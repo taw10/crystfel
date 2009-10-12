@@ -1,0 +1,12 @@
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache
+config.h
+config.log
+config.status
+configure
+stamp-h1
+src/*.o
+src/.deps
+src/template_index
