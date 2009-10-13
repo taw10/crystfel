@@ -60,6 +60,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	printf("Generating templates...\n");
+
 	printf("Input files (%i):\n", nin);
 	for ( i=0; i<nin; i++ ) {
 		printf("%6i: %s\n", i+1, in_files[i]);
