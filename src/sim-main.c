@@ -56,7 +56,17 @@ int main(int argc, char *argv[])
 
 	}
 
+	/* Define unit cell */
+	cell = cell_new_from_parameters(28.10e-9,
+	                                28.10e-9,
+	                                16.52e-9,
+	                                deg2rad(90.0),
+	                                deg2rad(90.0),
+	                                deg2rad(120.0));
+
 	printf("Generating test data...\n");
+
+	/* Define image parameters */
 	list = image_list_new();
 	image.width = 512;
 	image.height = 512;
