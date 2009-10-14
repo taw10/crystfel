@@ -145,3 +145,20 @@ struct imagefeature *image_feature_closest(ImageFeatureList *flist,
 	*d = +INFINITY;
 	return NULL;
 }
+
+
+int image_feature_count(ImageFeatureList *flist)
+{
+	if ( flist == NULL ) return 0;
+	return flist->n_features;
+}
+
+
+struct imagefeature *image_get_feature(ImageFeatureList *flist, int idx)
+{
+	/* Sanity check */
+	if ( flist == NULL ) return NULL;
+	if ( idx > flist->n_features ) return NULL;
+
+	return &flist->features[idx];
+}

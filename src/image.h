@@ -100,5 +100,7 @@ extern struct imagefeature *image_feature_closest(ImageFeatureList *flist,
                                                   double x, double y, double *d,
                                                   int *idx);
 
+extern int image_feature_count(ImageFeatureList *flist);
+extern struct imagefeature *image_get_feature(ImageFeatureList *flist, int idx);
 
 #endif	/* IMAGE_H */

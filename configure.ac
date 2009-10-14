@@ -18,4 +18,6 @@ AC_FUNC_MALLOC
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS([strdup])
 
+LIBS="$LIBS -lhdf5"
+
 AC_OUTPUT(Makefile src/Makefile)

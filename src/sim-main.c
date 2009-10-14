@@ -24,6 +24,7 @@
 #include "relrod.h"
 #include "cell.h"
 #include "utils.h"
+#include "hdf5-file.h"
 
 
 static void main_show_help(const char *s)
@@ -36,10 +37,11 @@ static void main_show_help(const char *s)
 
 int main(int argc, char *argv[])
 {
-	int c;
+	int c, i;
 	ImageList *list;
 	UnitCell *cell;
 	struct image image;
+	int nrefl;
 
 	while ((c = getopt(argc, argv, "h")) != -1) {
 
@@ -69,14 +71,27 @@ int main(int argc, char *argv[])
 	image.data = malloc(512*512*2);
 	image_add(list, &image);
 
-	cell = cell_new_from_parameters(28.10e-9,
-	                                28.10e-9,
-	                                16.52e-9,
-	                                deg2rad(90.0),
-	                                deg2rad(90.0),
-	                                deg2rad(120.0));
-
+	/* Calculate reflections */
 	get_reflections(&image, cell);
+
+	/* Construct the image */
+	nrefl = image_feature_count(image.rflist);
+	for ( i=0; i<nrefl; i++ ) {
+
+		struct imagefeature *f;
+		int x, y;
+
+		f = image_get_feature(image.rflist, i);
+
+		x = f->x;
+		y = f->y;	/* Discards digits after the decimal point */
+
+		image.data[y*image.width+x] = 1;
+
+	}
+
+	/* Write the output file */
+	hdf5_write("simulated.h5", image.data, image.width, image.height);
 
 	return 0;
 }
