@@ -19,9 +19,9 @@
 typedef struct {
 
 	/* Crystallographic representation */
-	double a;	/* nm */
-	double b;	/* nm */
-	double c;	/* nm */
+	double a;	/* m */
+	double b;	/* m */
+	double c;	/* m */
 	double alpha;	/* Radians */
 	double beta;	/* Radians */
 	double gamma;	/* Radians */
@@ -40,7 +40,7 @@ typedef struct {
 
 extern UnitCell *cell_new(void);
 
-/* Lengths in nm, angles in radians */
+/* Lengths in m, angles in radians */
 extern UnitCell *cell_new_from_parameters(double a, double b, double c,
 				double alpha, double beta, double gamma);
 
@@ -56,5 +56,10 @@ extern void cell_get_cartesian(UnitCell *cell,
                                double *ax, double *ay, double *az,
                                double *bx, double *by, double *bz,
                                double *cx, double *cy, double *cz);
+
+extern void cell_get_reciprocal(UnitCell *cell,
+                               double *asx, double *asy, double *asz,
+                               double *bsx, double *bsy, double *bsz,
+                               double *csx, double *csy, double *csz);
 
 #endif	/* CELL_H */

@@ -82,21 +82,19 @@ struct image {
 typedef struct _imagelist ImageList;
 
 
+/* Image lists */
 extern ImageList *image_list_new(void);
 
 extern int image_add(ImageList *list, struct image *image);
 
+
+/* Feature lists */
 extern ImageFeatureList *image_feature_list_new(void);
 
 extern void image_feature_list_free(ImageFeatureList *flist);
 
 extern void image_add_feature(ImageFeatureList *flist, double x, double y,
                               struct image *parent, double intensity);
-
-extern void image_add_feature_reflection(ImageFeatureList *flist,
-                                         double x, double y,
-                                         struct image *parent,
-                                         double intensity);
 
 extern struct imagefeature *image_feature_closest(ImageFeatureList *flist,
                                                   double x, double y, double *d,

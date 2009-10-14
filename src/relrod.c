@@ -62,14 +62,18 @@ void get_reflections(struct image *image, UnitCell *cell)
 	double kx, ky, kz; /* Electron wavevector ("normal" times 1/lambda) */
 	double ux, uy, uz; /* "up" vector */
 	double rx, ry, rz; /* "right" vector */
-	double ax, ay, az; /* "a" lattice parameter */
-	double bx, by, bz; /* "b" lattice parameter */
-	double cx, cy, cz; /* "c" lattice parameter */
+	double asx, asy, asz; /* "a*" lattice parameter */
+	double bsx, bsy, bsz; /* "b*" lattice parameter */
+	double csx, csy, csz; /* "c*" lattice parameter */
 	signed int h, k, l;
 
-	flist = image_feature_list_new();
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	/* Get the reciprocal unit cell */
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
 
+	/* Prepare list and some parameters */
+	flist = image_feature_list_new();
 	tilt = image->tilt;
 	omega = image->omega;
 	wavenumber = 1.0/image->lambda;
@@ -96,9 +100,9 @@ void get_reflections(struct image *image, UnitCell *cell)
 		double g_sq, gn;
 
 		/* Get the coordinates of the reciprocal lattice point */
-		xl = h*ax + k*bx + l*cx;
-		yl = h*ay + k*by + l*cy;
-		zl = h*az + k*bz + l*cz;
+		xl = h*asx + k*bsx + l*csx;
+		yl = h*asy + k*bsy + l*csy;
+		zl = h*asz + k*bsz + l*csz;
 		g_sq = modulus_squared(xl, yl, zl);
 		gn = xl*nx + yl*ny + zl*nz;
 
@@ -119,6 +123,7 @@ void get_reflections(struct image *image, UnitCell *cell)
 			double gx, gy, gz;
 			double theta;
 			double x, y;
+			double dx, dy, psi;
 
 			/* Determine the intersection point */
 			xi = xl + s*nx;  yi = yl + s*ny;  zi = zl + s*nz;
@@ -130,56 +135,49 @@ void get_reflections(struct image *image, UnitCell *cell)
 					*  the sphere to the intersection */
 			theta = angle_between(-kx, -ky, -kz, gx, gy, gz);
 
-			if ( theta > 0.0 ) {
+			/* Calculate azimuth of point in image
+			 * (anticlockwise from +x) */
+			dx = xi*rx + yi*ry + zi*rz;
+			dy = xi*ux + yi*uy + zi*uz;
+			psi = atan2(dy, dx);
 
-				double dx, dy, psi;
+			/* Get image coordinates from polar
+			 * representation */
+			if ( image->fmode == FORMULATION_CLEN ) {
+				x = image->camera_len*tan(theta)*cos(psi);
+				y = image->camera_len*tan(theta)*sin(psi);
+				x *= image->resolution;
+				y *= image->resolution;
+			} else if ( image->fmode==FORMULATION_PIXELSIZE ) {
+				x = tan(theta)*cos(psi) / image->lambda;
+				y = tan(theta)*sin(psi) / image->lambda;
+				x /= image->pixel_size;
+				y /= image->pixel_size;
+			} else {
+				fprintf(stderr,
+					"Unrecognised formulation mode "
+					"in get_reflections\n");
+				return;
+			}
 
-				/* Calculate azimuth of point in image
-				 * (anticlockwise from +x) */
-				dx = xi*rx + yi*ry + zi*rz;
-				dy = xi*ux + yi*uy + zi*uz;
-				psi = atan2(dy, dx);
+			x += image->x_centre;
+			y += image->y_centre;
 
-				/* Get image coordinates from polar
-				 * representation */
-				if ( image->fmode == FORMULATION_CLEN ) {
-					x = image->camera_len*tan(theta)*cos(psi);
-					y = image->camera_len*tan(theta)*sin(psi);
-					x *= image->resolution;
-					y *= image->resolution;
-				} else if ( image->fmode==FORMULATION_PIXELSIZE ) {
-					x = tan(theta)*cos(psi) / image->lambda;
-					y = tan(theta)*sin(psi) / image->lambda;
-					x /= image->pixel_size;
-					y /= image->pixel_size;
-				} else {
-					fprintf(stderr,
-						"Unrecognised formulation mode "
-						"in get_reflections\n");
-					return;
-				}
+			/* Sanity check */
+			if ( (x>=0) && (x<image->width)
+			  && (y>=0) && (y<image->height) ) {
 
-				x += image->x_centre;
-				y += image->y_centre;
+				/* Record the reflection.
+				 * Intensity should be multiplied by relrod
+				 * spike function, except reprojected
+				 * reflections aren't used quantitatively for
+				 * anything. */
+				 printf("%i %i %i\n", h,k,l);
+				image_add_feature(flist, x, y, image, 1.0);
 
-				/* Sanity check */
-				if ( (x>=0) && (x<image->width)
-				  && (y>=0) && (y<image->height) ) {
+			} /* else it's outside the picture somewhere */
 
-					/* Record the reflection
-					 *  Intensity should be multiplied by
-					 *  relrod spike function except
-					 *  reprojected reflections aren't used
-					 *  quantitatively for anything
-					 */
-					image_add_feature_reflection(flist, x,
-						y, image, 1.0);
-
-				} /* else it's outside the picture somewhere */
-
-			} /* else this is the central beam */
-
-		}
+		} /* else reflection is not excited in this orientation */
 
 	}
 	}

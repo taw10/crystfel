@@ -61,20 +61,20 @@ int main(int argc, char *argv[])
 	image.tilt = 0.0;
 	image.omega = 0.0;
 	image.fmode = FORMULATION_CLEN;
-	image.x_centre = 128;
-	image.y_centre = 128;
-	image.camera_len = 1.0; /* one metre */
-	image.resolution = 5120;
-	image.lambda = 0.6e-9;
+	image.x_centre = 255.5;
+	image.y_centre = 255.5;
+	image.camera_len = 0.2;  /* 20 cm */
+	image.resolution = 5120; /* 512 pixels in 10 cm */
+	image.lambda = 0.2e-9;   /* LCLS wavelength */
 	image.data = malloc(512*512*2);
 	image_add(list, &image);
 
-	cell = cell_new_from_parameters(1.0,
-	                                1.0,
-	                                1.0,
+	cell = cell_new_from_parameters(28.10e-9,
+	                                28.10e-9,
+	                                16.52e-9,
 	                                deg2rad(90.0),
 	                                deg2rad(90.0),
-	                                deg2rad(90.0));
+	                                deg2rad(120.0));
 
 	get_reflections(&image, cell);
 

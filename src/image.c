@@ -69,8 +69,8 @@ ImageList *image_list_new()
 }
 
 
-void image_add_feature_reflection(ImageFeatureList *flist, double x, double y,
-                                  struct image *parent, double intensity)
+void image_add_feature(ImageFeatureList *flist, double x, double y,
+                       struct image *parent, double intensity)
 {
 	if ( flist->features ) {
 		flist->features = realloc(flist->features,
@@ -90,13 +90,6 @@ void image_add_feature_reflection(ImageFeatureList *flist, double x, double y,
 
 	flist->n_features++;
 
-}
-
-
-void image_add_feature(ImageFeatureList *flist, double x, double y,
-                       struct image *parent, double intensity)
-{
-	image_add_feature_reflection(flist, x, y, parent, intensity);
 }
 
 

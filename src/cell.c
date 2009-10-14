@@ -16,6 +16,9 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_linalg.h>
 
 #include "cell.h"
 #include "utils.h"
@@ -74,9 +77,9 @@ static void cell_update_crystallographic(UnitCell *cell)
 	cell->gamma = angle_between(cell->ax, cell->ay, cell->az,
 					cell->bx, cell->by, cell->bz);
 
-	printf("a=%f nm\n", cell->a);
-	printf("b=%f nm\n", cell->b);
-	printf("c=%f nm\n", cell->c);
+	printf("a=%f nm\n", cell->a/1e9);
+	printf("b=%f nm\n", cell->b/1e9);
+	printf("c=%f nm\n", cell->c/1e9);
 	printf("alpha = %f deg\n", rad2deg(cell->alpha));
 	printf(" beta = %f deg\n", rad2deg(cell->beta));
 	printf("gamma = %f deg\n", rad2deg(cell->gamma));
@@ -104,7 +107,7 @@ UnitCell *cell_new()
 
 
 void cell_set_parameters(UnitCell *cell, double a, double b, double c,
-				double alpha, double beta, double gamma)
+                         double alpha, double beta, double gamma)
 {
 	if ( !cell ) return;
 
@@ -135,7 +138,7 @@ void cell_set_cartesian(UnitCell *cell,
 
 
 UnitCell *cell_new_from_parameters(double a, double b, double c,
-				double alpha, double beta, double gamma)
+                                   double alpha, double beta, double gamma)
 {
 	UnitCell *cell;
 
@@ -149,13 +152,61 @@ UnitCell *cell_new_from_parameters(double a, double b, double c,
 
 
 void cell_get_cartesian(UnitCell *cell,
-			double *ax, double *ay, double *az,
-			double *bx, double *by, double *bz,
-			double *cx, double *cy, double *cz)
+                        double *ax, double *ay, double *az,
+                        double *bx, double *by, double *bz,
+                        double *cx, double *cy, double *cz)
 {
 	if ( !cell ) return;
 
 	*ax = cell->ax;  *ay = cell->ay;  *az = cell->az;
 	*bx = cell->bx;  *by = cell->by;  *bz = cell->bz;
 	*cx = cell->cx;  *cy = cell->cy;  *cz = cell->cz;
+}
+
+
+void cell_get_reciprocal(UnitCell *cell,
+                         double *asx, double *asy, double *asz,
+                         double *bsx, double *bsy, double *bsz,
+                         double *csx, double *csy, double *csz)
+{
+	int s;
+	gsl_matrix *m;
+	gsl_matrix *inv;
+	gsl_permutation *perm;
+
+	m = gsl_matrix_alloc(3, 3);
+	gsl_matrix_set(m, 0, 0, cell->ax);
+	gsl_matrix_set(m, 0, 1, cell->bx);
+	gsl_matrix_set(m, 0, 2, cell->cx);
+	gsl_matrix_set(m, 1, 0, cell->ay);
+	gsl_matrix_set(m, 1, 1, cell->by);
+	gsl_matrix_set(m, 1, 2, cell->cy);
+	gsl_matrix_set(m, 2, 0, cell->az);
+	gsl_matrix_set(m, 2, 1, cell->bz);
+	gsl_matrix_set(m, 2, 2, cell->cz);
+
+	/* Invert */
+	perm = gsl_permutation_alloc(m->size1);
+	inv = gsl_matrix_alloc(m->size1, m->size2);
+	gsl_linalg_LU_decomp(m, perm, &s);
+	gsl_linalg_LU_invert(m, perm, inv);
+	gsl_permutation_free(perm);
+	gsl_matrix_free(m);
+
+	/* Transpose */
+	gsl_matrix_transpose(inv);
+
+	*asx = gsl_matrix_get(inv, 0, 0);
+	*bsx = gsl_matrix_get(inv, 0, 1);
+	*csx = gsl_matrix_get(inv, 0, 2);
+	*asy = gsl_matrix_get(inv, 1, 0);
+	*bsy = gsl_matrix_get(inv, 1, 1);
+	*csy = gsl_matrix_get(inv, 1, 2);
+	*asz = gsl_matrix_get(inv, 2, 0);
+	*bsz = gsl_matrix_get(inv, 2, 1);
+	*csz = gsl_matrix_get(inv, 2, 2);
+
+	printf("a* = %f %f %f\n", *asx/1e9, *asy/1e9, *asz/1e9);
+	printf("b* = %f %f %f\n", *bsx/1e9, *bsy/1e9, *bsz/1e9);
+	printf("c* = %f %f %f\n", *csx/1e9, *csy/1e9, *csz/1e9);
 }
