@@ -19,6 +19,20 @@
 #include "utils.h"
 
 
+struct _imagelist
+{
+	int		n_images;
+	struct image	*images;
+};
+
+
+struct _imagefeaturelist
+{
+	struct imagefeature	*features;
+	int			n_features;
+};
+
+
 int image_add(ImageList *list, struct image *image)
 {
 	if ( list->images ) {
@@ -60,10 +74,11 @@ void image_add_feature_reflection(ImageFeatureList *flist, double x, double y,
 {
 	if ( flist->features ) {
 		flist->features = realloc(flist->features,
-		                    (flist->n_features+1)*sizeof(ImageFeature));
+		                    (flist->n_features+1)
+		                    *sizeof(struct imagefeature));
 	} else {
 		assert(flist->n_features == 0);
-		flist->features = malloc(sizeof(ImageFeature));
+		flist->features = malloc(sizeof(struct imagefeature));
 	}
 
 	flist->features[flist->n_features].x = x;
@@ -107,8 +122,9 @@ void image_feature_list_free(ImageFeatureList *flist)
 }
 
 
-ImageFeature *image_feature_closest(ImageFeatureList *flist, double x, double y,
-                                    double *d, int *idx)
+struct imagefeature *image_feature_closest(ImageFeatureList *flist,
+                                           double x, double y,
+                                           double *d, int *idx)
 {
 	int i;
 	double dmin = +HUGE_VAL;
@@ -135,40 +151,4 @@ ImageFeature *image_feature_closest(ImageFeatureList *flist, double x, double y,
 
 	*d = +INFINITY;
 	return NULL;
-}
-
-
-ImageFeature *image_feature_second_closest(ImageFeatureList *flist,
-                                           double x, double y, double *d,
-                                           int *idx)
-{
-	int i;
-	double dmin = +HUGE_VAL;
-	int closest = 0;
-	double dfirst;
-	int idxfirst;
-
-	image_feature_closest(flist, x, y, &dfirst, &idxfirst);
-
-	for ( i=0; i<flist->n_features; i++ ) {
-
-		double d;
-
-		d = distance(flist->features[i].x, flist->features[i].y, x, y);
-
-		if ( (d < dmin) && (i != idxfirst) ) {
-			dmin = d;
-			closest = i;
-		}
-
-	}
-
-	if ( dmin < +HUGE_VAL ) {
-		*d = dmin;
-		*idx = closest;
-		return &flist->features[closest];
-	}
-
-	return NULL;
-
 }

@@ -20,13 +20,15 @@
 #include <stdint.h>
 
 
+/* How is the scaling of the image described? */
 typedef enum {
 	FORMULATION_CLEN,
 	FORMULATION_PIXELSIZE
 } FormulationMode;
 
 
-typedef struct imagefeature_struct {
+/* Structure describing a feature in an image */
+struct imagefeature {
 
 	struct image			*parent;
 	double				x;
@@ -39,20 +41,12 @@ typedef struct imagefeature_struct {
 	/* Distance between this feature and its partner, if any. */
 	double				partner_d;
 
-	/* The reflection this was projected from, if any */
-	struct reflection_struct	*reflection;
+};
 
-} ImageFeature;
+/* An opaque type representing a list of image features */
+typedef struct _imagefeaturelist ImageFeatureList;
 
-
-typedef struct {
-
-	ImageFeature		*features;
-	int			n_features;
-
-} ImageFeatureList;
-
-
+/* Structure describing an image */
 struct image {
 
 	uint16_t		*data;
@@ -84,13 +78,8 @@ struct image {
 
 };
 
-
-typedef struct imagelist_struct {
-
-	int		n_images;
-	struct image	*images;
-
-} ImageList;
+/* An opaque type representing a list of images */
+typedef struct _imagelist ImageList;
 
 
 extern ImageList *image_list_new(void);
@@ -109,11 +98,7 @@ extern void image_add_feature_reflection(ImageFeatureList *flist,
                                          struct image *parent,
                                          double intensity);
 
-extern ImageFeature *image_feature_closest(ImageFeatureList *flist,
-                                           double x, double y, double *d,
-                                           int *idx);
-
-extern ImageFeature *image_feature_second_closest(ImageFeatureList *flist,
+extern struct imagefeature *image_feature_closest(ImageFeatureList *flist,
                                                   double x, double y, double *d,
                                                   int *idx);
 
