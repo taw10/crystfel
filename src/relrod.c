@@ -172,7 +172,6 @@ void get_reflections(struct image *image, UnitCell *cell)
 				 * spike function, except reprojected
 				 * reflections aren't used quantitatively for
 				 * anything. */
-				 printf("%i %i %i\n", h,k,l);
 				image_add_feature(flist, x, y, image, 1.0);
 
 			} /* else it's outside the picture somewhere */
