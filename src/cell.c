@@ -206,7 +206,10 @@ void cell_get_reciprocal(UnitCell *cell,
 	*bsz = gsl_matrix_get(inv, 2, 1);
 	*csz = gsl_matrix_get(inv, 2, 2);
 
-	printf("a* = %f %f %f\n", *asx/1e9, *asy/1e9, *asz/1e9);
-	printf("b* = %f %f %f\n", *bsx/1e9, *bsy/1e9, *bsz/1e9);
-	printf("c* = %f %f %f\n", *csx/1e9, *csy/1e9, *csz/1e9);
+	printf("a* = %+8.5f %+8.5f %+8.5f nm^-1\n",
+	       *asx/1e9, *asy/1e9, *asz/1e9);
+	printf("b* = %+8.5f %+8.5f %+8.5f nm^-1\n",
+	       *bsx/1e9, *bsy/1e9, *bsz/1e9);
+	printf("c* = %+8.5f %+8.5f %+8.5f nm^-1\n",
+	       *csx/1e9, *csy/1e9, *csz/1e9);
 }
