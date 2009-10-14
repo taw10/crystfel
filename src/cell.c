@@ -146,3 +146,16 @@ UnitCell *cell_new_from_parameters(double a, double b, double c,
 
 	return cell;
 }
+
+
+void cell_get_cartesian(UnitCell *cell,
+			double *ax, double *ay, double *az,
+			double *bx, double *by, double *bz,
+			double *cx, double *cy, double *cz)
+{
+	if ( !cell ) return;
+
+	*ax = cell->ax;  *ay = cell->ay;  *az = cell->az;
+	*bx = cell->bx;  *by = cell->by;  *bz = cell->bz;
+	*cx = cell->cx;  *cy = cell->cy;  *cz = cell->cz;
+}

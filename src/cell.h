@@ -52,4 +52,9 @@ extern void cell_set_cartesian(UnitCell *cell,
 extern void cell_set_parameters(UnitCell *cell, double a, double b, double c,
 				double alpha, double beta, double gamma);
 
+extern void cell_get_cartesian(UnitCell *cell,
+                               double *ax, double *ay, double *az,
+                               double *bx, double *by, double *bz,
+                               double *cx, double *cy, double *cz);
+
 #endif	/* CELL_H */

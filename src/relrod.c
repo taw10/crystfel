@@ -57,17 +57,22 @@ void get_reflections(struct image *image, UnitCell *cell)
 {
 	ImageFeatureList *flist;
 	double smax = 0.2e9;
-	double tilt, omega, k;
+	double tilt, omega, wavenumber;
 	double nx, ny, nz; /* "normal" vector */
-	double kx, ky, kz; /* Electron wavevector ("normal" times 1/lambda */
+	double kx, ky, kz; /* Electron wavevector ("normal" times 1/lambda) */
 	double ux, uy, uz; /* "up" vector */
 	double rx, ry, rz; /* "right" vector */
+	double ax, ay, az; /* "a" lattice parameter */
+	double bx, by, bz; /* "b" lattice parameter */
+	double cx, cy, cz; /* "c" lattice parameter */
+	signed int h, k, l;
 
 	flist = image_feature_list_new();
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
 	tilt = image->tilt;
 	omega = image->omega;
-	k = 1.0/image->lambda;
+	wavenumber = 1.0/image->lambda;
 
 	/* Calculate the (normalised) incident electron wavevector */
 	mapping_rotate(0.0, 0.0, 1.0, &nx, &ny, &nz, omega, tilt);
@@ -81,7 +86,9 @@ void get_reflections(struct image *image, UnitCell *cell)
 	/* Determine where "right" is */
 	mapping_rotate(1.0, 0.0, 0.0, &rx, &ry, &rz, omega, tilt);
 
-	do {
+	for ( h=-20; h<20; h++ ) {
+	for ( k=-20; k<20; k++ ) {
+	for ( l=-20; l<20; l++ ) {
 
 		double xl, yl, zl;
 		double a, b, c;
@@ -89,16 +96,16 @@ void get_reflections(struct image *image, UnitCell *cell)
 		double g_sq, gn;
 
 		/* Get the coordinates of the reciprocal lattice point */
-	//	xl = reflection->x;
-	//	yl = reflection->y;
-	//	zl = reflection->z;
+		xl = h*ax + k*bx + l*cx;
+		yl = h*ay + k*by + l*cy;
+		zl = h*az + k*bz + l*cz;
 		g_sq = modulus_squared(xl, yl, zl);
 		gn = xl*nx + yl*ny + zl*nz;
 
 		/* Next, solve the relrod equation to calculate
 		 * the excitation error */
 		a = 1.0;
-		b = 2.0*(gn - k);
+		b = 2.0*(gn - wavenumber);
 		c = -2.0*gn*k + g_sq;
 		t = -0.5*(b + sign(b)*sqrt(b*b - 4.0*a*c));
 		s1 = t/a;
@@ -148,8 +155,8 @@ void get_reflections(struct image *image, UnitCell *cell)
 				} else {
 					fprintf(stderr,
 						"Unrecognised formulation mode "
-						"in reproject_get_reflections\n");
-					return NULL;
+						"in get_reflections\n");
+					return;
 				}
 
 				x += image->x_centre;
@@ -174,7 +181,9 @@ void get_reflections(struct image *image, UnitCell *cell)
 
 		}
 
-	} while ( 1 );
+	}
+	}
+	}
 
 	image->rflist = flist;
 }
