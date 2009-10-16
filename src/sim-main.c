@@ -42,7 +42,6 @@ static void main_show_help(const char *s)
 int main(int argc, char *argv[])
 {
 	int c, i;
-	ImageList *list;
 	UnitCell *cell;
 	struct image image;
 	int nrefl;
@@ -69,7 +68,6 @@ int main(int argc, char *argv[])
 	                                deg2rad(120.0));
 
 	/* Define image parameters */
-	list = image_list_new();
 	image.width = 512;
 	image.height = 512;
 	image.tilt = deg2rad(32.0);
@@ -81,7 +79,6 @@ int main(int argc, char *argv[])
 	image.resolution = 5120; /* 512 pixels in 10 cm */
 	image.lambda = 0.2e-9;   /* LCLS wavelength */
 	image.data = malloc(512*512*2);
-	image_add(list, &image);
 
 	/* Calculate reflections */
 	get_reflections(&image, cell, 1.0/CRYSTAL_SIZE);
