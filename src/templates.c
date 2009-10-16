@@ -134,7 +134,7 @@ TemplateList *generate_templates(UnitCell *cell, struct image params)
 }
 
 
-int try_template(struct image *image, struct template template)
+static int try_template(struct image *image, struct template template)
 {
 	int fit = 0;
 	struct template_feature *f;
