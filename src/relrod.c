@@ -90,9 +90,9 @@ void get_reflections(struct image *image, UnitCell *cell)
 	/* Determine where "right" is */
 	mapping_rotate(1.0, 0.0, 0.0, &rx, &ry, &rz, omega, tilt);
 
-	for ( h=-20; h<20; h++ ) {
-	for ( k=-20; k<20; k++ ) {
-	for ( l=-20; l<20; l++ ) {
+	for ( h=-50; h<50; h++ ) {
+	for ( k=-50; k<50; k++ ) {
+	for ( l=-50; l<50; l++ ) {
 
 		double xl, yl, zl;
 		double a, b, c;
