@@ -91,7 +91,6 @@ void get_reflections(struct image *image, UnitCell *cell, double smax)
 			" (resolution cutoff calculation)\n");
 		return;
 	}
-	printf("Resolution cutoff is %5.2f nm^-1\n", res_max/1e9);
 	res_max = pow(res_max, 2.0);
 
 	/* Calculate the (normalised) incident electron wavevector */

@@ -108,9 +108,6 @@ int hdf5_read(struct image *image, const char *filename)
 	}
 
 	H5Sget_simple_extent_dims(sh, size, max_size);
-	printf("Data dimensions %i %i (max %i %i)\n",
-	                           (int)size[1], (int)size[0],
-	                           (int)max_size[1], (int)max_size[0]);
 
 	buf = malloc(sizeof(float)*size[0]*size[1]);
 
