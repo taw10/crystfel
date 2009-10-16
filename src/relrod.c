@@ -109,8 +109,8 @@ void get_reflections(struct image *image, UnitCell *cell)
 		/* Next, solve the relrod equation to calculate
 		 * the excitation error */
 		a = 1.0;
-		b = 2.0*(gn - wavenumber);
-		c = -2.0*gn*k + g_sq;
+		b = 2.0*(wavenumber + gn);
+		c = -2.0*gn*wavenumber + g_sq;
 		t = -0.5*(b + sign(b)*sqrt(b*b - 4.0*a*c));
 		s1 = t/a;
 		s2 = c/t;
