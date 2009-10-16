@@ -70,8 +70,8 @@ int main(int argc, char *argv[])
 	list = image_list_new();
 	image.width = 512;
 	image.height = 512;
-	image.tilt = 0.0;
-	image.omega = 0.0;
+	image.tilt = deg2rad(10.0);
+	image.omega = deg2rad(0.0);
 	image.fmode = FORMULATION_CLEN;
 	image.x_centre = 255.5;
 	image.y_centre = 255.5;
