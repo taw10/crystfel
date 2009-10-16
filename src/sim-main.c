@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
 	UnitCell *cell;
 	struct image image;
 	int nrefl;
+	float t;
 
 	while ((c = getopt(argc, argv, "h")) != -1) {
 
@@ -70,7 +71,6 @@ int main(int argc, char *argv[])
 	/* Define image parameters */
 	image.width = 512;
 	image.height = 512;
-	image.tilt = deg2rad(32.0);
 	image.omega = deg2rad(40.0);
 	image.fmode = FORMULATION_CLEN;
 	image.x_centre = 255.5;
@@ -80,27 +80,37 @@ int main(int argc, char *argv[])
 	image.lambda = 0.2e-9;   /* LCLS wavelength */
 	image.data = malloc(512*512*2);
 
-	/* Calculate reflections */
-	get_reflections(&image, cell, 1.0/CRYSTAL_SIZE);
+	for ( t=0.0; t<180.0; t+=10.0 ) {
 
-	/* Construct the image */
-	nrefl = image_feature_count(image.rflist);
-	for ( i=0; i<nrefl; i++ ) {
+		char filename[32];
 
-		struct imagefeature *f;
-		int x, y;
+		memset(image.data, 0, 512*512*2);
+		image.tilt = deg2rad(t);
 
-		f = image_get_feature(image.rflist, i);
+		/* Calculate reflections */
+		get_reflections(&image, cell, 1.0/CRYSTAL_SIZE);
 
-		x = f->x;
-		y = f->y;	/* Discards digits after the decimal point */
+		/* Construct the image */
+		nrefl = image_feature_count(image.rflist);
+		for ( i=0; i<nrefl; i++ ) {
 
-		image.data[y*image.width+x] = 1;
+			struct imagefeature *f;
+			int x, y;
+
+			f = image_get_feature(image.rflist, i);
+
+			x = f->x;
+			y = f->y;  /* Discards digits after the decimal point */
+
+			image.data[y*image.width+x] = 1;
+
+		}
+
+		/* Write the output file */
+		snprintf(filename, 32, "simulated-%.0f.h5", t);
+		hdf5_write(filename, image.data, image.width, image.height);
 
 	}
-
-	/* Write the output file */
-	hdf5_write("simulated.h5", image.data, image.width, image.height);
 
 	return 0;
 }
