@@ -66,6 +66,7 @@ void get_reflections(struct image *image, UnitCell *cell)
 	double bsx, bsy, bsz; /* "b*" lattice parameter */
 	double csx, csy, csz; /* "c*" lattice parameter */
 	signed int h, k, l;
+	double res_max;
 
 	/* Get the reciprocal unit cell */
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
@@ -77,6 +78,22 @@ void get_reflections(struct image *image, UnitCell *cell)
 	tilt = image->tilt;
 	omega = image->omega;
 	wavenumber = 1.0/image->lambda;
+
+	/* Calculate (roughly) the maximum resolution */
+	if ( image->fmode == FORMULATION_CLEN ) {
+		double w2, h2;
+		w2 = image->width/2;  h2 = image->height/2;
+		w2 = pow(w2, 2.0);  h2 = pow(h2, 2.0);
+		res_max = sqrt(w2 + h2) / image->resolution;
+		res_max *= (wavenumber / image->camera_len);
+	} else {
+		fprintf(stderr,
+			"Unrecognised formulation mode in get_reflections"
+			" (resolution cutoff calculation)\n");
+		return;
+	}
+	printf("Resolution cutoff is %5.2f nm^-1\n", res_max/1e9);
+	res_max = pow(res_max, 2.0);
 
 	/* Calculate the (normalised) incident electron wavevector */
 	mapping_rotate(0.0, 0.0, 1.0, &nx, &ny, &nz, omega, tilt);
@@ -105,6 +122,9 @@ void get_reflections(struct image *image, UnitCell *cell)
 		zl = h*asz + k*bsz + l*csz;
 		g_sq = modulus_squared(xl, yl, zl);
 		gn = xl*nx + yl*ny + zl*nz;
+
+		/* Early bailout if resolution is clearly too high */
+		if ( g_sq > res_max ) continue;
 
 		/* Next, solve the relrod equation to calculate
 		 * the excitation error */
