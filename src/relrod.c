@@ -56,7 +56,7 @@ static void mapping_rotate(double x, double y, double z,
 void get_reflections(struct image *image, UnitCell *cell)
 {
 	ImageFeatureList *flist;
-	double smax = 0.2e9;
+	double smax = 0.01e9;
 	double tilt, omega, wavenumber;
 	double nx, ny, nz; /* "normal" vector */
 	double kx, ky, kz; /* Electron wavevector ("normal" times 1/lambda) */
