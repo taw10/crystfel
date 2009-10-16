@@ -88,12 +88,14 @@ int main(int argc, char *argv[])
 	template_parameters.lambda = 0.2e-9;   /* LCLS wavelength */
 	templates = generate_templates(cell, template_parameters);
 
-	printf("Input files (%i):\n", nin);
+	printf("%i files to index:\n", nin);
+	printf("     #:                        Omega     Tilt\n");
+	printf("--------------------------------------------------\n");
 	for ( i=0; i<nin; i++ ) {
 
 		struct image image;
 
-		printf("%6i: %s  ", i+1, in_files[i]);
+		printf("%6i: %20s ", i+1, in_files[i]);
 
 		image.width = 512;
 		image.height = 512;
@@ -112,8 +114,8 @@ int main(int argc, char *argv[])
 
 		try_templates(&image, templates);
 
-		printf("%6.2f %6.2f\n", rad2deg(image.omega),
-		                        rad2deg(image.tilt));
+		printf("%+8.2f %+8.2f deg\n", rad2deg(image.omega),
+		                              rad2deg(image.tilt));
 
 	}
 

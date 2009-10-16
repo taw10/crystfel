@@ -130,6 +130,8 @@ TemplateList *generate_templates(UnitCell *cell, struct image params)
 		}
 	//}
 
+	printf("Generating templates... done                      \n");
+
 	return list;
 }
 
