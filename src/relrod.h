@@ -19,6 +19,6 @@
 #include "image.h"
 #include "cell.h"
 
-extern void get_reflections(struct image *image, UnitCell *cell);
+extern void get_reflections(struct image *image, UnitCell *cell, double smax);
 
 #endif	/* RELROD_H */

@@ -27,6 +27,10 @@
 #include "hdf5-file.h"
 
 
+/* Crystal size in metres */
+#define CRYSTAL_SIZE (500.0e-9)
+
+
 static void main_show_help(const char *s)
 {
 	printf("Syntax: %s <file1.h5> <file2.h5> [...]\n\n", s);
@@ -80,7 +84,7 @@ int main(int argc, char *argv[])
 	image_add(list, &image);
 
 	/* Calculate reflections */
-	get_reflections(&image, cell);
+	get_reflections(&image, cell, 1.0/CRYSTAL_SIZE);
 
 	/* Construct the image */
 	nrefl = image_feature_count(image.rflist);
