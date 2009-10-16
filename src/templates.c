@@ -134,7 +134,48 @@ TemplateList *generate_templates(UnitCell *cell, struct image params)
 }
 
 
+int try_template(struct image *image, struct template template)
+{
+	int fit = 0;
+	struct template_feature *f;
+
+	f = template.features;
+	while ( f != NULL ) {
+
+		int x, y;
+
+		x = f->x;
+		y = f->y;	/* Discards digits after the decimal point */
+
+		fit += image->data[y*image->width+x];
+
+		f = f->next;
+
+	}
+
+	return fit;
+}
+
+
 int try_templates(struct image *image, TemplateList *list)
 {
+	int i;
+	int fit_max = 0;
+	int i_max = 0;
+
+	for ( i=0; i<list->n_templates; i++ ) {
+
+		int fit;
+
+		fit = try_template(image, list->templates[i]);
+		if ( fit > fit_max ) {
+			fit_max = fit;
+			i_max = i;
+		}
+
+	}
+	image->omega = list->templates[i_max].omega;
+	image->tilt = list->templates[i_max].tilt;
+
 	return 0;
 }

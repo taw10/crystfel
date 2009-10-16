@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 
 		struct image image;
 
-		printf("%6i: %s\n", i+1, in_files[i]);
+		printf("%6i: %s  ", i+1, in_files[i]);
 
 		image.width = 512;
 		image.height = 512;
@@ -111,6 +111,9 @@ int main(int argc, char *argv[])
 		}
 
 		try_templates(&image, templates);
+
+		printf("%6.2f %6.2f\n", rad2deg(image.omega),
+		                        rad2deg(image.tilt));
 
 	}
 
