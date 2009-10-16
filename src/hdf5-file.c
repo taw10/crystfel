@@ -28,7 +28,7 @@ int hdf5_write(const char *filename, const uint16_t *data,
 	hsize_t size[2];
 	hsize_t max_size[2];
 
-	fh = H5Fcreate(filename, H5F_ACC_EXCL, H5P_DEFAULT, H5P_DEFAULT);
+	fh = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	if ( fh < 0 ) {
 		fprintf(stderr, "Couldn't create file: %s\n", filename);
 		return 1;
