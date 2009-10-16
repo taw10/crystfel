@@ -64,8 +64,6 @@ int main(int argc, char *argv[])
 	                                deg2rad(90.0),
 	                                deg2rad(120.0));
 
-	printf("Generating test data...\n");
-
 	/* Define image parameters */
 	list = image_list_new();
 	image.width = 512;
