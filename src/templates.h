@@ -5,7 +5,7 @@
  *
  * (c) 2006-2009 Thomas White <thomas.white@desy.de>
  *
- * template_index - Indexing diffraction patterns by template matching
+ * pattern_sim - Simulate diffraction patterns from small crystals
  *
  */
 

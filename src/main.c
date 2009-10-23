@@ -1,11 +1,9 @@
 /*
  * main.c
  *
- * "Main"
- *
  * (c) 2006-2009 Thomas White <thomas.white@desy.de>
  *
- * template_index - Indexing diffraction patterns by template matching
+ * pattern_sim - Simulate diffraction patterns from small crystals
  *
  */
 
@@ -20,11 +18,15 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "cell.h"
 #include "image.h"
+#include "relrod.h"
+#include "cell.h"
 #include "utils.h"
 #include "hdf5-file.h"
-#include "templates.h"
+
+
+/* Crystal size in metres */
+#define CRYSTAL_SIZE (500.0e-9)
 
 
 static void main_show_help(const char *s)
@@ -37,13 +39,11 @@ static void main_show_help(const char *s)
 
 int main(int argc, char *argv[])
 {
-	int c;
-	char **in_files;
-	size_t nin;
-	size_t i;
+	int c, i;
 	UnitCell *cell;
-	TemplateList *templates;
-	struct image template_parameters;
+	struct image image;
+	int nrefl;
+	float t;
 
 	while ((c = getopt(argc, argv, "h")) != -1) {
 
@@ -58,17 +58,6 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( optind < argc ) {
-		nin = argc-optind;
-		in_files = malloc(nin*sizeof(char *));
-		for ( i=0; i<nin; i++ ) {
-			in_files[i] = strdup(argv[optind+i]);
-		}
-	} else {
-		fprintf(stderr, "No input files!\n");
-		return 1;
-	}
-
 	/* Define unit cell */
 	cell = cell_new_from_parameters(28.10e-9,
 	                                28.10e-9,
@@ -77,45 +66,47 @@ int main(int argc, char *argv[])
 	                                deg2rad(90.0),
 	                                deg2rad(120.0));
 
-	/* Generate templates */
-	template_parameters.width = 512;
-	template_parameters.height = 512;
-	template_parameters.fmode = FORMULATION_CLEN;
-	template_parameters.x_centre = 255.5;
-	template_parameters.y_centre = 255.5;
-	template_parameters.camera_len = 0.2;  /* 20 cm */
-	template_parameters.resolution = 5120; /* 512 pixels in 10 cm */
-	template_parameters.lambda = 0.2e-9;   /* LCLS wavelength */
-	templates = generate_templates(cell, template_parameters);
+	/* Define image parameters */
+	image.width = 512;
+	image.height = 512;
+	image.omega = deg2rad(40.0);
+	image.fmode = FORMULATION_CLEN;
+	image.x_centre = 255.5;
+	image.y_centre = 255.5;
+	image.camera_len = 0.2;  /* 20 cm */
+	image.resolution = 5120; /* 512 pixels in 10 cm */
+	image.lambda = 0.2e-9;   /* LCLS wavelength */
+	image.data = malloc(512*512*2);
 
-	printf("%i files to index:\n", nin);
-	printf("     #:                        Omega     Tilt\n");
-	printf("--------------------------------------------------\n");
-	for ( i=0; i<nin; i++ ) {
+	for ( t=0.0; t<180.0; t+=10.0 ) {
 
-		struct image image;
+		char filename[32];
 
-		printf("%6i: %20s ", i+1, in_files[i]);
+		memset(image.data, 0, 512*512*2);
+		image.tilt = deg2rad(t);
 
-		image.width = 512;
-		image.height = 512;
-		image.fmode = FORMULATION_CLEN;
-		image.x_centre = 255.5;
-		image.y_centre = 255.5;
-		image.camera_len = 0.2;  /* 20 cm */
-		image.resolution = 5120; /* 512 pixels in 10 cm */
-		image.lambda = 0.2e-9;   /* LCLS wavelength */
+		/* Calculate reflections */
+		get_reflections(&image, cell, 1.0/CRYSTAL_SIZE);
 
-		if ( hdf5_read(&image, in_files[i]) ) {
-			fprintf(stderr, "Couldn't read file '%s'\n",
-			        in_files[i]);
-			continue;
+		/* Construct the image */
+		nrefl = image_feature_count(image.rflist);
+		for ( i=0; i<nrefl; i++ ) {
+
+			struct imagefeature *f;
+			int x, y;
+
+			f = image_get_feature(image.rflist, i);
+
+			x = f->x;
+			y = f->y;  /* Discards digits after the decimal point */
+
+			image.data[y*image.width+x] = 1;
+
 		}
 
-		try_templates(&image, templates);
-
-		printf("%+8.2f %+8.2f deg\n", rad2deg(image.omega),
-		                              rad2deg(image.tilt));
+		/* Write the output file */
+		snprintf(filename, 32, "simulated-%.0f.h5", t);
+		hdf5_write(filename, image.data, image.width, image.height);
 
 	}
 

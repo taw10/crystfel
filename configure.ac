@@ -1,10 +1,10 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(template_index, 0.1.0, thomas.white@desy.de)
+AC_INIT(pattern_sim, 0.1.0, thomas.white@desy.de)
 VERSION=AC_PACKAGE_VERSION
 
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(template_index, "$VERSION")
+AM_INIT_AUTOMAKE(pattern_sim, "$VERSION")
 
 AC_PROG_CC
 AC_PROG_AWK

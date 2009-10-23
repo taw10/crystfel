@@ -9,5 +9,4 @@ configure
 stamp-h1
 src/*.o
 src/.deps
-src/template_index
-src/simulate_patterns
+src/pattern_sim
