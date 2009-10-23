@@ -85,24 +85,7 @@ int main(int argc, char *argv[])
 		memset(image.data, 0, 512*512*2);
 		image.tilt = deg2rad(t);
 
-		/* Calculate reflections */
-		get_reflections(&image, cell, 1.0/CRYSTAL_SIZE);
-
-		/* Construct the image */
-		nrefl = image_feature_count(image.rflist);
-		for ( i=0; i<nrefl; i++ ) {
-
-			struct imagefeature *f;
-			int x, y;
-
-			f = image_get_feature(image.rflist, i);
-
-			x = f->x;
-			y = f->y;  /* Discards digits after the decimal point */
-
-			image.data[y*image.width+x] = 1;
-
-		}
+		get_diffraction(&image, cell);
 
 		/* Write the output file */
 		snprintf(filename, 32, "simulated-%.0f.h5", t);
