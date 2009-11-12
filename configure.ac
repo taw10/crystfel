@@ -18,6 +18,13 @@ AC_FUNC_MALLOC
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS([strdup])
 
-LIBS="$LIBS -lhdf5"
+AC_ARG_WITH(hdf5,
+[AS_HELP_STRING([--with-hdf5], [specify location of HDF5 library])],
+[HDF5_CFLAGS="-I$withval/include"
+ HDF5_LIBS="-L$withval/lib -lhdf5"],
+[])
+
+CFLAGS="$CFLAGS $HDF5_CFLAGS"
+LIBS="$LIBS $HDF5_LIBS -lm -lgsl -lgslcblas"
 
 AC_OUTPUT(Makefile src/Makefile)
