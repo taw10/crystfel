@@ -33,7 +33,10 @@ extern double distance3d(double x1, double y1, double z1,
 extern size_t skipspace(const char *s);
 extern void chomp(char *s);
 extern int sign(double a);
-
+extern void mapping_rotate(double x, double y, double z,
+                           double *ddx, double *ddy, double *ddz,
+                           double omega, double tilt);
+                           
 #define rad2deg(a) ((a)*180/M_PI)
 #define deg2rad(a) ((a)*M_PI/180)
 

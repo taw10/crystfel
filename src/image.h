@@ -46,10 +46,22 @@ struct imagefeature {
 /* An opaque type representing a list of image features */
 typedef struct _imagefeaturelist ImageFeatureList;
 
+
+/* A 3D vector in reciprocal space */
+struct threevec
+{
+	double   u;
+	double   v;
+	double   w;
+};
+
+
 /* Structure describing an image */
 struct image {
 
 	uint16_t		*data;
+	double			*sfacs;
+	struct threevec		*qvecs;
 
 	/* Radians.  Defines where the pattern lies in reciprocal space */
 	double			tilt;

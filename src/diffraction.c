@@ -17,43 +17,64 @@
 #include "image.h"
 #include "utils.h"
 #include "cell.h"
-
-
-static void mapping_rotate(double x, double y, double z,
-                           double *ddx, double *ddy, double *ddz,
-                           double omega, double tilt)
-{
-	double nx, ny, nz;
-	double x_temp, y_temp, z_temp;
-
-	/* First: rotate image clockwise until tilt axis is aligned
-	 * horizontally. */
-	nx = x*cos(omega) + y*sin(omega);
-	ny = -x*sin(omega) + y*cos(omega);
-	nz = z;
-
-	/* Now, tilt about the x-axis ANTICLOCKWISE around +x, i.e. the
-	 * "wrong" way. This is because the crystal is rotated in the
-	 * experiment, not the Ewald sphere. */
-	x_temp = nx; y_temp = ny; z_temp = nz;
-	nx = x_temp;
-	ny = cos(tilt)*y_temp + sin(tilt)*z_temp;
-	nz = -sin(tilt)*y_temp + cos(tilt)*z_temp;
-
-	/* Finally, reverse the omega rotation to restore the location of the
-	 * image in 3D space */
-	x_temp = nx; y_temp = ny; z_temp = nz;
-	nx = x_temp*cos(-omega) + y_temp*sin(-omega);
-	ny = -x_temp*sin(-omega) + y_temp*cos(-omega);
-	nz = z_temp;
-
-	*ddx = nx;
-	*ddy = ny;
-	*ddz = nz;
-}
+#include "ewald.h"
 
 
 void get_diffraction(struct image *image, UnitCell *cell)
 {
+	int x, y;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;	
+	int na = 64;
+	int nb = 64;
+	int nc = 64;
 
+	/* Generate the array of reciprocal space vectors in image->qvecs */
+	get_ewald(image);
+	
+	cell_get_cartesian(cell, &ax, &ay, &az,
+		                 &bx, &by, &bz,
+		                 &cx, &cy, &cz);
+	
+	image->sfacs = malloc(image->width * image->height * sizeof(double));
+	
+	for ( x=0; x<image->width; x++ ) {
+	for ( y=0; y<image->height; y++ ) {
+	
+		struct threevec q;
+		struct threevec Udotq;
+		double f1, f2, f3;
+		                
+		q = image->qvecs[x + image->width*y];
+		
+		Udotq.u = (ax*q.u + ay*q.v + az*q.w)/2.0;
+		Udotq.v = (bx*q.u + by*q.v + bz*q.w)/2.0;
+		Udotq.w = (cx*q.u + cy*q.v + cz*q.w)/2.0;
+		
+		if ( na > 1 ) {
+			f1 = sin(2.0*M_PI*(double)na*Udotq.u)
+			       / sin(2.0*M_PI*Udotq.u);
+		} else {
+			f1 = 1.0;
+		}
+		
+		if ( nb > 1 ) {
+			f2 = sin(2.0*M_PI*(double)nb*Udotq.v)
+			       / sin(2.0*M_PI*Udotq.v);
+		} else {
+			f2 = 1.0;
+		}
+		
+		if ( nc > 1 ) {
+			f3 = sin(2.0*M_PI*(double)nc*Udotq.w)
+			       / sin(2.0*M_PI*Udotq.w);
+		} else {
+			f3 = 1.0;
+		}
+		
+		image->sfacs[x + image->width*y] = f1 * f2 * f3;
+
+	}
+	}
 }

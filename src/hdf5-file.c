@@ -22,7 +22,7 @@
 #include "image.h"
 
 
-int hdf5_write(const char *filename, const uint16_t *data,
+int hdf5_write(const char *filename, const double *data,
                int width, int height)
 {
 	hid_t fh, gh, sh, dh;	/* File, group, dataspace and data handles */
@@ -49,7 +49,7 @@ int hdf5_write(const char *filename, const uint16_t *data,
 	max_size[1] = height;
 	sh = H5Screate_simple(2, size, max_size);
 
-	dh = H5Dcreate(gh, "data", H5T_NATIVE_UINT16, sh,
+	dh = H5Dcreate(gh, "data", H5T_NATIVE_FLOAT, sh,
 	               H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		fprintf(stderr, "Couldn't create dataset\n");
@@ -63,7 +63,7 @@ int hdf5_write(const char *filename, const uint16_t *data,
 	                           (int)size[1], (int)size[0],
 	                           (int)max_size[1], (int)max_size[0]);
 
-	r = H5Dwrite(dh, H5T_NATIVE_UINT16, H5S_ALL,
+	r = H5Dwrite(dh, H5T_NATIVE_DOUBLE, H5S_ALL,
 	             H5S_ALL, H5P_DEFAULT, data);
 	if ( r < 0 ) {
 		fprintf(stderr, "Couldn't write data\n");
@@ -72,6 +72,8 @@ int hdf5_write(const char *filename, const uint16_t *data,
 		return 1;
 	}
 
+	H5Gclose(gh);
+	H5Dclose(dh);
 	H5Fclose(fh);
 
 	return 0;

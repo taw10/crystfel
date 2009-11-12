@@ -19,7 +19,7 @@
 #include <unistd.h>
 
 #include "image.h"
-#include "relrod.h"
+#include "diffraction.h"
 #include "cell.h"
 #include "utils.h"
 #include "hdf5-file.h"
@@ -39,11 +39,9 @@ static void main_show_help(const char *s)
 
 int main(int argc, char *argv[])
 {
-	int c, i;
+	int c;
 	UnitCell *cell;
 	struct image image;
-	int nrefl;
-	float t;
 
 	while ((c = getopt(argc, argv, "h")) != -1) {
 
@@ -70,28 +68,21 @@ int main(int argc, char *argv[])
 	image.width = 512;
 	image.height = 512;
 	image.omega = deg2rad(40.0);
+	image.tilt = deg2rad(0.0);
 	image.fmode = FORMULATION_CLEN;
 	image.x_centre = 255.5;
 	image.y_centre = 255.5;
 	image.camera_len = 0.2;  /* 20 cm */
 	image.resolution = 5120; /* 512 pixels in 10 cm */
 	image.lambda = 0.2e-9;   /* LCLS wavelength */
-	image.data = malloc(512*512*2);
+	image.qvecs = NULL;
+	image.sfacs = NULL;
+	image.data = NULL;
+	
+	get_diffraction(&image, cell);
 
-	for ( t=0.0; t<180.0; t+=10.0 ) {
-
-		char filename[32];
-
-		memset(image.data, 0, 512*512*2);
-		image.tilt = deg2rad(t);
-
-		get_diffraction(&image, cell);
-
-		/* Write the output file */
-		snprintf(filename, 32, "simulated-%.0f.h5", t);
-		hdf5_write(filename, image.data, image.width, image.height);
-
-	}
+	/* Write the output file */
+	hdf5_write("results/sim.h5", image.sfacs, image.width, image.height);
 
 	return 0;
 }
