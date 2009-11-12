@@ -18,7 +18,7 @@
 
 #include <stdint.h>
 
-extern int hdf5_write(const char *filename, const double *data,
+extern int hdf5_write(const char *filename, const uint16_t *data,
                       int width, int height);
 
 extern int hdf5_read(struct image *image, const char *filename);

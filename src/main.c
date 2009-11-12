@@ -23,6 +23,7 @@
 #include "cell.h"
 #include "utils.h"
 #include "hdf5-file.h"
+#include "detector.h"
 
 
 /* Crystal size in metres */
@@ -80,9 +81,10 @@ int main(int argc, char *argv[])
 	image.data = NULL;
 	
 	get_diffraction(&image, cell);
+	record_image(&image);
 
 	/* Write the output file */
-	hdf5_write("results/sim.h5", image.sfacs, image.width, image.height);
+	hdf5_write("results/sim.h5", image.data, image.width, image.height);
 
 	return 0;
 }
