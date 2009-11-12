@@ -10,3 +10,4 @@ stamp-h1
 src/*.o
 src/.deps
 src/pattern_sim
+*~
