@@ -59,10 +59,7 @@ int hdf5_write(const char *filename, const uint16_t *data,
 
 	/* Muppet check */
 	H5Sget_simple_extent_dims(sh, size, max_size);
-	printf("Data dimensions %i %i (max %i %i)\n",
-	                           (int)size[1], (int)size[0],
-	                           (int)max_size[1], (int)max_size[0]);
-
+	
 	r = H5Dwrite(dh, H5T_NATIVE_UINT16, H5S_ALL,
 	             H5S_ALL, H5P_DEFAULT, data);
 	if ( r < 0 ) {
