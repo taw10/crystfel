@@ -15,11 +15,23 @@
 #include <stdio.h>
 
 #include "image.h"
+#include "utils.h"
+
+
+/* Pulse energy density in J/m^2 */
+#define PULSE_ENERGY_DENSITY (30.0e7)
 
 
 void record_image(struct image *image)
 {
 	int x, y;
+	double ph_per_e;
+	
+	/* How many photons are scattered per electron? */
+	ph_per_e = PULSE_ENERGY_DENSITY * pow(THOMSON_LENGTH, 2.0)
+	          / image->xray_energy;
+	
+	printf("%e photons are scattered per electron\n", ph_per_e);
 	
 	image->data = malloc(image->width * image->height * sizeof(uint16_t));
 	
@@ -27,15 +39,16 @@ void record_image(struct image *image)
 	for ( y=0; y<image->height; y++ ) {
 	
 		uint16_t counts;
-		double val;
-		double intensity;
-		double phac;
+		double val, intensity;
+		double sa;
 		
 		val = image->sfacs[x + image->width*y];
-		phac = image->phactors[x + image->width*y];
+		
+		/* What solid angle is subtended by this pixel? */
+		sa = 1.0;
 		
 		intensity = pow(val, 2.0);
-		counts = intensity * phac;
+		counts = intensity * ph_per_e * sa;
 		
 		image->data[x + image->width*y] = counts;
 	

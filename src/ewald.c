@@ -19,10 +19,6 @@
 #include "cell.h"
 
 
-/* Pulse energy density in J/m^2 */
-#define PULSE_ENERGY_DENSITY (30.0e7)
-
-
 void get_ewald(struct image *image)
 {
 	int x, y;
@@ -31,17 +27,8 @@ void get_ewald(struct image *image)
 	
 	k = 1/image->lambda;
 	
-	/* How many photons are scattered per electron? */
-	i0fac = PULSE_ENERGY_DENSITY * pow(THOMSON_LENGTH, 2.0)
-	          / image->xray_energy;
-	
-	printf("%e photons are scattered per electron\n", i0fac);
-	
 	image->qvecs = malloc(image->width * image->height
 	                       * sizeof(struct threevec));
-	
-	image->phactors = malloc(image->width * image->height
-	                          * sizeof(double));
 	
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
@@ -66,9 +53,6 @@ void get_ewald(struct image *image)
 		image->qvecs[x + image->width*y].u = qx;
 		image->qvecs[x + image->width*y].v = qy;
 		image->qvecs[x + image->width*y].w = qz;
-		
-		/* Calculate photon factor ("phactor") */
-		
 	
 	}
 	}
