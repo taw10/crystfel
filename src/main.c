@@ -75,10 +75,14 @@ int main(int argc, char *argv[])
 	image.y_centre = 255.5;
 	image.camera_len = 0.2;  /* 20 cm */
 	image.resolution = 5120; /* 512 pixels in 10 cm */
-	image.lambda = 0.2e-9;   /* LCLS wavelength */
+	image.xray_energy = eV_to_J(2.0e3); /* 2 keV energy */
+	image.lambda = ph_en_to_lambda(image.xray_energy);  /* Wavelength */
 	image.qvecs = NULL;
 	image.sfacs = NULL;
 	image.data = NULL;
+	
+	/* Splurge a few useful numbers */
+	printf("Wavelength is %f nm\n", image.lambda/1.0e-9);
 	
 	get_diffraction(&image, cell);
 	record_image(&image);

@@ -18,6 +18,20 @@
 
 #include <math.h>
 
+
+/* Electron charge in C */
+#define ELECTRON_CHARGE (1.6021773e-19)
+
+/* Planck's constant (Js) */
+#define PLANCK (6.62606896e-34)
+
+/* Speed of light in vacuo (m/s) */
+#define C_VACUO (299792458)
+
+/* Thomson scattering length (m) */
+#define THOMSON_LENGTH (2.81794e-15)
+
+
 extern unsigned int biggest(signed int a, signed int b);
 extern unsigned int smallest(signed int a, signed int b);
 extern double distance(double x1, double y1, double x2, double y2);
@@ -41,5 +55,17 @@ extern void mapping_rotate(double x, double y, double z,
 #define deg2rad(a) ((a)*M_PI/180)
 
 #define is_odd(a) ((a)%2==1)
+
+/* Photon energy (J) to wavelength (m) */
+#define ph_en_to_lambda(a) ((PLANCK*C_VACUO)/(a))
+
+/* Photon wavelength (m) to energy (J) */
+#define ph_lambda_to_en(a) ((PLANCK*C_VACUO)/(a))
+
+/* eV to Joules */
+#define eV_to_J(a) ((a)*ELECTRON_CHARGE)
+
+/* Joules to eV */
+#define J_to_eV(a) ((a)/ELECTRON_CHARGE)
 
 #endif	/* UTILS_H */

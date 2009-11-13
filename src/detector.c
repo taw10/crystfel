@@ -29,11 +29,13 @@ void record_image(struct image *image)
 		uint16_t counts;
 		double val;
 		double intensity;
+		double phac;
 		
 		val = image->sfacs[x + image->width*y];
+		phac = image->phactors[x + image->width*y];
 		
 		intensity = pow(val, 2.0);
-		counts = intensity*16;
+		counts = intensity * phac;
 		
 		image->data[x + image->width*y] = counts;
 	

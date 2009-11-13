@@ -62,6 +62,7 @@ struct image {
 	uint16_t		*data;
 	double			*sfacs;
 	struct threevec		*qvecs;
+	double			*phactors;
 
 	/* Radians.  Defines where the pattern lies in reciprocal space */
 	double			tilt;
@@ -78,7 +79,9 @@ struct image {
 	double			resolution;	/* pixels per metre */
 
 	/* Wavelength must always be given */
-	double			lambda;
+	double			lambda;		/* Wavelength in m */
+	double			xray_energy;	/* X-ray energy
+	                                         * in J (per photon) */
 
 	int			width;
 	int			height;
