@@ -34,7 +34,6 @@ void record_image(struct image *image)
 	printf("%e photons are scattered per electron\n", ph_per_e);
 	
 	twotheta_max = image->twotheta[0];
-	
 	np = sqrt(pow(image->x_centre, 2.0) + pow(image->y_centre, 2.0));
 	sa_per_pixel = pow(2.0 * twotheta_max / np, 2.0);
 	printf("sa per pixel=%e\n", sa_per_pixel);
