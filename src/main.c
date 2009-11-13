@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
 	image.qvecs = NULL;
 	image.sfacs = NULL;
 	image.data = NULL;
+	image.twotheta = NULL;
 	
 	/* Splurge a few useful numbers */
 	printf("Wavelength is %f nm\n", image.lambda/1.0e-9);

@@ -62,6 +62,8 @@ struct image {
 	uint16_t		*data;
 	double			*sfacs;
 	struct threevec		*qvecs;
+	double			*twotheta;
+	
 
 	/* Radians.  Defines where the pattern lies in reciprocal space */
 	double			tilt;

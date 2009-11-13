@@ -30,6 +30,9 @@ void get_ewald(struct image *image)
 	image->qvecs = malloc(image->width * image->height
 	                       * sizeof(struct threevec));
 	
+	image->twotheta = malloc(image->width * image->height
+	                       * sizeof(double));
+	
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
 	
@@ -50,9 +53,12 @@ void get_ewald(struct image *image)
 		qy = k * sin(twothetay);
 		qz = k - k * cos(twotheta);
 		
+		/* FIXME: Rotate vector here */
+		
 		image->qvecs[x + image->width*y].u = qx;
 		image->qvecs[x + image->width*y].v = qy;
 		image->qvecs[x + image->width*y].w = qz;
+		image->twotheta[x + image->width*y] = twotheta;
 	
 	}
 	}
