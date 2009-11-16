@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
+#include <complex.h>
 
 #include "image.h"
 #include "utils.h"
@@ -59,9 +61,141 @@ static double lattice_factor(struct threevec q, double ax, double ay, double az,
 }
 
 
-static double molecule_factor(struct threevec q)
+static complex get_sfac(const char *n, struct threevec q, double en)
 {
+	return 1.0;
+}
+
+
+static double molecule_factor(struct molecule *mol, struct threevec q,
+                              double en)
+{
+	int i;
+	
+	for ( i=0; i<mol->n_species; i++ ) {
+		
+		complex sfac;
+		complex contrib = 0.0;
+		struct mol_species *spec;
+		int j;
+		
+		spec = mol->species[i];
+		
+		sfac = get_sfac(spec->species, q, en);
+		for ( j=0; j<spec->n_atoms; j++ ) {
+			contrib += 
+		}
+		
+	}
+	
 	return 1e5;
+}
+
+
+static struct molecule *load_molecule()
+{
+	struct molecule *mol;
+	FILE *fh;
+	char line[1024];
+	char *rval;
+	int i;
+	
+	mol = malloc(sizeof(struct molecule));
+	if ( mol == NULL ) return NULL;
+	mol->n_species = 0;
+	
+	fh = fopen("molecule.pdb", "r");
+	if ( fh == NULL ) {
+                fprintf(stderr, "Couldn't open file\n");
+                return NULL;
+        }
+
+	do {
+	
+		char el[4];
+		int i, r;
+		int done = 0;
+		float x, y, z, occ, B;
+		char *coords;
+	
+		rval = fgets(line, 1023, fh);
+		
+		/* Only interested in atoms */
+		if ( strncmp(line, "HETATM", 6) != 0 ) continue;
+		
+		/* The following crimes against programming style
+		 * were brought to you by Wizbit Enterprises, Inc. */
+		if ( line[76] == ' ' ) {
+			el[0] = line[77];
+			el[1] = '\0';
+		} else {
+			el[0] = line[76];
+			el[1] = line[77];
+			el[2] = '\0';
+		}
+		
+		coords = line + 29;
+		r = sscanf(coords, "%f %f %f %f %f", &x, &y, &z, &occ, &B);
+		if ( r != 5 ) {
+			fprintf(stderr, "WTF?\n");
+			abort();
+		}
+		
+		for ( i=0; i<mol->n_species; i++ ) {
+			
+			struct mol_species *spec;
+			int n;
+			
+			spec = mol->species[i];
+			
+			if ( strcmp(spec->species, el) != 0 ) continue;
+			
+			
+			n = mol->species[i]->n_atoms;
+			
+			spec->x[n] = x;
+			spec->y[n] = y;
+			spec->z[n] = z;
+			spec->occ[n] = occ;
+			spec->B[n] = B;
+			mol->species[i]->n_atoms++;
+			
+			done = 1;
+			
+		}
+		
+		if ( !done ) {
+			
+			/* Need to create record for this species */
+			struct mol_species *spec;
+			
+			spec = malloc(sizeof(struct mol_species));
+			
+			memcpy(spec->species, el, 4);
+			spec->x[0] = x;
+			spec->y[0] = y;
+			spec->z[0] = z;
+			spec->occ[0] = occ;
+			spec->B[0] = B;
+			spec->n_atoms = 1;
+			
+			mol->species[mol->n_species] = spec;
+			mol->n_species++;
+			
+		}
+		
+	
+	} while ( rval != NULL );
+	
+	fclose(fh);
+	
+	printf("There are %i species\n", mol->n_species);
+	for ( i=0; i<mol->n_species; i++ ) {
+		printf("'%s': %i\n", mol->species[i]->species,
+		       mol->species[i]->n_atoms);
+	}
+	
+	return mol;
 }
 
 
@@ -74,6 +208,8 @@ void get_diffraction(struct image *image, UnitCell *cell)
 	
 	/* Generate the array of reciprocal space vectors in image->qvecs */
 	get_ewald(image);
+	image->molecule = load_molecule();
+	if ( image->molecule == NULL ) return;
 	
 	cell_get_cartesian(cell, &ax, &ay, &az,
 		                 &bx, &by, &bz,
@@ -90,7 +226,8 @@ void get_diffraction(struct image *image, UnitCell *cell)
 		q = image->qvecs[x + image->width*y];
 		
 		f_lattice = lattice_factor(q, ax,ay,az,bx,by,bz,cx,cy,cz);
-		f_molecule = molecule_factor(q);
+		f_molecule = molecule_factor(image->molecule, q,
+		                             image->xray_energy);
 		
 		image->sfacs[x + image->width*y] = f_lattice * f_molecule;
 
