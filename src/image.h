@@ -61,7 +61,7 @@ struct mol_species
 {
 	char species[4];    /* Species name */
 	int n_atoms;        /* Number of atoms of this species */
-	
+
 	float x[32*1024];
 	float y[32*1024];
 	float z[32*1024];

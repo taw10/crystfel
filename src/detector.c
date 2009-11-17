@@ -27,22 +27,22 @@ void record_image(struct image *image)
 	int x, y;
 	double ph_per_e;
 	double twotheta_max, np, sa_per_pixel;
-	
+
 	/* How many photons are scattered per electron? */
 	ph_per_e = PULSE_ENERGY_DENSITY * pow(THOMSON_LENGTH, 2.0)
 	          / image->xray_energy;
 	printf("%e photons are scattered per electron\n", ph_per_e);
-	
+
 	twotheta_max = image->twotheta[0];
 	np = sqrt(pow(image->x_centre, 2.0) + pow(image->y_centre, 2.0));
 	sa_per_pixel = pow(2.0 * twotheta_max / np, 2.0);
 	printf("sa per pixel=%e\n", sa_per_pixel);
-	
+
 	image->data = malloc(image->width * image->height * sizeof(uint16_t));
-	
+
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
-	
+
 		double counts;
 		double intensity;
 		double sa;
@@ -55,9 +55,9 @@ void record_image(struct image *image)
 		sa = sa_per_pixel * cos(image->twotheta[x + image->width*y]);
 
 		counts = intensity * ph_per_e * sa;
-		
+
 		image->data[x + image->width*y] = counts;
-	
+
 	}
 	}
 }
