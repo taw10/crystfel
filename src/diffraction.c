@@ -20,6 +20,7 @@
 #include "utils.h"
 #include "cell.h"
 #include "ewald.h"
+#include "diffraction.h"
 
 
 static double lattice_factor(struct threevec q, double ax, double ay, double az,
@@ -28,31 +29,28 @@ static double lattice_factor(struct threevec q, double ax, double ay, double az,
 {
 	struct threevec Udotq;
 	double f1, f2, f3;
-	int na = 64;
-	int nb = 64;
-	int nc = 64;
+	int na = 8;
+	int nb = 8;
+	int nc = 8;
 
 	Udotq.u = (ax*q.u + ay*q.v + az*q.w)/2.0;
 	Udotq.v = (bx*q.u + by*q.v + bz*q.w)/2.0;
 	Udotq.w = (cx*q.u + cy*q.v + cz*q.w)/2.0;
 
 	if ( na > 1 ) {
-		f1 = sin(2.0*M_PI*(double)na*Udotq.u)
-		       / sin(2.0*M_PI*Udotq.u);
+		f1 = sin(2.0*M_PI*(double)na*Udotq.u) / sin(2.0*M_PI*Udotq.u);
 	} else {
 		f1 = 1.0;
 	}
 
 	if ( nb > 1 ) {
-		f2 = sin(2.0*M_PI*(double)nb*Udotq.v)
-		       / sin(2.0*M_PI*Udotq.v);
+		f2 = sin(2.0*M_PI*(double)nb*Udotq.v) / sin(2.0*M_PI*Udotq.v);
 	} else {
 		f2 = 1.0;
 	}
 
 	if ( nc > 1 ) {
-		f3 = sin(2.0*M_PI*(double)nc*Udotq.w)
-		       / sin(2.0*M_PI*Udotq.w);
+		f3 = sin(2.0*M_PI*(double)nc*Udotq.w) / sin(2.0*M_PI*Udotq.w);
 	} else {
 		f3 = 1.0;
 	}
@@ -62,7 +60,7 @@ static double lattice_factor(struct threevec q, double ax, double ay, double az,
 
 
 /* Look up f1 and f2 for this atom at this energy (in J/photon) */
-static double complex get_sfac(const char *n, double en)
+static double complex get_f1f2(const char *n, double en)
 {
 	FILE *fh;
 	char filename[64];
@@ -98,12 +96,15 @@ static double complex get_sfac(const char *n, double en)
 			abort();
 		}
 
+		/* Find the first energy greater than the required value */
 		if ( E < en ) {
+			/* Store old values ready for interpolation*/
 			last_E = E;
 			last_f1 = f1;
 			last_f2 = f2;
 		} else {
 
+			/* Perform (linear) interpolation */
 			float f;
 			float actual_f1, actual_f2;
 
@@ -128,6 +129,79 @@ static double complex get_sfac(const char *n, double en)
 }
 
 
+/* s = sin(theta)/lambda */
+static double get_waas_kirf(const char *n, double s)
+{
+	FILE *fh;
+	char *rval;
+	double f;
+	float a1, a2, a3, a4, a5, c, b1, b2, b3, b4, b5;
+	double s2;
+	
+	fh = fopen("scattering-factors/f0_WaasKirf.dat", "r");
+	if ( fh == NULL ) {
+		fprintf(stderr, "Couldn't open f0_WaasKirf.dat\n");
+		return 0.0;
+	}
+
+	do {
+
+		int r;
+		char line[1024];
+		char sp[1024];
+		int Z;
+
+		rval = fgets(line, 1023, fh);
+		
+		if ( (line[0] != '#') || (line[1] != 'S') ) continue;
+
+		r = sscanf(line, "#S  %i  %s", &Z, sp);
+		if ( (r != 2) || (strcmp(sp, n) != 0) ) continue;
+		
+		/* Skip two lines */
+		fgets(line, 1023, fh);
+		fgets(line, 1023, fh);
+		
+		/* Read scattering coefficients */
+		rval = fgets(line, 1023, fh);
+		r = sscanf(line, "  %f  %f  %f  %f  %f  %f  %f %f %f %f %f",
+		          &a1, &a2, &a3, &a4, &a5, &c, &b1, &b2, &b3, &b4, &b5);
+		if ( r != 11 ) {
+			fprintf(stderr, "Couldn't read scattering factors\n");
+			return 0.0;
+		}
+		
+		break;
+		
+	} while ( rval != NULL );
+	
+	fclose(fh);
+	
+	s2 = pow(s/1e10, 2.0);  /* s2 is s squared in Angstroms squared */
+	f = c + a1*exp(-b1*s2) + a2*exp(-b2*s2) + a3*exp(-b3*s2)
+	      + a4*exp(-b4*s2) + a5*exp(-b5*s2);
+
+	return f;
+}
+
+
+/* Get complex scattering factors for element 'n' at energy 'en' (J/photon),
+ * at resolution 's' = sin(theta)/lambda (in m^-1) */
+static double complex get_sfac(const char *n, double s, double en)
+{
+	double complex f1f2;
+	double fq, fq0;
+	
+	f1f2 = get_f1f2(n, en);
+	fq = get_waas_kirf(n, s);
+	fq0 = get_waas_kirf(n, 0.0);
+	
+	return fq - fq0 + f1f2;
+}
+
+
+/* Return structure factor for molecule 'mol' at energy en' (J/photon) at
+ * scattering vector 'q' */
 static double complex molecule_factor(struct molecule *mol, struct threevec q,
                                       double en)
 {
@@ -135,7 +209,8 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
 	double F = 0.0;
 	double s;
 
-	s = modulus(q.u, q.v, q.w);
+	/* s = sin(theta)/lambda = 1/2d = (1/d)/2.0 */
+	s = modulus(q.u, q.v, q.w) / 2.0;
 
 	for ( i=0; i<mol->n_species; i++ ) {
 
@@ -151,17 +226,23 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
 			double ph;
 
 			ph= q.u*spec->x[j] + q.v*spec->y[j] + q.w*spec->z[j];
+			
+			/* Conversion from revolutions to radians is required */
 			contrib += cos(2.0*M_PI*ph) + I*sin(2.0*M_PI*ph);
+			
 		}
 
-		sfac = get_sfac(spec->species, en);
+		sfac = get_sfac(spec->species, s, en);
 		F += sfac * contrib * exp(-2.0 * spec->B[j] * s);
+		
 	}
 
 	return F;
 }
 
 
+/* Load PDB file into a memory format suitable for efficient(ish) structure
+ * factor calculation */
 static struct molecule *load_molecule()
 {
 	struct molecule *mol;
