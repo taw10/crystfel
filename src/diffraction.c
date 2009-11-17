@@ -60,7 +60,7 @@ static double lattice_factor(struct threevec q, double ax, double ay, double az,
 }
 
 
-/* Return structure factor for molecule 'mol' at energy en' (J/photon) at
+/* Return structure factor for molecule 'mol' at energy 'en' (J/photon) at
  * scattering vector 'q' */
 static double complex molecule_factor(struct molecule *mol, struct threevec q,
                                       double en)
