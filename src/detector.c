@@ -44,15 +44,16 @@ void record_image(struct image *image)
 	for ( y=0; y<image->height; y++ ) {
 	
 		double counts;
-		double val, intensity;
+		double intensity;
 		double sa;
-		
+		double complex val;
+
 		val = image->sfacs[x + image->width*y];
-		
+		intensity = val * conj(val);
+
 		/* What solid angle is subtended by this pixel? */
 		sa = sa_per_pixel * cos(image->twotheta[x + image->width*y]);
-		
-		intensity = pow(val, 2.0);
+
 		counts = intensity * ph_per_e * sa;
 		
 		image->data[x + image->width*y] = counts;

@@ -61,9 +61,70 @@ static double lattice_factor(struct threevec q, double ax, double ay, double az,
 }
 
 
-static complex get_sfac(const char *n, double s, double en)
+/* Look up f1 and f2 for this atom at this energy (in J/photon) */
+static complex get_sfac(const char *n, double en)
 {
-	return 1.0;
+	FILE *fh;
+	char filename[64];
+	char line[1024];
+	char *rval;
+	float last_E, last_f1, last_f2;
+
+	snprintf(filename, 63, "scattering-factors/%s.nff", n);
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) {
+		fprintf(stderr, "Couldn't open file '%s'\n", filename);
+		return 0.0;
+	}
+
+	en = J_to_eV(en);
+
+	/* Discard first line */
+	fgets(line, 1023, fh);
+
+	last_E = 0.0;
+	last_f1 = 0.0;
+	last_f2 = 0.0;
+	do {
+
+		int r;
+		float E, f1, f2;
+
+		rval = fgets(line, 1023, fh);
+
+		r = sscanf(line, "%f %f %f", &E, &f1, &f2);
+		if ( r != 3 ) {
+			fprintf(stderr, "WTF?\n");
+			abort();
+		}
+
+		if ( E < en ) {
+			last_E = E;
+			last_f1 = f1;
+			last_f2 = f2;
+		} else {
+
+			double f;
+			float actual_f1, actual_f2;
+
+			f = (en - last_E) / (E - last_E);
+
+			actual_f1 = last_f1 + f * (f1 - last_f1);
+			actual_f2 = last_f2 + f * (f2 - last_f2);
+
+			fclose(fh);
+			return actual_f1 + I*actual_f2;
+
+		}
+
+	} while ( rval != NULL );
+
+	fclose(fh);
+
+	fprintf(stderr, "Couldn't find scattering factors for '%s' at %f eV!\n",
+	        n, en);
+
+	return 0.0;
 }
 
 
@@ -77,9 +138,9 @@ static complex molecule_factor(struct molecule *mol, struct threevec q,
 	s = modulus(q.u, q.v, q.w);
 	
 	for ( i=0; i<mol->n_species; i++ ) {
-		
-		complex sfac;
-		complex contrib = 0.0;
+
+		double complex sfac;
+		double complex contrib = 0.0;
 		struct mol_species *spec;
 		int j;
 		
@@ -90,10 +151,10 @@ static complex molecule_factor(struct molecule *mol, struct threevec q,
 			double ph;
 			
 			ph= q.u*spec->x[j] + q.v*spec->y[j] + q.w*spec->z[j];
-			contrib += cos(ph) + I*sin(ph);
+			contrib += cos(2.0*M_PI*ph) + I*sin(2.0*M_PI*ph);
 		}
-		
-		sfac = get_sfac(spec->species, s, en);
+
+		sfac = get_sfac(spec->species, en);
 		F += sfac * contrib * exp(-2.0 * spec->B[j] * s);
 	}
 	

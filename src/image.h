@@ -81,7 +81,7 @@ struct molecule
 struct image {
 
 	uint16_t		*data;
-	complex			*sfacs;
+	double complex		*sfacs;
 	struct threevec		*qvecs;
 	double			*twotheta;
 	struct molecule		*molecule;
