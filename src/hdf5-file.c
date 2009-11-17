@@ -20,6 +20,7 @@
 #include <hdf5.h>
 
 #include "image.h"
+#include "hdf5-file.h"
 
 
 int hdf5_write(const char *filename, const uint16_t *data,

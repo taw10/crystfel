@@ -23,7 +23,6 @@ void get_ewald(struct image *image)
 {
 	int x, y;
 	double k;  /* Wavenumber */
-	double i0fac;
 	
 	k = 1/image->lambda;
 	

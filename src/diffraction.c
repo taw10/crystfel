@@ -62,7 +62,7 @@ static double lattice_factor(struct threevec q, double ax, double ay, double az,
 
 
 /* Look up f1 and f2 for this atom at this energy (in J/photon) */
-static complex get_sfac(const char *n, double en)
+static double complex get_sfac(const char *n, double en)
 {
 	FILE *fh;
 	char filename[64];
@@ -104,7 +104,7 @@ static complex get_sfac(const char *n, double en)
 			last_f2 = f2;
 		} else {
 
-			double f;
+			float f;
 			float actual_f1, actual_f2;
 
 			f = (en - last_E) / (E - last_E);
@@ -128,8 +128,8 @@ static complex get_sfac(const char *n, double en)
 }
 
 
-static complex molecule_factor(struct molecule *mol, struct threevec q,
-                              double en)
+static double complex molecule_factor(struct molecule *mol, struct threevec q,
+                                      double en)
 {
 	int i;
 	double F = 0.0;
@@ -183,7 +183,7 @@ static struct molecule *load_molecule()
 	do {
 
 		char el[4];
-		int i, r;
+		int j, r;
 		int done = 0;
 		float x, y, z, occ, B;
 		char *coords;
@@ -211,24 +211,23 @@ static struct molecule *load_molecule()
 			abort();
 		}
 
-		for ( i=0; i<mol->n_species; i++ ) {
+		for ( j=0; j<mol->n_species; j++ ) {
 
 			struct mol_species *spec;
 			int n;
 
-			spec = mol->species[i];
+			spec = mol->species[j];
 
 			if ( strcmp(spec->species, el) != 0 ) continue;
 
-
-			n = mol->species[i]->n_atoms;
+			n = mol->species[j]->n_atoms;
 
 			spec->x[n] = x;
 			spec->y[n] = y;
 			spec->z[n] = z;
 			spec->occ[n] = occ;
 			spec->B[n] = B;
-			mol->species[i]->n_atoms++;
+			mol->species[j]->n_atoms++;
 
 			done = 1;
 
@@ -285,13 +284,14 @@ void get_diffraction(struct image *image, UnitCell *cell)
 		                 &bx, &by, &bz,
 		                 &cx, &cy, &cz);
 
-	image->sfacs = malloc(image->width * image->height * sizeof(complex));
+	image->sfacs = malloc(image->width * image->height
+	                      * sizeof(double complex));
 
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
 
 		double f_lattice;
-		complex f_molecule;
+		double complex f_molecule;
 		struct threevec q;
 
 		q = image->qvecs[x + image->width*y];
