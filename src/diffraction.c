@@ -61,16 +61,20 @@ static double lattice_factor(struct threevec q, double ax, double ay, double az,
 }
 
 
-static complex get_sfac(const char *n, struct threevec q, double en)
+static complex get_sfac(const char *n, double s, double en)
 {
 	return 1.0;
 }
 
 
-static double molecule_factor(struct molecule *mol, struct threevec q,
+static complex molecule_factor(struct molecule *mol, struct threevec q,
                               double en)
 {
 	int i;
+	double F = 0.0;
+	double s;
+	
+	s = modulus(q.u, q.v, q.w);
 	
 	for ( i=0; i<mol->n_species; i++ ) {
 		
@@ -81,14 +85,19 @@ static double molecule_factor(struct molecule *mol, struct threevec q,
 		
 		spec = mol->species[i];
 		
-		sfac = get_sfac(spec->species, q, en);
 		for ( j=0; j<spec->n_atoms; j++ ) {
-			contrib += 
+			
+			double ph;
+			
+			ph= q.u*spec->x[j] + q.v*spec->y[j] + q.w*spec->z[j];
+			contrib += cos(ph) + I*sin(ph);
 		}
 		
+		sfac = get_sfac(spec->species, s, en);
+		F += sfac * contrib * exp(-2.0 * spec->B[j] * s);
 	}
 	
-	return 1e5;
+	return F;
 }
 
 
@@ -215,12 +224,13 @@ void get_diffraction(struct image *image, UnitCell *cell)
 		                 &bx, &by, &bz,
 		                 &cx, &cy, &cz);
 	
-	image->sfacs = malloc(image->width * image->height * sizeof(double));
+	image->sfacs = malloc(image->width * image->height * sizeof(complex));
 	
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
 	
-		double f_lattice, f_molecule;
+		double f_lattice;
+		complex f_molecule;
 		struct threevec q;
 		
 		q = image->qvecs[x + image->width*y];

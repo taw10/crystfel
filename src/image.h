@@ -18,6 +18,7 @@
 #define IMAGE_H
 
 #include <stdint.h>
+#include <complex.h>
 
 
 /* How is the scaling of the image described? */
@@ -80,7 +81,7 @@ struct molecule
 struct image {
 
 	uint16_t		*data;
-	double			*sfacs;
+	complex			*sfacs;
 	struct threevec		*qvecs;
 	double			*twotheta;
 	struct molecule		*molecule;
