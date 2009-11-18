@@ -22,6 +22,33 @@
 #define PULSE_ENERGY_DENSITY (30.0e7)
 
 
+/* Detector's quantum efficiency */
+#define DQE (0.8)
+
+
+static uint16_t *bloom(double *hdr, int width, int height)
+{
+	int x, y;
+	uint16_t *data;
+	
+	data = malloc(width * height * sizeof(uint16_t));
+	
+	for ( x=0; x<width; x++ ) {
+	for ( y=0; y<height; y++ ) {
+	
+		double hdval;
+		
+		hdval = hdr[x + width*y] * DQE;
+		
+		
+	
+	}
+	}
+	
+	return data;
+}
+
+
 void record_image(struct image *image)
 {
 	int x, y;
@@ -38,7 +65,7 @@ void record_image(struct image *image)
 	sa_per_pixel = pow(2.0 * twotheta_max / np, 2.0);
 	printf("sa per pixel=%e\n", sa_per_pixel);
 
-	image->data = malloc(image->width * image->height * sizeof(uint16_t));
+	image->hdr = malloc(image->width * image->height * sizeof(double));
 
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
@@ -56,8 +83,10 @@ void record_image(struct image *image)
 
 		counts = intensity * ph_per_e * sa;
 
-		image->data[x + image->width*y] = counts;
+		image->hdr[x + image->width*y] = counts;
 
 	}
 	}
+	
+	image->data = bloom(image->hdr, image->width, image->height);
 }
