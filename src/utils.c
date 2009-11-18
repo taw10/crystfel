@@ -156,3 +156,21 @@ void mapping_rotate(double x, double y, double z,
 	*ddy = ny;
 	*ddz = nz;
 }
+
+
+void progress_bar(int val, int total)
+{
+	double frac;
+	int n, i;
+	char s[1024];
+
+	frac = (double)val/total;
+	n = frac*80;
+
+	for ( i=0; i<n; i++ ) s[i] = '=';
+	for ( i=n; i<80; i++ ) s[i] = '.';
+	s[n] = '\0';
+	printf("\r|%s|", s);
+
+	if ( val == total ) printf("\n");
+}

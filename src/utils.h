@@ -50,7 +50,8 @@ extern int sign(double a);
 extern void mapping_rotate(double x, double y, double z,
                            double *ddx, double *ddy, double *ddz,
                            double omega, double tilt);
-                           
+extern void progress_bar(int val, int total);
+
 #define rad2deg(a) ((a)*180/M_PI)
 #define deg2rad(a) ((a)*M_PI/180)
 

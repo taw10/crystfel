@@ -136,6 +136,6 @@ void get_diffraction(struct image *image, UnitCell *cell)
 		image->sfacs[x + image->width*y] = f_lattice * f_molecule;
 
 	}
-	printf("x=%i\n", x);
+	progress_bar(x, image->width-1);
 	}
 }
