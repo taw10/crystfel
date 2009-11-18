@@ -24,6 +24,16 @@
 #include "sfac.h"
 
 
+/* Density of water in kg/m^3 */
+#define WATER_DENSITY (1.0e6)
+
+/* Molar mass of water, in kg/mol */
+#define WATER_MOLAR_MASS (18.01528e3)
+
+/* Avogadro's number */
+#define AVOGADRO (6.022e23)
+
+
 static double lattice_factor(struct threevec q, double ax, double ay, double az,
                                                 double bx, double by, double bz,
                                                 double cx, double cy, double cz)
@@ -85,7 +95,7 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
 
 			double ph;
 
-			ph= q.u*spec->x[j] + q.v*spec->y[j] + q.w*spec->z[j];
+			ph = q.u*spec->x[j] + q.v*spec->y[j] + q.w*spec->z[j];
 
 			/* Conversion from revolutions to radians is required */
 			contrib += cos(2.0*M_PI*ph) + I*sin(2.0*M_PI*ph);
@@ -98,6 +108,45 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
 	}
 
 	return F;
+}
+
+
+double complex water_factor(struct threevec q, double en)
+{
+	double x;
+	double complex res = 0.0;
+	int n = 0;
+	double s;
+	double molecules_per_m3;
+	double molecules_per_m2;
+	const double rc = 0.5e-6; /* Radius of cylinder */
+	const double rb = 1.5e-6; /* Radius of beam */
+
+	molecules_per_m3 = WATER_DENSITY * (AVOGADRO / WATER_MOLAR_MASS);
+	molecules_per_m2 = molecules_per_m3 / (2*rb*2*rc);
+
+	/* s = sin(theta)/lambda = 1/2d = (1/d)/2.0 */
+	s = modulus(q.u, q.v, q.w) / 2.0;
+
+	for ( x=-rc; x<rc; x+=rc/50.0 ) {
+
+		double ph;
+		double thickness;
+
+		/* The thickness of a cylinder, axis
+		 * perpendicular to the beam */
+		thickness = 2.0 * sqrt((rc*rc)-(x*x));
+
+		ph = q.u*x;
+		res += thickness * (cos(2.0*M_PI*ph) + I*sin(2.0*M_PI*ph));
+		n++;
+
+	}
+	res *= (get_sfac("O", s, en) + 2.0*get_sfac("H", s, en))
+	       * molecules_per_m2;
+
+	/* Correct for sampling of integration */
+	return (res/n) * (2*rc);
 }
 
 
@@ -125,6 +174,7 @@ void get_diffraction(struct image *image, UnitCell *cell)
 
 		double f_lattice;
 		double complex f_molecule;
+		double complex f_water;
 		struct threevec q;
 
 		q = image->qvecs[x + image->width*y];
@@ -133,7 +183,15 @@ void get_diffraction(struct image *image, UnitCell *cell)
 		f_molecule = molecule_factor(image->molecule, q,
 		                             image->xray_energy);
 
-		image->sfacs[x + image->width*y] = f_lattice * f_molecule;
+		/* Nasty approximation follows */
+		if ( y == image->height/2 ) {
+			f_water = water_factor(q, image->xray_energy);
+		} else {
+			f_water = 0.0;
+		}
+
+		image->sfacs[x + image->width*y] = (f_lattice * f_molecule)
+		                                                  + f_water;
 
 	}
 	progress_bar(x, image->width-1);
