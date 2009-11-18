@@ -169,7 +169,7 @@ void progress_bar(int val, int total)
 
 	for ( i=0; i<n; i++ ) s[i] = '=';
 	for ( i=n; i<80; i++ ) s[i] = '.';
-	s[n] = '\0';
+	s[80] = '\0';
 	printf("\r|%s|", s);
 
 	if ( val == total ) printf("\n");
