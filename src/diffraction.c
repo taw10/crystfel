@@ -86,15 +86,15 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
 			double ph;
 
 			ph= q.u*spec->x[j] + q.v*spec->y[j] + q.w*spec->z[j];
-			
+
 			/* Conversion from revolutions to radians is required */
 			contrib += cos(2.0*M_PI*ph) + I*sin(2.0*M_PI*ph);
-			
+
 		}
 
 		sfac = get_sfac(spec->species, s, en);
 		F += sfac * contrib * exp(-2.0 * spec->B[j] * s);
-		
+
 	}
 
 	return F;

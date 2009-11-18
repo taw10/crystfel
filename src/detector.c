@@ -166,6 +166,6 @@ void record_image(struct image *image)
 
 	}
 	}
-	
+
 	image->data = bloom(image->hdr, image->width, image->height);
 }
