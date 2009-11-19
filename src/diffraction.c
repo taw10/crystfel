@@ -177,6 +177,7 @@ void get_diffraction(struct image *image, UnitCell *cell)
 	image->sfacs = malloc(image->width * image->height
 	                      * sizeof(double complex));
 
+	progress_bar(0, image->width-1);
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
 
