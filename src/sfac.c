@@ -268,11 +268,11 @@ struct molecule *load_molecule()
 
 			n = mol->species[j]->n_atoms;
 
-			spec->x[n] = x;
-			spec->y[n] = y;
-			spec->z[n] = z;
+			spec->x[n] = x*1.0e-10;  /* Convert to nm */
+			spec->y[n] = y*1.0e-10;
+			spec->z[n] = z*1.0e-10;
 			spec->occ[n] = occ;
-			spec->B[n] = B;
+			spec->B[n] = B*1.0e-20;  /* Convert to m^2 */
 			mol->species[j]->n_atoms++;
 
 			done = 1;
@@ -287,11 +287,11 @@ struct molecule *load_molecule()
 			spec = malloc(sizeof(struct mol_species));
 
 			memcpy(spec->species, el, 4);
-			spec->x[0] = x;
-			spec->y[0] = y;
-			spec->z[0] = z;
+			spec->x[0] = x*1.0e-10;  /* Convert to nm */
+			spec->y[0] = y*1.0e-10;
+			spec->z[0] = z*1.0e-10;
 			spec->occ[0] = occ;
-			spec->B[0] = B;
+			spec->B[0] = B*1.0e-20;  /* Convert to nm^2 */
 			spec->n_atoms = 1;
 
 			mol->species[mol->n_species] = spec;

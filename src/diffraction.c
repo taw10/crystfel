@@ -80,12 +80,13 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
                                       double en)
 {
 	int i;
-	double F = 0.0;
+	double complex F = 0.0;
 	double s;
 
 	/* s = sin(theta)/lambda = 1/2d = (1/d)/2.0 */
 	s = modulus(q.u, q.v, q.w) / 2.0;
 
+	/* Atoms are grouped by species for faster calculation */
 	for ( i=0; i<mol->n_species; i++ ) {
 
 		double complex sfac;
