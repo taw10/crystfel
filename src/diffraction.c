@@ -33,6 +33,10 @@
 /* Avogadro's number */
 #define AVOGADRO (6.022e23)
 
+/* Number of slices to divide water column into, where the
+ * slices are coplanar with the beam and the cylinder axis */
+#define N_WATER_SLICES 100
+
 
 static double lattice_factor(struct threevec q, double ax, double ay, double az,
                                                 double bx, double by, double bz,
@@ -118,23 +122,27 @@ static double complex water_factor(struct threevec q, double en)
 	int n = 0;
 	double s;
 	double molecules_per_m3;
-	double molecules_per_m2;
+	double molecules_per_m;
 	const double rc = 0.5e-6; /* Radius of cylinder */
 	const double rb = 1.5e-6; /* Radius of beam */
 
+	/* Density of water molecules */
 	molecules_per_m3 = WATER_DENSITY * (AVOGADRO / WATER_MOLAR_MASS);
-	molecules_per_m2 = molecules_per_m3 / (2*rb*2*rc);
+	
+	/* Number of water molecules per slice */
+	molecules_per_m = (2*rb*2*rc) * molecules_per_m3 / N_WATER_SLICES;
 
 	/* s = sin(theta)/lambda = 1/2d = (1/d)/2.0 */
 	s = modulus(q.u, q.v, q.w) / 2.0;
 
-	for ( x=-rc; x<rc; x+=rc/50.0 ) {
+	for ( x=-rc; x<rc; x+=rc/(N_WATER_SLICES/2) ) {
 
 		double ph;
 		double thickness;
 
-		/* The thickness of a cylinder, axis
-		 * perpendicular to the beam */
+		/* The thickness of a cylinder in a direction parallel
+		 * to the beam.  The cylinder axis is perpendicular to
+		 * the beam */
 		thickness = 2.0 * sqrt((rc*rc)-(x*x));
 
 		ph = q.u*x;
@@ -143,7 +151,7 @@ static double complex water_factor(struct threevec q, double en)
 
 	}
 	res *= (get_sfac("O", s, en) + 2.0*get_sfac("H", s, en))
-	       * molecules_per_m2;
+	       * molecules_per_m;
 
 	/* Correct for sampling of integration */
 	return (res/n) * (2*rc);
