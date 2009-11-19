@@ -116,10 +116,10 @@ again:
 	image.sfacs = NULL;
 	image.data = NULL;
 	image.twotheta = NULL;
-	
+
 	/* Splurge a few useful numbers */
 	printf("Wavelength is %f nm\n", image.lambda/1.0e-9);
-	
+
 	get_diffraction(&image, cell);
 	record_image(&image);
 
