@@ -125,7 +125,7 @@ static uint16_t *bloom(double *hdr_in, int width, int height)
 	/* Turn into integer array of counts */
 	for ( x=0; x<width; x++ ) {
 	for ( y=0; y<height; y++ ) {
-		data[x + width*y] = tmp[x + width*y];
+		data[x + width*y] = (uint16_t)tmp[x + width*y];
 	}
 	}
 
@@ -163,7 +163,7 @@ void record_image(struct image *image)
 		double complex val;
 
 		val = image->sfacs[x + image->width*y];
-		intensity = val * conj(val);
+		intensity = (double)(val * conj(val));
 
 		/* What solid angle is subtended by this pixel? */
 		sa = sa_per_pixel * cos(image->twotheta[x + image->width*y]);

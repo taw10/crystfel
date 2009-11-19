@@ -166,7 +166,7 @@ void progress_bar(int val, int total)
 	char s[1024];
 
 	frac = (double)val/total;
-	n = frac*80;
+	n = (int)(frac*80);
 
 	for ( i=0; i<n; i++ ) s[i] = '=';
 	for ( i=n; i<80; i++ ) s[i] = '.';
