@@ -40,9 +40,11 @@ static void main_show_help(const char *s)
 
 int main(int argc, char *argv[])
 {
-	int c;
+	int c, done;
 	UnitCell *cell;
 	struct image image;
+	char filename[1024];
+	int number = 1;
 
 	while ((c = getopt(argc, argv, "h")) != -1) {
 
@@ -65,11 +67,44 @@ int main(int argc, char *argv[])
 	                                deg2rad(90.0),
 	                                deg2rad(120.0));
 
+again:
+
+	/* Read quaternion from stdin */
+	done = 0;
+	do {
+
+		int r;
+		float w, x, y, z;
+		char line[1024];
+		char *rval;
+
+		printf("Please input quaternion: w x y z\n");
+		rval = fgets(line, 1023, stdin);
+		if ( rval == NULL ) return 0;
+		chomp(line);
+
+		r = sscanf(line, "%f %f %f %f", &w, &x, &y, &z);
+		if ( r == 4 ) {
+
+			printf("Rotation is: %f %f %f %f (modulus=%f)\n",
+			        w, x, y, z, sqrtf(w*w + x*x + y*y + z*z));
+
+			image.orientation.w = w;
+			image.orientation.x = x;
+			image.orientation.y = y;
+			image.orientation.z = z;
+
+			done = 1;
+
+		} else {
+			fprintf(stderr, "Invalid rotation '%s'\n", line);
+		}
+
+	} while ( !done );
+
 	/* Define image parameters */
 	image.width = 512;
 	image.height = 512;
-	image.omega = deg2rad(40.0);
-	image.tilt = deg2rad(0.0);
 	image.fmode = FORMULATION_CLEN;
 	image.x_centre = 255.5;
 	image.y_centre = 255.5;
@@ -88,8 +123,11 @@ int main(int argc, char *argv[])
 	get_diffraction(&image, cell);
 	record_image(&image);
 
-	/* Write the output file */
-	hdf5_write("results/sim.h5", image.data, image.width, image.height);
+	snprintf(filename, 1023, "results/sim-%i.h5", number);
+	number++;
 
-	return 0;
+	/* Write the output file */
+	hdf5_write(filename, image.data, image.width, image.height);
+	printf("Mock write: %i\n", number-1);
+	goto again;
 }

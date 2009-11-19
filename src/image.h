@@ -57,6 +57,15 @@ struct threevec
 };
 
 
+struct quaternion
+{
+	double w;
+	double x;
+	double y;
+	double z;
+};
+
+
 /* Structure describing an image */
 struct image {
 
@@ -67,11 +76,7 @@ struct image {
 	double			*twotheta;
 	struct molecule		*molecule;
 
-	/* Radians.  Defines where the pattern lies in reciprocal space */
-	double			tilt;
-
-	/* Radians.  Defines where the pattern lies in reciprocal space */
-	double			omega;
+	struct quaternion	orientation;
 
 	/* Image parameters can be given as camera length or pixel size.
 	 * If FORMULATION_CLEN, then camera_len and resolution must be given.
