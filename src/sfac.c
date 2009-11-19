@@ -303,7 +303,7 @@ struct molecule *load_molecule()
 
 	printf("There are %i species\n", mol->n_species);
 	for ( i=0; i<mol->n_species; i++ ) {
-		printf("'%s': %i\n", mol->species[i]->species,
+		printf("%3s : %6i\n", mol->species[i]->species,
 		       mol->species[i]->n_atoms);
 	}
 
