@@ -82,6 +82,14 @@ static uint16_t *bloom(double *hdr_in, int width, int height)
 	hdr = malloc(width * height * sizeof(double));
 
 	memcpy(hdr, hdr_in, width*height*sizeof(double));
+
+	/* Apply DQE (once only) */
+	for ( x=0; x<width; x++ ) {
+	for ( y=0; y<height; y++ ) {
+		 hdr[x + width*y] *= DQE;
+	}
+	}
+
 	do {
 
 		memset(tmp, 0, width*height*sizeof(double));
