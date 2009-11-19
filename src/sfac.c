@@ -228,7 +228,8 @@ struct molecule *load_molecule()
 		char el[4];
 		int j, r;
 		int done = 0;
-		float x, y, z, occ, B;
+		float xf, yf, zf, occf, Bf;
+		double x, y, z, occ, B;
 		char *coords;
 
 		rval = fgets(line, 1023, fh);
@@ -248,11 +249,13 @@ struct molecule *load_molecule()
 		}
 
 		coords = line + 29;
-		r = sscanf(coords, "%f %f %f %f %f", &x, &y, &z, &occ, &B);
+		r = sscanf(coords, "%f %f %f %f %f", &xf, &yf, &zf, &occf, &Bf);
 		if ( r != 5 ) {
 			fprintf(stderr, "WTF?\n");
 			abort();
 		}
+		/* Promote to double precision */
+		x = xf;  y = yf;  z = zf;  occ = occf;  B = Bf;
 
 		for ( j=0; j<mol->n_species; j++ ) {
 
