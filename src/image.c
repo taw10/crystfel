@@ -126,12 +126,12 @@ struct imagefeature *image_feature_closest(ImageFeatureList *flist,
 
 	for ( i=0; i<flist->n_features; i++ ) {
 
-		double d;
+		double ds;
 
-		d = distance(flist->features[i].x, flist->features[i].y, x, y);
+		ds = distance(flist->features[i].x, flist->features[i].y, x, y);
 
-		if ( d < dmin ) {
-			dmin = d;
+		if ( ds < dmin ) {
+			dmin = ds;
 			closest = i;
 		}
 

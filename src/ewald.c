@@ -17,6 +17,7 @@
 #include "image.h"
 #include "utils.h"
 #include "cell.h"
+#include "ewald.h"
 
 
 void get_ewald(struct image *image)

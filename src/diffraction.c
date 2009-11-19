@@ -111,7 +111,7 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
 }
 
 
-double complex water_factor(struct threevec q, double en)
+static double complex water_factor(struct threevec q, double en)
 {
 	double x;
 	double complex res = 0.0;
