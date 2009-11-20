@@ -129,7 +129,7 @@ static double complex water_factor(struct threevec q, double en)
 
 	/* Density of water molecules */
 	molecules_per_m3 = WATER_DENSITY * (AVOGADRO / WATER_MOLAR_MASS);
-	
+
 	/* Number of water molecules per slice */
 	molecules_per_m = (2*rb*2*rc) * molecules_per_m3 / N_WATER_SLICES;
 
@@ -168,8 +168,11 @@ void get_diffraction(struct image *image, UnitCell *cell)
 
 	/* Generate the array of reciprocal space vectors in image->qvecs */
 	get_ewald(image);
-	image->molecule = load_molecule();
-	if ( image->molecule == NULL ) return;
+
+	if ( image->molecule == NULL ) {
+		image->molecule = load_molecule();
+		if ( image->molecule == NULL ) return;
+	}
 
 	cell_get_cartesian(cell, &ax, &ay, &az,
 		                 &bx, &by, &bz,

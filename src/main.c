@@ -67,6 +67,21 @@ int main(int argc, char *argv[])
 	                                deg2rad(90.0),
 	                                deg2rad(120.0));
 
+	/* Define image parameters */
+	image.width = 512;
+	image.height = 512;
+	image.fmode = FORMULATION_CLEN;
+	image.x_centre = 255.5;
+	image.y_centre = 255.5;
+	image.camera_len = 0.2;  /* 20 cm */
+	image.resolution = 5120; /* 512 pixels in 10 cm */
+	image.xray_energy = eV_to_J(2.0e3); /* 2 keV energy */
+	image.lambda = ph_en_to_lambda(image.xray_energy);  /* Wavelength */
+	image.molecule = NULL;
+
+	/* Splurge a few useful numbers */
+	printf("Wavelength is %f nm\n", image.lambda/1.0e-9);
+
 again:
 
 	/* Read quaternion from stdin */
@@ -102,23 +117,12 @@ again:
 
 	} while ( !done );
 
-	/* Define image parameters */
-	image.width = 512;
-	image.height = 512;
-	image.fmode = FORMULATION_CLEN;
-	image.x_centre = 255.5;
-	image.y_centre = 255.5;
-	image.camera_len = 0.2;  /* 20 cm */
-	image.resolution = 5120; /* 512 pixels in 10 cm */
-	image.xray_energy = eV_to_J(2.0e3); /* 2 keV energy */
-	image.lambda = ph_en_to_lambda(image.xray_energy);  /* Wavelength */
+	/* Ensure no residual information */
 	image.qvecs = NULL;
 	image.sfacs = NULL;
 	image.data = NULL;
 	image.twotheta = NULL;
-
-	/* Splurge a few useful numbers */
-	printf("Wavelength is %f nm\n", image.lambda/1.0e-9);
+	image.hdr = NULL;
 
 	get_diffraction(&image, cell);
 	record_image(&image);
@@ -128,6 +132,14 @@ again:
 
 	/* Write the output file */
 	hdf5_write(filename, image.data, image.width, image.height);
-	printf("Mock write: %i\n", number-1);
+
+	/* Clean up */
+	free(image.data);
+	free(image.qvecs);
+	free(image.hdr);
+	free(image.sfacs);
+	free(image.twotheta);
+
+	/* Do it all again */
 	goto again;
 }
