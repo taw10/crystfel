@@ -130,19 +130,19 @@ static double complex water_factor(struct threevec q, double en)
 	double s;
 	double molecules_per_m3;
 	double molecules_per_m;
-	const double rc = 0.5e-6; /* Radius of cylinder */
-	const double rb = 1.5e-6; /* Radius of beam */
+	const double rc = 0.5e-6; /* Radius of cylinder (m) */
+	const double rb = 1.5e-6; /* Radius of beam (m) */
 
 	/* Density of water molecules */
 	molecules_per_m3 = WATER_DENSITY * (AVOGADRO / WATER_MOLAR_MASS);
 
-	/* Number of water molecules per slice */
+	/* Number of water molecules per slice per metre of thickness */
 	molecules_per_m = (2*rb*2*rc) * molecules_per_m3 / N_WATER_SLICES;
 
 	/* s = sin(theta)/lambda = 1/2d = (1/d)/2.0 */
 	s = modulus(q.u, q.v, q.w) / 2.0;
 
-	for ( x=-rc; x<rc; x+=rc/(N_WATER_SLICES/2) ) {
+	for ( x=-rc; x<=rc; x+=rc/(N_WATER_SLICES/2) ) {
 
 		double ph;
 		double thickness;
@@ -161,7 +161,7 @@ static double complex water_factor(struct threevec q, double en)
 	       * molecules_per_m;
 
 	/* Correct for sampling of integration */
-	return (res/n) * (2*rc);
+	return (res/(double)n) * (2.0*rc);
 }
 
 

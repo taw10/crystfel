@@ -147,7 +147,7 @@ void record_image(struct image *image)
 
 	/* Solid angle subtended by a single pixel at the centre of the CCD */
 	sa_per_pixel = pow(1.0/image->resolution, 2.0) / image->camera_len;
-	printf("Solid angle of pixel (at centre of CCD) = %e sr\n",
+	printf("Solid angle of one pixel (at centre of CCD) = %e sr\n",
 	       sa_per_pixel);
 
 	image->hdr = malloc(image->width * image->height * sizeof(double));
