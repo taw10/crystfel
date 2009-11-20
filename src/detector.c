@@ -22,10 +22,8 @@
 /* Pulse energy density in J/m^2 */
 #define PULSE_ENERGY_DENSITY (30.0e7)
 
-
 /* Detector's quantum efficiency */
 #define DQE (0.9)
-
 
 /* Detector's saturation value */
 #define SATURATION (60000)
