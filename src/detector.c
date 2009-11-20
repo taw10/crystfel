@@ -138,17 +138,17 @@ void record_image(struct image *image)
 {
 	int x, y;
 	double ph_per_e;
-	double twotheta_max, np, sa_per_pixel;
+	double sa_per_pixel;
 
 	/* How many photons are scattered per electron? */
 	ph_per_e = PULSE_ENERGY_DENSITY * pow(THOMSON_LENGTH, 2.0)
 	          / image->xray_energy;
 	printf("%e photons are scattered per electron\n", ph_per_e);
 
-	twotheta_max = image->twotheta[0];
-	np = sqrt(pow(image->x_centre, 2.0) + pow(image->y_centre, 2.0));
-	sa_per_pixel = pow(2.0 * twotheta_max / np, 2.0);
-	printf("sa per pixel=%e\n", sa_per_pixel);
+	/* Solid angle subtended by a single pixel at the centre of the CCD */
+	sa_per_pixel = pow(1.0/image->resolution, 2.0) / image->camera_len;
+	printf("Solid angle of pixel (at centre of CCD) = %e sr\n",
+	       sa_per_pixel);
 
 	image->hdr = malloc(image->width * image->height * sizeof(double));
 
