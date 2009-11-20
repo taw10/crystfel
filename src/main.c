@@ -68,13 +68,13 @@ int main(int argc, char *argv[])
 	                                deg2rad(120.0));
 
 	/* Define image parameters */
-	image.width = 512;
-	image.height = 512;
+	image.width = 1024;
+	image.height = 1024;
 	image.fmode = FORMULATION_CLEN;
-	image.x_centre = 255.5;
-	image.y_centre = 255.5;
-	image.camera_len = 0.2;  /* 20 cm */
-	image.resolution = 5120; /* 512 pixels in 10 cm */
+	image.x_centre = 512.5;
+	image.y_centre = 512.5;
+	image.camera_len = 0.2;  /* 20 cm (can move from 5cm-20cm) */
+	image.resolution = 13333.3; /* 75 micron pixel size */
 	image.xray_energy = eV_to_J(2.0e3); /* 2 keV energy */
 	image.lambda = ph_en_to_lambda(image.xray_energy);  /* Wavelength */
 	image.molecule = NULL;
