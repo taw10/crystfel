@@ -48,28 +48,34 @@ static double lattice_factor(struct threevec q, double ax, double ay, double az,
 	int nb = 4;
 	int nc = 30;
 
-	Udotq.u = (ax*q.u + ay*q.v + az*q.w)/2.0;
-	Udotq.v = (bx*q.u + by*q.v + bz*q.w)/2.0;
-	Udotq.w = (cx*q.u + cy*q.v + cz*q.w)/2.0;
+	Udotq.u = ax*q.u + ay*q.v + az*q.w;
+	Udotq.v = bx*q.u + by*q.v + bz*q.w;
+	Udotq.w = cx*q.u + cy*q.v + cz*q.w;
 
+	/* At exact Bragg condition, f1 = na */
 	if ( na > 1 ) {
-		f1 = sin(2.0*M_PI*(double)na*Udotq.u) / sin(2.0*M_PI*Udotq.u);
+		f1 = sin(M_PI*(double)na*Udotq.u) / sin(M_PI*Udotq.u);
 	} else {
 		f1 = 1.0;
 	}
 
+	/* At exact Bragg condition, f2 = nb */
 	if ( nb > 1 ) {
-		f2 = sin(2.0*M_PI*(double)nb*Udotq.v) / sin(2.0*M_PI*Udotq.v);
+		f2 = sin(M_PI*(double)nb*Udotq.v) / sin(M_PI*Udotq.v);
 	} else {
 		f2 = 1.0;
 	}
 
+	/* At exact Bragg condition, f3 = nc */
 	if ( nc > 1 ) {
-		f3 = sin(2.0*M_PI*(double)nc*Udotq.w) / sin(2.0*M_PI*Udotq.w);
+		f3 = sin(M_PI*(double)nc*Udotq.w) / sin(M_PI*Udotq.w);
 	} else {
 		f3 = 1.0;
 	}
 
+	/* At exact Bragg condition, this will multiply the molecular
+	 * part of the structure factor by the number of unit cells,
+	 * as desired (more scattering from bigger crystal!) */
 	return f1 * f2 * f3;
 }
 
