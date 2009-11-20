@@ -44,9 +44,9 @@ static double lattice_factor(struct threevec q, double ax, double ay, double az,
 {
 	struct threevec Udotq;
 	double f1, f2, f3;
-	int na = 8;
-	int nb = 8;
-	int nc = 8;
+	int na = 32;
+	int nb = 32;
+	int nc = 32;
 
 	Udotq.u = (ax*q.u + ay*q.v + az*q.w)/2.0;
 	Udotq.v = (bx*q.u + by*q.v + bz*q.w)/2.0;
