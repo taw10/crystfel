@@ -203,6 +203,62 @@ double complex get_sfac(const char *n, double s, double en)
 }
 
 
+static void centre_molecule(struct molecule *mol)
+{
+	int i;
+	double tx = 0.0;
+	double ty = 0.0;
+	double tz = 0.0;
+	double total = 0.0;
+
+	/* Atoms are grouped by species for faster calculation */
+	for ( i=0; i<mol->n_species; i++ ) {
+
+		struct mol_species *spec;
+		int j;
+
+		spec = mol->species[i];
+
+		for ( j=0; j<spec->n_atoms; j++ ) {
+
+			double sfac = get_waas_kirf(spec->species, 0.0);
+
+			tx += spec->x[j] * sfac;
+			ty += spec->y[j] * sfac;
+			tz += spec->z[j] * sfac;
+			total += sfac;
+
+		}
+
+	}
+
+	mol->xc = tx / total;
+	mol->yc = ty / total;
+	mol->zc = tz / total;
+
+	for ( i=0; i<mol->n_species; i++ ) {
+
+		struct mol_species *spec;
+		int j;
+
+		spec = mol->species[i];
+
+		for ( j=0; j<spec->n_atoms; j++ ) {
+
+			spec->x[j] -= mol->xc;
+			spec->y[j] -= mol->yc;
+			spec->z[j] -= mol->zc;
+
+		}
+
+	}
+
+	printf("Molecule was shifted by %f,%f,%f nm\n",
+	       mol->xc*1e9, mol->yc*1e9, mol->zc*1e9);
+
+}
+
+
 /* Load PDB file into a memory format suitable for efficient(ish) structure
  * factor calculation */
 struct molecule *load_molecule()
@@ -268,7 +324,7 @@ struct molecule *load_molecule()
 
 			n = mol->species[j]->n_atoms;
 
-			spec->x[n] = x*1.0e-10;  /* Convert to nm */
+			spec->x[n] = x*1.0e-10;  /* Convert to m */
 			spec->y[n] = y*1.0e-10;
 			spec->z[n] = z*1.0e-10;
 			spec->occ[n] = occ;
@@ -303,6 +359,8 @@ struct molecule *load_molecule()
 	} while ( rval != NULL );
 
 	fclose(fh);
+
+	centre_molecule(mol);
 
 	printf("There are %i species\n", mol->n_species);
 	for ( i=0; i<mol->n_species; i++ ) {

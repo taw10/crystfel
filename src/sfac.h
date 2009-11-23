@@ -36,6 +36,10 @@ struct molecule
 {
 	int n_species;
 	struct mol_species *species[32];
+
+	double xc;
+	double yc;
+	double zc;
 };
 
 
