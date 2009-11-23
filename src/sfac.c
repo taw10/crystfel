@@ -36,7 +36,7 @@ static double complex get_f1f2(const char *n, double en)
 	static double complex memo_res[N_MEMO];
 	static int n_memo = 0;
 	int i;
-	
+
 	for ( i=0; i<n_memo; i++ ) {
 		if ( (memo_en[i] == en) && (strcmp(memo_n[i], n) == 0) ) {
 			return memo_res[i];
@@ -93,14 +93,14 @@ static double complex get_f1f2(const char *n, double en)
 			actual_f2 = last_f2 + f * (f2 - last_f2);
 
 			fclose(fh);
-			
+
 			res = actual_f1 + I*actual_f2;
-			
+
 			memo_n[n_memo] = strdup(n);
 			memo_en[n_memo] = en;
 			memo_res[n_memo++] = res;
 			n_memo = n_memo % N_MEMO;
-			
+
 			return res;
 
 		}
@@ -129,13 +129,13 @@ static double get_waas_kirf(const char *n, double s)
 	static double memo_res[N_MEMO];
 	static int n_memo = 0;
 	int i;
-	
+
 	for ( i=0; i<n_memo; i++ ) {
 		if ( (memo_s[i] == s) && (strcmp(memo_n[i], n) == 0) ) {
 			return memo_res[i];
 		}
 	}
-	
+
 	fh = fopen("scattering-factors/f0_WaasKirf.dat", "r");
 	if ( fh == NULL ) {
 		fprintf(stderr, "Couldn't open f0_WaasKirf.dat\n");
@@ -150,16 +150,16 @@ static double get_waas_kirf(const char *n, double s)
 		int Z;
 
 		rval = fgets(line, 1023, fh);
-		
+
 		if ( (line[0] != '#') || (line[1] != 'S') ) continue;
 
 		r = sscanf(line, "#S  %i  %s", &Z, sp);
 		if ( (r != 2) || (strcmp(sp, n) != 0) ) continue;
-		
+
 		/* Skip two lines */
 		fgets(line, 1023, fh);
 		fgets(line, 1023, fh);
-		
+
 		/* Read scattering coefficients */
 		rval = fgets(line, 1023, fh);
 		r = sscanf(line, "  %f  %f  %f  %f  %f  %f  %f %f %f %f %f",
@@ -168,13 +168,13 @@ static double get_waas_kirf(const char *n, double s)
 			fprintf(stderr, "Couldn't read scattering factors\n");
 			return 0.0;
 		}
-		
+
 		break;
-		
+
 	} while ( rval != NULL );
-	
+
 	fclose(fh);
-	
+
 	s2 = pow(s/1e10, 2.0);  /* s2 is s squared in Angstroms squared */
 	f = c + a1*exp(-b1*s2) + a2*exp(-b2*s2) + a3*exp(-b3*s2)
 	      + a4*exp(-b4*s2) + a5*exp(-b5*s2);
@@ -194,11 +194,11 @@ double complex get_sfac(const char *n, double s, double en)
 {
 	double complex f1f2;
 	double fq, fq0;
-	
+
 	f1f2 = get_f1f2(n, en);
 	fq = get_waas_kirf(n, s);
 	fq0 = get_waas_kirf(n, 0.0);
-	
+
 	return fq - fq0 + f1f2;
 }
 
