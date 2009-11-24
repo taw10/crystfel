@@ -175,7 +175,7 @@ static double get_waas_kirf(const char *n, double s)
 
 	fclose(fh);
 
-	s2 = pow(s/1e10, 2.0);  /* s2 is s squared in Angstroms squared */
+	s2 = pow(s/1e10, 2.0);  /* s2 is s squared in Angstroms^-2 */
 	f = c + a1*exp(-b1*s2) + a2*exp(-b2*s2) + a3*exp(-b3*s2)
 	      + a4*exp(-b4*s2) + a5*exp(-b5*s2);
 
@@ -390,6 +390,8 @@ double complex *get_reflections(struct molecule *mol, double en)
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	signed int h, k, l;
+	//double tscat = 0.0;
+	//double F00;
 
 	cell_get_reciprocal(mol->cell, &asx, &asy, &asz,
 	                               &bsx, &bsy, &bsz,
@@ -401,9 +403,11 @@ double complex *get_reflections(struct molecule *mol, double en)
 	for ( k=-INDMAX; k<=INDMAX; k++ ) {
 	for ( l=-INDMAX; l<=INDMAX; l++ ) {
 
-		double complex F;
+		double complex F = 0.0;
 		int i;
 		double s;
+
+		s = resolution(mol->cell, h, k, l);
 
 		/* Atoms are grouped by species for faster calculation */
 		for ( i=0; i<mol->n_species; i++ ) {
@@ -426,8 +430,7 @@ double complex *get_reflections(struct molecule *mol, double en)
 				ph = u*spec->x[j] + v*spec->y[j] + w*spec->z[j];
 
 				/* Conversion from revolutions to radians */
-				contrib += cos(-2.0*M_PI*ph)
-				                          + I*sin(-2.0*M_PI*ph);
+				contrib += cexp(-2.0*M_PI*I*ph);
 
 			}
 
@@ -437,12 +440,63 @@ double complex *get_reflections(struct molecule *mol, double en)
 		}
 
 		integrate_reflection(reflections, h, k, l, F);
+		//if ( (h!=0) || (k!=0) || (l!=0) ) {
+		//	tscat += cabs(F);
+		//} else {
+		//	F00 = cabs(F);
+		//}
 
 	}
 	}
 	progress_bar((h+INDMAX+1), 2*INDMAX);
 	}
 	printf("\n");
+	//printf("Total scattered = %f, F000 = %f\n", tscat, F00);
 
 	return reflections;
+}
+
+
+void get_reflections_cached(struct molecule *mol, double en)
+{
+	char s[1024];
+	FILE *fh;
+	size_t r;
+
+	snprintf(s, 1023, "reflections-%ieV.cache", (int)J_to_eV(en));
+	fh = fopen(s, "rb");
+	if ( fh == NULL ) {
+		printf("No cache file found (looked for %s)\n", s);
+		goto calc;
+	}
+
+	mol->reflections = reflist_new();
+	r = fread(mol->reflections, sizeof(double complex), IDIM*IDIM*IDIM, fh);
+	if ( r <  IDIM*IDIM*IDIM ) {
+		printf("Found cache file (%s), but failed to read.\n", s);
+		goto calc;
+	}
+
+	printf("Read structure factors (at Bragg positions) from %s\n", s);
+	return;
+
+calc:
+	printf("Calculating structure factors at Bragg positions...\n");
+	mol->reflections = get_reflections(mol, en);
+	fh = fopen(s, "wb");
+	if ( fh == NULL ) {
+		printf("Failed to write cache file (%s)\n", s);
+		return;
+	}
+
+	r = fwrite(mol->reflections, sizeof(double complex),
+	           IDIM*IDIM*IDIM, fh);
+	if ( r <  IDIM*IDIM*IDIM ) {
+		printf("Failed to write cache file (%s)\n", s);
+		return;
+	}
+	fclose(fh);
+
+	printf("Successfully saved structure factors at Bragg positions to"
+	       " file %s\n", s);
 }

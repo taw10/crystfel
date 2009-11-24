@@ -84,6 +84,7 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
 {
 	double hd, kd, ld;
 	signed int h, k, l;
+	double complex r;
 
 	hd = q.u * ax + q.v * ay + q.w * az;
 	kd = q.u * bx + q.v * by + q.w * bz;
@@ -92,58 +93,15 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
 	k = (signed int)nearbyint(kd);
 	l = (signed int)nearbyint(ld);
 
-	return get_integral(mol->reflections, h, k, l);
+	r = get_integral(mol->reflections, h, k, l);
+
+	return r;
 }
 
 
 static double complex water_factor(struct threevec q, double en)
 {
 	return 0.0;
-}
-
-
-static void get_reflections_cached(struct molecule *mol, double en)
-{
-	char s[1024];
-	FILE *fh;
-	size_t r;
-
-	snprintf(s, 1023, "reflections-%ieV.cache", (int)J_to_eV(en));
-	fh = fopen(s, "rb");
-	if ( fh == NULL ) {
-		printf("No cache file found (looked for %s)\n", s);
-		goto calc;
-	}
-
-	mol->reflections = reflist_new();
-	r = fread(mol->reflections, sizeof(double complex), IDIM*IDIM*IDIM, fh);
-	if ( r <  IDIM*IDIM*IDIM ) {
-		printf("Found cache file (%s), but failed to read.\n", s);
-		goto calc;
-	}
-
-	printf("Read structure factors (at Bragg positions) from %s\n", s);
-	return;
-
-calc:
-	printf("Calculating structure factors at Bragg positions...\n");
-	mol->reflections = get_reflections(mol, en);
-	fh = fopen(s, "wb");
-	if ( fh == NULL ) {
-		printf("Failed to write cache file (%s)\n", s);
-		return;
-	}
-
-	r = fwrite(mol->reflections, sizeof(double complex),
-	           IDIM*IDIM*IDIM, fh);
-	if ( r <  IDIM*IDIM*IDIM ) {
-		printf("Failed to write cache file (%s)\n", s);
-		return;
-	}
-	fclose(fh);
-
-	printf("Successfully saved structure factors at Bragg positions to"
-	       " file %s\n", s);
 }
 
 
@@ -189,14 +147,8 @@ void get_diffraction(struct image *image)
 		f_molecule = molecule_factor(image->molecule, q,
 		                             ax,ay,az,bx,by,bz,cx,cy,cz);
 
-		/* Nasty approximation follows */
-		if ( y == image->height/2 ) {
-			f_water = water_factor(q, image->xray_energy);
-		} else {
-			f_water = 0.0;
-		}
-
-		val = (f_molecule) + f_water;
+		f_water = water_factor(q, image->xray_energy);
+		val = (f_molecule * f_lattice) + f_water;
 		image->sfacs[x + image->width*y] = val;
 
 	}

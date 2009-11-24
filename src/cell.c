@@ -206,3 +206,33 @@ void cell_get_reciprocal(UnitCell *cell,
 	*bsz = gsl_matrix_get(inv, 2, 1);
 	*csz = gsl_matrix_get(inv, 2, 2);
 }
+
+
+double resolution(UnitCell *cell, signed int h, signed int k, signed int l)
+{
+	const double a = cell->a;
+	const double b = cell->b;
+	const double c = cell->c;
+	const double alpha = cell->alpha;
+	const double beta = cell->beta;
+	const double gamma = cell->gamma;
+
+	const double Vsq = a*a*b*b*c*c*(1 - cos(alpha)*cos(alpha)
+	                                  - cos(beta)*cos(beta)
+	                                  - cos(gamma)*cos(gamma)
+				          + 2*cos(alpha)*cos(beta)*cos(gamma) );
+
+	const double S11 = b*b*c*c*sin(alpha)*sin(alpha);
+	const double S22 = a*a*c*c*sin(beta)*sin(beta);
+	const double S33 = a*a*b*b*sin(gamma)*sin(gamma);
+	const double S12 = a*b*c*c*(cos(alpha)*cos(beta) - cos(gamma));
+	const double S23 = a*a*b*c*(cos(beta)*cos(gamma) - cos(alpha));
+	const double S13 = a*b*b*c*(cos(gamma)*cos(alpha) - cos(beta));
+
+	const double brackets = S11*h*h + S22*k*k + S33*l*l
+	                         + 2*S12*h*k + 2*S23*k*l + 2*S13*h*l;
+	const double oneoverdsq = brackets / Vsq;
+	const double oneoverd = sqrt(oneoverdsq);
+
+	return oneoverd / 2;
+}
