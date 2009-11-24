@@ -116,7 +116,7 @@ static double complex get_f1f2(const char *n, double en)
 }
 
 
-/* s = sin(theta)/lambda */
+/* s = sin(theta)/lambda in metres^-1*/
 static double get_waas_kirf(const char *n, double s)
 {
 	FILE *fh;
@@ -195,6 +195,8 @@ double complex get_sfac(const char *n, double s, double en)
 	double complex f1f2;
 	double fq, fq0;
 
+	/* Use the complex scattering factor from Henke, and add the
+	 * falloff in the real part from  Waas/Kirf */
 	f1f2 = get_f1f2(n, en);
 	fq = get_waas_kirf(n, s);
 	fq0 = get_waas_kirf(n, 0.0);
@@ -352,11 +354,11 @@ struct molecule *load_molecule()
 			spec = malloc(sizeof(struct mol_species));
 
 			memcpy(spec->species, el, 4);
-			spec->x[0] = x*1.0e-10;  /* Convert to nm */
+			spec->x[0] = x*1.0e-10;  /* Convert to m */
 			spec->y[0] = y*1.0e-10;
 			spec->z[0] = z*1.0e-10;
 			spec->occ[0] = occ;
-			spec->B[0] = B*1.0e-20;  /* Convert to nm^2 */
+			spec->B[0] = B*1.0e-20;  /* Convert to m^2 */
 			spec->n_atoms = 1;
 
 			mol->species[mol->n_species] = spec;
