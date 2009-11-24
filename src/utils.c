@@ -174,6 +174,6 @@ void progress_bar(int val, int total)
 	printf("\r|%s|", s);
 
 	if ( val == total ) printf("\n");
-	
+
 	fflush(stdout);
 }
