@@ -33,7 +33,7 @@
 static void main_show_help(const char *s)
 {
 	printf("Syntax: %s <file1.h5> <file2.h5> [...]\n\n", s);
-	printf("Index diffraction patterns\n\n");
+	printf("Simulate diffraction patterns\n\n");
 	printf("  -h              Display this help message\n");
 }
 
