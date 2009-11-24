@@ -83,9 +83,6 @@ static inline void integrate_reflection(double complex *ref, signed int h,
 {
 	int idx;
 
-	/* Not interested in central beam */
-	if ( (h==0) && (k==0) && (l==0) ) return;
-
 	if ( h < 0 ) h += IDIM;
 	if ( k < 0 ) k += IDIM;
 	if ( l < 0 ) l += IDIM;
