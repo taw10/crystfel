@@ -17,6 +17,9 @@
 #endif
 
 #include <math.h>
+#include <complex.h>
+#include <string.h>
+#include <stdlib.h>
 
 
 /* Electron charge in C */
@@ -30,6 +33,10 @@
 
 /* Thomson scattering length (m) */
 #define THOMSON_LENGTH (2.81794e-15)
+
+/* Maxmimum index to go up to */
+#define INDMAX 20
+#define IDIM (INDMAX*2 +1)
 
 
 extern unsigned int biggest(signed int a, signed int b);
@@ -68,5 +75,49 @@ extern void progress_bar(int val, int total);
 
 /* Joules to eV */
 #define J_to_eV(a) ((a)/ELECTRON_CHARGE)
+
+
+static inline void integrate_reflection(double complex *ref, signed int h,
+                                        signed int k, signed int l,
+                                        double complex i)
+{
+	int idx;
+
+	/* Not interested in central beam */
+	if ( (h==0) && (k==0) && (l==0) ) return;
+
+	if ( h < 0 ) h += IDIM;
+	if ( k < 0 ) k += IDIM;
+	if ( l < 0 ) l += IDIM;
+
+	idx = h + (IDIM*k) + (IDIM*IDIM*l);
+	ref[idx] += i;
+}
+
+
+static inline double complex get_integral(double complex *ref, signed int h,
+                                          signed int k, signed int l)
+{
+	int idx;
+
+	if ( h < 0 ) h += IDIM;
+	if ( k < 0 ) k += IDIM;
+	if ( l < 0 ) l += IDIM;
+
+	idx = h + (IDIM*k) + (IDIM*IDIM*l);
+	return ref[idx];
+}
+
+
+static inline double complex *reflist_new(void)
+{
+	double complex *r;
+	size_t r_size;
+	r_size = IDIM*IDIM*IDIM*sizeof(double complex);
+	r = malloc(r_size);
+	memset(r, 0, r_size);
+	return r;
+}
+
 
 #endif	/* UTILS_H */

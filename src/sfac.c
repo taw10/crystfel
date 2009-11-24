@@ -272,6 +272,15 @@ struct molecule *load_molecule()
 	mol = malloc(sizeof(struct molecule));
 	if ( mol == NULL ) return NULL;
 	mol->n_species = 0;
+	mol->reflections = NULL;
+
+	/* FIXME: Read cell from file */
+	mol->cell = cell_new_from_parameters(28.10e-9,
+	                                     28.10e-9,
+	                                     16.52e-9,
+	                                     deg2rad(90.0),
+	                                     deg2rad(90.0),
+	                                     deg2rad(120.0));
 
 	fh = fopen("molecule.pdb", "r");
 	if ( fh == NULL ) {
@@ -369,4 +378,69 @@ struct molecule *load_molecule()
 	}
 
 	return mol;
+}
+
+
+double complex *get_reflections(struct molecule *mol, double en)
+{
+	double complex *reflections;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	signed int h, k, l;
+
+	cell_get_reciprocal(mol->cell, &asx, &asy, &asz,
+	                               &bsx, &bsy, &bsz,
+	                               &csx, &csy, &csz);
+
+	reflections = reflist_new();
+
+	for ( h=-INDMAX; h<=INDMAX; h++ ) {
+	for ( k=-INDMAX; k<=INDMAX; k++ ) {
+	for ( l=-INDMAX; l<=INDMAX; l++ ) {
+
+		double complex F;
+		int i;
+		double s;
+
+		/* Atoms are grouped by species for faster calculation */
+		for ( i=0; i<mol->n_species; i++ ) {
+
+			double complex sfac;
+			double complex contrib = 0.0;
+			struct mol_species *spec;
+			int j;
+
+			spec = mol->species[i];
+
+			for ( j=0; j<spec->n_atoms; j++ ) {
+
+				double ph, u, v, w;
+
+				u = h*asx + k*bsx + l*csx;
+				v = h*asy + k*bsy + l*csy;
+				w = h*asz + k*bsz + l*csz;
+
+				ph = u*spec->x[j] + v*spec->y[j] + w*spec->z[j];
+
+				/* Conversion from revolutions to radians */
+				contrib += cos(-2.0*M_PI*ph)
+				                          + I*sin(-2.0*M_PI*ph);
+
+			}
+
+			sfac = get_sfac(spec->species, s, en);
+			F += sfac * contrib * exp(-2.0 * spec->B[j] * s);
+
+		}
+
+		integrate_reflection(reflections, h, k, l, F);
+
+	}
+	}
+	progress_bar((h+INDMAX+1), 2*INDMAX);
+	}
+	printf("\n");
+
+	return reflections;
 }

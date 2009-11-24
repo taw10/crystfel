@@ -41,7 +41,6 @@ static void main_show_help(const char *s)
 int main(int argc, char *argv[])
 {
 	int c, done;
-	UnitCell *cell;
 	struct image image;
 	char filename[1024];
 	int number = 1;
@@ -58,14 +57,6 @@ int main(int argc, char *argv[])
 		}
 
 	}
-
-	/* Define unit cell */
-	cell = cell_new_from_parameters(28.10e-9,
-	                                28.10e-9,
-	                                16.52e-9,
-	                                deg2rad(90.0),
-	                                deg2rad(90.0),
-	                                deg2rad(120.0));
 
 	/* Define image parameters */
 	image.width = 1024;
@@ -124,7 +115,7 @@ again:
 	image.twotheta = NULL;
 	image.hdr = NULL;
 
-	get_diffraction(&image, cell);
+	get_diffraction(&image);
 	record_image(&image);
 
 	snprintf(filename, 1023, "results/sim-%i.h5", number);

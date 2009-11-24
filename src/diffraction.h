@@ -19,6 +19,6 @@
 #include "image.h"
 #include "cell.h"
 
-extern void get_diffraction(struct image *image, UnitCell *cell);
+extern void get_diffraction(struct image *image);
 
 #endif	/* DIFFRACTION_H */

@@ -76,45 +76,23 @@ static double lattice_factor(struct threevec q, double ax, double ay, double az,
 }
 
 
-/* Return structure factor for molecule 'mol' at energy 'en' (J/photon) at
- * scattering vector 'q' */
+/* Look up the structure factor for the nearest Bragg condition */
 static double complex molecule_factor(struct molecule *mol, struct threevec q,
-                                      double en)
+                                      double ax, double ay, double az,
+                                      double bx, double by, double bz,
+                                      double cx, double cy, double cz)
 {
-	int i;
-	double complex F = 0.0;
-	double s;
+	double hd, kd, ld;
+	signed int h, k, l;
 
-	/* s = sin(theta)/lambda = 1/2d = (1/d)/2.0 */
-	s = modulus(q.u, q.v, q.w) / 2.0;
+	hd = q.u * ax + q.v * ay + q.w * az;
+	kd = q.u * bx + q.v * by + q.w * bz;
+	ld = q.u * cx + q.v * cy + q.w * cz;
+	h = (signed int)nearbyint(hd);
+	k = (signed int)nearbyint(kd);
+	l = (signed int)nearbyint(ld);
 
-	/* Atoms are grouped by species for faster calculation */
-	for ( i=0; i<mol->n_species; i++ ) {
-
-		double complex sfac;
-		double complex contrib = 0.0;
-		struct mol_species *spec;
-		int j;
-
-		spec = mol->species[i];
-
-		for ( j=0; j<spec->n_atoms; j++ ) {
-
-			double ph;
-
-			ph = q.u*spec->x[j] + q.v*spec->y[j] + q.w*spec->z[j];
-
-			/* Conversion from revolutions to radians is required */
-			contrib += cos(2.0*M_PI*ph) + I*sin(2.0*M_PI*ph);
-
-		}
-
-		sfac = get_sfac(spec->species, s, en);
-		F += sfac * contrib * exp(-2.0 * spec->B[j] * s);
-
-	}
-
-	return F;
+	return get_integral(mol->reflections, h, k, l);
 }
 
 
@@ -124,7 +102,52 @@ static double complex water_factor(struct threevec q, double en)
 }
 
 
-void get_diffraction(struct image *image, UnitCell *cell)
+static void get_reflections_cached(struct molecule *mol, double en)
+{
+	char s[1024];
+	FILE *fh;
+	size_t r;
+
+	snprintf(s, 1023, "reflections-%ieV.cache", (int)J_to_eV(en));
+	fh = fopen(s, "rb");
+	if ( fh == NULL ) {
+		printf("No cache file found (looked for %s)\n", s);
+		goto calc;
+	}
+
+	mol->reflections = reflist_new();
+	r = fread(mol->reflections, sizeof(double complex), IDIM*IDIM*IDIM, fh);
+	if ( r <  IDIM*IDIM*IDIM ) {
+		printf("Found cache file (%s), but failed to read.\n", s);
+		goto calc;
+	}
+
+	printf("Read structure factors (at Bragg positions) from %s\n", s);
+	return;
+
+calc:
+	printf("Calculating structure factors at Bragg positions...\n");
+	mol->reflections = get_reflections(mol, en);
+	fh = fopen(s, "wb");
+	if ( fh == NULL ) {
+		printf("Failed to write cache file (%s)\n", s);
+		return;
+	}
+
+	r = fwrite(mol->reflections, sizeof(double complex),
+	           IDIM*IDIM*IDIM, fh);
+	if ( r <  IDIM*IDIM*IDIM ) {
+		printf("Failed to write cache file (%s)\n", s);
+		return;
+	}
+	fclose(fh);
+
+	printf("Successfully saved structure factors at Bragg positions to"
+	       " file %s\n", s);
+}
+
+
+void get_diffraction(struct image *image)
 {
 	int x, y;
 	double ax, ay, az;
@@ -139,12 +162,16 @@ void get_diffraction(struct image *image, UnitCell *cell)
 		if ( image->molecule == NULL ) return;
 	}
 
-	cell_get_cartesian(cell, &ax, &ay, &az,
-		                 &bx, &by, &bz,
-		                 &cx, &cy, &cz);
+	cell_get_cartesian(image->molecule->cell, &ax, &ay, &az,
+		                                  &bx, &by, &bz,
+		                                  &cx, &cy, &cz);
 
 	image->sfacs = malloc(image->width * image->height
 	                      * sizeof(double complex));
+
+	if ( image->molecule->reflections == NULL ) {
+		get_reflections_cached(image->molecule, image->xray_energy);
+	}
 
 	progress_bar(0, image->width-1);
 	for ( x=0; x<image->width; x++ ) {
@@ -154,12 +181,13 @@ void get_diffraction(struct image *image, UnitCell *cell)
 		double complex f_molecule;
 		double complex f_water;
 		struct threevec q;
+		double complex val;
 
 		q = image->qvecs[x + image->width*y];
 
 		f_lattice = lattice_factor(q, ax,ay,az,bx,by,bz,cx,cy,cz);
 		f_molecule = molecule_factor(image->molecule, q,
-		                             image->xray_energy);
+		                             ax,ay,az,bx,by,bz,cx,cy,cz);
 
 		/* Nasty approximation follows */
 		if ( y == image->height/2 ) {
@@ -168,8 +196,8 @@ void get_diffraction(struct image *image, UnitCell *cell)
 			f_water = 0.0;
 		}
 
-		image->sfacs[x + image->width*y] = (f_lattice * f_molecule)
-		                                                  + f_water;
+		val = (f_molecule) + f_water;
+		image->sfacs[x + image->width*y] = val;
 
 	}
 	progress_bar(x, image->width-1);

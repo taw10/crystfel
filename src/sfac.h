@@ -18,6 +18,8 @@
 
 #include <complex.h>
 
+#include "cell.h"
+
 
 struct mol_species
 {
@@ -37,6 +39,13 @@ struct molecule
 	int n_species;
 	struct mol_species *species[32];
 
+	/* Unit cell */
+	UnitCell *cell;
+
+	/* Reflection intensities at Bragg positions */
+	double complex *reflections;
+
+	/* Offset to molecule's centre of scattering power */
 	double xc;
 	double yc;
 	double zc;
@@ -45,5 +54,6 @@ struct molecule
 
 extern double complex get_sfac(const char *n, double s, double en);
 extern struct molecule *load_molecule(void);
+extern double complex *get_reflections(struct molecule *mol, double en);
 
 #endif	/* SFAC_H */
