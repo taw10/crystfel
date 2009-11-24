@@ -447,10 +447,9 @@ double complex *get_reflections(struct molecule *mol, double en)
 		//}
 
 	}
+	progress_bar((k+INDMAX)+IDIM*(h+INDMAX), IDIM*IDIM-1);
 	}
-	progress_bar((h+INDMAX+1), 2*INDMAX);
 	}
-	printf("\n");
 	//printf("Total scattered = %f, F000 = %f\n", tscat, F00);
 
 	return reflections;
@@ -463,7 +462,8 @@ void get_reflections_cached(struct molecule *mol, double en)
 	FILE *fh;
 	size_t r;
 
-	snprintf(s, 1023, "reflections-%ieV.cache", (int)J_to_eV(en));
+	/* Add 0.5 to improve rounding */
+	snprintf(s, 1023, "reflections-%ieV.cache", (int)(J_to_eV(en)+0.5));
 	fh = fopen(s, "rb");
 	if ( fh == NULL ) {
 		printf("No cache file found (looked for %s)\n", s);
@@ -491,7 +491,7 @@ calc:
 
 	r = fwrite(mol->reflections, sizeof(double complex),
 	           IDIM*IDIM*IDIM, fh);
-	if ( r <  IDIM*IDIM*IDIM ) {
+	if ( r < IDIM*IDIM*IDIM ) {
 		printf("Failed to write cache file (%s)\n", s);
 		return;
 	}
