@@ -139,6 +139,7 @@ void record_image(struct image *image)
 	int x, y;
 	double ph_per_e;
 	double sa_per_pixel;
+	const int do_bloom = 0;
 
 	/* How many photons are scattered per electron? */
 	ph_per_e = PULSE_ENERGY_DENSITY * pow(THOMSON_LENGTH, 2.0)
@@ -173,5 +174,17 @@ void record_image(struct image *image)
 	}
 	}
 
-	image->data = bloom(image->hdr, image->width, image->height);
+	if ( do_bloom ) {
+		image->data = bloom(image->hdr, image->width, image->height);
+	} else {
+		image->data = malloc(image->width * image->height
+		                                            * sizeof(uint16_t));
+		for ( x=0; x<image->width; x++ ) {
+		for ( y=0; y<image->height; y++ ) {
+			double val;
+			val = image->hdr[x + image->width*y];
+	                image->data[x + image->width*y] = (uint16_t)val;
+		}
+		}
+	}
 }
