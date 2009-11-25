@@ -53,19 +53,20 @@ void chomp(char *s)
 }
 
 
-void progress_bar(int val, int total)
+void progress_bar(int val, int total, const char *text)
 {
 	double frac;
 	int n, i;
 	char s[1024];
+	const int width = 50;
 
 	frac = (double)val/total;
-	n = (int)(frac*80);
+	n = (int)(frac*width);
 
 	for ( i=0; i<n; i++ ) s[i] = '=';
-	for ( i=n; i<80; i++ ) s[i] = '.';
-	s[80] = '\0';
-	printf("\r|%s|", s);
+	for ( i=n; i<width; i++ ) s[i] = '.';
+	s[width] = '\0';
+	printf("\r%s: |%s|", text, s);
 
 	if ( val == total ) printf("\n");
 

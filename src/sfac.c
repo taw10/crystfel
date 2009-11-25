@@ -454,7 +454,8 @@ double complex *get_reflections(struct molecule *mol, double en)
 		//}
 
 	}
-	progress_bar((k+INDMAX)+IDIM*(h+INDMAX), IDIM*IDIM-1);
+	progress_bar((k+INDMAX)+IDIM*(h+INDMAX), IDIM*IDIM-1,
+	             "Calculating structure factors");
 	}
 	}
 	//printf("Total scattered = %f, F000 = %f\n", tscat, F00);

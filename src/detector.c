@@ -182,7 +182,7 @@ void record_image(struct image *image)
 		image->hdr[x + image->width*y] = counts;
 
 	}
-	progress_bar(x, image->width-1);
+	progress_bar(x, image->width-1, "Adding water and noise");
 	}
 
 	if ( do_bloom ) {

@@ -166,7 +166,6 @@ void get_diffraction(struct image *image)
 		get_reflections_cached(image->molecule, image->xray_energy);
 	}
 
-	progress_bar(0, image->width-1);
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
 
@@ -185,6 +184,6 @@ void get_diffraction(struct image *image)
 		image->sfacs[x + image->width*y] = val;
 
 	}
-	progress_bar(x, image->width-1);
+	progress_bar(x, image->width-1, "Calculating lattice factors");
 	}
 }
