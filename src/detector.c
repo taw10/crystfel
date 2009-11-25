@@ -186,6 +186,7 @@ void record_image(struct image *image)
 		for ( y=0; y<image->height; y++ ) {
 			double val;
 			val = image->hdr[x + image->width*y];
+			if ( val > SATURATION ) val = SATURATION;
 	                image->data[x + image->width*y] = (uint16_t)val;
 		}
 		}
