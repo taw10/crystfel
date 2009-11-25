@@ -55,6 +55,7 @@ extern double angle_between(double x1, double y1, double z1,
 extern size_t skipspace(const char *s);
 extern void chomp(char *s);
 extern void progress_bar(int val, int total);
+extern double poisson_noise(double expected);
 
 /* Keep these ones inline, to avoid function call overhead */
 static inline double distance(double x1, double y1, double x2, double y2)

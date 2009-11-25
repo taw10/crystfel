@@ -71,3 +71,25 @@ void progress_bar(int val, int total)
 
 	fflush(stdout);
 }
+
+
+double poisson_noise(double expected)
+{
+	double L;
+	int k;
+	double p = 1.0;
+
+	L = exp(-expected);
+
+	do {
+
+		double r;
+
+		k++;
+		r = (double)random()/RAND_MAX;
+		p *= r;
+
+	} while ( p > L );
+
+	return k - 1;
+}
