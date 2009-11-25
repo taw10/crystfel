@@ -99,9 +99,44 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
 }
 
 
-static double complex water_factor(struct threevec q, double en)
+double water_intensity(struct threevec q, double en)
 {
-	return 0.0;
+	complex double fH, fO;
+	double s, modq;
+	double intensity;
+
+	/* Interatomic distances in water molecule */
+	const double rOH = 0.09584e-9;
+	const double rHH = 0.1515e-9;
+
+	/* Dimensions of water column */
+	const double water_r = 0.5e-6;
+	const double beam_r = 1.5e-6;
+
+	/* Volume of water column */
+	const double water_v = M_PI*pow(water_r, 2.0) * 2.0 * beam_r;
+
+	/* Number of water molecules */
+	const double n_water = water_v * WATER_DENSITY
+	                                        * (AVOGADRO / WATER_MOLAR_MASS);
+
+	/* s = sin(theta)/lambda = 1/2d = |q|/2 */
+	modq = modulus(q.u, q.v, q.w);
+	s = modq / 2.0;
+
+	fH = get_sfac("H", s, en);
+	fO = get_sfac("O", s, en);
+
+	/* Four O-H cross terms */
+	intensity = 4.0*fH*fO * sin(modq*rOH)/(modq*rOH);
+
+	/* Three H-H cross terms */
+	intensity += 3.0*fH*fH * sin(modq*rHH)/(modq*rHH);
+
+	/* Three diagonal terms */
+	intensity += 2.0*fH*fH + fO*fO;
+
+	return intensity * n_water;
 }
 
 
@@ -137,7 +172,6 @@ void get_diffraction(struct image *image)
 
 		double f_lattice;
 		double complex f_molecule;
-		double complex f_water;
 		struct threevec q;
 		double complex val;
 
@@ -147,8 +181,7 @@ void get_diffraction(struct image *image)
 		f_molecule = molecule_factor(image->molecule, q,
 		                             ax,ay,az,bx,by,bz,cx,cy,cz);
 
-		f_water = water_factor(q, image->xray_energy);
-		val = (f_molecule * f_lattice) + f_water;
+		val = f_molecule * f_lattice;
 		image->sfacs[x + image->width*y] = val;
 
 	}

@@ -156,13 +156,15 @@ void record_image(struct image *image)
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
 
-		double counts;
-		double intensity;
-		double sa;
+		double counts,  intensity, sa;
 		double complex val;
 
 		val = image->sfacs[x + image->width*y];
 		intensity = (double)(val * conj(val));
+
+		/* Add intensity contribution from water */
+		intensity += water_intensity(image->qvecs[x + image->width*y],
+		                            image->xray_energy);
 
 		/* What solid angle is subtended by this pixel? */
 		sa = sa_per_pixel * cos(image->twotheta[x + image->width*y]);
