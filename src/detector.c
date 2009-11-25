@@ -17,6 +17,7 @@
 
 #include "image.h"
 #include "utils.h"
+#include "diffraction.h"
 
 
 /* Pulse energy density in J/m^2 */
