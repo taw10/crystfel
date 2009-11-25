@@ -140,7 +140,7 @@ void record_image(struct image *image)
 	int x, y;
 	double ph_per_e;
 	double sa_per_pixel;
-	const int do_bloom = 0;
+	const int do_bloom = 1;
 
 	/* How many photons are scattered per electron? */
 	ph_per_e = PULSE_ENERGY_DENSITY * pow(THOMSON_LENGTH, 2.0)
