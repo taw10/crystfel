@@ -89,9 +89,9 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
 	hd = q.u * ax + q.v * ay + q.w * az;
 	kd = q.u * bx + q.v * by + q.w * bz;
 	ld = q.u * cx + q.v * cy + q.w * cz;
-	h = (signed int)nearbyint(hd);
-	k = (signed int)nearbyint(kd);
-	l = (signed int)nearbyint(ld);
+	h = (signed int)rint(hd);
+	k = (signed int)rint(kd);
+	l = (signed int)rint(ld);
 
 	r = get_integral(mol->reflections, h, k, l);
 
