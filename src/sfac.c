@@ -394,6 +394,7 @@ double complex *get_reflections(struct molecule *mol, double en)
 	signed int h, k, l;
 	//double tscat = 0.0;
 	//double F00;
+	const int do_thermal = 1;
 
 	cell_get_reciprocal(mol->cell, &asx, &asy, &asz,
 	                               &bsx, &bsy, &bsz,
@@ -437,7 +438,11 @@ double complex *get_reflections(struct molecule *mol, double en)
 			}
 
 			sfac = get_sfac(spec->species, s, en);
-			F += sfac * contrib * exp(-2.0 * spec->B[j] * s);
+			F += sfac * contrib;
+
+			if ( do_thermal ) {
+				F *= exp(-2.0 * spec->B[j] * s);
+			}
 
 		}
 
