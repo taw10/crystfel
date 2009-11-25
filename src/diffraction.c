@@ -101,7 +101,7 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
 
 double water_intensity(struct threevec q, double en)
 {
-	complex double fH, fO;
+	double complex fH, fO;
 	double s, modq;
 	double intensity;
 
