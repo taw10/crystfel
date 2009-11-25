@@ -35,7 +35,7 @@
 #define THOMSON_LENGTH (2.81794e-15)
 
 /* Maxmimum index to go up to */
-#define INDMAX 20
+#define INDMAX 40
 #define IDIM (INDMAX*2 +1)
 
 
@@ -96,6 +96,13 @@ static inline double complex get_integral(double complex *ref, signed int h,
                                           signed int k, signed int l)
 {
 	int idx;
+
+	if ( (abs(h) > INDMAX) || (abs(k) > INDMAX) || (abs(l) > INDMAX) ) {
+		printf("\nReflection %i %i %i is out of range!\n", h, k, l);
+		printf("You need to re-configure INDMAX, delete the reflection"
+		       " cache file and re-run.\n");
+		exit(1);
+	}
 
 	if ( h < 0 ) h += IDIM;
 	if ( k < 0 ) k += IDIM;
