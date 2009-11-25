@@ -260,7 +260,6 @@ static void centre_molecule(struct molecule *mol)
 
 	printf("Molecule was shifted by %f,%f,%f nm\n",
 	       mol->xc*1e9, mol->yc*1e9, mol->zc*1e9);
-
 }
 
 
