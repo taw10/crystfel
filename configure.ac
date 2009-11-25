@@ -25,6 +25,6 @@ AC_ARG_WITH(hdf5,
 [HDF5_LIBS="-lhdf5"])
 
 CFLAGS="$CFLAGS $HDF5_CFLAGS"
-LIBS="$LIBS $HDF5_LIBS -lm -lgsl -lgslcblas"
+LIBS="$LIBS $HDF5_LIBS -lm -lz -lgsl -lgslcblas"
 
 AC_OUTPUT(Makefile src/Makefile)
