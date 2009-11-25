@@ -32,13 +32,16 @@ static double complex get_f1f2(const char *n, double en)
 	char *rval;
 	double last_E, last_f1, last_f2;
 	static char *memo_n[N_MEMO];
-	static double memo_en[N_MEMO];
+	static int memo_eV[N_MEMO];
 	static double complex memo_res[N_MEMO];
 	static int n_memo = 0;
+	int eV;
 	int i;
 
+	eV = (int)rint(J_to_eV(en));
+
 	for ( i=0; i<n_memo; i++ ) {
-		if ( (memo_en[i] == en) && (strcmp(memo_n[i], n) == 0) ) {
+		if ( (memo_eV[i] == eV) && (strcmp(memo_n[i], n) == 0) ) {
 			return memo_res[i];
 		}
 	}
@@ -97,7 +100,7 @@ static double complex get_f1f2(const char *n, double en)
 			res = actual_f1 + I*actual_f2;
 
 			memo_n[n_memo] = strdup(n);
-			memo_en[n_memo] = en;
+			memo_eV[n_memo] = eV;
 			memo_res[n_memo++] = res;
 			n_memo = n_memo % N_MEMO;
 
