@@ -48,25 +48,34 @@ struct quaternion
 };
 
 
-extern unsigned int biggest(signed int a, signed int b);
-extern unsigned int smallest(signed int a, signed int b);
-extern double distance(double x1, double y1, double x2, double y2);
-extern double modulus(double x, double y, double z);
-extern double modulus_squared(double x, double y, double z);
+/* --------------------------- Useful functions ----------------------------- */
+
 extern double angle_between(double x1, double y1, double z1,
                             double x2, double y2, double z2);
-extern double angle_between_d(double x1, double y1, double z1,
-                              double x2, double y2, double z2);
-extern double lambda(double voltage);
-extern double distance3d(double x1, double y1, double z1,
-                         double x2, double y2, double z2);
 extern size_t skipspace(const char *s);
 extern void chomp(char *s);
-extern int sign(double a);
-extern void mapping_rotate(double x, double y, double z,
-                           double *ddx, double *ddy, double *ddz,
-                           double omega, double tilt);
 extern void progress_bar(int val, int total);
+
+/* Keep these ones inline, to avoid function call overhead */
+static inline double distance(double x1, double y1, double x2, double y2)
+{
+	return sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
+}
+
+static inline double modulus(double x, double y, double z)
+{
+	return sqrt(x*x + y*y + z*z);
+}
+
+static inline double modulus_squared(double x, double y, double z) {
+	return x*x + y*y + z*z;
+}
+
+static inline double distance3d(double x1, double y1, double z1,
+                  double x2, double y2, double z2)
+{
+	return modulus(x1-x2, y1-y2, z1-z2);
+}
 
 
 /* ----------------------------- Useful macros ------------------------------ */
