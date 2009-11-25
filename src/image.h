@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <complex.h>
 
+#include "utils.h"
+
 
 /* How is the scaling of the image described? */
 typedef enum {
@@ -54,15 +56,6 @@ struct threevec
 	double   u;
 	double   v;
 	double   w;
-};
-
-
-struct quaternion
-{
-	double w;
-	double x;
-	double y;
-	double z;
 };
 
 

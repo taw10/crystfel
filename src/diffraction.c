@@ -93,7 +93,7 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
 	k = (signed int)rint(kd);
 	l = (signed int)rint(ld);
 
-	r = get_integral(mol->reflections, h, k, l);
+	r = lookup_sfac(mol->reflections, h, k, l);
 
 	return r;
 }

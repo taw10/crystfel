@@ -22,6 +22,8 @@
 #include <stdlib.h>
 
 
+/* -------------------------- Fundamental constants  ------------------------ */
+
 /* Electron charge in C */
 #define ELECTRON_CHARGE (1.6021773e-19)
 
@@ -34,9 +36,16 @@
 /* Thomson scattering length (m) */
 #define THOMSON_LENGTH (2.81794e-15)
 
-/* Maxmimum index to go up to */
-#define INDMAX 40
-#define IDIM (INDMAX*2 +1)
+
+/* --------------------------- Useful datatypes ----------------------------- */
+
+struct quaternion
+{
+	double w;
+	double x;
+	double y;
+	double z;
+};
 
 
 extern unsigned int biggest(signed int a, signed int b);
@@ -59,6 +68,9 @@ extern void mapping_rotate(double x, double y, double z,
                            double omega, double tilt);
 extern void progress_bar(int val, int total);
 
+
+/* ----------------------------- Useful macros ------------------------------ */
+
 #define rad2deg(a) ((a)*180/M_PI)
 #define deg2rad(a) ((a)*M_PI/180)
 
@@ -77,51 +89,27 @@ extern void progress_bar(int val, int total);
 #define J_to_eV(a) ((a)/ELECTRON_CHARGE)
 
 
-static inline void integrate_reflection(double complex *ref, signed int h,
-                                        signed int k, signed int l,
-                                        double complex i)
-{
-	int idx;
+/* -------------------- Indexed lists for specified types ------------------- */
 
-	if ( h < 0 ) h += IDIM;
-	if ( k < 0 ) k += IDIM;
-	if ( l < 0 ) l += IDIM;
+/* Maxmimum index to hold values up to (can be increased if necessary) */
+#define INDMAX 40
 
-	idx = h + (IDIM*k) + (IDIM*IDIM*l);
-	ref[idx] += i;
-}
+/* Array size */
+#define IDIM (INDMAX*2 +1)
 
+/* Create functions for storing reflection intensities indexed as h,k,l */
+#define LABEL(x) x##_intensity
+#define TYPE double
+#include "list_tmp.h"
 
-static inline double complex get_integral(double complex *ref, signed int h,
-                                          signed int k, signed int l)
-{
-	int idx;
+/* As above, but for complex structure factors */
+#define LABEL(x) x##_sfac
+#define TYPE double complex
+#include "list_tmp.h"
 
-	if ( (abs(h) > INDMAX) || (abs(k) > INDMAX) || (abs(l) > INDMAX) ) {
-		printf("\nReflection %i %i %i is out of range!\n", h, k, l);
-		printf("You need to re-configure INDMAX, delete the reflection"
-		       " cache file and re-run.\n");
-		exit(1);
-	}
-
-	if ( h < 0 ) h += IDIM;
-	if ( k < 0 ) k += IDIM;
-	if ( l < 0 ) l += IDIM;
-
-	idx = h + (IDIM*k) + (IDIM*IDIM*l);
-	return ref[idx];
-}
-
-
-static inline double complex *reflist_new(void)
-{
-	double complex *r;
-	size_t r_size;
-	r_size = IDIM*IDIM*IDIM*sizeof(double complex);
-	r = malloc(r_size);
-	memset(r, 0, r_size);
-	return r;
-}
-
+/* As above, but for (unsigned) integer counts */
+#define LABEL(x) x##_count
+#define TYPE unsigned int
+#include "list_tmp.h"
 
 #endif	/* UTILS_H */

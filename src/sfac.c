@@ -400,7 +400,7 @@ double complex *get_reflections(struct molecule *mol, double en)
 	                               &bsx, &bsy, &bsz,
 	                               &csx, &csy, &csz);
 
-	reflections = reflist_new();
+	reflections = new_list_sfac();
 
 	for ( h=-INDMAX; h<=INDMAX; h++ ) {
 	for ( k=-INDMAX; k<=INDMAX; k++ ) {
@@ -446,7 +446,7 @@ double complex *get_reflections(struct molecule *mol, double en)
 
 		}
 
-		integrate_reflection(reflections, h, k, l, F);
+		set_sfac(reflections, h, k, l, F);
 		//if ( (h!=0) || (k!=0) || (l!=0) ) {
 		//	tscat += cabs(F);
 		//} else {
@@ -477,7 +477,7 @@ void get_reflections_cached(struct molecule *mol, double en)
 		goto calc;
 	}
 
-	mol->reflections = reflist_new();
+	mol->reflections = new_list_sfac();
 	r = fread(mol->reflections, sizeof(double complex), IDIM*IDIM*IDIM, fh);
 	if ( r <  IDIM*IDIM*IDIM ) {
 		printf("Found cache file (%s), but failed to read.\n", s);
