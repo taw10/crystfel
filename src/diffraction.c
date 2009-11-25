@@ -103,7 +103,7 @@ double water_intensity(struct threevec q, double en)
 {
 	double complex fH, fO;
 	double s, modq;
-	double intensity;
+	double complex ifac;
 
 	/* Interatomic distances in water molecule */
 	const double rOH = 0.09584e-9;
@@ -128,15 +128,15 @@ double water_intensity(struct threevec q, double en)
 	fO = get_sfac("O", s, en);
 
 	/* Four O-H cross terms */
-	intensity = 4.0*fH*fO * sin(modq*rOH)/(modq*rOH);
+	ifac = 4.0*fH*fO * sin(2.0*M_PI*modq*rOH)/(2.0*M_PI*modq*rOH);
 
 	/* Three H-H cross terms */
-	intensity += 3.0*fH*fH * sin(modq*rHH)/(modq*rHH);
+	ifac += 3.0*fH*fH * sin(2.0*M_PI*modq*rHH)/(2.0*M_PI*modq*rHH);
 
 	/* Three diagonal terms */
-	intensity += 2.0*fH*fH + fO*fO;
+	ifac += 2.0*fH*fH + fO*fO;
 
-	return intensity * n_water;
+	return cabs(ifac) * n_water;
 }
 
 
