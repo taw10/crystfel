@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #include "image.h"
 #include "diffraction.h"
@@ -30,11 +31,21 @@
 #define CRYSTAL_SIZE (500.0e-9)
 
 
-static void main_show_help(const char *s)
+static void show_help(const char *s)
 {
-	printf("Syntax: %s <file1.h5> <file2.h5> [...]\n\n", s);
-	printf("Simulate diffraction patterns\n\n");
-	printf("  -h              Display this help message\n");
+	printf("Syntax: %s\n\n", s);
+	printf("Simulate diffraction patterns from small crystals\n");
+	printf(" probed with femosecond pulses from a free electron laser\n\n");
+	printf("  -h, --help            Display this help message\n");
+	printf("  --simulation-details  Show details of the simulation\n");
+}
+
+
+static void show_details(const char *s)
+{
+	printf("%s: Simulation Details\n\n", s);
+	printf("Simulates diffraction patterns from small crystals\n");
+	printf("probed with femtosecond pulses from a free electron laser\n\n");
 }
 
 
@@ -44,18 +55,36 @@ int main(int argc, char *argv[])
 	struct image image;
 	char filename[1024];
 	int number = 1;
+	int config_simdetails = 0;
 
-	while ((c = getopt(argc, argv, "h")) != -1) {
+	const struct option longopts[] = {
+	      {"help", 0, NULL, 'h'},
+	      {"simulation-details", 0, &config_simdetails, 1},
+	      {0, 0, NULL, 0}
+	};
 
-		switch ( c ) {
+	while ((c = getopt_long(argc, argv, "h", longopts, NULL)) != -1) {
 
-			case 'h' : {
-				main_show_help(argv[0]);
-				return 0;
-			}
-
+		switch (c) {
+		case 'h' : {
+			show_help(argv[0]);
+			return 0;
 		}
 
+		case 0 : {
+			break;
+		}
+
+		default : {
+			return 1;
+		}
+		}
+
+	}
+
+	if ( config_simdetails ) {
+		show_details(argv[0]);
+		return 0;
 	}
 
 	/* Define image parameters */
