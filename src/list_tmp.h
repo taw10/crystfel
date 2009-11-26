@@ -1,3 +1,24 @@
+/*
+ * Template for creating indexed 3D lists of a given type, usually indexed
+ * as signed h,k,l values where -INDMAX<={h,k,l}<=+INDMAX.
+ *
+ * These are used, for example, for:
+ *  - a list of 'double complex' values for storing structure factors,
+ *  - a list of 'double' values for storing reflection intensities,
+ *  - a list of 'unsigned int' values for counts of some sort.
+ *
+ * When LABEL and TYPE are #defined appropriately, including this header
+ * defines functions such as:
+ *  - new_list_<LABEL>(), for creating a new list of the given type,
+ *  - set_<LABEL>(), for setting a value in a list,
+ *  - lookup_<LABEL>(), for retrieving values from a list,
+ * ..and so on.
+ *
+ * See src/utils.h for more information.
+ *
+ */
+
+
 static inline void LABEL(integrate)(TYPE *ref, signed int h,
                                     signed int k, signed int l,
                                     TYPE i)
@@ -72,3 +93,7 @@ static inline TYPE *LABEL(new_list)(void)
 	memset(r, 0, r_size);
 	return r;
 }
+
+
+#undef LABEL
+#undef TYPE
