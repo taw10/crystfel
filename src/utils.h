@@ -56,6 +56,11 @@ struct quaternion
 	double z;
 };
 
+extern struct quaternion normalise_quaternion(struct quaternion q);
+extern double quaternion_modulus(struct quaternion q);
+extern struct quaternion random_quaternion(void);
+extern int quaternion_valid(struct quaternion q);
+
 
 /* --------------------------- Useful functions ----------------------------- */
 
@@ -67,6 +72,16 @@ extern void progress_bar(int val, int total, const char *text);
 extern double poisson_noise(double expected);
 
 /* Keep these ones inline, to avoid function call overhead */
+static inline struct quaternion invalid_quaternion(void)
+{
+	struct quaternion quat;
+	quat.w = 0.0;
+	quat.x = 0.0;
+	quat.y = 0.0;
+	quat.z = 0.0;
+	return quat;
+}
+
 static inline double distance(double x1, double y1, double x2, double y2)
 {
 	return sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));

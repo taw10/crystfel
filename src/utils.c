@@ -94,3 +94,53 @@ double poisson_noise(double expected)
 
 	return k - 1;
 }
+
+
+double quaternion_modulus(struct quaternion q)
+{
+	return sqrt(q.w*q.w + q.x*q.x + q.y*q.y + q.z*q.z);
+}
+
+
+struct quaternion normalise_quaternion(struct quaternion q)
+{
+	double mod;
+	struct quaternion r;
+
+	mod = quaternion_modulus(q);
+
+	r.w = q.w / mod;
+	r.x = q.x / mod;
+	r.y = q.y / mod;
+	r.z = q.z / mod;
+
+	return r;
+}
+
+
+struct quaternion random_quaternion()
+{
+	struct quaternion q;
+
+	q.w = (double)random()/RAND_MAX;
+	q.x = (double)random()/RAND_MAX;
+	q.y = (double)random()/RAND_MAX;
+	q.z = (double)random()/RAND_MAX;
+	normalise_quaternion(q);
+
+	return q;
+}
+
+
+int quaternion_valid(struct quaternion q)
+{
+	double qmod;
+
+	qmod = quaternion_modulus(q);
+
+	/* Modulus = 1 to within some tolerance?
+	 * Nasty allowance for floating-point accuracy follows... */
+	if ( (qmod > 0.999) && (qmod < 1.001) ) return 1;
+
+	return 0;
+}
