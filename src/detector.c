@@ -138,17 +138,21 @@ static uint16_t *bloom(double *hdr_in, int width, int height)
 void record_image(struct image *image)
 {
 	int x, y;
+	double fluence;
 	double ph_per_e;
 	double sa_per_pixel;
+	double area;
 	const int do_bloom = 1;
 
 	/* How many photons are scattered per electron? */
-	ph_per_e = PULSE_ENERGY_DENSITY * pow(THOMSON_LENGTH, 2.0)
-	          / image->xray_energy;
-	printf("%e photons are scattered per electron\n", ph_per_e);
+	area = M_PI*pow(BEAM_RADIUS, 2.0);
+	fluence = PULSE_ENERGY_DENSITY / image->xray_energy;
+	ph_per_e = fluence * pow(THOMSON_LENGTH, 2.0);
+	printf("Fluence = %5e photons / m^2, %5e photons total\n",
+	       fluence, fluence*area);
 
 	/* Solid angle subtended by a single pixel at the centre of the CCD */
-	sa_per_pixel = pow(1.0/image->resolution, 2.0) / image->camera_len;
+	sa_per_pixel = pow(1.0/(image->resolution * image->camera_len), 2.0);
 	printf("Solid angle of one pixel (at centre of CCD) = %e sr\n",
 	       sa_per_pixel);
 
@@ -161,15 +165,14 @@ void record_image(struct image *image)
 		double complex val;
 
 		val = image->sfacs[x + image->width*y];
-		intensity = (double)(val * conj(val));
+		intensity = pow(cabs(val), 2.0);
 
 		/* Add intensity contribution from water */
 		water = water_intensity(image->qvecs[x + image->width*y],
 		                        image->xray_energy);
 
-		//printf("%e + %e", intensity, water);
+		//printf("%e, %e, ", intensity, water);
 		intensity += water;
-		//printf(" = %e\n", intensity);
 
 		/* What solid angle is subtended by this pixel? */
 		sa = sa_per_pixel * cos(image->twotheta[x + image->width*y]);
