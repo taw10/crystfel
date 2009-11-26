@@ -23,15 +23,8 @@
 #include "diffraction.h"
 #include "sfac.h"
 
-
-/* Density of water in kg/m^3 */
-#define WATER_DENSITY (1.0e6)
-
-/* Molar mass of water, in kg/mol */
-#define WATER_MOLAR_MASS (18.01528e3)
-
-/* Avogadro's number */
-#define AVOGADRO (6.022e23)
+/* Radius of beam (m) */
+#define BEAM_RADIUS (1.5e-6)
 
 
 static double lattice_factor(struct threevec q, double ax, double ay, double az,
@@ -99,7 +92,8 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
 }
 
 
-double water_intensity(struct threevec q, double en)
+double water_intensity(struct threevec q, double en,
+                       double beam_r, double water_r)
 {
 	double complex fH, fO;
 	double s, modq;
@@ -108,10 +102,6 @@ double water_intensity(struct threevec q, double en)
 	/* Interatomic distances in water molecule */
 	const double rOH = 0.09584e-9;
 	const double rHH = 0.1515e-9;
-
-	/* Dimensions of water column */
-	const double water_r = 0.5e-6;
-	const double beam_r = 1.5e-6;
 
 	/* Volume of water column */
 	const double water_v = M_PI*pow(water_r, 2.0) * 2.0 * beam_r;
