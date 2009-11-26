@@ -27,10 +27,6 @@
 #include "detector.h"
 
 
-/* Crystal size in metres */
-#define CRYSTAL_SIZE (500.0e-9)
-
-
 static void show_help(const char *s)
 {
 	printf("Syntax: %s\n\n", s);

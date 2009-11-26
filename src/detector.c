@@ -146,7 +146,7 @@ void record_image(struct image *image)
 	int x, y;
 	double fluence;
 	double ph_per_e;
-	double sa_per_pixel;
+	double pix_area, Lsq;
 	double area;
 	const int do_bloom = 1;
 
@@ -157,10 +157,9 @@ void record_image(struct image *image)
 	printf("Fluence = %5e photons / m^2, %5e photons total\n",
 	       fluence, fluence*area);
 
-	/* Solid angle subtended by a single pixel at the centre of the CCD */
-	sa_per_pixel = pow(1.0/(image->resolution * image->camera_len), 2.0);
-	printf("Solid angle of one pixel (at centre of CCD) = %e sr\n",
-	       sa_per_pixel);
+	/* Area of one pixel */
+	pix_area = pow(1.0/image->resolution, 2.0);
+	Lsq = pow(image->camera_len, 2.0);
 
 	image->hdr = malloc(image->width * image->height * sizeof(double));
 
@@ -169,6 +168,7 @@ void record_image(struct image *image)
 
 		double counts, intensity, sa, water;
 		double complex val;
+		double dsq, proj_area;
 
 		val = image->sfacs[x + image->width*y];
 		intensity = pow(cabs(val), 2.0);
@@ -181,13 +181,20 @@ void record_image(struct image *image)
 		//printf("%e, %e, ", intensity, water);
 		intensity += water;
 
-		/* What solid angle is subtended by this pixel? */
-		sa = sa_per_pixel * cos(image->twotheta[x + image->width*y]);
+		/* Area of pixel as seen from crystal (approximate) */
+		proj_area = pix_area * cos(image->twotheta[x + image->width*y]);
+
+		/* Calculate distance from crystal to pixel */
+		dsq = pow(((double)x - image->x_centre)/image->resolution, 2.0);
+		dsq += pow(((double)y - image->y_centre)/image->resolution, 2.0);
+
+		/* Projected area of pixel divided by distance squared */
+		sa = proj_area / (dsq + Lsq);
 
 		counts = intensity * ph_per_e * sa;
 		//printf("%e counts\n", counts);
 
-		counts += poisson_noise(counts);
+		counts = poisson_noise(counts);
 
 		image->hdr[x + image->width*y] = counts;
 
