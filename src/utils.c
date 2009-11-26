@@ -77,7 +77,7 @@ void progress_bar(int val, int total, const char *text)
 double poisson_noise(double expected)
 {
 	double L;
-	int k;
+	int k = 0;
 	double p = 1.0;
 
 	L = exp(-expected);

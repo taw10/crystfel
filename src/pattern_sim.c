@@ -201,4 +201,6 @@ int main(int argc, char *argv[])
 		if ( n_images && (number >= n_images) ) done = 1;
 
 	} while ( !done );
+
+	return 0;
 }
