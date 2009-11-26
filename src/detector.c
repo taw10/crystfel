@@ -194,7 +194,7 @@ void record_image(struct image *image)
 		counts = intensity * ph_per_e * sa;
 		//printf("%e counts\n", counts);
 
-		counts += poisson_noise(counts);
+		counts = poisson_noise(counts);
 
 		image->hdr[x + image->width*y] = counts;
 
