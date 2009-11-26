@@ -29,8 +29,11 @@
 /* Detector's saturation value */
 #define SATURATION (60000)
 
+/* Radius of the water column */
+#define WATER_RADIUS (2.0e-6 / 2.0)
+
 /* Radius of X-ray beam */
-#define BEAM_RADIUS (3.0e-6)
+#define BEAM_RADIUS (5.0e-6 / 2.0)
 
 
 /* Bleed excess intensity into neighbouring pixels */
@@ -173,7 +176,7 @@ void record_image(struct image *image)
 		/* Add intensity contribution from water */
 		water = water_intensity(image->qvecs[x + image->width*y],
 		                        image->xray_energy,
-		                        BEAM_RADIUS, 1.5e-6);
+		                        BEAM_RADIUS, WATER_RADIUS);
 
 		//printf("%e, %e, ", intensity, water);
 		intensity += water;

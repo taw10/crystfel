@@ -23,9 +23,6 @@
 #include "diffraction.h"
 #include "sfac.h"
 
-/* Radius of beam (m) */
-#define BEAM_RADIUS (1.5e-6)
-
 
 static double lattice_factor(struct threevec q, double ax, double ay, double az,
                                                 double bx, double by, double bz,
