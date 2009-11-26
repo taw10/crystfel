@@ -119,6 +119,21 @@ static double complex get_f1f2(const char *n, double en)
 }
 
 
+struct waas_kirf_factors {
+	char *n;
+	float a1;
+	float a2;
+	float a3;
+	float a4;
+	float a5;
+	float b1;
+	float b2;
+	float b3;
+	float b4;
+	float b5;
+	float c;
+};
+
 /* s = sin(theta)/lambda in metres^-1*/
 static double get_waas_kirf(const char *n, double s)
 {
@@ -127,65 +142,96 @@ static double get_waas_kirf(const char *n, double s)
 	double f;
 	float a1, a2, a3, a4, a5, c, b1, b2, b3, b4, b5;
 	double s2;
-	static char *memo_n[N_MEMO];
-	static double memo_s[N_MEMO];
-	static double memo_res[N_MEMO];
-	static int n_memo = 0;
 	int i;
+	static struct waas_kirf_factors waaskirfcache[N_MEMO];
+	int found;
+	static int n_waaskirfcache = 0;
 
-	for ( i=0; i<n_memo; i++ ) {
-		if ( (memo_s[i] == s) && (strcmp(memo_n[i], n) == 0) ) {
-			return memo_res[i];
+	found = 0;
+	for ( i=0; i<n_waaskirfcache; i++ ) {
+		if ( strcmp(waaskirfcache[i].n, n) == 0 ) {
+
+			found = 1;
+
+			a1 = waaskirfcache[n_waaskirfcache].a1;
+			a2 = waaskirfcache[n_waaskirfcache].a2;
+			a3 = waaskirfcache[n_waaskirfcache].a3;
+			a4 = waaskirfcache[n_waaskirfcache].a4;
+			a5 = waaskirfcache[n_waaskirfcache].a5;
+			b1 = waaskirfcache[n_waaskirfcache].b1;
+			b2 = waaskirfcache[n_waaskirfcache].b2;
+			b3 = waaskirfcache[n_waaskirfcache].b3;
+			b4 = waaskirfcache[n_waaskirfcache].b4;
+			b5 = waaskirfcache[n_waaskirfcache].b5;
+			c = waaskirfcache[n_waaskirfcache].c;
+
+			break;
 		}
 	}
 
-	fh = fopen("scattering-factors/f0_WaasKirf.dat", "r");
-	if ( fh == NULL ) {
-		fprintf(stderr, "Couldn't open f0_WaasKirf.dat\n");
-		return 0.0;
-	}
+	if ( !found ) {
 
-	do {
-
-		int r;
-		char line[1024];
-		char sp[1024];
-		int Z;
-
-		rval = fgets(line, 1023, fh);
-
-		if ( (line[0] != '#') || (line[1] != 'S') ) continue;
-
-		r = sscanf(line, "#S  %i  %s", &Z, sp);
-		if ( (r != 2) || (strcmp(sp, n) != 0) ) continue;
-
-		/* Skip two lines */
-		fgets(line, 1023, fh);
-		fgets(line, 1023, fh);
-
-		/* Read scattering coefficients */
-		rval = fgets(line, 1023, fh);
-		r = sscanf(line, "  %f  %f  %f  %f  %f  %f  %f %f %f %f %f",
-		          &a1, &a2, &a3, &a4, &a5, &c, &b1, &b2, &b3, &b4, &b5);
-		if ( r != 11 ) {
-			fprintf(stderr, "Couldn't read scattering factors\n");
+		fh = fopen("scattering-factors/f0_WaasKirf.dat", "r");
+		if ( fh == NULL ) {
+			fprintf(stderr, "Couldn't open f0_WaasKirf.dat\n");
 			return 0.0;
 		}
 
-		break;
+		do {
 
-	} while ( rval != NULL );
+			int r;
+			char line[1024];
+			char sp[1024];
+			int Z;
 
-	fclose(fh);
+			rval = fgets(line, 1023, fh);
+
+			if ( (line[0] != '#') || (line[1] != 'S') ) continue;
+
+			r = sscanf(line, "#S  %i  %s", &Z, sp);
+			if ( (r != 2) || (strcmp(sp, n) != 0) ) continue;
+
+			/* Skip two lines */
+			fgets(line, 1023, fh);
+			fgets(line, 1023, fh);
+
+			/* Read scattering coefficients */
+			rval = fgets(line, 1023, fh);
+			r = sscanf(line,
+			             "  %f  %f  %f  %f  %f  %f  %f %f %f %f %f",
+			            &a1, &a2, &a3, &a4, &a5, &c,
+			            &b1, &b2, &b3, &b4, &b5);
+			if ( r != 11 ) {
+				fprintf(stderr, "Couldn't read scattering "
+				                "factors (WaasKirf)\n");
+				return 0.0;
+			}
+
+			break;
+
+		} while ( rval != NULL );
+
+		fclose(fh);
+
+		waaskirfcache[n_waaskirfcache].a1 = a1;
+		waaskirfcache[n_waaskirfcache].a2 = a2;
+		waaskirfcache[n_waaskirfcache].a3 = a3;
+		waaskirfcache[n_waaskirfcache].a4 = a4;
+		waaskirfcache[n_waaskirfcache].a5 = a5;
+		waaskirfcache[n_waaskirfcache].c = c;
+		waaskirfcache[n_waaskirfcache].b1 = b1;
+		waaskirfcache[n_waaskirfcache].b2 = b2;
+		waaskirfcache[n_waaskirfcache].b3 = b3;
+		waaskirfcache[n_waaskirfcache].b4 = b4;
+		waaskirfcache[n_waaskirfcache].b5 = b5;
+		waaskirfcache[n_waaskirfcache++].n = strdup(n);
+		n_waaskirfcache = n_waaskirfcache % N_MEMO;  /* Unlikely */
+
+	}
 
 	s2 = pow(s/1e10, 2.0);  /* s2 is s squared in Angstroms^-2 */
 	f = c + a1*exp(-b1*s2) + a2*exp(-b2*s2) + a3*exp(-b3*s2)
 	      + a4*exp(-b4*s2) + a5*exp(-b5*s2);
-
-	memo_n[n_memo] = strdup(n);
-	memo_s[n_memo] = s;
-	memo_res[n_memo++] = f;
-	n_memo = n_memo % N_MEMO;
 
 	return f;
 }
