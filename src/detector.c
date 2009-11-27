@@ -20,8 +20,8 @@
 #include "diffraction.h"
 
 
-/* Pulse energy density in J/m^2 */
-#define PULSE_ENERGY_DENSITY (30.0e7)
+/* Number of photons in pulse */
+#define FLUENCE (1.0e13)
 
 /* Detector's quantum efficiency */
 #define DQE (0.9)
@@ -144,7 +144,7 @@ static uint16_t *bloom(double *hdr_in, int width, int height)
 void record_image(struct image *image)
 {
 	int x, y;
-	double fluence;
+	double total_energy, energy_density;
 	double ph_per_e;
 	double pix_area, Lsq;
 	double area;
@@ -152,10 +152,13 @@ void record_image(struct image *image)
 
 	/* How many photons are scattered per electron? */
 	area = M_PI*pow(BEAM_RADIUS, 2.0);
-	fluence = PULSE_ENERGY_DENSITY / image->xray_energy;
-	ph_per_e = fluence * pow(THOMSON_LENGTH, 2.0);
-	printf("Fluence = %5e photons / m^2, %5e photons total\n",
-	       fluence, fluence*area);
+	total_energy = FLUENCE * image->xray_energy;
+	energy_density = total_energy / area;
+	ph_per_e = (FLUENCE/area) * pow(THOMSON_LENGTH, 2.0);
+	printf("Fluence = %8.2e photons, "
+	       "Energy density = %5.3f kJ/cm^2, "
+	       "Total energy = %5.3f microJ\n",
+	       FLUENCE, energy_density/1e7, total_energy*1e6);
 
 	/* Area of one pixel */
 	pix_area = pow(1.0/image->resolution, 2.0);
