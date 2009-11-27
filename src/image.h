@@ -119,6 +119,4 @@ extern struct imagefeature *image_feature_closest(ImageFeatureList *flist,
 extern int image_feature_count(ImageFeatureList *flist);
 extern struct imagefeature *image_get_feature(ImageFeatureList *flist, int idx);
 
-extern void record_image(struct image *image);
-
 #endif	/* IMAGE_H */
