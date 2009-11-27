@@ -94,7 +94,7 @@ void get_ewald(struct image *image)
 		if ( (x==0) && (y==(int)image->y_centre) ) {
 			double s;
 			s = 1.0e-9*modulus(qx, qy, qz)/2.0;
-			printf("At left edge: 2theta = %5.3f deg,"
+			STATUS("At left edge: 2theta = %5.3f deg,"
 			       " sin(theta)/lambda = %5.3f nm^-1,"
 			       " d = %5.3f nm\n",
 			       rad2deg(twotheta), s, 1.0/(2.0*s));
@@ -102,7 +102,7 @@ void get_ewald(struct image *image)
 		if ( (x==0) && (y==0) ) {
 			double s;
 			s = 1.0e-9*modulus(qx, qy, qz)/2.0;
-			printf("   At corner: 2theta = %5.3f deg,"
+			STATUS("   At corner: 2theta = %5.3f deg,"
 			       " sin(theta)/lambda = %5.3f nm^-1,"
 			       " d = %5.3f nm\n",
 			       rad2deg(twotheta), s, 1.0/(2.0*s));

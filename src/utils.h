@@ -146,4 +146,11 @@ static inline double distance3d(double x1, double y1, double z1,
 #define TYPE unsigned int
 #include "list_tmp.h"
 
+
+/* ------------------------------ Message macros ---------------------------- */
+
+#define ERROR(...) fprintf(stderr, __VA_ARGS__)
+#define STATUS(...) fprintf(stderr, __VA_ARGS__)
+
+
 #endif	/* UTILS_H */

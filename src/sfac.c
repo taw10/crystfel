@@ -49,7 +49,7 @@ static double complex get_f1f2(const char *n, double en)
 	snprintf(filename, 63, "scattering-factors/%s.nff", n);
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
-		fprintf(stderr, "Couldn't open file '%s'\n", filename);
+		ERROR("Couldn't open file '%s'\n", filename);
 		return 0.0;
 	}
 
@@ -71,7 +71,7 @@ static double complex get_f1f2(const char *n, double en)
 
 		r = sscanf(line, "%f %f %f", &E_f, &f1_f, &f2_f);
 		if ( r != 3 ) {
-			fprintf(stderr, "WTF?\n");
+			ERROR("WTF?\n");
 			abort();
 		}
 		/* Promote to double precision */
@@ -112,8 +112,7 @@ static double complex get_f1f2(const char *n, double en)
 
 	fclose(fh);
 
-	fprintf(stderr, "Couldn't find scattering factors for '%s' at %f eV!\n",
-	        n, en);
+	ERROR("Couldn't find scattering factors for '%s' at %f eV!\n", n, en);
 
 	return 0.0;
 }
@@ -173,7 +172,7 @@ static double get_waas_kirf(const char *n, double s)
 
 		fh = fopen("scattering-factors/f0_WaasKirf.dat", "r");
 		if ( fh == NULL ) {
-			fprintf(stderr, "Couldn't open f0_WaasKirf.dat\n");
+			ERROR("Couldn't open f0_WaasKirf.dat\n");
 			return 0.0;
 		}
 
@@ -202,8 +201,8 @@ static double get_waas_kirf(const char *n, double s)
 			            &a1, &a2, &a3, &a4, &a5, &c,
 			            &b1, &b2, &b3, &b4, &b5);
 			if ( r != 11 ) {
-				fprintf(stderr, "Couldn't read scattering "
-				                "factors (WaasKirf)\n");
+				ERROR("Couldn't read scattering "
+				      "factors (WaasKirf)\n");
 				return 0.0;
 			}
 
@@ -304,7 +303,7 @@ static void centre_molecule(struct molecule *mol)
 
 	}
 
-	printf("Molecule was shifted by %5.3f, %5.3f, %5.3f nm\n",
+	STATUS("Molecule was shifted by %5.3f, %5.3f, %5.3f nm\n",
 	       mol->xc*1e9, mol->yc*1e9, mol->zc*1e9);
 }
 
@@ -334,7 +333,7 @@ struct molecule *load_molecule()
 
 	fh = fopen("molecule.pdb", "r");
 	if ( fh == NULL ) {
-                fprintf(stderr, "Couldn't open file\n");
+                ERROR("Couldn't open file\n");
                 return NULL;
         }
 
@@ -366,7 +365,7 @@ struct molecule *load_molecule()
 		coords = line + 29;
 		r = sscanf(coords, "%f %f %f %f %f", &xf, &yf, &zf, &occf, &Bf);
 		if ( r != 5 ) {
-			fprintf(stderr, "WTF?\n");
+			ERROR("WTF?\n");
 			abort();
 		}
 		/* Promote to double precision */
@@ -421,9 +420,9 @@ struct molecule *load_molecule()
 
 	centre_molecule(mol);
 
-	printf("There are %i species\n", mol->n_species);
+	STATUS("There are %i species\n", mol->n_species);
 	for ( i=0; i<mol->n_species; i++ ) {
-		printf("%3s : %6i\n", mol->species[i]->species,
+		STATUS("%3s : %6i\n", mol->species[i]->species,
 		       mol->species[i]->n_atoms);
 	}
 
@@ -504,7 +503,7 @@ double complex *get_reflections(struct molecule *mol, double en)
 	             "Calculating structure factors");
 	}
 	}
-	//printf("Total scattered = %f, F000 = %f\n", tscat, F00);
+	//STATUS("Total scattered = %f, F000 = %f\n", tscat, F00);
 
 	return reflections;
 }
@@ -520,37 +519,37 @@ void get_reflections_cached(struct molecule *mol, double en)
 	snprintf(s, 1023, "reflections-%ieV.cache", (int)(J_to_eV(en)+0.5));
 	fh = fopen(s, "rb");
 	if ( fh == NULL ) {
-		printf("No cache file found (looked for %s)\n", s);
+		STATUS("No cache file found (looked for %s)\n", s);
 		goto calc;
 	}
 
 	mol->reflections = new_list_sfac();
 	r = fread(mol->reflections, sizeof(double complex), IDIM*IDIM*IDIM, fh);
 	if ( r < IDIM*IDIM*IDIM ) {
-		printf("Found cache file (%s), but failed to read.\n", s);
+		STATUS("Found cache file (%s), but failed to read.\n", s);
 		goto calc;
 	}
 
-	printf("Read structure factors (at Bragg positions) from %s\n", s);
+	STATUS("Read structure factors (at Bragg positions) from %s\n", s);
 	return;
 
 calc:
-	printf("Calculating structure factors at Bragg positions...\n");
+	STATUS("Calculating structure factors at Bragg positions...\n");
 	mol->reflections = get_reflections(mol, en);
 	fh = fopen(s, "wb");
 	if ( fh == NULL ) {
-		printf("Failed to write cache file (%s)\n", s);
+		STATUS("Failed to write cache file (%s)\n", s);
 		return;
 	}
 
 	r = fwrite(mol->reflections, sizeof(double complex),
 	           IDIM*IDIM*IDIM, fh);
 	if ( r < IDIM*IDIM*IDIM ) {
-		printf("Failed to write cache file (%s)\n", s);
+		STATUS("Failed to write cache file (%s)\n", s);
 		return;
 	}
 	fclose(fh);
 
-	printf("Successfully saved structure factors at Bragg positions to"
+	STATUS("Successfully saved structure factors at Bragg positions to"
 	       " file %s\n", s);
 }

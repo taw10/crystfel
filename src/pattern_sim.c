@@ -121,7 +121,7 @@ static struct quaternion read_quaternion()
 			return quat;
 
 		} else {
-			fprintf(stderr, "Invalid rotation '%s'\n", line);
+			ERROR("Invalid rotation '%s'\n", line);
 		}
 
 	} while ( 1 );
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
 	image.molecule = NULL;
 
 	/* Splurge a few useful numbers */
-	printf("Wavelength is %f nm\n", image.lambda/1.0e-9);
+	STATUS("Wavelength is %f nm\n", image.lambda/1.0e-9);
 
 	do {
 
@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
 		}
 
 		if ( quaternion_valid(image.orientation) ) {
-			fprintf(stderr, "Orientation modulus is not zero!\n");
+			ERROR("Orientation modulus is not zero!\n");
 			return 1;
 		}
 

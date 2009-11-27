@@ -86,8 +86,7 @@ void get_reflections(struct image *image, UnitCell *cell, double smax)
 		res_max = sqrt(w2 + h2) / image->resolution;
 		res_max *= (wavenumber / image->camera_len);
 	} else {
-		fprintf(stderr,
-			"Unrecognised formulation mode in get_reflections"
+		ERROR("Unrecognised formulation mode in get_reflections"
 			" (resolution cutoff calculation)\n");
 		return;
 	}
@@ -172,9 +171,8 @@ void get_reflections(struct image *image, UnitCell *cell, double smax)
 				x /= image->pixel_size;
 				y /= image->pixel_size;
 			} else {
-				fprintf(stderr,
-					"Unrecognised formulation mode "
-					"in get_reflections\n");
+				ERROR("Unrecognised formulation mode "
+				      "in get_reflections\n");
 				return;
 			}
 

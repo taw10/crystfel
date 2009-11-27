@@ -66,9 +66,9 @@ void progress_bar(int val, int total, const char *text)
 	for ( i=0; i<n; i++ ) s[i] = '=';
 	for ( i=n; i<width; i++ ) s[i] = '.';
 	s[width] = '\0';
-	printf("\r%s: |%s|", text, s);
+	STATUS("\r%s: |%s|", text, s);
 
-	if ( val == total ) printf("\n");
+	if ( val == total ) STATUS("\n");
 
 	fflush(stdout);
 }

@@ -76,13 +76,6 @@ static void cell_update_crystallographic(UnitCell *cell)
 					cell->cx, cell->cy, cell->cz);
 	cell->gamma = angle_between(cell->ax, cell->ay, cell->az,
 					cell->bx, cell->by, cell->bz);
-
-	printf("a=%f nm\n", cell->a/1e9);
-	printf("b=%f nm\n", cell->b/1e9);
-	printf("c=%f nm\n", cell->c/1e9);
-	printf("alpha = %f deg\n", rad2deg(cell->alpha));
-	printf(" beta = %f deg\n", rad2deg(cell->beta));
-	printf("gamma = %f deg\n", rad2deg(cell->gamma));
 }
 
 

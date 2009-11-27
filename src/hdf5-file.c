@@ -33,13 +33,13 @@ int hdf5_write(const char *filename, const uint16_t *data,
 
 	fh = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	if ( fh < 0 ) {
-		fprintf(stderr, "Couldn't create file: %s\n", filename);
+		ERROR("Couldn't create file: %s\n", filename);
 		return 1;
 	}
 
 	gh = H5Gcreate(fh, "data", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	if ( gh < 0 ) {
-		fprintf(stderr, "Couldn't create group\n");
+		ERROR("Couldn't create group\n");
 		H5Fclose(fh);
 		return 1;
 	}
@@ -53,18 +53,18 @@ int hdf5_write(const char *filename, const uint16_t *data,
 	dh = H5Dcreate(gh, "data", H5T_NATIVE_UINT16, sh,
 	               H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	if ( dh < 0 ) {
-		fprintf(stderr, "Couldn't create dataset\n");
+		ERROR("Couldn't create dataset\n");
 		H5Fclose(fh);
 		return 1;
 	}
 
 	/* Muppet check */
 	H5Sget_simple_extent_dims(sh, size, max_size);
-	
+
 	r = H5Dwrite(dh, H5T_NATIVE_UINT16, H5S_ALL,
 	             H5S_ALL, H5P_DEFAULT, data);
 	if ( r < 0 ) {
-		fprintf(stderr, "Couldn't write data\n");
+		ERROR("Couldn't write data\n");
 		H5Dclose(dh);
 		H5Fclose(fh);
 		return 1;
@@ -89,20 +89,20 @@ int hdf5_read(struct image *image, const char *filename)
 	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
 		/* TODO: Try other formats here. */
-		fprintf(stderr, "Couldn't open file: %s\n", filename);
+		ERROR("Couldn't open file: %s\n", filename);
 		return 1;
 	}
 
 	dh = H5Dopen(fh, "/data/data", H5P_DEFAULT);
 	if ( dh < 0 ) {
-		fprintf(stderr, "Couldn't open dataset\n");
+		ERROR("Couldn't open dataset\n");
 		H5Fclose(fh);
 		return 1;
 	}
 
 	sh = H5Dget_space(dh);
 	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
-		fprintf(stderr, "Dataset is not two-dimensional\n");
+		ERROR("Dataset is not two-dimensional\n");
 		H5Fclose(fh);
 		return 1;
 	}
@@ -113,7 +113,7 @@ int hdf5_read(struct image *image, const char *filename)
 
 	r = H5Dread(dh, H5T_NATIVE_UINT16, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
 	if ( r < 0 ) {
-		fprintf(stderr, "Couldn't read data\n");
+		ERROR("Couldn't read data\n");
 		H5Dclose(dh);
 		H5Fclose(fh);
 		return 1;

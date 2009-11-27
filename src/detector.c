@@ -155,7 +155,7 @@ void record_image(struct image *image)
 	total_energy = FLUENCE * image->xray_energy;
 	energy_density = total_energy / area;
 	ph_per_e = (FLUENCE/area) * pow(THOMSON_LENGTH, 2.0);
-	printf("Fluence = %8.2e photons, "
+	STATUS("Fluence = %8.2e photons, "
 	       "Energy density = %5.3f kJ/cm^2, "
 	       "Total energy = %5.3f microJ\n",
 	       FLUENCE, energy_density/1e7, total_energy*1e6);
