@@ -17,11 +17,13 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include "statistics.h"
+
 
 /* By what (best-fitted) factor must the list "list" be multiplied by,
  * if it were to be merged with "target"? */
-double stat_scale_intensity(double *obs, double *calc, unsigned int *c,
-                            int size)
+static double stat_scale_intensity(double *obs, double *calc, unsigned int *c,
+                                   int size)
 {
 	double top = 0.0;
 	double bot = 0.0;
