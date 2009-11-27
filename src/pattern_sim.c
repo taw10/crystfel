@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
 			image.orientation = read_quaternion();
 		}
 
-		if ( quaternion_valid(image.orientation) ) {
+		if ( !quaternion_valid(image.orientation) ) {
 			ERROR("Orientation modulus is not zero!\n");
 			return 1;
 		}
