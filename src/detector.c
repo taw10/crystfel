@@ -37,56 +37,56 @@
 
 
 /* Bleed excess intensity into neighbouring pixels */
-static void bloom_values(double *tmp, int x, int y,
-                          int width, int height, double val)
+static void bloom_values(int *tmp, int x, int y,
+                          int width, int height, int val)
 {
-	double overflow;
+	int overflow;
 
 	overflow = val - SATURATION;
 
 	/* Intensity which bleeds off the edge of the detector is lost */
 	if ( x > 0 ) {
-		tmp[x-1 + width*y] += overflow / 6.0;
+		tmp[x-1 + width*y] += overflow / 6;
 		if ( y > 0 ) {
-			tmp[x-1 + width*(y-1)] += overflow / 12.0;
+			tmp[x-1 + width*(y-1)] += overflow / 12;
 		}
 		if ( y < height-1 ) {
-			tmp[x-1 + width*(y+1)] += overflow / 12.0;
+			tmp[x-1 + width*(y+1)] += overflow / 12;
 		}
 	}
 
 	if ( x < width-1 ) {
-		tmp[x+1 + width*y] += overflow / 6.0;
+		tmp[x+1 + width*y] += overflow / 6;
 		if ( y > 0 ) {
-			tmp[x+1 + width*(y-1)] += overflow / 12.0;
+			tmp[x+1 + width*(y-1)] += overflow / 12;
 		}
 		if ( y < height-1 ) {
-			tmp[x+1 + width*(y+1)] += overflow / 12.0;
+			tmp[x+1 + width*(y+1)] += overflow / 12;
 		}
 	}
 
 	if ( y > 0 ) {
-		tmp[x + width*(y-1)] += overflow / 6.0;
+		tmp[x + width*(y-1)] += overflow / 6;
 	}
 	if ( y < height-1 ) {
-		tmp[x + width*(y+1)] += overflow / 6.0;
+		tmp[x + width*(y+1)] += overflow / 6;
 	}
 }
 
 
-static uint16_t *bloom(double *hdr_in, int width, int height)
+static uint16_t *bloom(int *hdr_in, int width, int height)
 {
 	int x, y;
 	uint16_t *data;
-	double *tmp;
-	double *hdr;
+	int *tmp;
+	int *hdr;
 	int did_something;
 
 	data = malloc(width * height * sizeof(uint16_t));
-	tmp = malloc(width * height * sizeof(double));
-	hdr = malloc(width * height * sizeof(double));
+	tmp = malloc(width * height * sizeof(int));
+	hdr = malloc(width * height * sizeof(int));
 
-	memcpy(hdr, hdr_in, width*height*sizeof(double));
+	memcpy(hdr, hdr_in, width*height*sizeof(int));
 
 	/* Apply DQE (once only) */
 	for ( x=0; x<width; x++ ) {
@@ -97,13 +97,13 @@ static uint16_t *bloom(double *hdr_in, int width, int height)
 
 	do {
 
-		memset(tmp, 0, width*height*sizeof(double));
+		memset(tmp, 0, width*height*sizeof(int));
 		did_something = 0;
 
 		for ( x=0; x<width; x++ ) {
 		for ( y=0; y<height; y++ ) {
 
-			double hdval;
+			int hdval;
 
 			hdval = hdr[x + width*y];
 
@@ -122,7 +122,7 @@ static uint16_t *bloom(double *hdr_in, int width, int height)
 
 		/* Prepare new input if we're going round for another pass */
 		if ( did_something ) {
-			memcpy(hdr, tmp, width*height*sizeof(double));
+			memcpy(hdr, tmp, width*height*sizeof(int));
 		}
 
 	} while ( did_something );
@@ -169,7 +169,8 @@ void record_image(struct image *image)
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
 
-		double counts, intensity, sa, water;
+		int counts;
+		double intensity, sa, water;
 		double complex val;
 		double dsq, proj_area;
 
@@ -181,7 +182,6 @@ void record_image(struct image *image)
 		                        image->xray_energy,
 		                        BEAM_RADIUS, WATER_RADIUS);
 
-		//printf("%e, %e, ", intensity, water);
 		intensity += water;
 
 		/* Area of pixel as seen from crystal (approximate) */
@@ -194,10 +194,7 @@ void record_image(struct image *image)
 		/* Projected area of pixel divided by distance squared */
 		sa = proj_area / (dsq + Lsq);
 
-		counts = intensity * ph_per_e * sa;
-		//printf("%e counts\n", counts);
-
-		counts = poisson_noise(counts);
+		counts = poisson_noise(intensity * ph_per_e * sa * DQE);
 
 		image->hdr[x + image->width*y] = counts;
 
@@ -212,7 +209,7 @@ void record_image(struct image *image)
 		                                            * sizeof(uint16_t));
 		for ( x=0; x<image->width; x++ ) {
 		for ( y=0; y<image->height; y++ ) {
-			double val;
+			int val;
 			val = image->hdr[x + image->width*y];
 			if ( val > SATURATION ) val = SATURATION;
 	                image->data[x + image->width*y] = (uint16_t)val;
