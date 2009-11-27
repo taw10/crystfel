@@ -94,14 +94,22 @@ double water_intensity(struct threevec q, double en,
 {
 	double complex fH, fO;
 	double s, modq;
+	double width;
 	double complex ifac;
 
 	/* Interatomic distances in water molecule */
 	const double rOH = 0.09584e-9;
 	const double rHH = 0.1515e-9;
 
-	/* Volume of water column */
-	const double water_v = M_PI*pow(water_r, 2.0) * 2.0 * beam_r;
+	/* Volume of water column, approximated as:
+	 * (2water_r) * (2beam_r) * smallest(2beam_r, 2water_r)
+	 * neglecting the curvature of the faces of the volume */
+	if ( beam_r > water_r ) {
+		width = 2.0 * water_r;
+	} else {
+		width = 2.0 * beam_r;
+	}
+	const double water_v = 2.0*beam_r * 2.0*water_r * width;
 
 	/* Number of water molecules */
 	const double n_water = water_v * WATER_DENSITY
