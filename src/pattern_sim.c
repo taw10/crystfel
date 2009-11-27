@@ -30,24 +30,67 @@
 static void show_help(const char *s)
 {
 	printf("Syntax: %s\n\n", s);
-	printf("Simulate diffraction patterns from small crystals\n");
-	printf(" probed with femosecond pulses from a free electron laser.\n\n");
-	printf(" -h, --help                Display this help message\n");
-	printf(" --simulation-details      Show details of the simulation\n");
-	printf(" --near-bragg              Output h,k,l,I near Bragg conditions\n");
-	printf(" -r, --random-orientation  Use a randomly generated orientation\n");
-	printf("                            (a new orientation will be used for each image)\n");
-	printf(" -n, --number=<N>          Generate N images.  Default 1\n");
+	printf(
+"Simulate diffraction patterns from small crystals probed with femosecond\n"
+"pulses of X-rays from a free electron laser.\n"
+"\n"
+" -h, --help                Display this help message\n"
+" --simulation-details      Show technical details of the simulation\n"
+" --near-bragg              Output h,k,l,I near Bragg conditions\n"
+" -r, --random-orientation  Use a randomly generated orientation\n"
+"                            (a new orientation will be used for each image)\n"
+" -n, --number=<N>          Generate N images.  Default 1\n");
 }
 
 
 static void show_details()
 {
-	printf("This program simulates diffraction patterns from small crystals illuminated\n");
-	printf("with femtosecond X-ray pulses from a free electron laser.\n\n");
-	printf("Scattering Factors\n");
-	printf("------------------\n");
-	printf("Scattering factors\n");
+	printf(
+"This program simulates diffraction patterns from small crystals illuminated\n"
+"with femtosecond X-ray pulses from a free electron laser.\n"
+"\n"
+"The lattice transform from the specified number of unit cells is calculated\n"
+"using the closed-form solution for a truncated lattice:\n"
+"\n"
+"F(q) =  sin(pi*na*q.a)/sin(pi*q.a)\n"
+"      * sin(pi*nb*q.b)/sin(pi*q.b)\n"
+"      * sin(pi*nc*q.c)/sin(pi*q.c)\n"
+"\n"
+"na = number of unit cells in 'a' direction (likewise nb, nc)\n"
+" q = reciprocal vector (1/d convention, not 2pi/d)\n"
+"\n"
+"This value is multiplied by the complex structure factor at the nearest\n"
+"Bragg position, i.e. the gradient of the shape transform across each\n"
+"appearance of the shape transform is not included, for speed of calculation.\n"
+"\n"
+"Complex structure factors are calculated using a combination of the Henke\n"
+"and Waasmeier-Kirfel scattering factors. The Henke factors are complex\n"
+"and energy dependence, whereas the Waas-Kirf values are real-valued and\n"
+"|q|-dependent.  The difference between the Waas-Kirf value at the\n"
+"appropriate |q| and the same value at |q|=0 is subtracted from the Henke\n"
+"value.  The Henke values are linearly interpolated from the provided tables\n"
+"(note that the interpolation should really be exponential).\n"
+"\n"
+"The modulus of the structure factor is taken and squared.  Intensity from\n"
+"water is then added according to the first term of equation 5 from\n"
+"Phys Chem Chem Phys 20033 (5) 1981--1991.\n"
+"\n"
+"Expected intensities at the CCD are then calculated using:\n"
+"\n"
+"I(q) = I0 * r^2 * |F(q)|^2 * S\n"
+"\n"
+"I0 = number of photons per unit area in the incident beam\n"
+" r = Thomson radius\n"
+" S = solid angle of corresponding pixel\n"
+"\n"
+"Poisson counts are generated from the expected intensities using Knuth's\n"
+"algorithm.\n"
+"\n"
+"Bloom of the CCD is included.  Any excess intensity in a particular pixel\n"
+"is divided between the neighbouring pixels.  Diagonal neighbours receive\n"
+"half the contribution of adjacent pixels.  This process is repeated for\n"
+"every pixel until all pixels are below the saturation value.  Note that this\n"
+"process is slow for very saturated images.\n");
 }
 
 
