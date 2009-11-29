@@ -126,7 +126,7 @@ struct quaternion random_quaternion()
 	q.x = (double)random()/RAND_MAX;
 	q.y = (double)random()/RAND_MAX;
 	q.z = (double)random()/RAND_MAX;
-	normalise_quaternion(q);
+	q = normalise_quaternion(q);
 
 	return q;
 }
