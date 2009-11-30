@@ -25,6 +25,7 @@
 #include "utils.h"
 #include "hdf5-file.h"
 #include "detector.h"
+#include "intensities.h"
 
 
 static void show_help(const char *s)
@@ -223,6 +224,10 @@ int main(int argc, char *argv[])
 
 		get_diffraction(&image);
 		record_image(&image);
+
+		if ( config_nearbragg ) {
+			output_intensities(&image);
+		}
 
 		snprintf(filename, 1023, "results/sim-%i.h5", number);
 		number++;
