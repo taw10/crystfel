@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
 		{"near-bragg",         0, &config_nearbragg,   1},
 		{"random-orientation", 0, NULL,               'r'},
 		{"number",             1, NULL,               'n'},
-		{"no-images",           0, &config_noimages,   1},
+		{"no-images",          0, &config_noimages,    1},
 		{0, 0, NULL, 0}
 	};
 
