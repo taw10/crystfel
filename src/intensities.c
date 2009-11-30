@@ -127,6 +127,13 @@ void output_intensities(struct image *image)
 	for ( i=0; i<n_hits; i++ ) {
 
 		int intensity;
+
+		/* Bounds check */
+		if ( hits[i].x + 3 >= image->width ) continue;
+		if ( hits[i].x - 3 < 0 ) continue;
+		if ( hits[i].y + 3 >= image->height ) continue;
+		if ( hits[i].y - 3 < 0 ) continue;
+
 		intensity = sum_nearby_points(image->data, image->width,
 		                              hits[i].x, hits[i].y);
 
