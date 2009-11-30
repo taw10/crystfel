@@ -131,6 +131,8 @@ static inline double distance3d(double x1, double y1, double z1,
 /* Array size */
 #define IDIM (INDMAX*2 +1)
 
+#define LIST_SIZE (IDIM*IDIM*IDIM)
+
 /* Create functions for storing reflection intensities indexed as h,k,l */
 #define LABEL(x) x##_intensity
 #define TYPE double

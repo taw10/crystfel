@@ -10,5 +10,5 @@ stamp-h1
 src/*.o
 src/.deps
 src/pattern_sim
-src/integr_sim
+src/process_hkl
 *~
