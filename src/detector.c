@@ -18,6 +18,7 @@
 #include "image.h"
 #include "utils.h"
 #include "diffraction.h"
+#include "detector.h"
 
 
 /* Number of photons in pulse */
