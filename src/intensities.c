@@ -42,7 +42,6 @@ static int sum_nearby_points(uint16_t *data, int width, int x, int y)
 	for ( dx=-3; dx<=3; dx++ ) {
 	for ( dy=-3; dy<=3; dy++ ) {
 		intensity += data[(x+dx) + width*(y+dy)];
-		data[(x+dx) + width*(y+dy)] = 0;
 	}
 	}
 
