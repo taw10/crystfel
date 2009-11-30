@@ -30,17 +30,20 @@
 
 static void show_help(const char *s)
 {
-	printf("Syntax: %s\n\n", s);
+	printf("Syntax: %s [options]\n\n", s);
 	printf(
 "Simulate diffraction patterns from small crystals probed with femosecond\n"
 "pulses of X-rays from a free electron laser.\n"
 "\n"
-" -h, --help                Display this help message\n"
-" --simulation-details      Show technical details of the simulation\n"
-" --near-bragg              Output h,k,l,I near Bragg conditions\n"
+" -h, --help                Display this help message.\n"
+"     --simulation-details  Show technical details of the simulation.\n"
+"\n"
+"     --near-bragg          Output h,k,l,I near Bragg conditions.\n"
+" -n, --number=<N>          Generate N images.  Default 1.\n"
+"     --no-images           Do not output any HDF5 files.\n"
 " -r, --random-orientation  Use a randomly generated orientation\n"
-"                            (a new orientation will be used for each image)\n"
-" -n, --number=<N>          Generate N images.  Default 1\n");
+"                            (a new orientation will be used for each image).\n"
+);
 }
 
 
@@ -133,10 +136,10 @@ int main(int argc, char *argv[])
 {
 	int c;
 	struct image image;
-	char filename[1024];
 	int config_simdetails = 0;
 	int config_nearbragg = 0;
 	int config_randomquat = 0;
+	int config_noimages = 0;
 	int number = 1;  /* Index for the current image */
 	int n_images = 1;  /* Generate one image by default */
 	int done = 0;
@@ -148,6 +151,7 @@ int main(int argc, char *argv[])
 		{"near-bragg",         0, &config_nearbragg,   1},
 		{"random-orientation", 0, NULL,               'r'},
 		{"number",             1, NULL,               'n'},
+		{"no-images",           0, &config_noimages,   1},
 		{0, 0, NULL, 0}
 	};
 
@@ -229,11 +233,18 @@ int main(int argc, char *argv[])
 			output_intensities(&image);
 		}
 
-		snprintf(filename, 1023, "results/sim-%i.h5", number);
-		number++;
+		if ( !config_noimages ) {
 
-		/* Write the output file */
-		hdf5_write(filename, image.data, image.width, image.height);
+			char filename[1024];
+
+			snprintf(filename, 1023, "results/sim-%i.h5", number);
+			number++;
+
+			/* Write the output file */
+			hdf5_write(filename, image.data,
+			           image.width, image.height);
+
+		}
 
 		/* Clean up */
 		free(image.data);
