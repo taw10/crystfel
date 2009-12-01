@@ -26,12 +26,23 @@
 #include "sfac.h"
 
 
+/* Number of divisions for R vs |q| graphs */
+#define RVQDV (20)
+
+
 static void show_help(const char *s)
 {
 	printf("Syntax: %s [options]\n\n", s);
-	printf("Assemble and process FEL Bragg intensities.\n\n");
-	printf("  -h              Display this help message.\n");
-	printf("  -i <filename>   Specify input filename (\"-\" for stdin).\n");
+	printf(
+"Assemble and process FEL Bragg intensities.\n"
+"\n"
+"  -h, --help              Display this help message.\n"
+"  -i, --input=<filename>  Specify input filename (\"-\" for stdin).\n"
+"\n"
+"      --max-only          Take the integrated intensity to be equal to the\n"
+"                           maximum intensity measured for that reflection.\n"
+"                           The default is to use the mean value from all\n"
+"                           measurements.\n");
 }
 
 
@@ -56,11 +67,14 @@ static void write_RvsQ(const char *name, double *ref, double *trueref,
 	}
 	}
 
-	for ( sbracket=0.0; sbracket<smax; sbracket+=smax/10.0 ) {
+	for ( sbracket=0.0; sbracket<smax; sbracket+=smax/RVQDV ) {
 
 		double top = 0.0;
 		double bot = 0.0;
-		int n = 0;
+		int nhits = 0;
+		int nrefl = 0;
+		double R;
+		double hits_per_refl;
 
 		for ( h=-INDMAX; h<INDMAX; h++ ) {
 		for ( k=-INDMAX; k<INDMAX; k++ ) {
@@ -68,9 +82,12 @@ static void write_RvsQ(const char *name, double *ref, double *trueref,
 
 			double s;
 			int c;
+
+			if ( (h==0) && (k==0) && (l==0) ) continue;
+
 			c = lookup_count(counts, h, k, l);
 			s = resolution(cell, h, k, l);
-			if ((s>=sbracket) && (s<sbracket+smax/10.0) && (c>0)) {
+			if ((s>=sbracket) && (s<sbracket+smax/RVQDV) && (c>0)) {
 
 				double obs, calc, obsi;
 
@@ -78,16 +95,22 @@ static void write_RvsQ(const char *name, double *ref, double *trueref,
 				calc = lookup_intensity(trueref, h, k, l);
 
 				obsi = obs / (double)c;
-				top += fabs(obsi/scale - calc);
-				bot += obsi/scale;
-				n++;
+				top += pow(obsi - scale*calc, 2.0);
+				bot += pow(obsi, 2.0);
+				nhits += c;
+				nrefl++;
+
 			}
 
 		}
 		}
 		}
 
-		fprintf(fh, "%8.5f %8.5f %i\n", sbracket+smax/20.0, top/bot, n);
+		R = sqrt(top/bot);
+		hits_per_refl = nrefl ? (double)nhits/nrefl : 0;
+
+		fprintf(fh, "%8.5f %8.5f %5.2f\n", sbracket+smax/(2.0*RVQDV),
+		                                R, hits_per_refl);
 
 	}
 	fclose(fh);
@@ -146,9 +169,9 @@ static void process_reflections(double *ref, double *trueref,
 	double mean_counts;
 	int ctot = 0;
 	int nmeas = 0;
-	double ff;
 	char name[64];
 	double R, scale;
+	double calc_222, obs_222;
 
 	for ( j=0; j<LIST_SIZE; j++ ) {
 		ctot += counts[j];
@@ -156,13 +179,13 @@ static void process_reflections(double *ref, double *trueref,
 	}
 	mean_counts = (double)ctot/nmeas;
 
-	ff = lookup_intensity(ref, 2, 2, 2) / lookup_count(counts, 2, 2, 2);
+	calc_222 = lookup_intensity(ref, 2, 2, 2) / lookup_count(counts, 2, 2, 2);
+	obs_222 = lookup_intensity(trueref, 2, 2, 2);
 
 	R = stat_r2(ref, trueref, counts, LIST_SIZE, &scale);
-	STATUS("%8u: R=%5.2f%% (sf=%7.4e)"
-	       " mean meas/refl=%5.2f,"
-	       " %i reflections measured. %f\n",
-	       n_patterns, R*100.0, scale, mean_counts, nmeas, ff);
+	STATUS("%8u: R=%5.2f%% (sf=%7.4e)  mean meas/refl=%5.2f,"
+	       " %i reflections measured, %f\n",
+	       n_patterns, R*100.0, scale, mean_counts, nmeas, calc_222/obs_222);
 
 	/* Record graph of R against q for this N */
 	snprintf(name, 63, "results/R_vs_q-%u.dat", n_patterns);
@@ -180,11 +203,13 @@ int main(int argc, char *argv[])
 	unsigned int *counts;
 	char *rval;
 	struct molecule *mol;
+	int config_maxonly = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
+		{"max-only",           0, &config_maxonly,     1},
 		{0, 0, NULL, 0}
 	};
 
@@ -255,8 +280,17 @@ int main(int argc, char *argv[])
 		r = sscanf(line, "%i %i %i %i", &h, &k, &l, &intensity);
 		if ( r != 4 ) continue;
 
-		integrate_intensity(ref, h, k, l, intensity);
-		integrate_count(counts, h, k, l, 1);
+		//if ( (abs(h)>3) || (abs(k)>3) || (abs(l)>3) ) continue;
+
+		if ( !config_maxonly ) {
+			integrate_intensity(ref, h, k, l, intensity);
+			integrate_count(counts, h, k, l, 1);
+		} else {
+			if ( intensity > lookup_intensity(ref, h, k, l) ) {
+				set_intensity(ref, h, k, l, intensity);
+			}
+			set_count(counts, h, k, l, 1);
+		}
 
 	} while ( rval != NULL );
 

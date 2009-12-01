@@ -29,7 +29,8 @@ static double stat_scale_intensity(double *obs, double *calc, unsigned int *c,
 	double bot = 0.0;
 	int i;
 
-	for ( i=0; i<size; i++ ) {
+	/* Start from i=1 -> skip central beam */
+	for ( i=1; i<size; i++ ) {
 
 		if ( c[i] > 0 ) {
 			double obsi;
@@ -54,16 +55,17 @@ double stat_r2(double *obs, double *calc, unsigned int *c, int size,
 	scale = stat_scale_intensity(obs, calc, c, size);
 	*scalep = scale;
 
-	for ( i=0; i<size; i++ ) {
+	/* Start from i=1 -> skip central beam */
+	for ( i=1; i<size; i++ ) {
 
 		if ( c[i] > 0 ) {
 			double obsi;
 			obsi = obs[i] / (double)c[i];
-			top += fabs(obsi/scale - calc[i]);
-			bot += obsi/scale;
+			top += pow(fabs(obsi - scale*calc[i]), 2.0);
+			bot += pow(obsi, 2.0);
 		}
 
 	} /* else reflection not measured so don't worry about it */
 
-	return top/bot;
+	return sqrt(top/bot);
 }
