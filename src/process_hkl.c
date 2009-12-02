@@ -42,7 +42,8 @@ static void show_help(const char *s)
 "      --max-only          Take the integrated intensity to be equal to the\n"
 "                           maximum intensity measured for that reflection.\n"
 "                           The default is to use the mean value from all\n"
-"                           measurements.\n");
+"                           measurements.\n"
+"  -e, --output-every=<n>  Analyse figures of merit after every n patterns.\n");
 }
 
 
@@ -204,17 +205,19 @@ int main(int argc, char *argv[])
 	char *rval;
 	struct molecule *mol;
 	int config_maxonly = 0;
+	int config_every = 1000;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
 		{"max-only",           0, &config_maxonly,     1},
+		{"output-every",       1, NULL,               'e'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hi:e:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
@@ -224,6 +227,11 @@ int main(int argc, char *argv[])
 
 		case 'i' : {
 			filename = strdup(optarg);
+			break;
+		}
+
+		case 'e' : {
+			config_every = atoi(optarg);
 			break;
 		}
 
@@ -240,6 +248,11 @@ int main(int argc, char *argv[])
 
 	if ( filename == NULL ) {
 		ERROR("Please specify filename using the -i option\n");
+		return 1;
+	}
+
+	if ( config_every <= 0 ) {
+		ERROR("Invalid value for --output-every.\n");
 		return 1;
 	}
 
@@ -271,7 +284,7 @@ int main(int argc, char *argv[])
 		rval = fgets(line, 1023, fh);
 		if ( strncmp(line, "New pattern", 11) == 0 ) {
 			n_patterns++;
-			if ( n_patterns % 1000 == 0 ) {
+			if ( n_patterns % config_every == 0 ) {
 				process_reflections(ref, trueref, counts,
 				                    n_patterns, mol->cell);
 			}
