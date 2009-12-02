@@ -28,13 +28,13 @@
 #define DQE (0.9)
 
 /* Detector's saturation value */
-#define SATURATION (60000)
+#define SATURATION (5000)
 
 /* Radius of the water column */
-#define WATER_RADIUS (2.0e-6 / 2.0)
+#define WATER_RADIUS (3.0e-6 / 2.0)
 
 /* Radius of X-ray beam */
-#define BEAM_RADIUS (5.0e-6 / 2.0)
+#define BEAM_RADIUS (3.0e-6 / 2.0)
 
 
 /* Bleed excess intensity into neighbouring pixels */
