@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
 	image.fmode = FORMULATION_CLEN;
 	image.x_centre = 512.5;
 	image.y_centre = 512.5;
-	image.camera_len = 0.10;  /* 10 cm (front CCD can move from 5cm-20cm) */
+	image.camera_len = 0.05;  /* 5 cm (front CCD can move from 5cm-20cm) */
 	image.resolution = 13333.3; /* 75 micron pixel size */
 	image.xray_energy = eV_to_J(2.0e3); /* 2 keV energy */
 	image.lambda = ph_en_to_lambda(image.xray_energy);  /* Wavelength */
