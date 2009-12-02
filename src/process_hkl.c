@@ -298,12 +298,14 @@ int main(int argc, char *argv[])
 	do {
 
 		char line[1024];
-		int h, k, l, intensity;
+		signed int h, k, l, intensity;
 		int r;
 
 		rval = fgets(line, 1023, fh);
 		if ( strncmp(line, "New pattern", 11) == 0 ) {
+
 			n_patterns++;
+
 			if ( n_patterns % config_every == 0 ) {
 				process_reflections(ref, trueref, counts,
 				                    n_patterns, mol->cell,
@@ -316,6 +318,8 @@ int main(int argc, char *argv[])
 
 		r = sscanf(line, "%i %i %i %i", &h, &k, &l, &intensity);
 		if ( r != 4 ) continue;
+
+		if ( (h==0) && (k==0) && (l==0) ) continue;
 
 		//if ( (abs(h)>3) || (abs(k)>3) || (abs(l)>3) ) continue;
 
