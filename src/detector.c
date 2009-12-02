@@ -142,7 +142,7 @@ static uint16_t *bloom(int *hdr_in, int width, int height)
 }
 
 
-void record_image(struct image *image)
+void record_image(struct image *image, int do_water)
 {
 	int x, y;
 	double total_energy, energy_density;
@@ -178,12 +178,15 @@ void record_image(struct image *image)
 		val = image->sfacs[x + image->width*y];
 		intensity = pow(cabs(val), 2.0);
 
-		/* Add intensity contribution from water */
-		water = water_intensity(image->qvecs[x + image->width*y],
-		                        image->xray_energy,
-		                        BEAM_RADIUS, WATER_RADIUS);
+		if ( do_water ) {
 
-		intensity += water;
+			/* Add intensity contribution from water */
+			water = water_intensity(image->qvecs[x + image->width*y],
+			                        image->xray_energy,
+			                        BEAM_RADIUS, WATER_RADIUS);
+			intensity += water;
+
+		}
 
 		/* Area of pixel as seen from crystal (approximate) */
 		proj_area = pix_area * cos(image->twotheta[x + image->width*y]);

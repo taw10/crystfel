@@ -18,6 +18,6 @@
 
 #include "image.h"
 
-extern void record_image(struct image *image);
+extern void record_image(struct image *image, int do_water);
 
 #endif	/* DETECTOR_H */
