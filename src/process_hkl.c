@@ -45,7 +45,9 @@ static void show_help(const char *s)
 "                           measurements.\n"
 "  -e, --output-every=<n>  Analyse figures of merit after every n patterns.\n"
 "  -r, --rvsq              Output lists of R vs |q| (\"Luzzatti plots\") when\n"
-"                           analysing figures of merit.\n");
+"                           analysing figures of merit.\n"
+"      --stop-after=<n>    Stop after processing n patterns (zero means)\n"
+"                           never stop).\n");
 }
 
 
@@ -211,6 +213,7 @@ int main(int argc, char *argv[])
 	int config_maxonly = 0;
 	int config_every = 1000;
 	int config_rvsq = 0;
+	int config_stopafter = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -219,6 +222,7 @@ int main(int argc, char *argv[])
 		{"max-only",           0, &config_maxonly,     1},
 		{"output-every",       1, NULL,               'e'},
 		{"rvsq",               0, NULL,               'r'},
+		{"stop-after",         1, NULL,               's'},
 		{0, 0, NULL, 0}
 	};
 
@@ -243,6 +247,11 @@ int main(int argc, char *argv[])
 
 		case 'e' : {
 			config_every = atoi(optarg);
+			break;
+		}
+
+		case 's' : {
+			config_stopafter = atoi(optarg);
 			break;
 		}
 
@@ -300,6 +309,9 @@ int main(int argc, char *argv[])
 				                    n_patterns, mol->cell,
 				                    config_rvsq);
 			}
+
+			if ( n_patterns == config_stopafter ) break;
+
 		}
 
 		r = sscanf(line, "%i %i %i %i", &h, &k, &l, &intensity);
