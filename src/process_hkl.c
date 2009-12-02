@@ -43,7 +43,9 @@ static void show_help(const char *s)
 "                           maximum intensity measured for that reflection.\n"
 "                           The default is to use the mean value from all\n"
 "                           measurements.\n"
-"  -e, --output-every=<n>  Analyse figures of merit after every n patterns.\n");
+"  -e, --output-every=<n>  Analyse figures of merit after every n patterns.\n"
+"  -r, --rvsq              Output lists of R vs |q| (\"Luzzatti plots\") when\n"
+"                           analysing figures of merit.\n");
 }
 
 
@@ -164,7 +166,7 @@ static double *ideal_intensities(double complex *sfac)
 
 static void process_reflections(double *ref, double *trueref,
                                 unsigned int *counts, unsigned int n_patterns,
-                                UnitCell *cell)
+                                UnitCell *cell, int do_rvsq)
 {
 	int j;
 	double mean_counts;
@@ -188,9 +190,11 @@ static void process_reflections(double *ref, double *trueref,
 	       " %i reflections measured, %f\n",
 	       n_patterns, R*100.0, scale, mean_counts, nmeas, calc_222/obs_222);
 
-	/* Record graph of R against q for this N */
-	snprintf(name, 63, "results/R_vs_q-%u.dat", n_patterns);
-	write_RvsQ(name, ref, trueref, counts, scale, cell);
+	if ( do_rvsq ) {
+		/* Record graph of R against q for this N */
+		snprintf(name, 63, "results/R_vs_q-%u.dat", n_patterns);
+		write_RvsQ(name, ref, trueref, counts, scale, cell);
+	}
 }
 
 
@@ -206,6 +210,7 @@ int main(int argc, char *argv[])
 	struct molecule *mol;
 	int config_maxonly = 0;
 	int config_every = 1000;
+	int config_rvsq = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -213,11 +218,12 @@ int main(int argc, char *argv[])
 		{"input",              1, NULL,               'i'},
 		{"max-only",           0, &config_maxonly,     1},
 		{"output-every",       1, NULL,               'e'},
+		{"rvsq",               0, NULL,               'r'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:e:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hi:e:r", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
@@ -227,6 +233,11 @@ int main(int argc, char *argv[])
 
 		case 'i' : {
 			filename = strdup(optarg);
+			break;
+		}
+
+		case 'r' : {
+			config_rvsq = 1;
 			break;
 		}
 
@@ -286,7 +297,8 @@ int main(int argc, char *argv[])
 			n_patterns++;
 			if ( n_patterns % config_every == 0 ) {
 				process_reflections(ref, trueref, counts,
-				                    n_patterns, mol->cell);
+				                    n_patterns, mol->cell,
+				                    config_rvsq);
 			}
 		}
 
