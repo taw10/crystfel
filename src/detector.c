@@ -142,7 +142,7 @@ static uint16_t *bloom(int *hdr_in, int width, int height)
 }
 
 
-void record_image(struct image *image, int do_water)
+void record_image(struct image *image, int do_water, int do_poisson)
 {
 	int x, y;
 	double total_energy, energy_density;
@@ -171,6 +171,7 @@ void record_image(struct image *image, int do_water)
 	for ( y=0; y<image->height; y++ ) {
 
 		int counts;
+		double cf;
 		double intensity, sa, water;
 		double complex val;
 		double dsq, proj_area;
@@ -198,7 +199,12 @@ void record_image(struct image *image, int do_water)
 		/* Projected area of pixel divided by distance squared */
 		sa = proj_area / (dsq + Lsq);
 
-		counts = poisson_noise(intensity * ph_per_e * sa * DQE);
+		if ( do_poisson ) {
+			counts = poisson_noise(intensity * ph_per_e * sa * DQE);
+		} else {
+			cf = intensity * ph_per_e * sa * DQE;
+			counts = (int)cf;
+		}
 
 		image->hdr[x + image->width*y] = counts;
 

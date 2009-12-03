@@ -44,6 +44,7 @@ static void show_help(const char *s)
 " -r, --random-orientation  Use a randomly generated orientation\n"
 "                            (a new orientation will be used for each image).\n"
 "     --no-water            Do not simulate water background.\n"
+"     --no-noise            Do not calculate Poisson noise.\n"
 );
 }
 
@@ -142,6 +143,7 @@ int main(int argc, char *argv[])
 	int config_randomquat = 0;
 	int config_noimages = 0;
 	int config_nowater = 0;
+	int config_nonoise = 0;
 	int number = 1;  /* Index for the current image */
 	int n_images = 1;  /* Generate one image by default */
 	int done = 0;
@@ -155,6 +157,7 @@ int main(int argc, char *argv[])
 		{"number",             1, NULL,               'n'},
 		{"no-images",          0, &config_noimages,    1},
 		{"no-water",           0, &config_nowater,     1},
+		{"no-noise",           0, &config_nonoise,     1},
 		{0, 0, NULL, 0}
 	};
 
@@ -230,7 +233,7 @@ int main(int argc, char *argv[])
 		image.hdr = NULL;
 
 		get_diffraction(&image);
-		record_image(&image, !config_nowater);
+		record_image(&image, !config_nowater, !config_nonoise);
 
 		if ( config_nearbragg ) {
 			output_intensities(&image);
