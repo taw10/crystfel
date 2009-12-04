@@ -49,8 +49,9 @@ static void show_help(const char *s)
 "                           analysis only after reading all the patterns.\n"
 "  -r, --rvsq              Output lists of R vs |q| (\"Luzzatti plots\") when\n"
 "                           analysing figures of merit.\n"
-"      --stop-after=<n>    Stop after processing n patterns (zero means\n"
-"                           keep going until the end of the input).\n"
+"      --stop-after=<n>    Stop after processing n patterns.  Zero means\n"
+"                           keep going until the end of the input, and is the\n"
+"                           default."
 "      --zone-axis         Output an [001] zone axis pattern each time the\n"
 "                           figures of merit are analysed.\n");
 }
