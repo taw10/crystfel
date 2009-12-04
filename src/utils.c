@@ -122,10 +122,10 @@ struct quaternion random_quaternion()
 {
 	struct quaternion q;
 
-	q.w = (double)random()/RAND_MAX;
-	q.x = (double)random()/RAND_MAX;
-	q.y = (double)random()/RAND_MAX;
-	q.z = (double)random()/RAND_MAX;
+	q.w = 2.0*(double)random()/RAND_MAX - 1.0;
+	q.x = 2.0*(double)random()/RAND_MAX - 1.0;
+	q.y = 2.0*(double)random()/RAND_MAX - 1.0;
+	q.z = 2.0*(double)random()/RAND_MAX - 1.0;
 	q = normalise_quaternion(q);
 
 	return q;
