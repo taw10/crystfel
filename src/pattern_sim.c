@@ -87,7 +87,7 @@ static void show_details()
 "\n"
 "The modulus of the structure factor is taken and squared.  Intensity from\n"
 "water is then added according to the first term of equation 5 from\n"
-"Phys Chem Chem Phys 20033 (5) 1981--1991.\n"
+"Phys Chem Chem Phys 2003 (5) 1981--1991.\n"
 "\n"
 "Expected intensities at the CCD are then calculated using:\n"
 "\n"
