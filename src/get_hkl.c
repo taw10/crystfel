@@ -32,29 +32,97 @@ static void show_help(const char *s)
 	printf(
 "Write idealised intensity lists.\n"
 "\n"
-"  -h, --help              Display this help message.\n");
+"  -h, --help                 Display this help message.\n"
+"\n"
+"  -t, --template=<filename>  Only include reflections mentioned in file.\n");
+}
+
+
+static double *template_reflections(double *ref, const char *filename)
+{
+	char *rval;
+	double *out;
+	FILE *fh;
+
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) {
+		return NULL;
+	}
+
+	out = new_list_intensity();
+
+	do {
+
+		char line[1024];
+		double val;
+		int r;
+		signed int h, k, l;
+
+		rval = fgets(line, 1023, fh);
+
+		r = sscanf(line, "%i %i %i", &h, &k, &l);
+		if ( r != 3 ) continue;
+
+		val = lookup_intensity(ref, h, k, l);
+		set_intensity(out, h, k, l, val);
+
+	} while ( rval != NULL );
+
+	fclose(fh);
+
+	return out;
+}
+
+
+/* Apply Poisson noise to all reflections */
+static void noisify_reflections(double *ref)
+{
+	signed int h, k, l;
+
+	for ( h=-INDMAX; h<INDMAX; h++ ) {
+	for ( k=-INDMAX; k<INDMAX; k++ ) {
+	for ( l=-INDMAX; l<INDMAX; l++ ) {
+
+		double val;
+
+		val = lookup_intensity(ref, h, k, l);
+		val = poisson_noise(val);
+		set_intensity(ref, h, k, l, val);
+
+	}
+	}
+	}
 }
 
 
 int main(int argc, char *argv[])
 {
 	int c;
-	double *ref;
+	double *ref, *tref;
 	struct molecule *mol;
+	char *template = NULL;
+	int config_noisify = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
+		{"template",           1, NULL,               't'},
+		{"poisson",            0, &config_noisify,     1},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:e:r", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ht:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
 			show_help(argv[0]);
 			return 0;
+		}
+
+		case 't' : {
+			template = strdup(optarg);
+			break;
 		}
 
 		case 0 : {
@@ -71,7 +139,20 @@ int main(int argc, char *argv[])
 	mol = load_molecule();
 	get_reflections_cached(mol, eV_to_J(2.0e3));
 	ref = ideal_intensities(mol->reflections);
-	write_reflections("results/ideal-reflections.hkl", NULL, ref, 1,
+
+	if ( template != NULL ) {
+		tref = template_reflections(ref, template);
+		if ( tref == NULL ) {
+			ERROR("Couldn't read template file!\n");
+			return 1;
+		}
+		free(ref);
+		ref = tref;
+	}
+
+	if ( config_noisify ) noisify_reflections(ref);
+
+	write_reflections("results/ideal-reflections.hkl", NULL, tref, 1,
 	                  mol->cell);
 
 	return 0;
