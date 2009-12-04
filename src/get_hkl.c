@@ -34,7 +34,9 @@ static void show_help(const char *s)
 "\n"
 "  -h, --help                 Display this help message.\n"
 "\n"
-"  -t, --template=<filename>  Only include reflections mentioned in file.\n");
+"  -t, --template=<filename>  Only include reflections mentioned in file.\n"
+"      --poisson              Simulate Poisson samples.\n"
+"  -o  --output=<filename>    Output filename (default: stdout).\n");
 }
 
 
@@ -84,13 +86,15 @@ static void noisify_reflections(double *ref)
 	for ( l=-INDMAX; l<INDMAX; l++ ) {
 
 		double val;
+		int c;
 
 		val = lookup_intensity(ref, h, k, l);
-		val = poisson_noise(val);
-		set_intensity(ref, h, k, l, val);
+		c = poisson_noise(val);
+		set_intensity(ref, h, k, l, c);
 
 	}
 	}
+	progress_bar(h+INDMAX, 2*INDMAX, "Simulating noise");
 	}
 }
 
@@ -98,21 +102,23 @@ static void noisify_reflections(double *ref)
 int main(int argc, char *argv[])
 {
 	int c;
-	double *ref, *tref;
+	double *ref;
 	struct molecule *mol;
 	char *template = NULL;
 	int config_noisify = 0;
+	char *output = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"template",           1, NULL,               't'},
 		{"poisson",            0, &config_noisify,     1},
+		{"output",             1, NULL,               'o'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ht:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ht:o:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
@@ -122,6 +128,11 @@ int main(int argc, char *argv[])
 
 		case 't' : {
 			template = strdup(optarg);
+			break;
+		}
+
+		case 'o' : {
+			output = strdup(optarg);
 			break;
 		}
 
@@ -141,6 +152,9 @@ int main(int argc, char *argv[])
 	ref = ideal_intensities(mol->reflections);
 
 	if ( template != NULL ) {
+
+		double *tref;
+
 		tref = template_reflections(ref, template);
 		if ( tref == NULL ) {
 			ERROR("Couldn't read template file!\n");
@@ -148,12 +162,12 @@ int main(int argc, char *argv[])
 		}
 		free(ref);
 		ref = tref;
+
 	}
 
 	if ( config_noisify ) noisify_reflections(ref);
 
-	write_reflections("results/ideal-reflections.hkl", NULL, tref, 1,
-	                  mol->cell);
+	write_reflections(output, NULL, ref, 1, mol->cell);
 
 	return 0;
 }

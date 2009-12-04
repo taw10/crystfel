@@ -27,7 +27,16 @@ void write_reflections(const char *filename, unsigned int *counts,
 	FILE *fh;
 	signed int h, k, l;
 
-	fh = fopen(filename, "w");
+	if ( filename == NULL ) {
+		fh = stdout;
+	} else {
+		fh = fopen(filename, "w");
+	}
+
+	if ( fh == NULL ) {
+		ERROR("Couldn't open output file!\n");
+		return;
+	}
 
 	/* Write spacings and angle if zone axis pattern */
 	if ( zone_axis ) {
