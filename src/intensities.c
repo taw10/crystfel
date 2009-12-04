@@ -66,7 +66,8 @@ void output_intensities(struct image *image)
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
 
-		double hd, kd, ld;
+		double hd, kd, ld;  /* Indices with decimal places */
+		double dh, dk, dl;  /* Distances in h,k,l directions */
 		signed int h, k, l;
 		struct threevec q;
 		double dist;
@@ -83,10 +84,11 @@ void output_intensities(struct image *image)
 		k = (signed int)rint(kd);
 		l = (signed int)rint(ld);
 
-		dist = sqrt(pow(fmod(hd, 1.0), 2.0) + pow(fmod(kd, 1.0), 2.0)
-		          + pow(fmod(ld, 1.0), 2.0));
-
-		if ( dist > 0.2 ) continue;
+		dh = hd - h;
+		dk = kd - k;
+		dl = ld - l;
+		dist = sqrt(pow(dh, 2.0) + pow(dk, 2.0) + pow(dl, 2.0));
+		if ( dist > 0.1 ) continue;
 
 		for ( j=0; j<n_hits; j++ ) {
 			if ( (hits[j].h == h) && (hits[j].k == k)
