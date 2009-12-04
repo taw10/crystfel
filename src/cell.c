@@ -115,6 +115,22 @@ void cell_set_parameters(UnitCell *cell, double a, double b, double c,
 }
 
 
+void cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
+                         double *alpha, double *beta, double *gamma)
+{
+	if ( !cell ) return;
+
+	*a = cell->a;
+	*b = cell->b;
+	*c = cell->c;
+	*alpha = cell->alpha;
+	*beta = cell->beta;
+	*gamma = cell->gamma;
+
+	cell_update_cartesian(cell);
+}
+
+
 void cell_set_cartesian(UnitCell *cell,
 			double ax, double ay, double az,
 			double bx, double by, double bz,

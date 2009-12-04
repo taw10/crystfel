@@ -47,7 +47,9 @@ static void show_help(const char *s)
 "  -r, --rvsq              Output lists of R vs |q| (\"Luzzatti plots\") when\n"
 "                           analysing figures of merit.\n"
 "      --stop-after=<n>    Stop after processing n patterns (zero means\n"
-"                           keep going until the end of the input).\n");
+"                           keep going until the end of the input).\n"
+"      --zone-axis         Output an [001] zone axis pattern each time the\n"
+"                           figures of merit are analysed.\n");
 }
 
 
@@ -123,20 +125,42 @@ static void write_RvsQ(const char *name, double *ref, double *trueref,
 
 
 static void write_reflections(const char *filename, unsigned int *counts,
-                              double *ref)
+                              double *ref, int zone_axis, UnitCell *cell)
 {
 	FILE *fh;
 	signed int h, k, l;
 
 	fh = fopen(filename, "w");
+
+	/* Write spacings and angle if zone axis pattern */
+	if ( zone_axis ) {
+		double a, b, c, alpha, beta, gamma;
+		cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
+		fprintf(fh, "a %5.3f nm\n", a*1e9);
+		fprintf(fh, "b %5.3f nm\n", b*1e9);
+		fprintf(fh, "angle %5.3f deg\n", rad2deg(gamma));
+		fprintf(fh, "scale 10\n");
+	}
+
 	for ( h=-INDMAX; h<INDMAX; h++ ) {
 	for ( k=-INDMAX; k<INDMAX; k++ ) {
 	for ( l=-INDMAX; l<INDMAX; l++ ) {
+
 		int N;
-		N = lookup_count(counts, h, k, l);
-		if ( N == 0 ) continue;
-		double F = lookup_intensity(ref, h, k, l) / N;
+		double F;
+
+		if ( counts ) {
+			N = lookup_count(counts, h, k, l);
+			if ( N == 0 ) continue;
+		} else {
+			N = 1;
+		}
+
+		F = lookup_intensity(ref, h, k, l) / N;
+		if ( zone_axis && (l != 0) ) continue;
+
 		fprintf(fh, "%3i %3i %3i %f\n", h, k, l, F);
+
 	}
 	}
 	}
@@ -168,13 +192,12 @@ static double *ideal_intensities(double complex *sfac)
 
 static void process_reflections(double *ref, double *trueref,
                                 unsigned int *counts, unsigned int n_patterns,
-                                UnitCell *cell, int do_rvsq)
+                                UnitCell *cell, int do_rvsq, int do_zoneaxis)
 {
 	int j;
 	double mean_counts;
 	int ctot = 0;
 	int nmeas = 0;
-	char name[64];
 	double R, scale;
 	double calc_222, obs_222;
 
@@ -194,8 +217,15 @@ static void process_reflections(double *ref, double *trueref,
 
 	if ( do_rvsq ) {
 		/* Record graph of R against q for this N */
+		char name[64];
 		snprintf(name, 63, "results/R_vs_q-%u.dat", n_patterns);
 		write_RvsQ(name, ref, trueref, counts, scale, cell);
+	}
+
+	if ( do_zoneaxis ) {
+		char name[64];
+		snprintf(name, 63, "results/ZA-%u.dat", n_patterns);
+		write_reflections(name, counts, ref, 1, cell);
 	}
 }
 
@@ -214,6 +244,7 @@ int main(int argc, char *argv[])
 	int config_every = 1000;
 	int config_rvsq = 0;
 	int config_stopafter = 0;
+	int config_zoneaxis = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -223,6 +254,7 @@ int main(int argc, char *argv[])
 		{"output-every",       1, NULL,               'e'},
 		{"rvsq",               0, NULL,               'r'},
 		{"stop-after",         1, NULL,               's'},
+		{"zone-axis",          0, &config_zoneaxis,    1},
 		{0, 0, NULL, 0}
 	};
 
@@ -283,6 +315,9 @@ int main(int argc, char *argv[])
 	counts = new_list_count();
 	trueref = ideal_intensities(mol->reflections);
 
+	write_reflections("results/ideal-reflections.hkl", NULL, trueref, 1,
+	                  mol->cell);
+
 	if ( strcmp(filename, "-") == 0 ) {
 		fh = stdin;
 	} else {
@@ -309,7 +344,8 @@ int main(int argc, char *argv[])
 			if ( n_patterns % config_every == 0 ) {
 				process_reflections(ref, trueref, counts,
 				                    n_patterns, mol->cell,
-				                    config_rvsq);
+				                    config_rvsq,
+				                    config_zoneaxis);
 			}
 
 			if ( n_patterns == config_stopafter ) break;
@@ -337,7 +373,9 @@ int main(int argc, char *argv[])
 
 	fclose(fh);
 
-	write_reflections("results/reflections.hkl", counts, ref);
+	write_reflections("results/reflections.hkl", counts, ref, 0, NULL);
+
+	STATUS("There were %u patterns.\n", n_patterns);
 
 	return 0;
 }
