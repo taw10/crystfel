@@ -339,7 +339,10 @@ int main(int argc, char *argv[])
 		rval = fgets(line, 1023, fh);
 		if ( strncmp(line, "New pattern", 11) == 0 ) {
 
-			n_patterns++;
+			if ( n_patterns == 0 ) {
+				n_patterns++;
+				continue;
+			}
 
 			if ( n_patterns % config_every == 0 ) {
 				process_reflections(ref, trueref, counts,
@@ -350,14 +353,13 @@ int main(int argc, char *argv[])
 
 			if ( n_patterns == config_stopafter ) break;
 
+			n_patterns++;
 		}
 
 		r = sscanf(line, "%i %i %i %i", &h, &k, &l, &intensity);
 		if ( r != 4 ) continue;
 
 		if ( (h==0) && (k==0) && (l==0) ) continue;
-
-		//if ( (abs(h)>3) || (abs(k)>3) || (abs(l)>3) ) continue;
 
 		if ( !config_maxonly ) {
 			integrate_intensity(ref, h, k, l, intensity);
