@@ -46,8 +46,8 @@ static void show_help(const char *s)
 "  -e, --output-every=<n>  Analyse figures of merit after every n patterns.\n"
 "  -r, --rvsq              Output lists of R vs |q| (\"Luzzatti plots\") when\n"
 "                           analysing figures of merit.\n"
-"      --stop-after=<n>    Stop after processing n patterns (zero means)\n"
-"                           never stop).\n");
+"      --stop-after=<n>    Stop after processing n patterns (zero means\n"
+"                           keep going until the end of the input).\n");
 }
 
 
