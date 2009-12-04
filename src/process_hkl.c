@@ -45,7 +45,8 @@ static void show_help(const char *s)
 "                           The default is to use the mean value from all\n"
 "                           measurements.\n"
 "  -e, --output-every=<n>  Analyse figures of merit after every n patterns\n"
-"                           (default: 1000).\n"
+"                           Default: 1000.  A value of zero means to do the\n"
+"                           analysis only after reading all the patterns.\n"
 "  -r, --rvsq              Output lists of R vs |q| (\"Luzzatti plots\") when\n"
 "                           analysing figures of merit.\n"
 "      --stop-after=<n>    Stop after processing n patterns (zero means\n"
@@ -239,11 +240,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( config_every <= 0 ) {
-		ERROR("Invalid value for --output-every.\n");
-		return 1;
-	}
-
 	mol = load_molecule();
 	get_reflections_cached(mol, eV_to_J(2.0e3));
 
@@ -277,7 +273,7 @@ int main(int argc, char *argv[])
 				continue;
 			}
 
-			if ( n_patterns % config_every == 0 ) {
+			if (config_every && (n_patterns % config_every == 0)) {
 				process_reflections(ref, trueref, counts,
 				                    n_patterns, mol->cell,
 				                    config_rvsq,
@@ -307,6 +303,9 @@ int main(int argc, char *argv[])
 	} while ( rval != NULL );
 
 	fclose(fh);
+
+	process_reflections(ref, trueref, counts, n_patterns, mol->cell,
+	                    config_rvsq, config_zoneaxis);
 
 	write_reflections("results/reflections.hkl", counts, ref, 0, NULL);
 
