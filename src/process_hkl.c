@@ -39,6 +39,8 @@ static void show_help(const char *s)
 "\n"
 "  -h, --help              Display this help message.\n"
 "  -i, --input=<filename>  Specify input filename (\"-\" for stdin).\n"
+"  -o, --output=<filename> Specify output filename for merged intensities\n"
+"                           (don't specify for no output).\n"
 "\n"
 "      --max-only          Take the integrated intensity to be equal to the\n"
 "                           maximum intensity measured for that reflection.\n"
@@ -168,6 +170,7 @@ int main(int argc, char *argv[])
 {
 	int c;
 	char *filename = NULL;
+	char *output = NULL;
 	FILE *fh;
 	unsigned int n_patterns;
 	double *ref, *trueref;
@@ -184,6 +187,7 @@ int main(int argc, char *argv[])
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
+		{"output",              1, NULL,              'o'},
 		{"max-only",           0, &config_maxonly,     1},
 		{"output-every",       1, NULL,               'e'},
 		{"rvsq",               0, NULL,               'r'},
@@ -193,7 +197,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:e:r", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hi:e:ro:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
@@ -203,6 +207,11 @@ int main(int argc, char *argv[])
 
 		case 'i' : {
 			filename = strdup(optarg);
+			break;
+		}
+
+		case 'o' : {
+			output = strdup(optarg);
 			break;
 		}
 
@@ -304,7 +313,9 @@ int main(int argc, char *argv[])
 	process_reflections(ref, trueref, counts, n_patterns, mol->cell,
 	                    config_rvsq, config_zoneaxis);
 
-	write_reflections("results/reflections.hkl", counts, ref, 0, NULL);
+	if ( output != NULL ) {
+		write_reflections(output, counts, ref, 0, NULL);
+	}
 
 	STATUS("There were %u patterns.\n", n_patterns);
 
