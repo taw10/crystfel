@@ -230,6 +230,10 @@ int main(int argc, char *argv[])
 			image.orientation = read_quaternion();
 		}
 
+		STATUS("Orientation is %5.3f %5.3f %5.3f %5.3f\n",
+		       image.orientation.w, image.orientation.x,
+		       image.orientation.y, image.orientation.z);
+
 		if ( !quaternion_valid(image.orientation) ) {
 			ERROR("Orientation modulus is not zero!\n");
 			return 1;
