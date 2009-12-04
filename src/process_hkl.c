@@ -137,7 +137,6 @@ static void process_reflections(double *ref, double *trueref,
 	int ctot = 0;
 	int nmeas = 0;
 	double R, scale;
-	double calc_222, obs_222;
 
 	for ( j=0; j<LIST_SIZE; j++ ) {
 		ctot += counts[j];
@@ -145,13 +144,10 @@ static void process_reflections(double *ref, double *trueref,
 	}
 	mean_counts = (double)ctot/nmeas;
 
-	calc_222 = lookup_intensity(ref, 2, 2, 2) / lookup_count(counts, 2, 2, 2);
-	obs_222 = lookup_intensity(trueref, 2, 2, 2);
-
 	R = stat_r2(ref, trueref, counts, LIST_SIZE, &scale);
 	STATUS("%8u: R=%5.2f%% (sf=%7.4e)  mean meas/refl=%5.2f,"
-	       " %i reflections measured, %f\n",
-	       n_patterns, R*100.0, scale, mean_counts, nmeas, calc_222/obs_222);
+	       " %i reflections measured\n",
+	       n_patterns, R*100.0, scale, mean_counts, nmeas);
 
 	if ( do_rvsq ) {
 		/* Record graph of R against q for this N */
