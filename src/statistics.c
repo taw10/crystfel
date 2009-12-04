@@ -59,13 +59,18 @@ double stat_r2(double *obs, double *calc, unsigned int *c, int size,
 	for ( i=1; i<size; i++ ) {
 
 		if ( c[i] > 0 ) {
-			double obsi;
-			obsi = obs[i] / (double)c[i];
-			top += pow(fabs(obsi - scale*calc[i]), 2.0);
-			bot += pow(obsi, 2.0);
-		}
 
-	} /* else reflection not measured so don't worry about it */
+			double obsi;
+
+			obsi = obs[i] / (double)c[i];
+			obsi = obsi / scale;
+
+			top += pow(fabs(obsi - calc[i]), 2.0);
+			bot += pow(obsi, 2.0);
+
+		} /* else reflection not measured so don't worry about it */
+
+	}
 
 	return sqrt(top/bot);
 }
