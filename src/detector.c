@@ -142,14 +142,14 @@ static uint16_t *bloom(int *hdr_in, int width, int height)
 }
 
 
-void record_image(struct image *image, int do_water, int do_poisson)
+void record_image(struct image *image, int do_water, int do_poisson,
+                  int do_bloom)
 {
 	int x, y;
 	double total_energy, energy_density;
 	double ph_per_e;
 	double pix_area, Lsq;
 	double area;
-	const int do_bloom = 1;
 
 	/* How many photons are scattered per electron? */
 	area = M_PI*pow(BEAM_RADIUS, 2.0);
@@ -209,7 +209,7 @@ void record_image(struct image *image, int do_water, int do_poisson)
 		image->hdr[x + image->width*y] = counts;
 
 	}
-	progress_bar(x, image->width-1, "Adding water and noise");
+	progress_bar(x, image->width-1, "Post-processing");
 	}
 
 	if ( do_bloom ) {

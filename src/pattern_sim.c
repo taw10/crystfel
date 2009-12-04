@@ -43,8 +43,16 @@ static void show_help(const char *s)
 "     --no-images           Do not output any HDF5 files.\n"
 " -r, --random-orientation  Use a randomly generated orientation\n"
 "                            (a new orientation will be used for each image).\n"
+"\n"
+"By default, the simulation aims to be as accurate as possible.  For greater\n"
+"speed, or for testing, you can choose to disable certain things using the\n"
+"following options.\n"
+"\n"
 "     --no-water            Do not simulate water background.\n"
 "     --no-noise            Do not calculate Poisson noise.\n"
+"     --no-bloom            Do not calculate CCD bloom (intensities which are\n"
+"                            above the recordable range will be clamped to\n"
+"                            the maximum allowable value).\n"
 );
 }
 
@@ -144,6 +152,7 @@ int main(int argc, char *argv[])
 	int config_noimages = 0;
 	int config_nowater = 0;
 	int config_nonoise = 0;
+	int config_nobloom = 0;
 	int number = 1;  /* Index for the current image */
 	int n_images = 1;  /* Generate one image by default */
 	int done = 0;
@@ -158,6 +167,7 @@ int main(int argc, char *argv[])
 		{"no-images",          0, &config_noimages,    1},
 		{"no-water",           0, &config_nowater,     1},
 		{"no-noise",           0, &config_nonoise,     1},
+		{"no-bloom",           0, &config_nobloom,     1},
 		{0, 0, NULL, 0}
 	};
 
@@ -233,7 +243,8 @@ int main(int argc, char *argv[])
 		image.hdr = NULL;
 
 		get_diffraction(&image);
-		record_image(&image, !config_nowater, !config_nonoise);
+		record_image(&image, !config_nowater, !config_nonoise,
+		             !config_nobloom);
 
 		if ( config_nearbragg ) {
 			output_intensities(&image);
