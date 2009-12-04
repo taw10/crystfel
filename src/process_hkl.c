@@ -24,6 +24,7 @@
 #include "utils.h"
 #include "statistics.h"
 #include "sfac.h"
+#include "reflections.h"
 
 
 /* Number of divisions for R vs |q| graphs */
@@ -121,72 +122,6 @@ static void write_RvsQ(const char *name, double *ref, double *trueref,
 
 	}
 	fclose(fh);
-}
-
-
-static void write_reflections(const char *filename, unsigned int *counts,
-                              double *ref, int zone_axis, UnitCell *cell)
-{
-	FILE *fh;
-	signed int h, k, l;
-
-	fh = fopen(filename, "w");
-
-	/* Write spacings and angle if zone axis pattern */
-	if ( zone_axis ) {
-		double a, b, c, alpha, beta, gamma;
-		cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
-		fprintf(fh, "a %5.3f nm\n", a*1e9);
-		fprintf(fh, "b %5.3f nm\n", b*1e9);
-		fprintf(fh, "angle %5.3f deg\n", rad2deg(gamma));
-		fprintf(fh, "scale 10\n");
-	}
-
-	for ( h=-INDMAX; h<INDMAX; h++ ) {
-	for ( k=-INDMAX; k<INDMAX; k++ ) {
-	for ( l=-INDMAX; l<INDMAX; l++ ) {
-
-		int N;
-		double F;
-
-		if ( counts ) {
-			N = lookup_count(counts, h, k, l);
-			if ( N == 0 ) continue;
-		} else {
-			N = 1;
-		}
-
-		F = lookup_intensity(ref, h, k, l) / N;
-		if ( zone_axis && (l != 0) ) continue;
-
-		fprintf(fh, "%3i %3i %3i %f\n", h, k, l, F);
-
-	}
-	}
-	}
-	fclose(fh);
-}
-
-
-static double *ideal_intensities(double complex *sfac)
-{
-	double *ref;
-	signed int h, k, l;
-
-	ref = new_list_intensity();
-
-	/* Generate ideal reflections from complex structure factors */
-	for ( h=-INDMAX; h<=INDMAX; h++ ) {
-	for ( k=-INDMAX; k<=INDMAX; k++ ) {
-	for ( l=-INDMAX; l<=INDMAX; l++ ) {
-		double complex F = lookup_sfac(sfac, h, k, l);
-		double intensity = pow(cabs(F), 2.0);
-		set_intensity(ref, h, k, l, intensity);
-	}
-	}
-	}
-
-	return ref;
 }
 
 
@@ -314,9 +249,6 @@ int main(int argc, char *argv[])
 	ref = new_list_intensity();
 	counts = new_list_count();
 	trueref = ideal_intensities(mol->reflections);
-
-	write_reflections("results/ideal-reflections.hkl", NULL, trueref, 1,
-	                  mol->cell);
 
 	if ( strcmp(filename, "-") == 0 ) {
 		fh = stdin;

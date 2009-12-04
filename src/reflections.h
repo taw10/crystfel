@@ -1,0 +1,29 @@
+/*
+ * reflections.h
+ *
+ * Utilities for handling reflections
+ *
+ * (c) 2007-2009 Thomas White <thomas.white@desy.de>
+ *
+ * Part of CrystFEL - crystallography with a FEL
+ *
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifndef REFLECTIONS_H
+#define REFLECTIONS_H
+
+
+#include "cell.h"
+
+
+extern void write_reflections(const char *filename, unsigned int *counts,
+                              double *ref, int zone_axis, UnitCell *cell);
+
+extern double *ideal_intensities(double complex *sfac);
+
+
+#endif	/* REFLECTIONS_H */
