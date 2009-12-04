@@ -74,6 +74,28 @@ void progress_bar(int val, int total, const char *text)
 }
 
 
+static int fake_poisson_noise(double expected)
+{
+	double x1, x2, w;
+	double noise, rf;
+
+	do {
+
+		x1 = 2.0 * ((double)random()/RAND_MAX) - 1.0;
+		x2 = 2.0 * ((double)random()/RAND_MAX) - 1.0;
+		w = pow(x1, 2.0) + pow(x2, 2.0);
+
+	} while ( w >= 1.0 );
+
+	w = sqrt((-2.0*log(w))/w);
+	noise = w * x1;
+
+	rf = expected + noise*sqrt(expected);
+
+	return (int)rf;
+}
+
+
 int poisson_noise(double expected)
 {
 	double L;
@@ -82,12 +104,16 @@ int poisson_noise(double expected)
 
 	L = exp(-expected);
 
+	/* For large values of the mean, we get big problems with arithmetic.
+	 * In such cases, fall back on a Gaussian with the right variance. */
+	if ( !isnormal(L) ) return fake_poisson_noise(expected);
+
 	do {
 
 		double r;
 
 		k++;
-		r = (double)random()/RAND_MAX;
+		r = (double)random()/(double)RAND_MAX;
 		p *= r;
 
 	} while ( p > L );
