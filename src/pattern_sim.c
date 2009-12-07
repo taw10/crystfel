@@ -225,12 +225,9 @@ int main(int argc, char *argv[])
 
 		int na, nb, nc;
 
-		//na = 8*random()/RAND_MAX + 4;
-		//nb = 8*random()/RAND_MAX + 4;
-		//nc = 16*random()/RAND_MAX + 30;
-		na = 4;
-		nb = 4;
-		nc = 30;
+		na = 8*random()/RAND_MAX + 4;
+		nb = 8*random()/RAND_MAX + 4;
+		nc = 16*random()/RAND_MAX + 30;
 		STATUS("Particle size = %i x %i x %i\n", na, nb, nc);
 
 		/* Read quaternion from stdin */
@@ -256,7 +253,7 @@ int main(int argc, char *argv[])
 		image.twotheta = NULL;
 		image.hdr = NULL;
 
-		get_diffraction(&image);
+		get_diffraction(&image, na, nb, nc);
 		record_image(&image, !config_nowater, !config_nonoise,
 		             !config_nobloom);
 

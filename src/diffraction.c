@@ -31,9 +31,6 @@ static double lattice_factor(struct threevec q, double ax, double ay, double az,
 {
 	struct threevec Udotq;
 	double f1, f2, f3;
-	int na = 4;
-	int nb = 4;
-	int nc = 30;
 
 	Udotq.u = ax*q.u + ay*q.v + az*q.w;
 	Udotq.v = bx*q.u + by*q.v + bz*q.w;
@@ -136,7 +133,7 @@ double water_intensity(struct threevec q, double en,
 }
 
 
-void get_diffraction(struct image *image)
+void get_diffraction(struct image *image, int na, int nb, int nc)
 {
 	int x, y;
 	double ax, ay, az;
@@ -172,7 +169,8 @@ void get_diffraction(struct image *image)
 
 		q = image->qvecs[x + image->width*y];
 
-		f_lattice = lattice_factor(q, ax,ay,az,bx,by,bz,cx,cy,cz);
+		f_lattice = lattice_factor(q, ax,ay,az,bx,by,bz,cx,cy,cz,
+		                           na, nb, nc);
 		f_molecule = molecule_factor(image->molecule, q,
 		                             ax,ay,az,bx,by,bz,cx,cy,cz);
 
