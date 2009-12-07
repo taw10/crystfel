@@ -26,7 +26,8 @@
 
 static double lattice_factor(struct threevec q, double ax, double ay, double az,
                                                 double bx, double by, double bz,
-                                                double cx, double cy, double cz)
+                                                double cx, double cy, double cz,
+                                                int na, int nb, int nc)
 {
 	struct threevec Udotq;
 	double f1, f2, f3;

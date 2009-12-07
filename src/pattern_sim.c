@@ -32,7 +32,7 @@ static void show_help(const char *s)
 {
 	printf("Syntax: %s [options]\n\n", s);
 	printf(
-"Simulate diffraction patterns from small crystals probed with femosecond\n"
+"Simulate diffraction patterns from small crystals probed with femtosecond\n"
 "pulses of X-rays from a free electron laser.\n"
 "\n"
 " -h, --help                Display this help message.\n"
@@ -222,6 +222,16 @@ int main(int argc, char *argv[])
 	STATUS("Wavelength is %f nm\n", image.lambda/1.0e-9);
 
 	do {
+
+		int na, nb, nc;
+
+		//na = 8*random()/RAND_MAX + 4;
+		//nb = 8*random()/RAND_MAX + 4;
+		//nc = 16*random()/RAND_MAX + 30;
+		na = 4;
+		nb = 4;
+		nc = 30;
+		STATUS("Particle size = %i x %i x %i\n", na, nb, nc);
 
 		/* Read quaternion from stdin */
 		if ( config_randomquat ) {
