@@ -202,8 +202,10 @@ void record_image(struct image *image, int do_water, int do_poisson,
 		if ( do_poisson ) {
 			counts = poisson_noise(intensity * ph_per_e * sa * DQE);
 		} else {
+			double rounded;
 			cf = intensity * ph_per_e * sa * DQE;
-			counts = (int)cf;
+			rounded = rint(cf);
+			counts = (int)rounded;
 		}
 
 		image->hdr[x + image->width*y] = counts;
