@@ -139,6 +139,7 @@ static void process_reflections(double *ref, double *trueref,
 	int ctot = 0;
 	int nmeas = 0;
 	double R, scale;
+	FILE *fh;
 
 	for ( j=0; j<LIST_SIZE; j++ ) {
 		ctot += counts[j];
@@ -163,6 +164,10 @@ static void process_reflections(double *ref, double *trueref,
 		snprintf(name, 63, "results/ZA-%u.dat", n_patterns);
 		write_reflections(name, counts, ref, 1, cell);
 	}
+
+	fh = fopen("results/convergence.dat", "a");
+	fprintf(fh, "%u %5.2f %5.2f\n", n_patterns, R*100.0, mean_counts);
+	fclose(fh);
 }
 
 
