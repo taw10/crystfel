@@ -26,6 +26,7 @@
 #include "hdf5-file.h"
 #include "detector.h"
 #include "intensities.h"
+#include "sfac.h"
 
 
 static void show_help(const char *s)
@@ -228,7 +229,6 @@ int main(int argc, char *argv[])
 		na = 8*random()/RAND_MAX + 4;
 		nb = 8*random()/RAND_MAX + 4;
 		nc = 16*random()/RAND_MAX + 30;
-		STATUS("Particle size = %i x %i x %i\n", na, nb, nc);
 
 		/* Read quaternion from stdin */
 		if ( config_randomquat ) {
