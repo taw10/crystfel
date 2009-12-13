@@ -139,6 +139,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc)
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
+	double a, b, c, d;
 
 	/* Generate the array of reciprocal space vectors in image->qvecs */
 	get_ewald(image);
@@ -151,6 +152,11 @@ void get_diffraction(struct image *image, int na, int nb, int nc)
 	cell_get_cartesian(image->molecule->cell, &ax, &ay, &az,
 		                                  &bx, &by, &bz,
 		                                  &cx, &cy, &cz);
+
+	cell_get_parameters(image->molecule->cell,
+	                    &a, &b, &c, &d, &d, &d);
+	STATUS("Particle size = %i x %i x %i (=%5.2f x %5.2f x %5.2f nm)\n",
+	       na, nb, nc, na*a/1.0e-9, nb*b/1.0e-9, nc*c/1.0e-9);
 
 	image->sfacs = malloc(image->width * image->height
 	                      * sizeof(double complex));
