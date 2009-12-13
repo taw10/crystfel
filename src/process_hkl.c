@@ -53,7 +53,7 @@ static void show_help(const char *s)
 "                           analysing figures of merit.\n"
 "      --stop-after=<n>    Stop after processing n patterns.  Zero means\n"
 "                           keep going until the end of the input, and is the\n"
-"                           default."
+"                           default.\n"
 "      --zone-axis         Output an [001] zone axis pattern each time the\n"
 "                           figures of merit are analysed.\n");
 }
