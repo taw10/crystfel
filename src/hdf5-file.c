@@ -23,6 +23,143 @@
 #include "hdf5-file.h"
 
 
+struct hdfile {
+
+	const char      *path;  /* Current data path */
+
+	struct image    *image;
+
+	size_t          nx;  /* Image width */
+	size_t          ny;  /* Image height */
+
+	hid_t           fh;  /* HDF file handle */
+	hid_t           dh;  /* Dataset handle */
+	hid_t           sh;  /* Dataspace handle */
+};
+
+
+struct hdfile *hdfile_open(const char *filename)
+{
+	struct hdfile *f;
+
+	f = malloc(sizeof(struct hdfile));
+	if ( f == NULL ) return NULL;
+
+	f->fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	if ( f->fh < 0 ) {
+		ERROR("Couldn't open file: %s\n", filename);
+		free(f);
+		return NULL;
+	}
+
+	return f;
+}
+
+
+int hdfile_set_image(struct hdfile *f, const char *path)
+{
+	hsize_t size[2];
+	hsize_t max_size[2];
+
+	f->dh = H5Dopen(f->fh, path, H5P_DEFAULT);
+	if ( f->dh < 0 ) {
+		ERROR("Couldn't open dataset\n");
+		return -1;
+	}
+
+	f->sh = H5Dget_space(f->dh);
+	if ( H5Sget_simple_extent_ndims(f->sh) != 2 ) {
+		ERROR("Dataset is not two-dimensional\n");
+		return -1;
+	}
+
+	H5Sget_simple_extent_dims(f->sh, size, max_size);
+
+	f->nx = size[0];
+	f->ny = size[1];
+
+	return 0;
+}
+
+
+int hdfile_get_width(struct hdfile *f)
+{
+	return f->nx;
+}
+
+
+int hdfile_get_height(struct hdfile *f)
+{
+	return f->ny;
+}
+
+
+void hdfile_close(struct hdfile *f)
+{
+	H5Fclose(f->fh);
+	free(f->image);
+	free(f);
+}
+
+
+static void *hdfile_bin(uint16_t *in, int inw, int inh,
+                        int binning, uint16_t *maxp)
+{
+	uint16_t *data;
+	int x, y;
+	int w, h;
+	uint16_t max;
+
+	w = inw / binning;
+	h = inh / binning;      /* Some pixels might get discarded */
+
+	data = malloc(w*h*sizeof(uint16_t));
+	max = 0;
+
+	for ( x=0; x<w; x++ ) {
+	for ( y=0; y<h; y++ ) {
+
+		/* Big enough to hold large values */
+		unsigned long long int total;
+		size_t xb, yb;
+
+		total = 0;
+		for ( xb=0; xb<binning; xb++ ) {
+		for ( yb=0; yb<binning; yb++ ) {
+
+			total += in[inh*(binning*x+xb)+((inh-binning*y)+yb)];
+
+		}
+		}
+
+		data[x+w*y] = total / (binning * binning);
+		if ( data[x+w*y] > max ) max = data[x+w*y];
+
+	}
+	}
+
+	*maxp = max;
+	return data;
+}
+
+
+uint16_t *hdfile_get_image_binned(struct hdfile *f, int binning, uint16_t *max)
+{
+	struct image *image;
+	uint16_t *data;
+
+	image = malloc(sizeof(struct image));
+	if ( image == NULL ) return NULL;
+
+	hdf5_read(f, image);
+	f->image = image;
+
+	data = hdfile_bin(image->data, f->nx, f->ny, binning, max);
+
+	return data;
+}
+
+
 int hdf5_write(const char *filename, const uint16_t *data,
                int width, int height)
 {
@@ -78,54 +215,26 @@ int hdf5_write(const char *filename, const uint16_t *data,
 }
 
 
-int hdf5_read(struct image *image, const char *filename)
+int hdf5_read(struct hdfile *f, struct image *image)
 {
-	hid_t fh, sh, dh;	/* File, dataspace and data handles */
 	herr_t r;
-	hsize_t size[2];
-	hsize_t max_size[2];
 	uint16_t *buf;
 
-	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-	if ( fh < 0 ) {
-		/* TODO: Try other formats here. */
-		ERROR("Couldn't open file: %s\n", filename);
-		return 1;
-	}
+	buf = malloc(sizeof(float)*f->nx*f->ny);
 
-	dh = H5Dopen(fh, "/data/data", H5P_DEFAULT);
-	if ( dh < 0 ) {
-		ERROR("Couldn't open dataset\n");
-		H5Fclose(fh);
-		return 1;
-	}
-
-	sh = H5Dget_space(dh);
-	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
-		ERROR("Dataset is not two-dimensional\n");
-		H5Fclose(fh);
-		return 1;
-	}
-
-	H5Sget_simple_extent_dims(sh, size, max_size);
-
-	buf = malloc(sizeof(float)*size[0]*size[1]);
-
-	r = H5Dread(dh, H5T_NATIVE_UINT16, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
+	r = H5Dread(f->dh, H5T_NATIVE_UINT16, H5S_ALL, H5S_ALL,
+	            H5P_DEFAULT, buf);
 	if ( r < 0 ) {
 		ERROR("Couldn't read data\n");
-		H5Dclose(dh);
-		H5Fclose(fh);
+		H5Dclose(f->dh);
 		return 1;
 	}
 
 	image->data = buf;
-	image->height = size[0];
-	image->width = size[1];
+	image->height = f->nx;
+	image->width = f->ny;
 	image->x_centre = image->width/2;
 	image->y_centre = image->height/2;
-
-	H5Fclose(fh);
 
 	return 0;
 }

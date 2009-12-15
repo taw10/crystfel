@@ -1,0 +1,602 @@
+/*
+ * displaywindow.c
+ *
+ * Quick yet non-crappy HDF viewer
+ *
+ * (c) 2006-2009 Thomas White <thomas.white@desy.de>
+ *
+ * Part of CrystFEL - crystallography with a FEL
+ *
+ */
+
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#define _GNU_SOURCE
+#include <gtk/gtk.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <cairo.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
+#include "displaywindow.h"
+#include "render.h"
+#include "hdf5-file.h"
+#include "hdfsee.h"
+
+
+#define INITIAL_BINNING 2
+
+
+void displaywindow_error(DisplayWindow *dw, const char *message)
+{
+	GtkWidget *window;
+
+	window = gtk_message_dialog_new(GTK_WINDOW(dw->window),
+					GTK_DIALOG_DESTROY_WITH_PARENT,
+					GTK_MESSAGE_WARNING,
+					GTK_BUTTONS_CLOSE, message);
+
+	g_signal_connect_swapped(window, "response",
+				 G_CALLBACK(gtk_widget_destroy), window);
+	gtk_widget_show(window);
+}
+
+
+void displaywindow_update(DisplayWindow *dw)
+{
+	gint width;
+	GdkGeometry geom;
+
+	if ( dw->hdfile != NULL ) {
+		dw->width = hdfile_get_width(dw->hdfile)/dw->binning;
+		dw->height = hdfile_get_height(dw->hdfile)/dw->binning;
+	} else {
+		dw->width = 320;
+		dw->height = 320;
+	}
+
+	width = dw->width;
+	if ( dw->show_col_scale ) width += 20;
+
+	gtk_widget_set_size_request(GTK_WIDGET(dw->drawingarea), width,
+				    dw->height);
+	geom.min_width = -1;
+	geom.min_height = -1;
+	geom.max_width = -1;
+	geom.max_height = -1;
+	gtk_window_set_geometry_hints(GTK_WINDOW(dw->window),
+				      GTK_WIDGET(dw->drawingarea), &geom,
+				      GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE);
+
+	if ( dw->pixbuf != NULL ) {
+		gdk_pixbuf_unref(dw->pixbuf);
+	}
+	if ( dw->hdfile != NULL ) {
+		dw->pixbuf = render_get_image(dw->hdfile, dw->binning,
+					      dw->boostint, dw->monochrome);
+	} else {
+		dw->pixbuf = NULL;
+	}
+
+	if ( dw->col_scale != NULL ) {
+		gdk_pixbuf_unref(dw->col_scale);
+	}
+	dw->col_scale = render_get_colour_scale(20, dw->height, dw->monochrome);
+
+	gdk_window_invalidate_rect(dw->drawingarea->window, NULL, FALSE);
+}
+
+
+/* Window closed - clean up */
+static gint displaywindow_closed(GtkWidget *window, DisplayWindow *dw)
+{
+	if ( dw->hdfile != NULL ) {
+		hdfile_close(dw->hdfile);
+	}
+
+	/* Notify 'main', so it can update the master list */
+	hdfsee_window_closed(dw);
+
+	return 0;
+}
+
+
+static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
+				     DisplayWindow *dw)
+{
+	cairo_t *cr;
+
+	cr = gdk_cairo_create(da->window);
+
+	/* Blank white background */
+	cairo_rectangle(cr, 0.0, 0.0, da->allocation.width,
+			da->allocation.height);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+	cairo_fill(cr);
+
+	cairo_destroy(cr);
+
+	if ( dw->pixbuf != NULL ) {
+		gdk_draw_pixbuf(da->window,
+				da->style->bg_gc[GTK_WIDGET_STATE(da)],
+				dw->pixbuf,
+				0, 0, 0, 0, dw->width, dw->height,
+				GDK_RGB_DITHER_NONE, 0, 0);
+	}
+
+	if ( (dw->show_col_scale) && (dw->col_scale != NULL) ) {
+		gdk_draw_pixbuf(da->window,
+				da->style->bg_gc[GTK_WIDGET_STATE(da)],
+				dw->col_scale,
+				0, 0, dw->width, 0, 20, dw->height,
+				GDK_RGB_DITHER_NONE, 0, 0);
+	}
+
+	return FALSE;
+}
+
+
+static gint displaywindow_close(GtkWidget *widget, DisplayWindow *dw)
+{
+	gtk_widget_destroy(dw->window);
+	return 0;
+}
+
+
+static gint displaywindow_set_binning_response(GtkWidget *widget, gint response,
+					       DisplayWindow *dw)
+{
+	int done = 1;
+
+	if ( response == GTK_RESPONSE_OK ) {
+
+		const char *sbinning;
+		int binning;
+		int scanval;
+
+		sbinning = gtk_entry_get_text(
+					GTK_ENTRY(dw->binning_dialog->entry));
+		scanval = sscanf(sbinning, "%u", &binning);
+		if ( (scanval != 1) || (binning <= 0) ) {
+			displaywindow_error(dw,
+				"Please enter a positive integer for the "
+				"binning factor.");
+			done = 0;
+		} else {
+			if ((binning < hdfile_get_width(dw->hdfile)/10)
+			 && (binning < hdfile_get_height(dw->hdfile)/10)) {
+				dw->binning = binning;
+				displaywindow_update(dw);
+			} else {
+				displaywindow_error(dw,
+					"Please enter a sensible value for "
+					"the binning factor.");
+				done = 0;
+			}
+		}
+	}
+
+	if ( done ) {
+		gtk_widget_destroy(dw->binning_dialog->window);
+	}
+
+	return 0;
+
+}
+
+
+static gint displaywindow_set_binning_destroy(GtkWidget *widget,
+					      DisplayWindow *dw)
+{
+	free(dw->binning_dialog);
+	dw->binning_dialog = NULL;
+	return 0;
+}
+
+
+static gint displaywindow_set_binning_response_ac(GtkWidget *widget,
+						  DisplayWindow *dw)
+{
+	return displaywindow_set_binning_response(widget, GTK_RESPONSE_OK, dw);
+}
+
+
+/* Create a window to ask the user for a new binning factor */
+static gint displaywindow_set_binning(GtkWidget *widget, DisplayWindow *dw)
+{
+	BinningDialog *bd;
+	GtkWidget *vbox;
+	GtkWidget *hbox;
+	GtkWidget *table;
+	GtkWidget *label;
+	char tmp[64];
+
+	if ( dw->binning_dialog != NULL ) {
+		return 0;
+	}
+
+	if ( dw->hdfile == NULL ) {
+		return 0;
+	}
+
+	bd = malloc(sizeof(BinningDialog));
+	if ( bd == NULL ) return 0;
+	dw->binning_dialog = bd;
+
+	bd->window = gtk_dialog_new_with_buttons("Set Binning",
+					GTK_WINDOW(dw->window),
+					GTK_DIALOG_DESTROY_WITH_PARENT,
+					GTK_STOCK_CANCEL, GTK_RESPONSE_CLOSE,
+					GTK_STOCK_OK, GTK_RESPONSE_OK,
+					NULL);
+
+	vbox = gtk_vbox_new(FALSE, 0);
+	hbox = gtk_hbox_new(TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(bd->window)->vbox),
+			   GTK_WIDGET(hbox), FALSE, FALSE, 7);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(vbox), FALSE, FALSE, 5);
+
+	table = gtk_table_new(3, 2, FALSE);
+	gtk_table_set_row_spacings(GTK_TABLE(table), 5);
+	gtk_table_set_col_spacings(GTK_TABLE(table), 5);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(table), FALSE, FALSE, 0);
+
+	label = gtk_label_new("Smaller numbers mean larger images on screen");
+	gtk_label_set_markup(GTK_LABEL(label),
+			"<span style=\"italic\" weight=\"light\">"
+			"Smaller numbers mean larger images on screen</span>");
+	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(label),
+				  1, 3, 1, 2);
+
+	snprintf(tmp, 63, "Raw image size: %i by %i pixels",
+		 (int)hdfile_get_width(dw->hdfile),
+		 (int)hdfile_get_height(dw->hdfile));
+	label = gtk_label_new(tmp);
+	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(label),
+				  1, 3, 2, 3);
+
+	label = gtk_label_new("Binning Factor:");
+	gtk_misc_set_alignment(GTK_MISC(label), 1, 0.5);
+	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(label),
+				  1, 2, 3, 4);
+
+	bd->entry = gtk_entry_new();
+	snprintf(tmp, 63, "%i", dw->binning);
+	gtk_entry_set_text(GTK_ENTRY(bd->entry), tmp);
+	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(bd->entry),
+				  2, 3, 3, 4);
+
+	g_signal_connect(G_OBJECT(bd->entry), "activate",
+			 G_CALLBACK(displaywindow_set_binning_response_ac), dw);
+	g_signal_connect(G_OBJECT(bd->window), "response",
+			 G_CALLBACK(displaywindow_set_binning_response), dw);
+	g_signal_connect(G_OBJECT(bd->window), "destroy",
+			 G_CALLBACK(displaywindow_set_binning_destroy), dw);
+	gtk_window_set_resizable(GTK_WINDOW(bd->window), FALSE);
+	gtk_widget_show_all(bd->window);
+	gtk_widget_grab_focus(GTK_WIDGET(bd->entry));
+
+	return 0;
+}
+
+
+static gint displaywindow_set_boostint_response(GtkWidget *widget,
+						gint response,
+						DisplayWindow *dw)
+{
+	int done = 1;
+
+	if ( response == GTK_RESPONSE_OK ) {
+
+		const char *sboostint;
+		int boostint;
+		int scanval;
+
+		sboostint = gtk_entry_get_text(
+		 			GTK_ENTRY(dw->boostint_dialog->entry));
+		scanval = sscanf(sboostint, "%u", &boostint);
+		if ( (scanval != 1) || (boostint <= 0) ) {
+			displaywindow_error(dw, "Please enter a positive "
+					"integer for the intensity boost "
+					"factor.");
+			done = 0;
+		} else {
+			dw->boostint = boostint;
+			displaywindow_update(dw);
+		}
+	}
+
+	if ( done ) {
+		gtk_widget_destroy(dw->boostint_dialog->window);
+	}
+
+	return 0;
+}
+
+
+static gint displaywindow_set_boostint_destroy(GtkWidget *widget,
+					       DisplayWindow *dw)
+{
+	free(dw->boostint_dialog);
+	dw->boostint_dialog = NULL;
+	return 0;
+}
+
+
+static gint displaywindow_set_boostint_response_ac(GtkWidget *widget,
+						   DisplayWindow *dw)
+{
+	return displaywindow_set_boostint_response(widget, GTK_RESPONSE_OK, dw);
+}
+
+
+/* Create a window to ask the user for a new intensity boost factor */
+static gint displaywindow_set_boostint(GtkWidget *widget, DisplayWindow *dw)
+{
+	BoostIntDialog *bd;
+	GtkWidget *vbox;
+	GtkWidget *hbox;
+	GtkWidget *table;
+	GtkWidget *label;
+	char tmp[64];
+
+	if ( dw->boostint_dialog != NULL ) {
+		return 0;
+	}
+
+	if ( dw->hdfile == NULL ) {
+		return 0;
+	}
+
+	bd = malloc(sizeof(BoostIntDialog));
+	if ( bd == NULL ) return 0;
+	dw->boostint_dialog = bd;
+
+	bd->window = gtk_dialog_new_with_buttons("Intensity Boost",
+					GTK_WINDOW(dw->window),
+					GTK_DIALOG_DESTROY_WITH_PARENT,
+					GTK_STOCK_CANCEL, GTK_RESPONSE_CLOSE,
+					GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
+
+	vbox = gtk_vbox_new(FALSE, 0);
+	hbox = gtk_hbox_new(TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(bd->window)->vbox),
+			   GTK_WIDGET(hbox), FALSE, FALSE, 7);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(vbox), FALSE, FALSE, 5);
+
+	table = gtk_table_new(3, 2, FALSE);
+	gtk_table_set_row_spacings(GTK_TABLE(table), 5);
+	gtk_table_set_col_spacings(GTK_TABLE(table), 5);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(table), FALSE, FALSE, 0);
+
+	label = gtk_label_new("Boost Factor:");
+	gtk_misc_set_alignment(GTK_MISC(label), 1, 0.5);
+	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(label),
+				  1, 2, 3, 4);
+
+	bd->entry = gtk_entry_new();
+	snprintf(tmp, 63, "%i", dw->boostint);
+	gtk_entry_set_text(GTK_ENTRY(bd->entry), tmp);
+	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(bd->entry),
+				  2, 3, 3, 4);
+
+	g_signal_connect(G_OBJECT(bd->entry), "activate",
+			 G_CALLBACK(displaywindow_set_boostint_response_ac),
+			 dw);
+	g_signal_connect(G_OBJECT(bd->window), "response",
+			 G_CALLBACK(displaywindow_set_boostint_response), dw);
+	g_signal_connect(G_OBJECT(bd->window), "destroy",
+			 G_CALLBACK(displaywindow_set_boostint_destroy), dw);
+	gtk_window_set_resizable(GTK_WINDOW(bd->window), FALSE);
+	gtk_widget_show_all(bd->window);
+	gtk_widget_grab_focus(GTK_WIDGET(bd->entry));
+
+	return 0;
+}
+
+
+static gint displaywindow_about(GtkWidget *widget, DisplayWindow *dw)
+{
+	GtkWidget *window;
+
+	const gchar *authors[] = {
+		"Thomas White <taw@physics.org>",
+		"Erica Bithell <egb10@cam.ac.uk>",
+		"Alex Eggeman <ase25@cam.ac.uk>",
+		NULL
+	};
+
+	window = gtk_about_dialog_new();
+	gtk_window_set_transient_for(GTK_WINDOW(window),
+				     GTK_WINDOW(dw->window));
+
+	gtk_about_dialog_set_name(GTK_ABOUT_DIALOG(window), "hdfsee");
+	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window), PACKAGE_VERSION);
+	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window),
+		"(c) 2006-2009 Thomas White <taw@physics.org> and others");
+	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(window),
+		"Quick viewer for HDF files");
+	gtk_about_dialog_set_license(GTK_ABOUT_DIALOG(window),
+		"(c) 2006-2009 Thomas White <taw@physics.org>\n");
+	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(window),
+		"http://www.bitwiz.org.uk/");
+	gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(window), authors);
+
+	g_signal_connect(window, "response", G_CALLBACK(gtk_widget_destroy),
+			 NULL);
+
+	gtk_widget_show_all(window);
+
+	return 0;
+}
+
+
+static gint displaywindow_set_colscale(GtkWidget *widget, DisplayWindow *dw)
+{
+	dw->show_col_scale = 1 - dw->show_col_scale;
+	displaywindow_update(dw);
+	return 0;
+}
+
+
+static gint displaywindow_set_mono(GtkWidget *widget, DisplayWindow *dw)
+{
+	dw->monochrome = 1 - dw->monochrome;
+	displaywindow_update(dw);
+	return 0;
+}
+
+
+static void displaywindow_addui_callback(GtkUIManager *ui, GtkWidget *widget,
+					 GtkContainer *container)
+{
+	gtk_box_pack_start(GTK_BOX(container), widget, FALSE, FALSE, 0);
+
+	/* Enable overflow menu if this is a toolbar */
+	if ( GTK_IS_TOOLBAR(widget) ) {
+		gtk_toolbar_set_show_arrow(GTK_TOOLBAR(widget), TRUE);
+	}
+}
+
+
+static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox)
+{
+	GError *error = NULL;
+	GtkActionEntry entries[] = {
+
+		{ "FileAction", NULL, "_File", NULL, NULL, NULL },
+		{ "CloseAction", GTK_STOCK_CLOSE, "_Close", NULL, NULL,
+			G_CALLBACK(displaywindow_close) },
+
+		{ "ViewAction", NULL, "_View", NULL, NULL, NULL },
+		{ "BinningAction", NULL, "Set Binning...", "F3", NULL,
+			G_CALLBACK(displaywindow_set_binning) },
+		{ "BoostIntAction", NULL, "Boost Intensity...", "F5", NULL,
+			G_CALLBACK(displaywindow_set_boostint) },
+
+		{ "HelpAction", NULL, "_Help", NULL, NULL, NULL },
+		{ "AboutAction", GTK_STOCK_ABOUT, "_About hdfileView...",
+			NULL, NULL,
+			G_CALLBACK(displaywindow_about) },
+
+	};
+	guint n_entries = G_N_ELEMENTS(entries);
+
+	GtkToggleActionEntry toggles[] = {
+		{ "ColScaleAction", NULL, "Show Colour Scale", NULL, NULL,
+			G_CALLBACK(displaywindow_set_colscale), FALSE },
+		{ "MonoAction", NULL, "Monochrome", NULL, NULL,
+			G_CALLBACK(displaywindow_set_mono), FALSE },
+	};
+	guint n_toggles = G_N_ELEMENTS(toggles);
+
+	dw->action_group = gtk_action_group_new("hdfseedisplaywindow");
+	gtk_action_group_add_actions(dw->action_group, entries, n_entries, dw);
+	gtk_action_group_add_toggle_actions(dw->action_group, toggles,
+					    n_toggles, dw);
+
+	dw->ui = gtk_ui_manager_new();
+	gtk_ui_manager_insert_action_group(dw->ui, dw->action_group, 0);
+	g_signal_connect(dw->ui, "add_widget",
+			 G_CALLBACK(displaywindow_addui_callback), vbox);
+	if ( gtk_ui_manager_add_ui_from_file(dw->ui,
+	     DATADIR"/hdfsee/displaywindow.ui", &error) == 0 ) {
+		fprintf(stderr, "Error loading message window menu bar: %s\n",
+			error->message);
+		return;
+	}
+
+	gtk_window_add_accel_group(GTK_WINDOW(dw->window),
+				   gtk_ui_manager_get_accel_group(dw->ui));
+	gtk_ui_manager_ensure_update(dw->ui);
+}
+
+
+static void displaywindow_disable(DisplayWindow *dw)
+{
+	GtkWidget *w;
+
+	w = gtk_ui_manager_get_widget(dw->ui,
+				      "/ui/displaywindow/view/binning");
+	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
+
+	w = gtk_ui_manager_get_widget(dw->ui,
+				      "/ui/displaywindow/view/boostint");
+	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
+
+	w = gtk_ui_manager_get_widget(dw->ui,
+				      "/ui/displaywindow/tools/histogram");
+	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
+}
+
+
+DisplayWindow *displaywindow_open(const char *filename)
+{
+	DisplayWindow *dw;
+	char *title;
+	GtkWidget *vbox;
+
+	dw = malloc(sizeof(DisplayWindow));
+	if ( dw == NULL ) return NULL;
+	dw->pixbuf = NULL;
+	dw->binning_dialog = NULL;
+	dw->show_col_scale = 0;
+	dw->col_scale = NULL;
+	dw->monochrome = 0;
+	dw->boostint_dialog = NULL;
+	dw->boostint = 1;
+
+	dw->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+
+	if ( filename == NULL ) {
+		title = strdup("No file - hdfsee");
+	} else {
+		title = malloc(strlen(basename(filename))+14);
+		sprintf(title, "%s - hdfsee", basename(filename));
+	}
+	gtk_window_set_title(GTK_WINDOW(dw->window), title);
+	free(title);
+
+	g_signal_connect(G_OBJECT(dw->window), "destroy",
+			 G_CALLBACK(displaywindow_closed), dw);
+
+	vbox = gtk_vbox_new(FALSE, 0);
+	gtk_container_add(GTK_CONTAINER(dw->window), vbox);
+	displaywindow_addmenubar(dw, vbox);
+
+	dw->drawingarea = gtk_drawing_area_new();
+	gtk_box_pack_start(GTK_BOX(vbox), dw->drawingarea, TRUE, TRUE, 0);
+
+	g_signal_connect(GTK_OBJECT(dw->drawingarea), "expose-event",
+			 G_CALLBACK(displaywindow_expose), dw);
+
+	/* Open the file, if any */
+	if ( filename != NULL ) {
+
+		dw->hdfile = hdfile_open(filename);
+		if ( dw->hdfile == NULL ) {
+			fprintf(stderr, "Couldn't open file '%s'\n", filename);
+			displaywindow_disable(dw);
+		}
+		if ( hdfile_set_image(dw->hdfile, "/data/data") ) {
+			fprintf(stderr, "Couldn't select path\n");
+			displaywindow_disable(dw);
+		}
+
+	} else {
+		dw->hdfile = NULL;
+		displaywindow_disable(dw);
+	}
+
+	gtk_window_set_resizable(GTK_WINDOW(dw->window), FALSE);
+	gtk_widget_show_all(dw->window);
+
+	dw->binning = INITIAL_BINNING;
+	displaywindow_update(dw);
+
+	return dw;
+}

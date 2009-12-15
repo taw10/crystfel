@@ -1,0 +1,24 @@
+/*
+ * hdfsee.c
+ *
+ * Quick yet non-crappy HDF viewer
+ *
+ * (c) 2006-2009 Thomas White <thomas.white@desy.de>
+ *
+ * Part of CrystFEL - crystallography with a FEL
+ *
+ */
+
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifndef HDFSEE_H
+#define HDFSEE_H
+
+#include "displaywindow.h"
+
+extern void hdfsee_window_closed(DisplayWindow *dw);
+
+#endif	/* HDFSEE_H */

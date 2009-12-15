@@ -24,7 +24,13 @@ AC_ARG_WITH(hdf5,
  HDF5_LIBS="-L$withval/lib -lhdf5"],
 [HDF5_LIBS="-lhdf5"])
 
-CFLAGS="$CFLAGS $HDF5_CFLAGS"
-LIBS="$LIBS $HDF5_LIBS -lm -lz -lgsl -lgslcblas"
+havegtk=false
+AM_PATH_GTK_2_0(2.0.0, havegtk=true,
+AC_MSG_WARN([GTK not found.  hdfsee will not be built.]))
 
-AC_OUTPUT(Makefile src/Makefile)
+AM_CONDITIONAL([HAVE_GTK], test x$havegtk = xtrue)
+
+CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS"
+LIBS="$LIBS $HDF5_LIBS -lm -lz -lgsl -lgslcblas $GTK_LIBS -lgthread-2.0"
+
+AC_OUTPUT(Makefile src/Makefile data/Makefile)
