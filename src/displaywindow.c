@@ -759,8 +759,7 @@ DisplayWindow *displaywindow_open(const char *filename)
 		if ( dw->hdfile == NULL ) {
 			fprintf(stderr, "Couldn't open file '%s'\n", filename);
 			displaywindow_disable(dw);
-		}
-		if ( hdfile_set_image(dw->hdfile, "/data/data") ) {
+		} else if ( hdfile_set_image(dw->hdfile, "/data/data") ) {
 			fprintf(stderr, "Couldn't select path\n");
 			displaywindow_disable(dw);
 		}
