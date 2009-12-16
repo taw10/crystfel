@@ -3,9 +3,9 @@
  *
  * Calculate q-vector arrays
  *
- * (c) 2007-2009 Thomas White <thomas.white@desy.de>
+ * (c) 2007-2009 Thomas White <taw@physics.org>
  *
- * pattern_sim - Simulate diffraction patterns from small crystals
+ * Part of CrystFEL - crystallography with a FEL
  *
  */
 

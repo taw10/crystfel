@@ -3,7 +3,7 @@
  *
  * Small program to write out a list of h,k,l,I values given a structure
  *
- * (c) 2006-2009 Thomas White <thomas.white@desy.de>
+ * (c) 2006-2009 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *

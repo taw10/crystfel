@@ -3,7 +3,7 @@
  *
  * Quick yet non-crappy HDF viewer
  *
- * (c) 2006-2009 Thomas White <thomas.white@desy.de>
+ * (c) 2006-2009 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *

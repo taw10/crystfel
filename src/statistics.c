@@ -3,9 +3,9 @@
  *
  * Structure-factor statistics
  *
- * (c) 2007-2009 Thomas White <thomas.white@desy.de>
+ * (c) 2007-2009 Thomas White <taw@physics.org>
  *
- * integr_sim - Test relrod integration
+ * Part of CrystFEL - crystallography with a FEL
  *
  */
 

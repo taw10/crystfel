@@ -5,7 +5,7 @@
  *
  * (c) 2008 Thomas White <taw27@cam.ac.uk>
  *
- *  micronview - view Ditabis Micron images
+ * Part of CrystFEL - crystallography with a FEL
  *
  */
 
