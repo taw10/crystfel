@@ -114,26 +114,26 @@ GdkPixbuf *render_get_image(struct hdfile *hdfile, int binning, int boostint,
 	/* These x,y coordinates are measured relative to the bottom-left
 	 * corner */
 	for ( y=0; y<h; y++ ) {
-		for ( x=0; x<w; x++ ) {
+	for ( x=0; x<w; x++ ) {
 
-			int val;
-			guchar r, g, b;
+		int val;
+		guchar r, g, b;
 
-			val = hdr[x+w*y];
-			if ( !monochrome ) {
-				RENDER_RGB
-			} else {
-				RENDER_MONO
-			}
-
-			/* Stuff inside square brackets makes this pixel go to
-			 * the expected location in the pixbuf (which measures
-			 * from the top-left corner */
-			data[3*( x+w*(h-1-y) )+0] = r;
-			data[3*( x+w*(h-1-y) )+1] = g;
-			data[3*( x+w*(h-1-y) )+2] = b;
-
+		val = hdr[x+w*y];
+		if ( !monochrome ) {
+			RENDER_RGB
+		} else {
+			RENDER_MONO
 		}
+
+		/* Stuff inside square brackets makes this pixel go to
+		 * the expected location in the pixbuf (which measures
+		 * from the top-left corner */
+		data[3*( x+w*(h-1-y) )+0] = r;
+		data[3*( x+w*(h-1-y) )+1] = g;
+		data[3*( x+w*(h-1-y) )+2] = b;
+
+	}
 	}
 
 	/* Finished with this */
