@@ -102,18 +102,18 @@ void hdfile_close(struct hdfile *f)
 }
 
 
-static void *hdfile_bin(uint16_t *in, int inw, int inh,
-                        int binning, uint16_t *maxp)
+static void *hdfile_bin(int16_t *in, int inw, int inh,
+                        int binning, int16_t *maxp)
 {
-	uint16_t *data;
+	int16_t *data;
 	int x, y;
 	int w, h;
-	uint16_t max;
+	int16_t max;
 
 	w = inw / binning;
 	h = inh / binning;      /* Some pixels might get discarded */
 
-	data = malloc(w*h*sizeof(uint16_t));
+	data = malloc(w*h*sizeof(int16_t));
 	max = 0;
 
 	for ( x=0; x<w; x++ ) {
@@ -143,10 +143,10 @@ static void *hdfile_bin(uint16_t *in, int inw, int inh,
 }
 
 
-uint16_t *hdfile_get_image_binned(struct hdfile *f, int binning, uint16_t *max)
+int16_t *hdfile_get_image_binned(struct hdfile *f, int binning, int16_t *max)
 {
 	struct image *image;
-	uint16_t *data;
+	int16_t *data;
 
 	image = malloc(sizeof(struct image));
 	if ( image == NULL ) return NULL;
@@ -160,7 +160,17 @@ uint16_t *hdfile_get_image_binned(struct hdfile *f, int binning, uint16_t *max)
 }
 
 
-int hdf5_write(const char *filename, const uint16_t *data,
+int hdfile_get_unbinned_value(struct hdfile *f, int x, int y, int16_t *val)
+{
+	if ( (x>=f->image->width) || (y>=f->image->height) ) {
+		return 1;
+	}
+	*val = f->image->data[x+y*f->image->width];
+	return 0;
+}
+
+
+int hdf5_write(const char *filename, const int16_t *data,
                int width, int height)
 {
 	hid_t fh, gh, sh, dh;	/* File, group, dataspace and data handles */
@@ -187,7 +197,7 @@ int hdf5_write(const char *filename, const uint16_t *data,
 	max_size[1] = height;
 	sh = H5Screate_simple(2, size, max_size);
 
-	dh = H5Dcreate(gh, "data", H5T_NATIVE_UINT16, sh,
+	dh = H5Dcreate(gh, "data", H5T_NATIVE_INT16, sh,
 	               H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Couldn't create dataset\n");
@@ -218,11 +228,11 @@ int hdf5_write(const char *filename, const uint16_t *data,
 int hdf5_read(struct hdfile *f, struct image *image)
 {
 	herr_t r;
-	uint16_t *buf;
+	int16_t *buf;
 
 	buf = malloc(sizeof(float)*f->nx*f->ny);
 
-	r = H5Dread(f->dh, H5T_NATIVE_UINT16, H5S_ALL, H5S_ALL,
+	r = H5Dread(f->dh, H5T_NATIVE_INT16, H5S_ALL, H5S_ALL,
 	            H5P_DEFAULT, buf);
 	if ( r < 0 ) {
 		ERROR("Couldn't read data\n");

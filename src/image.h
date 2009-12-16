@@ -63,7 +63,7 @@ struct threevec
 struct image {
 
 	int			*hdr;      /* Actual counts */
-	uint16_t		*data;     /* Integer counts after bloom */
+	int16_t		*data;     /* Integer counts after bloom */
 	double complex		*sfacs;
 	struct threevec		*qvecs;
 	double			*twotheta;

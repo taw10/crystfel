@@ -451,6 +451,116 @@ static gint displaywindow_set_mono(GtkWidget *widget, DisplayWindow *dw)
 }
 
 
+static gint displaywindow_numbers_response(GtkWidget *widget,
+                                           gint response, DisplayWindow *dw)
+{
+	gtk_widget_destroy(dw->numbers_window->window);
+	return 0;
+}
+
+
+static gint displaywindow_numbers_destroy(GtkWidget *widget, DisplayWindow *dw)
+{
+	free(dw->numbers_window);
+	dw->numbers_window = NULL;
+	return 0;
+}
+
+
+static gint displaywindow_show_numbers(GtkWidget *widget, DisplayWindow *dw)
+{
+	struct numberswindow *nw;
+	GtkWidget *vbox;
+	GtkWidget *hbox;
+	GtkWidget *table;
+	unsigned int x, y;
+
+	if ( dw->numbers_window != NULL ) {
+		return 0;
+	}
+
+	if ( dw->hdfile == NULL ) {
+		return 0;
+	}
+
+	nw = malloc(sizeof(struct numberswindow));
+	if ( nw == NULL ) return 0;
+	dw->numbers_window = nw;
+
+	nw->window = gtk_dialog_new_with_buttons("Numbers",
+					GTK_WINDOW(dw->window),
+					GTK_DIALOG_DESTROY_WITH_PARENT,
+					GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE,
+					NULL);
+
+	vbox = gtk_vbox_new(FALSE, 0);
+	hbox = gtk_hbox_new(TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(nw->window)->vbox),
+			   GTK_WIDGET(hbox), FALSE, FALSE, 7);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(vbox), FALSE, FALSE, 5);
+
+	table = gtk_table_new(17, 17, FALSE);
+	gtk_table_set_row_spacings(GTK_TABLE(table), 5);
+	gtk_table_set_col_spacings(GTK_TABLE(table), 5);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(table), FALSE, FALSE, 0);
+
+	for ( x=0; x<17; x++ ) {
+	for ( y=0; y<17; y++ ) {
+
+		GtkWidget *label;
+
+		label = gtk_label_new("--");
+		gtk_widget_set_size_request(GTK_WIDGET(label), 40, -1);
+
+		gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(label),
+		                          x, x+1, y, y+1);
+
+		nw->labels[x+17*y] = label;
+
+	}
+	}
+
+	g_signal_connect(G_OBJECT(nw->window), "response",
+			 G_CALLBACK(displaywindow_numbers_response), dw);
+	g_signal_connect(G_OBJECT(nw->window), "destroy",
+			 G_CALLBACK(displaywindow_numbers_destroy), dw);
+	gtk_window_set_resizable(GTK_WINDOW(nw->window), FALSE);
+
+	gtk_widget_show_all(nw->window);
+
+	return 0;
+}
+
+
+static void numbers_update(DisplayWindow *dw)
+{
+	int px, py;
+
+	for ( px=0; px<17; px++ ) {
+	for ( py=0; py<17; py++ ) {
+
+		char s[32];
+		int16_t val;
+		GtkWidget *l;
+		int x, y;
+
+		x = dw->binning * dw->numbers_window->cx + (px-8);
+		y = dw->binning * (dw->height-dw->numbers_window->cy) + (py-8);
+
+		if ( (x>0) && (y>0) &&
+		     !hdfile_get_unbinned_value(dw->hdfile, x, y, &val) ) {
+			snprintf(s, 31, "%i", val);
+		} else {
+			strcpy(s, "--");
+		}
+		l = dw->numbers_window->labels[px+17*py];
+		gtk_label_set_text(GTK_LABEL(l), s);
+
+	}
+	}
+}
+
+
 static void displaywindow_addui_callback(GtkUIManager *ui, GtkWidget *widget,
 					 GtkContainer *container)
 {
@@ -478,8 +588,12 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox)
 		{ "BoostIntAction", NULL, "Boost Intensity...", "F5", NULL,
 			G_CALLBACK(displaywindow_set_boostint) },
 
+		{ "ToolsAction", NULL, "_Tools", NULL, NULL, NULL },
+		{ "NumbersAction", NULL, "View Numbers...", "F2", NULL,
+			G_CALLBACK(displaywindow_show_numbers) },
+
 		{ "HelpAction", NULL, "_Help", NULL, NULL, NULL },
-		{ "AboutAction", GTK_STOCK_ABOUT, "_About hdfileView...",
+		{ "AboutAction", GTK_STOCK_ABOUT, "_About hdfsee...",
 			NULL, NULL,
 			G_CALLBACK(displaywindow_about) },
 
@@ -529,8 +643,70 @@ static void displaywindow_disable(DisplayWindow *dw)
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
 
 	w = gtk_ui_manager_get_widget(dw->ui,
-				      "/ui/displaywindow/tools/histogram");
+				      "/ui/displaywindow/tools/numbers");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
+}
+
+
+static gint displaywindow_release(GtkWidget *widget, GdkEventButton *event,
+                                  DisplayWindow *dw)
+{
+	if ( (event->type == GDK_BUTTON_RELEASE) && (event->button == 1) ) {
+
+		g_signal_handler_disconnect(GTK_OBJECT(dw->drawingarea),
+		                            dw->motion_callback);
+		dw->motion_callback = 0;
+
+	}
+
+	return 0;
+}
+
+
+static gint displaywindow_motion(GtkWidget *widget, GdkEventMotion *event,
+                                 DisplayWindow *dw)
+{
+	if ( dw->numbers_window == NULL ) return 0;
+
+	dw->numbers_window->cx = event->x;
+	dw->numbers_window->cy = dw->height - 1 - event->y;
+
+	/* Schedule redraw */
+	gtk_widget_queue_draw_area(dw->drawingarea, 0, 0,
+	                           dw->width, dw->height);
+
+	/* Update numbers window */
+	numbers_update(dw);
+
+	return 0;
+
+}
+
+static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
+                                DisplayWindow *dw)
+{
+	if ( dw->motion_callback != 0 ) {
+		return 0;
+	}
+
+	if ( (event->type == GDK_BUTTON_PRESS) && (event->button == 1) ) {
+
+		dw->motion_callback = g_signal_connect(
+		                               GTK_OBJECT(dw->drawingarea),
+		                               "motion-notify-event",
+		                               G_CALLBACK(displaywindow_motion),
+		                               dw);
+
+		if ( dw->numbers_window != NULL ) {
+			dw->numbers_window->cx = event->x;
+			dw->numbers_window->cy = dw->height - 1 - event->y;
+			numbers_update(dw);
+		}
+
+	}
+
+	return 0;
+
 }
 
 
@@ -549,6 +725,8 @@ DisplayWindow *displaywindow_open(const char *filename)
 	dw->monochrome = 0;
 	dw->boostint_dialog = NULL;
 	dw->boostint = 1;
+	dw->motion_callback = 0;
+	dw->numbers_window = NULL;
 
 	dw->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
@@ -597,6 +775,17 @@ DisplayWindow *displaywindow_open(const char *filename)
 
 	dw->binning = INITIAL_BINNING;
 	displaywindow_update(dw);
+
+	gtk_widget_add_events(GTK_WIDGET(dw->drawingarea),
+	                      GDK_BUTTON_PRESS_MASK
+	                      | GDK_BUTTON_RELEASE_MASK
+	                      | GDK_BUTTON1_MOTION_MASK);
+	g_object_set(G_OBJECT(dw->drawingarea), "can-focus", TRUE, NULL);
+
+	g_signal_connect(GTK_OBJECT(dw->drawingarea), "button-press-event",
+	                 G_CALLBACK(displaywindow_press), dw);
+	g_signal_connect(GTK_OBJECT(dw->drawingarea), "button-release-event",
+	                 G_CALLBACK(displaywindow_release), dw);
 
 	return dw;
 }

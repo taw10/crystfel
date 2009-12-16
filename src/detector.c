@@ -75,15 +75,15 @@ static void bloom_values(int *tmp, int x, int y,
 }
 
 
-static uint16_t *bloom(int *hdr_in, int width, int height)
+static int16_t *bloom(int *hdr_in, int width, int height)
 {
 	int x, y;
-	uint16_t *data;
+	int16_t *data;
 	int *tmp;
 	int *hdr;
 	int did_something;
 
-	data = malloc(width * height * sizeof(uint16_t));
+	data = malloc(width * height * sizeof(int16_t));
 	tmp = malloc(width * height * sizeof(int));
 	hdr = malloc(width * height * sizeof(int));
 
@@ -131,7 +131,7 @@ static uint16_t *bloom(int *hdr_in, int width, int height)
 	/* Turn into integer array of counts */
 	for ( x=0; x<width; x++ ) {
 	for ( y=0; y<height; y++ ) {
-		data[x + width*y] = (uint16_t)tmp[x + width*y];
+		data[x + width*y] = (int16_t)tmp[x + width*y];
 	}
 	}
 
@@ -218,13 +218,13 @@ void record_image(struct image *image, int do_water, int do_poisson,
 		image->data = bloom(image->hdr, image->width, image->height);
 	} else {
 		image->data = malloc(image->width * image->height
-		                                            * sizeof(uint16_t));
+		                                            * sizeof(int16_t));
 		for ( x=0; x<image->width; x++ ) {
 		for ( y=0; y<image->height; y++ ) {
 			int val;
 			val = image->hdr[x + image->width*y];
 			if ( val > SATURATION ) val = SATURATION;
-	                image->data[x + image->width*y] = (uint16_t)val;
+	                image->data[x + image->width*y] = (int16_t)val;
 		}
 		}
 	}

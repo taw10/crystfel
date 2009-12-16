@@ -30,6 +30,14 @@ typedef struct {
 } BoostIntDialog;
 
 
+struct numberswindow {
+	GtkWidget *window;
+	GtkWidget *labels[17*17];
+	unsigned int cx;
+	unsigned int cy;
+};
+
+
 typedef struct {
 
 	GtkWidget	*window;
@@ -37,12 +45,14 @@ typedef struct {
 	GtkUIManager	*ui;
 	GtkActionGroup	*action_group;
 	GdkPixbuf	*pixbuf;
+	gulong		motion_callback;
 
 	struct hdfile	*hdfile;
 
 	/* Dialog boxes */
 	BinningDialog	*binning_dialog;
 	BoostIntDialog	*boostint_dialog;
+	struct numberswindow *numbers_window;
 
 	int		width;
 	int		height;		/* Size of the drawing area */

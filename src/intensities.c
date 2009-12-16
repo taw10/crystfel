@@ -34,7 +34,7 @@ struct reflhit {
 };
 
 
-static int sum_nearby_points(uint16_t *data, int width, int x, int y)
+static int sum_nearby_points(int16_t *data, int width, int x, int y)
 {
 	int dx, dy;
 	int intensity = 0;

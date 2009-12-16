@@ -89,9 +89,9 @@ GdkPixbuf *render_get_image(struct hdfile *hdfile, int binning, int boostint,
 {
 	int mw, mh, w, h;
 	guchar *data;
-	uint16_t *hdr;
+	int16_t *hdr;
 	size_t x, y;
-	uint16_t max;
+	int16_t max;
 
 	mw = hdfile_get_width(hdfile);
 	mh = hdfile_get_height(hdfile);
@@ -110,7 +110,7 @@ GdkPixbuf *render_get_image(struct hdfile *hdfile, int binning, int boostint,
 	}
 
 	max /= boostint;
-	if ( max <= 0.0 ) { max = 10.0; }
+	if ( max <= 6 ) { max = 10; }
 	/* These x,y coordinates are measured relative to the bottom-left
 	 * corner */
 	for ( y=0; y<h; y++ ) {
