@@ -579,6 +579,7 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox)
 	GtkActionEntry entries[] = {
 
 		{ "FileAction", NULL, "_File", NULL, NULL, NULL },
+		{ "ImagesAction", NULL, "Images", NULL, NULL, NULL },
 		{ "CloseAction", GTK_STOCK_CLOSE, "_Close", NULL, NULL,
 			G_CALLBACK(displaywindow_close) },
 
@@ -630,9 +631,123 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox)
 }
 
 
+struct newhdf {
+	DisplayWindow *dw;
+	char name[1024];
+};
+
+static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
+{
+	hdfile_set_image(nh->dw->hdfile, nh->name);
+	displaywindow_update(nh->dw);
+	return 0;
+}
+
+
+static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
+                                            const char *group,
+                                            DisplayWindow *dw)
+{
+	char **names;
+	int *is_group;
+	int *is_image;
+	GtkWidget *ms;
+	int n, i;
+
+	names = hdfile_walk_tree(hdfile, &n, group, &is_group, &is_image);
+	if ( n == 0 ) return NULL;
+
+	ms = gtk_menu_new();
+
+	for ( i=0; i<n; i++ ) {
+
+		GtkWidget *item;
+		GtkWidget *sub;
+
+		if ( names[i] != NULL ) {
+
+			char subgroup[1024];
+
+			item = gtk_menu_item_new_with_label(names[i]);
+			gtk_menu_shell_append(GTK_MENU_SHELL(ms), item);
+			gtk_widget_show(item);
+
+			if ( is_group[i] ) {
+				snprintf(subgroup, 1023, "%s/%s",
+				         group, names[i]);
+				sub = displaywindow_addhdfgroup(hdfile,
+				                                subgroup, dw);
+				gtk_menu_item_set_submenu(GTK_MENU_ITEM(item),
+				                          sub);
+			} else if ( is_image[i] ) {
+
+				struct newhdf *nh;
+
+				nh = malloc(sizeof(struct newhdf));
+				if ( nh != NULL ) {
+					snprintf(nh->name, 1023, "%s/%s", group,
+					         names[i]);
+					nh->dw = dw;
+					g_signal_connect(G_OBJECT(item),
+					                 "activate",
+				               G_CALLBACK(displaywindow_newhdf),
+				                         nh);
+				}
+			}
+
+			free(names[i]);
+
+		} else {
+			return NULL;
+		}
+
+	}
+
+	free(is_group);
+	free(is_image);
+
+	return ms;
+}
+
+
+static void displaywindow_update_menus(DisplayWindow *dw)
+{
+	GtkWidget *ms;
+	GtkWidget *w;
+
+	ms = displaywindow_addhdfgroup(dw->hdfile, "/", dw);
+
+	if ( ms == NULL ) {
+
+		/* Too bad.  You'd better hope that /data/data exists... */
+		ERROR("Couldn't get list of images in HDF file\n");
+		w = gtk_ui_manager_get_widget(dw->ui,
+					      "/ui/displaywindow/file/images");
+		gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
+
+		/* Add a dummy menu so that the user knows what's going on */
+		ms = gtk_menu_new();
+		w = gtk_ui_manager_get_widget(dw->ui,
+		                              "/ui/displaywindow/file/images");
+		gtk_menu_item_set_submenu(GTK_MENU_ITEM(w), ms);
+
+		return;
+
+	}
+
+	/* Make new menu be the submenu for File->Images */
+	w = gtk_ui_manager_get_widget(dw->ui, "/ui/displaywindow/file/images");
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(w), ms);
+}
+
+
 static void displaywindow_disable(DisplayWindow *dw)
 {
 	GtkWidget *w;
+
+	w = gtk_ui_manager_get_widget(dw->ui,
+				      "/ui/displaywindow/file/images");
+	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
 
 	w = gtk_ui_manager_get_widget(dw->ui,
 				      "/ui/displaywindow/view/binning");
@@ -785,6 +900,8 @@ DisplayWindow *displaywindow_open(const char *filename)
 	                 G_CALLBACK(displaywindow_press), dw);
 	g_signal_connect(GTK_OBJECT(dw->drawingarea), "button-release-event",
 	                 G_CALLBACK(displaywindow_release), dw);
+
+	displaywindow_update_menus(dw);
 
 	return dw;
 }

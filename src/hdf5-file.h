@@ -36,6 +36,8 @@ extern int16_t *hdfile_get_image_binned(struct hdfile *hdfile,
                                          int binning, int16_t *maxp);
 extern int hdfile_get_unbinned_value(struct hdfile *f, int x, int y,
                                      int16_t *val);
+extern char **hdfile_walk_tree(struct hdfile *f, int *n, const char *parent,
+                               int **p_is_group, int **p_is_image);
 extern void hdfile_close(struct hdfile *f);
 
 #endif	/* HDF5_H */

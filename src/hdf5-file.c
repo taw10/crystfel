@@ -248,3 +248,57 @@ int hdf5_read(struct hdfile *f, struct image *image)
 
 	return 0;
 }
+
+
+char **hdfile_walk_tree(struct hdfile *f, int *n, const char *parent,
+                        int **p_is_group, int **p_is_image)
+{
+	hid_t gh;
+	hsize_t num;
+	char **res;
+	int i;
+	int *is_group;
+	int *is_image;
+
+	gh = H5Gopen(f->fh, parent, H5P_DEFAULT);
+	if ( gh < 0 ) {
+		*n = 0;
+		return NULL;
+	}
+
+	if ( H5Gget_num_objs(gh, &num) < 0 ) {
+		/* Whoopsie */
+		*n = 0;
+		return NULL;
+	}
+	*n = num;
+	if ( num == 0 ) return NULL;  /* Bail out now */
+
+	res = malloc(num*sizeof(char *));
+	is_image = malloc(num*sizeof(int));
+	is_group = malloc(num*sizeof(int));
+	*p_is_image = is_image;
+	*p_is_group = is_group;
+
+	for ( i=0; i<num; i++ ) {
+
+		char buf[256];
+		int type;
+
+		H5Gget_objname_by_idx(gh, i, buf, 255);
+		res[i] = strdup(buf);
+
+		type = H5Gget_objtype_by_idx(gh, i);
+		is_image[i] = 0;
+		is_group[i] = 0;
+		if ( type == H5G_GROUP ) {
+			is_group[i] = 1;
+		} else if ( type == H5G_DATASET ) {
+			/* FIXME: Check better */
+			is_image[i] = 1;
+		}
+
+	}
+
+	return res;
+}
