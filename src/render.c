@@ -34,7 +34,10 @@
 									       \
 	r = 0;	g = 0;	b = 0;						       \
 									       \
-	if ( p < 0.0 ) p = 0.0;                                                \
+	if ( (val < 0.0) || (val > max) ) {                                    \
+		s = 0;                                                         \
+		p = 0.0;                                                       \
+	}                                                                      \
 	switch ( s ) {							       \
 		case 0 : {	/* Black to blue */			       \
 			r = 0;		g = 0;			b = p*255;     \
@@ -73,7 +76,8 @@
 #define RENDER_MONO							       \
 	float p;							       \
 	p = (float)val / (float)max;					       \
-	if ( p < 0.0 ) p = 0.0;                                                \
+	if ( val < 0.0 ) p = 0.0;                                              \
+	if ( val > max ) p = 0.0;                                              \
 	r = 255.0*p;	g = 255.0*p;	b = 255.0*p;
 
 /* NB This function is shared between render_get_image() and
