@@ -666,17 +666,13 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 
 		if ( names[i] != NULL ) {
 
-			char subgroup[1024];
-
 			item = gtk_menu_item_new_with_label(names[i]);
 			gtk_menu_shell_append(GTK_MENU_SHELL(ms), item);
 			gtk_widget_show(item);
 
 			if ( is_group[i] ) {
-				snprintf(subgroup, 1023, "%s/%s",
-				         group, names[i]);
 				sub = displaywindow_addhdfgroup(hdfile,
-				                                subgroup, dw);
+				                                names[i], dw);
 				gtk_menu_item_set_submenu(GTK_MENU_ITEM(item),
 				                          sub);
 			} else if ( is_image[i] ) {
@@ -685,8 +681,7 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 
 				nh = malloc(sizeof(struct newhdf));
 				if ( nh != NULL ) {
-					snprintf(nh->name, 1023, "%s/%s", group,
-					         names[i]);
+					strncpy(nh->name, names[i], 1023);
 					nh->dw = dw;
 					g_signal_connect(G_OBJECT(item),
 					                 "activate",
@@ -874,7 +869,7 @@ DisplayWindow *displaywindow_open(const char *filename)
 		if ( dw->hdfile == NULL ) {
 			fprintf(stderr, "Couldn't open file '%s'\n", filename);
 			displaywindow_disable(dw);
-		} else if ( hdfile_set_image(dw->hdfile, "/data/data") ) {
+		} else if ( hdfile_set_first_image(dw->hdfile, "/") ) {
 			fprintf(stderr, "Couldn't select path\n");
 			displaywindow_disable(dw);
 		}

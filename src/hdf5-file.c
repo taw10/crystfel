@@ -286,7 +286,12 @@ char **hdfile_walk_tree(struct hdfile *f, int *n, const char *parent,
 		int type;
 
 		H5Gget_objname_by_idx(gh, i, buf, 255);
-		res[i] = strdup(buf);
+		res[i] = malloc(256);
+		if ( strlen(parent) > 1 ) {
+			snprintf(res[i], 255, "%s/%s", parent, buf);
+		} else {
+			snprintf(res[i], 255, "%s%s", parent, buf);
+		} /* ick */
 
 		type = H5Gget_objtype_by_idx(gh, i);
 		is_image[i] = 0;
@@ -301,4 +306,29 @@ char **hdfile_walk_tree(struct hdfile *f, int *n, const char *parent,
 	}
 
 	return res;
+}
+
+
+int hdfile_set_first_image(struct hdfile *f, const char *group)
+{
+	char **names;
+	int *is_group;
+	int *is_image;
+	int n, i;
+
+	names = hdfile_walk_tree(f, &n, group, &is_group, &is_image);
+	if ( n == 0 ) return 1;
+
+	for ( i=0; i<n; i++ ) {
+
+		if ( is_image[i] ) {
+			hdfile_set_image(f, names[i]);
+			return 0;
+		} else if ( is_group[i] ) {
+			return hdfile_set_first_image(f, names[i]);
+		}
+
+	}
+
+	return 1;
 }
