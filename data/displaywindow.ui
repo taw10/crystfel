@@ -1,0 +1,27 @@
+<ui>
+	<menubar name="displaywindow">
+
+		<menu name="file" action="FileAction">
+			<menuitem name="images" action="ImagesAction" />
+			<separator />
+			<menuitem name="close" action="CloseAction" />
+		</menu>
+
+		<menu name="view" action="ViewAction">
+			<menuitem name="binning" action="BinningAction" />
+			<menuitem name="boostint" action="BoostIntAction" />
+			<menuitem name="monoscale" action="MonoAction" />
+			<menuitem name="colscale" action="ColScaleAction" />
+		</menu>
+
+		<menu name="tools" action="ToolsAction">
+			<menuitem name="numbers" action="NumbersAction" />
+		</menu>
+
+		<menu name="help" action="HelpAction">
+			<menuitem name="about" action="AboutAction" />
+		</menu>
+
+	</menubar>
+
+</ui>
