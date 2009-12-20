@@ -652,6 +652,7 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 	int *is_group;
 	int *is_image;
 	GtkWidget *ms;
+	GSList *rg = NULL;
 	int n, i;
 
 	names = hdfile_read_group(hdfile, &n, group, &is_group, &is_image);
@@ -664,37 +665,42 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 		GtkWidget *item;
 		GtkWidget *sub;
 
-		if ( names[i] != NULL ) {
+		if ( names[i] == NULL ) return NULL;
+
+		if ( is_group[i] ) {
 
 			item = gtk_menu_item_new_with_label(names[i]);
-			gtk_menu_shell_append(GTK_MENU_SHELL(ms), item);
-			gtk_widget_show(item);
 
-			if ( is_group[i] ) {
-				sub = displaywindow_addhdfgroup(hdfile,
-				                                names[i], dw);
-				gtk_menu_item_set_submenu(GTK_MENU_ITEM(item),
-				                          sub);
-			} else if ( is_image[i] ) {
+			sub = displaywindow_addhdfgroup(hdfile, names[i], dw);
+			gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), sub);
 
-				struct newhdf *nh;
+		} else if ( is_image[i] ) {
 
-				nh = malloc(sizeof(struct newhdf));
-				if ( nh != NULL ) {
-					strncpy(nh->name, names[i], 1023);
-					nh->dw = dw;
-					g_signal_connect(G_OBJECT(item),
-					                 "activate",
-				               G_CALLBACK(displaywindow_newhdf),
-				                         nh);
-				}
+			struct newhdf *nh;
+
+			item = gtk_radio_menu_item_new_with_label(rg, names[i]);
+			rg = gtk_radio_menu_item_get_group(
+		                                     GTK_RADIO_MENU_ITEM(item));
+
+			nh = malloc(sizeof(struct newhdf));
+			if ( nh != NULL ) {
+				strncpy(nh->name, names[i], 1023);
+				nh->dw = dw;
+				g_signal_connect(G_OBJECT(item), "activate",
+			                  G_CALLBACK(displaywindow_newhdf), nh);
 			}
 
-			free(names[i]);
-
 		} else {
-			return NULL;
+
+			item = gtk_menu_item_new_with_label(names[i]);
+
 		}
+
+		gtk_menu_shell_append(GTK_MENU_SHELL(ms), item);
+		gtk_widget_show(item);
+
+		free(names[i]);
+
 
 	}
 
