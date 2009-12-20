@@ -654,7 +654,7 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 	GtkWidget *ms;
 	int n, i;
 
-	names = hdfile_walk_tree(hdfile, &n, group, &is_group, &is_image);
+	names = hdfile_read_group(hdfile, &n, group, &is_group, &is_image);
 	if ( n == 0 ) return NULL;
 
 	ms = gtk_menu_new();

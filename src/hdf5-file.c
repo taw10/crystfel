@@ -61,6 +61,8 @@ int hdfile_set_image(struct hdfile *f, const char *path)
 	hsize_t size[2];
 	hsize_t max_size[2];
 
+	STATUS("Selecting %s\n", path);
+
 	f->dh = H5Dopen(f->fh, path, H5P_DEFAULT);
 	if ( f->dh < 0 ) {
 		ERROR("Couldn't open dataset\n");
@@ -250,7 +252,28 @@ int hdf5_read(struct hdfile *f, struct image *image)
 }
 
 
-char **hdfile_walk_tree(struct hdfile *f, int *n, const char *parent,
+static int looks_like_image(hid_t h)
+{
+	hid_t sh;
+	hsize_t size[2];
+	hsize_t max_size[2];
+
+	sh = H5Dget_space(h);
+	if ( sh < 0 ) return 0;
+
+	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
+		return 0;
+	}
+
+	H5Sget_simple_extent_dims(sh, size, max_size);
+
+	if ( ( size[0] > 64 ) && ( size[1] > 64 ) ) return 1;
+
+	return 0;
+}
+
+
+char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
                         int **p_is_group, int **p_is_image)
 {
 	hid_t gh;
@@ -299,8 +322,10 @@ char **hdfile_walk_tree(struct hdfile *f, int *n, const char *parent,
 		if ( type == H5G_GROUP ) {
 			is_group[i] = 1;
 		} else if ( type == H5G_DATASET ) {
-			/* FIXME: Check better */
-			is_image[i] = 1;
+			hid_t dh;
+			dh = H5Dopen(gh, res[i], H5P_DEFAULT);
+			is_image[i] = looks_like_image(dh);
+			H5Dclose(dh);
 		}
 
 	}
@@ -316,7 +341,7 @@ int hdfile_set_first_image(struct hdfile *f, const char *group)
 	int *is_image;
 	int n, i;
 
-	names = hdfile_walk_tree(f, &n, group, &is_group, &is_image);
+	names = hdfile_read_group(f, &n, group, &is_group, &is_image);
 	if ( n == 0 ) return 1;
 
 	for ( i=0; i<n; i++ ) {
@@ -325,7 +350,9 @@ int hdfile_set_first_image(struct hdfile *f, const char *group)
 			hdfile_set_image(f, names[i]);
 			return 0;
 		} else if ( is_group[i] ) {
-			return hdfile_set_first_image(f, names[i]);
+			if ( !hdfile_set_first_image(f, names[i]) ) {
+				return 0;
+			}
 		}
 
 	}
