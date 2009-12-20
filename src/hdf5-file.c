@@ -273,6 +273,77 @@ static int looks_like_image(hid_t h)
 }
 
 
+char *hdfile_get_string_value(struct hdfile *f, const char *name)
+{
+	hid_t dh;
+	hid_t sh;
+	hsize_t size;
+	hsize_t max_size;
+	hid_t type;
+	hid_t class;
+
+	dh = H5Dopen(f->fh, name, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		return NULL;
+	}
+
+	sh = H5Dget_space(dh);
+	if ( H5Sget_simple_extent_ndims(sh) != 1 ) {
+		return NULL;
+	}
+
+	H5Sget_simple_extent_dims(sh, &size, &max_size);
+	if ( size != 1 ) {
+		H5Dclose(dh);
+		return NULL;
+	}
+
+	type = H5Dget_type(dh);
+	class = H5Tget_class(type);
+	switch ( class ) {
+	case H5T_FLOAT : {
+
+		herr_t r;
+		double buf;
+		char *tmp;
+
+		r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
+		            H5P_DEFAULT, &buf);
+		if ( r < 0 ) goto fail;
+
+		tmp = malloc(256);
+		snprintf(tmp, 255, "%f", buf);
+
+		return tmp;
+
+	}
+	case H5T_INTEGER : {
+
+		herr_t r;
+		int buf;
+		char *tmp;
+
+		r = H5Dread(dh, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
+		            H5P_DEFAULT, &buf);
+		if ( r < 0 ) goto fail;
+
+		tmp = malloc(256);
+		snprintf(tmp, 255, "%d", buf);
+
+		return tmp;
+	}
+	default : {
+		goto fail;
+	}
+	}
+
+fail:
+	H5Tclose(type);
+	H5Dclose(dh);
+	return NULL;
+}
+
+
 char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
                         int **p_is_group, int **p_is_image)
 {

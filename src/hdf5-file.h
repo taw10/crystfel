@@ -41,4 +41,6 @@ extern char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
 extern int hdfile_set_first_image(struct hdfile *f, const char *group);
 extern void hdfile_close(struct hdfile *f);
 
+extern char *hdfile_get_string_value(struct hdfile *f, const char *name);
+
 #endif	/* HDF5_H */

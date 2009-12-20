@@ -692,12 +692,28 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 
 		} else {
 
+			char *tmp;
+
 			item = gtk_menu_item_new_with_label(names[i]);
+
+			tmp = hdfile_get_string_value(hdfile, names[i]);
+			if ( tmp != NULL ) {
+
+				GtkWidget *ss;
+				GtkWidget *mss;
+
+				mss = gtk_menu_new();
+				ss = gtk_menu_item_new_with_label(tmp);
+				gtk_menu_shell_append(GTK_MENU_SHELL(mss), ss);
+				gtk_menu_item_set_submenu(GTK_MENU_ITEM(item),
+				                          mss);
+
+			}
+
 
 		}
 
 		gtk_menu_shell_append(GTK_MENU_SHELL(ms), item);
-		gtk_widget_show(item);
 
 		free(names[i]);
 
@@ -739,6 +755,8 @@ static void displaywindow_update_menus(DisplayWindow *dw)
 	/* Make new menu be the submenu for File->Images */
 	w = gtk_ui_manager_get_widget(dw->ui, "/ui/displaywindow/file/images");
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(w), ms);
+
+	gtk_widget_show_all(ms);
 }
 
 
