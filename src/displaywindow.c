@@ -704,6 +704,7 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 
 				mss = gtk_menu_new();
 				ss = gtk_menu_item_new_with_label(tmp);
+				gtk_widget_set_sensitive(ss, FALSE);
 				gtk_menu_shell_append(GTK_MENU_SHELL(mss), ss);
 				gtk_menu_item_set_submenu(GTK_MENU_ITEM(item),
 				                          mss);
