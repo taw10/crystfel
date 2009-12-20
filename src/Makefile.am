@@ -17,7 +17,7 @@ process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
 process_hkl_LDADD = @LIBS@
 
 if HAVE_GTK
-hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c
+hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c
 hdfsee_LDADD = @LIBS@
 endif
 

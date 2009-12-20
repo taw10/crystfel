@@ -21,6 +21,7 @@
 
 #include "image.h"
 #include "hdf5-file.h"
+#include "utils.h"
 
 
 struct hdfile {
@@ -283,23 +284,44 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name)
 	hid_t class;
 
 	dh = H5Dopen(f->fh, name, H5P_DEFAULT);
-	if ( dh < 0 ) {
-		return NULL;
+	if ( dh < 0 ) return NULL;
+
+	type = H5Dget_type(dh);
+	class = H5Tget_class(type);
+
+	if ( class == H5T_STRING ) {
+
+		herr_t r;
+		char *tmp;
+		hid_t th;
+		hsize_t size;
+
+		size = H5Dget_storage_size(dh);
+
+		tmp = malloc(size+1);
+
+		th = H5Tcopy(H5T_C_S1);
+		H5Tset_size(th, size+1);
+
+		r = H5Dread(dh, th, H5S_ALL, H5S_ALL, H5P_DEFAULT, tmp);
+		if ( r < 0 ) goto fail;
+
+		tmp[size] = '\0';
+		chomp(tmp);
+
+		return tmp;
+
 	}
 
 	sh = H5Dget_space(dh);
-	if ( H5Sget_simple_extent_ndims(sh) != 1 ) {
-		return NULL;
-	}
+	if ( H5Sget_simple_extent_ndims(sh) != 1 ) goto fail;
 
 	H5Sget_simple_extent_dims(sh, &size, &max_size);
 	if ( size != 1 ) {
 		H5Dclose(dh);
-		return NULL;
+		goto fail;
 	}
 
-	type = H5Dget_type(dh);
-	class = H5Tget_class(type);
 	switch ( class ) {
 	case H5T_FLOAT : {
 
