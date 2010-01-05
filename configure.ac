@@ -31,6 +31,6 @@ AC_MSG_WARN([GTK not found.  hdfsee will not be built.]))
 AM_CONDITIONAL([HAVE_GTK], test x$havegtk = xtrue)
 
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS"
-LIBS="$LIBS $HDF5_LIBS -lm -lz -lgsl -lgslcblas $GTK_LIBS -lgthread-2.0"
+LIBS="$LIBS $HDF5_LIBS -lm -lz -lgsl -lgslcblas $GTK_LIBS -lgthread-2.0 -lutil"
 
 AC_OUTPUT(Makefile src/Makefile data/Makefile)

@@ -19,8 +19,10 @@
 
 #include <stdint.h>
 #include <complex.h>
+#include <glib.h>
 
 #include "utils.h"
+#include "cell.h"
 
 
 /* How is the scaling of the image described? */
@@ -92,6 +94,19 @@ struct image {
 	ImageFeatureList	*features;	/* "Experimental" features */
 	ImageFeatureList	*rflist;	/* "Predicted" features */
 
+	UnitCell		*cell;
+
+	/* DirAx auto-indexing low-level stuff */
+	GIOChannel		*dirax;
+	int			dirax_pty;
+	pid_t			dirax_pid;
+	char			*dirax_rbuffer;
+	int			dirax_rbufpos;
+	int			dirax_rbuflen;
+
+	/* DirAx auto-indexing high-level stuff */
+	int			dirax_step;
+	int			dirax_read_cell;
 };
 
 /* An opaque type representing a list of images */

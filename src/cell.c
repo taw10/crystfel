@@ -146,6 +146,36 @@ void cell_set_cartesian(UnitCell *cell,
 }
 
 
+void cell_set_cartesian_x(UnitCell *cell, double ax, double bx, double cx)
+{
+	if ( !cell ) return;
+
+	cell->ax = ax;  cell->bx = bx;  cell->cx = cx;
+
+	cell_update_crystallographic(cell);
+}
+
+
+void cell_set_cartesian_y(UnitCell *cell, double ay, double by, double cy)
+{
+	if ( !cell ) return;
+
+	cell->ay = ay;  cell->by = by;  cell->cy = cy;
+
+	cell_update_crystallographic(cell);
+}
+
+
+void cell_set_cartesian_z(UnitCell *cell, double az, double bz, double cz)
+{
+	if ( !cell ) return;
+
+	cell->az = az;  cell->bz = bz;  cell->cz = cz;
+
+	cell_update_crystallographic(cell);
+}
+
+
 UnitCell *cell_new_from_parameters(double a, double b, double c,
                                    double alpha, double beta, double gamma)
 {

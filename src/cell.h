@@ -60,6 +60,13 @@ extern void cell_get_cartesian(UnitCell *cell,
                                double *bx, double *by, double *bz,
                                double *cx, double *cy, double *cz);
 
+extern void cell_set_cartesian_x(UnitCell *cell,
+                                double ax, double bx, double cx);
+extern void cell_set_cartesian_y(UnitCell *cell,
+                                 double ay, double by, double cy);
+extern void cell_set_cartesian_z(UnitCell *cell,
+                                 double az, double bz, double cz);
+
 extern void cell_get_reciprocal(UnitCell *cell,
                                double *asx, double *asy, double *asz,
                                double *bsx, double *bsy, double *bsz,
