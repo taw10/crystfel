@@ -62,8 +62,6 @@ int hdfile_set_image(struct hdfile *f, const char *path)
 	hsize_t size[2];
 	hsize_t max_size[2];
 
-	STATUS("Selecting %s\n", path);
-
 	f->dh = H5Dopen(f->fh, path, H5P_DEFAULT);
 	if ( f->dh < 0 ) {
 		ERROR("Couldn't open dataset\n");
@@ -300,7 +298,6 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name)
 		herr_t r;
 		char *tmp;
 		hid_t th;
-		hsize_t size;
 
 		size = H5Dget_storage_size(dh);
 
