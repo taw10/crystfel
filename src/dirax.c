@@ -371,13 +371,10 @@ static int map_position(struct image *image, double x, double y,
 }
 
 
-void index_pattern(struct image *image)
+static void search_peaks(struct image *image)
 {
 	FILE *fh;
-	unsigned int opts;
-	int saved_stderr;
 	int x, y;
-	GMainLoop *ml;
 
 	fh = fopen("xfel.drx", "w");
 	if ( !fh ) {
@@ -407,6 +404,17 @@ void index_pattern(struct image *image)
 	}
 
 	fclose(fh);
+}
+
+
+void index_pattern(struct image *image)
+{
+	unsigned int opts;
+	int saved_stderr;
+	GMainLoop *ml;
+
+	/* Do peak search and splurge out 'xfel.drx' */
+	search_peaks(image);
 
 	saved_stderr = dup(STDERR_FILENO);
 	image->dirax_pid = forkpty(&image->dirax_pty, NULL, NULL, NULL);
