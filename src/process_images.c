@@ -50,7 +50,7 @@ static int sum_of_peaks(struct image *image)
 
 		int val;
 
-		val = image->data[y+image->height*(image->width-1-x)];
+		val = image->data[x+image->height*y];
 
 		if ( val > 1000 ) integr+=val;
 

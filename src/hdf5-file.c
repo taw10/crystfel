@@ -128,13 +128,13 @@ static void *hdfile_bin(int16_t *in, int inw, int inh,
 		for ( xb=0; xb<binning; xb++ ) {
 		for ( yb=0; yb<binning; yb++ ) {
 
-			total += in[inh*(binning*x+xb)+binning*y+yb];
+			total += in[binning*x+xb + (binning*y+yb)*(w*binning)];
 
 		}
 		}
 
-		data[y+h*(w-1-x)] = total / (binning * binning);
-		if ( data[y+h*(w-1-x)] > max ) max = data[y+h*(w-1-x)];
+		data[x+w*y] = total / (binning * binning);
+		if ( data[x+w*y] > max ) max = data[x+w*y];
 
 	}
 	}
