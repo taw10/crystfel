@@ -43,31 +43,65 @@ static void show_help(const char *s)
 static int sum_of_peaks(struct image *image)
 {
 	int x, y;
-	int integr = 0;
+	int integr, n;
+	float fintegr, mean, sd, th;
 
-	for ( x=0; x<400; x++ ) {
+	/* Measure mean */
+	integr = 0;
+	n = 0;
+	for ( x=0; x<1024; x++ ) {
+	for ( y=600; y<1024; y++ ) {
+
+		int val;
+		if ( (x>400) && (x<600) ) continue;
+		val = image->data[x+image->height*y];
+		if ( val < 0 ) continue;
+		integr += val;
+		n++;
+
+	}
+	}
+	mean = (float)integr / n;  /* As integer to keep maths fast */
+
+	/* Standard deviation */
+	integr = 0;
+	for ( x=0; x<1024; x++ ) {
+	for ( y=600; y<1024; y++ ) {
+
+		float val;
+
+		if ( (x>400) && (x<600) ) continue;
+		val = (float)image->data[x+image->height*y];
+		if ( val < 0 ) continue;
+
+		val -= mean;
+		val = powf(val, 2.0);
+		fintegr += val;
+
+	}
+	}
+	sd = sqrtf(fintegr / n);
+
+	/* Threshold */
+	th = mean + 5*sd;
+	STATUS("mean=%f ,sd=%f, th=%f\n", mean, sd, th);
+
+	/* Sum intensity above threshold */
+	integr = 0;
+	for ( x=0; x<1024; x++ ) {
 	for ( y=600; y<1024; y++ ) {
 
 		int val;
 
-		val = image->data[x+image->height*y];
-
-		if ( val > 1000 ) integr+=val;
-
-	}
-	}
-	for ( x=700; x<1023; x++ ) {
-	for ( y=600; y<1024; y++ ) {
-
-		int val;
+		/* Chop out streaky region */
+		if ( (x>400) && (x<600) ) continue;
 
 		val = image->data[x+image->height*y];
 
-		if ( val > 1000 ) integr+=val;
+		if ( val > th ) integr+=val;
 
 	}
 	}
-
 
 	return integr;
 }
