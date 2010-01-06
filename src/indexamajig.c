@@ -1,5 +1,5 @@
 /*
- * process_images.c
+ * indexamajig.c
  *
  * Find hits, index patterns, output hkl+intensity etc.
  *

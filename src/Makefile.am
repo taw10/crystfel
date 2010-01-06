@@ -1,4 +1,4 @@
-bin_PROGRAMS = pattern_sim process_hkl get_hkl process_images
+bin_PROGRAMS = pattern_sim process_hkl get_hkl indexamajig
 
 if HAVE_GTK
 bin_PROGRAMS += hdfsee
@@ -16,8 +16,8 @@ process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
                       reflections.c
 process_hkl_LDADD = @LIBS@
 
-process_images_SOURCES = process_images.c hdf5-file.c utils.c dirax.c cell.c
-process_images_LDADD = @LIBS@
+indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c dirax.c cell.c
+indexamajig_LDADD = @LIBS@
 
 if HAVE_GTK
 hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c
