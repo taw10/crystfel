@@ -45,8 +45,8 @@ static int sum_of_peaks(struct image *image)
 	int x, y;
 	int integr = 0;
 
-	for ( x=0; x<image->width; x++ ) {
-	for ( y=0; y<image->height; y++ ) {
+	for ( x=0; x<400; x++ ) {
+	for ( y=600; y<1024; y++ ) {
 
 		int val;
 
@@ -56,6 +56,18 @@ static int sum_of_peaks(struct image *image)
 
 	}
 	}
+	for ( x=700; x<1023; x++ ) {
+	for ( y=600; y<1024; y++ ) {
+
+		int val;
+
+		val = image->data[x+image->height*y];
+
+		if ( val > 1000 ) integr+=val;
+
+	}
+	}
+
 
 	return integr;
 }
@@ -141,7 +153,7 @@ int main(int argc, char *argv[])
 
 		integr = sum_of_peaks(&image);
 		printf("%6i %i\n", n_images, integr);
-		if ( integr > 1e7 ) {
+		if ( integr > 200000 ) {
 
 			STATUS("Hit: %s\n", line);
 
