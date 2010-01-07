@@ -40,11 +40,21 @@ static void show_help(const char *s)
 }
 
 
-static int sum_of_peaks(struct image *image)
+struct peak {
+	int x;
+	int y;
+	int i;
+	int invalid;
+};
+
+
+static int image_fom(struct image *image)
 {
 	int x, y;
 	int integr, n;
 	float fintegr, mean, sd, th;
+	struct peak peaks[1024];
+	int i, n_peaks, n_nearby, n_valid;
 
 	/* Measure mean */
 	integr = 0;
@@ -86,8 +96,8 @@ static int sum_of_peaks(struct image *image)
 	th = mean + 5*sd;
 	STATUS("mean=%f ,sd=%f, th=%f\n", mean, sd, th);
 
-	/* Sum intensity above threshold */
-	integr = 0;
+	/* Find pixels above threshold */
+	n_peaks = 0;
 	for ( x=0; x<1024; x++ ) {
 	for ( y=600; y<1024; y++ ) {
 
@@ -98,12 +108,78 @@ static int sum_of_peaks(struct image *image)
 
 		val = image->data[x+image->height*y];
 
-		if ( val > th ) integr+=val;
+		if ( val > th ) {
+			peaks[n_peaks].x = x;
+			peaks[n_peaks].y = y;
+			peaks[n_peaks].i = val;
+			peaks[n_peaks].invalid = 0;
+			n_peaks++;
+		}
 
 	}
 	}
 
-	return integr;
+	do {
+
+		int max, max_i;
+		int adjacent;
+
+		n_nearby = 0;
+
+		/* Find brightest peak */
+		max = 0;
+		for ( i=0; i<n_peaks; i++ ) {
+			if ( peaks[i].i > max ) {
+				max = peaks[i].i;
+				max_i = i;
+			}
+		}
+
+		/* Must be at least one adjacent bright pixel */
+		adjacent = 0;
+		for ( i=0; i<n_peaks; i++ ) {
+
+			int td;
+
+			td = abs(peaks[i].x - peaks[max_i].x) +
+			     abs(peaks[i].y - peaks[max_i].y);
+			if ( td == 1 ) {
+				adjacent++;
+				break;  /* One is enough */
+			}
+		}
+		if ( adjacent < 1 ) {
+			peaks[i].invalid = 1;
+			continue;
+		}
+
+		/* Remove nearby (non-invalidated) peaks from list */
+		n_nearby = 0;
+		for ( i=0; i<n_peaks; i++ ) {
+
+			int dx, dy, ds;
+
+			if ( peaks[i].invalid ) continue;
+
+			dx = abs(peaks[i].x - peaks[max_i].x);
+			dy = abs(peaks[i].y - peaks[max_i].y);
+			ds = dx*dx + dy*dy;
+			if ( ds < 36 ) {
+				n_nearby++;
+				peaks[i].invalid = 1;
+			}
+
+		}
+
+	} while ( n_nearby );
+
+	n_valid = 0;
+	for ( i=0; i<n_peaks; i++ ) {
+		if ( peaks[i].invalid ) continue;
+		n_valid++;
+	}
+
+	return n_valid;
 }
 
 
@@ -169,7 +245,7 @@ int main(int argc, char *argv[])
 		char line[1024];
 		struct hdfile *hdfile;
 		struct image image;
-		int integr;
+		int fom;
 
 		rval = fgets(line, 1023, fh);
 		chomp(line);
@@ -185,9 +261,9 @@ int main(int argc, char *argv[])
 
 		hdf5_read(hdfile, &image);
 
-		integr = sum_of_peaks(&image);
-		printf("%6i %i\n", n_images, integr);
-		if ( integr > 200000 ) {
+		fom = image_fom(&image);
+		printf("%6i %i\n", n_images, fom);
+		if ( fom > 0 ) {
 
 			STATUS("Hit: %s\n", line);
 
