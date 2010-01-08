@@ -385,6 +385,11 @@ static void search_peaks(struct image *image)
 	width = image->width;
 	height = image->height;
 
+	if ( image->features != NULL ) {
+		image_feature_list_free(image->features);
+	}
+	image->features = image_feature_list_new();
+
 	for ( x=1; x<image->width-1; x++ ) {
 	for ( y=1; y<image->height-1; y++ ) {
 
@@ -441,8 +446,8 @@ static void search_peaks(struct image *image)
 
 		if ( !did_something ) {
 
-			//double d;
-			//int idx;
+			double d;
+			int idx;
 
 			assert(mask_x<image->width);
 			assert(mask_y<image->height);
@@ -453,10 +458,10 @@ static void search_peaks(struct image *image)
 
 			/* Check for a feature at exactly the
 			 * same coordinates */
-			//image_feature_closest(flist, mask_x, mask_y,
-			//                      &d, &idx);
+			image_feature_closest(image->features, mask_x, mask_y,
+			                      &d, &idx);
 
-			//if ( d > 1.0 ) {
+			if ( d > 1.0 ) {
 
 				double rx = 0.0;
 				double ry = 0.0;
@@ -464,10 +469,13 @@ static void search_peaks(struct image *image)
 
 				/* Map and record reflection */
 				printf("%i %i\n", x, y);
+
+				image_add_feature(image->features, x, y,
+				                  image, 1.0);
 				map_position(image, x, y, &rx, &ry, &rz);
 				fprintf(fh, "%10f %10f %10f %8f\n",
 				        rx/1e10, ry/1e10, rz/1e10, 1.0);
-			//}
+			}
 
 		}
 
