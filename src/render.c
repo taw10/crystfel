@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include "hdf5-file.h"
+#include "render.h"
 
 /* Set to 1 to measure mean intensity in a rectangle */
 #define MEASURE_INT 0
@@ -79,6 +80,7 @@
 	if ( val < 0.0 ) p = 0.0;                                              \
 	if ( val > max ) p = 0.0;                                              \
 	r = 255.0*p;	g = 255.0*p;	b = 255.0*p;
+
 
 /* NB This function is shared between render_get_image() and
  * render_get_colour_scale() */

@@ -102,11 +102,11 @@ int poisson_noise(double expected)
 	int k = 0;
 	double p = 1.0;
 
-	L = exp(-expected);
-
 	/* For large values of the mean, we get big problems with arithmetic.
 	 * In such cases, fall back on a Gaussian with the right variance. */
-	if ( !isnormal(L) ) return fake_poisson_noise(expected);
+	if ( L > 100.0 ) return fake_poisson_noise(expected);
+
+	L = exp(-expected);
 
 	do {
 

@@ -246,8 +246,8 @@ int hdf5_read(struct hdfile *f, struct image *image)
 	image->width = f->ny;
 
 	/* FIXME: The following are basically made up... */
-	image->x_centre = image->width/2;
-	image->y_centre = image->height/2;
+	image->x_centre = image->width/2 - 19;
+	image->y_centre = image->height/2 - 35;
 	image->lambda = ph_en_to_lambda(eV_to_J(1793.0));
 	image->fmode = FORMULATION_CLEN;
 	image->camera_len = 75.0e-3;  /* 75 mm camera length */
