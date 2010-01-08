@@ -404,7 +404,11 @@ static void search_peaks(struct image *image)
 		double max;
 		unsigned int did_something = 1;
 
+		/* Overall threshold */
 		if ( data[x+width*y] < 800 ) continue;
+
+		/* Ignore streak */
+		if ( abs(x-image->x_centre) < 15 ) continue;
 
 		/* Get gradients */
 		dx1 = data[x+width*y] - data[(x+1)+width*y];
@@ -419,7 +423,7 @@ static void search_peaks(struct image *image)
 		/* Calculate overall gradient */
 		grad = dxs + dys;
 
-		if ( grad < 200000 ) continue;
+		if ( grad < 2000000 ) continue;
 
 		mask_x = x;
 		mask_y = y;
@@ -459,6 +463,7 @@ static void search_peaks(struct image *image)
 			assert(mask_x>=0);
 			assert(mask_y>=0);
 
+			/* Too far from foot point? */
 			if ( distance(mask_x, mask_y, x, y) > 50.0 )  continue;
 
 			/* Check for a feature at exactly the
@@ -475,8 +480,8 @@ static void search_peaks(struct image *image)
 				/* Map and record reflection */
 				printf("%i %i\n", x, y);
 
-				image_add_feature(image->features, x, y,
-				                  image, 1.0);
+				image_add_feature(image->features,
+				                  mask_x, mask_y, image, 1.0);
 				map_position(image, x, y, &rx, &ry, &rz);
 				fprintf(fh, "%10f %10f %10f %8f\n",
 				        rx/1e10, ry/1e10, rz/1e10, 1.0);
