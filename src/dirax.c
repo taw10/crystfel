@@ -401,6 +401,8 @@ static void search_peaks(struct image *image)
 		double max;
 		unsigned int did_something = 1;
 
+		if ( data[x+width*y] < 800 ) continue;
+
 		/* Get gradients */
 		dx1 = data[x+width*y] - data[(x+1)+width*y];
 		dx2 = data[(x-1)+width*y] - data[x+width*y];
@@ -414,7 +416,7 @@ static void search_peaks(struct image *image)
 		/* Calculate overall gradient */
 		grad = dxs + dys;
 
-		if ( grad < 2000000 ) continue;
+		if ( grad < 200000 ) continue;
 
 		mask_x = x;
 		mask_y = y;
