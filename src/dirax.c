@@ -335,6 +335,9 @@ static int map_position(struct image *image, double x, double y,
 	y -= image->y_centre;
 	k = 1.0 / image->lambda;
 
+	/* FIXME: Don't process lower CCD for now */
+	if ( y < 0 ) return 0;
+
 	if ( image->fmode == FORMULATION_CLEN ) {
 
 		/* Convert pixels to metres */
