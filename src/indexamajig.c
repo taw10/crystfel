@@ -76,7 +76,7 @@ static int image_fom(struct image *image)
 	mean = (float)integr / n;  /* As integer to keep maths fast */
 
 	/* Standard deviation */
-	integr = 0;
+	fintegr = 0;
 	for ( x=0; x<1024; x++ ) {
 	for ( y=600; y<1024; y++ ) {
 
@@ -123,7 +123,7 @@ static int image_fom(struct image *image)
 
 	do {
 
-		int max, max_i;
+		int max, max_i = -1;
 		int adjacent;
 
 		n_nearby = 0;
@@ -255,6 +255,8 @@ int main(int argc, char *argv[])
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
 		chomp(line);
+
+		image.features = NULL;
 
 		STATUS("Processing '%s'\n", line);
 
