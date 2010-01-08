@@ -586,7 +586,7 @@ static void numbers_update(DisplayWindow *dw)
 		int x, y;
 
 		x = dw->binning * dw->numbers_window->cx + (px-8);
-		y = dw->binning * (dw->height-dw->numbers_window->cy) + (py-8);
+		y = dw->binning * dw->numbers_window->cy + (py-8);
 
 		if ( (x>0) && (y>0) &&
 		     !hdfile_get_unbinned_value(dw->hdfile, x, y, &val) ) {
