@@ -26,6 +26,7 @@
 #include "render.h"
 #include "hdf5-file.h"
 #include "hdfsee.h"
+#include "utils.h"
 
 
 #define INITIAL_BINNING 2
@@ -399,6 +400,37 @@ static gint displaywindow_set_boostint(GtkWidget *widget, DisplayWindow *dw)
 }
 
 
+static void load_features_from_file(struct image *image, const char *filename)
+{
+	FILE *fh;
+	char *rval;
+
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) return;
+
+	if ( image->features != NULL ) {
+		image_feature_list_free(image->features);
+	}
+	image->features = image_feature_list_new();
+
+	do {
+		char line[1024];
+		int x, y;
+		int r;
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
+		chomp(line);
+
+		r = sscanf(line, "%i %i", &x, &y);
+		if ( r != 2 ) continue;
+
+		image_add_feature(image->features, x, y, image, 1.0);
+
+	} while ( rval != NULL );
+}
+
+
 static gint displaywindow_peaklist_response(GtkWidget *d, gint response,
                                             DisplayWindow *dw)
 {
@@ -408,7 +440,8 @@ static gint displaywindow_peaklist_response(GtkWidget *d, gint response,
 
 		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
 
-		load_features_from_file(dw->image);
+		load_features_from_file(hdfile_get_image(dw->hdfile), filename);
+		displaywindow_update(dw);
 
 		g_free(filename);
 

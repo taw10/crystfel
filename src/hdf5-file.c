@@ -45,6 +45,7 @@ struct hdfile *hdfile_open(const char *filename)
 
 	f = malloc(sizeof(struct hdfile));
 	if ( f == NULL ) return NULL;
+	f->image = NULL;
 
 	f->fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( f->fh < 0 ) {
@@ -149,15 +150,26 @@ int16_t *hdfile_get_image_binned(struct hdfile *f, int binning, int16_t *max)
 	struct image *image;
 	int16_t *data;
 
-	image = malloc(sizeof(struct image));
-	if ( image == NULL ) return NULL;
+	if ( f->image == NULL ) {
 
-	hdf5_read(f, image);
-	f->image = image;
+		image = malloc(sizeof(struct image));
+		if ( image == NULL ) return NULL;
+		image->features = NULL;
 
-	data = hdfile_bin(image->data, f->nx, f->ny, binning, max);
+		hdf5_read(f, image);
+		f->image = image;
+
+	}
+
+	data = hdfile_bin(f->image->data, f->nx, f->ny, binning, max);
 
 	return data;
+}
+
+
+struct image *hdfile_get_image(struct hdfile *f)
+{
+	return f->image;
 }
 
 

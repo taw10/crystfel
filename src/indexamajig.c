@@ -176,7 +176,7 @@ static int image_fom(struct image *image)
 	n_valid = 0;
 	for ( i=0; i<n_peaks; i++ ) {
 		if ( peaks[i].invalid ) continue;
-		printf("%i %i\n", peaks[i].x, peaks[i].y);
+		//printf("%i %i\n", peaks[i].x, peaks[i].y);
 		n_valid++;
 	}
 
@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
 		printf("%6i %i\n", n_images, fom);
 		if ( fom > 0 ) {
 
-			STATUS("Hit: %s\n", line);
+			printf("%s\n", line);
 
 			index_pattern(&image);
 

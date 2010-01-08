@@ -89,6 +89,31 @@ static void render_free_data(guchar *data, gpointer p)
 	free(data);
 }
 
+
+static void show_marked_features(struct image *image, guchar *data,
+                                 int w, int h, int binning)
+{
+	int i;
+
+	if ( image->features == NULL ) return;
+
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
+
+		struct imagefeature *f;
+		int x, y;
+
+		f = image_get_feature(image->features, i);
+
+		x = f->x;  y = f->y;
+
+		x /= binning;
+		y /= binning;
+
+		data[3*( x+w*(h-1-y) )+0] = 255;
+	}
+}
+
+
 /* Return a pixbuf containing a rendered version of the image after binning.
  * This pixbuf might be scaled later - hopefully mostly in a downward
  * direction. */
@@ -143,6 +168,8 @@ GdkPixbuf *render_get_image(struct hdfile *hdfile, int binning, int boostint,
 
 	}
 	}
+
+	show_marked_features(hdfile_get_image(hdfile), data, w, h, binning);
 
 	/* Finished with this */
 	free(hdr);

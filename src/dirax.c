@@ -32,6 +32,7 @@
 
 #include "image.h"
 #include "dirax.h"
+#include "utils.h"
 
 
 typedef enum {
@@ -371,10 +372,13 @@ static int map_position(struct image *image, double x, double y,
 }
 
 
+#define PEAK_WINDOW_SIZE (10)
+
 static void search_peaks(struct image *image)
 {
 	FILE *fh;
-	int x, y;
+	int x, y, width;
+	int16_t *data;
 
 	fh = fopen("xfel.drx", "w");
 	if ( !fh ) {
@@ -383,22 +387,95 @@ static void search_peaks(struct image *image)
 	}
 	fprintf(fh, "%f\n", 0.5);  /* Lie about the wavelength.  */
 
-	for ( x=0; x<image->width; x++ ) {
-	for ( y=0; y<image->height; y++ ) {
+	data = image->data;
+	width = image->width;
 
-		int val;
+	for ( x=1; x<image->width-1; x++ ) {
+	for ( y=1; y<image->height-1; y++ ) {
 
-		val = image->data[y+image->height*(image->width-1-x)];
+		double dx1, dx2, dy1, dy2;
+		double dxs, dys;
+		double grad;
+		int mask_x, mask_y;
+		int sx, sy;
+		double max;
+		unsigned int did_something = 1;
 
-		if ( val > 1000 ) {
+		/* Get gradients */
+		dx1 = data[x+width*y] - data[(x+1)+width*y];
+		dx2 = data[(x-1)+width*y] - data[x+width*y];
+		dy1 = data[x+width*y] - data[(x+1)+width*(y+1)];
+		dy2 = data[x+width*(y-1)] - data[x+width*y];
 
-			double rx, ry, rz;
+		/* Average gradient measurements from both sides */
+		dxs = ((dx1*dx1) + (dx2*dx2)) / 2;
+		dys = ((dy1*dy1) + (dy2*dy2)) / 2;
 
-			/* Map and record reflection */
-			map_position(image, x, y, &rx, &ry, &rz);
-			fprintf(fh, "%10f %10f %10f %8f\n",
-			        rx/1e10, ry/1e10, rz/1e10, 1.0);
+		/* Calculate overall gradient */
+		grad = dxs + dys;
+
+		if ( grad < 2000000 ) continue;
+
+		mask_x = x;
+		mask_y = y;
+
+		while ( (did_something)
+		     && (distance(mask_x, mask_y, x, y)<50) ) {
+
+			max = data[mask_x+width*mask_y];
+			did_something = 0;
+
+			for ( sy=biggest(mask_y-PEAK_WINDOW_SIZE/2, 0);
+			      sy<smallest(mask_y+PEAK_WINDOW_SIZE/2, image->height);
+			      sy++ ) {
+			for ( sx=biggest(mask_x-PEAK_WINDOW_SIZE/2, 0);
+			      sx<smallest(mask_x+PEAK_WINDOW_SIZE/2, width);
+			      sx++ ) {
+
+				if ( data[sx+width*sy] > max ) {
+					max = data[sx+width*sy];
+					mask_x = sx;
+					mask_y = sy;
+					did_something = 1;
+				}
+
+			}
+			}
+
 		}
+
+		if ( !did_something ) {
+
+			//double d;
+			//int idx;
+
+			assert(mask_x<image->width);
+			assert(mask_y<image->height);
+			assert(mask_x>=0);
+			assert(mask_y>=0);
+
+			if ( distance(mask_x, mask_y, x, y) > 50.0 )  continue;
+
+			/* Check for a feature at exactly the
+			 * same coordinates */
+			//image_feature_closest(flist, mask_x, mask_y,
+			//                      &d, &idx);
+
+			//if ( d > 1.0 ) {
+
+				double rx = 0.0;
+				double ry = 0.0;
+				double rz = 0.0;
+
+				/* Map and record reflection */
+				printf("%i %i\n", x, y);
+				map_position(image, x, y, &rx, &ry, &rz);
+				fprintf(fh, "%10f %10f %10f %8f\n",
+				        rx/1e10, ry/1e10, rz/1e10, 1.0);
+			//}
+
+		}
+
 
 	}
 	}

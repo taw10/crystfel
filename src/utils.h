@@ -110,6 +110,10 @@ static inline double distance3d(double x1, double y1, double z1,
 
 #define is_odd(a) ((a)%2==1)
 
+#define biggest(a,b) ((a>b) ? (a) : (b))
+#define smallest(a,b) ((a<b) ? (a) : (b))
+
+
 /* Photon energy (J) to wavelength (m) */
 #define ph_en_to_lambda(a) ((PLANCK*C_VACUO)/(a))
 

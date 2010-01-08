@@ -20,7 +20,7 @@ indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c dirax.c cell.c
 indexamajig_LDADD = @LIBS@
 
 if HAVE_GTK
-hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c
+hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c image.c
 hdfsee_LDADD = @LIBS@
 endif
 
