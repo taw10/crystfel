@@ -339,10 +339,6 @@ static int map_position(struct image *image, double x, double y,
 
 		/* Convert pixels to metres */
 		x /= image->resolution;
-		y /= image->resolution;
-		x = x * k / image->camera_len;
-		y = y * k / image->camera_len;
-		x /= image->resolution;
 		y /= image->resolution;	/* Convert pixels to metres */
 		d = sqrt((x*x) + (y*y));
 		theta = atan2(d, image->camera_len);
@@ -350,8 +346,6 @@ static int map_position(struct image *image, double x, double y,
 	} else if (image->fmode == FORMULATION_PIXELSIZE ) {
 
 		/* Convert pixels to metres^-1 */
-		x = x * image->pixel_size;
-		y = y * image->pixel_size;
 		x *= image->pixel_size;
 		y *= image->pixel_size;	/* Convert pixels to metres^-1 */
 		d = sqrt((x*x) + (y*y));
@@ -377,7 +371,7 @@ static int map_position(struct image *image, double x, double y,
 static void search_peaks(struct image *image)
 {
 	FILE *fh;
-	int x, y, width;
+	int x, y, width, height;
 	int16_t *data;
 
 	fh = fopen("xfel.drx", "w");
@@ -389,6 +383,7 @@ static void search_peaks(struct image *image)
 
 	data = image->data;
 	width = image->width;
+	height = image->height;
 
 	for ( x=1; x<image->width-1; x++ ) {
 	for ( y=1; y<image->height-1; y++ ) {
@@ -426,7 +421,7 @@ static void search_peaks(struct image *image)
 			did_something = 0;
 
 			for ( sy=biggest(mask_y-PEAK_WINDOW_SIZE/2, 0);
-			      sy<smallest(mask_y+PEAK_WINDOW_SIZE/2, image->height);
+			      sy<smallest(mask_y+PEAK_WINDOW_SIZE/2, height);
 			      sy++ ) {
 			for ( sx=biggest(mask_x-PEAK_WINDOW_SIZE/2, 0);
 			      sx<smallest(mask_x+PEAK_WINDOW_SIZE/2, width);
