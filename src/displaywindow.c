@@ -399,6 +399,27 @@ static gint displaywindow_set_boostint(GtkWidget *widget, DisplayWindow *dw)
 }
 
 
+static gint displaywindow_peaklist_response(GtkWidget *d, gint response,
+                                            DisplayWindow *dw)
+{
+	if ( response == GTK_RESPONSE_ACCEPT ) {
+
+		char *filename;
+
+		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
+
+		load_features_from_file(dw->image);
+
+		g_free(filename);
+
+	}
+
+	gtk_widget_destroy(d);
+
+	return 0;
+}
+
+
 static gint displaywindow_about(GtkWidget *widget, DisplayWindow *dw)
 {
 	GtkWidget *window;
@@ -430,6 +451,26 @@ static gint displaywindow_about(GtkWidget *widget, DisplayWindow *dw)
 			 NULL);
 
 	gtk_widget_show_all(window);
+
+	return 0;
+}
+
+
+static gint displaywindow_peak_overlay(GtkWidget *widget, DisplayWindow *dw)
+{
+	GtkWidget *d;
+
+	d = gtk_file_chooser_dialog_new("Choose Peak List",
+	                                GTK_WINDOW(dw->window),
+	                                GTK_FILE_CHOOSER_ACTION_OPEN,
+	                                GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+	                                GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+	                                NULL);
+
+	g_signal_connect(G_OBJECT(d), "response",
+	                 G_CALLBACK(displaywindow_peaklist_response), dw);
+
+	gtk_widget_show_all(d);
 
 	return 0;
 }
@@ -592,6 +633,8 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox)
 		{ "ToolsAction", NULL, "_Tools", NULL, NULL, NULL },
 		{ "NumbersAction", NULL, "View Numbers...", "F2", NULL,
 			G_CALLBACK(displaywindow_show_numbers) },
+		{ "PeaksAction", NULL, "Peak Position Overlay...", NULL, NULL,
+			G_CALLBACK(displaywindow_peak_overlay) },
 
 		{ "HelpAction", NULL, "_Help", NULL, NULL, NULL },
 		{ "AboutAction", GTK_STOCK_ABOUT, "_About hdfsee...",

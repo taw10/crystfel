@@ -176,6 +176,7 @@ static int image_fom(struct image *image)
 	n_valid = 0;
 	for ( i=0; i<n_peaks; i++ ) {
 		if ( peaks[i].invalid ) continue;
+		printf("%i %i\n", peaks[i].x, peaks[i].y);
 		n_valid++;
 	}
 
