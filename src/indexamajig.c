@@ -248,6 +248,7 @@ int main(int argc, char *argv[])
 		int fom;
 
 		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
 		chomp(line);
 
 		STATUS("Processing '%s'\n", line);
