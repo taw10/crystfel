@@ -497,7 +497,7 @@ static void search_peaks(struct image *image)
 }
 
 
-void index_pattern(struct image *image)
+void index_pattern(struct image *image, int no_index)
 {
 	unsigned int opts;
 	int saved_stderr;
@@ -505,6 +505,8 @@ void index_pattern(struct image *image)
 
 	/* Do peak search and splurge out 'xfel.drx' */
 	search_peaks(image);
+
+	if ( no_index ) return;
 
 	saved_stderr = dup(STDERR_FILENO);
 	image->dirax_pid = forkpty(&image->dirax_pty, NULL, NULL, NULL);

@@ -36,6 +36,8 @@ static void show_help(const char *s)
 "\n"
 "  -i, --input=<filename>  Specify file containing list of images to process.\n"
 "                           '-' means stdin, which is the default.\n"
+"      --no-index          Do everything else (including fine peak search),\n"
+"                           but don't invoke the indexing program.\n"
 "\n");
 }
 
@@ -192,16 +194,18 @@ int main(int argc, char *argv[])
 	char *rval;
 	int n_images;
 	int n_hits;
+	int config_noindex = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
+		{"no-index",           0, &config_noindex,     1},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hi:w", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
@@ -264,12 +268,9 @@ int main(int argc, char *argv[])
 		hdf5_read(hdfile, &image);
 
 		fom = image_fom(&image);
-		printf("%6i %i\n", n_images, fom);
 		if ( fom > 0 ) {
 
-			printf("%s\n", line);
-
-			index_pattern(&image);
+			index_pattern(&image, config_noindex);
 
 			n_hits++;
 
