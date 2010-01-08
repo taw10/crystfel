@@ -101,6 +101,7 @@ static void show_marked_features(struct image *image, guchar *data,
 
 		struct imagefeature *f;
 		int x, y;
+		double th;
 
 		f = image_get_feature(image->features, i);
 
@@ -109,7 +110,21 @@ static void show_marked_features(struct image *image, guchar *data,
 		x /= binning;
 		y /= binning;
 
-		data[3*( x+w*(h-1-y) )+0] = 255;
+		for ( th=0; th<2*M_PI; th+=M_PI/40.0 ) {
+
+			int nx, ny;
+
+			nx = x + 10.0*cos(th);
+			ny = y + 10.0*sin(th);
+
+			if ( nx < 0 ) continue;
+			if ( ny < 0 ) continue;
+			if ( nx >= w ) continue;
+			if ( ny >= h ) continue;
+
+			data[3*( nx+w*(h-1-ny) )+0] = 255;
+
+		}
 	}
 }
 
