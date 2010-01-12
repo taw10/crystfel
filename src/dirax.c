@@ -34,6 +34,7 @@
 #include "dirax.h"
 #include "utils.h"
 #include "sfac.h"
+#include "peaks.h"
 
 
 typedef enum {
@@ -377,13 +378,15 @@ static int map_position(struct image *image, double x, double y,
 }
 
 
-#define PEAK_WINDOW_SIZE (10)
-
-static void search_peaks(struct image *image, int dump_peaks)
+void index_pattern(struct image *image, int no_index, int dump_peaks)
 {
+	unsigned int opts;
+	int saved_stderr;
 	FILE *fh;
-	int x, y, width, height;
-	int16_t *data;
+	int i;
+
+	/* Do peak search and splurge out 'xfel.drx' */
+	search_peaks(image, dump_peaks);
 
 	fh = fopen("xfel.drx", "w");
 	if ( !fh ) {
@@ -392,128 +395,20 @@ static void search_peaks(struct image *image, int dump_peaks)
 	}
 	fprintf(fh, "%f\n", 0.5);  /* Lie about the wavelength.  */
 
-	data = image->data;
-	width = image->width;
-	height = image->height;
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
-	if ( image->features != NULL ) {
-		image_feature_list_free(image->features);
-	}
-	image->features = image_feature_list_new();
+		struct imagefeature *f;
+		double rx = 0.0;
+		double ry = 0.0;
+		double rz = 0.0;
 
-	for ( x=1; x<image->width-1; x++ ) {
-	for ( y=1; y<image->height-1; y++ ) {
-
-		double dx1, dx2, dy1, dy2;
-		double dxs, dys;
-		double grad;
-		int mask_x, mask_y;
-		int sx, sy;
-		double max;
-		unsigned int did_something = 1;
-
-		/* Overall threshold */
-		if ( data[x+width*y] < 800 ) continue;
-
-		/* Ignore streak */
-		if ( abs(x-image->x_centre) < 15 ) continue;
-
-		/* Get gradients */
-		dx1 = data[x+width*y] - data[(x+1)+width*y];
-		dx2 = data[(x-1)+width*y] - data[x+width*y];
-		dy1 = data[x+width*y] - data[(x+1)+width*(y+1)];
-		dy2 = data[x+width*(y-1)] - data[x+width*y];
-
-		/* Average gradient measurements from both sides */
-		dxs = ((dx1*dx1) + (dx2*dx2)) / 2;
-		dys = ((dy1*dy1) + (dy2*dy2)) / 2;
-
-		/* Calculate overall gradient */
-		grad = dxs + dys;
-
-		if ( grad < 2000000 ) continue;
-
-		mask_x = x;
-		mask_y = y;
-
-		while ( (did_something)
-		     && (distance(mask_x, mask_y, x, y)<50) ) {
-
-			max = data[mask_x+width*mask_y];
-			did_something = 0;
-
-			for ( sy=biggest(mask_y-PEAK_WINDOW_SIZE/2, 0);
-			      sy<smallest(mask_y+PEAK_WINDOW_SIZE/2, height);
-			      sy++ ) {
-			for ( sx=biggest(mask_x-PEAK_WINDOW_SIZE/2, 0);
-			      sx<smallest(mask_x+PEAK_WINDOW_SIZE/2, width);
-			      sx++ ) {
-
-				if ( data[sx+width*sy] > max ) {
-					max = data[sx+width*sy];
-					mask_x = sx;
-					mask_y = sy;
-					did_something = 1;
-				}
-
-			}
-			}
-
-		}
-
-		if ( !did_something ) {
-
-			double d;
-			int idx;
-
-			assert(mask_x<image->width);
-			assert(mask_y<image->height);
-			assert(mask_x>=0);
-			assert(mask_y>=0);
-
-			/* Too far from foot point? */
-			if ( distance(mask_x, mask_y, x, y) > 50.0 )  continue;
-
-			/* Check for a feature at exactly the
-			 * same coordinates */
-			image_feature_closest(image->features, mask_x, mask_y,
-			                      &d, &idx);
-
-			if ( d > 1.0 ) {
-
-				double rx = 0.0;
-				double ry = 0.0;
-				double rz = 0.0;
-
-				/* Map and record reflection */
-				if ( dump_peaks ) {
-					printf("%i %i\n", x, y);
-				}
-
-				image_add_feature(image->features,
-				                  mask_x, mask_y, image, 1.0);
-				map_position(image, x, y, &rx, &ry, &rz);
-				fprintf(fh, "%10f %10f %10f %8f\n",
-				        rx/1e10, ry/1e10, rz/1e10, 1.0);
-			}
-
-		}
-
+		f = image_get_feature(image->features, i);
+		map_position(image, f->x, f->y, &rx, &ry, &rz);
+		fprintf(fh, "%10f %10f %10f %8f\n",
+		        rx/1e10, ry/1e10, rz/1e10, 1.0);
 
 	}
-	}
-
 	fclose(fh);
-}
-
-
-void index_pattern(struct image *image, int no_index, int dump_peaks)
-{
-	unsigned int opts;
-	int saved_stderr;
-
-	/* Do peak search and splurge out 'xfel.drx' */
-	search_peaks(image, dump_peaks);
 
 	if ( no_index ) return;
 
