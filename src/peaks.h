@@ -18,6 +18,7 @@
 #endif
 
 
+extern int image_fom(struct image *image);
 extern void search_peaks(struct image *image, int dump_peaks);
 
 

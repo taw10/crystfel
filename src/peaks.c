@@ -26,6 +26,150 @@
 
 #define PEAK_WINDOW_SIZE (10)
 
+struct peak {
+	int x;
+	int y;
+	int i;
+	int invalid;
+};
+
+
+int image_fom(struct image *image)
+{
+	int x, y;
+	int integr, n;
+	float fintegr, mean, sd, th;
+	struct peak peaks[1024];
+	int i, n_peaks, n_nearby, n_valid;
+
+	/* Measure mean */
+	integr = 0;
+	n = 0;
+	for ( x=0; x<1024; x++ ) {
+	for ( y=600; y<1024; y++ ) {
+
+		int val;
+		if ( (x>400) && (x<600) ) continue;
+		val = image->data[x+image->height*y];
+		if ( val < 0 ) continue;
+		integr += val;
+		n++;
+
+	}
+	}
+	mean = (float)integr / n;  /* As integer to keep maths fast */
+
+	/* Standard deviation */
+	fintegr = 0;
+	for ( x=0; x<1024; x++ ) {
+	for ( y=600; y<1024; y++ ) {
+
+		float val;
+
+		if ( (x>400) && (x<600) ) continue;
+		val = (float)image->data[x+image->height*y];
+		if ( val < 0 ) continue;
+
+		val -= mean;
+		val = powf(val, 2.0);
+		fintegr += val;
+
+	}
+	}
+	sd = sqrtf(fintegr / n);
+
+	/* Threshold */
+	th = mean + 5*sd;
+	STATUS("mean=%f ,sd=%f, th=%f\n", mean, sd, th);
+
+	/* Find pixels above threshold */
+	n_peaks = 0;
+	for ( x=0; x<1024; x++ ) {
+	for ( y=600; y<1024; y++ ) {
+
+		int val;
+
+		/* Chop out streaky region */
+		if ( (x>400) && (x<600) ) continue;
+
+		val = image->data[x+image->height*y];
+
+		if ( val > th ) {
+			peaks[n_peaks].x = x;
+			peaks[n_peaks].y = y;
+			peaks[n_peaks].i = val;
+			peaks[n_peaks].invalid = 0;
+			n_peaks++;
+		}
+
+	}
+	}
+
+	do {
+
+		int max, max_i = -1;
+		int adjacent;
+
+		n_nearby = 0;
+
+		/* Find brightest peak */
+		max = 0;
+		for ( i=0; i<n_peaks; i++ ) {
+			if ( peaks[i].i > max ) {
+				max = peaks[i].i;
+				max_i = i;
+			}
+		}
+
+		/* Must be at least one adjacent bright pixel */
+		adjacent = 0;
+		for ( i=0; i<n_peaks; i++ ) {
+
+			int td;
+
+			td = abs(peaks[i].x - peaks[max_i].x) +
+			     abs(peaks[i].y - peaks[max_i].y);
+			if ( td == 1 ) {
+				adjacent++;
+				break;  /* One is enough */
+			}
+		}
+		if ( adjacent < 1 ) {
+			peaks[i].invalid = 1;
+			continue;
+		}
+
+		/* Remove nearby (non-invalidated) peaks from list */
+		n_nearby = 0;
+		for ( i=0; i<n_peaks; i++ ) {
+
+			int dx, dy, ds;
+
+			if ( peaks[i].invalid ) continue;
+
+			dx = abs(peaks[i].x - peaks[max_i].x);
+			dy = abs(peaks[i].y - peaks[max_i].y);
+			ds = dx*dx + dy*dy;
+			if ( ds < 36 ) {
+				n_nearby++;
+				peaks[i].invalid = 1;
+			}
+
+		}
+
+	} while ( n_nearby );
+
+	n_valid = 0;
+	for ( i=0; i<n_peaks; i++ ) {
+		if ( peaks[i].invalid ) continue;
+		//printf("%i %i\n", peaks[i].x, peaks[i].y);
+		n_valid++;
+	}
+
+	return n_valid;
+}
+
+
 void search_peaks(struct image *image, int dump_peaks)
 {
 	int x, y, width, height;
