@@ -135,53 +135,45 @@ static void dirax_send_next(struct image *image)
 {
 	switch ( image->dirax_step ) {
 
-		case 1 : {
-			dirax_sendline("\\echo off\n", image);
-			image->dirax_step++;
-			break;
-		}
+	case 1 :
+		dirax_sendline("\\echo off\n", image);
+		image->dirax_step++;
+		break;
 
-		case 2 : {
-			dirax_sendline("read xfel.drx\n", image);
-			image->dirax_step++;
-			break;
-		}
+	case 2 :
+		dirax_sendline("read xfel.drx\n", image);
+		image->dirax_step++;
+		break;
 
-		case 3 : {
-			dirax_sendline("dmax 10\n", image);
-			image->dirax_step++;
-			break;
-		}
+	case 3 :
+		dirax_sendline("dmax 1000\n", image);
+		image->dirax_step++;
+		break;
 
-		case 4 : {
-			dirax_sendline("indexfit 2\n", image);
-			image->dirax_step++;
-			break;
-		}
+	case 4 :
+		dirax_sendline("indexfit 2\n", image);
+		image->dirax_step++;
+		break;
 
-		case 5 : {
-			dirax_sendline("levelfit 200\n", image);
-			image->dirax_step++;
-			break;
-		}
+	case 5 :
+		dirax_sendline("levelfit 1000\n", image);
+		image->dirax_step++;
+		break;
 
-		case 6 : {
-			dirax_sendline("go\n", image);
-			image->dirax_step++;
-			break;
-		}
+	case 6 :
+		dirax_sendline("go\n", image);
+		image->dirax_step++;
+		break;
 
-		case 7 : {
-			dirax_sendline("cell\n", image);
-			image->dirax_step++;
-			break;
-		}
+	case 7 :
+		dirax_sendline("cell\n", image);
+		image->dirax_step++;
+		break;
 
-		default: {
-			image->dirax_step = 0;
-			STATUS("DirAx is idle\n");
-			g_main_loop_quit(image->dirax_ml);
-		}
+	default:
+		image->dirax_step = 0;
+		STATUS("DirAx is idle\n");
+		g_main_loop_quit(image->dirax_ml);
 
 	}
 }
