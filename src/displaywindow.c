@@ -415,12 +415,20 @@ static void load_features_from_file(struct image *image, const char *filename)
 
 	do {
 		char line[1024];
-		int x, y;
-		int r;
+		int x, y, r, d;
+		float df;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
 		chomp(line);
+
+		/* Try long format (output of pattern_sim --near-bragg) */
+		r = sscanf(line, "%i %i %i %f (at %i,%i)",
+		           &d, &d, &d, &df, &x, &y);
+		if ( r == 6 ) {
+			image_add_feature(image->features, x, y, image, 1.0);
+			continue;
+		}
 
 		r = sscanf(line, "%i %i", &x, &y);
 		if ( r != 2 ) continue;

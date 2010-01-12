@@ -33,6 +33,7 @@
 #include "image.h"
 #include "dirax.h"
 #include "utils.h"
+#include "sfac.h"
 
 
 typedef enum {
@@ -67,10 +68,13 @@ static void dirax_parseline(const char *line, struct image *image)
 		if ( line[i] == 'R' ) rf = 1;
 		if ( (line[i] == 'D') && rf ) {
 			image->dirax_read_cell = 1;
-			if ( image->cell ) {
-				free(image->cell);
+			if ( image->molecule == NULL ) {
+				image->molecule = malloc(sizeof(struct molecule));
+			} else if ( image->molecule->cell ) {
+				free(image->molecule->cell);
+				free(image->molecule);
 			}
-			image->cell = cell_new();
+			image->molecule->cell = cell_new();
 			return;
 		}
 		i++;
@@ -79,24 +83,27 @@ static void dirax_parseline(const char *line, struct image *image)
 	/* Parse unit cell vectors as appropriate */
 	if ( image->dirax_read_cell == 1 ) {
 		/* First row of unit cell values */
-		float x1, x2, x3;
-		sscanf(line, "%f %f %f", &x1, &x2, &x3);
-		cell_set_cartesian_x(image->cell, x1*1e10, x2*1e10, x3*1e10);
+		float x1, x2, x3, d;
+		sscanf(line, "%f %f %f %f %f %f", &d, &d, &d, &x1, &x2, &x3);
+		cell_set_cartesian_x(image->molecule->cell,
+		                     x1*1e-10, x2*1e-10, x3*1e-10);
 		image->dirax_read_cell++;
 		return;
 	} else if ( image->dirax_read_cell == 2 ) {
 		/* First row of unit cell values */
-		float y1, y2, y3;
-		sscanf(line, "%f %f %f", &y1, &y2, &y3);
-		cell_set_cartesian_y(image->cell, y1*1e10, y2*1e10, y3*1e10);
+		float y1, y2, y3, d;
+		sscanf(line, "%f %f %f %f %f %f", &d, &d, &d, &y1, &y2, &y3);
+		cell_set_cartesian_y(image->molecule->cell,
+		                     y1*1e-10, y2*1e-10, y3*1e-10);
 		image->dirax_read_cell++;
 		return;
 	} else if ( image->dirax_read_cell == 3 ) {
 		/* First row of unit cell values */
-		float z1, z2, z3;
-		sscanf(line, "%f %f %f", &z1, &z2, &z3);
-		cell_set_cartesian_z(image->cell, z1*1e10, z2*1e10, z3*1e10);
-		STATUS("Read a reciprocal unit cell from DirAx\n");
+		float z1, z2, z3, d;
+		sscanf(line, "%f %f %f %f %f %f", &d, &d, &d, &z1, &z2, &z3);
+		cell_set_cartesian_z(image->molecule->cell,
+		                     z1*1e-10, z2*1e-10, z3*1e-10);
+		STATUS("Read a direct space unit cell from DirAx\n");
 		/* FIXME: Do something */
 		image->dirax_read_cell = 0;
 		return;
@@ -172,6 +179,7 @@ static void dirax_send_next(struct image *image)
 		default: {
 			image->dirax_step = 0;
 			STATUS("DirAx is idle\n");
+			g_main_loop_quit(image->dirax_ml);
 		}
 
 	}
@@ -371,7 +379,7 @@ static int map_position(struct image *image, double x, double y,
 
 #define PEAK_WINDOW_SIZE (10)
 
-static void search_peaks(struct image *image)
+static void search_peaks(struct image *image, int dump_peaks)
 {
 	FILE *fh;
 	int x, y, width, height;
@@ -478,7 +486,9 @@ static void search_peaks(struct image *image)
 				double rz = 0.0;
 
 				/* Map and record reflection */
-				printf("%i %i\n", x, y);
+				if ( dump_peaks ) {
+					printf("%i %i\n", x, y);
+				}
 
 				image_add_feature(image->features,
 				                  mask_x, mask_y, image, 1.0);
@@ -497,14 +507,13 @@ static void search_peaks(struct image *image)
 }
 
 
-void index_pattern(struct image *image, int no_index)
+void index_pattern(struct image *image, int no_index, int dump_peaks)
 {
 	unsigned int opts;
 	int saved_stderr;
-	GMainLoop *ml;
 
 	/* Do peak search and splurge out 'xfel.drx' */
-	search_peaks(image);
+	search_peaks(image, dump_peaks);
 
 	if ( no_index ) return;
 
@@ -548,8 +557,8 @@ void index_pattern(struct image *image, int no_index)
 	g_io_add_watch(image->dirax, G_IO_IN | G_IO_HUP,
 	               (GIOFunc)dirax_readable, image);
 
-	ml = g_main_loop_new(NULL, FALSE);
-	g_main_loop_run(ml);
+	image->dirax_ml = g_main_loop_new(NULL, FALSE);
+	g_main_loop_run(image->dirax_ml);
 
 	return;
 }

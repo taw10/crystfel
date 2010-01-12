@@ -24,6 +24,8 @@
 #include "utils.h"
 #include "hdf5-file.h"
 #include "dirax.h"
+#include "intensities.h"
+#include "ewald.h"
 
 
 static void show_help(const char *s)
@@ -195,12 +197,14 @@ int main(int argc, char *argv[])
 	int n_images;
 	int n_hits;
 	int config_noindex = 0;
+	int config_dumpfound = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
 		{"no-index",           0, &config_noindex,     1},
+		{"dump-found-peaks",   0, &config_dumpfound,   1},
 		{0, 0, NULL, 0}
 	};
 
@@ -257,6 +261,7 @@ int main(int argc, char *argv[])
 		chomp(line);
 
 		image.features = NULL;
+		image.molecule = NULL;
 
 		STATUS("Processing '%s'\n", line);
 
@@ -272,7 +277,18 @@ int main(int argc, char *argv[])
 		fom = image_fom(&image);
 		if ( fom > 0 ) {
 
-			index_pattern(&image, config_noindex);
+			/* Calculate orientation matrix (by magic) */
+			index_pattern(&image, config_noindex, config_dumpfound);
+
+			/* View head-on (unit cell is tilted) */
+			image.orientation.x = 0.0;
+			image.orientation.y = 0.0;
+			image.orientation.z = 0.0;
+			image.orientation.w = 1.0;
+			get_ewald(&image);
+
+			/* Read h,k,l,I */
+			output_intensities(&image);
 
 			n_hits++;
 

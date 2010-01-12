@@ -94,8 +94,6 @@ struct image {
 	ImageFeatureList	*features;	/* "Experimental" features */
 	ImageFeatureList	*rflist;	/* "Predicted" features */
 
-	UnitCell		*cell;
-
 	/* DirAx auto-indexing low-level stuff */
 	GIOChannel		*dirax;
 	int			dirax_pty;
@@ -103,6 +101,7 @@ struct image {
 	char			*dirax_rbuffer;
 	int			dirax_rbufpos;
 	int			dirax_rbuflen;
+	GMainLoop		*dirax_ml;
 
 	/* DirAx auto-indexing high-level stuff */
 	int			dirax_step;
