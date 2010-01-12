@@ -36,6 +36,8 @@ static void show_help(const char *s)
 "  -h, --help                       Display this help message.\n"
 "\n"
 "  -p, --peak-overlay=<filename>    Draw circles in positions listed in file.\n"
+"  -i, --int-boost=<n>        Multiple intensity by <n>.\n"
+"  -b, --binning=<n>                Set display binning to <n>.\n"
 "\n");
 }
 
@@ -72,11 +74,15 @@ int main(int argc, char *argv[])
 	size_t i;
 	int nfiles;
 	char *peaks = NULL;
+	int boost = 1;
+	int binning = 2;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"peak-overlay",       1, NULL,               'p'},
+		{"int-boost",          1, NULL,               'i'},
+		{"binning",            1, NULL,               'b'},
 		{0, 0, NULL, 0}
 	};
 
@@ -84,7 +90,7 @@ int main(int argc, char *argv[])
 	gtk_init(&argc, &argv);
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hp:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hp:b:i:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
@@ -94,6 +100,23 @@ int main(int argc, char *argv[])
 
 		case 'p' : {
 			peaks = strdup(optarg);
+			break;
+		}
+
+		case 'i' : {
+			boost = atoi(optarg);
+			if ( boost < 1 ) {
+				ERROR("Intensity boost must be a positive"
+				      " integer.\n");
+			}
+			break;
+		}
+
+		case 'b' : {
+			binning = atoi(optarg);
+			if ( boost < 1 ) {
+				ERROR("Binning must be a positive integer.\n");
+			}
 			break;
 		}
 
@@ -116,7 +139,8 @@ int main(int argc, char *argv[])
 	}
 
 	for ( i=0; i<nfiles; i++ ) {
-		main_window_list[i] = displaywindow_open(argv[optind+i], peaks);
+		main_window_list[i] = displaywindow_open(argv[optind+i], peaks,
+		                                         boost, binning);
 		if ( main_window_list[i] == NULL ) {
 			ERROR("Couldn't open display window\n");
 		} else {

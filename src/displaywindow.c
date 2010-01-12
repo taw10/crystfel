@@ -29,9 +29,6 @@
 #include "utils.h"
 
 
-#define INITIAL_BINNING 2
-
-
 static void displaywindow_error(DisplayWindow *dw, const char *message)
 {
 	GtkWidget *window;
@@ -929,7 +926,8 @@ static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
 }
 
 
-DisplayWindow *displaywindow_open(const char *filename, const char *peaks)
+DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
+                                  int boost, int binning)
 {
 	DisplayWindow *dw;
 	char *title;
@@ -991,7 +989,8 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks)
 	gtk_window_set_resizable(GTK_WINDOW(dw->window), FALSE);
 	gtk_widget_show_all(dw->window);
 
-	dw->binning = INITIAL_BINNING;
+	dw->binning = binning;
+	dw->boostint = boost;
 	displaywindow_update(dw);
 
 	/* Peak list provided at startup? */
