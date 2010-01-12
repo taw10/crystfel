@@ -66,7 +66,8 @@ typedef struct {
 } DisplayWindow;
 
 /* Open an image display window showing the given filename, or NULL */
-extern DisplayWindow *displaywindow_open(const char *filename);
+extern DisplayWindow *displaywindow_open(const char *filename,
+                                         const char *peaks);
 
 
 #endif	/* DISPLAYWINDOW_H */

@@ -929,7 +929,7 @@ static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
 }
 
 
-DisplayWindow *displaywindow_open(const char *filename)
+DisplayWindow *displaywindow_open(const char *filename, const char *peaks)
 {
 	DisplayWindow *dw;
 	char *title;
@@ -993,6 +993,12 @@ DisplayWindow *displaywindow_open(const char *filename)
 
 	dw->binning = INITIAL_BINNING;
 	displaywindow_update(dw);
+
+	/* Peak list provided at startup? */
+	if ( peaks != NULL ) {
+		load_features_from_file(hdfile_get_image(dw->hdfile), peaks);
+		displaywindow_update(dw);
+	}
 
 	gtk_widget_add_events(GTK_WIDGET(dw->drawingarea),
 	                      GDK_BUTTON_PRESS_MASK
