@@ -18,7 +18,7 @@
 #endif
 
 
-extern void index_pattern(struct image *image, int no_index, int dump_peaks);
+extern void run_dirax(struct image *image, int no_index);
 
 
 #endif	/* DIRAX_H */

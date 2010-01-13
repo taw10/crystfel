@@ -46,6 +46,11 @@ struct imagefeature {
 	/* Distance between this feature and its partner, if any. */
 	double				partner_d;
 
+	/* Reciprocal space coordinates (m^-1 of course) of this feature */
+	double				rx;
+	double				ry;
+	double				rz;
+
 };
 
 /* An opaque type representing a list of image features */

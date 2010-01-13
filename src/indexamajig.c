@@ -23,7 +23,7 @@
 
 #include "utils.h"
 #include "hdf5-file.h"
-#include "dirax.h"
+#include "index.h"
 #include "intensities.h"
 #include "ewald.h"
 #include "peaks.h"
@@ -39,8 +39,10 @@ static void show_help(const char *s)
 "\n"
 "  -i, --input=<filename>  Specify file containing list of images to process.\n"
 "                           '-' means stdin, which is the default.\n"
-"      --no-index          Do everything else (including fine peak search),\n"
-"                           but don't invoke the indexing program.\n"
+"      --no-index          Do everything else (including fine peak search and\n"
+"                           writing 'xfel.drx' if DirAx is being used), but\n"
+"                           don't actually index.\n"
+"      --dirax             Use DirAx for indexing.\n"
 "\n");
 }
 
@@ -55,6 +57,7 @@ int main(int argc, char *argv[])
 	int n_hits;
 	int config_noindex = 0;
 	int config_dumpfound = 0;
+	int config_dirax = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -62,6 +65,7 @@ int main(int argc, char *argv[])
 		{"input",              1, NULL,               'i'},
 		{"no-index",           0, &config_noindex,     1},
 		{"dump-found-peaks",   0, &config_dumpfound,   1},
+		{"dirax",              0, &config_dirax,       1},
 		{0, 0, NULL, 0}
 	};
 
@@ -135,7 +139,10 @@ int main(int argc, char *argv[])
 		if ( fom > 0 ) {
 
 			/* Calculate orientation matrix (by magic) */
-			index_pattern(&image, config_noindex, config_dumpfound);
+			index_pattern(&image, config_noindex, config_dumpfound,
+			              config_dirax);
+
+			if ( image.molecule == NULL ) continue;
 
 			/* View head-on (unit cell is tilted) */
 			image.orientation.x = 0.0;
