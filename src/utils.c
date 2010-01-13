@@ -104,7 +104,7 @@ int poisson_noise(double expected)
 
 	/* For large values of the mean, we get big problems with arithmetic.
 	 * In such cases, fall back on a Gaussian with the right variance. */
-	if ( L > 100.0 ) return fake_poisson_noise(expected);
+	if ( expected > 100.0 ) return fake_poisson_noise(expected);
 
 	L = exp(-expected);
 
