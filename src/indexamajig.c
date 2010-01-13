@@ -148,10 +148,10 @@ int main(int argc, char *argv[])
 			if ( image.molecule == NULL ) continue;
 
 			/* View head-on (unit cell is tilted) */
+			image.orientation.w = 1.0;
 			image.orientation.x = 0.0;
 			image.orientation.y = 0.0;
 			image.orientation.z = 0.0;
-			image.orientation.w = 1.0;
 			get_ewald(&image);
 
 			/* Read h,k,l,I */
