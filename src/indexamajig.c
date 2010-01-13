@@ -126,11 +126,14 @@ int main(int argc, char *argv[])
 
 		STATUS("Processing '%s'\n", line);
 
+		n_images++;
+
 		hdfile = hdfile_open(line);
 		if ( hdfile == NULL ) {
-			ERROR("Couldn't open file '%s'\n", filename);
+			continue;
 		} else if ( hdfile_set_first_image(hdfile, "/") ) {
 			ERROR("Couldn't select path\n");
+			continue;
 		}
 
 		hdf5_read(hdfile, &image);
@@ -157,8 +160,6 @@ int main(int argc, char *argv[])
 			n_hits++;
 
 		}
-
-		n_images++;
 
 	} while ( rval != NULL );
 
