@@ -20,7 +20,7 @@
 #include "cell.h"
 
 extern void get_diffraction(struct image *image, int na, int nb, int nc);
-extern double water_intensity(struct threevec q, double en,
+extern double water_intensity(struct rvec q, double en,
                               double beam_r, double water_r);
 
 #endif	/* DIFFRACTION_H */

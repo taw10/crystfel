@@ -58,7 +58,7 @@ typedef struct _imagefeaturelist ImageFeatureList;
 
 
 /* A 3D vector in reciprocal space */
-struct threevec
+struct rvec
 {
 	double   u;
 	double   v;
@@ -72,7 +72,7 @@ struct image {
 	int			*hdr;      /* Actual counts */
 	int16_t			*data;     /* Integer counts after bloom */
 	double complex		*sfacs;
-	struct threevec		*qvecs;
+	struct rvec		*qvecs;
 	double			*twotheta;
 	struct molecule		*molecule;
 

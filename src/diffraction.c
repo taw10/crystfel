@@ -24,12 +24,12 @@
 #include "sfac.h"
 
 
-static double lattice_factor(struct threevec q, double ax, double ay, double az,
+static double lattice_factor(struct rvec q, double ax, double ay, double az,
                                                 double bx, double by, double bz,
                                                 double cx, double cy, double cz,
                                                 int na, int nb, int nc)
 {
-	struct threevec Udotq;
+	struct rvec Udotq;
 	double f1, f2, f3;
 
 	Udotq.u = ax*q.u + ay*q.v + az*q.w;
@@ -65,7 +65,7 @@ static double lattice_factor(struct threevec q, double ax, double ay, double az,
 
 
 /* Look up the structure factor for the nearest Bragg condition */
-static double complex molecule_factor(struct molecule *mol, struct threevec q,
+static double complex molecule_factor(struct molecule *mol, struct rvec q,
                                       double ax, double ay, double az,
                                       double bx, double by, double bz,
                                       double cx, double cy, double cz)
@@ -87,7 +87,7 @@ static double complex molecule_factor(struct molecule *mol, struct threevec q,
 }
 
 
-double water_intensity(struct threevec q, double en,
+double water_intensity(struct rvec q, double en,
                        double beam_r, double water_r)
 {
 	double complex fH, fO;
@@ -170,7 +170,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc)
 
 		double f_lattice;
 		double complex f_molecule;
-		struct threevec q;
+		struct rvec q;
 		double complex val;
 
 		q = image->qvecs[x + image->width*y];

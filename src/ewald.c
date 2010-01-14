@@ -20,9 +20,9 @@
 #include "ewald.h"
 
 
-static struct threevec quat_rot(struct threevec q, struct quaternion z)
+static struct rvec quat_rot(struct rvec q, struct quaternion z)
 {
-	struct threevec res;
+	struct rvec res;
 	double t01, t02, t03, t11, t12, t13, t22, t23, t33;
 
 	t01 = z.w*z.x;
@@ -59,7 +59,7 @@ void get_ewald(struct image *image)
 	k = 1/image->lambda;
 
 	image->qvecs = malloc(image->width * image->height
-	                       * sizeof(struct threevec));
+	                       * sizeof(struct rvec));
 
 	image->twotheta = malloc(image->width * image->height
 	                       * sizeof(double));
@@ -70,7 +70,7 @@ void get_ewald(struct image *image)
 		double rx, ry, r;
 		double twothetax, twothetay, twotheta;
 		double qx, qy, qz;
-		struct threevec q;
+		struct rvec q;
 
 		/* Calculate q vectors for Ewald sphere */
 		rx = ((double)x - image->x_centre) / image->resolution;

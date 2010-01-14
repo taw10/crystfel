@@ -69,7 +69,7 @@ void output_intensities(struct image *image)
 		double hd, kd, ld;  /* Indices with decimal places */
 		double dh, dk, dl;  /* Distances in h,k,l directions */
 		signed int h, k, l;
-		struct threevec q;
+		struct rvec q;
 		double dist;
 		int found = 0;
 		int j;
