@@ -64,8 +64,6 @@ extern int quaternion_valid(struct quaternion q);
 
 /* --------------------------- Useful functions ----------------------------- */
 
-extern double angle_between(double x1, double y1, double z1,
-                            double x2, double y2, double z2);
 extern size_t skipspace(const char *s);
 extern void chomp(char *s);
 extern void progress_bar(int val, int total, const char *text);
@@ -100,6 +98,15 @@ static inline double distance3d(double x1, double y1, double z1,
                   double x2, double y2, double z2)
 {
 	return modulus(x1-x2, y1-y2, z1-z2);
+}
+
+/* Answer in radians */
+static inline double angle_between(double x1, double y1, double z1,
+                  double x2, double y2, double z2)
+{
+	double mod1 = modulus(x1, y1, z1);
+	double mod2 = modulus(x2, y2, z2);
+	return acos( (x1*x2 + y1*y2 + z1*z2) / (mod1*mod2) );
 }
 
 
