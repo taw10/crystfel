@@ -3,7 +3,7 @@
  *
  * Quick yet non-crappy HDF viewer
  *
- * (c) 2006-2009 Thomas White <taw@physics.org>
+ * (c) 2006-2010 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
@@ -480,7 +480,7 @@ static gint displaywindow_about(GtkWidget *widget, DisplayWindow *dw)
 	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(window),
 		"Quick viewer for HDF files");
 	gtk_about_dialog_set_license(GTK_ABOUT_DIALOG(window),
-		"(c) 2006-2009 Thomas White <taw@physics.org>\n");
+		"(c) 2006-2010 Thomas White <taw@physics.org>\n");
 	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(window),
 		"http://www.bitwiz.org.uk/");
 	gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(window), authors);

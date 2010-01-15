@@ -3,7 +3,7 @@
  *
  * Render a high dynamic range buffer in some sensible way
  *
- * (c) 2008-2009 Thomas White <taw27@cam.ac.uk>
+ * (c) 2006-2010 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *

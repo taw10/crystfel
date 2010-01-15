@@ -3,7 +3,7 @@
  *
  * Utilities for handling reflections
  *
- * (c) 2007-2009 Thomas White <taw@physics.org>
+ * (c) 2006-2010 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
