@@ -26,6 +26,14 @@
 
 #define PEAK_WINDOW_SIZE (10)
 
+static int in_streak(int x, int y)
+{
+	if ( (y>512) && (y<768) && (abs(x-493)<15) ) return 1;
+	if ( (y>768) && (abs(x-480)<15) ) return 1;
+	return 0;
+}
+
+
 struct peak {
 	int x;
 	int y;
@@ -199,7 +207,7 @@ void search_peaks(struct image *image, int dump_peaks)
 		if ( data[x+width*y] < 800 ) continue;
 
 		/* Ignore streak */
-		if ( abs(x-image->x_centre) < 15 ) continue;
+		if ( in_streak(x, y) ) continue;
 
 		/* Get gradients */
 		dx1 = data[x+width*y] - data[(x+1)+width*y];

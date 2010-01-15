@@ -18,6 +18,12 @@
 
 #include "image.h"
 
+/* Position of central beam for upper and lower CCDs */
+#define UPPER_CX (492.8)
+#define UPPER_CY (437.6)
+#define LOWER_CX (494.0)
+#define LOWER_CY (772.1)
+
 extern void record_image(struct image *image, int do_water, int do_poisson,
                          int do_bloom);
 

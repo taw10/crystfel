@@ -18,6 +18,7 @@
 #include "utils.h"
 #include "cell.h"
 #include "ewald.h"
+#include "detector.h"
 
 
 static struct rvec quat_rot(struct rvec q, struct quaternion z)
@@ -73,8 +74,15 @@ void get_ewald(struct image *image)
 		struct rvec q;
 
 		/* Calculate q vectors for Ewald sphere */
-		rx = ((double)x - image->x_centre) / image->resolution;
-		ry = ((double)y - image->y_centre) / image->resolution;
+		if ( y >= 512 ) {
+			/* Top CCD */
+			rx = ((double)x - UPPER_CX) / image->resolution;
+			ry = ((double)y - UPPER_CY) / image->resolution;
+		} else {
+			/* Bottom CCD */
+			rx = ((double)x - LOWER_CX) / image->resolution;
+			ry = ((double)y - LOWER_CY) / image->resolution;
+		}
 		r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
 
 		twothetax = atan2(rx, image->camera_len);

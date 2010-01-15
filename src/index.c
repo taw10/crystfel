@@ -24,8 +24,11 @@
 #include "utils.h"
 #include "peaks.h"
 #include "dirax.h"
+#include "sfac.h"
+#include "detector.h"
 
 
+/* x,y in pixels relative to central beam */
 static int map_position(struct image *image, double x, double y,
                         double *rx, double *ry, double *rz)
 {
@@ -35,12 +38,7 @@ static int map_position(struct image *image, double x, double y,
 	/* Angular description of reflection */
 	double theta, psi, k;
 
-	x -= image->x_centre;
-	y -= image->y_centre;
 	k = 1.0 / image->lambda;
-
-	/* FIXME: Don't process lower CCD for now */
-	if ( y < 0 ) return 0;
 
 	if ( image->fmode == FORMULATION_CLEN ) {
 
@@ -81,14 +79,22 @@ void index_pattern(struct image *image, int no_index, int dump_peaks,
 	/* Perform 'fine' peak search */
 	search_peaks(image, dump_peaks);
 
-	/* Map positions to 3D. FIXME: Handle lower detector */
+	/* Map positions to 3D */
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
 
 		f = image_get_feature(image->features, i);
-		map_position(image, f->x, f->y, &f->rx, &f->ry, &f->rz);
 
+		if ( f->y >=512 ) {
+			/* Top half of CCD */
+			map_position(image, f->x-UPPER_CX, f->y-UPPER_CY,
+			             &f->rx, &f->ry, &f->rz);
+		} else {
+			/* Lower half of CCD */
+			map_position(image, f->x-LOWER_CX, f->y-LOWER_CY,
+			             &f->rx, &f->ry, &f->rz);
+		}
 	}
 
 	if ( use_dirax ) {
