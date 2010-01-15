@@ -333,7 +333,7 @@ struct molecule *load_molecule()
 
 	fh = fopen("molecule.pdb", "r");
 	if ( fh == NULL ) {
-                ERROR("Couldn't open file\n");
+                ERROR("Couldn't open PDB file\n");
                 return NULL;
         }
 

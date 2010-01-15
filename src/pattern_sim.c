@@ -256,6 +256,10 @@ int main(int argc, char *argv[])
 		image.hdr = NULL;
 
 		get_diffraction(&image, na, nb, nc);
+		if ( image.molecule == NULL ) {
+			ERROR("Couldn't open molecule.pdb\n");
+			return 1;
+		}
 		record_image(&image, !config_nowater, !config_nonoise,
 		             !config_nobloom);
 
