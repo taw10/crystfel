@@ -43,7 +43,7 @@ static void show_help(const char *s)
 "                           writing 'xfel.drx' if DirAx is being used), but\n"
 "                           don't actually index.\n"
 "      --dirax             Use DirAx for indexing.\n"
-"      --dump-found-peaks  Write the results of the peak search to stdout.\n"
+"      --dump-peaks        Write the results of the peak search to stdout.\n"
 "\n");
 }
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
 		{"no-index",           0, &config_noindex,     1},
-		{"dump-found-peaks",   0, &config_dumpfound,   1},
+		{"dump-peaks",         0, &config_dumpfound,   1},
 		{"dirax",              0, &config_dirax,       1},
 		{0, 0, NULL, 0}
 	};
