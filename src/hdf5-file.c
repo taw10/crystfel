@@ -29,6 +29,7 @@ struct hdfile {
 	const char      *path;  /* Current data path */
 
 	struct image    *image;
+	int             image_dirty;
 
 	size_t          nx;  /* Image width */
 	size_t          ny;  /* Image height */
@@ -53,6 +54,8 @@ struct hdfile *hdfile_open(const char *filename)
 		free(f);
 		return NULL;
 	}
+
+	f->image_dirty = 1;
 
 	return f;
 }
@@ -79,6 +82,8 @@ int hdfile_set_image(struct hdfile *f, const char *path)
 
 	f->nx = size[0];
 	f->ny = size[1];
+
+	f->image_dirty = 1;
 
 	return 0;
 }
@@ -150,13 +155,21 @@ int16_t *hdfile_get_image_binned(struct hdfile *f, int binning, int16_t *max)
 	struct image *image;
 	int16_t *data;
 
-	if ( f->image == NULL ) {
+	if ( (f->image == NULL) || (f->image_dirty) ) {
 
 		image = malloc(sizeof(struct image));
 		if ( image == NULL ) return NULL;
 		image->features = NULL;
 
 		hdf5_read(f, image);
+
+		/* Deal with the old image, if existing */
+		if ( f->image != NULL ) {
+			image->features = f->image->features;
+			if ( f->image->data != NULL ) free(f->image->data);
+			free(f->image);
+		}
+
 		f->image = image;
 
 	}
@@ -264,6 +277,8 @@ int hdf5_read(struct hdfile *f, struct image *image)
 	image->fmode = FORMULATION_CLEN;
 	image->camera_len = 75.0e-3;  /* 75 mm camera length */
 	image->resolution = 13333.3;  /* 75 micron pixel size */
+
+	f->image_dirty = 0;
 
 	return 0;
 }
