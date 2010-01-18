@@ -47,6 +47,7 @@ struct hdfile *hdfile_open(const char *filename)
 	f = malloc(sizeof(struct hdfile));
 	if ( f == NULL ) return NULL;
 	f->image = NULL;
+	f->image_dirty = 1;
 
 	f->fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( f->fh < 0 ) {
@@ -54,8 +55,6 @@ struct hdfile *hdfile_open(const char *filename)
 		free(f);
 		return NULL;
 	}
-
-	f->image_dirty = 1;
 
 	return f;
 }
@@ -104,7 +103,13 @@ int hdfile_get_height(struct hdfile *f)
 void hdfile_close(struct hdfile *f)
 {
 	H5Fclose(f->fh);
-	free(f->image);
+	if ( f->image != NULL ) {
+		if ( f->image->features != NULL ) {
+			image_feature_list_free(f->image->features);
+		}
+		free(f->image->data);
+		free(f->image);
+	}
 	free(f);
 }
 
@@ -160,6 +165,7 @@ int16_t *hdfile_get_image_binned(struct hdfile *f, int binning, int16_t *max)
 		image = malloc(sizeof(struct image));
 		if ( image == NULL ) return NULL;
 		image->features = NULL;
+		image->data = NULL;
 
 		hdf5_read(f, image);
 
@@ -167,7 +173,7 @@ int16_t *hdfile_get_image_binned(struct hdfile *f, int binning, int16_t *max)
 		if ( f->image != NULL ) {
 			image->features = f->image->features;
 			if ( f->image->data != NULL ) free(f->image->data);
-			free(f->image);
+			free(f->image->data);
 		}
 
 		f->image = image;
@@ -490,7 +496,7 @@ int hdfile_set_first_image(struct hdfile *f, const char *group)
 	char **names;
 	int *is_group;
 	int *is_image;
-	int n, i;
+	int n, i, j;
 
 	names = hdfile_read_group(f, &n, group, &is_group, &is_image);
 	if ( n == 0 ) return 1;
@@ -498,15 +504,30 @@ int hdfile_set_first_image(struct hdfile *f, const char *group)
 	for ( i=0; i<n; i++ ) {
 
 		if ( is_image[i] ) {
+			int j;
 			hdfile_set_image(f, names[i]);
+			for ( j=0; j<n; j++ ) free(names[j]);
+			free(is_image);
+			free(is_group);
+			free(names);
 			return 0;
 		} else if ( is_group[i] ) {
 			if ( !hdfile_set_first_image(f, names[i]) ) {
+				int j;
+				for ( j=0; j<n; j++ ) free(names[j]);
+				free(is_image);
+				free(is_group);
+				free(names);
 				return 0;
 			}
 		}
 
 	}
+
+	for ( j=0; j<n; j++ ) free(names[j]);
+	free(is_image);
+	free(is_group);
+	free(names);
 
 	return 1;
 }

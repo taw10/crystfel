@@ -20,6 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <hdf5.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -124,6 +125,7 @@ int main(int argc, char *argv[])
 
 		image.features = NULL;
 		image.molecule = NULL;
+		image.data = NULL;
 
 		STATUS("Processing '%s'\n", line);
 
@@ -161,6 +163,9 @@ int main(int argc, char *argv[])
 			n_hits++;
 
 		}
+
+		free(image.data);
+		hdfile_close(hdfile);
 
 	} while ( rval != NULL );
 
