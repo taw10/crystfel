@@ -22,6 +22,7 @@
 
 #include "image.h"
 #include "utils.h"
+#include "index.h"
 
 
 #define PEAK_WINDOW_SIZE (10)
@@ -192,6 +193,10 @@ void search_peaks(struct image *image, int dump_peaks)
 	}
 	image->features = image_feature_list_new();
 
+	if ( dump_peaks ) {
+		printf("x/px\ty/px\tq/nm^-1\tPeak I\n");
+	}
+
 	for ( x=1; x<image->width-1; x++ ) {
 	for ( y=1; y<image->height-1; y++ ) {
 
@@ -274,7 +279,18 @@ void search_peaks(struct image *image, int dump_peaks)
 
 				/* Map and record reflection */
 				if ( dump_peaks ) {
-					printf("%i %i\n", x, y);
+
+					double q, rx, ry, rz;
+
+					map_position(image, mask_x, mask_y,
+					             &rx, &ry, &rz);
+
+
+					q = modulus(rx, ry, rz);
+
+					printf("%i\t%i\t%f\t%i\n", x, y, q/1.0e9,
+					             data[mask_x+width*mask_y]);
+
 				}
 
 				image_add_feature(image->features,

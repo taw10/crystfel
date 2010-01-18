@@ -21,5 +21,9 @@
 extern void index_pattern(struct image *image, int no_index, int dump_peaks,
                           int use_dirax);
 
+/* x,y in pixels relative to central beam */
+extern int map_position(struct image *image, double x, double y,
+                        double *rx, double *ry, double *rz);
+
 
 #endif	/* INDEX_H */
