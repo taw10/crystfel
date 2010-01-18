@@ -251,6 +251,24 @@ int hdf5_write(const char *filename, const int16_t *data,
 }
 
 
+static double get_wavelength(struct hdfile *f)
+{
+	herr_t r;
+	hid_t dh;
+	double lambda;
+
+	dh = H5Dopen(f->fh, "/LCLS/wavelength", H5P_DEFAULT);
+	if ( dh < 0 ) return -1.0;
+
+	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
+		            H5P_DEFAULT, &lambda);
+	if ( r < 0 ) return -1.0;
+
+	/* Convert Angstroms -> m */
+	return lambda / 1.0e10;
+}
+
+
 int hdf5_read(struct hdfile *f, struct image *image)
 {
 	herr_t r;
@@ -269,16 +287,26 @@ int hdf5_read(struct hdfile *f, struct image *image)
 	image->data = buf;
 	image->height = f->nx;
 	image->width = f->ny;
+	f->image_dirty = 0;
 
-	/* FIXME: The following are basically made up... */
+	/* Always camera length/lambda formulation for FEL */
+	image->fmode = FORMULATION_CLEN;
+
+	/* Read wavelength from file */
+	image->lambda = get_wavelength(f);
+	if ( image->lambda < 0.0 ) {
+		ERROR("Couldn't read wavelength - using 2 keV.\n");
+		image->lambda = ph_en_to_lambda(eV_to_J(2000.0));
+	}
+	STATUS("lambda=%e m\n", image->lambda);
+
+	/* These are only used for simulation (not analysis) */
 	image->x_centre = image->width/2;
 	image->y_centre = image->height/2;
-	image->lambda = ph_en_to_lambda(eV_to_J(1793.0));
-	image->fmode = FORMULATION_CLEN;
+
+	/* FIXME: The following are basically made up... */
 	image->camera_len = 75.0e-3;  /* 75 mm camera length */
 	image->resolution = 13333.3;  /* 75 micron pixel size */
-
-	f->image_dirty = 0;
 
 	return 0;
 }
