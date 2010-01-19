@@ -263,15 +263,15 @@ static double get_wavelength(struct hdfile *f)
 	hid_t dh;
 	double lambda;
 
-	dh = H5Dopen(f->fh, "/LCLS/wavelength", H5P_DEFAULT);
+	dh = H5Dopen(f->fh, "/LCLS/photon_wavelength_nm", H5P_DEFAULT);
 	if ( dh < 0 ) return -1.0;
 
 	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
 		            H5P_DEFAULT, &lambda);
 	if ( r < 0 ) return -1.0;
 
-	/* Convert Angstroms -> m */
-	return lambda / 1.0e10;
+	/* Convert nm -> m */
+	return lambda / 1.0e9;
 }
 
 
