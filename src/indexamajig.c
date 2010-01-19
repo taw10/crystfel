@@ -167,6 +167,7 @@ int main(int argc, char *argv[])
 done:
 		free(image.data);
 		hdfile_close(hdfile);
+		H5close();
 
 	} while ( rval != NULL );
 
