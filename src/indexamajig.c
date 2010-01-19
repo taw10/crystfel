@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
 			index_pattern(&image, config_noindex, config_dumpfound,
 			              config_dirax);
 
-			if ( image.molecule == NULL ) continue;
+			if ( image.molecule == NULL ) goto done;
 
 			/* View head-on (unit cell is tilted) */
 			image.orientation.w = 1.0;
@@ -164,6 +164,7 @@ int main(int argc, char *argv[])
 
 		}
 
+done:
 		free(image.data);
 		hdfile_close(hdfile);
 
