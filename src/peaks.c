@@ -92,7 +92,6 @@ int image_fom(struct image *image)
 
 	/* Threshold */
 	th = mean + 5*sd;
-	STATUS("mean=%f ,sd=%f, th=%f\n", mean, sd, th);
 
 	/* Find pixels above threshold */
 	n_peaks = 0;

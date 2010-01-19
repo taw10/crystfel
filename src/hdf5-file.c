@@ -304,7 +304,6 @@ int hdf5_read(struct hdfile *f, struct image *image)
 		ERROR("Couldn't read wavelength - using 2 keV.\n");
 		image->lambda = ph_en_to_lambda(eV_to_J(2000.0));
 	}
-	STATUS("lambda=%e m\n", image->lambda);
 
 	/* These are only used for simulation (not analysis) */
 	image->x_centre = image->width/2;
