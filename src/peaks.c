@@ -24,6 +24,7 @@
 #include "utils.h"
 #include "index.h"
 #include "peaks.h"
+#include "detector.h"
 
 
 #define PEAK_WINDOW_SIZE (10)
@@ -188,7 +189,32 @@ int image_fom(struct image *image)
 }
 
 
-void search_peaks(struct image *image, int dump_peaks)
+static int is_hot_pixel(struct image *image, int x, int y)
+{
+	int dx, dy;
+	int w, v;
+
+	w = image->width;
+	v = (1*image->data[x+w*y])/2;
+
+	if ( x+1 >= image->width ) return 0;
+	if ( x-1 < 0 ) return 0;
+	if ( y+1 >= image->height ) return 0;
+	if ( y-1 < 0 ) return 0;
+
+	/* Must be at least one adjacent bright pixel */
+	for ( dx=-1; dx<=+1; dx++ ) {
+	for ( dy=-1; dy<=+1; dy++ ) {
+		if ( (dx==0) && (dy==0) ) continue;
+		if ( image->data[(x+dx)+w*(y+dy)] >= v ) return 0;
+	}
+	}
+
+	return 1;
+}
+
+
+void search_peaks(struct image *image)
 {
 	int x, y, width, height;
 	int16_t *data;
@@ -201,10 +227,6 @@ void search_peaks(struct image *image, int dump_peaks)
 		image_feature_list_free(image->features);
 	}
 	image->features = image_feature_list_new();
-
-	if ( dump_peaks ) {
-		printf("x/px\ty/px\t|q|/nm^-1\tPeak I\n");
-	}
 
 	for ( x=1; x<image->width-1; x++ ) {
 	for ( y=1; y<image->height-1; y++ ) {
@@ -279,6 +301,9 @@ void search_peaks(struct image *image, int dump_peaks)
 			/* Too far from foot point? */
 			if ( distance(mask_x, mask_y, x, y) > 50.0 )  continue;
 
+			/* Isolated hot pixel? */
+			if ( is_hot_pixel(image, mask_x, mask_y) ) continue;
+
 			/* Check for a feature at exactly the
 			 * same coordinates */
 			image_feature_closest(image->features, mask_x, mask_y,
@@ -286,24 +311,9 @@ void search_peaks(struct image *image, int dump_peaks)
 
 			if ( d > 1.0 ) {
 
-				/* Map and record reflection */
-				if ( dump_peaks ) {
-
-					double q, rx, ry, rz;
-
-					map_position(image, mask_x, mask_y,
-					             &rx, &ry, &rz);
-
-
-					q = modulus(rx, ry, rz);
-
-					printf("%i\t%i\t%f\t%i\n", x, y, q/1.0e9,
-					             data[mask_x+width*mask_y]);
-
-				}
-
 				image_add_feature(image->features,
-				                  mask_x, mask_y, image, 1.0);
+				                  mask_x, mask_y, image,
+				                  data[mask_x+width*mask_y]);
 
 			}
 
@@ -311,5 +321,41 @@ void search_peaks(struct image *image, int dump_peaks)
 
 
 	}
+	}
+}
+
+
+void dump_peaks(struct image *image)
+{
+	int i;
+
+	printf("x/px\ty/px\t|q|/nm^-1\tPeak I\n");
+
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
+
+		double q, rx, ry, rz;
+		int x, y;
+		struct imagefeature *f;
+
+		f = image_get_feature(image->features, i);
+
+		x = f->x;
+		y = f->y;
+
+		if ( f->y >=512 ) {
+			/* Top half of CCD */
+			map_position(image, f->x-UPPER_CX, f->y-UPPER_CY,
+			             &rx, &ry, &rz);
+		} else {
+			/* Lower half of CCD */
+			map_position(image, f->x-LOWER_CX, f->y-LOWER_CY,
+			             &rx, &ry, &rz);
+		}
+
+		q = modulus(rx, ry, rz);
+
+		printf("%i\t%i\t%f\t%i\n", x, y, q/1.0e9,
+	                                   image->data[x+image->width*y]);
+
 	}
 }

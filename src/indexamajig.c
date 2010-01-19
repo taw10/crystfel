@@ -141,11 +141,13 @@ int main(int argc, char *argv[])
 		hdf5_read(hdfile, &image);
 
 		/* Perform 'fine' peak search */
-		search_peaks(&image, config_dumpfound);
+		search_peaks(&image);
 
-		if ( image_feature_count(image.features) > 25 ) {
+		if ( image_feature_count(image.features) > 5 ) {
 
 			n_hits++;
+
+			if ( config_dumpfound ) dump_peaks(&image);
 
 			if ( !config_noindex ) {
 
