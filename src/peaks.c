@@ -194,7 +194,7 @@ void search_peaks(struct image *image, int dump_peaks)
 	image->features = image_feature_list_new();
 
 	if ( dump_peaks ) {
-		printf("x/px\ty/px\tq/nm^-1\tPeak I\n");
+		printf("x/px\ty/px\t|q|/nm^-1\tPeak I\n");
 	}
 
 	for ( x=1; x<image->width-1; x++ ) {
