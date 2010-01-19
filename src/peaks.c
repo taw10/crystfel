@@ -23,6 +23,7 @@
 #include "image.h"
 #include "utils.h"
 #include "index.h"
+#include "peaks.h"
 
 
 #define PEAK_WINDOW_SIZE (10)

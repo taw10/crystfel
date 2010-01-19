@@ -26,6 +26,7 @@
 #include "dirax.h"
 #include "sfac.h"
 #include "detector.h"
+#include "index.h"
 
 
 /* x,y in pixels relative to central beam */
