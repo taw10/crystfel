@@ -49,8 +49,10 @@ int image_fom(struct image *image)
 	int x, y;
 	int integr, n;
 	float fintegr, mean, sd, th;
-	struct peak peaks[MAX_PEAKS];
+	struct peak *peaks;
 	int i, n_peaks, n_nearby, n_valid;
+
+	peaks = malloc(MAX_PEAKS * sizeof(struct peak));
 
 	/* Measure mean */
 	integr = 0;
@@ -117,6 +119,7 @@ int image_fom(struct image *image)
 	}
 	}
 	if ( n_peaks < 1 ) return 0;
+
 	do {
 
 		int max, max_i = -1;
@@ -147,7 +150,8 @@ int image_fom(struct image *image)
 			}
 		}
 		if ( adjacent < 1 ) {
-			peaks[i].invalid = 1;
+			peaks[max_i].invalid = 1;
+			/* If invalidated, don't remove nearby peaks */
 			continue;
 		}
 
@@ -177,6 +181,8 @@ int image_fom(struct image *image)
 		//printf("%i %i\n", peaks[i].x, peaks[i].y);
 		n_valid++;
 	}
+
+	free(peaks);
 
 	return n_valid;
 }
