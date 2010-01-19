@@ -72,13 +72,9 @@ int map_position(struct image *image, double x, double y,
 }
 
 
-void index_pattern(struct image *image, int no_index, int dump_peaks,
-                   int use_dirax)
+void index_pattern(struct image *image, int no_index, int use_dirax)
 {
 	int i;
-
-	/* Perform 'fine' peak search */
-	search_peaks(image, dump_peaks);
 
 	/* Map positions to 3D */
 	for ( i=0; i<image_feature_count(image->features); i++ ) {

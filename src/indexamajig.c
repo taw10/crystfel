@@ -117,7 +117,6 @@ int main(int argc, char *argv[])
 		char line[1024];
 		struct hdfile *hdfile;
 		struct image image;
-		int fom;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
@@ -141,26 +140,31 @@ int main(int argc, char *argv[])
 
 		hdf5_read(hdfile, &image);
 
-		fom = image_fom(&image);
-		if ( fom > 0 ) {
+		/* Perform 'fine' peak search */
+		search_peaks(&image, config_dumpfound);
 
-			/* Calculate orientation matrix (by magic) */
-			index_pattern(&image, config_noindex, config_dumpfound,
-			              config_dirax);
-
-			if ( image.molecule == NULL ) goto done;
-
-			/* View head-on (unit cell is tilted) */
-			image.orientation.w = 1.0;
-			image.orientation.x = 0.0;
-			image.orientation.y = 0.0;
-			image.orientation.z = 0.0;
-			get_ewald(&image);
-
-			/* Read h,k,l,I */
-			output_intensities(&image);
+		if ( image_feature_count(image.features) > 25 ) {
 
 			n_hits++;
+
+			if ( !config_noindex ) {
+
+				/* Calculate orientation matrix (by magic) */
+				index_pattern(&image, config_noindex,
+				              config_dirax);
+
+				if ( image.molecule == NULL ) goto done;
+
+				/* View head-on (unit cell is tilted) */
+				image.orientation.w = 1.0;
+				image.orientation.x = 0.0;
+				image.orientation.y = 0.0;
+				image.orientation.z = 0.0;
+				get_ewald(&image);
+
+				/* Read h,k,l,I */
+				output_intensities(&image);
+			}
 
 		}
 
