@@ -503,7 +503,6 @@ int hdfile_set_first_image(struct hdfile *f, const char *group)
 	for ( i=0; i<n; i++ ) {
 
 		if ( is_image[i] ) {
-			int j;
 			hdfile_set_image(f, names[i]);
 			for ( j=0; j<n; j++ ) free(names[j]);
 			free(is_image);
@@ -512,7 +511,6 @@ int hdfile_set_first_image(struct hdfile *f, const char *group)
 			return 0;
 		} else if ( is_group[i] ) {
 			if ( !hdfile_set_first_image(f, names[i]) ) {
-				int j;
 				for ( j=0; j<n; j++ ) free(names[j]);
 				free(is_image);
 				free(is_group);
