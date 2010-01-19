@@ -26,6 +26,7 @@
 
 
 #define PEAK_WINDOW_SIZE (10)
+#define MAX_PEAKS (2048)
 
 static int in_streak(int x, int y)
 {
@@ -48,7 +49,7 @@ int image_fom(struct image *image)
 	int x, y;
 	int integr, n;
 	float fintegr, mean, sd, th;
-	struct peak peaks[1024];
+	struct peak peaks[MAX_PEAKS];
 	int i, n_peaks, n_nearby, n_valid;
 
 	/* Measure mean */
@@ -104,16 +105,18 @@ int image_fom(struct image *image)
 		val = image->data[x+image->height*y];
 
 		if ( val > th ) {
-			peaks[n_peaks].x = x;
-			peaks[n_peaks].y = y;
-			peaks[n_peaks].i = val;
-			peaks[n_peaks].invalid = 0;
-			n_peaks++;
+			if ( n_peaks < MAX_PEAKS ) {
+				peaks[n_peaks].x = x;
+				peaks[n_peaks].y = y;
+				peaks[n_peaks].i = val;
+				peaks[n_peaks].invalid = 0;
+				n_peaks++;
+			}
 		}
 
 	}
 	}
-
+	if ( n_peaks < 1 ) return 0;
 	do {
 
 		int max, max_i = -1;
