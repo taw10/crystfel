@@ -24,13 +24,19 @@ AC_ARG_WITH(hdf5,
  HDF5_LIBS="-L$withval/lib -lhdf5"],
 [HDF5_LIBS="-lhdf5"])
 
+AC_ARG_WITH(gsl,
+[AS_HELP_STRING([--with-gsl], [specify location of GSL])],
+[GSL_CFLAGS="-I$withval/include"
+ GSL_LIBS="-L$withval/lib -lgsl -lgslcblas"],
+[GSL_LIBS="-lgsl -lgslcblas"])
+
 havegtk=false
 AM_PATH_GTK_2_0(2.0.0, havegtk=true,
 AC_MSG_WARN([GTK not found.  hdfsee will not be built.]))
 
 AM_CONDITIONAL([HAVE_GTK], test x$havegtk = xtrue)
 
-CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS"
-LIBS="$LIBS $HDF5_LIBS -lm -lz -lgsl -lgslcblas $GTK_LIBS -lgthread-2.0 -lutil"
+CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS $GSL_CFLAGS"
+LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS -lgthread-2.0 -lutil"
 
 AC_OUTPUT(Makefile src/Makefile data/Makefile)
