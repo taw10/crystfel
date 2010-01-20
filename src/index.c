@@ -37,7 +37,7 @@ int map_position(struct image *image, double x, double y,
 	double d;
 
 	/* Angular description of reflection */
-	double theta, psi, k;
+	double twotheta, psi, k;
 
 	k = 1.0 / image->lambda;
 
@@ -47,7 +47,7 @@ int map_position(struct image *image, double x, double y,
 		x /= image->resolution;
 		y /= image->resolution;	/* Convert pixels to metres */
 		d = sqrt((x*x) + (y*y));
-		theta = atan2(d, image->camera_len);
+		twotheta = atan2(d, image->camera_len);
 
 	} else if (image->fmode == FORMULATION_PIXELSIZE ) {
 
@@ -55,7 +55,7 @@ int map_position(struct image *image, double x, double y,
 		x *= image->pixel_size;
 		y *= image->pixel_size;	/* Convert pixels to metres^-1 */
 		d = sqrt((x*x) + (y*y));
-		theta = atan2(d, k);
+		twotheta = atan2(d, k);
 
 	} else {
 		ERROR("Unrecognised formulation mode in mapping_scale.\n");
@@ -64,9 +64,9 @@ int map_position(struct image *image, double x, double y,
 
 	psi = atan2(y, x);
 
-	*rx = k*sin(theta)*cos(psi);
-	*ry = k*sin(theta)*sin(psi);
-	*rz = k - k*cos(theta);
+	*rx = k*sin(twotheta)*cos(psi);
+	*ry = k*sin(twotheta)*sin(psi);
+	*rz = k - k*cos(twotheta);
 
 	return 0;
 }
