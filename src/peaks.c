@@ -32,8 +32,8 @@
 
 static int in_streak(int x, int y)
 {
-	if ( (y>512) && (y<768) && (abs(x-493)<15) ) return 1;
-	if ( (y>768) && (abs(x-480)<15) ) return 1;
+	if ( (y>512) && (y<600) && (abs(x-489)<15) ) return 1;
+	if ( (y>600) && (abs(x-480)<25) ) return 1;
 	return 0;
 }
 
