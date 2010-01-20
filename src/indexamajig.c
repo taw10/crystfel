@@ -172,6 +172,7 @@ int main(int argc, char *argv[])
 
 done:
 		free(image.data);
+		image_feature_list_free(image.features);
 		hdfile_close(hdfile);
 		H5close();
 
