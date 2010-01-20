@@ -21,9 +21,6 @@
 #include "hdf5-file.h"
 #include "render.h"
 
-/* Set to 1 to measure mean intensity in a rectangle */
-#define MEASURE_INT 0
-
 #define RENDER_RGB							       \
 									       \
 	int s;								       \
