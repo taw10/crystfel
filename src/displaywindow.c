@@ -624,7 +624,7 @@ static void numbers_update(DisplayWindow *dw)
 		int valid;
 
 		x = dw->binning * dw->numbers_window->cx + (px-8);
-		y = dw->binning * dw->numbers_window->cy + (py-8);
+		y = dw->binning * dw->numbers_window->cy + (17-py-8);
 
 		if ( (x>=dw->image->width) || (y>=dw->image->height) ) {
 			valid = 0;
