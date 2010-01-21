@@ -21,6 +21,5 @@
 extern int image_fom(struct image *image);
 extern void search_peaks(struct image *image);
 extern void dump_peaks(struct image *image);
-extern void clean_image(struct image *image);
 
 #endif	/* PEAKS_H */

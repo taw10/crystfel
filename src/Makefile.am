@@ -17,11 +17,12 @@ process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
 process_hkl_LDADD = @LIBS@
 
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c dirax.c cell.c image.c \
-                      intensities.c ewald.c peaks.c index.c
+                      intensities.c ewald.c peaks.c index.c filters.c
 indexamajig_LDADD = @LIBS@
 
 if HAVE_GTK
-hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c image.c
+hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c image.c \
+                 filters.c
 hdfsee_LDADD = @LIBS@
 endif
 

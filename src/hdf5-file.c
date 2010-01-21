@@ -28,9 +28,6 @@ struct hdfile {
 
 	const char      *path;  /* Current data path */
 
-	struct image    *image;
-	int             image_dirty;
-
 	size_t          nx;  /* Image width */
 	size_t          ny;  /* Image height */
 
@@ -46,8 +43,6 @@ struct hdfile *hdfile_open(const char *filename)
 
 	f = malloc(sizeof(struct hdfile));
 	if ( f == NULL ) return NULL;
-	f->image = NULL;
-	f->image_dirty = 1;
 
 	f->fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( f->fh < 0 ) {
@@ -82,8 +77,6 @@ int hdfile_set_image(struct hdfile *f, const char *path)
 	f->nx = size[0];
 	f->ny = size[1];
 
-	f->image_dirty = 1;
-
 	return 0;
 }
 
@@ -103,102 +96,7 @@ int hdfile_get_height(struct hdfile *f)
 void hdfile_close(struct hdfile *f)
 {
 	H5Fclose(f->fh);
-	if ( f->image != NULL ) {
-		if ( f->image->features != NULL ) {
-			image_feature_list_free(f->image->features);
-		}
-		free(f->image->data);
-		free(f->image);
-	}
 	free(f);
-}
-
-
-static void *hdfile_bin(int16_t *in, int inw, int inh,
-                        int binning, int16_t *maxp)
-{
-	int16_t *data;
-	int x, y;
-	int w, h;
-	int16_t max;
-
-	w = inw / binning;
-	h = inh / binning;      /* Some pixels might get discarded */
-
-	data = malloc(w*h*sizeof(int16_t));
-	max = 0;
-
-	for ( x=0; x<w; x++ ) {
-	for ( y=0; y<h; y++ ) {
-
-		/* Big enough to hold large values */
-		unsigned long long int total;
-		size_t xb, yb;
-
-		total = 0;
-		for ( xb=0; xb<binning; xb++ ) {
-		for ( yb=0; yb<binning; yb++ ) {
-
-			total += in[binning*x+xb + (binning*y+yb)*(w*binning)];
-
-		}
-		}
-
-		data[x+w*y] = total / (binning * binning);
-		if ( data[x+w*y] > max ) max = data[x+w*y];
-
-	}
-	}
-
-	*maxp = max;
-	return data;
-}
-
-
-int16_t *hdfile_get_image_binned(struct hdfile *f, int binning, int16_t *max)
-{
-	struct image *image;
-	int16_t *data;
-
-	if ( (f->image == NULL) || (f->image_dirty) ) {
-
-		image = malloc(sizeof(struct image));
-		if ( image == NULL ) return NULL;
-		image->features = NULL;
-		image->data = NULL;
-
-		hdf5_read(f, image);
-
-		/* Deal with the old image, if existing */
-		if ( f->image != NULL ) {
-			image->features = f->image->features;
-			if ( f->image->data != NULL ) free(f->image->data);
-			free(f->image->data);
-		}
-
-		f->image = image;
-
-	}
-
-	data = hdfile_bin(f->image->data, f->nx, f->ny, binning, max);
-
-	return data;
-}
-
-
-struct image *hdfile_get_image(struct hdfile *f)
-{
-	return f->image;
-}
-
-
-int hdfile_get_unbinned_value(struct hdfile *f, int x, int y, int16_t *val)
-{
-	if ( (x>=f->image->width) || (y>=f->image->height) ) {
-		return 1;
-	}
-	*val = f->image->data[x+y*f->image->width];
-	return 0;
 }
 
 
@@ -293,7 +191,6 @@ int hdf5_read(struct hdfile *f, struct image *image)
 	image->data = buf;
 	image->height = f->nx;
 	image->width = f->ny;
-	f->image_dirty = 0;
 
 	/* Always camera length/lambda formulation for FEL */
 	image->fmode = FORMULATION_CLEN;

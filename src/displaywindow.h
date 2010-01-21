@@ -17,6 +17,8 @@
 #ifndef DISPLAYWINDOW_H
 #define DISPLAYWINDOW_H
 
+#include <gtk/gtk.h>
+
 
 typedef struct {
 	GtkWidget	*window;
@@ -48,6 +50,8 @@ typedef struct {
 	gulong		motion_callback;
 
 	struct hdfile	*hdfile;
+	struct image	*image;
+	int		image_dirty;
 
 	/* Dialog boxes */
 	BinningDialog	*binning_dialog;

@@ -21,8 +21,9 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <stddef.h>
 
-extern GdkPixbuf *render_get_image(struct hdfile *micron, int binning,
-                                   int boostint, int monochrome);
+#include "displaywindow.h"
+
+extern GdkPixbuf *render_get_image(DisplayWindow *dw);
 extern GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int monochrome);
 
 

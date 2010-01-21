@@ -74,8 +74,7 @@ static void displaywindow_update(DisplayWindow *dw)
 		gdk_pixbuf_unref(dw->pixbuf);
 	}
 	if ( dw->hdfile != NULL ) {
-		dw->pixbuf = render_get_image(dw->hdfile, dw->binning,
-					      dw->boostint, dw->monochrome);
+		dw->pixbuf = render_get_image(dw);
 	} else {
 		dw->pixbuf = NULL;
 	}
@@ -445,7 +444,7 @@ static gint displaywindow_peaklist_response(GtkWidget *d, gint response,
 
 		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
 
-		load_features_from_file(hdfile_get_image(dw->hdfile), filename);
+		load_features_from_file(dw->image, filename);
 		displaywindow_update(dw);
 
 		g_free(filename);
@@ -622,12 +621,20 @@ static void numbers_update(DisplayWindow *dw)
 		int16_t val;
 		GtkWidget *l;
 		int x, y;
+		int valid;
 
 		x = dw->binning * dw->numbers_window->cx + (px-8);
 		y = dw->binning * dw->numbers_window->cy + (py-8);
 
-		if ( (x>0) && (y>0) &&
-		     !hdfile_get_unbinned_value(dw->hdfile, x, y, &val) ) {
+		if ( (x>=dw->image->width) || (y>=dw->image->height) ) {
+			valid = 0;
+			val = 0;
+		} else {
+			val = dw->image->data[x+y*dw->image->width];
+			valid = 1;
+		}
+
+		if ( (x>0) && (y>0) && valid ) {
 			snprintf(s, 31, "%i", val);
 		} else {
 			strcpy(s, "--");
@@ -720,6 +727,7 @@ struct newhdf {
 static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 {
 	hdfile_set_image(nh->dw->hdfile, nh->name);
+	nh->dw->image_dirty = 1;  /* dw->image now contains the wrong thing */
 	displaywindow_update(nh->dw);
 	return 0;
 }
@@ -944,6 +952,8 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->boostint = 1;
 	dw->motion_callback = 0;
 	dw->numbers_window = NULL;
+	dw->image = NULL;
+	dw->image_dirty = 0;
 
 	dw->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
@@ -995,7 +1005,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 
 	/* Peak list provided at startup? */
 	if ( peaks != NULL ) {
-		load_features_from_file(hdfile_get_image(dw->hdfile), peaks);
+		load_features_from_file(dw->image, peaks);
 		displaywindow_update(dw);
 	}
 

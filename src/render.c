@@ -20,6 +20,83 @@
 
 #include "hdf5-file.h"
 #include "render.h"
+#include "peaks.h"
+#include "filters.h"
+
+
+static void *render_bin(int16_t *in, int inw, int inh,
+                        int binning, int16_t *maxp)
+{
+	int16_t *data;
+	int x, y;
+	int w, h;
+	int16_t max;
+
+	w = inw / binning;
+	h = inh / binning;      /* Some pixels might get discarded */
+
+	data = malloc(w*h*sizeof(int16_t));
+	max = 0;
+
+	for ( x=0; x<w; x++ ) {
+	for ( y=0; y<h; y++ ) {
+
+		/* Big enough to hold large values */
+		unsigned long long int total;
+		size_t xb, yb;
+
+		total = 0;
+		for ( xb=0; xb<binning; xb++ ) {
+		for ( yb=0; yb<binning; yb++ ) {
+
+			total += in[binning*x+xb + (binning*y+yb)*(w*binning)];
+
+		}
+		}
+
+		data[x+w*y] = total / (binning * binning);
+		if ( data[x+w*y] > max ) max = data[x+w*y];
+
+	}
+	}
+
+	*maxp = max;
+	return data;
+}
+
+
+int16_t *render_get_image_binned(DisplayWindow *dw, int binning, int16_t *max)
+{
+	struct image *image;
+	int16_t *data;
+
+	if ( (dw->image == NULL) || (dw->image_dirty) ) {
+
+		image = malloc(sizeof(struct image));
+		if ( image == NULL ) return NULL;
+		image->features = NULL;
+		image->data = NULL;
+
+		hdf5_read(dw->hdfile, image);
+		dw->image_dirty = 0;
+		clean_image(image);
+
+		/* Deal with the old image, if existing */
+		if ( dw->image != NULL ) {
+			image->features = dw->image->features;
+			if ( dw->image->data != NULL ) free(dw->image->data);
+		}
+
+		dw->image = image;
+
+	}
+
+	data = render_bin(dw->image->data, hdfile_get_width(dw->hdfile),
+	                  hdfile_get_height(dw->hdfile), binning, max);
+
+	return data;
+}
+
 
 #define RENDER_RGB							       \
 									       \
@@ -130,8 +207,7 @@ static void show_marked_features(struct image *image, guchar *data,
 /* Return a pixbuf containing a rendered version of the image after binning.
  * This pixbuf might be scaled later - hopefully mostly in a downward
  * direction. */
-GdkPixbuf *render_get_image(struct hdfile *hdfile, int binning, int boostint,
-			    int monochrome)
+GdkPixbuf *render_get_image(DisplayWindow *dw)
 {
 	int mw, mh, w, h;
 	guchar *data;
@@ -139,13 +215,13 @@ GdkPixbuf *render_get_image(struct hdfile *hdfile, int binning, int boostint,
 	size_t x, y;
 	int16_t max;
 
-	mw = hdfile_get_width(hdfile);
-	mh = hdfile_get_height(hdfile);
-	w = mw / binning;
-	h = mh / binning;
+	mw = hdfile_get_width(dw->hdfile);
+	mh = hdfile_get_height(dw->hdfile);
+	w = mw / dw->binning;
+	h = mh / dw->binning;
 
 	/* High dynamic range version */
-	hdr = hdfile_get_image_binned(hdfile, binning, &max);
+	hdr = render_get_image_binned(dw, dw->binning, &max);
 	if ( hdr == NULL ) return NULL;
 
 	/* Rendered (colourful) version */
@@ -155,7 +231,7 @@ GdkPixbuf *render_get_image(struct hdfile *hdfile, int binning, int boostint,
 		return NULL;
 	}
 
-	max /= boostint;
+	max /= dw->boostint;
 	if ( max <= 6 ) { max = 10; }
 	/* These x,y coordinates are measured relative to the bottom-left
 	 * corner */
@@ -166,7 +242,7 @@ GdkPixbuf *render_get_image(struct hdfile *hdfile, int binning, int boostint,
 		guchar r, g, b;
 
 		val = hdr[x+w*y];
-		if ( !monochrome ) {
+		if ( !dw->monochrome ) {
 			RENDER_RGB
 		} else {
 			RENDER_MONO
@@ -182,7 +258,7 @@ GdkPixbuf *render_get_image(struct hdfile *hdfile, int binning, int boostint,
 	}
 	}
 
-	show_marked_features(hdfile_get_image(hdfile), data, w, h, binning);
+	show_marked_features(dw->image, data, w, h, dw->binning);
 
 	/* Finished with this */
 	free(hdr);
