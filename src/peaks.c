@@ -314,7 +314,7 @@ void search_peaks(struct image *image)
 		/* Calculate overall gradient */
 		grad = dxs + dys;
 
-		if ( grad < 2000000 ) continue;
+		if ( grad < 1000000 ) continue;
 
 		mask_x = x;
 		mask_y = y;
@@ -360,12 +360,11 @@ void search_peaks(struct image *image)
 			/* Isolated hot pixel? */
 			if ( is_hot_pixel(image, mask_x, mask_y) ) continue;
 
-			/* Check for a feature at exactly the
-			 * same coordinates */
+			/* Check for a nearby feature */
 			image_feature_closest(image->features, mask_x, mask_y,
 			                      &d, &idx);
 
-			if ( d > 1.0 ) {
+			if ( d > 15.0 ) {
 
 				image_add_feature(image->features,
 				                  mask_x, mask_y, image,
