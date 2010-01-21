@@ -19,6 +19,7 @@
 #include <math.h>
 #include <string.h>
 #include <assert.h>
+#include <gsl/gsl_statistics_int.h>
 
 #include "image.h"
 #include "utils.h"
@@ -266,6 +267,79 @@ static void cull_peaks(struct image *image)
 }
 
 
+static int compare_vals(const void *ap, const void *bp)
+{
+	const signed int a = *(signed int *)ap;
+	const signed int b = *(signed int *)bp;
+
+	if ( a > b ) return 1;
+	if ( a < b ) return -1;
+	return 0;
+}
+
+
+static void clean_panel(struct image *image, int sx, int sy)
+{
+	int x, y;
+	const int s = sizeof(signed int);
+
+	for ( y=0; y<128; y++ ) {
+
+		signed int vals[512];
+		double m;
+
+		for ( x=0; x<512; x++ ) {
+			vals[x] = image->data[(x+sx)+(y+sy)*image->width];
+		}
+
+		qsort(&vals[0], 512, s, compare_vals);
+
+		m = gsl_stats_int_median_from_sorted_data(vals, 1, 512);
+
+		for ( x=0; x<512; x++ ) {
+			image->data[(x+sx)+(y+sy)*image->width] -= m;
+		}
+
+	}
+
+	for ( x=0; x<512; x++ ) {
+
+		signed int vals[128];
+		double m;
+
+		for ( y=0; y<128; y++ ) {
+			vals[y] = image->data[(x+sx)+(y+sy)*image->width];
+		}
+
+		qsort(&vals[0], 128, s, compare_vals);
+
+		m = gsl_stats_int_median_from_sorted_data(vals, 1, 128);
+
+		for ( y=0; y<128; y++ ) {
+			image->data[(x+sx)+(y+sy)*image->width] -= m;
+		}
+
+	}
+}
+
+
+/* Pre-processing to make life easier */
+void clean_image(struct image *image)
+{
+	int px, py;
+
+	if ( (image->width != 1024) || (image->height != 1024) ) return;
+
+	for ( px=0; px<2; px++ ) {
+	for ( py=0; py<8; py++ ) {
+
+		clean_panel(image, 512*px, 128*py);
+
+	}
+	}
+}
+
+
 void search_peaks(struct image *image)
 {
 	int x, y, width, height;
@@ -279,6 +353,8 @@ void search_peaks(struct image *image)
 		image_feature_list_free(image->features);
 	}
 	image->features = image_feature_list_new();
+
+	clean_image(image);
 
 	for ( x=1; x<image->width-1; x++ ) {
 	for ( y=1; y<image->height-1; y++ ) {
