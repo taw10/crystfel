@@ -88,6 +88,7 @@ void image_add_feature(ImageFeatureList *flist, double x, double y,
 	flist->features[flist->n_features].parent = parent;
 	flist->features[flist->n_features].partner = NULL;
 	flist->features[flist->n_features].partner_d = 0.0;
+	flist->features[flist->n_features].valid = 1;
 
 	flist->n_features++;
 
@@ -161,5 +162,13 @@ struct imagefeature *image_get_feature(ImageFeatureList *flist, int idx)
 	if ( flist == NULL ) return NULL;
 	if ( idx > flist->n_features ) return NULL;
 
+	if ( flist->features[idx].valid == 0 ) return NULL;
+
 	return &flist->features[idx];
+}
+
+
+void image_remove_feature(ImageFeatureList *flist, int idx)
+{
+	flist->features[idx].valid = 0;
 }

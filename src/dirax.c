@@ -342,6 +342,7 @@ void run_dirax(struct image *image, int no_index)
 		struct imagefeature *f;
 
 		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
 
 		fprintf(fh, "%10f %10f %10f %8f\n",
 		        f->rx/1e10, f->ry/1e10, f->rz/1e10, 1.0);

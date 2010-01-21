@@ -51,6 +51,9 @@ struct imagefeature {
 	double				ry;
 	double				rz;
 
+	/* Internal use only */
+	int				valid;
+
 };
 
 /* An opaque type representing a list of image features */
@@ -130,6 +133,8 @@ extern void image_feature_list_free(ImageFeatureList *flist);
 
 extern void image_add_feature(ImageFeatureList *flist, double x, double y,
                               struct image *parent, double intensity);
+
+extern void image_remove_feature(ImageFeatureList *flist, int idx);
 
 extern struct imagefeature *image_feature_closest(ImageFeatureList *flist,
                                                   double x, double y, double *d,

@@ -214,6 +214,58 @@ static int is_hot_pixel(struct image *image, int x, int y)
 }
 
 
+/* Post-processing of the peak list to remove noise */
+static void cull_peaks(struct image *image)
+{
+	int i, n;
+	int nelim = 0;
+
+	n = image_feature_count(image->features);
+
+	for ( i=0; i<n; i++ ) {
+
+		struct imagefeature *f;
+		int j, ncol;
+
+		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
+
+		/* How many peaks are in exactly the same column? */
+		ncol = 0;
+		for ( j=0; j<n; j++ ) {
+
+			struct imagefeature *g;
+
+			if ( i==j ) continue;
+
+			g = image_get_feature(image->features, j);
+			if ( g == NULL ) continue;
+			if ( f->x == g->x ) ncol++;
+
+
+		}
+
+		/* More than three? */
+		if ( ncol <= 3 ) continue;
+
+		/* Yes?  Delete them all... */
+		nelim = 0;
+		for ( j=0; j<n; j++ ) {
+			struct imagefeature *g;
+			g = image_get_feature(image->features, j);
+			if ( g == NULL ) continue;
+			if ( f->x == g->x ) {
+				image_remove_feature(image->features, j);
+				nelim++;
+			}
+		}
+
+	}
+
+	STATUS("%i peaks eliminated\n", nelim);
+}
+
+
 void search_peaks(struct image *image)
 {
 	int x, y, width, height;
@@ -322,6 +374,8 @@ void search_peaks(struct image *image)
 
 	}
 	}
+
+	cull_peaks(image);
 }
 
 
@@ -338,6 +392,7 @@ void dump_peaks(struct image *image)
 		struct imagefeature *f;
 
 		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
 
 		x = f->x;
 		y = f->y;

@@ -82,6 +82,7 @@ void index_pattern(struct image *image, int no_index, int use_dirax)
 		struct imagefeature *f;
 
 		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
 
 		if ( f->y >=512 ) {
 			/* Top half of CCD */

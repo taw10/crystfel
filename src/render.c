@@ -101,6 +101,7 @@ static void show_marked_features(struct image *image, guchar *data,
 		double th;
 
 		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
 
 		x = f->x;  y = f->y;
 
