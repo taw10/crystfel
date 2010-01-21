@@ -80,6 +80,40 @@ static void clean_panel(struct image *image, int sx, int sy)
 }
 
 
+static void noise_filter(struct image *image)
+{
+	int x, y;
+
+	for ( x=0; x<image->width; x++ ) {
+	for ( y=0; y<image->height; y++ ) {
+
+		int dx, dy;
+		int val = image->data[x+image->width*y];
+
+		if ( (x==1) || (x==image->width-1)
+		  || (y==1) || (y==image->height-1) ) {
+			if ( val < 0 ) val = 0;
+		}
+
+		for ( dx=-1; dx<=+1; dx++ ) {
+		for ( dy=-1; dy<=+1; dy++ ) {
+
+			int val2;
+
+			val2 = image->data[(x+dx)+image->width*(y+dy)];
+
+			if ( val2 < 0 ) val = 0;
+
+		}
+		}
+
+		image->data[x+image->width*y] = val;
+
+	}
+	}
+}
+
+
 /* Pre-processing to make life easier */
 void clean_image(struct image *image)
 {
@@ -94,4 +128,6 @@ void clean_image(struct image *image)
 
 	}
 	}
+
+	noise_filter(image);
 }
