@@ -18,6 +18,7 @@
  *
  */
 
+#define ERROR_T(...) fprintf(stderr, __VA_ARGS__)
 
 static inline void LABEL(integrate)(TYPE *ref, signed int h,
                                     signed int k, signed int l,
@@ -26,8 +27,8 @@ static inline void LABEL(integrate)(TYPE *ref, signed int h,
 	int idx;
 
 	if ( (abs(h) > INDMAX) || (abs(k) > INDMAX) || (abs(l) > INDMAX) ) {
-		printf("\nReflection %i %i %i is out of range!\n", h, k, l);
-		printf("You need to re-configure INDMAX, delete the reflection"
+		ERROR_T("\nReflection %i %i %i is out of range!\n", h, k, l);
+		ERROR_T("You need to re-configure INDMAX, delete the reflection"
 		       " cache file and re-run.\n");
 		exit(1);
 	}
@@ -48,8 +49,8 @@ static inline void LABEL(set)(TYPE *ref, signed int h,
 	int idx;
 
 	if ( (abs(h) > INDMAX) || (abs(k) > INDMAX) || (abs(l) > INDMAX) ) {
-		printf("\nReflection %i %i %i is out of range!\n", h, k, l);
-		printf("You need to re-configure INDMAX, delete the reflection"
+		ERROR_T("\nReflection %i %i %i is out of range!\n", h, k, l);
+		ERROR_T("You need to re-configure INDMAX, delete the reflection"
 		       " cache file and re-run.\n");
 		exit(1);
 	}
@@ -69,8 +70,8 @@ static inline TYPE LABEL(lookup)(TYPE *ref, signed int h,
 	int idx;
 
 	if ( (abs(h) > INDMAX) || (abs(k) > INDMAX) || (abs(l) > INDMAX) ) {
-		printf("\nReflection %i %i %i is out of range!\n", h, k, l);
-		printf("You need to re-configure INDMAX, delete the reflection"
+		ERROR_T("\nReflection %i %i %i is out of range!\n", h, k, l);
+		ERROR_T("You need to re-configure INDMAX, delete the reflection"
 		       " cache file and re-run.\n");
 		exit(1);
 	}
@@ -97,3 +98,4 @@ static inline TYPE *LABEL(new_list)(void)
 
 #undef LABEL
 #undef TYPE
+#undef ERROR_T
