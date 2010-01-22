@@ -46,7 +46,7 @@ static double complex get_f1f2(const char *n, double en)
 		}
 	}
 
-	snprintf(filename, 63, "scattering-factors/%s.nff", n);
+	snprintf(filename, 63, DATADIR"/crystfel/%s.nff", n);
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
 		ERROR("Couldn't open file '%s'\n", filename);
@@ -170,7 +170,7 @@ static double get_waas_kirf(const char *n, double s)
 
 	if ( !found ) {
 
-		fh = fopen("scattering-factors/f0_WaasKirf.dat", "r");
+		fh = fopen(DATADIR"/crystfel/f0_WaasKirf.dat", "r");
 		if ( fh == NULL ) {
 			ERROR("Couldn't open f0_WaasKirf.dat\n");
 			return 0.0;
