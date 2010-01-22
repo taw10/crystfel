@@ -31,7 +31,7 @@
 
 /* x,y in pixels relative to central beam */
 int map_position(struct image *image, double x, double y,
-                        double *rx, double *ry, double *rz)
+                 double *rx, double *ry, double *rz)
 {
 	/* "Input" space */
 	double d;
