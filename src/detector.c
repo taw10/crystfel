@@ -153,7 +153,7 @@ void record_image(struct image *image, int do_water, int do_poisson,
 
 	/* How many photons are scattered per electron? */
 	area = M_PI*pow(BEAM_RADIUS, 2.0);
-	total_energy = FLUENCE * image->xray_energy;
+	total_energy = FLUENCE * ph_lambda_to_en(image->lambda);
 	energy_density = total_energy / area;
 	ph_per_e = (FLUENCE/area) * pow(THOMSON_LENGTH, 2.0);
 	STATUS("Fluence = %8.2e photons, "
@@ -183,7 +183,7 @@ void record_image(struct image *image, int do_water, int do_poisson,
 
 			/* Add intensity contribution from water */
 			water = water_intensity(image->qvecs[x + image->width*y],
-			                        image->xray_energy,
+			                        ph_lambda_to_en(image->lambda),
 			                        BEAM_RADIUS, WATER_RADIUS);
 			intensity += water;
 

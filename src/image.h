@@ -91,8 +91,6 @@ struct image {
 
 	/* Wavelength must always be given */
 	double			lambda;		/* Wavelength in m */
-	double			xray_energy;	/* X-ray energy
-	                                         * in J (per photon) */
 
 	int			width;
 	int			height;

@@ -162,7 +162,8 @@ void get_diffraction(struct image *image, int na, int nb, int nc)
 	                      * sizeof(double complex));
 
 	if ( image->molecule->reflections == NULL ) {
-		get_reflections_cached(image->molecule, image->xray_energy);
+		get_reflections_cached(image->molecule,
+		                       ph_lambda_to_en(image->lambda));
 	}
 
 	for ( x=0; x<image->width; x++ ) {
