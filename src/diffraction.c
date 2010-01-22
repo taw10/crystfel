@@ -142,7 +142,9 @@ void get_diffraction(struct image *image, int na, int nb, int nc)
 	double a, b, c, d;
 
 	/* Generate the array of reciprocal space vectors in image->qvecs */
-	get_ewald(image);
+	if ( image->qvecs == NULL ) {
+		get_ewald(image);
+	}
 
 	if ( image->molecule == NULL ) {
 		image->molecule = load_molecule();

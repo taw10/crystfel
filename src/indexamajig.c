@@ -28,6 +28,8 @@
 #include "intensities.h"
 #include "ewald.h"
 #include "peaks.h"
+#include "diffraction.h"
+#include "detector.h"
 
 
 static void show_help(const char *s)
@@ -45,6 +47,9 @@ static void show_help(const char *s)
 "                           don't actually index.\n"
 "      --dirax             Use DirAx for indexing.\n"
 "      --dump-peaks        Write the results of the peak search to stdout.\n"
+"      --near-bragg        Output a list of reflection intensities to stdout.\n"
+"      --simulate          Simulate the diffraction pattern using the indexed\n"
+"                           unit cell.\n"
 "\n");
 }
 
@@ -60,6 +65,8 @@ int main(int argc, char *argv[])
 	int config_noindex = 0;
 	int config_dumpfound = 0;
 	int config_dirax = 0;
+	int config_nearbragg = 0;
+	int config_simulate = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -67,7 +74,9 @@ int main(int argc, char *argv[])
 		{"input",              1, NULL,               'i'},
 		{"no-index",           0, &config_noindex,     1},
 		{"dump-peaks",         0, &config_dumpfound,   1},
+		{"near-bragg",         0, &config_nearbragg,   1},
 		{"dirax",              0, &config_dirax,       1},
+		{"simulate",           0, &config_simulate,    1},
 		{0, 0, NULL, 0}
 	};
 
@@ -149,13 +158,16 @@ int main(int argc, char *argv[])
 
 			if ( config_dumpfound ) dump_peaks(&image);
 
-			if ( !config_noindex ) {
+			/* Not indexing?  Then there's nothing left to do. */
+			if ( config_noindex ) goto done;
 
-				/* Calculate orientation matrix (by magic) */
-				index_pattern(&image, config_noindex,
-				              config_dirax);
+			/* Calculate orientation matrix (by magic) */
+			index_pattern(&image, config_noindex,
+			              config_dirax);
 
-				if ( image.molecule == NULL ) goto done;
+			if ( image.molecule == NULL ) goto done;
+
+			if ( config_nearbragg || config_simulate ) {
 
 				/* View head-on (unit cell is tilted) */
 				image.orientation.w = 1.0;
@@ -164,8 +176,32 @@ int main(int argc, char *argv[])
 				image.orientation.z = 0.0;
 				get_ewald(&image);
 
+			}
+
+			if ( config_nearbragg ) {
 				/* Read h,k,l,I */
 				output_intensities(&image);
+			}
+
+			if ( config_simulate ) {
+
+				/* Simulate a diffraction pattern */
+				image.sfacs = NULL;
+				image.data = NULL;
+				image.twotheta = NULL;
+				image.hdr = NULL;
+				image.molecule = NULL;
+
+				get_diffraction(&image, 8, 8, 8);
+				if ( image.molecule == NULL ) {
+					ERROR("Couldn't open molecule.pdb\n");
+					return 1;
+				}
+				record_image(&image, 0, 0, 0);
+
+				hdf5_write("simulated.h5", image.data,
+				           image.width, image.height);
+
 			}
 
 		}

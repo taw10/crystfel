@@ -17,7 +17,8 @@ process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
 process_hkl_LDADD = @LIBS@
 
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c dirax.c cell.c image.c \
-                      intensities.c ewald.c peaks.c index.c filters.c
+                      intensities.c ewald.c peaks.c index.c filters.c \
+                      diffraction.c detector.c sfac.c
 indexamajig_LDADD = @LIBS@
 
 if HAVE_GTK
