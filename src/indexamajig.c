@@ -169,6 +169,13 @@ int main(int argc, char *argv[])
 
 			if ( config_nearbragg || config_simulate ) {
 
+				/* Simulate a diffraction pattern */
+				image.sfacs = NULL;
+				image.data = NULL;
+				image.qvecs = NULL;
+				image.twotheta = NULL;
+				image.hdr = NULL;
+
 				/* View head-on (unit cell is tilted) */
 				image.orientation.w = 1.0;
 				image.orientation.x = 0.0;
@@ -184,13 +191,6 @@ int main(int argc, char *argv[])
 			}
 
 			if ( config_simulate ) {
-
-				/* Simulate a diffraction pattern */
-				image.sfacs = NULL;
-				image.data = NULL;
-				image.twotheta = NULL;
-				image.hdr = NULL;
-				image.molecule = NULL;
 
 				get_diffraction(&image, 8, 8, 8);
 				if ( image.molecule == NULL ) {
