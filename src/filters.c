@@ -90,9 +90,10 @@ static void noise_filter(struct image *image)
 		int dx, dy;
 		int val = image->data[x+image->width*y];
 
-		if ( (x==1) || (x==image->width-1)
-		  || (y==1) || (y==image->height-1) ) {
+		if ( (x==0) || (x==image->width-1)
+		  || (y==0) || (y==image->height-1) ) {
 			if ( val < 0 ) val = 0;
+			continue;
 		}
 
 		for ( dx=-1; dx<=+1; dx++ ) {
