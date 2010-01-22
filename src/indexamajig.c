@@ -171,7 +171,6 @@ int main(int argc, char *argv[])
 
 				/* Simulate a diffraction pattern */
 				image.sfacs = NULL;
-				image.data = NULL;
 				image.qvecs = NULL;
 				image.twotheta = NULL;
 				image.hdr = NULL;
@@ -191,6 +190,8 @@ int main(int argc, char *argv[])
 			}
 
 			if ( config_simulate ) {
+
+				image.data = NULL;
 
 				get_diffraction(&image, 8, 8, 8);
 				if ( image.molecule == NULL ) {
