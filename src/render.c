@@ -111,7 +111,7 @@ int16_t *render_get_image_binned(DisplayWindow *dw, int binning, int16_t *max)
 									       \
 	if ( (val < 0.0) || (val > max) ) {                                    \
 		s = 0;                                                         \
-		p = 0.0;                                                       \
+		p = 1.0;                                                       \
 	}                                                                      \
 	switch ( s ) {							       \
 		case 0 : {	/* Black to blue */			       \
