@@ -526,7 +526,9 @@ void get_reflections_cached(struct molecule *mol, double en)
 	mol->reflections = new_list_sfac();
 	r = fread(mol->reflections, sizeof(double complex), IDIM*IDIM*IDIM, fh);
 	if ( r < IDIM*IDIM*IDIM ) {
-		STATUS("Found cache file (%s), but failed to read.\n", s);
+		STATUS("Found cache file (%s), but failed to read"
+		       " (got %lli items, wanted %i).\n",
+		       s, (long long)r, IDIM*IDIM*IDIM);
 		goto calc;
 	}
 
