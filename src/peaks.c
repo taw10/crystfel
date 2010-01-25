@@ -31,6 +31,7 @@
 
 #define PEAK_WINDOW_SIZE (10)
 #define MAX_PEAKS (2048)
+#define INTEGRATION_RADIUS (10)
 
 static int in_streak(int x, int y)
 {
@@ -268,6 +269,39 @@ static void cull_peaks(struct image *image)
 }
 
 
+static void integrate_peak(struct image *image, int xp, int yp,
+                           float *xc, float *yc, float *intensity)
+{
+	signed int x, y;
+	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
+	int total = 0;
+	int xct = 0;
+	int yct = 0;
+
+	for ( x=-INTEGRATION_RADIUS; x<+INTEGRATION_RADIUS; x++ ) {
+	for ( y=-INTEGRATION_RADIUS; y<+INTEGRATION_RADIUS; y++ ) {
+
+		int val;
+
+		/* Circular mask */
+		if ( x*x + y*y > lim ) continue;
+
+		val = image->data[(x+xp)+image->width*(y+yp)];
+
+		total += val;
+
+		xct += val*(xp+x);
+		yct += val*(yp+y);
+
+	}
+	}
+
+	*xc = (float)xct / total;
+	*yc = (float)yct / total;
+	*intensity = total;
+}
+
+
 void search_peaks(struct image *image)
 {
 	int x, y, width, height;
@@ -366,9 +400,15 @@ void search_peaks(struct image *image)
 
 			if ( d > 15.0 ) {
 
-				image_add_feature(image->features,
-				                  mask_x, mask_y, image,
-				                  data[mask_x+width*mask_y]);
+				float x = 0.0;
+				float y = 0.0;
+				float intensity = 0.0;
+
+				integrate_peak(image, mask_x, mask_y,
+				               &x, &y, &intensity);
+
+				image_add_feature(image->features, x, y,
+				                  image, intensity);
 
 			}
 
