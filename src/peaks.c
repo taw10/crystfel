@@ -286,6 +286,9 @@ static void integrate_peak(struct image *image, int xp, int yp,
 		/* Circular mask */
 		if ( x*x + y*y > lim ) continue;
 
+		if ( (x>=image->width) || (x<0) ) continue;
+		if ( (y>=image->height) || (y<0) ) continue;
+
 		val = image->data[(x+xp)+image->width*(y+yp)];
 
 		total += val;
