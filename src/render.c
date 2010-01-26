@@ -49,7 +49,7 @@ static void *render_bin(int16_t *in, int inw, int inh,
 		for ( xb=0; xb<binning; xb++ ) {
 		for ( yb=0; yb<binning; yb++ ) {
 
-			total += in[binning*x+xb + (binning*y+yb)*(w*binning)];
+			total += in[binning*x+xb + (binning*y+yb)*inw];
 
 		}
 		}
