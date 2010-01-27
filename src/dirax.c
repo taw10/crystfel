@@ -183,137 +183,122 @@ static gboolean dirax_readable(GIOChannel *dirax, GIOCondition condition,
                                struct image *image)
 {
 	int rval;
+	int no_string = 0;
 
 	rval = read(image->dirax_pty, image->dirax_rbuffer+image->dirax_rbufpos,
 			image->dirax_rbuflen-image->dirax_rbufpos);
 
 	if ( (rval == -1) || (rval == 0) ) {
 
-		ERROR("Lost connection to DirAx\n");
+		ERROR("Lost connection to DirAx (rval=%i)\n", rval);
 		waitpid(image->dirax_pid, NULL, 0);
 		g_io_channel_shutdown(image->dirax, FALSE, NULL);
 		image->dirax = NULL;
 		return FALSE;
 
-	} else {
+	}
 
-		int no_string = 0;
+	image->dirax_rbufpos += rval;
+	assert(image->dirax_rbufpos <= image->dirax_rbuflen);
 
-		image->dirax_rbufpos += rval;
-		assert(image->dirax_rbufpos <= image->dirax_rbuflen);
+	while ( (!no_string) && (image->dirax_rbufpos > 0) ) {
 
-		while ( (!no_string) && (image->dirax_rbufpos > 0) ) {
+		int i;
+		int block_ready = 0;
+		DirAxInputType type = DIRAX_INPUT_NONE;
 
-			int i;
-			int block_ready = 0;
-			DirAxInputType type = DIRAX_INPUT_NONE;
+		/* See if there's a full line in the buffer yet */
+		for ( i=0; i<image->dirax_rbufpos-1; i++ ) {
+			/* Means the last value looked at is rbufpos-2 */
 
-			/* See if there's a full line in the buffer yet */
-			for ( i=0; i<image->dirax_rbufpos-1; i++ ) {
-				/* Means the last value looked at is rbufpos-2 */
-
-				/* Is there a prompt in the buffer? */
-				if ( i+7 <= image->dirax_rbufpos ) {
-					if ( (strncmp(image->dirax_rbuffer+i,
-							"Dirax> ", 7) == 0)
-					  || (strncmp(image->dirax_rbuffer+i,
-					  		"PROMPT:", 7) == 0) ) {
-						block_ready = 1;
-						type = DIRAX_INPUT_PROMPT;
-						break;
-					}
-				}
-
-				if ( (image->dirax_rbuffer[i] == '\r')
-				  && (image->dirax_rbuffer[i+1] == '\n') ) {
+			/* Is there a prompt in the buffer? */
+			if ( i+7 <= image->dirax_rbufpos ) {
+				if ( (strncmp(image->dirax_rbuffer+i,
+						"Dirax> ", 7) == 0)
+				  || (strncmp(image->dirax_rbuffer+i,
+				  		"PROMPT:", 7) == 0) ) {
 					block_ready = 1;
-					type = DIRAX_INPUT_LINE;
+					type = DIRAX_INPUT_PROMPT;
 					break;
 				}
+			}
+
+			if ( (image->dirax_rbuffer[i] == '\r')
+			  && (image->dirax_rbuffer[i+1] == '\n') ) {
+				block_ready = 1;
+				type = DIRAX_INPUT_LINE;
+				break;
+			}
+
+		}
+
+		if ( block_ready ) {
+
+			unsigned int new_rbuflen;
+			unsigned int endbit_length;
+			char *block_buffer = NULL;
+
+			switch ( type ) {
+
+			case DIRAX_INPUT_LINE :
+
+				block_buffer = malloc(i+1);
+				memcpy(block_buffer, image->dirax_rbuffer, i);
+				block_buffer[i] = '\0';
+
+				if ( block_buffer[0] == '\r' ) {
+					memmove(block_buffer, block_buffer+1, i);
+				}
+
+				dirax_parseline(block_buffer, image);
+				free(block_buffer);
+				endbit_length = i+2;
+				break;
+
+			case DIRAX_INPUT_PROMPT :
+
+				dirax_send_next(image);
+				endbit_length = i+7;
+				break;
+
+			default :
+
+				/* Obviously, this never happens :) */
+				ERROR("Unrecognised input mode!\n");
+				abort();
 
 			}
 
-			if ( block_ready ) {
+			/* Now the block's been parsed, it should be
+			 * forgotten about */
+			memmove(image->dirax_rbuffer,
+			        image->dirax_rbuffer + endbit_length,
+			        image->dirax_rbuflen - endbit_length);
 
-				unsigned int new_rbuflen;
-				unsigned int endbit_length;
+			/* Subtract the number of bytes removed */
+			image->dirax_rbufpos = image->dirax_rbufpos
+			                       - endbit_length;
+			new_rbuflen = image->dirax_rbuflen - endbit_length;
+			if ( new_rbuflen == 0 ) new_rbuflen = 256;
+			image->dirax_rbuffer = realloc(image->dirax_rbuffer,
+			                               new_rbuflen);
+			image->dirax_rbuflen = new_rbuflen;
 
-				switch ( type ) {
+		} else {
 
-					case DIRAX_INPUT_LINE : {
+			if ( image->dirax_rbufpos==image->dirax_rbuflen ) {
 
-						char *block_buffer = NULL;
-
-						block_buffer = malloc(i+1);
-						memcpy(block_buffer,
-							image->dirax_rbuffer, i);
-						block_buffer[i] = '\0';
-
-						if ( block_buffer[0] == '\r' ) {
-							memmove(block_buffer,
-							  block_buffer+1, i);
-						}
-
-						dirax_parseline(block_buffer,
-									image);
-						free(block_buffer);
-						endbit_length = i+2;
-
-						break;
-
-					}
-
-					case DIRAX_INPUT_PROMPT : {
-
-						dirax_send_next(image);
-						endbit_length = i+7;
-						break;
-
-					}
-
-					default : {
-						ERROR(
-			" Unrecognised input mode (this never happens!)\n");
-						abort();
-					}
-
-				}
-
-				/* Now the block's been parsed, it should be
-				 * forgotten about */
-				memmove(image->dirax_rbuffer,
-					image->dirax_rbuffer + endbit_length,
-					image->dirax_rbuflen - endbit_length);
-
-				/* Subtract the number of bytes removed */
-				image->dirax_rbufpos = image->dirax_rbufpos
-								- endbit_length;
-				new_rbuflen = image->dirax_rbuflen
-								- endbit_length;
-				if ( new_rbuflen == 0 ) {
-					new_rbuflen = 256;
-				}
-				image->dirax_rbuffer = realloc(image->dirax_rbuffer,
-								new_rbuflen);
-				image->dirax_rbuflen = new_rbuflen;
-
-			} else {
-
-				if ( image->dirax_rbufpos==image->dirax_rbuflen ) {
-
-					/* More buffer space is needed */
-					image->dirax_rbuffer = realloc(
-						image->dirax_rbuffer,
-						image->dirax_rbuflen + 256);
-					image->dirax_rbuflen = image->dirax_rbuflen
-									+ 256;
-					/* The new space gets used at the next
-					 * read, shortly... */
-
-				}
-				no_string = 1;
+				/* More buffer space is needed */
+				image->dirax_rbuffer = realloc(
+				                    image->dirax_rbuffer,
+				                    image->dirax_rbuflen + 256);
+				image->dirax_rbuflen = image->dirax_rbuflen
+				                                          + 256;
+				/* The new space gets used at the next
+				 * read, shortly... */
 
 			}
+			no_string = 1;
 
 		}
 
