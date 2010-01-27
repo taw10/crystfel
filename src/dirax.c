@@ -137,45 +137,50 @@ static void dirax_send_next(struct image *image)
 
 	case 1 :
 		dirax_sendline("\\echo off\n", image);
-		image->dirax_step++;
 		break;
 
 	case 2 :
 		dirax_sendline("read xfel.drx\n", image);
-		image->dirax_step++;
 		break;
 
 	case 3 :
 		dirax_sendline("dmax 1000\n", image);
-		image->dirax_step++;
 		break;
 
 	case 4 :
 		dirax_sendline("indexfit 2\n", image);
-		image->dirax_step++;
 		break;
 
 	case 5 :
 		dirax_sendline("levelfit 1000\n", image);
-		image->dirax_step++;
 		break;
 
 	case 6 :
 		dirax_sendline("go\n", image);
-		image->dirax_step++;
 		break;
 
 	case 7 :
+		dirax_sendline("acl\n", image);
+		break;
+
+	case 8 :
+		/* Skip DirAx's 'acl' prompt */
+		dirax_sendline("\n", image);
+		break;
+
+	case 9 :
 		dirax_sendline("cell\n", image);
-		image->dirax_step++;
 		break;
 
 	default:
 		image->dirax_step = 0;
 		STATUS("DirAx is idle\n");
 		g_main_loop_quit(image->dirax_ml);
+		return;
 
 	}
+
+	image->dirax_step++;
 }
 
 
@@ -216,7 +221,9 @@ static gboolean dirax_readable(GIOChannel *dirax, GIOCondition condition,
 				if ( (strncmp(image->dirax_rbuffer+i,
 						"Dirax> ", 7) == 0)
 				  || (strncmp(image->dirax_rbuffer+i,
-				  		"PROMPT:", 7) == 0) ) {
+				                "PROMPT:", 7) == 0)
+				  || (strncmp(image->dirax_rbuffer+i,
+				                "acl/auto:", 8) == 0) ) {
 					block_ready = 1;
 					type = DIRAX_INPUT_PROMPT;
 					break;
