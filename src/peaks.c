@@ -245,7 +245,6 @@ static void cull_peaks(struct image *image)
 			if ( g == NULL ) continue;
 			if ( f->x == g->x ) ncol++;
 
-
 		}
 
 		/* More than three? */
