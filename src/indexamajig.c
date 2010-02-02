@@ -43,10 +43,12 @@ static void show_help(const char *s)
 "\n"
 "  -i, --input=<filename>  Specify file containing list of images to process.\n"
 "                           '-' means stdin, which is the default.\n"
-"      --no-index          Do everything else (including fine peak search and\n"
-"                           writing 'xfel.drx' if DirAx is being used), but\n"
-"                           don't actually index.\n"
-"      --dirax             Use DirAx for indexing.\n"
+"      --indexing=<method> Use 'method' for indexing.  Choose from:\n"
+"                           none     : no indexing\n"
+"                           dirax    : invoke DirAx\n"
+"      --write-drx         Write 'xfel.drx' for visualisation of reciprocal\n"
+"                           space.  Implied by any indexing method other than"
+"                           'none'.\n"
 "      --dump-peaks        Write the results of the peak search to stdout.\n"
 "      --near-bragg        Output a list of reflection intensities to stdout.\n"
 "      --simulate          Simulate the diffraction pattern using the indexed\n"
@@ -65,9 +67,11 @@ int main(int argc, char *argv[])
 	int n_hits;
 	int config_noindex = 0;
 	int config_dumpfound = 0;
-	int config_dirax = 0;
 	int config_nearbragg = 0;
+	int config_writedrx = 0;
 	int config_simulate = 0;
+	IndexingMethod indm;
+	char *indm_str = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -76,7 +80,8 @@ int main(int argc, char *argv[])
 		{"no-index",           0, &config_noindex,     1},
 		{"dump-peaks",         0, &config_dumpfound,   1},
 		{"near-bragg",         0, &config_nearbragg,   1},
-		{"dirax",              0, &config_dirax,       1},
+		{"write-drx",          0, &config_writedrx,    1},
+		{"indexing",           1, NULL,               'z'},
 		{"simulate",           0, &config_simulate,    1},
 		{0, 0, NULL, 0}
 	};
@@ -92,6 +97,11 @@ int main(int argc, char *argv[])
 
 		case 'i' : {
 			filename = strdup(optarg);
+			break;
+		}
+
+		case 'z' : {
+			indm_str = strdup(optarg);
 			break;
 		}
 
@@ -117,6 +127,20 @@ int main(int argc, char *argv[])
 	free(filename);
 	if ( fh == NULL ) {
 		ERROR("Failed to open input file\n");
+		return 1;
+	}
+
+	if ( indm_str == NULL ) {
+		STATUS("You didn't specify an indexing method, so I won't"
+		       " try to index anything.  If that isn't what you\n"
+		       " wanted, re-run with --indexing=<method>.\n");
+		indm = INDEXING_NONE;
+	} else if ( strcmp(indm_str, "none") == 0 ) {
+		indm = INDEXING_NONE;
+	} else if ( strcmp(indm_str, "dirax") == 0) {
+		indm = INDEXING_DIRAX;
+	} else {
+		ERROR("Unrecognised indexing method '%s'\n", indm_str);
 		return 1;
 	}
 
@@ -160,13 +184,22 @@ int main(int argc, char *argv[])
 
 			if ( config_dumpfound ) dump_peaks(&image);
 
-			/* Not indexing?  Then there's nothing left to do. */
-			if ( config_noindex ) goto done;
+			/* Not indexing nor writing xfel.drx?
+			 * Then there's nothing left to do. */
+			if ( (!config_writedrx) && (indm == INDEXING_NONE) ) {
+				goto done;
+			}
 
 			/* Calculate orientation matrix (by magic) */
-			index_pattern(&image, config_noindex, config_dirax);
+			if ( config_writedrx || (indm != INDEXING_NONE) ) {
+				index_pattern(&image, indm);
+			}
+
+			/* No cell at this point?  Then we're done. */
 			if ( image.indexed_cell == NULL ) goto done;
 
+			/* Simulation or intensity measurements both require
+			 * Ewald sphere vectors */
 			if ( config_nearbragg || config_simulate ) {
 
 				/* Simulate a diffraction pattern */
@@ -184,11 +217,12 @@ int main(int argc, char *argv[])
 
 			}
 
+			/* Measure intensities if requested */
 			if ( config_nearbragg ) {
-				/* Read h,k,l,I */
 				output_intensities(&image, image.indexed_cell);
 			}
 
+			/* Simulate pattern if requested */
 			if ( config_simulate ) {
 
 				image.data = NULL;

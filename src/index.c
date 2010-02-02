@@ -72,9 +72,40 @@ int map_position(struct image *image, double x, double y,
 }
 
 
-void index_pattern(struct image *image, int no_index, int use_dirax)
+static void write_drx(struct image *image)
+{
+	FILE *fh;
+	int i;
+
+	STATUS("Writing xfel.drx file.  Remember that it uses units of "
+	       "reciprocal Angstroms!\n");
+
+	fh = fopen("xfel.drx", "w");
+	if ( !fh ) {
+		ERROR("Couldn't open temporary file xfel.drx\n");
+		return;
+	}
+	fprintf(fh, "%f\n", 0.5);  /* Lie about the wavelength.  */
+
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
+
+		struct imagefeature *f;
+
+		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
+
+		fprintf(fh, "%10f %10f %10f %8f\n",
+		        f->rx/1e10, f->ry/1e10, f->rz/1e10, 1.0);
+
+	}
+	fclose(fh);
+}
+
+
+void index_pattern(struct image *image, IndexingMethod indm)
 {
 	int i;
+	UnitCell *new_cell = NULL;
 
 	/* Map positions to 3D */
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
@@ -95,17 +126,16 @@ void index_pattern(struct image *image, int no_index, int use_dirax)
 		}
 	}
 
-	if ( use_dirax ) {
+	write_drx(image);
 
-		UnitCell *new_cell;
+	/* Index (or not) as appropriate */
+	if ( indm == INDEXING_NONE ) return;
+	if ( indm == INDEXING_DIRAX ) run_dirax(image);
 
-		run_dirax(image, no_index);
-
-		new_cell = match_cell(image->indexed_cell,
-		                      image->molecule->cell);
-
-		if ( new_cell != NULL ) image->indexed_cell = new_cell;
-
-		return;
+	new_cell = match_cell(image->indexed_cell,
+		              image->molecule->cell);
+	if ( new_cell != NULL ) {
+		free(image->indexed_cell);
+		image->indexed_cell = new_cell;
 	}
 }

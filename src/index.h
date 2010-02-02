@@ -18,8 +18,14 @@
 #endif
 
 
-extern void index_pattern(struct image *image, int no_index, int use_dirax);
+typedef enum {
+	INDEXING_NONE,
+	INDEXING_DIRAX,
+	INDEXING_MATCH
+} IndexingMethod;
 
+
+extern void index_pattern(struct image *image, IndexingMethod indm);
 /* x,y in pixels relative to central beam */
 extern int map_position(struct image *image, double x, double y,
                         double *rx, double *ry, double *rz);

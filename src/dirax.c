@@ -309,34 +309,10 @@ static gboolean dirax_readable(GIOChannel *dirax, GIOCondition condition,
 }
 
 
-void run_dirax(struct image *image, int no_index)
+void run_dirax(struct image *image)
 {
 	unsigned int opts;
 	int saved_stderr;
-	FILE *fh;
-	int i;
-
-	fh = fopen("xfel.drx", "w");
-	if ( !fh ) {
-		ERROR("Couldn't open temporary file xfel.drx\n");
-		return;
-	}
-	fprintf(fh, "%f\n", 0.5);  /* Lie about the wavelength.  */
-
-	for ( i=0; i<image_feature_count(image->features); i++ ) {
-
-		struct imagefeature *f;
-
-		f = image_get_feature(image->features, i);
-		if ( f == NULL ) continue;
-
-		fprintf(fh, "%10f %10f %10f %8f\n",
-		        f->rx/1e10, f->ry/1e10, f->rz/1e10, 1.0);
-
-	}
-	fclose(fh);
-
-	if ( no_index ) return;
 
 	saved_stderr = dup(STDERR_FILENO);
 	image->dirax_pid = forkpty(&image->dirax_pty, NULL, NULL, NULL);
