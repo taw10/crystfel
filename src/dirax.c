@@ -69,13 +69,7 @@ static void dirax_parseline(const char *line, struct image *image)
 		if ( line[i] == 'R' ) rf = 1;
 		if ( (line[i] == 'D') && rf ) {
 			image->dirax_read_cell = 1;
-			if ( image->molecule == NULL ) {
-				image->molecule = malloc(sizeof(struct molecule));
-			} else if ( image->molecule->cell ) {
-				free(image->molecule->cell);
-				free(image->molecule);
-			}
-			image->molecule->cell = cell_new();
+			image->indexed_cell = cell_new();
 			return;
 		}
 		i++;
@@ -86,7 +80,7 @@ static void dirax_parseline(const char *line, struct image *image)
 		/* First row of unit cell values */
 		float ax, ay, az, d;
 		sscanf(line, "%f %f %f %f %f %f", &d, &d, &d, &ax, &ay, &az);
-		cell_set_cartesian_a(image->molecule->cell,
+		cell_set_cartesian_a(image->indexed_cell,
 		                     ax*1e-10, ay*1e-10, az*1e-10);
 		image->dirax_read_cell++;
 		return;
@@ -94,7 +88,7 @@ static void dirax_parseline(const char *line, struct image *image)
 		/* First row of unit cell values */
 		float bx, by, bz, d;
 		sscanf(line, "%f %f %f %f %f %f", &d, &d, &d, &bx, &by, &bz);
-		cell_set_cartesian_b(image->molecule->cell,
+		cell_set_cartesian_b(image->indexed_cell,
 		                     bx*1e-10, by*1e-10, bz*1e-10);
 		image->dirax_read_cell++;
 		return;
@@ -102,7 +96,7 @@ static void dirax_parseline(const char *line, struct image *image)
 		/* First row of unit cell values */
 		float cx, cy, cz, d;
 		sscanf(line, "%f %f %f %f %f %f", &d, &d, &d, &cx, &cy, &cz);
-		cell_set_cartesian_c(image->molecule->cell,
+		cell_set_cartesian_c(image->indexed_cell,
 		                     cx*1e-10, cy*1e-10, cz*1e-10);
 		STATUS("Read a direct space unit cell from DirAx\n");
 		/* FIXME: Do something */

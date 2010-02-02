@@ -140,24 +140,12 @@ void get_diffraction(struct image *image, int na, int nb, int nc)
 	double bx, by, bz;
 	double cx, cy, cz;
 	double a, b, c, d;
-	struct molecule *mtmp;
 
 	/* Generate the array of reciprocal space vectors in image->qvecs */
 	if ( image->qvecs == NULL ) {
 		get_ewald(image);
 	}
 
-	/* FIXME: Nasty */
-	mtmp = load_molecule();
-	if ( image->molecule == NULL ) {
-		image->molecule = mtmp;
-	} else {
-		int i;
-		for ( i=0; i<32; i++ ) {
-			image->molecule->species[i] = mtmp->species[i];
-		}
-		image->molecule->n_species = mtmp->n_species;
-	}
 	if ( image->molecule == NULL ) return;
 
 	cell_get_cartesian(image->molecule->cell, &ax, &ay, &az,

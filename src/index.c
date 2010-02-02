@@ -96,7 +96,16 @@ void index_pattern(struct image *image, int no_index, int use_dirax)
 	}
 
 	if ( use_dirax ) {
+
+		UnitCell *new_cell;
+
 		run_dirax(image, no_index);
+
+		new_cell = match_cell(image->indexed_cell,
+		                      image->molecule->cell);
+
+		if ( new_cell != NULL ) image->indexed_cell = new_cell;
+
 		return;
 	}
 }

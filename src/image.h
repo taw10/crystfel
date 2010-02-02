@@ -78,6 +78,7 @@ struct image {
 	struct rvec		*qvecs;
 	double			*twotheta;
 	struct molecule		*molecule;
+	UnitCell		*indexed_cell;
 
 	struct quaternion	orientation;
 

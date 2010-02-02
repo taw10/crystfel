@@ -17,7 +17,8 @@
 #define INTENSITIES_H
 
 #include "image.h"
+#include "cell.h"
 
-extern void output_intensities(struct image *image);
+extern void output_intensities(struct image *image, UnitCell *cell);
 
 #endif	/* INTENSITIES_H */

@@ -49,7 +49,7 @@ static int sum_nearby_points(int16_t *data, int width, int x, int y)
 }
 
 
-void output_intensities(struct image *image)
+void output_intensities(struct image *image, UnitCell *cell)
 {
 	int x, y;
 	double ax, ay, az;
@@ -59,9 +59,7 @@ void output_intensities(struct image *image)
 	int n_hits = 0;
 	int i;
 
-	cell_get_cartesian(image->molecule->cell, &ax, &ay, &az,
-		                                  &bx, &by, &bz,
-		                                  &cx, &cy, &cz);
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {

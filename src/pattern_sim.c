@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
 	image.camera_len = 0.05;  /* 5 cm (front CCD can move from 5cm-20cm) */
 	image.resolution = 13333.3; /* 75 micron pixel size */
 	image.lambda = ph_en_to_lambda(eV_to_J(2.0e3));  /* Wavelength */
-	image.molecule = NULL;
+	image.molecule = load_molecule();
 
 	/* Splurge a few useful numbers */
 	STATUS("Wavelength is %f nm\n", image.lambda/1.0e-9);
@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
 		             !config_nobloom);
 
 		if ( config_nearbragg ) {
-			output_intensities(&image);
+			output_intensities(&image, image.molecule->cell);
 		}
 
 		if ( !config_noimages ) {

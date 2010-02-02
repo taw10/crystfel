@@ -30,6 +30,7 @@
 #include "peaks.h"
 #include "diffraction.h"
 #include "detector.h"
+#include "sfac.h"
 
 
 static void show_help(const char *s)
@@ -132,8 +133,9 @@ int main(int argc, char *argv[])
 		chomp(line);
 
 		image.features = NULL;
-		image.molecule = NULL;
+		image.molecule = load_molecule();
 		image.data = NULL;
+		image.indexed_cell = NULL;
 
 		STATUS("Processing '%s'\n", line);
 
@@ -162,10 +164,8 @@ int main(int argc, char *argv[])
 			if ( config_noindex ) goto done;
 
 			/* Calculate orientation matrix (by magic) */
-			index_pattern(&image, config_noindex,
-			              config_dirax);
-
-			if ( image.molecule == NULL ) goto done;
+			index_pattern(&image, config_noindex, config_dirax);
+			if ( image.indexed_cell == NULL ) goto done;
 
 			if ( config_nearbragg || config_simulate ) {
 
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
 
 			if ( config_nearbragg ) {
 				/* Read h,k,l,I */
-				output_intensities(&image);
+				output_intensities(&image, image.indexed_cell);
 			}
 
 			if ( config_simulate ) {

@@ -22,6 +22,7 @@
 
 #include "cell.h"
 #include "utils.h"
+#include "image.h"
 
 
 /* Update the cartesian representation from the crystallographic one */
@@ -190,6 +191,55 @@ UnitCell *cell_new_from_parameters(double a, double b, double c,
 }
 
 
+static UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs,
+                                    struct rvec cs)
+{
+	UnitCell *cell;
+	int s;
+	gsl_matrix *m;
+	gsl_matrix *inv;
+	gsl_permutation *perm;
+
+	cell = cell_new();
+	if ( !cell ) return NULL;
+
+	m = gsl_matrix_alloc(3, 3);
+	gsl_matrix_set(m, 0, 0, as.u);
+	gsl_matrix_set(m, 0, 1, as.v);
+	gsl_matrix_set(m, 0, 2, as.w);
+	gsl_matrix_set(m, 1, 0, bs.u);
+	gsl_matrix_set(m, 1, 1, bs.v);
+	gsl_matrix_set(m, 1, 2, bs.w);
+	gsl_matrix_set(m, 2, 0, cs.u);
+	gsl_matrix_set(m, 2, 1, cs.v);
+	gsl_matrix_set(m, 2, 2, cs.w);
+
+	/* Invert */
+	perm = gsl_permutation_alloc(m->size1);
+	inv = gsl_matrix_alloc(m->size1, m->size2);
+	gsl_linalg_LU_decomp(m, perm, &s);
+	gsl_linalg_LU_invert(m, perm, inv);
+	gsl_permutation_free(perm);
+	gsl_matrix_free(m);
+
+	/* Transpose */
+	gsl_matrix_transpose(inv);
+
+	cell->ax = gsl_matrix_get(inv, 0, 0);
+	cell->ay = gsl_matrix_get(inv, 0, 1);
+	cell->az = gsl_matrix_get(inv, 0, 2);
+	cell->bx = gsl_matrix_get(inv, 1, 0);
+	cell->by = gsl_matrix_get(inv, 1, 1);
+	cell->bz = gsl_matrix_get(inv, 1, 2);
+	cell->cx = gsl_matrix_get(inv, 2, 0);
+	cell->cy = gsl_matrix_get(inv, 2, 1);
+	cell->cz = gsl_matrix_get(inv, 2, 2);
+
+	cell_update_crystallographic(cell);
+	return cell;
+}
+
+
 void cell_get_cartesian(UnitCell *cell,
                         double *ax, double *ay, double *az,
                         double *bx, double *by, double *bz,
@@ -244,6 +294,187 @@ void cell_get_reciprocal(UnitCell *cell,
 	*asz = gsl_matrix_get(inv, 2, 0);
 	*bsz = gsl_matrix_get(inv, 2, 1);
 	*csz = gsl_matrix_get(inv, 2, 2);
+}
+
+
+static void cell_print(UnitCell *cell)
+{
+	STATUS("  a     b     c         alpha   beta  gamma\n");
+	STATUS("%5.2f %5.2f %5.2f nm    %6.2f %6.2f %6.2f deg\n",
+	       cell->a*1e9, cell->b*1e9, cell->c*1e9,
+	       rad2deg(cell->alpha), rad2deg(cell->beta), rad2deg(cell->gamma));
+}
+
+
+#define MAX_CAND (1024)
+
+static int within_tolerance(double a, double b, double percent)
+{
+	double tol = a * (percent/100.0);
+	if ( fabs(b-a) < tol ) return 1;
+	return 0;
+}
+
+
+struct cvec {
+	struct rvec vec;
+	float na;
+	float nb;
+	float nc;
+};
+
+
+/* Attempt to make 'cell' fit into 'template' somehow */
+UnitCell *match_cell(UnitCell *cell, UnitCell *template)
+{
+	signed int n1l, n2l, n3l;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	int i, j;
+	double lengths[3];
+	double angles[3];
+	struct cvec *cand[3];
+
+	int ncand[3] = {0,0,0};
+	float ltl = 5.0;
+	float angtol = 5.0;
+	UnitCell *new_cell = NULL;
+
+	cell_get_reciprocal(template, &asx, &asy, &asz,
+	                              &bsx, &bsy, &bsz,
+	                              &csx, &csy, &csz);
+
+	lengths[0] = modulus(asx, asy, asz);
+	lengths[1] = modulus(bsx, bsy, bsz);
+	lengths[2] = modulus(csx, csy, csz);
+
+	angles[0] = angle_between(bsx, bsy, bsz, csx, csy, csz);
+	angles[1] = angle_between(asx, asy, asz, csx, csy, csz);
+	angles[2] = angle_between(asx, asy, asz, bsx, bsy, bsz);
+
+	cand[0] = malloc(MAX_CAND*sizeof(struct cvec));
+	cand[1] = malloc(MAX_CAND*sizeof(struct cvec));
+	cand[2] = malloc(MAX_CAND*sizeof(struct cvec));
+
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+
+	STATUS("Performing unit cell magic...\n");
+
+	/* Negative values mean 1/n, positive means n, zero means zero */
+	for ( n1l=-4; n1l<=4; n1l++ ) {
+	for ( n2l=-4; n2l<=4; n2l++ ) {
+	for ( n3l=-4; n3l<=4; n3l++ ) {
+
+		float n1, n2, n3;
+		signed int b1, b2, b3;
+
+		n1 = (n1l>=0) ? (n1l) : (1.0/n1l);
+		n2 = (n2l>=0) ? (n2l) : (1.0/n2l);
+		n3 = (n3l>=0) ? (n3l) : (1.0/n3l);
+
+		/* 'bit' values can be +1 or -1 */
+		for ( b1=-1; b1<=1; b1+=2 ) {
+		for ( b2=-1; b2<=1; b2+=2 ) {
+		for ( b3=-1; b3<=1; b3+=2 ) {
+
+			double tx, ty, tz;
+			double tlen;
+			int i;
+
+			n1 *= b1;  n2 *= b2;  n3 *= b3;
+
+			tx = n1*asx + n2*asy + n3*asz;
+			ty = n1*bsx + n2*bsy + n3*bsz;
+			tz = n1*csx + n2*csy + n3*csz;
+			tlen = modulus(tx, ty, tz);
+
+			/* Test modulus for agreement with moduli of template */
+			for ( i=0; i<3; i++ ) {
+				if ( within_tolerance(lengths[i], tlen, ltl) ) {
+					STATUS("sought %e, found %e (%e %e) for %i\n",
+					       lengths[i], tlen, 1.0/lengths[i],
+					       1.0/tlen, i);
+					cand[i][ncand[i]].vec.u = tx;
+					cand[i][ncand[i]].vec.v = ty;
+					cand[i][ncand[i]].vec.w = tz;
+					cand[i][ncand[i]].na = n1;
+					cand[i][ncand[i]].nb = n2;
+					cand[i][ncand[i]].nc = n3;
+					ncand[i]++;
+				}
+			}
+
+		}
+		}
+		}
+
+	}
+	}
+	}
+
+	for ( i=0; i<ncand[0]; i++ ) {
+	for ( j=0; j<ncand[1]; j++ ) {
+
+		double ang;
+		int k;
+
+		/* Measure the angle between the ith candidate for axis 0
+		 * and the jth candidate for axis 1 */
+		ang = angle_between(cand[0][i].vec.u, cand[0][i].vec.v,
+		                    cand[0][i].vec.w, cand[1][j].vec.u,
+		                    cand[1][j].vec.v, cand[1][j].vec.w);
+
+		/* Angle between axes 0 and 1 should be angle 2 */
+		if ( !within_tolerance(ang, angles[2], angtol) ) continue;
+
+		for ( k=0; k<ncand[2]; k++ ) {
+
+			/* Measure the angle between the current candidate for
+			 * axis 0 and the kth candidate for axis 2 */
+			ang = angle_between(cand[0][i].vec.u, cand[0][i].vec.v,
+			                    cand[0][i].vec.w, cand[2][k].vec.u,
+			                    cand[2][k].vec.v, cand[2][k].vec.w);
+
+			/* ... it should be angle 1 ... */
+			if ( !within_tolerance(ang, angles[1], angtol) ) continue;
+
+			/* Finally, the angle between the current candidate for
+			 * axis 1 and the kth candidate for axis 2 */
+			ang = angle_between(cand[1][j].vec.u, cand[1][j].vec.v,
+			                    cand[1][j].vec.w, cand[2][k].vec.u,
+			                    cand[2][k].vec.v, cand[2][k].vec.w);
+
+			/* ... it should be angle 0 ... */
+			if ( !within_tolerance(ang, angles[0], angtol) ) continue;
+
+			new_cell = cell_new_from_axes(cand[0][i].vec,
+			                              cand[1][j].vec,
+			                              cand[2][k].vec);
+
+			STATUS("Success! --------------- \n");
+			cell_print(new_cell);
+			STATUS("%f %f %f\n", cand[0][i].na, cand[0][i].nb,
+			                      cand[0][i].nc);
+			STATUS("%f %f %f\n", cand[1][j].na, cand[1][j].nb,
+			                      cand[1][j].nc);
+			STATUS("%f %f %f\n", cand[2][k].na, cand[2][k].nb,
+			                      cand[2][k].nc);
+			goto done;
+
+		}
+
+	}
+	}
+
+done:
+	free(cand[0]);
+	free(cand[1]);
+	free(cand[2]);
+
+	return new_cell;
 }
 
 
