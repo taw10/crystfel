@@ -303,8 +303,8 @@ static void centre_molecule(struct molecule *mol)
 
 	}
 
-	STATUS("Molecule was shifted by %5.3f, %5.3f, %5.3f nm\n",
-	       mol->xc*1e9, mol->yc*1e9, mol->zc*1e9);
+	//STATUS("Molecule was shifted by %5.3f, %5.3f, %5.3f nm\n",
+	//       mol->xc*1e9, mol->yc*1e9, mol->zc*1e9);
 }
 
 
@@ -420,10 +420,10 @@ struct molecule *load_molecule()
 
 	centre_molecule(mol);
 
-	STATUS("There are %i species\n", mol->n_species);
+	//STATUS("There are %i species\n", mol->n_species);
 	for ( i=0; i<mol->n_species; i++ ) {
-		STATUS("%3s : %6i\n", mol->species[i]->species,
-		       mol->species[i]->n_atoms);
+	//	STATUS("%3s : %6i\n", mol->species[i]->species,
+	//	       mol->species[i]->n_atoms);
 	}
 
 	return mol;

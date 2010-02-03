@@ -54,7 +54,7 @@ static void dirax_parseline(const char *line, struct image *image)
 		if ( copy[i] == '\r' ) copy[i]='r';
 		if ( copy[i] == '\n' ) copy[i]='\0';
 	}
-	STATUS("DirAx: %s\n", copy);
+	//STATUS("DirAx: %s\n", copy);
 	free(copy);
 
 	if ( strstr(line, "reflections from file") ) {
@@ -120,7 +120,7 @@ static void dirax_sendline(const char *line, struct image *image)
 		if ( copy[i] == '\r' ) copy[i]='\0';
 		if ( copy[i] == '\n' ) copy[i]='\0';
 	}
-	STATUS("To DirAx: '%s'\n", copy);
+	//STATUS("To DirAx: '%s'\n", copy);
 	free(copy);
 }
 
@@ -168,7 +168,6 @@ static void dirax_send_next(struct image *image)
 
 	default:
 		image->dirax_step = 0;
-		STATUS("DirAx is idle\n");
 		g_main_loop_quit(image->dirax_ml);
 		return;
 

@@ -264,7 +264,7 @@ static void cull_peaks(struct image *image)
 
 	}
 
-	STATUS("%i peaks eliminated\n", nelim);
+	//STATUS("%i peaks eliminated\n", nelim);
 }
 
 

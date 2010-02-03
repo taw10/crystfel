@@ -361,8 +361,6 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
 
-	STATUS("Performing unit cell magic...\n");
-
 	/* Negative values mean 1/n, positive means n, zero means zero */
 	for ( n1l=-4; n1l<=4; n1l++ ) {
 	for ( n2l=-4; n2l<=4; n2l++ ) {
@@ -394,9 +392,6 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 			/* Test modulus for agreement with moduli of template */
 			for ( i=0; i<3; i++ ) {
 				if ( within_tolerance(lengths[i], tlen, ltl) ) {
-					STATUS("sought %e, found %e (%e %e) for %i\n",
-					       lengths[i], tlen, 1.0/lengths[i],
-					       1.0/tlen, i);
 					cand[i][ncand[i]].vec.u = tx;
 					cand[i][ncand[i]].vec.v = ty;
 					cand[i][ncand[i]].vec.w = tz;
