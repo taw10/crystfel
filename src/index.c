@@ -134,8 +134,6 @@ void index_pattern(struct image *image, IndexingMethod indm)
 
 	new_cell = match_cell(image->indexed_cell,
 		              image->molecule->cell);
-	if ( new_cell != NULL ) {
-		free(image->indexed_cell);
-		image->indexed_cell = new_cell;
-	}
+	free(image->indexed_cell);
+	image->indexed_cell = new_cell;
 }

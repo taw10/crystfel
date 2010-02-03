@@ -180,8 +180,6 @@ int main(int argc, char *argv[])
 
 		if ( image_feature_count(image.features) > 5 ) {
 
-			n_hits++;
-
 			if ( config_dumpfound ) dump_peaks(&image);
 
 			/* Not indexing nor writing xfel.drx?
@@ -197,6 +195,8 @@ int main(int argc, char *argv[])
 
 			/* No cell at this point?  Then we're done. */
 			if ( image.indexed_cell == NULL ) goto done;
+
+			n_hits++;
 
 			/* Simulation or intensity measurements both require
 			 * Ewald sphere vectors */
