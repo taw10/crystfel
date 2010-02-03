@@ -199,9 +199,26 @@ static UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs,
 	gsl_matrix *m;
 	gsl_matrix *inv;
 	gsl_permutation *perm;
+	double lengths[3];
+	double angles[3];
 
 	cell = cell_new();
 	if ( !cell ) return NULL;
+
+	lengths[0] = modulus(as.u, as.v, as.w);
+	lengths[1] = modulus(bs.u, bs.v, bs.w);
+	lengths[2] = modulus(cs.u, cs.v, cs.w);
+
+	angles[0] = angle_between(bs.u, bs.v, bs.w, cs.u, cs.v, cs.w);
+	angles[1] = angle_between(as.u, as.v, as.w, cs.u, cs.v, cs.w);
+	angles[2] = angle_between(as.u, as.v, as.w, bs.u, bs.v, bs.w);
+
+	STATUS("Creating with %9.3e %9.3e %9.3e m^-1\n", lengths[0],
+	                                                  lengths[1],
+	                                                  lengths[2]);
+	STATUS("Creating with %5.2f %5.2f %5.2f deg\n", rad2deg(angles[0]),
+	                                              rad2deg(angles[1]),
+	                                              rad2deg(angles[2]));
 
 	m = gsl_matrix_alloc(3, 3);
 	gsl_matrix_set(m, 0, 0, as.u);
@@ -299,10 +316,39 @@ void cell_get_reciprocal(UnitCell *cell,
 
 static void cell_print(UnitCell *cell)
 {
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	double lengths[3];
+	double angles[3];
+
 	STATUS("  a     b     c         alpha   beta  gamma\n");
 	STATUS("%5.2f %5.2f %5.2f nm    %6.2f %6.2f %6.2f deg\n",
 	       cell->a*1e9, cell->b*1e9, cell->c*1e9,
 	       rad2deg(cell->alpha), rad2deg(cell->beta), rad2deg(cell->gamma));
+
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+
+	STATUS("astar = %10.3e %10.3e %10.3e\n", asx, asy, asz);
+	STATUS("bstar = %10.3e %10.3e %10.3e\n", bsx, bsy, bsz);
+	STATUS("cstar = %10.3e %10.3e %10.3e\n", csx, csy, csz);
+
+	lengths[0] = modulus(asx, asy, asz);
+	lengths[1] = modulus(bsx, bsy, bsz);
+	lengths[2] = modulus(csx, csy, csz);
+
+	angles[0] = angle_between(bsx, bsy, bsz, csx, csy, csz);
+	angles[1] = angle_between(asx, asy, asz, csx, csy, csz);
+	angles[2] = angle_between(asx, asy, asz, bsx, bsy, bsz);
+
+	STATUS("Checking %9.3e %9.3e %9.3e m^-1\n", lengths[0],
+	                                                  lengths[1],
+	                                                  lengths[2]);
+	STATUS("Checking %5.2f %5.2f %5.2f deg\n", rad2deg(angles[0]),
+	                                              rad2deg(angles[1]),
+	                                              rad2deg(angles[2]));
 }
 
 
@@ -353,6 +399,13 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 	angles[1] = angle_between(asx, asy, asz, csx, csy, csz);
 	angles[2] = angle_between(asx, asy, asz, bsx, bsy, bsz);
 
+	STATUS("Looking for %9.3e %9.3e %9.3e m^-1\n", lengths[0],
+	                                                  lengths[1],
+	                                                  lengths[2]);
+	STATUS("Looking for %5.2f %5.2f %5.2f deg\n", rad2deg(angles[0]),
+	                                              rad2deg(angles[1]),
+	                                              rad2deg(angles[2]));
+
 	cand[0] = malloc(MAX_CAND*sizeof(struct cvec));
 	cand[1] = malloc(MAX_CAND*sizeof(struct cvec));
 	cand[2] = malloc(MAX_CAND*sizeof(struct cvec));
@@ -362,9 +415,9 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 	                          &csx, &csy, &csz);
 
 	/* Negative values mean 1/n, positive means n, zero means zero */
-	for ( n1l=-4; n1l<=4; n1l++ ) {
-	for ( n2l=-4; n2l<=4; n2l++ ) {
-	for ( n3l=-4; n3l<=4; n3l++ ) {
+	for ( n1l=-2; n1l<=4; n1l++ ) {
+	for ( n2l=-2; n2l<=4; n2l++ ) {
+	for ( n3l=-2; n3l<=4; n3l++ ) {
 
 		float n1, n2, n3;
 		signed int b1, b2, b3;
@@ -451,12 +504,16 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 
 			STATUS("Success! --------------- \n");
 			cell_print(new_cell);
-			STATUS("%f %f %f\n", cand[0][i].na, cand[0][i].nb,
-			                      cand[0][i].nc);
-			STATUS("%f %f %f\n", cand[1][j].na, cand[1][j].nb,
-			                      cand[1][j].nc);
-			STATUS("%f %f %f\n", cand[2][k].na, cand[2][k].nb,
-			                      cand[2][k].nc);
+			STATUS("The transformation from the original was:\n");
+			STATUS("%5.2f %5.2f %5.2f\n", cand[0][i].na,
+			                              cand[0][i].nb,
+			                              cand[0][i].nc);
+			STATUS("%5.2f %5.2f %5.2f\n", cand[1][j].na,
+			                              cand[1][j].nb,
+			                              cand[1][j].nc);
+			STATUS("%5.2f %5.2f %5.2f\n", cand[2][k].na,
+			                              cand[2][k].nb,
+			                              cand[2][k].nc);
 			goto done;
 
 		}
