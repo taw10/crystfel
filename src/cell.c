@@ -319,7 +319,6 @@ static void cell_print(UnitCell *cell)
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
-	double lengths[3];
 	double angles[3];
 
 	STATUS("  a     b     c         alpha   beta  gamma\n");
@@ -331,24 +330,24 @@ static void cell_print(UnitCell *cell)
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
 
-	STATUS("astar = %10.3e %10.3e %10.3e\n", asx, asy, asz);
-	STATUS("bstar = %10.3e %10.3e %10.3e\n", bsx, bsy, bsz);
-	STATUS("cstar = %10.3e %10.3e %10.3e\n", csx, csy, csz);
+	STATUS("a = %10.3e %10.3e %10.3e m\n", cell->ax, cell->ay, cell->az);
+	STATUS("b = %10.3e %10.3e %10.3e m\n", cell->bx, cell->by, cell->bz);
+	STATUS("c = %10.3e %10.3e %10.3e m\n", cell->cx, cell->cy, cell->cz);
 
-	lengths[0] = modulus(asx, asy, asz);
-	lengths[1] = modulus(bsx, bsy, bsz);
-	lengths[2] = modulus(csx, csy, csz);
+	STATUS("astar = %10.3e %10.3e %10.3e m^-1 (modulus = %10.3e m^-1)\n",
+	                             asx, asy, asz, modulus(asx, asy, asz));
+	STATUS("bstar = %10.3e %10.3e %10.3e m^-1 (modulus = %10.3e m^-1)\n",
+	                             bsx, bsy, bsz, modulus(bsx, bsy, bsz));
+	STATUS("cstar = %10.3e %10.3e %10.3e m^-1 (modulus = %10.3e m^-1)\n",
+	                             csx, csy, csz, modulus(csx, csy, csz));
 
 	angles[0] = angle_between(bsx, bsy, bsz, csx, csy, csz);
 	angles[1] = angle_between(asx, asy, asz, csx, csy, csz);
 	angles[2] = angle_between(asx, asy, asz, bsx, bsy, bsz);
 
-	STATUS("Checking %9.3e %9.3e %9.3e m^-1\n", lengths[0],
-	                                                  lengths[1],
-	                                                  lengths[2]);
-	STATUS("Checking %5.2f %5.2f %5.2f deg\n", rad2deg(angles[0]),
-	                                              rad2deg(angles[1]),
-	                                              rad2deg(angles[2]));
+//	STATUS("Checking %5.2f %5.2f %5.2f deg\n", rad2deg(angles[0]),
+//	                                              rad2deg(angles[1]),
+//	                                              rad2deg(angles[2]));
 }
 
 
@@ -383,9 +382,15 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 	struct cvec *cand[3];
 
 	int ncand[3] = {0,0,0};
-	float ltl = 5.0;
-	float angtol = 5.0;
+	float ltl = 15.0;     /* percent */
+	float angtol = deg2rad(9.0);
 	UnitCell *new_cell = NULL;
+
+	STATUS("Matching this experimental cell: --------------------------\n");
+	cell_print(cell);
+	STATUS("With this model cell: -------------------------------------\n");
+	cell_print(template);
+	STATUS("-----------------------------------------------------------\n");
 
 	cell_get_reciprocal(template, &asx, &asy, &asz,
 	                              &bsx, &bsy, &bsz,
@@ -398,13 +403,6 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 	angles[0] = angle_between(bsx, bsy, bsz, csx, csy, csz);
 	angles[1] = angle_between(asx, asy, asz, csx, csy, csz);
 	angles[2] = angle_between(asx, asy, asz, bsx, bsy, bsz);
-
-	STATUS("Looking for %9.3e %9.3e %9.3e m^-1\n", lengths[0],
-	                                                  lengths[1],
-	                                                  lengths[2]);
-	STATUS("Looking for %5.2f %5.2f %5.2f deg\n", rad2deg(angles[0]),
-	                                              rad2deg(angles[1]),
-	                                              rad2deg(angles[2]));
 
 	cand[0] = malloc(MAX_CAND*sizeof(struct cvec));
 	cand[1] = malloc(MAX_CAND*sizeof(struct cvec));
@@ -476,7 +474,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 		                    cand[1][j].vec.v, cand[1][j].vec.w);
 
 		/* Angle between axes 0 and 1 should be angle 2 */
-		if ( !within_tolerance(ang, angles[2], angtol) ) continue;
+		if ( fabs(ang - angles[2]) > angtol ) continue;
 
 		for ( k=0; k<ncand[2]; k++ ) {
 
@@ -487,7 +485,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 			                    cand[2][k].vec.v, cand[2][k].vec.w);
 
 			/* ... it should be angle 1 ... */
-			if ( !within_tolerance(ang, angles[1], angtol) ) continue;
+			if ( fabs(ang - angles[1]) > angtol ) continue;
 
 			/* Finally, the angle between the current candidate for
 			 * axis 1 and the kth candidate for axis 2 */
@@ -496,7 +494,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 			                    cand[2][k].vec.v, cand[2][k].vec.w);
 
 			/* ... it should be angle 0 ... */
-			if ( !within_tolerance(ang, angles[0], angtol) ) continue;
+			if ( fabs(ang - angles[0]) > angtol ) continue;
 
 			new_cell = cell_new_from_axes(cand[0][i].vec,
 			                              cand[1][j].vec,
