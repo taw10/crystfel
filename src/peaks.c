@@ -318,8 +318,6 @@ void search_peaks(struct image *image)
 	}
 	image->features = image_feature_list_new();
 
-	clean_image(image);
-
 	for ( x=1; x<image->width-1; x++ ) {
 	for ( y=1; y<image->height-1; y++ ) {
 

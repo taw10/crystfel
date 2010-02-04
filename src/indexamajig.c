@@ -31,6 +31,7 @@
 #include "diffraction.h"
 #include "detector.h"
 #include "sfac.h"
+#include "filters.h"
 
 
 static void show_help(const char *s)
@@ -53,6 +54,8 @@ static void show_help(const char *s)
 "      --near-bragg        Output a list of reflection intensities to stdout.\n"
 "      --simulate          Simulate the diffraction pattern using the indexed\n"
 "                           unit cell.\n"
+"      --clean-image       Perform common-mode noise subtraction and\n"
+"                           background removal on images before proceeding.\n"
 "\n");
 }
 
@@ -70,6 +73,7 @@ int main(int argc, char *argv[])
 	int config_nearbragg = 0;
 	int config_writedrx = 0;
 	int config_simulate = 0;
+	int config_clean = 0;
 	IndexingMethod indm;
 	char *indm_str = NULL;
 
@@ -83,6 +87,7 @@ int main(int argc, char *argv[])
 		{"write-drx",          0, &config_writedrx,    1},
 		{"indexing",           1, NULL,               'z'},
 		{"simulate",           0, &config_simulate,    1},
+		{"clean-image",        0, &config_clean,       1},
 		{0, 0, NULL, 0}
 	};
 
@@ -174,6 +179,10 @@ int main(int argc, char *argv[])
 		}
 
 		hdf5_read(hdfile, &image);
+
+		if ( config_clean ) {
+			clean_image(&image);
+		}
 
 		/* Perform 'fine' peak search */
 		search_peaks(&image);
