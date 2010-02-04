@@ -102,7 +102,7 @@ static void write_drx(struct image *image)
 }
 
 
-void index_pattern(struct image *image, IndexingMethod indm)
+void index_pattern(struct image *image, IndexingMethod indm, int no_match)
 {
 	int i;
 	UnitCell *new_cell = NULL;
@@ -148,8 +148,10 @@ void index_pattern(struct image *image, IndexingMethod indm)
 		return;
 	}
 
-	new_cell = match_cell(image->indexed_cell,
-		              image->molecule->cell);
-	free(image->indexed_cell);
-	image->indexed_cell = new_cell;
+	if ( !no_match ) {
+		new_cell = match_cell(image->indexed_cell,
+			              image->molecule->cell);
+		free(image->indexed_cell);
+		image->indexed_cell = new_cell;
+	}
 }
