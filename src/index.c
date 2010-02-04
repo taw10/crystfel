@@ -143,6 +143,11 @@ void index_pattern(struct image *image, IndexingMethod indm)
 	if ( indm == INDEXING_NONE ) return;
 	if ( indm == INDEXING_DIRAX ) run_dirax(image);
 
+	if ( image->indexed_cell == NULL ) {
+		STATUS("No cell found.\n");
+		return;
+	}
+
 	new_cell = match_cell(image->indexed_cell,
 		              image->molecule->cell);
 	free(image->indexed_cell);
