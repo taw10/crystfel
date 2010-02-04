@@ -16,13 +16,25 @@
 #ifndef DETECTOR_H
 #define DETECTOR_H
 
+struct image;
+
 #include "image.h"
 
-/* Position of central beam for upper and lower CCDs */
-#define UPPER_CX (491.9)
-#define UPPER_CY (440.7)
-#define LOWER_CX (492.0)
-#define LOWER_CY (779.7)
+struct panel
+{
+	int      min_x;   /* Smallest x value considered to be in this panel */
+	int      max_x;   /* Largest x value considered to be in this panel */
+	int      min_y;   /* ... and so on */
+	int      max_y;
+	float    cx;     /* Location of centre */
+	float    cy;
+};
+
+struct detector
+{
+	struct panel *panels;
+	int           n_panels;
+};
 
 extern void record_image(struct image *image, int do_water, int do_poisson,
                          int do_bloom);

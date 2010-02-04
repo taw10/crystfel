@@ -166,6 +166,24 @@ int main(int argc, char *argv[])
 		image.data = NULL;
 		image.indexed_cell = NULL;
 
+		/* Set up detector configuration */
+		image.det.n_panels = 2;
+		image.det.panels = malloc(2*sizeof(struct panel));
+		/* Upper panel */
+		image.det.panels[0].min_x = 0;
+		image.det.panels[0].max_x = 1023;
+		image.det.panels[0].min_y = 512;
+		image.det.panels[0].max_y = 1023;
+		image.det.panels[0].cx = 491.9;
+		image.det.panels[0].cy = 440.7;
+		/* Lower panel */
+		image.det.panels[1].min_x = 0;
+		image.det.panels[1].max_x = 1023;
+		image.det.panels[1].min_y = 0;
+		image.det.panels[1].max_y = 511;
+		image.det.panels[1].cx = 492.0;
+		image.det.panels[1].cy = 779.7;
+
 		STATUS("Processing '%s'\n", line);
 
 		n_images++;

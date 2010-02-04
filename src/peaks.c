@@ -432,7 +432,11 @@ void dump_peaks(struct image *image)
 
 		double q, rx, ry, rz;
 		int x, y;
+		double rcx = 0.0;
+		double rcy = 0.0;
+		int found = 0;
 		struct imagefeature *f;
+		int p;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
@@ -440,16 +444,24 @@ void dump_peaks(struct image *image)
 		x = f->x;
 		y = f->y;
 
-		if ( f->y >=512 ) {
-			/* Top half of CCD */
-			map_position(image, f->x-UPPER_CX, f->y-UPPER_CY,
-			             &rx, &ry, &rz);
-		} else {
-			/* Lower half of CCD */
-			map_position(image, f->x-LOWER_CX, f->y-LOWER_CY,
-			             &rx, &ry, &rz);
+		for ( p=0; p<image->det.n_panels; p++ ) {
+			if ( (x >= image->det.panels[p].min_x)
+			  && (x <= image->det.panels[p].max_x)
+			  && (y >= image->det.panels[p].min_y)
+			  && (y <= image->det.panels[p].max_y) ) {
+				rcx = ((double)x - image->det.panels[p].cx)
+				                            / image->resolution;
+				rcy = ((double)y - image->det.panels[p].cy)
+				                            / image->resolution;
+				found = 1;
+			}
+		}
+		if ( !found ) {
+			ERROR("No mapping found for %i,%i\n", x, y);
+			continue;
 		}
 
+		map_position(image, rcx, rcy, &rx, &ry, &rz);
 		q = modulus(rx, ry, rz);
 
 		printf("%i\t%i\t%f\t%i\n", x, y, q/1.0e9,

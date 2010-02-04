@@ -68,20 +68,25 @@ void get_ewald(struct image *image)
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
 
-		double rx, ry, r;
+		double rx = 0.0;
+		double ry = 0.0;
+		double r;
 		double twothetax, twothetay, twotheta;
 		double qx, qy, qz;
 		struct rvec q;
+		int p;
 
 		/* Calculate q vectors for Ewald sphere */
-		if ( y >= 512 ) {
-			/* Top CCD */
-			rx = ((double)x - UPPER_CX) / image->resolution;
-			ry = ((double)y - UPPER_CY) / image->resolution;
-		} else {
-			/* Bottom CCD */
-			rx = ((double)x - LOWER_CX) / image->resolution;
-			ry = ((double)y - LOWER_CY) / image->resolution;
+		for ( p=0; p<image->det.n_panels; p++ ) {
+			if ( (x >= image->det.panels[p].min_x)
+			  && (x <= image->det.panels[p].max_x)
+			  && (y >= image->det.panels[p].min_y)
+			  && (y <= image->det.panels[p].max_y) ) {
+				rx = ((double)x - image->det.panels[p].cx)
+				                            / image->resolution;
+				ry = ((double)y - image->det.panels[p].cy)
+				                            / image->resolution;
+			}
 		}
 		r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
 

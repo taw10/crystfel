@@ -23,6 +23,7 @@
 
 #include "utils.h"
 #include "cell.h"
+#include "detector.h"
 
 
 /* How is the scaling of the image described? */
@@ -79,6 +80,7 @@ struct image {
 	double			*twotheta;
 	struct molecule		*molecule;
 	UnitCell		*indexed_cell;
+	struct detector		det;
 
 	struct quaternion	orientation;
 

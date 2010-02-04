@@ -111,19 +111,30 @@ void index_pattern(struct image *image, IndexingMethod indm)
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
+		double rx = 0.0;
+		double ry = 0.0;
+		int p;
+		int found = 0;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		if ( f->y >=512 ) {
-			/* Top half of CCD */
-			map_position(image, f->x-UPPER_CX, f->y-UPPER_CY,
-			             &f->rx, &f->ry, &f->rz);
-		} else {
-			/* Lower half of CCD */
-			map_position(image, f->x-LOWER_CX, f->y-LOWER_CY,
-			             &f->rx, &f->ry, &f->rz);
+		for ( p=0; p<image->det.n_panels; p++ ) {
+			if ( (f->x >= image->det.panels[p].min_x)
+			  && (f->x <= image->det.panels[p].max_x)
+			  && (f->y >= image->det.panels[p].min_y)
+			  && (f->y <= image->det.panels[p].max_y) ) {
+				rx = ((double)f->x - image->det.panels[p].cx);
+				ry = ((double)f->y - image->det.panels[p].cy);
+				found = 1;
+			}
 		}
+		if ( !found ) {
+			ERROR("No mapping found for %f,%f\n", f->x, f->y);
+			continue;
+		}
+
+		map_position(image, rx, ry, &f->rx, &f->ry, &f->rz);
 	}
 
 	write_drx(image);
