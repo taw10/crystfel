@@ -19,7 +19,8 @@
 #include "image.h"
 #include "cell.h"
 
-extern void get_diffraction(struct image *image, int na, int nb, int nc);
+extern void get_diffraction(struct image *image, int na, int nb, int nc,
+                            int nosfac);
 extern double water_intensity(struct rvec q, double en,
                               double beam_r, double water_r);
 

@@ -133,7 +133,7 @@ double water_intensity(struct rvec q, double en,
 }
 
 
-void get_diffraction(struct image *image, int na, int nb, int nc)
+void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 {
 	int x, y;
 	double ax, ay, az;
@@ -158,11 +158,13 @@ void get_diffraction(struct image *image, int na, int nb, int nc)
 	       na, nb, nc, na*a/1.0e-9, nb*b/1.0e-9, nc*c/1.0e-9);
 
 	image->sfacs = malloc(image->width * image->height
-	                      * sizeof(double complex));
+		                      * sizeof(double complex));
 
-	if ( image->molecule->reflections == NULL ) {
-		get_reflections_cached(image->molecule,
-		                       ph_lambda_to_en(image->lambda));
+	if ( !no_sfac ) {
+		if ( image->molecule->reflections == NULL ) {
+			get_reflections_cached(image->molecule,
+			                       ph_lambda_to_en(image->lambda));
+		}
 	}
 
 	for ( x=0; x<image->width; x++ ) {
@@ -177,8 +179,12 @@ void get_diffraction(struct image *image, int na, int nb, int nc)
 
 		f_lattice = lattice_factor(q, ax,ay,az,bx,by,bz,cx,cy,cz,
 		                           na, nb, nc);
-		f_molecule = molecule_factor(image->molecule, q,
+		if ( no_sfac ) {
+			f_molecule = 1.0;
+		} else {
+			f_molecule = molecule_factor(image->molecule, q,
 		                             ax,ay,az,bx,by,bz,cx,cy,cz);
+		}
 
 		val = f_molecule * f_lattice;
 		image->sfacs[x + image->width*y] = val;

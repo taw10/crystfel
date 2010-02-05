@@ -156,6 +156,7 @@ int main(int argc, char *argv[])
 	int config_nowater = 0;
 	int config_nonoise = 0;
 	int config_nobloom = 0;
+	int config_nosfac = 0;
 	int number = 1;  /* Index for the current image */
 	int n_images = 1;  /* Generate one image by default */
 	int done = 0;
@@ -171,6 +172,7 @@ int main(int argc, char *argv[])
 		{"no-water",           0, &config_nowater,     1},
 		{"no-noise",           0, &config_nonoise,     1},
 		{"no-bloom",           0, &config_nobloom,     1},
+		{"no-sfac",            0, &config_nosfac,     1},
 		{0, 0, NULL, 0}
 	};
 
@@ -272,7 +274,7 @@ int main(int argc, char *argv[])
 		image.twotheta = NULL;
 		image.hdr = NULL;
 
-		get_diffraction(&image, na, nb, nc);
+		get_diffraction(&image, na, nb, nc, config_nosfac);
 		if ( image.molecule == NULL ) {
 			ERROR("Couldn't open molecule.pdb\n");
 			return 1;

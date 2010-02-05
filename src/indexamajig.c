@@ -259,7 +259,7 @@ int main(int argc, char *argv[])
 
 				image.data = NULL;
 
-				get_diffraction(&image, 8, 8, 8);
+				get_diffraction(&image, 8, 8, 8, 0);
 				if ( image.molecule == NULL ) {
 					ERROR("Couldn't open molecule.pdb\n");
 					return 1;
