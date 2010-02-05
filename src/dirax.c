@@ -264,8 +264,12 @@ static gboolean dirax_readable(GIOChannel *dirax, GIOCondition condition,
 			default :
 
 				/* Obviously, this never happens :) */
-				ERROR("Unrecognised input mode!\n");
-				abort();
+				ERROR("Unrecognised DirAx input mode! "
+				      "I don't know how to understand DirAx\n");
+				waitpid(image->dirax_pid, NULL, 0);
+				g_io_channel_shutdown(image->dirax, FALSE, NULL);
+				image->dirax = NULL;
+				return FALSE;
 
 			}
 

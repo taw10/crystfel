@@ -71,8 +71,9 @@ static double complex get_f1f2(const char *n, double en)
 
 		r = sscanf(line, "%f %f %f", &E_f, &f1_f, &f2_f);
 		if ( r != 3 ) {
-			ERROR("WTF?\n");
-			abort();
+			STATUS("I couldn't understand a line in the f1f2 "
+			       "tables\n");
+			continue;
 		}
 		/* Promote to double precision */
 		E = E_f;  f1 = f1_f;  f2 = f2_f;
@@ -365,8 +366,8 @@ struct molecule *load_molecule()
 		coords = line + 29;
 		r = sscanf(coords, "%f %f %f %f %f", &xf, &yf, &zf, &occf, &Bf);
 		if ( r != 5 ) {
-			ERROR("WTF?\n");
-			abort();
+			STATUS("I didn't understand a line in the PDB file.\n");
+			continue;
 		}
 		/* Promote to double precision */
 		x = xf;  y = yf;  z = zf;  occ = occf;  B = Bf;
