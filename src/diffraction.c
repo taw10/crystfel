@@ -174,20 +174,25 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 		double complex f_molecule;
 		struct rvec q;
 		double complex val;
+		int i;
 
-		q = image->qvecs[x + image->width*y];
+		for ( i=0; i<image->nspheres; i++ ) {
 
-		f_lattice = lattice_factor(q, ax,ay,az,bx,by,bz,cx,cy,cz,
-		                           na, nb, nc);
-		if ( no_sfac ) {
-			f_molecule = 1.0;
-		} else {
-			f_molecule = molecule_factor(image->molecule, q,
-		                             ax,ay,az,bx,by,bz,cx,cy,cz);
+			q = image->qvecs[i][x + image->width*y];
+
+			f_lattice = lattice_factor(q, ax,ay,az,bx,by,bz,cx,cy,cz,
+			                           na, nb, nc);
+			if ( no_sfac ) {
+				f_molecule = 10000.0;
+			} else {
+				f_molecule = molecule_factor(image->molecule, q,
+			                            ax,ay,az,bx,by,bz,cx,cy,cz);
+			}
+
+			val = f_molecule * f_lattice;
+			image->sfacs[x + image->width*y] = val;
+
 		}
-
-		val = f_molecule * f_lattice;
-		image->sfacs[x + image->width*y] = val;
 
 	}
 	progress_bar(x, image->width-1, "Calculating lattice factors");

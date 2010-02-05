@@ -247,6 +247,7 @@ int main(int argc, char *argv[])
 	do {
 
 		int na, nb, nc;
+		int i;
 
 		na = 8*random()/RAND_MAX + 4;
 		nb = 8*random()/RAND_MAX + 4;
@@ -302,6 +303,9 @@ int main(int argc, char *argv[])
 
 		/* Clean up */
 		free(image.data);
+		for ( i=0; i<image.nspheres; i++ ) {
+			free(image.qvecs[i]);
+		}
 		free(image.qvecs);
 		free(image.hdr);
 		free(image.sfacs);

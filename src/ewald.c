@@ -21,6 +21,11 @@
 #include "detector.h"
 
 
+#define SAMPLING (4)
+#define BWSAMPLING (10)
+#define BANDWIDTH (0.05)
+
+
 static struct rvec quat_rot(struct rvec q, struct quaternion z)
 {
 	struct rvec res;
@@ -52,18 +57,9 @@ static struct rvec quat_rot(struct rvec q, struct quaternion z)
 }
 
 
-void get_ewald(struct image *image)
+static void add_sphere(struct image *image, double k)
 {
 	int x, y;
-	double k;  /* Wavenumber */
-
-	k = 1/image->lambda;
-
-	image->qvecs = malloc(image->width * image->height
-	                       * sizeof(struct rvec));
-
-	image->twotheta = malloc(image->width * image->height
-	                       * sizeof(double));
 
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
@@ -73,8 +69,8 @@ void get_ewald(struct image *image)
 		double r;
 		double twothetax, twothetay, twotheta;
 		double qx, qy, qz;
-		struct rvec q;
-		int p;
+		struct rvec q1, q2, q3, q4;
+		int p, sx, sy, i;
 
 		/* Calculate q vectors for Ewald sphere */
 		for ( p=0; p<image->det.n_panels; p++ ) {
@@ -86,23 +82,80 @@ void get_ewald(struct image *image)
 				                            / image->resolution;
 				ry = ((double)y - image->det.panels[p].cy)
 				                            / image->resolution;
+				break;
 			}
 		}
-		r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
 
+		/* Bottom left corner */
+		r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
 		twothetax = atan2(rx, image->camera_len);
 		twothetay = atan2(ry, image->camera_len);
 		twotheta = atan2(r, image->camera_len);
-
 		qx = k * sin(twothetax);
 		qy = k * sin(twothetay);
 		qz = k - k * cos(twotheta);
+		q1.u = qx;  q1.v = qy;  q1.w = qz;
+		/* 2theta value is calculated at the bottom left only */
+		image->twotheta[x + image->width*y] = twotheta;
 
-		q.u = qx;  q.v = qy;  q.w = qz;
-		image->qvecs[x + image->width*y] = quat_rot(q,
+		/* Bottom right corner (using the same panel configuration!) */
+		rx = ((double)(x+1) - image->det.panels[p].cx)
+		                            / image->resolution;
+		ry = ((double)y - image->det.panels[p].cy)
+		                            / image->resolution;
+		twothetax = atan2(rx, image->camera_len);
+		twothetay = atan2(ry, image->camera_len);
+		twotheta = atan2(r, image->camera_len);
+		qx = k * sin(twothetax);
+		qy = k * sin(twothetay);
+		qz = k - k * cos(twotheta);
+		q2.u = qx;  q2.v = qy;  q2.w = qz;
+
+		/* Top left corner (using the same panel configuration!) */
+		rx = ((double)x - image->det.panels[p].cx)
+		                            / image->resolution;
+		ry = ((double)(y+1) - image->det.panels[p].cy)
+		                            / image->resolution;
+		twothetax = atan2(rx, image->camera_len);
+		twothetay = atan2(ry, image->camera_len);
+		twotheta = atan2(r, image->camera_len);
+		qx = k * sin(twothetax);
+		qy = k * sin(twothetay);
+		qz = k - k * cos(twotheta);
+		q3.u = qx;  q3.v = qy;  q3.w = qz;
+
+		/* Top right corner (using the same panel configuration!) */
+		rx = ((double)(x+1) - image->det.panels[p].cx)
+		                            / image->resolution;
+		ry = ((double)(y+1) - image->det.panels[p].cy)
+		                            / image->resolution;
+		twothetax = atan2(rx, image->camera_len);
+		twothetay = atan2(ry, image->camera_len);
+		twotheta = atan2(r, image->camera_len);
+		qx = k * sin(twothetax);
+		qy = k * sin(twothetay);
+		qz = k - k * cos(twotheta);
+		q4.u = qx;  q4.v = qy;  q4.w = qz;
+
+		/* Now interpolate between the values to get
+		 * the sampling points */
+		i = 0;
+		for ( sx=0; sx<SAMPLING; sx++ ) {
+		for ( sy=0; sy<SAMPLING; sy++ ) {
+
+			struct rvec q;
+
+			q.u = q1.u + ((q2.u - q1.u)/SAMPLING)*sx
+			           + ((q3.u - q1.u)/SAMPLING)*sy;
+			q.v = q1.v + ((q2.v - q1.v)/SAMPLING)*sx
+			           + ((q3.v - q1.v)/SAMPLING)*sy;
+			q.w = q1.w + ((q2.w - q1.w)/SAMPLING)*sx
+			           + ((q3.w - q1.w)/SAMPLING)*sy;
+			image->qvecs[i++][x + image->width*y] = quat_rot(q,
 		                                            image->orientation);
 
-		image->twotheta[x + image->width*y] = twotheta;
+		}
+		}
 
 		if ( (x==0) && (y==(int)image->y_centre) ) {
 			double s;
@@ -122,5 +175,38 @@ void get_ewald(struct image *image)
 		}
 
 	}
+	}
+
+}
+
+
+void get_ewald(struct image *image)
+{
+	double kc;  /* Wavenumber */
+	int i, kstep;
+
+	kc = 1/image->lambda;  /* Centre */
+
+	image->qvecs = malloc(image->width * image->height
+	                       * sizeof(struct rvec *));
+
+	image->twotheta = malloc(image->width * image->height
+	                       * sizeof(double));
+
+	/* Create the spheres */
+	image->nspheres = SAMPLING*SAMPLING*BWSAMPLING;
+	for ( i=0; i<image->nspheres; i++ ) {
+		image->qvecs[i] = malloc(image->width * image->height
+                                                 * sizeof(struct rvec));
+	}
+
+	for ( kstep=0; kstep<BWSAMPLING; kstep++ ) {
+
+		double k;
+
+		k = kc + (kstep-(BWSAMPLING/2))*kc*(BANDWIDTH/BWSAMPLING);
+
+		add_sphere(image, k);
+
 	}
 }
