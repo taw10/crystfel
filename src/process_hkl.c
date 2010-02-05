@@ -49,6 +49,8 @@ static void show_help(const char *s)
 "  -e, --output-every=<n>  Analyse figures of merit after every n patterns\n"
 "                           Default: 1000.  A value of zero means to do the\n"
 "                           analysis only after reading all the patterns.\n"
+"      --no-analyse        Don't perform any kind of analysis, just merge the\n"
+"                           intensities.\n"
 "  -r, --rvsq              Output lists of R vs |q| (\"Luzzatti plots\") when\n"
 "                           analysing figures of merit.\n"
 "      --stop-after=<n>    Stop after processing n patterns.  Zero means\n"
@@ -178,15 +180,16 @@ int main(int argc, char *argv[])
 	char *output = NULL;
 	FILE *fh;
 	unsigned int n_patterns;
-	double *ref, *trueref;
+	double *ref, *trueref = NULL;
 	unsigned int *counts;
 	char *rval;
-	struct molecule *mol;
+	struct molecule *mol = NULL;
 	int config_maxonly = 0;
 	int config_every = 1000;
 	int config_rvsq = 0;
 	int config_stopafter = 0;
 	int config_zoneaxis = 0;
+	int config_noanalyse = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -195,6 +198,7 @@ int main(int argc, char *argv[])
 		{"output",              1, NULL,              'o'},
 		{"max-only",           0, &config_maxonly,     1},
 		{"output-every",       1, NULL,               'e'},
+		{"no-analyse",         0, &config_noanalyse,   1},
 		{"rvsq",               0, NULL,               'r'},
 		{"stop-after",         1, NULL,               's'},
 		{"zone-axis",          0, &config_zoneaxis,    1},
@@ -251,12 +255,15 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	mol = load_molecule();
-	get_reflections_cached(mol, eV_to_J(2.0e3));
-
 	ref = new_list_intensity();
 	counts = new_list_count();
-	trueref = ideal_intensities(mol->reflections);
+
+	if ( !config_noanalyse ) {
+		mol = load_molecule();
+		get_reflections_cached(mol, eV_to_J(2.0e3));
+
+		trueref = ideal_intensities(mol->reflections);
+	}
 
 	if ( strcmp(filename, "-") == 0 ) {
 		fh = stdin;
@@ -315,8 +322,10 @@ int main(int argc, char *argv[])
 
 	fclose(fh);
 
-	process_reflections(ref, trueref, counts, n_patterns, mol->cell,
-	                    config_rvsq, config_zoneaxis);
+	if ( !config_noanalyse ) {
+		process_reflections(ref, trueref, counts, n_patterns, mol->cell,
+		                    config_rvsq, config_zoneaxis);
+	}
 
 	if ( output != NULL ) {
 		write_reflections(output, counts, ref, 0, NULL);
