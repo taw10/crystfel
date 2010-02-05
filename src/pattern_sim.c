@@ -157,8 +157,9 @@ int main(int argc, char *argv[])
 	int config_nonoise = 0;
 	int config_nobloom = 0;
 	int config_nosfac = 0;
-	int number = 1;  /* Index for the current image */
-	int n_images = 1;  /* Generate one image by default */
+	int ndone = 0;    /* Number of simulations done (images or not) */
+	int number = 1;   /* Number used for filename of image */
+	int n_images = 1; /* Generate one image by default */
 	int done = 0;
 
 	/* Long options */
@@ -306,9 +307,9 @@ int main(int argc, char *argv[])
 		free(image.sfacs);
 		free(image.twotheta);
 
-		number++;
+		ndone++;
 
-		if ( n_images && (number > n_images) ) done = 1;
+		if ( n_images && (ndone > n_images) ) done = 1;
 
 	} while ( !done );
 
