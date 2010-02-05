@@ -157,8 +157,8 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 	STATUS("Particle size = %i x %i x %i (=%5.2f x %5.2f x %5.2f nm)\n",
 	       na, nb, nc, na*a/1.0e-9, nb*b/1.0e-9, nc*c/1.0e-9);
 
-	image->sfacs = malloc(image->width * image->height
-		                      * sizeof(double complex));
+	image->sfacs = calloc(image->width * image->height,
+	                      sizeof(double complex));
 
 	if ( !no_sfac ) {
 		if ( image->molecule->reflections == NULL ) {
@@ -190,7 +190,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 			}
 
 			val = f_molecule * f_lattice;
-			image->sfacs[x + image->width*y] = val;
+			image->sfacs[x + image->width*y] += val;
 
 		}
 

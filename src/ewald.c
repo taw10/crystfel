@@ -57,7 +57,7 @@ static struct rvec quat_rot(struct rvec q, struct quaternion z)
 }
 
 
-static void add_sphere(struct image *image, double k)
+static void add_sphere(struct image *image, double k, int soffs)
 {
 	int x, y;
 
@@ -139,7 +139,7 @@ static void add_sphere(struct image *image, double k)
 
 		/* Now interpolate between the values to get
 		 * the sampling points */
-		i = 0;
+		i = soffs;
 		for ( sx=0; sx<SAMPLING; sx++ ) {
 		for ( sy=0; sy<SAMPLING; sy++ ) {
 
@@ -184,29 +184,30 @@ void get_ewald(struct image *image)
 {
 	double kc;  /* Wavenumber */
 	int i, kstep;
+	int mtotal = 0;
 
 	kc = 1/image->lambda;  /* Centre */
-
-	image->qvecs = malloc(image->width * image->height
-	                       * sizeof(struct rvec *));
 
 	image->twotheta = malloc(image->width * image->height
 	                       * sizeof(double));
 
 	/* Create the spheres */
 	image->nspheres = SAMPLING*SAMPLING*BWSAMPLING;
+	image->qvecs = malloc(image->nspheres * sizeof(struct rvec *));
+
 	for ( i=0; i<image->nspheres; i++ ) {
+		mtotal += image->width * image->height * sizeof(struct rvec);
 		image->qvecs[i] = malloc(image->width * image->height
                                                  * sizeof(struct rvec));
 	}
+	STATUS("%i spheres, %i Mbytes\n", image->nspheres, mtotal/(1024*1024));
 
 	for ( kstep=0; kstep<BWSAMPLING; kstep++ ) {
 
 		double k;
 
 		k = kc + (kstep-(BWSAMPLING/2))*kc*(BANDWIDTH/BWSAMPLING);
-
-		add_sphere(image, k);
+		add_sphere(image, k, kstep*SAMPLING);
 
 	}
 }
