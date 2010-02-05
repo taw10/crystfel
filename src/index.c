@@ -30,16 +30,32 @@
 
 
 /* x,y in pixels relative to central beam */
-int map_position(struct image *image, double x, double y,
+int map_position(struct image *image, double dx, double dy,
                  double *rx, double *ry, double *rz)
 {
-	/* "Input" space */
 	double d;
+	double twotheta, psi;
+	const double k = 1.0 / image->lambda;
+	int p;
+	int found = 0;
+	double x = 0.0;
+	double y = 0.0;
 
-	/* Angular description of reflection */
-	double twotheta, psi, k;
-
-	k = 1.0 / image->lambda;
+	/* Perform the detector mapping for these coordinates */
+	for ( p=0; p<image->det.n_panels; p++ ) {
+		if ( (dx >= image->det.panels[p].min_x)
+		  && (dx <= image->det.panels[p].max_x)
+		  && (dy >= image->det.panels[p].min_y)
+		  && (dy <= image->det.panels[p].max_y) ) {
+			x = ((double)dx - image->det.panels[p].cx);
+			y = ((double)dy - image->det.panels[p].cy);
+			found = 1;
+		}
+	}
+	if ( !found ) {
+		ERROR("No mapping found for %f,%f\n", dx, dy);
+		return 0;
+	}
 
 	if ( image->fmode == FORMULATION_CLEN ) {
 
@@ -106,35 +122,22 @@ void index_pattern(struct image *image, IndexingMethod indm, int no_match)
 {
 	int i;
 	UnitCell *new_cell = NULL;
+	int nc = 0;
 
 	/* Map positions to 3D */
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
-		double rx = 0.0;
-		double ry = 0.0;
-		int p;
-		int found = 0;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		for ( p=0; p<image->det.n_panels; p++ ) {
-			if ( (f->x >= image->det.panels[p].min_x)
-			  && (f->x <= image->det.panels[p].max_x)
-			  && (f->y >= image->det.panels[p].min_y)
-			  && (f->y <= image->det.panels[p].max_y) ) {
-				rx = ((double)f->x - image->det.panels[p].cx);
-				ry = ((double)f->y - image->det.panels[p].cy);
-				found = 1;
-			}
+		if ( map_position(image, f->x, f->y, &f->rx, &f->ry, &f->rz) ) {
+			nc++;
 		}
-		if ( !found ) {
-			ERROR("No mapping found for %f,%f\n", f->x, f->y);
-			continue;
-		}
-
-		map_position(image, rx, ry, &f->rx, &f->ry, &f->rz);
+	}
+	if ( nc ) {
+		ERROR("Failed to map %i reflections\n", nc);
 	}
 
 	write_drx(image);
