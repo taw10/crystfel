@@ -167,7 +167,7 @@ void get_ewald(struct image *image)
 {
 	double kc;  /* Wavenumber */
 	int i, kstep;
-	int mtotal = 0;
+	long long int mtotal = 0;
 
 	kc = 1/image->lambda;  /* Centre */
 
@@ -183,7 +183,7 @@ void get_ewald(struct image *image)
 		image->qvecs[i] = malloc(image->width * image->height
                                                  * sizeof(struct rvec));
 	}
-	STATUS("%i spheres, %i Mbytes\n", image->nspheres, mtotal/(1024*1024));
+	STATUS("%i spheres, %lli Mbytes\n", image->nspheres, mtotal/(1024*1024));
 
 	for ( kstep=0; kstep<BWSAMPLING; kstep++ ) {
 
