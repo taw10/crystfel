@@ -306,7 +306,9 @@ int main(int argc, char *argv[])
 		free(image.sfacs);
 		free(image.twotheta);
 
-		if ( n_images && (number >= n_images) ) done = 1;
+		number++;
+
+		if ( n_images && (number > n_images) ) done = 1;
 
 	} while ( !done );
 
