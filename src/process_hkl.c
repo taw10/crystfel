@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
-		{"output",              1, NULL,              'o'},
+		{"output",             1, NULL,               'o'},
 		{"max-only",           0, &config_maxonly,     1},
 		{"output-every",       1, NULL,               'e'},
 		{"no-analyse",         0, &config_noanalyse,   1},
