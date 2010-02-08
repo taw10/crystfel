@@ -19,6 +19,7 @@
 #include "intensities.h"
 #include "cell.h"
 #include "sfac.h"
+#include "diffraction.h"
 
 
 #define MAX_HITS (1024)
@@ -72,7 +73,7 @@ void output_intensities(struct image *image, UnitCell *cell)
 		int found = 0;
 		int j;
 
-		q = image->qvecs[0][x + image->width*y];
+		q = get_q(image, x, y, 1, NULL);
 
 		hd = q.u * ax + q.v * ay + q.w * az;
 		kd = q.u * bx + q.v * by + q.w * bz;

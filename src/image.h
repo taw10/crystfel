@@ -76,8 +76,6 @@ struct image {
 	int			*hdr;      /* Actual counts */
 	int16_t			*data;     /* Integer counts after bloom */
 	double complex		*sfacs;
-	struct rvec		**qvecs;
-	int			nspheres;
 	double			*twotheta;
 	struct molecule		*molecule;
 	UnitCell		*indexed_cell;

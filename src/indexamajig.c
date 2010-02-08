@@ -26,7 +26,6 @@
 #include "hdf5-file.h"
 #include "index.h"
 #include "intensities.h"
-#include "ewald.h"
 #include "peaks.h"
 #include "diffraction.h"
 #include "detector.h"
@@ -236,7 +235,6 @@ int main(int argc, char *argv[])
 
 				/* Simulate a diffraction pattern */
 				image.sfacs = NULL;
-				image.qvecs = NULL;
 				image.twotheta = NULL;
 				image.hdr = NULL;
 
@@ -245,7 +243,6 @@ int main(int argc, char *argv[])
 				image.orientation.x = 0.0;
 				image.orientation.y = 0.0;
 				image.orientation.z = 0.0;
-				get_ewald(&image);
 
 			}
 

@@ -182,7 +182,7 @@ void record_image(struct image *image, int do_water, int do_poisson,
 		if ( do_water ) {
 
 			/* Add intensity contribution from water */
-			water = water_intensity(image->qvecs[0][x + image->width*y],
+			water = water_intensity(get_q(image, x, y, 1, NULL),
 			                        ph_lambda_to_en(image->lambda),
 			                        BEAM_RADIUS, WATER_RADIUS);
 			intensity += water;

@@ -8,7 +8,7 @@ AM_CFLAGS = -Wall
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\"
 
 pattern_sim_SOURCES = pattern_sim.c diffraction.c utils.c image.c cell.c \
-                      hdf5-file.c ewald.c detector.c sfac.c intensities.c \
+                      hdf5-file.c detector.c sfac.c intensities.c \
                       reflections.c
 pattern_sim_LDADD = @LIBS@
 
@@ -17,7 +17,7 @@ process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
 process_hkl_LDADD = @LIBS@
 
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c dirax.c cell.c image.c \
-                      intensities.c ewald.c peaks.c index.c filters.c \
+                      intensities.c peaks.c index.c filters.c \
                       diffraction.c detector.c sfac.c
 indexamajig_LDADD = @LIBS@
 
