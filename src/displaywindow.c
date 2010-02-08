@@ -871,6 +871,10 @@ static void displaywindow_disable(DisplayWindow *dw)
 	w = gtk_ui_manager_get_widget(dw->ui,
 				      "/ui/displaywindow/tools/numbers");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
+
+	w = gtk_ui_manager_get_widget(dw->ui,
+				      "/ui/displaywindow/tools/peaks");
+	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
 }
 
 
