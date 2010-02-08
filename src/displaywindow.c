@@ -744,6 +744,8 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 	GSList *rg = NULL;
 	int n, i;
 
+	if ( hdfile == NULL ) return NULL;
+
 	names = hdfile_read_group(hdfile, &n, group, &is_group, &is_image);
 	if ( n == 0 ) return NULL;
 
@@ -1020,7 +1022,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	g_signal_connect(GTK_OBJECT(dw->drawingarea), "button-release-event",
 	                 G_CALLBACK(displaywindow_release), dw);
 
-	displaywindow_update_menus(dw);
+	if ( dw->hdfile != NULL ) displaywindow_update_menus(dw);
 
 	return dw;
 }
