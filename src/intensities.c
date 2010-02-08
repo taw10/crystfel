@@ -73,7 +73,7 @@ void output_intensities(struct image *image, UnitCell *cell)
 		int found = 0;
 		int j;
 
-		q = get_q(image, x, y, 1, NULL);
+		q = get_q(image, x, y, 1, NULL, 1.0/image->lambda);
 
 		hd = q.u * ax + q.v * ay + q.w * az;
 		kd = q.u * bx + q.v * by + q.w * bz;

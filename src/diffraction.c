@@ -23,7 +23,9 @@
 #include "sfac.h"
 
 
-#define SAMPLING (1)
+#define SAMPLING (2)
+#define BWSAMPLING (10)
+#define BANDWIDTH (0.015)
 
 
 static double lattice_factor(struct rvec q, double ax, double ay, double az,
@@ -136,7 +138,7 @@ double water_intensity(struct rvec q, double en,
 
 
 struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
-                  unsigned int sampling, float *ttp)
+                  unsigned int sampling, float *ttp, float k)
 {
 	struct rvec q;
 	float twothetax, twothetay, twotheta, r;
@@ -144,7 +146,6 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 	float ry = 0.0;
 	int p;
 
-	const float k = 1.0/image->lambda;
 	const unsigned int x = xs / sampling;
 	const unsigned int y = ys / sampling; /* Integer part only */
 
@@ -184,6 +185,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 	double bx, by, bz;
 	double cx, cy, cz;
 	double a, b, c, d;
+	float kc;
 
 	if ( image->molecule == NULL ) return;
 
@@ -210,6 +212,8 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 	/* Needed later for Lorentz calculation */
 	image->twotheta = malloc(image->width * image->height * sizeof(double));
 
+	kc = 1.0/image->lambda;  /* Centre value */
+
 	for ( xs=0; xs<image->width*SAMPLING; xs++ ) {
 	for ( ys=0; ys<image->height*SAMPLING; ys++ ) {
 
@@ -222,19 +226,33 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 		const unsigned int x = xs / SAMPLING;
 		const unsigned int y = ys / SAMPLING; /* Integer part only */
 
-		q = get_q(image, xs, ys, SAMPLING, &twotheta);
-		image->twotheta[x + image->width*y] = twotheta;
+		int kstep;
 
-		f_lattice = lattice_factor(q, ax,ay,az,bx,by,bz,cx,cy,cz,
-		                           na, nb, nc);
-		if ( no_sfac ) {
-			f_molecule = 10000.0;
-		} else {
-			f_molecule = molecule_factor(image->molecule, q,
-		                            ax,ay,az,bx,by,bz,cx,cy,cz);
+		for ( kstep=0; kstep<BWSAMPLING; kstep++ ) {
+
+			float k;
+
+			/* Calculate k this time round */
+			k = kc + (kstep-(BWSAMPLING/2)) *
+			                              kc*(BANDWIDTH/BWSAMPLING);
+
+			q = get_q(image, xs, ys, SAMPLING, &twotheta, k);
+			image->twotheta[x + image->width*y] = twotheta;
+
+			f_lattice = lattice_factor(q, ax, ay, az,
+			                              bx, by, bz,
+			                              cx, cy, cz,
+			                              na, nb, nc);
+			if ( no_sfac ) {
+				f_molecule = 10000.0;
+			} else {
+				f_molecule = molecule_factor(image->molecule, q,
+			                            ax,ay,az,bx,by,bz,cx,cy,cz);
+			}
+
+			image->sfacs[x + image->width*y] += sw * f_molecule * f_lattice;
+
 		}
-
-		image->sfacs[x + image->width*y] += sw * f_molecule * f_lattice;
 
 	}
 	progress_bar(xs, SAMPLING*image->width-1, "Calculating lattice factors");
