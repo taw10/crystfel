@@ -36,8 +36,11 @@ static void show_help(const char *s)
 "  -h, --help                       Display this help message.\n"
 "\n"
 "  -p, --peak-overlay=<filename>    Draw circles in positions listed in file.\n"
-"  -i, --int-boost=<n>        Multiple intensity by <n>.\n"
+"  -i, --int-boost=<n>              Multiply intensity by <n>.\n"
 "  -b, --binning=<n>                Set display binning to <n>.\n"
+"      --clean-image                Perform common-mode noise subtraction and\n"
+"                                    background removal on images before\n"
+"                                    proceeding.\n"
 "\n");
 }
 
@@ -76,6 +79,7 @@ int main(int argc, char *argv[])
 	char *peaks = NULL;
 	int boost = 1;
 	int binning = 2;
+	int config_clean = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -83,6 +87,7 @@ int main(int argc, char *argv[])
 		{"peak-overlay",       1, NULL,               'p'},
 		{"int-boost",          1, NULL,               'i'},
 		{"binning",            1, NULL,               'b'},
+		{"clean-image",        0, &config_clean,       1},
 		{0, 0, NULL, 0}
 	};
 
@@ -140,7 +145,8 @@ int main(int argc, char *argv[])
 
 	for ( i=0; i<nfiles; i++ ) {
 		main_window_list[i] = displaywindow_open(argv[optind+i], peaks,
-		                                         boost, binning);
+		                                         boost, binning,
+		                                         config_clean);
 		if ( main_window_list[i] == NULL ) {
 			ERROR("Couldn't open display window\n");
 		} else {

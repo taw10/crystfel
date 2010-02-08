@@ -62,6 +62,7 @@ typedef struct {
 	int		height;		/* Size of the drawing area */
 	int		binning;
 	int		boostint;
+	int		clean;		/* Whether or not to clean the image */
 
 	int		show_col_scale;
 	int		monochrome;
@@ -72,7 +73,7 @@ typedef struct {
 /* Open an image display window showing the given filename, or NULL */
 extern DisplayWindow *displaywindow_open(const char *filename,
                                          const char *peaks, int boost,
-                                         int binning);
+                                         int binning, int clean);
 
 
 #endif	/* DISPLAYWINDOW_H */

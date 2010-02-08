@@ -941,7 +941,7 @@ static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
 
 
 DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
-                                  int boost, int binning)
+                                  int boost, int binning, int clean)
 {
 	DisplayWindow *dw;
 	char *title;
@@ -1007,6 +1007,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 
 	dw->binning = binning;
 	dw->boostint = boost;
+	dw->clean = clean;
 	displaywindow_update(dw);
 
 	/* Peak list provided at startup? */

@@ -79,7 +79,7 @@ int16_t *render_get_image_binned(DisplayWindow *dw, int binning, int16_t *max)
 
 		hdf5_read(dw->hdfile, image);
 		dw->image_dirty = 0;
-		clean_image(image);
+		if ( dw->clean ) clean_image(image);
 
 		/* Deal with the old image, if existing */
 		if ( dw->image != NULL ) {
