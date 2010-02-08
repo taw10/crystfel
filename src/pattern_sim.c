@@ -307,7 +307,7 @@ int main(int argc, char *argv[])
 
 		ndone++;
 
-		if ( n_images && (ndone > n_images) ) done = 1;
+		if ( n_images && (ndone >= n_images) ) done = 1;
 
 	} while ( !done );
 
