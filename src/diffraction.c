@@ -173,7 +173,7 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 	q.v = k * sin(twothetay);
 	q.w = k - k * cos(twotheta);
 
-	return q;
+	return quat_rot(q, image->orientation);
 }
 
 

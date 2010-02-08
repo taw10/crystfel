@@ -60,6 +60,7 @@ extern struct quaternion normalise_quaternion(struct quaternion q);
 extern double quaternion_modulus(struct quaternion q);
 extern struct quaternion random_quaternion(void);
 extern int quaternion_valid(struct quaternion q);
+extern struct rvec quat_rot(struct rvec q, struct quaternion z);
 
 
 /* --------------------------- Useful functions ----------------------------- */

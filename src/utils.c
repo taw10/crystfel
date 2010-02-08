@@ -14,6 +14,7 @@
 #include <stdio.h>
 
 #include "utils.h"
+#include "image.h"
 
 
 size_t skipspace(const char *s)
@@ -159,4 +160,35 @@ int quaternion_valid(struct quaternion q)
 	if ( (qmod > 0.999) && (qmod < 1.001) ) return 1;
 
 	return 0;
+}
+
+
+struct rvec quat_rot(struct rvec q, struct quaternion z)
+{
+	struct rvec res;
+	double t01, t02, t03, t11, t12, t13, t22, t23, t33;
+
+	t01 = z.w*z.x;
+	t02 = z.w*z.y;
+	t03 = z.w*z.z;
+	t11 = z.x*z.x;
+	t12 = z.x*z.y;
+	t13 = z.x*z.z;
+	t22 = z.y*z.y;
+	t23 = z.y*z.z;
+	t33 = z.z*z.z;
+
+	res.u = (1.0 - 2.0 * (t22 + t33)) * q.u
+	            + (2.0 * (t12 + t03)) * q.v
+	            + (2.0 * (t13 - t02)) * q.w;
+
+	res.v =       (2.0 * (t12 - t03)) * q.u
+	      + (1.0 - 2.0 * (t11 + t33)) * q.v
+	            + (2.0 * (t01 + t23)) * q.w;
+
+	res.w =       (2.0 * (t02 + t13)) * q.u
+	            + (2.0 * (t23 - t01)) * q.v
+	      + (1.0 - 2.0 * (t11 + t22)) * q.w;
+
+	return res;
 }
