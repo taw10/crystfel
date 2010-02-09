@@ -1,4 +1,4 @@
-bin_PROGRAMS = pattern_sim process_hkl get_hkl indexamajig
+bin_PROGRAMS = pattern_sim process_hkl get_hkl indexamajig compare_hkl
 
 if HAVE_GTK
 bin_PROGRAMS += hdfsee
@@ -33,3 +33,6 @@ endif
 
 get_hkl_SOURCES = get_hkl.c sfac.c cell.c utils.c reflections.c
 get_hkl_LDADD = @LIBS@
+
+compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c
+compare_hkl_LDADD = @LIBS@

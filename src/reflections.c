@@ -77,6 +77,40 @@ void write_reflections(const char *filename, unsigned int *counts,
 }
 
 
+double *read_reflections(const char *filename)
+{
+	double *ref;
+	FILE *fh;
+	char *rval;
+
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) {
+		ERROR("Failed to open input file\n");
+		return NULL;
+	}
+
+	ref = new_list_intensity();
+
+	do {
+
+		char line[1024];
+		signed int h, k, l, intensity;
+		int r;
+
+		rval = fgets(line, 1023, fh);
+		r = sscanf(line, "%i %i %i %i", &h, &k, &l, &intensity);
+		if ( r != 4 ) continue;
+
+		set_intensity(ref, h, k, l, intensity);
+
+	} while ( rval != NULL );
+
+	fclose(fh);
+
+	return ref;
+}
+
+
 double *ideal_intensities(double complex *sfac)
 {
 	double *ref;
