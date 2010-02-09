@@ -53,7 +53,7 @@ void write_reflections(const char *filename, unsigned int *counts,
 	for ( l=-INDMAX; l<INDMAX; l++ ) {
 
 		int N;
-		double F;
+		double F, s;
 
 		if ( counts ) {
 			N = lookup_count(counts, h, k, l);
@@ -65,7 +65,10 @@ void write_reflections(const char *filename, unsigned int *counts,
 		F = lookup_intensity(ref, h, k, l) / N;
 		if ( zone_axis && (l != 0) ) continue;
 
-		fprintf(fh, "%3i %3i %3i %f\n", h, k, l, F);
+		s = resolution(cell, h, k, l);
+
+		/* h, k, l, I, sigma(I), s */
+		fprintf(fh, "%3i %3i %3i %f %f %f\n", h, k, l, F, 0.0, s/1.0e9);
 
 	}
 	}

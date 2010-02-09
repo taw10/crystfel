@@ -258,10 +258,9 @@ int main(int argc, char *argv[])
 	ref = new_list_intensity();
 	counts = new_list_count();
 
+	mol = load_molecule();
 	if ( !config_noanalyse ) {
-		mol = load_molecule();
 		get_reflections_cached(mol, eV_to_J(2.0e3));
-
 		trueref = ideal_intensities(mol->reflections);
 	}
 
@@ -328,7 +327,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ( output != NULL ) {
-		write_reflections(output, counts, ref, 0, NULL);
+		write_reflections(output, counts, ref, 0, mol->cell);
 	}
 
 	STATUS("There were %u patterns.\n", n_patterns);
