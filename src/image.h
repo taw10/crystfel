@@ -88,8 +88,8 @@ struct image {
 	 * If FORMULATION_PIXELSIZE, then pixel_size only is needed.*/
 	FormulationMode		fmode;
 	double			pixel_size;
-	double			camera_len;
-	double			resolution;	/* pixels per metre */
+	float			camera_len;
+	float			resolution;	/* pixels per metre */
 
 	/* Wavelength must always be given */
 	double			lambda;		/* Wavelength in m */

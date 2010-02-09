@@ -30,13 +30,24 @@ AC_ARG_WITH(gsl,
  GSL_LIBS="-L$withval/lib -lgsl -lgslcblas"],
 [GSL_LIBS="-lgsl -lgslcblas"])
 
+AC_MSG_CHECKING([whether to use OpenCL])
+AC_ARG_ENABLE(opencl,
+[AS_HELP_STRING([--enable-opencl], [Enable the use of OpenCL])],
+[OPENCL_CFLAGS=""
+ OPENCL_LIBS="-lOpenCL"
+ AC_MSG_RESULT([yes])
+ AC_DEFINE([HAVE_OPENCL], [1], [Define to 1 if OpenCL is available])
+ have_opencl=true],
+[AC_MSG_RESULT([no])])
+
 havegtk=false
 AM_PATH_GTK_2_0(2.0.0, havegtk=true,
 AC_MSG_WARN([GTK not found.  hdfsee will not be built.]))
 
 AM_CONDITIONAL([HAVE_GTK], test x$havegtk = xtrue)
+AM_CONDITIONAL([HAVE_OPENCL], test x$have_opencl = xtrue)
 
-CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS $GSL_CFLAGS"
-LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS -lgthread-2.0 -lutil"
+CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS"
+LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -lgthread-2.0 -lutil"
 
 AC_OUTPUT(Makefile src/Makefile data/Makefile)

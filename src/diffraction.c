@@ -23,9 +23,9 @@
 #include "sfac.h"
 
 
-#define SAMPLING (5)
-#define BWSAMPLING (10)
-#define BANDWIDTH (1.0 / 100.0)
+#define SAMPLING (1)
+#define BWSAMPLING (1)
+#define BANDWIDTH (0.0 / 100.0)
 
 
 static double lattice_factor(struct rvec q, double ax, double ay, double az,

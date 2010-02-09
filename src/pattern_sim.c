@@ -21,6 +21,7 @@
 
 #include "image.h"
 #include "diffraction.h"
+#include "diffraction-gpu.h"
 #include "cell.h"
 #include "utils.h"
 #include "hdf5-file.h"
@@ -38,6 +39,7 @@ static void show_help(const char *s)
 "\n"
 " -h, --help                Display this help message.\n"
 "     --simulation-details  Show technical details of the simulation.\n"
+"     --gpu                 Use the GPU to speed up the calculation.\n"
 "\n"
 "     --near-bragg          Output h,k,l,I near Bragg conditions.\n"
 " -n, --number=<N>          Generate N images.  Default 1.\n"
@@ -157,6 +159,7 @@ int main(int argc, char *argv[])
 	int config_nonoise = 0;
 	int config_nobloom = 0;
 	int config_nosfac = 0;
+	int config_gpu = 0;
 	int ndone = 0;    /* Number of simulations done (images or not) */
 	int number = 1;   /* Number used for filename of image */
 	int n_images = 1; /* Generate one image by default */
@@ -166,6 +169,7 @@ int main(int argc, char *argv[])
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"simulation-details", 0, &config_simdetails,  1},
+		{"gpu",                0, &config_gpu,         1},
 		{"near-bragg",         0, &config_nearbragg,   1},
 		{"random-orientation", 0, NULL,               'r'},
 		{"number",             1, NULL,               'n'},
@@ -274,11 +278,20 @@ int main(int argc, char *argv[])
 		image.twotheta = NULL;
 		image.hdr = NULL;
 
-		get_diffraction(&image, na, nb, nc, config_nosfac);
+		if ( config_gpu ) {
+			get_diffraction_gpu(&image, na, nb, nc, config_nosfac);
+		} else {
+			get_diffraction(&image, na, nb, nc, config_nosfac);
+		}
 		if ( image.molecule == NULL ) {
 			ERROR("Couldn't open molecule.pdb\n");
 			return 1;
 		}
+		if ( image.sfacs == NULL ) {
+			ERROR("Diffraction calculation failed.\n");
+			goto skip;
+		}
+
 		record_image(&image, !config_nowater, !config_nonoise,
 		             !config_nobloom);
 
@@ -305,6 +318,7 @@ int main(int argc, char *argv[])
 		free(image.sfacs);
 		free(image.twotheta);
 
+skip:
 		ndone++;
 
 		if ( n_images && (ndone >= n_images) ) done = 1;

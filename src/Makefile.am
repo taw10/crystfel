@@ -10,6 +10,10 @@ AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\"
 pattern_sim_SOURCES = pattern_sim.c diffraction.c utils.c image.c cell.c \
                       hdf5-file.c detector.c sfac.c intensities.c \
                       reflections.c
+if HAVE_OPENCL
+pattern_sim_SOURCES += diffraction-gpu.c
+endif
+
 pattern_sim_LDADD = @LIBS@
 
 process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
