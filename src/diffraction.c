@@ -23,9 +23,9 @@
 #include "sfac.h"
 
 
-#define SAMPLING (2)
+#define SAMPLING (5)
 #define BWSAMPLING (10)
-#define BANDWIDTH (0.015)
+#define BANDWIDTH (1.0 / 100.0)
 
 
 static double lattice_factor(struct rvec q, double ax, double ay, double az,
@@ -231,6 +231,8 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 		for ( kstep=0; kstep<BWSAMPLING; kstep++ ) {
 
 			float k;
+			double kw = 1.0/BWSAMPLING;
+			double complex val;
 
 			/* Calculate k this time round */
 			k = kc + (kstep-(BWSAMPLING/2)) *
@@ -250,7 +252,8 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 			                            ax,ay,az,bx,by,bz,cx,cy,cz);
 			}
 
-			image->sfacs[x + image->width*y] += sw * f_molecule * f_lattice;
+			val = sw * kw * f_molecule * f_lattice;
+			image->sfacs[x + image->width*y] += val;
 
 		}
 
