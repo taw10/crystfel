@@ -51,6 +51,10 @@ static void show_help(const char *s)
 "                           analysis only after reading all the patterns.\n"
 "      --no-analyse        Don't perform any kind of analysis, just merge the\n"
 "                           intensities.\n"
+"      --sum               Sum (rather than average) the intensities for the\n"
+"                           final output list.  This is useful for comparing\n"
+"                           results to radially summed powder patterns, but\n"
+"                           will break R-factor analysis.\n"
 "  -r, --rvsq              Output lists of R vs |q| (\"Luzzatti plots\") when\n"
 "                           analysing figures of merit.\n"
 "      --stop-after=<n>    Stop after processing n patterns.  Zero means\n"
@@ -190,6 +194,7 @@ int main(int argc, char *argv[])
 	int config_stopafter = 0;
 	int config_zoneaxis = 0;
 	int config_noanalyse = 0;
+	int config_sum = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -202,6 +207,7 @@ int main(int argc, char *argv[])
 		{"rvsq",               0, NULL,               'r'},
 		{"stop-after",         1, NULL,               's'},
 		{"zone-axis",          0, &config_zoneaxis,    1},
+		{"sum",                0, &config_sum,    1},
 		{0, 0, NULL, 0}
 	};
 
@@ -309,7 +315,11 @@ int main(int argc, char *argv[])
 
 		if ( !config_maxonly ) {
 			integrate_intensity(ref, h, k, l, intensity);
-			integrate_count(counts, h, k, l, 1);
+			if ( config_sum ) {
+				set_count(counts, h, k, l, 1);
+			} else {
+				integrate_count(counts, h, k, l, 1);
+			}
 		} else {
 			if ( intensity > lookup_intensity(ref, h, k, l) ) {
 				set_intensity(ref, h, k, l, intensity);
