@@ -42,6 +42,7 @@ static void show_help(const char *s)
 "     --gpu                 Use the GPU to speed up the calculation.\n"
 "\n"
 "     --near-bragg          Output h,k,l,I near Bragg conditions.\n"
+"     --powder              Output a powder pattern as results/powder.h5.\n"
 " -n, --number=<N>          Generate N images.  Default 1.\n"
 "     --no-images           Do not output any HDF5 files.\n"
 " -r, --random-orientation  Use a randomly generated orientation\n"
@@ -151,6 +152,7 @@ int main(int argc, char *argv[])
 {
 	int c;
 	struct image image;
+	long long int *powder;
 	int config_simdetails = 0;
 	int config_nearbragg = 0;
 	int config_randomquat = 0;
@@ -160,6 +162,7 @@ int main(int argc, char *argv[])
 	int config_nobloom = 0;
 	int config_nosfac = 0;
 	int config_gpu = 0;
+	int config_powder = 0;
 	int ndone = 0;    /* Number of simulations done (images or not) */
 	int number = 1;   /* Number used for filename of image */
 	int n_images = 1; /* Generate one image by default */
@@ -177,7 +180,8 @@ int main(int argc, char *argv[])
 		{"no-water",           0, &config_nowater,     1},
 		{"no-noise",           0, &config_nonoise,     1},
 		{"no-bloom",           0, &config_nobloom,     1},
-		{"no-sfac",            0, &config_nosfac,     1},
+		{"no-sfac",            0, &config_nosfac,      1},
+		{"powder",             0, &config_powder,      1},
 		{0, 0, NULL, 0}
 	};
 
@@ -245,6 +249,8 @@ int main(int argc, char *argv[])
 	image.det.panels[1].cx = 492.0;
 	image.det.panels[1].cy = 779.7;
 
+	powder = calloc(image.width*image.height, sizeof(*powder));
+
 	/* Splurge a few useful numbers */
 	STATUS("Wavelength is %f nm\n", image.lambda/1.0e-9);
 
@@ -299,6 +305,25 @@ int main(int argc, char *argv[])
 			output_intensities(&image, image.molecule->cell);
 		}
 
+		if ( config_powder ) {
+
+			int x, y, w;
+
+			w = image.width;
+
+			for ( x=0; x<image.width; x++ ) {
+			for ( y=0; y<image.height; y++ ) {
+				powder[x+w*y] += image.data[x+w*y];
+			}
+			}
+
+			if ( !(ndone % 10) ) {
+				hdf5_write("results/integr-bw.h5", powder,
+				           image.width, image.height,
+				           H5T_NATIVE_LLONG);
+			}
+		}
+
 		if ( !config_noimages ) {
 
 			char filename[1024];
@@ -308,7 +333,7 @@ int main(int argc, char *argv[])
 
 			/* Write the output file */
 			hdf5_write(filename, image.data,
-			           image.width, image.height);
+			           image.width, image.height, H5T_NATIVE_INT16);
 
 		}
 

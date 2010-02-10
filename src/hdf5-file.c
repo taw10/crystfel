@@ -100,8 +100,8 @@ void hdfile_close(struct hdfile *f)
 }
 
 
-int hdf5_write(const char *filename, const int16_t *data,
-               int width, int height)
+int hdf5_write(const char *filename, const void *data,
+               int width, int height, int type)
 {
 	hid_t fh, gh, sh, dh;	/* File, group, dataspace and data handles */
 	herr_t r;
@@ -127,7 +127,7 @@ int hdf5_write(const char *filename, const int16_t *data,
 	max_size[1] = height;
 	sh = H5Screate_simple(2, size, max_size);
 
-	dh = H5Dcreate(gh, "data", H5T_NATIVE_INT16, sh,
+	dh = H5Dcreate(gh, "data", type, sh,
 	               H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Couldn't create dataset\n");
@@ -138,7 +138,7 @@ int hdf5_write(const char *filename, const int16_t *data,
 	/* Muppet check */
 	H5Sget_simple_extent_dims(sh, size, max_size);
 
-	r = H5Dwrite(dh, H5T_NATIVE_UINT16, H5S_ALL,
+	r = H5Dwrite(dh, type, H5S_ALL,
 	             H5S_ALL, H5P_DEFAULT, data);
 	if ( r < 0 ) {
 		ERROR("Couldn't write data\n");

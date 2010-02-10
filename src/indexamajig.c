@@ -264,7 +264,8 @@ int main(int argc, char *argv[])
 				record_image(&image, 0, 0, 0);
 
 				hdf5_write("simulated.h5", image.data,
-				           image.width, image.height);
+				           image.width, image.height,
+				           H5T_NATIVE_INT16);
 
 			}
 

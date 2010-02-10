@@ -17,14 +17,15 @@
 #define HDF5_H
 
 #include <stdint.h>
+#include <hdf5.h>
 
 #include "image.h"
 
 struct hdfile;
 
 
-extern int hdf5_write(const char *filename, const int16_t *data,
-                      int width, int height);
+extern int hdf5_write(const char *filename, const void *data,
+                      int width, int height, int type);
 
 extern int hdf5_read(struct hdfile *f, struct image *image);
 
