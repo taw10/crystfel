@@ -15,4 +15,5 @@ src/process_hkl
 src/get_hkl
 src/hdfsee
 src/indexamajig
+src/compare_hkl
 *~
