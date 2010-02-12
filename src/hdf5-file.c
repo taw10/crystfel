@@ -207,7 +207,7 @@ int hdf5_read(struct hdfile *f, struct image *image)
 	image->y_centre = image->height/2;
 
 	/* FIXME: The following are basically made up... */
-	image->camera_len = 75.0e-3;  /* 75 mm camera length */
+	image->camera_len = 67.0e-3;  /* 75 mm camera length */
 	image->resolution = 13333.3;  /* 75 micron pixel size */
 
 	return 0;
