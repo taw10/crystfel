@@ -314,7 +314,7 @@ void cell_get_reciprocal(UnitCell *cell,
 }
 
 
-static void cell_print(UnitCell *cell)
+void cell_print(UnitCell *cell)
 {
 	double asx, asy, asz;
 	double bsx, bsy, bsz;

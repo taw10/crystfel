@@ -72,6 +72,8 @@ extern void cell_get_reciprocal(UnitCell *cell,
 extern double resolution(UnitCell *cell,
                          signed int h, signed int k, signed int l);
 
+extern void cell_print(UnitCell *cell);
+
 extern UnitCell *match_cell(UnitCell *cell, UnitCell *template);
 
 #endif	/* CELL_H */
