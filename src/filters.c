@@ -40,25 +40,6 @@ static void clean_panel(struct image *image, int sx, int sy)
 	int x, y;
 	const int s = sizeof(signed int);
 
-	for ( y=0; y<128; y++ ) {
-
-		signed int vals[512];
-		double m;
-
-		for ( x=0; x<512; x++ ) {
-			vals[x] = image->data[(x+sx)+(y+sy)*image->width];
-		}
-
-		qsort(&vals[0], 512, s, compare_vals);
-
-		m = gsl_stats_int_median_from_sorted_data(vals, 1, 512);
-
-		for ( x=0; x<512; x++ ) {
-			image->data[(x+sx)+(y+sy)*image->width] -= m;
-		}
-
-	}
-
 	for ( x=0; x<512; x++ ) {
 
 		signed int vals[128];
