@@ -426,7 +426,7 @@ void dump_peaks(struct image *image)
 {
 	int i;
 
-	printf("x/px\ty/px\t|q|/nm^-1\tIntegrated I\n");
+	printf("x/px\ty/px\t(1/d)/nm^-1\tIntegrated I\n");
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
