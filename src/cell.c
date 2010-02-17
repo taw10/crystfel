@@ -213,12 +213,16 @@ static UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs,
 	angles[1] = angle_between(as.u, as.v, as.w, cs.u, cs.v, cs.w);
 	angles[2] = angle_between(as.u, as.v, as.w, bs.u, bs.v, bs.w);
 
+	STATUS("as = %9.3e %9.3e %9.3e m^-1\n", as.u, as.v, as.w);
+	STATUS("bs = %9.3e %9.3e %9.3e m^-1\n", bs.u, bs.v, bs.w);
+	STATUS("cs = %9.3e %9.3e %9.3e m^-1\n", cs.u, cs.v, cs.w);
+
 	STATUS("Creating with %9.3e %9.3e %9.3e m^-1\n", lengths[0],
-	                                                  lengths[1],
-	                                                  lengths[2]);
+	                                                 lengths[1],
+	                                                 lengths[2]);
 	STATUS("Creating with %5.2f %5.2f %5.2f deg\n", rad2deg(angles[0]),
-	                                              rad2deg(angles[1]),
-	                                              rad2deg(angles[2]));
+	                                                rad2deg(angles[1]),
+	                                                rad2deg(angles[2]));
 
 	m = gsl_matrix_alloc(3, 3);
 	gsl_matrix_set(m, 0, 0, as.u);
@@ -369,6 +373,15 @@ struct cvec {
 };
 
 
+static int same_vector(struct cvec a, struct cvec b)
+{
+	if ( a.na != b.na ) return 0;
+	if ( a.nb != b.nb ) return 0;
+	if ( a.nc != b.nc ) return 0;
+	return 1;
+}
+
+
 /* Attempt to make 'cell' fit into 'template' somehow */
 UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 {
@@ -382,13 +395,11 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 	struct cvec *cand[3];
 
 	int ncand[3] = {0,0,0};
-	float ltl = 15.0;     /* percent */
-	float angtol = deg2rad(9.0);
+	float ltl = 5.0;     /* percent */
+	float angtol = deg2rad(5.0);
 	UnitCell *new_cell = NULL;
 
-	STATUS("Matching this experimental cell: --------------------------\n");
-	cell_print(cell);
-	STATUS("With this model cell: -------------------------------------\n");
+	STATUS("Matching with this model cell: ----------------------------\n");
 	cell_print(template);
 	STATUS("-----------------------------------------------------------\n");
 
@@ -403,6 +414,8 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 	angles[0] = angle_between(bsx, bsy, bsz, csx, csy, csz);
 	angles[1] = angle_between(asx, asy, asz, csx, csy, csz);
 	angles[2] = angle_between(asx, asy, asz, bsx, bsy, bsz);
+	STATUS("Looking for %f %f %f\n", rad2deg(angles[0]), rad2deg(angles[1]),
+	                                 rad2deg(angles[2]));
 
 	cand[0] = malloc(MAX_CAND*sizeof(struct cvec));
 	cand[1] = malloc(MAX_CAND*sizeof(struct cvec));
@@ -450,6 +463,9 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 					cand[i][ncand[i]].nb = n2;
 					cand[i][ncand[i]].nc = n3;
 					ncand[i]++;
+					if ( ncand[i] == MAX_CAND ) {
+						ERROR("Too many candidates\n");
+					}
 				}
 			}
 
@@ -461,11 +477,15 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 	}
 	}
 
+	STATUS("Candidates: %i %i %i\n", ncand[0], ncand[1], ncand[2]);
+
 	for ( i=0; i<ncand[0]; i++ ) {
 	for ( j=0; j<ncand[1]; j++ ) {
 
 		double ang;
 		int k;
+
+		if ( same_vector(cand[0][i], cand[1][j]) ) continue;
 
 		/* Measure the angle between the ith candidate for axis 0
 		 * and the jth candidate for axis 1 */
@@ -475,8 +495,11 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 
 		/* Angle between axes 0 and 1 should be angle 2 */
 		if ( fabs(ang - angles[2]) > angtol ) continue;
+		STATUS("Matched %i-%i (0-1 %f deg)\n", i, j, rad2deg(ang));
 
 		for ( k=0; k<ncand[2]; k++ ) {
+
+			if ( same_vector(cand[1][j], cand[2][k]) ) continue;
 
 			/* Measure the angle between the current candidate for
 			 * axis 0 and the kth candidate for axis 2 */
@@ -487,6 +510,8 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 			/* ... it should be angle 1 ... */
 			if ( fabs(ang - angles[1]) > angtol ) continue;
 
+			STATUS("0-2 %f\n", rad2deg(ang));
+
 			/* Finally, the angle between the current candidate for
 			 * axis 1 and the kth candidate for axis 2 */
 			ang = angle_between(cand[1][j].vec.u, cand[1][j].vec.v,
@@ -494,6 +519,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template)
 			                    cand[2][k].vec.v, cand[2][k].vec.w);
 
 			/* ... it should be angle 0 ... */
+			STATUS("1-2 %f\n", rad2deg(ang));
 			if ( fabs(ang - angles[0]) > angtol ) continue;
 
 			new_cell = cell_new_from_axes(cand[0][i].vec,

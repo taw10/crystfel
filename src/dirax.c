@@ -98,10 +98,6 @@ static void dirax_parseline(const char *line, struct image *image)
 		sscanf(line, "%f %f %f %f %f %f", &d, &d, &d, &cx, &cy, &cz);
 		cell_set_cartesian_c(image->indexed_cell,
 		                     cx*1e-10, cy*1e-10, cz*1e-10);
-		STATUS("--------------------\n");
-		STATUS("The cell from DirAx:\n");
-		cell_print(image->indexed_cell);
-		STATUS("--------------------\n");
 		image->dirax_read_cell = 0;
 		return;
 	}

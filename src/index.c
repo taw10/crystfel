@@ -149,6 +149,11 @@ void index_pattern(struct image *image, IndexingMethod indm, int no_match)
 	if ( image->indexed_cell == NULL ) {
 		STATUS("No cell found.\n");
 		return;
+	} else {
+		STATUS("--------------------\n");
+		STATUS("The indexed cell (before matching):\n");
+		cell_print(image->indexed_cell);
+		STATUS("--------------------\n");
 	}
 
 	if ( !no_match ) {
