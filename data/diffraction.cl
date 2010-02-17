@@ -14,11 +14,43 @@
 #define IDIM (INDMAX*2 +1)
 
 
+float4 quat_rot(float4 q, float4 z)
+{
+	float4 res;
+	float t01, t02, t03, t11, t12, t13, t22, t23, t33;
+
+	t01 = z.x*z.y;
+	t02 = z.x*z.z;
+	t03 = z.x*z.w;
+	t11 = z.y*z.y;
+	t12 = z.y*z.z;
+	t13 = z.y*z.w;
+	t22 = z.z*z.z;
+	t23 = z.z*z.w;
+	t33 = z.w*z.w;
+
+	res.x = (1.0 - 2.0 * (t22 + t33)) * q.x
+	            + (2.0 * (t12 + t03)) * q.y
+	            + (2.0 * (t13 - t02)) * q.z;
+
+	res.y =       (2.0 * (t12 - t03)) * q.x
+	      + (1.0 - 2.0 * (t11 + t33)) * q.y
+	            + (2.0 * (t01 + t23)) * q.z;
+
+	res.z =       (2.0 * (t02 + t13)) * q.x
+	            + (2.0 * (t23 - t01)) * q.y
+	      + (1.0 - 2.0 * (t11 + t22)) * q.z;
+
+	return res;
+}
+
+
 float4 get_q(int x, int y, float cx, float cy, float res, float clen, float k,
-             float *ttp)
+             float *ttp, float4 z)
 {
 	float rx, ry, r;
 	float ttx, tty, tt;
+	float4 q;
 
 	rx = ((float)x - cx)/res;
 	ry = ((float)y - cy)/res;
@@ -31,7 +63,9 @@ float4 get_q(int x, int y, float cx, float cy, float res, float clen, float k,
 
 	*ttp = tt;
 
-	return (float4)(k*sin(ttx), k*sin(tty), k-k*cos(tt), 0.0);
+	q = (float4)(k*sin(ttx), k*sin(tty), k-k*cos(tt), 0.0);
+
+	return quat_rot(q, z);
 }
 
 
@@ -88,7 +122,7 @@ float2 get_sfac(global float2 *sfacs, float16 cell, float4 q)
 kernel void diffraction(global float2 *diff, global float *tt, float k,
                        int w, float cx, float cy,
                        float res, float clen, float16 cell,
-                       global float2 *sfacs)
+                       global float2 *sfacs, float4 z)
 {
 	float ttv;
 	const int x = get_global_id(0);
@@ -96,11 +130,11 @@ kernel void diffraction(global float2 *diff, global float *tt, float k,
 	float f_lattice;
 	float2 f_molecule;
 
-	float4 q = get_q(x, y, cx, cy, res, clen, k, &ttv);
+	float4 q = get_q(x, y, cx, cy, res, clen, k, &ttv, z);
 
 	f_lattice = lattice_factor(cell, q);
 	f_molecule = get_sfac(sfacs, cell, q);
 
-	diff[x+w*y] = f_molecule*f_lattice;
+	diff[x+w*y] = f_molecule * f_lattice;
 	tt[x+w*y] = ttv;
 }

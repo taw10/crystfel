@@ -128,6 +128,7 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	size_t diff_size;
 	float *diff_ptr;
 	int i;
+	cl_float4 orientation;
 
 	if ( image->molecule == NULL ) return;
 
@@ -156,7 +157,10 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 		ERROR("Couldn't get platform IDs: %i\n", err);
 		return;
 	}
-	STATUS("%i platforms\n", nplat);
+	if ( nplat == 0 ) {
+		ERROR("Couldn't find at least one platform!\n");
+		return;
+	}
 	prop[0] = CL_CONTEXT_PLATFORM;
 	prop[1] = (cl_context_properties)platforms[0];
 	prop[2] = 0;
@@ -226,18 +230,24 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	/* Calculate wavelength */
 	kc = 1.0/image->lambda;  /* Centre value */
 
+	/* Orientation */
+	orientation[0] = image->orientation.w;
+	orientation[1] = image->orientation.x;
+	orientation[2] = image->orientation.y;
+	orientation[3] = image->orientation.z;
+
 	clSetKernelArg(kern, 0, sizeof(cl_mem), &diff);
 	clSetKernelArg(kern, 1, sizeof(cl_mem), &tt);
 	clSetKernelArg(kern, 2, sizeof(cl_float), &kc);
 	clSetKernelArg(kern, 3, sizeof(cl_int), &image->width);
 	clSetKernelArg(kern, 4, sizeof(cl_float), &image->det.panels[0].cx);
 	clSetKernelArg(kern, 5, sizeof(cl_float), &image->det.panels[0].cy);
-	clSetKernelArg(kern, 6, sizeof(cl_float), &image->resolution);
-	clSetKernelArg(kern, 7, sizeof(cl_float), &image->camera_len);
+	clSetKernelArg(kern, 6, sizeof(cl_float), &image->det.panels[0].res);
+	clSetKernelArg(kern, 7, sizeof(cl_float), &image->det.panels[0].clen);
 	clSetKernelArg(kern, 8, sizeof(cl_float16), &cell);
 	clSetKernelArg(kern, 9, sizeof(cl_mem), &sfacs);
+	clSetKernelArg(kern, 10, sizeof(cl_float4), &orientation);
 
-	STATUS("Running...\n");
 	err = clEnqueueNDRangeKernel(cq, kern, 2, NULL, dims, NULL,
 	                             0, NULL, NULL);
 	if ( err != CL_SUCCESS ) {
@@ -257,7 +267,6 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 		ERROR("Couldn't map tt buffer\n");
 		return;
 	}
-	STATUS("Done!\n");
 
 	image->sfacs = calloc(image->width * image->height,
 	                      sizeof(double complex));
