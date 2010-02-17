@@ -174,16 +174,14 @@ static void show_marked_features(struct image *image, guchar *data,
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
-		int x, y;
+		float x, y;
 		double th;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		x = f->x;  y = f->y;
-
-		x /= binning;
-		y /= binning;
+		x = f->x / (float)binning;
+		y = f->y / (float)binning;
 
 		for ( th=0; th<2*M_PI; th+=M_PI/40.0 ) {
 
