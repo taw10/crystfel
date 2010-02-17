@@ -26,8 +26,10 @@ struct panel
 	int      max_x;   /* Largest x value considered to be in this panel */
 	int      min_y;   /* ... and so on */
 	int      max_y;
-	float    cx;     /* Location of centre */
+	float    cx;      /* Location of centre */
 	float    cy;
+	float    clen;    /* Camera length */
+	float    res;     /* Resolution */
 };
 
 struct detector

@@ -60,10 +60,10 @@ int map_position(struct image *image, double dx, double dy,
 	if ( image->fmode == FORMULATION_CLEN ) {
 
 		/* Convert pixels to metres */
-		x /= image->resolution;
-		y /= image->resolution;	/* Convert pixels to metres */
+		x /= image->det.panels[p].res;
+		y /= image->det.panels[p].res;	/* Convert pixels to metres */
 		d = sqrt((x*x) + (y*y));
-		twotheta = atan2(d, image->camera_len);
+		twotheta = atan2(d, image->det.panels[p].clen);
 
 	} else if (image->fmode == FORMULATION_PIXELSIZE ) {
 

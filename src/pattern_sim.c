@@ -224,10 +224,6 @@ int main(int argc, char *argv[])
 	image.width = 1024;
 	image.height = 1024;
 	image.fmode = FORMULATION_CLEN;
-	image.x_centre = 512.5;
-	image.y_centre = 512.5;
-	image.camera_len = 0.05;  /* 5 cm (front CCD can move from 5cm-20cm) */
-	image.resolution = 13333.3; /* 75 micron pixel size */
 	image.lambda = ph_en_to_lambda(eV_to_J(2.0e3));  /* Wavelength */
 	image.molecule = load_molecule();
 

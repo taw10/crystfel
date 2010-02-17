@@ -450,9 +450,9 @@ void dump_peaks(struct image *image)
 			  && (y >= image->det.panels[p].min_y)
 			  && (y <= image->det.panels[p].max_y) ) {
 				rcx = ((double)x - image->det.panels[p].cx)
-				                            / image->resolution;
+				                     / image->det.panels[p].res;
 				rcy = ((double)y - image->det.panels[p].cy)
-				                            / image->resolution;
+				                     / image->det.panels[p].res;
 				found = 1;
 			}
 		}

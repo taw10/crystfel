@@ -148,7 +148,6 @@ void record_image(struct image *image, int do_water, int do_poisson,
 	int x, y;
 	double total_energy, energy_density;
 	double ph_per_e;
-	double pix_area, Lsq;
 	double area;
 
 	/* How many photons are scattered per electron? */
@@ -161,10 +160,6 @@ void record_image(struct image *image, int do_water, int do_poisson,
 	       "Total energy = %5.3f microJ\n",
 	       FLUENCE, energy_density/1e7, total_energy*1e6);
 
-	/* Area of one pixel */
-	pix_area = pow(1.0/image->resolution, 2.0);
-	Lsq = pow(image->camera_len, 2.0);
-
 	image->hdr = malloc(image->width * image->height * sizeof(double));
 
 	for ( x=0; x<image->width; x++ ) {
@@ -174,10 +169,26 @@ void record_image(struct image *image, int do_water, int do_poisson,
 		double cf;
 		double intensity, sa, water;
 		double complex val;
+		double pix_area, Lsq;
 		double dsq, proj_area;
+		int p;
+		int found = 0;
 
 		val = image->sfacs[x + image->width*y];
 		intensity = pow(cabs(val), 2.0);
+
+		for ( p=0; p<image->det.n_panels; p++ ) {
+			if ( (x >= image->det.panels[p].min_x)
+			  && (x <= image->det.panels[p].max_x)
+			  && (y >= image->det.panels[p].min_y)
+			  && (y <= image->det.panels[p].max_y) ) {
+				found = 1;
+			}
+		}
+		if ( !found ) {
+			ERROR("No mapping found for %i,%i\n", x, y);
+			return;
+		}
 
 		if ( do_water ) {
 
@@ -193,12 +204,18 @@ void record_image(struct image *image, int do_water, int do_poisson,
 
 		}
 
+		/* Area of one pixel */
+		pix_area = pow(1.0/image->det.panels[p].res, 2.0);
+		Lsq = pow(image->det.panels[p].clen, 2.0);
+
 		/* Area of pixel as seen from crystal (approximate) */
 		proj_area = pix_area * cos(image->twotheta[x + image->width*y]);
 
 		/* Calculate distance from crystal to pixel */
-		dsq = pow(((double)x - image->x_centre)/image->resolution, 2.0);
-		dsq += pow(((double)y - image->y_centre)/image->resolution, 2.0);
+		dsq = pow(((double)x - image->det.panels[p].cx)
+		                               / image->det.panels[p].res, 2.0);
+		dsq += pow(((double)y - image->det.panels[p].cy)
+		                               / image->det.panels[p].res, 2.0);
 
 		/* Projected area of pixel divided by distance squared */
 		sa = proj_area / (dsq + Lsq);

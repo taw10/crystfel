@@ -155,18 +155,18 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 		  && (y >= image->det.panels[p].min_y)
 		  && (y <= image->det.panels[p].max_y) ) {
 			rx = ((float)xs - (sampling*image->det.panels[p].cx))
-			               / (sampling * image->resolution);
+			               / (sampling * image->det.panels[p].res);
 			ry = ((float)ys - (sampling*image->det.panels[p].cy))
-			               / (sampling * image->resolution);
+			               / (sampling * image->det.panels[p].res);
 			break;
 		}
 	}
 
 	/* Calculate q-vector for this sub-pixel */
 	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
-	twothetax = atan2(rx, image->camera_len);
-	twothetay = atan2(ry, image->camera_len);
-	twotheta = atan2(r, image->camera_len);
+	twothetax = atan2(rx, image->det.panels[p].clen);
+	twothetay = atan2(ry, image->det.panels[p].clen);
+	twotheta = atan2(r, image->det.panels[p].clen);
 
 	if ( ttp != NULL ) *ttp = twotheta;
 

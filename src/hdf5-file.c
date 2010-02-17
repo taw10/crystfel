@@ -202,14 +202,6 @@ int hdf5_read(struct hdfile *f, struct image *image)
 		image->lambda = ph_en_to_lambda(eV_to_J(2000.0));
 	}
 
-	/* These are only used for simulation (not analysis) */
-	image->x_centre = image->width/2;
-	image->y_centre = image->height/2;
-
-	/* FIXME: The following are basically made up... */
-	image->camera_len = 67.0e-3;  /* 75 mm camera length */
-	image->resolution = 13333.3;  /* 75 micron pixel size */
-
 	return 0;
 }
 
