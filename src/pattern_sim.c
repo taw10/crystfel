@@ -236,6 +236,8 @@ int main(int argc, char *argv[])
 	image.det.panels[0].max_y = 1023;
 	image.det.panels[0].cx = 491.9;
 	image.det.panels[0].cy = 440.7;
+	image.det.panels[0].clen = 67.0e-3;
+	image.det.panels[0].res = 13333.3;  /* 75 micron pixel size */
 	/* Lower panel */
 	image.det.panels[1].min_x = 0;
 	image.det.panels[1].max_x = 1023;
@@ -243,6 +245,8 @@ int main(int argc, char *argv[])
 	image.det.panels[1].max_y = 511;
 	image.det.panels[1].cx = 492.0;
 	image.det.panels[1].cy = 779.7;
+	image.det.panels[1].clen = 75.0e-3;
+	image.det.panels[1].res = 13333.3;  /* 75 micron pixel size */
 
 	powder = calloc(image.width*image.height, sizeof(*powder));
 

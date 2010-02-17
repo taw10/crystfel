@@ -183,6 +183,7 @@ void record_image(struct image *image, int do_water, int do_poisson,
 			  && (y >= image->det.panels[p].min_y)
 			  && (y <= image->det.panels[p].max_y) ) {
 				found = 1;
+				break;
 			}
 		}
 		if ( !found ) {

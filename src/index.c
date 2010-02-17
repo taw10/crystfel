@@ -50,11 +50,13 @@ int map_position(struct image *image, double dx, double dy,
 			x = ((double)dx - image->det.panels[p].cx);
 			y = ((double)dy - image->det.panels[p].cy);
 			found = 1;
+			break;
 		}
 	}
 	if ( !found ) {
-		ERROR("No mapping found for %f,%f\n", dx, dy);
-		return 0;
+		ERROR("No mapping found for %f,%f (map_position)\n", dx, dy);
+		*rx = 0.0;  *ry = 0.0;  *rz = 0.0;
+		return 1;
 	}
 
 	/* Convert pixels to metres */
@@ -113,13 +115,14 @@ void index_pattern(struct image *image, IndexingMethod indm, int no_match)
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
+		int c;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		if ( map_position(image, f->x, f->y, &f->rx, &f->ry, &f->rz) ) {
-			nc++;
-		}
+		c = map_position(image, f->x, f->y, &f->rx, &f->ry, &f->rz);
+		if ( c != 0 ) nc++;
+
 	}
 	if ( nc ) {
 		ERROR("Failed to map %i reflections\n", nc);

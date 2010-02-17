@@ -426,46 +426,20 @@ void dump_peaks(struct image *image)
 {
 	int i;
 
-	printf("x/px\ty/px\t(1/d)/nm^-1\tIntegrated I\n");
+	printf("x/px\ty/px\t(1/d)/nm^-1\n");
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		double q, rx, ry, rz;
-		int x, y;
-		double rcx = 0.0;
-		double rcy = 0.0;
-		int found = 0;
 		struct imagefeature *f;
-		int p;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		x = f->x;
-		y = f->y;
-
-		for ( p=0; p<image->det.n_panels; p++ ) {
-			if ( (x >= image->det.panels[p].min_x)
-			  && (x <= image->det.panels[p].max_x)
-			  && (y >= image->det.panels[p].min_y)
-			  && (y <= image->det.panels[p].max_y) ) {
-				rcx = ((double)x - image->det.panels[p].cx)
-				                     / image->det.panels[p].res;
-				rcy = ((double)y - image->det.panels[p].cy)
-				                     / image->det.panels[p].res;
-				found = 1;
-			}
-		}
-		if ( !found ) {
-			ERROR("No mapping found for %i,%i\n", x, y);
-			continue;
-		}
-
-		map_position(image, rcx, rcy, &rx, &ry, &rz);
+		map_position(image, f->x, f->y, &rx, &ry, &rz);
 		q = modulus(rx, ry, rz);
 
-		printf("%i\t%i\t%f\t%i\n", x, y, q/1.0e9,
-	                                   image->data[x+image->width*y]);
+		printf("%7.3f\t%7.3f\t%7.3f\t%7.3f\n", f->x, f->y, q/1.0e9, 1.0);
 
 	}
 }
