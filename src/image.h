@@ -26,13 +26,6 @@
 #include "detector.h"
 
 
-/* How is the scaling of the image described? */
-typedef enum {
-	FORMULATION_CLEN,
-	FORMULATION_PIXELSIZE
-} FormulationMode;
-
-
 /* Structure describing a feature in an image */
 struct imagefeature {
 
@@ -82,12 +75,6 @@ struct image {
 	struct detector		det;
 
 	struct quaternion	orientation;
-
-	/* Image parameters can be given as camera length or pixel size.
-	 * If FORMULATION_CLEN, then camera_len and resolution must be given.
-	 * If FORMULATION_PIXELSIZE, then pixel_size only is needed.*/
-	FormulationMode		fmode;
-	double			pixel_size;
 
 	/* Wavelength must always be given */
 	double			lambda;		/* Wavelength in m */

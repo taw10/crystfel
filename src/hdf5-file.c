@@ -192,9 +192,6 @@ int hdf5_read(struct hdfile *f, struct image *image)
 	image->height = f->nx;
 	image->width = f->ny;
 
-	/* Always camera length/lambda formulation for FEL */
-	image->fmode = FORMULATION_CLEN;
-
 	/* Read wavelength from file */
 	image->lambda = get_wavelength(f);
 	if ( image->lambda < 0.0 ) {

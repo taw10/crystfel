@@ -57,26 +57,11 @@ int map_position(struct image *image, double dx, double dy,
 		return 0;
 	}
 
-	if ( image->fmode == FORMULATION_CLEN ) {
-
-		/* Convert pixels to metres */
-		x /= image->det.panels[p].res;
-		y /= image->det.panels[p].res;	/* Convert pixels to metres */
-		d = sqrt((x*x) + (y*y));
-		twotheta = atan2(d, image->det.panels[p].clen);
-
-	} else if (image->fmode == FORMULATION_PIXELSIZE ) {
-
-		/* Convert pixels to metres^-1 */
-		x *= image->pixel_size;
-		y *= image->pixel_size;	/* Convert pixels to metres^-1 */
-		d = sqrt((x*x) + (y*y));
-		twotheta = atan2(d, k);
-
-	} else {
-		ERROR("Unrecognised formulation mode in mapping_scale.\n");
-		return -1;
-	}
+	/* Convert pixels to metres */
+	x /= image->det.panels[p].res;
+	y /= image->det.panels[p].res;	/* Convert pixels to metres */
+	d = sqrt((x*x) + (y*y));
+	twotheta = atan2(d, image->det.panels[p].clen);
 
 	psi = atan2(y, x);
 

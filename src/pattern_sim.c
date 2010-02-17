@@ -223,7 +223,6 @@ int main(int argc, char *argv[])
 	/* Define image parameters */
 	image.width = 1024;
 	image.height = 1024;
-	image.fmode = FORMULATION_CLEN;
 	image.lambda = ph_en_to_lambda(eV_to_J(2.0e3));  /* Wavelength */
 	image.molecule = load_molecule();
 
