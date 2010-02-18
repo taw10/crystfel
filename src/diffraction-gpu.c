@@ -29,6 +29,33 @@
 #define BANDWIDTH (1.0 / 100.0)
 
 
+static const char *clstrerr(cl_int err)
+{
+	switch ( err ) {
+	case CL_SUCCESS : return "no error";
+	case CL_INVALID_PLATFORM : return "invalid platform";
+	case CL_INVALID_KERNEL : return "invalid kernel";
+	case CL_INVALID_ARG_INDEX : return "invalid argument index";
+	case CL_INVALID_ARG_VALUE : return "invalid argument value";
+	case CL_INVALID_MEM_OBJECT : return "invalid memory object";
+	case CL_INVALID_SAMPLER : return "invalid sampler";
+	case CL_INVALID_ARG_SIZE : return "invalid argument size";
+	case CL_INVALID_COMMAND_QUEUE  : return "invalid command queue";
+	case CL_INVALID_CONTEXT : return "invalid context";
+	case CL_INVALID_VALUE : return "invalid value";
+	case CL_INVALID_EVENT_WAIT_LIST : return "invalid wait list";
+	case CL_MAP_FAILURE : return "map failure";
+	case CL_MEM_OBJECT_ALLOCATION_FAILURE : return "object allocation failure";
+	case CL_OUT_OF_HOST_MEMORY : return "out of host memory";
+	case CL_OUT_OF_RESOURCES : return "out of resources";
+	case CL_INVALID_KERNEL_NAME : return "invalid kernel name";
+	default :
+		ERROR("Error code: %i\n", err);
+		return "unknown error";
+	}
+}
+
+
 static cl_device_id get_first_dev(cl_context ctx)
 {
 	cl_device_id dev;
@@ -86,7 +113,7 @@ static cl_program load_program(const char *filename, cl_context ctx,
 
 	r = clBuildProgram(prog, 0, NULL, "-Werror", NULL, NULL);
 	if ( r != CL_SUCCESS ) {
-		ERROR("Couldn't build program\n");
+		ERROR("Couldn't build program '%s'\n", filename);
 		show_build_log(prog, dev);
 		*err = r;
 		return 0;
@@ -168,14 +195,6 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	ctx = clCreateContextFromType(prop, CL_DEVICE_TYPE_GPU, NULL, NULL, &err);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't create OpenCL context: %i\n", err);
-		switch ( err ) {
-		case CL_INVALID_PLATFORM :
-			ERROR("Invalid platform\n");
-			break;
-		case CL_OUT_OF_HOST_MEMORY :
-			ERROR("Out of memory\n");
-			break;
-		}
 		return;
 	}
 
@@ -189,7 +208,7 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 
 	/* Create buffer for the picture */
 	diff_size = image->width*image->height*sizeof(cl_float)*2; /* complex */
-	diff = clCreateBuffer(ctx, CL_MEM_READ_WRITE, diff_size, NULL, &err);
+	diff = clCreateBuffer(ctx, CL_MEM_WRITE_ONLY, diff_size, NULL, &err);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't allocate diffraction memory\n");
 		return;
@@ -202,7 +221,7 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 		sfac_ptr[2*i+0] = creal(image->molecule->reflections[i]);
 		sfac_ptr[2*i+1] = cimag(image->molecule->reflections[i]);
 	}
-	sfacs = clCreateBuffer(ctx, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+	sfacs = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
 	                       sfac_size, sfac_ptr, &err);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't allocate sfac memory\n");
@@ -210,7 +229,7 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	}
 
 	tt_size = image->width*image->height*sizeof(cl_float);
-	tt = clCreateBuffer(ctx, CL_MEM_READ_WRITE, tt_size, NULL, &err);
+	tt = clCreateBuffer(ctx, CL_MEM_WRITE_ONLY, tt_size, NULL, &err);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't allocate twotheta memory\n");
 		return;
@@ -249,20 +268,20 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	clSetKernelArg(kern, 10, sizeof(cl_float4), &orientation);
 
 	err = clEnqueueNDRangeKernel(cq, kern, 2, NULL, dims, NULL,
-	                             0, NULL, NULL);
+	                             1, &event_q, &event_d);
 	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't enqueue kernel\n");
+		ERROR("Couldn't enqueue diffraction kernel\n");
 		return;
 	}
 
 	diff_ptr = clEnqueueMapBuffer(cq, diff, CL_TRUE, CL_MAP_READ, 0,
-	                              diff_size, 0, NULL, NULL, &err);
+	                              diff_size, 1, &event_d, NULL, &err);
 	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't map sfac buffer\n");
+		ERROR("Couldn't map diffraction buffer: %s\n", clstrerr(err));
 		return;
 	}
 	tt_ptr = clEnqueueMapBuffer(cq, tt, CL_TRUE, CL_MAP_READ, 0,
-	                            tt_size, 0, NULL, NULL, &err);
+	                            tt_size, 1, &event_d, NULL, &err);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't map tt buffer\n");
 		return;
