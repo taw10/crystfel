@@ -29,7 +29,7 @@
 #define BANDWIDTH (1.0 / 100.0)
 
 
-static const char *clstrerr(cl_int err)
+static const char *clError(cl_int err)
 {
 	switch ( err ) {
 	case CL_SUCCESS : return "no error";
@@ -142,6 +142,7 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	double a, b, c, d;
 	float kc;
 	const size_t dims[2] = {1024, 1024};
+	cl_event event_d;
 
 	cl_mem sfacs;
 	size_t sfac_size;
@@ -255,20 +256,64 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	orientation[2] = image->orientation.y;
 	orientation[3] = image->orientation.z;
 
-	clSetKernelArg(kern, 0, sizeof(cl_mem), &diff);
+	err = clSetKernelArg(kern, 0, sizeof(cl_mem), &diff);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 0: %s\n", clError(err));
+		return;
+	}
 	clSetKernelArg(kern, 1, sizeof(cl_mem), &tt);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 1: %s\n", clError(err));
+		return;
+	}
 	clSetKernelArg(kern, 2, sizeof(cl_float), &kc);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 2: %s\n", clError(err));
+		return;
+	}
 	clSetKernelArg(kern, 3, sizeof(cl_int), &image->width);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 3: %s\n", clError(err));
+		return;
+	}
 	clSetKernelArg(kern, 4, sizeof(cl_float), &image->det.panels[0].cx);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 4: %s\n", clError(err));
+		return;
+	}
 	clSetKernelArg(kern, 5, sizeof(cl_float), &image->det.panels[0].cy);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 5: %s\n", clError(err));
+		return;
+	}
 	clSetKernelArg(kern, 6, sizeof(cl_float), &image->det.panels[0].res);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 6: %s\n", clError(err));
+		return;
+	}
 	clSetKernelArg(kern, 7, sizeof(cl_float), &image->det.panels[0].clen);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 7: %s\n", clError(err));
+		return;
+	}
 	clSetKernelArg(kern, 8, sizeof(cl_float16), &cell);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 8: %s\n", clError(err));
+		return;
+	}
 	clSetKernelArg(kern, 9, sizeof(cl_mem), &sfacs);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 9: %s\n", clError(err));
+		return;
+	}
 	clSetKernelArg(kern, 10, sizeof(cl_float4), &orientation);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 10: %s\n", clError(err));
+		return;
+	}
 
 	err = clEnqueueNDRangeKernel(cq, kern, 2, NULL, dims, NULL,
-	                             1, &event_q, &event_d);
+	                             0, NULL, &event_d);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't enqueue diffraction kernel\n");
 		return;
@@ -277,7 +322,7 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	diff_ptr = clEnqueueMapBuffer(cq, diff, CL_TRUE, CL_MAP_READ, 0,
 	                              diff_size, 1, &event_d, NULL, &err);
 	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't map diffraction buffer: %s\n", clstrerr(err));
+		ERROR("Couldn't map diffraction buffer: %s\n", clError(err));
 		return;
 	}
 	tt_ptr = clEnqueueMapBuffer(cq, tt, CL_TRUE, CL_MAP_READ, 0,
