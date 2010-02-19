@@ -216,9 +216,9 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	}
 
 	/* Create a single-precision version of the scattering factors */
-	sfac_size = IDIM*IDIM*sizeof(cl_float)*2; /* complex */
-	sfac_ptr = malloc(IDIM*IDIM*sizeof(cl_float)*2);
-	for ( i=0; i<IDIM*IDIM; i++ ) {
+	sfac_size = IDIM*IDIM*IDIM*sizeof(cl_float)*2; /* complex */
+	sfac_ptr = malloc(sfac_size);
+	for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
 		sfac_ptr[2*i+0] = creal(image->molecule->reflections[i]);
 		sfac_ptr[2*i+1] = cimag(image->molecule->reflections[i]);
 	}

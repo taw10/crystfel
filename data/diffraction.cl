@@ -10,7 +10,7 @@
  */
 
 
-#define INDMAX 30
+#define INDMAX 70
 #define IDIM (INDMAX*2 +1)
 
 
@@ -99,12 +99,17 @@ float lattice_factor(float16 cell, float4 q)
 
 float2 get_sfac(global float2 *sfacs, float16 cell, float4 q)
 {
-	signed int h, k, l;
+	float hf, kf, lf;
+	int h, k, l;
 	int idx;
 
-	h = rint(cell.s0*q.x + cell.s1*q.y + cell.s2*q.z);  /* h */
-	k = rint(cell.s3*q.x + cell.s4*q.y + cell.s5*q.z);  /* k */
-	l = rint(cell.s6*q.x + cell.s7*q.y + cell.s8*q.z);  /* l */
+	hf = cell.s0*q.x + cell.s1*q.y + cell.s2*q.z;  /* h */
+	kf = cell.s3*q.x + cell.s4*q.y + cell.s5*q.z;  /* k */
+	lf = cell.s6*q.x + cell.s7*q.y + cell.s8*q.z;  /* l */
+
+	h = round(hf);
+	k = round(kf);
+	l = round(lf);
 
 	if ( (abs(h) > INDMAX) || (abs(k) > INDMAX) || (abs(l) > INDMAX) ) {
 		return 100.0;
@@ -114,7 +119,10 @@ float2 get_sfac(global float2 *sfacs, float16 cell, float4 q)
 	if ( k < 0 ) k += IDIM;
 	if ( l < 0 ) l += IDIM;
 
+	if ( (h>=IDIM) || (k>=IDIM) || (l>=IDIM) ) return 100.0;
+
 	idx = h + (IDIM*k) + (IDIM*IDIM*l);
+
 	return sfacs[idx];
 }
 
