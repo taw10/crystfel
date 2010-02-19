@@ -49,6 +49,7 @@ static const char *clError(cl_int err)
 	case CL_OUT_OF_HOST_MEMORY : return "out of host memory";
 	case CL_OUT_OF_RESOURCES : return "out of resources";
 	case CL_INVALID_KERNEL_NAME : return "invalid kernel name";
+	case CL_INVALID_KERNEL_ARGS : return "invalid kernel arguments";
 	default :
 		ERROR("Error code: %i\n", err);
 		return "unknown error";
@@ -315,7 +316,7 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	err = clEnqueueNDRangeKernel(cq, kern, 2, NULL, dims, NULL,
 	                             0, NULL, &event_d);
 	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't enqueue diffraction kernel\n");
+		ERROR("Couldn't enqueue diffraction kernel: %s\n", clError(err));
 		return;
 	}
 
