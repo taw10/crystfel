@@ -25,8 +25,8 @@
 
 
 #define SAMPLING (4)
-#define BWSAMPLING (1)
-#define BANDWIDTH (0.0 / 100.0)
+#define BWSAMPLING (10)
+#define BANDWIDTH (1.0 / 100.0)
 
 
 struct gpu_context
@@ -150,7 +150,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-	float kc;
+	float k, klow;
 	cl_event *event;
 	int p;
 	float *tt_ptr;
@@ -160,6 +160,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	cl_float4 orientation;
 	cl_int4 ncells;
 	const int sampling = SAMPLING;
+	cl_float bwstep;
 
 	cell_get_cartesian(image->molecule->cell, &ax, &ay, &az,
 		                                  &bx, &by, &bz,
@@ -169,7 +170,9 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	cell[6] = cx;  cell[7] = cy;  cell[8] = cz;
 
 	/* Calculate wavelength */
-	kc = 1.0/image->lambda;  /* Centre value */
+	k = 1.0/image->lambda;  /* Centre value */
+	klow = k - k*(BANDWIDTH/2.0);  /* Lower value */
+	bwstep = k * BANDWIDTH / BWSAMPLING;
 
 	/* Orientation */
 	orientation[0] = image->orientation.w;
@@ -192,7 +195,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		ERROR("Couldn't set arg 1: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(gctx->kern, 2, sizeof(cl_float), &kc);
+	clSetKernelArg(gctx->kern, 2, sizeof(cl_float), &klow);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 2: %s\n", clError(err));
 		return;
@@ -228,10 +231,16 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		return;
 	}
 	/* Local memory for reduction */
-	clSetKernelArg(gctx->kern, 15, SAMPLING*SAMPLING*2*sizeof(cl_float),
-	               NULL);
+	clSetKernelArg(gctx->kern, 15,
+	               BWSAMPLING*SAMPLING*SAMPLING*2*sizeof(cl_float), NULL);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 15: %s\n", clError(err));
+		return;
+	}
+	/* Bandwidth sampling step */
+	clSetKernelArg(gctx->kern, 16, sizeof(cl_float), &bwstep);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 16: %s\n", clError(err));
 		return;
 	}
 
@@ -239,15 +248,16 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	event = malloc(image->det.n_panels * sizeof(cl_event));
 	for ( p=0; p<image->det.n_panels; p++ ) {
 
-		size_t dims[2];
-		size_t ldims[2] = {SAMPLING, SAMPLING};
+		size_t dims[3];
+		size_t ldims[3] = {SAMPLING, SAMPLING, BWSAMPLING};
 
 		/* In a future version of OpenCL, this could be done
 		 * with a global work offset.  But not yet... */
-		dims[0] = image->det.panels[0].max_x-image->det.panels[0].min_x;
-		dims[1] = image->det.panels[0].max_y-image->det.panels[0].min_y;
+		dims[0] = 1+image->det.panels[0].max_x-image->det.panels[0].min_x;
+		dims[1] = 1+image->det.panels[0].max_y-image->det.panels[0].min_y;
 		dims[0] *= SAMPLING;
 		dims[1] *= SAMPLING;
+		dims[2] = BWSAMPLING;
 
 		clSetKernelArg(gctx->kern, 4, sizeof(cl_float),
 		               &image->det.panels[p].cx);
@@ -286,7 +296,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 			return;
 		}
 
-		err = clEnqueueNDRangeKernel(gctx->cq, gctx->kern, 2, NULL,
+		err = clEnqueueNDRangeKernel(gctx->cq, gctx->kern, 3, NULL,
 		                             dims, ldims, 0, NULL, &event[p]);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't enqueue diffraction kernel: %s\n",

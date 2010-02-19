@@ -24,8 +24,8 @@
 
 
 #define SAMPLING (4)
-#define BWSAMPLING (1)
-#define BANDWIDTH (0.0 / 100.0)
+#define BWSAMPLING (10)
+#define BANDWIDTH (1.0 / 100.0)
 
 
 static double lattice_factor(struct rvec q, double ax, double ay, double az,
@@ -184,7 +184,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-	float kc;
+	float k, klow, bwstep;
 
 	if ( image->molecule == NULL ) return;
 
@@ -206,7 +206,9 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 	/* Needed later for Lorentz calculation */
 	image->twotheta = malloc(image->width * image->height * sizeof(double));
 
-	kc = 1.0/image->lambda;  /* Centre value */
+	k = 1.0/image->lambda;  /* Centre value */
+	klow = k - k*(BANDWIDTH/2.0);  /* Lower value */
+	bwstep = k * BANDWIDTH / BWSAMPLING;
 
 	for ( xs=0; xs<image->width*SAMPLING; xs++ ) {
 	for ( ys=0; ys<image->height*SAMPLING; ys++ ) {
@@ -229,8 +231,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 			double complex val;
 
 			/* Calculate k this time round */
-			k = kc + (kstep-(BWSAMPLING/2)) *
-			                              kc*(BANDWIDTH/BWSAMPLING);
+			k = klow + kstep * bwstep;
 
 			q = get_q(image, xs, ys, SAMPLING, &twotheta, k);
 			image->twotheta[x + image->width*y] = twotheta;
