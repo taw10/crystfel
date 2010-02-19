@@ -46,7 +46,7 @@ float4 quat_rot(float4 q, float4 z)
 
 
 float4 get_q(int x, int y, float cx, float cy, float res, float clen, float k,
-             float *ttp, float4 z)
+             float *ttp, float4 z, int sampling)
 {
 	float rx, ry, r;
 	float ttx, tty, tt;
@@ -131,19 +131,43 @@ kernel void diffraction(global float2 *diff, global float *tt, float k,
                        int w, float cx, float cy,
                        float res, float clen, float16 cell,
                        global float2 *sfacs, float4 z, int4 ncells,
-                       int xmin, int ymin)
+                       int xmin, int ymin, int sampling, local float2 *tmp)
 {
 	float ttv;
 	const int x = get_global_id(0) + xmin;
 	const int y = get_global_id(1) + ymin;
 	float f_lattice;
 	float2 f_molecule;
+	float4 q;
+	const int lx = get_local_id(0);
+	const int ly = get_local_id(1);
+	const int ax = x / sampling;
+	const int ay = y / sampling;
 
-	float4 q = get_q(x, y, cx, cy, res, clen, k, &ttv, z);
-
+	/* Calculate value */
+	q = get_q(x, y, cx, cy, res, clen, k, &ttv, z, sampling);
 	f_lattice = lattice_factor(cell, q, ncells);
 	f_molecule = get_sfac(sfacs, cell, q);
 
-	diff[x+w*y] = f_molecule * f_lattice;
-	tt[x+w*y] = ttv;
+	/* Write the value to local memory */
+	tmp[lx+sampling*ly] = f_molecule * f_lattice;
+
+	/* Memory fence */
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	/* Leader thread sums the values */
+	if ( lx + ly == 0 ) {
+
+		int i;
+		float2 sum = (0.0, 0.0);
+
+		for ( i=0; i<sampling*sampling; i++ ) sum += tmp[i];
+
+		diff[ax+w*ay] = sum / (sampling*sampling);
+
+		/* Leader thread also records 2theta value.
+		 * This should really be averaged across all pixels, but
+		 * I strongly suspect this would be a waste of time. */
+		tt[ax+w*ay] = ttv;
+	}
 }

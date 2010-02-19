@@ -23,7 +23,7 @@
 #include "sfac.h"
 
 
-#define SAMPLING (1)
+#define SAMPLING (4)
 #define BWSAMPLING (1)
 #define BANDWIDTH (0.0 / 100.0)
 

@@ -24,9 +24,9 @@
 #include "sfac.h"
 
 
-#define SAMPLING (5)
-#define BWSAMPLING (10)
-#define BANDWIDTH (1.0 / 100.0)
+#define SAMPLING (4)
+#define BWSAMPLING (1)
+#define BANDWIDTH (0.0 / 100.0)
 
 
 struct gpu_context
@@ -150,7 +150,6 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	double bx, by, bz;
 	double cx, cy, cz;
 	float kc;
-	size_t dims[2];
 	cl_event *event;
 	int p;
 	float *tt_ptr;
@@ -159,6 +158,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	float *diff_ptr;
 	cl_float4 orientation;
 	cl_int4 ncells;
+	const int sampling = SAMPLING;
 
 	cell_get_cartesian(image->molecule->cell, &ax, &ay, &az,
 		                                  &bx, &by, &bz,
@@ -221,30 +221,49 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		ERROR("Couldn't set arg 11: %s\n", clError(err));
 		return;
 	}
+	clSetKernelArg(gctx->kern, 14, sizeof(cl_int), &sampling);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 14: %s\n", clError(err));
+		return;
+	}
+	/* Local memory for reduction */
+	clSetKernelArg(gctx->kern, 15, SAMPLING*SAMPLING*2*sizeof(cl_float),
+	               NULL);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 15: %s\n", clError(err));
+		return;
+	}
 
 	/* Iterate over panels */
 	event = malloc(image->det.n_panels * sizeof(cl_event));
 	for ( p=0; p<image->det.n_panels; p++ ) {
 
+		size_t dims[2];
+		size_t ldims[2] = {SAMPLING, SAMPLING};
+		cl_float res = image->det.panels[p].res * SAMPLING;
+		int offsx = image->det.panels[p].min_x * SAMPLING;
+		int offsy = image->det.panels[p].min_y * SAMPLING;
+		cl_float centx = image->det.panels[p].cx * SAMPLING;
+		cl_float centy = image->det.panels[p].cy * SAMPLING;
+
 		/* In a future version of OpenCL, this could be done
 		 * with a global work offset.  But not yet... */
 		dims[0] = image->det.panels[0].max_x-image->det.panels[0].min_x;
 		dims[1] = image->det.panels[0].max_y-image->det.panels[0].min_y;
+		dims[0] *= SAMPLING;
+		dims[1] *= SAMPLING;
 
-		clSetKernelArg(gctx->kern, 4, sizeof(cl_float),
-		               &image->det.panels[p].cx);
+		clSetKernelArg(gctx->kern, 4, sizeof(cl_float), &centx);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 4: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(gctx->kern, 5, sizeof(cl_float),
-		               &image->det.panels[p].cy);
+		clSetKernelArg(gctx->kern, 5, sizeof(cl_float), &centy);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 5: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(gctx->kern, 6, sizeof(cl_float),
-		               &image->det.panels[p].res);
+		clSetKernelArg(gctx->kern, 6, sizeof(cl_float), &res);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 6: %s\n", clError(err));
 			return;
@@ -255,22 +274,19 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 			ERROR("Couldn't set arg 7: %s\n", clError(err));
 			return;
 		}
-
-		clSetKernelArg(gctx->kern, 12, sizeof(cl_int),
-		               &image->det.panels[p].min_x);
+		clSetKernelArg(gctx->kern, 12, sizeof(cl_int), &offsx);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 12: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(gctx->kern, 13, sizeof(cl_int),
-		               &image->det.panels[p].min_y);
+		clSetKernelArg(gctx->kern, 13, sizeof(cl_int), &offsy);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 13: %s\n", clError(err));
 			return;
 		}
 
 		err = clEnqueueNDRangeKernel(gctx->cq, gctx->kern, 2, NULL,
-		                             dims, NULL, 0, NULL, &event[p]);
+		                             dims, ldims, 0, NULL, &event[p]);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't enqueue diffraction kernel: %s\n",
 			      clError(err));
