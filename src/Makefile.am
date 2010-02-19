@@ -36,3 +36,5 @@ get_hkl_LDADD = @LIBS@
 
 compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c
 compare_hkl_LDADD = @LIBS@
+
+INCLUDES = "-I$(top_srcdir)/data"

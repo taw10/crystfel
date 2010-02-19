@@ -10,8 +10,7 @@
  */
 
 
-#define INDMAX 70
-#define IDIM (INDMAX*2 +1)
+#include <defs.h>
 
 
 float4 quat_rot(float4 q, float4 z)

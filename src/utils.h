@@ -137,11 +137,7 @@ static inline double angle_between(double x1, double y1, double z1,
 
 /* -------------------- Indexed lists for specified types ------------------- */
 
-/* Maxmimum index to hold values up to (can be increased if necessary) */
-#define INDMAX 70
-
-/* Array size */
-#define IDIM (INDMAX*2 +1)
+#include "defs.h"
 
 #define LIST_SIZE (IDIM*IDIM*IDIM)
 
