@@ -137,6 +137,7 @@ static cl_program load_program(const char *filename, cl_context ctx,
 		return 0;
 	}
 
+	free(source);
 	*err = CL_SUCCESS;
 	return prog;
 }
@@ -329,6 +330,9 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 	}
 	}
+
+	clEnqueueUnmapMemObject(gctx->cq, gctx->diff, diff_ptr, 0, NULL, NULL);
+	clEnqueueUnmapMemObject(gctx->cq, gctx->tt, tt_ptr, 0, NULL, NULL);
 }
 
 
@@ -349,8 +353,8 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 
 	/* Generate structure factors if required */
 	if ( !no_sfac ) {
-		if ( image->molecule->reflections == NULL ) {
-			get_reflections_cached(image->molecule,
+		if ( molecule->reflections == NULL ) {
+			get_reflections_cached(molecule,
 			                       ph_lambda_to_en(image->lambda));
 		}
 	}
@@ -413,13 +417,14 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 		}
 	}
 	gctx->sfacs = clCreateBuffer(gctx->ctx,
-	                             CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
+	                             CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
 	                             sfac_size, sfac_ptr, &err);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't allocate sfac memory\n");
 		free(gctx);
 		return NULL;
 	}
+	free(sfac_ptr);
 
 	gctx->tt_size = image->width*image->height*sizeof(cl_float);
 	gctx->tt = clCreateBuffer(gctx->ctx, CL_MEM_WRITE_ONLY, gctx->tt_size,

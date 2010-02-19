@@ -363,5 +363,10 @@ skip:
 		cleanup_gpu(gctx);
 	}
 
+	free(image.det.panels);
+	free(powder);
+	free(image.molecule->reflections);
+	free(image.molecule);
+
 	return 0;
 }
