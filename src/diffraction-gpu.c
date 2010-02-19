@@ -29,6 +29,23 @@
 #define BANDWIDTH (1.0 / 100.0)
 
 
+struct gpu_context
+{
+	cl_context ctx;
+	cl_command_queue cq;
+	cl_program prog;
+	cl_kernel kern;
+	cl_mem sfacs;
+
+	cl_mem tt;
+	size_t tt_size;
+
+	cl_mem diff;
+	size_t diff_size;
+
+};
+
+
 static const char *clError(cl_int err)
 {
 	switch ( err ) {
@@ -125,18 +142,10 @@ static cl_program load_program(const char *filename, cl_context ctx,
 }
 
 
-void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
-                         int no_sfac)
+void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
+                         int na, int nb, int nc, int no_sfac)
 {
-	cl_uint nplat;
-	cl_platform_id platforms[8];
-	cl_context_properties prop[3];
-	cl_context ctx;
 	cl_int err;
-	cl_command_queue cq;
-	cl_program prog;
-	cl_device_id dev;
-	cl_kernel kern;
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
@@ -144,31 +153,12 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	size_t dims[2];
 	cl_event event_d;
 	int p;
-
-	cl_mem sfacs;
-	size_t sfac_size;
-	float *sfac_ptr;
-	cl_mem tt;
-	size_t tt_size;
 	float *tt_ptr;
 	int x, y;
 	cl_float16 cell;
-	cl_mem diff;
-	size_t diff_size;
 	float *diff_ptr;
-	int i;
 	cl_float4 orientation;
 	cl_int4 ncells;
-
-	if ( image->molecule == NULL ) return;
-
-	/* Generate structure factors if required */
-	if ( !no_sfac ) {
-		if ( image->molecule->reflections == NULL ) {
-			get_reflections_cached(image->molecule,
-			                       ph_lambda_to_en(image->lambda));
-		}
-	}
 
 	cell_get_cartesian(image->molecule->cell, &ax, &ay, &az,
 		                                  &bx, &by, &bz,
@@ -176,73 +166,6 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	cell[0] = ax;  cell[1] = ay;  cell[2] = az;
 	cell[3] = bx;  cell[4] = by;  cell[5] = bz;
 	cell[6] = cx;  cell[7] = cy;  cell[8] = cz;
-
-	err = clGetPlatformIDs(8, platforms, &nplat);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't get platform IDs: %i\n", err);
-		return;
-	}
-	if ( nplat == 0 ) {
-		ERROR("Couldn't find at least one platform!\n");
-		return;
-	}
-	prop[0] = CL_CONTEXT_PLATFORM;
-	prop[1] = (cl_context_properties)platforms[0];
-	prop[2] = 0;
-
-	ctx = clCreateContextFromType(prop, CL_DEVICE_TYPE_GPU, NULL, NULL, &err);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't create OpenCL context: %i\n", err);
-		return;
-	}
-
-	dev = get_first_dev(ctx);
-
-	cq = clCreateCommandQueue(ctx, dev, 0, &err);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't create OpenCL command queue\n");
-		return;
-	}
-
-	/* Create buffer for the picture */
-	diff_size = image->width*image->height*sizeof(cl_float)*2; /* complex */
-	diff = clCreateBuffer(ctx, CL_MEM_WRITE_ONLY, diff_size, NULL, &err);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't allocate diffraction memory\n");
-		return;
-	}
-
-	/* Create a single-precision version of the scattering factors */
-	sfac_size = IDIM*IDIM*IDIM*sizeof(cl_float)*2; /* complex */
-	sfac_ptr = malloc(sfac_size);
-	for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
-		sfac_ptr[2*i+0] = creal(image->molecule->reflections[i]);
-		sfac_ptr[2*i+1] = cimag(image->molecule->reflections[i]);
-	}
-	sfacs = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
-	                       sfac_size, sfac_ptr, &err);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't allocate sfac memory\n");
-		return;
-	}
-
-	tt_size = image->width*image->height*sizeof(cl_float);
-	tt = clCreateBuffer(ctx, CL_MEM_WRITE_ONLY, tt_size, NULL, &err);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't allocate twotheta memory\n");
-		return;
-	}
-
-	prog = load_program(DATADIR"/crystfel/diffraction.cl", ctx, dev, &err);
-	if ( err != CL_SUCCESS ) {
-		return;
-	}
-
-	kern = clCreateKernel(prog, "diffraction", &err);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't create kernel\n");
-		return;
-	}
 
 	/* Calculate wavelength */
 	kc = 1.0/image->lambda;  /* Centre value */
@@ -258,42 +181,42 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	ncells[2] = nc;
 	ncells[3] = 0;  /* unused */
 
-	err = clSetKernelArg(kern, 0, sizeof(cl_mem), &diff);
+	err = clSetKernelArg(gctx->kern, 0, sizeof(cl_mem), &gctx->diff);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 0: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(kern, 1, sizeof(cl_mem), &tt);
+	clSetKernelArg(gctx->kern, 1, sizeof(cl_mem), &gctx->tt);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 1: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(kern, 2, sizeof(cl_float), &kc);
+	clSetKernelArg(gctx->kern, 2, sizeof(cl_float), &kc);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 2: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(kern, 3, sizeof(cl_int), &image->width);
+	clSetKernelArg(gctx->kern, 3, sizeof(cl_int), &image->width);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 3: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(kern, 8, sizeof(cl_float16), &cell);
+	clSetKernelArg(gctx->kern, 8, sizeof(cl_float16), &cell);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 8: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(kern, 9, sizeof(cl_mem), &sfacs);
+	clSetKernelArg(gctx->kern, 9, sizeof(cl_mem), &gctx->sfacs);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 9: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(kern, 10, sizeof(cl_float4), &orientation);
+	clSetKernelArg(gctx->kern, 10, sizeof(cl_float4), &orientation);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 10: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(kern, 11, sizeof(cl_int4), &ncells);
+	clSetKernelArg(gctx->kern, 11, sizeof(cl_int4), &ncells);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 11: %s\n", clError(err));
 		return;
@@ -307,46 +230,46 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 		dims[0] = image->det.panels[0].max_x-image->det.panels[0].min_x;
 		dims[1] = image->det.panels[0].max_y-image->det.panels[0].min_y;
 
-		clSetKernelArg(kern, 4, sizeof(cl_float),
+		clSetKernelArg(gctx->kern, 4, sizeof(cl_float),
 		               &image->det.panels[p].cx);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 4: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(kern, 5, sizeof(cl_float),
+		clSetKernelArg(gctx->kern, 5, sizeof(cl_float),
 		               &image->det.panels[p].cy);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 5: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(kern, 6, sizeof(cl_float),
+		clSetKernelArg(gctx->kern, 6, sizeof(cl_float),
 		               &image->det.panels[p].res);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 6: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(kern, 7, sizeof(cl_float),
+		clSetKernelArg(gctx->kern, 7, sizeof(cl_float),
 		               &image->det.panels[p].clen);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 7: %s\n", clError(err));
 			return;
 		}
 
-		clSetKernelArg(kern, 12, sizeof(cl_int),
+		clSetKernelArg(gctx->kern, 12, sizeof(cl_int),
 		               &image->det.panels[p].min_x);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 12: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(kern, 13, sizeof(cl_int),
+		clSetKernelArg(gctx->kern, 13, sizeof(cl_int),
 		               &image->det.panels[p].min_y);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 13: %s\n", clError(err));
 			return;
 		}
 
-		err = clEnqueueNDRangeKernel(cq, kern, 2, NULL, dims, NULL,
-			                     0, NULL, &event_d);
+		err = clEnqueueNDRangeKernel(gctx->cq, gctx->kern, 2, NULL,
+		                             dims, NULL, 0, NULL, &event_d);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't enqueue diffraction kernel: %s\n",
 			      clError(err));
@@ -354,14 +277,15 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 		}
 	}
 
-	diff_ptr = clEnqueueMapBuffer(cq, diff, CL_TRUE, CL_MAP_READ, 0,
-	                              diff_size, 1, &event_d, NULL, &err);
+	diff_ptr = clEnqueueMapBuffer(gctx->cq, gctx->diff, CL_TRUE,
+	                              CL_MAP_READ, 0, gctx->diff_size, 1,
+	                              &event_d, NULL, &err);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't map diffraction buffer: %s\n", clError(err));
 		return;
 	}
-	tt_ptr = clEnqueueMapBuffer(cq, tt, CL_TRUE, CL_MAP_READ, 0,
-	                            tt_size, 1, &event_d, NULL, &err);
+	tt_ptr = clEnqueueMapBuffer(gctx->cq, gctx->tt, CL_TRUE, CL_MAP_READ, 0,
+	                            gctx->tt_size, 1, &event_d, NULL, &err);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't map tt buffer\n");
 		return;
@@ -385,11 +309,132 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 
 	}
 	}
+}
 
-	clReleaseProgram(prog);
-	clReleaseMemObject(diff);
-	clReleaseMemObject(tt);
-	clReleaseMemObject(sfacs);
-	clReleaseCommandQueue(cq);
-	clReleaseContext(ctx);
+
+/* Setup the OpenCL stuff, create buffers, load the structure factor table */
+struct gpu_context *setup_gpu(int no_sfac, struct image *image,
+                              struct molecule *molecule)
+{
+	struct gpu_context *gctx;
+	cl_uint nplat;
+	cl_platform_id platforms[8];
+	cl_context_properties prop[3];
+	cl_int err;
+	cl_device_id dev;
+	size_t sfac_size;
+	float *sfac_ptr;
+
+	if ( molecule == NULL ) return NULL;
+
+	/* Generate structure factors if required */
+	if ( !no_sfac ) {
+		if ( image->molecule->reflections == NULL ) {
+			get_reflections_cached(image->molecule,
+			                       ph_lambda_to_en(image->lambda));
+		}
+	}
+
+	err = clGetPlatformIDs(8, platforms, &nplat);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't get platform IDs: %i\n", err);
+		return NULL;
+	}
+	if ( nplat == 0 ) {
+		ERROR("Couldn't find at least one platform!\n");
+		return NULL;
+	}
+	prop[0] = CL_CONTEXT_PLATFORM;
+	prop[1] = (cl_context_properties)platforms[0];
+	prop[2] = 0;
+
+	gctx = malloc(sizeof(*gctx));
+	gctx->ctx = clCreateContextFromType(prop, CL_DEVICE_TYPE_GPU,
+	                                    NULL, NULL, &err);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't create OpenCL context: %i\n", err);
+		free(gctx);
+		return NULL;
+	}
+
+	dev = get_first_dev(gctx->ctx);
+
+	gctx->cq = clCreateCommandQueue(gctx->ctx, dev, 0, &err);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't create OpenCL command queue\n");
+		free(gctx);
+		return NULL;
+	}
+
+	/* Create buffer for the picture */
+	gctx->diff_size = image->width*image->height*sizeof(cl_float)*2;
+	gctx->diff = clCreateBuffer(gctx->ctx, CL_MEM_WRITE_ONLY,
+	                            gctx->diff_size, NULL, &err);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't allocate diffraction memory\n");
+		free(gctx);
+		return NULL;
+	}
+
+	/* Create a single-precision version of the scattering factors */
+	sfac_size = IDIM*IDIM*IDIM*sizeof(cl_float)*2; /* complex */
+	sfac_ptr = malloc(sfac_size);
+	if ( !no_sfac ) {
+		int i;
+		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
+			sfac_ptr[2*i+0] = creal(molecule->reflections[i]);
+			sfac_ptr[2*i+1] = cimag(molecule->reflections[i]);
+		}
+	} else {
+		int i;
+		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
+			sfac_ptr[2*i+0] = 1000.0;
+			sfac_ptr[2*i+1] = 0.0;
+		}
+	}
+	gctx->sfacs = clCreateBuffer(gctx->ctx,
+	                             CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
+	                             sfac_size, sfac_ptr, &err);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't allocate sfac memory\n");
+		free(gctx);
+		return NULL;
+	}
+
+	gctx->tt_size = image->width*image->height*sizeof(cl_float);
+	gctx->tt = clCreateBuffer(gctx->ctx, CL_MEM_WRITE_ONLY, gctx->tt_size,
+	                          NULL, &err);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't allocate twotheta memory\n");
+		free(gctx);
+		return NULL;
+	}
+
+	gctx->prog = load_program(DATADIR"/crystfel/diffraction.cl", gctx->ctx,
+	                          dev, &err);
+	if ( err != CL_SUCCESS ) {
+		free(gctx);
+		return NULL;
+	}
+
+	gctx->kern = clCreateKernel(gctx->prog, "diffraction", &err);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't create kernel\n");
+		free(gctx);
+		return NULL;
+	}
+
+	return gctx;
+}
+
+
+void cleanup_gpu(struct gpu_context *gctx)
+{
+	clReleaseProgram(gctx->prog);
+	clReleaseMemObject(gctx->diff);
+	clReleaseMemObject(gctx->tt);
+	clReleaseMemObject(gctx->sfacs);
+	clReleaseCommandQueue(gctx->cq);
+	clReleaseContext(gctx->ctx);
+	free(gctx);
 }

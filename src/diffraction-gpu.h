@@ -19,16 +19,22 @@
 #include "image.h"
 #include "cell.h"
 
+struct gpu_context;
+
 #if HAVE_OPENCL
-extern void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
-                                int nosfac);
+extern void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
+                                int na, int nb, int nc);
 #else
-static void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
-                                int nosfac)
+static void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
+                                int na, int nb, int nc)
 {
 	/* Do nothing */
 	ERROR("This copy of CrystFEL was not compiled with OpenCL support.\n");
 }
 #endif
+
+extern struct gpu_context *setup_gpu(int no_sfac, struct image *image,
+                                     struct molecule *molecule);
+extern void cleanup_gpu(struct gpu_context *gctx);
 
 #endif	/* DIFFRACTION_GPU_H */

@@ -152,6 +152,7 @@ int main(int argc, char *argv[])
 {
 	int c;
 	struct image image;
+	struct gpu_context *gctx = NULL;
 	long long int *powder;
 	int config_simdetails = 0;
 	int config_nearbragg = 0;
@@ -289,7 +290,11 @@ int main(int argc, char *argv[])
 	               na, nb, nc, na*a/1.0e-9, nb*b/1.0e-9, nc*c/1.0e-9);
 
 		if ( config_gpu ) {
-			get_diffraction_gpu(&image, na, nb, nc, config_nosfac);
+			if ( gctx == NULL ) {
+				gctx = setup_gpu(config_nosfac, &image,
+				                 image.molecule);
+			}
+			get_diffraction_gpu(gctx, &image, na, nb, nc);
 		} else {
 			get_diffraction(&image, na, nb, nc, config_nosfac);
 		}
@@ -353,6 +358,10 @@ skip:
 		if ( n_images && (ndone >= n_images) ) done = 1;
 
 	} while ( !done );
+
+	if ( gctx != NULL ) {
+		cleanup_gpu(gctx);
+	}
 
 	return 0;
 }
