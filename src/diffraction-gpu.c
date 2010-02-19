@@ -240,11 +240,6 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 		size_t dims[2];
 		size_t ldims[2] = {SAMPLING, SAMPLING};
-		cl_float res = image->det.panels[p].res * SAMPLING;
-		int offsx = image->det.panels[p].min_x * SAMPLING;
-		int offsy = image->det.panels[p].min_y * SAMPLING;
-		cl_float centx = image->det.panels[p].cx * SAMPLING;
-		cl_float centy = image->det.panels[p].cy * SAMPLING;
 
 		/* In a future version of OpenCL, this could be done
 		 * with a global work offset.  But not yet... */
@@ -253,17 +248,20 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		dims[0] *= SAMPLING;
 		dims[1] *= SAMPLING;
 
-		clSetKernelArg(gctx->kern, 4, sizeof(cl_float), &centx);
+		clSetKernelArg(gctx->kern, 4, sizeof(cl_float),
+		               &image->det.panels[p].cx);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 4: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(gctx->kern, 5, sizeof(cl_float), &centy);
+		clSetKernelArg(gctx->kern, 5, sizeof(cl_float),
+		               &image->det.panels[p].cy);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 5: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(gctx->kern, 6, sizeof(cl_float), &res);
+		clSetKernelArg(gctx->kern, 6, sizeof(cl_float),
+		               &image->det.panels[p].res);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 6: %s\n", clError(err));
 			return;
@@ -274,12 +272,14 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 			ERROR("Couldn't set arg 7: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(gctx->kern, 12, sizeof(cl_int), &offsx);
+		clSetKernelArg(gctx->kern, 12, sizeof(cl_int),
+		               &image->det.panels[p].min_x);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 12: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(gctx->kern, 13, sizeof(cl_int), &offsy);
+		clSetKernelArg(gctx->kern, 13, sizeof(cl_int),
+		               &image->det.panels[p].min_y);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 13: %s\n", clError(err));
 			return;

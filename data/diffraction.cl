@@ -52,8 +52,8 @@ float4 get_q(int x, int y, float cx, float cy, float res, float clen, float k,
 	float ttx, tty, tt;
 	float4 q;
 
-	rx = ((float)x - cx)/res;
-	ry = ((float)y - cy)/res;
+	rx = ((float)x - sampling*cx)/(res*sampling);
+	ry = ((float)y - sampling*cy)/(res*sampling);
 
 	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
 
@@ -134,8 +134,8 @@ kernel void diffraction(global float2 *diff, global float *tt, float k,
                        int xmin, int ymin, int sampling, local float2 *tmp)
 {
 	float ttv;
-	const int x = get_global_id(0) + xmin;
-	const int y = get_global_id(1) + ymin;
+	const int x = get_global_id(0) + (xmin*sampling);
+	const int y = get_global_id(1) + (ymin*sampling);
 	float f_lattice;
 	float2 f_molecule;
 	float4 q;
@@ -165,7 +165,7 @@ kernel void diffraction(global float2 *diff, global float *tt, float k,
 
 		diff[ax+w*ay] = sum / (sampling*sampling);
 
-		/* Leader thread also records 2theta value.
+		/* Leader thread also records the 2theta value.
 		 * This should really be averaged across all pixels, but
 		 * I strongly suspect this would be a waste of time. */
 		tt[ax+w*ay] = ttv;
