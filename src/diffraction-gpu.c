@@ -141,8 +141,9 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	double bx, by, bz;
 	double cx, cy, cz;
 	float kc;
-	const size_t dims[2] = {1024, 1024};
+	size_t dims[2];
 	cl_event event_d;
+	int p;
 
 	cl_mem sfacs;
 	size_t sfac_size;
@@ -277,26 +278,6 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 		ERROR("Couldn't set arg 3: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(kern, 4, sizeof(cl_float), &image->det.panels[0].cx);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 4: %s\n", clError(err));
-		return;
-	}
-	clSetKernelArg(kern, 5, sizeof(cl_float), &image->det.panels[0].cy);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 5: %s\n", clError(err));
-		return;
-	}
-	clSetKernelArg(kern, 6, sizeof(cl_float), &image->det.panels[0].res);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 6: %s\n", clError(err));
-		return;
-	}
-	clSetKernelArg(kern, 7, sizeof(cl_float), &image->det.panels[0].clen);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 7: %s\n", clError(err));
-		return;
-	}
 	clSetKernelArg(kern, 8, sizeof(cl_float16), &cell);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 8: %s\n", clError(err));
@@ -318,11 +299,59 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 		return;
 	}
 
-	err = clEnqueueNDRangeKernel(cq, kern, 2, NULL, dims, NULL,
-	                             0, NULL, &event_d);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't enqueue diffraction kernel: %s\n", clError(err));
-		return;
+	/* Iterate over panels */
+	for ( p=0; p<image->det.n_panels; p++ ) {
+
+		/* In a future version of OpenCL, this could be done
+		 * with a global work offset.  But not yet... */
+		dims[0] = image->det.panels[0].max_x-image->det.panels[0].min_x;
+		dims[1] = image->det.panels[0].max_y-image->det.panels[0].min_y;
+
+		clSetKernelArg(kern, 4, sizeof(cl_float),
+		               &image->det.panels[p].cx);
+		if ( err != CL_SUCCESS ) {
+			ERROR("Couldn't set arg 4: %s\n", clError(err));
+			return;
+		}
+		clSetKernelArg(kern, 5, sizeof(cl_float),
+		               &image->det.panels[p].cy);
+		if ( err != CL_SUCCESS ) {
+			ERROR("Couldn't set arg 5: %s\n", clError(err));
+			return;
+		}
+		clSetKernelArg(kern, 6, sizeof(cl_float),
+		               &image->det.panels[p].res);
+		if ( err != CL_SUCCESS ) {
+			ERROR("Couldn't set arg 6: %s\n", clError(err));
+			return;
+		}
+		clSetKernelArg(kern, 7, sizeof(cl_float),
+		               &image->det.panels[p].clen);
+		if ( err != CL_SUCCESS ) {
+			ERROR("Couldn't set arg 7: %s\n", clError(err));
+			return;
+		}
+
+		clSetKernelArg(kern, 12, sizeof(cl_int),
+		               &image->det.panels[p].min_x);
+		if ( err != CL_SUCCESS ) {
+			ERROR("Couldn't set arg 12: %s\n", clError(err));
+			return;
+		}
+		clSetKernelArg(kern, 13, sizeof(cl_int),
+		               &image->det.panels[p].min_y);
+		if ( err != CL_SUCCESS ) {
+			ERROR("Couldn't set arg 13: %s\n", clError(err));
+			return;
+		}
+
+		err = clEnqueueNDRangeKernel(cq, kern, 2, NULL, dims, NULL,
+			                     0, NULL, &event_d);
+		if ( err != CL_SUCCESS ) {
+			ERROR("Couldn't enqueue diffraction kernel: %s\n",
+			      clError(err));
+			return;
+		}
 	}
 
 	diff_ptr = clEnqueueMapBuffer(cq, diff, CL_TRUE, CL_MAP_READ, 0,

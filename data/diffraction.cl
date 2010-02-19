@@ -130,11 +130,12 @@ float2 get_sfac(global float2 *sfacs, float16 cell, float4 q)
 kernel void diffraction(global float2 *diff, global float *tt, float k,
                        int w, float cx, float cy,
                        float res, float clen, float16 cell,
-                       global float2 *sfacs, float4 z, int4 ncells)
+                       global float2 *sfacs, float4 z, int4 ncells,
+                       int xmin, int ymin)
 {
 	float ttv;
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
+	const int x = get_global_id(0) + xmin;
+	const int y = get_global_id(1) + ymin;
 	float f_lattice;
 	float2 f_molecule;
 
