@@ -157,6 +157,7 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	float *diff_ptr;
 	int i;
 	cl_float4 orientation;
+	cl_int4 ncells;
 
 	if ( image->molecule == NULL ) return;
 
@@ -251,6 +252,11 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	orientation[2] = image->orientation.y;
 	orientation[3] = image->orientation.z;
 
+	ncells[0] = na;
+	ncells[1] = nb;
+	ncells[2] = nc;
+	ncells[3] = 0;  /* unused */
+
 	err = clSetKernelArg(kern, 0, sizeof(cl_mem), &diff);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 0: %s\n", clError(err));
@@ -304,6 +310,11 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	clSetKernelArg(kern, 10, sizeof(cl_float4), &orientation);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 10: %s\n", clError(err));
+		return;
+	}
+	clSetKernelArg(kern, 11, sizeof(cl_int4), &ncells);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 11: %s\n", clError(err));
 		return;
 	}
 

@@ -69,13 +69,13 @@ float4 get_q(int x, int y, float cx, float cy, float res, float clen, float k,
 }
 
 
-float lattice_factor(float16 cell, float4 q)
+float lattice_factor(float16 cell, float4 q, int4 ncells)
 {
 	float f1, f2, f3;
 	float4 Udotq;
-	const int na = 8;
-	const int nb = 8;
-	const int nc = 8;
+	const int na = ncells.s0;
+	const int nb = ncells.s1;
+	const int nc = ncells.s2;
 
 	Udotq.x = cell.s0*q.x + cell.s1*q.y + cell.s2*q.z;
 	Udotq.y = cell.s3*q.x + cell.s4*q.y + cell.s5*q.z;
@@ -130,7 +130,7 @@ float2 get_sfac(global float2 *sfacs, float16 cell, float4 q)
 kernel void diffraction(global float2 *diff, global float *tt, float k,
                        int w, float cx, float cy,
                        float res, float clen, float16 cell,
-                       global float2 *sfacs, float4 z)
+                       global float2 *sfacs, float4 z, int4 ncells)
 {
 	float ttv;
 	const int x = get_global_id(0);
@@ -140,7 +140,7 @@ kernel void diffraction(global float2 *diff, global float *tt, float k,
 
 	float4 q = get_q(x, y, cx, cy, res, clen, k, &ttv, z);
 
-	f_lattice = lattice_factor(cell, q);
+	f_lattice = lattice_factor(cell, q, ncells);
 	f_molecule = get_sfac(sfacs, cell, q);
 
 	diff[x+w*y] = f_molecule * f_lattice;
