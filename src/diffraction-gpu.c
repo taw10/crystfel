@@ -151,7 +151,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	double cx, cy, cz;
 	float kc;
 	size_t dims[2];
-	cl_event event_d;
+	cl_event *event;
 	int p;
 	float *tt_ptr;
 	int x, y;
@@ -223,6 +223,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	}
 
 	/* Iterate over panels */
+	event = malloc(image->det.n_panels * sizeof(cl_event));
 	for ( p=0; p<image->det.n_panels; p++ ) {
 
 		/* In a future version of OpenCL, this could be done
@@ -269,7 +270,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		}
 
 		err = clEnqueueNDRangeKernel(gctx->cq, gctx->kern, 2, NULL,
-		                             dims, NULL, 0, NULL, &event_d);
+		                             dims, NULL, 0, NULL, &event[p]);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't enqueue diffraction kernel: %s\n",
 			      clError(err));
@@ -278,18 +279,21 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	}
 
 	diff_ptr = clEnqueueMapBuffer(gctx->cq, gctx->diff, CL_TRUE,
-	                              CL_MAP_READ, 0, gctx->diff_size, 1,
-	                              &event_d, NULL, &err);
+	                              CL_MAP_READ, 0, gctx->diff_size,
+	                              image->det.n_panels, event, NULL, &err);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't map diffraction buffer: %s\n", clError(err));
 		return;
 	}
 	tt_ptr = clEnqueueMapBuffer(gctx->cq, gctx->tt, CL_TRUE, CL_MAP_READ, 0,
-	                            gctx->tt_size, 1, &event_d, NULL, &err);
+	                            gctx->tt_size, image->det.n_panels, event,
+	                            NULL, &err);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't map tt buffer\n");
 		return;
 	}
+
+	free(event);
 
 	image->sfacs = calloc(image->width * image->height,
 	                      sizeof(double complex));
