@@ -387,6 +387,8 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	}
 
 	clReleaseProgram(prog);
+	clReleaseMemObject(diff);
+	clReleaseMemObject(tt);
 	clReleaseMemObject(sfacs);
 	clReleaseCommandQueue(cq);
 	clReleaseContext(ctx);
