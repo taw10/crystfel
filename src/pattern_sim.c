@@ -256,10 +256,11 @@ int main(int argc, char *argv[])
 	do {
 
 		int na, nb, nc;
+		double a, b, c, d;
 
-		na = 8;//*random()/RAND_MAX + 4;
-		nb = 8;//*random()/RAND_MAX + 4;
-		nc = 16;//*random()/RAND_MAX + 30;
+		na = 8*random()/RAND_MAX + 4;
+		nb = 8*random()/RAND_MAX + 4;
+		nc = 16*random()/RAND_MAX + 30;
 
 		/* Read quaternion from stdin */
 		if ( config_randomquat ) {
@@ -282,6 +283,10 @@ int main(int argc, char *argv[])
 		image.data = NULL;
 		image.twotheta = NULL;
 		image.hdr = NULL;
+
+		cell_get_parameters(image.molecule->cell, &a, &b, &c, &d, &d, &d);
+		STATUS("Particle size = %i x %i x %i (=%5.2f x %5.2f x %5.2f nm)\n",
+	               na, nb, nc, na*a/1.0e-9, nb*b/1.0e-9, nc*c/1.0e-9);
 
 		if ( config_gpu ) {
 			get_diffraction_gpu(&image, na, nb, nc, config_nosfac);

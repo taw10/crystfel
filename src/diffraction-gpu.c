@@ -140,7 +140,6 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-	double a, b, c, d;
 	float kc;
 	const size_t dims[2] = {1024, 1024};
 	cl_event event_d;
@@ -175,11 +174,6 @@ void get_diffraction_gpu(struct image *image, int na, int nb, int nc,
 	cell[0] = ax;  cell[1] = ay;  cell[2] = az;
 	cell[3] = bx;  cell[4] = by;  cell[5] = bz;
 	cell[6] = cx;  cell[7] = cy;  cell[8] = cz;
-
-	cell_get_parameters(image->molecule->cell,
-	                    &a, &b, &c, &d, &d, &d);
-	STATUS("Particle size = %i x %i x %i (=%5.2f x %5.2f x %5.2f nm)\n",
-	       na, nb, nc, na*a/1.0e-9, nb*b/1.0e-9, nc*c/1.0e-9);
 
 	err = clGetPlatformIDs(8, platforms, &nplat);
 	if ( err != CL_SUCCESS ) {
