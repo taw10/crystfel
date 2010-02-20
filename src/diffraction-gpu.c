@@ -423,7 +423,7 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	} else {
 		int i;
 		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
-			sfac_ptr[2*i+0] = 1000.0;
+			sfac_ptr[2*i+0] = 10000.0;
 			sfac_ptr[2*i+1] = 0.0;
 		}
 	}
