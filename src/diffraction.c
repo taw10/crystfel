@@ -141,7 +141,7 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
                   unsigned int sampling, float *ttp, float k)
 {
 	struct rvec q;
-	float twothetax, twothetay, twotheta, r;
+	float twotheta, r, az;
 	float rx = 0.0;
 	float ry = 0.0;
 	int p;
@@ -164,14 +164,13 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 
 	/* Calculate q-vector for this sub-pixel */
 	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
-	twothetax = atan2(rx, image->det.panels[p].clen);
-	twothetay = atan2(ry, image->det.panels[p].clen);
-	twotheta = atan2(r, image->det.panels[p].clen);
 
+	twotheta = atan2(r, image->det.panels[p].clen);
+	az = atan2(ry, rx);
 	if ( ttp != NULL ) *ttp = twotheta;
 
-	q.u = k * sin(twothetax);
-	q.v = k * sin(twothetay);
+	q.u = k * sin(twotheta)*cos(az);
+	q.v = k * sin(twotheta)*sin(az);
 	q.w = k - k * cos(twotheta);
 
 	return quat_rot(q, image->orientation);

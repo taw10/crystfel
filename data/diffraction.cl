@@ -48,7 +48,7 @@ float4 get_q(int x, int y, float cx, float cy, float res, float clen, float k,
              float *ttp, float4 z, int sampling)
 {
 	float rx, ry, r;
-	float ttx, tty, tt;
+	float az, tt;
 	float4 q;
 
 	rx = ((float)x - sampling*cx)/(res*sampling);
@@ -56,13 +56,12 @@ float4 get_q(int x, int y, float cx, float cy, float res, float clen, float k,
 
 	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
 
-	ttx = atan2(rx, clen);
-	tty = atan2(ry, clen);
 	tt = atan2(r, clen);
-
 	*ttp = tt;
 
-	q = (float4)(k*sin(ttx), k*sin(tty), k-k*cos(tt), 0.0);
+	az = atan2(ry, rx);
+
+	q = (float4)(k*sin(tt)*cos(az), k*sin(tt)*sin(az), k-k*cos(tt), 0.0);
 
 	return quat_rot(q, z);
 }
