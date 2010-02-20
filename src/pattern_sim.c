@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
 			}
 
 			if ( !(ndone % 10) ) {
-				hdf5_write("results/integr-bw.h5", powder,
+				hdf5_write("results/integr.h5", powder,
 				           image.width, image.height,
 				           H5T_NATIVE_LLONG);
 			}
