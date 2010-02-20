@@ -11,7 +11,7 @@ pattern_sim_SOURCES = pattern_sim.c diffraction.c utils.c image.c cell.c \
                       hdf5-file.c detector.c sfac.c intensities.c \
                       reflections.c
 if HAVE_OPENCL
-pattern_sim_SOURCES += diffraction-gpu.c
+pattern_sim_SOURCES += diffraction-gpu.c cl-utils.c
 endif
 
 pattern_sim_LDADD = @LIBS@
