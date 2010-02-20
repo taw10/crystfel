@@ -158,7 +158,7 @@ kernel void diffraction(global float2 *diff, global float *tt, float klow,
 	barrier(CLK_LOCAL_MEM_FENCE);
 
 	/* Leader thread sums the values */
-	if ( lx + ly == 0 ) {
+	if ( lx + ly + lb == 0 ) {
 
 		int i;
 		float2 sum = (0.0, 0.0);
