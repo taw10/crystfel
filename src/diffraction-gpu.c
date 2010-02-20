@@ -129,7 +129,8 @@ static cl_program load_program(const char *filename, cl_context ctx,
 		return 0;
 	}
 
-	r = clBuildProgram(prog, 0, NULL, "-Werror -I"DATADIR"/crystfel/",
+	r = clBuildProgram(prog, 0, NULL,
+	                   "-Werror -I"DATADIR"/crystfel/ -cl-no-signed-zeros",
 	                   NULL, NULL);
 	if ( r != CL_SUCCESS ) {
 		ERROR("Couldn't build program '%s'\n", filename);

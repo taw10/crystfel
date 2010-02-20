@@ -109,15 +109,16 @@ float2 get_sfac(global float2 *sfacs, float16 cell, float4 q)
 	k = round(kf);
 	l = round(lf);
 
+	/* Return a silly value if indices are out of range */
 	if ( (abs(h) > INDMAX) || (abs(k) > INDMAX) || (abs(l) > INDMAX) ) {
-		return 100.0;
+		return 100000.0;
 	}
 
-	if ( h < 0 ) h += IDIM;
-	if ( k < 0 ) k += IDIM;
-	if ( l < 0 ) l += IDIM;
+	h = (h>=0) ? h : h+IDIM;
+	k = (k>=0) ? k : k+IDIM;
+	l = (l>=0) ? l : l+IDIM;
 
-	if ( (h>=IDIM) || (k>=IDIM) || (l>=IDIM) ) return 100.0;
+	if ( (h>=IDIM) || (k>=IDIM) || (l>=IDIM) ) return 100000.0;
 
 	idx = h + (IDIM*k) + (IDIM*IDIM*l);
 
