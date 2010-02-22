@@ -30,34 +30,42 @@ AC_ARG_WITH(gsl,
  GSL_LIBS="-L$withval/lib -lgsl -lgslcblas"],
 [GSL_LIBS="-lgsl -lgslcblas"])
 
-AC_MSG_CHECKING([whether to use OpenCL])
-AC_ARG_ENABLE(opencl,
-[AS_HELP_STRING([--enable-opencl], [Enable the use of OpenCL])],
-[OPENCL_CFLAGS=""
- OPENCL_LIBS="-lOpenCL"
- AC_MSG_RESULT([yes])
- AC_DEFINE([HAVE_OPENCL], [1], [Define to 1 if OpenCL is available])
- have_opencl=true],
-[AC_MSG_RESULT([no])])
 
+AC_ARG_ENABLE(opencl, AS_HELP_STRING([--enable-opencl], [Enable the use of OpenCL])])
+AC_MSG_CHECKING([whether to use OpenCL])
+AS_IF([test "x$enable_opencl" == "xyes"],
+[
+   AC_MSG_RESULT([yes])
+   OPENCL_CFLAGS=""
+   OPENCL_LIBS="-lOpenCL"
+   AC_DEFINE([HAVE_OPENCL], [1], [Define to 1 if OpenCL is available])
+   have_opencl=true
+],
+[
+   AC_MSG_RESULT([no])
+])
+
+
+AC_ARG_ENABLE(gtk, AS_HELP_STRING([--disable-gtk], [Disable GTK+/GLib])])
 haveglib=false
 havegtk=false
 AC_MSG_CHECKING([whether to use GTK/GLib])
-AC_ARG_ENABLE(gtk,
-   [AC_HELP_STRING([--disable-gtk], [Disable GTK+/GLib])],
-   [
-      AC_MSG_RESULT([yes])
-      AM_PATH_GTK_2_0(2.0.0,
+AS_IF([test "x$enable_gtk" != "xno"],
+[
+   AC_MSG_RESULT([yes])
+   AM_PATH_GTK_2_0(2.0.0,
       [
          havegtk=true
          haveglib=true
          AC_DEFINE([HAVE_GLIB], [1], [Define to 1 if GLib is available])
          GTK_LIBS="$GTK_LIBS -lgthread-2.0 -lutil"
       ],
-      AC_MSG_WARN([GTK not found.  hdfsee will not be built.]))
-   ],
-   [AC_MSG_RESULT([no])]
-)
+      AC_MSG_WARN([GTK not found.  hdfsee will not be built.])
+   )
+],
+[
+   AC_MSG_RESULT([no])
+])
 
 AM_CONDITIONAL([HAVE_GTK], test x$havegtk = xtrue)
 AM_CONDITIONAL([HAVE_GLIB], test x$haveglib = xtrue)
