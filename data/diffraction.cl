@@ -11,7 +11,9 @@
 
 
 #include <defs.h>
+#ifndef M_PI
 #define M_PI ((float)(3.14159265))
+#endif
 
 float4 quat_rot(float4 q, float4 z)
 {
