@@ -65,6 +65,11 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	const int sampling = SAMPLING;
 	cl_float bwstep;
 
+	if ( gctx == NULL ) {
+		ERROR("GPU setup failed.\n");
+		return;
+	}
+
 	cell_get_cartesian(image->molecule->cell, &ax, &ay, &az,
 		                                  &bx, &by, &bz,
 		                                  &cx, &cy, &cz);
