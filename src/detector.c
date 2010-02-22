@@ -171,25 +171,13 @@ void record_image(struct image *image, int do_water, int do_poisson,
 		double complex val;
 		double pix_area, Lsq;
 		double dsq, proj_area;
-		int p;
+		struct panel *p;
 		int found = 0;
 
 		val = image->sfacs[x + image->width*y];
 		intensity = pow(cabs(val), 2.0);
 
-		for ( p=0; p<image->det.n_panels; p++ ) {
-			if ( (x >= image->det.panels[p].min_x)
-			  && (x <= image->det.panels[p].max_x)
-			  && (y >= image->det.panels[p].min_y)
-			  && (y <= image->det.panels[p].max_y) ) {
-				found = 1;
-				break;
-			}
-		}
-		if ( !found ) {
-			ERROR("No mapping found for %i,%i\n", x, y);
-			return;
-		}
+		p = find_panel(&image->det, x, y);
 
 		/* FIXME: Move to diffraction.c somehow */
 		if ( do_water ) {
@@ -207,17 +195,15 @@ void record_image(struct image *image, int do_water, int do_poisson,
 		}
 
 		/* Area of one pixel */
-		pix_area = pow(1.0/image->det.panels[p].res, 2.0);
-		Lsq = pow(image->det.panels[p].clen, 2.0);
+		pix_area = pow(1.0/p->res, 2.0);
+		Lsq = pow(p->clen, 2.0);
 
 		/* Area of pixel as seen from crystal (approximate) */
 		proj_area = pix_area * cos(image->twotheta[x + image->width*y]);
 
 		/* Calculate distance from crystal to pixel */
-		dsq = pow(((double)x - image->det.panels[p].cx)
-		                               / image->det.panels[p].res, 2.0);
-		dsq += pow(((double)y - image->det.panels[p].cy)
-		                               / image->det.panels[p].res, 2.0);
+		dsq = pow(((double)x - p->cx) / p->res, 2.0);
+		dsq += pow(((double)y - p->cy) / p->res, 2.0);
 
 		/* Projected area of pixel divided by distance squared */
 		sa = proj_area / (dsq + Lsq);
@@ -251,4 +237,22 @@ void record_image(struct image *image, int do_water, int do_poisson,
 		}
 		}
 	}
+}
+
+
+struct panel *find_panel(struct detector *det, int x, int y)
+{
+	int p;
+
+	for ( p=0; p<det->n_panels; p++ ) {
+		if ( (x >= det->panels[p].min_x)
+		  && (x <= det->panels[p].max_x)
+		  && (y >= det->panels[p].min_y)
+		  && (y <= det->panels[p].max_y) ) {
+			return &det->panels[p];
+		}
+	}
+	ERROR("No mapping found for %i,%i\n", x, y);
+
+	return NULL;
 }

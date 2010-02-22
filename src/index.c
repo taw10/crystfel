@@ -36,34 +36,20 @@ int map_position(struct image *image, double dx, double dy,
 	double d;
 	double twotheta, psi;
 	const double k = 1.0 / image->lambda;
-	int p;
-	int found = 0;
+	struct panel *p;
 	double x = 0.0;
 	double y = 0.0;
 
-	/* Perform the detector mapping for these coordinates */
-	for ( p=0; p<image->det.n_panels; p++ ) {
-		if ( (dx >= image->det.panels[p].min_x)
-		  && (dx <= image->det.panels[p].max_x)
-		  && (dy >= image->det.panels[p].min_y)
-		  && (dy <= image->det.panels[p].max_y) ) {
-			x = ((double)dx - image->det.panels[p].cx);
-			y = ((double)dy - image->det.panels[p].cy);
-			found = 1;
-			break;
-		}
-	}
-	if ( !found ) {
-		ERROR("No mapping found for %f,%f (map_position)\n", dx, dy);
-		*rx = 0.0;  *ry = 0.0;  *rz = 0.0;
-		return 1;
-	}
+	p = find_panel(&image->det, dx, dy);
+
+	x = ((double)dx - p->cx);
+	y = ((double)dy - p->cy);
 
 	/* Convert pixels to metres */
-	x /= image->det.panels[p].res;
-	y /= image->det.panels[p].res;	/* Convert pixels to metres */
+	x /= p->res;
+	y /= p->res;	/* Convert pixels to metres */
 	d = sqrt((x*x) + (y*y));
-	twotheta = atan2(d, image->det.panels[p].clen);
+	twotheta = atan2(d, p->clen);
 
 	psi = atan2(y, x);
 

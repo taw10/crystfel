@@ -144,28 +144,20 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 	float twotheta, r, az;
 	float rx = 0.0;
 	float ry = 0.0;
-	int p;
+	struct panel *p;
 
 	const unsigned int x = xs / sampling;
 	const unsigned int y = ys / sampling; /* Integer part only */
 
-	for ( p=0; p<image->det.n_panels; p++ ) {
-		if ( (x >= image->det.panels[p].min_x)
-		  && (x <= image->det.panels[p].max_x)
-		  && (y >= image->det.panels[p].min_y)
-		  && (y <= image->det.panels[p].max_y) ) {
-			rx = ((float)xs - (sampling*image->det.panels[p].cx))
-			               / (sampling * image->det.panels[p].res);
-			ry = ((float)ys - (sampling*image->det.panels[p].cy))
-			               / (sampling * image->det.panels[p].res);
-			break;
-		}
-	}
+	p = find_panel(&image->det, x, y);
+
+	rx = ((float)xs - (sampling*p->cx)) / (sampling * p->res);
+	ry = ((float)ys - (sampling*p->cy)) / (sampling * p->res);
 
 	/* Calculate q-vector for this sub-pixel */
 	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
 
-	twotheta = atan2(r, image->det.panels[p].clen);
+	twotheta = atan2(r, p->clen);
 	az = atan2(ry, rx);
 	if ( ttp != NULL ) *ttp = twotheta;
 

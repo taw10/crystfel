@@ -41,4 +41,6 @@ struct detector
 extern void record_image(struct image *image, int do_water, int do_poisson,
                          int do_bloom);
 
+extern struct panel *find_panel(struct detector *det, int x, int y);
+
 #endif	/* DETECTOR_H */
