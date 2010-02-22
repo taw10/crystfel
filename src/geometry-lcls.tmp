@@ -9,7 +9,7 @@ image.det.panels[0].min_y = 512;
 image.det.panels[0].max_y = 1023;
 image.det.panels[0].cx = 491.9;
 image.det.panels[0].cy = 440.7;
-image.det.panels[0].clen = 67.0e-3;
+image.det.panels[0].clen = 72.0e-3;
 image.det.panels[0].res = 13333.3;  /* 75 micron pixel size */
 
 /* Lower panel */
