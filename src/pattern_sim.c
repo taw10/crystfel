@@ -1,5 +1,7 @@
 /*
- * main.c
+ * pattern_sim.c
+ *
+ * Simulate diffraction patterns from small crystals
  *
  * (c) 2006-2010 Thomas White <taw@physics.org>
  *
@@ -227,27 +229,7 @@ int main(int argc, char *argv[])
 	image.lambda = ph_en_to_lambda(eV_to_J(2.0e3));  /* Wavelength */
 	image.molecule = load_molecule();
 
-	/* Set up detector configuration */
-	image.det.n_panels = 2;
-	image.det.panels = malloc(2*sizeof(struct panel));
-	/* Upper panel */
-	image.det.panels[0].min_x = 0;
-	image.det.panels[0].max_x = 1023;
-	image.det.panels[0].min_y = 512;
-	image.det.panels[0].max_y = 1023;
-	image.det.panels[0].cx = 491.9;
-	image.det.panels[0].cy = 440.7;
-	image.det.panels[0].clen = 67.0e-3;
-	image.det.panels[0].res = 13333.3;  /* 75 micron pixel size */
-	/* Lower panel */
-	image.det.panels[1].min_x = 0;
-	image.det.panels[1].max_x = 1023;
-	image.det.panels[1].min_y = 0;
-	image.det.panels[1].max_y = 511;
-	image.det.panels[1].cx = 492.0;
-	image.det.panels[1].cy = 779.7;
-	image.det.panels[1].clen = 75.0e-3;
-	image.det.panels[1].res = 13333.3;  /* 75 micron pixel size */
+	#include "geometry-lcls.tmp"
 
 	powder = calloc(image.width*image.height, sizeof(*powder));
 

@@ -554,6 +554,7 @@ done:
 }
 
 
+/* Return sin(theta)/lambda = 1/2d.  Multiply by two if you want 1/d */
 double resolution(UnitCell *cell, signed int h, signed int k, signed int l)
 {
 	const double a = cell->a;

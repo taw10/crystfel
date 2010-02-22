@@ -456,6 +456,7 @@ double complex *get_reflections(struct molecule *mol, double en)
 		int i;
 		double s;
 
+		/* We need sin(theta)/lambda = 1/2d */
 		s = resolution(mol->cell, h, k, l);
 
 		/* Atoms are grouped by species for faster calculation */

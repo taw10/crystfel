@@ -28,7 +28,7 @@
 
 static void show_help(const char *s)
 {
-	printf("Syntax: %s [options] <file1.hkl> <file2.hkl>\n\n", s);
+	printf("Syntax: %s [options] -a <file1.hkl> -b <file2.hkl>\n\n", s);
 	printf(
 "Compare intensity lists.\n"
 "\n"

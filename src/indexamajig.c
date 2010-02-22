@@ -170,28 +170,7 @@ int main(int argc, char *argv[])
 		image.data = NULL;
 		image.indexed_cell = NULL;
 
-		/* Set up detector configuration */
-		image.det.n_panels = 2;
-		image.det.panels = malloc(2*sizeof(struct panel));
-		/* Upper panel */
-		image.det.panels[0].min_x = 0;
-		image.det.panels[0].max_x = 1023;
-		image.det.panels[0].min_y = 512;
-		image.det.panels[0].max_y = 1023;
-		image.det.panels[0].cx = 491.9;
-		image.det.panels[0].cy = 440.7;
-		image.det.panels[0].clen = 67.0e-3;
-		image.det.panels[0].res = 13333.3;  /* 75 micron pixel size */
-
-		/* Lower panel */
-		image.det.panels[1].min_x = 0;
-		image.det.panels[1].max_x = 1023;
-		image.det.panels[1].min_y = 0;
-		image.det.panels[1].max_y = 511;
-		image.det.panels[1].cx = 492.0;
-		image.det.panels[1].cy = 779.7;
-		image.det.panels[1].clen = 75.0e-3;
-		image.det.panels[1].res = 13333.3;  /* 75 micron pixel size */
+		#include "geometry-lcls.tmp"
 
 		STATUS("Processing '%s'\n", line);
 

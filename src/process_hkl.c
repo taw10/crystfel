@@ -78,7 +78,7 @@ static void write_RvsQ(const char *name, double *ref, double *trueref,
 	for ( h=-INDMAX; h<INDMAX; h++ ) {
 	for ( k=-INDMAX; k<INDMAX; k++ ) {
 	for ( l=-INDMAX; l<INDMAX; l++ ) {
-		double s = resolution(cell, h, k, l);
+		double s = 2.0*resolution(cell, h, k, l);
 		if ( (lookup_count(counts, h, k, l) > 0) && (s > smax) ) {
 			smax = s;
 		}
@@ -105,7 +105,7 @@ static void write_RvsQ(const char *name, double *ref, double *trueref,
 			if ( (h==0) && (k==0) && (l==0) ) continue;
 
 			c = lookup_count(counts, h, k, l);
-			s = resolution(cell, h, k, l);
+			s = 2.0*resolution(cell, h, k, l);
 			if ((s>=sbracket) && (s<sbracket+smax/RVQDV) && (c>0)) {
 
 				double obs, calc, obsi;

@@ -45,7 +45,6 @@ void write_reflections(const char *filename, unsigned int *counts,
 		fprintf(fh, "a %5.3f nm\n", a*1e9);
 		fprintf(fh, "b %5.3f nm\n", b*1e9);
 		fprintf(fh, "angle %5.3f deg\n", rad2deg(gamma));
-		fprintf(fh, "scale 10\n");
 	}
 
 	for ( h=-INDMAX; h<INDMAX; h++ ) {
@@ -65,7 +64,7 @@ void write_reflections(const char *filename, unsigned int *counts,
 		F = lookup_intensity(ref, h, k, l) / N;
 		if ( zone_axis && (l != 0) ) continue;
 
-		s = resolution(cell, h, k, l);
+		s = 2.0*resolution(cell, h, k, l);
 
 		/* h, k, l, I, sigma(I), s */
 		fprintf(fh, "%3i %3i %3i %f %f %f\n", h, k, l, F, 0.0, s/1.0e9);

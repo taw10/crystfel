@@ -191,6 +191,7 @@ void record_image(struct image *image, int do_water, int do_poisson,
 			return;
 		}
 
+		/* FIXME: Move to diffraction.c somehow */
 		if ( do_water ) {
 
 			struct rvec q;
