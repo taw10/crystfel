@@ -11,7 +11,7 @@
 
 
 #include <defs.h>
-
+#define M_PI ((float)(3.14159265))
 
 float4 quat_rot(float4 q, float4 z)
 {
@@ -54,7 +54,7 @@ float4 get_q(int x, int y, float cx, float cy, float res, float clen, float k,
 	rx = ((float)x - sampling*cx)/(res*sampling);
 	ry = ((float)y - sampling*cy)/(res*sampling);
 
-	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
+	r = sqrt(pow(rx, 2.0f) + pow(ry, 2.0f));
 
 	tt = atan2(r, clen);
 	*ttp = tt;
@@ -161,12 +161,12 @@ kernel void diffraction(global float2 *diff, global float *tt, float klow,
 	if ( lx + ly + lb == 0 ) {
 
 		int i;
-		float2 sum = (0.0, 0.0);
+		float2 sum = (float2)(0.0, 0.0);
 
 		for ( i=0; i<sampling*sampling*get_local_size(2); i++ )
 			sum += tmp[i];
 
-		diff[ax+w*ay] = sum / (sampling*sampling*get_local_size(2));
+		diff[ax+w*ay] = sum / (float)(sampling*sampling*get_local_size(2));
 
 		/* Leader thread also records the 2theta value.
 		 * This should really be averaged across all pixels, but
