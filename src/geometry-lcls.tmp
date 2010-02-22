@@ -1,6 +1,6 @@
 /* Set up detector configuration */
 image.det.n_panels = 2;
-image.det.panels = malloc(2*sizeof(struct panel));
+image.det.panels = malloc(image.det.n_panels*sizeof(struct panel));
 
 /* Upper panel */
 image.det.panels[0].min_x = 0;
