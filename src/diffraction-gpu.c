@@ -264,6 +264,8 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 
 	if ( molecule == NULL ) return NULL;
 
+	STATUS("Setting up GPU..."); fflush(stderr);
+
 	/* Generate structure factors if required */
 	if ( !no_sfac ) {
 		if ( molecule->reflections == NULL ) {
@@ -361,6 +363,8 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 		free(gctx);
 		return NULL;
 	}
+
+	STATUS("done\n");
 
 	return gctx;
 }
