@@ -44,11 +44,12 @@ static void show_help(const char *s)
 "     --gpu                 Use the GPU to speed up the calculation.\n"
 "\n"
 "     --near-bragg          Output h,k,l,I near Bragg conditions.\n"
-"     --powder              Output a powder pattern as results/powder.h5.\n"
 " -n, --number=<N>          Generate N images.  Default 1.\n"
 "     --no-images           Do not output any HDF5 files.\n"
 " -r, --random-orientation  Use a randomly generated orientation\n"
 "                            (a new orientation will be used for each image).\n"
+"     --powder              Write a summed pattern of all images simulated by\n"
+"                            this invocation to results/integr.h5.\n"
 "\n"
 "By default, the simulation aims to be as accurate as possible.  For greater\n"
 "speed, or for testing, you can choose to disable certain things using the\n"
@@ -59,6 +60,7 @@ static void show_help(const char *s)
 "     --no-bloom            Do not calculate CCD bloom (intensities which are\n"
 "                            above the recordable range will be clamped to\n"
 "                            the maximum allowable value).\n"
+"     --no-sfac             Pretend that all structure factors are 1.\n"
 );
 }
 
