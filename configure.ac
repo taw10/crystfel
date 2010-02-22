@@ -40,14 +40,30 @@ AC_ARG_ENABLE(opencl,
  have_opencl=true],
 [AC_MSG_RESULT([no])])
 
+haveglib=false
 havegtk=false
-AM_PATH_GTK_2_0(2.0.0, havegtk=true,
-AC_MSG_WARN([GTK not found.  hdfsee will not be built.]))
+AC_MSG_CHECKING([whether to use GTK/GLib])
+AC_ARG_ENABLE(gtk,
+   [AC_HELP_STRING([--disable-gtk], [Disable GTK+/GLib])],
+   [
+      AC_MSG_RESULT([yes])
+      AM_PATH_GTK_2_0(2.0.0,
+      [
+         havegtk=true
+         haveglib=true
+         AC_DEFINE([HAVE_GLIB], [1], [Define to 1 if GLib is available])
+         GTK_LIBS="$GTK_LIBS -lgthread-2.0 -lutil"
+      ],
+      AC_MSG_WARN([GTK not found.  hdfsee will not be built.]))
+   ],
+   [AC_MSG_RESULT([no])]
+)
 
 AM_CONDITIONAL([HAVE_GTK], test x$havegtk = xtrue)
+AM_CONDITIONAL([HAVE_GLIB], test x$haveglib = xtrue)
 AM_CONDITIONAL([HAVE_OPENCL], test x$have_opencl = xtrue)
 
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS"
-LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -lgthread-2.0 -lutil"
+LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS"
 
 AC_OUTPUT(Makefile src/Makefile data/Makefile)

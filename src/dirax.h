@@ -17,8 +17,19 @@
 #include <config.h>
 #endif
 
+#include "utils.h"
+
+#if HAVE_GLIB
 
 extern void run_dirax(struct image *image);
 
+#else
+
+static void run_dirax(struct image *image)
+{
+	ERROR("Can't run DirAx without GLib.\n");
+}
+
+#endif
 
 #endif	/* DIRAX_H */

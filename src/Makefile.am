@@ -21,10 +21,14 @@ process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
                       reflections.c
 process_hkl_LDADD = @LIBS@
 
-indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c dirax.c cell.c image.c \
+indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
                       intensities.c peaks.c index.c filters.c \
                       diffraction.c detector.c sfac.c
 indexamajig_LDADD = @LIBS@
+
+if HAVE_GLIB
+indexamajig_SOURCES += dirax.c
+endif
 
 if HAVE_GTK
 hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c image.c \
@@ -39,7 +43,11 @@ compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c
 compare_hkl_LDADD = @LIBS@
 
 powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \
-                      detector.c index.c diffraction.c sfac.c dirax.c
+                      detector.c index.c diffraction.c sfac.c
 powder_plot_LDADD = @LIBS@
+
+if HAVE_GLIB
+powder_plot_SOURCES += dirax.c
+endif
 
 INCLUDES = "-I$(top_srcdir)/data"

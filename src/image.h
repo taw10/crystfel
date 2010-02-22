@@ -19,7 +19,10 @@
 
 #include <stdint.h>
 #include <complex.h>
+
+#if HAVE_GLIB
 #include <glib.h>
+#endif
 
 #include "utils.h"
 #include "cell.h"
@@ -86,6 +89,7 @@ struct image {
 	ImageFeatureList	*rflist;	/* "Predicted" features */
 
 	/* DirAx auto-indexing low-level stuff */
+#if HAVE_GLIB
 	GIOChannel		*dirax;
 	int			dirax_pty;
 	pid_t			dirax_pid;
@@ -97,6 +101,7 @@ struct image {
 	/* DirAx auto-indexing high-level stuff */
 	int			dirax_step;
 	int			dirax_read_cell;
+#endif
 };
 
 /* An opaque type representing a list of images */
