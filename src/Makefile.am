@@ -1,4 +1,5 @@
-bin_PROGRAMS = pattern_sim process_hkl get_hkl indexamajig compare_hkl
+bin_PROGRAMS = pattern_sim process_hkl get_hkl indexamajig compare_hkl \
+               powder_plot
 
 if HAVE_GTK
 bin_PROGRAMS += hdfsee
@@ -36,5 +37,9 @@ get_hkl_LDADD = @LIBS@
 
 compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c
 compare_hkl_LDADD = @LIBS@
+
+powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \
+                      detector.c index.c diffraction.c sfac.c dirax.c
+powder_plot_LDADD = @LIBS@
 
 INCLUDES = "-I$(top_srcdir)/data"
