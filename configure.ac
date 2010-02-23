@@ -36,8 +36,15 @@ AC_MSG_CHECKING([whether to use OpenCL])
 AS_IF([test "x$enable_opencl" == "xyes"],
 [
    AC_MSG_RESULT([yes])
-   OPENCL_CFLAGS=""
-   OPENCL_LIBS="-lOpenCL"
+   AC_CHECK_HEADERS([/System/Library/Frameworks/OpenCL.framework/Headers/cl.h],
+   [
+      OPENCL_CFLAGS="-I/System/Library/Frameworks/OpenCL.framework/Headers"
+      OPENCL_LIBS="-framework OpenCL"
+   ],
+   [
+      OPENCL_CFLAGS="-I/usr/include/CL"
+      OPENCL_LIBS="-lOpenCL"
+   ])
    AC_DEFINE([HAVE_OPENCL], [1], [Define to 1 if OpenCL is available])
    have_opencl=true
 ],

@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <CL/cl.h>
+#include <cl.h>
 
 #include "utils.h"
 

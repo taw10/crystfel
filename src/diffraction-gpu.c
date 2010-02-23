@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <complex.h>
-#include <CL/cl.h>
+#include <cl.h>
 
 #include "image.h"
 #include "utils.h"
