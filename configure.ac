@@ -31,7 +31,7 @@ AC_ARG_WITH(gsl,
 [GSL_LIBS="-lgsl -lgslcblas"])
 
 
-AC_ARG_ENABLE(opencl, AS_HELP_STRING([--enable-opencl], [Enable the use of OpenCL])])
+AC_ARG_ENABLE(opencl, AS_HELP_STRING([--enable-opencl], [Enable the use of OpenCL]))
 AC_MSG_CHECKING([whether to use OpenCL])
 AS_IF([test "x$enable_opencl" == "xyes"],
 [
@@ -46,7 +46,7 @@ AS_IF([test "x$enable_opencl" == "xyes"],
 ])
 
 
-AC_ARG_ENABLE(gtk, AS_HELP_STRING([--disable-gtk], [Disable GTK+/GLib])])
+AC_ARG_ENABLE(gtk, AS_HELP_STRING([--disable-gtk], [Disable GTK+/GLib]))
 haveglib=false
 havegtk=false
 AC_MSG_CHECKING([whether to use GTK/GLib])
