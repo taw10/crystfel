@@ -5380,14 +5380,14 @@ fi
      { $as_echo "$as_me:$LINENO: result: yes (version $gtk_config_major_version.$gtk_config_minor_version.$gtk_config_micro_version)" >&5
 $as_echo "yes (version $gtk_config_major_version.$gtk_config_minor_version.$gtk_config_micro_version)" >&6; }
 
-         havegtk=true
-         haveglib=true
+      havegtk=true
+      haveglib=true
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_GLIB 1
 _ACEOF
 
-         GTK_LIBS="$GTK_LIBS -lgthread-2.0 -lutil"
+      GTK_LIBS="$GTK_LIBS -lgthread-2.0 -lutil"
 
   else
      { $as_echo "$as_me:$LINENO: result: no" >&5
@@ -5469,7 +5469,8 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
      fi
      GTK_CFLAGS=""
      GTK_LIBS=""
-     { $as_echo "$as_me:$LINENO: WARNING: GTK not found.  hdfsee will not be built." >&5
+
+      { $as_echo "$as_me:$LINENO: WARNING: GTK not found.  hdfsee will not be built." >&5
 $as_echo "$as_me: WARNING: GTK not found.  hdfsee will not be built." >&2;}
 
   fi

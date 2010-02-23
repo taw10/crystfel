@@ -61,14 +61,15 @@ AS_IF([test "x$enable_gtk" != "xno"],
 [
    AC_MSG_RESULT([yes])
    AM_PATH_GTK_2_0(2.0.0,
-      [
-         havegtk=true
-         haveglib=true
-         AC_DEFINE([HAVE_GLIB], [1], [Define to 1 if GLib is available])
-         GTK_LIBS="$GTK_LIBS -lgthread-2.0 -lutil"
-      ],
+   [
+      havegtk=true
+      haveglib=true
+      AC_DEFINE([HAVE_GLIB], [1], [Define to 1 if GLib is available])
+      GTK_LIBS="$GTK_LIBS -lgthread-2.0 -lutil"
+   ],
+   [
       AC_MSG_WARN([GTK not found.  hdfsee will not be built.])
-   )
+   ])
 ],
 [
    AC_MSG_RESULT([no])
