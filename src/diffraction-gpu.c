@@ -269,8 +269,6 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 
 	if ( molecule == NULL ) return NULL;
 
-	STATUS("Setting up GPU..."); fflush(stderr);
-
 	/* Generate structure factors if required */
 	if ( !no_sfac ) {
 		if ( molecule->reflections == NULL ) {
@@ -278,6 +276,8 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 			                       ph_lambda_to_en(image->lambda));
 		}
 	}
+
+	STATUS("Setting up GPU..."); fflush(stderr);
 
 	err = clGetPlatformIDs(8, platforms, &nplat);
 	if ( err != CL_SUCCESS ) {
