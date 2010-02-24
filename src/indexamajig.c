@@ -245,6 +245,8 @@ int main(int argc, char *argv[])
 
 				image.data = NULL;
 
+				image.molecule->cell = image.indexed_cell;
+
 				if ( config_gpu ) {
 					if ( gctx == NULL ) {
 						gctx = setup_gpu(0, &image,
