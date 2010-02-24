@@ -337,7 +337,9 @@ int main(int argc, char *argv[])
 	}
 
 	if ( output != NULL ) {
-		write_reflections(output, counts, ref, 0, mol->cell);
+		UnitCell *cell = NULL;
+		if ( mol != NULL ) cell = mol->cell;
+		write_reflections(output, counts, ref, 0, cell);
 	}
 
 	STATUS("There were %u patterns.\n", n_patterns);
