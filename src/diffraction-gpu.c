@@ -266,6 +266,7 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	cl_device_id dev;
 	size_t sfac_size;
 	float *sfac_ptr;
+	size_t maxwgsize;
 
 	if ( molecule == NULL ) return NULL;
 
@@ -370,6 +371,10 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	}
 
 	STATUS("done\n");
+
+	clGetDeviceInfo(dev, CL_DEVICE_MAX_WORK_GROUP_SIZE,
+	                sizeof(size_t), &maxwgsize, NULL);
+	STATUS("Maximum work group size = %lli\n", (long long int)maxwgsize);
 
 	return gctx;
 }
