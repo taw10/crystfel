@@ -28,6 +28,7 @@
 #include "intensities.h"
 #include "peaks.h"
 #include "diffraction.h"
+#include "diffraction-gpu.h"
 #include "detector.h"
 #include "sfac.h"
 #include "filters.h"
@@ -65,6 +66,7 @@ static void show_help(const char *s)
 int main(int argc, char *argv[])
 {
 	int c;
+	struct gpu_context *gctx = NULL;
 	char *filename = NULL;
 	FILE *fh;
 	char *rval;
@@ -77,6 +79,7 @@ int main(int argc, char *argv[])
 	int config_simulate = 0;
 	int config_clean = 0;
 	int config_nomatch = 0;
+	int config_gpu = 0;
 	IndexingMethod indm;
 	char *indm_str = NULL;
 
@@ -84,6 +87,7 @@ int main(int argc, char *argv[])
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
+		{"gpu",                0, &config_gpu,         1},
 		{"no-index",           0, &config_noindex,     1},
 		{"dump-peaks",         0, &config_dumpfound,   1},
 		{"near-bragg",         0, &config_nearbragg,   1},
@@ -240,7 +244,16 @@ int main(int argc, char *argv[])
 
 				image.data = NULL;
 
-				get_diffraction(&image, 8, 8, 8, 0);
+				if ( config_gpu ) {
+					if ( gctx == NULL ) {
+						gctx = setup_gpu(0, &image,
+						                image.molecule);
+					}
+					get_diffraction_gpu(gctx, &image,
+					                    8, 8, 8);
+				} else {
+					get_diffraction(&image, 8, 8, 8, 0);
+				}
 				if ( image.molecule == NULL ) {
 					ERROR("Couldn't open molecule.pdb\n");
 					return 1;
@@ -267,6 +280,10 @@ done:
 
 	STATUS("There were %i images.\n", n_images);
 	STATUS("%i hits were found.\n", n_hits);
+
+	if ( gctx != NULL ) {
+		cleanup_gpu(gctx);
+	}
 
 	return 0;
 }

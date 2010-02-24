@@ -25,6 +25,9 @@ indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
                       intensities.c peaks.c index.c filters.c \
                       diffraction.c detector.c sfac.c
 indexamajig_LDADD = @LIBS@
+if HAVE_OPENCL
+indexamajig_SOURCES += diffraction-gpu.c cl-utils.c
+endif
 
 if HAVE_GLIB
 indexamajig_SOURCES += dirax.c
