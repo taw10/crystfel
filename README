@@ -1,0 +1,43 @@
+CrystFEL - Crystallography with a FEL
+-------------------------------------
+
+Thomas White <taw@physics.org>, CFEL, DESY
+
+CrystFEL is a suite of programs for simulating and processing crystallographic
+(Bragg diffraction) data acquired with a free electron laser.  The particular
+characteristics of such data which call for a specialised software suite are
+
+- The sliced, rather than integrated, measurement of intensity data.  Many, if
+   not all reflections are partially integrated.  Unique correction factors are
+   needed.
+
+- The crystals are small, leading to significant Fourier truncation effects on
+   the detector.
+
+- Many patterns (>10,000) are required - high throughput is needed.
+
+
+The main programs are:
+
+	- pattern_sim, for simulating patterns.
+
+	- indexamajig, for finding hits, locating peaks, indexing patterns
+	               and constructing lists of h,k,l,I,sigma(I) for each
+	               pattern.
+
+	- process_hkl, for merging per-pattern lists of intensities into a
+	               single reflection list.
+
+	- hdfsee, a simple HDF5 image viewer.
+
+In addition, there is also:
+
+	- get_hkl, for generating a list of squared structure factors for
+	           comparison to simulated or experimental data.
+
+	- powder_plot, for turning an image into a list of reciprocal space
+	               vector moduli and intensities (i.e. a powder diffraction
+	               trace).
+
+	- compare_hkl, for working out the differences (e.g. a q-dependent
+	               scaling factor) between two lists of reflections.
