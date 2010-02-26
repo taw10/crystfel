@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
 						                image.molecule);
 					}
 					get_diffraction_gpu(gctx, &image,
-					                    8, 8, 8);
+					                    24, 24, 40);
 				} else {
 					get_diffraction(&image, 8, 8, 8, 0, 0);
 				}
