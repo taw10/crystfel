@@ -1,5 +1,5 @@
 /* Number of photons in pulse */
-#define FLUENCE (1.0e13)
+#define FLUENCE (2.0e11)
 
 /* Detector's quantum efficiency */
 #define DQE (0.9)
