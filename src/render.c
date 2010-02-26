@@ -108,9 +108,12 @@ float *render_get_image_binned(DisplayWindow *dw, int binning, float *max)
 									       \
 	r = 0;	g = 0;	b = 0;						       \
 									       \
-	if ( (val < 0.0) || (val > max) ) {                                    \
+	if ( (val < 0.0) ) {                                                   \
 		s = 0;                                                         \
 		p = 1.0;                                                       \
+	}                                                                      \
+	if ( (val > max) ) {                                                   \
+		s = 6;                                                         \
 	}                                                                      \
 	switch ( s ) {							       \
 		case 0 : {	/* Black to blue */			       \
@@ -141,17 +144,13 @@ float *render_get_image_binned(DisplayWindow *dw, int binning, float *max)
 			r = 255;	g = 255;		b = 255;       \
 			break;						       \
 		}							       \
-		default : {	/* Above saturation */			       \
-			r = 255;	g = 255;		b = 255;       \
-			break;						       \
-		}							       \
 	}
 
 #define RENDER_MONO							       \
 	float p;							       \
 	p = (float)val / (float)max;					       \
 	if ( val < 0.0 ) p = 0.0;                                              \
-	if ( val > max ) p = 0.0;                                              \
+	if ( val > max ) p = 1.0;                                              \
 	r = 255.0*p;	g = 255.0*p;	b = 255.0*p;
 
 
