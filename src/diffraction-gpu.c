@@ -140,7 +140,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	}
 	/* Local memory for reduction */
 	clSetKernelArg(gctx->kern, 15,
-	               BWSAMPLING*SAMPLING*SAMPLING*2*sizeof(cl_float), NULL);
+	               BWSAMPLING*SAMPLING*SAMPLING*sizeof(cl_float), NULL);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 15: %s\n", clError(err));
 		return;
@@ -230,20 +230,18 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 	free(event);
 
-	image->sfacs = calloc(image->width * image->height,
-	                      sizeof(double complex));
+	image->data = calloc(image->width * image->height, sizeof(float));
 	image->twotheta = calloc(image->width * image->height, sizeof(double));
 
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
 
-		float re, im, tt;
+		float val, tt;
 
-		re = diff_ptr[2*(x + image->width*y)+0];
-		im = diff_ptr[2*(x + image->width*y)+1];
+		val = diff_ptr[x + image->width*y];
 		tt = tt_ptr[x + image->width*y];
 
-		image->sfacs[x + image->width*y] = re + I*im;
+		image->data[x + image->width*y] = val;
 		image->twotheta[x + image->width*y] = tt;
 
 	}
@@ -312,7 +310,7 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	}
 
 	/* Create buffer for the picture */
-	gctx->diff_size = image->width*image->height*sizeof(cl_float)*2;
+	gctx->diff_size = image->width*image->height*sizeof(cl_float);
 	gctx->diff = clCreateBuffer(gctx->ctx, CL_MEM_WRITE_ONLY,
 	                            gctx->diff_size, NULL, &err);
 	if ( err != CL_SUCCESS ) {

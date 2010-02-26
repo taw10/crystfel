@@ -130,11 +130,11 @@ float2 get_sfac(global float2 *sfacs, float16 cell, float4 q)
 }
 
 
-kernel void diffraction(global float2 *diff, global float *tt, float klow,
+kernel void diffraction(global float *diff, global float *tt, float klow,
                        int w, float cx, float cy,
                        float res, float clen, float16 cell,
                        global float2 *sfacs, float4 z, int4 ncells,
-                       int xmin, int ymin, int sampling, local float2 *tmp,
+                       int xmin, int ymin, int sampling, local float *tmp,
                        float kstep)
 {
 	float ttv;
@@ -149,6 +149,8 @@ kernel void diffraction(global float2 *diff, global float *tt, float klow,
 	float k = klow + kstep * get_local_id(2);
 	const int ax = x / sampling;
 	const int ay = y / sampling;
+	float intensity;
+	float2 val;
 
 	/* Calculate value */
 	q = get_q(x, y, cx, cy, res, clen, k, &ttv, z, sampling);
@@ -156,7 +158,9 @@ kernel void diffraction(global float2 *diff, global float *tt, float klow,
 	f_molecule = get_sfac(sfacs, cell, q);
 
 	/* Write the value to local memory */
-	tmp[lx+sampling*ly+sampling*sampling*lb] = f_molecule * f_lattice;
+	val = f_molecule * f_lattice;
+	intensity = pow(val.x, 2.0f) + pow(val.y, 2.0f);
+	tmp[lx+sampling*ly+sampling*sampling*lb] = intensity;
 
 	/* Memory fence */
 	barrier(CLK_LOCAL_MEM_FENCE);
@@ -165,12 +169,14 @@ kernel void diffraction(global float2 *diff, global float *tt, float klow,
 	if ( lx + ly + lb == 0 ) {
 
 		int i;
-		float2 sum = (float2)(0.0, 0.0);
+		float sum = 0.0;
+		float val;
 
 		for ( i=0; i<sampling*sampling*get_local_size(2); i++ )
 			sum += tmp[i];
 
-		diff[ax+w*ay] = sum / (float)(sampling*sampling*get_local_size(2));
+		val = sum / (float)(sampling*sampling*get_local_size(2));
+		diff[ax+w*ay] = val;
 
 		/* Leader thread also records the 2theta value.
 		 * This should really be averaged across all pixels, but

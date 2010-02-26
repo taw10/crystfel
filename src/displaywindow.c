@@ -618,7 +618,7 @@ static void numbers_update(DisplayWindow *dw)
 	for ( py=0; py<17; py++ ) {
 
 		char s[32];
-		int16_t val;
+		float val;
 		GtkWidget *l;
 		int x, y;
 		int valid;
@@ -635,7 +635,7 @@ static void numbers_update(DisplayWindow *dw)
 		}
 
 		if ( (x>0) && (y>0) && valid ) {
-			snprintf(s, 31, "%i", val);
+			snprintf(s, 31, "%.0f", val);
 		} else {
 			strcpy(s, "--");
 		}

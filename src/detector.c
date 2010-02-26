@@ -19,22 +19,42 @@
 #include "utils.h"
 #include "diffraction.h"
 #include "detector.h"
+#include "parameters-lcls.tmp"
 
 
-/* Number of photons in pulse */
-#define FLUENCE (1.0e13)
+/* x,y in pixels relative to central beam */
+int map_position(struct image *image, double dx, double dy,
+                 double *rx, double *ry, double *rz)
+{
+	double d;
+	double twotheta, psi;
+	const double k = 1.0 / image->lambda;
+	struct panel *p;
+	double x = 0.0;
+	double y = 0.0;
 
-/* Detector's quantum efficiency (ADU per photon, front detector) */
-#define DQE (167.0)
+	p = find_panel(&image->det, dx, dy);
 
-/* Radius of the water column */
-#define WATER_RADIUS (3.0e-6 / 2.0)
+	x = ((double)dx - p->cx);
+	y = ((double)dy - p->cy);
 
-/* Radius of X-ray beam */
-#define BEAM_RADIUS (3.0e-6 / 2.0)
+	/* Convert pixels to metres */
+	x /= p->res;
+	y /= p->res;	/* Convert pixels to metres */
+	d = sqrt((x*x) + (y*y));
+	twotheta = atan2(d, p->clen);
+
+	psi = atan2(y, x);
+
+	*rx = k*sin(twotheta)*cos(psi);
+	*ry = k*sin(twotheta)*sin(psi);
+	*rz = k - k*cos(twotheta);
+
+	return 0;
+}
 
 
-void record_image(struct image *image, int do_water, int do_poisson)
+void record_image(struct image *image, int do_poisson)
 {
 	int x, y;
 	double total_energy, energy_density;
@@ -51,38 +71,19 @@ void record_image(struct image *image, int do_water, int do_poisson)
 	       "Total energy = %5.3f microJ\n",
 	       FLUENCE, energy_density/1e7, total_energy*1e6);
 
-	image->hdr = malloc(image->width * image->height * sizeof(double));
-
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
 
 		int counts;
 		double cf;
-		double intensity, sa, water;
-		double complex val;
+		double intensity, sa;
 		double pix_area, Lsq;
 		double dsq, proj_area;
 		struct panel *p;
 
-		val = image->sfacs[x + image->width*y];
-		intensity = pow(cabs(val), 2.0);
+		intensity = image->data[x + image->width*y];
 
 		p = find_panel(&image->det, x, y);
-
-		/* FIXME: Move to diffraction.c somehow */
-		if ( do_water ) {
-
-			struct rvec q;
-
-			q = get_q(image, x, y, 1, NULL, 1.0/image->lambda);
-
-			/* Add intensity contribution from water */
-			water = water_intensity(q,
-			                        ph_lambda_to_en(image->lambda),
-			                        BEAM_RADIUS, WATER_RADIUS);
-			intensity += water;
-
-		}
 
 		/* Area of one pixel */
 		pix_area = pow(1.0/p->res, 2.0);
@@ -107,19 +108,10 @@ void record_image(struct image *image, int do_water, int do_poisson)
 			counts = (int)rounded;
 		}
 
-		image->hdr[x + image->width*y] = counts;
+		image->data[x + image->width*y] = counts;
 
 	}
 	progress_bar(x, image->width-1, "Post-processing");
-	}
-
-	image->data = malloc(image->width * image->height * sizeof(float));
-	for ( x=0; x<image->width; x++ ) {
-	for ( y=0; y<image->height; y++ ) {
-		int val;
-		val = image->hdr[x + image->width*y];
-		image->data[x + image->width*y] = val;
-	}
 	}
 }
 

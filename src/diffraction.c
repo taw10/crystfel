@@ -21,6 +21,7 @@
 #include "cell.h"
 #include "diffraction.h"
 #include "sfac.h"
+#include "parameters-lcls.tmp"
 
 
 #define SAMPLING (4)
@@ -91,8 +92,8 @@ static double complex molecule_factor(struct molecule *mol, struct rvec q,
 }
 
 
-double water_intensity(struct rvec q, double en,
-                       double beam_r, double water_r)
+double water_diffraction(struct rvec q, double en,
+                                 double beam_r, double water_r)
 {
 	double complex fH, fO;
 	double s, modq;
@@ -169,7 +170,8 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 }
 
 
-void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
+void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac,
+                     int do_water)
 {
 	unsigned int xs, ys;
 	double ax, ay, az;
@@ -184,8 +186,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 		                                  &cx, &cy, &cz);
 
 	/* Allocate (and zero) the "diffraction array" */
-	image->sfacs = calloc(image->width * image->height,
-	                      sizeof(double complex));
+	image->data = calloc(image->width * image->height, sizeof(float));
 
 	if ( !no_sfac ) {
 		if ( image->molecule->reflections == NULL ) {
@@ -220,6 +221,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 			float k;
 			double kw = 1.0/BWSAMPLING;
 			double complex val;
+			double intensity;
 
 			/* Calculate k this time round */
 			k = klow + kstep * bwstep;
@@ -238,12 +240,28 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac)
 			                            ax,ay,az,bx,by,bz,cx,cy,cz);
 			}
 
-			val = sw * kw * f_molecule * f_lattice;
-			image->sfacs[x + image->width*y] += val;
+			val = f_molecule * f_lattice;
+			intensity = sw * kw * pow(cabs(val), 2.0);
+			image->data[x + image->width*y] += intensity;
 
 		}
 
+		if ( do_water ) {
+
+			/* Bandwidth not simulated for water */
+			struct rvec q;
+
+			q = get_q(image, x, y, 1, NULL, 1.0/image->lambda);
+
+			/* Add intensity contribution from water */
+			image->data[x + image->width*y] += water_diffraction(q,
+			                        ph_lambda_to_en(image->lambda),
+			                        BEAM_RADIUS, WATER_RADIUS);
+
+		}
+
+
 	}
-	progress_bar(xs, SAMPLING*image->width-1, "Calculating lattice factors");
+	progress_bar(xs, SAMPLING*image->width-1, "Calculating diffraction");
 	}
 }

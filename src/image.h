@@ -69,9 +69,7 @@ struct rvec
 /* Structure describing an image */
 struct image {
 
-	int			*hdr;      /* Actual counts */
 	float			*data;     /* Integer counts after bloom */
-	double complex		*sfacs;
 	double			*twotheta;
 	struct molecule		*molecule;
 	UnitCell		*indexed_cell;

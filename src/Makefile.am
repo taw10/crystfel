@@ -46,7 +46,7 @@ compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c
 compare_hkl_LDADD = @LIBS@
 
 powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \
-                      detector.c index.c diffraction.c sfac.c
+                      detector.c
 powder_plot_LDADD = @LIBS@
 
 if HAVE_GLIB

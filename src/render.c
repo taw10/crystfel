@@ -52,7 +52,7 @@ static void *render_bin(float *in, int inw, int inh, int binning, float *maxp)
 		}
 		}
 
-		data[x+w*y] = total / (binning * binning);
+		data[x+w*y] = total / ((double)binning * (double)binning);
 		if ( data[x+w*y] > max ) max = data[x+w*y];
 
 	}

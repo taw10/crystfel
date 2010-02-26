@@ -223,9 +223,8 @@ int main(int argc, char *argv[])
 			if ( config_nearbragg || config_simulate ) {
 
 				/* Simulate a diffraction pattern */
-				image.sfacs = NULL;
 				image.twotheta = NULL;
-				image.hdr = NULL;
+				image.data = NULL;
 
 				/* View head-on (unit cell is tilted) */
 				image.orientation.w = 1.0;
@@ -255,13 +254,13 @@ int main(int argc, char *argv[])
 					get_diffraction_gpu(gctx, &image,
 					                    8, 8, 8);
 				} else {
-					get_diffraction(&image, 8, 8, 8, 0);
+					get_diffraction(&image, 8, 8, 8, 0, 0);
 				}
 				if ( image.molecule == NULL ) {
 					ERROR("Couldn't open molecule.pdb\n");
 					return 1;
 				}
-				record_image(&image, 0, 0);
+				record_image(&image, 0);
 
 				hdf5_write("simulated.h5", image.data,
 				           image.width, image.height,

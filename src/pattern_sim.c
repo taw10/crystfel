@@ -106,6 +106,9 @@ static void show_details()
 "algorithm.  When the intensity is sufficiently high that Knuth's algorithm\n"
 "would result in machine precision problems, a normal distribution with\n"
 "standard deviation sqrt(I) is used instead.\n"
+"\n"
+"The coherent, elastic part of the diffuse scattering from the water jet can\n"
+"be simulated.\n"
 );
 }
 
@@ -215,6 +218,12 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
+	if ( (!config_nowater) && config_gpu ) {
+		ERROR("Cannot simulate water scattering on the GPU.\n");
+		ERROR("Please try again with the --no-water option.\n");
+		return 1;
+	}
+
 	/* Define image parameters */
 	image.width = 1024;
 	image.height = 1024;
@@ -257,10 +266,8 @@ int main(int argc, char *argv[])
 		}
 
 		/* Ensure no residual information */
-		image.sfacs = NULL;
 		image.data = NULL;
 		image.twotheta = NULL;
-		image.hdr = NULL;
 
 		cell_get_parameters(image.molecule->cell, &a, &b, &c, &d, &d, &d);
 		STATUS("Particle size = %i x %i x %i (=%5.2f x %5.2f x %5.2f nm)\n",
@@ -273,18 +280,19 @@ int main(int argc, char *argv[])
 			}
 			get_diffraction_gpu(gctx, &image, na, nb, nc);
 		} else {
-			get_diffraction(&image, na, nb, nc, config_nosfac);
+			get_diffraction(&image, na, nb, nc, config_nosfac,
+			                !config_nowater);
 		}
 		if ( image.molecule == NULL ) {
 			ERROR("Couldn't open molecule.pdb\n");
 			return 1;
 		}
-		if ( image.sfacs == NULL ) {
+		if ( image.data == NULL ) {
 			ERROR("Diffraction calculation failed.\n");
 			goto skip;
 		}
 
-		record_image(&image, !config_nowater, !config_nonoise);
+		record_image(&image, !config_nonoise);
 
 		if ( config_nearbragg ) {
 			output_intensities(&image, image.molecule->cell);
@@ -324,8 +332,6 @@ int main(int argc, char *argv[])
 
 		/* Clean up */
 		free(image.data);
-		free(image.hdr);
-		free(image.sfacs);
 		free(image.twotheta);
 
 skip:

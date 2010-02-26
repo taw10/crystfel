@@ -93,11 +93,10 @@ am_pattern_sim_OBJECTS = pattern_sim.$(OBJEXT) diffraction.$(OBJEXT) \
 pattern_sim_OBJECTS = $(am_pattern_sim_OBJECTS)
 pattern_sim_DEPENDENCIES =
 am__powder_plot_SOURCES_DIST = powder_plot.c cell.c utils.c image.c \
-	hdf5-file.c detector.c index.c diffraction.c sfac.c dirax.c
+	hdf5-file.c detector.c dirax.c
 am_powder_plot_OBJECTS = powder_plot.$(OBJEXT) cell.$(OBJEXT) \
 	utils.$(OBJEXT) image.$(OBJEXT) hdf5-file.$(OBJEXT) \
-	detector.$(OBJEXT) index.$(OBJEXT) diffraction.$(OBJEXT) \
-	sfac.$(OBJEXT) $(am__objects_2)
+	detector.$(OBJEXT) $(am__objects_2)
 powder_plot_OBJECTS = $(am_powder_plot_OBJECTS)
 powder_plot_DEPENDENCIES =
 am_process_hkl_OBJECTS = process_hkl.$(OBJEXT) sfac.$(OBJEXT) \
@@ -235,7 +234,7 @@ get_hkl_LDADD = @LIBS@
 compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c
 compare_hkl_LDADD = @LIBS@
 powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \
-	detector.c index.c diffraction.c sfac.c $(am__append_5)
+	detector.c $(am__append_5)
 powder_plot_LDADD = @LIBS@
 INCLUDES = "-I$(top_srcdir)/data"
 all: all-am
