@@ -256,7 +256,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac,
 			/* Add intensity contribution from water */
 			image->data[x + image->width*y] += water_diffraction(q,
 			                        ph_lambda_to_en(image->lambda),
-			                        BEAM_RADIUS, WATER_RADIUS);
+			                        BEAM_RADIUS, WATER_RADIUS) * sw;
 
 		}
 
