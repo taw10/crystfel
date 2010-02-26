@@ -172,7 +172,6 @@ void record_image(struct image *image, int do_water, int do_poisson,
 		double pix_area, Lsq;
 		double dsq, proj_area;
 		struct panel *p;
-		int found = 0;
 
 		val = image->sfacs[x + image->width*y];
 		intensity = pow(cabs(val), 2.0);
