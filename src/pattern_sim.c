@@ -57,9 +57,6 @@ static void show_help(const char *s)
 "\n"
 "     --no-water            Do not simulate water background.\n"
 "     --no-noise            Do not calculate Poisson noise.\n"
-"     --no-bloom            Do not calculate CCD bloom (intensities which are\n"
-"                            above the recordable range will be clamped to\n"
-"                            the maximum allowable value).\n"
 "     --no-sfac             Pretend that all structure factors are 1.\n"
 );
 }
@@ -109,12 +106,7 @@ static void show_details()
 "algorithm.  When the intensity is sufficiently high that Knuth's algorithm\n"
 "would result in machine precision problems, a normal distribution with\n"
 "standard deviation sqrt(I) is used instead.\n"
-"\n"
-"Bloom of the CCD is included.  Any excess intensity in a particular pixel\n"
-"is divided between the neighbouring pixels.  Diagonal neighbours receive\n"
-"half the contribution of adjacent pixels.  This process is repeated for\n"
-"every pixel until all pixels are below the saturation value.  Note that this\n"
-"process is slow for very saturated images.\n");
+);
 }
 
 
@@ -164,7 +156,6 @@ int main(int argc, char *argv[])
 	int config_noimages = 0;
 	int config_nowater = 0;
 	int config_nonoise = 0;
-	int config_nobloom = 0;
 	int config_nosfac = 0;
 	int config_gpu = 0;
 	int config_powder = 0;
@@ -184,7 +175,6 @@ int main(int argc, char *argv[])
 		{"no-images",          0, &config_noimages,    1},
 		{"no-water",           0, &config_nowater,     1},
 		{"no-noise",           0, &config_nonoise,     1},
-		{"no-bloom",           0, &config_nobloom,     1},
 		{"no-sfac",            0, &config_nosfac,      1},
 		{"powder",             0, &config_powder,      1},
 		{0, 0, NULL, 0}
@@ -294,8 +284,7 @@ int main(int argc, char *argv[])
 			goto skip;
 		}
 
-		record_image(&image, !config_nowater, !config_nonoise,
-		             !config_nobloom);
+		record_image(&image, !config_nowater, !config_nonoise);
 
 		if ( config_nearbragg ) {
 			output_intensities(&image, image.molecule->cell);
@@ -329,7 +318,7 @@ int main(int argc, char *argv[])
 
 			/* Write the output file */
 			hdf5_write(filename, image.data,
-			           image.width, image.height, H5T_NATIVE_INT16);
+			           image.width, image.height, H5T_NATIVE_FLOAT);
 
 		}
 

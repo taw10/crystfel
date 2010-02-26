@@ -176,11 +176,11 @@ static double get_wavelength(struct hdfile *f)
 int hdf5_read(struct hdfile *f, struct image *image)
 {
 	herr_t r;
-	int16_t *buf;
+	float *buf;
 
 	buf = malloc(sizeof(float)*f->nx*f->ny);
 
-	r = H5Dread(f->dh, H5T_NATIVE_INT16, H5S_ALL, H5S_ALL,
+	r = H5Dread(f->dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 	            H5P_DEFAULT, buf);
 	if ( r < 0 ) {
 		ERROR("Couldn't read data\n");

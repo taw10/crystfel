@@ -24,25 +24,23 @@
 #include "filters.h"
 
 
-static void *render_bin(int16_t *in, int inw, int inh,
-                        int binning, int16_t *maxp)
+static void *render_bin(float *in, int inw, int inh, int binning, float *maxp)
 {
-	int16_t *data;
+	float *data;
 	int x, y;
 	int w, h;
-	int16_t max;
+	float max;
 
 	w = inw / binning;
 	h = inh / binning;      /* Some pixels might get discarded */
 
-	data = malloc(w*h*sizeof(int16_t));
-	max = 0;
+	data = malloc(w*h*sizeof(float));
+	max = 0.0;
 
 	for ( x=0; x<w; x++ ) {
 	for ( y=0; y<h; y++ ) {
 
-		/* Big enough to hold large values */
-		unsigned long long int total;
+		double total;
 		size_t xb, yb;
 
 		total = 0;
@@ -65,10 +63,10 @@ static void *render_bin(int16_t *in, int inw, int inh,
 }
 
 
-int16_t *render_get_image_binned(DisplayWindow *dw, int binning, int16_t *max)
+float *render_get_image_binned(DisplayWindow *dw, int binning, float *max)
 {
 	struct image *image;
-	int16_t *data;
+	float *data;
 
 	if ( (dw->image == NULL) || (dw->image_dirty) ) {
 
@@ -85,6 +83,7 @@ int16_t *render_get_image_binned(DisplayWindow *dw, int binning, int16_t *max)
 		if ( dw->image != NULL ) {
 			image->features = dw->image->features;
 			if ( dw->image->data != NULL ) free(dw->image->data);
+			free(dw->image);
 		}
 
 		dw->image = image;
@@ -209,9 +208,9 @@ GdkPixbuf *render_get_image(DisplayWindow *dw)
 {
 	int mw, mh, w, h;
 	guchar *data;
-	int16_t *hdr;
+	float *hdr;
 	size_t x, y;
-	int16_t max;
+	float max;
 
 	mw = hdfile_get_width(dw->hdfile);
 	mh = hdfile_get_height(dw->hdfile);

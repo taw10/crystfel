@@ -307,7 +307,7 @@ static void integrate_peak(struct image *image, int xp, int yp,
 void search_peaks(struct image *image)
 {
 	int x, y, width, height;
-	int16_t *data;
+	float *data;
 
 	data = image->data;
 	width = image->width;

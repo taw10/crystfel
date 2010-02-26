@@ -24,11 +24,8 @@
 /* Number of photons in pulse */
 #define FLUENCE (1.0e13)
 
-/* Detector's quantum efficiency */
-#define DQE (0.9)
-
-/* Detector's saturation value */
-#define SATURATION (5000)
+/* Detector's quantum efficiency (ADU per photon, front detector) */
+#define DQE (167.0)
 
 /* Radius of the water column */
 #define WATER_RADIUS (3.0e-6 / 2.0)
@@ -37,113 +34,7 @@
 #define BEAM_RADIUS (3.0e-6 / 2.0)
 
 
-/* Bleed excess intensity into neighbouring pixels */
-static void bloom_values(int *tmp, int x, int y,
-                          int width, int height, int val)
-{
-	int overflow;
-
-	overflow = val - SATURATION;
-
-	/* Intensity which bleeds off the edge of the detector is lost */
-	if ( x > 0 ) {
-		tmp[x-1 + width*y] += overflow / 6;
-		if ( y > 0 ) {
-			tmp[x-1 + width*(y-1)] += overflow / 12;
-		}
-		if ( y < height-1 ) {
-			tmp[x-1 + width*(y+1)] += overflow / 12;
-		}
-	}
-
-	if ( x < width-1 ) {
-		tmp[x+1 + width*y] += overflow / 6;
-		if ( y > 0 ) {
-			tmp[x+1 + width*(y-1)] += overflow / 12;
-		}
-		if ( y < height-1 ) {
-			tmp[x+1 + width*(y+1)] += overflow / 12;
-		}
-	}
-
-	if ( y > 0 ) {
-		tmp[x + width*(y-1)] += overflow / 6;
-	}
-	if ( y < height-1 ) {
-		tmp[x + width*(y+1)] += overflow / 6;
-	}
-}
-
-
-static int16_t *bloom(int *hdr_in, int width, int height)
-{
-	int x, y;
-	int16_t *data;
-	int *tmp;
-	int *hdr;
-	int did_something;
-
-	data = malloc(width * height * sizeof(int16_t));
-	tmp = malloc(width * height * sizeof(int));
-	hdr = malloc(width * height * sizeof(int));
-
-	memcpy(hdr, hdr_in, width*height*sizeof(int));
-
-	/* Apply DQE (once only) */
-	for ( x=0; x<width; x++ ) {
-	for ( y=0; y<height; y++ ) {
-		 hdr[x + width*y] *= DQE;
-	}
-	}
-
-	do {
-
-		memset(tmp, 0, width*height*sizeof(int));
-		did_something = 0;
-
-		for ( x=0; x<width; x++ ) {
-		for ( y=0; y<height; y++ ) {
-
-			int hdval;
-
-			hdval = hdr[x + width*y];
-
-			/* Pixel not saturated? */
-			if ( hdval <= SATURATION ) {
-				tmp[x + width*y] += hdval;
-				continue;
-			}
-
-			bloom_values(tmp, x, y, width, height, hdval);
-			tmp[x + width*y] += SATURATION;
-			did_something = 1;
-
-		}
-		}
-
-		/* Prepare new input if we're going round for another pass */
-		if ( did_something ) {
-			memcpy(hdr, tmp, width*height*sizeof(int));
-		}
-
-	} while ( did_something );
-
-	/* Turn into integer array of counts */
-	for ( x=0; x<width; x++ ) {
-	for ( y=0; y<height; y++ ) {
-		data[x + width*y] = (int16_t)tmp[x + width*y];
-	}
-	}
-
-	free(tmp);
-	free(hdr);
-
-	return data;
-}
-
-
-void record_image(struct image *image, int do_water, int do_poisson,
-                  int do_bloom)
+void record_image(struct image *image, int do_water, int do_poisson)
 {
 	int x, y;
 	double total_energy, energy_density;
@@ -222,19 +113,13 @@ void record_image(struct image *image, int do_water, int do_poisson,
 	progress_bar(x, image->width-1, "Post-processing");
 	}
 
-	if ( do_bloom ) {
-		image->data = bloom(image->hdr, image->width, image->height);
-	} else {
-		image->data = malloc(image->width * image->height
-		                                            * sizeof(int16_t));
-		for ( x=0; x<image->width; x++ ) {
-		for ( y=0; y<image->height; y++ ) {
-			int val;
-			val = image->hdr[x + image->width*y];
-			if ( val > SATURATION ) val = SATURATION;
-	                image->data[x + image->width*y] = (int16_t)val;
-		}
-		}
+	image->data = malloc(image->width * image->height * sizeof(float));
+	for ( x=0; x<image->width; x++ ) {
+	for ( y=0; y<image->height; y++ ) {
+		int val;
+		val = image->hdr[x + image->width*y];
+		image->data[x + image->width*y] = val;
+	}
 	}
 }
 

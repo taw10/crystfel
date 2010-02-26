@@ -38,8 +38,7 @@ struct detector
 	int           n_panels;
 };
 
-extern void record_image(struct image *image, int do_water, int do_poisson,
-                         int do_bloom);
+extern void record_image(struct image *image, int do_water, int do_poisson);
 
 extern struct panel *find_panel(struct detector *det, int x, int y);
 

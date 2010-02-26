@@ -35,10 +35,10 @@ struct reflhit {
 };
 
 
-static int sum_nearby_points(int16_t *data, int width, int x, int y)
+static double sum_nearby_points(float *data, int width, int x, int y)
 {
 	int dx, dy;
-	int intensity = 0;
+	double intensity = 0;
 
 	for ( dx=-3; dx<=3; dx++ ) {
 	for ( dy=-3; dy<=3; dy++ ) {
@@ -127,7 +127,7 @@ void output_intensities(struct image *image, UnitCell *cell)
 	       image->orientation.y, image->orientation.z);
 	for ( i=0; i<n_hits; i++ ) {
 
-		int intensity;
+		double intensity;
 
 		/* Bounds check */
 		if ( hits[i].x + 3 >= image->width ) continue;
@@ -138,7 +138,7 @@ void output_intensities(struct image *image, UnitCell *cell)
 		intensity = sum_nearby_points(image->data, image->width,
 		                              hits[i].x, hits[i].y);
 
-		printf("%3i %3i %3i %6i (at %i,%i)\n",
+		printf("%3i %3i %3i %6f (at %i,%i)\n",
 		       hits[i].h, hits[i].k, hits[i].l, intensity,
 		       hits[i].x, hits[i].y);
 

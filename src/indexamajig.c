@@ -261,11 +261,11 @@ int main(int argc, char *argv[])
 					ERROR("Couldn't open molecule.pdb\n");
 					return 1;
 				}
-				record_image(&image, 0, 0, 0);
+				record_image(&image, 0, 0);
 
 				hdf5_write("simulated.h5", image.data,
 				           image.width, image.height,
-				           H5T_NATIVE_INT16);
+				           H5T_NATIVE_FLOAT);
 
 			}
 
