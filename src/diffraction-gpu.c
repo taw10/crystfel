@@ -239,6 +239,12 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		float val, tt;
 
 		val = diff_ptr[x + image->width*y];
+		if ( isinf(val) ) {
+			ERROR("Extracting infinity at %i,%i\n", x, y);
+		}
+		if ( val < 0.0 ) {
+			ERROR("Extracting negative at %i,%i\n", x, y);
+		}
 		tt = tt_ptr[x + image->width*y];
 
 		image->data[x + image->width*y] = val;

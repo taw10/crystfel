@@ -74,14 +74,17 @@ void record_image(struct image *image, int do_poisson)
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
 
-		int counts;
+		double counts;
 		double cf;
 		double intensity, sa;
 		double pix_area, Lsq;
 		double dsq, proj_area;
 		struct panel *p;
 
-		intensity = image->data[x + image->width*y];
+		intensity = (double)image->data[x + image->width*y];
+		if ( isinf(intensity) ) {
+			ERROR("Infinity at %i,%i\n", x, y);
+		}
 
 		p = find_panel(&image->det, x, y);
 
@@ -102,13 +105,20 @@ void record_image(struct image *image, int do_poisson)
 		if ( do_poisson ) {
 			counts = poisson_noise(intensity * ph_per_e * sa * DQE);
 		} else {
-			double rounded;
 			cf = intensity * ph_per_e * sa * DQE;
-			rounded = rint(cf);
-			counts = (int)rounded;
+			counts = rint(cf);
+			if ( counts < 0.0 ) {
+				ERROR("Negative at %i,%i %f\n", x, y, counts);
+			}
 		}
 
 		image->data[x + image->width*y] = counts * DETECTOR_GAIN;
+		if ( isinf(image->data[x+image->width*y]) ) {
+			ERROR("Processed infinity at %i,%i\n", x, y);
+		}
+		if ( image->data[x+image->width*y] < 0.0 ) {
+			ERROR("Processed negative at %i,%i %f\n", x, y, counts);
+		}
 
 	}
 	progress_bar(x, image->width-1, "Post-processing");
