@@ -108,7 +108,7 @@ void record_image(struct image *image, int do_poisson)
 			counts = (int)rounded;
 		}
 
-		image->data[x + image->width*y] = counts;
+		image->data[x + image->width*y] = counts * DETECTOR_GAIN;
 
 	}
 	progress_bar(x, image->width-1, "Post-processing");

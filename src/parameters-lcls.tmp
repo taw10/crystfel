@@ -1,8 +1,11 @@
 /* Number of photons in pulse */
 #define FLUENCE (1.0e13)
 
-/* Detector's quantum efficiency (ADU per photon, front detector) */
-#define DQE (167.0)
+/* Detector's quantum efficiency */
+#define DQE (0.9)
+
+/* ADU per photon (front detector) */
+#define DETECTOR_GAIN (167.0)
 
 /* Radius of the water column */
 #define WATER_RADIUS (3.0e-6 / 2.0)
