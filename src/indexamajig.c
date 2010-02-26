@@ -218,9 +218,14 @@ int main(int argc, char *argv[])
 
 			n_hits++;
 
+			/* Measure intensities if requested */
+			if ( config_nearbragg ) {
+				output_intensities(&image, image.indexed_cell);
+			}
+
 			/* Simulation or intensity measurements both require
 			 * Ewald sphere vectors */
-			if ( config_nearbragg || config_simulate ) {
+			if ( config_simulate ) {
 
 				/* Simulate a diffraction pattern */
 				image.twotheta = NULL;
@@ -231,18 +236,6 @@ int main(int argc, char *argv[])
 				image.orientation.x = 0.0;
 				image.orientation.y = 0.0;
 				image.orientation.z = 0.0;
-
-			}
-
-			/* Measure intensities if requested */
-			if ( config_nearbragg ) {
-				output_intensities(&image, image.indexed_cell);
-			}
-
-			/* Simulate pattern if requested */
-			if ( config_simulate ) {
-
-				image.data = NULL;
 
 				image.molecule->cell = image.indexed_cell;
 
