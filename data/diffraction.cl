@@ -71,9 +71,18 @@ float4 get_q(int x, int y, float cx, float cy, float res, float clen, float k,
 }
 
 
+float range(float a)
+{
+	a = a >= 0.0 ? a : 2.0*M_PI + a;
+	a = a < 2.0*M_PI ? a : a - 2.0*M_PI;
+
+	return a;
+}
+
+
 float lattice_factor(float16 cell, float4 q, int4 ncells)
 {
-	float f1, f2, f3;
+	float f1, f2, f3, v;
 	float4 Udotq;
 	const int na = ncells.s0;
 	const int nb = ncells.s1;
@@ -84,13 +93,19 @@ float lattice_factor(float16 cell, float4 q, int4 ncells)
 	Udotq.z = cell.s6*q.x + cell.s7*q.y + cell.s8*q.z;
 
 	/* At exact Bragg condition, f1 = na */
-	f1 = native_sin(M_PI*(float)na*Udotq.x) / native_sin(M_PI*Udotq.x);
+	v = M_PI*Udotq.x;
+	f1 = sin(v*(float)na) / sin(v);
+	f1 = isnan(f1) ? na : f1;
 
 	/* At exact Bragg condition, f2 = nb */
-	f2 = native_sin(M_PI*(float)nb*Udotq.y) / native_sin(M_PI*Udotq.y);
+	v = M_PI*Udotq.y;
+	f2 = sin(v*(float)nb) / sin(v);
+	f2 = isnan(f2) ? nb : f2;
 
 	/* At exact Bragg condition, f3 = nc */
-	f3 = native_sin(M_PI*(float)nc*Udotq.z) / native_sin(M_PI*Udotq.z);
+	v = M_PI*Udotq.z;
+	f3 = sin(v*(float)nc) / sin(v);
+	f3 = isnan(f3) ? nc : f3;
 
 	/* At exact Bragg condition, this will multiply the molecular
 	 * part of the structure factor by the number of unit cells,
