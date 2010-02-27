@@ -307,10 +307,6 @@ int main(int argc, char *argv[])
 			for ( x=0; x<image.width; x++ ) {
 			for ( y=0; y<image.height; y++ ) {
 				powder[x+w*y] += (double)image.data[x+w*y];
-				if ( image.data[x+w*y] < 0 ) {
-					STATUS("Negative! %f %i %i\n",
-					       image.data[x+w*y], x, y);
-				}
 			}
 			}
 

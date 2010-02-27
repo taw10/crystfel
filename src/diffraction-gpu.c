@@ -245,6 +245,9 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		if ( val < 0.0 ) {
 			ERROR("Extracting negative at %i,%i\n", x, y);
 		}
+		if ( isnan(val) ) {
+			ERROR("Extracting NaN at %i,%i\n", x, y);
+		}
 		tt = tt_ptr[x + image->width*y];
 
 		image->data[x + image->width*y] = val;
