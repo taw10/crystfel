@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
 	int c;
 	struct image image;
 	struct gpu_context *gctx = NULL;
-	long long int *powder;
+	double *powder;
 	int config_simdetails = 0;
 	int config_nearbragg = 0;
 	int config_randomquat = 0;
@@ -306,9 +306,10 @@ int main(int argc, char *argv[])
 
 			for ( x=0; x<image.width; x++ ) {
 			for ( y=0; y<image.height; y++ ) {
-				powder[x+w*y] += image.data[x+w*y];
+				powder[x+w*y] += (double)image.data[x+w*y];
 				if ( image.data[x+w*y] < 0 ) {
-					STATUS("Negative! %f %i %i\n", image.data[x+w*y], x, y);
+					STATUS("Negative! %f %i %i\n",
+					       image.data[x+w*y], x, y);
 				}
 			}
 			}
@@ -316,7 +317,7 @@ int main(int argc, char *argv[])
 			if ( !(ndone % 10) ) {
 				hdf5_write("results/integr.h5", powder,
 				           image.width, image.height,
-				           H5T_NATIVE_LLONG);
+				           H5T_NATIVE_DOUBLE);
 			}
 		}
 
