@@ -245,9 +245,9 @@ int main(int argc, char *argv[])
 		//na = 8*random()/RAND_MAX + 4;
 		//nb = 8*random()/RAND_MAX + 4;
 		//nc = 16*random()/RAND_MAX + 30;
-		na = 8;
-		nb = 8;
-		nc = 16;
+		na = 24;
+		nb = 24;
+		nc = 40;
 
 		/* Read quaternion from stdin */
 		if ( config_randomquat ) {
