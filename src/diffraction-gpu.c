@@ -29,6 +29,8 @@
 #define BWSAMPLING (10)
 #define BANDWIDTH (1.0 / 100.0)
 
+#define SINC_LUT_ELEMENTS (4096)
+
 
 struct gpu_context
 {
@@ -43,6 +45,13 @@ struct gpu_context
 
 	cl_mem diff;
 	size_t diff_size;
+
+	cl_mem func_a;
+	cl_float *func_a_ptr;
+	cl_mem func_b;
+	cl_float *func_b_ptr;
+	cl_mem func_c;
+	cl_float *func_c_ptr;
 };
 
 
@@ -128,27 +137,22 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		ERROR("Couldn't set arg 10: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(gctx->kern, 11, sizeof(cl_int4), &ncells);
+	clSetKernelArg(gctx->kern, 13, sizeof(cl_int), &sampling);
 	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 11: %s\n", clError(err));
+		ERROR("Couldn't set arg 13: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(gctx->kern, 14, sizeof(cl_int), &sampling);
+	/* Local memory for reduction */
+	clSetKernelArg(gctx->kern, 14,
+	               BWSAMPLING*SAMPLING*SAMPLING*sizeof(cl_float), NULL);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 14: %s\n", clError(err));
 		return;
 	}
-	/* Local memory for reduction */
-	clSetKernelArg(gctx->kern, 15,
-	               BWSAMPLING*SAMPLING*SAMPLING*sizeof(cl_float), NULL);
+	/* Bandwidth sampling step */
+	clSetKernelArg(gctx->kern, 15, sizeof(cl_float), &bwstep);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 15: %s\n", clError(err));
-		return;
-	}
-	/* Bandwidth sampling step */
-	clSetKernelArg(gctx->kern, 16, sizeof(cl_float), &bwstep);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 16: %s\n", clError(err));
 		return;
 	}
 
@@ -191,16 +195,16 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 			ERROR("Couldn't set arg 7: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(gctx->kern, 12, sizeof(cl_int),
+		clSetKernelArg(gctx->kern, 11, sizeof(cl_int),
 		               &image->det.panels[p].min_x);
 		if ( err != CL_SUCCESS ) {
-			ERROR("Couldn't set arg 12: %s\n", clError(err));
+			ERROR("Couldn't set arg 11: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(gctx->kern, 13, sizeof(cl_int),
+		clSetKernelArg(gctx->kern, 12, sizeof(cl_int),
 		               &image->det.panels[p].min_y);
 		if ( err != CL_SUCCESS ) {
-			ERROR("Couldn't set arg 13: %s\n", clError(err));
+			ERROR("Couldn't set arg 12: %s\n", clError(err));
 			return;
 		}
 
@@ -263,7 +267,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 /* Setup the OpenCL stuff, create buffers, load the structure factor table */
 struct gpu_context *setup_gpu(int no_sfac, struct image *image,
-                              struct molecule *molecule)
+                              struct molecule *molecule, int na, int nb, int nc)
 {
 	struct gpu_context *gctx;
 	cl_uint nplat;
@@ -274,6 +278,9 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	size_t sfac_size;
 	float *sfac_ptr;
 	size_t maxwgsize;
+	size_t sinc_lut_size;
+	cl_image_format fmt;
+	int i;
 
 	if ( molecule == NULL ) return NULL;
 
@@ -332,13 +339,11 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	sfac_size = IDIM*IDIM*IDIM*sizeof(cl_float)*2; /* complex */
 	sfac_ptr = malloc(sfac_size);
 	if ( !no_sfac ) {
-		int i;
 		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
 			sfac_ptr[2*i+0] = creal(molecule->reflections[i]);
 			sfac_ptr[2*i+1] = cimag(molecule->reflections[i]);
 		}
 	} else {
-		int i;
 		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
 			sfac_ptr[2*i+0] = 10000.0;
 			sfac_ptr[2*i+1] = 0.0;
@@ -374,6 +379,67 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't create kernel\n");
 		free(gctx);
+		return NULL;
+	}
+
+	fmt.image_channel_order = CL_INTENSITY;
+	fmt.image_channel_data_type = CL_FLOAT;
+	sinc_lut_size = SINC_LUT_ELEMENTS*sizeof(cl_float);
+
+	/* Set up sinc LUT for a* direction */
+	gctx->func_a_ptr = malloc(sinc_lut_size);
+	gctx->func_a_ptr[0] = na;
+	for ( i=1; i<SINC_LUT_ELEMENTS; i++ ) {
+		double x, val;
+		x = (double)i/SINC_LUT_ELEMENTS;
+		val = sin(M_PI*na*x)/sin(M_PI*x);
+		gctx->func_a_ptr[i] = val;
+	}
+	gctx->func_a = clCreateImage2D(gctx->ctx,
+	                               CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+	                               &fmt, SINC_LUT_ELEMENTS, 1, 0,
+	                               gctx->func_a_ptr, &err);
+	clSetKernelArg(gctx->kern, 16, sizeof(cl_mem), &gctx->func_a);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 16: %s\n", clError(err));
+		return NULL;
+	}
+
+	/* Set up sinc LUT for b* direction */
+	gctx->func_b_ptr = malloc(sinc_lut_size);
+	gctx->func_b_ptr[0] = nb;
+	for ( i=1; i<SINC_LUT_ELEMENTS; i++ ) {
+		double x, val;
+		x = (double)i/SINC_LUT_ELEMENTS;
+		val = sin(M_PI*nb*x)/sin(M_PI*x);
+		gctx->func_b_ptr[i] = val;
+	}
+	gctx->func_b = clCreateImage2D(gctx->ctx,
+	                               CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+	                               &fmt, SINC_LUT_ELEMENTS, 1, 0,
+	                               gctx->func_b_ptr, &err);
+	clSetKernelArg(gctx->kern, 17, sizeof(cl_mem), &gctx->func_b);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 17: %s\n", clError(err));
+		return NULL;
+	}
+
+	/* Set up sinc LUT for c* direction */
+	gctx->func_c_ptr = malloc(sinc_lut_size);
+	gctx->func_c_ptr[0] = nc;
+	for ( i=1; i<SINC_LUT_ELEMENTS; i++ ) {
+		double x, val;
+		x = (double)i/SINC_LUT_ELEMENTS;
+		val = sin(M_PI*nc*x)/sin(M_PI*x);
+		gctx->func_c_ptr[i] = val;
+	}
+	gctx->func_c = clCreateImage2D(gctx->ctx,
+	                               CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+	                               &fmt, SINC_LUT_ELEMENTS, 1, 0,
+	                               gctx->func_c_ptr, &err);
+	clSetKernelArg(gctx->kern, 18, sizeof(cl_mem), &gctx->func_c);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set arg 18: %s\n", clError(err));
 		return NULL;
 	}
 

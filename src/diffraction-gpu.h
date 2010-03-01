@@ -23,10 +23,10 @@ struct gpu_context;
 
 #if HAVE_OPENCL
 
-extern void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
-                                int na, int nb, int nc);
+extern void get_diffraction_gpu(struct gpu_context *gctx, struct image *image);
 extern struct gpu_context *setup_gpu(int no_sfac, struct image *image,
-                                     struct molecule *molecule);
+                                     struct molecule *molecule,
+                                     int na, int nb, int nc);
 extern void cleanup_gpu(struct gpu_context *gctx);
 
 #else

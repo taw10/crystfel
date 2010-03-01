@@ -15,6 +15,15 @@
 #define M_PI ((float)(3.14159265))
 #endif
 
+
+const sampler_t sampler_a = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT
+                             | CLK_FILTER_LINEAR;
+const sampler_t sampler_b = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT
+                             | CLK_FILTER_LINEAR;
+const sampler_t sampler_c = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT
+                             | CLK_FILTER_LINEAR;
+
+
 float4 quat_rot(float4 q, float4 z)
 {
 	float4 res;
@@ -80,36 +89,23 @@ float range(float a)
 }
 
 
-float lattice_factor(float16 cell, float4 q, int4 ncells)
+float lattice_factor(float16 cell, float4 q,
+                     read_only image2d_t func_a,
+                     read_only image2d_t func_b,
+                     read_only image2d_t func_c)
 {
 	float f1, f2, f3, v;
 	float4 Udotq;
-	const int na = ncells.s0;
-	const int nb = ncells.s1;
-	const int nc = ncells.s2;
 
 	Udotq.x = cell.s0*q.x + cell.s1*q.y + cell.s2*q.z;
 	Udotq.y = cell.s3*q.x + cell.s4*q.y + cell.s5*q.z;
 	Udotq.z = cell.s6*q.x + cell.s7*q.y + cell.s8*q.z;
 
-	/* At exact Bragg condition, f1 = na */
-	v = M_PI*Udotq.x;
-	f1 = sin(v*(float)na) / sin(v);
-	f1 = isnan(f1) ? na : f1;
+	/* Look up values from precalculated sinc() table */
+	f1 = read_imagef(func_a, sampler_a, (float2)(Udotq.x, 0.0)).s0;
+	f2 = read_imagef(func_b, sampler_b, (float2)(Udotq.y, 0.0)).s0;
+	f3 = read_imagef(func_c, sampler_c, (float2)(Udotq.z, 0.0)).s0;
 
-	/* At exact Bragg condition, f2 = nb */
-	v = M_PI*Udotq.y;
-	f2 = sin(v*(float)nb) / sin(v);
-	f2 = isnan(f2) ? nb : f2;
-
-	/* At exact Bragg condition, f3 = nc */
-	v = M_PI*Udotq.z;
-	f3 = sin(v*(float)nc) / sin(v);
-	f3 = isnan(f3) ? nc : f3;
-
-	/* At exact Bragg condition, this will multiply the molecular
-	 * part of the structure factor by the number of unit cells,
-	 * as desired (more scattering from bigger crystal!) */
 	return f1 * f2 * f3;
 }
 
@@ -148,9 +144,12 @@ float2 get_sfac(global float2 *sfacs, float16 cell, float4 q)
 kernel void diffraction(global float *diff, global float *tt, float klow,
                        int w, float cx, float cy,
                        float res, float clen, float16 cell,
-                       global float2 *sfacs, float4 z, int4 ncells,
+                       global float2 *sfacs, float4 z,
                        int xmin, int ymin, int sampling, local float *tmp,
-                       float kstep)
+                       float kstep,
+                       read_only image2d_t func_a,
+                       read_only image2d_t func_b,
+                       read_only image2d_t func_c)
 {
 	float ttv;
 	const int x = get_global_id(0) + (xmin*sampling);
@@ -169,7 +168,7 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
 
 	/* Calculate value */
 	q = get_q(x, y, cx, cy, res, clen, k, &ttv, z, sampling);
-	f_lattice = lattice_factor(cell, q, ncells);
+	f_lattice = lattice_factor(cell, q, func_a, func_b, func_c);
 	f_molecule = get_sfac(sfacs, cell, q);
 
 	/* Write the value to local memory */

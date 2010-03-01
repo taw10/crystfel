@@ -242,10 +242,10 @@ int main(int argc, char *argv[])
 				if ( config_gpu ) {
 					if ( gctx == NULL ) {
 						gctx = setup_gpu(0, &image,
-						                image.molecule);
+						                image.molecule,
+						                24, 24, 40);
 					}
-					get_diffraction_gpu(gctx, &image,
-					                    24, 24, 40);
+					get_diffraction_gpu(gctx, &image);
 				} else {
 					get_diffraction(&image, 8, 8, 8, 0, 0);
 				}
