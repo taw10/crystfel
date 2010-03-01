@@ -40,6 +40,7 @@ const char *clError(cl_int err)
 	case CL_INVALID_KERNEL_NAME : return "invalid kernel name";
 	case CL_INVALID_KERNEL_ARGS : return "invalid kernel arguments";
 	case CL_INVALID_WORK_GROUP_SIZE : return "invalid work group size";
+	case CL_IMAGE_FORMAT_NOT_SUPPORTED : return "image format not supported";
 	default :
 		ERROR("Error code: %i\n", err);
 		return "unknown error";
