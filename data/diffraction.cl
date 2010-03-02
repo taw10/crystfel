@@ -80,15 +80,6 @@ float4 get_q(int x, int y, float cx, float cy, float res, float clen, float k,
 }
 
 
-float range(float a)
-{
-	a = a >= 0.0 ? a : 2.0*M_PI + a;
-	a = a < 2.0*M_PI ? a : a - 2.0*M_PI;
-
-	return a;
-}
-
-
 float lattice_factor(float16 cell, float4 q,
                      read_only image2d_t func_a,
                      read_only image2d_t func_b,
