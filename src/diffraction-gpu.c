@@ -459,6 +459,12 @@ void cleanup_gpu(struct gpu_context *gctx)
 	clReleaseMemObject(gctx->diff);
 	clReleaseMemObject(gctx->tt);
 	clReleaseMemObject(gctx->sfacs);
+	clReleaseMemObject(gctx->func_a);
+	clReleaseMemObject(gctx->func_b);
+	clReleaseMemObject(gctx->func_c);
+	free(gctx->func_a_ptr);
+	free(gctx->func_b_ptr);
+	free(gctx->func_c_ptr);
 	clReleaseCommandQueue(gctx->cq);
 	clReleaseContext(gctx->ctx);
 	free(gctx);
