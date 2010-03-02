@@ -392,7 +392,7 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	for ( i=1; i<SINC_LUT_ELEMENTS; i++ ) {
 		double x, val;
 		x = (double)i/SINC_LUT_ELEMENTS;
-		val = sin(M_PI*na*x)/sin(M_PI*x);
+		val = fabs(sin(M_PI*na*x)/sin(M_PI*x));
 		gctx->func_a_ptr[i] = val;
 	}
 	gctx->func_a = clCreateImage2D(gctx->ctx,
@@ -411,7 +411,7 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	for ( i=1; i<SINC_LUT_ELEMENTS; i++ ) {
 		double x, val;
 		x = (double)i/SINC_LUT_ELEMENTS;
-		val = sin(M_PI*nb*x)/sin(M_PI*x);
+		val = fabs(sin(M_PI*nb*x)/sin(M_PI*x));
 		gctx->func_b_ptr[i] = val;
 	}
 	gctx->func_b = clCreateImage2D(gctx->ctx,
@@ -430,7 +430,7 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	for ( i=1; i<SINC_LUT_ELEMENTS; i++ ) {
 		double x, val;
 		x = (double)i/SINC_LUT_ELEMENTS;
-		val = sin(M_PI*nc*x)/sin(M_PI*x);
+		val = fabs(sin(M_PI*nc*x)/sin(M_PI*x));
 		gctx->func_c_ptr[i] = val;
 	}
 	gctx->func_c = clCreateImage2D(gctx->ctx,
