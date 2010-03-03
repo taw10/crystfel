@@ -34,6 +34,7 @@ int map_position(struct image *image, double dx, double dy,
 	double y = 0.0;
 
 	p = find_panel(&image->det, dx, dy);
+	if ( p == NULL ) return 1;
 
 	x = ((double)dx - p->cx);
 	y = ((double)dy - p->cy);
