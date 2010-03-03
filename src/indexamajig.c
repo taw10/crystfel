@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
 	int config_verbose = 0;
 	IndexingMethod indm;
 	char *indm_str = NULL;
+	struct image image;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -163,20 +164,25 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	image.molecule = load_molecule();
+	if ( image.molecule == NULL ) {
+		ERROR("You must provide molecule.pdb in the working "
+		      "directory.\n");
+		return 1;
+	}
+
 	n_images = 0;
 	n_hits = 0;
 	do {
 
 		char line[1024];
 		struct hdfile *hdfile;
-		struct image image;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
 		chomp(line);
 
 		image.features = NULL;
-		image.molecule = load_molecule();
 		image.data = NULL;
 		image.indexed_cell = NULL;
 
