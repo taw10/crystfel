@@ -57,7 +57,7 @@ static void dirax_parseline(const char *line, struct image *image)
 	free(copy);
 
 	if ( strstr(line, "reflections from file") ) {
-		ERROR("DirAx can't understand this data.");
+		ERROR("DirAx can't understand this data.\n");
 		return;
 	}
 
