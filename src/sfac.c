@@ -438,8 +438,6 @@ double complex *get_reflections(struct molecule *mol, double en)
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	signed int h, k, l;
-	//double tscat = 0.0;
-	//double F00;
 	const int do_thermal = 1;
 
 	cell_get_reciprocal(mol->cell, &asx, &asy, &asz,
@@ -494,18 +492,12 @@ double complex *get_reflections(struct molecule *mol, double en)
 		}
 
 		set_sfac(reflections, h, k, l, F);
-		//if ( (h!=0) || (k!=0) || (l!=0) ) {
-		//	tscat += cabs(F);
-		//} else {
-		//	F00 = cabs(F);
-		//}
 
 	}
 	progress_bar((k+INDMAX)+IDIM*(h+INDMAX), IDIM*IDIM-1,
 	             "Calculating structure factors");
 	}
 	}
-	//STATUS("Total scattered = %f, F000 = %f\n", tscat, F00);
 
 	return reflections;
 }
