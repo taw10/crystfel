@@ -74,6 +74,6 @@ extern double resolution(UnitCell *cell,
 
 extern void cell_print(UnitCell *cell);
 
-extern UnitCell *match_cell(UnitCell *cell, UnitCell *template);
+extern UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose);
 
 #endif	/* CELL_H */

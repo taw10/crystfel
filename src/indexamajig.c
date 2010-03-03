@@ -47,6 +47,8 @@ static void show_help(const char *s)
 "      --indexing=<method> Use 'method' for indexing.  Choose from:\n"
 "                           none     : no indexing\n"
 "                           dirax    : invoke DirAx\n"
+"\n"
+"      --verbose           Be verbose about indexing.\n"
 "      --write-drx         Write 'xfel.drx' for visualisation of reciprocal\n"
 "                           space.  Implied by any indexing method other than\n"
 "                           'none'.\n"
@@ -81,6 +83,7 @@ int main(int argc, char *argv[])
 	int config_clean = 0;
 	int config_nomatch = 0;
 	int config_gpu = 0;
+	int config_verbose = 0;
 	IndexingMethod indm;
 	char *indm_str = NULL;
 
@@ -97,6 +100,7 @@ int main(int argc, char *argv[])
 		{"simulate",           0, &config_simulate,    1},
 		{"clean-image",        0, &config_clean,       1},
 		{"no-match",           0, &config_nomatch,     1},
+		{"verbose",            0, &config_verbose,     1},
 		{0, 0, NULL, 0}
 	};
 
@@ -210,7 +214,8 @@ int main(int argc, char *argv[])
 
 			/* Calculate orientation matrix (by magic) */
 			if ( config_writedrx || (indm != INDEXING_NONE) ) {
-				index_pattern(&image, indm, config_nomatch);
+				index_pattern(&image, indm, config_nomatch,
+				              config_verbose);
 			}
 
 			/* No cell at this point?  Then we're done. */

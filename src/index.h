@@ -26,6 +26,6 @@ typedef enum {
 
 
 extern void index_pattern(struct image *image, IndexingMethod indm,
-                          int no_match);
+                          int no_match, int verbose);
 
 #endif	/* INDEX_H */

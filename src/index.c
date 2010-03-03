@@ -60,7 +60,8 @@ static void write_drx(struct image *image)
 }
 
 
-void index_pattern(struct image *image, IndexingMethod indm, int no_match)
+void index_pattern(struct image *image, IndexingMethod indm, int no_match,
+                   int verbose)
 {
 	int i;
 	UnitCell *new_cell = NULL;
@@ -92,7 +93,7 @@ void index_pattern(struct image *image, IndexingMethod indm, int no_match)
 	if ( image->indexed_cell == NULL ) {
 		STATUS("No cell found.\n");
 		return;
-	} else {
+	} else if ( verbose ) {
 		STATUS("--------------------\n");
 		STATUS("The indexed cell (before matching):\n");
 		cell_print(image->indexed_cell);
@@ -101,7 +102,7 @@ void index_pattern(struct image *image, IndexingMethod indm, int no_match)
 
 	if ( !no_match ) {
 		new_cell = match_cell(image->indexed_cell,
-			              image->molecule->cell);
+			              image->molecule->cell, verbose);
 		free(image->indexed_cell);
 		image->indexed_cell = new_cell;
 	}
