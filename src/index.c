@@ -35,9 +35,6 @@ static void write_drx(struct image *image)
 	FILE *fh;
 	int i;
 
-	STATUS("Writing xfel.drx file.  Remember that it uses units of "
-	       "reciprocal Angstroms!\n");
-
 	fh = fopen("xfel.drx", "w");
 	if ( !fh ) {
 		ERROR("Couldn't open temporary file xfel.drx\n");
