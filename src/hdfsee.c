@@ -91,7 +91,6 @@ int main(int argc, char *argv[])
 		{0, 0, NULL, 0}
 	};
 
-	g_thread_init(NULL);
 	gtk_init(&argc, &argv);
 
 	/* Short options */

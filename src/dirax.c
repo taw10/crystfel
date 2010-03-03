@@ -15,7 +15,6 @@
 #endif
 
 
-#include <glib.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -165,8 +164,7 @@ static void dirax_send_next(struct image *image)
 		break;
 
 	default:
-		image->dirax_step = 0;
-		g_main_loop_quit(image->dirax_ml);
+		dirax_sendline("exit\n", image);
 		return;
 
 	}
@@ -175,24 +173,15 @@ static void dirax_send_next(struct image *image)
 }
 
 
-static gboolean dirax_readable(GIOChannel *dirax, GIOCondition condition,
-                               struct image *image)
+static int dirax_readable(struct image *image)
 {
 	int rval;
 	int no_string = 0;
 
 	rval = read(image->dirax_pty, image->dirax_rbuffer+image->dirax_rbufpos,
-			image->dirax_rbuflen-image->dirax_rbufpos);
+	            image->dirax_rbuflen-image->dirax_rbufpos);
 
-	if ( (rval == -1) || (rval == 0) ) {
-
-		ERROR("Lost connection to DirAx (rval=%i)\n", rval);
-		waitpid(image->dirax_pid, NULL, 0);
-		g_io_channel_shutdown(image->dirax, FALSE, NULL);
-		image->dirax = NULL;
-		return FALSE;
-
-	}
+	if ( (rval == -1) || (rval == 0) ) return 1;
 
 	image->dirax_rbufpos += rval;
 	assert(image->dirax_rbufpos <= image->dirax_rbuflen);
@@ -264,10 +253,7 @@ static gboolean dirax_readable(GIOChannel *dirax, GIOCondition condition,
 				/* Obviously, this never happens :) */
 				ERROR("Unrecognised DirAx input mode! "
 				      "I don't know how to understand DirAx\n");
-				waitpid(image->dirax_pid, NULL, 0);
-				g_io_channel_shutdown(image->dirax, FALSE, NULL);
-				image->dirax = NULL;
-				return FALSE;
+				return 1;
 
 			}
 
@@ -306,7 +292,7 @@ static gboolean dirax_readable(GIOChannel *dirax, GIOCondition condition,
 
 	}
 
-	return TRUE;
+	return 0;
 }
 
 
@@ -315,6 +301,7 @@ void run_dirax(struct image *image)
 	unsigned int opts;
 	int saved_stderr;
 	int status;
+	int rval;
 
 	saved_stderr = dup(STDERR_FILENO);
 	image->dirax_pid = forkpty(&image->dirax_pty, NULL, NULL, NULL);
@@ -352,13 +339,34 @@ void run_dirax(struct image *image)
 	image->dirax_step = 1;	/* This starts the "initialisation" procedure */
 	image->dirax_read_cell = 0;
 
-	image->dirax = g_io_channel_unix_new(image->dirax_pty);
-	g_io_add_watch(image->dirax, G_IO_IN | G_IO_HUP,
-	               (GIOFunc)dirax_readable, image);
+	do {
 
-	image->dirax_ml = g_main_loop_new(NULL, FALSE);
-	g_main_loop_run(image->dirax_ml);
+		fd_set fds;
+		struct timeval tv;
+		int sval;
+
+		FD_ZERO(&fds);
+		FD_SET(image->dirax_pty, &fds);
+
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+
+		sval = select(image->dirax_pty+1, &fds, NULL, NULL, &tv);
+
+		if ( sval == -1 ) {
+			ERROR("select() failed.\n");
+			rval = 1;
+		} else if ( sval != 0 ) {
+			rval = dirax_readable(image);
+		} else {
+			ERROR("No response from DirAx..\n");
+			rval = 1;
+		}
+
+	} while ( !rval );
+
 	close(image->dirax_pty);
+	close(saved_stderr);
 	wait(&status);
 
 	return;

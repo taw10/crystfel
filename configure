@@ -641,8 +641,6 @@ am__EXEEXT_TRUE
 LTLIBOBJS
 HAVE_OPENCL_FALSE
 HAVE_OPENCL_TRUE
-HAVE_GLIB_FALSE
-HAVE_GLIB_TRUE
 HAVE_GTK_FALSE
 HAVE_GTK_TRUE
 GTK_LIBS
@@ -5139,10 +5137,9 @@ if test "${enable_gtk+set}" = set; then
   enableval=$enable_gtk;
 fi
 
-haveglib=false
 havegtk=false
-{ $as_echo "$as_me:$LINENO: checking whether to use GTK/GLib" >&5
-$as_echo_n "checking whether to use GTK/GLib... " >&6; }
+{ $as_echo "$as_me:$LINENO: checking whether to use GTK" >&5
+$as_echo_n "checking whether to use GTK... " >&6; }
 if test "x$enable_gtk" != "xno"; then
 
    { $as_echo "$as_me:$LINENO: result: yes" >&5
@@ -5381,13 +5378,7 @@ fi
 $as_echo "yes (version $gtk_config_major_version.$gtk_config_minor_version.$gtk_config_micro_version)" >&6; }
 
       havegtk=true
-      haveglib=true
-
-cat >>confdefs.h <<\_ACEOF
-#define HAVE_GLIB 1
-_ACEOF
-
-      GTK_LIBS="$GTK_LIBS -lgthread-2.0 -lutil"
+      GTK_LIBS="$GTK_LIBS"
 
   else
      { $as_echo "$as_me:$LINENO: result: no" >&5
@@ -5495,14 +5486,6 @@ else
   HAVE_GTK_FALSE=
 fi
 
- if test x$haveglib = xtrue; then
-  HAVE_GLIB_TRUE=
-  HAVE_GLIB_FALSE='#'
-else
-  HAVE_GLIB_TRUE='#'
-  HAVE_GLIB_FALSE=
-fi
-
  if test x$have_opencl = xtrue; then
   HAVE_OPENCL_TRUE=
   HAVE_OPENCL_FALSE='#'
@@ -5513,7 +5496,7 @@ fi
 
 
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS"
-LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS"
+LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -lutil"
 
 ac_config_files="$ac_config_files Makefile src/Makefile data/Makefile"
 
@@ -5640,13 +5623,6 @@ if test -z "${HAVE_GTK_TRUE}" && test -z "${HAVE_GTK_FALSE}"; then
   { { $as_echo "$as_me:$LINENO: error: conditional \"HAVE_GTK\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 $as_echo "$as_me: error: conditional \"HAVE_GTK\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${HAVE_GLIB_TRUE}" && test -z "${HAVE_GLIB_FALSE}"; then
-  { { $as_echo "$as_me:$LINENO: error: conditional \"HAVE_GLIB\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-$as_echo "$as_me: error: conditional \"HAVE_GLIB\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi

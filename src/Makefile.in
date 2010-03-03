@@ -38,8 +38,6 @@ bin_PROGRAMS = pattern_sim$(EXEEXT) process_hkl$(EXEEXT) \
 @HAVE_GTK_TRUE@am__append_1 = hdfsee
 @HAVE_OPENCL_TRUE@am__append_2 = diffraction-gpu.c cl-utils.c
 @HAVE_OPENCL_TRUE@am__append_3 = diffraction-gpu.c cl-utils.c
-@HAVE_GLIB_TRUE@am__append_4 = dirax.c
-@HAVE_GLIB_TRUE@am__append_5 = dirax.c
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -71,16 +69,15 @@ hdfsee_OBJECTS = $(am_hdfsee_OBJECTS)
 hdfsee_DEPENDENCIES =
 am__indexamajig_SOURCES_DIST = indexamajig.c hdf5-file.c utils.c \
 	cell.c image.c intensities.c peaks.c index.c filters.c \
-	diffraction.c detector.c sfac.c diffraction-gpu.c cl-utils.c \
-	dirax.c
+	diffraction.c detector.c sfac.c dirax.c diffraction-gpu.c \
+	cl-utils.c
 @HAVE_OPENCL_TRUE@am__objects_1 = diffraction-gpu.$(OBJEXT) \
 @HAVE_OPENCL_TRUE@	cl-utils.$(OBJEXT)
-@HAVE_GLIB_TRUE@am__objects_2 = dirax.$(OBJEXT)
 am_indexamajig_OBJECTS = indexamajig.$(OBJEXT) hdf5-file.$(OBJEXT) \
 	utils.$(OBJEXT) cell.$(OBJEXT) image.$(OBJEXT) \
 	intensities.$(OBJEXT) peaks.$(OBJEXT) index.$(OBJEXT) \
 	filters.$(OBJEXT) diffraction.$(OBJEXT) detector.$(OBJEXT) \
-	sfac.$(OBJEXT) $(am__objects_1) $(am__objects_2)
+	sfac.$(OBJEXT) dirax.$(OBJEXT) $(am__objects_1)
 indexamajig_OBJECTS = $(am_indexamajig_OBJECTS)
 indexamajig_DEPENDENCIES =
 am__pattern_sim_SOURCES_DIST = pattern_sim.c diffraction.c utils.c \
@@ -92,11 +89,9 @@ am_pattern_sim_OBJECTS = pattern_sim.$(OBJEXT) diffraction.$(OBJEXT) \
 	intensities.$(OBJEXT) reflections.$(OBJEXT) $(am__objects_1)
 pattern_sim_OBJECTS = $(am_pattern_sim_OBJECTS)
 pattern_sim_DEPENDENCIES =
-am__powder_plot_SOURCES_DIST = powder_plot.c cell.c utils.c image.c \
-	hdf5-file.c detector.c dirax.c
 am_powder_plot_OBJECTS = powder_plot.$(OBJEXT) cell.$(OBJEXT) \
 	utils.$(OBJEXT) image.$(OBJEXT) hdf5-file.$(OBJEXT) \
-	detector.$(OBJEXT) $(am__objects_2)
+	detector.$(OBJEXT)
 powder_plot_OBJECTS = $(am_powder_plot_OBJECTS)
 powder_plot_DEPENDENCIES =
 am_process_hkl_OBJECTS = process_hkl.$(OBJEXT) sfac.$(OBJEXT) \
@@ -117,8 +112,8 @@ SOURCES = $(compare_hkl_SOURCES) $(get_hkl_SOURCES) $(hdfsee_SOURCES) \
 	$(powder_plot_SOURCES) $(process_hkl_SOURCES)
 DIST_SOURCES = $(compare_hkl_SOURCES) $(get_hkl_SOURCES) \
 	$(am__hdfsee_SOURCES_DIST) $(am__indexamajig_SOURCES_DIST) \
-	$(am__pattern_sim_SOURCES_DIST) \
-	$(am__powder_plot_SOURCES_DIST) $(process_hkl_SOURCES)
+	$(am__pattern_sim_SOURCES_DIST) $(powder_plot_SOURCES) \
+	$(process_hkl_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -223,7 +218,7 @@ process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
 process_hkl_LDADD = @LIBS@
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
 	intensities.c peaks.c index.c filters.c diffraction.c \
-	detector.c sfac.c $(am__append_3) $(am__append_4)
+	detector.c sfac.c dirax.c $(am__append_3)
 indexamajig_LDADD = @LIBS@
 @HAVE_GTK_TRUE@hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c image.c \
 @HAVE_GTK_TRUE@                 filters.c
@@ -234,7 +229,8 @@ get_hkl_LDADD = @LIBS@
 compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c
 compare_hkl_LDADD = @LIBS@
 powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \
-	detector.c $(am__append_5)
+                      detector.c
+
 powder_plot_LDADD = @LIBS@
 INCLUDES = "-I$(top_srcdir)/data"
 all: all-am
