@@ -213,6 +213,7 @@ static UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs,
 	angles[1] = angle_between(as.u, as.v, as.w, cs.u, cs.v, cs.w);
 	angles[2] = angle_between(as.u, as.v, as.w, bs.u, bs.v, bs.w);
 
+	/*
 	STATUS("as = %9.3e %9.3e %9.3e m^-1\n", as.u, as.v, as.w);
 	STATUS("bs = %9.3e %9.3e %9.3e m^-1\n", bs.u, bs.v, bs.w);
 	STATUS("cs = %9.3e %9.3e %9.3e m^-1\n", cs.u, cs.v, cs.w);
@@ -223,6 +224,7 @@ static UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs,
 	STATUS("Creating with %5.2f %5.2f %5.2f deg\n", rad2deg(angles[0]),
 	                                                rad2deg(angles[1]),
 	                                                rad2deg(angles[2]));
+	*/
 
 	m = gsl_matrix_alloc(3, 3);
 	gsl_matrix_set(m, 0, 0, as.u);
