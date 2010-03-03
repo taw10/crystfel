@@ -357,6 +357,7 @@ void run_dirax(struct image *image)
 
 	image->dirax_ml = g_main_loop_new(NULL, FALSE);
 	g_main_loop_run(image->dirax_ml);
+	close(image->dirax_pty);
 
 	return;
 }
