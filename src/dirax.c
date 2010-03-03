@@ -314,6 +314,7 @@ void run_dirax(struct image *image)
 {
 	unsigned int opts;
 	int saved_stderr;
+	int status;
 
 	saved_stderr = dup(STDERR_FILENO);
 	image->dirax_pid = forkpty(&image->dirax_pty, NULL, NULL, NULL);
@@ -358,6 +359,7 @@ void run_dirax(struct image *image)
 	image->dirax_ml = g_main_loop_new(NULL, FALSE);
 	g_main_loop_run(image->dirax_ml);
 	close(image->dirax_pty);
+	wait(&status);
 
 	return;
 }
