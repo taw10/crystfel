@@ -360,10 +360,10 @@ void search_peaks(struct image *image)
 			did_something = 0;
 
 			for ( sy=biggest(mask_y-PEAK_WINDOW_SIZE/2, 0);
-			      sy<smallest(mask_y+PEAK_WINDOW_SIZE/2, height);
+			      sy<smallest(mask_y+PEAK_WINDOW_SIZE/2, height-1);
 			      sy++ ) {
 			for ( sx=biggest(mask_x-PEAK_WINDOW_SIZE/2, 0);
-			      sx<smallest(mask_x+PEAK_WINDOW_SIZE/2, width);
+			      sx<smallest(mask_x+PEAK_WINDOW_SIZE/2, width-1);
 			      sx++ ) {
 
 				if ( data[sx+width*sy] > max ) {
