@@ -11,6 +11,7 @@ AC_PROG_AWK
 AC_PROG_INSTALL
 AC_PROG_LN_S
 
+
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h stdlib.h string.h unistd.h])
 AC_C_CONST
@@ -18,11 +19,13 @@ AC_FUNC_MALLOC
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS([strdup])
 
+
 AC_ARG_WITH(hdf5,
 [AS_HELP_STRING([--with-hdf5], [specify location of HDF5 library])],
 [HDF5_CFLAGS="-I$withval/include"
  HDF5_LIBS="-L$withval/lib -lhdf5"],
 [HDF5_LIBS="-lhdf5"])
+
 
 AC_ARG_WITH(gsl,
 [AS_HELP_STRING([--with-gsl], [specify location of GSL])],
@@ -51,6 +54,7 @@ AS_IF([test "x$enable_opencl" == "xyes"],
 [
    AC_MSG_RESULT([no])
 ])
+AM_CONDITIONAL([HAVE_OPENCL], test x$have_opencl = xtrue)
 
 
 AC_ARG_ENABLE(gtk, AS_HELP_STRING([--disable-gtk], [Disable GTK+/GLib]))
@@ -71,9 +75,16 @@ AS_IF([test "x$enable_gtk" != "xno"],
 [
    AC_MSG_RESULT([no])
 ])
-
 AM_CONDITIONAL([HAVE_GTK], test x$havegtk = xtrue)
-AM_CONDITIONAL([HAVE_OPENCL], test x$have_opencl = xtrue)
+
+
+AC_CHECK_FUNCS(forkpty,,
+   AC_CHECK_LIB(util,forkpty,
+     [AC_DEFINE(HAVE_FORKPTY) LIBS="$LIBS -lutil"],
+     AC_CHECK_LIB(bsd,forkpty, [AC_DEFINE(HAVE_FORKPTY) LIBS="$LIBS -lbsd"])
+   )
+)
+
 
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS"
 LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -lutil"
