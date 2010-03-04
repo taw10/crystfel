@@ -34,7 +34,7 @@ void write_reflections(const char *filename, unsigned int *counts,
 	}
 
 	if ( fh == NULL ) {
-		ERROR("Couldn't open output file!\n");
+		ERROR("Couldn't open output file '%s'.\n", filename);
 		return;
 	}
 
@@ -45,6 +45,7 @@ void write_reflections(const char *filename, unsigned int *counts,
 		fprintf(fh, "a %5.3f nm\n", a*1e9);
 		fprintf(fh, "b %5.3f nm\n", b*1e9);
 		fprintf(fh, "angle %5.3f deg\n", rad2deg(gamma));
+		fprintf(fh, "scale 10\n");
 	}
 
 	for ( h=-INDMAX; h<INDMAX; h++ ) {

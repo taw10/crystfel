@@ -161,13 +161,13 @@ static void process_reflections(double *ref, double *trueref,
 	if ( do_rvsq ) {
 		/* Record graph of R against q for this N */
 		char name[64];
-		snprintf(name, 63, "results/R_vs_q-%u.dat", n_patterns);
+		snprintf(name, 63, "R_vs_q-%u.dat", n_patterns);
 		write_RvsQ(name, ref, trueref, counts, scale, cell);
 	}
 
 	if ( do_zoneaxis ) {
 		char name[64];
-		snprintf(name, 63, "results/ZA-%u.dat", n_patterns);
+		snprintf(name, 63, "ZA-%u.dat", n_patterns);
 		write_reflections(name, counts, ref, 1, cell);
 	}
 
@@ -340,6 +340,14 @@ int main(int argc, char *argv[])
 		UnitCell *cell = NULL;
 		if ( mol != NULL ) cell = mol->cell;
 		write_reflections(output, counts, ref, 0, cell);
+	}
+
+	if ( config_zoneaxis ) {
+		char name[64];
+		UnitCell *cell = NULL;
+		if ( mol != NULL ) cell = mol->cell;
+		snprintf(name, 63, "ZA-%u.dat", n_patterns);
+		write_reflections(name, counts, ref, 1, cell);
 	}
 
 	STATUS("There were %u patterns.\n", n_patterns);
