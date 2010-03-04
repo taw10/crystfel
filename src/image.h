@@ -20,10 +20,6 @@
 #include <stdint.h>
 #include <complex.h>
 
-#if HAVE_GLIB
-#include <glib.h>
-#endif
-
 #include "utils.h"
 #include "cell.h"
 #include "detector.h"
