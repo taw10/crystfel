@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
 	}
 
 	mol = load_molecule();
-	get_reflections_cached(mol, eV_to_J(2.0e3));
+	get_reflections_cached(mol, eV_to_J(1.8e3));
 	ref = ideal_intensities(mol->reflections);
 
 	if ( template != NULL ) {
