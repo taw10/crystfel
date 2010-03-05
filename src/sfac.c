@@ -324,14 +324,6 @@ struct molecule *load_molecule()
 	mol->n_species = 0;
 	mol->reflections = NULL;
 
-	/* FIXME: Read cell from file */
-	mol->cell = cell_new_from_parameters(28.10e-9,
-	                                     28.10e-9,
-	                                     16.52e-9,
-	                                     deg2rad(90.0),
-	                                     deg2rad(90.0),
-	                                     deg2rad(120.0));
-
 	fh = fopen("molecule.pdb", "r");
 	if ( fh == NULL ) {
                 ERROR("Couldn't open PDB file\n");
@@ -348,6 +340,21 @@ struct molecule *load_molecule()
 		char *coords;
 
 		rval = fgets(line, 1023, fh);
+
+		if ( strncmp(line, "CRYST1", 6) == 0 ) {
+
+			float a, b, c, al, be, ga;
+
+			r = sscanf(line+7, "%f %f %f %f %f %f",
+			           &a, &b, &c, &al, &be, &ga);
+
+			mol->cell = cell_new_from_parameters(a*1e-10,
+			                                     b*1e-10, c*1e-10,
+	                                                     deg2rad(al),
+	                                                     deg2rad(be),
+	                                                     deg2rad(ga));
+
+		}
 
 		/* Only interested in atoms */
 		if ( strncmp(line, "HETATM", 6) != 0 ) continue;
@@ -425,6 +432,11 @@ struct molecule *load_molecule()
 	for ( i=0; i<mol->n_species; i++ ) {
 	//	STATUS("%3s : %6i\n", mol->species[i]->species,
 	//	       mol->species[i]->n_atoms);
+	}
+
+	if ( mol->cell == NULL ) {
+		ERROR("No unit cell found in PDB file\n");
+		return NULL;
 	}
 
 	return mol;
