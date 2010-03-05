@@ -78,11 +78,15 @@ AS_IF([test "x$enable_gtk" != "xno"],
 AM_CONDITIONAL([HAVE_GTK], test x$havegtk = xtrue)
 
 
-AC_CHECK_FUNCS(forkpty,,
+AC_CHECK_FUNCS(forkpty,
+   AC_DEFINE([HAVE_FORKPTY_BSD], [1],
+             [Define to 1 if a Linux-style forkpty is available]),
    AC_CHECK_LIB(util,forkpty,
-     [AC_DEFINE(HAVE_FORKPTY) LIBS="$LIBS -lutil"],
-     AC_CHECK_LIB(bsd,forkpty, [AC_DEFINE(HAVE_FORKPTY) LIBS="$LIBS -lbsd"])
-   )
+   [
+      AC_DEFINE([HAVE_FORKPTY_LINUX], [1],
+                [Define to 1 if a Linux-style forkpty is available])
+      LIBS="$LIBS -lutil"
+   ])
 )
 
 
