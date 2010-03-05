@@ -6,7 +6,7 @@
 /* Define to 1 if you have the `forkpty' function. */
 #undef HAVE_FORKPTY
 
-/* Define to 1 if a Linux-style forkpty is available */
+/* Define to 1 if a BSD-style forkpty is available */
 #undef HAVE_FORKPTY_BSD
 
 /* Define to 1 if a Linux-style forkpty is available */

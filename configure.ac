@@ -80,7 +80,7 @@ AM_CONDITIONAL([HAVE_GTK], test x$havegtk = xtrue)
 
 AC_CHECK_FUNCS(forkpty,
    AC_DEFINE([HAVE_FORKPTY_BSD], [1],
-             [Define to 1 if a Linux-style forkpty is available]),
+             [Define to 1 if a BSD-style forkpty is available]),
    AC_CHECK_LIB(util,forkpty,
    [
       AC_DEFINE([HAVE_FORKPTY_LINUX], [1],
