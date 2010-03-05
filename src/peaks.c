@@ -285,8 +285,8 @@ static void integrate_peak(struct image *image, int xp, int yp,
 		/* Circular mask */
 		if ( x*x + y*y > lim ) continue;
 
-		if ( (x>=image->width) || (x<0) ) continue;
-		if ( (y>=image->height) || (y<0) ) continue;
+		if ( ((x+xp)>=image->width) || ((x+xp)<0) ) continue;
+		if ( ((y+yp)>=image->height) || ((y+yp)<0) ) continue;
 
 		val = image->data[(x+xp)+image->width*(y+yp)];
 
@@ -382,6 +382,9 @@ void search_peaks(struct image *image)
 
 			double d;
 			int idx;
+			float x = 0.0;
+			float y = 0.0;
+			float intensity = 0.0;
 
 			assert(mask_x<image->width);
 			assert(mask_y<image->height);
@@ -394,18 +397,14 @@ void search_peaks(struct image *image)
 			/* Isolated hot pixel? */
 			if ( is_hot_pixel(image, mask_x, mask_y) ) continue;
 
+			integrate_peak(image, mask_x, mask_y,
+				               &x, &y, &intensity);
+
 			/* Check for a nearby feature */
 			image_feature_closest(image->features, mask_x, mask_y,
 			                      &d, &idx);
 
 			if ( d > 15.0 ) {
-
-				float x = 0.0;
-				float y = 0.0;
-				float intensity = 0.0;
-
-				integrate_peak(image, mask_x, mask_y,
-				               &x, &y, &intensity);
 
 				image_add_feature(image->features, x, y,
 				                  image, intensity);
