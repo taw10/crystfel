@@ -351,7 +351,7 @@ void run_dirax(struct image *image)
 		FD_ZERO(&fds);
 		FD_SET(image->dirax_pty, &fds);
 
-		tv.tv_sec = 1;
+		tv.tv_sec = 10;
 		tv.tv_usec = 0;
 
 		sval = select(image->dirax_pty+1, &fds, NULL, NULL, &tv);
