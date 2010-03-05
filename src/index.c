@@ -102,5 +102,8 @@ void index_pattern(struct image *image, IndexingMethod indm, int no_match,
 			              image->molecule->cell, verbose);
 		free(image->indexed_cell);
 		image->indexed_cell = new_cell;
+		if ( new_cell == NULL ) {
+			STATUS("Cell found, but not matched.\n");
+		}
 	}
 }
