@@ -49,9 +49,9 @@ static void cell_update_cartesian(UnitCell *cell)
 	cell->bz = 0.0;
 
 	tmp = cos(cell->alpha)*cos(cell->alpha)
-		- cos(cell->beta)*cos(cell->beta)
-		- cos(cell->gamma)*cos(cell->gamma)
-		+ 2.0*cos(cell->alpha)*cos(cell->beta)*cos(cell->gamma);
+		+ cos(cell->beta)*cos(cell->beta)
+		+ cos(cell->gamma)*cos(cell->gamma)
+		- 2.0*cos(cell->alpha)*cos(cell->beta)*cos(cell->gamma);
 	V = cell->a * cell->b * cell->c * sqrt(1.0 - tmp);
 
 	cosalphastar = cos(cell->beta)*cos(cell->gamma) - cos(cell->alpha);
