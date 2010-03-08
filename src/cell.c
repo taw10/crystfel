@@ -401,7 +401,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 	double angles[3];
 	struct cvec *cand[3];
 	UnitCell *new_cell = NULL;
-	float best_fom = HUGE_VAL;
+	float best_fom = +HUGE_VALF;
 	int ncand[3] = {0,0,0};
 	float ltl = 5.0;     /* percent */
 	float angtol = deg2rad(5.0);
@@ -457,13 +457,14 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 
 			n1 *= b1;  n2 *= b2;  n3 *= b3;
 
-			tx = n1*asx + n2*asy + n3*asz;
-			ty = n1*bsx + n2*bsy + n3*bsz;
-			tz = n1*csx + n2*csy + n3*csz;
+			tx = n1*asx + n2*bsx + n3*csx;
+			ty = n1*asy + n2*bsy + n3*csy;
+			tz = n1*asz + n2*bsz + n3*csz;
 			tlen = modulus(tx, ty, tz);
 
 			/* Test modulus for agreement with moduli of template */
 			for ( i=0; i<3; i++ ) {
+
 				if ( !within_tolerance(lengths[i], tlen, ltl) )
 					continue;
 
@@ -510,6 +511,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 
 		/* Angle between axes 0 and 1 should be angle 2 */
 		if ( fabs(ang - angles[2]) > angtol ) continue;
+
 		fom1 = fabs(ang - angles[2]);
 
 		for ( k=0; k<ncand[2]; k++ ) {
@@ -526,6 +528,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 
 			/* ... it should be angle 1 ... */
 			if ( fabs(ang - angles[1]) > angtol ) continue;
+
 			fom2 = fom1 + fabs(ang - angles[1]);
 
 			/* Finally, the angle between the current candidate for
@@ -536,6 +539,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 
 			/* ... it should be angle 0 ... */
 			if ( fabs(ang - angles[0]) > angtol ) continue;
+
 			fom3 = fom2 + fabs(ang - angles[0]);
 			fom3 += LWEIGHT * (cand[0][i].fom + cand[1][j].fom
 			                   + cand[2][k].fom);
