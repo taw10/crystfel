@@ -425,11 +425,6 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 	angles[0] = angle_between(bsx, bsy, bsz, csx, csy, csz);
 	angles[1] = angle_between(asx, asy, asz, csx, csy, csz);
 	angles[2] = angle_between(asx, asy, asz, bsx, bsy, bsz);
-	if ( verbose ) {
-		STATUS("Looking for %f %f %f\n", rad2deg(angles[0]),
-		                                 rad2deg(angles[1]),
-	                                         rad2deg(angles[2]));
-	}
 
 	cand[0] = malloc(MAX_CAND*sizeof(struct cvec));
 	cand[1] = malloc(MAX_CAND*sizeof(struct cvec));
@@ -479,9 +474,10 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 				cand[i][ncand[i]].nb = n2;
 				cand[i][ncand[i]].nc = n3;
 				cand[i][ncand[i]].fom = fabs(lengths[i] - tlen);
-				ncand[i]++;
 				if ( ncand[i] == MAX_CAND ) {
 					ERROR("Too many candidates\n");
+				} else {
+					ncand[i]++;
 				}
 			}
 
@@ -514,10 +510,6 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 
 		/* Angle between axes 0 and 1 should be angle 2 */
 		if ( fabs(ang - angles[2]) > angtol ) continue;
-		if ( verbose ) {
-			STATUS("Matched %i-%i (0-1 %f deg)\n", i, j,
-			                                       rad2deg(ang));
-		}
 		fom1 = fabs(ang - angles[2]);
 
 		for ( k=0; k<ncand[2]; k++ ) {
@@ -534,9 +526,6 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 
 			/* ... it should be angle 1 ... */
 			if ( fabs(ang - angles[1]) > angtol ) continue;
-			if ( verbose ) {
-				STATUS("0-2 %f\n", rad2deg(ang));
-			}
 			fom2 = fom1 + fabs(ang - angles[1]);
 
 			/* Finally, the angle between the current candidate for
@@ -546,9 +535,6 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 			                    cand[2][k].vec.v, cand[2][k].vec.w);
 
 			/* ... it should be angle 0 ... */
-			if ( verbose ) {
-				STATUS("1-2 %f\n", rad2deg(ang));
-			}
 			if ( fabs(ang - angles[0]) > angtol ) continue;
 			fom3 = fom2 + fabs(ang - angles[0]);
 			fom3 += LWEIGHT * (cand[0][i].fom + cand[1][j].fom
@@ -567,8 +553,10 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 	}
 	}
 
-	STATUS("Success! --------------- \n");
-	cell_print(new_cell);
+	if ( new_cell != NULL ) {
+		STATUS("Success! --------------- \n");
+		cell_print(new_cell);
+	}
 
 	free(cand[0]);
 	free(cand[1]);
