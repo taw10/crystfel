@@ -25,6 +25,10 @@
 #include "image.h"
 
 
+/* Weighting factor of lengths relative to angles */
+#define LWEIGHT (10.0e-9)
+
+
 /* Update the cartesian representation from the crystallographic one */
 static void cell_update_cartesian(UnitCell *cell)
 {
@@ -372,6 +376,7 @@ struct cvec {
 	float na;
 	float nb;
 	float nc;
+	float fom;
 };
 
 
@@ -395,11 +400,11 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 	double lengths[3];
 	double angles[3];
 	struct cvec *cand[3];
-
+	UnitCell *new_cell = NULL;
+	float best_fom = HUGE_VAL;
 	int ncand[3] = {0,0,0};
 	float ltl = 5.0;     /* percent */
 	float angtol = deg2rad(5.0);
-	UnitCell *new_cell = NULL;
 
 	if ( verbose ) {
 		STATUS("Matching with this model cell: "
@@ -464,17 +469,19 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 
 			/* Test modulus for agreement with moduli of template */
 			for ( i=0; i<3; i++ ) {
-				if ( within_tolerance(lengths[i], tlen, ltl) ) {
-					cand[i][ncand[i]].vec.u = tx;
-					cand[i][ncand[i]].vec.v = ty;
-					cand[i][ncand[i]].vec.w = tz;
-					cand[i][ncand[i]].na = n1;
-					cand[i][ncand[i]].nb = n2;
-					cand[i][ncand[i]].nc = n3;
-					ncand[i]++;
-					if ( ncand[i] == MAX_CAND ) {
-						ERROR("Too many candidates\n");
-					}
+				if ( !within_tolerance(lengths[i], tlen, ltl) )
+					continue;
+
+				cand[i][ncand[i]].vec.u = tx;
+				cand[i][ncand[i]].vec.v = ty;
+				cand[i][ncand[i]].vec.w = tz;
+				cand[i][ncand[i]].na = n1;
+				cand[i][ncand[i]].nb = n2;
+				cand[i][ncand[i]].nc = n3;
+				cand[i][ncand[i]].fom = fabs(lengths[i] - tlen);
+				ncand[i]++;
+				if ( ncand[i] == MAX_CAND ) {
+					ERROR("Too many candidates\n");
 				}
 			}
 
@@ -495,6 +502,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 
 		double ang;
 		int k;
+		float fom1;
 
 		if ( same_vector(cand[0][i], cand[1][j]) ) continue;
 
@@ -510,7 +518,11 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 			STATUS("Matched %i-%i (0-1 %f deg)\n", i, j,
 			                                       rad2deg(ang));
 		}
+		fom1 = fabs(ang - angles[2]);
+
 		for ( k=0; k<ncand[2]; k++ ) {
+
+			float fom2, fom3;
 
 			if ( same_vector(cand[1][j], cand[2][k]) ) continue;
 
@@ -522,10 +534,10 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 
 			/* ... it should be angle 1 ... */
 			if ( fabs(ang - angles[1]) > angtol ) continue;
-
 			if ( verbose ) {
 				STATUS("0-2 %f\n", rad2deg(ang));
 			}
+			fom2 = fom1 + fabs(ang - angles[1]);
 
 			/* Finally, the angle between the current candidate for
 			 * axis 1 and the kth candidate for axis 2 */
@@ -538,31 +550,26 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 				STATUS("1-2 %f\n", rad2deg(ang));
 			}
 			if ( fabs(ang - angles[0]) > angtol ) continue;
+			fom3 = fom2 + fabs(ang - angles[0]);
+			fom3 += LWEIGHT * (cand[0][i].fom + cand[1][j].fom
+			                   + cand[2][k].fom);
 
-			new_cell = cell_new_from_axes(cand[0][i].vec,
-			                              cand[1][j].vec,
-			                              cand[2][k].vec);
-
-			STATUS("Success! --------------- \n");
-			cell_print(new_cell);
-			STATUS("The transformation from the original was:\n");
-			STATUS("%5.2f %5.2f %5.2f\n", cand[0][i].na,
-			                              cand[0][i].nb,
-			                              cand[0][i].nc);
-			STATUS("%5.2f %5.2f %5.2f\n", cand[1][j].na,
-			                              cand[1][j].nb,
-			                              cand[1][j].nc);
-			STATUS("%5.2f %5.2f %5.2f\n", cand[2][k].na,
-			                              cand[2][k].nb,
-			                              cand[2][k].nc);
-			goto done;
+			if ( fom3 < best_fom ) {
+				if ( new_cell != NULL ) free(new_cell);
+				new_cell = cell_new_from_axes(cand[0][i].vec,
+			                                      cand[1][j].vec,
+			                                      cand[2][k].vec);
+				best_fom = fom3;
+			}
 
 		}
 
 	}
 	}
 
-done:
+	STATUS("Success! --------------- \n");
+	cell_print(new_cell);
+
 	free(cand[0]);
 	free(cand[1]);
 	free(cand[2]);
