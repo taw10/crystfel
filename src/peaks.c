@@ -308,6 +308,16 @@ void search_peaks(struct image *image)
 {
 	int x, y, width, height;
 	float *data;
+	double d;
+	int idx;
+	float fx = 0.0;
+	float fy = 0.0;
+	float intensity = 0.0;
+	int nrej_dis = 0;
+	int nrej_hot = 0;
+	int nrej_pro = 0;
+	int nrej_fra = 0;
+	int nacc = 0;
 
 	data = image->data;
 	width = image->width;
@@ -327,7 +337,7 @@ void search_peaks(struct image *image)
 		int mask_x, mask_y;
 		int sx, sy;
 		double max;
-		unsigned int did_something = 1;
+		unsigned int did_something;
 
 		/* Overall threshold */
 		if ( data[x+width*y] < 800 ) continue;
@@ -348,13 +358,12 @@ void search_peaks(struct image *image)
 		/* Calculate overall gradient */
 		grad = dxs + dys;
 
-		if ( grad < 1000000 ) continue;
+		if ( grad < 100000 ) continue;
 
 		mask_x = x;
 		mask_y = y;
 
-		while ( (did_something)
-		     && (distance(mask_x, mask_y, x, y)<50) ) {
+		do {
 
 			max = data[mask_x+width*mask_y];
 			did_something = 0;
@@ -376,46 +385,55 @@ void search_peaks(struct image *image)
 			}
 			}
 
+			/* Abort if drifted too far from the foot point */
+			if ( distance(mask_x, mask_y, x, y) > 50.0 ) break;
+
+		} while ( did_something );
+
+		/* Too far from foot point? */
+		if ( distance(mask_x, mask_y, x, y) > 50.0 ) {
+			nrej_dis++;
+			continue;
 		}
 
-		if ( !did_something ) {
+		/* Should be enforced by bounds used above.  Muppet check. */
+		assert(mask_x < image->width);
+		assert(mask_y < image->height);
+		assert(mask_x >= 0);
+		assert(mask_y >= 0);
 
-			double d;
-			int idx;
-			float x = 0.0;
-			float y = 0.0;
-			float intensity = 0.0;
-
-			assert(mask_x<image->width);
-			assert(mask_y<image->height);
-			assert(mask_x>=0);
-			assert(mask_y>=0);
-
-			/* Too far from foot point? */
-			if ( distance(mask_x, mask_y, x, y) > 50.0 )  continue;
-
-			/* Isolated hot pixel? */
-			if ( is_hot_pixel(image, mask_x, mask_y) ) continue;
-
-			integrate_peak(image, mask_x, mask_y,
-				               &x, &y, &intensity);
-
-			/* Check for a nearby feature */
-			image_feature_closest(image->features, mask_x, mask_y,
-			                      &d, &idx);
-
-			if ( d > 15.0 ) {
-
-				image_add_feature(image->features, x, y,
-				                  image, intensity);
-
-			}
-
+		/* Isolated hot pixel? */
+		if ( is_hot_pixel(image, mask_x, mask_y) ) {
+			nrej_hot++;
+			continue;
 		}
 
+		/* Centroid peak and get better coordinates */
+		integrate_peak(image, mask_x, mask_y, &fx, &fy, &intensity);
+
+		/* It is possible for the centroid to fall outside the image */
+		if ( (fx < 0.0) || (fx > image->width)
+		  || (fy < 0.0) || (fy > image->height) ) {
+			nrej_fra++;
+			continue;
+		}
+
+		/* Check for a nearby feature */
+		image_feature_closest(image->features, fx, fy, &d, &idx);
+		if ( d < 15.0 ) {
+			nrej_pro++;
+			continue;
+		}
+
+		/* Add using "better" coordinates */
+		image_add_feature(image->features, fx, fy, image, intensity);
+		nacc++;
 
 	}
 	}
+
+	STATUS("%i accepted, %i box, %i hot, %i proximity, %i outside frame\n",
+	       nacc, nrej_dis, nrej_hot, nrej_pro, nrej_fra);
 
 	cull_peaks(image);
 }
