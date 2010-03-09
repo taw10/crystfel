@@ -67,6 +67,48 @@ static void show_help(const char *s)
 }
 
 
+static void simulate_and_write(struct image *template, struct gpu_context *gctx)
+{
+	struct image image;
+
+	/* Simulate a diffraction pattern */
+	image.twotheta = NULL;
+	image.data = NULL;
+	image.det = template->det;
+
+	/* View head-on (unit cell is tilted) */
+	image.orientation.w = 1.0;
+	image.orientation.x = 0.0;
+	image.orientation.y = 0.0;
+	image.orientation.z = 0.0;
+
+	/* Detector geometry for the simulation
+	 * - not necessarily the same as the original. */
+	image.width = 1024;
+	image.height = 1024;
+	image.det = template->det;
+
+	image.lambda = template->lambda;
+
+	image.molecule = template->molecule;
+	image.molecule->cell = template->indexed_cell;
+
+	if ( gctx != NULL ) {
+		get_diffraction_gpu(gctx, &image);
+	} else {
+		get_diffraction(&image, 8, 8, 8, 0, 0);
+	}
+	if ( image.molecule == NULL ) {
+		ERROR("Couldn't open molecule.pdb\n");
+		return;
+	}
+	record_image(&image, 0);
+
+	hdf5_write("simulated.h5", image.data, image.width, image.height,
+		   H5T_NATIVE_FLOAT);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -209,69 +251,42 @@ int main(int argc, char *argv[])
 		/* Perform 'fine' peak search */
 		search_peaks(&image);
 
-		if ( image_feature_count(image.features) > 5 ) {
+		if ( image_feature_count(image.features) < 5 ) goto done;
 
-			if ( config_dumpfound ) dump_peaks(&image);
+		if ( config_dumpfound ) dump_peaks(&image);
 
-			/* Not indexing nor writing xfel.drx?
-			 * Then there's nothing left to do. */
-			if ( (!config_writedrx) && (indm == INDEXING_NONE) ) {
-				goto done;
+		/* Not indexing nor writing xfel.drx?
+		 * Then there's nothing left to do. */
+		if ( (!config_writedrx) && (indm == INDEXING_NONE) ) {
+			goto done;
+		}
+
+		/* Calculate orientation matrix (by magic) */
+		if ( config_writedrx || (indm != INDEXING_NONE) ) {
+			index_pattern(&image, indm, config_nomatch,
+			              config_verbose);
+		}
+
+		/* No cell at this point?  Then we're done. */
+		if ( image.indexed_cell == NULL ) goto done;
+
+		n_hits++;
+
+		/* Measure intensities if requested */
+		if ( config_nearbragg ) {
+			output_intensities(&image, image.indexed_cell);
+		}
+
+		if ( config_simulate ) {
+
+			/* Set up GPU if necessary */
+			if ( gctx == NULL ) {
+				gctx = setup_gpu(0, &image, image.molecule,
+				                 24, 24, 40);
 			}
 
-			/* Calculate orientation matrix (by magic) */
-			if ( config_writedrx || (indm != INDEXING_NONE) ) {
-				index_pattern(&image, indm, config_nomatch,
-				              config_verbose);
-			}
-
-			/* No cell at this point?  Then we're done. */
-			if ( image.indexed_cell == NULL ) goto done;
-
-			n_hits++;
-
-			/* Measure intensities if requested */
-			if ( config_nearbragg ) {
-				output_intensities(&image, image.indexed_cell);
-			}
-
-			/* Simulation or intensity measurements both require
-			 * Ewald sphere vectors */
-			if ( config_simulate ) {
-
-				/* Simulate a diffraction pattern */
-				image.twotheta = NULL;
-				image.data = NULL;
-
-				/* View head-on (unit cell is tilted) */
-				image.orientation.w = 1.0;
-				image.orientation.x = 0.0;
-				image.orientation.y = 0.0;
-				image.orientation.z = 0.0;
-
-				image.molecule->cell = image.indexed_cell;
-
-				if ( config_gpu ) {
-					if ( gctx == NULL ) {
-						gctx = setup_gpu(0, &image,
-						                image.molecule,
-						                24, 24, 40);
-					}
-					get_diffraction_gpu(gctx, &image);
-				} else {
-					get_diffraction(&image, 8, 8, 8, 0, 0);
-				}
-				if ( image.molecule == NULL ) {
-					ERROR("Couldn't open molecule.pdb\n");
-					return 1;
-				}
-				record_image(&image, 0);
-
-				hdf5_write("simulated.h5", image.data,
-				           image.width, image.height,
-				           H5T_NATIVE_FLOAT);
-
-			}
+			/* gctx remains NULL if OpenCL isn't available */
+			simulate_and_write(&image, gctx);
 
 		}
 
