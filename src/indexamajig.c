@@ -118,14 +118,14 @@ static void simulate_and_write(struct image *template,
 	image.molecule->cell = template->indexed_cell;
 
 	/* Set up GPU if necessary */
-	if ( *gctx == NULL ) {
+	if ( (gctx != NULL) && (*gctx == NULL) ) {
 		*gctx = setup_gpu(0, &image, image.molecule);
 	}
 
-	if ( *gctx != NULL ) {
-		get_diffraction_gpu(*gctx, &image, 8, 8, 8);
+	if ( (gctx != NULL) && (*gctx != NULL) ) {
+		get_diffraction_gpu(*gctx, &image, 24, 24, 40);
 	} else {
-		get_diffraction(&image, 8, 8, 8, 0, 0);
+		get_diffraction(&image, 24, 24, 40, 0, 0);
 	}
 	if ( image.molecule == NULL ) {
 		ERROR("Couldn't open molecule.pdb\n");
@@ -307,7 +307,13 @@ int main(int argc, char *argv[])
 		}
 
 		/* Simulate if requested */
-		if ( config_simulate ) simulate_and_write(&image, &gctx);
+		if ( config_simulate ) {
+			if ( config_gpu ) {
+				simulate_and_write(&image, &gctx);
+			} else {
+				simulate_and_write(&image, NULL);
+			}
+		}
 
 done:
 		free(image.data);
