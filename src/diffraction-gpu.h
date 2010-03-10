@@ -39,7 +39,7 @@ static void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 }
 
 static struct gpu_context *setup_gpu(int no_sfac, struct image *image,
-                                     struct molecule *molecule
+                                     struct molecule *molecule)
 {
 	return NULL;
 }
