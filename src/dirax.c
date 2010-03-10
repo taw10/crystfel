@@ -39,6 +39,9 @@
 #include "peaks.h"
 
 
+#define DIRAX_VERBOSE 0
+
+
 typedef enum {
 	DIRAX_INPUT_NONE,
 	DIRAX_INPUT_LINE,
@@ -48,7 +51,9 @@ typedef enum {
 
 static void dirax_parseline(const char *line, struct image *image)
 {
-	int i, rf;
+	int rf, i;
+
+	#if DIRAX_VERBOSE
 	char *copy;
 
 	copy = strdup(line);
@@ -56,8 +61,9 @@ static void dirax_parseline(const char *line, struct image *image)
 		if ( copy[i] == '\r' ) copy[i]='r';
 		if ( copy[i] == '\n' ) copy[i]='\0';
 	}
-	//STATUS("DirAx: %s\n", copy);
+	STATUS("DirAx: %s\n", copy);
 	free(copy);
+	#endif
 
 	if ( strstr(line, "reflections from file") ) {
 		ERROR("DirAx can't understand this data.\n");
@@ -110,18 +116,20 @@ static void dirax_parseline(const char *line, struct image *image)
 
 static void dirax_sendline(const char *line, struct image *image)
 {
+	#if DIRAX_VERBOSE
 	char *copy;
 	int i;
-
-	write(image->dirax_pty, line, strlen(line));
 
 	copy = strdup(line);
 	for ( i=0; i<strlen(copy); i++ ) {
 		if ( copy[i] == '\r' ) copy[i]='\0';
 		if ( copy[i] == '\n' ) copy[i]='\0';
 	}
-	//STATUS("To DirAx: '%s'\n", copy);
+	STATUS("To DirAx: '%s'\n", copy);
 	free(copy);
+	#endif
+
+	write(image->dirax_pty, line, strlen(line));
 }
 
 
