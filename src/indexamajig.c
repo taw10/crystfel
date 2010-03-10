@@ -119,12 +119,11 @@ static void simulate_and_write(struct image *template,
 
 	/* Set up GPU if necessary */
 	if ( *gctx == NULL ) {
-		*gctx = setup_gpu(0, &image, image.molecule,
-		                 24, 24, 40);
+		*gctx = setup_gpu(0, &image, image.molecule);
 	}
 
 	if ( *gctx != NULL ) {
-		get_diffraction_gpu(*gctx, &image);
+		get_diffraction_gpu(*gctx, &image, 8, 8, 8);
 	} else {
 		get_diffraction(&image, 8, 8, 8, 0, 0);
 	}

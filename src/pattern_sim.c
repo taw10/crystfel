@@ -276,9 +276,9 @@ int main(int argc, char *argv[])
 		if ( config_gpu ) {
 			if ( gctx == NULL ) {
 				gctx = setup_gpu(config_nosfac, &image,
-				                 image.molecule, na, nb, nc);
+				                 image.molecule);
 			}
-			get_diffraction_gpu(gctx, &image);
+			get_diffraction_gpu(gctx, &image, na, nb, nc);
 		} else {
 			get_diffraction(&image, na, nb, nc, config_nosfac,
 			                !config_nowater);
