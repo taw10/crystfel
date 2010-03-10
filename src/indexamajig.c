@@ -67,28 +67,29 @@ static void show_help(const char *s)
 }
 
 
-static void simulate_and_write(struct image *template,
-                               struct gpu_context **gctx)
+static struct image *get_simage(struct image *template)
 {
-	struct image image;
+	struct image *image;
 	struct panel panels[2];
 
+	image = malloc(sizeof(*image));
+
 	/* Simulate a diffraction pattern */
-	image.twotheta = NULL;
-	image.data = NULL;
-	image.det = template->det;
+	image->twotheta = NULL;
+	image->data = NULL;
+	image->det = template->det;
 
 	/* View head-on (unit cell is tilted) */
-	image.orientation.w = 1.0;
-	image.orientation.x = 0.0;
-	image.orientation.y = 0.0;
-	image.orientation.z = 0.0;
+	image->orientation.w = 1.0;
+	image->orientation.x = 0.0;
+	image->orientation.y = 0.0;
+	image->orientation.z = 0.0;
 
 	/* Detector geometry for the simulation
 	 * - not necessarily the same as the original. */
-	image.width = 1024;
-	image.height = 1024;
-	image.det.n_panels = 2;
+	image->width = 1024;
+	image->height = 1024;
+	image->det.n_panels = 2;
 
 	/* Upper */
 	panels[0].min_x = 0;
@@ -110,30 +111,37 @@ static void simulate_and_write(struct image *template,
 	panels[1].clen = 56.7e-2;  /* 56.7 cm */
 	panels[1].res = 13333.3;   /* 75 microns/pixel */
 
-	image.det.panels = panels;
+	image->det.panels = panels;
 
-	image.lambda = ph_en_to_lambda(eV_to_J(1.8e3));
+	image->lambda = ph_en_to_lambda(eV_to_J(1.8e3));
 
-	image.molecule = template->molecule;
-	image.molecule->cell = template->indexed_cell;
+	image->molecule = template->molecule;
+	image->molecule->cell = template->indexed_cell;
 
+	return image;
+}
+
+
+static void simulate_and_write(struct image *simage,
+                               struct gpu_context **gctx)
+{
 	/* Set up GPU if necessary */
 	if ( (gctx != NULL) && (*gctx == NULL) ) {
-		*gctx = setup_gpu(0, &image, image.molecule);
+		*gctx = setup_gpu(0, simage, simage->molecule);
 	}
 
 	if ( (gctx != NULL) && (*gctx != NULL) ) {
-		get_diffraction_gpu(*gctx, &image, 24, 24, 40);
+		get_diffraction_gpu(*gctx, simage, 24, 24, 40);
 	} else {
-		get_diffraction(&image, 24, 24, 40, 0, 0);
+		get_diffraction(simage, 24, 24, 40, 0, 0);
 	}
-	if ( image.molecule == NULL ) {
+	if ( simage->molecule == NULL ) {
 		ERROR("Couldn't open molecule.pdb\n");
 		return;
 	}
-	record_image(&image, 0);
+	record_image(simage, 0);
 
-	hdf5_write("simulated.h5", image.data, image.width, image.height,
+	hdf5_write("simulated.h5", simage->data, simage->width, simage->height,
 		   H5T_NATIVE_FLOAT);
 }
 
@@ -248,6 +256,7 @@ int main(int argc, char *argv[])
 
 		char line[1024];
 		struct hdfile *hdfile;
+		struct image *simage;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
@@ -301,18 +310,29 @@ int main(int argc, char *argv[])
 
 		n_hits++;
 
+		simage = get_simage(&image);
+
 		/* Measure intensities if requested */
 		if ( config_nearbragg ) {
-			output_intensities(&image, image.indexed_cell);
+			/* Use original data (temporarily) */
+			simage->data = image.data;
+			output_intensities(simage, image.indexed_cell);
+			simage->data = NULL;
 		}
 
 		/* Simulate if requested */
 		if ( config_simulate ) {
 			if ( config_gpu ) {
-				simulate_and_write(&image, &gctx);
+				simulate_and_write(simage, &gctx);
 			} else {
-				simulate_and_write(&image, NULL);
+				simulate_and_write(simage, NULL);
 			}
+		}
+
+		if ( simage != NULL ) {
+			if ( simage->data != NULL ) free(simage->data);
+			if ( simage->twotheta != NULL ) free(simage->twotheta);
+			free(simage);
 		}
 
 done:
