@@ -57,7 +57,6 @@ struct gpu_context
 static void check_sinc_lut(struct gpu_context *gctx, int n)
 {
 	cl_int err;
-	size_t sinc_lut_size;
 	cl_image_format fmt;
 	int i;
 
@@ -78,12 +77,13 @@ static void check_sinc_lut(struct gpu_context *gctx, int n)
 		gctx->max_sinc_lut = n;
 	}
 
-	fmt.image_channel_order = CL_INTENSITY;
-	fmt.image_channel_data_type = CL_FLOAT;
-	sinc_lut_size = SINC_LUT_ELEMENTS*sizeof(cl_float);
+	if ( gctx->sinc_lut_ptrs[n-1] != NULL ) {
+		STATUS("Already have %i\n", n);
+		return;
+	}
 
 	/* Create a new sinc LUT */
-	gctx->sinc_lut_ptrs[n-1] = malloc(sinc_lut_size);
+	gctx->sinc_lut_ptrs[n-1] = malloc(SINC_LUT_ELEMENTS*sizeof(cl_float));
 	gctx->sinc_lut_ptrs[n-1][0] = n;
 	if ( n == 1 ) {
 		for ( i=1; i<SINC_LUT_ELEMENTS; i++ ) {
@@ -98,10 +98,17 @@ static void check_sinc_lut(struct gpu_context *gctx, int n)
 		}
 	}
 
+	fmt.image_channel_order = CL_INTENSITY;
+	fmt.image_channel_data_type = CL_FLOAT;
+
 	gctx->sinc_luts[n-1] = clCreateImage2D(gctx->ctx,
 	                                CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
 	                                &fmt, SINC_LUT_ELEMENTS, 1, 0,
 	                                gctx->sinc_lut_ptrs[n-1], &err);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't create LUT for %i\n", n);
+		return;
+	}
 }
 
 
