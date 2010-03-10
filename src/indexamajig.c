@@ -67,7 +67,7 @@ static void show_help(const char *s)
 }
 
 
-static struct image *get_simage(struct image *template)
+static struct image *get_simage(struct image *template, int alternate)
 {
 	struct image *image;
 	struct panel panels[2];
@@ -91,27 +91,35 @@ static struct image *get_simage(struct image *template)
 	image->height = 1024;
 	image->det.n_panels = 2;
 
-	/* Upper */
-	panels[0].min_x = 0;
-	panels[0].max_x = 1023;
-	panels[0].min_y = 512;
-	panels[0].max_y = 1023;
-	panels[0].cx = 523.6;
-	panels[0].cy = 502.5;
-	panels[0].clen = 56.4e-2;  /* 56.4 cm */
-	panels[0].res = 13333.3;   /* 75 microns/pixel */
+	if ( alternate ) {
 
-	/* Lower */
-	panels[1].min_x = 0;
-	panels[1].max_x = 1023;
-	panels[1].min_y = 0;
-	panels[1].max_y = 511;
-	panels[1].cx = 520.8;
-	panels[1].cy = 772.1;
-	panels[1].clen = 56.7e-2;  /* 56.7 cm */
-	panels[1].res = 13333.3;   /* 75 microns/pixel */
+		/* Upper */
+		panels[0].min_x = 0;
+		panels[0].max_x = 1023;
+		panels[0].min_y = 512;
+		panels[0].max_y = 1023;
+		panels[0].cx = 523.6;
+		panels[0].cy = 502.5;
+		panels[0].clen = 56.4e-2;  /* 56.4 cm */
+		panels[0].res = 13333.3;   /* 75 microns/pixel */
 
-	image->det.panels = panels;
+		/* Lower */
+		panels[1].min_x = 0;
+		panels[1].max_x = 1023;
+		panels[1].min_y = 0;
+		panels[1].max_y = 511;
+		panels[1].cx = 520.8;
+		panels[1].cy = 772.1;
+		panels[1].clen = 56.7e-2;  /* 56.7 cm */
+		panels[1].res = 13333.3;   /* 75 microns/pixel */
+
+		image->det.panels = panels;
+	} else {
+
+		/* Copy pointer to old geometry */
+		image->det.panels = template->det.panels;
+
+	}
 
 	image->lambda = ph_en_to_lambda(eV_to_J(1.8e3));
 
@@ -164,6 +172,7 @@ int main(int argc, char *argv[])
 	int config_nomatch = 0;
 	int config_gpu = 0;
 	int config_verbose = 0;
+	int config_alternate = 0;
 	IndexingMethod indm;
 	char *indm_str = NULL;
 	struct image image;
@@ -182,6 +191,7 @@ int main(int argc, char *argv[])
 		{"clean-image",        0, &config_clean,       1},
 		{"no-match",           0, &config_nomatch,     1},
 		{"verbose",            0, &config_verbose,     1},
+		{"alternate",          0, &config_alternate,   1},
 		{0, 0, NULL, 0}
 	};
 
@@ -310,7 +320,7 @@ int main(int argc, char *argv[])
 
 		n_hits++;
 
-		simage = get_simage(&image);
+		simage = get_simage(&image, config_alternate);
 
 		/* Measure intensities if requested */
 		if ( config_nearbragg ) {
@@ -329,14 +339,14 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if ( simage != NULL ) {
-			if ( simage->data != NULL ) free(simage->data);
-			if ( simage->twotheta != NULL ) free(simage->twotheta);
-			free(simage);
-		}
+		/* Finished with alternate image */
+		if ( simage->twotheta != NULL ) free(simage->twotheta);
+		if ( simage->data != NULL ) free(simage->data);
+		free(simage);
 
 done:
 		free(image.data);
+		free(image.det.panels);
 		image_feature_list_free(image.features);
 		hdfile_close(hdfile);
 		H5close();
