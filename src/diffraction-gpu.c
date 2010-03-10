@@ -62,25 +62,19 @@ static void check_sinc_lut(struct gpu_context *gctx, int n)
 
 	if ( n > gctx->max_sinc_lut ) {
 
-		STATUS("Allocating %i -> %i\n", gctx->max_sinc_lut, n);
-
 		gctx->sinc_luts = realloc(gctx->sinc_luts,
 		                          n*sizeof(*gctx->sinc_luts));
 		gctx->sinc_lut_ptrs = realloc(gctx->sinc_lut_ptrs,
 		                              n*sizeof(*gctx->sinc_lut_ptrs));
 
 		for ( i=gctx->max_sinc_lut; i<n; i++ ) {
-			STATUS("zeroing %i\n", i);
 			gctx->sinc_lut_ptrs[i] = NULL;
 		}
 
 		gctx->max_sinc_lut = n;
 	}
 
-	if ( gctx->sinc_lut_ptrs[n-1] != NULL ) {
-		STATUS("Already have %i\n", n);
-		return;
-	}
+	if ( gctx->sinc_lut_ptrs[n-1] != NULL ) return;
 
 	/* Create a new sinc LUT */
 	gctx->sinc_lut_ptrs[n-1] = malloc(SINC_LUT_ELEMENTS*sizeof(cl_float));
@@ -489,7 +483,6 @@ void cleanup_gpu(struct gpu_context *gctx)
 	/* Release LUTs */
 	for ( i=1; i<=gctx->max_sinc_lut; i++ ) {
 		if ( gctx->sinc_lut_ptrs[i-1] != NULL ) {
-			STATUS("freeing %i\n", i-1);
 			clReleaseMemObject(gctx->sinc_luts[i-1]);
 			free(gctx->sinc_lut_ptrs[i-1]);
 		}
