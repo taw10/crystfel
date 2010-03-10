@@ -67,9 +67,11 @@ static void show_help(const char *s)
 }
 
 
-static void simulate_and_write(struct image *template, struct gpu_context *gctx)
+static void simulate_and_write(struct image *template,
+                               struct gpu_context **gctx)
 {
 	struct image image;
+	struct panel panels[2];
 
 	/* Simulate a diffraction pattern */
 	image.twotheta = NULL;
@@ -86,15 +88,43 @@ static void simulate_and_write(struct image *template, struct gpu_context *gctx)
 	 * - not necessarily the same as the original. */
 	image.width = 1024;
 	image.height = 1024;
-	image.det = template->det;
+	image.det.n_panels = 2;
 
-	image.lambda = template->lambda;
+	/* Upper */
+	panels[0].min_x = 0;
+	panels[0].max_x = 1023;
+	panels[0].min_y = 512;
+	panels[0].max_y = 1023;
+	panels[0].cx = 523.6;
+	panels[0].cy = 502.5;
+	panels[0].clen = 56.4e-2;  /* 56.4 cm */
+	panels[0].res = 13333.3;   /* 75 microns/pixel */
+
+	/* Lower */
+	panels[1].min_x = 0;
+	panels[1].max_x = 1023;
+	panels[1].min_y = 0;
+	panels[1].max_y = 511;
+	panels[1].cx = 520.8;
+	panels[1].cy = 772.1;
+	panels[1].clen = 56.7e-2;  /* 56.7 cm */
+	panels[1].res = 13333.3;   /* 75 microns/pixel */
+
+	image.det.panels = panels;
+
+	image.lambda = ph_en_to_lambda(eV_to_J(1.8e3));
 
 	image.molecule = template->molecule;
 	image.molecule->cell = template->indexed_cell;
 
-	if ( gctx != NULL ) {
-		get_diffraction_gpu(gctx, &image);
+	/* Set up GPU if necessary */
+	if ( *gctx == NULL ) {
+		*gctx = setup_gpu(0, &image, image.molecule,
+		                 24, 24, 40);
+	}
+
+	if ( *gctx != NULL ) {
+		get_diffraction_gpu(*gctx, &image);
 	} else {
 		get_diffraction(&image, 8, 8, 8, 0, 0);
 	}
@@ -277,18 +307,8 @@ int main(int argc, char *argv[])
 			output_intensities(&image, image.indexed_cell);
 		}
 
-		if ( config_simulate ) {
-
-			/* Set up GPU if necessary */
-			if ( gctx == NULL ) {
-				gctx = setup_gpu(0, &image, image.molecule,
-				                 24, 24, 40);
-			}
-
-			/* gctx remains NULL if OpenCL isn't available */
-			simulate_and_write(&image, gctx);
-
-		}
+		/* Simulate if requested */
+		if ( config_simulate ) simulate_and_write(&image, &gctx);
 
 done:
 		free(image.data);
