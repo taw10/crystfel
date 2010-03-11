@@ -66,7 +66,7 @@ typedef struct {
 	int		clean;		/* Whether or not to clean the image */
 
 	int		show_col_scale;
-	int		monochrome;
+	int		scale;
 	GdkPixbuf	*col_scale;
 
 } DisplayWindow;

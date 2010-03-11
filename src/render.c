@@ -153,6 +153,14 @@ float *render_get_image_binned(DisplayWindow *dw, int binning, float *max)
 	if ( val > max ) p = 1.0;                                              \
 	r = 255.0*p;	g = 255.0*p;	b = 255.0*p;
 
+#define RENDER_INVMONO							       \
+	float p;							       \
+	p = (float)val / (float)max;					       \
+	p = 1.0 - p;							       \
+	if ( val < 0.0 ) p = 1.0;                                              \
+	if ( val > max ) p = 0.0;                                              \
+	r = 255.0*p;	g = 255.0*p;	b = 255.0*p;
+
 
 /* NB This function is shared between render_get_image() and
  * render_get_colour_scale() */
@@ -238,10 +246,23 @@ GdkPixbuf *render_get_image(DisplayWindow *dw)
 		guchar r, g, b;
 
 		val = hdr[x+w*y];
-		if ( !dw->monochrome ) {
+		switch ( dw->scale ) {
+		case SCALE_COLOUR : {
 			RENDER_RGB
-		} else {
+			break;
+		}
+		case SCALE_MONO : {
 			RENDER_MONO
+			break;
+		}
+		case SCALE_INVMONO : {
+			RENDER_INVMONO
+			break;
+		}
+		default : {
+			RENDER_RGB;
+			break;
+		}
 		}
 
 		/* Stuff inside square brackets makes this pixel go to

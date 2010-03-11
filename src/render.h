@@ -23,8 +23,14 @@
 
 #include "displaywindow.h"
 
+enum {
+	SCALE_COLOUR,
+	SCALE_MONO,
+	SCALE_INVMONO
+};
+
 extern GdkPixbuf *render_get_image(DisplayWindow *dw);
-extern GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int monochrome);
+extern GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale);
 
 
 #endif	/* RENDER_H */

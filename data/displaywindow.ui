@@ -10,7 +10,11 @@
 		<menu name="view" action="ViewAction">
 			<menuitem name="binning" action="BinningAction" />
 			<menuitem name="boostint" action="BoostIntAction" />
+			<separator />
+			<menuitem name="col" action="ColAction" />
 			<menuitem name="monoscale" action="MonoAction" />
+			<menuitem name="invmonoscale" action="InvMonoAction" />
+			<separator />
 			<menuitem name="colscale" action="ColScaleAction" />
 		</menu>
 

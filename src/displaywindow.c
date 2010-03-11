@@ -82,7 +82,7 @@ static void displaywindow_update(DisplayWindow *dw)
 	if ( dw->col_scale != NULL ) {
 		gdk_pixbuf_unref(dw->col_scale);
 	}
-	dw->col_scale = render_get_colour_scale(20, dw->height, dw->monochrome);
+	dw->col_scale = render_get_colour_scale(20, dw->height, dw->scale);
 
 	gdk_window_invalidate_rect(dw->drawingarea->window, NULL, FALSE);
 }
@@ -525,14 +525,6 @@ static gint displaywindow_set_colscale(GtkWidget *widget, DisplayWindow *dw)
 }
 
 
-static gint displaywindow_set_mono(GtkWidget *widget, DisplayWindow *dw)
-{
-	dw->monochrome = 1 - dw->monochrome;
-	displaywindow_update(dw);
-	return 0;
-}
-
-
 static gint displaywindow_numbers_response(GtkWidget *widget,
                                            gint response, DisplayWindow *dw)
 {
@@ -687,6 +679,16 @@ static void displaywindow_addui_callback(GtkUIManager *ui, GtkWidget *widget,
 }
 
 
+static gint displaywindow_setscale(GtkWidget *widget, GtkRadioAction *action,
+                                   DisplayWindow *dw)
+{
+	dw->scale = gtk_radio_action_get_current_value(action);
+	displaywindow_update(dw);
+
+	return 0;
+}
+
+
 static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox)
 {
 	GError *error = NULL;
@@ -720,15 +722,26 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox)
 	GtkToggleActionEntry toggles[] = {
 		{ "ColScaleAction", NULL, "Show Colour Scale", NULL, NULL,
 			G_CALLBACK(displaywindow_set_colscale), FALSE },
-		{ "MonoAction", NULL, "Monochrome", NULL, NULL,
-			G_CALLBACK(displaywindow_set_mono), FALSE },
 	};
 	guint n_toggles = G_N_ELEMENTS(toggles);
+	GtkRadioActionEntry radios[] = {
+		{ "ColAction", NULL, "Colour", NULL, NULL,
+			SCALE_COLOUR },
+		{ "MonoAction", NULL, "Monochrome", NULL, NULL,
+			SCALE_MONO },
+		{ "InvMonoAction", NULL, "Inverse Monochrome", NULL, NULL,
+			SCALE_INVMONO },
+	};
+	guint n_radios = G_N_ELEMENTS(radios);
 
 	dw->action_group = gtk_action_group_new("hdfseedisplaywindow");
 	gtk_action_group_add_actions(dw->action_group, entries, n_entries, dw);
 	gtk_action_group_add_toggle_actions(dw->action_group, toggles,
 					    n_toggles, dw);
+	gtk_action_group_add_radio_actions(dw->action_group, radios, n_radios,
+	                                   SCALE_COLOUR,
+	                                   G_CALLBACK(displaywindow_setscale),
+	                                   dw);
 
 	dw->ui = gtk_ui_manager_new();
 	gtk_ui_manager_insert_action_group(dw->ui, dw->action_group, 0);
@@ -981,7 +994,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->binning_dialog = NULL;
 	dw->show_col_scale = 0;
 	dw->col_scale = NULL;
-	dw->monochrome = 0;
+	dw->scale = SCALE_COLOUR;
 	dw->boostint_dialog = NULL;
 	dw->boostint = 1;
 	dw->motion_callback = 0;
