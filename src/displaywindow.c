@@ -411,25 +411,29 @@ static void load_features_from_file(struct image *image, const char *filename)
 
 	do {
 		char line[1024];
-		float x, y, d, df;
+		float x, y, df;
 		int r;
+		signed int h, k, l;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
 		chomp(line);
 
 		/* Try long format (output of pattern_sim --near-bragg) */
-		r = sscanf(line, "%f %f %f %f (at %f,%f)",
-		           &d, &d, &d, &df, &x, &y);
+		r = sscanf(line, "%i %i %i %f (at %f,%f)",
+		           &h, &k, &l, &df, &x, &y);
 		if ( r == 6 ) {
-			image_add_feature(image->features, x, y, image, 1.0);
+			char name[32];
+			snprintf(name, 31, "%i %i %i", h, k, l);
+			image_add_feature(image->features, x, y, image, 1.0,
+			                  strdup(name));
 			continue;
 		}
 
 		r = sscanf(line, "%f %f", &x, &y);
 		if ( r != 2 ) continue;
 
-		image_add_feature(image->features, x, y, image, 1.0);
+		image_add_feature(image->features, x, y, image, 1.0, NULL);
 
 	} while ( rval != NULL );
 }
@@ -550,7 +554,9 @@ static gint displaywindow_show_numbers(GtkWidget *widget, DisplayWindow *dw)
 	struct numberswindow *nw;
 	GtkWidget *vbox;
 	GtkWidget *hbox;
+	GtkWidget *hbox2;
 	GtkWidget *table;
+	GtkWidget *label;
 	unsigned int x, y;
 
 	if ( dw->numbers_window != NULL ) {
@@ -598,6 +604,13 @@ static gint displaywindow_show_numbers(GtkWidget *widget, DisplayWindow *dw)
 	}
 	}
 
+	hbox2 = gtk_hbox_new(FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox2), FALSE, FALSE, 5);
+	label = gtk_label_new("Feature:");
+	gtk_box_pack_start(GTK_BOX(hbox2), GTK_WIDGET(label), FALSE, FALSE, 5);
+	nw->feat = gtk_label_new("-");
+	gtk_box_pack_start(GTK_BOX(hbox2), GTK_WIDGET(nw->feat), FALSE, FALSE, 5);
+
 	g_signal_connect(G_OBJECT(nw->window), "response",
 			 G_CALLBACK(displaywindow_numbers_response), dw);
 	g_signal_connect(G_OBJECT(nw->window), "destroy",
@@ -613,6 +626,9 @@ static gint displaywindow_show_numbers(GtkWidget *widget, DisplayWindow *dw)
 static void numbers_update(DisplayWindow *dw)
 {
 	int px, py;
+	int imin;
+	double dmin;
+	struct imagefeature *f;
 
 	for ( px=0; px<17; px++ ) {
 	for ( py=0; py<17; py++ ) {
@@ -644,6 +660,18 @@ static void numbers_update(DisplayWindow *dw)
 
 	}
 	}
+
+	if ( dw->image->features == NULL ) return;
+
+	f = image_feature_closest(dw->image->features, dw->numbers_window->cx,
+	                          dw->numbers_window->cy, &dmin, &imin);
+	if ( dmin < 20.0 ) {
+		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat),
+                                   f->name);
+        } else {
+		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat),
+                                   "-");
+        }
 }
 
 

@@ -71,7 +71,7 @@ ImageList *image_list_new()
 
 
 void image_add_feature(ImageFeatureList *flist, double x, double y,
-                       struct image *parent, double intensity)
+                       struct image *parent, double intensity, const char *name)
 {
 	if ( flist->features ) {
 		flist->features = realloc(flist->features,
@@ -88,6 +88,7 @@ void image_add_feature(ImageFeatureList *flist, double x, double y,
 	flist->features[flist->n_features].parent = parent;
 	flist->features[flist->n_features].partner = NULL;
 	flist->features[flist->n_features].partner_d = 0.0;
+	flist->features[flist->n_features].name = name;
 	flist->features[flist->n_features].valid = 1;
 
 	flist->n_features++;

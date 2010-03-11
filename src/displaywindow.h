@@ -35,6 +35,7 @@ typedef struct {
 struct numberswindow {
 	GtkWidget *window;
 	GtkWidget *labels[17*17];
+	GtkWidget *feat;
 	unsigned int cx;
 	unsigned int cy;
 };

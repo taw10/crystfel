@@ -426,7 +426,8 @@ void search_peaks(struct image *image)
 		}
 
 		/* Add using "better" coordinates */
-		image_add_feature(image->features, fx, fy, image, intensity);
+		image_add_feature(image->features, fx, fy, image, intensity,
+		                  NULL);
 		nacc++;
 
 	}
