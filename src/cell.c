@@ -401,7 +401,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 	double angles[3];
 	struct cvec *cand[3];
 	UnitCell *new_cell = NULL;
-	float best_fom = +HUGE_VALF;
+	float best_fom = +999999999.9; /* Large number.. */
 	int ncand[3] = {0,0,0};
 	float ltl = 5.0;     /* percent */
 	float angtol = deg2rad(5.0);

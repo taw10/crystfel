@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include <complex.h>
+#include <sys/types.h>
 
 #include "utils.h"
 #include "cell.h"
