@@ -51,6 +51,8 @@ void progress_bar(int val, int total, const char *text)
 	char s[1024];
 	const int width = 50;
 
+	if ( !isatty(stderr) ) return;
+
 	frac = (double)val/total;
 	n = (int)(frac*width);
 
