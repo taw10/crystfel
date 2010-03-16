@@ -1,6 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(crystfel, 0.1.0, taw@physics.org)
+AM_SILENT_RULES([yes])
 VERSION=AC_PACKAGE_VERSION
 
 AM_CONFIG_HEADER(config.h)
