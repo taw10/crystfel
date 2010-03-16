@@ -12,6 +12,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "utils.h"
 #include "image.h"
@@ -51,7 +52,7 @@ void progress_bar(int val, int total, const char *text)
 	char s[1024];
 	const int width = 50;
 
-	if ( !isatty(stderr) ) return;
+	if ( !isatty(fileno(stderr)) ) return;
 
 	frac = (double)val/total;
 	n = (int)(frac*width);
