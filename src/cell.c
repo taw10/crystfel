@@ -262,8 +262,22 @@ static UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs,
 	cell->cy = gsl_matrix_get(inv, 2, 1);
 	cell->cz = gsl_matrix_get(inv, 2, 2);
 
+	gsl_matrix_free(inv);
+
 	cell_update_crystallographic(cell);
 	return cell;
+}
+
+
+UnitCell *cell_new_from_cell(UnitCell *orig)
+{
+	UnitCell *new;
+
+	new = malloc(sizeof(UnitCell));
+
+	*new = *orig;
+
+	return new;
 }
 
 
@@ -321,6 +335,8 @@ void cell_get_reciprocal(UnitCell *cell,
 	*asz = gsl_matrix_get(inv, 2, 0);
 	*bsz = gsl_matrix_get(inv, 2, 1);
 	*csz = gsl_matrix_get(inv, 2, 2);
+
+	gsl_matrix_free(inv);
 }
 
 

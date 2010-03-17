@@ -54,7 +54,10 @@ struct molecule
 
 extern double complex get_sfac(const char *n, double s, double en);
 extern struct molecule *load_molecule(void);
+extern void free_molecule(struct molecule *mol);
+extern struct molecule *copy_molecule(struct molecule *orig);
 extern double complex *get_reflections(struct molecule *mol, double en);
 extern void get_reflections_cached(struct molecule *mol, double en);
+
 
 #endif	/* SFAC_H */

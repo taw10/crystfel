@@ -421,6 +421,7 @@ void run_dirax(struct image *image)
 
 	close(image->dirax_pty);
 	close(saved_stderr);
+	free(image->dirax_rbuffer);
 	wait(&status);
 
 	return;

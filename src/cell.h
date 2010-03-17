@@ -39,6 +39,7 @@ typedef struct {
 } UnitCell;
 
 extern UnitCell *cell_new(void);
+extern UnitCell *cell_new_from_cell(UnitCell *orig);
 
 /* Lengths in m, angles in radians */
 extern UnitCell *cell_new_from_parameters(double a, double b, double c,

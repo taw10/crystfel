@@ -323,6 +323,7 @@ struct molecule *load_molecule()
 	if ( mol == NULL ) return NULL;
 	mol->n_species = 0;
 	mol->reflections = NULL;
+	mol->cell = NULL;
 
 	fh = fopen("molecule.pdb", "r");
 	if ( fh == NULL ) {
@@ -440,6 +441,41 @@ struct molecule *load_molecule()
 	}
 
 	return mol;
+}
+
+
+void free_molecule(struct molecule *mol)
+{
+	int i;
+
+	for ( i=0; i<mol->n_species; i++ ) {
+		free(mol->species[i]);
+	}
+
+	free(mol->cell);
+	free(mol);
+}
+
+
+struct molecule *copy_molecule(struct molecule *orig)
+{
+	struct molecule *new;
+	int i;
+
+	new = malloc(sizeof(*new));
+	*new = *orig;
+
+	/* Now sort out pointers */
+	for ( i=0; i<orig->n_species; i++ ) {
+		new->species[i] = malloc(sizeof(struct mol_species));
+		memcpy(new->species[i], orig->species[i],
+		       sizeof(struct mol_species));
+	}
+
+	new->cell = cell_new_from_cell(orig->cell);
+	new->reflections = NULL;
+
+	return new;
 }
 
 

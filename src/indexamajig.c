@@ -114,6 +114,7 @@ static struct image *get_simage(struct image *template, int alternate)
 		panels[1].res = 13333.3;   /* 75 microns/pixel */
 
 		image->det.panels = panels;
+
 	} else {
 
 		/* Copy pointer to old geometry */
@@ -123,8 +124,9 @@ static struct image *get_simage(struct image *template, int alternate)
 
 	image->lambda = ph_en_to_lambda(eV_to_J(1.8e3));
 
-	image->molecule = template->molecule;
-	image->molecule->cell = template->indexed_cell;
+	image->molecule = copy_molecule(template->molecule);
+	free(image->molecule->cell);
+	image->molecule->cell = cell_new_from_cell(template->indexed_cell);
 
 	return image;
 }
@@ -241,8 +243,9 @@ int main(int argc, char *argv[])
 
 	if ( indm_str == NULL ) {
 		STATUS("You didn't specify an indexing method, so I won't"
-		       " try to index anything.  If that isn't what you\n"
-		       " wanted, re-run with --indexing=<method>.\n");
+		       " try to index anything.\n"
+		       "If that isn't what you wanted, re-run with"
+		       " --indexing=<method>.\n");
 		indm = INDEXING_NONE;
 	} else if ( strcmp(indm_str, "none") == 0 ) {
 		indm = INDEXING_NONE;
@@ -252,6 +255,7 @@ int main(int argc, char *argv[])
 		ERROR("Unrecognised indexing method '%s'\n", indm_str);
 		return 1;
 	}
+	free(indm_str);
 
 	image.molecule = load_molecule();
 	if ( image.molecule == NULL ) {
@@ -342,7 +346,11 @@ int main(int argc, char *argv[])
 		/* Finished with alternate image */
 		if ( simage->twotheta != NULL ) free(simage->twotheta);
 		if ( simage->data != NULL ) free(simage->data);
+		free_molecule(simage->molecule);
 		free(simage);
+
+		/* Only free cell if found */
+		free(image.indexed_cell);
 
 done:
 		free(image.data);
@@ -354,6 +362,7 @@ done:
 	} while ( rval != NULL );
 
 	fclose(fh);
+	free_molecule(image.molecule);
 
 	STATUS("There were %i images.\n", n_images);
 	STATUS("%i hits were found.\n", n_hits);
