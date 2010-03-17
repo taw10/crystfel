@@ -26,6 +26,9 @@
 #include "detector.h"
 
 
+#define MAX_CELL_CANDIDATES (32)
+
+
 /* Structure describing a feature in an image */
 struct imagefeature {
 
@@ -71,6 +74,8 @@ struct image {
 	double			*twotheta;
 	struct molecule		*molecule;
 	UnitCell		*indexed_cell;
+	UnitCell		*candidate_cells[MAX_CELL_CANDIDATES];
+	int			ncells;
 	struct detector		det;
 
 	struct quaternion	orientation;
@@ -94,6 +99,10 @@ struct image {
 	/* DirAx auto-indexing high-level stuff */
 	int			dirax_step;
 	int			dirax_read_cell;
+	int			best_acl;
+	int			best_acl_nh;
+	int			acls_tried[MAX_CELL_CANDIDATES];
+	int			n_acls_tried;
 
 };
 

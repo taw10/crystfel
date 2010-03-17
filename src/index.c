@@ -61,7 +61,6 @@ void index_pattern(struct image *image, IndexingMethod indm, int no_match,
                    int verbose)
 {
 	int i;
-	UnitCell *new_cell = NULL;
 	int nc = 0;
 
 	/* Map positions to 3D */
@@ -83,27 +82,52 @@ void index_pattern(struct image *image, IndexingMethod indm, int no_match,
 
 	write_drx(image);
 
+	image->ncells = 0;
+
 	/* Index (or not) as appropriate */
 	if ( indm == INDEXING_NONE ) return;
 	if ( indm == INDEXING_DIRAX ) run_dirax(image);
 
-	if ( image->indexed_cell == NULL ) {
-		STATUS("No cell found.\n");
+	if ( image->ncells == 0 ) {
+		STATUS("No candidate cells found.\n");
 		return;
-	} else if ( verbose ) {
-		STATUS("--------------------\n");
-		STATUS("The indexed cell (before matching):\n");
-		cell_print(image->indexed_cell);
-		STATUS("--------------------\n");
 	}
 
-	if ( !no_match ) {
-		new_cell = match_cell(image->indexed_cell,
+	if ( no_match ) {
+		image->indexed_cell = image->candidate_cells[0];
+		if ( verbose ) {
+			STATUS("--------------------\n");
+			STATUS("The indexed cell (matching not performed):\n");
+			cell_print(image->indexed_cell);
+			STATUS("--------------------\n");
+		}
+		return;
+	}
+
+	for ( i=0; i<image->ncells; i++ ) {
+
+		UnitCell *new_cell = NULL;
+
+		if ( verbose ) {
+			STATUS("--------------------\n");
+			STATUS("Candidate cell %i (before matching):\n", i);
+			cell_print(image->candidate_cells[i]);
+			STATUS("--------------------\n");
+		}
+
+		new_cell = match_cell(image->candidate_cells[i],
 			              image->molecule->cell, verbose);
-		free(image->indexed_cell);
 		image->indexed_cell = new_cell;
 		if ( new_cell == NULL ) {
-			STATUS("Cell found, but not matched.\n");
+			STATUS("Cell %i not matched.\n", i);
+		} else {
+			goto done;
 		}
+
+	}
+
+done:
+	for ( i=0; i<image->ncells; i++ ) {
+		free(image->candidate_cells[i]);
 	}
 }

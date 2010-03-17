@@ -41,6 +41,8 @@
 
 #define DIRAX_VERBOSE 0
 
+#define MAX_DIRAX_CELL_CANDIDATES (5)
+
 
 typedef enum {
 	DIRAX_INPUT_NONE,
@@ -51,7 +53,8 @@ typedef enum {
 
 static void dirax_parseline(const char *line, struct image *image)
 {
-	int rf, i;
+	int rf, i, di, acl, acl_nh;
+	float d;
 
 	#if DIRAX_VERBOSE
 	char *copy;
@@ -77,7 +80,7 @@ static void dirax_parseline(const char *line, struct image *image)
 		if ( line[i] == 'R' ) rf = 1;
 		if ( (line[i] == 'D') && rf ) {
 			image->dirax_read_cell = 1;
-			image->indexed_cell = cell_new();
+			image->candidate_cells[image->ncells] = cell_new();
 			return;
 		}
 		i++;
@@ -86,31 +89,49 @@ static void dirax_parseline(const char *line, struct image *image)
 	/* Parse unit cell vectors as appropriate */
 	if ( image->dirax_read_cell == 1 ) {
 		/* First row of unit cell values */
-		float ax, ay, az, d;
+		float ax, ay, az;
 		sscanf(line, "%f %f %f %f %f %f", &d, &d, &d, &ax, &ay, &az);
-		cell_set_cartesian_a(image->indexed_cell,
+		cell_set_cartesian_a(image->candidate_cells[image->ncells],
 		                     ax*1e-10, ay*1e-10, az*1e-10);
 		image->dirax_read_cell++;
 		return;
 	} else if ( image->dirax_read_cell == 2 ) {
 		/* First row of unit cell values */
-		float bx, by, bz, d;
+		float bx, by, bz;
 		sscanf(line, "%f %f %f %f %f %f", &d, &d, &d, &bx, &by, &bz);
-		cell_set_cartesian_b(image->indexed_cell,
+		cell_set_cartesian_b(image->candidate_cells[image->ncells],
 		                     bx*1e-10, by*1e-10, bz*1e-10);
 		image->dirax_read_cell++;
 		return;
 	} else if ( image->dirax_read_cell == 3 ) {
 		/* First row of unit cell values */
-		float cx, cy, cz, d;
+		float cx, cy, cz;
 		sscanf(line, "%f %f %f %f %f %f", &d, &d, &d, &cx, &cy, &cz);
-		cell_set_cartesian_c(image->indexed_cell,
+		cell_set_cartesian_c(image->candidate_cells[image->ncells++],
 		                     cx*1e-10, cy*1e-10, cz*1e-10);
 		image->dirax_read_cell = 0;
 		return;
 	}
 
 	image->dirax_read_cell = 0;
+
+	if ( sscanf(line, "%i %i %f %f %f %f %f %f %i", &acl, &acl_nh,
+	                               &d, &d, &d, &d, &d, &d, &di) == 9 ) {
+		if ( acl_nh > image->best_acl_nh ) {
+
+			int i, found = 0;
+
+			for ( i=0; i<image->n_acls_tried; i++ ) {
+				if ( image->acls_tried[i] == acl ) found = 1;
+			}
+
+			if ( !found ) {
+				image->best_acl_nh = acl_nh;
+				image->best_acl = acl;
+			}
+
+		}
+	}
 }
 
 
@@ -135,6 +156,8 @@ static void dirax_sendline(const char *line, struct image *image)
 
 static void dirax_send_next(struct image *image)
 {
+	char tmp[32];
+
 	switch ( image->dirax_step ) {
 
 	case 1 :
@@ -166,12 +189,30 @@ static void dirax_send_next(struct image *image)
 		break;
 
 	case 8 :
-		/* Skip DirAx's 'acl' prompt */
-		dirax_sendline("\n", image);
+		if ( image->best_acl_nh == 0 ) {
+			STATUS("No more cells to try.\n");
+			dirax_sendline("exit", image);
+			break;
+		}
+		snprintf(tmp, 31, "acl %i\n", image->best_acl);
+		image->acls_tried[image->n_acls_tried++] = image->best_acl;
+		dirax_sendline(tmp, image);
 		break;
 
 	case 9 :
 		dirax_sendline("cell\n", image);
+		break;
+
+	case 10 :
+		if ( image->n_acls_tried == MAX_DIRAX_CELL_CANDIDATES ) {
+			STATUS("That's enough cells.\n");
+			dirax_sendline("exit\n", image);
+		} else {
+			/* Go back round for another cell */
+			image->best_acl_nh = 0;
+			image->dirax_step = 6;
+			dirax_sendline("acl\n", image);
+		}
 		break;
 
 	default:
@@ -349,6 +390,8 @@ void run_dirax(struct image *image)
 
 	image->dirax_step = 1;	/* This starts the "initialisation" procedure */
 	image->dirax_read_cell = 0;
+	image->n_acls_tried = 0;
+	image->best_acl_nh = 0;
 
 	do {
 
