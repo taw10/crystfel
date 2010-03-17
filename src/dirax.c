@@ -205,7 +205,6 @@ static void dirax_send_next(struct image *image)
 
 	case 10 :
 		if ( image->n_acls_tried == MAX_DIRAX_CELL_CANDIDATES ) {
-			STATUS("That's enough cells.\n");
 			dirax_sendline("exit\n", image);
 		} else {
 			/* Go back round for another cell */
