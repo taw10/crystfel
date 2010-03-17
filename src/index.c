@@ -118,9 +118,8 @@ void index_pattern(struct image *image, IndexingMethod indm, int no_match,
 		new_cell = match_cell(image->candidate_cells[i],
 			              image->molecule->cell, verbose);
 		image->indexed_cell = new_cell;
-		if ( new_cell == NULL ) {
-			STATUS("Cell %i not matched.\n", i);
-		} else {
+		if ( new_cell != NULL ) {
+			STATUS("Matched on attempt %i.\n", i);
 			goto done;
 		}
 
