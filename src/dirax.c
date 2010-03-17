@@ -47,7 +47,8 @@
 typedef enum {
 	DIRAX_INPUT_NONE,
 	DIRAX_INPUT_LINE,
-	DIRAX_INPUT_PROMPT
+	DIRAX_INPUT_PROMPT,
+	DIRAX_INPUT_ACL
 } DirAxInputType;
 
 
@@ -191,10 +192,10 @@ static void dirax_send_next(struct image *image)
 	case 8 :
 		if ( image->best_acl_nh == 0 ) {
 			STATUS("No more cells to try.\n");
-			dirax_sendline("exit", image);
+			dirax_sendline("exit\n", image);
 			break;
 		}
-		snprintf(tmp, 31, "acl %i\n", image->best_acl);
+		snprintf(tmp, 31, "%i\n", image->best_acl);
 		image->acls_tried[image->n_acls_tried++] = image->best_acl;
 		dirax_sendline(tmp, image);
 		break;
@@ -209,7 +210,7 @@ static void dirax_send_next(struct image *image)
 		} else {
 			/* Go back round for another cell */
 			image->best_acl_nh = 0;
-			image->dirax_step = 6;
+			image->dirax_step = 7;
 			dirax_sendline("acl\n", image);
 		}
 		break;
@@ -248,17 +249,19 @@ static int dirax_readable(struct image *image)
 			/* Means the last value looked at is rbufpos-2 */
 
 			/* Is there a prompt in the buffer? */
-			if ( i+7 <= image->dirax_rbufpos ) {
-				if ( (strncmp(image->dirax_rbuffer+i,
-						"Dirax> ", 7) == 0)
-				  || (strncmp(image->dirax_rbuffer+i,
-				                "PROMPT:", 7) == 0)
-				  || (strncmp(image->dirax_rbuffer+i,
-				                "acl/auto:", 8) == 0) ) {
-					block_ready = 1;
-					type = DIRAX_INPUT_PROMPT;
-					break;
-				}
+			if ( (i+7 <= image->dirax_rbufpos)
+			  && (!strncmp(image->dirax_rbuffer+i, "Dirax> ", 7)) ) {
+				block_ready = 1;
+				type = DIRAX_INPUT_PROMPT;
+				break;
+			}
+
+			/* How about an ACL prompt? */
+			if ( (i+10 <= image->dirax_rbufpos)
+			  && (!strncmp(image->dirax_rbuffer+i, "acl/auto [", 10)) ) {
+				block_ready = 1;
+				type = DIRAX_INPUT_ACL;
+				break;
 			}
 
 			if ( (image->dirax_rbuffer[i] == '\r')
@@ -297,6 +300,12 @@ static int dirax_readable(struct image *image)
 
 				dirax_send_next(image);
 				endbit_length = i+7;
+				break;
+
+			case DIRAX_INPUT_ACL :
+
+				dirax_send_next(image);
+				endbit_length = i+10;
 				break;
 
 			default :
