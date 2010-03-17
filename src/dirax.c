@@ -350,11 +350,9 @@ static int dirax_readable(struct image *image)
 void run_dirax(struct image *image)
 {
 	unsigned int opts;
-	int saved_stderr;
 	int status;
 	int rval;
 
-	saved_stderr = dup(STDERR_FILENO);
 	image->dirax_pid = forkpty(&image->dirax_pty, NULL, NULL, NULL);
 	if ( image->dirax_pid == -1 ) {
 		ERROR("Failed to fork for DirAx\n");
@@ -369,9 +367,6 @@ void run_dirax(struct image *image)
 		tcgetattr(STDIN_FILENO, &t);
 		t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
 		tcsetattr(STDIN_FILENO, TCSANOW, &t);
-
-		/* Reconnect stderr */
-		dup2(saved_stderr, STDERR_FILENO);
 
 		execlp("dirax", "", (char *)NULL);
 		ERROR("Failed to invoke DirAx.\n");
@@ -419,7 +414,6 @@ void run_dirax(struct image *image)
 	} while ( !rval );
 
 	close(image->dirax_pty);
-	close(saved_stderr);
 	free(image->dirax_rbuffer);
 	wait(&status);
 
