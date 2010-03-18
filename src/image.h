@@ -70,7 +70,7 @@ struct rvec
 /* Structure describing an image */
 struct image {
 
-	float			*data;     /* Integer counts after bloom */
+	float			*data;
 	double			*twotheta;
 	struct molecule		*molecule;
 	UnitCell		*indexed_cell;

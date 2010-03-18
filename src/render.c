@@ -78,7 +78,7 @@ float *render_get_image_binned(DisplayWindow *dw, int binning, float *max)
 		hdf5_read(dw->hdfile, image);
 		dw->image_dirty = 0;
 		if ( dw->cmfilter ) filter_cm(image);
-		if ( dw->noisefilter ) filter_noise(image);
+		if ( dw->noisefilter ) filter_noise(image, NULL);
 
 		/* Deal with the old image, if existing */
 		if ( dw->image != NULL ) {

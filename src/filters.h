@@ -19,7 +19,7 @@
 
 
 extern void filter_cm(struct image *image);
-extern void filter_noise(struct image *image);
+extern void filter_noise(struct image *image, float *old);
 
 
 #endif	/* FILTERS_H */

@@ -61,7 +61,25 @@ static void clean_panel(struct image *image, int sx, int sy)
 }
 
 
-static void noise_filter(struct image *image)
+/* Pre-processing to make life easier */
+void filter_cm(struct image *image)
+{
+	int px, py;
+
+	if ( (image->width != 1024) || (image->height != 1024) ) return;
+
+	for ( px=0; px<2; px++ ) {
+	for ( py=0; py<8; py++ ) {
+
+		clean_panel(image, 512*px, 128*py);
+
+	}
+	}
+
+}
+
+
+void filter_noise(struct image *image, float *old)
 {
 	int x, y;
 
@@ -71,6 +89,10 @@ static void noise_filter(struct image *image)
 		int dx, dy;
 		int val = image->data[x+image->width*y];
 
+		if ( old != NULL ) old[x+image->width*y] = val;
+
+		/* FIXME: This isn't really the right thing to do
+		 * at the edges. */
 		if ( (x==0) || (x==image->width-1)
 		  || (y==0) || (y==image->height-1) ) {
 			if ( val < 0 ) val = 0;
@@ -93,28 +115,4 @@ static void noise_filter(struct image *image)
 
 	}
 	}
-}
-
-
-/* Pre-processing to make life easier */
-void filter_cm(struct image *image)
-{
-	int px, py;
-
-	if ( (image->width != 1024) || (image->height != 1024) ) return;
-
-	for ( px=0; px<2; px++ ) {
-	for ( py=0; py<8; py++ ) {
-
-		clean_panel(image, 512*px, 128*py);
-
-	}
-	}
-
-}
-
-
-void filter_noise(struct image *image)
-{
-	noise_filter(image);
 }

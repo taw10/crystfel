@@ -280,6 +280,8 @@ int main(int argc, char *argv[])
 		char line[1024];
 		struct hdfile *hdfile;
 		struct image *simage;
+		float *data_for_measurement;
+		size_t data_size;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
@@ -307,6 +309,27 @@ int main(int argc, char *argv[])
 
 		if ( config_cmfilter ) {
 			filter_cm(&image);
+		}
+
+		/* Take snapshot of image after CM subtraction but before
+		 * the aggressive noise filter. */
+		data_size = image.width*image.height*sizeof(float);
+		data_for_measurement = malloc(data_size);
+
+		if ( config_noisefilter ) {
+			filter_noise(&image, data_for_measurement);
+		} else {
+
+			int x, y;
+
+			for ( x=0; x<image.width; x++ ) {
+			for ( y=0; y<image.height; y++ ) {
+				float val;
+				val = image.data[x+image.width*y];
+				data_for_measurement[x+image.width*y] = val;
+			}
+			}
+
 		}
 
 		/* Perform 'fine' peak search */
@@ -338,7 +361,7 @@ int main(int argc, char *argv[])
 		/* Measure intensities if requested */
 		if ( config_nearbragg ) {
 			/* Use original data (temporarily) */
-			simage->data = image.data;
+			simage->data = data_for_measurement;
 			output_intensities(simage, image.indexed_cell);
 			simage->data = NULL;
 		}
@@ -365,6 +388,7 @@ done:
 		free(image.data);
 		free(image.det.panels);
 		image_feature_list_free(image.features);
+		free(data_for_measurement);
 		hdfile_close(hdfile);
 		H5close();
 
