@@ -97,7 +97,7 @@ static void noise_filter(struct image *image)
 
 
 /* Pre-processing to make life easier */
-void clean_image(struct image *image)
+void filter_cm(struct image *image)
 {
 	int px, py;
 
@@ -111,5 +111,10 @@ void clean_image(struct image *image)
 	}
 	}
 
+}
+
+
+void filter_noise(struct image *image)
+{
 	noise_filter(image);
 }

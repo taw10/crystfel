@@ -18,6 +18,8 @@
 #endif
 
 
-extern void clean_image(struct image *image);
+extern void filter_cm(struct image *image);
+extern void filter_noise(struct image *image);
+
 
 #endif	/* FILTERS_H */

@@ -38,9 +38,11 @@ static void show_help(const char *s)
 "  -p, --peak-overlay=<filename>    Draw circles in positions listed in file.\n"
 "  -i, --int-boost=<n>              Multiply intensity by <n>.\n"
 "  -b, --binning=<n>                Set display binning to <n>.\n"
-"      --clean-image                Perform common-mode noise subtraction and\n"
-"                                    background removal on images before\n"
-"                                    proceeding.\n"
+"      --filter-cm                  Perform common-mode noise subtraction.\n"
+"      --filter-noise               Apply an aggressive noise filter which\n"
+"                                    sets all pixels in each 3x3 region to\n"
+"                                    zero if any of them have negative\n"
+"                                    values.\n"
 "\n");
 }
 
@@ -79,7 +81,8 @@ int main(int argc, char *argv[])
 	char *peaks = NULL;
 	int boost = 1;
 	int binning = 2;
-	int config_clean = 0;
+	int config_cmfilter = 0;
+	int config_noisefilter = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -87,7 +90,8 @@ int main(int argc, char *argv[])
 		{"peak-overlay",       1, NULL,               'p'},
 		{"int-boost",          1, NULL,               'i'},
 		{"binning",            1, NULL,               'b'},
-		{"clean-image",        0, &config_clean,       1},
+		{"filter-cm",          0, &config_cmfilter,    1},
+		{"filter-noise",       0, &config_noisefilter, 1},
 		{0, 0, NULL, 0}
 	};
 
@@ -145,7 +149,8 @@ int main(int argc, char *argv[])
 	for ( i=0; i<nfiles; i++ ) {
 		main_window_list[i] = displaywindow_open(argv[optind+i], peaks,
 		                                         boost, binning,
-		                                         config_clean);
+		                                         config_cmfilter,
+		                                         config_noisefilter);
 		if ( main_window_list[i] == NULL ) {
 			ERROR("Couldn't open display window\n");
 		} else {
