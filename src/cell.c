@@ -420,7 +420,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 	float best_fom = +999999999.9; /* Large number.. */
 	int ncand[3] = {0,0,0};
 	float ltl = 5.0;     /* percent */
-	float angtol = deg2rad(5.0);
+	float angtol = deg2rad(1.5);
 
 	if ( verbose ) {
 		STATUS("Matching with this model cell: "
