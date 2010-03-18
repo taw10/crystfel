@@ -46,6 +46,9 @@ void write_reflections(const char *filename, unsigned int *counts,
 		fprintf(fh, "b %5.3f nm\n", b*1e9);
 		fprintf(fh, "angle %5.3f deg\n", rad2deg(gamma));
 		fprintf(fh, "scale 10\n");
+	} else {
+
+		fprintf(fh, " h   k   l    I    sigma(I)   1/d / nm^-1\n");
 	}
 
 	for ( h=-INDMAX; h<INDMAX; h++ ) {

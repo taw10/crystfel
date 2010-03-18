@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	write_reflections(output, NULL, ref, 1, mol->cell);
+	write_reflections(output, NULL, ref, 0, mol->cell);
 
 	return 0;
 }
