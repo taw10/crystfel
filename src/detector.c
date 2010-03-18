@@ -22,7 +22,7 @@
 #include "parameters-lcls.tmp"
 
 
-/* x,y in pixels relative to central beam */
+/* x,y in pixels relative to image origin */
 int map_position(struct image *image, double dx, double dy,
                  double *rx, double *ry, double *rz)
 {
