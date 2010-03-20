@@ -41,24 +41,19 @@ static void show_help(const char *s)
 }
 
 
-static double *template_reflections(double *ref, const char *filename,
-                                    unsigned int *counts)
+static int template_reflections(const char *filename, unsigned int *counts)
 {
 	char *rval;
-	double *out;
 	FILE *fh;
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
-		return NULL;
+		return 1;
 	}
-
-	out = new_list_intensity();
 
 	do {
 
 		char line[1024];
-		double val;
 		int r;
 		signed int h, k, l;
 
@@ -67,17 +62,13 @@ static double *template_reflections(double *ref, const char *filename,
 		r = sscanf(line, "%i %i %i", &h, &k, &l);
 		if ( r != 3 ) continue;
 
-		val = lookup_intensity(ref, h, k, l);
-		set_intensity(out, h, k, l, val);
-		if ( counts != NULL ) {
-			set_count(counts, h, k, l, 1);
-		}
+		set_count(counts, h, k, l, 1);
 
 	} while ( rval != NULL );
 
 	fclose(fh);
 
-	return out;
+	return 0;
 }
 
 
@@ -107,12 +98,12 @@ static void noisify_reflections(double *ref)
 int main(int argc, char *argv[])
 {
 	int c;
-	double *ref;
 	double *ideal_ref;
 	struct molecule *mol;
 	char *template = NULL;
 	int config_noisify = 0;
 	int config_twin = 0;
+	int config_za = 0;
 	char *output = NULL;
 	unsigned int *counts;
 	signed int h, k, l;
@@ -124,6 +115,7 @@ int main(int argc, char *argv[])
 		{"poisson",            0, &config_noisify,     1},
 		{"output",             1, NULL,               'o'},
 		{"twin",               0, &config_twin,        1},
+		{"zone-axis",          0, &config_za,          1},
 		{0, 0, NULL, 0}
 	};
 
@@ -160,20 +152,17 @@ int main(int argc, char *argv[])
 	mol = load_molecule();
 	get_reflections_cached(mol, eV_to_J(1.8e3));
 	ideal_ref = ideal_intensities(mol->reflections);
-
 	counts = new_list_count();
 
 	if ( template != NULL ) {
 
-		ref = template_reflections(ideal_ref, template, counts);
-		if ( ref == NULL ) {
-			ERROR("Couldn't read template file!\n");
+		if ( template_reflections(template, counts) != 0 ) {
+			ERROR("Failed to template reflections.\n");
 			return 1;
 		}
 
 	} else {
 
-		ref = ideal_ref;
 		for ( h=-INDMAX; h<=INDMAX; h++ ) {
 		for ( k=-INDMAX; k<=INDMAX; k++ ) {
 		for ( l=-INDMAX; l<=INDMAX; l++ ) {
@@ -184,28 +173,21 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( config_noisify ) noisify_reflections(ref);
+	if ( config_noisify ) noisify_reflections(ideal_ref);
 
 	if ( config_twin ) {
-
-		STATUS("Twinning...\n");
 
 		for ( h=-INDMAX; h<=INDMAX; h++ ) {
 		for ( k=-INDMAX; k<=INDMAX; k++ ) {
 		for ( l=-INDMAX; l<=INDMAX; l++ ) {
 
-			if ( lookup_count(counts, h, k, l) != 0 ) {
+			double a, b;
 
-				double a, b;
+			a = lookup_intensity(ideal_ref, h, k, l);
+			b = lookup_intensity(ideal_ref, k, h, -l);
 
-				a = lookup_intensity(ideal_ref, h, k, l);
-				b = lookup_intensity(ideal_ref, k, h, -l);
-
-				set_intensity(ref, h, k, l, (a+b)/2.0);
-
-				STATUS("%i %i %i\n", h, k, l);
-
-			}
+			set_intensity(ideal_ref, h, k, l, (a+b)/2.0);
+			set_intensity(ideal_ref, k, h, -l, (a+b)/2.0);
 
 		}
 		}
@@ -213,7 +195,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	write_reflections(output, NULL, ref, 0, mol->cell);
+	write_reflections(output, counts, ideal_ref, config_za, mol->cell);
 
 	return 0;
 }
