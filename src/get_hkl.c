@@ -181,13 +181,25 @@ int main(int argc, char *argv[])
 		for ( k=-INDMAX; k<=INDMAX; k++ ) {
 		for ( l=-INDMAX; l<=INDMAX; l++ ) {
 
-			double a, b;
+			double a, b, c, d;
+			double t;
+
+			if ( abs(h+k) > INDMAX ) {
+				set_intensity(ideal_ref, h, k, l, 0.0);
+				continue;
+			}
 
 			a = lookup_intensity(ideal_ref, h, k, l);
 			b = lookup_intensity(ideal_ref, k, h, -l);
+			c = lookup_intensity(ideal_ref, -(h+k), k, -l);
+			d = lookup_intensity(ideal_ref, -(h+k), h, l);
 
-			set_intensity(ideal_ref, h, k, l, (a+b)/2.0);
-			set_intensity(ideal_ref, k, h, -l, (a+b)/2.0);
+			t = (a+b+c+d)/4.0;
+
+			set_intensity(ideal_ref, h, k, l, t);
+			set_intensity(ideal_ref, k, h, -l, t);
+			set_intensity(ideal_ref, -(h+k), h, l, t);
+			set_intensity(ideal_ref, -(h+k), k, -l, t);
 
 		}
 		}
