@@ -37,7 +37,10 @@ static void show_help(const char *s)
 "  -t, --template=<filename>  Only include reflections mentioned in file.\n"
 "      --poisson              Simulate Poisson samples.\n"
 "      --twin                 Generate twinned data.\n"
-"  -o  --output=<filename>    Output filename (default: stdout).\n");
+"  -o  --output=<filename>    Output filename (default: stdout).\n"
+"      --zone-axis            Generate hk0 intensities only (and add\n"
+"                              Synth2D-style header.\n"
+);
 }
 
 
