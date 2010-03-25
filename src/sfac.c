@@ -359,7 +359,8 @@ struct molecule *load_molecule()
 		}
 
 		/* Only interested in atoms */
-		if ( strncmp(line, "HETATM", 6) != 0 ) continue;
+		if ( (strncmp(line, "HETATM", 6) != 0)
+		  && (strncmp(line, "ATOM", 4) != 0) ) continue;
 
 		chomp(line);
 		nbits = assplode(line, " ", &bits, ASSPLODE_NONE);
