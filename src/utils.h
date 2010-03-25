@@ -67,6 +67,14 @@ extern struct rvec quat_rot(struct rvec q, struct quaternion z);
 
 extern size_t skipspace(const char *s);
 extern void chomp(char *s);
+
+typedef enum {
+	ASSPLODE_NONE	= 0,
+	ASSPLODE_DUPS	= 1<<0
+} AssplodeFlag;
+extern int assplode(const char *a, const char *delims, char ***pbits,
+                    AssplodeFlag flags);
+
 extern void progress_bar(int val, int total, const char *text);
 extern int poisson_noise(double expected);
 

@@ -318,6 +318,8 @@ struct molecule *load_molecule()
 	char line[1024];
 	char *rval;
 	int i;
+	int nbits;
+	char **bits;
 
 	mol = malloc(sizeof(struct molecule));
 	if ( mol == NULL ) return NULL;
@@ -333,12 +335,11 @@ struct molecule *load_molecule()
 
 	do {
 
-		char el[4];
+		char *el;
 		int j, r;
 		int done = 0;
 		float xf, yf, zf, occf, Bf;
 		double x, y, z, occ, B;
-		char *coords;
 
 		rval = fgets(line, 1023, fh);
 
@@ -360,23 +361,49 @@ struct molecule *load_molecule()
 		/* Only interested in atoms */
 		if ( strncmp(line, "HETATM", 6) != 0 ) continue;
 
-		/* The following crimes against programming style
-		 * were brought to you by Wizbit Enterprises, Inc. */
-		if ( line[76] == ' ' ) {
-			el[0] = line[77];
-			el[1] = '\0';
-		} else {
-			el[0] = line[76];
-			el[1] = line[77];
-			el[2] = '\0';
-		}
+		chomp(line);
+		nbits = assplode(line, " ", &bits, ASSPLODE_NONE);
+		if ( nbits == 0 ) continue;
 
-		coords = line + 29;
-		r = sscanf(coords, "%f %f %f %f %f", &xf, &yf, &zf, &occf, &Bf);
-		if ( r != 5 ) {
-			STATUS("I didn't understand a line in the PDB file.\n");
+		if ( nbits == 11 ) {
+
+			/* Normal case- HETATM<space+>number<space+>stuff */
+			r = sscanf(bits[5], "%f", &xf);
+			r += sscanf(bits[6], "%f", &yf);
+			r += sscanf(bits[7], "%f", &zf);
+			r += sscanf(bits[8], "%f", &occf);
+			r += sscanf(bits[9], "%f", &Bf);
+			if ( r != 5 ) {
+				STATUS("PDB read failed (%i)\n", r);
+				for ( i=0; i<nbits; i++ ) free(bits[i]);
+				continue;
+			}
+			el = strdup(bits[10]);
+
+		} else if ( nbits == 10 ) {
+
+			/* Squished case- HETATMnumber<space+>stuff */
+			r = sscanf(bits[4], "%f", &xf);
+			r += sscanf(bits[5], "%f", &yf);
+			r += sscanf(bits[6], "%f", &zf);
+			r += sscanf(bits[7], "%f", &occf);
+			r += sscanf(bits[8], "%f", &Bf);
+			if ( r != 5 ) {
+				STATUS("PDB read failed (%i)\n", r);
+				for ( i=0; i<nbits; i++ ) free(bits[i]);
+				continue;
+			}
+			el = strdup(bits[9]);
+
+		} else {
+			STATUS("Unrecognised line in the PDB file (%i)\n",
+			       nbits);
+			STATUS("'%s'\n", line);
+			for ( i=0; i<nbits; i++ ) free(bits[i]);
 			continue;
 		}
+		for ( i=0; i<nbits; i++ ) free(bits[i]);
+
 		/* Promote to double precision */
 		x = xf;  y = yf;  z = zf;  occ = occf;  B = Bf;
 
@@ -397,6 +424,10 @@ struct molecule *load_molecule()
 			spec->occ[n] = occ;
 			spec->B[n] = B*1.0e-20;  /* Convert to m^2 */
 			mol->species[j]->n_atoms++;
+			if ( mol->species[j]->n_atoms == MAX_ATOMS ) {
+				ERROR("Too many atoms of type '%s'!\n", el);
+				exit(1);
+			}
 
 			done = 1;
 
@@ -409,7 +440,7 @@ struct molecule *load_molecule()
 
 			spec = malloc(sizeof(struct mol_species));
 
-			memcpy(spec->species, el, 4);
+			memcpy(spec->species, el, 1+strlen(el));
 			spec->x[0] = x*1.0e-10;  /* Convert to m */
 			spec->y[0] = y*1.0e-10;
 			spec->z[0] = z*1.0e-10;
@@ -422,6 +453,7 @@ struct molecule *load_molecule()
 
 		}
 
+		free(el);
 
 	} while ( rval != NULL );
 

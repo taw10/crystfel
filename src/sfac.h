@@ -21,16 +21,19 @@
 #include "cell.h"
 
 
+#define MAX_ATOMS (128*1024)
+
+
 struct mol_species
 {
 	char species[4];    /* Species name */
 	int n_atoms;        /* Number of atoms of this species */
 
-	double x[32*1024];
-	double y[32*1024];
-	double z[32*1024];
-	double occ[32*1024];
-	double B[32*1024];
+	double x[MAX_ATOMS];
+	double y[MAX_ATOMS];
+	double z[MAX_ATOMS];
+	double occ[MAX_ATOMS];
+	double B[MAX_ATOMS];
 };
 
 

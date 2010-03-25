@@ -195,3 +195,91 @@ struct rvec quat_rot(struct rvec q, struct quaternion z)
 
 	return res;
 }
+
+
+/* Return non-zero if c is in delims */
+static int assplode_isdelim(const char c, const char *delims)
+{
+	size_t i;
+	for ( i=0; i<strlen(delims); i++ ) {
+		if ( c == delims[i] ) return 1;
+	}
+	return 0;
+}
+
+
+static int assplode_extract(char ***pbits, int n, size_t n_captured,
+                            size_t start, const char *a)
+{
+	char **bits = *pbits;
+	bits = realloc(bits, sizeof(char *)*(n+1));
+	bits[n] = malloc(n_captured+1);
+	memcpy(bits[n], a+start, n_captured);
+	bits[n][n_captured] = '\0';
+	n++;
+	*pbits = bits;
+	return n;
+}
+
+
+/* Split the string 'a' using 'delims' as a zero-terminated list of
+ *  deliminators.
+ * Store each segment in bits[0...n] where n is the number of segments and is
+ *  the return value.  pbits = &bits
+ * Each segment needs to be freed with free() when finished with.
+ * The array of bits also needs to be freed with free() when finished with,
+ *  unless n=0 in which case bits==NULL
+ */
+int assplode(const char *a, const char *delims, char ***pbits,
+             AssplodeFlag flags)
+{
+	size_t i, start, n_captured;
+	int n, last_was_delim;
+	char **bits;
+
+	n = 0;
+	i = 0;
+	n_captured = 0;
+	start = 0;
+	last_was_delim = 0;
+	bits = NULL;
+	while ( i < strlen(a) ) {
+
+		if ( assplode_isdelim(a[i], delims) ) {
+
+			if ( n_captured > 0 ) {
+				/* This is a deliminator after a sequence of
+				 * non-deliminator chars */
+				n = assplode_extract(&bits, n, n_captured,
+				                     start, a);
+			}
+
+			n_captured = 0;
+			if ( (flags & ASSPLODE_DUPS) && last_was_delim ) {
+				n = assplode_extract(&bits, n, 0, start, a);
+			}
+			last_was_delim = 1;
+
+		} else {
+
+			if ( n_captured == 0 ) {
+				/* No characters currently found, so this is the
+				 * start */
+				start = i;
+			}
+			n_captured++;
+			last_was_delim = 0;
+
+		}
+
+		i++;
+
+	}
+	/* Left over characters at the end? */
+	if ( n_captured > 0 ) {
+		n = assplode_extract(&bits, n, n_captured, start, a);
+	}
+
+	*pbits = bits;
+	return n;
+}
