@@ -462,10 +462,10 @@ struct molecule *load_molecule()
 
 	centre_molecule(mol);
 
-	//STATUS("There are %i species\n", mol->n_species);
+	STATUS("There are %i species\n", mol->n_species); fflush(stderr);
 	for ( i=0; i<mol->n_species; i++ ) {
-	//	STATUS("%3s : %6i\n", mol->species[i]->species,
-	//	       mol->species[i]->n_atoms);
+		STATUS("%3s : %6i\n", mol->species[i]->species,
+		       mol->species[i]->n_atoms);
 	}
 
 	if ( mol->cell == NULL ) {
