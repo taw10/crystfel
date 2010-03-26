@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 	double *ref1;
 	double *ref2;
 	double *out;
-	struct molecule *mol;
+	UnitCell *cell;
 	char *outfile = NULL;
 	char *afile = NULL;
 	char *bfile = NULL;
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	mol = load_molecule();
+	cell = load_cell_from_pdb("molecule.pdb");
 	ref1 = read_reflections(afile);
 	if ( ref1 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", afile);
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 	}
 	}
 
-	write_reflections(outfile, NULL, out, 1, mol->cell);
+	write_reflections(outfile, NULL, out, 1, cell);
 
 	return 0;
 }

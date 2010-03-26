@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
 		{"no-match",           0, &config_nomatch,     1},
 		{"verbose",            0, &config_verbose,     1},
 		{"alternate",          0, &config_alternate,   1},
-		{"intensities",        0, NULL,               'q'},
+		{"intensities",        1, NULL,               'q'},
 		{0, 0, NULL, 0}
 	};
 

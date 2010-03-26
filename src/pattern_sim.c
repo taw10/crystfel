@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
 		{"no-images",          0, &config_noimages,    1},
 		{"no-water",           0, &config_nowater,     1},
 		{"no-noise",           0, &config_nonoise,     1},
-		{"intensities",        0, NULL,               'i'},
+		{"intensities",        1, NULL,               'i'},
 		{"powder",             0, &config_powder,      1},
 		{0, 0, NULL, 0}
 	};

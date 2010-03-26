@@ -304,8 +304,8 @@ static void centre_molecule(struct molecule *mol)
 
 	}
 
-	//STATUS("Molecule was shifted by %5.3f, %5.3f, %5.3f nm\n",
-	//       mol->xc*1e9, mol->yc*1e9, mol->zc*1e9);
+	STATUS("The atoms were shifted by %5.3f, %5.3f, %5.3f nm\n",
+	       mol->xc*1e9, mol->yc*1e9, mol->zc*1e9);
 }
 
 
@@ -462,7 +462,7 @@ struct molecule *load_molecule()
 
 	centre_molecule(mol);
 
-	STATUS("There are %i species\n", mol->n_species); fflush(stderr);
+	STATUS("There are %i species:\n", mol->n_species); fflush(stderr);
 	for ( i=0; i<mol->n_species; i++ ) {
 		STATUS("%3s : %6i\n", mol->species[i]->species,
 		       mol->species[i]->n_atoms);
@@ -490,31 +490,9 @@ void free_molecule(struct molecule *mol)
 }
 
 
-struct molecule *copy_molecule(struct molecule *orig)
+double *get_reflections(struct molecule *mol, double en)
 {
-	struct molecule *new;
-	int i;
-
-	new = malloc(sizeof(*new));
-	*new = *orig;
-
-	/* Now sort out pointers */
-	for ( i=0; i<orig->n_species; i++ ) {
-		new->species[i] = malloc(sizeof(struct mol_species));
-		memcpy(new->species[i], orig->species[i],
-		       sizeof(struct mol_species));
-	}
-
-	new->cell = cell_new_from_cell(orig->cell);
-	new->reflections = NULL;
-
-	return new;
-}
-
-
-double complex *get_reflections(struct molecule *mol, double en)
-{
-	double complex *reflections;
+	double *reflections;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
@@ -525,7 +503,7 @@ double complex *get_reflections(struct molecule *mol, double en)
 	                               &bsx, &bsy, &bsz,
 	                               &csx, &csy, &csz);
 
-	reflections = new_list_sfac();
+	reflections = new_list_intensity();
 
 	for ( h=-INDMAX; h<=INDMAX; h++ ) {
 	for ( k=-INDMAX; k<=INDMAX; k++ ) {
@@ -572,61 +550,13 @@ double complex *get_reflections(struct molecule *mol, double en)
 
 		}
 
-		set_sfac(reflections, h, k, l, F);
+		set_intensity(reflections, h, k, l, pow(cabs(F), 2.0));
 
 	}
 	progress_bar((k+INDMAX)+IDIM*(h+INDMAX), IDIM*IDIM-1,
-	             "Calculating structure factors");
+	             "Calculating reflection intensities");
 	}
 	}
 
 	return reflections;
-}
-
-
-void get_reflections_cached(struct molecule *mol, double en)
-{
-	char s[1024];
-	FILE *fh;
-	size_t r;
-
-	/* Add 0.5 to improve rounding */
-	snprintf(s, 1023, "reflections-%ieV.cache", (int)(J_to_eV(en)+0.5));
-	fh = fopen(s, "rb");
-	if ( fh == NULL ) {
-		STATUS("No cache file found (looked for %s)\n", s);
-		goto calc;
-	}
-
-	mol->reflections = new_list_sfac();
-	r = fread(mol->reflections, sizeof(double complex), IDIM*IDIM*IDIM, fh);
-	if ( r < IDIM*IDIM*IDIM ) {
-		STATUS("Found cache file (%s), but failed to read"
-		       " (got %lli items, wanted %i).\n",
-		       s, (long long)r, IDIM*IDIM*IDIM);
-		goto calc;
-	}
-
-	STATUS("Read structure factors (at Bragg positions) from %s\n", s);
-	return;
-
-calc:
-	STATUS("Calculating structure factors at Bragg positions...\n");
-	mol->reflections = get_reflections(mol, en);
-	fh = fopen(s, "wb");
-	if ( fh == NULL ) {
-		STATUS("Failed to write cache file (%s)\n", s);
-		return;
-	}
-
-	r = fwrite(mol->reflections, sizeof(double complex),
-	           IDIM*IDIM*IDIM, fh);
-	if ( r < IDIM*IDIM*IDIM ) {
-		STATUS("Failed to write cache file (%s)\n", s);
-		return;
-	}
-	fclose(fh);
-
-	STATUS("Successfully saved structure factors at Bragg positions to"
-	       " file %s\n", s);
 }

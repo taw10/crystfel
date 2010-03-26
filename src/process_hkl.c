@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
 	double *ref, *trueref = NULL;
 	unsigned int *counts;
 	char *rval;
-	struct molecule *mol = NULL;
+	UnitCell *cell;
 	int config_maxonly = 0;
 	int config_every = 1000;
 	int config_rvsq = 0;
@@ -276,8 +276,7 @@ int main(int argc, char *argv[])
 
 	ref = new_list_intensity();
 	counts = new_list_count();
-
-	mol = load_molecule();
+	cell = load_cell_from_pdb("molecule.pdb");
 
 	if ( strcmp(filename, "-") == 0 ) {
 		fh = stdin;
@@ -307,7 +306,7 @@ int main(int argc, char *argv[])
 
 			if (config_every && (n_patterns % config_every == 0)) {
 				process_reflections(ref, trueref, counts,
-				                    n_patterns, mol->cell,
+				                    n_patterns, cell,
 				                    config_rvsq,
 				                    config_zoneaxis);
 			}
@@ -341,20 +340,16 @@ int main(int argc, char *argv[])
 	fclose(fh);
 
 	if ( trueref != NULL ) {
-		process_reflections(ref, trueref, counts, n_patterns, mol->cell,
+		process_reflections(ref, trueref, counts, n_patterns, cell,
 		                    config_rvsq, config_zoneaxis);
 	}
 
 	if ( output != NULL ) {
-		UnitCell *cell = NULL;
-		if ( mol != NULL ) cell = mol->cell;
 		write_reflections(output, counts, ref, 0, cell);
 	}
 
 	if ( config_zoneaxis ) {
 		char name[64];
-		UnitCell *cell = NULL;
-		if ( mol != NULL ) cell = mol->cell;
 		snprintf(name, 63, "ZA-%u.dat", n_patterns);
 		write_reflections(name, counts, ref, 1, cell);
 	}

@@ -223,7 +223,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 			                              na, nb, nc);
 
 			if ( intensities == NULL ) {
-				I_molecule = 10000.0;
+				I_molecule = 1.0e10;
 			} else {
 				I_molecule = molecule_factor(intensities, q,
 			                            ax,ay,az,bx,by,bz,cx,cy,cz);
