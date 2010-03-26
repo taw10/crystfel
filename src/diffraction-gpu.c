@@ -107,7 +107,7 @@ static void check_sinc_lut(struct gpu_context *gctx, int n)
 
 
 void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
-                         int na, int nb, int nc, int no_sfac)
+                         int na, int nb, int nc, UnitCell *ucell)
 {
 	cl_int err;
 	double ax, ay, az;
@@ -130,9 +130,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		return;
 	}
 
-	cell_get_cartesian(image->molecule->cell, &ax, &ay, &az,
-		                                  &bx, &by, &bz,
-		                                  &cx, &cy, &cz);
+	cell_get_cartesian(ucell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	cell[0] = ax;  cell[1] = ay;  cell[2] = az;
 	cell[3] = bx;  cell[4] = by;  cell[5] = bz;
 	cell[6] = cx;  cell[7] = cy;  cell[8] = cz;

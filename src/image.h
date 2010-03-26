@@ -72,7 +72,6 @@ struct image {
 
 	float			*data;
 	double			*twotheta;
-	struct molecule		*molecule;
 	UnitCell		*indexed_cell;
 	UnitCell		*candidate_cells[MAX_CELL_CANDIDATES];
 	int			ncells;

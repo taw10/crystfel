@@ -110,8 +110,6 @@ int main(int argc, char *argv[])
 	char *output = NULL;
 	unsigned int *counts;
 	signed int h, k, l;
-	FILE *fh;
-	char *rval;
 
 	/* Long options */
 	const struct option longopts[] = {

@@ -23,7 +23,7 @@ process_hkl_LDADD = @LIBS@
 
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
                       intensities.c peaks.c index.c filters.c \
-                      diffraction.c detector.c sfac.c dirax.c
+                      diffraction.c detector.c sfac.c dirax.c reflections.c
 indexamajig_LDADD = @LIBS@
 if HAVE_OPENCL
 indexamajig_SOURCES += diffraction-gpu.c cl-utils.c

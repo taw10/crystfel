@@ -615,3 +615,45 @@ double resolution(UnitCell *cell, signed int h, signed int k, signed int l)
 
 	return oneoverd / 2;
 }
+
+
+UnitCell *load_cell_from_pdb(const char *filename)
+{
+	FILE *fh;
+	char *rval;
+	UnitCell *cell = NULL;
+
+	fh = fopen(filename, "r");
+
+	do {
+
+		char line[1024];
+
+		rval = fgets(line, 1023, fh);
+
+		if ( strncmp(line, "CRYST1", 6) == 0 ) {
+
+			float a, b, c, al, be, ga;
+			int r;
+
+			r = sscanf(line+7, "%f %f %f %f %f %f",
+			           &a, &b, &c, &al, &be, &ga);
+			if ( r != 6 ) {
+				ERROR("Couldn't understand CRYST1 line\n");
+				return NULL;
+			}
+
+			cell = cell_new_from_parameters(a*1e-10,
+			                                     b*1e-10, c*1e-10,
+	                                                     deg2rad(al),
+	                                                     deg2rad(be),
+	                                                     deg2rad(ga));
+
+		}
+
+	} while ( rval != NULL );
+
+	fclose(fh);
+
+	return cell;
+}

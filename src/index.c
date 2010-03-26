@@ -57,8 +57,8 @@ static void write_drx(struct image *image)
 }
 
 
-void index_pattern(struct image *image, IndexingMethod indm, int no_match,
-                   int verbose)
+void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
+                   int no_match, int verbose)
 {
 	int i;
 	int nc = 0;
@@ -115,8 +115,7 @@ void index_pattern(struct image *image, IndexingMethod indm, int no_match,
 			STATUS("--------------------\n");
 		}
 
-		new_cell = match_cell(image->candidate_cells[i],
-			              image->molecule->cell, verbose);
+		new_cell = match_cell(image->candidate_cells[i], cell, verbose);
 		image->indexed_cell = new_cell;
 		if ( new_cell != NULL ) {
 			STATUS("Matched on attempt %i.\n", i);

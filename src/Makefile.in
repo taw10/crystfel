@@ -69,15 +69,16 @@ hdfsee_OBJECTS = $(am_hdfsee_OBJECTS)
 hdfsee_DEPENDENCIES =
 am__indexamajig_SOURCES_DIST = indexamajig.c hdf5-file.c utils.c \
 	cell.c image.c intensities.c peaks.c index.c filters.c \
-	diffraction.c detector.c sfac.c dirax.c diffraction-gpu.c \
-	cl-utils.c
+	diffraction.c detector.c sfac.c dirax.c reflections.c \
+	diffraction-gpu.c cl-utils.c
 @HAVE_OPENCL_TRUE@am__objects_1 = diffraction-gpu.$(OBJEXT) \
 @HAVE_OPENCL_TRUE@	cl-utils.$(OBJEXT)
 am_indexamajig_OBJECTS = indexamajig.$(OBJEXT) hdf5-file.$(OBJEXT) \
 	utils.$(OBJEXT) cell.$(OBJEXT) image.$(OBJEXT) \
 	intensities.$(OBJEXT) peaks.$(OBJEXT) index.$(OBJEXT) \
 	filters.$(OBJEXT) diffraction.$(OBJEXT) detector.$(OBJEXT) \
-	sfac.$(OBJEXT) dirax.$(OBJEXT) $(am__objects_1)
+	sfac.$(OBJEXT) dirax.$(OBJEXT) reflections.$(OBJEXT) \
+	$(am__objects_1)
 indexamajig_OBJECTS = $(am_indexamajig_OBJECTS)
 indexamajig_DEPENDENCIES =
 am__pattern_sim_SOURCES_DIST = pattern_sim.c diffraction.c utils.c \
@@ -231,7 +232,7 @@ process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
 process_hkl_LDADD = @LIBS@
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
 	intensities.c peaks.c index.c filters.c diffraction.c \
-	detector.c sfac.c dirax.c $(am__append_3)
+	detector.c sfac.c dirax.c reflections.c $(am__append_3)
 indexamajig_LDADD = @LIBS@
 @HAVE_GTK_TRUE@hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c image.c \
 @HAVE_GTK_TRUE@                 filters.c

@@ -171,7 +171,7 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 
 
 void get_diffraction(struct image *image, int na, int nb, int nc,
-                     double *intensities, int do_water)
+                     double *intensities, UnitCell *cell, int do_water)
 {
 	unsigned int xs, ys;
 	double ax, ay, az;
@@ -179,11 +179,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	double cx, cy, cz;
 	float k, klow, bwstep;
 
-	if ( image->molecule == NULL ) return;
-
-	cell_get_cartesian(image->molecule->cell, &ax, &ay, &az,
-		                                  &bx, &by, &bz,
-		                                  &cx, &cy, &cz);
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
 	/* Allocate (and zero) the "diffraction array" */
 	image->data = calloc(image->width * image->height, sizeof(float));

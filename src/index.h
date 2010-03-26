@@ -18,6 +18,9 @@
 #endif
 
 
+#include "cell.h"
+
+
 typedef enum {
 	INDEXING_NONE,
 	INDEXING_DIRAX,
@@ -25,7 +28,7 @@ typedef enum {
 } IndexingMethod;
 
 
-extern void index_pattern(struct image *image, IndexingMethod indm,
-                          int no_match, int verbose);
+extern void index_pattern(struct image *image, UnitCell *cell,
+                          IndexingMethod indm, int no_match, int verbose);
 
 #endif	/* INDEX_H */

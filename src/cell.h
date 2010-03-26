@@ -77,4 +77,6 @@ extern void cell_print(UnitCell *cell);
 
 extern UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose);
 
+extern UnitCell *load_cell_from_pdb(const char *filename);
+
 #endif	/* CELL_H */

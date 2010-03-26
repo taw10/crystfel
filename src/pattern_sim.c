@@ -162,6 +162,7 @@ int main(int argc, char *argv[])
 	int number = 1;   /* Number used for filename of image */
 	int n_images = 1; /* Generate one image by default */
 	int done = 0;
+	UnitCell *cell;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -240,7 +241,7 @@ int main(int argc, char *argv[])
 	image.width = 1024;
 	image.height = 1024;
 	image.lambda = ph_en_to_lambda(eV_to_J(1790.0));  /* Wavelength */
-	image.molecule = load_molecule();
+	cell = load_cell_from_pdb("molecule.pdb");
 
 	#include "geometry-lcls.tmp"
 
@@ -281,7 +282,7 @@ int main(int argc, char *argv[])
 		image.data = NULL;
 		image.twotheta = NULL;
 
-		cell_get_parameters(image.molecule->cell, &a, &b, &c, &d, &d, &d);
+		cell_get_parameters(cell, &a, &b, &c, &d, &d, &d);
 		STATUS("Particle size = %i x %i x %i (=%5.2f x %5.2f x %5.2f nm)\n",
 	               na, nb, nc, na*a/1.0e-9, nb*b/1.0e-9, nc*c/1.0e-9);
 
@@ -290,14 +291,10 @@ int main(int argc, char *argv[])
 				gctx = setup_gpu(config_nosfac, &image,
 				                 intensities);
 			}
-			get_diffraction_gpu(gctx, &image, na, nb, nc);
+			get_diffraction_gpu(gctx, &image, na, nb, nc, cell);
 		} else {
-			get_diffraction(&image, na, nb, nc, intensities,
+			get_diffraction(&image, na, nb, nc, intensities, cell,
 			                !config_nowater);
-		}
-		if ( image.molecule == NULL ) {
-			ERROR("Couldn't open molecule.pdb\n");
-			return 1;
 		}
 		if ( image.data == NULL ) {
 			ERROR("Diffraction calculation failed.\n");
@@ -307,7 +304,7 @@ int main(int argc, char *argv[])
 		record_image(&image, !config_nonoise);
 
 		if ( config_nearbragg ) {
-			output_intensities(&image, image.molecule->cell);
+			output_intensities(&image, cell);
 		}
 
 		if ( config_powder ) {
@@ -359,8 +356,8 @@ skip:
 
 	free(image.det.panels);
 	free(powder);
-	free(image.molecule->reflections);
-	free(image.molecule);
+	free(cell);
+	free(intensities);
 
 	return 0;
 }
