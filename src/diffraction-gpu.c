@@ -38,7 +38,7 @@ struct gpu_context
 	cl_command_queue cq;
 	cl_program prog;
 	cl_kernel kern;
-	cl_mem sfacs;
+	cl_mem intensities;
 
 	cl_mem tt;
 	size_t tt_size;
@@ -183,7 +183,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		ERROR("Couldn't set arg 8: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(gctx->kern, 9, sizeof(cl_mem), &gctx->sfacs);
+	clSetKernelArg(gctx->kern, 9, sizeof(cl_mem), &gctx->intensities);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 9: %s\n", clError(err));
 		return;
@@ -344,7 +344,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 /* Setup the OpenCL stuff, create buffers, load the structure factor table */
 struct gpu_context *setup_gpu(int no_sfac, struct image *image,
-                              struct molecule *molecule)
+                              double *intensities)
 {
 	struct gpu_context *gctx;
 	cl_uint nplat;
@@ -352,20 +352,10 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	cl_context_properties prop[3];
 	cl_int err;
 	cl_device_id dev;
-	size_t sfac_size;
-	float *sfac_ptr;
+	size_t intensities_size;
+	float *intensities_ptr;
 	size_t maxwgsize;
 	int i;
-
-	if ( molecule == NULL ) return NULL;
-
-	/* Generate structure factors if required */
-	if ( !no_sfac ) {
-		if ( molecule->reflections == NULL ) {
-			get_reflections_cached(molecule,
-			                       ph_lambda_to_en(image->lambda));
-		}
-	}
 
 	STATUS("Setting up GPU..."); fflush(stderr);
 
@@ -411,28 +401,26 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	}
 
 	/* Create a single-precision version of the scattering factors */
-	sfac_size = IDIM*IDIM*IDIM*sizeof(cl_float)*2; /* complex */
-	sfac_ptr = malloc(sfac_size);
-	if ( !no_sfac ) {
+	intensities_size = IDIM*IDIM*IDIM*sizeof(cl_float);
+	intensities_ptr = malloc(intensities_size);
+	if ( intensities != NULL ) {
 		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
-			sfac_ptr[2*i+0] = creal(molecule->reflections[i]);
-			sfac_ptr[2*i+1] = cimag(molecule->reflections[i]);
+			intensities_ptr[i] = intensities[i];
 		}
 	} else {
 		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
-			sfac_ptr[2*i+0] = 10000.0;
-			sfac_ptr[2*i+1] = 0.0;
+			intensities_ptr[i] = 10000.0;
 		}
 	}
-	gctx->sfacs = clCreateBuffer(gctx->ctx,
+	gctx->intensities = clCreateBuffer(gctx->ctx,
 	                             CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-	                             sfac_size, sfac_ptr, &err);
+	                             intensities_size, intensities_ptr, &err);
 	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't allocate sfac memory\n");
+		ERROR("Couldn't allocate intensities memory\n");
 		free(gctx);
 		return NULL;
 	}
-	free(sfac_ptr);
+	free(intensities_ptr);
 
 	gctx->tt_size = image->width*image->height*sizeof(cl_float);
 	gctx->tt = clCreateBuffer(gctx->ctx, CL_MEM_WRITE_ONLY, gctx->tt_size,
@@ -478,7 +466,7 @@ void cleanup_gpu(struct gpu_context *gctx)
 	clReleaseProgram(gctx->prog);
 	clReleaseMemObject(gctx->diff);
 	clReleaseMemObject(gctx->tt);
-	clReleaseMemObject(gctx->sfacs);
+	clReleaseMemObject(gctx->intensities);
 
 	/* Release LUTs */
 	for ( i=1; i<=gctx->max_sinc_lut; i++ ) {

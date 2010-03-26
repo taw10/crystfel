@@ -37,31 +37,31 @@ static void show_help(const char *s)
 	printf(
 "Assemble and process FEL Bragg intensities.\n"
 "\n"
-"  -h, --help              Display this help message.\n"
-"  -i, --input=<filename>  Specify input filename (\"-\" for stdin).\n"
-"  -o, --output=<filename> Specify output filename for merged intensities\n"
-"                           (don't specify for no output).\n"
+"  -h, --help                Display this help message.\n"
+"  -i, --input=<filename>    Specify input filename (\"-\" for stdin).\n"
+"  -o, --output=<filename>   Specify output filename for merged intensities\n"
+"                             (don't specify for no output).\n"
 "\n"
-"      --max-only          Take the integrated intensity to be equal to the\n"
-"                           maximum intensity measured for that reflection.\n"
-"                           The default is to use the mean value from all\n"
-"                           measurements.\n"
-"  -e, --output-every=<n>  Analyse figures of merit after every n patterns\n"
-"                           Default: 1000.  A value of zero means to do the\n"
-"                           analysis only after reading all the patterns.\n"
-"      --no-analyse        Don't perform any kind of analysis, just merge the\n"
-"                           intensities.\n"
-"      --sum               Sum (rather than average) the intensities for the\n"
-"                           final output list.  This is useful for comparing\n"
-"                           results to radially summed powder patterns, but\n"
-"                           will break R-factor analysis.\n"
-"  -r, --rvsq              Output lists of R vs |q| (\"Luzzatti plots\") when\n"
-"                           analysing figures of merit.\n"
-"      --stop-after=<n>    Stop after processing n patterns.  Zero means\n"
-"                           keep going until the end of the input, and is the\n"
-"                           default.\n"
-"      --zone-axis         Output an [001] zone axis pattern each time the\n"
-"                           figures of merit are analysed.\n");
+"      --max-only            Take the integrated intensity to be equal to the\n"
+"                             maximum intensity measured for that reflection.\n"
+"                             The default is to use the mean value from all\n"
+"                             measurements.\n"
+"      --sum                 Sum (rather than average) the intensities for the\n"
+"                             final output list.  This is useful for comparing\n"
+"                             results to radially summed powder patterns, but\n"
+"                             will break R-factor analysis.\n"
+"      --stop-after=<n>      Stop after processing n patterns.  Zero means\n"
+"                             keep going until the end of the input, and is\n"
+"                             the default.\n"
+"  -c, --compare-with=<file> Compare with reflection intensities in this file\n"
+"\n"
+"  -e, --output-every=<n>    Analyse figures of merit after every n patterns\n"
+"                             Default: 1000.  A value of zero means to do the\n"
+"                             analysis only after reading all the patterns.\n"
+"  -r, --rvsq                Output lists of R vs |q| (\"Luzzatti plots\")\n"
+"                             when analysing figures of merit.\n"
+"      --zone-axis           Output an [001] zone axis pattern each time the\n"
+"                             figures of merit are analysed.\n");
 }
 
 
@@ -193,8 +193,8 @@ int main(int argc, char *argv[])
 	int config_rvsq = 0;
 	int config_stopafter = 0;
 	int config_zoneaxis = 0;
-	int config_noanalyse = 0;
 	int config_sum = 0;
+	char *intfile = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -203,10 +203,10 @@ int main(int argc, char *argv[])
 		{"output",             1, NULL,               'o'},
 		{"max-only",           0, &config_maxonly,     1},
 		{"output-every",       1, NULL,               'e'},
-		{"no-analyse",         0, &config_noanalyse,   1},
 		{"rvsq",               0, NULL,               'r'},
 		{"stop-after",         1, NULL,               's'},
 		{"zone-axis",          0, &config_zoneaxis,    1},
+		{"compare-with",       0, NULL,               'c'},
 		{"sum",                0, &config_sum,    1},
 		{0, 0, NULL, 0}
 	};
@@ -245,6 +245,11 @@ int main(int argc, char *argv[])
 			break;
 		}
 
+		case 'c' : {
+			intfile = strdup(optarg);
+			break;
+		}
+
 		case 0 : {
 			break;
 		}
@@ -261,14 +266,18 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if ( intfile != NULL ) {
+		STATUS("Comparing against '%s'\n", intfile);
+		trueref = read_reflections(intfile);
+		free(intfile);
+	} else {
+		trueref = NULL;
+	}
+
 	ref = new_list_intensity();
 	counts = new_list_count();
 
 	mol = load_molecule();
-	if ( !config_noanalyse ) {
-		get_reflections_cached(mol, eV_to_J(2.0e3));
-		trueref = ideal_intensities(mol->reflections);
-	}
 
 	if ( strcmp(filename, "-") == 0 ) {
 		fh = stdin;
@@ -331,7 +340,7 @@ int main(int argc, char *argv[])
 
 	fclose(fh);
 
-	if ( !config_noanalyse ) {
+	if ( trueref != NULL ) {
 		process_reflections(ref, trueref, counts, n_patterns, mol->cell,
 		                    config_rvsq, config_zoneaxis);
 	}

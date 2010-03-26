@@ -110,6 +110,8 @@ int main(int argc, char *argv[])
 	char *output = NULL;
 	unsigned int *counts;
 	signed int h, k, l;
+	FILE *fh;
+	char *rval;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -154,7 +156,7 @@ int main(int argc, char *argv[])
 
 	mol = load_molecule();
 	get_reflections_cached(mol, eV_to_J(1790.0));
-	ideal_ref = ideal_intensities(mol->reflections);
+
 	counts = new_list_count();
 
 	if ( template != NULL ) {

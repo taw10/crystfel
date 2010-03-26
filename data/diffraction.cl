@@ -101,7 +101,7 @@ float lattice_factor(float16 cell, float4 q,
 }
 
 
-float2 get_sfac(global float2 *sfacs, float16 cell, float4 q)
+float get_intensity(global float *intensities, float16 cell, float4 q)
 {
 	float hf, kf, lf;
 	int h, k, l;
@@ -117,25 +117,25 @@ float2 get_sfac(global float2 *sfacs, float16 cell, float4 q)
 
 	/* Return a silly value if indices are out of range */
 	if ( (abs(h) > INDMAX) || (abs(k) > INDMAX) || (abs(l) > INDMAX) ) {
-		return (float2)(100000.0, 0.0);
+		return 1000000.0;
 	}
 
 	h = (h>=0) ? h : h+IDIM;
 	k = (k>=0) ? k : k+IDIM;
 	l = (l>=0) ? l : l+IDIM;
 
-	if ( (h>=IDIM) || (k>=IDIM) || (l>=IDIM) ) return (float2)(100000.0, 0.0);
+	if ( (h>=IDIM) || (k>=IDIM) || (l>=IDIM) ) return 1000000.0;
 
 	idx = h + (IDIM*k) + (IDIM*IDIM*l);
 
-	return sfacs[idx];
+	return intensities[idx];
 }
 
 
 kernel void diffraction(global float *diff, global float *tt, float klow,
                        int w, float cx, float cy,
                        float res, float clen, float16 cell,
-                       global float2 *sfacs, float4 z,
+                       global float *intensities, float4 z,
                        int xmin, int ymin, int sampling, local float *tmp,
                        float kstep,
                        read_only image2d_t func_a,
@@ -145,8 +145,8 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
 	float ttv;
 	const int x = get_global_id(0) + (xmin*sampling);
 	const int y = get_global_id(1) + (ymin*sampling);
-	float f_lattice;
-	float2 f_molecule;
+	float f_lattice, I_lattice;
+	float I_molecule;
 	float4 q;
 	const int lx = get_local_id(0);
 	const int ly = get_local_id(1);
@@ -155,16 +155,15 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
 	const int ax = x / sampling;
 	const int ay = y / sampling;
 	float intensity;
-	float2 val;
 
 	/* Calculate value */
 	q = get_q(x, y, cx, cy, res, clen, k, &ttv, z, sampling);
 	f_lattice = lattice_factor(cell, q, func_a, func_b, func_c);
-	f_molecule = get_sfac(sfacs, cell, q);
+	I_molecule = get_intensity(intensities, cell, q);
+	I_lattice = pow(f_lattice, 2.0f);
 
 	/* Write the value to local memory */
-	val = f_molecule * f_lattice;
-	intensity = pow(val.x, 2.0f) + pow(val.y, 2.0f);
+	intensity = I_molecule * I_lattice;
 	tmp[lx+sampling*ly+sampling*sampling*lb] = intensity;
 
 	/* Memory fence */

@@ -30,6 +30,7 @@
 #include "detector.h"
 #include "intensities.h"
 #include "sfac.h"
+#include "reflections.h"
 
 
 static void show_help(const char *s)
@@ -50,6 +51,8 @@ static void show_help(const char *s)
 "                            (a new orientation will be used for each image).\n"
 "     --powder              Write a summed pattern of all images simulated by\n"
 "                            this invocation to results/integr.h5.\n"
+" -i, --intensities=<file>  Specify file containing reflection intensities\n"
+"                            to use.\n"
 "\n"
 "By default, the simulation aims to be as accurate as possible.  For greater\n"
 "speed, or for testing, you can choose to disable certain things using the\n"
@@ -57,7 +60,6 @@ static void show_help(const char *s)
 "\n"
 "     --no-water            Do not simulate water background.\n"
 "     --no-noise            Do not calculate Poisson noise.\n"
-"     --no-sfac             Pretend that all structure factors are 1.\n"
 );
 }
 
@@ -78,21 +80,15 @@ static void show_details()
 "na = number of unit cells in 'a' direction (likewise nb, nc)\n"
 " q = reciprocal vector (1/d convention, not 2pi/d)\n"
 "\n"
-"This value is multiplied by the complex structure factor at the nearest\n"
-"Bragg position, i.e. the gradient of the shape transform across each\n"
-"appearance of the shape transform is not included, for speed of calculation.\n"
+"This square modulus of this value is take, and multiplied by the Bragg\n"
+"intensitiy at the neares Bragg position.  That means that the gradient of\n"
+"the underlying molecule transform is not included, for speed of calculation.\n"
+"The Bragg intensities are taken from the file specified on the command line\n"
+"with the --intensities option.\n"
 "\n"
-"Complex structure factors are calculated using a combination of the Henke\n"
-"and Waasmeier-Kirfel scattering factors. The Henke factors are complex\n"
-"and energy dependence, whereas the Waas-Kirf values are real-valued and\n"
-"|q|-dependent.  The difference between the Waas-Kirf value at the\n"
-"appropriate |q| and the same value at |q|=0 is subtracted from the Henke\n"
-"value.  The Henke values are linearly interpolated from the provided tables\n"
-"(note that the interpolation should really be exponential).\n"
-"\n"
-"The modulus of the structure factor is taken and squared.  Intensity from\n"
-"water is then added according to the first term of equation 5 from\n"
-"Phys Chem Chem Phys 2003 (5) 1981--1991.\n"
+"Intensity from water is then added according to the first term of equation\n"
+"5 from Phys Chem Chem Phys 2003 (5) 1981--1991.  This simulates the\n"
+"coherent, elastic part of the diffuse scattering from the water jet only.\n"
 "\n"
 "Expected intensities at the CCD are then calculated using:\n"
 "\n"
@@ -101,14 +97,12 @@ static void show_details()
 "I0 = number of photons per unit area in the incident beam\n"
 " r = Thomson radius\n"
 " S = solid angle of corresponding pixel\n"
+"where |F(q)|^2 is the value calculated as described above.\n"
 "\n"
 "Poisson counts are generated from the expected intensities using Knuth's\n"
 "algorithm.  When the intensity is sufficiently high that Knuth's algorithm\n"
 "would result in machine precision problems, a normal distribution with\n"
 "standard deviation sqrt(I) is used instead.\n"
-"\n"
-"The coherent, elastic part of the diffuse scattering from the water jet can\n"
-"be simulated.\n"
 );
 }
 
@@ -153,6 +147,8 @@ int main(int argc, char *argv[])
 	struct image image;
 	struct gpu_context *gctx = NULL;
 	double *powder;
+	char *intfile = NULL;
+	double *intensities;
 	int config_simdetails = 0;
 	int config_nearbragg = 0;
 	int config_randomquat = 0;
@@ -178,7 +174,7 @@ int main(int argc, char *argv[])
 		{"no-images",          0, &config_noimages,    1},
 		{"no-water",           0, &config_nowater,     1},
 		{"no-noise",           0, &config_nonoise,     1},
-		{"no-sfac",            0, &config_nosfac,      1},
+		{"intensities",        0, NULL,               'i'},
 		{"powder",             0, &config_powder,      1},
 		{0, 0, NULL, 0}
 	};
@@ -202,6 +198,11 @@ int main(int argc, char *argv[])
 			break;
 		}
 
+		case 'i' : {
+			intfile = strdup(optarg);
+			break;
+		}
+
 		case 0 : {
 			break;
 		}
@@ -222,6 +223,17 @@ int main(int argc, char *argv[])
 		ERROR("Cannot simulate water scattering on the GPU.\n");
 		ERROR("Please try again with the --no-water option.\n");
 		return 1;
+	}
+
+	if ( intfile == NULL ) {
+		/* Gentle reminder */
+		STATUS("You didn't specify the file containing the ");
+		STATUS("reflection intensities (with --intensities).\n");
+		STATUS("I'll simulate a flat intensity distribution.\n");
+		intensities = NULL;
+	} else {
+		intensities = read_reflections(intfile);
+		free(intfile);
 	}
 
 	/* Define image parameters */
@@ -276,11 +288,11 @@ int main(int argc, char *argv[])
 		if ( config_gpu ) {
 			if ( gctx == NULL ) {
 				gctx = setup_gpu(config_nosfac, &image,
-				                 image.molecule);
+				                 intensities);
 			}
 			get_diffraction_gpu(gctx, &image, na, nb, nc);
 		} else {
-			get_diffraction(&image, na, nb, nc, config_nosfac,
+			get_diffraction(&image, na, nb, nc, intensities,
 			                !config_nowater);
 		}
 		if ( image.molecule == NULL ) {

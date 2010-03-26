@@ -70,14 +70,14 @@ static double lattice_factor(struct rvec q, double ax, double ay, double az,
 
 
 /* Look up the structure factor for the nearest Bragg condition */
-static double complex molecule_factor(struct molecule *mol, struct rvec q,
+static double molecule_factor(double *intensities, struct rvec q,
                                       double ax, double ay, double az,
                                       double bx, double by, double bz,
                                       double cx, double cy, double cz)
 {
 	double hd, kd, ld;
 	signed int h, k, l;
-	double complex r;
+	double r;
 
 	hd = q.u * ax + q.v * ay + q.w * az;
 	kd = q.u * bx + q.v * by + q.w * bz;
@@ -86,7 +86,7 @@ static double complex molecule_factor(struct molecule *mol, struct rvec q,
 	k = (signed int)rint(kd);
 	l = (signed int)rint(ld);
 
-	r = lookup_sfac(mol->reflections, h, k, l);
+	r = lookup_intensity(intensities, h, k, l);
 
 	return r;
 }
@@ -170,8 +170,8 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 }
 
 
-void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac,
-                     int do_water)
+void get_diffraction(struct image *image, int na, int nb, int nc,
+                     double *intensities, int do_water)
 {
 	unsigned int xs, ys;
 	double ax, ay, az;
@@ -188,13 +188,6 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac,
 	/* Allocate (and zero) the "diffraction array" */
 	image->data = calloc(image->width * image->height, sizeof(float));
 
-	if ( !no_sfac ) {
-		if ( image->molecule->reflections == NULL ) {
-			get_reflections_cached(image->molecule,
-			                       ph_lambda_to_en(image->lambda));
-		}
-	}
-
 	/* Needed later for Lorentz calculation */
 	image->twotheta = malloc(image->width * image->height * sizeof(double));
 
@@ -205,8 +198,6 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac,
 	for ( xs=0; xs<image->width*SAMPLING; xs++ ) {
 	for ( ys=0; ys<image->height*SAMPLING; ys++ ) {
 
-		double f_lattice;
-		double complex f_molecule;
 		struct rvec q;
 		float twotheta;
 		double sw = 1.0/(SAMPLING*SAMPLING);  /* Sample weight */
@@ -220,8 +211,9 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac,
 
 			float k;
 			double kw = 1.0/BWSAMPLING;
-			double complex val;
 			double intensity;
+			double f_lattice, I_lattice;
+			double I_molecule;
 
 			/* Calculate k this time round */
 			k = klow + kstep * bwstep;
@@ -233,15 +225,17 @@ void get_diffraction(struct image *image, int na, int nb, int nc, int no_sfac,
 			                              bx, by, bz,
 			                              cx, cy, cz,
 			                              na, nb, nc);
-			if ( no_sfac ) {
-				f_molecule = 10000.0;
+
+			if ( intensities == NULL ) {
+				I_molecule = 10000.0;
 			} else {
-				f_molecule = molecule_factor(image->molecule, q,
+				I_molecule = molecule_factor(intensities, q,
 			                            ax,ay,az,bx,by,bz,cx,cy,cz);
 			}
 
-			val = f_molecule * f_lattice;
-			intensity = sw * kw * pow(cabs(val), 2.0);
+			I_lattice = pow(f_lattice, 2.0);
+
+			intensity = sw * kw * I_lattice * I_molecule;
 			image->data[x + image->width*y] += intensity;
 
 		}
