@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
 	}
 
 	mol = load_molecule();
-	get_reflections_cached(mol, eV_to_J(1.8e3));
+	get_reflections_cached(mol, eV_to_J(1790.0));
 	ideal_ref = ideal_intensities(mol->reflections);
 	counts = new_list_count();
 
