@@ -292,7 +292,7 @@ int main(int argc, char *argv[])
 		if ( config_gpu ) {
 			if ( gctx == NULL ) {
 				gctx = setup_gpu(config_nosfac, &image,
-				                 intensities);
+				                 intensities, counts);
 			}
 			get_diffraction_gpu(gctx, &image, na, nb, nc, cell);
 		} else {
