@@ -55,7 +55,7 @@ void write_reflections(const char *filename, unsigned int *counts,
 	for ( l=-INDMAX; l<INDMAX; l++ ) {
 
 		int N;
-		double F, s;
+		double intensity, s;
 
 		if ( counts ) {
 			N = lookup_count(counts, h, k, l);
@@ -65,7 +65,7 @@ void write_reflections(const char *filename, unsigned int *counts,
 		}
 		if ( zone_axis && (l != 0) ) continue;
 
-		F = lookup_intensity(ref, h, k, l) / N;
+		intensity = lookup_intensity(ref, h, k, l) / N;
 
 		if ( cell != NULL ) {
 			s = 2.0*resolution(cell, h, k, l);
@@ -74,7 +74,8 @@ void write_reflections(const char *filename, unsigned int *counts,
 		}
 
 		/* h, k, l, I, sigma(I), s */
-		fprintf(fh, "%3i %3i %3i %f %f %f\n", h, k, l, F, 0.0, s/1.0e9);
+		fprintf(fh, "%3i %3i %3i %f %f %f\n", h, k, l, intensity,
+		                                      0.0, s/1.0e9);
 
 	}
 	}
@@ -100,11 +101,12 @@ double *read_reflections(const char *filename)
 	do {
 
 		char line[1024];
-		signed int h, k, l, intensity;
+		signed int h, k, l;
+		float intensity;
 		int r;
 
 		rval = fgets(line, 1023, fh);
-		r = sscanf(line, "%i %i %i %i", &h, &k, &l, &intensity);
+		r = sscanf(line, "%i %i %i %f", &h, &k, &l, &intensity);
 		if ( r != 4 ) continue;
 
 		set_intensity(ref, h, k, l, intensity);

@@ -87,7 +87,7 @@ void record_image(struct image *image, int do_poisson)
 			ERROR("Infinity at %i,%i\n", x, y);
 		}
 		if ( intensity < 0.0 ) {
-			ERROR("Infinity at %i,%i\n", x, y);
+			ERROR("Negative at %i,%i\n", x, y);
 		}
 		if ( isnan(intensity) ) {
 			ERROR("NaN at %i,%i\n", x, y);
