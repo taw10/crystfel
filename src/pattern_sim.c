@@ -163,6 +163,7 @@ int main(int argc, char *argv[])
 	int n_images = 1; /* Generate one image by default */
 	int done = 0;
 	UnitCell *cell;
+	unsigned int *counts;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -232,8 +233,10 @@ int main(int argc, char *argv[])
 		STATUS("reflection intensities (with --intensities).\n");
 		STATUS("I'll simulate a flat intensity distribution.\n");
 		intensities = NULL;
+		counts = NULL;
 	} else {
-		intensities = read_reflections(intfile);
+		counts = new_list_count();
+		intensities = read_reflections(intfile, counts);
 		free(intfile);
 	}
 
@@ -293,8 +296,8 @@ int main(int argc, char *argv[])
 			}
 			get_diffraction_gpu(gctx, &image, na, nb, nc, cell);
 		} else {
-			get_diffraction(&image, na, nb, nc, intensities, cell,
-			                !config_nowater);
+			get_diffraction(&image, na, nb, nc, intensities, counts,
+			                cell, !config_nowater);
 		}
 		if ( image.data == NULL ) {
 			ERROR("Diffraction calculation failed.\n");

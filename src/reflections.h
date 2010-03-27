@@ -23,7 +23,7 @@
 extern void write_reflections(const char *filename, unsigned int *counts,
                               double *ref, int zone_axis, UnitCell *cell);
 
-extern double *read_reflections(const char *filename);
+extern double *read_reflections(const char *filename, unsigned int *counts);
 
 extern double *ideal_intensities(double complex *sfac);
 

@@ -98,12 +98,12 @@ int main(int argc, char *argv[])
 	}
 
 	cell = load_cell_from_pdb("molecule.pdb");
-	ref1 = read_reflections(afile);
+	ref1 = read_reflections(afile, NULL);
 	if ( ref1 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", afile);
 		return 1;
 	}
-	ref2 = read_reflections(bfile);
+	ref2 = read_reflections(bfile, NULL);
 	if ( ref2 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", bfile);
 		return 1;

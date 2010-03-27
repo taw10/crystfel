@@ -70,10 +70,11 @@ static double lattice_factor(struct rvec q, double ax, double ay, double az,
 
 
 /* Look up the structure factor for the nearest Bragg condition */
-static double molecule_factor(double *intensities, struct rvec q,
-                                      double ax, double ay, double az,
-                                      double bx, double by, double bz,
-                                      double cx, double cy, double cz)
+static double molecule_factor(double *intensities, unsigned int *counts,
+                              struct rvec q,
+                              double ax, double ay, double az,
+                              double bx, double by, double bz,
+                              double cx, double cy, double cz)
 {
 	double hd, kd, ld;
 	signed int h, k, l;
@@ -86,8 +87,13 @@ static double molecule_factor(double *intensities, struct rvec q,
 	k = (signed int)rint(kd);
 	l = (signed int)rint(ld);
 
-	r = lookup_intensity(intensities, h, k, l);
+	if ( lookup_count(counts, h, k, l) == 0 ) {
+		ERROR("Needed intensity for %i %i %i, but don't have it.\n",
+		      h, k, l);
+		return 1.0e20;
+	}
 
+	r = lookup_intensity(intensities, h, k, l);
 	return r;
 }
 
@@ -171,7 +177,8 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 
 
 void get_diffraction(struct image *image, int na, int nb, int nc,
-                     double *intensities, UnitCell *cell, int do_water)
+                     double *intensities, unsigned int *counts, UnitCell *cell,
+                     int do_water)
 {
 	unsigned int xs, ys;
 	double ax, ay, az;
@@ -225,8 +232,10 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 			if ( intensities == NULL ) {
 				I_molecule = 1.0e10;
 			} else {
-				I_molecule = molecule_factor(intensities, q,
-			                            ax,ay,az,bx,by,bz,cx,cy,cz);
+				I_molecule = molecule_factor(intensities,
+				                             counts, q,
+			                                     ax,ay,az,
+			                                     bx,by,bz,cx,cy,cz);
 			}
 
 			I_lattice = pow(f_lattice, 2.0);

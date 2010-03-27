@@ -84,7 +84,7 @@ void write_reflections(const char *filename, unsigned int *counts,
 }
 
 
-double *read_reflections(const char *filename)
+double *read_reflections(const char *filename, unsigned int *counts)
 {
 	double *ref;
 	FILE *fh;
@@ -110,6 +110,7 @@ double *read_reflections(const char *filename)
 		if ( r != 4 ) continue;
 
 		set_intensity(ref, h, k, l, intensity);
+		if ( counts != NULL ) set_count(counts, h, k, l, 1);
 
 	} while ( rval != NULL );
 

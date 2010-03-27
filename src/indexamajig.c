@@ -146,7 +146,8 @@ static struct image *get_simage(struct image *template, int alternate)
 
 
 static void simulate_and_write(struct image *simage, struct gpu_context **gctx,
-                               double *intensities, UnitCell *cell)
+                               double *intensities, unsigned int *counts,
+                               UnitCell *cell)
 {
 	/* Set up GPU if necessary */
 	if ( (gctx != NULL) && (*gctx == NULL) ) {
@@ -156,7 +157,8 @@ static void simulate_and_write(struct image *simage, struct gpu_context **gctx,
 	if ( (gctx != NULL) && (*gctx != NULL) ) {
 		get_diffraction_gpu(*gctx, simage, 24, 24, 40, cell);
 	} else {
-		get_diffraction(simage, 24, 24, 40, intensities, cell, 0);
+		get_diffraction(simage, 24, 24, 40,
+		                intensities, counts, cell, 0);
 	}
 	record_image(simage, 0);
 
@@ -191,6 +193,7 @@ int main(int argc, char *argv[])
 	UnitCell *cell;
 	double *intensities = NULL;
 	char *intfile = NULL;
+	unsigned int *counts = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -262,9 +265,10 @@ int main(int argc, char *argv[])
 	}
 
 	if ( intfile != NULL ) {
-		intensities = read_reflections(intfile);
+		intensities = read_reflections(intfile, counts);
 	} else {
 		intensities = NULL;
+		counts = NULL;
 	}
 
 	if ( indm_str == NULL ) {
@@ -386,10 +390,10 @@ int main(int argc, char *argv[])
 		if ( config_simulate ) {
 			if ( config_gpu ) {
 				simulate_and_write(simage, &gctx, intensities,
-				                   cell);
+				                   counts, cell);
 			} else {
 				simulate_and_write(simage, NULL, intensities,
-				                   cell);
+				                   counts, cell);
 			}
 		}
 

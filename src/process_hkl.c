@@ -268,7 +268,7 @@ int main(int argc, char *argv[])
 
 	if ( intfile != NULL ) {
 		STATUS("Comparing against '%s'\n", intfile);
-		trueref = read_reflections(intfile);
+		trueref = read_reflections(intfile, NULL);
 		free(intfile);
 	} else {
 		trueref = NULL;
