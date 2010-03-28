@@ -17,8 +17,6 @@
 #include <config.h>
 #endif
 
-
-extern int image_fom(struct image *image);
 extern void search_peaks(struct image *image);
 extern void dump_peaks(struct image *image);
 extern void output_intensities(struct image *image, UnitCell *cell);
