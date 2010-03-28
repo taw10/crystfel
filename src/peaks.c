@@ -325,21 +325,6 @@ void dump_peaks(struct image *image)
 }
 
 
-static double sum_nearby_points(float *data, int width, int x, int y)
-{
-	int dx, dy;
-	double intensity = 0;
-
-	for ( dx=-3; dx<=3; dx++ ) {
-	for ( dy=-3; dy<=3; dy++ ) {
-		intensity += data[(x+dx) + width*(y+dy)];
-	}
-	}
-
-	return intensity;
-}
-
-
 void output_intensities(struct image *image, UnitCell *cell)
 {
 	int x, y;
@@ -417,7 +402,7 @@ void output_intensities(struct image *image, UnitCell *cell)
 	       image->orientation.y, image->orientation.z);
 	for ( i=0; i<n_hits; i++ ) {
 
-		double intensity;
+		float x, y, intensity;
 
 		/* Bounds check */
 		if ( hits[i].x + 3 >= image->width ) continue;
@@ -425,12 +410,11 @@ void output_intensities(struct image *image, UnitCell *cell)
 		if ( hits[i].y + 3 >= image->height ) continue;
 		if ( hits[i].y - 3 < 0 ) continue;
 
-		intensity = sum_nearby_points(image->data, image->width,
-		                              hits[i].x, hits[i].y);
+		integrate_peak(image, hits[i].x, hits[i].y, &x, &y, &intensity);
 
-		printf("%3i %3i %3i %6f (at %i,%i)\n",
-		       hits[i].h, hits[i].k, hits[i].l, intensity,
-		       hits[i].x, hits[i].y);
+		/* Write h,k,l, integrated intensity and centroid coordinates */
+		printf("%3i %3i %3i %6f (at %5.2f,%5.2f)\n",
+		       hits[i].h, hits[i].k, hits[i].l, intensity, x, y);
 
 	}
 
