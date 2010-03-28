@@ -25,7 +25,6 @@
 #include "utils.h"
 #include "hdf5-file.h"
 #include "index.h"
-#include "intensities.h"
 #include "peaks.h"
 #include "diffraction.h"
 #include "diffraction-gpu.h"

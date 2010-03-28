@@ -21,5 +21,6 @@
 extern int image_fom(struct image *image);
 extern void search_peaks(struct image *image);
 extern void dump_peaks(struct image *image);
+extern void output_intensities(struct image *image, UnitCell *cell);
 
 #endif	/* PEAKS_H */

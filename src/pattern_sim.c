@@ -28,7 +28,7 @@
 #include "utils.h"
 #include "hdf5-file.h"
 #include "detector.h"
-#include "intensities.h"
+#include "peaks.h"
 #include "sfac.h"
 #include "reflections.h"
 
