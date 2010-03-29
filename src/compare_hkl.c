@@ -92,11 +92,6 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( outfile == NULL ) {
-		ERROR("You must specify the output filename with -o\n");
-		return 1;
-	}
-
 	cell = load_cell_from_pdb("molecule.pdb");
 	ref1 = read_reflections(afile, NULL);
 	if ( ref1 == NULL ) {
@@ -127,7 +122,9 @@ int main(int argc, char *argv[])
 	}
 	}
 
-	write_reflections(outfile, NULL, out, 1, cell);
+	if ( outfile != NULL ) {
+		write_reflections(outfile, NULL, out, 1, cell);
+	}
 
 	return 0;
 }
