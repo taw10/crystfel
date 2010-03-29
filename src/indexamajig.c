@@ -139,6 +139,7 @@ static struct image *get_simage(struct image *template, int alternate)
 	}
 
 	image->lambda = ph_en_to_lambda(eV_to_J(1.8e3));
+	image->features = template->features;
 
 	return image;
 }

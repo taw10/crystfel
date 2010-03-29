@@ -403,8 +403,19 @@ void output_intensities(struct image *image, UnitCell *cell)
 	for ( i=0; i<n_hits; i++ ) {
 
 		float x, y, intensity;
+		double d;
+		int idx;
+		struct imagefeature *f;
 
 		integrate_peak(image, hits[i].x, hits[i].y, &x, &y, &intensity);
+
+		/* Wait.. is there a closer feature which was detected? */
+		f = image_feature_closest(image->features, x, y, &d, &idx);
+		if ( (d < 10.0) && (f != NULL) ) {
+			x = f->x;
+			y = f->y;
+			intensity = f->intensity;
+		}
 
 		/* Write h,k,l, integrated intensity and centroid coordinates */
 		printf("%3i %3i %3i %6f (at %5.2f,%5.2f)\n",
