@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
 	int config_za = 0;
 	char *output = NULL;
 	unsigned int *counts;
+	unsigned int *cts;
 	signed int h, k, l;
 
 	/* Long options */
@@ -153,7 +154,8 @@ int main(int argc, char *argv[])
 	}
 
 	mol = load_molecule();
-	ideal_ref = get_reflections(mol, eV_to_J(1790.0), 1/(0.6e-9));
+	cts = new_list_count();
+	ideal_ref = get_reflections(mol, eV_to_J(1790.0), 1/(0.6e-9), cts);
 
 	counts = new_list_count();
 
@@ -166,10 +168,14 @@ int main(int argc, char *argv[])
 
 	} else {
 
+		/* No template? Then only mark reflections which were
+		 * calculated. */
 		for ( h=-INDMAX; h<=INDMAX; h++ ) {
 		for ( k=-INDMAX; k<=INDMAX; k++ ) {
 		for ( l=-INDMAX; l<=INDMAX; l++ ) {
-			set_count(counts, h, k, l, 1);
+			unsigned int c;
+			c = lookup_count(cts, h, k, l);
+			set_count(counts, h, k, l, c);
 		}
 		}
 		}

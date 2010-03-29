@@ -490,7 +490,8 @@ void free_molecule(struct molecule *mol)
 }
 
 
-double *get_reflections(struct molecule *mol, double en, double res)
+double *get_reflections(struct molecule *mol, double en, double res,
+                        unsigned int *counts)
 {
 	double *reflections;
 	double asx, asy, asz;
@@ -553,6 +554,7 @@ double *get_reflections(struct molecule *mol, double en, double res)
 		}
 
 		set_intensity(reflections, h, k, l, pow(cabs(F), 2.0));
+		set_count(counts, h, k, l, 1);
 
 	}
 	progress_bar((k+INDMAX)+IDIM*(h+INDMAX), IDIM*IDIM-1,
