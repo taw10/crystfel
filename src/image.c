@@ -49,7 +49,6 @@ int image_add(ImageList *list, struct image *image)
 
 	/* Fill out some extra fields */
 	list->images[list->n_images].features = NULL;
-	list->images[list->n_images].rflist = NULL;
 
 	list->n_images++;
 

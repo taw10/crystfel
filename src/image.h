@@ -86,7 +86,6 @@ struct image {
 	int			height;
 
 	ImageFeatureList	*features;	/* "Experimental" features */
-	ImageFeatureList	*rflist;	/* "Predicted" features */
 
 	/* DirAx auto-indexing low-level stuff */
 	int			dirax_pty;
