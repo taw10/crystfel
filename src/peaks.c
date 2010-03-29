@@ -404,12 +404,6 @@ void output_intensities(struct image *image, UnitCell *cell)
 
 		float x, y, intensity;
 
-		/* Bounds check */
-		if ( hits[i].x + 3 >= image->width ) continue;
-		if ( hits[i].x - 3 < 0 ) continue;
-		if ( hits[i].y + 3 >= image->height ) continue;
-		if ( hits[i].y - 3 < 0 ) continue;
-
 		integrate_peak(image, hits[i].x, hits[i].y, &x, &y, &intensity);
 
 		/* Write h,k,l, integrated intensity and centroid coordinates */
