@@ -24,6 +24,7 @@
 #include "utils.h"
 #include "sfac.h"
 #include "reflections.h"
+#include "statistics.h"
 
 
 static void show_help(const char *s)
@@ -49,6 +50,12 @@ int main(int argc, char *argv[])
 	char *afile = NULL;
 	char *bfile = NULL;
 	signed int h, k, l;
+	double scale, R;
+	unsigned int *c1;
+	unsigned int *c2;
+	unsigned int *cjoint;
+	int i;
+	int nc1, nc2, ncom;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -93,12 +100,14 @@ int main(int argc, char *argv[])
 	}
 
 	cell = load_cell_from_pdb("molecule.pdb");
-	ref1 = read_reflections(afile, NULL);
+	c1 = new_list_count();
+	ref1 = read_reflections(afile, c1);
 	if ( ref1 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", afile);
 		return 1;
 	}
-	ref2 = read_reflections(bfile, NULL);
+	c2 = new_list_count();
+	ref2 = read_reflections(bfile, c2);
 	if ( ref2 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", bfile);
 		return 1;
@@ -121,6 +130,20 @@ int main(int argc, char *argv[])
 	}
 	}
 	}
+
+	cjoint = new_list_count();
+	nc1 = 0;
+	nc2 = 0;
+	ncom = 0;
+	for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
+		cjoint[i] = c1[i] && c2[i];
+		nc1 += c1[i];
+		nc2 += c2[i];
+		ncom += cjoint[i];
+	}
+	STATUS("%i,%i reflections: %i in common\n", nc1, nc2, ncom);
+	R = stat_r2(ref1, ref2, cjoint, IDIM*IDIM*IDIM, &scale);
+	STATUS("R2 = %5.4f %% (scale=%5.2f)\n", R*100.0, scale);
 
 	if ( outfile != NULL ) {
 		write_reflections(outfile, NULL, out, 1, cell);

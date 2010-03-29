@@ -52,7 +52,8 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_compare_hkl_OBJECTS = compare_hkl.$(OBJEXT) sfac.$(OBJEXT) \
-	cell.$(OBJEXT) utils.$(OBJEXT) reflections.$(OBJEXT)
+	cell.$(OBJEXT) utils.$(OBJEXT) reflections.$(OBJEXT) \
+	statistics.$(OBJEXT)
 compare_hkl_OBJECTS = $(am_compare_hkl_OBJECTS)
 compare_hkl_DEPENDENCIES =
 am_get_hkl_OBJECTS = get_hkl.$(OBJEXT) sfac.$(OBJEXT) cell.$(OBJEXT) \
@@ -239,7 +240,9 @@ indexamajig_LDADD = @LIBS@
 @HAVE_GTK_TRUE@hdfsee_LDADD = @LIBS@
 get_hkl_SOURCES = get_hkl.c sfac.c cell.c utils.c reflections.c
 get_hkl_LDADD = @LIBS@
-compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c
+compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c \
+                      statistics.c
+
 compare_hkl_LDADD = @LIBS@
 powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \
                       detector.c
