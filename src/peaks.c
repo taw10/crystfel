@@ -160,9 +160,16 @@ static void integrate_peak(struct image *image, int xp, int yp,
 	}
 	}
 
-	*xc = (float)xct / total;
-	*yc = (float)yct / total;
-	*intensity = total;
+	/* The centroid is excitingly undefined if there is no intensity */
+	if ( total != 0 ) {
+		*xc = (float)xct / total;
+		*yc = (float)yct / total;
+		*intensity = total;
+	} else {
+		*xc = (float)xp;
+		*yc = (float)yp;
+		*intensity = 0;
+	}
 }
 
 
