@@ -490,7 +490,7 @@ void free_molecule(struct molecule *mol)
 }
 
 
-double *get_reflections(struct molecule *mol, double en)
+double *get_reflections(struct molecule *mol, double en, double res)
 {
 	double *reflections;
 	double asx, asy, asz;
@@ -511,10 +511,12 @@ double *get_reflections(struct molecule *mol, double en)
 
 		double complex F = 0.0;
 		int i;
-		double s;
+		double s, oneoverd;
 
 		/* We need sin(theta)/lambda = 1/2d */
 		s = resolution(mol->cell, h, k, l);
+		oneoverd = 2.0 * s;
+		if ( oneoverd > res ) continue;
 
 		/* Atoms are grouped by species for faster calculation */
 		for ( i=0; i<mol->n_species; i++ ) {
