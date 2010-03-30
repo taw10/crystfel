@@ -532,6 +532,7 @@ double *get_reflections(struct molecule *mol, double en, double res,
 			for ( j=0; j<spec->n_atoms; j++ ) {
 
 				double ph, u, v, w;
+				double complex cpart;
 
 				u = h*asx + k*bsx + l*csx;
 				v = h*asy + k*bsy + l*csy;
@@ -540,16 +541,16 @@ double *get_reflections(struct molecule *mol, double en, double res,
 				ph = u*spec->x[j] + v*spec->y[j] + w*spec->z[j];
 
 				/* Conversion from revolutions to radians */
-				contrib += cexp(-2.0*M_PI*I*ph);
+				cpart = cexp(-2.0*M_PI*I*ph);
+				if ( do_thermal ) {
+					cpart *= exp(-2.0 * spec->B[j] * s * s);
+				}
+				contrib += cpart;
 
 			}
 
 			sfac = get_sfac(spec->species, s, en);
 			F += sfac * contrib;
-
-			if ( do_thermal ) {
-				F *= exp(-2.0 * spec->B[j] * s);
-			}
 
 		}
 
