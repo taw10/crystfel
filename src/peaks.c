@@ -419,9 +419,13 @@ void output_intensities(struct image *image, UnitCell *cell)
 		/* Wait.. is there a closer feature which was detected? */
 		f = image_feature_closest(image->features, x, y, &d, &idx);
 		if ( (d < 10.0) && (f != NULL) ) {
-			x = f->x;
-			y = f->y;
+
+			/* f->intensity was measured on the filtered pattern,
+			 * so instead re-integrate using old coordinates.
+			 * This will produce further revised coordinates. */
+			integrate_peak(image, f->x, f->y, &x, &y, &intensity);
 			intensity = f->intensity;
+
 		}
 
 		/* Write h,k,l, integrated intensity and centroid coordinates */
