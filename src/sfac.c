@@ -242,15 +242,15 @@ static double get_waas_kirf(const char *n, double s)
 double complex get_sfac(const char *n, double s, double en)
 {
 	double complex f1f2;
-	double fq, fq0;
+	double fq;
 
-	/* Use the complex scattering factor from Henke, and add the
-	 * falloff in the real part from  Waas/Kirf */
+	/* Anomalous part (point-like K-shell electrons only) */
 	f1f2 = get_f1f2(n, en);
-	fq = get_waas_kirf(n, s);
-	fq0 = get_waas_kirf(n, 0.0);
 
-	return fq - fq0 + f1f2;
+	/* Atomic form factor part (not complex-valued) */
+	fq = get_waas_kirf(n, s) - get_waas_kirf(n, 0.0);
+
+	return fq + f1f2;
 }
 
 
