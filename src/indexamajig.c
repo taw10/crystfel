@@ -80,6 +80,7 @@ static void show_help(const char *s)
 "     --intensities=<file> Specify file containing reflection intensities\n"
 "                           to use when simulating.\n"
 " -p, --pdb=<file>         PDB file from which to get the unit cell to match.\n"
+" -x, --prefix=<p>         Prefix filenames from input file with 'p'.\n"
 );
 }
 
@@ -196,6 +197,7 @@ int main(int argc, char *argv[])
 	char *intfile = NULL;
 	unsigned int *counts = NULL;
 	char *pdb = NULL;
+	char *prefix = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -215,6 +217,7 @@ int main(int argc, char *argv[])
 		{"alternate",          0, &config_alternate,   1},
 		{"intensities",        1, NULL,               'q'},
 		{"pdb",                1, NULL,               'p'},
+		{"prefix",             1, NULL,               'x'},
 		{0, 0, NULL, 0}
 	};
 
@@ -244,6 +247,11 @@ int main(int argc, char *argv[])
 
 		case 'p' : {
 			pdb = strdup(optarg);
+			break;
+		}
+
+		case 'x' : {
+			prefix = strdup(optarg);
 			break;
 		}
 
@@ -283,6 +291,10 @@ int main(int argc, char *argv[])
 		pdb = strdup("molecule.pdb");
 	}
 
+	if ( prefix == NULL ) {
+		prefix = "";
+	}
+
 	if ( indm_str == NULL ) {
 		STATUS("You didn't specify an indexing method, so I won't"
 		       " try to index anything.\n"
@@ -315,6 +327,7 @@ int main(int argc, char *argv[])
 		struct image *simage;
 		float *data_for_measurement;
 		size_t data_size;
+		char prefixed[1024];
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
@@ -326,11 +339,13 @@ int main(int argc, char *argv[])
 
 		#include "geometry-lcls.tmp"
 
-		STATUS("Processing '%s'\n", line);
+		snprintf(prefixed, 1023, "%s%s", prefix, line);
+
+		STATUS("Processing '%s'\n", prefixed);
 
 		n_images++;
 
-		hdfile = hdfile_open(line);
+		hdfile = hdfile_open(prefixed);
 		if ( hdfile == NULL ) {
 			continue;
 		} else if ( hdfile_set_first_image(hdfile, "/") ) {
