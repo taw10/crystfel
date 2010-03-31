@@ -624,6 +624,10 @@ UnitCell *load_cell_from_pdb(const char *filename)
 	UnitCell *cell = NULL;
 
 	fh = fopen(filename, "r");
+	if ( fh == NULL ) {
+		ERROR("Couldn't open '%s'\n", filename);
+		return NULL;
+	}
 
 	do {
 
