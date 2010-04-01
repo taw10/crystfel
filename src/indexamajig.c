@@ -493,7 +493,7 @@ int main(int argc, char *argv[])
 		prefix = strdup("");
 	}
 
-	if ( nthreads == 0 ) {
+	if ( (nthreads == 0) || (nthreads > MAX_THREADS) ) {
 		ERROR("Invalid number of threads.\n");
 		return 1;
 	}
