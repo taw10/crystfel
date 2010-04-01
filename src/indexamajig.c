@@ -327,9 +327,6 @@ static void *process_image(void *pargsv)
 	/* Only free cell if found */
 	free(image.indexed_cell);
 
-	/* Free detector panel records */
-	free(image.det.panels);
-
 done:
 	free(image.data);
 	free(image.det.panels);
@@ -477,7 +474,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ( prefix == NULL ) {
-		prefix = "";
+		prefix = strdup("");
 	}
 
 	if ( nthreads == 0 ) {

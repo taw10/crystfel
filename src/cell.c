@@ -351,7 +351,6 @@ int cell_get_reciprocal(UnitCell *cell,
 	gsl_matrix_set(m, 2, 2, cell->cz);
 
 	/* Invert */
-	/* Invert */
 	perm = gsl_permutation_alloc(m->size1);
 	if ( perm == NULL ) {
 		ERROR("Couldn't allocate permutation\n");
@@ -381,6 +380,8 @@ int cell_get_reciprocal(UnitCell *cell,
 		free(cell);
 		return -1;
 	}
+	gsl_permutation_free(perm);
+	gsl_matrix_free(m);
 
 	/* Transpose */
 	gsl_matrix_transpose(inv);
