@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <hdf5.h>
+#include <gsl/gsl_errno.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -317,6 +318,8 @@ int main(int argc, char *argv[])
 		ERROR("Couldn't read unit cell (from molecule.pdb)\n");
 		return 1;
 	}
+
+	gsl_set_error_handler_off();
 
 	n_images = 0;
 	n_hits = 0;

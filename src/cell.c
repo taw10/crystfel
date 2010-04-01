@@ -231,6 +231,11 @@ static UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs,
 	*/
 
 	m = gsl_matrix_alloc(3, 3);
+	if ( m == NULL ) {
+		ERROR("Couldn't allocate memory for matrix\n");
+		free(cell);
+		return NULL;
+	}
 	gsl_matrix_set(m, 0, 0, as.u);
 	gsl_matrix_set(m, 0, 1, as.v);
 	gsl_matrix_set(m, 0, 2, as.w);
@@ -243,9 +248,34 @@ static UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs,
 
 	/* Invert */
 	perm = gsl_permutation_alloc(m->size1);
+	if ( perm == NULL ) {
+		ERROR("Couldn't allocate permutation\n");
+		free(cell);
+		gsl_matrix_free(m);
+		return NULL;
+	}
 	inv = gsl_matrix_alloc(m->size1, m->size2);
-	gsl_linalg_LU_decomp(m, perm, &s);
-	gsl_linalg_LU_invert(m, perm, inv);
+	if ( inv == NULL ) {
+		ERROR("Couldn't allocate inverse\n");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		free(cell);
+		return NULL;
+	}
+	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
+		ERROR("Couldn't decompose matrix");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		free(cell);
+		return NULL;
+	}
+	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
+		ERROR("Couldn't invert matrix");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		free(cell);
+		return NULL;
+	}
 	gsl_permutation_free(perm);
 	gsl_matrix_free(m);
 
@@ -294,7 +324,7 @@ void cell_get_cartesian(UnitCell *cell,
 }
 
 
-void cell_get_reciprocal(UnitCell *cell,
+int cell_get_reciprocal(UnitCell *cell,
                          double *asx, double *asy, double *asz,
                          double *bsx, double *bsy, double *bsz,
                          double *csx, double *csy, double *csz)
@@ -305,6 +335,11 @@ void cell_get_reciprocal(UnitCell *cell,
 	gsl_permutation *perm;
 
 	m = gsl_matrix_alloc(3, 3);
+	if ( m == NULL ) {
+		ERROR("Couldn't allocate memory for matrix\n");
+		free(cell);
+		return -1;
+	}
 	gsl_matrix_set(m, 0, 0, cell->ax);
 	gsl_matrix_set(m, 0, 1, cell->bx);
 	gsl_matrix_set(m, 0, 2, cell->cx);
@@ -316,12 +351,36 @@ void cell_get_reciprocal(UnitCell *cell,
 	gsl_matrix_set(m, 2, 2, cell->cz);
 
 	/* Invert */
+	/* Invert */
 	perm = gsl_permutation_alloc(m->size1);
+	if ( perm == NULL ) {
+		ERROR("Couldn't allocate permutation\n");
+		free(cell);
+		gsl_matrix_free(m);
+		return -1;
+	}
 	inv = gsl_matrix_alloc(m->size1, m->size2);
-	gsl_linalg_LU_decomp(m, perm, &s);
-	gsl_linalg_LU_invert(m, perm, inv);
-	gsl_permutation_free(perm);
-	gsl_matrix_free(m);
+	if ( inv == NULL ) {
+		ERROR("Couldn't allocate inverse\n");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		free(cell);
+		return -1;
+	}
+	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
+		ERROR("Couldn't decompose matrix\n");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		free(cell);
+		return -1;
+	}
+	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
+		ERROR("Couldn't invert matrix\n");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		free(cell);
+		return -1;
+	}
 
 	/* Transpose */
 	gsl_matrix_transpose(inv);
@@ -337,6 +396,8 @@ void cell_get_reciprocal(UnitCell *cell,
 	*csz = gsl_matrix_get(inv, 2, 2);
 
 	gsl_matrix_free(inv);
+
+	return 0;
 }
 
 
@@ -430,9 +491,12 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 		       "----------------------------\n");
 	}
 
-	cell_get_reciprocal(template, &asx, &asy, &asz,
-	                              &bsx, &bsy, &bsz,
-	                              &csx, &csy, &csz);
+	if ( cell_get_reciprocal(template, &asx, &asy, &asz,
+	                         &bsx, &bsy, &bsz,
+	                         &csx, &csy, &csz) ) {
+		ERROR("Couldn't get reciprocal cell for template.\n");
+		return NULL;
+	}
 
 	lengths[0] = modulus(asx, asy, asz);
 	lengths[1] = modulus(bsx, bsy, bsz);
@@ -446,9 +510,12 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 	cand[1] = malloc(MAX_CAND*sizeof(struct cvec));
 	cand[2] = malloc(MAX_CAND*sizeof(struct cvec));
 
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
+	if ( cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                         &bsx, &bsy, &bsz,
+	                         &csx, &csy, &csz) ) {
+		ERROR("Couldn't get reciprocal cell.\n");
+		return NULL;
+	}
 
 	/* Negative values mean 1/n, positive means n, zero means zero */
 	for ( n1l=-2; n1l<=4; n1l++ ) {
