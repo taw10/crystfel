@@ -43,6 +43,7 @@
 struct process_args
 {
 	char *filename;
+	pthread_mutex_t *output_mutex;
 	UnitCell *cell;
 	int config_cmfilter;
 	int config_noisefilter;
@@ -305,7 +306,9 @@ static void *process_image(void *pargsv)
 	if ( config_nearbragg ) {
 		/* Use original data (temporarily) */
 		simage->data = data_for_measurement;
+		pthread_mutex_lock(pargs->output_mutex);
 		output_intensities(simage, image.indexed_cell);
+		pthread_mutex_unlock(pargs->output_mutex);
 		simage->data = NULL;
 	}
 
@@ -377,6 +380,7 @@ int main(int argc, char *argv[])
 	struct process_args *worker_args[MAX_THREADS];
 	int worker_active[MAX_THREADS];
 	int i;
+	pthread_mutex_t output_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -531,6 +535,7 @@ int main(int argc, char *argv[])
 
 		pargs = malloc(sizeof(*pargs));
 		pargs->filename = prefixed;
+		pargs->output_mutex = &output_mutex;
 		pargs->config_cmfilter = config_cmfilter;
 		pargs->config_noisefilter = config_noisefilter;
 		pargs->config_writedrx = config_writedrx;
