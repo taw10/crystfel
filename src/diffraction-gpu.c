@@ -342,7 +342,8 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 /* Setup the OpenCL stuff, create buffers, load the structure factor table */
 struct gpu_context *setup_gpu(int no_sfac, struct image *image,
-                              double *intensities, unsigned int *counts)
+                              const double *intensities,
+                              const unsigned int *counts)
 {
 	struct gpu_context *gctx;
 	cl_uint nplat;

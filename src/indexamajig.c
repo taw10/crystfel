@@ -14,6 +14,7 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE 1
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -22,6 +23,7 @@
 #include <getopt.h>
 #include <hdf5.h>
 #include <gsl/gsl_errno.h>
+#include <pthread.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -33,6 +35,35 @@
 #include "sfac.h"
 #include "filters.h"
 #include "reflections.h"
+
+
+#define MAX_THREADS (96)
+
+struct process_args
+{
+	char *filename;
+	UnitCell *cell;
+	int config_cmfilter;
+	int config_noisefilter;
+	int config_writedrx;
+	int config_dumpfound;
+	int config_verbose;
+	int config_alternate;
+	int config_nearbragg;
+	int config_gpu;
+	int config_simulate;
+	int config_nomatch;
+	IndexingMethod indm;
+	const double *intensities;
+	const unsigned int *counts;
+	struct gpu_context *gctx;
+};
+
+struct process_result
+{
+	int hit;
+	struct process_args *pargs;
+};
 
 
 static void show_help(const char *s)
@@ -51,6 +82,7 @@ static void show_help(const char *s)
 "\n"
 "      --verbose           Be verbose about indexing.\n"
 "      --gpu               Use the GPU to speed up the simulation.\n"
+"  -j <n>                  Run <n> analyses in parallel.\n"
 "\n"
 "      --near-bragg        Output a list of reflection intensities to stdout.\n"
 "                           The intensities in this list are the sum of\n"
@@ -149,8 +181,8 @@ static struct image *get_simage(struct image *template, int alternate)
 
 
 static void simulate_and_write(struct image *simage, struct gpu_context **gctx,
-                               double *intensities, unsigned int *counts,
-                               UnitCell *cell)
+                               const double *intensities,
+                               const unsigned int *counts, UnitCell *cell)
 {
 	/* Set up GPU if necessary */
 	if ( (gctx != NULL) && (*gctx == NULL) ) {
@@ -170,36 +202,53 @@ static void simulate_and_write(struct image *simage, struct gpu_context **gctx,
 }
 
 
-static int process_pattern(const char *filename, UnitCell *cell,
-                          int config_cmfilter, int config_noisefilter,
-		          int config_writedrx, int config_dumpfound,
-		          int config_verbose, int config_alternate,
-		          int config_nearbragg, int config_gpu,
-		          int config_simulate, int config_nomatch,
-		          IndexingMethod indm, double *intensities,
-		          unsigned int *counts, struct gpu_context *gctx)
+static void *process_image(void *pargsv)
 {
+	struct process_args *pargs = pargsv;
 	struct hdfile *hdfile;
 	struct image image;
 	struct image *simage;
 	float *data_for_measurement;
 	size_t data_size;
+	const char *filename = pargs->filename;
+	UnitCell *cell = pargs->cell;
+	int config_cmfilter = pargs->config_cmfilter;
+	int config_noisefilter = pargs->config_noisefilter;
+	int config_writedrx = pargs->config_writedrx;
+	int config_dumpfound = pargs->config_dumpfound;
+	int config_verbose = pargs->config_verbose;
+	int config_alternate  = pargs->config_alternate;
+	int config_nearbragg = pargs->config_nearbragg;
+	int config_gpu = pargs->config_gpu;
+	int config_simulate = pargs->config_simulate;
+	int config_nomatch = pargs->config_nomatch;
+	IndexingMethod indm = pargs->indm;
+	const double *intensities = pargs->intensities;
+	const unsigned int *counts = pargs->counts;
+	struct gpu_context *gctx = pargs->gctx;
+	struct process_result *result;
 
 	image.features = NULL;
 	image.data = NULL;
 	image.indexed_cell = NULL;
 
-	#include "geometry-lcls.tmp"
-
 	STATUS("Processing '%s'\n", filename);
+
+	result = malloc(sizeof(*result));
+	if ( result == NULL ) return NULL;
+	result->pargs = pargs;
 
 	hdfile = hdfile_open(filename);
 	if ( hdfile == NULL ) {
-		return 0;
+		result->hit = 0;
+		return result;
 	} else if ( hdfile_set_first_image(hdfile, "/") ) {
 		ERROR("Couldn't select path\n");
-		return 0;
+		result->hit = 0;
+		return result;
 	}
+
+	#include "geometry-lcls.tmp"
 
 	hdf5_read(hdfile, &image);
 
@@ -278,16 +327,22 @@ static int process_pattern(const char *filename, UnitCell *cell,
 	/* Only free cell if found */
 	free(image.indexed_cell);
 
+	/* Free detector panel records */
+	free(image.det.panels);
+
 done:
 	free(image.data);
 	free(image.det.panels);
 	image_feature_list_free(image.features);
 	free(data_for_measurement);
 	hdfile_close(hdfile);
-	H5close();
 
-	if ( image.indexed_cell == NULL ) return 0;
-	return 1;
+	if ( image.indexed_cell == NULL ) {
+		result->hit = 0;
+	} else {
+		result->hit = 1;
+	}
+	return result;
 }
 
 
@@ -297,7 +352,7 @@ int main(int argc, char *argv[])
 	struct gpu_context *gctx = NULL;
 	char *filename = NULL;
 	FILE *fh;
-	char *rval;
+	char *rval = NULL;
 	int n_images;
 	int n_hits;
 	int config_noindex = 0;
@@ -319,6 +374,10 @@ int main(int argc, char *argv[])
 	unsigned int *counts = NULL;
 	char *pdb = NULL;
 	char *prefix = NULL;
+	int nthreads = 1;
+	pthread_t workers[MAX_THREADS];
+	struct process_args *worker_args[MAX_THREADS];
+	int i;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -343,7 +402,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:wp:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hi:wp:j:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
@@ -373,6 +432,11 @@ int main(int argc, char *argv[])
 
 		case 'x' : {
 			prefix = strdup(optarg);
+			break;
+		}
+
+		case 'j' : {
+			nthreads = atoi(optarg);
 			break;
 		}
 
@@ -416,6 +480,11 @@ int main(int argc, char *argv[])
 		prefix = "";
 	}
 
+	if ( nthreads == 0 ) {
+		ERROR("Invalid number of threads.\n");
+		return 1;
+	}
+
 	if ( indm_str == NULL ) {
 		STATUS("You didn't specify an indexing method, so I won't"
 		       " try to index anything.\n"
@@ -440,31 +509,106 @@ int main(int argc, char *argv[])
 	}
 
 	gsl_set_error_handler_off();
-
 	n_images = 0;
 	n_hits = 0;
-	do {
+
+	/* Initially, fire off the full number of threads */
+	for ( i=0; i<nthreads; i++ ) {
 
 		char line[1024];
-		char prefixed[1024];
+		char *prefixed;
+		struct process_args *pargs;
+		int r;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
 		chomp(line);
+		prefixed = malloc(1024);
 		snprintf(prefixed, 1023, "%s%s", prefix, line);
 
 		n_images++;
 
-		n_hits += process_pattern(line, cell, config_cmfilter,
-		                          config_noisefilter,
-		                          config_writedrx, config_dumpfound,
-		                          config_verbose, config_alternate,
-		                          config_nearbragg, config_gpu,
-		                          config_simulate, config_nomatch, indm,
-		                          intensities, counts, gctx);
+		pargs = malloc(sizeof(*pargs));
+		pargs->filename = prefixed;
+		pargs->config_cmfilter = config_cmfilter;
+		pargs->config_noisefilter = config_noisefilter;
+		pargs->config_writedrx = config_writedrx;
+		pargs->config_dumpfound = config_dumpfound;
+		pargs->config_verbose = config_verbose;
+		pargs->config_alternate = config_alternate;
+		pargs->config_nearbragg = config_nearbragg;
+		pargs->config_gpu = config_gpu;
+		pargs->config_simulate = config_simulate;
+		pargs->config_nomatch = config_nomatch;
+		pargs->cell = cell;
+		pargs->indm = indm;
+		pargs->intensities = intensities;
+		pargs->counts = counts;
+		pargs->gctx = gctx;
+		worker_args[i] = pargs;
+
+		r = pthread_create(&workers[i], NULL, process_image, pargs);
+		if ( r != 0 ) {
+			ERROR("Couldn't start thread %i\n", i);
+		}
+
+	}
+
+	/* Start new threads as old ones finish */
+	do {
+
+		int i;
+
+		for ( i=0; i<nthreads; i++ ) {
+
+			char line[1024];
+			char *prefixed;
+			int r;
+			struct process_result *result = NULL;
+			struct timespec t;
+			struct process_args *pargs;
+
+			t.tv_sec = 0;
+			t.tv_nsec = 20000; /* 20 ms */
+
+			r = pthread_timedjoin_np(workers[i], (void *)&result,
+			                         &t);
+			if ( r != 0 ) continue; /* Not ready yet */
+
+			if ( result != NULL ) {
+				n_hits += result->hit;
+				free(result);
+			}
+
+			rval = fgets(line, 1023, fh);
+			if ( rval == NULL ) break;
+			chomp(line);
+			prefixed = malloc(1024);
+			snprintf(prefixed, 1023, "%s%s", prefix, line);
+
+			pargs = worker_args[i];
+			free(pargs->filename);
+			pargs->filename = prefixed;
+			/* Other arguments unchanged */
+
+			r = pthread_create(&workers[i], NULL, process_image,
+			                   pargs);
+			if ( r != 0 ) {
+				ERROR("Couldn't start thread %i\n", i);
+			}
+
+			n_images++;
+		}
 
 	} while ( rval != NULL );
 
+	for ( i=0; i<nthreads; i++ ) {
+		free(worker_args[i]->filename);
+		free(worker_args[i]);
+	}
+
+	free(prefix);
+	free(cell);
 	fclose(fh);
 
 	STATUS("There were %i images.\n", n_images);

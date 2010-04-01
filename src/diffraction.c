@@ -70,8 +70,8 @@ static double lattice_factor(struct rvec q, double ax, double ay, double az,
 
 
 /* Look up the structure factor for the nearest Bragg condition */
-static double molecule_factor(double *intensities, unsigned int *counts,
-                              struct rvec q,
+static double molecule_factor(const double *intensities,
+                              const unsigned int *counts, struct rvec q,
                               double ax, double ay, double az,
                               double bx, double by, double bz,
                               double cx, double cy, double cz)
@@ -177,8 +177,8 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 
 
 void get_diffraction(struct image *image, int na, int nb, int nc,
-                     double *intensities, unsigned int *counts, UnitCell *cell,
-                     int do_water)
+                     const double *intensities, const unsigned int *counts,
+                     UnitCell *cell, int do_water)
 {
 	unsigned int xs, ys;
 	double ax, ay, az;

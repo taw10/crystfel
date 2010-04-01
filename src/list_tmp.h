@@ -64,7 +64,7 @@ static inline void LABEL(set)(TYPE *ref, signed int h,
 }
 
 
-static inline TYPE LABEL(lookup)(TYPE *ref, signed int h,
+static inline TYPE LABEL(lookup)(const TYPE *ref, signed int h,
                                  signed int k, signed int l)
 {
 	int idx;

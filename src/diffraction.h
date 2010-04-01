@@ -20,8 +20,9 @@
 #include "cell.h"
 
 extern void get_diffraction(struct image *image, int na, int nb, int nc,
-                            double *intensities, unsigned int *counts,
-                            UnitCell *cell, int do_water);
+                            const double *intensities,
+                            const unsigned int *counts, UnitCell *cell,
+                            int do_water);
 extern struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
                          unsigned int sampling, float *ttp, float k);
 
