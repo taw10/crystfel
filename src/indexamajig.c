@@ -24,6 +24,7 @@
 #include <hdf5.h>
 #include <gsl/gsl_errno.h>
 #include <pthread.h>
+#include <sys/time.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -374,6 +375,7 @@ int main(int argc, char *argv[])
 	int nthreads = 1;
 	pthread_t workers[MAX_THREADS];
 	struct process_args *worker_args[MAX_THREADS];
+	int worker_active[MAX_THREADS];
 	int i;
 
 	/* Long options */
@@ -517,6 +519,8 @@ int main(int argc, char *argv[])
 		struct process_args *pargs;
 		int r;
 
+		worker_active[i] = 0;
+
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
 		chomp(line);
@@ -544,8 +548,10 @@ int main(int argc, char *argv[])
 		pargs->gctx = gctx;
 		worker_args[i] = pargs;
 
+		worker_active[i] = 1;
 		r = pthread_create(&workers[i], NULL, process_image, pargs);
 		if ( r != 0 ) {
+			worker_active[i] = 0;
 			ERROR("Couldn't start thread %i\n", i);
 		}
 
@@ -563,14 +569,20 @@ int main(int argc, char *argv[])
 			int r;
 			struct process_result *result = NULL;
 			struct timespec t;
+			struct timeval tv;
 			struct process_args *pargs;
 
-			t.tv_sec = 0;
-			t.tv_nsec = 20000; /* 20 ms */
+			if ( !worker_active[i] ) continue;
+
+			gettimeofday(&tv, NULL);
+			t.tv_sec = tv.tv_sec;
+			t.tv_nsec = tv.tv_usec * 1000 + 20000;
 
 			r = pthread_timedjoin_np(workers[i], (void *)&result,
 			                         &t);
 			if ( r != 0 ) continue; /* Not ready yet */
+
+			worker_active[i] = 0;
 
 			if ( result != NULL ) {
 				n_hits += result->hit;
@@ -588,9 +600,11 @@ int main(int argc, char *argv[])
 			pargs->filename = prefixed;
 			/* Other arguments unchanged */
 
+			worker_active[i] = 1;
 			r = pthread_create(&workers[i], NULL, process_image,
 			                   pargs);
 			if ( r != 0 ) {
+				worker_active[i] = 0;
 				ERROR("Couldn't start thread %i\n", i);
 			}
 
@@ -599,9 +613,25 @@ int main(int argc, char *argv[])
 
 	} while ( rval != NULL );
 
+	/* Catch all remaining threads */
 	for ( i=0; i<nthreads; i++ ) {
+
+		struct process_result *result = NULL;
+
+		if ( !worker_active[i] ) continue;
+
+		pthread_join(workers[i], (void *)&result);
+
+		worker_active[i] = 0;
+
+		if ( result != NULL ) {
+			n_hits += result->hit;
+			free(result);
+		}
+
 		free(worker_args[i]->filename);
 		free(worker_args[i]);
+
 	}
 
 	free(prefix);
