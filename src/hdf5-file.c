@@ -33,7 +33,8 @@ struct hdfile {
 
 	hid_t           fh;  /* HDF file handle */
 	hid_t           dh;  /* Dataset handle */
-	hid_t           sh;  /* Dataspace handle */
+
+	int             data_open;  /* True if dh is initialised */
 };
 
 
@@ -51,6 +52,8 @@ struct hdfile *hdfile_open(const char *filename)
 		return NULL;
 	}
 
+	f->data_open = 0;
+
 	return f;
 }
 
@@ -59,20 +62,22 @@ int hdfile_set_image(struct hdfile *f, const char *path)
 {
 	hsize_t size[2];
 	hsize_t max_size[2];
+	hid_t sh;
 
 	f->dh = H5Dopen(f->fh, path, H5P_DEFAULT);
 	if ( f->dh < 0 ) {
 		ERROR("Couldn't open dataset\n");
 		return -1;
 	}
+	f->data_open = 1;
 
-	f->sh = H5Dget_space(f->dh);
-	if ( H5Sget_simple_extent_ndims(f->sh) != 2 ) {
+	sh = H5Dget_space(f->dh);
+	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
 		ERROR("Dataset is not two-dimensional\n");
 		return -1;
 	}
-
-	H5Sget_simple_extent_dims(f->sh, size, max_size);
+	H5Sget_simple_extent_dims(sh, size, max_size);
+	H5Sclose(sh);
 
 	f->nx = size[0];
 	f->ny = size[1];
@@ -95,6 +100,9 @@ int hdfile_get_height(struct hdfile *f)
 
 void hdfile_close(struct hdfile *f)
 {
+	if ( f->data_open ) {
+		H5Dclose(f->dh);
+	}
 	H5Fclose(f->fh);
 	free(f);
 }
@@ -166,6 +174,7 @@ static double get_wavelength(struct hdfile *f)
 
 	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
 		            H5P_DEFAULT, &lambda);
+	H5Dclose(dh);
 	if ( r < 0 ) return -1.0;
 
 	/* Convert nm -> m */
@@ -184,7 +193,6 @@ int hdf5_read(struct hdfile *f, struct image *image)
 	            H5P_DEFAULT, buf);
 	if ( r < 0 ) {
 		ERROR("Couldn't read data\n");
-		H5Dclose(f->dh);
 		return 1;
 	}
 
