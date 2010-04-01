@@ -85,7 +85,7 @@ static void show_help(const char *s)
 "\n"
 "      --verbose           Be verbose about indexing.\n"
 "      --gpu               Use the GPU to speed up the simulation.\n"
-"  -j <n>                  Run <n> analyses in parallel.\n"
+"  -j <n>                  Run <n> analyses in parallel.  Default 1.\n"
 "\n"
 "      --near-bragg        Output a list of reflection intensities to stdout.\n"
 "                           The intensities in this list are the sum of\n"
