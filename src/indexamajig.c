@@ -170,6 +170,127 @@ static void simulate_and_write(struct image *simage, struct gpu_context **gctx,
 }
 
 
+static int process_pattern(const char *filename, UnitCell *cell,
+                          int config_cmfilter, int config_noisefilter,
+		          int config_writedrx, int config_dumpfound,
+		          int config_verbose, int config_alternate,
+		          int config_nearbragg, int config_gpu,
+		          int config_simulate, int config_nomatch,
+		          IndexingMethod indm, double *intensities,
+		          unsigned int *counts, struct gpu_context *gctx)
+{
+	struct hdfile *hdfile;
+	struct image image;
+	struct image *simage;
+	float *data_for_measurement;
+	size_t data_size;
+
+	image.features = NULL;
+	image.data = NULL;
+	image.indexed_cell = NULL;
+
+	#include "geometry-lcls.tmp"
+
+	STATUS("Processing '%s'\n", filename);
+
+	hdfile = hdfile_open(filename);
+	if ( hdfile == NULL ) {
+		return 0;
+	} else if ( hdfile_set_first_image(hdfile, "/") ) {
+		ERROR("Couldn't select path\n");
+		return 0;
+	}
+
+	hdf5_read(hdfile, &image);
+
+	if ( config_cmfilter ) {
+		filter_cm(&image);
+	}
+
+	/* Take snapshot of image after CM subtraction but before
+	 * the aggressive noise filter. */
+	data_size = image.width*image.height*sizeof(float);
+	data_for_measurement = malloc(data_size);
+
+	if ( config_noisefilter ) {
+		filter_noise(&image, data_for_measurement);
+	} else {
+
+		int x, y;
+
+		for ( x=0; x<image.width; x++ ) {
+		for ( y=0; y<image.height; y++ ) {
+			float val;
+			val = image.data[x+image.width*y];
+			data_for_measurement[x+image.width*y] = val;
+		}
+		}
+
+	}
+
+	/* Perform 'fine' peak search */
+	search_peaks(&image);
+	if ( image_feature_count(image.features) < 5 ) goto done;
+
+	if ( config_dumpfound ) dump_peaks(&image);
+
+	/* Not indexing nor writing xfel.drx?
+	 * Then there's nothing left to do. */
+	if ( (!config_writedrx) && (indm == INDEXING_NONE) ) {
+		goto done;
+	}
+
+	/* Calculate orientation matrix (by magic) */
+	if ( config_writedrx || (indm != INDEXING_NONE) ) {
+		index_pattern(&image, cell, indm, config_nomatch,
+		              config_verbose);
+	}
+
+	/* No cell at this point?  Then we're done. */
+	if ( image.indexed_cell == NULL ) goto done;
+
+	simage = get_simage(&image, config_alternate);
+
+	/* Measure intensities if requested */
+	if ( config_nearbragg ) {
+		/* Use original data (temporarily) */
+		simage->data = data_for_measurement;
+		output_intensities(simage, image.indexed_cell);
+		simage->data = NULL;
+	}
+
+	/* Simulate if requested */
+	if ( config_simulate ) {
+		if ( config_gpu ) {
+			simulate_and_write(simage, &gctx, intensities,
+			                   counts, cell);
+		} else {
+			simulate_and_write(simage, NULL, intensities,
+			                   counts, cell);
+		}
+	}
+
+	/* Finished with alternate image */
+	if ( simage->twotheta != NULL ) free(simage->twotheta);
+	if ( simage->data != NULL ) free(simage->data);
+	free(simage);
+
+	/* Only free cell if found */
+	free(image.indexed_cell);
+
+done:
+	free(image.data);
+	free(image.det.panels);
+	image_feature_list_free(image.features);
+	free(data_for_measurement);
+	hdfile_close(hdfile);
+	H5close();
+
+	if ( image.indexed_cell == NULL ) return 0;
+	return 1;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -192,7 +313,6 @@ int main(int argc, char *argv[])
 	int config_alternate = 0;
 	IndexingMethod indm;
 	char *indm_str = NULL;
-	struct image image;
 	UnitCell *cell;
 	double *intensities = NULL;
 	char *intfile = NULL;
@@ -326,123 +446,22 @@ int main(int argc, char *argv[])
 	do {
 
 		char line[1024];
-		struct hdfile *hdfile;
-		struct image *simage;
-		float *data_for_measurement;
-		size_t data_size;
 		char prefixed[1024];
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
 		chomp(line);
-
-		image.features = NULL;
-		image.data = NULL;
-		image.indexed_cell = NULL;
-
-		#include "geometry-lcls.tmp"
-
 		snprintf(prefixed, 1023, "%s%s", prefix, line);
-
-		STATUS("Processing '%s'\n", prefixed);
 
 		n_images++;
 
-		hdfile = hdfile_open(prefixed);
-		if ( hdfile == NULL ) {
-			continue;
-		} else if ( hdfile_set_first_image(hdfile, "/") ) {
-			ERROR("Couldn't select path\n");
-			continue;
-		}
-
-		hdf5_read(hdfile, &image);
-
-		if ( config_cmfilter ) {
-			filter_cm(&image);
-		}
-
-		/* Take snapshot of image after CM subtraction but before
-		 * the aggressive noise filter. */
-		data_size = image.width*image.height*sizeof(float);
-		data_for_measurement = malloc(data_size);
-
-		if ( config_noisefilter ) {
-			filter_noise(&image, data_for_measurement);
-		} else {
-
-			int x, y;
-
-			for ( x=0; x<image.width; x++ ) {
-			for ( y=0; y<image.height; y++ ) {
-				float val;
-				val = image.data[x+image.width*y];
-				data_for_measurement[x+image.width*y] = val;
-			}
-			}
-
-		}
-
-		/* Perform 'fine' peak search */
-		search_peaks(&image);
-
-		if ( image_feature_count(image.features) < 5 ) goto done;
-
-		if ( config_dumpfound ) dump_peaks(&image);
-
-		/* Not indexing nor writing xfel.drx?
-		 * Then there's nothing left to do. */
-		if ( (!config_writedrx) && (indm == INDEXING_NONE) ) {
-			goto done;
-		}
-
-		/* Calculate orientation matrix (by magic) */
-		if ( config_writedrx || (indm != INDEXING_NONE) ) {
-			index_pattern(&image, cell, indm, config_nomatch,
-			              config_verbose);
-		}
-
-		/* No cell at this point?  Then we're done. */
-		if ( image.indexed_cell == NULL ) goto done;
-
-		n_hits++;
-
-		simage = get_simage(&image, config_alternate);
-
-		/* Measure intensities if requested */
-		if ( config_nearbragg ) {
-			/* Use original data (temporarily) */
-			simage->data = data_for_measurement;
-			output_intensities(simage, image.indexed_cell);
-			simage->data = NULL;
-		}
-
-		/* Simulate if requested */
-		if ( config_simulate ) {
-			if ( config_gpu ) {
-				simulate_and_write(simage, &gctx, intensities,
-				                   counts, cell);
-			} else {
-				simulate_and_write(simage, NULL, intensities,
-				                   counts, cell);
-			}
-		}
-
-		/* Finished with alternate image */
-		if ( simage->twotheta != NULL ) free(simage->twotheta);
-		if ( simage->data != NULL ) free(simage->data);
-		free(simage);
-
-		/* Only free cell if found */
-		free(image.indexed_cell);
-
-done:
-		free(image.data);
-		free(image.det.panels);
-		image_feature_list_free(image.features);
-		free(data_for_measurement);
-		hdfile_close(hdfile);
-		H5close();
+		n_hits += process_pattern(line, cell, config_cmfilter,
+		                          config_noisefilter,
+		                          config_writedrx, config_dumpfound,
+		                          config_verbose, config_alternate,
+		                          config_nearbragg, config_gpu,
+		                          config_simulate, config_nomatch, indm,
+		                          intensities, counts, gctx);
 
 	} while ( rval != NULL );
 
