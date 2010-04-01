@@ -43,7 +43,8 @@
 struct process_args
 {
 	char *filename;
-	pthread_mutex_t *output_mutex;
+	pthread_mutex_t *output_mutex;  /* Protects stdout */
+	pthread_mutex_t *gpu_mutex;     /* Protects "gctx" */
 	UnitCell *cell;
 	int config_cmfilter;
 	int config_noisefilter;
@@ -315,8 +316,10 @@ static void *process_image(void *pargsv)
 	/* Simulate if requested */
 	if ( config_simulate ) {
 		if ( config_gpu ) {
+			pthread_mutex_lock(pargs->gpu_mutex);
 			simulate_and_write(simage, &gctx, intensities,
 			                   counts, cell);
+			pthread_mutex_unlock(pargs->gpu_mutex);
 		} else {
 			simulate_and_write(simage, NULL, intensities,
 			                   counts, cell);
@@ -381,6 +384,7 @@ int main(int argc, char *argv[])
 	int worker_active[MAX_THREADS];
 	int i;
 	pthread_mutex_t output_mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_t gpu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -536,6 +540,7 @@ int main(int argc, char *argv[])
 		pargs = malloc(sizeof(*pargs));
 		pargs->filename = prefixed;
 		pargs->output_mutex = &output_mutex;
+		pargs->gpu_mutex = &gpu_mutex;
 		pargs->config_cmfilter = config_cmfilter;
 		pargs->config_noisefilter = config_noisefilter;
 		pargs->config_writedrx = config_writedrx;
