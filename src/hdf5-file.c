@@ -108,7 +108,7 @@ static void cleanup(hid_t fh)
 
 	ids = malloc(n_objs * sizeof(hid_t));
 	n_ids = H5Fget_obj_ids(fh, H5F_OBJ_ALL, n_objs, ids);
-	for (i=0; i<n_ids; i++ ) {
+	for ( i=0; i<n_ids; i++ ) {
 
 		hid_t id;
 		H5I_type_t type;
