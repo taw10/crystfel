@@ -77,6 +77,8 @@ struct image {
 	int			ncells;
 	struct detector		det;
 
+	int			id;
+
 	struct quaternion	orientation;
 
 	/* Wavelength must always be given */

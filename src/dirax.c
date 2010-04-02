@@ -190,7 +190,8 @@ static void dirax_send_next(struct image *image)
 		break;
 
 	case 2 :
-		dirax_sendline("read xfel.drx\n", image);
+		snprintf(tmp, 31, "read xfel-%i.drx\n", image->id);
+		dirax_sendline(tmp, image);
 		break;
 
 	case 3 :

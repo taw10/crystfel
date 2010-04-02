@@ -34,8 +34,11 @@ static void write_drx(struct image *image)
 {
 	FILE *fh;
 	int i;
+	char filename[1024];
 
-	fh = fopen("xfel.drx", "w");
+	snprintf(filename, 1023, "xfel-%i.drx", image->id);
+
+	fh = fopen(filename, "w");
 	if ( !fh ) {
 		ERROR("Couldn't open temporary file xfel.drx\n");
 		return;

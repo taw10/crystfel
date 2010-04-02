@@ -43,6 +43,7 @@
 struct process_args
 {
 	char *filename;
+	int id;
 	pthread_mutex_t *output_mutex;  /* Protects stdout */
 	pthread_mutex_t *gpu_mutex;     /* Protects "gctx" */
 	UnitCell *cell;
@@ -240,6 +241,7 @@ static void *process_image(void *pargsv)
 	image.features = NULL;
 	image.data = NULL;
 	image.indexed_cell = NULL;
+	image.id = pargs->id;
 
 	STATUS("Processing '%s'\n", filename);
 
@@ -562,6 +564,7 @@ int main(int argc, char *argv[])
 		pargs->intensities = intensities;
 		pargs->counts = counts;
 		pargs->gctx = gctx;
+		pargs->id = i;
 		worker_args[i] = pargs;
 
 		worker_active[i] = 1;
