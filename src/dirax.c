@@ -91,23 +91,47 @@ static void dirax_parseline(const char *line, struct image *image)
 	if ( image->dirax_read_cell == 1 ) {
 		/* First row of unit cell values */
 		float ax, ay, az;
-		sscanf(line, "%f %f %f %f %f %f", &d, &d, &d, &ax, &ay, &az);
+		int r;
+		r = sscanf(line, "%f %f %f %f %f %f",
+		           &d, &d, &d, &ax, &ay, &az);
+		if ( r != 6 ) {
+			ERROR("Couldn't understand cell line\n");
+			image->dirax_read_cell = 0;
+			free(image->candidate_cells[image->ncells]);
+			return;
+		}
 		cell_set_cartesian_a(image->candidate_cells[image->ncells],
 		                     ax*1e-10, ay*1e-10, az*1e-10);
 		image->dirax_read_cell++;
 		return;
 	} else if ( image->dirax_read_cell == 2 ) {
-		/* First row of unit cell values */
+		/* Second row of unit cell values */
 		float bx, by, bz;
-		sscanf(line, "%f %f %f %f %f %f", &d, &d, &d, &bx, &by, &bz);
+		int r;
+		r = sscanf(line, "%f %f %f %f %f %f",
+		           &d, &d, &d, &bx, &by, &bz);
+		if ( r != 6 ) {
+			ERROR("Couldn't understand cell line\n");
+			image->dirax_read_cell = 0;
+			free(image->candidate_cells[image->ncells]);
+			return;
+		}
 		cell_set_cartesian_b(image->candidate_cells[image->ncells],
 		                     bx*1e-10, by*1e-10, bz*1e-10);
 		image->dirax_read_cell++;
 		return;
 	} else if ( image->dirax_read_cell == 3 ) {
-		/* First row of unit cell values */
+		/* Third row of unit cell values */
 		float cx, cy, cz;
-		sscanf(line, "%f %f %f %f %f %f", &d, &d, &d, &cx, &cy, &cz);
+		int r;
+		r = sscanf(line, "%f %f %f %f %f %f",
+		           &d, &d, &d, &cx, &cy, &cz);
+		if ( r != 6 ) {
+			ERROR("Couldn't understand cell line\n");
+			image->dirax_read_cell = 0;
+			free(image->candidate_cells[image->ncells]);
+			return;
+		}
 		cell_set_cartesian_c(image->candidate_cells[image->ncells++],
 		                     cx*1e-10, cy*1e-10, cz*1e-10);
 		image->dirax_read_cell = 0;
