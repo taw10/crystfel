@@ -66,7 +66,6 @@ struct process_args
 struct process_result
 {
 	int hit;
-	struct process_args *pargs;
 };
 
 
@@ -251,7 +250,6 @@ static void *process_image(void *pargsv)
 
 	result = malloc(sizeof(*result));
 	if ( result == NULL ) return NULL;
-	result->pargs = pargs;
 
 	hdfile = hdfile_open(filename);
 	if ( hdfile == NULL ) {
