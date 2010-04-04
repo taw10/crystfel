@@ -641,7 +641,7 @@ int main(int argc, char *argv[])
 
 		struct process_result *result = NULL;
 
-		if ( !worker_active[i] ) continue;
+		if ( !worker_active[i] ) goto free;
 
 		pthread_join(workers[i], (void *)&result);
 
@@ -652,6 +652,7 @@ int main(int argc, char *argv[])
 			free(result);
 		}
 
+	free:
 		free(worker_args[i]->filename);
 		free(worker_args[i]);
 
