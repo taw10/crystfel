@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hrn:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hrn:i:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
