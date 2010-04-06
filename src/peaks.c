@@ -143,6 +143,9 @@ static void integrate_peak(struct image *image, int xp, int yp,
 	for ( y=-INTEGRATION_RADIUS; y<+INTEGRATION_RADIUS; y++ ) {
 
 		int val;
+		struct panel *p;
+		double sa, pix_area, Lsq, dsq, proj_area;
+		float tt;
 
 		/* Circular mask */
 		if ( x*x + y*y > lim ) continue;
@@ -150,7 +153,24 @@ static void integrate_peak(struct image *image, int xp, int yp,
 		if ( ((x+xp)>=image->width) || ((x+xp)<0) ) continue;
 		if ( ((y+yp)>=image->height) || ((y+yp)<0) ) continue;
 
-		val = image->data[(x+xp)+image->width*(y+yp)];
+		p = find_panel(&image->det, x+xp, y+yp);
+
+		/* Area of one pixel */
+		pix_area = pow(1.0/p->res, 2.0);
+		Lsq = pow(p->clen, 2.0);
+
+		/* Area of pixel as seen from crystal (approximate) */
+		get_q(image, x+xp, y+yp, 1, &tt, 1.0 / image->lambda);
+		proj_area = pix_area * cos(tt);
+
+		/* Calculate distance from crystal to pixel */
+		dsq = pow(((double)(x+xp) - p->cx) / p->res, 2.0);
+		dsq += pow(((double)(y+yp) - p->cy) / p->res, 2.0);
+
+		/* Projected area of pixel divided by distance squared */
+		sa = 1.0e7 * proj_area / (dsq + Lsq);
+
+		val = image->data[(x+xp)+image->width*(y+yp)] / sa;
 
 		total += val;
 
