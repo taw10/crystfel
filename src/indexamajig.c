@@ -535,27 +535,28 @@ int main(int argc, char *argv[])
 	n_images = 0;
 	n_hits = 0;
 
+	for ( i=0; i<nthreads; i++ ) {
+		worker_args[i] = malloc(sizeof(struct process_args));
+		worker_args[i]->filename = malloc(1024);
+		worker_active[i] = 0;
+	}
+
 	/* Initially, fire off the full number of threads */
 	for ( i=0; i<nthreads; i++ ) {
 
 		char line[1024];
-		char *prefixed;
 		struct process_args *pargs;
 		int r;
 
-		worker_active[i] = 0;
-		worker_args[i] = NULL;
+		pargs = worker_args[i];
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
 		chomp(line);
-		prefixed = malloc(1024);
-		snprintf(prefixed, 1023, "%s%s", prefix, line);
+		snprintf(pargs->filename, 1023, "%s%s", prefix, line);
 
 		n_images++;
 
-		pargs = malloc(sizeof(*pargs));
-		pargs->filename = prefixed;
 		pargs->output_mutex = &output_mutex;
 		pargs->gpu_mutex = &gpu_mutex;
 		pargs->config_cmfilter = config_cmfilter;
@@ -574,7 +575,6 @@ int main(int argc, char *argv[])
 		pargs->counts = counts;
 		pargs->gctx = gctx;
 		pargs->id = i;
-		worker_args[i] = pargs;
 
 		worker_active[i] = 1;
 		r = pthread_create(&workers[i], NULL, process_image, pargs);
@@ -593,7 +593,6 @@ int main(int argc, char *argv[])
 		for ( i=0; i<nthreads; i++ ) {
 
 			char line[1024];
-			char *prefixed;
 			int r;
 			struct process_result *result = NULL;
 			struct timespec t;
@@ -601,6 +600,8 @@ int main(int argc, char *argv[])
 			struct process_args *pargs;
 
 			if ( !worker_active[i] ) continue;
+
+			pargs = worker_args[i];
 
 			gettimeofday(&tv, NULL);
 			t.tv_sec = tv.tv_sec;
@@ -620,13 +621,7 @@ int main(int argc, char *argv[])
 			rval = fgets(line, 1023, fh);
 			if ( rval == NULL ) break;
 			chomp(line);
-			prefixed = malloc(1024);
-			snprintf(prefixed, 1023, "%s%s", prefix, line);
-
-			pargs = worker_args[i];
-			free(pargs->filename);
-			pargs->filename = prefixed;
-			/* Other arguments unchanged */
+			snprintf(pargs->filename, 1023, "%s%s", prefix, line);
 
 			worker_active[i] = 1;
 			r = pthread_create(&workers[i], NULL, process_image,
@@ -658,10 +653,10 @@ int main(int argc, char *argv[])
 		}
 
 	free:
-		if ( worker_args[i] != NULL ) {
+		if ( worker_args[i]->filename != NULL ) {
 			free(worker_args[i]->filename);
-			free(worker_args[i]);
 		}
+		free(worker_args[i]);
 
 	}
 
