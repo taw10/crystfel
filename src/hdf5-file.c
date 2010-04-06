@@ -100,14 +100,10 @@ int hdfile_get_height(struct hdfile *f)
 
 static void cleanup(hid_t fh)
 {
-	int n_objs, n_ids, i;
-	hid_t *ids;
+	int n_ids, i;
+	hid_t ids[256];
 
-	n_objs = H5Fget_obj_count(fh, H5F_OBJ_ALL);
-	if ( n_objs <= 0 ) return;
-
-	ids = malloc(n_objs * sizeof(hid_t));
-	n_ids = H5Fget_obj_ids(fh, H5F_OBJ_ALL, n_objs, ids);
+	n_ids = H5Fget_obj_ids(fh, H5F_OBJ_ALL, 256, ids);
 	for ( i=0; i<n_ids; i++ ) {
 
 		hid_t id;
@@ -119,8 +115,6 @@ static void cleanup(hid_t fh)
 		if ( type == H5I_GROUP ) H5Gclose(id);
 
 	}
-
-	free(ids);
 }
 
 
