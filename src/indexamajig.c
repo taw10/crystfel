@@ -521,11 +521,15 @@ int main(int argc, char *argv[])
 	free(indm_str);
 
 	cell = load_cell_from_pdb(pdb);
-	free(pdb);
 	if ( cell == NULL ) {
-		ERROR("Couldn't read unit cell (from molecule.pdb)\n");
+		if ( pdb == NULL ) {
+			ERROR("Couldn't read unit cell (from molecule.pdb)\n");
+		} else {
+			ERROR("Couldn't read unit cell (from %s)\n", pdb);
+		}
 		return 1;
 	}
+	free(pdb);
 
 	gsl_set_error_handler_off();
 	n_images = 0;
