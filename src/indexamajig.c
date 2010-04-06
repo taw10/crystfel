@@ -188,6 +188,7 @@ static struct image *get_simage(struct image *template, int alternate)
 
 	image->lambda = ph_en_to_lambda(eV_to_J(1.8e3));
 	image->features = template->features;
+	image->filename = template->filename;
 
 	return image;
 }
@@ -245,8 +246,9 @@ static void *process_image(void *pargsv)
 	image.data = NULL;
 	image.indexed_cell = NULL;
 	image.id = pargs->id;
+	image.filename = filename;
 
-	STATUS("Processing '%s'\n", filename);
+	STATUS("Processing '%s'\n", image.filename);
 
 	result = malloc(sizeof(*result));
 	if ( result == NULL ) return NULL;

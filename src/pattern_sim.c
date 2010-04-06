@@ -245,6 +245,7 @@ int main(int argc, char *argv[])
 	image.height = 1024;
 	image.lambda = ph_en_to_lambda(eV_to_J(1790.0));  /* Wavelength */
 	cell = load_cell_from_pdb("molecule.pdb");
+	image.filename = NULL;
 
 	#include "geometry-lcls.tmp"
 

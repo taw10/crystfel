@@ -404,7 +404,7 @@ void output_intensities(struct image *image, UnitCell *cell)
 
 	/* Explicit printf() used here (not normally allowed) because
 	 * we really want to output to stdout */
-	printf("New pattern: %7.5f %7.5f %7.5f %7.5f\n",
+	printf("New pattern: %s %7.5f %7.5f %7.5f %7.5f\n", image->filename,
 	       image->orientation.w, image->orientation.x,
 	       image->orientation.y, image->orientation.z);
 	for ( i=0; i<n_hits; i++ ) {
