@@ -538,6 +538,7 @@ int main(int argc, char *argv[])
 		int r;
 
 		worker_active[i] = 0;
+		worker_args[i] = NULL;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
@@ -651,8 +652,10 @@ int main(int argc, char *argv[])
 		}
 
 	free:
-		free(worker_args[i]->filename);
-		free(worker_args[i]);
+		if ( worker_args[i] != NULL ) {
+			free(worker_args[i]->filename);
+			free(worker_args[i]);
+		}
 
 	}
 
