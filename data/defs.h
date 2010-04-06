@@ -14,7 +14,7 @@
 
 
 /* Maxmimum index to hold values up to (can be increased if necessary) */
-#define INDMAX 70
+#define INDMAX 128
 
 /* Array size */
 #define IDIM (INDMAX*2 +1)
