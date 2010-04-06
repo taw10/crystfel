@@ -29,7 +29,6 @@
 #include "index.h"
 
 
-
 static void write_drx(struct image *image)
 {
 	FILE *fh;
