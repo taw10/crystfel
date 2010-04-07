@@ -1,0 +1,51 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+my $bins = 200;
+open(FH, $ARGV[0]);
+
+my $min = 99999999999999999999.0;
+my $max = 0.0;
+my $line;
+
+while ( $line = <FH> ) {
+
+	chomp($line);
+	if ( $line < $min ) {
+		$min = $line;
+	}
+	if ( $line > $max ) {
+		$max = $line;
+	}
+
+}
+
+printf("%f -> %f\n", $min, $max);
+
+seek(FH, 0, 0);
+
+my $binsize = ($max+1-$min)/$bins;
+my @hist;
+my $i;
+
+for ( $i=0; $i<$bins; $i++ ) {
+	$hist[$i] = 0;
+}
+
+while ( $line = <FH> ) {
+
+	my $bin;
+
+	chomp($line);
+
+	$bin = int(($line-$min)/$binsize);
+	$hist[$bin]++;
+
+}
+
+for ( $i=0; $i<$bins; $i++ ) {
+	printf("%f\t%i\n", $min+(($i+0.5)*$binsize), $hist[$i]);
+}
+
+close(FH);
