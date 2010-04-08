@@ -173,7 +173,7 @@ static struct image *get_simage(struct image *template, int alternate)
 		panels[1].min_y = 0;
 		panels[1].max_y = 511;
 		panels[1].cx = 520.8;
-		panels[1].cy = 772.1;
+		panels[1].cy = 525.0;
 		panels[1].clen = 56.7e-2;  /* 56.7 cm */
 		panels[1].res = 13333.3;   /* 75 microns/pixel */
 
