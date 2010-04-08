@@ -293,7 +293,8 @@ int main(int argc, char *argv[])
 	do {
 
 		char line[1024];
-		signed int h, k, l, intensity;
+		signed int h, k, l;
+		float intensity;
 		int r;
 
 		rval = fgets(line, 1023, fh);
@@ -316,7 +317,7 @@ int main(int argc, char *argv[])
 			n_patterns++;
 		}
 
-		r = sscanf(line, "%i %i %i %i", &h, &k, &l, &intensity);
+		r = sscanf(line, "%i %i %i %f", &h, &k, &l, &intensity);
 		if ( r != 4 ) continue;
 
 		if ( (h==0) && (k==0) && (l==0) ) continue;
