@@ -168,7 +168,7 @@ static void process_reflections(double *ref, double *trueref,
 	if ( do_zoneaxis ) {
 		char name[64];
 		snprintf(name, 63, "ZA-%u.dat", n_patterns);
-		write_reflections(name, counts, ref, 1, cell);
+		write_reflections(name, counts, ref, 1, cell, 1);
 	}
 
 	fh = fopen("results/convergence.dat", "a");
@@ -346,13 +346,13 @@ int main(int argc, char *argv[])
 	}
 
 	if ( output != NULL ) {
-		write_reflections(output, counts, ref, 0, cell);
+		write_reflections(output, counts, ref, 0, cell, 1);
 	}
 
 	if ( config_zoneaxis ) {
 		char name[64];
 		snprintf(name, 63, "ZA-%u.dat", n_patterns);
-		write_reflections(name, counts, ref, 1, cell);
+		write_reflections(name, counts, ref, 1, cell, 10);
 	}
 
 	STATUS("There were %u patterns.\n", n_patterns);

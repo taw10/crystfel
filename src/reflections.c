@@ -22,7 +22,8 @@
 
 
 void write_reflections(const char *filename, unsigned int *counts,
-                       double *ref, int zone_axis, UnitCell *cell)
+                       double *ref, int zone_axis, UnitCell *cell,
+                       unsigned int min_counts)
 {
 	FILE *fh;
 	signed int h, k, l;
@@ -59,7 +60,7 @@ void write_reflections(const char *filename, unsigned int *counts,
 
 		if ( counts ) {
 			N = lookup_count(counts, h, k, l);
-			if ( N == 0 ) continue;
+			if ( N < min_counts ) continue;
 		} else {
 			N = 1;
 		}

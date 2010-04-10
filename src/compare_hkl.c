@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
 	STATUS("R2 = %5.4f %% (scale=%5.2f)\n", R*100.0, scale);
 
 	if ( outfile != NULL ) {
-		write_reflections(outfile, NULL, out, 1, cell);
+		write_reflections(outfile, NULL, out, 1, cell, 1);
 	}
 
 	return 0;

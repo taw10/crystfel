@@ -230,7 +230,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	write_reflections(output, counts, ideal_ref, config_za, mol->cell);
+	write_reflections(output, counts, ideal_ref, config_za, mol->cell, 1);
 
 	return 0;
 }

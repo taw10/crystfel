@@ -21,7 +21,8 @@
 
 
 extern void write_reflections(const char *filename, unsigned int *counts,
-                              double *ref, int zone_axis, UnitCell *cell);
+                              double *ref, int zone_axis, UnitCell *cell,
+                              unsigned int min_counts);
 
 extern double *read_reflections(const char *filename, unsigned int *counts);
 
