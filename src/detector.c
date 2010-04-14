@@ -113,7 +113,7 @@ void record_image(struct image *image, int do_poisson)
 			counts = poisson_noise(intensity * ph_per_e * sa * DQE);
 		} else {
 			cf = intensity * ph_per_e * sa * DQE;
-			counts = rint(cf);
+			counts = cf;
 		}
 
 		image->data[x + image->width*y] = counts * DETECTOR_GAIN;
