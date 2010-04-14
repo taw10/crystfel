@@ -387,7 +387,7 @@ int main(int argc, char *argv[])
 	UnitCell *cell;
 	double *intensities = NULL;
 	char *intfile = NULL;
-	unsigned int *counts = NULL;
+	unsigned int *counts;
 	char *pdb = NULL;
 	char *prefix = NULL;
 	int nthreads = 1;
@@ -485,6 +485,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ( intfile != NULL ) {
+		counts = new_list_count();
 		intensities = read_reflections(intfile, counts);
 	} else {
 		intensities = NULL;
