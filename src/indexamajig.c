@@ -478,11 +478,11 @@ int main(int argc, char *argv[])
 	} else {
 		fh = fopen(filename, "r");
 	}
-	free(filename);
 	if ( fh == NULL ) {
-		ERROR("Failed to open input file\n");
+		ERROR("Failed to open input file '%s'\n", filename);
 		return 1;
 	}
+	free(filename);
 
 	if ( intfile != NULL ) {
 		counts = new_list_count();

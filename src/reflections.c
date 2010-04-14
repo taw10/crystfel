@@ -93,7 +93,7 @@ double *read_reflections(const char *filename, unsigned int *counts)
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
-		ERROR("Failed to open input file\n");
+		ERROR("Failed to open input file '%s'\n", filename);
 		return NULL;
 	}
 
