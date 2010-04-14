@@ -330,11 +330,11 @@ static void *process_image(void *pargsv)
 		if ( config_gpu ) {
 			pthread_mutex_lock(pargs->gpu_mutex);
 			simulate_and_write(simage, &gctx, intensities,
-			                   counts, cell);
+			                   counts, image.indexed_cell);
 			pthread_mutex_unlock(pargs->gpu_mutex);
 		} else {
 			simulate_and_write(simage, NULL, intensities,
-			                   counts, cell);
+			                   counts, image.indexed_cell);
 		}
 	}
 
