@@ -80,7 +80,7 @@ static void show_details()
 "na = number of unit cells in 'a' direction (likewise nb, nc)\n"
 " q = reciprocal vector (1/d convention, not 2pi/d)\n"
 "\n"
-"This square modulus of this value is take, and multiplied by the Bragg\n"
+"This square modulus of this value is taken, and multiplied by the Bragg\n"
 "intensitiy at the neares Bragg position.  That means that the gradient of\n"
 "the underlying molecule transform is not included, for speed of calculation.\n"
 "The Bragg intensities are taken from the file specified on the command line\n"
