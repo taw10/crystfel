@@ -131,9 +131,9 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	}
 
 	cell_get_cartesian(ucell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	cell[0] = ax;  cell[1] = ay;  cell[2] = az;
-	cell[3] = bx;  cell[4] = by;  cell[5] = bz;
-	cell[6] = cx;  cell[7] = cy;  cell[8] = cz;
+	cell.s[0] = ax;  cell.s[1] = ay;  cell.s[2] = az;
+	cell.s[3] = bx;  cell.s[4] = by;  cell.s[5] = bz;
+	cell.s[6] = cx;  cell.s[7] = cy;  cell.s[8] = cz;
 
 	/* Calculate wavelength */
 	k = 1.0/image->lambda;  /* Centre value */
@@ -141,15 +141,15 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	bwstep = k * BANDWIDTH / BWSAMPLING;
 
 	/* Orientation */
-	orientation[0] = image->orientation.w;
-	orientation[1] = image->orientation.x;
-	orientation[2] = image->orientation.y;
-	orientation[3] = image->orientation.z;
+	orientation.s[0] = image->orientation.w;
+	orientation.s[1] = image->orientation.x;
+	orientation.s[2] = image->orientation.y;
+	orientation.s[3] = image->orientation.z;
 
-	ncells[0] = na;
-	ncells[1] = nb;
-	ncells[2] = nc;
-	ncells[3] = 0;  /* unused */
+	ncells.s[0] = na;
+	ncells.s[1] = nb;
+	ncells.s[2] = nc;
+	ncells.s[3] = 0;  /* unused */
 
 	/* Ensure all required LUTs are available */
 	check_sinc_lut(gctx, na);
