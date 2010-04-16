@@ -34,7 +34,7 @@ static void cell_update_cartesian(UnitCell *cell)
 {
 	double tmp, V, cosalphastar, cstar;
 
-	if ( !cell ) return;
+	if ( cell == NULL ) return;
 
 	/* a in terms of x, y and z
 	 * +a (cryst) is defined to lie along +x (cart) */
@@ -69,7 +69,7 @@ static void cell_update_cartesian(UnitCell *cell)
 /* Update the crystallographic representation from the cartesian one */
 static void cell_update_crystallographic(UnitCell *cell)
 {
-	if ( !cell ) return;
+	if ( cell == NULL ) return;
 
 	cell->a = modulus(cell->ax, cell->ay, cell->az);
 	cell->b = modulus(cell->bx, cell->by, cell->bz);
@@ -89,7 +89,7 @@ UnitCell *cell_new()
 	UnitCell *cell;
 
 	cell = malloc(sizeof(UnitCell));
-	if ( !cell ) return NULL;
+	if ( cell == NULL ) return NULL;
 
 	cell->a = 1.0;
 	cell->b = 1.0;
@@ -107,7 +107,7 @@ UnitCell *cell_new()
 void cell_set_parameters(UnitCell *cell, double a, double b, double c,
                          double alpha, double beta, double gamma)
 {
-	if ( !cell ) return;
+	if ( cell == NULL ) return;
 
 	cell->a = a;
 	cell->b = b;
@@ -123,7 +123,7 @@ void cell_set_parameters(UnitCell *cell, double a, double b, double c,
 void cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
                          double *alpha, double *beta, double *gamma)
 {
-	if ( !cell ) return;
+	if ( cell == NULL ) return;
 
 	*a = cell->a;
 	*b = cell->b;
@@ -141,7 +141,7 @@ void cell_set_cartesian(UnitCell *cell,
 			double bx, double by, double bz,
 			double cx, double cy, double cz)
 {
-	if ( !cell ) return;
+	if ( cell == NULL ) return;
 
 	cell->ax = ax;  cell->ay = ay;  cell->az = az;
 	cell->bx = bx;  cell->by = by;  cell->bz = bz;
@@ -153,7 +153,7 @@ void cell_set_cartesian(UnitCell *cell,
 
 void cell_set_cartesian_a(UnitCell *cell, double ax, double ay, double az)
 {
-	if ( !cell ) return;
+	if ( cell == NULL ) return;
 
 	cell->ax = ax;  cell->ay = ay;  cell->az = az;
 
@@ -163,7 +163,7 @@ void cell_set_cartesian_a(UnitCell *cell, double ax, double ay, double az)
 
 void cell_set_cartesian_b(UnitCell *cell, double bx, double by, double bz)
 {
-	if ( !cell ) return;
+	if ( cell == NULL ) return;
 
 	cell->bx = bx;  cell->by = by;  cell->bz = bz;
 
@@ -173,7 +173,7 @@ void cell_set_cartesian_b(UnitCell *cell, double bx, double by, double bz)
 
 void cell_set_cartesian_c(UnitCell *cell, double cx, double cy, double cz)
 {
-	if ( !cell ) return;
+	if ( cell == NULL ) return;
 
 	cell->cx = cx;  cell->cy = cy;  cell->cz = cz;
 
@@ -187,7 +187,7 @@ UnitCell *cell_new_from_parameters(double a, double b, double c,
 	UnitCell *cell;
 
 	cell = cell_new();
-	if ( !cell ) return NULL;
+	if ( cell == NULL ) return NULL;
 
 	cell_set_parameters(cell, a, b, c, alpha, beta, gamma);
 
@@ -207,7 +207,7 @@ static UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs,
 	double angles[3];
 
 	cell = cell_new();
-	if ( !cell ) return NULL;
+	if ( cell == NULL ) return NULL;
 
 	lengths[0] = modulus(as.u, as.v, as.w);
 	lengths[1] = modulus(bs.u, bs.v, bs.w);
@@ -316,7 +316,7 @@ void cell_get_cartesian(UnitCell *cell,
                         double *bx, double *by, double *bz,
                         double *cx, double *cy, double *cz)
 {
-	if ( !cell ) return;
+	if ( cell == NULL ) return;
 
 	*ax = cell->ax;  *ay = cell->ay;  *az = cell->az;
 	*bx = cell->bx;  *by = cell->by;  *bz = cell->bz;
