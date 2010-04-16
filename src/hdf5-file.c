@@ -225,9 +225,10 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 	}
 
 	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
+		ERROR("Saturation table has the wrong dimensionality (%i).\n",
+		      H5Sget_simple_extent_ndims(sh));
 		H5Sclose(sh);
 		H5Dclose(dh);
-		ERROR("Saturation table has the wrong number of dimensions.\n");
 		return;
 	}
 
@@ -241,6 +242,12 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 	}
 
 	buf = malloc(sizeof(float)*size[0]*size[1]);
+	if ( buf == NULL ) {
+		H5Sclose(sh);
+		H5Dclose(dh);
+		ERROR("Couldn't reserve memory for saturation table.\n");
+		return;
+	}
 	r = H5Dread(dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
 	if ( r < 0 ) {
 		ERROR("Couldn't read saturation table.\n");
@@ -268,6 +275,7 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 		if ( (v1 != 32767) || (v2 != 32767) || (v3 != 32767) ||
 		     (v4 != 32767) || (v5 != 32767) ) {
 			STATUS("Cross not found for saturation %i,%i\n", x, y);
+			STATUS("%i %i %i %i %i -> %f\n", v1, v2, v3, v4, v5, val);
 		} else {
 			float v = val / 5;
 			image->data[x+image->width*y] = v;
@@ -279,7 +287,8 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 		}
 
 	}
-	STATUS("Corrected %i saturation values, %i failed.\n", n, size[0]-n);
+	STATUS("Corrected %i saturation values, %i failed.\n",
+	       n, (int)size[0]-n);
 
 	free(buf);
 	H5Sclose(sh);
