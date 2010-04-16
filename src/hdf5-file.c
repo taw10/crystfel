@@ -204,6 +204,89 @@ static double get_wavelength(struct hdfile *f)
 }
 
 
+static void debodge_saturation(struct hdfile *f, struct image *image)
+{
+	hid_t dh, sh;
+	hsize_t size[2];
+	hsize_t max_size[2];
+	int i;
+	float *buf;
+	herr_t r;
+	int n;
+
+	dh = H5Dopen(f->fh, "/processing/hitfinder/peakinfo_saturated",
+	             H5P_DEFAULT);
+
+	sh = H5Dget_space(dh);
+	if ( sh < 0 ) {
+		H5Dclose(dh);
+		ERROR("Couldn't get dataspace for saturation table.\n");
+		return;
+	}
+
+	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
+		H5Sclose(sh);
+		H5Dclose(dh);
+		ERROR("Saturation table has the wrong number of dimensions.\n");
+		return;
+	}
+
+	H5Sget_simple_extent_dims(sh, size, max_size);
+
+	if ( size[1] != 3 ) {
+		H5Sclose(sh);
+		H5Dclose(dh);
+		ERROR("Saturation table has the wrong dimensions.\n");
+		return;
+	}
+
+	buf = malloc(sizeof(float)*size[0]*size[1]);
+	r = H5Dread(dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
+	if ( r < 0 ) {
+		ERROR("Couldn't read saturation table.\n");
+		free(buf);
+		return;
+	}
+
+	n = 0;
+	for ( i=0; i<size[0]; i++ ) {
+
+		unsigned int x, y;
+		float val;
+		int v1, v2, v3, v4, v5;
+
+		x = buf[3*i+0];
+		y = buf[3*i+1];
+		val = buf[3*i+2];
+
+		/* Find the cross */
+		v1 = (int)image->data[x+image->width*y];
+		v2 = (int)image->data[x+1+image->width*y];
+		v3 = (int)image->data[x-1+image->width*y];
+		v4 = (int)image->data[x+image->width*(y+1)];
+		v5 = (int)image->data[x+image->width*(y-1)];
+		if ( (v1 != 32767) || (v2 != 32767) || (v3 != 32767) ||
+		     (v4 != 32767) || (v5 != 32767) ) {
+			STATUS("Cross not found for saturation %i,%i\n", x, y);
+		} else {
+			float v = val / 5;
+			image->data[x+image->width*y] = v;
+			image->data[x+1+image->width*y] = v;
+			image->data[x-1+image->width*y] = v;
+			image->data[x+image->width*(y+1)] = v;
+			image->data[x+image->width*(y-1)] = v;
+			n++;
+		}
+
+	}
+	STATUS("Corrected %i saturation values, %i failed.\n", n, size[0]-n);
+
+	free(buf);
+	H5Sclose(sh);
+	H5Dclose(dh);
+}
+
+
 int hdf5_read(struct hdfile *f, struct image *image)
 {
 	herr_t r;
@@ -228,6 +311,8 @@ int hdf5_read(struct hdfile *f, struct image *image)
 		ERROR("Couldn't read wavelength - using 2 keV.\n");
 		image->lambda = ph_en_to_lambda(eV_to_J(2000.0));
 	}
+
+	debodge_saturation(f, image);
 
 	return 0;
 }
