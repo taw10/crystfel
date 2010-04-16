@@ -273,18 +273,20 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name)
 
 		herr_t r;
 		char *tmp;
-		hid_t th;
+		hid_t sh;
 
-		size = H5Dget_storage_size(dh);
-
+		size = H5Tget_size(type);
 		tmp = malloc(size+1);
 
-		th = H5Tcopy(H5T_C_S1);
-		H5Tset_size(th, size+1);
+		sh = H5Screate(H5S_SCALAR);
 
-		r = H5Dread(dh, th, H5S_ALL, H5S_ALL, H5P_DEFAULT, tmp);
+		r = H5Dread(dh, type, sh, sh, H5P_DEFAULT, tmp);
 		if ( r < 0 ) goto fail;
 
+		/* Two possibilities:
+		 *   String is already zero-terminated
+		 *   String is not terminated.
+		 * Make sure things are done properly... */
 		tmp[size] = '\0';
 		chomp(tmp);
 
