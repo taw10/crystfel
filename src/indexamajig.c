@@ -189,6 +189,7 @@ static struct image *get_simage(struct image *template, int alternate)
 	image->lambda = ph_en_to_lambda(eV_to_J(1.8e3));
 	image->features = template->features;
 	image->filename = template->filename;
+	image->indexed_cell = template->indexed_cell;
 
 	return image;
 }
@@ -296,7 +297,7 @@ static void *process_image(void *pargsv)
 	search_peaks(&image);
 	if ( image_feature_count(image.features) < 5 ) goto done;
 
-	if ( config_dumpfound ) dump_peaks(&image);
+	if ( config_dumpfound ) dump_peaks(&image, pargs->output_mutex);
 
 	/* Not indexing nor writing xfel.drx?
 	 * Then there's nothing left to do. */
@@ -319,9 +320,8 @@ static void *process_image(void *pargsv)
 	if ( config_nearbragg ) {
 		/* Use original data (temporarily) */
 		simage->data = data_for_measurement;
-		pthread_mutex_lock(pargs->output_mutex);
-		output_intensities(simage, image.indexed_cell);
-		pthread_mutex_unlock(pargs->output_mutex);
+		output_intensities(simage, image.indexed_cell,
+		                   pargs->output_mutex);
 		simage->data = NULL;
 	}
 

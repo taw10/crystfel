@@ -20,6 +20,7 @@
 #include <string.h>
 #include <assert.h>
 #include <gsl/gsl_statistics_int.h>
+#include <pthread.h>
 
 #include "image.h"
 #include "utils.h"
@@ -329,11 +330,15 @@ void search_peaks(struct image *image)
 }
 
 
-void dump_peaks(struct image *image)
+void dump_peaks(struct image *image, pthread_mutex_t *mutex)
 {
 	int i;
 
-	printf("x/px\ty/px\t(1/d)/nm^-1\n");
+	/* Get exclusive access to the output stream if necessary */
+	if ( mutex != NULL ) pthread_mutex_lock(mutex);
+
+	printf("Peaks from peak search in %s\n", image->filename);
+	printf("  x/px     y/px   (1/d)/nm^-1    Intensity\n");
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
@@ -346,18 +351,25 @@ void dump_peaks(struct image *image)
 		map_position(image, f->x, f->y, &rx, &ry, &rz);
 		q = modulus(rx, ry, rz);
 
-		printf("%7.3f\t%7.3f\t%7.3f\t%7.3f\n", f->x, f->y, q/1.0e9, 1.0);
+		printf("%8.3f %8.3f %8.3f    %12.3f\n",
+		       f->x, f->y, q/1.0e9, f->intensity);
 
 	}
+
+	printf("\n");
+
+	if ( mutex != NULL ) pthread_mutex_unlock(mutex);
 }
 
 
-void output_intensities(struct image *image, UnitCell *cell)
+void output_intensities(struct image *image, UnitCell *cell,
+                        pthread_mutex_t *mutex)
 {
 	int x, y;
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
+	double a, b, c, al, be, ga;
 	struct reflhit hits[MAX_HITS];
 	int n_hits = 0;
 	int i;
@@ -422,11 +434,19 @@ void output_intensities(struct image *image, UnitCell *cell)
 
 	STATUS("Found %i reflections\n", n_hits);
 
+	/* Get exclusive access to the output stream if necessary */
+	if ( mutex != NULL ) pthread_mutex_lock(mutex);
+
 	/* Explicit printf() used here (not normally allowed) because
 	 * we really want to output to stdout */
-	printf("New pattern: %s %7.5f %7.5f %7.5f %7.5f\n", image->filename,
+	printf("Reflections from indexing in %s\n", image->filename);
+	printf("Orientation (wxyz): %7.5f %7.5f %7.5f %7.5f\n",
 	       image->orientation.w, image->orientation.x,
 	       image->orientation.y, image->orientation.z);
+	cell_get_parameters(image->indexed_cell, &a, &b, &c, &al, &be, &ga);
+	printf("Cell parameters %7.5f %7.5f %7.5f nm, %7.5f %7.5f %7.5f deg\n",
+	       a*1.0e9, b*1.0e9, c*1.0e9,
+	       rad2deg(al), rad2deg(be), rad2deg(ga));
 	for ( i=0; i<n_hits; i++ ) {
 
 		float x, y, intensity;
@@ -456,4 +476,6 @@ void output_intensities(struct image *image, UnitCell *cell)
 
 	/* Blank line at end */
 	printf("\n");
+
+	if ( mutex != NULL ) pthread_mutex_unlock(mutex);
 }

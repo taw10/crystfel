@@ -17,8 +17,11 @@
 #include <config.h>
 #endif
 
+#include <pthread.h>
+
 extern void search_peaks(struct image *image);
-extern void dump_peaks(struct image *image);
-extern void output_intensities(struct image *image, UnitCell *cell);
+extern void dump_peaks(struct image *image, pthread_mutex_t *mutex);
+extern void output_intensities(struct image *image, UnitCell *cell,
+                               pthread_mutex_t *mutex);
 
 #endif	/* PEAKS_H */

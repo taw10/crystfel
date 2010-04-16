@@ -308,7 +308,7 @@ int main(int argc, char *argv[])
 		record_image(&image, !config_nonoise);
 
 		if ( config_nearbragg ) {
-			output_intensities(&image, cell);
+			output_intensities(&image, cell, NULL);
 		}
 
 		if ( config_powder ) {
