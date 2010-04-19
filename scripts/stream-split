@@ -1,0 +1,30 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+open(FH, $ARGV[0]);
+open(OFH_IND, "> ".$ARGV[1]);
+open(OFH_PEAKS, "> ".$ARGV[2]);
+
+my $line;
+my $mode = 0;
+
+while ( $line = <FH> ) {
+
+	if ( $line =~ /^Reflections\ from\ indexing/ ) {
+		$mode = 1;
+	}
+
+	if ( $line =~ /^Peaks\ from\ peak\ search/ ) {
+		$mode = 2;
+	}
+
+	if ( $mode == 1 ) {
+		printf(OFH_IND $line);
+	} elsif ( $mode == 2 ) {
+		printf(OFH_PEAKS $line);
+	} else {
+		printf($line);
+	}
+
+}
