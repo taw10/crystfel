@@ -34,7 +34,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 bin_PROGRAMS = pattern_sim$(EXEEXT) process_hkl$(EXEEXT) \
 	get_hkl$(EXEEXT) indexamajig$(EXEEXT) compare_hkl$(EXEEXT) \
-	powder_plot$(EXEEXT) $(am__EXEEXT_1)
+	powder_plot$(EXEEXT) render_hkl$(EXEEXT) $(am__EXEEXT_1)
 @HAVE_GTK_TRUE@am__append_1 = hdfsee
 @HAVE_OPENCL_TRUE@am__append_2 = diffraction-gpu.c cl-utils.c
 @HAVE_OPENCL_TRUE@am__append_3 = diffraction-gpu.c cl-utils.c
@@ -100,6 +100,10 @@ am_process_hkl_OBJECTS = process_hkl.$(OBJEXT) sfac.$(OBJEXT) \
 	reflections.$(OBJEXT)
 process_hkl_OBJECTS = $(am_process_hkl_OBJECTS)
 process_hkl_DEPENDENCIES =
+am_render_hkl_OBJECTS = render_hkl.$(OBJEXT) cell.$(OBJEXT) \
+	reflections.$(OBJEXT) utils.$(OBJEXT)
+render_hkl_OBJECTS = $(am_render_hkl_OBJECTS)
+render_hkl_DEPENDENCIES =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -122,11 +126,12 @@ am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN   " $@;
 SOURCES = $(compare_hkl_SOURCES) $(get_hkl_SOURCES) $(hdfsee_SOURCES) \
 	$(indexamajig_SOURCES) $(pattern_sim_SOURCES) \
-	$(powder_plot_SOURCES) $(process_hkl_SOURCES)
+	$(powder_plot_SOURCES) $(process_hkl_SOURCES) \
+	$(render_hkl_SOURCES)
 DIST_SOURCES = $(compare_hkl_SOURCES) $(get_hkl_SOURCES) \
 	$(am__hdfsee_SOURCES_DIST) $(am__indexamajig_SOURCES_DIST) \
 	$(am__pattern_sim_SOURCES_DIST) $(powder_plot_SOURCES) \
-	$(process_hkl_SOURCES)
+	$(process_hkl_SOURCES) $(render_hkl_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -248,6 +253,8 @@ powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \
                       detector.c
 
 powder_plot_LDADD = @LIBS@
+render_hkl_SOURCES = render_hkl.c cell.c reflections.c utils.c
+render_hkl_LDADD = @LIBS@
 INCLUDES = "-I$(top_srcdir)/data"
 all: all-am
 
@@ -341,6 +348,9 @@ powder_plot$(EXEEXT): $(powder_plot_OBJECTS) $(powder_plot_DEPENDENCIES)
 process_hkl$(EXEEXT): $(process_hkl_OBJECTS) $(process_hkl_DEPENDENCIES) 
 	@rm -f process_hkl$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(process_hkl_OBJECTS) $(process_hkl_LDADD) $(LIBS)
+render_hkl$(EXEEXT): $(render_hkl_OBJECTS) $(render_hkl_DEPENDENCIES) 
+	@rm -f render_hkl$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(render_hkl_OBJECTS) $(render_hkl_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -369,6 +379,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/process_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reflections.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/render.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/render_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sfac.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/statistics.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utils.Po@am__quote@

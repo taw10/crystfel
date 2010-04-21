@@ -13,4 +13,5 @@ src/hdfsee
 src/indexamajig
 src/compare_hkl
 src/powder_plot
+src/render_hkl
 *~
