@@ -108,7 +108,8 @@ int main(int argc, char *argv[])
 
 	/* Second quarter */
 	fprintf(fh, "#if ( (clock >= 125) & (clock <= 250) )\n");
-	fprintf(fh, "camera { location <0.0, -(2.0+cos((clock-125)*(180/125))), 0.0>"
+	fprintf(fh, "camera { location <0.0,"
+	            " -(2.0+cos(radians((clock-125)*(180/125)))), 0.0>"
 	            " sky z direction 1.1*y\n"
 	            " right -x*(image_width/image_height)\n"
 	            " look_at <0.0, 0.0, 0.0> }\n\n");
@@ -124,7 +125,8 @@ int main(int argc, char *argv[])
 
 	/* Fourth quarter */
 	fprintf(fh, "#if ( (clock >= 375) & (clock <= 500) )\n");
-	fprintf(fh, "camera { location <0.0, -(2.0+cos((clock-375)*(180/125))+180), 0.0>"
+	fprintf(fh, "camera { location <0.0,"
+	            " -(2.0+cos(radians((clock-375)*(180/125)+180))), 0.0>"
 	            " sky z direction 1.1*y\n"
 	            " right -x*(image_width/image_height)\n"
 	            " look_at <0.0, 0.0, 0.0> }\n\n");
