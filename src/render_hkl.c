@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 
 	/* Third quarter */
 	fprintf(fh, "#if ( (clock >= 250) & (clock <= 374) )\n");
-	fprintf(fh, "camera { location <0.0, -3.0, 0.0>"
+	fprintf(fh, "camera { location <0.0, -1.0, 0.0>"
 	            " sky z direction 1.1*y\n"
 	            " right -x*(image_width/image_height)\n"
 	            " look_at <0.0, 0.0, 0.0> }\n\n");
