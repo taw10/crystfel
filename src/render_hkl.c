@@ -321,14 +321,14 @@ int main(int argc, char *argv[])
 
 				char minf[256];
 				char maxf[256];
-				int nf, xf, nsec;
+				float nf, xf, nsec;
 
-				nsec = 500 / nproc;
-				nf = nsec * i;
-				xf = (nsec * i + nsec)-1;
+				nsec = 500.0 / (float)nproc;
+				nf = nsec * (float)i;
+				xf = (nsec * (float)i + nsec) - 1.0;
 
-				snprintf(minf, 255, "+SF%i", nf);
-				snprintf(maxf, 255, "+EF%i", xf);
+				snprintf(minf, 255, "+SF%i", (int)nf);
+				snprintf(maxf, 255, "+EF%i", (int)xf);
 
 				/* Forked successfully, child process */
 				execlp("povray", "", "+W1024", "+H768",
