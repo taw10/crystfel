@@ -27,13 +27,17 @@
 #include "reflections.h"
 
 
+#define MAX_PROC (256)
+
+
 static void show_help(const char *s)
 {
 	printf("Syntax: %s [options] <file.hkl>\n\n", s);
 	printf(
-"Render intensity lists using POVray.\n"
+"Render intensity lists using POV-ray.\n"
 "\n"
-"  -h, --help                 Display this help message.\n"
+"  -h, --help      Display this help message.\n"
+"  -j <n>          Run <n> instances of POV-ray in parallel.\n"
 "\n");
 }
 
@@ -50,8 +54,10 @@ int main(int argc, char *argv[])
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
-	pid_t pid;
+	pid_t pids[MAX_PROC];
 	float max;
+	int nproc = 1;
+	int i;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -60,12 +66,17 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "h", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hj:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
 			show_help(argv[0]);
 			return 0;
+		}
+
+		case 'j' : {
+			nproc = atoi(optarg);
+			break;
 		}
 
 		case 0 : {
@@ -77,6 +88,11 @@ int main(int argc, char *argv[])
 		}
 		}
 
+	}
+
+	if ( (nproc > MAX_PROC) || (nproc < 1) ) {
+		ERROR("Number of processes is invalid.\n");
+		return 1;
 	}
 
 	infile = argv[optind];
@@ -276,21 +292,38 @@ int main(int argc, char *argv[])
 	fprintf(fh, "\n");
 	fclose(fh);
 
-	pid = fork();
-	if ( !( (pid != 0) && (pid != -1) ) ) {
-		if ( pid == -1 ) {
-			fprintf(stderr, "fork() failed.\n");
-		} else {
-			/* Forked successfully, child process */
-			execlp("povray", "", "+W320", "+H240",
-			       "+Irender.pov", "+Orender.png",
-			       "+KFI0", "+KFF499", "+KI0", "+KF499",
-			//       "+SF220", "+EF280",
-			       NULL);
-		}
-	} else {
+	for ( i=0; i<nproc; i++ ) {
+
+		pids[i] = fork();
+		if ( !( (pids[i] != 0) && (pids[i] != -1) ) ) {
+			if ( pids[i] == -1 ) {
+				ERROR("fork() failed.\n");
+			} else {
+
+				char minf[256];
+				char maxf[256];
+				int nf, xf, nsec;
+
+				nsec = 500 / nproc;
+				nf = nsec * i;
+				xf = (nsec * i + nsec)-1;
+
+				snprintf(minf, 255, "+SF%i", nf);
+				snprintf(maxf, 255, "+EF%i", xf);
+
+				/* Forked successfully, child process */
+				execlp("povray", "", "+W1024", "+H768",
+				       "+Irender.pov", "+Orender.png",
+				       "+KFI0", "+KFF499", "+KI0", "+KF499",
+				       minf, maxf, NULL);
+
+			}
+		} /* else start the next one */
+	}
+
+	for ( i=0; i<nproc; i++ ) {
 		int r;
-		waitpid(pid, &r, 0);
+		waitpid(pids[i], &r, 0);
 	}
 
 	return 0;
