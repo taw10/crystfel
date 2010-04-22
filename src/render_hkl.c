@@ -158,8 +158,10 @@ int main(int argc, char *argv[])
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
 
-	fprintf(fh, "#declare WC = (720/19);\n");
-
+	fprintf(fh, "#declare WCA = (720/19);\n");
+	fprintf(fh, "#declare WCL = (360/8.5);\n");
+	fprintf(fh, "#declare TA = (4.875);\n");
+	fprintf(fh, "#declare TB = (1.125);\n");
 
 	fprintf(fh, "#declare TRANS = \n");
 	fprintf(fh, "transform {\n");
@@ -168,38 +170,55 @@ int main(int argc, char *argv[])
 
 	/* Acceleration */
 	fprintf(fh, "#if ( clock <= 24 )\n"
-	"rotate <0, 0, 0.5*WC*(clock/25)*(clock/25)>\n"
+	"rotate <0, 0, 0.5*WCA*(clock/25)*(clock/25)>\n"
 	"#end\n"
 
 	/* Cruise */
 	"#if ( (clock >= 25) & (clock <= 224) )\n"
-	"rotate <0, 0, (WC/2)+WC*((clock-25)/25)>\n"
+	"rotate <0, 0, (WA/2)+WCA*((clock-25)/25)>\n"
 	"#end\n"
 
 	/* Overlap */
 
 	/* Deceleration */
 	"#if ( (clock >= 225) & (clock <= 274) )\n"
-	"rotate <0, 0, 360-WC + WC*((clock-225)/25) "
-	" - 0.5*(WC/2)*((clock-225)/25)*((clock-225)/25) >\n"
+	"rotate <0, 0, 360-WCA + WCA*((clock-225)/25) "
+	" - 0.5*(WCA/2)*((clock-225)/25)*((clock-225)/25) >\n"
 	"#end\n"
 
 	/* Acceleration */
 	"#if ( (clock >= 225) & (clock <= 274) )\n"
-	"rotate <0.5*(WC/2)*((clock-225)/25)*((clock-225)/25), 0, 0>\n"
+	"rotate <0.5*(WCL/2)*((clock-225)/25)*((clock-225)/25), 0, 0>\n"
 	"#end\n"
 
 	/* Second half */
 
 	/* Cruise */
-	"#if ( (clock >= 275) & (clock <= 474) )\n"
-	"rotate <WC+WC*((clock-275)/25), 0, 0>\n"
+	"#if ( (clock >= 275) & (clock <= 396) )\n"
+	"rotate <WCL + WCL*((clock-275)/25), 0, 0>\n"
 	"#end\n"
 
-	/* Deceleration */
+	/* Deceleration to pause */
+	"#if ( (clock >= 397) & (clock <= 421) )\n"
+	"rotate <(1+TA)*WCL+ WCL*((clock-397)/25) "
+	" - 0.5*WCL*((clock-397)/25)*((clock-397)/25), 0, 0 >\n"
+	"#end\n"
+
+	/* Acceleration after pause */
+	"#if ( (clock >= 422) & (clock <= 446) )\n"
+	"rotate <(1.5+TA)*WCL"
+	" + 0.5*WCL*((clock-422)/25)*((clock-422)/25), 0, 0>\n"
+	"#end\n"
+
+	/* Final Cruise */
+	"#if ( (clock >= 447) & (clock <= 474) )\n"
+	"rotate <(2+TA)*WCL + WCL*((clock-447)/25), 0, 0>\n"
+	"#end\n"
+
+	/* Final Deceleration */
 	"#if ( (clock >= 475) & (clock <= 499) )\n"
-	"rotate <360-(WC/2)+ WC*((clock-475)/25) "
-	" - 0.5*WC*((clock-475)/25)*((clock-475)/25), 0, 0 >\n"
+	"rotate <(2+TA+TB)*WCL + WCL*((clock-475)/25) "
+	" - 0.5*WCL*((clock-475)/25)*((clock-475)/25), 0, 0 >\n"
 	"#end\n");
 
 	fprintf(fh, "}\n");
