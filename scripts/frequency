@@ -100,6 +100,8 @@ while ( $line = <FH> ) {
 open(GP, "| gnuplot");
 printf(GP "set term postscript enhanced font \"Helvetica,20\"\n");
 printf(GP "set output \"histo.ps\"\n");
+printf(GP "set xtics nomirror out rotate by -60\n");
+#printf(GP "set logscale x\n");
 foreach $ref ( sort {-($counts{$a} <=> $counts{$b})} keys %counts )
 {
 	my $max = $maxs{$ref};
@@ -153,7 +155,7 @@ foreach $ref ( sort {-($counts{$a} <=> $counts{$b})} keys %counts )
 	my $nref = $ref;
 	$nref =~ s/\,/\ /g;
 	my $title = "t \"".$nref." reflection\"";
-	printf(GP "plot \"".$ref.".dat\" u 1:2 w histeps ".$title."\n");
+	printf(GP "plot [] [0:20]\"".$ref.".dat\" u 1:2 w histeps ".$title."\n");
 
 }
 
