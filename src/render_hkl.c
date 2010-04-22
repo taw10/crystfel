@@ -315,7 +315,7 @@ int main(int argc, char *argv[])
 				execlp("povray", "", "+W1024", "+H768",
 				       "+Irender.pov", "+Orender.png",
 				       "+KFI0", "+KFF499", "+KI0", "+KF499",
-				       minf, maxf, NULL);
+				       minf, maxf, "-D", NULL);
 
 			}
 		} /* else start the next one */
