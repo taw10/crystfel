@@ -655,8 +655,10 @@ static void numbers_update(DisplayWindow *dw)
 
 	if ( dw->image->features == NULL ) return;
 
-	f = image_feature_closest(dw->image->features, dw->numbers_window->cx,
-	                          dw->numbers_window->cy, &dmin, &imin);
+	f = image_feature_closest(dw->image->features,
+	                          dw->binning * dw->numbers_window->cx,
+	                          dw->binning * dw->numbers_window->cy,
+	                          &dmin, &imin);
 	if ( dmin < 20.0 ) {
 		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat),
                                    f->name);
