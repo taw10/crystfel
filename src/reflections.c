@@ -43,9 +43,11 @@ void write_reflections(const char *filename, unsigned int *counts,
 	if ( zone_axis ) {
 		double a, b, c, alpha, beta, gamma;
 		cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
-		fprintf(fh, "a %5.3f nm\n", a*1e9);
-		fprintf(fh, "b %5.3f nm\n", b*1e9);
-		fprintf(fh, "angle %5.3f deg\n", rad2deg(gamma));
+		fprintf(fh, "a %5.3f nm\n",
+		            (0.5/resolution(cell, 1, 0, 0))*1e9);
+		fprintf(fh, "b %5.3f nm\n",
+		            (0.5/resolution(cell, 0, 1, 0))*1e9);
+		fprintf(fh, "angle %5.3f deg\n", rad2deg(alpha));
 		fprintf(fh, "scale 10\n");
 	} else {
 		fprintf(fh, " h   k   l    I    sigma(I)   1/d / nm^-1\n");
