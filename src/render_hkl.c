@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 	fprintf(fh, "#end\n");
 
 	/* Second quarter */
-	fprintf(fh, "#if ( (clock >= 125) & (clock <= 250) )\n");
+	fprintf(fh, "#if ( (clock >= 125) & (clock <= 249) )\n");
 	fprintf(fh, "camera { location <0.0,"
 	            " -(2.0+cos(radians((clock-125)*(180/125)))), 0.0>"
 	            " sky z direction 1.1*y\n"
@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
 
 	/* Cruise */
 	"#if ( (clock >= 25) & (clock <= 224) )\n"
-	"rotate <0, 0, (WA/2)+WCA*((clock-25)/25)>\n"
+	"rotate <0, 0, (WCA/2)+WCA*((clock-25)/25)>\n"
 	"#end\n"
 
 	/* Overlap */
