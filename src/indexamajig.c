@@ -421,7 +421,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:wp:j:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hi:wp:j:x:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
