@@ -643,7 +643,11 @@ static void numbers_update(DisplayWindow *dw)
 		}
 
 		if ( (x>0) && (y>0) && valid ) {
-			snprintf(s, 31, "%.0f", val);
+			if ( log(val)/log(10) < 5 ) {
+				snprintf(s, 31, "%.0f", val);
+			} else {
+				snprintf(s, 31, "HUGE");
+			}
 		} else {
 			strcpy(s, "--");
 		}
