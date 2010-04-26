@@ -245,7 +245,7 @@ GdkPixbuf *render_get_image(DisplayWindow *dw)
 	for ( y=0; y<h; y++ ) {
 	for ( x=0; x<w; x++ ) {
 
-		int val;
+		float val;
 		guchar r, g, b;
 
 		val = hdr[x+w*y];
