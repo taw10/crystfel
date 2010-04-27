@@ -37,6 +37,7 @@ static void displaywindow_error(DisplayWindow *dw, const char *message)
 					GTK_DIALOG_DESTROY_WITH_PARENT,
 					GTK_MESSAGE_WARNING,
 					GTK_BUTTONS_CLOSE, message);
+	gtk_window_set_title(GTK_WINDOW(window), "Error");
 
 	g_signal_connect_swapped(window, "response",
 				 G_CALLBACK(gtk_widget_destroy), window);
