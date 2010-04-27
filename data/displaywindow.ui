@@ -2,12 +2,14 @@
 	<menubar name="displaywindow">
 
 		<menu name="file" action="FileAction">
-			<menuitem name="images" action="ImagesAction" />
+			<menuitem name="save" action="SaveAction" />
 			<separator />
 			<menuitem name="close" action="CloseAction" />
 		</menu>
 
 		<menu name="view" action="ViewAction">
+			<menuitem name="images" action="ImagesAction" />
+			<separator />
 			<menuitem name="binning" action="BinningAction" />
 			<menuitem name="boostint" action="BoostIntAction" />
 			<separator />

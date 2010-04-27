@@ -91,6 +91,19 @@ AC_CHECK_FUNCS(forkpty,
 )
 
 
+AC_MSG_CHECKING([libpng])
+if $PKG_CONFIG --atleast-version 1.2.0 libpng ; then
+        LIBPNG_VERSION=`$PKG_CONFIG --modversion libpng`
+        AC_MSG_RESULT($LIBPNG_VERSION)
+        LIBPNG_CFLAGS=`$PKG_CONFIG --cflags libpng`
+        LIBPNG_LIBS=`$PKG_CONFIG --libs libpng`
+else
+        AC_MSG_RESULT([Lower than 1.2.0 or not found])
+        AC_MSG_ERROR([
+*** libPNG is required to build CrystFEL])
+fi
+
+
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread"
 LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
 

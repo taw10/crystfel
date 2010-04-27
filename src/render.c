@@ -17,6 +17,7 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <math.h>
 #include <stdint.h>
+#include <png.h>
 
 #include "hdf5-file.h"
 #include "render.h"
@@ -324,4 +325,113 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int monochrome)
 
 	return gdk_pixbuf_new_from_data(data, GDK_COLORSPACE_RGB, FALSE, 8,
 					w, h, w*3, render_free_data, NULL);
+}
+
+
+int render_png(DisplayWindow *dw, const char *filename)
+{
+	FILE *fh;
+	png_structp png_ptr;
+	png_infop info_ptr;
+	png_bytep *row_pointers;
+	int x, y;
+	float *hdr;
+	float max;
+	int w, h;
+
+	w = dw->width;
+	h = dw->height;
+
+	hdr = render_get_image_binned(dw, dw->binning, &max);
+	if ( hdr == NULL ) return 1;
+
+	fh = fopen(filename, "wb");
+	if ( !fh ) {
+		ERROR("Couldn't open output file.\n");
+		return 1;
+	}
+	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
+	                                  NULL, NULL, NULL);
+	if ( !png_ptr ) {
+		ERROR("Couldn't create PNG write structure.\n");
+		fclose(fh);
+		return 1;
+	}
+	info_ptr = png_create_info_struct(png_ptr);
+	if ( !info_ptr ) {
+		png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+		ERROR("Couldn't create PNG info structure.\n");
+		fclose(fh);
+		return 1;
+	}
+	if ( setjmp(png_jmpbuf(png_ptr)) ) {
+		png_destroy_write_struct(&png_ptr, &info_ptr);
+		fclose(fh);
+		ERROR( "PNG write failed.\n");
+		return 1;
+	}
+	png_init_io(png_ptr, fh);
+
+	png_set_IHDR(png_ptr, info_ptr, w, h, 8,
+	             PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
+	             PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+
+	row_pointers = malloc(h*sizeof(png_bytep *));
+
+	/* Write the image data */
+	max /= dw->boostint;
+	if ( max <= 6 ) { max = 10; }
+
+	for ( y=0; y<h; y++ ) {
+
+		row_pointers[y] = malloc(w*3);
+
+		for ( x=0; x<w; x++ ) {
+
+			int r, g, b;
+			float val;
+
+			val = hdr[x+w*y];
+
+			RENDER_RGB
+
+			row_pointers[y][3*x] = (png_byte)r;
+			row_pointers[y][3*x+1] = (png_byte)g;
+			row_pointers[y][3*x+2] = (png_byte)b;
+
+		}
+	}
+
+	for ( y=0; y<h/2+1; y++ ) {
+		png_bytep scratch;
+		scratch = row_pointers[y];
+		row_pointers[y] = row_pointers[h-y-1];
+		row_pointers[h-y-1] = scratch;
+	}
+
+	png_set_rows(png_ptr, info_ptr, row_pointers);
+	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+
+	png_destroy_write_struct(&png_ptr, &info_ptr);
+	for ( y=0; y<h; y++ ) {
+		free(row_pointers[y]);
+	}
+	free(row_pointers);
+	fclose(fh);
+
+	free(hdr);
+
+	return 0;
+}
+
+
+int render_tiff_fp(DisplayWindow *dw, const char *filename)
+{
+	return 1;
+}
+
+
+int render_tiff_int16(DisplayWindow *dw, const char *filename)
+{
+	return 1;
 }

@@ -5700,6 +5700,25 @@ done
 
 
 
+{ $as_echo "$as_me:$LINENO: checking libpng" >&5
+$as_echo_n "checking libpng... " >&6; }
+if $PKG_CONFIG --atleast-version 1.2.0 libpng ; then
+        LIBPNG_VERSION=`$PKG_CONFIG --modversion libpng`
+        { $as_echo "$as_me:$LINENO: result: $LIBPNG_VERSION" >&5
+$as_echo "$LIBPNG_VERSION" >&6; }
+        LIBPNG_CFLAGS=`$PKG_CONFIG --cflags libpng`
+        LIBPNG_LIBS=`$PKG_CONFIG --libs libpng`
+else
+        { $as_echo "$as_me:$LINENO: result: Lower than 1.2.0 or not found" >&5
+$as_echo "Lower than 1.2.0 or not found" >&6; }
+        { { $as_echo "$as_me:$LINENO: error:
+*** libPNG is required to build CrystFEL" >&5
+$as_echo "$as_me: error:
+*** libPNG is required to build CrystFEL" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread"
 LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
 

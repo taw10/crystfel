@@ -22,6 +22,7 @@
 #include <stddef.h>
 
 #include "displaywindow.h"
+#include "image.h"
 
 enum {
 	SCALE_COLOUR,
@@ -31,6 +32,10 @@ enum {
 
 extern GdkPixbuf *render_get_image(DisplayWindow *dw);
 extern GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale);
+
+extern int render_png(DisplayWindow *dw, const char *filename);
+extern int render_tiff_fp(DisplayWindow *dw, const char *filename);
+extern int render_tiff_int16(DisplayWindow *dw, const char *filename);
 
 
 #endif	/* RENDER_H */

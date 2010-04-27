@@ -517,6 +517,92 @@ static gint displaywindow_peak_overlay(GtkWidget *widget, DisplayWindow *dw)
 }
 
 
+struct savedialog {
+	DisplayWindow *dw;
+	GtkWidget *cb;
+};
+
+
+static gint displaywindow_save_response(GtkWidget *d, gint response,
+                                        struct savedialog *cd)
+{
+	DisplayWindow *dw = cd->dw;
+	int r;
+
+	if ( response == GTK_RESPONSE_ACCEPT ) {
+
+		char *file;
+		int type;
+
+		file = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
+
+		type = gtk_combo_box_get_active(GTK_COMBO_BOX(cd->cb));
+
+		if ( type == 0 ) {
+			r = render_png(dw, file);
+		} else if ( type == 1 ) {
+			r = render_tiff_fp(dw, file);
+		} else if ( type == 2 ) {
+			r = render_tiff_int16(dw, file);
+		} else {
+			r = -1;
+		}
+
+		if ( r != 0 ) {
+			displaywindow_error(dw, "Unable to save the image.");
+		}
+
+		g_free(file);
+
+	}
+
+	gtk_widget_destroy(d);
+	free(cd);
+
+	return 0;
+}
+
+
+static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
+{
+	GtkWidget *d, *hbox, *l, *cb;
+	struct savedialog *cd;
+
+	d = gtk_file_chooser_dialog_new("Save Image",
+	                                GTK_WINDOW(dw->window),
+	                                GTK_FILE_CHOOSER_ACTION_SAVE,
+	                                GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+	                                GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+	                                NULL);
+
+	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(d),
+	                                               TRUE);
+
+	hbox = gtk_hbox_new(FALSE, 0);
+	gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(d), hbox);
+	cb = gtk_combo_box_new_text();
+	gtk_box_pack_end(GTK_BOX(hbox), GTK_WIDGET(cb), TRUE, TRUE, 5);
+	l = gtk_label_new("Save as type:");
+	gtk_box_pack_end(GTK_BOX(hbox), GTK_WIDGET(l), FALSE, FALSE, 5);
+
+	gtk_combo_box_append_text(GTK_COMBO_BOX(cb), "PNG - 8 bit RGB");
+	gtk_combo_box_append_text(GTK_COMBO_BOX(cb), "TIFF - Floating point");
+	gtk_combo_box_append_text(GTK_COMBO_BOX(cb), "TIFF - 16 bit integer");
+	gtk_combo_box_set_active(GTK_COMBO_BOX(cb), 0);
+
+	cd = malloc(sizeof(*cd));
+	cd->dw = dw;
+	cd->cb = cb;
+
+	g_signal_connect(G_OBJECT(d), "response",
+	                 G_CALLBACK(displaywindow_save_response), cd);
+
+	gtk_widget_show_all(d);
+
+	return 0;
+}
+
+
 static gint displaywindow_set_colscale(GtkWidget *widget, DisplayWindow *dw)
 {
 	dw->show_col_scale = 1 - dw->show_col_scale;
@@ -701,11 +787,13 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox)
 	GtkActionEntry entries[] = {
 
 		{ "FileAction", NULL, "_File", NULL, NULL, NULL },
-		{ "ImagesAction", NULL, "Images", NULL, NULL, NULL },
+		{ "SaveAction", GTK_STOCK_SAVE, "Save Image...", NULL, NULL,
+			G_CALLBACK(displaywindow_save) },
 		{ "CloseAction", GTK_STOCK_CLOSE, "_Close", NULL, NULL,
 			G_CALLBACK(displaywindow_close) },
 
 		{ "ViewAction", NULL, "_View", NULL, NULL, NULL },
+		{ "ImagesAction", NULL, "Images", NULL, NULL, NULL },
 		{ "BinningAction", NULL, "Set Binning...", "F3", NULL,
 			G_CALLBACK(displaywindow_set_binning) },
 		{ "BoostIntAction", NULL, "Boost Intensity...", "F5", NULL,
@@ -897,13 +985,13 @@ static void displaywindow_update_menus(DisplayWindow *dw)
 		/* Too bad.  You'd better hope that /data/data exists... */
 		ERROR("Couldn't get list of images in HDF file\n");
 		w = gtk_ui_manager_get_widget(dw->ui,
-					      "/ui/displaywindow/file/images");
+					      "/ui/displaywindow/view/images");
 		gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
 
 		/* Add a dummy menu so that the user knows what's going on */
 		ms = gtk_menu_new();
 		w = gtk_ui_manager_get_widget(dw->ui,
-		                              "/ui/displaywindow/file/images");
+		                              "/ui/displaywindow/view/images");
 		gtk_menu_item_set_submenu(GTK_MENU_ITEM(w), ms);
 
 		return;
@@ -911,7 +999,7 @@ static void displaywindow_update_menus(DisplayWindow *dw)
 	}
 
 	/* Make new menu be the submenu for File->Images */
-	w = gtk_ui_manager_get_widget(dw->ui, "/ui/displaywindow/file/images");
+	w = gtk_ui_manager_get_widget(dw->ui, "/ui/displaywindow/view/images");
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(w), ms);
 
 	gtk_widget_show_all(ms);
