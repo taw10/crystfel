@@ -370,6 +370,9 @@ void output_intensities(struct image *image, UnitCell *cell,
 	double bx, by, bz;
 	double cx, cy, cz;
 	double a, b, c, al, be, ga;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
 	struct reflhit hits[MAX_HITS];
 	int n_hits = 0;
 	int i;
@@ -447,6 +450,16 @@ void output_intensities(struct image *image, UnitCell *cell,
 	printf("Cell parameters %7.5f %7.5f %7.5f nm, %7.5f %7.5f %7.5f deg\n",
 	       a*1.0e9, b*1.0e9, c*1.0e9,
 	       rad2deg(al), rad2deg(be), rad2deg(ga));
+	cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
+	                                         &bsx, &bsy, &bsz,
+	                                         &csx, &csy, &csz);
+	printf("astar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+	       asx/1e9, asy/1e9, asz/1e9);
+	printf("bstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+	       bsx/1e9, bsy/1e9, bsz/1e9);
+	printf("cstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+	       csx/1e9, csy/1e9, csz/1e9);
+
 	for ( i=0; i<n_hits; i++ ) {
 
 		float x, y, intensity;
