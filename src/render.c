@@ -510,7 +510,7 @@ int render_tiff_int16(DisplayWindow *dw, const char *filename)
 		if ( val > max ) max = val;
 	}
 	}
-	max /= 32767;
+	max /= 32767.0;
 
 	for ( y=0; y<image->height; y++ ) {
 		for ( x=0;x<image->width; x++ ) {
@@ -521,8 +521,8 @@ int render_tiff_int16(DisplayWindow *dw, const char *filename)
 			val *= ((float)dw->boostint/max);
 
 			/* Clamp to 16-bit range */
-			if ( val > 32767 ) val = 32767;
-			if ( val < -32768 ) val = -32768;
+			if ( val > 32767.0 ) val = 32767.0;
+			if ( val < -32768.0 ) val = -32768.0;
 
 			line[x] = val;
 		}
