@@ -472,5 +472,66 @@ int render_tiff_fp(DisplayWindow *dw, const char *filename)
 
 int render_tiff_int16(DisplayWindow *dw, const char *filename)
 {
-	return 1;
+	TIFF *th;
+	struct image *image;
+	int16_t *line;
+	int x, y;
+	float max;
+
+	/* Get raw, unbinned image data */
+	image = malloc(sizeof(struct image));
+	if ( image == NULL ) return 1;
+	image->features = NULL;
+	image->data = NULL;
+	hdf5_read(dw->hdfile, image);
+	if ( dw->cmfilter ) filter_cm(image);
+	if ( dw->noisefilter ) filter_noise(image, NULL);
+
+	th = TIFFOpen(filename, "w");
+	if ( th == NULL ) return 1;
+
+	TIFFSetField(th, TIFFTAG_IMAGEWIDTH, image->width);
+	TIFFSetField(th, TIFFTAG_IMAGELENGTH, image->height);
+	TIFFSetField(th, TIFFTAG_SAMPLESPERPIXEL, 1);
+	TIFFSetField(th, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_INT); /* (signed) */
+	TIFFSetField(th, TIFFTAG_BITSPERSAMPLE, 16);
+	TIFFSetField(th, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+	TIFFSetField(th, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
+	TIFFSetField(th, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+	TIFFSetField(th, TIFFTAG_ROWSPERSTRIP,
+	             TIFFDefaultStripSize(th, image->width*4));
+
+	line = _TIFFmalloc(TIFFScanlineSize(th));
+	max = 0.0;
+	for ( y=0; y<image->height; y++ ) {
+	for ( x=0;x<image->width; x++ ) {
+		float val;
+		val = image->data[x+image->height*y];
+		if ( val > max ) max = val;
+	}
+	}
+	max /= 32767;
+
+	for ( y=0; y<image->height; y++ ) {
+		for ( x=0;x<image->width; x++ ) {
+
+			float val;
+
+			val = image->data[x+(image->height-1-y)*image->width];
+			val *= ((float)dw->boostint/max);
+
+			/* Clamp to 16-bit range */
+			if ( val > 32767 ) val = 32767;
+			if ( val < -32768 ) val = -32768;
+
+			line[x] = val;
+		}
+
+		TIFFWriteScanline(th, line, y, 0);
+	}
+	_TIFFfree(line);
+
+	TIFFClose(th);
+
+	return 0;
 }
