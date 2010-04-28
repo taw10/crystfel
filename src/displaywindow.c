@@ -733,10 +733,18 @@ static void numbers_update(DisplayWindow *dw)
 		}
 
 		if ( (x>0) && (y>0) && valid ) {
-			if ( log(val)/log(10) < 5 ) {
-				snprintf(s, 31, "%.0f", val);
+			if ( val > 0 ) {
+				if ( log(val)/log(10) < 5 ) {
+					snprintf(s, 31, "%.0f", val);
+				} else {
+					snprintf(s, 31, "HUGE");
+				}
 			} else {
-				snprintf(s, 31, "HUGE");
+				if ( log(-val)/log(10) < 4 ) {
+					snprintf(s, 31, "%.0f", val);
+				} else {
+					snprintf(s, 31, "-HUGE");
+				}
 			}
 		} else {
 			strcpy(s, "--");
