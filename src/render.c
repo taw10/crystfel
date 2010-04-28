@@ -18,6 +18,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <png.h>
+#include <tiffio.h>
 
 #include "hdf5-file.h"
 #include "render.h"
@@ -427,7 +428,45 @@ int render_png(DisplayWindow *dw, const char *filename)
 
 int render_tiff_fp(DisplayWindow *dw, const char *filename)
 {
-	return 1;
+	TIFF *th;
+	struct image *image;
+	float *line;
+	int y;
+
+	/* Get raw, unbinned image data */
+	image = malloc(sizeof(struct image));
+	if ( image == NULL ) return 1;
+	image->features = NULL;
+	image->data = NULL;
+	hdf5_read(dw->hdfile, image);
+	if ( dw->cmfilter ) filter_cm(image);
+	if ( dw->noisefilter ) filter_noise(image, NULL);
+
+	th = TIFFOpen(filename, "w");
+	if ( th == NULL ) return 1;
+
+	TIFFSetField(th, TIFFTAG_IMAGEWIDTH, image->width);
+	TIFFSetField(th, TIFFTAG_IMAGELENGTH, image->height);
+	TIFFSetField(th, TIFFTAG_SAMPLESPERPIXEL, 1);
+	TIFFSetField(th, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
+	TIFFSetField(th, TIFFTAG_BITSPERSAMPLE, 32);
+	TIFFSetField(th, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+	TIFFSetField(th, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
+	TIFFSetField(th, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+	TIFFSetField(th, TIFFTAG_ROWSPERSTRIP,
+	             TIFFDefaultStripSize(th, image->width*4));
+
+	line = _TIFFmalloc(TIFFScanlineSize(th));
+	for ( y=0; y<image->height; y++ ) {
+		memcpy(line, &image->data[(image->height-1-y)*image->width],
+		       image->width*4);
+		TIFFWriteScanline(th, line, y, 0);
+	}
+	_TIFFfree(line);
+
+	TIFFClose(th);
+
+	return 0;
 }
 
 

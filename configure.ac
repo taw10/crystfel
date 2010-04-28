@@ -104,7 +104,16 @@ else
 fi
 
 
+AC_ARG_WITH(libtiff,
+[AS_HELP_STRING([--with-libtiff], [specify location of libTIFF library])],
+[LIBTIFF_CFLAGS="-I$withval/include"
+ LIBTIFF_LIBS="-L$withval/lib -ltiff"],
+[LIBTIFF_LIBS="-ltiff"])
+
+
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread"
+CFLAGS="$CFLAGS $LIBTIFF_CFLAGS"
 LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
+LIBS="$LIBS $LIBTIFF_LIBS"
 
 AC_OUTPUT(Makefile src/Makefile data/Makefile)
