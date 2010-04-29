@@ -375,6 +375,9 @@ void output_intensities(struct image *image, UnitCell *cell,
 	struct reflhit hits[MAX_HITS];
 	int n_hits = 0;
 	int i;
+	int n_found;
+	int n_close = 0;
+	int n_nonclose = 0;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -476,11 +479,13 @@ void output_intensities(struct image *image, UnitCell *cell,
 			 * This will produce further revised coordinates. */
 			integrate_peak(image, f->x, f->y, &x, &y, &intensity);
 			intensity = f->intensity;
+			n_close++;
 
 		} else {
 
 			integrate_peak(image, hits[i].x, hits[i].y,
 			               &x, &y, &intensity);
+			n_nonclose++;
 		}
 
 		/* Write h,k,l, integrated intensity and centroid coordinates */
@@ -488,6 +493,12 @@ void output_intensities(struct image *image, UnitCell *cell,
 		       hits[i].h, hits[i].k, hits[i].l, intensity, x, y);
 
 	}
+	n_found = image_feature_count(image->features);
+
+	printf("Peak statistics: %i found, of which "
+	       "%i were close to indexed positions. "
+	       "%i indexed positions were not close to any detected peak.\n",
+	       n_found, n_close, n_nonclose);
 
 	/* Blank line at end */
 	printf("\n");
