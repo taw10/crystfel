@@ -136,16 +136,15 @@ static void integrate_peak(struct image *image, int xp, int yp,
 {
 	signed int x, y;
 	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
-	int total = 0;
+	double total = 0;
 	int xct = 0;
 	int yct = 0;
 
 	for ( x=-INTEGRATION_RADIUS; x<+INTEGRATION_RADIUS; x++ ) {
 	for ( y=-INTEGRATION_RADIUS; y<+INTEGRATION_RADIUS; y++ ) {
 
-		int val;
 		struct panel *p;
-		double sa, pix_area, Lsq, dsq, proj_area;
+		double val, sa, pix_area, Lsq, dsq, proj_area;
 		float tt;
 
 		/* Circular mask */
@@ -467,11 +466,10 @@ void output_intensities(struct image *image, UnitCell *cell,
 		int idx;
 		struct imagefeature *f;
 
-		integrate_peak(image, hits[i].x, hits[i].y, &x, &y, &intensity);
-
 		/* Wait.. is there a closer feature which was detected? */
-		f = image_feature_closest(image->features, x, y, &d, &idx);
-		if ( (d < 10.0) && (f != NULL) ) {
+		f = image_feature_closest(image->features, hits[i].x, hits[i].y,
+		                          &d, &idx);
+		if ( (f != NULL) && (d < 10.0) ) {
 
 			/* f->intensity was measured on the filtered pattern,
 			 * so instead re-integrate using old coordinates.
@@ -479,6 +477,10 @@ void output_intensities(struct image *image, UnitCell *cell,
 			integrate_peak(image, f->x, f->y, &x, &y, &intensity);
 			intensity = f->intensity;
 
+		} else {
+
+			integrate_peak(image, hits[i].x, hits[i].y,
+			               &x, &y, &intensity);
 		}
 
 		/* Write h,k,l, integrated intensity and centroid coordinates */
