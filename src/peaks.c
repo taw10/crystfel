@@ -377,7 +377,6 @@ void output_intensities(struct image *image, UnitCell *cell,
 	int i;
 	int n_found;
 	int n_close = 0;
-	int n_nonclose = 0;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -489,8 +488,6 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 		if ( (f != NULL) && (d < 30.0) ) {
 			n_close++;
-		} else {
-			n_nonclose++;
 		}
 
 		/* Write h,k,l, integrated intensity and centroid coordinates */
@@ -500,10 +497,9 @@ void output_intensities(struct image *image, UnitCell *cell,
 	}
 	n_found = image_feature_count(image->features);
 
-	printf("Peak statistics: %i found, of which "
-	       "%i were close to indexed positions. "
-	       "%i indexed positions were not close to any detected peak.\n",
-	       n_found, n_close, n_nonclose);
+	printf("Peak statistics: %i found by peak search. "
+	       "%i indexed positions out of %i were close to detected peaks\n",
+	       n_found, n_close, n_hits);
 
 	/* Blank line at end */
 	printf("\n");
