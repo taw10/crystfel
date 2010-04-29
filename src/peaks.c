@@ -479,12 +479,17 @@ void output_intensities(struct image *image, UnitCell *cell,
 			 * This will produce further revised coordinates. */
 			integrate_peak(image, f->x, f->y, &x, &y, &intensity);
 			intensity = f->intensity;
-			n_close++;
 
 		} else {
 
 			integrate_peak(image, hits[i].x, hits[i].y,
 			               &x, &y, &intensity);
+
+		}
+
+		if ( (f != NULL) && (d < 30.0) ) {
+			n_close++;
+		} else {
 			n_nonclose++;
 		}
 
