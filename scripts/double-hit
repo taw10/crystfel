@@ -15,42 +15,32 @@ while ( $line = <FH> ) {
 		$filename = basename($1);
 	}
 
-	if ( $line =~ /^Peak\ statistics:\ (\d+)\ .*\ (\d+)\ .*\ (\d+)\ / ) {
+	if ( $line =~ /^Peak\ statistics:\ (\d+)\ .*\ (\d+)\ .*\ (\d+)\ .*\ (\d+)\ / ) {
 
-		my $found = $1;
-		my $close = $2;
+		my $foundclose = $1;
+		my $found = $2;
+		my $indclose = $3;
 		my $hits = $3;
 
-		$filename =~ /LCLS_(\d+)_([A-Za-z]+)(\d+)_r\d+_(\d+)_/;
+		$filename =~ /LCLS_(\d+)_([A-Za-z]+)(\d+)_r\d+_(\d\d)(\d\d)(\d\d)_/;
 		my $year = $1;
 		my $month = $2;
 		my $day = $3;
-		my $time = $4;
-
-		# Yeah, I know.
-		if ( $month eq "Jan" ) { $month = "01"; }
-		if ( $month eq "Feb" ) { $month = "02"; }
-		if ( $month eq "Mar" ) { $month = "03"; }
-		if ( $month eq "Apr" ) { $month = "04"; }
-		if ( $month eq "May" ) { $month = "05"; }
-		if ( $month eq "Jun" ) { $month = "06"; }
-		if ( $month eq "Jul" ) { $month = "07"; }
-		if ( $month eq "Aug" ) { $month = "08"; }
-		if ( $month eq "Sep" ) { $month = "09"; }
-		if ( $month eq "Oct" ) { $month = "10"; }
-		if ( $month eq "Nov" ) { $month = "11"; }
-		if ( $month eq "Dec" ) { $month = "12"; }
+		my $hour = $4;
+		my $min = $5;
+		my $sec = $6;
 
 		my $div;
 
 		if ( $close > 0 ) {
-			$div = $found / $close;
+			$div = $found / $foundclose;
 		} else {
 			$div = 0.0;
 		}
 
-		printf(OFH "%s%s%s%s %f\n", $year, $month, $day, $time,
-		                            $div);
+		printf(OFH "%s/%s/%s-%s:%s:%s %f\n", $year, $month, $day,
+		                                     $hour, $min, $sec,
+		                                     $div);
 	}
 
 }
@@ -59,12 +49,14 @@ close(FH);
 close(OFH);
 
 open(GP, "| gnuplot");
-printf(GP "set term postscript enhanced font \"Helvetica,20\"\n");
-printf(GP "set output \"doublehit.ps\"\n");
-printf(GP "set xtics nomirror out rotate by -60\n");
-print(GP "set format x \"%15.0f\"\n");
-printf(GP "unset key\n");
-printf(GP "plot [] [1:4] \"doublehit.dat\" u 1:2 w points\n");
+print(GP "set term postscript enhanced font \"Helvetica,20\"\n");
+print(GP "set output \"doublehit.ps\"\n");
+print(GP "set xtics nomirror out rotate by -60\n");
+print(GP "set xdata time\n");
+print(GP "set timefmt \"%Y/%b/%d-%H:%M:%S\"\n");
+print(GP "set format x \"%d/%b %H:%M\"\n");
+print(GP "unset key\n");
+print(GP "plot [] [0:5] \"doublehit.dat\" u 1:2 w points\n");
 close(GP);
 
 system("ps2pdf doublehit.ps");
