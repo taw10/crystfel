@@ -8,11 +8,13 @@ open(OFH, "> doublehit.dat");
 
 my $line;
 my $filename;
+my $full_filename;
 
 while ( $line = <FH> ) {
 
 	if ( $line =~ /^Reflections\ from\ indexing\ in\ (.+)$/ ) {
-		$filename = basename($1);
+		$full_filename = $1;
+		$filename = basename($full_filename);
 	}
 
 	if ( $line =~ /^Peak\ statistics:\ (\d+)\ .*\ (\d+)\ .*\ (\d+)\ .*\ (\d+)\ / ) {
@@ -32,7 +34,7 @@ while ( $line = <FH> ) {
 
 		my $div;
 
-		if ( $foundclose > 0 ) {
+		if ( $found > 0 ) {
 			$div = $found / $foundclose;
 		} else {
 			$div = 0.0;
@@ -41,6 +43,13 @@ while ( $line = <FH> ) {
 		printf(OFH "%s/%s/%s-%s:%s:%s %f\n", $year, $month, $day,
 		                                     $hour, $min, $sec,
 		                                     $div);
+
+		if ( $div > 4.0 ) {
+			printf("Double hit: %s\n", $full_filename);
+		}
+		if ( $div == 1.0 ) {
+			printf("Single hit: %s\n", $full_filename);
+		}
 	}
 
 }
