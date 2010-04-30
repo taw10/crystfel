@@ -33,6 +33,14 @@
 
 #define MAX_HITS (1024)
 
+/* How close a peak must be to an indexed position to be considered "close"
+ * for the purposes of double hit detection etc. */
+#define PEAK_CLOSE (30.0)
+
+/* How close a peak must be to an indexed position to be considered "close"
+ * for the purposes of integration. */
+#define PEAK_REALLY_CLOSE (10.0)
+
 struct reflhit {
 	signed int h;
 	signed int k;
@@ -376,7 +384,8 @@ void output_intensities(struct image *image, UnitCell *cell,
 	int n_hits = 0;
 	int i;
 	int n_found;
-	int n_close = 0;
+	int n_indclose = 0;
+	int n_foundclose = 0;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -468,10 +477,10 @@ void output_intensities(struct image *image, UnitCell *cell,
 		int idx;
 		struct imagefeature *f;
 
-		/* Wait.. is there a closer feature which was detected? */
+		/* Wait.. is there a really close feature which was detected? */
 		f = image_feature_closest(image->features, hits[i].x, hits[i].y,
 		                          &d, &idx);
-		if ( (f != NULL) && (d < 10.0) ) {
+		if ( (f != NULL) && (d < PEAK_REALLY_CLOSE) ) {
 
 			/* f->intensity was measured on the filtered pattern,
 			 * so instead re-integrate using old coordinates.
@@ -486,20 +495,43 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 		}
 
-		if ( (f != NULL) && (d < 30.0) ) {
-			n_close++;
+		if ( (f != NULL) && (d < PEAK_CLOSE) ) {
+			n_indclose++;
 		}
 
 		/* Write h,k,l, integrated intensity and centroid coordinates */
 		printf("%3i %3i %3i %6f (at %5.2f,%5.2f)\n",
 		       hits[i].h, hits[i].k, hits[i].l, intensity, x, y);
 
-	}
-	n_found = image_feature_count(image->features);
+		hits[i].x = x;
+		hits[i].y = y;
 
-	printf("Peak statistics: %i found by peak search. "
+	}
+
+	n_found = image_feature_count(image->features);
+	for ( i=0; i<n_found; i++ ) {
+
+		struct imagefeature *f;
+		int j;
+
+		f = image_get_feature(image->features, i);
+
+		for ( j=0; j<n_hits; j++ ) {
+
+			double d;
+
+			d = pow(hits[j].x-f->x, 2.0) + pow(hits[j].y-f->y, 2.0);
+
+			if ( d < PEAK_CLOSE ) n_foundclose++;
+
+		}
+
+	}
+
+	printf("Peak statistics: %i peaks found by the peak search out of "
+	       "%i were close to indexed positions. "
 	       "%i indexed positions out of %i were close to detected peaks\n",
-	       n_found, n_close, n_hits);
+	       n_foundclose, n_found, n_indclose, n_hits);
 
 	/* Blank line at end */
 	printf("\n");
