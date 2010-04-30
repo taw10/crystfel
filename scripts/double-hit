@@ -34,7 +34,7 @@ while ( $line = <FH> ) {
 
 		my $div;
 
-		if ( $found > 0 ) {
+		if ( $foundclose > 0 ) {
 			$div = $found / $foundclose;
 		} else {
 			$div = 0.0;
