@@ -353,7 +353,8 @@ int main(int argc, char *argv[])
 		int r;
 
 		rval = fgets(line, 1023, fh);
-		if ( strncmp(line, "Reflections from indexing", 25) == 0 ) {
+		if ( (strncmp(line, "Reflections from indexing", 25) == 0)
+		    || (strncmp(line, "New pattern", 11) == 0) ) {
 
 			/* Start of first pattern? */
 			if ( n_patterns == 0 ) {
