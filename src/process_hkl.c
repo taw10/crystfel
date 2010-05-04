@@ -177,6 +177,42 @@ static void process_reflections(double *ref, double *trueref,
 }
 
 
+static void merge_pattern(double *model, const double *new,
+                          unsigned int *model_counts,
+                          const unsigned int *counts, int mo, int sum)
+{
+	signed int h, k, l;
+
+	for ( l=-INDMAX; l<INDMAX; l++ ) {
+	for ( k=-INDMAX; k<INDMAX; k++ ) {
+	for ( h=-INDMAX; h<INDMAX; h++ ) {
+
+		double intensity;
+
+		if ( lookup_count(counts, h, k, l) == 0 ) continue;
+
+		intensity = lookup_intensity(new, h, k, l);
+
+		if ( !mo ) {
+			integrate_intensity(model, h, k, l, intensity);
+			if ( sum ) {
+				set_count(model_counts, h, k, l, 1);
+			} else {
+				integrate_count(model_counts, h, k, l, 1);
+			}
+		} else {
+			if ( intensity > lookup_intensity(model, h, k, l) ) {
+				set_intensity(model, h, k, l, intensity);
+			}
+			set_count(model_counts, h, k, l, 1);
+		}
+
+	}
+	}
+	}
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -184,8 +220,8 @@ int main(int argc, char *argv[])
 	char *output = NULL;
 	FILE *fh;
 	unsigned int n_patterns;
-	double *ref, *trueref = NULL;
-	unsigned int *counts;
+	double *model, *trueref = NULL;
+	unsigned int *model_counts;
 	char *rval;
 	UnitCell *cell;
 	int config_maxonly = 0;
@@ -195,6 +231,9 @@ int main(int argc, char *argv[])
 	int config_zoneaxis = 0;
 	int config_sum = 0;
 	char *intfile = NULL;
+	double *new_pattern = NULL;
+	unsigned int *new_counts = NULL;
+	unsigned int n_total_patterns;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -274,9 +313,11 @@ int main(int argc, char *argv[])
 		trueref = NULL;
 	}
 
-	ref = new_list_intensity();
-	counts = new_list_count();
+	model = new_list_intensity();
+	model_counts = new_list_count();
 	cell = load_cell_from_pdb("molecule.pdb");
+	new_pattern = new_list_intensity();
+	new_counts = new_list_count();
 
 	if ( strcmp(filename, "-") == 0 ) {
 		fh = stdin;
@@ -300,19 +341,26 @@ int main(int argc, char *argv[])
 		rval = fgets(line, 1023, fh);
 		if ( strncmp(line, "Reflections from indexing", 25) == 0 ) {
 
+			/* Start of first pattern? */
 			if ( n_patterns == 0 ) {
 				n_patterns++;
 				continue;
 			}
 
+			/* Start of second or later pattern */
+			merge_pattern(model, new_pattern, model_counts,
+			              new_counts, config_maxonly, config_sum);
+
 			if (config_every && (n_patterns % config_every == 0)) {
-				process_reflections(ref, trueref, counts,
-				                    n_patterns, cell,
-				                    config_rvsq,
+				process_reflections(model, trueref,
+				                    model_counts, n_patterns,
+				                    cell, config_rvsq,
 				                    config_zoneaxis);
 			}
 
 			if ( n_patterns == config_stopafter ) break;
+
+			zero_list_count(new_counts);
 
 			n_patterns++;
 		}
@@ -322,37 +370,30 @@ int main(int argc, char *argv[])
 
 		if ( (h==0) && (k==0) && (l==0) ) continue;
 
-		if ( !config_maxonly ) {
-			integrate_intensity(ref, h, k, l, intensity);
-			if ( config_sum ) {
-				set_count(counts, h, k, l, 1);
-			} else {
-				integrate_count(counts, h, k, l, 1);
-			}
-		} else {
-			if ( intensity > lookup_intensity(ref, h, k, l) ) {
-				set_intensity(ref, h, k, l, intensity);
-			}
-			set_count(counts, h, k, l, 1);
+		if ( lookup_count(new_counts, h, k, l) != 0 ) {
+			ERROR("More than one measurement for %i %i %i in"
+			      " pattern number %i\n", h, k, l, n_patterns);
 		}
+		set_intensity(new_pattern, h, k, l, intensity);
+		set_count(new_counts, h, k, l, 1);
 
 	} while ( rval != NULL );
 
 	fclose(fh);
 
 	if ( trueref != NULL ) {
-		process_reflections(ref, trueref, counts, n_patterns, cell,
-		                    config_rvsq, config_zoneaxis);
+		process_reflections(model, trueref, model_counts, n_patterns,
+		                    cell, config_rvsq, config_zoneaxis);
 	}
 
 	if ( output != NULL ) {
-		write_reflections(output, counts, ref, 0, cell, 1);
+		write_reflections(output, model_counts, model, 0, cell, 1);
 	}
 
 	if ( config_zoneaxis ) {
 		char name[64];
 		snprintf(name, 63, "ZA-%u.dat", n_patterns);
-		write_reflections(name, counts, ref, 1, cell, 10);
+		write_reflections(name, model_counts, model, 1, cell, 10);
 	}
 
 	STATUS("There were %u patterns.\n", n_patterns);

@@ -96,6 +96,12 @@ static inline TYPE *LABEL(new_list)(void)
 }
 
 
+static inline void LABEL(zero_list)(TYPE *ref)
+{
+	memset(ref, 0, IDIM*IDIM*IDIM*sizeof(TYPE));
+}
+
+
 #undef LABEL
 #undef TYPE
 #undef ERROR_T
