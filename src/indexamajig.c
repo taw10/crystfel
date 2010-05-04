@@ -208,7 +208,7 @@ static void simulate_and_write(struct image *simage, struct gpu_context **gctx,
 		get_diffraction_gpu(*gctx, simage, 24, 24, 40, cell);
 	} else {
 		get_diffraction(simage, 24, 24, 40,
-		                intensities, counts, cell, 0);
+		                intensities, counts, cell, 0, GRADIENT_MOSAIC);
 	}
 	record_image(simage, 0);
 

@@ -19,10 +19,16 @@
 #include "image.h"
 #include "cell.h"
 
+typedef enum {
+	GRADIENT_MOSAIC,
+	GRADIENT_INTERPOLATE,
+	GRADIENT_PHASED
+} GradientMethod;
+
 extern void get_diffraction(struct image *image, int na, int nb, int nc,
                             const double *intensities,
                             const unsigned int *counts, UnitCell *cell,
-                            int do_water);
+                            int do_water, GradientMethod m);
 extern struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
                          unsigned int sampling, float *ttp, float k);
 

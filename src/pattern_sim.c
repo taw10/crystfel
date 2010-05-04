@@ -53,6 +53,14 @@ static void show_help(const char *s)
 "                            this invocation to results/integr.h5.\n"
 " -i, --intensities=<file>  Specify file containing reflection intensities\n"
 "                            to use.\n"
+" -g, --gradients=<method>  Use <method> for the calculation of shape\n"
+"                            transform intensities.  Choose from:\n"
+"                             mosaic      : Take the intensity of the nearest\n"
+"                                           Bragg position.\n"
+"                             interpolate : Interpolate trilinearly between\n"
+"                                           six adjacent Bragg intensities.\n"
+"                             phased      : As 'interpolate', but take phase\n"
+"                                           values into account.\n"
 "\n"
 "By default, the simulation aims to be as accurate as possible.  For greater\n"
 "speed, or for testing, you can choose to disable certain things using the\n"
@@ -158,6 +166,8 @@ int main(int argc, char *argv[])
 	int config_nosfac = 0;
 	int config_gpu = 0;
 	int config_powder = 0;
+	char *grad_str = NULL;
+	GradientMethod grad;
 	int ndone = 0;    /* Number of simulations done (images or not) */
 	int number = 1;   /* Number used for filename of image */
 	int n_images = 1; /* Generate one image by default */
@@ -178,11 +188,12 @@ int main(int argc, char *argv[])
 		{"no-noise",           0, &config_nonoise,     1},
 		{"intensities",        1, NULL,               'i'},
 		{"powder",             0, &config_powder,      1},
+		{"gradients",          1, NULL,               'g'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hrn:i:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hrn:i:g:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
@@ -202,6 +213,11 @@ int main(int argc, char *argv[])
 
 		case 'i' : {
 			intfile = strdup(optarg);
+			break;
+		}
+
+		case 'g' : {
+			grad_str = strdup(optarg);
 			break;
 		}
 
@@ -238,6 +254,28 @@ int main(int argc, char *argv[])
 		counts = new_list_count();
 		intensities = read_reflections(intfile, counts);
 		free(intfile);
+	}
+
+	if ( grad_str == NULL ) {
+		STATUS("You didn't specify a gradient calculation method, so"
+		       " I'm using the 'mosaic' method, which is fastest.\n");
+		grad = GRADIENT_MOSAIC;
+	} else if ( strcmp(grad_str, "mosaic") == 0 ) {
+		grad = GRADIENT_MOSAIC;
+	} else if ( strcmp(grad_str, "interpolate") == 0) {
+		grad = GRADIENT_INTERPOLATE;
+	} else if ( strcmp(grad_str, "phased") == 0) {
+		grad = GRADIENT_PHASED;
+	} else {
+		ERROR("Unrecognised gradient method '%s'\n", grad_str);
+		return 1;
+	}
+	free(grad_str);
+
+	if ( config_gpu && (grad != GRADIENT_MOSAIC) ) {
+		ERROR("Only the mosaic method can be used for gradients when"
+		      "calculating on the GPU.\n");
+		return 1;
 	}
 
 	/* Define image parameters */
@@ -298,7 +336,7 @@ int main(int argc, char *argv[])
 			get_diffraction_gpu(gctx, &image, na, nb, nc, cell);
 		} else {
 			get_diffraction(&image, na, nb, nc, intensities, counts,
-			                cell, !config_nowater);
+			                cell, !config_nowater, grad);
 		}
 		if ( image.data == NULL ) {
 			ERROR("Diffraction calculation failed.\n");

@@ -178,7 +178,7 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 
 void get_diffraction(struct image *image, int na, int nb, int nc,
                      const double *intensities, const unsigned int *counts,
-                     UnitCell *cell, int do_water)
+                     UnitCell *cell, int do_water, GradientMethod m)
 {
 	unsigned int xs, ys;
 	double ax, ay, az;
