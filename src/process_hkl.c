@@ -25,6 +25,7 @@
 #include "statistics.h"
 #include "sfac.h"
 #include "reflections.h"
+#include "likelihood.h"
 
 
 /* Number of divisions for R vs |q| graphs */
@@ -61,7 +62,11 @@ static void show_help(const char *s)
 "  -r, --rvsq                Output lists of R vs |q| (\"Luzzatti plots\")\n"
 "                             when analysing figures of merit.\n"
 "      --zone-axis           Output an [001] zone axis pattern each time the\n"
-"                             figures of merit are analysed.\n");
+"                             figures of merit are analysed.\n"
+"      --detwin              Correlate each new pattern with the current\n"
+"                             model and choose the best fitting out of the\n"
+"                             allowable twins.\n"
+);
 }
 
 
@@ -230,6 +235,7 @@ int main(int argc, char *argv[])
 	int config_stopafter = 0;
 	int config_zoneaxis = 0;
 	int config_sum = 0;
+	int config_detwin = 0;
 	char *intfile = NULL;
 	double *new_pattern = NULL;
 	unsigned int *new_counts = NULL;
@@ -246,7 +252,8 @@ int main(int argc, char *argv[])
 		{"stop-after",         1, NULL,               's'},
 		{"zone-axis",          0, &config_zoneaxis,    1},
 		{"compare-with",       0, NULL,               'c'},
-		{"sum",                0, &config_sum,    1},
+		{"sum",                0, &config_sum,         1},
+		{"detwin",             0, &config_detwin,      1},
 		{0, 0, NULL, 0}
 	};
 
@@ -360,6 +367,11 @@ int main(int argc, char *argv[])
 			if ( n_patterns == 0 ) {
 				n_patterns++;
 				continue;
+			}
+
+			if ( config_detwin ) {
+				detwin_intensities(model, new_pattern,
+				                   model_counts, new_counts);
 			}
 
 			/* Start of second or later pattern */
