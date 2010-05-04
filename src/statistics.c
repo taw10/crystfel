@@ -18,26 +18,26 @@
 #include <stdlib.h>
 
 #include "statistics.h"
+#include "utils.h"
 
 
-/* By what (best-fitted) factor must the list "list" be multiplied by,
- * if it were to be merged with "target"? */
-static double stat_scale_intensity(double *obs, double *calc, unsigned int *c,
-                                   int size)
+double stat_scale_intensity(const double *ref1, const unsigned int *c1,
+                            const double *ref2, const unsigned int *c2)
 {
 	double top = 0.0;
 	double bot = 0.0;
 	int i;
 
 	/* Start from i=1 -> skip central beam */
-	for ( i=1; i<size; i++ ) {
+	for ( i=1; i<LIST_SIZE; i++ ) {
 
-		if ( c[i] > 0 ) {
-			double obsi;
-			obsi = obs[i] / (double)c[i];
-			top += obsi * calc[i];
-			bot += calc[i] * calc[i];
-		} /* else reflection not measured so don't worry about it */
+		if ( c1[i] && c2[i] ) {
+			double i1, i2;
+			i1 = ref1[i] / (double)c1[i];
+			i2 = ref2[i] / (double)c2[i];
+			top += i1 * i2;
+			bot += i2 * i2;
+		} /* else reflection not common so don't worry about it */
 
 	}
 
@@ -45,28 +45,27 @@ static double stat_scale_intensity(double *obs, double *calc, unsigned int *c,
 }
 
 
-double stat_r2(double *obs, double *calc, unsigned int *c, int size,
-               double *scalep)
+double stat_r2(const double *ref1, const unsigned int *c1,
+               const double *ref2, const unsigned int *c2, double *scalep)
 {
 	double top = 0.0;
 	double bot = 0.0;
 	double scale;
 	int i;
-	scale = stat_scale_intensity(obs, calc, c, size);
+	scale = stat_scale_intensity(ref1, c1, ref2, c2);
 	*scalep = scale;
 
 	/* Start from i=1 -> skip central beam */
-	for ( i=1; i<size; i++ ) {
+	for ( i=1; i<LIST_SIZE; i++ ) {
 
-		if ( c[i] > 0 ) {
+		if ( c1[i] && c2[i] ) {
 
-			double obsi;
+			double i1, i2;
+			i1 = ref1[i] / (scale*(double)c1[i]);
+			i2 = ref2[i] / (scale*(double)c2[i]);
 
-			obsi = obs[i] / (double)c[i];
-			obsi = obsi / scale;
-
-			top += pow(fabs(obsi - calc[i]), 2.0);
-			bot += pow(obsi, 2.0);
+			top += pow(fabs(i1 - i2), 2.0);
+			bot += pow(i1, 2.0);
 
 		} /* else reflection not measured so don't worry about it */
 

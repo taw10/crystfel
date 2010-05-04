@@ -53,7 +53,6 @@ int main(int argc, char *argv[])
 	double scale, R;
 	unsigned int *c1;
 	unsigned int *c2;
-	unsigned int *cjoint;
 	int i;
 	int nc1, nc2, ncom;
 
@@ -134,18 +133,16 @@ int main(int argc, char *argv[])
 	}
 	}
 
-	cjoint = new_list_count();
 	nc1 = 0;
 	nc2 = 0;
 	ncom = 0;
 	for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
-		cjoint[i] = c1[i] && c2[i];
 		nc1 += c1[i];
 		nc2 += c2[i];
-		ncom += cjoint[i];
+		ncom += c1[i] && c2[i];
 	}
 	STATUS("%i,%i reflections: %i in common\n", nc1, nc2, ncom);
-	R = stat_r2(ref1, ref2, cjoint, IDIM*IDIM*IDIM, &scale);
+	R = stat_r2(ref1, c1, ref2, c2, &scale);
 	STATUS("R2 = %5.4f %% (scale=%5.2f)\n", R*100.0, scale);
 
 	if ( outfile != NULL ) {

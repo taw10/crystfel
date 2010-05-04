@@ -16,7 +16,11 @@
 #ifndef STATISTICS_H
 #define STATISTICS_H
 
-double stat_r2(double *obs, double *calc, unsigned int *c, int size,
-               double *scalep);
+extern double stat_scale_intensity(const double *ref1, const unsigned int *c1,
+                                   const double *ref2, const unsigned int *c2);
+
+extern double stat_r2(const double *ref1, const unsigned int *c1,
+                      const double *ref2, const unsigned int *c2,
+                      double *scalep);
 
 #endif	/* STATISTICS_H */

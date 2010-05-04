@@ -18,6 +18,8 @@
  *
  */
 
+#include <stdio.h>
+
 #define ERROR_T(...) fprintf(stderr, __VA_ARGS__)
 
 static inline void LABEL(integrate)(TYPE *ref, signed int h,

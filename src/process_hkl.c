@@ -66,6 +66,8 @@ static void show_help(const char *s)
 "      --detwin              Correlate each new pattern with the current\n"
 "                             model and choose the best fitting out of the\n"
 "                             allowable twins.\n"
+"      --scale               Scale each pattern for best fit with the current\n"
+"                             model.\n"
 );
 }
 
@@ -141,8 +143,9 @@ static void write_RvsQ(const char *name, double *ref, double *trueref,
 }
 
 
-static void process_reflections(double *ref, double *trueref,
-                                unsigned int *counts, unsigned int n_patterns,
+static void process_reflections(double *ref, unsigned int *counts,
+                                double *trueref, unsigned int *truecounts,
+                                unsigned int n_patterns,
                                 UnitCell *cell, int do_rvsq, int do_zoneaxis)
 {
 	int j;
@@ -158,7 +161,7 @@ static void process_reflections(double *ref, double *trueref,
 	}
 	mean_counts = (double)ctot/nmeas;
 
-	R = stat_r2(ref, trueref, counts, LIST_SIZE, &scale);
+	R = stat_r2(ref, counts, trueref, truecounts, &scale);
 	STATUS("%8u: R=%5.2f%% (sf=%7.4e)  mean meas/refl=%5.2f,"
 	       " %i reflections measured\n",
 	       n_patterns, R*100.0, scale, mean_counts, nmeas);
@@ -236,10 +239,12 @@ int main(int argc, char *argv[])
 	int config_zoneaxis = 0;
 	int config_sum = 0;
 	int config_detwin = 0;
+	int config_scale = 0;
 	char *intfile = NULL;
 	double *new_pattern = NULL;
 	unsigned int *new_counts = NULL;
 	unsigned int n_total_patterns;
+	unsigned int *truecounts = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -254,6 +259,7 @@ int main(int argc, char *argv[])
 		{"compare-with",       0, NULL,               'c'},
 		{"sum",                0, &config_sum,         1},
 		{"detwin",             0, &config_detwin,      1},
+		{"scale",              0, &config_scale,      1},
 		{0, 0, NULL, 0}
 	};
 
@@ -313,8 +319,9 @@ int main(int argc, char *argv[])
 	}
 
 	if ( intfile != NULL ) {
+		truecounts = new_list_count();
 		STATUS("Comparing against '%s'\n", intfile);
-		trueref = read_reflections(intfile, NULL);
+		trueref = read_reflections(intfile, truecounts);
 		free(intfile);
 	} else {
 		trueref = NULL;
@@ -369,9 +376,16 @@ int main(int argc, char *argv[])
 				continue;
 			}
 
+			/* Detwin before scaling */
 			if ( config_detwin ) {
 				detwin_intensities(model, new_pattern,
 				                   model_counts, new_counts);
+			}
+
+			/* Scale if requested */
+			if ( config_scale ) {
+				scale_intensities(model, new_pattern,
+				                  model_counts, new_counts);
 			}
 
 			/* Start of second or later pattern */
@@ -379,9 +393,10 @@ int main(int argc, char *argv[])
 			              new_counts, config_maxonly, config_sum);
 
 			if (config_every && (n_patterns % config_every == 0)) {
-				process_reflections(model, trueref,
-				                    model_counts, n_patterns,
-				                    cell, config_rvsq,
+				process_reflections(model, model_counts,
+				                    trueref, truecounts,
+				                    n_patterns, cell,
+				                    config_rvsq,
 				                    config_zoneaxis);
 			}
 
@@ -412,8 +427,9 @@ int main(int argc, char *argv[])
 	fclose(fh);
 
 	if ( trueref != NULL ) {
-		process_reflections(model, trueref, model_counts, n_patterns,
-		                    cell, config_rvsq, config_zoneaxis);
+		process_reflections(model, model_counts, trueref, truecounts,
+		                    n_patterns, cell, config_rvsq,
+		                    config_zoneaxis);
 	}
 
 	if ( output != NULL ) {
