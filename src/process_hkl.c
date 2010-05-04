@@ -330,6 +330,20 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	/* Count the number of patterns in the file */
+	n_total_patterns = 0;
+	do {
+		char line[1024];
+
+		rval = fgets(line, 1023, fh);
+		if ( (strncmp(line, "Reflections from indexing", 25) == 0)
+		    || (strncmp(line, "New pattern", 11) == 0) ) {
+		    n_total_patterns++;
+		}
+	} while ( rval != NULL );
+	rewind(fh);
+	STATUS("There are %i patterns to process\n", n_total_patterns);
+
 	n_patterns = 0;
 	do {
 
@@ -363,6 +377,9 @@ int main(int argc, char *argv[])
 			zero_list_count(new_counts);
 
 			n_patterns++;
+
+			progress_bar(n_patterns, n_total_patterns, "Merging");
+
 		}
 
 		r = sscanf(line, "%i %i %i %f", &h, &k, &l, &intensity);
