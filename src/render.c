@@ -394,8 +394,24 @@ int render_png(DisplayWindow *dw, const char *filename)
 
 			val = hdr[x+w*y];
 
-			RENDER_RGB
-
+			switch ( dw->scale ) {
+			case SCALE_COLOUR : {
+				RENDER_RGB
+				break;
+			}
+			case SCALE_MONO : {
+				RENDER_MONO
+				break;
+			}
+			case SCALE_INVMONO : {
+				RENDER_INVMONO
+				break;
+			}
+			default : {
+				RENDER_RGB;
+				break;
+			}
+			}
 			row_pointers[y][3*x] = (png_byte)r;
 			row_pointers[y][3*x+1] = (png_byte)g;
 			row_pointers[y][3*x+2] = (png_byte)b;
