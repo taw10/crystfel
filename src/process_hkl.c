@@ -392,7 +392,8 @@ int main(int argc, char *argv[])
 			merge_pattern(model, new_pattern, model_counts,
 			              new_counts, config_maxonly, config_sum);
 
-			if (config_every && (n_patterns % config_every == 0)) {
+			if ( (trueref != NULL) && config_every
+			    && (n_patterns % config_every == 0) ) {
 				process_reflections(model, model_counts,
 				                    trueref, truecounts,
 				                    n_patterns, cell,
