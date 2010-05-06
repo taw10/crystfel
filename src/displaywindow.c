@@ -1179,7 +1179,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	displaywindow_update(dw);
 
 	/* Peak list provided at startup? */
-	if ( peaks != NULL ) {
+	if ( (dw->hdfile != NULL) && (peaks != NULL) ) {
 		load_features_from_file(dw->image, peaks);
 		displaywindow_update(dw);
 	}
