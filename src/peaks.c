@@ -460,9 +460,9 @@ void output_intensities(struct image *image, UnitCell *cell,
 	printf("Cell parameters %7.5f %7.5f %7.5f nm, %7.5f %7.5f %7.5f deg\n",
 	       a*1.0e9, b*1.0e9, c*1.0e9,
 	       rad2deg(al), rad2deg(be), rad2deg(ga));
-	cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
-	                                         &bsx, &bsy, &bsz,
-	                                         &csx, &csy, &csz);
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
 	printf("astar = %+9.7f %+9.7f %+9.7f nm^-1\n",
 	       asx/1e9, asy/1e9, asz/1e9);
 	printf("bstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
