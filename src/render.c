@@ -177,6 +177,7 @@ static void show_marked_features(struct image *image, guchar *data,
                                  int w, int h, int binning)
 {
 	int i;
+	float r = 10.0/binning;
 
 	if ( image->features == NULL ) return;
 
@@ -196,8 +197,8 @@ static void show_marked_features(struct image *image, guchar *data,
 
 			int nx, ny;
 
-			nx = x + 10.0*cos(th);
-			ny = y + 10.0*sin(th);
+			nx = x + r*cos(th);
+			ny = y + r*sin(th);
 
 			if ( nx < 0 ) continue;
 			if ( ny < 0 ) continue;
