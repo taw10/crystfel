@@ -10,6 +10,16 @@ my $line;
 my $filename;
 my $full_filename;
 
+my $hsteps = 128;
+my @hist;
+my $hmin = 0;
+my $hmax = 5;
+my $hstep = ($hmax - $hmin)/$hsteps;
+
+for ( my $i=0; $i<$hsteps; $i++ ) {
+	$hist[$i] = 0;
+}
+
 while ( $line = <FH> ) {
 
 	if ( $line =~ /^Reflections\ from\ indexing\ in\ (.+)$/ ) {
@@ -50,6 +60,9 @@ while ( $line = <FH> ) {
 		if ( $div == 1.0 ) {
 			printf("Single hit: %s\n", $full_filename);
 		}
+
+		my $bin = int(($div-$hmin)/$hstep);
+		$hist[$bin]++;
 	}
 
 }
@@ -58,6 +71,7 @@ close(FH);
 close(OFH);
 
 open(GP, "| gnuplot");
+
 print(GP "set term postscript enhanced font \"Helvetica,20\"\n");
 print(GP "set output \"doublehit.ps\"\n");
 print(GP "set xtics nomirror out rotate by -60\n");
@@ -66,6 +80,19 @@ print(GP "set timefmt \"%Y/%b/%d-%H:%M:%S\"\n");
 print(GP "set format x \"%d/%b %H:%M\"\n");
 print(GP "unset key\n");
 print(GP "plot [] [0:5] \"doublehit.dat\" u 1:2 w points\n");
+
+open(OFH, "> doublehit-hist.dat");
+for ( my $i=0; $i<$hsteps; $i++ ) {
+	printf(OFH "%f %f\n", $hmin+$hstep*$i+($hstep/2), $hist[$i]);
+}
+close(OFH);
+
+print(GP "set xtics nomirror out rotate by 0\n");
+print(GP "unset xdata\n");
+print(GP "set format x \"% g\"\n");
+print(GP "unset key\n");
+print(GP "plot [] [0:1000] \"doublehit-hist.dat\" u 1:2 w histeps\n");
+
 close(GP);
 
 system("ps2pdf doublehit.ps");
