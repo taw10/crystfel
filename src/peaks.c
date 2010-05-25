@@ -41,6 +41,9 @@
  * for the purposes of integration. */
 #define PEAK_REALLY_CLOSE (10.0)
 
+/* Degree of polarisation of X-ray beam */
+#define POL (1.0)
+
 struct reflhit {
 	signed int h;
 	signed int k;
@@ -140,7 +143,8 @@ static void cull_peaks(struct image *image)
 
 
 static void integrate_peak(struct image *image, int xp, int yp,
-                           float *xc, float *yc, float *intensity)
+                           float *xc, float *yc, float *intensity,
+                           int do_polar)
 {
 	signed int x, y;
 	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
@@ -154,6 +158,7 @@ static void integrate_peak(struct image *image, int xp, int yp,
 		struct panel *p;
 		double val, sa, pix_area, Lsq, dsq, proj_area;
 		float tt;
+		double phi, pa, pb, pol;
 
 		/* Circular mask */
 		if ( x*x + y*y > lim ) continue;
@@ -178,7 +183,12 @@ static void integrate_peak(struct image *image, int xp, int yp,
 		/* Projected area of pixel divided by distance squared */
 		sa = 1.0e7 * proj_area / (dsq + Lsq);
 
-		val = image->data[(x+xp)+image->width*(y+yp)] / sa;
+		phi = atan2(y+yp, x+xp);
+		pa = pow(sin(phi)*sin(tt), 2.0);
+		pb = pow(cos(tt), 2.0);
+		pol = 1.0 - 2.0*POL*(1-pa) + POL*(1.0+pb);
+
+		val = image->data[(x+xp)+image->width*(y+yp)] / (sa*pol);
 
 		total += val;
 
@@ -305,8 +315,10 @@ void search_peaks(struct image *image)
 			continue;
 		}
 
-		/* Centroid peak and get better coordinates */
-		integrate_peak(image, mask_x, mask_y, &fx, &fy, &intensity);
+		/* Centroid peak and get better coordinates.
+		 * Don't bother doing polarisation correction, because the
+		 * intensity of this peak is only an estimate at this stage. */
+		integrate_peak(image, mask_x, mask_y, &fx, &fy, &intensity, 0);
 
 		/* It is possible for the centroid to fall outside the image */
 		if ( (fx < 0.0) || (fx > image->width)
@@ -370,7 +382,7 @@ void dump_peaks(struct image *image, pthread_mutex_t *mutex)
 
 
 void output_intensities(struct image *image, UnitCell *cell,
-                        pthread_mutex_t *mutex)
+                        pthread_mutex_t *mutex, int unpolar)
 {
 	int x, y;
 	double ax, ay, az;
@@ -485,13 +497,14 @@ void output_intensities(struct image *image, UnitCell *cell,
 			/* f->intensity was measured on the filtered pattern,
 			 * so instead re-integrate using old coordinates.
 			 * This will produce further revised coordinates. */
-			integrate_peak(image, f->x, f->y, &x, &y, &intensity);
+			integrate_peak(image, f->x, f->y, &x, &y, &intensity,
+			               !unpolar);
 			intensity = f->intensity;
 
 		} else {
 
 			integrate_peak(image, hits[i].x, hits[i].y,
-			               &x, &y, &intensity);
+			               &x, &y, &intensity, !unpolar);
 
 		}
 
