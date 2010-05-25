@@ -85,6 +85,9 @@ struct image {
 	/* Wavelength must always be given */
 	double			lambda;		/* Wavelength in m */
 
+	/* Incident intensity (if unknown, put 1.0) */
+	double			f0;
+
 	int			width;
 	int			height;
 
