@@ -318,8 +318,6 @@ static void *process_image(void *pargsv)
 	/* No cell at this point?  Then we're done. */
 	if ( image.indexed_cell == NULL ) goto done;
 
-	simage = get_simage(&image, config_alternate);
-
 	/* Measure intensities if requested */
 	if ( config_nearbragg ) {
 		/* Use original data (temporarily) */
@@ -328,6 +326,8 @@ static void *process_image(void *pargsv)
 		                   pargs->output_mutex, config_unpolar);
 		simage->data = NULL;
 	}
+
+	simage = get_simage(&image, config_alternate);
 
 	/* Simulate if requested */
 	if ( config_simulate ) {
