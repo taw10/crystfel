@@ -321,10 +321,10 @@ static void *process_image(void *pargsv)
 	/* Measure intensities if requested */
 	if ( config_nearbragg ) {
 		/* Use original data (temporarily) */
-		simage->data = data_for_measurement;
-		output_intensities(simage, image.indexed_cell,
+		image.data = data_for_measurement;
+		output_intensities(&image, image.indexed_cell,
 		                   pargs->output_mutex, config_unpolar);
-		simage->data = NULL;
+		image.data = NULL;
 	}
 
 	simage = get_simage(&image, config_alternate);
