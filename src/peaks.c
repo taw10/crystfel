@@ -183,10 +183,14 @@ static void integrate_peak(struct image *image, int xp, int yp,
 		/* Projected area of pixel divided by distance squared */
 		sa = 1.0e7 * proj_area / (dsq + Lsq);
 
-		phi = atan2(y+yp, x+xp);
-		pa = pow(sin(phi)*sin(tt), 2.0);
-		pb = pow(cos(tt), 2.0);
-		pol = 1.0 - 2.0*POL*(1-pa) + POL*(1.0+pb);
+		if ( do_polar ) {
+			phi = atan2(y+yp, x+xp);
+			pa = pow(sin(phi)*sin(tt), 2.0);
+			pb = pow(cos(tt), 2.0);
+			pol = 1.0 - 2.0*POL*(1-pa) + POL*(1.0+pb);
+		} else {
+			pol = 1.0;
+		}
 
 		val = image->data[(x+xp)+image->width*(y+yp)] / (sa*pol);
 
