@@ -391,6 +391,7 @@ int main(int argc, char *argv[])
 	char *rval = NULL;
 	int n_images;
 	int n_hits;
+	int n_sane;
 	int config_noindex = 0;
 	int config_dumpfound = 0;
 	int config_nearbragg = 0;
@@ -557,6 +558,7 @@ int main(int argc, char *argv[])
 	gsl_set_error_handler_off();
 	n_images = 0;
 	n_hits = 0;
+	n_sane = 0;
 
 	for ( i=0; i<nthreads; i++ ) {
 		worker_args[i] = malloc(sizeof(struct process_args));
@@ -639,6 +641,7 @@ int main(int argc, char *argv[])
 
 			if ( result != NULL ) {
 				n_hits += result->hit;
+				n_sane += result->peaks_sane;
 				free(result);
 			}
 
@@ -689,7 +692,7 @@ int main(int argc, char *argv[])
 	fclose(fh);
 
 	STATUS("There were %i images.\n", n_images);
-	STATUS("%i hits were found.\n", n_hits);
+	STATUS("%i hits were found, of which %i were sane.\n", n_hits, n_sane);
 
 	if ( gctx != NULL ) {
 		cleanup_gpu(gctx);
