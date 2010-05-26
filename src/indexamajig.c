@@ -192,6 +192,7 @@ static struct image *get_simage(struct image *template, int alternate)
 	image->features = template->features;
 	image->filename = template->filename;
 	image->indexed_cell = template->indexed_cell;
+	image->f0 = template->f0;
 
 	return image;
 }
