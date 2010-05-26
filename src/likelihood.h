@@ -23,7 +23,7 @@ extern void detwin_intensities(const double *model, double *new_pattern,
 
 extern void scale_intensities(const double *model, double *new_pattern,
 	                      const unsigned int *model_counts,
-                              unsigned int *new_counts);
+                              unsigned int *new_counts, double f0);
 
 
 #endif	/* LIKELIHOOD_H */

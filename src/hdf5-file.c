@@ -218,6 +218,8 @@ static double get_f0(struct hdfile *f)
 	H5Dclose(dh);
 	if ( r < 0 ) return -1.0;
 
+	STATUS("%f\n", f0);
+
 	return f0;
 }
 
