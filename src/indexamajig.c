@@ -67,6 +67,7 @@ struct process_args
 struct process_result
 {
 	int hit;
+	int peaks_sane;
 };
 
 
@@ -194,6 +195,10 @@ static struct image *get_simage(struct image *template, int alternate)
 	image->indexed_cell = template->indexed_cell;
 	image->f0 = template->f0;
 
+	/* Prevent muppetry */
+	image->hits = NULL;
+	image->n_hits = 0;
+
 	return image;
 }
 
@@ -252,6 +257,8 @@ static void *process_image(void *pargsv)
 	image.indexed_cell = NULL;
 	image.id = pargs->id;
 	image.filename = filename;
+	image.hits = NULL;
+	image.n_hits = 0;
 
 	STATUS("Processing '%s'\n", image.filename);
 
@@ -317,6 +324,15 @@ static void *process_image(void *pargsv)
 
 	/* No cell at this point?  Then we're done. */
 	if ( image.indexed_cell == NULL ) goto done;
+
+	/* Sanity check */
+	if ( !peak_sanity_check(&image, image.indexed_cell) ) {
+		STATUS("Failed peak sanity check.\n");
+		result->peaks_sane = 0;
+		goto done;
+	} else {
+		result->peaks_sane = 1;
+	}
 
 	/* Measure intensities if requested */
 	if ( config_nearbragg ) {

@@ -44,15 +44,6 @@
 /* Degree of polarisation of X-ray beam */
 #define POL (1.0)
 
-struct reflhit {
-	signed int h;
-	signed int k;
-	signed int l;
-	double min_distance;
-	int x;
-	int y;
-};
-
 
 #define PEAK_WINDOW_SIZE (10)
 #define MAX_PEAKS (2048)
@@ -385,23 +376,17 @@ void dump_peaks(struct image *image, pthread_mutex_t *mutex)
 }
 
 
-void output_intensities(struct image *image, UnitCell *cell,
-                        pthread_mutex_t *mutex, int unpolar)
+static int find_projected_peaks(struct image *image, UnitCell *cell)
 {
 	int x, y;
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-	double a, b, c, al, be, ga;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	struct reflhit hits[MAX_HITS];
+	struct reflhit *hits;
 	int n_hits = 0;
-	int i;
-	int n_found;
-	int n_indclose = 0;
-	int n_foundclose = 0;
+
+	hits = malloc(sizeof(struct reflhit)*MAX_HITS);
+	if ( hits == NULL ) return 0;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -462,6 +447,58 @@ void output_intensities(struct image *image, UnitCell *cell,
 	}
 
 	STATUS("Found %i reflections\n", n_hits);
+	image->hits = hits;
+	image->n_hits = n_hits;
+
+	return n_hits;
+}
+
+
+int peak_sanity_check(struct image *image, UnitCell *cell)
+{
+	int i;
+	const int n_hits = image->n_hits;
+	const struct reflhit *hits = image->hits;
+	int n_sane = 0;
+
+	find_projected_peaks(image, cell);
+	if ( image->n_hits == 0 ) return 0;  /* Failed sanity check: no peaks */
+
+	for ( i=0; i<n_hits; i++ ) {
+
+		double d;
+		int idx;
+		struct imagefeature *f;
+
+		f = image_feature_closest(image->features, hits[i].x, hits[i].y,
+		                          &d, &idx);
+		if ( (f != NULL) && (d < PEAK_CLOSE) ) {
+			n_sane++;
+		}
+
+	}
+
+	if ( (float)n_sane / (float)n_hits < 0.8 ) return 0;
+
+	return 1;
+}
+
+
+void output_intensities(struct image *image, UnitCell *cell,
+                        pthread_mutex_t *mutex, int unpolar)
+{
+	int i;
+	int n_found;
+	int n_indclose = 0;
+	int n_foundclose = 0;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	double a, b, c, al, be, ga;
+	int n_hits = image->n_hits;
+	struct reflhit *hits = image->hits;
+
+	if ( image->n_hits == 0 ) return;
 
 	/* Get exclusive access to the output stream if necessary */
 	if ( mutex != NULL ) pthread_mutex_lock(mutex);
