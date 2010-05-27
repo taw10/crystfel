@@ -457,20 +457,19 @@ static int find_projected_peaks(struct image *image, UnitCell *cell)
 int peak_sanity_check(struct image *image, UnitCell *cell)
 {
 	int i;
-	const int n_hits = image->n_hits;
-	const struct reflhit *hits = image->hits;
 	int n_sane = 0;
 
 	find_projected_peaks(image, cell);
 	if ( image->n_hits == 0 ) return 0;  /* Failed sanity check: no peaks */
 
-	for ( i=0; i<n_hits; i++ ) {
+	for ( i=0; i<image->n_hits; i++ ) {
 
 		double d;
 		int idx;
 		struct imagefeature *f;
 
-		f = image_feature_closest(image->features, hits[i].x, hits[i].y,
+		f = image_feature_closest(image->features,
+                                          image->hits[i].x, image->hits[i].y,
 		                          &d, &idx);
 		if ( (f != NULL) && (d < PEAK_CLOSE) ) {
 			n_sane++;
@@ -478,7 +477,9 @@ int peak_sanity_check(struct image *image, UnitCell *cell)
 
 	}
 
-	if ( (float)n_sane / (float)n_hits < 0.8 ) return 0;
+	STATUS("Sanity factor: %f / %f = %f\n", (float)n_sane, (float)image->n_hits,
+                                                (float)n_sane / (float)image->n_hits);
+	if ( (float)n_sane / (float)image->n_hits < 0.8 ) return 0;
 
 	return 1;
 }
