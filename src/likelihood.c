@@ -32,7 +32,7 @@ void scale_intensities(const double *model, double *new_pattern,
 	unsigned int i;
 
 	s = stat_scale_intensity(model, model_counts, new_pattern, new_counts);
-	printf("%f %f\n", s, f0);
+	if ( f0 != 1.0 ) printf("%f %f\n", s, f0);
 
 	/* NaN -> abort */
 	if ( isnan(s) ) return;
