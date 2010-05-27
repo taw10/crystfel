@@ -1,0 +1,106 @@
+#!/usr/bin/perl -w
+
+use strict;
+use File::Basename;
+
+open(FH, $ARGV[0]);
+
+my $line;
+my $filename;
+my $full_filename;
+
+my $hsteps = 128;
+my @hist;
+
+open(GP, "| gnuplot");
+print(GP "set term postscript enhanced font \"Helvetica,20\"\n");
+print(GP "set output \"i0.ps\"\n");
+print(GP "unset key\n");
+print(GP "set xtics nomirror out rotate by 0\n");
+print(GP "unset xdata\n");
+print(GP "set format x \"% g\"\n");
+print(GP "unset key\n");
+
+
+# First graph: distribution of scaling factors
+my $hmin = -0.1;
+my $hmax = 1.5;
+my $hstep = ($hmax - $hmin)/$hsteps;
+for ( my $i=0; $i<$hsteps; $i++ ) {
+	$hist[$i] = 0;
+}
+while ( $line = <FH> ) {
+	if ( $line =~ /^([\d\.]+)\ ([\d\.]+)$/ ) {
+		my $scale = $1;
+		my $i0 = $2;
+		my $bin = int(($scale-$hmin)/$hstep);
+		$hist[$bin]++;
+	}
+}
+close(FH);
+open(OFH, "> i0-scale-hist.dat");
+for ( my $i=0; $i<$hsteps; $i++ ) {
+	printf(OFH "%f %f\n", $hmin+$hstep*$i+($hstep/2), $hist[$i]);
+}
+close(OFH);
+print(GP "set title \"Distribution of Scaling Factors\"\n");
+print(GP "plot [] [] \"i0-scale-hist.dat\" u 1:2 w histeps\n");
+
+
+# Second graph: distribution of gas detector values
+$hmin = -0.5;
+$hmax = 3.0;
+$hstep = ($hmax - $hmin)/$hsteps;
+open(FH, $ARGV[0]);
+for ( my $i=0; $i<$hsteps; $i++ ) {
+	$hist[$i] = 0;
+}
+while ( $line = <FH> ) {
+	if ( $line =~ /^([\d\.]+)\ ([\d\.]+)$/ ) {
+		my $scale = $1;
+		my $i0 = $2;
+		my $bin = int(($i0-$hmin)/$hstep);
+		$hist[$bin]++;
+	}
+}
+close(FH);
+open(OFH, "> i0-hist.dat");
+for ( my $i=0; $i<$hsteps; $i++ ) {
+	printf(OFH "%f %f\n", $hmin+$hstep*$i+($hstep/2), $hist[$i]);
+}
+close(OFH);
+print(GP "set title \"Distribution of Gas Detector Values\"\n");
+print(GP "plot [] [] \"i0-hist.dat\" u 1:2 w histeps\n");
+
+
+# Third graph: distribution of scale factors after scaling i0=1
+$hmin = -0.1;
+$hmax = 1.5;
+$hstep = ($hmax - $hmin)/$hsteps;
+open(FH, $ARGV[0]);
+for ( my $i=0; $i<$hsteps; $i++ ) {
+	$hist[$i] = 0;
+}
+while ( $line = <FH> ) {
+	if ( $line =~ /^([\d\.]+)\ ([\d\.]+)$/ ) {
+		my $scale = $1;
+		my $i0 = $2;
+		my $bin = int((($scale/$i0)-$hmin)/$hstep);
+		$hist[$bin]++;
+	}
+}
+close(FH);
+open(OFH, "> i0-prior-hist.dat");
+for ( my $i=0; $i<$hsteps; $i++ ) {
+	printf(OFH "%f %f\n", $hmin+$hstep*$i+($hstep/2), $hist[$i]);
+}
+close(OFH);
+print(GP "set title \"Distribution of Scaling Factors with I0=1\"\n");
+print(GP "plot [] [] \"i0-prior-hist.dat\" u 1:2 w histeps\n");
+
+
+close(GP);
+
+system("ps2pdf i0.ps");
+unlink("i0.dat");
+unlink("i0.ps");
