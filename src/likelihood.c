@@ -26,13 +26,13 @@ void detwin_intensities(const double *model, double *new_pattern,
 
 void scale_intensities(const double *model, double *new_pattern,
                        const unsigned int *model_counts,
-                       unsigned int *new_counts, double f0)
+                       unsigned int *new_counts, double f0, int f0_valid)
 {
 	double s;
 	unsigned int i;
 
 	s = stat_scale_intensity(model, model_counts, new_pattern, new_counts);
-	if ( f0 != 1.0 ) printf("%f %f\n", s, f0);
+	if ( f0_valid ) printf("%f %f\n", s, f0);
 
 	/* NaN -> abort */
 	if ( isnan(s) ) return;

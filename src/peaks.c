@@ -524,7 +524,12 @@ void output_intensities(struct image *image, UnitCell *cell,
 	printf("cstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
 	       csx/1e9, csy/1e9, csz/1e9);
 
-	printf("f0 = %7.5f (arbitrary gas detector units)\n", image->f0);
+	if ( image->f0_available ) {
+		printf("f0 = %7.5f (arbitrary gas detector units)\n",
+		       image->f0);
+	} else {
+		printf("f0 = invalid\n");
+	}
 
 	for ( i=0; i<n_hits; i++ ) {
 

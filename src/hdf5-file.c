@@ -343,6 +343,9 @@ int hdf5_read(struct hdfile *f, struct image *image)
 	if ( image->f0 < 0.0 ) {
 		ERROR("Couldn't read incident intensity - using 1.0.\n");
 		image->f0 = 1.0;
+		image->f0_available = 0;
+	} else {
+		image->f0_available = 1;
 	}
 
 	debodge_saturation(f, image);

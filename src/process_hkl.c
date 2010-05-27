@@ -246,6 +246,7 @@ int main(int argc, char *argv[])
 	unsigned int n_total_patterns;
 	unsigned int *truecounts = NULL;
 	float f0;
+	int f0_valid;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -360,7 +361,7 @@ int main(int argc, char *argv[])
 	STATUS("There are %i patterns to process\n", n_total_patterns);
 
 	n_patterns = 0;
-	f0 = -1.0;
+	f0_valid = 0;
 	do {
 
 		char line[1024];
@@ -384,7 +385,8 @@ int main(int argc, char *argv[])
 				                   model_counts, new_counts);
 			}
 
-			if ( config_scale && (f0 == -1.0) ) {
+			/* Assume a default I0 if we don't have one by now */
+			if ( config_scale && !f0_valid ) {
 				ERROR("No f0 value.\n");
 				f0 = 1.0;
 			}
@@ -392,7 +394,8 @@ int main(int argc, char *argv[])
 			/* Scale if requested */
 			if ( config_scale ) {
 				scale_intensities(model, new_pattern,
-				                  model_counts, new_counts, f0);
+				                  model_counts, new_counts, f0,
+				                  f0_valid);
 			}
 
 			/* Start of second or later pattern */
@@ -416,7 +419,7 @@ int main(int argc, char *argv[])
 
 			progress_bar(n_patterns, n_total_patterns, "Merging");
 
-			f0 = -1.0;
+			f0_valid = 0;
 
 		}
 
@@ -424,8 +427,11 @@ int main(int argc, char *argv[])
 			r = sscanf(line, "f0 = %f", &f0);
 			if ( r != 1 ) {
 				ERROR("Couldn't understand f0 line.\n");
+				f0 = 1.0;
+				f0_valid = 0;
 				continue;
 			}
+			f0_valid = 1;
 		}
 
 		r = sscanf(line, "%i %i %i %f", &h, &k, &l, &intensity);

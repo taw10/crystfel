@@ -99,6 +99,7 @@ struct image {
 
 	/* Incident intensity (if unknown, put 1.0) */
 	double			f0;
+	int			f0_available;
 
 	int			width;
 	int			height;
