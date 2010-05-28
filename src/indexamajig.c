@@ -372,7 +372,6 @@ done:
 	free(image.data);
 	free(image.det.panels);
 	image_feature_list_free(image.features);
-	free(data_for_measurement);
 	free(image.hits);
 	hdfile_close(hdfile);
 
