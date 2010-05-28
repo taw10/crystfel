@@ -267,6 +267,28 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 }
 
 
+double get_tt(struct image *image, unsigned int xs, unsigned int ys)
+{
+	float r;
+	float rx = 0.0;
+	float ry = 0.0;
+	struct panel *p;
+
+	const unsigned int x = xs;
+	const unsigned int y = ys; /* Integer part only */
+
+	p = find_panel(&image->det, x, y);
+
+	rx = ((float)xs - p->cx) / p->res;
+	ry = ((float)ys - p->cy) / p->res;
+
+	/* Calculate q-vector for this sub-pixel */
+	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
+
+	return atan2(r, p->clen);
+}
+
+
 void get_diffraction(struct image *image, int na, int nb, int nc,
                      const double *intensities, const unsigned int *counts,
                      UnitCell *cell, int do_water, GradientMethod m)

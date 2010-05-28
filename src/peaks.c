@@ -164,7 +164,7 @@ static void integrate_peak(struct image *image, int xp, int yp,
 		Lsq = pow(p->clen, 2.0);
 
 		/* Area of pixel as seen from crystal (approximate) */
-		get_q(image, x+xp, y+yp, 1, &tt, 1.0 / image->lambda);
+		tt = get_tt(image, x+xp, y+yp);
 		proj_area = pix_area * cos(tt);
 
 		/* Calculate distance from crystal to pixel */

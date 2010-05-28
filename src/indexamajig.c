@@ -323,6 +323,7 @@ static void *process_image(void *pargsv)
 	}
 
 	/* No cell at this point?  Then we're done. */
+	result->peaks_sane = 0;
 	if ( image.indexed_cell == NULL ) goto done;
 
 	/* Sanity check */
