@@ -240,8 +240,8 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 {
 	struct rvec q;
 	float twotheta, r, az;
-	float rx = 0.0;
-	float ry = 0.0;
+	float rx;
+	float ry;
 	struct panel *p;
 
 	const unsigned int x = xs / sampling;
@@ -269,9 +269,7 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 
 double get_tt(struct image *image, unsigned int xs, unsigned int ys)
 {
-	float r;
-	float rx = 0.0;
-	float ry = 0.0;
+	float r, rx, ry;
 	struct panel *p;
 
 	const unsigned int x = xs;
