@@ -334,13 +334,14 @@ static void *process_image(void *pargsv)
 		result->peaks_sane = 1;
 	}
 
+	/* Get rid of noise-filtered version at this point */
+	free(image.data);
+	image.data = data_for_measurement;
+
 	/* Measure intensities if requested */
 	if ( config_nearbragg ) {
-		/* Use original data (temporarily) */
-		image.data = data_for_measurement;
 		output_intensities(&image, image.indexed_cell,
 		                   pargs->output_mutex, config_unpolar);
-		image.data = NULL;
 	}
 
 	simage = get_simage(&image, config_alternate);
