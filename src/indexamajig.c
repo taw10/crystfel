@@ -306,6 +306,12 @@ static void *process_image(void *pargsv)
 
 	/* Perform 'fine' peak search */
 	search_peaks(&image);
+
+	/* Get rid of noise-filtered version at this point
+	 * - it was strictly for the purposes of peak detection. */
+	free(image.data);
+	image.data = data_for_measurement;
+
 	if ( image_feature_count(image.features) < 5 ) goto done;
 
 	if ( config_dumpfound ) dump_peaks(&image, pargs->output_mutex);
@@ -334,10 +340,6 @@ static void *process_image(void *pargsv)
 	} else {
 		result->peaks_sane = 1;
 	}
-
-	/* Get rid of noise-filtered version at this point */
-	free(image.data);
-	image.data = data_for_measurement;
 
 	/* Measure intensities if requested */
 	if ( config_nearbragg ) {
