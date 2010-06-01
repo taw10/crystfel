@@ -34,21 +34,15 @@
 #define MAX_HITS (1024)
 
 /* How close a peak must be to an indexed position to be considered "close"
- * for the purposes of double hit detection etc. */
+ * for the purposes of double hit detection and sanity checking. */
 #define PEAK_CLOSE (30.0)
 
 /* How close a peak must be to an indexed position to be considered "close"
  * for the purposes of integration. */
 #define PEAK_REALLY_CLOSE (10.0)
 
-struct reflhit {
-	signed int h;
-	signed int k;
-	signed int l;
-	double min_distance;
-	int x;
-	int y;
-};
+/* Degree of polarisation of X-ray beam */
+#define POL (1.0)
 
 
 #define PEAK_WINDOW_SIZE (10)
@@ -140,7 +134,8 @@ static void cull_peaks(struct image *image)
 
 
 static void integrate_peak(struct image *image, int xp, int yp,
-                           float *xc, float *yc, float *intensity)
+                           float *xc, float *yc, float *intensity,
+                           int do_polar)
 {
 	signed int x, y;
 	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
@@ -154,6 +149,7 @@ static void integrate_peak(struct image *image, int xp, int yp,
 		struct panel *p;
 		double val, sa, pix_area, Lsq, dsq, proj_area;
 		float tt;
+		double phi, pa, pb, pol;
 
 		/* Circular mask */
 		if ( x*x + y*y > lim ) continue;
@@ -168,7 +164,7 @@ static void integrate_peak(struct image *image, int xp, int yp,
 		Lsq = pow(p->clen, 2.0);
 
 		/* Area of pixel as seen from crystal (approximate) */
-		get_q(image, x+xp, y+yp, 1, &tt, 1.0 / image->lambda);
+		tt = get_tt(image, x+xp, y+yp);
 		proj_area = pix_area * cos(tt);
 
 		/* Calculate distance from crystal to pixel */
@@ -178,7 +174,16 @@ static void integrate_peak(struct image *image, int xp, int yp,
 		/* Projected area of pixel divided by distance squared */
 		sa = 1.0e7 * proj_area / (dsq + Lsq);
 
-		val = image->data[(x+xp)+image->width*(y+yp)] / sa;
+		if ( do_polar ) {
+			phi = atan2(y+yp, x+xp);
+			pa = pow(sin(phi)*sin(tt), 2.0);
+			pb = pow(cos(tt), 2.0);
+			pol = 1.0 - 2.0*POL*(1-pa) + POL*(1.0+pb);
+		} else {
+			pol = 1.0;
+		}
+
+		val = image->data[(x+xp)+image->width*(y+yp)] / (sa*pol);
 
 		total += val;
 
@@ -305,8 +310,10 @@ void search_peaks(struct image *image)
 			continue;
 		}
 
-		/* Centroid peak and get better coordinates */
-		integrate_peak(image, mask_x, mask_y, &fx, &fy, &intensity);
+		/* Centroid peak and get better coordinates.
+		 * Don't bother doing polarisation correction, because the
+		 * intensity of this peak is only an estimate at this stage. */
+		integrate_peak(image, mask_x, mask_y, &fx, &fy, &intensity, 0);
 
 		/* It is possible for the centroid to fall outside the image */
 		if ( (fx < 0.0) || (fx > image->width)
@@ -369,23 +376,17 @@ void dump_peaks(struct image *image, pthread_mutex_t *mutex)
 }
 
 
-void output_intensities(struct image *image, UnitCell *cell,
-                        pthread_mutex_t *mutex)
+static int find_projected_peaks(struct image *image, UnitCell *cell)
 {
 	int x, y;
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-	double a, b, c, al, be, ga;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	struct reflhit hits[MAX_HITS];
+	struct reflhit *hits;
 	int n_hits = 0;
-	int i;
-	int n_found;
-	int n_indclose = 0;
-	int n_foundclose = 0;
+
+	hits = malloc(sizeof(struct reflhit)*MAX_HITS);
+	if ( hits == NULL ) return 0;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -446,6 +447,59 @@ void output_intensities(struct image *image, UnitCell *cell,
 	}
 
 	STATUS("Found %i reflections\n", n_hits);
+	image->hits = hits;
+	image->n_hits = n_hits;
+
+	return n_hits;
+}
+
+
+int peak_sanity_check(struct image *image, UnitCell *cell)
+{
+	int i;
+	int n_sane = 0;
+
+	find_projected_peaks(image, cell);
+	if ( image->n_hits == 0 ) return 0;  /* Failed sanity check: no peaks */
+
+	for ( i=0; i<image->n_hits; i++ ) {
+
+		double d;
+		int idx;
+		struct imagefeature *f;
+
+		f = image_feature_closest(image->features,
+                                          image->hits[i].x, image->hits[i].y,
+		                          &d, &idx);
+		if ( (f != NULL) && (d < PEAK_CLOSE) ) {
+			n_sane++;
+		}
+
+	}
+
+	STATUS("Sanity factor: %f / %f = %f\n", (float)n_sane, (float)image->n_hits,
+                                                (float)n_sane / (float)image->n_hits);
+	if ( (float)n_sane / (float)image->n_hits < 0.8 ) return 0;
+
+	return 1;
+}
+
+
+void output_intensities(struct image *image, UnitCell *cell,
+                        pthread_mutex_t *mutex, int unpolar)
+{
+	int i;
+	int n_found;
+	int n_indclose = 0;
+	int n_foundclose = 0;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	double a, b, c, al, be, ga;
+	int n_hits = image->n_hits;
+	struct reflhit *hits = image->hits;
+
+	if ( image->n_hits == 0 ) return;
 
 	/* Get exclusive access to the output stream if necessary */
 	if ( mutex != NULL ) pthread_mutex_lock(mutex);
@@ -470,6 +524,13 @@ void output_intensities(struct image *image, UnitCell *cell,
 	printf("cstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
 	       csx/1e9, csy/1e9, csz/1e9);
 
+	if ( image->f0_available ) {
+		printf("f0 = %7.5f (arbitrary gas detector units)\n",
+		       image->f0);
+	} else {
+		printf("f0 = invalid\n");
+	}
+
 	for ( i=0; i<n_hits; i++ ) {
 
 		float x, y, intensity;
@@ -485,13 +546,14 @@ void output_intensities(struct image *image, UnitCell *cell,
 			/* f->intensity was measured on the filtered pattern,
 			 * so instead re-integrate using old coordinates.
 			 * This will produce further revised coordinates. */
-			integrate_peak(image, f->x, f->y, &x, &y, &intensity);
+			integrate_peak(image, f->x, f->y, &x, &y, &intensity,
+			               !unpolar);
 			intensity = f->intensity;
 
 		} else {
 
 			integrate_peak(image, hits[i].x, hits[i].y,
-			               &x, &y, &intensity);
+			               &x, &y, &intensity, !unpolar);
 
 		}
 

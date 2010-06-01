@@ -204,6 +204,24 @@ static double get_wavelength(struct hdfile *f)
 }
 
 
+static double get_f0(struct hdfile *f)
+{
+	herr_t r;
+	hid_t dh;
+	double f0;
+
+	dh = H5Dopen(f->fh, "/LCLS/f_11_ENRC", H5P_DEFAULT);
+	if ( dh < 0 ) return -1.0;
+
+	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
+		            H5P_DEFAULT, &f0);
+	H5Dclose(dh);
+	if ( r < 0 ) return -1.0;
+
+	return f0;
+}
+
+
 static void debodge_saturation(struct hdfile *f, struct image *image)
 {
 	hid_t dh, sh;
@@ -319,6 +337,15 @@ int hdf5_read(struct hdfile *f, struct image *image)
 	if ( image->lambda < 0.0 ) {
 		ERROR("Couldn't read wavelength - using 2 keV.\n");
 		image->lambda = ph_en_to_lambda(eV_to_J(2000.0));
+	}
+
+	image->f0 = get_f0(f);
+	if ( image->f0 < 0.0 ) {
+		ERROR("Couldn't read incident intensity - using 1.0.\n");
+		image->f0 = 1.0;
+		image->f0_available = 0;
+	} else {
+		image->f0_available = 1;
 	}
 
 	debodge_saturation(f, image);

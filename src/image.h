@@ -67,6 +67,16 @@ struct rvec
 };
 
 
+struct reflhit {
+	signed int h;
+	signed int k;
+	signed int l;
+	double min_distance;
+	int x;
+	int y;
+};
+
+
 /* Structure describing an image */
 struct image {
 
@@ -77,6 +87,8 @@ struct image {
 	int			ncells;
 	struct detector		det;
 	const char		*filename;
+	struct reflhit		*hits;
+	int			n_hits;
 
 	int			id;
 
@@ -84,6 +96,10 @@ struct image {
 
 	/* Wavelength must always be given */
 	double			lambda;		/* Wavelength in m */
+
+	/* Incident intensity (if unknown, put 1.0) */
+	double			f0;
+	int			f0_available;
 
 	int			width;
 	int			height;
