@@ -291,17 +291,7 @@ static void *process_image(void *pargsv)
 	if ( config_noisefilter ) {
 		filter_noise(&image, data_for_measurement);
 	} else {
-
-		int x, y;
-
-		for ( x=0; x<image.width; x++ ) {
-		for ( y=0; y<image.height; y++ ) {
-			float val;
-			val = image.data[x+image.width*y];
-			data_for_measurement[x+image.width*y] = val;
-		}
-		}
-
+		memcpy(data_for_measurement, image.data, data_size);
 	}
 
 	/* Perform 'fine' peak search */
