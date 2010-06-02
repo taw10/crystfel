@@ -356,7 +356,7 @@ void search_peaks(struct image *image)
 	}
 	}
 
-	STATUS("%i accepted, %i box, %i hot, %i proximity, %i outside frame,"
+	STATUS("%i accepted, %i box, %i hot, %i proximity, %i outside frame, "
 	       "%i in bad regions.\n",
 	       nacc, nrej_dis, nrej_hot, nrej_pro, nrej_fra, nrej_bad);
 
