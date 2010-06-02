@@ -318,6 +318,11 @@ int hdf5_read(struct hdfile *f, struct image *image)
 {
 	herr_t r;
 	float *buf;
+	uint8_t *flags;
+	hid_t mask_dh;
+
+	image->height = f->nx;
+	image->width = f->ny;
 
 	buf = malloc(sizeof(float)*f->nx*f->ny);
 
@@ -327,10 +332,22 @@ int hdf5_read(struct hdfile *f, struct image *image)
 		ERROR("Couldn't read data\n");
 		return 1;
 	}
-
 	image->data = buf;
-	image->height = f->nx;
-	image->width = f->ny;
+
+	mask_dh = H5Dopen(f->fh, "/processing/hitfinder/masks", H5P_DEFAULT);
+	if ( mask_dh <= 0 ) {
+		ERROR("Couldn't open flags\n");
+	} else {
+		flags = malloc(sizeof(uint8_t)*f->nx*f->ny);
+		r = H5Dread(mask_dh, H5T_NATIVE_B8, H5S_ALL, H5S_ALL,
+		            H5P_DEFAULT, flags);
+		if ( r < 0 ) {
+			ERROR("Couldn't read flags\n");
+			image->flags = NULL;
+		} else {
+			image->flags = flags;
+		}
+	}
 
 	/* Read wavelength from file */
 	image->lambda = get_wavelength(f);
