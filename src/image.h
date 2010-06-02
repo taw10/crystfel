@@ -32,26 +32,26 @@
 /* Structure describing a feature in an image */
 struct imagefeature {
 
-	struct image			*parent;
-	double				x;
-	double				y;
-	double				intensity;
+	struct image                    *parent;
+	double                          x;
+	double                          y;
+	double                          intensity;
 
 	/* Partner for this feature (in another feature list) or NULL */
-	struct imagefeature_struct	*partner;
+	struct imagefeature_struct      *partner;
 
 	/* Distance between this feature and its partner, if any. */
-	double				partner_d;
+	double                          partner_d;
 
 	/* Reciprocal space coordinates (m^-1 of course) of this feature */
-	double				rx;
-	double				ry;
-	double				rz;
+	double                          rx;
+	double                          ry;
+	double                          rz;
 
 	/* Internal use only */
-	int				valid;
+	int                             valid;
 
-	const char			*name;
+	const char                      *name;
 };
 
 /* An opaque type representing a list of image features */
@@ -80,47 +80,47 @@ struct reflhit {
 /* Structure describing an image */
 struct image {
 
-	float			*data;
-	uint16_t		*flags;
-	double			*twotheta;
-	UnitCell		*indexed_cell;
-	UnitCell		*candidate_cells[MAX_CELL_CANDIDATES];
-	int			ncells;
-	struct detector		det;
-	const char		*filename;
-	struct reflhit		*hits;
-	int			n_hits;
+	float                   *data;
+	uint16_t                *flags;
+	double                  *twotheta;
+	UnitCell                *indexed_cell;
+	UnitCell                *candidate_cells[MAX_CELL_CANDIDATES];
+	int                     ncells;
+	struct detector         det;
+	const char              *filename;
+	struct reflhit          *hits;
+	int                     n_hits;
 
-	int			id;
+	int                     id;
 
-	struct quaternion	orientation;
+	struct quaternion       orientation;
 
 	/* Wavelength must always be given */
-	double			lambda;		/* Wavelength in m */
+	double                  lambda;   /* Wavelength in m */
 
 	/* Incident intensity (if unknown, put 1.0) */
-	double			f0;
-	int			f0_available;
+	double                  f0;
+	int                     f0_available;
 
-	int			width;
-	int			height;
+	int                     width;
+	int                     height;
 
-	ImageFeatureList	*features;	/* "Experimental" features */
+	ImageFeatureList        *features;   /* "Experimental" features */
 
 	/* DirAx auto-indexing low-level stuff */
-	int			dirax_pty;
-	pid_t			dirax_pid;
-	char			*dirax_rbuffer;
-	int			dirax_rbufpos;
-	int			dirax_rbuflen;
+	int                     dirax_pty;
+	pid_t                   dirax_pid;
+	char                    *dirax_rbuffer;
+	int                     dirax_rbufpos;
+	int                     dirax_rbuflen;
 
 	/* DirAx auto-indexing high-level stuff */
-	int			dirax_step;
-	int			dirax_read_cell;
-	int			best_acl;
-	int			best_acl_nh;
-	int			acls_tried[MAX_CELL_CANDIDATES];
-	int			n_acls_tried;
+	int                     dirax_step;
+	int                     dirax_read_cell;
+	int                     best_acl;
+	int                     best_acl_nh;
+	int                     acls_tried[MAX_CELL_CANDIDATES];
+	int                     n_acls_tried;
 
 };
 
