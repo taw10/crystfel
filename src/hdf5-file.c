@@ -339,7 +339,7 @@ int hdf5_read(struct hdfile *f, struct image *image)
 		ERROR("Couldn't open flags\n");
 	} else {
 		flags = malloc(sizeof(uint16_t)*f->nx*f->ny);
-		r = H5Dread(mask_dh, H5T_NATIVE_B16, H5S_ALL, H5S_ALL,
+		r = H5Dread(mask_dh, H5T_NATIVE_UINT16, H5S_ALL, H5S_ALL,
 		            H5P_DEFAULT, flags);
 		if ( r < 0 ) {
 			ERROR("Couldn't read flags\n");
