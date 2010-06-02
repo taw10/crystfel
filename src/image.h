@@ -81,7 +81,7 @@ struct reflhit {
 struct image {
 
 	float			*data;
-	uint8_t			*flags;
+	uint16_t		*flags;
 	double			*twotheta;
 	UnitCell		*indexed_cell;
 	UnitCell		*candidate_cells[MAX_CELL_CANDIDATES];

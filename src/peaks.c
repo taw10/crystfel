@@ -152,7 +152,7 @@ static int integrate_peak(struct image *image, int xp, int yp,
 		double val, sa, pix_area, Lsq, dsq, proj_area;
 		float tt;
 		double phi, pa, pb, pol;
-		uint8_t flags;
+		uint16_t flags;
 
 		/* Circular mask */
 		if ( x*x + y*y > lim ) continue;
