@@ -113,6 +113,10 @@ static void cleanup(hid_t fh)
 		type = H5Iget_type(id);
 
 		if ( type == H5I_GROUP ) H5Gclose(id);
+		if ( type == H5I_DATASET ) H5Dclose(id);
+		if ( type == H5I_DATATYPE ) H5Tclose(id);
+		if ( type == H5I_DATASPACE ) H5Sclose(id);
+		if ( type == H5I_ATTR ) H5Aclose(id);
 
 	}
 }
@@ -348,6 +352,7 @@ int hdf5_read(struct hdfile *f, struct image *image)
 			image->flags = flags;
 		}
 	}
+	H5Dclose(mask_dh);
 
 	/* Read wavelength from file */
 	image->lambda = get_wavelength(f);
