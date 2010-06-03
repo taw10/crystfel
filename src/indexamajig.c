@@ -368,6 +368,7 @@ static void *process_image(void *pargsv)
 
 done:
 	free(image.data);
+	free(image.flags);
 	free(image.det.panels);
 	image_feature_list_free(image.features);
 	free(image.hits);
