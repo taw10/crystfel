@@ -260,6 +260,12 @@ static void *process_image(void *pargsv)
 	image.hits = NULL;
 	image.n_hits = 0;
 
+	/* View head-on (unit cell is tilted) */
+	image.orientation.w = 1.0;
+	image.orientation.x = 0.0;
+	image.orientation.y = 0.0;
+	image.orientation.z = 0.0;
+
 	STATUS("Processing '%s'\n", image.filename);
 
 	result = malloc(sizeof(*result));
