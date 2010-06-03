@@ -31,6 +31,7 @@
 #include "peaks.h"
 #include "sfac.h"
 #include "reflections.h"
+#include "parameters-lcls.tmp"
 
 
 static void show_help(const char *s)
@@ -316,7 +317,7 @@ int main(int argc, char *argv[])
 	/* Define image parameters */
 	image.width = 1024;
 	image.height = 1024;
-	image.lambda = ph_en_to_lambda(eV_to_J(1790.0));  /* Wavelength */
+	image.lambda = ph_en_to_lambda(eV_to_J(PHOTON_ENERGY)); /* Wavelength */
 	cell = load_cell_from_pdb(filename);
 	image.filename = NULL;
 

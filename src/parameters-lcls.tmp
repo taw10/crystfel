@@ -12,3 +12,6 @@
 
 /* Radius of X-ray beam */
 #define BEAM_RADIUS (3.0e-6 / 2.0)
+
+/* Photon energy in eV */
+#define PHOTON_ENERGY (8000.0)
