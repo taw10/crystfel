@@ -270,14 +270,14 @@ static void *process_image(void *pargsv)
 
 	result = malloc(sizeof(*result));
 	if ( result == NULL ) return NULL;
+	result->peaks_sane = 0;
+	result->hit = 0;
 
 	hdfile = hdfile_open(filename);
 	if ( hdfile == NULL ) {
-		result->hit = 0;
 		return result;
 	} else if ( hdfile_set_first_image(hdfile, "/") ) {
 		ERROR("Couldn't select path\n");
-		result->hit = 0;
 		return result;
 	}
 
@@ -325,13 +325,11 @@ static void *process_image(void *pargsv)
 	}
 
 	/* No cell at this point?  Then we're done. */
-	result->peaks_sane = 0;
 	if ( image.indexed_cell == NULL ) goto done;
 
 	/* Sanity check */
 	if ( !peak_sanity_check(&image, image.indexed_cell) ) {
 		STATUS("Failed peak sanity check.\n");
-		result->peaks_sane = 0;
 		goto done;
 	} else {
 		result->peaks_sane = 1;
