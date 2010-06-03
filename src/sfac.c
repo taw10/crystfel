@@ -311,7 +311,7 @@ static void centre_molecule(struct molecule *mol)
 
 /* Load PDB file into a memory format suitable for efficient(ish) structure
  * factor calculation */
-struct molecule *load_molecule()
+struct molecule *load_molecule(const char *filename)
 {
 	struct molecule *mol;
 	FILE *fh;
@@ -327,7 +327,7 @@ struct molecule *load_molecule()
 	mol->reflections = NULL;
 	mol->cell = NULL;
 
-	fh = fopen("molecule.pdb", "r");
+	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
                 ERROR("Couldn't open PDB file\n");
                 return NULL;

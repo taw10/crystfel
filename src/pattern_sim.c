@@ -41,6 +41,9 @@ static void show_help(const char *s)
 "pulses of X-rays from a free electron laser.\n"
 "\n"
 " -h, --help                Display this help message.\n"
+" -p, --pdb=<file>          PDB file from which to get the unit cell.\n"
+"                            (The actual Bragg intensities come from the\n"
+"                            intensities file)\n"
 "     --simulation-details  Show technical details of the simulation.\n"
 "     --gpu                 Use the GPU to speed up the calculation.\n"
 "\n"
@@ -166,6 +169,7 @@ int main(int argc, char *argv[])
 	int config_nosfac = 0;
 	int config_gpu = 0;
 	int config_powder = 0;
+	char *filename = NULL;
 	char *grad_str = NULL;
 	GradientMethod grad;
 	int ndone = 0;    /* Number of simulations done (images or not) */
@@ -189,11 +193,12 @@ int main(int argc, char *argv[])
 		{"intensities",        1, NULL,               'i'},
 		{"powder",             0, &config_powder,      1},
 		{"gradients",          1, NULL,               'g'},
+		{"pdb",                1, NULL,               'p'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hrn:i:g:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hrn:i:g:p:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
@@ -221,6 +226,11 @@ int main(int argc, char *argv[])
 			break;
 		}
 
+		case 'p' : {
+			filename = strdup(optarg);
+			break;
+		}
+
 		case 0 : {
 			break;
 		}
@@ -230,6 +240,10 @@ int main(int argc, char *argv[])
 		}
 		}
 
+	}
+
+	if ( filename == NULL ) {
+		filename = strdup("molecule.pdb");
 	}
 
 	if ( config_simdetails ) {
@@ -282,7 +296,7 @@ int main(int argc, char *argv[])
 	image.width = 1024;
 	image.height = 1024;
 	image.lambda = ph_en_to_lambda(eV_to_J(1790.0));  /* Wavelength */
-	cell = load_cell_from_pdb("molecule.pdb");
+	cell = load_cell_from_pdb(filename);
 	image.filename = NULL;
 
 	#include "geometry-lcls.tmp"
