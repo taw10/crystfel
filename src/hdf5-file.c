@@ -45,6 +45,9 @@ struct hdfile *hdfile_open(const char *filename)
 	f = malloc(sizeof(struct hdfile));
 	if ( f == NULL ) return NULL;
 
+	/* Please stop spamming my terminal */
+	H5Eset_auto(H5E_DEFAULT, NULL, NULL);
+
 	f->fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( f->fh < 0 ) {
 		ERROR("Couldn't open file: %s\n", filename);
