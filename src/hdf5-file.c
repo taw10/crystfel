@@ -242,6 +242,11 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 	dh = H5Dopen(f->fh, "/processing/hitfinder/peakinfo_saturated",
 	             H5P_DEFAULT);
 
+	if ( dh < 0 ) {
+		ERROR("Couldn't open saturation table.\n");
+		return;
+	}
+
 	sh = H5Dget_space(dh);
 	if ( sh < 0 ) {
 		H5Dclose(dh);
