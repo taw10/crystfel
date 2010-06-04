@@ -61,6 +61,7 @@ void record_image(struct image *image, int do_poisson)
 	double total_energy, energy_density;
 	double ph_per_e;
 	double area;
+	double max_tt = 0.0;
 
 	/* How many photons are scattered per electron? */
 	area = M_PI*pow(BEAM_RADIUS, 2.0);
@@ -127,9 +128,17 @@ void record_image(struct image *image, int do_poisson)
 			ERROR("Processed negative at %i,%i %f\n", x, y, counts);
 		}
 
+		if ( image->twotheta[x + image->width*y] > max_tt ) {
+			max_tt = image->twotheta[x + image->width*y];
+		}
+
 	}
 	progress_bar(x, image->width-1, "Post-processing");
 	}
+
+	STATUS("Max 2theta = %.2f deg, min d = %.2f nm (halve this to get the"
+	       " voxel size for a synthesis)\n",
+	        rad2deg(max_tt), (image->lambda/(2.0*sin(max_tt/2.0)))/1e-9);
 }
 
 
