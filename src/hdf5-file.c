@@ -341,6 +341,7 @@ int hdf5_read(struct hdfile *f, struct image *image)
 	mask_dh = H5Dopen(f->fh, "/processing/hitfinder/masks", H5P_DEFAULT);
 	if ( mask_dh <= 0 ) {
 		ERROR("Couldn't open flags\n");
+		image->flags = NULL;
 	} else {
 		flags = malloc(sizeof(uint16_t)*f->nx*f->ny);
 		r = H5Dread(mask_dh, H5T_NATIVE_UINT16, H5S_ALL, H5S_ALL,
@@ -351,8 +352,8 @@ int hdf5_read(struct hdfile *f, struct image *image)
 		} else {
 			image->flags = flags;
 		}
+		H5Dclose(mask_dh);
 	}
-	H5Dclose(mask_dh);
 
 	/* Read wavelength from file */
 	image->lambda = get_wavelength(f);
