@@ -113,6 +113,10 @@ static void cleanup(hid_t fh)
 		type = H5Iget_type(id);
 
 		if ( type == H5I_GROUP ) H5Gclose(id);
+		if ( type == H5I_DATASET ) H5Dclose(id);
+		if ( type == H5I_DATATYPE ) H5Tclose(id);
+		if ( type == H5I_DATASPACE ) H5Sclose(id);
+		if ( type == H5I_ATTR ) H5Aclose(id);
 
 	}
 }
@@ -318,6 +322,11 @@ int hdf5_read(struct hdfile *f, struct image *image)
 {
 	herr_t r;
 	float *buf;
+	uint16_t *flags;
+	hid_t mask_dh;
+
+	image->height = f->nx;
+	image->width = f->ny;
 
 	buf = malloc(sizeof(float)*f->nx*f->ny);
 
@@ -327,10 +336,23 @@ int hdf5_read(struct hdfile *f, struct image *image)
 		ERROR("Couldn't read data\n");
 		return 1;
 	}
-
 	image->data = buf;
-	image->height = f->nx;
-	image->width = f->ny;
+
+	mask_dh = H5Dopen(f->fh, "/processing/hitfinder/masks", H5P_DEFAULT);
+	if ( mask_dh <= 0 ) {
+		ERROR("Couldn't open flags\n");
+	} else {
+		flags = malloc(sizeof(uint16_t)*f->nx*f->ny);
+		r = H5Dread(mask_dh, H5T_NATIVE_UINT16, H5S_ALL, H5S_ALL,
+		            H5P_DEFAULT, flags);
+		if ( r < 0 ) {
+			ERROR("Couldn't read flags\n");
+			image->flags = NULL;
+		} else {
+			image->flags = flags;
+		}
+	}
+	H5Dclose(mask_dh);
 
 	/* Read wavelength from file */
 	image->lambda = get_wavelength(f);

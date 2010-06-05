@@ -41,7 +41,9 @@ static void show_help(const char *s)
 "      --zone-axis            Generate hk0 intensities only (and add\n"
 "                              Synth2D-style header.\n"
 "  -i, --intensities=<file>   Read intensities from file instead of\n"
-"                              calculating them from scratch.\n"
+"                              calculating them from scratch.  You might use\n"
+"                              this if you need to apply noise or twinning.\n"
+"  -p, --pdb=<file>           PDB file from which to get the structure.\n"
 );
 }
 
@@ -114,6 +116,7 @@ int main(int argc, char *argv[])
 	unsigned int *cts;
 	char *input = NULL;
 	signed int h, k, l;
+	char *filename = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -124,11 +127,12 @@ int main(int argc, char *argv[])
 		{"twin",               0, &config_twin,        1},
 		{"zone-axis",          0, &config_za,          1},
 		{"intensities",        1, NULL,               'i'},
+		{"pdb",                1, NULL,               'p'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ht:o:i:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ht:o:i:p:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
@@ -151,6 +155,11 @@ int main(int argc, char *argv[])
 			break;
 		}
 
+		case 'p' : {
+			filename = strdup(optarg);
+			break;
+		}
+
 		case 0 : {
 			break;
 		}
@@ -162,10 +171,14 @@ int main(int argc, char *argv[])
 
 	}
 
-	mol = load_molecule();
+	if ( filename == NULL ) {
+		filename = strdup("molecule.pdb");
+	}
+
+	mol = load_molecule(filename);
 	cts = new_list_count();
 	if ( input == NULL ) {
-		ideal_ref = get_reflections(mol, eV_to_J(1790.0), 1/(0.6e-9), cts);
+		ideal_ref = get_reflections(mol, eV_to_J(1790.0), 1/(0.05e-9), cts);
 	} else {
 		ideal_ref = read_reflections(input, cts);
 		free(input);
