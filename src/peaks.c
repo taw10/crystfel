@@ -533,7 +533,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 	printf("Orientation (wxyz): %7.5f %7.5f %7.5f %7.5f\n",
 	       image->orientation.w, image->orientation.x,
 	       image->orientation.y, image->orientation.z);
-	cell_get_parameters(image->indexed_cell, &a, &b, &c, &al, &be, &ga);
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
 	printf("Cell parameters %7.5f %7.5f %7.5f nm, %7.5f %7.5f %7.5f deg\n",
 	       a*1.0e9, b*1.0e9, c*1.0e9,
 	       rad2deg(al), rad2deg(be), rad2deg(ga));

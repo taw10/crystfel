@@ -325,6 +325,8 @@ int main(int argc, char *argv[])
 	image.filename = NULL;
 	image.features = NULL;
 	image.flags = NULL;
+	image.f0 = 1.0;
+	image.f0_available = 1;
 
 	#include "geometry-lcls.tmp"
 
