@@ -100,13 +100,13 @@ int main(int argc, char *argv[])
 
 	cell = load_cell_from_pdb("molecule.pdb");
 	c1 = new_list_count();
-	ref1 = read_reflections(afile, c1);
+	ref1 = read_reflections(afile, c1, NULL);
 	if ( ref1 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", afile);
 		return 1;
 	}
 	c2 = new_list_count();
-	ref2 = read_reflections(bfile, c2);
+	ref2 = read_reflections(bfile, c2, NULL);
 	if ( ref2 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", bfile);
 		return 1;
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 	STATUS("R2 = %5.4f %% (scale=%5.2f)\n", R*100.0, scale);
 
 	if ( outfile != NULL ) {
-		write_reflections(outfile, NULL, out, 1, cell, 1);
+		write_reflections(outfile, NULL, out, NULL, 1, cell, 1);
 	}
 
 	return 0;

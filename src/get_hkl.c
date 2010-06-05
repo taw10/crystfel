@@ -106,6 +106,7 @@ int main(int argc, char *argv[])
 {
 	int c;
 	double *ideal_ref;
+	double *phases;
 	struct molecule *mol;
 	char *template = NULL;
 	int config_noisify = 0;
@@ -177,10 +178,12 @@ int main(int argc, char *argv[])
 
 	mol = load_molecule(filename);
 	cts = new_list_count();
+	phases = new_list_intensity(); /* "intensity" type used for phases */
 	if ( input == NULL ) {
-		ideal_ref = get_reflections(mol, eV_to_J(1790.0), 1/(0.05e-9), cts);
+		ideal_ref = get_reflections(mol, eV_to_J(1790.0), 1/(0.05e-9),
+		                            cts, phases);
 	} else {
-		ideal_ref = read_reflections(input, cts);
+		ideal_ref = read_reflections(input, cts, phases);
 		free(input);
 	}
 
@@ -243,7 +246,8 @@ int main(int argc, char *argv[])
 
 	}
 
-	write_reflections(output, counts, ideal_ref, config_za, mol->cell, 1);
+	write_reflections(output, counts, ideal_ref, phases,
+	                  config_za, mol->cell, 1);
 
 	return 0;
 }

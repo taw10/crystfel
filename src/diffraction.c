@@ -148,9 +148,107 @@ static double interpolate_intensity(const double *ref,
 }
 
 
+static double complex interpolate_phased_linear(const double *ref,
+                                                const unsigned int *counts,
+                                                const double *phases,
+                                                float hd,
+                                                signed int k, signed int l)
+{
+	signed int h;
+	double val1, val2;
+	float f;
+	unsigned int c1, c2;
+	double ph1, ph2;
+	double re1, re2, im1, im2;
+	double re, im;
+
+	h = (signed int)hd;
+	if ( hd < 0.0 ) h -= 1;
+	f = hd - (float)h;
+	assert(f >= 0.0);
+
+	val1 = lookup_intensity(ref, h, k, l);
+	val2 = lookup_intensity(ref, h+1, k, l);
+	c1 = lookup_count(counts, h, k, l);
+	c2 = lookup_count(counts, h+1, k, l);
+	ph1 = lookup_phase(phases, h, k, l);
+	ph2 = lookup_phase(phases, h+1, k, l);
+
+	if ( c1 == 0 ) {
+		ERROR("Needed intensity for %i %i %i, but don't have it.\n",
+		      h, k, l);
+		return 1.0e20;
+	}
+
+	if ( c2 == 0 ) {
+		ERROR("Needed intensity for %i %i %i, but don't have it.\n",
+		      h+1, k, l);
+		return 1.0e20;
+	}
+
+	val1 = val1 / (double)c1;
+	val2 = val2 / (double)c2;
+
+	/* Calculate real and imaginary parts */
+	re1 = val1 * cos(ph1);
+	im1 = val1 * sin(ph1);
+	re2 = val2 * cos(ph2);
+	im2 = val2 * sin(ph2);
+
+	re = (1.0-f)*re1 + f*re2;
+	im = (1.0-f)*im1 + f*im2;
+
+	return re + im*I;
+}
+
+
+static double complex interpolate_phased_bilinear(const double *ref,
+                                                  const unsigned int *counts,
+                                                  const double *phases,
+                                                  float hd, float kd,
+                                                  signed int l)
+{
+	signed int k;
+	double complex val1, val2;
+	float f;
+
+	k = (signed int)kd;
+	if ( kd < 0.0 ) k -= 1;
+	f = kd - (float)k;
+	assert(f >= 0.0);
+
+	val1 = interpolate_phased_linear(ref, counts, phases, hd, k, l);
+	val2 = interpolate_phased_linear(ref, counts, phases, hd, k+1, l);
+
+	return (1.0-f)*val1 + f*val2;
+}
+
+
+static double interpolate_phased_intensity(const double *ref,
+                                           const unsigned int *counts,
+                                           const double *phases,
+                                           float hd, float kd, float ld)
+{
+	signed int l;
+	double complex val1, val2;
+	float f;
+
+	l = (signed int)ld;
+	if ( ld < 0.0 ) l -= 1;
+	f = ld - (float)l;
+	assert(f >= 0.0);
+
+	val1 = interpolate_phased_bilinear(ref, counts, phases, hd, kd, l);
+	val2 = interpolate_phased_bilinear(ref, counts, phases, hd, kd, l+1);
+
+	return cabs((1.0-f)*val1 + f*val2);
+}
+
+
 /* Look up the structure factor for the nearest Bragg condition */
 static double molecule_factor(const double *intensities,
-                              const unsigned int *counts, struct rvec q,
+                              const unsigned int *counts, const double *phases,
+                              struct rvec q,
                               double ax, double ay, double az,
                               double bx, double by, double bz,
                               double cx, double cy, double cz,
@@ -180,6 +278,9 @@ static double molecule_factor(const double *intensities,
 		r = interpolate_intensity(intensities, counts, hd, kd, ld);
 		break;
 	case GRADIENT_PHASED :
+		r = interpolate_phased_intensity(intensities, counts, phases,
+		                                 hd, kd, ld);
+		break;
 	default:
 		ERROR("This gradient method not implemented yet.\n");
 		exit(1);
@@ -290,7 +391,8 @@ double get_tt(struct image *image, unsigned int xs, unsigned int ys)
 
 void get_diffraction(struct image *image, int na, int nb, int nc,
                      const double *intensities, const unsigned int *counts,
-                     UnitCell *cell, int do_water, GradientMethod m)
+                     const double *phases, UnitCell *cell, int do_water,
+                     GradientMethod m)
 {
 	unsigned int xs, ys;
 	double ax, ay, az;
@@ -345,7 +447,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 				I_molecule = 1.0e10;
 			} else {
 				I_molecule = molecule_factor(intensities,
-				                             counts, q,
+				                             counts, phases, q,
 			                                     ax,ay,az,
 			                                     bx,by,bz,cx,cy,cz,
 				                             m);

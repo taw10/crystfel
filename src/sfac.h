@@ -61,7 +61,7 @@ extern double complex get_sfac(const char *n, double s, double en);
 extern struct molecule *load_molecule(const char *filename);
 extern void free_molecule(struct molecule *mol);
 extern double *get_reflections(struct molecule *mol, double en, double res,
-                               unsigned int *counts);
+                               unsigned int *counts, double *phases);
 
 
 #endif	/* SFAC_H */

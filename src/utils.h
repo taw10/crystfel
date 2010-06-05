@@ -160,6 +160,11 @@ static inline double angle_between(double x1, double y1, double z1,
 #define TYPE double
 #include "list_tmp.h"
 
+/* CAs above, but for phase values */
+#define LABEL(x) x##_phase
+#define TYPE double
+#include "list_tmp.h"
+
 /* As above, but for complex structure factors */
 #define LABEL(x) x##_sfac
 #define TYPE double complex

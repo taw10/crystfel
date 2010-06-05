@@ -167,6 +167,7 @@ int main(int argc, char *argv[])
 	double *powder;
 	char *intfile = NULL;
 	double *intensities;
+	double *phases;
 	int config_simdetails = 0;
 	int config_nearbragg = 0;
 	int config_randomquat = 0;
@@ -286,9 +287,11 @@ int main(int argc, char *argv[])
 		STATUS("I'll simulate a flat intensity distribution.\n");
 		intensities = NULL;
 		counts = NULL;
+		phases = NULL;
 	} else {
 		counts = new_list_count();
-		intensities = read_reflections(intfile, counts);
+		phases = new_list_phase();
+		intensities = read_reflections(intfile, counts, phases);
 		free(intfile);
 	}
 
@@ -379,7 +382,7 @@ int main(int argc, char *argv[])
 			get_diffraction_gpu(gctx, &image, na, nb, nc, cell);
 		} else {
 			get_diffraction(&image, na, nb, nc, intensities, counts,
-			                cell, !config_nowater, grad);
+			                phases, cell, !config_nowater, grad);
 		}
 		if ( image.data == NULL ) {
 			ERROR("Diffraction calculation failed.\n");

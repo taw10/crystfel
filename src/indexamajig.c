@@ -216,7 +216,8 @@ static void simulate_and_write(struct image *simage, struct gpu_context **gctx,
 		get_diffraction_gpu(*gctx, simage, 24, 24, 40, cell);
 	} else {
 		get_diffraction(simage, 24, 24, 40,
-		                intensities, counts, cell, 0, GRADIENT_MOSAIC);
+		                intensities, counts, NULL, cell, 0,
+		                GRADIENT_MOSAIC);
 	}
 	record_image(simage, 0);
 
@@ -508,7 +509,7 @@ int main(int argc, char *argv[])
 
 	if ( intfile != NULL ) {
 		counts = new_list_count();
-		intensities = read_reflections(intfile, counts);
+		intensities = read_reflections(intfile, counts, NULL);
 	} else {
 		intensities = NULL;
 		counts = NULL;

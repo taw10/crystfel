@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 
 	cell = load_cell_from_pdb("molecule.pdb");
 	c1 = new_list_count();
-	ref1 = read_reflections(infile, c1);
+	ref1 = read_reflections(infile, c1, NULL);
 	if ( ref1 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", infile);
 		return 1;

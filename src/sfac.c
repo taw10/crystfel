@@ -491,7 +491,7 @@ void free_molecule(struct molecule *mol)
 
 
 double *get_reflections(struct molecule *mol, double en, double res,
-                        unsigned int *counts)
+                        unsigned int *counts, double *phases)
 {
 	double *reflections;
 	double asx, asy, asz;
@@ -555,6 +555,7 @@ double *get_reflections(struct molecule *mol, double en, double res,
 		}
 
 		set_intensity(reflections, h, k, l, pow(cabs(F), 2.0));
+		if ( phases != NULL ) set_phase(phases, h, k, l, carg(F));
 		set_count(counts, h, k, l, 1);
 
 	}

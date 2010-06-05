@@ -22,8 +22,8 @@
 
 
 void write_reflections(const char *filename, unsigned int *counts,
-                       double *ref, int zone_axis, UnitCell *cell,
-                       unsigned int min_counts)
+                       double *ref, double *phases, int zone_axis,
+                       UnitCell *cell, unsigned int min_counts)
 {
 	FILE *fh;
 	signed int h, k, l;
@@ -50,7 +50,7 @@ void write_reflections(const char *filename, unsigned int *counts,
 		fprintf(fh, "angle %5.3f deg\n", rad2deg(alpha));
 		fprintf(fh, "scale 10\n");
 	} else {
-		fprintf(fh, " h   k   l    I    sigma(I)   1/d / nm^-1\n");
+		fprintf(fh, " h   k   l    I    phase(I)    sigma(I)   1/d / nm^-1\n");
 	}
 
 	for ( h=-INDMAX; h<INDMAX; h++ ) {
@@ -59,6 +59,7 @@ void write_reflections(const char *filename, unsigned int *counts,
 
 		int N;
 		double intensity, s;
+		char ph[32];
 
 		if ( counts ) {
 			N = lookup_count(counts, h, k, l);
@@ -68,7 +69,14 @@ void write_reflections(const char *filename, unsigned int *counts,
 		}
 		if ( zone_axis && (l != 0) ) continue;
 
-		intensity = lookup_intensity(ref, h, k, l) / N;
+		intensity = lookup_phase(ref, h, k, l) / N;
+		if ( phases != NULL ) {
+			double p;
+			p = lookup_intensity(phases, h, k, l);
+			snprintf(ph, 31, "%f", p);
+		} else {
+			strncpy(ph, "-", 31);
+		}
 
 		if ( cell != NULL ) {
 			s = 2.0*resolution(cell, h, k, l);
@@ -77,7 +85,7 @@ void write_reflections(const char *filename, unsigned int *counts,
 		}
 
 		/* h, k, l, I, sigma(I), s */
-		fprintf(fh, "%3i %3i %3i %f %f %f\n", h, k, l, intensity,
+		fprintf(fh, "%3i %3i %3i %f %s %f %f\n", h, k, l, intensity, ph,
 		                                      0.0, s/1.0e9);
 
 	}
@@ -87,7 +95,8 @@ void write_reflections(const char *filename, unsigned int *counts,
 }
 
 
-double *read_reflections(const char *filename, unsigned int *counts)
+double *read_reflections(const char *filename, unsigned int *counts,
+                         double *phases)
 {
 	double *ref;
 	FILE *fh;
@@ -105,14 +114,15 @@ double *read_reflections(const char *filename, unsigned int *counts)
 
 		char line[1024];
 		signed int h, k, l;
-		float intensity;
+		float intensity, ph;
 		int r;
 
 		rval = fgets(line, 1023, fh);
-		r = sscanf(line, "%i %i %i %f", &h, &k, &l, &intensity);
-		if ( r != 4 ) continue;
+		r = sscanf(line, "%i %i %i %f %f", &h, &k, &l, &intensity, &ph);
+		if ( r != 5 ) continue;
 
 		set_intensity(ref, h, k, l, intensity);
+		if ( phases != NULL ) set_phase(phases, h, k, l, ph);
 		if ( counts != NULL ) set_count(counts, h, k, l, 1);
 
 	} while ( rval != NULL );

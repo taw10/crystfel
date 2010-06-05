@@ -176,7 +176,7 @@ static void process_reflections(double *ref, unsigned int *counts,
 	if ( do_zoneaxis ) {
 		char name[64];
 		snprintf(name, 63, "ZA-%u.dat", n_patterns);
-		write_reflections(name, counts, ref, 1, cell, 1);
+		write_reflections(name, counts, ref, NULL, 1, cell, 1);
 	}
 
 	fh = fopen("results/convergence.dat", "a");
@@ -323,7 +323,7 @@ int main(int argc, char *argv[])
 	if ( intfile != NULL ) {
 		truecounts = new_list_count();
 		STATUS("Comparing against '%s'\n", intfile);
-		trueref = read_reflections(intfile, truecounts);
+		trueref = read_reflections(intfile, truecounts, NULL);
 		free(intfile);
 	} else {
 		trueref = NULL;
@@ -457,13 +457,14 @@ int main(int argc, char *argv[])
 	}
 
 	if ( output != NULL ) {
-		write_reflections(output, model_counts, model, 0, cell, 1);
+		write_reflections(output, model_counts, model, NULL,
+		                  0, cell, 1);
 	}
 
 	if ( config_zoneaxis ) {
 		char name[64];
 		snprintf(name, 63, "ZA-%u.dat", n_patterns);
-		write_reflections(name, model_counts, model, 1, cell, 10);
+		write_reflections(name, model_counts, model, NULL, 1, cell, 10);
 	}
 
 	STATUS("There were %u patterns.\n", n_patterns);
