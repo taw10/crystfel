@@ -24,5 +24,6 @@ extern void dump_peaks(struct image *image, pthread_mutex_t *mutex);
 extern void output_intensities(struct image *image, UnitCell *cell,
                                pthread_mutex_t *mutex, int unpolar);
 extern int peak_sanity_check(struct image *image, UnitCell *cell);
+extern int find_projected_peaks(struct image *image, UnitCell *cell);
 
 #endif	/* PEAKS_H */

@@ -167,6 +167,9 @@ static int integrate_peak(struct image *image, int xp, int yp,
 		}
 
 		p = find_panel(&image->det, x+xp, y+yp);
+		if ( p == NULL ) {
+			return 1;
+		}
 
 		/* Area of one pixel */
 		pix_area = pow(1.0/p->res, 2.0);
@@ -396,7 +399,7 @@ void dump_peaks(struct image *image, pthread_mutex_t *mutex)
 }
 
 
-static int find_projected_peaks(struct image *image, UnitCell *cell)
+int find_projected_peaks(struct image *image, UnitCell *cell)
 {
 	int x, y;
 	double ax, ay, az;
@@ -561,8 +564,13 @@ void output_intensities(struct image *image, UnitCell *cell,
 		struct imagefeature *f;
 
 		/* Wait.. is there a really close feature which was detected? */
-		f = image_feature_closest(image->features, hits[i].x, hits[i].y,
-		                          &d, &idx);
+		if ( image->features != NULL ) {
+			f = image_feature_closest(image->features,
+			                          hits[i].x, hits[i].y,
+			                          &d, &idx);
+		} else {
+			f = NULL;
+		}
 		if ( (f != NULL) && (d < PEAK_REALLY_CLOSE) ) {
 
 			int r;
