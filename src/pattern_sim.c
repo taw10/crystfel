@@ -59,8 +59,8 @@ static void show_help(const char *s)
 "                            files produced are sim-1.h5, sim-2.h5 and so on.\n"
 " -r, --random-orientation  Use a randomly generated orientation\n"
 "                            (a new orientation will be used for each image).\n"
-"     --powder              Write a summed pattern of all images simulated by\n"
-"                            this invocation to results/integr.h5.\n"
+"     --powder=<file>       Write a summed pattern of all images simulated by\n"
+"                            this invocation as the given filename.\n"
 " -i, --intensities=<file>  Specify file containing reflection intensities\n"
 "                            (and phases) to use.\n"
 " -g, --gradients=<method>  Use <method> for the calculation of shape\n"
@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
 	int config_nonoise = 0;
 	int config_nosfac = 0;
 	int config_gpu = 0;
-	int config_powder = 0;
+	char *powder_fn = NULL;
 	char *filename = NULL;
 	char *grad_str = NULL;
 	char *outfile = NULL;
@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
 		{"no-water",           0, &config_nowater,     1},
 		{"no-noise",           0, &config_nonoise,     1},
 		{"intensities",        1, NULL,               'i'},
-		{"powder",             0, &config_powder,      1},
+		{"powder",             1, NULL,               'w'},
 		{"gradients",          1, NULL,               'g'},
 		{"pdb",                1, NULL,               'p'},
 		{"output",             1, NULL,               'o'},
@@ -250,6 +250,11 @@ int main(int argc, char *argv[])
 
 		case 'o' : {
 			outfile = strdup(optarg);
+			break;
+		}
+
+		case 'w' : {
+			powder_fn = strdup(optarg);
 			break;
 		}
 
@@ -403,7 +408,7 @@ int main(int argc, char *argv[])
 			output_intensities(&image, cell, NULL, 1);
 		}
 
-		if ( config_powder ) {
+		if ( powder_fn != NULL ) {
 
 			int x, y, w;
 
@@ -416,7 +421,7 @@ int main(int argc, char *argv[])
 			}
 
 			if ( !(ndone % 10) ) {
-				hdf5_write("results/integr.h5", powder,
+				hdf5_write(powder_fn, powder,
 				           image.width, image.height,
 				           H5T_NATIVE_DOUBLE);
 			}
