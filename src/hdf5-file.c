@@ -45,6 +45,9 @@ struct hdfile *hdfile_open(const char *filename)
 	f = malloc(sizeof(struct hdfile));
 	if ( f == NULL ) return NULL;
 
+	/* Please stop spamming my terminal */
+	H5Eset_auto(H5E_DEFAULT, NULL, NULL);
+
 	f->fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( f->fh < 0 ) {
 		ERROR("Couldn't open file: %s\n", filename);
@@ -239,6 +242,11 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 	dh = H5Dopen(f->fh, "/processing/hitfinder/peakinfo_saturated",
 	             H5P_DEFAULT);
 
+	if ( dh < 0 ) {
+		ERROR("Couldn't open saturation table.\n");
+		return;
+	}
+
 	sh = H5Dget_space(dh);
 	if ( sh < 0 ) {
 		H5Dclose(dh);
@@ -341,6 +349,7 @@ int hdf5_read(struct hdfile *f, struct image *image)
 	mask_dh = H5Dopen(f->fh, "/processing/hitfinder/masks", H5P_DEFAULT);
 	if ( mask_dh <= 0 ) {
 		ERROR("Couldn't open flags\n");
+		image->flags = NULL;
 	} else {
 		flags = malloc(sizeof(uint16_t)*f->nx*f->ny);
 		r = H5Dread(mask_dh, H5T_NATIVE_UINT16, H5S_ALL, H5S_ALL,
@@ -351,8 +360,8 @@ int hdf5_read(struct hdfile *f, struct image *image)
 		} else {
 			image->flags = flags;
 		}
+		H5Dclose(mask_dh);
 	}
-	H5Dclose(mask_dh);
 
 	/* Read wavelength from file */
 	image->lambda = get_wavelength(f);

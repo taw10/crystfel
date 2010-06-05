@@ -320,6 +320,8 @@ int main(int argc, char *argv[])
 	image.lambda = ph_en_to_lambda(eV_to_J(PHOTON_ENERGY)); /* Wavelength */
 	cell = load_cell_from_pdb(filename);
 	image.filename = NULL;
+	image.features = NULL;
+	image.flags = NULL;
 
 	#include "geometry-lcls.tmp"
 
@@ -382,6 +384,7 @@ int main(int argc, char *argv[])
 		record_image(&image, !config_nonoise);
 
 		if ( config_nearbragg ) {
+			find_projected_peaks(&image, cell);
 			output_intensities(&image, cell, NULL, 1);
 		}
 
