@@ -319,6 +319,9 @@ int main(int argc, char *argv[])
 	image.height = 1024;
 	image.lambda = ph_en_to_lambda(eV_to_J(PHOTON_ENERGY)); /* Wavelength */
 	cell = load_cell_from_pdb(filename);
+	if ( cell == NULL ) {
+		exit(1);
+	}
 	image.filename = NULL;
 	image.features = NULL;
 	image.flags = NULL;
