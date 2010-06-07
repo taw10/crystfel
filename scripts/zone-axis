@@ -1,0 +1,25 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+open(FH, $ARGV[0]);
+
+my $line;
+
+while ( $line = <FH> ) {
+
+	if ( $line =~ /^([\d\-]+)\s+([\d\-]+)\s+([\d\-]+)\s+([\d\.\-]+)\s+/ ) {
+
+		my $h = $1;
+		my $k = $2;
+		my $l = $3;
+		my $intensity = $4;
+
+		if ( $l == 0 ) {
+			printf("%3i %3i %3i %f\n", $h, $k, $l, $intensity);
+		}
+
+
+	}
+
+}
