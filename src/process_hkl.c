@@ -42,6 +42,7 @@ static void show_help(const char *s)
 "  -i, --input=<filename>    Specify input filename (\"-\" for stdin).\n"
 "  -o, --output=<filename>   Specify output filename for merged intensities\n"
 "                             (don't specify for no output).\n"
+"  -p, --pdb=<filename>      PDB file to use (default: molecule.pdb).\n"
 "\n"
 "      --max-only            Take the integrated intensity to be equal to the\n"
 "                             maximum intensity measured for that reflection.\n"
@@ -245,6 +246,7 @@ int main(int argc, char *argv[])
 	unsigned int *new_counts = NULL;
 	unsigned int n_total_patterns;
 	unsigned int *truecounts = NULL;
+	char *pdb = NULL;
 	float f0;
 	int f0_valid;
 
@@ -261,12 +263,13 @@ int main(int argc, char *argv[])
 		{"compare-with",       0, NULL,               'c'},
 		{"sum",                0, &config_sum,         1},
 		{"detwin",             0, &config_detwin,      1},
-		{"scale",              0, &config_scale,      1},
+		{"scale",              0, &config_scale,       1},
+		{"pdb",                1, NULL,               'p'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:e:ro:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hi:e:ro:p:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
@@ -304,6 +307,11 @@ int main(int argc, char *argv[])
 			break;
 		}
 
+		case 'p' : {
+			pdb = strdup(optarg);
+			break;
+		}
+
 		case 0 : {
 			break;
 		}
@@ -329,9 +337,13 @@ int main(int argc, char *argv[])
 		trueref = NULL;
 	}
 
+	if ( pdb == NULL ) {
+		pdb = strdup("molecule.pdb");
+	}
+
 	model = new_list_intensity();
 	model_counts = new_list_count();
-	cell = load_cell_from_pdb("molecule.pdb");
+	cell = load_cell_from_pdb(pdb);
 	new_pattern = new_list_intensity();
 	new_counts = new_list_count();
 
