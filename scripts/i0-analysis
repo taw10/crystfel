@@ -2,6 +2,7 @@
 
 use strict;
 use File::Basename;
+use POSIX;
 
 open(FH, $ARGV[0]);
 
@@ -33,7 +34,7 @@ while ( $line = <FH> ) {
 	if ( $line =~ /^([\d\.]+)\ ([\d\.]+)$/ ) {
 		my $scale = $1;
 		my $i0 = $2;
-		my $bin = int(($scale-$hmin)/$hstep);
+		my $bin = floor(($scale-$hmin)/$hstep);
 		$hist[$bin]++;
 	}
 }
@@ -59,7 +60,7 @@ while ( $line = <FH> ) {
 	if ( $line =~ /^([\d\.]+)\ ([\d\.]+)$/ ) {
 		my $scale = $1;
 		my $i0 = $2;
-		my $bin = int(($i0-$hmin)/$hstep);
+		my $bin = floor(($i0-$hmin)/$hstep);
 		$hist[$bin]++;
 	}
 }
@@ -85,7 +86,7 @@ while ( $line = <FH> ) {
 	if ( $line =~ /^([\d\.]+)\ ([\d\.]+)$/ ) {
 		my $scale = $1;
 		my $i0 = $2;
-		my $bin = int((($scale/$i0)-$hmin)/$hstep);
+		my $bin = floor((($scale/$i0)-$hmin)/$hstep);
 		$hist[$bin]++;
 	}
 }
