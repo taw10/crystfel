@@ -59,6 +59,7 @@ struct process_args
 	int config_nomatch;
 	int config_unpolar;
 	int config_sanity;
+	struct detector *det;
 	IndexingMethod indm;
 	const double *intensities;
 	const unsigned int *counts;
@@ -86,6 +87,7 @@ static void show_help(const char *s)
 "      --indexing=<method> Use 'method' for indexing.  Choose from:\n"
 "                           none     : no indexing\n"
 "                           dirax    : invoke DirAx\n"
+"  -g. --geometry=<file>   Get detector geometry from file.\n"
 "\n\nWith just the above options, this program does not do much of practical "
 "use.\nYou should also enable some of the following:\n\n"
 "      --near-bragg        Output a list of reflection intensities to stdout.\n"
@@ -159,7 +161,7 @@ static struct image *get_simage(struct image *template, int alternate)
 	 * - not necessarily the same as the original. */
 	image->width = 1024;
 	image->height = 1024;
-	image->det.n_panels = 2;
+	image->det->n_panels = 2;
 
 	if ( alternate ) {
 
@@ -183,12 +185,12 @@ static struct image *get_simage(struct image *template, int alternate)
 		panels[1].clen = 56.7e-2;  /* 56.7 cm */
 		panels[1].res = 13333.3;   /* 75 microns/pixel */
 
-		image->det.panels = panels;
+		image->det->panels = panels;
 
 	} else {
 
 		/* Copy pointer to old geometry */
-		image->det.panels = template->det.panels;
+		image->det->panels = template->det->panels;
 
 	}
 
@@ -263,6 +265,7 @@ static void *process_image(void *pargsv)
 	image.filename = filename;
 	image.hits = NULL;
 	image.n_hits = 0;
+	image.det = pargs->det;
 
 	/* View head-on (unit cell is tilted) */
 	image.orientation.w = 1.0;
@@ -284,8 +287,6 @@ static void *process_image(void *pargsv)
 		ERROR("Couldn't select path\n");
 		return result;
 	}
-
-	#include "geometry-lcls.tmp"
 
 	hdf5_read(hdfile, &image);
 
@@ -372,7 +373,6 @@ static void *process_image(void *pargsv)
 done:
 	free(image.data);
 	free(image.flags);
-	free(image.det.panels);
 	image_feature_list_free(image.features);
 	free(image.hits);
 	hdfile_close(hdfile);
@@ -409,6 +409,8 @@ int main(int argc, char *argv[])
 	int config_alternate = 0;
 	int config_unpolar = 0;
 	int config_sanity = 0;
+	struct detector *det;
+	char *geometry = NULL;
 	IndexingMethod indm;
 	char *indm_str = NULL;
 	UnitCell *cell;
@@ -435,6 +437,7 @@ int main(int argc, char *argv[])
 		{"near-bragg",         0, &config_nearbragg,   1},
 		{"write-drx",          0, &config_writedrx,    1},
 		{"indexing",           1, NULL,               'z'},
+		{"geometry",           1, NULL,               'g'},
 		{"simulate",           0, &config_simulate,    1},
 		{"filter-cm",          0, &config_cmfilter,    1},
 		{"filter-noise",       0, &config_noisefilter, 1},
@@ -450,7 +453,8 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:wp:j:x:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hi:wp:j:x:g:",
+	                        longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
@@ -485,6 +489,11 @@ int main(int argc, char *argv[])
 
 		case 'j' : {
 			nthreads = atoi(optarg);
+			break;
+		}
+
+		case 'g' : {
+			geometry = strdup(optarg);
 			break;
 		}
 
@@ -550,6 +559,18 @@ int main(int argc, char *argv[])
 	}
 	free(indm_str);
 
+	if ( geometry == NULL ) {
+		ERROR("You need to specify a geometry file with --geometry\n");
+		return 1;
+	}
+
+	det = get_detector_geometry(geometry);
+	if ( det == NULL ) {
+		ERROR("Failed to read detector geometry from '%s'\n", geometry);
+		return 1;
+	}
+	free(geometry);
+
 	cell = load_cell_from_pdb(pdb);
 	if ( cell == NULL ) {
 		if ( pdb == NULL ) {
@@ -603,6 +624,7 @@ int main(int argc, char *argv[])
 		pargs->config_unpolar = config_unpolar;
 		pargs->config_sanity = config_sanity;
 		pargs->cell = cell;
+		pargs->det = det;
 		pargs->indm = indm;
 		pargs->intensities = intensities;
 		pargs->counts = counts;
@@ -695,6 +717,8 @@ int main(int argc, char *argv[])
 	}
 
 	free(prefix);
+	free(det->panels);
+	free(det);
 	free(cell);
 	fclose(fh);
 

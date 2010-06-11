@@ -47,4 +47,6 @@ extern void record_image(struct image *image, int do_poisson);
 
 extern struct panel *find_panel(struct detector *det, int x, int y);
 
+extern struct detector *get_detector_geometry(const char *filename);
+
 #endif	/* DETECTOR_H */

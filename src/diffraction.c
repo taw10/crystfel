@@ -348,7 +348,7 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 	const unsigned int x = xs / sampling;
 	const unsigned int y = ys / sampling; /* Integer part only */
 
-	p = find_panel(&image->det, x, y);
+	p = find_panel(image->det, x, y);
 	assert(p != NULL);
 
 	rx = ((float)xs - (sampling*p->cx)) / (sampling * p->res);
@@ -377,7 +377,7 @@ double get_tt(struct image *image, unsigned int xs, unsigned int ys)
 	const unsigned int x = xs;
 	const unsigned int y = ys; /* Integer part only */
 
-	p = find_panel(&image->det, x, y);
+	p = find_panel(image->det, x, y);
 
 	rx = ((float)xs - p->cx) / p->res;
 	ry = ((float)ys - p->cy) / p->res;

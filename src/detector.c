@@ -33,7 +33,7 @@ int map_position(struct image *image, double dx, double dy,
 	double x = 0.0;
 	double y = 0.0;
 
-	p = find_panel(&image->det, dx, dy);
+	p = find_panel(image->det, dx, dy);
 	if ( p == NULL ) return 1;
 
 	x = ((double)dx - p->cx);
@@ -94,7 +94,7 @@ void record_image(struct image *image, int do_poisson)
 			ERROR("NaN at %i,%i\n", x, y);
 		}
 
-		p = find_panel(&image->det, x, y);
+		p = find_panel(image->det, x, y);
 
 		/* Area of one pixel */
 		pix_area = pow(1.0/p->res, 2.0);
@@ -157,4 +157,99 @@ struct panel *find_panel(struct detector *det, int x, int y)
 	ERROR("No mapping found for %i,%i\n", x, y);
 
 	return NULL;
+}
+
+
+struct detector *get_detector_geometry(const char *filename)
+{
+	FILE *fh;
+	struct detector *det;
+	char *rval;
+	char **bits;
+	int n_panels = -1;
+	int i;
+
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) return NULL;
+
+	det = malloc(sizeof(struct detector));
+	if ( det == NULL ) {
+		fclose(fh);
+		return NULL;
+	}
+
+	do {
+
+		int n1, n2;
+		char **path;
+		char line[1024];
+		int np;
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) break;
+		chomp(line);
+
+		n1 = assplode(line, " \t", &bits, ASSPLODE_NONE);
+		if ( n1 < 3 ) continue;
+
+		if ( bits[1][0] != '=' ) continue;
+
+		if ( strcmp(bits[0], "n_panels") == 0 ) {
+			if ( n_panels != -1 ) {
+				ERROR("Duplicate n_panels statement.\n");
+				fclose(fh);
+				free(det);
+				return NULL;
+			}
+			n_panels = atoi(bits[2]);
+			det->panels = malloc(n_panels * sizeof(struct panel));
+			continue;
+		}
+
+		n2 = assplode(bits[0], "/\\.", &path, ASSPLODE_NONE);
+
+		np = atoi(path[0]);
+
+		if ( strcmp(path[1], "min_x") == 0 ) {
+			det->panels[np].min_x = atof(bits[2]);
+		} else if ( strcmp(path[1], "max_x") == 0 ) {
+			det->panels[np].max_x = atof(bits[2]);
+		} else if ( strcmp(path[1], "min_y") == 0 ) {
+			det->panels[np].min_y = atof(bits[2]);
+		} else if ( strcmp(path[1], "max_y") == 0 ) {
+			det->panels[np].max_y = atof(bits[2]);
+		} else if ( strcmp(path[1], "cx") == 0 ) {
+			det->panels[np].cx = atof(bits[2]);
+		} else if ( strcmp(path[1], "cy") == 0 ) {
+			det->panels[np].cy = atof(bits[2]);
+		} else if ( strcmp(path[1], "clen") == 0 ) {
+			det->panels[np].clen = atof(bits[2]);
+		} else if ( strcmp(path[1], "res") == 0 ) {
+			det->panels[np].res = atof(bits[2]);
+		} else {
+			ERROR("Unrecognised field '%s'\n", path[1]);
+		}
+
+	} while ( rval != NULL );
+
+	if ( n_panels == -1 ) {
+		ERROR("No panel descriptions in geometry file.\n");
+		fclose(fh);
+		free(det->panels);
+		free(det);
+		return NULL;
+	}
+
+	for ( i=0; i<n_panels; i++ ) {
+		STATUS("Panel %i, min_x = %i\n", i, det->panels[i].min_x);
+		STATUS("Panel %i, max_x = %i\n", i, det->panels[i].max_x);
+		STATUS("Panel %i, min_y = %i\n", i, det->panels[i].min_y);
+		STATUS("Panel %i, max_y = %i\n", i, det->panels[i].max_y);
+		STATUS("Panel %i, cx = %f\n", i, det->panels[i].cx);
+		STATUS("Panel %i, cy = %f\n", i, det->panels[i].cy);
+		STATUS("Panel %i, clen = %f\n", i, det->panels[i].clen);
+		STATUS("Panel %i, res = %f\n", i, det->panels[i].res);
+	}
+
+	return det;
 }

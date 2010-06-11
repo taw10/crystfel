@@ -35,6 +35,7 @@ static void show_help(const char *s)
 "Compare intensity lists.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
+"  -g. --geometry=<file>   Get detector geometry from file.\n"
 "\n");
 }
 
@@ -46,16 +47,18 @@ int main(int argc, char *argv[])
 	int x, y;
 	struct hdfile *hdfile;
 	char *filename = NULL;
+	char *geometry = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
+		{"geometry",           1, NULL,               'g'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hi:g:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
@@ -72,6 +75,11 @@ int main(int argc, char *argv[])
 			break;
 		}
 
+		case 'g' : {
+			geometry = strdup(optarg);
+			break;
+		}
+
 		default : {
 			return 1;
 		}
@@ -84,7 +92,17 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	#include "geometry-lcls.tmp"
+	if ( geometry == NULL ) {
+		ERROR("You need to specify a geometry file with --geometry\n");
+		return 1;
+	}
+
+	image.det = get_detector_geometry(geometry);
+	if ( image.det == NULL ) {
+		ERROR("Failed to read detector geometry from '%s'\n", geometry);
+		return 1;
+	}
+	free(geometry);
 
 	hdfile = hdfile_open(filename);
 	hdfile_set_image(hdfile, "/data/data");

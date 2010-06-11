@@ -86,7 +86,7 @@ struct image {
 	UnitCell                *indexed_cell;
 	UnitCell                *candidate_cells[MAX_CELL_CANDIDATES];
 	int                     ncells;
-	struct detector         det;
+	struct detector         *det;
 	const char              *filename;
 	struct reflhit          *hits;
 	int                     n_hits;

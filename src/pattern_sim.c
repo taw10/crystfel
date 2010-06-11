@@ -47,6 +47,7 @@ static void show_help(const char *s)
 "                            intensities file)\n"
 "     --simulation-details  Show technical details of the simulation.\n"
 "     --gpu                 Use the GPU to speed up the calculation.\n"
+"  -g. --geometry=<file>    Get detector geometry from file.\n"
 "\n"
 "     --near-bragg          Output h,k,l,I near Bragg conditions.\n"
 " -n, --number=<N>          Generate N images.  Default 1.\n"
@@ -187,6 +188,7 @@ int main(int argc, char *argv[])
 	char *filename = NULL;
 	char *grad_str = NULL;
 	char *outfile = NULL;
+	char *geometry = NULL;
 	GradientMethod grad;
 	int ndone = 0;    /* Number of simulations done (images or not) */
 	int number = 1;   /* Number used for filename of image */
@@ -208,14 +210,16 @@ int main(int argc, char *argv[])
 		{"no-noise",           0, &config_nonoise,     1},
 		{"intensities",        1, NULL,               'i'},
 		{"powder",             1, NULL,               'w'},
-		{"gradients",          1, NULL,               'g'},
+		{"gradients",          1, NULL,               't'},
 		{"pdb",                1, NULL,               'p'},
 		{"output",             1, NULL,               'o'},
+		{"geometry",           1, NULL,               'g'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hrn:i:g:p:o:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hrn:i:t:p:o:",
+	                        longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' : {
@@ -238,7 +242,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 
-		case 'g' : {
+		case 't' : {
 			grad_str = strdup(optarg);
 			break;
 		}
@@ -255,6 +259,11 @@ int main(int argc, char *argv[])
 
 		case 'w' : {
 			powder_fn = strdup(optarg);
+			break;
+		}
+
+		case 'g' : {
+			geometry = strdup(optarg);
 			break;
 		}
 
@@ -329,6 +338,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if ( geometry == NULL ) {
+		ERROR("You need to specify a geometry file with --geometry\n");
+		return 1;
+	}
+
 	/* Define image parameters */
 	image.width = 1024;
 	image.height = 1024;
@@ -343,7 +357,12 @@ int main(int argc, char *argv[])
 	image.f0 = 1.0;
 	image.f0_available = 1;
 
-	#include "geometry-lcls.tmp"
+	image.det = get_detector_geometry(geometry);
+	if ( image.det == NULL ) {
+		ERROR("Failed to read detector geometry from '%s'\n", geometry);
+		return 1;
+	}
+	free(geometry);
 
 	powder = calloc(image.width*image.height, sizeof(*powder));
 
@@ -461,7 +480,8 @@ skip:
 		cleanup_gpu(gctx);
 	}
 
-	free(image.det.panels);
+	free(image.det->panels);
+	free(image.det);
 	free(powder);
 	free(cell);
 	free(intensities);

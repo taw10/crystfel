@@ -166,7 +166,7 @@ static int integrate_peak(struct image *image, int xp, int yp,
 			if ( !((flags & 0x01) && (flags & 0x04)) ) return 1;
 		}
 
-		p = find_panel(&image->det, x+xp, y+yp);
+		p = find_panel(image->det, x+xp, y+yp);
 		if ( p == NULL ) return 1;
 
 		/* Area of one pixel */
