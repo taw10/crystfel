@@ -32,10 +32,11 @@ static void show_help(const char *s)
 {
 	printf("Syntax: %s [options] <file.h5>\n\n", s);
 	printf(
-"Compare intensity lists.\n"
+"Plot a powder pattern as a 1D graph using the detector geometry.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
-"  -g. --geometry=<file>   Get detector geometry from file.\n"
+"  -g. --geometry=<file>      Get detector geometry from file.\n"
+"  -i, --input=<file>         Input filename.\n"
 "\n");
 }
 
