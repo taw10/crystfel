@@ -498,8 +498,9 @@ int peak_sanity_check(struct image *image, UnitCell *cell)
 
 	}
 
-	STATUS("Sanity factor: %f / %f = %f\n", (float)n_sane, (float)image->n_hits,
-                                                (float)n_sane / (float)image->n_hits);
+	STATUS("Sanity factor: %f / %f = %f\n", (float)n_sane,
+	                                  (float)image->n_hits,
+                                          (float)n_sane / (float)image->n_hits);
 	if ( (float)n_sane / (float)image->n_hits < 0.8 ) return 0;
 
 	return 1;
@@ -519,7 +520,6 @@ void output_intensities(struct image *image, UnitCell *cell,
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	double a, b, c, al, be, ga;
-	struct reflhit *hits = image->hits;
 
 	if ( image->n_hits == 0 ) find_projected_peaks(image, cell);
 	if ( image->n_hits == 0 ) return;
@@ -564,7 +564,8 @@ void output_intensities(struct image *image, UnitCell *cell,
 		/* Wait.. is there a really close feature which was detected? */
 		if ( image->features != NULL ) {
 			f = image_feature_closest(image->features,
-			                          hits[i].x, hits[i].y,
+			                          image->hits[i].x,
+			                          image->hits[i].y,
 			                          &d, &idx);
 		} else {
 			f = NULL;
@@ -593,7 +594,8 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 			int r;
 
-			r = integrate_peak(image, hits[i].x, hits[i].y,
+			r = integrate_peak(image,
+			                   image->hits[i].x,image->hits[i].y,
 			                   &x, &y, &intensity, !unpolar);
 			if ( r ) {
 				/* Plain old ordinary peak veto */
@@ -609,10 +611,11 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 		/* Write h,k,l, integrated intensity and centroid coordinates */
 		printf("%3i %3i %3i %6f (at %5.2f,%5.2f)\n",
-		       hits[i].h, hits[i].k, hits[i].l, intensity, x, y);
+		       image->hits[i].h, image->hits[i].k, image->hits[i].l,
+		       intensity, x, y);
 
-		hits[i].x = x;
-		hits[i].y = y;
+		image->hits[i].x = x;
+		image->hits[i].y = y;
 
 	}
 
@@ -628,7 +631,8 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 			double d;
 
-			d = pow(hits[j].x-f->x, 2.0) + pow(hits[j].y-f->y, 2.0);
+			d = pow(image->hits[j].x-f->x, 2.0)
+			  + pow(image->hits[j].y-f->y, 2.0);
 
 			if ( d < PEAK_CLOSE ) n_foundclose++;
 
