@@ -62,28 +62,23 @@ int main(int argc, char *argv[])
 	while ((c = getopt_long(argc, argv, "hi:g:", longopts, NULL)) != -1) {
 
 		switch (c) {
-		case 'h' : {
+		case 'h' :
 			show_help(argv[0]);
 			return 0;
-		}
 
-		case 0 : {
+		case 0 :
 			break;
-		}
 
-		case 'i' : {
+		case 'i' :
 			filename = strdup(optarg);
 			break;
-		}
 
-		case 'g' : {
+		case 'g' :
 			geometry = strdup(optarg);
 			break;
-		}
 
-		default : {
+		default :
 			return 1;
-		}
 		}
 
 	}

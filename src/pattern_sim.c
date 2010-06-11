@@ -222,58 +222,47 @@ int main(int argc, char *argv[])
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
-		case 'h' : {
+		case 'h' :
 			show_help(argv[0]);
 			return 0;
-		}
 
-		case 'r' : {
+		case 'r' :
 			config_randomquat = 1;
 			break;
-		}
 
-		case 'n' : {
+		case 'n' :
 			n_images = atoi(optarg);
 			break;
-		}
 
-		case 'i' : {
+		case 'i' :
 			intfile = strdup(optarg);
 			break;
-		}
 
-		case 't' : {
+		case 't' :
 			grad_str = strdup(optarg);
 			break;
-		}
 
-		case 'p' : {
+		case 'p' :
 			filename = strdup(optarg);
 			break;
-		}
 
-		case 'o' : {
+		case 'o' :
 			outfile = strdup(optarg);
 			break;
-		}
 
-		case 'w' : {
+		case 'w' :
 			powder_fn = strdup(optarg);
 			break;
-		}
 
-		case 'g' : {
+		case 'g' :
 			geometry = strdup(optarg);
 			break;
-		}
 
-		case 0 : {
+		case 0 :
 			break;
-		}
 
-		default : {
+		default :
 			return 1;
-		}
 		}
 
 	}

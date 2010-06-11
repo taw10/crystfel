@@ -272,53 +272,44 @@ int main(int argc, char *argv[])
 	while ((c = getopt_long(argc, argv, "hi:e:ro:p:", longopts, NULL)) != -1) {
 
 		switch (c) {
-		case 'h' : {
+		case 'h' :
 			show_help(argv[0]);
 			return 0;
-		}
 
-		case 'i' : {
+		case 'i' :
 			filename = strdup(optarg);
 			break;
-		}
 
-		case 'o' : {
+		case 'o' :
 			output = strdup(optarg);
 			break;
-		}
 
-		case 'r' : {
+
+		case 'r' :
 			config_rvsq = 1;
 			break;
-		}
 
-		case 'e' : {
+		case 'e' :
 			config_every = atoi(optarg);
 			break;
-		}
 
-		case 's' : {
+		case 's' :
 			config_stopafter = atoi(optarg);
 			break;
-		}
 
-		case 'c' : {
+		case 'c' :
 			intfile = strdup(optarg);
 			break;
-		}
 
-		case 'p' : {
+		case 'p' :
 			pdb = strdup(optarg);
 			break;
-		}
 
-		case 0 : {
+		case 0 :
 			break;
-		}
 
-		default : {
+		default :
 			return 1;
-		}
 		}
 
 	}

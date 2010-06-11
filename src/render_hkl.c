@@ -330,34 +330,27 @@ static void povray_render_animation(UnitCell *cell, double *ref,
 			s = 6;
 		}
 		switch ( s ) {
-			case 0 : {  /* Black to blue */
-				r = 0.0;  g = 0.0;  b = p;
-				break;
-			}
-			case 1 : {  /* Blue to green */
-				r = 0.0;  g = p;  b = 1.0-p;
-				break;
-			}
-			case 2 : {  /* Green to red */
-				r =p;  g = 1.0-p;  b = 0.0;
-				break;
-			}
-			case 3 : {  /* Red to Orange */
-				r = 1.0;  g = 0.5*p;  b = 0.0;
-				break;
-			}
-			case 4 : {  /* Orange to Yellow */
-				r = 1.0;  g = 0.5 + 0.5*p;  b = 0.0;
-				break;
-			}
-			case 5 : {  /* Yellow to White */
-				r = 1.0;  g = 1.0;  b = 1.0*p;
-				break;
-			}
-			case 6 : {  /* Pixel has hit the maximum value */
-				r = 1.0;  g = 1.0;  b = 1.0;
-				break;
-			}
+		case 0 :   /* Black to blue */
+			r = 0.0;  g = 0.0;  b = p;
+			break;
+		case 1 :   /* Blue to green */
+			r = 0.0;  g = p;  b = 1.0-p;
+			break;
+		case 2 :   /* Green to red */
+			r =p;  g = 1.0-p;  b = 0.0;
+			break;
+		case 3 :   /* Red to Orange */
+			r = 1.0;  g = 0.5*p;  b = 0.0;
+			break;
+		case 4 :   /* Orange to Yellow */
+			r = 1.0;  g = 0.5 + 0.5*p;  b = 0.0;
+			break;
+		case 5 :   /* Yellow to White */
+			r = 1.0;  g = 1.0;  b = 1.0*p;
+			break;
+		case 6 :   /* Pixel has hit the maximum value */
+			r = 1.0;  g = 1.0;  b = 1.0;
+			break;
 		}
 
 		val = max-val;
@@ -448,23 +441,19 @@ int main(int argc, char *argv[])
 	while ((c = getopt_long(argc, argv, "hj:", longopts, NULL)) != -1) {
 
 		switch (c) {
-		case 'h' : {
+		case 'h' :
 			show_help(argv[0]);
 			return 0;
-		}
 
-		case 'j' : {
+		case 'j' :
 			nproc = atoi(optarg);
 			break;
-		}
 
-		case 0 : {
+		case 0 :
 			break;
-		}
 
-		default : {
+		default :
 			return 1;
-		}
 		}
 
 	}

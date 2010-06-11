@@ -136,38 +136,31 @@ int main(int argc, char *argv[])
 	while ((c = getopt_long(argc, argv, "ht:o:i:p:", longopts, NULL)) != -1) {
 
 		switch (c) {
-		case 'h' : {
+		case 'h' :
 			show_help(argv[0]);
 			return 0;
-		}
 
-		case 't' : {
+		case 't' :
 			template = strdup(optarg);
 			break;
-		}
 
-		case 'o' : {
+		case 'o' :
 			output = strdup(optarg);
 			break;
-		}
 
-		case 'i' : {
+		case 'i' :
 			input = strdup(optarg);
 			break;
-		}
 
-		case 'p' : {
+		case 'p' :
 			filename = strdup(optarg);
 			break;
-		}
 
-		case 0 : {
+		case 0 :
 			break;
-		}
 
-		default : {
+		default :
 			return 1;
-		}
 		}
 
 	}

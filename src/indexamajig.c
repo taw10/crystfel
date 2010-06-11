@@ -457,53 +457,43 @@ int main(int argc, char *argv[])
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
-		case 'h' : {
+		case 'h' :
 			show_help(argv[0]);
 			return 0;
-		}
 
-		case 'i' : {
+		case 'i' :
 			filename = strdup(optarg);
 			break;
-		}
 
-		case 'z' : {
+		case 'z' :
 			indm_str = strdup(optarg);
 			break;
-		}
 
-		case 'q' : {
+		case 'q' :
 			intfile = strdup(optarg);
 			break;
-		}
 
-		case 'p' : {
+		case 'p' :
 			pdb = strdup(optarg);
 			break;
-		}
 
-		case 'x' : {
+		case 'x' :
 			prefix = strdup(optarg);
 			break;
-		}
 
-		case 'j' : {
+		case 'j' :
 			nthreads = atoi(optarg);
 			break;
-		}
 
-		case 'g' : {
+		case 'g' :
 			geometry = strdup(optarg);
 			break;
-		}
 
-		case 0 : {
+		case 0 :
 			break;
-		}
 
-		default : {
+		default :
 			return 1;
-		}
 		}
 
 	}

@@ -67,33 +67,27 @@ int main(int argc, char *argv[])
 	while ((c = getopt_long(argc, argv, "ho:a:b:", longopts, NULL)) != -1) {
 
 		switch (c) {
-		case 'h' : {
+		case 'h' :
 			show_help(argv[0]);
 			return 0;
-		}
 
-		case 'o' : {
+		case 'o' :
 			outfile = strdup(optarg);
 			break;
-		}
 
-		case 'a' : {
+		case 'a' :
 			afile = strdup(optarg);
 			break;
-		}
 
-		case 'b' : {
+		case 'b' :
 			bfile = strdup(optarg);
 			break;
-		}
 
-		case 0 : {
+		case 0 :
 			break;
-		}
 
-		default : {
+		default :
 			return 1;
-		}
 		}
 
 	}

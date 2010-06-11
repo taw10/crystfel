@@ -101,40 +101,34 @@ int main(int argc, char *argv[])
 	while ((c = getopt_long(argc, argv, "hp:b:i:", longopts, NULL)) != -1) {
 
 		switch (c) {
-		case 'h' : {
+		case 'h' :
 			show_help(argv[0]);
 			return 0;
-		}
 
-		case 'p' : {
+		case 'p' :
 			peaks = strdup(optarg);
 			break;
-		}
 
-		case 'i' : {
+		case 'i' :
 			boost = atoi(optarg);
 			if ( boost < 1 ) {
 				ERROR("Intensity boost must be a positive"
 				      " integer.\n");
 			}
 			break;
-		}
 
-		case 'b' : {
+		case 'b' :
 			binning = atoi(optarg);
 			if ( boost < 1 ) {
 				ERROR("Binning must be a positive integer.\n");
 			}
 			break;
-		}
 
-		case 0 : {
+		case 0 :
 			break;
-		}
 
-		default : {
+		default :
 			return 1;
-		}
 		}
 
 	}
