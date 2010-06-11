@@ -519,7 +519,6 @@ void output_intensities(struct image *image, UnitCell *cell,
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	double a, b, c, al, be, ga;
-	int n_hits = image->n_hits;
 	struct reflhit *hits = image->hits;
 
 	if ( image->n_hits == 0 ) find_projected_peaks(image, cell);
@@ -555,7 +554,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 		printf("f0 = invalid\n");
 	}
 
-	for ( i=0; i<n_hits; i++ ) {
+	for ( i=0; i<image->n_hits; i++ ) {
 
 		float x, y, intensity;
 		double d;
@@ -625,7 +624,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 		f = image_get_feature(image->features, i);
 
-		for ( j=0; j<n_hits; j++ ) {
+		for ( j=0; j<image->n_hits; j++ ) {
 
 			double d;
 
