@@ -639,7 +639,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 	printf("Peak statistics: %i peaks found by the peak search out of "
 	       "%i were close to indexed positions. "
 	       "%i indexed positions out of %i were close to detected peaks.\n",
-	       n_foundclose, n_found, n_indclose, n_hits);
+	       n_foundclose, n_found, n_indclose, image->n_hits);
 	printf("%i integrations using indexed locations were aborted because "
 	       "they hit one or more bad pixels.\n", n_veto);
 	printf("%i integrations using peak search locations were aborted "
