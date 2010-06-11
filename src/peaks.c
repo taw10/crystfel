@@ -522,6 +522,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 	int n_hits = image->n_hits;
 	struct reflhit *hits = image->hits;
 
+	if ( image->n_hits != 0 ) find_projected_peaks(image, cell);
 	if ( image->n_hits == 0 ) return;
 
 	/* Get exclusive access to the output stream if necessary */
