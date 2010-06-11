@@ -166,7 +166,6 @@ struct detector *get_detector_geometry(const char *filename)
 	struct detector *det;
 	char *rval;
 	char **bits;
-	int n_panels = -1;
 	int i;
 
 	fh = fopen(filename, "r");
@@ -177,6 +176,7 @@ struct detector *get_detector_geometry(const char *filename)
 		fclose(fh);
 		return NULL;
 	}
+	det->n_panels = -1;
 
 	do {
 
@@ -195,14 +195,15 @@ struct detector *get_detector_geometry(const char *filename)
 		if ( bits[1][0] != '=' ) continue;
 
 		if ( strcmp(bits[0], "n_panels") == 0 ) {
-			if ( n_panels != -1 ) {
+			if ( det->n_panels != -1 ) {
 				ERROR("Duplicate n_panels statement.\n");
 				fclose(fh);
 				free(det);
 				return NULL;
 			}
-			n_panels = atoi(bits[2]);
-			det->panels = malloc(n_panels * sizeof(struct panel));
+			det->n_panels = atoi(bits[2]);
+			det->panels = malloc(det->n_panels
+			                      * sizeof(struct panel));
 			continue;
 		}
 
@@ -232,7 +233,7 @@ struct detector *get_detector_geometry(const char *filename)
 
 	} while ( rval != NULL );
 
-	if ( n_panels == -1 ) {
+	if ( det->n_panels == -1 ) {
 		ERROR("No panel descriptions in geometry file.\n");
 		fclose(fh);
 		free(det->panels);
@@ -240,7 +241,7 @@ struct detector *get_detector_geometry(const char *filename)
 		return NULL;
 	}
 
-	for ( i=0; i<n_panels; i++ ) {
+	for ( i=0; i<det->n_panels; i++ ) {
 		STATUS("Panel %i, min_x = %i\n", i, det->panels[i].min_x);
 		STATUS("Panel %i, max_x = %i\n", i, det->panels[i].max_x);
 		STATUS("Panel %i, min_y = %i\n", i, det->panels[i].min_y);
