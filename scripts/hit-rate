@@ -1,0 +1,67 @@
+#!/usr/bin/perl -w
+
+use strict;
+use File::Basename;
+
+open(FH, $ARGV[0]);
+open(OFH, "> hitrate.dat");
+
+my $line;
+my $filename;
+my $full_filename;
+my $np;
+
+while ( $line = <FH> ) {
+
+	chomp($line);
+
+	if ( $line =~ /^Peaks\ from\ peak\ search\ in\ (.+)$/ ) {
+		$full_filename = $1;
+		$filename = basename($full_filename);
+		$np = 0;
+	}
+
+	if ( $line =~ /^\s+[0-9\.]+\s+[0-9\.]+\s+[0-9\.]+\s+[0-9\.]+$/ ) {
+		$np++;
+	}
+
+	# Blank line
+	if ( $line =~ /^$/ ) {
+
+		$filename =~ /LCLS_(\d+)_([A-Za-z]+)(\d+)_r\d+_(\d\d)(\d\d)(\d\d)_/;
+		my $year = $1;
+		my $month = $2;
+		my $day = $3;
+		my $hour = $4;
+		my $min = $5;
+		my $sec = $6;
+
+		my $div;
+
+		$np
+
+		printf(OFH "%s/%s/%s-%s:%s:%s %f\n", $year, $month, $day,
+		                                     $hour, $min, $sec,
+		                                     $val);
+
+	}
+
+}
+
+close(FH);
+close(OFH);
+
+open(GP, "| gnuplot");
+print(GP "set term postscript enhanced font \"Helvetica,20\"\n");
+print(GP "set output \"hitrate.ps\"\n");
+print(GP "set xtics nomirror out rotate by -60\n");
+print(GP "set xdata time\n");
+print(GP "set timefmt \"%Y/%b/%d-%H:%M:%S\"\n");
+print(GP "set format x \"%d/%b %H:%M\"\n");
+print(GP "unset key\n");
+print(GP "plot [] [0:5] \"hitrate.dat\" u 1:2 w points\n");
+close(GP);
+
+system("ps2pdf hitrate.ps");
+unlink("hitrate.dat");
+unlink("hitrate.ps");
