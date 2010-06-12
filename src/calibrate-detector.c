@@ -324,23 +324,29 @@ int main(int argc, char *argv[])
 		if ( worker_args[i]->filename != NULL ) {
 			free(worker_args[i]->filename);
 		}
-		free(worker_args[i]);
 
 	}
 
-	/* Sum the individual sums */
+	/* Add the individual sums to the 0th sum */
 	for ( i=1; i<nthreads; i++ ) {
+
 		int x, y;
+
 		for ( x=0; x<w; x++ ) {
 		for ( y=0; y<h; y++ ) {
 			float val = worker_args[i]->sum[x+w*y];
 			worker_args[0]->sum[x+w*y] += val;
 		}
 		}
+		free(worker_args[i]->sum);
+		free(worker_args[i]);
+
 	}
 
 	hdf5_write(outfile, worker_args[0]->sum, w, h, H5T_NATIVE_FLOAT);
 
+	free(worker_args[0]->sum);
+	free(worker_args[0]);
 	free(prefix);
 	free(outfile);
 	fclose(fh);
