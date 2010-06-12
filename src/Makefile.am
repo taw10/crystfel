@@ -1,5 +1,5 @@
 bin_PROGRAMS = pattern_sim process_hkl get_hkl indexamajig compare_hkl \
-               powder_plot render_hkl
+               powder_plot render_hkl calibrate_detector
 
 if HAVE_GTK
 bin_PROGRAMS += hdfsee
@@ -48,5 +48,9 @@ powder_plot_LDADD = @LIBS@
 
 render_hkl_SOURCES = render_hkl.c cell.c reflections.c utils.c
 render_hkl_LDADD = @LIBS@
+
+calibrate_detector_SOURCES = calibrate-detector.c utils.c hdf5-file.c image.c \
+                             filters.c
+calibrate_detector_LDADD = @LIBS@
 
 INCLUDES = "-I$(top_srcdir)/data"
