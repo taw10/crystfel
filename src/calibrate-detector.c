@@ -304,6 +304,7 @@ int main(int argc, char *argv[])
 			}
 
 			n_images++;
+			STATUS("Done %i images\n", n_images);
 		}
 
 	} while ( rval != NULL );
