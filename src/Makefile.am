@@ -49,7 +49,7 @@ powder_plot_LDADD = @LIBS@
 render_hkl_SOURCES = render_hkl.c cell.c reflections.c utils.c
 render_hkl_LDADD = @LIBS@
 
-calibrate_detector_SOURCES = calibrate-detector.c utils.c hdf5-file.c image.c \
+calibrate_detector_SOURCES = calibrate_detector.c utils.c hdf5-file.c image.c \
                              filters.c peaks.c detector.c cell.c diffraction.c \
                              sfac.c
 calibrate_detector_LDADD = @LIBS@

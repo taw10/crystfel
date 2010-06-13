@@ -52,7 +52,7 @@ CONFIG_CLEAN_VPATH_FILES =
 @HAVE_GTK_TRUE@am__EXEEXT_1 = hdfsee$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_calibrate_detector_OBJECTS = calibrate-detector.$(OBJEXT) \
+am_calibrate_detector_OBJECTS = calibrate_detector.$(OBJEXT) \
 	utils.$(OBJEXT) hdf5-file.$(OBJEXT) image.$(OBJEXT) \
 	filters.$(OBJEXT) peaks.$(OBJEXT) detector.$(OBJEXT) \
 	cell.$(OBJEXT) diffraction.$(OBJEXT) sfac.$(OBJEXT)
@@ -263,7 +263,7 @@ powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \
 powder_plot_LDADD = @LIBS@
 render_hkl_SOURCES = render_hkl.c cell.c reflections.c utils.c
 render_hkl_LDADD = @LIBS@
-calibrate_detector_SOURCES = calibrate-detector.c utils.c hdf5-file.c image.c \
+calibrate_detector_SOURCES = calibrate_detector.c utils.c hdf5-file.c image.c \
                              filters.c peaks.c detector.c cell.c diffraction.c \
                              sfac.c
 
@@ -374,7 +374,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/calibrate-detector.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/calibrate_detector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cell.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cl-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/compare_hkl.Po@am__quote@
