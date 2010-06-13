@@ -66,14 +66,24 @@ static void show_help(const char *s)
 "  -o, --output=<filename> Output filename for summed image in HDF5 format.\n"
 "                           Default: summed.h5.\n"
 "\n"
+"  -p, --intermediate=<P>  Stem of filename for intermediate images.\n"
+"                            The filename stem <p> will be postfixed with a\n"
+"                            hyphen, the current number of patterns processed\n"
+"                            and '.h5'.  Such a pattern will be saved after\n"
+"                            every 1000 input patterns.\n"
+"                            If this option is not specified, no intermediate\n"
+"                            patterns will be saved.\n"
+"\n"
 "  -s, --sum=<method>      Use this method for summation.  Choose from:\n"
 "                           peaks : sum 10px radius circles around peaks.\n"
 "                           threshold : sum thresholded images.\n"
+"\n"
 "      --filter-cm         Perform common-mode noise subtraction on images\n"
 "                           before proceeding.\n"
 "      --filter-noise      Apply an aggressive noise filter which sets all\n"
 "                           pixels in each 3x3 region to zero if any of them\n"
 "                           have negative values.\n"
+"\n"
 "  -j <n>                  Run <n> analyses in parallel.  Default 1.\n");
 }
 
@@ -201,7 +211,7 @@ out:
 
 
 static void dump_to_file(struct process_args *worker_args[], int nthreads,
-                         int w, int h, int n)
+                         int w, int h, int n, const char *stem)
 {
 	int i;
 	double *total;
@@ -223,7 +233,7 @@ static void dump_to_file(struct process_args *worker_args[], int nthreads,
 
 	}
 
-	snprintf(outfile, 255, "sum-%i.h5", n);
+	snprintf(outfile, 255, "%s-%i.h5", stem, n);
 
 	hdf5_write(outfile, total, w, h, H5T_NATIVE_DOUBLE);
 }
@@ -241,6 +251,7 @@ int main(int argc, char *argv[])
 	int config_noisefilter = 0;
 	char *prefix = NULL;
 	char *sum_str = NULL;
+	char *intermediate = NULL;
 	SumMethod sum;
 	int nthreads = 1;
 	pthread_t workers[MAX_THREADS];
@@ -259,11 +270,12 @@ int main(int argc, char *argv[])
 		{"filter-noise",       0, &config_noisefilter, 1},
 		{"prefix",             1, NULL,               'x'},
 		{"sum",                1, NULL,               's'},
+		{"intermediate",       1, NULL,               'p'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:x:j:o:s:",
+	while ((c = getopt_long(argc, argv, "hi:x:j:o:s:p:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -289,6 +301,10 @@ int main(int argc, char *argv[])
 
 		case 's' :
 			sum_str = strdup(optarg);
+			break;
+
+		case 'p' :
+			intermediate = strdup(optarg);
 			break;
 
 		case 0 :
@@ -427,7 +443,11 @@ int main(int argc, char *argv[])
 			STATUS("Done %i images\n", n_images);
 
 			if ( n_images % 1000 == 0 ) {
-				dump_to_file(worker_args, nthreads, w, h, n_images);
+				if ( intermediate != NULL ) {
+					dump_to_file(worker_args, nthreads,
+					              w, h, n_images,
+					              intermediate);
+				}
 			}
 		}
 
@@ -471,6 +491,7 @@ int main(int argc, char *argv[])
 	free(worker_args[0]);
 	free(prefix);
 	free(outfile);
+	if ( intermediate != NULL ) free(intermediate);
 	fclose(fh);
 
 	STATUS("There were %i images.\n", n_images);
