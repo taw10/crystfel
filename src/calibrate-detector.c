@@ -309,7 +309,6 @@ int main(int argc, char *argv[])
 
 			char line[1024];
 			int r;
-			struct process_result *result = NULL;
 			struct timespec t;
 			struct timeval tv;
 			struct process_args *pargs;
@@ -322,8 +321,7 @@ int main(int argc, char *argv[])
 			t.tv_sec = tv.tv_sec;
 			t.tv_nsec = tv.tv_usec * 1000 + 20000;
 
-			r = pthread_timedjoin_np(workers[i], (void *)&result,
-			                         &t);
+			r = pthread_timedjoin_np(workers[i], NULL, &t);
 			if ( r != 0 ) continue; /* Not ready yet */
 
 			worker_active[i] = 0;
@@ -334,8 +332,7 @@ int main(int argc, char *argv[])
 			snprintf(pargs->filename, 1023, "%s%s", prefix, line);
 
 			worker_active[i] = 1;
-			r = pthread_create(&workers[i], NULL, process_image,
-			                   pargs);
+			r = pthread_create(&workers[i], NULL, process_image, pargs);
 			if ( r != 0 ) {
 				worker_active[i] = 0;
 				ERROR("Couldn't start thread %i\n", i);
@@ -350,11 +347,9 @@ int main(int argc, char *argv[])
 	/* Catch all remaining threads */
 	for ( i=0; i<nthreads; i++ ) {
 
-		struct process_result *result = NULL;
-
 		if ( !worker_active[i] ) goto free;
 
-		pthread_join(workers[i], (void *)&result);
+		pthread_join(workers[i], NULL);
 
 		worker_active[i] = 0;
 
