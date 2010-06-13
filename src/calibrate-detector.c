@@ -144,7 +144,7 @@ static void *process_image(void *pargsv)
 			if ( ((y+yp)>=image.height) || ((y+yp)<0) ) continue;
 
 			float val = image.data[x+image.width*y];
-			pargs->sum[x+pargs->w*y] += val;
+			pargs->sum[(x+xp)+pargs->w*(y+yp)] += val;
 
 		}
 		}
