@@ -118,15 +118,6 @@ static void *process_image(void *pargsv)
 
 	search_peaks(&image);
 
-//	for ( x=0; x<image.width; x++ ) {
-//	for ( y=0; y<image.height; y++ ) {
-//		float val = image.data[x+image.width*y];
-//		if ( val > 100.0 ) {
-//			pargs->sum[x+pargs->w*y] += val;
-//		}
-//	}
-//	}
-
 	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
 
 	for ( i=0; i<image_feature_count(image.features); i++ ) {
@@ -192,8 +183,6 @@ static void dump_to_file(struct process_args *worker_args[], int nthreads,
 	snprintf(outfile, 255, "sum-%i.h5", n);
 
 	hdf5_write(outfile, total, w, h, H5T_NATIVE_DOUBLE);
-
-	abort();
 }
 
 
