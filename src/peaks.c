@@ -137,7 +137,7 @@ static void cull_peaks(struct image *image)
  * i.e. don't use result if return value is not zero. */
 static int integrate_peak(struct image *image, int xp, int yp,
                            float *xc, float *yc, float *intensity,
-                           int do_polar)
+                           int do_polar, int do_sa)
 {
 	signed int x, y;
 	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
@@ -150,7 +150,7 @@ static int integrate_peak(struct image *image, int xp, int yp,
 
 		struct panel *p;
 		double val, sa, pix_area, Lsq, dsq, proj_area;
-		float tt;
+		float tt = 0.0;
 		double phi, pa, pb, pol;
 		uint16_t flags;
 
@@ -166,34 +166,48 @@ static int integrate_peak(struct image *image, int xp, int yp,
 			if ( !((flags & 0x01) && (flags & 0x04)) ) return 1;
 		}
 
-		p = find_panel(image->det, x+xp, y+yp);
-		if ( p == NULL ) return 1;
+		val = image->data[(x+xp)+image->width*(y+yp)];
 
-		/* Area of one pixel */
-		pix_area = pow(1.0/p->res, 2.0);
-		Lsq = pow(p->clen, 2.0);
+		if ( do_sa || do_polar ) {
 
-		/* Area of pixel as seen from crystal (approximate) */
-		tt = get_tt(image, x+xp, y+yp);
-		proj_area = pix_area * cos(tt);
+			p = find_panel(image->det, x+xp, y+yp);
+			if ( p == NULL ) return 1;
 
-		/* Calculate distance from crystal to pixel */
-		dsq = pow(((double)(x+xp) - p->cx) / p->res, 2.0);
-		dsq += pow(((double)(y+yp) - p->cy) / p->res, 2.0);
+		}
 
-		/* Projected area of pixel divided by distance squared */
-		sa = 1.0e7 * proj_area / (dsq + Lsq);
+		if ( do_sa ) {
+
+			/* Area of one pixel */
+			pix_area = pow(1.0/p->res, 2.0);
+			Lsq = pow(p->clen, 2.0);
+
+			/* Area of pixel as seen from crystal (approximate) */
+			tt = get_tt(image, x+xp, y+yp);
+			proj_area = pix_area * cos(tt);
+
+			/* Calculate distance from crystal to pixel */
+			dsq = pow(((double)(x+xp) - p->cx) / p->res, 2.0);
+			dsq += pow(((double)(y+yp) - p->cy) / p->res, 2.0);
+
+			/* Projected area of pixel divided by distance squared */
+			sa = 1.0e7 * proj_area / (dsq + Lsq);
+
+			val /= sa;
+
+		}
 
 		if ( do_polar ) {
+
+			if ( !do_sa ) tt = get_tt(image, x+xp, y+yp);
+
 			phi = atan2(y+yp, x+xp);
 			pa = pow(sin(phi)*sin(tt), 2.0);
 			pb = pow(cos(tt), 2.0);
 			pol = 1.0 - 2.0*POL*(1-pa) + POL*(1.0+pb);
-		} else {
-			pol = 1.0;
-		}
 
-		val = image->data[(x+xp)+image->width*(y+yp)] / (sa*pol);
+			val /= pol;
+
+		}
 
 		total += val;
 
@@ -325,10 +339,10 @@ void search_peaks(struct image *image)
 		}
 
 		/* Centroid peak and get better coordinates.
-		 * Don't bother doing polarisation correction, because the
+		 * Don't bother doing polarisation/SA correction, because the
 		 * intensity of this peak is only an estimate at this stage. */
 		r = integrate_peak(image, mask_x, mask_y,
-		                   &fx, &fy, &intensity, 0);
+		                   &fx, &fy, &intensity, 0, 0);
 		if ( r ) {
 			/* Bad region - don't detect peak */
 			nrej_bad++;
@@ -578,7 +592,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 			 * so instead re-integrate using old coordinates.
 			 * This will produce further revised coordinates. */
 			r = integrate_peak(image, f->x, f->y, &x, &y,
-			                   &intensity, !unpolar);
+			                   &intensity, !unpolar, 1);
 			if ( r ) {
 				/* The original peak (which also went through
 				 * integrate_peak(), but with the mangled
@@ -596,7 +610,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 			r = integrate_peak(image,
 			                   image->hits[i].x,image->hits[i].y,
-			                   &x, &y, &intensity, !unpolar);
+			                   &x, &y, &intensity, !unpolar, 1);
 			if ( r ) {
 				/* Plain old ordinary peak veto */
 				n_veto++;
