@@ -39,7 +39,7 @@ struct process_args
 	int id;
 	int config_cmfilter;
 	int config_noisefilter;
-	float *sum;
+	double *sum;
 	int w;
 	int h;
 };
@@ -76,6 +76,7 @@ static void *process_image(void *pargsv)
 
 	image.features = NULL;
 	image.data = NULL;
+	image.flags = NULL;
 	image.indexed_cell = NULL;
 	image.id = pargs->id;
 	image.filename = pargs->filename;
@@ -117,22 +118,18 @@ static void *process_image(void *pargsv)
 
 	search_peaks(&image);
 
-//	for ( x=0; x<image.width; x++ ) {
-//	for ( y=0; y<image.height; y++ ) {
-//		float val = image.data[x+image.width*y];
-//		if ( val > 100.0 ) {
-//			pargs->sum[x+pargs->w*y] += val;
-//		}
-//	}
-//	}
-
 	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
 
 	for ( i=0; i<image_feature_count(image.features); i++ ) {
 
 		struct imagefeature *f = image_get_feature(image.features, i);
-		int xp = f->x;
-		int yp = f->y;
+		int xp, yp;
+
+		/* This is not an error. */
+		if ( f == NULL ) continue;
+
+		xp = f->x;
+		yp = f->y;
 
 		for ( x=-INTEGRATION_RADIUS; x<+INTEGRATION_RADIUS; x++ ) {
 		for ( y=-INTEGRATION_RADIUS; y<+INTEGRATION_RADIUS; y++ ) {
@@ -153,10 +150,39 @@ static void *process_image(void *pargsv)
 
 out:
 	free(image.data);
-	free(image.flags);
+	if ( image.flags != NULL ) free(image.flags);
 	hdfile_close(hdfile);
 
 	return NULL;
+}
+
+
+static void dump_to_file(struct process_args *worker_args[], int nthreads,
+                         int w, int h, int n)
+{
+	int i;
+	double *total;
+	char outfile[256];
+
+	total = calloc(w*h, sizeof(double));
+
+	/* Add the individual sums to the 0th sum */
+	for ( i=0; i<nthreads; i++ ) {
+
+		int x, y;
+
+		for ( x=0; x<w; x++ ) {
+		for ( y=0; y<h; y++ ) {
+			double val = worker_args[i]->sum[x+w*y];
+			total[x+w*y] += val;
+		}
+		}
+
+	}
+
+	snprintf(outfile, 255, "sum-%i.h5", n);
+
+	hdf5_write(outfile, total, w, h, H5T_NATIVE_DOUBLE);
 }
 
 
@@ -256,7 +282,7 @@ int main(int argc, char *argv[])
 
 		worker_args[i] = malloc(sizeof(struct process_args));
 		worker_args[i]->filename = malloc(1024);
-		worker_args[i]->sum = calloc(w*h, sizeof(float));
+		worker_args[i]->sum = calloc(w*h, sizeof(double));
 		worker_active[i] = 0;
 
 		worker_args[i]->w = w;
@@ -303,7 +329,6 @@ int main(int argc, char *argv[])
 
 			char line[1024];
 			int r;
-			struct process_result *result = NULL;
 			struct timespec t;
 			struct timeval tv;
 			struct process_args *pargs;
@@ -316,8 +341,7 @@ int main(int argc, char *argv[])
 			t.tv_sec = tv.tv_sec;
 			t.tv_nsec = tv.tv_usec * 1000 + 20000;
 
-			r = pthread_timedjoin_np(workers[i], (void *)&result,
-			                         &t);
+			r = pthread_timedjoin_np(workers[i], NULL, &t);
 			if ( r != 0 ) continue; /* Not ready yet */
 
 			worker_active[i] = 0;
@@ -328,8 +352,7 @@ int main(int argc, char *argv[])
 			snprintf(pargs->filename, 1023, "%s%s", prefix, line);
 
 			worker_active[i] = 1;
-			r = pthread_create(&workers[i], NULL, process_image,
-			                   pargs);
+			r = pthread_create(&workers[i], NULL, process_image, pargs);
 			if ( r != 0 ) {
 				worker_active[i] = 0;
 				ERROR("Couldn't start thread %i\n", i);
@@ -337,6 +360,10 @@ int main(int argc, char *argv[])
 
 			n_images++;
 			STATUS("Done %i images\n", n_images);
+
+			if ( n_images % 1000 == 0 ) {
+				dump_to_file(worker_args, nthreads, w, h, n_images);
+			}
 		}
 
 	} while ( rval != NULL );
@@ -344,11 +371,9 @@ int main(int argc, char *argv[])
 	/* Catch all remaining threads */
 	for ( i=0; i<nthreads; i++ ) {
 
-		struct process_result *result = NULL;
-
 		if ( !worker_active[i] ) goto free;
 
-		pthread_join(workers[i], (void *)&result);
+		pthread_join(workers[i], NULL);
 
 		worker_active[i] = 0;
 
@@ -366,7 +391,7 @@ int main(int argc, char *argv[])
 
 		for ( x=0; x<w; x++ ) {
 		for ( y=0; y<h; y++ ) {
-			float val = worker_args[i]->sum[x+w*y];
+			double val = worker_args[i]->sum[x+w*y];
 			worker_args[0]->sum[x+w*y] += val;
 		}
 		}
@@ -375,7 +400,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	hdf5_write(outfile, worker_args[0]->sum, w, h, H5T_NATIVE_FLOAT);
+	hdf5_write(outfile, worker_args[0]->sum, w, h, H5T_NATIVE_DOUBLE);
 
 	free(worker_args[0]->sum);
 	free(worker_args[0]);
