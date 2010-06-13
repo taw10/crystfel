@@ -1,0 +1,14 @@
+#!/bin/bash
+
+FILE=$1
+TEMPFILE=`mktemp $1.XXXXXX`
+
+trap "rm -f $TEMPFILE" EXIT
+sort -R $FILE > $TEMPFILE
+
+for FILENAME in `cat $TEMPFILE`; do
+
+	echo $FILENAME
+	hdfsee --int-boost=10 ${2}${FILENAME}
+
+done
