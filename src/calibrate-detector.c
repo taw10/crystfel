@@ -39,7 +39,7 @@ struct process_args
 	int id;
 	int config_cmfilter;
 	int config_noisefilter;
-	float *sum;
+	double *sum;
 	int w;
 	int h;
 };
@@ -166,6 +166,37 @@ out:
 }
 
 
+static void dump_to_file(struct process_args *worker_args[], int nthreads,
+                         int w, int h, int n)
+{
+	int i;
+	double *total;
+	char outfile[256];
+
+	total = calloc(w*h, sizeof(double));
+
+	/* Add the individual sums to the 0th sum */
+	for ( i=0; i<nthreads; i++ ) {
+
+		int x, y;
+
+		for ( x=0; x<w; x++ ) {
+		for ( y=0; y<h; y++ ) {
+			double val = worker_args[i]->sum[x+w*y];
+			total[x+w*y] += val;
+		}
+		}
+
+	}
+
+	snprintf(outfile, 255, "sum-%i.h5", n);
+
+	hdf5_write(outfile, total, w, h, H5T_NATIVE_DOUBLE);
+
+	abort();
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -262,7 +293,7 @@ int main(int argc, char *argv[])
 
 		worker_args[i] = malloc(sizeof(struct process_args));
 		worker_args[i]->filename = malloc(1024);
-		worker_args[i]->sum = calloc(w*h, sizeof(float));
+		worker_args[i]->sum = calloc(w*h, sizeof(double));
 		worker_active[i] = 0;
 
 		worker_args[i]->w = w;
@@ -340,6 +371,10 @@ int main(int argc, char *argv[])
 
 			n_images++;
 			STATUS("Done %i images\n", n_images);
+
+			if ( n_images % 1000 == 0 ) {
+				dump_to_file(worker_args, nthreads, w, h, n_images);
+			}
 		}
 
 	} while ( rval != NULL );
@@ -367,7 +402,7 @@ int main(int argc, char *argv[])
 
 		for ( x=0; x<w; x++ ) {
 		for ( y=0; y<h; y++ ) {
-			float val = worker_args[i]->sum[x+w*y];
+			double val = worker_args[i]->sum[x+w*y];
 			worker_args[0]->sum[x+w*y] += val;
 		}
 		}
@@ -376,7 +411,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	hdf5_write(outfile, worker_args[0]->sum, w, h, H5T_NATIVE_FLOAT);
+	hdf5_write(outfile, worker_args[0]->sum, w, h, H5T_NATIVE_DOUBLE);
 
 	free(worker_args[0]->sum);
 	free(worker_args[0]);
