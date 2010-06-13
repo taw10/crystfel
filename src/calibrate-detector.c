@@ -76,6 +76,7 @@ static void *process_image(void *pargsv)
 
 	image.features = NULL;
 	image.data = NULL;
+	image.flags = NULL;
 	image.indexed_cell = NULL;
 	image.id = pargs->id;
 	image.filename = pargs->filename;
@@ -131,8 +132,13 @@ static void *process_image(void *pargsv)
 	for ( i=0; i<image_feature_count(image.features); i++ ) {
 
 		struct imagefeature *f = image_get_feature(image.features, i);
-		int xp = f->x;
-		int yp = f->y;
+		int xp, yp;
+
+		/* This is not an error. */
+		if ( f == NULL ) continue;
+
+		xp = f->x;
+		yp = f->y;
 
 		for ( x=-INTEGRATION_RADIUS; x<+INTEGRATION_RADIUS; x++ ) {
 		for ( y=-INTEGRATION_RADIUS; y<+INTEGRATION_RADIUS; y++ ) {
@@ -153,7 +159,7 @@ static void *process_image(void *pargsv)
 
 out:
 	free(image.data);
-	free(image.flags);
+	if ( image.flags != NULL ) free(image.flags);
 	hdfile_close(hdfile);
 
 	return NULL;
