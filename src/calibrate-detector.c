@@ -143,7 +143,7 @@ static void *process_image(void *pargsv)
 			if ( ((x+xp)>=image.width) || ((x+xp)<0) ) continue;
 			if ( ((y+yp)>=image.height) || ((y+yp)<0) ) continue;
 
-			float val = image.data[x+image.width*y];
+			float val = image.data[(x+xp)+image.width*(y+yp)];
 			pargs->sum[(x+xp)+pargs->w*(y+yp)] += val;
 
 		}
