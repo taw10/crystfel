@@ -50,6 +50,7 @@ struct process_args
 	int w;
 	int h;
 	SumMethod sum_method;
+	double threshold;
 };
 
 
@@ -126,14 +127,14 @@ static void sum_peaks(struct image *image, double *sum)
 }
 
 
-static void sum_threshold(struct image *image, double *sum)
+static void sum_threshold(struct image *image, double *sum, double threshold)
 {
 	int x, y;
 
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
 		float val = image->data[x+image->width*y];
-		if ( val > 400.0 ) {
+		if ( val > threshold ) {
 			sum[x+image->width*y] += val;
 		}
 	}
@@ -192,7 +193,7 @@ static void *process_image(void *pargsv)
 	switch ( pargs->sum_method ) {
 
 	case SUM_THRESHOLD :
-		sum_threshold(&image, pargs->sum);
+		sum_threshold(&image, pargs->sum, pargs->threshold);
 		break;
 
 	case SUM_PEAKS :
@@ -252,6 +253,7 @@ int main(int argc, char *argv[])
 	char *prefix = NULL;
 	char *sum_str = NULL;
 	char *intermediate = NULL;
+	double threshold = 400.0;
 	SumMethod sum;
 	int nthreads = 1;
 	pthread_t workers[MAX_THREADS];
@@ -271,11 +273,12 @@ int main(int argc, char *argv[])
 		{"prefix",             1, NULL,               'x'},
 		{"sum",                1, NULL,               's'},
 		{"intermediate",       1, NULL,               'p'},
+		{"threshold",          1, NULL,               't'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:x:j:o:s:p:",
+	while ((c = getopt_long(argc, argv, "hi:x:j:o:s:p:t:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -305,6 +308,10 @@ int main(int argc, char *argv[])
 
 		case 'p' :
 			intermediate = strdup(optarg);
+			break;
+
+		case 't' :
+			threshold = atof(optarg);
 			break;
 
 		case 0 :
@@ -368,6 +375,7 @@ int main(int argc, char *argv[])
 		worker_args[i]->w = w;
 		worker_args[i]->h = h;
 		worker_args[i]->sum_method = sum;
+		worker_args[i]->threshold = threshold;
 
 	}
 
