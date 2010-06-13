@@ -136,9 +136,13 @@ void record_image(struct image *image, int do_poisson)
 	progress_bar(x, image->width-1, "Post-processing");
 	}
 
-	STATUS("Max 2theta = %.2f deg, min d = %.2f nm (halve this to get the"
-	       " voxel size for a synthesis)\n",
+	STATUS("Max 2theta = %.2f deg, min d = %.2f nm\n",
 	        rad2deg(max_tt), (image->lambda/(2.0*sin(max_tt/2.0)))/1e-9);
+	double tt_side = image->twotheta[512+image->width*0];
+	STATUS("At 512,0: %.2f deg, min d = %.2f nm\n",
+	        rad2deg(tt_side), (image->lambda/(2.0*sin(tt_side/2.0)))/1e-9);
+
+	STATUS("Halve the d values to get the voxel size for a synthesis.\n");
 }
 
 
