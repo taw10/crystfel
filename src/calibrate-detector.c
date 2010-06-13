@@ -27,8 +27,10 @@
 #include "utils.h"
 #include "hdf5-file.h"
 #include "filters.h"
+#include "peaks.h"
 
 
+#define INTEGRATION_RADIUS (10)
 #define MAX_THREADS (96)
 
 struct process_args
@@ -70,7 +72,7 @@ static void *process_image(void *pargsv)
 	struct process_args *pargs = pargsv;
 	struct hdfile *hdfile;
 	struct image image;
-	int x, y;
+	int x, y, i;
 
 	image.features = NULL;
 	image.data = NULL;
@@ -113,10 +115,40 @@ static void *process_image(void *pargsv)
 		goto out;
 	}
 
-	for ( x=0; x<image.width; x++ ) {
-	for ( y=0; y<image.height; y++ ) {
-		pargs->sum[x+pargs->w*y] += image.data[x+image.width*y];
-	}
+	search_peaks(&image);
+
+//	for ( x=0; x<image.width; x++ ) {
+//	for ( y=0; y<image.height; y++ ) {
+//		float val = image.data[x+image.width*y];
+//		if ( val > 100.0 ) {
+//			pargs->sum[x+pargs->w*y] += val;
+//		}
+//	}
+//	}
+
+	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
+
+	for ( i=0; i<image_feature_count(image.features); i++ ) {
+
+		struct imagefeature *f = image_get_feature(image.features, i);
+		int xp = f->x;
+		int yp = f->y;
+
+		for ( x=-INTEGRATION_RADIUS; x<+INTEGRATION_RADIUS; x++ ) {
+		for ( y=-INTEGRATION_RADIUS; y<+INTEGRATION_RADIUS; y++ ) {
+
+			/* Circular mask */
+			if ( x*x + y*y > lim ) continue;
+
+			if ( ((x+xp)>=image.width) || ((x+xp)<0) ) continue;
+			if ( ((y+yp)>=image.height) || ((y+yp)<0) ) continue;
+
+			float val = image.data[x+image.width*y];
+			pargs->sum[x+pargs->w*y] += val;
+
+		}
+		}
+
 	}
 
 out:
