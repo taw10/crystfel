@@ -148,7 +148,7 @@ static int integrate_peak(struct image *image, int xp, int yp,
 	for ( x=-INTEGRATION_RADIUS; x<+INTEGRATION_RADIUS; x++ ) {
 	for ( y=-INTEGRATION_RADIUS; y<+INTEGRATION_RADIUS; y++ ) {
 
-		struct panel *p;
+		struct panel *p = NULL;
 		double val, sa, pix_area, Lsq, dsq, proj_area;
 		float tt = 0.0;
 		double phi, pa, pb, pol;
