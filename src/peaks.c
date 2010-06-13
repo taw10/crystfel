@@ -108,7 +108,7 @@ static void cull_peaks(struct image *image)
 
 			g = image_get_feature(image->features, j);
 			if ( g == NULL ) continue;
-			if ( fabs(f->x - g->x) < 2.0 ) ncol++;
+			if ( fabs(f->y - g->y) < 2.0 ) ncol++;
 
 		}
 
@@ -121,7 +121,7 @@ static void cull_peaks(struct image *image)
 			struct imagefeature *g;
 			g = image_get_feature(image->features, j);
 			if ( g == NULL ) continue;
-			if ( f->x == g->x ) {
+			if ( fabs(f->y - g->y) < 2.0 ) {
 				image_remove_feature(image->features, j);
 				nelim++;
 			}
