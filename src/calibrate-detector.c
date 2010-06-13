@@ -33,6 +33,13 @@
 #define INTEGRATION_RADIUS (10)
 #define MAX_THREADS (96)
 
+
+typedef enum
+{
+	SUM_THRESHOLD,
+	SUM_PEAKS
+} SumMethod;
+
 struct process_args
 {
 	char *filename;
@@ -42,6 +49,7 @@ struct process_args
 	double *sum;
 	int w;
 	int h;
+	SumMethod sum_method;
 };
 
 
@@ -58,6 +66,9 @@ static void show_help(const char *s)
 "  -o, --output=<filename> Output filename for summed image in HDF5 format.\n"
 "                           Default: summed.h5.\n"
 "\n"
+"  -s, --sum=<method>      Use this method for summation.  Choose from:\n"
+"                           peaks : sum 10px radius circles around peaks.\n"
+"                           threshold : sum thresholded images.\n"
 "      --filter-cm         Perform common-mode noise subtraction on images\n"
 "                           before proceeding.\n"
 "      --filter-noise      Apply an aggressive noise filter which sets all\n"
@@ -67,12 +78,64 @@ static void show_help(const char *s)
 }
 
 
+static void sum_peaks(struct image *image, double *sum)
+{
+	int x, y, i;
+	int w = image->width;
+	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
+
+	search_peaks(image);
+
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
+
+		struct imagefeature *f = image_get_feature(image->features, i);
+		int xp, yp;
+
+		/* This is not an error. */
+		if ( f == NULL ) continue;
+
+		xp = f->x;
+		yp = f->y;
+
+		for ( x=-INTEGRATION_RADIUS; x<+INTEGRATION_RADIUS; x++ ) {
+		for ( y=-INTEGRATION_RADIUS; y<+INTEGRATION_RADIUS; y++ ) {
+
+			/* Circular mask */
+			if ( x*x + y*y > lim ) continue;
+
+			if ( ((x+xp)>=image->width) || ((x+xp)<0) ) continue;
+			if ( ((y+yp)>=image->height) || ((y+yp)<0) ) continue;
+
+			float val = image->data[(x+xp)+w*(y+yp)];
+			sum[(x+xp)+w*(y+yp)] += val;
+
+		}
+		}
+
+	}
+}
+
+
+static void sum_threshold(struct image *image, double *sum)
+{
+	int x, y;
+
+	for ( x=0; x<image->width; x++ ) {
+	for ( y=0; y<image->height; y++ ) {
+		float val = image->data[x+image->width*y];
+		if ( val > 400.0 ) {
+			sum[x+image->width*y] += val;
+		}
+	}
+	}
+}
+
+
 static void *process_image(void *pargsv)
 {
 	struct process_args *pargs = pargsv;
 	struct hdfile *hdfile;
 	struct image image;
-	int x, y, i;
 
 	image.features = NULL;
 	image.data = NULL;
@@ -116,35 +179,15 @@ static void *process_image(void *pargsv)
 		goto out;
 	}
 
-	search_peaks(&image);
+	switch ( pargs->sum_method ) {
 
-	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
+	case SUM_THRESHOLD :
+		sum_threshold(&image, pargs->sum);
+		break;
 
-	for ( i=0; i<image_feature_count(image.features); i++ ) {
-
-		struct imagefeature *f = image_get_feature(image.features, i);
-		int xp, yp;
-
-		/* This is not an error. */
-		if ( f == NULL ) continue;
-
-		xp = f->x;
-		yp = f->y;
-
-		for ( x=-INTEGRATION_RADIUS; x<+INTEGRATION_RADIUS; x++ ) {
-		for ( y=-INTEGRATION_RADIUS; y<+INTEGRATION_RADIUS; y++ ) {
-
-			/* Circular mask */
-			if ( x*x + y*y > lim ) continue;
-
-			if ( ((x+xp)>=image.width) || ((x+xp)<0) ) continue;
-			if ( ((y+yp)>=image.height) || ((y+yp)<0) ) continue;
-
-			float val = image.data[(x+xp)+image.width*(y+yp)];
-			pargs->sum[(x+xp)+pargs->w*(y+yp)] += val;
-
-		}
-		}
+	case SUM_PEAKS :
+		sum_peaks(&image, pargs->sum);
+		break;
 
 	}
 
@@ -197,6 +240,8 @@ int main(int argc, char *argv[])
 	int config_cmfilter = 0;
 	int config_noisefilter = 0;
 	char *prefix = NULL;
+	char *sum_str = NULL;
+	SumMethod sum;
 	int nthreads = 1;
 	pthread_t workers[MAX_THREADS];
 	struct process_args *worker_args[MAX_THREADS];
@@ -213,6 +258,7 @@ int main(int argc, char *argv[])
 		{"filter-cm",          0, &config_cmfilter,    1},
 		{"filter-noise",       0, &config_noisefilter, 1},
 		{"prefix",             1, NULL,               'x'},
+		{"sum",                1, NULL,               's'},
 		{0, 0, NULL, 0}
 	};
 
@@ -241,6 +287,10 @@ int main(int argc, char *argv[])
 			nthreads = atoi(optarg);
 			break;
 
+		case 's' :
+			sum_str = strdup(optarg);
+			break;
+
 		case 0 :
 			break;
 
@@ -263,6 +313,20 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	free(filename);
+
+	if ( sum_str == NULL ) {
+		STATUS("You didn't specify a summation method, so I'm using"
+		       " the 'peaks' method, which gives the best results.\n");
+		sum = SUM_PEAKS;
+	} else if ( strcmp(sum_str, "peaks") == 0 ) {
+		sum = SUM_PEAKS;
+	} else if ( strcmp(sum_str, "threshold") == 0) {
+		sum = SUM_THRESHOLD;
+	} else {
+		ERROR("Unrecognised summation method '%s'\n", sum_str);
+		return 1;
+	}
+	free(sum_str);
 
 	if ( prefix == NULL ) {
 		prefix = strdup("");
@@ -287,6 +351,7 @@ int main(int argc, char *argv[])
 
 		worker_args[i]->w = w;
 		worker_args[i]->h = h;
+		worker_args[i]->sum_method = sum;
 
 	}
 
