@@ -1,0 +1,8 @@
+#!/bin/sh
+
+for FILENAME in `cat $1`; do
+
+	~/crystfel/src/hdfsee $2$FILENAME --binning=4 \
+		                      --int-boost=20 --filter-noise
+	
+done
