@@ -237,6 +237,8 @@ static void dump_to_file(struct process_args *worker_args[], int nthreads,
 	snprintf(outfile, 255, "%s-%i.h5", stem, n);
 
 	hdf5_write(outfile, total, w, h, H5T_NATIVE_DOUBLE);
+
+	free(total);
 }
 
 
