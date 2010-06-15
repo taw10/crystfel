@@ -308,7 +308,7 @@ GdkPixbuf *render_get_image(DisplayWindow *dw)
 					w, h, w*3, render_free_data, NULL);
 }
 
-GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int monochrome)
+GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
 {
 	guchar *data;
 	size_t x, y;
@@ -321,14 +321,26 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int monochrome)
 
 	for ( y=0; y<h; y++ ) {
 
-		guchar r, g, b;
+		guchar r = 0;
+		guchar g = 0;
+		guchar b = 0;
 		int val;
 
 		val = y;
-		if ( !monochrome ) {
+
+		switch ( scale ) {
+		case SCALE_COLOUR : {
 			render_rgb(val, max, &r, &g, &b);
-		} else {
+			break;
+		}
+		case SCALE_MONO : {
 			render_mono(val, max, &r, &g, &b);
+			break;
+		}
+		case SCALE_INVMONO : {
+			render_invmono(val, max, &r, &g, &b);
+			break;
+		}
 		}
 
 		data[3*( 0+w*(h-1-y) )+0] = 0;
