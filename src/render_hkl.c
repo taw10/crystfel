@@ -38,11 +38,12 @@ static void show_help(const char *s)
 	printf(
 "Render intensity lists using POV-ray.\n"
 "\n"
-"  -h, --help      Display this help message.\n"
-"      --povray    Render a 3D animation using POV-ray.\n"
-"  -j <n>          Run <n> instances of POV-ray in parallel.\n"
-"      --zone-axis Render a 2D zone axis pattern.\n"
-"\n");
+"  -h, --help       Display this help message.\n"
+"      --povray     Render a 3D animation using POV-ray.\n"
+"      --zone-axis  Render a 2D zone axis pattern.\n"
+"  -j <n>           Run <n> instances of POV-ray in parallel.\n"
+"  -p, --pdb=<file> PDB file from which to get the unit cell.\n"
+);
 }
 
 
@@ -428,17 +429,19 @@ int main(int argc, char *argv[])
 	int config_povray = 0;
 	int config_zoneaxis = 0;
 	unsigned int nproc = 1;
+	char *pdb = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"povray",             0, &config_povray,      1},
 		{"zone-axis",          0, &config_zoneaxis,    1},
+		{"pdb",                1, NULL,               'p'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hj:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hj:p:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' :
@@ -447,6 +450,10 @@ int main(int argc, char *argv[])
 
 		case 'j' :
 			nproc = atoi(optarg);
+			break;
+
+		case 'p' :
+			pdb = strdup(optarg);
 			break;
 
 		case 0 :
@@ -458,6 +465,10 @@ int main(int argc, char *argv[])
 
 	}
 
+	if ( pdb == NULL ) {
+		pdb = strdup("molecule.pdb");
+	}
+
 	if ( (nproc > MAX_PROC) || (nproc < 1) ) {
 		ERROR("Number of processes is invalid.\n");
 		return 1;
@@ -465,7 +476,7 @@ int main(int argc, char *argv[])
 
 	infile = argv[optind];
 
-	cell = load_cell_from_pdb("molecule.pdb");
+	cell = load_cell_from_pdb(pdb);
 	cts = new_list_count();
 	ref = read_reflections(infile, cts, NULL);
 	if ( ref == NULL ) {
@@ -481,6 +492,7 @@ int main(int argc, char *argv[])
 		ERROR("Try again with either --povray or --zone-axis.\n");
 	}
 
+	free(pdb);
 
 	return 0;
 }
