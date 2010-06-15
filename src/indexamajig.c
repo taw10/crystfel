@@ -563,11 +563,7 @@ int main(int argc, char *argv[])
 
 	cell = load_cell_from_pdb(pdb);
 	if ( cell == NULL ) {
-		if ( pdb == NULL ) {
-			ERROR("Couldn't read unit cell (from molecule.pdb)\n");
-		} else {
-			ERROR("Couldn't read unit cell (from %s)\n", pdb);
-		}
+		ERROR("Couldn't read unit cell (from %s)\n", pdb);
 		return 1;
 	}
 	free(pdb);
