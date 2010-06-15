@@ -199,20 +199,32 @@ struct detector *get_detector_geometry(const char *filename)
 		chomp(line);
 
 		n1 = assplode(line, " \t", &bits, ASSPLODE_NONE);
-		if ( n1 < 3 ) continue;
+		if ( n1 < 3 ) {
+			for ( i=0; i<n1; i++ ) free(bits[i]);
+			free(bits);
+			continue;
+		}
 
-		if ( bits[1][0] != '=' ) continue;
+		if ( bits[1][0] != '=' ) {
+			for ( i=0; i<n1; i++ ) free(bits[i]);
+			free(bits);
+			continue;
+		}
 
 		if ( strcmp(bits[0], "n_panels") == 0 ) {
 			if ( det->n_panels != -1 ) {
 				ERROR("Duplicate n_panels statement.\n");
 				fclose(fh);
 				free(det);
+				for ( i=0; i<n1; i++ ) free(bits[i]);
+				free(bits);
 				return NULL;
 			}
 			det->n_panels = atoi(bits[2]);
 			det->panels = malloc(det->n_panels
 			                      * sizeof(struct panel));
+			for ( i=0; i<n1; i++ ) free(bits[i]);
+			free(bits);
 			continue;
 		}
 
