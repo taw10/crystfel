@@ -641,6 +641,8 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 		f = image_get_feature(image->features, i);
 
+		if ( f == NULL ) continue;
+
 		for ( j=0; j<image->n_hits; j++ ) {
 
 			double d;
