@@ -477,6 +477,10 @@ int main(int argc, char *argv[])
 	infile = argv[optind];
 
 	cell = load_cell_from_pdb(pdb);
+	if ( cell == NULL ) {
+		ERROR("Couldn't load unit cell from %s\n", pdb);
+		return 1;
+	}
 	cts = new_list_count();
 	ref = read_reflections(infile, cts, NULL);
 	if ( ref == NULL ) {
