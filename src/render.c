@@ -100,69 +100,88 @@ float *render_get_image_binned(DisplayWindow *dw, int binning, float *max)
 }
 
 
-#define RENDER_RGB							       \
-									       \
-	int s;								       \
-	float p;							       \
-									       \
-	s = val / (max/6);						       \
-	p = fmod(val, max/6);						       \
-	p /= (max/6);							       \
-									       \
-	r = 0;	g = 0;	b = 0;						       \
-									       \
-	if ( (val < 0.0) ) {                                                   \
-		s = 0;                                                         \
-		p = 1.0;                                                       \
-	}                                                                      \
-	if ( (val > max) ) {                                                   \
-		s = 6;                                                         \
-	}                                                                      \
-	switch ( s ) {							       \
-		case 0 : {	/* Black to blue */			       \
-			r = 0;		g = 0;			b = p*255;     \
-			break;						       \
-		}							       \
-		case 1 : {	/* Blue to green */			       \
-			r = 0;		g = 255*p;		b = (1-p)*255; \
-			break;						       \
-		}							       \
-		case 2 : {	/* Green to red */			       \
-			r =p*255;	g = (1-p)*255;		b = 0;	       \
-			break;						       \
-		}							       \
-		case 3 : {	/* Red to Orange */			       \
-			r = 255;	g = 127*p;		b = 0;	       \
-			break;						       \
-		}							       \
-		case 4 : {	/* Orange to Yellow */			       \
-			r = 255;	g = 127 + 127*p;	b = 0;	       \
-			break;						       \
-		}							       \
-		case 5 : {	/* Yellow to White */			       \
-			r = 255;	g = 255;		b = 255*p;     \
-			break;						       \
-		}							       \
-		case 6 : {	/* Pixel has hit the maximum value */	       \
-			r = 255;	g = 255;		b = 255;       \
-			break;						       \
-		}							       \
+static inline void render_rgb(float val, float max,
+                              guchar *rp, guchar *gp, guchar *bp)
+{
+	int s;
+	float p;
+	guchar r, g, b;
+
+	s = val / (max/6);
+	p = fmod(val, max/6);
+	p /= (max/6);
+
+	r = 0;	g = 0;	b = 0;
+
+	if ( (val < 0.0) ) {
+		s = 0;
+		p = 1.0;
+	}
+	if ( (val > max) ) {
+		s = 6;
+	}
+	switch ( s ) {
+		case 0 : {	/* Black to blue */
+			r = 0;     g = 0;            b = p*255;
+			break;
+		}
+		case 1 : {	/* Blue to pink */
+			r = 255*p; g = 0;            b = 255;
+			break;
+		}
+		case 2 : {	/* Pink to red */
+			r = 255;  g = 0;    b = (1-p)*255;
+			break;
+		}
+		case 3 : {	/* Red to Orange */
+			r = 255;   g = 127*p;        b = 0;
+			break;
+		}
+		case 4 : {	/* Orange to Yellow */
+			r = 255;   g = 127 + 127*p;  b = 0;
+			break;
+		}
+		case 5 : {	/* Yellow to White */
+			r = 255;   g = 255;          b = 255*p;
+			break;
+		}
+		case 6 : {	/* Pixel has hit the maximum value */
+			r = 255;   g = 255;          b = 255;
+			break;
+		}
 	}
 
-#define RENDER_MONO							       \
-	float p;							       \
-	p = (float)val / (float)max;					       \
-	if ( val < 0.0 ) p = 0.0;                                              \
-	if ( val > max ) p = 1.0;                                              \
-	r = 255.0*p;	g = 255.0*p;	b = 255.0*p;
+	*rp = r;
+	*gp = g;
+	*bp = b;
+}
 
-#define RENDER_INVMONO							       \
-	float p;							       \
-	p = (float)val / (float)max;					       \
-	p = 1.0 - p;							       \
-	if ( val < 0.0 ) p = 1.0;                                              \
-	if ( val > max ) p = 0.0;                                              \
-	r = 255.0*p;	g = 255.0*p;	b = 255.0*p;
+
+static inline void render_mono(float val, float max,
+                               guchar *rp, guchar *gp, guchar *bp)
+{
+	float p;
+	p = (float)val / (float)max;
+	if ( val < 0.0 ) p = 0.0;
+	if ( val > max ) p = 1.0;
+	*rp = 255.0*p;
+	*gp = 255.0*p;
+	*bp = 255.0*p;
+}
+
+
+static inline void render_invmono(float val, float max,
+                                  guchar *rp, guchar *gp, guchar *bp)
+{
+	float p;
+	p = (float)val / (float)max;
+	p = 1.0 - p;
+	if ( val < 0.0 ) p = 1.0;
+	if ( val > max ) p = 0.0;
+	*rp = 255.0*p;
+	*gp = 255.0*p;
+	*bp = 255.0*p;
+}
 
 
 /* NB This function is shared between render_get_image() and
@@ -249,24 +268,22 @@ GdkPixbuf *render_get_image(DisplayWindow *dw)
 	for ( x=0; x<w; x++ ) {
 
 		float val;
-		guchar r, g, b;
+		guchar r = 0;
+		guchar g = 0;
+		guchar b = 0;
 
 		val = hdr[x+w*y];
 		switch ( dw->scale ) {
 		case SCALE_COLOUR : {
-			RENDER_RGB
+			render_rgb(val, max, &r, &g, &b);
 			break;
 		}
 		case SCALE_MONO : {
-			RENDER_MONO
+			render_mono(val, max, &r, &g, &b);
 			break;
 		}
 		case SCALE_INVMONO : {
-			RENDER_INVMONO
-			break;
-		}
-		default : {
-			RENDER_RGB;
+			render_invmono(val, max, &r, &g, &b);
 			break;
 		}
 		}
@@ -309,9 +326,9 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int monochrome)
 
 		val = y;
 		if ( !monochrome ) {
-			RENDER_RGB
+			render_rgb(val, max, &r, &g, &b);
 		} else {
-			RENDER_MONO
+			render_mono(val, max, &r, &g, &b);
 		}
 
 		data[3*( 0+w*(h-1-y) )+0] = 0;
@@ -390,26 +407,24 @@ int render_png(DisplayWindow *dw, const char *filename)
 
 		for ( x=0; x<w; x++ ) {
 
-			int r, g, b;
+			guchar r = 0;
+			guchar g = 0;
+			guchar b = 0;
 			float val;
 
 			val = hdr[x+w*y];
 
 			switch ( dw->scale ) {
 			case SCALE_COLOUR : {
-				RENDER_RGB
+				render_rgb(val, max, &r, &g, &b);
 				break;
 			}
 			case SCALE_MONO : {
-				RENDER_MONO
+				render_mono(val, max, &r, &g, &b);
 				break;
 			}
 			case SCALE_INVMONO : {
-				RENDER_INVMONO
-				break;
-			}
-			default : {
-				RENDER_RGB;
+				render_invmono(val, max, &r, &g, &b);
 				break;
 			}
 			}
