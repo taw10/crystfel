@@ -474,6 +474,8 @@ skip:
 	free(powder);
 	free(cell);
 	free(intensities);
+	free(outfile);
+	free(filename);
 
 	return 0;
 }

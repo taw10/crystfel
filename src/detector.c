@@ -240,6 +240,11 @@ struct detector *get_detector_geometry(const char *filename)
 			ERROR("Unrecognised field '%s'\n", path[1]);
 		}
 
+		for ( i=0; i<n1; i++ ) free(bits[i]);
+		for ( i=0; i<n2; i++ ) free(path[i]);
+		free(bits);
+		free(path);
+
 	} while ( rval != NULL );
 
 	if ( det->n_panels == -1 ) {
