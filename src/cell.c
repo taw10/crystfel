@@ -28,6 +28,27 @@
 /* Weighting factor of lengths relative to angles */
 #define LWEIGHT (10.0e-9)
 
+struct _unitcell {
+
+	/* Crystallographic representation */
+	double a;	/* m */
+	double b;	/* m */
+	double c;	/* m */
+	double alpha;	/* Radians */
+	double beta;	/* Radians */
+	double gamma;	/* Radians */
+
+	/* Cartesian representation */
+	double ax;	double bx;	double cx;
+	double ay;	double by;	double cy;
+	double az;	double bz;	double cz;
+
+	/* Cartesian representation of reciprocal axes */
+	double axs;	double bxs;	double cxs;
+	double ays;	double bys;	double cys;
+	double azs;	double bzs;	double czs;
+
+};
 
 /* Update the cartesian representation from the crystallographic one */
 static void cell_update_cartesian(UnitCell *cell)

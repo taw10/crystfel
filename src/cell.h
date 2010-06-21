@@ -16,27 +16,7 @@
 #include <config.h>
 #endif
 
-typedef struct {
-
-	/* Crystallographic representation */
-	double a;	/* m */
-	double b;	/* m */
-	double c;	/* m */
-	double alpha;	/* Radians */
-	double beta;	/* Radians */
-	double gamma;	/* Radians */
-
-	/* Cartesian representation */
-	double ax;	double bx;	double cx;
-	double ay;	double by;	double cy;
-	double az;	double bz;	double cz;
-
-	/* Cartesian representation of reciprocal axes */
-	double axs;	double bxs;	double cxs;
-	double ays;	double bys;	double cys;
-	double azs;	double bzs;	double czs;
-
-} UnitCell;
+typedef struct _unitcell UnitCell;
 
 extern UnitCell *cell_new(void);
 extern UnitCell *cell_new_from_cell(UnitCell *orig);
