@@ -232,52 +232,52 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	}
 
 	/* Iterate over panels */
-	event = malloc(image->det.n_panels * sizeof(cl_event));
-	for ( p=0; p<image->det.n_panels; p++ ) {
+	event = malloc(image->det->n_panels * sizeof(cl_event));
+	for ( p=0; p<image->det->n_panels; p++ ) {
 
 		size_t dims[3];
 		size_t ldims[3] = {SAMPLING, SAMPLING, BWSAMPLING};
 
 		/* In a future version of OpenCL, this could be done
 		 * with a global work offset.  But not yet... */
-		dims[0] = 1+image->det.panels[0].max_x-image->det.panels[0].min_x;
-		dims[1] = 1+image->det.panels[0].max_y-image->det.panels[0].min_y;
+		dims[0] = 1+image->det->panels[0].max_x-image->det->panels[0].min_x;
+		dims[1] = 1+image->det->panels[0].max_y-image->det->panels[0].min_y;
 		dims[0] *= SAMPLING;
 		dims[1] *= SAMPLING;
 		dims[2] = BWSAMPLING;
 
 		clSetKernelArg(gctx->kern, 4, sizeof(cl_float),
-		               &image->det.panels[p].cx);
+		               &image->det->panels[p].cx);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 4: %s\n", clError(err));
 			return;
 		}
 		clSetKernelArg(gctx->kern, 5, sizeof(cl_float),
-		               &image->det.panels[p].cy);
+		               &image->det->panels[p].cy);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 5: %s\n", clError(err));
 			return;
 		}
 		clSetKernelArg(gctx->kern, 6, sizeof(cl_float),
-		               &image->det.panels[p].res);
+		               &image->det->panels[p].res);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 6: %s\n", clError(err));
 			return;
 		}
 		clSetKernelArg(gctx->kern, 7, sizeof(cl_float),
-		               &image->det.panels[p].clen);
+		               &image->det->panels[p].clen);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 7: %s\n", clError(err));
 			return;
 		}
 		clSetKernelArg(gctx->kern, 11, sizeof(cl_int),
-		               &image->det.panels[p].min_x);
+		               &image->det->panels[p].min_x);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 11: %s\n", clError(err));
 			return;
 		}
 		clSetKernelArg(gctx->kern, 12, sizeof(cl_int),
-		               &image->det.panels[p].min_y);
+		               &image->det->panels[p].min_y);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set arg 12: %s\n", clError(err));
 			return;
@@ -294,13 +294,13 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 	diff_ptr = clEnqueueMapBuffer(gctx->cq, gctx->diff, CL_TRUE,
 	                              CL_MAP_READ, 0, gctx->diff_size,
-	                              image->det.n_panels, event, NULL, &err);
+	                              image->det->n_panels, event, NULL, &err);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't map diffraction buffer: %s\n", clError(err));
 		return;
 	}
 	tt_ptr = clEnqueueMapBuffer(gctx->cq, gctx->tt, CL_TRUE, CL_MAP_READ, 0,
-	                            gctx->tt_size, image->det.n_panels, event,
+	                            gctx->tt_size, image->det->n_panels, event,
 	                            NULL, &err);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't map tt buffer\n");
