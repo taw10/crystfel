@@ -104,7 +104,7 @@ powder_plot_OBJECTS = $(am_powder_plot_OBJECTS)
 powder_plot_DEPENDENCIES =
 am_process_hkl_OBJECTS = process_hkl.$(OBJEXT) sfac.$(OBJEXT) \
 	statistics.$(OBJEXT) cell.$(OBJEXT) utils.$(OBJEXT) \
-	reflections.$(OBJEXT) likelihood.$(OBJEXT)
+	reflections.$(OBJEXT) likelihood.$(OBJEXT) symmetry.$(OBJEXT)
 process_hkl_OBJECTS = $(am_process_hkl_OBJECTS)
 process_hkl_DEPENDENCIES =
 am_render_hkl_OBJECTS = render_hkl.$(OBJEXT) cell.$(OBJEXT) \
@@ -240,7 +240,7 @@ pattern_sim_SOURCES = pattern_sim.c diffraction.c utils.c image.c \
 	$(am__append_2)
 pattern_sim_LDADD = @LIBS@
 process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
-                      reflections.c likelihood.c
+                      reflections.c likelihood.c symmetry.c
 
 process_hkl_LDADD = @LIBS@
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
@@ -400,6 +400,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/render_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sfac.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/statistics.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symmetry.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utils.Po@am__quote@
 
 .c.o:

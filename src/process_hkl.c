@@ -246,6 +246,7 @@ int main(int argc, char *argv[])
 	unsigned int *new_counts = NULL;
 	unsigned int n_total_patterns;
 	unsigned int *truecounts = NULL;
+	char *sym = NULL;
 	char *pdb = NULL;
 	float f0;
 	int f0_valid;
@@ -264,12 +265,14 @@ int main(int argc, char *argv[])
 		{"sum",                0, &config_sum,         1},
 		{"detwin",             0, &config_detwin,      1},
 		{"scale",              0, &config_scale,       1},
+		{"symmetry",           0, NULL,               'y'},
 		{"pdb",                1, NULL,               'p'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:e:ro:p:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hi:e:ro:p:y:",
+	                        longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' :
@@ -303,6 +306,10 @@ int main(int argc, char *argv[])
 
 		case 'p' :
 			pdb = strdup(optarg);
+			break;
+
+		case 'y' :
+			sym = strdup(optarg);
 			break;
 
 		case 0 :

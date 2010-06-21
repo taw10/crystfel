@@ -17,7 +17,7 @@ endif
 pattern_sim_LDADD = @LIBS@
 
 process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
-                      reflections.c likelihood.c
+                      reflections.c likelihood.c symmetry.c
 process_hkl_LDADD = @LIBS@
 
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
