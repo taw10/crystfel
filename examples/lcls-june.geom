@@ -9,6 +9,7 @@ n_panels = 2
 0/cy = 512.0
 0/clen = 66.0e-3
 0/res = 13333.3  ; 75 micron pixel size
+0/badrow_direction = x
 
 ; Lower panel (found to the "left" in the HDF5, furthest from the beam)
 1/min_x = 0
@@ -19,3 +20,4 @@ n_panels = 2
 1/cy = 512.0
 1/clen = 69.0e-3
 1/res = 13333.3  ; 75 micron pixel size
+1/badrow_direction = x

@@ -82,8 +82,7 @@ static int is_hot_pixel(struct image *image, int x, int y)
 }
 
 
-/* Post-processing of the peak list to remove noise */
-static void cull_peaks(struct image *image)
+static int cull_peaks_in_panel(struct image *image, struct panel *p)
 {
 	int i, n;
 	int nelim = 0;
@@ -98,7 +97,12 @@ static void cull_peaks(struct image *image)
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		/* How many peaks are in exactly the same column? */
+		if ( f->x < p->min_x ) continue;
+		if ( f->x > p->max_x ) continue;
+		if ( f->y < p->min_y ) continue;
+		if ( f->y > p->max_y ) continue;
+
+		/* How many peaks are in the same column? */
 		ncol = 0;
 		for ( j=0; j<n; j++ ) {
 
@@ -108,7 +112,15 @@ static void cull_peaks(struct image *image)
 
 			g = image_get_feature(image->features, j);
 			if ( g == NULL ) continue;
-			if ( fabs(f->y - g->y) < 2.0 ) ncol++;
+
+			if ( p->badrow == 'x' ) {
+				if ( fabs(f->y - g->y) < 2.0 ) ncol++;
+			} else if ( p->badrow == 'y' ) {
+				if ( fabs(f->x - g->x) < 2.0 ) ncol++;
+			} else {
+				ERROR("Invalid badrow direction.\n");
+				abort();
+			}
 
 		}
 
@@ -121,15 +133,44 @@ static void cull_peaks(struct image *image)
 			struct imagefeature *g;
 			g = image_get_feature(image->features, j);
 			if ( g == NULL ) continue;
-			if ( fabs(f->y - g->y) < 2.0 ) {
-				image_remove_feature(image->features, j);
-				nelim++;
+			if ( p->badrow == 'x' ) {
+				if ( fabs(f->y - g->y) < 2.0 ) {
+					image_remove_feature(image->features,
+					                     j);
+					nelim++;
+				}
+			} else if ( p->badrow == 'y' ) {
+				if ( fabs(f->x - g->x) < 2.0 ) {
+					image_remove_feature(image->features,
+					                     j);
+					nelim++;
+				}
+			} else {
+				ERROR("Invalid badrow direction.\n");
+				abort();
 			}
+
 		}
 
 	}
 
-	//STATUS("%i peaks eliminated\n", nelim);
+	return nelim;
+}
+
+
+/* Post-processing of the peak list to remove noise */
+static int cull_peaks(struct image *image)
+{
+	int nelim = 0;
+	struct panel *p;
+	int i;
+
+	for ( i=0; i<image->det->n_panels; i++ ) {
+		p = &image->det->panels[i];
+		nelim += cull_peaks_in_panel(image, p);
+	}
+
+	return nelim;
 }
 
 
@@ -247,6 +288,7 @@ void search_peaks(struct image *image)
 	int nrej_fra = 0;
 	int nrej_bad = 0;
 	int nacc = 0;
+	int ncull;
 
 	data = image->data;
 	width = image->width;
@@ -371,11 +413,12 @@ void search_peaks(struct image *image)
 	}
 	}
 
-	STATUS("%i accepted, %i box, %i hot, %i proximity, %i outside frame, "
-	       "%i in bad regions.\n",
-	       nacc, nrej_dis, nrej_hot, nrej_pro, nrej_fra, nrej_bad);
+	ncull = cull_peaks(image);
+	nacc -= ncull;
 
-	cull_peaks(image);
+	STATUS("%i accepted, %i box, %i hot, %i proximity, %i outside frame, "
+	       "%i in bad regions, %i badrow culled.\n",
+	       nacc, nrej_dis, nrej_hot, nrej_pro, nrej_fra, nrej_bad, ncull);
 }
 
 

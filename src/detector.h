@@ -30,6 +30,7 @@ struct panel
 	float    cy;
 	float    clen;    /* Camera length */
 	float    res;     /* Resolution */
+	char     badrow;  /* 'x' or 'y' */
 };
 
 struct detector
