@@ -5,7 +5,7 @@ Thomas White <taw@physics.org>, CFEL, DESY
 
 CrystFEL is a suite of programs for simulating and processing crystallographic
 (Bragg diffraction) data acquired with a free electron laser.  The particular
-characteristics of such data which call for a specialised software suite are
+characteristics of such data which call for a specialised software suite are:
 
 - The sliced, rather than integrated, measurement of intensity data.  Many, if
    not all reflections are partially integrated.  Unique correction factors are
@@ -16,19 +16,18 @@ characteristics of such data which call for a specialised software suite are
 
 - Many patterns (>10,000) are required - high throughput is needed.
 
-
-The main programs are:
+CrystFEL includes programs for simulating and processing patterns subject to the
+above characteristics.  The main programs are:
 
 	- pattern_sim, for simulating patterns.
 
-	- indexamajig, for finding hits, locating peaks, indexing patterns
-	               and constructing lists of h,k,l,I,sigma(I) for each
-	               pattern.
+	- indexamajig, a "batch indexer" and data reduction program.
+	               It is used for finding hits, locating peaks, indexing
+	               patterns and constructing lists of h,k,l,I,sigma(I) (or
+	               similar) for each pattern.
 
 	- process_hkl, for merging per-pattern lists of intensities into a
 	               single reflection list.
-
-	- hdfsee, a simple HDF5 image viewer.
 
 In addition, there is also:
 
@@ -41,3 +40,51 @@ In addition, there is also:
 
 	- compare_hkl, for working out the differences (e.g. a q-dependent
 	               scaling factor) between two lists of reflections.
+
+And, because I'm so nice, included at no extra cost is:
+
+	- hdfsee, a simple viewer for images stored in HDF5 format.
+
+
+CrystFEL mostly works with images stored in HDF5 format, unit cell and atomic
+coordinate data in PDB format, and reflection lists in plain text format (i.e.
+not MTZ).
+
+For documentation on the individual programs, see the files inside the "doc"
+directory.
+
+
+Installation
+------------
+
+See the "INSTALL" file for the generic instructions on how to use the build
+system.  In short, it's
+
+$ ./configure
+$ make
+$ sudo make install
+
+You might want to substitute something based on one of the following for the
+first step:
+
+$ ./configure --enable-opencl
+$ ./configure --with-hdf5=/some/strange/location
+$ ./configure --with-libtiff=/some/strange/location
+$ ./configure --with-gsl=/some/strange/location
+$ ./configure --disable-gtk
+
+
+A note on data orientation
+--------------------------
+
+CrystFEL defines "x" as the most quickly varying coordinate in the data, and "y"
+as the second most quickly varying coordinate in the data.  It doesn't know what
+to do with any extra dimensions beyond the second.
+
+The origin, which is considered the lower left corner of the image, is defined
+by CrystFEL as the first element in the image data.  Positive x points in a
+direction to the right, and positive y points upwards.  When a right-handed
+coordinate system is formed using these definitions, CrystFEL will consider the
+positive z direction to point towards the source of the incident beam.
+
+The detector surface is assumed to be perpendicular to the incident beam.
