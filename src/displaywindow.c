@@ -591,7 +591,7 @@ static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
 	gtk_combo_box_append_text(GTK_COMBO_BOX(cb),
 	       "TIFF - Floating point (mono, unbinned, filtered, not boosted)");
 	gtk_combo_box_append_text(GTK_COMBO_BOX(cb),
-	       "TIFF - 16 bit integer (mono, unbinned, filtered, boosted)");
+	       "TIFF - 16 bit signed integer (mono, unbinned, filtered, boosted)");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(cb), 0);
 
 	cd = malloc(sizeof(*cd));
