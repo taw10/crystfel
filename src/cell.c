@@ -28,7 +28,15 @@
 /* Weighting factor of lengths relative to angles */
 #define LWEIGHT (10.0e-9)
 
+typedef enum {
+	CELL_REP_CRYST,
+	CELL_REP_CART,
+	CELL_REP_RECIP
+} CellRepresentation;
+
 struct _unitcell {
+
+	CellRepresentation rep;
 
 	/* Crystallographic representation */
 	double a;	/* m */
@@ -50,60 +58,8 @@ struct _unitcell {
 
 };
 
-/* Update the cartesian representation from the crystallographic one */
-static void cell_update_cartesian(UnitCell *cell)
-{
-	double tmp, V, cosalphastar, cstar;
 
-	if ( cell == NULL ) return;
-
-	/* a in terms of x, y and z
-	 * +a (cryst) is defined to lie along +x (cart) */
-	cell->ax = cell->a;
-	cell->ay = 0.0;
-	cell->az = 0.0;
-
-	/* b in terms of x, y and z
-	 * b (cryst) is defined to lie in the xy (cart) plane */
-	cell->bx = cell->b*cos(cell->gamma);
-	cell->by = cell->b*sin(cell->gamma);
-	cell->bz = 0.0;
-
-	tmp = cos(cell->alpha)*cos(cell->alpha)
-		+ cos(cell->beta)*cos(cell->beta)
-		+ cos(cell->gamma)*cos(cell->gamma)
-		- 2.0*cos(cell->alpha)*cos(cell->beta)*cos(cell->gamma);
-	V = cell->a * cell->b * cell->c * sqrt(1.0 - tmp);
-
-	cosalphastar = cos(cell->beta)*cos(cell->gamma) - cos(cell->alpha);
-	cosalphastar /= sin(cell->beta)*sin(cell->gamma);
-
-	cstar = (cell->a * cell->b * sin(cell->gamma))/V;
-
-	/* c in terms of x, y and z */
-	cell->cx = cell->c*cos(cell->beta);
-	cell->cy = -cell->c*sin(cell->beta)*cosalphastar;
-	cell->cz = 1.0/cstar;
-}
-
-
-/* Update the crystallographic representation from the cartesian one */
-static void cell_update_crystallographic(UnitCell *cell)
-{
-	if ( cell == NULL ) return;
-
-	cell->a = modulus(cell->ax, cell->ay, cell->az);
-	cell->b = modulus(cell->bx, cell->by, cell->bz);
-	cell->c = modulus(cell->cx, cell->cy, cell->cz);
-
-	cell->alpha = angle_between(cell->bx, cell->by, cell->bz,
-					cell->cx, cell->cy, cell->cz);
-	cell->beta = angle_between(cell->ax, cell->ay, cell->az,
-					cell->cx, cell->cy, cell->cz);
-	cell->gamma = angle_between(cell->ax, cell->ay, cell->az,
-					cell->bx, cell->by, cell->bz);
-}
-
+/************************** Setters and Constructors **************************/
 
 UnitCell *cell_new()
 {
@@ -119,7 +75,7 @@ UnitCell *cell_new()
 	cell->beta = M_PI_2;
 	cell->gamma = M_PI_2;
 
-	cell_update_cartesian(cell);
+	cell->rep = CELL_REP_CRYST;
 
 	return cell;
 }
@@ -137,23 +93,7 @@ void cell_set_parameters(UnitCell *cell, double a, double b, double c,
 	cell->beta = beta;
 	cell->gamma = gamma;
 
-	cell_update_cartesian(cell);
-}
-
-
-void cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
-                         double *alpha, double *beta, double *gamma)
-{
-	if ( cell == NULL ) return;
-
-	*a = cell->a;
-	*b = cell->b;
-	*c = cell->c;
-	*alpha = cell->alpha;
-	*beta = cell->beta;
-	*gamma = cell->gamma;
-
-	cell_update_cartesian(cell);
+	cell->rep = CELL_REP_CRYST;
 }
 
 
@@ -168,37 +108,31 @@ void cell_set_cartesian(UnitCell *cell,
 	cell->bx = bx;  cell->by = by;  cell->bz = bz;
 	cell->cx = cx;  cell->cy = cy;  cell->cz = cz;
 
-	cell_update_crystallographic(cell);
+	cell->rep = CELL_REP_CART;
 }
 
 
 void cell_set_cartesian_a(UnitCell *cell, double ax, double ay, double az)
 {
 	if ( cell == NULL ) return;
-
 	cell->ax = ax;  cell->ay = ay;  cell->az = az;
-
-	cell_update_crystallographic(cell);
+	cell->rep = CELL_REP_CART;
 }
 
 
 void cell_set_cartesian_b(UnitCell *cell, double bx, double by, double bz)
 {
 	if ( cell == NULL ) return;
-
 	cell->bx = bx;  cell->by = by;  cell->bz = bz;
-
-	cell_update_crystallographic(cell);
+	cell->rep = CELL_REP_CART;
 }
 
 
 void cell_set_cartesian_c(UnitCell *cell, double cx, double cy, double cz)
 {
 	if ( cell == NULL ) return;
-
 	cell->cx = cx;  cell->cy = cy;  cell->cz = cz;
-
-	cell_update_crystallographic(cell);
+	cell->rep = CELL_REP_CART;
 }
 
 
@@ -220,102 +154,16 @@ static UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs,
                                     struct rvec cs)
 {
 	UnitCell *cell;
-	int s;
-	gsl_matrix *m;
-	gsl_matrix *inv;
-	gsl_permutation *perm;
-	double lengths[3];
-	double angles[3];
 
 	cell = cell_new();
 	if ( cell == NULL ) return NULL;
 
-	lengths[0] = modulus(as.u, as.v, as.w);
-	lengths[1] = modulus(bs.u, bs.v, bs.w);
-	lengths[2] = modulus(cs.u, cs.v, cs.w);
+	cell->axs = as.u;  cell->ays = as.v;  cell->azs = as.w;
+	cell->bxs = bs.u;  cell->bys = bs.v;  cell->bzs = bs.w;
+	cell->cxs = cs.u;  cell->cys = cs.v;  cell->czs = cs.w;
 
-	angles[0] = angle_between(bs.u, bs.v, bs.w, cs.u, cs.v, cs.w);
-	angles[1] = angle_between(as.u, as.v, as.w, cs.u, cs.v, cs.w);
-	angles[2] = angle_between(as.u, as.v, as.w, bs.u, bs.v, bs.w);
+	cell->rep = CELL_REP_RECIP;
 
-	/*
-	STATUS("as = %9.3e %9.3e %9.3e m^-1\n", as.u, as.v, as.w);
-	STATUS("bs = %9.3e %9.3e %9.3e m^-1\n", bs.u, bs.v, bs.w);
-	STATUS("cs = %9.3e %9.3e %9.3e m^-1\n", cs.u, cs.v, cs.w);
-
-	STATUS("Creating with %9.3e %9.3e %9.3e m^-1\n", lengths[0],
-	                                                 lengths[1],
-	                                                 lengths[2]);
-	STATUS("Creating with %5.2f %5.2f %5.2f deg\n", rad2deg(angles[0]),
-	                                                rad2deg(angles[1]),
-	                                                rad2deg(angles[2]));
-	*/
-
-	m = gsl_matrix_alloc(3, 3);
-	if ( m == NULL ) {
-		ERROR("Couldn't allocate memory for matrix\n");
-		free(cell);
-		return NULL;
-	}
-	gsl_matrix_set(m, 0, 0, as.u);
-	gsl_matrix_set(m, 0, 1, as.v);
-	gsl_matrix_set(m, 0, 2, as.w);
-	gsl_matrix_set(m, 1, 0, bs.u);
-	gsl_matrix_set(m, 1, 1, bs.v);
-	gsl_matrix_set(m, 1, 2, bs.w);
-	gsl_matrix_set(m, 2, 0, cs.u);
-	gsl_matrix_set(m, 2, 1, cs.v);
-	gsl_matrix_set(m, 2, 2, cs.w);
-
-	/* Invert */
-	perm = gsl_permutation_alloc(m->size1);
-	if ( perm == NULL ) {
-		ERROR("Couldn't allocate permutation\n");
-		free(cell);
-		gsl_matrix_free(m);
-		return NULL;
-	}
-	inv = gsl_matrix_alloc(m->size1, m->size2);
-	if ( inv == NULL ) {
-		ERROR("Couldn't allocate inverse\n");
-		gsl_matrix_free(m);
-		gsl_permutation_free(perm);
-		free(cell);
-		return NULL;
-	}
-	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
-		ERROR("Couldn't decompose matrix");
-		gsl_matrix_free(m);
-		gsl_permutation_free(perm);
-		free(cell);
-		return NULL;
-	}
-	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
-		ERROR("Couldn't invert matrix");
-		gsl_matrix_free(m);
-		gsl_permutation_free(perm);
-		free(cell);
-		return NULL;
-	}
-	gsl_permutation_free(perm);
-	gsl_matrix_free(m);
-
-	/* Transpose */
-	gsl_matrix_transpose(inv);
-
-	cell->ax = gsl_matrix_get(inv, 0, 0);
-	cell->ay = gsl_matrix_get(inv, 0, 1);
-	cell->az = gsl_matrix_get(inv, 0, 2);
-	cell->bx = gsl_matrix_get(inv, 1, 0);
-	cell->by = gsl_matrix_get(inv, 1, 1);
-	cell->bz = gsl_matrix_get(inv, 1, 2);
-	cell->cx = gsl_matrix_get(inv, 2, 0);
-	cell->cy = gsl_matrix_get(inv, 2, 1);
-	cell->cz = gsl_matrix_get(inv, 2, 2);
-
-	gsl_matrix_free(inv);
-
-	cell_update_crystallographic(cell);
 	return cell;
 }
 
@@ -332,23 +180,54 @@ UnitCell *cell_new_from_cell(UnitCell *orig)
 }
 
 
-void cell_get_cartesian(UnitCell *cell,
-                        double *ax, double *ay, double *az,
-                        double *bx, double *by, double *bz,
-                        double *cx, double *cy, double *cz)
-{
-	if ( cell == NULL ) return;
+/************************* Getter helper functions ****************************/
 
-	*ax = cell->ax;  *ay = cell->ay;  *az = cell->az;
-	*bx = cell->bx;  *by = cell->by;  *bz = cell->bz;
-	*cx = cell->cx;  *cy = cell->cy;  *cz = cell->cz;
+static int cell_crystallographic_to_cartesian(UnitCell *cell,
+                                             double *ax, double *ay, double *az,
+                                             double *bx, double *by, double *bz,
+                                             double *cx, double *cy, double *cz)
+{
+	double tmp, V, cosalphastar, cstar;
+
+	/* Firstly: Get a in terms of x, y and z
+	 * +a (cryst) is defined to lie along +x (cart) */
+	*ax = cell->a;
+	*ay = 0.0;
+	*az = 0.0;
+
+	/* b in terms of x, y and z
+	 * b (cryst) is defined to lie in the xy (cart) plane */
+	*bx = cell->b*cos(cell->gamma);
+	*by = cell->b*sin(cell->gamma);
+	*bz = 0.0;
+
+	tmp = cos(cell->alpha)*cos(cell->alpha)
+		+ cos(cell->beta)*cos(cell->beta)
+		+ cos(cell->gamma)*cos(cell->gamma)
+		- 2.0*cos(cell->alpha)*cos(cell->beta)*cos(cell->gamma);
+	V = cell->a * cell->b * cell->c * sqrt(1.0 - tmp);
+
+	cosalphastar = cos(cell->beta)*cos(cell->gamma) - cos(cell->alpha);
+	cosalphastar /= sin(cell->beta)*sin(cell->gamma);
+
+	cstar = (cell->a * cell->b * sin(cell->gamma))/V;
+
+	/* c in terms of x, y and z */
+	*cx = cell->c*cos(cell->beta);
+	*cy = -cell->c*sin(cell->beta)*cosalphastar;
+	*cz = 1.0/cstar;
+
+	return 0;
 }
 
 
-int cell_get_reciprocal(UnitCell *cell,
-                         double *asx, double *asy, double *asz,
-                         double *bsx, double *bsy, double *bsz,
-                         double *csx, double *csy, double *csz)
+/* Why yes, I do enjoy long argument lists...! */
+static int cell_invert(double ax, double ay, double az,
+                       double bx, double by, double bz,
+                       double cx, double cy, double cz,
+                       double *asx, double *asy, double *asz,
+                       double *bsx, double *bsy, double *bsz,
+                       double *csx, double *csy, double *csz)
 {
 	int s;
 	gsl_matrix *m;
@@ -358,48 +237,43 @@ int cell_get_reciprocal(UnitCell *cell,
 	m = gsl_matrix_alloc(3, 3);
 	if ( m == NULL ) {
 		ERROR("Couldn't allocate memory for matrix\n");
-		free(cell);
-		return -1;
+		return 1;
 	}
-	gsl_matrix_set(m, 0, 0, cell->ax);
-	gsl_matrix_set(m, 0, 1, cell->bx);
-	gsl_matrix_set(m, 0, 2, cell->cx);
-	gsl_matrix_set(m, 1, 0, cell->ay);
-	gsl_matrix_set(m, 1, 1, cell->by);
-	gsl_matrix_set(m, 1, 2, cell->cy);
-	gsl_matrix_set(m, 2, 0, cell->az);
-	gsl_matrix_set(m, 2, 1, cell->bz);
-	gsl_matrix_set(m, 2, 2, cell->cz);
+	gsl_matrix_set(m, 0, 0, ax);
+	gsl_matrix_set(m, 0, 1, bx);
+	gsl_matrix_set(m, 0, 2, cx);
+	gsl_matrix_set(m, 1, 0, ay);
+	gsl_matrix_set(m, 1, 1, by);
+	gsl_matrix_set(m, 1, 2, cy);
+	gsl_matrix_set(m, 2, 0, az);
+	gsl_matrix_set(m, 2, 1, bz);
+	gsl_matrix_set(m, 2, 2, cz);
 
 	/* Invert */
 	perm = gsl_permutation_alloc(m->size1);
 	if ( perm == NULL ) {
 		ERROR("Couldn't allocate permutation\n");
-		free(cell);
 		gsl_matrix_free(m);
-		return -1;
+		return 1;
 	}
 	inv = gsl_matrix_alloc(m->size1, m->size2);
 	if ( inv == NULL ) {
 		ERROR("Couldn't allocate inverse\n");
 		gsl_matrix_free(m);
 		gsl_permutation_free(perm);
-		free(cell);
-		return -1;
+		return 1;
 	}
 	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
 		ERROR("Couldn't decompose matrix\n");
 		gsl_matrix_free(m);
 		gsl_permutation_free(perm);
-		free(cell);
-		return -1;
+		return 1;
 	}
 	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
 		ERROR("Couldn't invert matrix\n");
 		gsl_matrix_free(m);
 		gsl_permutation_free(perm);
-		free(cell);
-		return -1;
+		return 1;
 	}
 	gsl_permutation_free(perm);
 	gsl_matrix_free(m);
@@ -423,25 +297,169 @@ int cell_get_reciprocal(UnitCell *cell,
 }
 
 
+/********************************** Getters ***********************************/
+
+int cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
+                        double *alpha, double *beta, double *gamma)
+{
+	double ax, ay, az, bx, by, bz, cx, cy, cz;
+
+	if ( cell == NULL ) return 1;
+
+	switch ( cell->rep ) {
+
+	case CELL_REP_CRYST:
+		/* Direct response */
+		*a = cell->a;
+		*b = cell->b;
+		*c = cell->c;
+		*alpha = cell->alpha;
+		*beta = cell->beta;
+		*gamma = cell->gamma;
+		return 0;
+
+	case CELL_REP_CART:
+		/* Convert cartesian -> crystallographic */
+		*a = modulus(cell->ax, cell->ay, cell->az);
+		*b = modulus(cell->bx, cell->by, cell->bz);
+		*c = modulus(cell->cx, cell->cy, cell->cz);
+
+		*alpha = angle_between(cell->bx, cell->by, cell->bz,
+		                       cell->cx, cell->cy, cell->cz);
+		*beta = angle_between(cell->ax, cell->ay, cell->az,
+		                      cell->cx, cell->cy, cell->cz);
+		*gamma = angle_between(cell->ax, cell->ay, cell->az,
+		                       cell->bx, cell->by, cell->bz);
+		return 0;
+
+	case CELL_REP_RECIP:
+		/* Convert reciprocal -> crystallographic.
+                 * Start by converting reciprocal -> cartesian */
+		cell_invert(cell->axs, cell->ays, cell->azs,
+		            cell->bxs, cell->bys, cell->bzs,
+		            cell->cxs, cell->cys, cell->czs,
+		            &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+
+		/* Now convert cartesian -> crystallographic */
+		*a = modulus(ax, ay, az);
+		*b = modulus(bx, by, bz);
+		*c = modulus(cx, cy, cz);
+
+		*alpha = angle_between(bx, by, bz, cx, cy, cz);
+		*beta = angle_between(ax, ay, az, cx, cy, cz);
+		*gamma = angle_between(ax, ay, az, bx, by, bz);
+		return 0;
+	}
+
+	return 1;
+}
+
+
+int cell_get_cartesian(UnitCell *cell,
+                       double *ax, double *ay, double *az,
+                       double *bx, double *by, double *bz,
+                       double *cx, double *cy, double *cz)
+{
+	if ( cell == NULL ) return 1;
+
+	switch ( cell->rep ) {
+
+	case CELL_REP_CRYST:
+		/* Convert crystallographic -> cartesian. */
+		return cell_crystallographic_to_cartesian(cell,
+		                                          ax, ay, az,
+		                                          bx, by, bz,
+		                                          cx, cy, cz);
+
+	case CELL_REP_CART:
+		/* Direct response */
+		*ax = cell->ax;  *ay = cell->ay;  *az = cell->az;
+		*bx = cell->bx;  *by = cell->by;  *bz = cell->bz;
+		*cx = cell->cx;  *cy = cell->cy;  *cz = cell->cz;
+		return 0;
+
+	case CELL_REP_RECIP:
+		/* Convert reciprocal -> cartesian */
+		return cell_invert(cell->axs, cell->ays, cell->azs,
+		                   cell->bxs, cell->bys, cell->bzs,
+		                   cell->cxs, cell->cys, cell->czs,
+		                   ax, ay, az, bx, by, bz, cx, cy, cz);
+
+	}
+
+	return 1;
+}
+
+
+int cell_get_reciprocal(UnitCell *cell,
+                        double *asx, double *asy, double *asz,
+                        double *bsx, double *bsy, double *bsz,
+                        double *csx, double *csy, double *csz)
+{
+	int r;
+	double ax, ay, az, bx, by, bz, cx, cy, cz;
+	if ( cell == NULL ) return 1;
+
+	switch ( cell->rep ) {
+
+	case CELL_REP_CRYST:
+		/* Convert crystallographic -> reciprocal */
+		r = cell_crystallographic_to_cartesian(cell,
+		                                       &ax, &ay, &az,
+		                                       &bx, &by, &bz,
+		                                      &cx, &cy, &cz);
+		if ( r ) return r;
+		return cell_invert(ax, ay, az,bx, by, bz, cx, cy, cz,
+		                   asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+
+	case CELL_REP_CART:
+		/* Convert cartesian -> reciprocal */
+		cell_invert(cell->ax, cell->ay, cell->az,
+		            cell->bx, cell->by, cell->bz,
+		            cell->cx, cell->cy, cell->cz,
+		            asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+		return 0;
+
+	case CELL_REP_RECIP:
+		/* Direct response */
+		*asx = cell->axs;  *asy = cell->ays;  *asz = cell->azs;
+		*bsx = cell->bxs;  *bsy = cell->bys;  *bsz = cell->bzs;
+		*csx = cell->cxs;  *csy = cell->cys;  *csz = cell->czs;
+		return 0;
+
+	}
+
+	return 1;
+}
+
+
+/********************************* Utilities **********************************/
+
 void cell_print(UnitCell *cell)
 {
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	double angles[3];
+	double a, b, c, alpha, beta, gamma;
+	double ax, ay, az, bx, by, bz, cx, cy, cz;
+
+	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
 
 	STATUS("  a     b     c         alpha   beta  gamma\n");
 	STATUS("%5.2f %5.2f %5.2f nm    %6.2f %6.2f %6.2f deg\n",
-	       cell->a*1e9, cell->b*1e9, cell->c*1e9,
-	       rad2deg(cell->alpha), rad2deg(cell->beta), rad2deg(cell->gamma));
+	       a*1e9, b*1e9, c*1e9,
+	       rad2deg(alpha), rad2deg(beta), rad2deg(gamma));
+
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+
+	STATUS("a = %10.3e %10.3e %10.3e m\n", ax, ay, az);
+	STATUS("b = %10.3e %10.3e %10.3e m\n", bx, by, bz);
+	STATUS("c = %10.3e %10.3e %10.3e m\n", cx, cy, cz);
 
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
-
-	STATUS("a = %10.3e %10.3e %10.3e m\n", cell->ax, cell->ay, cell->az);
-	STATUS("b = %10.3e %10.3e %10.3e m\n", cell->bx, cell->by, cell->bz);
-	STATUS("c = %10.3e %10.3e %10.3e m\n", cell->cx, cell->cy, cell->cz);
 
 	STATUS("astar = %10.3e %10.3e %10.3e m^-1 (modulus = %10.3e m^-1)\n",
 	                             asx, asy, asz, modulus(asx, asy, asz));
@@ -453,10 +471,6 @@ void cell_print(UnitCell *cell)
 	angles[0] = angle_between(bsx, bsy, bsz, csx, csy, csz);
 	angles[1] = angle_between(asx, asy, asz, csx, csy, csz);
 	angles[2] = angle_between(asx, asy, asz, bsx, bsy, bsz);
-
-//	STATUS("Checking %5.2f %5.2f %5.2f deg\n", rad2deg(angles[0]),
-//	                                              rad2deg(angles[1]),
-//	                                              rad2deg(angles[2]));
 }
 
 
@@ -678,12 +692,9 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 /* Return sin(theta)/lambda = 1/2d.  Multiply by two if you want 1/d */
 double resolution(UnitCell *cell, signed int h, signed int k, signed int l)
 {
-	const double a = cell->a;
-	const double b = cell->b;
-	const double c = cell->c;
-	const double alpha = cell->alpha;
-	const double beta = cell->beta;
-	const double gamma = cell->gamma;
+	double a, b, c, alpha, beta, gamma;
+
+	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
 
 	const double Vsq = a*a*b*b*c*c*(1 - cos(alpha)*cos(alpha)
 	                                  - cos(beta)*cos(beta)
@@ -737,10 +748,10 @@ UnitCell *load_cell_from_pdb(const char *filename)
 			}
 
 			cell = cell_new_from_parameters(a*1e-10,
-			                                     b*1e-10, c*1e-10,
-	                                                     deg2rad(al),
-	                                                     deg2rad(be),
-	                                                     deg2rad(ga));
+			                                b*1e-10, c*1e-10,
+	                                                deg2rad(al),
+	                                                deg2rad(be),
+	                                                deg2rad(ga));
 
 		}
 

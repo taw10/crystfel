@@ -33,22 +33,24 @@ extern void cell_set_cartesian(UnitCell *cell,
 extern void cell_set_parameters(UnitCell *cell, double a, double b, double c,
 				double alpha, double beta, double gamma);
 
-extern void cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
-                                double *alpha, double *beta, double *gamma);
-
-extern void cell_get_cartesian(UnitCell *cell,
-                               double *ax, double *ay, double *az,
-                               double *bx, double *by, double *bz,
-                               double *cx, double *cy, double *cz);
-
 extern void cell_set_cartesian_a(UnitCell *cell, double ax, double ay, double az);
 extern void cell_set_cartesian_b(UnitCell *cell, double bx, double by, double bz);
 extern void cell_set_cartesian_c(UnitCell *cell, double cx, double cy, double cz);
+
+
+extern int cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
+                                double *alpha, double *beta, double *gamma);
+
+extern int cell_get_cartesian(UnitCell *cell,
+                               double *ax, double *ay, double *az,
+                               double *bx, double *by, double *bz,
+                               double *cx, double *cy, double *cz);
 
 extern int cell_get_reciprocal(UnitCell *cell,
                                double *asx, double *asy, double *asz,
                                double *bsx, double *bsy, double *bsz,
                                double *csx, double *csy, double *csz);
+
 
 extern double resolution(UnitCell *cell,
                          signed int h, signed int k, signed int l);
