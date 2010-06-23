@@ -250,6 +250,7 @@ int main(int argc, char *argv[])
 	char *pdb = NULL;
 	float f0;
 	int f0_valid;
+	int n_nof0 = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -397,7 +398,7 @@ int main(int argc, char *argv[])
 
 			/* Assume a default I0 if we don't have one by now */
 			if ( config_scale && !f0_valid ) {
-				ERROR("No f0 value.\n");
+				n_nof0++;
 				f0 = 1.0;
 			}
 
@@ -436,7 +437,6 @@ int main(int argc, char *argv[])
 		if ( strncmp(line, "f0 = ", 5) == 0 ) {
 			r = sscanf(line, "f0 = %f", &f0);
 			if ( r != 1 ) {
-				ERROR("Couldn't understand f0 line.\n");
 				f0 = 1.0;
 				f0_valid = 0;
 				continue;
@@ -478,6 +478,7 @@ int main(int argc, char *argv[])
 	}
 
 	STATUS("There were %u patterns.\n", n_patterns);
+	STATUS("%i had no f0 valid value.\n", n_nof0);
 
 	return 0;
 }
