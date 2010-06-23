@@ -88,3 +88,26 @@ coordinate system is formed using these definitions, CrystFEL will consider the
 positive z direction to point towards the source of the incident beam.
 
 The detector surface is assumed to be perpendicular to the incident beam.
+
+
+Program name
+------------
+
+There seems to be a tendency to capitalise the names of programs in
+publications.  It's not 1970 any more, and programs can have capitalisation
+any way we choose, not just all capitals.  I hope you can forgive me for being
+fussy about how my work is referred to in publications and talks.
+
+The name for the overall software suite is "CrystFEL", with this being the only
+acceptable capitalisation.  The individual programs should always be referred to
+with all letters in lower case, exactly as written earlier in this file.
+
+In most cases, it will be more appropriate to refer to the overall suite than to
+one of its constituent programs.
+
+The following are NOT acceptable forms: "CRYSTFEL", "crystFEL", "Crystfel",
+"Indexamajig", "INDEXAMAJIG", "PATTERN_SIM", "Pattern_Sim", "Pattern_sim".
+
+In addition, CrystFEL is made up of "programs", not "routines" nor "procedures".
+(The "programs" in turn are made up from "routines" and "procedures", but unless
+you are exploring the source code, there's no need for you to know about that).
