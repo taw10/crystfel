@@ -78,9 +78,12 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c)
 	max_res = 0.0;
 
 	/* Work out reciprocal lattice spacings and angles for this cut */
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	if ( cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
+	                          &csx, &csy, &csz) ) {
+		ERROR("Couldn't get reciprocal parameters\n");
+		return;
+	}
 	theta = angle_between(asx, asy, asz, bsx, bsy, bsz);
 	as = modulus(asx, asy, asz) / 1e9;
 	bs = modulus(bsx, bsy, bsz) / 1e9;
