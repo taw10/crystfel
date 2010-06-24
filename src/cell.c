@@ -407,7 +407,7 @@ int cell_get_reciprocal(UnitCell *cell,
 		r = cell_crystallographic_to_cartesian(cell,
 		                                       &ax, &ay, &az,
 		                                       &bx, &by, &bz,
-		                                      &cx, &cy, &cz);
+		                                       &cx, &cy, &cz);
 		if ( r ) return r;
 		return cell_invert(ax, ay, az,bx, by, bz, cx, cy, cz,
 		                   asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
