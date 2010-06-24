@@ -108,7 +108,7 @@ am_process_hkl_OBJECTS = process_hkl.$(OBJEXT) sfac.$(OBJEXT) \
 process_hkl_OBJECTS = $(am_process_hkl_OBJECTS)
 process_hkl_DEPENDENCIES =
 am_render_hkl_OBJECTS = render_hkl.$(OBJEXT) cell.$(OBJEXT) \
-	reflections.$(OBJEXT) utils.$(OBJEXT)
+	reflections.$(OBJEXT) utils.$(OBJEXT) povray.$(OBJEXT)
 render_hkl_OBJECTS = $(am_render_hkl_OBJECTS)
 render_hkl_DEPENDENCIES =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -261,7 +261,7 @@ powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \
                       detector.c
 
 powder_plot_LDADD = @LIBS@
-render_hkl_SOURCES = render_hkl.c cell.c reflections.c utils.c
+render_hkl_SOURCES = render_hkl.c cell.c reflections.c utils.c povray.c
 render_hkl_LDADD = @LIBS@
 calibrate_detector_SOURCES = calibrate_detector.c utils.c hdf5-file.c image.c \
                              filters.c peaks.c detector.c cell.c diffraction.c \
@@ -393,6 +393,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/likelihood.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pattern_sim.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/peaks.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/povray.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/powder_plot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/process_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reflections.Po@am__quote@
