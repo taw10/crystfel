@@ -326,7 +326,7 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 }
 
 
-int hdf5_read(struct hdfile *f, struct image *image)
+int hdf5_read(struct hdfile *f, struct image *image, int satcorr)
 {
 	herr_t r;
 	float *buf;
@@ -379,7 +379,7 @@ int hdf5_read(struct hdfile *f, struct image *image)
 		image->f0_available = 1;
 	}
 
-	debodge_saturation(f, image);
+	if ( satcorr ) debodge_saturation(f, image);
 
 	return 0;
 }

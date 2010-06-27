@@ -77,7 +77,7 @@ float *render_get_image_binned(DisplayWindow *dw, int binning, float *max)
 		image->features = NULL;
 		image->data = NULL;
 
-		hdf5_read(dw->hdfile, image);
+		hdf5_read(dw->hdfile, image, 1);
 		dw->image_dirty = 0;
 		if ( dw->cmfilter ) filter_cm(image);
 		if ( dw->noisefilter ) filter_noise(image, NULL);
@@ -482,7 +482,7 @@ int render_tiff_fp(DisplayWindow *dw, const char *filename)
 	if ( image == NULL ) return 1;
 	image->features = NULL;
 	image->data = NULL;
-	hdf5_read(dw->hdfile, image);
+	hdf5_read(dw->hdfile, image, 1);
 	if ( dw->cmfilter ) filter_cm(image);
 	if ( dw->noisefilter ) filter_noise(image, NULL);
 
@@ -527,7 +527,7 @@ int render_tiff_int16(DisplayWindow *dw, const char *filename)
 	if ( image == NULL ) return 1;
 	image->features = NULL;
 	image->data = NULL;
-	hdf5_read(dw->hdfile, image);
+	hdf5_read(dw->hdfile, image, 1);
 	if ( dw->cmfilter ) filter_cm(image);
 	if ( dw->noisefilter ) filter_noise(image, NULL);
 

@@ -175,7 +175,7 @@ static void *process_image(void *pargsv)
 		return NULL;
 	}
 
-	hdf5_read(hdfile, &image);
+	hdf5_read(hdfile, &image, 1);
 
 	if ( pargs->config_cmfilter ) {
 		filter_cm(&image);

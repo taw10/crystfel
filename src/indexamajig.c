@@ -59,6 +59,7 @@ struct process_args
 	int config_nomatch;
 	int config_unpolar;
 	int config_sanity;
+	int config_satcorr;
 	struct detector *det;
 	IndexingMethod indm;
 	const double *intensities;
@@ -126,6 +127,8 @@ static void show_help(const char *s)
 "      --unpolarized       Don't correct for the polarisation of the X-rays.\n"
 "      --check-sanity      Check that indexed locations approximately correspond\n"
 "                           with detected peaks.\n"
+"      --sat-corr          Correct values of saturated peaks using a table\n"
+"                           included in the HDF5 file.\n"
 "\n\nOptions for greater performance or verbosity:\n\n"
 "      --verbose           Be verbose about indexing.\n"
 "      --gpu               Use the GPU to speed up the simulation.\n"
@@ -288,7 +291,7 @@ static void *process_image(void *pargsv)
 		return result;
 	}
 
-	hdf5_read(hdfile, &image);
+	hdf5_read(hdfile, &image, pargs->config_satcorr);
 
 	if ( config_cmfilter ) {
 		filter_cm(&image);
@@ -409,6 +412,7 @@ int main(int argc, char *argv[])
 	int config_alternate = 0;
 	int config_unpolar = 0;
 	int config_sanity = 0;
+	int config_satcorr = 0;
 	struct detector *det;
 	char *geometry = NULL;
 	IndexingMethod indm;
@@ -449,6 +453,7 @@ int main(int argc, char *argv[])
 		{"prefix",             1, NULL,               'x'},
 		{"unpolarized",        0, &config_unpolar,     1},
 		{"check-sanity",       0, &config_sanity,      1},
+		{"sat-corr",           0, &config_satcorr,     1},
 		{0, 0, NULL, 0}
 	};
 
@@ -609,6 +614,7 @@ int main(int argc, char *argv[])
 		pargs->config_nomatch = config_nomatch;
 		pargs->config_unpolar = config_unpolar;
 		pargs->config_sanity = config_sanity;
+		pargs->config_satcorr = config_satcorr;
 		pargs->cell = cell;
 		pargs->det = det;
 		pargs->indm = indm;
