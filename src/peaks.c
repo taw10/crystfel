@@ -565,7 +565,7 @@ int peak_sanity_check(struct image *image, UnitCell *cell)
 
 
 void output_intensities(struct image *image, UnitCell *cell,
-                        pthread_mutex_t *mutex, int unpolar)
+                        pthread_mutex_t *mutex, int unpolar, int sa)
 {
 	int i;
 	int n_found;
@@ -635,7 +635,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 			 * so instead re-integrate using old coordinates.
 			 * This will produce further revised coordinates. */
 			r = integrate_peak(image, f->x, f->y, &x, &y,
-			                   &intensity, !unpolar, 1);
+			                   &intensity, !unpolar, sa);
 			if ( r ) {
 				/* The original peak (which also went through
 				 * integrate_peak(), but with the mangled
@@ -653,7 +653,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 			r = integrate_peak(image,
 			                   image->hits[i].x,image->hits[i].y,
-			                   &x, &y, &intensity, !unpolar, 1);
+			                   &x, &y, &intensity, !unpolar, sa);
 			if ( r ) {
 				/* Plain old ordinary peak veto */
 				n_veto++;

@@ -60,6 +60,7 @@ struct process_args
 	int config_unpolar;
 	int config_sanity;
 	int config_satcorr;
+	int config_sa;
 	struct detector *det;
 	IndexingMethod indm;
 	const double *intensities;
@@ -129,6 +130,8 @@ static void show_help(const char *s)
 "                           with detected peaks.\n"
 "      --sat-corr          Correct values of saturated peaks using a table\n"
 "                           included in the HDF5 file.\n"
+"      --no-sa             Don't correct for the differing solid angles of\n"
+"                           the pixels.\n"
 "\n\nOptions for greater performance or verbosity:\n\n"
 "      --verbose           Be verbose about indexing.\n"
 "      --gpu               Use the GPU to speed up the simulation.\n"
@@ -347,7 +350,8 @@ static void *process_image(void *pargsv)
 	/* Measure intensities if requested */
 	if ( config_nearbragg ) {
 		output_intensities(&image, image.indexed_cell,
-		                   pargs->output_mutex, config_unpolar);
+		                   pargs->output_mutex, config_unpolar,
+		                   pargs->config_sa);
 	}
 
 	simage = get_simage(&image, config_alternate);
@@ -413,6 +417,7 @@ int main(int argc, char *argv[])
 	int config_unpolar = 0;
 	int config_sanity = 0;
 	int config_satcorr = 0;
+	int config_sa = 1;
 	struct detector *det;
 	char *geometry = NULL;
 	IndexingMethod indm;
@@ -454,6 +459,7 @@ int main(int argc, char *argv[])
 		{"unpolarized",        0, &config_unpolar,     1},
 		{"check-sanity",       0, &config_sanity,      1},
 		{"sat-corr",           0, &config_satcorr,     1},
+		{"no-sa",              0, &config_sa,          0},
 		{0, 0, NULL, 0}
 	};
 
@@ -615,6 +621,7 @@ int main(int argc, char *argv[])
 		pargs->config_unpolar = config_unpolar;
 		pargs->config_sanity = config_sanity;
 		pargs->config_satcorr = config_satcorr;
+		pargs->config_sa = config_sa;
 		pargs->cell = cell;
 		pargs->det = det;
 		pargs->indm = indm;
