@@ -57,7 +57,7 @@ struct process_args
 	int config_gpu;
 	int config_simulate;
 	int config_nomatch;
-	int config_unpolar;
+	int config_polar;
 	int config_sanity;
 	int config_satcorr;
 	int config_sa;
@@ -257,7 +257,7 @@ static void *process_image(void *pargsv)
 	int config_gpu = pargs->config_gpu;
 	int config_simulate = pargs->config_simulate;
 	int config_nomatch = pargs->config_nomatch;
-	int config_unpolar = pargs->config_unpolar;
+	int config_polar = pargs->config_polar;
 	IndexingMethod indm = pargs->indm;
 	const double *intensities = pargs->intensities;
 	const unsigned int *counts = pargs->counts;
@@ -350,7 +350,7 @@ static void *process_image(void *pargsv)
 	/* Measure intensities if requested */
 	if ( config_nearbragg ) {
 		output_intensities(&image, image.indexed_cell,
-		                   pargs->output_mutex, config_unpolar,
+		                   pargs->output_mutex, config_polar,
 		                   pargs->config_sa);
 	}
 
@@ -414,7 +414,7 @@ int main(int argc, char *argv[])
 	int config_gpu = 0;
 	int config_verbose = 0;
 	int config_alternate = 0;
-	int config_unpolar = 0;
+	int config_polar = 1;
 	int config_sanity = 0;
 	int config_satcorr = 0;
 	int config_sa = 1;
@@ -456,7 +456,7 @@ int main(int argc, char *argv[])
 		{"intensities",        1, NULL,               'q'},
 		{"pdb",                1, NULL,               'p'},
 		{"prefix",             1, NULL,               'x'},
-		{"unpolarized",        0, &config_unpolar,     1},
+		{"unpolarized",        0, &config_polar,       0},
 		{"check-sanity",       0, &config_sanity,      1},
 		{"sat-corr",           0, &config_satcorr,     1},
 		{"no-sa",              0, &config_sa,          0},
@@ -618,7 +618,7 @@ int main(int argc, char *argv[])
 		pargs->config_gpu = config_gpu;
 		pargs->config_simulate = config_simulate;
 		pargs->config_nomatch = config_nomatch;
-		pargs->config_unpolar = config_unpolar;
+		pargs->config_polar = config_polar;
 		pargs->config_sanity = config_sanity;
 		pargs->config_satcorr = config_satcorr;
 		pargs->config_sa = config_sa;

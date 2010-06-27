@@ -22,7 +22,7 @@
 extern void search_peaks(struct image *image);
 extern void dump_peaks(struct image *image, pthread_mutex_t *mutex);
 extern void output_intensities(struct image *image, UnitCell *cell,
-                               pthread_mutex_t *mutex, int unpolar, int sa);
+                               pthread_mutex_t *mutex, int polar, int sa);
 extern int peak_sanity_check(struct image *image, UnitCell *cell);
 extern int find_projected_peaks(struct image *image, UnitCell *cell);
 
