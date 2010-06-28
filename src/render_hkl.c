@@ -145,7 +145,7 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c)
 		if ( ct < 1 ) continue;
 
 		intensity = lookup_intensity(ref, h, k, 0) / (float)ct;
-		val = 10.0*intensity/max_intensity;
+		val = 3.0*intensity/max_intensity;
 
 		u = (double)h*as*sin(theta);
 		v = (double)h*as*cos(theta) + k*bs;
