@@ -353,7 +353,7 @@ struct refl_item *get_item(ReflItemList *items, int i)
 	return &items->items[i];
 }
 
-int num_items(ReflItemList *items)
+int num_items(const ReflItemList *items)
 {
 	return items->n_items;
 }

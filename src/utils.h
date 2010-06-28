@@ -194,7 +194,7 @@ extern void add_item(ReflItemList *items,
 extern int find_item(ReflItemList *items,
                      signed int h, signed int k, signed int l);
 extern struct refl_item *get_item(ReflItemList *items, int i);
-extern int num_items(ReflItemList *items);
+extern int num_items(const ReflItemList *items);
 extern unsigned int *items_to_counts(ReflItemList *items);
 
 
