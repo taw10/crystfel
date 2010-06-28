@@ -42,7 +42,7 @@ void scale_intensities(const double *model, double *new_pattern,
 
 	/* Multiply the new pattern up by "s" */
 	for ( i=0; i<LIST_SIZE; i++ ) {
-		new_counts[i] *= s;
+		new_pattern[i] *= s;
 	}
 
 	free(new_counts);
