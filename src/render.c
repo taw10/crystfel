@@ -564,9 +564,12 @@ int render_tiff_int16(DisplayWindow *dw, const char *filename)
 			val = image->data[x+(image->height-1-y)*image->width];
 			val *= ((float)dw->boostint/max);
 
-			/* Clamp to 16-bit range */
+			/* Clamp to 16-bit range,
+			 * and work round inability of most readers to deal
+			 * with signed integers. */
+			val += 1000.0;
 			if ( val > 32767.0 ) val = 32767.0;
-			if ( val < -32768.0 ) val = -32768.0;
+			if ( val < 0.0 ) val = 0.0;
 
 			line[x] = val;
 		}
