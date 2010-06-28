@@ -19,17 +19,20 @@
 
 void detwin_intensities(const double *model, double *new_pattern,
                         const unsigned int *model_counts,
-                        unsigned int *new_counts)
+                        ReflItemList *items)
 {
 	/* Placeholder... */
 }
 
 void scale_intensities(const double *model, double *new_pattern,
                        const unsigned int *model_counts,
-                       unsigned int *new_counts, double f0, int f0_valid)
+                       ReflItemList *items, double f0, int f0_valid)
 {
 	double s;
 	unsigned int i;
+	unsigned int *new_counts;
+
+	new_counts = items_to_counts(items);
 
 	s = stat_scale_intensity(model, model_counts, new_pattern, new_counts);
 	if ( f0_valid ) printf("%f %f\n", s, f0);
@@ -41,4 +44,6 @@ void scale_intensities(const double *model, double *new_pattern,
 	for ( i=0; i<LIST_SIZE; i++ ) {
 		new_counts[i] *= s;
 	}
+
+	free(new_counts);
 }

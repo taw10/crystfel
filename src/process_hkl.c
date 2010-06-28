@@ -188,17 +188,21 @@ static void process_reflections(double *ref, unsigned int *counts,
 
 static void merge_pattern(double *model, const double *new,
                           unsigned int *model_counts,
-                          const unsigned int *counts, int mo, int sum)
+                          ReflItemList *items, int mo, int sum)
 {
-	signed int h, k, l;
+	int i;
 
-	for ( l=-INDMAX; l<INDMAX; l++ ) {
-	for ( k=-INDMAX; k<INDMAX; k++ ) {
-	for ( h=-INDMAX; h<INDMAX; h++ ) {
+	for ( i=0; i<num_items(items); i++ ) {
 
 		double intensity;
+		signed int h, k, l;
+		struct refl_item *item;
 
-		if ( lookup_count(counts, h, k, l) == 0 ) continue;
+		item = get_item(items, i);
+
+		h = item->h;
+		k = item->k;
+		l = item->l;
 
 		intensity = lookup_intensity(new, h, k, l);
 
@@ -216,8 +220,6 @@ static void merge_pattern(double *model, const double *new,
 			set_count(model_counts, h, k, l, 1);
 		}
 
-	}
-	}
 	}
 }
 
@@ -243,7 +245,6 @@ int main(int argc, char *argv[])
 	int config_scale = 0;
 	char *intfile = NULL;
 	double *new_pattern = NULL;
-	unsigned int *new_counts = NULL;
 	unsigned int n_total_patterns;
 	unsigned int *truecounts = NULL;
 	char *sym = NULL;
@@ -251,6 +252,7 @@ int main(int argc, char *argv[])
 	float f0;
 	int f0_valid;
 	int n_nof0 = 0;
+	ReflItemList *items;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -344,7 +346,7 @@ int main(int argc, char *argv[])
 	model_counts = new_list_count();
 	cell = load_cell_from_pdb(pdb);
 	new_pattern = new_list_intensity();
-	new_counts = new_list_count();
+	items = new_items();
 
 	if ( strcmp(filename, "-") == 0 ) {
 		fh = stdin;
@@ -393,7 +395,7 @@ int main(int argc, char *argv[])
 			/* Detwin before scaling */
 			if ( config_detwin ) {
 				detwin_intensities(model, new_pattern,
-				                   model_counts, new_counts);
+				                   model_counts, items);
 			}
 
 			/* Assume a default I0 if we don't have one by now */
@@ -405,13 +407,13 @@ int main(int argc, char *argv[])
 			/* Scale if requested */
 			if ( config_scale ) {
 				scale_intensities(model, new_pattern,
-				                  model_counts, new_counts, f0,
+				                  model_counts, items, f0,
 				                  f0_valid);
 			}
 
 			/* Start of second or later pattern */
 			merge_pattern(model, new_pattern, model_counts,
-			              new_counts, config_maxonly, config_sum);
+			              items, config_maxonly, config_sum);
 
 			if ( (trueref != NULL) && config_every
 			    && (n_patterns % config_every == 0) ) {
@@ -424,9 +426,8 @@ int main(int argc, char *argv[])
 
 			if ( n_patterns == config_stopafter ) break;
 
-			zero_list_count(new_counts);
-
 			n_patterns++;
+			clear_items(items);
 
 			progress_bar(n_patterns, n_total_patterns, "Merging");
 
@@ -449,12 +450,12 @@ int main(int argc, char *argv[])
 
 		if ( (h==0) && (k==0) && (l==0) ) continue;
 
-		if ( lookup_count(new_counts, h, k, l) != 0 ) {
+		if ( find_item(items, h, k, l) != 0 ) {
 			ERROR("More than one measurement for %i %i %i in"
 			      " pattern number %i\n", h, k, l, n_patterns);
 		}
 		set_intensity(new_pattern, h, k, l, intensity);
-		set_count(new_counts, h, k, l, 1);
+		add_item(items, h, k, l);
 
 	} while ( rval != NULL );
 
@@ -479,6 +480,8 @@ int main(int argc, char *argv[])
 
 	STATUS("There were %u patterns.\n", n_patterns);
 	STATUS("%i had no f0 valid value.\n", n_nof0);
+
+	delete_items(items);
 
 	return 0;
 }

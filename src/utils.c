@@ -283,3 +283,93 @@ int assplode(const char *a, const char *delims, char ***pbits,
 	*pbits = bits;
 	return n;
 }
+
+
+struct _reflitemlist {
+	struct refl_item *items;
+	int n_items;
+	int max_items;
+};
+
+void clear_items(ReflItemList *items)
+{
+	items->n_items = 0;
+}
+
+static void alloc_items(ReflItemList *items)
+{
+	items->items = realloc(items->items,
+	                       items->max_items*sizeof(struct refl_item));
+}
+
+ReflItemList *new_items()
+{
+	ReflItemList *new;
+	new = malloc(sizeof(ReflItemList));
+	new->max_items = 1024;
+	new->n_items = 0;
+	new->items = NULL;
+	alloc_items(new);
+	return new;
+}
+
+void delete_items(ReflItemList *items)
+{
+	if ( items->items != NULL ) free(items->items);
+	free(items);
+}
+
+void add_item(ReflItemList *items,
+                     signed int h, signed int k, signed int l)
+{
+	if ( items->n_items == items->max_items ) {
+		items->max_items += 1024;
+		alloc_items(items);
+	}
+
+	items->items[items->n_items].h = h;
+	items->items[items->n_items].k = k;
+	items->items[items->n_items].l = l;
+	items->n_items++;
+}
+
+int find_item(ReflItemList *items,
+                     signed int h, signed int k, signed int l)
+{
+	int i;
+
+	for ( i=0; i<items->n_items; i++ ) {
+		if ( items->items[i].h != h ) continue;
+		if ( items->items[i].k != k ) continue;
+		if ( items->items[i].l != l ) continue;
+		return 1;
+	}
+	return 0;
+}
+
+struct refl_item *get_item(ReflItemList *items, int i)
+{
+	if ( i >= items->n_items ) return NULL;
+	return &items->items[i];
+}
+
+int num_items(ReflItemList *items)
+{
+	return items->n_items;
+}
+
+unsigned int *items_to_counts(ReflItemList *items)
+{
+	unsigned int *c;
+	int i;
+
+	c = new_list_count();
+
+	for ( i=0; i<num_items(items); i++ ) {
+		struct refl_item *r;
+		r = get_item(items, i);
+		set_count(c, r->h, r->k, r->l, 1);
+	}
+
+	return c;
+}

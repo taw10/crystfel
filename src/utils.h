@@ -176,6 +176,28 @@ static inline double angle_between(double x1, double y1, double z1,
 #include "list_tmp.h"
 
 
+/* ----------- Reflection lists indexed by sequence (not indices) ----------- */
+
+typedef struct _reflitemlist ReflItemList;  /* Opaque */
+
+struct refl_item {
+	signed int h;
+	signed int k;
+	signed int l;
+};
+
+extern void clear_items(ReflItemList *items);
+extern ReflItemList *new_items(void);
+extern void delete_items(ReflItemList *items);
+extern void add_item(ReflItemList *items,
+                     signed int h, signed int k, signed int l);
+extern int find_item(ReflItemList *items,
+                     signed int h, signed int k, signed int l);
+extern struct refl_item *get_item(ReflItemList *items, int i);
+extern int num_items(ReflItemList *items);
+extern unsigned int *items_to_counts(ReflItemList *items);
+
+
 /* ------------------------------ Message macros ---------------------------- */
 
 #define ERROR(...) fprintf(stderr, __VA_ARGS__)
