@@ -85,8 +85,8 @@ void write_reflections(const char *filename, unsigned int *counts,
 		}
 
 		/* h, k, l, I, sigma(I), s */
-		fprintf(fh, "%3i %3i %3i %f %s %f %f\n", h, k, l, intensity, ph,
-		                                      0.0, s/1.0e9);
+		fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %10.2f\n",
+		        h, k, l, intensity, ph, 0.0, s/1.0e9);
 
 	}
 	}
