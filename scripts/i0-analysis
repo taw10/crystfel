@@ -105,3 +105,6 @@ close(GP);
 system("ps2pdf i0.ps");
 unlink("i0.dat");
 unlink("i0.ps");
+unlink("i0-hist.dat");
+unlink("i0-prior-hist.dat");
+unlink("i0-scale-hist.dat");
