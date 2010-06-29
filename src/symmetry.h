@@ -17,6 +17,9 @@
 #include <config.h>
 #endif
 
-extern void apply_symmetry(double ref, unsigned int *counts, const char *sym);
+
+extern void get_asymm(signed int h, signed int k, signed int l,
+                      signed int *hp, signed int *kp, signed int *lp,
+                      const char *sym);
 
 #endif	/* SYMMETRY_H */

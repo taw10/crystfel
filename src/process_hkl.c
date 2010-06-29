@@ -26,6 +26,7 @@
 #include "sfac.h"
 #include "reflections.h"
 #include "likelihood.h"
+#include "symmetry.h"
 
 
 /* Number of divisions for R vs |q| graphs */
@@ -188,21 +189,25 @@ static void process_reflections(double *ref, unsigned int *counts,
 
 static void merge_pattern(double *model, const double *new,
                           unsigned int *model_counts,
-                          ReflItemList *items, int mo, int sum)
+                          ReflItemList *items, int mo, int sum,
+                          const char *symm)
 {
 	int i;
 
 	for ( i=0; i<num_items(items); i++ ) {
 
 		double intensity;
+		signed int hs, ks, ls;
 		signed int h, k, l;
 		struct refl_item *item;
 
 		item = get_item(items, i);
 
-		h = item->h;
-		k = item->k;
-		l = item->l;
+		hs = item->h;
+		ks = item->k;
+		ls = item->l;
+
+		get_asymm(hs, ks, ls, &h, &k, &l, symm);
 
 		intensity = lookup_intensity(new, h, k, l);
 
@@ -268,7 +273,7 @@ int main(int argc, char *argv[])
 		{"sum",                0, &config_sum,         1},
 		{"detwin",             0, &config_detwin,      1},
 		{"scale",              0, &config_scale,       1},
-		{"symmetry",           0, NULL,               'y'},
+		{"symmetry",           1, NULL,               'y'},
 		{"pdb",                1, NULL,               'p'},
 		{0, 0, NULL, 0}
 	};
@@ -413,7 +418,7 @@ int main(int argc, char *argv[])
 
 			/* Start of second or later pattern */
 			merge_pattern(model, new_pattern, model_counts,
-			              items, config_maxonly, config_sum);
+			              items, config_maxonly, config_sum, sym);
 
 			if ( (trueref != NULL) && config_every
 			    && (n_patterns % config_every == 0) ) {
