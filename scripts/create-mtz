@@ -1,0 +1,16 @@
+#!/bin/sh
+
+f2mtz HKLIN $1 HKLOUT $1.mtz << EOF
+
+TITLE Reflections from CrystFEL
+NAME PROJECT wibble CRYSTAL wibble DATASET wibble
+
+CELL 281 281 165.2  90  90 120
+SYMM P63
+
+SKIP 2
+LABOUT H   K  L   I      SIGMA
+CTYPE  H   H  H   J      Q
+FORMAT '(F3.0, 1X, F3.0, 1X, F3.0, 1X, F10.2, 3X, F10.2, 1X, F11.2)'
+
+EOF
