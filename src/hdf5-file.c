@@ -290,31 +290,17 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 
 		unsigned int x, y;
 		float val;
-		int v1, v2, v3, v4, v5;
 
 		x = buf[3*i+0];
 		y = buf[3*i+1];
 		val = buf[3*i+2];
 
-		/* Find the cross */
-		v1 = (int)image->data[x+image->width*y];
-		v2 = (int)image->data[x+1+image->width*y];
-		v3 = (int)image->data[x-1+image->width*y];
-		v4 = (int)image->data[x+image->width*(y+1)];
-		v5 = (int)image->data[x+image->width*(y-1)];
-		if ( (v1 != 32767) || (v2 != 32767) || (v3 != 32767) ||
-		     (v4 != 32767) || (v5 != 32767) ) {
-			STATUS("Cross not found for saturation %i,%i\n", x, y);
-			STATUS("%i %i %i %i %i -> %f\n", v1, v2, v3, v4, v5, val);
-		} else {
-			float v = val / 5;
-			image->data[x+image->width*y] = v;
-			image->data[x+1+image->width*y] = v;
-			image->data[x-1+image->width*y] = v;
-			image->data[x+image->width*(y+1)] = v;
-			image->data[x+image->width*(y-1)] = v;
-			n++;
-		}
+		image->data[x+image->width*y] = val / 5.0;
+		image->data[x+1+image->width*y] = val / 5.0;
+		image->data[x-1+image->width*y] = val / 5.0;
+		image->data[x+image->width*(y+1)] = val / 5.0;
+		image->data[x+image->width*(y-1)] = val / 5.0;
+		n++;
 
 	}
 	STATUS("Corrected %i saturation values, %i failed.\n",
