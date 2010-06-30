@@ -26,6 +26,7 @@
 #include "utils.h"
 #include "reflections.h"
 #include "povray.h"
+#include "symmetry.h"
 
 
 static void show_help(const char *s)
@@ -55,6 +56,7 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c)
 	double csx, csy, csz;
 	signed int h, k;
 	float wh, ht;
+	const char *sym = "6/mmm";
 
 	wh = 1024;
 	ht = 1024;
@@ -94,22 +96,34 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c)
 
 		double u, v, intensity, res;
 		int ct;
+		int nequiv, p;
 
 		ct = lookup_count(c, h, k, 0);
 		if ( ct < 1 ) continue;
 
 		intensity = lookup_intensity(ref, h, k, 0) / (float)ct;
 
-		res = resolution(cell, h, k, 0);
-		if ( res > max_res ) max_res = res;
-
 		if ( intensity != 0 ) {
-			u =  (double)h*as*sin(theta);
-			v =  (double)h*as*cos(theta) + k*bs;
-			if ( fabs(u) > fabs(max_u) ) max_u = fabs(u);
-			if ( fabs(v) > fabs(max_v) ) max_v = fabs(v);
-			if ( fabs(intensity) > fabs(max_intensity) )
-						max_intensity = fabs(intensity);
+
+			nequiv = num_equivs(h, k, 0, sym);
+			for ( p=0; p<nequiv; p++ ) {
+
+				signed int he, ke, le;
+				get_equiv(h, k, 0, &he, &ke, &le, sym, p);
+
+				u =  (double)he*as*sin(theta);
+				v =  (double)he*as*cos(theta) + ke*bs;
+				if ( fabs(u) > fabs(max_u) ) max_u = fabs(u);
+				if ( fabs(v) > fabs(max_v) ) max_v = fabs(v);
+				if ( fabs(intensity) > fabs(max_intensity) ) {
+					max_intensity = fabs(intensity);
+				}
+				res = resolution(cell, he, ke, 0);
+				if ( res > max_res ) max_res = res;
+
+
+
+			}
 		}
 
 	}
@@ -140,6 +154,7 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c)
 
 		double u, v, intensity, val;
 		int ct;
+		int nequiv, p;
 
 		ct = lookup_count(c, h, k, 0);
 		if ( ct < 1 ) continue;
@@ -147,14 +162,23 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c)
 		intensity = lookup_intensity(ref, h, k, 0) / (float)ct;
 		val = 3.0*intensity/max_intensity;
 
-		u = (double)h*as*sin(theta);
-		v = (double)h*as*cos(theta) + k*bs;
+		nequiv = num_equivs(h, k, 0, sym);
+		for ( p=0; p<nequiv; p++ ) {
 
-		cairo_arc(dctx, ((double)wh/2)+u*scale*2,
-				((double)ht/2)+v*scale*2, max_r, 0, 2*M_PI);
+			signed int he, ke, le;
+			get_equiv(h, k, 0, &he, &ke, &le, sym, p);
 
-		cairo_set_source_rgb(dctx, val, val, val);
-		cairo_fill(dctx);
+			u = (double)he*as*sin(theta);
+			v = (double)he*as*cos(theta) + ke*bs;
+
+			cairo_arc(dctx, ((double)wh/2)+u*scale*2,
+					((double)ht/2)+v*scale*2, max_r,
+					0, 2*M_PI);
+
+			cairo_set_source_rgb(dctx, val, val, val);
+			cairo_fill(dctx);
+
+		}
 
 	}
 	}
