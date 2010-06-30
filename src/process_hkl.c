@@ -63,8 +63,6 @@ static void show_help(const char *s)
 "                             analysis only after reading all the patterns.\n"
 "  -r, --rvsq                Output lists of R vs |q| (\"Luzzatti plots\")\n"
 "                             when analysing figures of merit.\n"
-"      --zone-axis           Output an [001] zone axis pattern each time the\n"
-"                             figures of merit are analysed.\n"
 "      --detwin              Correlate each new pattern with the current\n"
 "                             model and choose the best fitting out of the\n"
 "                             allowable twins.\n"
@@ -149,7 +147,7 @@ static void write_RvsQ(const char *name, double *ref, double *trueref,
 static void process_reflections(double *ref, unsigned int *counts,
                                 double *trueref, unsigned int *truecounts,
                                 unsigned int n_patterns,
-                                UnitCell *cell, int do_rvsq, int do_zoneaxis)
+                                UnitCell *cell, int do_rvsq)
 {
 	int j;
 	double mean_counts;
@@ -174,12 +172,6 @@ static void process_reflections(double *ref, unsigned int *counts,
 		char name[64];
 		snprintf(name, 63, "R_vs_q-%u.dat", n_patterns);
 		write_RvsQ(name, ref, trueref, counts, scale, cell);
-	}
-
-	if ( do_zoneaxis ) {
-		char name[64];
-		snprintf(name, 63, "ZA-%u.dat", n_patterns);
-		write_reflections(name, counts, ref, NULL, 1, cell, 1);
 	}
 
 	fh = fopen("results/convergence.dat", "a");
@@ -245,7 +237,6 @@ int main(int argc, char *argv[])
 	int config_every = 1000;
 	int config_rvsq = 0;
 	int config_stopafter = 0;
-	int config_zoneaxis = 0;
 	int config_sum = 0;
 	int config_detwin = 0;
 	int config_scale = 0;
@@ -269,7 +260,6 @@ int main(int argc, char *argv[])
 		{"output-every",       1, NULL,               'e'},
 		{"rvsq",               0, NULL,               'r'},
 		{"stop-after",         1, NULL,               's'},
-		{"zone-axis",          0, &config_zoneaxis,    1},
 		{"compare-with",       0, NULL,               'c'},
 		{"sum",                0, &config_sum,         1},
 		{"detwin",             0, &config_detwin,      1},
@@ -426,8 +416,7 @@ int main(int argc, char *argv[])
 				process_reflections(model, model_counts,
 				                    trueref, truecounts,
 				                    n_patterns, cell,
-				                    config_rvsq,
-				                    config_zoneaxis);
+				                    config_rvsq);
 			}
 
 			if ( n_patterns == config_stopafter ) break;
@@ -469,19 +458,12 @@ int main(int argc, char *argv[])
 
 	if ( trueref != NULL ) {
 		process_reflections(model, model_counts, trueref, truecounts,
-		                    n_patterns, cell, config_rvsq,
-		                    config_zoneaxis);
+		                    n_patterns, cell, config_rvsq);
 	}
 
 	if ( output != NULL ) {
 		write_reflections(output, model_counts, model, NULL,
 		                  0, cell, 1);
-	}
-
-	if ( config_zoneaxis ) {
-		char name[64];
-		snprintf(name, 63, "ZA-%u.dat", n_patterns);
-		write_reflections(name, model_counts, model, NULL, 1, cell, 10);
 	}
 
 	STATUS("There were %u patterns.\n", n_patterns);
