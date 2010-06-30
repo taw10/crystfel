@@ -115,12 +115,14 @@ double *read_reflections(const char *filename, unsigned int *counts,
 
 		char line[1024];
 		signed int h, k, l;
-		float intensity, ph;
+		float intensity, ph, res;
 		char phs[1024];
 		int r;
+		int cts;
 
 		rval = fgets(line, 1023, fh);
-		r = sscanf(line, "%i %i %i %f %s", &h, &k, &l, &intensity, phs);
+		r = sscanf(line, "%i %i %i %f %s %f %i",
+		           &h, &k, &l, &intensity, phs, &res, &cts);
 		if ( r != 5 ) continue;
 
 		set_intensity(ref, h, k, l, intensity);
@@ -128,7 +130,13 @@ double *read_reflections(const char *filename, unsigned int *counts,
 			ph = atof(phs);
 			set_phase(phases, h, k, l, ph);
 		}
-		if ( counts != NULL ) set_count(counts, h, k, l, 1);
+		if ( counts != NULL ) {
+			set_count(counts, h, k, l, cts);
+			/* In this case, the intensity must be multiplied up
+			 * because other parts of the program will try to
+			 * divide it down. */
+			set_intensity(ref, h, k, l, intensity*(double)cts);
+		}
 
 	} while ( rval != NULL );
 
