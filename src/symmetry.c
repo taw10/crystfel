@@ -156,8 +156,8 @@ void get_equiv(signed int h, signed int k, signed int l,
 
 	/* TODO: Add more groups here */
 
-	/* Fallback for unrecognised groups */
-	*he = h;  *ke = k;  *le = l;
+	ERROR("Unrecognised symmetry '%s'\n", sym);
+	abort();
 }
 
 
@@ -178,4 +178,5 @@ void get_asymm(signed int h, signed int k, signed int l,
 
 	/* Should never reach here */
 	ERROR("No match found in %s for %i %i %i\n", sym, h, k, l);
+	abort();
 }

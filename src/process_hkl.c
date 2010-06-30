@@ -338,6 +338,10 @@ int main(int argc, char *argv[])
 		pdb = strdup("molecule.pdb");
 	}
 
+	if ( sym == NULL ) {
+		sym = strdup("1");
+	}
+
 	model = new_list_intensity();
 	model_counts = new_list_count();
 	cell = load_cell_from_pdb(pdb);
@@ -470,6 +474,7 @@ int main(int argc, char *argv[])
 	STATUS("%i had no f0 valid value.\n", n_nof0);
 
 	delete_items(items);
+	free(sym);
 
 	return 0;
 }
