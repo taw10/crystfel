@@ -48,8 +48,11 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c)
 {
 	cairo_surface_t *surface;
 	cairo_t *dctx;
-	double max_u, max_v, max_res, max_intensity, scale;
+	double max_u, max_v, max_res, max_intensity;
+	double scale_u, scale_v, scale;
 	double sep_u, sep_v, max_r;
+	double u, v;
+	signed int max_h, max_k;
 	double as, bs, theta;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
@@ -77,7 +80,7 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c)
 	cairo_fill(dctx);
 
 	max_u = 0.0;  max_v = 0.0;  max_intensity = 0.0;
-	max_res = 0.0;
+	max_res = 0.0;  max_h = 0;  max_k = 0;
 
 	/* Work out reciprocal lattice spacings and angles for this cut */
 	if ( cell_get_reciprocal(cell, &asx, &asy, &asz,
@@ -118,10 +121,10 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c)
 				if ( fabs(intensity) > fabs(max_intensity) ) {
 					max_intensity = fabs(intensity);
 				}
+				if ( fabs(he) > max_h ) max_h = fabs(he);
+				if ( fabs(ke) > max_k ) max_k = fabs(ke);
 				res = resolution(cell, he, ke, 0);
 				if ( res > max_res ) max_res = res;
-
-
 
 			}
 		}
@@ -130,8 +133,6 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c)
 	}
 
 	max_res /= 1e9;
-	max_u /= 0.5;
-	max_v /= 0.5;
 	printf("Maximum resolution is 1/d = %5.3f nm^-1, d = %5.3f nm\n",
 	       max_res*2.0, 1.0/(max_res*2.0));
 
@@ -141,14 +142,14 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c)
 	}
 
 	/* Choose whichever scaling factor gives the smallest value */
-	scale = ((double)wh-50.0) / (2*max_u);
-	if ( ((double)ht-50.0) / (2*max_v) < scale ) {
-		scale = ((double)ht-50.0) / (2*max_v);
-	}
+	scale_u = ((double)(wh/2.0)-50.0) / max_u;
+	scale_v = ((double)(ht/2.0)-50.0) / max_v;
+	scale = (scale_u < scale_v) ? scale_u : scale_v;
 
 	sep_u = as * scale * cos(theta);
 	sep_v = bs * scale;
-	max_r = ((sep_u < sep_v)?sep_u:sep_v);
+	max_r = (sep_u < sep_v) ? sep_u : sep_v;
+	max_r -= 1.0;  /* Add a tiny separation between circles */
 
 	for ( h=-INDMAX; h<INDMAX; h++ ) {
 	for ( k=-INDMAX; k<INDMAX; k++ ) {
@@ -172,8 +173,8 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c)
 			u = (double)he*as*sin(theta);
 			v = (double)he*as*cos(theta) + ke*bs;
 
-			cairo_arc(dctx, ((double)wh/2)+u*scale*2,
-					((double)ht/2)+v*scale*2, max_r,
+			cairo_arc(dctx, ((double)wh/2)+u*scale,
+					((double)ht/2)+v*scale, max_r,
 					0, 2*M_PI);
 
 			cairo_set_source_rgb(dctx, val, val, val);
@@ -189,6 +190,36 @@ out:
 	cairo_arc(dctx, (double)wh/2,
 			(double)ht/2, max_r, 0, 2*M_PI);
 	cairo_set_source_rgb(dctx, 1.0, 0.0, 0.0);
+	cairo_fill(dctx);
+
+	/* Draw indexing lines */
+	cairo_set_line_width(dctx, 4.0);
+	cairo_move_to(dctx, (double)wh/2, (double)ht/2);
+	u = (double)max_h*as*sin(theta);
+	v = (double)max_h*as*cos(theta) + 0*bs;
+	cairo_line_to(dctx, ((double)wh/2)+u*scale,
+	                    ((double)ht/2)+v*scale);
+	cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
+	cairo_stroke(dctx);
+
+	cairo_move_to(dctx,((double)wh/2)+u*scale-40.0,
+	                   ((double)ht/2)+v*scale+40.0);
+	                   cairo_set_font_size(dctx, 40.0);
+	cairo_show_text(dctx, "h");
+	cairo_fill(dctx);
+
+	cairo_move_to(dctx, (double)wh/2, (double)ht/2);
+	u = 0.0;
+	v = (double)max_k*bs;
+	cairo_line_to(dctx, ((double)wh/2)+u*scale,
+	                    ((double)ht/2)+v*scale);
+	cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
+	cairo_stroke(dctx);
+
+	cairo_move_to(dctx,((double)wh/2)+u*scale-40.0,
+	                   ((double)ht/2)+v*scale-40.0);
+	                   cairo_set_font_size(dctx, 40.0);
+	cairo_show_text(dctx, "k");
 	cairo_fill(dctx);
 
 	cairo_surface_finish(surface);
