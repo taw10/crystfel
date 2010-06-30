@@ -122,7 +122,7 @@ void get_equiv(signed int h, signed int k, signed int l,
 		if ( (h==0) && (k==0) ) {
 			switch ( idx ) {
 			case  0 : *he = 0;   *ke = 0;   *le = l;   return;
-			case  1 : *he = 0;   *ke = 0;   *le = -l;   return;
+			case  1 : *he = 0;   *ke = 0;   *le = -l;  return;
 			}
 		}
 		/* Common table for  b-g */
