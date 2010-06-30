@@ -34,11 +34,12 @@ static int check_cond(signed int h, signed int k, signed int l, const char *sym)
 	if ( strcmp(sym, "1") == 0 )
 		return ( 1 );
 	if ( strcmp(sym, "6") == 0 )
-		return ( (h>=0) && (k>=0) );
+		return ( ((h>0) && (k>=0)) || ((h==0) && (k==0)) );
 	if ( strcmp(sym, "6/m") == 0 )
-		return ( (h>=0) && (k>=0) && (l>=0) );
+		return ( (((h>0) && (k>=0)) || ((h==0) && (k==0))) && (l>=0) );
 	if ( strcmp(sym, "6/mmm") == 0 )
-		return ( (h>=0) && (k>=0) && (l>=0) && (h>=k) );
+		return ( (((h>0) && (k>=0)) || ((h==0) && (k==0))) && (l>=0)
+		         && (h>=k) );
 
 	/* TODO: Add more groups here */
 
@@ -58,9 +59,16 @@ int num_equivs(signed int h, signed int k, signed int l, const char *sym)
 {
 	if ( strcmp(sym, "1") == 0 ) return 1;
 
-	if ( strcmp(sym, "6") == 0 ) return 6;  /* FIXME */
+	if ( strcmp(sym, "6") == 0 ) {
+		if ( (h==0) && (k==0) ) return 2;  /* a */
+		return 6;  /* b */
+	}
 
-	if ( strcmp(sym, "6/m") == 0 ) return 12;  /* FIXME */
+	if ( strcmp(sym, "6/m") == 0 ) {
+		if ( (h==0) && (k==0) ) return 2;  /* a */
+		if ( l == 0 ) return 6;  /* b */
+		return 12;  /* c */
+	}
 
 	if ( strcmp(sym, "6/mmm") == 0 ) {
 		if ( (h==0) && (k==0) ) return 2;  /* a */
@@ -82,12 +90,21 @@ void get_equiv(signed int h, signed int k, signed int l,
                signed int *he, signed int *ke, signed int *le,
                const char *sym, int idx)
 {
+	signed int i = -h-k;
+
 	if ( strcmp(sym, "1") == 0 ) {
 		*he = h;   *ke = k;   *le = l;  return;
 	}
 
 	if ( strcmp(sym, "6") == 0 ) {
-		signed int i = -h-k;
+		/* a */
+		if ( (h==0) && (k==0) ) {
+			switch ( idx ) {
+			case  0 : *he = 0;   *ke = 0;   *le = l;   return;
+			case  1 : *he = 0;   *ke = 0;   *le = -l;  return;
+			}
+		}
+		/* b */
 		switch ( idx ) {
 		case  0 : *he = h;   *ke = k;   *le = l;  return;
 		case  1 : *he = i;   *ke = h;   *le = l;  return;
@@ -99,7 +116,14 @@ void get_equiv(signed int h, signed int k, signed int l,
 	}
 
 	if ( strcmp(sym, "6/m") == 0 ) {
-		signed int i = -h-k;
+		/* a */
+		if ( (h==0) && (k==0) ) {
+			switch ( idx ) {
+			case  0 : *he = 0;   *ke = 0;   *le = l;   return;
+			case  1 : *he = 0;   *ke = 0;   *le = -l;  return;
+			}
+		}
+		/* b-c */
 		switch ( idx ) {
 		case  0 : *he = h;   *ke = k;   *le = l;   return;
 		case  1 : *he = i;   *ke = h;   *le = l;   return;
@@ -117,15 +141,14 @@ void get_equiv(signed int h, signed int k, signed int l,
 	}
 
 	if ( strcmp(sym, "6/mmm") == 0 ) {
-		signed int i = -h-k;
-		/* Special table for a */
+		/* a */
 		if ( (h==0) && (k==0) ) {
 			switch ( idx ) {
 			case  0 : *he = 0;   *ke = 0;   *le = l;   return;
 			case  1 : *he = 0;   *ke = 0;   *le = -l;  return;
 			}
 		}
-		/* Common table for  b-g */
+		/* b-g */
 		switch ( idx ) {
 		case  0 : *he = h;   *ke = k;   *le = l;   return;
 		case  1 : *he = i;   *ke = h;   *le = l;   return;
