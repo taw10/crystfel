@@ -35,18 +35,19 @@ static void show_help(const char *s)
 	printf(
 "Render intensity lists in various ways.\n"
 "\n"
-"  -h, --help         Display this help message.\n"
-"      --povray       Render a 3D animation using POV-ray.\n"
-"      --zone-axis    Render a 2D zone axis pattern.\n"
-"      --boost=<val>  Squash colour scale by <val>.\n"
-"  -j <n>             Run <n> instances of POV-ray in parallel.\n"
-"  -p, --pdb=<file>   PDB file from which to get the unit cell.\n"
+"  -h, --help            Display this help message.\n"
+"      --povray          Render a 3D animation using POV-ray.\n"
+"      --zone-axis       Render a 2D zone axis pattern.\n"
+"      --boost=<val>     Squash colour scale by <val>.\n"
+"  -j <n>                Run <n> instances of POV-ray in parallel.\n"
+"  -p, --pdb=<file>      PDB file from which to get the unit cell.\n"
+"  -y, --symmetry=<sym>  Expand reflections according to point group <sym>.\n"
 );
 }
 
 
 static void render_za(UnitCell *cell, double *ref, unsigned int *c,
-                      double boost)
+                      double boost, const char *sym)
 {
 	cairo_surface_t *surface;
 	cairo_t *dctx;
@@ -61,7 +62,6 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 	double csx, csy, csz;
 	signed int h, k;
 	float wh, ht;
-	const char *sym = "6/mmm";
 
 	wh = 1024;
 	ht = 1024;
@@ -242,6 +242,7 @@ int main(int argc, char *argv[])
 	char *pdb = NULL;
 	int r = 0;
 	double boost = 1.0;
+	char *sym = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -250,6 +251,7 @@ int main(int argc, char *argv[])
 		{"zone-axis",          0, &config_zoneaxis,    1},
 		{"pdb",                1, NULL,               'p'},
 		{"boost",              1, NULL,               'b'},
+		{"symmetry",           1, NULL,               'y'},
 		{0, 0, NULL, 0}
 	};
 
@@ -273,6 +275,10 @@ int main(int argc, char *argv[])
 			boost = atof(optarg);
 			break;
 
+		case 'y' :
+			sym = strdup(optarg);
+			break;
+
 		case 0 :
 			break;
 
@@ -284,6 +290,10 @@ int main(int argc, char *argv[])
 
 	if ( pdb == NULL ) {
 		pdb = strdup("molecule.pdb");
+	}
+
+	if ( sym == NULL ) {
+		sym = strdup("1");
 	}
 
 	infile = argv[optind];
@@ -303,12 +313,13 @@ int main(int argc, char *argv[])
 	if ( config_povray ) {
 		r = povray_render_animation(cell, ref, cts, nproc);
 	} else if ( config_zoneaxis ) {
-		render_za(cell, ref, cts, boost);
+		render_za(cell, ref, cts, boost, sym);
 	} else {
 		ERROR("Try again with either --povray or --zone-axis.\n");
 	}
 
 	free(pdb);
+	free(sym);
 
 	return r;
 }
