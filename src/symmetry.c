@@ -28,27 +28,30 @@
 #endif /* DEBUG */
 
 
-/* Conditions for a reflection to be in the asymmetric unit cell */
-#define COND_1(h, k, l) (1)
-#define COND_6(h, k, l) ( (h>=0) && (k>=0) )
-#define COND_6M(h, k, l) ( (h>=0) && (k>=0) && (l>=0) )
-#define COND_6MMM(h, k, l) ( (h>=0) && (k>=0) && (l>=0) \
-                          && (h>=k) )
-/* TODO: Add more groups here */
+/* Check if a reflection is in the asymmetric unit cell */
+static int check_cond(signed int h, signed int k, signed int l, const char *sym)
+{
+	if ( strcmp(sym, "1") == 0 )
+		return ( 1 );
+	if ( strcmp(sym, "6") == 0 )
+		return ( (h>=0) && (k>=0) );
+	if ( strcmp(sym, "6/m") == 0 )
+		return ( (h>=0) && (k>=0) && (l>=0) );
+	if ( strcmp(sym, "6/mmm") == 0 )
+		return ( (h>=0) && (k>=0) && (l>=0) && (h>=k) );
+
+	/* TODO: Add more groups here */
+
+	return 1;
+}
 
 
 /* Macros for checking the above conditions and returning if satisfied */
-#define CHECK_COND(h, k, l, cond)                  \
-	if ( COND_##cond((h), (k), (l)) ) {        \
+#define CHECK_COND(h, k, l, sym)                   \
+	if ( check_cond((h), (k), (l), (sym)) ) {  \
 		*hp = (h);  *kp = (k);  *lp = (l); \
 		return;                            \
 	}
-
-
-/* Abort macro if no match found */
-#define SYM_ABORT                                             \
-	ERROR("No match in %s for %i %i %i\n", sym, h, k, l); \
-	abort();
 
 
 /* FIXME: Should take into account special indices
@@ -132,6 +135,8 @@ void get_equiv(signed int h, signed int k, signed int l,
 		}
 	}
 
+	/* TODO: Add more groups here */
+
 	/* Fallback for unrecognised groups */
 	*he = h;  *ke = k;  *le = l;
 }
@@ -149,14 +154,9 @@ void get_asymm(signed int h, signed int k, signed int l,
 		signed int he, ke, le;
 		get_equiv(h, k, l, &he, &ke, &le, sym, p);
 		SYM_DEBUG("%i : %i %i %i\n", p, he, ke, le);
-		if ( strcmp(sym, "1") == 0 ) CHECK_COND(he, ke, le, 1);
-		if ( strcmp(sym, "6") == 0 ) CHECK_COND(he, ke, le, 6);
-		if ( strcmp(sym, "6/m") == 0 ) CHECK_COND(he, ke, le, 6M);
-		if ( strcmp(sym, "6/mmm") == 0 ) CHECK_COND(he, ke, le, 6MMM);
+		CHECK_COND(he, ke, le, sym);
 	}
 
-	SYM_ABORT;  /* Should never reach here */
-
-	ERROR("Unknown point group '%s'\n", sym);
-	abort();
+	/* Should never reach here */
+	ERROR("No match found in %s for %i %i %i\n", sym, h, k, l);
 }
