@@ -42,12 +42,14 @@ static void show_help(const char *s)
 "  -j <n>                Run <n> instances of POV-ray in parallel.\n"
 "  -p, --pdb=<file>      PDB file from which to get the unit cell.\n"
 "  -y, --symmetry=<sym>  Expand reflections according to point group <sym>.\n"
+"      --sqrt            Plot square roots of intensities, rather than\n"
+"                         the intensities themselves.\n"
 );
 }
 
 
 static void render_za(UnitCell *cell, double *ref, unsigned int *c,
-                      double boost, const char *sym)
+                      double boost, const char *sym, int config_sqrt)
 {
 	cairo_surface_t *surface;
 	cairo_t *dctx;
@@ -107,7 +109,9 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 		if ( ct < 1 ) continue;
 
 		intensity = lookup_intensity(ref, h, k, 0) / (float)ct;
-
+		if ( config_sqrt ) {
+			intensity = (intensity>0.0) ? sqrt(intensity) : 0.0;
+		}
 		if ( intensity != 0 ) {
 
 			nequiv = num_equivs(h, k, 0, sym);
@@ -164,6 +168,9 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 		if ( ct < 1 ) continue;
 
 		intensity = lookup_intensity(ref, h, k, 0) / (float)ct;
+		if ( config_sqrt ) {
+			intensity = (intensity>0.0) ? sqrt(intensity) : 0.0;
+		}
 		val = boost*intensity/max_intensity;
 
 		nequiv = num_equivs(h, k, 0, sym);
@@ -238,6 +245,7 @@ int main(int argc, char *argv[])
 	unsigned int *cts;
 	int config_povray = 0;
 	int config_zoneaxis = 0;
+	int config_sqrt = 0;
 	unsigned int nproc = 1;
 	char *pdb = NULL;
 	int r = 0;
@@ -252,6 +260,7 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"boost",              1, NULL,               'b'},
 		{"symmetry",           1, NULL,               'y'},
+		{"sqrt",               0, &config_sqrt,        1},
 		{0, 0, NULL, 0}
 	};
 
@@ -313,7 +322,7 @@ int main(int argc, char *argv[])
 	if ( config_povray ) {
 		r = povray_render_animation(cell, ref, cts, nproc);
 	} else if ( config_zoneaxis ) {
-		render_za(cell, ref, cts, boost, sym);
+		render_za(cell, ref, cts, boost, sym, config_sqrt);
 	} else {
 		ERROR("Try again with either --povray or --zone-axis.\n");
 	}
