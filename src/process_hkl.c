@@ -70,6 +70,7 @@ static void show_help(const char *s)
 "                             allowable twins.\n"
 "      --scale               Scale each pattern for best fit with the current\n"
 "                             model.\n"
+"  -y, --symmetry=<sym>      Merge according to point group <sym>.\n"
 );
 }
 
