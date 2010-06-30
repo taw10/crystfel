@@ -58,9 +58,10 @@ static int check_cond(signed int h, signed int k, signed int l, const char *sym)
  * e.g. l==0 has fewer equivalent reflections */
 int num_equivs(signed int h, signed int k, signed int l, const char *sym)
 {
-	if ( strcmp(sym, "6/mmm") == 0 ) return 24;
+	if ( strcmp(sym, "1") == 0 ) return 1;
 	if ( strcmp(sym, "6") == 0 ) return 6;
 	if ( strcmp(sym, "6/m") == 0 ) return 12;
+	if ( strcmp(sym, "6/mmm") == 0 ) return 24;
 	/* TODO: Add more groups here */
 
 	return 1;
