@@ -35,16 +35,18 @@ static void show_help(const char *s)
 	printf(
 "Render intensity lists in various ways.\n"
 "\n"
-"  -h, --help       Display this help message.\n"
-"      --povray     Render a 3D animation using POV-ray.\n"
-"      --zone-axis  Render a 2D zone axis pattern.\n"
-"  -j <n>           Run <n> instances of POV-ray in parallel.\n"
-"  -p, --pdb=<file> PDB file from which to get the unit cell.\n"
+"  -h, --help         Display this help message.\n"
+"      --povray       Render a 3D animation using POV-ray.\n"
+"      --zone-axis    Render a 2D zone axis pattern.\n"
+"      --boost=<val>  Squash colour scale by <val>.\n"
+"  -j <n>             Run <n> instances of POV-ray in parallel.\n"
+"  -p, --pdb=<file>   PDB file from which to get the unit cell.\n"
 );
 }
 
 
-static void render_za(UnitCell *cell, double *ref, unsigned int *c)
+static void render_za(UnitCell *cell, double *ref, unsigned int *c,
+                      double boost)
 {
 	cairo_surface_t *surface;
 	cairo_t *dctx;
@@ -162,7 +164,7 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c)
 		if ( ct < 1 ) continue;
 
 		intensity = lookup_intensity(ref, h, k, 0) / (float)ct;
-		val = 3.0*intensity/max_intensity;
+		val = boost*intensity/max_intensity;
 
 		nequiv = num_equivs(h, k, 0, sym);
 		for ( p=0; p<nequiv; p++ ) {
@@ -239,6 +241,7 @@ int main(int argc, char *argv[])
 	unsigned int nproc = 1;
 	char *pdb = NULL;
 	int r = 0;
+	double boost = 1.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -246,6 +249,7 @@ int main(int argc, char *argv[])
 		{"povray",             0, &config_povray,      1},
 		{"zone-axis",          0, &config_zoneaxis,    1},
 		{"pdb",                1, NULL,               'p'},
+		{"boost",              1, NULL,               'b'},
 		{0, 0, NULL, 0}
 	};
 
@@ -263,6 +267,10 @@ int main(int argc, char *argv[])
 
 		case 'p' :
 			pdb = strdup(optarg);
+			break;
+
+		case 'b' :
+			boost = atof(optarg);
 			break;
 
 		case 0 :
@@ -295,7 +303,7 @@ int main(int argc, char *argv[])
 	if ( config_povray ) {
 		r = povray_render_animation(cell, ref, cts, nproc);
 	} else if ( config_zoneaxis ) {
-		render_za(cell, ref, cts);
+		render_za(cell, ref, cts, boost);
 	} else {
 		ERROR("Try again with either --povray or --zone-axis.\n");
 	}
