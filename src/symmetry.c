@@ -54,14 +54,24 @@ static int check_cond(signed int h, signed int k, signed int l, const char *sym)
 	}
 
 
-/* FIXME: Should take into account special indices
- * e.g. l==0 has fewer equivalent reflections */
 int num_equivs(signed int h, signed int k, signed int l, const char *sym)
 {
 	if ( strcmp(sym, "1") == 0 ) return 1;
-	if ( strcmp(sym, "6") == 0 ) return 6;
-	if ( strcmp(sym, "6/m") == 0 ) return 12;
-	if ( strcmp(sym, "6/mmm") == 0 ) return 24;
+
+	if ( strcmp(sym, "6") == 0 ) return 6;  /* FIXME */
+
+	if ( strcmp(sym, "6/m") == 0 ) return 12;  /* FIXME */
+
+	if ( strcmp(sym, "6/mmm") == 0 ) {
+		if ( (h==0) && (k==0) ) return 2;  /* a */
+		if ( (l==0) && (h==k) ) return 6;  /* b */
+		if ( (l==0) && (k==0) ) return 6;  /* c */
+		if ( h == k ) return 12;  /* d */
+		if ( k == 0 ) return 12;  /* e */
+		if ( l == 0 ) return 12;  /* f */
+		return 24;  /* g */
+	}
+
 	/* TODO: Add more groups here */
 
 	return 1;
@@ -108,6 +118,14 @@ void get_equiv(signed int h, signed int k, signed int l,
 
 	if ( strcmp(sym, "6/mmm") == 0 ) {
 		signed int i = -h-k;
+		/* Special table for a */
+		if ( (h==0) && (k==0) ) {
+			switch ( idx ) {
+			case  0 : *he = 0;   *ke = 0;   *le = l;   return;
+			case  1 : *he = 0;   *ke = 0;   *le = -l;   return;
+			}
+		}
+		/* Common table for  b-g */
 		switch ( idx ) {
 		case  0 : *he = h;   *ke = k;   *le = l;   return;
 		case  1 : *he = i;   *ke = h;   *le = l;   return;
