@@ -50,7 +50,8 @@ void write_reflections(const char *filename, unsigned int *counts,
 		fprintf(fh, "angle %5.3f deg\n", rad2deg(alpha));
 		fprintf(fh, "scale 10\n");
 	} else {
-		fprintf(fh, " h   k   l    I    phase(I)    sigma(I)   1/d / nm^-1\n");
+		fprintf(fh, "  h   k   l          I    phase   sigma(I) "
+		            " 1/d(nm^-1)  counts\n");
 	}
 
 	for ( h=-INDMAX; h<INDMAX; h++ ) {
@@ -73,9 +74,9 @@ void write_reflections(const char *filename, unsigned int *counts,
 		if ( phases != NULL ) {
 			double p;
 			p = lookup_intensity(phases, h, k, l);
-			snprintf(ph, 31, "%f", p);
+			snprintf(ph, 31, "%8.6f", p);
 		} else {
-			strncpy(ph, "-", 31);
+			strncpy(ph, "       -", 31);
 		}
 
 		if ( cell != NULL ) {
@@ -85,8 +86,8 @@ void write_reflections(const char *filename, unsigned int *counts,
 		}
 
 		/* h, k, l, I, sigma(I), s */
-		fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %10.2f\n",
-		        h, k, l, intensity, ph, 0.0, s/1.0e9);
+		fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f  %10.2f %7i\n",
+		        h, k, l, intensity, ph, 0.0, s/1.0e9, N);
 
 	}
 	}
