@@ -132,7 +132,8 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c)
 	max_res /= 1e9;
 	max_u /= 0.5;
 	max_v /= 0.5;
-	printf("Maximum resolution is %f nm^-1\n", max_res);
+	printf("Maximum resolution is 1/d = %5.3f nm^-1, d = %5.3f nm\n",
+	       max_res*2.0, 1.0/(max_res*2.0));
 
 	if ( max_intensity <= 0.0 ) {
 		max_r = 4.0;
