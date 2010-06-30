@@ -115,15 +115,15 @@ double *read_reflections(const char *filename, unsigned int *counts,
 
 		char line[1024];
 		signed int h, k, l;
-		float intensity, ph, res;
+		float intensity, ph, res, sigma;
 		char phs[1024];
 		int r;
 		int cts;
 
 		rval = fgets(line, 1023, fh);
-		r = sscanf(line, "%i %i %i %f %s %f %i",
-		           &h, &k, &l, &intensity, phs, &res, &cts);
-		if ( r != 5 ) continue;
+		r = sscanf(line, "%i %i %i %f %s %f %f %i",
+		           &h, &k, &l, &intensity, phs, &sigma, &res, &cts);
+		if ( r != 8 ) continue;
 
 		set_intensity(ref, h, k, l, intensity);
 		if ( phases != NULL ) {

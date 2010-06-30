@@ -28,6 +28,11 @@
 #include "povray.h"
 #include "symmetry.h"
 
+enum {
+	WGHT_I,
+	WGHT_SQRTI,
+	WGHT_COUNTS,
+};
 
 static void show_help(const char *s)
 {
@@ -35,25 +40,28 @@ static void show_help(const char *s)
 	printf(
 "Render intensity lists in various ways.\n"
 "\n"
-"  -h, --help            Display this help message.\n"
-"      --povray          Render a 3D animation using POV-ray.\n"
-"      --zone-axis       Render a 2D zone axis pattern.\n"
-"      --boost=<val>     Squash colour scale by <val>.\n"
-"  -j <n>                Run <n> instances of POV-ray in parallel.\n"
-"  -p, --pdb=<file>      PDB file from which to get the unit cell.\n"
-"  -y, --symmetry=<sym>  Expand reflections according to point group <sym>.\n"
-"      --sqrt            Plot square roots of intensities, rather than\n"
-"                         the intensities themselves.\n"
+"  -h, --help              Display this help message.\n"
+"      --povray            Render a 3D animation using POV-ray.\n"
+"      --zone-axis         Render a 2D zone axis pattern.\n"
+"      --boost=<val>       Squash colour scale by <val>.\n"
+"  -j <n>                  Run <n> instances of POV-ray in parallel.\n"
+"  -p, --pdb=<file>        PDB file from which to get the unit cell.\n"
+"  -y, --symmetry=<sym>    Expand reflections according to point group <sym>.\n"
+"  -w  --weighting=<wght>  Colour/shade the reciprocal lattice points\n"
+"                           according to:\n"
+"                            I     : the intensity of the reflection.\n"
+"                            sqrtI : the square root of the intensity.\n"
+"                            count : the number of counts for the reflection.\n"
 );
 }
 
 
 static void render_za(UnitCell *cell, double *ref, unsigned int *c,
-                      double boost, const char *sym, int config_sqrt)
+                      double boost, const char *sym, int wght)
 {
 	cairo_surface_t *surface;
 	cairo_t *dctx;
-	double max_u, max_v, max_res, max_intensity;
+	double max_u, max_v, max_res, max_val;
 	double scale_u, scale_v, scale;
 	double sep_u, sep_v, max_r;
 	double u, v;
@@ -83,7 +91,7 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 	cairo_set_source_rgb(dctx, 0.0, 0.0, 0.0);
 	cairo_fill(dctx);
 
-	max_u = 0.0;  max_v = 0.0;  max_intensity = 0.0;
+	max_u = 0.0;  max_v = 0.0;  max_val = 0.0;
 	max_res = 0.0;  max_h = 0;  max_k = 0;
 
 	/* Work out reciprocal lattice spacings and angles for this cut */
@@ -101,38 +109,44 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 	for ( h=-INDMAX; h<INDMAX; h++ ) {
 	for ( k=-INDMAX; k<INDMAX; k++ ) {
 
-		double u, v, intensity, res;
+		double u, v, val, res;
 		int ct;
 		int nequiv, p;
 
 		ct = lookup_count(c, h, k, 0);
 		if ( ct < 1 ) continue;
 
-		intensity = lookup_intensity(ref, h, k, 0) / (float)ct;
-		if ( config_sqrt ) {
-			intensity = (intensity>0.0) ? sqrt(intensity) : 0.0;
+		switch ( wght ) {
+		case WGHT_I :
+			val = lookup_intensity(ref, h, k, 0) / (float)ct;
+			break;
+		case WGHT_SQRTI :
+			val = lookup_intensity(ref, h, k, 0) / (float)ct;
+			val = (val>0.0) ? sqrt(val) : 0.0;
+			break;
+		case WGHT_COUNTS :
+			val = (float)ct;
+			break;
 		}
-		if ( intensity != 0 ) {
 
-			nequiv = num_equivs(h, k, 0, sym);
-			for ( p=0; p<nequiv; p++ ) {
+		nequiv = num_equivs(h, k, 0, sym);
+		for ( p=0; p<nequiv; p++ ) {
 
-				signed int he, ke, le;
-				get_equiv(h, k, 0, &he, &ke, &le, sym, p);
+			signed int he, ke, le;
+			get_equiv(h, k, 0, &he, &ke, &le, sym, p);
 
-				u =  (double)he*as*sin(theta);
-				v =  (double)he*as*cos(theta) + ke*bs;
-				if ( fabs(u) > fabs(max_u) ) max_u = fabs(u);
-				if ( fabs(v) > fabs(max_v) ) max_v = fabs(v);
-				if ( fabs(intensity) > fabs(max_intensity) ) {
-					max_intensity = fabs(intensity);
-				}
-				if ( fabs(he) > max_h ) max_h = fabs(he);
-				if ( fabs(ke) > max_k ) max_k = fabs(ke);
-				res = resolution(cell, he, ke, 0);
-				if ( res > max_res ) max_res = res;
-
+			u =  (double)he*as*sin(theta);
+			v =  (double)he*as*cos(theta) + ke*bs;
+			if ( fabs(u) > fabs(max_u) ) max_u = fabs(u);
+			if ( fabs(v) > fabs(max_v) ) max_v = fabs(v);
+			if ( fabs(val) > fabs(max_val) ) {
+				max_val = fabs(val);
 			}
+			if ( fabs(he) > max_h ) max_h = fabs(he);
+			if ( fabs(ke) > max_k ) max_k = fabs(ke);
+			res = resolution(cell, he, ke, 0);
+			if ( res > max_res ) max_res = res;
+
 		}
 
 	}
@@ -142,7 +156,7 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 	printf("Maximum resolution is 1/d = %5.3f nm^-1, d = %5.3f nm\n",
 	       max_res*2.0, 1.0/(max_res*2.0));
 
-	if ( max_intensity <= 0.0 ) {
+	if ( max_val <= 0.0 ) {
 		max_r = 4.0;
 		goto out;
 	}
@@ -160,18 +174,27 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 	for ( h=-INDMAX; h<INDMAX; h++ ) {
 	for ( k=-INDMAX; k<INDMAX; k++ ) {
 
-		double u, v, intensity, val;
+		double u, v, val;
 		int ct;
 		int nequiv, p;
 
 		ct = lookup_count(c, h, k, 0);
-		if ( ct < 1 ) continue;
+		if ( ct < 1 ) continue;  /* Must have at least one count */
 
-		intensity = lookup_intensity(ref, h, k, 0) / (float)ct;
-		if ( config_sqrt ) {
-			intensity = (intensity>0.0) ? sqrt(intensity) : 0.0;
+		switch ( wght ) {
+		case WGHT_I :
+			val = lookup_intensity(ref, h, k, 0) / (float)ct;
+			break;
+		case WGHT_SQRTI :
+			val = lookup_intensity(ref, h, k, 0) / (float)ct;
+			val = (val>0.0) ? sqrt(val) : 0.0;
+			break;
+		case WGHT_COUNTS :
+			val = (float)ct;
+			break;
 		}
-		val = boost*intensity/max_intensity;
+
+		val = boost*val/max_val;
 
 		nequiv = num_equivs(h, k, 0, sym);
 		for ( p=0; p<nequiv; p++ ) {
@@ -251,6 +274,8 @@ int main(int argc, char *argv[])
 	int r = 0;
 	double boost = 1.0;
 	char *sym = NULL;
+	char *weighting = NULL;
+	int wght;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -260,12 +285,13 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"boost",              1, NULL,               'b'},
 		{"symmetry",           1, NULL,               'y'},
-		{"sqrt",               0, &config_sqrt,        1},
+		{"weighting",          1, NULL,               'w'},
+		{"counts",             0, &config_sqrt,        1},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hj:p:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hj:p:w:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' :
@@ -288,6 +314,10 @@ int main(int argc, char *argv[])
 			sym = strdup(optarg);
 			break;
 
+		case 'w' :
+			weighting = strdup(optarg);
+			break;
+
 		case 0 :
 			break;
 
@@ -303,6 +333,21 @@ int main(int argc, char *argv[])
 
 	if ( sym == NULL ) {
 		sym = strdup("1");
+	}
+
+	if ( weighting == NULL ) {
+		weighting = strdup("I");
+	}
+
+	if ( strcmp(weighting, "I") == 0 ) {
+		wght = WGHT_I;
+	} else if ( strcmp(weighting, "sqrtI") == 0 ) {
+		wght = WGHT_SQRTI;
+	} else if ( strcmp(weighting, "count") == 0 ) {
+		wght = WGHT_COUNTS;
+	} else {
+		ERROR("Unrecognised weighting '%s'\n", weighting);
+		return 1;
 	}
 
 	infile = argv[optind];
@@ -322,7 +367,7 @@ int main(int argc, char *argv[])
 	if ( config_povray ) {
 		r = povray_render_animation(cell, ref, cts, nproc);
 	} else if ( config_zoneaxis ) {
-		render_za(cell, ref, cts, boost, sym, config_sqrt);
+		render_za(cell, ref, cts, boost, sym, wght);
 	} else {
 		ERROR("Try again with either --povray or --zone-axis.\n");
 	}
