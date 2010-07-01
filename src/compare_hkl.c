@@ -29,7 +29,7 @@
 
 static void show_help(const char *s)
 {
-	printf("Syntax: %s [options] -a <file1.hkl> -b <file2.hkl>\n\n", s);
+	printf("Syntax: %s [options] <file1.hkl> <file2.hkl>\n\n", s);
 	printf(
 "Compare intensity lists.\n"
 "\n"
@@ -75,14 +75,6 @@ int main(int argc, char *argv[])
 			outfile = strdup(optarg);
 			break;
 
-		case 'a' :
-			afile = strdup(optarg);
-			break;
-
-		case 'b' :
-			bfile = strdup(optarg);
-			break;
-
 		case 0 :
 			break;
 
@@ -91,6 +83,14 @@ int main(int argc, char *argv[])
 		}
 
 	}
+
+	if ( argc != (optind+2) ) {
+		ERROR("Please provide exactly two HKL files to compare.\n");
+		return 1;
+	}
+
+	afile = strdup(argv[optind++]);
+	bfile = strdup(argv[optind]);
 
 	cell = load_cell_from_pdb("molecule.pdb");
 	c1 = new_list_count();
