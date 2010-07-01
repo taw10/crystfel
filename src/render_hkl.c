@@ -32,6 +32,7 @@ enum {
 	WGHT_I,
 	WGHT_SQRTI,
 	WGHT_COUNTS,
+	WGHT_RAWCOUNTS,
 };
 
 static void show_help(const char *s)
@@ -49,9 +50,12 @@ static void show_help(const char *s)
 "  -y, --symmetry=<sym>    Expand reflections according to point group <sym>.\n"
 "  -w  --weighting=<wght>  Colour/shade the reciprocal lattice points\n"
 "                           according to:\n"
-"                            I     : the intensity of the reflection.\n"
-"                            sqrtI : the square root of the intensity.\n"
-"                            count : the number of counts for the reflection.\n"
+"                            I      : the intensity of the reflection.\n"
+"                            sqrtI  : the square root of the intensity.\n"
+"                            count  : the number of hits for the reflection.\n"
+"                                     (after correcting for 'epsilon')\n"
+"                            rawcts : the raw number of hits for the\n"
+"                                     reflection (no 'epsilon' correction).\n"
 );
 }
 
@@ -126,6 +130,10 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 			break;
 		case WGHT_COUNTS :
 			val = (float)ct;
+			val /= (float)num_equivs(h, k, 0, sym);
+			break;
+		case WGHT_RAWCOUNTS :
+			val = (float)ct;
 			break;
 		}
 
@@ -190,6 +198,10 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 			val = (val>0.0) ? sqrt(val) : 0.0;
 			break;
 		case WGHT_COUNTS :
+			val = (float)ct;
+			val /= (float)num_equivs(h, k, 0, sym);
+			break;
+		case WGHT_RAWCOUNTS :
 			val = (float)ct;
 			break;
 		}
@@ -345,6 +357,8 @@ int main(int argc, char *argv[])
 		wght = WGHT_SQRTI;
 	} else if ( strcmp(weighting, "count") == 0 ) {
 		wght = WGHT_COUNTS;
+	} else if ( strcmp(weighting, "rawcts") == 0 ) {
+		wght = WGHT_RAWCOUNTS;
 	} else {
 		ERROR("Unrecognised weighting '%s'\n", weighting);
 		return 1;
