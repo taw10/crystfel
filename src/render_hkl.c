@@ -135,6 +135,9 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 		case WGHT_RAWCOUNTS :
 			val = (float)ct;
 			break;
+		default :
+			ERROR("Invalid weighting.\n");
+			abort();
 		}
 
 		nequiv = num_equivs(h, k, 0, sym);
@@ -204,6 +207,9 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 		case WGHT_RAWCOUNTS :
 			val = (float)ct;
 			break;
+		default :
+			ERROR("Invalid weighting.\n");
+			abort();
 		}
 
 		val = boost*val/max_val;
