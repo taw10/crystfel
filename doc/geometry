@@ -1,0 +1,52 @@
+CrystFEL detector geometry files
+--------------------------------
+
+The detector geometry is taken from a text file rather than hardcoded into the
+program.  Programs which care about the geometry (indexamajig, pattern_sim and
+powder_plot) take an argument "--geometry=<file>" (or "-g <file>"), where <file>
+contains the geometry.  CrystFEL's representation of a detector is broken down
+into one or more "panels", each of which has its own location for the centre of
+the panel (i.e. the location of the central beam), its own camera length,
+resolution and so on.  Each panel fits into the overall image taken from the
+HDF5 file, defined by minimum and maximum coordinates in x and y.  The
+coordinates are specified inclusively, meaning that a minimum of 0 and a maximum
+of 9 results in ten items.  Counting begins from zero.  All pixels in the image
+must be assigned to a panel.
+
+See "A note on data orientation" in the top level README file for important
+information about how CrystFEL defines the axes.  All coordinates (including the
+centre coordinates for each panel) are measured according to these axes:  there
+is no coordinate system local to a panel.
+
+The syntax for a simple geometry might be as follows:
+
+; The number of panels
+n_panels = 1
+
+; "0/" specifies the first (and only) panel.  If we had more panels, there would
+; be a copy of the following lines but prefixes with "1/", "2/" and so on.
+
+; The region of the image which belongs to this panel:
+0/min_x = 0
+0/max_x = 1023
+0/min_y = 512
+0/max_y = 1023
+
+; The coordinates of the central beam which should be
+; used for pixels in this panel:
+0/cx = 491.9
+0/cy = 440.7
+
+; The camera length (in metres) for this panel
+0/clen = 67.8e-3
+
+; The resolution (in pixels per metre) for this panel
+0/res = 13333.3  ; 75 micron pixel size
+
+; The readout direction (x or y).  If more than three peaks are found in
+; the same readout region, they are all discarded.  This helps to avoid
+; problems due to streaks appearing along the readout direction.
+0/badrow_direction = y
+
+
+See the "examples" folder for some examples.
