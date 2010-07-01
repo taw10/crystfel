@@ -357,7 +357,13 @@ int main(int argc, char *argv[])
 		wght = WGHT_SQRTI;
 	} else if ( strcmp(weighting, "count") == 0 ) {
 		wght = WGHT_COUNTS;
+	} else if ( strcmp(weighting, "counts") == 0 ) {
+		wght = WGHT_COUNTS;
 	} else if ( strcmp(weighting, "rawcts") == 0 ) {
+		wght = WGHT_RAWCOUNTS;
+	} else if ( strcmp(weighting, "rawcount") == 0 ) {
+		wght = WGHT_RAWCOUNTS;
+	} else if ( strcmp(weighting, "rawcounts") == 0 ) {
 		wght = WGHT_RAWCOUNTS;
 	} else {
 		ERROR("Unrecognised weighting '%s'\n", weighting);
