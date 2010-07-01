@@ -110,6 +110,10 @@ int main(int argc, char *argv[])
 	set_count(c1, 0, 0, 0, 0);
 	set_count(c2, 0, 0, 0, 0);
 
+	/* Divide by number of counts, since we're not interested in them */
+	divide_down(ref1, c1);
+	divide_down(ref2, c2);
+
 	for ( h=-INDMAX; h<INDMAX; h++ ) {
 	for ( k=-INDMAX; k<INDMAX; k++ ) {
 	for ( l=-INDMAX; l<INDMAX; l++ ) {

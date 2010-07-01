@@ -29,5 +29,7 @@ extern double *read_reflections(const char *filename, unsigned int *counts,
 
 extern double *ideal_intensities(double complex *sfac);
 
+extern void divide_down(double *intensities, unsigned int *counts);
+
 
 #endif	/* REFLECTIONS_H */

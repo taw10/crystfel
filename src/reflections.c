@@ -166,3 +166,16 @@ double *ideal_intensities(double complex *sfac)
 
 	return ref;
 }
+
+
+void divide_down(double *intensities, unsigned int *counts)
+{
+	int i;
+
+	for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
+		if ( counts[i] > 0 ) {
+			intensities[i] /= (double)counts[i];
+			counts[i] = 1;
+		}
+	}
+}
