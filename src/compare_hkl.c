@@ -107,6 +107,7 @@ int main(int argc, char *argv[])
 	}
 	out = new_list_intensity();
 
+	/* Knock out the zero beam, in case it's present */
 	set_count(c1, 0, 0, 0, 0);
 	set_count(c2, 0, 0, 0, 0);
 
