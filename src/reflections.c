@@ -123,7 +123,28 @@ double *read_reflections(const char *filename, unsigned int *counts,
 		rval = fgets(line, 1023, fh);
 		r = sscanf(line, "%i %i %i %f %s %f %f %i",
 		           &h, &k, &l, &intensity, phs, &sigma, &res, &cts);
-		if ( r != 8 ) continue;
+		if ( r >= 8 ) {
+			/* Woohoo */
+		} else if ( r >= 7 ) {
+			/* No "counts", that's fine.. */
+			cts = 1;
+		} else if ( r >= 6 ) {
+			/* No resolution.  Didn't want it anyway. */
+			res = 0.0;
+		} else if ( r >= 5 ) {
+			/* No sigma.  It's OK today, but one
+			 * day I'll get you... */
+			sigma = 0.0;
+		} else if ( r >= 4 ) {
+			/* No phase.  Better not need it.. */
+			if ( phases != NULL ) {
+				ERROR("Need phases and none were specified!\n");
+				abort();
+			}
+		} else {
+			/* You lose. */
+			continue;
+		}
 
 		set_intensity(ref, h, k, l, intensity);
 		if ( phases != NULL ) {
