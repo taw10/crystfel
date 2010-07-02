@@ -62,7 +62,7 @@ double stat_r2(const double *ref1, const unsigned int *c1,
 
 			double i1, i2;
 			i1 = ref1[i] / (scale*(double)c1[i]);
-			i2 = ref2[i] / (scale*(double)c2[i]);
+			i2 = ref2[i] / (double)c2[i];
 
 			top += pow(fabs(i1 - i2), 2.0);
 			bot += pow(i1, 2.0);
