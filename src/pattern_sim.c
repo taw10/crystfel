@@ -290,21 +290,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( intfile == NULL ) {
-		/* Gentle reminder */
-		STATUS("You didn't specify the file containing the ");
-		STATUS("reflection intensities (with --intensities).\n");
-		STATUS("I'll simulate a flat intensity distribution.\n");
-		intensities = NULL;
-		counts = NULL;
-		phases = NULL;
-	} else {
-		counts = new_list_count();
-		phases = new_list_phase();
-		intensities = read_reflections(intfile, counts, phases);
-		free(intfile);
-	}
-
 	if ( grad_str == NULL ) {
 		STATUS("You didn't specify a gradient calculation method, so"
 		       " I'm using the 'mosaic' method, which is fastest.\n");
@@ -330,6 +315,25 @@ int main(int argc, char *argv[])
 	if ( geometry == NULL ) {
 		ERROR("You need to specify a geometry file with --geometry\n");
 		return 1;
+	}
+
+	if ( intfile == NULL ) {
+		/* Gentle reminder */
+		STATUS("You didn't specify the file containing the ");
+		STATUS("reflection intensities (with --intensities).\n");
+		STATUS("I'll simulate a flat intensity distribution.\n");
+		intensities = NULL;
+		counts = NULL;
+		phases = NULL;
+	} else {
+		counts = new_list_count();
+		if ( grad == GRADIENT_PHASED ) {
+			phases = new_list_phase();
+		} else {
+			phases = NULL;
+		}
+		intensities = read_reflections(intfile, counts, phases);
+		free(intfile);
 	}
 
 	/* Define image parameters */
