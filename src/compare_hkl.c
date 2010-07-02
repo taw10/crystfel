@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 	char *afile = NULL;
 	char *bfile = NULL;
 	signed int h, k, l;
-	double scale, R;
+	double scale, R2, Rmerge;
 	unsigned int *c1;
 	unsigned int *c2;
 	int i;
@@ -141,8 +141,10 @@ int main(int argc, char *argv[])
 		ncom += c1[i] && c2[i];
 	}
 	STATUS("%i,%i reflections: %i in common\n", nc1, nc2, ncom);
-	R = stat_r2(ref1, c1, ref2, c2, &scale);
-	STATUS("R2 = %5.4f %% (scale=%5.2f)\n", R*100.0, scale);
+	R2 = stat_r2(ref1, c1, ref2, c2, &scale);
+	STATUS("R2 = %5.4f %% (scale=%5.2f)\n", R2*100.0, scale);
+	Rmerge = stat_rmerge(ref1, c1, ref2, c2, &scale);
+	STATUS("Rmerge = %5.4f %% (scale=%5.2f)\n", Rmerge*100.0, scale);
 
 	if ( outfile != NULL ) {
 		write_reflections(outfile, NULL, out, NULL, 1, cell, 1);

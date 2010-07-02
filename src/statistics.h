@@ -23,4 +23,8 @@ extern double stat_r2(const double *ref1, const unsigned int *c1,
                       const double *ref2, const unsigned int *c2,
                       double *scalep);
 
+extern double stat_rmerge(const double *ref1, const unsigned int *c1,
+                          const double *ref2, const unsigned int *c2,
+                          double *scalep);
+
 #endif	/* STATISTICS_H */
