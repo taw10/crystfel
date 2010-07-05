@@ -5710,14 +5710,14 @@ if $PKG_CONFIG --atleast-version 1.2.0 libpng ; then
 $as_echo "$LIBPNG_VERSION" >&6; }
         LIBPNG_CFLAGS=`$PKG_CONFIG --cflags libpng`
         LIBPNG_LIBS=`$PKG_CONFIG --libs libpng`
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_LIBPNG 1
+_ACEOF
+
 else
         { $as_echo "$as_me:$LINENO: result: Lower than 1.2.0 or not found" >&5
 $as_echo "Lower than 1.2.0 or not found" >&6; }
-        { { $as_echo "$as_me:$LINENO: error:
-*** libPNG is required to build CrystFEL" >&5
-$as_echo "$as_me: error:
-*** libPNG is required to build CrystFEL" >&2;}
-   { (exit 1); exit 1; }; }
 fi
 
 

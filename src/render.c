@@ -24,6 +24,7 @@
 #include "render.h"
 #include "peaks.h"
 #include "filters.h"
+#include "utils.h"
 
 
 static void *render_bin(float *in, int inw, int inh, int binning, float *maxp)
@@ -361,6 +362,7 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
 
 int render_png(DisplayWindow *dw, const char *filename)
 {
+#ifdef HAVE_LIBPNG
 	FILE *fh;
 	png_structp png_ptr;
 	png_infop info_ptr;
@@ -465,7 +467,9 @@ int render_png(DisplayWindow *dw, const char *filename)
 	fclose(fh);
 
 	free(hdr);
-
+#else
+	STATUS("No PNG support.\n");
+#endif
 	return 0;
 }
 

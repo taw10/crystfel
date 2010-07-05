@@ -97,10 +97,9 @@ if $PKG_CONFIG --atleast-version 1.2.0 libpng ; then
         AC_MSG_RESULT($LIBPNG_VERSION)
         LIBPNG_CFLAGS=`$PKG_CONFIG --cflags libpng`
         LIBPNG_LIBS=`$PKG_CONFIG --libs libpng`
+        AC_DEFINE([HAVE_LIBPNG], [1], [Define to 1 if libPNG is available])
 else
         AC_MSG_RESULT([Lower than 1.2.0 or not found])
-        AC_MSG_ERROR([
-*** libPNG is required to build CrystFEL])
 fi
 
 
