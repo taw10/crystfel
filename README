@@ -50,8 +50,8 @@ CrystFEL mostly works with images stored in HDF5 format, unit cell and atomic
 coordinate data in PDB format, and reflection lists in plain text format (i.e.
 not MTZ).
 
-For documentation on the individual programs, see the files inside the "doc"
-directory.
+For documentation on the individual programs and topics, see the files inside
+the "doc" directory.
 
 
 Installation
