@@ -73,6 +73,11 @@ $ ./configure --with-libtiff=/some/strange/location
 $ ./configure --with-gsl=/some/strange/location
 $ ./configure --disable-gtk
 
+If you're compiling on Mac OS X, where GTK, libPNG and libTIFF seem to be much
+harder to come by, disable lots of things:
+
+$ ./configure --disable-gtk --disable-png --disable-libtiff
+
 
 A note on data orientation
 --------------------------

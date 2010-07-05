@@ -476,6 +476,7 @@ int render_png(DisplayWindow *dw, const char *filename)
 
 int render_tiff_fp(DisplayWindow *dw, const char *filename)
 {
+#ifdef HAVE_TIFF
 	TIFF *th;
 	struct image *image;
 	float *line;
@@ -514,12 +515,16 @@ int render_tiff_fp(DisplayWindow *dw, const char *filename)
 
 	TIFFClose(th);
 
+#else
+	STATUS("No TIFF support.\n");
+#endif
 	return 0;
 }
 
 
 int render_tiff_int16(DisplayWindow *dw, const char *filename)
 {
+#ifdef HAVE_TIFF
 	TIFF *th;
 	struct image *image;
 	int16_t *line;
@@ -583,6 +588,8 @@ int render_tiff_int16(DisplayWindow *dw, const char *filename)
 	_TIFFfree(line);
 
 	TIFFClose(th);
-
+#else
+	STATUS("No TIFF support.\n");
+#endif
 	return 0;
 }
