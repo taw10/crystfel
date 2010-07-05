@@ -91,23 +91,42 @@ AC_CHECK_FUNCS(forkpty,
 )
 
 
-AC_MSG_CHECKING([libpng])
-if $PKG_CONFIG --atleast-version 1.2.0 libpng ; then
-        LIBPNG_VERSION=`$PKG_CONFIG --modversion libpng`
-        AC_MSG_RESULT($LIBPNG_VERSION)
-        LIBPNG_CFLAGS=`$PKG_CONFIG --cflags libpng`
-        LIBPNG_LIBS=`$PKG_CONFIG --libs libpng`
-        AC_DEFINE([HAVE_LIBPNG], [1], [Define to 1 if libPNG is available])
-else
-        AC_MSG_RESULT([Lower than 1.2.0 or not found])
-fi
+AC_MSG_CHECKING([whether to use PNG])
+AC_ARG_ENABLE([png],
+    AS_HELP_STRING([--disable-png], [Disable the use of libPNG]))
+AS_IF([test "x$enable_png" != "xno"],
+[
+   AC_MSG_RESULT([yes])
+   AC_MSG_CHECKING([libpng])
+   if $PKG_CONFIG --atleast-version 1.2.0 libpng ; then
+      LIBPNG_VERSION=`$PKG_CONFIG --modversion libpng`
+      AC_MSG_RESULT($LIBPNG_VERSION)
+      LIBPNG_CFLAGS=`$PKG_CONFIG --cflags libpng`
+      LIBPNG_LIBS=`$PKG_CONFIG --libs libpng`
+      AC_DEFINE([HAVE_LIBPNG], [1], [Define to 1 if libPNG is available])
+   else
+      AC_MSG_RESULT([Lower than 1.2.0 or not found])
+   fi
+],[
+   AC_MSG_RESULT([no])
+])
 
 
-AC_ARG_WITH(libtiff,
-[AS_HELP_STRING([--with-libtiff], [specify location of libTIFF library])],
-[LIBTIFF_CFLAGS="-I$withval/include"
- LIBTIFF_LIBS="-L$withval/lib -ltiff"],
-[LIBTIFF_LIBS="-ltiff"])
+AC_MSG_CHECKING([whether to use TIFF])
+AC_ARG_ENABLE([tiff],
+    AS_HELP_STRING([--disable-tiff], [Disable the use of libTIFF]))
+AS_IF([test "x$enable_tiff" != "xno"],
+[
+   AC_ARG_WITH(libtiff,
+   [AS_HELP_STRING([--with-libtiff], [specify location of libTIFF library])],
+   [LIBTIFF_CFLAGS="-I$withval/include"
+    LIBTIFF_LIBS="-L$withval/lib -ltiff"],
+   [LIBTIFF_LIBS="-ltiff"])
+   AC_MSG_RESULT([yes])
+],
+[
+   AC_MSG_RESULT([no])
+])
 
 
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread"
