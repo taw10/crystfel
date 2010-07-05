@@ -1,0 +1,56 @@
+How CrystFEL handles symmetry
+-----------------------------
+
+Currently, only process_hkl and render_hkl understand symmetry (and render_hkl
+only understands it when plotting a zone axis pattern).  get_hkl does NOT
+currently understand symmetry, which means you'll have to expand any molecular
+model (the PDB) out to P1 to get the correct results.  You can achieve that, for
+example, by loading it into Mercury, turning on "Packing", and re-saving.
+
+Symmetry definitions are included in src/symmetry.c.  Point group definitions
+are required for merging and the display of merged results (since merging does
+not care about systematic absences (i.e. the space group) - as far as merging is
+concerned, systematic absences are just measurements which happen to have values
+of zero.  Each space group belongs to exactly one point group, which you can
+look up in the International Tables for X-Ray Crystallography.
+
+Space groups would be needed to make get_hkl handle symmetry properly, but that
+hasn't been done yet, so symmetry.c just handles point groups for now.  The
+method used in symmetry.c is general to both point groups and space groups, even
+though the code currently is not.
+
+Point groups are being added here as they are required, so it's likely that the
+exact one you want hasn't been added yet.  Here's how to add a new one:
+
+First, expand the check_cond() function to include a description of the
+asymmetric reciprocal unit cell for the point group.  Every reflection in the
+whole of reciprocal space must map onto exactly one reflection in the asymmetric
+unit cell so defined.  The asymmetric cell is usually defined with positive h, k
+and l, but it doesn't really matter.  Working out the required condition means
+visualising the cell and taking care to properly handle situations such as the
+(000) reflection.
+
+Now, expand the num_equivs() function.  Given a point group and a set of Miller
+indices, this function must return the number of equivalent reflections,
+including the given reflection, taking into account the multiplicity of the
+reflection.  For example, high-symmetry reflections (usually ones with zeroes
+in their indices) have fewer equivalents.  Label the different classes of
+reflection according to their Wyckoff letters.  This information can be found in
+the International Tables.
+
+Finally, add the new point group to the get_equiv() function.  This function
+takes a set of Miller indices, a point group and an index, "n", and returns (by
+reference) the indices of the "n"th equivalent reflection.  Again, you have to
+distinguish between the different Wyckoff positions.  Lists of equivalent
+reflection, grouped according to Wyckoff symbol, can also be found in the
+International Tables.
+
+It's not normally necessary to write an individual table of equivalents for each
+Wyckoff position, because many positions are just "truncated" sub-classes of
+other positions.  For example, in 6/mmm, the equivalent reflections for "b" and
+"c" can be generated simply by working through the list for "g" (the general
+position) with indices set to zero or equal as appropriate, and by stopping
+after the first six equivalents.  Therefore, the num_equivs() function combined
+with a single table for positions b-g in get_equivs() is sufficient to deal with
+all cases.  Check carefully whether this really works for your chosen point
+group first.
