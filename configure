@@ -742,6 +742,7 @@ enable_gtktest
 enable_png
 enable_tiff
 with_libtiff
+enable_cairo
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1387,6 +1388,7 @@ Optional Features:
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --disable-png           Disable the use of libPNG
   --disable-tiff          Disable the use of libTIFF
+  --disable-cairo         Disable the use of Cairo
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -5764,6 +5766,44 @@ fi
 
    { $as_echo "$as_me:$LINENO: result: yes" >&5
 $as_echo "yes" >&6; }
+
+else
+
+   { $as_echo "$as_me:$LINENO: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+
+
+
+{ $as_echo "$as_me:$LINENO: checking whether to use Cairo" >&5
+$as_echo_n "checking whether to use Cairo... " >&6; }
+# Check whether --enable-cairo was given.
+if test "${enable_cairo+set}" = set; then
+  enableval=$enable_cairo;
+fi
+
+if test "x$enable_cairo" != "xno"; then
+
+   { $as_echo "$as_me:$LINENO: result: yes" >&5
+$as_echo "yes" >&6; }
+   { $as_echo "$as_me:$LINENO: checking Cairo" >&5
+$as_echo_n "checking Cairo... " >&6; }
+   if $PKG_CONFIG --atleast-version 1.2.0 cairo ; then
+      CAIRO_VERSION=`$PKG_CONFIG --modversion cairo`
+      CAIRO_CFLAGS=`$PKG_CONFIG --cflags cairo`
+      CAIRO_LIBS=`$PKG_CONFIG --libs cairo`
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_CAIRO 1
+_ACEOF
+
+      { $as_echo "$as_me:$LINENO: result: $CAIRO_VERSION" >&5
+$as_echo "$CAIRO_VERSION" >&6; }
+   else
+      { $as_echo "$as_me:$LINENO: result: not found.  Some functions will be unavailable." >&5
+$as_echo "not found.  Some functions will be unavailable." >&6; }
+   fi
 
 else
 

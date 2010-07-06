@@ -20,8 +20,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#ifdef HAVE_CAIRO
 #include <cairo.h>
 #include <cairo-pdf.h>
+#endif
 
 #include "utils.h"
 #include "reflections.h"
@@ -43,7 +45,9 @@ static void show_help(const char *s)
 "\n"
 "  -h, --help              Display this help message.\n"
 "      --povray            Render a 3D animation using POV-ray.\n"
+#ifdef HAVE_CAIRO
 "      --zone-axis         Render a 2D zone axis pattern.\n"
+#endif
 "      --boost=<val>       Squash colour scale by <val>.\n"
 "  -j <n>                  Run <n> instances of POV-ray in parallel.\n"
 "  -p, --pdb=<file>        PDB file from which to get the unit cell.\n"
@@ -60,6 +64,7 @@ static void show_help(const char *s)
 }
 
 
+#ifdef HAVE_CAIRO
 static void render_za(UnitCell *cell, double *ref, unsigned int *c,
                       double boost, const char *sym, int wght)
 {
@@ -275,6 +280,7 @@ out:
 	cairo_surface_finish(surface);
 	cairo_destroy(dctx);
 }
+#endif
 
 
 int main(int argc, char *argv[])
@@ -393,7 +399,13 @@ int main(int argc, char *argv[])
 	if ( config_povray ) {
 		r = povray_render_animation(cell, ref, cts, nproc);
 	} else if ( config_zoneaxis ) {
+#ifdef HAVE_CAIRO
 		render_za(cell, ref, cts, boost, sym, wght);
+#else
+		ERROR("This version of CrystFEL was compiled without Cairo");
+		ERROR(" support, which is required to plot a zone axis");
+		ERROR(" pattern.  Sorry!\n");
+#endif
 	} else {
 		ERROR("Try again with either --povray or --zone-axis.\n");
 	}

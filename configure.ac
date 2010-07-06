@@ -129,6 +129,28 @@ AS_IF([test "x$enable_tiff" != "xno"],
 ])
 
 
+AC_MSG_CHECKING([whether to use Cairo])
+AC_ARG_ENABLE([cairo],
+              AS_HELP_STRING([--disable-cairo], [Disable the use of Cairo]))
+AS_IF([test "x$enable_cairo" != "xno"],
+[
+   AC_MSG_RESULT([yes])
+   AC_MSG_CHECKING([Cairo])
+   if $PKG_CONFIG --atleast-version 1.2.0 cairo ; then
+      CAIRO_VERSION=`$PKG_CONFIG --modversion cairo`
+      CAIRO_CFLAGS=`$PKG_CONFIG --cflags cairo`
+      CAIRO_LIBS=`$PKG_CONFIG --libs cairo`
+      AC_DEFINE([HAVE_CAIRO], [1], [Define to 1 if Cairo is available])
+      AC_MSG_RESULT($CAIRO_VERSION)
+   else
+      AC_MSG_RESULT([not found.  Some functions will be unavailable.])
+   fi
+],
+[
+   AC_MSG_RESULT([no])
+])
+
+
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread"
 CFLAGS="$CFLAGS $LIBTIFF_CFLAGS"
 LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
