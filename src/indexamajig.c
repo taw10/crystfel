@@ -742,7 +742,9 @@ int main(int argc, char *argv[])
 
 		/* Tell the thread to exit */
 		struct process_args *pargs = worker_args[i];
+		pthread_mutex_lock(&pargs->control_mutex);
 		pargs->finish = 1;
+		pthread_mutex_unlock(&pargs->control_mutex);
 
 		/* Wait for it to join */
 		pthread_join(workers[i], NULL);
