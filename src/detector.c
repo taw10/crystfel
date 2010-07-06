@@ -286,5 +286,7 @@ struct detector *get_detector_geometry(const char *filename)
 		STATUS("Panel %i, res = %f\n", i, det->panels[i].res);
 	}
 
+	fclose(fh);
+
 	return det;
 }
