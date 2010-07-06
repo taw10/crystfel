@@ -209,6 +209,7 @@ static void process_image(struct process_args *pargs)
 
 out:
 	free(image.data);
+	image_feature_list_free(image.features);
 	if ( image.flags != NULL ) free(image.flags);
 	hdfile_close(hdfile);
 }
