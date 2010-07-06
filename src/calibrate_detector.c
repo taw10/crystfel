@@ -84,6 +84,8 @@ static void show_help(const char *s)
 "  -s, --sum=<method>      Use this method for summation.  Choose from:\n"
 "                           peaks : sum 10px radius circles around peaks.\n"
 "                           threshold : sum thresholded images.\n"
+"  -t, --threshold=<n>     Set the threshold if summing using the 'threshold'\n"
+"                           method.\n"
 "\n"
 "      --filter-cm         Perform common-mode noise subtraction on images\n"
 "                           before proceeding.\n"
@@ -91,7 +93,7 @@ static void show_help(const char *s)
 "                           pixels in each 3x3 region to zero if any of them\n"
 "                           have negative values.\n"
 "\n"
-"  -j <n>                  Run <n> analyses in parallel.  Default 1.\n"
+" -j <n>                   Run <n> analyses in parallel.  Default 1.\n"
 " -x, --prefix=<p>         Prefix filenames from input file with 'p'.\n");
 }
 
