@@ -413,8 +413,14 @@ void search_peaks(struct image *image)
 	}
 	}
 
-	ncull = cull_peaks(image);
-	nacc -= ncull;
+	if ( image->det != NULL ) {
+		ncull = cull_peaks(image);
+		nacc -= ncull;
+	} else {
+		STATUS("Not culling peaks because I don't have a "
+		       "detector geometry file.\n");
+		ncull = 0;
+	}
 
 	STATUS("%i accepted, %i box, %i hot, %i proximity, %i outside frame, "
 	       "%i in bad regions, %i badrow culled.\n",
