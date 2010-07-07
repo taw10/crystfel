@@ -142,9 +142,9 @@ int main(int argc, char *argv[])
 	}
 	STATUS("%i,%i reflections: %i in common\n", nc1, nc2, ncom);
 	R2 = stat_r2(ref1, c1, ref2, c2, &scale);
-	STATUS("R2 = %5.4f %% (scale=%5.2f)\n", R2*100.0, scale);
+	STATUS("R2 = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale);
 	Rmerge = stat_rmerge(ref1, c1, ref2, c2, &scale);
-	STATUS("Rmerge = %5.4f %% (scale=%5.2f)\n", Rmerge*100.0, scale);
+	STATUS("Rmerge = %5.4f %% (scale=%5.2e)\n", Rmerge*100.0, scale);
 
 	if ( outfile != NULL ) {
 		write_reflections(outfile, NULL, out, NULL, 1, cell, 1);
