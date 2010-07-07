@@ -6,6 +6,13 @@ only understands it when plotting a zone axis pattern).  get_hkl does NOT
 currently understand symmetry, which means you'll have to expand any molecular
 model (the PDB) out to P1 to get the correct results.  You can achieve that, for
 example, by loading it into Mercury, turning on "Packing", and re-saving.
+Alternatively, using CCP4:
+
+$ echo symgen P63 | pdbset xyzin model.pdb xyzout model-P1.pdb
+
+[ While on this subject, you'll probably also want to include hydrogens in the
+model using something like:
+$ echo HYDROGENS APPEND | hgen xyzin model.pdb xyzout model-with-H.pdb     ]
 
 Symmetry definitions are included in src/symmetry.c.  Point group definitions
 are required for merging and the display of merged results (since merging does
@@ -43,7 +50,8 @@ takes a set of Miller indices, a point group and an index, "n", and returns (by
 reference) the indices of the "n"th equivalent reflection.  Again, you have to
 distinguish between the different Wyckoff positions.  Lists of equivalent
 reflection, grouped according to Wyckoff symbol, can also be found in the
-International Tables.
+International Tables.  get_equiv() should return the original indices as the
+first set of equivalent indices, i.e. when idx=0.
 
 It's not normally necessary to write an individual table of equivalents for each
 Wyckoff position, because many positions are just "truncated" sub-classes of
