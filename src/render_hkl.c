@@ -29,6 +29,7 @@
 #include "reflections.h"
 #include "povray.h"
 #include "symmetry.h"
+#include "render.h"
 
 enum {
 	WGHT_I,
@@ -66,7 +67,7 @@ static void show_help(const char *s)
 
 #ifdef HAVE_CAIRO
 static void render_za(UnitCell *cell, double *ref, unsigned int *c,
-                      double boost, const char *sym, int wght)
+                      double boost, const char *sym, int wght, int colscale)
 {
 	cairo_surface_t *surface;
 	cairo_t *dctx;
@@ -217,12 +218,11 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 			abort();
 		}
 
-		val = boost*val/max_val;
-
 		nequiv = num_equivs(h, k, 0, sym);
 		for ( p=0; p<nequiv; p++ ) {
 
 			signed int he, ke, le;
+			float r, g, b;
 			get_equiv(h, k, 0, &he, &ke, &le, sym, p);
 
 			u = (double)he*as*sin(theta);
@@ -232,7 +232,8 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 					((double)ht/2)+v*scale, max_r,
 					0, 2*M_PI);
 
-			cairo_set_source_rgb(dctx, val, val, val);
+			render_scale(val, max_val/boost, colscale, &r, &g, &b);
+			cairo_set_source_rgb(dctx, r, g, b);
 			cairo_fill(dctx);
 
 		}
@@ -300,6 +301,8 @@ int main(int argc, char *argv[])
 	char *sym = NULL;
 	char *weighting = NULL;
 	int wght;
+	int colscale;
+	char *cscale = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -310,12 +313,14 @@ int main(int argc, char *argv[])
 		{"boost",              1, NULL,               'b'},
 		{"symmetry",           1, NULL,               'y'},
 		{"weighting",          1, NULL,               'w'},
+		{"colscale",           1, NULL,               'c'},
 		{"counts",             0, &config_sqrt,        1},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hj:p:w:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hj:p:w:c:y:",
+	                        longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' :
@@ -340,6 +345,10 @@ int main(int argc, char *argv[])
 
 		case 'w' :
 			weighting = strdup(optarg);
+			break;
+
+		case 'c' :
+			cscale = strdup(optarg);
 			break;
 
 		case 0 :
@@ -381,6 +390,25 @@ int main(int argc, char *argv[])
 		ERROR("Unrecognised weighting '%s'\n", weighting);
 		return 1;
 	}
+	free(weighting);
+
+	if ( cscale == NULL ) {
+		cscale = strdup("mono");
+	}
+
+	if ( strcmp(cscale, "mono") == 0 ) {
+		colscale = SCALE_MONO;
+	} else if ( strcmp(cscale, "invmono") == 0 ) {
+		colscale = SCALE_INVMONO;
+	} else if ( strcmp(cscale, "colour") == 0 ) {
+		colscale = SCALE_COLOUR;
+	} else if ( strcmp(cscale, "color") == 0 ) {
+		colscale = SCALE_COLOUR;
+	} else {
+		ERROR("Unrecognised colour scale '%s'\n", cscale);
+		return 1;
+	}
+	free(cscale);
 
 	infile = argv[optind];
 
@@ -400,7 +428,7 @@ int main(int argc, char *argv[])
 		r = povray_render_animation(cell, ref, cts, nproc);
 	} else if ( config_zoneaxis ) {
 #ifdef HAVE_CAIRO
-		render_za(cell, ref, cts, boost, sym, wght);
+		render_za(cell, ref, cts, boost, sym, wght, colscale);
 #else
 		ERROR("This version of CrystFEL was compiled without Cairo");
 		ERROR(" support, which is required to plot a zone axis");

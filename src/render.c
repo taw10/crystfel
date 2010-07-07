@@ -101,12 +101,11 @@ float *render_get_image_binned(DisplayWindow *dw, int binning, float *max)
 }
 
 
-static inline void render_rgb(float val, float max,
-                              guchar *rp, guchar *gp, guchar *bp)
+static void render_rgb(float val, float max, float *rp, float *gp, float *bp)
 {
 	int s;
 	float p;
-	guchar r, g, b;
+	float r, g, b;
 
 	s = val / (max/6);
 	p = fmod(val, max/6);
@@ -123,31 +122,31 @@ static inline void render_rgb(float val, float max,
 	}
 	switch ( s ) {
 		case 0 : {	/* Black to blue */
-			r = 0;     g = 0;            b = p*255;
+			r = 0;  g = 0;  b = p;
 			break;
 		}
 		case 1 : {	/* Blue to pink */
-			r = 255*p; g = 0;            b = 255;
+			r = p;  g = 0;  b = 1.0;
 			break;
 		}
 		case 2 : {	/* Pink to red */
-			r = 255;  g = 0;    b = (1-p)*255;
+			r = 1.0;  g = 0;  b = (1.0-p)*1.0;
 			break;
 		}
 		case 3 : {	/* Red to Orange */
-			r = 255;   g = 127*p;        b = 0;
+			r = 1.0;  g = 0.5*p;  b = 0;
 			break;
 		}
 		case 4 : {	/* Orange to Yellow */
-			r = 255;   g = 127 + 127*p;  b = 0;
+			r = 1.0;  g = 0.5 + 0.5*p;  b = 0;
 			break;
 		}
 		case 5 : {	/* Yellow to White */
-			r = 255;   g = 255;          b = 255*p;
+			r = 1.0;  g = 1.0;  b = 1.0*p;
 			break;
 		}
 		case 6 : {	/* Pixel has hit the maximum value */
-			r = 255;   g = 255;          b = 255;
+			r = 1.0;  g = 1.0;  b = 1.0;
 			break;
 		}
 	}
@@ -158,30 +157,46 @@ static inline void render_rgb(float val, float max,
 }
 
 
-static inline void render_mono(float val, float max,
-                               guchar *rp, guchar *gp, guchar *bp)
+static void render_mono(float val, float max, float *rp, float *gp, float *bp)
 {
 	float p;
-	p = (float)val / (float)max;
+	p = val / max;
 	if ( val < 0.0 ) p = 0.0;
 	if ( val > max ) p = 1.0;
-	*rp = 255.0*p;
-	*gp = 255.0*p;
-	*bp = 255.0*p;
+	*rp = p;
+	*gp = p;
+	*bp = p;
 }
 
 
-static inline void render_invmono(float val, float max,
-                                  guchar *rp, guchar *gp, guchar *bp)
+static void render_invmono(float val, float max,
+                           float *rp, float *gp, float *bp)
 {
 	float p;
-	p = (float)val / (float)max;
+	p = val / max;
 	p = 1.0 - p;
 	if ( val < 0.0 ) p = 1.0;
 	if ( val > max ) p = 0.0;
-	*rp = 255.0*p;
-	*gp = 255.0*p;
-	*bp = 255.0*p;
+	*rp = p;
+	*gp = p;
+	*bp = p;
+}
+
+
+void render_scale(float val, float max, int scale,
+                  float *rp, float *gp, float *bp)
+{
+	switch ( scale ) {
+	case SCALE_COLOUR :
+		render_rgb(val, max, rp, gp, bp);
+		break;
+	case SCALE_MONO :
+		render_mono(val, max, rp, gp, bp);
+		break;
+	case SCALE_INVMONO :
+		render_invmono(val, max, rp, gp, bp);
+		break;
+	}
 }
 
 
@@ -269,32 +284,17 @@ GdkPixbuf *render_get_image(DisplayWindow *dw)
 	for ( x=0; x<w; x++ ) {
 
 		float val;
-		guchar r = 0;
-		guchar g = 0;
-		guchar b = 0;
+		float r, g, b;
 
 		val = hdr[x+w*y];
-		switch ( dw->scale ) {
-		case SCALE_COLOUR : {
-			render_rgb(val, max, &r, &g, &b);
-			break;
-		}
-		case SCALE_MONO : {
-			render_mono(val, max, &r, &g, &b);
-			break;
-		}
-		case SCALE_INVMONO : {
-			render_invmono(val, max, &r, &g, &b);
-			break;
-		}
-		}
+		render_scale(val, max, dw->scale, &r, &g, &b);
 
 		/* Stuff inside square brackets makes this pixel go to
 		 * the expected location in the pixbuf (which measures
 		 * from the top-left corner */
-		data[3*( x+w*(h-1-y) )+0] = r;
-		data[3*( x+w*(h-1-y) )+1] = g;
-		data[3*( x+w*(h-1-y) )+2] = b;
+		data[3*( x+w*(h-1-y) )+0] = 255*r;
+		data[3*( x+w*(h-1-y) )+1] = 255*g;
+		data[3*( x+w*(h-1-y) )+2] = 255*b;
 
 	}
 	}
@@ -322,35 +322,20 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
 
 	for ( y=0; y<h; y++ ) {
 
-		guchar r = 0;
-		guchar g = 0;
-		guchar b = 0;
+		float r, g, b;
 		int val;
 
 		val = y;
 
-		switch ( scale ) {
-		case SCALE_COLOUR : {
-			render_rgb(val, max, &r, &g, &b);
-			break;
-		}
-		case SCALE_MONO : {
-			render_mono(val, max, &r, &g, &b);
-			break;
-		}
-		case SCALE_INVMONO : {
-			render_invmono(val, max, &r, &g, &b);
-			break;
-		}
-		}
+		render_scale(val, max, scale, &r, &g, &b);
 
 		data[3*( 0+w*(h-1-y) )+0] = 0;
 		data[3*( 0+w*(h-1-y) )+1] = 0;
 		data[3*( 0+w*(h-1-y) )+2] = 0;
 		for ( x=1; x<w; x++ ) {
-			data[3*( x+w*(h-1-y) )+0] = r;
-			data[3*( x+w*(h-1-y) )+1] = g;
-			data[3*( x+w*(h-1-y) )+2] = b;
+			data[3*( x+w*(h-1-y) )+0] = 255*r;
+			data[3*( x+w*(h-1-y) )+1] = 255*g;
+			data[3*( x+w*(h-1-y) )+2] = 255*b;
 		}
 
 	}
@@ -421,30 +406,15 @@ int render_png(DisplayWindow *dw, const char *filename)
 
 		for ( x=0; x<w; x++ ) {
 
-			guchar r = 0;
-			guchar g = 0;
-			guchar b = 0;
+			float r, g, b;
 			float val;
 
 			val = hdr[x+w*y];
 
-			switch ( dw->scale ) {
-			case SCALE_COLOUR : {
-				render_rgb(val, max, &r, &g, &b);
-				break;
-			}
-			case SCALE_MONO : {
-				render_mono(val, max, &r, &g, &b);
-				break;
-			}
-			case SCALE_INVMONO : {
-				render_invmono(val, max, &r, &g, &b);
-				break;
-			}
-			}
-			row_pointers[y][3*x] = (png_byte)r;
-			row_pointers[y][3*x+1] = (png_byte)g;
-			row_pointers[y][3*x+2] = (png_byte)b;
+			render_scale(val, max, dw->scale, &r, &g, &b);
+			row_pointers[y][3*x] = (png_byte)255*r;
+			row_pointers[y][3*x+1] = (png_byte)255*g;
+			row_pointers[y][3*x+2] = (png_byte)255*b;
 
 		}
 	}

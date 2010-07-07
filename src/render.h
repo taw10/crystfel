@@ -30,6 +30,9 @@ enum {
 	SCALE_INVMONO
 };
 
+extern void render_scale(float val, float max, int scale,
+                         float *rp, float *gp, float *bp);
+
 extern GdkPixbuf *render_get_image(DisplayWindow *dw);
 extern GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale);
 

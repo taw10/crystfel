@@ -47,7 +47,7 @@ powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \
 powder_plot_LDADD = @LIBS@
 
 render_hkl_SOURCES = render_hkl.c cell.c reflections.c utils.c povray.c \
-                     symmetry.c
+                     symmetry.c render.c hdf5-file.c image.c filters.c
 render_hkl_LDADD = @LIBS@
 
 calibrate_detector_SOURCES = calibrate_detector.c utils.c hdf5-file.c image.c \

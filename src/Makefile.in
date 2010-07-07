@@ -109,7 +109,8 @@ process_hkl_OBJECTS = $(am_process_hkl_OBJECTS)
 process_hkl_DEPENDENCIES =
 am_render_hkl_OBJECTS = render_hkl.$(OBJEXT) cell.$(OBJEXT) \
 	reflections.$(OBJEXT) utils.$(OBJEXT) povray.$(OBJEXT) \
-	symmetry.$(OBJEXT)
+	symmetry.$(OBJEXT) render.$(OBJEXT) hdf5-file.$(OBJEXT) \
+	image.$(OBJEXT) filters.$(OBJEXT)
 render_hkl_OBJECTS = $(am_render_hkl_OBJECTS)
 render_hkl_DEPENDENCIES =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -263,7 +264,7 @@ powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \
 
 powder_plot_LDADD = @LIBS@
 render_hkl_SOURCES = render_hkl.c cell.c reflections.c utils.c povray.c \
-                     symmetry.c
+                     symmetry.c render.c hdf5-file.c image.c filters.c
 
 render_hkl_LDADD = @LIBS@
 calibrate_detector_SOURCES = calibrate_detector.c utils.c hdf5-file.c image.c \
