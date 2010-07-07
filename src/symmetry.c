@@ -33,6 +33,8 @@ static int check_cond(signed int h, signed int k, signed int l, const char *sym)
 {
 	if ( strcmp(sym, "1") == 0 )
 		return ( 1 );
+	if ( strcmp(sym, "-1") == 0 )
+		return ( 1 );
 	if ( strcmp(sym, "6") == 0 )
 		return ( ((h>0) && (k>=0)) || ((h==0) && (k==0)) );
 	if ( strcmp(sym, "6/m") == 0 )
@@ -57,7 +59,12 @@ static int check_cond(signed int h, signed int k, signed int l, const char *sym)
 
 int num_equivs(signed int h, signed int k, signed int l, const char *sym)
 {
+	/* 000 is always unique */
+	if ( (h==0) && (k==0) && (l==0) ) return 1;
+
 	if ( strcmp(sym, "1") == 0 ) return 1;
+
+	if ( strcmp(sym, "-1") == 0 ) return 2;
 
 	if ( strcmp(sym, "6") == 0 ) {
 		if ( (h==0) && (k==0) ) return 2;  /* a */
@@ -94,6 +101,13 @@ void get_equiv(signed int h, signed int k, signed int l,
 
 	if ( strcmp(sym, "1") == 0 ) {
 		*he = h;   *ke = k;   *le = l;  return;
+	}
+
+	if ( strcmp(sym, "-1") == 0 ) {
+		switch ( idx ) {
+		case 0 : *he = h;   *ke = k;   *le = l;   return;
+		case 1 : *he = -h;  *ke = -k;  *le = -l;  return;
+		}
 	}
 
 	if ( strcmp(sym, "6") == 0 ) {
