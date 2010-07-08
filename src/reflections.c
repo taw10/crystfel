@@ -70,10 +70,11 @@ void write_reflections(const char *filename, unsigned int *counts,
 		}
 		if ( zone_axis && (l != 0) ) continue;
 
-		intensity = lookup_phase(ref, h, k, l) / N;
+		/* Divide measured intensity by the number of counts */
+		intensity = lookup_intensity(ref, h, k, l) / N;
 		if ( phases != NULL ) {
 			double p;
-			p = lookup_intensity(phases, h, k, l);
+			p = lookup_phase(phases, h, k, l);
 			snprintf(ph, 31, "%8.6f", p);
 		} else {
 			strncpy(ph, "       -", 31);
