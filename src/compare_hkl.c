@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ho:a:b:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ho:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' :
