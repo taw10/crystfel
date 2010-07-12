@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
 	unsigned int *c2;
 	int i;
 	int nc1, nc2, ncom;
+	unsigned int *outcounts;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -106,6 +107,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	out = new_list_intensity();
+	outcounts = new_list_count();
 
 	/* Knock out the zero beam, in case it's present */
 	set_count(c1, 0, 0, 0, 0);
@@ -120,12 +122,20 @@ int main(int argc, char *argv[])
 	for ( l=-INDMAX; l<INDMAX; l++ ) {
 
 		double i1, i2;
+		unsigned int c1s, c2s;
+
+		c1s = lookup_count(c1, h, k, l);
+		c2s = lookup_count(c2, h, k, l);
 
 		i1 = lookup_intensity(ref1, h, k, l);
 		i2 = lookup_intensity(ref2, h, k, l);
 
-		if ( (i1 != 0.0) && (i2 != 0.0) ) {
-			set_intensity(out, h, k, l, i1/i2);
+		if ( c1s && c2s ) {
+			if ( (i1 != 0.0) && (i2 != 0.0) ) {
+				set_intensity(out, h, k, l,
+				              (i1/(double)c1s)/i2/(double)c2s);
+				set_count(outcounts, h, k, l, 1);
+			}
 		}
 
 	}
@@ -149,7 +159,7 @@ int main(int argc, char *argv[])
 	STATUS("Pearson r = %5.4f\n", pearson);
 
 	if ( outfile != NULL ) {
-		write_reflections(outfile, NULL, out, NULL, 1, cell, 1);
+		write_reflections(outfile, outcounts, out, NULL, 0, cell, 1);
 	}
 
 	return 0;
