@@ -216,3 +216,110 @@ void get_asymm(signed int h, signed int k, signed int l,
 	ERROR("No match found in %s for %i %i %i\n", sym, h, k, l);
 	abort();
 }
+
+
+static const char *get_holohedral(const char *sym)
+{
+	/* Triclinic */
+	if ( strcmp(sym, "1") == 0 ) return "-1";
+	if ( strcmp(sym, "1") == 0 ) return "-1";
+
+	/* Hexagonal */
+	if ( strcmp(sym, "6") == 0 ) return "6/m";
+	if ( strcmp(sym, "6/m") == 0 ) return "6/mmm";
+	if ( strcmp(sym, "6/mmm") == 0 ) return "6/mmm";
+
+	/* TODO: Add more groups here */
+
+	ERROR("Couldn't find holohedral point group for '%s'\n", sym);
+	abort();
+}
+
+
+/* This is kind of like a "numerical" left coset decomposition.
+ * Given a reflection index and a point group, it returns the "idx-th"
+ * twinning possibility for the reflection.  It returns "idx" if
+ * successful.  To just count the number of possibilities, set idx=-1.
+ *
+ * The sequence of operators producing each possibility is guaranteed to
+ * be the same for any choice of indices given the same point group. */
+static int coset_decomp(signed int hs, signed int ks, signed int ls,
+                        signed int *hp, signed int *kp, signed int *lp,
+                        const char *mero, signed int idx)
+{
+	const char *holo = get_holohedral(mero);
+	int n_mero, n_holo;
+	int i;
+	signed int n_twins = 1;
+	signed int h, k, l;
+	ReflItemList *twins;
+
+	twins = new_items();
+
+	if ( idx == 0 ) {
+		/* Twin index zero is always the original orientation */
+		*hp = hs;  *kp = ks;  *lp = ls;
+		return 0;
+	}
+
+	get_asymm(hs, ks, ls, &h, &k, &l, mero);
+
+	/* How many equivalents in the holohedral point group are not
+	 * equivalents according to the (possibly) merohedral group? */
+	n_holo = num_equivs(h, k, l, holo);
+	n_mero = num_equivs(h, k, l, mero);
+
+	for ( i=0; i<n_holo; i++ ) {
+
+		signed int h_holo, k_holo, l_holo;
+		signed int hs_holo, ks_holo, ls_holo;
+
+		/* Get equivalent according to the holohedral group */
+		get_equiv(h, k, l, &hs_holo, &ks_holo, &ls_holo, holo, i);
+
+		/* Put it into the asymmetric cell for the merohedral group */
+		get_asymm(hs_holo, ks_holo, ls_holo,
+		          &h_holo, &k_holo, &l_holo, mero);
+
+		/* Is this the same reflection as we started with?
+		 * If not, this reflection is 'equivalent by twinning' */
+		if ( (h_holo != h) || (k_holo != k) || (l_holo != l) ) {
+
+			if ( find_item(twins, h_holo, k_holo, l_holo) )
+				continue;
+
+			if ( n_twins == idx ) {
+				*hp = h_holo;
+				*kp = k_holo;
+				*lp = l_holo;
+				delete_items(twins);
+				return n_twins;
+			}
+			add_item(twins, h_holo, k_holo, l_holo);
+			n_twins++;
+		}
+
+	}
+
+	delete_items(twins);
+	return n_twins;
+}
+
+
+/* Get the number of twinned "equivalents" for this reflection */
+int num_twins(signed int h, signed int k, signed int l, const char *sym)
+{
+	return coset_decomp(h, k, l, NULL, NULL, NULL, sym, -1);
+}
+
+
+void get_twins(signed int h, signed int k, signed int l,
+              signed int *hp, signed int *kp, signed int *lp,
+              const char *sym, int idx)
+{
+	if ( coset_decomp(h, k, l, hp, kp, lp, sym, idx) != idx ) {
+		ERROR("Failed coset decomposition for %i %i %i in %s\n",
+		      h, k, l, sym);
+		abort();
+	}
+}
