@@ -67,7 +67,7 @@ int num_equivs(signed int h, signed int k, signed int l, const char *sym)
 	if ( strcmp(sym, "-1") == 0 ) return 2;
 
 	if ( strcmp(sym, "6") == 0 ) {
-		if ( (h==0) && (k==0) ) return 2;  /* a */
+		if ( (h==0) && (k==0) ) return 1;  /* a */
 		return 6;  /* b */
 	}
 
@@ -115,7 +115,6 @@ void get_equiv(signed int h, signed int k, signed int l,
 		if ( (h==0) && (k==0) ) {
 			switch ( idx ) {
 			case  0 : *he = 0;   *ke = 0;   *le = l;   return;
-			case  1 : *he = 0;   *ke = 0;   *le = -l;  return;
 			}
 		}
 		/* b */
