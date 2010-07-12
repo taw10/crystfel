@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_min.h>
+#include <gsl/gsl_statistics.h>
 
 #include "statistics.h"
 #include "utils.h"
@@ -248,4 +249,39 @@ double stat_r2(const double *ref1, const unsigned int *c1,
                double *scalep)
 {
 	return r_minimised(ref1, c1, ref2, c2, scalep, R_2);
+}
+
+
+double stat_pearson(const double *ref1, const unsigned int *c1,
+                    const double *ref2, const unsigned int *c2)
+{
+	double vec1[4096];
+	double vec2[4096];
+	signed int h, k, l;
+	int i = 0;
+
+	for ( l=-INDMAX; l<INDMAX; l++ ) {
+	for ( k=-INDMAX; k<INDMAX; k++ ) {
+	for ( h=-INDMAX; h<INDMAX; h++ ) {
+
+		double i1, i2;
+		unsigned int c1s, c2s;
+
+		c1s = lookup_count(c1, h, k, l);
+		c2s = lookup_count(c2, h, k, l);
+
+		i1 = lookup_intensity(ref1, h, k, l);
+		i2 = lookup_intensity(ref2, h, k, l);
+
+		if ( c1s && c2s && (i1>0.0) && (i2>0.0) ) {
+			vec1[i] = sqrt(i1 / (double)c1s);
+			vec2[i] = sqrt(i2 / (double)c2s);
+			i++;
+		}
+
+	}
+	}
+	}
+
+	return gsl_stats_correlation(vec1, 1, vec2, 1, i);
 }

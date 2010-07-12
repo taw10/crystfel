@@ -27,4 +27,7 @@ extern double stat_rmerge(const double *ref1, const unsigned int *c1,
                           const double *ref2, const unsigned int *c2,
                           double *scalep);
 
+extern double stat_pearson(const double *ref1, const unsigned int *c1,
+                           const double *ref2, const unsigned int *c2);
+
 #endif	/* STATISTICS_H */

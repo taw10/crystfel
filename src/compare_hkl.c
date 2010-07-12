@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 	char *afile = NULL;
 	char *bfile = NULL;
 	signed int h, k, l;
-	double scale, R2, Rmerge;
+	double scale, R2, Rmerge, pearson;
 	unsigned int *c1;
 	unsigned int *c2;
 	int i;
@@ -145,6 +145,8 @@ int main(int argc, char *argv[])
 	STATUS("R2 = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale);
 	Rmerge = stat_rmerge(ref1, c1, ref2, c2, &scale);
 	STATUS("Rmerge = %5.4f %% (scale=%5.2e)\n", Rmerge*100.0, scale);
+	pearson = stat_pearson(ref1, c1, ref2, c2);
+	STATUS("Pearson r = %5.4f\n", pearson);
 
 	if ( outfile != NULL ) {
 		write_reflections(outfile, NULL, out, NULL, 1, cell, 1);
