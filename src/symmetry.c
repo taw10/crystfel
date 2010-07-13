@@ -242,7 +242,7 @@ const char *get_holohedral(const char *sym)
 	if ( strcmp(sym, "1") == 0 ) return "-1";
 
 	/* Hexagonal */
-	if ( strcmp(sym, "6") == 0 ) return "6/m";
+	if ( strcmp(sym, "6") == 0 ) return "6/mmm";
 	if ( strcmp(sym, "6/m") == 0 ) return "6/mmm";
 	if ( strcmp(sym, "6/mmm") == 0 ) return "6/mmm";
 
