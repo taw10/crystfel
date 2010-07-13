@@ -155,6 +155,11 @@ void get_general_equiv(signed int h, signed int k, signed int l,
 }
 
 
+/* Given a reflection and a point group, this returns (by reference) the indices
+ * of the "idx"th equivalent reflection, taking special positions into account.
+ * It returns "idx" if successful.  Otherwise, it returns the number of
+ * equivalents for the particular reflection (taking special positions into
+ * account).  Therefore, set idx=-1 to get the number of equivalents. */
 static int special_position(signed int hs, signed int ks, signed int ls,
                             signed int *hp, signed int *kp, signed int *lp,
                             const char *sym, signed int idx)
