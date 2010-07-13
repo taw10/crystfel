@@ -164,14 +164,13 @@ static int special_position(signed int hs, signed int ks, signed int ls,
 	ReflItemList *equivs;
 	int n_equivs = 0;
 
-	equivs = new_items();
-
 	if ( idx == 0 ) {
 		/* Index zero is always the original reflection */
 		*hp = hs;  *kp = ks;  *lp = ls;
 		return 0;
 	}
 
+	equivs = new_items();
 	n_general = num_general_equivs(sym);
 
 	for ( i=0; i<n_general; i++ ) {

@@ -344,9 +344,11 @@ int main(int argc, char *argv[])
 
 	model = new_list_intensity();
 	model_counts = new_list_count();
-	cell = load_cell_from_pdb(pdb);
 	new_pattern = new_list_intensity();
 	items = new_items();
+
+	cell = load_cell_from_pdb(pdb);
+	free(pdb);
 
 	if ( strcmp(filename, "-") == 0 ) {
 		fh = stdin;
@@ -475,6 +477,11 @@ int main(int argc, char *argv[])
 
 	delete_items(items);
 	free(sym);
+	free(model);
+	free(model_counts);
+	free(new_pattern);
+	free(output);
+	free(cell);
 
 	return 0;
 }
