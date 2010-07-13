@@ -184,6 +184,7 @@ struct refl_item {
 	signed int h;
 	signed int k;
 	signed int l;
+	int op;
 };
 
 extern void clear_items(ReflItemList *items);
@@ -191,6 +192,8 @@ extern ReflItemList *new_items(void);
 extern void delete_items(ReflItemList *items);
 extern void add_item(ReflItemList *items,
                      signed int h, signed int k, signed int l);
+extern void add_item_with_op(ReflItemList *items,
+                             signed int h, signed int k, signed int l, int op);
 extern int find_item(ReflItemList *items,
                      signed int h, signed int k, signed int l);
 extern struct refl_item *get_item(ReflItemList *items, int i);

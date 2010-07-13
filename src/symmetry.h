@@ -29,11 +29,13 @@ extern void get_equiv(signed int h, signed int k, signed int l,
                       signed int *he, signed int *ke, signed int *le,
                       const char *sym, int idx);
 
-extern int num_twins(signed int h, signed int k, signed int l, const char *sym);
+extern void get_general_equiv(signed int h, signed int k, signed int l,
+                              signed int *he, signed int *ke, signed int *le,
+                              const char *sym, int idx);
 
-extern void get_twins(signed int h, signed int k, signed int l,
-                      signed int *hp, signed int *kp, signed int *lp,
-                      const char *sym, int idx);
+extern const char *get_holohedral(const char *sym);
+
+extern ReflItemList *get_twins(ReflItemList *items, const char *sym);
 
 
 #endif	/* SYMMETRY_H */

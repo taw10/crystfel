@@ -292,16 +292,19 @@ struct _reflitemlist {
 	int max_items;
 };
 
+
 void clear_items(ReflItemList *items)
 {
 	items->n_items = 0;
 }
+
 
 static void alloc_items(ReflItemList *items)
 {
 	items->items = realloc(items->items,
 	                       items->max_items*sizeof(struct refl_item));
 }
+
 
 ReflItemList *new_items()
 {
@@ -314,14 +317,17 @@ ReflItemList *new_items()
 	return new;
 }
 
+
 void delete_items(ReflItemList *items)
 {
+	if ( items == NULL ) return;
 	if ( items->items != NULL ) free(items->items);
 	free(items);
 }
 
-void add_item(ReflItemList *items,
-                     signed int h, signed int k, signed int l)
+
+void add_item_with_op(ReflItemList *items, signed int h, signed int k,
+                      signed int l, int op)
 {
 	if ( items->n_items == items->max_items ) {
 		items->max_items += 1024;
@@ -331,8 +337,16 @@ void add_item(ReflItemList *items,
 	items->items[items->n_items].h = h;
 	items->items[items->n_items].k = k;
 	items->items[items->n_items].l = l;
+	items->items[items->n_items].op = op;
 	items->n_items++;
 }
+
+
+void add_item(ReflItemList *items, signed int h, signed int k, signed int l)
+{
+	add_item_with_op(items, h, k, l, 0);
+}
+
 
 int find_item(ReflItemList *items,
                      signed int h, signed int k, signed int l)
@@ -348,16 +362,19 @@ int find_item(ReflItemList *items,
 	return 0;
 }
 
+
 struct refl_item *get_item(ReflItemList *items, int i)
 {
 	if ( i >= items->n_items ) return NULL;
 	return &items->items[i];
 }
 
+
 int num_items(const ReflItemList *items)
 {
 	return items->n_items;
 }
+
 
 unsigned int *items_to_counts(ReflItemList *items)
 {

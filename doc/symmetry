@@ -15,14 +15,15 @@ model using something like:
 $ echo HYDROGENS APPEND | hgen xyzin model.pdb xyzout model-with-H.pdb     ]
 
 Symmetry definitions are included in src/symmetry.c.  Point group definitions
-are required for merging and the display of merged results (since merging does
-not care about systematic absences (i.e. the space group) - as far as merging is
-concerned, systematic absences are just measurements which happen to have values
-of zero.  Each space group belongs to exactly one point group, which you can
-look up in the International Tables for X-Ray Crystallography.
+are required for merging and the display of merged results, but space groups are
+not taken into account since merging does not care about systematic absences -
+as far as process_hkl is concerned, systematic absences are just measurements
+which happen to have values of zero.  Each space group belongs to exactly one
+point group, which you can look up in the International Tables for X-Ray
+Crystallography.
 
-Space groups would be needed to make get_hkl handle symmetry properly, but that
-hasn't been done yet, so symmetry.c just handles point groups for now.  The
+Space groups would only be needed to make get_hkl handle symmetry properly, but
+that hasn't been done yet, so symmetry.c just handles point groups for now.  The
 method used in symmetry.c is general to both point groups and space groups, even
 though the code currently is not.
 
@@ -35,30 +36,18 @@ whole of reciprocal space must map onto exactly one reflection in the asymmetric
 unit cell so defined.  The asymmetric cell is usually defined with positive h, k
 and l, but it doesn't really matter.  Working out the required condition means
 visualising the cell and taking care to properly handle situations such as the
-(000) reflection.
+(000) reflection.  Get this right, otherwise you'll go crazy when your symmetry
+breaks in weird ways.
 
-Now, expand the num_equivs() function.  Given a point group and a set of Miller
-indices, this function must return the number of equivalent reflections,
-including the given reflection, taking into account the multiplicity of the
-reflection.  For example, high-symmetry reflections (usually ones with zeroes
-in their indices) have fewer equivalents.  Label the different classes of
-reflection according to their Wyckoff letters.  This information can be found in
-the International Tables.
+Now, expand the num_general_equivs() function.  Given a point group, this
+function must return the number of equivalent reflections for a general
+reflection, including the given reflection.  High-symmetry reflections (usually
+ones with zeroes in their indices) have fewer equivalents, but the num_equivs()
+function will work this out for you.
 
-Finally, add the new point group to the get_equiv() function.  This function
-takes a set of Miller indices, a point group and an index, "n", and returns (by
-reference) the indices of the "n"th equivalent reflection.  Again, you have to
-distinguish between the different Wyckoff positions.  Lists of equivalent
-reflection, grouped according to Wyckoff symbol, can also be found in the
-International Tables.  get_equiv() should return the original indices as the
-first set of equivalent indices, i.e. when idx=0.
-
-It's not normally necessary to write an individual table of equivalents for each
-Wyckoff position, because many positions are just "truncated" sub-classes of
-other positions.  For example, in 6/mmm, the equivalent reflections for "b" and
-"c" can be generated simply by working through the list for "g" (the general
-position) with indices set to zero or equal as appropriate, and by stopping
-after the first six equivalents.  Therefore, the num_equivs() function combined
-with a single table for positions b-g in get_equivs() is sufficient to deal with
-all cases.  Check carefully whether this really works for your chosen point
-group first.
+Finally, add the new point group to the get_general_equiv() function.  This
+function takes a set of Miller indices, a point group and an index "n", and
+returns (by reference) the indices of the "n"th equivalent reflection. You just
+have to worry about the general position, because get_equiv() will work out the
+special positions for you.  get_general_equiv() should return the original
+indices when idx=0.

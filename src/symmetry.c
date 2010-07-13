@@ -57,35 +57,16 @@ static int check_cond(signed int h, signed int k, signed int l, const char *sym)
 	}
 
 
-int num_equivs(signed int h, signed int k, signed int l, const char *sym)
+static int num_general_equivs(const char *sym)
 {
-	/* 000 is always unique */
-	if ( (h==0) && (k==0) && (l==0) ) return 1;
-
+	/* Triclinic */
 	if ( strcmp(sym, "1") == 0 ) return 1;
-
 	if ( strcmp(sym, "-1") == 0 ) return 2;
 
-	if ( strcmp(sym, "6") == 0 ) {
-		if ( (h==0) && (k==0) ) return 1;  /* a */
-		return 6;  /* b */
-	}
-
-	if ( strcmp(sym, "6/m") == 0 ) {
-		if ( (h==0) && (k==0) ) return 2;  /* a */
-		if ( l == 0 ) return 6;  /* b */
-		return 12;  /* c */
-	}
-
-	if ( strcmp(sym, "6/mmm") == 0 ) {
-		if ( (h==0) && (k==0) ) return 2;  /* a */
-		if ( (l==0) && (h==k) ) return 6;  /* b */
-		if ( (l==0) && (k==0) ) return 6;  /* c */
-		if ( h == k ) return 12;  /* d */
-		if ( k == 0 ) return 12;  /* e */
-		if ( l == 0 ) return 12;  /* f */
-		return 24;  /* g */
-	}
+	/* Hexagonal */
+	if ( strcmp(sym, "6") == 0 ) return 6;
+	if ( strcmp(sym, "6/m") == 0 ) return 12;
+	if ( strcmp(sym, "6/mmm") == 0 ) return 24;
 
 	/* TODO: Add more groups here */
 
@@ -93,9 +74,9 @@ int num_equivs(signed int h, signed int k, signed int l, const char *sym)
 }
 
 
-void get_equiv(signed int h, signed int k, signed int l,
-               signed int *he, signed int *ke, signed int *le,
-               const char *sym, int idx)
+void get_general_equiv(signed int h, signed int k, signed int l,
+                       signed int *he, signed int *ke, signed int *le,
+                       const char *sym, int idx)
 {
 	signed int i = -h-k;
 
@@ -111,13 +92,6 @@ void get_equiv(signed int h, signed int k, signed int l,
 	}
 
 	if ( strcmp(sym, "6") == 0 ) {
-		/* a */
-		if ( (h==0) && (k==0) ) {
-			switch ( idx ) {
-			case  0 : *he = 0;   *ke = 0;   *le = l;   return;
-			}
-		}
-		/* b */
 		switch ( idx ) {
 		case  0 : *he = h;   *ke = k;   *le = l;  return;
 		case  1 : *he = i;   *ke = h;   *le = l;  return;
@@ -129,14 +103,6 @@ void get_equiv(signed int h, signed int k, signed int l,
 	}
 
 	if ( strcmp(sym, "6/m") == 0 ) {
-		/* a */
-		if ( (h==0) && (k==0) ) {
-			switch ( idx ) {
-			case  0 : *he = 0;   *ke = 0;   *le = l;   return;
-			case  1 : *he = 0;   *ke = 0;   *le = -l;  return;
-			}
-		}
-		/* b-c */
 		switch ( idx ) {
 		case  0 : *he = h;   *ke = k;   *le = l;   return;
 		case  1 : *he = i;   *ke = h;   *le = l;   return;
@@ -154,14 +120,6 @@ void get_equiv(signed int h, signed int k, signed int l,
 	}
 
 	if ( strcmp(sym, "6/mmm") == 0 ) {
-		/* a */
-		if ( (h==0) && (k==0) ) {
-			switch ( idx ) {
-			case  0 : *he = 0;   *ke = 0;   *le = l;   return;
-			case  1 : *he = 0;   *ke = 0;   *le = -l;  return;
-			}
-		}
-		/* b-g */
 		switch ( idx ) {
 		case  0 : *he = h;   *ke = k;   *le = l;   return;
 		case  1 : *he = i;   *ke = h;   *le = l;   return;
@@ -197,6 +155,66 @@ void get_equiv(signed int h, signed int k, signed int l,
 }
 
 
+static int special_position(signed int hs, signed int ks, signed int ls,
+                            signed int *hp, signed int *kp, signed int *lp,
+                            const char *sym, signed int idx)
+{
+	int n_general;
+	int i;
+	ReflItemList *equivs;
+	int n_equivs = 0;
+
+	equivs = new_items();
+
+	if ( idx == 0 ) {
+		/* Index zero is always the original reflection */
+		*hp = hs;  *kp = ks;  *lp = ls;
+		return 0;
+	}
+
+	n_general = num_general_equivs(sym);
+
+	for ( i=0; i<n_general; i++ ) {
+
+		signed int h, k, l;
+
+		/* Get equivalent according to the holohedral group */
+		get_general_equiv(hs, ks, ls, &h, &k, &l, sym, i);
+
+		/* Already got this one? */
+		if ( find_item(equivs, h, k, l) ) continue;
+
+		if ( n_equivs == idx ) {
+			*hp = h;
+			*kp = k;
+			*lp = l;
+			delete_items(equivs);
+			return n_equivs;
+		}
+		add_item(equivs, h, k, l);
+		n_equivs++;
+
+	}
+
+	delete_items(equivs);
+	return n_equivs;
+}
+
+
+void get_equiv(signed int h, signed int k, signed int l,
+               signed int *he, signed int *ke, signed int *le,
+               const char *sym, int idx)
+{
+	special_position(h, k, l, he, ke, le, sym, idx);
+}
+
+
+int num_equivs(signed int h, signed int k, signed int l, const char *sym)
+{
+	return special_position(h, k, l, NULL, NULL, NULL, sym, -1);
+}
+
+
 void get_asymm(signed int h, signed int k, signed int l,
                signed int *hp, signed int *kp, signed int *lp,
                const char *sym)
@@ -218,7 +236,7 @@ void get_asymm(signed int h, signed int k, signed int l,
 }
 
 
-static const char *get_holohedral(const char *sym)
+const char *get_holohedral(const char *sym)
 {
 	/* Triclinic */
 	if ( strcmp(sym, "1") == 0 ) return "-1";
@@ -237,37 +255,28 @@ static const char *get_holohedral(const char *sym)
 
 
 /* This is kind of like a "numerical" left coset decomposition.
- * Given a reflection index and a point group, it returns the "idx-th"
- * twinning possibility for the reflection.  It returns "idx" if
- * successful.  To just count the number of possibilities, set idx=-1.
+ * Given a reflection index and a point group, it returns the list of twinning
+ * possibilities.
  *
- * The sequence of operators producing each possibility is guaranteed to
- * be the same for any choice of indices given the same point group. */
-static int coset_decomp(signed int hs, signed int ks, signed int ls,
-                        signed int *hp, signed int *kp, signed int *lp,
-                        const char *mero, signed int idx)
+ * To count the number of possibilities, use num_items() on the result.
+ */
+static ReflItemList *coset_decomp(signed int hs, signed int ks, signed int ls,
+                                  const char *mero)
 {
 	const char *holo = get_holohedral(mero);
 	int n_mero, n_holo;
 	int i;
-	signed int n_twins = 1;
 	signed int h, k, l;
-	ReflItemList *twins;
+	ReflItemList *twins = new_items();
 
-	twins = new_items();
-
-	if ( idx == 0 ) {
-		/* Twin index zero is always the original orientation */
-		*hp = hs;  *kp = ks;  *lp = ls;
-		return 0;
-	}
-
+	/* Start by putting the given reflection into the asymmetric cell
+	 * for its (probably merohedral) point group. */
 	get_asymm(hs, ks, ls, &h, &k, &l, mero);
 
 	/* How many equivalents in the holohedral point group are not
 	 * equivalents according to the (possibly) merohedral group? */
-	n_holo = num_equivs(h, k, l, holo);
-	n_mero = num_equivs(h, k, l, mero);
+	n_holo = num_general_equivs(holo);
+	n_mero = num_general_equivs(mero);
 
 	for ( i=0; i<n_holo; i++ ) {
 
@@ -275,51 +284,61 @@ static int coset_decomp(signed int hs, signed int ks, signed int ls,
 		signed int hs_holo, ks_holo, ls_holo;
 
 		/* Get equivalent according to the holohedral group */
-		get_equiv(h, k, l, &hs_holo, &ks_holo, &ls_holo, holo, i);
+		get_general_equiv(h, k, l, &hs_holo, &ks_holo, &ls_holo,
+		                  holo, i);
 
 		/* Put it into the asymmetric cell for the merohedral group */
 		get_asymm(hs_holo, ks_holo, ls_holo,
 		          &h_holo, &k_holo, &l_holo, mero);
 
-		/* Is this the same reflection as we started with?
-		 * If not, this reflection is 'equivalent by twinning' */
-		if ( (h_holo != h) || (k_holo != k) || (l_holo != l) ) {
+		/* Already got this one?
+		 * Note: The list "twins" starts empty, so the first iteration
+		 * (i=0) will add the original reflection to the list along with
+		 * the identity operation. */
+		if ( find_item(twins, h_holo, k_holo, l_holo) ) continue;
 
-			if ( find_item(twins, h_holo, k_holo, l_holo) )
-				continue;
+		add_item_with_op(twins, h_holo, k_holo, l_holo, i);
 
-			if ( n_twins == idx ) {
-				*hp = h_holo;
-				*kp = k_holo;
-				*lp = l_holo;
-				delete_items(twins);
-				return n_twins;
-			}
-			add_item(twins, h_holo, k_holo, l_holo);
-			n_twins++;
+	}
+
+	return twins;
+}
+
+
+/* Work out the twinning possibilities for this pattern.
+ * To use the result, call get_general_equiv() on each reflection using
+ * the holohedral point group (use get_holohedral() for this), and for "idx"
+ * give each "op" field from the list returned by this function. */
+ReflItemList *get_twins(ReflItemList *items, const char *sym)
+{
+	int i;
+	int n_twins = 1;
+	ReflItemList *max_ops = NULL;
+
+	/* Run the coset decomposition for every reflection in the "pattern",
+	 * and see which gives the highest number of possibilities.  This
+	 * approach takes into account that a pattern consisting entirely of
+	 * special reflections might have fewer twin possibilities. */
+	for ( i=0; i<num_items(items); i++ ) {
+
+		signed int h, k, l;
+		struct refl_item *item;
+		ReflItemList *ops;
+
+		item = get_item(items, i);
+
+		h = item->h;
+		k = item->k;
+		l = item->l;
+
+		ops = coset_decomp(h, k, l, sym);
+		if ( num_items(ops) > n_twins ) {
+			n_twins = num_items(ops);
+			delete_items(max_ops);
+			max_ops = ops;
 		}
 
 	}
 
-	delete_items(twins);
-	return n_twins;
-}
-
-
-/* Get the number of twinned "equivalents" for this reflection */
-int num_twins(signed int h, signed int k, signed int l, const char *sym)
-{
-	return coset_decomp(h, k, l, NULL, NULL, NULL, sym, -1);
-}
-
-
-void get_twins(signed int h, signed int k, signed int l,
-              signed int *hp, signed int *kp, signed int *lp,
-              const char *sym, int idx)
-{
-	if ( coset_decomp(h, k, l, hp, kp, lp, sym, idx) != idx ) {
-		ERROR("Failed coset decomposition for %i %i %i in %s\n",
-		      h, k, l, sym);
-		abort();
-	}
+	return max_ops;
 }
