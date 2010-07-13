@@ -49,5 +49,5 @@ Finally, add the new point group to the get_general_equiv() function.  This
 function takes a set of Miller indices, a point group and an index "n", and
 returns (by reference) the indices of the "n"th equivalent reflection. You just
 have to worry about the general position, because get_equiv() will work out the
-special positions for you.  get_general_equiv() should return the original
-indices when idx=0.
+special positions for you.  get_general_equiv() must return the original indices
+when idx=0.
