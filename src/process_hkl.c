@@ -180,12 +180,78 @@ static void process_reflections(double *ref, unsigned int *counts,
 }
 
 
+static int resolve_twin(ReflItemList *items, const char *symm,
+                        const double *patt, const double *model,
+                        const unsigned int *model_counts)
+{
+	ReflItemList *twins;
+	const char *holo;
+	int n, i;
+	double best_fom = 0.0;
+	int best_op = 0;
+
+	/* How many possible twinned orientations are there? */
+	twins = get_twins(items, symm);
+
+	holo = get_holohedral(symm);
+
+	n = num_items(twins);
+
+	for ( i=0; i<n; i++ ) {
+
+		int j;
+		int op;
+		double *trial_ints = new_list_intensity();
+		unsigned int *trial_counts = new_list_count();
+		double fom;
+
+		op = get_item(twins, i)->op;
+
+		for ( j=0; j<num_items(items); j++ ) {
+
+			signed int h, k, l;
+			struct refl_item *r = get_item(items, j);
+
+			get_general_equiv(r->h, r->k, r->l, &h, &k, &l,
+			                  holo, op);
+			get_asymm(h, k, l, &h, &k, &l, symm);
+
+			set_intensity(trial_ints, h, k, l,
+			              lookup_intensity(patt, r->h, r->k, r->l));
+			set_count(trial_counts, h, k, l, 1);
+
+		}
+
+		fom = stat_pearson(trial_ints, trial_counts,
+		                   model, model_counts);
+
+		free(trial_ints);
+		free(trial_counts);
+
+		//printf(" %f", fom);
+		if ( fom > best_fom ) {
+			best_fom = fom;
+			best_op = op;
+		}
+
+	}
+	//printf("\n");
+
+	delete_items(twins);
+	return best_op;
+}
+
+
 static void merge_pattern(double *model, const double *new,
                           unsigned int *model_counts,
                           ReflItemList *items, int mo, int sum,
                           const char *symm)
 {
 	int i;
+	const char *holo = get_holohedral(symm);  /* Needed to look up later */
+	int twin;
+
+	twin = resolve_twin(items, symm, new, model, model_counts);
 
 	for ( i=0; i<num_items(items); i++ ) {
 
@@ -200,7 +266,8 @@ static void merge_pattern(double *model, const double *new,
 		ks = item->k;
 		ls = item->l;
 
-		get_asymm(hs, ks, ls, &h, &k, &l, symm);
+		get_general_equiv(hs, ks, ls, &h, &k, &l, holo, twin);
+		get_asymm(h, k, l, &h, &k, &l, symm);
 
 		intensity = lookup_intensity(new, h, k, l);
 
