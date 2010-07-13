@@ -363,6 +363,17 @@ int find_item(ReflItemList *items,
 }
 
 
+static int find_op(ReflItemList *items, int op)
+{
+	int i;
+
+	for ( i=0; i<items->n_items; i++ ) {
+		if ( items->items[i].op == op ) return 1;
+	}
+	return 0;
+}
+
+
 struct refl_item *get_item(ReflItemList *items, int i)
 {
 	if ( i >= items->n_items ) return NULL;
@@ -390,4 +401,20 @@ unsigned int *items_to_counts(ReflItemList *items)
 	}
 
 	return c;
+}
+
+
+void union_op_items(ReflItemList *items, ReflItemList *newi)
+{
+	int n, i;
+
+	n = num_items(newi);
+	for ( i=0; i<n; i++ ) {
+
+		struct refl_item *r = get_item(newi, i);
+		if ( find_op(items, r->op) ) continue;
+
+		add_item_with_op(items, r->h, r->k, r->l, r->op);
+
+	}
 }

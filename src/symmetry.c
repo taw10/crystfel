@@ -311,8 +311,7 @@ static ReflItemList *coset_decomp(signed int hs, signed int ks, signed int ls,
 ReflItemList *get_twins(ReflItemList *items, const char *sym)
 {
 	int i;
-	int n_twins = 1;
-	ReflItemList *max_ops = NULL;
+	ReflItemList *ops = new_items();;
 
 	/* Run the coset decomposition for every reflection in the "pattern",
 	 * and see which gives the highest number of possibilities.  This
@@ -322,7 +321,7 @@ ReflItemList *get_twins(ReflItemList *items, const char *sym)
 
 		signed int h, k, l;
 		struct refl_item *item;
-		ReflItemList *ops;
+		ReflItemList *new_ops;
 
 		item = get_item(items, i);
 
@@ -330,14 +329,11 @@ ReflItemList *get_twins(ReflItemList *items, const char *sym)
 		k = item->k;
 		l = item->l;
 
-		ops = coset_decomp(h, k, l, sym);
-		if ( num_items(ops) > n_twins ) {
-			n_twins = num_items(ops);
-			delete_items(max_ops);
-			max_ops = ops;
-		}
+		new_ops = coset_decomp(h, k, l, sym);
+		union_op_items(ops, new_ops);
+		delete_items(new_ops);
 
 	}
 
-	return max_ops;
+	return ops;
 }
