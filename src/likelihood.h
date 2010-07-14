@@ -20,10 +20,6 @@
 #include "utils.h"
 
 
-extern void detwin_intensities(const double *model, double *new_pattern,
-	                       const unsigned int *model_counts,
-                               ReflItemList *items);
-
 extern void scale_intensities(const double *model, double *new_pattern,
 	                      const unsigned int *model_counts,
                               ReflItemList *items, double f0,

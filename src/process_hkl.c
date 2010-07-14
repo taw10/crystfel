@@ -56,127 +56,11 @@ static void show_help(const char *s)
 "      --stop-after=<n>      Stop after processing n patterns.  Zero means\n"
 "                             keep going until the end of the input, and is\n"
 "                             the default.\n"
-"  -c, --compare-with=<file> Compare with reflection intensities in this file\n"
 "\n"
-"  -e, --output-every=<n>    Analyse figures of merit after every n patterns\n"
-"                             Default: 1000.  A value of zero means to do the\n"
-"                             analysis only after reading all the patterns.\n"
-"  -r, --rvsq                Output lists of R vs |q| (\"Luzzatti plots\")\n"
-"                             when analysing figures of merit.\n"
-"      --detwin              Correlate each new pattern with the current\n"
-"                             model and choose the best fitting out of the\n"
-"                             allowable twins.\n"
 "      --scale               Scale each pattern for best fit with the current\n"
 "                             model.\n"
 "  -y, --symmetry=<sym>      Merge according to point group <sym>.\n"
 );
-}
-
-
-static void write_RvsQ(const char *name, double *ref, double *trueref,
-                       unsigned int *counts, double scale, UnitCell *cell)
-{
-	FILE *fh;
-	double smax, sbracket;
-	signed int h, k, l;
-
-	fh = fopen(name, "w");
-
-	smax = 0.0;
-	for ( h=-INDMAX; h<INDMAX; h++ ) {
-	for ( k=-INDMAX; k<INDMAX; k++ ) {
-	for ( l=-INDMAX; l<INDMAX; l++ ) {
-		double s = 2.0*resolution(cell, h, k, l);
-		if ( (lookup_count(counts, h, k, l) > 0) && (s > smax) ) {
-			smax = s;
-		}
-	}
-	}
-	}
-
-	for ( sbracket=0.0; sbracket<smax; sbracket+=smax/RVQDV ) {
-
-		double top = 0.0;
-		double bot = 0.0;
-		int nhits = 0;
-		int nrefl = 0;
-		double R;
-		double hits_per_refl;
-
-		for ( h=-INDMAX; h<INDMAX; h++ ) {
-		for ( k=-INDMAX; k<INDMAX; k++ ) {
-		for ( l=-INDMAX; l<INDMAX; l++ ) {
-
-			double s;
-			int c;
-
-			if ( (h==0) && (k==0) && (l==0) ) continue;
-
-			c = lookup_count(counts, h, k, l);
-			s = 2.0*resolution(cell, h, k, l);
-			if ((s>=sbracket) && (s<sbracket+smax/RVQDV) && (c>0)) {
-
-				double obs, calc, obsi;
-
-				obs = lookup_intensity(ref, h, k, l);
-				calc = lookup_intensity(trueref, h, k, l);
-
-				obsi = obs / (double)c;
-				top += pow(obsi - scale*calc, 2.0);
-				bot += pow(obsi, 2.0);
-				nhits += c;
-				nrefl++;
-
-			}
-
-		}
-		}
-		}
-
-		R = sqrt(top/bot);
-		hits_per_refl = nrefl ? (double)nhits/nrefl : 0;
-
-		fprintf(fh, "%8.5f %8.5f %5.2f\n", sbracket+smax/(2.0*RVQDV),
-		                                R, hits_per_refl);
-
-	}
-	fclose(fh);
-}
-
-
-static void process_reflections(double *ref, unsigned int *counts,
-                                double *trueref, unsigned int *truecounts,
-                                unsigned int n_patterns,
-                                UnitCell *cell, int do_rvsq)
-{
-	int j;
-	double mean_counts;
-	int ctot = 0;
-	int nmeas = 0;
-	double R, scale;
-	FILE *fh;
-
-	for ( j=0; j<LIST_SIZE; j++ ) {
-		ctot += counts[j];
-		if ( counts[j] > 0 ) nmeas++;
-	}
-	mean_counts = (double)ctot/nmeas;
-
-	R = stat_r2(ref, counts, trueref, truecounts, &scale);
-	STATUS("%8u: R=%5.2f%% (sf=%7.4e)  mean meas/refl=%5.2f,"
-	       " %i reflections measured\n",
-	       n_patterns, R*100.0, scale, mean_counts, nmeas);
-
-	if ( do_rvsq ) {
-		/* Record graph of R against q for this N */
-		char name[64];
-		snprintf(name, 63, "R_vs_q-%u.dat", n_patterns);
-		write_RvsQ(name, ref, trueref, counts, scale, cell);
-	}
-
-	fh = fopen("results/convergence.dat", "a");
-	fprintf(fh, "%u %5.2f %5.2f\n", n_patterns, R*100.0, mean_counts);
-	fclose(fh);
 }
 
 
@@ -321,183 +205,20 @@ static void merge_pattern(double *model, const double *new,
 }
 
 
-int main(int argc, char *argv[])
+static void merge_all(FILE *fh, double *model, unsigned int *model_counts,
+                      int config_maxonly, int config_scale, int config_sum,
+                      int config_stopafter,
+                      ReflItemList *twins, const char *holo, const char *mero,
+                      int n_total_patterns)
 {
-	int c;
-	char *filename = NULL;
-	char *output = NULL;
-	FILE *fh;
-	unsigned int n_patterns;
-	double *model, *trueref = NULL;
-	unsigned int *model_counts;
 	char *rval;
-	UnitCell *cell;
-	int config_maxonly = 0;
-	int config_every = 1000;
-	int config_rvsq = 0;
-	int config_stopafter = 0;
-	int config_sum = 0;
-	int config_detwin = 0;
-	int config_scale = 0;
-	char *intfile = NULL;
-	double *new_pattern = NULL;
-	unsigned int n_total_patterns;
-	unsigned int *truecounts = NULL;
-	char *sym = NULL;
-	char *pdb = NULL;
 	float f0;
-	int f0_valid;
 	int n_nof0 = 0;
-	ReflItemList *items;
-	ReflItemList *twins;
-	int i;
+	int f0_valid = 0;
+	int n_patterns = 0;
+	double *new_pattern = new_list_intensity();
+	ReflItemList *items = new_items();
 
-	/* Long options */
-	const struct option longopts[] = {
-		{"help",               0, NULL,               'h'},
-		{"input",              1, NULL,               'i'},
-		{"output",             1, NULL,               'o'},
-		{"max-only",           0, &config_maxonly,     1},
-		{"output-every",       1, NULL,               'e'},
-		{"rvsq",               0, NULL,               'r'},
-		{"stop-after",         1, NULL,               's'},
-		{"compare-with",       0, NULL,               'c'},
-		{"sum",                0, &config_sum,         1},
-		{"detwin",             0, &config_detwin,      1},
-		{"scale",              0, &config_scale,       1},
-		{"symmetry",           1, NULL,               'y'},
-		{"pdb",                1, NULL,               'p'},
-		{0, 0, NULL, 0}
-	};
-
-	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:e:ro:p:y:",
-	                        longopts, NULL)) != -1) {
-
-		switch (c) {
-		case 'h' :
-			show_help(argv[0]);
-			return 0;
-
-		case 'i' :
-			filename = strdup(optarg);
-			break;
-
-		case 'o' :
-			output = strdup(optarg);
-			break;
-
-
-		case 'r' :
-			config_rvsq = 1;
-			break;
-
-		case 'e' :
-			config_every = atoi(optarg);
-			break;
-
-		case 's' :
-			config_stopafter = atoi(optarg);
-			break;
-
-		case 'c' :
-			intfile = strdup(optarg);
-			break;
-
-		case 'p' :
-			pdb = strdup(optarg);
-			break;
-
-		case 'y' :
-			sym = strdup(optarg);
-			break;
-
-		case 0 :
-			break;
-
-		default :
-			return 1;
-		}
-
-	}
-
-	if ( filename == NULL ) {
-		ERROR("Please specify filename using the -i option\n");
-		return 1;
-	}
-
-	if ( intfile != NULL ) {
-		truecounts = new_list_count();
-		STATUS("Comparing against '%s'\n", intfile);
-		trueref = read_reflections(intfile, truecounts, NULL);
-		free(intfile);
-	} else {
-		trueref = NULL;
-	}
-
-	if ( pdb == NULL ) {
-		pdb = strdup("molecule.pdb");
-	}
-
-	if ( sym == NULL ) {
-		sym = strdup("1");
-	}
-
-	model = new_list_intensity();
-	model_counts = new_list_count();
-	new_pattern = new_list_intensity();
-	items = new_items();
-
-	cell = load_cell_from_pdb(pdb);
-	free(pdb);
-
-	if ( strcmp(filename, "-") == 0 ) {
-		fh = stdin;
-	} else {
-		fh = fopen(filename, "r");
-	}
-	free(filename);
-	if ( fh == NULL ) {
-		ERROR("Failed to open input file\n");
-		return 1;
-	}
-
-	/* Count the number of patterns in the file */
-	n_total_patterns = 0;
-	do {
-		char line[1024];
-
-		rval = fgets(line, 1023, fh);
-		if ( (strncmp(line, "Reflections from indexing", 25) == 0)
-		    || (strncmp(line, "New pattern", 11) == 0) ) {
-		    n_total_patterns++;
-		}
-	} while ( rval != NULL );
-	rewind(fh);
-	STATUS("There are %i patterns to process\n", n_total_patterns);
-
-	/* Show useful symmetry information */
-	const char *holo = get_holohedral(sym);
-	int np = num_general_equivs(holo) / num_general_equivs(sym);
-	if ( np > 1 ) {
-
-		STATUS("Resolving point group %s into %s (%i possibilities)\n",
-		       holo, sym, np);
-		/* Get the list of twin/Bijvoet possibilities */
-		twins = get_twin_possibilities(holo, sym);
-		STATUS("Twin/inversion operation indices (from %s) are:", holo);
-		for ( i=0; i<num_items(twins); i++ ) {
-			STATUS(" %i", get_item(twins, i)->op);
-		}
-		STATUS("\n");
-
-	} else {
-		STATUS("No twin/inversion resolution necessary.\n");
-		twins = NULL;
-	}
-
-	n_patterns = 0;
-	f0_valid = 0;
 	do {
 
 		char line[1024];
@@ -513,12 +234,6 @@ int main(int argc, char *argv[])
 			if ( n_patterns == 0 ) {
 				n_patterns++;
 				continue;
-			}
-
-			/* Detwin before scaling */
-			if ( config_detwin ) {
-				detwin_intensities(model, new_pattern,
-				                   model_counts, items);
 			}
 
 			/* Assume a default I0 if we don't have one by now */
@@ -537,15 +252,7 @@ int main(int argc, char *argv[])
 			/* Start of second or later pattern */
 			merge_pattern(model, new_pattern, model_counts,
 			              items, config_maxonly, config_sum, twins,
-			              holo, sym);
-
-			if ( (trueref != NULL) && config_every
-			    && (n_patterns % config_every == 0) ) {
-				process_reflections(model, model_counts,
-				                    trueref, truecounts,
-				                    n_patterns, cell,
-				                    config_rvsq);
-			}
+			              holo, mero);
 
 			if ( n_patterns == config_stopafter ) break;
 
@@ -582,26 +289,175 @@ int main(int argc, char *argv[])
 
 	} while ( rval != NULL );
 
-	fclose(fh);
+	delete_items(items);
+	free(new_pattern);
 
-	if ( trueref != NULL ) {
-		process_reflections(model, model_counts, trueref, truecounts,
-		                    n_patterns, cell, config_rvsq);
+	STATUS("%i patterns had no f0 valid value.\n", n_nof0);
+}
+
+
+static int count_patterns(FILE *fh)
+{
+	char *rval;
+
+	int n_total_patterns = 0;
+	do {
+		char line[1024];
+
+		rval = fgets(line, 1023, fh);
+		if ( (strncmp(line, "Reflections from indexing", 25) == 0)
+		    || (strncmp(line, "New pattern", 11) == 0) ) {
+		    n_total_patterns++;
+		}
+	} while ( rval != NULL );
+
+	return n_total_patterns;
+}
+
+
+int main(int argc, char *argv[])
+{
+	int c;
+	char *filename = NULL;
+	char *output = NULL;
+	FILE *fh;
+	double *model;
+	unsigned int *model_counts;
+	UnitCell *cell;
+	int config_maxonly = 0;
+	int config_stopafter = 0;
+	int config_sum = 0;
+	int config_scale = 0;
+	unsigned int n_total_patterns;
+	char *sym = NULL;
+	char *pdb = NULL;
+	ReflItemList *twins;
+	int i;
+
+	/* Long options */
+	const struct option longopts[] = {
+		{"help",               0, NULL,               'h'},
+		{"input",              1, NULL,               'i'},
+		{"output",             1, NULL,               'o'},
+		{"max-only",           0, &config_maxonly,     1},
+		{"output-every",       1, NULL,               'e'},
+		{"stop-after",         1, NULL,               's'},
+		{"sum",                0, &config_sum,         1},
+		{"scale",              0, &config_scale,       1},
+		{"symmetry",           1, NULL,               'y'},
+		{"pdb",                1, NULL,               'p'},
+		{0, 0, NULL, 0}
+	};
+
+	/* Short options */
+	while ((c = getopt_long(argc, argv, "hi:e:ro:p:y:",
+	                        longopts, NULL)) != -1) {
+
+		switch (c) {
+		case 'h' :
+			show_help(argv[0]);
+			return 0;
+
+		case 'i' :
+			filename = strdup(optarg);
+			break;
+
+		case 'o' :
+			output = strdup(optarg);
+			break;
+
+		case 's' :
+			config_stopafter = atoi(optarg);
+			break;
+
+		case 'p' :
+			pdb = strdup(optarg);
+			break;
+
+		case 'y' :
+			sym = strdup(optarg);
+			break;
+
+		case 0 :
+			break;
+
+		default :
+			return 1;
+		}
+
 	}
+
+	if ( filename == NULL ) {
+		ERROR("Please specify filename using the -i option\n");
+		return 1;
+	}
+
+	if ( pdb == NULL ) {
+		pdb = strdup("molecule.pdb");
+	}
+
+	if ( sym == NULL ) {
+		sym = strdup("1");
+	}
+
+	model = new_list_intensity();
+	model_counts = new_list_count();
+
+	cell = load_cell_from_pdb(pdb);
+	free(pdb);
+
+	/* Show useful symmetry information */
+	const char *holo = get_holohedral(sym);
+	int np = num_general_equivs(holo) / num_general_equivs(sym);
+	if ( np > 1 ) {
+
+		STATUS("Resolving point group %s into %s (%i possibilities)\n",
+		       holo, sym, np);
+		/* Get the list of twin/Bijvoet possibilities */
+		twins = get_twin_possibilities(holo, sym);
+		STATUS("Twin/inversion operation indices (from %s) are:", holo);
+		for ( i=0; i<num_items(twins); i++ ) {
+			STATUS(" %i", get_item(twins, i)->op);
+		}
+		STATUS("\n");
+
+	} else {
+		STATUS("No twin/inversion resolution necessary.\n");
+		twins = NULL;
+	}
+
+	/* Open the data stream */
+	if ( strcmp(filename, "-") == 0 ) {
+		fh = stdin;
+	} else {
+		fh = fopen(filename, "r");
+	}
+	free(filename);
+	if ( fh == NULL ) {
+		ERROR("Failed to open input file\n");
+		return 1;
+	}
+
+	/* Count the number of patterns in the file */
+	n_total_patterns = count_patterns(fh);
+	STATUS("There are %i patterns to process\n", n_total_patterns);
+	rewind(fh);
+
+	merge_all(fh, model, model_counts,
+	          config_maxonly, config_scale, config_sum, config_stopafter,
+                  twins, holo, sym, n_total_patterns);
+	rewind(fh);
+
+	fclose(fh);
 
 	if ( output != NULL ) {
 		write_reflections(output, model_counts, model, NULL,
 		                  0, cell, 1);
 	}
 
-	STATUS("There were %u patterns.\n", n_patterns);
-	STATUS("%i had no f0 valid value.\n", n_nof0);
-
-	delete_items(items);
 	free(sym);
 	free(model);
 	free(model_counts);
-	free(new_pattern);
 	free(output);
 	free(cell);
 

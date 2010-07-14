@@ -17,12 +17,6 @@
 #include "statistics.h"
 #include "utils.h"
 
-void detwin_intensities(const double *model, double *new_pattern,
-                        const unsigned int *model_counts,
-                        ReflItemList *items)
-{
-	/* Placeholder... */
-}
 
 void scale_intensities(const double *model, double *new_pattern,
                        const unsigned int *model_counts,
