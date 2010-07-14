@@ -37,7 +37,8 @@ extern void get_general_equiv(signed int h, signed int k, signed int l,
 
 extern const char *get_holohedral(const char *sym);
 
-extern ReflItemList *get_twins(ReflItemList *items, const char *sym);
+extern ReflItemList *get_twins(ReflItemList *items,
+                               const char *holo, const char *mero);
 
 
 #endif	/* SYMMETRY_H */

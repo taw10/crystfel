@@ -180,20 +180,48 @@ static void process_reflections(double *ref, unsigned int *counts,
 }
 
 
-static int resolve_twin(ReflItemList *items, const char *symm,
-                        const double *patt, const double *model,
-                        const unsigned int *model_counts)
+/* Note "holo" needn't actually be a holohedral point group, if you want to try
+ * something strange like resolving from a low-symmetry group into an even
+ * lower symmetry one.
+ */
+static ReflItemList *get_twin_possibilities(const char *holo, const char *mero)
 {
+	ReflItemList *test_items;
 	ReflItemList *twins;
-	const char *holo;
+	int np;
+
+	np = num_general_equivs(holo) / num_general_equivs(mero);
+
+	test_items = new_items();
+
+	/* Some arbitrarily chosen reflections which can't be special
+	 * reflections in any point group, i.e. lots of odd numbers,
+	 * prime numbers and so on.  There's probably an analytical
+	 * way of working these out, but this will do. */
+	add_item(test_items, 1, 2, 3);
+	add_item(test_items, 3, 7, 13);
+	add_item(test_items, 5, 2, 1);
+
+	twins = get_twins(test_items, holo, mero);
+	delete_items(test_items);
+
+	if ( num_items(twins) != np ) {
+		ERROR("Whoops! Couldn't find all the twinning possiblities.\n");
+		abort();
+	}
+
+	return twins;
+}
+
+
+static int resolve_twin(ReflItemList *items, ReflItemList *twins,
+                        const double *patt, const double *model,
+                        const unsigned int *model_counts,
+                        const char *holo, const char *mero)
+{
 	int n, i;
 	double best_fom = 0.0;
 	int best_op = 0;
-
-	/* How many possible twinned orientations are there? */
-	twins = get_twins(items, symm);
-
-	holo = get_holohedral(symm);
 
 	n = num_items(twins);
 
@@ -214,7 +242,7 @@ static int resolve_twin(ReflItemList *items, const char *symm,
 
 			get_general_equiv(r->h, r->k, r->l, &h, &k, &l,
 			                  holo, op);
-			get_asymm(h, k, l, &h, &k, &l, symm);
+			get_asymm(h, k, l, &h, &k, &l, mero);
 
 			set_intensity(trial_ints, h, k, l,
 			              lookup_intensity(patt, r->h, r->k, r->l));
@@ -237,7 +265,6 @@ static int resolve_twin(ReflItemList *items, const char *symm,
 	}
 	//printf("\n");
 
-	delete_items(twins);
 	return best_op;
 }
 
@@ -245,13 +272,18 @@ static int resolve_twin(ReflItemList *items, const char *symm,
 static void merge_pattern(double *model, const double *new,
                           unsigned int *model_counts,
                           ReflItemList *items, int mo, int sum,
-                          const char *symm)
+                          ReflItemList *twins,
+                          const char *holo, const char *mero)
 {
 	int i;
-	const char *holo = get_holohedral(symm);  /* Needed to look up later */
 	int twin;
 
-	twin = resolve_twin(items, symm, new, model, model_counts);
+	if ( twins != NULL ) {
+		twin = resolve_twin(items, twins, new, model,
+		                     model_counts, holo, mero);
+	} else {
+		twin = 0;
+	}
 
 	for ( i=0; i<num_items(items); i++ ) {
 
@@ -267,7 +299,7 @@ static void merge_pattern(double *model, const double *new,
 		ls = item->l;
 
 		get_general_equiv(hs, ks, ls, &h, &k, &l, holo, twin);
-		get_asymm(h, k, l, &h, &k, &l, symm);
+		get_asymm(h, k, l, &h, &k, &l, mero);
 
 		intensity = lookup_intensity(new, h, k, l);
 
@@ -317,6 +349,8 @@ int main(int argc, char *argv[])
 	int f0_valid;
 	int n_nof0 = 0;
 	ReflItemList *items;
+	ReflItemList *twins;
+	int i;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -445,9 +479,22 @@ int main(int argc, char *argv[])
 	/* Show useful symmetry information */
 	const char *holo = get_holohedral(sym);
 	int np = num_general_equivs(holo) / num_general_equivs(sym);
-	STATUS("Resolving from point group %s to %s (%i possibilities)\n",
-	       holo, sym, np);
+	if ( np > 1 ) {
 
+		STATUS("Resolving point group %s into %s (%i possibilities)\n",
+		       holo, sym, np);
+		/* Get the list of twin/Bijvoet possibilities */
+		twins = get_twin_possibilities(holo, sym);
+		STATUS("Twin/inversion operation indices (from %s) are:", holo);
+		for ( i=0; i<num_items(twins); i++ ) {
+			STATUS(" %i", get_item(twins, i)->op);
+		}
+		STATUS("\n");
+
+	} else {
+		STATUS("No twin/inversion resolution necessary.\n");
+		twins = NULL;
+	}
 
 	n_patterns = 0;
 	f0_valid = 0;
@@ -489,7 +536,8 @@ int main(int argc, char *argv[])
 
 			/* Start of second or later pattern */
 			merge_pattern(model, new_pattern, model_counts,
-			              items, config_maxonly, config_sum, sym);
+			              items, config_maxonly, config_sum, twins,
+			              holo, sym);
 
 			if ( (trueref != NULL) && config_every
 			    && (n_patterns % config_every == 0) ) {

@@ -265,9 +265,8 @@ const char *get_holohedral(const char *sym)
  * To count the number of possibilities, use num_items() on the result.
  */
 static ReflItemList *coset_decomp(signed int hs, signed int ks, signed int ls,
-                                  const char *mero)
+                                  const char *holo, const char *mero)
 {
-	const char *holo = get_holohedral(mero);
 	int n_mero, n_holo;
 	int i;
 	signed int h, k, l;
@@ -313,7 +312,7 @@ static ReflItemList *coset_decomp(signed int hs, signed int ks, signed int ls,
  * To use the result, call get_general_equiv() on each reflection using
  * the holohedral point group (use get_holohedral() for this), and for "idx"
  * give each "op" field from the list returned by this function. */
-ReflItemList *get_twins(ReflItemList *items, const char *sym)
+ReflItemList *get_twins(ReflItemList *items, const char *holo, const char *mero)
 {
 	int i;
 	ReflItemList *ops = new_items();;
@@ -334,7 +333,7 @@ ReflItemList *get_twins(ReflItemList *items, const char *sym)
 		k = item->k;
 		l = item->l;
 
-		new_ops = coset_decomp(h, k, l, sym);
+		new_ops = coset_decomp(h, k, l, holo, mero);
 		union_op_items(ops, new_ops);
 		delete_items(new_ops);
 
