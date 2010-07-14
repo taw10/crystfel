@@ -20,10 +20,9 @@
 #include "utils.h"
 
 
-extern void scale_intensities(const double *model, double *new_pattern,
-	                      const unsigned int *model_counts,
-                              ReflItemList *items, double f0,
-                              int f0_valid);
+extern void scale_intensities(const double *model, ReflItemList *model_items,
+                              double *new_pattern, ReflItemList *new_items,
+                              double f0, int f0_valid);
 
 
 #endif	/* LIKELIHOOD_H */

@@ -16,18 +16,20 @@
 #ifndef STATISTICS_H
 #define STATISTICS_H
 
-extern double stat_scale_intensity(const double *ref1, const unsigned int *c1,
-                                   const double *ref2, const unsigned int *c2);
 
-extern double stat_r2(const double *ref1, const unsigned int *c1,
-                      const double *ref2, const unsigned int *c2,
-                      double *scalep);
+#include "utils.h"
 
-extern double stat_rmerge(const double *ref1, const unsigned int *c1,
-                          const double *ref2, const unsigned int *c2,
-                          double *scalep);
+extern double stat_scale_intensity(const double *ref1, const double *ref2,
+                                   ReflItemList *items);
 
-extern double stat_pearson(const double *ref1, const unsigned int *c1,
-                           const double *ref2, const unsigned int *c2);
+extern double stat_rmerge(const double *ref1, const double *ref2,
+                          ReflItemList *items, double *scalep);
+
+extern double stat_r2(const double *ref1, const double *ref2,
+                      ReflItemList *items, double *scalep);
+
+extern double stat_pearson(const double *ref1, const double *ref2,
+                           ReflItemList *items);
+
 
 #endif	/* STATISTICS_H */

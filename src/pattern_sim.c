@@ -195,7 +195,6 @@ int main(int argc, char *argv[])
 	int n_images = 1; /* Generate one image by default */
 	int done = 0;
 	UnitCell *cell;
-	unsigned int *counts;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -323,17 +322,19 @@ int main(int argc, char *argv[])
 		STATUS("reflection intensities (with --intensities).\n");
 		STATUS("I'll simulate a flat intensity distribution.\n");
 		intensities = NULL;
-		counts = NULL;
 		phases = NULL;
 	} else {
-		counts = new_list_count();
+		ReflItemList *items;
 		if ( grad == GRADIENT_PHASED ) {
 			phases = new_list_phase();
 		} else {
 			phases = NULL;
 		}
-		intensities = read_reflections(intfile, counts, phases);
+		intensities = new_list_intensity();
+		phases = new_list_phase();
+		items = read_reflections(intfile, intensities, phases, NULL);
 		free(intfile);
+		delete_items(items);
 	}
 
 	/* Define image parameters */
@@ -401,12 +402,12 @@ int main(int argc, char *argv[])
 		if ( config_gpu ) {
 			if ( gctx == NULL ) {
 				gctx = setup_gpu(config_nosfac, &image,
-				                 intensities, counts);
+				                 intensities);
 			}
 			get_diffraction_gpu(gctx, &image, na, nb, nc, cell);
 		} else {
-			get_diffraction(&image, na, nb, nc, intensities, counts,
-			                phases, cell, !config_nowater, grad);
+			get_diffraction(&image, na, nb, nc, intensities, phases,
+			                cell, !config_nowater, grad);
 		}
 		if ( image.data == NULL ) {
 			ERROR("Diffraction calculation failed.\n");

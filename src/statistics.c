@@ -26,10 +26,9 @@
 
 struct r_params {
 	const double *ref1;
-	const unsigned int *c1;
 	const double *ref2;
-	const unsigned int *c2;
-	int fom;
+	ReflItemList *items;  /* Which reflections to use */
+	int fom;              /* Which FoM to use (see the enum just below) */
 };
 
 enum {
@@ -38,23 +37,31 @@ enum {
 };
 
 
-double stat_scale_intensity(const double *ref1, const unsigned int *c1,
-                            const double *ref2, const unsigned int *c2)
+/* Return the least squares optimal scaling factor when comparing intensities.
+ * ref1,ref2 are the two intensity lists to compare.  "items" is a ReflItemList
+ * containing the reflections which should be taken into account.
+ */
+double stat_scale_intensity(const double *ref1, const double *ref2,
+                            ReflItemList *items)
 {
 	double top = 0.0;
 	double bot = 0.0;
 	int i;
 
-	/* Start from i=1 -> skip central beam */
-	for ( i=1; i<LIST_SIZE; i++ ) {
+	for ( i=0; i<num_items(items); i++ ) {
 
-		if ( c1[i] && c2[i] ) {
-			double i1, i2;
-			i1 = ref1[i] / (double)c1[i];
-			i2 = ref2[i] / (double)c2[i];
-			top += i1 * i2;
-			bot += i2 * i2;
-		} /* else reflection not common so don't worry about it */
+		double i1, i2;
+		struct refl_item *it;
+		signed int h, k, l;
+
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
+
+		i1 = lookup_intensity(ref1, h, k, l);
+		i2 = lookup_intensity(ref2, h, k, l);
+
+		top += i1 * i2;
+		bot += i2 * i2;
 
 	}
 
@@ -62,29 +69,36 @@ double stat_scale_intensity(const double *ref1, const unsigned int *c1,
 }
 
 
-double stat_scale_sqrti(const double *ref1, const unsigned int *c1,
-                            const double *ref2, const unsigned int *c2)
+/* Return the least squares optimal scaling factor when comparing the square
+ * roots of the intensities (i.e. one approximation to the structure factor
+ * moduli).
+ * ref1,ref2 are the two intensity lists to compare (they contain intensities,
+ * not square rooted intensities).  "items" is a ReflItemList containing the
+ * reflections which should be taken into account.
+ */
+static double stat_scale_sqrti(const double *ref1, const double *ref2,
+                               ReflItemList *items)
 {
 	double top = 0.0;
 	double bot = 0.0;
 	int i;
 
-	/* Start from i=1 -> skip central beam */
-	for ( i=1; i<LIST_SIZE; i++ ) {
+	for ( i=0; i<num_items(items); i++ ) {
 
-		if ( c1[i] && c2[i] ) {
+		double i1, i2, f1, f2;
+		struct refl_item *it;
+		signed int h, k, l;
 
-			double f1, f2;
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
 
-			if ( (ref1[i]<0.0) || (ref2[i]<0.0) ) continue;
+		i1 = lookup_intensity(ref1, h, k, l);
+		f1 = i1 > 0.0 ? sqrt(i1) : 0.0;
+		i2 = lookup_intensity(ref2, h, k, l);
+		f2 = i2 > 0.0 ? sqrt(i2) : 0.0;
 
-			f1 = sqrt(ref1[i]) / (double)c1[i];
-			f2 = sqrt(ref2[i]) / (double)c2[i];
-
-			top += f1 * f2;
-			bot += f2 * f2;
-
-		} /* else reflection not common so don't worry about it */
+		top += i1 * i2;
+		bot += i2 * i2;
 
 	}
 
@@ -92,27 +106,27 @@ double stat_scale_sqrti(const double *ref1, const unsigned int *c1,
 }
 
 
-static double internal_r2(const double *ref1, const unsigned int *c1,
-                          const double *ref2, const unsigned int *c2,
-                          double scale)
+static double internal_r2(const double *ref1, const double *ref2,
+                          ReflItemList *items, double scale)
 {
 	double top = 0.0;
 	double bot = 0.0;
 	int i;
 
-	/* Start from i=1 -> skip central beam */
-	for ( i=1; i<LIST_SIZE; i++ ) {
+	for ( i=0; i<num_items(items); i++ ) {
 
-		if ( c1[i] && c2[i] ) {
+		double i1, i2;
+		struct refl_item *it;
+		signed int h, k, l;
 
-			double i1, i2;
-			i1 = ref1[i] / (scale*(double)c1[i]);
-			i2 = ref2[i] / (double)c2[i];
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
 
-			top += pow(i1 - i2, 2.0);
-			bot += pow(i1, 2.0);
+		i1 = scale * lookup_intensity(ref1, h, k, l);
+		i2 = lookup_intensity(ref2, h, k, l);
 
-		} /* else reflection not measured so don't worry about it */
+		top += pow(i1 - i2, 2.0);
+		bot += pow(i1, 2.0);
 
 	}
 
@@ -120,30 +134,29 @@ static double internal_r2(const double *ref1, const unsigned int *c1,
 }
 
 
-static double internal_rmerge(const double *ref1, const unsigned int *c1,
-                              const double *ref2, const unsigned int *c2,
-                              double scale)
+static double internal_rmerge(const double *ref1, const double *ref2,
+                              ReflItemList *items, double scale)
 {
 	double top = 0.0;
 	double bot = 0.0;
 	int i;
 
-	/* Start from i=1 -> skip central beam */
-	for ( i=1; i<LIST_SIZE; i++ ) {
+	for ( i=0; i<num_items(items); i++ ) {
 
-		if ( c1[i] && c2[i] ) {
+		double i1, i2, f1, f2;
+		struct refl_item *it;
+		signed int h, k, l;
 
-			double f1, f2;
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
 
-			if ( (ref1[i]<0.0) || (ref2[i]<0.0) ) continue;
+		i1 = lookup_intensity(ref1, h, k, l);
+		f1 = i1 > 0.0 ? sqrt(i1) : 0.0;
+		i2 = lookup_intensity(ref2, h, k, l);
+		f2 = i2 > 0.0 ? sqrt(i2) : 0.0;
 
-			f1 = sqrt(ref1[i]) / (scale*(double)c1[i]);
-			f2 = sqrt(ref2[i]) / (double)c2[i];
-
-			top += fabs(f1 - f2);
-			bot += f1 + f2;
-
-		} /* else reflection not measured so don't worry about it */
+		top += fabs(f1 - f2);
+		bot += f1 + f2;
 
 	}
 
@@ -157,11 +170,9 @@ static double calc_r(double scale, void *params)
 
 	switch ( rp->fom) {
 	case R_MERGE :
-		return internal_rmerge(rp->ref1, rp->c1,
-		                       rp->ref2, rp->c2, scale);
+		return internal_rmerge(rp->ref1, rp->ref2, rp->items, scale);
 	case R_2 :
-		return internal_r2(rp->ref1, rp->c1,
-		                   rp->ref2, rp->c2, scale);
+		return internal_r2(rp->ref1, rp->ref2, rp->items, scale);
 	}
 
 	ERROR("No such FoM!\n");
@@ -169,9 +180,8 @@ static double calc_r(double scale, void *params)
 }
 
 
-static double r_minimised(const double *ref1, const unsigned int *c1,
-                          const double *ref2, const unsigned int *c2,
-                          double *scalep, int fom)
+static double r_minimised(const double *ref1, const double *ref2,
+                          ReflItemList *items, double *scalep, int fom)
 {
 	gsl_function F;
 	gsl_min_fminimizer *s;
@@ -182,8 +192,7 @@ static double r_minimised(const double *ref1, const unsigned int *c1,
 
 	rp.ref1 = ref1;
 	rp.ref2 = ref2;
-	rp.c1 = c1;
-	rp.c2 = c2;
+	rp.items = items;
 	rp.fom = fom;
 
 	F.function = &calc_r;
@@ -194,10 +203,10 @@ static double r_minimised(const double *ref1, const unsigned int *c1,
 	/* Initial guess */
 	switch ( fom ) {
 	case R_MERGE :
-		scale = stat_scale_sqrti(ref1, c1, ref2, c2);
+		scale = stat_scale_sqrti(ref1, ref2, items);
 		break;
 	case R_2 :
-		scale = stat_scale_intensity(ref1, c1, ref2, c2);
+		scale = stat_scale_intensity(ref1, ref2, items);
 		break;
 	}
 	//STATUS("Initial scale factor estimate: %5.2e\n", scale);
@@ -236,52 +245,52 @@ static double r_minimised(const double *ref1, const unsigned int *c1,
 }
 
 
-double stat_rmerge(const double *ref1, const unsigned int *c1,
-                   const double *ref2, const unsigned int *c2,
-                   double *scalep)
+double stat_rmerge(const double *ref1, const double *ref2,
+                   ReflItemList *items, double *scalep)
 {
-	return r_minimised(ref1, c1, ref2, c2, scalep, R_MERGE);
+	return r_minimised(ref1, ref2, items, scalep, R_MERGE);
 }
 
 
-double stat_r2(const double *ref1, const unsigned int *c1,
-               const double *ref2, const unsigned int *c2,
-               double *scalep)
+double stat_r2(const double *ref1, const double *ref2,
+               ReflItemList *items, double *scalep)
 {
-	return r_minimised(ref1, c1, ref2, c2, scalep, R_2);
+	return r_minimised(ref1, ref2, items, scalep, R_2);
 }
 
 
-double stat_pearson(const double *ref1, const unsigned int *c1,
-                    const double *ref2, const unsigned int *c2)
+double stat_pearson(const double *ref1, const double *ref2, ReflItemList *items)
 {
-	double vec1[4096];
-	double vec2[4096];
-	signed int h, k, l;
+	double *vec1, *vec2;
 	int i = 0;
+	int ni = num_items(items);
+	double val;
 
-	for ( l=-INDMAX; l<INDMAX; l++ ) {
-	for ( k=-INDMAX; k<INDMAX; k++ ) {
-	for ( h=-INDMAX; h<INDMAX; h++ ) {
+	vec1 = malloc(ni*sizeof(double));
+	vec2 = malloc(ni*sizeof(double));
 
-		double i1, i2;
-		unsigned int c1s, c2s;
+	for ( i=0; i<ni; i++ ) {
 
-		c1s = lookup_count(c1, h, k, l);
-		c2s = lookup_count(c2, h, k, l);
+		double i1, i2, f1, f2;
+		struct refl_item *it;
+		signed int h, k, l;
+
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
 
 		i1 = lookup_intensity(ref1, h, k, l);
+		f1 = i1 > 0.0 ? sqrt(i1) : 0.0;
 		i2 = lookup_intensity(ref2, h, k, l);
+		f2 = i2 > 0.0 ? sqrt(i2) : 0.0;
 
-		if ( c1s && c2s && (i1>0.0) && (i2>0.0) ) {
-			vec1[i] = sqrt(i1 / (double)c1s);
-			vec2[i] = sqrt(i2 / (double)c2s);
-			i++;
-		}
+		vec1[i] = f1;
+		vec2[i] = f2;
 
 	}
-	}
-	}
 
-	return gsl_stats_correlation(vec1, 1, vec2, 1, i);
+	val = gsl_stats_correlation(vec1, 1, vec2, 1, i);
+	free(vec1);
+	free(vec2);
+
+	return val;
 }

@@ -89,6 +89,8 @@ static ReflItemList *get_twin_possibilities(const char *holo, const char *mero)
 	twins = get_twins(test_items, holo, mero);
 	delete_items(test_items);
 
+	/* Idiot check.  Wouldn't be necessary if I could prove that the above
+	 * set of arbitrarily chosen reflections were always general. */
 	if ( num_items(twins) != np ) {
 		ERROR("Whoops! Couldn't find all the twinning possiblities.\n");
 		abort();
@@ -98,10 +100,9 @@ static ReflItemList *get_twin_possibilities(const char *holo, const char *mero)
 }
 
 
-static int resolve_twin(ReflItemList *items, ReflItemList *twins,
-                        const double *patt, const double *model,
-                        const unsigned int *model_counts,
-                        const char *holo, const char *mero)
+static int resolve_twin(const double *model, ReflItemList *observed,
+                        const double *patt, ReflItemList *items,
+                        ReflItemList *twins, const char *holo, const char *mero)
 {
 	int n, i;
 	double best_fom = 0.0;
@@ -116,6 +117,7 @@ static int resolve_twin(ReflItemList *items, ReflItemList *twins,
 		double *trial_ints = new_list_intensity();
 		unsigned int *trial_counts = new_list_count();
 		double fom;
+		ReflItemList *intersection;
 
 		op = get_item(twins, i)->op;
 
@@ -134,8 +136,9 @@ static int resolve_twin(ReflItemList *items, ReflItemList *twins,
 
 		}
 
-		fom = stat_pearson(trial_ints, trial_counts,
-		                   model, model_counts);
+		intersection = intersection_items(observed, items);
+		fom = stat_pearson(trial_ints, model, intersection);
+		delete_items(intersection);
 
 		free(trial_ints);
 		free(trial_counts);
@@ -153,9 +156,9 @@ static int resolve_twin(ReflItemList *items, ReflItemList *twins,
 }
 
 
-static void merge_pattern(double *model, const double *new,
-                          unsigned int *model_counts,
-                          ReflItemList *items, int mo, int sum,
+static void merge_pattern(double *model, ReflItemList *observed,
+                          const double *new,  ReflItemList *items,
+                          unsigned int *model_counts,  int mo,
                           ReflItemList *twins,
                           const char *holo, const char *mero)
 {
@@ -163,8 +166,8 @@ static void merge_pattern(double *model, const double *new,
 	int twin;
 
 	if ( twins != NULL ) {
-		twin = resolve_twin(items, twins, new, model,
-		                     model_counts, holo, mero);
+		twin = resolve_twin(model, observed, new, items,
+		                    twins, holo, mero);
 	} else {
 		twin = 0;
 	}
@@ -187,25 +190,23 @@ static void merge_pattern(double *model, const double *new,
 
 		intensity = lookup_intensity(new, h, k, l);
 
+		/* User asked for max only? */
 		if ( !mo ) {
 			integrate_intensity(model, h, k, l, intensity);
-			if ( sum ) {
-				set_count(model_counts, h, k, l, 1);
-			} else {
-				integrate_count(model_counts, h, k, l, 1);
-			}
 		} else {
 			if ( intensity > lookup_intensity(model, h, k, l) ) {
 				set_intensity(model, h, k, l, intensity);
 			}
-			set_count(model_counts, h, k, l, 1);
 		}
+
+		integrate_count(model_counts, h, k, l, 1);
 
 	}
 }
 
 
-static void merge_all(FILE *fh, double *model, unsigned int *model_counts,
+static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
+                      unsigned int **pcounts,
                       int config_maxonly, int config_scale, int config_sum,
                       int config_stopafter,
                       ReflItemList *twins, const char *holo, const char *mero,
@@ -218,6 +219,10 @@ static void merge_all(FILE *fh, double *model, unsigned int *model_counts,
 	int n_patterns = 0;
 	double *new_pattern = new_list_intensity();
 	ReflItemList *items = new_items();
+	ReflItemList *observed = new_items();
+	double *model = new_list_intensity();
+	unsigned int *counts = new_list_count();
+	int i;
 
 	do {
 
@@ -244,19 +249,20 @@ static void merge_all(FILE *fh, double *model, unsigned int *model_counts,
 
 			/* Scale if requested */
 			if ( config_scale ) {
-				scale_intensities(model, new_pattern,
-				                  model_counts, items, f0,
-				                  f0_valid);
+				scale_intensities(model, observed,
+				                  new_pattern, items,
+				                  f0, f0_valid);
 			}
 
 			/* Start of second or later pattern */
-			merge_pattern(model, new_pattern, model_counts,
-			              items, config_maxonly, config_sum, twins,
-			              holo, mero);
+			merge_pattern(model, observed, new_pattern, items,
+			              counts, config_maxonly,
+			              twins, holo, mero);
 
 			if ( n_patterns == config_stopafter ) break;
 
 			n_patterns++;
+			union_items(observed, items);
 			clear_items(items);
 
 			progress_bar(n_patterns, n_total_patterns, "Merging");
@@ -292,6 +298,19 @@ static void merge_all(FILE *fh, double *model, unsigned int *model_counts,
 	delete_items(items);
 	free(new_pattern);
 
+	if ( !config_sum ) {
+		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
+			if ( counts[i] > 0 ) {
+				model[i] /= (double)counts[i];
+				counts[i] = 1;
+			}
+		}
+	}
+
+	*pmodel = model;
+	*pcounts = counts;
+	*pobserved = observed;
+
 	STATUS("%i patterns had no f0 valid value.\n", n_nof0);
 }
 
@@ -322,7 +341,7 @@ int main(int argc, char *argv[])
 	char *output = NULL;
 	FILE *fh;
 	double *model;
-	unsigned int *model_counts;
+	unsigned int *counts;
 	UnitCell *cell;
 	int config_maxonly = 0;
 	int config_stopafter = 0;
@@ -332,6 +351,7 @@ int main(int argc, char *argv[])
 	char *sym = NULL;
 	char *pdb = NULL;
 	ReflItemList *twins;
+	ReflItemList *observed;
 	int i;
 
 	/* Long options */
@@ -400,9 +420,6 @@ int main(int argc, char *argv[])
 		sym = strdup("1");
 	}
 
-	model = new_list_intensity();
-	model_counts = new_list_count();
-
 	cell = load_cell_from_pdb(pdb);
 	free(pdb);
 
@@ -443,7 +460,7 @@ int main(int argc, char *argv[])
 	STATUS("There are %i patterns to process\n", n_total_patterns);
 	rewind(fh);
 
-	merge_all(fh, model, model_counts,
+	merge_all(fh, &model, &observed, &counts,
 	          config_maxonly, config_scale, config_sum, config_stopafter,
                   twins, holo, sym, n_total_patterns);
 	rewind(fh);
@@ -451,13 +468,12 @@ int main(int argc, char *argv[])
 	fclose(fh);
 
 	if ( output != NULL ) {
-		write_reflections(output, model_counts, model, NULL,
-		                  0, cell, 1);
+		write_reflections(output, observed, model, NULL, counts, cell);
 	}
 
 	free(sym);
 	free(model);
-	free(model_counts);
+	free(counts);
 	free(output);
 	free(cell);
 

@@ -65,7 +65,6 @@ struct process_args
 	struct detector *det;
 	IndexingMethod indm;
 	const double *intensities;
-	const unsigned int *counts;
 	struct gpu_context *gctx;
 
 	/* Thread control and output */
@@ -225,19 +224,18 @@ static struct image *get_simage(struct image *template, int alternate)
 
 
 static void simulate_and_write(struct image *simage, struct gpu_context **gctx,
-                               const double *intensities,
-                               const unsigned int *counts, UnitCell *cell)
+                               const double *intensities, UnitCell *cell)
 {
 	/* Set up GPU if necessary */
 	if ( (gctx != NULL) && (*gctx == NULL) ) {
-		*gctx = setup_gpu(0, simage, intensities, counts);
+		*gctx = setup_gpu(0, simage, intensities);
 	}
 
 	if ( (gctx != NULL) && (*gctx != NULL) ) {
 		get_diffraction_gpu(*gctx, simage, 24, 24, 40, cell);
 	} else {
 		get_diffraction(simage, 24, 24, 40,
-		                intensities, counts, NULL, cell, 0,
+		                intensities, NULL, cell, 0,
 		                GRADIENT_MOSAIC);
 	}
 	record_image(simage, 0);
@@ -270,7 +268,6 @@ static struct process_result process_image(struct process_args *pargs)
 	int config_polar = pargs->config_polar;
 	IndexingMethod indm = pargs->indm;
 	const double *intensities = pargs->intensities;
-	const unsigned int *counts = pargs->counts;
 	struct gpu_context *gctx = pargs->gctx;
 
 	image.features = NULL;
@@ -368,11 +365,11 @@ static struct process_result process_image(struct process_args *pargs)
 		if ( config_gpu ) {
 			pthread_mutex_lock(pargs->gpu_mutex);
 			simulate_and_write(simage, &gctx, intensities,
-			                   counts, image.indexed_cell);
+			                   image.indexed_cell);
 			pthread_mutex_unlock(pargs->gpu_mutex);
 		} else {
 			simulate_and_write(simage, NULL, intensities,
-			                   counts, image.indexed_cell);
+			                   image.indexed_cell);
 		}
 	}
 
@@ -469,7 +466,6 @@ int main(int argc, char *argv[])
 	UnitCell *cell;
 	double *intensities = NULL;
 	char *intfile = NULL;
-	unsigned int *counts;
 	char *pdb = NULL;
 	char *prefix = NULL;
 	int nthreads = 1;
@@ -568,11 +564,11 @@ int main(int argc, char *argv[])
 	free(filename);
 
 	if ( intfile != NULL ) {
-		counts = new_list_count();
-		intensities = read_reflections(intfile, counts, NULL);
+		ReflItemList *items;
+		items = read_reflections(intfile, intensities, NULL, NULL);
+		delete_items(items);
 	} else {
 		intensities = NULL;
-		counts = NULL;
 	}
 
 	if ( pdb == NULL ) {
@@ -671,7 +667,6 @@ int main(int argc, char *argv[])
 		pargs->det = det;
 		pargs->indm = indm;
 		pargs->intensities = intensities;
-		pargs->counts = counts;
 		pargs->gctx = gctx;
 		pargs->id = i;
 		pthread_mutex_lock(&pargs->control_mutex);

@@ -19,6 +19,7 @@
 #include <complex.h>
 
 #include "cell.h"
+#include "utils.h"
 
 
 #define MAX_ATOMS (128*1024)
@@ -61,7 +62,7 @@ extern double complex get_sfac(const char *n, double s, double en);
 extern struct molecule *load_molecule(const char *filename);
 extern void free_molecule(struct molecule *mol);
 extern double *get_reflections(struct molecule *mol, double en, double res,
-                               unsigned int *counts, double *phases);
+                               double *phases, ReflItemList *items);
 
 
 #endif	/* SFAC_H */

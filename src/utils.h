@@ -200,6 +200,8 @@ extern struct refl_item *get_item(ReflItemList *items, int i);
 extern int num_items(const ReflItemList *items);
 extern unsigned int *items_to_counts(ReflItemList *items);
 extern void union_op_items(ReflItemList *items, ReflItemList *newi);
+extern void union_items(ReflItemList *items, ReflItemList *newi);
+extern ReflItemList *intersection_items(ReflItemList *i1, ReflItemList *i2);
 
 /* ------------------------------ Message macros ---------------------------- */
 

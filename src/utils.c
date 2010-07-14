@@ -387,23 +387,6 @@ int num_items(const ReflItemList *items)
 }
 
 
-unsigned int *items_to_counts(ReflItemList *items)
-{
-	unsigned int *c;
-	int i;
-
-	c = new_list_count();
-
-	for ( i=0; i<num_items(items); i++ ) {
-		struct refl_item *r;
-		r = get_item(items, i);
-		set_count(c, r->h, r->k, r->l, 1);
-	}
-
-	return c;
-}
-
-
 void union_op_items(ReflItemList *items, ReflItemList *newi)
 {
 	int n, i;
@@ -417,4 +400,39 @@ void union_op_items(ReflItemList *items, ReflItemList *newi)
 		add_item_with_op(items, r->h, r->k, r->l, r->op);
 
 	}
+}
+
+
+void union_items(ReflItemList *items, ReflItemList *newi)
+{
+	int n, i;
+
+	n = num_items(newi);
+	for ( i=0; i<n; i++ ) {
+
+		struct refl_item *r = get_item(newi, i);
+		if ( find_item(items, r->h, r->k, r->l) ) continue;
+
+		add_item_with_op(items, r->h, r->k, r->l, r->op);
+
+	}
+}
+
+
+ReflItemList *intersection_items(ReflItemList *i1, ReflItemList *i2)
+{
+	int n, i;
+	ReflItemList *res = new_items();
+
+	n = num_items(i1);
+	for ( i=0; i<n; i++ ) {
+
+		struct refl_item *r = get_item(i1, i);
+		if ( find_item(i2, r->h, r->k, r->l) ) {
+			add_item_with_op(res, r->h, r->k, r->l, r->op);
+		}
+
+	}
+
+	return res;
 }

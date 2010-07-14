@@ -38,44 +38,11 @@ static void show_help(const char *s)
 "      --poisson              Simulate Poisson samples.\n"
 "      --twin                 Generate twinned data.\n"
 "  -o, --output=<filename>    Output filename (default: stdout).\n"
-"      --zone-axis            Generate hk0 intensities only (and add\n"
-"                              Synth2D-style header.\n"
 "  -i, --intensities=<file>   Read intensities from file instead of\n"
 "                              calculating them from scratch.  You might use\n"
 "                              this if you need to apply noise or twinning.\n"
 "  -p, --pdb=<file>           PDB file from which to get the structure.\n"
 );
-}
-
-
-static int template_reflections(const char *filename, unsigned int *counts)
-{
-	char *rval;
-	FILE *fh;
-
-	fh = fopen(filename, "r");
-	if ( fh == NULL ) {
-		return 1;
-	}
-
-	do {
-
-		char line[1024];
-		int r;
-		signed int h, k, l;
-
-		rval = fgets(line, 1023, fh);
-
-		r = sscanf(line, "%i %i %i", &h, &k, &l);
-		if ( r != 3 ) continue;
-
-		set_count(counts, h, k, l, 1);
-
-	} while ( rval != NULL );
-
-	fclose(fh);
-
-	return 0;
 }
 
 
@@ -111,13 +78,12 @@ int main(int argc, char *argv[])
 	char *template = NULL;
 	int config_noisify = 0;
 	int config_twin = 0;
-	int config_za = 0;
 	char *output = NULL;
-	unsigned int *counts;
-	unsigned int *cts;
 	char *input = NULL;
 	signed int h, k, l;
 	char *filename = NULL;
+	ReflItemList *input_items;
+	ReflItemList *write_items;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -126,7 +92,6 @@ int main(int argc, char *argv[])
 		{"poisson",            0, &config_noisify,     1},
 		{"output",             1, NULL,               'o'},
 		{"twin",               0, &config_twin,        1},
-		{"zone-axis",          0, &config_za,          1},
 		{"intensities",        1, NULL,               'i'},
 		{"pdb",                1, NULL,               'p'},
 		{0, 0, NULL, 0}
@@ -170,39 +135,16 @@ int main(int argc, char *argv[])
 	}
 
 	mol = load_molecule(filename);
-	cts = new_list_count();
-	phases = new_list_intensity(); /* "intensity" type used for phases */
+	phases = new_list_phase();
 	if ( input == NULL ) {
+		input_items = new_items();
 		ideal_ref = get_reflections(mol, eV_to_J(1790.0), 1/(0.05e-9),
-		                            cts, phases);
+		                            phases, input_items);
 	} else {
-		ideal_ref = read_reflections(input, cts, phases);
+		ideal_ref = new_list_intensity();
+		phases = new_list_phase();
+		input_items = read_reflections(input, ideal_ref, phases, NULL);
 		free(input);
-	}
-
-	counts = new_list_count();
-
-	if ( template != NULL ) {
-
-		if ( template_reflections(template, counts) != 0 ) {
-			ERROR("Failed to template reflections.\n");
-			return 1;
-		}
-
-	} else {
-
-		/* No template? Then only mark reflections which were
-		 * calculated. */
-		for ( h=-INDMAX; h<=INDMAX; h++ ) {
-		for ( k=-INDMAX; k<=INDMAX; k++ ) {
-		for ( l=-INDMAX; l<=INDMAX; l++ ) {
-			unsigned int c;
-			c = lookup_count(cts, h, k, l);
-			set_count(counts, h, k, l, c);
-		}
-		}
-		}
-
 	}
 
 	if ( config_noisify ) noisify_reflections(ideal_ref);
@@ -239,8 +181,24 @@ int main(int argc, char *argv[])
 
 	}
 
-	write_reflections(output, counts, ideal_ref, phases,
-	                  config_za, mol->cell, 1);
+	if ( template ) {
+		/* Write out only reflections which are in the template
+		 * (and which we have in the input) */
+		ReflItemList *template_items;
+		template_items = read_reflections(template, NULL, NULL, NULL);
+		write_items = intersection_items(input_items, template_items);
+		delete_items(template_items);
+	} else {
+		/* Write out all reflections */
+		write_items = new_items();
+		union_items(write_items, input_items);
+	}
+
+	write_reflections(output, write_items, ideal_ref, phases, NULL,
+	                  mol->cell);
+
+	delete_items(input_items);
+	delete_items(write_items);
 
 	return 0;
 }

@@ -128,10 +128,10 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 
 		switch ( wght ) {
 		case WGHT_I :
-			val = lookup_intensity(ref, h, k, 0) / (float)ct;
+			val = lookup_intensity(ref, h, k, 0);
 			break;
 		case WGHT_SQRTI :
-			val = lookup_intensity(ref, h, k, 0) / (float)ct;
+			val = lookup_intensity(ref, h, k, 0);
 			val = (val>0.0) ? sqrt(val) : 0.0;
 			break;
 		case WGHT_COUNTS :
@@ -290,7 +290,6 @@ int main(int argc, char *argv[])
 	UnitCell *cell;
 	char *infile;
 	double *ref;
-	unsigned int *cts;
 	int config_povray = 0;
 	int config_zoneaxis = 0;
 	int config_sqrt = 0;
@@ -303,6 +302,7 @@ int main(int argc, char *argv[])
 	int wght;
 	int colscale;
 	char *cscale = NULL;
+	unsigned int *cts;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -417,8 +417,10 @@ int main(int argc, char *argv[])
 		ERROR("Couldn't load unit cell from %s\n", pdb);
 		return 1;
 	}
+	ref = new_list_intensity();
 	cts = new_list_count();
-	ref = read_reflections(infile, cts, NULL);
+	ReflItemList *items = read_reflections(infile, ref, NULL, cts);
+	delete_items(items);
 	if ( ref == NULL ) {
 		ERROR("Couldn't open file '%s'\n", infile);
 		return 1;

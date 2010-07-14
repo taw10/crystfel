@@ -49,13 +49,9 @@ int main(int argc, char *argv[])
 	char *outfile = NULL;
 	char *afile = NULL;
 	char *bfile = NULL;
-	signed int h, k, l;
 	double scale, R2, Rmerge, pearson;
-	unsigned int *c1;
-	unsigned int *c2;
-	int i;
-	int nc1, nc2, ncom;
-	unsigned int *outcounts;
+	int i, ncom;
+	ReflItemList *i1, *i2, *icommon;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -94,72 +90,53 @@ int main(int argc, char *argv[])
 	bfile = strdup(argv[optind]);
 
 	cell = load_cell_from_pdb("molecule.pdb");
-	c1 = new_list_count();
-	ref1 = read_reflections(afile, c1, NULL);
+	ref1 = new_list_intensity();
+	i1 = read_reflections(afile, ref1, NULL, NULL);
 	if ( ref1 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", afile);
 		return 1;
 	}
-	c2 = new_list_count();
-	ref2 = read_reflections(bfile, c2, NULL);
+	ref2 = new_list_intensity();
+	i2 = read_reflections(bfile, ref2, NULL, NULL);
 	if ( ref2 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", bfile);
 		return 1;
 	}
+
+	/* Find common reflections */
+	icommon = intersection_items(i1, i2);
+	ncom = num_items(icommon);
+
+	/* List for output scale factor map */
 	out = new_list_intensity();
-	outcounts = new_list_count();
 
-	/* Knock out the zero beam, in case it's present */
-	set_count(c1, 0, 0, 0, 0);
-	set_count(c2, 0, 0, 0, 0);
-
-	/* Divide by number of counts, since we're not interested in them */
-	divide_down(ref1, c1);
-	divide_down(ref2, c2);
-
-	for ( h=-INDMAX; h<INDMAX; h++ ) {
-	for ( k=-INDMAX; k<INDMAX; k++ ) {
-	for ( l=-INDMAX; l<INDMAX; l++ ) {
+	for ( i=0; i<ncom; i++ ) {
 
 		double i1, i2;
-		unsigned int c1s, c2s;
+		struct refl_item *it;
+		signed int h, k, l;
 
-		c1s = lookup_count(c1, h, k, l);
-		c2s = lookup_count(c2, h, k, l);
+		it = get_item(icommon, i);
+		h = it->h;  k = it->k;  l = it->l;
 
 		i1 = lookup_intensity(ref1, h, k, l);
 		i2 = lookup_intensity(ref2, h, k, l);
 
-		if ( c1s && c2s ) {
-			if ( (i1 != 0.0) && (i2 != 0.0) ) {
-				set_intensity(out, h, k, l,
-				              (i1/(double)c1s)/i2/(double)c2s);
-				set_count(outcounts, h, k, l, 1);
-			}
-		}
+		set_intensity(out, h, k, l, i1/i2);
 
 	}
-	}
-	}
 
-	nc1 = 0;
-	nc2 = 0;
-	ncom = 0;
-	for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
-		nc1 += c1[i];
-		nc2 += c2[i];
-		ncom += c1[i] && c2[i];
-	}
-	STATUS("%i,%i reflections: %i in common\n", nc1, nc2, ncom);
-	R2 = stat_r2(ref1, c1, ref2, c2, &scale);
+	STATUS("%i,%i reflections: %i in common\n",
+	       num_items(i1), num_items(i2), ncom);
+	R2 = stat_r2(ref1, ref2, icommon, &scale);
 	STATUS("R2 = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale);
-	Rmerge = stat_rmerge(ref1, c1, ref2, c2, &scale);
+	Rmerge = stat_rmerge(ref1, ref2, icommon, &scale);
 	STATUS("Rmerge = %5.4f %% (scale=%5.2e)\n", Rmerge*100.0, scale);
-	pearson = stat_pearson(ref1, c1, ref2, c2);
+	pearson = stat_pearson(ref1, ref2, icommon);
 	STATUS("Pearson r = %5.4f\n", pearson);
 
 	if ( outfile != NULL ) {
-		write_reflections(outfile, outcounts, out, NULL, 0, cell, 1);
+		write_reflections(outfile, icommon, out, NULL, NULL, cell);
 	}
 
 	return 0;

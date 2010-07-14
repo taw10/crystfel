@@ -21,12 +21,12 @@
 #include "reflections.h"
 
 
-void write_reflections(const char *filename, unsigned int *counts,
-                       double *ref, double *phases, int zone_axis,
-                       UnitCell *cell, unsigned int min_counts)
+void write_reflections(const char *filename, ReflItemList *items,
+                       double *intensities, double *phases,
+                       unsigned int *counts, UnitCell *cell)
 {
 	FILE *fh;
-	signed int h, k, l;
+	int i;
 
 	if ( filename == NULL ) {
 		fh = stdout;
@@ -40,23 +40,16 @@ void write_reflections(const char *filename, unsigned int *counts,
 	}
 
 	/* Write spacings and angle if zone axis pattern */
-	if ( zone_axis ) {
-		double a, b, c, alpha, beta, gamma;
-		cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
-		fprintf(fh, "a %5.3f nm\n",
-		            (0.5/resolution(cell, 1, 0, 0))*1e9);
-		fprintf(fh, "b %5.3f nm\n",
-		            (0.5/resolution(cell, 0, 1, 0))*1e9);
-		fprintf(fh, "angle %5.3f deg\n", rad2deg(alpha));
-		fprintf(fh, "scale 10\n");
-	} else {
-		fprintf(fh, "  h   k   l          I    phase   sigma(I) "
-		            " 1/d(nm^-1)  counts\n");
-	}
+	fprintf(fh, "  h   k   l          I    phase   sigma(I) "
+		    " 1/d(nm^-1)  counts\n");
 
-	for ( h=-INDMAX; h<INDMAX; h++ ) {
-	for ( k=-INDMAX; k<INDMAX; k++ ) {
-	for ( l=-INDMAX; l<INDMAX; l++ ) {
+	for ( i=0; i<num_items(items); i++ ) {
+
+		struct refl_item *it;
+		signed int h, k, l;
+
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
 
 		int N;
 		double intensity, s;
@@ -64,14 +57,12 @@ void write_reflections(const char *filename, unsigned int *counts,
 
 		if ( counts ) {
 			N = lookup_count(counts, h, k, l);
-			if ( N < min_counts ) continue;
 		} else {
 			N = 1;
 		}
-		if ( zone_axis && (l != 0) ) continue;
 
-		/* Divide measured intensity by the number of counts */
-		intensity = lookup_intensity(ref, h, k, l) / N;
+		intensity = lookup_intensity(intensities, h, k, l);
+
 		if ( phases != NULL ) {
 			double p;
 			p = lookup_phase(phases, h, k, l);
@@ -91,18 +82,25 @@ void write_reflections(const char *filename, unsigned int *counts,
 		        h, k, l, intensity, ph, 0.0, s/1.0e9, N);
 
 	}
-	}
-	}
 	fclose(fh);
 }
 
 
-double *read_reflections(const char *filename, unsigned int *counts,
-                         double *phases)
+/* Read reflections from file.  Returns the list of reflections successfully
+ * read in.  "intensities", "phases" and "counts" are lists which will be
+ * populated with the values read from the file.  Existing values in either list
+ * will be overwritten if the reflection is read from the file, but other values
+ * will be left intact.
+ *
+ * "intensities", "phases" or "counts" can be NULL, if you don't need them.
+ */
+ReflItemList *read_reflections(const char *filename,
+                               double *intensities, double *phases,
+                               unsigned int *counts)
 {
-	double *ref;
 	FILE *fh;
 	char *rval;
+	ReflItemList *items;
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
@@ -110,7 +108,7 @@ double *read_reflections(const char *filename, unsigned int *counts,
 		return NULL;
 	}
 
-	ref = new_list_intensity();
+	items = new_items();
 
 	do {
 
@@ -147,24 +145,24 @@ double *read_reflections(const char *filename, unsigned int *counts,
 			continue;
 		}
 
-		set_intensity(ref, h, k, l, intensity);
+		add_item(items, h, k, l);
+
+		if ( intensities != NULL ) {
+			set_intensity(intensities, h, k, l, intensity);
+		}
 		if ( phases != NULL ) {
 			ph = atof(phs);
 			set_phase(phases, h, k, l, ph);
 		}
 		if ( counts != NULL ) {
 			set_count(counts, h, k, l, cts);
-			/* In this case, the intensity must be multiplied up
-			 * because other parts of the program will try to
-			 * divide it down. */
-			set_intensity(ref, h, k, l, intensity*(double)cts);
 		}
 
 	} while ( rval != NULL );
 
 	fclose(fh);
 
-	return ref;
+	return items;
 }
 
 
@@ -187,17 +185,4 @@ double *ideal_intensities(double complex *sfac)
 	}
 
 	return ref;
-}
-
-
-void divide_down(double *intensities, unsigned int *counts)
-{
-	int i;
-
-	for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
-		if ( counts[i] > 0 ) {
-			intensities[i] /= (double)counts[i];
-			counts[i] = 1;
-		}
-	}
 }

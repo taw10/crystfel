@@ -26,8 +26,7 @@ struct gpu_context;
 extern void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
                                 int na, int nb, int nc, UnitCell *ucell);
 extern struct gpu_context *setup_gpu(int no_sfac, struct image *image,
-                                     const double *intensities,
-                                     const unsigned int *counts);
+                                     const double *intensities);
 extern void cleanup_gpu(struct gpu_context *gctx);
 
 #else
@@ -40,8 +39,7 @@ static void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 }
 
 static struct gpu_context *setup_gpu(int no_sfac, struct image *image,
-                                     const double *intensities,
-                                     const unsigned int *counts)
+                                     const double *intensities)
 {
 	return NULL;
 }

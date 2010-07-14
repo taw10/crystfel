@@ -18,18 +18,18 @@
 
 
 #include "cell.h"
+#include "utils.h"
 
 
-extern void write_reflections(const char *filename, unsigned int *counts,
-                              double *ref, double *phases, int zone_axis,
-                              UnitCell *cell, unsigned int min_counts);
+extern void write_reflections(const char *filename, ReflItemList *items,
+                              double *intensities, double *phases,
+                              unsigned int *counts, UnitCell *cell);
 
-extern double *read_reflections(const char *filename, unsigned int *counts,
-                                double *phases);
+extern ReflItemList *read_reflections(const char *filename,
+                                      double *intensities, double *phases,
+                                      unsigned int *counts);
 
 extern double *ideal_intensities(double complex *sfac);
-
-extern void divide_down(double *intensities, unsigned int *counts);
 
 
 #endif	/* REFLECTIONS_H */
