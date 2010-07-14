@@ -442,6 +442,13 @@ int main(int argc, char *argv[])
 	rewind(fh);
 	STATUS("There are %i patterns to process\n", n_total_patterns);
 
+	/* Show useful symmetry information */
+	const char *holo = get_holohedral(sym);
+	int np = num_general_equivs(holo) / num_general_equivs(sym);
+	STATUS("Resolving from point group %s to %s (%i possibilities)\n",
+	       holo, sym, np);
+
+
 	n_patterns = 0;
 	f0_valid = 0;
 	do {

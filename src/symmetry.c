@@ -57,7 +57,7 @@ static int check_cond(signed int h, signed int k, signed int l, const char *sym)
 	}
 
 
-static int num_general_equivs(const char *sym)
+int num_general_equivs(const char *sym)
 {
 	/* Triclinic */
 	if ( strcmp(sym, "1") == 0 ) return 1;

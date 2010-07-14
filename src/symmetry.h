@@ -25,6 +25,8 @@ extern void get_asymm(signed int h, signed int k, signed int l,
 extern int num_equivs(signed int h, signed int k, signed int l,
                       const char *sym);
 
+extern int num_general_equivs(const char *sym);
+
 extern void get_equiv(signed int h, signed int k, signed int l,
                       signed int *he, signed int *ke, signed int *le,
                       const char *sym, int idx);
