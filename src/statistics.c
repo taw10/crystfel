@@ -97,8 +97,8 @@ static double stat_scale_sqrti(const double *ref1, const double *ref2,
 		i2 = lookup_intensity(ref2, h, k, l);
 		f2 = i2 > 0.0 ? sqrt(i2) : 0.0;
 
-		top += i1 * i2;
-		bot += i2 * i2;
+		top += f1 * f2;
+		bot += f2 * f2;
 
 	}
 
@@ -122,8 +122,8 @@ static double internal_r2(const double *ref1, const double *ref2,
 		it = get_item(items, i);
 		h = it->h;  k = it->k;  l = it->l;
 
-		i1 = scale * lookup_intensity(ref1, h, k, l);
-		i2 = lookup_intensity(ref2, h, k, l);
+		i1 = lookup_intensity(ref1, h, k, l);
+		i2 = scale * lookup_intensity(ref2, h, k, l);
 
 		top += pow(i1 - i2, 2.0);
 		bot += pow(i1, 2.0);
@@ -154,6 +154,7 @@ static double internal_rmerge(const double *ref1, const double *ref2,
 		f1 = i1 > 0.0 ? sqrt(i1) : 0.0;
 		i2 = lookup_intensity(ref2, h, k, l);
 		f2 = i2 > 0.0 ? sqrt(i2) : 0.0;
+		f2 *= scale;
 
 		top += fabs(f1 - f2);
 		bot += f1 + f2;
