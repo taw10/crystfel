@@ -44,15 +44,21 @@ static void show_help(const char *s)
 	printf(
 "Render intensity lists in various ways.\n"
 "\n"
-"  -h, --help              Display this help message.\n"
 "      --povray            Render a 3D animation using POV-ray.\n"
 #ifdef HAVE_CAIRO
 "      --zone-axis         Render a 2D zone axis pattern.\n"
 #endif
+"\n"
 "      --boost=<val>       Squash colour scale by <val>.\n"
-"  -j <n>                  Run <n> instances of POV-ray in parallel.\n"
 "  -p, --pdb=<file>        PDB file from which to get the unit cell.\n"
 "  -y, --symmetry=<sym>    Expand reflections according to point group <sym>.\n"
+"\n"
+"  -c, --colscale=<scale>  Use the given colour scale.  Choose from:\n"
+"                           mono    : Greyscale, black is zero.\n"
+"                           invmono : Greyscale, white is zero.\n"
+"                           colour  : Colours scale:\n"
+"                                     black-blue-pink-red-orange-yellow-white\n"
+"\n"
 "  -w  --weighting=<wght>  Colour/shade the reciprocal lattice points\n"
 "                           according to:\n"
 "                            I      : the intensity of the reflection.\n"
@@ -61,6 +67,10 @@ static void show_help(const char *s)
 "                                     (after correcting for 'epsilon')\n"
 "                            rawcts : the raw number of hits for the\n"
 "                                     reflection (no 'epsilon' correction).\n"
+"\n"
+"      --colour-key        Draw (only) the key for the current colour scale.\n"
+"  -j <n>                  Run <n> instances of POV-ray in parallel.\n"
+"  -h, --help              Display this help message.\n"
 );
 }
 
@@ -281,6 +291,45 @@ out:
 	cairo_surface_finish(surface);
 	cairo_destroy(dctx);
 }
+
+static int render_key(int colscale)
+{
+	cairo_surface_t *surface;
+	cairo_t *dctx;
+	float wh, ht;
+	float y;
+
+	wh = 128;
+	ht = 1024;
+
+	surface = cairo_pdf_surface_create("key.pdf", wh, ht);
+
+	if ( cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS ) {
+		fprintf(stderr, "Couldn't create Cairo surface\n");
+		cairo_surface_destroy(surface);
+		return 1;
+	}
+
+	dctx = cairo_create(surface);
+
+	for ( y=0; y<ht; y++ ) {
+
+		float r, g, b;
+
+		cairo_rectangle(dctx, 0.0, y, wh, y+1.0);
+
+		render_scale(ht-y, ht, colscale, &r, &g, &b);
+		cairo_set_source_rgb(dctx, r, g, b);
+
+		cairo_fill(dctx);
+
+	}
+
+	cairo_surface_finish(surface);
+	cairo_destroy(dctx);
+
+	return 0;
+}
 #endif
 
 
@@ -293,6 +342,7 @@ int main(int argc, char *argv[])
 	int config_povray = 0;
 	int config_zoneaxis = 0;
 	int config_sqrt = 0;
+	int config_colkey = 0;
 	unsigned int nproc = 1;
 	char *pdb = NULL;
 	int r = 0;
@@ -315,6 +365,7 @@ int main(int argc, char *argv[])
 		{"weighting",          1, NULL,               'w'},
 		{"colscale",           1, NULL,               'c'},
 		{"counts",             0, &config_sqrt,        1},
+		{"colour-key",         0, &config_colkey,      1},
 		{0, 0, NULL, 0}
 	};
 
@@ -409,6 +460,10 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	free(cscale);
+
+	if ( config_colkey ) {
+		return render_key(colscale);
+	}
 
 	infile = argv[optind];
 
