@@ -108,10 +108,10 @@ static void render_rgb(float val, float max, float *rp, float *gp, float *bp)
 	float r, g, b;
 
 	s = val / (max/6);
-	p = fmod(val, max/6);
-	p /= (max/6);
+	p = fmod(val, max/6.0);
+	p /= (max/6.0);
 
-	r = 0;	g = 0;	b = 0;
+	r = 0.0;  g = 0.0;  b = 0.0;
 
 	if ( (val < 0.0) ) {
 		s = 0;
