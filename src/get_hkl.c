@@ -191,6 +191,7 @@ int main(int argc, char *argv[])
 	} else {
 		/* Write out all reflections */
 		write_items = new_items();
+		/* (quick way of copying a list) */
 		union_items(write_items, input_items);
 	}
 
