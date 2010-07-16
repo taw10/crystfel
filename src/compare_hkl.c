@@ -35,6 +35,7 @@ static void show_help(const char *s)
 "\n"
 "  -h, --help                 Display this help message.\n"
 "  -o, --output=<filename>    Specify output filename for correction factor.\n"
+"  -y, --symmetry=<sym>       The symmetry of both the input files.\n"
 "\n");
 }
 
@@ -57,6 +58,7 @@ int main(int argc, char *argv[])
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"output",             1, NULL,               'o'},
+		{"symmetry",           1, NULL,               'y'},
 		{0, 0, NULL, 0}
 	};
 
@@ -70,6 +72,10 @@ int main(int argc, char *argv[])
 
 		case 'o' :
 			outfile = strdup(optarg);
+			break;
+
+		case 'y' :
+			sym = strdup(optarg);
 			break;
 
 		case 0 :
