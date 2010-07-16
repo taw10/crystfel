@@ -244,7 +244,7 @@ const char *get_holohedral(const char *sym)
 {
 	/* Triclinic */
 	if ( strcmp(sym, "1") == 0 ) return "-1";
-	if ( strcmp(sym, "1") == 0 ) return "-1";
+	if ( strcmp(sym, "-1") == 0 ) return "-1";
 
 	/* Hexagonal */
 	if ( strcmp(sym, "6") == 0 ) return "6/mmm";
