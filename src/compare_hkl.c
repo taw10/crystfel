@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
 	char *outfile = NULL;
 	char *afile = NULL;
 	char *bfile = NULL;
+	char *sym = NULL;
 	double scale, R2, Rmerge, pearson;
 	int i, ncom;
 	ReflItemList *i1, *i2, *icommon;
