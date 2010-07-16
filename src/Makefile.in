@@ -64,7 +64,7 @@ am_compare_hkl_OBJECTS = compare_hkl.$(OBJEXT) sfac.$(OBJEXT) \
 compare_hkl_OBJECTS = $(am_compare_hkl_OBJECTS)
 compare_hkl_DEPENDENCIES =
 am_get_hkl_OBJECTS = get_hkl.$(OBJEXT) sfac.$(OBJEXT) cell.$(OBJEXT) \
-	utils.$(OBJEXT) reflections.$(OBJEXT)
+	utils.$(OBJEXT) reflections.$(OBJEXT) symmetry.$(OBJEXT)
 get_hkl_OBJECTS = $(am_get_hkl_OBJECTS)
 get_hkl_DEPENDENCIES =
 am__hdfsee_SOURCES_DIST = hdfsee.c displaywindow.c render.c \
@@ -253,7 +253,7 @@ indexamajig_LDADD = @LIBS@
 @HAVE_GTK_TRUE@                 filters.c
 
 @HAVE_GTK_TRUE@hdfsee_LDADD = @LIBS@
-get_hkl_SOURCES = get_hkl.c sfac.c cell.c utils.c reflections.c
+get_hkl_SOURCES = get_hkl.c sfac.c cell.c utils.c reflections.c symmetry.c
 get_hkl_LDADD = @LIBS@
 compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c \
                       statistics.c

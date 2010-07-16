@@ -35,7 +35,7 @@ hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c image.c \
 hdfsee_LDADD = @LIBS@
 endif
 
-get_hkl_SOURCES = get_hkl.c sfac.c cell.c utils.c reflections.c
+get_hkl_SOURCES = get_hkl.c sfac.c cell.c utils.c reflections.c symmetry.c
 get_hkl_LDADD = @LIBS@
 
 compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c \

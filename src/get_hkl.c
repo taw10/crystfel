@@ -24,6 +24,7 @@
 #include "utils.h"
 #include "sfac.h"
 #include "reflections.h"
+#include "symmetry.h"
 
 
 static void show_help(const char *s)
@@ -36,7 +37,9 @@ static void show_help(const char *s)
 "\n"
 "  -t, --template=<filename>  Only include reflections mentioned in file.\n"
 "      --poisson              Simulate Poisson samples.\n"
-"      --twin                 Generate twinned data.\n"
+"  -y, --symmetry=<sym>       The symmetry of the input file (-i).\n"
+"  -w, --twin=<sym>           Generate twinned data according to the given\n"
+"                              point group.\n"
 "  -o, --output=<filename>    Output filename (default: stdout).\n"
 "  -i, --intensities=<file>   Read intensities from file instead of\n"
 "                              calculating them from scratch.  You might use\n"
@@ -69,6 +72,132 @@ static void noisify_reflections(double *ref)
 }
 
 
+static void scold_user_about_symmetry(signed int h, signed int k, signed int l,
+                                      signed int he, signed int ke,
+                                      signed int le)
+{
+	ERROR("Merohedrally equivalent reflection (%i %i %i) found for "
+	      "%i %i %i.\n", he, ke, le, h, k, l);
+	ERROR("This indicates that you lied to me about the symmetry of the "
+	      "input reflections.  ");
+	ERROR("I won't be able to give you a meaningful result in this "
+	      "situation, so I'm going to give up right now.  ");
+	ERROR("Please reconsider your previous processing of the data, and "
+	      "perhaps try again with a lower symmetry for the '-y' option.\n");
+}
+
+
+static int find_unique_equiv(ReflItemList *items, signed int h, signed int k,
+                             signed int l, const char *mero, signed int *hu,
+                             signed int *ku, signed int *lu)
+{
+	int i;
+
+	for ( i=0; i<num_equivs(h, k, l, mero); i++ ) {
+
+		signed int he, ke, le;
+		get_equiv(h, k, l, &he, &ke, &le, mero, i);
+		if ( find_item(items, he, ke, le) ) {
+			*hu = he;  *ku = ke;  *lu = le;
+			return 1;
+		}
+
+	}
+
+	return 0;
+}
+
+
+static ReflItemList *twin_reflections(double *ref, ReflItemList *items,
+                                      const char *holo, const char *mero)
+{
+	int i;
+	ReflItemList *new;
+
+	new = new_items();
+
+	for ( i=0; i<num_items(items); i++ ) {
+
+		double mean;
+		struct refl_item *it;
+		signed int h, k, l;
+		int n, j;
+		int skip;
+
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
+
+		/* None of the equivalent reflections should exist in the
+		 * input dataset.  That would indicate that the user lied about
+		 * the input symmetry.
+		 *
+		 * Start from j=1 to ignore the reflection itself.
+		 */
+		for ( j=1; j<num_equivs(h, k, l, mero); j++ ) {
+
+			signed int he, ke, le;
+			get_equiv(h, k, l, &he, &ke, &le, mero, j);
+			if ( !find_item(items, he, ke, le) ) continue;
+
+			scold_user_about_symmetry(h, k, l, he, ke, le);
+			abort();
+
+		}
+		/* It doesn't matter if the reflection wasn't actually the one
+		 * we define as being in the asymmetric unit cell, as long as
+		 * things aren't confused by there being more than one of it.
+		 */
+
+		n = num_equivs(h, k, l, holo);
+
+		mean = 0.0;
+		skip = 0;
+		for ( j=0; j<n; j++ ) {
+
+			signed int he, ke, le;
+			signed int hu, ku, lu;
+
+			get_equiv(h, k, l, &he, &ke, &le, holo, j);
+
+			/* Do we have this reflection?
+			 * We might not have the particular (merohedral)
+			 * equivalent which belongs to our definition of the
+			 * asymmetric unit cell, so check them all.
+			 *
+			 * We checked earlier that there's only one of these
+			 * for each reflection.
+			 */
+			if ( !find_unique_equiv(items, he, ke, le, mero,
+			                        &hu, &ku, &lu) ) {
+				/* Don't have this reflection, so bail out */
+				ERROR("Twinning %i %i %i requires the %i %i %i "
+				      "reflection (or an equivalent in %s), "
+				      "which I don't have. %i %i %i won't "
+				      "appear in the output\n",
+				      h, k, l, he, ke, le, mero, h, k, l);
+				skip = 1;
+				break;
+			}
+
+			mean += lookup_intensity(ref, hu, ku, lu);
+
+		}
+
+		if ( !skip ) {
+
+			mean /= (double)n;
+
+			set_intensity(ref, h, k, l, mean);
+			add_item(new, h, k, l);
+
+		}
+
+	}
+
+	return new;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -77,10 +206,10 @@ int main(int argc, char *argv[])
 	struct molecule *mol;
 	char *template = NULL;
 	int config_noisify = 0;
-	int config_twin = 0;
+	char *holo = NULL;
+	char *mero = NULL;
 	char *output = NULL;
 	char *input = NULL;
-	signed int h, k, l;
 	char *filename = NULL;
 	ReflItemList *input_items;
 	ReflItemList *write_items;
@@ -91,14 +220,15 @@ int main(int argc, char *argv[])
 		{"template",           1, NULL,               't'},
 		{"poisson",            0, &config_noisify,     1},
 		{"output",             1, NULL,               'o'},
-		{"twin",               0, &config_twin,        1},
+		{"twin",               1, NULL,               'w'},
+		{"symmetry",           1, NULL,               'y'},
 		{"intensities",        1, NULL,               'i'},
 		{"pdb",                1, NULL,               'p'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ht:o:i:p:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ht:o:i:p:w:y:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' :
@@ -119,6 +249,14 @@ int main(int argc, char *argv[])
 
 		case 'p' :
 			filename = strdup(optarg);
+			break;
+
+		case 'y' :
+			mero = strdup(optarg);
+			break;
+
+		case 'w' :
+			holo = strdup(optarg);
 			break;
 
 		case 0 :
@@ -149,36 +287,12 @@ int main(int argc, char *argv[])
 
 	if ( config_noisify ) noisify_reflections(ideal_ref);
 
-	if ( config_twin ) {
-
-		for ( h=-INDMAX; h<=INDMAX; h++ ) {
-		for ( k=-INDMAX; k<=INDMAX; k++ ) {
-		for ( l=-INDMAX; l<=INDMAX; l++ ) {
-
-			double a, b, c, d;
-			double t;
-
-			if ( abs(h+k) > INDMAX ) {
-				set_intensity(ideal_ref, h, k, l, 0.0);
-				continue;
-			}
-
-			a = lookup_intensity(ideal_ref, h, k, l);
-			b = lookup_intensity(ideal_ref, k, h, -l);
-			c = lookup_intensity(ideal_ref, -(h+k), k, -l);
-			d = lookup_intensity(ideal_ref, -(h+k), h, l);
-
-			t = (a+b+c+d)/4.0;
-
-			set_intensity(ideal_ref, h, k, l, t);
-			set_intensity(ideal_ref, k, h, -l, t);
-			set_intensity(ideal_ref, -(h+k), h, l, t);
-			set_intensity(ideal_ref, -(h+k), k, -l, t);
-
-		}
-		}
-		}
-
+	if ( holo != NULL ) {
+		ReflItemList *new;
+		STATUS("Twinning from %s into %s\n", mero, holo);
+		new = twin_reflections(ideal_ref, input_items, holo, mero);
+		delete_items(input_items);
+		input_items = new;
 	}
 
 	if ( template ) {
