@@ -315,7 +315,8 @@ static ReflItemList *coset_decomp(signed int hs, signed int ks, signed int ls,
 ReflItemList *get_twins(ReflItemList *items, const char *holo, const char *mero)
 {
 	int i;
-	ReflItemList *ops = new_items();;
+	ReflItemList *ops = new_items();
+	int expected, actual;
 
 	/* Run the coset decomposition for every reflection in the "pattern",
 	 * and see which gives the highest number of possibilities.  This
@@ -337,6 +338,16 @@ ReflItemList *get_twins(ReflItemList *items, const char *holo, const char *mero)
 		union_op_items(ops, new_ops);
 		delete_items(new_ops);
 
+	}
+
+	/* Idiot check */
+	actual = num_items(ops);
+	expected = num_general_equivs(holo) / num_general_equivs(mero);
+	if ( actual != expected ) {
+		ERROR("I couldn't find the number of twin laws that I expected."
+		      " This is an internal error, and shouldn't happen. "
+		      "Sorry.\n");
+		abort();
 	}
 
 	return ops;
