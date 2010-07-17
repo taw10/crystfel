@@ -60,7 +60,7 @@ calibrate_detector_OBJECTS = $(am_calibrate_detector_OBJECTS)
 calibrate_detector_DEPENDENCIES =
 am_compare_hkl_OBJECTS = compare_hkl.$(OBJEXT) sfac.$(OBJEXT) \
 	cell.$(OBJEXT) utils.$(OBJEXT) reflections.$(OBJEXT) \
-	statistics.$(OBJEXT)
+	statistics.$(OBJEXT) symmetry.$(OBJEXT)
 compare_hkl_OBJECTS = $(am_compare_hkl_OBJECTS)
 compare_hkl_DEPENDENCIES =
 am_get_hkl_OBJECTS = get_hkl.$(OBJEXT) sfac.$(OBJEXT) cell.$(OBJEXT) \
@@ -256,7 +256,7 @@ indexamajig_LDADD = @LIBS@
 get_hkl_SOURCES = get_hkl.c sfac.c cell.c utils.c reflections.c symmetry.c
 get_hkl_LDADD = @LIBS@
 compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c \
-                      statistics.c
+                      statistics.c symmetry.c
 
 compare_hkl_LDADD = @LIBS@
 powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \

@@ -39,7 +39,7 @@ get_hkl_SOURCES = get_hkl.c sfac.c cell.c utils.c reflections.c symmetry.c
 get_hkl_LDADD = @LIBS@
 
 compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c \
-                      statistics.c
+                      statistics.c symmetry.c
 compare_hkl_LDADD = @LIBS@
 
 powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \

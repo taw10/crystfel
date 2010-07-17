@@ -40,5 +40,9 @@ extern const char *get_holohedral(const char *sym);
 extern ReflItemList *get_twins(ReflItemList *items,
                                const char *holo, const char *mero);
 
+extern int find_unique_equiv(ReflItemList *items, signed int h, signed int k,
+                             signed int l, const char *mero, signed int *hu,
+                             signed int *ku, signed int *lu);
+
 
 #endif	/* SYMMETRY_H */

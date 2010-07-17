@@ -352,3 +352,50 @@ ReflItemList *get_twins(ReflItemList *items, const char *holo, const char *mero)
 
 	return ops;
 }
+
+
+static void scold_user_about_symmetry(signed int h, signed int k, signed int l,
+                                      signed int he, signed int ke,
+                                      signed int le)
+{
+	ERROR("Symmetrically equivalent reflection (%i %i %i) found for "
+	      "%i %i %i in the input.\n", he, ke, le, h, k, l);
+	ERROR("This indicates that you lied to me about the symmetry of the "
+	      "input reflections.  ");
+	ERROR("I won't be able to give you a meaningful result in this "
+	      "situation, so I'm going to give up right now.  ");
+	ERROR("Please reconsider your previous processing of the data, and "
+	      "perhaps try again with a lower symmetry for the '-y' option.\n");
+	abort();
+}
+
+
+int find_unique_equiv(ReflItemList *items, signed int h, signed int k,
+                      signed int l, const char *mero, signed int *hu,
+                      signed int *ku, signed int *lu)
+{
+	int i;
+	int found = 0;
+
+	for ( i=0; i<num_equivs(h, k, l, mero); i++ ) {
+
+		signed int he, ke, le;
+		int f;
+		get_equiv(h, k, l, &he, &ke, &le, mero, i);
+		f = find_item(items, he, ke, le);
+
+		/* There must only be one equivalent.  If there are more, it
+		 * indicates that the user lied about the input symmetry. */
+		if ( f && found ) {
+			scold_user_about_symmetry(he, ke, le, *hu, *ku, *lu);
+		}
+
+		if ( f && !found ) {
+			*hu = he;  *ku = ke;  *lu = le;
+			found = 1;
+		}
+
+	}
+
+	return found;
+}

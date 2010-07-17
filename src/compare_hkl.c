@@ -25,6 +25,7 @@
 #include "sfac.h"
 #include "reflections.h"
 #include "statistics.h"
+#include "symmetry.h"
 
 
 static void show_help(const char *s)
@@ -45,6 +46,7 @@ int main(int argc, char *argv[])
 	int c;
 	double *ref1;
 	double *ref2;
+	double *ref2_transformed;
 	double *out;
 	UnitCell *cell;
 	char *outfile = NULL;
@@ -64,7 +66,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ho:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ho:y:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' :
@@ -110,36 +112,44 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* Find common reflections */
-	icommon = intersection_items(i1, i2);
-	ncom = num_items(icommon);
 
 	/* List for output scale factor map */
 	out = new_list_intensity();
 
-	for ( i=0; i<ncom; i++ ) {
 
-		double i1, i2;
+	/* Find common reflections (taking symmetry into account) */
+	icommon = new_items();
+	ref2_transformed = new_list_intensity();
+	for ( i=0; i<num_items(i1); i++ ) {
+
 		struct refl_item *it;
 		signed int h, k, l;
+		signed int he, ke, le;
+		double val1, val2;
 
-		it = get_item(icommon, i);
+		it = get_item(i1, i);
 		h = it->h;  k = it->k;  l = it->l;
 
-		i1 = lookup_intensity(ref1, h, k, l);
-		i2 = lookup_intensity(ref2, h, k, l);
+		if ( !find_unique_equiv(i2, h, k, l, sym, &he, &ke, &le) ) {
+			continue;
+		}
 
-		set_intensity(out, h, k, l, i1/i2);
+		val1 = lookup_intensity(ref1, h, k, l);
+		val2 = lookup_intensity(ref2, he, ke, le);
+		set_intensity(ref2_transformed, h, k, l, val2);
+		set_intensity(out, h, k, l, val1/val2);
+		add_item(icommon, h, k, l);
 
 	}
+	ncom = num_items(icommon);
 
 	STATUS("%i,%i reflections: %i in common\n",
 	       num_items(i1), num_items(i2), ncom);
-	R2 = stat_r2(ref1, ref2, icommon, &scale);
+	R2 = stat_r2(ref1, ref2_transformed, icommon, &scale);
 	STATUS("R2 = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale);
-	Rmerge = stat_rmerge(ref1, ref2, icommon, &scale);
+	Rmerge = stat_rmerge(ref1, ref2_transformed, icommon, &scale);
 	STATUS("Rmerge = %5.4f %% (scale=%5.2e)\n", Rmerge*100.0, scale);
-	pearson = stat_pearson(ref1, ref2, icommon);
+	pearson = stat_pearson(ref1, ref2_transformed, icommon);
 	STATUS("Pearson r = %5.4f\n", pearson);
 
 	if ( outfile != NULL ) {
