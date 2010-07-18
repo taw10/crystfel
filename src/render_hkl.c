@@ -209,10 +209,10 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 
 		switch ( wght ) {
 		case WGHT_I :
-			val = lookup_intensity(ref, h, k, 0) / (float)ct;
+			val = lookup_intensity(ref, h, k, 0);
 			break;
 		case WGHT_SQRTI :
-			val = lookup_intensity(ref, h, k, 0) / (float)ct;
+			val = lookup_intensity(ref, h, k, 0);
 			val = (val>0.0) ? sqrt(val) : 0.0;
 			break;
 		case WGHT_COUNTS :
