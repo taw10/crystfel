@@ -164,6 +164,7 @@ static void merge_pattern(double *model, ReflItemList *observed,
 {
 	int i;
 	int twin;
+	ReflItemList *sym_items = new_items();
 
 	if ( twins != NULL ) {
 		twin = resolve_twin(model, observed, new, items,
@@ -185,7 +186,11 @@ static void merge_pattern(double *model, ReflItemList *observed,
 		ks = item->k;
 		ls = item->l;
 
+		/* Transform into correct side of the twin law.
+		 * "twin" is always zero if no de-twinning is performed. */
 		get_general_equiv(hs, ks, ls, &h, &k, &l, holo, twin);
+
+		/* Put into the asymmetric cell for the target group */
 		get_asymm(h, k, l, &h, &k, &l, mero);
 
 		intensity = lookup_intensity(new, h, k, l);
@@ -199,9 +204,24 @@ static void merge_pattern(double *model, ReflItemList *observed,
 			}
 		}
 
+		/* Already seen this reflection in this pattern? Complain. */
+		if ( !find_item(sym_items, h, k, l) ) {
+			/* Add the asymmetric version of this reflection to our
+			 * temporary list.  One reflection (in the asymmetric
+			 * unit) may appear more than once per pattern if
+			 * symmetrically related reflections are present.
+			 * That's fine... */
+		}	add_item(sym_items, h, k, l);
+
+		/* Increase count count */
 		integrate_count(model_counts, h, k, l, 1);
 
 	}
+
+	/* Dump the reflections in this pattern into the overall list */
+	union_items(observed, sym_items);
+
+	delete_items(sym_items);
 }
 
 
@@ -261,8 +281,8 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 
 			if ( n_patterns == config_stopafter ) break;
 
+			/* Reset for the next pattern */
 			n_patterns++;
-			union_items(observed, items);
 			clear_items(items);
 
 			progress_bar(n_patterns, n_total_patterns, "Merging");
@@ -284,13 +304,19 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 		r = sscanf(line, "%i %i %i %f", &h, &k, &l, &intensity);
 		if ( r != 4 ) continue;
 
+		/* Not interested in the central beam */
 		if ( (h==0) && (k==0) && (l==0) ) continue;
 
+		/* The same raw indices (before mapping into the asymmetric
+		 * unit should not turn up twice in one pattern. */
 		if ( find_item(items, h, k, l) != 0 ) {
 			ERROR("More than one measurement for %i %i %i in"
 			      " pattern number %i\n", h, k, l, n_patterns);
 		}
 		set_intensity(new_pattern, h, k, l, intensity);
+
+		/* NB: This list contains raw indices, before working out
+		 * where they belong in the asymmetric unit. */
 		add_item(items, h, k, l);
 
 	} while ( rval != NULL );
