@@ -184,6 +184,7 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 
 	if ( max_val <= 0.0 ) {
 		max_r = 4.0;
+		STATUS("Couldn't find max value.\n");
 		goto out;
 	}
 
