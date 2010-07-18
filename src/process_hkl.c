@@ -329,7 +329,6 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
 			if ( counts[i] > 0 ) {
 				model[i] /= (double)counts[i];
-				counts[i] = 1;
 			}
 		}
 	}
