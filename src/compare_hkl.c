@@ -101,13 +101,13 @@ int main(int argc, char *argv[])
 	cell = load_cell_from_pdb("molecule.pdb");
 	ref1 = new_list_intensity();
 	i1 = read_reflections(afile, ref1, NULL, NULL);
-	if ( ref1 == NULL ) {
+	if ( i1 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", afile);
 		return 1;
 	}
 	ref2 = new_list_intensity();
 	i2 = read_reflections(bfile, ref2, NULL, NULL);
-	if ( ref2 == NULL ) {
+	if ( i2 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", bfile);
 		return 1;
 	}
