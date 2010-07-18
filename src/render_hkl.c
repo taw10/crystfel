@@ -124,7 +124,6 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 	theta = angle_between(asx, asy, asz, bsx, bsy, bsz);
 	as = modulus(asx, asy, asz) / 1e9;
 	bs = modulus(bsx, bsy, bsz) / 1e9;
-	STATUS("theta=%f\n", rad2deg(theta));
 
 	for ( h=-INDMAX; h<INDMAX; h++ ) {
 	for ( k=-INDMAX; k<INDMAX; k++ ) {
