@@ -324,7 +324,8 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 	delete_items(items);
 	free(new_pattern);
 
-	if ( !config_sum ) {
+	/* Calculate mean intensity if necessary */
+	if ( !config_sum && !config_maxonly ) {
 		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
 			if ( counts[i] > 0 ) {
 				model[i] /= (double)counts[i];
