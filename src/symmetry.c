@@ -34,7 +34,9 @@ static int check_cond(signed int h, signed int k, signed int l, const char *sym)
 	if ( strcmp(sym, "1") == 0 )
 		return ( 1 );
 	if ( strcmp(sym, "-1") == 0 )
-		return ( 1 );
+		return ( (l>0)
+		      || ( (l==0) && (k>0) )
+		      || ( (l==0) && (k==0) && (h>=0) ) );
 	if ( strcmp(sym, "6") == 0 )
 		return ( ((h>0) && (k>=0)) || ((h==0) && (k==0)) );
 	if ( strcmp(sym, "6/m") == 0 )

@@ -379,6 +379,7 @@ int main(int argc, char *argv[])
 	ReflItemList *twins;
 	ReflItemList *observed;
 	int i;
+	const char *holo = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -442,31 +443,36 @@ int main(int argc, char *argv[])
 		pdb = strdup("molecule.pdb");
 	}
 
-	if ( sym == NULL ) {
-		sym = strdup("1");
-	}
-
 	cell = load_cell_from_pdb(pdb);
 	free(pdb);
 
 	/* Show useful symmetry information */
-	const char *holo = get_holohedral(sym);
-	int np = num_general_equivs(holo) / num_general_equivs(sym);
-	if ( np > 1 ) {
+	if ( sym != NULL ) {
+		holo = get_holohedral(sym);
+		int np = num_general_equivs(holo) / num_general_equivs(sym);
+		if ( np > 1 ) {
 
-		STATUS("Resolving point group %s into %s (%i possibilities)\n",
-		       holo, sym, np);
-		/* Get the list of twin/Bijvoet possibilities */
-		twins = get_twin_possibilities(holo, sym);
-		STATUS("Twin/inversion operation indices (from %s) are:", holo);
-		for ( i=0; i<num_items(twins); i++ ) {
-			STATUS(" %i", get_item(twins, i)->op);
+			STATUS("Resolving point group %s into %s "
+			       "(%i possibilities)\n",
+			       holo, sym, np);
+			/* Get the list of twin/Bijvoet possibilities */
+			twins = get_twin_possibilities(holo, sym);
+			STATUS("Twin/inversion operation indices from %s are:",
+			       holo);
+			for ( i=0; i<num_items(twins); i++ ) {
+				STATUS(" %i", get_item(twins, i)->op);
+			}
+			STATUS("\n");
+
+		} else {
+			STATUS("No twin/inversion resolution necessary.\n");
+			twins = NULL;
 		}
-		STATUS("\n");
-
 	} else {
-		STATUS("No twin/inversion resolution necessary.\n");
+		STATUS("Not performing any twin/inversion resolution.\n");
 		twins = NULL;
+		sym = strdup("1");
+		holo = strdup("1");
 	}
 
 	/* Open the data stream */
