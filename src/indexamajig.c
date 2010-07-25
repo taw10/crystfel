@@ -165,6 +165,9 @@ static struct image *get_simage(struct image *template, int alternate)
 	image->twotheta = NULL;
 	image->data = NULL;
 	image->det = template->det;
+	image->flags = NULL;
+	image->f0_available = 0;
+	image->f0 = 1.0;
 
 	/* View head-on (unit cell is tilted) */
 	image->orientation.w = 1.0;
