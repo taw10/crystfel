@@ -76,7 +76,8 @@ static void show_help(const char *s)
 
 
 #ifdef HAVE_CAIRO
-static void render_za(UnitCell *cell, double *ref, unsigned int *c,
+static void render_za(UnitCell *cell, ReflItemList *items,
+                      double *ref, unsigned int *c,
                       double boost, const char *sym, int wght, int colscale)
 {
 	cairo_surface_t *surface;
@@ -85,16 +86,36 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 	double scale_u, scale_v, scale;
 	double sep_u, sep_v, max_r;
 	double u, v;
-	signed int max_h, max_k;
+	signed int max_ux, max_uy;
 	double as, bs, theta;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
-	signed int h, k;
 	float wh, ht;
+	signed int xh, xk, xl;
+	signed int yh, yk, yl;
+	signed int zh, zk, zl;
+	double xx, xy, xz;
+	double yx, yy, yz;
+	signed int xi, yi;
+	char tmp[256];
+	cairo_text_extents_t size;
+	double cx, cy;
+	const double border = 200.0;
+
+	xh = 1;  xk = -1;  xl = 0;
+	yh = 0;  yk = 0;  yl = 1;
+
+	zh = xk*yl - xl*yk;
+	zk = - xh*yl + xl*yh;
+	zl = xh*yk - xk*yh;
+
+	STATUS("Zone axis is %i %i %i\n", zh, zk, zl);
 
 	wh = 1024;
 	ht = 1024;
+	cx = 512.0;
+	cy = 500.0;
 
 	surface = cairo_pdf_surface_create("za.pdf", wh, ht);
 
@@ -112,7 +133,7 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 	cairo_fill(dctx);
 
 	max_u = 0.0;  max_v = 0.0;  max_val = 0.0;
-	max_res = 0.0;  max_h = 0;  max_k = 0;
+	max_res = 0.0;  max_ux = 0;  max_uy = 0;
 
 	/* Work out reciprocal lattice spacings and angles for this cut */
 	if ( cell_get_reciprocal(cell, &asx, &asy, &asz,
@@ -121,31 +142,47 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 		ERROR("Couldn't get reciprocal parameters\n");
 		return;
 	}
-	theta = angle_between(asx, asy, asz, bsx, bsy, bsz);
-	as = modulus(asx, asy, asz) / 1e9;
-	bs = modulus(bsx, bsy, bsz) / 1e9;
+	xx = xh*asx + xk*bsx + xl*csx;
+	xy = xh*asy + xk*bsy + xl*csy;
+	xz = xh*asz + xk*bsz + xl*csz;
+	yx = yh*asx + yk*bsx + yl*csx;
+	yy = yh*asy + yk*bsy + yl*csy;
+	yz = yh*asz + yk*bsz + yl*csz;
+	theta = angle_between(xx, xy, xz, yx, yy, yz);
+	as = modulus(xx, xy, xz) / 1e9;
+	bs = modulus(yx, yy, yz) / 1e9;
 
-	for ( h=-INDMAX; h<INDMAX; h++ ) {
-	for ( k=-INDMAX; k<INDMAX; k++ ) {
+	for ( xi=-INDMAX; xi<INDMAX; xi++ ) {
+	for ( yi=-INDMAX; yi<INDMAX; yi++ ) {
 
 		double u, v, val, res;
 		int ct;
 		int nequiv, p;
+		signed int h, k, l;
 
-		ct = lookup_count(c, h, k, 0);
-		if ( ct < 1 ) continue;
+		h = xi*xh + yi*yh;
+		k = xi*xk + yi*yk;
+		l = xi*xl + yi*yl;
+
+		/* Do we have this reflection? */
+		if ( find_unique_equiv(items, h, k, l, sym, &h, &k, &l) == 0 ) {
+			continue;
+		}
+
+		/* Reflection in the zone? */
+		if ( zh*h + zk*k + zl*l != 0 ) continue;
 
 		switch ( wght ) {
 		case WGHT_I :
-			val = lookup_intensity(ref, h, k, 0);
+			val = lookup_intensity(ref, h, k, l);
 			break;
 		case WGHT_SQRTI :
-			val = lookup_intensity(ref, h, k, 0);
+			val = lookup_intensity(ref, h, k, l);
 			val = (val>0.0) ? sqrt(val) : 0.0;
 			break;
 		case WGHT_COUNTS :
 			val = (float)ct;
-			val /= (float)num_equivs(h, k, 0, sym);
+			val /= (float)num_equivs(h, k, l, sym);
 			break;
 		case WGHT_RAWCOUNTS :
 			val = (float)ct;
@@ -155,22 +192,28 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 			abort();
 		}
 
-		nequiv = num_equivs(h, k, 0, sym);
+		nequiv = num_equivs(h, k, l, sym);
 		for ( p=0; p<nequiv; p++ ) {
 
 			signed int he, ke, le;
-			get_equiv(h, k, 0, &he, &ke, &le, sym, p);
+			signed int ux, uy;
 
-			u =  (double)he*as*sin(theta);
-			v =  (double)he*as*cos(theta) + ke*bs;
+			get_equiv(h, k, l, &he, &ke, &le, sym, p);
+
+			ux = he*xh + ke*xk + le*xl;
+			uy = he*yh + ke*yk + le*yl;
+
+			u = (double)ux*as*sin(theta);
+			v = (double)ux*as*cos(theta) + uy*bs;
+
 			if ( fabs(u) > fabs(max_u) ) max_u = fabs(u);
 			if ( fabs(v) > fabs(max_v) ) max_v = fabs(v);
 			if ( fabs(val) > fabs(max_val) ) {
 				max_val = fabs(val);
 			}
-			if ( fabs(he) > max_h ) max_h = fabs(he);
-			if ( fabs(ke) > max_k ) max_k = fabs(ke);
-			res = resolution(cell, he, ke, 0);
+			if ( fabs(ux) > max_ux ) max_ux = fabs(ux);
+			if ( fabs(uy) > max_uy ) max_uy = fabs(uy);
+			res = resolution(cell, he, ke, le);
 			if ( res > max_res ) max_res = res;
 
 		}
@@ -189,36 +232,52 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 	}
 
 	/* Choose whichever scaling factor gives the smallest value */
-	scale_u = ((double)(wh/2.0)-50.0) / max_u;
-	scale_v = ((double)(ht/2.0)-50.0) / max_v;
+	scale_u = ((double)wh-border) / (2.0*max_u);
+	scale_v = ((double)ht-border) / (2.0*max_v);
 	scale = (scale_u < scale_v) ? scale_u : scale_v;
 
-	sep_u = as * scale * cos(theta);
-	sep_v = bs * scale;
+	sep_u = (double)scale*as*sin(theta);
+	sep_v = (double)scale*as*cos(theta) + scale*bs;
+	/* We are interested in the smaller of the two separations */
 	max_r = (sep_u < sep_v) ? sep_u : sep_v;
+	max_r /= 2.0;  /* Max radius if half the separation */
 	max_r -= 1.0;  /* Add a tiny separation between circles */
+	if ( max_r < 1.0 ) {
+		ERROR("Circle radius is probably too small (%f).\n", max_r);
+	}
 
-	for ( h=-INDMAX; h<INDMAX; h++ ) {
-	for ( k=-INDMAX; k<INDMAX; k++ ) {
+	for ( xi=-INDMAX; xi<INDMAX; xi++ ) {
+	for ( yi=-INDMAX; yi<INDMAX; yi++ ) {
 
 		double u, v, val;
 		int ct;
 		int nequiv, p;
+		signed int h, k, l;
 
-		ct = lookup_count(c, h, k, 0);
-		if ( ct < 1 ) continue;  /* Must have at least one count */
+		h = xi*xh + yi*yh;
+		k = xi*xk + yi*yk;
+		l = xi*xl + yi*yl;
+
+		/* Do we have this reflection? */
+		if ( find_unique_equiv(items, h, k, l, sym, &h, &k, &l) == 0 ) {
+			continue;
+		}
+
+
+		/* Reflection in the zone? */
+		if ( zh*h + zk*k + zl*l != 0 ) continue;
 
 		switch ( wght ) {
 		case WGHT_I :
-			val = lookup_intensity(ref, h, k, 0);
+			val = lookup_intensity(ref, h, k, l);
 			break;
 		case WGHT_SQRTI :
-			val = lookup_intensity(ref, h, k, 0);
+			val = lookup_intensity(ref, h, k, l);
 			val = (val>0.0) ? sqrt(val) : 0.0;
 			break;
 		case WGHT_COUNTS :
 			val = (float)ct;
-			val /= (float)num_equivs(h, k, 0, sym);
+			val /= (float)num_equivs(h, k, l, sym);
 			break;
 		case WGHT_RAWCOUNTS :
 			val = (float)ct;
@@ -228,19 +287,23 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 			abort();
 		}
 
-		nequiv = num_equivs(h, k, 0, sym);
+		nequiv = num_equivs(h, k, l, sym);
 		for ( p=0; p<nequiv; p++ ) {
 
 			signed int he, ke, le;
+			signed int ux, uy;
 			float r, g, b;
-			get_equiv(h, k, 0, &he, &ke, &le, sym, p);
+			get_equiv(h, k, l, &he, &ke, &le, sym, p);
 
-			u = (double)he*as*sin(theta);
-			v = (double)he*as*cos(theta) + ke*bs;
+			ux = he*xh + ke*xk + le*xl;
+			uy = he*yh + ke*yk + le*yl;
 
-			cairo_arc(dctx, ((double)wh/2)+u*scale,
-					((double)ht/2)+v*scale, max_r,
-					0, 2*M_PI);
+			u = (double)ux*as*sin(theta);
+			v = (double)ux*as*cos(theta) + uy*bs;
+
+			cairo_arc(dctx, ((double)cx)+u*scale,
+			                ((double)cy)+v*scale,
+			                max_r, 0, 2*M_PI);
 
 			render_scale(val, max_val/boost, colscale, &r, &g, &b);
 			cairo_set_source_rgb(dctx, r, g, b);
@@ -253,39 +316,41 @@ static void render_za(UnitCell *cell, double *ref, unsigned int *c,
 
 out:
 	/* Centre marker */
-	cairo_arc(dctx, (double)wh/2,
-			(double)ht/2, max_r, 0, 2*M_PI);
+	cairo_arc(dctx, (double)cx,
+			(double)cy, max_r, 0, 2*M_PI);
 	cairo_set_source_rgb(dctx, 1.0, 0.0, 0.0);
 	cairo_fill(dctx);
 
 	/* Draw indexing lines */
 	cairo_set_line_width(dctx, 4.0);
-	cairo_move_to(dctx, (double)wh/2, (double)ht/2);
-	u = (double)max_h*as*sin(theta);
-	v = (double)max_h*as*cos(theta) + 0*bs;
-	cairo_line_to(dctx, ((double)wh/2)+u*scale,
-	                    ((double)ht/2)+v*scale);
+	cairo_move_to(dctx, (double)cx, (double)cy);
+	u = (double)max_ux*as*sin(theta);
+	v = (double)max_ux*as*cos(theta);
+	cairo_line_to(dctx, cx+u*scale, cy+v*scale);
 	cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
 	cairo_stroke(dctx);
 
-	cairo_move_to(dctx,((double)wh/2)+u*scale-40.0,
-	                   ((double)ht/2)+v*scale+40.0);
-	                   cairo_set_font_size(dctx, 40.0);
-	cairo_show_text(dctx, "h");
+	cairo_set_font_size(dctx, 40.0);
+	snprintf(tmp, 255, "%i%i%i", xh, xk, xl);
+	cairo_text_extents(dctx, tmp, &size);
+
+	cairo_move_to(dctx, cx+u*scale + 20.0, cy+v*scale + size.height/2.0);
+	cairo_show_text(dctx, tmp);
 	cairo_fill(dctx);
 
-	cairo_move_to(dctx, (double)wh/2, (double)ht/2);
+	snprintf(tmp, 255, "%i%i%i", yh, yk, yl);
+	cairo_text_extents(dctx, tmp, &size);
+
+	cairo_move_to(dctx, (double)cx, (double)cy);
 	u = 0.0;
-	v = (double)max_k*bs;
-	cairo_line_to(dctx, ((double)wh/2)+u*scale,
-	                    ((double)ht/2)+v*scale);
+	v = (double)max_uy*bs;
+	cairo_line_to(dctx, cx+u*scale, cy+v*scale);
 	cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
 	cairo_stroke(dctx);
 
-	cairo_move_to(dctx,((double)wh/2)+u*scale-40.0,
-	                   ((double)ht/2)+v*scale-40.0);
-	                   cairo_set_font_size(dctx, 40.0);
-	cairo_show_text(dctx, "k");
+	cairo_move_to(dctx, cx+u*scale - size.width/2.0,
+	                    cy+v*scale + size.height + 20.0);
+	cairo_show_text(dctx, tmp);
 	cairo_fill(dctx);
 
 	cairo_surface_finish(surface);
@@ -475,7 +540,6 @@ int main(int argc, char *argv[])
 	ref = new_list_intensity();
 	cts = new_list_count();
 	ReflItemList *items = read_reflections(infile, ref, NULL, cts);
-	delete_items(items);
 	if ( ref == NULL ) {
 		ERROR("Couldn't open file '%s'\n", infile);
 		return 1;
@@ -485,7 +549,7 @@ int main(int argc, char *argv[])
 		r = povray_render_animation(cell, ref, cts, nproc);
 	} else if ( config_zoneaxis ) {
 #ifdef HAVE_CAIRO
-		render_za(cell, ref, cts, boost, sym, wght, colscale);
+		render_za(cell, items, ref, cts, boost, sym, wght, colscale);
 #else
 		ERROR("This version of CrystFEL was compiled without Cairo");
 		ERROR(" support, which is required to plot a zone axis");
@@ -497,6 +561,7 @@ int main(int argc, char *argv[])
 
 	free(pdb);
 	free(sym);
+	delete_items(items);
 
 	return r;
 }
