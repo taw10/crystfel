@@ -218,7 +218,7 @@ int povray_render_animation(UnitCell *cell, double *ref,
 
 		if ( val <= 0.0 ) continue;
 		radius = 0.1 * sqrt(sqrt(val))/1e2;
-		radius -= 0.005;
+		radius -= 0.008;
 		if ( radius > 0.03 ) radius = 0.03;
 		if ( radius <= 0.0 ) continue;
 		trans = (0.03-radius)/0.03;
