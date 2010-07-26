@@ -82,6 +82,9 @@ void get_general_equiv(signed int h, signed int k, signed int l,
 {
 	signed int i = -h-k;
 
+	/* The returned indices when idx=0 *must* be the same as the input.
+	 * After that, the order does not matter. */
+
 	if ( strcmp(sym, "1") == 0 ) {
 		*he = h;   *ke = k;   *le = l;  return;
 	}
