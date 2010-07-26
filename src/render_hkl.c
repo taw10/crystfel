@@ -369,23 +369,6 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	/* Size of output and centre definition */
 	wh = 1024;
 	ht = 1024;
-	cx = 512.0;
-	cy = 500.0;
-
-	surface = cairo_pdf_surface_create("za.pdf", wh, ht);
-
-	if ( cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS ) {
-		fprintf(stderr, "Couldn't create Cairo surface\n");
-		cairo_surface_destroy(surface);
-		return;
-	}
-
-	dctx = cairo_create(surface);
-
-	/* Black background */
-	cairo_rectangle(dctx, 0.0, 0.0, wh, ht);
-	cairo_set_source_rgb(dctx, 0.0, 0.0, 0.0);
-	cairo_fill(dctx);
 
 	/* Work out reciprocal lattice spacings and angles for this cut */
 	if ( cell_get_reciprocal(cell, &asx, &asy, &asz,
@@ -404,6 +387,7 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	as = modulus(xx, xy, xz) / 1e9;
 	bs = modulus(yx, yy, yz) / 1e9;
 
+	scale = 1.0;
 	draw_circles(xh, xk, xl, yh, yk, yl, zh, zk, zl,
 	             ref, counts, items, sym, NULL, wght, boost, colscale, cell,
 	             0.0, theta, as, bs, cx, cy, scale,
@@ -433,6 +417,29 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	if ( max_r < 1.0 ) {
 		ERROR("Circle radius is probably too small (%f).\n", max_r);
 	}
+
+	surface = cairo_pdf_surface_create("za.pdf", wh, ht);
+
+	if ( cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS ) {
+		fprintf(stderr, "Couldn't create Cairo surface\n");
+		cairo_surface_destroy(surface);
+		return;
+	}
+
+	dctx = cairo_create(surface);
+
+	/* Black background */
+	cairo_rectangle(dctx, 0.0, 0.0, wh, ht);
+	cairo_set_source_rgb(dctx, 0.0, 0.0, 0.0);
+	cairo_fill(dctx);
+
+	/* Test size of text that goes to the right(ish) */
+	cairo_set_font_size(dctx, 40.0);
+	snprintf(tmp, 255, "%i%i%i", abs(xh), abs(xk), abs(xl));
+	cairo_text_extents(dctx, tmp, &size);
+
+	cx = 532.0 - size.width;
+	cy = 512.0 - 20.0;
 
 	draw_circles(xh, xk, xl, yh, yk, yl, zh, zk, zl,
 	             ref, counts, items, sym, dctx, wght, boost, colscale, cell,
