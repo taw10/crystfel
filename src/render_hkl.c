@@ -23,6 +23,10 @@
 #ifdef HAVE_CAIRO
 #include <cairo.h>
 #include <cairo-pdf.h>
+/* GSL is only used if Cairo is present */
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_linalg.h>
 #endif
 
 #include "utils.h"
@@ -76,8 +80,209 @@ static void show_help(const char *s)
 
 
 #ifdef HAVE_CAIRO
+static int get_basis_change_coefficients(double *in, double *out)
+{
+	int s;
+	gsl_matrix *m;
+	gsl_matrix *inv;
+	gsl_permutation *perm;
+
+	m = gsl_matrix_alloc(3, 3);
+	if ( m == NULL ) {
+		ERROR("Couldn't allocate memory for matrix\n");
+		return 1;
+	}
+	gsl_matrix_set(m, 0, 0, in[0]);
+	gsl_matrix_set(m, 0, 1, in[1]);
+	gsl_matrix_set(m, 0, 2, in[2]);
+	gsl_matrix_set(m, 1, 0, in[3]);
+	gsl_matrix_set(m, 1, 1, in[4]);
+	gsl_matrix_set(m, 1, 2, in[5]);
+	gsl_matrix_set(m, 2, 0, in[6]);
+	gsl_matrix_set(m, 2, 1, in[7]);
+	gsl_matrix_set(m, 2, 2, in[8]);
+
+	/* Invert */
+	perm = gsl_permutation_alloc(m->size1);
+	if ( perm == NULL ) {
+		ERROR("Couldn't allocate permutation\n");
+		gsl_matrix_free(m);
+		return 1;
+	}
+	inv = gsl_matrix_alloc(3, 3);
+	if ( inv == NULL ) {
+		ERROR("Couldn't allocate inverse\n");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		return 1;
+	}
+	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
+		ERROR("Couldn't decompose matrix\n");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		return 1;
+	}
+	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
+		ERROR("Couldn't invert matrix\n");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		return 1;
+	}
+	gsl_permutation_free(perm);
+	gsl_matrix_free(m);
+
+	/* Transpose */
+	gsl_matrix_transpose(inv);
+
+	out[0] = gsl_matrix_get(inv, 0, 0);
+	out[1] = gsl_matrix_get(inv, 0, 1);
+	out[2] = gsl_matrix_get(inv, 0, 2);
+	out[3] = gsl_matrix_get(inv, 1, 0);
+	out[4] = gsl_matrix_get(inv, 1, 1);
+	out[5] = gsl_matrix_get(inv, 1, 2);
+	out[6] = gsl_matrix_get(inv, 2, 0);
+	out[7] = gsl_matrix_get(inv, 2, 1);
+	out[8] = gsl_matrix_get(inv, 2, 2);
+
+	gsl_matrix_free(inv);
+
+	return 0;
+
+}
+
+
+static void draw_circles(signed int xh, signed int xk, signed int xl,
+                         signed int yh, signed int yk, signed int yl,
+                         signed int zh, signed int zk, signed int zl,
+                         double *ref, unsigned int *counts, ReflItemList *items,
+                         const char *sym,
+                         cairo_t *dctx, int wght, double boost, int colscale,
+                         UnitCell *cell, double radius, double theta,
+                         double as, double bs, double cx, double cy,
+                         double scale,
+                         signed int *max_ux, signed int *max_uy,
+                         double *max_val, double *max_u, double *max_v,
+                         double *max_res)
+{
+	signed int xi, yi;
+	double in[9];
+	double bc[9];
+
+	if ( dctx == NULL ) {
+		*max_u = 0.0;  *max_v = 0.0;  *max_val = 0.0;
+		*max_res = 0.0;  *max_ux = 0;  *max_uy = 0;
+	}
+
+	in[0] = xh;  in[1] = xk;  in[2] = xl;
+	in[3] = yh;  in[4] = yk;  in[5] = yl;
+	in[6] = zh;  in[7] = zk;  in[8] = zl;
+	if ( get_basis_change_coefficients(in, bc) ) {
+		ERROR("Couldn't change basis.\n");
+		return;
+	}
+
+	/* Loop across the two basis directions */
+	for ( xi=-INDMAX; xi<INDMAX; xi++ ) {
+	for ( yi=-INDMAX; yi<INDMAX; yi++ ) {
+
+		double u, v, val, res;
+		int nequiv, p;
+		signed int h, k, l;
+
+		h = xi*xh + yi*yh;
+		k = xi*xk + yi*yk;
+		l = xi*xl + yi*yl;
+
+		/* Got this reflection? */
+		if ( find_unique_equiv(items, h, k, l, sym, &h, &k, &l) == 0 ) {
+			continue;
+		}
+
+		switch ( wght ) {
+		case WGHT_I :
+			val = lookup_intensity(ref, h, k, l);
+			break;
+		case WGHT_SQRTI :
+			val = lookup_intensity(ref, h, k, l);
+			val = (val>0.0) ? sqrt(val) : 0.0;
+			break;
+		case WGHT_COUNTS :
+			val = lookup_count(counts, h, k, l);
+			val /= (float)num_equivs(h, k, l, sym);
+			break;
+		case WGHT_RAWCOUNTS :
+			val = lookup_count(counts, h, k, l);
+			break;
+		default :
+			ERROR("Invalid weighting.\n");
+			abort();
+		}
+
+		/* For each equivalent reflection... */
+		nequiv = num_equivs(h, k, l, sym);
+		for ( p=0; p<nequiv; p++ ) {
+
+			signed int he, ke, le;
+			signed int ux, uy, uz;
+
+			get_equiv(h, k, l, &he, &ke, &le, sym, p);
+
+			/* Calculate the indices in the 2D basis */
+			ux = he*bc[0] + ke*bc[1] + le*bc[2];
+			uy = he*bc[3] + ke*bc[4] + le*bc[5];
+			uz = he*bc[6] + ke*bc[7] + le*bc[8];
+
+			/* Reflection in the zone? */
+			if ( uz != 0 ) continue;
+
+			/* Absolute location in image based on 2D basis */
+			u = (double)ux*as*sin(theta);
+			v = (double)ux*as*cos(theta) + (double)uy*bs;
+
+			if ( dctx != NULL ) {
+
+				float r, g, b;
+
+				cairo_arc(dctx, ((double)cx)+u*scale,
+				                ((double)cy)+v*scale,
+				                radius, 0, 2*M_PI);
+
+				render_scale(val, *max_val/boost, colscale,
+				             &r, &g, &b);
+				cairo_set_source_rgb(dctx, r, g, b);
+				cairo_fill(dctx);
+
+			} else {
+
+				/* Find max vectors in plane for scaling */
+				if ( fabs(u) > fabs(*max_u) ) *max_u = fabs(u);
+				if ( fabs(v) > fabs(*max_v) ) *max_v = fabs(v);
+
+				/* Find max value for colour scale */
+				if ( fabs(val) > fabs(*max_val) ) {
+					*max_val = fabs(val);
+				}
+
+				/* Find max indices */
+				if ( (uy==0) && (fabs(ux) > *max_ux) )
+					*max_ux = fabs(ux);
+				if ( (ux==0) && (fabs(uy) > *max_uy) )
+					*max_uy = fabs(uy);
+
+				/* Find max resolution */
+				res = resolution(cell, he, ke, le);
+				if ( res > *max_res ) *max_res = res;
+			}
+
+		}
+
+	}
+	}
+}
+
+
 static void render_za(UnitCell *cell, ReflItemList *items,
-                      double *ref, unsigned int *c,
+                      double *ref, unsigned int *counts,
                       double boost, const char *sym, int wght, int colscale)
 {
 	cairo_surface_t *surface;
@@ -97,21 +302,21 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	signed int zh, zk, zl;
 	double xx, xy, xz;
 	double yx, yy, yz;
-	signed int xi, yi;
 	char tmp[256];
 	cairo_text_extents_t size;
 	double cx, cy;
 	const double border = 200.0;
 
-	xh = 1;  xk = -1;  xl = 0;
+	xh = 0;  xk = 1;  xl = 0;
 	yh = 0;  yk = 0;  yl = 1;
 
+	/* Vector product to determine the zone axis. */
 	zh = xk*yl - xl*yk;
 	zk = - xh*yl + xl*yh;
 	zl = xh*yk - xk*yh;
-
 	STATUS("Zone axis is %i %i %i\n", zh, zk, zl);
 
+	/* Size of output and centre definition */
 	wh = 1024;
 	ht = 1024;
 	cx = 512.0;
@@ -132,9 +337,6 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	cairo_set_source_rgb(dctx, 0.0, 0.0, 0.0);
 	cairo_fill(dctx);
 
-	max_u = 0.0;  max_v = 0.0;  max_val = 0.0;
-	max_res = 0.0;  max_ux = 0;  max_uy = 0;
-
 	/* Work out reciprocal lattice spacings and angles for this cut */
 	if ( cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
@@ -152,74 +354,10 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	as = modulus(xx, xy, xz) / 1e9;
 	bs = modulus(yx, yy, yz) / 1e9;
 
-	for ( xi=-INDMAX; xi<INDMAX; xi++ ) {
-	for ( yi=-INDMAX; yi<INDMAX; yi++ ) {
-
-		double u, v, val, res;
-		int ct;
-		int nequiv, p;
-		signed int h, k, l;
-
-		h = xi*xh + yi*yh;
-		k = xi*xk + yi*yk;
-		l = xi*xl + yi*yl;
-
-		/* Do we have this reflection? */
-		if ( find_unique_equiv(items, h, k, l, sym, &h, &k, &l) == 0 ) {
-			continue;
-		}
-
-		/* Reflection in the zone? */
-		if ( zh*h + zk*k + zl*l != 0 ) continue;
-
-		switch ( wght ) {
-		case WGHT_I :
-			val = lookup_intensity(ref, h, k, l);
-			break;
-		case WGHT_SQRTI :
-			val = lookup_intensity(ref, h, k, l);
-			val = (val>0.0) ? sqrt(val) : 0.0;
-			break;
-		case WGHT_COUNTS :
-			val = (float)ct;
-			val /= (float)num_equivs(h, k, l, sym);
-			break;
-		case WGHT_RAWCOUNTS :
-			val = (float)ct;
-			break;
-		default :
-			ERROR("Invalid weighting.\n");
-			abort();
-		}
-
-		nequiv = num_equivs(h, k, l, sym);
-		for ( p=0; p<nequiv; p++ ) {
-
-			signed int he, ke, le;
-			signed int ux, uy;
-
-			get_equiv(h, k, l, &he, &ke, &le, sym, p);
-
-			ux = he*xh + ke*xk + le*xl;
-			uy = he*yh + ke*yk + le*yl;
-
-			u = (double)ux*as*sin(theta);
-			v = (double)ux*as*cos(theta) + uy*bs;
-
-			if ( fabs(u) > fabs(max_u) ) max_u = fabs(u);
-			if ( fabs(v) > fabs(max_v) ) max_v = fabs(v);
-			if ( fabs(val) > fabs(max_val) ) {
-				max_val = fabs(val);
-			}
-			if ( fabs(ux) > max_ux ) max_ux = fabs(ux);
-			if ( fabs(uy) > max_uy ) max_uy = fabs(uy);
-			res = resolution(cell, he, ke, le);
-			if ( res > max_res ) max_res = res;
-
-		}
-
-	}
-	}
+	draw_circles(xh, xk, xl, yh, yk, yl, zh, zk, zl,
+	             ref, counts, items, sym, NULL, wght, boost, colscale, cell,
+	             0.0, theta, as, bs, cx, cy, scale,
+	             &max_ux, &max_uy, &max_val, &max_u, &max_v, &max_res);
 
 	max_res /= 1e9;
 	printf("Maximum resolution is 1/d = %5.3f nm^-1, d = %5.3f nm\n",
@@ -240,79 +378,16 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	sep_v = (double)scale*as*cos(theta) + scale*bs;
 	/* We are interested in the smaller of the two separations */
 	max_r = (sep_u < sep_v) ? sep_u : sep_v;
-	max_r /= 2.0;  /* Max radius if half the separation */
+	max_r /= 2.0;  /* Max radius is half the separation */
 	max_r -= 1.0;  /* Add a tiny separation between circles */
 	if ( max_r < 1.0 ) {
 		ERROR("Circle radius is probably too small (%f).\n", max_r);
 	}
 
-	for ( xi=-INDMAX; xi<INDMAX; xi++ ) {
-	for ( yi=-INDMAX; yi<INDMAX; yi++ ) {
-
-		double u, v, val;
-		int ct;
-		int nequiv, p;
-		signed int h, k, l;
-
-		h = xi*xh + yi*yh;
-		k = xi*xk + yi*yk;
-		l = xi*xl + yi*yl;
-
-		/* Do we have this reflection? */
-		if ( find_unique_equiv(items, h, k, l, sym, &h, &k, &l) == 0 ) {
-			continue;
-		}
-
-
-		/* Reflection in the zone? */
-		if ( zh*h + zk*k + zl*l != 0 ) continue;
-
-		switch ( wght ) {
-		case WGHT_I :
-			val = lookup_intensity(ref, h, k, l);
-			break;
-		case WGHT_SQRTI :
-			val = lookup_intensity(ref, h, k, l);
-			val = (val>0.0) ? sqrt(val) : 0.0;
-			break;
-		case WGHT_COUNTS :
-			val = (float)ct;
-			val /= (float)num_equivs(h, k, l, sym);
-			break;
-		case WGHT_RAWCOUNTS :
-			val = (float)ct;
-			break;
-		default :
-			ERROR("Invalid weighting.\n");
-			abort();
-		}
-
-		nequiv = num_equivs(h, k, l, sym);
-		for ( p=0; p<nequiv; p++ ) {
-
-			signed int he, ke, le;
-			signed int ux, uy;
-			float r, g, b;
-			get_equiv(h, k, l, &he, &ke, &le, sym, p);
-
-			ux = he*xh + ke*xk + le*xl;
-			uy = he*yh + ke*yk + le*yl;
-
-			u = (double)ux*as*sin(theta);
-			v = (double)ux*as*cos(theta) + uy*bs;
-
-			cairo_arc(dctx, ((double)cx)+u*scale,
-			                ((double)cy)+v*scale,
-			                max_r, 0, 2*M_PI);
-
-			render_scale(val, max_val/boost, colscale, &r, &g, &b);
-			cairo_set_source_rgb(dctx, r, g, b);
-			cairo_fill(dctx);
-
-		}
-
-	}
-	}
+	draw_circles(xh, xk, xl, yh, yk, yl, zh, zk, zl,
+	             ref, counts, items, sym, dctx, wght, boost, colscale, cell,
+	             max_r, theta, as, bs, cx, cy, scale,
+	             NULL, NULL, &max_val, NULL, NULL, NULL);
 
 out:
 	/* Centre marker */
@@ -324,8 +399,9 @@ out:
 	/* Draw indexing lines */
 	cairo_set_line_width(dctx, 4.0);
 	cairo_move_to(dctx, (double)cx, (double)cy);
-	u = (double)max_ux*as*sin(theta);
-	v = (double)max_ux*as*cos(theta);
+	u = (1.0+max_ux)*as*sin(theta);
+	v = (1.0+max_ux)*as*cos(theta);
+	STATUS("max u %i\n", max_ux);
 	cairo_line_to(dctx, cx+u*scale, cy+v*scale);
 	cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
 	cairo_stroke(dctx);
@@ -343,7 +419,7 @@ out:
 
 	cairo_move_to(dctx, (double)cx, (double)cy);
 	u = 0.0;
-	v = (double)max_uy*bs;
+	v = (1.0+max_uy)*bs;
 	cairo_line_to(dctx, cx+u*scale, cy+v*scale);
 	cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
 	cairo_stroke(dctx);
