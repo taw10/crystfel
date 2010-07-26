@@ -281,6 +281,56 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 }
 
 
+static void render_overlined_indices(cairo_t *dctx,
+                                     signed int h, signed int k, signed int l)
+{
+	char tmp[256];
+	cairo_text_extents_t size;
+	double x, y;
+	const double sh = 39.0;
+
+	cairo_get_current_point(dctx, &x, &y);
+	cairo_set_line_width(dctx, 4.0);
+
+	/* Draw 'h' */
+	snprintf(tmp, 255, "%i", abs(h));
+	cairo_text_extents(dctx, tmp, &size);
+	cairo_show_text(dctx, tmp);
+	cairo_fill(dctx);
+	if ( h < 0 ) {
+		cairo_move_to(dctx, x+size.x_bearing, y-sh);
+		cairo_rel_line_to(dctx, size.width, 0.0);
+		cairo_stroke(dctx);
+	}
+	x += size.x_advance;
+
+	/* Draw 'k' */
+	cairo_move_to(dctx, x, y);
+	snprintf(tmp, 255, "%i", abs(k));
+	cairo_text_extents(dctx, tmp, &size);
+	cairo_show_text(dctx, tmp);
+	cairo_fill(dctx);
+	if ( k < 0 ) {
+		cairo_move_to(dctx, x+size.x_bearing, y-sh);
+		cairo_rel_line_to(dctx, size.width, 0.0);
+		cairo_stroke(dctx);
+	}
+	x += size.x_advance;
+
+	/* Draw 'l' */
+	cairo_move_to(dctx, x, y);
+	snprintf(tmp, 255, "%i", abs(l));
+	cairo_text_extents(dctx, tmp, &size);
+	cairo_show_text(dctx, tmp);
+	cairo_fill(dctx);
+	if ( l < 0 ) {
+		cairo_move_to(dctx, x+size.x_bearing, y-sh);
+		cairo_rel_line_to(dctx, size.width, 0.0);
+		cairo_stroke(dctx);
+	}
+}
+
+
 static void render_za(UnitCell *cell, ReflItemList *items,
                       double *ref, unsigned int *counts,
                       double boost, const char *sym, int wght, int colscale)
@@ -397,24 +447,24 @@ out:
 	cairo_fill(dctx);
 
 	/* Draw indexing lines */
+	cairo_set_line_cap(dctx, CAIRO_LINE_CAP_ROUND);
 	cairo_set_line_width(dctx, 4.0);
 	cairo_move_to(dctx, (double)cx, (double)cy);
 	u = (1.0+max_ux)*as*sin(theta);
 	v = (1.0+max_ux)*as*cos(theta);
-	STATUS("max u %i\n", max_ux);
 	cairo_line_to(dctx, cx+u*scale, cy+v*scale);
 	cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
 	cairo_stroke(dctx);
 
 	cairo_set_font_size(dctx, 40.0);
-	snprintf(tmp, 255, "%i%i%i", xh, xk, xl);
+	snprintf(tmp, 255, "%i%i%i", abs(xh), abs(xk), abs(xl));
 	cairo_text_extents(dctx, tmp, &size);
 
 	cairo_move_to(dctx, cx+u*scale + 20.0, cy+v*scale + size.height/2.0);
-	cairo_show_text(dctx, tmp);
+	render_overlined_indices(dctx, xh, xk, xl);
 	cairo_fill(dctx);
 
-	snprintf(tmp, 255, "%i%i%i", yh, yk, yl);
+	snprintf(tmp, 255, "%i%i%i", abs(yh), abs(yk), abs(yl));
 	cairo_text_extents(dctx, tmp, &size);
 
 	cairo_move_to(dctx, (double)cx, (double)cy);
@@ -426,12 +476,13 @@ out:
 
 	cairo_move_to(dctx, cx+u*scale - size.width/2.0,
 	                    cy+v*scale + size.height + 20.0);
-	cairo_show_text(dctx, tmp);
+	render_overlined_indices(dctx, yh, yk, yl);
 	cairo_fill(dctx);
 
 	cairo_surface_finish(surface);
 	cairo_destroy(dctx);
 }
+
 
 static int render_key(int colscale)
 {
