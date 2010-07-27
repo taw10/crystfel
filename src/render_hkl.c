@@ -54,8 +54,10 @@ static void show_help(const char *s)
 #endif
 "\n"
 "  -d, --down=<h>,<k>,<l>  Indices for the axis in the downward direction.\n"
+"                           Default: 1,0,0.\n"
 "  -r, --right=<h>,<k>,<l> Indices for the axis in the 'right' (roughly)\n"
-"                           direction.\n"
+"                           direction.  Default: 0,1,0.\n"
+"  -o, --output=<filename> Output filename (not for POV-ray).\n"
 "      --boost=<val>       Squash colour scale by <val>.\n"
 "  -p, --pdb=<file>        PDB file from which to get the unit cell.\n"
 "  -y, --symmetry=<sym>    Expand reflections according to point group <sym>.\n"
@@ -318,7 +320,8 @@ static void render_za(UnitCell *cell, ReflItemList *items,
                       double *ref, unsigned int *counts,
                       double boost, const char *sym, int wght, int colscale,
                       signed int xh, signed int xk, signed int xl,
-                      signed int yh, signed int yk, signed int yl)
+                      signed int yh, signed int yk, signed int yl,
+                      const char *outfile)
 {
 	cairo_surface_t *surface;
 	cairo_t *dctx;
@@ -398,7 +401,8 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 		ERROR("Circle radius is probably too small (%f).\n", max_r);
 	}
 
-	surface = cairo_pdf_surface_create("za.pdf", wh, ht);
+	if ( outfile == NULL ) outfile = "za.pdf";
+	surface = cairo_pdf_surface_create(outfile, wh, ht);
 
 	if ( cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS ) {
 		fprintf(stderr, "Couldn't create Cairo surface\n");
@@ -536,12 +540,14 @@ int main(int argc, char *argv[])
 	signed int rh=0, rk=1, rl=0;
 	char *down = NULL;
 	char *right = NULL;
+	char *outfile = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"povray",             0, &config_povray,      1},
 		{"zone-axis",          0, &config_zoneaxis,    1},
+		{"output",             1, NULL,               'o'},
 		{"pdb",                1, NULL,               'p'},
 		{"boost",              1, NULL,               'b'},
 		{"symmetry",           1, NULL,               'y'},
@@ -593,6 +599,10 @@ int main(int argc, char *argv[])
 
 		case 'r' :
 			right = strdup(optarg);
+			break;
+
+		case 'o' :
+			outfile = strdup(optarg);
 			break;
 
 		case 0 :
@@ -702,7 +712,7 @@ int main(int argc, char *argv[])
 	} else if ( config_zoneaxis ) {
 #ifdef HAVE_CAIRO
 		render_za(cell, items, ref, cts, boost, sym, wght, colscale,
-		          rh, rk, rl, dh, dk, dl);
+		          rh, rk, rl, dh, dk, dl, outfile);
 #else
 		ERROR("This version of CrystFEL was compiled without Cairo");
 		ERROR(" support, which is required to plot a zone axis");
@@ -715,6 +725,7 @@ int main(int argc, char *argv[])
 	free(pdb);
 	free(sym);
 	delete_items(items);
+	if ( outfile != NULL ) free(outfile);
 
 	return r;
 }
