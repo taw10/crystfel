@@ -450,8 +450,8 @@ out:
 	cairo_set_line_cap(dctx, CAIRO_LINE_CAP_ROUND);
 	cairo_set_line_width(dctx, 4.0);
 	cairo_move_to(dctx, (double)cx, (double)cy);
-	u = (1.0+max_ux)*as*sin(theta);
-	v = (1.0+max_ux)*as*cos(theta);
+	u = (2.0+max_ux)*as*sin(theta);
+	v = (2.0+max_ux)*as*cos(theta);
 	cairo_line_to(dctx, cx+u*scale, cy+v*scale);
 	cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
 	cairo_stroke(dctx);
@@ -469,7 +469,7 @@ out:
 
 	cairo_move_to(dctx, (double)cx, (double)cy);
 	u = 0.0;
-	v = (1.0+max_uy)*bs;
+	v = (2.0+max_uy)*bs;
 	cairo_line_to(dctx, cx+u*scale, cy+v*scale);
 	cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
 	cairo_stroke(dctx);
