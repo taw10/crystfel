@@ -388,8 +388,8 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	scale_v = ((double)ht-border) / (2.0*max_v);
 	scale = (scale_u < scale_v) ? scale_u : scale_v;
 
-	sep_u = (double)scale*as*sin(theta);
-	sep_v = (double)scale*as*cos(theta) + scale*bs;
+	sep_u = scale*as;
+	sep_v = scale*bs;
 	/* We are interested in the smaller of the two separations */
 	max_r = (sep_u < sep_v) ? sep_u : sep_v;
 	max_r /= 2.0;  /* Max radius is half the separation */
