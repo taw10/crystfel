@@ -53,6 +53,9 @@ static void show_help(const char *s)
 "      --zone-axis         Render a 2D zone axis pattern.\n"
 #endif
 "\n"
+"  -d, --down=<h>,<k>,<l>  Indices for the axis in the downward direction.\n"
+"  -r, --right=<h>,<k>,<l> Indices for the axis in the 'right' (roughly)\n"
+"                           direction.\n"
 "      --boost=<val>       Squash colour scale by <val>.\n"
 "  -p, --pdb=<file>        PDB file from which to get the unit cell.\n"
 "  -y, --symmetry=<sym>    Expand reflections according to point group <sym>.\n"
@@ -333,7 +336,9 @@ static void render_overlined_indices(cairo_t *dctx,
 
 static void render_za(UnitCell *cell, ReflItemList *items,
                       double *ref, unsigned int *counts,
-                      double boost, const char *sym, int wght, int colscale)
+                      double boost, const char *sym, int wght, int colscale,
+                      signed int xh, signed int xk, signed int xl,
+                      signed int yh, signed int yk, signed int yl)
 {
 	cairo_surface_t *surface;
 	cairo_t *dctx;
@@ -347,8 +352,6 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	float wh, ht;
-	signed int xh, xk, xl;
-	signed int yh, yk, yl;
 	signed int zh, zk, zl;
 	double xx, xy, xz;
 	double yx, yy, yz;
@@ -356,9 +359,6 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	cairo_text_extents_t size;
 	double cx, cy;
 	const double border = 200.0;
-
-	xh = 0;  xk = 1;  xl = 0;
-	yh = 0;  yk = 0;  yl = 1;
 
 	/* Vector product to determine the zone axis. */
 	zh = xk*yl - xl*yk;
@@ -552,6 +552,10 @@ int main(int argc, char *argv[])
 	int colscale;
 	char *cscale = NULL;
 	unsigned int *cts;
+	signed int dh=1, dk=0, dl=0;
+	signed int rh=0, rk=1, rl=0;
+	char *down = NULL;
+	char *right = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -563,13 +567,15 @@ int main(int argc, char *argv[])
 		{"symmetry",           1, NULL,               'y'},
 		{"weighting",          1, NULL,               'w'},
 		{"colscale",           1, NULL,               'c'},
+		{"down",               1, NULL,               'd'},
+		{"right",              1, NULL,               'r'},
 		{"counts",             0, &config_sqrt,        1},
 		{"colour-key",         0, &config_colkey,      1},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hj:p:w:c:y:",
+	while ((c = getopt_long(argc, argv, "hj:p:w:c:y:d:r:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -599,6 +605,14 @@ int main(int argc, char *argv[])
 
 		case 'c' :
 			cscale = strdup(optarg);
+			break;
+
+		case 'd' :
+			down = strdup(optarg);
+			break;
+
+		case 'r' :
+			right = strdup(optarg);
 			break;
 
 		case 0 :
@@ -664,6 +678,30 @@ int main(int argc, char *argv[])
 		return render_key(colscale);
 	}
 
+	if ( config_zoneaxis ) {
+		if ( (( down == NULL ) && ( right != NULL ))
+		  || (( down != NULL ) && ( right == NULL )) ) {
+			ERROR("Either specify both 'down' and 'right', or neither.\n");
+			return 1;
+		}
+		if ( down != NULL ) {
+			int r;
+			r = sscanf(down, "%i,%i,%i", &dh, &dk, &dl);
+			if ( r != 3 ) {
+				ERROR("Invalid format for 'down'\n");
+				return 1;
+			}
+		}
+		if ( right != NULL ) {
+			int r;
+			r = sscanf(right, "%i,%i,%i", &rh, &rk, &rl);
+			if ( r != 3 ) {
+				ERROR("Invalid format for 'right'\n");
+				return 1;
+			}
+		}
+	}
+
 	infile = argv[optind];
 
 	cell = load_cell_from_pdb(pdb);
@@ -683,7 +721,8 @@ int main(int argc, char *argv[])
 		r = povray_render_animation(cell, ref, cts, nproc);
 	} else if ( config_zoneaxis ) {
 #ifdef HAVE_CAIRO
-		render_za(cell, items, ref, cts, boost, sym, wght, colscale);
+		render_za(cell, items, ref, cts, boost, sym, wght, colscale,
+		          rh, rk, rl, dh, dk, dl);
 #else
 		ERROR("This version of CrystFEL was compiled without Cairo");
 		ERROR(" support, which is required to plot a zone axis");
