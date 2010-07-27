@@ -189,7 +189,6 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 	for ( yi=-INDMAX; yi<INDMAX; yi++ ) {
 
 		double u, v, val, res;
-		int nequiv, p;
 		signed int h, k, l;
 
 		h = xi*xh + yi*yh;
@@ -221,62 +220,56 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 			abort();
 		}
 
-		/* For each equivalent reflection... */
-		nequiv = num_equivs(h, k, l, sym);
-		for ( p=0; p<nequiv; p++ ) {
+		signed int he, ke, le;
+		signed int ux, uy, uz;
 
-			signed int he, ke, le;
-			signed int ux, uy, uz;
+		find_unique_equiv(items, h, k, l, sym, &he, &ke, &le);
 
-			get_equiv(h, k, l, &he, &ke, &le, sym, p);
+		/* Calculate the indices in the 2D basis */
+		ux = he*bc[0] + ke*bc[1] + le*bc[2];
+		uy = he*bc[3] + ke*bc[4] + le*bc[5];
+		uz = he*bc[6] + ke*bc[7] + le*bc[8];
 
-			/* Calculate the indices in the 2D basis */
-			ux = he*bc[0] + ke*bc[1] + le*bc[2];
-			uy = he*bc[3] + ke*bc[4] + le*bc[5];
-			uz = he*bc[6] + ke*bc[7] + le*bc[8];
+		/* Reflection in the zone? */
+		if ( uz != 0 ) continue;
 
-			/* Reflection in the zone? */
-			if ( uz != 0 ) continue;
+		/* Absolute location in image based on 2D basis */
+		u = (double)ux*as*sin(theta);
+		v = (double)ux*as*cos(theta) + (double)uy*bs;
 
-			/* Absolute location in image based on 2D basis */
-			u = (double)ux*as*sin(theta);
-			v = (double)ux*as*cos(theta) + (double)uy*bs;
+		if ( dctx != NULL ) {
 
-			if ( dctx != NULL ) {
+			float r, g, b;
 
-				float r, g, b;
+			cairo_arc(dctx, ((double)cx)+u*scale,
+			                ((double)cy)+v*scale,
+			                radius, 0, 2*M_PI);
 
-				cairo_arc(dctx, ((double)cx)+u*scale,
-				                ((double)cy)+v*scale,
-				                radius, 0, 2*M_PI);
+			render_scale(val, *max_val/boost, colscale,
+			             &r, &g, &b);
+			cairo_set_source_rgb(dctx, r, g, b);
+			cairo_fill(dctx);
 
-				render_scale(val, *max_val/boost, colscale,
-				             &r, &g, &b);
-				cairo_set_source_rgb(dctx, r, g, b);
-				cairo_fill(dctx);
+		} else {
 
-			} else {
+			/* Find max vectors in plane for scaling */
+			if ( fabs(u) > fabs(*max_u) ) *max_u = fabs(u);
+			if ( fabs(v) > fabs(*max_v) ) *max_v = fabs(v);
 
-				/* Find max vectors in plane for scaling */
-				if ( fabs(u) > fabs(*max_u) ) *max_u = fabs(u);
-				if ( fabs(v) > fabs(*max_v) ) *max_v = fabs(v);
-
-				/* Find max value for colour scale */
-				if ( fabs(val) > fabs(*max_val) ) {
-					*max_val = fabs(val);
-				}
-
-				/* Find max indices */
-				if ( (uy==0) && (fabs(ux) > *max_ux) )
-					*max_ux = fabs(ux);
-				if ( (ux==0) && (fabs(uy) > *max_uy) )
-					*max_uy = fabs(uy);
-
-				/* Find max resolution */
-				res = resolution(cell, he, ke, le);
-				if ( res > *max_res ) *max_res = res;
+			/* Find max value for colour scale */
+			if ( fabs(val) > fabs(*max_val) ) {
+				*max_val = fabs(val);
 			}
 
+			/* Find max indices */
+			if ( (uy==0) && (fabs(ux) > *max_ux) )
+				*max_ux = fabs(ux);
+			if ( (ux==0) && (fabs(uy) > *max_uy) )
+				*max_uy = fabs(uy);
+
+			/* Find max resolution */
+			res = resolution(cell, he, ke, le);
+			if ( res > *max_res ) *max_res = res;
 		}
 
 	}
