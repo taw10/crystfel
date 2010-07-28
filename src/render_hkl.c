@@ -190,52 +190,39 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 
 		double u, v, val, res;
 		signed int h, k, l;
+		signed int he, ke, le;
 
 		h = xi*xh + yi*yh;
 		k = xi*xk + yi*yk;
 		l = xi*xl + yi*yl;
 
 		/* Got this reflection? */
-		if ( find_unique_equiv(items, h, k, l, sym, &h, &k, &l) == 0 ) {
-			continue;
-		}
+		if ( find_unique_equiv(items, h, k, l, sym,
+		                       &he, &ke, &le) == 0 ) continue;
 
 		switch ( wght ) {
 		case WGHT_I :
-			val = lookup_intensity(ref, h, k, l);
+			val = lookup_intensity(ref, he, ke, le);
 			break;
 		case WGHT_SQRTI :
-			val = lookup_intensity(ref, h, k, l);
+			val = lookup_intensity(ref, he, ke, le);
 			val = (val>0.0) ? sqrt(val) : 0.0;
 			break;
 		case WGHT_COUNTS :
-			val = lookup_count(counts, h, k, l);
-			val /= (float)num_equivs(h, k, l, sym);
+			val = lookup_count(counts, he, ke, le);
+			val /= (float)num_equivs(he, ke, le, sym);
 			break;
 		case WGHT_RAWCOUNTS :
-			val = lookup_count(counts, h, k, l);
+			val = lookup_count(counts, he, ke, le);
 			break;
 		default :
 			ERROR("Invalid weighting.\n");
 			abort();
 		}
 
-		signed int he, ke, le;
-		signed int ux, uy, uz;
-
-		find_unique_equiv(items, h, k, l, sym, &he, &ke, &le);
-
-		/* Calculate the indices in the 2D basis */
-		ux = he*bc[0] + ke*bc[1] + le*bc[2];
-		uy = he*bc[3] + ke*bc[4] + le*bc[5];
-		uz = he*bc[6] + ke*bc[7] + le*bc[8];
-
-		/* Reflection in the zone? */
-		if ( uz != 0 ) continue;
-
 		/* Absolute location in image based on 2D basis */
-		u = (double)ux*as*sin(theta);
-		v = (double)ux*as*cos(theta) + (double)uy*bs;
+		u = (double)xi*as*sin(theta);
+		v = (double)xi*as*cos(theta) + (double)yi*bs;
 
 		if ( dctx != NULL ) {
 
@@ -262,13 +249,13 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 			}
 
 			/* Find max indices */
-			if ( (uy==0) && (fabs(ux) > *max_ux) )
-				*max_ux = fabs(ux);
-			if ( (ux==0) && (fabs(uy) > *max_uy) )
-				*max_uy = fabs(uy);
+			if ( (yi==0) && (fabs(xi) > *max_ux) )
+				*max_ux = fabs(xi);
+			if ( (xi==0) && (fabs(yi) > *max_uy) )
+				*max_uy = fabs(yi);
 
 			/* Find max resolution */
-			res = resolution(cell, he, ke, le);
+			res = resolution(cell, h, k, l);
 			if ( res > *max_res ) *max_res = res;
 		}
 
