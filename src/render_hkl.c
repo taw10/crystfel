@@ -23,10 +23,6 @@
 #ifdef HAVE_CAIRO
 #include <cairo.h>
 #include <cairo-pdf.h>
-/* GSL is only used if Cairo is present */
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_linalg.h>
 #endif
 
 #include "utils.h"
@@ -85,77 +81,6 @@ static void show_help(const char *s)
 
 
 #ifdef HAVE_CAIRO
-static int get_basis_change_coefficients(double *in, double *out)
-{
-	int s;
-	gsl_matrix *m;
-	gsl_matrix *inv;
-	gsl_permutation *perm;
-
-	m = gsl_matrix_alloc(3, 3);
-	if ( m == NULL ) {
-		ERROR("Couldn't allocate memory for matrix\n");
-		return 1;
-	}
-	gsl_matrix_set(m, 0, 0, in[0]);
-	gsl_matrix_set(m, 0, 1, in[1]);
-	gsl_matrix_set(m, 0, 2, in[2]);
-	gsl_matrix_set(m, 1, 0, in[3]);
-	gsl_matrix_set(m, 1, 1, in[4]);
-	gsl_matrix_set(m, 1, 2, in[5]);
-	gsl_matrix_set(m, 2, 0, in[6]);
-	gsl_matrix_set(m, 2, 1, in[7]);
-	gsl_matrix_set(m, 2, 2, in[8]);
-
-	/* Invert */
-	perm = gsl_permutation_alloc(m->size1);
-	if ( perm == NULL ) {
-		ERROR("Couldn't allocate permutation\n");
-		gsl_matrix_free(m);
-		return 1;
-	}
-	inv = gsl_matrix_alloc(3, 3);
-	if ( inv == NULL ) {
-		ERROR("Couldn't allocate inverse\n");
-		gsl_matrix_free(m);
-		gsl_permutation_free(perm);
-		return 1;
-	}
-	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
-		ERROR("Couldn't decompose matrix\n");
-		gsl_matrix_free(m);
-		gsl_permutation_free(perm);
-		return 1;
-	}
-	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
-		ERROR("Couldn't invert matrix\n");
-		gsl_matrix_free(m);
-		gsl_permutation_free(perm);
-		return 1;
-	}
-	gsl_permutation_free(perm);
-	gsl_matrix_free(m);
-
-	/* Transpose */
-	gsl_matrix_transpose(inv);
-
-	out[0] = gsl_matrix_get(inv, 0, 0);
-	out[1] = gsl_matrix_get(inv, 0, 1);
-	out[2] = gsl_matrix_get(inv, 0, 2);
-	out[3] = gsl_matrix_get(inv, 1, 0);
-	out[4] = gsl_matrix_get(inv, 1, 1);
-	out[5] = gsl_matrix_get(inv, 1, 2);
-	out[6] = gsl_matrix_get(inv, 2, 0);
-	out[7] = gsl_matrix_get(inv, 2, 1);
-	out[8] = gsl_matrix_get(inv, 2, 2);
-
-	gsl_matrix_free(inv);
-
-	return 0;
-
-}
-
-
 static void draw_circles(signed int xh, signed int xk, signed int xl,
                          signed int yh, signed int yk, signed int yl,
                          signed int zh, signed int zk, signed int zl,
@@ -170,20 +95,10 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
                          double *max_res)
 {
 	signed int xi, yi;
-	double in[9];
-	double bc[9];
 
 	if ( dctx == NULL ) {
 		*max_u = 0.0;  *max_v = 0.0;  *max_val = 0.0;
 		*max_res = 0.0;  *max_ux = 0;  *max_uy = 0;
-	}
-
-	in[0] = xh;  in[1] = xk;  in[2] = xl;
-	in[3] = yh;  in[4] = yk;  in[5] = yl;
-	in[6] = zh;  in[7] = zk;  in[8] = zl;
-	if ( get_basis_change_coefficients(in, bc) ) {
-		ERROR("Couldn't change basis.\n");
-		return;
 	}
 
 	/* Loop across the two basis directions */
