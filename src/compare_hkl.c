@@ -112,10 +112,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-
 	/* List for output scale factor map */
 	out = new_list_intensity();
-
 
 	/* Find common reflections (taking symmetry into account) */
 	icommon = new_items();
