@@ -1,0 +1,20 @@
+#!/bin/sh
+
+FILENAME=$1
+SYM="6/mmm"
+
+render_hkl --zone-axis -p ../molecule.pdb --colscale=colour --weighting=I \
+           --boost=5 ${FILENAME} \
+           --down=1,0,0 --right=0,1,0 --output=zah-001.pdf -y ${SYM}
+
+render_hkl --zone-axis -p ../molecule.pdb --colscale=colour --weighting=I \
+           --boost=50 ${FILENAME} \
+           --down=0,0,1 --right=-1,1,0 --output=zab-110.pdf -y ${SYM}
+
+render_hkl --zone-axis -p ../molecule.pdb --colscale=colour --weighting=I \
+           --boost=50 ${FILENAME} \
+           --down=0,0,1 --right=0,1,0 --output=zab-100.pdf -y ${SYM}
+
+render_hkl --zone-axis -p ../molecule.pdb --colscale=colour --weighting=I \
+           --boost=50 ${FILENAME} \
+           --down=0,0,1 --right=1,0,0 --output=zab-010.pdf -y ${SYM}
