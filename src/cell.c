@@ -150,8 +150,7 @@ UnitCell *cell_new_from_parameters(double a, double b, double c,
 }
 
 
-static UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs,
-                                    struct rvec cs)
+UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs, struct rvec cs)
 {
 	UnitCell *cell;
 

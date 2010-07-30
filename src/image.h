@@ -58,15 +58,6 @@ struct imagefeature {
 typedef struct _imagefeaturelist ImageFeatureList;
 
 
-/* A 3D vector in reciprocal space */
-struct rvec
-{
-	double   u;
-	double   v;
-	double   w;
-};
-
-
 struct reflhit {
 	signed int h;
 	signed int k;

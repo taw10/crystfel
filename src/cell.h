@@ -16,6 +16,14 @@
 #include <config.h>
 #endif
 
+/* A 3D vector in reciprocal space */
+struct rvec
+{
+	double   u;
+	double   v;
+	double   w;
+};
+
 typedef struct _unitcell UnitCell;
 
 extern UnitCell *cell_new(void);
@@ -24,6 +32,9 @@ extern UnitCell *cell_new_from_cell(UnitCell *orig);
 /* Lengths in m, angles in radians */
 extern UnitCell *cell_new_from_parameters(double a, double b, double c,
 				double alpha, double beta, double gamma);
+
+extern UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs,
+                                    struct rvec cs);
 
 extern void cell_set_cartesian(UnitCell *cell,
 			double ax, double ay, double az,

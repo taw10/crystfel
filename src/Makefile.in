@@ -35,7 +35,7 @@ POST_UNINSTALL = :
 bin_PROGRAMS = pattern_sim$(EXEEXT) process_hkl$(EXEEXT) \
 	get_hkl$(EXEEXT) indexamajig$(EXEEXT) compare_hkl$(EXEEXT) \
 	powder_plot$(EXEEXT) render_hkl$(EXEEXT) \
-	calibrate_detector$(EXEEXT) $(am__EXEEXT_1)
+	calibrate_detector$(EXEEXT) facetron$(EXEEXT) $(am__EXEEXT_1)
 @HAVE_GTK_TRUE@am__append_1 = hdfsee
 @HAVE_OPENCL_TRUE@am__append_2 = diffraction-gpu.c cl-utils.c
 @HAVE_OPENCL_TRUE@am__append_3 = diffraction-gpu.c cl-utils.c
@@ -63,6 +63,9 @@ am_compare_hkl_OBJECTS = compare_hkl.$(OBJEXT) sfac.$(OBJEXT) \
 	statistics.$(OBJEXT) symmetry.$(OBJEXT)
 compare_hkl_OBJECTS = $(am_compare_hkl_OBJECTS)
 compare_hkl_DEPENDENCIES =
+am_facetron_OBJECTS = facetron.$(OBJEXT) cell.$(OBJEXT)
+facetron_OBJECTS = $(am_facetron_OBJECTS)
+facetron_DEPENDENCIES =
 am_get_hkl_OBJECTS = get_hkl.$(OBJEXT) sfac.$(OBJEXT) cell.$(OBJEXT) \
 	utils.$(OBJEXT) reflections.$(OBJEXT) symmetry.$(OBJEXT)
 get_hkl_OBJECTS = $(am_get_hkl_OBJECTS)
@@ -134,12 +137,13 @@ AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN   " $@;
 SOURCES = $(calibrate_detector_SOURCES) $(compare_hkl_SOURCES) \
-	$(get_hkl_SOURCES) $(hdfsee_SOURCES) $(indexamajig_SOURCES) \
-	$(pattern_sim_SOURCES) $(powder_plot_SOURCES) \
-	$(process_hkl_SOURCES) $(render_hkl_SOURCES)
+	$(facetron_SOURCES) $(get_hkl_SOURCES) $(hdfsee_SOURCES) \
+	$(indexamajig_SOURCES) $(pattern_sim_SOURCES) \
+	$(powder_plot_SOURCES) $(process_hkl_SOURCES) \
+	$(render_hkl_SOURCES)
 DIST_SOURCES = $(calibrate_detector_SOURCES) $(compare_hkl_SOURCES) \
-	$(get_hkl_SOURCES) $(am__hdfsee_SOURCES_DIST) \
-	$(am__indexamajig_SOURCES_DIST) \
+	$(facetron_SOURCES) $(get_hkl_SOURCES) \
+	$(am__hdfsee_SOURCES_DIST) $(am__indexamajig_SOURCES_DIST) \
 	$(am__pattern_sim_SOURCES_DIST) $(powder_plot_SOURCES) \
 	$(process_hkl_SOURCES) $(render_hkl_SOURCES)
 ETAGS = etags
@@ -272,6 +276,8 @@ calibrate_detector_SOURCES = calibrate_detector.c utils.c hdf5-file.c image.c \
                              sfac.c
 
 calibrate_detector_LDADD = @LIBS@
+facetron_SOURCES = facetron.c cell.c
+facetron_LDADD = @LIBS@
 INCLUDES = "-I$(top_srcdir)/data"
 all: all-am
 
@@ -350,6 +356,9 @@ calibrate_detector$(EXEEXT): $(calibrate_detector_OBJECTS) $(calibrate_detector_
 compare_hkl$(EXEEXT): $(compare_hkl_OBJECTS) $(compare_hkl_DEPENDENCIES) 
 	@rm -f compare_hkl$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(compare_hkl_OBJECTS) $(compare_hkl_LDADD) $(LIBS)
+facetron$(EXEEXT): $(facetron_OBJECTS) $(facetron_DEPENDENCIES) 
+	@rm -f facetron$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(facetron_OBJECTS) $(facetron_LDADD) $(LIBS)
 get_hkl$(EXEEXT): $(get_hkl_OBJECTS) $(get_hkl_DEPENDENCIES) 
 	@rm -f get_hkl$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(get_hkl_OBJECTS) $(get_hkl_LDADD) $(LIBS)
@@ -387,6 +396,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diffraction.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dirax.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/displaywindow.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/facetron.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filters.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hdf5-file.Po@am__quote@
