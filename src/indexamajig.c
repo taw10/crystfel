@@ -617,8 +617,13 @@ int main(int argc, char *argv[])
 
 	cell = load_cell_from_pdb(pdb);
 	if ( cell == NULL ) {
-		ERROR("Couldn't read unit cell (from %s)\n", pdb);
-		return 1;
+		if ( config_nomatch ) {
+			STATUS("Couldn't read unit cell, but no matching is"
+			       " requested, so that's OK.\n");
+		} else {
+			ERROR("Couldn't read unit cell (from %s)\n", pdb);
+			return 1;
+		}
 	}
 	free(pdb);
 
