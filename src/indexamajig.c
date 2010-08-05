@@ -615,15 +615,15 @@ int main(int argc, char *argv[])
 	}
 	free(geometry);
 
-	cell = load_cell_from_pdb(pdb);
-	if ( cell == NULL ) {
-		if ( config_nomatch ) {
-			STATUS("Couldn't read unit cell, but no matching is"
-			       " requested, so that's OK.\n");
-		} else {
+	if ( !config_nomatch ) {
+		cell = load_cell_from_pdb(pdb);
+		if ( cell == NULL ) {
 			ERROR("Couldn't read unit cell (from %s)\n", pdb);
 			return 1;
 		}
+	} else {
+		STATUS("No cell needed because --no-match was used.\n");
+		cell = NULL;
 	}
 	free(pdb);
 
