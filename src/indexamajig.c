@@ -716,13 +716,20 @@ int main(int argc, char *argv[])
 			pthread_mutex_unlock(&pargs->control_mutex);
 			if ( !done ) continue;
 
+			/* Results will be processed after checking if
+			 * there are any more images to process. */
+
+			/* Get next filename */
+			rval = fgets(line, 1023, fh);
+			/* In this case, the result of the last file
+			 * file will be processed when the thread is
+			 * joined. */
+			if ( rval == NULL ) break;
+
 			/* Record the result */
 			n_hits += pargs->hit;
 			n_sane += pargs->peaks_sane;
 
-			/* Get next filename */
-			rval = fgets(line, 1023, fh);
-			if ( rval == NULL ) break;
 			chomp(line);
 			snprintf(pargs->filename, 1023, "%s%s", prefix, line);
 
