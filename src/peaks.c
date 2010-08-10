@@ -49,13 +49,6 @@
 #define MAX_PEAKS (2048)
 #define INTEGRATION_RADIUS (10)
 
-static int in_streak(int x, int y)
-{
-	if ( (y>512) && (y<600) && (abs(x-489)<15) ) return 1;
-	if ( (y>600) && (abs(x-480)<25) ) return 1;
-	return 0;
-}
-
 
 static int is_hot_pixel(struct image *image, int x, int y)
 {
@@ -312,10 +305,7 @@ void search_peaks(struct image *image)
 		int r;
 
 		/* Overall threshold */
-		if ( data[x+width*y] < 800 ) continue;
-
-		/* Ignore streak */
-		if ( in_streak(x, y) ) continue;
+		if ( data[x+width*y] < 50 ) continue;
 
 		/* Get gradients */
 		dx1 = data[x+width*y] - data[(x+1)+width*y];
