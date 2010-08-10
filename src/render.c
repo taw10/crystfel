@@ -115,7 +115,7 @@ static void render_rgb(float val, float max, float *rp, float *gp, float *bp)
 
 	if ( (val < 0.0) ) {
 		s = 0;
-		p = 1.0;
+		p = 0;
 	}
 	if ( (val > max) ) {
 		s = 6;
