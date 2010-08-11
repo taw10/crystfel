@@ -22,6 +22,14 @@
 #include "parameters-lcls.tmp"
 
 
+int atob(const char *a)
+{
+	if ( strcasecmp(a, "true") == 0 ) return 1;
+	if ( strcasecmp(a, "false") == 0 ) return 1;
+	return atoi(a);
+}
+
+
 /* x,y in pixels relative to image origin */
 int map_position(struct image *image, double dx, double dy,
                  double *rx, double *ry, double *rz)
@@ -35,6 +43,7 @@ int map_position(struct image *image, double dx, double dy,
 
 	p = find_panel(image->det, dx, dy);
 	if ( p == NULL ) return 1;
+	if ( p->no_index ) return 1;
 
 	x = ((double)dx - p->cx);
 	y = ((double)dy - p->cy);
@@ -256,6 +265,8 @@ struct detector *get_detector_geometry(const char *filename)
 				ERROR("Assuming 'x'\n.");
 				det->panels[np].badrow = 'x';
 			}
+		} else if ( strcmp(path[1], "no_index") == 0 ) {
+			det->panels[np].no_index = atob(bits[2]);
 		} else {
 			ERROR("Unrecognised field '%s'\n", path[1]);
 		}

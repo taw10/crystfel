@@ -22,15 +22,16 @@ struct image;
 
 struct panel
 {
-	int      min_x;   /* Smallest x value considered to be in this panel */
-	int      max_x;   /* Largest x value considered to be in this panel */
-	int      min_y;   /* ... and so on */
+	int      min_x;    /* Smallest x value considered to be in this panel */
+	int      max_x;    /* Largest x value considered to be in this panel */
+	int      min_y;    /* ... and so on */
 	int      max_y;
-	float    cx;      /* Location of centre */
+	float    cx;       /* Location of centre */
 	float    cy;
-	float    clen;    /* Camera length */
-	float    res;     /* Resolution */
-	char     badrow;  /* 'x' or 'y' */
+	float    clen;     /* Camera length */
+	float    res;      /* Resolution */
+	char     badrow;   /* 'x' or 'y' */
+	int      no_index; /* Don't index peaks in this panel if non-zero */
 };
 
 struct detector
