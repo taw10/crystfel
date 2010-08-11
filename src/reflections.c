@@ -52,7 +52,7 @@ void write_reflections(const char *filename, ReflItemList *items,
 		h = it->h;  k = it->k;  l = it->l;
 
 		int N;
-		double intensity, s;
+		double intensity, s, sigma;
 		char ph[32];
 
 		if ( counts ) {
@@ -77,9 +77,15 @@ void write_reflections(const char *filename, ReflItemList *items,
 			s = 0.0;
 		}
 
+		if ( intensity > 0.0 ) {
+			sigma = sqrt(intensity);
+		} else {
+			sigma = 0.0;
+		}
+
 		/* h, k, l, I, sigma(I), s */
 		fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f  %10.2f %7i\n",
-		        h, k, l, intensity, ph, 0.0, s/1.0e9, N);
+		        h, k, l, intensity, ph, sigma, s/1.0e9, N);
 
 	}
 	fclose(fh);
