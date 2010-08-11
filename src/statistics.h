@@ -22,11 +22,17 @@
 extern double stat_scale_intensity(const double *ref1, const double *ref2,
                                    ReflItemList *items);
 
-extern double stat_rmerge(const double *ref1, const double *ref2,
-                          ReflItemList *items, double *scalep);
+extern double stat_r1(const double *ref1, const double *ref2,
+                      ReflItemList *items, double *scalep);
 
 extern double stat_r2(const double *ref1, const double *ref2,
                       ReflItemList *items, double *scalep);
+
+extern double stat_rdiff(const double *ref1, const double *ref2,
+                         ReflItemList *items, double *scalep);
+
+extern double stat_riso(const double *ref1, const double *ref2,
+                        ReflItemList *items, double *scalep);
 
 extern double stat_pearson(const double *ref1, const double *ref2,
                            ReflItemList *items);

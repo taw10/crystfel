@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 	char *afile = NULL;
 	char *bfile = NULL;
 	char *sym = NULL;
-	double scale, R2, Rmerge, pearson;
+	double scale, R1, R2, Rdiff, Riso, pearson;
 	int i, ncom;
 	ReflItemList *i1, *i2, *icommon;
 
@@ -143,10 +143,14 @@ int main(int argc, char *argv[])
 
 	STATUS("%i,%i reflections: %i in common\n",
 	       num_items(i1), num_items(i2), ncom);
+	R1 = stat_r1(ref1, ref2_transformed, icommon, &scale);
+	STATUS("R1 = %5.4f %% (scale=%5.2e)\n", R1*100.0, scale);
 	R2 = stat_r2(ref1, ref2_transformed, icommon, &scale);
 	STATUS("R2 = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale);
-	Rmerge = stat_rmerge(ref1, ref2_transformed, icommon, &scale);
-	STATUS("Rmerge = %5.4f %% (scale=%5.2e)\n", Rmerge*100.0, scale);
+	Rdiff = stat_rdiff(ref1, ref2_transformed, icommon, &scale);
+	STATUS("Rdiff = %5.4f %% (scale=%5.2e)\n", Rdiff*100.0, scale);
+	Riso = stat_riso(ref1, ref2_transformed, icommon, &scale);
+	STATUS("Riso = %5.4f %% (scale=%5.2e)\n", Riso*100.0, scale);
 	pearson = stat_pearson(ref1, ref2_transformed, icommon);
 	STATUS("Pearson r = %5.4f\n", pearson);
 
