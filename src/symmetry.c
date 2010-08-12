@@ -31,12 +31,20 @@
 /* Check if a reflection is in the asymmetric unit cell */
 static int check_cond(signed int h, signed int k, signed int l, const char *sym)
 {
+	/* Triclinic */
 	if ( strcmp(sym, "1") == 0 )
 		return ( 1 );
 	if ( strcmp(sym, "-1") == 0 )
 		return ( (l>0)
 		      || ( (l==0) && (k>0) )
 		      || ( (l==0) && (k==0) && (h>=0) ) );
+
+	/* Tetragonal */
+	if ( strcmp(sym, "422") == 0 )
+		return ( (((h>=0) && (k>0)) || ((h==0) && (k==0)))
+		         && (h>=k) );
+
+	/* Hexagonal */
 	if ( strcmp(sym, "6") == 0 )
 		return ( ((h>0) && (k>=0)) || ((h==0) && (k==0)) );
 	if ( strcmp(sym, "6/m") == 0 )
@@ -64,6 +72,9 @@ int num_general_equivs(const char *sym)
 	/* Triclinic */
 	if ( strcmp(sym, "1") == 0 ) return 1;
 	if ( strcmp(sym, "-1") == 0 ) return 2;
+
+	/* Tetragonal */
+	if ( strcmp(sym, "422") == 0 ) return 8;
 
 	/* Hexagonal */
 	if ( strcmp(sym, "6") == 0 ) return 6;
@@ -93,6 +104,19 @@ void get_general_equiv(signed int h, signed int k, signed int l,
 		switch ( idx ) {
 		case 0 : *he = h;   *ke = k;   *le = l;   return;
 		case 1 : *he = -h;  *ke = -k;  *le = -l;  return;
+		}
+	}
+
+	if ( strcmp(sym, "422") == 0 ) {
+		switch ( idx ) {
+		case  0 : *he = h;   *ke = k;   *le = l;  return;
+		case  1 : *he = -h;  *ke = -k;  *le = l;  return;
+		case  2 : *he = -k;  *ke = h;   *le = l;  return;
+		case  3 : *he = k;   *ke = -h;  *le = l;  return;
+		case  4 : *he = -h;  *ke = k;   *le = -l; return;
+		case  5 : *he = h;   *ke = -k;  *le = -l; return;
+		case  6 : *he = k;   *ke = h;   *le = -l; return;
+		case  7 : *he = -k;  *ke = -h;  *le = -l; return;
 		}
 	}
 
@@ -250,6 +274,9 @@ const char *get_holohedral(const char *sym)
 	/* Triclinic */
 	if ( strcmp(sym, "1") == 0 ) return "-1";
 	if ( strcmp(sym, "-1") == 0 ) return "-1";
+
+	/* Tetragonal */
+	if ( strcmp(sym, "422") == 0 ) return "4/mmm";
 
 	/* Hexagonal */
 	if ( strcmp(sym, "6") == 0 ) return "6/mmm";
