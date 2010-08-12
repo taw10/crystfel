@@ -45,6 +45,9 @@ static void show_help(const char *s)
 "                              calculating them from scratch.  You might use\n"
 "                              this if you need to apply noise or twinning.\n"
 "  -p, --pdb=<file>           PDB file from which to get the structure.\n"
+"      --no-phases            Do not try to use phases in the input file.\n"
+"      --multiplicity         Multiply intensities by the number of\n"
+"                              equivalent reflections.\n"
 );
 }
 
@@ -153,6 +156,8 @@ int main(int argc, char *argv[])
 	struct molecule *mol;
 	char *template = NULL;
 	int config_noisify = 0;
+	int config_nophase = 0;
+	int config_multi = 0;
 	char *holo = NULL;
 	char *mero = NULL;
 	char *output = NULL;
@@ -171,6 +176,8 @@ int main(int argc, char *argv[])
 		{"symmetry",           1, NULL,               'y'},
 		{"intensities",        1, NULL,               'i'},
 		{"pdb",                1, NULL,               'p'},
+		{"no-phases",          0, &config_nophase,     1},
+		{"multiplicity",       0, &config_multi,       1},
 		{0, 0, NULL, 0}
 	};
 
@@ -220,14 +227,17 @@ int main(int argc, char *argv[])
 	}
 
 	mol = load_molecule(filename);
-	phases = new_list_phase();
+	if ( !config_nophase ) {
+		phases = new_list_phase();
+	} else {
+		phases = NULL;
+	}
 	if ( input == NULL ) {
 		input_items = new_items();
 		ideal_ref = get_reflections(mol, eV_to_J(1790.0), 1/(0.05e-9),
 		                            phases, input_items);
 	} else {
 		ideal_ref = new_list_intensity();
-		phases = new_list_phase();
 		input_items = read_reflections(input, ideal_ref, phases, NULL);
 		free(input);
 	}
@@ -240,6 +250,25 @@ int main(int argc, char *argv[])
 		new = twin_reflections(ideal_ref, input_items, holo, mero);
 		delete_items(input_items);
 		input_items = new;
+	}
+
+	if ( config_multi ) {
+
+		int i;
+
+		for ( i=0; i<num_items(input_items); i++ ) {
+
+			struct refl_item *it;
+			double inty;
+
+			it = get_item(input_items, i);
+			inty = lookup_intensity(ideal_ref, it->h, it->k, it->l);
+			inty *= num_equivs(it->h, it->k, it->l, mero);
+			set_intensity(ideal_ref, it->h, it->k, it->l, inty);
+			STATUS("%i %i %i %i\n", it->h, it->k, it->l,
+			       num_equivs(it->h, it->k, it->l, mero));
+
+		}
 	}
 
 	if ( template ) {
