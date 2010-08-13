@@ -197,7 +197,7 @@ int integrate_peak(struct image *image, int xp, int yp,
 		/* Veto this peak if we tried to integrate in a bad region */
 		if ( image->flags != NULL ) {
 			flags = image->flags[(x+xp)+image->width*(y+yp)];
-			if ( !((flags & 0x01) && (flags & 0x04)) ) return 1;
+			if ( !(flags & 0x01) ) return 1;
 		}
 
 		val = image->data[(x+xp)+image->width*(y+yp)];
