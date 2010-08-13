@@ -55,7 +55,7 @@ calibrate_detector_SOURCES = calibrate_detector.c utils.c hdf5-file.c image.c \
                              sfac.c
 calibrate_detector_LDADD = @LIBS@
 
-facetron_SOURCES = facetron.c cell.c
+facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c
 facetron_LDADD = @LIBS@
 
 cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c

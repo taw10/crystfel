@@ -1,8 +1,7 @@
 #!/bin/sh
 
-echo $1 | indexamajig --indexing=dirax -i - \
+echo $1 | ~/crystfel/src/indexamajig --indexing=dirax -i - \
                       -g ~/crystfel/examples/lcls-dec.geom \
                       -p ~/lcls/1JB0.pdb \
                       --near-bragg --filter-cm \
-        2>/dev/null | grep 'star' | cut -d"=" -f 2 | cut -d" " -f 1-4 \
-        | ~/crystfel/src/facetron
+        | ~/crystfel/src/facetron -g ~/crystfel/examples/lcls-dec.geom
