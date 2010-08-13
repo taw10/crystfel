@@ -240,9 +240,9 @@ static void show_marked_features(struct image *image, guchar *data,
 			if ( nx >= w ) continue;
 			if ( ny >= h ) continue;
 
-			data[3*( nx+w*(h-1-ny) )+0] = 0;
-			data[3*( nx+w*(h-1-ny) )+1] = 0;
-			data[3*( nx+w*(h-1-ny) )+2] = 255;
+			data[3*( nx+w*(h-1-ny) )+0] = 128;
+			data[3*( nx+w*(h-1-ny) )+1] = 128;
+			data[3*( nx+w*(h-1-ny) )+2] = 30;
 
 		}
 	}
