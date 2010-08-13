@@ -26,6 +26,7 @@
 #include "cell.h"
 #include "hdf5-file.h"
 #include "detector.h"
+#include "peaks.h"
 
 
 #define MAX_HITS (1024)
@@ -46,9 +47,78 @@ static void show_help(const char *s)
 }
 
 
-/* Predict peaks */
-static int find_intersections(struct image *image, UnitCell *cell,
-                              double divergence, double bandwidth)
+static UnitCell *read_orientation_matrix(FILE *fh)
+{
+	float u, v, w;
+	struct rvec as, bs, cs;
+	UnitCell *cell;
+	char line[1024];
+
+	if ( fgets(line, 1023, fh) == NULL ) return NULL;
+	if ( sscanf(line, "astar = %f %f %f", &u, &v, &w) != 3 ) {
+		ERROR("Couldn't read a-star\n");
+		return NULL;
+	}
+	as.u = u*1e9;  as.v = v*1e9;  as.w = w*1e9;
+	if ( fgets(line, 1023, fh) == NULL ) return NULL;
+	if ( sscanf(line, "bstar = %f %f %f", &u, &v, &w) != 3 ) {
+		ERROR("Couldn't read b-star\n");
+		return NULL;
+	}
+	bs.u = u*1e9;  bs.v = v*1e9;  bs.w = w*1e9;
+	if ( fgets(line, 1023, fh) == NULL ) return NULL;
+	if ( sscanf(line, "cstar = %f %f %f", &u, &v, &w) != 3 ) {
+		ERROR("Couldn't read c-star\n");
+		return NULL;
+	}
+	cs.u = u*1e9;  cs.v = v*1e9;  cs.w = w*1e9;
+	cell = cell_new_from_axes(as, bs, cs);
+
+	return cell;
+}
+
+
+static int find_chunk(FILE *fh, UnitCell **cell, char **filename)
+{
+	char line[1024];
+	char *rval = NULL;
+
+	do {
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
+
+		chomp(line);
+
+		if ( strncmp(line, "Reflections from indexing", 25) != 0 ) {
+			continue;
+		}
+
+		*filename = strdup(line+29);
+
+		/* Skip two lines (while checking for errors) */
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
+
+		*cell = read_orientation_matrix(fh);
+		if ( *cell == NULL ) {
+			STATUS("Got filename but no cell for %s\n", *filename);
+			continue;
+		}
+
+		return 0;
+
+	} while ( rval != NULL );
+
+	return 1;
+}
+
+
+static struct reflhit *find_intersections(struct image *image, UnitCell *cell,
+                                          double divergence, double bandwidth,
+                                          int *n, int output)
 {
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
@@ -60,7 +130,10 @@ static int find_intersections(struct image *image, UnitCell *cell,
 	signed int h, k, l;
 
 	hits = malloc(sizeof(struct reflhit)*MAX_HITS);
-	if ( hits == NULL ) return 0;
+	if ( hits == NULL ) {
+		*n = 0;
+		return NULL;
+	}
 
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
@@ -140,84 +213,155 @@ static int find_intersections(struct image *image, UnitCell *cell,
 		hits[np].k = k;
 		hits[np].l = l;
 		np++;
-		printf("%i %i %i 0.0 (at %f,%f) %i\n", h, k, l, xda, yda, p);
+
+		if ( output ) {
+			printf("%i %i %i 0.0 (at %f,%f)\n", h, k, l, xda, yda);
+		}
 
 	}
 	}
 	}
 
-	free(hits);  /* FIXME! */
-
-	return np;
+	*n = np;
+	return hits;
 }
 
 
-static UnitCell *read_orientation_matrix(FILE *fh)
+static double integrate_all(struct image *image, struct reflhit *hits, int n)
 {
-	float u, v, w;
-	struct rvec as, bs, cs;
-	UnitCell *cell;
-	char line[1024];
+	double itot = 0.0;
+	int i;
 
-	if ( fgets(line, 1023, fh) == NULL ) return NULL;
-	if ( sscanf(line, "astar = %f %f %f", &u, &v, &w) != 3 ) {
-		ERROR("Couldn't read a-star\n");
-		return NULL;
-	}
-	as.u = u*1e9;  as.v = v*1e9;  as.w = w*1e9;
-	if ( fgets(line, 1023, fh) == NULL ) return NULL;
-	if ( sscanf(line, "bstar = %f %f %f", &u, &v, &w) != 3 ) {
-		ERROR("Couldn't read b-star\n");
-		return NULL;
-	}
-	bs.u = u*1e9;  bs.v = v*1e9;  bs.w = w*1e9;
-	if ( fgets(line, 1023, fh) == NULL ) return NULL;
-	if ( sscanf(line, "cstar = %f %f %f", &u, &v, &w) != 3 ) {
-		ERROR("Couldn't read c-star\n");
-		return NULL;
-	}
-	cs.u = u*1e9;  cs.v = v*1e9;  cs.w = w*1e9;
-	cell = cell_new_from_axes(as, bs, cs);
+	for ( i=0; i<n; i++ ) {
 
-	return cell;
+		float x, y, intensity;
+
+		if ( integrate_peak(image, hits[i].x, hits[i].y, &x, &y,
+                                    &intensity, 0, 0) ) continue;
+
+		itot += intensity;
+	}
+
+	return itot;
 }
 
 
-static int find_chunk(FILE *fh, UnitCell **cell, char **filename)
+static void get_trial_cell(UnitCell *out, UnitCell *in, int i, double step)
 {
-	char line[1024];
-	char *rval = NULL;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+
+	cell_get_reciprocal(in, &asx, &asy, &asz, &bsx, &bsy, &bsz,
+	                    &csx, &csy, &csz);
+
+	switch ( i ) {
+	case  0 : asx += step; break;
+	case  1 : asx -= step; break;
+	case  2 : asy += step; break;
+	case  3 : asy -= step; break;
+	case  4 : asz += step; break;
+	case  5 : asz -= step; break;
+	case  6 : bsx += step; break;
+	case  7 : bsx -= step; break;
+	case  8 : bsy += step; break;
+	case  9 : bsy -= step; break;
+	case 10 : bsz += step; break;
+	case 11 : bsz -= step; break;
+	case 12 : csx += step; break;
+	case 13 : csx -= step; break;
+	case 14 : csy += step; break;
+	case 15 : csy -= step; break;
+	case 16 : csz += step; break;
+	case 17 : csz -= step; break;
+	default : break;
+	}
+
+	cell_set_reciprocal(out, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+}
+
+
+static void try_refine(struct image *image, UnitCell *cell,
+                       double da, double dw, double step)
+{
+	struct reflhit *hits;
+	int np;
+	double itot;
+	UnitCell *trial_cell;
+	int did_something;
+
+	trial_cell = cell_new();
+
+	hits = find_intersections(image, cell, da, dw, &np, 0);
+	itot = integrate_all(image, hits, np);
+	STATUS("%f\n", itot);
 
 	do {
 
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
+		int i;
 
-		chomp(line);
+		did_something = 0;
 
-		if ( strncmp(line, "Reflections from indexing", 25) != 0 ) {
-			continue;
+		for ( i=0; i<18; i++ ) {
+
+			struct reflhit *trial_hits;
+			double trial_itot;
+
+			get_trial_cell(trial_cell, cell, i, step);
+
+			trial_hits = find_intersections(image, trial_cell,
+				                        da, dw, &np, 0);
+			trial_itot = integrate_all(image, hits, np);
+
+			if ( trial_itot > itot ) {
+
+				double asx, asy, asz;
+				double bsx, bsy, bsz;
+				double csx, csy, csz;
+
+				cell_get_reciprocal(trial_cell, &asx, &asy,
+				                    &asz, &bsx, &bsy, &bsz,
+				                    &csx, &csy, &csz);
+				cell_set_reciprocal(cell, asx, asy, asz, bsx,
+				                    bsy, bsz, csx, csy, csz);
+
+				itot = trial_itot;
+				free(hits);
+				hits = trial_hits;
+
+				did_something = 1;
+
+			} else {
+
+				free(trial_hits);
+
+			}
 		}
 
-		*filename = strdup(line+29);
+	} while ( did_something );
 
-		/* Skip two lines (while checking for errors) */
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
+	free(trial_cell);
+}
 
-		*cell = read_orientation_matrix(fh);
-		if ( *cell == NULL ) {
-			STATUS("Got filename but no cell for %s\n", *filename);
-			continue;
-		}
 
-		return 0;
+/* Predict peaks */
+static void pre_refine(struct image *image, UnitCell *cell,
+                       double *da, double *dw)
+{
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	double istep, step;
 
-	} while ( rval != NULL );
+	/* Start by changing parameters by 1% */
+	cell_get_reciprocal(cell, &asx, &asy,
+	                    &asz, &bsx, &bsy, &bsz,
+	                    &csx, &csy, &csz);
+	istep = (asx+asy+asz+bsx+bsy+bsz+csx+csy+csz)/900.0;
 
-	return 1;
+	for ( step=istep; step>istep/100.0; step-=istep/100.0 ) {
+		try_refine(image, cell, *da, *dw, step);
+	}
 }
 
 
@@ -288,6 +432,8 @@ int main(int argc, char *argv[])
 
 		struct image image;
 		struct hdfile *hdfile;
+		double da, dw;
+		int np;
 
 		STATUS("Integrating intensities from '%s'\n", filename);
 
@@ -302,7 +448,13 @@ int main(int argc, char *argv[])
 		}
 
 		hdf5_read(hdfile, &image, 0);
-		find_intersections(&image, cell, 5.0e-3, 3.0/100.0);
+
+		da = 5.0e-3;     /* Initial divergence */
+		dw = 3.0/100.0;  /* Initial bandwidth */
+
+		pre_refine(&image, cell, &da, &dw);
+
+		find_intersections(&image, cell, da, dw, &np, 1);
 
 		hdfile_close(hdfile);
 		free(cell);

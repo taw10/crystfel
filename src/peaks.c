@@ -169,9 +169,9 @@ static int cull_peaks(struct image *image)
 
 /* Returns non-zero if peak has been vetoed.
  * i.e. don't use result if return value is not zero. */
-static int integrate_peak(struct image *image, int xp, int yp,
-                           float *xc, float *yc, float *intensity,
-                           int do_polar, int do_sa)
+int integrate_peak(struct image *image, int xp, int yp,
+                   float *xc, float *yc, float *intensity,
+                   int do_polar, int do_sa)
 {
 	signed int x, y;
 	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;

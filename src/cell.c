@@ -179,6 +179,21 @@ UnitCell *cell_new_from_cell(UnitCell *orig)
 }
 
 
+void cell_set_reciprocal(UnitCell *cell,
+                        double asx, double asy, double asz,
+                        double bsx, double bsy, double bsz,
+                        double csx, double csy, double csz)
+{
+	if ( cell == NULL ) return;
+
+	cell->axs = asx;  cell->ays = asy;  cell->azs = asz;
+	cell->bxs = bsx;  cell->bys = bsy;  cell->bzs = bsz;
+	cell->cxs = csx;  cell->cys = csy;  cell->czs = csz;
+
+	cell->rep = CELL_REP_RECIP;
+}
+
+
 /************************* Getter helper functions ****************************/
 
 static int cell_crystallographic_to_cartesian(UnitCell *cell,

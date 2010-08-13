@@ -62,6 +62,10 @@ extern int cell_get_reciprocal(UnitCell *cell,
                                double *bsx, double *bsy, double *bsz,
                                double *csx, double *csy, double *csz);
 
+extern void cell_set_reciprocal(UnitCell *cell,
+                               double asx, double asy, double asz,
+                               double bsx, double bsy, double bsz,
+                               double csx, double csy, double csz);
 
 extern double resolution(UnitCell *cell,
                          signed int h, signed int k, signed int l);

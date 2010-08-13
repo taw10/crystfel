@@ -69,7 +69,9 @@ am_cubeit_OBJECTS = cubeit.$(OBJEXT) cell.$(OBJEXT) \
 cubeit_OBJECTS = $(am_cubeit_OBJECTS)
 cubeit_DEPENDENCIES =
 am_facetron_OBJECTS = facetron.$(OBJEXT) cell.$(OBJEXT) \
-	hdf5-file.$(OBJEXT) utils.$(OBJEXT) detector.$(OBJEXT)
+	hdf5-file.$(OBJEXT) utils.$(OBJEXT) detector.$(OBJEXT) \
+	peaks.$(OBJEXT) image.$(OBJEXT) diffraction.$(OBJEXT) \
+	sfac.$(OBJEXT)
 facetron_OBJECTS = $(am_facetron_OBJECTS)
 facetron_DEPENDENCIES =
 am_get_hkl_OBJECTS = get_hkl.$(OBJEXT) sfac.$(OBJEXT) cell.$(OBJEXT) \
@@ -282,7 +284,9 @@ calibrate_detector_SOURCES = calibrate_detector.c utils.c hdf5-file.c image.c \
                              sfac.c
 
 calibrate_detector_LDADD = @LIBS@
-facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c
+facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
+                   image.c diffraction.c sfac.c
+
 facetron_LDADD = @LIBS@
 cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c
 cubeit_LDADD = @LIBS@
