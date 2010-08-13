@@ -16,4 +16,5 @@ src/powder_plot
 src/render_hkl
 src/calibrate_detector
 src/facetron
+src/cubeit
 *~

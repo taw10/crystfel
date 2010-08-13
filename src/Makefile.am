@@ -1,5 +1,5 @@
 bin_PROGRAMS = pattern_sim process_hkl get_hkl indexamajig compare_hkl \
-               powder_plot render_hkl calibrate_detector facetron
+               powder_plot render_hkl calibrate_detector facetron cubeit
 
 if HAVE_GTK
 bin_PROGRAMS += hdfsee
@@ -57,5 +57,8 @@ calibrate_detector_LDADD = @LIBS@
 
 facetron_SOURCES = facetron.c cell.c
 facetron_LDADD = @LIBS@
+
+cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c
+cubeit_LDADD = @LIBS@
 
 INCLUDES = "-I$(top_srcdir)/data"
