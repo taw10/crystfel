@@ -431,3 +431,90 @@ int find_unique_equiv(ReflItemList *items, signed int h, signed int k,
 
 	return found;
 }
+
+
+/* Returns true if the point group is 23, m-3, 432, -43m or m-3m
+ * (i.e. T, Th, O, Td or Oh) */
+int is_polyhedral(const char *sym)
+{
+	/* Triclinic */
+	if ( strcmp(sym, "1") == 0 ) return 0;
+	if ( strcmp(sym, "-1") == 0 ) return 0;
+
+	/* Tetragonal */
+	if ( strcmp(sym, "422") == 0 ) return 0;
+
+	/* Hexagonal */
+	if ( strcmp(sym, "6") == 0 ) return 0;
+	if ( strcmp(sym, "6/m") == 0 ) return 0;
+	if ( strcmp(sym, "6/mmm") == 0 ) return 0;
+
+	/* TODO: Add more groups here */
+
+	ERROR("Don't know if '%s' is polyhedral or not.\n", sym);
+	abort();
+}
+
+
+/* Returns the order of the highest axis of proper or improper rotation */
+int rotational_order(const char *sym)
+{
+	/* Triclinic */
+	if ( strcmp(sym, "1") == 0 ) return 1;
+	if ( strcmp(sym, "-1") == 0 ) return 2 ;
+
+	/* Tetragonal */
+	if ( strcmp(sym, "422") == 0 ) return 4;
+
+	/* Hexagonal */
+	if ( strcmp(sym, "6") == 0 ) return 6;
+	if ( strcmp(sym, "6/m") == 0 ) return 6;
+	if ( strcmp(sym, "6/mmm") == 0 ) return 6;
+
+	/* TODO: Add more groups here */
+
+	ERROR("Couldn't find rotational order for '%s'.\n", sym);
+	abort();
+}
+
+
+int has_perpendicular_mirror(const char *sym)
+{
+	/* Triclinic */
+	if ( strcmp(sym, "1") == 0 ) return 0;
+	if ( strcmp(sym, "-1") == 0 ) return 0;
+
+	/* Tetragonal */
+	if ( strcmp(sym, "422") == 0 ) return 0;
+
+	/* Hexagonal */
+	if ( strcmp(sym, "6") == 0 ) return 0;
+	if ( strcmp(sym, "6/m") == 0 ) return 1;
+	if ( strcmp(sym, "6/mmm") == 0 ) return 1;
+
+	/* TODO: Add more groups here */
+
+	ERROR("Couldn't find mirror definition for '%s'.\n", sym);
+	abort();
+}
+
+
+int has_bisecting_mirror_or_diad(const char *sym)
+{
+	/* Triclinic */
+	if ( strcmp(sym, "1") == 0 ) return 0;
+	if ( strcmp(sym, "-1") == 0 ) return 0;
+
+	/* Tetragonal */
+	if ( strcmp(sym, "422") == 0 ) return 0;
+
+	/* Hexagonal */
+	if ( strcmp(sym, "6") == 0 ) return 0;
+	if ( strcmp(sym, "6/m") == 0 ) return 1;
+	if ( strcmp(sym, "6/mmm") == 0 ) return 1;
+
+	/* TODO: Add more groups here */
+
+	ERROR("Couldn't find mirror definition for '%s'.\n", sym);
+	abort();
+}
