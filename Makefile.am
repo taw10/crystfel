@@ -6,5 +6,5 @@ EXTRA_DIST = configure src/cell.h src/hdf5-file.h src/image.h \
              src/filters.h src/diffraction-gpu.h src/cl-utils.h \
              data/defs.h src/parameters-lcls.tmp \
              data/diffraction.cl data/sfac src/likelihood.h src/symmetry.h \
-             src/povray.h
+             src/povray.h src/index-priv.h
 SUBDIRS = src data

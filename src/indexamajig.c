@@ -64,6 +64,7 @@ struct process_args
 	int config_sa;
 	struct detector *det;
 	IndexingMethod indm;
+	IndexingPrivate *ipriv;
 	const double *intensities;
 	struct gpu_context *gctx;
 
@@ -98,6 +99,7 @@ static void show_help(const char *s)
 "      --indexing=<method> Use 'method' for indexing.  Choose from:\n"
 "                           none     : no indexing\n"
 "                           dirax    : invoke DirAx\n"
+"                           template : index by template matching\n"
 "  -g. --geometry=<file>   Get detector geometry from file.\n"
 "\n\nWith just the above options, this program does not do much of practical "
 "use.\nYou should also enable some of the following:\n\n"
@@ -339,7 +341,7 @@ static struct process_result process_image(struct process_args *pargs)
 	/* Calculate orientation matrix (by magic) */
 	if ( config_writedrx || (indm != INDEXING_NONE) ) {
 		index_pattern(&image, cell, indm, config_nomatch,
-		              config_verbose);
+		              config_verbose, pargs->ipriv);
 	}
 
 	/* No cell at this point?  Then we're done. */
@@ -478,6 +480,9 @@ int main(int argc, char *argv[])
 	int i;
 	pthread_mutex_t output_mutex = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t gpu_mutex = PTHREAD_MUTEX_INITIALIZER;
+	char prepare_line[1024];
+	char prepare_filename[1024];
+	IndexingPrivate *ipriv;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -597,6 +602,8 @@ int main(int argc, char *argv[])
 		indm = INDEXING_NONE;
 	} else if ( strcmp(indm_str, "dirax") == 0) {
 		indm = INDEXING_DIRAX;
+	} else if ( strcmp(indm_str, "template") == 0) {
+		indm = INDEXING_TEMPLATE;
 	} else {
 		ERROR("Unrecognised indexing method '%s'\n", indm_str);
 		return 1;
@@ -615,7 +622,7 @@ int main(int argc, char *argv[])
 	}
 	free(geometry);
 
-	if ( !config_nomatch ) {
+	if ( (!config_nomatch) || (indm == INDEXING_TEMPLATE) ) {
 		cell = load_cell_from_pdb(pdb);
 		if ( cell == NULL ) {
 			ERROR("Couldn't read unit cell (from %s)\n", pdb);
@@ -626,6 +633,21 @@ int main(int argc, char *argv[])
 		cell = NULL;
 	}
 	free(pdb);
+
+	/* Get first filename and use it to set up the indexing */
+	rval = fgets(prepare_line, 1023, fh);
+	if ( rval == NULL ) {
+		ERROR("Failed to get filename to prepare indexing.\n");
+		return 1;
+	}
+	chomp(prepare_line);
+	snprintf(prepare_filename, 1023, "%s%s", prefix, prepare_line);
+	ipriv = prepare_indexing(indm, cell, prepare_filename);
+	if ( ipriv == NULL ) {
+		ERROR("Failed to prepare indexing.\n");
+		return 1;
+	}
+	rewind(fh);
 
 	gsl_set_error_handler_off();
 	n_images = 0;
@@ -673,6 +695,7 @@ int main(int argc, char *argv[])
 		pargs->config_sa = config_sa;
 		pargs->cell = cell;
 		pargs->det = det;
+		pargs->ipriv = ipriv;
 		pargs->indm = indm;
 		pargs->intensities = intensities;
 		pargs->gctx = gctx;

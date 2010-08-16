@@ -19,16 +19,22 @@
 
 
 #include "cell.h"
-
+#include "image.h"
 
 typedef enum {
 	INDEXING_NONE,
 	INDEXING_DIRAX,
-	INDEXING_MATCH
+	INDEXING_TEMPLATE
 } IndexingMethod;
 
 
+typedef struct _indexingprivate IndexingPrivate;
+
+extern IndexingPrivate *prepare_indexing(IndexingMethod indm, UnitCell *cell,
+                                         const char *filename);
+
 extern void index_pattern(struct image *image, UnitCell *cell,
-                          IndexingMethod indm, int no_match, int verbose);
+                          IndexingMethod indm, int no_match, int verbose,
+                          IndexingPrivate *priv);
 
 #endif	/* INDEX_H */

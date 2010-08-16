@@ -27,6 +27,33 @@
 #include "sfac.h"
 #include "detector.h"
 #include "index.h"
+#include "index-priv.h"
+#include "templates.h"
+
+
+/* Base class constructor for unspecialised indexing private data */
+static IndexingPrivate *indexing_private(IndexingMethod indm)
+{
+	struct _indexingprivate *priv;
+	priv = calloc(1, sizeof(struct _indexingprivate));
+	priv->indm = indm;
+	return priv;
+}
+
+
+IndexingPrivate *prepare_indexing(IndexingMethod indm, UnitCell *cell,
+                                  const char *filename)
+{
+	switch ( indm ) {
+	case INDEXING_NONE :
+		return indexing_private(indm);
+	case INDEXING_DIRAX :
+		return indexing_private(indm);
+	case INDEXING_TEMPLATE :
+		return generate_templates(cell, filename);
+	}
+	return 0;
+}
 
 
 static void write_drx(struct image *image)
@@ -60,7 +87,7 @@ static void write_drx(struct image *image)
 
 
 void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
-                   int no_match, int verbose)
+                   int no_match, int verbose, IndexingPrivate *ipriv)
 {
 	int i;
 	int nc = 0;
@@ -87,8 +114,16 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
 	image->ncells = 0;
 
 	/* Index (or not) as appropriate */
-	if ( indm == INDEXING_NONE ) return;
-	if ( indm == INDEXING_DIRAX ) run_dirax(image);
+	switch ( indm ) {
+	case INDEXING_NONE :
+		return;
+	case INDEXING_DIRAX :
+		run_dirax(image);
+		break;
+	case INDEXING_TEMPLATE :
+		match_templates(image, ipriv);
+		break;
+	}
 
 	if ( image->ncells == 0 ) {
 		STATUS("No candidate cells found.\n");
