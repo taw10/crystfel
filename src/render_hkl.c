@@ -288,7 +288,7 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	scale = 1.0;
 	draw_circles(xh, xk, xl, yh, yk, yl, zh, zk, zl,
 	             ref, counts, items, sym, NULL, wght, boost, colscale, cell,
-	             0.0, theta, as, bs, cx, cy, scale,
+	             0.0, theta, as, bs, 0.0, 0.0, scale,
 	             &max_ux, &max_uy, &max_val, &max_u, &max_v, &max_res);
 
 	max_res /= 1e9;
@@ -296,9 +296,8 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	       max_res*2.0, 1.0/(max_res*2.0));
 
 	if ( max_val <= 0.0 ) {
-		max_r = 4.0;
 		STATUS("Couldn't find max value.\n");
-		goto out;
+		return;
 	}
 
 	/* Choose whichever scaling factor gives the smallest value */
@@ -345,7 +344,6 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	             max_r, theta, as, bs, cx, cy, scale,
 	             NULL, NULL, &max_val, NULL, NULL, NULL);
 
-out:
 	/* Centre marker */
 	cairo_arc(dctx, (double)cx,
 			(double)cy, max_r, 0, 2*M_PI);
