@@ -65,7 +65,7 @@ extern struct rvec quat_rot(struct rvec q, struct quaternion z);
 
 /* --------------------------- Useful functions ----------------------------- */
 
-extern size_t skipspace(const char *s);
+extern size_t notrail(char *s);
 extern void chomp(char *s);
 
 typedef enum {

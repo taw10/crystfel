@@ -67,6 +67,8 @@ extern void cell_set_reciprocal(UnitCell *cell,
                                double bsx, double bsy, double bsz,
                                double csx, double csy, double csz);
 
+extern const char *cell_get_pointgroup(UnitCell *cell);
+
 extern double resolution(UnitCell *cell,
                          signed int h, signed int k, signed int l);
 

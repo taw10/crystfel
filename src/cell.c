@@ -56,6 +56,8 @@ struct _unitcell {
 	double ays;	double bys;	double cys;
 	double azs;	double bzs;	double czs;
 
+	char *pointgroup;
+
 };
 
 
@@ -76,6 +78,8 @@ UnitCell *cell_new()
 	cell->gamma = M_PI_2;
 
 	cell->rep = CELL_REP_CRYST;
+
+	cell->pointgroup = strdup("1");
 
 	return cell;
 }
@@ -447,6 +451,12 @@ int cell_get_reciprocal(UnitCell *cell,
 }
 
 
+const char *cell_get_pointgroup(UnitCell *cell)
+{
+	return cell->pointgroup;
+}
+
+
 /********************************* Utilities **********************************/
 
 void cell_print(UnitCell *cell)
@@ -731,6 +741,21 @@ double resolution(UnitCell *cell, signed int h, signed int k, signed int l)
 }
 
 
+static void cell_set_pointgroup_from_pdb(UnitCell *cell, const char *sym)
+{
+	char *new = NULL;
+
+	if ( strcmp(sym, "P 63") == 0 ) new = "6";
+
+	if ( new != NULL ) {
+		free(cell->pointgroup);
+		cell->pointgroup = strdup(new);
+	} else {
+		ERROR("Can't determine point group for space group %s\n", sym);
+	}
+}
+
+
 UnitCell *load_cell_from_pdb(const char *filename)
 {
 	FILE *fh;
@@ -753,8 +778,9 @@ UnitCell *load_cell_from_pdb(const char *filename)
 
 			float a, b, c, al, be, ga;
 			int r;
+			char *sym;
 
-			r = sscanf(line+7, "%f %f %f %f %f %f",
+			r = sscanf(line+7, "%f %f %f %f %f %f\n",
 			           &a, &b, &c, &al, &be, &ga);
 			if ( r != 6 ) {
 				ERROR("Couldn't understand CRYST1 line\n");
@@ -766,6 +792,11 @@ UnitCell *load_cell_from_pdb(const char *filename)
 	                                                deg2rad(al),
 	                                                deg2rad(be),
 	                                                deg2rad(ga));
+
+			sym = strndup(line+55, 11);
+			notrail(sym);
+			cell_set_pointgroup_from_pdb(cell, sym);
+			free(sym);
 
 		}
 

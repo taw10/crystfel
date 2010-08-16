@@ -18,15 +18,21 @@
 #include "image.h"
 
 
-size_t skipspace(const char *s)
+size_t notrail(char *s)
 {
 	size_t i;
+	size_t munched = 0;
 
-	for ( i=0; i<strlen(s); i++ ) {
-		if ( (s[i] != ' ') && (s[i] != '\t') ) return i;
+	for ( i=strlen(s)-1; i>=0; i-- ) {
+		if ( (s[i] == ' ') || (s[i] == '\t') ) {
+			s[i] = '\0';
+			munched++;
+		} else {
+			return munched;
+		}
 	}
 
-	return strlen(s);
+	return munched;
 }
 
 
