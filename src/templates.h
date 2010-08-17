@@ -21,8 +21,8 @@
 #include "image.h"
 #include "cell.h"
 
-extern IndexingPrivate *generate_templates(UnitCell *cell,
-                                           const char *filename);
+extern IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
+                                           struct detector *det);
 
 
 extern void match_templates(struct image *image, IndexingPrivate *ipriv);

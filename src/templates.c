@@ -86,7 +86,8 @@ UnitCell *rotate_cell(UnitCell *in, double omega, double phi)
 
 
 /* Generate templates for the given cell using a representative image */
-IndexingPrivate *generate_templates(UnitCell *cell, const char *filename)
+IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
+                                    struct detector *det)
 {
 	struct _indexingprivate_template *priv;
 	const char *holo;
@@ -107,6 +108,7 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename)
 	}
 	hdf5_read(hdfile, &image, 0);
 	hdfile_close(hdfile);
+	image.det = det;
 
 	priv = calloc(1, sizeof(struct _indexingprivate_template));
 	priv->base.indm = INDEXING_TEMPLATE;
@@ -149,13 +151,11 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename)
 			return NULL;
 		}
 
-		STATUS("%.2f, %.2f : %i features\n",
-		       rad2deg(omega), rad2deg(phi), n);
-
 		free(cell_rot);
 
 	}
-	STATUS("Finished omega=%.2f\n", rad2deg(omega));
+	progress_bar(omega*1000.0, (omega_max-omega_step)*1000.0,
+	             "Generating templates");
 	}
 
 	priv->n_templates = n_templates;

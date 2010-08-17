@@ -20,6 +20,7 @@
 
 #include "cell.h"
 #include "image.h"
+#include "detector.h"
 
 typedef enum {
 	INDEXING_NONE,
@@ -31,7 +32,8 @@ typedef enum {
 typedef struct _indexingprivate IndexingPrivate;
 
 extern IndexingPrivate *prepare_indexing(IndexingMethod indm, UnitCell *cell,
-                                         const char *filename);
+                                         const char *filename,
+                                         struct detector *det);
 
 extern void index_pattern(struct image *image, UnitCell *cell,
                           IndexingMethod indm, int no_match, int verbose,

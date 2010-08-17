@@ -642,7 +642,7 @@ int main(int argc, char *argv[])
 	}
 	chomp(prepare_line);
 	snprintf(prepare_filename, 1023, "%s%s", prefix, prepare_line);
-	ipriv = prepare_indexing(indm, cell, prepare_filename);
+	ipriv = prepare_indexing(indm, cell, prepare_filename, det);
 	if ( ipriv == NULL ) {
 		ERROR("Failed to prepare indexing.\n");
 		return 1;
