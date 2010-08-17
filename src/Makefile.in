@@ -71,7 +71,7 @@ cubeit_DEPENDENCIES =
 am_facetron_OBJECTS = facetron.$(OBJEXT) cell.$(OBJEXT) \
 	hdf5-file.$(OBJEXT) utils.$(OBJEXT) detector.$(OBJEXT) \
 	peaks.$(OBJEXT) image.$(OBJEXT) diffraction.$(OBJEXT) \
-	sfac.$(OBJEXT)
+	sfac.$(OBJEXT) geometry.$(OBJEXT)
 facetron_OBJECTS = $(am_facetron_OBJECTS)
 facetron_DEPENDENCIES =
 am_get_hkl_OBJECTS = get_hkl.$(OBJEXT) sfac.$(OBJEXT) cell.$(OBJEXT) \
@@ -89,7 +89,7 @@ hdfsee_DEPENDENCIES =
 am__indexamajig_SOURCES_DIST = indexamajig.c hdf5-file.c utils.c \
 	cell.c image.c peaks.c index.c filters.c diffraction.c \
 	detector.c sfac.c dirax.c reflections.c templates.c symmetry.c \
-	diffraction-gpu.c cl-utils.c
+	geometry.c diffraction-gpu.c cl-utils.c
 @HAVE_OPENCL_TRUE@am__objects_1 = diffraction-gpu.$(OBJEXT) \
 @HAVE_OPENCL_TRUE@	cl-utils.$(OBJEXT)
 am_indexamajig_OBJECTS = indexamajig.$(OBJEXT) hdf5-file.$(OBJEXT) \
@@ -97,7 +97,7 @@ am_indexamajig_OBJECTS = indexamajig.$(OBJEXT) hdf5-file.$(OBJEXT) \
 	index.$(OBJEXT) filters.$(OBJEXT) diffraction.$(OBJEXT) \
 	detector.$(OBJEXT) sfac.$(OBJEXT) dirax.$(OBJEXT) \
 	reflections.$(OBJEXT) templates.$(OBJEXT) symmetry.$(OBJEXT) \
-	$(am__objects_1)
+	geometry.$(OBJEXT) $(am__objects_1)
 indexamajig_OBJECTS = $(am_indexamajig_OBJECTS)
 indexamajig_DEPENDENCIES =
 am__pattern_sim_SOURCES_DIST = pattern_sim.c diffraction.c utils.c \
@@ -260,7 +260,8 @@ process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
 process_hkl_LDADD = @LIBS@
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
 	peaks.c index.c filters.c diffraction.c detector.c sfac.c \
-	dirax.c reflections.c templates.c symmetry.c $(am__append_3)
+	dirax.c reflections.c templates.c symmetry.c geometry.c \
+	$(am__append_3)
 indexamajig_LDADD = @LIBS@
 @HAVE_GTK_TRUE@hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c image.c \
 @HAVE_GTK_TRUE@                 filters.c
@@ -286,7 +287,7 @@ calibrate_detector_SOURCES = calibrate_detector.c utils.c hdf5-file.c image.c \
 
 calibrate_detector_LDADD = @LIBS@
 facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
-                   image.c diffraction.c sfac.c
+                   image.c diffraction.c sfac.c geometry.c
 
 facetron_LDADD = @LIBS@
 cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c
@@ -415,6 +416,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/displaywindow.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/facetron.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filters.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/geometry.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hdf5-file.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hdfsee.Po@am__quote@

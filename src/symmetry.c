@@ -456,7 +456,8 @@ int is_polyhedral(const char *sym)
 }
 
 
-/* Returns the order of the highest axis of proper or improper rotation */
+/* Returns the order of the characteristic axis of proper or improper rotation
+ * for the point group.  This should be the rotation about the c axis. */
 int rotational_order(const char *sym)
 {
 	/* Triclinic */

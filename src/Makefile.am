@@ -22,7 +22,8 @@ process_hkl_LDADD = @LIBS@
 
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
                       peaks.c index.c filters.c diffraction.c detector.c \
-                      sfac.c dirax.c reflections.c templates.c symmetry.c
+                      sfac.c dirax.c reflections.c templates.c symmetry.c \
+                      geometry.c
 indexamajig_LDADD = @LIBS@
 if HAVE_OPENCL
 indexamajig_SOURCES += diffraction-gpu.c cl-utils.c
@@ -56,7 +57,7 @@ calibrate_detector_SOURCES = calibrate_detector.c utils.c hdf5-file.c image.c \
 calibrate_detector_LDADD = @LIBS@
 
 facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
-                   image.c diffraction.c sfac.c
+                   image.c diffraction.c sfac.c geometry.c
 facetron_LDADD = @LIBS@
 
 cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c
