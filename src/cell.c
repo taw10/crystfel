@@ -462,12 +462,26 @@ const char *cell_get_pointgroup(UnitCell *cell)
 
 /********************************* Utilities **********************************/
 
+static const char *cell_rep(UnitCell *cell)
+{
+	switch ( cell->rep ) {
+	case CELL_REP_CRYST:
+		return "crystallographic, direct space";
+	case CELL_REP_CART:
+		return "cartesian, direct space";
+	case CELL_REP_RECIP:
+		return "cartesian, reciprocal space";
+	}
+
+	return "unknown";
+}
+
+
 void cell_print(UnitCell *cell)
 {
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
-	double angles[3];
 	double a, b, c, alpha, beta, gamma;
 	double ax, ay, az, bx, by, bz, cx, cy, cz;
 
@@ -495,9 +509,7 @@ void cell_print(UnitCell *cell)
 	STATUS("cstar = %10.3e %10.3e %10.3e m^-1 (modulus = %10.3e m^-1)\n",
 	                             csx, csy, csz, modulus(csx, csy, csz));
 
-	angles[0] = angle_between(bsx, bsy, bsz, csx, csy, csz);
-	angles[1] = angle_between(asx, asy, asz, csx, csy, csz);
-	angles[2] = angle_between(asx, asy, asz, bsx, bsy, bsz);
+	STATUS("Cell representation is %s.\n", cell_rep(cell));
 }
 
 
