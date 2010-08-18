@@ -647,7 +647,6 @@ int main(int argc, char *argv[])
 		ERROR("Failed to prepare indexing.\n");
 		return 1;
 	}
-	rewind(fh);
 
 	gsl_set_error_handler_off();
 	n_images = 0;
@@ -669,8 +668,13 @@ int main(int argc, char *argv[])
 
 		pargs = worker_args[i];
 
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
+		if ( strlen(prepare_line) > 0 ) {
+			strcpy(line, prepare_line);
+			prepare_line[0] = '\0';
+		} else {
+			rval = fgets(line, 1023, fh);
+			if ( rval == NULL ) continue;
+		}
 		chomp(line);
 		snprintf(pargs->filename, 1023, "%s%s", prefix, line);
 
