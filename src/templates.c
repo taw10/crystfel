@@ -32,6 +32,7 @@
 struct _indexingprivate_template
 {
 	struct _indexingprivate base;
+	UnitCell *cell;
 	int n_templates;
 	struct template *templates;
 };
@@ -177,6 +178,7 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 	}
 
 	priv->n_templates = n_templates;
+	priv->cell = cell_new_from_cell(cell);
 
 	return (struct _indexingprivate *)priv;
 }
@@ -261,4 +263,10 @@ void match_templates(struct image *image, IndexingPrivate *ipriv)
 	STATUS("%i (%.2f, %.2f): %.2f%%\n", max_i, priv->templates[max_i].omega,
 	                                   priv->templates[max_i].phi,
 	                                   100.0 * max / tot);
+
+	image->ncells = 1;
+	image->candidate_cells[0] = rotate_cell(priv->cell,
+	                                        priv->templates[max_i].omega,
+	                                        priv->templates[max_i].phi);
+
 }

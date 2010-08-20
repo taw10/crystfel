@@ -130,7 +130,7 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
 		return;
 	}
 
-	if ( no_match ) {
+	if ( no_match || (indm == INDEXING_TEMPLATE) ) {
 		image->indexed_cell = image->candidate_cells[0];
 		if ( verbose ) {
 			STATUS("--------------------\n");
