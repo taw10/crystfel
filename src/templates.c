@@ -20,6 +20,9 @@
 #include "utils.h"
 #include "geometry.h"
 #include "hdf5-file.h"
+#include "peaks.h"
+
+#include <assert.h>
 
 
 /* Private data for template indexing */
@@ -35,7 +38,7 @@ struct template {
 	double omega;
 	double phi;
 	int n;
-	struct reflhit spots;  /* Made into an array by Magic */
+	struct reflhit *spots;
 };
 
 
@@ -98,6 +101,7 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 	double omega, phi;
 	struct image image;
 	struct hdfile *hdfile;
+	int i;
 
 	hdfile = hdfile_open(filename);
 	if ( hdfile == NULL ) {
@@ -135,12 +139,17 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 	n_templates = (omega_max * phi_max)/(omega_step * phi_step);
 	STATUS("%i templates to be calculated.\n", n_templates);
 
-	for ( omega = 0.0; omega < omega_max; omega += omega_step ) {
-	for ( phi = 0.0; phi < phi_max; phi += phi_step ) {
+	priv->templates = malloc(n_templates * sizeof(struct template));
+
+	i = 0;
+	for ( omega = 0.0; omega < omega_max-omega_step; omega += omega_step ) {
+	for ( phi = 0.0; phi < phi_max-phi_step; phi += phi_step ) {
 
 		int n;
 		struct reflhit *hits;
 		UnitCell *cell_rot;
+
+		assert(i < n_templates);
 
 		cell_rot = rotate_cell(cell, omega, phi);
 
@@ -150,6 +159,12 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 			ERROR("Template calculation failed.\n");
 			return NULL;
 		}
+
+		priv->templates[i].omega = omega;
+		priv->templates[i].phi = phi;
+		priv->templates[i].n = n;
+		priv->templates[i].spots = hits;
+		i++;
 
 		free(cell_rot);
 
@@ -164,6 +179,66 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 }
 
 
+static double integrate_all_rot(struct image *image, struct reflhit *hits,
+                                int n, double rot)
+{
+	double itot = 0.0;
+	int i;
+
+	for ( i=0; i<n; i++ ) {
+
+		float x, y, intensity;
+		float xp, yp;
+
+		xp = cos(rot)*hits[i].x + sin(rot)*hits[i].y;
+		yp = -sin(rot)*hits[i].x + cos(rot)*hits[i].y;
+
+		if ( integrate_peak(image, xp, yp, &x, &y,
+                                    &intensity, 0, 0) ) continue;
+
+		itot += intensity;
+	}
+
+	return itot;
+}
+
+
 void match_templates(struct image *image, IndexingPrivate *ipriv)
 {
+	struct _indexingprivate_template *priv
+	        = (struct _indexingprivate_template *)ipriv;
+	int i, max_i;
+	double max, tot;
+	double rot, rot_max, rot_step;
+
+	max = 0.0;
+	max_i = 0;
+	rot_max = 2.0*M_PI;
+	rot_step = 2.0*M_PI / 360.0;  /* 1 deg steps */
+
+	for ( i=0; i<priv->n_templates; i++ ) {
+	for ( rot=0.0; rot<rot_max; rot+=rot_step ) {
+
+		double val;
+
+		val = integrate_all_rot(image, priv->templates[i].spots,
+		                        priv->templates[i].n, rot);
+
+		if ( val > max ) {
+			max = val;
+			max_i = i;
+		}
+
+	}
+	progress_bar(i, priv->n_templates, "Indexing");
+	}
+
+	tot = 0.0;
+	for ( i=0; i<(image->width*image->height); i++ ) {
+		tot += image->data[i];
+	}
+
+	STATUS("%i (%.2f, %.2f): %.2f%%\n", max_i, priv->templates[max_i].omega,
+	                                   priv->templates[max_i].phi,
+	                                   100.0 * max / tot);
 }
