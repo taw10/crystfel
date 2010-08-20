@@ -172,7 +172,7 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 		free(cell_rot);
 
 	}
-	progress_bar(omega*1000.0, (omega_max-omega_step)*1000.0,
+	progress_bar(omega*1000.0, (omega_max-2.0*omega_step)*1000.0,
 	             "Generating templates");
 	}
 
@@ -250,7 +250,7 @@ void match_templates(struct image *image, IndexingPrivate *ipriv)
 		}
 
 	}
-	progress_bar(i, priv->n_templates, "Indexing");
+	progress_bar(i, priv->n_templates-1, "Indexing");
 	}
 
 	tot = 0.0;
