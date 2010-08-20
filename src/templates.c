@@ -25,6 +25,9 @@
 #include <assert.h>
 
 
+#define INTEGRATION_SQUARE_SIDE (10)
+
+
 /* Private data for template indexing */
 struct _indexingprivate_template
 {
@@ -179,6 +182,27 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 }
 
 
+static int fast_integrate_peak(struct image *image, int xp, int yp)
+{
+	int x, y;
+	double total = 0;
+	int r = INTEGRATION_SQUARE_SIDE;
+
+	for ( x=xp-r; x<=xp+r; x++ ) {
+	for ( y=yp-r; y<=yp+r; y++ ) {
+
+		if ( (x>=image->width) || (x<0) ) continue;
+		if ( (y>=image->height) || (y<0) ) continue;
+
+		total += image->data[x+image->width*y];
+
+	}
+	}
+
+	return total;
+}
+
+
 static double integrate_all_rot(struct image *image, struct reflhit *hits,
                                 int n, double rot)
 {
@@ -187,16 +211,12 @@ static double integrate_all_rot(struct image *image, struct reflhit *hits,
 
 	for ( i=0; i<n; i++ ) {
 
-		float x, y, intensity;
 		float xp, yp;
 
 		xp = cos(rot)*hits[i].x + sin(rot)*hits[i].y;
 		yp = -sin(rot)*hits[i].x + cos(rot)*hits[i].y;
 
-		if ( integrate_peak(image, xp, yp, &x, &y,
-                                    &intensity, 0, 0) ) continue;
-
-		itot += intensity;
+		itot += fast_integrate_peak(image, xp, yp);
 	}
 
 	return itot;
