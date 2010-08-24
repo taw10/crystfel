@@ -230,15 +230,20 @@ static double integrate_all_rot(struct image *image, struct reflhit *hits,
 {
 	double itot = 0.0;
 	int i;
+	double cosr, sinr;
+
+	cosr = cos(rot);
+	sinr = sin(rot);
 
 	for ( i=0; i<n; i++ ) {
 
 		float xp, yp;
 
-		xp = cos(rot)*hits[i].x + sin(rot)*hits[i].y;
-		yp = -sin(rot)*hits[i].x + cos(rot)*hits[i].y;
+		xp =  cosr*hits[i].x + sinr*hits[i].y;
+		yp = -sinr*hits[i].x + cosr*hits[i].y;
 
-		itot += fast_integrate_peak(image, xp, yp);
+		itot += fast_integrate_peak(image, rint(xp), rint(yp));
+
 	}
 
 	return itot;
