@@ -14,7 +14,6 @@
 #include <config.h>
 #endif
 
-#define _GNU_SOURCE 1
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>

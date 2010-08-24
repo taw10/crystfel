@@ -14,7 +14,6 @@
 #include <config.h>
 #endif
 
-#define _GNU_SOURCE
 #include <gtk/gtk.h>
 #include <stdlib.h>
 #include <stdio.h>
