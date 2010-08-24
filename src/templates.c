@@ -26,6 +26,7 @@
 
 
 #define INTEGRATION_SQUARE_SIDE (10)
+#define THRESHOLD (500)
 
 
 /* Private data for template indexing */
@@ -207,10 +208,15 @@ static int fast_integrate_peak(struct image *image, int xp, int yp)
 	for ( x=xp-r; x<=xp+r; x++ ) {
 	for ( y=yp-r; y<=yp+r; y++ ) {
 
+		int val;
+
 		if ( (x>=image->width) || (x<0) ) continue;
 		if ( (y>=image->height) || (y<0) ) continue;
 
-		total += image->data[x+image->width*y];
+		val = image->data[x+image->width*y];
+
+		if ( val < THRESHOLD ) continue;
+		total += val;
 
 	}
 	}
@@ -273,7 +279,10 @@ void match_templates(struct image *image, IndexingPrivate *ipriv)
 
 	tot = 0.0;
 	for ( i=0; i<(image->width*image->height); i++ ) {
-		tot += image->data[i];
+		int val;
+		val = image->data[i];
+		if ( val < THRESHOLD ) continue;
+		tot += val;
 	}
 
 	STATUS("%i (%.2f, %.2f, %.2f): %.2f%%\n", max_i,
