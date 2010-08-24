@@ -46,7 +46,7 @@ struct template {
 };
 
 
-UnitCell *rotate_cell(UnitCell *in, double omega, double phi)
+UnitCell *rotate_cell(UnitCell *in, double omega, double phi, double rot)
 {
 	UnitCell *out;
 	double asx, asy, asz;
@@ -83,6 +83,20 @@ UnitCell *rotate_cell(UnitCell *in, double omega, double phi)
 	xnew = csx;
 	ynew = csy*cos(phi) + csz*sin(phi);
 	znew = -csy*sin(phi) + csz*cos(phi);
+	csx = xnew;  csy = ynew;  csz = znew;
+
+	/* Rotate by "rot" about the new +z (in-plane rotation) */
+	xnew = asx*cos(rot) + asy*sin(rot);
+	ynew = -asx*sin(rot) + asy*cos(rot);
+	znew = asz;
+	asx = xnew;  asy = ynew;  asz = znew;
+	xnew = bsx*cos(rot) + bsy*sin(rot);
+	ynew = -bsx*sin(rot) + bsy*cos(rot);
+	znew = bsz;
+	bsx = xnew;  bsy = ynew;  bsz = znew;
+	xnew = csx*cos(rot) + csy*sin(rot);
+	ynew = -csx*sin(rot) + csy*cos(rot);
+	znew = csz;
 	csx = xnew;  csy = ynew;  csz = znew;
 
 	out = cell_new_from_cell(in);
@@ -155,7 +169,7 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 
 		assert(i < n_templates);
 
-		cell_rot = rotate_cell(cell, omega, phi);
+		cell_rot = rotate_cell(cell, omega, phi, 0.0);
 
 		hits = find_intersections(&image, cell_rot, 5.0e-3,
 		                          3.0/100.0, &n, 0);
@@ -231,12 +245,13 @@ void match_templates(struct image *image, IndexingPrivate *ipriv)
 	        = (struct _indexingprivate_template *)ipriv;
 	int i, max_i;
 	double max, tot;
-	double rot, rot_max, rot_step;
+	double rot, rot_max, rot_step, rot_best;
 
 	max = 0.0;
 	max_i = 0;
 	rot_max = 2.0*M_PI;
 	rot_step = 2.0*M_PI / 360.0;  /* 1 deg steps */
+	rot_best = 0.0;
 
 	for ( i=0; i<priv->n_templates; i++ ) {
 	for ( rot=0.0; rot<rot_max; rot+=rot_step ) {
@@ -249,6 +264,7 @@ void match_templates(struct image *image, IndexingPrivate *ipriv)
 		if ( val > max ) {
 			max = val;
 			max_i = i;
+			rot_best = rot;
 		}
 
 	}
@@ -260,13 +276,15 @@ void match_templates(struct image *image, IndexingPrivate *ipriv)
 		tot += image->data[i];
 	}
 
-	STATUS("%i (%.2f, %.2f): %.2f%%\n", max_i, priv->templates[max_i].omega,
-	                                   priv->templates[max_i].phi,
-	                                   100.0 * max / tot);
+	STATUS("%i (%.2f, %.2f, %.2f): %.2f%%\n", max_i,
+	                                  rad2deg(priv->templates[max_i].omega),
+	                                  rad2deg(priv->templates[max_i].phi),
+	                                  rad2deg(rot_best), 100.0 * max / tot);
 
 	image->ncells = 1;
 	image->candidate_cells[0] = rotate_cell(priv->cell,
 	                                        priv->templates[max_i].omega,
-	                                        priv->templates[max_i].phi);
+	                                        priv->templates[max_i].phi,
+	                                        rot_best);
 
 }
