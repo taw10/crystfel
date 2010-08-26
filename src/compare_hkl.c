@@ -95,6 +95,10 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if ( sym == NULL ) {
+		sym = strdup("1");
+	}
+
 	afile = strdup(argv[optind++]);
 	bfile = strdup(argv[optind]);
 
