@@ -58,6 +58,7 @@ static void show_help(const char *s)
 "                             the default.\n"
 "  -g, --histogram=<h,k,l>   Calculate the histogram of measurements for this\n"
 "                             reflection.\n"
+"      --rmerge              Calculate and report Rmerge and Rpim\n"
 "\n"
 "      --scale               Scale each pattern for best fit with the current\n"
 "                             model.\n"
@@ -205,7 +206,8 @@ static void merge_pattern(double *model, ReflItemList *observed,
                           ReflItemList *twins,
                           const char *holo, const char *mero, double *hist_vals,
                           signed int hist_h, signed int hist_k,
-                          signed int hist_l, int *hist_n)
+                          signed int hist_l, int *hist_n, double *devs,
+                          double *tots, double *means)
 {
 	int i;
 	int twin;
@@ -249,6 +251,13 @@ static void merge_pattern(double *model, ReflItemList *observed,
 			}
 		}
 
+		if ( tots != NULL ) {
+			double m;
+			m = lookup_intensity(means, h, k, l);
+			integrate_intensity(tots, h, k, l, intensity);
+			integrate_intensity(devs, h, k, l, fabs(intensity-m));
+		}
+
 		/* Already seen this reflection in this pattern? Complain. */
 		if ( !find_item(sym_items, h, k, l) ) {
 			/* Add the asymmetric version of this reflection to our
@@ -285,7 +294,7 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
                       ReflItemList *twins, const char *holo, const char *mero,
                       int n_total_patterns, double *hist_vals,
                       signed int hist_h, signed int hist_k, signed int hist_l,
-                      int *hist_i)
+                      int *hist_i, double *devs, double *tots, double *means)
 {
 	char *rval;
 	float f0;
@@ -334,7 +343,7 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 			              counts, config_maxonly,
 			              twins, holo, mero,
 			              hist_vals, hist_h, hist_k, hist_l,
-			              hist_i);
+			              hist_i, devs, tots, means);
 
 			if ( n_patterns == config_stopafter ) break;
 
@@ -430,6 +439,7 @@ int main(int argc, char *argv[])
 	int config_stopafter = 0;
 	int config_sum = 0;
 	int config_scale = 0;
+	int config_rmerge = 0;
 	unsigned int n_total_patterns;
 	char *sym = NULL;
 	char *pdb = NULL;
@@ -455,6 +465,7 @@ int main(int argc, char *argv[])
 		{"symmetry",           1, NULL,               'y'},
 		{"pdb",                1, NULL,               'p'},
 		{"histogram",          1, NULL,               'g'},
+		{"rmerge",             0, &config_rmerge,      1},
 		{0, 0, NULL, 0}
 	};
 
@@ -498,6 +509,12 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
+	}
+
+	if ( config_sum && config_rmerge ) {
+		ERROR("Options --sum and --rmerge do not make sense"
+		      " together.\n");
+		return 1;
 	}
 
 	if ( filename == NULL ) {
@@ -578,10 +595,8 @@ int main(int argc, char *argv[])
 	merge_all(fh, &model, &observed, &counts,
 	          config_maxonly, config_scale, config_sum, config_stopafter,
                   twins, holo, sym, n_total_patterns,
-                  hist_vals, hist_h, hist_k, hist_l, &hist_i);
+                  hist_vals, hist_h, hist_k, hist_l, &hist_i, NULL, NULL, NULL);
 	rewind(fh);
-
-	fclose(fh);
 
 	if ( hist_vals != NULL ) {
 		STATUS("%i %i %i was seen %i times.\n", hist_h, hist_k, hist_l,
@@ -593,6 +608,53 @@ int main(int argc, char *argv[])
 		write_reflections(output, observed, model, NULL, counts, cell);
 	}
 
+	if ( config_rmerge ) {
+
+		double *devs = new_list_intensity();
+		double *tots = new_list_intensity();
+		double total_dev = 0.0;
+		double total_tot = 0.0;
+		double total_pdev = 0.0;
+		double total_rdev = 0.0;
+		int i;
+
+		STATUS("Extra pass to calculate figures of merit...\n");
+
+		rewind(fh);
+		merge_all(fh, &model, &observed, &counts,
+		          config_maxonly, config_scale, 0,
+		          config_stopafter, twins, holo, sym, n_total_patterns,
+		          NULL, 0, 0, 0, NULL, devs, tots, model);
+
+		for ( i=0; i<num_items(observed); i++ ) {
+
+			struct refl_item *it;
+			signed int h, k, l;
+			double dev;
+			unsigned int count;
+
+			it = get_item(observed, i);
+			h = it->h;  k = it->k,  l = it->l;
+
+			dev = lookup_intensity(devs, h, k, l);
+			count = lookup_count(counts, h, k, l);
+
+			if ( count < 2 ) continue;
+
+			total_dev += dev;
+			total_pdev += sqrt(1.0/(count-1.0))*dev;
+			total_rdev += sqrt(count/(count-1.0))*dev;
+			total_tot += lookup_intensity(tots, h, k, l);
+
+		}
+
+		STATUS("Rmerge = %f%%\n", 100.0*total_dev/total_tot);
+		STATUS("  Rpim = %f%%\n", 100.0*total_pdev/total_tot);
+		STATUS("  Rrim = %f%%\n", 100.0*total_rdev/total_tot);
+
+	}
+
+	fclose(fh);
 	free(sym);
 	free(model);
 	free(counts);
