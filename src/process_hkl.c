@@ -30,7 +30,7 @@
 
 
 /* Number of divisions for intensity histograms */
-#define NBINS (200)
+#define NBINS (50)
 
 
 static void show_help(const char *s)
