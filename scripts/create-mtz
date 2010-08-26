@@ -2,6 +2,8 @@
 
 OUTFILE=`echo $1 | sed -e 's/\.hkl$/.mtz/'`
 TMPFILE=`echo $1 | sed -e 's/\.hkl$/.temp.mtz/'`
+PDB=../1JB0.pdb
+
 echo " Input: $1"
 echo "Output: $OUTFILE"
 if [ -e $TMPFILE -o -e $OUTFILE ]; then
@@ -39,7 +41,7 @@ if [ $? -ne 0 ]; then echo "Failed."; exit; fi
 
 # Get the unit cell contents
 echo "Running 'rwcontents'..."
-rwcontents XYZIN ../../1JB0.pdb >> out.html << EOF
+rwcontents XYZIN $PDB >> out.html << EOF
 NHOH 2.3 lowt
 EOF
 
