@@ -35,7 +35,6 @@ enum {
 	R_1,
 	R_2,
 	R_DIFF,
-	R_ISO
 };
 
 
@@ -198,33 +197,6 @@ static double internal_rdiff(const double *ref1, const double *ref2,
 }
 
 
-static double internal_riso(const double *ref1, const double *ref2,
-                            ReflItemList *items, double scale)
-{
-	double top = 0.0;
-	double bot = 0.0;
-	int i;
-
-	for ( i=0; i<num_items(items); i++ ) {
-
-		double i1, i2;
-		struct refl_item *it;
-		signed int h, k, l;
-
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
-
-		i1 = lookup_intensity(ref1, h, k, l);
-		i2 = lookup_intensity(ref2, h, k, l);
-
-		top += fabs(i1 - i2);
-		bot += fabs(i1 + i2);
-
-	}
-
-	return 2.0*top/bot;
-}
-
 
 static double calc_r(double scale, void *params)
 {
@@ -237,8 +209,6 @@ static double calc_r(double scale, void *params)
 		return internal_r2(rp->ref1, rp->ref2, rp->items, scale);
 	case R_DIFF :
 		return internal_rdiff(rp->ref1, rp->ref2, rp->items, scale);
-	case R_ISO :
-		return internal_riso(rp->ref1, rp->ref2, rp->items, scale);
 	}
 
 	ERROR("No such FoM!\n");
@@ -277,11 +247,8 @@ static double r_minimised(const double *ref1, const double *ref2,
 	case R_DIFF :
 		scale = stat_scale_sqrti(ref1, ref2, items);
 		break;
-	case R_ISO :
-		scale = stat_scale_intensity(ref1, ref2, items);
-		break;
 	}
-	STATUS("Initial scale factor estimate: %5.2e\n", scale);
+	//STATUS("Initial scale factor estimate: %5.2e\n", scale);
 
 	/* Probably within an order of magnitude either side */
 	gsl_min_fminimizer_set(s, &F, scale, scale/10.0, scale*10.0);
@@ -335,13 +302,6 @@ double stat_rdiff(const double *ref1, const double *ref2,
                   ReflItemList *items, double *scalep)
 {
 	return r_minimised(ref1, ref2, items, scalep, R_DIFF);
-}
-
-
-double stat_riso(const double *ref1, const double *ref2,
-                 ReflItemList *items, double *scalep)
-{
-	return r_minimised(ref1, ref2, items, scalep, R_ISO);
 }
 
 

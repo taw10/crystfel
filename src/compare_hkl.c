@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 	char *afile = NULL;
 	char *bfile = NULL;
 	char *sym = NULL;
-	double scale, R1, R2, Rdiff, Riso, pearson;
+	double scale, R1, R2, Rdiff, pearson;
 	int i, ncom;
 	ReflItemList *i1, *i2, *icommon;
 
@@ -149,8 +149,6 @@ int main(int argc, char *argv[])
 	STATUS("R2 = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale);
 	Rdiff = stat_rdiff(ref1, ref2_transformed, icommon, &scale);
 	STATUS("Rdiff = %5.4f %% (scale=%5.2e)\n", Rdiff*100.0, scale);
-	Riso = stat_riso(ref1, ref2_transformed, icommon, &scale);
-	STATUS("Riso = %5.4f %% (scale=%5.2e)\n", Riso*100.0, scale);
 	pearson = stat_pearson(ref1, ref2_transformed, icommon);
 	STATUS("Pearson r = %5.4f\n", pearson);
 
