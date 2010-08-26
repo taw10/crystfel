@@ -1,0 +1,6 @@
+process_hkl - data scaling and merging program
+----------------------------------------------
+
+This program takes as input the data stream from "indexamajig".  It merges the
+many individual intensities together to form a single list of reflection
+intensities which are useful for crystallography.

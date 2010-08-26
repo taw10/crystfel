@@ -2,17 +2,7 @@ How CrystFEL handles symmetry
 -----------------------------
 
 Currently, only process_hkl and render_hkl understand symmetry (and render_hkl
-only understands it when plotting a zone axis pattern).  get_hkl does NOT
-currently understand symmetry, which means you'll have to expand any molecular
-model (the PDB) out to P1 to get the correct results.  You can achieve that, for
-example, by loading it into Mercury, turning on "Packing", and re-saving.
-Alternatively, using CCP4:
-
-$ echo symgen P63 | pdbset xyzin model.pdb xyzout model-P1.pdb
-
-[ While on this subject, you'll probably also want to include hydrogens in the
-model using something like:
-$ echo HYDROGENS APPEND | hgen xyzin model.pdb xyzout model-with-H.pdb     ]
+only understands it when plotting a zone axis pattern).
 
 Symmetry definitions are included in src/symmetry.c.  Point group definitions
 are required for merging and the display of merged results, but space groups are
@@ -22,13 +12,16 @@ which happen to have values of zero.  Each space group belongs to exactly one
 point group, which you can look up in the International Tables for X-Ray
 Crystallography.
 
-Space groups would only be needed to make get_hkl handle symmetry properly, but
-that hasn't been done yet, so symmetry.c just handles point groups for now.  The
-method used in symmetry.c is general to both point groups and space groups, even
-though the code currently is not.
+Please read doc/process_hkl for important information on how symmetry is used
+during the indexing and merging procedures.
+
+
+Adding a new point group
+------------------------
 
 Point groups are being added here as they are required, so it's likely that the
-exact one you want hasn't been added yet.  Here's how to add a new one:
+exact one you want hasn't been added yet.  Here's how to add a new one by
+editing src/symmetry.c.
 
 First, expand the check_cond() function to include a description of the
 asymmetric reciprocal unit cell for the point group.  Every reflection in the
@@ -36,12 +29,12 @@ whole of reciprocal space must map onto exactly one reflection in the asymmetric
 unit cell so defined.  The asymmetric cell is usually defined with positive h, k
 and l, but it doesn't really matter.  Working out the required condition means
 visualising the cell and taking care to properly handle situations such as the
-(000) reflection.  Get this right, otherwise you'll go crazy when your symmetry
-breaks in weird ways.
+(000) reflection.  Get this right, otherwise you'll go crazy when it breaks in
+weird ways.
 
-Now, expand the num_general_equivs() function.  Given a point group, this
+Next, expand the num_general_equivs() function.  Given a point group, this
 function must return the number of equivalent reflections for a general
-reflection, including the given reflection.  High-symmetry reflections (usually
+reflection, including the input reflection.  High-symmetry reflections (usually
 ones with zeroes in their indices) have fewer equivalents, but the num_equivs()
 function will work this out for you.
 
@@ -51,3 +44,18 @@ returns (by reference) the indices of the "n"th equivalent reflection. You just
 have to worry about the general position, because get_equiv() will work out the
 special positions for you.  get_general_equiv() must return the original indices
 when idx=0.
+
+
+The symmetry of the molecular model (the space group)
+-----------------------------------------------------
+
+get_hkl does not currently understand symmetry, which means you'll have to
+expand any molecular model (the PDB) out to P1 to get the correct results.  You
+can achieve that, for example, by loading it into Mercury, turning on "Packing"
+and re-saving.  Alternatively, you can do this using CCP4 with a command like:
+
+$ echo symgen P63 | pdbset xyzin model.pdb xyzout model-P1.pdb
+
+While on this subject, you might also want to include hydrogens in the model
+using something like:
+$ echo HYDROGENS APPEND | hgen xyzin model.pdb xyzout model-with-H.pdb
