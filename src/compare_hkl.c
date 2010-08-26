@@ -41,6 +41,7 @@ static void show_help(const char *s)
 "  -h, --help                 Display this help message.\n"
 "  -o, --output=<filename>    Specify output filename for correction factor.\n"
 "  -y, --symmetry=<sym>       The symmetry of both the input files.\n"
+"  -p, --pdb=<filename>       PDB file to use (default: molecule.pdb).\n"
 "\n");
 }
 
@@ -140,6 +141,7 @@ int main(int argc, char *argv[])
 	int i, ncom;
 	ReflItemList *i1, *i2, *icommon;
 	int config_luzzati = 0;
+	char *pdb = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -147,11 +149,12 @@ int main(int argc, char *argv[])
 		{"output",             1, NULL,               'o'},
 		{"symmetry",           1, NULL,               'y'},
 		{"luzzati",            0, &config_luzzati,     1},
+		{"pdb",                1, NULL,               'p'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ho:y:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ho:y:p:", longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' :
@@ -164,6 +167,10 @@ int main(int argc, char *argv[])
 
 		case 'y' :
 			sym = strdup(optarg);
+			break;
+
+		case 'p' :
+			pdb = strdup(optarg);
 			break;
 
 		case 0 :
@@ -187,7 +194,13 @@ int main(int argc, char *argv[])
 	afile = strdup(argv[optind++]);
 	bfile = strdup(argv[optind]);
 
-	cell = load_cell_from_pdb("molecule.pdb");
+	if ( pdb == NULL ) {
+		pdb = strdup("molecule.pdb");
+	}
+
+	cell = load_cell_from_pdb(pdb);
+	free(pdb);
+
 	ref1 = new_list_intensity();
 	i1 = read_reflections(afile, ref1, NULL, NULL);
 	if ( i1 == NULL ) {
