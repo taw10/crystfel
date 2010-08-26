@@ -29,8 +29,8 @@
 #include "symmetry.h"
 
 
-/* Number of divisions for R vs |q| graphs */
-#define RVQDV (20)
+/* Number of divisions for intensity histograms */
+#define NBINS (200)
 
 
 static void show_help(const char *s)
@@ -56,11 +56,54 @@ static void show_help(const char *s)
 "      --stop-after=<n>      Stop after processing n patterns.  Zero means\n"
 "                             keep going until the end of the input, and is\n"
 "                             the default.\n"
+"  -g, --histogram=<h,k,l>   Calculate the histogram of measurements for this\n"
+"                             reflection.\n"
 "\n"
 "      --scale               Scale each pattern for best fit with the current\n"
 "                             model.\n"
 "  -y, --symmetry=<sym>      Merge according to point group <sym>.\n"
 );
+}
+
+
+static void plot_histogram(double *vals, int n)
+{
+	int i;
+	double max = -INFINITY;
+	double min = +INFINITY;
+	double step;
+	int histo[NBINS];
+	FILE *fh;
+
+	fh = fopen("histogram.dat", "w");
+	if ( fh == NULL ) {
+		ERROR("Couldn't open 'histogram.dat'\n");
+		return;
+	}
+
+	for ( i=0; i<n; i++ ) {
+		if ( vals[i] > max ) max = vals[i];
+		if ( vals[i] < min ) min = vals[i];
+	}
+	STATUS("%f %f\n", min, max);
+
+	for ( i=0; i<NBINS; i++ ) {
+		histo[i] = 0;
+	}
+
+	step = (max-min)/NBINS;
+
+	for ( i=0; i<n; i++ ) {
+		int bin;
+		bin = (vals[i]-min)/step;
+		histo[bin]++;
+	}
+
+	for ( i=0; i<NBINS; i++ ) {
+		fprintf(fh, "%f %i\n", min+step*i, histo[i]);
+	}
+
+	fclose(fh);
 }
 
 
@@ -160,7 +203,9 @@ static void merge_pattern(double *model, ReflItemList *observed,
                           const double *new,  ReflItemList *items,
                           unsigned int *model_counts,  int mo,
                           ReflItemList *twins,
-                          const char *holo, const char *mero)
+                          const char *holo, const char *mero, double *hist_vals,
+                          signed int hist_h, signed int hist_k,
+                          signed int hist_l, int *hist_n)
 {
 	int i;
 	int twin;
@@ -216,6 +261,14 @@ static void merge_pattern(double *model, ReflItemList *observed,
 		/* Increase count count */
 		integrate_count(model_counts, h, k, l, 1);
 
+		if ( hist_vals != NULL ) {
+			int p = *hist_n;
+			if ( (h==hist_h) && (k==hist_k) && (l==hist_l) ) {
+				hist_vals[p] = intensity;
+				*hist_n = p+1;
+			}
+		}
+
 	}
 
 	/* Dump the reflections in this pattern into the overall list */
@@ -230,7 +283,9 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
                       int config_maxonly, int config_scale, int config_sum,
                       int config_stopafter,
                       ReflItemList *twins, const char *holo, const char *mero,
-                      int n_total_patterns)
+                      int n_total_patterns, double *hist_vals,
+                      signed int hist_h, signed int hist_k, signed int hist_l,
+                      int *hist_i)
 {
 	char *rval;
 	float f0;
@@ -277,7 +332,9 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 			/* Start of second or later pattern */
 			merge_pattern(model, observed, new_pattern, items,
 			              counts, config_maxonly,
-			              twins, holo, mero);
+			              twins, holo, mero,
+			              hist_vals, hist_h, hist_k, hist_l,
+			              hist_i);
 
 			if ( n_patterns == config_stopafter ) break;
 
@@ -380,6 +437,10 @@ int main(int argc, char *argv[])
 	ReflItemList *observed;
 	int i;
 	const char *holo = NULL;
+	char *histo = NULL;
+	signed int hist_h, hist_k, hist_l;
+	double *hist_vals = NULL;
+	int hist_i;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -393,11 +454,12 @@ int main(int argc, char *argv[])
 		{"scale",              0, &config_scale,       1},
 		{"symmetry",           1, NULL,               'y'},
 		{"pdb",                1, NULL,               'p'},
+		{"histogram",          1, NULL,               'g'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:e:ro:p:y:",
+	while ((c = getopt_long(argc, argv, "hi:e:ro:p:y:g:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -423,6 +485,10 @@ int main(int argc, char *argv[])
 
 		case 'y' :
 			sym = strdup(optarg);
+			break;
+
+		case 'g' :
+			histo = strdup(optarg);
 			break;
 
 		case 0 :
@@ -475,6 +541,22 @@ int main(int argc, char *argv[])
 		holo = strdup("1");
 	}
 
+	if ( histo != NULL ) {
+		int r;
+		r = sscanf(histo, "%i,%i,%i", &hist_h, &hist_k, &hist_l);
+		if ( r != 3 ) {
+			ERROR("Invalid indices for '--histogram'\n");
+			return 1;
+		}
+		hist_vals = malloc(10*1024*sizeof(double));
+		free(histo);
+		STATUS("Histogramming %i %i %i -> ", hist_h, hist_k, hist_l);
+		/* Put into the asymmetric cell for the target group */
+		get_asymm(hist_h, hist_k, hist_l,
+		          &hist_h, &hist_k, &hist_l, sym);
+		STATUS("%i %i %i\n", hist_h, hist_k, hist_l);
+	}
+
 	/* Open the data stream */
 	if ( strcmp(filename, "-") == 0 ) {
 		fh = stdin;
@@ -492,12 +574,20 @@ int main(int argc, char *argv[])
 	STATUS("There are %i patterns to process\n", n_total_patterns);
 	rewind(fh);
 
+	hist_i = 0;
 	merge_all(fh, &model, &observed, &counts,
 	          config_maxonly, config_scale, config_sum, config_stopafter,
-                  twins, holo, sym, n_total_patterns);
+                  twins, holo, sym, n_total_patterns,
+                  hist_vals, hist_h, hist_k, hist_l, &hist_i);
 	rewind(fh);
 
 	fclose(fh);
+
+	if ( hist_vals != NULL ) {
+		STATUS("%i %i %i was seen %i times.\n", hist_h, hist_k, hist_l,
+		                                        hist_i);
+		plot_histogram(hist_vals, hist_i);
+	}
 
 	if ( output != NULL ) {
 		write_reflections(output, observed, model, NULL, counts, cell);

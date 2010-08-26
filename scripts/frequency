@@ -2,168 +2,37 @@
 
 use strict;
 
-my $bins = 200;
 my $nplots = 32;
+my $sym = "6/mmm";
 
-open(FH, $ARGV[0]);
+my $stream = $ARGV[0];
 
+#system("~/crystfel/src/process_hkl -i ".$stream." -o test.hkl -y ".$sym);
+
+open(FH, "test.hkl");
+my $max = 0;
+my $h;
+my $k;
+my $l;
 my $line;
-my %counts;
-
-# --- Step 1: Count reflections and find the most popular ones
-
 while ( $line = <FH> ) {
 
-	my $h;
-	my $k;
-	my $l;
+	chomp $line;
 
-	chomp($line);
+	if ( $line =~ /\s+(\d+)$/ ) {
 
-	if ( $line =~ /^\s+(\d+)\s+(\d+)\s+(\d+)/ ) {
-
-		my $key;
-
-		$h = $1;
-		$k = $2;
-		$l = $3;
-
-		$key = $h.",".$k.",".$l;
-		$counts{$key}++;
-
-	}
-
-}
-
-my $ref;
-my $i;
-$i = 0;
-foreach $ref ( sort {-($counts{$a} <=> $counts{$b})} keys %counts )
-{
-	$i++;
-	if ( $i > $nplots ) {
-		delete($counts{$ref});
-	} else {
-		printf("%s %i\n", $ref, $counts{$ref});
-	}
-}
-
-
-# --- Step 2: Work out histogram bins for each reflection
-
-seek(FH, 0, 0);
-
-my %mins;
-my %maxs;
-
-while ( $line = <FH> ) {
-
-	my $key;
-	my $intensity;
-
-	chomp($line);
-
-	if ( $line =~ /^\s+(\d+)\s+(\d+)\s+(\d+)\s+([\d\.]+)/ ) {
-
-		my $h;
-		my $k;
-		my $l;
-
-		$h = $1;
-		$k = $2;
-		$l = $3;
-		$intensity = $4;
-
-		$key = $h.",".$k.",".$l;
-
-		next unless exists($counts{$key});
-
-		unless ( exists($mins{$key}) ) {
-			$mins{$key} = $intensity;
-		}
-		unless ( exists($maxs{$key}) ) {
-			$maxs{$key} = $intensity;
-		}
-		if ( $intensity < $mins{$key} ) {
-			$mins{$key} = $intensity;
-		}
-		if ( $intensity > $maxs{$key} ) {
-			$maxs{$key} = $intensity;
-		}
-
-	}
-
-}
-
-# --- Step 3: Bin the counts and plot
-
-open(GP, "| gnuplot");
-printf(GP "set term postscript enhanced font \"Helvetica,20\"\n");
-printf(GP "set output \"histo.ps\"\n");
-printf(GP "set xtics nomirror out rotate by -60\n");
-#printf(GP "set logscale x\n");
-foreach $ref ( sort {-($counts{$a} <=> $counts{$b})} keys %counts )
-{
-	my $max = $maxs{$ref};
-	my $min = $mins{$ref};
-	my $binsize = ($max+1-$min)/$bins;
-	my @hist;
-
-	printf("%s %f -> %f\n", $ref, $mins{$ref}, $maxs{$ref});
-
-	for ( $i=0; $i<$bins; $i++ ) {
-		$hist[$i] = 0;
-	}
-
-	seek(FH, 0, 0);
-	while ( $line = <FH> ) {
-
-		my $bin;
-		my $h;
-		my $k;
-		my $l;
-		my $intensity;
-
-		chomp($line);
-
-		if ( $line =~ /^\s+(\d+)\s+(\d+)\s+(\d+)\s+([\d\.]+)/ ) {
-
-			my $key;
-
+		my $n = $1;
+		if ( $n > $max ) {
+			$line =~ /^\s+(\d+)\s+(\d+)\s+(\d+)\s+/;
 			$h = $1;
 			$k = $2;
 			$l = $3;
-			$intensity = $4;
-
-			$key = $h.",".$k.",".$l;
-
-			next unless ( $ref eq $key );
-
-			$bin = int(($intensity-$min)/$binsize);
-			$hist[$bin]++;
-
+			$max = $n;
 		}
 
 	}
-
-	open(OFH, "> ".$ref.".dat");
-	for ( $i=0; $i<$bins; $i++ ) {
-		printf(OFH "%f\t%i\n", $min+(($i+0.5)*$binsize), $hist[$i]);
-	}
-	close(OFH);
-
-	my $nref = $ref;
-	$nref =~ s/\,/\ /g;
-	my $title = "t \"".$nref." reflection\"";
-	printf(GP "plot [] [0:20]\"".$ref.".dat\" u 1:2 w histeps ".$title."\n");
-
 }
 
-close(FH);
-close(GP);
+printf("%i %i %i = %i\n", $h, $k, $l, $max);
 
-foreach $ref ( sort {-($counts{$a} <=> $counts{$b})} keys %counts ) {
-	unlink($ref.".dat");
-}
-system("ps2pdf histo.ps");
-unlink("histo.ps");
+exit 0;
