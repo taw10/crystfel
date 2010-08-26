@@ -53,6 +53,7 @@ static void show_help(const char *s)
 "                             final output list.  This is useful for comparing\n"
 "                             results to radially summed powder patterns, but\n"
 "                             will break R-factor analysis.\n"
+"      --start-after=<n>     Skip n patterns at the start of the stream.\n"
 "      --stop-after=<n>      Stop after processing n patterns.  Zero means\n"
 "                             keep going until the end of the input, and is\n"
 "                             the default.\n"
@@ -290,7 +291,7 @@ static void merge_pattern(double *model, ReflItemList *observed,
 static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
                       unsigned int **pcounts,
                       int config_maxonly, int config_scale, int config_sum,
-                      int config_stopafter,
+                      int config_startafter, int config_stopafter,
                       ReflItemList *twins, const char *holo, const char *mero,
                       int n_total_patterns, double *hist_vals,
                       signed int hist_h, signed int hist_k, signed int hist_l,
@@ -307,6 +308,25 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 	double *model = new_list_intensity();
 	unsigned int *counts = new_list_count();
 	int i;
+
+	if ( config_startafter != 0 ) {
+
+		do {
+
+			char line[1024];
+
+			rval = fgets(line, 1023, fh);
+			if ( (strncmp(line, "Reflections from indexing", 25)
+			                                                   == 0)
+			    || (strncmp(line, "New pattern", 11) == 0) ) {
+				n_patterns++;
+			}
+
+			if ( n_patterns == config_startafter ) break;
+
+		} while ( rval != NULL );
+
+	}
 
 	do {
 
@@ -436,6 +456,7 @@ int main(int argc, char *argv[])
 	unsigned int *counts;
 	UnitCell *cell;
 	int config_maxonly = 0;
+	int config_startafter = 0;
 	int config_stopafter = 0;
 	int config_sum = 0;
 	int config_scale = 0;
@@ -460,6 +481,7 @@ int main(int argc, char *argv[])
 		{"max-only",           0, &config_maxonly,     1},
 		{"output-every",       1, NULL,               'e'},
 		{"stop-after",         1, NULL,               's'},
+		{"start-after",        1, NULL,               'f'},
 		{"sum",                0, &config_sum,         1},
 		{"scale",              0, &config_scale,       1},
 		{"symmetry",           1, NULL,               'y'},
@@ -470,7 +492,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:e:ro:p:y:g:",
+	while ((c = getopt_long(argc, argv, "hi:e:ro:p:y:g:f:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -488,6 +510,10 @@ int main(int argc, char *argv[])
 
 		case 's' :
 			config_stopafter = atoi(optarg);
+			break;
+
+		case 'f' :
+			config_startafter = atoi(optarg);
 			break;
 
 		case 'p' :
@@ -593,7 +619,8 @@ int main(int argc, char *argv[])
 
 	hist_i = 0;
 	merge_all(fh, &model, &observed, &counts,
-	          config_maxonly, config_scale, config_sum, config_stopafter,
+	          config_maxonly, config_scale, config_sum,
+	          config_startafter, config_stopafter,
                   twins, holo, sym, n_total_patterns,
                   hist_vals, hist_h, hist_k, hist_l, &hist_i, NULL, NULL, NULL);
 	rewind(fh);
@@ -623,7 +650,8 @@ int main(int argc, char *argv[])
 		rewind(fh);
 		merge_all(fh, &model, &observed, &counts,
 		          config_maxonly, config_scale, 0,
-		          config_stopafter, twins, holo, sym, n_total_patterns,
+		          config_startafter, config_stopafter, twins, holo, sym,
+		          n_total_patterns,
 		          NULL, 0, 0, 0, NULL, devs, tots, model);
 
 		for ( i=0; i<num_items(observed); i++ ) {
