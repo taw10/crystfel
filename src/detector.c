@@ -238,8 +238,29 @@ struct detector *get_detector_geometry(const char *filename)
 		}
 
 		n2 = assplode(bits[0], "/\\.", &path, ASSPLODE_NONE);
+		if ( n2 < 2 ) {
+			/* This was a top-level option, but not handled above. */
+			for ( i=0; i<n1; i++ ) free(bits[i]);
+			free(bits);
+			for ( i=0; i<n2; i++ ) free(path[i]);
+			free(path);
+			continue;
+		}
 
 		np = atoi(path[0]);
+		if ( det->n_panels == -1 ) {
+			ERROR("n_panels statement must come first in "
+			      "detector geometry file.\n");
+			return NULL;
+		}
+
+		if ( np > det->n_panels ) {
+			ERROR("The detector geometry file said there were %i "
+			      "panels, but then tried to specify number %i\n",
+			      det->n_panels, np);
+			ERROR("Note: panel indices are counted from zero.\n");
+			return NULL;
+		}
 
 		if ( strcmp(path[1], "min_x") == 0 ) {
 			det->panels[np].min_x = atof(bits[2]);
