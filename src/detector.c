@@ -185,6 +185,7 @@ struct detector *get_detector_geometry(const char *filename)
 	char *rval;
 	char **bits;
 	int i;
+	int reject;
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) return NULL;
@@ -234,6 +235,19 @@ struct detector *get_detector_geometry(const char *filename)
 			                      * sizeof(struct panel));
 			for ( i=0; i<n1; i++ ) free(bits[i]);
 			free(bits);
+
+			for ( i=0; i<det->n_panels; i++ ) {
+				det->panels[i].min_x = -1;
+				det->panels[i].min_y = -1;
+				det->panels[i].max_x = -1;
+				det->panels[i].max_y = -1;
+				det->panels[i].cx = -1;
+				det->panels[i].cy = -1;
+				det->panels[i].clen = -1;
+				det->panels[i].res = -1;
+				det->panels[i].badrow = '0';
+			}
+
 			continue;
 		}
 
@@ -307,16 +321,67 @@ struct detector *get_detector_geometry(const char *filename)
 		return NULL;
 	}
 
+	reject = 0;
 	for ( i=0; i<det->n_panels; i++ ) {
 		STATUS("Panel %i, min_x = %i\n", i, det->panels[i].min_x);
+		if ( det->panels[i].min_x == -1 ) {
+			ERROR("Please specify the minimum x coordinate for"
+			      " panel %i\n", i);
+			reject = 1;
+		}
 		STATUS("Panel %i, max_x = %i\n", i, det->panels[i].max_x);
+		if ( det->panels[i].max_x == -1 ) {
+			ERROR("Please specify the maximum x coordinate for"
+			      " panel %i\n", i);
+			reject = 1;
+		}
 		STATUS("Panel %i, min_y = %i\n", i, det->panels[i].min_y);
+		if ( det->panels[i].min_y == -1 ) {
+			ERROR("Please specify the minimum y coordinate for"
+			      " panel %i\n", i);
+			reject = 1;
+		}
 		STATUS("Panel %i, max_y = %i\n", i, det->panels[i].max_y);
+		if ( det->panels[i].max_y == -1 ) {
+			ERROR("Please specify the maximum y coordinate for"
+			      " panel %i\n", i);
+			reject = 1;
+		}
 		STATUS("Panel %i, cx = %f\n", i, det->panels[i].cx);
+		if ( det->panels[i].cx == -1 ) {
+			ERROR("Please specify the centre x coordinate for"
+			      " panel %i\n", i);
+			reject = 1;
+		}
 		STATUS("Panel %i, cy = %f\n", i, det->panels[i].cy);
+		if ( det->panels[i].cy == -1 ) {
+			ERROR("Please specify the centre y coordinate for"
+			      " panel %i\n", i);
+			reject = 1;
+		}
 		STATUS("Panel %i, clen = %f\n", i, det->panels[i].clen);
+		if ( det->panels[i].clen == -1 ) {
+			ERROR("Please specify the camera length for"
+			      " panel %i\n", i);
+			reject = 1;
+		}
 		STATUS("Panel %i, res = %f\n", i, det->panels[i].res);
+		if ( det->panels[i].res == -1 ) {
+			ERROR("Please specify the resolution for"
+			      " panel %i\n", i);
+			reject = 1;
+		}
+		STATUS("Panel %i, badrow direction = %c\n", i,
+		       det->panels[i].badrow);
+		if ( det->panels[i].badrow == '0' ) {
+			ERROR("Please specify the bad row direction for"
+			      " panel %i\n", i);
+			reject = 1;
+		}
+
 	}
+
+	if ( reject ) return NULL;
 
 	fclose(fh);
 
