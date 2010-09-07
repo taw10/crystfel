@@ -231,6 +231,7 @@ static double integrate_all_rot(struct image *image, struct reflhit *hits,
 	double itot = 0.0;
 	int i;
 	double cosr, sinr;
+	int num_int = 0;
 
 	cosr = cos(rot);
 	sinr = sin(rot);
@@ -243,10 +244,59 @@ static double integrate_all_rot(struct image *image, struct reflhit *hits,
 		yp = -sinr*hits[i].x + cosr*hits[i].y;
 
 		itot += fast_integrate_peak(image, rint(xp), rint(yp));
+		num_int++;
 
 	}
 
-	return itot;
+	return itot / num_int;
+}
+
+
+/* Return the mean of the distances between peaks in the image and peaks from
+ * the given template. */
+static double mean_distance(struct image *image, struct reflhit *hits,
+                            int n, double rot)
+{
+	double dtot = 0.0;
+	int i;
+	double cosr, sinr;
+	int num_dist = 0;
+
+	cosr = cos(rot);
+	sinr = sin(rot);
+
+	/* For each template peak */
+	for ( i=0; i<n; i++ ) {
+
+		float xp, yp;
+		int j;
+		double min_dsq;
+
+		xp =  cosr*hits[i].x + sinr*hits[i].y;
+		yp = -sinr*hits[i].x + cosr*hits[i].y;
+
+		/* Compare to every real peak */
+		min_dsq = +INFINITY;
+		for ( j=0; j<image_feature_count(image->features); j++ ) {
+
+			struct imagefeature *f;
+			double this_dsq;
+
+			f = image_get_feature(image->features, j);
+
+			this_dsq = pow(f->x - xp, 2.0) + pow(f->y - yp, 2.0);
+			if ( this_dsq < min_dsq ) min_dsq = this_dsq;
+
+		}
+
+		if ( min_dsq < pow(50.0, 2.0) ) {
+			dtot += sqrt(min_dsq);
+			num_dist++;
+		}
+
+	}
+
+	return dtot / num_dist;
 }
 
 
@@ -255,10 +305,14 @@ void match_templates(struct image *image, IndexingPrivate *ipriv)
 	struct _indexingprivate_template *priv
 	        = (struct _indexingprivate_template *)ipriv;
 	int i, max_i;
-	double max, tot;
-	double rot, rot_max, rot_step, rot_best;
+	double max, rot, rot_max, rot_step, rot_best;
+	const int peaks = 0;
 
-	max = 0.0;
+	if ( peaks ) {
+		max = INFINITY;
+	} else {
+		max = 0.0;
+	}
 	max_i = 0;
 	rot_max = 2.0*M_PI;
 	rot_step = 2.0*M_PI / 360.0;  /* 1 deg steps */
@@ -268,11 +322,19 @@ void match_templates(struct image *image, IndexingPrivate *ipriv)
 	for ( rot=0.0; rot<rot_max; rot+=rot_step ) {
 
 		double val;
+		int best;
 
-		val = integrate_all_rot(image, priv->templates[i].spots,
-		                        priv->templates[i].n, rot);
+		if ( !peaks ) {
+			val = integrate_all_rot(image, priv->templates[i].spots,
+			                        priv->templates[i].n, rot);
+			best = val > max;
+		} else {
+			val = mean_distance(image, priv->templates[i].spots,
+			                    priv->templates[i].n, rot);
+			best = val < max;
+		}
 
-		if ( val > max ) {
+		if ( best ) {
 			max = val;
 			max_i = i;
 			rot_best = rot;
@@ -282,18 +344,10 @@ void match_templates(struct image *image, IndexingPrivate *ipriv)
 	progress_bar(i, priv->n_templates-1, "Indexing");
 	}
 
-	tot = 0.0;
-	for ( i=0; i<(image->width*image->height); i++ ) {
-		int val;
-		val = image->data[i];
-		if ( val < THRESHOLD ) continue;
-		tot += val;
-	}
-
-	STATUS("%i (%.2f, %.2f, %.2f): %.2f%%\n", max_i,
+	STATUS("%i (%.2f, %.2f, %.2f): %.2f\n", max_i,
 	                                  rad2deg(priv->templates[max_i].omega),
 	                                  rad2deg(priv->templates[max_i].phi),
-	                                  rad2deg(rot_best), 100.0 * max / tot);
+	                                  rad2deg(rot_best), max);
 
 	image->ncells = 1;
 	image->candidate_cells[0] = rotate_cell(priv->cell,

@@ -121,6 +121,8 @@ struct reflhit *find_intersections(struct image *image, UnitCell *cell,
 		hits[np].h = h;
 		hits[np].k = k;
 		hits[np].l = l;
+		hits[np].x = xda;
+		hits[np].y = yda;
 		np++;
 
 		if ( output ) {
