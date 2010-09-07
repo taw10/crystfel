@@ -202,7 +202,7 @@ static double get_wavelength(struct hdfile *f)
 	if ( dh < 0 ) return -1.0;
 
 	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
-		            H5P_DEFAULT, &lambda);
+	            H5P_DEFAULT, &lambda);
 	H5Dclose(dh);
 	if ( r < 0 ) return -1.0;
 
