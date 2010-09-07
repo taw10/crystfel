@@ -24,6 +24,8 @@
 #include <gsl/gsl_errno.h>
 #include <pthread.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -158,7 +160,48 @@ static void show_help(const char *s)
 "     --verbose            Be verbose about indexing.\n"
 "     --gpu                Use the GPU to speed up the simulation.\n"
 " -j <n>                   Run <n> analyses in parallel.  Default 1.\n"
+"\n"
+"\nOptions you probably won't need:\n\n"
+"     --no-check-prefix    Don't attempt to correct the --prefix.\n"
 );
+}
+
+
+static char *check_prefix(char *prefix)
+{
+	int r;
+	struct stat statbuf;
+	char *new;
+	size_t len;
+
+	/* Is "prefix" a directory? */
+	r = stat(prefix, &statbuf);
+	if ( r != 0 ) {
+		/* "prefix" probably doesn't exist.  This is fine - assume
+		 * the user knows what they're doing, and that "prefix"
+		 * suffixed with the actual filename will produce something
+		 * sensible. */
+		return prefix;
+	}
+
+	if ( !S_ISDIR(statbuf.st_mode) ) {
+		/* Also fine, as above. */
+		return prefix;
+	}
+
+	/* Does the prefix end in a slash? */
+	if ( prefix[strlen(prefix)-1] == '/' ) {
+		/* This looks sensible. */
+		return prefix;
+	}
+
+	STATUS("Your prefix ('%s') is a directory, but doesn't end"
+	       " with a slash.  I'm going to add it for you.\n", prefix);
+	len = strlen(prefix)+2;
+	new = malloc(len);
+	snprintf(new, len, "%s/", prefix);
+	free(prefix);
+	return new;
 }
 
 
@@ -597,6 +640,8 @@ int main(int argc, char *argv[])
 
 	if ( prefix == NULL ) {
 		prefix = strdup("");
+	} else {
+		prefix = check_prefix(prefix);
 	}
 
 	if ( (nthreads == 0) || (nthreads > MAX_THREADS) ) {
