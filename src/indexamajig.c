@@ -61,6 +61,7 @@ struct process_args
 	int config_sanity;
 	int config_satcorr;
 	int config_sa;
+	float threshold;
 	struct detector *det;
 	IndexingMethod indm;
 	IndexingPrivate *ipriv;
@@ -145,6 +146,7 @@ static void show_help(const char *s)
 "                           included in the HDF5 file.\n"
 "      --no-sa             Don't correct for the differing solid angles of\n"
 "                           the pixels.\n"
+"      --threshold=<n>     Only accept peaks above <n> ADU.  Default: 800.\n"
 "\n"
 "\nOptions for greater performance or verbosity:\n\n"
 "      --verbose           Be verbose about indexing.\n"
@@ -325,7 +327,7 @@ static struct process_result process_image(struct process_args *pargs)
 	}
 
 	/* Perform 'fine' peak search */
-	search_peaks(&image);
+	search_peaks(&image, pargs->threshold);
 
 	/* Get rid of noise-filtered version at this point
 	 * - it was strictly for the purposes of peak detection. */
@@ -468,6 +470,7 @@ int main(int argc, char *argv[])
 	int config_sanity = 0;
 	int config_satcorr = 0;
 	int config_sa = 1;
+	float threshold = 800.0;
 	struct detector *det;
 	char *geometry = NULL;
 	IndexingMethod indm;
@@ -512,11 +515,12 @@ int main(int argc, char *argv[])
 		{"check-sanity",       0, &config_sanity,      1},
 		{"sat-corr",           0, &config_satcorr,     1},
 		{"no-sa",              0, &config_sa,          0},
+		{"threshold",          1, NULL,               't'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:wp:j:x:g:",
+	while ((c = getopt_long(argc, argv, "hi:wp:j:x:g:t:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -550,6 +554,10 @@ int main(int argc, char *argv[])
 
 		case 'g' :
 			geometry = strdup(optarg);
+			break;
+
+		case 't' :
+			threshold = strtof(optarg, NULL);
 			break;
 
 		case 0 :
@@ -707,6 +715,7 @@ int main(int argc, char *argv[])
 		pargs->indm = indm;
 		pargs->intensities = intensities;
 		pargs->gctx = gctx;
+		pargs->threshold = threshold;
 		pargs->id = i;
 		pthread_mutex_lock(&pargs->control_mutex);
 		pargs->done = 0;

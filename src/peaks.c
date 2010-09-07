@@ -266,7 +266,7 @@ int integrate_peak(struct image *image, int xp, int yp,
 }
 
 
-void search_peaks(struct image *image)
+void search_peaks(struct image *image, float threshold)
 {
 	int x, y, width, height;
 	float *data;
@@ -305,7 +305,7 @@ void search_peaks(struct image *image)
 		int r;
 
 		/* Overall threshold */
-		if ( data[x+width*y] < 50 ) continue;
+		if ( data[x+width*y] < threshold ) continue;
 
 		/* Get gradients */
 		dx1 = data[x+width*y] - data[(x+1)+width*y];
