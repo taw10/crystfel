@@ -513,6 +513,7 @@ int main(int argc, char *argv[])
 	int config_sanity = 0;
 	int config_satcorr = 0;
 	int config_sa = 1;
+	int config_checkprefix = 1;
 	float threshold = 800.0;
 	struct detector *det;
 	char *geometry = NULL;
@@ -559,6 +560,7 @@ int main(int argc, char *argv[])
 		{"sat-corr",           0, &config_satcorr,     1},
 		{"no-sa",              0, &config_sa,          0},
 		{"threshold",          1, NULL,               't'},
+		{"no-check-prefix",    0, &config_checkprefix, 0},
 		{0, 0, NULL, 0}
 	};
 
@@ -641,7 +643,9 @@ int main(int argc, char *argv[])
 	if ( prefix == NULL ) {
 		prefix = strdup("");
 	} else {
-		prefix = check_prefix(prefix);
+		if ( config_checkprefix ) {
+			prefix = check_prefix(prefix);
+		}
 	}
 
 	if ( (nthreads == 0) || (nthreads > MAX_THREADS) ) {
