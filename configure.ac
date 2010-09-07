@@ -156,4 +156,4 @@ CFLAGS="$CFLAGS $LIBTIFF_CFLAGS -D_GNU_SOURCE"
 LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
 LIBS="$LIBS $LIBTIFF_LIBS"
 
-AC_OUTPUT(Makefile src/Makefile data/Makefile)
+AC_OUTPUT(Makefile src/Makefile data/Makefile doc/Makefile)
