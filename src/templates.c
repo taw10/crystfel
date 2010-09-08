@@ -195,6 +195,9 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 	priv->n_templates = n_templates;
 	priv->cell = cell_new_from_cell(cell);
 
+	free(image.data);
+	free(image.flags);
+
 	return (struct _indexingprivate *)priv;
 }
 
