@@ -1,23 +1,23 @@
 n_panels = 2
 
-; Upper panel (found to the "right" in the HDF5, nearest the beam)
-0/min_x = 512
+; Upper panel (nearest the beam)
+0/min_x = 0
 0/max_x = 1023
-0/min_y = 0
+0/min_y = 512
 0/max_y = 1023
-0/cx = 459.0
-0/cy = 511.0
-0/clen = 64.6e-3
+0/cx = 512.9
+0/cy = 459.0
+0/clen = 64.78e-3
 0/res = 13333.3  ; 75 micron pixel size
-0/badrow_direction = x
+0/badrow_direction = y
 
-; Lower panel (found to the "left" in the HDF5, furthest from the beam)
+; Lower panel (furthest from the beam)
 1/min_x = 0
-1/max_x = 511
+1/max_x = 1023
 1/min_y = 0
-1/max_y = 1023
-1/cx = 901.0
-1/cy = 519.0
-1/clen = 67.4e-3
+1/max_y = 511
+1/cx = 519.0
+1/cy = 901.0
+1/clen = 67.73e-3
 1/res = 13333.3  ; 75 micron pixel size
-1/badrow_direction = x
+1/badrow_direction = y
