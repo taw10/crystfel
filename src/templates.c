@@ -362,9 +362,15 @@ void match_templates(struct image *image, IndexingPrivate *ipriv)
 
 void free_templates(IndexingPrivate *priv)
 {
+	int i;
 	struct _indexingprivate_template *tpriv
 	        = (struct _indexingprivate_template *)priv;
 
+	for ( i=0; i<tpriv->n_templates; i++ ) {
+		free(tpriv->templates[i].spots);
+	}
+
 	free(tpriv->templates);
+	cell_free(tpriv->cell);
 	free(tpriv);
 }
