@@ -324,7 +324,7 @@ int main(int argc, char *argv[])
 		find_intersections(&image, cell, da, dw, &np, 1);
 
 		hdfile_close(hdfile);
-		free(cell);
+		cell_free(cell);
 		free(filename);
 		free(image.data);
 		free(image.flags);

@@ -687,7 +687,7 @@ int main(int argc, char *argv[])
 	free(model);
 	free(counts);
 	free(output);
-	free(cell);
+	cell_free(cell);
 
 	return 0;
 }

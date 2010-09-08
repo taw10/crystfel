@@ -86,6 +86,13 @@ UnitCell *cell_new()
 }
 
 
+void cell_free(UnitCell *cell)
+{
+	free(cell->pointgroup);
+	free(cell);
+}
+
+
 void cell_set_parameters(UnitCell *cell, double a, double b, double c,
                          double alpha, double beta, double gamma)
 {

@@ -433,7 +433,7 @@ static struct process_result process_image(struct process_args *pargs)
 	free(simage);
 
 	/* Only free cell if found */
-	free(image.indexed_cell);
+	cell_free(image.indexed_cell);
 
 done:
 	free(image.data);
@@ -865,7 +865,7 @@ int main(int argc, char *argv[])
 	free(prefix);
 	free(det->panels);
 	free(det);
-	free(cell);
+	cell_free(cell);
 	fclose(fh);
 
 	STATUS("There were %i images.\n", n_images);

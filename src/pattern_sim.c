@@ -477,7 +477,7 @@ skip:
 	free(image.det->panels);
 	free(image.det);
 	free(powder);
-	free(cell);
+	cell_free(cell);
 	free(intensities);
 	free(outfile);
 	free(filename);

@@ -176,6 +176,6 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
 
 done:
 	for ( i=0; i<image->ncells; i++ ) {
-		free(image->candidate_cells[i]);
+		cell_free(image->candidate_cells[i]);
 	}
 }
