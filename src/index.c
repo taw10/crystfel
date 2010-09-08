@@ -56,6 +56,19 @@ IndexingPrivate *prepare_indexing(IndexingMethod indm, UnitCell *cell,
 }
 
 
+void cleanup_indexing(IndexingPrivate *priv)
+{
+	switch ( priv->indm ) {
+	case INDEXING_NONE :
+		break;
+	case INDEXING_DIRAX :
+		break;
+	case INDEXING_TEMPLATE :
+		free_templates(priv);
+	}
+}
+
+
 static void write_drx(struct image *image)
 {
 	FILE *fh;

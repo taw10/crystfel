@@ -354,5 +354,14 @@ void match_templates(struct image *image, IndexingPrivate *ipriv)
 	                                        priv->templates[max_i].omega,
 	                                        priv->templates[max_i].phi,
 	                                        rot_best);
+}
 
+
+void free_templates(IndexingPrivate *priv)
+{
+	struct _indexingprivate_template *tpriv
+	        = (struct _indexingprivate_template *)priv;
+
+	free(tpriv->templates);
+	free(tpriv);
 }

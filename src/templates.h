@@ -27,4 +27,6 @@ extern IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 
 extern void match_templates(struct image *image, IndexingPrivate *ipriv);
 
+extern void free_templates(IndexingPrivate *priv);
+
 #endif	/* TEMPLATES_H */

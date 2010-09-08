@@ -39,4 +39,6 @@ extern void index_pattern(struct image *image, UnitCell *cell,
                           IndexingMethod indm, int no_match, int verbose,
                           IndexingPrivate *priv);
 
+extern void cleanup_indexing(IndexingPrivate *priv);
+
 #endif	/* INDEX_H */

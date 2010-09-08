@@ -860,6 +860,8 @@ int main(int argc, char *argv[])
 
 	}
 
+	cleanup_indexing(ipriv);
+
 	free(prefix);
 	free(det->panels);
 	free(det);
