@@ -1,0 +1,38 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+open(FH, $ARGV[0]);
+open(TMP, "> list.tmp");
+
+my $in_image = 0;
+my $line;
+my $filename;
+while ( $line = <FH> ) {
+
+	chomp $line;
+	my $handled = 0;
+
+	if ( $line =~ /^\s*[0-9\-]+\s+[0-9\-]+\s+[0-9\-]+\s+[0-9\.\-]+/ ) {
+		printf(TMP "%s\n", $line);
+		$handled = 1;
+	}
+
+	if ( $line =~ /^Reflections\ from\ indexing\ in\ (.+)$/ ) {
+		$filename = $1;
+		$handled = 1;
+	}
+
+	if ( $line =~ /^Peak statistics/ ) {
+		close(TMP);
+		system("hdfsee ".$filename." --peak-overlay=list.tmp --binning=1 --int-boost=10");
+		unlink("list.tmp");
+		open(TMP, "> list.tmp");
+		$handled = 1;
+	}
+
+	if ( !$handled ) {
+		printf(STDERR "Unhandled: '%s'\n", $line);
+	}
+
+}
