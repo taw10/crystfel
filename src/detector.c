@@ -246,6 +246,7 @@ struct detector *get_detector_geometry(const char *filename)
 				det->panels[i].clen = -1;
 				det->panels[i].res = -1;
 				det->panels[i].badrow = '0';
+				det->panels[i].no_index = 0;
 			}
 
 			continue;
@@ -378,6 +379,7 @@ struct detector *get_detector_geometry(const char *filename)
 			      " panel %i\n", i);
 			reject = 1;
 		}
+		/* It's not a problem if "no_index" is still zero */
 
 	}
 
