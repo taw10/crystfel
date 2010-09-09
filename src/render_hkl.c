@@ -30,13 +30,8 @@
 #include "povray.h"
 #include "symmetry.h"
 #include "render.h"
+#include "render_hkl.h"
 
-enum {
-	WGHT_I,
-	WGHT_SQRTI,
-	WGHT_COUNTS,
-	WGHT_RAWCOUNTS,
-};
 
 static void show_help(const char *s)
 {
@@ -621,7 +616,8 @@ int main(int argc, char *argv[])
 	}
 
 	if ( config_povray ) {
-		r = povray_render_animation(cell, ref, cts, nproc);
+		r = povray_render_animation(cell, ref, cts, items,
+		                            nproc, sym, wght, boost);
 	} else if ( config_zoneaxis ) {
 #ifdef HAVE_CAIRO
 		render_za(cell, items, ref, cts, boost, sym, wght, colscale,

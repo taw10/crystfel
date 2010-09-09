@@ -21,13 +21,16 @@
 
 #include "cell.h"
 #include "utils.h"
+#include "symmetry.h"
+#include "render_hkl.h"
 
 
 #define MAX_PROC (256)
 
 
-int povray_render_animation(UnitCell *cell, double *ref,
-                             unsigned int *c, unsigned int nproc)
+int povray_render_animation(UnitCell *cell, double *ref, unsigned int *counts,
+                            ReflItemList *items, unsigned int nproc,
+                            const char *sym, int wght, double boost)
 {
 	FILE *fh;
 	double asx, asy, asz;
@@ -36,7 +39,6 @@ int povray_render_animation(UnitCell *cell, double *ref,
 	pid_t pids[MAX_PROC];
 	float max;
 	int i;
-	signed int h, k, l;
 
 	if ( (nproc > MAX_PROC) || (nproc < 1) ) {
 		ERROR("Number of processes must be a number between 1 and %i\n",
@@ -162,20 +164,68 @@ int povray_render_animation(UnitCell *cell, double *ref,
 
 	fprintf(fh, "}\n");
 
-	max = 0.5e6;
-	for ( h=-INDMAX; h<INDMAX; h++ ) {
-	for ( k=-INDMAX; k<INDMAX; k++ ) {
-	for ( l=-INDMAX; l<INDMAX; l++ ) {
+	max = 0.0;
+	for ( i=0; i<num_items(items); i++ ) {
 
-		float radius, x, y, z;
+		struct refl_item *it;
+		float val;
+
+		it = get_item(items, i);
+
+		switch ( wght ) {
+		case WGHT_I :
+			val = lookup_intensity(ref, it->h, it->k, it->l);
+			break;
+		case WGHT_SQRTI :
+			val = lookup_intensity(ref, it->h, it->k, it->l);
+			val = (val>0.0) ? sqrt(val) : 0.0;
+			break;
+		case WGHT_COUNTS :
+			val = lookup_count(counts, it->h, it->k, it->l);
+			val /= (float)num_equivs(it->h, it->k, it->l, sym);
+			break;
+		case WGHT_RAWCOUNTS :
+			val = lookup_count(counts, it->h, it->k, it->l);
+			break;
+		default :
+			ERROR("Invalid weighting.\n");
+			abort();
+		}
+
+		if ( val > max ) max = val;
+
+	}
+	max /= boost;
+
+	for ( i=0; i<num_items(items); i++ ) {
+
+		struct refl_item *it;
+		float radius;
 		int s;
 		float val, p, r, g, b, trans;
+		int j;
 
-		if ( !lookup_count(c, h, k, l) ) continue;
+		it = get_item(items, i);
 
-		val = lookup_intensity(ref, h, k, l);
-
-		val = max-val;
+		switch ( wght ) {
+		case WGHT_I :
+			val = lookup_intensity(ref, it->h, it->k, it->l);
+			break;
+		case WGHT_SQRTI :
+			val = lookup_intensity(ref, it->h, it->k, it->l);
+			val = (val>0.0) ? sqrt(val) : 0.0;
+			break;
+		case WGHT_COUNTS :
+			val = lookup_count(counts, it->h, it->k, it->l);
+			val /= (float)num_equivs(it->h, it->k, it->l, sym);
+			break;
+		case WGHT_RAWCOUNTS :
+			val = lookup_count(counts, it->h, it->k, it->l);
+			break;
+		default :
+			ERROR("Invalid weighting.\n");
+			abort();
+		}
 
 		s = val / (max/6);
 		p = fmod(val, max/6);
@@ -214,30 +264,33 @@ int povray_render_animation(UnitCell *cell, double *ref,
 			break;
 		}
 
-		val = max-val;
-
 		if ( val <= 0.0 ) continue;
-		radius = 0.1 * sqrt(sqrt(val))/1e2;
-		radius -= 0.008;
-		if ( radius > 0.03 ) radius = 0.03;
-		if ( radius <= 0.0 ) continue;
-		trans = (0.03-radius)/0.03;
-		radius += 0.002;
+		radius = 0.01 * pow(val, 0.25)/pow(max, 0.25);
+		trans = 1.0-(val/max);
 
-		x = asx*h + bsx*k + csx*l;
-		y = asy*h + bsy*k + csy*l;
-		z = asz*h + bsz*k + csz*l;
+		/* For each equivalent */
+		for ( j=0; j<num_equivs(it->h, it->k, it->l, sym); j++ ) {
 
-		fprintf(fh, "sphere { <%.5f, %.5f, %.5f>, %.5f "
-		            "texture{pigment{color rgb <%f, %f, %f>"
-		            " transmit %f} "
-		            "finish { reflection 0.1 } } \n"
-			    "transform { TRANS }\n"
-			    "}\n",
-			x/1e9, y/1e9, z/1e9, radius, r, g, b, trans);
+			signed int he, ke, le;
+			float x, y, z;
 
-	}
-	}
+			get_equiv(it->h, it->k, it->l, &he, &ke, &le, sym, j);
+
+			x = asx*he + bsx*ke + csx*le;
+			y = asy*he + bsy*ke + csy*le;
+			z = asz*he + bsz*ke + csz*le;
+
+			fprintf(fh, "sphere { <%.5f, %.5f, %.5f>, %.5f "
+			            "texture{pigment{color rgb <%f, %f, %f>"
+			            " transmit %f} "
+			            "finish { reflection 0.1 } } \n"
+			            "transform { TRANS }\n"
+			            "}\n",
+			            x/1e9, y/1e9, z/1e9, radius,
+			            r, g, b, trans);
+
+		}
+
 	}
 
 	fprintf(fh, "\n");
