@@ -283,11 +283,11 @@ int povray_render_animation(UnitCell *cell, double *ref, unsigned int *counts,
 			fprintf(fh, "sphere { <%.5f, %.5f, %.5f>, %.5f "
 			            "texture{pigment{color rgb <%f, %f, %f>"
 			            " transmit %f} "
-			            "finish { reflection 0.1 } } \n"
+			            "finish { reflection %f } } \n"
 			            "transform { TRANS }\n"
 			            "}\n",
 			            x/1e9, y/1e9, z/1e9, radius,
-			            r, g, b, trans);
+			            r, g, b, trans, 0.1*(1.0-trans));
 
 		}
 
