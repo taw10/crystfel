@@ -63,6 +63,7 @@ struct process_args
 	int config_sanity;
 	int config_satcorr;
 	int config_sa;
+	int config_closer;
 	float threshold;
 	struct detector *det;
 	IndexingMethod indm;
@@ -163,6 +164,9 @@ static void show_help(const char *s)
 "\n"
 "\nOptions you probably won't need:\n\n"
 "     --no-check-prefix    Don't attempt to correct the --prefix.\n"
+"     --no-closer-peak     Don't integrate from the location of a nearby peak\n"
+"                           instead of the position closest to the reciprocal\n"
+"                           lattice point.\n"
 );
 }
 
@@ -409,7 +413,7 @@ static struct process_result process_image(struct process_args *pargs)
 	if ( config_nearbragg ) {
 		output_intensities(&image, image.indexed_cell,
 		                   pargs->output_mutex, config_polar,
-		                   pargs->config_sa);
+		                   pargs->config_sa, pargs->config_closer);
 	}
 
 	simage = get_simage(&image, config_alternate);
@@ -514,6 +518,7 @@ int main(int argc, char *argv[])
 	int config_satcorr = 0;
 	int config_sa = 1;
 	int config_checkprefix = 1;
+	int config_closer = 1;
 	float threshold = 800.0;
 	struct detector *det;
 	char *geometry = NULL;
@@ -561,6 +566,7 @@ int main(int argc, char *argv[])
 		{"no-sa",              0, &config_sa,          0},
 		{"threshold",          1, NULL,               't'},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
+		{"no-closer-peak",     0, &config_closer,      0},
 		{0, 0, NULL, 0}
 	};
 
@@ -758,6 +764,7 @@ int main(int argc, char *argv[])
 		pargs->config_sanity = config_sanity;
 		pargs->config_satcorr = config_satcorr;
 		pargs->config_sa = config_sa;
+		pargs->config_closer = config_closer;
 		pargs->cell = cell;
 		pargs->det = det;
 		pargs->ipriv = ipriv;

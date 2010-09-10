@@ -561,7 +561,8 @@ int peak_sanity_check(struct image *image, UnitCell *cell)
 
 
 void output_intensities(struct image *image, UnitCell *cell,
-                        pthread_mutex_t *mutex, int polar, int sa)
+                        pthread_mutex_t *mutex, int polar, int sa,
+                        int use_closer)
 {
 	int i;
 	int n_found;

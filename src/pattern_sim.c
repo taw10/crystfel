@@ -418,7 +418,7 @@ int main(int argc, char *argv[])
 
 		if ( config_nearbragg ) {
 			find_projected_peaks(&image, cell);
-			output_intensities(&image, cell, NULL, 0, 1);
+			output_intensities(&image, cell, NULL, 0, 1, 0);
 		}
 
 		if ( powder_fn != NULL ) {
