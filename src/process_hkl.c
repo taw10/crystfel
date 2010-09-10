@@ -25,7 +25,6 @@
 #include "statistics.h"
 #include "sfac.h"
 #include "reflections.h"
-#include "likelihood.h"
 #include "symmetry.h"
 
 
@@ -64,6 +63,10 @@ static void show_help(const char *s)
 "      --scale               Scale each pattern for best fit with the current\n"
 "                             model.\n"
 "  -y, --symmetry=<sym>      Merge according to point group <sym>.\n"
+"      --reference=<file>    Compare against intensities from <file> when\n"
+"                             scaling or resolving ambiguities.\n"
+"      --outstream=<file>    Write an annotated version of the input stream\n"
+"                             to <file>.\n"
 );
 }
 
@@ -205,20 +208,31 @@ static void merge_pattern(double *model, ReflItemList *observed,
                           const double *new,  ReflItemList *items,
                           unsigned int *model_counts,  int mo,
                           ReflItemList *twins,
-                          const char *holo, const char *mero, double *hist_vals,
+                          const char *holo, const char *mero,
+                          ReflItemList *reference, const double *reference_i,
+                          double *hist_vals,
                           signed int hist_h, signed int hist_k,
                           signed int hist_l, int *hist_n, double *devs,
-                          double *tots, double *means)
+                          double *tots, double *means, FILE *outfh)
 {
 	int i;
 	int twin;
 	ReflItemList *sym_items = new_items();
 
 	if ( twins != NULL ) {
-		twin = resolve_twin(model, observed, new, items,
-		                    twins, holo, mero);
+		if ( reference != NULL ) {
+			twin = resolve_twin(reference_i, reference, new, items,
+			                    twins, holo, mero);
+		} else {
+			twin = resolve_twin(model, observed, new, items,
+			                    twins, holo, mero);
+		}
 	} else {
 		twin = 0;
+	}
+
+	if ( outfh != NULL ) {
+		fprintf(outfh, "twin=%i\n", twin);
 	}
 
 	for ( i=0; i<num_items(items); i++ ) {
@@ -288,20 +302,46 @@ static void merge_pattern(double *model, ReflItemList *observed,
 }
 
 
+static void scale_intensities(const double *model, ReflItemList *model_items,
+                              double *new_pattern, ReflItemList *new_items,
+                              double f0, int f0_valid)
+{
+	double s;
+	unsigned int i;
+	ReflItemList *items;
+
+	items = intersection_items(model_items, new_items);
+	s = stat_scale_intensity(model, new_pattern, items);
+	delete_items(items);
+	if ( f0_valid ) printf("%f %f\n", s, f0);
+
+	/* NaN -> abort */
+	if ( isnan(s) ) return;
+
+	/* Multiply the new pattern up by "s" */
+	for ( i=0; i<LIST_SIZE; i++ ) {
+		new_pattern[i] *= s;
+	}
+}
+
+
 static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
                       unsigned int **pcounts,
                       int config_maxonly, int config_scale, int config_sum,
                       int config_startafter, int config_stopafter,
                       ReflItemList *twins, const char *holo, const char *mero,
-                      int n_total_patterns, double *hist_vals,
+                      int n_total_patterns,
+                      ReflItemList *reference, double *reference_i,
+                      double *hist_vals,
                       signed int hist_h, signed int hist_k, signed int hist_l,
-                      int *hist_i, double *devs, double *tots, double *means)
+                      int *hist_i, double *devs, double *tots, double *means,
+                      FILE *outfh)
 {
 	char *rval;
 	float f0;
 	int n_nof0 = 0;
 	int f0_valid = 0;
-	int n_patterns = 0;
+	int n_patterns = 1;
 	double *new_pattern = new_list_intensity();
 	ReflItemList *items = new_items();
 	ReflItemList *observed = new_items();
@@ -336,14 +376,7 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 		int r;
 
 		rval = fgets(line, 1023, fh);
-		if ( (strncmp(line, "Reflections from indexing", 25) == 0)
-		    || (strncmp(line, "New pattern", 11) == 0) ) {
-
-			/* Start of first pattern? */
-			if ( n_patterns == 0 ) {
-				n_patterns++;
-				continue;
-			}
+		if ( strcmp(line, "\n") == 0 ) {
 
 			/* Assume a default I0 if we don't have one by now */
 			if ( config_scale && !f0_valid ) {
@@ -353,17 +386,25 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 
 			/* Scale if requested */
 			if ( config_scale ) {
-				scale_intensities(model, observed,
-				                  new_pattern, items,
-				                  f0, f0_valid);
+				if ( reference == NULL ) {
+					scale_intensities(model, observed,
+					                  new_pattern, items,
+					                  f0, f0_valid);
+				} else {
+					scale_intensities(reference_i,
+					                  reference,
+					                  new_pattern, items,
+					                  f0, f0_valid);
+				}
 			}
 
 			/* Start of second or later pattern */
 			merge_pattern(model, observed, new_pattern, items,
 			              counts, config_maxonly,
 			              twins, holo, mero,
+			              reference, reference_i,
 			              hist_vals, hist_h, hist_k, hist_l,
-			              hist_i, devs, tots, means);
+			              hist_i, devs, tots, means, outfh);
 
 			if ( n_patterns == config_stopafter ) break;
 
@@ -375,6 +416,10 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 
 			f0_valid = 0;
 
+		}
+
+		if ( outfh != NULL ) {
+			fprintf(outfh, "%s", line);
 		}
 
 		if ( strncmp(line, "f0 = ", 5) == 0 ) {
@@ -472,6 +517,11 @@ int main(int argc, char *argv[])
 	signed int hist_h, hist_k, hist_l;
 	double *hist_vals = NULL;
 	int hist_i;
+	char *outstream = NULL;
+	char *reference = NULL;
+	ReflItemList *reference_items;
+	double *reference_i;
+	FILE *outfh = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -488,11 +538,13 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"histogram",          1, NULL,               'g'},
 		{"rmerge",             0, &config_rmerge,      1},
+		{"outstream",          1, NULL,               'a'},
+		{"reference",          1, NULL,               'r'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:e:ro:p:y:g:f:",
+	while ((c = getopt_long(argc, argv, "hi:e:ro:p:y:g:f:a:r:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -526,6 +578,14 @@ int main(int argc, char *argv[])
 
 		case 'g' :
 			histo = strdup(optarg);
+			break;
+
+		case 'r' :
+			reference = strdup(optarg);
+			break;
+
+		case 'a' :
+			outstream = strdup(optarg);
 			break;
 
 		case 0 :
@@ -612,6 +672,28 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	/* Read the reference reflections */
+	if ( reference != NULL ) {
+		reference_i = new_list_intensity();
+		reference_items = read_reflections(reference, reference_i,
+		                                   NULL, NULL);
+		if ( reference_items == NULL ) {
+			ERROR("Couldn't read '%s'\n", reference);
+			return 1;
+		}
+	} else {
+		reference_items = NULL;
+		reference_i = NULL;
+	}
+
+	if ( outstream != NULL ) {
+		outfh = fopen(outstream, "w");
+		if ( outfh == NULL ) {
+			ERROR("Couldn't open '%s'\n", outstream);
+			return 1;
+		}
+	}
+
 	/* Count the number of patterns in the file */
 	n_total_patterns = count_patterns(fh);
 	STATUS("There are %i patterns to process\n", n_total_patterns);
@@ -622,7 +704,9 @@ int main(int argc, char *argv[])
 	          config_maxonly, config_scale, config_sum,
 	          config_startafter, config_stopafter,
                   twins, holo, sym, n_total_patterns,
-                  hist_vals, hist_h, hist_k, hist_l, &hist_i, NULL, NULL, NULL);
+                  reference_items, reference_i,
+                  hist_vals, hist_h, hist_k, hist_l, &hist_i, NULL, NULL, NULL,
+                  outfh);
 	rewind(fh);
 
 	if ( hist_vals != NULL ) {
@@ -651,8 +735,8 @@ int main(int argc, char *argv[])
 		merge_all(fh, &model, &observed, &counts,
 		          config_maxonly, config_scale, 0,
 		          config_startafter, config_stopafter, twins, holo, sym,
-		          n_total_patterns,
-		          NULL, 0, 0, 0, NULL, devs, tots, model);
+		          n_total_patterns, reference_items, reference_i,
+		          NULL, 0, 0, 0, NULL, devs, tots, model, NULL);
 
 		for ( i=0; i<num_items(observed); i++ ) {
 
