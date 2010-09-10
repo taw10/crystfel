@@ -613,54 +613,79 @@ void output_intensities(struct image *image, UnitCell *cell,
 		float x, y, intensity;
 		double d;
 		int idx;
-		struct imagefeature *f;
 
 		/* Wait.. is there a really close feature which was detected? */
-		if ( image->features != NULL ) {
-			f = image_feature_closest(image->features,
-			                          image->hits[i].x,
-			                          image->hits[i].y,
-			                          &d, &idx);
-		} else {
-			f = NULL;
-		}
-		if ( (f != NULL) && (d < PEAK_REALLY_CLOSE) ) {
+		if ( use_closer ) {
 
-			int r;
+			struct imagefeature *f;
 
-			/* f->intensity was measured on the filtered pattern,
-			 * so instead re-integrate using old coordinates.
-			 * This will produce further revised coordinates. */
-			r = integrate_peak(image, f->x, f->y, &x, &y,
-			                   &intensity, polar, sa);
-			if ( r ) {
-				/* The original peak (which also went through
-				 * integrate_peak(), but with the mangled
-				 * image data) would have been rejected if it
-				 * was in a bad region.  Integration of the same
-				 * peak included a bad region this time. */
-				n_veto_second++;
-				continue;
+			if ( image->features != NULL ) {
+				f = image_feature_closest(image->features,
+					                  image->hits[i].x,
+					                  image->hits[i].y,
+					                  &d, &idx);
+			} else {
+				f = NULL;
 			}
-			intensity = f->intensity;
+			if ( (f != NULL) && (d < PEAK_REALLY_CLOSE) ) {
+
+				int r;
+
+				/* f->intensity was measured on the filtered
+				 * pattern, so instead re-integrate using old
+				 * coordinates. This will produce further
+				 * revised coordinates. */
+				r = integrate_peak(image, f->x, f->y, &x, &y,
+					           &intensity, polar, sa);
+				if ( r ) {
+					/* The original peak (which also went
+					 * through integrate_peak(), but with
+					 * the mangled image data) would have
+					 * been rejected if it was in a bad
+					 * region.  Integration of the same
+					 * peak included a bad region this time.
+					 */
+					n_veto_second++;
+					continue;
+				}
+				intensity = f->intensity;
+
+			} else {
+
+				int r;
+
+				r = integrate_peak(image,
+					           image->hits[i].x,
+					           image->hits[i].y,
+					           &x, &y, &intensity, polar,
+					           sa);
+				if ( r ) {
+					/* Plain old ordinary peak veto */
+					n_veto++;
+					continue;
+				}
+
+			}
+
+			if ( (f != NULL) && (d < PEAK_CLOSE) ) {
+				n_indclose++;
+			}
 
 		} else {
 
 			int r;
 
 			r = integrate_peak(image,
-			                   image->hits[i].x,image->hits[i].y,
-			                   &x, &y, &intensity, polar, sa);
+				           image->hits[i].x,
+				           image->hits[i].y,
+				           &x, &y, &intensity, polar,
+				           sa);
 			if ( r ) {
 				/* Plain old ordinary peak veto */
 				n_veto++;
 				continue;
 			}
 
-		}
-
-		if ( (f != NULL) && (d < PEAK_CLOSE) ) {
-			n_indclose++;
 		}
 
 		/* Write h,k,l, integrated intensity and centroid coordinates */
