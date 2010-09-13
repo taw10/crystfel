@@ -203,10 +203,16 @@ extern void union_op_items(ReflItemList *items, ReflItemList *newi);
 extern void union_items(ReflItemList *items, ReflItemList *newi);
 extern ReflItemList *intersection_items(ReflItemList *i1, ReflItemList *i2);
 
+
 /* ------------------------------ Message macros ---------------------------- */
 
 #define ERROR(...) fprintf(stderr, __VA_ARGS__)
 #define STATUS(...) fprintf(stderr, __VA_ARGS__)
+
+
+/* ------------------------------ File handling ----------------------------- */
+
+extern char *check_prefix(char *prefix);
 
 
 #endif	/* UTILS_H */

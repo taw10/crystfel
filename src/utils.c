@@ -13,6 +13,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "utils.h"
 #include "image.h"
@@ -441,4 +443,43 @@ ReflItemList *intersection_items(ReflItemList *i1, ReflItemList *i2)
 	}
 
 	return res;
+}
+
+
+char *check_prefix(char *prefix)
+{
+	int r;
+	struct stat statbuf;
+	char *new;
+	size_t len;
+
+	/* Is "prefix" a directory? */
+	r = stat(prefix, &statbuf);
+	if ( r != 0 ) {
+		/* "prefix" probably doesn't exist.  This is fine - assume
+		 * the user knows what they're doing, and that "prefix"
+		 * suffixed with the actual filename will produce something
+		 * sensible. */
+		return prefix;
+	}
+
+	if ( !S_ISDIR(statbuf.st_mode) ) {
+		/* Also fine, as above. */
+		return prefix;
+	}
+
+	/* Does the prefix end in a slash? */
+	if ( prefix[strlen(prefix)-1] == '/' ) {
+		/* This looks sensible. */
+		return prefix;
+	}
+
+	STATUS("Your prefix ('%s') is a directory, but doesn't end"
+	       " with a slash.  I'm going to add it for you.\n", prefix);
+	STATUS("If this isn't what you want, run with --no-check-prefix.\n");
+	len = strlen(prefix)+2;
+	new = malloc(len);
+	snprintf(new, len, "%s/", prefix);
+	free(prefix);
+	return new;
 }
