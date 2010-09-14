@@ -20,7 +20,6 @@
 
 #include "utils.h"
 
-
 #ifdef DEBUG
 #define SYM_DEBUG STATUS
 #else /* DEBUG */
@@ -38,6 +37,15 @@ static int check_cond(signed int h, signed int k, signed int l, const char *sym)
 		return ( (l>0)
 		      || ( (l==0) && (k>0) )
 		      || ( (l==0) && (k==0) && (h>=0) ) );
+
+	/* Orthorhombic */
+	if ( strcmp(sym, "mmm") == 0 )
+		return ( (h>=0) && (k>=0) && (l>=0) );
+	if ( strcmp(sym, "222") == 0 )
+		return ( (h>=0) && (k>0) )
+		    || ( (h>0) && (k>=0) )
+		    || ( (h>=0) && (k==0) && (l>=0) )
+		    || ( (h==0) && (k>=0) && (l>=0) );
 
 	/* Tetragonal */
 	if ( strcmp(sym, "422") == 0 )
@@ -73,6 +81,10 @@ int num_general_equivs(const char *sym)
 	if ( strcmp(sym, "1") == 0 ) return 1;
 	if ( strcmp(sym, "-1") == 0 ) return 2;
 
+	/* Orthorhombic */
+	if ( strcmp(sym, "222") == 0 ) return 4;
+	if ( strcmp(sym, "mmm") == 0 ) return 8;
+
 	/* Tetragonal */
 	if ( strcmp(sym, "422") == 0 ) return 8;
 
@@ -104,6 +116,28 @@ void get_general_equiv(signed int h, signed int k, signed int l,
 		switch ( idx ) {
 		case 0 : *he = h;   *ke = k;   *le = l;   return;
 		case 1 : *he = -h;  *ke = -k;  *le = -l;  return;
+		}
+	}
+
+	if ( strcmp(sym, "222") == 0 ) {
+		switch ( idx ) {
+		case  0 : *he = h;   *ke = k;   *le = l;  return;
+		case  1 : *he = -h;  *ke = -k;  *le = l;  return;
+		case  2 : *he = -h;  *ke = k;  *le = -l;  return;
+		case  3 : *he = h;  *ke = -k;  *le = -l;  return;
+		}
+	}
+
+	if ( strcmp(sym, "mmm") == 0 ) {
+		switch ( idx ) {
+		case  0 : *he = h;  *ke = k;  *le = l;  return;
+		case  1 : *he = -h; *ke = -k; *le = l;  return;
+		case  2 : *he = -h; *ke = k;  *le = -l; return;
+		case  3 : *he = h;  *ke = -k; *le = -l; return;
+		case  4 : *he = -h; *ke = -k; *le = -l; return;
+		case  5 : *he = h;  *ke = k;  *le = -l; return;
+		case  6 : *he = h;  *ke = -k; *le = l;  return;
+		case  7 : *he = -h; *ke = k;  *le = l;  return;
 		}
 	}
 
@@ -275,6 +309,9 @@ const char *get_holohedral(const char *sym)
 	if ( strcmp(sym, "1") == 0 ) return "-1";
 	if ( strcmp(sym, "-1") == 0 ) return "-1";
 
+	if ( strcmp(sym, "222") == 0 ) return "mmm";
+	if ( strcmp(sym, "mmm") == 0 ) return "mmm";
+
 	/* Tetragonal */
 	if ( strcmp(sym, "422") == 0 ) return "4/mmm";
 
@@ -441,6 +478,10 @@ int is_polyhedral(const char *sym)
 	if ( strcmp(sym, "1") == 0 ) return 0;
 	if ( strcmp(sym, "-1") == 0 ) return 0;
 
+	/* Orthorhombic */
+	if ( strcmp(sym, "222") == 0 ) return 0;
+	if ( strcmp(sym, "mmm") == 0 ) return 0;
+
 	/* Tetragonal */
 	if ( strcmp(sym, "422") == 0 ) return 0;
 
@@ -462,7 +503,11 @@ int rotational_order(const char *sym)
 {
 	/* Triclinic */
 	if ( strcmp(sym, "1") == 0 ) return 1;
-	if ( strcmp(sym, "-1") == 0 ) return 2 ;
+	if ( strcmp(sym, "-1") == 0 ) return 2;
+
+	/* Orthorhombic */
+	if ( strcmp(sym, "222") == 0 ) return 2;
+	if ( strcmp(sym, "mmm") == 0 ) return 2;
 
 	/* Tetragonal */
 	if ( strcmp(sym, "422") == 0 ) return 4;
@@ -485,6 +530,10 @@ int has_perpendicular_mirror(const char *sym)
 	if ( strcmp(sym, "1") == 0 ) return 0;
 	if ( strcmp(sym, "-1") == 0 ) return 0;
 
+	/* Orthorhombic */
+	if ( strcmp(sym, "222") == 0 ) return 0;
+	if ( strcmp(sym, "mmm") == 0 ) return 1;
+
 	/* Tetragonal */
 	if ( strcmp(sym, "422") == 0 ) return 0;
 
@@ -505,6 +554,10 @@ int has_bisecting_mirror_or_diad(const char *sym)
 	/* Triclinic */
 	if ( strcmp(sym, "1") == 0 ) return 0;
 	if ( strcmp(sym, "-1") == 0 ) return 0;
+
+	/* Orthorhombic */
+	if ( strcmp(sym, "222") == 0 ) return 1;
+	if ( strcmp(sym, "mmm") == 0 ) return 1;
 
 	/* Tetragonal */
 	if ( strcmp(sym, "422") == 0 ) return 0;
