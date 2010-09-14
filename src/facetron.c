@@ -37,8 +37,8 @@ static void show_help(const char *s)
 "\n"
 "  -h, --help                 Display this help message.\n"
 "\n"
-"  -i, --input=<filename>     Specify the name of the input stream.\n"
-"                              Can be '-' for stdin.\n"
+"  -i, --input=<filename>     Specify the name of the input 'stream'.\n"
+"                              (must be a file, not e.g. stdin)\n"
 "  -g. --geometry=<file>      Get detector geometry from file.\n"
 "  -x, --prefix=<p>           Prefix filenames from input file with <p>.\n"
 "      --basename             Remove the directory parts of the filenames.\n"
@@ -195,16 +195,12 @@ int main(int argc, char *argv[])
 	}
 
 	if ( infile == NULL ) infile = strdup("-");
-	if ( strcmp(infile, "-") == 0 ) {
-		fh = stdin;
-	} else {
-		fh = fopen(infile, "r");
-	}
-	free(infile);
+	fh = fopen(infile, "r");
 	if ( fh == NULL ) {
 		ERROR("Couldn't open input stream '%s'\n", infile);
 		return ENOENT;
 	}
+	free(infile);
 
 	if ( prefix == NULL ) {
 		prefix = strdup("");
