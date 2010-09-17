@@ -460,6 +460,10 @@ int main(int argc, char *argv[])
 
 		}
 
+		hdfile_close(hdfile);
+		free(image.data);
+		free(image.flags);
+
 	}
 
 	for ( i=0; i<gs; i++ ) {
