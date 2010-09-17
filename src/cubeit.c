@@ -188,7 +188,7 @@ static void interpolate_onto_grid(double *vals, double v,
 
 
 static void write_slice(const char *filename, double *vals, int z,
-                        int xs, int ys, int zs)
+                        int xs, int ys, int zs, double boost)
 {
 #ifdef HAVE_LIBPNG
 	FILE *fh;
@@ -201,8 +201,6 @@ static void write_slice(const char *filename, double *vals, int z,
 
 	w = xs;
 	h = ys;
-
-	if ( max <= 6 ) { max = 10; }
 
 	for ( y=0; y<h; y++ ) {
 	for ( x=0; x<w; x++ ) {
@@ -250,7 +248,7 @@ static void write_slice(const char *filename, double *vals, int z,
 	row_pointers = malloc(h*sizeof(png_bytep *));
 
 	/* Write the image data */
-	max /= 1.0;
+	max /= boost;
 	if ( max <= 6 ) { max = 10; }
 
 	for ( y=0; y<h; y++ ) {
@@ -466,8 +464,11 @@ int main(int argc, char *argv[])
 
 	for ( i=0; i<gs; i++ ) {
 		char line[64];
+		float boost;
 		snprintf(line, 63, "slice-%i.png", i);
-		write_slice(line, vals, i, gs, gs, gs);
+		for ( boost=1; boost<1000; boost+=50 ) {
+			write_slice(line, vals, i, gs, gs, gs, boost);
+		}
 	}
 
 	if ( config_angles ) {
