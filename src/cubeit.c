@@ -138,8 +138,8 @@ static void interpolate_linear(double *vals, double v,
 	val1 = v*(1.0-f);
 	val2 = v*f;
 
-	vals[xs*ys*k + xs*yv + xv] = val1;
-	vals[xs*ys*(k+1) + xs*yv + xv] = val2;
+	vals[xs*ys*k + xs*yv + xv] += val1;
+	vals[xs*ys*(k+1) + xs*yv + xv] += val2;
 }
 
 
