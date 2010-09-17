@@ -65,7 +65,7 @@ am_compare_hkl_OBJECTS = compare_hkl.$(OBJEXT) sfac.$(OBJEXT) \
 compare_hkl_OBJECTS = $(am_compare_hkl_OBJECTS)
 compare_hkl_DEPENDENCIES =
 am_cubeit_OBJECTS = cubeit.$(OBJEXT) cell.$(OBJEXT) \
-	hdf5-file.$(OBJEXT) utils.$(OBJEXT)
+	hdf5-file.$(OBJEXT) utils.$(OBJEXT) detector.$(OBJEXT)
 cubeit_OBJECTS = $(am_cubeit_OBJECTS)
 cubeit_DEPENDENCIES =
 am_facetron_OBJECTS = facetron.$(OBJEXT) cell.$(OBJEXT) \
@@ -199,6 +199,7 @@ PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
 PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
+PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
@@ -290,7 +291,7 @@ facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
                    image.c diffraction.c sfac.c geometry.c
 
 facetron_LDADD = @LIBS@
-cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c
+cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c
 cubeit_LDADD = @LIBS@
 INCLUDES = "-I$(top_srcdir)/data"
 all: all-am
