@@ -65,6 +65,8 @@ static void show_help(const char *s)
 "  -y, --symmetry=<sym>      Merge according to point group <sym>.\n"
 "      --reference=<file>    Compare against intensities from <file> when\n"
 "                             scaling or resolving ambiguities.\n"
+"                             The symmetry of the reference list must be the\n"
+"                             same as that given with '-y'.\n"
 "      --outstream=<file>    Write an annotated version of the input stream\n"
 "                             to <file>.\n"
 );
@@ -304,19 +306,37 @@ static void merge_pattern(double *model, ReflItemList *observed,
 
 static void scale_intensities(const double *model, ReflItemList *model_items,
                               double *new_pattern, ReflItemList *new_items,
-                              double f0, int f0_valid)
+                              double f0, int f0_valid, const char *sym)
 {
 	double s;
+	double top = 0.0;
+	double bot = 0.0;
 	unsigned int i;
-	ReflItemList *items;
 
-	items = intersection_items(model_items, new_items);
-	s = stat_scale_intensity(model, new_pattern, items);
-	delete_items(items);
+
+	for ( i=0; i<num_items(new_items); i++ ) {
+
+		double i1, i2;
+		struct refl_item *it;
+		signed int hu, ku, lu;
+
+		/* Get the next item in the list of new reflections */
+		it = get_item(new_items, i);
+
+		/* Find the (only) partner in the model */
+		find_unique_equiv(model_items, it->h, it->k, it->l, sym,
+		                  &hu, &ku, &lu);
+
+		i1 = lookup_intensity(model, hu, ku, lu);
+		i2 = lookup_intensity(new_pattern, it->h, it->k, it->l);
+
+		top += i1 * i2;
+		bot += i2 * i2;
+
+	}
+
+	s = top / bot;
 	if ( f0_valid ) printf("%f %f\n", s, f0);
-
-	/* NaN -> abort */
-	if ( isnan(s) ) return;
 
 	/* Multiply the new pattern up by "s" */
 	for ( i=0; i<LIST_SIZE; i++ ) {
@@ -389,12 +409,12 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 				if ( reference == NULL ) {
 					scale_intensities(model, observed,
 					                  new_pattern, items,
-					                  f0, f0_valid);
+					                  f0, f0_valid, mero);
 				} else {
 					scale_intensities(reference_i,
 					                  reference,
 					                  new_pattern, items,
-					                  f0, f0_valid);
+					                  f0, f0_valid, mero);
 				}
 			}
 
@@ -412,7 +432,7 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 			n_patterns++;
 			clear_items(items);
 
-			progress_bar(n_patterns, n_total_patterns, "Merging");
+			progress_bar(n_patterns, n_total_patterns-1, "Merging");
 
 			f0_valid = 0;
 
