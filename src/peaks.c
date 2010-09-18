@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <gsl/gsl_statistics_int.h>
 #include <pthread.h>
+#include <fenv.h>
 
 #include "image.h"
 #include "utils.h"
@@ -464,6 +465,7 @@ int find_projected_peaks(struct image *image, UnitCell *cell)
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
+	fesetround(1);  /* Round towards nearest */
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
 
@@ -481,9 +483,9 @@ int find_projected_peaks(struct image *image, UnitCell *cell)
 		kd = q.u * bx + q.v * by + q.w * bz;
 		ld = q.u * cx + q.v * cy + q.w * cz;
 
-		h = (signed int)rint(hd);
-		k = (signed int)rint(kd);
-		l = (signed int)rint(ld);
+		h = lrint(hd);
+		k = lrint(kd);
+		l = lrint(ld);
 
 		dh = hd - h;
 		dk = kd - k;

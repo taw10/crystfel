@@ -24,6 +24,7 @@
 #include <sys/time.h>
 #include <assert.h>
 #include <png.h>
+#include <fenv.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -187,6 +188,7 @@ static void process_image(struct process_args *pargs)
 	cell_get_cartesian(pargs->cell, &ax, &ay, &az, &bx, &by,
 	                                &bz, &cx, &cy, &cz);
 
+	fesetround(1);  /* Round towards nearest */
 	for ( x=0; x<image.width; x++ ) {
 	for ( y=0; y<image.height; y++ ) {
 
@@ -202,10 +204,11 @@ static void process_image(struct process_args *pargs)
 		kd = q.u * bx + q.v * by + q.w * bz;
 		ld = q.u * cx + q.v * cy + q.w * cz;
 
-		h = (signed int)rint(hd);
-		k = (signed int)rint(kd);
-		l = (signed int)rint(ld);
+		h = lrint(hd);
+		k = lrint(kd);
+		l = lrint(ld);
 
+		/* FIXME: This is really, really slow */
 		get_asymm(h, k, l, &ha, &ka, &la, pargs->sym);
 		if ( (ha!=pargs->ht) || (ka!=pargs->kt) || (la!=pargs->lt) ) {
 			continue;
