@@ -290,7 +290,11 @@ static void write_slice(const char *filename, double *vals, int z,
 	int x, y;
 	float max = 0.0;
 	int w, h;
+	int pw, ph;
+	int zoom = 32;
 
+	pw = xs * zoom;
+	ph = ys * zoom;
 	w = xs;
 	h = ys;
 
@@ -333,7 +337,7 @@ static void write_slice(const char *filename, double *vals, int z,
 	}
 	png_init_io(png_ptr, fh);
 
-	png_set_IHDR(png_ptr, info_ptr, w, h, 8,
+	png_set_IHDR(png_ptr, info_ptr, pw, ph, 8,
 	             PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
 	             PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
@@ -343,16 +347,18 @@ static void write_slice(const char *filename, double *vals, int z,
 	max /= boost;
 	if ( max <= 6 ) { max = 10; }
 
-	for ( y=0; y<h; y++ ) {
+	for ( y=0; y<ph; y++ ) {
 
-		row_pointers[y] = malloc(w*3);
+		row_pointers[y] = malloc(pw*3);
 
-		for ( x=0; x<w; x++ ) {
+		for ( x=0; x<pw; x++ ) {
 
 			float r, g, b;
 			float val;
+			int ax = x / zoom;
+			int ay = y / zoom;
 
-			val = vals[xs*ys*z + xs*y + x];
+			val = vals[xs*ys*z + xs*ay + ax];
 
 			render_scale(val, max, SCALE_COLOUR, &r, &g, &b);
 			row_pointers[y][3*x] = (png_byte)255*r;
@@ -362,18 +368,18 @@ static void write_slice(const char *filename, double *vals, int z,
 		}
 	}
 
-	for ( y=0; y<h/2+1; y++ ) {
+	for ( y=0; y<ph/2+1; y++ ) {
 		png_bytep scratch;
 		scratch = row_pointers[y];
-		row_pointers[y] = row_pointers[h-y-1];
-		row_pointers[h-y-1] = scratch;
+		row_pointers[y] = row_pointers[ph-y-1];
+		row_pointers[ph-y-1] = scratch;
 	}
 
 	png_set_rows(png_ptr, info_ptr, row_pointers);
 	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
 
 	png_destroy_write_struct(&png_ptr, &info_ptr);
-	for ( y=0; y<h; y++ ) {
+	for ( y=0; y<ph; y++ ) {
 		free(row_pointers[y]);
 	}
 	free(row_pointers);
@@ -614,11 +620,9 @@ int main(int argc, char *argv[])
 
 	for ( i=0; i<gs; i++ ) {
 		char line[64];
-		float boost;
+		float boost = 1000.0;
 		snprintf(line, 63, "slice-%i.png", i);
-		for ( boost=1; boost<1000; boost+=50 ) {
-			write_slice(line, vals, i, gs, gs, gs, boost);
-		}
+		write_slice(line, vals, i, gs, gs, gs, boost);
 	}
 
 	if ( config_angles ) {
