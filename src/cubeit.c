@@ -217,7 +217,11 @@ static void process_image(struct process_args *pargs)
 		k = lrint(kd);
 		l = lrint(ld);
 
-		/* FIXME: This is really, really slow */
+		/* FIXME: This is really, really slow.
+		 * And wrong.  To get useful information from symmetry
+		 * averaging, the pattern must be transformed by the
+		 * appropriate symmetry operator(s) to bring it into
+		 * alignment. */
 		get_asymm(h, k, l, &ha, &ka, &la, pargs->sym);
 		if ( (ha!=pargs->ht) || (ka!=pargs->kt) || (la!=pargs->lt) ) {
 			continue;
