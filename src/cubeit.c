@@ -730,7 +730,7 @@ int main(int argc, char *argv[])
 
 	for ( i=0; i<gs; i++ ) {
 		char line[64];
-		float boost = 1000.0;
+		float boost = 1.0;
 		snprintf(line, 63, "slice-%i.png", i);
 		write_slice(line, vals, i, gs, gs, gs, boost);
 	}
