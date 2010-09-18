@@ -240,6 +240,7 @@ static void process_image(struct process_args *pargs)
 	}
 
 	free(image.data);
+	cell_free(pargs->cell);
 	if ( image.flags != NULL ) free(image.flags);
 	hdfile_close(hdfile);
 }
@@ -591,16 +592,27 @@ int main(int argc, char *argv[])
 	/* Start threads off */
 	for ( i=0; i<nthreads; i++ ) {
 
-		char line[1024];
 		struct process_args *pargs;
 		int r;
+		int rval;
+		char *filename;
+		UnitCell *cell;
 
 		pargs = worker_args[i];
 
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
-		chomp(line);
-		snprintf(pargs->filename, 1023, "%s%s", prefix, line);
+		/* Get the next filename */
+		rval = find_chunk(fh, &cell, &filename);
+		if ( rval == 1 ) break;
+		if ( config_basename ) {
+			char *tmp;
+			tmp = basename(filename);
+			free(filename);
+			filename = tmp;
+		}
+		snprintf(pargs->filename, 1023, "%s%s",
+		         prefix, filename);
+		pargs->cell = cell;
+		free(filename);
 
 		n_images++;
 
@@ -657,6 +669,7 @@ int main(int argc, char *argv[])
 			snprintf(pargs->filename, 1023, "%s%s",
 			         prefix, filename);
 			pargs->cell = cell;
+			free(filename);
 
 			n_images++;
 
@@ -667,9 +680,6 @@ int main(int argc, char *argv[])
 			pargs->done = 0;
 			pargs->start = 1;
 			pthread_mutex_unlock(&pargs->control_mutex);
-
-			cell_free(cell);
-			free(filename);
 
 		}
 
