@@ -89,8 +89,12 @@ static void interpolate_linear(double *vals, double v,
 	double val1, val2;
 	float f, c;
 
-	c = (zv+0.5)*(float)(zs-1);
+	c = (zv+0.5)*(float)zs;
 	k = (int)c;
+	if ( k == zs ) {
+		/* Intensity belongs entirely to the next reflection */
+		return;
+	}
 	f = c - (float)k;
 	assert(f >= 0.0);
 	assert(k+1 <= zs);
@@ -99,7 +103,7 @@ static void interpolate_linear(double *vals, double v,
 	val2 = v*f;
 
 	vals[xs*ys*k + xs*yv + xv] += val1;
-	/* If "zv" is right at the edge, then f=0.0 and ks=zs */
+	/* Intensity may belong to the next reflection along */
 	if ( k+1 < zs ) {
 		vals[xs*ys*(k+1) + xs*yv + xv] += val2;
 	}
@@ -114,8 +118,12 @@ static void interpolate_bilinear(double *vals, double v,
 	double val1, val2;
 	float f, c;
 
-	c = (yv+0.5)*(float)(ys-1);
+	c = (yv+0.5)*(float)ys;
 	k = (int)c;
+	if ( k == ys ) {
+		/* Intensity belongs entirely to the next reflection */
+		return;
+	}
 	f = c - (float)k;
 	assert(f >= 0.0);
 	assert(k+1 <= ys);
@@ -124,7 +132,7 @@ static void interpolate_bilinear(double *vals, double v,
 	val2 = v*f;
 
 	interpolate_linear(vals, val1, xs, ys, zs, xv, k, zv);
-	/* If "yv" is right at the edge, then f=0.0 and ks=ys */
+	/* Intensity may belong to the next reflection along */
 	if ( k+1 < ys ) {
 		interpolate_linear(vals, val2, xs, ys, zs, xv, k+1, zv);
 	}
@@ -139,8 +147,12 @@ static void interpolate_onto_grid(double *vals, double v,
 	double val1, val2;
 	float f, c;
 
-	c = (xv+0.5)*(float)(xs-1);
+	c = (xv+0.5)*(float)xs;
 	k = (int)c;
+	if ( k == xs ) {
+		/* Intensity belongs entirely to the next reflection */
+		return;
+	}
 	f = c - (float)k;
 	assert(f >= 0.0);
 	assert(k+1 <= xs);
@@ -149,7 +161,7 @@ static void interpolate_onto_grid(double *vals, double v,
 	val2 = v*f;
 
 	interpolate_bilinear(vals, val1, xs, ys, zs, k, yv, zv);
-	/* If "xv" is right at the edge, then f=0.0 and ks=xs */
+	/* Intensity may belong to the next reflection along */
 	if ( k+1 < xs ) {
 		interpolate_bilinear(vals, val2, xs, ys, zs, k+1, yv, zv);
 	}
