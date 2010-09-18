@@ -93,13 +93,16 @@ static void interpolate_linear(double *vals, double v,
 	k = (int)c;
 	f = c - (float)k;
 	assert(f >= 0.0);
-	assert(k+1 < zs);
+	assert(k+1 <= zs);
 
 	val1 = v*(1.0-f);
 	val2 = v*f;
 
 	vals[xs*ys*k + xs*yv + xv] += val1;
-	vals[xs*ys*(k+1) + xs*yv + xv] += val2;
+	/* If "zv" is right at the edge, then f=0.0 and ks=zs */
+	if ( k+1 < zs ) {
+		vals[xs*ys*(k+1) + xs*yv + xv] += val2;
+	}
 }
 
 
@@ -115,13 +118,16 @@ static void interpolate_bilinear(double *vals, double v,
 	k = (int)c;
 	f = c - (float)k;
 	assert(f >= 0.0);
-	assert(k+1 < ys);
+	assert(k+1 <= ys);
 
 	val1 = v*(1.0-f);
 	val2 = v*f;
 
 	interpolate_linear(vals, val1, xs, ys, zs, xv, k, zv);
-	interpolate_linear(vals, val2, xs, ys, zs, xv, k+1, zv);
+	/* If "yv" is right at the edge, then f=0.0 and ks=ys */
+	if ( k+1 < ys ) {
+		interpolate_linear(vals, val2, xs, ys, zs, xv, k+1, zv);
+	}
 }
 
 
@@ -137,13 +143,16 @@ static void interpolate_onto_grid(double *vals, double v,
 	k = (int)c;
 	f = c - (float)k;
 	assert(f >= 0.0);
-	assert(k+1 < xs);
+	assert(k+1 <= xs);
 
 	val1 = v*(1.0-f);
 	val2 = v*f;
 
 	interpolate_bilinear(vals, val1, xs, ys, zs, k, yv, zv);
-	interpolate_bilinear(vals, val2, xs, ys, zs, k+1, yv, zv);
+	/* If "xv" is right at the edge, then f=0.0 and ks=xs */
+	if ( k+1 < xs ) {
+		interpolate_bilinear(vals, val2, xs, ys, zs, k+1, yv, zv);
+	}
 }
 
 
