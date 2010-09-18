@@ -391,6 +391,75 @@ static void write_slice(const char *filename, double *vals, int z,
 }
 
 
+static UnitCell *read_orientation_matrix(FILE *fh)
+{
+	float u, v, w;
+	struct rvec as, bs, cs;
+	UnitCell *cell;
+	char line[1024];
+
+	if ( fgets(line, 1023, fh) == NULL ) return NULL;
+	if ( sscanf(line, "astar = %f %f %f", &u, &v, &w) != 3 ) {
+		ERROR("Couldn't read a-star\n");
+		return NULL;
+	}
+	as.u = u*1e9;  as.v = v*1e9;  as.w = w*1e9;
+	if ( fgets(line, 1023, fh) == NULL ) return NULL;
+	if ( sscanf(line, "bstar = %f %f %f", &u, &v, &w) != 3 ) {
+		ERROR("Couldn't read b-star\n");
+		return NULL;
+	}
+	bs.u = u*1e9;  bs.v = v*1e9;  bs.w = w*1e9;
+	if ( fgets(line, 1023, fh) == NULL ) return NULL;
+	if ( sscanf(line, "cstar = %f %f %f", &u, &v, &w) != 3 ) {
+		ERROR("Couldn't read c-star\n");
+		return NULL;
+	}
+	cs.u = u*1e9;  cs.v = v*1e9;  cs.w = w*1e9;
+	cell = cell_new_from_axes(as, bs, cs);
+
+	return cell;
+}
+
+
+static int find_chunk(FILE *fh, UnitCell **cell, char **filename)
+{
+	char line[1024];
+	char *rval = NULL;
+
+	do {
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
+
+		chomp(line);
+
+		if ( strncmp(line, "Reflections from indexing", 25) != 0 ) {
+			continue;
+		}
+
+		*filename = strdup(line+29);
+
+		/* Skip two lines (while checking for errors) */
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
+
+		*cell = read_orientation_matrix(fh);
+		if ( *cell == NULL ) {
+			STATUS("Got filename but no cell for %s\n", *filename);
+			continue;
+		}
+
+		return 0;
+
+	} while ( rval != NULL );
+
+	return 1;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -557,9 +626,11 @@ int main(int argc, char *argv[])
 
 		for ( i=0; i<nthreads; i++ ) {
 
-			char line[1024];
 			struct process_args *pargs;
 			int done;
+			int rval;
+			char *filename;
+			UnitCell *cell;
 
 			/* Spend time working, not managing threads */
 			usleep(100000);
@@ -575,10 +646,17 @@ int main(int argc, char *argv[])
 			if ( !done ) continue;
 
 			/* Get the next filename */
-			rval = fgets(line, 1023, fh);
-			if ( rval == NULL ) break;
-			chomp(line);
-			snprintf(pargs->filename, 1023, "%s%s", prefix, line);
+			rval = find_chunk(fh, &cell, &filename);
+			if ( rval == 1 ) break;
+			if ( config_basename ) {
+				char *tmp;
+				tmp = basename(filename);
+				free(filename);
+				filename = tmp;
+			}
+			snprintf(pargs->filename, 1023, "%s%s",
+			         prefix, filename);
+			pargs->cell = cell;
 
 			n_images++;
 
@@ -589,6 +667,9 @@ int main(int argc, char *argv[])
 			pargs->done = 0;
 			pargs->start = 1;
 			pthread_mutex_unlock(&pargs->control_mutex);
+
+			cell_free(cell);
+			free(filename);
 
 		}
 
