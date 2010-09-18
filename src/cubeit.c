@@ -289,7 +289,7 @@ static void write_slice(const char *filename, double *vals, int z,
 	png_structp png_ptr;
 	png_infop info_ptr;
 	png_bytep *row_pointers;
-	int x, y;
+	int x, y, zf;
 	float max = 0.0;
 	int w, h;
 	int pw, ph;
@@ -300,15 +300,17 @@ static void write_slice(const char *filename, double *vals, int z,
 	w = xs;
 	h = ys;
 
+	for ( zf=0; zf<zs; zf++ ) {
 	for ( y=0; y<h; y++ ) {
 	for ( x=0; x<w; x++ ) {
 
 		float val;
 
-		val = vals[xs*ys*z + xs*y + x];
+		val = vals[xs*ys*zf + xs*y + x];
 
 		if ( val > max ) max = val;
 
+	}
 	}
 	}
 
@@ -370,7 +372,7 @@ static void write_slice(const char *filename, double *vals, int z,
 		}
 	}
 
-	for ( y=0; y<ph/2+1; y++ ) {
+	for ( y=0; y<ph/2; y++ ) {
 		png_bytep scratch;
 		scratch = row_pointers[y];
 		row_pointers[y] = row_pointers[ph-y-1];
@@ -691,7 +693,6 @@ int main(int argc, char *argv[])
 	for ( i=0; i<nthreads; i++ ) {
 
 		if ( !worker_active[i] ) goto free;
-
 
 		/* Tell the thread to exit */
 		struct process_args *pargs = worker_args[i];
