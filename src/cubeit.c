@@ -84,11 +84,11 @@ static void interpolate_linear(double *vals, double v,
 	double val1, val2;
 	float f, c;
 
-	c = (zv+0.5)*(float)zs;
+	c = (zv+0.5)*(float)(zs-1);
 	k = (int)c;
 	f = c - (float)k;
 	assert(f >= 0.0);
-	assert(k < zs);
+	assert(k+1 < zs);
 
 	val1 = v*(1.0-f);
 	val2 = v*f;
@@ -106,11 +106,11 @@ static void interpolate_bilinear(double *vals, double v,
 	double val1, val2;
 	float f, c;
 
-	c = (yv+0.5)*(float)ys;
+	c = (yv+0.5)*(float)(ys-1);
 	k = (int)c;
 	f = c - (float)k;
 	assert(f >= 0.0);
-	assert(k < ys);
+	assert(k+1 < ys);
 
 	val1 = v*(1.0-f);
 	val2 = v*f;
@@ -128,11 +128,11 @@ static void interpolate_onto_grid(double *vals, double v,
 	double val1, val2;
 	float f, c;
 
-	c = (xv+0.5)*(float)xs;
+	c = (xv+0.5)*(float)(xs-1);
 	k = (int)c;
 	f = c - (float)k;
 	assert(f >= 0.0);
-	assert(k < xs);
+	assert(k+1 < xs);
 
 	val1 = v*(1.0-f);
 	val2 = v*f;
