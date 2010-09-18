@@ -90,11 +90,8 @@ static void interpolate_linear(double *vals, double v,
 	float f, c;
 
 	c = (zv+0.5)*(float)zs;
-	k = (int)c;
-	if ( k == zs ) {
-		/* Intensity belongs entirely to the next reflection */
-		return;
-	}
+	c -= 0.5;
+	k = floor(c);
 	f = c - (float)k;
 	assert(f >= 0.0);
 	assert(k+1 <= zs);
@@ -102,8 +99,10 @@ static void interpolate_linear(double *vals, double v,
 	val1 = v*(1.0-f);
 	val2 = v*f;
 
-	vals[xs*ys*k + xs*yv + xv] += val1;
 	/* Intensity may belong to the next reflection along */
+	if ( k >= 0 ) {
+		vals[xs*ys*k + xs*yv + xv] += val1;
+	}
 	if ( k+1 < zs ) {
 		vals[xs*ys*(k+1) + xs*yv + xv] += val2;
 	}
@@ -119,11 +118,8 @@ static void interpolate_bilinear(double *vals, double v,
 	float f, c;
 
 	c = (yv+0.5)*(float)ys;
-	k = (int)c;
-	if ( k == ys ) {
-		/* Intensity belongs entirely to the next reflection */
-		return;
-	}
+	c -= 0.5;
+	k = floor(c);
 	f = c - (float)k;
 	assert(f >= 0.0);
 	assert(k+1 <= ys);
@@ -131,8 +127,10 @@ static void interpolate_bilinear(double *vals, double v,
 	val1 = v*(1.0-f);
 	val2 = v*f;
 
-	interpolate_linear(vals, val1, xs, ys, zs, xv, k, zv);
-	/* Intensity may belong to the next reflection along */
+	/* Intensity may partially belong to the next reflection along */
+	if ( k >= 0 ) {
+		interpolate_linear(vals, val1, xs, ys, zs, xv, k, zv);
+	}
 	if ( k+1 < ys ) {
 		interpolate_linear(vals, val2, xs, ys, zs, xv, k+1, zv);
 	}
@@ -148,11 +146,8 @@ static void interpolate_onto_grid(double *vals, double v,
 	float f, c;
 
 	c = (xv+0.5)*(float)xs;
-	k = (int)c;
-	if ( k == xs ) {
-		/* Intensity belongs entirely to the next reflection */
-		return;
-	}
+	c -= 0.5;
+	k = floor(c);
 	f = c - (float)k;
 	assert(f >= 0.0);
 	assert(k+1 <= xs);
@@ -160,8 +155,10 @@ static void interpolate_onto_grid(double *vals, double v,
 	val1 = v*(1.0-f);
 	val2 = v*f;
 
-	interpolate_bilinear(vals, val1, xs, ys, zs, k, yv, zv);
-	/* Intensity may belong to the next reflection along */
+	/* Intensity may partially belong to the next reflection along */
+	if ( k >= 0 ) {
+		interpolate_bilinear(vals, val1, xs, ys, zs, k, yv, zv);
+	}
 	if ( k+1 < xs ) {
 		interpolate_bilinear(vals, val2, xs, ys, zs, k+1, yv, zv);
 	}
