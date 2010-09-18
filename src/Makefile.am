@@ -61,7 +61,7 @@ facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
 facetron_LDADD = @LIBS@
 
 cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c diffraction.c \
-                 sfac.c render.c filters.c image.c
+                 sfac.c render.c filters.c image.c symmetry.c
 cubeit_LDADD = @LIBS@
 
 INCLUDES = "-I$(top_srcdir)/data"

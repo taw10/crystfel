@@ -29,6 +29,7 @@
 #include "hdf5-file.h"
 #include "diffraction.h"
 #include "render.h"
+#include "symmetry.h"
 
 
 #define MAX_THREADS (256)
@@ -54,7 +55,10 @@ struct process_args
 	pthread_mutex_t angles_mutex;  /* Protects "angles" */
 	unsigned int *angles;
 	struct detector *det;
-
+	signed int ht;
+	signed int kt;
+	signed int lt;
+	char *sym;
 };
 
 
@@ -150,9 +154,6 @@ static void process_image(struct process_args *pargs)
 	double bx, by, bz;
 	double cx, cy, cz;
 	int x, y;
-	const signed int ht = 3;
-	const signed int kt = 4;
-	const signed int lt = 5;
 
 	image.features = NULL;
 	image.data = NULL;
@@ -193,6 +194,7 @@ static void process_image(struct process_args *pargs)
 		signed int h, k, l;
 		double dh, dk, dl;
 		struct rvec q;
+		signed int ha, ka, la;
 
 		q = get_q(&image, x, y, 1, NULL, 1.0/image.lambda);
 
@@ -204,7 +206,10 @@ static void process_image(struct process_args *pargs)
 		k = (signed int)rint(kd);
 		l = (signed int)rint(ld);
 
-		if ( (h!=ht) || (k!=kt) || (l!=lt) ) continue;
+		get_asymm(h, k, l, &ha, &ka, &la, pargs->sym);
+		if ( (ha!=pargs->ht) || (ka!=pargs->kt) || (la!=pargs->lt) ) {
+			continue;
+		}
 
 		dh = hd - h;
 		dk = kd - k;
@@ -485,6 +490,8 @@ int main(int argc, char *argv[])
 	const int gs = 16;
 	unsigned int angles[180];
 	int config_angles = 0;
+	signed int ht, kt, lt;
+	char *sym = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -561,6 +568,8 @@ int main(int argc, char *argv[])
 	}
 	free(geomfile);
 
+	sym = strdup("6/mmm");  /* FIXME: Should be on command line */
+
 	/* Initialise histogram */
 	for ( i=0; i<180; i++ ) angles[i] = 0;
 
@@ -571,6 +580,9 @@ int main(int argc, char *argv[])
 		ERROR("Invalid number of threads.\n");
 		return 1;
 	}
+
+	/* FIXME: Get indices on command line (or elsewhere) */
+	get_asymm(3, 4, 5, &ht, &kt, &lt, sym);
 
 	/* Initialise worker arguments */
 	for ( i=0; i<nthreads; i++ ) {
@@ -588,6 +600,10 @@ int main(int argc, char *argv[])
 		pthread_mutex_init(&worker_args[i]->control_mutex, NULL);
 		pthread_mutex_init(&worker_args[i]->vals_mutex, NULL);
 		pthread_mutex_init(&worker_args[i]->angles_mutex, NULL);
+		worker_args[i]->ht = ht;
+		worker_args[i]->kt = kt;
+		worker_args[i]->lt = lt;
+		worker_args[i]->sym = sym;
 
 	}
 

@@ -67,7 +67,7 @@ compare_hkl_DEPENDENCIES =
 am_cubeit_OBJECTS = cubeit.$(OBJEXT) cell.$(OBJEXT) \
 	hdf5-file.$(OBJEXT) utils.$(OBJEXT) detector.$(OBJEXT) \
 	diffraction.$(OBJEXT) sfac.$(OBJEXT) render.$(OBJEXT) \
-	filters.$(OBJEXT) image.$(OBJEXT)
+	filters.$(OBJEXT) image.$(OBJEXT) symmetry.$(OBJEXT)
 cubeit_OBJECTS = $(am_cubeit_OBJECTS)
 cubeit_DEPENDENCIES =
 am_facetron_OBJECTS = facetron.$(OBJEXT) cell.$(OBJEXT) \
@@ -294,7 +294,7 @@ facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
 
 facetron_LDADD = @LIBS@
 cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c diffraction.c \
-                 sfac.c render.c filters.c image.c
+                 sfac.c render.c filters.c image.c symmetry.c
 
 cubeit_LDADD = @LIBS@
 INCLUDES = "-I$(top_srcdir)/data"
