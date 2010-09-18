@@ -343,7 +343,7 @@ static void write_slice(const char *filename, double *vals, int z,
 	             PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
 	             PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
-	row_pointers = malloc(h*sizeof(png_bytep *));
+	row_pointers = malloc(ph*sizeof(png_bytep *));
 
 	/* Write the image data */
 	max /= boost;
@@ -468,7 +468,7 @@ int main(int argc, char *argv[])
 	char *infile = NULL;
 	char *geomfile = NULL;
 	FILE *fh;
-	char *rval = NULL;
+	int rval;
 	int n_images;
 	char *prefix = NULL;
 	int nthreads = 1;
@@ -637,12 +637,12 @@ int main(int argc, char *argv[])
 	do {
 
 		int i;
+		rval = 0;
 
 		for ( i=0; i<nthreads; i++ ) {
 
 			struct process_args *pargs;
 			int done;
-			int rval;
 			char *filename;
 			UnitCell *cell;
 
@@ -685,7 +685,7 @@ int main(int argc, char *argv[])
 
 		}
 
-	} while ( rval != NULL );
+	} while ( rval == 0 );
 
 	/* Join threads */
 	for ( i=0; i<nthreads; i++ ) {
