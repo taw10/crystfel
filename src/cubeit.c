@@ -53,6 +53,7 @@ struct process_args
 	int config_angles;
 	pthread_mutex_t angles_mutex;  /* Protects "angles" */
 	unsigned int *angles;
+	struct detector *det;
 
 };
 
@@ -161,7 +162,7 @@ static void process_image(struct process_args *pargs)
 	image.filename = pargs->filename;
 	image.hits = NULL;
 	image.n_hits = 0;
-	image.det = NULL;
+	image.det = pargs->det;
 
 	/* View head-on (unit cell is tilted) */
 	image.orientation.w = 1.0;
@@ -581,6 +582,7 @@ int main(int argc, char *argv[])
 		worker_args[i]->config_angles = config_angles;
 		worker_args[i]->vals = vals;
 		worker_args[i]->angles = angles;
+		worker_args[i]->det = det;
 		pthread_mutex_init(&worker_args[i]->control_mutex, NULL);
 		pthread_mutex_init(&worker_args[i]->vals_mutex, NULL);
 		pthread_mutex_init(&worker_args[i]->angles_mutex, NULL);
