@@ -23,10 +23,12 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <png.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
 #include "diffraction.h"
+#include "render.h"
 
 
 #define MAX_THREADS (256)
@@ -277,6 +279,112 @@ static void *worker_thread(void *pargsv)
 }
 
 
+static void write_slice(const char *filename, double *vals, int z,
+                        int xs, int ys, int zs, double boost)
+{
+#ifdef HAVE_LIBPNG
+	FILE *fh;
+	png_structp png_ptr;
+	png_infop info_ptr;
+	png_bytep *row_pointers;
+	int x, y;
+	float max = 0.0;
+	int w, h;
+
+	w = xs;
+	h = ys;
+
+	for ( y=0; y<h; y++ ) {
+	for ( x=0; x<w; x++ ) {
+
+		float val;
+
+		val = vals[xs*ys*z + xs*y + x];
+
+		if ( val > max ) max = val;
+
+	}
+	}
+
+	fh = fopen(filename, "wb");
+	if ( !fh ) {
+		ERROR("Couldn't open output file.\n");
+		return;
+	}
+	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
+	                                  NULL, NULL, NULL);
+	if ( !png_ptr ) {
+		ERROR("Couldn't create PNG write structure.\n");
+		fclose(fh);
+		return;
+	}
+	info_ptr = png_create_info_struct(png_ptr);
+	if ( !info_ptr ) {
+		png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+		ERROR("Couldn't create PNG info structure.\n");
+		fclose(fh);
+		return;
+	}
+	if ( setjmp(png_jmpbuf(png_ptr)) ) {
+		png_destroy_write_struct(&png_ptr, &info_ptr);
+		fclose(fh);
+		ERROR("PNG write failed.\n");
+		return;
+	}
+	png_init_io(png_ptr, fh);
+
+	png_set_IHDR(png_ptr, info_ptr, w, h, 8,
+	             PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
+	             PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+
+	row_pointers = malloc(h*sizeof(png_bytep *));
+
+	/* Write the image data */
+	max /= boost;
+	if ( max <= 6 ) { max = 10; }
+
+	for ( y=0; y<h; y++ ) {
+
+		row_pointers[y] = malloc(w*3);
+
+		for ( x=0; x<w; x++ ) {
+
+			float r, g, b;
+			float val;
+
+			val = vals[xs*ys*z + xs*y + x];
+
+			render_scale(val, max, SCALE_COLOUR, &r, &g, &b);
+			row_pointers[y][3*x] = (png_byte)255*r;
+			row_pointers[y][3*x+1] = (png_byte)255*g;
+			row_pointers[y][3*x+2] = (png_byte)255*b;
+
+		}
+	}
+
+	for ( y=0; y<h/2+1; y++ ) {
+		png_bytep scratch;
+		scratch = row_pointers[y];
+		row_pointers[y] = row_pointers[h-y-1];
+		row_pointers[h-y-1] = scratch;
+	}
+
+	png_set_rows(png_ptr, info_ptr, row_pointers);
+	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+
+	png_destroy_write_struct(&png_ptr, &info_ptr);
+	for ( y=0; y<h; y++ ) {
+		free(row_pointers[y]);
+	}
+	free(row_pointers);
+	fclose(fh);
+
+#else
+	STATUS("No PNG support.\n");
+#endif
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -503,6 +611,21 @@ int main(int argc, char *argv[])
 	}
 
 	fclose(fh);
+
+	for ( i=0; i<gs; i++ ) {
+		char line[64];
+		float boost;
+		snprintf(line, 63, "slice-%i.png", i);
+		for ( boost=1; boost<1000; boost+=50 ) {
+			write_slice(line, vals, i, gs, gs, gs, boost);
+		}
+	}
+
+	if ( config_angles ) {
+		for ( i=0; i<180; i++ ) {
+			STATUS("%i %i\n", i, angles[i]);
+		}
+	}
 
 	STATUS("There were %i images.\n", n_images);
 
