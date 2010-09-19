@@ -32,9 +32,12 @@ struct r_params {
 };
 
 enum {
-	R_1,
+	R_1_ZERO,
+	R_1_IGNORE,
 	R_2,
-	R_DIFF,
+	R_INT,
+	R_DIFF_ZERO,
+	R_DIFF_IGNORE,
 };
 
 
@@ -94,9 +97,11 @@ static double stat_scale_sqrti(const double *ref1, const double *ref2,
 		h = it->h;  k = it->k;  l = it->l;
 
 		i1 = lookup_intensity(ref1, h, k, l);
-		f1 = i1 > 0.0 ? sqrt(i1) : 0.0;
+		if ( i1 < 0.0 ) continue;
+		f1 = sqrt(i1);
 		i2 = lookup_intensity(ref2, h, k, l);
-		f2 = i2 > 0.0 ? sqrt(i2) : 0.0;
+		if ( i2 < 0.0 ) continue;
+		f2 = sqrt(i2);
 
 		top += f1 * f2;
 		bot += f2 * f2;
@@ -107,8 +112,41 @@ static double stat_scale_sqrti(const double *ref1, const double *ref2,
 }
 
 
-static double internal_r1(const double *ref1, const double *ref2,
-                          ReflItemList *items, double scale)
+static double internal_r1_ignorenegs(const double *ref1, const double *ref2,
+                                     ReflItemList *items, double scale)
+{
+	double top = 0.0;
+	double bot = 0.0;
+	int i;
+
+	for ( i=0; i<num_items(items); i++ ) {
+
+		double i1, f1, i2, f2;
+		struct refl_item *it;
+		signed int h, k, l;
+
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
+
+		i1 = lookup_intensity(ref1, h, k, l);
+		if ( i1 < 0.0 ) continue;
+		f1 = sqrt(i1);
+		i2 = lookup_intensity(ref2, h, k, l);
+		if ( i2 < 0.0 ) continue;
+		f2 = sqrt(i2);
+		f2 *= scale;
+
+		top += fabs(f1 - f2);
+		bot += f1;
+
+	}
+
+	return top/bot;
+}
+
+
+static double internal_r1_negstozero(const double *ref1, const double *ref2,
+                                     ReflItemList *items, double scale)
 {
 	double top = 0.0;
 	double bot = 0.0;
@@ -166,8 +204,36 @@ static double internal_r2(const double *ref1, const double *ref2,
 }
 
 
-static double internal_rdiff(const double *ref1, const double *ref2,
-                             ReflItemList *items, double scale)
+static double internal_rint(const double *ref1, const double *ref2,
+                          ReflItemList *items, double scale)
+{
+	double top = 0.0;
+	double bot = 0.0;
+	int i;
+
+	for ( i=0; i<num_items(items); i++ ) {
+
+		double i1, i2;
+		struct refl_item *it;
+		signed int h, k, l;
+
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
+
+		i1 = lookup_intensity(ref1, h, k, l);
+		i2 = scale * lookup_intensity(ref2, h, k, l);
+
+		top += fabs(i1-i2);
+		bot += fabs(i1);
+
+	}
+
+	return top/bot;
+}
+
+
+static double internal_rdiff_negstozero(const double *ref1, const double *ref2,
+                                        ReflItemList *items, double scale)
 {
 	double top = 0.0;
 	double bot = 0.0;
@@ -197,18 +263,62 @@ static double internal_rdiff(const double *ref1, const double *ref2,
 }
 
 
+static double internal_rdiff_ignorenegs(const double *ref1, const double *ref2,
+                                        ReflItemList *items, double scale)
+{
+	double top = 0.0;
+	double bot = 0.0;
+	int i;
+
+	for ( i=0; i<num_items(items); i++ ) {
+
+		double i1, i2, f1, f2;
+		struct refl_item *it;
+		signed int h, k, l;
+
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
+
+		i1 = lookup_intensity(ref1, h, k, l);
+		if ( i1 < 0.0 ) continue;
+		f1 = sqrt(i1);
+		i2 = lookup_intensity(ref2, h, k, l);
+		if ( i2 < 0.0 ) continue;
+		f2 = sqrt(i2);
+		f2 *= scale;
+
+		top += fabs(f1 - f2);
+		bot += f1 + f2;
+
+	}
+
+	return 2.0*top/bot;
+}
+
 
 static double calc_r(double scale, void *params)
 {
 	struct r_params *rp = params;
 
 	switch ( rp->fom) {
-	case R_1 :
-		return internal_r1(rp->ref1, rp->ref2, rp->items, scale);
+	case R_1_ZERO :
+		return internal_r1_negstozero(rp->ref1, rp->ref2,
+		                              rp->items, scale);
+	case R_1_IGNORE :
+		return internal_r1_ignorenegs(rp->ref1, rp->ref2,
+		                              rp->items, scale);
 	case R_2 :
 		return internal_r2(rp->ref1, rp->ref2, rp->items, scale);
-	case R_DIFF :
-		return internal_rdiff(rp->ref1, rp->ref2, rp->items, scale);
+
+	case R_INT :
+		return internal_rint(rp->ref1, rp->ref2, rp->items, scale);
+
+	case R_DIFF_ZERO :
+		return internal_rdiff_negstozero(rp->ref1, rp->ref2,
+		                                 rp->items, scale);
+	case R_DIFF_IGNORE :
+		return internal_rdiff_ignorenegs(rp->ref1, rp->ref2,
+		                                 rp->items, scale);
 	}
 
 	ERROR("No such FoM!\n");
@@ -238,14 +348,15 @@ static double r_minimised(const double *ref1, const double *ref2,
 
 	/* Initial guess */
 	switch ( fom ) {
-	case R_1 :
+	case R_1_ZERO :
+	case R_1_IGNORE :
+	case R_DIFF_ZERO :
+	case R_DIFF_IGNORE :
 		scale = stat_scale_sqrti(ref1, ref2, items);
 		break;
 	case R_2 :
+	case R_INT :
 		scale = stat_scale_intensity(ref1, ref2, items);
-		break;
-	case R_DIFF :
-		scale = stat_scale_sqrti(ref1, ref2, items);
 		break;
 	}
 	//STATUS("Initial scale factor estimate: %5.2e\n", scale);
@@ -284,10 +395,17 @@ static double r_minimised(const double *ref1, const double *ref2,
 }
 
 
-double stat_r1(const double *ref1, const double *ref2,
-               ReflItemList *items, double *scalep)
+double stat_r1_ignore(const double *ref1, const double *ref2,
+                      ReflItemList *items, double *scalep)
 {
-	return r_minimised(ref1, ref2, items, scalep, R_1);
+	return r_minimised(ref1, ref2, items, scalep, R_1_IGNORE);
+}
+
+
+double stat_r1_zero(const double *ref1, const double *ref2,
+                    ReflItemList *items, double *scalep)
+{
+	return r_minimised(ref1, ref2, items, scalep, R_1_ZERO);
 }
 
 
@@ -298,14 +416,107 @@ double stat_r2(const double *ref1, const double *ref2,
 }
 
 
-double stat_rdiff(const double *ref1, const double *ref2,
-                  ReflItemList *items, double *scalep)
+double stat_rint(const double *ref1, const double *ref2,
+                 ReflItemList *items, double *scalep)
 {
-	return r_minimised(ref1, ref2, items, scalep, R_DIFF);
+	return r_minimised(ref1, ref2, items, scalep, R_INT);
 }
 
 
-double stat_pearson(const double *ref1, const double *ref2, ReflItemList *items)
+double stat_rdiff_zero(const double *ref1, const double *ref2,
+                       ReflItemList *items, double *scalep)
+{
+	return r_minimised(ref1, ref2, items, scalep, R_DIFF_ZERO);
+}
+
+
+double stat_rdiff_ignore(const double *ref1, const double *ref2,
+                         ReflItemList *items, double *scalep)
+{
+	return r_minimised(ref1, ref2, items, scalep, R_DIFF_IGNORE);
+}
+
+
+double stat_pearson_i(const double *ref1, const double *ref2,
+                      ReflItemList *items)
+{
+	double *vec1, *vec2;
+	int i = 0;
+	int ni = num_items(items);
+	double val;
+
+	vec1 = malloc(ni*sizeof(double));
+	vec2 = malloc(ni*sizeof(double));
+
+	for ( i=0; i<ni; i++ ) {
+
+		double i1, i2;
+		struct refl_item *it;
+		signed int h, k, l;
+
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
+
+		i1 = lookup_intensity(ref1, h, k, l);
+		i2 = lookup_intensity(ref2, h, k, l);
+
+		vec1[i] = i1;
+		vec2[i] = i2;
+
+		printf("%f %f\n", i1, i2);
+
+	}
+
+	val = gsl_stats_correlation(vec1, 1, vec2, 1, i);
+	free(vec1);
+	free(vec2);
+
+	return val;
+}
+
+
+double stat_pearson_f_ignore(const double *ref1, const double *ref2,
+                             ReflItemList *items)
+{
+	double *vec1, *vec2;
+	int i = 0;
+	int ni = num_items(items);
+	double val;
+
+	vec1 = malloc(ni*sizeof(double));
+	vec2 = malloc(ni*sizeof(double));
+
+	for ( i=0; i<ni; i++ ) {
+
+		double i1, i2, f1, f2;
+		struct refl_item *it;
+		signed int h, k, l;
+
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
+
+		i1 = lookup_intensity(ref1, h, k, l);
+		if ( i1 < 0.0 ) continue;
+		f1 = sqrt(i1);
+		i2 = lookup_intensity(ref2, h, k, l);
+		if ( i2 < 0.0 ) continue;
+		f2 = sqrt(i2);
+
+		vec1[i] = f1;
+		vec2[i] = f2;
+
+	}
+
+	val = gsl_stats_correlation(vec1, 1, vec2, 1, i);
+	free(vec1);
+	free(vec2);
+
+	return val;
+}
+
+
+double stat_pearson_f_zero(const double *ref1, const double *ref2,
+                      ReflItemList *items)
 {
 	double *vec1, *vec2;
 	int i = 0;

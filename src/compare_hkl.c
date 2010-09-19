@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 	char *afile = NULL;
 	char *bfile = NULL;
 	char *sym = NULL;
-	double scale, scale_r2, R1, R2, Rdiff, pearson;
+	double scale, scale_r2, scale_rint, R1, R2, Rint, Rdiff, pearson;
 	int i, ncom;
 	ReflItemList *i1, *i2, *icommon;
 	int config_luzzati = 0;
@@ -245,14 +245,39 @@ int main(int argc, char *argv[])
 
 	STATUS("%i,%i reflections: %i in common\n",
 	       num_items(i1), num_items(i2), ncom);
-	R1 = stat_r1(ref1, ref2_transformed, icommon, &scale);
-	STATUS("R1 = %5.4f %% (scale=%5.2e)\n", R1*100.0, scale);
+
+	R1 = stat_r1_ignore(ref1, ref2_transformed, icommon, &scale);
+	STATUS("R1 = %5.4f %% (scale=%5.2e) (ignoring negative intensities)\n",
+	       R1*100.0, scale);
+
+	R1 = stat_r1_zero(ref1, ref2_transformed, icommon, &scale);
+	STATUS("R1 = %5.4f %% (scale=%5.2e) (zeroing negative intensities)\n",
+	       R1*100.0, scale);
+
 	R2 = stat_r2(ref1, ref2_transformed, icommon, &scale_r2);
 	STATUS("R2 = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale_r2);
-	Rdiff = stat_rdiff(ref1, ref2_transformed, icommon, &scale);
-	STATUS("Rdiff = %5.4f %% (scale=%5.2e)\n", Rdiff*100.0, scale);
-	pearson = stat_pearson(ref1, ref2_transformed, icommon);
-	STATUS("Pearson r = %5.4f\n", pearson);
+
+	Rint = stat_rint(ref1, ref2_transformed, icommon, &scale_rint);
+	STATUS("Rint = %5.4f %% (scale=%5.2e)\n", Rint*100.0, scale_rint);
+
+	Rdiff = stat_rdiff_ignore(ref1, ref2_transformed, icommon, &scale);
+	STATUS("Rdiff = %5.4f %% (scale=%5.2e) (ignoring negative intensities)\n",
+	       Rdiff*100.0, scale);
+
+	Rdiff = stat_rdiff_zero(ref1, ref2_transformed, icommon, &scale);
+	STATUS("Rdiff = %5.4f %% (scale=%5.2e) (zeroing negative intensities)\n",
+	       Rdiff*100.0, scale);
+
+	pearson = stat_pearson_i(ref1, ref2_transformed, icommon);
+	STATUS("Pearson r(I) = %5.4f\n", pearson);
+
+	pearson = stat_pearson_f_ignore(ref1, ref2_transformed, icommon);
+	STATUS("Pearson r(F) = %5.4f (ignoring negative intensities)\n",
+	       pearson);
+
+	pearson = stat_pearson_f_zero(ref1, ref2_transformed, icommon);
+	STATUS("Pearson r(F) = %5.4f (zeroing negative intensities)\n",
+	       pearson);
 
 	if ( config_luzzati ) {
 		plot_luzzati(ref1, ref2_transformed, icommon, scale_r2, cell);

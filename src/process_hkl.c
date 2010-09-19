@@ -187,7 +187,7 @@ static int resolve_twin(const double *model, ReflItemList *observed,
 		}
 
 		intersection = intersection_items(observed, items);
-		fom = stat_pearson(trial_ints, model, intersection);
+		fom = stat_pearson_i(trial_ints, model, intersection);
 		delete_items(intersection);
 
 		free(trial_ints);
