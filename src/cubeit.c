@@ -336,7 +336,7 @@ static void write_slice(const char *filename, double *vals, int z,
 	}
 	max /= boost;
 
-	STATUS("%f %f\n", s*(xs*as+ys*bs*cos(ang)), s*(ys*bs*sin(ang))
+	STATUS("%f %f\n", s*(xs*as+ys*bs*cos(ang)), s*(ys*bs*sin(ang)));
 
 	surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 	                                     s*(xs*as+ys*bs*cos(ang)),
