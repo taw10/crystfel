@@ -318,7 +318,7 @@ static void write_slice(const char *filename, double *vals, int z,
 	int x, y, zf;
 	float max = 0.0;
 	int zoom = 16;
-	double s = zoom * 1000.0 / 1e9;
+	double s = zoom * 30.0 / 1e9;
 	cairo_surface_t *surface;
 	cairo_t *c;
 	int w, h;
@@ -336,7 +336,7 @@ static void write_slice(const char *filename, double *vals, int z,
 	}
 	max /= boost;
 
-	STATUS("%f %f\n", s*(as+bs*cos(ang)), s*(bs*sin(ang)));
+	STATUS("%f %f\n", s*(xs*as+ys*bs*cos(ang)), s*(ys*bs*sin(ang))
 
 	surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 	                                     s*(xs*as+ys*bs*cos(ang)),
