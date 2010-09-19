@@ -361,7 +361,7 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 	float f0;
 	int n_nof0 = 0;
 	int f0_valid = 0;
-	int n_patterns = 1;
+	int n_patterns = 0;
 	double *new_pattern = new_list_intensity();
 	ReflItemList *items = new_items();
 	ReflItemList *observed = new_items();
@@ -396,6 +396,7 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 		int r;
 
 		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;  /* And 'break' */
 		if ( strcmp(line, "\n") == 0 ) {
 
 			/* Assume a default I0 if we don't have one by now */
@@ -426,13 +427,12 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 			              hist_vals, hist_h, hist_k, hist_l,
 			              hist_i, devs, tots, means, outfh);
 
+			n_patterns++;
 			if ( n_patterns == config_stopafter ) break;
+			progress_bar(n_patterns, n_total_patterns, "Merging");
 
 			/* Reset for the next pattern */
-			n_patterns++;
 			clear_items(items);
-
-			progress_bar(n_patterns, n_total_patterns-1, "Merging");
 
 			f0_valid = 0;
 
@@ -501,6 +501,7 @@ static int count_patterns(FILE *fh)
 		char line[1024];
 
 		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
 		if ( (strncmp(line, "Reflections from indexing", 25) == 0)
 		    || (strncmp(line, "New pattern", 11) == 0) ) {
 		    n_total_patterns++;
