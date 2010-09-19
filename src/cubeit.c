@@ -349,7 +349,7 @@ static void write_slice(const char *filename, double *vals, int z,
 	c = cairo_create(surface);
 
 	cairo_scale(c, 1.0, -1.0);
-	cairo_translate(c, 0.0, ys*yl);
+	cairo_translate(c, 0.0, -ys*yl);
 
 	cairo_rectangle(c, 0.0, 0.0, xs*xl + ys*xli, ys*yl);
 	cairo_set_source_rgb(c, 1.0, 1.0, 1.0);
