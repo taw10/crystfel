@@ -783,7 +783,7 @@ int main(int argc, char *argv[])
 
 		STATUS("Rmerge = %f%%\n", 100.0*total_dev/total_tot);
 		STATUS("  Rpim = %f%%\n", 100.0*total_pdev/total_tot);
-		STATUS("  Rrim = %f%%\n", 100.0*total_rdev/total_tot);
+		STATUS(" Rmeas = %f%%\n", 100.0*total_rdev/total_tot);
 
 	}
 
