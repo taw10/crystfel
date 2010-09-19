@@ -20,20 +20,39 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
-#include <errno.h>
+#include <pthread.h>
+#include <sys/time.h>
+#include <assert.h>
 
-#include "image.h"
-#include "cell.h"
+#include "utils.h"
 #include "hdf5-file.h"
-#include "detector.h"
-#include "geometry.h"
+#include "symmetry.h"
+
+
+#define MAX_THREADS (256)
+
+struct process_args
+{
+	char *filename;
+	int id;
+
+	/* Thread control */
+	pthread_mutex_t control_mutex;  /* Protects the scary stuff below */
+	int start;
+	int finish;
+	int done;
+
+	UnitCell *cell;
+	struct detector *det;
+	char *sym;
+};
 
 
 static void show_help(const char *s)
 {
 	printf("Syntax: %s [options]\n\n", s);
 	printf(
-"Profile fitting for coherent nanocrystallography.\n"
+"Post-refinement and profile fitting for coherent nanocrystallography.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
 "\n"
@@ -43,7 +62,83 @@ static void show_help(const char *s)
 "  -x, --prefix=<p>           Prefix filenames from input file with <p>.\n"
 "      --basename             Remove the directory parts of the filenames.\n"
 "      --no-check-prefix      Don't attempt to correct the --prefix.\n"
-);
+"  -j <n>                     Run <n> analyses in parallel.\n");
+}
+
+
+static void process_image(struct process_args *pargs)
+{
+	struct hdfile *hdfile;
+	struct image image;
+
+	image.features = NULL;
+	image.data = NULL;
+	image.flags = NULL;
+	image.indexed_cell = NULL;
+	image.id = pargs->id;
+	image.filename = pargs->filename;
+	image.hits = NULL;
+	image.n_hits = 0;
+	image.det = pargs->det;
+
+	/* View head-on (unit cell is tilted) */
+	image.orientation.w = 1.0;
+	image.orientation.x = 0.0;
+	image.orientation.y = 0.0;
+	image.orientation.z = 0.0;
+
+	STATUS("Processing '%s'\n", pargs->filename);
+
+	hdfile = hdfile_open(pargs->filename);
+	if ( hdfile == NULL ) {
+		return;
+	} else if ( hdfile_set_first_image(hdfile, "/") ) {
+		ERROR("Couldn't select path\n");
+		hdfile_close(hdfile);
+		return;
+	}
+
+	hdf5_read(hdfile, &image, 1);
+
+
+	free(image.data);
+	cell_free(pargs->cell);
+	if ( image.flags != NULL ) free(image.flags);
+	hdfile_close(hdfile);
+}
+
+
+static void *worker_thread(void *pargsv)
+{
+	struct process_args *pargs = pargsv;
+	int finish;
+
+	do {
+
+		int wakeup;
+
+		process_image(pargs);
+
+		pthread_mutex_lock(&pargs->control_mutex);
+		pargs->done = 1;
+		pargs->start = 0;
+		pthread_mutex_unlock(&pargs->control_mutex);
+
+		/* Go to sleep until told to exit or process next image */
+		do {
+
+			pthread_mutex_lock(&pargs->control_mutex);
+			/* Either of these can result in the thread waking up */
+			wakeup = pargs->start || pargs->finish;
+			finish = pargs->finish;
+			pthread_mutex_unlock(&pargs->control_mutex);
+			usleep(20000);
+
+		} while ( !wakeup );
+
+	} while ( !pargs->finish );
+
+	return NULL;
 }
 
 
@@ -116,28 +211,21 @@ static int find_chunk(FILE *fh, UnitCell **cell, char **filename)
 }
 
 
-static char *twiddle_filename(char *filename, int config_basename,
-                              const char *prefix)
+static void add_to_mean(UnitCell *cell, double *ast, double *bst, double *cst,
+                        double *alst, double *best, double *gast)
 {
-	char *f3;
-	size_t len;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
 
-	if ( config_basename ) {
-		char *f2;
-		/* Happy with either the GNU or non-GNU versions of basename()
-		 * here.  Because _GNU_SOURCE is defined in configure.ac, we
-		 * should have the GNU version. */
-		f2 = strdup(basename(filename));
-		free(filename);
-		filename = f2;
-	}
-
-	len = strlen(prefix)+strlen(filename)+1;
-	f3 = malloc(len);
-	snprintf(f3, len, "%s%s", prefix, filename);
-
-	free(filename);
-	return f3;
+	cell_get_reciprocal(cell, &asx, &asy, &asz, &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+	*ast += modulus(asx, asy, asz);
+	*bst += modulus(bsx, bsy, bsz);
+	*cst += modulus(csx, csy, csz);
+	*alst += angle_between(bsx, bsy, bsz, csx, csy, csz);
+	*best += angle_between(asx, asy, asz, csx, csy, csz);
+	*gast += angle_between(asx, asy, asz, bsx, bsy, bsz);
 }
 
 
@@ -145,14 +233,21 @@ int main(int argc, char *argv[])
 {
 	int c;
 	char *infile = NULL;
+	char *geomfile = NULL;
 	FILE *fh;
-	UnitCell *cell;
-	char *filename;
-	struct detector *det;
-	char *geometry = NULL;
+	int rval;
+	int n_images;
 	char *prefix = NULL;
+	int nthreads = 1;
+	pthread_t workers[MAX_THREADS];
+	struct process_args *worker_args[MAX_THREADS];
+	int worker_active[MAX_THREADS];
 	int config_basename = 0;
 	int config_checkprefix = 1;
+	struct detector *det;
+	int i;
+	char *sym = NULL;
+	double as, bs, cs, als, bes, gas;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -166,7 +261,8 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:g:x:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hi:g:x:j:",
+	                        longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' :
@@ -178,11 +274,15 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'g' :
-			geometry = strdup(optarg);
+			geomfile = strdup(optarg);
 			break;
 
 		case 'x' :
 			prefix = strdup(optarg);
+			break;
+
+		case 'j' :
+			nthreads = atoi(optarg);
 			break;
 
 		case 0 :
@@ -194,11 +294,18 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( infile == NULL ) infile = strdup("-");
-	fh = fopen(infile, "r");
+
+	if ( infile == NULL ) {
+		infile = strdup("-");
+	}
+	if ( strcmp(infile, "-") == 0 ) {
+		fh = stdin;
+	} else {
+		fh = fopen(infile, "r");
+	}
 	if ( fh == NULL ) {
-		ERROR("Couldn't open input stream '%s'\n", infile);
-		return ENOENT;
+		ERROR("Failed to open input file '%s'\n", infile);
+		return 1;
 	}
 	free(infile);
 
@@ -210,51 +317,153 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	det = get_detector_geometry(geometry);
+	det = get_detector_geometry(geomfile);
 	if ( det == NULL ) {
-		ERROR("Failed to read detector geometry from '%s'\n", geometry);
+		ERROR("Failed to read detector geometry from '%s'\n", geomfile);
 		return 1;
 	}
-	free(geometry);
+	free(geomfile);
 
-	/* Loop over all successfully indexed patterns */
-	while ( find_chunk(fh, &cell, &filename) == 0 ) {
+	sym = strdup("6/mmm");  /* FIXME: Should be on command line */
 
-		struct image image;
-		struct hdfile *hdfile;
-		struct reflhit *hits;
-		int np;
+	as = 0.0; bs = 0.0; cs = 0.0; als = 0.0; bes = 0.0; gas = 0.0;
 
-		filename = twiddle_filename(filename, config_basename, prefix);
+	/* Initialise worker arguments */
+	for ( i=0; i<nthreads; i++ ) {
 
-		STATUS("Integrating intensities from '%s'\n", filename);
-
-		image.det = det;
-
-		hdfile = hdfile_open(filename);
-		if ( hdfile == NULL ) {
-			return ENOENT;
-		} else if ( hdfile_set_image(hdfile, "/data/data0") ) {
-			ERROR("Couldn't select path\n");
-			return ENOENT;
-		}
-
-		hdf5_read(hdfile, &image, 0);
-
-		hits = find_intersections(&image, cell, 5.0e-3, 0.0001, &np, 1);
-
-		hdfile_close(hdfile);
-		cell_free(cell);
-		free(filename);
-		free(image.data);
-		free(image.flags);
+		worker_args[i] = malloc(sizeof(struct process_args));
+		worker_args[i]->filename = malloc(1024);
+		worker_active[i] = 0;
+		worker_args[i]->det = det;
+		pthread_mutex_init(&worker_args[i]->control_mutex, NULL);
+		worker_args[i]->sym = sym;
 
 	}
 
-	free(det->panels);
-	free(det);
+	n_images = 0;
+
+	/* Start threads off */
+	for ( i=0; i<nthreads; i++ ) {
+
+		struct process_args *pargs;
+		int r;
+		int rval;
+		char *filename;
+		UnitCell *cell;
+
+		pargs = worker_args[i];
+
+		/* Get the next filename */
+		rval = find_chunk(fh, &cell, &filename);
+		if ( rval == 1 ) break;
+		add_to_mean(cell, &as, &bs, &cs, &als, &bes, &gas);
+		if ( config_basename ) {
+			char *tmp;
+			tmp = basename(filename);
+			free(filename);
+			filename = tmp;
+		}
+		snprintf(pargs->filename, 1023, "%s%s",
+		         prefix, filename);
+		pargs->cell = cell;
+		free(filename);
+
+		n_images++;
+
+		pthread_mutex_lock(&pargs->control_mutex);
+		pargs->done = 0;
+		pargs->start = 1;
+		pargs->finish = 0;
+		pthread_mutex_unlock(&pargs->control_mutex);
+
+		worker_active[i] = 1;
+		r = pthread_create(&workers[i], NULL, worker_thread, pargs);
+		if ( r != 0 ) {
+			worker_active[i] = 0;
+			ERROR("Couldn't start thread %i\n", i);
+		}
+
+	}
+
+	/* Keep threads busy until the end of the data */
+	do {
+
+		int i;
+		rval = 0;
+
+		for ( i=0; i<nthreads; i++ ) {
+
+			struct process_args *pargs;
+			int done;
+			char *filename;
+			UnitCell *cell;
+
+			/* Spend time working, not managing threads */
+			usleep(100000);
+
+			/* Are we using this thread record at all? */
+			if ( !worker_active[i] ) continue;
+
+			/* Has the thread finished yet? */
+			pargs = worker_args[i];
+			pthread_mutex_lock(&pargs->control_mutex);
+			done = pargs->done;
+			pthread_mutex_unlock(&pargs->control_mutex);
+			if ( !done ) continue;
+
+			/* Get the next filename */
+			rval = find_chunk(fh, &cell, &filename);
+			if ( rval == 1 ) break;
+			add_to_mean(cell, &as, &bs, &cs, &als, &bes, &gas);
+			if ( config_basename ) {
+				char *tmp;
+				tmp = basename(filename);
+				free(filename);
+				filename = tmp;
+			}
+			snprintf(pargs->filename, 1023, "%s%s",
+			         prefix, filename);
+			pargs->cell = cell;
+			free(filename);
+
+			n_images++;
+
+			STATUS("Done %i images\n", n_images);
+
+			/* Wake the thread up ... */
+			pthread_mutex_lock(&pargs->control_mutex);
+			pargs->done = 0;
+			pargs->start = 1;
+			pthread_mutex_unlock(&pargs->control_mutex);
+
+		}
+
+	} while ( rval == 0 );
+
+	/* Join threads */
+	for ( i=0; i<nthreads; i++ ) {
+
+		if ( !worker_active[i] ) goto free;
+
+		/* Tell the thread to exit */
+		struct process_args *pargs = worker_args[i];
+		pthread_mutex_lock(&pargs->control_mutex);
+		pargs->finish = 1;
+		pthread_mutex_unlock(&pargs->control_mutex);
+
+		/* Wait for it to join */
+		pthread_join(workers[i], NULL);
+
+	free:
+		if ( worker_args[i]->filename != NULL ) {
+			free(worker_args[i]->filename);
+		}
+
+	}
+
 	fclose(fh);
-	free(prefix);
+
+	STATUS("There were %i images.\n", n_images);
 
 	return 0;
 }
