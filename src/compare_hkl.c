@@ -231,6 +231,8 @@ int main(int argc, char *argv[])
 		h = it->h;  k = it->k;  l = it->l;
 
 		if ( !find_unique_equiv(i2, h, k, l, sym, &he, &ke, &le) ) {
+			//STATUS("%i %i %i not matched (%f nm).\n", h, k, l,
+			//       1.0/(2.0*resolution(cell, h, k, l)/1e9));
 			continue;
 		}
 
