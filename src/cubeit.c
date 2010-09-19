@@ -312,116 +312,62 @@ static void *worker_thread(void *pargsv)
 
 
 static void write_slice(const char *filename, double *vals, int z,
-                        int xs, int ys, int zs, double boost)
+                        int xs, int ys, int zs, double boost,
+                        double as, double bs, double ang)
 {
-#ifdef HAVE_LIBPNG
-	FILE *fh;
-	png_structp png_ptr;
-	png_infop info_ptr;
-	png_bytep *row_pointers;
 	int x, y, zf;
 	float max = 0.0;
+	int zoom = 16;
+	double s = zoom * 1000.0 / 1e9;
+	cairo_surface_t *surface;
+	cairo_t *c;
 	int w, h;
-	int pw, ph;
-	int zoom = 32;
 
-	pw = xs * zoom;
-	ph = ys * zoom;
-	w = xs;
-	h = ys;
+	w = xs;  h = ys;
 
+	/* Find maximum value */
 	for ( zf=0; zf<zs; zf++ ) {
 	for ( y=0; y<h; y++ ) {
 	for ( x=0; x<w; x++ ) {
+		float val = vals[xs*ys*zf + xs*y + x];
+		if ( val > max ) max = val;
+	}
+	}
+	}
+	max /= boost;
 
+	STATUS("%f %f\n", s*(as+bs*cos(ang)), s*(bs*sin(ang)));
+
+	surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+	                                     s*(xs*as+ys*bs*cos(ang)),
+	                                     s*(ys*bs*sin(ang)));
+
+	c = cairo_create(surface);
+	for ( y=0; y<h; y++ ) {
+	for ( x=0; x<w; x++ ) {
+
+		float r, g, b;
 		float val;
 
-		val = vals[xs*ys*zf + xs*y + x];
+		val = vals[xs*ys*z + xs*y + x];
 
-		if ( val > max ) max = val;
+		render_scale(val, max, SCALE_COLOUR, &r, &g, &b);
+
+		cairo_new_path(c);
+		cairo_move_to(c, s*(as*x+bs*y*cos(ang)), s*(y*bs*sin(ang)));
+		cairo_line_to(c, s*(as*(x+1)+bs*y*cos(ang)), s*(y*bs*sin(ang)));
+		cairo_line_to(c, s*(as*(x+1)+bs*y*cos(ang)),
+		                 s*((y+1)*bs*sin(ang)));
+		cairo_line_to(c, s*(as*x+bs*y*cos(ang)), s*((y+1)*bs*sin(ang)));
+		cairo_set_source_rgb(c, r, g, b);
+		cairo_fill(c);
 
 	}
 	}
-	}
 
-	fh = fopen(filename, "wb");
-	if ( !fh ) {
-		ERROR("Couldn't open output file.\n");
-		return;
-	}
-	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
-	                                  NULL, NULL, NULL);
-	if ( !png_ptr ) {
-		ERROR("Couldn't create PNG write structure.\n");
-		fclose(fh);
-		return;
-	}
-	info_ptr = png_create_info_struct(png_ptr);
-	if ( !info_ptr ) {
-		png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
-		ERROR("Couldn't create PNG info structure.\n");
-		fclose(fh);
-		return;
-	}
-	if ( setjmp(png_jmpbuf(png_ptr)) ) {
-		png_destroy_write_struct(&png_ptr, &info_ptr);
-		fclose(fh);
-		ERROR("PNG write failed.\n");
-		return;
-	}
-	png_init_io(png_ptr, fh);
+	cairo_surface_write_to_png(surface, filename);
+	cairo_surface_destroy(surface);
 
-	png_set_IHDR(png_ptr, info_ptr, pw, ph, 8,
-	             PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
-	             PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
-
-	row_pointers = malloc(ph*sizeof(png_bytep *));
-
-	/* Write the image data */
-	max /= boost;
-	if ( max <= 6 ) { max = 10; }
-
-	for ( y=0; y<ph; y++ ) {
-
-		row_pointers[y] = malloc(pw*3);
-
-		for ( x=0; x<pw; x++ ) {
-
-			float r, g, b;
-			float val;
-			int ax = x / zoom;
-			int ay = y / zoom;
-
-			val = vals[xs*ys*z + xs*ay + ax];
-
-			render_scale(val, max, SCALE_COLOUR, &r, &g, &b);
-			row_pointers[y][3*x] = (png_byte)255*r;
-			row_pointers[y][3*x+1] = (png_byte)255*g;
-			row_pointers[y][3*x+2] = (png_byte)255*b;
-
-		}
-	}
-
-	for ( y=0; y<ph/2; y++ ) {
-		png_bytep scratch;
-		scratch = row_pointers[y];
-		row_pointers[y] = row_pointers[ph-y-1];
-		row_pointers[ph-y-1] = scratch;
-	}
-
-	png_set_rows(png_ptr, info_ptr, row_pointers);
-	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
-
-	png_destroy_write_struct(&png_ptr, &info_ptr);
-	for ( y=0; y<ph; y++ ) {
-		free(row_pointers[y]);
-	}
-	free(row_pointers);
-	fclose(fh);
-
-#else
-	STATUS("No PNG support.\n");
-#endif
 }
 
 
@@ -494,6 +440,24 @@ static int find_chunk(FILE *fh, UnitCell **cell, char **filename)
 }
 
 
+static void add_to_mean(UnitCell *cell, double *ast, double *bst, double *cst,
+                        double *alst, double *best, double *gast)
+{
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+
+	cell_get_reciprocal(cell, &asx, &asy, &asz, &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+	*ast += modulus(asx, asy, asz);
+	*bst += modulus(bsx, bsy, bsz);
+	*cst += modulus(csx, csy, csz);
+	*alst += angle_between(bsx, bsy, bsz, csx, csy, csz);
+	*best += angle_between(asx, asy, asz, csx, csy, csz);
+	*gast += angle_between(asx, asy, asz, bsx, bsy, bsz);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -517,6 +481,7 @@ int main(int argc, char *argv[])
 	int config_angles = 0;
 	signed int ht, kt, lt;
 	char *sym = NULL;
+	double as, bs, cs, als, bes, gas;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -609,6 +574,8 @@ int main(int argc, char *argv[])
 	/* FIXME: Get indices on command line (or elsewhere) */
 	get_asymm(3, 4, 5, &ht, &kt, &lt, sym);
 
+	as = 0.0; bs = 0.0; cs = 0.0; als = 0.0; bes = 0.0; gas = 0.0;
+
 	/* Initialise worker arguments */
 	for ( i=0; i<nthreads; i++ ) {
 
@@ -648,6 +615,7 @@ int main(int argc, char *argv[])
 		/* Get the next filename */
 		rval = find_chunk(fh, &cell, &filename);
 		if ( rval == 1 ) break;
+		add_to_mean(cell, &as, &bs, &cs, &als, &bes, &gas);
 		if ( config_basename ) {
 			char *tmp;
 			tmp = basename(filename);
@@ -705,6 +673,7 @@ int main(int argc, char *argv[])
 			/* Get the next filename */
 			rval = find_chunk(fh, &cell, &filename);
 			if ( rval == 1 ) break;
+			add_to_mean(cell, &as, &bs, &cs, &als, &bes, &gas);
 			if ( config_basename ) {
 				char *tmp;
 				tmp = basename(filename);
@@ -757,7 +726,8 @@ int main(int argc, char *argv[])
 		char line[64];
 		float boost = 1.0;
 		snprintf(line, 63, "slice-%i.png", i);
-		write_slice(line, vals, i, gs, gs, gs, boost);
+		write_slice(line, vals, i, gs, gs, gs, boost,
+		            as/n_images, bs/n_images, gas/n_images);
 	}
 
 	if ( config_angles ) {
