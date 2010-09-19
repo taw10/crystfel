@@ -540,7 +540,6 @@ int main(int argc, char *argv[])
 
 	}
 
-
 	if ( infile == NULL ) {
 		infile = strdup("-");
 	}
