@@ -322,6 +322,7 @@ static void write_slice(const char *filename, double *vals, int z,
 	cairo_surface_t *surface;
 	cairo_t *c;
 	int w, h;
+	double xl, yl, xli;
 
 	w = xs;  h = ys;
 
@@ -336,13 +337,24 @@ static void write_slice(const char *filename, double *vals, int z,
 	}
 	max /= boost;
 
-	STATUS("%f %f\n", s*(xs*as+ys*bs*cos(ang)), s*(ys*bs*sin(ang)));
+	xl = s*as;
+	yl = s*bs*sin(ang);
+	xli = s*bs*cos(ang);
+
+	STATUS("%f %f\n", xs*xl + ys*xli, ys*yl);
 
 	surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
-	                                     s*(xs*as+ys*bs*cos(ang)),
-	                                     s*(ys*bs*sin(ang)));
+	                                     xs*xl + ys*xli, ys*yl);
 
 	c = cairo_create(surface);
+
+	cairo_scale(c, 1.0, -1.0);
+	cairo_translate(c, 0.0, ys*yl);
+
+	cairo_rectangle(c, 0.0, 0.0, xs*xl + ys*xli, ys*yl);
+	cairo_set_source_rgb(c, 1.0, 1.0, 1.0);
+	cairo_fill(c);
+
 	for ( y=0; y<h; y++ ) {
 	for ( x=0; x<w; x++ ) {
 
@@ -354,13 +366,13 @@ static void write_slice(const char *filename, double *vals, int z,
 		render_scale(val, max, SCALE_COLOUR, &r, &g, &b);
 
 		cairo_new_path(c);
-		cairo_move_to(c, s*(as*x+bs*y*cos(ang)), s*(y*bs*sin(ang)));
-		cairo_line_to(c, s*(as*(x+1)+bs*y*cos(ang)), s*(y*bs*sin(ang)));
-		cairo_line_to(c, s*(as*(x+1)+bs*y*cos(ang)),
-		                 s*((y+1)*bs*sin(ang)));
-		cairo_line_to(c, s*(as*x+bs*y*cos(ang)), s*((y+1)*bs*sin(ang)));
+		cairo_move_to(c, x*xl+y*xli, y*yl);
+		cairo_line_to(c, (x+1)*xl+y*xli, y*yl);
+		cairo_line_to(c, (x+1)*xl+(y+1)*xli, (y+1)*yl);
+		cairo_line_to(c, x*xl+(y+1)*xli, (y+1)*yl);
 		cairo_set_source_rgb(c, r, g, b);
 		cairo_fill(c);
+		cairo_stroke(c);
 
 	}
 	}
