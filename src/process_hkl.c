@@ -313,7 +313,6 @@ static void scale_intensities(const double *model, ReflItemList *model_items,
 	double bot = 0.0;
 	unsigned int i;
 
-
 	for ( i=0; i<num_items(new_items); i++ ) {
 
 		double i1, i2;
