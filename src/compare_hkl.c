@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 	char *afile = NULL;
 	char *bfile = NULL;
 	char *sym = NULL;
-	double scale, scale_r2, scale_rint, R1, R2, Rint, Rdiff, pearson;
+	double scale, scale_r2, R1, R2, R1i, Rdiff, pearson;
 	int i, ncom;
 	ReflItemList *i1, *i2, *icommon;
 	int config_luzzati = 0;
@@ -249,25 +249,25 @@ int main(int argc, char *argv[])
 	       num_items(i1), num_items(i2), ncom);
 
 	R1 = stat_r1_ignore(ref1, ref2_transformed, icommon, &scale);
-	STATUS("R1 = %5.4f %% (scale=%5.2e) (ignoring negative intensities)\n",
+	STATUS("R1(F) = %5.4f %% (scale=%5.2e) (ignoring negative intensities)\n",
 	       R1*100.0, scale);
 
 	R1 = stat_r1_zero(ref1, ref2_transformed, icommon, &scale);
-	STATUS("R1 = %5.4f %% (scale=%5.2e) (zeroing negative intensities)\n",
+	STATUS("R1(F) = %5.4f %% (scale=%5.2e) (zeroing negative intensities)\n",
 	       R1*100.0, scale);
 
 	R2 = stat_r2(ref1, ref2_transformed, icommon, &scale_r2);
-	STATUS("R2 = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale_r2);
+	STATUS("R2(I) = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale_r2);
 
-	Rint = stat_rint(ref1, ref2_transformed, icommon, &scale_rint);
-	STATUS("Rint = %5.4f %% (scale=%5.2e)\n", Rint*100.0, scale_rint);
+	R1i = stat_r1_i(ref1, ref2_transformed, icommon, &scale);
+	STATUS("R1(I) = %5.4f %% (scale=%5.2e)\n", R1i*100.0, scale);
 
 	Rdiff = stat_rdiff_ignore(ref1, ref2_transformed, icommon, &scale);
-	STATUS("Rdiff = %5.4f %% (scale=%5.2e) (ignoring negative intensities)\n",
+	STATUS("Rdiff(F) = %5.4f %% (scale=%5.2e) (ignoring negative intensities)\n",
 	       Rdiff*100.0, scale);
 
 	Rdiff = stat_rdiff_zero(ref1, ref2_transformed, icommon, &scale);
-	STATUS("Rdiff = %5.4f %% (scale=%5.2e) (zeroing negative intensities)\n",
+	STATUS("Rdiff(F) = %5.4f %% (scale=%5.2e) (zeroing negative intensities)\n",
 	       Rdiff*100.0, scale);
 
 	pearson = stat_pearson_i(ref1, ref2_transformed, icommon);

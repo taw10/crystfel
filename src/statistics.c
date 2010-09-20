@@ -35,7 +35,7 @@ enum {
 	R_1_ZERO,
 	R_1_IGNORE,
 	R_2,
-	R_INT,
+	R_1_I,
 	R_DIFF_ZERO,
 	R_DIFF_IGNORE,
 };
@@ -204,7 +204,7 @@ static double internal_r2(const double *ref1, const double *ref2,
 }
 
 
-static double internal_rint(const double *ref1, const double *ref2,
+static double internal_r_i(const double *ref1, const double *ref2,
                           ReflItemList *items, double scale)
 {
 	double top = 0.0;
@@ -310,8 +310,8 @@ static double calc_r(double scale, void *params)
 	case R_2 :
 		return internal_r2(rp->ref1, rp->ref2, rp->items, scale);
 
-	case R_INT :
-		return internal_rint(rp->ref1, rp->ref2, rp->items, scale);
+	case R_1_I :
+		return internal_r_i(rp->ref1, rp->ref2, rp->items, scale);
 
 	case R_DIFF_ZERO :
 		return internal_rdiff_negstozero(rp->ref1, rp->ref2,
@@ -355,7 +355,7 @@ static double r_minimised(const double *ref1, const double *ref2,
 		scale = stat_scale_sqrti(ref1, ref2, items);
 		break;
 	case R_2 :
-	case R_INT :
+	case R_1_I :
 		scale = stat_scale_intensity(ref1, ref2, items);
 		break;
 	}
@@ -416,10 +416,10 @@ double stat_r2(const double *ref1, const double *ref2,
 }
 
 
-double stat_rint(const double *ref1, const double *ref2,
+double stat_r1_i(const double *ref1, const double *ref2,
                  ReflItemList *items, double *scalep)
 {
-	return r_minimised(ref1, ref2, items, scalep, R_INT);
+	return r_minimised(ref1, ref2, items, scalep, R_1_I);
 }
 
 
