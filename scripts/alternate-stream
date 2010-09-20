@@ -1,0 +1,26 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+open(FH, $ARGV[0]);
+open(OFH_ONE, "> ".$ARGV[1]);
+open(OFH_TWO, "> ".$ARGV[2]);
+
+my $line;
+my $alt = 0;
+
+while ( $line = <FH> ) {
+
+	if ( $line =~ /^Reflections\ from\ indexing/ ) {
+		$alt = 1 - $alt;
+	}
+
+	if ( $alt == 0 ) {
+		printf(OFH_ONE $line);
+	} elsif ( $alt == 1 ) {
+		printf(OFH_TWO $line);
+	} else {
+		printf("Unhandled: '%s'\n", chomp($line));
+	}
+
+}
