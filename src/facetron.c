@@ -44,7 +44,7 @@ struct process_args
 
 	UnitCell *cell;
 	struct detector *det;
-	char *sym;
+	const char *sym;
 };
 
 
@@ -211,21 +211,137 @@ static int find_chunk(FILE *fh, UnitCell **cell, char **filename)
 }
 
 
-static void add_to_mean(UnitCell *cell, double *ast, double *bst, double *cst,
-                        double *alst, double *best, double *gast)
+static void optimise_all(int nthreads, struct detector *det, const char *sym,
+                         FILE *fh, int config_basename, const char *prefix)
 {
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
+	pthread_t workers[MAX_THREADS];
+	struct process_args *worker_args[MAX_THREADS];
+	int worker_active[MAX_THREADS];
+	int i;
+	int rval;
 
-	cell_get_reciprocal(cell, &asx, &asy, &asz, &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	*ast += modulus(asx, asy, asz);
-	*bst += modulus(bsx, bsy, bsz);
-	*cst += modulus(csx, csy, csz);
-	*alst += angle_between(bsx, bsy, bsz, csx, csy, csz);
-	*best += angle_between(asx, asy, asz, csx, csy, csz);
-	*gast += angle_between(asx, asy, asz, bsx, bsy, bsz);
+	/* Initialise worker arguments */
+	for ( i=0; i<nthreads; i++ ) {
+
+		worker_args[i] = malloc(sizeof(struct process_args));
+		worker_args[i]->filename = malloc(1024);
+		worker_active[i] = 0;
+		worker_args[i]->det = det;
+		pthread_mutex_init(&worker_args[i]->control_mutex, NULL);
+		worker_args[i]->sym = sym;
+
+	}
+
+	/* Start threads off */
+	for ( i=0; i<nthreads; i++ ) {
+
+		struct process_args *pargs;
+		int r;
+		int rval;
+		char *filename;
+		UnitCell *cell;
+
+		pargs = worker_args[i];
+
+		/* Get the next filename */
+		rval = find_chunk(fh, &cell, &filename);
+		if ( rval == 1 ) break;
+		if ( config_basename ) {
+			char *tmp;
+			tmp = basename(filename);
+			free(filename);
+			filename = tmp;
+		}
+		snprintf(pargs->filename, 1023, "%s%s",
+		         prefix, filename);
+		pargs->cell = cell;
+		free(filename);
+
+		pthread_mutex_lock(&pargs->control_mutex);
+		pargs->done = 0;
+		pargs->start = 1;
+		pargs->finish = 0;
+		pthread_mutex_unlock(&pargs->control_mutex);
+
+		worker_active[i] = 1;
+		r = pthread_create(&workers[i], NULL, worker_thread, pargs);
+		if ( r != 0 ) {
+			worker_active[i] = 0;
+			ERROR("Couldn't start thread %i\n", i);
+		}
+
+	}
+
+	/* Keep threads busy until the end of the data */
+	do {
+
+		int i;
+		rval = 0;
+
+		for ( i=0; i<nthreads; i++ ) {
+
+			struct process_args *pargs;
+			int done;
+			char *filename;
+			UnitCell *cell;
+
+			/* Spend time working, not managing threads */
+			usleep(100000);
+
+			/* Are we using this thread record at all? */
+			if ( !worker_active[i] ) continue;
+
+			/* Has the thread finished yet? */
+			pargs = worker_args[i];
+			pthread_mutex_lock(&pargs->control_mutex);
+			done = pargs->done;
+			pthread_mutex_unlock(&pargs->control_mutex);
+			if ( !done ) continue;
+
+			/* Get the next filename */
+			rval = find_chunk(fh, &cell, &filename);
+			if ( rval == 1 ) break;
+			if ( config_basename ) {
+				char *tmp;
+				tmp = basename(filename);
+				free(filename);
+				filename = tmp;
+			}
+			snprintf(pargs->filename, 1023, "%s%s",
+			         prefix, filename);
+			pargs->cell = cell;
+			free(filename);
+
+			/* Wake the thread up ... */
+			pthread_mutex_lock(&pargs->control_mutex);
+			pargs->done = 0;
+			pargs->start = 1;
+			pthread_mutex_unlock(&pargs->control_mutex);
+
+		}
+
+	} while ( rval == 0 );
+
+	/* Join threads */
+	for ( i=0; i<nthreads; i++ ) {
+
+		if ( !worker_active[i] ) goto free;
+
+		/* Tell the thread to exit */
+		struct process_args *pargs = worker_args[i];
+		pthread_mutex_lock(&pargs->control_mutex);
+		pargs->finish = 1;
+		pthread_mutex_unlock(&pargs->control_mutex);
+
+		/* Wait for it to join */
+		pthread_join(workers[i], NULL);
+
+	free:
+		if ( worker_args[i]->filename != NULL ) {
+			free(worker_args[i]->filename);
+		}
+
+	}
 }
 
 
@@ -235,19 +351,12 @@ int main(int argc, char *argv[])
 	char *infile = NULL;
 	char *geomfile = NULL;
 	FILE *fh;
-	int rval;
-	int n_images;
 	char *prefix = NULL;
 	int nthreads = 1;
-	pthread_t workers[MAX_THREADS];
-	struct process_args *worker_args[MAX_THREADS];
-	int worker_active[MAX_THREADS];
 	int config_basename = 0;
 	int config_checkprefix = 1;
 	struct detector *det;
-	int i;
 	char *sym = NULL;
-	double as, bs, cs, als, bes, gas;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -294,7 +403,6 @@ int main(int argc, char *argv[])
 
 	}
 
-
 	if ( infile == NULL ) {
 		infile = strdup("-");
 	}
@@ -326,144 +434,12 @@ int main(int argc, char *argv[])
 
 	sym = strdup("6/mmm");  /* FIXME: Should be on command line */
 
-	as = 0.0; bs = 0.0; cs = 0.0; als = 0.0; bes = 0.0; gas = 0.0;
-
-	/* Initialise worker arguments */
-	for ( i=0; i<nthreads; i++ ) {
-
-		worker_args[i] = malloc(sizeof(struct process_args));
-		worker_args[i]->filename = malloc(1024);
-		worker_active[i] = 0;
-		worker_args[i]->det = det;
-		pthread_mutex_init(&worker_args[i]->control_mutex, NULL);
-		worker_args[i]->sym = sym;
-
-	}
-
-	n_images = 0;
-
-	/* Start threads off */
-	for ( i=0; i<nthreads; i++ ) {
-
-		struct process_args *pargs;
-		int r;
-		int rval;
-		char *filename;
-		UnitCell *cell;
-
-		pargs = worker_args[i];
-
-		/* Get the next filename */
-		rval = find_chunk(fh, &cell, &filename);
-		if ( rval == 1 ) break;
-		add_to_mean(cell, &as, &bs, &cs, &als, &bes, &gas);
-		if ( config_basename ) {
-			char *tmp;
-			tmp = basename(filename);
-			free(filename);
-			filename = tmp;
-		}
-		snprintf(pargs->filename, 1023, "%s%s",
-		         prefix, filename);
-		pargs->cell = cell;
-		free(filename);
-
-		n_images++;
-
-		pthread_mutex_lock(&pargs->control_mutex);
-		pargs->done = 0;
-		pargs->start = 1;
-		pargs->finish = 0;
-		pthread_mutex_unlock(&pargs->control_mutex);
-
-		worker_active[i] = 1;
-		r = pthread_create(&workers[i], NULL, worker_thread, pargs);
-		if ( r != 0 ) {
-			worker_active[i] = 0;
-			ERROR("Couldn't start thread %i\n", i);
-		}
-
-	}
-
-	/* Keep threads busy until the end of the data */
-	do {
-
-		int i;
-		rval = 0;
-
-		for ( i=0; i<nthreads; i++ ) {
-
-			struct process_args *pargs;
-			int done;
-			char *filename;
-			UnitCell *cell;
-
-			/* Spend time working, not managing threads */
-			usleep(100000);
-
-			/* Are we using this thread record at all? */
-			if ( !worker_active[i] ) continue;
-
-			/* Has the thread finished yet? */
-			pargs = worker_args[i];
-			pthread_mutex_lock(&pargs->control_mutex);
-			done = pargs->done;
-			pthread_mutex_unlock(&pargs->control_mutex);
-			if ( !done ) continue;
-
-			/* Get the next filename */
-			rval = find_chunk(fh, &cell, &filename);
-			if ( rval == 1 ) break;
-			add_to_mean(cell, &as, &bs, &cs, &als, &bes, &gas);
-			if ( config_basename ) {
-				char *tmp;
-				tmp = basename(filename);
-				free(filename);
-				filename = tmp;
-			}
-			snprintf(pargs->filename, 1023, "%s%s",
-			         prefix, filename);
-			pargs->cell = cell;
-			free(filename);
-
-			n_images++;
-
-			STATUS("Done %i images\n", n_images);
-
-			/* Wake the thread up ... */
-			pthread_mutex_lock(&pargs->control_mutex);
-			pargs->done = 0;
-			pargs->start = 1;
-			pthread_mutex_unlock(&pargs->control_mutex);
-
-		}
-
-	} while ( rval == 0 );
-
-	/* Join threads */
-	for ( i=0; i<nthreads; i++ ) {
-
-		if ( !worker_active[i] ) goto free;
-
-		/* Tell the thread to exit */
-		struct process_args *pargs = worker_args[i];
-		pthread_mutex_lock(&pargs->control_mutex);
-		pargs->finish = 1;
-		pthread_mutex_unlock(&pargs->control_mutex);
-
-		/* Wait for it to join */
-		pthread_join(workers[i], NULL);
-
-	free:
-		if ( worker_args[i]->filename != NULL ) {
-			free(worker_args[i]->filename);
-		}
-
-	}
+	rewind(fh);
+	optimise_all(nthreads, det, sym, fh, config_basename, prefix);
 
 	fclose(fh);
-
-	STATUS("There were %i images.\n", n_images);
+	free(sym);
+	free(prefix);
 
 	return 0;
 }
