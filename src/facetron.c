@@ -366,12 +366,14 @@ int main(int argc, char *argv[])
 		{"prefix",             1, NULL,               'x'},
 		{"basename",           0, &config_basename,    1},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
+		{"symmetry",           1, NULL,               'y'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:g:x:j:",
-	                        longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hi:g:x:j:y:",
+	                        longopts, NULL)) != -1)
+	{
 
 		switch (c) {
 		case 'h' :
@@ -392,6 +394,10 @@ int main(int argc, char *argv[])
 
 		case 'j' :
 			nthreads = atoi(optarg);
+			break;
+
+		case 'y' :
+			sym = strdup(optarg);
 			break;
 
 		case 0 :
@@ -431,8 +437,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	free(geomfile);
-
-	sym = strdup("6/mmm");  /* FIXME: Should be on command line */
 
 	rewind(fh);
 	optimise_all(nthreads, det, sym, fh, config_basename, prefix);
