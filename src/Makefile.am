@@ -1,5 +1,6 @@
 bin_PROGRAMS = pattern_sim process_hkl get_hkl indexamajig compare_hkl \
-               powder_plot render_hkl calibrate_detector facetron cubeit
+               powder_plot render_hkl calibrate_detector facetron cubeit \
+               reintegrate
 
 if HAVE_GTK
 bin_PROGRAMS += hdfsee
@@ -63,5 +64,9 @@ facetron_LDADD = @LIBS@
 cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c diffraction.c \
                  sfac.c render.c filters.c image.c symmetry.c
 cubeit_LDADD = @LIBS@
+
+reintegrate_SOURCES = reintegrate.c cell.c hdf5-file.c utils.c detector.c \
+                      peaks.c image.c diffraction.c sfac.c geometry.c
+reintegrate_LDADD = @LIBS@
 
 INCLUDES = "-I$(top_srcdir)/data"
