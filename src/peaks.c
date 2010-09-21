@@ -451,7 +451,8 @@ void dump_peaks(struct image *image, pthread_mutex_t *mutex)
 }
 
 
-int find_projected_peaks(struct image *image, UnitCell *cell)
+int find_projected_peaks(struct image *image, UnitCell *cell,
+                         int circular_domain, double domain_r)
 {
 	int x, y;
 	double ax, ay, az;
@@ -459,11 +460,15 @@ int find_projected_peaks(struct image *image, UnitCell *cell)
 	double cx, cy, cz;
 	struct reflhit *hits;
 	int n_hits = 0;
+	double alen, blen, clen;
 
 	hits = malloc(sizeof(struct reflhit)*MAX_HITS);
 	if ( hits == NULL ) return 0;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	alen = modulus(ax, ay, az);
+	blen = modulus(bx, by, bz);
+	clen = modulus(cx, cy, cz);
 
 	fesetround(1);  /* Round towards nearest */
 	for ( x=0; x<image->width; x++ ) {
@@ -490,8 +495,17 @@ int find_projected_peaks(struct image *image, UnitCell *cell)
 		dh = hd - h;
 		dk = kd - k;
 		dl = ld - l;
-		dist = sqrt(pow(dh, 2.0) + pow(dk, 2.0) + pow(dl, 2.0));
-		if ( dist > 0.1 ) continue;
+
+		if ( circular_domain ) {
+			/* Circular integration domain */
+			dist = sqrt(pow(dh*alen, 2.0) + pow(dk*blen, 2.0)
+			                              + pow(dl*clen, 2.0));
+			if ( dist > domain_r ) continue;
+		} else {
+			/* "Crystallographic" integration domain */
+			dist = sqrt(pow(dh, 2.0) + pow(dk, 2.0) + pow(dl, 2.0));
+			if ( dist > domain_r ) continue;
+		}
 
 		for ( j=0; j<n_hits; j++ ) {
 			if ( (hits[j].h == h) && (hits[j].k == k)
@@ -530,12 +544,13 @@ int find_projected_peaks(struct image *image, UnitCell *cell)
 }
 
 
-int peak_sanity_check(struct image *image, UnitCell *cell)
+int peak_sanity_check(struct image *image, UnitCell *cell,
+                      int circular_domain, double domain_r)
 {
 	int i;
 	int n_sane = 0;
 
-	find_projected_peaks(image, cell);
+	find_projected_peaks(image, cell, circular_domain, domain_r);
 	if ( image->n_hits == 0 ) return 0;  /* Failed sanity check: no peaks */
 
 	for ( i=0; i<image->n_hits; i++ ) {
@@ -564,7 +579,7 @@ int peak_sanity_check(struct image *image, UnitCell *cell)
 
 void output_intensities(struct image *image, UnitCell *cell,
                         pthread_mutex_t *mutex, int polar, int sa,
-                        int use_closer)
+                        int use_closer, int circular_domain, double domain_r)
 {
 	int i;
 	int n_found;
@@ -577,7 +592,9 @@ void output_intensities(struct image *image, UnitCell *cell,
 	double csx, csy, csz;
 	double a, b, c, al, be, ga;
 
-	if ( image->n_hits == 0 ) find_projected_peaks(image, cell);
+	if ( image->n_hits == 0 ) {
+		find_projected_peaks(image, cell, circular_domain, domain_r);
+	}
 	if ( image->n_hits == 0 ) return;
 
 	/* Get exclusive access to the output stream if necessary */

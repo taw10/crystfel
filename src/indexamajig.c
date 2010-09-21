@@ -362,7 +362,7 @@ static struct process_result process_image(struct process_args *pargs)
 
 	/* Sanity check */
 	if ( pargs->config_sanity
-	  && !peak_sanity_check(&image, image.indexed_cell) ) {
+	  && !peak_sanity_check(&image, image.indexed_cell, 0, 0.1) ) {
 		STATUS("Failed peak sanity check.\n");
 		goto done;
 	} else {
@@ -373,7 +373,8 @@ static struct process_result process_image(struct process_args *pargs)
 	if ( config_nearbragg ) {
 		output_intensities(&image, image.indexed_cell,
 		                   pargs->output_mutex, config_polar,
-		                   pargs->config_sa, pargs->config_closer);
+		                   pargs->config_sa, pargs->config_closer,
+		                   0, 0.1);
 	}
 
 	simage = get_simage(&image, config_alternate);

@@ -103,7 +103,8 @@ static void process_image(struct process_args *pargs)
 
 	output_intensities(&image, pargs->cell,
 		                   pargs->output_mutex, 1,
-		                   1, 0);
+		                   1, 0,
+		                   0, 0.1);
 
 	free(image.data);
 	cell_free(pargs->cell);
