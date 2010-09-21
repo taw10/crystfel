@@ -465,10 +465,13 @@ int find_projected_peaks(struct image *image, UnitCell *cell,
 	hits = malloc(sizeof(struct reflhit)*MAX_HITS);
 	if ( hits == NULL ) return 0;
 
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	/* "Borrow" direction values to get reciprocal lengths */
+	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	alen = modulus(ax, ay, az);
 	blen = modulus(bx, by, bz);
 	clen = modulus(cx, cy, cz);
+
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
 	fesetround(1);  /* Round towards nearest */
 	for ( x=0; x<image->width; x++ ) {
