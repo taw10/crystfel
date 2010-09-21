@@ -519,7 +519,7 @@ int main(int argc, char *argv[])
 	FILE *fh;
 	double *model;
 	unsigned int *counts;
-	UnitCell *cell;
+	UnitCell *cell = NULL;
 	int config_maxonly = 0;
 	int config_startafter = 0;
 	int config_stopafter = 0;
@@ -791,7 +791,7 @@ int main(int argc, char *argv[])
 	free(model);
 	free(counts);
 	free(output);
-	cell_free(cell);
+	if ( cell != NULL ) cell_free(cell);
 
 	return 0;
 }
