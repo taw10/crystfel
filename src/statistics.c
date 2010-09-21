@@ -462,9 +462,6 @@ double stat_pearson_i(const double *ref1, const double *ref2,
 
 		vec1[i] = i1;
 		vec2[i] = i2;
-
-		printf("%f %f\n", i1, i2);
-
 	}
 
 	val = gsl_stats_correlation(vec1, 1, vec2, 1, i);
