@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
 		val1 = lookup_intensity(ref1, h, k, l);
 		val2 = lookup_intensity(ref2, he, ke, le);
 		sig1 = lookup_sigma(esd1, h, k, l);
-		sig2 = lookup_sigma(esd2, h, k, l);
+		sig2 = lookup_sigma(esd2, he, ke, le);
 
 		if ( val1 < 3.0 * sig1 ) {
 			rej1++;
