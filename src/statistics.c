@@ -444,6 +444,7 @@ double stat_pearson_i(const double *ref1, const double *ref2,
 	int i = 0;
 	int ni = num_items(items);
 	double val;
+	int nacc = 0;
 
 	vec1 = malloc(ni*sizeof(double));
 	vec2 = malloc(ni*sizeof(double));
@@ -460,11 +461,12 @@ double stat_pearson_i(const double *ref1, const double *ref2,
 		i1 = lookup_intensity(ref1, h, k, l);
 		i2 = lookup_intensity(ref2, h, k, l);
 
-		vec1[i] = i1;
-		vec2[i] = i2;
+		vec1[nacc] = i1;
+		vec2[nacc] = i2;
+		nacc++;
 	}
 
-	val = gsl_stats_correlation(vec1, 1, vec2, 1, i);
+	val = gsl_stats_correlation(vec1, 1, vec2, 1, nacc);
 	free(vec1);
 	free(vec2);
 
@@ -479,6 +481,7 @@ double stat_pearson_f_ignore(const double *ref1, const double *ref2,
 	int i = 0;
 	int ni = num_items(items);
 	double val;
+	int nacc = 0;
 
 	vec1 = malloc(ni*sizeof(double));
 	vec2 = malloc(ni*sizeof(double));
@@ -488,23 +491,31 @@ double stat_pearson_f_ignore(const double *ref1, const double *ref2,
 		double i1, i2, f1, f2;
 		struct refl_item *it;
 		signed int h, k, l;
+		int ig = 0;
 
 		it = get_item(items, i);
 		h = it->h;  k = it->k;  l = it->l;
 
 		i1 = lookup_intensity(ref1, h, k, l);
-		if ( i1 < 0.0 ) continue;
+		if ( i1 < 0.0 ) {
+			ig=1;
+		}
 		f1 = sqrt(i1);
 		i2 = lookup_intensity(ref2, h, k, l);
-		if ( i2 < 0.0 ) continue;
+		if ( i2 < 0.0 ) {
+			ig=1;
+		}
 		f2 = sqrt(i2);
 
-		vec1[i] = f1;
-		vec2[i] = f2;
+		if ( ig  ) continue;
+
+		vec1[nacc] = f1;
+		vec2[nacc] = f2;
+		nacc++;
 
 	}
 
-	val = gsl_stats_correlation(vec1, 1, vec2, 1, i);
+	val = gsl_stats_correlation(vec1, 1, vec2, 1, nacc);
 	free(vec1);
 	free(vec2);
 
@@ -519,6 +530,7 @@ double stat_pearson_f_zero(const double *ref1, const double *ref2,
 	int i = 0;
 	int ni = num_items(items);
 	double val;
+	int nacc = 0;
 
 	vec1 = malloc(ni*sizeof(double));
 	vec2 = malloc(ni*sizeof(double));
@@ -537,12 +549,13 @@ double stat_pearson_f_zero(const double *ref1, const double *ref2,
 		i2 = lookup_intensity(ref2, h, k, l);
 		f2 = i2 > 0.0 ? sqrt(i2) : 0.0;
 
-		vec1[i] = f1;
-		vec2[i] = f2;
+		vec1[nacc] = f1;
+		vec2[nacc] = f2;
+		nacc++;
 
 	}
 
-	val = gsl_stats_correlation(vec1, 1, vec2, 1, i);
+	val = gsl_stats_correlation(vec1, 1, vec2, 1, nacc);
 	free(vec1);
 	free(vec2);
 
