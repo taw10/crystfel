@@ -78,7 +78,7 @@ void write_reflections(const char *filename, ReflItemList *items,
 		}
 
 		if ( intensity > 0.0 ) {
-			sigma = sqrt(intensity);
+			sigma = 179.0 * sqrt(intensity/179.0);
 		} else {
 			sigma = 0.0;
 		}
@@ -88,6 +88,7 @@ void write_reflections(const char *filename, ReflItemList *items,
 		        h, k, l, intensity, ph, sigma, s/1.0e9, N);
 
 	}
+	STATUS("Warning: Errors are only remotely valid for 1/16 gain.\n");
 	fclose(fh);
 }
 
