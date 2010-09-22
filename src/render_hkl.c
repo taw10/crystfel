@@ -609,7 +609,7 @@ int main(int argc, char *argv[])
 	}
 	ref = new_list_intensity();
 	cts = new_list_count();
-	ReflItemList *items = read_reflections(infile, ref, NULL, cts);
+	ReflItemList *items = read_reflections(infile, ref, NULL, cts, NULL);
 	if ( ref == NULL ) {
 		ERROR("Couldn't open file '%s'\n", infile);
 		return 1;

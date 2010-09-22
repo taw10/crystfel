@@ -332,7 +332,8 @@ int main(int argc, char *argv[])
 		}
 		intensities = new_list_intensity();
 		phases = new_list_phase();
-		items = read_reflections(intfile, intensities, phases, NULL);
+		items = read_reflections(intfile, intensities, phases,
+		                         NULL, NULL);
 		free(intfile);
 		delete_items(items);
 	}

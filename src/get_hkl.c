@@ -238,7 +238,8 @@ int main(int argc, char *argv[])
 		                            phases, input_items);
 	} else {
 		ideal_ref = new_list_intensity();
-		input_items = read_reflections(input, ideal_ref, phases, NULL);
+		input_items = read_reflections(input, ideal_ref, phases,
+		                               NULL, NULL);
 		free(input);
 	}
 
@@ -275,7 +276,8 @@ int main(int argc, char *argv[])
 		/* Write out only reflections which are in the template
 		 * (and which we have in the input) */
 		ReflItemList *template_items;
-		template_items = read_reflections(template, NULL, NULL, NULL);
+		template_items = read_reflections(template,
+		                                  NULL, NULL, NULL, NULL);
 		write_items = intersection_items(input_items, template_items);
 		delete_items(template_items);
 	} else {

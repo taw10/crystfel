@@ -27,7 +27,7 @@ extern void write_reflections(const char *filename, ReflItemList *items,
 
 extern ReflItemList *read_reflections(const char *filename,
                                       double *intensities, double *phases,
-                                      unsigned int *counts);
+                                      unsigned int *counts, double *esds);
 
 extern double *ideal_intensities(double complex *sfac);
 

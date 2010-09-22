@@ -597,7 +597,8 @@ int main(int argc, char *argv[])
 
 	if ( intfile != NULL ) {
 		ReflItemList *items;
-		items = read_reflections(intfile, intensities, NULL, NULL);
+		items = read_reflections(intfile, intensities,
+		                         NULL, NULL, NULL);
 		delete_items(items);
 	} else {
 		intensities = NULL;

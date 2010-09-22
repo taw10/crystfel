@@ -696,7 +696,7 @@ int main(int argc, char *argv[])
 	if ( reference != NULL ) {
 		reference_i = new_list_intensity();
 		reference_items = read_reflections(reference, reference_i,
-		                                   NULL, NULL);
+		                                   NULL, NULL, NULL);
 		if ( reference_items == NULL ) {
 			ERROR("Couldn't read '%s'\n", reference);
 			return 1;

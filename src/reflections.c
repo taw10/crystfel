@@ -102,7 +102,7 @@ void write_reflections(const char *filename, ReflItemList *items,
  */
 ReflItemList *read_reflections(const char *filename,
                                double *intensities, double *phases,
-                               unsigned int *counts)
+                               unsigned int *counts, double *esds)
 {
 	FILE *fh;
 	char *rval;
@@ -162,6 +162,9 @@ ReflItemList *read_reflections(const char *filename,
 		}
 		if ( counts != NULL ) {
 			set_count(counts, h, k, l, cts);
+		}
+		if ( esds != NULL ) {
+			set_sigma(esds, h, k, l, sigma);
 		}
 
 	} while ( rval != NULL );

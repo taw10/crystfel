@@ -142,6 +142,10 @@ int main(int argc, char *argv[])
 	ReflItemList *i1, *i2, *icommon;
 	int config_luzzati = 0;
 	char *pdb = NULL;
+	double *esd1;
+	double *esd2;
+	int rej1 = 0;
+	int rej2 = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -202,13 +206,15 @@ int main(int argc, char *argv[])
 	free(pdb);
 
 	ref1 = new_list_intensity();
-	i1 = read_reflections(afile, ref1, NULL, NULL);
+	esd1 = new_list_sigma();
+	i1 = read_reflections(afile, ref1, NULL, NULL, esd1);
 	if ( i1 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", afile);
 		return 1;
 	}
 	ref2 = new_list_intensity();
-	i2 = read_reflections(bfile, ref2, NULL, NULL);
+	esd2 = new_list_sigma();
+	i2 = read_reflections(bfile, ref2, NULL, NULL, esd2);
 	if ( i2 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", bfile);
 		return 1;
@@ -226,6 +232,8 @@ int main(int argc, char *argv[])
 		signed int h, k, l;
 		signed int he, ke, le;
 		double val1, val2;
+		double sig1, sig2;
+		int ig = 0;
 
 		it = get_item(i1, i);
 		h = it->h;  k = it->k;  l = it->l;
@@ -238,12 +246,29 @@ int main(int argc, char *argv[])
 
 		val1 = lookup_intensity(ref1, h, k, l);
 		val2 = lookup_intensity(ref2, he, ke, le);
+		sig1 = lookup_sigma(esd1, h, k, l);
+		sig2 = lookup_sigma(esd2, h, k, l);
+
+		if ( val1 < 3.0 * sig1 ) {
+			rej1++;
+			ig = 1;
+		}
+		if ( val2 < 3.0 * sig2 ) {
+			rej2++;
+			ig = 1;
+		}
+		if ( ig ) continue;
+
 		set_intensity(ref2_transformed, h, k, l, val2);
 		set_intensity(out, h, k, l, val1/val2);
 		add_item(icommon, h, k, l);
 
 	}
 	ncom = num_items(icommon);
+	STATUS("%i reflections with I < 3.0*sigma(I) rejected from '%s'\n",
+	       rej1, afile);
+	STATUS("%i reflections with I < 3.0*sigma(I) rejected from '%s'\n",
+	       rej2, bfile);
 
 	STATUS("%i,%i reflections: %i in common\n",
 	       num_items(i1), num_items(i2), ncom);
