@@ -19,6 +19,7 @@
 #include "utils.h"
 #include "cell.h"
 #include "reflections.h"
+#include "parameters-lcls.tmp"
 
 
 void write_reflections(const char *filename, ReflItemList *items,
@@ -78,7 +79,7 @@ void write_reflections(const char *filename, ReflItemList *items,
 		}
 
 		if ( intensity > 0.0 ) {
-			sigma = 179.0 * sqrt(intensity/179.0);
+			sigma = DETECTOR_GAIN * sqrt(intensity/DETECTOR_GAIN);
 		} else {
 			sigma = 0.0;
 		}
@@ -88,7 +89,8 @@ void write_reflections(const char *filename, ReflItemList *items,
 		        h, k, l, intensity, ph, sigma, s/1.0e9, N);
 
 	}
-	STATUS("Warning: Errors are only remotely valid for 1/16 gain.\n");
+	STATUS("Warning: Errors have been estimated from Poisson distribution"
+	       " assuming %5.2f ADU per photon.\n", DETECTOR_GAIN);
 	fclose(fh);
 }
 
