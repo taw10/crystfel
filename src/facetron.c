@@ -27,6 +27,8 @@
 #include "utils.h"
 #include "hdf5-file.h"
 #include "symmetry.h"
+#include "reflections.h"
+#include "stream.h"
 
 
 #define MAX_THREADS (256)
@@ -58,6 +60,7 @@ static void show_help(const char *s)
 "\n"
 "  -i, --input=<filename>     Specify the name of the input 'stream'.\n"
 "                              (must be a file, not e.g. stdin)\n"
+"  -o, --output=<filename>    Output filename.  Default: facetron.hkl.\n"
 "  -g. --geometry=<file>      Get detector geometry from file.\n"
 "  -x, --prefix=<p>           Prefix filenames from input file with <p>.\n"
 "      --basename             Remove the directory parts of the filenames.\n"
@@ -87,24 +90,22 @@ static void process_image(struct process_args *pargs)
 	image.orientation.y = 0.0;
 	image.orientation.z = 0.0;
 
-	STATUS("Processing '%s'\n", pargs->filename);
+	//hdfile = hdfile_open(pargs->filename);
+	//if ( hdfile == NULL ) {
+	//	return;
+	//} else if ( hdfile_set_first_image(hdfile, "/") ) {
+	//	ERROR("Couldn't select path\n");
+	//	hdfile_close(hdfile);
+	//	return;
+	//}
 
-	hdfile = hdfile_open(pargs->filename);
-	if ( hdfile == NULL ) {
-		return;
-	} else if ( hdfile_set_first_image(hdfile, "/") ) {
-		ERROR("Couldn't select path\n");
-		hdfile_close(hdfile);
-		return;
-	}
-
-	hdf5_read(hdfile, &image, 1);
+	//hdf5_read(hdfile, &image, 1);
 
 
 	free(image.data);
 	cell_free(pargs->cell);
 	if ( image.flags != NULL ) free(image.flags);
-	hdfile_close(hdfile);
+	//hdfile_close(hdfile);
 }
 
 
@@ -142,83 +143,16 @@ static void *worker_thread(void *pargsv)
 }
 
 
-static UnitCell *read_orientation_matrix(FILE *fh)
-{
-	float u, v, w;
-	struct rvec as, bs, cs;
-	UnitCell *cell;
-	char line[1024];
-
-	if ( fgets(line, 1023, fh) == NULL ) return NULL;
-	if ( sscanf(line, "astar = %f %f %f", &u, &v, &w) != 3 ) {
-		ERROR("Couldn't read a-star\n");
-		return NULL;
-	}
-	as.u = u*1e9;  as.v = v*1e9;  as.w = w*1e9;
-	if ( fgets(line, 1023, fh) == NULL ) return NULL;
-	if ( sscanf(line, "bstar = %f %f %f", &u, &v, &w) != 3 ) {
-		ERROR("Couldn't read b-star\n");
-		return NULL;
-	}
-	bs.u = u*1e9;  bs.v = v*1e9;  bs.w = w*1e9;
-	if ( fgets(line, 1023, fh) == NULL ) return NULL;
-	if ( sscanf(line, "cstar = %f %f %f", &u, &v, &w) != 3 ) {
-		ERROR("Couldn't read c-star\n");
-		return NULL;
-	}
-	cs.u = u*1e9;  cs.v = v*1e9;  cs.w = w*1e9;
-	cell = cell_new_from_axes(as, bs, cs);
-
-	return cell;
-}
-
-
-static int find_chunk(FILE *fh, UnitCell **cell, char **filename)
-{
-	char line[1024];
-	char *rval = NULL;
-
-	do {
-
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
-
-		chomp(line);
-
-		if ( strncmp(line, "Reflections from indexing", 25) != 0 ) {
-			continue;
-		}
-
-		*filename = strdup(line+29);
-
-		/* Skip two lines (while checking for errors) */
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
-
-		*cell = read_orientation_matrix(fh);
-		if ( *cell == NULL ) {
-			STATUS("Got filename but no cell for %s\n", *filename);
-			continue;
-		}
-
-		return 0;
-
-	} while ( rval != NULL );
-
-	return 1;
-}
-
-
 static void optimise_all(int nthreads, struct detector *det, const char *sym,
-                         FILE *fh, int config_basename, const char *prefix)
+                         FILE *fh, int config_basename, const char *prefix,
+                         int n_total_patterns)
 {
 	pthread_t workers[MAX_THREADS];
 	struct process_args *worker_args[MAX_THREADS];
 	int worker_active[MAX_THREADS];
 	int i;
 	int rval;
+	int n_done = 0;
 
 	/* Initialise worker arguments */
 	for ( i=0; i<nthreads; i++ ) {
@@ -248,7 +182,7 @@ static void optimise_all(int nthreads, struct detector *det, const char *sym,
 		if ( rval == 1 ) break;
 		if ( config_basename ) {
 			char *tmp;
-			tmp = basename(filename);
+			tmp = strdup(basename(filename));
 			free(filename);
 			filename = tmp;
 		}
@@ -298,12 +232,15 @@ static void optimise_all(int nthreads, struct detector *det, const char *sym,
 			pthread_mutex_unlock(&pargs->control_mutex);
 			if ( !done ) continue;
 
+			n_done++;
+			progress_bar(n_done, n_total_patterns, "Refining");
+
 			/* Get the next filename */
 			rval = find_chunk(fh, &cell, &filename);
 			if ( rval == 1 ) break;
 			if ( config_basename ) {
 				char *tmp;
-				tmp = basename(filename);
+				tmp = strdup(basename(filename));
 				free(filename);
 				filename = tmp;
 			}
@@ -349,19 +286,25 @@ int main(int argc, char *argv[])
 {
 	int c;
 	char *infile = NULL;
+	char *outfile = NULL;
 	char *geomfile = NULL;
-	FILE *fh;
 	char *prefix = NULL;
+	char *sym = NULL;
+	FILE *fh;
 	int nthreads = 1;
 	int config_basename = 0;
 	int config_checkprefix = 1;
 	struct detector *det;
-	char *sym = NULL;
+	double *i_full;
+	ReflItemList *obs;
+	int i;
+	int n_total_patterns;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
+		{"output",             1, NULL,               'o'},
 		{"geometry",           1, NULL,               'g'},
 		{"prefix",             1, NULL,               'x'},
 		{"basename",           0, &config_basename,    1},
@@ -371,7 +314,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:g:x:j:y:",
+	while ((c = getopt_long(argc, argv, "hi:g:x:j:y:o:",
 	                        longopts, NULL)) != -1)
 	{
 
@@ -400,6 +343,10 @@ int main(int argc, char *argv[])
 			sym = strdup(optarg);
 			break;
 
+		case 'o' :
+			outfile = strdup(optarg);
+			break;
+
 		case 0 :
 			break;
 
@@ -409,6 +356,7 @@ int main(int argc, char *argv[])
 
 	}
 
+	/* Sanitise input filename and open */
 	if ( infile == NULL ) {
 		infile = strdup("-");
 	}
@@ -423,6 +371,12 @@ int main(int argc, char *argv[])
 	}
 	free(infile);
 
+	/* Sanitise output filename */
+	if ( outfile == NULL ) {
+		outfile = strdup("facetron.hkl");
+	}
+
+	/* Sanitise prefix */
 	if ( prefix == NULL ) {
 		prefix = strdup("");
 	} else {
@@ -431,6 +385,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	/* Get detector geometry */
 	det = get_detector_geometry(geomfile);
 	if ( det == NULL ) {
 		ERROR("Failed to read detector geometry from '%s'\n", geomfile);
@@ -438,12 +393,38 @@ int main(int argc, char *argv[])
 	}
 	free(geomfile);
 
-	rewind(fh);
-	optimise_all(nthreads, det, sym, fh, config_basename, prefix);
+	/* Prepare for iteration */
+	i_full = new_list_intensity();
+	obs = new_items();
 
+	n_total_patterns = count_patterns(fh);
+	STATUS("There are %i patterns to process\n", n_total_patterns);
+
+	/* Iterate */
+	for ( i=0; i<10; i++ ) {
+
+		STATUS("Post refinement iteration %i of 10\n", i+1);
+
+		/* Refine the geometry of all patterns to get the best fit */
+		rewind(fh);
+		optimise_all(nthreads, det, sym, fh, config_basename, prefix,
+		             n_total_patterns);
+
+		/* Re-estimate all the full intensities */
+
+
+	}
+
+	/* Output results */
+	write_reflections(outfile, obs, i_full, NULL, NULL, NULL);
+
+	/* Clean up */
+	free(i_full);
+	delete_items(obs);
 	fclose(fh);
 	free(sym);
 	free(prefix);
+	free(outfile);
 
 	return 0;
 }
