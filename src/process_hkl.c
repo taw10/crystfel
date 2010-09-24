@@ -26,6 +26,7 @@
 #include "sfac.h"
 #include "reflections.h"
 #include "symmetry.h"
+#include "stream.h"
 
 
 /* Number of divisions for intensity histograms */
@@ -532,26 +533,6 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 	*pobserved = observed;
 
 	STATUS("%i patterns had no f0 valid value.\n", n_nof0);
-}
-
-
-static int count_patterns(FILE *fh)
-{
-	char *rval;
-
-	int n_total_patterns = 0;
-	do {
-		char line[1024];
-
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
-		if ( (strncmp(line, "Reflections from indexing", 25) == 0)
-		    || (strncmp(line, "New pattern", 11) == 0) ) {
-		    n_total_patterns++;
-		}
-	} while ( rval != NULL );
-
-	return n_total_patterns;
 }
 
 

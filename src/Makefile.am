@@ -18,7 +18,7 @@ endif
 pattern_sim_LDADD = @LIBS@
 
 process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
-                      reflections.c symmetry.c
+                      reflections.c symmetry.c stream.c
 process_hkl_LDADD = @LIBS@
 
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
@@ -62,11 +62,11 @@ facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
 facetron_LDADD = @LIBS@
 
 cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c diffraction.c \
-                 sfac.c render.c filters.c image.c symmetry.c
+                 sfac.c render.c filters.c image.c symmetry.c stream.c
 cubeit_LDADD = @LIBS@
 
 reintegrate_SOURCES = reintegrate.c cell.c hdf5-file.c utils.c detector.c \
-                      peaks.c image.c diffraction.c sfac.c geometry.c
+                      peaks.c image.c diffraction.c sfac.c geometry.c stream.c
 reintegrate_LDADD = @LIBS@
 
 INCLUDES = "-I$(top_srcdir)/data"

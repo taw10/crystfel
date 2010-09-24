@@ -67,7 +67,8 @@ compare_hkl_DEPENDENCIES =
 am_cubeit_OBJECTS = cubeit.$(OBJEXT) cell.$(OBJEXT) \
 	hdf5-file.$(OBJEXT) utils.$(OBJEXT) detector.$(OBJEXT) \
 	diffraction.$(OBJEXT) sfac.$(OBJEXT) render.$(OBJEXT) \
-	filters.$(OBJEXT) image.$(OBJEXT) symmetry.$(OBJEXT)
+	filters.$(OBJEXT) image.$(OBJEXT) symmetry.$(OBJEXT) \
+	stream.$(OBJEXT)
 cubeit_OBJECTS = $(am_cubeit_OBJECTS)
 cubeit_DEPENDENCIES =
 am_facetron_OBJECTS = facetron.$(OBJEXT) cell.$(OBJEXT) \
@@ -118,13 +119,13 @@ powder_plot_OBJECTS = $(am_powder_plot_OBJECTS)
 powder_plot_DEPENDENCIES =
 am_process_hkl_OBJECTS = process_hkl.$(OBJEXT) sfac.$(OBJEXT) \
 	statistics.$(OBJEXT) cell.$(OBJEXT) utils.$(OBJEXT) \
-	reflections.$(OBJEXT) symmetry.$(OBJEXT)
+	reflections.$(OBJEXT) symmetry.$(OBJEXT) stream.$(OBJEXT)
 process_hkl_OBJECTS = $(am_process_hkl_OBJECTS)
 process_hkl_DEPENDENCIES =
 am_reintegrate_OBJECTS = reintegrate.$(OBJEXT) cell.$(OBJEXT) \
 	hdf5-file.$(OBJEXT) utils.$(OBJEXT) detector.$(OBJEXT) \
 	peaks.$(OBJEXT) image.$(OBJEXT) diffraction.$(OBJEXT) \
-	sfac.$(OBJEXT) geometry.$(OBJEXT)
+	sfac.$(OBJEXT) geometry.$(OBJEXT) stream.$(OBJEXT)
 reintegrate_OBJECTS = $(am_reintegrate_OBJECTS)
 reintegrate_DEPENDENCIES =
 am_render_hkl_OBJECTS = render_hkl.$(OBJEXT) cell.$(OBJEXT) \
@@ -265,7 +266,7 @@ pattern_sim_SOURCES = pattern_sim.c diffraction.c utils.c image.c \
 	$(am__append_2)
 pattern_sim_LDADD = @LIBS@
 process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
-                      reflections.c symmetry.c
+                      reflections.c symmetry.c stream.c
 
 process_hkl_LDADD = @LIBS@
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
@@ -301,11 +302,11 @@ facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
 
 facetron_LDADD = @LIBS@
 cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c diffraction.c \
-                 sfac.c render.c filters.c image.c symmetry.c
+                 sfac.c render.c filters.c image.c symmetry.c stream.c
 
 cubeit_LDADD = @LIBS@
 reintegrate_SOURCES = reintegrate.c cell.c hdf5-file.c utils.c detector.c \
-                      peaks.c image.c diffraction.c sfac.c geometry.c
+                      peaks.c image.c diffraction.c sfac.c geometry.c stream.c
 
 reintegrate_LDADD = @LIBS@
 INCLUDES = "-I$(top_srcdir)/data"
@@ -453,6 +454,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/render_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sfac.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/statistics.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symmetry.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/templates.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utils.Po@am__quote@
