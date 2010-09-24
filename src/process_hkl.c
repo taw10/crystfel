@@ -304,6 +304,13 @@ static void merge_pattern(double *model, ReflItemList *observed,
 }
 
 
+enum {
+	SCALE_NONE,
+	SCALE_CONSTINT,
+	SCALE_TWOPASS
+};
+
+
 static void scale_intensities(const double *model, ReflItemList *model_items,
                               double *new_pattern, ReflItemList *new_items,
                               double f0, int f0_valid, const char *sym)
@@ -312,6 +319,7 @@ static void scale_intensities(const double *model, ReflItemList *model_items,
 	double top = 0.0;
 	double bot = 0.0;
 	unsigned int i;
+	const int scaling = SCALE_CONSTINT;
 
 	for ( i=0; i<num_items(new_items); i++ ) {
 
@@ -322,20 +330,43 @@ static void scale_intensities(const double *model, ReflItemList *model_items,
 		/* Get the next item in the list of new reflections */
 		it = get_item(new_items, i);
 
-		/* Find the (only) partner in the model */
-		find_unique_equiv(model_items, it->h, it->k, it->l, sym,
-		                  &hu, &ku, &lu);
+		switch ( scaling ) {
+		case SCALE_TWOPASS :
 
-		i1 = lookup_intensity(model, hu, ku, lu);
-		i2 = lookup_intensity(new_pattern, it->h, it->k, it->l);
+			/* Find the (only) partner in the model */
+			find_unique_equiv(model_items, it->h, it->k, it->l, sym,
+				          &hu, &ku, &lu);
 
-		top += i1 * i2;
-		bot += i2 * i2;
+			i1 = lookup_intensity(model, hu, ku, lu);
+			i2 = lookup_intensity(new_pattern, it->h, it->k, it->l);
+
+			/* Calculate LSQ estimate of scaling factor */
+			top += i1 * i2;
+			bot += i2 * i2;
+
+			break;
+
+		case SCALE_CONSTINT :
+
+			/* Sum up the intensity in the pattern */
+			i2 = lookup_intensity(new_pattern, it->h, it->k, it->l);
+			top += i2;
+
+			break;
+
+		}
 
 	}
 
-	s = top / bot;
-	if ( f0_valid ) printf("%f %f\n", s, f0);
+	switch ( scaling ) {
+	case SCALE_TWOPASS :
+		s = top / bot;
+		break;
+	case SCALE_CONSTINT :
+		s = 1000.0 / top;
+		break;
+	}
+	//if ( f0_valid ) printf("%f %f\n", s, f0);
 
 	/* Multiply the new pattern up by "s" */
 	for ( i=0; i<LIST_SIZE; i++ ) {
