@@ -1,0 +1,40 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+open(FH, $ARGV[0]);
+
+printf("!FORMAT=XDS_ASCII   MERGE=TRUE   FRIEDEL'S_LAW=TRUE\n");
+printf("!SPACE_GROUP_NUMBER=182\n");
+printf("!UNIT_CELL_CONSTANTS=      281.00    281.00   165.00 90.000 90.000    120.000\n");
+printf("!NUMBER_OF_ITEMS_IN_EACH_DATA_RECORD=5\n");
+printf("!X-RAY_WAVELENGTH= -1.0\n");
+printf("!ITEM_H=1\n");
+printf("!ITEM_K=2\n");
+printf("!ITEM_L=3\n");
+printf("!ITEM_IOBS=4\n");
+printf("!ITEM_SIGMA(IOBS)=5\n");
+printf("!END_OF_HEADER\n");
+
+my $line;
+while ( $line = <FH> ) {
+
+	chomp($line);
+
+	if ( $line =~ /^\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9\.\-]+)/ ) {
+
+		my $h = $1;
+		my $k = $2;
+		my $l = $3;
+		my $int = $4;
+
+		my $err = 179.0 * sqrt(abs($int)/179.0);
+
+		printf("%6i %6i %5i %9.2f %9.2f\n", $h, $k, $l, $int, $err);
+	}
+
+}
+
+printf("!END_OF_DATA");
+
+close(FH);
