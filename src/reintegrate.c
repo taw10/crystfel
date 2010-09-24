@@ -254,7 +254,7 @@ static void integrate_all(int nthreads, struct detector *det, FILE *fh,
 		if ( rval == 1 ) break;
 		if ( config_basename ) {
 			char *tmp;
-			tmp = basename(filename);
+			tmp = strdup(basename(filename));
 			free(filename);
 			filename = tmp;
 		}
@@ -309,7 +309,7 @@ static void integrate_all(int nthreads, struct detector *det, FILE *fh,
 			if ( rval == 1 ) break;
 			if ( config_basename ) {
 				char *tmp;
-				tmp = basename(filename);
+				tmp = strdup(basename(filename));
 				free(filename);
 				filename = tmp;
 			}

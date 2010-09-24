@@ -629,7 +629,7 @@ int main(int argc, char *argv[])
 		add_to_mean(cell, &as, &bs, &cs, &als, &bes, &gas);
 		if ( config_basename ) {
 			char *tmp;
-			tmp = basename(filename);
+			tmp = strdup(basename(filename));
 			free(filename);
 			filename = tmp;
 		}
@@ -687,7 +687,7 @@ int main(int argc, char *argv[])
 			add_to_mean(cell, &as, &bs, &cs, &als, &bes, &gas);
 			if ( config_basename ) {
 				char *tmp;
-				tmp = basename(filename);
+				tmp = strdup(basename(filename));
 				free(filename);
 				filename = tmp;
 			}
