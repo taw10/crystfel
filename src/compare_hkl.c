@@ -28,7 +28,7 @@
 #include "symmetry.h"
 
 
-/* Number of bins for Luzzati plot */
+/* Number of bins for plot of resolution shells */
 #define NBINS (10)
 
 
@@ -42,12 +42,13 @@ static void show_help(const char *s)
 "  -o, --output=<filename>    Specify output filename for correction factor.\n"
 "  -y, --symmetry=<sym>       The symmetry of both the input files.\n"
 "  -p, --pdb=<filename>       PDB file to use (default: molecule.pdb).\n"
+"      --shells               Plot the figures of merit by resolution.\n"
 "\n");
 }
 
 
-static void plot_luzzati(const double *ref1, const double *ref2,
-                         ReflItemList *items, double scale, UnitCell *cell)
+static void plot_shells(const double *ref1, const double *ref2,
+                        ReflItemList *items, double scale, UnitCell *cell)
 {
 	double num[NBINS];
 	double den[NBINS];
@@ -56,13 +57,13 @@ static void plot_luzzati(const double *ref1, const double *ref2,
 	FILE *fh;
 
 	if ( cell == NULL ) {
-		ERROR("Need the unit cell to plot the Luzzati plot.\n");
+		ERROR("Need the unit cell to plot resolution shells.\n");
 		return;
 	}
 
-	fh = fopen("luzzati.dat", "w");
+	fh = fopen("shells.dat", "w");
 	if ( fh == NULL ) {
-		ERROR("Couldn't open 'luzzati.dat'\n");
+		ERROR("Couldn't open 'shells.dat'\n");
 		return;
 	}
 
@@ -140,7 +141,7 @@ int main(int argc, char *argv[])
 	double scale, scale_r2, R1, R2, R1i, Rdiff, pearson;
 	int i, ncom;
 	ReflItemList *i1, *i2, *icommon;
-	int config_luzzati = 0;
+	int config_shells = 0;
 	char *pdb = NULL;
 	double *esd1;
 	double *esd2;
@@ -152,7 +153,7 @@ int main(int argc, char *argv[])
 		{"help",               0, NULL,               'h'},
 		{"output",             1, NULL,               'o'},
 		{"symmetry",           1, NULL,               'y'},
-		{"luzzati",            0, &config_luzzati,     1},
+		{"shells",             0, &config_shells,     1},
 		{"pdb",                1, NULL,               'p'},
 		{0, 0, NULL, 0}
 	};
@@ -306,8 +307,8 @@ int main(int argc, char *argv[])
 	STATUS("Pearson r(F) = %5.4f (zeroing negative intensities)\n",
 	       pearson);
 
-	if ( config_luzzati ) {
-		plot_luzzati(ref1, ref2_transformed, icommon, scale_r2, cell);
+	if ( config_shells ) {
+		plot_shells(ref1, ref2_transformed, icommon, scale_r2, cell);
 	}
 
 	if ( outfile != NULL ) {
