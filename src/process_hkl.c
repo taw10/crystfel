@@ -307,7 +307,8 @@ static void merge_pattern(double *model, ReflItemList *observed,
 enum {
 	SCALE_NONE,
 	SCALE_CONSTINT,
-	SCALE_TWOPASS
+	SCALE_INTPERBRAGG,
+	SCALE_TWOPASS,
 };
 
 
@@ -319,7 +320,7 @@ static void scale_intensities(const double *model, ReflItemList *model_items,
 	double top = 0.0;
 	double bot = 0.0;
 	unsigned int i;
-	const int scaling = SCALE_CONSTINT;
+	const int scaling = SCALE_INTPERBRAGG;
 
 	for ( i=0; i<num_items(new_items); i++ ) {
 
@@ -354,6 +355,15 @@ static void scale_intensities(const double *model, ReflItemList *model_items,
 
 			break;
 
+		case SCALE_INTPERBRAGG :
+
+			/* Sum up the intensity in the pattern */
+			i2 = lookup_intensity(new_pattern, it->h, it->k, it->l);
+			top += i2;
+			bot += 1.0;
+
+			break;
+
 		}
 
 	}
@@ -364,6 +374,9 @@ static void scale_intensities(const double *model, ReflItemList *model_items,
 		break;
 	case SCALE_CONSTINT :
 		s = 1000.0 / top;
+		break;
+	case SCALE_INTPERBRAGG :
+		s = 1000.0 / (top/bot);
 		break;
 	}
 	//if ( f0_valid ) printf("%f %f\n", s, f0);
