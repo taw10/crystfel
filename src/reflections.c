@@ -55,7 +55,7 @@ void write_reflections(const char *filename, ReflItemList *items,
 		double intensity, s, sigma;
 		char ph[32];
 
-		if ( counts ) {
+		if ( counts != NULL ) {
 			N = lookup_count(counts, h, k, l);
 		} else {
 			N = 1;
