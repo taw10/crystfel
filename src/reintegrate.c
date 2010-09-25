@@ -47,6 +47,12 @@ struct process_args
 	UnitCell *cell;
 	struct detector *det;
 	pthread_mutex_t *output_mutex;  /* Protects 'stdout' */
+	int config_cmfilter;
+	int config_polar;
+	int config_satcorr;
+	int config_sa;
+	int config_closer;
+	int config_sanity;
 };
 
 
@@ -56,15 +62,28 @@ static void show_help(const char *s)
 	printf(
 "Like 'indexamajig', but skip the indexing step.\n"
 "\n"
-"  -h, --help                 Display this help message.\n"
+"  -h, --help               Display this help message.\n"
 "\n"
-"  -i, --input=<filename>     Specify the name of the input 'stream'.\n"
-"                              (must be a file, not e.g. stdin)\n"
-"  -g. --geometry=<file>      Get detector geometry from file.\n"
-"  -x, --prefix=<p>           Prefix filenames from input file with <p>.\n"
-"      --basename             Remove the directory parts of the filenames.\n"
-"      --no-check-prefix      Don't attempt to correct the --prefix.\n"
-"  -j <n>                     Run <n> analyses in parallel.\n");
+"  -i, --input=<filename>   Specify the name of the input 'stream'.\n"
+"                            (must be a file, not e.g. stdin)\n"
+"  -g. --geometry=<file>    Get detector geometry from file.\n"
+"  -x, --prefix=<p>         Prefix filenames from input file with <p>.\n"
+"      --basename           Remove the directory parts of the filenames.\n"
+"      --no-check-prefix    Don't attempt to correct the --prefix.\n"
+"      --check-sanity       Check that indexed locations approximately correspond\n"
+"                            with detected peaks.\n"
+"      --filter-cm          Perform common-mode noise subtraction on images\n"
+"                            before proceeding.  Intensities will be extracted\n"
+"                            from the image as it is after this processing.\n"
+"      --unpolarized        Don't correct for the polarisation of the X-rays.\n"
+"      --sat-corr           Correct values of saturated peaks using a table\n"
+"                            included in the HDF5 file.\n"
+"      --no-sa              Don't correct for the differing solid angles of\n"
+"                            the pixels.\n"
+"      --no-closer-peak     Don't integrate from the location of a nearby peak\n"
+"                            instead of the position closest to the reciprocal\n"
+"                            lattice point.\n"
+"  -j <n>                   Run <n> analyses in parallel.\n");
 }
 
 
@@ -100,12 +119,21 @@ static void process_image(struct process_args *pargs)
 		return;
 	}
 
-	hdf5_read(hdfile, &image, 1);
+	hdf5_read(hdfile, &image, pargs->config_satcorr);
 
-	output_intensities(&image, pargs->cell,
-		                   pargs->output_mutex, 1,
-		                   1, 0,
+	/* Sanity check */
+	if ( pargs->config_sanity
+	  && !peak_sanity_check(&image, image.indexed_cell, 0, 0.1) ) {
+
+		STATUS("Failed peak sanity check.\n");
+
+	} else {
+
+		output_intensities(&image, pargs->cell,
+		                   pargs->output_mutex, pargs->config_polar,
+		                   pargs->config_sa, pargs->config_closer,
 		                   0, 0.1);
+	}
 
 	free(image.data);
 	cell_free(pargs->cell);
@@ -149,7 +177,10 @@ static void *worker_thread(void *pargsv)
 
 
 static void integrate_all(int nthreads, struct detector *det, FILE *fh,
-                          int config_basename, const char *prefix)
+                          int config_basename, const char *prefix,
+                          int config_cmfilter, int config_polar,
+                          int config_satcorr, int config_sa, int config_closer,
+                          int config_sanity)
 {
 	pthread_t workers[MAX_THREADS];
 	struct process_args *worker_args[MAX_THREADS];
@@ -165,6 +196,12 @@ static void integrate_all(int nthreads, struct detector *det, FILE *fh,
 		worker_args[i]->filename = malloc(1024);
 		worker_active[i] = 0;
 		worker_args[i]->det = det;
+		worker_args[i]->config_cmfilter = config_cmfilter;
+		worker_args[i]->config_polar = config_polar;
+		worker_args[i]->config_sanity = config_sanity;
+		worker_args[i]->config_satcorr = config_satcorr;
+		worker_args[i]->config_sa = config_sa;
+		worker_args[i]->config_closer = config_closer;
 		pthread_mutex_init(&worker_args[i]->control_mutex, NULL);
 		worker_args[i]->output_mutex = &output_mutex;
 
@@ -293,6 +330,12 @@ int main(int argc, char *argv[])
 	int nthreads = 1;
 	int config_basename = 0;
 	int config_checkprefix = 1;
+	int config_closer = 1;
+	int config_polar = 1;
+	int config_sanity = 0;
+	int config_satcorr = 0;
+	int config_sa = 1;
+	int config_cmfilter = 0;
 	struct detector *det;
 
 	/* Long options */
@@ -303,6 +346,12 @@ int main(int argc, char *argv[])
 		{"prefix",             1, NULL,               'x'},
 		{"basename",           0, &config_basename,    1},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
+		{"no-closer-peak",     0, &config_closer,      0},
+		{"unpolarized",        0, &config_polar,       0},
+		{"check-sanity",       0, &config_sanity,      1},
+		{"sat-corr",           0, &config_satcorr,     1},
+		{"no-sa",              0, &config_sa,          0},
+		{"filter-cm",          0, &config_cmfilter,    1},
 		{0, 0, NULL, 0}
 	};
 
@@ -371,7 +420,9 @@ int main(int argc, char *argv[])
 	free(geomfile);
 
 	rewind(fh);
-	integrate_all(nthreads, det, fh, config_basename, prefix);
+	integrate_all(nthreads, det, fh, config_basename, prefix,
+	              config_cmfilter, config_polar, config_satcorr, config_sa,
+	              config_closer, config_sanity);
 
 	fclose(fh);
 	free(prefix);
