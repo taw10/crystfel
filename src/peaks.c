@@ -203,12 +203,10 @@ int integrate_peak(struct image *image, int xp, int yp,
 
 		val = image->data[(x+xp)+image->width*(y+yp)];
 
-		if ( do_sa || do_polar ) {
+		p = find_panel(image->det, x+xp, y+yp);
+		if ( p == NULL ) return 1;
 
-			p = find_panel(image->det, x+xp, y+yp);
-			if ( p == NULL ) return 1;
-
-		}
+		if ( p->no_index ) return 1;
 
 		if ( do_sa ) {
 
