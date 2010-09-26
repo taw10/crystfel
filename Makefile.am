@@ -11,4 +11,4 @@ EXTRA_DIST = configure src/cell.h src/hdf5-file.h src/image.h \
              data/sfac/Mg.nff data/sfac/N.nff data/sfac/O.nff data/sfac/P.nff \
              data/sfac/S.nff data/sfac/f0_WaasKirf.dat src/render_hkl.h \
              src/stream.h
-SUBDIRS = src data doc scripts
+SUBDIRS = src data doc doc/examples scripts

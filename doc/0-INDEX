@@ -1,0 +1,19 @@
+Index to the CrystFEL documentation
+-----------------------------------
+
+indexamajig.txt
+pattern_sim.txt
+process_hkl.txt
+	Information about the individual programs and their use.
+
+geometry.txt
+	Information about detector geometry description files.
+
+twin-calculator.pdf
+	Symmetry tables (in two formats).
+
+symmetry.txt
+	How CrystFEL uses symmetry.
+
+examples/
+	Contains example geometry files.

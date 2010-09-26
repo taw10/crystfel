@@ -1,0 +1,3 @@
+This director contains useful scripts to enhance the use of CrystFEL.  You are
+supposed to copy them to your working directory, edit them and make them
+executable (chmod +x).

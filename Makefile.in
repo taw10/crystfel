@@ -146,6 +146,7 @@ PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
 PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
+PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
@@ -209,7 +210,7 @@ EXTRA_DIST = configure src/cell.h src/hdf5-file.h src/image.h \
              data/sfac/S.nff data/sfac/f0_WaasKirf.dat src/render_hkl.h \
              src/stream.h
 
-SUBDIRS = src data doc scripts
+SUBDIRS = src data doc doc/examples scripts
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 

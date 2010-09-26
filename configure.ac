@@ -157,3 +157,4 @@ LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
 LIBS="$LIBS $LIBTIFF_LIBS $LIBPNG_LIBS"
 
 AC_OUTPUT(Makefile src/Makefile data/Makefile doc/Makefile scripts/Makefile)
+AC_OUTPUT(doc/examples/Makefile)

@@ -4,3 +4,51 @@ process_hkl - data scaling and merging program
 This program takes as input the data stream from "indexamajig".  It merges the
 many individual intensities together to form a single list of reflection
 intensities which are useful for crystallography.
+
+Typical usage is of the form:
+
+$ process_hkl -i mypatterns.stream -o mydata.hkl -y mypointgroup
+
+
+How to choose the point group
+-----------------------------
+
+One of the main features of serial crystallography is that the orientations of
+individual crystals are random.  That means that the orientation of each
+crystal must be determined independently, with no information about its
+relationship to the orientation of crystals in other patterns (as would be the
+case for a rotation series of patterns).
+
+The orientation of a crystal can be determined from the diffraction pattern only
+within certain limits.  For example, it is never possible, by geometry alone, to
+distinguish between a diffraction pattern and its inverse, e.g. to tell the
+[001] zone axis from [00-1].  That means that it is impossible to tell the
+difference between a reflection and its Friedel opposite.  If Friedel's Law is
+not strictly observed, as is the case for data showing anomalous effects, and if
+we wish to measure the anomalous differences, then another way to distinguish
+the orientations apart must be determined.
+
+So far, there is no such method which works reliably.  You will need to take
+this into account when deciding how to merge the data.
+
+Because of the above, the use of symmetry in serial crystallography is
+"backwards" with respect to the method in conventional crystallography.  If you
+are not interested in distinguishing between any of the possible ambiguities,
+then you would just treat ambiguous reflections as equivalent and merge them
+together in a high-symmetry point group.  If you needed to distinguish between
+them, then you would merge into a lower symmetry.
+
+Having first determined the point group for the structure under examination,
+decide whether or not you need to tell Friedel opposites (Bijvoet pairs) apart.
+If not, merge according to the Laue class corresponding to the point group.  The
+Laue class is just the point group after introducing a centre of symmetry.  The
+point group is equivalent to the Laue class if the structure is centrosymmetric.
+
+Some Laue classes are merohedral.  This means that the orientation will have an
+additional ambiguity, but this time more serious.  The two (or more) possible
+orientations could be called "twins", but the mechanism of their formation is
+somewhat different to the conventional use of the term.  In these cases, you
+will need to merge according to the corresponding holohedral Laue class.
+
+The document twin-calculator.pdf contains more detailed information about this
+issue, as well as tables which contain all the required information.

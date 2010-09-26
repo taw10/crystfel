@@ -1,19 +1,22 @@
 How CrystFEL handles symmetry
 -----------------------------
 
-Currently, only process_hkl and render_hkl understand symmetry (and render_hkl
-only understands it when plotting a zone axis pattern).
+Most programs in CrystFEL understand point group symmetry.  The exception is
+"get_hkl", which you can read about below.  You give the point group following
+the "-y" option to the programs.
+
+Please read doc/process_hkl for important information on how symmetry is used
+during the indexing and merging procedures.
 
 Symmetry definitions are included in src/symmetry.c.  Point group definitions
 are required for merging and the display of merged results, but space groups are
 not taken into account since merging does not care about systematic absences -
-as far as process_hkl is concerned, systematic absences are just measurements
+as far as CrystFEL is concerned, systematic absences are just measurements
 which happen to have values of zero.  Each space group belongs to exactly one
 point group, which you can look up in the International Tables for X-Ray
-Crystallography.
-
-Please read doc/process_hkl for important information on how symmetry is used
-during the indexing and merging procedures.
+Crystallography.  Alternatively, "twin-calculator.pdf" in the same directory as
+this file lists all the space groups according to point group, Laue class and
+holohedry.
 
 
 Adding a new point group
