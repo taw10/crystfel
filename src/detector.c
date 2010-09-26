@@ -25,7 +25,7 @@
 int atob(const char *a)
 {
 	if ( strcasecmp(a, "true") == 0 ) return 1;
-	if ( strcasecmp(a, "false") == 0 ) return 1;
+	if ( strcasecmp(a, "false") == 0 ) return 0;
 	return atoi(a);
 }
 
