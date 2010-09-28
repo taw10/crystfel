@@ -549,30 +549,69 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
                       int circular_domain, double domain_r)
 {
 	int i;
+	int n_feat = 0;
 	int n_sane = 0;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	double alen, blen, clen;
 
 	find_projected_peaks(image, cell, circular_domain, domain_r);
 	if ( image->n_hits == 0 ) return 0;  /* Failed sanity check: no peaks */
 
-	for ( i=0; i<image->n_hits; i++ ) {
+	/* "Borrow" direction values to get reciprocal lengths */
+	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	alen = modulus(ax, ay, az);
+	blen = modulus(bx, by, bz);
+	clen = modulus(cx, cy, cz);
 
-		double d;
-		int idx;
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+
+	fesetround(1);  /* Round towards nearest */
+	n_feat = image_feature_count(image->features);
+	for ( i=0; i<n_feat; i++ ) {
+
+		double dist;
+		struct rvec q;
 		struct imagefeature *f;
+		double hd, kd, ld;
+		signed int h, k, l;
+		double dh, dk, dl;
 
-		f = image_feature_closest(image->features,
-                                          image->hits[i].x, image->hits[i].y,
-		                          &d, &idx);
-		if ( (f != NULL) && (d < PEAK_CLOSE) ) {
-			n_sane++;
+		f = image_get_feature(image->features, i);
+
+		/* Get closest hkl */
+		q = get_q(image, f->x, f->y, 1, NULL, 1.0/image->lambda);
+
+		hd = q.u * ax + q.v * ay + q.w * az;
+		kd = q.u * bx + q.v * by + q.w * bz;
+		ld = q.u * cx + q.v * cy + q.w * cz;
+
+		h = lrint(hd);  k = lrint(kd);  l = lrint(ld);
+
+		dh = hd - h;  dk = kd - k;  dl = ld - l;
+
+		if ( circular_domain ) {
+
+			/* Circular integration domain */
+			dist = sqrt(pow(dh*alen, 2.0) + pow(dk*blen, 2.0)
+			                              + pow(dl*clen, 2.0));
+			if ( dist <= domain_r ) n_sane++;
+
+		} else {
+
+			/* "Crystallographic" integration domain */
+			dist = sqrt(pow(dh, 2.0) + pow(dk, 2.0) + pow(dl, 2.0));
+			if ( dist <= domain_r ) n_sane++;
 		}
+
+
 
 	}
 
-	STATUS("Sanity factor: %f / %f = %f\n", (float)n_sane,
-	                                  (float)image->n_hits,
-                                          (float)n_sane / (float)image->n_hits);
-	if ( (float)n_sane / (float)image->n_hits < 0.8 ) return 0;
+	STATUS("Sanity factor: %f / %f = %f\n", (float)n_sane, (float)n_feat,
+                                                (float)n_sane / (float)n_feat);
+	if ( (float)n_sane / (float)n_feat < 0.8 ) return 0;
 
 	return 1;
 }

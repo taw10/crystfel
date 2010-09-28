@@ -35,6 +35,8 @@ extern IndexingPrivate *prepare_indexing(IndexingMethod indm, UnitCell *cell,
                                          const char *filename,
                                          struct detector *det);
 
+extern void map_all_peaks(struct image *image);
+
 extern void index_pattern(struct image *image, UnitCell *cell,
                           IndexingMethod indm, int no_match, int verbose,
                           IndexingPrivate *priv);

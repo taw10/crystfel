@@ -99,8 +99,7 @@ static void write_drx(struct image *image)
 }
 
 
-void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
-                   int no_match, int verbose, IndexingPrivate *ipriv)
+void map_all_peaks(struct image *image)
 {
 	int i;
 	int nc = 0;
@@ -121,7 +120,15 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
 	if ( nc ) {
 		ERROR("Failed to map %i reflections\n", nc);
 	}
+}
 
+
+void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
+                   int no_match, int verbose, IndexingPrivate *ipriv)
+{
+	int i;
+
+	map_all_peaks(image);
 	write_drx(image);
 
 	image->ncells = 0;

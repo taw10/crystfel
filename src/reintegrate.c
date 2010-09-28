@@ -29,6 +29,7 @@
 #include "symmetry.h"
 #include "peaks.h"
 #include "stream.h"
+#include "index.h"
 
 
 #define MAX_THREADS (256)
@@ -121,9 +122,11 @@ static void process_image(struct process_args *pargs)
 
 	hdf5_read(hdfile, &image, pargs->config_satcorr);
 
+	map_all_peaks(&image);
+
 	/* Sanity check */
 	if ( pargs->config_sanity
-	  && !peak_sanity_check(&image, image.indexed_cell, 0, 0.1) ) {
+	  && !peak_sanity_check(&image, image.indexed_cell, 1, 0.006e9) ) {
 
 		STATUS("Failed peak sanity check.\n");
 
