@@ -78,14 +78,14 @@ static void plot_shells(const double *ref1, const double *ref2,
 
 		struct refl_item *it;
 		signed int h, k, l;
-		double res;
+		double d;
 
 		it = get_item(items, i);
 		h = it->h;  k = it->k;  l = it->l;
 
-		res = 2.0*resolution(cell, h, k, l);
-		if ( res > rmax ) rmax = res;
-		if ( res < rmin ) rmin = res;
+		d = 0.5/resolution(cell, h, k, l);
+		if ( d > rmax ) rmax = d;
+		if ( d < rmin ) rmin = d;
 
 	}
 	rstep = (rmax-rmin) / NBINS;
@@ -94,22 +94,26 @@ static void plot_shells(const double *ref1, const double *ref2,
 
 		struct refl_item *it;
 		signed int h, k, l;
-		double res;
+		double d;
 		int bin;
-		double i1, i2;
+		double i1, i2, f1, f2;
 
 		it = get_item(items, i);
 		h = it->h;  k = it->k;  l = it->l;
 
-		res = 2.0*resolution(cell, h, k, l);
+		d = 0.5/resolution(cell, h, k, l);
 
-		bin = (res-rmin)/rstep;
+		bin = (d-rmin)/rstep;
 
 		i1 = lookup_intensity(ref1, h, k, l);
-		i2 = scale * lookup_intensity(ref2, h, k, l);
+		if ( i1 < 0.0 ) continue;
+		f1 = sqrt(i1);
+		i2 = lookup_intensity(ref2, h, k, l);
+		if ( i2 < 0.0 ) continue;
+		f2 = sqrt(i2);
 
-		num[bin] += pow(i1 - i2, 2.0);
-		den[bin] += pow(i1, 2.0);
+		num[bin] += fabs(f1 - f2);
+		den[bin] += fabs(f1 + f2) / 2.0;
 
 	}
 
@@ -117,8 +121,8 @@ static void plot_shells(const double *ref1, const double *ref2,
 
 		double r2, cen;
 		cen = rmin + rstep*i + rstep/2.0;
-		r2 = sqrt(num[i]/den[i]);
-		fprintf(fh, "%f %f\n", cen/1.0e9, r2*100.0);
+		r2 = num[i]/den[i];
+		fprintf(fh, "%f %f\n", cen/1.0e-10, r2*100.0);
 
 	}
 
@@ -235,6 +239,7 @@ int main(int argc, char *argv[])
 		double val1, val2;
 		double sig1, sig2;
 		int ig = 0;
+		double d;
 
 		it = get_item(i1, i);
 		h = it->h;  k = it->k;  l = it->l;
@@ -258,6 +263,11 @@ int main(int argc, char *argv[])
 			rej2++;
 			ig = 1;
 		}
+
+		d = 0.5/resolution(cell, h, k, l);
+		if ( d > 55.0e-10 ) ig = 1;
+		//if ( d < 15.0e-10 ) ig = 1;
+
 		if ( ig ) continue;
 
 		set_intensity(ref2_transformed, h, k, l, val2);
