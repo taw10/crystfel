@@ -45,6 +45,11 @@ struct detector
 extern int map_position(struct image *image, double x, double y,
                         double *rx, double *ry, double *rz);
 
+extern struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
+                         unsigned int sampling, float *ttp, float k);
+
+extern double get_tt(struct image *image, unsigned int xs, unsigned int ys);
+
 extern void record_image(struct image *image, int do_poisson);
 
 extern struct panel *find_panel(struct detector *det, int x, int y);

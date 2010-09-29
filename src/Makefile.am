@@ -53,22 +53,20 @@ render_hkl_SOURCES = render_hkl.c cell.c reflections.c utils.c povray.c \
 render_hkl_LDADD = @LIBS@
 
 calibrate_detector_SOURCES = calibrate_detector.c utils.c hdf5-file.c image.c \
-                             filters.c peaks.c detector.c cell.c diffraction.c \
-                             sfac.c
+                             filters.c peaks.c detector.c cell.c
 calibrate_detector_LDADD = @LIBS@
 
 facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
-                   image.c diffraction.c sfac.c geometry.c reflections.c \
-                   stream.c
+                   image.c geometry.c reflections.c stream.c
 facetron_LDADD = @LIBS@
 
-cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c diffraction.c \
-                 sfac.c render.c filters.c image.c symmetry.c stream.c
+cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c render.c \
+                 filters.c image.c symmetry.c stream.c
 cubeit_LDADD = @LIBS@
 
 reintegrate_SOURCES = reintegrate.c cell.c hdf5-file.c utils.c detector.c \
-                      peaks.c image.c diffraction.c sfac.c geometry.c stream.c \
-                      index.c dirax.c templates.c symmetry.c
+                      peaks.c image.c stream.c \
+                      index.c dirax.c templates.c geometry.c symmetry.c
 reintegrate_LDADD = @LIBS@
 
 INCLUDES = "-I$(top_srcdir)/data"

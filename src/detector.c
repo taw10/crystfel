@@ -14,6 +14,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "image.h"
 #include "utils.h"
@@ -27,6 +28,59 @@ int atob(const char *a)
 	if ( strcasecmp(a, "true") == 0 ) return 1;
 	if ( strcasecmp(a, "false") == 0 ) return 0;
 	return atoi(a);
+}
+
+
+struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
+                  unsigned int sampling, float *ttp, float k)
+{
+	struct rvec q;
+	float twotheta, r, az;
+	float rx;
+	float ry;
+	struct panel *p;
+
+	const unsigned int x = xs / sampling;
+	const unsigned int y = ys / sampling; /* Integer part only */
+
+	p = find_panel(image->det, x, y);
+	assert(p != NULL);
+
+	rx = ((float)xs - (sampling*p->cx)) / (sampling * p->res);
+	ry = ((float)ys - (sampling*p->cy)) / (sampling * p->res);
+
+	/* Calculate q-vector for this sub-pixel */
+	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
+
+	twotheta = atan2(r, p->clen);
+	az = atan2(ry, rx);
+	if ( ttp != NULL ) *ttp = twotheta;
+
+	q.u = k * sin(twotheta)*cos(az);
+	q.v = k * sin(twotheta)*sin(az);
+	q.w = k - k * cos(twotheta);
+
+	return quat_rot(q, image->orientation);
+}
+
+
+double get_tt(struct image *image, unsigned int xs, unsigned int ys)
+{
+	float r, rx, ry;
+	struct panel *p;
+
+	const unsigned int x = xs;
+	const unsigned int y = ys; /* Integer part only */
+
+	p = find_panel(image->det, x, y);
+
+	rx = ((float)xs - p->cx) / p->res;
+	ry = ((float)ys - p->cy) / p->res;
+
+	/* Calculate q-vector for this sub-pixel */
+	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
+
+	return atan2(r, p->clen);
 }
 
 

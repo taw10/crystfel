@@ -28,9 +28,5 @@ typedef enum {
 extern void get_diffraction(struct image *image, int na, int nb, int nc,
                             const double *intensities,const double *phases,
                             UnitCell *cell, int do_water, GradientMethod m);
-extern struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
-                         unsigned int sampling, float *ttp, float k);
-
-extern double get_tt(struct image *image, unsigned int xs, unsigned int ys);
 
 #endif	/* DIFFRACTION_H */
