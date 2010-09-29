@@ -145,8 +145,8 @@ static void show_help(const char *s)
 "                           have negative values.  Intensity measurement will\n"
 "                           be performed on the image as it was before this.\n"
 "     --unpolarized        Don't correct for the polarisation of the X-rays.\n"
-"     --sat-corr           Correct values of saturated peaks using a table\n"
-"                           included in the HDF5 file.\n"
+"     --no-sat-corr        Don't correct values of saturated peaks using a\n"
+"                           table included in the HDF5 file.\n"
 "     --no-sa              Don't correct for the differing solid angles of\n"
 "                           the pixels.\n"
 "     --threshold=<n>      Only accept peaks above <n> ADU.  Default: 800.\n"
@@ -476,7 +476,7 @@ int main(int argc, char *argv[])
 	int config_alternate = 0;
 	int config_polar = 1;
 	int config_sanity = 0;
-	int config_satcorr = 0;
+	int config_satcorr = 1;
 	int config_sa = 1;
 	int config_checkprefix = 1;
 	int config_closer = 1;
@@ -523,7 +523,8 @@ int main(int argc, char *argv[])
 		{"prefix",             1, NULL,               'x'},
 		{"unpolarized",        0, &config_polar,       0},
 		{"check-sanity",       0, &config_sanity,      1},
-		{"sat-corr",           0, &config_satcorr,     1},
+		{"no-sat-corr",        0, &config_satcorr,     0},
+		{"sat-corr",           0, &config_satcorr,     1}, /* Compat */
 		{"no-sa",              0, &config_sa,          0},
 		{"threshold",          1, NULL,               't'},
 		{"no-check-prefix",    0, &config_checkprefix, 0},

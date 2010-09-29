@@ -77,8 +77,8 @@ static void show_help(const char *s)
 "                            before proceeding.  Intensities will be extracted\n"
 "                            from the image as it is after this processing.\n"
 "      --unpolarized        Don't correct for the polarisation of the X-rays.\n"
-"      --sat-corr           Correct values of saturated peaks using a table\n"
-"                            included in the HDF5 file.\n"
+"      --no-sat-corr        Don't correct values of saturated peaks using a\n"
+"                            table included in the HDF5 file.\n"
 "      --no-sa              Don't correct for the differing solid angles of\n"
 "                            the pixels.\n"
 "      --no-closer-peak     Don't integrate from the location of a nearby peak\n"
@@ -336,7 +336,7 @@ int main(int argc, char *argv[])
 	int config_closer = 1;
 	int config_polar = 1;
 	int config_sanity = 0;
-	int config_satcorr = 0;
+	int config_satcorr = 1;
 	int config_sa = 1;
 	int config_cmfilter = 0;
 	struct detector *det;
@@ -353,6 +353,7 @@ int main(int argc, char *argv[])
 		{"unpolarized",        0, &config_polar,       0},
 		{"check-sanity",       0, &config_sanity,      1},
 		{"sat-corr",           0, &config_satcorr,     1},
+		{"no-sat-corr",        0, &config_satcorr,     0},
 		{"no-sa",              0, &config_sa,          0},
 		{"filter-cm",          0, &config_cmfilter,    1},
 		{0, 0, NULL, 0}

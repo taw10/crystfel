@@ -243,6 +243,8 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 	             H5P_DEFAULT);
 
 	if ( dh < 0 ) {
+		/* This isn't an error */
+		STATUS("No saturation table found.\n");
 		return;
 	}
 
