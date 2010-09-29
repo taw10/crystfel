@@ -556,9 +556,6 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
 	double cx, cy, cz;
 	double alen, blen, clen;
 
-	find_projected_peaks(image, cell, circular_domain, domain_r);
-	if ( image->n_hits == 0 ) return 0;  /* Failed sanity check: no peaks */
-
 	/* "Borrow" direction values to get reciprocal lengths */
 	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	alen = modulus(ax, ay, az);
