@@ -88,6 +88,7 @@ UnitCell *cell_new()
 
 void cell_free(UnitCell *cell)
 {
+	if ( cell == NULL ) return;
 	free(cell->pointgroup);
 	free(cell);
 }
