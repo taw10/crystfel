@@ -195,6 +195,7 @@ int main(int argc, char *argv[])
 	char *filename = NULL;
 	ReflItemList *input_items;
 	ReflItemList *write_items;
+	UnitCell *cell = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -258,6 +259,7 @@ int main(int argc, char *argv[])
 	}
 
 	mol = load_molecule(filename);
+	cell = load_cell_from_pdb(filename);
 	if ( !config_nophase ) {
 		phases = new_list_phase();
 	} else {
@@ -319,8 +321,7 @@ int main(int argc, char *argv[])
 		union_items(write_items, input_items);
 	}
 
-	write_reflections(output, write_items, ideal_ref, phases, NULL,
-	                  mol->cell);
+	write_reflections(output, write_items, ideal_ref, phases, NULL, cell);
 
 	delete_items(input_items);
 	delete_items(write_items);
