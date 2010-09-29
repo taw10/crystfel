@@ -581,6 +581,13 @@ int main(int argc, char *argv[])
 
 	}
 
+	/* Start by writing the entire command line to stdout */
+	printf("Command line:");
+	for ( i=0; i<argc; i++ ) {
+		printf(" %s", argv[i]);
+	}
+	printf("\n");
+
 	if ( filename == NULL ) {
 		filename = strdup("-");
 	}
