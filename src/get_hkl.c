@@ -31,12 +31,13 @@ static void show_help(const char *s)
 {
 	printf("Syntax: %s [options]\n\n", s);
 	printf(
-"Write idealised intensity lists.\n"
+"Create reflections lists.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
 "\n"
 "  -t, --template=<filename>  Only include reflections mentioned in file.\n"
 "      --poisson              Simulate Poisson samples.\n"
+"      --noise                Add 10%% random noise.\n"
 "  -y, --symmetry=<sym>       The symmetry of the input file (-i).\n"
 "  -w, --twin=<sym>           Generate twinned data according to the given\n"
 "                              point group.\n"
@@ -53,24 +54,52 @@ static void show_help(const char *s)
 
 
 /* Apply Poisson noise to all reflections */
-static void noisify_reflections(double *ref)
+static void poisson_reflections(double *ref, ReflItemList *items)
 {
-	signed int h, k, l;
+	int i;
+	const int n = num_items(items);
 
-	for ( h=-INDMAX; h<INDMAX; h++ ) {
-	for ( k=-INDMAX; k<INDMAX; k++ ) {
-	for ( l=-INDMAX; l<INDMAX; l++ ) {
+	for ( i=0; i<n; i++ ) {
 
+		struct refl_item *it;
 		double val;
 		int c;
 
-		val = lookup_intensity(ref, h, k, l);
+		it = get_item(items, i);
+
+		val = lookup_intensity(ref, it->h, it->k, it->l);
 		c = poisson_noise(val);
-		set_intensity(ref, h, k, l, c);
+		set_intensity(ref, it->h, it->k, it->l, c);
+
+		progress_bar(i, n-1, "Simulating noise");
 
 	}
-	}
-	progress_bar(h+INDMAX, 2*INDMAX, "Simulating noise");
+}
+
+
+/* Apply 10% uniform noise to all reflections */
+static void noise_reflections(double *ref, ReflItemList *items)
+{
+	int i;
+	const int n = num_items(items);
+
+	for ( i=0; i<n; i++ ) {
+
+		struct refl_item *it;
+		double val;
+		double r;
+
+		it = get_item(items, i);
+
+		val = lookup_intensity(ref, it->h, it->k, it->l);
+
+		r = (double)random()/RAND_MAX;
+		val += 0.1 * val * r;
+
+		set_intensity(ref, it->h, it->k, it->l, val);
+
+		progress_bar(i, n-1, "Simulating noise");
+
 	}
 }
 
@@ -155,7 +184,8 @@ int main(int argc, char *argv[])
 	double *phases;
 	struct molecule *mol;
 	char *template = NULL;
-	int config_noisify = 0;
+	int config_noise = 0;
+	int config_poisson = 0;
 	int config_nophase = 0;
 	int config_multi = 0;
 	char *holo = NULL;
@@ -170,7 +200,8 @@ int main(int argc, char *argv[])
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"template",           1, NULL,               't'},
-		{"poisson",            0, &config_noisify,     1},
+		{"poisson",            0, &config_poisson,     1},
+		{"noise",              0, &config_noise,       1},
 		{"output",             1, NULL,               'o'},
 		{"twin",               1, NULL,               'w'},
 		{"symmetry",           1, NULL,               'y'},
@@ -243,7 +274,8 @@ int main(int argc, char *argv[])
 		free(input);
 	}
 
-	if ( config_noisify ) noisify_reflections(ideal_ref);
+	if ( config_poisson ) poisson_reflections(ideal_ref, input_items);
+	if ( config_noise ) noise_reflections(ideal_ref, input_items);
 
 	if ( holo != NULL ) {
 		ReflItemList *new;
