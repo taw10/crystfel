@@ -565,8 +565,7 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
 	fesetround(1);  /* Round towards nearest */
-	n_feat = image_feature_count(image->features);
-	for ( i=0; i<n_feat; i++ ) {
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		double dist;
 		struct rvec q;
@@ -576,6 +575,8 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
 		double dh, dk, dl;
 
 		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
+		n_feat++;
 
 		/* Get closest hkl */
 		q = get_q(image, f->x, f->y, 1, NULL, 1.0/image->lambda);
