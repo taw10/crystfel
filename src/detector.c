@@ -164,12 +164,12 @@ void record_image(struct image *image, int do_poisson)
 	STATUS("Max 2theta = %.2f deg, min d = %.2f nm\n",
 	        rad2deg(max_tt), (image->lambda/(2.0*sin(max_tt/2.0)))/1e-9);
 
-	double tt_side = image->twotheta[512+image->width*0];
-	STATUS("At 512,0: %.2f deg, min d = %.2f nm\n",
+	double tt_side = image->twotheta[(image->width/2)+image->width*0];
+	STATUS("At middle of bottom edge: %.2f deg, min d = %.2f nm\n",
 	        rad2deg(tt_side), (image->lambda/(2.0*sin(tt_side/2.0)))/1e-9);
 
-	tt_side = image->twotheta[0+image->width*512];
-	STATUS("At 0,512: %.2f deg, min d = %.2f nm\n",
+	tt_side = image->twotheta[0+image->width*(image->height/2)];
+	STATUS("At middle of left edge: %.2f deg, min d = %.2f nm\n",
 	        rad2deg(tt_side), (image->lambda/(2.0*sin(tt_side/2.0)))/1e-9);
 
 	STATUS("Halve the d values to get the voxel size for a synthesis.\n");
