@@ -338,9 +338,16 @@ int main(int argc, char *argv[])
 		delete_items(items);
 	}
 
+	image.det = get_detector_geometry(geometry);
+	if ( image.det == NULL ) {
+		ERROR("Failed to read detector geometry from '%s'\n", geometry);
+		return 1;
+	}
+	free(geometry);
+
 	/* Define image parameters */
-	image.width = 1024;
-	image.height = 1024;
+	image.width = image.det->max_x + 1;
+	image.height = image.det->max_y + 1;
 	image.lambda = ph_en_to_lambda(eV_to_J(PHOTON_ENERGY)); /* Wavelength */
 	cell = load_cell_from_pdb(filename);
 	if ( cell == NULL ) {
@@ -351,13 +358,6 @@ int main(int argc, char *argv[])
 	image.flags = NULL;
 	image.f0 = 1.0;
 	image.f0_available = 1;
-
-	image.det = get_detector_geometry(geometry);
-	if ( image.det == NULL ) {
-		ERROR("Failed to read detector geometry from '%s'\n", geometry);
-		return 1;
-	}
-	free(geometry);
 
 	powder = calloc(image.width*image.height, sizeof(*powder));
 

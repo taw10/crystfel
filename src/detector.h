@@ -38,6 +38,8 @@ struct detector
 {
 	struct panel *panels;
 	int           n_panels;
+	int           max_x;
+	int           max_y;  /* Size of overall array needed, minus 1 */
 };
 
 extern struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,

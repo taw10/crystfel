@@ -202,6 +202,7 @@ struct detector *get_detector_geometry(const char *filename)
 	char **bits;
 	int i;
 	int reject;
+	int x, y, max_x, max_y;
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) return NULL;
@@ -339,7 +340,10 @@ struct detector *get_detector_geometry(const char *filename)
 	}
 
 	reject = 0;
+	max_x = 0;
+	max_y = 0;
 	for ( i=0; i<det->n_panels; i++ ) {
+
 		STATUS("Panel %i, min_x = %i\n", i, det->panels[i].min_x);
 		if ( det->panels[i].min_x == -1 ) {
 			ERROR("Please specify the minimum x coordinate for"
@@ -397,7 +401,25 @@ struct detector *get_detector_geometry(const char *filename)
 		}
 		/* It's not a problem if "no_index" is still zero */
 
+		if ( det->panels[i].max_x > max_x ) {
+			max_x = det->panels[i].max_x;
+		}
+		if ( det->panels[i].max_y > max_y ) {
+			max_y = det->panels[i].max_y;
+		}
+
 	}
+
+	for ( x=0; x<=max_x; x++ ) {
+	for ( y=0; y<=max_y; y++ ) {
+		if ( find_panel(det, x, y) == NULL ) {
+			ERROR("Detector geometry invalid: contains gaps.\n");
+			reject = 1;
+		}
+	}
+	}
+	det->max_x = max_x;
+	det->max_y = max_y;
 
 	if ( reject ) return NULL;
 
