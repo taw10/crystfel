@@ -20,7 +20,7 @@
 #include "utils.h"
 #include "diffraction.h"
 #include "detector.h"
-#include "parameters-lcls.tmp"
+#include "parameters.tmp"
 
 
 int atob(const char *a)

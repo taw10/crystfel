@@ -22,7 +22,7 @@
 #include "cell.h"
 #include "diffraction.h"
 #include "sfac.h"
-#include "parameters-lcls.tmp"
+#include "parameters.tmp"
 
 
 #define SAMPLING (4)

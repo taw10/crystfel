@@ -19,7 +19,7 @@
 #include "utils.h"
 #include "cell.h"
 #include "reflections.h"
-#include "parameters-lcls.tmp"
+#include "parameters.tmp"
 
 
 void write_reflections(const char *filename, ReflItemList *items,

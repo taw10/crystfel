@@ -31,7 +31,7 @@
 #include "peaks.h"
 #include "sfac.h"
 #include "reflections.h"
-#include "parameters-lcls.tmp"
+#include "parameters.tmp"
 
 
 static void show_help(const char *s)
