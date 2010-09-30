@@ -69,15 +69,11 @@ double get_tt(struct image *image, unsigned int xs, unsigned int ys)
 	float r, rx, ry;
 	struct panel *p;
 
-	const unsigned int x = xs;
-	const unsigned int y = ys; /* Integer part only */
-
-	p = find_panel(image->det, x, y);
+	p = find_panel(image->det, xs, ys);
 
 	rx = ((float)xs - p->cx) / p->res;
 	ry = ((float)ys - p->cy) / p->res;
 
-	/* Calculate q-vector for this sub-pixel */
 	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
 
 	return atan2(r, p->clen);
