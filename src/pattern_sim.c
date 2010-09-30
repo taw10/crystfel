@@ -47,7 +47,7 @@ static void show_help(const char *s)
 "                            intensities file)\n"
 "     --simulation-details  Show technical details of the simulation.\n"
 "     --gpu                 Use the GPU to speed up the calculation.\n"
-"  -g. --geometry=<file>    Get detector geometry from file.\n"
+" -g, --geometry=<file>    Get detector geometry from file.\n"
 "\n"
 "     --near-bragg          Output h,k,l,I near Bragg conditions.\n"
 " -n, --number=<N>          Generate N images.  Default 1.\n"
@@ -64,7 +64,7 @@ static void show_help(const char *s)
 "                            this invocation as the given filename.\n"
 " -i, --intensities=<file>  Specify file containing reflection intensities\n"
 "                            (and phases) to use.\n"
-" -g, --gradients=<method>  Use <method> for the calculation of shape\n"
+" -t, --gradients=<method>  Use <method> for the calculation of shape\n"
 "                            transform intensities.  Choose from:\n"
 "                             mosaic      : Take the intensity of the nearest\n"
 "                                           Bragg position.  This is the\n"
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hrn:i:t:p:o:",
+	while ((c = getopt_long(argc, argv, "hrn:i:t:p:o:g:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
