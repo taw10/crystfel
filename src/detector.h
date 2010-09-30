@@ -40,11 +40,6 @@ struct detector
 	int           n_panels;
 };
 
-
-/* x,y in pixels relative to central beam */
-extern int map_position(struct image *image, double x, double y,
-                        double *rx, double *ry, double *rz);
-
 extern struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
                          unsigned int sampling, float *ttp, float k);
 

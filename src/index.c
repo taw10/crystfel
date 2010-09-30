@@ -102,23 +102,19 @@ static void write_drx(struct image *image)
 void map_all_peaks(struct image *image)
 {
 	int i;
-	int nc = 0;
 
 	/* Map positions to 3D */
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
-		int c;
+		struct rvec r;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		c = map_position(image, f->x, f->y, &f->rx, &f->ry, &f->rz);
-		if ( c != 0 ) nc++;
+		r = get_q(image, f->x, f->y, 1, NULL, 1.0/image->lambda);
+		f->rx = r.u;  f->ry = r.v;  f->rz = r.w;
 
-	}
-	if ( nc ) {
-		ERROR("Failed to map %i reflections\n", nc);
 	}
 }
 

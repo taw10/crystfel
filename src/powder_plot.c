@@ -107,12 +107,12 @@ int main(int argc, char *argv[])
 	for ( x=0; x<image.width; x++ ) {
 	for ( y=0; y<image.height; y++ ) {
 
-		double rx, ry, rz;
 		double q;
 		int intensity;
+		struct rvec r;
 
-		map_position(&image, x, y, &rx, &ry, &rz);
-		q = modulus(rx, ry, rz);
+		r = get_q(&image, x, y, 1, NULL, 1.0/image.lambda);
+		q = modulus(r.u, r.v, r.w);
 
 		intensity = image.data[x + image.width*y];
 

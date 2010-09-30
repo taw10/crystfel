@@ -84,40 +84,6 @@ double get_tt(struct image *image, unsigned int xs, unsigned int ys)
 }
 
 
-/* x,y in pixels relative to image origin */
-int map_position(struct image *image, double dx, double dy,
-                 double *rx, double *ry, double *rz)
-{
-	double d;
-	double twotheta, psi;
-	const double k = 1.0 / image->lambda;
-	struct panel *p;
-	double x = 0.0;
-	double y = 0.0;
-
-	p = find_panel(image->det, dx, dy);
-	if ( p == NULL ) return 1;
-	if ( p->no_index ) return 1;
-
-	x = ((double)dx - p->cx);
-	y = ((double)dy - p->cy);
-
-	/* Convert pixels to metres */
-	x /= p->res;
-	y /= p->res;	/* Convert pixels to metres */
-	d = sqrt((x*x) + (y*y));
-	twotheta = atan2(d, p->clen);
-
-	psi = atan2(y, x);
-
-	*rx = k*sin(twotheta)*cos(psi);
-	*ry = k*sin(twotheta)*sin(psi);
-	*rz = k - k*cos(twotheta);
-
-	return 0;
-}
-
-
 void record_image(struct image *image, int do_poisson)
 {
 	int x, y;

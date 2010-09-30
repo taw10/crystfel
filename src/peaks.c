@@ -429,14 +429,15 @@ void dump_peaks(struct image *image, pthread_mutex_t *mutex)
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
-		double q, rx, ry, rz;
 		struct imagefeature *f;
+		struct rvec r;
+		double q;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		map_position(image, f->x, f->y, &rx, &ry, &rz);
-		q = modulus(rx, ry, rz);
+		r = get_q(image, f->x, f->y, 1, NULL, 1.0/image->lambda);
+		q = modulus(r.u, r.v, r.w);
 
 		printf("%8.3f %8.3f %8.3f    %12.3f\n",
 		       f->x, f->y, q/1.0e9, f->intensity);
