@@ -1,0 +1,17 @@
+/* Number of photons in pulse */
+#define FLUENCE (2.0e11)
+
+/* Detector's quantum efficiency */
+#define DQE (0.9)
+
+/* ADU per photon (front detector) */
+#define DETECTOR_GAIN (1.0)
+
+/* Radius of the water column */
+#define WATER_RADIUS (0.0e-6 / 2.0)
+
+/* Radius of X-ray beam */
+#define BEAM_RADIUS (1.0e-6 / 2.0)
+
+/* Photon energy in eV */
+#define PHOTON_ENERGY (8000.0)
