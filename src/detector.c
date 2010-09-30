@@ -415,9 +415,11 @@ struct detector *get_detector_geometry(const char *filename)
 		if ( find_panel(det, x, y) == NULL ) {
 			ERROR("Detector geometry invalid: contains gaps.\n");
 			reject = 1;
+			goto out;
 		}
 	}
 	}
+out:
 	det->max_x = max_x;
 	det->max_y = max_y;
 
