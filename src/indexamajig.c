@@ -336,7 +336,9 @@ static void process_image(struct process_args *pargs)
 	free(image.data);
 	image.data = data_for_measurement;
 
-	if ( config_dumpfound ) dump_peaks(&image, pargs->output_mutex);
+	if ( config_dumpfound ) {
+		dump_peaks(&image, pargs->ofh, pargs->output_mutex);
+	}
 
 	/* Not indexing nor writing xfel.drx?
 	 * Then there's nothing left to do. */

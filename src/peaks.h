@@ -20,7 +20,7 @@
 #include <pthread.h>
 
 extern void search_peaks(struct image *image, float threshold);
-extern void dump_peaks(struct image *image, pthread_mutex_t *mutex);
+extern void dump_peaks(struct image *image, FILE *ofh, pthread_mutex_t *mutex);
 extern void output_intensities(struct image *image, UnitCell *cell,
                                pthread_mutex_t *mutex, int polar, int sa,
                                int use_closer, FILE *ofh, int circular_domain,

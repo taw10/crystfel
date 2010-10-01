@@ -417,15 +417,15 @@ void search_peaks(struct image *image, float threshold)
 }
 
 
-void dump_peaks(struct image *image, pthread_mutex_t *mutex)
+void dump_peaks(struct image *image, FILE *ofh, pthread_mutex_t *mutex)
 {
 	int i;
 
 	/* Get exclusive access to the output stream if necessary */
 	if ( mutex != NULL ) pthread_mutex_lock(mutex);
 
-	printf("Peaks from peak search in %s\n", image->filename);
-	printf("  x/px     y/px   (1/d)/nm^-1    Intensity\n");
+	fprintf(ofh, "Peaks from peak search in %s\n", image->filename);
+	fprintf(ofh, "  x/px     y/px   (1/d)/nm^-1    Intensity\n");
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
@@ -439,12 +439,12 @@ void dump_peaks(struct image *image, pthread_mutex_t *mutex)
 		r = get_q(image, f->x, f->y, 1, NULL, 1.0/image->lambda);
 		q = modulus(r.u, r.v, r.w);
 
-		printf("%8.3f %8.3f %8.3f    %12.3f\n",
+		fprintf(ofh, "%8.3f %8.3f %8.3f    %12.3f\n",
 		       f->x, f->y, q/1.0e9, f->intensity);
 
 	}
 
-	printf("\n");
+	fprintf(ofh, "\n");
 
 	if ( mutex != NULL ) pthread_mutex_unlock(mutex);
 }
@@ -661,10 +661,10 @@ void output_intensities(struct image *image, UnitCell *cell,
 	       csx/1e9, csy/1e9, csz/1e9);
 
 	if ( image->f0_available ) {
-		printf("f0 = %7.5f (arbitrary gas detector units)\n",
+		fprintf(ofh, "f0 = %7.5f (arbitrary gas detector units)\n",
 		       image->f0);
 	} else {
-		printf("f0 = invalid\n");
+		fprintf(ofh, "f0 = invalid\n");
 	}
 
 	for ( i=0; i<image->n_hits; i++ ) {
