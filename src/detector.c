@@ -31,23 +31,22 @@ int atob(const char *a)
 }
 
 
-struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
+struct rvec get_q(struct image *image, double xs, double ys,
                   unsigned int sampling, float *ttp, float k)
 {
 	struct rvec q;
-	float twotheta, r, az;
-	float rx;
-	float ry;
+	double twotheta, r, az;
+	double rx, ry;
 	struct panel *p;
 
+	/* Determine which panel to use */
 	const unsigned int x = xs / sampling;
-	const unsigned int y = ys / sampling; /* Integer part only */
-
+	const unsigned int y = ys / sampling;
 	p = find_panel(image->det, x, y);
 	assert(p != NULL);
 
-	rx = ((float)xs - (sampling*p->cx)) / (sampling * p->res);
-	ry = ((float)ys - (sampling*p->cy)) / (sampling * p->res);
+	rx = (xs - (sampling*p->cx)) / (sampling * p->res);
+	ry = (ys - (sampling*p->cy)) / (sampling * p->res);
 
 	/* Calculate q-vector for this sub-pixel */
 	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
@@ -64,7 +63,7 @@ struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
 }
 
 
-double get_tt(struct image *image, unsigned int xs, unsigned int ys)
+double get_tt(struct image *image, double xs, double ys)
 {
 	float r, rx, ry;
 	struct panel *p;

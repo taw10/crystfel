@@ -42,10 +42,10 @@ struct detector
 	int           max_y;  /* Size of overall array needed, minus 1 */
 };
 
-extern struct rvec get_q(struct image *image, unsigned int xs, unsigned int ys,
+extern struct rvec get_q(struct image *image, double xs, double ys,
                          unsigned int sampling, float *ttp, float k);
 
-extern double get_tt(struct image *image, unsigned int xs, unsigned int ys);
+extern double get_tt(struct image *image, double xs, double ys);
 
 extern void record_image(struct image *image, int do_poisson);
 
