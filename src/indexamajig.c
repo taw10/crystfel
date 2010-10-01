@@ -44,7 +44,6 @@ struct process_args
 	/* Input */
 	char *filename;
 	int id;
-	pthread_mutex_t *output_mutex;  /* Protects stdout */
 	pthread_mutex_t *gpu_mutex;     /* Protects "gctx" */
 	UnitCell *cell;
 	int config_cmfilter;
@@ -76,6 +75,10 @@ struct process_args
 	int done;
 	int indexable;
 	int sane;
+
+	/* Output stream */
+	pthread_mutex_t *output_mutex;  /* Protects the output stream */
+	FILE *ofh;
 };
 
 
@@ -365,7 +368,7 @@ static void process_image(struct process_args *pargs)
 		output_intensities(&image, image.indexed_cell,
 		                   pargs->output_mutex, config_polar,
 		                   pargs->config_sa, pargs->config_closer,
-		                   0, 0.1);
+		                   pargs->ofh, 0, 0.1);
 	}
 
 	simage = get_simage(&image, config_alternate);
@@ -439,7 +442,9 @@ int main(int argc, char *argv[])
 	int c;
 	struct gpu_context *gctx = NULL;
 	char *filename = NULL;
+	char *outfile = NULL;
 	FILE *fh;
+	FILE *ofh;
 	char *rval = NULL;
 	int n_images;
 	int n_indexable;
@@ -486,6 +491,7 @@ int main(int argc, char *argv[])
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
+		{"output",             1, NULL,               'o'},
 		{"gpu",                0, &config_gpu,         1},
 		{"no-index",           0, &config_noindex,     1},
 		{"dump-peaks",         0, &config_dumpfound,   1},
@@ -514,7 +520,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:wp:j:x:g:t:",
+	while ((c = getopt_long(argc, argv, "hi:wp:j:x:g:t:o:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -524,6 +530,10 @@ int main(int argc, char *argv[])
 
 		case 'i' :
 			filename = strdup(optarg);
+			break;
+
+		case 'o' :
+			outfile = strdup(optarg);
 			break;
 
 		case 'z' :
@@ -583,6 +593,20 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	free(filename);
+
+	if ( outfile == NULL ) {
+		outfile = strdup("-");
+	}
+	if ( strcmp(outfile, "-") == 0 ) {
+		ofh = stdout;
+	} else {
+		ofh = fopen(outfile, "w");
+	}
+	if ( ofh == NULL ) {
+		ERROR("Failed to open output file '%s'\n", outfile);
+		return 1;
+	}
+	free(outfile);
 
 	if ( intfile != NULL ) {
 		ReflItemList *items;
@@ -674,6 +698,7 @@ int main(int argc, char *argv[])
 	for ( i=0; i<nthreads; i++ ) {
 		worker_args[i] = malloc(sizeof(struct process_args));
 		worker_args[i]->filename = malloc(1024);
+		worker_args[i]->ofh = ofh;
 		worker_active[i] = 0;
 	}
 

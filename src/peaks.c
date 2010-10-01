@@ -618,7 +618,8 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
 
 void output_intensities(struct image *image, UnitCell *cell,
                         pthread_mutex_t *mutex, int polar, int sa,
-                        int use_closer, int circular_domain, double domain_r)
+                        int use_closer, FILE *ofh,
+                        int circular_domain, double domain_r)
 {
 	int i;
 	int n_found;
@@ -641,22 +642,22 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 	/* Explicit printf() used here (not normally allowed) because
 	 * we really want to output to stdout */
-	printf("Reflections from indexing in %s\n", image->filename);
-	printf("Orientation (wxyz): %7.5f %7.5f %7.5f %7.5f\n",
+	fprintf(ofh, "Reflections from indexing in %s\n", image->filename);
+	fprintf(ofh, "Orientation (wxyz): %7.5f %7.5f %7.5f %7.5f\n",
 	       image->orientation.w, image->orientation.x,
 	       image->orientation.y, image->orientation.z);
 	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
-	printf("Cell parameters %7.5f %7.5f %7.5f nm, %7.5f %7.5f %7.5f deg\n",
+	fprintf(ofh, "Cell parameters %7.5f %7.5f %7.5f nm, %7.5f %7.5f %7.5f deg\n",
 	       a*1.0e9, b*1.0e9, c*1.0e9,
 	       rad2deg(al), rad2deg(be), rad2deg(ga));
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
-	printf("astar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+	fprintf(ofh, "astar = %+9.7f %+9.7f %+9.7f nm^-1\n",
 	       asx/1e9, asy/1e9, asz/1e9);
-	printf("bstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+	fprintf(ofh, "bstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
 	       bsx/1e9, bsy/1e9, bsz/1e9);
-	printf("cstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+	fprintf(ofh, "cstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
 	       csx/1e9, csy/1e9, csz/1e9);
 
 	if ( image->f0_available ) {
@@ -747,7 +748,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 		}
 
 		/* Write h,k,l, integrated intensity and centroid coordinates */
-		printf("%3i %3i %3i %6f (at %5.2f,%5.2f)\n",
+		fprintf(ofh, "%3i %3i %3i %6f (at %5.2f,%5.2f)\n",
 		       image->hits[i].h, image->hits[i].k, image->hits[i].l,
 		       intensity, x, y);
 
@@ -779,16 +780,16 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 	}
 
-	printf("Peak statistics: %i peaks found by the peak search out of "
+	fprintf(ofh, "Peak statistics: %i peaks found by the peak search out of "
 	       "%i were close to indexed positions. "
 	       "%i indexed positions out of %i were close to detected peaks.\n",
 	       n_foundclose, n_found, n_indclose, image->n_hits);
-	printf("%i integrations using indexed locations were aborted because "
+	fprintf(ofh, "%i integrations using indexed locations were aborted because "
 	       "they hit one or more bad pixels.\n", n_veto);
-	printf("%i integrations using peak search locations were aborted "
+	fprintf(ofh, "%i integrations using peak search locations were aborted "
 	       "because they hit one or more bad pixels.\n", n_veto_second);
 	/* Blank line at end */
-	printf("\n");
+	fprintf(ofh, "\n");
 
 	if ( mutex != NULL ) pthread_mutex_unlock(mutex);
 }

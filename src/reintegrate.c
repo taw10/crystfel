@@ -135,7 +135,7 @@ static void process_image(struct process_args *pargs)
 		output_intensities(&image, pargs->cell,
 		                   pargs->output_mutex, pargs->config_polar,
 		                   pargs->config_sa, pargs->config_closer,
-		                   0, 0.1);
+		                   stdout, 0, 0.1);
 	}
 
 	free(image.data);
