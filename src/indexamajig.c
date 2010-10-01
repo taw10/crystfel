@@ -575,13 +575,6 @@ int main(int argc, char *argv[])
 
 	}
 
-	/* Start by writing the entire command line to stdout */
-	printf("Command line:");
-	for ( i=0; i<argc; i++ ) {
-		printf(" %s", argv[i]);
-	}
-	printf("\n");
-
 	if ( filename == NULL ) {
 		filename = strdup("-");
 	}
@@ -677,6 +670,13 @@ int main(int argc, char *argv[])
 		cell = NULL;
 	}
 	free(pdb);
+
+	/* Start by writing the entire command line to stdout */
+	fprintf(ofh, "Command line:");
+	for ( i=0; i<argc; i++ ) {
+		fprintf(ofh, " %s", argv[i]);
+	}
+	printf("\n");
 
 	/* Get first filename and use it to set up the indexing */
 	rval = fgets(prepare_line, 1023, fh);
