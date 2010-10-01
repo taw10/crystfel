@@ -74,15 +74,8 @@ struct process_args
 	int start;
 	int finish;
 	int done;
-	int hit;
-	int peaks_sane;
-};
-
-
-struct process_result
-{
-	int hit;
-	int peaks_sane;
+	int indexable;
+	int sane;
 };
 
 
@@ -263,13 +256,12 @@ static void simulate_and_write(struct image *simage, struct gpu_context **gctx,
 }
 
 
-static struct process_result process_image(struct process_args *pargs)
+static void process_image(struct process_args *pargs)
 {
 	struct hdfile *hdfile;
 	struct image image;
 	struct image *simage;
 	float *data_for_measurement;
-	struct process_result result;
 	size_t data_size;
 	const char *filename = pargs->filename;
 	UnitCell *cell = pargs->cell;
@@ -305,15 +297,15 @@ static struct process_result process_image(struct process_args *pargs)
 
 	STATUS("Processing '%s'\n", image.filename);
 
-	result.peaks_sane = 0;
-	result.hit = 0;
+	pargs->sane = 0;
+	pargs->indexable = 0;
 
 	hdfile = hdfile_open(filename);
 	if ( hdfile == NULL ) {
-		return result;
+		return;
 	} else if ( hdfile_set_first_image(hdfile, "/") ) {
 		ERROR("Couldn't select path\n");
-		return result;
+		return;
 	}
 
 	hdf5_read(hdfile, &image, pargs->config_satcorr);
@@ -341,8 +333,6 @@ static struct process_result process_image(struct process_args *pargs)
 	free(image.data);
 	image.data = data_for_measurement;
 
-	if ( image_feature_count(image.features) < 5 ) goto done;
-
 	if ( config_dumpfound ) dump_peaks(&image, pargs->output_mutex);
 
 	/* Not indexing nor writing xfel.drx?
@@ -359,6 +349,7 @@ static struct process_result process_image(struct process_args *pargs)
 
 	/* No cell at this point?  Then we're done. */
 	if ( image.indexed_cell == NULL ) goto done;
+	pargs->indexable = 1;
 
 	/* Sanity check */
 	if ( pargs->config_sanity
@@ -366,7 +357,7 @@ static struct process_result process_image(struct process_args *pargs)
 		STATUS("Failed peak sanity check.\n");
 		goto done;
 	} else {
-		result.peaks_sane = 1;
+		pargs->sane = 1;
 	}
 
 	/* Measure intensities if requested */
@@ -406,13 +397,6 @@ done:
 	image_feature_list_free(image.features);
 	free(image.hits);
 	hdfile_close(hdfile);
-
-	if ( image.indexed_cell == NULL ) {
-		result.hit = 0;
-	} else {
-		result.hit = 1;
-	}
-	return result;
 }
 
 
@@ -423,14 +407,11 @@ static void *worker_thread(void *pargsv)
 
 	do {
 
-		struct process_result result;
 		int wakeup;
 
-		result = process_image(pargs);
+		process_image(pargs);
 
 		pthread_mutex_lock(&pargs->control_mutex);
-		pargs->hit = result.hit;
-		pargs->peaks_sane = result.peaks_sane;
 		pargs->done = 1;
 		pargs->start = 0;
 		pthread_mutex_unlock(&pargs->control_mutex);
@@ -461,7 +442,7 @@ int main(int argc, char *argv[])
 	FILE *fh;
 	char *rval = NULL;
 	int n_images;
-	int n_hits;
+	int n_indexable;
 	int n_sane;
 	int config_noindex = 0;
 	int config_dumpfound = 0;
@@ -687,7 +668,7 @@ int main(int argc, char *argv[])
 
 	gsl_set_error_handler_off();
 	n_images = 0;
-	n_hits = 0;
+	n_indexable = 0;
 	n_sane = 0;
 
 	for ( i=0; i<nthreads; i++ ) {
@@ -793,8 +774,8 @@ int main(int argc, char *argv[])
 			if ( rval == NULL ) break;
 
 			/* Record the result */
-			n_hits += pargs->hit;
-			n_sane += pargs->peaks_sane;
+			n_indexable += pargs->indexable;
+			n_sane += pargs->sane;
 
 			chomp(line);
 			snprintf(pargs->filename, 1023, "%s%s", prefix, line);
@@ -826,8 +807,8 @@ int main(int argc, char *argv[])
 		pthread_join(workers[i], NULL);
 		worker_active[i] = 0;
 
-		n_hits += pargs->hit;
-		n_sane += pargs->peaks_sane;
+		n_indexable += pargs->indexable;
+		n_sane += pargs->sane;
 
 	free:
 		if ( worker_args[i]->filename != NULL ) {
@@ -845,8 +826,8 @@ int main(int argc, char *argv[])
 	cell_free(cell);
 	fclose(fh);
 
-	STATUS("There were %i images.\n", n_images);
-	STATUS("%i hits were found, of which %i were sane.\n", n_hits, n_sane);
+	STATUS("There were %i images.  %i could be indexed, of which %i"
+	       " looked sane.\n", n_images, n_indexable, n_sane);
 
 	if ( gctx != NULL ) {
 		cleanup_gpu(gctx);
