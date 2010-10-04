@@ -440,8 +440,8 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 		int r;
 
 		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;  /* And 'break' */
-		if ( strcmp(line, "\n") == 0 ) {
+		if ( ((strncmp(line, "Reflections from indexing", 25) == 0)
+		  || (rval == NULL)) && (num_items(items)>0) ) {
 
 			/* Assume a default I0 if we don't have one by now */
 			if ( config_scale && !f0_valid ) {
