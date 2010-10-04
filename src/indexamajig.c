@@ -676,7 +676,8 @@ int main(int argc, char *argv[])
 	for ( i=0; i<argc; i++ ) {
 		fprintf(ofh, " %s", argv[i]);
 	}
-	printf("\n");
+	fprintf(ofh, "\n");
+	fflush(ofh);
 
 	/* Get first filename and use it to set up the indexing */
 	rval = fgets(prepare_line, 1023, fh);
