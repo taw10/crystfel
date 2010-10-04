@@ -56,7 +56,7 @@ static void show_help(const char *s)
 "  -c, --colscale=<scale>  Use the given colour scale.  Choose from:\n"
 "                           mono    : Greyscale, black is zero.\n"
 "                           invmono : Greyscale, white is zero.\n"
-"                           colour  : Colours scale:\n"
+"                           colour  : Colour scale:\n"
 "                                     black-blue-pink-red-orange-yellow-white\n"
 "\n"
 "  -w  --weighting=<wght>  Colour/shade the reciprocal lattice points\n"
