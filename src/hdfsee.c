@@ -20,6 +20,7 @@
 
 #include "displaywindow.h"
 #include "utils.h"
+#include "render.h"
 
 
 /* Global program state */
@@ -43,6 +44,12 @@ static void show_help(const char *s)
 "                                    sets all pixels in each 3x3 region to\n"
 "                                    zero if any of them have negative\n"
 "                                    values.\n"
+"  -c, --colscale=<scale>           Use the given colour scale.  Choose from:\n"
+"                                    mono    : Greyscale, black is zero.\n"
+"                                    invmono : Greyscale, white is zero.\n"
+"                                    colour  : Colour scale:\n"
+"                                               black-blue-pink-red-orange-\n"
+"                                               -yellow-white.\n"
 "\n");
 }
 
@@ -83,6 +90,8 @@ int main(int argc, char *argv[])
 	int binning = 2;
 	int config_cmfilter = 0;
 	int config_noisefilter = 0;
+	int colscale = SCALE_COLOUR;
+	char *cscale = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -92,13 +101,15 @@ int main(int argc, char *argv[])
 		{"binning",            1, NULL,               'b'},
 		{"filter-cm",          0, &config_cmfilter,    1},
 		{"filter-noise",       0, &config_noisefilter, 1},
+		{"colscale",           1, NULL,               'c'},
 		{0, 0, NULL, 0}
 	};
 
 	gtk_init(&argc, &argv);
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hp:b:i:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hp:b:i:c:",
+	                        longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' :
@@ -124,6 +135,10 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+		case 'c' :
+			cscale = strdup(optarg);
+			break;
+
 		case 0 :
 			break;
 
@@ -140,11 +155,28 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	if ( cscale == NULL ) cscale = strdup("colour");
+	if ( strcmp(cscale, "mono") == 0 ) {
+		colscale = SCALE_MONO;
+	} else if ( strcmp(cscale, "invmono") == 0 ) {
+		colscale = SCALE_INVMONO;
+	} else if ( strcmp(cscale, "colour") == 0 ) {
+		colscale = SCALE_COLOUR;
+	} else if ( strcmp(cscale, "color") == 0 ) {
+		colscale = SCALE_COLOUR;
+	} else {
+		ERROR("Unrecognised colour scale '%s'\n", cscale);
+		return 1;
+	}
+	free(cscale);
+
+
 	for ( i=0; i<nfiles; i++ ) {
 		main_window_list[i] = displaywindow_open(argv[optind+i], peaks,
 		                                         boost, binning,
 		                                         config_cmfilter,
-		                                         config_noisefilter);
+		                                         config_noisefilter,
+		                                         colscale);
 		if ( main_window_list[i] == NULL ) {
 			ERROR("Couldn't open display window\n");
 		} else {

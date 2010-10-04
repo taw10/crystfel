@@ -76,7 +76,7 @@ typedef struct {
 extern DisplayWindow *displaywindow_open(const char *filename,
                                          const char *peaks, int boost,
                                          int binning, int cmfilter,
-                                         int noisefilter);
+                                         int noisefilter, int colscale);
 
 
 #endif	/* DISPLAYWINDOW_H */

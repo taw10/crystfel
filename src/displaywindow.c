@@ -785,14 +785,20 @@ static void displaywindow_addui_callback(GtkUIManager *ui, GtkWidget *widget,
 static gint displaywindow_setscale(GtkWidget *widget, GtkRadioAction *action,
                                    DisplayWindow *dw)
 {
-	dw->scale = gtk_radio_action_get_current_value(action);
+	switch ( gtk_radio_action_get_current_value(action) )
+	{
+		case 0 : dw->scale = SCALE_COLOUR; break;
+		case 1 : dw->scale = SCALE_MONO; break;
+		case 2 : dw->scale = SCALE_INVMONO; break;
+	}
 	displaywindow_update(dw);
 
 	return 0;
 }
 
 
-static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox)
+static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
+                                     int colscale)
 {
 	GError *error = NULL;
 	GtkActionEntry entries[] = {
@@ -844,7 +850,7 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox)
 	gtk_action_group_add_toggle_actions(dw->action_group, toggles,
 					    n_toggles, dw);
 	gtk_action_group_add_radio_actions(dw->action_group, radios, n_radios,
-	                                   SCALE_COLOUR,
+	                                   colscale,
 	                                   G_CALLBACK(displaywindow_setscale),
 	                                   dw);
 
@@ -1107,7 +1113,7 @@ static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
 
 DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
                                   int boost, int binning, int cmfilter,
-                                  int noisefilter)
+                                  int noisefilter, int colscale)
 {
 	DisplayWindow *dw;
 	char *title;
@@ -1119,7 +1125,6 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->binning_dialog = NULL;
 	dw->show_col_scale = 0;
 	dw->col_scale = NULL;
-	dw->scale = SCALE_COLOUR;
 	dw->boostint_dialog = NULL;
 	dw->boostint = 1;
 	dw->motion_callback = 0;
@@ -1143,7 +1148,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 
 	vbox = gtk_vbox_new(FALSE, 0);
 	gtk_container_add(GTK_CONTAINER(dw->window), vbox);
-	displaywindow_addmenubar(dw, vbox);
+	displaywindow_addmenubar(dw, vbox, colscale);
 
 	dw->drawingarea = gtk_drawing_area_new();
 	gtk_box_pack_start(GTK_BOX(vbox), dw->drawingarea, TRUE, TRUE, 0);
@@ -1171,6 +1176,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	gtk_window_set_resizable(GTK_WINDOW(dw->window), FALSE);
 	gtk_widget_show_all(dw->window);
 
+	dw->scale = colscale;
 	dw->binning = binning;
 	dw->boostint = boost;
 	dw->cmfilter = cmfilter;
