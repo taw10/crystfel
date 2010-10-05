@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
 	char *afile = NULL;
 	char *bfile = NULL;
 	char *sym = NULL;
-	double scale, scale_r2, R1, R2, R1i, Rdiff, pearson;
+	double scale, scale_r2, scale_rdig, R1, R2, R1i, Rdiff, pearson;
 	int i, ncom;
 	ReflItemList *i1, *i2, *icommon;
 	int config_shells = 0;
@@ -320,7 +320,7 @@ int main(int argc, char *argv[])
 	R1i = stat_r1_i(ref1, ref2_transformed, icommon, &scale);
 	STATUS("R1(I) = %5.4f %% (scale=%5.2e)\n", R1i*100.0, scale);
 
-	Rdiff = stat_rdiff_ignore(ref1, ref2_transformed, icommon, &scale);
+	Rdiff = stat_rdiff_ignore(ref1, ref2_transformed, icommon, &scale_rdig);
 	STATUS("Rdiff(F) = %5.4f %% (scale=%5.2e) (ignoring negative intensities)\n",
 	       Rdiff*100.0, scale);
 
@@ -340,7 +340,7 @@ int main(int argc, char *argv[])
 	       pearson);
 
 	if ( config_shells ) {
-		plot_shells(ref1, ref2_transformed, icommon, scale_r2, cell);
+		plot_shells(ref1, ref2_transformed, icommon, scale_rdig, cell);
 	}
 
 	if ( outfile != NULL ) {
