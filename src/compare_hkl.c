@@ -54,6 +54,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 	double den[NBINS];
 	double rmin, rmax, rstep;
 	int i;
+	double dentot;
 	FILE *fh;
 
 	if ( cell == NULL ) {
@@ -90,6 +91,27 @@ static void plot_shells(const double *ref1, const double *ref2,
 	}
 	rstep = (rmax-rmin) / NBINS;
 
+	dentot = 0.0;
+	for ( i=0; i<num_items(items); i++ ) {
+
+		struct refl_item *it;
+		signed int h, k, l;
+		double i1, i2, f1, f2;
+
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
+
+		i1 = lookup_intensity(ref1, h, k, l);
+		if ( i1 < 0.0 ) continue;
+		f1 = sqrt(i1);
+		i2 = lookup_intensity(ref2, h, k, l);
+		if ( i2 < 0.0 ) continue;
+		f2 = sqrt(i2);
+
+		dentot += (f1 + f2) / 2.0;
+
+	}
+
 	for ( i=0; i<num_items(items); i++ ) {
 
 		struct refl_item *it;
@@ -113,16 +135,16 @@ static void plot_shells(const double *ref1, const double *ref2,
 		f2 = sqrt(i2);
 
 		num[bin] += fabs(f1 - f2);
-		den[bin] += fabs(f1 + f2) / 2.0;
+		den[bin] = dentot;
 
 	}
 
 	for ( i=0; i<NBINS; i++ ) {
 
-		double r2, cen;
+		double r, cen;
 		cen = rmin + rstep*i + rstep/2.0;
-		r2 = num[i]/den[i];
-		fprintf(fh, "%f %f\n", cen/1.0e-10, r2*100.0);
+		r = num[i]/den[i];
+		fprintf(fh, "%f %f\n", cen/1.0e-10, r*100.0);
 
 	}
 
