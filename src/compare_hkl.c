@@ -51,9 +51,11 @@ static void plot_shells(const double *ref1, const double *ref2,
                         ReflItemList *items, double scale, UnitCell *cell)
 {
 	double num[NBINS];
+	int cts[NBINS];
 	double den;
 	double rmin, rmax, rstep;
 	int i;
+	int ctot;
 	FILE *fh;
 
 	if ( cell == NULL ) {
@@ -69,6 +71,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 
 	for ( i=0; i<NBINS; i++ ) {
 		num[i] = 0.0;
+		cts[i] = 0;
 	}
 
 	rmin = +INFINITY;
@@ -90,6 +93,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 	rstep = (rmax-rmin) / NBINS;
 
 	den = 0.0;
+	ctot = 0;
 	for ( i=0; i<num_items(items); i++ ) {
 
 		struct refl_item *it;
@@ -104,6 +108,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 		d = 0.5/resolution(cell, h, k, l);
 
 		bin = (d-rmin)/rstep;
+		if ( bin == NBINS ) bin = NBINS-1;
 
 		i1 = lookup_intensity(ref1, h, k, l);
 		if ( i1 < 0.0 ) continue;
@@ -114,6 +119,8 @@ static void plot_shells(const double *ref1, const double *ref2,
 
 		num[bin] += fabs(f1 - f2);
 		den += (f1 + f2) / 2.0;
+		cts[bin]++;
+		ctot++;
 
 	}
 
@@ -121,8 +128,8 @@ static void plot_shells(const double *ref1, const double *ref2,
 
 		double r, cen;
 		cen = rmin + rstep*i + rstep/2.0;
-		r = num[i]/den;
-		fprintf(fh, "%f %f\n", cen/1.0e-10, r*100.0);
+		r = (num[i]/den)*(ctot/cts[i]);
+		fprintf(fh, "%f %f %i\n", cen*1.0e-9, r*100.0, cts[i]);
 
 	}
 
