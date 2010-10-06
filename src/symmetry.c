@@ -48,6 +48,9 @@ static int check_cond(signed int h, signed int k, signed int l, const char *sym)
 		    || ( (h==0) && (k>=0) && (l>=0) );
 
 	/* Tetragonal */
+	if ( strcmp(sym, "4/mmm") == 0 )
+		return ( (((h>0) && (k>=0)) || ((h==0) && (k==0))) && (l>=0)
+		         && (h>=k) );  /* Like 6/mmm */
 	if ( strcmp(sym, "422") == 0 )
 		return ( (((h>=0) && (k>0)) || ((h==0) && (k==0)))
 		         && (h>=k) );
@@ -87,6 +90,7 @@ int num_general_equivs(const char *sym)
 
 	/* Tetragonal */
 	if ( strcmp(sym, "422") == 0 ) return 8;
+	if ( strcmp(sym, "4/mmm") == 0 ) return 16;
 
 	/* Hexagonal */
 	if ( strcmp(sym, "6") == 0 ) return 6;
@@ -151,6 +155,27 @@ void get_general_equiv(signed int h, signed int k, signed int l,
 		case  5 : *he = h;   *ke = -k;  *le = -l; return;
 		case  6 : *he = k;   *ke = h;   *le = -l; return;
 		case  7 : *he = -k;  *ke = -h;  *le = -l; return;
+		}
+	}
+
+	if ( strcmp(sym, "4/mmm") == 0 ) {
+		switch ( idx ) {
+		case  0 : *he = h;   *ke = k;   *le = l;  return;
+		case  1 : *he = -h;  *ke = -k;  *le = l;  return;
+		case  2 : *he = -k;  *ke = h;   *le = l;  return;
+		case  3 : *he = k;   *ke = -h;  *le = l;  return;
+		case  4 : *he = -h;  *ke = k;   *le = -l; return;
+		case  5 : *he = h;   *ke = -k;  *le = -l; return;
+		case  6 : *he = k;   *ke = h;   *le = -l; return;
+		case  7 : *he = -k;  *ke = -h;  *le = -l; return;
+		case  8 : *he = -h;  *ke = -k;  *le = -l; return;
+		case  9 : *he = h;   *ke = k;   *le = -l; return;
+		case 10 : *he = k;   *ke = -h;  *le = -l; return;
+		case 11 : *he = -k;  *ke = h;   *le = -l; return;
+		case 12 : *he = h;   *ke = -k;  *le = l;  return;
+		case 13 : *he = -h;  *ke = k;   *le = l;  return;
+		case 14 : *he = -k;  *ke = -h;  *le = l;  return;
+		case 15 : *he = k;   *ke = h;   *le = l;  return;
 		}
 	}
 
@@ -314,6 +339,7 @@ const char *get_holohedral(const char *sym)
 
 	/* Tetragonal */
 	if ( strcmp(sym, "422") == 0 ) return "4/mmm";
+	if ( strcmp(sym, "4/mmm") == 0 ) return "4/mmm";
 
 	/* Hexagonal */
 	if ( strcmp(sym, "6") == 0 ) return "6/mmm";
@@ -486,6 +512,7 @@ int is_polyhedral(const char *sym)
 
 	/* Tetragonal */
 	if ( strcmp(sym, "422") == 0 ) return 0;
+	if ( strcmp(sym, "4/mmm") == 0 ) return 0;
 
 	/* Hexagonal */
 	if ( strcmp(sym, "6") == 0 ) return 0;
@@ -513,6 +540,7 @@ int rotational_order(const char *sym)
 
 	/* Tetragonal */
 	if ( strcmp(sym, "422") == 0 ) return 4;
+	if ( strcmp(sym, "4/mmm") == 0 ) return 4;
 
 	/* Hexagonal */
 	if ( strcmp(sym, "6") == 0 ) return 6;
@@ -538,6 +566,7 @@ int has_perpendicular_mirror(const char *sym)
 
 	/* Tetragonal */
 	if ( strcmp(sym, "422") == 0 ) return 0;
+	if ( strcmp(sym, "4/mmm") == 0 ) return 1;
 
 	/* Hexagonal */
 	if ( strcmp(sym, "6") == 0 ) return 0;
@@ -563,6 +592,7 @@ int has_bisecting_mirror_or_diad(const char *sym)
 
 	/* Tetragonal */
 	if ( strcmp(sym, "422") == 0 ) return 0;
+	if ( strcmp(sym, "4/mmm") == 0 ) return 1;
 
 	/* Hexagonal */
 	if ( strcmp(sym, "6") == 0 ) return 0;
