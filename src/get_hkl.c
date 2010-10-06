@@ -177,6 +177,60 @@ static ReflItemList *twin_reflections(double *ref, ReflItemList *items,
 }
 
 
+static ReflItemList *expand_reflections(double *ref, ReflItemList *items,
+                                        const char *target, const char *initial)
+{
+	int i;
+	ReflItemList *new;
+
+	new = new_items();
+
+	for ( i=0; i<num_items(items); i++ ) {
+
+		struct refl_item *it;
+		signed int h, k, l;
+		signed int hd, kd, ld;
+		int n, j;
+		double intensity;
+
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
+
+		/* Actually we don't really care what the equivalent is,
+		 * we just want to be sure that there is nly be one version of
+		 * this reflection. */
+		find_unique_equiv(items, h, k, l, initial, &hd, &kd, &ld);
+
+		/* Now find out how many reflections need to be filled in */
+		n = num_equivs(h, k, l, initial);
+		intensity = lookup_intensity(ref, h, k, l);
+
+		for ( j=0; j<n; j++ ) {
+
+			signed int he, ke, le;
+
+			/* Get the equivalent */
+			get_equiv(h, k, l, &he, &ke, &le, initial, j);
+
+			/* Put it into the asymmetric unit for the target */
+			get_asymm(he, ke, le, &he, &ke, &le, target);
+
+			/* Make sure the intensity is in the right place */
+			set_intensity(ref, he, ke, le, intensity);
+
+			/* Add the reflection, but only once */
+			if ( !find_item(new, he, ke, le) ) {
+				add_item(new, he, ke, le);
+			}
+
+		}
+
+	}
+
+	return new;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -190,6 +244,7 @@ int main(int argc, char *argv[])
 	int config_multi = 0;
 	char *holo = NULL;
 	char *mero = NULL;
+	char *expand = NULL;
 	char *output = NULL;
 	char *input = NULL;
 	char *filename = NULL;
@@ -204,8 +259,9 @@ int main(int argc, char *argv[])
 		{"poisson",            0, &config_poisson,     1},
 		{"noise",              0, &config_noise,       1},
 		{"output",             1, NULL,               'o'},
-		{"twin",               1, NULL,               'w'},
 		{"symmetry",           1, NULL,               'y'},
+		{"twin",               1, NULL,               'w'},
+		{"expand",             1, NULL,               'e'},
 		{"intensities",        1, NULL,               'i'},
 		{"pdb",                1, NULL,               'p'},
 		{"no-phases",          0, &config_nophase,     1},
@@ -214,7 +270,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ht:o:i:p:w:y:",
+	while ((c = getopt_long(argc, argv, "ht:o:i:p:w:y:e:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -246,6 +302,10 @@ int main(int argc, char *argv[])
 			holo = strdup(optarg);
 			break;
 
+		case 'e' :
+			expand = strdup(optarg);
+			break;
+
 		case 0 :
 			break;
 
@@ -257,6 +317,12 @@ int main(int argc, char *argv[])
 
 	if ( filename == NULL ) {
 		filename = strdup("molecule.pdb");
+	}
+
+	if ( (holo != NULL) && (expand != NULL) ) {
+		ERROR("You cannot 'twin' and 'expand' at the same time.\n");
+		ERROR("Decide which one you want to do first.\n");
+		exit(1);
 	}
 
 	mol = load_molecule(filename);
@@ -284,6 +350,14 @@ int main(int argc, char *argv[])
 		ReflItemList *new;
 		STATUS("Twinning from %s into %s\n", mero, holo);
 		new = twin_reflections(ideal_ref, input_items, holo, mero);
+		delete_items(input_items);
+		input_items = new;
+	}
+
+	if ( expand != NULL ) {
+		ReflItemList *new;
+		STATUS("Expanding from %s into %s\n", mero, expand);
+		new = expand_reflections(ideal_ref, input_items, expand, mero);
 		delete_items(input_items);
 		input_items = new;
 	}
