@@ -116,6 +116,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 		i2 = lookup_intensity(ref2, h, k, l);
 		if ( i2 < 0.0 ) continue;
 		f2 = sqrt(i2);
+		f2 *= scale;
 
 		num[bin] += fabs(f1 - f2);
 		den += (f1 + f2) / 2.0;
@@ -128,7 +129,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 
 		double r, cen;
 		cen = rmin + rstep*i + rstep/2.0;
-		r = (num[i]/den)*(ctot/cts[i]);
+		r = (num[i]/den)*((double)ctot/cts[i]);
 		fprintf(fh, "%f %f %i\n", cen*1.0e-9, r*100.0, cts[i]);
 
 	}
