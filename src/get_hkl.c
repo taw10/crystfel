@@ -123,9 +123,9 @@ static ReflItemList *twin_reflections(double *ref, ReflItemList *items,
 		it = get_item(items, i);
 
 		/* There is a many-to-one correspondence between reflections
-		 * in the merohedral and holohedral unit cells.  Do the
-		 * calculation only once for each reflection in the holohedral
-		 * cell, which contains fewer reflections.
+		 * in the merohedral and holohedral groups.  Do the calculation
+		 * only once for each reflection in the holohedral group, which
+		 * contains fewer reflections.
 		 */
 		get_asymm(it->h, it->k, it->l, &h, &k, &l, holo);
 		if ( find_item(new, h, k, l) ) continue;

@@ -413,6 +413,8 @@ ReflItemList *get_twins(ReflItemList *items, const char *holo, const char *mero)
 	actual = num_items(ops);
 	expected = num_general_equivs(holo) / num_general_equivs(mero);
 	if ( actual != expected ) {
+		ERROR("Found %i twin possibilities, but expected %i.\n",
+		       actual, expected);
 		ERROR("I couldn't find the number of twin laws that I expected."
 		      " This is an internal error, and shouldn't happen. "
 		      "Sorry.\n");
