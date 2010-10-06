@@ -112,6 +112,11 @@ static ReflItemList *twin_reflections(double *ref, ReflItemList *items,
 
 	new = new_items();
 
+	if ( num_general_equivs(holo) < num_general_equivs(mero) ) {
+		ERROR("%s is not a subgroup of %s!\n", mero, holo);
+		return NULL;
+	}
+
 	for ( i=0; i<num_items(items); i++ ) {
 
 		double mean;
@@ -184,6 +189,11 @@ static ReflItemList *expand_reflections(double *ref, ReflItemList *items,
 	ReflItemList *new;
 
 	new = new_items();
+
+	if ( num_general_equivs(target) > num_general_equivs(initial) ) {
+		ERROR("%s is not a subgroup of %s!\n", initial, target);
+		return NULL;
+	}
 
 	for ( i=0; i<num_items(items); i++ ) {
 
