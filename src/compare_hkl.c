@@ -29,7 +29,7 @@
 
 
 /* Number of bins for plot of resolution shells */
-#define NBINS (50)
+#define NBINS (10)
 
 
 static void show_help(const char *s)
@@ -85,7 +85,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 		it = get_item(items, i);
 		h = it->h;  k = it->k;  l = it->l;
 
-		d = 0.5/resolution(cell, h, k, l);
+		d = resolution(cell, h, k, l) * 2.0;
 		if ( d > rmax ) rmax = d;
 		if ( d < rmin ) rmin = d;
 
@@ -105,7 +105,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 		it = get_item(items, i);
 		h = it->h;  k = it->k;  l = it->l;
 
-		d = 0.5/resolution(cell, h, k, l);
+		d = resolution(cell, h, k, l) * 2.0;
 
 		bin = (d-rmin)/rstep;
 		if ( bin == NBINS ) bin = NBINS-1;
