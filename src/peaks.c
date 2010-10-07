@@ -542,12 +542,16 @@ int find_projected_peaks(struct image *image, UnitCell *cell,
 			hits[n_hits].k = k;
 			hits[n_hits].l = l;
 			n_hits++;
-			assert(n_hits < MAX_HITS);
+			if ( n_hits == MAX_HITS ) {
+				ERROR("Unit cell is insanely large!\n");
+				goto out;
+			}
 		}
 
 	}
 	}
 
+out:
 	STATUS("Found %i reflections\n", n_hits);
 	image->hits = hits;
 	image->n_hits = n_hits;
