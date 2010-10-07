@@ -155,6 +155,11 @@ int get_peaks(struct image *image, struct hdfile *f)
 		return 1;
 	}
 
+	if ( image->features != NULL ) {
+		image_feature_list_free(image->features);
+	}
+	image->features = image_feature_list_new();
+
 	for ( i=0; i<size[0]; i++ ) {
 
 		unsigned int x, y;
