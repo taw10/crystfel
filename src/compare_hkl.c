@@ -276,7 +276,7 @@ int main(int argc, char *argv[])
 		if ( d > 55.0e-10 ) ig = 1;
 		//if ( d < 15.0e-10 ) ig = 1;
 
-		if ( ig ) continue;
+		//if ( ig ) continue;
 
 		set_intensity(ref2_transformed, h, k, l, val2);
 		set_intensity(out, h, k, l, val1/val2);
