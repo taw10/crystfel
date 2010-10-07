@@ -237,7 +237,6 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 	int i;
 	float *buf;
 	herr_t r;
-	int n;
 
 	dh = H5Dopen(f->fh, "/processing/hitfinder/peakinfo_saturated",
 	             H5P_DEFAULT);
@@ -286,7 +285,6 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 		return;
 	}
 
-	n = 0;
 	for ( i=0; i<size[0]; i++ ) {
 
 		unsigned int x, y;
@@ -301,11 +299,9 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 		image->data[x-1+image->width*y] = val / 5.0;
 		image->data[x+image->width*(y+1)] = val / 5.0;
 		image->data[x+image->width*(y-1)] = val / 5.0;
-		n++;
 
 	}
-	STATUS("Corrected %i saturation values, %i failed.\n",
-	       n, (int)size[0]-n);
+	STATUS("Corrected %i saturation values\n", (int)size[0]);
 
 	free(buf);
 	H5Sclose(sh);
