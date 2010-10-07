@@ -138,11 +138,12 @@ int find_chunk(FILE *fh, UnitCell **cell, char **filename)
 		}
 
 		/* Read in "Rick Mode"? */
-		if ( strncmp(line, "## h5FilePath:", 14) != 0 ) {
+		if ( strncmp(line, "## h5FilePath:", 14) == 0 ) {
 
 			/* Filename is on next line */
 			rval = fgets(line, 1023, fh);
 			if ( rval == NULL ) continue;
+			chomp(line);
 			*filename = strdup(line);
 			/* Look for the start of the orientation matrix */
 			do {
