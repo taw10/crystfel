@@ -169,8 +169,6 @@ int get_peaks(struct image *image, struct hdfile *f)
 		y = buf[3*i+1];
 		val = buf[3*i+2];
 
-		STATUS("%i %i %f\n", x, y, val);
-
 		image_add_feature(image->features, x, y, image, val, NULL);
 
 	}
