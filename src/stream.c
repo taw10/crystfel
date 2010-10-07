@@ -73,6 +73,37 @@ static UnitCell *read_orientation_matrix(FILE *fh)
 }
 
 
+static UnitCell *read_orientation_matrix_rick(FILE *fh)
+{
+	float u, v, w;
+	struct rvec as, bs, cs;
+	UnitCell *cell;
+	char line[1024];
+
+	if ( fgets(line, 1023, fh) == NULL ) return NULL;
+	if ( sscanf(line, "%f %f %f", &u, &v, &w) != 3 ) {
+		ERROR("Couldn't read a-star\n");
+		return NULL;
+	}
+	as.u = u*1e9;  as.v = v*1e9;  as.w = w*1e9;
+	if ( fgets(line, 1023, fh) == NULL ) return NULL;
+	if ( sscanf(line, "%f %f %f", &u, &v, &w) != 3 ) {
+		ERROR("Couldn't read b-star\n");
+		return NULL;
+	}
+	bs.u = u*1e9;  bs.v = v*1e9;  bs.w = w*1e9;
+	if ( fgets(line, 1023, fh) == NULL ) return NULL;
+	if ( sscanf(line, "%f %f %f", &u, &v, &w) != 3 ) {
+		ERROR("Couldn't read c-star\n");
+		return NULL;
+	}
+	cs.u = u*1e9;  cs.v = v*1e9;  cs.w = w*1e9;
+	cell = cell_new_from_axes(as, bs, cs);
+
+	return cell;
+}
+
+
 int find_chunk(FILE *fh, UnitCell **cell, char **filename)
 {
 	char line[1024];
@@ -80,24 +111,47 @@ int find_chunk(FILE *fh, UnitCell **cell, char **filename)
 
 	do {
 
+		int i;
+
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
 
 		chomp(line);
 
-		if ( strncmp(line, "Reflections from indexing", 25) != 0 ) {
+		/* Look for the first line of a chunk */
+		if ( (strncmp(line, "Reflections from indexing", 25) != 0)
+		  && (strncmp(line, "## h5FilePath:", 14) != 0 ) ) {
 			continue;
 		}
 
-		*filename = strdup(line+29);
+		/* Read in "Tom Mode"? */
+		if ( strncmp(line, "Reflections from indexing", 25) == 0 ) {
 
-		/* Skip two lines (while checking for errors) */
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
+			*filename = strdup(line+29);
+			/* Skip two lines */
+			for ( i=0; i<2; i++ ) {
+				rval = fgets(line, 1023, fh);
+				if ( rval == NULL ) continue;
+			}
+			*cell = read_orientation_matrix(fh);
 
-		*cell = read_orientation_matrix(fh);
+		}
+
+		/* Read in "Rick Mode"? */
+		if ( strncmp(line, "## h5FilePath:", 14) != 0 ) {
+
+			/* Filename is on next line */
+			rval = fgets(line, 1023, fh);
+			if ( rval == NULL ) continue;
+			*filename = strdup(line);
+			/* Look for the start of the orientation matrix */
+			do {
+				rval = fgets(line, 1023, fh);
+				if ( rval == NULL ) continue;
+			} while ( strncmp(line, "## A:", 5) != 0 );
+			*cell = read_orientation_matrix_rick(fh);
+		}
+
 		if ( *cell == NULL ) {
 			STATUS("Got filename but no cell for %s\n", *filename);
 			continue;
