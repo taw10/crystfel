@@ -75,29 +75,29 @@ static UnitCell *read_orientation_matrix(FILE *fh)
 
 static UnitCell *read_orientation_matrix_rick(FILE *fh)
 {
-	float u, v, w;
+	float a, b, c;
 	struct rvec as, bs, cs;
 	UnitCell *cell;
 	char line[1024];
 
 	if ( fgets(line, 1023, fh) == NULL ) return NULL;
-	if ( sscanf(line, "%f %f %f", &u, &v, &w) != 3 ) {
+	if ( sscanf(line, "%f %f %f", &a, &b, &c) != 3 ) {
 		ERROR("Couldn't read a-star\n");
 		return NULL;
 	}
-	as.u = u*1e9;  as.v = v*1e9;  as.w = w*1e9;
+	as.u = a*1e10;  bs.u = b*1e10;  cs.u = c*1e10;
 	if ( fgets(line, 1023, fh) == NULL ) return NULL;
-	if ( sscanf(line, "%f %f %f", &u, &v, &w) != 3 ) {
+	if ( sscanf(line, "%f %f %f", &a, &b, &c) != 3 ) {
 		ERROR("Couldn't read b-star\n");
 		return NULL;
 	}
-	bs.u = u*1e9;  bs.v = v*1e9;  bs.w = w*1e9;
+	as.v = a*1e10;  bs.v = b*1e10;  cs.v = c*1e10;
 	if ( fgets(line, 1023, fh) == NULL ) return NULL;
-	if ( sscanf(line, "%f %f %f", &u, &v, &w) != 3 ) {
+	if ( sscanf(line, "%f %f %f", &a, &b, &c) != 3 ) {
 		ERROR("Couldn't read c-star\n");
 		return NULL;
 	}
-	cs.u = u*1e9;  cs.v = v*1e9;  cs.w = w*1e9;
+	as.w = -a*1e10;  bs.w = -b*1e10;  cs.w = -c*1e10;
 	cell = cell_new_from_axes(as, bs, cs);
 
 	return cell;
