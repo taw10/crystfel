@@ -39,6 +39,13 @@
 
 #define MAX_THREADS (96)
 
+
+enum {
+	PEAK_ZAEF,
+	PEAK_HDF5,
+};
+
+
 struct process_args
 {
 	/* Input */
@@ -67,6 +74,7 @@ struct process_args
 	IndexingPrivate *ipriv;
 	const double *intensities;
 	struct gpu_context *gctx;
+	int peaks;
 
 	/* Thread control and output */
 	pthread_mutex_t control_mutex;  /* Protects the scary stuff below */
@@ -100,6 +108,11 @@ static void show_help(const char *s)
 " -g. --geometry=<file>    Get detector geometry from file.\n"
 " -p, --pdb=<file>         PDB file from which to get the unit cell to match.\n"
 " -x, --prefix=<p>         Prefix filenames from input file with <p>.\n"
+"     --peaks=<method>     Use 'method' for finding peaks.  Choose from:\n"
+"                           zaef  : Use Zaefferer (2000) gradient detection.\n"
+"                                    This is the default method.\n"
+"                           hdf5  : Get from /processing/hitfinder/peakinfo\n"
+"                                    in the HDF5 file.\n"
 "\n"
 "\nWith just the above options, this program does not do much of practical use."
 "\nYou should also enable some of the following:\n\n"
@@ -328,8 +341,19 @@ static void process_image(struct process_args *pargs)
 		memcpy(data_for_measurement, image.data, data_size);
 	}
 
-	/* Perform 'fine' peak search */
-	search_peaks(&image, pargs->threshold);
+	switch ( pargs->peaks )
+	{
+	case PEAK_HDF5 :
+		/* Get peaks from HDF5 */
+		if ( get_peaks(&image, hdfile) ) {
+			ERROR("Failed to get peaks from HDF5 file.\n");
+			return;
+		}
+		break;
+	case PEAK_ZAEF :
+		search_peaks(&image, pargs->threshold);
+		break;
+	}
 
 	/* Get rid of noise-filtered version at this point
 	 * - it was strictly for the purposes of peak detection. */
@@ -478,6 +502,8 @@ int main(int argc, char *argv[])
 	char *intfile = NULL;
 	char *pdb = NULL;
 	char *prefix = NULL;
+	char *speaks = NULL;
+	int peaks;
 	int nthreads = 1;
 	pthread_t workers[MAX_THREADS];
 	struct process_args *worker_args[MAX_THREADS];
@@ -497,6 +523,7 @@ int main(int argc, char *argv[])
 		{"gpu",                0, &config_gpu,         1},
 		{"no-index",           0, &config_noindex,     1},
 		{"dump-peaks",         0, &config_dumpfound,   1},
+		{"peaks",              1, NULL,                2},
 		{"near-bragg",         0, &config_nearbragg,   1},
 		{"write-drx",          0, &config_writedrx,    1},
 		{"indexing",           1, NULL,               'z'},
@@ -566,6 +593,10 @@ int main(int argc, char *argv[])
 			threshold = strtof(optarg, NULL);
 			break;
 
+		case 2 :
+			speaks = strdup(optarg);
+			break;
+
 		case 0 :
 			break;
 
@@ -602,6 +633,20 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	free(outfile);
+
+	if ( speaks == NULL ) {
+		speaks = strdup("zaef");
+		STATUS("You didn't specify a peak detection method.\n");
+		STATUS("I'm using 'zaef' for you.\n");
+	}
+	if ( strcmp(speaks, "zaef") == 0 ) {
+		peaks = PEAK_ZAEF;
+	} else if ( strcmp(speaks, "hdf5") == 0 ) {
+		peaks = PEAK_HDF5;
+	} else {
+		ERROR("Unrecognised peak detection method '%s'\n", speaks);
+		return 1;
+	}
 
 	if ( intfile != NULL ) {
 		ReflItemList *items;
@@ -702,6 +747,7 @@ int main(int argc, char *argv[])
 		worker_args[i] = malloc(sizeof(struct process_args));
 		worker_args[i]->filename = malloc(1024);
 		worker_args[i]->ofh = ofh;
+		worker_args[i]->peaks = peaks;
 		worker_active[i] = 0;
 	}
 

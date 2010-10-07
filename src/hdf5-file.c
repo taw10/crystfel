@@ -101,6 +101,84 @@ int hdfile_get_height(struct hdfile *f)
 }
 
 
+int get_peaks(struct image *image, struct hdfile *f)
+{
+	hid_t dh, sh;
+	hsize_t size[2];
+	hsize_t max_size[2];
+	int i;
+	float *buf;
+	herr_t r;
+
+	dh = H5Dopen(f->fh, "/processing/hitfinder/peakinfo", H5P_DEFAULT);
+
+	if ( dh < 0 ) {
+		ERROR("No peak list found!\n");
+		return 1;
+	}
+
+	sh = H5Dget_space(dh);
+	if ( sh < 0 ) {
+		H5Dclose(dh);
+		ERROR("Couldn't get dataspace for peak list.\n");
+		return 1;
+	}
+
+	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
+		ERROR("Peak list has the wrong dimensionality (%i).\n",
+		      H5Sget_simple_extent_ndims(sh));
+		H5Sclose(sh);
+		H5Dclose(dh);
+		return 1;
+	}
+
+	H5Sget_simple_extent_dims(sh, size, max_size);
+
+	if ( size[1] != 3 ) {
+		H5Sclose(sh);
+		H5Dclose(dh);
+		ERROR("Peak list has the wrong dimensions.\n");
+		return 1;
+	}
+
+	buf = malloc(sizeof(float)*size[0]*size[1]);
+	if ( buf == NULL ) {
+		H5Sclose(sh);
+		H5Dclose(dh);
+		ERROR("Couldn't reserve memory for the peak list.\n");
+		return 1;
+	}
+	r = H5Dread(dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
+	if ( r < 0 ) {
+		ERROR("Couldn't read peak list.\n");
+		free(buf);
+		return 1;
+	}
+
+	for ( i=0; i<size[0]; i++ ) {
+
+		unsigned int x, y;
+		float val;
+
+		x = buf[3*i+0];
+		y = buf[3*i+1];
+		val = buf[3*i+2];
+
+		STATUS("%i %i %f\n", x, y, val);
+
+		image_add_feature(image->features, x, y, image, val, NULL);
+
+	}
+	STATUS("Got %i peaks from peak list.\n", (int)size[0]);
+
+	free(buf);
+	H5Sclose(sh);
+	H5Dclose(dh);
+
+	return 0;
+}
+
+
 static void cleanup(hid_t fh)
 {
 	int n_ids, i;
