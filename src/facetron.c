@@ -29,14 +29,14 @@
 #include "symmetry.h"
 #include "reflections.h"
 #include "stream.h"
+#include "geometry.h"
 
 
 #define MAX_THREADS (256)
 
 struct process_args
 {
-	char *filename;
-	int id;
+	struct image *image;
 
 	/* Thread control */
 	pthread_mutex_t control_mutex;  /* Protects the scary stuff below */
@@ -44,9 +44,10 @@ struct process_args
 	int finish;
 	int done;
 
-	UnitCell *cell;
-	struct detector *det;
+	/* Analysis parameters */
 	const char *sym;
+	ReflItemList *obs;
+	double *i_full;
 };
 
 
@@ -65,30 +66,28 @@ static void show_help(const char *s)
 "  -x, --prefix=<p>           Prefix filenames from input file with <p>.\n"
 "      --basename             Remove the directory parts of the filenames.\n"
 "      --no-check-prefix      Don't attempt to correct the --prefix.\n"
+"  -y, --symmetry=<sym>       Merge according to symmetry <sym>.\n"
+"  -n, --iterations=<n>       Run <n> cycles of post-refinement.\n"
+"\n"
 "  -j <n>                     Run <n> analyses in parallel.\n");
 }
 
 
-static void process_image(struct process_args *pargs)
+static void refine_image(struct image *image, ReflItemList *obs, double *i_full)
 {
-	struct hdfile *hdfile;
-	struct image image;
+	//struct hdfile *hdfile;
 
-	image.features = NULL;
-	image.data = NULL;
-	image.flags = NULL;
-	image.indexed_cell = NULL;
-	image.id = pargs->id;
-	image.filename = pargs->filename;
-	image.hits = NULL;
-	image.n_hits = 0;
-	image.det = pargs->det;
+	image->features = NULL;
+	image->data = NULL;
+	image->flags = NULL;
+	image->hits = NULL;
+	image->n_hits = 0;
 
 	/* View head-on (unit cell is tilted) */
-	image.orientation.w = 1.0;
-	image.orientation.x = 0.0;
-	image.orientation.y = 0.0;
-	image.orientation.z = 0.0;
+	image->orientation.w = 1.0;
+	image->orientation.x = 0.0;
+	image->orientation.y = 0.0;
+	image->orientation.z = 0.0;
 
 	//hdfile = hdfile_open(pargs->filename);
 	//if ( hdfile == NULL ) {
@@ -101,10 +100,8 @@ static void process_image(struct process_args *pargs)
 
 	//hdf5_read(hdfile, &image, 1);
 
-
-	free(image.data);
-	cell_free(pargs->cell);
-	if ( image.flags != NULL ) free(image.flags);
+	free(image->data);
+	if ( image->flags != NULL ) free(image->flags);
 	//hdfile_close(hdfile);
 }
 
@@ -118,11 +115,10 @@ static void *worker_thread(void *pargsv)
 
 		int wakeup;
 
-		process_image(pargs);
+		refine_image(pargs->image, pargs->obs, pargs->i_full);
 
 		pthread_mutex_lock(&pargs->control_mutex);
 		pargs->done = 1;
-		pargs->start = 0;
 		pthread_mutex_unlock(&pargs->control_mutex);
 
 		/* Go to sleep until told to exit or process next image */
@@ -143,24 +139,22 @@ static void *worker_thread(void *pargsv)
 }
 
 
-static void optimise_all(int nthreads, struct detector *det, const char *sym,
-                         FILE *fh, int config_basename, const char *prefix,
-                         int n_total_patterns)
+static void refine_all(struct image *images, int n_total_patterns,
+                       struct detector *det, const char *sym,
+                       ReflItemList *obs, double *i_full, int nthreads)
 {
 	pthread_t workers[MAX_THREADS];
 	struct process_args *worker_args[MAX_THREADS];
 	int worker_active[MAX_THREADS];
 	int i;
-	int rval;
 	int n_done = 0;
+	int n_started = 0;
 
-	/* Initialise worker arguments */
+	/* Initialise worker arguments with the unchanging data */
 	for ( i=0; i<nthreads; i++ ) {
 
 		worker_args[i] = malloc(sizeof(struct process_args));
-		worker_args[i]->filename = malloc(1024);
 		worker_active[i] = 0;
-		worker_args[i]->det = det;
 		pthread_mutex_init(&worker_args[i]->control_mutex, NULL);
 		worker_args[i]->sym = sym;
 
@@ -171,25 +165,9 @@ static void optimise_all(int nthreads, struct detector *det, const char *sym,
 
 		struct process_args *pargs;
 		int r;
-		int rval;
-		char *filename;
-		UnitCell *cell;
 
 		pargs = worker_args[i];
-
-		/* Get the next filename */
-		rval = find_chunk(fh, &cell, &filename);
-		if ( rval == 1 ) break;
-		if ( config_basename ) {
-			char *tmp;
-			tmp = strdup(basename(filename));
-			free(filename);
-			filename = tmp;
-		}
-		snprintf(pargs->filename, 1023, "%s%s",
-		         prefix, filename);
-		pargs->cell = cell;
-		free(filename);
+		pargs->image = &images[n_started++];
 
 		pthread_mutex_lock(&pargs->control_mutex);
 		pargs->done = 0;
@@ -210,14 +188,11 @@ static void optimise_all(int nthreads, struct detector *det, const char *sym,
 	do {
 
 		int i;
-		rval = 0;
 
 		for ( i=0; i<nthreads; i++ ) {
 
 			struct process_args *pargs;
 			int done;
-			char *filename;
-			UnitCell *cell;
 
 			/* Spend time working, not managing threads */
 			usleep(100000);
@@ -235,19 +210,9 @@ static void optimise_all(int nthreads, struct detector *det, const char *sym,
 			n_done++;
 			progress_bar(n_done, n_total_patterns, "Refining");
 
-			/* Get the next filename */
-			rval = find_chunk(fh, &cell, &filename);
-			if ( rval == 1 ) break;
-			if ( config_basename ) {
-				char *tmp;
-				tmp = strdup(basename(filename));
-				free(filename);
-				filename = tmp;
-			}
-			snprintf(pargs->filename, 1023, "%s%s",
-			         prefix, filename);
-			pargs->cell = cell;
-			free(filename);
+			/* Start work on the next pattern */
+			if ( n_started == n_total_patterns ) break;
+			pargs->image = &images[n_started++];
 
 			/* Wake the thread up ... */
 			pthread_mutex_lock(&pargs->control_mutex);
@@ -257,12 +222,12 @@ static void optimise_all(int nthreads, struct detector *det, const char *sym,
 
 		}
 
-	} while ( rval == 0 );
+	} while ( n_started < n_total_patterns );
 
 	/* Join threads */
 	for ( i=0; i<nthreads; i++ ) {
 
-		if ( !worker_active[i] ) goto free;
+		if ( !worker_active[i] ) continue;
 
 		/* Tell the thread to exit */
 		struct process_args *pargs = worker_args[i];
@@ -273,10 +238,41 @@ static void optimise_all(int nthreads, struct detector *det, const char *sym,
 		/* Wait for it to join */
 		pthread_join(workers[i], NULL);
 
-	free:
-		if ( worker_args[i]->filename != NULL ) {
-			free(worker_args[i]->filename);
+		n_done++;
+		progress_bar(n_done, n_total_patterns, "Refining");
+
+	}
+}
+
+
+static double partiality(struct image *image, double x, double y)
+{
+	return 1.0;
+}
+
+
+static void estimate_full(struct image *images, int n_total_patterns,
+                          struct detector *det, const char *sym,
+                          ReflItemList *obs, double *i_full)
+{
+	int i;
+
+	for ( i=0; i<n_total_patterns; i++ ) {
+
+		struct reflhit *spots;
+		struct image *image = &images[i];
+		int j, n;
+
+		/* Get the "spots" appearing in this pattern */
+		spots = find_intersections(image, image->indexed_cell,
+		                           image->div, image->bw, &n, 0);
+
+		/* For each spot, estimate the partiality */
+		for ( j=0; j<n; j++ ) {
+			double p = partiality(image, spots[j].x, spots[j].y);
 		}
+
+		progress_bar(i, n_total_patterns-1, "Integrating");
 
 	}
 }
@@ -299,6 +295,8 @@ int main(int argc, char *argv[])
 	ReflItemList *obs;
 	int i;
 	int n_total_patterns;
+	struct image *images;
+	int n_iter = 10;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -310,6 +308,7 @@ int main(int argc, char *argv[])
 		{"basename",           0, &config_basename,    1},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
 		{"symmetry",           1, NULL,               'y'},
+		{"iterations",         1, NULL,               'n'},
 		{0, 0, NULL, 0}
 	};
 
@@ -345,6 +344,10 @@ int main(int argc, char *argv[])
 
 		case 'o' :
 			outfile = strdup(optarg);
+			break;
+
+		case 'n' :
+			n_iter = atoi(optarg);
 			break;
 
 		case 0 :
@@ -400,18 +403,63 @@ int main(int argc, char *argv[])
 	n_total_patterns = count_patterns(fh);
 	STATUS("There are %i patterns to process\n", n_total_patterns);
 
-	/* Iterate */
-	for ( i=0; i<10; i++ ) {
+	images = malloc(n_total_patterns * sizeof(struct image));
+	if ( images == NULL ) {
+		ERROR("Couldn't allocate memory for images.\n");
+		return 1;
+	}
 
-		STATUS("Post refinement iteration %i of 10\n", i+1);
+	/* Fill in what we know about the images so far */
+	rewind(fh);
+	for ( i=0; i<n_total_patterns; i++ ) {
+
+		UnitCell *cell;
+		char *filename;
+		char fnamereal[1024];
+
+		if ( find_chunk(fh, &cell, &filename) == 1 ) {
+			ERROR("Couldn't get all of the filenames and cells"
+			      " from the input stream.\n");
+			return 1;
+		}
+
+		images[i].indexed_cell = cell;
+
+		/* Mangle the filename now */
+		if ( config_basename ) {
+			char *tmp;
+			tmp = strdup(basename(filename));
+			free(filename);
+			filename = tmp;
+		}
+		snprintf(fnamereal, 1023, "%s%s", prefix, filename);
+
+		images[i].filename = fnamereal;
+		images[i].div = 0.5e-3;
+		images[i].bw = 0.001;
+
+		free(filename);
+
+		progress_bar(i, n_total_patterns-1, "Loading pattern data");
+
+	}
+	fclose(fh);
+	free(prefix);
+
+	/* Make initial estimates */
+	estimate_full(images, n_total_patterns, det, sym, obs, i_full);
+
+	/* Iterate */
+	for ( i=0; i<n_iter; i++ ) {
+
+		STATUS("Post refinement iteration %i of %i\n", i+1, n_iter);
 
 		/* Refine the geometry of all patterns to get the best fit */
-		rewind(fh);
-		optimise_all(nthreads, det, sym, fh, config_basename, prefix,
-		             n_total_patterns);
+		refine_all(images, n_total_patterns, det, sym, obs, i_full,
+		           nthreads);
 
 		/* Re-estimate all the full intensities */
-
+		estimate_full(images, n_total_patterns, det, sym, obs, i_full);
 
 	}
 
@@ -421,9 +469,7 @@ int main(int argc, char *argv[])
 	/* Clean up */
 	free(i_full);
 	delete_items(obs);
-	fclose(fh);
 	free(sym);
-	free(prefix);
 	free(outfile);
 
 	return 0;

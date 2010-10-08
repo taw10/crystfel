@@ -82,21 +82,26 @@ struct image {
 	struct reflhit          *hits;
 	int                     n_hits;
 
-	int                     id;
+	int                     id;   /* ID number of the thread
+	                               * handling this image */
 
+	/* Information about the crystal */
 	struct quaternion       orientation;
+	double                  m;  /* Mosaicity in radians */
 
-	/* Wavelength must always be given */
-	double                  lambda;   /* Wavelength in m */
 
-	/* Incident intensity (if unknown, put 1.0) */
-	double                  f0;
-	int                     f0_available;
+	/* Information about the radiation */
+	double                  lambda;        /* Wavelength in m */
+	double                  div;           /* Divergence in radians */
+	double                  bw;            /* Bandwidth as a fraction */
+	double                  f0;            /* Incident intensity */
+	int                     f0_available;  /* 0 if f0 wasn't available
+	                                        * from the input. */
 
 	int                     width;
 	int                     height;
 
-	ImageFeatureList        *features;   /* "Experimental" features */
+	ImageFeatureList        *features;
 
 	/* DirAx auto-indexing low-level stuff */
 	int                     dirax_pty;
