@@ -207,16 +207,19 @@ static void refine_all(struct image *images, int n_total_patterns,
 			pthread_mutex_unlock(&pargs->control_mutex);
 			if ( !done ) continue;
 
+			/* Reset "done" flag */
+			pargs->done = 0;
+
 			n_done++;
 			progress_bar(n_done, n_total_patterns, "Refining");
 
-			/* Start work on the next pattern */
+			/* If there are no more patterns, "done" will remain
+			 * zero, so the last pattern will not be re-counted. */
 			if ( n_started == n_total_patterns ) break;
-			pargs->image = &images[n_started++];
 
-			/* Wake the thread up ... */
+			/* Start work on the next pattern */
+			pargs->image = &images[n_started++];
 			pthread_mutex_lock(&pargs->control_mutex);
-			pargs->done = 0;
 			pargs->start = 1;
 			pthread_mutex_unlock(&pargs->control_mutex);
 
@@ -238,8 +241,10 @@ static void refine_all(struct image *images, int n_total_patterns,
 		/* Wait for it to join */
 		pthread_join(workers[i], NULL);
 
-		n_done++;
-		progress_bar(n_done, n_total_patterns, "Refining");
+		if ( pargs->done ) {
+			n_done++;
+			progress_bar(n_done, n_total_patterns, "Refining");
+		} /* else this thread was not busy */
 
 	}
 }
