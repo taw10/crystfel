@@ -30,6 +30,7 @@
 #include "reflections.h"
 #include "stream.h"
 #include "geometry.h"
+#include "peaks.h"
 
 
 #define MAX_THREADS (256)
@@ -44,10 +45,15 @@ struct process_args
 	int finish;
 	int done;
 
+	/* Analysis routine */
+	void (*func)(struct process_args *);
+
 	/* Analysis parameters */
 	const char *sym;
+	pthread_mutex_t *list_lock;  /* Protects 'obs', 'i_full' and 'cts' */
 	ReflItemList *obs;
 	double *i_full;
+	unsigned int *cts;
 };
 
 
@@ -73,36 +79,93 @@ static void show_help(const char *s)
 }
 
 
-static void refine_image(struct image *image, ReflItemList *obs, double *i_full)
+static void refine_image(struct process_args *pargs)
 {
-	//struct hdfile *hdfile;
+	/* Do, er, something. */
+}
 
-	image->features = NULL;
+
+static double partiality(struct image *image,
+                         signed int h, signed int k, signed int l)
+{
+	return 1.0;
+}
+
+
+static void integrate_image(struct process_args *pargs)
+{
+	struct reflhit *spots;
+	int j, n;
+	struct hdfile *hdfile;
+	struct image *image = pargs->image;
+
 	image->data = NULL;
 	image->flags = NULL;
-	image->hits = NULL;
-	image->n_hits = 0;
 
-	/* View head-on (unit cell is tilted) */
-	image->orientation.w = 1.0;
-	image->orientation.x = 0.0;
-	image->orientation.y = 0.0;
-	image->orientation.z = 0.0;
+	hdfile = hdfile_open(image->filename);
+	if ( hdfile == NULL ) {
+		ERROR("Couldn't open '%s'\n", image->filename);
+		return;
+	} else if ( hdfile_set_image(hdfile, "/data/data0") ) {
+		ERROR("Couldn't select path\n");
+		hdfile_close(hdfile);
+		return;
+	}
 
-	//hdfile = hdfile_open(pargs->filename);
-	//if ( hdfile == NULL ) {
-	//	return;
-	//} else if ( hdfile_set_first_image(hdfile, "/") ) {
-	//	ERROR("Couldn't select path\n");
-	//	hdfile_close(hdfile);
-	//	return;
-	//}
+	if ( hdf5_read(hdfile, pargs->image, 0) ) {
+		ERROR("Couldn't read '%s'\n", image->filename);
+		hdfile_close(hdfile);
+		return;
+	}
 
-	//hdf5_read(hdfile, &image, 1);
+goto skip;
 
+	/* Figure out which spots should appear in this pattern,
+	 * using a large divergence and bandwidth to avoid missing
+	 * reflection tails. */
+	spots = find_intersections(image, image->indexed_cell,
+	                           image->div, image->bw, &n, 0);
+
+	/* For each reflection, estimate the partiality */
+	for ( j=0; j<n; j++ ) {
+
+		signed int h, k, l;
+		float i_partial;
+		double p;
+		float xc, yc;
+
+		h = spots[j].h;
+		k = spots[j].k;
+		l = spots[j].l;
+
+		/* Calculated partiality of this spot in this pattern */
+		p = partiality(image, h, k, l);
+
+		/* Don't attempt to use spots with very small
+		 * partialities, since it won't be accurate. */
+		if ( p < 0.1 ) continue;
+
+		/* Actual measurement of this reflection from this
+		 * pattern? */
+		/* FIXME: Coordinates aren't whole numbers */
+		if ( integrate_peak(image, spots[j].x, spots[j].y,
+		                    &xc, &yc, &i_partial, 1, 1) ) continue;
+
+		pthread_mutex_lock(pargs->list_lock);
+		integrate_intensity(pargs->i_full, h, k, l, i_partial);
+		integrate_count(pargs->cts, h, k, l, 1);
+		if ( !find_item(pargs->obs, h, k, l) ) {
+			add_item(pargs->obs, h, k, l);
+		}
+		pthread_mutex_unlock(pargs->list_lock);
+
+	}
+
+skip:
 	free(image->data);
 	if ( image->flags != NULL ) free(image->flags);
-	//hdfile_close(hdfile);
+	hdfile_close(hdfile);
+	//free(spots);
 }
 
 
@@ -115,7 +178,7 @@ static void *worker_thread(void *pargsv)
 
 		int wakeup;
 
-		refine_image(pargs->image, pargs->obs, pargs->i_full);
+		pargs->func(pargs);
 
 		pthread_mutex_lock(&pargs->control_mutex);
 		pargs->done = 1;
@@ -139,12 +202,15 @@ static void *worker_thread(void *pargsv)
 }
 
 
-static void refine_all(struct image *images, int n_total_patterns,
-                       struct detector *det, const char *sym,
-                       ReflItemList *obs, double *i_full, int nthreads)
+static void munch_threads(struct image *images, int n_total_patterns,
+                          struct detector *det, const char *sym,
+                          ReflItemList *obs, double *i_full, unsigned int *cts,
+                          int nthreads, void (*func)(struct process_args *),
+                          const char *text)
 {
 	pthread_t workers[MAX_THREADS];
 	struct process_args *worker_args[MAX_THREADS];
+	pthread_mutex_t list_lock = PTHREAD_MUTEX_INITIALIZER;
 	int worker_active[MAX_THREADS];
 	int i;
 	int n_done = 0;
@@ -157,6 +223,11 @@ static void refine_all(struct image *images, int n_total_patterns,
 		worker_active[i] = 0;
 		pthread_mutex_init(&worker_args[i]->control_mutex, NULL);
 		worker_args[i]->sym = sym;
+		worker_args[i]->obs = obs;
+		worker_args[i]->i_full = i_full;
+		worker_args[i]->cts = cts;
+		worker_args[i]->list_lock = &list_lock;
+		worker_args[i]->func = func;
 
 	}
 
@@ -211,7 +282,7 @@ static void refine_all(struct image *images, int n_total_patterns,
 			pargs->done = 0;
 
 			n_done++;
-			progress_bar(n_done, n_total_patterns, "Refining");
+			progress_bar(n_done, n_total_patterns, text);
 
 			/* If there are no more patterns, "done" will remain
 			 * zero, so the last pattern will not be re-counted. */
@@ -243,43 +314,53 @@ static void refine_all(struct image *images, int n_total_patterns,
 
 		if ( pargs->done ) {
 			n_done++;
-			progress_bar(n_done, n_total_patterns, "Refining");
+			progress_bar(n_done, n_total_patterns, text);
 		} /* else this thread was not busy */
 
+	}
+
+	for ( i=0; i<nthreads; i++ ) {
+		free(worker_args[i]);
 	}
 }
 
 
-static double partiality(struct image *image, double x, double y)
+static void refine_all(struct image *images, int n_total_patterns,
+                       struct detector *det, const char *sym,
+                       ReflItemList *obs, double *i_full, int nthreads)
 {
-	return 1.0;
+	munch_threads(images, n_total_patterns, det, sym, obs, i_full, NULL,
+	              nthreads, refine_image, "Refining");
 }
 
 
 static void estimate_full(struct image *images, int n_total_patterns,
                           struct detector *det, const char *sym,
-                          ReflItemList *obs, double *i_full)
+                          ReflItemList *obs, double *i_full, int nthreads)
 {
 	int i;
+	unsigned int *cts;
 
-	for ( i=0; i<n_total_patterns; i++ ) {
+	cts = new_list_count();
+	clear_items(obs);
 
-		struct reflhit *spots;
-		struct image *image = &images[i];
-		int j, n;
+	munch_threads(images, n_total_patterns, det, sym, obs, i_full, cts,
+	              nthreads, integrate_image, "Integrating");
 
-		/* Get the "spots" appearing in this pattern */
-		spots = find_intersections(image, image->indexed_cell,
-		                           image->div, image->bw, &n, 0);
+	/* Divide the totals to get the means */
+	for ( i=0; i<num_items(obs); i++ ) {
 
-		/* For each spot, estimate the partiality */
-		for ( j=0; j<n; j++ ) {
-			double p = partiality(image, spots[j].x, spots[j].y);
-		}
+		struct refl_item *it;
+		double total;
 
-		progress_bar(i, n_total_patterns-1, "Integrating");
+		it = get_item(obs, i);
+		total = lookup_intensity(i_full, it->h, it->k, it->l);
+		total /= lookup_count(cts, it->h, it->k, it->l);
+		set_intensity(i_full, it->h, it->k, it->l, total);
 
 	}
+
+	free(cts);
 }
 
 
@@ -420,7 +501,7 @@ int main(int argc, char *argv[])
 
 		UnitCell *cell;
 		char *filename;
-		char fnamereal[1024];
+		char *fnamereal;
 
 		if ( find_chunk(fh, &cell, &filename) == 1 ) {
 			ERROR("Couldn't get all of the filenames and cells"
@@ -437,11 +518,17 @@ int main(int argc, char *argv[])
 			free(filename);
 			filename = tmp;
 		}
+		fnamereal = malloc(1024);
 		snprintf(fnamereal, 1023, "%s%s", prefix, filename);
 
 		images[i].filename = fnamereal;
 		images[i].div = 0.5e-3;
 		images[i].bw = 0.001;
+		images[i].orientation.w = 1.0;
+		images[i].orientation.x = 0.0;
+		images[i].orientation.y = 0.0;
+		images[i].orientation.z = 0.0;
+		images[i].det = det;
 
 		free(filename);
 
@@ -452,7 +539,8 @@ int main(int argc, char *argv[])
 	free(prefix);
 
 	/* Make initial estimates */
-	estimate_full(images, n_total_patterns, det, sym, obs, i_full);
+	estimate_full(images, n_total_patterns, det, sym, obs, i_full,
+	              nthreads);
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -464,7 +552,8 @@ int main(int argc, char *argv[])
 		           nthreads);
 
 		/* Re-estimate all the full intensities */
-		estimate_full(images, n_total_patterns, det, sym, obs, i_full);
+		estimate_full(images, n_total_patterns, det, sym, obs, i_full,
+		              nthreads);
 
 	}
 
@@ -476,6 +565,13 @@ int main(int argc, char *argv[])
 	delete_items(obs);
 	free(sym);
 	free(outfile);
+	free(det->panels);
+	free(det);
+	for ( i=0; i<n_total_patterns; i++ ) {
+		cell_free(images[i].indexed_cell);
+		free(images[i].filename);
+	}
+	free(images);
 
 	return 0;
 }
