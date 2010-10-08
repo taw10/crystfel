@@ -1,5 +1,5 @@
 /*
- * geometry.h
+ * geometry.c
  *
  * Geometry of diffraction
  *
