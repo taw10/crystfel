@@ -280,7 +280,7 @@ static void process_image(struct process_args *pargs)
 	struct image *simage;
 	float *data_for_measurement;
 	size_t data_size;
-	const char *filename = pargs->filename;
+	char *filename = pargs->filename;
 	UnitCell *cell = pargs->cell;
 	int config_cmfilter = pargs->config_cmfilter;
 	int config_noisefilter = pargs->config_noisefilter;
