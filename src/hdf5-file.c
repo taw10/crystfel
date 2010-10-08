@@ -406,6 +406,7 @@ int hdf5_read(struct hdfile *f, struct image *image, int satcorr)
 	            H5P_DEFAULT, buf);
 	if ( r < 0 ) {
 		ERROR("Couldn't read data\n");
+		free(buf);
 		return 1;
 	}
 	image->data = buf;
@@ -420,6 +421,7 @@ int hdf5_read(struct hdfile *f, struct image *image, int satcorr)
 		            H5P_DEFAULT, flags);
 		if ( r < 0 ) {
 			ERROR("Couldn't read flags\n");
+			free(flags);
 			image->flags = NULL;
 		} else {
 			image->flags = flags;
