@@ -60,6 +60,8 @@ void progress_bar(int val, int total, const char *text)
 	char s[1024];
 	const int width = 50;
 
+	if ( total == 0 ) return;
+
 	if ( !isatty(STDERR_FILENO) ) return;
 	if ( tcgetpgrp(STDERR_FILENO) != getpgrp() ) return;
 
