@@ -240,6 +240,8 @@ static void munch_threads(struct image *images, int n_total_patterns,
 		struct process_args *pargs;
 		int r;
 
+		if ( n_started == n_total_patterns ) break;
+
 		pargs = worker_args[i];
 		pargs->image = &images[n_started++];
 
