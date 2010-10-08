@@ -99,9 +99,6 @@ static void integrate_image(struct process_args *pargs)
 	struct hdfile *hdfile;
 	struct image *image = pargs->image;
 
-	image->data = NULL;
-	image->flags = NULL;
-
 	hdfile = hdfile_open(image->filename);
 	if ( hdfile == NULL ) {
 		ERROR("Couldn't open '%s'\n", image->filename);
@@ -117,8 +114,6 @@ static void integrate_image(struct process_args *pargs)
 		hdfile_close(hdfile);
 		return;
 	}
-
-goto skip;
 
 	/* Figure out which spots should appear in this pattern,
 	 * using a large divergence and bandwidth to avoid missing
@@ -161,11 +156,14 @@ goto skip;
 
 	}
 
-skip:
 	free(image->data);
 	if ( image->flags != NULL ) free(image->flags);
 	hdfile_close(hdfile);
-	//free(spots);
+	free(spots);
+
+	/* Muppet proofing */
+	image->data = NULL;
+	image->flags = NULL;
 }
 
 
@@ -177,6 +175,11 @@ static void *worker_thread(void *pargsv)
 	do {
 
 		int wakeup;
+
+		/* Acknowledge start */
+		pthread_mutex_lock(&pargs->control_mutex);
+		pargs->start = 0;
+		pthread_mutex_unlock(&pargs->control_mutex);
 
 		pargs->func(pargs);
 
@@ -279,7 +282,9 @@ static void munch_threads(struct image *images, int n_total_patterns,
 			if ( !done ) continue;
 
 			/* Reset "done" flag */
+			pthread_mutex_lock(&pargs->control_mutex);
 			pargs->done = 0;
+			pthread_mutex_unlock(&pargs->control_mutex);
 
 			n_done++;
 			progress_bar(n_done, n_total_patterns, text);
@@ -529,6 +534,10 @@ int main(int argc, char *argv[])
 		images[i].orientation.y = 0.0;
 		images[i].orientation.z = 0.0;
 		images[i].det = det;
+
+		/* Muppet proofing */
+		images[i].data = NULL;
+		images[i].flags = NULL;
 
 		free(filename);
 
