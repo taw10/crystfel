@@ -138,6 +138,13 @@ struct reflhit *find_intersections(struct image *image, UnitCell *cell,
 }
 
 
+/* Return the partiality of this reflection in this image */
+double partiality(struct image *image, signed int h, signed int k, signed int l)
+{
+	return 1.0;
+}
+
+
 double integrate_all(struct image *image, struct reflhit *hits, int n)
 {
 	double itot = 0.0;

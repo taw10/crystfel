@@ -85,13 +85,6 @@ static void refine_image(struct process_args *pargs)
 }
 
 
-static double partiality(struct image *image,
-                         signed int h, signed int k, signed int l)
-{
-	return 1.0;
-}
-
-
 static void integrate_image(struct process_args *pargs)
 {
 	struct reflhit *spots;
