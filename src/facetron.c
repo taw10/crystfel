@@ -108,9 +108,7 @@ static void integrate_image(struct process_args *pargs)
 		return;
 	}
 
-	/* Figure out which spots should appear in this pattern,
-	 * using a large divergence and bandwidth to avoid missing
-	 * reflection tails. */
+	/* Figure out which spots should appear in this pattern */
 	spots = find_intersections(image, image->indexed_cell,
 	                           image->div, image->bw, &n, 0);
 
