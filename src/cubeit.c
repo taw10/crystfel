@@ -317,7 +317,7 @@ static void sum_image(void *pg)
 	hdfile_close(hdfile);
 
 	free(apargs->filename);
-	free(pargs);
+	free(apargs);
 }
 
 
@@ -570,9 +570,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.bes = &bes;
 	qargs.static_args.gas = &gas;
 
-	n_images = 0;
-
-	run_threads(nthreads, sum_image, get_image, &qargs, 0);
+	n_images = run_threads(nthreads, sum_image, get_image, &qargs, 0);
 
 	fclose(fh);
 
