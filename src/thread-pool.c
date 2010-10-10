@@ -78,7 +78,9 @@ static void *worker_thread(void *pargsv)
 		pthread_mutex_lock(&q->lock);
 		q->status[mytask] = TASK_FINISHED;
 		q->n_done++;
-		progress_bar(q->n_done, q->n_tasks, q->text);
+		if ( q->text != NULL ) {
+			progress_bar(q->n_done, q->n_tasks, q->text);
+		}
 		pthread_mutex_unlock(&q->lock);
 
 	} while ( 1 );
