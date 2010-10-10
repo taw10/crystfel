@@ -200,7 +200,7 @@ static void interpolate_onto_grid(double *vals, double v,
 }
 
 
-static void sum_image(void *pg)
+static void sum_image(void *pg, int cookie)
 {
 	struct sum_args *apargs = pg;
 	struct static_sum_args *pargs = &apargs->static_args;

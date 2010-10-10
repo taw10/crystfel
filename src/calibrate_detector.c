@@ -157,7 +157,7 @@ static void sum_threshold(struct image *image, double *sum, double threshold)
 }
 
 
-static void add_image(void *args)
+static void add_image(void *args, int cookie)
 {
 	struct sum_args *pargs = args;
 	struct hdfile *hdfile;
@@ -178,7 +178,7 @@ static void add_image(void *args)
 	image.orientation.y = 0.0;
 	image.orientation.z = 0.0;
 
-	STATUS("Processing '%s'\n", pargs->filename);
+	STATUS("%3i: Processing '%s'\n", cookie, pargs->filename);
 
 	hdfile = hdfile_open(pargs->filename);
 	if ( hdfile == NULL ) {

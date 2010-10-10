@@ -21,6 +21,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <assert.h>
 
 #include "utils.h"
 
@@ -145,10 +146,12 @@ struct task_queue
 	int              n_started;
 	int              n_completed;
 	int              max;
+	int              n_cookies;
+	int             *cookies;
 
 	void *(*get_task)(void *);
 	void *queue_args;
-	void (*work)(void *);
+	void (*work)(void *, int);
 };
 
 
@@ -159,6 +162,9 @@ static void *task_worker(void *pargsv)
 	do {
 
 		void *task;
+		int i;
+		int mycookie = -1;
+		int found = 0;
 
 		/* Get a task */
 		pthread_mutex_lock(&q->lock);
@@ -174,14 +180,26 @@ static void *task_worker(void *pargsv)
 			break;
 		}
 
+		/* Find a cookie */
+		for ( i=0; i<q->n_cookies; i++ ) {
+			if ( q->cookies[i] == 0 ) {
+				mycookie = i;
+				found = 1;
+				q->cookies[i] = 1;
+				break;
+			}
+		}
+		assert(found);
+
 		q->n_started++;
 		pthread_mutex_unlock(&q->lock);
 
-		q->work(task);
+		q->work(task, mycookie);
 
-		/* Update totals etc */
+		/* Update totals, release cookie etc */
 		pthread_mutex_lock(&q->lock);
 		q->n_completed++;
+		q->cookies[mycookie] = 0;
 		pthread_mutex_unlock(&q->lock);
 
 	} while ( 1 );
@@ -190,7 +208,7 @@ static void *task_worker(void *pargsv)
 }
 
 
-int run_threads(int n_threads, void (*work)(void *),
+int run_threads(int n_threads, void (*work)(void *, int),
                 void *(*get_task)(void *), void *queue_args, int max)
 {
 	pthread_t *workers;
@@ -206,6 +224,13 @@ int run_threads(int n_threads, void (*work)(void *),
 	q.n_started = 0;
 	q.n_completed = 0;
 	q.max = max;
+	q.n_cookies = n_threads;
+	q.cookies = malloc(q.n_cookies * sizeof(int));
+
+
+	for ( i=0; i<n_threads; i++ ) {
+		q.cookies[i] = 0;
+	}
 
 	/* Start threads */
 	for ( i=0; i<n_threads; i++ ) {
@@ -224,6 +249,7 @@ int run_threads(int n_threads, void (*work)(void *),
 	}
 
 	free(workers);
+	free(q.cookies);
 
 	return q.n_completed;
 }

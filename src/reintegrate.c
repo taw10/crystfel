@@ -97,7 +97,7 @@ static void show_help(const char *s)
 }
 
 
-static void process_image(void *pg)
+static void process_image(void *pg, int cookie)
 {
 	struct integration_args *apargs = pg;
 	struct static_integration_args *pargs = &apargs->static_args;

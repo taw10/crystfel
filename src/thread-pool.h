@@ -30,7 +30,7 @@ extern void run_thread_range(int n_tasks, int n_threads, const char *text,
  * be passed to work().  Work will stop after 'max' tasks have been processed.
  * get_task() does not need to be re-entrant.
  * Returns: the number of tasks processed. */
-extern int run_threads(int n_threads, void (*work)(void *),
+extern int run_threads(int n_threads, void (*work)(void *, int),
                        void *(*get_task)(void *), void *queue_args, int max);
 
 
