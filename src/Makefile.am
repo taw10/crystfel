@@ -66,7 +66,8 @@ cubeit_LDADD = @LIBS@
 
 reintegrate_SOURCES = reintegrate.c cell.c hdf5-file.c utils.c detector.c \
                       peaks.c image.c stream.c \
-                      index.c dirax.c templates.c geometry.c symmetry.c
+                      index.c dirax.c templates.c geometry.c symmetry.c \
+                      thread-pool.c
 reintegrate_LDADD = @LIBS@
 
 INCLUDES = "-I$(top_srcdir)/data"

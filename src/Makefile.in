@@ -125,7 +125,7 @@ am_reintegrate_OBJECTS = reintegrate.$(OBJEXT) cell.$(OBJEXT) \
 	hdf5-file.$(OBJEXT) utils.$(OBJEXT) detector.$(OBJEXT) \
 	peaks.$(OBJEXT) image.$(OBJEXT) stream.$(OBJEXT) \
 	index.$(OBJEXT) dirax.$(OBJEXT) templates.$(OBJEXT) \
-	geometry.$(OBJEXT) symmetry.$(OBJEXT)
+	geometry.$(OBJEXT) symmetry.$(OBJEXT) thread-pool.$(OBJEXT)
 reintegrate_OBJECTS = $(am_reintegrate_OBJECTS)
 reintegrate_DEPENDENCIES =
 am_render_hkl_OBJECTS = render_hkl.$(OBJEXT) cell.$(OBJEXT) \
@@ -307,7 +307,8 @@ cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c render.c \
 cubeit_LDADD = @LIBS@
 reintegrate_SOURCES = reintegrate.c cell.c hdf5-file.c utils.c detector.c \
                       peaks.c image.c stream.c \
-                      index.c dirax.c templates.c geometry.c symmetry.c
+                      index.c dirax.c templates.c geometry.c symmetry.c \
+                      thread-pool.c
 
 reintegrate_LDADD = @LIBS@
 INCLUDES = "-I$(top_srcdir)/data"
