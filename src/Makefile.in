@@ -73,7 +73,7 @@ cubeit_DEPENDENCIES =
 am_facetron_OBJECTS = facetron.$(OBJEXT) cell.$(OBJEXT) \
 	hdf5-file.$(OBJEXT) utils.$(OBJEXT) detector.$(OBJEXT) \
 	peaks.$(OBJEXT) image.$(OBJEXT) geometry.$(OBJEXT) \
-	reflections.$(OBJEXT) stream.$(OBJEXT)
+	reflections.$(OBJEXT) stream.$(OBJEXT) thread-pool.$(OBJEXT)
 facetron_OBJECTS = $(am_facetron_OBJECTS)
 facetron_DEPENDENCIES =
 am_get_hkl_OBJECTS = get_hkl.$(OBJEXT) sfac.$(OBJEXT) cell.$(OBJEXT) \
@@ -298,7 +298,7 @@ calibrate_detector_SOURCES = calibrate_detector.c utils.c hdf5-file.c image.c \
 
 calibrate_detector_LDADD = @LIBS@
 facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
-                   image.c geometry.c reflections.c stream.c
+                   image.c geometry.c reflections.c stream.c thread-pool.c
 
 facetron_LDADD = @LIBS@
 cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c render.c \
@@ -458,6 +458,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symmetry.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/templates.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/thread-pool.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utils.Po@am__quote@
 
 .c.o:
