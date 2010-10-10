@@ -25,12 +25,19 @@
 #include "utils.h"
 
 
+enum {
+	TASK_READY,
+	TASK_RUNNING,
+	TASK_FINISHED,
+};
+
+
 struct task_queue
 {
 	pthread_mutex_t  lock;
 
 	int              n_tasks;
-	int             *done;
+	int             *status;
 	int              n_done;
 
 	void (*work)(int, void *);
@@ -53,9 +60,11 @@ static void *worker_thread(void *pargsv)
 		/* Get a task */
 		pthread_mutex_lock(&q->lock);
 		for ( i=0; i<q->n_tasks; i++ ) {
-			if ( q->done[i] == 0 ) {
+			if ( q->status[i] == TASK_READY ) {
 				mytask = i;
 				found = 1;
+				q->status[i] = TASK_RUNNING;
+				break;
 			}
 		}
 		pthread_mutex_unlock(&q->lock);
@@ -67,7 +76,7 @@ static void *worker_thread(void *pargsv)
 
 		/* Mark this task as done, update totals etc */
 		pthread_mutex_lock(&q->lock);
-		q->done[mytask] = 1;
+		q->status[mytask] = TASK_FINISHED;
 		q->n_done++;
 		progress_bar(q->n_done, q->n_tasks, q->text);
 		pthread_mutex_unlock(&q->lock);
@@ -90,7 +99,7 @@ void munch_threads(int n_tasks, int n_threads, const char *text,
 
 	workers = malloc(n_threads * sizeof(pthread_t));
 
-	q.done = malloc(n_tasks * sizeof(int));
+	q.status = malloc(n_tasks * sizeof(int));
 	pthread_mutex_init(&q.lock, NULL);
 	q.n_tasks = n_tasks;
 	q.work = work;
@@ -99,7 +108,7 @@ void munch_threads(int n_tasks, int n_threads, const char *text,
 	q.text = text;
 
 	for ( i=0; i<n_tasks; i++ ) {
-		q.done[i] = 0;
+		q.status[i] = TASK_READY;
 	}
 
 	/* Start threads */
@@ -118,6 +127,6 @@ void munch_threads(int n_tasks, int n_threads, const char *text,
 		pthread_join(workers[i], NULL);
 	}
 
-	free(q.done);
+	free(q.status);
 	free(workers);
 }
