@@ -546,6 +546,9 @@ int main(int argc, char *argv[])
 
 	as = 0.0; bs = 0.0; cs = 0.0; als = 0.0; bes = 0.0; gas = 0.0;
 
+	qargs.fh = fh;
+	qargs.prefix = prefix;
+	qargs.config_basename = config_basename;
 	qargs.static_args.xs = gs;
 	qargs.static_args.ys = gs;
 	qargs.static_args.zs = gs;
