@@ -389,7 +389,6 @@ static void write_slice(const char *filename, double *vals, int z,
 
 	cairo_surface_write_to_png(surface, filename);
 	cairo_surface_destroy(surface);
-
 }
 
 

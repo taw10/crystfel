@@ -162,7 +162,7 @@ static void *task_worker(void *pargsv)
 
 		/* Get a task */
 		pthread_mutex_lock(&q->lock);
-		if ( q->n_started >= q->max ) {
+		if ( (q->max) && (q->n_started >= q->max) ) {
 			pthread_mutex_unlock(&q->lock);
 			break;
 		}

@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "utils.h"
 #include "hdf5-file.h"

@@ -21,7 +21,6 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <pthread.h>
-#include <sys/time.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -31,7 +30,6 @@
 
 
 #define INTEGRATION_RADIUS (10)
-#define MAX_THREADS (96)
 
 
 typedef enum
