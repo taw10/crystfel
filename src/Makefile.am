@@ -53,7 +53,7 @@ render_hkl_SOURCES = render_hkl.c cell.c reflections.c utils.c povray.c \
 render_hkl_LDADD = @LIBS@
 
 calibrate_detector_SOURCES = calibrate_detector.c utils.c hdf5-file.c image.c \
-                             filters.c peaks.c detector.c cell.c
+                             filters.c peaks.c detector.c cell.c thread-pool.c
 calibrate_detector_LDADD = @LIBS@
 
 facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \

@@ -174,8 +174,8 @@ static void refine_all(struct image *images, int n_total_patterns,
 
 	}
 
-	munch_threads(n_total_patterns, nthreads, "Refining",
-	              refine_image, tasks);
+	run_thread_range(n_total_patterns, nthreads, "Refining",
+	                 refine_image, tasks);
 
 	free(tasks);
 }
@@ -205,8 +205,8 @@ static void estimate_full(struct image *images, int n_total_patterns,
 
 	}
 
-	munch_threads(n_total_patterns, nthreads, "Integrating",
-	              integrate_image, tasks);
+	run_thread_range(n_total_patterns, nthreads, "Integrating",
+	                 integrate_image, tasks);
 
 	free(tasks);
 
