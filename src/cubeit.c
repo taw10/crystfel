@@ -351,8 +351,6 @@ static void write_slice(const char *filename, double *vals, int z,
 	yl = s*bs*sin(ang);
 	xli = s*bs*cos(ang);
 
-	STATUS("%f %f\n", xs*xl + ys*xli, ys*yl);
-
 	surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 	                                     xs*xl + ys*xli, ys*yl);
 
