@@ -61,7 +61,7 @@ facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
 facetron_LDADD = @LIBS@
 
 cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c render.c \
-                 filters.c image.c symmetry.c stream.c
+                 filters.c image.c symmetry.c stream.c thread-pool.c
 cubeit_LDADD = @LIBS@
 
 reintegrate_SOURCES = reintegrate.c cell.c hdf5-file.c utils.c detector.c \
