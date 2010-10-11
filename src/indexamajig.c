@@ -664,6 +664,7 @@ int main(int argc, char *argv[])
 		ERROR("Unrecognised peak detection method '%s'\n", speaks);
 		return 1;
 	}
+	free(speaks);
 
 	if ( intfile != NULL ) {
 		ReflItemList *items;

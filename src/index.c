@@ -60,8 +60,10 @@ void cleanup_indexing(IndexingPrivate *priv)
 {
 	switch ( priv->indm ) {
 	case INDEXING_NONE :
+		free(priv);
 		break;
 	case INDEXING_DIRAX :
+		free(priv);
 		break;
 	case INDEXING_TEMPLATE :
 		free_templates(priv);
