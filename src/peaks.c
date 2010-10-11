@@ -630,40 +630,23 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
 }
 
 
-void output_intensities(struct image *image, UnitCell *cell,
-                        pthread_mutex_t *mutex, int polar, int sa,
-                        int use_closer, FILE *ofh,
-                        int circular_domain, double domain_r)
+static void output_header(FILE *ofh, UnitCell *cell, struct image *image)
 {
-	int i;
-	int n_found;
-	int n_indclose = 0;
-	int n_foundclose = 0;
-	int n_veto = 0;
-	int n_veto_second = 0;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	double a, b, c, al, be, ga;
 
-	if ( image->n_hits == 0 ) {
-		find_projected_peaks(image, cell, circular_domain, domain_r);
-	}
-	if ( image->n_hits == 0 ) return;
-
-	/* Get exclusive access to the output stream if necessary */
-	if ( mutex != NULL ) pthread_mutex_lock(mutex);
-
-	/* Explicit printf() used here (not normally allowed) because
-	 * we really want to output to stdout */
 	fprintf(ofh, "Reflections from indexing in %s\n", image->filename);
 	fprintf(ofh, "Orientation (wxyz): %7.5f %7.5f %7.5f %7.5f\n",
 	       image->orientation.w, image->orientation.x,
 	       image->orientation.y, image->orientation.z);
+
 	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
 	fprintf(ofh, "Cell parameters %7.5f %7.5f %7.5f nm, %7.5f %7.5f %7.5f deg\n",
 	       a*1.0e9, b*1.0e9, c*1.0e9,
 	       rad2deg(al), rad2deg(be), rad2deg(ga));
+
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
@@ -680,6 +663,38 @@ void output_intensities(struct image *image, UnitCell *cell,
 	} else {
 		fprintf(ofh, "f0 = invalid\n");
 	}
+
+}
+
+
+void output_intensities(struct image *image, UnitCell *cell,
+                        pthread_mutex_t *mutex, int polar, int sa,
+                        int use_closer, FILE *ofh,
+                        int circular_domain, double domain_r)
+{
+	int i;
+	int n_found;
+	int n_indclose = 0;
+	int n_foundclose = 0;
+	int n_veto = 0;
+	int n_veto_second = 0;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+
+	if ( image->n_hits == 0 ) {
+		find_projected_peaks(image, cell, circular_domain, domain_r);
+	}
+	if ( image->n_hits == 0 ) return;
+
+	/* Get exclusive access to the output stream if necessary */
+	if ( mutex != NULL ) pthread_mutex_lock(mutex);
+
+	output_header(ofh, cell, image);
+
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
 
 	for ( i=0; i<image->n_hits; i++ ) {
 
@@ -802,6 +817,174 @@ void output_intensities(struct image *image, UnitCell *cell,
 	       "they hit one or more bad pixels.\n", n_veto);
 	fprintf(ofh, "%i integrations using peak search locations were aborted "
 	       "because they hit one or more bad pixels.\n", n_veto_second);
+	/* Blank line at end */
+	fprintf(ofh, "\n");
+
+	if ( mutex != NULL ) pthread_mutex_unlock(mutex);
+}
+
+
+void output_pixels(struct image *image, UnitCell *cell,
+                   pthread_mutex_t *mutex, int do_polar, int do_sa,
+                   FILE *ofh, int circular_domain, double domain_r)
+{
+	int i;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	int x, y;
+	double aslen, bslen, cslen;
+	double *intensities;
+	double *xmom;
+	double *ymom;
+	ReflItemList *obs;
+
+	/* Get exclusive access to the output stream if necessary */
+	if ( mutex != NULL ) pthread_mutex_lock(mutex);
+
+	output_header(ofh, cell, image);
+
+	obs = new_items();
+	intensities = new_list_intensity();
+	xmom = new_list_intensity();
+	ymom = new_list_intensity();
+
+	/* "Borrow" direction values to get reciprocal lengths */
+	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	aslen = modulus(ax, ay, az);
+	bslen = modulus(bx, by, bz);
+	cslen = modulus(cx, cy, cz);
+
+	cell_get_cartesian(cell, &ax, &ay, &az,
+	                         &bx, &by, &bz,
+	                         &cx, &cy, &cz);
+	/* For each pixel */
+	fesetround(1);  /* Round towards nearest */
+	for ( x=0; x<image->width; x++ ) {
+	for ( y=0; y<image->height; y++ ) {
+
+		double hd, kd, ld;  /* Indices with decimal places */
+		double dh, dk, dl;  /* Distances in h,k,l directions */
+		signed int h, k, l;
+		struct rvec q;
+		double dist;
+
+		q = get_q(image, x, y, 1, NULL, 1.0/image->lambda);
+
+		hd = q.u * ax + q.v * ay + q.w * az;
+		kd = q.u * bx + q.v * by + q.w * bz;
+		ld = q.u * cx + q.v * cy + q.w * cz;
+
+		h = lrint(hd);
+		k = lrint(kd);
+		l = lrint(ld);
+
+		dh = hd - h;  dk = kd - k;  dl = ld - l;
+
+		if ( circular_domain ) {
+
+			/* Circular integration domain */
+			dist = sqrt(pow(dh*aslen, 2.0) + pow(dk*bslen, 2.0)
+			                              + pow(dl*cslen, 2.0));
+
+		} else {
+
+			/* "Crystallographic" integration domain */
+			dist = sqrt(pow(dh, 2.0) + pow(dk, 2.0) + pow(dl, 2.0));
+		}
+
+		if ( dist < domain_r ) {
+
+			double val;
+			struct panel *p;
+			double pix_area, Lsq, proj_area, dsq, sa;
+			double phi, pa, pb, pol;
+			float tt = 0.0;
+
+			/* Veto if we want to integrate a bad region */
+			if ( image->flags != NULL ) {
+				int flags;
+				flags = image->flags[x+image->width*y];
+				if ( !(flags & 0x01) ) continue;
+			}
+
+			val = image->data[x+image->width*y];
+
+			p = find_panel(image->det, x, y);
+			if ( p == NULL ) continue;
+
+			if ( p->no_index ) continue;
+
+			if ( do_sa ) {
+
+				/* Area of one pixel */
+				pix_area = pow(1.0/p->res, 2.0);
+				Lsq = pow(p->clen, 2.0);
+
+				/* Area of pixel as seen from crystal  */
+				tt = get_tt(image, x, y);
+				proj_area = pix_area * cos(tt);
+
+				/* Calculate distance from crystal to pixel */
+				dsq = pow(((double)x - p->cx) / p->res, 2.0);
+				dsq += pow(((double)y - p->cy) / p->res, 2.0);
+
+				/* Projected area of pixel / distance squared */
+				sa = 1.0e7 * proj_area / (dsq + Lsq);
+
+				val /= sa;
+
+			}
+
+			if ( do_polar ) {
+
+				if ( !do_sa ) tt = get_tt(image, x, y);
+
+				phi = atan2(y, x);
+				pa = pow(sin(phi)*sin(tt), 2.0);
+				pb = pow(cos(tt), 2.0);
+				pol = 1.0 - 2.0*POL*(1-pa) + POL*(1.0+pb);
+
+				val /= pol;
+
+			}
+
+			/* Add value to sum */
+			integrate_intensity(intensities, h, k, l, val);
+
+			integrate_intensity(xmom, h, k, l, val*x);
+			integrate_intensity(ymom, h, k, l, val*y);
+
+			if ( !find_item(obs, h, k, l) ) {
+				add_item(obs, h, k, l);
+			}
+
+		}
+
+	}
+	}
+
+	for ( i=0; i<num_items(obs); i++ ) {
+
+		struct refl_item *it;
+		double intensity, xmomv, ymomv;
+		double xp, yp;
+
+		it = get_item(obs, i);
+		intensity = lookup_intensity(intensities, it->h, it->k, it->l);
+		xmomv = lookup_intensity(xmom, it->h, it->k, it->l);
+		ymomv = lookup_intensity(ymom, it->h, it->k, it->l);
+
+		xp = xmomv / (double)intensity;
+		yp = ymomv / (double)intensity;
+
+		fprintf(ofh, "%3i %3i %3i %6f (at %5.2f,%5.2f)\n",
+		       image->hits[i].h, image->hits[i].k, image->hits[i].l,
+		       intensity, xp, yp);
+
+	}
+
+	fprintf(ofh, "No peak statistics, because output_pixels() was used.");
 	/* Blank line at end */
 	fprintf(ofh, "\n");
 
