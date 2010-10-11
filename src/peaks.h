@@ -21,10 +21,16 @@
 
 extern void search_peaks(struct image *image, float threshold);
 extern void dump_peaks(struct image *image, FILE *ofh, pthread_mutex_t *mutex);
+
 extern void output_intensities(struct image *image, UnitCell *cell,
                                pthread_mutex_t *mutex, int polar, int sa,
                                int use_closer, FILE *ofh, int circular_domain,
                                double domain_r);
+
+extern void output_pixels(struct image *image, UnitCell *cell,
+                          pthread_mutex_t *mutex, int do_polar, int do_sa,
+                          FILE *ofh, int circular_domain, double domain_r);
+
 extern int peak_sanity_check(struct image *image, UnitCell *cell,
                              int circular_domain, double domain_r);
 extern int find_projected_peaks(struct image *image, UnitCell *cell,

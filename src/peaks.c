@@ -979,14 +979,18 @@ void output_pixels(struct image *image, UnitCell *cell,
 		yp = ymomv / (double)intensity;
 
 		fprintf(ofh, "%3i %3i %3i %6f (at %5.2f,%5.2f)\n",
-		       image->hits[i].h, image->hits[i].k, image->hits[i].l,
-		       intensity, xp, yp);
+		       it->h, it->k, it->l, intensity, xp, yp);
 
 	}
 
-	fprintf(ofh, "No peak statistics, because output_pixels() was used.");
+	fprintf(ofh, "No peak statistics, because output_pixels() was used.\n");
 	/* Blank line at end */
 	fprintf(ofh, "\n");
+
+	free(xmom);
+	free(ymom);
+	free(intensities);
+	delete_items(obs);
 
 	if ( mutex != NULL ) pthread_mutex_unlock(mutex);
 }
