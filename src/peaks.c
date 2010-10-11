@@ -569,13 +569,13 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-	double alen, blen, clen;
+	double aslen, bslen, cslen;
 
 	/* "Borrow" direction values to get reciprocal lengths */
 	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	alen = modulus(ax, ay, az);
-	blen = modulus(bx, by, bz);
-	clen = modulus(cx, cy, cz);
+	aslen = modulus(ax, ay, az);
+	bslen = modulus(bx, by, bz);
+	cslen = modulus(cx, cy, cz);
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -607,8 +607,8 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
 		if ( circular_domain ) {
 
 			/* Circular integration domain */
-			dist = sqrt(pow(dh*alen, 2.0) + pow(dk*blen, 2.0)
-			                              + pow(dl*clen, 2.0));
+			dist = sqrt(pow(dh*aslen, 2.0) + pow(dk*bslen, 2.0)
+			                              + pow(dl*cslen, 2.0));
 			if ( dist <= domain_r ) n_sane++;
 
 		} else {
