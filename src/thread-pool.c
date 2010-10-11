@@ -227,7 +227,6 @@ int run_threads(int n_threads, void (*work)(void *, int),
 	q.n_cookies = n_threads;
 	q.cookies = malloc(q.n_cookies * sizeof(int));
 
-
 	for ( i=0; i<n_threads; i++ ) {
 		q.cookies[i] = 0;
 	}
