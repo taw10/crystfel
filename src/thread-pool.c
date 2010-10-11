@@ -150,6 +150,7 @@ struct task_queue
 	int             *cookies;
 
 	void *(*get_task)(void *);
+	void (*finalise)(void *, void *);
 	void *queue_args;
 	void (*work)(void *, int);
 };
@@ -200,6 +201,9 @@ static void *task_worker(void *pargsv)
 		pthread_mutex_lock(&q->lock);
 		q->n_completed++;
 		q->cookies[mycookie] = 0;
+		if ( q->finalise ) {
+			q->finalise(q, task);
+		}
 		pthread_mutex_unlock(&q->lock);
 
 	} while ( 1 );
@@ -209,7 +213,8 @@ static void *task_worker(void *pargsv)
 
 
 int run_threads(int n_threads, void (*work)(void *, int),
-                void *(*get_task)(void *), void *queue_args, int max)
+                void *(*get_task)(void *), void (*final)(void *, void *),
+                void *queue_args, int max)
 {
 	pthread_t *workers;
 	int i;
@@ -220,6 +225,7 @@ int run_threads(int n_threads, void (*work)(void *, int),
 	pthread_mutex_init(&q.lock, NULL);
 	q.work = work;
 	q.get_task = get_task;
+	q.finalise = final;
 	q.queue_args = queue_args;
 	q.n_started = 0;
 	q.n_completed = 0;

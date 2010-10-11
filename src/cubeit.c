@@ -568,7 +568,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.bes = &bes;
 	qargs.static_args.gas = &gas;
 
-	n_images = run_threads(nthreads, sum_image, get_image, &qargs, 0);
+	n_images = run_threads(nthreads, sum_image, get_image, NULL, &qargs, 0);
 
 	fclose(fh);
 

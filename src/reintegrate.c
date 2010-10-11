@@ -214,7 +214,7 @@ static void integrate_all(int nthreads, struct detector *det, FILE *fh,
 	qargs.static_args.config_sanity = qargs.static_args.config_sanity;
 	qargs.static_args.output_mutex = &output_mutex;
 
-	run_threads(nthreads, process_image, get_image, &qargs, 0);
+	run_threads(nthreads, process_image, get_image, NULL, &qargs, 0);
 }
 
 
