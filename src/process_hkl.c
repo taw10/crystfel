@@ -276,14 +276,9 @@ static void merge_pattern(double *model, ReflItemList *observed,
 			integrate_intensity(devs, h, k, l, fabs(intensity-m));
 		}
 
-		/* Already seen this reflection in this pattern? Complain. */
 		if ( !find_item(sym_items, h, k, l) ) {
-			/* Add the asymmetric version of this reflection to our
-			 * temporary list.  One reflection (in the asymmetric
-			 * unit) may appear more than once per pattern if
-			 * symmetrically related reflections are present.
-			 * That's fine... */
-		}	add_item(sym_items, h, k, l);
+			add_item(sym_items, h, k, l);
+		}
 
 		/* Increase count count */
 		integrate_count(model_counts, h, k, l, 1);
