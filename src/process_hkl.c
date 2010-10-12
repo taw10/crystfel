@@ -255,7 +255,7 @@ static void merge_pattern(double *model, ReflItemList *observed,
 		 * "twin" is always zero if no de-twinning is performed. */
 		get_general_equiv(hs, ks, ls, &h, &k, &l, holo, twin);
 
-		/* Put into the asymmetric cell for the target group */
+		/* Put into the asymmetric unit for the target group */
 		get_asymm(h, k, l, &h, &k, &l, mero);
 
 		/* Read the intensity from the original location
