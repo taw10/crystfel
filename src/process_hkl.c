@@ -258,7 +258,9 @@ static void merge_pattern(double *model, ReflItemList *observed,
 		/* Put into the asymmetric cell for the target group */
 		get_asymm(h, k, l, &h, &k, &l, mero);
 
-		intensity = lookup_intensity(new, h, k, l);
+		/* Read the intensity from the original location
+		 * (i.e. before screwing around with symmetry) */
+		intensity = lookup_intensity(new, hs, ks, ls);
 
 		/* User asked for max only? */
 		if ( !mo ) {
