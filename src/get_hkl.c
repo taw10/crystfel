@@ -41,6 +41,7 @@ static void show_help(const char *s)
 "  -y, --symmetry=<sym>       The symmetry of the input file (-i).\n"
 "  -w, --twin=<sym>           Generate twinned data according to the given\n"
 "                              point group.\n"
+"  -e, --expand=<sym>         Expand reflections to this point group.\n"
 "  -o, --output=<filename>    Output filename (default: stdout).\n"
 "  -i, --intensities=<file>   Read intensities from file instead of\n"
 "                              calculating them from scratch.  You might use\n"
