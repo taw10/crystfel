@@ -799,7 +799,7 @@ int main(int argc, char *argv[])
 	free(det->panels);
 	free(det);
 	cell_free(cell);
-	fclose(fh);
+	if ( fh != stdout ) fclose(fh);
 
 	STATUS("There were %i images.  %i could be indexed, of which %i"
 	       " looked sane.\n", n_images, qargs.n_indexable, qargs.n_sane);
