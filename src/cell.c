@@ -532,6 +532,24 @@ static int within_tolerance(double a, double b, double percent)
 }
 
 
+static int right_handed(struct rvec a, struct rvec b, struct rvec c)
+{
+	struct rvec aCb;
+	double aCb_dot_c;
+
+	/* "a" cross "b" */
+	aCb.u = a.v*b.w - a.w*b.v;
+	aCb.v = - (a.u*b.w - a.w*b.u);
+	aCb.w = a.u*b.v - a.v*b.u;
+
+	/* "a cross b" dot "c" */
+	aCb_dot_c = aCb.u*c.u + aCb.v*c.v + aCb.w*c.w;
+
+	if ( aCb_dot_c > 0.0 ) return 1;
+	return 0;
+}
+
+
 struct cvec {
 	struct rvec vec;
 	float na;
@@ -706,6 +724,10 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 
 			/* ... it should be angle 0 ... */
 			if ( fabs(ang - angles[0]) > angtol ) continue;
+
+			/* Unit cell must be right-handed */
+			if ( !right_handed(cand[0][i].vec, cand[1][j].vec,
+			                   cand[2][k].vec) ) continue;
 
 			fom3 = fom2 + fabs(ang - angles[0]);
 			fom3 += LWEIGHT * (cand[0][i].fom + cand[1][j].fom
