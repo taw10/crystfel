@@ -37,6 +37,8 @@ extern double stat_rdiff_zero(const double *ref1, const double *ref2,
                          ReflItemList *items, double *scalep);
 extern double stat_rdiff_ignore(const double *ref1, const double *ref2,
                          ReflItemList *items, double *scalep);
+extern double stat_rdiff_intensity(const double *ref1, const double *ref2,
+                         ReflItemList *items, double *scalep);
 
 extern double stat_pearson_i(const double *ref1, const double *ref2,
                              ReflItemList *items);

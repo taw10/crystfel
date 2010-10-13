@@ -38,6 +38,7 @@ enum {
 	R_1_I,
 	R_DIFF_ZERO,
 	R_DIFF_IGNORE,
+	R_DIFF_INTENSITY,
 };
 
 
@@ -232,6 +233,35 @@ static double internal_r_i(const double *ref1, const double *ref2,
 }
 
 
+static double internal_rdiff_intensity(const double *ref1, const double *ref2,
+                                       ReflItemList *items, double scale)
+{
+	double top = 0.0;
+	double bot = 0.0;
+	int i;
+
+	for ( i=0; i<num_items(items); i++ ) {
+
+		double i1, i2;
+		struct refl_item *it;
+		signed int h, k, l;
+
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
+
+		i1 = lookup_intensity(ref1, h, k, l);
+		i2 = lookup_intensity(ref2, h, k, l);
+		i2 *= scale;
+
+		top += fabs(i1 - i2);
+		bot += i1 + i2;
+
+	}
+
+	return 2.0*top/bot;
+}
+
+
 static double internal_rdiff_negstozero(const double *ref1, const double *ref2,
                                         ReflItemList *items, double scale)
 {
@@ -319,6 +349,9 @@ static double calc_r(double scale, void *params)
 	case R_DIFF_IGNORE :
 		return internal_rdiff_ignorenegs(rp->ref1, rp->ref2,
 		                                 rp->items, scale);
+	case R_DIFF_INTENSITY :
+		return internal_rdiff_intensity(rp->ref1, rp->ref2,
+		                                rp->items, scale);
 	}
 
 	ERROR("No such FoM!\n");
@@ -356,6 +389,7 @@ static double r_minimised(const double *ref1, const double *ref2,
 		break;
 	case R_2 :
 	case R_1_I :
+	case R_DIFF_INTENSITY :
 		scale = stat_scale_intensity(ref1, ref2, items);
 		break;
 	}
@@ -436,6 +470,12 @@ double stat_rdiff_ignore(const double *ref1, const double *ref2,
 	return r_minimised(ref1, ref2, items, scalep, R_DIFF_IGNORE);
 }
 
+
+double stat_rdiff_intensity(const double *ref1, const double *ref2,
+                            ReflItemList *items, double *scalep)
+{
+	return r_minimised(ref1, ref2, items, scalep, R_DIFF_INTENSITY);
+}
 
 double stat_pearson_i(const double *ref1, const double *ref2,
                       ReflItemList *items)

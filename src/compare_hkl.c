@@ -293,6 +293,7 @@ int main(int argc, char *argv[])
 	char *bfile = NULL;
 	char *sym = NULL;
 	double scale, scale_r2, scale_rdig, R1, R2, R1i, Rdiff, pearson;
+	double scale_rintint;
 	int i, ncom;
 	ReflItemList *i1, *i2, *icommon;
 	int config_shells = 0;
@@ -451,11 +452,16 @@ int main(int argc, char *argv[])
 	STATUS("R1(I) = %5.4f %% (scale=%5.2e)\n", R1i*100.0, scale);
 
 	Rdiff = stat_rdiff_ignore(ref1, ref2_transformed, icommon, &scale_rdig);
-	STATUS("Rdiff(F) = %5.4f %% (scale=%5.2e) (ignoring negative intensities)\n",
+	STATUS("Rint(F) = %5.4f %% (scale=%5.2e) (ignoring negative intensities)\n",
 	       Rdiff*100.0, scale);
 
 	Rdiff = stat_rdiff_zero(ref1, ref2_transformed, icommon, &scale);
-	STATUS("Rdiff(F) = %5.4f %% (scale=%5.2e) (zeroing negative intensities)\n",
+	STATUS("Rint(F) = %5.4f %% (scale=%5.2e) (zeroing negative intensities)\n",
+	       Rdiff*100.0, scale);
+
+	Rdiff = stat_rdiff_intensity(ref1, ref2_transformed, icommon,
+	                             &scale_rintint);
+	STATUS("Rint(I) = %5.4f %% (scale=%5.2e)\n",
 	       Rdiff*100.0, scale);
 
 	pearson = stat_pearson_i(ref1, ref2_transformed, icommon);
