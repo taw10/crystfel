@@ -48,12 +48,22 @@ static void show_help(const char *s)
 
 
 static void plot_shells(const double *ref1, const double *ref2,
-                        ReflItemList *items, double scale, UnitCell *cell)
+                        ReflItemList *items, double scale, UnitCell *cell,
+                        const char *sym, ReflItemList *characterise,
+                        unsigned int *char_counts)
 {
 	double num[NBINS];
 	int cts[NBINS];
+	int possible[NBINS];
+	unsigned int *counted;
+	unsigned int measurements[NBINS];
+	unsigned int measured[NBINS];
+	double total_vol, vol_per_shell;
+	double rmins[NBINS];
+	double rmaxs[NBINS];
 	double den;
-	double rmin, rmax, rstep;
+	double rmin, rmax;
+	signed int h, k, l;
 	int i;
 	int ctot;
 	FILE *fh;
@@ -72,6 +82,9 @@ static void plot_shells(const double *ref1, const double *ref2,
 	for ( i=0; i<NBINS; i++ ) {
 		num[i] = 0.0;
 		cts[i] = 0;
+		possible[i] = 0;
+		measured[i] = 0;
+		measurements[i] = 0;
 	}
 
 	rmin = +INFINITY;
@@ -90,7 +103,119 @@ static void plot_shells(const double *ref1, const double *ref2,
 		if ( d < rmin ) rmin = d;
 
 	}
-	rstep = (rmax-rmin) / NBINS;
+
+	STATUS("%f -> %f\n", rmin/1e9, rmax/1e9);
+
+	/* Increase the max just a little bit */
+	rmax += 0.001e9;
+
+	total_vol = pow(rmax, 3.0) - pow(rmin, 3.0);
+	vol_per_shell = total_vol / NBINS;
+	rmins[0] = rmin;
+	for ( i=1; i<NBINS; i++ ) {
+
+		double r;
+
+		r = vol_per_shell + pow(rmins[i-1], 3.0);
+		r = pow(r, 1.0/3.0);
+
+		rmaxs[i-1] = r;
+		rmins[i] = r;
+
+		STATUS("Shell %i: %f to %f\n", i-1,
+		       rmins[i-1]/1e9, rmaxs[i-1]/1e9);
+
+	}
+	rmaxs[NBINS-1] = rmax;
+	STATUS("Shell %i: %f to %f\n", NBINS-1,
+	       rmins[NBINS-1]/1e9, rmaxs[NBINS-1]/1e9);
+
+#if 0
+	/* FIXME: Fixed resolution shells */
+	rmins[0] = 0.121065;  rmaxs[0] = 0.552486;
+	rmins[1] = 0.552486;  rmaxs[1] = 0.690186;
+	rmins[2] = 0.690186;  rmaxs[2] = 0.787787;
+	rmins[3] = 0.787787;  rmaxs[3] = 0.865813;
+	rmins[4] = 0.865813;  rmaxs[4] = 0.931853;
+	rmins[5] = 0.931853;  rmaxs[5] = 0.989663;
+	rmins[6] = 0.989663;  rmaxs[6] = 1.041409;
+	rmins[7] = 1.041409;  rmaxs[7] = 1.088467;
+	rmins[8] = 1.088467;  rmaxs[8] = 1.131775;
+	rmins[9] = 1.131775;  rmaxs[9] = 1.172000;
+	for ( i=0; i<NBINS; i++ ) {
+		rmins[i] *= 1e9;
+		rmaxs[i] *= 1e9;
+	}
+#endif
+
+	/* Count the number of reflections possible in each shell */
+	counted = new_list_count();
+	for ( h=-50; h<=+50; h++ ) {
+	for ( k=-50; k<=+50; k++ ) {
+	for ( l=-50; l<=+50; l++ ) {
+
+		double d;
+		signed int hs, ks, ls;
+		int bin;
+
+		/* FIXME: Reflection condition */
+		// if ( (h==0) && (k==0) && (l%2) ) continue;
+
+		get_asymm(h, k, l, &hs, &ks, &ls, sym);
+		if ( lookup_count(counted, hs, ks, ls) ) continue;
+		set_count(counted, hs, ks, ls, 1);
+
+		d = resolution(cell, h, k, l) * 2.0;
+
+		bin = -1;
+		for ( i=0; i<NBINS; i++ ) {
+			if ( (d>rmins[i]) && (d<=rmaxs[i]) ) {
+				bin = i;
+				break;
+			}
+		}
+		if ( bin == -1 ) continue;
+
+		possible[bin]++;
+
+	}
+	}
+	}
+	free(counted);
+
+	/* Characterise the first data set (only) */
+	for ( i=0; i<num_items(characterise); i++ ) {
+
+		struct refl_item *it;
+		signed int h, k, l;
+		double d;
+		int bin;
+		int j;
+
+		it = get_item(characterise, i);
+		h = it->h;  k = it->k;  l = it->l;
+
+		/* FIXME: Reflection condition */
+		//if ( (h==0) && (k==0) && (l%2) ) continue;
+
+		d = resolution(cell, h, k, l) * 2.0;
+
+		bin = -1;
+		for ( j=0; j<NBINS; j++ ) {
+			if ( (d>rmins[j]) && (d<=rmaxs[j]) ) {
+				bin = j;
+				break;
+			}
+		}
+		if ( bin == -1 ) {
+			ERROR("Warnung! %i %i %i %f\n", h, k, l, d/1e9);
+			continue;
+		}
+
+		measured[bin]++;
+		measurements[bin] += lookup_count(char_counts, h, k, l);
+
+	}
 
 	den = 0.0;
 	ctot = 0;
@@ -101,14 +226,28 @@ static void plot_shells(const double *ref1, const double *ref2,
 		double d;
 		int bin;
 		double i1, i2, f1, f2;
+		int j;
 
 		it = get_item(items, i);
 		h = it->h;  k = it->k;  l = it->l;
 
+		/* FIXME: Reflection condition */
+		//if ( (h==0) && (k==0) && (l%2) ) continue;
+
 		d = resolution(cell, h, k, l) * 2.0;
 
-		bin = (d-rmin)/rstep;
-		if ( bin == NBINS ) bin = NBINS-1;
+		bin = -1;
+		for ( j=0; j<NBINS; j++ ) {
+			if ( (d>rmins[j]) && (d<=rmaxs[j]) ) {
+				bin = j;
+				break;
+			}
+		}
+		if ( bin == -1 ) {
+			ERROR("Warnung! %i %i %i %f\n", h, k, l, d/1e9);
+			abort();
+			continue;
+		}
 
 		i1 = lookup_intensity(ref1, h, k, l);
 		if ( i1 < 0.0 ) continue;
@@ -120,17 +259,20 @@ static void plot_shells(const double *ref1, const double *ref2,
 
 		num[bin] += fabs(f1 - f2);
 		den += (f1 + f2) / 2.0;
-		cts[bin]++;
 		ctot++;
+		cts[bin]++;
 
 	}
 
 	for ( i=0; i<NBINS; i++ ) {
 
 		double r, cen;
-		cen = rmin + rstep*i + rstep/2.0;
+		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
 		r = (num[i]/den)*((double)ctot/cts[i]);
-		fprintf(fh, "%f %f %i\n", cen*1.0e-9, r*100.0, cts[i]);
+		fprintf(fh, "%f %f %i %i %i %f\n", cen*1.0e-9, r*100.0,
+		                            measured[i],
+		                            possible[i], measurements[i],
+		                            (float)measurements[i]/measured[i]);
 
 	}
 
@@ -159,6 +301,7 @@ int main(int argc, char *argv[])
 	double *esd2;
 	int rej1 = 0;
 	int rej2 = 0;
+	unsigned int *cts1;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -220,7 +363,8 @@ int main(int argc, char *argv[])
 
 	ref1 = new_list_intensity();
 	esd1 = new_list_sigma();
-	i1 = read_reflections(afile, ref1, NULL, NULL, esd1);
+	cts1 = new_list_count();
+	i1 = read_reflections(afile, ref1, NULL, cts1, esd1);
 	if ( i1 == NULL ) {
 		ERROR("Couldn't open file '%s'\n", afile);
 		return 1;
@@ -326,7 +470,8 @@ int main(int argc, char *argv[])
 	       pearson);
 
 	if ( config_shells ) {
-		plot_shells(ref1, ref2_transformed, icommon, scale_rdig, cell);
+		plot_shells(ref1, ref2_transformed, icommon, scale_rdig, cell,
+		            sym, i1, cts1);
 	}
 
 	if ( outfile != NULL ) {
