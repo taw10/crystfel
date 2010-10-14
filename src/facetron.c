@@ -135,7 +135,9 @@ static void integrate_image(int mytask, void *tasks)
 		 * pattern? */
 		/* FIXME: Coordinates aren't whole numbers */
 		if ( integrate_peak(image, spots[j].x, spots[j].y,
-		                    &xc, &yc, &i_partial, 1, 1) ) continue;
+		                    &xc, &yc, &i_partial, NULL, NULL, 1, 1) ) {
+			continue;
+		}
 
 		pthread_mutex_lock(pargs->list_lock);
 		integrate_intensity(pargs->i_full, h, k, l, i_partial);
