@@ -32,6 +32,7 @@
 #include "diffraction.h"
 
 
+/* Maximum number of peaks which may be predicted by find_projected_peaks() */
 #define MAX_HITS (1024)
 
 /* How close a peak must be to an indexed position to be considered "close"
@@ -45,10 +46,15 @@
 /* Degree of polarisation of X-ray beam */
 #define POL (1.0)
 
-
+/* Window size for Zaefferer peak detection */
 #define PEAK_WINDOW_SIZE (10)
-#define MAX_PEAKS (2048)
+
+/* Integration radius for peaks */
 #define INTEGRATION_RADIUS (10)
+
+/* Integration radius for background estimation */
+#define OUT_INTEGRATION_RADIUS (15)
+
 
 static int in_streak(int x, int y)
 {
@@ -179,16 +185,21 @@ static int cull_peaks(struct image *image)
  * i.e. don't use result if return value is not zero. */
 int integrate_peak(struct image *image, int xp, int yp,
                    float *xc, float *yc, float *intensity,
+                   double *pbg, double *pmax,
                    int do_polar, int do_sa)
 {
 	signed int x, y;
 	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
-	double total = 0;
+	const int out_lim = OUT_INTEGRATION_RADIUS * OUT_INTEGRATION_RADIUS;
+	double total = 0.0;
 	int xct = 0;
 	int yct = 0;
+	double noise = 0.0;
+	int noise_counts = 0;
+	double max = 0.0;
 
-	for ( x=-INTEGRATION_RADIUS; x<+INTEGRATION_RADIUS; x++ ) {
-	for ( y=-INTEGRATION_RADIUS; y<+INTEGRATION_RADIUS; y++ ) {
+	for ( x=-OUT_INTEGRATION_RADIUS; x<+OUT_INTEGRATION_RADIUS; x++ ) {
+	for ( y=-OUT_INTEGRATION_RADIUS; y<+OUT_INTEGRATION_RADIUS; y++ ) {
 
 		struct panel *p = NULL;
 		double val, sa, pix_area, Lsq, dsq, proj_area;
@@ -196,8 +207,8 @@ int integrate_peak(struct image *image, int xp, int yp,
 		double phi, pa, pb, pol;
 		uint16_t flags;
 
-		/* Circular mask */
-		if ( x*x + y*y > lim ) continue;
+		/* Outer mask radius */
+		if ( x*x + y*y > out_lim ) continue;
 
 		if ( ((x+xp)>=image->width) || ((x+xp)<0) ) continue;
 		if ( ((y+yp)>=image->height) || ((y+yp)<0) ) continue;
@@ -209,6 +220,16 @@ int integrate_peak(struct image *image, int xp, int yp,
 		}
 
 		val = image->data[(x+xp)+image->width*(y+yp)];
+
+		/* Inner mask */
+		if ( x*x + y*y > lim ) {
+			/* Estimate noise from this region */
+			noise += fabs(val);
+			noise_counts++;
+			continue;
+		}
+
+		if ( val > max ) max = val;
 
 		p = find_panel(image->det, x+xp, y+yp);
 		if ( p == NULL ) return 1;
@@ -266,6 +287,13 @@ int integrate_peak(struct image *image, int xp, int yp,
 		*xc = (float)xp;
 		*yc = (float)yp;
 		*intensity = 0;
+	}
+
+	if ( pbg != NULL ) {
+		*pbg = (noise / noise_counts);
+	}
+	if ( pmax != NULL ) {
+		*pmax = max;
 	}
 
 	return 0;
@@ -383,7 +411,7 @@ void search_peaks(struct image *image, float threshold)
 		 * Don't bother doing polarisation/SA correction, because the
 		 * intensity of this peak is only an estimate at this stage. */
 		r = integrate_peak(image, mask_x, mask_y,
-		                   &fx, &fy, &intensity, 0, 0);
+		                   &fx, &fy, &intensity, NULL, NULL, 0, 0);
 		if ( r ) {
 			/* Bad region - don't detect peak */
 			nrej_bad++;
@@ -701,6 +729,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 		float x, y, intensity;
 		double d;
 		int idx;
+		double bg, max;
 
 		/* Wait.. is there a really close feature which was detected? */
 		if ( use_closer ) {
@@ -724,7 +753,8 @@ void output_intensities(struct image *image, UnitCell *cell,
 				 * coordinates. This will produce further
 				 * revised coordinates. */
 				r = integrate_peak(image, f->x, f->y, &x, &y,
-					           &intensity, polar, sa);
+					           &intensity, &bg, &max,
+					           polar, sa);
 				if ( r ) {
 					/* The original peak (which also went
 					 * through integrate_peak(), but with
@@ -745,8 +775,8 @@ void output_intensities(struct image *image, UnitCell *cell,
 				r = integrate_peak(image,
 					           image->hits[i].x,
 					           image->hits[i].y,
-					           &x, &y, &intensity, polar,
-					           sa);
+					           &x, &y, &intensity, &bg, &max,
+					           polar, sa);
 				if ( r ) {
 					/* Plain old ordinary peak veto */
 					n_veto++;
@@ -766,7 +796,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 			r = integrate_peak(image,
 				           image->hits[i].x,
 				           image->hits[i].y,
-				           &x, &y, &intensity, polar,
+				           &x, &y, &intensity, &bg, &max, polar,
 				           sa);
 			if ( r ) {
 				/* Plain old ordinary peak veto */
@@ -777,9 +807,9 @@ void output_intensities(struct image *image, UnitCell *cell,
 		}
 
 		/* Write h,k,l, integrated intensity and centroid coordinates */
-		fprintf(ofh, "%3i %3i %3i %6f (at %5.2f,%5.2f)\n",
+		fprintf(ofh, "%3i %3i %3i %6f (at %5.2f,%5.2f) max=%6f bg=%6f\n",
 		       image->hits[i].h, image->hits[i].k, image->hits[i].l,
-		       intensity, x, y);
+		       intensity, x, y, max, bg);
 
 		image->hits[i].x = x;
 		image->hits[i].y = y;

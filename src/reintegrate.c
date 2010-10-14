@@ -65,7 +65,6 @@ struct queue_args
 };
 
 
-
 static void show_help(const char *s)
 {
 	printf("Syntax: %s [options]\n\n", s);

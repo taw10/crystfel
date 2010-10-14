@@ -155,7 +155,7 @@ double integrate_all(struct image *image, struct reflhit *hits, int n)
 		float x, y, intensity;
 
 		if ( integrate_peak(image, hits[i].x, hits[i].y, &x, &y,
-                                    &intensity, 0, 0) ) continue;
+                                    &intensity, NULL, NULL, 0, 0) ) continue;
 
 		itot += intensity;
 	}

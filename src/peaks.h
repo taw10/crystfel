@@ -37,6 +37,7 @@ extern int find_projected_peaks(struct image *image, UnitCell *cell,
                                 int circular_domain, double domain_r);
 extern int integrate_peak(struct image *image, int xp, int yp,
                           float *xc, float *yc, float *intensity,
+                          double *pbg, double *pmax,
                           int do_polar, int do_sa);
 
 #endif	/* PEAKS_H */
