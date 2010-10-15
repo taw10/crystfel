@@ -109,6 +109,10 @@ static void plot_shells(const double *ref1, const double *ref2,
 	/* Increase the max just a little bit */
 	rmax += 0.001e9;
 
+	/* FIXME: Fixed resolution shells */
+	rmin = 0.120e9;
+	rmax = 1.172e9;
+
 	total_vol = pow(rmax, 3.0) - pow(rmin, 3.0);
 	vol_per_shell = total_vol / NBINS;
 	rmins[0] = rmin;
@@ -119,8 +123,13 @@ static void plot_shells(const double *ref1, const double *ref2,
 		r = vol_per_shell + pow(rmins[i-1], 3.0);
 		r = pow(r, 1.0/3.0);
 
+		/* Shells of constant volume */
 		rmaxs[i-1] = r;
 		rmins[i] = r;
+
+		/* Shells of constant thickness */
+		//rmins[i] = rmins[i-1] + (rmax-rmin)/NBINS;
+		//rmaxs[i-1] = rmins[i-1] + (rmax-rmin)/NBINS;
 
 		STATUS("Shell %i: %f to %f\n", i-1,
 		       rmins[i-1]/1e9, rmaxs[i-1]/1e9);
@@ -293,7 +302,7 @@ int main(int argc, char *argv[])
 	char *bfile = NULL;
 	char *sym = NULL;
 	double scale, scale_r2, scale_rdig, R1, R2, R1i, Rdiff, pearson;
-	double scale_rintint;
+	double scale_rintint, scale_r1i;
 	int i, ncom;
 	ReflItemList *i1, *i2, *icommon;
 	int config_shells = 0;
@@ -448,7 +457,7 @@ int main(int argc, char *argv[])
 	R2 = stat_r2(ref1, ref2_transformed, icommon, &scale_r2);
 	STATUS("R2(I) = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale_r2);
 
-	R1i = stat_r1_i(ref1, ref2_transformed, icommon, &scale);
+	R1i = stat_r1_i(ref1, ref2_transformed, icommon, &scale_r1i);
 	STATUS("R1(I) = %5.4f %% (scale=%5.2e)\n", R1i*100.0, scale);
 
 	Rdiff = stat_rdiff_ignore(ref1, ref2_transformed, icommon, &scale_rdig);
