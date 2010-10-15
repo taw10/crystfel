@@ -18,4 +18,5 @@ src/calibrate_detector
 src/facetron
 src/cubeit
 src/reintegrate
+src/estimate_background
 *~

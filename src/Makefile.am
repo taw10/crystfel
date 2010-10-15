@@ -1,6 +1,6 @@
 bin_PROGRAMS = pattern_sim process_hkl get_hkl indexamajig compare_hkl \
                powder_plot render_hkl calibrate_detector facetron cubeit \
-               reintegrate
+               reintegrate estimate_background
 
 if HAVE_GTK
 bin_PROGRAMS += hdfsee
@@ -69,5 +69,8 @@ reintegrate_SOURCES = reintegrate.c cell.c hdf5-file.c utils.c detector.c \
                       index.c dirax.c templates.c geometry.c symmetry.c \
                       thread-pool.c
 reintegrate_LDADD = @LIBS@
+
+estimate_background_SOURCES = estimate_background.c stream.c utils.c cell.c
+estimate_background_LDADD = @LIBS@
 
 INCLUDES = "-I$(top_srcdir)/data"
