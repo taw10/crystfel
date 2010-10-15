@@ -168,7 +168,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 		int bin;
 
 		/* FIXME: Reflection condition */
-		 if ( (h==0) && (k==0) && (l%2) ) continue;
+		if ( (h==0) && (k==0) && (l%2) ) continue;
 
 		get_asymm(h, k, l, &hs, &ks, &ls, sym);
 		if ( lookup_count(counted, hs, ks, ls) ) continue;
