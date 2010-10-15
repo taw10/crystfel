@@ -168,7 +168,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 		int bin;
 
 		/* FIXME: Reflection condition */
-		// if ( (h==0) && (k==0) && (l%2) ) continue;
+		 if ( (h==0) && (k==0) && (l%2) ) continue;
 
 		get_asymm(h, k, l, &hs, &ks, &ls, sym);
 		if ( lookup_count(counted, hs, ks, ls) ) continue;
@@ -205,7 +205,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 		h = it->h;  k = it->k;  l = it->l;
 
 		/* FIXME: Reflection condition */
-		//if ( (h==0) && (k==0) && (l%2) ) continue;
+		if ( (h==0) && (k==0) && (l%2) ) continue;
 
 		d = resolution(cell, h, k, l) * 2.0;
 
@@ -241,7 +241,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 		h = it->h;  k = it->k;  l = it->l;
 
 		/* FIXME: Reflection condition */
-		//if ( (h==0) && (k==0) && (l%2) ) continue;
+		if ( (h==0) && (k==0) && (l%2) ) continue;
 
 		d = resolution(cell, h, k, l) * 2.0;
 
@@ -259,15 +259,15 @@ static void plot_shells(const double *ref1, const double *ref2,
 		}
 
 		i1 = lookup_intensity(ref1, h, k, l);
-		if ( i1 < 0.0 ) continue;
-		f1 = sqrt(i1);
+		//if ( i1 < 0.0 ) continue;
+		//f1 = sqrt(i1);
 		i2 = lookup_intensity(ref2, h, k, l);
-		if ( i2 < 0.0 ) continue;
-		f2 = sqrt(i2);
-		f2 *= scale;
+		//if ( i2 < 0.0 ) continue;
+		//f2 = sqrt(i2);
+		i2 *= scale;
 
-		num[bin] += fabs(f1 - f2);
-		den += (f1 + f2) / 2.0;
+		num[bin] += fabs(i1 - i2);
+		den += i1;// + i2) / 2.0;
 		ctot++;
 		cts[bin]++;
 
@@ -485,8 +485,8 @@ int main(int argc, char *argv[])
 	       pearson);
 
 	if ( config_shells ) {
-		plot_shells(ref1, ref2_transformed, icommon, scale_rdig, cell,
-		            sym, i1, cts1);
+		plot_shells(ref1, ref2_transformed, icommon, scale_r1i,
+		            cell, sym, i1, cts1);
 	}
 
 	if ( outfile != NULL ) {
