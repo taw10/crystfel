@@ -652,7 +652,7 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
 
 	STATUS("Sanity factor: %f / %f = %f\n", (float)n_sane, (float)n_feat,
                                                 (float)n_sane / (float)n_feat);
-	if ( (float)n_sane / (float)n_feat < 0.8 ) return 0;
+	if ( (float)n_sane / (float)n_feat < 0.1 ) return 0;
 
 	return 1;
 }
