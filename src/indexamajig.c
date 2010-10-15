@@ -743,13 +743,21 @@ int main(int argc, char *argv[])
 	fflush(ofh);
 
 	/* Get first filename and use it to set up the indexing */
-	rval = fgets(prepare_line, 1023, fh);
-	if ( rval == NULL ) {
-		ERROR("Failed to get filename to prepare indexing.\n");
-		return 1;
+	if ( fh != stdin ) {
+		rval = fgets(prepare_line, 1023, fh);
+		if ( rval == NULL ) {
+			ERROR("Failed to get filename to prepare indexing.\n");
+			return 1;
+		}
+		chomp(prepare_line);
+		snprintf(prepare_filename, 1023, "%s%s", prefix, prepare_line);
+		rewind(fh);
+	} else {
+		STATUS("Reading input filenames from stdin, so can't (yet)");
+		STATUS(" use the first file for preparing the indexing.\n");
+		STATUS("Stuff might break.\n");
+		prepare_filename[0] = '\0';
 	}
-	chomp(prepare_line);
-	snprintf(prepare_filename, 1023, "%s%s", prefix, prepare_line);
 	ipriv = prepare_indexing(indm, cell, prepare_filename, det);
 	if ( ipriv == NULL ) {
 		ERROR("Failed to prepare indexing.\n");
