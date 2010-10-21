@@ -50,7 +50,7 @@ static void show_help(const char *s)
 static void plot_shells(const double *ref1, const double *ref2,
                         ReflItemList *items, double scale, UnitCell *cell,
                         const char *sym, ReflItemList *characterise,
-                        unsigned int *char_counts)
+                        unsigned int *char_counts, const double *sigma)
 {
 	double num[NBINS];
 	int cts[NBINS];
@@ -61,12 +61,15 @@ static void plot_shells(const double *ref1, const double *ref2,
 	double total_vol, vol_per_shell;
 	double rmins[NBINS];
 	double rmaxs[NBINS];
+	double snr[NBINS];
 	double den;
 	double rmin, rmax;
 	signed int h, k, l;
 	int i;
 	int ctot;
 	FILE *fh;
+	double snr_total = 0;
+	int nmeas = 0;
 
 	if ( cell == NULL ) {
 		ERROR("Need the unit cell to plot resolution shells.\n");
@@ -85,6 +88,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 		possible[i] = 0;
 		measured[i] = 0;
 		measurements[i] = 0;
+		snr[i] = 0;
 	}
 
 	rmin = +INFINITY;
@@ -223,8 +227,14 @@ static void plot_shells(const double *ref1, const double *ref2,
 
 		measured[bin]++;
 		measurements[bin] += lookup_count(char_counts, h, k, l);
+		snr[bin] += (lookup_intensity(ref1, h, k, l) /
+		                              lookup_intensity(sigma, h, k, l));
+		snr_total += (lookup_intensity(ref1, h, k, l) /
+		                              lookup_intensity(sigma, h, k, l));
+		nmeas++;
 
 	}
+	STATUS("overall <snr> = %f\n", snr_total/(double)nmeas);
 
 	den = 0.0;
 	ctot = 0;
@@ -278,10 +288,11 @@ static void plot_shells(const double *ref1, const double *ref2,
 		double r, cen;
 		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
 		r = (num[i]/den)*((double)ctot/cts[i]);
-		fprintf(fh, "%f %f %i %i %i %f\n", cen*1.0e-9, r*100.0,
+		fprintf(fh, "%f %f %i %i %i %f %f\n", cen*1.0e-9, r*100.0,
 		                            measured[i],
 		                            possible[i], measurements[i],
-		                            (float)measurements[i]/measured[i]);
+		                            (float)measurements[i]/measured[i],
+		                            (snr[i]/(double)measured[i]));
 
 	}
 
@@ -485,8 +496,8 @@ int main(int argc, char *argv[])
 	       pearson);
 
 	if ( config_shells ) {
-		plot_shells(ref1, ref2_transformed, icommon, scale_r1i,
-		            cell, sym, i1, cts1);
+		plot_shells(ref1, ref2_transformed, icommon, scale_r1fi,
+		            cell, sym, i1, cts1, esd1);
 	}
 
 	if ( outfile != NULL ) {
