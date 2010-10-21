@@ -129,6 +129,7 @@ ReflItemList *read_reflections(const char *filename,
 		int cts;
 
 		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
 		r = sscanf(line, "%i %i %i %f %s %f %f %i",
 		           &h, &k, &l, &intensity, phs, &sigma, &res, &cts);
 		if ( r >= 8 ) {
