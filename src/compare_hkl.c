@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
 	char *bfile = NULL;
 	char *sym = NULL;
 	double scale, scale_r2, scale_rdig, R1, R2, R1i, Rdiff, pearson;
-	double scale_rintint, scale_r1i;
+	double scale_rintint, scale_r1i, scale_r1, scale_r1fi;
 	int i, ncom;
 	ReflItemList *i1, *i2, *icommon;
 	int config_shells = 0;
@@ -457,23 +457,23 @@ int main(int argc, char *argv[])
 	STATUS("%i,%i reflections: %i in common\n",
 	       num_items(i1), num_items(i2), ncom);
 
-	R1 = stat_r1_ignore(ref1, ref2_transformed, icommon, &scale);
+	R1 = stat_r1_ignore(ref1, ref2_transformed, icommon, &scale_r1fi);
 	STATUS("R1(F) = %5.4f %% (scale=%5.2e) (ignoring negative intensities)\n",
-	       R1*100.0, scale);
+	       R1*100.0, scale_r1fi);
 
-	R1 = stat_r1_zero(ref1, ref2_transformed, icommon, &scale);
+	R1 = stat_r1_zero(ref1, ref2_transformed, icommon, &scale_r1);
 	STATUS("R1(F) = %5.4f %% (scale=%5.2e) (zeroing negative intensities)\n",
-	       R1*100.0, scale);
+	       R1*100.0, scale_r1);
 
 	R2 = stat_r2(ref1, ref2_transformed, icommon, &scale_r2);
 	STATUS("R2(I) = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale_r2);
 
 	R1i = stat_r1_i(ref1, ref2_transformed, icommon, &scale_r1i);
-	STATUS("R1(I) = %5.4f %% (scale=%5.2e)\n", R1i*100.0, scale);
+	STATUS("R1(I) = %5.4f %% (scale=%5.2e)\n", R1i*100.0, scale_r1i);
 
 	Rdiff = stat_rdiff_ignore(ref1, ref2_transformed, icommon, &scale_rdig);
 	STATUS("Rint(F) = %5.4f %% (scale=%5.2e) (ignoring negative intensities)\n",
-	       Rdiff*100.0, scale);
+	       Rdiff*100.0, scale_rdig);
 
 	Rdiff = stat_rdiff_zero(ref1, ref2_transformed, icommon, &scale);
 	STATUS("Rint(F) = %5.4f %% (scale=%5.2e) (zeroing negative intensities)\n",
@@ -482,7 +482,7 @@ int main(int argc, char *argv[])
 	Rdiff = stat_rdiff_intensity(ref1, ref2_transformed, icommon,
 	                             &scale_rintint);
 	STATUS("Rint(I) = %5.4f %% (scale=%5.2e)\n",
-	       Rdiff*100.0, scale);
+	       Rdiff*100.0, scale_rintint);
 
 	pearson = stat_pearson_i(ref1, ref2_transformed, icommon);
 	STATUS("Pearson r(I) = %5.4f\n", pearson);
