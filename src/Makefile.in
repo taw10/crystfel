@@ -320,6 +320,13 @@ reintegrate_LDADD = @LIBS@
 estimate_background_SOURCES = estimate_background.c stream.c utils.c cell.c
 estimate_background_LDADD = @LIBS@
 INCLUDES = "-I$(top_srcdir)/data"
+EXTRA_DIST = cell.h hdf5-file.h image.h  utils.h diffraction.h detector.h \
+             sfac.h reflections.h list_tmp.h statistics.h displaywindow.h \
+             render.h hdfsee.h dirax.h peaks.h index.h  filters.h \
+             diffraction-gpu.h cl-utils.h parameters-lcls.tmp symmetry.h \
+             povray.h index-priv.h geometry.h templates.h render_hkl.h \
+             stream.h thread-pool.h parameters.tmp
+
 all: all-am
 
 .SUFFIXES:
