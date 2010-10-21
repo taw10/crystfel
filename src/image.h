@@ -58,7 +58,8 @@ struct imagefeature {
 typedef struct _imagefeaturelist ImageFeatureList;
 
 
-struct reflhit {
+/* This structure represents a predicted peak in an image */
+struct cpeak {
 	signed int h;
 	signed int k;
 	signed int l;
@@ -79,8 +80,8 @@ struct image {
 	int                     ncells;
 	struct detector         *det;
 	char                    *filename;
-	struct reflhit          *hits;
-	int                     n_hits;
+	struct cpeak            *cpeaks;
+	int                     n_cpeaks;
 
 	int                     id;   /* ID number of the thread
 	                               * handling this image */

@@ -87,7 +87,7 @@ static void integrate_image(int mytask, void *tasks)
 {
 	struct integrate_args *all_args = tasks;
 	struct integrate_args *pargs = &all_args[mytask];
-	struct reflhit *spots;
+	struct cpeak *spots;
 	int j, n;
 	struct hdfile *hdfile;
 	struct image *image = pargs->image;

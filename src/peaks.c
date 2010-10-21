@@ -33,7 +33,7 @@
 
 
 /* Maximum number of peaks which may be predicted by find_projected_peaks() */
-#define MAX_HITS (1024)
+#define MAX_CPEAKS (1024)
 
 /* How close a peak must be to an indexed position to be considered "close"
  * for the purposes of double hit detection and sanity checking. */
@@ -495,12 +495,12 @@ int find_projected_peaks(struct image *image, UnitCell *cell,
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-	struct reflhit *hits;
-	int n_hits = 0;
+	struct cpeak *cpeaks;
+	int n_cpeaks = 0;
 	double alen, blen, clen;
 
-	hits = malloc(sizeof(struct reflhit)*MAX_HITS);
-	if ( hits == NULL ) return 0;
+	cpeaks = malloc(sizeof(struct cpeak)*MAX_CPEAKS);
+	if ( cpeaks == NULL ) return 0;
 
 	/* "Borrow" direction values to get reciprocal lengths */
 	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
@@ -547,14 +547,14 @@ int find_projected_peaks(struct image *image, UnitCell *cell,
 			if ( dist > domain_r ) continue;
 		}
 
-		for ( j=0; j<n_hits; j++ ) {
-			if ( (hits[j].h == h) && (hits[j].k == k)
-			                      && (hits[j].l == l) ) {
+		for ( j=0; j<n_cpeaks; j++ ) {
+			if ( (cpeaks[j].h == h) && (cpeaks[j].k == k)
+			                      && (cpeaks[j].l == l) ) {
 
-				if ( dist < hits[j].min_distance ) {
-					hits[j].min_distance = dist;
-					hits[j].x = x;
-					hits[j].y = y;
+				if ( dist < cpeaks[j].min_distance ) {
+					cpeaks[j].min_distance = dist;
+					cpeaks[j].x = x;
+					cpeaks[j].y = y;
 				}
 
 				found = 1;
@@ -563,14 +563,14 @@ int find_projected_peaks(struct image *image, UnitCell *cell,
 		}
 
 		if ( !found ) {
-			hits[n_hits].min_distance = dist;
-			hits[n_hits].x = x;
-			hits[n_hits].y = y;
-			hits[n_hits].h = h;
-			hits[n_hits].k = k;
-			hits[n_hits].l = l;
-			n_hits++;
-			if ( n_hits == MAX_HITS ) {
+			cpeaks[n_cpeaks].min_distance = dist;
+			cpeaks[n_cpeaks].x = x;
+			cpeaks[n_cpeaks].y = y;
+			cpeaks[n_cpeaks].h = h;
+			cpeaks[n_cpeaks].k = k;
+			cpeaks[n_cpeaks].l = l;
+			n_cpeaks++;
+			if ( n_cpeaks == MAX_CPEAKS ) {
 				ERROR("Unit cell is insanely large!\n");
 				goto out;
 			}
@@ -580,11 +580,11 @@ int find_projected_peaks(struct image *image, UnitCell *cell,
 	}
 
 out:
-	STATUS("Found %i reflections\n", n_hits);
-	image->hits = hits;
-	image->n_hits = n_hits;
+	STATUS("Found %i reflections\n", n_cpeaks);
+	image->cpeaks = cpeaks;
+	image->n_cpeaks = n_cpeaks;
 
-	return n_hits;
+	return n_cpeaks;
 }
 
 
@@ -710,10 +710,10 @@ void output_intensities(struct image *image, UnitCell *cell,
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 
-	if ( image->n_hits == 0 ) {
+	if ( image->n_cpeaks == 0 ) {
 		find_projected_peaks(image, cell, circular_domain, domain_r);
 	}
-	if ( image->n_hits == 0 ) return;
+	if ( image->n_cpeaks == 0 ) return;
 
 	/* Get exclusive access to the output stream if necessary */
 	if ( mutex != NULL ) pthread_mutex_lock(mutex);
@@ -724,7 +724,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
 
-	for ( i=0; i<image->n_hits; i++ ) {
+	for ( i=0; i<image->n_cpeaks; i++ ) {
 
 		float x, y, intensity;
 		double d;
@@ -738,8 +738,8 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 			if ( image->features != NULL ) {
 				f = image_feature_closest(image->features,
-					                  image->hits[i].x,
-					                  image->hits[i].y,
+					                  image->cpeaks[i].x,
+					                  image->cpeaks[i].y,
 					                  &d, &idx);
 			} else {
 				f = NULL;
@@ -773,8 +773,8 @@ void output_intensities(struct image *image, UnitCell *cell,
 				int r;
 
 				r = integrate_peak(image,
-					           image->hits[i].x,
-					           image->hits[i].y,
+					           image->cpeaks[i].x,
+					           image->cpeaks[i].y,
 					           &x, &y, &intensity, &bg, &max,
 					           polar, sa);
 				if ( r ) {
@@ -794,8 +794,8 @@ void output_intensities(struct image *image, UnitCell *cell,
 			int r;
 
 			r = integrate_peak(image,
-				           image->hits[i].x,
-				           image->hits[i].y,
+				           image->cpeaks[i].x,
+				           image->cpeaks[i].y,
 				           &x, &y, &intensity, &bg, &max, polar,
 				           sa);
 			if ( r ) {
@@ -808,11 +808,11 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 		/* Write h,k,l, integrated intensity and centroid coordinates */
 		fprintf(ofh, "%3i %3i %3i %6f (at %5.2f,%5.2f) max=%6f bg=%6f\n",
-		       image->hits[i].h, image->hits[i].k, image->hits[i].l,
+		       image->cpeaks[i].h, image->cpeaks[i].k, image->cpeaks[i].l,
 		       intensity, x, y, max, bg);
 
-		image->hits[i].x = x;
-		image->hits[i].y = y;
+		image->cpeaks[i].x = x;
+		image->cpeaks[i].y = y;
 
 	}
 
@@ -826,12 +826,12 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 		if ( f == NULL ) continue;
 
-		for ( j=0; j<image->n_hits; j++ ) {
+		for ( j=0; j<image->n_cpeaks; j++ ) {
 
 			double d;
 
-			d = pow(image->hits[j].x-f->x, 2.0)
-			  + pow(image->hits[j].y-f->y, 2.0);
+			d = pow(image->cpeaks[j].x-f->x, 2.0)
+			  + pow(image->cpeaks[j].y-f->y, 2.0);
 
 			if ( d < PEAK_CLOSE ) n_foundclose++;
 
@@ -842,7 +842,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 	fprintf(ofh, "Peak statistics: %i peaks found by the peak search out of "
 	       "%i were close to indexed positions. "
 	       "%i indexed positions out of %i were close to detected peaks.\n",
-	       n_foundclose, n_found, n_indclose, image->n_hits);
+	       n_foundclose, n_found, n_indclose, image->n_cpeaks);
 	fprintf(ofh, "%i integrations using indexed locations were aborted because "
 	       "they hit one or more bad pixels.\n", n_veto);
 	fprintf(ofh, "%i integrations using peak search locations were aborted "

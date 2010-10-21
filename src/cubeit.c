@@ -216,8 +216,8 @@ static void sum_image(void *pg, int cookie)
 	image.flags = NULL;
 	image.indexed_cell = NULL;
 	image.filename = apargs->filename;
-	image.hits = NULL;
-	image.n_hits = 0;
+	image.cpeaks = NULL;
+	image.n_cpeaks = 0;
 	image.det = pargs->det;
 
 	/* View head-on (unit cell is tilted) */

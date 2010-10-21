@@ -22,24 +22,24 @@
 #include "peaks.h"
 
 
-#define MAX_HITS (1024)
+#define MAX_CPEAKS (1024)
 
 
-struct reflhit *find_intersections(struct image *image, UnitCell *cell,
-                                   double divergence, double bandwidth,
-                                   int *n, int output)
+struct cpeak *find_intersections(struct image *image, UnitCell *cell,
+                                 double divergence, double bandwidth,
+                                 int *n, int output)
 {
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
-	struct reflhit *hits;
+	struct cpeak *cpeaks;
 	int np = 0;
 	int hmax, kmax, lmax;
 	double mres;
 	signed int h, k, l;
 
-	hits = malloc(sizeof(struct reflhit)*MAX_HITS);
-	if ( hits == NULL ) {
+	cpeaks = malloc(sizeof(struct cpeak)*MAX_CPEAKS);
+	if ( cpeaks == NULL ) {
 		*n = 0;
 		return NULL;
 	}
@@ -118,11 +118,11 @@ struct reflhit *find_intersections(struct image *image, UnitCell *cell,
 
 		if ( !found ) continue;
 
-		hits[np].h = h;
-		hits[np].k = k;
-		hits[np].l = l;
-		hits[np].x = xda;
-		hits[np].y = yda;
+		cpeaks[np].h = h;
+		cpeaks[np].k = k;
+		cpeaks[np].l = l;
+		cpeaks[np].x = xda;
+		cpeaks[np].y = yda;
 		np++;
 
 		if ( output ) {
@@ -134,7 +134,7 @@ struct reflhit *find_intersections(struct image *image, UnitCell *cell,
 	}
 
 	*n = np;
-	return hits;
+	return cpeaks;
 }
 
 
@@ -145,7 +145,7 @@ double partiality(struct image *image, signed int h, signed int k, signed int l)
 }
 
 
-double integrate_all(struct image *image, struct reflhit *hits, int n)
+double integrate_all(struct image *image, struct cpeak *cpeaks, int n)
 {
 	double itot = 0.0;
 	int i;
@@ -154,7 +154,7 @@ double integrate_all(struct image *image, struct reflhit *hits, int n)
 
 		float x, y, intensity;
 
-		if ( integrate_peak(image, hits[i].x, hits[i].y, &x, &y,
+		if ( integrate_peak(image, cpeaks[i].x, cpeaks[i].y, &x, &y,
                                     &intensity, NULL, NULL, 0, 0) ) continue;
 
 		itot += intensity;

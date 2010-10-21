@@ -168,8 +168,8 @@ static void add_image(void *args, int cookie)
 	image.flags = NULL;
 	image.indexed_cell = NULL;
 	image.filename = pargs->filename;
-	image.hits = NULL;
-	image.n_hits = 0;
+	image.cpeaks = NULL;
+	image.n_cpeaks = 0;
 	image.det = NULL;
 
 	/* View head-on (unit cell is tilted) */

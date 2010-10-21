@@ -43,7 +43,7 @@ struct template {
 	double omega;
 	double phi;
 	int n;
-	struct reflhit *spots;
+	struct cpeak *spots;
 };
 
 
@@ -165,16 +165,16 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 	for ( phi = 0.0; phi < phi_max-phi_step; phi += phi_step ) {
 
 		int n;
-		struct reflhit *hits;
+		struct cpeak *cpeaks;
 		UnitCell *cell_rot;
 
 		assert(i < n_templates);
 
 		cell_rot = rotate_cell(cell, omega, phi, 0.0);
 
-		hits = find_intersections(&image, cell_rot, 5.0e-3,
+		cpeaks = find_intersections(&image, cell_rot, 5.0e-3,
 		                          3.0/100.0, &n, 0);
-		if ( hits == NULL ) {
+		if ( cpeaks == NULL ) {
 			ERROR("Template calculation failed.\n");
 			return NULL;
 		}
@@ -182,7 +182,7 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 		priv->templates[i].omega = omega;
 		priv->templates[i].phi = phi;
 		priv->templates[i].n = n;
-		priv->templates[i].spots = hits;
+		priv->templates[i].spots = cpeaks;
 		i++;
 
 		free(cell_rot);
@@ -228,7 +228,7 @@ static int fast_integrate_peak(struct image *image, int xp, int yp)
 }
 
 
-static double integrate_all_rot(struct image *image, struct reflhit *hits,
+static double integrate_all_rot(struct image *image, struct cpeak *cpeaks,
                                 int n, double rot)
 {
 	double itot = 0.0;
@@ -243,8 +243,8 @@ static double integrate_all_rot(struct image *image, struct reflhit *hits,
 
 		float xp, yp;
 
-		xp =  cosr*hits[i].x + sinr*hits[i].y;
-		yp = -sinr*hits[i].x + cosr*hits[i].y;
+		xp =  cosr*cpeaks[i].x + sinr*cpeaks[i].y;
+		yp = -sinr*cpeaks[i].x + cosr*cpeaks[i].y;
 
 		itot += fast_integrate_peak(image, rint(xp), rint(yp));
 		num_int++;
@@ -257,7 +257,7 @@ static double integrate_all_rot(struct image *image, struct reflhit *hits,
 
 /* Return the mean of the distances between peaks in the image and peaks from
  * the given template. */
-static double mean_distance(struct image *image, struct reflhit *hits,
+static double mean_distance(struct image *image, struct cpeak *cpeaks,
                             int n, double rot)
 {
 	double dtot = 0.0;
@@ -275,8 +275,8 @@ static double mean_distance(struct image *image, struct reflhit *hits,
 		int j;
 		double min_dsq;
 
-		xp =  cosr*hits[i].x + sinr*hits[i].y;
-		yp = -sinr*hits[i].x + cosr*hits[i].y;
+		xp =  cosr*cpeaks[i].x + sinr*cpeaks[i].y;
+		yp = -sinr*cpeaks[i].x + cosr*cpeaks[i].y;
 
 		/* Compare to every real peak */
 		min_dsq = +INFINITY;

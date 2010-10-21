@@ -1,7 +1,7 @@
 /*
  * indexamajig.c
  *
- * Find hits, index patterns, output hkl+intensity etc.
+ * Index patterns, output hkl+intensity etc.
  *
  * (c) 2006-2010 Thomas White <taw@physics.org>
  *
@@ -258,8 +258,8 @@ static struct image *get_simage(struct image *template, int alternate)
 	image->f0 = template->f0;
 
 	/* Prevent muppetry */
-	image->hits = NULL;
-	image->n_hits = 0;
+	image->cpeaks = NULL;
+	image->n_cpeaks = 0;
 
 	return image;
 }
@@ -317,8 +317,8 @@ static void process_image(void *pp, int cookie)
 	image.indexed_cell = NULL;
 	image.id = cookie;
 	image.filename = filename;
-	image.hits = NULL;
-	image.n_hits = 0;
+	image.cpeaks = NULL;
+	image.n_cpeaks = 0;
 	image.det = pargs->static_args.det;
 
 	/* View head-on (unit cell is tilted) */
@@ -442,7 +442,7 @@ done:
 	free(image.data);
 	free(image.flags);
 	image_feature_list_free(image.features);
-	free(image.hits);
+	free(image.cpeaks);
 	hdfile_close(hdfile);
 }
 
