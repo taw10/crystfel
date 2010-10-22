@@ -70,6 +70,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 	FILE *fh;
 	double snr_total = 0;
 	int nmeas = 0;
+	int nmeastot = 0;
 
 	if ( cell == NULL ) {
 		ERROR("Need the unit cell to plot resolution shells.\n");
@@ -232,9 +233,12 @@ static void plot_shells(const double *ref1, const double *ref2,
 		snr_total += (lookup_intensity(ref1, h, k, l) /
 		                              lookup_intensity(sigma, h, k, l));
 		nmeas++;
+		nmeastot += lookup_count(char_counts, h, k, l);
 
 	}
 	STATUS("overall <snr> = %f\n", snr_total/(double)nmeas);
+	STATUS("%i measurements in total.\n", nmeastot);
+	STATUS("%i reflections in total.\n", nmeas);
 
 	den = 0.0;
 	ctot = 0;
