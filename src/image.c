@@ -84,8 +84,6 @@ void image_add_feature(ImageFeatureList *flist, double x, double y,
 	flist->features[flist->n_features].y = y;
 	flist->features[flist->n_features].intensity = intensity;
 	flist->features[flist->n_features].parent = parent;
-	flist->features[flist->n_features].partner = NULL;
-	flist->features[flist->n_features].partner_d = 0.0;
 	flist->features[flist->n_features].name = name;
 	flist->features[flist->n_features].valid = 1;
 

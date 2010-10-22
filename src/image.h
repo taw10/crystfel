@@ -37,12 +37,6 @@ struct imagefeature {
 	double                          y;
 	double                          intensity;
 
-	/* Partner for this feature (in another feature list) or NULL */
-	struct imagefeature_struct      *partner;
-
-	/* Distance between this feature and its partner, if any. */
-	double                          partner_d;
-
 	/* Reciprocal space coordinates (m^-1 of course) of this feature */
 	double                          rx;
 	double                          ry;
