@@ -73,6 +73,7 @@ struct image {
 	UnitCell                *candidate_cells[MAX_CELL_CANDIDATES];
 	int                     ncells;
 	struct detector         *det;
+	struct beam_params      *beam;
 	char                    *filename;
 	struct cpeak            *cpeaks;
 	int                     n_cpeaks;

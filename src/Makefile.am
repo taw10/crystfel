@@ -10,7 +10,8 @@ AM_CFLAGS = -Wall
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\"
 
 pattern_sim_SOURCES = pattern_sim.c diffraction.c utils.c image.c cell.c \
-                      hdf5-file.c detector.c sfac.c peaks.c reflections.c
+                      hdf5-file.c detector.c sfac.c peaks.c reflections.c \
+                      beam-parameters.c
 if HAVE_OPENCL
 pattern_sim_SOURCES += diffraction-gpu.c cl-utils.c
 endif
@@ -18,7 +19,7 @@ endif
 pattern_sim_LDADD = @LIBS@
 
 process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
-                      reflections.c symmetry.c stream.c
+                      reflections.c symmetry.c stream.c beam-parameters.c
 process_hkl_LDADD = @LIBS@
 
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
@@ -37,7 +38,8 @@ hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c image.c \
 hdfsee_LDADD = @LIBS@
 endif
 
-get_hkl_SOURCES = get_hkl.c sfac.c cell.c utils.c reflections.c symmetry.c
+get_hkl_SOURCES = get_hkl.c sfac.c cell.c utils.c reflections.c symmetry.c \
+                  beam-parameters.c
 get_hkl_LDADD = @LIBS@
 
 compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c \
@@ -78,6 +80,6 @@ INCLUDES = "-I$(top_srcdir)/data"
 EXTRA_DIST = cell.h hdf5-file.h image.h  utils.h diffraction.h detector.h \
              sfac.h reflections.h list_tmp.h statistics.h displaywindow.h \
              render.h hdfsee.h dirax.h peaks.h index.h  filters.h \
-             diffraction-gpu.h cl-utils.h parameters-lcls.tmp symmetry.h \
+             diffraction-gpu.h cl-utils.h symmetry.h \
              povray.h index-priv.h geometry.h templates.h render_hkl.h \
-             stream.h thread-pool.h parameters.tmp
+             stream.h thread-pool.h beam-parameters.h

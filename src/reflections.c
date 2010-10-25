@@ -19,12 +19,13 @@
 #include "utils.h"
 #include "cell.h"
 #include "reflections.h"
-#include "parameters.tmp"
+#include "beam-parameters.h"
 
 
 void write_reflections(const char *filename, ReflItemList *items,
                        double *intensities, double *phases,
-                       unsigned int *counts, UnitCell *cell)
+                       unsigned int *counts, UnitCell *cell,
+                       double adu_per_photon)
 {
 	FILE *fh;
 	int i;
@@ -79,7 +80,7 @@ void write_reflections(const char *filename, ReflItemList *items,
 		}
 
 		if ( intensity > 0.0 ) {
-			sigma = DETECTOR_GAIN * sqrt(intensity/DETECTOR_GAIN);
+			sigma = adu_per_photon * sqrt(intensity/adu_per_photon);
 		} else {
 			sigma = 0.0;
 		}
@@ -90,7 +91,8 @@ void write_reflections(const char *filename, ReflItemList *items,
 
 	}
 	STATUS("Warning: Errors have been estimated from Poisson distribution"
-	       " assuming %5.2f ADU per photon.\n", DETECTOR_GAIN);
+	       " assuming %5.2f ADU per photon.\n", adu_per_photon);
+	STATUS("This is not necessarily a useful estimate.\n");
 	fclose(fh);
 }
 

@@ -505,7 +505,10 @@ int main(int argc, char *argv[])
 	}
 
 	if ( outfile != NULL ) {
-		write_reflections(outfile, icommon, out, NULL, NULL, cell);
+
+		write_reflections(outfile, icommon, out, NULL, NULL, cell, 1.0);
+		STATUS("Sigma(I) values in output file are not meaningful.\n");
+
 	}
 
 	return 0;

@@ -20,7 +20,7 @@
 #include "utils.h"
 #include "diffraction.h"
 #include "detector.h"
-#include "parameters.tmp"
+#include "beam-parameters.h"
 
 
 int atob(const char *a)
@@ -88,14 +88,14 @@ void record_image(struct image *image, int do_poisson)
 	double max_tt = 0.0;
 
 	/* How many photons are scattered per electron? */
-	area = M_PI*pow(BEAM_RADIUS, 2.0);
-	total_energy = FLUENCE * ph_lambda_to_en(image->lambda);
+	area = M_PI*pow(image->beam->beam_radius, 2.0);
+	total_energy = image->beam->fluence * ph_lambda_to_en(image->lambda);
 	energy_density = total_energy / area;
-	ph_per_e = (FLUENCE/area) * pow(THOMSON_LENGTH, 2.0);
+	ph_per_e = (image->beam->fluence /area) * pow(THOMSON_LENGTH, 2.0);
 	STATUS("Fluence = %8.2e photons, "
 	       "Energy density = %5.3f kJ/cm^2, "
 	       "Total energy = %5.3f microJ\n",
-	       FLUENCE, energy_density/1e7, total_energy*1e6);
+	       image->beam->fluence, energy_density/1e7, total_energy*1e6);
 
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
@@ -135,13 +135,15 @@ void record_image(struct image *image, int do_poisson)
 		sa = proj_area / (dsq + Lsq);
 
 		if ( do_poisson ) {
-			counts = poisson_noise(intensity * ph_per_e * sa * DQE);
+			counts = poisson_noise(intensity * ph_per_e
+			                              * sa * image->beam->dqe );
 		} else {
-			cf = intensity * ph_per_e * sa * DQE;
+			cf = intensity * ph_per_e * sa * image->beam->dqe;
 			counts = cf;
 		}
 
-		image->data[x + image->width*y] = counts * DETECTOR_GAIN;
+		image->data[x + image->width*y] = counts
+		                                  * image->beam->adu_per_photon;
 		if ( isinf(image->data[x+image->width*y]) ) {
 			ERROR("Processed infinity at %i,%i\n", x, y);
 		}

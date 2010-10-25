@@ -82,7 +82,8 @@ am_facetron_OBJECTS = facetron.$(OBJEXT) cell.$(OBJEXT) \
 facetron_OBJECTS = $(am_facetron_OBJECTS)
 facetron_DEPENDENCIES =
 am_get_hkl_OBJECTS = get_hkl.$(OBJEXT) sfac.$(OBJEXT) cell.$(OBJEXT) \
-	utils.$(OBJEXT) reflections.$(OBJEXT) symmetry.$(OBJEXT)
+	utils.$(OBJEXT) reflections.$(OBJEXT) symmetry.$(OBJEXT) \
+	beam-parameters.$(OBJEXT)
 get_hkl_OBJECTS = $(am_get_hkl_OBJECTS)
 get_hkl_DEPENDENCIES =
 am__hdfsee_SOURCES_DIST = hdfsee.c displaywindow.c render.c \
@@ -109,11 +110,12 @@ indexamajig_OBJECTS = $(am_indexamajig_OBJECTS)
 indexamajig_DEPENDENCIES =
 am__pattern_sim_SOURCES_DIST = pattern_sim.c diffraction.c utils.c \
 	image.c cell.c hdf5-file.c detector.c sfac.c peaks.c \
-	reflections.c diffraction-gpu.c cl-utils.c
+	reflections.c beam-parameters.c diffraction-gpu.c cl-utils.c
 am_pattern_sim_OBJECTS = pattern_sim.$(OBJEXT) diffraction.$(OBJEXT) \
 	utils.$(OBJEXT) image.$(OBJEXT) cell.$(OBJEXT) \
 	hdf5-file.$(OBJEXT) detector.$(OBJEXT) sfac.$(OBJEXT) \
-	peaks.$(OBJEXT) reflections.$(OBJEXT) $(am__objects_1)
+	peaks.$(OBJEXT) reflections.$(OBJEXT) \
+	beam-parameters.$(OBJEXT) $(am__objects_1)
 pattern_sim_OBJECTS = $(am_pattern_sim_OBJECTS)
 pattern_sim_DEPENDENCIES =
 am_powder_plot_OBJECTS = powder_plot.$(OBJEXT) cell.$(OBJEXT) \
@@ -123,7 +125,8 @@ powder_plot_OBJECTS = $(am_powder_plot_OBJECTS)
 powder_plot_DEPENDENCIES =
 am_process_hkl_OBJECTS = process_hkl.$(OBJEXT) sfac.$(OBJEXT) \
 	statistics.$(OBJEXT) cell.$(OBJEXT) utils.$(OBJEXT) \
-	reflections.$(OBJEXT) symmetry.$(OBJEXT) stream.$(OBJEXT)
+	reflections.$(OBJEXT) symmetry.$(OBJEXT) stream.$(OBJEXT) \
+	beam-parameters.$(OBJEXT)
 process_hkl_OBJECTS = $(am_process_hkl_OBJECTS)
 process_hkl_DEPENDENCIES =
 am_reintegrate_OBJECTS = reintegrate.$(OBJEXT) cell.$(OBJEXT) \
@@ -270,10 +273,10 @@ AM_CFLAGS = -Wall
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\"
 pattern_sim_SOURCES = pattern_sim.c diffraction.c utils.c image.c \
 	cell.c hdf5-file.c detector.c sfac.c peaks.c reflections.c \
-	$(am__append_2)
+	beam-parameters.c $(am__append_2)
 pattern_sim_LDADD = @LIBS@
 process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
-                      reflections.c symmetry.c stream.c
+                      reflections.c symmetry.c stream.c beam-parameters.c
 
 process_hkl_LDADD = @LIBS@
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
@@ -285,7 +288,9 @@ indexamajig_LDADD = @LIBS@
 @HAVE_GTK_TRUE@                 filters.c
 
 @HAVE_GTK_TRUE@hdfsee_LDADD = @LIBS@
-get_hkl_SOURCES = get_hkl.c sfac.c cell.c utils.c reflections.c symmetry.c
+get_hkl_SOURCES = get_hkl.c sfac.c cell.c utils.c reflections.c symmetry.c \
+                  beam-parameters.c
+
 get_hkl_LDADD = @LIBS@
 compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c \
                       statistics.c symmetry.c
@@ -323,9 +328,9 @@ INCLUDES = "-I$(top_srcdir)/data"
 EXTRA_DIST = cell.h hdf5-file.h image.h  utils.h diffraction.h detector.h \
              sfac.h reflections.h list_tmp.h statistics.h displaywindow.h \
              render.h hdfsee.h dirax.h peaks.h index.h  filters.h \
-             diffraction-gpu.h cl-utils.h parameters-lcls.tmp symmetry.h \
+             diffraction-gpu.h cl-utils.h symmetry.h \
              povray.h index-priv.h geometry.h templates.h render_hkl.h \
-             stream.h thread-pool.h parameters.tmp
+             stream.h thread-pool.h beam-parameters.h
 
 all: all-am
 
@@ -444,6 +449,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/beam-parameters.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/calibrate_detector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cell.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cl-utils.Po@am__quote@

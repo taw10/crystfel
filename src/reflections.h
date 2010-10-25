@@ -23,7 +23,8 @@
 
 extern void write_reflections(const char *filename, ReflItemList *items,
                               double *intensities, double *phases,
-                              unsigned int *counts, UnitCell *cell);
+                              unsigned int *counts, UnitCell *cell,
+                              double adu_per_photon);
 
 extern ReflItemList *read_reflections(const char *filename,
                                       double *intensities, double *phases,

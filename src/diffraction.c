@@ -22,7 +22,7 @@
 #include "cell.h"
 #include "diffraction.h"
 #include "sfac.h"
-#include "parameters.tmp"
+#include "beam-parameters.h"
 
 
 #define SAMPLING (4)
@@ -374,7 +374,8 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 			/* Add intensity contribution from water */
 			image->data[x + image->width*y] += water_diffraction(q,
 			                        ph_lambda_to_en(image->lambda),
-			                        BEAM_RADIUS, WATER_RADIUS) * sw;
+			                        image->beam->beam_radius,
+			                        image->beam->water_radius) * sw;
 
 		}
 

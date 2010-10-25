@@ -1,0 +1,19 @@
+; Number of photons per pulse
+beam/fluence = 2.0e11
+
+; Radius of X-ray beam
+beam/radius = 3.0e-6 / 2.0
+
+; Photon energy in eV
+beam/photon_energy = 2000.0
+
+
+; Detector's quantum efficiency
+detector/dqe = 0.9
+
+; Number of detector ADU per photon
+detector/adu_per_photon = 20.9
+
+
+; Radius in metres
+jet/radius = 3.0e-6 / 2.0

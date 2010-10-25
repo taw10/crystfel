@@ -27,6 +27,7 @@
 #include "reflections.h"
 #include "symmetry.h"
 #include "stream.h"
+#include "beam-parameters.h"
 
 
 /* Number of divisions for intensity histograms */
@@ -44,6 +45,7 @@ static void show_help(const char *s)
 "  -o, --output=<filename>   Specify output filename for merged intensities\n"
 "                             (don't specify for no output).\n"
 "  -p, --pdb=<filename>      PDB file to use (default: molecule.pdb).\n"
+"  -b, --beam=<file>         Get beam parameters from file (used for sigmas).\n"
 "\n"
 "      --max-only            Take the integrated intensity to be equal to the\n"
 "                             maximum intensity measured for that reflection.\n"
@@ -564,6 +566,7 @@ int main(int argc, char *argv[])
 	ReflItemList *reference_items;
 	double *reference_i;
 	FILE *outfh = NULL;
+	struct beam_params *beam = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -582,6 +585,7 @@ int main(int argc, char *argv[])
 		{"rmerge",             0, &config_rmerge,      1},
 		{"outstream",          1, NULL,               'a'},
 		{"reference",          1, NULL,               'r'},
+		{"beam",               1, NULL,               'b'},
 		{0, 0, NULL, 0}
 	};
 
@@ -628,6 +632,15 @@ int main(int argc, char *argv[])
 
 		case 'a' :
 			outstream = strdup(optarg);
+			break;
+
+		case 'b' :
+			beam = get_beam_parameters(optarg);
+			if ( beam == NULL ) {
+				ERROR("Failed to load beam parameters"
+				      " from '%s'\n", optarg);
+				return 1;
+			}
 			break;
 
 		case 0 :
@@ -758,7 +771,19 @@ int main(int argc, char *argv[])
 	}
 
 	if ( output != NULL ) {
-		write_reflections(output, observed, model, NULL, counts, cell);
+
+		double adu_per_photon;
+
+		if ( beam == NULL ) {
+			adu_per_photon = 167.0;
+			STATUS("No beam parameters file provided (use -b), "
+			       "so I'm assuming 167.0 ADU per photon.\n");
+		} else {
+			adu_per_photon = beam->adu_per_photon;
+		}
+
+		write_reflections(output, observed, model, NULL, counts, cell,
+		                  adu_per_photon);
 	}
 
 	if ( config_rmerge ) {

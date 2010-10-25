@@ -25,6 +25,7 @@
 #include "sfac.h"
 #include "reflections.h"
 #include "symmetry.h"
+#include "beam-parameters.h"
 
 
 static void show_help(const char *s)
@@ -50,6 +51,7 @@ static void show_help(const char *s)
 "      --no-phases            Do not try to use phases in the input file.\n"
 "      --multiplicity         Multiply intensities by the number of\n"
 "                              equivalent reflections.\n"
+"  -b, --beam=<file>         Get beam parameters from file (used for sigmas).\n"
 );
 }
 
@@ -262,6 +264,8 @@ int main(int argc, char *argv[])
 	ReflItemList *input_items;
 	ReflItemList *write_items;
 	UnitCell *cell = NULL;
+	double adu_per_photon;
+	struct beam_params *beam = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -277,6 +281,7 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"no-phases",          0, &config_nophase,     1},
 		{"multiplicity",       0, &config_multi,       1},
+		{"beam",               1, NULL,               'b'},
 		{0, 0, NULL, 0}
 	};
 
@@ -315,6 +320,15 @@ int main(int argc, char *argv[])
 
 		case 'e' :
 			expand = strdup(optarg);
+			break;
+
+		case 'b' :
+			beam = get_beam_parameters(optarg);
+			if ( beam == NULL ) {
+				ERROR("Failed to load beam parameters"
+				      " from '%s'\n", optarg);
+				return 1;
+			}
 			break;
 
 		case 0 :
@@ -407,7 +421,16 @@ int main(int argc, char *argv[])
 		union_items(write_items, input_items);
 	}
 
-	write_reflections(output, write_items, ideal_ref, phases, NULL, cell);
+	if ( beam == NULL ) {
+		adu_per_photon = 167.0;
+		STATUS("No beam parameters file provided (use -b), "
+		       "so I'm assuming 167.0 ADU per photon.\n");
+	} else {
+		adu_per_photon = beam->adu_per_photon;
+	}
+
+	write_reflections(output, write_items, ideal_ref, phases, NULL, cell,
+	                  adu_per_photon);
 
 	delete_items(input_items);
 	delete_items(write_items);

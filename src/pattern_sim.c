@@ -31,7 +31,7 @@
 #include "peaks.h"
 #include "sfac.h"
 #include "reflections.h"
-#include "parameters.tmp"
+#include "beam-parameters.h"
 
 
 static void show_help(const char *s)
@@ -47,7 +47,8 @@ static void show_help(const char *s)
 "                            intensities file)\n"
 "     --simulation-details  Show technical details of the simulation.\n"
 "     --gpu                 Use the GPU to speed up the calculation.\n"
-" -g, --geometry=<file>    Get detector geometry from file.\n"
+" -g, --geometry=<file>     Get detector geometry from file.\n"
+" -b, --beam=<file>         Get beam parameters from file.\n"
 "\n"
 "     --near-bragg          Output h,k,l,I near Bragg conditions.\n"
 " -n, --number=<N>          Generate N images.  Default 1.\n"
@@ -189,6 +190,7 @@ int main(int argc, char *argv[])
 	char *grad_str = NULL;
 	char *outfile = NULL;
 	char *geometry = NULL;
+	char *beamfile = NULL;
 	GradientMethod grad;
 	int ndone = 0;    /* Number of simulations done (images or not) */
 	int number = 1;   /* Number used for filename of image */
@@ -213,11 +215,12 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"output",             1, NULL,               'o'},
 		{"geometry",           1, NULL,               'g'},
+		{"beam",               1, NULL,               'b'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hrn:i:t:p:o:g:",
+	while ((c = getopt_long(argc, argv, "hrn:i:t:p:o:g:b:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -255,6 +258,10 @@ int main(int argc, char *argv[])
 
 		case 'g' :
 			geometry = strdup(optarg);
+			break;
+
+		case 'b' :
+			beamfile = strdup(optarg);
 			break;
 
 		case 0 :
@@ -316,6 +323,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if ( beamfile == NULL ) {
+		ERROR("You need to specify a beam parameter file"
+		      " with --beam\n");
+		return 1;
+	}
+
 	if ( intfile == NULL ) {
 		/* Gentle reminder */
 		STATUS("You didn't specify the file containing the ");
@@ -345,10 +358,17 @@ int main(int argc, char *argv[])
 	}
 	free(geometry);
 
+	image.beam = get_beam_parameters(beamfile);
+	if ( image.beam == NULL ) {
+		ERROR("Failed to read beam parameters from '%s'\n", beamfile);
+		return 1;
+	}
+	free(beamfile);
+
 	/* Define image parameters */
 	image.width = image.det->max_x + 1;
 	image.height = image.det->max_y + 1;
-	image.lambda = ph_en_to_lambda(eV_to_J(PHOTON_ENERGY)); /* Wavelength */
+	image.lambda = ph_en_to_lambda(eV_to_J(image.beam->photon_energy));
 	cell = load_cell_from_pdb(filename);
 	if ( cell == NULL ) {
 		exit(1);
@@ -478,6 +498,7 @@ skip:
 
 	free(image.det->panels);
 	free(image.det);
+	free(image.beam);
 	free(powder);
 	cell_free(cell);
 	free(intensities);
