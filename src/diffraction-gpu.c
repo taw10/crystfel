@@ -23,11 +23,11 @@
 #include "diffraction.h"
 #include "sfac.h"
 #include "cl-utils.h"
+#include "beam-parameters.h"
 
 
 #define SAMPLING (4)
-#define BWSAMPLING (1)
-#define BANDWIDTH (0.0 / 100.0)
+#define BWSAMPLING (10)
 
 #define SINC_LUT_ELEMENTS (4096)
 
@@ -137,8 +137,8 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 	/* Calculate wavelength */
 	k = 1.0/image->lambda;  /* Centre value */
-	klow = k - k*(BANDWIDTH/2.0);  /* Lower value */
-	bwstep = k * BANDWIDTH / BWSAMPLING;
+	klow = k - k*(image->beam->bandwidth/2.0);  /* Lower value */
+	bwstep = k * image->beam->bandwidth / BWSAMPLING;
 
 	/* Orientation */
 	orientation.s[0] = image->orientation.w;

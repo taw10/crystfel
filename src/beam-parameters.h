@@ -23,6 +23,10 @@ struct beam_params
 	double fluence;        /* photons per pulse */
 	double beam_radius;    /* metres */
 	double photon_energy;  /* eV per photon */
+	double bandwidth;      /* FWHM(wavelength) over wavelength.
+	                        *  Note: current simulation code just uses
+	                        *        a rectangular distribution with this as
+	                        *        its (full) width. */
 
 	double dqe;            /* Detector DQE (fraction) */
 	double adu_per_photon; /* Detector "gain" */

@@ -26,8 +26,7 @@
 
 
 #define SAMPLING (4)
-#define BWSAMPLING (1)
-#define BANDWIDTH (0.0 / 100.0)
+#define BWSAMPLING (10)
 
 
 static double lattice_factor(struct rvec q, double ax, double ay, double az,
@@ -313,8 +312,8 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	image->twotheta = malloc(image->width * image->height * sizeof(double));
 
 	k = 1.0/image->lambda;  /* Centre value */
-	klow = k - k*(BANDWIDTH/2.0);  /* Lower value */
-	bwstep = k * BANDWIDTH / BWSAMPLING;
+	klow = k - k*(image->beam->bandwidth/2.0);  /* Lower value */
+	bwstep = k * image->beam->bandwidth / BWSAMPLING;
 
 	for ( xs=0; xs<image->width*SAMPLING; xs++ ) {
 	for ( ys=0; ys<image->height*SAMPLING; ys++ ) {

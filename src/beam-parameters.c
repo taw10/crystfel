@@ -37,6 +37,7 @@ struct beam_params *get_beam_parameters(const char *filename)
 	b->fluence = -1.0;
 	b->beam_radius = -1.0;
 	b->photon_energy = -1.0;
+	b->bandwidth = -1.0;
 	b->dqe = -1.0;
 	b->adu_per_photon = -1.0;
 	b->water_radius = -1.0;
@@ -66,17 +67,19 @@ struct beam_params *get_beam_parameters(const char *filename)
 		}
 
 		if ( strcmp(bits[0], "beam/fluence") == 0 ) {
-			b->fluence = atof(bits[0]);
+			b->fluence = atof(bits[2]);
 		} else if ( strcmp(bits[0], "beam/radius") == 0 ) {
-			b->beam_radius = atof(bits[0]);
+			b->beam_radius = atof(bits[2]);
 		} else if ( strcmp(bits[0], "beam/photon_energy") == 0 ) {
-			b->photon_energy = atof(bits[0]);
+			b->photon_energy = atof(bits[2]);
+		} else if ( strcmp(bits[0], "beam/bandwidth") == 0 ) {
+			b->bandwidth = atof(bits[2]);
 		} else if ( strcmp(bits[0], "detector/dqe") == 0 ) {
-			b->dqe = atof(bits[0]);
+			b->dqe = atof(bits[2]);
 		} else if ( strcmp(bits[0], "detector/adu_per_photon") == 0 ) {
-			b->adu_per_photon = atof(bits[0]);
+			b->adu_per_photon = atof(bits[2]);
 		} else if ( strcmp(bits[0], "jet/radius") == 0 ) {
-			b->water_radius = atof(bits[0]);
+			b->water_radius = atof(bits[2]);
 		} else {
 			ERROR("Unrecognised field '%s'\n", bits[0]);
 		}
@@ -100,6 +103,10 @@ struct beam_params *get_beam_parameters(const char *filename)
 	if ( b->photon_energy < 0.0 ) {
 		ERROR("Invalid or unspecified value for"
 		      " 'beam/photon_energy'.\n");
+		reject = 1;
+	}
+	if ( b->bandwidth < 0.0 ) {
+		ERROR("Invalid or unspecified value for 'beam/bandwidth'.\n");
 		reject = 1;
 	}
 	if ( b->dqe < 0.0 ) {
