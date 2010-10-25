@@ -2,7 +2,7 @@
 beam/fluence = 2.0e11
 
 ; Radius of X-ray beam
-beam/radius = 3.0e-6 / 2.0
+beam/radius = 1.5e-6
 
 ; Photon energy in eV
 beam/photon_energy = 2000.0
@@ -21,4 +21,4 @@ detector/adu_per_photon = 20.9
 
 
 ; Radius in metres
-jet/radius = 3.0e-6 / 2.0
+jet/radius = 1.5e-6
