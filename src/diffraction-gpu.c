@@ -136,8 +136,8 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	cell.s[6] = cx;  cell.s[7] = cy;  cell.s[8] = cz;
 
 	/* Calculate wavelength */
-	klow = 1.0/(image->lambda + image->beam->bandwidth/2.0);
-	khigh = 1.0/(image->lambda - image->beam->bandwidth/2.0);
+	klow = 1.0/(image->lambda*(1.0 + image->beam->bandwidth/2.0));
+	khigh = 1.0/(image->lambda*(1.0 - image->beam->bandwidth/2.0));
 	bwstep = (khigh-klow) / BWSAMPLING;
 
 	/* Orientation */

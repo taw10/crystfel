@@ -311,8 +311,8 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	/* Needed later for Lorentz calculation */
 	image->twotheta = malloc(image->width * image->height * sizeof(double));
 
-	klow = 1.0/(image->lambda + image->beam->bandwidth/2.0);
-	khigh = 1.0/(image->lambda - image->beam->bandwidth/2.0);
+	klow = 1.0/(image->lambda*(1.0 + image->beam->bandwidth/2.0));
+	khigh = 1.0/(image->lambda*(1.0 - image->beam->bandwidth/2.0));
 	bwstep = (khigh-klow) / BWSAMPLING;
 
 	for ( xs=0; xs<image->width*SAMPLING; xs++ ) {
