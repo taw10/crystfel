@@ -113,7 +113,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-	float k, klow;
+	float klow, khigh;
 	cl_event *event;
 	int p;
 	float *tt_ptr;
@@ -136,9 +136,9 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	cell.s[6] = cx;  cell.s[7] = cy;  cell.s[8] = cz;
 
 	/* Calculate wavelength */
-	k = 1.0/image->lambda;  /* Centre value */
-	klow = k - k*(image->beam->bandwidth/2.0);  /* Lower value */
-	bwstep = k * image->beam->bandwidth / BWSAMPLING;
+	klow = 1.0/(image->lambda + image->beam->bandwidth/2.0);
+	khigh = 1.0/(image->lambda - image->beam->bandwidth/2.0);
+	bwstep = (khigh-klow) / BWSAMPLING;
 
 	/* Orientation */
 	orientation.s[0] = image->orientation.w;

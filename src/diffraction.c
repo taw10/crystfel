@@ -301,7 +301,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-	float k, klow, bwstep;
+	float klow, khigh, bwstep;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -311,9 +311,9 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	/* Needed later for Lorentz calculation */
 	image->twotheta = malloc(image->width * image->height * sizeof(double));
 
-	k = 1.0/image->lambda;  /* Centre value */
-	klow = k - k*(image->beam->bandwidth/2.0);  /* Lower value */
-	bwstep = k * image->beam->bandwidth / BWSAMPLING;
+	klow = 1.0/(image->lambda + image->beam->bandwidth/2.0);
+	khigh = 1.0/(image->lambda - image->beam->bandwidth/2.0);
+	bwstep = (khigh-klow) / BWSAMPLING;
 
 	for ( xs=0; xs<image->width*SAMPLING; xs++ ) {
 	for ( ys=0; ys<image->height*SAMPLING; ys++ ) {
