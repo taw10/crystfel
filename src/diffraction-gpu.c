@@ -407,7 +407,7 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 		}
 	} else {
 		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
-			intensities_ptr[i] = 10000.0;
+			intensities_ptr[i] = 1e10;
 		}
 	}
 	gctx->intensities = clCreateBuffer(gctx->ctx,
