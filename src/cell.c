@@ -840,7 +840,7 @@ UnitCell *load_cell_from_pdb(const char *filename)
 	                                                deg2rad(be),
 	                                                deg2rad(ga));
 
-			sym = strndup(line+55, 11);
+			sym = strndup(line+55, 10);
 			notrail(sym);
 			cell_set_pointgroup_from_pdb(cell, sym);
 			free(sym);
