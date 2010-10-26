@@ -229,7 +229,10 @@ static double molecule_factor(const double *intensities,const double *phases,
 		h = (signed int)rint(hd);
 		k = (signed int)rint(kd);
 		l = (signed int)rint(ld);
-		r = lookup_intensity(intensities, h, k, l);
+		if ( abs(h) > INDMAX ) r = 0.0;
+		else if ( abs(k) > INDMAX ) r = 0.0;
+		else if ( abs(l) > INDMAX ) r = 0.0;
+		else r = lookup_intensity(intensities, h, k, l);
 		break;
 	case GRADIENT_INTERPOLATE :
 		r = interpolate_intensity(intensities, hd, kd, ld);

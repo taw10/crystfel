@@ -117,7 +117,7 @@ float get_intensity(global float *intensities, float16 cell, float4 q)
 
 	/* Return a silly value if indices are out of range */
 	if ( (abs(h) > INDMAX) || (abs(k) > INDMAX) || (abs(l) > INDMAX) ) {
-		return 1000000.0;
+		return 0.0;
 	}
 
 	h = (h>=0) ? h : h+IDIM;
