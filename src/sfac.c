@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <complex.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "utils.h"
 #include "sfac.h"
@@ -318,8 +319,6 @@ struct molecule *load_molecule(const char *filename)
 	char line[1024];
 	char *rval;
 	int i;
-	int nbits;
-	char **bits;
 
 	mol = malloc(sizeof(struct molecule));
 	if ( mol == NULL ) return NULL;
@@ -335,9 +334,14 @@ struct molecule *load_molecule(const char *filename)
 
 	do {
 
-		char *el;
 		int j, r;
 		int done = 0;
+		char xs[8];
+		char ys[8];
+		char zs[8];
+		char occs[6];
+		char Bs[6];
+		char el[3];
 		float xf, yf, zf, occf, Bf;
 		double x, y, z, occ, B;
 
@@ -360,50 +364,36 @@ struct molecule *load_molecule(const char *filename)
 
 		/* Only interested in atoms */
 		if ( (strncmp(line, "HETATM", 6) != 0)
-		  && (strncmp(line, "ATOM", 4) != 0) ) continue;
+		  && (strncmp(line, "ATOM  ", 6) != 0) ) continue;
 
 		chomp(line);
-		nbits = assplode(line, " ", &bits, ASSPLODE_NONE);
-		if ( nbits == 0 ) continue;
-
-		if ( nbits == 11 ) {
-
-			/* Normal case- HETATM<space+>number<space+>stuff */
-			r = sscanf(bits[5], "%f", &xf);
-			r += sscanf(bits[6], "%f", &yf);
-			r += sscanf(bits[7], "%f", &zf);
-			r += sscanf(bits[8], "%f", &occf);
-			r += sscanf(bits[9], "%f", &Bf);
-			if ( r != 5 ) {
-				STATUS("PDB read failed (%i)\n", r);
-				for ( i=0; i<nbits; i++ ) free(bits[i]);
-				continue;
-			}
-			el = strdup(bits[10]);
-
-		} else if ( nbits == 10 ) {
-
-			/* Squished case- HETATMnumber<space+>stuff */
-			r = sscanf(bits[4], "%f", &xf);
-			r += sscanf(bits[5], "%f", &yf);
-			r += sscanf(bits[6], "%f", &zf);
-			r += sscanf(bits[7], "%f", &occf);
-			r += sscanf(bits[8], "%f", &Bf);
-			if ( r != 5 ) {
-				STATUS("PDB read failed (%i)\n", r);
-				for ( i=0; i<nbits; i++ ) free(bits[i]);
-				continue;
-			}
-			el = strdup(bits[9]);
-
-		} else {
-			STATUS("Unrecognised line in the PDB file (%i)\n",
-			       nbits);
+		if ( strlen(line) != 80 ) {
+			STATUS("Line does not have the correct length (%i):\n",
+			       (int)strlen(line));
 			STATUS("'%s'\n", line);
-			for ( i=0; i<nbits; i++ ) free(bits[i]);
 			continue;
 		}
-		for ( i=0; i<nbits; i++ ) free(bits[i]);
+
+		/* Separate out fixed-width fields */
+		memcpy(xs, line+30, 5);    xs[7] = '\0';
+		memcpy(ys, line+38, 5);    ys[7] = '\0';
+		memcpy(zs, line+46, 5);    zs[7] = '\0';
+		memcpy(occs, line+54, 5);  occs[5] = '\0';
+		memcpy(Bs, line+60, 5);    Bs[5] = '\0';
+		memcpy(el, line+76, 2);    el[2] = '\0';
+
+		/* Convert fields */
+		r = sscanf(xs, "%f", &xf);
+		r += sscanf(ys, "%f", &yf);
+		r += sscanf(zs, "%f", &zf);
+		r += sscanf(occs, "%f", &occf);
+		r += sscanf(Bs, "%f", &Bf);
+		if ( el[0] == ' ' ) {
+			el[0] = el[1];
+			el[1] = '\0';
+		} else {
+			el[1] = tolower(el[1]);
+		}
 
 		/* Promote to double precision */
 		x = xf;  y = yf;  z = zf;  occ = occf;  B = Bf;
@@ -453,8 +443,6 @@ struct molecule *load_molecule(const char *filename)
 			mol->n_species++;
 
 		}
-
-		free(el);
 
 	} while ( rval != NULL );
 
