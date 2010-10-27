@@ -78,7 +78,8 @@ float *render_get_image_binned(DisplayWindow *dw, int binning, float *max)
 		image->features = NULL;
 		image->data = NULL;
 
-		hdf5_read(dw->hdfile, image, 1);
+		/* We don't care about the photon energy here */
+		hdf5_read(dw->hdfile, image, 1, 0.0);
 		dw->image_dirty = 0;
 		if ( dw->cmfilter ) filter_cm(image);
 		if ( dw->noisefilter ) filter_noise(image, NULL);

@@ -36,6 +36,7 @@
 #include "filters.h"
 #include "reflections.h"
 #include "thread-pool.h"
+#include "beam-parameters.h"
 
 
 enum {
@@ -71,6 +72,7 @@ struct static_index_args
 	const double *intensities;
 	struct gpu_context *gctx;
 	int peaks;
+	double nominal_photon_energy;
 
 	/* Output stream */
 	pthread_mutex_t *output_mutex;  /* Protects the output stream */
@@ -120,6 +122,9 @@ static void show_help(const char *s)
 "                           dirax    : invoke DirAx\n"
 "                           template : index by template matching\n"
 " -g. --geometry=<file>    Get detector geometry from file.\n"
+" -b, --beam=<file>        Get beam parameters from file (provides nominal\n"
+"                           wavelength value if no per-shot value is found in\n"
+"                           the HDF5 files.\n"
 " -p, --pdb=<file>         PDB file from which to get the unit cell to match.\n"
 "                           Default: 'molecule.pdb'.\n"
 " -x, --prefix=<p>         Prefix filenames from input file with <p>.\n"
@@ -340,7 +345,8 @@ static void process_image(void *pp, int cookie)
 		return;
 	}
 
-	hdf5_read(hdfile, &image, pargs->static_args.config_satcorr);
+	hdf5_read(hdfile, &image, pargs->static_args.config_satcorr,
+	          pargs->static_args.nominal_photon_energy);
 
 	if ( config_cmfilter ) {
 		filter_cm(&image);
@@ -531,6 +537,8 @@ int main(int argc, char *argv[])
 	char prepare_filename[1024];
 	IndexingPrivate *ipriv;
 	struct queue_args qargs;
+	struct beam_params *beam = NULL;
+	double nominal_photon_energy;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -545,6 +553,7 @@ int main(int argc, char *argv[])
 		{"write-drx",          0, &config_writedrx,    1},
 		{"indexing",           1, NULL,               'z'},
 		{"geometry",           1, NULL,               'g'},
+		{"beam",               1, NULL,               'b'},
 		{"simulate",           0, &config_simulate,    1},
 		{"filter-cm",          0, &config_cmfilter,    1},
 		{"filter-noise",       0, &config_noisefilter, 1},
@@ -566,7 +575,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:wp:j:x:g:t:o:",
+	while ((c = getopt_long(argc, argv, "hi:wp:j:x:g:t:o:b:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -608,6 +617,15 @@ int main(int argc, char *argv[])
 
 		case 't' :
 			threshold = strtof(optarg, NULL);
+			break;
+
+		case 'b' :
+			beam = get_beam_parameters(optarg);
+			if ( beam == NULL ) {
+				ERROR("Failed to load beam parameters"
+				      " from '%s'\n", optarg);
+				return 1;
+			}
 			break;
 
 		case 2 :
@@ -742,6 +760,14 @@ int main(int argc, char *argv[])
 	fprintf(ofh, "\n");
 	fflush(ofh);
 
+	if ( beam != NULL ) {
+		nominal_photon_energy = beam->photon_energy;
+	} else {
+		STATUS("No beam parameters file was given, so I'm taking the"
+		       " nominal photon energy to be 2 keV.\n");
+		nominal_photon_energy = 2000.0;
+	}
+
 	/* Get first filename and use it to set up the indexing */
 	if ( fh != stdin ) {
 		rval = fgets(prepare_line, 1023, fh);
@@ -758,7 +784,8 @@ int main(int argc, char *argv[])
 		STATUS("Stuff might break.\n");
 		prepare_filename[0] = '\0';
 	}
-	ipriv = prepare_indexing(indm, cell, prepare_filename, det);
+	ipriv = prepare_indexing(indm, cell, prepare_filename, det,
+	                         nominal_photon_energy);
 	if ( ipriv == NULL ) {
 		ERROR("Failed to prepare indexing.\n");
 		return 1;
@@ -792,6 +819,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.peaks = peaks;
 	qargs.static_args.output_mutex = &output_mutex;
 	qargs.static_args.ofh = ofh;
+	qargs.static_args.nominal_photon_energy = nominal_photon_energy;
 
 	qargs.fh = fh;
 	qargs.prefix = prefix;

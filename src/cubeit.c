@@ -237,7 +237,8 @@ static void sum_image(void *pg, int cookie)
 		return;
 	}
 
-	hdf5_read(hdfile, &image, 1);
+	/* FIXME: Nominal photon energy */
+	hdf5_read(hdfile, &image, 1, 2000.0);
 
 	cell_get_cartesian(apargs->cell, &ax, &ay, &az, &bx, &by,
 	                                &bz, &cx, &cy, &cz);

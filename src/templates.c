@@ -109,7 +109,8 @@ UnitCell *rotate_cell(UnitCell *in, double omega, double phi, double rot)
 
 /* Generate templates for the given cell using a representative image */
 IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
-                                    struct detector *det)
+                                    struct detector *det,
+                                    double nominal_photon_energy)
 {
 	struct _indexingprivate_template *priv;
 	const char *holo;
@@ -129,7 +130,7 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 		ERROR("Couldn't select path\n");
 		return NULL;
 	}
-	hdf5_read(hdfile, &image, 0);
+	hdf5_read(hdfile, &image, 0, nominal_photon_energy);
 	hdfile_close(hdfile);
 	image.det = det;
 

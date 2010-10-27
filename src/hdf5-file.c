@@ -390,7 +390,8 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 }
 
 
-int hdf5_read(struct hdfile *f, struct image *image, int satcorr)
+int hdf5_read(struct hdfile *f, struct image *image, int satcorr,
+              double nominal_photon_energy)
 {
 	herr_t r;
 	float *buf;
@@ -432,8 +433,8 @@ int hdf5_read(struct hdfile *f, struct image *image, int satcorr)
 	/* Read wavelength from file */
 	image->lambda = get_wavelength(f);
 	if ( image->lambda < 0.0 ) {
-		ERROR("Couldn't read wavelength - using 2 keV.\n");
-		image->lambda = ph_en_to_lambda(eV_to_J(2000.0));
+		ERROR("Couldn't read wavelength - using nominal value.\n");
+		image->lambda = ph_en_to_lambda(eV_to_J(nominal_photon_energy));
 	}
 
 	image->f0 = get_f0(f);

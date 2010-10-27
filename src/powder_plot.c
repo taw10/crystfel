@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 
 	hdfile = hdfile_open(filename);
 	hdfile_set_image(hdfile, "/data/data");
-	hdf5_read(hdfile, &image, 1);
+	hdf5_read(hdfile, &image, 1, 2000.0);
 
 	for ( x=0; x<image.width; x++ ) {
 	for ( y=0; y<image.height; y++ ) {

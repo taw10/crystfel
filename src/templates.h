@@ -22,7 +22,8 @@
 #include "cell.h"
 
 extern IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
-                                           struct detector *det);
+                                           struct detector *det,
+                                           double nominal_photon_energy);
 
 
 extern void match_templates(struct image *image, IndexingPrivate *ipriv);

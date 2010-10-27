@@ -27,7 +27,8 @@ struct hdfile;
 extern int hdf5_write(const char *filename, const void *data,
                       int width, int height, int type);
 
-extern int hdf5_read(struct hdfile *f, struct image *image, int satcorr);
+extern int hdf5_read(struct hdfile *f, struct image *image, int satcorr,
+                     double nominal_photon_energy);
 
 extern struct hdfile *hdfile_open(const char *filename);
 extern int hdfile_set_image(struct hdfile *f, const char *path);

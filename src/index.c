@@ -42,7 +42,8 @@ static IndexingPrivate *indexing_private(IndexingMethod indm)
 
 
 IndexingPrivate *prepare_indexing(IndexingMethod indm, UnitCell *cell,
-                                  const char *filename, struct detector *det)
+                                  const char *filename, struct detector *det,
+                                  double nominal_photon_energy)
 {
 	switch ( indm ) {
 	case INDEXING_NONE :
@@ -50,7 +51,8 @@ IndexingPrivate *prepare_indexing(IndexingMethod indm, UnitCell *cell,
 	case INDEXING_DIRAX :
 		return indexing_private(indm);
 	case INDEXING_TEMPLATE :
-		return generate_templates(cell, filename, det);
+		return generate_templates(cell, filename, det,
+		                          nominal_photon_energy);
 	}
 	return 0;
 }

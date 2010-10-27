@@ -33,7 +33,8 @@ typedef struct _indexingprivate IndexingPrivate;
 
 extern IndexingPrivate *prepare_indexing(IndexingMethod indm, UnitCell *cell,
                                          const char *filename,
-                                         struct detector *det);
+                                         struct detector *det,
+                                         double nominal_photon_energy);
 
 extern void map_all_peaks(struct image *image);
 
