@@ -12,6 +12,9 @@ beam/photon_energy = 2000.0
 ;       distribution with this as its (full) width.
 beam/bandwidth = 0.001
 
+; Beam divergence in radians
+beam/divergence = 0.001
+
 
 ; Detector's quantum efficiency
 detector/dqe = 0.9

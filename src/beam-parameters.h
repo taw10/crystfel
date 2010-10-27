@@ -27,6 +27,7 @@ struct beam_params
 	                        *  Note: current simulation code just uses
 	                        *        a rectangular distribution with this as
 	                        *        its (full) width. */
+	double divergence;     /* divergence (radians) */
 
 	double dqe;            /* Detector DQE (fraction) */
 	double adu_per_photon; /* Detector "gain" */

@@ -38,6 +38,7 @@ struct beam_params *get_beam_parameters(const char *filename)
 	b->beam_radius = -1.0;
 	b->photon_energy = -1.0;
 	b->bandwidth = -1.0;
+	b->divergence = -1.0;
 	b->dqe = -1.0;
 	b->adu_per_photon = -1.0;
 	b->water_radius = -1.0;
@@ -74,6 +75,8 @@ struct beam_params *get_beam_parameters(const char *filename)
 			b->photon_energy = atof(bits[2]);
 		} else if ( strcmp(bits[0], "beam/bandwidth") == 0 ) {
 			b->bandwidth = atof(bits[2]);
+		} else if ( strcmp(bits[0], "beam/divergence") == 0 ) {
+			b->divergence = atof(bits[2]);
 		} else if ( strcmp(bits[0], "detector/dqe") == 0 ) {
 			b->dqe = atof(bits[2]);
 		} else if ( strcmp(bits[0], "detector/adu_per_photon") == 0 ) {
@@ -107,6 +110,10 @@ struct beam_params *get_beam_parameters(const char *filename)
 	}
 	if ( b->bandwidth < 0.0 ) {
 		ERROR("Invalid or unspecified value for 'beam/bandwidth'.\n");
+		reject = 1;
+	}
+	if ( b->divergence < 0.0 ) {
+		ERROR("Invalid or unspecified value for 'beam/divergence'.\n");
 		reject = 1;
 	}
 	if ( b->dqe < 0.0 ) {
