@@ -78,7 +78,8 @@ estimate_background_DEPENDENCIES =
 am_facetron_OBJECTS = facetron.$(OBJEXT) cell.$(OBJEXT) \
 	hdf5-file.$(OBJEXT) utils.$(OBJEXT) detector.$(OBJEXT) \
 	peaks.$(OBJEXT) image.$(OBJEXT) geometry.$(OBJEXT) \
-	reflections.$(OBJEXT) stream.$(OBJEXT) thread-pool.$(OBJEXT)
+	reflections.$(OBJEXT) stream.$(OBJEXT) thread-pool.$(OBJEXT) \
+	beam-parameters.$(OBJEXT)
 facetron_OBJECTS = $(am_facetron_OBJECTS)
 facetron_DEPENDENCIES =
 am_get_hkl_OBJECTS = get_hkl.$(OBJEXT) sfac.$(OBJEXT) cell.$(OBJEXT) \
@@ -97,7 +98,8 @@ hdfsee_DEPENDENCIES =
 am__indexamajig_SOURCES_DIST = indexamajig.c hdf5-file.c utils.c \
 	cell.c image.c peaks.c index.c filters.c diffraction.c \
 	detector.c sfac.c dirax.c reflections.c templates.c symmetry.c \
-	geometry.c thread-pool.c diffraction-gpu.c cl-utils.c
+	geometry.c thread-pool.c beam-parameters.c diffraction-gpu.c \
+	cl-utils.c
 @HAVE_OPENCL_TRUE@am__objects_1 = diffraction-gpu.$(OBJEXT) \
 @HAVE_OPENCL_TRUE@	cl-utils.$(OBJEXT)
 am_indexamajig_OBJECTS = indexamajig.$(OBJEXT) hdf5-file.$(OBJEXT) \
@@ -105,7 +107,8 @@ am_indexamajig_OBJECTS = indexamajig.$(OBJEXT) hdf5-file.$(OBJEXT) \
 	index.$(OBJEXT) filters.$(OBJEXT) diffraction.$(OBJEXT) \
 	detector.$(OBJEXT) sfac.$(OBJEXT) dirax.$(OBJEXT) \
 	reflections.$(OBJEXT) templates.$(OBJEXT) symmetry.$(OBJEXT) \
-	geometry.$(OBJEXT) thread-pool.$(OBJEXT) $(am__objects_1)
+	geometry.$(OBJEXT) thread-pool.$(OBJEXT) \
+	beam-parameters.$(OBJEXT) $(am__objects_1)
 indexamajig_OBJECTS = $(am_indexamajig_OBJECTS)
 indexamajig_DEPENDENCIES =
 am__pattern_sim_SOURCES_DIST = pattern_sim.c diffraction.c utils.c \
@@ -282,7 +285,7 @@ process_hkl_LDADD = @LIBS@
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
 	peaks.c index.c filters.c diffraction.c detector.c sfac.c \
 	dirax.c reflections.c templates.c symmetry.c geometry.c \
-	thread-pool.c $(am__append_3)
+	thread-pool.c beam-parameters.c $(am__append_3)
 indexamajig_LDADD = @LIBS@
 @HAVE_GTK_TRUE@hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c image.c \
 @HAVE_GTK_TRUE@                 filters.c
