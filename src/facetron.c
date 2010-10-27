@@ -31,6 +31,7 @@
 #include "geometry.h"
 #include "peaks.h"
 #include "thread-pool.h"
+#include "beam-parameters.h"
 
 
 static void show_help(const char *s)
@@ -45,6 +46,9 @@ static void show_help(const char *s)
 "                              (must be a file, not e.g. stdin)\n"
 "  -o, --output=<filename>    Output filename.  Default: facetron.hkl.\n"
 "  -g. --geometry=<file>      Get detector geometry from file.\n"
+"  -b, --beam=<file>          Get beam parameters from file (provides initial\n"
+"                              values for parameters, and nominal wavelengths\n"
+"                              if no per-shot value is found in an HDF5 file.\n"
 "  -x, --prefix=<p>           Prefix filenames from input file with <p>.\n"
 "      --basename             Remove the directory parts of the filenames.\n"
 "      --no-check-prefix      Don't attempt to correct the --prefix.\n"
@@ -91,6 +95,7 @@ static void integrate_image(int mytask, void *tasks)
 	int j, n;
 	struct hdfile *hdfile;
 	struct image *image = pargs->image;
+	double nominal_photon_energy = pargs->image->beam->photon_energy;
 
 	hdfile = hdfile_open(image->filename);
 	if ( hdfile == NULL ) {
@@ -102,34 +107,31 @@ static void integrate_image(int mytask, void *tasks)
 		return;
 	}
 
-	if ( hdf5_read(hdfile, pargs->image, 0) ) {
+	/* FIXME: Nominal photon energy */
+	if ( hdf5_read(hdfile, pargs->image, 0, nominal_photon_energy) ) {
 		ERROR("Couldn't read '%s'\n", image->filename);
 		hdfile_close(hdfile);
 		return;
 	}
 
 	/* Figure out which spots should appear in this pattern */
-	spots = find_intersections(image, image->indexed_cell,
-	                           image->div, image->bw, &n, 0);
+	spots = find_intersections(image, image->indexed_cell, &n, 1);
 
 	/* For each reflection, estimate the partiality */
 	for ( j=0; j<n; j++ ) {
 
 		signed int h, k, l;
 		float i_partial;
-		double p;
 		float xc, yc;
+		float i_full_est;
 
 		h = spots[j].h;
 		k = spots[j].k;
 		l = spots[j].l;
 
-		/* Calculated partiality of this spot in this pattern */
-		p = partiality(image, h, k, l);
-
 		/* Don't attempt to use spots with very small
 		 * partialities, since it won't be accurate. */
-		if ( p < 0.1 ) continue;
+		if ( spots[j].p < 0.1 ) continue;
 
 		/* Actual measurement of this reflection from this
 		 * pattern? */
@@ -139,8 +141,10 @@ static void integrate_image(int mytask, void *tasks)
 			continue;
 		}
 
+		i_full_est = i_partial * spots[j].p;
+
 		pthread_mutex_lock(pargs->list_lock);
-		integrate_intensity(pargs->i_full, h, k, l, i_partial);
+		integrate_intensity(pargs->i_full, h, k, l, i_full_est);
 		integrate_count(pargs->cts, h, k, l, 1);
 		if ( !find_item(pargs->obs, h, k, l) ) {
 			add_item(pargs->obs, h, k, l);
@@ -249,6 +253,7 @@ int main(int argc, char *argv[])
 	int n_total_patterns;
 	struct image *images;
 	int n_iter = 10;
+	struct beam_params *beam = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -256,6 +261,7 @@ int main(int argc, char *argv[])
 		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
 		{"geometry",           1, NULL,               'g'},
+		{"beam",               1, NULL,               'b'},
 		{"prefix",             1, NULL,               'x'},
 		{"basename",           0, &config_basename,    1},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
@@ -265,7 +271,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:g:x:j:y:o:",
+	while ((c = getopt_long(argc, argv, "hi:g:x:j:y:o:b:",
 	                        longopts, NULL)) != -1)
 	{
 
@@ -300,6 +306,15 @@ int main(int argc, char *argv[])
 
 		case 'n' :
 			n_iter = atoi(optarg);
+			break;
+
+		case 'b' :
+			beam = get_beam_parameters(optarg);
+			if ( beam == NULL ) {
+				ERROR("Failed to load beam parameters"
+				      " from '%s'\n", optarg);
+				return 1;
+			}
 			break;
 
 		case 0 :
@@ -348,6 +363,11 @@ int main(int argc, char *argv[])
 	}
 	free(geomfile);
 
+	if ( beam == NULL ) {
+		ERROR("You must provide a beam parameters file.\n");
+		return 1;
+	}
+
 	/* Prepare for iteration */
 	i_full = new_list_intensity();
 	obs = new_items();
@@ -388,13 +408,14 @@ int main(int argc, char *argv[])
 		snprintf(fnamereal, 1023, "%s%s", prefix, filename);
 
 		images[i].filename = fnamereal;
-		images[i].div = 0.5e-3;
-		images[i].bw = 0.001;
+		images[i].div = beam->divergence;
+		images[i].bw = beam->bandwidth;
 		images[i].orientation.w = 1.0;
 		images[i].orientation.x = 0.0;
 		images[i].orientation.y = 0.0;
 		images[i].orientation.z = 0.0;
 		images[i].det = det;
+		images[i].beam = beam;
 
 		/* Muppet proofing */
 		images[i].data = NULL;

@@ -53,11 +53,21 @@ typedef struct _imagefeaturelist ImageFeatureList;
 
 
 /* This structure represents a predicted peak in an image */
-struct cpeak {
+struct cpeak
+{
+	/* Indices */
 	signed int h;
 	signed int k;
 	signed int l;
+
 	double min_distance;
+
+	/* Partiality */
+	double r1;
+	double r2;
+	double p;
+
+	/* Location in image */
 	int x;
 	int y;
 };
@@ -73,7 +83,7 @@ struct image {
 	UnitCell                *candidate_cells[MAX_CELL_CANDIDATES];
 	int                     ncells;
 	struct detector         *det;
-	struct beam_params      *beam;
+	struct beam_params      *beam;  /* The nominal beam parameters */
 	char                    *filename;
 	struct cpeak            *cpeaks;
 	int                     n_cpeaks;
@@ -86,7 +96,7 @@ struct image {
 	double                  m;  /* Mosaicity in radians */
 
 
-	/* Information about the radiation */
+	/* Per-shot radiation values */
 	double                  lambda;        /* Wavelength in m */
 	double                  div;           /* Divergence in radians */
 	double                  bw;            /* Bandwidth as a fraction */
