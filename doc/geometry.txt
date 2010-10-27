@@ -13,10 +13,10 @@ coordinates are specified inclusively, meaning that a minimum of 0 and a maximum
 of 9 results in ten items.  Counting begins from zero.  All pixels in the image
 must be assigned to a panel.
 
-See "A note on data orientation" in the top level README file for important
-information about how CrystFEL defines the axes.  All coordinates (including the
-centre coordinates for each panel) are measured according to these axes:  there
-is no coordinate system local to a panel.
+See "A note on data orientation" below for important information about how
+CrystFEL defines the axes.  All coordinates (including the centre coordinates
+for each panel) are measured according to these axes:  there is no coordinate
+system local to a panel.
 
 The syntax for a simple geometry might be as follows:
 
@@ -54,3 +54,21 @@ n_panels = 1
 
 
 See the "examples" folder for some examples.
+
+
+A note on data orientation
+--------------------------
+
+In the image data extracted from the HDF5 file, CrystFEL defines "x" as the most
+quickly varying coordinate in the data, and "y" as the second most quickly
+varying coordinate in the data.  It doesn't know what to do with any extra
+dimensions in the HDF5 dataset beyond the second.
+
+The origin, which is considered the lower left corner of the image, is defined
+by CrystFEL as the first element in the image data.  Positive x points in a
+direction to the right, and positive y points upwards.  CrystFEL considers the
+positive z direction to be the direction of the incident beam completing the
+right-handed set of axes.
+
+The detector surface is currently always assumed to be perpendicular to the
+incident beam.

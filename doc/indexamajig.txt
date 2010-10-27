@@ -1,7 +1,7 @@
-indexmajig - bulk indexing and data reduction program
------------------------------------------------------
+indexamajig - bulk indexing and data reduction program
+------------------------------------------------------
 
-The indexamajig program takes as input a list of diffraction image files,
+The "indexamajig" program takes as input a list of diffraction image files,
 currently in HDF5 format.  For each image, it attempts to find peaks and then
 index the pattern.  If successful, it will measure the intensities of the peaks
 at Bragg locations and produce a list in the form "h k l I", with some extra
