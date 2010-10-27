@@ -1,10 +1,10 @@
 CrystFEL - Crystallography with a FEL
 -------------------------------------
 
-Thomas White <taw@physics.org>, CFEL, DESY
+Thomas White <taw@physics.org>, CFEL, DESY Hamburg
 
-CrystFEL is a suite of programs for simulating and processing crystallographic
-(Bragg diffraction) data acquired with a free electron laser.  The particular
+CrystFEL is a suite of programs for processing (and simulating) Bragg
+diffraction data acquired with a free electron laser.  Some of the particular
 characteristics of such data which call for a specialised software suite are:
 
 - The sliced, rather than integrated, measurement of intensity data.  Many, if
@@ -15,6 +15,13 @@ characteristics of such data which call for a specialised software suite are:
    the detector.
 
 - Many patterns (>10,000) are required - high throughput is needed.
+
+- The crystal orientations in each pattern are random and uncorrelated, meaning
+   that:
+
+- Merging into lower symmetry point groups may require the resolution of
+   indexing ambiguities.
+
 
 CrystFEL includes programs for simulating and processing patterns subject to the
 above characteristics.  The main programs are:
@@ -29,6 +36,13 @@ above characteristics.  The main programs are:
 	- process_hkl, for merging per-pattern lists of intensities into a
 	               single reflection list.
 
+	- facetron, for merging patterns more accurately (and much more slowly)
+	            using post refinement.
+
+	- reintegrate, which is like "indexamajig" but without the indexing
+	               step, instead getting the orientation matrix from the
+	               output of a previous run of either "indexamajig" or
+	               "reintegrate".
 In addition, there is also:
 
 	- get_hkl, for generating a list of squared structure factors for
@@ -40,6 +54,17 @@ In addition, there is also:
 
 	- compare_hkl, for working out the differences (e.g. a q-dependent
 	               scaling factor) between two lists of reflections.
+
+	- calibrate_detector, for summing patterns after peak detection to use
+	                      for calibrating your detector.
+
+	- cubeit, for summing patterns in 3D to inspect the peak profiles.
+
+	- estimate_background, for calculating signal to noise ratios from
+	                       the indexed peaks.
+
+	- render_hkl, for turning reflection lists into pretty graphics.
+
 
 And, because I'm so nice, included at no extra cost is:
 
@@ -79,22 +104,6 @@ harder to come by, disable lots of things:
 $ ./configure --disable-gtk --disable-png --disable-libtiff
 
 
-A note on data orientation
---------------------------
-
-CrystFEL defines "x" as the most quickly varying coordinate in the data, and "y"
-as the second most quickly varying coordinate in the data.  It doesn't know what
-to do with any extra dimensions beyond the second.
-
-The origin, which is considered the lower left corner of the image, is defined
-by CrystFEL as the first element in the image data.  Positive x points in a
-direction to the right, and positive y points upwards.  When a right-handed
-coordinate system is formed using these definitions, CrystFEL will consider the
-positive z direction to point towards the source of the incident beam.
-
-The detector surface is assumed to be perpendicular to the incident beam.
-
-
 Program name
 ------------
 
@@ -105,7 +114,8 @@ fussy about how my work is referred to in publications and talks.
 
 The name for the overall software suite is "CrystFEL", with this being the only
 acceptable capitalisation.  The individual programs should always be referred to
-with all letters in lower case, exactly as written earlier in this file.
+with all letters in lower case, exactly as written earlier in this file.  Put
+the names in quotes if they sound strange to you.
 
 In most cases, it will be more appropriate to refer to the overall suite than to
 one of its constituent programs.
