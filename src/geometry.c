@@ -76,28 +76,19 @@ static signed int locate_peak(double x, double y, double z, double lambda,
 
 
 static double excitation_error(double xl, double yl, double zl,
-                               double ds_sq, double lambda)
+                               double ds, double lambda)
 {
-	double tt;
-	double a, b, c;
-	double r1, r2;
-	int n;
+	double tt, al;
+	double r;
 
 	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+1.0/lambda);
+	al = M_PI_2 - asin(-zl/ds);
 
-	a = 1.0;
-	b = - cos(tt) * 2.0/lambda;
-	c = pow(lambda, -2.0) - ds_sq;
+	r = ds * sin(al) / sin(tt);
 
-	/* FIXME: I don't trust GSL's quadratic solver */
-	n = gsl_poly_solve_quadratic(a, b, c, &r1, &r2);
-	assert(n == 2);
+	r -= 1.0/lambda;
 
-	r1 -= 1.0/lambda;
-	r2 -= 1.0/lambda;
-
-	if ( r1 > r2 ) return r2;
-	return r1;
+	return r;
 }
 
 
@@ -115,7 +106,7 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 	double bandwidth = image->bw;
 	double divergence = image->div;
 	double lambda = image->lambda;
-	const double profile_cutoff = 0.05e9;  /* 0.1 nm^-1 */
+	const double profile_cutoff = 0.005e9;  /* 0.1 nm^-1 */
 	double llow, lhigh;    /* Wavelength */
 
 	cpeaks = malloc(sizeof(struct cpeak)*MAX_CPEAKS);
@@ -148,10 +139,10 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 		double xl, yl, zl;
 		double ds, ds_sq;
 		double rlow, rhigh;    /* "Excitation error" */
-		signed int plow, phigh;
-		double xdalow, xdahigh;
-		double ydalow, ydahigh;
+		signed int p;
+		double lcen;
 		double xda, yda;
+		int close, straddled;
 
 		/* Ignore central beam */
 		if ( (h==0) && (k==0) && (l==0) ) continue;
@@ -168,32 +159,32 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 		if ( ds > mres ) continue;  /* Outside resolution range */
 
 		/* Calculate excitation errors */
-		rlow = excitation_error(xl, yl, zl, ds_sq, llow);
-		rhigh = excitation_error(xl, yl, zl, ds_sq, lhigh);
+		rlow = excitation_error(xl, yl, zl, ds, llow);
+		rhigh = excitation_error(xl, yl, zl, ds, lhigh);
 
-		if ( (fabs(rlow) > profile_cutoff)
-		  && (fabs(rhigh) > profile_cutoff) ) {
-			/* Reflection is not close to Bragg at either of
-			 * the two extremes of wavelength, so skip it. */
-			continue;
-		}
+		/* Is the reciprocal lattice point close to either extreme of
+		 * the sphere, maybe just outside the "Ewald volume"? */
+		close = (fabs(rlow) < profile_cutoff)
+		     || (fabs(rhigh) < profile_cutoff);
+
+		/* Is the reciprocal lattice point somewhere between the
+		 * extremes of the sphere, i.e. inside the "Ewald volume"? */
+		straddled = signbit(rlow) ^ signbit(rhigh);
+
+		/* Neither?  Skip it. */
+		if ( !(close || straddled) ) continue;
+
+		lcen = -2.0*zl / ds_sq;
 
 		/* Locate peak on detector, and check it doesn't span panels */
-		plow = locate_peak(xl, yl, zl, llow, image->det,
-		                   &xdalow, &ydalow);
-		if ( plow == -1 ) continue;
-		phigh = locate_peak(xl, yl, zl, lhigh, image->det,
-		                    &xdahigh, &ydahigh);
-		if ( phigh == -1 ) continue;
-		if ( plow != phigh ) continue;
+		p = locate_peak(xl, yl, zl, lcen, image->det, &xda, &yda);
+		if ( p == -1 ) continue;
 
-		xda = xdahigh;
-		yda = ydahigh;
 		cpeaks[np].h = h;
 		cpeaks[np].k = k;
 		cpeaks[np].l = l;
-		cpeaks[np].x = xdahigh;
-		cpeaks[np].y = ydahigh;
+		cpeaks[np].x = xda;
+		cpeaks[np].y = yda;
 		np++;
 
 		if ( output ) {
