@@ -63,9 +63,9 @@ struct cpeak
 	double min_distance;
 
 	/* Partiality */
-	double r1;
-	double r2;
-	double p;
+	double r1;  /* First excitation error */
+	double r2;  /* Second excitation error */
+	double p;   /* Partiality */
 
 	/* Location in image */
 	int x;

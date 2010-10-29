@@ -90,6 +90,29 @@ static double excitation_error(double xl, double yl, double zl,
 }
 
 
+static double partiality(double r1, double r2, double r)
+{
+	double q1, q2;
+	double p, p1, p2;
+
+	/* Calculate degrees of penetration */
+	q1 = (r1 + r)/(2.0*r);
+	q2 = (r2 + r)/(2.0*r);
+
+	if ( q1 > 1.0 ) q1 = 1.0;
+	if ( q1 < 0.0 ) q1 = 0.0;
+	if ( q2 > 1.0 ) q2 = 1.0;
+	if ( q2 < 0.0 ) q2 = 0.0;
+
+	p1 = 3.0*pow(q1,2.0) - 2.0*pow(q1,3.0);
+	p2 = 3.0*pow(q2,2.0) - 2.0*pow(q2,3.0);
+
+	p = fabs(p2 - p1);
+
+	return p;
+}
+
+
 struct cpeak *find_intersections(struct image *image, UnitCell *cell,
                                  int *n, int output)
 {
@@ -104,8 +127,11 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 	double bandwidth = image->bw;
 	double divergence = image->div;
 	double lambda = image->lambda;
-	const double profile_cutoff = 0.005e9;  /* 0.1 nm^-1 */
 	double klow, kcen, khigh;    /* Wavenumber */
+	/* Bounding sphere for the shape transform approximation */
+	const double profile_cutoff = 0.02e9;  /* 0.02 nm^-1 */
+	/* Actual radius of the profile */
+	const double profile_radius = 0.005e9;
 
 	cpeaks = malloc(sizeof(struct cpeak)*MAX_CPEAKS);
 	if ( cpeaks == NULL ) {
@@ -138,6 +164,7 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 		signed int p;           /* Panel number */
 		double xda, yda;        /* Position on detector */
 		int close, inside;
+		double part;            /* Partiality */
 
 		/* Ignore central beam */
 		if ( (h==0) && (k==0) && (l==0) ) continue;
@@ -187,16 +214,23 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 		p = locate_peak(xl, yl, zl, kcen, image->det, &xda, &yda);
 		if ( p == -1 ) continue;
 
+		part = partiality(rlow, rhigh, profile_radius);
+
+		if ( part < 0.1 ) continue;
+
 		cpeaks[np].h = h;
 		cpeaks[np].k = k;
 		cpeaks[np].l = l;
 		cpeaks[np].x = xda;
 		cpeaks[np].y = yda;
+		cpeaks[np].r1 = rlow;
+		cpeaks[np].r2 = rhigh;
+		cpeaks[np].p = part;
 		np++;
 
 		if ( output ) {
-			printf("%3i %3i %3i %6f (at %5.2f,%5.2f) %9e %9e\n",
-			       h, k, l, 0.0, xda, yda, rlow, rhigh);
+			printf("%3i %3i %3i %6f (at %5.2f,%5.2f) %5.2f\n",
+			       h, k, l, 0.0, xda, yda, part);
 		}
 
 		if ( np == MAX_CPEAKS ) goto out;
