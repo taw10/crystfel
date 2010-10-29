@@ -142,7 +142,7 @@ static void integrate_image(int mytask, void *tasks)
 			continue;
 		}
 
-		i_full_est = i_partial * spots[j].p;
+		i_full_est = i_partial / spots[j].p;
 
 		get_asymm(h, k, l, &ha, &ka, &la, pargs->sym);
 
