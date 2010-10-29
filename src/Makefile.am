@@ -60,7 +60,7 @@ calibrate_detector_LDADD = @LIBS@
 
 facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
                    image.c geometry.c reflections.c stream.c thread-pool.c \
-                   beam-parameters.c
+                   beam-parameters.c symmetry.c
 facetron_LDADD = @LIBS@
 
 cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c render.c \

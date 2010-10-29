@@ -121,6 +121,7 @@ static void integrate_image(int mytask, void *tasks)
 	for ( j=0; j<n; j++ ) {
 
 		signed int h, k, l;
+		signed int ha, ka, la;
 		float i_partial;
 		float xc, yc;
 		float i_full_est;
@@ -143,11 +144,13 @@ static void integrate_image(int mytask, void *tasks)
 
 		i_full_est = i_partial * spots[j].p;
 
+		get_asymm(h, k, l, &ha, &ka, &la, pargs->sym);
+
 		pthread_mutex_lock(pargs->list_lock);
-		integrate_intensity(pargs->i_full, h, k, l, i_full_est);
-		integrate_count(pargs->cts, h, k, l, 1);
-		if ( !find_item(pargs->obs, h, k, l) ) {
-			add_item(pargs->obs, h, k, l);
+		integrate_intensity(pargs->i_full, ha, ka, la, i_full_est);
+		integrate_count(pargs->cts, ha, ka, la, 1);
+		if ( !find_item(pargs->obs, ha, ka, la) ) {
+			add_item(pargs->obs, ha, ka, la);
 		}
 		pthread_mutex_unlock(pargs->list_lock);
 
