@@ -28,12 +28,12 @@
 #define MAX_CPEAKS (256 * 256)
 
 
-static signed int locate_peak(double x, double y, double z, double lambda,
+static signed int locate_peak(double x, double y, double z, double k,
                               struct detector *det, double *xdap, double *ydap)
 {
 	int p;
 	signed int found = -1;
-	const double den = 1.0/lambda + z;
+	const double den = k + z;
 
 	for ( p=0; p<det->n_panels; p++ ) {
 
@@ -76,17 +76,15 @@ static signed int locate_peak(double x, double y, double z, double lambda,
 
 
 static double excitation_error(double xl, double yl, double zl,
-                               double ds, double lambda)
+                               double ds, double k)
 {
 	double tt, al;
 	double r;
 
-	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+1.0/lambda);
+	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+k);
 	al = M_PI_2 - asin(-zl/ds);
 
-	r = ds * sin(al) / sin(tt);
-
-	r -= 1.0/lambda;
+	r = ( ds * sin(al) / sin(tt) ) - k;
 
 	return r;
 }
@@ -107,7 +105,7 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 	double divergence = image->div;
 	double lambda = image->lambda;
 	const double profile_cutoff = 0.005e9;  /* 0.1 nm^-1 */
-	double llow, lhigh;    /* Wavelength */
+	double klow, kcen, khigh;    /* Wavenumber */
 
 	cpeaks = malloc(sizeof(struct cpeak)*MAX_CPEAKS);
 	if ( cpeaks == NULL ) {
@@ -119,9 +117,6 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
 
-	/* FIXME: Account for left-handed indexing */
-	asz = -asz;  bsz = -bsz;  csz = -csz;
-
 	mres = 1.0 / 8.0e-10;  /* 8 Angstroms */
 	hmax = mres / modulus(asx, asy, asz);
 	kmax = mres / modulus(bsx, bsy, bsz);
@@ -129,8 +124,9 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 
 	/* "low" gives the largest Ewald sphere,
 	 * "high" gives the smallest Ewald sphere. */
-	llow = lambda - lambda*bandwidth/2.0;
-	lhigh = lambda + lambda*bandwidth/2.0;
+	klow = 1.0/(lambda - lambda*bandwidth/2.0);
+	kcen = 1.0/lambda;
+	khigh = 1.0/(lambda + lambda*bandwidth/2.0);
 
 	for ( h=-hmax; h<hmax; h++ ) {
 	for ( k=-kmax; k<kmax; k++ ) {
@@ -138,18 +134,18 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 
 		double xl, yl, zl;
 		double ds, ds_sq;
-		double rlow, rhigh;    /* "Excitation error" */
-		signed int p;
-		double lcen;
-		double xda, yda;
-		int close, straddled;
+		double rlow, rhigh;     /* "Excitation error" */
+		signed int p;           /* Panel number */
+		double xda, yda;        /* Position on detector */
+		int close, inside;
 
 		/* Ignore central beam */
 		if ( (h==0) && (k==0) && (l==0) ) continue;
 
 		/* Get the coordinates of the reciprocal lattice point */
 		zl = h*asz + k*bsz + l*csz;
-		if ( zl > 0.0 ) continue;  /* Throw out if it's "in front" */
+		/* Throw out if it's "in front" */
+		if ( zl > profile_cutoff ) continue;
 		xl = h*asx + k*bsx + l*csx;
 		yl = h*asy + k*bsy + l*csy;
 
@@ -159,8 +155,8 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 		if ( ds > mres ) continue;  /* Outside resolution range */
 
 		/* Calculate excitation errors */
-		rlow = excitation_error(xl, yl, zl, ds, llow);
-		rhigh = excitation_error(xl, yl, zl, ds, lhigh);
+		rlow = excitation_error(xl, yl, zl, ds, klow);
+		rhigh = excitation_error(xl, yl, zl, ds, khigh);
 
 		/* Is the reciprocal lattice point close to either extreme of
 		 * the sphere, maybe just outside the "Ewald volume"? */
@@ -169,15 +165,26 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 
 		/* Is the reciprocal lattice point somewhere between the
 		 * extremes of the sphere, i.e. inside the "Ewald volume"? */
-		straddled = signbit(rlow) ^ signbit(rhigh);
+		inside = signbit(rlow) ^ signbit(rhigh);
+
+		/* Can't be both inside and close */
+		if ( inside ) close = 0;
 
 		/* Neither?  Skip it. */
-		if ( !(close || straddled) ) continue;
+		if ( !(close || inside) ) continue;
 
-		lcen = -2.0*zl / ds_sq;
+		/* If the "lower" Ewald sphere is a long way away, use the
+		 * position at which the Ewald sphere would just touch the
+		 * reflection. */
+		if ( rlow > profile_cutoff ) rlow = profile_cutoff;
+		if ( rlow < -profile_cutoff ) rlow = -profile_cutoff;
 
-		/* Locate peak on detector, and check it doesn't span panels */
-		p = locate_peak(xl, yl, zl, lcen, image->det, &xda, &yda);
+		/* As above, other side. */
+		if ( rhigh > profile_cutoff ) rhigh = profile_cutoff;
+		if ( rhigh < -profile_cutoff ) rhigh = -profile_cutoff;
+
+		/* Locate peak on detector. */
+		p = locate_peak(xl, yl, zl, kcen, image->det, &xda, &yda);
 		if ( p == -1 ) continue;
 
 		cpeaks[np].h = h;
