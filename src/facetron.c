@@ -463,6 +463,7 @@ int main(int argc, char *argv[])
 	free(outfile);
 	free(det->panels);
 	free(det);
+	free(beam);
 	free(cts);
 	for ( i=0; i<n_total_patterns; i++ ) {
 		cell_free(images[i].indexed_cell);
