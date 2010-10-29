@@ -230,8 +230,6 @@ static void estimate_full(struct image *images, int n_total_patterns,
 		set_intensity(i_full, it->h, it->k, it->l, total);
 
 	}
-
-	free(cts);
 }
 
 
@@ -465,6 +463,7 @@ int main(int argc, char *argv[])
 	free(outfile);
 	free(det->panels);
 	free(det);
+	free(cts);
 	for ( i=0; i<n_total_patterns; i++ ) {
 		cell_free(images[i].indexed_cell);
 		free(images[i].filename);
