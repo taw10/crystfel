@@ -107,7 +107,6 @@ static void integrate_image(int mytask, void *tasks)
 		return;
 	}
 
-	/* FIXME: Nominal photon energy */
 	if ( hdf5_read(hdfile, pargs->image, 0, nominal_photon_energy) ) {
 		ERROR("Couldn't read '%s'\n", image->filename);
 		hdfile_close(hdfile);
