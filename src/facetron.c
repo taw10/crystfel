@@ -358,6 +358,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if ( sym == NULL ) sym = strdup("1");
+
 	/* Get detector geometry */
 	det = get_detector_geometry(geomfile);
 	if ( det == NULL ) {
