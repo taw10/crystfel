@@ -192,14 +192,13 @@ static void refine_all(struct image *images, int n_total_patterns,
 
 static void estimate_full(struct image *images, int n_total_patterns,
                           struct detector *det, const char *sym,
-                          ReflItemList *obs, double *i_full, int nthreads)
+                          ReflItemList *obs, double *i_full, unsigned int *cts,
+                          int nthreads)
 {
 	int i;
-	unsigned int *cts;
 	struct integrate_args *tasks;
 	pthread_mutex_t list_lock = PTHREAD_MUTEX_INITIALIZER;
 
-	cts = new_list_count();
 	clear_items(obs);
 
 	tasks = malloc(n_total_patterns * sizeof(struct integrate_args));
@@ -250,6 +249,7 @@ int main(int argc, char *argv[])
 	int config_checkprefix = 1;
 	struct detector *det;
 	double *i_full;
+	unsigned int *cts;
 	ReflItemList *obs;
 	int i;
 	int n_total_patterns;
@@ -433,8 +433,10 @@ int main(int argc, char *argv[])
 	fclose(fh);
 	free(prefix);
 
+	cts = new_list_count();
+
 	/* Make initial estimates */
-	estimate_full(images, n_total_patterns, det, sym, obs, i_full,
+	estimate_full(images, n_total_patterns, det, sym, obs, i_full, cts,
 	              nthreads);
 
 	/* Iterate */
@@ -448,12 +450,12 @@ int main(int argc, char *argv[])
 
 		/* Re-estimate all the full intensities */
 		estimate_full(images, n_total_patterns, det, sym, obs, i_full,
-		              nthreads);
+		              cts, nthreads);
 
 	}
 
 	/* Output results */
-	write_reflections(outfile, obs, i_full, NULL, NULL, NULL, 1.0);
+	write_reflections(outfile, obs, i_full, NULL, cts, NULL, 1.0);
 	STATUS("Sigma(I) values in output file are not (yet) meaningful.\n");
 
 	/* Clean up */
