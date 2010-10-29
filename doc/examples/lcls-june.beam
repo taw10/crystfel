@@ -10,7 +10,7 @@ beam/photon_energy = 2000.0
 ; Bandwidth: FWHM(wavelength) over wavelength.
 ; Note: current simulation code just uses a rectangular
 ;       distribution with this as its (full) width.
-beam/bandwidth = 0.001
+beam/bandwidth = 0.01
 
 ; Beam divergence in radians
 beam/divergence = 0.001

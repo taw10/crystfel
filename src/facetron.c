@@ -115,7 +115,7 @@ static void integrate_image(int mytask, void *tasks)
 	}
 
 	/* Figure out which spots should appear in this pattern */
-	spots = find_intersections(image, image->indexed_cell, &n, 1);
+	spots = find_intersections(image, image->indexed_cell, &n, 0);
 
 	/* For each reflection, estimate the partiality */
 	for ( j=0; j<n; j++ ) {
