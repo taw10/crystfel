@@ -202,7 +202,7 @@ static void *task_worker(void *pargsv)
 		q->n_completed++;
 		q->cookies[mycookie] = 0;
 		if ( q->finalise ) {
-			q->finalise(q, task);
+			q->finalise(q->queue_args, task);
 		}
 		pthread_mutex_unlock(&q->lock);
 
