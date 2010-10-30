@@ -102,6 +102,8 @@ struct queue_args
 
 	int n_indexable;
 	int n_sane;
+
+	char *use_this_one_instead;
 };
 
 
@@ -460,18 +462,31 @@ static void *get_image(void *qp)
 	char *rval;
 	struct queue_args *qargs = qp;
 
-	/* Get the next filename */
-	rval = fgets(line, 1023, qargs->fh);
-	if ( rval == NULL ) return NULL;
-
+	/* Initialise new task arguments */
 	pargs = malloc(sizeof(struct index_args));
-
 	memcpy(&pargs->static_args, &qargs->static_args,
 	       sizeof(struct static_index_args));
 
-	chomp(line);
-	pargs->filename = malloc(strlen(qargs->prefix) + strlen(line) + 1);
-	snprintf(pargs->filename, 1023, "%s%s", qargs->prefix, line);
+	/* Get the next filename */
+	if ( qargs->use_this_one_instead != NULL ) {
+
+		pargs->filename = malloc(strlen(qargs->prefix) +
+		                       strlen(qargs->use_this_one_instead) + 1);
+
+		snprintf(pargs->filename, 1023, "%s%s", qargs->prefix,
+		         qargs->use_this_one_instead);
+
+		qargs->use_this_one_instead = NULL;
+
+	} else {
+
+		rval = fgets(line, 1023, qargs->fh);
+		if ( rval == NULL ) return NULL;
+		chomp(line);
+		pargs->filename = malloc(strlen(qargs->prefix)+strlen(line)+1);
+		snprintf(pargs->filename, 1023, "%s%s", qargs->prefix, line);
+
+	}
 
 	return pargs;
 }
@@ -769,21 +784,16 @@ int main(int argc, char *argv[])
 	}
 
 	/* Get first filename and use it to set up the indexing */
-	if ( fh != stdin ) {
-		rval = fgets(prepare_line, 1023, fh);
-		if ( rval == NULL ) {
-			ERROR("Failed to get filename to prepare indexing.\n");
-			return 1;
-		}
-		chomp(prepare_line);
-		snprintf(prepare_filename, 1023, "%s%s", prefix, prepare_line);
-		rewind(fh);
-	} else {
-		STATUS("Reading input filenames from stdin, so can't (yet)");
-		STATUS(" use the first file for preparing the indexing.\n");
-		STATUS("Stuff might break.\n");
-		prepare_filename[0] = '\0';
+	rval = fgets(prepare_line, 1023, fh);
+	if ( rval == NULL ) {
+		ERROR("Failed to get filename to prepare indexing.\n");
+		return 1;
 	}
+	chomp(prepare_line);
+	snprintf(prepare_filename, 1023, "%s%s", prefix, prepare_line);
+	qargs.use_this_one_instead = prepare_line;
+
+	/* Prepare the indexer */
 	ipriv = prepare_indexing(indm, cell, prepare_filename, det,
 	                         nominal_photon_energy);
 	if ( ipriv == NULL ) {
