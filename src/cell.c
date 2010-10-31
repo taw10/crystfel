@@ -759,6 +759,28 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 }
 
 
+int cells_similar(UnitCell *cell1, UnitCell *cell2)
+{
+	double a1, b1, c1, al1, be1, ga1;
+	double a2, b2, c2, al2, be2, ga2;
+	double ltl = 5.0;     /* percent */
+	double angtol = deg2rad(1.5);
+
+	cell_get_parameters(cell1, &a1, &b1, &c1, &al1, &be1, &ga1);
+	cell_get_parameters(cell2, &a2, &b2, &c2, &al2, &be2, &ga2);
+
+	if ( !within_tolerance(a1, a2, ltl) ) return 0;
+	if ( !within_tolerance(b1, b2, ltl) ) return 0;
+	if ( !within_tolerance(c1, c2, ltl) ) return 0;
+
+	if ( fabs(al1-al2) > angtol ) return 0;
+	if ( fabs(be1-be2) > angtol ) return 0;
+	if ( fabs(ga1-ga2) > angtol ) return 0;
+
+	return 1;
+}
+
+
 /* Return sin(theta)/lambda = 1/2d.  Multiply by two if you want 1/d */
 double resolution(UnitCell *cell, signed int h, signed int k, signed int l)
 {

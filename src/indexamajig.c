@@ -59,7 +59,6 @@ struct static_index_args
 	int config_nearbragg;
 	int config_gpu;
 	int config_simulate;
-	int config_nomatch;
 	int config_polar;
 	int config_sanity;
 	int config_satcorr;
@@ -72,6 +71,7 @@ struct static_index_args
 	const double *intensities;
 	struct gpu_context *gctx;
 	int peaks;
+	int cellr;
 	double nominal_photon_energy;
 
 	/* Output stream */
@@ -313,7 +313,6 @@ static void process_image(void *pp, int cookie)
 	int config_nearbragg = pargs->static_args.config_nearbragg;
 	int config_gpu = pargs->static_args.config_gpu;
 	int config_simulate = pargs->static_args.config_simulate;
-	int config_nomatch = pargs->static_args.config_nomatch;
 	int config_polar = pargs->static_args.config_polar;
 	IndexingMethod indm = pargs->static_args.indm;
 	const double *intensities = pargs->static_args.intensities;
@@ -397,7 +396,7 @@ static void process_image(void *pp, int cookie)
 
 	/* Calculate orientation matrix (by magic) */
 	if ( config_writedrx || (indm != INDEXING_NONE) ) {
-		index_pattern(&image, cell, indm, config_nomatch,
+		index_pattern(&image, cell, indm, pargs->static_args.cellr,
 		              config_verbose, pargs->static_args.ipriv);
 	}
 
@@ -522,7 +521,6 @@ int main(int argc, char *argv[])
 	int config_simulate = 0;
 	int config_cmfilter = 0;
 	int config_noisefilter = 0;
-	int config_nomatch = 0;
 	int config_gpu = 0;
 	int config_verbose = 0;
 	int config_alternate = 0;
@@ -543,6 +541,8 @@ int main(int argc, char *argv[])
 	char *pdb = NULL;
 	char *prefix = NULL;
 	char *speaks = NULL;
+	char *scellr = NULL;
+	int cellr;
 	int peaks;
 	int nthreads = 1;
 	int i;
@@ -564,6 +564,7 @@ int main(int argc, char *argv[])
 		{"no-index",           0, &config_noindex,     1},
 		{"dump-peaks",         0, &config_dumpfound,   1},
 		{"peaks",              1, NULL,                2},
+		{"cell-reduction",     1, NULL,                3},
 		{"near-bragg",         0, &config_nearbragg,   1},
 		{"write-drx",          0, &config_writedrx,    1},
 		{"indexing",           1, NULL,               'z'},
@@ -572,7 +573,6 @@ int main(int argc, char *argv[])
 		{"simulate",           0, &config_simulate,    1},
 		{"filter-cm",          0, &config_cmfilter,    1},
 		{"filter-noise",       0, &config_noisefilter, 1},
-		{"no-match",           0, &config_nomatch,     1},
 		{"verbose",            0, &config_verbose,     1},
 		{"alternate",          0, &config_alternate,   1},
 		{"intensities",        1, NULL,               'q'},
@@ -645,6 +645,10 @@ int main(int argc, char *argv[])
 
 		case 2 :
 			speaks = strdup(optarg);
+			break;
+
+		case 3 :
+			scellr = strdup(optarg);
 			break;
 
 		case 0 :
@@ -743,6 +747,22 @@ int main(int argc, char *argv[])
 	}
 	free(indm_str);
 
+	if ( scellr == NULL ) {
+		STATUS("You didn't specify a cell reduction method, so I'm"
+		       " going to use 'reduce'.\n");
+		cellr = CELLR_REDUCE;
+	} else if ( strcmp(scellr, "none") == 0 ) {
+		cellr = CELLR_NONE;
+	} else if ( strcmp(scellr, "reduce") == 0) {
+		cellr = CELLR_REDUCE;
+	} else if ( strcmp(scellr, "compare") == 0) {
+		cellr = CELLR_COMPARE;
+	} else {
+		ERROR("Unrecognised cell reduction method '%s'\n", scellr);
+		return 1;
+	}
+	free(scellr);  /* free(NULL) is OK. */
+
 	if ( geometry == NULL ) {
 		ERROR("You need to specify a geometry file with --geometry\n");
 		return 1;
@@ -755,7 +775,7 @@ int main(int argc, char *argv[])
 	}
 	free(geometry);
 
-	if ( (!config_nomatch) || (indm == INDEXING_TEMPLATE) ) {
+	if ( (cellr != CELLR_NONE) || (indm == INDEXING_TEMPLATE) ) {
 		cell = load_cell_from_pdb(pdb);
 		if ( cell == NULL ) {
 			ERROR("Couldn't read unit cell (from %s)\n", pdb);
@@ -814,12 +834,12 @@ int main(int argc, char *argv[])
 	qargs.static_args.config_nearbragg = config_nearbragg;
 	qargs.static_args.config_gpu = config_gpu;
 	qargs.static_args.config_simulate = config_simulate;
-	qargs.static_args.config_nomatch = config_nomatch;
 	qargs.static_args.config_polar = config_polar;
 	qargs.static_args.config_sanity = config_sanity;
 	qargs.static_args.config_satcorr = config_satcorr;
 	qargs.static_args.config_sa = config_sa;
 	qargs.static_args.config_closer = config_closer;
+	qargs.static_args.cellr = cellr;
 	qargs.static_args.threshold = threshold;
 	qargs.static_args.det = det;
 	qargs.static_args.indm = indm;

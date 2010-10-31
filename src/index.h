@@ -22,11 +22,21 @@
 #include "image.h"
 #include "detector.h"
 
+
+/* Indexing methods */
 typedef enum {
 	INDEXING_NONE,
 	INDEXING_DIRAX,
 	INDEXING_TEMPLATE
 } IndexingMethod;
+
+
+/* Cell reduction methods */
+enum {
+	CELLR_NONE,
+	CELLR_REDUCE,
+	CELLR_COMPARE
+};
 
 
 typedef struct _indexingprivate IndexingPrivate;
@@ -39,7 +49,7 @@ extern IndexingPrivate *prepare_indexing(IndexingMethod indm, UnitCell *cell,
 extern void map_all_peaks(struct image *image);
 
 extern void index_pattern(struct image *image, UnitCell *cell,
-                          IndexingMethod indm, int no_match, int verbose,
+                          IndexingMethod indm, int cellr, int verbose,
                           IndexingPrivate *priv);
 
 extern void cleanup_indexing(IndexingPrivate *priv);

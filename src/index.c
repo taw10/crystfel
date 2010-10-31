@@ -124,7 +124,7 @@ void map_all_peaks(struct image *image)
 
 
 void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
-                   int no_match, int verbose, IndexingPrivate *ipriv)
+                   int cellr, int verbose, IndexingPrivate *ipriv)
 {
 	int i;
 
@@ -150,7 +150,7 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
 		return;
 	}
 
-	if ( no_match || (indm == INDEXING_TEMPLATE) ) {
+	if ( (cellr == CELLR_NONE) || (indm == INDEXING_TEMPLATE) ) {
 		image->indexed_cell = image->candidate_cells[0];
 		if ( verbose ) {
 			STATUS("--------------------\n");
@@ -172,7 +172,22 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
 			STATUS("--------------------\n");
 		}
 
-		new_cell = match_cell(image->candidate_cells[i], cell, verbose);
+		/* Match or reduce the cell as appropriate */
+		switch ( cellr ) {
+		case CELLR_NONE :
+			/* Never happens */
+			break;
+		case CELLR_REDUCE :
+			new_cell = match_cell(image->candidate_cells[i],
+			                      cell, verbose);
+			break;
+		case CELLR_COMPARE :
+			if ( cells_similar(image->candidate_cells[i], cell) ) {
+				new_cell = image->candidate_cells[i];
+			}
+			break;
+		}
+
 		image->indexed_cell = new_cell;
 		if ( new_cell != NULL ) {
 			STATUS("Matched on attempt %i.\n", i);
