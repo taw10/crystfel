@@ -26,6 +26,7 @@ while ( $line = <FH> ) {
 	if ( $line =~ /^Peak statistics/ ) {
 		close(TMP);
 		system("hdfsee ".$filename." --peak-overlay=list.tmp --binning=1 --int-boost=10");
+		if ( $? != 0 ) { exit; }
 		unlink("list.tmp");
 		open(TMP, "> list.tmp");
 		$handled = 1;
