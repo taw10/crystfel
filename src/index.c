@@ -179,12 +179,11 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
 			break;
 		case CELLR_REDUCE :
 			new_cell = match_cell(image->candidate_cells[i],
-			                      cell, verbose);
+			                      cell, verbose, 1);
 			break;
 		case CELLR_COMPARE :
-			if ( cells_similar(image->candidate_cells[i], cell) ) {
-				new_cell = image->candidate_cells[i];
-			}
+			new_cell = match_cell(image->candidate_cells[i],
+			                      cell, verbose, 0);
 			break;
 		}
 

@@ -569,7 +569,8 @@ static int same_vector(struct cvec a, struct cvec b)
 
 
 /* Attempt to make 'cell' fit into 'template' somehow */
-UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
+UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
+                     int reduce)
 {
 	signed int n1l, n2l, n3l;
 	double asx, asy, asz;
@@ -582,6 +583,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 	UnitCell *new_cell = NULL;
 	float best_fom = +999999999.9; /* Large number.. */
 	int ncand[3] = {0,0,0};
+	signed int ilow, ihigh;
 	float ltl = 5.0;     /* percent */
 	float angtol = deg2rad(1.5);
 
@@ -619,10 +621,16 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 		return NULL;
 	}
 
+	if ( reduce ) {
+		ilow = -2;  ihigh = 4;
+	} else {
+		ilow = 1;  ihigh = 1;
+	}
+
 	/* Negative values mean 1/n, positive means n, zero means zero */
-	for ( n1l=-2; n1l<=4; n1l++ ) {
-	for ( n2l=-2; n2l<=4; n2l++ ) {
-	for ( n3l=-2; n3l<=4; n3l++ ) {
+	for ( n1l=ilow; n1l<=ihigh; n1l++ ) {
+	for ( n2l=ilow; n2l<=ihigh; n2l++ ) {
+	for ( n3l=ilow; n3l<=ihigh; n3l++ ) {
 
 		float n1, n2, n3;
 		signed int b1, b2, b3;
@@ -756,28 +764,6 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose)
 	free(cand[2]);
 
 	return new_cell;
-}
-
-
-int cells_similar(UnitCell *cell1, UnitCell *cell2)
-{
-	double a1, b1, c1, al1, be1, ga1;
-	double a2, b2, c2, al2, be2, ga2;
-	double ltl = 5.0;     /* percent */
-	double angtol = deg2rad(1.5);
-
-	cell_get_parameters(cell1, &a1, &b1, &c1, &al1, &be1, &ga1);
-	cell_get_parameters(cell2, &a2, &b2, &c2, &al2, &be2, &ga2);
-
-	if ( !within_tolerance(a1, a2, ltl) ) return 0;
-	if ( !within_tolerance(b1, b2, ltl) ) return 0;
-	if ( !within_tolerance(c1, c2, ltl) ) return 0;
-
-	if ( fabs(al1-al2) > angtol ) return 0;
-	if ( fabs(be1-be2) > angtol ) return 0;
-	if ( fabs(ga1-ga2) > angtol ) return 0;
-
-	return 1;
 }
 
 
