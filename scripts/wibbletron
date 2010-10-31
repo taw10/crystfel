@@ -5,10 +5,12 @@ for FILENAME in `cat $1`; do
 	echo $FILENAME | indexamajig --indexing=dirax \
 	                             --near-bragg \
 	                             --filter-noise \
-	                             > indexed.lst
+	                             > out.stream
 
-	if [ -s indexed.lst ]; then
-		#hdfsee simulated.h5 &
+	if [ $? -ne 0 ]; then exit 0; fi
+
+	if [ `stat -c '%s' out.stream` -gt 300 ]; then
+
 		~/crystfel/src/hdfsee $FILENAME --binning=1 \
 		                      --int-boost=8 --filter-noise \
 		                      --peak-overlay=indexed.lst
