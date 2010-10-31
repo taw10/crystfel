@@ -56,6 +56,45 @@ See doc/geometry for information about how to create a geometry description
 file.
 
 
+Cell Reduction
+--------------
+
+You can choose from various options for cell reduction with the
+"--cell-reduction=" option.  The choices are "none", "reduce" and "compare".
+This choice is important because all autoindexing methods produce an "ab
+initio" estimate of the unit cell (nine parameters), rather than just finding
+the orientation of the target cell (three parameters).  It's clear that this is
+not optimal, and will hopefully be fixed in future versions.
+
+With "none", the raw cell from the autoindexer will be used.  The cell probably
+won't match the target cell, but it'll still get used.  Use this option to test
+whether the patterns are basically "indexable" or not, or if you don't know the
+cell parameters.  In the latter case, you'll need to plot some kind of histogram
+of the resulting parameters from the output stream to see which are the most
+popular.  If you're lucky, this will reveal the true unit cell.
+
+With "reduce", linear combinations of the raw cell will be checked against the
+target cell.  If at least one candidate is found for each axis of the target
+cell, the angles will be checked to correspondence.  If a match is found, this
+cell will be used for further processing.  This option should generate the most
+matches, but might produce spurious results in many cases.  The "--check-sanity"
+option can help with this.
+
+The "compare" method is like "reduce", but linear combinations are not taken.
+That means that the cell must either match or match after a simple permutation
+of the axes.  This is useful when the target cell is subject to reticular
+twinning, such as if one cell axis length is close to twice another.  With
+"reduce", there is a possibility that the axes might be confused in this
+situation.  This happens for lysozyme (1VDS), so watch out.
+
+The tolerance for matching with "reduce" and "compare" is hardcoded as 5% in
+the reciprocal axis lengths and 1.5 degrees in the (reciprocal) angles.  Cells
+from these reduction routines are further constrained to be right-handed.  The
+unmatched raw cell might be left-handed: CrystFEL doesn't check this for you.
+Always using a right-handed cell means that the Bijvoet pairs can be told
+apart.
+
+
 Unconventional Use
 ------------------
 
