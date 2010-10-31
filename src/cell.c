@@ -801,12 +801,13 @@ static void cell_set_pointgroup_from_pdb(UnitCell *cell, const char *sym)
 
 	if ( strcmp(sym, "P 63") == 0 ) new = "6";
 	if ( strcmp(sym, "P 21 21 21") == 0 ) new = "222";
+	if ( strcmp(sym, "P 43 21 2") == 0 ) new = "422";
 
 	if ( new != NULL ) {
 		free(cell->pointgroup);
 		cell->pointgroup = strdup(new);
 	} else {
-		ERROR("Can't determine point group for space group %s\n", sym);
+		ERROR("Can't determine point group for '%s'\n", sym);
 	}
 }
 
