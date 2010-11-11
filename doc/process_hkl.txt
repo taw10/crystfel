@@ -26,5 +26,21 @@ somewhat different to the conventional use of the term.  In these cases, you
 will need to merge according to the point group corresponding holohedral Laue
 class.
 
+You can also tell process_hkl the "apparent" symmetry, which is the symmetry as
+far as whatever produced the stream was concerned.  In the case of most indexing
+algorithms, this will be the corresponding holohedral point group (not the
+Laue class nor the holohedral Laue class).  If you use the "-a" option to give
+this information, process_hkl will try to resolve the remaining orientational
+ambiguities to get from the apparent symmetry to the true symmetry (given with
+"-y").  Currently, it won't do a very good job of it.
+
+Commit number 5cdcaad6277c on the 13th of October 2010 altered indexamajig such
+that it always finds a right-handed unit cell.  That means that no ambiguity due
+to inversion exists in streams produced by versions later than that.  For
+streams produced by copies of indexamajig older than that, you DO need to use
+the corresponding holohedral Laue class (not point group) as the apparent
+symmetry (with -a).  However, since the ambiguity resolution used by process_hkl
+doesn't really work, this detail is somewhat academic.
+
 The document twin-calculator.pdf contains more detailed information about this
 issue, as well as tables which contain all the required information.
