@@ -113,7 +113,7 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
                                     double nominal_photon_energy)
 {
 	struct _indexingprivate_template *priv;
-	const char *holo;
+	const char *sym;
 	double omega_max, phi_max;
 	int n_templates;
 	const double omega_step = deg2rad(0.5);
@@ -137,24 +137,23 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 	priv = calloc(1, sizeof(struct _indexingprivate_template));
 	priv->base.indm = INDEXING_TEMPLATE;
 
-	/* We can only distinguish orientations within the holohedral cell */
-	holo = get_holohedral(cell_get_pointgroup(cell));
+	sym = cell_get_pointgroup(cell);
 
 	/* These define the orientation in space */
-	if ( is_polyhedral(holo) ) {
-		ERROR("WARNING: Holohedral point group is polyhedral.\n");
+	if ( is_polyhedral(sym) ) {
+		ERROR("WARNING: Point group is polyhedral.\n");
 		ERROR("This means I can't properly determine the orientation");
 		ERROR(" ranges for template matching.  Expect trouble.\n");
 	}
-	omega_max = 2.0*M_PI / rotational_order(holo);
-	if ( has_bisecting_mirror_or_diad(holo) ) omega_max /= 2.0;
+	omega_max = 2.0*M_PI / rotational_order(sym);
+	if ( has_bisecting_mirror_or_diad(sym) ) omega_max /= 2.0;
 	phi_max = M_PI;
-	if ( has_perpendicular_mirror(holo) ) phi_max /= 2.0;
+	if ( has_perpendicular_mirror(sym) ) phi_max /= 2.0;
 
 	/* One more axis would define the rotation in the plane of the image */
 
 	STATUS("Orientation ranges in %s: %.0f-%.0f, %.0f-%.0f deg.\n",
-	       holo, 0.0, rad2deg(omega_max), 0.0, rad2deg(phi_max));
+	       sym, 0.0, rad2deg(omega_max), 0.0, rad2deg(phi_max));
 
 	n_templates = (omega_max * phi_max)/(omega_step * phi_step);
 	STATUS("%i templates to be calculated.\n", n_templates);

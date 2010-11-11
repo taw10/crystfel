@@ -66,6 +66,7 @@ static void show_help(const char *s)
 "      --scale               Scale each pattern for best fit with the current\n"
 "                             model.\n"
 "  -y, --symmetry=<sym>      Merge according to point group <sym>.\n"
+"  -a, --input-symmetry=<a>  Specify the apparent (input) symmetry.\n"
 "      --reference=<file>    Compare against intensities from <file> when\n"
 "                             scaling or resolving ambiguities.\n"
 "                             The symmetry of the reference list must be the\n"
@@ -552,11 +553,11 @@ int main(int argc, char *argv[])
 	int config_rmerge = 0;
 	unsigned int n_total_patterns;
 	char *sym = NULL;
+	char *in_sym = NULL;
 	char *pdb = NULL;
 	ReflItemList *twins;
 	ReflItemList *observed;
 	int i;
-	const char *holo = NULL;
 	char *histo = NULL;
 	signed int hist_h, hist_k, hist_l;
 	double *hist_vals = NULL;
@@ -580,10 +581,11 @@ int main(int argc, char *argv[])
 		{"sum",                0, &config_sum,         1},
 		{"scale",              0, &config_scale,       1},
 		{"symmetry",           1, NULL,               'y'},
+		{"input-symmetry",     1, NULL,               'a'},
 		{"pdb",                1, NULL,               'p'},
 		{"histogram",          1, NULL,               'g'},
 		{"rmerge",             0, &config_rmerge,      1},
-		{"outstream",          1, NULL,               'a'},
+		{"outstream",          1, NULL,                2},
 		{"reference",          1, NULL,               'r'},
 		{"beam",               1, NULL,               'b'},
 		{0, 0, NULL, 0}
@@ -630,8 +632,12 @@ int main(int argc, char *argv[])
 			reference = strdup(optarg);
 			break;
 
-		case 'a' :
+		case 2 :
 			outstream = strdup(optarg);
+			break;
+
+		case 'a' :
+			in_sym = strdup(optarg);
 			break;
 
 		case 'b' :
@@ -670,33 +676,35 @@ int main(int argc, char *argv[])
 	cell = load_cell_from_pdb(pdb);
 	free(pdb);
 
+	if ( sym == NULL ) sym = strdup("1");
+
 	/* Show useful symmetry information */
-	if ( sym != NULL ) {
-		holo = get_holohedral(sym);
-		int np = num_general_equivs(holo) / num_general_equivs(sym);
+	if ( (sym != NULL) && (in_sym != NULL) ) {
+
+		int np = num_general_equivs(in_sym) / num_general_equivs(sym);
 		if ( np > 1 ) {
 
 			STATUS("Resolving point group %s into %s "
 			       "(%i possibilities)\n",
-			       holo, sym, np);
+			       in_sym, sym, np);
 			/* Get the list of twin/Bijvoet possibilities */
-			twins = get_twin_possibilities(holo, sym);
-			STATUS("Twin/inversion operation indices from %s are:",
-			       holo);
+			twins = get_twin_possibilities(in_sym, sym);
+			STATUS("Twin operation indices from %s are:", in_sym);
 			for ( i=0; i<num_items(twins); i++ ) {
 				STATUS(" %i", get_item(twins, i)->op);
 			}
 			STATUS("\n");
 
 		} else {
-			STATUS("No twin/inversion resolution necessary.\n");
+			STATUS("No resolution required to get from %s to %s\n",
+			       in_sym, sym);
 			twins = NULL;
 		}
+
 	} else {
-		STATUS("Not performing any twin/inversion resolution.\n");
+		STATUS("No twin resolution requested (use -a otherwise).\n");
 		twins = NULL;
-		sym = strdup("1");
-		holo = strdup("1");
+		in_sym = strdup(sym);
 	}
 
 	if ( histo != NULL ) {
@@ -758,7 +766,7 @@ int main(int argc, char *argv[])
 	merge_all(fh, &model, &observed, &counts,
 	          config_maxonly, config_scale, config_sum,
 	          config_startafter, config_stopafter,
-                  twins, holo, sym, n_total_patterns,
+                  twins, in_sym, sym, n_total_patterns,
                   reference_items, reference_i,
                   hist_vals, hist_h, hist_k, hist_l, &hist_i, NULL, NULL, NULL,
                   outfh);
@@ -801,7 +809,8 @@ int main(int argc, char *argv[])
 		rewind(fh);
 		merge_all(fh, &model, &observed, &counts,
 		          config_maxonly, config_scale, 0,
-		          config_startafter, config_stopafter, twins, holo, sym,
+		          config_startafter, config_stopafter,
+		          twins, in_sym, sym,
 		          n_total_patterns, reference_items, reference_i,
 		          NULL, 0, 0, 0, NULL, devs, tots, model, NULL);
 

@@ -328,31 +328,6 @@ void get_asymm(signed int h, signed int k, signed int l,
 }
 
 
-const char *get_holohedral(const char *sym)
-{
-	/* Triclinic */
-	if ( strcmp(sym, "1") == 0 ) return "-1";
-	if ( strcmp(sym, "-1") == 0 ) return "-1";
-
-	if ( strcmp(sym, "222") == 0 ) return "mmm";
-	if ( strcmp(sym, "mmm") == 0 ) return "mmm";
-
-	/* Tetragonal */
-	if ( strcmp(sym, "422") == 0 ) return "4/mmm";
-	if ( strcmp(sym, "4/mmm") == 0 ) return "4/mmm";
-
-	/* Hexagonal */
-	if ( strcmp(sym, "6") == 0 ) return "6/mmm";
-	if ( strcmp(sym, "6/m") == 0 ) return "6/mmm";
-	if ( strcmp(sym, "6/mmm") == 0 ) return "6/mmm";
-
-	/* TODO: Add more groups here */
-
-	ERROR("Couldn't find holohedral point group for '%s'\n", sym);
-	abort();
-}
-
-
 /* This is kind of like a "numerical" left coset decomposition.
  * Given a reflection index and a point group, it returns the list of twinning
  * possibilities.
