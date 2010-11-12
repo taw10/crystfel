@@ -395,11 +395,7 @@ struct detector *get_detector_geometry(const char *filename)
 		}
 		STATUS("Panel %i, badrow direction = %c\n", i,
 		       det->panels[i].badrow);
-		if ( det->panels[i].badrow == '0' ) {
-			ERROR("Please specify the bad row direction for"
-			      " panel %i\n", i);
-			reject = 1;
-		}
+		/* It's OK if the badrow direction is '0' */
 		/* It's not a problem if "no_index" is still zero */
 
 		if ( det->panels[i].max_x > max_x ) {

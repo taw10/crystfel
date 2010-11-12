@@ -33,7 +33,7 @@
 
 
 /* Maximum number of peaks which may be predicted by find_projected_peaks() */
-#define MAX_CPEAKS (1024)
+#define MAX_CPEAKS (2048)
 
 /* How close a peak must be to an indexed position to be considered "close"
  * for the purposes of double hit detection and sanity checking. */
@@ -174,7 +174,9 @@ static int cull_peaks(struct image *image)
 
 	for ( i=0; i<image->det->n_panels; i++ ) {
 		p = &image->det->panels[i];
-		nelim += cull_peaks_in_panel(image, p);
+		if ( p->badrow != '0' ) {
+			nelim += cull_peaks_in_panel(image, p);
+		}
 	}
 
 	return nelim;

@@ -43,9 +43,11 @@ n_panels = 1
 ; The resolution (in pixels per metre) for this panel
 0/res = 13333.3  ; 75 micron pixel size
 
-; The readout direction (x or y).  If more than three peaks are found in
+; The readout direction (x, y or 0).  If more than three peaks are found in
 ; the same readout region, they are all discarded.  This helps to avoid
 ; problems due to streaks appearing along the readout direction.
+; If the badrow direction is '0', then the culling described above will not
+; be performed for this panel.
 0/badrow_direction = y
 
 ; If "no_index" is "true", then peaks in this panel will not be used for
