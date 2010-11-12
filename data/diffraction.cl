@@ -124,7 +124,7 @@ float get_intensity(global float *intensities, float16 cell, float4 q)
 	k = (k>=0) ? k : k+IDIM;
 	l = (l>=0) ? l : l+IDIM;
 
-	if ( (h>=IDIM) || (k>=IDIM) || (l>=IDIM) ) return 1000000.0;
+	if ( (h>=IDIM) || (k>=IDIM) || (l>=IDIM) ) return 0.0;
 
 	idx = h + (IDIM*k) + (IDIM*IDIM*l);
 
