@@ -52,8 +52,10 @@ static int check_cond(signed int h, signed int k, signed int l, const char *sym)
 		return ( (((h>0) && (k>=0)) || ((h==0) && (k==0))) && (l>=0)
 		         && (h>=k) );  /* Like 6/mmm */
 	if ( strcmp(sym, "422") == 0 )
-		return ( (((h>=0) && (k>0)) || ((h==0) && (k==0)))
+		return ( (((h>0) && (k>=0)) || ((h==0) && (k==0)))
 		         && (h>=k) );
+	if ( strcmp(sym, "4") == 0 )
+		return ( ((h>0) && (k>=0)) || ((h==0) && (k==0)) );
 
 	/* Hexagonal */
 	if ( strcmp(sym, "6") == 0 )
@@ -89,6 +91,7 @@ int num_general_equivs(const char *sym)
 	if ( strcmp(sym, "mmm") == 0 ) return 8;
 
 	/* Tetragonal */
+	if ( strcmp(sym, "4") == 0 ) return 4;
 	if ( strcmp(sym, "422") == 0 ) return 8;
 	if ( strcmp(sym, "4/mmm") == 0 ) return 16;
 
@@ -142,6 +145,15 @@ void get_general_equiv(signed int h, signed int k, signed int l,
 		case  5 : *he = h;  *ke = k;  *le = -l; return;
 		case  6 : *he = h;  *ke = -k; *le = l;  return;
 		case  7 : *he = -h; *ke = k;  *le = l;  return;
+		}
+	}
+
+	if ( strcmp(sym, "4") == 0 ) {
+		switch ( idx ) {
+		case  0 : *he = h;   *ke = k;   *le = l;  return;
+		case  1 : *he = -h;  *ke = -k;  *le = l;  return;
+		case  2 : *he = -k;  *ke = h;   *le = l;  return;
+		case  3 : *he = k;   *ke = -h;  *le = l;  return;
 		}
 	}
 

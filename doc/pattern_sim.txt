@@ -18,3 +18,10 @@ $ echo symgen P63 | pdbset xyzin model.pdb xyzout model-P1.pdb
 While on this subject, you might also want to include hydrogens in the model
 using something like:
 $ echo HYDROGENS APPEND | hgen xyzin model.pdb xyzout model-with-H.pdb
+
+
+A Note about Unit Cell Settings
+-------------------------------
+
+Please be sure to read the "Note about Unit Cell Settings" in the documentation
+for indexamajig.

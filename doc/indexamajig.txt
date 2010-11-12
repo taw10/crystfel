@@ -95,6 +95,14 @@ Always using a right-handed cell means that the Bijvoet pairs can be told
 apart.
 
 
+A Note about Unit Cell Settings
+-------------------------------
+
+CrystFEL's core symmetry module only knows about one setting for each unit cell.
+You must use the same setting.  That means that the unique axis (for cells which
+have one) must be "c".
+
+
 Unconventional Use
 ------------------
 
