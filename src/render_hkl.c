@@ -314,12 +314,17 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	surface = cairo_pdf_surface_create(outfile, wh, ht);
 
 	if ( cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS ) {
-		fprintf(stderr, "Couldn't create Cairo surface\n");
+		ERROR("Couldn't create Cairo surface\n");
 		cairo_surface_destroy(surface);
 		return;
 	}
 
 	dctx = cairo_create(surface);
+	if ( cairo_status(dctx) != CAIRO_STATUS_SUCCESS ) {
+		ERROR("Couldn't create Cairo context\n");
+		cairo_surface_destroy(surface);
+		return;
+	}
 
 	/* Black background */
 	cairo_rectangle(dctx, 0.0, 0.0, wh, ht);
