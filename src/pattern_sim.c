@@ -42,6 +42,7 @@ static void show_help(const char *s)
 "pulses of X-rays from a free electron laser.\n"
 "\n"
 " -h, --help                Display this help message.\n"
+"\n"
 " -p, --pdb=<file>          PDB file from which to get the unit cell.\n"
 "                            (The actual Bragg intensities come from the\n"
 "                            intensities file)\n"
