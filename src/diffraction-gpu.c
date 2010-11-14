@@ -474,6 +474,9 @@ void cleanup_gpu(struct gpu_context *gctx)
 		}
 	}
 
+	free(gctx->sinc_luts);
+	free(gctx->sinc_lut_ptrs);
+
 	clReleaseCommandQueue(gctx->cq);
 	clReleaseContext(gctx->ctx);
 	free(gctx);
