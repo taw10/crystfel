@@ -80,6 +80,9 @@ static void show_help(const char *s)
 "                                           values into account.  This is the\n"
 "                                           most accurate method, but the\n"
 "                                           slowest.\n"
+"     --really-random       Use really random numbers for the orientation and\n"
+"                            crystal size.  By default, the same sequence\n"
+"                            will be used for each new run.\n"
 "\n"
 "By default, the simulation aims to be as accurate as possible.  For greater\n"
 "speed, or for testing, you can choose to disable certain things using the\n"
@@ -186,6 +189,7 @@ int main(int argc, char *argv[])
 	int config_nonoise = 0;
 	int config_nosfac = 0;
 	int config_gpu = 0;
+	int config_random = 0;
 	char *powder_fn = NULL;
 	char *filename = NULL;
 	char *grad_str = NULL;
@@ -217,6 +221,7 @@ int main(int argc, char *argv[])
 		{"output",             1, NULL,               'o'},
 		{"geometry",           1, NULL,               'g'},
 		{"beam",               1, NULL,               'b'},
+		{"really-random",      0, &config_random,      1},
 		{0, 0, NULL, 0}
 	};
 
@@ -274,8 +279,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	/* FIXME: Make this optional */
-	if ( 1 ) {
+	if ( config_random ) {
 		FILE *fh;
 		unsigned int seed;
 		fh = fopen("/dev/urandom", "r");
