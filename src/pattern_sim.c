@@ -273,6 +273,16 @@ int main(int argc, char *argv[])
 
 	}
 
+	/* FIXME: Make this optional */
+	if ( 1 ) {
+		FILE *fh;
+		unsigned int seed;
+		fh = fopen("/dev/urandom", "r");
+		fread(&seed, sizeof(seed), 1, fh);
+		fclose(fh);
+		srand(seed);
+	}
+
 	if ( filename == NULL ) {
 		filename = strdup("molecule.pdb");
 	}
