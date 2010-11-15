@@ -43,6 +43,8 @@ static void show_help(const char *s)
 "  -y, --symmetry=<sym>       The symmetry of both the input files.\n"
 "  -p, --pdb=<filename>       PDB file to use (default: molecule.pdb).\n"
 "      --shells               Plot the figures of merit by resolution.\n"
+"      --rmin=<res>           Fix lower resolution limit for --shells (m^-1).\n"
+"      --rmax=<res>           Fix upper resolution limit for --shells (m^-1).\n"
 "\n");
 }
 
@@ -50,7 +52,8 @@ static void show_help(const char *s)
 static void plot_shells(const double *ref1, const double *ref2,
                         ReflItemList *items, double scale, UnitCell *cell,
                         const char *sym, ReflItemList *characterise,
-                        unsigned int *char_counts, const double *sigma)
+                        unsigned int *char_counts, const double *sigma,
+                        double rmin_fix, double rmax_fix)
 {
 	double num[NBINS];
 	int cts[NBINS];
@@ -71,6 +74,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 	double snr_total = 0;
 	int nmeas = 0;
 	int nmeastot = 0;
+	int nout = 0;
 
 	if ( cell == NULL ) {
 		ERROR("Need the unit cell to plot resolution shells.\n");
@@ -109,14 +113,15 @@ static void plot_shells(const double *ref1, const double *ref2,
 
 	}
 
-	STATUS("%f -> %f\n", rmin/1e9, rmax/1e9);
+	STATUS("1/d goes from %f to %f nm^-1\n", rmin/1e9, rmax/1e9);
 
-	/* Increase the max just a little bit */
+	/* Widen the range just a little bit */
+	rmin -= 0.001e9;
 	rmax += 0.001e9;
 
-	/* FIXME: Fixed resolution shells */
-	rmin = 0.120e9;
-	rmax = 1.172e9;
+	/* Fixed resolution shells if needed */
+	if ( rmin_fix > 0.0 ) rmin = rmin_fix;
+	if ( rmax_fix > 0.0 ) rmax = rmax_fix;
 
 	total_vol = pow(rmax, 3.0) - pow(rmin, 3.0);
 	vol_per_shell = total_vol / NBINS;
@@ -144,24 +149,6 @@ static void plot_shells(const double *ref1, const double *ref2,
 	STATUS("Shell %i: %f to %f\n", NBINS-1,
 	       rmins[NBINS-1]/1e9, rmaxs[NBINS-1]/1e9);
 
-#if 0
-	/* FIXME: Fixed resolution shells */
-	rmins[0] = 0.121065;  rmaxs[0] = 0.552486;
-	rmins[1] = 0.552486;  rmaxs[1] = 0.690186;
-	rmins[2] = 0.690186;  rmaxs[2] = 0.787787;
-	rmins[3] = 0.787787;  rmaxs[3] = 0.865813;
-	rmins[4] = 0.865813;  rmaxs[4] = 0.931853;
-	rmins[5] = 0.931853;  rmaxs[5] = 0.989663;
-	rmins[6] = 0.989663;  rmaxs[6] = 1.041409;
-	rmins[7] = 1.041409;  rmaxs[7] = 1.088467;
-	rmins[8] = 1.088467;  rmaxs[8] = 1.131775;
-	rmins[9] = 1.131775;  rmaxs[9] = 1.172000;
-	for ( i=0; i<NBINS; i++ ) {
-		rmins[i] *= 1e9;
-		rmaxs[i] *= 1e9;
-	}
-#endif
-
 	/* Count the number of reflections possible in each shell */
 	counted = new_list_count();
 	for ( h=-50; h<=+50; h++ ) {
@@ -171,9 +158,6 @@ static void plot_shells(const double *ref1, const double *ref2,
 		double d;
 		signed int hs, ks, ls;
 		int bin;
-
-		/* FIXME: Reflection condition */
-		if ( (h==0) && (k==0) && (l%2) ) continue;
 
 		get_asymm(h, k, l, &hs, &ks, &ls, sym);
 		if ( lookup_count(counted, hs, ks, ls) ) continue;
@@ -209,9 +193,6 @@ static void plot_shells(const double *ref1, const double *ref2,
 		it = get_item(characterise, i);
 		h = it->h;  k = it->k;  l = it->l;
 
-		/* FIXME: Reflection condition */
-		if ( (h==0) && (k==0) && (l%2) ) continue;
-
 		d = resolution(cell, h, k, l) * 2.0;
 
 		bin = -1;
@@ -222,7 +203,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 			}
 		}
 		if ( bin == -1 ) {
-			ERROR("Warnung! %i %i %i %f\n", h, k, l, d/1e9);
+			nout++;
 			continue;
 		}
 
@@ -240,6 +221,11 @@ static void plot_shells(const double *ref1, const double *ref2,
 	STATUS("%i measurements in total.\n", nmeastot);
 	STATUS("%i reflections in total.\n", nmeas);
 
+	if ( nout ) {
+		STATUS("Warning; %i reflections outside resolution range.\n",
+		       nout);
+	}
+
 	den = 0.0;
 	ctot = 0;
 	for ( i=0; i<num_items(items); i++ ) {
@@ -248,14 +234,11 @@ static void plot_shells(const double *ref1, const double *ref2,
 		signed int h, k, l;
 		double d;
 		int bin;
-		double i1, i2, f1, f2;
+		double i1, i2;
 		int j;
 
 		it = get_item(items, i);
 		h = it->h;  k = it->k;  l = it->l;
-
-		/* FIXME: Reflection condition */
-		if ( (h==0) && (k==0) && (l%2) ) continue;
 
 		d = resolution(cell, h, k, l) * 2.0;
 
@@ -266,22 +249,16 @@ static void plot_shells(const double *ref1, const double *ref2,
 				break;
 			}
 		}
-		if ( bin == -1 ) {
-			ERROR("Warnung! %i %i %i %f\n", h, k, l, d/1e9);
-			abort();
-			continue;
-		}
+
+		/* Outside resolution range? */
+		if ( bin == -1 ) continue;
 
 		i1 = lookup_intensity(ref1, h, k, l);
-		//if ( i1 < 0.0 ) continue;
-		//f1 = sqrt(i1);
 		i2 = lookup_intensity(ref2, h, k, l);
-		//if ( i2 < 0.0 ) continue;
-		//f2 = sqrt(i2);
 		i2 *= scale;
 
 		num[bin] += fabs(i1 - i2);
-		den += i1;// + i2) / 2.0;
+		den += i1;
 		ctot++;
 		cts[bin]++;
 
@@ -327,6 +304,8 @@ int main(int argc, char *argv[])
 	int rej1 = 0;
 	int rej2 = 0;
 	unsigned int *cts1;
+	float rmin_fix = -1.0;
+	float rmax_fix = -1.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -335,6 +314,8 @@ int main(int argc, char *argv[])
 		{"symmetry",           1, NULL,               'y'},
 		{"shells",             0, &config_shells,     1},
 		{"pdb",                1, NULL,               'p'},
+		{"rmin",               1, NULL,               2},
+		{"rmax",               1, NULL,               3},
 		{0, 0, NULL, 0}
 	};
 
@@ -359,6 +340,20 @@ int main(int argc, char *argv[])
 			break;
 
 		case 0 :
+			break;
+
+		case 2 :
+			if ( sscanf(optarg, "%e", &rmin_fix) != 1 ) {
+				ERROR("Invalid value for --rmin\n");
+				return 1;
+			}
+			break;
+
+		case 3 :
+			if ( sscanf(optarg, "%e", &rmax_fix) != 1 ) {
+				ERROR("Invalid value for --rmax\n");
+				return 1;
+			}
 			break;
 
 		default :
@@ -501,7 +496,7 @@ int main(int argc, char *argv[])
 
 	if ( config_shells ) {
 		plot_shells(ref1, ref2_transformed, icommon, scale_r1fi,
-		            cell, sym, i1, cts1, esd1);
+		            cell, sym, i1, cts1, esd1, rmin_fix, rmax_fix);
 	}
 
 	if ( outfile != NULL ) {
