@@ -120,7 +120,6 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	int x, y;
 	cl_float16 cell;
 	float *diff_ptr;
-	cl_float4 orientation;
 	cl_int4 ncells;
 	const int sampling = SAMPLING;
 	cl_float bwstep;
@@ -180,48 +179,43 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		ERROR("Couldn't set arg 9: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(gctx->kern, 10, sizeof(cl_float4), &orientation);
+	clSetKernelArg(gctx->kern, 12, sizeof(cl_int), &sampling);
 	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 10: %s\n", clError(err));
+		ERROR("Couldn't set arg 12: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(gctx->kern, 13, sizeof(cl_int), &sampling);
+	/* Local memory for reduction */
+	clSetKernelArg(gctx->kern, 13,
+	               BWSAMPLING*SAMPLING*SAMPLING*sizeof(cl_float), NULL);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 13: %s\n", clError(err));
 		return;
 	}
-	/* Local memory for reduction */
-	clSetKernelArg(gctx->kern, 14,
-	               BWSAMPLING*SAMPLING*SAMPLING*sizeof(cl_float), NULL);
+	/* Bandwidth sampling step */
+	clSetKernelArg(gctx->kern, 14, sizeof(cl_float), &bwstep);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 14: %s\n", clError(err));
 		return;
 	}
-	/* Bandwidth sampling step */
-	clSetKernelArg(gctx->kern, 15, sizeof(cl_float), &bwstep);
+
+	/* LUT in 'a' direction */
+	clSetKernelArg(gctx->kern, 15, sizeof(cl_mem), &gctx->sinc_luts[na-1]);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 15: %s\n", clError(err));
 		return;
 	}
 
-	/* LUT in 'a' direction */
-	clSetKernelArg(gctx->kern, 16, sizeof(cl_mem), &gctx->sinc_luts[na-1]);
+	/* LUT in 'b' direction */
+	clSetKernelArg(gctx->kern, 16, sizeof(cl_mem), &gctx->sinc_luts[nb-1]);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 16: %s\n", clError(err));
 		return;
 	}
 
-	/* LUT in 'b' direction */
-	clSetKernelArg(gctx->kern, 17, sizeof(cl_mem), &gctx->sinc_luts[nb-1]);
+	/* LUT in 'c' direction */
+	clSetKernelArg(gctx->kern, 17, sizeof(cl_mem), &gctx->sinc_luts[nc-1]);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set arg 17: %s\n", clError(err));
-		return;
-	}
-
-	/* LUT in 'c' direction */
-	clSetKernelArg(gctx->kern, 18, sizeof(cl_mem), &gctx->sinc_luts[nc-1]);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 18: %s\n", clError(err));
 		return;
 	}
 
@@ -264,16 +258,16 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 			ERROR("Couldn't set arg 7: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(gctx->kern, 11, sizeof(cl_int),
+		clSetKernelArg(gctx->kern, 10, sizeof(cl_int),
 		               &image->det->panels[p].min_x);
 		if ( err != CL_SUCCESS ) {
-			ERROR("Couldn't set arg 11: %s\n", clError(err));
+			ERROR("Couldn't set arg 10: %s\n", clError(err));
 			return;
 		}
-		clSetKernelArg(gctx->kern, 12, sizeof(cl_int),
+		clSetKernelArg(gctx->kern, 11, sizeof(cl_int),
 		               &image->det->panels[p].min_y);
 		if ( err != CL_SUCCESS ) {
-			ERROR("Couldn't set arg 12: %s\n", clError(err));
+			ERROR("Couldn't set arg 11: %s\n", clError(err));
 			return;
 		}
 

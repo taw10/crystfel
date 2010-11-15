@@ -24,39 +24,8 @@ const sampler_t sampler_c = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT
                              | CLK_FILTER_LINEAR;
 
 
-float4 quat_rot(float4 q, float4 z)
-{
-	float4 res;
-	float t01, t02, t03, t11, t12, t13, t22, t23, t33;
-
-	t01 = z.x*z.y;
-	t02 = z.x*z.z;
-	t03 = z.x*z.w;
-	t11 = z.y*z.y;
-	t12 = z.y*z.z;
-	t13 = z.y*z.w;
-	t22 = z.z*z.z;
-	t23 = z.z*z.w;
-	t33 = z.w*z.w;
-
-	res.x = (1.0 - 2.0 * (t22 + t33)) * q.x
-	            + (2.0 * (t12 + t03)) * q.y
-	            + (2.0 * (t13 - t02)) * q.z;
-
-	res.y =       (2.0 * (t12 - t03)) * q.x
-	      + (1.0 - 2.0 * (t11 + t33)) * q.y
-	            + (2.0 * (t01 + t23)) * q.z;
-
-	res.z =       (2.0 * (t02 + t13)) * q.x
-	            + (2.0 * (t23 - t01)) * q.y
-	      + (1.0 - 2.0 * (t11 + t22)) * q.z;
-
-	return res;
-}
-
-
 float4 get_q(int x, int y, float cx, float cy, float res, float clen, float k,
-             float *ttp, float4 z, int sampling)
+             float *ttp, int sampling)
 {
 	float rx, ry, r;
 	float az, tt;
@@ -76,7 +45,7 @@ float4 get_q(int x, int y, float cx, float cy, float res, float clen, float k,
 	             k*native_sin(tt)*native_sin(az),
 	             k*(native_cos(tt)-1.0), 0.0);
 
-	return quat_rot(q, z);
+	return q;
 }
 
 
@@ -135,7 +104,7 @@ float get_intensity(global float *intensities, float16 cell, float4 q)
 kernel void diffraction(global float *diff, global float *tt, float klow,
                        int w, float cx, float cy,
                        float res, float clen, float16 cell,
-                       global float *intensities, float4 z,
+                       global float *intensities,
                        int xmin, int ymin, int sampling, local float *tmp,
                        float kstep,
                        read_only image2d_t func_a,
@@ -157,7 +126,7 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
 	float intensity;
 
 	/* Calculate value */
-	q = get_q(x, y, cx, cy, res, clen, k, &ttv, z, sampling);
+	q = get_q(x, y, cx, cy, res, clen, k, &ttv, sampling);
 	f_lattice = lattice_factor(cell, q, func_a, func_b, func_c);
 	I_molecule = get_intensity(intensities, cell, q);
 	I_lattice = pow(f_lattice, 2.0f);
