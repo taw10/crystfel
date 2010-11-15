@@ -74,7 +74,7 @@ float4 get_q(int x, int y, float cx, float cy, float res, float clen, float k,
 
 	q = (float4)(k*native_sin(tt)*native_cos(az),
 	             k*native_sin(tt)*native_sin(az),
-	             k-k*native_cos(tt), 0.0);
+	             k*(native_cos(tt)-1.0), 0.0);
 
 	return quat_rot(q, z);
 }
