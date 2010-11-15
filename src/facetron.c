@@ -412,10 +412,6 @@ int main(int argc, char *argv[])
 		images[i].filename = fnamereal;
 		images[i].div = beam->divergence;
 		images[i].bw = beam->bandwidth;
-		images[i].orientation.w = 1.0;
-		images[i].orientation.x = 0.0;
-		images[i].orientation.y = 0.0;
-		images[i].orientation.z = 0.0;
 		images[i].det = det;
 		images[i].beam = beam;
 

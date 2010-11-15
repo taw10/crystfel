@@ -172,12 +172,6 @@ static void add_image(void *args, int cookie)
 	image.n_cpeaks = 0;
 	image.det = NULL;
 
-	/* View head-on (unit cell is tilted) */
-	image.orientation.w = 1.0;
-	image.orientation.x = 0.0;
-	image.orientation.y = 0.0;
-	image.orientation.z = 0.0;
-
 	STATUS("%3i: Processing '%s'\n", cookie, pargs->filename);
 
 	hdfile = hdfile_open(pargs->filename);

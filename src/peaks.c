@@ -668,9 +668,6 @@ static void output_header(FILE *ofh, UnitCell *cell, struct image *image)
 	double a, b, c, al, be, ga;
 
 	fprintf(ofh, "Reflections from indexing in %s\n", image->filename);
-	fprintf(ofh, "Orientation (wxyz): %7.5f %7.5f %7.5f %7.5f\n",
-	       image->orientation.w, image->orientation.x,
-	       image->orientation.y, image->orientation.z);
 
 	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
 	fprintf(ofh, "Cell parameters %7.5f %7.5f %7.5f nm, %7.5f %7.5f %7.5f deg\n",

@@ -16,6 +16,8 @@
 #include <config.h>
 #endif
 
+#include "utils.h"
+
 /* A 3D vector in reciprocal space */
 struct rvec
 {
@@ -72,6 +74,8 @@ extern const char *cell_get_pointgroup(UnitCell *cell);
 
 extern double resolution(UnitCell *cell,
                          signed int h, signed int k, signed int l);
+
+extern UnitCell *cell_rotate(UnitCell *in, struct quaternion quat);
 
 extern void cell_print(UnitCell *cell);
 

@@ -217,12 +217,6 @@ static struct image *get_simage(struct image *template, int alternate)
 	image->f0_available = 0;
 	image->f0 = 1.0;
 
-	/* View head-on (unit cell is tilted) */
-	image->orientation.w = 1.0;
-	image->orientation.x = 0.0;
-	image->orientation.y = 0.0;
-	image->orientation.z = 0.0;
-
 	/* Detector geometry for the simulation
 	 * - not necessarily the same as the original. */
 	image->width = 1024;
@@ -328,12 +322,6 @@ static void process_image(void *pp, int cookie)
 	image.cpeaks = NULL;
 	image.n_cpeaks = 0;
 	image.det = pargs->static_args.det;
-
-	/* View head-on (unit cell is tilted) */
-	image.orientation.w = 1.0;
-	image.orientation.x = 0.0;
-	image.orientation.y = 0.0;
-	image.orientation.z = 0.0;
 
 	STATUS("Processing '%s'\n", image.filename);
 

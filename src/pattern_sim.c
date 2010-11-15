@@ -201,7 +201,8 @@ int main(int argc, char *argv[])
 	int number = 1;   /* Number used for filename of image */
 	int n_images = 1; /* Generate one image by default */
 	int done = 0;
-	UnitCell *cell;
+	UnitCell *input_cell;
+	struct quaternion orientation;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -384,10 +385,14 @@ int main(int argc, char *argv[])
 	image.width = image.det->max_x + 1;
 	image.height = image.det->max_y + 1;
 	image.lambda = ph_en_to_lambda(eV_to_J(image.beam->photon_energy));
-	cell = load_cell_from_pdb(filename);
-	if ( cell == NULL ) {
+
+	/* Load unit cell */
+	input_cell = load_cell_from_pdb(filename);
+	if ( input_cell == NULL ) {
 		exit(1);
 	}
+
+	/* Initialise stuff */
 	image.filename = NULL;
 	image.features = NULL;
 	image.flags = NULL;
@@ -403,6 +408,7 @@ int main(int argc, char *argv[])
 
 		int na, nb, nc;
 		double a, b, c, d;
+		UnitCell *cell;
 
 		//na = 8*random()/RAND_MAX + 4;
 		//nb = 8*random()/RAND_MAX + 4;
@@ -413,19 +419,21 @@ int main(int argc, char *argv[])
 
 		/* Read quaternion from stdin */
 		if ( config_randomquat ) {
-			image.orientation = random_quaternion();
+			orientation = random_quaternion();
 		} else {
-			image.orientation = read_quaternion();
+			orientation = read_quaternion();
 		}
 
 		STATUS("Orientation is %5.3f %5.3f %5.3f %5.3f\n",
-		       image.orientation.w, image.orientation.x,
-		       image.orientation.y, image.orientation.z);
+		       orientation.w, orientation.x,
+		       orientation.y, orientation.z);
 
-		if ( !quaternion_valid(image.orientation) ) {
+		if ( !quaternion_valid(orientation) ) {
 			ERROR("Orientation modulus is not zero!\n");
 			return 1;
 		}
+
+		cell = cell_rotate(input_cell, orientation);
 
 		/* Ensure no residual information */
 		image.data = NULL;
@@ -500,6 +508,7 @@ int main(int argc, char *argv[])
 		/* Clean up */
 		free(image.data);
 		free(image.twotheta);
+		cell_free(cell);
 
 skip:
 		ndone++;
@@ -516,7 +525,7 @@ skip:
 	free(image.det);
 	free(image.beam);
 	free(powder);
-	cell_free(cell);
+	cell_free(input_cell);
 	free(intensities);
 	free(outfile);
 	free(filename);

@@ -92,7 +92,6 @@ struct image {
 	                               * handling this image */
 
 	/* Information about the crystal */
-	struct quaternion       orientation;
 	double                  m;  /* Mosaicity in radians */
 
 

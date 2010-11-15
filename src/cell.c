@@ -486,6 +486,28 @@ static const char *cell_rep(UnitCell *cell)
 }
 
 
+UnitCell *cell_rotate(UnitCell *in, struct quaternion quat)
+{
+	struct rvec a, b, c;
+	struct rvec an, bn, cn;
+	UnitCell *out = cell_new();
+
+	cell_get_cartesian(in, &a.u, &a.v, &a.w,
+	                       &b.u, &b.v, &b.w,
+	                       &c.u, &c.v, &c.w);
+
+	an = quat_rot(a, quat);
+	bn = quat_rot(b, quat);
+	cn = quat_rot(c, quat);
+
+	cell_set_cartesian(out, an.u, an.v, an.w,
+	                        bn.u, bn.v, bn.w,
+	                        cn.u, cn.v, cn.w);
+
+	return out;
+}
+
+
 void cell_print(UnitCell *cell)
 {
 	double asx, asy, asz;

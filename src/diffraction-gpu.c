@@ -140,12 +140,6 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	khigh = 1.0/(image->lambda*(1.0 - image->beam->bandwidth/2.0));
 	bwstep = (khigh-klow) / BWSAMPLING;
 
-	/* Orientation */
-	orientation.s[0] = image->orientation.w;
-	orientation.s[1] = image->orientation.x;
-	orientation.s[2] = image->orientation.y;
-	orientation.s[3] = image->orientation.z;
-
 	ncells.s[0] = na;
 	ncells.s[1] = nb;
 	ncells.s[2] = nc;
