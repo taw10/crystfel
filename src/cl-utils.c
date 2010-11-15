@@ -55,7 +55,7 @@ cl_device_id get_first_dev(cl_context ctx)
 
 	r = clGetContextInfo(ctx, CL_CONTEXT_DEVICES, sizeof(dev), &dev, NULL);
 	if ( r != CL_SUCCESS ) {
-		ERROR("Couldn't get device\n");
+		ERROR("Couldn't get device: %s\n", clError(r));
 		return 0;
 	}
 
