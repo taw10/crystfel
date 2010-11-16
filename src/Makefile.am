@@ -1,6 +1,6 @@
 bin_PROGRAMS = pattern_sim process_hkl get_hkl indexamajig compare_hkl \
                powder_plot render_hkl calibrate_detector facetron cubeit \
-               reintegrate estimate_background
+               reintegrate estimate_background check_hkl
 
 if HAVE_GTK
 bin_PROGRAMS += hdfsee
@@ -45,6 +45,10 @@ get_hkl_LDADD = @LIBS@
 compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c \
                       statistics.c symmetry.c
 compare_hkl_LDADD = @LIBS@
+
+check_hkl_SOURCES = check_hkl.c sfac.c cell.c utils.c reflections.c \
+                    statistics.c symmetry.c
+check_hkl_LDADD = @LIBS@
 
 powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \
                       detector.c

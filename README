@@ -55,6 +55,8 @@ In addition, there is also:
 	- compare_hkl, for working out the differences (e.g. a q-dependent
 	               scaling factor) between two lists of reflections.
 
+	- check_hkl, for determining things like completeness.
+
 	- calibrate_detector, for summing patterns after peak detection to use
 	                      for calibrating your detector.
 

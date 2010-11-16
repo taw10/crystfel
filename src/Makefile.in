@@ -37,7 +37,7 @@ bin_PROGRAMS = pattern_sim$(EXEEXT) process_hkl$(EXEEXT) \
 	powder_plot$(EXEEXT) render_hkl$(EXEEXT) \
 	calibrate_detector$(EXEEXT) facetron$(EXEEXT) cubeit$(EXEEXT) \
 	reintegrate$(EXEEXT) estimate_background$(EXEEXT) \
-	$(am__EXEEXT_1)
+	check_hkl$(EXEEXT) $(am__EXEEXT_1)
 @HAVE_GTK_TRUE@am__append_1 = hdfsee
 @HAVE_OPENCL_TRUE@am__append_2 = diffraction-gpu.c cl-utils.c
 @HAVE_OPENCL_TRUE@am__append_3 = diffraction-gpu.c cl-utils.c
@@ -60,6 +60,11 @@ am_calibrate_detector_OBJECTS = calibrate_detector.$(OBJEXT) \
 	cell.$(OBJEXT) thread-pool.$(OBJEXT)
 calibrate_detector_OBJECTS = $(am_calibrate_detector_OBJECTS)
 calibrate_detector_DEPENDENCIES =
+am_check_hkl_OBJECTS = check_hkl.$(OBJEXT) sfac.$(OBJEXT) \
+	cell.$(OBJEXT) utils.$(OBJEXT) reflections.$(OBJEXT) \
+	statistics.$(OBJEXT) symmetry.$(OBJEXT)
+check_hkl_OBJECTS = $(am_check_hkl_OBJECTS)
+check_hkl_DEPENDENCIES =
 am_compare_hkl_OBJECTS = compare_hkl.$(OBJEXT) sfac.$(OBJEXT) \
 	cell.$(OBJEXT) utils.$(OBJEXT) reflections.$(OBJEXT) \
 	statistics.$(OBJEXT) symmetry.$(OBJEXT)
@@ -165,16 +170,18 @@ am__v_CCLD_0 = @echo "  CCLD  " $@;
 AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN   " $@;
-SOURCES = $(calibrate_detector_SOURCES) $(compare_hkl_SOURCES) \
-	$(cubeit_SOURCES) $(estimate_background_SOURCES) \
-	$(facetron_SOURCES) $(get_hkl_SOURCES) $(hdfsee_SOURCES) \
-	$(indexamajig_SOURCES) $(pattern_sim_SOURCES) \
-	$(powder_plot_SOURCES) $(process_hkl_SOURCES) \
-	$(reintegrate_SOURCES) $(render_hkl_SOURCES)
-DIST_SOURCES = $(calibrate_detector_SOURCES) $(compare_hkl_SOURCES) \
-	$(cubeit_SOURCES) $(estimate_background_SOURCES) \
-	$(facetron_SOURCES) $(get_hkl_SOURCES) \
-	$(am__hdfsee_SOURCES_DIST) $(am__indexamajig_SOURCES_DIST) \
+SOURCES = $(calibrate_detector_SOURCES) $(check_hkl_SOURCES) \
+	$(compare_hkl_SOURCES) $(cubeit_SOURCES) \
+	$(estimate_background_SOURCES) $(facetron_SOURCES) \
+	$(get_hkl_SOURCES) $(hdfsee_SOURCES) $(indexamajig_SOURCES) \
+	$(pattern_sim_SOURCES) $(powder_plot_SOURCES) \
+	$(process_hkl_SOURCES) $(reintegrate_SOURCES) \
+	$(render_hkl_SOURCES)
+DIST_SOURCES = $(calibrate_detector_SOURCES) $(check_hkl_SOURCES) \
+	$(compare_hkl_SOURCES) $(cubeit_SOURCES) \
+	$(estimate_background_SOURCES) $(facetron_SOURCES) \
+	$(get_hkl_SOURCES) $(am__hdfsee_SOURCES_DIST) \
+	$(am__indexamajig_SOURCES_DIST) \
 	$(am__pattern_sim_SOURCES_DIST) $(powder_plot_SOURCES) \
 	$(process_hkl_SOURCES) $(reintegrate_SOURCES) \
 	$(render_hkl_SOURCES)
@@ -299,6 +306,10 @@ compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c \
                       statistics.c symmetry.c
 
 compare_hkl_LDADD = @LIBS@
+check_hkl_SOURCES = check_hkl.c sfac.c cell.c utils.c reflections.c \
+                    statistics.c symmetry.c
+
+check_hkl_LDADD = @LIBS@
 powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \
                       detector.c
 
@@ -410,6 +421,9 @@ clean-binPROGRAMS:
 calibrate_detector$(EXEEXT): $(calibrate_detector_OBJECTS) $(calibrate_detector_DEPENDENCIES) 
 	@rm -f calibrate_detector$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(calibrate_detector_OBJECTS) $(calibrate_detector_LDADD) $(LIBS)
+check_hkl$(EXEEXT): $(check_hkl_OBJECTS) $(check_hkl_DEPENDENCIES) 
+	@rm -f check_hkl$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(check_hkl_OBJECTS) $(check_hkl_LDADD) $(LIBS)
 compare_hkl$(EXEEXT): $(compare_hkl_OBJECTS) $(compare_hkl_DEPENDENCIES) 
 	@rm -f compare_hkl$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(compare_hkl_OBJECTS) $(compare_hkl_LDADD) $(LIBS)
@@ -456,6 +470,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/beam-parameters.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/calibrate_detector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cell.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cl-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/compare_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cubeit.Po@am__quote@
