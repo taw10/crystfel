@@ -56,6 +56,36 @@ See doc/geometry for information about how to create a geometry description
 file.
 
 
+Peak Detection
+--------------
+
+You can control the peak detection on the command line.  Firstly, you can choose
+the peak detection method using "--peaks=<method>".  Currently, two possible
+values for "method" are available.  "hdf5" will take the peak locations from the
+HDF5 file.  It expects a two dimensional array at /processing/hitfinder/peakinfo
+where size in the first dimension is the number of peaks and the size in the
+second dimension is three.  The first two columns contain the x and y
+coordinate (see the "Note about data orientation" in geometry.txt for details),
+the third contains the intensity.  However, the intensity will be ignored since
+the pattern will always be re-integrated using the unit cell provided by the
+indexer on the basis of the peaks.
+
+The "zaef" method uses a simple gradient search after Zaefferer (2000).  You can
+control the overall threshold and minimum gradient for finding a peak using the
+"--threshold" and "--min-gradient" options.  Both of these have units of "ADU"
+(i.e. units of intensity according to the contents of the HDF5 file).
+
+A minimum peak separation can also be provided in the geometry description file
+(see geometry.txt for details).  This number serves two purposes.  Firstly,
+it is the maximum distance allowed between the peak summit and the foot point
+(where the gradient exceeds the minimum gradient).  Secondly, it is the minimum
+distance allowed between one peak and another, before the later peak will be
+rejected "by proximity".
+
+You can suppress peak detection altogether for a panel in the geometry file by
+specifying the "no_index" value for the panel as non-zero.
+
+
 Cell Reduction
 --------------
 
