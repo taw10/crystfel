@@ -302,7 +302,7 @@ int integrate_peak(struct image *image, int xp, int yp,
 }
 
 
-void search_peaks(struct image *image, float threshold)
+void search_peaks(struct image *image, float threshold, float min_gradient)
 {
 	int x, y, width, height;
 	float *data;
@@ -364,7 +364,7 @@ void search_peaks(struct image *image, float threshold)
 		/* Calculate overall gradient */
 		grad = dxs + dys;
 
-		if ( grad < 100000 ) continue;
+		if ( grad < min_gradient ) continue;
 
 		mask_x = x;
 		mask_y = y;

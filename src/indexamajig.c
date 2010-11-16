@@ -65,6 +65,7 @@ struct static_index_args
 	int config_sa;
 	int config_closer;
 	float threshold;
+	float min_gradient;
 	struct detector *det;
 	IndexingMethod indm;
 	IndexingPrivate *ipriv;
@@ -183,6 +184,8 @@ static void show_help(const char *s)
 "     --no-sa              Don't correct for the differing solid angles of\n"
 "                           the pixels.\n"
 "     --threshold=<n>      Only accept peaks above <n> ADU.  Default: 800.\n"
+"     --min-gradient=<n>   Minimum gradient for Zaefferer peak search.\n"
+"                           Default: 100,000.\n"
 "\n"
 "\nIf you used --simulate, you may also want:\n\n"
 "     --intensities=<file> Specify file containing reflection intensities\n"
@@ -364,7 +367,8 @@ static void process_image(void *pp, int cookie)
 		}
 		break;
 	case PEAK_ZAEF :
-		search_peaks(&image, pargs->static_args.threshold);
+		search_peaks(&image, pargs->static_args.threshold,
+		             pargs->static_args.min_gradient);
 		break;
 	}
 
@@ -521,6 +525,7 @@ int main(int argc, char *argv[])
 	int config_checkprefix = 1;
 	int config_closer = 1;
 	float threshold = 800.0;
+	float min_gradient = 100000.0;
 	struct detector *det;
 	char *geometry = NULL;
 	IndexingMethod indm;
@@ -574,6 +579,7 @@ int main(int argc, char *argv[])
 		{"sat-corr",           0, &config_satcorr,     1}, /* Compat */
 		{"no-sa",              0, &config_sa,          0},
 		{"threshold",          1, NULL,               't'},
+		{"min-gradient",       1, NULL,                4},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
 		{"no-closer-peak",     0, &config_closer,      0},
 		{0, 0, NULL, 0}
@@ -639,6 +645,10 @@ int main(int argc, char *argv[])
 
 		case 3 :
 			scellr = strdup(optarg);
+			break;
+
+		case 4 :
+			min_gradient = strtof(optarg, NULL);
 			break;
 
 		case 0 :
@@ -831,6 +841,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.config_closer = config_closer;
 	qargs.static_args.cellr = cellr;
 	qargs.static_args.threshold = threshold;
+	qargs.static_args.min_gradient = min_gradient;
 	qargs.static_args.det = det;
 	qargs.static_args.indm = indm;
 	qargs.static_args.ipriv = ipriv;

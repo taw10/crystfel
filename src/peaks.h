@@ -19,7 +19,8 @@
 
 #include <pthread.h>
 
-extern void search_peaks(struct image *image, float threshold);
+extern void search_peaks(struct image *image, float threshold,
+                         float min_gradient);
 extern void dump_peaks(struct image *image, FILE *ofh, pthread_mutex_t *mutex);
 
 extern void output_intensities(struct image *image, UnitCell *cell,

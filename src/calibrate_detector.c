@@ -110,7 +110,7 @@ static void sum_peaks(struct image *image, double *sum)
 	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
 
 	/* FIXME: Get threshold value from command line */
-	search_peaks(image, 800.0);
+	search_peaks(image, 800.0, 100000.0);
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
