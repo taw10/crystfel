@@ -530,11 +530,6 @@ int find_projected_peaks(struct image *image, UnitCell *cell,
 		double dist;
 		int found = 0;
 		int j;
-		struct panel *p;
-
-		p = find_panel(image->det, x, y);
-		if ( p == NULL ) continue;
-		if ( p->no_index ) continue;
 
 		q = get_q(image, x, y, 1, NULL, 1.0/image->lambda);
 
@@ -741,6 +736,12 @@ void output_intensities(struct image *image, UnitCell *cell,
 		double d;
 		int idx;
 		double bg, max;
+		struct panel *p;
+
+		p = find_panel(image->det, image->cpeaks[i].x,
+		                           image->cpeaks[i].y);
+		if ( p == NULL ) continue;
+		if ( p->no_index ) continue;
 
 		/* Wait.. is there a really close feature which was detected? */
 		if ( use_closer ) {
@@ -909,6 +910,11 @@ void output_pixels(struct image *image, UnitCell *cell,
 		signed int h, k, l;
 		struct rvec q;
 		double dist;
+		struct panel *p;
+
+		p = find_panel(image->det, x, y);
+		if ( p == NULL ) continue;
+		if ( p->no_index ) continue;
 
 		q = get_q(image, x, y, 1, NULL, 1.0/image->lambda);
 
