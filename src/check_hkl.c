@@ -177,7 +177,7 @@ static void plot_shells(const double *ref1, ReflItemList *items, UnitCell *cell,
 	}
 	free(counted);
 
-	/* Characterise the first data set (only) */
+	/* Characterise the data set */
 	for ( i=0; i<num_items(items); i++ ) {
 
 		struct refl_item *it;
