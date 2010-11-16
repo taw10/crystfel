@@ -265,6 +265,7 @@ struct detector *get_detector_geometry(const char *filename)
 				det->panels[i].res = -1;
 				det->panels[i].badrow = '0';
 				det->panels[i].no_index = 0;
+				det->panels[i].peak_sep = 50.0;
 			}
 
 			continue;
@@ -311,6 +312,8 @@ struct detector *get_detector_geometry(const char *filename)
 			det->panels[np].clen = atof(bits[2]);
 		} else if ( strcmp(path[1], "res") == 0 ) {
 			det->panels[np].res = atof(bits[2]);
+		} else if ( strcmp(path[1], "peak_sep") == 0 ) {
+			det->panels[np].peak_sep = atof(bits[2]);
 		} else if ( strcmp(path[1], "badrow_direction") == 0 ) {
 			det->panels[np].badrow = bits[2][0];
 			if ( (det->panels[np].badrow != 'x')
@@ -397,6 +400,7 @@ struct detector *get_detector_geometry(const char *filename)
 		       det->panels[i].badrow);
 		/* It's OK if the badrow direction is '0' */
 		/* It's not a problem if "no_index" is still zero */
+		/* The default peak_sep is OK (maybe) */
 
 		if ( det->panels[i].max_x > max_x ) {
 			max_x = det->panels[i].max_x;

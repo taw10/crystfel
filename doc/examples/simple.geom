@@ -9,6 +9,7 @@ n_panels = 2
 0/cy = 502.0
 0/clen = 50.0e-3
 0/res = 13333.3  ; 75 micron pixel size
+0/peak_sep = 50
 
 ; Lower panel
 1/min_x = 0
@@ -19,3 +20,4 @@ n_panels = 2
 1/cy = 522.0
 1/clen = 50.0e-3
 1/res = 13333.3  ; 75 micron pixel size
+1/peak_sep = 50

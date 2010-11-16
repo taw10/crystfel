@@ -339,9 +339,14 @@ void search_peaks(struct image *image, float threshold)
 		double max;
 		unsigned int did_something;
 		int r;
+		struct panel *p;
 
 		/* Overall threshold */
 		if ( data[x+width*y] < threshold ) continue;
+
+		p = find_panel(image->det, x, y);
+		if ( !p ) continue;
+		if ( p->no_index ) continue;
 
 		/* Ignore streak */
 		if ( in_streak(x, y) ) continue;
@@ -387,12 +392,14 @@ void search_peaks(struct image *image, float threshold)
 			}
 
 			/* Abort if drifted too far from the foot point */
-			if ( distance(mask_x, mask_y, x, y) > 50.0 ) break;
+			if ( distance(mask_x, mask_y, x, y) > p->peak_sep ) {
+				break;
+			}
 
 		} while ( did_something );
 
 		/* Too far from foot point? */
-		if ( distance(mask_x, mask_y, x, y) > 50.0 ) {
+		if ( distance(mask_x, mask_y, x, y) > p->peak_sep ) {
 			nrej_dis++;
 			continue;
 		}
@@ -429,7 +436,7 @@ void search_peaks(struct image *image, float threshold)
 
 		/* Check for a nearby feature */
 		image_feature_closest(image->features, fx, fy, &d, &idx);
-		if ( d < 15.0 ) {
+		if ( d < p->peak_sep ) {
 			nrej_pro++;
 			continue;
 		}
@@ -523,6 +530,11 @@ int find_projected_peaks(struct image *image, UnitCell *cell,
 		double dist;
 		int found = 0;
 		int j;
+		struct panel *p;
+
+		p = find_panel(image->det, x, y);
+		if ( p == NULL ) continue;
+		if ( p->no_index ) continue;
 
 		q = get_q(image, x, y, 1, NULL, 1.0/image->lambda);
 

@@ -54,6 +54,9 @@ n_panels = 1
 ; indexing nor integrated and recorded in the stream.
 0/no_index = false
 
+; The lower bound on true peak separation is about 50 pixels
+0/peak_sep = 50
+
 
 See the "examples" folder for some examples.
 
