@@ -179,7 +179,7 @@ static void plot_shells(const double *ref, ReflItemList *items, UnitCell *cell,
 	}
 	free(counted);
 
-	/* Characterise the data set */
+	/* Calculate means */
 	for ( i=0; i<num_items(items); i++ ) {
 
 		struct refl_item *it;
@@ -206,13 +206,51 @@ static void plot_shells(const double *ref, ReflItemList *items, UnitCell *cell,
 		}
 
 		measured[bin]++;
+		mean[bin] += lookup_intensity(ref, h, k, l);
+
+	}
+
+	for ( i=0; i<NBINS; i++ ) {
+		mean[i] /= (double)measured[i];
+	}
+
+	/* Characterise the data set */
+	for ( i=0; i<num_items(items); i++ ) {
+
+		struct refl_item *it;
+		signed int h, k, l;
+		double d;
+		int bin;
+		int j;
+		double val, esd;
+
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
+
+		d = resolution(cell, h, k, l) * 2.0;
+		val = lookup_intensity(ref, h, k, l);
+		esd = lookup_intensity(sigma, h, k, l);
+
+		bin = -1;
+		for ( j=0; j<NBINS; j++ ) {
+			if ( (d>rmins[j]) && (d<=rmaxs[j]) ) {
+				bin = j;
+				break;
+			}
+		}
+		if ( bin == -1 ) {
+			nout++;
+			continue;
+		}
+
+		/* measured[bin] was done earlier */
 		measurements[bin] += lookup_count(counts, h, k, l);
-		snr[bin] += (lookup_intensity(ref1, h, k, l) /
-		                              lookup_intensity(sigma, h, k, l));
-		snr_total += (lookup_intensity(ref1, h, k, l) /
-		                              lookup_intensity(sigma, h, k, l));
+		snr[bin] += val / esd;
+		snr_total += val / esd;
 		nmeas++;
 		nmeastot += lookup_count(counts, h, k, l);
+
+		var[bin] += pow(val-mean[bin], 2.0);
 
 	}
 	STATUS("overall <snr> = %f\n", snr_total/(double)nmeas);
@@ -224,15 +262,22 @@ static void plot_shells(const double *ref, ReflItemList *items, UnitCell *cell,
 		       nout);
 	}
 
+	fprintf(fh, "1/d centre   # refs Possible  Compl       "
+		    "Meas   Red   SNR    Std dev       Mean\n");
 	for ( i=0; i<NBINS; i++ ) {
 
-		double r, cen;
+		double cen;
 		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
-		r = (num[i]/den)*((double)ctot/cts[i]);
-		fprintf(fh, "%f %i %i %5.2f %i %f %f\n", cen*1.0e-9, measured[i],
-		        possible[i], 100.0*(float)measured[i]/possible[i],
-		        measurements[i], (float)measurements[i]/measured[i],
-		        (snr[i]/(double)measured[i]));
+		fprintf(fh, "%10.3f %8i %8i %6.2f %10i %5.1f %5.2f %10.2f %10.2f\n",
+		        cen*1.0e-9,
+		        measured[i],
+		        possible[i],
+		        100.0*(float)measured[i]/possible[i],
+		        measurements[i],
+		        (float)measurements[i]/measured[i],
+		        snr[i]/(double)measured[i],
+		        sqrt(var[i]/measured[i]),
+		        mean[i]);
 
 	}
 
