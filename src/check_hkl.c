@@ -47,7 +47,7 @@ static void show_help(const char *s)
 }
 
 
-static void plot_shells(const double *ref1, ReflItemList *items, UnitCell *cell,
+static void plot_shells(const double *ref, ReflItemList *items, UnitCell *cell,
                         const char *sym, unsigned int *counts,
                         const double *sigma, double rmin_fix, double rmax_fix)
 {
@@ -61,11 +61,11 @@ static void plot_shells(const double *ref1, ReflItemList *items, UnitCell *cell,
 	double rmins[NBINS];
 	double rmaxs[NBINS];
 	double snr[NBINS];
-	double den;
+	double mean[NBINS];
+	double var[NBINS];
 	double rmin, rmax;
 	signed int h, k, l;
 	int i;
-	int ctot;
 	FILE *fh;
 	double snr_total = 0;
 	int nmeas = 0;
@@ -90,6 +90,8 @@ static void plot_shells(const double *ref1, ReflItemList *items, UnitCell *cell,
 		measured[i] = 0;
 		measurements[i] = 0;
 		snr[i] = 0;
+		var[i] = 0;
+		mean[i] = 0;
 	}
 
 	rmin = +INFINITY;
@@ -147,17 +149,13 @@ static void plot_shells(const double *ref1, ReflItemList *items, UnitCell *cell,
 
 	/* Count the number of reflections possible in each shell */
 	counted = new_list_count();
-	for ( h=-50; h<=+50; h++ ) {
-	for ( k=-50; k<=+50; k++ ) {
-	for ( l=-50; l<=+50; l++ ) {
+	for ( h=-150; h<=+150; h++ ) {
+	for ( k=-150; k<=+150; k++ ) {
+	for ( l=-150; l<=+150; l++ ) {
 
 		double d;
 		signed int hs, ks, ls;
 		int bin;
-
-		get_asymm(h, k, l, &hs, &ks, &ls, sym);
-		if ( lookup_count(counted, hs, ks, ls) ) continue;
-		set_count(counted, hs, ks, ls, 1);
 
 		d = resolution(cell, h, k, l) * 2.0;
 
@@ -169,6 +167,10 @@ static void plot_shells(const double *ref1, ReflItemList *items, UnitCell *cell,
 			}
 		}
 		if ( bin == -1 ) continue;
+
+		get_asymm(h, k, l, &hs, &ks, &ls, sym);
+		if ( lookup_count(counted, hs, ks, ls) ) continue;
+		set_count(counted, hs, ks, ls, 1);
 
 		possible[bin]++;
 
