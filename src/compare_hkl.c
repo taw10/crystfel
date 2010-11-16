@@ -228,11 +228,7 @@ static void plot_shells(const double *ref1, const double *ref2,
 		double r, cen;
 		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
 		r = (num[i]/den)*((double)ctot/cts[i]);
-		fprintf(fh, "%f %f %i %i %i %f %f\n", cen*1.0e-9, r*100.0,
-		                            measured[i],
-		                            possible[i], measurements[i],
-		                            (float)measurements[i]/measured[i],
-		                            (snr[i]/(double)measured[i]));
+		fprintf(fh, "%f %f\n", cen*1.0e-9, r*100.0);
 
 	}
 
