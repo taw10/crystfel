@@ -97,6 +97,7 @@ static void plot_histogram(double *vals, int n)
 		if ( vals[i] < min ) min = vals[i];
 	}
 	STATUS("%f %f\n", min, max);
+	min--;  max++;
 
 	for ( i=0; i<NBINS; i++ ) {
 		histo[i] = 0;
@@ -285,7 +286,7 @@ static void merge_pattern(double *model, ReflItemList *observed,
 			add_item(sym_items, h, k, l);
 		}
 
-		/* Increase count count */
+		/* Increase count */
 		integrate_count(model_counts, h, k, l, 1);
 
 		if ( hist_vals != NULL ) {
@@ -568,6 +569,7 @@ int main(int argc, char *argv[])
 	double *reference_i;
 	FILE *outfh = NULL;
 	struct beam_params *beam = NULL;
+	int space_for_hist = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -707,22 +709,6 @@ int main(int argc, char *argv[])
 		in_sym = strdup(sym);
 	}
 
-	if ( histo != NULL ) {
-		int r;
-		r = sscanf(histo, "%i,%i,%i", &hist_h, &hist_k, &hist_l);
-		if ( r != 3 ) {
-			ERROR("Invalid indices for '--histogram'\n");
-			return 1;
-		}
-		hist_vals = malloc(10*1024*sizeof(double));
-		free(histo);
-		STATUS("Histogramming %i %i %i -> ", hist_h, hist_k, hist_l);
-		/* Put into the asymmetric cell for the target group */
-		get_asymm(hist_h, hist_k, hist_l,
-		          &hist_h, &hist_k, &hist_l, sym);
-		STATUS("%i %i %i\n", hist_h, hist_k, hist_l);
-	}
-
 	/* Open the data stream */
 	if ( strcmp(filename, "-") == 0 ) {
 		fh = stdin;
@@ -762,6 +748,23 @@ int main(int argc, char *argv[])
 	STATUS("There are %i patterns to process\n", n_total_patterns);
 	rewind(fh);
 
+	if ( histo != NULL ) {
+		int r;
+		r = sscanf(histo, "%i,%i,%i", &hist_h, &hist_k, &hist_l);
+		if ( r != 3 ) {
+			ERROR("Invalid indices for '--histogram'\n");
+			return 1;
+		}
+		space_for_hist = n_total_patterns * num_general_equivs(sym);
+		hist_vals = malloc(space_for_hist * sizeof(double));
+		free(histo);
+		STATUS("Histogramming %i %i %i -> ", hist_h, hist_k, hist_l);
+		/* Put into the asymmetric cell for the target group */
+		get_asymm(hist_h, hist_k, hist_l,
+		          &hist_h, &hist_k, &hist_l, sym);
+		STATUS("%i %i %i\n", hist_h, hist_k, hist_l);
+	}
+
 	hist_i = 0;
 	merge_all(fh, &model, &observed, &counts,
 	          config_maxonly, config_scale, config_sum,
@@ -771,6 +774,9 @@ int main(int argc, char *argv[])
                   hist_vals, hist_h, hist_k, hist_l, &hist_i, NULL, NULL, NULL,
                   outfh);
 	rewind(fh);
+	if ( space_for_hist && (hist_i >= space_for_hist) ) {
+		ERROR("Histogram array was too small!\n");
+	}
 
 	if ( hist_vals != NULL ) {
 		STATUS("%i %i %i was seen %i times.\n", hist_h, hist_k, hist_l,
