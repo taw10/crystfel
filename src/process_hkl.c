@@ -472,7 +472,11 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 			              hist_i, devs, means, outfh);
 
 			n_patterns++;
-			if ( n_patterns == config_stopafter ) break;
+			if ( n_patterns == config_stopafter ) {
+				progress_bar(n_total_patterns, n_total_patterns,
+				             "Merging");
+				break;
+			}
 			progress_bar(n_patterns, n_total_patterns, "Merging");
 
 			/* Reset for the next pattern */
