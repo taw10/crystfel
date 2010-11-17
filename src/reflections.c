@@ -22,10 +22,40 @@
 #include "beam-parameters.h"
 
 
+double *poisson_esds(double *intensities, ReflItemList *items,
+                     double adu_per_photon)
+{
+	int i;
+	double *esds = new_list_intensity();
+
+	for ( i=0; i<num_items(items); i++ ) {
+
+		struct refl_item *it;
+		signed int h, k, l;
+		double intensity, sigma;
+
+		it = get_item(items, i);
+		h = it->h;  k = it->k;  l = it->l;
+
+		intensity = lookup_intensity(intensities, h, k, l);
+
+		if ( intensity > 0.0 ) {
+			sigma = adu_per_photon * sqrt(intensity/adu_per_photon);
+		} else {
+			sigma = 0.0;
+		}
+
+		set_intensity(esds, h, k, l, sigma);
+
+	}
+
+	return esds;
+}
+
+
 void write_reflections(const char *filename, ReflItemList *items,
-                       double *intensities, double *phases,
-                       unsigned int *counts, UnitCell *cell,
-                       double adu_per_photon)
+                       double *intensities, double *esds, double *phases,
+                       unsigned int *counts, UnitCell *cell)
 {
 	FILE *fh;
 	int i;
@@ -79,8 +109,8 @@ void write_reflections(const char *filename, ReflItemList *items,
 			s = 0.0;
 		}
 
-		if ( intensity > 0.0 ) {
-			sigma = adu_per_photon * sqrt(intensity/adu_per_photon);
+		if ( esds != NULL ) {
+			sigma = lookup_intensity(esds, h, k, l);
 		} else {
 			sigma = 0.0;
 		}
@@ -90,9 +120,6 @@ void write_reflections(const char *filename, ReflItemList *items,
 		        h, k, l, intensity, ph, sigma, s/1.0e9, N);
 
 	}
-	STATUS("Warning: Errors have been estimated from Poisson distribution"
-	       " assuming %5.2f ADU per photon.\n", adu_per_photon);
-	STATUS("This is not necessarily a useful estimate.\n");
 	fclose(fh);
 }
 

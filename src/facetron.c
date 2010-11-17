@@ -449,8 +449,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Output results */
-	write_reflections(outfile, obs, i_full, NULL, cts, NULL, 1.0);
-	STATUS("Sigma(I) values in output file are not (yet) meaningful.\n");
+	write_reflections(outfile, obs, i_full, NULL, NULL, cts, NULL);
 
 	/* Clean up */
 	free(i_full);

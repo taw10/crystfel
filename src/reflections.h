@@ -21,10 +21,12 @@
 #include "utils.h"
 
 
+extern double *poisson_esds(double *intensities, ReflItemList *items,
+                            double adu_per_photon);
+
 extern void write_reflections(const char *filename, ReflItemList *items,
-                              double *intensities, double *phases,
-                              unsigned int *counts, UnitCell *cell,
-                              double adu_per_photon);
+                              double *intensities, double *esds, double *phases,
+                              unsigned int *counts, UnitCell *cell);
 
 extern ReflItemList *read_reflections(const char *filename,
                                       double *intensities, double *phases,

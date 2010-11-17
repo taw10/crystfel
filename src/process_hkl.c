@@ -220,7 +220,7 @@ static void merge_pattern(double *model, ReflItemList *observed,
                           double *hist_vals,
                           signed int hist_h, signed int hist_k,
                           signed int hist_l, int *hist_n, double *devs,
-                          double *tots, double *means, FILE *outfh)
+                          double *means, FILE *outfh)
 {
 	int i;
 	int twin;
@@ -275,11 +275,11 @@ static void merge_pattern(double *model, ReflItemList *observed,
 			}
 		}
 
-		if ( tots != NULL ) {
+		if ( devs != NULL ) {
 			double m;
 			m = lookup_intensity(means, h, k, l);
-			integrate_intensity(tots, h, k, l, intensity);
-			integrate_intensity(devs, h, k, l, fabs(intensity-m));
+			integrate_intensity(devs, h, k, l,
+			                    pow(intensity-m, 2.0));
 		}
 
 		if ( !find_item(sym_items, h, k, l) ) {
@@ -399,8 +399,7 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
                       ReflItemList *reference, double *reference_i,
                       double *hist_vals,
                       signed int hist_h, signed int hist_k, signed int hist_l,
-                      int *hist_i, double *devs, double *tots, double *means,
-                      FILE *outfh)
+                      int *hist_i, double *devs, double *means, FILE *outfh)
 {
 	char *rval;
 	float f0;
@@ -470,7 +469,7 @@ static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
 			              twins, holo, mero,
 			              reference, reference_i,
 			              hist_vals, hist_h, hist_k, hist_l,
-			              hist_i, devs, tots, means, outfh);
+			              hist_i, devs, means, outfh);
 
 			n_patterns++;
 			if ( n_patterns == config_stopafter ) break;
@@ -570,6 +569,8 @@ int main(int argc, char *argv[])
 	FILE *outfh = NULL;
 	struct beam_params *beam = NULL;
 	int space_for_hist = 0;
+	double *devs;
+	double *esds;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -771,7 +772,7 @@ int main(int argc, char *argv[])
 	          config_startafter, config_stopafter,
                   twins, in_sym, sym, n_total_patterns,
                   reference_items, reference_i,
-                  hist_vals, hist_h, hist_k, hist_l, &hist_i, NULL, NULL, NULL,
+                  hist_vals, hist_h, hist_k, hist_l, &hist_i, NULL, NULL,
                   outfh);
 	rewind(fh);
 	if ( space_for_hist && (hist_i >= space_for_hist) ) {
@@ -782,6 +783,37 @@ int main(int argc, char *argv[])
 		STATUS("%i %i %i was seen %i times.\n", hist_h, hist_k, hist_l,
 		                                        hist_i);
 		plot_histogram(hist_vals, hist_i);
+	}
+
+	STATUS("Extra pass to calculate ESDs...\n");
+	devs = new_list_intensity();
+	esds = new_list_intensity();
+	rewind(fh);
+	merge_all(fh, &model, &observed, &counts,
+	          config_maxonly, config_scale, 0,
+	          config_startafter, config_stopafter,
+	          twins, in_sym, sym,
+	          n_total_patterns, reference_items, reference_i,
+	          NULL, 0, 0, 0, NULL, devs, model, NULL);
+
+	for ( i=0; i<num_items(observed); i++ ) {
+
+		struct refl_item *it;
+		signed int h, k, l;
+		double dev, esd;
+		unsigned int count;
+
+		it = get_item(observed, i);
+		h = it->h;  k = it->k,  l = it->l;
+
+		dev = lookup_intensity(devs, h, k, l);
+		count = lookup_count(counts, h, k, l);
+
+		if ( count < 2 ) continue;
+
+		esd = sqrt(dev) / (double)count;
+		set_intensity(esds, h, k, l, esd);
+
 	}
 
 	if ( output != NULL ) {
@@ -796,55 +828,8 @@ int main(int argc, char *argv[])
 			adu_per_photon = beam->adu_per_photon;
 		}
 
-		write_reflections(output, observed, model, NULL, counts, cell,
-		                  adu_per_photon);
-	}
-
-	if ( config_rmerge ) {
-
-		double *devs = new_list_intensity();
-		double *tots = new_list_intensity();
-		double total_dev = 0.0;
-		double total_tot = 0.0;
-		double total_pdev = 0.0;
-		double total_rdev = 0.0;
-		int i;
-
-		STATUS("Extra pass to calculate figures of merit...\n");
-
-		rewind(fh);
-		merge_all(fh, &model, &observed, &counts,
-		          config_maxonly, config_scale, 0,
-		          config_startafter, config_stopafter,
-		          twins, in_sym, sym,
-		          n_total_patterns, reference_items, reference_i,
-		          NULL, 0, 0, 0, NULL, devs, tots, model, NULL);
-
-		for ( i=0; i<num_items(observed); i++ ) {
-
-			struct refl_item *it;
-			signed int h, k, l;
-			double dev;
-			unsigned int count;
-
-			it = get_item(observed, i);
-			h = it->h;  k = it->k,  l = it->l;
-
-			dev = lookup_intensity(devs, h, k, l);
-			count = lookup_count(counts, h, k, l);
-
-			if ( count < 2 ) continue;
-
-			total_dev += dev;
-			total_pdev += sqrt(1.0/(count-1.0))*dev;
-			total_rdev += sqrt(count/(count-1.0))*dev;
-			total_tot += lookup_intensity(tots, h, k, l);
-
-		}
-
-		STATUS("Rmerge = %f%%\n", 100.0*total_dev/total_tot);
-		STATUS("  Rpim = %f%%\n", 100.0*total_pdev/total_tot);
-		STATUS(" Rmeas = %f%%\n", 100.0*total_rdev/total_tot);
+		write_reflections(output, observed, model, esds,
+		                  NULL, counts, cell);
 
 	}
 

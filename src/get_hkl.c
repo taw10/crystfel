@@ -429,8 +429,8 @@ int main(int argc, char *argv[])
 		adu_per_photon = beam->adu_per_photon;
 	}
 
-	write_reflections(output, write_items, ideal_ref, phases, NULL, cell,
-	                  adu_per_photon);
+	write_reflections(output, write_items, ideal_ref, NULL, phases,
+	                  NULL, cell);
 
 	delete_items(input_items);
 	delete_items(write_items);
