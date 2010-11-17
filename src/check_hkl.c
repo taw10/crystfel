@@ -243,6 +243,8 @@ static void plot_shells(const double *ref, ReflItemList *items, UnitCell *cell,
 			continue;
 		}
 
+		if ( !isfinite(val/esd) ) continue;
+
 		/* measured[bin] was done earlier */
 		measurements[bin] += lookup_count(counts, h, k, l);
 		snr[bin] += val / esd;

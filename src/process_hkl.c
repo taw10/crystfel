@@ -813,9 +813,12 @@ int main(int argc, char *argv[])
 		dev = lookup_intensity(devs, h, k, l);
 		count = lookup_count(counts, h, k, l);
 
-		if ( count < 2 ) continue;
-
-		esd = sqrt(dev) / (double)count;
+		if ( count < 2 ) {
+			/* If we have only one measurement, the error is 100% */
+			esd = lookup_intensity(model, h, k, l);
+		} else {
+			esd = sqrt(dev) / (double)count;
+		}
 		set_intensity(esds, h, k, l, esd);
 
 	}
