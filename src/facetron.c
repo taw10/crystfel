@@ -151,8 +151,9 @@ static double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
 		delta_I += I_partial - spots[h].p * I_full;
 
 		if ( graph != NULL ) {
-			fprintf(graph, "%3i %3i %3i %5.2f %5.2f\n",
-			       hind, kind, lind,
+			fprintf(graph, "%3i %3i %3i %5.2f (at %5.2f,%5.2f)"
+			               " %5.2f %5.2f\n",
+			       hind, kind, lind, I_partial/spots[h].p, xc, yc,
 			       spots[h].p, I_partial / I_full);
 		}
 
