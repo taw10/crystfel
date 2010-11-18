@@ -48,6 +48,8 @@ static void show_help(const char *s)
 "                            intensities file)\n"
 "     --simulation-details  Show technical details of the simulation.\n"
 "     --gpu                 Use the GPU to speed up the calculation.\n"
+"     --gpu-dev=<n>         Use GPU device <n>.  Omit this option to see the\n"
+"                            available devices.\n"
 " -g, --geometry=<file>     Get detector geometry from file.\n"
 " -b, --beam=<file>         Get beam parameters from file.\n"
 "\n"
