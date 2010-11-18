@@ -37,6 +37,9 @@
 #include "beam-parameters.h"
 
 
+/* Number of iterations of NLSq to do for each image per macrocycle. */
+#define NUM_CYCLES (1)
+
 /* Refineable parameters */
 enum {
 	REF_SCALE,
@@ -75,6 +78,7 @@ struct refine_args
 	ReflItemList *obs;
 	double *i_full;
 	struct image *image;
+	FILE *graph;
 };
 
 
@@ -112,10 +116,10 @@ static void apply_shift(struct image *image, int k, double shift)
 
 
 static double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
-                               const char *sym, double *i_full)
+                               const char *sym, double *i_full, FILE *graph)
 {
 	int h;
-	double delta_I;
+	double delta_I = 0.0;
 
 	for ( h=0; h<n; h++ ) {
 
@@ -140,10 +144,17 @@ static double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
 		                    &xc, &yc, &I_partial, NULL, NULL, 1, 1) ) {
 			continue;
 		}
+		I_partial *= image->osf;
 
 		get_asymm(hind, kind, lind, &ha, &ka, &la, sym);
 		I_full = lookup_intensity(i_full, ha, ka, la);
 		delta_I += I_partial - spots[h].p * I_full;
+
+		if ( graph != NULL ) {
+			fprintf(graph, "%3i %3i %3i %5.2f %5.2f\n",
+			       hind, kind, lind,
+			       spots[h].p, I_partial / I_full);
+		}
 
 	}
 
@@ -157,7 +168,7 @@ static double iterate(struct image *image, double *i_full, const char *sym,
 	gsl_matrix *M;
 	gsl_vector *v;
 	gsl_vector *shifts;
-	int h, shift;
+	int h, param;
 
 	M = gsl_matrix_alloc(NUM_PARAMS, NUM_PARAMS);
 	v = gsl_vector_alloc(NUM_PARAMS);
@@ -187,6 +198,7 @@ static double iterate(struct image *image, double *i_full, const char *sym,
 		                    &xc, &yc, &I_partial, NULL, NULL, 1, 1) ) {
 			continue;
 		}
+		I_partial *= image->osf;
 
 		get_asymm(hind, kind, lind, &ha, &ka, &la, sym);
 		I_full = lookup_intensity(i_full, ha, ka, la);
@@ -221,13 +233,16 @@ static double iterate(struct image *image, double *i_full, const char *sym,
 
 	shifts = gsl_vector_alloc(NUM_PARAMS);
 	gsl_linalg_HH_solve(M, v, shifts);
-	for ( shift=0; shift<NUM_PARAMS; shift++ ) {
-		apply_shift(image, shift, gsl_vector_get(shifts, shift));
+	for ( param=0; param<NUM_PARAMS; param++ ) {
+		double shift = gsl_vector_get(shifts, param);
+		STATUS("Shift=%e\n", shift);
+		apply_shift(image, param, shift);
 	}
+	STATUS("New OSF = %f\n", image->osf);
 
 	free(spots);
 	spots = find_intersections(image, image->indexed_cell, &n, 0);
-	return mean_partial_dev(image, spots, n, sym, i_full);
+	return mean_partial_dev(image, spots, n, sym, i_full, NULL);
 }
 
 
@@ -239,7 +254,7 @@ static void refine_image(int mytask, void *tasks)
 	double nominal_photon_energy = pargs->image->beam->photon_energy;
 	struct hdfile *hdfile;
 	struct cpeak *spots;
-	int n;
+	int n, i;
 	double dev;
 
 	hdfile = hdfile_open(image->filename);
@@ -259,8 +274,12 @@ static void refine_image(int mytask, void *tasks)
 	}
 
 	spots = find_intersections(image, image->indexed_cell, &n, 0);
-	dev = iterate(image, pargs->i_full, pargs->sym, spots, n);
-	STATUS("Iteration %2i: mean dev = %5.2f\n", 0, dev);
+	for ( i=0; i<NUM_CYCLES; i++ ) {
+		dev = iterate(image, pargs->i_full, pargs->sym, spots, n);
+		STATUS("Iteration %2i: mean dev = %5.2f\n", i, dev);
+	}
+	mean_partial_dev(image, spots, n, pargs->sym,
+	                 pargs->i_full, pargs->graph);
 
 	free(image->data);
 	if ( image->flags != NULL ) free(image->flags);
@@ -310,7 +329,7 @@ static void integrate_image(int mytask, void *tasks)
 	}
 
 	/* Figure out which spots should appear in this pattern */
-	spots = find_intersections(image, image->indexed_cell, &n, 1);
+	spots = find_intersections(image, image->indexed_cell, &n, 0);
 
 	/* For each reflection, estimate the partiality */
 	for ( j=0; j<n; j++ ) {
@@ -336,6 +355,7 @@ static void integrate_image(int mytask, void *tasks)
 		                    &xc, &yc, &i_partial, NULL, NULL, 1, 1) ) {
 			continue;
 		}
+		i_partial *= image->osf;
 
 		i_full_est = i_partial / spots[j].p;
 
@@ -364,7 +384,8 @@ static void integrate_image(int mytask, void *tasks)
 
 static void refine_all(struct image *images, int n_total_patterns,
                        struct detector *det, const char *sym,
-                       ReflItemList *obs, double *i_full, int nthreads)
+                       ReflItemList *obs, double *i_full, int nthreads,
+                       FILE *graph)
 {
 	struct refine_args *tasks;
 	int i;
@@ -376,6 +397,7 @@ static void refine_all(struct image *images, int n_total_patterns,
 		tasks[i].obs = obs;
 		tasks[i].i_full = i_full;
 		tasks[i].image = &images[i];
+		tasks[i].graph = graph;
 
 	}
 
@@ -633,16 +655,27 @@ int main(int argc, char *argv[])
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
 
+		FILE *fh;
+		char filename[1024];
+
 		STATUS("Post refinement iteration %i of %i\n", i+1, n_iter);
+
+		snprintf(filename, 1023, "iteration-%i.dat", i+1);
+		fh = fopen(filename, "w");
+		if ( fh == NULL ) {
+			ERROR("Failed to open '%s'\n", filename);
+			/* Nothing will be written later */
+		}
 
 		/* Refine the geometry of all patterns to get the best fit */
 		refine_all(images, n_total_patterns, det, sym, obs, i_full,
-		           nthreads);
+		           nthreads, fh);
 
 		/* Re-estimate all the full intensities */
 		estimate_full(images, n_total_patterns, det, sym, obs, i_full,
 		              cts, nthreads);
 
+		fclose(fh);
 	}
 
 	/* Output results */
