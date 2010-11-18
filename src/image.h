@@ -94,7 +94,6 @@ struct image {
 	/* Information about the crystal */
 	double                  m;  /* Mosaicity in radians */
 
-
 	/* Per-shot radiation values */
 	double                  lambda;        /* Wavelength in m */
 	double                  div;           /* Divergence in radians */
@@ -102,6 +101,7 @@ struct image {
 	double                  f0;            /* Incident intensity */
 	int                     f0_available;  /* 0 if f0 wasn't available
 	                                        * from the input. */
+	double                  osf;           /* Overall scaling factor */
 
 	int                     width;
 	int                     height;

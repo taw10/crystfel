@@ -22,6 +22,9 @@
 #include <getopt.h>
 #include <assert.h>
 #include <pthread.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_linalg.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -32,6 +35,13 @@
 #include "peaks.h"
 #include "thread-pool.h"
 #include "beam-parameters.h"
+
+
+/* Refineable parameters */
+enum {
+	REF_SCALE,
+	NUM_PARAMS
+};
 
 
 static void show_help(const char *s)
@@ -68,11 +78,197 @@ struct refine_args
 };
 
 
+/* Return the gradient of parameter 'k' given the current status of 'image'. */
+static double gradient(struct image *image, int k,
+                       struct cpeak spot, double I_partial)
+{
+	switch ( k ) {
+
+	case REF_SCALE :
+		return I_partial;
+
+	}
+
+	ERROR("No gradient defined for parameter %i\n", k);
+	abort();
+}
+
+
+/* Apply the given shift to the 'k'th parameter of 'image'. */
+static void apply_shift(struct image *image, int k, double shift)
+{
+	switch ( k ) {
+
+	case REF_SCALE :
+		image->osf += shift;
+		break;
+
+	default :
+		ERROR("No gradient defined for parameter %i\n", k);
+		abort();
+
+	}
+}
+
+
+static double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
+                               const char *sym, double *i_full)
+{
+	int h;
+	double delta_I;
+
+	for ( h=0; h<n; h++ ) {
+
+		signed int hind, kind, lind;
+		signed int ha, ka, la;
+		double I_full;
+		float I_partial;
+		float xc, yc;
+
+		hind = spots[h].h;
+		kind = spots[h].k;
+		lind = spots[h].l;
+
+		/* Don't attempt to use spots with very small
+		 * partialities, since it won't be accurate. */
+		if ( spots[h].p < 0.1 ) continue;
+
+		/* Actual measurement of this reflection from this
+		 * pattern? */
+		/* FIXME: Coordinates aren't whole numbers */
+		if ( integrate_peak(image, spots[h].x, spots[h].y,
+		                    &xc, &yc, &I_partial, NULL, NULL, 1, 1) ) {
+			continue;
+		}
+
+		get_asymm(hind, kind, lind, &ha, &ka, &la, sym);
+		I_full = lookup_intensity(i_full, ha, ka, la);
+		delta_I += I_partial - spots[h].p * I_full;
+
+	}
+
+	return delta_I / (double)n;
+}
+
+
+static double iterate(struct image *image, double *i_full, const char *sym,
+                      struct cpeak *spots, int n)
+{
+	gsl_matrix *M;
+	gsl_vector *v;
+	gsl_vector *shifts;
+	int h, shift;
+
+	M = gsl_matrix_alloc(NUM_PARAMS, NUM_PARAMS);
+	v = gsl_vector_alloc(NUM_PARAMS);
+
+	/* Construct the equations, one per reflection in this image */
+	for ( h=0; h<n; h++ ) {
+
+		signed int hind, kind, lind;
+		signed int ha, ka, la;
+		double I_full, delta_I;
+		float I_partial;
+		float xc, yc;
+		int k;
+
+		hind = spots[h].h;
+		kind = spots[h].k;
+		lind = spots[h].l;
+
+		/* Don't attempt to use spots with very small
+		 * partialities, since it won't be accurate. */
+		if ( spots[h].p < 0.1 ) continue;
+
+		/* Actual measurement of this reflection from this
+		 * pattern? */
+		/* FIXME: Coordinates aren't whole numbers */
+		if ( integrate_peak(image, spots[h].x, spots[h].y,
+		                    &xc, &yc, &I_partial, NULL, NULL, 1, 1) ) {
+			continue;
+		}
+
+		get_asymm(hind, kind, lind, &ha, &ka, &la, sym);
+		I_full = lookup_intensity(i_full, ha, ka, la);
+		delta_I = I_partial - spots[h].p * I_full;
+
+		for ( k=0; k<NUM_PARAMS; k++ ) {
+
+			int g;
+			double v_c;
+
+			for ( g=0; g<NUM_PARAMS; g++ ) {
+
+				double M_curr, M_c;
+
+				M_curr = gsl_matrix_get(M, g, k);
+
+				M_c = gradient(image, g, spots[h], I_partial)
+				    * gradient(image, k, spots[h], I_partial);
+				M_c *= pow(I_full, 2.0);
+
+				gsl_matrix_set(M, g, k, M_curr + M_c);
+
+			}
+
+			v_c = delta_I * I_full * gradient(image, k, spots[h],
+			                                  I_partial);
+			gsl_vector_set(v, k, v_c);
+
+		}
+
+	}
+
+	shifts = gsl_vector_alloc(NUM_PARAMS);
+	gsl_linalg_HH_solve(M, v, shifts);
+	for ( shift=0; shift<NUM_PARAMS; shift++ ) {
+		apply_shift(image, shift, gsl_vector_get(shifts, shift));
+	}
+
+	free(spots);
+	spots = find_intersections(image, image->indexed_cell, &n, 0);
+	return mean_partial_dev(image, spots, n, sym, i_full);
+}
+
+
 static void refine_image(int mytask, void *tasks)
 {
 	struct refine_args *all_args = tasks;
 	struct refine_args *pargs = &all_args[mytask];
-	/* Do, er, something. */
+	struct image *image = pargs->image;
+	double nominal_photon_energy = pargs->image->beam->photon_energy;
+	struct hdfile *hdfile;
+	struct cpeak *spots;
+	int n;
+	double dev;
+
+	hdfile = hdfile_open(image->filename);
+	if ( hdfile == NULL ) {
+		ERROR("Couldn't open '%s'\n", image->filename);
+		return;
+	} else if ( hdfile_set_image(hdfile, "/data/data0") ) {
+		ERROR("Couldn't select path\n");
+		hdfile_close(hdfile);
+		return;
+	}
+
+	if ( hdf5_read(hdfile, pargs->image, 0, nominal_photon_energy) ) {
+		ERROR("Couldn't read '%s'\n", image->filename);
+		hdfile_close(hdfile);
+		return;
+	}
+
+	spots = find_intersections(image, image->indexed_cell, &n, 0);
+	dev = iterate(image, pargs->i_full, pargs->sym, spots, n);
+	STATUS("Iteration %2i: mean dev = %5.2f\n", 0, dev);
+
+	free(image->data);
+	if ( image->flags != NULL ) free(image->flags);
+	hdfile_close(hdfile);
+
+	/* Muppet proofing */
+	image->data = NULL;
+	image->flags = NULL;
 }
 
 
@@ -114,7 +310,7 @@ static void integrate_image(int mytask, void *tasks)
 	}
 
 	/* Figure out which spots should appear in this pattern */
-	spots = find_intersections(image, image->indexed_cell, &n, 0);
+	spots = find_intersections(image, image->indexed_cell, &n, 1);
 
 	/* For each reflection, estimate the partiality */
 	for ( j=0; j<n; j++ ) {
@@ -414,6 +610,7 @@ int main(int argc, char *argv[])
 		images[i].bw = beam->bandwidth;
 		images[i].det = det;
 		images[i].beam = beam;
+		images[i].osf = 1.0;
 
 		/* Muppet proofing */
 		images[i].data = NULL;
