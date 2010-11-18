@@ -71,6 +71,7 @@ struct static_index_args
 	IndexingPrivate *ipriv;
 	const double *intensities;
 	struct gpu_context *gctx;
+	int gpu_dev;
 	int peaks;
 	int cellr;
 	double nominal_photon_energy;
@@ -194,6 +195,8 @@ static void show_help(const char *s)
 "\nOptions for greater performance or verbosity:\n\n"
 "     --verbose            Be verbose about indexing.\n"
 "     --gpu                Use the GPU to speed up the simulation.\n"
+"     --gpu-dev=<n>        Use GPU device <n>.  Omit this option to see the\n"
+"                           available devices.\n"
 " -j <n>                   Run <n> analyses in parallel.  Default 1.\n"
 "\n"
 "\nOptions you probably won't need:\n\n"
@@ -272,11 +275,14 @@ static struct image *get_simage(struct image *template, int alternate)
 
 
 static void simulate_and_write(struct image *simage, struct gpu_context **gctx,
-                               const double *intensities, UnitCell *cell)
+                               const double *intensities, UnitCell *cell,
+                               int gpu_dev)
 {
-	/* Set up GPU if necessary */
+	/* Set up GPU if necessary.
+	 * Unfortunately, setup has to go here since until now we don't know
+	 * enough about the situation. */
 	if ( (gctx != NULL) && (*gctx == NULL) ) {
-		*gctx = setup_gpu(0, simage, intensities, 0);
+		*gctx = setup_gpu(0, simage, intensities, gpu_dev);
 	}
 
 	if ( (gctx != NULL) && (*gctx != NULL) ) {
@@ -423,11 +429,12 @@ static void process_image(void *pp, int cookie)
 		if ( config_gpu ) {
 			pthread_mutex_lock(pargs->static_args.gpu_mutex);
 			simulate_and_write(simage, &gctx, intensities,
-			                   image.indexed_cell);
+			                   image.indexed_cell,
+			                   pargs->static_args.gpu_dev);
 			pthread_mutex_unlock(pargs->static_args.gpu_mutex);
 		} else {
 			simulate_and_write(simage, NULL, intensities,
-			                   image.indexed_cell);
+			                   image.indexed_cell, 0);
 		}
 	}
 
@@ -549,6 +556,7 @@ int main(int argc, char *argv[])
 	struct queue_args qargs;
 	struct beam_params *beam = NULL;
 	double nominal_photon_energy;
+	int gpu_dev = -1;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -582,6 +590,7 @@ int main(int argc, char *argv[])
 		{"min-gradient",       1, NULL,                4},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
 		{"no-closer-peak",     0, &config_closer,      0},
+		{"gpu-dev",            1, NULL,                5},
 		{0, 0, NULL, 0}
 	};
 
@@ -649,6 +658,10 @@ int main(int argc, char *argv[])
 
 		case 4 :
 			min_gradient = strtof(optarg, NULL);
+			break;
+
+		case 5 :
+			gpu_dev = atoi(optarg);
 			break;
 
 		case 0 :
@@ -847,6 +860,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.ipriv = ipriv;
 	qargs.static_args.intensities = intensities;
 	qargs.static_args.gctx = gctx;
+	qargs.static_args.gpu_dev = gpu_dev;
 	qargs.static_args.peaks = peaks;
 	qargs.static_args.output_mutex = &output_mutex;
 	qargs.static_args.ofh = ofh;
