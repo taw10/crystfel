@@ -36,13 +36,14 @@
 struct static_integration_args
 {
 	struct detector *det;
-	pthread_mutex_t *output_mutex;  /* Protects 'stdout' */
+	pthread_mutex_t *output_mutex;  /* Protects the output stream */
 	int config_cmfilter;
 	int config_polar;
 	int config_satcorr;
 	int config_sa;
 	int config_closer;
 	int config_sanity;
+	FILE *ofh;
 };
 
 
@@ -75,6 +76,7 @@ static void show_help(const char *s)
 "\n"
 "  -i, --input=<filename>   Specify the name of the input 'stream'.\n"
 "                            (must be a file, not e.g. stdin)\n"
+"  -o, --output=<filename>  Write out stream to this file. '-' for stdout.\n"
 "  -g. --geometry=<file>    Get detector geometry from file.\n"
 "  -x, --prefix=<p>         Prefix filenames from input file with <p>.\n"
 "      --basename           Remove the directory parts of the filenames.\n"
@@ -139,7 +141,7 @@ static void process_image(void *pg, int cookie)
 		output_intensities(&image, apargs->cell,
 		                   pargs->output_mutex, pargs->config_polar,
 		                   pargs->config_sa, pargs->config_closer,
-		                   stdout, 0, 0.1);
+		                   pargs->ofh, 0, 0.1);
 	}
 
 	free(image.data);
@@ -188,7 +190,7 @@ static void integrate_all(int nthreads, struct detector *det, FILE *fh,
                           int config_basename, const char *prefix,
                           int config_cmfilter, int config_polar,
                           int config_satcorr, int config_sa, int config_closer,
-                          int config_sanity)
+                          int config_sanity, FILE *ofh)
 {
 	struct queue_args qargs;
 	pthread_mutex_t output_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -207,6 +209,7 @@ static void integrate_all(int nthreads, struct detector *det, FILE *fh,
 	qargs.static_args.config_closer = config_closer;
 	qargs.static_args.config_sanity = qargs.static_args.config_sanity;
 	qargs.static_args.output_mutex = &output_mutex;
+	qargs.static_args.ofh = ofh;
 
 	run_threads(nthreads, process_image, get_image, NULL, &qargs, 0);
 }
@@ -216,8 +219,10 @@ int main(int argc, char *argv[])
 {
 	int c;
 	char *infile = NULL;
+	char *outfile = NULL;
 	char *geomfile = NULL;
 	FILE *fh;
+	FILE *ofh;
 	char *prefix = NULL;
 	int nthreads = 1;
 	int config_basename = 0;
@@ -234,6 +239,7 @@ int main(int argc, char *argv[])
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
+		{"output",             1, NULL,               'o'},
 		{"geometry",           1, NULL,               'g'},
 		{"prefix",             1, NULL,               'x'},
 		{"basename",           0, &config_basename,    1},
@@ -249,7 +255,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:g:x:j:",
+	while ((c = getopt_long(argc, argv, "hi:g:x:j:o:",
 	                        longopts, NULL)) != -1)
 	{
 
@@ -260,6 +266,10 @@ int main(int argc, char *argv[])
 
 		case 'i' :
 			infile = strdup(optarg);
+			break;
+
+		case 'o' :
+			outfile = strdup(optarg);
 			break;
 
 		case 'g' :
@@ -297,6 +307,20 @@ int main(int argc, char *argv[])
 	}
 	free(infile);
 
+	if ( outfile == NULL ) {
+		outfile = strdup("-");
+	}
+	if ( strcmp(outfile, "-") == 0 ) {
+		ofh = stdout;
+	} else {
+		ofh = fopen(outfile, "w");
+	}
+	if ( ofh == NULL ) {
+		ERROR("Failed to open output file '%s'\n", outfile);
+		return 1;
+	}
+	free(outfile);
+
 	if ( prefix == NULL ) {
 		prefix = strdup("");
 	} else {
@@ -315,7 +339,7 @@ int main(int argc, char *argv[])
 	rewind(fh);
 	integrate_all(nthreads, det, fh, config_basename, prefix,
 	              config_cmfilter, config_polar, config_satcorr, config_sa,
-	              config_closer, config_sanity);
+	              config_closer, config_sanity, ofh);
 
 	fclose(fh);
 	free(prefix);
