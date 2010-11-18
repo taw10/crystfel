@@ -37,8 +37,8 @@
 #include "beam-parameters.h"
 
 
-/* Number of iterations of NLSq to do for each image per macrocycle. */
-#define NUM_CYCLES (1)
+/* Maximum number of iterations of NLSq to do for each image per macrocycle. */
+#define MAX_CYCLES (100)
 
 /* Refineable parameters */
 enum {
@@ -256,7 +256,7 @@ static void refine_image(int mytask, void *tasks)
 	struct hdfile *hdfile;
 	struct cpeak *spots;
 	int n, i;
-	double dev;
+	double dev, last_dev;
 
 	hdfile = hdfile_open(image->filename);
 	if ( hdfile == NULL ) {
@@ -275,10 +275,14 @@ static void refine_image(int mytask, void *tasks)
 	}
 
 	spots = find_intersections(image, image->indexed_cell, &n, 0);
-	for ( i=0; i<NUM_CYCLES; i++ ) {
+	dev = +INFINITY;
+	i = 0;
+	do {
+		last_dev = dev;
 		dev = iterate(image, pargs->i_full, pargs->sym, spots, n);
 		STATUS("Iteration %2i: mean dev = %5.2f\n", i, dev);
-	}
+		i++;
+	} while ( (fabs(last_dev - dev) > 1.0) || (i == MAX_CYCLES) );
 	mean_partial_dev(image, spots, n, pargs->sym,
 	                 pargs->i_full, pargs->graph);
 
