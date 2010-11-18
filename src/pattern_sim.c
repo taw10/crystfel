@@ -203,6 +203,7 @@ int main(int argc, char *argv[])
 	int done = 0;
 	UnitCell *input_cell;
 	struct quaternion orientation;
+	int gpu_dev = -1;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -223,6 +224,7 @@ int main(int argc, char *argv[])
 		{"geometry",           1, NULL,               'g'},
 		{"beam",               1, NULL,               'b'},
 		{"really-random",      0, &config_random,      1},
+		{"gpu-dev",            1, NULL,                2},
 		{0, 0, NULL, 0}
 	};
 
@@ -269,6 +271,10 @@ int main(int argc, char *argv[])
 
 		case 'b' :
 			beamfile = strdup(optarg);
+			break;
+
+		case 2 :
+			gpu_dev = atoi(optarg);
 			break;
 
 		case 0 :
@@ -446,7 +452,7 @@ int main(int argc, char *argv[])
 		if ( config_gpu ) {
 			if ( gctx == NULL ) {
 				gctx = setup_gpu(config_nosfac, &image,
-				                 intensities);
+				                 intensities, gpu_dev);
 			}
 			get_diffraction_gpu(gctx, &image, na, nb, nc, cell);
 		} else {

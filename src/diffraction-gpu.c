@@ -330,7 +330,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 /* Setup the OpenCL stuff, create buffers, load the structure factor table */
 struct gpu_context *setup_gpu(int no_sfac, struct image *image,
-                              const double *intensities)
+                              const double *intensities, int dev_num)
 {
 	struct gpu_context *gctx;
 	cl_uint nplat;
@@ -343,7 +343,7 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	size_t maxwgsize;
 	int i;
 
-	STATUS("Setting up GPU..."); fflush(stderr);
+	STATUS("Setting up GPU...\n");
 
 	err = clGetPlatformIDs(8, platforms, &nplat);
 	if ( err != CL_SUCCESS ) {
@@ -367,7 +367,7 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 		return NULL;
 	}
 
-	dev = get_first_dev(gctx->ctx);
+	dev = get_cl_dev(gctx->ctx, dev_num);
 
 	gctx->cq = clCreateCommandQueue(gctx->ctx, dev, 0, &err);
 	if ( err != CL_SUCCESS ) {
@@ -430,8 +430,6 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 		free(gctx);
 		return NULL;
 	}
-
-	STATUS("done\n");
 
 	gctx->max_sinc_lut = 0;
 	gctx->sinc_lut_ptrs = NULL;

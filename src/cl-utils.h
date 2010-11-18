@@ -18,7 +18,7 @@
 
 
 extern const char *clError(cl_int err);
-extern cl_device_id get_first_dev(cl_context ctx);
+extern cl_device_id get_cl_dev(cl_context ctx, int n);
 extern cl_program load_program(const char *filename, cl_context ctx,
                         cl_device_id dev, cl_int *err);
 

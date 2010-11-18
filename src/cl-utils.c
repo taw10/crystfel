@@ -48,18 +48,87 @@ const char *clError(cl_int err)
 }
 
 
-cl_device_id get_first_dev(cl_context ctx)
+static char *get_device_string(cl_device_id dev, cl_device_info info)
 {
-	cl_device_id dev;
-	cl_int r;
+	int r;
+	size_t size;
+	char *val;
 
-	r = clGetContextInfo(ctx, CL_CONTEXT_DEVICES, sizeof(dev), &dev, NULL);
+	r = clGetDeviceInfo(dev, info, 0, NULL, &size);
+	if ( r != CL_SUCCESS ) {
+		ERROR("Couldn't get device vendor size: %s\n",
+		      clError(r));
+		return NULL;
+	}
+	val = malloc(size);
+	r = clGetDeviceInfo(dev, info, size, val, NULL);
+	if ( r != CL_SUCCESS ) {
+		ERROR("Couldn't get dev vendor: %s\n", clError(r));
+		return NULL;
+	}
+
+	return val;
+}
+
+
+cl_device_id get_cl_dev(cl_context ctx, int n)
+{
+	cl_device_id *dev;
+	cl_int r;
+	size_t size;
+	int i, num_devs;
+
+	/* Get the required size of the array */
+	r = clGetContextInfo(ctx, CL_CONTEXT_DEVICES, 0, NULL, &size);
+	if ( r != CL_SUCCESS ) {
+		ERROR("Couldn't get array size for devices: %s\n", clError(r));
+		return 0;
+	}
+
+	dev = malloc(size);
+	r = clGetContextInfo(ctx, CL_CONTEXT_DEVICES, size, dev, NULL);
 	if ( r != CL_SUCCESS ) {
 		ERROR("Couldn't get device: %s\n", clError(r));
 		return 0;
 	}
+	num_devs = size/sizeof(cl_device_id);
 
-	return dev;
+	if ( n >= num_devs ) {
+		ERROR("Device ID out of range\n");
+		return 0;
+	}
+
+	if ( n < 0 ) {
+
+		STATUS("Available devices:\n");
+		for ( i=0; i<num_devs; i++ ) {
+
+			char *vendor;
+			char *name;
+
+			vendor = get_device_string(dev[i], CL_DEVICE_VENDOR);
+			name = get_device_string(dev[i], CL_DEVICE_NAME);
+
+			STATUS("Device %i: %s %s\n", i, vendor, name);
+
+		}
+		n = 0;
+
+		STATUS("Using device 0.  Use --gpu-dev to choose another.\n");
+
+	} else {
+
+		char *vendor;
+		char *name;
+
+		vendor = get_device_string(dev[n], CL_DEVICE_VENDOR);
+		name = get_device_string(dev[n], CL_DEVICE_NAME);
+
+		STATUS("Using device %i: %s %s\n", n, vendor, name);
+
+	}
+
+	return dev[n];
 }
 
 
