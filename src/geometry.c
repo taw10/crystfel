@@ -35,6 +35,8 @@ static signed int locate_peak(double x, double y, double z, double k,
 	signed int found = -1;
 	const double den = k + z;
 
+	*xdap = -1;  *ydap = -1;
+
 	for ( p=0; p<det->n_panels; p++ ) {
 
 		double xd, yd, cl;
