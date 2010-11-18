@@ -104,7 +104,7 @@ static void apply_shift(struct image *image, int k, double shift)
 		break;
 
 	default :
-		ERROR("No gradient defined for parameter %i\n", k);
+		ERROR("No shift defined for parameter %i\n", k);
 		abort();
 
 	}
