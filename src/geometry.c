@@ -76,15 +76,23 @@ static signed int locate_peak(double x, double y, double z, double k,
 
 
 static double excitation_error(double xl, double yl, double zl,
-                               double ds, double k)
+                               double ds, double k, double divergence)
 {
 	double tt, al;
 	double r;
+	double delta;
 
 	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+k);
 	al = M_PI_2 - asin(-zl/ds);
 
 	r = ( ds * sin(al) / sin(tt) ) - k;
+
+	delta = sqrt(2.0 * pow(ds, 2.0) * (1-cos(divergence)));
+	if ( divergence > 0.0 ) {
+		r += delta;
+	} else {
+		r -= delta;
+	}
 
 	return r;
 }
@@ -99,14 +107,17 @@ static double partiality(double r1, double r2, double r)
 	q1 = (r1 + r)/(2.0*r);
 	q2 = (r2 + r)/(2.0*r);
 
+	/* Clamp */
 	if ( q1 > 1.0 ) q1 = 1.0;
 	if ( q1 < 0.0 ) q1 = 0.0;
 	if ( q2 > 1.0 ) q2 = 1.0;
 	if ( q2 < 0.0 ) q2 = 0.0;
 
+	/* Convert to partiality */
 	p1 = 3.0*pow(q1,2.0) - 2.0*pow(q1,3.0);
 	p2 = 3.0*pow(q2,2.0) - 2.0*pow(q2,3.0);
 
+	/* Input values may have been backwards */
 	p = fabs(p2 - p1);
 
 	return p;
@@ -182,8 +193,8 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 		if ( ds > mres ) continue;  /* Outside resolution range */
 
 		/* Calculate excitation errors */
-		rlow = excitation_error(xl, yl, zl, ds, klow);
-		rhigh = excitation_error(xl, yl, zl, ds, khigh);
+		rlow = excitation_error(xl, yl, zl, ds, klow, -divergence);
+		rhigh = excitation_error(xl, yl, zl, ds, khigh, +divergence);
 
 		/* Is the reciprocal lattice point close to either extreme of
 		 * the sphere, maybe just outside the "Ewald volume"? */
