@@ -237,10 +237,8 @@ static double iterate(struct image *image, double *i_full, const char *sym,
 	gsl_linalg_HH_solve(M, v, shifts);
 	for ( param=0; param<NUM_PARAMS; param++ ) {
 		double shift = gsl_vector_get(shifts, param);
-		STATUS("Shift=%e\n", shift);
 		apply_shift(image, param, shift);
 	}
-	STATUS("New OSF = %f\n", image->osf);
 
 	gsl_matrix_free(M);
 	gsl_vector_free(v);
