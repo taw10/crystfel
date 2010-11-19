@@ -148,7 +148,7 @@ static double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
 
 		get_asymm(hind, kind, lind, &ha, &ka, &la, sym);
 		I_full = lookup_intensity(i_full, ha, ka, la);
-		delta_I += I_partial - spots[h].p * I_full;
+		delta_I += fabs(I_partial - spots[h].p * I_full);
 
 		if ( graph != NULL ) {
 			fprintf(graph, "%3i %3i %3i %5.2f (at %5.2f,%5.2f)"
@@ -286,7 +286,7 @@ static void refine_image(int mytask, void *tasks)
 		dev = iterate(image, pargs->i_full, pargs->sym, &spots, &n);
 		STATUS("Iteration %2i: mean dev = %5.2f\n", i, dev);
 		i++;
-	} while ( (fabs(last_dev - dev) > 1.0) || (i == MAX_CYCLES) );
+	} while ( (fabs(last_dev - dev) > 1.0) && (i < MAX_CYCLES) );
 	mean_partial_dev(image, spots, n, pargs->sym,
 	                 pargs->i_full, pargs->graph);
 
