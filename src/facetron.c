@@ -164,18 +164,19 @@ static double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
 
 
 static double iterate(struct image *image, double *i_full, const char *sym,
-                      struct cpeak *spots, int n)
+                      struct cpeak **pspots, int *n)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
 	gsl_vector *shifts;
 	int h, param;
+	struct cpeak *spots = *pspots;
 
-	M = gsl_matrix_alloc(NUM_PARAMS, NUM_PARAMS);
-	v = gsl_vector_alloc(NUM_PARAMS);
+	M = gsl_matrix_calloc(NUM_PARAMS, NUM_PARAMS);
+	v = gsl_vector_calloc(NUM_PARAMS);
 
 	/* Construct the equations, one per reflection in this image */
-	for ( h=0; h<n; h++ ) {
+	for ( h=0; h<*n; h++ ) {
 
 		signed int hind, kind, lind;
 		signed int ha, ka, la;
@@ -241,9 +242,14 @@ static double iterate(struct image *image, double *i_full, const char *sym,
 	}
 	STATUS("New OSF = %f\n", image->osf);
 
+	gsl_matrix_free(M);
+	gsl_vector_free(v);
+	gsl_vector_free(shifts);
+
 	free(spots);
-	spots = find_intersections(image, image->indexed_cell, &n, 0);
-	return mean_partial_dev(image, spots, n, sym, i_full, NULL);
+	spots = find_intersections(image, image->indexed_cell, n, 0);
+	*pspots = spots;
+	return mean_partial_dev(image, spots, *n, sym, i_full, NULL);
 }
 
 
@@ -279,7 +285,7 @@ static void refine_image(int mytask, void *tasks)
 	i = 0;
 	do {
 		last_dev = dev;
-		dev = iterate(image, pargs->i_full, pargs->sym, spots, n);
+		dev = iterate(image, pargs->i_full, pargs->sym, &spots, &n);
 		STATUS("Iteration %2i: mean dev = %5.2f\n", i, dev);
 		i++;
 	} while ( (fabs(last_dev - dev) > 1.0) || (i == MAX_CYCLES) );
@@ -289,6 +295,7 @@ static void refine_image(int mytask, void *tasks)
 	free(image->data);
 	if ( image->flags != NULL ) free(image->flags);
 	hdfile_close(hdfile);
+	free(spots);
 
 	/* Muppet proofing */
 	image->data = NULL;
