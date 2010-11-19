@@ -43,6 +43,7 @@
 /* Refineable parameters */
 enum {
 	REF_SCALE,
+	REF_DIV,
 	NUM_PARAMS
 };
 
@@ -86,10 +87,20 @@ struct refine_args
 static double gradient(struct image *image, int k,
                        struct cpeak spot, double I_partial)
 {
+	double ds;
+	double nom, den;
+
+	ds = 2.0 * resolution(image->indexed_cell, spot.h, spot.k, spot.l);
+
 	switch ( k ) {
 
 	case REF_SCALE :
 		return I_partial;
+
+	case REF_DIV :
+		nom = sqrt(2.0) * ds * sin(image->div);
+		den = sqrt(1.0 - cos(image->div));
+		return nom/den;
 
 	}
 
@@ -105,6 +116,11 @@ static void apply_shift(struct image *image, int k, double shift)
 
 	case REF_SCALE :
 		image->osf += shift;
+		break;
+
+	case REF_DIV :
+		STATUS("Shifting div by %e\n", shift);
+		image->div += shift;
 		break;
 
 	default :
