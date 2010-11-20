@@ -64,7 +64,7 @@ calibrate_detector_LDADD = @LIBS@
 
 facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
                    image.c geometry.c reflections.c stream.c thread-pool.c \
-                   beam-parameters.c symmetry.c
+                   beam-parameters.c symmetry.c post-refinement.c
 facetron_LDADD = @LIBS@
 
 cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c render.c \
@@ -87,4 +87,4 @@ EXTRA_DIST = cell.h hdf5-file.h image.h  utils.h diffraction.h detector.h \
              render.h hdfsee.h dirax.h peaks.h index.h  filters.h \
              diffraction-gpu.h cl-utils.h symmetry.h \
              povray.h index-priv.h geometry.h templates.h render_hkl.h \
-             stream.h thread-pool.h beam-parameters.h
+             stream.h thread-pool.h beam-parameters.h post-refinement.h
