@@ -251,6 +251,7 @@ static void estimate_full(struct image *images, int n_total_patterns,
 	pthread_mutex_t list_lock = PTHREAD_MUTEX_INITIALIZER;
 
 	clear_items(obs);
+	memset(i_full, 0, LIST_SIZE*sizeof(double));
 
 	tasks = malloc(n_total_patterns * sizeof(struct integrate_args));
 	for ( i=0; i<n_total_patterns; i++ ) {
