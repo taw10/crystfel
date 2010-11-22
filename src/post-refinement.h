@@ -27,6 +27,7 @@
 enum {
 	REF_SCALE,
 	REF_DIV,
+	REF_R,
 	NUM_PARAMS
 };
 

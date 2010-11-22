@@ -46,6 +46,24 @@ static double partiality_gradient(double r, double profile_radius)
 }
 
 
+/* Returns dp/drad at "r" */
+static double partiality_rgradient(double r, double profile_radius)
+{
+	double q, dpdq, dqdrad;
+
+	/* Calculate degree of penetration */
+	q = (r + profile_radius)/(2.0*profile_radius);
+
+	/* dp/dq */
+	dpdq = 6.0*(q-pow(q, 2.0));
+
+	/* dq/drad */
+	dqdrad = 0.5 * (1.0 - r * pow(profile_radius, -2.0));
+
+	return dpdq * dqdrad;
+}
+
+
 /* Return the gradient of parameter 'k' given the current status of 'image'. */
 double gradient(struct image *image, int k,
                 struct cpeak spot, double I_partial, double r)
@@ -79,6 +97,15 @@ double gradient(struct image *image, int k,
 		}
 		return g;
 
+	case REF_R :
+		if ( spot.clamp1 == 0 ) {
+			g += partiality_rgradient(spot.r1, r);
+		}
+		if ( spot.clamp2 == 0 ) {
+			g += partiality_rgradient(spot.r2, r);
+		}
+		return g;
+
 	}
 
 	ERROR("No gradient defined for parameter %i\n", k);
@@ -98,6 +125,11 @@ void apply_shift(struct image *image, int k, double shift)
 	case REF_DIV :
 		STATUS("Shifting div by %e\n", shift);
 		image->div += shift;
+		break;
+
+	case REF_R :
+		STATUS("Shifting r by %e\n", shift);
+		image->profile_radius += shift;
 		break;
 
 	default :
