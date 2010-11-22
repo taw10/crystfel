@@ -66,6 +66,8 @@ struct cpeak
 	double r1;  /* First excitation error */
 	double r2;  /* Second excitation error */
 	double p;   /* Partiality */
+	int clamp1; /* Clamp status for r1 */
+	int clamp2; /* Clamp status for r2 */
 
 	/* Location in image */
 	int x;
@@ -102,6 +104,7 @@ struct image {
 	int                     f0_available;  /* 0 if f0 wasn't available
 	                                        * from the input. */
 	double                  osf;           /* Overall scaling factor */
+	double                  profile_radius; /* Radius of reflection */
 
 	int                     width;
 	int                     height;

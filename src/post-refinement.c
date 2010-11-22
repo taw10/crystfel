@@ -28,12 +28,33 @@
 #include "geometry.h"
 
 
+/* Returns dp/dr at "r" */
+static double partiality_gradient(double r, double profile_radius)
+{
+	double q, dpdq, dqdr;
+
+	/* Calculate degree of penetration */
+	q = (r + profile_radius)/(2.0*profile_radius);
+
+	/* dp/dq */
+	dpdq = 6.0*(q-pow(q, 2.0));
+
+	/* dq/dr */
+	dqdr = 1.0 / (2.0*profile_radius);
+
+	return dpdq * dqdr;
+}
+
+
 /* Return the gradient of parameter 'k' given the current status of 'image'. */
 double gradient(struct image *image, int k,
-                       struct cpeak spot, double I_partial)
+                struct cpeak spot, double I_partial, double r)
 {
 	double ds;
 	double nom, den;
+	double r1g = 0.0;
+	double r2g = 0.0;
+	double g = 0.0;
 
 	ds = 2.0 * resolution(image->indexed_cell, spot.h, spot.k, spot.l);
 
@@ -43,9 +64,20 @@ double gradient(struct image *image, int k,
 		return I_partial;
 
 	case REF_DIV :
-		nom = sqrt(2.0) * ds * sin(image->div);
-		den = sqrt(1.0 - cos(image->div));
-		return nom/den;
+		/* Calculate the gradient of r1 and r2 wrt divergence */
+		if ( spot.clamp1 == 0 ) {
+			nom = sqrt(2.0) * ds * sin(image->div/2.0);
+			den = sqrt(1.0 - cos(image->div/2.0));
+			r1g = nom/den;
+			g += r1g * partiality_gradient(spot.r1, r);
+		}
+		if ( spot.clamp2 == 0 ) {
+			nom = sqrt(2.0) * ds * sin(image->div/2.0);
+			den = sqrt(1.0 - cos(image->div/2.0));
+			r2g = nom/den;
+			g += r2g * partiality_gradient(spot.r2, r);
+		}
+		return g;
 
 	}
 
@@ -171,7 +203,7 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 		for ( k=0; k<NUM_PARAMS; k++ ) {
 
 			int g;
-			double v_c;
+			double v_c, gr;
 
 			for ( g=0; g<NUM_PARAMS; g++ ) {
 
@@ -179,16 +211,19 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 
 				M_curr = gsl_matrix_get(M, g, k);
 
-				M_c = gradient(image, g, spots[h], I_partial)
-				    * gradient(image, k, spots[h], I_partial);
+				M_c = gradient(image, g, spots[h], I_partial,
+				               image->profile_radius)
+				    * gradient(image, k, spots[h], I_partial,
+				               image->profile_radius);
 				M_c *= pow(I_full, 2.0);
 
 				gsl_matrix_set(M, g, k, M_curr + M_c);
 
 			}
 
-			v_c = delta_I * I_full * gradient(image, k, spots[h],
-			                                  I_partial);
+			gr = gradient(image, k, spots[h], I_partial,
+			              image->profile_radius);
+			v_c = delta_I * I_full * gr;
 			gsl_vector_set(v, k, v_c);
 
 		}

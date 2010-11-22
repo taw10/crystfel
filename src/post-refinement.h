@@ -30,11 +30,6 @@ enum {
 	NUM_PARAMS
 };
 
-
-/* Return the gradient of parameter 'k' given the current status of 'image'. */
-double gradient(struct image *image, int k, struct cpeak spot,
-                double I_partial);
-
 /* Apply the given shift to the 'k'th parameter of 'image'. */
 void apply_shift(struct image *image, int k, double shift);
 

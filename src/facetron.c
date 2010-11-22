@@ -467,6 +467,7 @@ int main(int argc, char *argv[])
 		images[i].det = det;
 		images[i].beam = beam;
 		images[i].osf = 1.0;
+		images[i].profile_radius = 0.005e9;
 
 		/* Muppet proofing */
 		images[i].data = NULL;

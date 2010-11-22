@@ -103,26 +103,17 @@ static double excitation_error(double xl, double yl, double zl,
 static double partiality(double r1, double r2, double r)
 {
 	double q1, q2;
-	double p, p1, p2;
+	double p1, p2;
 
 	/* Calculate degrees of penetration */
 	q1 = (r1 + r)/(2.0*r);
 	q2 = (r2 + r)/(2.0*r);
 
-	/* Clamp */
-	if ( q1 > 1.0 ) q1 = 1.0;
-	if ( q1 < 0.0 ) q1 = 0.0;
-	if ( q2 > 1.0 ) q2 = 1.0;
-	if ( q2 < 0.0 ) q2 = 0.0;
-
 	/* Convert to partiality */
 	p1 = 3.0*pow(q1,2.0) - 2.0*pow(q1,3.0);
 	p2 = 3.0*pow(q2,2.0) - 2.0*pow(q2,3.0);
 
-	/* Input values may have been backwards */
-	p = fabs(p2 - p1);
-
-	return p;
+	return p2 - p1;
 }
 
 
@@ -143,8 +134,6 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 	double klow, kcen, khigh;    /* Wavenumber */
 	/* Bounding sphere for the shape transform approximation */
 	const double profile_cutoff = 0.02e9;  /* 0.02 nm^-1 */
-	/* Actual radius of the profile */
-	const double profile_radius = 0.005e9;
 
 	cpeaks = malloc(sizeof(struct cpeak)*MAX_CPEAKS);
 	if ( cpeaks == NULL ) {
@@ -178,6 +167,8 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 		double xda, yda;        /* Position on detector */
 		int close, inside;
 		double part;            /* Partiality */
+		int clamp_low = 0;
+		int clamp_high = 0;
 
 		/* Ignore central beam */
 		if ( (h==0) && (k==0) && (l==0) ) continue;
@@ -216,21 +207,36 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 		/* If the "lower" Ewald sphere is a long way away, use the
 		 * position at which the Ewald sphere would just touch the
 		 * reflection. */
-		if ( rlow > profile_cutoff ) rlow = profile_cutoff;
-		if ( rlow < -profile_cutoff ) rlow = -profile_cutoff;
+		if ( rlow < -profile_cutoff ) {
+			rlow = -profile_cutoff;
+			clamp_low = -1;
+		}
+		if ( rlow > +profile_cutoff ) {
+			rlow = +profile_cutoff;
+			clamp_low = +1;
+		}
+		/* Likewise the "higher" Ewald sphere */
+		if ( rhigh < -profile_cutoff ) {
+			rhigh = -profile_cutoff;
+			clamp_high = -1;
+		}
+		if ( rhigh > +profile_cutoff ) {
+			rhigh = +profile_cutoff;
+			clamp_high = +1;
+		}
+		/* The six possible combinations of clamp_{low,high} (including
+		 * zero) correspond to the six situations in Table 3 of Rossmann
+		 * et al. (1979). */
 
-		/* As above, other side. */
-		if ( rhigh > profile_cutoff ) rhigh = profile_cutoff;
-		if ( rhigh < -profile_cutoff ) rhigh = -profile_cutoff;
+		/* Calculate partiality and reject if too small */
+		part = partiality(rlow, rhigh, image->profile_radius);
+		if ( part < 0.1 ) continue;
 
 		/* Locate peak on detector. */
 		p = locate_peak(xl, yl, zl, kcen, image->det, &xda, &yda);
 		if ( p == -1 ) continue;
 
-		part = partiality(rlow, rhigh, profile_radius);
-
-		if ( part < 0.1 ) continue;
-
+		/* Add peak to list */
 		cpeaks[np].h = h;
 		cpeaks[np].k = k;
 		cpeaks[np].l = l;
@@ -239,6 +245,8 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 		cpeaks[np].r1 = rlow;
 		cpeaks[np].r2 = rhigh;
 		cpeaks[np].p = part;
+		cpeaks[np].clamp1 = clamp_low;
+		cpeaks[np].clamp2 = clamp_high;
 		np++;
 
 		if ( output ) {
