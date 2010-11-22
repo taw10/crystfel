@@ -137,8 +137,6 @@ static int check_reflection(struct image *image, double mres, int output,
 	double divergence = image->div;
 	double lambda = image->lambda;
 	double klow, kcen, khigh;    /* Wavenumber */
-	/* Bounding sphere for the shape transform approximation */
-	const double profile_cutoff = 0.02e9;  /* 0.02 nm^-1 */
 
 	/* "low" gives the largest Ewald sphere,
 	 * "high" gives the smallest Ewald sphere. */
@@ -148,8 +146,8 @@ static int check_reflection(struct image *image, double mres, int output,
 
 	/* Get the coordinates of the reciprocal lattice point */
 	zl = h*asz + k*bsz + l*csz;
-	/* Throw out if it's "in front" */
-	if ( zl > profile_cutoff ) return 0;
+	/* Throw out if it's "in front".  A tiny bit "in front" is OK. */
+	if ( zl > image->profile_radius ) return 0;
 	xl = h*asx + k*bsx + l*csx;
 	yl = h*asy + k*bsy + l*csy;
 
@@ -164,8 +162,8 @@ static int check_reflection(struct image *image, double mres, int output,
 
 	/* Is the reciprocal lattice point close to either extreme of
 	 * the sphere, maybe just outside the "Ewald volume"? */
-	close = (fabs(rlow) < profile_cutoff)
-	     || (fabs(rhigh) < profile_cutoff);
+	close = (fabs(rlow) < image->profile_radius)
+	     || (fabs(rhigh) < image->profile_radius);
 
 	/* Is the reciprocal lattice point somewhere between the
 	 * extremes of the sphere, i.e. inside the "Ewald volume"? */
@@ -180,21 +178,21 @@ static int check_reflection(struct image *image, double mres, int output,
 	/* If the "lower" Ewald sphere is a long way away, use the
 	 * position at which the Ewald sphere would just touch the
 	 * reflection. */
-	if ( rlow < -profile_cutoff ) {
-		rlow = -profile_cutoff;
+	if ( rlow < -image->profile_radius ) {
+		rlow = -image->profile_radius;
 		clamp_low = -1;
 	}
-	if ( rlow > +profile_cutoff ) {
-		rlow = +profile_cutoff;
+	if ( rlow > +image->profile_radius ) {
+		rlow = +image->profile_radius;
 		clamp_low = +1;
 	}
 	/* Likewise the "higher" Ewald sphere */
-	if ( rhigh < -profile_cutoff ) {
-		rhigh = -profile_cutoff;
+	if ( rhigh < -image->profile_radius ) {
+		rhigh = -image->profile_radius;
 		clamp_high = -1;
 	}
-	if ( rhigh > +profile_cutoff ) {
-		rhigh = +profile_cutoff;
+	if ( rhigh > +image->profile_radius ) {
+		rhigh = +image->profile_radius;
 		clamp_high = +1;
 	}
 	/* The six possible combinations of clamp_{low,high} (including
