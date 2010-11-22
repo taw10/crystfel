@@ -147,7 +147,6 @@ static void apply_cell_shift(UnitCell *cell, int k, double shift)
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
-	double a, b, c, al, be, ga;
 
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
@@ -170,6 +169,7 @@ static void apply_cell_shift(UnitCell *cell, int k, double shift)
 	                          csx, csy, csz);
 
 	if ( k == REF_CSZ ) {
+		double a, b, c, al, be, ga;
 		cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
 		STATUS("New cell: %5.2f %5.2f %5.2f nm %5.2f %5.2f %5.2f deg\n",
 		       a/1.0e-9, b/1.0e-9, c/1.0e-9,
