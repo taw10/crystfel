@@ -117,8 +117,122 @@ static double partiality(double r1, double r2, double r)
 }
 
 
+static int check_reflection(struct image *image, double mres, int output,
+                            struct cpeak *cpeaks, int np,
+                            signed int h, signed int k, signed int l,
+                            double asx, double asy, double asz,
+                            double bsx, double bsy, double bsz,
+                            double csx, double csy, double csz)
+{
+	double xl, yl, zl;
+	double ds, ds_sq;
+	double rlow, rhigh;     /* "Excitation error" */
+	signed int p;           /* Panel number */
+	double xda, yda;        /* Position on detector */
+	int close, inside;
+	double part;            /* Partiality */
+	int clamp_low = 0;
+	int clamp_high = 0;
+	double bandwidth = image->bw;
+	double divergence = image->div;
+	double lambda = image->lambda;
+	double klow, kcen, khigh;    /* Wavenumber */
+	/* Bounding sphere for the shape transform approximation */
+	const double profile_cutoff = 0.02e9;  /* 0.02 nm^-1 */
+
+	/* "low" gives the largest Ewald sphere,
+	 * "high" gives the smallest Ewald sphere. */
+	klow = 1.0/(lambda - lambda*bandwidth/2.0);
+	kcen = 1.0/lambda;
+	khigh = 1.0/(lambda + lambda*bandwidth/2.0);
+
+	/* Get the coordinates of the reciprocal lattice point */
+	zl = h*asz + k*bsz + l*csz;
+	/* Throw out if it's "in front" */
+	if ( zl > profile_cutoff ) return 0;
+	xl = h*asx + k*bsx + l*csx;
+	yl = h*asy + k*bsy + l*csy;
+
+	/* Calculate reciprocal lattice point modulus (and square) */
+	ds_sq = modulus_squared(xl, yl, zl);  /* d*^2 */
+	ds = sqrt(ds_sq);
+	if ( ds > mres ) return 0;  /* Outside resolution range */
+
+	/* Calculate excitation errors */
+	rlow = excitation_error(xl, yl, zl, ds, klow, -divergence);
+	rhigh = excitation_error(xl, yl, zl, ds, khigh, +divergence);
+
+	/* Is the reciprocal lattice point close to either extreme of
+	 * the sphere, maybe just outside the "Ewald volume"? */
+	close = (fabs(rlow) < profile_cutoff)
+	     || (fabs(rhigh) < profile_cutoff);
+
+	/* Is the reciprocal lattice point somewhere between the
+	 * extremes of the sphere, i.e. inside the "Ewald volume"? */
+	inside = signbit(rlow) ^ signbit(rhigh);
+
+	/* Can't be both inside and close */
+	if ( inside ) close = 0;
+
+	/* Neither?  Skip it. */
+	if ( !(close || inside) ) return 0;
+
+	/* If the "lower" Ewald sphere is a long way away, use the
+	 * position at which the Ewald sphere would just touch the
+	 * reflection. */
+	if ( rlow < -profile_cutoff ) {
+		rlow = -profile_cutoff;
+		clamp_low = -1;
+	}
+	if ( rlow > +profile_cutoff ) {
+		rlow = +profile_cutoff;
+		clamp_low = +1;
+	}
+	/* Likewise the "higher" Ewald sphere */
+	if ( rhigh < -profile_cutoff ) {
+		rhigh = -profile_cutoff;
+		clamp_high = -1;
+	}
+	if ( rhigh > +profile_cutoff ) {
+		rhigh = +profile_cutoff;
+		clamp_high = +1;
+	}
+	/* The six possible combinations of clamp_{low,high} (including
+	 * zero) correspond to the six situations in Table 3 of Rossmann
+	 * et al. (1979). */
+
+	/* Calculate partiality and reject if too small */
+	part = partiality(rlow, rhigh, image->profile_radius);
+	if ( part < 0.1 ) return 0;
+
+	/* Locate peak on detector. */
+	p = locate_peak(xl, yl, zl, kcen, image->det, &xda, &yda);
+	if ( p == -1 ) return 0;
+
+	/* Add peak to list */
+	cpeaks[np].h = h;
+	cpeaks[np].k = k;
+	cpeaks[np].l = l;
+	cpeaks[np].x = xda;
+	cpeaks[np].y = yda;
+	cpeaks[np].r1 = rlow;
+	cpeaks[np].r2 = rhigh;
+	cpeaks[np].p = part;
+	cpeaks[np].clamp1 = clamp_low;
+	cpeaks[np].clamp2 = clamp_high;
+	np++;
+
+	if ( output ) {
+		printf("%3i %3i %3i %6f (at %5.2f,%5.2f) %5.2f\n",
+		       h, k, l, 0.0, xda, yda, part);
+	}
+
+	return 1;
+}
+
+
 struct cpeak *find_intersections(struct image *image, UnitCell *cell,
-                                 int *n, int output)
+                                 int *n, int output, struct cpeak *t)
 {
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
@@ -128,12 +242,6 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 	int hmax, kmax, lmax;
 	double mres;
 	signed int h, k, l;
-	double bandwidth = image->bw;
-	double divergence = image->div;
-	double lambda = image->lambda;
-	double klow, kcen, khigh;    /* Wavenumber */
-	/* Bounding sphere for the shape transform approximation */
-	const double profile_cutoff = 0.02e9;  /* 0.02 nm^-1 */
 
 	cpeaks = malloc(sizeof(struct cpeak)*MAX_CPEAKS);
 	if ( cpeaks == NULL ) {
@@ -150,112 +258,14 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 	kmax = mres / modulus(bsx, bsy, bsz);
 	lmax = mres / modulus(csx, csy, csz);
 
-	/* "low" gives the largest Ewald sphere,
-	 * "high" gives the smallest Ewald sphere. */
-	klow = 1.0/(lambda - lambda*bandwidth/2.0);
-	kcen = 1.0/lambda;
-	khigh = 1.0/(lambda + lambda*bandwidth/2.0);
-
 	for ( h=-hmax; h<hmax; h++ ) {
 	for ( k=-kmax; k<kmax; k++ ) {
 	for ( l=-lmax; l<lmax; l++ ) {
-
-		double xl, yl, zl;
-		double ds, ds_sq;
-		double rlow, rhigh;     /* "Excitation error" */
-		signed int p;           /* Panel number */
-		double xda, yda;        /* Position on detector */
-		int close, inside;
-		double part;            /* Partiality */
-		int clamp_low = 0;
-		int clamp_high = 0;
-
 		/* Ignore central beam */
 		if ( (h==0) && (k==0) && (l==0) ) continue;
-
-		/* Get the coordinates of the reciprocal lattice point */
-		zl = h*asz + k*bsz + l*csz;
-		/* Throw out if it's "in front" */
-		if ( zl > profile_cutoff ) continue;
-		xl = h*asx + k*bsx + l*csx;
-		yl = h*asy + k*bsy + l*csy;
-
-		/* Calculate reciprocal lattice point modulus (and square) */
-		ds_sq = modulus_squared(xl, yl, zl);  /* d*^2 */
-		ds = sqrt(ds_sq);
-		if ( ds > mres ) continue;  /* Outside resolution range */
-
-		/* Calculate excitation errors */
-		rlow = excitation_error(xl, yl, zl, ds, klow, -divergence);
-		rhigh = excitation_error(xl, yl, zl, ds, khigh, +divergence);
-
-		/* Is the reciprocal lattice point close to either extreme of
-		 * the sphere, maybe just outside the "Ewald volume"? */
-		close = (fabs(rlow) < profile_cutoff)
-		     || (fabs(rhigh) < profile_cutoff);
-
-		/* Is the reciprocal lattice point somewhere between the
-		 * extremes of the sphere, i.e. inside the "Ewald volume"? */
-		inside = signbit(rlow) ^ signbit(rhigh);
-
-		/* Can't be both inside and close */
-		if ( inside ) close = 0;
-
-		/* Neither?  Skip it. */
-		if ( !(close || inside) ) continue;
-
-		/* If the "lower" Ewald sphere is a long way away, use the
-		 * position at which the Ewald sphere would just touch the
-		 * reflection. */
-		if ( rlow < -profile_cutoff ) {
-			rlow = -profile_cutoff;
-			clamp_low = -1;
-		}
-		if ( rlow > +profile_cutoff ) {
-			rlow = +profile_cutoff;
-			clamp_low = +1;
-		}
-		/* Likewise the "higher" Ewald sphere */
-		if ( rhigh < -profile_cutoff ) {
-			rhigh = -profile_cutoff;
-			clamp_high = -1;
-		}
-		if ( rhigh > +profile_cutoff ) {
-			rhigh = +profile_cutoff;
-			clamp_high = +1;
-		}
-		/* The six possible combinations of clamp_{low,high} (including
-		 * zero) correspond to the six situations in Table 3 of Rossmann
-		 * et al. (1979). */
-
-		/* Calculate partiality and reject if too small */
-		part = partiality(rlow, rhigh, image->profile_radius);
-		if ( part < 0.1 ) continue;
-
-		/* Locate peak on detector. */
-		p = locate_peak(xl, yl, zl, kcen, image->det, &xda, &yda);
-		if ( p == -1 ) continue;
-
-		/* Add peak to list */
-		cpeaks[np].h = h;
-		cpeaks[np].k = k;
-		cpeaks[np].l = l;
-		cpeaks[np].x = xda;
-		cpeaks[np].y = yda;
-		cpeaks[np].r1 = rlow;
-		cpeaks[np].r2 = rhigh;
-		cpeaks[np].p = part;
-		cpeaks[np].clamp1 = clamp_low;
-		cpeaks[np].clamp2 = clamp_high;
-		np++;
-
-		if ( output ) {
-			printf("%3i %3i %3i %6f (at %5.2f,%5.2f) %5.2f\n",
-			       h, k, l, 0.0, xda, yda, part);
-		}
-
+		np += check_reflection(image, mres, output, cpeaks, np, h, k, l,
+		                       asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
 		if ( np == MAX_CPEAKS ) goto out;
-
 	}
 	}
 	}

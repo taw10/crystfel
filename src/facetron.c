@@ -101,7 +101,7 @@ static void refine_image(int mytask, void *tasks)
 		return;
 	}
 
-	spots = find_intersections(image, image->indexed_cell, &n, 0);
+	spots = find_intersections(image, image->indexed_cell, &n, 0, NULL);
 	dev = +INFINITY;
 	i = 0;
 	do {
@@ -162,7 +162,7 @@ static void integrate_image(int mytask, void *tasks)
 	}
 
 	/* Figure out which spots should appear in this pattern */
-	spots = find_intersections(image, image->indexed_cell, &n, 0);
+	spots = find_intersections(image, image->indexed_cell, &n, 0, NULL);
 
 	/* For each reflection, estimate the partiality */
 	for ( j=0; j<n; j++ ) {

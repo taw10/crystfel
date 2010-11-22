@@ -18,7 +18,7 @@
 #endif
 
 extern struct cpeak *find_intersections(struct image *image, UnitCell *cell,
-                                        int *n, int output);
+                                        int *n, int output, struct cpeak *t);
 
 extern double integrate_all(struct image *image, struct cpeak *cpeaks, int n);
 

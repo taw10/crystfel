@@ -165,6 +165,7 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 	gsl_vector *shifts;
 	int h, param;
 	struct cpeak *spots = *pspots;
+	struct cpeak *spots_old;
 
 	M = gsl_matrix_calloc(NUM_PARAMS, NUM_PARAMS);
 	v = gsl_vector_calloc(NUM_PARAMS);
@@ -241,8 +242,9 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 	gsl_vector_free(v);
 	gsl_vector_free(shifts);
 
-	free(spots);
-	spots = find_intersections(image, image->indexed_cell, n, 0);
+	spots_old = spots;
+	spots = find_intersections(image, image->indexed_cell, n, 0, spots_old);
+	free(spots_old);
 	*pspots = spots;
 	return mean_partial_dev(image, spots, *n, sym, i_full, NULL);
 }
