@@ -230,7 +230,7 @@ static int check_reflection(struct image *image, double mres, int output,
 
 
 struct cpeak *find_intersections(struct image *image, UnitCell *cell,
-                                 int *n, int output, struct cpeak *t)
+                                 int *n, int output)
 {
 	double asx, asy, asz;
 	double bsx, bsy, bsz;

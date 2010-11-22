@@ -172,7 +172,7 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 
 		cell_rot = rotate_cell(cell, omega, phi, 0.0);
 
-		cpeaks = find_intersections(&image, cell_rot, &n, 0, NULL);
+		cpeaks = find_intersections(&image, cell_rot, &n, 0);
 		if ( cpeaks == NULL ) {
 			ERROR("Template calculation failed.\n");
 			return NULL;
