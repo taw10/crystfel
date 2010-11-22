@@ -71,6 +71,7 @@ struct refine_args
 	double *i_full;
 	struct image *image;
 	FILE *graph;
+	FILE *pgraph;
 };
 
 
@@ -112,6 +113,9 @@ static void refine_image(int mytask, void *tasks)
 	} while ( (fabs(last_dev - dev) > 1.0) && (i < MAX_CYCLES) );
 	mean_partial_dev(image, spots, n, pargs->sym,
 	                 pargs->i_full, pargs->graph);
+	if ( pargs->pgraph ) {
+		fprintf(pargs->pgraph, "%5i %5.2f\n", mytask, dev);
+	}
 
 	free(image->data);
 	if ( image->flags != NULL ) free(image->flags);
@@ -218,7 +222,7 @@ static void integrate_image(int mytask, void *tasks)
 static void refine_all(struct image *images, int n_total_patterns,
                        struct detector *det, const char *sym,
                        ReflItemList *obs, double *i_full, int nthreads,
-                       FILE *graph)
+                       FILE *graph, FILE *pgraph)
 {
 	struct refine_args *tasks;
 	int i;
@@ -231,6 +235,7 @@ static void refine_all(struct image *images, int n_total_patterns,
 		tasks[i].i_full = i_full;
 		tasks[i].image = &images[i];
 		tasks[i].graph = graph;
+		tasks[i].pgraph = pgraph;
 
 	}
 
@@ -490,21 +495,29 @@ int main(int argc, char *argv[])
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
 
-		FILE *fh;
+		FILE *fhg;
+		FILE *fhp;
 		char filename[1024];
 
 		STATUS("Post refinement iteration %i of %i\n", i+1, n_iter);
 
-		snprintf(filename, 1023, "iteration-%i.dat", i+1);
-		fh = fopen(filename, "w");
-		if ( fh == NULL ) {
+		snprintf(filename, 1023, "p-iteration-%i.dat", i+1);
+		fhg = fopen(filename, "w");
+		if ( fhg == NULL ) {
+			ERROR("Failed to open '%s'\n", filename);
+			/* Nothing will be written later */
+		}
+
+		snprintf(filename, 1023, "g-iteration-%i.dat", i+1);
+		fhp = fopen(filename, "w");
+		if ( fhp == NULL ) {
 			ERROR("Failed to open '%s'\n", filename);
 			/* Nothing will be written later */
 		}
 
 		/* Refine the geometry of all patterns to get the best fit */
 		refine_all(images, n_total_patterns, det, sym, obs, i_full,
-		           nthreads, fh);
+		           nthreads, fhg, fhp);
 
 		/* Re-estimate all the full intensities */
 		estimate_full(images, n_total_patterns, det, sym, obs, i_full,
