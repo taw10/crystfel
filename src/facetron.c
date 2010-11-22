@@ -523,7 +523,8 @@ int main(int argc, char *argv[])
 		estimate_full(images, n_total_patterns, det, sym, obs, i_full,
 		              cts, nthreads);
 
-		fclose(fh);
+		fclose(fhg);
+		fclose(fhp);
 	}
 
 	/* Output results */
