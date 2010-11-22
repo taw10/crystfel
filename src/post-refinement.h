@@ -28,6 +28,15 @@ enum {
 	REF_SCALE,
 	REF_DIV,
 	REF_R,
+	REF_ASX,
+	REF_BSX,
+	REF_CSX,
+	REF_ASY,
+	REF_BSY,
+	REF_CSY,
+	REF_ASZ,
+	REF_BSZ,
+	REF_CSZ,
 	NUM_PARAMS
 };
 

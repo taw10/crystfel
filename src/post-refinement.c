@@ -25,6 +25,7 @@
 #include "peaks.h"
 #include "symmetry.h"
 #include "geometry.h"
+#include "cell.h"
 
 
 /* Returns dp/dr at "r" */
@@ -67,34 +68,43 @@ static double partiality_rgradient(double r, double profile_radius)
 double gradient(struct image *image, int k,
                 struct cpeak spot, double I_partial, double r)
 {
-	double ds;
+	double ds, tt, azi;
 	double nom, den;
-	double r1g = 0.0;
-	double r2g = 0.0;
 	double g = 0.0;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	double xl, yl, zl;
+	cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
+	                                         &bsx, &bsy, &bsz,
+	                                         &csx, &csy, &csz);
+	xl = spot.h*asx + spot.k*bsx + spot.l*csx;
+	yl = spot.h*asy + spot.k*bsy + spot.l*csy;
+	zl = spot.h*asz + spot.k*bsz + spot.l*csz;
 
 	ds = 2.0 * resolution(image->indexed_cell, spot.h, spot.k, spot.l);
+	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+k);
+	azi = angle_between(1.0, 0.0, 0.0, xl, yl, 0.0);
 
+	/* Calculate the gradient of partiality wrt excitation error. */
+	if ( spot.clamp1 == 0 ) {
+		g += partiality_gradient(spot.r1, r);
+	}
+	if ( spot.clamp2 == 0 ) {
+		g += partiality_gradient(spot.r2, r);
+	}
+
+	/* For many gradients, just multiply the above number by the gradient
+	 * of excitation error wrt whatever. */
 	switch ( k ) {
 
 	case REF_SCALE :
 		return I_partial;
 
 	case REF_DIV :
-		/* Calculate the gradient of r1 and r2 wrt divergence */
-		if ( spot.clamp1 == 0 ) {
-			nom = sqrt(2.0) * ds * sin(image->div/2.0);
-			den = sqrt(1.0 - cos(image->div/2.0));
-			r1g = nom/den;
-			g += r1g * partiality_gradient(spot.r1, r);
-		}
-		if ( spot.clamp2 == 0 ) {
-			nom = sqrt(2.0) * ds * sin(image->div/2.0);
-			den = sqrt(1.0 - cos(image->div/2.0));
-			r2g = nom/den;
-			g += r2g * partiality_gradient(spot.r2, r);
-		}
-		return g;
+		nom = sqrt(2.0) * ds * sin(image->div/2.0);
+		den = sqrt(1.0 - cos(image->div/2.0));
+		return (nom/den) * g;
 
 	case REF_R :
 		if ( spot.clamp1 == 0 ) {
@@ -105,10 +115,66 @@ double gradient(struct image *image, int k,
 		}
 		return g;
 
+	/* Cell parameters and orientation */
+	case REF_ASX :
+		return spot.h * pow(sin(tt), -1.0) * cos(azi) * g;
+	case REF_BSX :
+		return spot.k * pow(sin(tt), -1.0) * cos(azi) * g;
+	case REF_CSX :
+		return spot.l * pow(sin(tt), -1.0) * cos(azi) * g;
+	case REF_ASY :
+		return spot.h * pow(sin(tt), -1.0) * sin(azi) * g;
+	case REF_BSY :
+		return spot.k * pow(sin(tt), -1.0) * sin(azi) * g;
+	case REF_CSY :
+		return spot.l * pow(sin(tt), -1.0) * sin(azi) * g;
+	case REF_ASZ :
+		return spot.h * pow(cos(tt), -1.0) * g;
+	case REF_BSZ :
+		return spot.k * pow(cos(tt), -1.0) * g;
+	case REF_CSZ :
+		return spot.l * pow(cos(tt), -1.0) * g;
+
 	}
 
 	ERROR("No gradient defined for parameter %i\n", k);
 	abort();
+}
+
+
+static void apply_cell_shift(UnitCell *cell, int k, double shift)
+{
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	double a, b, c, al, be, ga;
+
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+	switch ( k )
+	{
+		case REF_ASX :  asx += shift;  break;
+		case REF_ASY :  asy += shift;  break;
+		case REF_ASZ :  asz += shift;  break;
+		case REF_BSX :  bsx += shift;  break;
+		case REF_BSY :  bsy += shift;  break;
+		case REF_BSZ :  bsz += shift;  break;
+		case REF_CSX :  csx += shift;  break;
+		case REF_CSY :  csy += shift;  break;
+		case REF_CSZ :  csz += shift;  break;
+	}
+
+	cell_set_reciprocal(cell, asx, asy, asz,
+	                          bsx, bsy, bsz,
+	                          csx, csy, csz);
+
+	if ( k == REF_CSZ ) {
+		cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+		STATUS("New cell: %5.2f %5.2f %5.2f nm %5.2f %5.2f %5.2f deg\n",
+		       a/1.0e-9, b/1.0e-9, c/1.0e-9,
+		       rad2deg(al), rad2deg(be), rad2deg(ga));
+	}
 }
 
 
@@ -129,6 +195,18 @@ void apply_shift(struct image *image, int k, double shift)
 	case REF_R :
 		STATUS("Shifting r by %e\n", shift);
 		image->profile_radius += shift;
+		break;
+
+	case REF_ASX :
+	case REF_ASY :
+	case REF_ASZ :
+	case REF_BSX :
+	case REF_BSY :
+	case REF_BSZ :
+	case REF_CSX :
+	case REF_CSY :
+	case REF_CSZ :
+		apply_cell_shift(image->indexed_cell, k, shift);
 		break;
 
 	default :
