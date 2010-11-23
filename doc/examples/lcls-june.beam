@@ -13,7 +13,7 @@ beam/photon_energy = 2000.0
 beam/bandwidth = 0.01
 
 ; Beam divergence in radians
-beam/divergence = 0.001
+beam/divergence = 0.0087
 
 
 ; Detector's quantum efficiency
