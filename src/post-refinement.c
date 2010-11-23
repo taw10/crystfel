@@ -75,6 +75,7 @@ double gradient(struct image *image, int k,
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	double xl, yl, zl;
+
 	cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
 	                                         &bsx, &bsy, &bsz,
 	                                         &csx, &csy, &csz);
