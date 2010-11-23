@@ -220,9 +220,10 @@ void apply_shift(struct image *image, int k, double shift)
 double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
                         const char *sym, double *i_full, FILE *graph)
 {
-	int h;
+	int h, n_used;
 	double delta_I = 0.0;
 
+	n_used = 0;
 	for ( h=0; h<n; h++ ) {
 
 		signed int hind, kind, lind;
@@ -251,6 +252,7 @@ double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
 		get_asymm(hind, kind, lind, &ha, &ka, &la, sym);
 		I_full = lookup_intensity(i_full, ha, ka, la);
 		delta_I += fabs(I_partial - spots[h].p * I_full);
+		n_used++;
 
 		if ( graph != NULL ) {
 			fprintf(graph, "%3i %3i %3i %5.2f (at %5.2f,%5.2f)"
@@ -261,7 +263,7 @@ double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
 
 	}
 
-	return delta_I / (double)n;
+	return delta_I / (double)n_used;
 }
 
 
