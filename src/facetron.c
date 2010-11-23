@@ -257,6 +257,7 @@ static void estimate_full(struct image *images, int n_total_patterns,
 
 	clear_items(obs);
 	memset(i_full, 0, LIST_SIZE*sizeof(double));
+	memset(cts, 0, LIST_SIZE*sizeof(unsigned int));
 
 	tasks = malloc(n_total_patterns * sizeof(struct integrate_args));
 	for ( i=0; i<n_total_patterns; i++ ) {
