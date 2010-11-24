@@ -268,6 +268,20 @@ double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
 }
 
 
+static void show_matrix_eqn(gsl_matrix *M, gsl_vector *v, int r)
+{
+	int i, j;
+
+	for ( i=0; i<r; i++ ) {
+		STATUS("[ ");
+		for ( j=0; j<r; j++ ) {
+			STATUS("%+9.3e ", gsl_matrix_get(M, i, j));
+		}
+		STATUS("][ a%2i ] = [ %+9.3e ]\n", i, gsl_vector_get(v, i));
+	}
+}
+
+
 /* Perform one cycle of post refinement on 'image' against 'i_full' */
 double pr_iterate(struct image *image, double *i_full, const char *sym,
                   struct cpeak **pspots, int *n)
@@ -341,6 +355,7 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 		}
 
 	}
+	show_matrix_eqn(M, v, NUM_PARAMS);
 
 	shifts = gsl_vector_alloc(NUM_PARAMS);
 	gsl_linalg_HH_solve(M, v, shifts);
