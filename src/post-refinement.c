@@ -65,8 +65,7 @@ static double partiality_rgradient(double r, double profile_radius)
 
 
 /* Return the gradient of parameter 'k' given the current status of 'image'. */
-double gradient(struct image *image, int k,
-                struct cpeak spot, double I_partial, double r)
+double gradient(struct image *image, int k, struct cpeak spot, double r)
 {
 	double ds, tt, azi;
 	double nom, den;
@@ -100,7 +99,7 @@ double gradient(struct image *image, int k,
 	switch ( k ) {
 
 	case REF_SCALE :
-		return I_partial;
+		return -spot.p*pow(image->osf, -2.0);
 
 	case REF_DIV :
 		nom = sqrt(2.0) * ds * sin(image->div/2.0);
@@ -186,6 +185,7 @@ void apply_shift(struct image *image, int k, double shift)
 
 	case REF_SCALE :
 		image->osf += shift;
+		STATUS("New OSF = %f (shift %e)\n", image->osf, shift);
 		break;
 
 	case REF_DIV :
@@ -248,11 +248,10 @@ double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
 		                    &xc, &yc, &I_partial, NULL, NULL, 1, 1) ) {
 			continue;
 		}
-		I_partial *= image->osf;
 
 		get_asymm(hind, kind, lind, &ha, &ka, &la, sym);
 		I_full = lookup_intensity(i_full, ha, ka, la);
-		delta_I += fabs(I_partial - spots[h].p * I_full);
+		delta_I += fabs(I_partial - (spots[h].p * I_full / image->osf));
 		n_used++;
 
 		if ( graph != NULL ) {
@@ -320,11 +319,10 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 		                    &xc, &yc, &I_partial, NULL, NULL, 1, 1) ) {
 			continue;
 		}
-		I_partial *= image->osf;
 
 		get_asymm(hind, kind, lind, &ha, &ka, &la, sym);
 		I_full = lookup_intensity(i_full, ha, ka, la);
-		delta_I = I_partial - spots[h].p * I_full;
+		delta_I = I_partial - (spots[h].p * I_full / image->osf);
 
 		for ( k=0; k<NUM_PARAMS; k++ ) {
 
@@ -337,9 +335,9 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 
 				M_curr = gsl_matrix_get(M, g, k);
 
-				M_c = gradient(image, g, spots[h], I_partial,
+				M_c = gradient(image, g, spots[h],
 				               image->profile_radius)
-				    * gradient(image, k, spots[h], I_partial,
+				    * gradient(image, k, spots[h],
 				               image->profile_radius);
 				M_c *= pow(I_full, 2.0);
 
@@ -347,7 +345,7 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 
 			}
 
-			gr = gradient(image, k, spots[h], I_partial,
+			gr = gradient(image, k, spots[h],
 			              image->profile_radius);
 			v_c = delta_I * I_full * gr;
 			gsl_vector_set(v, k, v_c);

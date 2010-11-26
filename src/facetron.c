@@ -102,6 +102,12 @@ static void refine_image(int mytask, void *tasks)
 		return;
 	}
 
+	double a, b, c, al, be, ga;
+	cell_get_parameters(image->indexed_cell, &a, &b, &c, &al, &be, &ga);
+	STATUS("Initial cell: %5.2f %5.2f %5.2f nm %5.2f %5.2f %5.2f deg\n",
+	       a/1.0e-9, b/1.0e-9, c/1.0e-9,
+	       rad2deg(al), rad2deg(be), rad2deg(ga));
+
 	spots = find_intersections(image, image->indexed_cell, &n, 0);
 	dev = +INFINITY;
 	i = 0;
