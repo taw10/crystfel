@@ -821,6 +821,7 @@ static void cell_set_pointgroup_from_pdb(UnitCell *cell, const char *sym)
 {
 	char *new = NULL;
 
+	if ( strcmp(sym, "P 1") == 0 ) new = "1";
 	if ( strcmp(sym, "P 63") == 0 ) new = "6";
 	if ( strcmp(sym, "P 21 21 21") == 0 ) new = "222";
 	if ( strcmp(sym, "P 2 2 2") == 0 ) new = "222";
@@ -872,11 +873,15 @@ UnitCell *load_cell_from_pdb(const char *filename)
 	                                                deg2rad(be),
 	                                                deg2rad(ga));
 
-			sym = strndup(line+55, 10);
-			notrail(sym);
-			cell_set_pointgroup_from_pdb(cell, sym);
-			free(sym);
-
+			if ( strlen(line) > 65 ) {
+				sym = strndup(line+55, 10);
+				notrail(sym);
+				cell_set_pointgroup_from_pdb(cell, sym);
+				free(sym);
+			} else {
+				cell_set_pointgroup_from_pdb(cell, "P 1");
+				ERROR("CRYST1 line without space group.\n");
+			}
 		}
 
 	} while ( rval != NULL );
