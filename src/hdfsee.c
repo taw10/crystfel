@@ -15,7 +15,6 @@
 #endif
 
 #include <gtk/gtk.h>
-#include <glib/gthread.h>
 #include <getopt.h>
 
 #include "displaywindow.h"
