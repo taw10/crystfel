@@ -85,6 +85,11 @@ static void show_help(const char *s)
 "     --really-random       Use really random numbers for the orientation and\n"
 "                            crystal size.  By default, the same sequence\n"
 "                            will be used for each new run.\n"
+"     --min-size=<s>        Generate random crystal sizes using <s> as the\n"
+"                            minimum crystal size in nm. --max-size is also\n"
+"                            required.\n"
+"     --max-size=<s>        Use <s> as the maximum crystal size in nm.\n"
+"                            --min-size is also required.\n"
 "\n"
 "By default, the simulation aims to be as accurate as possible.  For greater\n"
 "speed, or for testing, you can choose to disable certain things using the\n"
@@ -174,6 +179,18 @@ static struct quaternion read_quaternion()
 }
 
 
+static int random_ncells(double len, double min_nm, double max_nm)
+{
+	int min_cells, max_cells, wid;
+
+	min_cells = min_nm*1e-9 / len;
+	max_cells = max_nm*1e-9 / len;
+	wid = max_cells - min_cells;
+
+	return wid*random()/RAND_MAX + min_cells;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -206,6 +223,9 @@ int main(int argc, char *argv[])
 	UnitCell *input_cell;
 	struct quaternion orientation;
 	int gpu_dev = -1;
+	int random_size = 0;
+	double min_size = 0.0;
+	double max_size = 0.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -227,6 +247,8 @@ int main(int argc, char *argv[])
 		{"beam",               1, NULL,               'b'},
 		{"really-random",      0, &config_random,      1},
 		{"gpu-dev",            1, NULL,                2},
+		{"min-size",           1, NULL,                3},
+		{"max-size",           1, NULL,                4},
 		{0, 0, NULL, 0}
 	};
 
@@ -279,6 +301,16 @@ int main(int argc, char *argv[])
 			gpu_dev = atoi(optarg);
 			break;
 
+		case 3 :
+			min_size = atof(optarg);
+			random_size++;
+			break;
+
+		case 4 :
+			max_size = atof(optarg);
+			random_size++;
+			break;
+
 		case 0 :
 			break;
 
@@ -295,6 +327,11 @@ int main(int argc, char *argv[])
 		fread(&seed, sizeof(seed), 1, fh);
 		fclose(fh);
 		srand(seed);
+	}
+
+	if ( random_size == 1 ) {
+		ERROR("You must specify both --min-size and --max-size.\n");
+		return 1;
 	}
 
 	if ( filename == NULL ) {
@@ -418,12 +455,24 @@ int main(int argc, char *argv[])
 		double a, b, c, d;
 		UnitCell *cell;
 
-		//na = 8*random()/RAND_MAX + 4;
-		//nb = 8*random()/RAND_MAX + 4;
-		//nc = 16*random()/RAND_MAX + 30;
-		na = 24;
-		nb = 24;
-		nc = 40;
+		if ( random_size ) {
+
+			double alen, blen, clen, dis;
+
+			cell_get_parameters(input_cell, &alen, &blen, &clen,
+			                    &dis, &dis, &dis);
+
+			na = random_ncells(alen, min_size, max_size);
+			nb = random_ncells(blen, min_size, max_size);
+			nc = random_ncells(clen, min_size, max_size);
+
+		} else {
+
+			na = 8;
+			nb = 8;
+			nc = 8;
+
+		}
 
 		/* Read quaternion from stdin */
 		if ( config_randomquat ) {
