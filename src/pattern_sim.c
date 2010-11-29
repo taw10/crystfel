@@ -199,6 +199,7 @@ int main(int argc, char *argv[])
 	double *powder;
 	char *intfile = NULL;
 	double *intensities;
+	char *rval;
 	double *phases;
 	int config_simdetails = 0;
 	int config_nearbragg = 0;
@@ -266,7 +267,11 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'n' :
-			n_images = atoi(optarg);
+			n_images = strtol(optarg, &rval, 10);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid number of images.\n");
+				return 1;
+			}
 			break;
 
 		case 'i' :
@@ -302,12 +307,20 @@ int main(int argc, char *argv[])
 			break;
 
 		case 3 :
-			min_size = atof(optarg);
+			min_size = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid minimum size.\n");
+				return 1;
+			}
 			random_size++;
 			break;
 
 		case 4 :
-			max_size = atof(optarg);
+			max_size = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid maximum size.\n");
+				return 1;
+			}
 			random_size++;
 			break;
 
