@@ -33,6 +33,7 @@
 #include "thread-pool.h"
 #include "beam-parameters.h"
 #include "post-refinement.h"
+#include "hrs-scaling.h"
 
 
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
@@ -134,97 +135,6 @@ static void refine_image(int mytask, void *tasks)
 }
 
 
-struct integrate_args
-{
-	const char *sym;
-	ReflItemList *obs;
-	double *i_full;
-	unsigned int *cts;
-	pthread_mutex_t *list_lock;
-	struct image *image;
-};
-
-
-static void integrate_image(int mytask, void *tasks)
-{
-	struct integrate_args *all_args = tasks;
-	struct integrate_args *pargs = &all_args[mytask];
-	struct cpeak *spots;
-	int j, n;
-	struct hdfile *hdfile;
-	struct image *image = pargs->image;
-	double nominal_photon_energy = pargs->image->beam->photon_energy;
-
-	hdfile = hdfile_open(image->filename);
-	if ( hdfile == NULL ) {
-		ERROR("Couldn't open '%s'\n", image->filename);
-		return;
-	} else if ( hdfile_set_image(hdfile, "/data/data0") ) {
-		ERROR("Couldn't select path\n");
-		hdfile_close(hdfile);
-		return;
-	}
-
-	if ( hdf5_read(hdfile, pargs->image, 0, nominal_photon_energy) ) {
-		ERROR("Couldn't read '%s'\n", image->filename);
-		hdfile_close(hdfile);
-		return;
-	}
-
-	/* Figure out which spots should appear in this pattern */
-	spots = find_intersections(image, image->indexed_cell, &n, 0);
-
-	/* For each reflection, estimate the partiality */
-	for ( j=0; j<n; j++ ) {
-
-		signed int h, k, l;
-		signed int ha, ka, la;
-		float i_partial;
-		float xc, yc;
-		float i_full_est;
-
-		h = spots[j].h;
-		k = spots[j].k;
-		l = spots[j].l;
-
-		/* Don't attempt to use spots with very small
-		 * partialities, since it won't be accurate. */
-		if ( spots[j].p < 0.1 ) continue;
-
-		/* Actual measurement of this reflection from this
-		 * pattern? */
-		/* FIXME: Coordinates aren't whole numbers */
-		if ( integrate_peak(image, spots[j].x, spots[j].y,
-		                    &xc, &yc, &i_partial, NULL, NULL, 1, 1) ) {
-			continue;
-		}
-		i_partial *= image->osf;
-
-		i_full_est = i_partial / spots[j].p;
-
-		get_asymm(h, k, l, &ha, &ka, &la, pargs->sym);
-
-		pthread_mutex_lock(pargs->list_lock);
-		integrate_intensity(pargs->i_full, ha, ka, la, i_full_est);
-		integrate_count(pargs->cts, ha, ka, la, 1);
-		if ( !find_item(pargs->obs, ha, ka, la) ) {
-			add_item(pargs->obs, ha, ka, la);
-		}
-		pthread_mutex_unlock(pargs->list_lock);
-
-	}
-
-	free(image->data);
-	if ( image->flags != NULL ) free(image->flags);
-	hdfile_close(hdfile);
-	free(spots);
-
-	/* Muppet proofing */
-	image->data = NULL;
-	image->flags = NULL;
-}
-
-
 static void refine_all(struct image *images, int n_total_patterns,
                        struct detector *det, const char *sym,
                        ReflItemList *obs, double *i_full, int nthreads,
@@ -252,48 +162,65 @@ static void refine_all(struct image *images, int n_total_patterns,
 }
 
 
-static void estimate_full(struct image *images, int n_total_patterns,
-                          struct detector *det, const char *sym,
-                          ReflItemList *obs, double *i_full, unsigned int *cts,
-                          int nthreads)
+static void integrate_image(struct image *image)
 {
-	int i;
-	struct integrate_args *tasks;
-	pthread_mutex_t list_lock = PTHREAD_MUTEX_INITIALIZER;
+	struct cpeak *spots;
+	int j, n;
+	struct hdfile *hdfile;
+	double nominal_photon_energy = image->beam->photon_energy;
 
-	clear_items(obs);
-	memset(i_full, 0, LIST_SIZE*sizeof(double));
-	memset(cts, 0, LIST_SIZE*sizeof(unsigned int));
+	hdfile = hdfile_open(image->filename);
+	if ( hdfile == NULL ) {
+		ERROR("Couldn't open '%s'\n", image->filename);
+		return;
+	} else if ( hdfile_set_image(hdfile, "/data/data0") ) {
+		ERROR("Couldn't select path\n");
+		hdfile_close(hdfile);
+		return;
+	}
 
-	tasks = malloc(n_total_patterns * sizeof(struct integrate_args));
-	for ( i=0; i<n_total_patterns; i++ ) {
+	if ( hdf5_read(hdfile, image, 0, nominal_photon_energy) ) {
+		ERROR("Couldn't read '%s'\n", image->filename);
+		hdfile_close(hdfile);
+		return;
+	}
 
-		tasks[i].sym = sym;
-		tasks[i].obs = obs;
-		tasks[i].i_full = i_full;
-		tasks[i].cts = cts;
-		tasks[i].list_lock = &list_lock;
-		tasks[i].image = &images[i];
+	/* Figure out which spots should appear in this pattern */
+	spots = find_intersections(image, image->indexed_cell, &n, 0);
+
+	/* For each reflection, estimate the partiality */
+	for ( j=0; j<n; j++ ) {
+
+		signed int h, k, l;
+		float i_partial;
+		float xc, yc;
+
+		h = spots[j].h;
+		k = spots[j].k;
+		l = spots[j].l;
+
+		/* Don't attempt to use spots with very small
+		 * partialities, since it won't be accurate. */
+		if ( spots[j].p < 0.1 ) continue;
+
+		/* Actual measurement of this reflection from this
+		 * pattern? */
+		/* FIXME: Coordinates aren't whole numbers */
+		if ( integrate_peak(image, spots[j].x, spots[j].y,
+		                    &xc, &yc, &i_partial, NULL, NULL, 1, 1) ) {
+			continue;
+		}
 
 	}
 
-	run_thread_range(n_total_patterns, nthreads, "Integrating",
-	                 integrate_image, tasks);
+	free(image->data);
+	if ( image->flags != NULL ) free(image->flags);
+	hdfile_close(hdfile);
+	image->cpeaks = spots;
 
-	free(tasks);
-
-	/* Divide the totals to get the means */
-	for ( i=0; i<num_items(obs); i++ ) {
-
-		struct refl_item *it;
-		double total;
-
-		it = get_item(obs, i);
-		total = lookup_intensity(i_full, it->h, it->k, it->l);
-		total /= lookup_count(cts, it->h, it->k, it->l);
-		set_intensity(i_full, it->h, it->k, it->l, total);
-
-	}
+	/* Muppet proofing */
+	image->data = NULL;
+	image->flags = NULL;
 }
 
 
@@ -485,6 +412,9 @@ int main(int argc, char *argv[])
 		images[i].data = NULL;
 		images[i].flags = NULL;
 
+		/* Get reflections from this image */
+		integrate_image(&images[i]);
+
 		free(filename);
 
 		progress_bar(i, n_total_patterns-1, "Loading pattern data");
@@ -496,8 +426,8 @@ int main(int argc, char *argv[])
 	cts = new_list_count();
 
 	/* Make initial estimates */
-	estimate_full(images, n_total_patterns, det, sym, obs, i_full, cts,
-	              nthreads);
+	STATUS("Performing initial scaling.\n");
+	scale_intensities(images, n_total_patterns, sym);
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -527,8 +457,7 @@ int main(int argc, char *argv[])
 		           nthreads, fhg, fhp);
 
 		/* Re-estimate all the full intensities */
-		estimate_full(images, n_total_patterns, det, sym, obs, i_full,
-		              cts, nthreads);
+		scale_intensities(images, n_total_patterns, sym);
 
 		fclose(fhg);
 		fclose(fhp);
