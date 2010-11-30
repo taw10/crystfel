@@ -108,7 +108,8 @@ static void noise_reflections(double *ref, ReflItemList *items)
 
 
 static ReflItemList *twin_reflections(double *ref, ReflItemList *items,
-                                      const char *holo, const char *mero)
+                                      const char *holo, const char *mero,
+                                      double *esds)
 {
 	int i;
 	ReflItemList *new;
@@ -122,7 +123,7 @@ static ReflItemList *twin_reflections(double *ref, ReflItemList *items,
 
 	for ( i=0; i<num_items(items); i++ ) {
 
-		double mean;
+		double total, sigma;
 		struct refl_item *it;
 		signed int h, k, l;
 		int n, j;
@@ -140,7 +141,8 @@ static ReflItemList *twin_reflections(double *ref, ReflItemList *items,
 
 		n = num_equivs(h, k, l, holo);
 
-		mean = 0.0;
+		total = 0.0;
+		sigma = 0.0;
 		skip = 0;
 		for ( j=0; j<n; j++ ) {
 
@@ -166,15 +168,15 @@ static ReflItemList *twin_reflections(double *ref, ReflItemList *items,
 				break;
 			}
 
-			mean += lookup_intensity(ref, hu, ku, lu);
+			total += lookup_intensity(ref, hu, ku, lu);
+			sigma += pow(lookup_intensity(esds, hu, ku, lu), 2.0);
 
 		}
 
 		if ( !skip ) {
 
-			mean /= (double)n;
-
-			set_intensity(ref, h, k, l, mean);
+			set_intensity(ref, h, k, l, total);
+			set_intensity(esds, h, k, l, sqrt(sigma));
 			add_item(new, h, k, l);
 
 		}
@@ -249,6 +251,7 @@ int main(int argc, char *argv[])
 	int c;
 	double *ideal_ref;
 	double *phases;
+	double *esds;
 	struct molecule *mol;
 	char *template = NULL;
 	int config_noise = 0;
@@ -264,8 +267,6 @@ int main(int argc, char *argv[])
 	ReflItemList *input_items;
 	ReflItemList *write_items;
 	UnitCell *cell = NULL;
-	double adu_per_photon;
-	struct beam_params *beam = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -281,7 +282,6 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"no-phases",          0, &config_nophase,     1},
 		{"multiplicity",       0, &config_multi,       1},
-		{"beam",               1, NULL,               'b'},
 		{0, 0, NULL, 0}
 	};
 
@@ -322,15 +322,6 @@ int main(int argc, char *argv[])
 			expand = strdup(optarg);
 			break;
 
-		case 'b' :
-			beam = get_beam_parameters(optarg);
-			if ( beam == NULL ) {
-				ERROR("Failed to load beam parameters"
-				      " from '%s'\n", optarg);
-				return 1;
-			}
-			break;
-
 		case 0 :
 			break;
 
@@ -357,6 +348,7 @@ int main(int argc, char *argv[])
 	} else {
 		phases = NULL;
 	}
+	esds = new_list_intensity();
 	if ( input == NULL ) {
 		input_items = new_items();
 		ideal_ref = get_reflections(mol, eV_to_J(1790.0), 1/(0.05e-9),
@@ -364,7 +356,7 @@ int main(int argc, char *argv[])
 	} else {
 		ideal_ref = new_list_intensity();
 		input_items = read_reflections(input, ideal_ref, phases,
-		                               NULL, NULL);
+		                               NULL, esds);
 		free(input);
 	}
 
@@ -374,7 +366,8 @@ int main(int argc, char *argv[])
 	if ( holo != NULL ) {
 		ReflItemList *new;
 		STATUS("Twinning from %s into %s\n", mero, holo);
-		new = twin_reflections(ideal_ref, input_items, holo, mero);
+		new = twin_reflections(ideal_ref, input_items,
+		                       holo, mero, esds);
 		delete_items(input_items);
 		input_items = new;
 	}
@@ -421,15 +414,7 @@ int main(int argc, char *argv[])
 		union_items(write_items, input_items);
 	}
 
-	if ( beam == NULL ) {
-		adu_per_photon = 167.0;
-		STATUS("No beam parameters file provided (use -b), "
-		       "so I'm assuming 167.0 ADU per photon.\n");
-	} else {
-		adu_per_photon = beam->adu_per_photon;
-	}
-
-	write_reflections(output, write_items, ideal_ref, NULL, phases,
+	write_reflections(output, write_items, ideal_ref, esds, phases,
 	                  NULL, cell);
 
 	delete_items(input_items);
