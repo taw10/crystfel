@@ -30,8 +30,7 @@ static inline void LABEL(integrate)(TYPE *ref, signed int h,
 
 	if ( (abs(h) > INDMAX) || (abs(k) > INDMAX) || (abs(l) > INDMAX) ) {
 		ERROR_T("\nReflection %i %i %i is out of range!\n", h, k, l);
-		ERROR_T("You need to re-configure INDMAX, delete the reflection"
-		       " cache file and re-run.\n");
+		ERROR_T("You need to re-configure INDMAX and re-run.\n");
 		exit(1);
 	}
 
@@ -52,8 +51,7 @@ static inline void LABEL(set)(TYPE *ref, signed int h,
 
 	if ( (abs(h) > INDMAX) || (abs(k) > INDMAX) || (abs(l) > INDMAX) ) {
 		ERROR_T("\nReflection %i %i %i is out of range!\n", h, k, l);
-		ERROR_T("You need to re-configure INDMAX, delete the reflection"
-		       " cache file and re-run.\n");
+		ERROR_T("You need to re-configure INDMAX and re-run.\n");
 		exit(1);
 	}
 
@@ -73,8 +71,7 @@ static inline TYPE LABEL(lookup)(const TYPE *ref, signed int h,
 
 	if ( (abs(h) > INDMAX) || (abs(k) > INDMAX) || (abs(l) > INDMAX) ) {
 		ERROR_T("\nReflection %i %i %i is out of range!\n", h, k, l);
-		ERROR_T("You need to re-configure INDMAX, delete the reflection"
-		       " cache file and re-run.\n");
+		ERROR_T("You need to re-configure INDMAX and re-run.\n");
 		exit(1);
 	}
 
