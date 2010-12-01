@@ -24,6 +24,7 @@ fi
 
 
 # PS1: CELL 281 281 165.2  90  90 120
+# PS2: CELL 139 232 309  90  90 90
 # Start by putting the CrystFEL intensities into an MTZ file
 echo "Running 'f2mtz'..."
 f2mtz HKLIN $1 HKLOUT $TMPFILE > out.html << EOF
@@ -38,7 +39,6 @@ FORMAT '(F3.0,1X,F3.0,1X,F3.0,1X,F10.2,10X,F10.2)'
 EOF
 
 if [ $? -ne 0 ]; then echo "Failed."; exit; fi
-exit 0
 
 # Get the unit cell contents
 echo "Running 'rwcontents'..."
