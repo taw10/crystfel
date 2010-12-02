@@ -24,6 +24,7 @@
 #include <png.h>
 #include <fenv.h>
 #include <pthread.h>
+#include <libgen.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
