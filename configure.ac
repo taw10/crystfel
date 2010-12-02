@@ -18,7 +18,7 @@ AC_CHECK_HEADERS([fcntl.h stdlib.h string.h unistd.h])
 AC_C_CONST
 AC_FUNC_MALLOC
 AC_TYPE_SIGNAL
-AC_CHECK_FUNCS([strdup])
+AC_CHECK_FUNCS([strdup strndup])
 
 
 AC_ARG_WITH(hdf5,
@@ -67,7 +67,7 @@ AS_IF([test "x$enable_gtk" != "xno"],
    AM_PATH_GTK_2_0(2.0.0,
    [
       havegtk=true
-      GTK_LIBS="$GTK_LIBS"
+      AC_DEFINE([HAVE_GTK], [1], [Define to 1 if GTK and GDK are available])
    ],
    [
       AC_MSG_WARN([GTK not found.  hdfsee will not be built.])
@@ -76,7 +76,7 @@ AS_IF([test "x$enable_gtk" != "xno"],
 [
    AC_MSG_RESULT([no])
 ])
-AM_CONDITIONAL([HAVE_GTK], test x$havegtk = xtrue)
+AM_CONDITIONAL([HAVE_GTK], test "x$havegtk" = "xtrue")
 
 
 AC_CHECK_FUNCS(forkpty,
@@ -97,16 +97,7 @@ AC_ARG_ENABLE([png],
 AS_IF([test "x$enable_png" != "xno"],
 [
    AC_MSG_RESULT([yes])
-   AC_MSG_CHECKING([libpng])
-   if $PKG_CONFIG --atleast-version 1.2.0 libpng ; then
-      LIBPNG_VERSION=`$PKG_CONFIG --modversion libpng`
-      AC_MSG_RESULT($LIBPNG_VERSION)
-      LIBPNG_CFLAGS=`$PKG_CONFIG --cflags libpng`
-      LIBPNG_LIBS=`$PKG_CONFIG --libs libpng`
-      AC_DEFINE([HAVE_LIBPNG], [1], [Define to 1 if libPNG is available])
-   else
-      AC_MSG_RESULT([Lower than 1.2.0 or not found])
-   fi
+   PKG_CHECK_MODULES([libPNG], [libpng >= 1.2.0], [havelibpng=true])
 ],[
    AC_MSG_RESULT([no])
 ])
@@ -135,26 +126,22 @@ AC_ARG_ENABLE([cairo],
 AS_IF([test "x$enable_cairo" != "xno"],
 [
    AC_MSG_RESULT([yes])
-   AC_MSG_CHECKING([Cairo])
-   if $PKG_CONFIG --atleast-version 1.2.0 cairo ; then
-      CAIRO_VERSION=`$PKG_CONFIG --modversion cairo`
-      CAIRO_CFLAGS=`$PKG_CONFIG --cflags cairo`
-      CAIRO_LIBS=`$PKG_CONFIG --libs cairo`
-      AC_DEFINE([HAVE_CAIRO], [1], [Define to 1 if Cairo is available])
-      AC_MSG_RESULT($CAIRO_VERSION)
-   else
-      AC_MSG_RESULT([not found.  Some functions will be unavailable.])
-   fi
+   PKG_CHECK_MODULES([Cairo], [cairo >= 1.2.0],
+   [
+     havecairo=true
+     AC_DEFINE([HAVE_CAIRO], [1], [Define to 1 if Cairo is available])
+   ])
 ],
 [
    AC_MSG_RESULT([no])
 ])
+AM_CONDITIONAL([HAVE_CAIRO], test x$havecairo = xtrue)
 
 
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread"
-CFLAGS="$CFLAGS $LIBTIFF_CFLAGS -D_GNU_SOURCE $LIBPNG_CFLAGS"
+CFLAGS="$CFLAGS $LIBTIFF_CFLAGS -D_GNU_SOURCE $libPNG_CFLAGS $Cairo_CFLAGS"
 LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
-LIBS="$LIBS $LIBTIFF_LIBS $LIBPNG_LIBS"
+LIBS="$LIBS $LIBTIFF_LIBS $libPNG_LIBS $Cairo_LIBS"
 
 AC_OUTPUT(Makefile src/Makefile data/Makefile doc/Makefile scripts/Makefile)
 AC_OUTPUT(doc/examples/Makefile)

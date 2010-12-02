@@ -76,6 +76,8 @@ static void show_help(const char *s)
 
 
 #ifdef HAVE_CAIRO
+
+
 static void draw_circles(signed int xh, signed int xk, signed int xl,
                          signed int yh, signed int yk, signed int yl,
                          signed int zh, signed int zk, signed int zl,
@@ -426,7 +428,34 @@ static int render_key(int colscale)
 
 	return 0;
 }
-#endif
+
+
+#else  /* HAVE_CAIRO */
+
+
+static int render_key(int colscale)
+{
+	ERROR("This version of CrystFEL was compiled without Cairo");
+	ERROR(" support, which is required to draw the colour");
+	ERROR(" scale.  Sorry!\n");
+	return 1;
+}
+
+
+static void render_za(UnitCell *cell, ReflItemList *items,
+                      double *ref, unsigned int *counts,
+                      double boost, const char *sym, int wght, int colscale,
+                      signed int xh, signed int xk, signed int xl,
+                      signed int yh, signed int yk, signed int yl,
+                      const char *outfile)
+{
+	ERROR("This version of CrystFEL was compiled without Cairo");
+	ERROR(" support, which is required to plot a zone axis");
+	ERROR(" pattern.  Sorry!\n");
+}
+
+
+#endif /* HAVE_CAIRO */
 
 
 int main(int argc, char *argv[])
@@ -624,14 +653,8 @@ int main(int argc, char *argv[])
 		r = povray_render_animation(cell, ref, cts, items,
 		                            nproc, sym, wght, boost);
 	} else if ( config_zoneaxis ) {
-#ifdef HAVE_CAIRO
 		render_za(cell, items, ref, cts, boost, sym, wght, colscale,
 		          rh, rk, rl, dh, dk, dl, outfile);
-#else
-		ERROR("This version of CrystFEL was compiled without Cairo");
-		ERROR(" support, which is required to plot a zone axis");
-		ERROR(" pattern.  Sorry!\n");
-#endif
 	} else {
 		ERROR("Try again with either --povray or --zone-axis.\n");
 	}

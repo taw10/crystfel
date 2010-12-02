@@ -18,7 +18,6 @@
 #define RENDER_H
 
 
-#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <stddef.h>
 
 #include "displaywindow.h"
@@ -33,8 +32,14 @@ enum {
 extern void render_scale(float val, float max, int scale,
                          float *rp, float *gp, float *bp);
 
+#ifdef HAVE_GTK
+
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
 extern GdkPixbuf *render_get_image(DisplayWindow *dw);
 extern GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale);
+
+#endif /* HAVE_GTK */
 
 extern int render_png(DisplayWindow *dw, const char *filename);
 extern int render_tiff_fp(DisplayWindow *dw, const char *filename);

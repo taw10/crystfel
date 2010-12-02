@@ -250,6 +250,7 @@ static void show_marked_features(struct image *image, guchar *data,
 }
 
 
+#ifdef HAVE_GTK
 /* Return a pixbuf containing a rendered version of the image after binning.
  * This pixbuf might be scaled later - hopefully mostly in a downward
  * direction. */
@@ -344,6 +345,7 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
 	return gdk_pixbuf_new_from_data(data, GDK_COLORSPACE_RGB, FALSE, 8,
 					w, h, w*3, render_free_data, NULL);
 }
+#endif /* HAVE_GTK */
 
 
 int render_png(DisplayWindow *dw, const char *filename)
