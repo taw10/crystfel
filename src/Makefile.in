@@ -70,10 +70,15 @@ am_compare_hkl_OBJECTS = compare_hkl.$(OBJEXT) sfac.$(OBJEXT) \
 	statistics.$(OBJEXT) symmetry.$(OBJEXT)
 compare_hkl_OBJECTS = $(am_compare_hkl_OBJECTS)
 compare_hkl_DEPENDENCIES =
-am_cubeit_OBJECTS = cubeit.$(OBJEXT) cell.$(OBJEXT) \
-	hdf5-file.$(OBJEXT) utils.$(OBJEXT) detector.$(OBJEXT) \
-	render.$(OBJEXT) filters.$(OBJEXT) image.$(OBJEXT) \
-	symmetry.$(OBJEXT) stream.$(OBJEXT) thread-pool.$(OBJEXT)
+am__cubeit_SOURCES_DIST = cubeit.c cell.c hdf5-file.c utils.c \
+	detector.c render.c filters.c image.c symmetry.c stream.c \
+	thread-pool.c
+@HAVE_CAIRO_TRUE@am_cubeit_OBJECTS = cubeit.$(OBJEXT) cell.$(OBJEXT) \
+@HAVE_CAIRO_TRUE@	hdf5-file.$(OBJEXT) utils.$(OBJEXT) \
+@HAVE_CAIRO_TRUE@	detector.$(OBJEXT) render.$(OBJEXT) \
+@HAVE_CAIRO_TRUE@	filters.$(OBJEXT) image.$(OBJEXT) \
+@HAVE_CAIRO_TRUE@	symmetry.$(OBJEXT) stream.$(OBJEXT) \
+@HAVE_CAIRO_TRUE@	thread-pool.$(OBJEXT)
 cubeit_OBJECTS = $(am_cubeit_OBJECTS)
 cubeit_DEPENDENCIES =
 am_estimate_background_OBJECTS = estimate_background.$(OBJEXT) \
@@ -180,7 +185,7 @@ SOURCES = $(calibrate_detector_SOURCES) $(check_hkl_SOURCES) \
 	$(process_hkl_SOURCES) $(reintegrate_SOURCES) \
 	$(render_hkl_SOURCES)
 DIST_SOURCES = $(calibrate_detector_SOURCES) $(check_hkl_SOURCES) \
-	$(compare_hkl_SOURCES) $(cubeit_SOURCES) \
+	$(compare_hkl_SOURCES) $(am__cubeit_SOURCES_DIST) \
 	$(estimate_background_SOURCES) $(facetron_SOURCES) \
 	$(get_hkl_SOURCES) $(am__hdfsee_SOURCES_DIST) \
 	$(am__indexamajig_SOURCES_DIST) \
@@ -333,10 +338,10 @@ facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
                    beam-parameters.c symmetry.c post-refinement.c hrs-scaling.c
 
 facetron_LDADD = @LIBS@
-cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c render.c \
-                 filters.c image.c symmetry.c stream.c thread-pool.c
+@HAVE_CAIRO_TRUE@cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c render.c \
+@HAVE_CAIRO_TRUE@                 filters.c image.c symmetry.c stream.c thread-pool.c
 
-cubeit_LDADD = @LIBS@
+@HAVE_CAIRO_TRUE@cubeit_LDADD = @LIBS@
 reintegrate_SOURCES = reintegrate.c cell.c hdf5-file.c utils.c detector.c \
                       peaks.c image.c stream.c \
                       index.c dirax.c templates.c geometry.c symmetry.c \

@@ -13,8 +13,12 @@
 #include <config.h>
 #endif
 
-#include <stdlib.h>
+
+#ifdef HAVE_GTK
 #include <gdk-pixbuf/gdk-pixbuf.h>
+#endif
+
+#include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
 #include <png.h>
@@ -25,81 +29,6 @@
 #include "peaks.h"
 #include "filters.h"
 #include "utils.h"
-
-
-static void *render_bin(float *in, int inw, int inh, int binning, float *maxp)
-{
-	float *data;
-	int x, y;
-	int w, h;
-	float max;
-
-	w = inw / binning;
-	h = inh / binning;      /* Some pixels might get discarded */
-
-	data = malloc(w*h*sizeof(float));
-	max = 0.0;
-
-	for ( x=0; x<w; x++ ) {
-	for ( y=0; y<h; y++ ) {
-
-		double total;
-		size_t xb, yb;
-
-		total = 0;
-		for ( xb=0; xb<binning; xb++ ) {
-		for ( yb=0; yb<binning; yb++ ) {
-
-			total += in[binning*x+xb + (binning*y+yb)*inw];
-
-		}
-		}
-
-		data[x+w*y] = total / ((double)binning * (double)binning);
-		if ( data[x+w*y] > max ) max = data[x+w*y];
-
-	}
-	}
-
-	*maxp = max;
-	return data;
-}
-
-
-float *render_get_image_binned(DisplayWindow *dw, int binning, float *max)
-{
-	struct image *image;
-	float *data;
-
-	if ( (dw->image == NULL) || (dw->image_dirty) ) {
-
-		image = malloc(sizeof(struct image));
-		if ( image == NULL ) return NULL;
-		image->features = NULL;
-		image->data = NULL;
-
-		/* We don't care about the photon energy here */
-		hdf5_read(dw->hdfile, image, 1, 0.0);
-		dw->image_dirty = 0;
-		if ( dw->cmfilter ) filter_cm(image);
-		if ( dw->noisefilter ) filter_noise(image, NULL);
-
-		/* Deal with the old image, if existing */
-		if ( dw->image != NULL ) {
-			image->features = dw->image->features;
-			if ( dw->image->data != NULL ) free(dw->image->data);
-			free(dw->image);
-		}
-
-		dw->image = image;
-
-	}
-
-	data = render_bin(dw->image->data, hdfile_get_width(dw->hdfile),
-	                  hdfile_get_height(dw->hdfile), binning, max);
-
-	return data;
-}
 
 
 static void render_rgb(float val, float max, float *rp, float *gp, float *bp)
@@ -201,6 +130,84 @@ void render_scale(float val, float max, int scale,
 }
 
 
+#ifdef HAVE_GTK
+
+
+static void *render_bin(float *in, int inw, int inh, int binning, float *maxp)
+{
+	float *data;
+	int x, y;
+	int w, h;
+	float max;
+
+	w = inw / binning;
+	h = inh / binning;      /* Some pixels might get discarded */
+
+	data = malloc(w*h*sizeof(float));
+	max = 0.0;
+
+	for ( x=0; x<w; x++ ) {
+	for ( y=0; y<h; y++ ) {
+
+		double total;
+		size_t xb, yb;
+
+		total = 0;
+		for ( xb=0; xb<binning; xb++ ) {
+		for ( yb=0; yb<binning; yb++ ) {
+
+			total += in[binning*x+xb + (binning*y+yb)*inw];
+
+		}
+		}
+
+		data[x+w*y] = total / ((double)binning * (double)binning);
+		if ( data[x+w*y] > max ) max = data[x+w*y];
+
+	}
+	}
+
+	*maxp = max;
+	return data;
+}
+
+
+float *render_get_image_binned(DisplayWindow *dw, int binning, float *max)
+{
+	struct image *image;
+	float *data;
+
+	if ( (dw->image == NULL) || (dw->image_dirty) ) {
+
+		image = malloc(sizeof(struct image));
+		if ( image == NULL ) return NULL;
+		image->features = NULL;
+		image->data = NULL;
+
+		/* We don't care about the photon energy here */
+		hdf5_read(dw->hdfile, image, 1, 0.0);
+		dw->image_dirty = 0;
+		if ( dw->cmfilter ) filter_cm(image);
+		if ( dw->noisefilter ) filter_noise(image, NULL);
+
+		/* Deal with the old image, if existing */
+		if ( dw->image != NULL ) {
+			image->features = dw->image->features;
+			if ( dw->image->data != NULL ) free(dw->image->data);
+			free(dw->image);
+		}
+
+		dw->image = image;
+
+	}
+
+	data = render_bin(dw->image->data, hdfile_get_width(dw->hdfile),
+	                  hdfile_get_height(dw->hdfile), binning, max);
+
+	return data;
+}
+
+
 /* NB This function is shared between render_get_image() and
  * render_get_colour_scale() */
 static void render_free_data(guchar *data, gpointer p)
@@ -250,7 +257,6 @@ static void show_marked_features(struct image *image, guchar *data,
 }
 
 
-#ifdef HAVE_GTK
 /* Return a pixbuf containing a rendered version of the image after binning.
  * This pixbuf might be scaled later - hopefully mostly in a downward
  * direction. */
@@ -345,7 +351,6 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
 	return gdk_pixbuf_new_from_data(data, GDK_COLORSPACE_RGB, FALSE, 8,
 					w, h, w*3, render_free_data, NULL);
 }
-#endif /* HAVE_GTK */
 
 
 int render_png(DisplayWindow *dw, const char *filename)
@@ -566,3 +571,5 @@ int render_tiff_int16(DisplayWindow *dw, const char *filename)
 #endif
 	return 0;
 }
+
+#endif /* HAVE_GTK */

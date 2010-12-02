@@ -25,6 +25,7 @@
 #include <fenv.h>
 #include <pthread.h>
 #include <libgen.h>
+#include <cairo.h>
 
 #include "utils.h"
 #include "hdf5-file.h"

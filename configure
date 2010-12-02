@@ -600,8 +600,6 @@ HAVE_CAIRO_FALSE
 HAVE_CAIRO_TRUE
 Cairo_LIBS
 Cairo_CFLAGS
-HAVE_LIBPNG_FALSE
-HAVE_LIBPNG_TRUE
 libPNG_LIBS
 libPNG_CFLAGS
 HAVE_GTK_FALSE
@@ -4972,14 +4970,6 @@ else
 $as_echo "no" >&6; }
 
 fi
- if test x$havelibpng = xtrue; then
-  HAVE_LIBPNG_TRUE=
-  HAVE_LIBPNG_FALSE='#'
-else
-  HAVE_LIBPNG_TRUE='#'
-  HAVE_LIBPNG_FALSE=
-fi
-
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use TIFF" >&5
@@ -5256,10 +5246,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_GTK_TRUE}" && test -z "${HAVE_GTK_FALSE}"; then
   as_fn_error "conditional \"HAVE_GTK\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_LIBPNG_TRUE}" && test -z "${HAVE_LIBPNG_FALSE}"; then
-  as_fn_error "conditional \"HAVE_LIBPNG\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_CAIRO_TRUE}" && test -z "${HAVE_CAIRO_FALSE}"; then
@@ -6708,10 +6694,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_GTK_TRUE}" && test -z "${HAVE_GTK_FALSE}"; then
   as_fn_error "conditional \"HAVE_GTK\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_LIBPNG_TRUE}" && test -z "${HAVE_LIBPNG_FALSE}"; then
-  as_fn_error "conditional \"HAVE_LIBPNG\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_CAIRO_TRUE}" && test -z "${HAVE_CAIRO_FALSE}"; then

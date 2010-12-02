@@ -67,9 +67,11 @@ facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
                    beam-parameters.c symmetry.c post-refinement.c hrs-scaling.c
 facetron_LDADD = @LIBS@
 
+if HAVE_CAIRO
 cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c render.c \
                  filters.c image.c symmetry.c stream.c thread-pool.c
 cubeit_LDADD = @LIBS@
+endif
 
 reintegrate_SOURCES = reintegrate.c cell.c hdf5-file.c utils.c detector.c \
                       peaks.c image.c stream.c \
