@@ -33,7 +33,7 @@
 
 
 /* Maximum number of peaks which may be predicted by find_projected_peaks() */
-#define MAX_CPEAKS (2048)
+#define MAX_CPEAKS (8192)
 
 /* How close a peak must be to an indexed position to be considered "close"
  * for the purposes of double hit detection and sanity checking. */
