@@ -70,21 +70,12 @@ float lattice_factor(float16 cell, float4 q,
 }
 
 
-float get_intensity(global float *intensities, float16 cell, float4 q)
+float lookup_intensity(global float *intensities,
+                       signed int h, signed int k, signed int l)
 {
-	float hf, kf, lf;
-	int h, k, l;
 	int idx;
 
-	hf = cell.s0*q.x + cell.s1*q.y + cell.s2*q.z;  /* h */
-	kf = cell.s3*q.x + cell.s4*q.y + cell.s5*q.z;  /* k */
-	lf = cell.s6*q.x + cell.s7*q.y + cell.s8*q.z;  /* l */
-
-	h = round(hf);
-	k = round(kf);
-	l = round(lf);
-
-	/* Return a silly value if indices are out of range */
+	/* Out of range? */
 	if ( (abs(h) > INDMAX) || (abs(k) > INDMAX) || (abs(l) > INDMAX) ) {
 		return 0.0;
 	}
@@ -93,11 +84,103 @@ float get_intensity(global float *intensities, float16 cell, float4 q)
 	k = (k>=0) ? k : k+IDIM;
 	l = (l>=0) ? l : l+IDIM;
 
-	if ( (h>=IDIM) || (k>=IDIM) || (l>=IDIM) ) return 0.0;
-
 	idx = h + (IDIM*k) + (IDIM*IDIM*l);
 
 	return intensities[idx];
+}
+
+
+float lookup_flagged_intensity(global float *intensities, global float *flags,
+                               signed int h, signed int k, signed int l)
+{
+	return lookup_intensity(intensities, h, k, l)
+	        * lookup_intensity(flags, h, k, l);
+}
+
+
+float molecule_factor(global float *intensities, global float *flags,
+                      float16 cell, float4 q)
+{
+	float hf, kf, lf;
+	int h, k, l;
+	float val = 0.0;
+	signed int i;
+
+	#ifdef FLAT_INTENSITIES
+	return 1.0e5;
+	#else
+
+	hf = cell.s0*q.x + cell.s1*q.y + cell.s2*q.z;  /* h */
+	kf = cell.s3*q.x + cell.s4*q.y + cell.s5*q.z;  /* k */
+	lf = cell.s6*q.x + cell.s7*q.y + cell.s8*q.z;  /* l */
+
+	h = round(hf);
+	k = round(kf);
+	l = round(lf);
+	i = -h-k;
+
+	#ifdef PG1
+	val += lookup_flagged_intensity(intensities, flags, h, k, l);
+	#endif /* PG1 */
+
+	#ifdef PG1BAR
+	val += lookup_flagged_intensity(intensities, flags,  h,  k,  l);
+	val += lookup_flagged_intensity(intensities, flags, -h, -k, -l);
+	#endif /* PG1BAR */
+
+	#ifdef PG6
+	val += lookup_flagged_intensity(intensities, flags,  h,  k,  l);
+	val += lookup_flagged_intensity(intensities, flags,  i,  h,  l);
+	val += lookup_flagged_intensity(intensities, flags,  k,  i,  l);
+	val += lookup_flagged_intensity(intensities, flags, -h, -k,  l);
+	val += lookup_flagged_intensity(intensities, flags, -i, -h,  l);
+	val += lookup_flagged_intensity(intensities, flags, -k, -i,  l);
+	#endif /* PG6 */
+
+	#ifdef PG6M
+	val += lookup_flagged_intensity(intensities, flags,  h,  k,  l);
+	val += lookup_flagged_intensity(intensities, flags,  i,  h,  l);
+	val += lookup_flagged_intensity(intensities, flags,  k,  i,  l);
+	val += lookup_flagged_intensity(intensities, flags, -h, -k,  l);
+	val += lookup_flagged_intensity(intensities, flags, -i, -h,  l);
+	val += lookup_flagged_intensity(intensities, flags, -k, -i,  l);
+	val += lookup_flagged_intensity(intensities, flags, -h, -k, -l);
+	val += lookup_flagged_intensity(intensities, flags, -i, -h, -l);
+	val += lookup_flagged_intensity(intensities, flags, -k, -i, -l);
+	val += lookup_flagged_intensity(intensities, flags,  h,  k, -l);
+	val += lookup_flagged_intensity(intensities, flags,  i,  h, -l);
+	val += lookup_flagged_intensity(intensities, flags,  k,  i, -l);
+	#endif /* PG6M */
+
+	#ifdef PG6MMM
+	val += lookup_flagged_intensity(intensities, flags,  h,  k,  l);
+	val += lookup_flagged_intensity(intensities, flags,  i,  h,  l);
+	val += lookup_flagged_intensity(intensities, flags,  k,  i,  l);
+	val += lookup_flagged_intensity(intensities, flags, -h, -k,  l);
+	val += lookup_flagged_intensity(intensities, flags, -i, -h,  l);
+	val += lookup_flagged_intensity(intensities, flags, -k, -i,  l);
+	val += lookup_flagged_intensity(intensities, flags,  k,  h, -l);
+	val += lookup_flagged_intensity(intensities, flags,  h,  i, -l);
+	val += lookup_flagged_intensity(intensities, flags,  i,  k, -l);
+	val += lookup_flagged_intensity(intensities, flags, -k, -h, -l);
+	val += lookup_flagged_intensity(intensities, flags, -h, -i, -l);
+	val += lookup_flagged_intensity(intensities, flags, -i, -k, -l);
+	val += lookup_flagged_intensity(intensities, flags, -h, -k, -l);
+	val += lookup_flagged_intensity(intensities, flags, -i, -h, -l);
+	val += lookup_flagged_intensity(intensities, flags, -k,  i, -l);
+	val += lookup_flagged_intensity(intensities, flags,  h,  k, -l);
+	val += lookup_flagged_intensity(intensities, flags,  i,  h, -l);
+	val += lookup_flagged_intensity(intensities, flags,  k,  i, -l);
+	val += lookup_flagged_intensity(intensities, flags, -k, -h,  l);
+	val += lookup_flagged_intensity(intensities, flags, -h, -i,  l);
+	val += lookup_flagged_intensity(intensities, flags, -i, -k,  l);
+	val += lookup_flagged_intensity(intensities, flags,  k,  h,  l);
+	val += lookup_flagged_intensity(intensities, flags,  h,  i,  l);
+	val += lookup_flagged_intensity(intensities, flags,  i,  k,  l);
+	#endif /* PG6MMM */
+
+	return val;
+	#endif /* FLAT_INTENSITIIES */
 }
 
 
@@ -109,7 +192,8 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
                        float kstep,
                        read_only image2d_t func_a,
                        read_only image2d_t func_b,
-                       read_only image2d_t func_c)
+                       read_only image2d_t func_c,
+                       global float *flags)
 {
 	float ttv;
 	const int x = get_global_id(0) + (xmin*sampling);
@@ -128,7 +212,7 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
 	/* Calculate value */
 	q = get_q(x, y, cx, cy, res, clen, k, &ttv, sampling);
 	f_lattice = lattice_factor(cell, q, func_a, func_b, func_c);
-	I_molecule = get_intensity(intensities, cell, q);
+	I_molecule = molecule_factor(intensities, flags, cell, q);
 	I_lattice = pow(f_lattice, 2.0f);
 
 	/* Write the value to local memory */

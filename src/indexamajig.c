@@ -286,7 +286,7 @@ static void simulate_and_write(struct image *simage, struct gpu_context **gctx,
 	 * Unfortunately, setup has to go here since until now we don't know
 	 * enough about the situation. */
 	if ( (gctx != NULL) && (*gctx == NULL) ) {
-		*gctx = setup_gpu(0, simage, intensities, flags, gpu_dev);
+		*gctx = setup_gpu(0, simage, intensities, flags, sym, gpu_dev);
 	}
 
 	if ( (gctx != NULL) && (*gctx != NULL) ) {

@@ -146,13 +146,14 @@ static void show_build_log(cl_program prog, cl_device_id dev)
 
 
 cl_program load_program(const char *filename, cl_context ctx,
-                        cl_device_id dev, cl_int *err)
+                        cl_device_id dev, cl_int *err, const char *extra_cflags)
 {
 	FILE *fh;
 	cl_program prog;
 	char *source;
 	size_t len;
 	cl_int r;
+	char cflags[1024] = "";
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
@@ -172,9 +173,12 @@ cl_program load_program(const char *filename, cl_context ctx,
 		return 0;
 	}
 
-	r = clBuildProgram(prog, 0, NULL,
-	                   "-Werror -I"DATADIR"/crystfel/ -cl-no-signed-zeros",
-	                   NULL, NULL);
+	snprintf(cflags, 1023, "-Werror ");
+	strncat(cflags, "-I"DATADIR"/crystfel/ ", 1023-strlen(cflags));
+	strncat(cflags, "-cl-no-signed-zeros ", 1023-strlen(cflags));
+	strncat(cflags, extra_cflags, 1023-strlen(cflags));
+
+	r = clBuildProgram(prog, 0, NULL, cflags, NULL, NULL);
 	if ( r != CL_SUCCESS ) {
 		ERROR("Couldn't build program '%s'\n", filename);
 		show_build_log(prog, dev);

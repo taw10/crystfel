@@ -39,6 +39,7 @@ struct gpu_context
 	cl_program prog;
 	cl_kernel kern;
 	cl_mem intensities;
+	cl_mem flags;
 
 	cl_mem tt;
 	size_t tt_size;
@@ -219,6 +220,13 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		return;
 	}
 
+	/* Flag array */
+	clSetKernelArg(gctx->kern, 18, sizeof(cl_mem), &gctx->flags);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set flag array: %s\n", clError(err));
+		return;
+	}
+
 	/* Iterate over panels */
 	event = malloc(image->det->n_panels * sizeof(cl_event));
 	for ( p=0; p<image->det->n_panels; p++ ) {
@@ -331,7 +339,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 /* Setup the OpenCL stuff, create buffers, load the structure factor table */
 struct gpu_context *setup_gpu(int no_sfac, struct image *image,
                               const double *intensities, unsigned char *flags,
-                              int dev_num)
+                              const char *sym, int dev_num)
 {
 	struct gpu_context *gctx;
 	cl_uint nplat;
@@ -341,8 +349,11 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	cl_device_id dev;
 	size_t intensities_size;
 	float *intensities_ptr;
+	size_t flags_size;
+	float *flags_ptr;
 	size_t maxwgsize;
 	int i;
+	char cflags[512] = "";
 
 	STATUS("Setting up GPU...\n");
 
@@ -396,8 +407,9 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 		}
 	} else {
 		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
-			intensities_ptr[i] = 1e10;
+			intensities_ptr[i] = 1e5;
 		}
+		strncat(cflags, "-DFLAT_INTENSITIES ", 511-strlen(cflags));
 	}
 	gctx->intensities = clCreateBuffer(gctx->ctx,
 	                             CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
@@ -409,6 +421,44 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	}
 	free(intensities_ptr);
 
+	if ( strcmp(sym, "1") == 0 ) {
+		strncat(cflags, "-DPG1 ", 511-strlen(cflags));
+	} else if ( strcmp(sym, "-1") == 0 ) {
+		strncat(cflags, "-DPG1BAR ", 511-strlen(cflags));
+	} else if ( strcmp(sym, "6/mmm") == 0 ) {
+		strncat(cflags, "-DPG6MMM ", 511-strlen(cflags));
+	} else if ( strcmp(sym, "6") == 0 ) {
+		strncat(cflags, "-DPG6 ", 511-strlen(cflags));
+	} else if ( strcmp(sym, "6/m") == 0 ) {
+		strncat(cflags, "-DPG6M ", 511-strlen(cflags));
+	} else {
+		ERROR("Sorry!  Point group '%s' is not currently supported"
+		      " on the GPU.  I'm using '1' instead.\n", sym);
+		strncat(cflags, "-DPG1 ", 511-strlen(cflags));
+	}
+
+	/* Create a flag array */
+	flags_size = IDIM*IDIM*IDIM*sizeof(cl_float);
+	flags_ptr = malloc(flags_size);
+	if ( flags != NULL ) {
+		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
+			flags_ptr[i] = flags[i];
+		}
+	} else {
+		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
+			flags_ptr[i] = 1.0;
+		}
+	}
+	gctx->flags = clCreateBuffer(gctx->ctx,
+	                             CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+	                             flags_size, flags_ptr, &err);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't allocate flag buffer\n");
+		free(gctx);
+		return NULL;
+	}
+	free(flags_ptr);
+
 	gctx->tt_size = image->width*image->height*sizeof(cl_float);
 	gctx->tt = clCreateBuffer(gctx->ctx, CL_MEM_WRITE_ONLY, gctx->tt_size,
 	                          NULL, &err);
@@ -419,7 +469,7 @@ struct gpu_context *setup_gpu(int no_sfac, struct image *image,
 	}
 
 	gctx->prog = load_program(DATADIR"/crystfel/diffraction.cl", gctx->ctx,
-	                          dev, &err);
+	                          dev, &err, cflags);
 	if ( err != CL_SUCCESS ) {
 		free(gctx);
 		return NULL;
