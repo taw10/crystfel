@@ -119,12 +119,13 @@ indexamajig_OBJECTS = $(am_indexamajig_OBJECTS)
 indexamajig_DEPENDENCIES =
 am__pattern_sim_SOURCES_DIST = pattern_sim.c diffraction.c utils.c \
 	image.c cell.c hdf5-file.c detector.c sfac.c peaks.c \
-	reflections.c beam-parameters.c diffraction-gpu.c cl-utils.c
+	reflections.c beam-parameters.c symmetry.c diffraction-gpu.c \
+	cl-utils.c
 am_pattern_sim_OBJECTS = pattern_sim.$(OBJEXT) diffraction.$(OBJEXT) \
 	utils.$(OBJEXT) image.$(OBJEXT) cell.$(OBJEXT) \
 	hdf5-file.$(OBJEXT) detector.$(OBJEXT) sfac.$(OBJEXT) \
 	peaks.$(OBJEXT) reflections.$(OBJEXT) \
-	beam-parameters.$(OBJEXT) $(am__objects_1)
+	beam-parameters.$(OBJEXT) symmetry.$(OBJEXT) $(am__objects_1)
 pattern_sim_OBJECTS = $(am_pattern_sim_OBJECTS)
 pattern_sim_DEPENDENCIES =
 am_powder_plot_OBJECTS = powder_plot.$(OBJEXT) cell.$(OBJEXT) \
@@ -284,7 +285,7 @@ AM_CFLAGS = -Wall
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\"
 pattern_sim_SOURCES = pattern_sim.c diffraction.c utils.c image.c \
 	cell.c hdf5-file.c detector.c sfac.c peaks.c reflections.c \
-	beam-parameters.c $(am__append_2)
+	beam-parameters.c symmetry.c $(am__append_2)
 pattern_sim_LDADD = @LIBS@
 process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
                       reflections.c symmetry.c stream.c beam-parameters.c

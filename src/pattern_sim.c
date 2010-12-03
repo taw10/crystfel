@@ -68,6 +68,7 @@ static void show_help(const char *s)
 "                            this invocation as the given filename.\n"
 " -i, --intensities=<file>  Specify file containing reflection intensities\n"
 "                            (and phases) to use.\n"
+" -y, --symmetry=<sym>      The symmetry of the intensities file.\n"
 " -t, --gradients=<method>  Use <method> for the calculation of shape\n"
 "                            transform intensities.  Choose from:\n"
 "                             mosaic      : Take the intensity of the nearest\n"
@@ -201,6 +202,7 @@ int main(int argc, char *argv[])
 	double *intensities;
 	char *rval;
 	double *phases;
+	unsigned char *flags;
 	int config_simdetails = 0;
 	int config_nearbragg = 0;
 	int config_randomquat = 0;
@@ -227,6 +229,7 @@ int main(int argc, char *argv[])
 	int random_size = 0;
 	double min_size = 0.0;
 	double max_size = 0.0;
+	char *sym = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -240,6 +243,7 @@ int main(int argc, char *argv[])
 		{"no-water",           0, &config_nowater,     1},
 		{"no-noise",           0, &config_nonoise,     1},
 		{"intensities",        1, NULL,               'i'},
+		{"symmetry",           1, NULL,               'y'},
 		{"powder",             1, NULL,               'w'},
 		{"gradients",          1, NULL,               't'},
 		{"pdb",                1, NULL,               'p'},
@@ -254,7 +258,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hrn:i:t:p:o:g:b:",
+	while ((c = getopt_long(argc, argv, "hrn:i:t:p:o:g:b:y:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -300,6 +304,10 @@ int main(int argc, char *argv[])
 
 		case 'b' :
 			beamfile = strdup(optarg);
+			break;
+
+		case 'y' :
+			sym = strdup(optarg);
 			break;
 
 		case 2 :
@@ -359,6 +367,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if ( sym == NULL ) sym = strdup("1");
+
 	if ( config_simdetails ) {
 		show_details();
 		return 0;
@@ -404,14 +414,20 @@ int main(int argc, char *argv[])
 	}
 
 	if ( intfile == NULL ) {
+
 		/* Gentle reminder */
 		STATUS("You didn't specify the file containing the ");
 		STATUS("reflection intensities (with --intensities).\n");
 		STATUS("I'll simulate a flat intensity distribution.\n");
 		intensities = NULL;
 		phases = NULL;
+		flags = NULL;
+
 	} else {
+
+		int i;
 		ReflItemList *items;
+
 		if ( grad == GRADIENT_PHASED ) {
 			phases = new_list_phase();
 		} else {
@@ -419,9 +435,16 @@ int main(int argc, char *argv[])
 		}
 		intensities = new_list_intensity();
 		phases = new_list_phase();
+		flags = new_list_flag();
 		items = read_reflections(intfile, intensities, phases,
 		                         NULL, NULL);
 		free(intfile);
+
+		for ( i=0; i<num_items(items); i++ ) {
+			struct refl_item *it = get_item(items, i);
+			set_flag(flags, it->h, it->k, it->l, 1);
+		}
+
 		delete_items(items);
 	}
 
@@ -516,12 +539,13 @@ int main(int argc, char *argv[])
 		if ( config_gpu ) {
 			if ( gctx == NULL ) {
 				gctx = setup_gpu(config_nosfac, &image,
-				                 intensities, gpu_dev);
+				                 intensities, flags, gpu_dev);
 			}
 			get_diffraction_gpu(gctx, &image, na, nb, nc, cell);
 		} else {
 			get_diffraction(&image, na, nb, nc, intensities, phases,
-			                cell, !config_nowater, grad);
+			                flags, cell, !config_nowater, grad,
+			                sym);
 		}
 		if ( image.data == NULL ) {
 			ERROR("Diffraction calculation failed.\n");
@@ -599,6 +623,7 @@ skip:
 	free(intensities);
 	free(outfile);
 	free(filename);
+	free(sym);
 
 	return 0;
 }

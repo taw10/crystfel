@@ -23,6 +23,7 @@
 #include "diffraction.h"
 #include "sfac.h"
 #include "beam-parameters.h"
+#include "symmetry.h"
 
 
 #define SAMPLING (4)
@@ -69,8 +70,63 @@ static double lattice_factor(struct rvec q, double ax, double ay, double az,
 }
 
 
-static double interpolate_linear(const double *ref,
-                                 float hd, signed int k, signed int l)
+static double sym_lookup_intensity(const double *intensities,
+                                   const unsigned char *flags, const char *sym,
+                                   signed int h, signed int k, signed int l)
+{
+	int i;
+	double ret = 0.0;
+
+	for ( i=0; i<num_general_equivs(sym); i++ ) {
+
+		signed int he;
+		signed int ke;
+		signed int le;
+		double f, val;
+
+		get_general_equiv(h, k, l, &he, &ke, &le, sym, i);
+
+		f = (double)lookup_flag(flags, he, ke, le);
+		val = lookup_intensity(intensities, he, ke, le);
+
+		ret += f*val;
+
+	}
+
+	return ret;
+}
+
+
+static double sym_lookup_phase(const double *phases,
+                               const unsigned char *flags, const char *sym,
+                               signed int h, signed int k, signed int l)
+{
+	int i;
+	double ret = 0.0;
+
+	for ( i=0; i<num_general_equivs(sym); i++ ) {
+
+		signed int he;
+		signed int ke;
+		signed int le;
+		double f, val;
+
+		get_general_equiv(h, k, l, &he, &ke, &le, sym, i);
+
+		f = (double)lookup_flag(flags, he, ke, le);
+		val = lookup_phase(phases, he, ke, le);
+
+		ret += f*val;
+
+	}
+
+	return ret;
+}
+
+
+static double interpolate_linear(const double *ref, const unsigned char *flags,
+                                 const char *sym, float hd,
+                                 signed int k, signed int l)
 {
 	signed int h;
 	double val1, val2;
@@ -81,8 +137,8 @@ static double interpolate_linear(const double *ref,
 	f = hd - (float)h;
 	assert(f >= 0.0);
 
-	val1 = lookup_intensity(ref, h, k, l);
-	val2 = lookup_intensity(ref, h+1, k, l);
+	val1 = sym_lookup_intensity(ref, flags, sym, h, k, l);
+	val2 = sym_lookup_intensity(ref, flags, sym, h+1, k, l);
 
 	val1 = val1;
 	val2 = val2;
@@ -92,6 +148,7 @@ static double interpolate_linear(const double *ref,
 
 
 static double interpolate_bilinear(const double *ref,
+                                   const unsigned char *flags, const char *sym,
                                    float hd, float kd, signed int l)
 {
 	signed int k;
@@ -103,14 +160,15 @@ static double interpolate_bilinear(const double *ref,
 	f = kd - (float)k;
 	assert(f >= 0.0);
 
-	val1 = interpolate_linear(ref, hd, k, l);
-	val2 = interpolate_linear(ref, hd, k+1, l);
+	val1 = interpolate_linear(ref, flags, sym, hd, k, l);
+	val2 = interpolate_linear(ref, flags, sym, hd, k+1, l);
 
 	return (1.0-f)*val1 + f*val2;
 }
 
 
 static double interpolate_intensity(const double *ref,
+                                    const unsigned char *flags, const char *sym,
                                     float hd, float kd, float ld)
 {
 	signed int l;
@@ -122,8 +180,8 @@ static double interpolate_intensity(const double *ref,
 	f = ld - (float)l;
 	assert(f >= 0.0);
 
-	val1 = interpolate_bilinear(ref, hd, kd, l);
-	val2 = interpolate_bilinear(ref, hd, kd, l+1);
+	val1 = interpolate_bilinear(ref, flags, sym, hd, kd, l);
+	val2 = interpolate_bilinear(ref, flags, sym, hd, kd, l+1);
 
 	return (1.0-f)*val1 + f*val2;
 }
@@ -131,6 +189,8 @@ static double interpolate_intensity(const double *ref,
 
 static double complex interpolate_phased_linear(const double *ref,
                                                 const double *phases,
+                                                const unsigned char *flags,
+                                                const char *sym,
                                                 float hd,
                                                 signed int k, signed int l)
 {
@@ -146,10 +206,10 @@ static double complex interpolate_phased_linear(const double *ref,
 	f = hd - (float)h;
 	assert(f >= 0.0);
 
-	val1 = lookup_intensity(ref, h, k, l);
-	val2 = lookup_intensity(ref, h+1, k, l);
-	ph1 = lookup_phase(phases, h, k, l);
-	ph2 = lookup_phase(phases, h+1, k, l);
+	val1 = sym_lookup_intensity(ref, flags, sym, h, k, l);
+	val2 = sym_lookup_intensity(ref, flags, sym, h+1, k, l);
+	ph1 = sym_lookup_phase(phases, flags, sym, h, k, l);
+	ph2 = sym_lookup_phase(phases, flags, sym, h+1, k, l);
 
 	val1 = val1;
 	val2 = val2;
@@ -169,6 +229,8 @@ static double complex interpolate_phased_linear(const double *ref,
 
 static double complex interpolate_phased_bilinear(const double *ref,
                                                   const double *phases,
+                                                  const unsigned char *flags,
+                                                  const char *sym,
                                                   float hd, float kd,
                                                   signed int l)
 {
@@ -181,8 +243,8 @@ static double complex interpolate_phased_bilinear(const double *ref,
 	f = kd - (float)k;
 	assert(f >= 0.0);
 
-	val1 = interpolate_phased_linear(ref, phases, hd, k, l);
-	val2 = interpolate_phased_linear(ref, phases, hd, k+1, l);
+	val1 = interpolate_phased_linear(ref, phases, flags, sym, hd, k, l);
+	val2 = interpolate_phased_linear(ref, phases, flags, sym, hd, k+1, l);
 
 	return (1.0-f)*val1 + f*val2;
 }
@@ -190,6 +252,8 @@ static double complex interpolate_phased_bilinear(const double *ref,
 
 static double interpolate_phased_intensity(const double *ref,
                                            const double *phases,
+                                           const unsigned char *flags,
+                                           const char *sym,
                                            float hd, float kd, float ld)
 {
 	signed int l;
@@ -201,20 +265,22 @@ static double interpolate_phased_intensity(const double *ref,
 	f = ld - (float)l;
 	assert(f >= 0.0);
 
-	val1 = interpolate_phased_bilinear(ref, phases, hd, kd, l);
-	val2 = interpolate_phased_bilinear(ref, phases, hd, kd, l+1);
+	val1 = interpolate_phased_bilinear(ref, phases, flags, sym,
+	                                   hd, kd, l);
+	val2 = interpolate_phased_bilinear(ref, phases, flags, sym,
+	                                   hd, kd, l+1);
 
 	return cabs((1.0-f)*val1 + f*val2);
 }
 
 
 /* Look up the structure factor for the nearest Bragg condition */
-static double molecule_factor(const double *intensities,const double *phases,
-                              struct rvec q,
+static double molecule_factor(const double *intensities, const double *phases,
+                              const unsigned char *flags, struct rvec q,
                               double ax, double ay, double az,
                               double bx, double by, double bz,
                               double cx, double cy, double cz,
-                              GradientMethod m)
+                              GradientMethod m, const char *sym)
 {
 	float hd, kd, ld;
 	signed int h, k, l;
@@ -224,6 +290,9 @@ static double molecule_factor(const double *intensities,const double *phases,
 	kd = q.u * bx + q.v * by + q.w * bz;
 	ld = q.u * cx + q.v * cy + q.w * cz;
 
+	/* No flags -> flat intensity distribution */
+	if ( flags == NULL ) return 1.0e5;
+
 	switch ( m ) {
 	case GRADIENT_MOSAIC :
 		h = (signed int)rint(hd);
@@ -232,14 +301,14 @@ static double molecule_factor(const double *intensities,const double *phases,
 		if ( abs(h) > INDMAX ) r = 0.0;
 		else if ( abs(k) > INDMAX ) r = 0.0;
 		else if ( abs(l) > INDMAX ) r = 0.0;
-		else r = lookup_intensity(intensities, h, k, l);
+		else r = sym_lookup_intensity(intensities, flags, sym, h, k, l);
 		break;
 	case GRADIENT_INTERPOLATE :
-		r = interpolate_intensity(intensities, hd, kd, ld);
+		r = interpolate_intensity(intensities, flags, sym, hd, kd, ld);
 		break;
 	case GRADIENT_PHASED :
-		r = interpolate_phased_intensity(intensities, phases,
-		                                 hd, kd, ld);
+		r = interpolate_phased_intensity(intensities, phases, flags,
+		                                 sym, hd, kd, ld);
 		break;
 	default:
 		ERROR("This gradient method not implemented yet.\n");
@@ -298,7 +367,8 @@ double water_diffraction(struct rvec q, double en,
 
 void get_diffraction(struct image *image, int na, int nb, int nc,
                      const double *intensities, const double *phases,
-                     UnitCell *cell, int do_water, GradientMethod m)
+                     const unsigned char *flags, UnitCell *cell, int do_water,
+                     GradientMethod m, const char *sym)
 {
 	unsigned int xs, ys;
 	double ax, ay, az;
@@ -353,10 +423,10 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 				I_molecule = 1.0e10;
 			} else {
 				I_molecule = molecule_factor(intensities,
-				                             phases, q,
+				                             phases, flags, q,
 			                                     ax,ay,az,
 			                                     bx,by,bz,cx,cy,cz,
-				                             m);
+				                             m, sym);
 			}
 
 			I_lattice = pow(f_lattice, 2.0);

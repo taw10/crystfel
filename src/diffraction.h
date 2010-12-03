@@ -26,7 +26,8 @@ typedef enum {
 } GradientMethod;
 
 extern void get_diffraction(struct image *image, int na, int nb, int nc,
-                            const double *intensities,const double *phases,
-                            UnitCell *cell, int do_water, GradientMethod m);
+                            const double *intensities, const double *phases,
+                            const unsigned char *flags, UnitCell *cell,
+                            int do_water, GradientMethod m, const char *sym);
 
 #endif	/* DIFFRACTION_H */

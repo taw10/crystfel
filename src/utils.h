@@ -180,6 +180,11 @@ static inline double angle_between(double x1, double y1, double z1,
 #define TYPE double
 #include "list_tmp.h"
 
+/* As above, but for simple flags */
+#define LABEL(x) x##_flag
+#define TYPE unsigned char
+#include "list_tmp.h"
+
 
 /* ----------- Reflection lists indexed by sequence (not indices) ----------- */
 

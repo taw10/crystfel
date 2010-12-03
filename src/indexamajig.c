@@ -70,6 +70,8 @@ struct static_index_args
 	IndexingMethod indm;
 	IndexingPrivate *ipriv;
 	const double *intensities;
+	const unsigned char *flags;
+	const char *sym;  /* Symmetry of "intensities" and "flags" */
 	struct gpu_context *gctx;
 	int gpu_dev;
 	int peaks;
@@ -191,6 +193,7 @@ static void show_help(const char *s)
 "\nIf you used --simulate, you may also want:\n\n"
 "     --intensities=<file> Specify file containing reflection intensities\n"
 "                           to use when simulating.\n"
+" -y, --symmetry=<sym>     The symmetry of the intensities file.\n"
 "\n"
 "\nOptions for greater performance or verbosity:\n\n"
 "     --verbose            Be verbose about indexing.\n"
@@ -275,22 +278,23 @@ static struct image *get_simage(struct image *template, int alternate)
 
 
 static void simulate_and_write(struct image *simage, struct gpu_context **gctx,
-                               const double *intensities, UnitCell *cell,
-                               int gpu_dev)
+                               const double *intensities,
+                               const unsigned char *flags, UnitCell *cell,
+                               int gpu_dev, const char *sym)
 {
 	/* Set up GPU if necessary.
 	 * Unfortunately, setup has to go here since until now we don't know
 	 * enough about the situation. */
 	if ( (gctx != NULL) && (*gctx == NULL) ) {
-		*gctx = setup_gpu(0, simage, intensities, gpu_dev);
+		*gctx = setup_gpu(0, simage, intensities, flags, gpu_dev);
 	}
 
 	if ( (gctx != NULL) && (*gctx != NULL) ) {
 		get_diffraction_gpu(*gctx, simage, 24, 24, 40, cell);
 	} else {
 		get_diffraction(simage, 24, 24, 40,
-		                intensities, NULL, cell, 0,
-		                GRADIENT_MOSAIC);
+		                intensities, NULL, flags, cell, 0,
+		                GRADIENT_MOSAIC, sym);
 	}
 	record_image(simage, 0);
 
@@ -321,7 +325,9 @@ static void process_image(void *pp, int cookie)
 	int config_polar = pargs->static_args.config_polar;
 	IndexingMethod indm = pargs->static_args.indm;
 	const double *intensities = pargs->static_args.intensities;
+	const unsigned char *flags = pargs->static_args.flags;
 	struct gpu_context *gctx = pargs->static_args.gctx;
+	const char *sym = pargs->static_args.sym;
 
 	image.features = NULL;
 	image.data = NULL;
@@ -428,13 +434,13 @@ static void process_image(void *pp, int cookie)
 	if ( config_simulate ) {
 		if ( config_gpu ) {
 			pthread_mutex_lock(pargs->static_args.gpu_mutex);
-			simulate_and_write(simage, &gctx, intensities,
+			simulate_and_write(simage, &gctx, intensities, flags,
 			                   image.indexed_cell,
-			                   pargs->static_args.gpu_dev);
+			                   pargs->static_args.gpu_dev, sym);
 			pthread_mutex_unlock(pargs->static_args.gpu_mutex);
 		} else {
-			simulate_and_write(simage, NULL, intensities,
-			                   image.indexed_cell, 0);
+			simulate_and_write(simage, NULL, intensities, flags,
+			                   image.indexed_cell, 0, sym);
 		}
 	}
 
@@ -539,6 +545,7 @@ int main(int argc, char *argv[])
 	char *indm_str = NULL;
 	UnitCell *cell;
 	double *intensities = NULL;
+	unsigned char *flags;
 	char *intfile = NULL;
 	char *pdb = NULL;
 	char *prefix = NULL;
@@ -557,6 +564,7 @@ int main(int argc, char *argv[])
 	struct beam_params *beam = NULL;
 	double nominal_photon_energy;
 	int gpu_dev = -1;
+	char *sym = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -579,6 +587,7 @@ int main(int argc, char *argv[])
 		{"verbose",            0, &config_verbose,     1},
 		{"alternate",          0, &config_alternate,   1},
 		{"intensities",        1, NULL,               'q'},
+		{"symmetry",           1, NULL,               'y'},
 		{"pdb",                1, NULL,               'p'},
 		{"prefix",             1, NULL,               'x'},
 		{"unpolarized",        0, &config_polar,       0},
@@ -595,7 +604,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:wp:j:x:g:t:o:b:",
+	while ((c = getopt_long(argc, argv, "hi:wp:j:x:g:t:o:b:y:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -637,6 +646,10 @@ int main(int argc, char *argv[])
 
 		case 't' :
 			threshold = strtof(optarg, NULL);
+			break;
+
+		case 'y' :
+			sym = strdup(optarg);
 			break;
 
 		case 'b' :
@@ -701,6 +714,8 @@ int main(int argc, char *argv[])
 	}
 	free(outfile);
 
+	if ( sym == NULL ) sym = strdup("1");
+
 	if ( speaks == NULL ) {
 		speaks = strdup("zaef");
 		STATUS("You didn't specify a peak detection method.\n");
@@ -717,12 +732,26 @@ int main(int argc, char *argv[])
 	free(speaks);
 
 	if ( intfile != NULL ) {
+
 		ReflItemList *items;
+		int i;
+
 		items = read_reflections(intfile, intensities,
 		                         NULL, NULL, NULL);
+
+		flags = new_list_flag();
+		for ( i=0; i<num_items(items); i++ ) {
+			struct refl_item *it = get_item(items, i);
+			set_flag(flags, it->h, it->k, it->l, 1);
+		}
+
 		delete_items(items);
+
 	} else {
+
 		intensities = NULL;
+		flags = NULL;
+
 	}
 
 	if ( pdb == NULL ) {
@@ -859,6 +888,8 @@ int main(int argc, char *argv[])
 	qargs.static_args.indm = indm;
 	qargs.static_args.ipriv = ipriv;
 	qargs.static_args.intensities = intensities;
+	qargs.static_args.flags = flags;
+	qargs.static_args.sym = sym;
 	qargs.static_args.gctx = gctx;
 	qargs.static_args.gpu_dev = gpu_dev;
 	qargs.static_args.peaks = peaks;
@@ -881,6 +912,7 @@ int main(int argc, char *argv[])
 	free(det);
 	cell_free(cell);
 	if ( fh != stdout ) fclose(fh);
+	free(sym);
 
 	STATUS("There were %i images.  %i could be indexed, of which %i"
 	       " looked sane.\n", n_images, qargs.n_indexable, qargs.n_sane);
