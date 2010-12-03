@@ -47,3 +47,9 @@ returns (by reference) the indices of the "n"th equivalent reflection. You just
 have to worry about the general position, because get_equiv() will work out the
 special positions for you.  get_general_equiv() must return the original indices
 when idx=0.
+
+If you want the new point group to be used for simulation on the GPU, you will
+also need to modify src/diffraction-gpu.c and data/diffraction.cl.  Choose a
+simple capitalised name for the point group and add it to the list of OpenCL
+preprocessor definitions in setup_gpu().  Then add a corresponding list of
+equivalents following the established pattern in molecule_factor().  That's it.
