@@ -207,7 +207,8 @@ static void integrate_image(struct image *image)
 		 * pattern? */
 		/* FIXME: Coordinates aren't whole numbers */
 		if ( integrate_peak(image, spots[j].x, spots[j].y,
-		                    &xc, &yc, &i_partial, NULL, NULL, 1, 1) ) {
+		                    &xc, &yc, &i_partial, NULL, NULL,
+		                    1, 1, 0) ) {
 			continue;
 		}
 

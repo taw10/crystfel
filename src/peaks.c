@@ -49,12 +49,6 @@
 /* Window size for Zaefferer peak detection */
 #define PEAK_WINDOW_SIZE (10)
 
-/* Integration radius for peaks */
-#define INTEGRATION_RADIUS (10)
-
-/* Integration radius for background estimation */
-#define OUT_INTEGRATION_RADIUS (15)
-
 
 static int in_streak(int x, int y)
 {
@@ -188,32 +182,43 @@ static int cull_peaks(struct image *image)
 int integrate_peak(struct image *image, int xp, int yp,
                    float *xc, float *yc, float *intensity,
                    double *pbg, double *pmax,
-                   int do_polar, int do_sa)
+                   int do_polar, int do_sa, int centroid)
 {
 	signed int x, y;
-	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
-	const int out_lim = OUT_INTEGRATION_RADIUS * OUT_INTEGRATION_RADIUS;
+	int lim, out_lim;
 	double total = 0.0;
 	int xct = 0;
 	int yct = 0;
 	double noise = 0.0;
 	int noise_counts = 0;
 	double max = 0.0;
+	struct panel *p = NULL;
 
-	for ( x=-OUT_INTEGRATION_RADIUS; x<+OUT_INTEGRATION_RADIUS; x++ ) {
-	for ( y=-OUT_INTEGRATION_RADIUS; y<+OUT_INTEGRATION_RADIUS; y++ ) {
+	p = find_panel(image->det, xp, yp);
+	if ( p == NULL ) return 1;
+	if ( p->no_index ) return 1;
 
-		struct panel *p = NULL;
+	lim = p->peak_sep/2;
+	out_lim = lim + 1;
+
+	for ( x=-out_lim; x<+out_lim; x++ ) {
+	for ( y=-out_lim; y<+out_lim; y++ ) {
+
 		double val, sa, pix_area, Lsq, dsq, proj_area;
 		float tt = 0.0;
 		double phi, pa, pb, pol;
 		uint16_t flags;
+		struct panel *p2;
 
 		/* Outer mask radius */
 		if ( x*x + y*y > out_lim ) continue;
 
 		if ( ((x+xp)>=image->width) || ((x+xp)<0) ) continue;
 		if ( ((y+yp)>=image->height) || ((y+yp)<0) ) continue;
+
+		/* Strayed off one panel? */
+		p2 = find_panel(image->det, x+xp, y+yp);
+		if ( p2 != p ) return 1;
 
 		/* Veto this peak if we tried to integrate in a bad region */
 		if ( image->flags != NULL ) {
@@ -232,11 +237,6 @@ int integrate_peak(struct image *image, int xp, int yp,
 		}
 
 		if ( val > max ) max = val;
-
-		p = find_panel(image->det, x+xp, y+yp);
-		if ( p == NULL ) return 1;
-
-		if ( p->no_index ) return 1;
 
 		if ( do_sa ) {
 
@@ -281,7 +281,7 @@ int integrate_peak(struct image *image, int xp, int yp,
 	}
 
 	/* The centroid is excitingly undefined if there is no intensity */
-	if ( total != 0 ) {
+	if ( centroid && (total != 0) ) {
 		*xc = (float)xct / total;
 		*yc = (float)yct / total;
 		*intensity = total;
@@ -420,7 +420,7 @@ void search_peaks(struct image *image, float threshold, float min_gradient)
 		 * Don't bother doing polarisation/SA correction, because the
 		 * intensity of this peak is only an estimate at this stage. */
 		r = integrate_peak(image, mask_x, mask_y,
-		                   &fx, &fy, &intensity, NULL, NULL, 0, 0);
+		                   &fx, &fy, &intensity, NULL, NULL, 0, 0, 1);
 		if ( r ) {
 			/* Bad region - don't detect peak */
 			nrej_bad++;
@@ -766,7 +766,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 				 * revised coordinates. */
 				r = integrate_peak(image, f->x, f->y, &x, &y,
 					           &intensity, &bg, &max,
-					           polar, sa);
+					           polar, sa, 1);
 				if ( r ) {
 					/* The original peak (which also went
 					 * through integrate_peak(), but with
@@ -788,7 +788,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 					           image->cpeaks[i].x,
 					           image->cpeaks[i].y,
 					           &x, &y, &intensity, &bg, &max,
-					           polar, sa);
+					           polar, sa, 1);
 				if ( r ) {
 					/* Plain old ordinary peak veto */
 					n_veto++;
@@ -809,7 +809,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 				           image->cpeaks[i].x,
 				           image->cpeaks[i].y,
 				           &x, &y, &intensity, &bg, &max, polar,
-				           sa);
+				           sa, 0);
 			if ( r ) {
 				/* Plain old ordinary peak veto */
 				n_veto++;

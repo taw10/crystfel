@@ -245,7 +245,8 @@ double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
 		 * pattern? */
 		/* FIXME: Coordinates aren't whole numbers */
 		if ( integrate_peak(image, spots[h].x, spots[h].y,
-		                    &xc, &yc, &I_partial, NULL, NULL, 1, 1) ) {
+		                    &xc, &yc, &I_partial, NULL, NULL,
+		                    1, 1, 0) ) {
 			continue;
 		}
 
@@ -316,7 +317,8 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 		 * pattern? */
 		/* FIXME: Coordinates aren't whole numbers */
 		if ( integrate_peak(image, spots[h].x, spots[h].y,
-		                    &xc, &yc, &I_partial, NULL, NULL, 1, 1) ) {
+		                    &xc, &yc, &I_partial, NULL, NULL,
+		                    1, 1, 0) ) {
 			continue;
 		}
 
