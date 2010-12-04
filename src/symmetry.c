@@ -631,11 +631,13 @@ int check_symmetry(ReflItemList *items, const char *sym)
 		}
 
 		if ( found > 1 ) {
-			STATUS("%i found for %i %i %i\n", found, it->h, it->k, it->l);
+			free(flags);
 			return 1;  /* Symmetry is wrong! */
 		}
 
 	}
+
+	free(flags);
 
 	return 0;
 }
