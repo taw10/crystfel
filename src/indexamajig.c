@@ -745,6 +745,12 @@ int main(int argc, char *argv[])
 			set_flag(flags, it->h, it->k, it->l, 1);
 		}
 
+		if ( check_symmetry(items, sym) ) {
+			ERROR("The input reflection list does not appear to"
+			      " have symmetry %s\n", sym);
+			return 1;
+		}
+
 		delete_items(items);
 
 	} else {

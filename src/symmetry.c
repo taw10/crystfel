@@ -454,22 +454,6 @@ ReflItemList *get_twins(ReflItemList *items, const char *holo, const char *mero)
 }
 
 
-static void scold_user_about_symmetry(signed int h, signed int k, signed int l,
-                                      signed int he, signed int ke,
-                                      signed int le)
-{
-	ERROR("Symmetrically equivalent reflection (%i %i %i) found for "
-	      "%i %i %i in the input.\n", he, ke, le, h, k, l);
-	ERROR("This indicates that you lied to me about the symmetry of the "
-	      "input reflections.  ");
-	ERROR("I won't be able to give you a meaningful result in this "
-	      "situation, so I'm going to give up right now.  ");
-	ERROR("Please reconsider your previous processing of the data, and "
-	      "perhaps try again with a lower symmetry for the '-y' option.\n");
-	abort();
-}
-
-
 int find_unique_equiv(ReflItemList *items, signed int h, signed int k,
                       signed int l, const char *mero, signed int *hu,
                       signed int *ku, signed int *lu)
@@ -485,19 +469,18 @@ int find_unique_equiv(ReflItemList *items, signed int h, signed int k,
 		f = find_item(items, he, ke, le);
 
 		/* There must only be one equivalent.  If there are more, it
-		 * indicates that the user lied about the input symmetry. */
-		if ( f && found ) {
-			scold_user_about_symmetry(he, ke, le, *hu, *ku, *lu);
-		}
+		 * indicates that the user lied about the input symmetry.
+		 * This situation should have been checked for earlier by
+		 * calling check_symmetry() with 'items' and 'mero'. */
 
 		if ( f && !found ) {
 			*hu = he;  *ku = ke;  *lu = le;
-			found = 1;
+			return 1;
 		}
 
 	}
 
-	return found;
+	return 0;
 }
 
 
@@ -614,4 +597,45 @@ int has_bisecting_mirror_or_diad(const char *sym)
 
 	ERROR("Couldn't find mirror definition for '%s'.\n", sym);
 	abort();
+}
+
+
+int check_symmetry(ReflItemList *items, const char *sym)
+{
+	int i;
+	unsigned char *flags;
+
+	flags = new_list_flag();
+	for ( i=0; i<num_items(items); i++ ) {
+		struct refl_item *it = get_item(items, i);
+		set_flag(flags, it->h, it->k, it->l, 1);
+	}
+
+	for ( i=0; i<num_items(items); i++ ) {
+
+		int j;
+		struct refl_item *it = get_item(items, i);
+		int found = 0;
+
+		for ( j=0; j<num_equivs(it->h, it->k, it->l, sym); j++ ) {
+
+			signed int he, ke, le;
+			get_equiv(it->h, it->k, it->l, &he, &ke, &le, sym, j);
+
+			if ( abs(he) > INDMAX ) continue;
+			if ( abs(le) > INDMAX ) continue;
+			if ( abs(ke) > INDMAX ) continue;
+
+			found += lookup_flag(flags, he, ke, le);
+
+		}
+
+		if ( found > 1 ) {
+			STATUS("%i found for %i %i %i\n", found, it->h, it->k, it->l);
+			return 1;  /* Symmetry is wrong! */
+		}
+
+	}
+
+	return 0;
 }

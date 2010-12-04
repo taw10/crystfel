@@ -42,6 +42,8 @@ extern int find_unique_equiv(ReflItemList *items, signed int h, signed int k,
                              signed int l, const char *mero, signed int *hu,
                              signed int *ku, signed int *lu);
 
+extern int check_symmetry(ReflItemList *items, const char *sym);
+
 /* Properties of point groups */
 extern int is_polyhedral(const char *sym);
 extern int rotational_order(const char *sym);

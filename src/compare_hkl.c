@@ -352,6 +352,18 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	/* Check that the intensities have the correct symmetry */
+	if ( check_symmetry(i1, sym) ) {
+		ERROR("The first input reflection list does not appear to"
+		      " have symmetry %s\n", sym);
+		return 1;
+	}
+	if ( check_symmetry(i2, sym) ) {
+		ERROR("The second input reflection list does not appear to"
+		      " have symmetry %s\n", sym);
+		return 1;
+	}
+
 	/* List for output scale factor map */
 	out = new_list_intensity();
 

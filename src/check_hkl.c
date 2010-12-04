@@ -379,6 +379,13 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	/* Check that the intensities have the correct symmetry */
+	if ( check_symmetry(items, sym) ) {
+		ERROR("The input reflection list does not appear to"
+		      " have symmetry %s\n", sym);
+		return 1;
+	}
+
 	/* Reject reflections */
 	good_items = new_items();
 	for ( i=0; i<num_items(items); i++ ) {

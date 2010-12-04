@@ -648,6 +648,11 @@ int main(int argc, char *argv[])
 		ERROR("Couldn't open file '%s'\n", infile);
 		return 1;
 	}
+	if ( check_symmetry(items, sym) ) {
+		ERROR("The input reflection list does not appear to"
+		      " have symmetry %s\n", sym);
+		return 1;
+	}
 
 	if ( config_povray ) {
 		r = povray_render_animation(cell, ref, cts, items,

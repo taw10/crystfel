@@ -358,6 +358,11 @@ int main(int argc, char *argv[])
 		input_items = read_reflections(input, ideal_ref, phases,
 		                               NULL, esds);
 		free(input);
+		if ( check_symmetry(input_items, mero) ) {
+			ERROR("The input reflection list does not appear to"
+			      " have symmetry %s\n", mero);
+			return 1;
+		}
 	}
 
 	if ( config_poisson ) poisson_reflections(ideal_ref, input_items);

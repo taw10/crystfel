@@ -32,6 +32,7 @@
 #include "sfac.h"
 #include "reflections.h"
 #include "beam-parameters.h"
+#include "symmetry.h"
 
 
 static void show_help(const char *s)
@@ -443,6 +444,13 @@ int main(int argc, char *argv[])
 		for ( i=0; i<num_items(items); i++ ) {
 			struct refl_item *it = get_item(items, i);
 			set_flag(flags, it->h, it->k, it->l, 1);
+		}
+
+		/* Check that the intensities have the correct symmetry */
+		if ( check_symmetry(items, sym) ) {
+			ERROR("The input reflection list does not appear to"
+			      " have symmetry %s\n", sym);
+			return 1;
 		}
 
 		delete_items(items);
