@@ -37,6 +37,7 @@
 #include "reflections.h"
 #include "thread-pool.h"
 #include "beam-parameters.h"
+#include "symmetry.h"
 
 
 enum {
