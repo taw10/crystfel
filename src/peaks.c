@@ -288,7 +288,7 @@ int integrate_peak(struct image *image, int xp, int yp,
 	} else {
 		*xc = (float)xp;
 		*yc = (float)yp;
-		*intensity = 0;
+		*intensity = total;
 	}
 
 	if ( pbg != NULL ) {
