@@ -1,3 +1,5 @@
 stddef.h
 string.h
 libgnu.a
+.deps
+*.o
