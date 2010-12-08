@@ -58,7 +58,7 @@ struct _unitcell {
 	double azs;	double bzs;	double czs;
 
 	char *pointgroup;
-
+	char *spacegroup;
 };
 
 
@@ -469,6 +469,15 @@ const char *cell_get_pointgroup(UnitCell *cell)
 }
 
 
+const char *cell_get_spacegroup(UnitCell *cell)
+{
+	return cell->spacegroup;
+}
+
+
+
+
+
 /********************************* Utilities **********************************/
 
 static const char *cell_rep(UnitCell *cell)
@@ -877,9 +886,11 @@ UnitCell *load_cell_from_pdb(const char *filename)
 				sym = strndup(line+55, 10);
 				notrail(sym);
 				cell_set_pointgroup_from_pdb(cell, sym);
-				free(sym);
+				cell->spacegroup = sym;
+				
 			} else {
 				cell_set_pointgroup_from_pdb(cell, "P 1");
+				cell->spacegroup = strdup("P 1");
 				ERROR("CRYST1 line without space group.\n");
 			}
 		}

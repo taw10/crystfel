@@ -72,6 +72,8 @@ extern void cell_set_reciprocal(UnitCell *cell,
 
 extern const char *cell_get_pointgroup(UnitCell *cell);
 
+extern const char *cell_get_spacegroup(UnitCell *cell);
+
 extern double resolution(UnitCell *cell,
                          signed int h, signed int k, signed int l);
 
@@ -83,5 +85,6 @@ extern UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
                             int reduce);
 
 extern UnitCell *load_cell_from_pdb(const char *filename);
+
 
 #endif	/* CELL_H */
