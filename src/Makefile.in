@@ -37,7 +37,7 @@ host_triplet = @host@
 bin_PROGRAMS = pattern_sim$(EXEEXT) process_hkl$(EXEEXT) \
 	get_hkl$(EXEEXT) indexamajig$(EXEEXT) compare_hkl$(EXEEXT) \
 	powder_plot$(EXEEXT) render_hkl$(EXEEXT) \
-	calibrate_detector$(EXEEXT) facetron$(EXEEXT) cubeit$(EXEEXT) \
+	calibrate_detector$(EXEEXT) facetron$(EXEEXT) \
 	reintegrate$(EXEEXT) estimate_background$(EXEEXT) \
 	check_hkl$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 @HAVE_GTK_TRUE@am__append_1 = hdfsee

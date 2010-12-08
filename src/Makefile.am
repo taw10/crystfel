@@ -1,5 +1,5 @@
 bin_PROGRAMS = pattern_sim process_hkl get_hkl indexamajig compare_hkl \
-               powder_plot render_hkl calibrate_detector facetron cubeit \
+               powder_plot render_hkl calibrate_detector facetron \
                reintegrate estimate_background check_hkl
 
 if HAVE_GTK
