@@ -170,7 +170,7 @@ static void *get_image(void *qp)
 
 	if ( qargs->config_basename ) {
 		char *tmp;
-		tmp = strdup(basename(filename));
+		tmp = safe_basename(filename);
 		free(filename);
 		filename = tmp;
 	}
@@ -181,6 +181,7 @@ static void *get_image(void *qp)
 	pargs->cell = cell;
 	pargs->filename = malloc(1024);
 	snprintf(pargs->filename, 1023, "%s%s", qargs->prefix, filename);
+	free(filename);
 
 	return pargs;
 }

@@ -1137,8 +1137,10 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	if ( filename == NULL ) {
 		title = strdup("No file - hdfsee");
 	} else {
-		title = malloc(strlen(basename(filename))+14);
-		sprintf(title, "%s - hdfsee", basename(filename));
+		char *bn = safe_basename(filename);
+		title = malloc(strlen(bn)+14);
+		sprintf(title, "%s - hdfsee", bn);
+		free(bn);
 	}
 	gtk_window_set_title(GTK_WINDOW(dw->window), title);
 	free(title);

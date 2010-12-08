@@ -223,6 +223,7 @@ extern ReflItemList *intersection_items(ReflItemList *i1, ReflItemList *i2);
 /* ------------------------------ File handling ----------------------------- */
 
 extern char *check_prefix(char *prefix);
+extern char *safe_basename(const char *in);
 
 
 #endif	/* UTILS_H */

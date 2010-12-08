@@ -9,6 +9,7 @@
  *
  */
 
+#include <libgen.h>
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
@@ -484,4 +485,38 @@ char *check_prefix(char *prefix)
 	snprintf(new, len, "%s/", prefix);
 	free(prefix);
 	return new;
+}
+
+
+char *safe_basename(const char *in)
+{
+	int i;
+	char *cpy;
+	char *res;
+
+	cpy = strdup(in);
+
+	/* Get rid of any trailing slashes */
+	for ( i=strlen(cpy)-1; i>0; i-- ) {
+		if ( cpy[i] == '/' ) {
+			cpy[i] = '\0';
+		} else {
+			break;
+		}
+	}
+
+	/* Find the base name */
+	for ( i=strlen(cpy)-1; i>=0; i-- ) {
+		if ( cpy[i] == '/' ) {
+			i++;
+			break;
+		}
+	}
+
+	res = strdup(cpy+i);
+	/* If we didn't find a previous slash, i==0 so res==cpy */
+
+	free(cpy);
+
+	return res;
 }

@@ -394,12 +394,13 @@ int main(int argc, char *argv[])
 		/* Mangle the filename now */
 		if ( config_basename ) {
 			char *tmp;
-			tmp = strdup(basename(filename));
+			tmp = safe_basename(filename);
 			free(filename);
 			filename = tmp;
 		}
 		fnamereal = malloc(1024);
 		snprintf(fnamereal, 1023, "%s%s", prefix, filename);
+		free(filename);
 
 		images[i].filename = fnamereal;
 		images[i].div = beam->divergence;
@@ -415,8 +416,6 @@ int main(int argc, char *argv[])
 
 		/* Get reflections from this image */
 		integrate_image(&images[i]);
-
-		free(filename);
 
 		progress_bar(i, n_total_patterns-1, "Loading pattern data");
 
