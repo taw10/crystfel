@@ -24,6 +24,7 @@
 #include "utils.h"
 #include "peaks.h"
 #include "dirax.h"
+#include "mosflm.h"
 #include "sfac.h"
 #include "detector.h"
 #include "index.h"
@@ -50,6 +51,8 @@ IndexingPrivate *prepare_indexing(IndexingMethod indm, UnitCell *cell,
 		return indexing_private(indm);
 	case INDEXING_DIRAX :
 		return indexing_private(indm);
+	case INDEXING_MOSFLM :
+		return indexing_private(indm);
 	case INDEXING_TEMPLATE :
 		return generate_templates(cell, filename, det,
 		                          nominal_photon_energy);
@@ -65,6 +68,9 @@ void cleanup_indexing(IndexingPrivate *priv)
 		free(priv);
 		break;
 	case INDEXING_DIRAX :
+		free(priv);
+		break;
+	case INDEXING_MOSFLM :
 		free(priv);
 		break;
 	case INDEXING_TEMPLATE :
@@ -139,6 +145,9 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
 		return;
 	case INDEXING_DIRAX :
 		run_dirax(image);
+		break;
+	case INDEXING_MOSFLM :
+		run_mosflm(image);
 		break;
 	case INDEXING_TEMPLATE :
 		match_templates(image, ipriv);

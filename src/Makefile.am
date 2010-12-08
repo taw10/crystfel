@@ -25,8 +25,8 @@ process_hkl_LDADD = @LIBS@
 
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
                       peaks.c index.c filters.c diffraction.c detector.c \
-                      sfac.c dirax.c reflections.c templates.c symmetry.c \
-                      geometry.c thread-pool.c beam-parameters.c
+                      sfac.c dirax.c mosflm.c reflections.c templates.c \
+                      symmetry.c geometry.c thread-pool.c beam-parameters.c
 indexamajig_LDADD = @LIBS@
 if HAVE_OPENCL
 indexamajig_SOURCES += diffraction-gpu.c cl-utils.c
@@ -76,8 +76,8 @@ endif
 
 reintegrate_SOURCES = reintegrate.c cell.c hdf5-file.c utils.c detector.c \
                       peaks.c image.c stream.c \
-                      index.c dirax.c templates.c geometry.c symmetry.c \
-                      thread-pool.c
+                      index.c dirax.c mosflm.c templates.c geometry.c \
+                      symmetry.c thread-pool.c
 reintegrate_LDADD = @LIBS@
 
 estimate_background_SOURCES = estimate_background.c stream.c utils.c cell.c
@@ -87,7 +87,7 @@ INCLUDES = "-I$(top_srcdir)/data"
 
 EXTRA_DIST = cell.h hdf5-file.h image.h  utils.h diffraction.h detector.h \
              sfac.h reflections.h list_tmp.h statistics.h displaywindow.h \
-             render.h hdfsee.h dirax.h peaks.h index.h  filters.h \
+             render.h hdfsee.h dirax.h mosflm.h peaks.h index.h  filters.h \
              diffraction-gpu.h cl-utils.h symmetry.h \
              povray.h index-priv.h geometry.h templates.h render_hkl.h \
              stream.h thread-pool.h beam-parameters.h post-refinement.h \

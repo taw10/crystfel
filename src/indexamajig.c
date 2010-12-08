@@ -127,6 +127,7 @@ static void show_help(const char *s)
 "     --indexing=<method>  Use 'method' for indexing.  Choose from:\n"
 "                           none     : no indexing (default)\n"
 "                           dirax    : invoke DirAx\n"
+"                           mosflm   : invoke MOSFLM (DPS)\n"
 "                           template : index by template matching\n"
 " -g. --geometry=<file>    Get detector geometry from file.\n"
 " -b, --beam=<file>        Get beam parameters from file (provides nominal\n"
@@ -788,6 +789,8 @@ int main(int argc, char *argv[])
 		indm = INDEXING_NONE;
 	} else if ( strcmp(indm_str, "dirax") == 0) {
 		indm = INDEXING_DIRAX;
+	} else if ( strcmp(indm_str, "mosflm") == 0) {
+		indm = INDEXING_MOSFLM;
 	} else if ( strcmp(indm_str, "template") == 0) {
 		indm = INDEXING_TEMPLATE;
 	} else {
