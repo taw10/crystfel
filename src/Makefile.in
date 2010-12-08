@@ -70,17 +70,20 @@ am_calibrate_detector_OBJECTS = calibrate_detector.$(OBJEXT) \
 	filters.$(OBJEXT) peaks.$(OBJEXT) detector.$(OBJEXT) \
 	cell.$(OBJEXT) thread-pool.$(OBJEXT)
 calibrate_detector_OBJECTS = $(am_calibrate_detector_OBJECTS)
-calibrate_detector_DEPENDENCIES =
+calibrate_detector_LDADD = $(LDADD)
+calibrate_detector_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_check_hkl_OBJECTS = check_hkl.$(OBJEXT) sfac.$(OBJEXT) \
 	cell.$(OBJEXT) utils.$(OBJEXT) reflections.$(OBJEXT) \
 	statistics.$(OBJEXT) symmetry.$(OBJEXT)
 check_hkl_OBJECTS = $(am_check_hkl_OBJECTS)
-check_hkl_DEPENDENCIES =
+check_hkl_LDADD = $(LDADD)
+check_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_compare_hkl_OBJECTS = compare_hkl.$(OBJEXT) sfac.$(OBJEXT) \
 	cell.$(OBJEXT) utils.$(OBJEXT) reflections.$(OBJEXT) \
 	statistics.$(OBJEXT) symmetry.$(OBJEXT)
 compare_hkl_OBJECTS = $(am_compare_hkl_OBJECTS)
-compare_hkl_DEPENDENCIES =
+compare_hkl_LDADD = $(LDADD)
+compare_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am__cubeit_SOURCES_DIST = cubeit.c cell.c hdf5-file.c utils.c \
 	detector.c render.c filters.c image.c symmetry.c stream.c \
 	thread-pool.c
@@ -91,11 +94,13 @@ am__cubeit_SOURCES_DIST = cubeit.c cell.c hdf5-file.c utils.c \
 @HAVE_CAIRO_TRUE@	symmetry.$(OBJEXT) stream.$(OBJEXT) \
 @HAVE_CAIRO_TRUE@	thread-pool.$(OBJEXT)
 cubeit_OBJECTS = $(am_cubeit_OBJECTS)
-cubeit_DEPENDENCIES =
+cubeit_LDADD = $(LDADD)
+cubeit_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_estimate_background_OBJECTS = estimate_background.$(OBJEXT) \
 	stream.$(OBJEXT) utils.$(OBJEXT) cell.$(OBJEXT)
 estimate_background_OBJECTS = $(am_estimate_background_OBJECTS)
-estimate_background_DEPENDENCIES =
+estimate_background_LDADD = $(LDADD)
+estimate_background_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_facetron_OBJECTS = facetron.$(OBJEXT) cell.$(OBJEXT) \
 	hdf5-file.$(OBJEXT) utils.$(OBJEXT) detector.$(OBJEXT) \
 	peaks.$(OBJEXT) image.$(OBJEXT) geometry.$(OBJEXT) \
@@ -103,12 +108,14 @@ am_facetron_OBJECTS = facetron.$(OBJEXT) cell.$(OBJEXT) \
 	beam-parameters.$(OBJEXT) symmetry.$(OBJEXT) \
 	post-refinement.$(OBJEXT) hrs-scaling.$(OBJEXT)
 facetron_OBJECTS = $(am_facetron_OBJECTS)
-facetron_DEPENDENCIES =
+facetron_LDADD = $(LDADD)
+facetron_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_get_hkl_OBJECTS = get_hkl.$(OBJEXT) sfac.$(OBJEXT) cell.$(OBJEXT) \
 	utils.$(OBJEXT) reflections.$(OBJEXT) symmetry.$(OBJEXT) \
 	beam-parameters.$(OBJEXT)
 get_hkl_OBJECTS = $(am_get_hkl_OBJECTS)
-get_hkl_DEPENDENCIES =
+get_hkl_LDADD = $(LDADD)
+get_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am__hdfsee_SOURCES_DIST = hdfsee.c displaywindow.c render.c \
 	hdf5-file.c utils.c image.c filters.c
 @HAVE_GTK_TRUE@am_hdfsee_OBJECTS = hdfsee.$(OBJEXT) \
@@ -116,7 +123,8 @@ am__hdfsee_SOURCES_DIST = hdfsee.c displaywindow.c render.c \
 @HAVE_GTK_TRUE@	hdf5-file.$(OBJEXT) utils.$(OBJEXT) \
 @HAVE_GTK_TRUE@	image.$(OBJEXT) filters.$(OBJEXT)
 hdfsee_OBJECTS = $(am_hdfsee_OBJECTS)
-hdfsee_DEPENDENCIES =
+hdfsee_LDADD = $(LDADD)
+hdfsee_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am__indexamajig_SOURCES_DIST = indexamajig.c hdf5-file.c utils.c \
 	cell.c image.c peaks.c index.c filters.c diffraction.c \
 	detector.c sfac.c dirax.c mosflm.c reflections.c templates.c \
@@ -132,7 +140,8 @@ am_indexamajig_OBJECTS = indexamajig.$(OBJEXT) hdf5-file.$(OBJEXT) \
 	symmetry.$(OBJEXT) geometry.$(OBJEXT) thread-pool.$(OBJEXT) \
 	beam-parameters.$(OBJEXT) $(am__objects_1)
 indexamajig_OBJECTS = $(am_indexamajig_OBJECTS)
-indexamajig_DEPENDENCIES =
+indexamajig_LDADD = $(LDADD)
+indexamajig_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am__pattern_sim_SOURCES_DIST = pattern_sim.c diffraction.c utils.c \
 	image.c cell.c hdf5-file.c detector.c sfac.c peaks.c \
 	reflections.c beam-parameters.c symmetry.c diffraction-gpu.c \
@@ -143,18 +152,21 @@ am_pattern_sim_OBJECTS = pattern_sim.$(OBJEXT) diffraction.$(OBJEXT) \
 	peaks.$(OBJEXT) reflections.$(OBJEXT) \
 	beam-parameters.$(OBJEXT) symmetry.$(OBJEXT) $(am__objects_1)
 pattern_sim_OBJECTS = $(am_pattern_sim_OBJECTS)
-pattern_sim_DEPENDENCIES =
+pattern_sim_LDADD = $(LDADD)
+pattern_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_powder_plot_OBJECTS = powder_plot.$(OBJEXT) cell.$(OBJEXT) \
 	utils.$(OBJEXT) image.$(OBJEXT) hdf5-file.$(OBJEXT) \
 	detector.$(OBJEXT)
 powder_plot_OBJECTS = $(am_powder_plot_OBJECTS)
-powder_plot_DEPENDENCIES =
+powder_plot_LDADD = $(LDADD)
+powder_plot_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_process_hkl_OBJECTS = process_hkl.$(OBJEXT) sfac.$(OBJEXT) \
 	statistics.$(OBJEXT) cell.$(OBJEXT) utils.$(OBJEXT) \
 	reflections.$(OBJEXT) symmetry.$(OBJEXT) stream.$(OBJEXT) \
 	beam-parameters.$(OBJEXT)
 process_hkl_OBJECTS = $(am_process_hkl_OBJECTS)
-process_hkl_DEPENDENCIES =
+process_hkl_LDADD = $(LDADD)
+process_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_reintegrate_OBJECTS = reintegrate.$(OBJEXT) cell.$(OBJEXT) \
 	hdf5-file.$(OBJEXT) utils.$(OBJEXT) detector.$(OBJEXT) \
 	peaks.$(OBJEXT) image.$(OBJEXT) stream.$(OBJEXT) \
@@ -162,13 +174,15 @@ am_reintegrate_OBJECTS = reintegrate.$(OBJEXT) cell.$(OBJEXT) \
 	templates.$(OBJEXT) geometry.$(OBJEXT) symmetry.$(OBJEXT) \
 	thread-pool.$(OBJEXT)
 reintegrate_OBJECTS = $(am_reintegrate_OBJECTS)
-reintegrate_DEPENDENCIES =
+reintegrate_LDADD = $(LDADD)
+reintegrate_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_render_hkl_OBJECTS = render_hkl.$(OBJEXT) cell.$(OBJEXT) \
 	reflections.$(OBJEXT) utils.$(OBJEXT) povray.$(OBJEXT) \
 	symmetry.$(OBJEXT) render.$(OBJEXT) hdf5-file.$(OBJEXT) \
 	image.$(OBJEXT) filters.$(OBJEXT)
 render_hkl_OBJECTS = $(am_render_hkl_OBJECTS)
-render_hkl_DEPENDENCIES =
+render_hkl_LDADD = $(LDADD)
+render_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -399,65 +413,51 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib -I$(top_srcdir)/lib
-LDADD = lib/libgnu.a
+LDADD = $(top_builddir)/lib/libgnu.a
 pattern_sim_SOURCES = pattern_sim.c diffraction.c utils.c image.c \
 	cell.c hdf5-file.c detector.c sfac.c peaks.c reflections.c \
 	beam-parameters.c symmetry.c $(am__append_2)
-pattern_sim_LDADD = @LIBS@
 process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
                       reflections.c symmetry.c stream.c beam-parameters.c
 
-process_hkl_LDADD = @LIBS@
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
 	peaks.c index.c filters.c diffraction.c detector.c sfac.c \
 	dirax.c mosflm.c reflections.c templates.c symmetry.c \
 	geometry.c thread-pool.c beam-parameters.c $(am__append_3)
-indexamajig_LDADD = @LIBS@
 @HAVE_GTK_TRUE@hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c image.c \
 @HAVE_GTK_TRUE@                 filters.c
 
-@HAVE_GTK_TRUE@hdfsee_LDADD = @LIBS@
 get_hkl_SOURCES = get_hkl.c sfac.c cell.c utils.c reflections.c symmetry.c \
                   beam-parameters.c
 
-get_hkl_LDADD = @LIBS@
 compare_hkl_SOURCES = compare_hkl.c sfac.c cell.c utils.c reflections.c \
                       statistics.c symmetry.c
 
-compare_hkl_LDADD = @LIBS@
 check_hkl_SOURCES = check_hkl.c sfac.c cell.c utils.c reflections.c \
                     statistics.c symmetry.c
 
-check_hkl_LDADD = @LIBS@
 powder_plot_SOURCES = powder_plot.c cell.c utils.c image.c hdf5-file.c \
                       detector.c
 
-powder_plot_LDADD = @LIBS@
 render_hkl_SOURCES = render_hkl.c cell.c reflections.c utils.c povray.c \
                      symmetry.c render.c hdf5-file.c image.c filters.c
 
-render_hkl_LDADD = @LIBS@
 calibrate_detector_SOURCES = calibrate_detector.c utils.c hdf5-file.c image.c \
                              filters.c peaks.c detector.c cell.c thread-pool.c
 
-calibrate_detector_LDADD = @LIBS@
 facetron_SOURCES = facetron.c cell.c hdf5-file.c utils.c detector.c peaks.c \
                    image.c geometry.c reflections.c stream.c thread-pool.c \
                    beam-parameters.c symmetry.c post-refinement.c hrs-scaling.c
 
-facetron_LDADD = @LIBS@
 @HAVE_CAIRO_TRUE@cubeit_SOURCES = cubeit.c cell.c hdf5-file.c utils.c detector.c render.c \
 @HAVE_CAIRO_TRUE@                 filters.c image.c symmetry.c stream.c thread-pool.c
 
-@HAVE_CAIRO_TRUE@cubeit_LDADD = @LIBS@
 reintegrate_SOURCES = reintegrate.c cell.c hdf5-file.c utils.c detector.c \
                       peaks.c image.c stream.c \
                       index.c dirax.c mosflm.c templates.c geometry.c \
                       symmetry.c thread-pool.c
 
-reintegrate_LDADD = @LIBS@
 estimate_background_SOURCES = estimate_background.c stream.c utils.c cell.c
-estimate_background_LDADD = @LIBS@
 INCLUDES = "-I$(top_srcdir)/data"
 EXTRA_DIST = cell.h hdf5-file.h image.h  utils.h diffraction.h detector.h \
              sfac.h reflections.h list_tmp.h statistics.h displaywindow.h \
