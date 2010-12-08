@@ -1,5 +1,8 @@
 stddef.h
 string.h
+arg-nonnull.h
+c++defs.h
+warn-on-use.h
 libgnu.a
 .deps
 *.o
