@@ -1,0 +1,8 @@
+/Makefile.am
+/dummy.c
+/memchr.c
+/memchr.valgrind
+/stddef.in.h
+/string.in.h
+/strndup.c
+/strnlen.c

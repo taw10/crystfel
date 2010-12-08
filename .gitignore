@@ -21,3 +21,6 @@ src/reintegrate
 src/estimate_background
 src/check_hkl
 *~
+/arg-nonnull.h
+/c++defs.h
+/warn-on-use.h
