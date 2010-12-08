@@ -119,17 +119,17 @@ hdfsee_OBJECTS = $(am_hdfsee_OBJECTS)
 hdfsee_DEPENDENCIES =
 am__indexamajig_SOURCES_DIST = indexamajig.c hdf5-file.c utils.c \
 	cell.c image.c peaks.c index.c filters.c diffraction.c \
-	detector.c sfac.c dirax.c reflections.c templates.c symmetry.c \
-	geometry.c thread-pool.c beam-parameters.c diffraction-gpu.c \
-	cl-utils.c
+	detector.c sfac.c dirax.c mosflm.c reflections.c templates.c \
+	symmetry.c geometry.c thread-pool.c beam-parameters.c \
+	diffraction-gpu.c cl-utils.c
 @HAVE_OPENCL_TRUE@am__objects_1 = diffraction-gpu.$(OBJEXT) \
 @HAVE_OPENCL_TRUE@	cl-utils.$(OBJEXT)
 am_indexamajig_OBJECTS = indexamajig.$(OBJEXT) hdf5-file.$(OBJEXT) \
 	utils.$(OBJEXT) cell.$(OBJEXT) image.$(OBJEXT) peaks.$(OBJEXT) \
 	index.$(OBJEXT) filters.$(OBJEXT) diffraction.$(OBJEXT) \
 	detector.$(OBJEXT) sfac.$(OBJEXT) dirax.$(OBJEXT) \
-	reflections.$(OBJEXT) templates.$(OBJEXT) symmetry.$(OBJEXT) \
-	geometry.$(OBJEXT) thread-pool.$(OBJEXT) \
+	mosflm.$(OBJEXT) reflections.$(OBJEXT) templates.$(OBJEXT) \
+	symmetry.$(OBJEXT) geometry.$(OBJEXT) thread-pool.$(OBJEXT) \
 	beam-parameters.$(OBJEXT) $(am__objects_1)
 indexamajig_OBJECTS = $(am_indexamajig_OBJECTS)
 indexamajig_DEPENDENCIES =
@@ -158,8 +158,9 @@ process_hkl_DEPENDENCIES =
 am_reintegrate_OBJECTS = reintegrate.$(OBJEXT) cell.$(OBJEXT) \
 	hdf5-file.$(OBJEXT) utils.$(OBJEXT) detector.$(OBJEXT) \
 	peaks.$(OBJEXT) image.$(OBJEXT) stream.$(OBJEXT) \
-	index.$(OBJEXT) dirax.$(OBJEXT) templates.$(OBJEXT) \
-	geometry.$(OBJEXT) symmetry.$(OBJEXT) thread-pool.$(OBJEXT)
+	index.$(OBJEXT) dirax.$(OBJEXT) mosflm.$(OBJEXT) \
+	templates.$(OBJEXT) geometry.$(OBJEXT) symmetry.$(OBJEXT) \
+	thread-pool.$(OBJEXT)
 reintegrate_OBJECTS = $(am_reintegrate_OBJECTS)
 reintegrate_DEPENDENCIES =
 am_render_hkl_OBJECTS = render_hkl.$(OBJEXT) cell.$(OBJEXT) \
@@ -409,8 +410,8 @@ process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
 process_hkl_LDADD = @LIBS@
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
 	peaks.c index.c filters.c diffraction.c detector.c sfac.c \
-	dirax.c reflections.c templates.c symmetry.c geometry.c \
-	thread-pool.c beam-parameters.c $(am__append_3)
+	dirax.c mosflm.c reflections.c templates.c symmetry.c \
+	geometry.c thread-pool.c beam-parameters.c $(am__append_3)
 indexamajig_LDADD = @LIBS@
 @HAVE_GTK_TRUE@hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c image.c \
 @HAVE_GTK_TRUE@                 filters.c
@@ -451,8 +452,8 @@ facetron_LDADD = @LIBS@
 @HAVE_CAIRO_TRUE@cubeit_LDADD = @LIBS@
 reintegrate_SOURCES = reintegrate.c cell.c hdf5-file.c utils.c detector.c \
                       peaks.c image.c stream.c \
-                      index.c dirax.c templates.c geometry.c symmetry.c \
-                      thread-pool.c
+                      index.c dirax.c mosflm.c templates.c geometry.c \
+                      symmetry.c thread-pool.c
 
 reintegrate_LDADD = @LIBS@
 estimate_background_SOURCES = estimate_background.c stream.c utils.c cell.c
@@ -460,7 +461,7 @@ estimate_background_LDADD = @LIBS@
 INCLUDES = "-I$(top_srcdir)/data"
 EXTRA_DIST = cell.h hdf5-file.h image.h  utils.h diffraction.h detector.h \
              sfac.h reflections.h list_tmp.h statistics.h displaywindow.h \
-             render.h hdfsee.h dirax.h peaks.h index.h  filters.h \
+             render.h hdfsee.h dirax.h mosflm.h peaks.h index.h  filters.h \
              diffraction-gpu.h cl-utils.h symmetry.h \
              povray.h index-priv.h geometry.h templates.h render_hkl.h \
              stream.h thread-pool.h beam-parameters.h post-refinement.h \
@@ -609,6 +610,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/image.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/index.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/indexamajig.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mosflm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pattern_sim.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/peaks.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/post-refinement.Po@am__quote@

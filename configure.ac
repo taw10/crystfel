@@ -7,8 +7,6 @@ VERSION=AC_PACKAGE_VERSION
 AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(crystfel, "$VERSION")
 
-AC_CONFIG_FILES(lib/Makefile)
-
 AC_PROG_CC
 gl_EARLY
 AC_PROG_AWK
@@ -148,5 +146,6 @@ CFLAGS="$CFLAGS $LIBTIFF_CFLAGS -D_GNU_SOURCE $libPNG_CFLAGS $Cairo_CFLAGS"
 LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
 LIBS="$LIBS $LIBTIFF_LIBS $libPNG_LIBS $Cairo_LIBS"
 
-AC_OUTPUT(Makefile src/Makefile data/Makefile doc/Makefile scripts/Makefile)
-AC_OUTPUT(doc/examples/Makefile)
+AC_CONFIG_FILES(Makefile src/Makefile data/Makefile doc/Makefile)
+AC_CONFIG_FILES(scripts/Makefile doc/examples/Makefile lib/Makefile)
+AC_OUTPUT

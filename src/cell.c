@@ -887,7 +887,7 @@ UnitCell *load_cell_from_pdb(const char *filename)
 				notrail(sym);
 				cell_set_pointgroup_from_pdb(cell, sym);
 				cell->spacegroup = sym;
-				
+
 			} else {
 				cell_set_pointgroup_from_pdb(cell, "P 1");
 				cell->spacegroup = strdup("P 1");

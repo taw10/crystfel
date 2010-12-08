@@ -307,7 +307,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 EXTRA_DIST = configure m4/gnulib-cache.m4
-SUBDIRS = src data doc doc/examples scripts lib
+SUBDIRS = lib src data doc doc/examples scripts
 ACLOCAL_AMFLAGS = -I m4
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
