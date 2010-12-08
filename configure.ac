@@ -100,7 +100,10 @@ AC_ARG_ENABLE([png],
 AS_IF([test "x$enable_png" != "xno"],
 [
    AC_MSG_RESULT([yes])
-   PKG_CHECK_MODULES([libPNG], [libpng >= 1.2.0], [havelibpng=true])
+   PKG_CHECK_MODULES([libPNG], [libpng >= 1.2.0],
+   [
+     AC_DEFINE([HAVE_LIBPNG], [1], [Define to 1 if libPNG is available])
+   ])
 ],[
    AC_MSG_RESULT([no])
 ])
@@ -117,6 +120,7 @@ AS_IF([test "x$enable_tiff" != "xno"],
     LIBTIFF_LIBS="-L$withval/lib -ltiff"],
    [LIBTIFF_LIBS="-ltiff"])
    AC_MSG_RESULT([yes])
+   AC_DEFINE([HAVE_TIFF], [1], [Define to 1 if libTIFF is available])
 ],
 [
    AC_MSG_RESULT([no])

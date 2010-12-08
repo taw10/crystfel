@@ -6626,7 +6626,11 @@ else
 	libPNG_LIBS=$pkg_cv_libPNG_LIBS
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-	havelibpng=true
+
+
+$as_echo "#define HAVE_LIBPNG 1" >>confdefs.h
+
+
 fi
 
 else
@@ -6657,6 +6661,9 @@ fi
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_TIFF 1" >>confdefs.h
+
 
 else
 
