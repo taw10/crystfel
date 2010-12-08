@@ -9,7 +9,6 @@ endif
 AM_CFLAGS = -Wall
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib -I$(top_srcdir)/lib
 LDADD = lib/libgnu.a
-ACLOCAL_AMFLAGS = -I m4
 
 pattern_sim_SOURCES = pattern_sim.c diffraction.c utils.c image.c cell.c \
                       hdf5-file.c detector.c sfac.c peaks.c reflections.c \

@@ -18,15 +18,12 @@ AC_PROG_RANLIB
 
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS([fcntl.h stdlib.h string.h unistd.h])
+AC_CHECK_HEADERS([fcntl.h stdlib.h unistd.h])
 AC_C_CONST
 AC_FUNC_MALLOC
 AC_TYPE_SIGNAL
-AC_CHECK_FUNCS([strdup strndup])
 
 gl_INIT
-
-gl_FUNC_STRNDUP
 
 
 AC_ARG_WITH(hdf5,
