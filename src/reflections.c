@@ -26,7 +26,7 @@ double *poisson_esds(double *intensities, ReflItemList *items,
                      double adu_per_photon)
 {
 	int i;
-	double *esds = new_list_intensity();
+	double *esds = new_list_sigma();
 
 	for ( i=0; i<num_items(items); i++ ) {
 
@@ -45,7 +45,7 @@ double *poisson_esds(double *intensities, ReflItemList *items,
 			sigma = 0.0;
 		}
 
-		set_intensity(esds, h, k, l, sigma);
+		set_sigma(esds, h, k, l, sigma);
 
 	}
 
@@ -110,7 +110,7 @@ void write_reflections(const char *filename, ReflItemList *items,
 		}
 
 		if ( esds != NULL ) {
-			sigma = lookup_intensity(esds, h, k, l);
+			sigma = lookup_sigma(esds, h, k, l);
 		} else {
 			sigma = 0.0;
 		}

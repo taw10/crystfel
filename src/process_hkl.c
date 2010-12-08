@@ -791,7 +791,7 @@ int main(int argc, char *argv[])
 
 	STATUS("Extra pass to calculate ESDs...\n");
 	devs = new_list_intensity();
-	esds = new_list_intensity();
+	esds = new_list_sigma();
 	rewind(fh);
 	merge_all(fh, &model, &observed, &counts,
 	          config_maxonly, config_scale, 0,
@@ -815,11 +815,11 @@ int main(int argc, char *argv[])
 
 		if ( count < 2 ) {
 			/* If we have only one measurement, the error is 100% */
-			esd = lookup_intensity(model, h, k, l);
+			esd = lookup_sigma(model, h, k, l);
 		} else {
 			esd = sqrt(dev) / (double)count;
 		}
-		set_intensity(esds, h, k, l, esd);
+		set_sigma(esds, h, k, l, esd);
 
 	}
 

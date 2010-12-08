@@ -229,7 +229,7 @@ static void plot_shells(const double *ref, ReflItemList *items, UnitCell *cell,
 
 		d = resolution(cell, h, k, l) * 2.0;
 		val = lookup_intensity(ref, h, k, l);
-		esd = lookup_intensity(sigma, h, k, l);
+		esd = lookup_sigma(sigma, h, k, l);
 
 		bin = -1;
 		for ( j=0; j<NBINS; j++ ) {

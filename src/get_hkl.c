@@ -169,14 +169,14 @@ static ReflItemList *twin_reflections(double *ref, ReflItemList *items,
 			}
 
 			total += lookup_intensity(ref, hu, ku, lu);
-			sigma += pow(lookup_intensity(esds, hu, ku, lu), 2.0);
+			sigma += pow(lookup_sigma(esds, hu, ku, lu), 2.0);
 
 		}
 
 		if ( !skip ) {
 
 			set_intensity(ref, h, k, l, total);
-			set_intensity(esds, h, k, l, sqrt(sigma));
+			set_sigma(esds, h, k, l, sqrt(sigma));
 			add_item(new, h, k, l);
 
 		}
@@ -348,7 +348,7 @@ int main(int argc, char *argv[])
 	} else {
 		phases = NULL;
 	}
-	esds = new_list_intensity();
+	esds = new_list_sigma();
 	if ( input == NULL ) {
 		input_items = new_items();
 		ideal_ref = get_reflections(mol, eV_to_J(1790.0), 1/(0.05e-9),
