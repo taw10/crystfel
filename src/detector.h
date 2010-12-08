@@ -26,10 +26,10 @@ struct panel
 	int      max_x;    /* Largest x value considered to be in this panel */
 	int      min_y;    /* ... and so on */
 	int      max_y;
-	float    cx;       /* Location of centre */
+	float    cx;       /* Location of centre in pixels */
 	float    cy;
-	float    clen;     /* Camera length */
-	float    res;      /* Resolution */
+	float    clen;     /* Camera length in metres */
+	float    res;      /* Resolution in pixels per metre */
 	char     badrow;   /* 'x' or 'y' */
 	int      no_index; /* Don't index peaks in this panel if non-zero */
 	float    peak_sep; /* Characteristic peak separation */
