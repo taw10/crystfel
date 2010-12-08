@@ -39,10 +39,11 @@ bin_PROGRAMS = pattern_sim$(EXEEXT) process_hkl$(EXEEXT) \
 	powder_plot$(EXEEXT) render_hkl$(EXEEXT) \
 	calibrate_detector$(EXEEXT) facetron$(EXEEXT) cubeit$(EXEEXT) \
 	reintegrate$(EXEEXT) estimate_background$(EXEEXT) \
-	check_hkl$(EXEEXT) $(am__EXEEXT_1)
+	check_hkl$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 @HAVE_GTK_TRUE@am__append_1 = hdfsee
-@HAVE_OPENCL_TRUE@am__append_2 = diffraction-gpu.c cl-utils.c
+@HAVE_CAIRO_TRUE@am__append_2 = cubeit
 @HAVE_OPENCL_TRUE@am__append_3 = diffraction-gpu.c cl-utils.c
+@HAVE_OPENCL_TRUE@am__append_4 = diffraction-gpu.c cl-utils.c
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -63,6 +64,7 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @HAVE_GTK_TRUE@am__EXEEXT_1 = hdfsee$(EXEEXT)
+@HAVE_CAIRO_TRUE@am__EXEEXT_2 = cubeit$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_calibrate_detector_OBJECTS = calibrate_detector.$(OBJEXT) \
@@ -416,14 +418,14 @@ AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib -I$(top_srcdir)/l
 LDADD = $(top_builddir)/lib/libgnu.a
 pattern_sim_SOURCES = pattern_sim.c diffraction.c utils.c image.c \
 	cell.c hdf5-file.c detector.c sfac.c peaks.c reflections.c \
-	beam-parameters.c symmetry.c $(am__append_2)
+	beam-parameters.c symmetry.c $(am__append_3)
 process_hkl_SOURCES = process_hkl.c sfac.c statistics.c cell.c utils.c \
                       reflections.c symmetry.c stream.c beam-parameters.c
 
 indexamajig_SOURCES = indexamajig.c hdf5-file.c utils.c cell.c image.c \
 	peaks.c index.c filters.c diffraction.c detector.c sfac.c \
 	dirax.c mosflm.c reflections.c templates.c symmetry.c \
-	geometry.c thread-pool.c beam-parameters.c $(am__append_3)
+	geometry.c thread-pool.c beam-parameters.c $(am__append_4)
 @HAVE_GTK_TRUE@hdfsee_SOURCES = hdfsee.c displaywindow.c render.c hdf5-file.c utils.c image.c \
 @HAVE_GTK_TRUE@                 filters.c
 

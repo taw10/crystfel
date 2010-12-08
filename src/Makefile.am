@@ -6,6 +6,10 @@ if HAVE_GTK
 bin_PROGRAMS += hdfsee
 endif
 
+if HAVE_CAIRO
+bin_PROGRAMS += cubeit
+endif
+
 AM_CFLAGS = -Wall
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib -I$(top_srcdir)/lib
 LDADD = $(top_builddir)/lib/libgnu.a
