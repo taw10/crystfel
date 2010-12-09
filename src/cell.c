@@ -549,6 +549,7 @@ void cell_print(UnitCell *cell)
 	STATUS("cstar = %10.3e %10.3e %10.3e m^-1 (modulus = %10.3e m^-1)\n",
 	                             csx, csy, csz, modulus(csx, csy, csz));
 
+	STATUS("Point group: %s\n", cell_get_pointgroup(cell));
 	STATUS("Cell representation is %s.\n", cell_rep(cell));
 }
 
