@@ -109,16 +109,37 @@ static void write_drx(struct image *image)
 }
 
 
-static void write_mosflm(struct image *image)
+struct sptline {
+	double x; /* x coordinate of peak */
+	double y; /* y coordinate of peak */
+	double h; /* height of peak */
+	double s; /* sigma of peak */
+};
+
+/* need to sort mosflm peaks by intensity... */
+static int compare_vals(const void *ap, const void *bp)
+{
+	const struct sptline a = *(struct sptline *)ap;
+	const struct sptline b = *(struct sptline *)bp;
+
+	if ( a.h < b.h ) return 1;
+	if ( a.h > b.h ) return -1;
+	return 0;
+}
+
+/* write .spt file for mosflm */
+static void write_spt(struct image *image)
 {
 	FILE *fh;
 	int i;
 	char filename[1024];
-	double cl=100;  /* fake camera length in mm */
-	double pix=0;
-	double height=0;
-	double sigma=0;
-
+	double fclen=67.8;  /* fake camera length in mm */
+	double fpix=0.075;  /* fake pixel size in mm */
+	double pix;
+	double height=100;
+	double sigma=1;
+	int nPeaks = image_feature_count(image->features);
+	
 	snprintf(filename, 1023, "xfel-%i.spt", image->id);
 
 	fh = fopen(filename, "w");
@@ -127,23 +148,47 @@ static void write_mosflm(struct image *image)
 		return;
 	}
 	
-	fprintf(fh, "%10d %10d %10.8f %10.6f %10.6f\n", 1, 1, 1, 1, 0);
+	fprintf(fh, "%10d %10d %10.8f %10.6f %10.6f\n", 1, 1, fpix, 1.0, 0.0);
 	fprintf(fh, "%10d %10d\n", 1, 1);
-	fprintf(fh, "%10.5f %10.5f", 0, 0);
+	fprintf(fh, "%10.5f %10.5f\n", 0.0, 0.0);
 	
-	for ( i=0; i<image_feature_count(image->features); i++ ) {
+	struct sptline *sptlines;
+	sptlines = malloc(sizeof(struct sptline)*nPeaks);
+	
+	for ( i=0; i<nPeaks; i++ ) {
 
 		struct imagefeature *f;
-
+		
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		fprintf(fh, "%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
-		        f->x, f->y, 0, 0, height, sigma);
-
+		struct panel *pan;
+		pan = find_panel(image->det,f->x,f->y);
+		if ( pan == NULL ) continue;
+		
+		pix = 1000/pan->res; /* pixel size in mm */
+		height = f->intensity;
+		
+		sptlines[i].x = (f->y - pan->cy)*pix*fclen/pan->clen/1000;
+		sptlines[i].y = -(f->x - pan->cx)*pix*fclen/pan->clen/1000;
+		sptlines[i].h = height;
+		sptlines[i].s = sigma;
+		
 	}
+	
+	qsort(sptlines, nPeaks, sizeof(struct sptline), compare_vals);
+	
+	for ( i=0; i<nPeaks; i++ ) {
+		
+		fprintf(fh, "%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
+		        sptlines[i].x, sptlines[i].y, 
+		        0.0, 0.0, 
+		        sptlines[i].h, sptlines[i].s);
+	
+	}
+	
 	fprintf(fh,"%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
-	           -999,-999,-999,-999,-999,-999);
+	           -999.0,-999.0,-999.0,-999.0,-999.0,-999.0);
 	fclose(fh);
 }
 
@@ -186,6 +231,7 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
 		run_dirax(image);
 		break;
 	case INDEXING_MOSFLM :
+		write_spt(image);
 		run_mosflm(image);
 		break;
 	case INDEXING_TEMPLATE :
