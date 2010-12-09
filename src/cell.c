@@ -867,14 +867,28 @@ UnitCell *load_cell_from_pdb(const char *filename)
 		if ( strncmp(line, "CRYST1", 6) == 0 ) {
 
 			float a, b, c, al, be, ga;
-			int r;
+			char as[10], bs[10], cs[10];
+			char als[8], bes[8], gas[8];
 			char *sym;
+			int r;
 
-			r = sscanf(line+7, "%f %f %f %f %f %f\n",
-			           &a, &b, &c, &al, &be, &ga);
+			memcpy(as, line+6, 9);    as[9] = '\0';
+			memcpy(bs, line+15, 9);   bs[9] = '\0';
+			memcpy(cs, line+24, 9);   cs[9] = '\0';
+			memcpy(als, line+33, 7);  als[7] = '\0';
+			memcpy(bes, line+40, 7);  bes[7] = '\0';
+			memcpy(gas, line+47, 7);  gas[7] = '\0';
+
+			r = sscanf(as, "%f", &a);
+			r += sscanf(bs, "%f", &b);
+			r += sscanf(cs, "%f", &c);
+			r += sscanf(als, "%f", &al);
+			r += sscanf(bes, "%f", &be);
+			r += sscanf(gas, "%f", &ga);
+
 			if ( r != 6 ) {
-				ERROR("Couldn't understand CRYST1 line\n");
-				return NULL;
+				STATUS("Couldn't understand CRYST1 line.\n");
+				continue;
 			}
 
 			cell = cell_new_from_parameters(a*1e-10,

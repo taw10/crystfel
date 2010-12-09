@@ -347,21 +347,6 @@ struct molecule *load_molecule(const char *filename)
 
 		rval = fgets(line, 1023, fh);
 
-		if ( strncmp(line, "CRYST1", 6) == 0 ) {
-
-			float a, b, c, al, be, ga;
-
-			r = sscanf(line+7, "%f %f %f %f %f %f",
-			           &a, &b, &c, &al, &be, &ga);
-
-			mol->cell = cell_new_from_parameters(a*1e-10,
-			                                     b*1e-10, c*1e-10,
-	                                                     deg2rad(al),
-	                                                     deg2rad(be),
-	                                                     deg2rad(ga));
-
-		}
-
 		/* Only interested in atoms */
 		if ( (strncmp(line, "HETATM", 6) != 0)
 		  && (strncmp(line, "ATOM  ", 6) != 0) ) continue;
@@ -456,6 +441,7 @@ struct molecule *load_molecule(const char *filename)
 		       mol->species[i]->n_atoms);
 	}
 
+	mol->cell = load_cell_from_pdb(filename);
 	if ( mol->cell == NULL ) {
 		ERROR("No unit cell found in PDB file\n");
 		return NULL;
