@@ -192,6 +192,36 @@ static void write_spt(struct image *image)
 	fclose(fh);
 }
 
+/* write a dummy 1x1 pixel image file for mosflm.  Without post refinement, 
+   mosflm will ignore this, but it must be present.*/
+void write_img(struct image *image)
+{
+	FILE *fh;
+	char filename[1024];
+	unsigned short int * intimage;
+	
+	intimage = malloc(sizeof(unsigned short int));
+	intimage[0] = 0;
+	
+	snprintf(filename, 1023, "xfel-%i.img", image->id);
+	
+	fh = fopen(filename, "w");
+	if ( !fh ) {
+		ERROR("Couldn't open temporary file xfel.spt\n");
+		return;
+	}
+	
+	fprintf(fh,"{\nHEADER_BYTES=512;\n");
+	fprintf(fh,"BYTE_ORDER=little_endian;\n");
+	fprintf(fh,"TYPE=unsigned_short;\n");
+	fprintf(fh,"DIM=2;\n");
+	fprintf(fh,"SIZE1=1;\n");
+	fprintf(fh,"SIZE2=1;\n");
+	fprintf(fh,"}\n");
+	while ( ftell(fh) < 512 ) { fprintf(fh," "); };
+	fwrite(fh,sizeof(unsigned short int),1,fh);
+	fclose(fh);
+}
 
 void map_all_peaks(struct image *image)
 {
@@ -232,6 +262,7 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
 		break;
 	case INDEXING_MOSFLM :
 		write_spt(image);
+		write_img(image); /* don't do this every time? */
 		run_mosflm(image);
 		break;
 	case INDEXING_TEMPLATE :
