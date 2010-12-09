@@ -51,7 +51,8 @@ static void show_help(const char *s)
 "      --no-phases            Do not try to use phases in the input file.\n"
 "      --multiplicity         Multiply intensities by the number of\n"
 "                              equivalent reflections.\n"
-"  -b, --beam=<file>         Get beam parameters from file (used for sigmas).\n"
+"  -b, --beam=<file>          Get beam parameters from file (used for sigmas).\n"
+"      --max-res=<d>          Calculate structure factors out to d=<d> nm.\n"
 );
 }
 
@@ -267,6 +268,11 @@ int main(int argc, char *argv[])
 	ReflItemList *input_items;
 	ReflItemList *write_items;
 	UnitCell *cell = NULL;
+	char *beamfile = NULL;
+	char *rval;
+	struct beam_params *beam;  /* Beam parameters for SF calculation */
+	int have_max_res = 0;
+	double max_res = 0.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -282,11 +288,13 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"no-phases",          0, &config_nophase,     1},
 		{"multiplicity",       0, &config_multi,       1},
+		{"beam",               1, NULL,               'b'},
+		{"max-res",            1, NULL,                2},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ht:o:i:p:w:y:e:",
+	while ((c = getopt_long(argc, argv, "ht:o:i:p:w:y:e:b:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -322,6 +330,20 @@ int main(int argc, char *argv[])
 			expand = strdup(optarg);
 			break;
 
+		case 'b' :
+			beamfile = strdup(optarg);
+			break;
+
+		case 2 :
+			max_res = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid maximum resolution.\n");
+				return 1;
+			}
+			max_res = 1.0 / (max_res * 1.0e-9);
+			have_max_res = 1;
+			break;
+
 		case 0 :
 			break;
 
@@ -350,10 +372,33 @@ int main(int argc, char *argv[])
 	}
 	esds = new_list_sigma();
 	if ( input == NULL ) {
+
+		if ( beamfile == NULL ) {
+			ERROR("To calculate structure factors, you must"
+			      " provide a beam parameters file (use -b)\n");
+			return 1;
+		}
+
+		beam = get_beam_parameters(beamfile);
+		if ( beam == NULL ) {
+			ERROR("Failed to read beam parameters from '%s'\n", beamfile);
+			return 1;
+		}
+		free(beamfile);
+
+		if ( !have_max_res ) {
+			STATUS("You didn't specify the maximum resolution to"
+			       " calculate structure factors.  I'll go to"
+			       " d = 0.5 nm.\n");
+			max_res = 1.0/0.5e-9;
+		}
+
 		input_items = new_items();
-		ideal_ref = get_reflections(mol, eV_to_J(1790.0), 1/(0.05e-9),
-		                            phases, input_items);
+		ideal_ref = get_reflections(mol, eV_to_J(beam->photon_energy),
+		                            max_res, phases, input_items);
+
 	} else {
+
 		ideal_ref = new_list_intensity();
 		input_items = read_reflections(input, ideal_ref, phases,
 		                               NULL, esds);
@@ -363,6 +408,7 @@ int main(int argc, char *argv[])
 			      " have symmetry %s\n", mero);
 			return 1;
 		}
+
 	}
 
 	if ( config_poisson ) poisson_reflections(ideal_ref, input_items);
