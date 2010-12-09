@@ -109,6 +109,45 @@ static void write_drx(struct image *image)
 }
 
 
+static void write_mosflm(struct image *image)
+{
+	FILE *fh;
+	int i;
+	char filename[1024];
+	double cl=100;  /* fake camera length in mm */
+	double pix=0;
+	double height=0;
+	double sigma=0;
+
+	snprintf(filename, 1023, "xfel-%i.spt", image->id);
+
+	fh = fopen(filename, "w");
+	if ( !fh ) {
+		ERROR("Couldn't open temporary file xfel.spt\n");
+		return;
+	}
+	
+	fprintf(fh, "%10d %10d %10.8f %10.6f %10.6f\n", 1, 1, 1, 1, 0);
+	fprintf(fh, "%10d %10d\n", 1, 1);
+	fprintf(fh, "%10.5f %10.5f", 0, 0);
+	
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
+
+		struct imagefeature *f;
+
+		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
+
+		fprintf(fh, "%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
+		        f->x, f->y, 0, 0, height, sigma);
+
+	}
+	fprintf(fh,"%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
+	           -999,-999,-999,-999,-999,-999);
+	fclose(fh);
+}
+
+
 void map_all_peaks(struct image *image)
 {
 	int i;
