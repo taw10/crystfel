@@ -112,7 +112,10 @@ int get_peaks(struct image *image, struct hdfile *f)
 
 	dh = H5Dopen(f->fh, "/processing/hitfinder/peakinfo", H5P_DEFAULT);
 
-	if ( dh < 0 ) {
+	if ( dh < 0 ) dh = H5Dopen(f->fh, "/data/peakinfo", H5P_DEFAULT);
+	
+	if ( dh < 0 ){
+	
 		ERROR("No peak list found!\n");
 		return 1;
 	}
