@@ -3,8 +3,6 @@
  *
  * Invoke the DPS auto-indexing algorithm through MOSFLM
  *
- * This will actuaully run DirAx for now... will be fixed soon...
- *
  * (c) 2006-2010 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
