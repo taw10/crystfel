@@ -150,6 +150,9 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	sprintf(mos_cmd,"%sGO\n",mos_cmd);
 	sprintf(mos_cmd,"%s%s",mos_cmd,"eof-mosflm\n");
 
+	/* remove the previous NEWMAT file prior to running mosflm */
+	remove(newmatfile);
+
 	/* Run the mosflm script */
 	fail = system(mos_cmd);
 	if (fail) {
@@ -165,8 +168,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 		return;
 	}
 
-	/* remove the mosflm NEWMAT file */
-	//remove(newmatfile);
+
 
 	return;
 }
