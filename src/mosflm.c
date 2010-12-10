@@ -115,16 +115,13 @@ static int read_newmat(const char * filename, struct image *image)
 
 void run_mosflm(struct image *image, UnitCell *cell)
 {
-	unsigned int opts;
-	int status;
-	int rval;
 	int i,j;
 	char mos_cmd[1024];
 	char symm[64];
 	const char *sg;
 	double a,b,c,alpha,beta,gamma;
 	double wavelength; /* angstrom */
-	const char newmatfile[128];
+	char newmatfile[128];
 	int fail;
 	
 	wavelength = image->lambda*1e10;
