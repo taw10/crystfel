@@ -20,17 +20,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <fcntl.h>
-#include <assert.h>
-#include <sys/ioctl.h>
-
-#if HAVE_FORKPTY_LINUX
-#include <pty.h>
-#elif HAVE_FORKPTY_BSD
-#include <util.h>
-#endif
 
 
 #include "image.h"
