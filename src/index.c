@@ -109,6 +109,8 @@ static void write_drx(struct image *image)
 }
 
 
+/* write .spt file for mosflm */
+/* need to sort mosflm peaks by intensity... */
 struct sptline {
 	double x; /* x coordinate of peak */
 	double y; /* y coordinate of peak */
@@ -116,7 +118,7 @@ struct sptline {
 	double s; /* sigma of peak */
 };
 
-/* need to sort mosflm peaks by intensity... */
+
 static int compare_vals(const void *ap, const void *bp)
 {
 	const struct sptline a = *(struct sptline *)ap;
@@ -127,7 +129,7 @@ static int compare_vals(const void *ap, const void *bp)
 	return 0;
 }
 
-/* write .spt file for mosflm */
+
 static void write_spt(struct image *image)
 {
 	FILE *fh;
@@ -201,9 +203,9 @@ void write_img(struct image *image)
 	unsigned short int * intimage;
 	
 	intimage = malloc(sizeof(unsigned short int));
-	intimage[0] = 0;
+	intimage[0] = 1;
 	
-	snprintf(filename, 1023, "xfel-%i.img", image->id);
+	snprintf(filename, 1023, "xfel-%i_001.img", image->id);
 	
 	fh = fopen(filename, "w");
 	if ( !fh ) {
@@ -219,7 +221,7 @@ void write_img(struct image *image)
 	fprintf(fh,"SIZE2=1;\n");
 	fprintf(fh,"}\n");
 	while ( ftell(fh) < 512 ) { fprintf(fh," "); };
-	fwrite(fh,sizeof(unsigned short int),1,fh);
+	fwrite(intimage,sizeof(unsigned short int),1,fh);
 	fclose(fh);
 }
 
@@ -262,8 +264,8 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod indm,
 		break;
 	case INDEXING_MOSFLM :
 		write_spt(image);
-		write_img(image); /* don't do this every time? */
-		run_mosflm(image);
+		write_img(image); /* dummy image. not needed for each frame.*/
+		run_mosflm(image,cell);
 		break;
 	case INDEXING_TEMPLATE :
 		match_templates(image, ipriv);

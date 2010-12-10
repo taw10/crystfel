@@ -22,7 +22,7 @@
 #include "utils.h"
 
 
-extern void run_mosflm(struct image *image);
+extern void run_mosflm(struct image *image, UnitCell *cell);
 
 
 #endif	/* MOSFLM_H */

@@ -391,17 +391,112 @@ static int dirax_readable(struct image *image)
 }
 
 
+static int read_newmat(const char * filename, struct image *image)
+{
+	FILE * fh;
+	float asx, asy, asz;
+	float bsx, bsy, bsz;
+	float csx, csy, csz;
+	int n;
+	double c;
+	
+	fh = fopen(filename,"r");
+	if (fh == NULL){ 
+		return 1;
+	}
+	n  = fscanf(fh,"%f %f %f\n",&asx,&bsx,&csx);
+	n += fscanf(fh,"%f %f %f\n",&asy,&bsy,&csy);
+	n += fscanf(fh,"%f %f %f\n",&asz,&bsz,&csz);
+	if (n != 9) {
+		return 1;
+	}
+	fclose(fh);
+	
+	/* mosflm A matrix is multiplied by lambda, so fix this */
+	c = 1e-10/image->lambda;
+	
+	cell_set_reciprocal(image->candidate_cells[0],
+                            asz*c, asy*c, asx*c,
+                            bsz*c, bsy*c, bsx*c,
+                            csz*c, csy*c, csx*c);
+               
+        image->ncells = 1;
+        
+        return 0;
+}
 
 
-
-void run_mosflm(struct image *image)
+void run_mosflm(struct image *image, UnitCell *cell)
 {
 	unsigned int opts;
 	int status;
 	int rval;
+	int i,j;
+	char mos_cmd[1024];
+	char symm[64];
+	const char *sg;
+	double a,b,c,alpha,beta,gamma;
+	double wavelength; /* angstrom */
+	const char newmatfile[128];
+	int fail;
+	
+	printf("Mosflm is not fully implemented.  Using DirAx for now.\n");
+	
+	wavelength = image->lambda*1e10;
+	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
+	sg = cell_get_spacegroup(cell);
+	sprintf(newmatfile,"xfel-%i.newmat",image->id);
+	
+	/* need to remove white space from spacegroup... */
+	j = 0;
+	for(i = 0; i < strlen(sg);i++)
+	{
+		if (sg[i] != ' ') {
+			symm[j] = sg[i];
+			j++;
+		}
+	}
+	symm[j] = '\0';	
+	
+	
+	/* build a script to run mosflm */
+	sprintf(mos_cmd,"%s","ipmosflm << eof-mosflm >> /dev/null\n");
+	sprintf(mos_cmd,"%s%s",mos_cmd,
+	                     "DETECTOR ROTATION HORIZONTAL ANTICLOCKWISE"
+	                     " ORIGIN LL FAST HORIZONTAL RECTANGULAR\n");
+	sprintf(mos_cmd,"%sCELL %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f\n",
+	                   mos_cmd,
+	                   a*1e10,b*1e10,c*1e10,
+	                   rad2deg(alpha),rad2deg(beta),rad2deg(gamma));
+	sprintf(mos_cmd,"%sSYMM %s\n",mos_cmd,symm);
+	sprintf(mos_cmd,"%sDISTANCE %8.4f\n",mos_cmd,67.8);
+	sprintf(mos_cmd,"%sBEAM %8.4f %8.4f\n",mos_cmd,0.0,0.0);
+	sprintf(mos_cmd,"%sWAVELENGTH %10.5f\n",mos_cmd,wavelength);
+	sprintf(mos_cmd,"%sNEWMAT %s\n",mos_cmd,newmatfile);
+	sprintf(mos_cmd,"%sIMAGE xfel-%i_001.img phi 0 0\n",mos_cmd,image->id);
+	sprintf(mos_cmd,"%sAUTOINDEX DPS FILE xfel-%i.spt IMAGE 1\n",
+	                      mos_cmd,image->id);
+	sprintf(mos_cmd,"%sGO\n",mos_cmd);
+	sprintf(mos_cmd,"%s%s",mos_cmd,"eof-mosflm\n");
 
-	printf("Mosflm is not yet implemented.  Using DirAx for now.\n");
+	/* Run the mosflm script */
+	fail = system(mos_cmd);
+	if (fail) { 
+		ERROR("mosflm execution failed.\n");
+		return; 
+	}
 
+	/* Read the mosflm NEWMAT file and set cell candidate */ 
+	/* Existence of this file means possible success. Pretty shady. */
+	fail = read_newmat(newmatfile,image);
+	if (fail) {
+		printf("Failed to read mosflm NEWMAT file.\n"); 
+		return;
+	}
+
+	/* remove the mosflm NEWMAT file */
+	remove(newmatfile);
+	
 	image->dirax_pid = forkpty(&image->dirax_pty, NULL, NULL, NULL);
 	if ( image->dirax_pid == -1 ) {
 		ERROR("Failed to fork for DirAx\n");
