@@ -142,7 +142,7 @@ static void write_spt(struct image *image)
 	double height=100;
 	double sigma=1;
 	int nPeaks = image_feature_count(image->features);
-	
+
 	snprintf(filename, 1023, "xfel-%i.spt", image->id);
 
 	fh = fopen(filename, "w");
@@ -150,70 +150,70 @@ static void write_spt(struct image *image)
 		ERROR("Couldn't open temporary file xfel.spt\n");
 		return;
 	}
-	
+
 	fprintf(fh, "%10d %10d %10.8f %10.6f %10.6f\n", 1, 1, fpix, 1.0, 0.0);
 	fprintf(fh, "%10d %10d\n", 1, 1);
 	fprintf(fh, "%10.5f %10.5f\n", 0.0, 0.0);
-	
+
 	struct sptline *sptlines;
 	sptlines = malloc(sizeof(struct sptline)*nPeaks);
-	
+
 	for ( i=0; i<nPeaks; i++ ) {
 
 		struct imagefeature *f;
-		
+
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
 		struct panel *pan;
 		pan = find_panel(image->det,f->x,f->y);
 		if ( pan == NULL ) continue;
-		
+
 		pix = 1000/pan->res; /* pixel size in mm */
 		height = f->intensity;
-		
+
 		sptlines[i].x = (f->y - pan->cy)*pix*fclen/pan->clen/1000;
 		sptlines[i].y = -(f->x - pan->cx)*pix*fclen/pan->clen/1000;
 		sptlines[i].h = height;
 		sptlines[i].s = sigma;
-		
+
 	}
-	
+
 	qsort(sptlines, nPeaks, sizeof(struct sptline), compare_vals);
-	
+
 	for ( i=0; i<nPeaks; i++ ) {
-		
+
 		fprintf(fh, "%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
-		        sptlines[i].x, sptlines[i].y, 
-		        0.0, 0.0, 
+		        sptlines[i].x, sptlines[i].y,
+		        0.0, 0.0,
 		        sptlines[i].h, sptlines[i].s);
-	
+
 	}
-	
+
 	fprintf(fh,"%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
 	           -999.0,-999.0,-999.0,-999.0,-999.0,-999.0);
 	fclose(fh);
 }
 
-/* write a dummy 1x1 pixel image file for mosflm.  Without post refinement, 
+/* write a dummy 1x1 pixel image file for mosflm.  Without post refinement,
    mosflm will ignore this, but it must be present.*/
 void write_img(struct image *image)
 {
 	FILE *fh;
 	char filename[1024];
 	unsigned short int * intimage;
-	
+
 	intimage = malloc(sizeof(unsigned short int));
 	intimage[0] = 1;
-	
+
 	snprintf(filename, 1023, "xfel-%i_001.img", image->id);
-	
+
 	fh = fopen(filename, "w");
 	if ( !fh ) {
 		ERROR("Couldn't open temporary file xfel.spt\n");
 		return;
 	}
-	
+
 	fprintf(fh,"{\nHEADER_BYTES=512;\n");
 	fprintf(fh,"BYTE_ORDER=little_endian;\n");
 	fprintf(fh,"TYPE=unsigned_short;\n");

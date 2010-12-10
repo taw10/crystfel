@@ -48,11 +48,11 @@ todo
 ** properly read the newmat file (don't use fscanf-- spaces between numers
    are not guaranteed)
 
-** "success" is indicated by existence of NEWMAT file written by mosflm.  
+** "success" is indicated by existence of NEWMAT file written by mosflm.
    Better to interact with mosflm directly in order to somehow verify success.
-   
+
 ** investigate how these keywords affect mosflms behavior:
-   
+
    MOSAICITY
    DISPERSION
    DIVERGENCE
@@ -62,7 +62,7 @@ todo
    PREREFINE ON
    EXTRA ON
    POSTREF ON
-   
+
    These did not seem to affect the results by my (Rick's) experience, probably
    because they are only used conjunction with image intensity data, but it's
    worth another look at the documentation.
@@ -82,10 +82,10 @@ static int read_newmat(const char * filename, struct image *image)
 	float csx, csy, csz;
 	int n;
 	double c;
-	
+
 	fh = fopen(filename,"r");
 	if (fh == NULL){
-		STATUS("found newmat.\n"); 
+		STATUS("found newmat.\n");
 		return 1;
 	}
 	n  = fscanf(fh,"%f %f %f\n",&asx,&bsx,&csx);
@@ -96,19 +96,19 @@ static int read_newmat(const char * filename, struct image *image)
 		return 1;
 	}
 	fclose(fh);
-	
+
 	/* mosflm A matrix is multiplied by lambda, so fix this */
 	c = 1/image->lambda;
-	
+
 	image->candidate_cells[0] = cell_new();
-	
+
 	cell_set_reciprocal(image->candidate_cells[0],
                             asz*c, asy*c, asx*c,
                             bsz*c, bsy*c, bsx*c,
                             csz*c, csy*c, csx*c);
-        
+
         image->ncells = 1;
-        
+
         return 0;
 }
 
@@ -123,12 +123,12 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	double wavelength; /* angstrom */
 	char newmatfile[128];
 	int fail;
-	
+
 	wavelength = image->lambda*1e10;
 	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
 	sg = cell_get_spacegroup(cell);
 	sprintf(newmatfile,"xfel-%i.newmat",image->id);
-	
+
 	/* need to remove white space from spacegroup... */
 	j = 0;
 	for(i = 0; i < strlen(sg);i++)
@@ -138,9 +138,9 @@ void run_mosflm(struct image *image, UnitCell *cell)
 			j++;
 		}
 	}
-	symm[j] = '\0';	
-	
-	
+	symm[j] = '\0';
+
+
 	/* build a script to run mosflm */
 	sprintf(mos_cmd,"%s","ipmosflm << eof-mosflm > /dev/null\n");
 	sprintf(mos_cmd,"%s%s",mos_cmd,
@@ -163,22 +163,21 @@ void run_mosflm(struct image *image, UnitCell *cell)
 
 	/* Run the mosflm script */
 	fail = system(mos_cmd);
-	if (fail) { 
+	if (fail) {
 		ERROR("mosflm execution failed.\n");
-		return; 
+		return;
 	}
 
-	/* Read the mosflm NEWMAT file and set cell candidate */ 
+	/* Read the mosflm NEWMAT file and set cell candidate */
 	/* Existence of this file means possible success. Pretty shady. */
 	fail = read_newmat(newmatfile,image);
 	if (fail) {
-		printf("Failed to read mosflm NEWMAT file.\n"); 
+		printf("Failed to read mosflm NEWMAT file.\n");
 		return;
 	}
 
 	/* remove the mosflm NEWMAT file */
 	//remove(newmatfile);
-	
+
 	return;
 }
-
