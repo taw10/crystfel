@@ -20,59 +20,60 @@ AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib -I$(top_srcdir)/l
 LDADD = $(top_builddir)/lib/libgnu.a
 
 src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c src/utils.c \
-                      src/image.c src/cell.c src/hdf5-file.c src/detector.c \
-                      src/sfac.c src/peaks.c src/reflections.c \
-                      src/beam-parameters.c src/symmetry.c
+                          src/image.c src/cell.c src/hdf5-file.c \
+                          src/detector.c src/sfac.c src/peaks.c \
+                          src/reflections.c src/beam-parameters.c \
+                          src/symmetry.c
 if HAVE_OPENCL
 src_pattern_sim_SOURCES += src/diffraction-gpu.c src/cl-utils.c
 endif
 
-src_process_hkl_SOURCES = src/process_hkl.c src/sfac.c src/statistics.c src/cell.c \
-                      src/utils.c src/reflections.c src/symmetry.c \
-                      src/stream.c src/beam-parameters.c
+src_process_hkl_SOURCES = src/process_hkl.c src/sfac.c src/statistics.c \
+                          src/cell.c src/utils.c src/reflections.c \
+                          src/symmetry.c src/stream.c src/beam-parameters.c
 
-src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c src/utils.c src/cell.c \
-                      src/image.c src/peaks.c src/index.c src/filters.c \
-                      src/diffraction.c src/detector.c src/sfac.c src/dirax.c \
-                      src/mosflm.c src/reflections.c src/templates.c \
-                      src/symmetry.c src/geometry.c src/thread-pool.c \
-                      src/beam-parameters.c
+src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c src/utils.c \
+                          src/cell.c src/image.c src/peaks.c src/index.c \
+                          src/filters.c src/diffraction.c src/detector.c \
+                          src/sfac.c src/dirax.c src/mosflm.c \
+                          src/reflections.c src/templates.c src/symmetry.c \
+                          src/geometry.c src/thread-pool.c src/beam-parameters.c
 if HAVE_OPENCL
 src_indexamajig_SOURCES += src/diffraction-gpu.c src/cl-utils.c
 endif
 
 
 if HAVE_GTK
-src_hdfsee_SOURCES = src/hdfsee.c src/displaywindow.c src/render.c src/hdf5-file.c \
-                 src/utils.c src/image.c src/filters.c
+src_hdfsee_SOURCES = src/hdfsee.c src/displaywindow.c src/render.c \
+                     src/hdf5-file.c src/utils.c src/image.c src/filters.c
 endif
 
 src_get_hkl_SOURCES = src/get_hkl.c src/sfac.c src/cell.c src/utils.c \
-                  src/reflections.c src/symmetry.c src/beam-parameters.c
+                      src/reflections.c src/symmetry.c src/beam-parameters.c
 
 src_compare_hkl_SOURCES = src/compare_hkl.c src/sfac.c src/cell.c src/utils.c \
-                      src/reflections.c src/statistics.c src/symmetry.c
+                          src/reflections.c src/statistics.c src/symmetry.c
 
 src_check_hkl_SOURCES = src/check_hkl.c src/sfac.c src/cell.c src/utils.c \
-                    src/reflections.c src/statistics.c src/symmetry.c
+                        src/reflections.c src/statistics.c src/symmetry.c
 
 src_powder_plot_SOURCES = src/powder_plot.c src/cell.c src/utils.c src/image.c \
-                      src/hdf5-file.c src/detector.c
+                          src/hdf5-file.c src/detector.c
 
-src_render_hkl_SOURCES = src/render_hkl.c src/cell.c src/reflections.c src/utils.c \
-                     src/povray.c src/symmetry.c src/render.c src/hdf5-file.c \
-                     src/image.c src/filters.c
+src_render_hkl_SOURCES = src/render_hkl.c src/cell.c src/reflections.c \
+                         src/utils.c  src/povray.c src/symmetry.c src/render.c \
+                         src/hdf5-file.c src/image.c src/filters.c
 
 src_calibrate_detector_SOURCES = src/calibrate_detector.c src/utils.c \
-                             src/hdf5-file.c src/image.c src/filters.c \
-                             src/peaks.c src/detector.c src/cell.c \
-                             src/thread-pool.c
+                                 src/hdf5-file.c src/image.c src/filters.c \
+                                 src/peaks.c src/detector.c src/cell.c \
+                                 src/thread-pool.c
 
 src_facetron_SOURCES = src/facetron.c src/cell.c src/hdf5-file.c src/utils.c \
-                   src/detector.c src/peaks.c src/image.c src/geometry.c \
-                   src/reflections.c src/stream.c src/thread-pool.c \
-                   src/beam-parameters.c src/symmetry.c src/post-refinement.c \
-                   src/hrs-scaling.c
+                       src/detector.c src/peaks.c src/image.c src/geometry.c \
+                       src/reflections.c src/stream.c src/thread-pool.c \
+                       src/beam-parameters.c src/symmetry.c \
+                        src/post-refinement.c src/hrs-scaling.c
 
 if HAVE_CAIRO
 src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
@@ -80,13 +81,14 @@ src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
                  src/symmetry.c src/stream.c src/thread-pool.c
 endif
 
-src_reintegrate_SOURCES = src/reintegrate.c src/cell.c src/hdf5-file.c src/utils.c \
-                      src/detector.c src/peaks.c src/image.c src/stream.c \
-                      src/index.c src/dirax.c src/mosflm.c src/templates.c \
-                      src/geometry.c src/symmetry.c src/thread-pool.c
+src_reintegrate_SOURCES = src/reintegrate.c src/cell.c src/hdf5-file.c \
+                          src/utils.c src/detector.c src/peaks.c src/image.c \
+                          src/stream.c src/index.c src/dirax.c src/mosflm.c \
+                          src/templates.c src/geometry.c src/symmetry.c \
+                          src/thread-pool.c
 
 src_estimate_background_SOURCES = src/estimate_background.c src/stream.c \
-                              src/utils.c src/cell.c
+                                  src/utils.c src/cell.c
 
 INCLUDES = "-I$(top_srcdir)/data"
 
