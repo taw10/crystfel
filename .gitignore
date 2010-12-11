@@ -15,7 +15,7 @@ src/compare_hkl
 src/powder_plot
 src/render_hkl
 src/calibrate_detector
-src/facetron
+src/partialator
 src/cubeit
 src/reintegrate
 src/estimate_background

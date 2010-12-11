@@ -4,7 +4,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
                src/compare_hkl src/powder_plot src/render_hkl \
-               src/calibrate_detector src/facetron src/reintegrate \
+               src/calibrate_detector src/partialator src/reintegrate \
                src/estimate_background src/check_hkl
 
 if HAVE_GTK
@@ -69,16 +69,17 @@ src_calibrate_detector_SOURCES = src/calibrate_detector.c src/utils.c \
                                  src/peaks.c src/detector.c src/cell.c \
                                  src/thread-pool.c
 
-src_facetron_SOURCES = src/facetron.c src/cell.c src/hdf5-file.c src/utils.c \
-                       src/detector.c src/peaks.c src/image.c src/geometry.c \
-                       src/reflections.c src/stream.c src/thread-pool.c \
-                       src/beam-parameters.c src/symmetry.c \
-                        src/post-refinement.c src/hrs-scaling.c
+src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
+                          src/utils.c src/detector.c src/peaks.c src/image.c \
+                          src/geometry.c src/reflections.c src/stream.c \
+                          src/thread-pool.c src/beam-parameters.c \
+                          src/symmetry.c src/post-refinement.c \
+                          src/hrs-scaling.c
 
 if HAVE_CAIRO
 src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
-                 src/detector.c src/render.c src/filters.c src/image.c \
-                 src/symmetry.c src/stream.c src/thread-pool.c
+                     src/detector.c src/render.c src/filters.c src/image.c \
+                     src/symmetry.c src/stream.c src/thread-pool.c
 endif
 
 src_reintegrate_SOURCES = src/reintegrate.c src/cell.c src/hdf5-file.c \

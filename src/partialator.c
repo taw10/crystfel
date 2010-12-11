@@ -1,7 +1,7 @@
 /*
- * facetron.c
+ * partialator.c
  *
- * Profile fitting for coherent nanocrystallography
+ * Scaling and post refinement for coherent nanocrystallography
  *
  * (c) 2006-2010 Thomas White <taw@physics.org>
  *
@@ -44,7 +44,7 @@ static void show_help(const char *s)
 {
 	printf("Syntax: %s [options]\n\n", s);
 	printf(
-"Post-refinement and profile fitting for coherent nanocrystallography.\n"
+"Scaling and post refinement for coherent nanocrystallography.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
 "\n"
@@ -52,14 +52,15 @@ static void show_help(const char *s)
 "                              (must be a file, not e.g. stdin)\n"
 "  -o, --output=<filename>    Output filename.  Default: facetron.hkl.\n"
 "  -g. --geometry=<file>      Get detector geometry from file.\n"
-"  -b, --beam=<file>          Get beam parameters from file (provides initial\n"
-"                              values for parameters, and nominal wavelengths\n"
-"                              if no per-shot value is found in an HDF5 file.\n"
+"  -b, --beam=<file>          Get beam parameters from file, which provides\n"
+"                              initial values for parameters, and nominal\n"
+"                              wavelengths if no per-shot value is found in \n"
+"                              an HDF5 file.\n"
 "  -x, --prefix=<p>           Prefix filenames from input file with <p>.\n"
 "      --basename             Remove the directory parts of the filenames.\n"
 "      --no-check-prefix      Don't attempt to correct the --prefix.\n"
 "  -y, --symmetry=<sym>       Merge according to symmetry <sym>.\n"
-"  -n, --iterations=<n>       Run <n> cycles of post-refinement.\n"
+"  -n, --iterations=<n>       Run <n> cycles of scaling and post-refinement.\n"
 "\n"
 "  -j <n>                     Run <n> analyses in parallel.\n");
 }
