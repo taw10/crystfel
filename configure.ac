@@ -1,20 +1,18 @@
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(crystfel, 0.2.0, taw@physics.org)
-AM_SILENT_RULES([yes])
-VERSION=AC_PACKAGE_VERSION
 AC_CONFIG_AUX_DIR([build-aux])
-
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(crystfel, "$VERSION")
+AM_INIT_AUTOMAKE([subdir-objects])
 
 AC_PROG_CC
 gl_EARLY
+AM_PROG_CC_C_O
 AC_PROG_AWK
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_RANLIB
-
+AM_SILENT_RULES([yes])
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h stdlib.h unistd.h])
@@ -151,6 +149,5 @@ CFLAGS="$CFLAGS $LIBTIFF_CFLAGS -D_GNU_SOURCE $libPNG_CFLAGS $Cairo_CFLAGS"
 LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
 LIBS="$LIBS $LIBTIFF_LIBS $libPNG_LIBS $Cairo_LIBS"
 
-AC_CONFIG_FILES(Makefile src/Makefile data/Makefile doc/Makefile)
-AC_CONFIG_FILES(scripts/Makefile doc/examples/Makefile lib/Makefile)
+AC_CONFIG_FILES(Makefile lib/Makefile)
 AC_OUTPUT
