@@ -354,7 +354,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ( argc != (optind+1) ) {
-		ERROR("Please provide exactly one HKL files to check.\n");
+		ERROR("Please provide exactly one HKL file to check.\n");
 		return 1;
 	}
 
