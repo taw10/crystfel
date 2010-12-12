@@ -91,13 +91,13 @@ int hdfile_set_image(struct hdfile *f, const char *path)
 
 int hdfile_get_width(struct hdfile *f)
 {
-	return f->nx;
+	return f->ny;
 }
 
 
 int hdfile_get_height(struct hdfile *f)
 {
-	return f->ny;
+	return f->nx;
 }
 
 
@@ -242,10 +242,10 @@ int hdf5_write(const char *filename, const void *data,
 		return 1;
 	}
 
-	size[0] = width;
-	size[1] = height;
-	max_size[0] = width;
-	max_size[1] = height;
+	size[0] = height;
+	size[1] = width;
+	max_size[0] = height;
+	max_size[1] = width;
 	sh = H5Screate_simple(2, size, max_size);
 
 	dh = H5Dcreate(gh, "data", type, sh,
@@ -401,8 +401,8 @@ int hdf5_read(struct hdfile *f, struct image *image, int satcorr,
 	uint16_t *flags;
 	hid_t mask_dh;
 
-	image->height = f->nx;
-	image->width = f->ny;
+	image->width = hdfile_get_width(f);
+	image->height = hdfile_get_height(f);
 
 	buf = malloc(sizeof(float)*f->nx*f->ny);
 
