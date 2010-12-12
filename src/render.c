@@ -208,8 +208,8 @@ float *render_get_image_binned(DisplayWindow *dw, int binning, float *max)
 
 	}
 
-	data = render_bin(dw->image->data, hdfile_get_width(dw->hdfile),
-	                  hdfile_get_height(dw->hdfile), binning, max);
+	data = render_bin(dw->image->data, dw->image->width, dw->image->height,
+	                  binning, max);
 
 	return data;
 }
