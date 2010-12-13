@@ -163,7 +163,7 @@ static void refine_all(struct image *images, int n_total_patterns,
 }
 
 
-static void integrate_image(struct image *image)
+static void integrate_image(struct image *image, ReflItemList *obs)
 {
 	struct cpeak *spots;
 	int j, n;
@@ -210,15 +210,22 @@ static void integrate_image(struct image *image)
 		if ( integrate_peak(image, spots[j].x, spots[j].y,
 		                    &xc, &yc, &i_partial, NULL, NULL,
 		                    1, 1, 0) ) {
+			spots[j].valid = 0;
 			continue;
 		}
 
+		spots[j].intensity = i_partial;
+		spots[j].valid = 1;
+
+		if ( !find_item(obs, h, k, l) ) add_item(obs, h, k, l);
+
 	}
+	image->cpeaks = spots;
+	image->n_cpeaks = n;
 
 	free(image->data);
 	if ( image->flags != NULL ) free(image->flags);
 	hdfile_close(hdfile);
-	image->cpeaks = spots;
 
 	/* Muppet proofing */
 	image->data = NULL;
@@ -239,7 +246,6 @@ int main(int argc, char *argv[])
 	int config_basename = 0;
 	int config_checkprefix = 1;
 	struct detector *det;
-	double *i_full;
 	unsigned int *cts;
 	ReflItemList *obs;
 	int i;
@@ -247,6 +253,7 @@ int main(int argc, char *argv[])
 	struct image *images;
 	int n_iter = 10;
 	struct beam_params *beam = NULL;
+	double *I_full;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -363,10 +370,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* Prepare for iteration */
-	i_full = new_list_intensity();
-	obs = new_items();
-
 	n_total_patterns = count_patterns(fh);
 	STATUS("There are %i patterns to process\n", n_total_patterns);
 
@@ -378,6 +381,7 @@ int main(int argc, char *argv[])
 
 	/* Fill in what we know about the images so far */
 	rewind(fh);
+	obs = new_items();
 	for ( i=0; i<n_total_patterns; i++ ) {
 
 		UnitCell *cell;
@@ -416,7 +420,7 @@ int main(int argc, char *argv[])
 		images[i].flags = NULL;
 
 		/* Get reflections from this image */
-		integrate_image(&images[i]);
+		integrate_image(&images[i], obs);
 
 		progress_bar(i, n_total_patterns-1, "Loading pattern data");
 
@@ -428,7 +432,7 @@ int main(int argc, char *argv[])
 
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
-	scale_intensities(images, n_total_patterns, sym);
+	I_full = scale_intensities(images, n_total_patterns, sym, obs);
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -454,21 +458,31 @@ int main(int argc, char *argv[])
 		}
 
 		/* Refine the geometry of all patterns to get the best fit */
-		refine_all(images, n_total_patterns, det, sym, obs, i_full,
+		refine_all(images, n_total_patterns, det, sym, obs, I_full,
 		           nthreads, fhg, fhp);
 
 		/* Re-estimate all the full intensities */
-		scale_intensities(images, n_total_patterns, sym);
+		free(I_full);
+		I_full = scale_intensities(images, n_total_patterns, sym, obs);
 
 		fclose(fhg);
 		fclose(fhp);
+
+	}
+
+	STATUS("Final scale factors:\n");
+	for ( i=0; i<n_total_patterns; i++ ) {
+		STATUS("%4i : %e\n", i, images[i].osf);
 	}
 
 	/* Output results */
-	write_reflections(outfile, obs, i_full, NULL, NULL, cts, NULL);
+	write_reflections(outfile, obs, I_full, NULL, NULL, cts, NULL);
 
 	/* Clean up */
-	free(i_full);
+	for ( i=0; i<n_total_patterns; i++ ) {
+		free(images[i].cpeaks);
+	}
+	free(I_full);
 	delete_items(obs);
 	free(sym);
 	free(outfile);

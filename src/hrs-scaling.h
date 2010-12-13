@@ -20,7 +20,8 @@
 
 #include "image.h"
 
-extern void scale_intensities(struct image *image, int n, const char *sym);
+extern double *scale_intensities(struct image *image, int n, const char *sym,
+                                 ReflItemList *obs);
 
 
 #endif	/* HRS_SCALING_H */

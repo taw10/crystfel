@@ -61,6 +61,7 @@ struct cpeak
 	signed int l;
 
 	double min_distance;
+	int valid;
 
 	/* Partiality */
 	double r1;  /* First excitation error */
@@ -72,6 +73,9 @@ struct cpeak
 	/* Location in image */
 	int x;
 	int y;
+
+	/* Intensity */
+	double intensity;
 };
 
 
