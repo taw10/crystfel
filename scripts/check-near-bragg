@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 use strict;
+use File::Basename;
 
 open(FH, $ARGV[0]);
 open(TMP, "> list.tmp");
@@ -18,13 +19,24 @@ while ( $line = <FH> ) {
 		$handled = 1;
 	}
 
+	if ( $line =~ /^\s*[0-9\-\.]+\s+[0-9\-\.]+\s+[0-9\-\.]+\s+[0-9\.\-]+/ ) {
+		printf(TMP "%s\n", $line);
+		$handled = 1;
+	}
+
 	if ( $line =~ /^Reflections\ from\ indexing\ in\ (.+)$/ ) {
 		$filename = $1;
 		$handled = 1;
 	}
 
-	if ( $line =~ /^Peak statistics/ ) {
+	if ( $line =~ /^Peaks\ from\ peak search\ in\ (.+)$/ ) {
+		$filename = $1;
+		$handled = 1;
+	}
+
+	if ( $line =~ /^$/ ) {
 		close(TMP);
+		$filename = "images-old/".basename($filename);
 		system("hdfsee ".$filename." --peak-overlay=list.tmp --binning=1 --int-boost=10");
 		if ( $? != 0 ) { exit; }
 		unlink("list.tmp");
