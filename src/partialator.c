@@ -472,7 +472,7 @@ int main(int argc, char *argv[])
 
 	STATUS("Final scale factors:\n");
 	for ( i=0; i<n_total_patterns; i++ ) {
-		STATUS("%4i : %e\n", i, images[i].osf);
+		STATUS("%4i : %5.2f\n", i, images[i].osf);
 	}
 
 	/* Output results */

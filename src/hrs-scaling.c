@@ -28,7 +28,7 @@
 
 
 /* Maximum number of iterations of NLSq scaling per macrocycle. */
-#define MAX_CYCLES (10)
+#define MAX_CYCLES (30)
 
 
 static void show_matrix_eqn(gsl_matrix *M, gsl_vector *v, int r)
@@ -45,156 +45,167 @@ static void show_matrix_eqn(gsl_matrix *M, gsl_vector *v, int r)
 }
 
 
-static double gradient(int j, signed int h, signed int k, signed int l,
-                       struct image *images, int n, const char *sym)
+static void sum_GI(struct image *images, int n, const char *sym,
+                   signed int hat, signed int kat, signed int lat,
+                   double *sigma_GI, double *sigma_Gsq)
 {
-	struct image *image;
-	struct cpeak *spots;
-	double num1 = 0.0;
-	double num2 = 0.0;
-	double den = 0.0;
-	double num1_this = 0.0;
-	double num2_this = 0.0;
-	int m, i;
+	int k;
 
-	/* "Everything" terms */
-	for ( m=0; m<n; m++ ) {
+	*sigma_GI = 0.0;
+	*sigma_Gsq = 0.0;
+	for ( k=0; k<n; k++ ) {
 
-		image = &images[m];
-		spots = image->cpeaks;
+		int hi;
+		struct image *image = &images[k];
+		struct cpeak *spots = images->cpeaks;
+		int found = 0;
 
-		for ( i=0; i<image->n_cpeaks; i++ ) {
+		for ( hi=0; hi<image->n_cpeaks; hi++ ) {
 
+			double ic;
 			signed int ha, ka, la;
 
-			if ( !spots[i].valid ) continue;
-			if ( spots[i].p < 0.1 ) continue;
+			if ( !spots[hi].valid ) continue;
+			if ( spots[hi].p < 0.1 ) continue;
+			get_asymm(spots[hi].h, spots[hi].k, spots[hi].l,
+				  &ha, &ka, &la, sym);
+			if ( ha != hat ) continue;
+			if ( ka != kat ) continue;
+			if ( la != lat ) continue;
 
-			get_asymm(spots[i].h, spots[i].k, spots[i].l,
-			          &ha, &ka, &la, sym);
+			ic = spots[hi].intensity / spots[hi].p;
 
-			if ( ha != h ) continue;
-			if ( ka != k ) continue;
-			if ( la != l ) continue;
-
-			num1 += pow(image->osf, 2.0) * pow(spots[i].p, 2.0);
-			num2 += image->osf * spots[i].intensity * spots[i].p;
-			den += pow(image->osf, 2.0) * pow(spots[i].p, 2.0);
+			*sigma_GI += ic * image->osf;
+			found = 1;
 
 		}
 
+		if ( found ) {
+			*sigma_Gsq += pow(image->osf, 2.0);
+		}
 	}
+}
 
-	/* "This frame" terms */
-	image = &images[j];
-	spots = image->cpeaks;
-	for ( i=0; i<image->n_cpeaks; i++ ) {
+
+static double find_occurrances(struct image *image, const char *sym,
+                               signed int h, signed int k, signed int l)
+{
+	double Ihl = 0.0;
+	int find;
+	struct cpeak *spots = image->cpeaks;
+
+	for ( find=0; find<image->n_cpeaks; find++ ) {
 
 		signed int ha, ka, la;
 
-		if ( !spots[i].valid ) continue;
-		if ( spots[i].p < 0.1 ) continue;
-
-		get_asymm(spots[i].h, spots[i].k, spots[i].l,
-		          &ha, &ka, &la, sym);
-
+		if ( !spots[find].valid ) continue;
+		if ( spots[find].p < 0.1 ) continue;
+		get_asymm(spots[find].h, spots[find].k,
+		          spots[find].l, &ha, &ka, &la, sym);
 		if ( ha != h ) continue;
 		if ( ka != k ) continue;
 		if ( la != l ) continue;
 
-		num1_this += spots[i].intensity * spots[i].p;
-		num2_this += pow(spots[i].p, 2.0);
+		Ihl += spots[find].intensity / spots[find].p;
 
 	}
 
-	return (num1*num1_this - num2*num2_this) / den;
+	return Ihl;
 }
 
 
-static double iterate_scale(struct image *images, int n, const char *sym,
-                            double *I_full_old)
+static double iterate_scale(struct image *images, int n,
+                            ReflItemList *obs, const char *sym)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
 	gsl_vector *shifts;
-	int m;
+	int l;
 	double max_shift;
 	int crossed = 0;
+	int n_ref;
 
 	M = gsl_matrix_calloc(n-1, n-1);
 	v = gsl_vector_calloc(n-1);
+	n_ref = num_items(obs);
 
-	for ( m=0; m<n; m++ ) {  /* "Equation number": one equation per frame */
+	for ( l=0; l<n; l++ ) {  /* "Equation number": one equation per frame */
 
-		int k;  /* Frame (scale factor) number */
+		int m;  /* Frame (scale factor) number */
 		int h;
-		int mcomp;
+		int lcomp;
 		double vc_tot = 0.0;
-		struct image *image = &images[m];
-		struct cpeak *spots = image->cpeaks;
+		struct image *imagel = &images[l];
 
-		if ( m == crossed ) continue;
+		if ( l == crossed ) continue;
 
 		/* Determine the "solution" vector component */
-		for ( h=0; h<image->n_cpeaks; h++ ) {
+		for ( h=0; h<n_ref; h++ ) {
 
-			double v_c;
-			double ic, ip;
-			signed int ha, ka, la;
+			double sigma_GI, sigma_Gsq;
+			double vc;
+			double Ihl;
+			struct refl_item *it = get_item(obs, h);
 
-			if ( !spots[h].valid ) continue;
-			if ( spots[h].p < 0.1 ) continue;
+			sum_GI(images, n, sym, it->h, it->k, it->l,
+			       &sigma_GI, &sigma_Gsq);
 
-			get_asymm(spots[h].h, spots[h].k, spots[h].l,
-			          &ha, &ka, &la, sym);
-			ic = lookup_intensity(I_full_old, ha, ka, la);
+			/* Add up symmetric equivalents within the pattern */
+			Ihl = find_occurrances(imagel, sym,
+			                       it->h, it->k, it->l);
 
-			v_c = ip - (spots[h].p * image->osf * ic);
-			v_c *= pow(spots[h].p, 2.0);
-			v_c *= pow(image->osf, 2.0);
-			v_c *= ic;
-			v_c *= gradient(m, ha, ka, la, images, n, sym);
-			vc_tot += v_c;
+			vc = Ihl * sigma_GI / sigma_Gsq;
+			vc -= imagel->osf * pow(sigma_GI, 2.0) / sigma_Gsq;
+
+			vc_tot += vc;
 
 		}
 
-		mcomp = m;
-		if ( m > crossed ) mcomp--;
-		gsl_vector_set(v, mcomp, vc_tot);
+		lcomp = l;
+		if ( l > crossed ) lcomp--;
+		gsl_vector_set(v, lcomp, vc_tot);
 
 		/* Now fill in the matrix components */
-		for ( k=0; k<n; k++ ) {
+		for ( m=0; m<n; m++ ) {
 
-			double val = 0.0;
-			int kcomp;
+			double mc_tot = 0.0;
+			int mcomp;
+			struct image *imagem = &images[m];
 
-			if ( k == crossed ) continue;
+			if ( m == crossed ) continue;
 
-			for ( h=0; h<image->n_cpeaks; h++ ) {
+			for ( h=0; h<n_ref; h++ ) {
 
-				signed int ha, ka, la;
-				double con;
-				double ic;
+				double mc = 0.0;
+				double Ihl, Ihm;
+				struct refl_item *it = get_item(obs, h);
+				double sigma_GI, sigma_Gsq;
 
-				if ( !spots[h].valid ) continue;
-				if ( spots[h].p < 0.1 ) continue;
+				sum_GI(images, n, sym, it->h, it->k, it->l,
+				       &sigma_GI, &sigma_Gsq);
 
-				get_asymm(spots[h].h, spots[h].k, spots[h].l,
-				          &ha, &ka, &la, sym);
-				ic = lookup_intensity(I_full_old, ha, ka, la);
+				if ( l == m ) {
+					mc += pow(sigma_GI, 2.0)
+					                  / pow(sigma_Gsq, 2.0);
+				}
 
-				con = -pow(spots[h].p, 3.0);
-				con *= pow(image->osf, 3.0);
-				con *= ic;
-				con *= gradient(m, ha, ka, la, images, n, sym);
-				con *= gradient(k, ha, ka, la, images, n, sym);
-				val += con;
+				Ihl = find_occurrances(imagel, sym,
+			                       it->h, it->k, it->l);
+			        Ihm = find_occurrances(imagem, sym,
+			                       it->h, it->k, it->l);
+
+				mc += Ihl * Ihm / sigma_Gsq;
+
+				mc += (sigma_GI / pow(sigma_Gsq, 2.0) )
+				       * ( imagel->osf*Ihm + imagem->osf * Ihl);
+
+				mc_tot += mc;
 
 			}
 
-			kcomp = k;
-			if ( k > crossed ) kcomp--;
-			gsl_matrix_set(M, mcomp, kcomp, val);
+			mcomp = m;
+			if ( m > crossed ) mcomp--;
+			gsl_matrix_set(M, lcomp, mcomp, mc_tot);
 
 		}
 
@@ -205,17 +216,19 @@ static double iterate_scale(struct image *images, int n, const char *sym,
 	shifts = gsl_vector_alloc(n-1);
 	gsl_linalg_HH_solve(M, v, shifts);
 	max_shift = 0.0;
-	for ( m=0; m<n-1; m++ ) {
+	for ( l=0; l<n-1; l++ ) {
 
-		double shift = gsl_vector_get(shifts, m);
-		int mimg;
+		double shift = gsl_vector_get(shifts, l);
+		int limg;
 
-		mimg = m;
-		if ( mimg >= crossed ) mimg++;
+		limg = l;
+		if ( limg >= crossed ) limg++;
 
-		images[mimg].osf += shift;
+		images[limg].osf += shift;
 
-		if ( shift > max_shift ) max_shift = shift;
+		if ( fabs(shift) > fabs(max_shift) ) {
+			max_shift = fabs(shift);
+		}
 
 	}
 	gsl_vector_free(shifts);
@@ -227,8 +240,8 @@ static double iterate_scale(struct image *images, int n, const char *sym,
 }
 
 
-static double *lsq_intensities(struct image *images, int n, const char *sym,
-                               ReflItemList *obs)
+static double *lsq_intensities(struct image *images, int n,
+                               ReflItemList *obs, const char *sym)
 {
 	double *I_full;
 	int i;
@@ -287,6 +300,23 @@ static double *lsq_intensities(struct image *images, int n, const char *sym,
 }
 
 
+static void normalise_osfs(struct image *images, int n)
+{
+	int m;
+	double tot = 0.0;
+	double mean;
+
+	for ( m=0; m<n; m++ ) {
+		tot += images[m].osf;
+	}
+	mean = tot / (double)n;
+
+	for ( m=0; m<n; m++ ) {
+		images[m].osf /= mean;
+	}
+}
+
+
 /* Scale the stack of images */
 double *scale_intensities(struct image *images, int n, const char *sym,
                           ReflItemList *obs)
@@ -298,23 +328,35 @@ double *scale_intensities(struct image *images, int n, const char *sym,
 
 	/* Start with all scale factors equal */
 	for ( m=0; m<n; m++ ) {
-		images[m].osf = 1.0;
-	}
 
-	/* Calculate LSQ intensities using these scale factors */
-	I_full = lsq_intensities(images, n, sym, obs);
+		double tot = 0.0;
+		int j;
+
+		for ( j=0; j<images[m].n_cpeaks; j++ ) {
+			tot += images[m].cpeaks[j].intensity
+			        / images[m].cpeaks[j].p;
+		}
+
+		images[m].osf = tot;
+
+	}
+	normalise_osfs(images, n);
 
 	/* Iterate */
 	i = 0;
 	do {
 
-		max_shift = iterate_scale(images, n, sym, I_full);
+		max_shift = iterate_scale(images, n, obs, sym);
 		STATUS("Iteration %2i: max shift = %5.2f\n", i, max_shift);
-		free(I_full);
-		I_full = lsq_intensities(images, n, sym, obs);
 		i++;
+		normalise_osfs(images, n);
 
-	} while ( (max_shift > 0.1) && (i < MAX_CYCLES) );
+	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );
 
+	for ( m=0; m<n; m++ ) {
+		images[m].osf /= images[0].osf;
+	}
+
+	I_full = lsq_intensities(images, n, obs, sym);
 	return I_full;
 }
