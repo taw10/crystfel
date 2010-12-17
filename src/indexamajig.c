@@ -68,8 +68,8 @@ struct static_index_args
 	float threshold;
 	float min_gradient;
 	struct detector *det;
-	IndexingMethod indm;
-	IndexingPrivate *ipriv;
+	IndexingMethod *indm;
+	IndexingPrivate **ipriv;
 	const double *intensities;
 	const unsigned char *flags;
 	const char *sym;  /* Symmetry of "intensities" and "flags" */
@@ -325,7 +325,7 @@ static void process_image(void *pp, int cookie)
 	int config_gpu = pargs->static_args.config_gpu;
 	int config_simulate = pargs->static_args.config_simulate;
 	int config_polar = pargs->static_args.config_polar;
-	IndexingMethod indm = pargs->static_args.indm;
+	IndexingMethod *indm = pargs->static_args.indm;
 	const double *intensities = pargs->static_args.intensities;
 	const unsigned char *flags = pargs->static_args.flags;
 	struct gpu_context *gctx = pargs->static_args.gctx;
@@ -543,7 +543,10 @@ int main(int argc, char *argv[])
 	float min_gradient = 100000.0;
 	struct detector *det;
 	char *geometry = NULL;
-	IndexingMethod indm;
+	IndexingMethod *indm;
+	IndexingPrivate **ipriv;
+	int indexer_needs_cell;
+	int reduction_needs_cell;
 	char *indm_str = NULL;
 	UnitCell *cell;
 	double *intensities = NULL;
@@ -561,7 +564,6 @@ int main(int argc, char *argv[])
 	pthread_mutex_t gpu_mutex = PTHREAD_MUTEX_INITIALIZER;
 	char prepare_line[1024];
 	char prepare_filename[1024];
-	IndexingPrivate *ipriv;
 	struct queue_args qargs;
 	struct beam_params *beam = NULL;
 	double nominal_photon_energy;
@@ -784,31 +786,30 @@ int main(int argc, char *argv[])
 		       " try to index anything.\n"
 		       "If that isn't what you wanted, re-run with"
 		       " --indexing=<method>.\n");
-		indm = INDEXING_NONE;
-	} else if ( strcmp(indm_str, "none") == 0 ) {
-		indm = INDEXING_NONE;
-	} else if ( strcmp(indm_str, "dirax") == 0) {
-		indm = INDEXING_DIRAX;
-	} else if ( strcmp(indm_str, "mosflm") == 0) {
-		indm = INDEXING_MOSFLM;
-	} else if ( strcmp(indm_str, "template") == 0) {
-		indm = INDEXING_TEMPLATE;
+		indm = NULL;
 	} else {
-		ERROR("Unrecognised indexing method '%s'\n", indm_str);
-		return 1;
+		indm = build_indexer_list(indm_str, &indexer_needs_cell);
+		if ( indm == NULL ) {
+			ERROR("Invalid indexer list '%s'\n", indm_str);
+			return 1;
+		}
+		free(indm_str);
 	}
-	free(indm_str);
 
+	reduction_needs_cell = 0;
 	if ( scellr == NULL ) {
 		STATUS("You didn't specify a cell reduction method, so I'm"
 		       " going to use 'reduce'.\n");
 		cellr = CELLR_REDUCE;
+		reduction_needs_cell = 1;
 	} else if ( strcmp(scellr, "none") == 0 ) {
 		cellr = CELLR_NONE;
 	} else if ( strcmp(scellr, "reduce") == 0) {
 		cellr = CELLR_REDUCE;
+		reduction_needs_cell = 1;
 	} else if ( strcmp(scellr, "compare") == 0) {
 		cellr = CELLR_COMPARE;
+		reduction_needs_cell = 1;
 	} else {
 		ERROR("Unrecognised cell reduction method '%s'\n", scellr);
 		return 1;
@@ -827,14 +828,15 @@ int main(int argc, char *argv[])
 	}
 	free(geometry);
 
-	if ( (cellr != CELLR_NONE) || (indm == INDEXING_TEMPLATE) ) {
+	if ( reduction_needs_cell || indexer_needs_cell ) {
 		cell = load_cell_from_pdb(pdb);
 		if ( cell == NULL ) {
 			ERROR("Couldn't read unit cell (from %s)\n", pdb);
 			return 1;
 		}
 	} else {
-		STATUS("No cell needed because --no-match was used.\n");
+		STATUS("No cell needed for these choices of indexing"
+		       " and reduction.\n");
 		cell = NULL;
 	}
 	free(pdb);
@@ -866,11 +868,15 @@ int main(int argc, char *argv[])
 	qargs.use_this_one_instead = prepare_line;
 
 	/* Prepare the indexer */
-	ipriv = prepare_indexing(indm, cell, prepare_filename, det,
-	                         nominal_photon_energy);
-	if ( ipriv == NULL ) {
-		ERROR("Failed to prepare indexing.\n");
-		return 1;
+	if ( indm != NULL ) {
+		ipriv = prepare_indexing(indm, cell, prepare_filename, det,
+		                         nominal_photon_energy);
+		if ( ipriv == NULL ) {
+			ERROR("Failed to prepare indexing.\n");
+			return 1;
+		}
+	} else {
+		ipriv = NULL;
 	}
 
 	gsl_set_error_handler_off();

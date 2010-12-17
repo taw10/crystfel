@@ -42,7 +42,7 @@ enum {
 
 typedef struct _indexingprivate IndexingPrivate;
 
-extern IndexingPrivate *prepare_indexing(IndexingMethod indm, UnitCell *cell,
+extern IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
                                          const char *filename,
                                          struct detector *det,
                                          double nominal_photon_energy);
@@ -50,9 +50,11 @@ extern IndexingPrivate *prepare_indexing(IndexingMethod indm, UnitCell *cell,
 extern void map_all_peaks(struct image *image);
 
 extern void index_pattern(struct image *image, UnitCell *cell,
-                          IndexingMethod indm, int cellr, int verbose,
-                          IndexingPrivate *priv);
+                          IndexingMethod *indm, int cellr, int verbose,
+                          IndexingPrivate **priv);
 
-extern void cleanup_indexing(IndexingPrivate *priv);
+extern void cleanup_indexing(IndexingPrivate **priv);
+
+extern IndexingMethod *build_indexer_list(const char *str, int *need_cell);
 
 #endif	/* INDEX_H */
