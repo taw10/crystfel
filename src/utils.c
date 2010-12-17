@@ -506,7 +506,7 @@ char *safe_basename(const char *in)
 	}
 
 	/* Find the base name */
-	for ( i=strlen(cpy)-1; i>=0; i-- ) {
+	for ( i=strlen(cpy)-1; i>0; i-- ) {
 		if ( cpy[i] == '/' ) {
 			i++;
 			break;
