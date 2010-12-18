@@ -73,8 +73,6 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 			break;
 		}
 
-		n++;
-
 	}
 	iprivs[n] = NULL;
 
