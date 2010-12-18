@@ -172,6 +172,7 @@ static double iterate_scale(struct image *images, int n,
 			int mcomp;
 			struct image *imagem = &images[m];
 
+			if ( m > l ) continue;  /* Matrix is symmetric */
 			if ( m == crossed ) continue;
 
 			for ( h=0; h<n_ref; h++ ) {
@@ -206,6 +207,7 @@ static double iterate_scale(struct image *images, int n,
 			mcomp = m;
 			if ( m > crossed ) mcomp--;
 			gsl_matrix_set(M, lcomp, mcomp, mc_tot);
+			gsl_matrix_set(M, mcomp, lcomp, mc_tot);
 
 		}
 
