@@ -122,22 +122,18 @@ static double iterate_scale(struct image *images, int n,
 	gsl_vector *shifts;
 	int l;
 	double max_shift;
-	int crossed = 0;
 	int n_ref;
 
-	M = gsl_matrix_calloc(n-1, n-1);
-	v = gsl_vector_calloc(n-1);
+	M = gsl_matrix_calloc(n, n);
+	v = gsl_vector_calloc(n);
 	n_ref = num_items(obs);
 
 	for ( l=0; l<n; l++ ) {  /* "Equation number": one equation per frame */
 
 		int m;  /* Frame (scale factor) number */
 		int h;
-		int lcomp;
 		double vc_tot = 0.0;
 		struct image *imagel = &images[l];
-
-		if ( l == crossed ) continue;
 
 		/* Determine the "solution" vector component */
 		for ( h=0; h<n_ref; h++ ) {
@@ -161,19 +157,15 @@ static double iterate_scale(struct image *images, int n,
 
 		}
 
-		lcomp = l;
-		if ( l > crossed ) lcomp--;
-		gsl_vector_set(v, lcomp, vc_tot);
+		gsl_vector_set(v, l, vc_tot);
 
 		/* Now fill in the matrix components */
 		for ( m=0; m<n; m++ ) {
 
 			double mc_tot = 0.0;
-			int mcomp;
 			struct image *imagem = &images[m];
 
 			if ( m > l ) continue;  /* Matrix is symmetric */
-			if ( m == crossed ) continue;
 
 			for ( h=0; h<n_ref; h++ ) {
 
@@ -204,29 +196,23 @@ static double iterate_scale(struct image *images, int n,
 
 			}
 
-			mcomp = m;
-			if ( m > crossed ) mcomp--;
-			gsl_matrix_set(M, lcomp, mcomp, mc_tot);
-			gsl_matrix_set(M, mcomp, lcomp, mc_tot);
+			gsl_matrix_set(M, l, m, mc_tot);
+			gsl_matrix_set(M, m, l, mc_tot);
 
 		}
 
 
 	}
-	show_matrix_eqn(M, v, n-1);
+	show_matrix_eqn(M, v, n);
 
-	shifts = gsl_vector_alloc(n-1);
+	shifts = gsl_vector_alloc(n);
 	gsl_linalg_HH_solve(M, v, shifts);
 	max_shift = 0.0;
 	for ( l=0; l<n-1; l++ ) {
 
 		double shift = gsl_vector_get(shifts, l);
-		int limg;
 
-		limg = l;
-		if ( limg >= crossed ) limg++;
-
-		images[limg].osf += shift;
+		images[l].osf += shift;
 
 		if ( fabs(shift) > fabs(max_shift) ) {
 			max_shift = fabs(shift);
