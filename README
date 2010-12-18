@@ -36,13 +36,14 @@ above characteristics.  The main programs are:
 	- process_hkl, for merging per-pattern lists of intensities into a
 	               single reflection list.
 
-	- facetron, for merging patterns more accurately (and much more slowly)
-	            using post refinement.
+	- partialator, for merging patterns more accurately (and much more
+	            slowly) using post refinement.
 
 	- reintegrate, which is like "indexamajig" but without the indexing
 	               step, instead getting the orientation matrix from the
 	               output of a previous run of either "indexamajig" or
 	               "reintegrate".
+
 In addition, there is also:
 
 	- get_hkl, for generating a list of squared structure factors for
@@ -72,6 +73,7 @@ And, because I'm so nice, included at no extra cost is:
 
 	- hdfsee, a simple viewer for images stored in HDF5 format.
 
+There is also a big folder of scripts for achieving many related tasks.
 
 CrystFEL mostly works with images stored in HDF5 format, unit cell and atomic
 coordinate data in PDB format, and reflection lists in plain text format (i.e.
@@ -124,7 +126,7 @@ In most cases, it will be more appropriate to refer to the overall suite than to
 one of its constituent programs.
 
 The following are NOT acceptable forms: "CRYSTFEL", "crystFEL", "Crystfel",
-"INDEXAMAJIG", "PATTERN_SIM", "Pattern_Sim" and "Pattern_sim".
+"INDEXAMAJIG" and "PATTERN_SIM".
 
 In addition, CrystFEL is made up of "programs", not "routines" nor "procedures".
 (The "programs" in turn are made up from "routines" and "procedures", but unless

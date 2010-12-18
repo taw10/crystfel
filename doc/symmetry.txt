@@ -6,7 +6,8 @@ Most programs in CrystFEL understand point group symmetry.  The exception is
 the "-y" option to the programs.
 
 Please read doc/process_hkl for important information on how symmetry is used
-during the indexing and merging procedures.
+during the indexing and merging procedures.  It's important to understand how
+this works before, for example, trying to merge a dataset.
 
 Symmetry definitions are included in src/symmetry.c.  Point group definitions
 are required for merging and the display of merged results, but space groups are
