@@ -62,11 +62,11 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 			ERROR("Tried to prepare INDEXING_NONE!\n");
 			break;
 		case INDEXING_DIRAX :
-			 iprivs[n] = indexing_private(indm[n]);
-			 break;
+			iprivs[n] = indexing_private(indm[n]);
+			break;
 		case INDEXING_MOSFLM :
-			 iprivs[n] = indexing_private(indm[n]);
-			 break;
+			iprivs[n] = indexing_private(indm[n]);
+			break;
 		case INDEXING_TEMPLATE :
 			iprivs[n] = generate_templates(cell, filename, det,
 				                  nominal_photon_energy);
