@@ -8,14 +8,12 @@ at Bragg locations and produce a list in the form "h k l I", with some extra
 information about the locations of the peaks.
 
 For minimal basic use, you need to provide the list of diffraction patterns,
-the method which will be used to index (currently there is only one available
-method), a file describing the geometry of the detector, a PDB file which
-contains the unit cell which will be used for the indexing, and that you'd like
-the program to output a list of intensities for each successfully indexed
-pattern.  You should redirect the output (stdout, but not stderr) of the program
-to a file for later analysis.  Here is what the minimal use looks like on the
-command line, with each argument shown on a separate line.  In practice, you'd
-put this all on one line:
+the method which will be used to index, a file describing the geometry of the
+detector, a PDB file which contains the unit cell which will be used for the
+indexing, and that you'd like the program to output a list of intensities for
+each successfully indexed pattern.  Here is what the minimal use looks like on
+the command line, with each argument shown on a separate line.  In practice,
+you'd put this all on one line:
 
 indexamajig
 -i mypatternlist.lst
@@ -23,7 +21,7 @@ indexamajig
 --geometry mygeometry.geom
 -p mystructure.pdb
 --near-bragg
-> myoutputfile.txt
+-o myoutputfile.txt
 
 More typical use includes all the above, but might also include a noise or
 common mode filter (--filter-noise or --filter-cm respectively) if detector
@@ -44,7 +42,7 @@ indexamajig
 --prefix=/some/horribly/long/pathname/ending/in/a/slash/
 -j 16
 --sat-corr
-> myoutputfile.txt
+-o myoutputfile.txt
 
 The table of saturation values for --sat-corr should be located in the HDF5 file
 as follows: /processing/hitfinder/peakinfo_saturated.  It should be an n*3 two
@@ -84,6 +82,24 @@ rejected "by proximity".
 
 You can suppress peak detection altogether for a panel in the geometry file by
 specifying the "no_index" value for the panel as non-zero.
+
+
+Indexing Methods
+----------------
+
+You can choose between a variety of indexing methods.  You can choose more than
+one method, in which case each method will be tried in turn until the later cell
+reduction step says that the cell is a "hit".  Choose from:
+
+ dirax    : invoke DirAx
+ mosflm   : invoke MOSFLM (DPS)
+ template : index by template matching
+
+Depending on what you have installed.  For "dirax" and "mosflm", you need to
+have the dirax or ipmosflm binaries in your PATH.  "template" is not ready for
+use at the moment, so don't choose that option.
+
+Example:  --indexing=dirax,mosflm
 
 
 Cell Reduction
