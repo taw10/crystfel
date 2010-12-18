@@ -53,7 +53,6 @@ struct static_index_args
 	UnitCell *cell;
 	int config_cmfilter;
 	int config_noisefilter;
-	int config_writedrx;
 	int config_dumpfound;
 	int config_verbose;
 	int config_alternate;
@@ -161,10 +160,6 @@ static void show_help(const char *s)
 "                           as \"simulated.h5\".  You can TRY to combine this\n"
 "                           with \"-j <n>\" with n greater than 1, but it's\n"
 "                           not a good idea.\n"
-"     --write-drx          Write 'xfel.drx' for visualisation of reciprocal\n"
-"                           space.  Implied by any indexing method other than\n"
-"                           'none'.  Beware: the units in this file are\n"
-"                           reciprocal Angstroms.\n"
 "     --dump-peaks         Write the results of the peak search to stdout.\n"
 "                           The intensities in this list are from the\n"
 "                           centroid/integration procedure.\n"
@@ -318,7 +313,6 @@ static void process_image(void *pp, int cookie)
 	UnitCell *cell = pargs->static_args.cell;
 	int config_cmfilter = pargs->static_args.config_cmfilter;
 	int config_noisefilter = pargs->static_args.config_noisefilter;
-	int config_writedrx = pargs->static_args.config_writedrx;
 	int config_dumpfound = pargs->static_args.config_dumpfound;
 	int config_verbose = pargs->static_args.config_verbose;
 	int config_alternate  = pargs->static_args.config_alternate;
@@ -397,17 +391,12 @@ static void process_image(void *pp, int cookie)
 		           pargs->static_args.output_mutex);
 	}
 
-	/* Not indexing nor writing xfel.drx?
-	 * Then there's nothing left to do. */
-	if ( (!config_writedrx) && (indm == INDEXING_NONE) ) {
-		goto done;
-	}
+	/* Not indexing? Then there's nothing left to do. */
+	if ( indm == NULL ) goto done;
 
 	/* Calculate orientation matrix (by magic) */
-	if ( config_writedrx || (indm != INDEXING_NONE) ) {
-		index_pattern(&image, cell, indm, pargs->static_args.cellr,
-		              config_verbose, pargs->static_args.ipriv);
-	}
+	index_pattern(&image, cell, indm, pargs->static_args.cellr,
+		      config_verbose, pargs->static_args.ipriv);
 
 	/* No cell at this point?  Then we're done. */
 	if ( image.indexed_cell == NULL ) goto done;
@@ -527,7 +516,6 @@ int main(int argc, char *argv[])
 	int config_noindex = 0;
 	int config_dumpfound = 0;
 	int config_nearbragg = 0;
-	int config_writedrx = 0;
 	int config_simulate = 0;
 	int config_cmfilter = 0;
 	int config_noisefilter = 0;
@@ -582,7 +570,6 @@ int main(int argc, char *argv[])
 		{"peaks",              1, NULL,                2},
 		{"cell-reduction",     1, NULL,                3},
 		{"near-bragg",         0, &config_nearbragg,   1},
-		{"write-drx",          0, &config_writedrx,    1},
 		{"indexing",           1, NULL,               'z'},
 		{"geometry",           1, NULL,               'g'},
 		{"beam",               1, NULL,               'b'},
@@ -886,7 +873,6 @@ int main(int argc, char *argv[])
 	qargs.static_args.cell = cell;
 	qargs.static_args.config_cmfilter = config_cmfilter;
 	qargs.static_args.config_noisefilter = config_noisefilter;
-	qargs.static_args.config_writedrx = config_writedrx;
 	qargs.static_args.config_dumpfound = config_dumpfound;
 	qargs.static_args.config_verbose = config_verbose;
 	qargs.static_args.config_alternate = config_alternate;

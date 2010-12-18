@@ -385,11 +385,44 @@ static int dirax_readable(struct image *image)
 }
 
 
+static void write_drx(struct image *image)
+{
+	FILE *fh;
+	int i;
+	char filename[1024];
+
+	snprintf(filename, 1023, "xfel-%i.drx", image->id);
+
+	fh = fopen(filename, "w");
+	if ( !fh ) {
+		ERROR("Couldn't open temporary file xfel.drx\n");
+		return;
+	}
+	fprintf(fh, "%f\n", 0.5);  /* Lie about the wavelength.  */
+
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
+
+		struct imagefeature *f;
+
+		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
+
+		fprintf(fh, "%10f %10f %10f %8f\n",
+		        f->rx/1e10, f->ry/1e10, f->rz/1e10, 1.0);
+
+	}
+	fclose(fh);
+}
+
+
+
 void run_dirax(struct image *image)
 {
 	unsigned int opts;
 	int status;
 	int rval;
+
+	write_drx(image);
 
 	image->dirax_pid = forkpty(&image->dirax_pty, NULL, NULL, NULL);
 	if ( image->dirax_pid == -1 ) {
