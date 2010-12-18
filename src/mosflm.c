@@ -203,7 +203,7 @@ static void write_img(struct image *image)
 
 	fh = fopen(filename, "w");
 	if ( !fh ) {
-		ERROR("Couldn't open temporary file xfel.spt\n");
+		ERROR("Couldn't open temporary file '%s'\n", filename);
 		return;
 	}
 
