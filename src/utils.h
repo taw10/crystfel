@@ -20,6 +20,10 @@
 #include <complex.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
+
+
+#include "thread-pool.h"
 
 
 /* -------------------------- Fundamental constants  ------------------------ */
@@ -216,8 +220,27 @@ extern ReflItemList *intersection_items(ReflItemList *i1, ReflItemList *i2);
 
 /* ------------------------------ Message macros ---------------------------- */
 
-#define ERROR(...) fprintf(stderr, __VA_ARGS__)
-#define STATUS(...) fprintf(stderr, __VA_ARGS__)
+extern pthread_mutex_t stderr_lock;
+
+#define ERROR(...) { \
+                      int val = get_status_label(); \
+                      pthread_mutex_lock(&stderr_lock); \
+                      if ( val >= 0 ) { \
+                         fprintf(stderr, "%3i: ", val); \
+                      } \
+                      fprintf(stderr, __VA_ARGS__); \
+                      pthread_mutex_unlock(&stderr_lock); \
+                   }
+
+#define STATUS(...) { \
+                       int val = get_status_label(); \
+                       pthread_mutex_lock(&stderr_lock); \
+                       if ( val >= 0 ) { \
+                          fprintf(stderr, "%3i: ", val); \
+                       } \
+                       fprintf(stderr, __VA_ARGS__); \
+                       pthread_mutex_unlock(&stderr_lock); \
+                    }
 
 
 /* ------------------------------ File handling ----------------------------- */

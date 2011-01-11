@@ -18,6 +18,9 @@
 #endif
 
 
+extern signed int get_status_label(void);
+
+
 /* work() will be called with a number and work_args.  The number will be
  * unique and in the range 0..n_tasks.  A progress bar will be shown using
  * "text" and the progress through the tasks, unless "text" is NULL. */

@@ -89,14 +89,14 @@ src_calibrate_detector_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_check_hkl_OBJECTS = src/check_hkl.$(OBJEXT) src/sfac.$(OBJEXT) \
 	src/cell.$(OBJEXT) src/utils.$(OBJEXT) \
 	src/reflections.$(OBJEXT) src/statistics.$(OBJEXT) \
-	src/symmetry.$(OBJEXT)
+	src/symmetry.$(OBJEXT) src/thread-pool.$(OBJEXT)
 src_check_hkl_OBJECTS = $(am_src_check_hkl_OBJECTS)
 src_check_hkl_LDADD = $(LDADD)
 src_check_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_compare_hkl_OBJECTS = src/compare_hkl.$(OBJEXT) \
 	src/sfac.$(OBJEXT) src/cell.$(OBJEXT) src/utils.$(OBJEXT) \
 	src/reflections.$(OBJEXT) src/statistics.$(OBJEXT) \
-	src/symmetry.$(OBJEXT)
+	src/symmetry.$(OBJEXT) src/thread-pool.$(OBJEXT)
 src_compare_hkl_OBJECTS = $(am_src_compare_hkl_OBJECTS)
 src_compare_hkl_LDADD = $(LDADD)
 src_compare_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
@@ -115,7 +115,8 @@ src_cubeit_LDADD = $(LDADD)
 src_cubeit_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_estimate_background_OBJECTS =  \
 	src/estimate_background.$(OBJEXT) src/stream.$(OBJEXT) \
-	src/utils.$(OBJEXT) src/cell.$(OBJEXT)
+	src/utils.$(OBJEXT) src/cell.$(OBJEXT) \
+	src/thread-pool.$(OBJEXT)
 src_estimate_background_OBJECTS =  \
 	$(am_src_estimate_background_OBJECTS)
 src_estimate_background_LDADD = $(LDADD)
@@ -123,18 +124,18 @@ src_estimate_background_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_get_hkl_OBJECTS = src/get_hkl.$(OBJEXT) src/sfac.$(OBJEXT) \
 	src/cell.$(OBJEXT) src/utils.$(OBJEXT) \
 	src/reflections.$(OBJEXT) src/symmetry.$(OBJEXT) \
-	src/beam-parameters.$(OBJEXT)
+	src/beam-parameters.$(OBJEXT) src/thread-pool.$(OBJEXT)
 src_get_hkl_OBJECTS = $(am_src_get_hkl_OBJECTS)
 src_get_hkl_LDADD = $(LDADD)
 src_get_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am__src_hdfsee_SOURCES_DIST = src/hdfsee.c src/displaywindow.c \
 	src/render.c src/hdf5-file.c src/utils.c src/image.c \
-	src/filters.c
+	src/filters.c src/thread-pool.c
 @HAVE_GTK_TRUE@am_src_hdfsee_OBJECTS = src/hdfsee.$(OBJEXT) \
 @HAVE_GTK_TRUE@	src/displaywindow.$(OBJEXT) \
 @HAVE_GTK_TRUE@	src/render.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
 @HAVE_GTK_TRUE@	src/utils.$(OBJEXT) src/image.$(OBJEXT) \
-@HAVE_GTK_TRUE@	src/filters.$(OBJEXT)
+@HAVE_GTK_TRUE@	src/filters.$(OBJEXT) src/thread-pool.$(OBJEXT)
 src_hdfsee_OBJECTS = $(am_src_hdfsee_OBJECTS)
 src_hdfsee_LDADD = $(LDADD)
 src_hdfsee_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
@@ -171,20 +172,22 @@ src_partialator_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am__src_pattern_sim_SOURCES_DIST = src/pattern_sim.c src/diffraction.c \
 	src/utils.c src/image.c src/cell.c src/hdf5-file.c \
 	src/detector.c src/sfac.c src/peaks.c src/reflections.c \
-	src/beam-parameters.c src/symmetry.c src/diffraction-gpu.c \
-	src/cl-utils.c
+	src/beam-parameters.c src/symmetry.c src/thread-pool.c \
+	src/diffraction-gpu.c src/cl-utils.c
 am_src_pattern_sim_OBJECTS = src/pattern_sim.$(OBJEXT) \
 	src/diffraction.$(OBJEXT) src/utils.$(OBJEXT) \
 	src/image.$(OBJEXT) src/cell.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
 	src/detector.$(OBJEXT) src/sfac.$(OBJEXT) src/peaks.$(OBJEXT) \
 	src/reflections.$(OBJEXT) src/beam-parameters.$(OBJEXT) \
-	src/symmetry.$(OBJEXT) $(am__objects_1)
+	src/symmetry.$(OBJEXT) src/thread-pool.$(OBJEXT) \
+	$(am__objects_1)
 src_pattern_sim_OBJECTS = $(am_src_pattern_sim_OBJECTS)
 src_pattern_sim_LDADD = $(LDADD)
 src_pattern_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_powder_plot_OBJECTS = src/powder_plot.$(OBJEXT) \
 	src/cell.$(OBJEXT) src/utils.$(OBJEXT) src/image.$(OBJEXT) \
-	src/hdf5-file.$(OBJEXT) src/detector.$(OBJEXT)
+	src/hdf5-file.$(OBJEXT) src/detector.$(OBJEXT) \
+	src/thread-pool.$(OBJEXT)
 src_powder_plot_OBJECTS = $(am_src_powder_plot_OBJECTS)
 src_powder_plot_LDADD = $(LDADD)
 src_powder_plot_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
@@ -192,7 +195,7 @@ am_src_process_hkl_OBJECTS = src/process_hkl.$(OBJEXT) \
 	src/sfac.$(OBJEXT) src/statistics.$(OBJEXT) src/cell.$(OBJEXT) \
 	src/utils.$(OBJEXT) src/reflections.$(OBJEXT) \
 	src/symmetry.$(OBJEXT) src/stream.$(OBJEXT) \
-	src/beam-parameters.$(OBJEXT)
+	src/beam-parameters.$(OBJEXT) src/thread-pool.$(OBJEXT)
 src_process_hkl_OBJECTS = $(am_src_process_hkl_OBJECTS)
 src_process_hkl_LDADD = $(LDADD)
 src_process_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
@@ -211,7 +214,7 @@ am_src_render_hkl_OBJECTS = src/render_hkl.$(OBJEXT) \
 	src/utils.$(OBJEXT) src/povray.$(OBJEXT) \
 	src/symmetry.$(OBJEXT) src/render.$(OBJEXT) \
 	src/hdf5-file.$(OBJEXT) src/image.$(OBJEXT) \
-	src/filters.$(OBJEXT)
+	src/filters.$(OBJEXT) src/thread-pool.$(OBJEXT)
 src_render_hkl_OBJECTS = $(am_src_render_hkl_OBJECTS)
 src_render_hkl_LDADD = $(LDADD)
 src_render_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
@@ -431,7 +434,6 @@ PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
 PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
-PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
@@ -550,10 +552,12 @@ LDADD = $(top_builddir)/lib/libgnu.a
 src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c \
 	src/utils.c src/image.c src/cell.c src/hdf5-file.c \
 	src/detector.c src/sfac.c src/peaks.c src/reflections.c \
-	src/beam-parameters.c src/symmetry.c $(am__append_3)
+	src/beam-parameters.c src/symmetry.c src/thread-pool.c \
+	$(am__append_3)
 src_process_hkl_SOURCES = src/process_hkl.c src/sfac.c src/statistics.c \
                           src/cell.c src/utils.c src/reflections.c \
-                          src/symmetry.c src/stream.c src/beam-parameters.c
+                          src/symmetry.c src/stream.c src/beam-parameters.c \
+                          src/thread-pool.c
 
 src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c \
 	src/utils.c src/cell.c src/image.c src/peaks.c src/index.c \
@@ -562,23 +566,28 @@ src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c \
 	src/symmetry.c src/geometry.c src/thread-pool.c \
 	src/beam-parameters.c $(am__append_4)
 @HAVE_GTK_TRUE@src_hdfsee_SOURCES = src/hdfsee.c src/displaywindow.c src/render.c \
-@HAVE_GTK_TRUE@                     src/hdf5-file.c src/utils.c src/image.c src/filters.c
+@HAVE_GTK_TRUE@                     src/hdf5-file.c src/utils.c src/image.c src/filters.c \
+@HAVE_GTK_TRUE@                     src/thread-pool.c
 
 src_get_hkl_SOURCES = src/get_hkl.c src/sfac.c src/cell.c src/utils.c \
-                      src/reflections.c src/symmetry.c src/beam-parameters.c
+                      src/reflections.c src/symmetry.c src/beam-parameters.c \
+                      src/thread-pool.c
 
 src_compare_hkl_SOURCES = src/compare_hkl.c src/sfac.c src/cell.c src/utils.c \
-                          src/reflections.c src/statistics.c src/symmetry.c
+                          src/reflections.c src/statistics.c src/symmetry.c \
+                          src/thread-pool.c
 
 src_check_hkl_SOURCES = src/check_hkl.c src/sfac.c src/cell.c src/utils.c \
-                        src/reflections.c src/statistics.c src/symmetry.c
+                        src/reflections.c src/statistics.c src/symmetry.c \
+                        src/thread-pool.c
 
 src_powder_plot_SOURCES = src/powder_plot.c src/cell.c src/utils.c src/image.c \
-                          src/hdf5-file.c src/detector.c
+                          src/hdf5-file.c src/detector.c src/thread-pool.c
 
 src_render_hkl_SOURCES = src/render_hkl.c src/cell.c src/reflections.c \
                          src/utils.c  src/povray.c src/symmetry.c src/render.c \
-                         src/hdf5-file.c src/image.c src/filters.c
+                         src/hdf5-file.c src/image.c src/filters.c \
+                         src/thread-pool.c
 
 src_calibrate_detector_SOURCES = src/calibrate_detector.c src/utils.c \
                                  src/hdf5-file.c src/image.c src/filters.c \
@@ -603,7 +612,7 @@ src_reintegrate_SOURCES = src/reintegrate.c src/cell.c src/hdf5-file.c \
                           src/thread-pool.c
 
 src_estimate_background_SOURCES = src/estimate_background.c src/stream.c \
-                                  src/utils.c src/cell.c
+                                  src/utils.c src/cell.c src/thread-pool.c
 
 INCLUDES = "-I$(top_srcdir)/data"
 hdfseedir = $(datadir)/hdfsee
