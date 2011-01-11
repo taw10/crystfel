@@ -214,7 +214,6 @@ static void *task_worker(void *pargsv)
 	cookie = malloc(sizeof(int));
 	*cookie = w->id;
 	pthread_setspecific(status_label_key, cookie);
-	STATUS("Initialised thread %i\n", w->id);
 
 	free(w);
 
@@ -243,7 +242,7 @@ static void *task_worker(void *pargsv)
 		cookie = *(int *)pthread_getspecific(status_label_key);
 		q->work(task, cookie);
 
-		/* Update totals, release cookie etc */
+		/* Update totals etc */
 		pthread_mutex_lock(&q->lock);
 		q->n_completed++;
 		if ( q->finalise ) {
