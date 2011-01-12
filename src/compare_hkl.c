@@ -415,8 +415,8 @@ int main(int argc, char *argv[])
 
 	}
 	ncom = num_items(icommon);
-	STATUS("%i reflections in '%s' had I < 3.0*sigma(I)\n", afile, rej1);
-	STATUS("%i reflections in '%s' had I < 3.0*sigma(I)\n", bfile, rej2);
+	STATUS("%i reflections in '%s' had I < 3.0*sigma(I)\n", rej1, afile);
+	STATUS("%i reflections in '%s' had I < 3.0*sigma(I)\n", rej2, bfile);
 
 	STATUS("%i,%i reflections: %i in common\n",
 	       num_items(i1), num_items(i2), ncom);
