@@ -1,4 +1,4 @@
-set ylabel "R ignoring -ve ints (%) [blue]"
+set ylabel "R ( sum(|I1-kI2|) / sum(I1) ) (%) [blue]"
 set ytics nomirror
 set yrange [0:120]
 #set y2range [0:50000]
