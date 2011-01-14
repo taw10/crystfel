@@ -287,6 +287,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 			/* Forked successfully, child process */
 			if ( system(mos_cmd) ) {
 				ERROR("MOSFLM execution failed.\n");
+				exit(0);
 				return;
 			}
 
