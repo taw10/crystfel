@@ -52,7 +52,28 @@ typedef enum {
 } DirAxInputType;
 
 
-static void dirax_parseline(const char *line, struct image *image)
+struct dirax_data {
+
+	/* DirAx auto-indexing low-level stuff */
+	int                     pty;
+	pid_t                   pid;
+	char                    *rbuffer;
+	int                     rbufpos;
+	int                     rbuflen;
+
+	/* DirAx auto-indexing high-level stuff */
+	int                     step;
+	int                     read_cell;
+	int                     best_acl;
+	int                     best_acl_nh;
+	int                     acls_tried[MAX_CELL_CANDIDATES];
+	int                     n_acls_tried;
+
+};
+
+
+static void dirax_parseline(const char *line, struct image *image,
+                            struct dirax_data *dirax)
 {
 	int rf, i, di, acl, acl_nh;
 	float d;
@@ -80,7 +101,7 @@ static void dirax_parseline(const char *line, struct image *image)
 				|| (line[i] == 'D') || (line[i] == ' ')) ) {
 		if ( line[i] == 'R' ) rf = 1;
 		if ( (line[i] == 'D') && rf ) {
-			image->dirax_read_cell = 1;
+			dirax->read_cell = 1;
 			image->candidate_cells[image->ncells] = cell_new();
 			return;
 		}
@@ -88,7 +109,7 @@ static void dirax_parseline(const char *line, struct image *image)
 	}
 
 	/* Parse unit cell vectors as appropriate */
-	if ( image->dirax_read_cell == 1 ) {
+	if ( dirax->read_cell == 1 ) {
 		/* First row of unit cell values */
 		float ax, ay, az;
 		int r;
@@ -96,15 +117,15 @@ static void dirax_parseline(const char *line, struct image *image)
 		           &d, &d, &d, &ax, &ay, &az);
 		if ( r != 6 ) {
 			ERROR("Couldn't understand cell line\n");
-			image->dirax_read_cell = 0;
+			dirax->read_cell = 0;
 			free(image->candidate_cells[image->ncells]);
 			return;
 		}
 		cell_set_cartesian_a(image->candidate_cells[image->ncells],
 		                     ax*1e-10, ay*1e-10, az*1e-10);
-		image->dirax_read_cell++;
+		dirax->read_cell++;
 		return;
-	} else if ( image->dirax_read_cell == 2 ) {
+	} else if ( dirax->read_cell == 2 ) {
 		/* Second row of unit cell values */
 		float bx, by, bz;
 		int r;
@@ -112,15 +133,15 @@ static void dirax_parseline(const char *line, struct image *image)
 		           &d, &d, &d, &bx, &by, &bz);
 		if ( r != 6 ) {
 			ERROR("Couldn't understand cell line\n");
-			image->dirax_read_cell = 0;
+			dirax->read_cell = 0;
 			free(image->candidate_cells[image->ncells]);
 			return;
 		}
 		cell_set_cartesian_b(image->candidate_cells[image->ncells],
 		                     bx*1e-10, by*1e-10, bz*1e-10);
-		image->dirax_read_cell++;
+		dirax->read_cell++;
 		return;
-	} else if ( image->dirax_read_cell == 3 ) {
+	} else if ( dirax->read_cell == 3 ) {
 		/* Third row of unit cell values */
 		float cx, cy, cz;
 		int r;
@@ -128,31 +149,31 @@ static void dirax_parseline(const char *line, struct image *image)
 		           &d, &d, &d, &cx, &cy, &cz);
 		if ( r != 6 ) {
 			ERROR("Couldn't understand cell line\n");
-			image->dirax_read_cell = 0;
+			dirax->read_cell = 0;
 			free(image->candidate_cells[image->ncells]);
 			return;
 		}
 		cell_set_cartesian_c(image->candidate_cells[image->ncells++],
 		                     cx*1e-10, cy*1e-10, cz*1e-10);
-		image->dirax_read_cell = 0;
+		dirax->read_cell = 0;
 		return;
 	}
 
-	image->dirax_read_cell = 0;
+	dirax->read_cell = 0;
 
 	if ( sscanf(line, "%i %i %f %f %f %f %f %f %i", &acl, &acl_nh,
 	                               &d, &d, &d, &d, &d, &d, &di) == 9 ) {
-		if ( acl_nh > image->best_acl_nh ) {
+		if ( acl_nh > dirax->best_acl_nh ) {
 
 			int i, found = 0;
 
-			for ( i=0; i<image->n_acls_tried; i++ ) {
-				if ( image->acls_tried[i] == acl ) found = 1;
+			for ( i=0; i<dirax->n_acls_tried; i++ ) {
+				if ( dirax->acls_tried[i] == acl ) found = 1;
 			}
 
 			if ( !found ) {
-				image->best_acl_nh = acl_nh;
-				image->best_acl = acl;
+				dirax->best_acl_nh = acl_nh;
+				dirax->best_acl = acl;
 			}
 
 		}
@@ -160,7 +181,7 @@ static void dirax_parseline(const char *line, struct image *image)
 }
 
 
-static void dirax_sendline(const char *line, struct image *image)
+static void dirax_sendline(const char *line, struct dirax_data *dirax)
 {
 	#if DIRAX_VERBOSE
 	char *copy;
@@ -175,126 +196,126 @@ static void dirax_sendline(const char *line, struct image *image)
 	free(copy);
 	#endif
 
-	write(image->dirax_pty, line, strlen(line));
+	write(dirax->pty, line, strlen(line));
 }
 
 
-static void dirax_send_next(struct image *image)
+static void dirax_send_next(struct image *image, struct dirax_data *dirax)
 {
 	char tmp[32];
 
-	switch ( image->dirax_step ) {
+	switch ( dirax->step ) {
 
 	case 1 :
-		dirax_sendline("\\echo off\n", image);
+		dirax_sendline("\\echo off\n", dirax);
 		break;
 
 	case 2 :
 		snprintf(tmp, 31, "read xfel-%i.drx\n", image->id);
-		dirax_sendline(tmp, image);
+		dirax_sendline(tmp, dirax);
 		break;
 
 	case 3 :
-		dirax_sendline("dmax 1000\n", image);
+		dirax_sendline("dmax 1000\n", dirax);
 		break;
 
 	case 4 :
-		dirax_sendline("indexfit 2\n", image);
+		dirax_sendline("indexfit 2\n", dirax);
 		break;
 
 	case 5 :
-		dirax_sendline("levelfit 1000\n", image);
+		dirax_sendline("levelfit 1000\n", dirax);
 		break;
 
 	case 6 :
-		dirax_sendline("go\n", image);
+		dirax_sendline("go\n", dirax);
 		break;
 
 	case 7 :
-		dirax_sendline("acl\n", image);
+		dirax_sendline("acl\n", dirax);
 		break;
 
 	case 8 :
-		if ( image->best_acl_nh == 0 ) {
+		if ( dirax->best_acl_nh == 0 ) {
 			STATUS("No more cells to try.\n");
 			/* At this point, DirAx is presenting its ACL prompt
 			 * and waiting for a single number.  Use an extra
 			 * newline to choose automatic ACL selection before
 			 * exiting. */
-			dirax_sendline("\nexit\n", image);
+			dirax_sendline("\nexit\n", dirax);
 			break;
 		}
-		snprintf(tmp, 31, "%i\n", image->best_acl);
-		image->acls_tried[image->n_acls_tried++] = image->best_acl;
-		dirax_sendline(tmp, image);
+		snprintf(tmp, 31, "%i\n", dirax->best_acl);
+		dirax->acls_tried[dirax->n_acls_tried++] = dirax->best_acl;
+		dirax_sendline(tmp, dirax);
 		break;
 
 	case 9 :
-		dirax_sendline("cell\n", image);
+		dirax_sendline("cell\n", dirax);
 		break;
 
 	case 10 :
-		if ( image->n_acls_tried == MAX_DIRAX_CELL_CANDIDATES ) {
-			dirax_sendline("exit\n", image);
+		if ( dirax->n_acls_tried == MAX_DIRAX_CELL_CANDIDATES ) {
+			dirax_sendline("exit\n", dirax);
 		} else {
 			/* Go back round for another cell */
-			image->best_acl_nh = 0;
-			image->dirax_step = 7;
-			dirax_sendline("acl\n", image);
+			dirax->best_acl_nh = 0;
+			dirax->step = 7;
+			dirax_sendline("acl\n", dirax);
 		}
 		break;
 
 	default:
-		dirax_sendline("exit\n", image);
+		dirax_sendline("exit\n", dirax);
 		return;
 
 	}
 
-	image->dirax_step++;
+	dirax->step++;
 }
 
 
-static int dirax_readable(struct image *image)
+static int dirax_readable(struct image *image, struct dirax_data *dirax)
 {
 	int rval;
 	int no_string = 0;
 
-	rval = read(image->dirax_pty, image->dirax_rbuffer+image->dirax_rbufpos,
-	            image->dirax_rbuflen-image->dirax_rbufpos);
+	rval = read(dirax->pty, dirax->rbuffer+dirax->rbufpos,
+	            dirax->rbuflen-dirax->rbufpos);
 
 	if ( (rval == -1) || (rval == 0) ) return 1;
 
-	image->dirax_rbufpos += rval;
-	assert(image->dirax_rbufpos <= image->dirax_rbuflen);
+	dirax->rbufpos += rval;
+	assert(dirax->rbufpos <= dirax->rbuflen);
 
-	while ( (!no_string) && (image->dirax_rbufpos > 0) ) {
+	while ( (!no_string) && (dirax->rbufpos > 0) ) {
 
 		int i;
 		int block_ready = 0;
 		DirAxInputType type = DIRAX_INPUT_NONE;
 
 		/* See if there's a full line in the buffer yet */
-		for ( i=0; i<image->dirax_rbufpos-1; i++ ) {
+		for ( i=0; i<dirax->rbufpos-1; i++ ) {
 			/* Means the last value looked at is rbufpos-2 */
 
 			/* Is there a prompt in the buffer? */
-			if ( (i+7 <= image->dirax_rbufpos)
-			  && (!strncmp(image->dirax_rbuffer+i, "Dirax> ", 7)) ) {
+			if ( (i+7 <= dirax->rbufpos)
+			  && (!strncmp(dirax->rbuffer+i, "Dirax> ", 7)) ) {
 				block_ready = 1;
 				type = DIRAX_INPUT_PROMPT;
 				break;
 			}
 
 			/* How about an ACL prompt? */
-			if ( (i+10 <= image->dirax_rbufpos)
-			  && (!strncmp(image->dirax_rbuffer+i, "acl/auto [", 10)) ) {
+			if ( (i+10 <= dirax->rbufpos)
+			  && (!strncmp(dirax->rbuffer+i, "acl/auto [", 10)) ) {
 				block_ready = 1;
 				type = DIRAX_INPUT_ACL;
 				break;
 			}
 
-			if ( (image->dirax_rbuffer[i] == '\r')
-			  && (image->dirax_rbuffer[i+1] == '\n') ) {
+			if ( (dirax->rbuffer[i] == '\r')
+			  && (dirax->rbuffer[i+1] == '\n') ) {
 				block_ready = 1;
 				type = DIRAX_INPUT_LINE;
 				break;
@@ -313,27 +334,27 @@ static int dirax_readable(struct image *image)
 			case DIRAX_INPUT_LINE :
 
 				block_buffer = malloc(i+1);
-				memcpy(block_buffer, image->dirax_rbuffer, i);
+				memcpy(block_buffer, dirax->rbuffer, i);
 				block_buffer[i] = '\0';
 
 				if ( block_buffer[0] == '\r' ) {
 					memmove(block_buffer, block_buffer+1, i);
 				}
 
-				dirax_parseline(block_buffer, image);
+				dirax_parseline(block_buffer, image, dirax);
 				free(block_buffer);
 				endbit_length = i+2;
 				break;
 
 			case DIRAX_INPUT_PROMPT :
 
-				dirax_send_next(image);
+				dirax_send_next(image, dirax);
 				endbit_length = i+7;
 				break;
 
 			case DIRAX_INPUT_ACL :
 
-				dirax_send_next(image);
+				dirax_send_next(image,dirax );
 				endbit_length = i+10;
 				break;
 
@@ -348,28 +369,28 @@ static int dirax_readable(struct image *image)
 
 			/* Now the block's been parsed, it should be
 			 * forgotten about */
-			memmove(image->dirax_rbuffer,
-			        image->dirax_rbuffer + endbit_length,
-			        image->dirax_rbuflen - endbit_length);
+			memmove(dirax->rbuffer,
+			        dirax->rbuffer + endbit_length,
+			        dirax->rbuflen - endbit_length);
 
 			/* Subtract the number of bytes removed */
-			image->dirax_rbufpos = image->dirax_rbufpos
+			dirax->rbufpos = dirax->rbufpos
 			                       - endbit_length;
-			new_rbuflen = image->dirax_rbuflen - endbit_length;
+			new_rbuflen = dirax->rbuflen - endbit_length;
 			if ( new_rbuflen == 0 ) new_rbuflen = 256;
-			image->dirax_rbuffer = realloc(image->dirax_rbuffer,
+			dirax->rbuffer = realloc(dirax->rbuffer,
 			                               new_rbuflen);
-			image->dirax_rbuflen = new_rbuflen;
+			dirax->rbuflen = new_rbuflen;
 
 		} else {
 
-			if ( image->dirax_rbufpos==image->dirax_rbuflen ) {
+			if ( dirax->rbufpos==dirax->rbuflen ) {
 
 				/* More buffer space is needed */
-				image->dirax_rbuffer = realloc(
-				                    image->dirax_rbuffer,
-				                    image->dirax_rbuflen + 256);
-				image->dirax_rbuflen = image->dirax_rbuflen
+				dirax->rbuffer = realloc(
+				                    dirax->rbuffer,
+				                    dirax->rbuflen + 256);
+				dirax->rbuflen = dirax->rbuflen
 				                                          + 256;
 				/* The new space gets used at the next
 				 * read, shortly... */
@@ -421,15 +442,18 @@ void run_dirax(struct image *image)
 	unsigned int opts;
 	int status;
 	int rval;
+	struct dirax_data *dirax;
 
 	write_drx(image);
 
-	image->dirax_pid = forkpty(&image->dirax_pty, NULL, NULL, NULL);
-	if ( image->dirax_pid == -1 ) {
+	dirax = malloc(sizeof(struct dirax_data));
+
+	dirax->pid = forkpty(&dirax->pty, NULL, NULL, NULL);
+	if ( dirax->pid == -1 ) {
 		ERROR("Failed to fork for DirAx\n");
 		return;
 	}
-	if ( image->dirax_pid == 0 ) {
+	if ( dirax->pid == 0 ) {
 
 		/* Child process: invoke DirAx */
 		struct termios t;
@@ -445,18 +469,18 @@ void run_dirax(struct image *image)
 
 	}
 
-	image->dirax_rbuffer = malloc(256);
-	image->dirax_rbuflen = 256;
-	image->dirax_rbufpos = 0;
+	dirax->rbuffer = malloc(256);
+	dirax->rbuflen = 256;
+	dirax->rbufpos = 0;
 
 	/* Set non-blocking */
-	opts = fcntl(image->dirax_pty, F_GETFL);
-	fcntl(image->dirax_pty, F_SETFL, opts | O_NONBLOCK);
+	opts = fcntl(dirax->pty, F_GETFL);
+	fcntl(dirax->pty, F_SETFL, opts | O_NONBLOCK);
 
-	image->dirax_step = 1;	/* This starts the "initialisation" procedure */
-	image->dirax_read_cell = 0;
-	image->n_acls_tried = 0;
-	image->best_acl_nh = 0;
+	dirax->step = 1;	/* This starts the "initialisation" procedure */
+	dirax->read_cell = 0;
+	dirax->n_acls_tried = 0;
+	dirax->best_acl_nh = 0;
 
 	do {
 
@@ -465,18 +489,18 @@ void run_dirax(struct image *image)
 		int sval;
 
 		FD_ZERO(&fds);
-		FD_SET(image->dirax_pty, &fds);
+		FD_SET(dirax->pty, &fds);
 
 		tv.tv_sec = 10;
 		tv.tv_usec = 0;
 
-		sval = select(image->dirax_pty+1, &fds, NULL, NULL, &tv);
+		sval = select(dirax->pty+1, &fds, NULL, NULL, &tv);
 
 		if ( sval == -1 ) {
 			ERROR("select() failed.\n");
 			rval = 1;
 		} else if ( sval != 0 ) {
-			rval = dirax_readable(image);
+			rval = dirax_readable(image, dirax);
 		} else {
 			ERROR("No response from DirAx..\n");
 			rval = 1;
@@ -484,9 +508,11 @@ void run_dirax(struct image *image)
 
 	} while ( !rval );
 
-	close(image->dirax_pty);
-	free(image->dirax_rbuffer);
+	close(dirax->pty);
+	free(dirax->rbuffer);
 	wait(&status);
+
+	free(dirax);
 
 	return;
 }

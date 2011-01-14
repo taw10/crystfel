@@ -115,21 +115,6 @@ struct image {
 
 	ImageFeatureList        *features;
 
-	/* DirAx auto-indexing low-level stuff */
-	int                     dirax_pty;
-	pid_t                   dirax_pid;
-	char                    *dirax_rbuffer;
-	int                     dirax_rbufpos;
-	int                     dirax_rbuflen;
-
-	/* DirAx auto-indexing high-level stuff */
-	int                     dirax_step;
-	int                     dirax_read_cell;
-	int                     best_acl;
-	int                     best_acl_nh;
-	int                     acls_tried[MAX_CELL_CANDIDATES];
-	int                     n_acls_tried;
-
 };
 
 /* An opaque type representing a list of images */
