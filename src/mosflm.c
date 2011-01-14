@@ -20,14 +20,15 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "image.h"
 #include "mosflm.h"
 #include "utils.h"
 #include "sfac.h"
 #include "peaks.h"
-
 
 
 /*
@@ -230,6 +231,8 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	double wavelength; /* angstrom */
 	char newmatfile[128];
 	int fail;
+	pid_t pid;
+	int r;
 
 	write_spt(image);
 	write_img(image); /* dummy image */
@@ -275,11 +278,21 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	remove(newmatfile);
 
 	/* Run the mosflm script */
-	fail = system(mos_cmd);
-	if (fail) {
-		ERROR("mosflm execution failed.\n");
-		return;
+	pid = fork();
+	if ( !( (pid != 0) && (pid != -1) ) ) {
+		if ( pid == -1 ) {
+			ERROR("fork() failed.\n");
+		} else {
+
+			/* Forked successfully, child process */
+			if ( system(mos_cmd) ) {
+				ERROR("MOSFLM execution failed.\n");
+				return;
+			}
+
+		}
 	}
+	waitpid(pid, &r, 0);
 
 	/* Read the mosflm NEWMAT file and set cell candidate */
 	/* Existence of this file means possible success. Pretty shady. */
@@ -288,8 +301,4 @@ void run_mosflm(struct image *image, UnitCell *cell)
 		printf("Failed to read mosflm NEWMAT file.\n");
 		return;
 	}
-
-
-
-	return;
 }
