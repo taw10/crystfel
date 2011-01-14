@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <assert.h>
 #include <sys/ioctl.h>
+#include <errno.h>
 
 #if HAVE_FORKPTY_LINUX
 #include <pty.h>
@@ -497,7 +498,8 @@ void run_dirax(struct image *image)
 		sval = select(dirax->pty+1, &fds, NULL, NULL, &tv);
 
 		if ( sval == -1 ) {
-			ERROR("select() failed.\n");
+			int err = errno;
+			ERROR("select() failed: %s\n", strerror(err));
 			rval = 1;
 		} else if ( sval != 0 ) {
 			rval = dirax_readable(image, dirax);
