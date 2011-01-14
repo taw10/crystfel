@@ -290,6 +290,8 @@ void run_mosflm(struct image *image, UnitCell *cell)
 				return;
 			}
 
+			exit(0);
+
 		}
 	}
 	waitpid(pid, &r, 0);
