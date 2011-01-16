@@ -30,11 +30,14 @@ AC_ARG_WITH(hdf5,
 [HDF5_LIBS="-lhdf5"])
 
 
-AC_ARG_WITH(gsl,
-[AS_HELP_STRING([--with-gsl], [specify location of GSL])],
-[GSL_CFLAGS="-I$withval/include"
- GSL_LIBS="-L$withval/lib -lgsl -lgslcblas"],
-[GSL_LIBS="-lgsl -lgslcblas"])
+PKG_CHECK_MODULES([GSL], [gsl], [],
+[
+   AC_ERROR([GSL is required])
+])
+PKG_CHECK_MODULES([GSL_version], [gsl >= 1.13],
+[
+   gl_IGNORE_UNUSED_LIBRARIES
+])
 
 
 AC_ARG_ENABLE(opencl, AS_HELP_STRING([--enable-opencl], [Enable the use of OpenCL]))
@@ -151,9 +154,6 @@ PKG_CHECK_MODULES([GDK_pixbuf], [gdk-pixbuf], [],
       AC_ERROR([gdk-pixbuf is required.])
    ])
 ])
-
-
-gl_IGNORE_UNUSED_LIBRARIES
 
 
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread $GTK_CFLAGS"

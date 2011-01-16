@@ -612,15 +612,19 @@ Cairo_LIBS
 Cairo_CFLAGS
 libPNG_LIBS
 libPNG_CFLAGS
-PKG_CONFIG_LIBDIR
-PKG_CONFIG_PATH
 HAVE_GTK_FALSE
 HAVE_GTK_TRUE
 GTK_LIBS
 GTK_CFLAGS
-PKG_CONFIG
 HAVE_OPENCL_FALSE
 HAVE_OPENCL_TRUE
+GSL_version_LIBS
+GSL_version_CFLAGS
+GSL_LIBS
+GSL_CFLAGS
+PKG_CONFIG_LIBDIR
+PKG_CONFIG_PATH
+PKG_CONFIG
 LIBGNU_LTLIBDEPS
 LIBGNU_LIBDEPS
 gltests_WITNESS
@@ -805,7 +809,6 @@ enable_option_checking
 enable_dependency_tracking
 enable_silent_rules
 with_hdf5
-with_gsl
 enable_opencl
 enable_gtk
 enable_gtktest
@@ -826,6 +829,10 @@ CPP
 PKG_CONFIG
 PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
+GSL_CFLAGS
+GSL_LIBS
+GSL_version_CFLAGS
+GSL_version_LIBS
 libPNG_CFLAGS
 libPNG_LIBS
 Cairo_CFLAGS
@@ -1468,7 +1475,6 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-hdf5             specify location of HDF5 library
-  --with-gsl              specify location of GSL
   --with-libtiff          specify location of libTIFF library
 
 Some influential environment variables:
@@ -1485,6 +1491,12 @@ Some influential environment variables:
               directories to add to pkg-config's search path
   PKG_CONFIG_LIBDIR
               path overriding pkg-config's built-in search path
+  GSL_CFLAGS  C compiler flags for GSL, overriding pkg-config
+  GSL_LIBS    linker flags for GSL, overriding pkg-config
+  GSL_version_CFLAGS
+              C compiler flags for GSL_version, overriding pkg-config
+  GSL_version_LIBS
+              linker flags for GSL_version, overriding pkg-config
   libPNG_CFLAGS
               C compiler flags for libPNG, overriding pkg-config
   libPNG_LIBS linker flags for libPNG, overriding pkg-config
@@ -6208,14 +6220,346 @@ fi
 
 
 
-# Check whether --with-gsl was given.
-if test "${with_gsl+set}" = set; then :
-  withval=$with_gsl; GSL_CFLAGS="-I$withval/include"
- GSL_LIBS="-L$withval/lib -lgsl -lgslcblas"
+
+
+
+
+
+if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
+	if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
+set dummy ${ac_tool_prefix}pkg-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_path_PKG_CONFIG+set}" = set; then :
+  $as_echo_n "(cached) " >&6
 else
-  GSL_LIBS="-lgsl -lgslcblas"
+  case $PKG_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_PKG_CONFIG="$PKG_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_PKG_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+PKG_CONFIG=$ac_cv_path_PKG_CONFIG
+if test -n "$PKG_CONFIG"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PKG_CONFIG" >&5
+$as_echo "$PKG_CONFIG" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 fi
 
+
+fi
+if test -z "$ac_cv_path_PKG_CONFIG"; then
+  ac_pt_PKG_CONFIG=$PKG_CONFIG
+  # Extract the first word of "pkg-config", so it can be a program name with args.
+set dummy pkg-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_path_ac_pt_PKG_CONFIG+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $ac_pt_PKG_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_PKG_CONFIG="$ac_pt_PKG_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_ac_pt_PKG_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ac_pt_PKG_CONFIG=$ac_cv_path_ac_pt_PKG_CONFIG
+if test -n "$ac_pt_PKG_CONFIG"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_PKG_CONFIG" >&5
+$as_echo "$ac_pt_PKG_CONFIG" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_pt_PKG_CONFIG" = x; then
+    PKG_CONFIG=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    PKG_CONFIG=$ac_pt_PKG_CONFIG
+  fi
+else
+  PKG_CONFIG="$ac_cv_path_PKG_CONFIG"
+fi
+
+fi
+if test -n "$PKG_CONFIG"; then
+	_pkg_min_version=0.9.0
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking pkg-config is at least version $_pkg_min_version" >&5
+$as_echo_n "checking pkg-config is at least version $_pkg_min_version... " >&6; }
+	if $PKG_CONFIG --atleast-pkgconfig-version $_pkg_min_version; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	else
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		PKG_CONFIG=""
+	fi
+fi
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for GSL" >&5
+$as_echo_n "checking for GSL... " >&6; }
+
+if test -n "$GSL_CFLAGS"; then
+    pkg_cv_GSL_CFLAGS="$GSL_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gsl\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "gsl") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_GSL_CFLAGS=`$PKG_CONFIG --cflags "gsl" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$GSL_LIBS"; then
+    pkg_cv_GSL_LIBS="$GSL_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gsl\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "gsl") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_GSL_LIBS=`$PKG_CONFIG --libs "gsl" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        GSL_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "gsl" 2>&1`
+        else
+	        GSL_PKG_ERRORS=`$PKG_CONFIG --print-errors "gsl" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$GSL_PKG_ERRORS" >&5
+
+
+   as_fn_error $? "GSL is required" "$LINENO" 5
+
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+   as_fn_error $? "GSL is required" "$LINENO" 5
+
+else
+	GSL_CFLAGS=$pkg_cv_GSL_CFLAGS
+	GSL_LIBS=$pkg_cv_GSL_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+fi
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for GSL_version" >&5
+$as_echo_n "checking for GSL_version... " >&6; }
+
+if test -n "$GSL_version_CFLAGS"; then
+    pkg_cv_GSL_version_CFLAGS="$GSL_version_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gsl >= 1.13\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "gsl >= 1.13") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_GSL_version_CFLAGS=`$PKG_CONFIG --cflags "gsl >= 1.13" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$GSL_version_LIBS"; then
+    pkg_cv_GSL_version_LIBS="$GSL_version_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gsl >= 1.13\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "gsl >= 1.13") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_GSL_version_LIBS=`$PKG_CONFIG --libs "gsl >= 1.13" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        GSL_version_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "gsl >= 1.13" 2>&1`
+        else
+	        GSL_version_PKG_ERRORS=`$PKG_CONFIG --print-errors "gsl >= 1.13" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$GSL_version_PKG_ERRORS" >&5
+
+	as_fn_error $? "Package requirements (gsl >= 1.13) were not met:
+
+$GSL_version_PKG_ERRORS
+
+Consider adjusting the PKG_CONFIG_PATH environment variable if you
+installed software in a non-standard prefix.
+
+Alternatively, you may set the environment variables GSL_version_CFLAGS
+and GSL_version_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details." "$LINENO" 5
+
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "The pkg-config script could not be found or is too old.  Make sure it
+is in your PATH or set the PKG_CONFIG environment variable to the full
+path to pkg-config.
+
+Alternatively, you may set the environment variables GSL_version_CFLAGS
+and GSL_version_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.
+
+To get pkg-config, see <http://pkg-config.freedesktop.org/>.
+See \`config.log' for more details" "$LINENO" 5; }
+
+else
+	GSL_version_CFLAGS=$pkg_cv_GSL_version_CFLAGS
+	GSL_version_LIBS=$pkg_cv_GSL_version_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for C compiler flag to ignore unused libraries" >&5
+$as_echo_n "checking for C compiler flag to ignore unused libraries... " >&6; }
+if test "${gl_cv_prog_c_ignore_unused_libraries+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  gl_cv_prog_c_ignore_unused_libraries=none
+     gl_saved_ldflags=$LDFLAGS
+     gl_saved_libs=$LIBS
+     # Link with -lm to detect binutils 2.16 bug with --as-needed; see
+     # <http://lists.gnu.org/archive/html/bug-gnulib/2006-06/msg00131.html>.
+     LIBS="$LIBS -lm"
+     # Use long option sequences like '-z ignore' to test for the feature,
+     # to forestall problems with linkers that have -z, -i, -g, -n, etc. flags.
+     # GCC + binutils likes '-Wl,--as-needed'.
+     # GCC + Solaris ld likes '-Wl,-z,ignore'.
+     # Sun C likes '-Wl,-z,ignore'. '-z ignore' is accepted but has no effect.
+     # Don't try bare '--as-needed'; nothing likes it and the HP-UX 11.11
+     # native cc issues annoying warnings and then ignores it,
+     # which would cause us to incorrectly conclude that it worked.
+     for gl_flags in  '-Wl,--as-needed' \
+  '-Wl,-z,ignore' \
+  '-z ignore'
+
+     do
+       LDFLAGS="$gl_flags $LDFLAGS"
+       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  gl_cv_prog_c_ignore_unused_libraries=$gl_flags
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+       LDFLAGS=$gl_saved_ldflags
+       test "$gl_cv_prog_c_ignore_unused_libraries" != none &&
+         break
+     done
+     LIBS=$gl_saved_libs
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $gl_cv_prog_c_ignore_unused_libraries" >&5
+$as_echo "$gl_cv_prog_c_ignore_unused_libraries" >&6; }
+  IGNORE_UNUSED_LIBRARIES_CFLAGS=
+  if test "$gl_cv_prog_c_ignore_unused_libraries" != none; then
+    IGNORE_UNUSED_LIBRARIES_CFLAGS="$gl_cv_prog_c_ignore_unused_libraries"
+  fi
+
+
+
+fi
 
 
 # Check whether --enable-opencl was given.
@@ -6635,125 +6979,6 @@ if test "${enable_png+set}" = set; then :
   enableval=$enable_png;
 fi
 
-
-
-
-
-
-
-if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
-	if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
-set dummy ${ac_tool_prefix}pkg-config; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if test "${ac_cv_path_PKG_CONFIG+set}" = set; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $PKG_CONFIG in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_PKG_CONFIG="$PKG_CONFIG" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_PKG_CONFIG="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-PKG_CONFIG=$ac_cv_path_PKG_CONFIG
-if test -n "$PKG_CONFIG"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PKG_CONFIG" >&5
-$as_echo "$PKG_CONFIG" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test -z "$ac_cv_path_PKG_CONFIG"; then
-  ac_pt_PKG_CONFIG=$PKG_CONFIG
-  # Extract the first word of "pkg-config", so it can be a program name with args.
-set dummy pkg-config; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if test "${ac_cv_path_ac_pt_PKG_CONFIG+set}" = set; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $ac_pt_PKG_CONFIG in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_ac_pt_PKG_CONFIG="$ac_pt_PKG_CONFIG" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_ac_pt_PKG_CONFIG="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-ac_pt_PKG_CONFIG=$ac_cv_path_ac_pt_PKG_CONFIG
-if test -n "$ac_pt_PKG_CONFIG"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_PKG_CONFIG" >&5
-$as_echo "$ac_pt_PKG_CONFIG" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-  if test "x$ac_pt_PKG_CONFIG" = x; then
-    PKG_CONFIG=""
-  else
-    case $cross_compiling:$ac_tool_warned in
-yes:)
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
-$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
-ac_tool_warned=yes ;;
-esac
-    PKG_CONFIG=$ac_pt_PKG_CONFIG
-  fi
-else
-  PKG_CONFIG="$ac_cv_path_PKG_CONFIG"
-fi
-
-fi
-if test -n "$PKG_CONFIG"; then
-	_pkg_min_version=0.9.0
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking pkg-config is at least version $_pkg_min_version" >&5
-$as_echo_n "checking pkg-config is at least version $_pkg_min_version... " >&6; }
-	if $PKG_CONFIG --atleast-pkgconfig-version $_pkg_min_version; then
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-	else
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-		PKG_CONFIG=""
-	fi
-fi
 if test "x$enable_png" != "xno"; then :
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
@@ -7235,65 +7460,6 @@ else
 $as_echo "yes" >&6; }
 
 fi
-
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for C compiler flag to ignore unused libraries" >&5
-$as_echo_n "checking for C compiler flag to ignore unused libraries... " >&6; }
-if test "${gl_cv_prog_c_ignore_unused_libraries+set}" = set; then :
-  $as_echo_n "(cached) " >&6
-else
-  gl_cv_prog_c_ignore_unused_libraries=none
-     gl_saved_ldflags=$LDFLAGS
-     gl_saved_libs=$LIBS
-     # Link with -lm to detect binutils 2.16 bug with --as-needed; see
-     # <http://lists.gnu.org/archive/html/bug-gnulib/2006-06/msg00131.html>.
-     LIBS="$LIBS -lm"
-     # Use long option sequences like '-z ignore' to test for the feature,
-     # to forestall problems with linkers that have -z, -i, -g, -n, etc. flags.
-     # GCC + binutils likes '-Wl,--as-needed'.
-     # GCC + Solaris ld likes '-Wl,-z,ignore'.
-     # Sun C likes '-Wl,-z,ignore'. '-z ignore' is accepted but has no effect.
-     # Don't try bare '--as-needed'; nothing likes it and the HP-UX 11.11
-     # native cc issues annoying warnings and then ignores it,
-     # which would cause us to incorrectly conclude that it worked.
-     for gl_flags in  '-Wl,--as-needed' \
-  '-Wl,-z,ignore' \
-  '-z ignore'
-
-     do
-       LDFLAGS="$gl_flags $LDFLAGS"
-       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  gl_cv_prog_c_ignore_unused_libraries=$gl_flags
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-       LDFLAGS=$gl_saved_ldflags
-       test "$gl_cv_prog_c_ignore_unused_libraries" != none &&
-         break
-     done
-     LIBS=$gl_saved_libs
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $gl_cv_prog_c_ignore_unused_libraries" >&5
-$as_echo "$gl_cv_prog_c_ignore_unused_libraries" >&6; }
-  IGNORE_UNUSED_LIBRARIES_CFLAGS=
-  if test "$gl_cv_prog_c_ignore_unused_libraries" != none; then
-    IGNORE_UNUSED_LIBRARIES_CFLAGS="$gl_cv_prog_c_ignore_unused_libraries"
-  fi
-
-
 
 
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread $GTK_CFLAGS"
