@@ -30,11 +30,10 @@ AC_ARG_WITH(hdf5,
 [HDF5_LIBS="-lhdf5"])
 
 
-AC_ARG_WITH(gsl,
-[AS_HELP_STRING([--with-gsl], [specify location of GSL])],
-[GSL_CFLAGS="-I$withval/include"
- GSL_LIBS="-L$withval/lib -lgsl -lgslcblas"],
-[GSL_LIBS="-lgsl -lgslcblas"])
+PKG_CHECK_MODULES([GSL], [gsl], [],
+[
+   AC_ERROR([GSL is required])
+])
 
 
 AC_ARG_ENABLE(opencl, AS_HELP_STRING([--enable-opencl], [Enable the use of OpenCL]))
