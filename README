@@ -107,6 +107,11 @@ harder to come by, disable lots of things:
 
 $ ./configure --disable-gtk --disable-png --disable-libtiff
 
+If you get a screen full of errors of the following form:
+<stuff>: undefined reference to `cblas_<something>'
+Add "--enable-gsl-fudge" to your configuration parameters.
+
+
 
 Program name
 ------------
