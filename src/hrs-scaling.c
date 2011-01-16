@@ -19,6 +19,7 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_eigen.h>
 
 #include "image.h"
 #include "peaks.h"
@@ -41,6 +42,20 @@ static void show_matrix_eqn(gsl_matrix *M, gsl_vector *v, int r)
 			STATUS("%+9.3e ", gsl_matrix_get(M, i, j));
 		}
 		STATUS("][ a%2i ] = [ %+9.3e ]\n", i, gsl_vector_get(v, i));
+	}
+}
+
+
+static void show_eigen(gsl_matrix *e_vec, gsl_vector *e_val, int r)
+{
+	int i, j;
+
+	for ( i=0; i<r; i++ ) {
+		STATUS("[ ");
+		for ( j=0; j<r; j++ ) {
+			STATUS("%+5.2f ", gsl_matrix_get(e_vec, i, j));
+		}
+		STATUS("]   [ %+9.3e ]\n", gsl_vector_get(e_val, i));
 	}
 }
 
@@ -205,6 +220,21 @@ static double iterate_scale(struct image *images, int n,
 	}
 	show_matrix_eqn(M, v, n);
 
+	gsl_eigen_symmv_workspace *work;
+	gsl_vector *e_val;
+	gsl_matrix *e_vec;
+	int val;
+
+	work = gsl_eigen_symmv_alloc(n);
+	e_val = gsl_vector_alloc(n);
+	e_vec = gsl_matrix_alloc(n, n);
+	val = gsl_eigen_symmv(M, e_val, e_vec, work);
+	STATUS("gsl_eigen_symmv said %i (%s)\n", val, gsl_strerror(val));
+	gsl_eigen_symmv_free(work);
+
+	show_eigen(e_vec, e_val, n);
+
+#if 0  /* HRS method */
 	shifts = gsl_vector_alloc(n);
 	gsl_linalg_HH_solve(M, v, shifts);
 	max_shift = 0.0;
@@ -220,6 +250,7 @@ static double iterate_scale(struct image *images, int n,
 
 	}
 	gsl_vector_free(shifts);
+#endif
 
 	gsl_matrix_free(M);
 	gsl_vector_free(v);
