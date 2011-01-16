@@ -20,6 +20,9 @@
 #include <string.h>
 #include <assert.h>
 #include <gsl/gsl_statistics_int.h>
+#ifdef GSL_FUDGE
+#include <gsl/gsl_blas.h>
+#endif
 
 #include "image.h"
 
@@ -116,3 +119,12 @@ void filter_noise(struct image *image, float *old)
 	}
 	}
 }
+
+
+#ifdef GSL_FUDGE
+/* Force the linker to bring in CBLAS to make GSL happy */
+void fudge_gslcblas()
+{
+        STATUS("%p\n", cblas_sgemm);
+}
+#endif
