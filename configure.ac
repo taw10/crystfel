@@ -144,10 +144,21 @@ AS_IF([test "x$enable_cairo" != "xno"],
 AM_CONDITIONAL([HAVE_CAIRO], test x$havecairo = xtrue)
 
 
+PKG_CHECK_MODULES([GDK_pixbuf], [gdk-pixbuf], [],
+[
+   PKG_CHECK_MODULES([GDK_pixbuf_2], [gdk-pixbuf-2.0], [],
+   [
+      AC_ERROR([gdk-pixbuf is required.])
+   ])
+])
+
+
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread"
 CFLAGS="$CFLAGS $LIBTIFF_CFLAGS -D_GNU_SOURCE $libPNG_CFLAGS $Cairo_CFLAGS"
+CFLAGS="$CFLAGS $GDK_pixbuf_CFLAGS $GDK_pixbuf_2_CFLAGS"
 LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
-LIBS="$LIBS $LIBTIFF_LIBS $libPNG_LIBS $Cairo_LIBS"
+LIBS="$LIBS $LIBTIFF_LIBS $libPNG_LIBS $Cairo_LIBS $GDK_pixbuf_LIBS"
+LIBS="$LIBS $GDK_pixbuf_2_LIBS"
 
 AC_CONFIG_FILES(Makefile lib/Makefile)
 AC_OUTPUT
