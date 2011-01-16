@@ -36,6 +36,18 @@ PKG_CHECK_MODULES([GSL], [gsl], [],
 ])
 
 
+AC_ARG_ENABLE(gsl-fudge, AS_HELP_STRING([--enable-gsl-fudge],
+   [Use this option if you get lots of linker errors concerning GSL and CBLAS]))
+AC_MSG_CHECKING([whether to use the GSL CBLAS fudge])
+AS_IF([test "x$enable_gsl_fudge" == "xyes"],
+[
+   AC_MSG_RESULT([yes])
+   AC_DEFINE([GSL_FUDGE], [1], [Define to 1 if the GSL fudge is needed])
+],
+[
+   AC_MSG_RESULT([no])
+])
+
 AC_ARG_ENABLE(opencl, AS_HELP_STRING([--enable-opencl], [Enable the use of OpenCL]))
 AC_MSG_CHECKING([whether to use OpenCL])
 AS_IF([test "x$enable_opencl" == "xyes"],

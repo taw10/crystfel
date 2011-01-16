@@ -9,6 +9,9 @@
 /* Define to 1 when the gnulib module strnlen should be tested. */
 #undef GNULIB_TEST_STRNLEN
 
+/* Define to 1 if the GSL fudge is needed */
+#undef GSL_FUDGE
+
 /* Define to 1 if you have the <bp-sym.h> header file. */
 #undef HAVE_BP_SYM_H
 

@@ -807,6 +807,7 @@ enable_option_checking
 enable_dependency_tracking
 enable_silent_rules
 with_hdf5
+enable_gsl_fudge
 enable_opencl
 enable_gtk
 enable_gtktest
@@ -1460,6 +1461,8 @@ Optional Features:
   --enable-dependency-tracking   do not reject slow dependency extractors
   --enable-silent-rules          less verbose build output (undo: `make V=1')
   --disable-silent-rules         verbose build output (undo: `make V=0')
+  --enable-gsl-fudge      Use this option if you get lots of linker errors
+                          concerning GSL and CBLAS
   --enable-opencl         Enable the use of OpenCL
   --disable-gtk           Disable GTK+/GLib
   --disable-gtktest       do not try to compile and run a test GTK+ program
@@ -6404,6 +6407,28 @@ $as_echo "yes" >&6; }
 
 fi
 
+
+# Check whether --enable-gsl-fudge was given.
+if test "${enable_gsl_fudge+set}" = set; then :
+  enableval=$enable_gsl_fudge;
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use the GSL CBLAS fudge" >&5
+$as_echo_n "checking whether to use the GSL CBLAS fudge... " >&6; }
+if test "x$enable_gsl_fudge" == "xyes"; then :
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define GSL_FUDGE 1" >>confdefs.h
+
+
+else
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
 
 # Check whether --enable-opencl was given.
 if test "${enable_opencl+set}" = set; then :
