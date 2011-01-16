@@ -15,7 +15,6 @@
 
 
 #include <stdlib.h>
-#include <gsl/gsl_poly.h>
 #include <assert.h>
 
 #include "utils.h"
