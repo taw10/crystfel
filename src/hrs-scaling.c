@@ -204,7 +204,7 @@ static double iterate_scale(struct image *images, int n,
 
 				mc += Ihl * Ihm / sigma_Gsq;
 
-				mc += (sigma_GI / pow(sigma_Gsq, 2.0) )
+				mc -= (sigma_GI / pow(sigma_Gsq, 2.0) )
 				       * ( imagel->osf*Ihm + imagem->osf * Ihl);
 
 				mc_tot += mc;
