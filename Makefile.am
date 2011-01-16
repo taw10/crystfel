@@ -17,7 +17,7 @@ endif
 
 AM_CFLAGS = -Wall
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib -I$(top_srcdir)/lib
-LDADD = $(top_builddir)/lib/libgnu.a
+LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@
 
 src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c src/utils.c \
                           src/image.c src/cell.c src/hdf5-file.c \

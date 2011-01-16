@@ -32,7 +32,7 @@
    Compiling this file, and adding its object file to the library, will
    prevent the library from exporting no symbols.  */
 
-#if defined __sun || defined __APPLE__
+#ifdef __sun
 /* This declaration ensures that the library will export at least 1 symbol.  */
 int gl_dummy_symbol;
 #else

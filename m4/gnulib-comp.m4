@@ -31,6 +31,7 @@ AC_DEFUN([gl_EARLY],
   # Code from module extensions:
   AC_REQUIRE([gl_USE_SYSTEM_EXTENSIONS])
   # Code from module include_next:
+  # Code from module lib-ignore:
   # Code from module memchr:
   # Code from module stddef:
   # Code from module string:
@@ -59,6 +60,8 @@ AC_DEFUN([gl_INIT],
   # Code from module c++defs:
   # Code from module extensions:
   # Code from module include_next:
+  # Code from module lib-ignore:
+  gl_IGNORE_UNUSED_LIBRARIES
   # Code from module memchr:
   gl_FUNC_MEMCHR
   gl_STRING_MODULE_INDICATOR([memchr])
@@ -228,6 +231,7 @@ AC_DEFUN([gl_FILE_LIST], [
   m4/extensions.m4
   m4/gnulib-common.m4
   m4/include_next.m4
+  m4/lib-ignore.m4
   m4/memchr.m4
   m4/mmap-anon.m4
   m4/onceonly.m4

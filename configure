@@ -703,6 +703,7 @@ GNULIB_MEMRCHR
 GNULIB_MEMPCPY
 GNULIB_MEMMEM
 GNULIB_MEMCHR
+IGNORE_UNUSED_LIBRARIES_CFLAGS
 GL_COND_LIBTOOL_FALSE
 GL_COND_LIBTOOL_TRUE
 LIBOBJS
@@ -4469,6 +4470,7 @@ $as_echo "$ac_cv_safe_to_define___extensions__" >&6; }
   # Code from module extensions:
 
   # Code from module include_next:
+  # Code from module lib-ignore:
   # Code from module memchr:
   # Code from module stddef:
   # Code from module string:
@@ -5763,6 +5765,64 @@ fi
   # Code from module c++defs:
   # Code from module extensions:
   # Code from module include_next:
+  # Code from module lib-ignore:
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for C compiler flag to ignore unused libraries" >&5
+$as_echo_n "checking for C compiler flag to ignore unused libraries... " >&6; }
+if test "${gl_cv_prog_c_ignore_unused_libraries+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  gl_cv_prog_c_ignore_unused_libraries=none
+     gl_saved_ldflags=$LDFLAGS
+     gl_saved_libs=$LIBS
+     # Link with -lm to detect binutils 2.16 bug with --as-needed; see
+     # <http://lists.gnu.org/archive/html/bug-gnulib/2006-06/msg00131.html>.
+     LIBS="$LIBS -lm"
+     # Use long option sequences like '-z ignore' to test for the feature,
+     # to forestall problems with linkers that have -z, -i, -g, -n, etc. flags.
+     # GCC + binutils likes '-Wl,--as-needed'.
+     # GCC + Solaris ld likes '-Wl,-z,ignore'.
+     # Sun C likes '-Wl,-z,ignore'. '-z ignore' is accepted but has no effect.
+     # Don't try bare '--as-needed'; nothing likes it and the HP-UX 11.11
+     # native cc issues annoying warnings and then ignores it,
+     # which would cause us to incorrectly conclude that it worked.
+     for gl_flags in  '-Wl,--as-needed' \
+  '-Wl,-z,ignore' \
+  '-z ignore'
+
+     do
+       LDFLAGS="$gl_flags $LDFLAGS"
+       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  gl_cv_prog_c_ignore_unused_libraries=$gl_flags
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+       LDFLAGS=$gl_saved_ldflags
+       test "$gl_cv_prog_c_ignore_unused_libraries" != none &&
+         break
+     done
+     LIBS=$gl_saved_libs
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $gl_cv_prog_c_ignore_unused_libraries" >&5
+$as_echo "$gl_cv_prog_c_ignore_unused_libraries" >&6; }
+  IGNORE_UNUSED_LIBRARIES_CFLAGS=
+  if test "$gl_cv_prog_c_ignore_unused_libraries" != none; then
+    IGNORE_UNUSED_LIBRARIES_CFLAGS="$gl_cv_prog_c_ignore_unused_libraries"
+  fi
+
+
   # Code from module memchr:
 
 
@@ -7177,12 +7237,72 @@ $as_echo "yes" >&6; }
 fi
 
 
-CFLAGS="$CFLAGS $HDF5_CFLAGS $GTK_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread"
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for C compiler flag to ignore unused libraries" >&5
+$as_echo_n "checking for C compiler flag to ignore unused libraries... " >&6; }
+if test "${gl_cv_prog_c_ignore_unused_libraries+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  gl_cv_prog_c_ignore_unused_libraries=none
+     gl_saved_ldflags=$LDFLAGS
+     gl_saved_libs=$LIBS
+     # Link with -lm to detect binutils 2.16 bug with --as-needed; see
+     # <http://lists.gnu.org/archive/html/bug-gnulib/2006-06/msg00131.html>.
+     LIBS="$LIBS -lm"
+     # Use long option sequences like '-z ignore' to test for the feature,
+     # to forestall problems with linkers that have -z, -i, -g, -n, etc. flags.
+     # GCC + binutils likes '-Wl,--as-needed'.
+     # GCC + Solaris ld likes '-Wl,-z,ignore'.
+     # Sun C likes '-Wl,-z,ignore'. '-z ignore' is accepted but has no effect.
+     # Don't try bare '--as-needed'; nothing likes it and the HP-UX 11.11
+     # native cc issues annoying warnings and then ignores it,
+     # which would cause us to incorrectly conclude that it worked.
+     for gl_flags in  '-Wl,--as-needed' \
+  '-Wl,-z,ignore' \
+  '-z ignore'
+
+     do
+       LDFLAGS="$gl_flags $LDFLAGS"
+       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  gl_cv_prog_c_ignore_unused_libraries=$gl_flags
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+       LDFLAGS=$gl_saved_ldflags
+       test "$gl_cv_prog_c_ignore_unused_libraries" != none &&
+         break
+     done
+     LIBS=$gl_saved_libs
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $gl_cv_prog_c_ignore_unused_libraries" >&5
+$as_echo "$gl_cv_prog_c_ignore_unused_libraries" >&6; }
+  IGNORE_UNUSED_LIBRARIES_CFLAGS=
+  if test "$gl_cv_prog_c_ignore_unused_libraries" != none; then
+    IGNORE_UNUSED_LIBRARIES_CFLAGS="$gl_cv_prog_c_ignore_unused_libraries"
+  fi
+
+
+
+
+CFLAGS="$CFLAGS $HDF5_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread $GTK_CFLAGS"
 CFLAGS="$CFLAGS $LIBTIFF_CFLAGS -D_GNU_SOURCE $libPNG_CFLAGS $Cairo_CFLAGS"
 CFLAGS="$CFLAGS $GDK_pixbuf_CFLAGS $GDK_pixbuf_2_CFLAGS"
 LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
 LIBS="$LIBS $LIBTIFF_LIBS $libPNG_LIBS $Cairo_LIBS $GDK_pixbuf_LIBS"
-LIBS="$LIBS $GDK_pixbuf_2_LIBS"
+LIBS="$LIBS $GDK_pixbuf_2_LIBS $LDFLAGS"
+
 
 ac_config_files="$ac_config_files Makefile lib/Makefile"
 
