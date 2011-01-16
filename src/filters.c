@@ -123,7 +123,7 @@ void filter_noise(struct image *image, float *old)
 
 #ifdef GSL_FUDGE
 /* Force the linker to bring in CBLAS to make GSL happy */
-void fudge_gslcblas()
+void filters_fudge_gslcblas()
 {
         STATUS("%p\n", cblas_sgemm);
 }

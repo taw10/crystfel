@@ -920,7 +920,7 @@ UnitCell *load_cell_from_pdb(const char *filename)
 
 #ifdef GSL_FUDGE
 /* Force the linker to bring in CBLAS to make GSL happy */
-void fudge_gslcblas()
+void cell_fudge_gslcblas()
 {
         STATUS("%p\n", cblas_sgemm);
 }
