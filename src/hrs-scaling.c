@@ -331,7 +331,7 @@ static void normalise_osfs(struct image *images, int n)
 	mean = tot / (double)n;
 
 	for ( m=0; m<n; m++ ) {
-		images[m].osf /= mean;
+		images[m].osf -= (mean-1.0);
 	}
 }
 
