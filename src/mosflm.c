@@ -99,6 +99,7 @@ static void mosflm_parseline(const char *line, struct image *image,
 {
 	#if MOSFLM_VERBOSE
 	char *copy;
+	int i;
 
 	copy = strdup(line);
 	for ( i=0; i<strlen(copy); i++ ) {
