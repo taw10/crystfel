@@ -417,7 +417,7 @@ static void write_drx(struct image *image)
 
 	fh = fopen(filename, "w");
 	if ( !fh ) {
-		ERROR("Couldn't open temporary file xfel.drx\n");
+		ERROR("Couldn't open temporary file '%s'\n", filename);
 		return;
 	}
 	fprintf(fh, "%f\n", 0.5);  /* Lie about the wavelength.  */
@@ -437,7 +437,6 @@ static void write_drx(struct image *image)
 }
 
 
-
 void run_dirax(struct image *image)
 {
 	unsigned int opts;
@@ -448,6 +447,10 @@ void run_dirax(struct image *image)
 	write_drx(image);
 
 	dirax = malloc(sizeof(struct dirax_data));
+	if ( dirax == NULL ) {
+		ERROR("Couldn't allocate memory for DirAx data.\n");
+		return;
+	}
 
 	dirax->pid = forkpty(&dirax->pty, NULL, NULL, NULL);
 	if ( dirax->pid == -1 ) {
@@ -515,6 +518,4 @@ void run_dirax(struct image *image)
 	wait(&status);
 
 	free(dirax);
-
-	return;
 }
