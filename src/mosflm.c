@@ -527,7 +527,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 		t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
 		tcsetattr(STDIN_FILENO, TCSANOW, &t);
 
-		execlp("mosflm", "", (char *)NULL);
+		execlp("ipmosflm", "", (char *)NULL);
 		ERROR("Failed to invoke MOSFLM.\n");
 		_exit(0);
 
