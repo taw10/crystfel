@@ -157,7 +157,8 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 
 		if ( image->ncells == 0 ) {
 			STATUS("No candidate cells found.\n");
-			return;
+			n++;
+			continue;
 		}
 
 		if ( (cellr == CELLR_NONE) || (indm[n] == INDEXING_TEMPLATE) ) {
