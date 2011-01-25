@@ -122,14 +122,14 @@ static int read_newmat(const char *filename, struct image *image)
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
-		STATUS("Found NEWMAT file.\n");
+		STATUS("No NEWMAT file (autoindexing was unsuccessful).\n");
 		return 1;
 	}
 	n  = fscanf(fh, "%f %f %f\n", &asx, &bsx, &csx);
 	n += fscanf(fh, "%f %f %f\n", &asy, &bsy, &csy);
 	n += fscanf(fh, "%f %f %f\n", &asz, &bsz, &csz);
 	if ( n != 9 ) {
-		STATUS("<9 parameters.\n");
+		STATUS("Fewer than 9 parameters found in NEWMAT file.\n");
 		return 1;
 	}
 	fclose(fh);
