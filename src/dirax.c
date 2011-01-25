@@ -515,7 +515,7 @@ void run_dirax(struct image *image)
 
 	close(dirax->pty);
 	free(dirax->rbuffer);
-	wait(&status);
+	waitpid(dirax->pid, &status, __WNOTHREAD);
 
 	free(dirax);
 }
