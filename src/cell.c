@@ -81,6 +81,7 @@ UnitCell *cell_new()
 	cell->rep = CELL_REP_CRYST;
 
 	cell->pointgroup = strdup("1");
+	cell->spacegroup = strdup("P 1");
 
 	return cell;
 }
@@ -90,6 +91,7 @@ void cell_free(UnitCell *cell)
 {
 	if ( cell == NULL ) return;
 	free(cell->pointgroup);
+	free(cell->spacegroup);
 	free(cell);
 }
 
@@ -187,6 +189,8 @@ UnitCell *cell_new_from_cell(UnitCell *orig)
 	new = malloc(sizeof(UnitCell));
 
 	*new = *orig;
+	cell_set_pointgroup(new, orig->pointgroup);
+	cell_set_spacegroup(new, orig->spacegroup);
 
 	return new;
 }
@@ -204,6 +208,20 @@ void cell_set_reciprocal(UnitCell *cell,
 	cell->cxs = csx;  cell->cys = csy;  cell->czs = csz;
 
 	cell->rep = CELL_REP_RECIP;
+}
+
+
+void cell_set_spacegroup(UnitCell *cell, const char *sym)
+{
+	free(cell->spacegroup);
+	cell->spacegroup = strdup(sym);
+}
+
+
+void cell_set_pointgroup(UnitCell *cell, const char *sym)
+{
+	free(cell->pointgroup);
+	cell->pointgroup = strdup(sym);
 }
 
 
@@ -838,8 +856,7 @@ static void cell_set_pointgroup_from_pdb(UnitCell *cell, const char *sym)
 	if ( strcmp(sym, "P 43 21 2") == 0 ) new = "422";
 
 	if ( new != NULL ) {
-		free(cell->pointgroup);
-		cell->pointgroup = strdup(new);
+		cell_set_pointgroup(cell, new);
 	} else {
 		ERROR("Can't determine point group for '%s'\n", sym);
 	}
@@ -901,13 +918,15 @@ UnitCell *load_cell_from_pdb(const char *filename)
 				sym = strndup(line+55, 10);
 				notrail(sym);
 				cell_set_pointgroup_from_pdb(cell, sym);
-				cell->spacegroup = sym;
-
+				cell_set_spacegroup(cell, sym);
+				free(sym);
 			} else {
 				cell_set_pointgroup_from_pdb(cell, "P 1");
-				cell->spacegroup = strdup("P 1");
+				cell_set_spacegroup(cell, "P 1");
 				ERROR("CRYST1 line without space group.\n");
 			}
+
+			break;  /* Done */
 		}
 
 	} while ( rval != NULL );

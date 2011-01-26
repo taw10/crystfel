@@ -461,7 +461,10 @@ static void *get_image(void *qp)
 	} else {
 
 		rval = fgets(line, 1023, qargs->fh);
-		if ( rval == NULL ) return NULL;
+		if ( rval == NULL ) {
+			free(pargs);
+			return NULL;
+		}
 		chomp(line);
 		pargs->filename = malloc(strlen(qargs->prefix)+strlen(line)+1);
 		snprintf(pargs->filename, 1023, "%s%s", qargs->prefix, line);
@@ -884,11 +887,14 @@ int main(int argc, char *argv[])
 
 	cleanup_indexing(ipriv);
 
+	free(indm);
+	free(ipriv);
 	free(prefix);
 	free(det->panels);
 	free(det);
 	cell_free(cell);
-	if ( fh != stdout ) fclose(fh);
+	if ( fh != stdin ) fclose(fh);
+	if ( ofh != stdout ) fclose(ofh);
 	free(sym);
 
 	STATUS("There were %i images, of which %i could be indexed.\n",

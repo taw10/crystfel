@@ -228,6 +228,8 @@ static void write_spt(struct image *image, const char *filename)
 
 	}
 
+	free(sptlines);
+
 	fprintf(fh,"%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
 	           -999.0,-999.0,-999.0,-999.0,-999.0,-999.0);
 	fclose(fh);
@@ -262,8 +264,8 @@ static void write_img(struct image *image, const char *filename)
 	/* Header padding */
 	while ( ftell(fh) < 512 ) fprintf(fh," ");
 
-	fwrite(fh, sizeof(unsigned short int), 1, fh);
-
+	fwrite(intimage, sizeof(unsigned short int), 1, fh);
+	free(intimage);
 	fclose(fh);
 }
 

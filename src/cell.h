@@ -50,6 +50,8 @@ extern void cell_set_parameters(UnitCell *cell, double a, double b, double c,
 extern void cell_set_cartesian_a(UnitCell *cell, double ax, double ay, double az);
 extern void cell_set_cartesian_b(UnitCell *cell, double bx, double by, double bz);
 extern void cell_set_cartesian_c(UnitCell *cell, double cx, double cy, double cz);
+extern void cell_set_spacegroup(UnitCell *cell, const char *sym);
+extern void cell_set_pointgroup(UnitCell *cell, const char *sym);
 
 
 extern int cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,

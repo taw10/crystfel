@@ -162,7 +162,8 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 		}
 
 		if ( (cellr == CELLR_NONE) || (indm[n] == INDEXING_TEMPLATE) ) {
-			image->indexed_cell = image->candidate_cells[0];
+			image->indexed_cell = cell_new_from_cell(
+			                             image->candidate_cells[0]);
 			if ( verbose ) {
 				STATUS("--------------------\n");
 				STATUS("The indexed cell (matching not"
@@ -170,7 +171,7 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 				cell_print(image->indexed_cell);
 				STATUS("--------------------\n");
 			}
-			return;
+			goto done;
 		}
 
 		for ( i=0; i<image->ncells; i++ ) {
@@ -206,6 +207,7 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 			/* Sanity check */
 			if ( !peak_sanity_check(image, new_cell, 0, 0.1) ) {
 				STATUS("Failed peak sanity check.\n");
+				cell_free(new_cell);
 				continue;
 			}
 
@@ -216,6 +218,7 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 
 		for ( i=0; i<image->ncells; i++ ) {
 			cell_free(image->candidate_cells[i]);
+			image->candidate_cells[i] = NULL;
 		}
 
 		/* Move on to the next indexing method */
@@ -225,6 +228,7 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 
 done:
 	for ( i=0; i<image->ncells; i++ ) {
+		/* May free(NULL) if all algorithms were tried */
 		cell_free(image->candidate_cells[i]);
 	}
 }
