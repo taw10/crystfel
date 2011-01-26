@@ -397,7 +397,7 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 			/* Means the last value looked at is rbufpos-2 */
 
 			/* Is there a prompt in the buffer? */
-			if ( (i+7 <= mosflm->rbufpos)
+			if ( (i+10 <= mosflm->rbufpos)
 			  && (!strncmp(mosflm->rbuffer+i, "MOSFLM => ", 10)) ) {
 				block_ready = 1;
 				type = MOSFLM_INPUT_PROMPT;
