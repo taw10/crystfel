@@ -60,7 +60,6 @@ struct static_index_args
 	int config_gpu;
 	int config_simulate;
 	int config_polar;
-	int config_sanity;
 	int config_satcorr;
 	int config_closer;
 	float threshold;
@@ -92,7 +91,6 @@ struct index_args
 
 	/* "Output" */
 	int indexable;
-	int sane;
 };
 
 
@@ -104,7 +102,6 @@ struct queue_args
 	struct static_index_args static_args;
 
 	int n_indexable;
-	int n_sane;
 
 	char *use_this_one_instead;
 };
@@ -169,8 +166,6 @@ static void show_help(const char *s)
 "                           reduce  : full cell reduction.\n"
 "                           compare : match by at most changing the order of\n"
 "                                     the indices.\n"
-"     --check-sanity       Check that indexed locations approximately correspond\n"
-"                           with detected peaks.\n"
 "     --filter-cm          Perform common-mode noise subtraction on images\n"
 "                           before proceeding.  Intensities will be extracted\n"
 "                           from the image as it is after this processing.\n"
@@ -334,7 +329,6 @@ static void process_image(void *pp, int cookie)
 
 	STATUS("Processing '%s'\n", image.filename);
 
-	pargs->sane = 0;
 	pargs->indexable = 0;
 
 	hdfile = hdfile_open(filename);
@@ -398,15 +392,6 @@ static void process_image(void *pp, int cookie)
 	/* No cell at this point?  Then we're done. */
 	if ( image.indexed_cell == NULL ) goto done;
 	pargs->indexable = 1;
-
-	/* Sanity check */
-	if ( pargs->static_args.config_sanity
-	  && !peak_sanity_check(&image, image.indexed_cell, 0, 0.1) ) {
-		STATUS("Failed peak sanity check.\n");
-		goto done;
-	} else {
-		pargs->sane = 1;
-	}
 
 	/* Measure intensities if requested */
 	if ( config_nearbragg ) {
@@ -493,7 +478,6 @@ static void finalise_image(void *qp, void *pp)
 	struct index_args *pargs = pp;
 
 	qargs->n_indexable += pargs->indexable;
-	qargs->n_sane += pargs->sane;
 
 	free(pargs->filename);
 	free(pargs);
@@ -520,7 +504,6 @@ int main(int argc, char *argv[])
 	int config_verbose = 0;
 	int config_alternate = 0;
 	int config_polar = 1;
-	int config_sanity = 0;
 	int config_satcorr = 1;
 	int config_checkprefix = 1;
 	int config_closer = 1;
@@ -579,7 +562,6 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"prefix",             1, NULL,               'x'},
 		{"unpolarized",        0, &config_polar,       0},
-		{"check-sanity",       0, &config_sanity,      1},
 		{"no-sat-corr",        0, &config_satcorr,     0},
 		{"sat-corr",           0, &config_satcorr,     1}, /* Compat */
 		{"threshold",          1, NULL,               't'},
@@ -875,7 +857,6 @@ int main(int argc, char *argv[])
 	qargs.static_args.config_gpu = config_gpu;
 	qargs.static_args.config_simulate = config_simulate;
 	qargs.static_args.config_polar = config_polar;
-	qargs.static_args.config_sanity = config_sanity;
 	qargs.static_args.config_satcorr = config_satcorr;
 	qargs.static_args.config_closer = config_closer;
 	qargs.static_args.cellr = cellr;
@@ -897,7 +878,6 @@ int main(int argc, char *argv[])
 	qargs.fh = fh;
 	qargs.prefix = prefix;
 	qargs.n_indexable = 0;
-	qargs.n_sane = 0;
 
 	n_images = run_threads(nthreads, process_image, get_image,
 	                       finalise_image, &qargs, 0);
@@ -911,8 +891,8 @@ int main(int argc, char *argv[])
 	if ( fh != stdout ) fclose(fh);
 	free(sym);
 
-	STATUS("There were %i images.  %i could be indexed, of which %i"
-	       " looked sane.\n", n_images, qargs.n_indexable, qargs.n_sane);
+	STATUS("There were %i images, of which %i could be indexed.\n",
+	        n_images, qargs.n_indexable);
 
 	if ( gctx != NULL ) {
 		cleanup_gpu(gctx);

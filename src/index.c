@@ -200,11 +200,18 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 				break;
 			}
 
-			image->indexed_cell = new_cell;
-			if ( new_cell != NULL ) {
-				STATUS("Matched on attempt %i.\n", i);
+			/* No cell?  Move on to the next method */
+			if ( new_cell == NULL ) {
 				goto done;
 			}
+
+			/* Sanity check */
+			if ( !peak_sanity_check(image, new_cell, 0, 0.1) ) {
+				STATUS("Failed peak sanity check.\n");
+				goto done;
+			}
+
+			image->indexed_cell = new_cell;
 
 		}
 
