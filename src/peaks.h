@@ -24,12 +24,12 @@ extern void search_peaks(struct image *image, float threshold,
 extern void dump_peaks(struct image *image, FILE *ofh, pthread_mutex_t *mutex);
 
 extern void output_intensities(struct image *image, UnitCell *cell,
-                               pthread_mutex_t *mutex, int polar, int sa,
+                               pthread_mutex_t *mutex, int polar,
                                int use_closer, FILE *ofh, int circular_domain,
                                double domain_r);
 
 extern void output_pixels(struct image *image, UnitCell *cell,
-                          pthread_mutex_t *mutex, int do_polar, int do_sa,
+                          pthread_mutex_t *mutex, int do_polar,
                           FILE *ofh, int circular_domain, double domain_r);
 
 extern int peak_sanity_check(struct image *image, UnitCell *cell,
@@ -39,6 +39,6 @@ extern int find_projected_peaks(struct image *image, UnitCell *cell,
 extern int integrate_peak(struct image *image, int xp, int yp,
                           float *xc, float *yc, float *intensity,
                           double *pbg, double *pmax,
-                          int do_polar, int do_sa, int centroid);
+                          int do_polar, int centroid);
 
 #endif	/* PEAKS_H */

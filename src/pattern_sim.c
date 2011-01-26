@@ -565,7 +565,7 @@ int main(int argc, char *argv[])
 
 		if ( config_nearbragg ) {
 			find_projected_peaks(&image, cell, 0, 0.1);
-			output_intensities(&image, cell, NULL, 0, 1, 0, stdout,
+			output_intensities(&image, cell, NULL, 0, 0, stdout,
 			                   0, 0.1);
 			free(image.cpeaks);
 		}

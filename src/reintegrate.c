@@ -140,8 +140,7 @@ static void process_image(void *pg, int cookie)
 
 		output_intensities(&image, apargs->cell,
 		                   pargs->output_mutex, pargs->config_polar,
-		                   pargs->config_sa, pargs->config_closer,
-		                   pargs->ofh, 0, 0.1);
+		                   pargs->config_closer, pargs->ofh, 0, 0.1);
 	}
 
 	free(image.data);

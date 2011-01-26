@@ -62,7 +62,6 @@ struct static_index_args
 	int config_polar;
 	int config_sanity;
 	int config_satcorr;
-	int config_sa;
 	int config_closer;
 	float threshold;
 	float min_gradient;
@@ -182,8 +181,6 @@ static void show_help(const char *s)
 "     --unpolarized        Don't correct for the polarisation of the X-rays.\n"
 "     --no-sat-corr        Don't correct values of saturated peaks using a\n"
 "                           table included in the HDF5 file.\n"
-"     --no-sa              Don't correct for the differing solid angles of\n"
-"                           the pixels.\n"
 "     --threshold=<n>      Only accept peaks above <n> ADU.  Default: 800.\n"
 "     --min-gradient=<n>   Minimum gradient for Zaefferer peak search.\n"
 "                           Default: 100,000.\n"
@@ -415,7 +412,7 @@ static void process_image(void *pp, int cookie)
 	if ( config_nearbragg ) {
 		output_intensities(&image, image.indexed_cell,
 		                   pargs->static_args.output_mutex,
-		                   config_polar, pargs->static_args.config_sa,
+		                   config_polar,
 		                   pargs->static_args.config_closer,
 		                   pargs->static_args.ofh, 0, 0.1);
 	}
@@ -525,7 +522,6 @@ int main(int argc, char *argv[])
 	int config_polar = 1;
 	int config_sanity = 0;
 	int config_satcorr = 1;
-	int config_sa = 1;
 	int config_checkprefix = 1;
 	int config_closer = 1;
 	float threshold = 800.0;
@@ -586,7 +582,6 @@ int main(int argc, char *argv[])
 		{"check-sanity",       0, &config_sanity,      1},
 		{"no-sat-corr",        0, &config_satcorr,     0},
 		{"sat-corr",           0, &config_satcorr,     1}, /* Compat */
-		{"no-sa",              0, &config_sa,          0},
 		{"threshold",          1, NULL,               't'},
 		{"min-gradient",       1, NULL,                4},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
@@ -882,7 +877,6 @@ int main(int argc, char *argv[])
 	qargs.static_args.config_polar = config_polar;
 	qargs.static_args.config_sanity = config_sanity;
 	qargs.static_args.config_satcorr = config_satcorr;
-	qargs.static_args.config_sa = config_sa;
 	qargs.static_args.config_closer = config_closer;
 	qargs.static_args.cellr = cellr;
 	qargs.static_args.threshold = threshold;

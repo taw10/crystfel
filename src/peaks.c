@@ -182,7 +182,7 @@ static int cull_peaks(struct image *image)
 int integrate_peak(struct image *image, int xp, int yp,
                    float *xc, float *yc, float *intensity,
                    double *pbg, double *pmax,
-                   int do_polar, int do_sa, int centroid)
+                   int do_polar, int centroid)
 {
 	signed int x, y;
 	int lim, out_lim;
@@ -204,7 +204,7 @@ int integrate_peak(struct image *image, int xp, int yp,
 	for ( x=-out_lim; x<+out_lim; x++ ) {
 	for ( y=-out_lim; y<+out_lim; y++ ) {
 
-		double val, sa, pix_area, Lsq, dsq, proj_area;
+		double val;
 		float tt = 0.0;
 		double phi, pa, pb, pol;
 		uint16_t flags;
@@ -238,30 +238,9 @@ int integrate_peak(struct image *image, int xp, int yp,
 
 		if ( val > max ) max = val;
 
-		if ( do_sa ) {
-
-			/* Area of one pixel */
-			pix_area = pow(1.0/p->res, 2.0);
-			Lsq = pow(p->clen, 2.0);
-
-			/* Area of pixel as seen from crystal (approximate) */
-			tt = get_tt(image, x+xp, y+yp);
-			proj_area = pix_area * cos(tt);
-
-			/* Calculate distance from crystal to pixel */
-			dsq = pow(((double)(x+xp) - p->cx) / p->res, 2.0);
-			dsq += pow(((double)(y+yp) - p->cy) / p->res, 2.0);
-
-			/* Projected area of pixel divided by distance squared */
-			sa = 1.0e7 * proj_area / (dsq + Lsq);
-
-			val /= sa;
-
-		}
-
 		if ( do_polar ) {
 
-			if ( !do_sa ) tt = get_tt(image, x+xp, y+yp);
+			tt = get_tt(image, x+xp, y+yp);
 
 			phi = atan2(y+yp, x+xp);
 			pa = pow(sin(phi)*sin(tt), 2.0);
@@ -420,7 +399,7 @@ void search_peaks(struct image *image, float threshold, float min_gradient)
 		 * Don't bother doing polarisation/SA correction, because the
 		 * intensity of this peak is only an estimate at this stage. */
 		r = integrate_peak(image, mask_x, mask_y,
-		                   &fx, &fy, &intensity, NULL, NULL, 0, 0, 1);
+		                   &fx, &fy, &intensity, NULL, NULL, 0, 1);
 		if ( r ) {
 			/* Bad region - don't detect peak */
 			nrej_bad++;
@@ -702,7 +681,7 @@ static void output_header(FILE *ofh, UnitCell *cell, struct image *image)
 
 
 void output_intensities(struct image *image, UnitCell *cell,
-                        pthread_mutex_t *mutex, int polar, int sa,
+                        pthread_mutex_t *mutex, int polar,
                         int use_closer, FILE *ofh,
                         int circular_domain, double domain_r)
 {
@@ -766,7 +745,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 				 * revised coordinates. */
 				r = integrate_peak(image, f->x, f->y, &x, &y,
 					           &intensity, &bg, &max,
-					           polar, sa, 1);
+					           polar, 1);
 				if ( r ) {
 					/* The original peak (which also went
 					 * through integrate_peak(), but with
@@ -788,7 +767,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 					           image->cpeaks[i].x,
 					           image->cpeaks[i].y,
 					           &x, &y, &intensity, &bg, &max,
-					           polar, sa, 1);
+					           polar, 1);
 				if ( r ) {
 					/* Plain old ordinary peak veto */
 					n_veto++;
@@ -809,7 +788,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 				           image->cpeaks[i].x,
 				           image->cpeaks[i].y,
 				           &x, &y, &intensity, &bg, &max, polar,
-				           sa, 0);
+				           0);
 			if ( r ) {
 				/* Plain old ordinary peak veto */
 				n_veto++;
@@ -867,7 +846,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 
 void output_pixels(struct image *image, UnitCell *cell,
-                   pthread_mutex_t *mutex, int do_polar, int do_sa,
+                   pthread_mutex_t *mutex, int do_polar,
                    FILE *ofh, int circular_domain, double domain_r)
 {
 	int i;
@@ -962,30 +941,27 @@ void output_pixels(struct image *image, UnitCell *cell,
 
 			if ( p->no_index ) continue;
 
-			if ( do_sa ) {
+			/* Area of one pixel */
+			pix_area = pow(1.0/p->res, 2.0);
+			Lsq = pow(p->clen, 2.0);
 
-				/* Area of one pixel */
-				pix_area = pow(1.0/p->res, 2.0);
-				Lsq = pow(p->clen, 2.0);
+			/* Area of pixel as seen from crystal  */
+			tt = get_tt(image, x, y);
+			proj_area = pix_area * cos(tt);
 
-				/* Area of pixel as seen from crystal  */
-				tt = get_tt(image, x, y);
-				proj_area = pix_area * cos(tt);
+			/* Calculate distance from crystal to pixel */
+			dsq = pow(((double)x - p->cx) / p->res, 2.0);
+			dsq += pow(((double)y - p->cy) / p->res, 2.0);
 
-				/* Calculate distance from crystal to pixel */
-				dsq = pow(((double)x - p->cx) / p->res, 2.0);
-				dsq += pow(((double)y - p->cy) / p->res, 2.0);
+			/* Projected area of pixel / distance squared */
+			sa = 1.0e7 * proj_area / (dsq + Lsq);
 
-				/* Projected area of pixel / distance squared */
-				sa = 1.0e7 * proj_area / (dsq + Lsq);
-
-				val /= sa;
-
-			}
+			/* Solid angle correction is needed in this case */
+			val /= sa;
 
 			if ( do_polar ) {
 
-				if ( !do_sa ) tt = get_tt(image, x, y);
+				tt = get_tt(image, x, y);
 
 				phi = atan2(y, x);
 				pa = pow(sin(phi)*sin(tt), 2.0);
