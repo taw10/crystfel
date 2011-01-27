@@ -61,7 +61,7 @@ static void show_eigen(gsl_matrix *e_vec, gsl_vector *e_val, int r)
 
 
 static double s_uha(signed int hat, signed int kat, signed int lat,
-                    struct image *images, int n, const char *sym)
+                    struct image *images, int n, const char *sym, int a)
 {
 	int k;
 	double val = 0.0;
@@ -71,6 +71,8 @@ static double s_uha(signed int hat, signed int kat, signed int lat,
 		int hi;
 		struct image *image = &images[k];
 		struct cpeak *spots = images->cpeaks;
+
+		if ( k != a ) continue;
 
 		for ( hi=0; hi<image->n_cpeaks; hi++ ) {
 
@@ -99,7 +101,7 @@ static double s_uha(signed int hat, signed int kat, signed int lat,
 
 
 static double s_vha(signed int hat, signed int kat, signed int lat,
-                    struct image *images, int n, const char *sym)
+                    struct image *images, int n, const char *sym, int a)
 {
 	int k;
 	double val = 0.0;
@@ -109,6 +111,8 @@ static double s_vha(signed int hat, signed int kat, signed int lat,
 		int hi;
 		struct image *image = &images[k];
 		struct cpeak *spots = images->cpeaks;
+
+		if ( k != a ) continue;
 
 		for ( hi=0; hi<image->n_cpeaks; hi++ ) {
 
@@ -195,8 +199,8 @@ static double iterate_scale(struct image *images, int n,
 			struct refl_item *it = get_item(obs, h);
 
 			/* Determine the "solution" vector component */
-			vha = s_vha(it->h, it->k, it->l, images, n, sym);
-			uha = s_uha(it->h, it->k, it->l, images, n, sym);
+			vha = s_vha(it->h, it->k, it->l, images, n, sym, a);
+			uha = s_uha(it->h, it->k, it->l, images, n, sym, a);
 			uh = s_uh(images, n, uha);
 			Ih = s_vh(images, n, vha) / uh;
 			rha = vha - image_a->osf * uha * Ih;
@@ -217,8 +221,10 @@ static double iterate_scale(struct image *images, int n,
 				bcomp = b;
 				if ( b > crossed ) bcomp--;
 
-				vhb = vha;  /* Because we ignore the weights */
-				uhb = uha;  /* Same as above */
+				vhb = s_vha(it->h, it->k, it->l, images, n,
+				            sym, b);
+				uhb = s_uha(it->h, it->k, it->l, images, n,
+				            sym, b);
 				rhb = vhb - image_b->osf * uhb * Ih;
 
 				mc = (rha*vhb + vha*rhb - vha*vhb) / uh;
