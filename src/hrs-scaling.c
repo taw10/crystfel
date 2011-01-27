@@ -209,7 +209,7 @@ static double iterate_scale(struct image *images, int n,
 				double mc = 0.0;
 				double tval, rhb, vhb, uhb;
 				int bcomp;
-				struct image *image_b = &images[a];
+				struct image *image_b = &images[b];
 
 				/* Matrix is symmetric */
 				if ( b > a ) continue;
