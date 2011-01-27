@@ -84,6 +84,8 @@ void cleanup_indexing(IndexingPrivate **priv)
 {
 	int n = 0;
 
+	if ( priv == NULL ) return;  /* Nothing to do */
+
 	while ( priv[n] != NULL ) {
 
 		switch ( priv[n]->indm ) {
