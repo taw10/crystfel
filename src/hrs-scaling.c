@@ -70,7 +70,7 @@ static double s_uha(signed int hat, signed int kat, signed int lat,
 
 		int hi;
 		struct image *image = &images[k];
-		struct cpeak *spots = images->cpeaks;
+		struct cpeak *spots = image->cpeaks;
 
 		if ( k != a ) continue;
 
@@ -110,7 +110,7 @@ static double s_vha(signed int hat, signed int kat, signed int lat,
 
 		int hi;
 		struct image *image = &images[k];
-		struct cpeak *spots = images->cpeaks;
+		struct cpeak *spots = image->cpeaks;
 
 		if ( k != a ) continue;
 
