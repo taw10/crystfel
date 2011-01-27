@@ -60,24 +60,21 @@ static void show_eigen(gsl_matrix *e_vec, gsl_vector *e_val, int r)
 }
 
 
-static void sum_GI(struct image *images, int n, const char *sym,
-                   signed int hat, signed int kat, signed int lat,
-                   double *sigma_GI, double *sigma_Gsq)
+static double s_uha(signed int hat, signed int kat, signed int lat,
+                    struct image *images, int n, const char *sym)
 {
 	int k;
+	double val = 0.0;
 
-	*sigma_GI = 0.0;
-	*sigma_Gsq = 0.0;
 	for ( k=0; k<n; k++ ) {
 
 		int hi;
 		struct image *image = &images[k];
 		struct cpeak *spots = images->cpeaks;
-		int found = 0;
 
 		for ( hi=0; hi<image->n_cpeaks; hi++ ) {
 
-			double ic;
+			double ic, sigi;
 			signed int ha, ka, la;
 
 			if ( !spots[hi].valid ) continue;
@@ -89,43 +86,79 @@ static void sum_GI(struct image *images, int n, const char *sym,
 			if ( la != lat ) continue;
 
 			ic = spots[hi].intensity / spots[hi].p;
+			sigi = sqrt(fabs(ic));
 
-			*sigma_GI += ic * image->osf;
-			found = 1;
+			val += 1.0 / pow(sigi, 2.0);
 
 		}
 
-		if ( found ) {
-			*sigma_Gsq += pow(image->osf, 2.0);
-		}
 	}
+
+	return val;
 }
 
 
-static double find_occurrances(struct image *image, const char *sym,
-                               signed int h, signed int k, signed int l)
+static double s_vha(signed int hat, signed int kat, signed int lat,
+                    struct image *images, int n, const char *sym)
 {
-	double Ihl = 0.0;
-	int find;
-	struct cpeak *spots = image->cpeaks;
+	int k;
+	double val = 0.0;
 
-	for ( find=0; find<image->n_cpeaks; find++ ) {
+	for ( k=0; k<n; k++ ) {
 
-		signed int ha, ka, la;
+		int hi;
+		struct image *image = &images[k];
+		struct cpeak *spots = images->cpeaks;
 
-		if ( !spots[find].valid ) continue;
-		if ( spots[find].p < 0.1 ) continue;
-		get_asymm(spots[find].h, spots[find].k,
-		          spots[find].l, &ha, &ka, &la, sym);
-		if ( ha != h ) continue;
-		if ( ka != k ) continue;
-		if ( la != l ) continue;
+		for ( hi=0; hi<image->n_cpeaks; hi++ ) {
 
-		Ihl += spots[find].intensity / spots[find].p;
+			double ic, sigi;
+			signed int ha, ka, la;
+
+			if ( !spots[hi].valid ) continue;
+			if ( spots[hi].p < 0.1 ) continue;
+			get_asymm(spots[hi].h, spots[hi].k, spots[hi].l,
+				  &ha, &ka, &la, sym);
+			if ( ha != hat ) continue;
+			if ( ka != kat ) continue;
+			if ( la != lat ) continue;
+
+			ic = spots[hi].intensity / spots[hi].p;
+			sigi = sqrt(fabs(ic));
+
+			val += ic / pow(sigi, 2.0);  /* Yes, I know this = 1 */
+
+		}
 
 	}
 
-	return Ihl;
+	return val;
+}
+
+
+static double s_uh(struct image *images, int n, double uha)
+{
+	int k;
+	double val = 0.0;
+
+	for ( k=0; k<n; k++ ) {
+		val += pow(images[k].osf, 2.0) * uha;
+	}
+
+	return val;
+}
+
+
+static double s_vh(struct image *images, int n, double vha)
+{
+	int k;
+	double val = 0.0;
+
+	for ( k=0; k<n; k++ ) {
+		val += images[k].osf * vha;
+	}
+
+	return val;
 }
 
 
@@ -135,7 +168,7 @@ static double iterate_scale(struct image *images, int n,
 	gsl_matrix *M;
 	gsl_vector *v;
 	gsl_vector *shifts;
-	int l;
+	int a;
 	double max_shift;
 	int crossed = 0;
 	int n_ref;
@@ -144,93 +177,71 @@ static double iterate_scale(struct image *images, int n,
 	v = gsl_vector_calloc(n-1);
 	n_ref = num_items(obs);
 
-	for ( l=0; l<n; l++ ) {  /* "Equation number": one equation per frame */
+	for ( a=0; a<n; a++ ) {  /* "Equation number": one equation per frame */
 
-		int m;  /* Frame (scale factor) number */
-		int h;
-		int lcomp;
+		int b;  /* Frame (scale factor) number */
+		int h;  /* Reflection index */
+		int acomp;
 		double vc_tot = 0.0;
-		struct image *imagel = &images[l];
+		struct image *image_a = &images[a];
 
-		if ( l == crossed ) continue;
+		if ( a == crossed ) continue;
+		acomp = a;
+		if ( a > crossed ) acomp--;
 
-		/* Determine the "solution" vector component */
 		for ( h=0; h<n_ref; h++ ) {
 
-			double sigma_GI, sigma_Gsq;
-			double vc;
-			double Ihl;
+			double vc, Ih, uh, rha, vha, uha;
 			struct refl_item *it = get_item(obs, h);
 
-			sum_GI(images, n, sym, it->h, it->k, it->l,
-			       &sigma_GI, &sigma_Gsq);
-
-			/* Add up symmetric equivalents within the pattern */
-			Ihl = find_occurrances(imagel, sym,
-			                       it->h, it->k, it->l);
-
-			vc = Ihl * sigma_GI / sigma_Gsq;
-			vc -= imagel->osf * pow(sigma_GI, 2.0) / sigma_Gsq;
-
+			/* Determine the "solution" vector component */
+			vha = s_vha(it->h, it->k, it->l, images, n, sym);
+			uha = s_uha(it->h, it->k, it->l, images, n, sym);
+			uh = s_uh(images, n, uha);
+			Ih = s_vh(images, n, vha) / uh;
+			rha = vha - image_a->osf * uha * Ih;
+			vc = Ih * rha;
 			vc_tot += vc;
 
-		}
-
-		lcomp = l;
-		if ( l > crossed ) lcomp--;
-		gsl_vector_set(v, lcomp, vc_tot);
-
-		/* Now fill in the matrix components */
-		for ( m=0; m<n; m++ ) {
-
-			double mc_tot = 0.0;
-			int mcomp;
-			struct image *imagem = &images[m];
-
-			if ( m > l ) continue;  /* Matrix is symmetric */
-			if ( m == crossed ) continue;
-
-			for ( h=0; h<n_ref; h++ ) {
+			/* Determine the matrix component */
+			for ( b=0; b<n; b++ ) {
 
 				double mc = 0.0;
-				double Ihl, Ihm;
-				struct refl_item *it = get_item(obs, h);
-				double sigma_GI, sigma_Gsq;
+				double tval, rhb, vhb, uhb;
+				int bcomp;
+				struct image *image_b = &images[a];
 
-				sum_GI(images, n, sym, it->h, it->k, it->l,
-				       &sigma_GI, &sigma_Gsq);
+				/* Matrix is symmetric */
+				if ( b > a ) continue;
+				if ( b == crossed ) continue;
+				bcomp = b;
+				if ( b > crossed ) bcomp--;
 
-				if ( l == m ) {
-					mc += pow(sigma_GI, 2.0)
-					                  / pow(sigma_Gsq, 2.0);
+				vhb = vha;  /* Because we ignore the weights */
+				uhb = uha;  /* Same as above */
+				rhb = vhb - image_b->osf * uhb * Ih;
+
+				mc = (rha*vhb + vha*rhb - vha*vhb) / uh;
+
+				if ( a == b ) {
+					mc += pow(Ih, 2.0) * uha;
 				}
 
-				Ihl = find_occurrances(imagel, sym,
-			                       it->h, it->k, it->l);
-			        Ihm = find_occurrances(imagem, sym,
-			                       it->h, it->k, it->l);
-
-				mc += Ihl * Ihm / sigma_Gsq;
-
-				mc -= (sigma_GI / pow(sigma_Gsq, 2.0) )
-				       * ( imagel->osf*Ihm + imagem->osf * Ihl);
-
-				mc_tot += mc;
+				tval = gsl_matrix_get(M, acomp, bcomp);
+				gsl_matrix_set(M, acomp, bcomp, tval+mc);
+				gsl_matrix_set(M, bcomp, acomp, tval+mc);
 
 			}
 
-			mcomp = m;
-			if ( m > crossed ) mcomp--;
-			gsl_matrix_set(M, lcomp, mcomp, mc_tot);
-			gsl_matrix_set(M, mcomp, lcomp, mc_tot);
-
 		}
 
+		gsl_vector_set(v, acomp, vc_tot);
 
 	}
+
 	show_matrix_eqn(M, v, n-1);
 
-
+#if 0  /* Fox and Holmes method */
 	gsl_eigen_symmv_workspace *work;
 	gsl_vector *e_val;
 	gsl_matrix *e_vec;
@@ -244,21 +255,21 @@ static double iterate_scale(struct image *images, int n,
 	gsl_eigen_symmv_free(work);
 
 	show_eigen(e_vec, e_val, n);
+#endif
 
-#if 0  /* HRS method */
 	shifts = gsl_vector_alloc(n-1);
 
 	gsl_linalg_HH_solve(M, v, shifts);
 	max_shift = 0.0;
-	for ( l=0; l<n-1; l++ ) {
+	for ( a=0; a<n-1; a++ ) {
 
-		double shift = gsl_vector_get(shifts, l);
-		int limg;
+		double shift = gsl_vector_get(shifts, a);
+		int aimg;
 
-		limg = l;
-		if ( limg >= crossed ) limg++;
+		aimg = a;
+		if ( aimg >= crossed ) aimg++;
 
-		images[limg].osf += shift;
+		images[aimg].osf += shift;
 
 		if ( fabs(shift) > fabs(max_shift) ) {
 			max_shift = fabs(shift);
@@ -266,7 +277,6 @@ static double iterate_scale(struct image *images, int n,
 
 	}
 	gsl_vector_free(shifts);
-#endif
 
 	gsl_matrix_free(M);
 	gsl_vector_free(v);
@@ -339,15 +349,15 @@ static void normalise_osfs(struct image *images, int n)
 {
 	int m;
 	double tot = 0.0;
-	double mean;
+	double norm;
 
 	for ( m=0; m<n; m++ ) {
 		tot += images[m].osf;
 	}
-	mean = tot / (double)n;
+	norm = n / tot;
 
 	for ( m=0; m<n; m++ ) {
-		images[m].osf -= (mean-1.0);
+		images[m].osf *= norm;
 	}
 }
 

@@ -418,7 +418,8 @@ int main(int argc, char *argv[])
 		images[i].data = NULL;
 		images[i].flags = NULL;
 
-		/* Get reflections from this image */
+		/* Get reflections from this image.
+		 * FIXME: Use the ones from the stream */
 		integrate_image(&images[i], obs);
 
 		progress_bar(i, n_total_patterns-1, "Loading pattern data");
