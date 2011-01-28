@@ -384,6 +384,8 @@ double *scale_intensities(struct image *images, int n, const char *sym,
 		int j;
 
 		for ( j=0; j<images[m].n_cpeaks; j++ ) {
+			if ( !images[m].cpeaks[j].valid ) continue;
+			if ( images[m].cpeaks[j].p < 0.1 ) continue;
 			tot += images[m].cpeaks[j].intensity
 			        / images[m].cpeaks[j].p;
 		}
