@@ -267,6 +267,7 @@ static double iterate_scale(struct image *images, int n,
 
 	gsl_linalg_HH_solve(M, v, shifts);
 	max_shift = 0.0;
+	STATUS("Shifts:\n");
 	for ( a=0; a<n-1; a++ ) {
 
 		double shift = gsl_vector_get(shifts, a);
@@ -275,6 +276,7 @@ static double iterate_scale(struct image *images, int n,
 		aimg = a;
 		if ( aimg >= crossed ) aimg++;
 
+		STATUS("%3i: %5.2f\n", aimg, shift);
 		images[aimg].osf += shift;
 
 		if ( fabs(shift) > fabs(max_shift) ) {
