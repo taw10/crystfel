@@ -140,6 +140,11 @@ unmatched raw cell might be left-handed: CrystFEL doesn't check this for you.
 Always using a right-handed cell means that the Bijvoet pairs can be told
 apart.
 
+If the unit cell is centered (i.e. if the space group begins with I, R, C, A or
+F), you should be careful when using "compare" for the cell reduction, since
+(for example) DirAx will always find a primitive unit cell, and this cell must
+be converted to the non-primitive conventional cell from the PDB.
+
 
 A Note about Unit Cell Settings
 -------------------------------
