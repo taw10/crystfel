@@ -123,8 +123,10 @@ With "reduce", linear combinations of the raw cell will be checked against the
 target cell.  If at least one candidate is found for each axis of the target
 cell, the angles will be checked to correspondence.  If a match is found, this
 cell will be used for further processing.  This option should generate the most
-matches, but might produce spurious results in many cases.  The "--check-sanity"
-option can help with this.
+matches, but might produce spurious results in many cases.  The predicted peaks
+are always checked to verify that at least 10% of the predicted peaks are close
+to peaks located by the peak search.  If not, the next candidate unit cell is
+tried until there are no more options.
 
 The "compare" method is like "reduce", but linear combinations are not taken.
 That means that the cell must either match or match after a simple permutation
