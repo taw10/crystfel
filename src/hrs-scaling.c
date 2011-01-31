@@ -140,26 +140,30 @@ static double s_vha(signed int hat, signed int kat, signed int lat,
 }
 
 
-static double s_uh(struct image *images, int n, double uha)
+static double s_uh(struct image *images, int n,
+                   signed int h, signed int k, signed int l, const char *sym)
 {
-	int k;
+	int a;
 	double val = 0.0;
 
-	for ( k=0; k<n; k++ ) {
-		val += pow(images[k].osf, 2.0) * uha;
+	for ( a=0; a<n; a++ ) {
+		double uha = s_vha(h, k, l, images, n, sym, a);
+		val += pow(images[a].osf, 2.0) * uha;
 	}
 
 	return val;
 }
 
 
-static double s_vh(struct image *images, int n, double vha)
+static double s_vh(struct image *images, int n,
+                   signed int h, signed int k, signed int l, const char *sym)
 {
-	int k;
+	int a;
 	double val = 0.0;
 
-	for ( k=0; k<n; k++ ) {
-		val += images[k].osf * vha;
+	for ( a=0; a<n; a++ ) {
+		double vha = s_vha(h, k, l, images, n, sym, a);
+		val += images[a].osf * vha;
 	}
 
 	return val;
@@ -197,12 +201,15 @@ static double iterate_scale(struct image *images, int n,
 
 			double vc, Ih, uh, rha, vha, uha;
 			struct refl_item *it = get_item(obs, h);
+			const signed int h = it->h;
+			const signed int k = it->k;
+			const signed int l = it->l;
 
 			/* Determine the "solution" vector component */
-			vha = s_vha(it->h, it->k, it->l, images, n, sym, a);
-			uha = s_uha(it->h, it->k, it->l, images, n, sym, a);
-			uh = s_uh(images, n, uha);
-			Ih = s_vh(images, n, vha) / uh;
+			vha = s_vha(h, k, l, images, n, sym, a);
+			uha = s_uha(h, k, l, images, n, sym, a);
+			uh = s_uh(images, n, h, k, l, sym);
+			Ih = s_vh(images, n, h, k, l, sym) / uh;
 			rha = vha - image_a->osf * uha * Ih;
 			vc = Ih * rha;
 			vc_tot += vc;
@@ -221,10 +228,8 @@ static double iterate_scale(struct image *images, int n,
 				bcomp = b;
 				if ( b > crossed ) bcomp--;
 
-				vhb = s_vha(it->h, it->k, it->l, images, n,
-				            sym, b);
-				uhb = s_uha(it->h, it->k, it->l, images, n,
-				            sym, b);
+				vhb = s_vha(h, k, l, images, n, sym, b);
+				uhb = s_uha(h, k, l, images, n, sym, b);
 				rhb = vhb - image_b->osf * uhb * Ih;
 
 				mc = (rha*vhb + vha*rhb - vha*vhb) / uh;
