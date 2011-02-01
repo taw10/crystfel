@@ -307,26 +307,35 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		break;
 
 	case 2 :
-		cell_get_parameters(mosflm->target_cell, &a, &b, &c,
-		                    &alpha, &beta, &gamma);
-		snprintf(tmp, 255, "CELL %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f\n",
-                         a*1e10, b*1e10, c*1e10,
-                         rad2deg(alpha), rad2deg(beta), rad2deg(gamma));
-		mosflm_sendline(tmp, mosflm);
+		if ( mosflm->target_cell != NULL ) {
+			cell_get_parameters(mosflm->target_cell, &a, &b, &c,
+				            &alpha, &beta, &gamma);
+			snprintf(tmp, 255,
+			         "CELL %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f\n",
+		                 a*1e10, b*1e10, c*1e10,
+		                 rad2deg(alpha), rad2deg(beta), rad2deg(gamma));
+			mosflm_sendline(tmp, mosflm);
+		} else {
+			mosflm_sendline("# Do nothing\n", mosflm);
+		}
 		break;
 
 	case 3 :
-		sg = cell_get_spacegroup(mosflm->target_cell);
-		/* Remove white space from space group */
-		j = 0;
-		for ( i=0; i<strlen(sg); i++ ) {
-			if (sg[i] != ' ') {
-				symm[j++] = sg[i];
+		if ( mosflm->target_cell != NULL ) {
+			sg = cell_get_spacegroup(mosflm->target_cell);
+			/* Remove white space from space group */
+			j = 0;
+			for ( i=0; i<strlen(sg); i++ ) {
+				if (sg[i] != ' ') {
+					symm[j++] = sg[i];
+				}
 			}
+			symm[j] = '\0';
+			snprintf(tmp, 255, "SYMM %s\n", symm);
+			mosflm_sendline(tmp, mosflm);
+		} else {
+			mosflm_sendline("SYMM P1\n", mosflm);
 		}
-		symm[j] = '\0';
-		snprintf(tmp, 255, "SYMM %s\n", symm);
-		mosflm_sendline(tmp, mosflm);
 		break;
 
 	case 4 :
