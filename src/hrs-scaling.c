@@ -178,24 +178,18 @@ static double iterate_scale(struct image *images, int n,
 	gsl_vector *shifts;
 	int a;
 	double max_shift;
-	int crossed = 0;
 	int n_ref;
 
-	M = gsl_matrix_calloc(n-1, n-1);
-	v = gsl_vector_calloc(n-1);
+	M = gsl_matrix_calloc(n, n);
+	v = gsl_vector_calloc(n);
 	n_ref = num_items(obs);
 
 	for ( a=0; a<n; a++ ) {  /* "Equation number": one equation per frame */
 
 		int b;  /* Frame (scale factor) number */
 		int h;  /* Reflection index */
-		int acomp;
 		double vc_tot = 0.0;
 		struct image *image_a = &images[a];
-
-		if ( a == crossed ) continue;
-		acomp = a;
-		if ( a > crossed ) acomp--;
 
 		for ( h=0; h<n_ref; h++ ) {
 
@@ -219,14 +213,10 @@ static double iterate_scale(struct image *images, int n,
 
 				double mc = 0.0;
 				double tval, rhb, vhb, uhb;
-				int bcomp;
 				struct image *image_b = &images[b];
 
 				/* Matrix is symmetric */
 				if ( b > a ) continue;
-				if ( b == crossed ) continue;
-				bcomp = b;
-				if ( b > crossed ) bcomp--;
 
 				vhb = s_vha(h, k, l, images, n, sym, b);
 				uhb = s_uha(h, k, l, images, n, sym, b);
@@ -238,21 +228,21 @@ static double iterate_scale(struct image *images, int n,
 					mc += pow(Ih, 2.0) * uha;
 				}
 
-				tval = gsl_matrix_get(M, acomp, bcomp);
-				gsl_matrix_set(M, acomp, bcomp, tval+mc);
-				gsl_matrix_set(M, bcomp, acomp, tval+mc);
+				tval = gsl_matrix_get(M, a, b);
+				gsl_matrix_set(M, a, b, tval+mc);
+				gsl_matrix_set(M, b, a, tval+mc);
 
 			}
 
 		}
 
-		gsl_vector_set(v, acomp, vc_tot);
+		gsl_vector_set(v, a, vc_tot);
 
 	}
 
-	show_matrix_eqn(M, v, n-1);
+	show_matrix_eqn(M, v, n);
 
-#if 0  /* Fox and Holmes method */
+	/* Fox and Holmes method */
 	gsl_eigen_symmv_workspace *work;
 	gsl_vector *e_val;
 	gsl_matrix *e_vec;
@@ -266,23 +256,19 @@ static double iterate_scale(struct image *images, int n,
 	gsl_eigen_symmv_free(work);
 
 	show_eigen(e_vec, e_val, n);
-#endif
 
-	shifts = gsl_vector_alloc(n-1);
+#if 0
+	shifts = gsl_vector_alloc(n);
 
 	gsl_linalg_HH_solve(M, v, shifts);
 	max_shift = 0.0;
 	STATUS("Shifts:\n");
-	for ( a=0; a<n-1; a++ ) {
+	for ( a=0; a<n; a++ ) {
 
 		double shift = gsl_vector_get(shifts, a);
-		int aimg;
 
-		aimg = a;
-		if ( aimg >= crossed ) aimg++;
-
-		STATUS("%3i: %5.2f\n", aimg, shift);
-		images[aimg].osf += shift;
+		STATUS("%3i: %5.2f\n", a, shift);
+		images[a].osf += shift;
 
 		if ( fabs(shift) > fabs(max_shift) ) {
 			max_shift = fabs(shift);
@@ -290,11 +276,12 @@ static double iterate_scale(struct image *images, int n,
 
 	}
 	gsl_vector_free(shifts);
+#endif
 
 	gsl_matrix_free(M);
 	gsl_vector_free(v);
 
-	return max_shift;
+	return 0.0;//max_shift;
 }
 
 
@@ -364,12 +351,14 @@ static void normalise_osfs(struct image *images, int n)
 	double tot = 0.0;
 	double norm;
 
-	for ( m=0; m<n; m++ ) {
+	images[0].osf = 1.0;
+
+	for ( m=1; m<n; m++ ) {
 		tot += images[m].osf;
 	}
 	norm = n / tot;
 
-	for ( m=0; m<n; m++ ) {
+	for ( m=1; m<n; m++ ) {
 		images[m].osf *= norm;
 	}
 }
@@ -406,10 +395,15 @@ double *scale_intensities(struct image *images, int n, const char *sym,
 	i = 0;
 	do {
 
+		int j;
 		max_shift = iterate_scale(images, n, obs, sym);
 		STATUS("Iteration %2i: max shift = %5.2f\n", i, max_shift);
 		i++;
+		STATUS("Before normalising:\n");
+		for ( j=0; j<n; j++ ) STATUS("%3i   %5.2f\n", j, images[j].osf);
 		normalise_osfs(images, n);
+		STATUS("After normalising:\n");
+		for ( j=0; j<n; j++ ) STATUS("%3i   %5.2f\n", j, images[j].osf);
 
 	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );
 
