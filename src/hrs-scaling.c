@@ -276,7 +276,7 @@ static double iterate_scale(struct image *images, int n,
 	gsl_vector *sprime;
 	sprime = gsl_vector_alloc(n);
 	gsl_linalg_HH_solve(D, rprime, sprime);
-	//gsl_vector_set(sprime, n-1, 0.0);  /* Set last shift to zero */
+	gsl_vector_set(sprime, n-1, 0.0);  /* Set last shift to zero */
 	STATUS("Raw shifts:\n");
 	for ( a=0; a<n; a++ ) STATUS("%3i: %5.2f\n", a, gsl_vector_get(sprime, a));
 
