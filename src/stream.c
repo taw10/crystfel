@@ -154,8 +154,6 @@ int find_chunk(FILE *fh, UnitCell **cell, char **filename)
 
 	do {
 
-		int i;
-
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
 
