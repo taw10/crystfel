@@ -52,8 +52,8 @@ static double s_uha(signed int hat, signed int kat, signed int lat,
 			double ic, sigi;
 			signed int ha, ka, la;
 
-			if ( !spots[hi].valid ) continue;
-			if ( spots[hi].p < 0.1 ) continue;
+			if ( !spots[hi].scalable ) continue;
+
 			get_asymm(spots[hi].h, spots[hi].k, spots[hi].l,
 				  &ha, &ka, &la, sym);
 			if ( ha != hat ) continue;
@@ -92,8 +92,8 @@ static double s_vha(signed int hat, signed int kat, signed int lat,
 			double ic, sigi;
 			signed int ha, ka, la;
 
-			if ( !spots[hi].valid ) continue;
-			if ( spots[hi].p < 0.1 ) continue;
+			if ( !spots[hi].scalable ) continue;
+
 			get_asymm(spots[hi].h, spots[hi].k, spots[hi].l,
 				  &ha, &ka, &la, sym);
 			if ( ha != hat ) continue;
@@ -303,8 +303,7 @@ static double *lsq_intensities(struct image *images, int n,
 
 				signed int ha, ka, la;
 
-				if ( !images[m].cpeaks[a].valid ) continue;
-				if ( images[m].cpeaks[a].p < 0.1 ) continue;
+				if ( !images[m].cpeaks[a].scalable ) continue;
 
 				/* Correct reflection? */
 				get_asymm(images[m].cpeaks[a].h,
@@ -361,6 +360,24 @@ double *scale_intensities(struct image *images, int n, const char *sym,
 
 	/* Start with all scale factors equal */
 	for ( m=0; m<n; m++ ) images[m].osf = 1.0;
+
+	/* Decide which reflections can be scaled */
+	for ( m=0; m<n; m++ ) {
+
+		int j;
+
+		for ( j=0; j<images[m].n_cpeaks; j++ ) {
+
+			int scalable = 1;
+			if ( images[m].cpeaks[j].p < 0.1 ) scalable = 0;
+			if ( !images[m].cpeaks[j].valid ) scalable = 0;
+			if ( images[m].cpeaks[j].intensity < 0.1 ) scalable = 0;
+
+			images[m].cpeaks[j].scalable = scalable;
+
+		}
+
+	}
 
 	/* Iterate */
 	i = 0;

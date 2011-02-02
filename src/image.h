@@ -74,6 +74,8 @@ struct cpeak
 	int x;
 	int y;
 
+	int scalable;
+
 	/* Intensity */
 	double intensity;
 };
