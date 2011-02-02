@@ -148,7 +148,7 @@ static double s_uh(struct image *images, int n,
 	double val = 0.0;
 
 	for ( a=0; a<n; a++ ) {
-		double uha = s_vha(h, k, l, images, n, sym, a);
+		double uha = s_uha(h, k, l, images, n, sym, a);
 		val += pow(images[a].osf, 2.0) * uha;
 	}
 
@@ -293,7 +293,7 @@ static double iterate_scale(struct image *images, int n,
 		double shift = gsl_vector_get(shifts, a);
 
 		STATUS("%3i: %5.2f\n", a, shift);
-		images[a].osf = shift;
+		images[a].osf += shift;
 
 		if ( fabs(shift) > fabs(max_shift) ) {
 			max_shift = fabs(shift);
