@@ -42,12 +42,55 @@ int count_patterns(FILE *fh)
 }
 
 
+static int find_cell(FILE *fh)
+{
+	int done = 0;
+	int found = 0;
+
+	do {
+
+		long pos;
+		char *rval;
+		float u, v, w;
+		char line[1024];
+
+		pos = ftell(fh);
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) {
+			STATUS("Read error in find_cell()\n");
+			done = 1;
+		}
+
+		chomp(line);
+
+		if ( strncmp(line, "Reflections from indexing", 25) == 0 ) {
+			done = 1;
+		}
+
+		if ( sscanf(line, "astar = %f %f %f", &u, &v, &w) == 3 ) {
+			fseek(fh, pos, SEEK_SET);
+			done = 1;
+			found = 1;
+		}
+
+	} while ( !done );
+
+	return found;
+}
+
+
 static UnitCell *read_orientation_matrix(FILE *fh)
 {
 	float u, v, w;
 	struct rvec as, bs, cs;
 	UnitCell *cell;
 	char line[1024];
+
+	if ( find_cell(fh) == 0 ) {
+		ERROR("Couldn't find orientation matrix.\n");
+		return NULL;
+	}
 
 	if ( fgets(line, 1023, fh) == NULL ) return NULL;
 	if ( sscanf(line, "astar = %f %f %f", &u, &v, &w) != 3 ) {
@@ -128,11 +171,6 @@ int find_chunk(FILE *fh, UnitCell **cell, char **filename)
 		if ( strncmp(line, "Reflections from indexing", 25) == 0 ) {
 
 			*filename = strdup(line+29);
-			/* Skip two lines */
-			for ( i=0; i<2; i++ ) {
-				rval = fgets(line, 1023, fh);
-				if ( rval == NULL ) continue;
-			}
 			*cell = read_orientation_matrix(fh);
 
 		}
