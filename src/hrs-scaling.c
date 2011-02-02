@@ -32,6 +32,18 @@
 /* Maximum number of iterations of NLSq scaling per macrocycle. */
 #define MAX_CYCLES (30)
 
+static void show_matrix_eqn(gsl_matrix *M, gsl_vector *v, int r)
+{
+	int i, j;
+
+	for ( i=0; i<r; i++ ) {
+		STATUS("[ ");
+		for ( j=0; j<r; j++ ) {
+			STATUS("%+9.3e ", gsl_matrix_get(M, i, j));
+		}
+		STATUS("][ a%2i ] = [ %+9.3e ]\n", i, gsl_vector_get(v, i));
+	}
+}
 
 static double s_uha(signed int hat, signed int kat, signed int lat,
                     struct image *images, int n, const char *sym, int a)
@@ -236,6 +248,7 @@ static double iterate_scale(struct image *images, int n,
 	}
 	rprime = gsl_vector_alloc(n);
 	val = gsl_blas_dgemv(CblasTrans, 1.0, e_vec, v, 0.0, rprime);
+	show_matrix_eqn(D, rprime, n);
 
 	/* Solve */
 	gsl_vector *sprime;
@@ -374,6 +387,7 @@ double *scale_intensities(struct image *images, int n, const char *sym,
 			if ( images[m].cpeaks[j].intensity < 0.1 ) scalable = 0;
 
 			images[m].cpeaks[j].scalable = scalable;
+			STATUS("%i %i %i\n", m, j, scalable);
 
 		}
 
