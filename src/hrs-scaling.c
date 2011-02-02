@@ -20,6 +20,7 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_eigen.h>
+#include <gsl/gsl_blas.h>
 
 #include "image.h"
 #include "peaks.h"
@@ -248,19 +249,43 @@ static double iterate_scale(struct image *images, int n,
 	gsl_matrix *e_vec;
 	int val;
 
+	/* Diagonalise */
 	work = gsl_eigen_symmv_alloc(n);
 	e_val = gsl_vector_alloc(n);
 	e_vec = gsl_matrix_alloc(n, n);
 	val = gsl_eigen_symmv(M, e_val, e_vec, work);
 	STATUS("gsl_eigen_symmv said %i (%s)\n", val, gsl_strerror(val));
 	gsl_eigen_symmv_free(work);
-
+	val = gsl_eigen_symmv_sort(e_val, e_vec, GSL_EIGEN_SORT_ABS_DESC);
+	STATUS("gsl_eigen_symmv_sort said %i (%s)\n", val, gsl_strerror(val));
 	show_eigen(e_vec, e_val, n);
 
-#if 0
-	shifts = gsl_vector_alloc(n);
+	/* Set up the diagonalised normal equations */
+	gsl_matrix *D;
+	gsl_vector *rprime;
+	D = gsl_matrix_calloc(n, n);
+	for ( a=0; a<n; a++ ) {
+		gsl_matrix_set(D, a, a, gsl_vector_get(e_val, a));
+	}
+	rprime = gsl_vector_alloc(n);
+	val = gsl_blas_dgemv(CblasTrans, 1.0, e_vec, v, 0.0, rprime);
+	STATUS("gsl_blas_dgemv said %i (%s)\n", val, gsl_strerror(val));
+	show_matrix_eqn(D, rprime, n);
 
-	gsl_linalg_HH_solve(M, v, shifts);
+	/* Solve */
+	gsl_vector *sprime;
+	sprime = gsl_vector_alloc(n);
+	gsl_linalg_HH_solve(D, rprime, sprime);
+	//gsl_vector_set(sprime, n-1, 0.0);  /* Set last shift to zero */
+	STATUS("Raw shifts:\n");
+	for ( a=0; a<n; a++ ) STATUS("%3i: %5.2f\n", a, gsl_vector_get(sprime, a));
+
+	/* Rotate back */
+	shifts = gsl_vector_alloc(n);
+	val = gsl_blas_dgemv(CblasNoTrans, 1.0, e_vec, sprime, 0.0, shifts);
+	STATUS("gsl_blas_dgemv said %i (%s)\n", val, gsl_strerror(val));
+
+	/* Apply shifts */
 	max_shift = 0.0;
 	STATUS("Shifts:\n");
 	for ( a=0; a<n; a++ ) {
@@ -268,20 +293,23 @@ static double iterate_scale(struct image *images, int n,
 		double shift = gsl_vector_get(shifts, a);
 
 		STATUS("%3i: %5.2f\n", a, shift);
-		images[a].osf += shift;
+		images[a].osf = shift;
 
 		if ( fabs(shift) > fabs(max_shift) ) {
 			max_shift = fabs(shift);
 		}
 
 	}
-	gsl_vector_free(shifts);
-#endif
 
+	gsl_vector_free(shifts);
+	gsl_vector_free(sprime);
+	gsl_matrix_free(e_vec);
+	gsl_vector_free(e_val);
+	gsl_matrix_free(D);
 	gsl_matrix_free(M);
 	gsl_vector_free(v);
 
-	return 0.0;//max_shift;
+	return max_shift;
 }
 
 
@@ -351,14 +379,12 @@ static void normalise_osfs(struct image *images, int n)
 	double tot = 0.0;
 	double norm;
 
-	images[0].osf = 1.0;
-
-	for ( m=1; m<n; m++ ) {
+	for ( m=0; m<n; m++ ) {
 		tot += images[m].osf;
 	}
 	norm = n / tot;
 
-	for ( m=1; m<n; m++ ) {
+	for ( m=0; m<n; m++ ) {
 		images[m].osf *= norm;
 	}
 }
@@ -374,22 +400,10 @@ double *scale_intensities(struct image *images, int n, const char *sym,
 	double max_shift;
 
 	/* Start with all scale factors equal */
-	for ( m=0; m<n; m++ ) {
+	for ( m=0; m<n; m++ ) images[m].osf = 1.0;
 
-		double tot = 0.0;
-		int j;
-
-		for ( j=0; j<images[m].n_cpeaks; j++ ) {
-			if ( !images[m].cpeaks[j].valid ) continue;
-			if ( images[m].cpeaks[j].p < 0.1 ) continue;
-			tot += images[m].cpeaks[j].intensity
-			        / images[m].cpeaks[j].p;
-		}
-
-		images[m].osf = tot;
-
-	}
-	normalise_osfs(images, n);
+	STATUS("Initial scale factors:\n");
+	for ( i=0; i<n; i++ ) STATUS("%3i   %5.2f\n", i, images[i].osf);
 
 	/* Iterate */
 	i = 0;
@@ -400,16 +414,12 @@ double *scale_intensities(struct image *images, int n, const char *sym,
 		STATUS("Iteration %2i: max shift = %5.2f\n", i, max_shift);
 		i++;
 		STATUS("Before normalising:\n");
-		for ( j=0; j<n; j++ ) STATUS("%3i   %5.2f\n", j, images[j].osf);
+		for ( j=0; j<n; j++ ) STATUS("%3i   %5.8f\n", j, images[j].osf);
 		normalise_osfs(images, n);
 		STATUS("After normalising:\n");
-		for ( j=0; j<n; j++ ) STATUS("%3i   %5.2f\n", j, images[j].osf);
+		for ( j=0; j<n; j++ ) STATUS("%3i   %5.8f\n", j, images[j].osf);
 
 	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );
-
-	for ( m=0; m<n; m++ ) {
-		images[m].osf /= images[0].osf;
-	}
 
 	I_full = lsq_intensities(images, n, obs, sym);
 	return I_full;
