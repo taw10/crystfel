@@ -366,7 +366,6 @@ double *scale_intensities(struct image *images, int n, const char *sym,
 	i = 0;
 	do {
 
-		int j;
 		max_shift = iterate_scale(images, n, obs, sym);
 		STATUS("Iteration %2i: max shift = %5.2f\n", i, max_shift);
 		i++;
