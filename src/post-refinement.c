@@ -237,9 +237,7 @@ double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
 		kind = spots[h].k;
 		lind = spots[h].l;
 
-		/* Don't attempt to use spots with very small
-		 * partialities, since it won't be accurate. */
-		if ( spots[h].p < 0.1 ) continue;
+		if ( !spots[h].scalable ) continue;
 
 		/* Actual measurement of this reflection from this
 		 * pattern? */
@@ -309,9 +307,7 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 		kind = spots[h].k;
 		lind = spots[h].l;
 
-		/* Don't attempt to use spots with very small
-		 * partialities, since it won't be accurate. */
-		if ( spots[h].p < 0.1 ) continue;
+		if ( !spots[h].scalable ) continue;
 
 		/* Actual measurement of this reflection from this
 		 * pattern? */

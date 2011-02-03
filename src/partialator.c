@@ -232,6 +232,35 @@ static void integrate_image(struct image *image, ReflItemList *obs)
 }
 
 
+/* Decide which reflections can be scaled */
+static void select_scalable_reflections(struct image *images, int n)
+{
+	int m;
+
+	for ( m=0; m<n; m++ ) {
+
+		int j;
+
+		for ( j=0; j<images[m].n_cpeaks; j++ ) {
+
+			int scalable = 1;
+
+			if ( images[m].cpeaks[j].p < 0.1 ) scalable = 0;
+			if ( !images[m].cpeaks[j].valid ) {
+				scalable = 0;
+			} else {
+				double v = fabs(images[m].cpeaks[j].intensity);
+				if ( v < 0.1 ) scalable = 0;
+			}
+
+			images[m].cpeaks[j].scalable = scalable;
+
+		}
+
+	}
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -432,6 +461,7 @@ int main(int argc, char *argv[])
 
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
+	select_scalable_reflections(images, n_total_patterns);
 	I_full = scale_intensities(images, n_total_patterns, sym, obs);
 
 	/* Iterate */
@@ -463,6 +493,7 @@ int main(int argc, char *argv[])
 
 		/* Re-estimate all the full intensities */
 		free(I_full);
+		select_scalable_reflections(images, n_total_patterns);
 		I_full = scale_intensities(images, n_total_patterns, sym, obs);
 
 		fclose(fhg);
