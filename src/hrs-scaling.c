@@ -385,9 +385,11 @@ double *scale_intensities(struct image *images, int n, const char *sym,
 			int scalable = 1;
 
 			if ( images[m].cpeaks[j].p < 0.1 ) scalable = 0;
-			if ( !images[m].cpeaks[j].valid ) scalable = 0;
-			if ( fabs(images[m].cpeaks[j].intensity) < 0.1 ) {
+			if ( !images[m].cpeaks[j].valid ) {
 				scalable = 0;
+			} else {
+				double v = fabs(images[m].cpeaks[j].intensity);
+				if ( v < 0.1 ) scalable = 0;
 			}
 
 			images[m].cpeaks[j].scalable = scalable;
