@@ -21,6 +21,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_vector.h>
 
 
 #include "thread-pool.h"
@@ -69,6 +71,7 @@ extern struct rvec quat_rot(struct rvec q, struct quaternion z);
 
 /* --------------------------- Useful functions ----------------------------- */
 
+extern void show_matrix_eqn(gsl_matrix *M, gsl_vector *v, int r);
 extern size_t notrail(char *s);
 extern void chomp(char *s);
 

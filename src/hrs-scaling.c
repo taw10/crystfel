@@ -27,23 +27,12 @@
 #include "symmetry.h"
 #include "geometry.h"
 #include "cell.h"
+#include "utils.h"
 
 
 /* Maximum number of iterations of NLSq scaling per macrocycle. */
 #define MAX_CYCLES (30)
 
-static void show_matrix_eqn(gsl_matrix *M, gsl_vector *v, int r)
-{
-	int i, j;
-
-	for ( i=0; i<r; i++ ) {
-		STATUS("[ ");
-		for ( j=0; j<r; j++ ) {
-			STATUS("%+9.3e ", gsl_matrix_get(M, i, j));
-		}
-		STATUS("][ a%2i ] = [ %+9.3e ]\n", i, gsl_vector_get(v, i));
-	}
-}
 
 static double s_uha(signed int hat, signed int kat, signed int lat,
                     struct image *images, int n, const char *sym, int a)

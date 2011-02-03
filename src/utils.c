@@ -16,9 +16,25 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_vector.h>
 
 #include "utils.h"
 #include "image.h"
+
+
+void show_matrix_eqn(gsl_matrix *M, gsl_vector *v, int r)
+{
+	int i, j;
+
+	for ( i=0; i<r; i++ ) {
+		STATUS("[ ");
+		for ( j=0; j<r; j++ ) {
+			STATUS("%+9.3e ", gsl_matrix_get(M, i, j));
+		}
+		STATUS("][ a%2i ] = [ %+9.3e ]\n", i, gsl_vector_get(v, i));
+	}
+}
 
 
 size_t notrail(char *s)
