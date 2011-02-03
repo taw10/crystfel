@@ -242,21 +242,20 @@ static double iterate_scale(struct image *images, int n,
 	gsl_eigen_symmv_free(work);
 	val = gsl_eigen_symmv_sort(e_val, e_vec, GSL_EIGEN_SORT_ABS_DESC);
 
-	/* Set up the diagonalised normal equations */
-	gsl_matrix *D;
+	/* Rotate the "solution vector" */
 	gsl_vector *rprime;
-	D = gsl_matrix_calloc(n, n);
-	for ( a=0; a<n; a++ ) {
-		gsl_matrix_set(D, a, a, gsl_vector_get(e_val, a));
-	}
 	rprime = gsl_vector_alloc(n);
 	val = gsl_blas_dgemv(CblasTrans, 1.0, e_vec, v, 0.0, rprime);
-	show_matrix_eqn(D, rprime, n);
 
-	/* Solve */
+	/* Solve (now easy) */
 	gsl_vector *sprime;
 	sprime = gsl_vector_alloc(n);
-	gsl_linalg_HH_solve(D, rprime, sprime);
+	for ( a=0; a<n-1; a++ ) {
+		double num, den;
+		num = gsl_vector_get(rprime, a);
+		den = gsl_vector_get(e_val, a);
+		gsl_vector_set(sprime, a, num/den);
+	}
 	gsl_vector_set(sprime, n-1, 0.0);  /* Set last shift to zero */
 
 	/* Rotate back */
@@ -281,7 +280,6 @@ static double iterate_scale(struct image *images, int n,
 	gsl_vector_free(sprime);
 	gsl_matrix_free(e_vec);
 	gsl_vector_free(e_val);
-	gsl_matrix_free(D);
 	gsl_matrix_free(M);
 	gsl_vector_free(v);
 
