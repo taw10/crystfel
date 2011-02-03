@@ -3,7 +3,7 @@
  *
  * A thread pool implementation
  *
- * (c) 2006-2010 Thomas White <taw@physics.org>
+ * (c) 2006-2011 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
@@ -167,7 +167,7 @@ void run_thread_range(int n_tasks, int n_threads, const char *text,
 		w->tq = NULL;
 		w->id = i;
 
-		if ( pthread_create(&workers[i], NULL, range_worker, &w) ) {
+		if ( pthread_create(&workers[i], NULL, range_worker, w) ) {
 			/* Not ERROR() here */
 			fprintf(stderr, "Couldn't start thread %i\n", i);
 			n_threads = i;
