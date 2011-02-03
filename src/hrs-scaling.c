@@ -178,7 +178,7 @@ static double iterate_scale(struct image *images, int n,
 
 		for ( h=0; h<n_ref; h++ ) {
 
-			double vc, Ih, uh, rha, vha, uha;
+			double vc, Ih, uh, vh, rha, vha, uha;
 			struct refl_item *it = get_item(obs, h);
 			const signed int h = it->h;
 			const signed int k = it->k;
@@ -188,7 +188,9 @@ static double iterate_scale(struct image *images, int n,
 			vha = s_vha(h, k, l, images, n, sym, a);
 			uha = s_uha(h, k, l, images, n, sym, a);
 			uh = s_uh(images, n, h, k, l, sym);
-			Ih = s_vh(images, n, h, k, l, sym) / uh;
+			vh = s_vh(images, n, h, k, l, sym);
+			Ih = vh / uh;
+			if ( isnan(Ih) ) Ih = 0.0;  /* 0 / 0 = 0, not NaN */
 			rha = vha - image_a->osf * uha * Ih;
 			vc = Ih * rha;
 			vc_tot += vc;
@@ -208,6 +210,7 @@ static double iterate_scale(struct image *images, int n,
 				rhb = vhb - image_b->osf * uhb * Ih;
 
 				mc = (rha*vhb + vha*rhb - vha*vhb) / uh;
+				if ( isnan(mc) ) mc = 0.0; /* 0 / 0 = 0 */
 
 				if ( a == b ) {
 					mc += pow(Ih, 2.0) * uha;
