@@ -51,7 +51,7 @@ extern void map_all_peaks(struct image *image);
 
 extern void index_pattern(struct image *image, UnitCell *cell,
                           IndexingMethod *indm, int cellr, int verbose,
-                          IndexingPrivate **priv);
+                          IndexingPrivate **priv, int config_insane);
 
 extern void cleanup_indexing(IndexingPrivate **priv);
 

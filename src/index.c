@@ -129,7 +129,8 @@ void map_all_peaks(struct image *image)
 
 
 void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
-                   int cellr, int verbose, IndexingPrivate **ipriv)
+                   int cellr, int verbose, IndexingPrivate **ipriv,
+                   int config_insane)
 {
 	int i;
 	int n = 0;
@@ -207,7 +208,8 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 			if ( new_cell == NULL ) continue;
 
 			/* Sanity check */
-			if ( !peak_sanity_check(image, new_cell, 0, 0.1) ) {
+			if ( !config_insane &&
+			     !peak_sanity_check(image, new_cell, 0, 0.1) ) {
 				STATUS("Failed peak sanity check.\n");
 				cell_free(new_cell);
 				continue;

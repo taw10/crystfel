@@ -62,6 +62,7 @@ struct static_index_args
 	int config_polar;
 	int config_satcorr;
 	int config_closer;
+	int config_insane;
 	float threshold;
 	float min_gradient;
 	struct detector *det;
@@ -197,6 +198,8 @@ static void show_help(const char *s)
 "     --no-closer-peak     Don't integrate from the location of a nearby peak\n"
 "                           instead of the position closest to the reciprocal\n"
 "                           lattice point.\n"
+"     --insane             Don't check that the reduced cell accounts for at\n"
+"                           least 10%% of the located peaks.\n"
 );
 }
 
@@ -387,7 +390,8 @@ static void process_image(void *pp, int cookie)
 
 	/* Calculate orientation matrix (by magic) */
 	index_pattern(&image, cell, indm, pargs->static_args.cellr,
-		      config_verbose, pargs->static_args.ipriv);
+		      config_verbose, pargs->static_args.ipriv,
+		      pargs->static_args.config_insane);
 
 	/* No cell at this point?  Then we're done. */
 	if ( image.indexed_cell == NULL ) goto done;
@@ -510,6 +514,7 @@ int main(int argc, char *argv[])
 	int config_satcorr = 1;
 	int config_checkprefix = 1;
 	int config_closer = 1;
+	int config_insane = 0;
 	float threshold = 800.0;
 	float min_gradient = 100000.0;
 	struct detector *det;
@@ -572,6 +577,7 @@ int main(int argc, char *argv[])
 		{"no-check-prefix",    0, &config_checkprefix, 0},
 		{"no-closer-peak",     0, &config_closer,      0},
 		{"gpu-dev",            1, NULL,                5},
+		{"insane",             1, &config_insane,      1},
 		{0, 0, NULL, 0}
 	};
 
@@ -862,6 +868,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.config_polar = config_polar;
 	qargs.static_args.config_satcorr = config_satcorr;
 	qargs.static_args.config_closer = config_closer;
+	qargs.static_args.config_insane = config_insane;
 	qargs.static_args.cellr = cellr;
 	qargs.static_args.threshold = threshold;
 	qargs.static_args.min_gradient = min_gradient;
