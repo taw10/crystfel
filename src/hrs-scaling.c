@@ -35,38 +35,28 @@
 
 
 static void s_uhavha(signed int hat, signed int kat, signed int lat,
-                     struct image *images, int n, const char *sym, int a,
-                     double *uha, double *vha)
+                     struct image *image, double *uha, double *vha)
 {
-	int k;
 	double uha_val = 0.0;
 	double vha_val = 0.0;
+	struct cpeak *spots = image->cpeaks;
+	int hi;
 
-	for ( k=0; k<n; k++ ) {
+	for ( hi=0; hi<image->n_cpeaks; hi++ ) {
 
-		int hi;
-		struct image *image = &images[k];
-		struct cpeak *spots = image->cpeaks;
+		double ic, sigi;
 
-		if ( k != a ) continue;
+		if ( !spots[hi].scalable ) continue;
 
-		for ( hi=0; hi<image->n_cpeaks; hi++ ) {
+		if ( spots[hi].h != hat ) continue;
+		if ( spots[hi].k != kat ) continue;
+		if ( spots[hi].l != lat ) continue;
 
-			double ic, sigi;
+		ic = spots[hi].intensity / spots[hi].p;
+		sigi = sqrt(fabs(ic));
 
-			if ( !spots[hi].scalable ) continue;
-
-			if ( spots[hi].h != hat ) continue;
-			if ( spots[hi].k != kat ) continue;
-			if ( spots[hi].l != lat ) continue;
-
-			ic = spots[hi].intensity / spots[hi].p;
-			sigi = sqrt(fabs(ic));
-
-			uha_val += 1.0 / pow(sigi, 2.0);
-			vha_val += ic / pow(sigi, 2.0);
-
-		}
+		uha_val += 1.0 / pow(sigi, 2.0);
+		vha_val += ic / pow(sigi, 2.0);
 
 	}
 
@@ -83,7 +73,7 @@ static double s_uh(struct image *images, int n,
 
 	for ( a=0; a<n; a++ ) {
 		double uha;
-		s_uhavha(h, k, l, images, n, sym, a, &uha, NULL);
+		s_uhavha(h, k, l, &images[a], &uha, NULL);
 		val += pow(images[a].osf, 2.0) * uha;
 	}
 
@@ -99,7 +89,7 @@ static double s_vh(struct image *images, int n,
 
 	for ( a=0; a<n; a++ ) {
 		double vha;
-		s_uhavha(h, k, l, images, n, sym, a, NULL, &vha);
+		s_uhavha(h, k, l, &images[a], NULL, &vha);
 		val += images[a].osf * vha;
 	}
 
@@ -158,7 +148,7 @@ static double iterate_scale(struct image *images, int n,
 
 			double uha, vha;
 
-			s_uhavha(h, k, l, images, n, sym, a, &uha, &vha);
+			s_uhavha(h, k, l, &images[a], &uha, &vha);
 			uha_arr[a] = uha;
 			vha_arr[a] = vha;
 
