@@ -34,51 +34,13 @@
 #define MAX_CYCLES (30)
 
 
-static double s_uha(signed int hat, signed int kat, signed int lat,
-                    struct image *images, int n, const char *sym, int a)
+static void s_uhavha(signed int hat, signed int kat, signed int lat,
+                     struct image *images, int n, const char *sym, int a,
+                     double *uha, double *vha)
 {
 	int k;
-	double val = 0.0;
-
-	for ( k=0; k<n; k++ ) {
-
-		int hi;
-		struct image *image = &images[k];
-		struct cpeak *spots = image->cpeaks;
-
-		if ( k != a ) continue;
-
-		for ( hi=0; hi<image->n_cpeaks; hi++ ) {
-
-			double ic, sigi;
-			signed int ha, ka, la;
-
-			if ( !spots[hi].scalable ) continue;
-
-			get_asymm(spots[hi].h, spots[hi].k, spots[hi].l,
-				  &ha, &ka, &la, sym);
-			if ( ha != hat ) continue;
-			if ( ka != kat ) continue;
-			if ( la != lat ) continue;
-
-			ic = spots[hi].intensity / spots[hi].p;
-			sigi = sqrt(fabs(ic));
-
-			val += 1.0 / pow(sigi, 2.0);
-
-		}
-
-	}
-
-	return val;
-}
-
-
-static double s_vha(signed int hat, signed int kat, signed int lat,
-                    struct image *images, int n, const char *sym, int a)
-{
-	int k;
-	double val = 0.0;
+	double uha_val = 0.0;
+	double vha_val = 0.0;
 
 	for ( k=0; k<n; k++ ) {
 
@@ -101,13 +63,15 @@ static double s_vha(signed int hat, signed int kat, signed int lat,
 			ic = spots[hi].intensity / spots[hi].p;
 			sigi = sqrt(fabs(ic));
 
-			val += ic / pow(sigi, 2.0);  /* Yes, I know this = 1 */
+			uha_val += 1.0 / pow(sigi, 2.0);
+			vha_val += ic / pow(sigi, 2.0);
 
 		}
 
 	}
 
-	return val;
+	if ( uha != NULL ) *uha = uha_val;
+	if ( vha != NULL ) *vha = vha_val;
 }
 
 
@@ -118,7 +82,8 @@ static double s_uh(struct image *images, int n,
 	double val = 0.0;
 
 	for ( a=0; a<n; a++ ) {
-		double uha = s_uha(h, k, l, images, n, sym, a);
+		double uha;
+		s_uhavha(h, k, l, images, n, sym, a, &uha, NULL);
 		val += pow(images[a].osf, 2.0) * uha;
 	}
 
@@ -133,7 +98,8 @@ static double s_vh(struct image *images, int n,
 	double val = 0.0;
 
 	for ( a=0; a<n; a++ ) {
-		double vha = s_vha(h, k, l, images, n, sym, a);
+		double vha;
+		s_uhavha(h, k, l, images, n, sym, a, NULL, &vha);
 		val += images[a].osf * vha;
 	}
 
@@ -188,8 +154,7 @@ static double iterate_scale(struct image *images, int n,
 			const signed int l = it->l;
 
 			/* Determine the "solution" vector component */
-			vha = s_vha(h, k, l, images, n, sym, a);
-			uha = s_uha(h, k, l, images, n, sym, a);
+			s_uhavha(h, k, l, images, n, sym, a, &uha, &vha);
 			uh = lookup_intensity(uh_arr, h, k, l);
 			vh = lookup_intensity(vh_arr, h, k, l);
 			Ih = vh / uh;
@@ -208,8 +173,7 @@ static double iterate_scale(struct image *images, int n,
 				/* Matrix is symmetric */
 				if ( b > a ) continue;
 
-				vhb = s_vha(h, k, l, images, n, sym, b);
-				uhb = s_uha(h, k, l, images, n, sym, b);
+				s_uhavha(h, k, l, images, n, sym, b, &uhb, &vhb);
 				rhb = vhb - image_b->osf * uhb * Ih;
 
 				mc = (rha*vhb + vha*rhb - vha*vhb) / uh;
