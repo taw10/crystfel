@@ -113,12 +113,14 @@ static double iterate_scale(struct image *images, int n,
 	gsl_matrix *M;
 	gsl_vector *v;
 	gsl_vector *shifts;
-	int a;
 	double max_shift;
 	int n_ref;
 	double *uh_arr;
 	double *vh_arr;
+	double *uha_arr;
+	double *vha_arr;
 	int h;  /* Reflection index */
+	int frame;
 
 	M = gsl_matrix_calloc(n, n);
 	v = gsl_vector_calloc(n);
@@ -139,29 +141,45 @@ static double iterate_scale(struct image *images, int n,
 
 	}
 
-	for ( a=0; a<n; a++ ) {  /* "Equation number": one equation per frame */
+	uha_arr = malloc(n*sizeof(double));
+	vha_arr = malloc(n*sizeof(double));
 
-		int b;  /* Frame (scale factor) number */
-		double vc_tot = 0.0;
-		struct image *image_a = &images[a];
+	for ( h=0; h<n_ref; h++ ) {
 
-		for ( h=0; h<n_ref; h++ ) {
+		int a;
+		struct refl_item *it = get_item(obs, h);
+		const signed int h = it->h;
+		const signed int k = it->k;
+		const signed int l = it->l;
 
+		/* For this reflection, calculate all the possible
+		 * values of uha and vha */
+		for ( a=0; a<n; a++ ) {
+
+			double uha, vha;
+
+			s_uhavha(h, k, l, images, n, sym, a, &uha, &vha);
+			uha_arr[a] = uha;
+			vha_arr[a] = vha;
+
+		}
+
+		for ( a=0; a<n; a++ ) {
+
+			int b;  /* Frame (scale factor) number */
+			struct image *image_a = &images[a];
 			double vc, Ih, uh, vh, rha, vha, uha;
-			struct refl_item *it = get_item(obs, h);
-			const signed int h = it->h;
-			const signed int k = it->k;
-			const signed int l = it->l;
+			double vval;
 
 			/* Determine the "solution" vector component */
-			s_uhavha(h, k, l, images, n, sym, a, &uha, &vha);
+			uha = uha_arr[a];
+			vha = vha_arr[a];
 			uh = lookup_intensity(uh_arr, h, k, l);
 			vh = lookup_intensity(vh_arr, h, k, l);
 			Ih = vh / uh;
 			if ( isnan(Ih) ) Ih = 0.0;  /* 0 / 0 = 0, not NaN */
 			rha = vha - image_a->osf * uha * Ih;
 			vc = Ih * rha;
-			vc_tot += vc;
 
 			/* Determine the matrix component */
 			for ( b=0; b<n; b++ ) {
@@ -173,7 +191,8 @@ static double iterate_scale(struct image *images, int n,
 				/* Matrix is symmetric */
 				if ( b > a ) continue;
 
-				s_uhavha(h, k, l, images, n, sym, b, &uhb, &vhb);
+				uhb = uha_arr[b];
+				vhb = vha_arr[b];
 				rhb = vhb - image_b->osf * uhb * Ih;
 
 				mc = (rha*vhb + vha*rhb - vha*vhb) / uh;
@@ -189,11 +208,17 @@ static double iterate_scale(struct image *images, int n,
 
 			}
 
+			vval = gsl_vector_get(v, a);
+			gsl_vector_set(v, a, vval+vc);
+
 		}
 
-		gsl_vector_set(v, a, vc_tot);
-
 	}
+
+	free(uh_arr);
+	free(vh_arr);
+	free(uha_arr);
+	free(vha_arr);
 
 	/* Fox and Holmes method */
 	gsl_eigen_symmv_workspace *work;
@@ -217,11 +242,11 @@ static double iterate_scale(struct image *images, int n,
 	/* Solve (now easy) */
 	gsl_vector *sprime;
 	sprime = gsl_vector_alloc(n);
-	for ( a=0; a<n-1; a++ ) {
+	for ( frame=0; frame<n-1; frame++ ) {
 		double num, den;
-		num = gsl_vector_get(rprime, a);
-		den = gsl_vector_get(e_val, a);
-		gsl_vector_set(sprime, a, num/den);
+		num = gsl_vector_get(rprime, frame);
+		den = gsl_vector_get(e_val, frame);
+		gsl_vector_set(sprime, frame, num/den);
 	}
 	gsl_vector_set(sprime, n-1, 0.0);  /* Set last shift to zero */
 
@@ -231,11 +256,11 @@ static double iterate_scale(struct image *images, int n,
 
 	/* Apply shifts */
 	max_shift = 0.0;
-	for ( a=0; a<n; a++ ) {
+	for ( frame=0; frame<n; frame++ ) {
 
-		double shift = gsl_vector_get(shifts, a);
+		double shift = gsl_vector_get(shifts, frame);
 
-		images[a].osf += shift;
+		images[frame].osf += shift;
 
 		if ( fabs(shift) > fabs(max_shift) ) {
 			max_shift = fabs(shift);
