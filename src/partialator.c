@@ -163,7 +163,19 @@ static void refine_all(struct image *images, int n_total_patterns,
 }
 
 
-static void integrate_image(struct image *image, ReflItemList *obs)
+static void uniquify(struct cpeak *spot, const char *sym)
+{
+	signed int ha, ka, la;
+
+	get_asymm(spot->h, spot->k, spot->l, &ha, &ka, &la, sym);
+	spot->h = ha;
+	spot->k = ka;
+	spot->l = la;
+}
+
+
+static void integrate_image(struct image *image, ReflItemList *obs,
+                            const char *sym)
 {
 	struct cpeak *spots;
 	int j, n;
@@ -195,6 +207,8 @@ static void integrate_image(struct image *image, ReflItemList *obs)
 		signed int h, k, l;
 		float i_partial;
 		float xc, yc;
+
+		uniquify(&spots[j], sym);
 
 		h = spots[j].h;
 		k = spots[j].k;
@@ -449,7 +463,7 @@ int main(int argc, char *argv[])
 
 		/* Get reflections from this image.
 		 * FIXME: Use the ones from the stream */
-		integrate_image(&images[i], obs);
+		integrate_image(&images[i], obs, sym);
 
 		progress_bar(i, n_total_patterns-1, "Loading pattern data");
 

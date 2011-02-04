@@ -91,15 +91,12 @@ static double s_vha(signed int hat, signed int kat, signed int lat,
 		for ( hi=0; hi<image->n_cpeaks; hi++ ) {
 
 			double ic, sigi;
-			signed int ha, ka, la;
 
 			if ( !spots[hi].scalable ) continue;
 
-			get_asymm(spots[hi].h, spots[hi].k, spots[hi].l,
-				  &ha, &ka, &la, sym);
-			if ( ha != hat ) continue;
-			if ( ka != kat ) continue;
-			if ( la != lat ) continue;
+			if ( spots[hi].h != hat ) continue;
+			if ( spots[hi].k != kat ) continue;
+			if ( spots[hi].l != lat ) continue;
 
 			ic = spots[hi].intensity / spots[hi].p;
 			sigi = sqrt(fabs(ic));
@@ -153,15 +150,32 @@ static double iterate_scale(struct image *images, int n,
 	int a;
 	double max_shift;
 	int n_ref;
+	double *uh_arr;
+	double *vh_arr;
+	int h;  /* Reflection index */
 
 	M = gsl_matrix_calloc(n, n);
 	v = gsl_vector_calloc(n);
 	n_ref = num_items(obs);
 
+	uh_arr = new_list_intensity();
+	vh_arr = new_list_intensity();
+	for ( h=0; h<n_ref; h++ ) {
+
+		double uh, vh;
+		struct refl_item *it = get_item(obs, h);
+
+		uh = s_uh(images, n, it->h, it->k, it->l, sym);
+		vh = s_vh(images, n, it->h, it->k, it->l, sym);
+
+		set_intensity(uh_arr, it->h, it->k, it->l, uh);
+		set_intensity(vh_arr, it->h, it->k, it->l, vh);
+
+	}
+
 	for ( a=0; a<n; a++ ) {  /* "Equation number": one equation per frame */
 
 		int b;  /* Frame (scale factor) number */
-		int h;  /* Reflection index */
 		double vc_tot = 0.0;
 		struct image *image_a = &images[a];
 
@@ -176,8 +190,8 @@ static double iterate_scale(struct image *images, int n,
 			/* Determine the "solution" vector component */
 			vha = s_vha(h, k, l, images, n, sym, a);
 			uha = s_uha(h, k, l, images, n, sym, a);
-			uh = s_uh(images, n, h, k, l, sym);
-			vh = s_vh(images, n, h, k, l, sym);
+			uh = lookup_intensity(uh_arr, h, k, l);
+			vh = lookup_intensity(vh_arr, h, k, l);
 			Ih = vh / uh;
 			if ( isnan(Ih) ) Ih = 0.0;  /* 0 / 0 = 0, not NaN */
 			rha = vha - image_a->osf * uha * Ih;
