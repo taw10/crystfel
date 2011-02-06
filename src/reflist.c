@@ -17,15 +17,16 @@
 
 struct _reflection {
 
-	unsigned int serial;  /* Serial number */
+	/* Listy stuff */
+	unsigned int serial;          /* Unique serial number, key */
+	struct _reflection *child[2]; /* Child nodes */
+	struct _reflection *parent;   /* Parent node */
 
 	signed int h;
 	signed int k;
 	signed int l;
 
-	double excitation_error;
-
-	/* Partiality */
+	/* Partiality and related geometrical stuff */
 	double r1;  /* First excitation error */
 	double r2;  /* Second excitation error */
 	double p;   /* Partiality */
@@ -33,21 +34,24 @@ struct _reflection {
 	int clamp2; /* Clamp status for r2 */
 
 	/* Location in image */
-	int x;
-	int y;
+	double x;
+	double y;
 
+	/* The distance from the exact Bragg position to the coordinates
+	 * given above. */
+	double excitation_error;
+
+	/* Non-zero if this reflection can be used for scaling */
 	int scalable;
 
 	/* Intensity */
 	double intensity;
-
-
 };
 
 
 struct _reflist {
 
-	struct ref *head;
+	struct _reflection *head;
 
 };
 
@@ -60,13 +64,24 @@ RefList *reflist_new()
 	RefList *new;
 
 	new = malloc(sizeof(struct _reflist));
+	new->head = NULL;
 
 	return new;
 }
 
 
+static void recursive_free(Reflection *refl)
+{
+	if ( refl->child[0] != NULL ) recursive_free(refl->child[0]);
+	if ( refl->child[1] != NULL ) recursive_free(refl->child[1]);
+	free(refl);
+}
+
+
 void reflist_free(RefList *list)
 {
+	recursive_free(list->head);
+	free(list);
 }
 
 
@@ -86,37 +101,51 @@ Reflection *next_found_refl(Reflection *refl)
 
 double get_excitation_error(Reflection *refl)
 {
+	return refl->excitation_error;
 }
 
 
 void get_detector_pos(Reflection *refl, double *x, double *y)
 {
+	*x = refl->x;
+	*y = refl->y;
 }
 
 
 void get_indices(Reflection *refl, signed int *h, signed int *k, signed int *l)
 {
+	*h = refl->h;
+	*k = refl->k;
+	*l = refl->l;
 }
 
 
 double get_partiality(Reflection *refl)
 {
+	return refl->p;
 }
 
 
 double get_intensity(Reflection *refl)
 {
+	return refl->intensity;
 }
 
 
 void get_partial(Reflection *refl, double *r1, double *r2, double *p,
                  int *clamp_low, int *clamp_high)
 {
+	*r1 = refl->r1;
+	*r2 = refl->r2;
+	*p = get_partiality(refl);
+	*clamp_low = refl->clamp1;
+	*clamp_high = refl->clamp2;
 }
 
 
 int get_scalable(Reflection *refl)
 {
+	return refl->scalable;
 }
 
 
