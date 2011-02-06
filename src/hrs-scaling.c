@@ -28,6 +28,7 @@
 #include "geometry.h"
 #include "cell.h"
 #include "utils.h"
+#include "reflist.h"
 
 
 /* Maximum number of iterations of NLSq scaling per macrocycle. */
@@ -39,20 +40,18 @@ static void s_uhavha(signed int hat, signed int kat, signed int lat,
 {
 	double uha_val = 0.0;
 	double vha_val = 0.0;
-	struct cpeak *spots = image->cpeaks;
-	int hi;
+	RefList *reflections = image->reflections;
+	Reflection *refl;
 
-	for ( hi=0; hi<image->n_cpeaks; hi++ ) {
+	for ( refl = find_refl(reflections, hat, kat, lat);
+	      refl != NULL;
+	      refl = next_found_refl(refl) ) {
 
 		double ic, sigi;
 
-		if ( !spots[hi].scalable ) continue;
+		if ( !get_scalable(refl) ) continue;
 
-		if ( spots[hi].h != hat ) continue;
-		if ( spots[hi].k != kat ) continue;
-		if ( spots[hi].l != lat ) continue;
-
-		ic = spots[hi].intensity / spots[hi].p;
+		ic = get_intensity(refl) / get_partiality(refl);
 		sigi = sqrt(fabs(ic));
 
 		uha_val += 1.0 / pow(sigi, 2.0);
@@ -278,49 +277,38 @@ static double *lsq_intensities(struct image *images, int n,
 	I_full = new_list_intensity();
 	for ( i=0; i<num_items(obs); i++ ) {
 
-		signed int h, k, l;
 		struct refl_item *it = get_item(obs, i);
 		double num = 0.0;
 		double den = 0.0;
 		int m;
 
-		get_asymm(it->h, it->k, it->l, &h, &k, &l, sym);
-
 		/* For each frame */
 		for ( m=0; m<n; m++ ) {
 
 			double G;
-			int a;
+			Reflection *refl;
 
 			G = images[m].osf;
 
-			/* For each peak */
-			for ( a=0; a<images[m].n_cpeaks; a++ ) {
+			for ( refl = find_refl(images[m].reflections,
+			                       it->h, it->k, it->l);
+			      refl != NULL;
+			      refl = next_found_refl(refl) ) {
 
-				signed int ha, ka, la;
+				double p;
 
-				if ( !images[m].cpeaks[a].scalable ) continue;
+				if ( !get_scalable(refl) ) continue;
 
-				/* Correct reflection? */
-				get_asymm(images[m].cpeaks[a].h,
-				          images[m].cpeaks[a].k,
-				          images[m].cpeaks[a].l,
-				          &ha, &ka, &la, sym);
-				if ( ha != h ) continue;
-				if ( ka != k ) continue;
-				if ( la != l ) continue;
+				p = get_partiality(refl);
 
-				num += images[m].cpeaks[a].intensity
-				     * images[m].cpeaks[a].p * G;
-
-				den += pow(images[m].cpeaks[a].p, 2.0)
-				     * pow(G, 2.0);
+				num += get_intensity(refl) * p * G;
+				den += pow(p, 2.0) * pow(G, 2.0);
 
 			}
 
 		}
 
-		set_intensity(I_full, h, k, l, num/den);
+		set_intensity(I_full, it->h, it->k, it->l, num/den);
 
 	}
 

@@ -28,6 +28,7 @@ extern void reflist_free(RefList *list);
 
 /* Search */
 extern Reflection *find_refl(RefList *list, INDICES);
+extern Reflection *next_found_refl(Reflection *refl);
 
 /* Get */
 extern double get_excitation_error(Reflection *refl);

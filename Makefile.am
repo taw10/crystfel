@@ -93,7 +93,7 @@ src_reintegrate_SOURCES = src/reintegrate.c src/cell.c src/hdf5-file.c \
                           src/utils.c src/detector.c src/peaks.c src/image.c \
                           src/stream.c src/index.c src/dirax.c src/mosflm.c \
                           src/templates.c src/geometry.c src/symmetry.c \
-                          src/thread-pool.c
+                          src/thread-pool.c src/reflist.c
 
 src_estimate_background_SOURCES = src/estimate_background.c src/stream.c \
                                   src/utils.c src/cell.c src/thread-pool.c

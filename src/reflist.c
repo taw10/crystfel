@@ -77,6 +77,11 @@ Reflection *find_refl(RefList *list, INDICES)
 }
 
 
+Reflection *next_found_refl(Reflection *refl)
+{
+}
+
+
 /********************************** Getters ***********************************/
 
 double get_excitation_error(Reflection *refl)
@@ -94,6 +99,27 @@ void get_indices(Reflection *refl, signed int *h, signed int *k, signed int *l)
 }
 
 
+double get_partiality(Reflection *refl)
+{
+}
+
+
+double get_intensity(Reflection *refl)
+{
+}
+
+
+void get_partial(Reflection *refl, double *r1, double *r2, double *p,
+                 int *clamp_low, int *clamp_high)
+{
+}
+
+
+int get_scalable(Reflection *refl)
+{
+}
+
+
 /********************************** Setters ***********************************/
 
 void set_detector_pos(Reflection *refl, double exerr, double x, double y)
@@ -107,6 +133,22 @@ void set_partial(Reflection *refl, double r1, double r2, double p,
 }
 
 
+void set_indices(Reflection *refl,
+                        signed int h, signed int k, signed int l)
+{
+}
+
+
+void set_int(Reflection *refl, double intensity)
+{
+}
+
+
+void set_scalable(Reflection *refl, int scalable)
+{
+}
+
+
 /********************************* Insertion **********************************/
 
 Reflection *add_refl(RefList *list, INDICES)
@@ -116,6 +158,13 @@ Reflection *add_refl(RefList *list, INDICES)
 
 Reflection *add_refl_with_det_pos(RefList *refl, INDICES, double exerr,
                                   double x, double y)
+{
+}
+
+
+/********************************** Deletion **********************************/
+
+void delete_refl(Reflection *refl)
 {
 }
 
