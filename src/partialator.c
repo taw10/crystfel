@@ -34,6 +34,7 @@
 #include "beam-parameters.h"
 #include "post-refinement.h"
 #include "hrs-scaling.h"
+#include "reflist.h"
 
 
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
@@ -84,9 +85,9 @@ static void refine_image(int mytask, void *tasks)
 	struct image *image = pargs->image;
 	double nominal_photon_energy = pargs->image->beam->photon_energy;
 	struct hdfile *hdfile;
-	struct cpeak *spots;
-	int n, i;
+	int i;
 	double dev, last_dev;
+	RefList *reflections;
 
 	hdfile = hdfile_open(image->filename);
 	if ( hdfile == NULL ) {
@@ -110,16 +111,17 @@ static void refine_image(int mytask, void *tasks)
 	       a/1.0e-9, b/1.0e-9, c/1.0e-9,
 	       rad2deg(al), rad2deg(be), rad2deg(ga));
 
-	spots = find_intersections(image, image->indexed_cell, &n, 0);
+	/* FIXME: Don't do this each time */
+	reflections = find_intersections(image, image->indexed_cell, 0);
 	dev = +INFINITY;
 	i = 0;
 	do {
 		last_dev = dev;
-		dev = pr_iterate(image, pargs->i_full, pargs->sym, &spots, &n);
+		dev = pr_iterate(image, pargs->i_full, pargs->sym, reflections);
 		STATUS("Iteration %2i: mean dev = %5.2f\n", i, dev);
 		i++;
 	} while ( (fabs(last_dev - dev) > 1.0) && (i < MAX_CYCLES) );
-	mean_partial_dev(image, spots, n, pargs->sym,
+	mean_partial_dev(image, reflections, pargs->sym,
 	                 pargs->i_full, pargs->graph);
 	if ( pargs->pgraph ) {
 		fprintf(pargs->pgraph, "%5i %5.2f\n", mytask, dev);
@@ -128,7 +130,7 @@ static void refine_image(int mytask, void *tasks)
 	free(image->data);
 	if ( image->flags != NULL ) free(image->flags);
 	hdfile_close(hdfile);
-	free(spots);
+	reflist_free(reflections);
 
 	/* Muppet proofing */
 	image->data = NULL;
@@ -163,22 +165,23 @@ static void refine_all(struct image *images, int n_total_patterns,
 }
 
 
-static void uniquify(struct cpeak *spot, const char *sym)
+static void uniquify(Reflection *refl, const char *sym)
 {
+	signed int h, k, l;
 	signed int ha, ka, la;
 
-	get_asymm(spot->h, spot->k, spot->l, &ha, &ka, &la, sym);
-	spot->h = ha;
-	spot->k = ka;
-	spot->l = la;
+	get_indices(refl, &h, &k, &l);
+	get_asymm(h, k, l, &ha, &ka, &la, sym);
+	set_indices(refl, h, k, l);
 }
 
 
+/* FIXME: Get rid of this */
 static void integrate_image(struct image *image, ReflItemList *obs,
                             const char *sym)
 {
-	struct cpeak *spots;
-	int j, n;
+	RefList *reflections;
+	Reflection *refl;
 	struct hdfile *hdfile;
 	double nominal_photon_energy = image->beam->photon_energy;
 
@@ -199,42 +202,39 @@ static void integrate_image(struct image *image, ReflItemList *obs,
 	}
 
 	/* Figure out which spots should appear in this pattern */
-	spots = find_intersections(image, image->indexed_cell, &n, 0);
+	reflections = find_intersections(image, image->indexed_cell, 0);
 
 	/* For each reflection, estimate the partiality */
-	for ( j=0; j<n; j++ ) {
+	for ( refl = first_refl(reflections);
+	      refl != NULL;
+	      refl = next_refl(refl) ) {
 
 		signed int h, k, l;
 		float i_partial;
 		float xc, yc;
+		double x, y;
 
-		uniquify(&spots[j], sym);
-
-		h = spots[j].h;
-		k = spots[j].k;
-		l = spots[j].l;
+		uniquify(refl, sym);
+		get_indices(refl, &h, &k, &l);
 
 		/* Don't attempt to use spots with very small
 		 * partialities, since it won't be accurate. */
-		if ( spots[j].p < 0.1 ) continue;
+		if ( get_partiality(refl) < 0.1 ) continue;
 
-		/* Actual measurement of this reflection from this
-		 * pattern? */
-		/* FIXME: Coordinates aren't whole numbers */
-		if ( integrate_peak(image, spots[j].x, spots[j].y,
+		/* Actual measurement of this reflection from this pattern? */
+		get_detector_pos(refl, &x, &y);
+		if ( integrate_peak(image, x, y,
 		                    &xc, &yc, &i_partial, NULL, NULL, 1, 0) ) {
-			spots[j].valid = 0;
+			delete_refl(refl);
 			continue;
 		}
 
-		spots[j].intensity = i_partial;
-		spots[j].valid = 1;
+		set_int(refl, i_partial);
 
 		if ( !find_item(obs, h, k, l) ) add_item(obs, h, k, l);
 
 	}
-	image->cpeaks = spots;
-	image->n_cpeaks = n;
+	image->reflections = reflections;
 
 	free(image->data);
 	if ( image->flags != NULL ) free(image->flags);
@@ -253,21 +253,20 @@ static void select_scalable_reflections(struct image *images, int n)
 
 	for ( m=0; m<n; m++ ) {
 
-		int j;
+		Reflection *refl;
 
-		for ( j=0; j<images[m].n_cpeaks; j++ ) {
+		for ( refl = first_refl(images[m].reflections);
+		      refl != NULL;
+		      refl = next_refl(refl) ) {
 
 			int scalable = 1;
+			double v;
 
-			if ( images[m].cpeaks[j].p < 0.1 ) scalable = 0;
-			if ( !images[m].cpeaks[j].valid ) {
-				scalable = 0;
-			} else {
-				double v = fabs(images[m].cpeaks[j].intensity);
-				if ( v < 0.1 ) scalable = 0;
-			}
+			if ( get_partiality(refl) < 0.1 ) scalable = 0;
+			v = fabs(get_intensity(refl));
+			if ( v < 0.1 ) scalable = 0;
 
-			images[m].cpeaks[j].scalable = scalable;
+			set_scalable(refl, scalable);
 
 		}
 
@@ -525,7 +524,7 @@ int main(int argc, char *argv[])
 
 	/* Clean up */
 	for ( i=0; i<n_total_patterns; i++ ) {
-		free(images[i].cpeaks);
+		reflist_free(images[i].reflections);
 	}
 	free(I_full);
 	delete_items(obs);

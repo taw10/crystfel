@@ -22,6 +22,7 @@
 #include "image.h"
 #include "peaks.h"
 #include "beam-parameters.h"
+#include "reflist.h"
 
 
 #define MAX_CPEAKS (256 * 256)
@@ -117,7 +118,7 @@ static double partiality(double r1, double r2, double r)
 
 
 static int check_reflection(struct image *image, double mres, int output,
-                            struct cpeak *cpeaks, int np,
+                            RefList *reflections,
                             signed int h, signed int k, signed int l,
                             double asx, double asy, double asz,
                             double bsx, double bsy, double bsz,
@@ -136,6 +137,7 @@ static int check_reflection(struct image *image, double mres, int output,
 	double divergence = image->div;
 	double lambda = image->lambda;
 	double klow, kcen, khigh;    /* Wavenumber */
+	Reflection *refl;
 
 	/* "low" gives the largest Ewald sphere,
 	 * "high" gives the smallest Ewald sphere. */
@@ -207,17 +209,9 @@ static int check_reflection(struct image *image, double mres, int output,
 	if ( p == -1 ) return 0;
 
 	/* Add peak to list */
-	cpeaks[np].h = h;
-	cpeaks[np].k = k;
-	cpeaks[np].l = l;
-	cpeaks[np].x = xda;
-	cpeaks[np].y = yda;
-	cpeaks[np].r1 = rlow;
-	cpeaks[np].r2 = rhigh;
-	cpeaks[np].p = part;
-	cpeaks[np].clamp1 = clamp_low;
-	cpeaks[np].clamp2 = clamp_high;
-	np++;
+	refl = add_refl(reflections, h, k, l);
+	set_detector_pos(refl, 0.0, xda, yda);
+	set_partial(refl, rlow, rhigh, part, clamp_low, clamp_high);
 
 	if ( output ) {
 		printf("%3i %3i %3i %6f (at %5.2f,%5.2f) %5.2f\n",
@@ -228,23 +222,18 @@ static int check_reflection(struct image *image, double mres, int output,
 }
 
 
-struct cpeak *find_intersections(struct image *image, UnitCell *cell,
-                                 int *n, int output)
+RefList *find_intersections(struct image *image, UnitCell *cell,
+                            int output)
 {
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
-	struct cpeak *cpeaks;
-	int np = 0;
+	RefList *reflections;
 	int hmax, kmax, lmax;
 	double mres;
 	signed int h, k, l;
 
-	cpeaks = malloc(sizeof(struct cpeak)*MAX_CPEAKS);
-	if ( cpeaks == NULL ) {
-		*n = 0;
-		return NULL;
-	}
+	reflections = reflist_new();
 
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
@@ -260,29 +249,30 @@ struct cpeak *find_intersections(struct image *image, UnitCell *cell,
 	for ( l=-lmax; l<lmax; l++ ) {
 		/* Ignore central beam */
 		if ( (h==0) && (k==0) && (l==0) ) continue;
-		np += check_reflection(image, mres, output, cpeaks, np, h, k, l,
-		                       asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
-		if ( np == MAX_CPEAKS ) goto out;
+		check_reflection(image, mres, output, reflections, h, k, l,
+		                 asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
 	}
 	}
 	}
 
-out:
-	*n = np;
-	return cpeaks;
+	return reflections;
 }
 
 
-double integrate_all(struct image *image, struct cpeak *cpeaks, int n)
+double integrate_all(struct image *image, RefList *reflections)
 {
 	double itot = 0.0;
-	int i;
+	Reflection *refl;
 
-	for ( i=0; i<n; i++ ) {
+	for ( refl = first_refl(reflections);
+	      refl != NULL;
+	      refl = next_refl(refl) ) {
 
 		float x, y, intensity;
+		double xp, yp;
+		get_detector_pos(refl, &xp, &yp);
 
-		if ( integrate_peak(image, cpeaks[i].x, cpeaks[i].y, &x, &y,
+		if ( integrate_peak(image, xp, yp, &x, &y,
                                     &intensity, NULL, NULL, 0, 0) ) continue;
 
 		itot += intensity;

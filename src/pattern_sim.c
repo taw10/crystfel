@@ -567,7 +567,7 @@ int main(int argc, char *argv[])
 			find_projected_peaks(&image, cell, 0, 0.1);
 			output_intensities(&image, cell, NULL, 0, 0, stdout,
 			                   0, 0.1);
-			free(image.cpeaks);
+			reflist_free(image.reflections);
 		}
 
 		if ( powder_fn != NULL ) {

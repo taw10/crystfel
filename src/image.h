@@ -24,6 +24,7 @@
 #include "utils.h"
 #include "cell.h"
 #include "detector.h"
+#include "reflist.h"
 
 
 #define MAX_CELL_CANDIDATES (32)
@@ -52,35 +53,6 @@ struct imagefeature {
 typedef struct _imagefeaturelist ImageFeatureList;
 
 
-/* This structure represents a predicted peak in an image */
-struct cpeak
-{
-	/* Indices */
-	signed int h;
-	signed int k;
-	signed int l;
-
-	double min_distance;
-	int valid;
-
-	/* Partiality */
-	double r1;  /* First excitation error */
-	double r2;  /* Second excitation error */
-	double p;   /* Partiality */
-	int clamp1; /* Clamp status for r1 */
-	int clamp2; /* Clamp status for r2 */
-
-	/* Location in image */
-	int x;
-	int y;
-
-	int scalable;
-
-	/* Intensity */
-	double intensity;
-};
-
-
 /* Structure describing an image */
 struct image {
 
@@ -93,8 +65,7 @@ struct image {
 	struct detector         *det;
 	struct beam_params      *beam;  /* The nominal beam parameters */
 	char                    *filename;
-	struct cpeak            *cpeaks;
-	int                     n_cpeaks;
+	RefList                 *reflections;
 
 	int                     id;   /* ID number of the thread
 	                               * handling this image */

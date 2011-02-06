@@ -21,6 +21,7 @@
 #include <stdio.h>
 
 #include "image.h"
+#include "reflist.h"
 
 
 /* Refineable parameters */
@@ -44,12 +45,12 @@ enum {
 void apply_shift(struct image *image, int k, double shift);
 
 
-double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
+double mean_partial_dev(struct image *image, RefList *reflections,
                         const char *sym, double *i_full, FILE *graph);
 
 
 double pr_iterate(struct image *image, double *i_full, const char *sym,
-                  struct cpeak **pspots, int *n);
+                  RefList *reflections);
 
 
 #endif	/* POST_REFINEMENT_H */

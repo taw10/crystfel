@@ -23,7 +23,7 @@ src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c src/utils.c \
                           src/image.c src/cell.c src/hdf5-file.c \
                           src/detector.c src/sfac.c src/peaks.c \
                           src/reflections.c src/beam-parameters.c \
-                          src/symmetry.c src/thread-pool.c
+                          src/symmetry.c src/thread-pool.c src/reflist.c
 if HAVE_OPENCL
 src_pattern_sim_SOURCES += src/diffraction-gpu.c src/cl-utils.c
 endif
@@ -38,7 +38,8 @@ src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c src/utils.c \
                           src/filters.c src/diffraction.c src/detector.c \
                           src/sfac.c src/dirax.c src/mosflm.c \
                           src/reflections.c src/templates.c src/symmetry.c \
-                          src/geometry.c src/thread-pool.c src/beam-parameters.c
+                          src/geometry.c src/thread-pool.c \
+                          src/beam-parameters.c src/reflist.c
 if HAVE_OPENCL
 src_indexamajig_SOURCES += src/diffraction-gpu.c src/cl-utils.c
 endif
@@ -73,14 +74,14 @@ src_render_hkl_SOURCES = src/render_hkl.c src/cell.c src/reflections.c \
 src_calibrate_detector_SOURCES = src/calibrate_detector.c src/utils.c \
                                  src/hdf5-file.c src/image.c src/filters.c \
                                  src/peaks.c src/detector.c src/cell.c \
-                                 src/thread-pool.c
+                                 src/thread-pool.c src/reflist.c
 
 src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
                           src/utils.c src/detector.c src/peaks.c src/image.c \
                           src/geometry.c src/reflections.c src/stream.c \
                           src/thread-pool.c src/beam-parameters.c \
                           src/symmetry.c src/post-refinement.c \
-                          src/hrs-scaling.c
+                          src/hrs-scaling.c src/reflist.c
 
 if HAVE_CAIRO
 src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \

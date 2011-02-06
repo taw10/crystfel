@@ -65,7 +65,7 @@ static double partiality_rgradient(double r, double profile_radius)
 
 
 /* Return the gradient of parameter 'k' given the current status of 'image'. */
-double gradient(struct image *image, int k, struct cpeak spot, double r)
+double gradient(struct image *image, int k, Reflection *refl, double r)
 {
 	double ds, tt, azi;
 	double nom, den;
@@ -74,24 +74,32 @@ double gradient(struct image *image, int k, struct cpeak spot, double r)
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	double xl, yl, zl;
+	signed int hi, ki, li;
+	double r1, r2, p;
+	int clamp_low, clamp_high;
+
+	get_indices(refl, &hi, &ki, &li);
 
 	cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
 	                                         &bsx, &bsy, &bsz,
 	                                         &csx, &csy, &csz);
-	xl = spot.h*asx + spot.k*bsx + spot.l*csx;
-	yl = spot.h*asy + spot.k*bsy + spot.l*csy;
-	zl = spot.h*asz + spot.k*bsz + spot.l*csz;
+	xl = hi*asx + ki*bsx + li*csx;
+	yl = hi*asy + ki*bsy + li*csy;
+	zl = hi*asz + ki*bsz + li*csz;
 
-	ds = 2.0 * resolution(image->indexed_cell, spot.h, spot.k, spot.l);
+
+	ds = 2.0 * resolution(image->indexed_cell, hi, ki, li);
 	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+k);
 	azi = angle_between(1.0, 0.0, 0.0, xl, yl, 0.0);
 
+	get_partial(refl, &r1, &r2, &p, &clamp_low, &clamp_high);
+
 	/* Calculate the gradient of partiality wrt excitation error. */
-	if ( spot.clamp1 == 0 ) {
-		g += partiality_gradient(spot.r1, r);
+	if ( clamp_low == 0 ) {
+		g += partiality_gradient(r1, r);
 	}
-	if ( spot.clamp2 == 0 ) {
-		g += partiality_gradient(spot.r2, r);
+	if ( clamp_high == 0 ) {
+		g += partiality_gradient(r2, r);
 	}
 
 	/* For many gradients, just multiply the above number by the gradient
@@ -99,7 +107,7 @@ double gradient(struct image *image, int k, struct cpeak spot, double r)
 	switch ( k ) {
 
 	case REF_SCALE :
-		return -spot.p*pow(image->osf, -2.0);
+		return -p*pow(image->osf, -2.0);
 
 	case REF_DIV :
 		nom = sqrt(2.0) * ds * sin(image->div/2.0);
@@ -107,33 +115,33 @@ double gradient(struct image *image, int k, struct cpeak spot, double r)
 		return (nom/den) * g;
 
 	case REF_R :
-		if ( spot.clamp1 == 0 ) {
-			g += partiality_rgradient(spot.r1, r);
+		if ( clamp_low == 0 ) {
+			g += partiality_rgradient(r1, r);
 		}
-		if ( spot.clamp2 == 0 ) {
-			g += partiality_rgradient(spot.r2, r);
+		if ( clamp_high == 0 ) {
+			g += partiality_rgradient(r2, r);
 		}
 		return g;
 
 	/* Cell parameters and orientation */
 	case REF_ASX :
-		return spot.h * pow(sin(tt), -1.0) * cos(azi) * g;
+		return hi * pow(sin(tt), -1.0) * cos(azi) * g;
 	case REF_BSX :
-		return spot.k * pow(sin(tt), -1.0) * cos(azi) * g;
+		return ki * pow(sin(tt), -1.0) * cos(azi) * g;
 	case REF_CSX :
-		return spot.l * pow(sin(tt), -1.0) * cos(azi) * g;
+		return li * pow(sin(tt), -1.0) * cos(azi) * g;
 	case REF_ASY :
-		return spot.h * pow(sin(tt), -1.0) * sin(azi) * g;
+		return hi * pow(sin(tt), -1.0) * sin(azi) * g;
 	case REF_BSY :
-		return spot.k * pow(sin(tt), -1.0) * sin(azi) * g;
+		return ki * pow(sin(tt), -1.0) * sin(azi) * g;
 	case REF_CSY :
-		return spot.l * pow(sin(tt), -1.0) * sin(azi) * g;
+		return li * pow(sin(tt), -1.0) * sin(azi) * g;
 	case REF_ASZ :
-		return spot.h * pow(cos(tt), -1.0) * g;
+		return hi * pow(cos(tt), -1.0) * g;
 	case REF_BSZ :
-		return spot.k * pow(cos(tt), -1.0) * g;
+		return ki * pow(cos(tt), -1.0) * g;
 	case REF_CSZ :
-		return spot.l * pow(cos(tt), -1.0) * g;
+		return li * pow(cos(tt), -1.0) * g;
 
 	}
 
@@ -218,31 +226,34 @@ void apply_shift(struct image *image, int k, double shift)
 }
 
 
-double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
+double mean_partial_dev(struct image *image, RefList *reflections,
                         const char *sym, double *i_full, FILE *graph)
 {
-	int h, n_used;
+	int n_used;
 	double delta_I = 0.0;
+	Reflection *refl;
 
 	n_used = 0;
-	for ( h=0; h<n; h++ ) {
+	for ( refl = first_refl(reflections);
+	      refl != NULL;
+	      refl = next_refl(refl) ) {
 
 		signed int hind, kind, lind;
 		signed int ha, ka, la;
 		double I_full;
 		float I_partial;
 		float xc, yc;
+		double x, y;
+		double p;
 
-		hind = spots[h].h;
-		kind = spots[h].k;
-		lind = spots[h].l;
+		get_indices(refl, &hind, &kind, &lind);
 
-		if ( !spots[h].scalable ) continue;
+		if ( !get_scalable(refl) ) continue;
 
-		/* Actual measurement of this reflection from this
-		 * pattern? */
-		/* FIXME: Coordinates aren't whole numbers */
-		if ( integrate_peak(image, spots[h].x, spots[h].y,
+		/* Actual measurement of this reflection from this pattern? */
+		get_detector_pos(refl, &x, &y);
+		/* FIXME: Get rid of this */
+		if ( integrate_peak(image, x, y,
 		                    &xc, &yc, &I_partial, NULL, NULL,
 		                    1, 0) ) {
 			continue;
@@ -250,14 +261,15 @@ double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
 
 		get_asymm(hind, kind, lind, &ha, &ka, &la, sym);
 		I_full = lookup_intensity(i_full, ha, ka, la);
-		delta_I += fabs(I_partial - (spots[h].p * I_full / image->osf));
+		p = get_partiality(refl);
+		delta_I += fabs(I_partial - (p * I_full / image->osf));
 		n_used++;
 
 		if ( graph != NULL ) {
 			fprintf(graph, "%3i %3i %3i %5.2f (at %5.2f,%5.2f)"
 			               " %5.2f %5.2f\n",
-			       hind, kind, lind, I_partial/spots[h].p, xc, yc,
-			       spots[h].p, I_partial / I_full);
+			       hind, kind, lind, I_partial/p, xc, yc,
+			       p, I_partial / I_full);
 		}
 
 	}
@@ -268,19 +280,21 @@ double mean_partial_dev(struct image *image, struct cpeak *spots, int n,
 
 /* Perform one cycle of post refinement on 'image' against 'i_full' */
 double pr_iterate(struct image *image, double *i_full, const char *sym,
-                  struct cpeak **pspots, int *n)
+                  RefList *reflections)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
 	gsl_vector *shifts;
-	int h, param;
-	struct cpeak *spots = *pspots;
+	int param;
+	Reflection *refl;
 
 	M = gsl_matrix_calloc(NUM_PARAMS, NUM_PARAMS);
 	v = gsl_vector_calloc(NUM_PARAMS);
 
 	/* Construct the equations, one per reflection in this image */
-	for ( h=0; h<*n; h++ ) {
+	for ( refl = first_refl(reflections);
+	      refl != NULL;
+	      refl = next_refl(refl) ) {
 
 		signed int hind, kind, lind;
 		signed int ha, ka, la;
@@ -288,17 +302,17 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 		float I_partial;
 		float xc, yc;
 		int k;
+		double x, y;
+		double p;
 
-		hind = spots[h].h;
-		kind = spots[h].k;
-		lind = spots[h].l;
+		get_indices(refl, &hind, &kind, &lind);
 
-		if ( !spots[h].scalable ) continue;
+		if ( !get_scalable(refl) ) continue;
 
-		/* Actual measurement of this reflection from this
-		 * pattern? */
-		/* FIXME: Coordinates aren't whole numbers */
-		if ( integrate_peak(image, spots[h].x, spots[h].y,
+		/* Actual measurement of this reflection from this pattern? */
+		get_detector_pos(refl, &x, &y);
+		/* FIXME: Get rid of this */
+		if ( integrate_peak(image, x, y,
 		                    &xc, &yc, &I_partial, NULL, NULL,
 		                    1, 0) ) {
 			continue;
@@ -306,7 +320,8 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 
 		get_asymm(hind, kind, lind, &ha, &ka, &la, sym);
 		I_full = lookup_intensity(i_full, ha, ka, la);
-		delta_I = I_partial - (spots[h].p * I_full / image->osf);
+		p = get_partiality(refl);
+		delta_I = I_partial - (p * I_full / image->osf);
 
 		for ( k=0; k<NUM_PARAMS; k++ ) {
 
@@ -319,9 +334,9 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 
 				M_curr = gsl_matrix_get(M, g, k);
 
-				M_c = gradient(image, g, spots[h],
+				M_c = gradient(image, g, refl,
 				               image->profile_radius)
-				    * gradient(image, k, spots[h],
+				    * gradient(image, k, refl,
 				               image->profile_radius);
 				M_c *= pow(I_full, 2.0);
 
@@ -329,8 +344,7 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 
 			}
 
-			gr = gradient(image, k, spots[h],
-			              image->profile_radius);
+			gr = gradient(image, k, refl, image->profile_radius);
 			v_c = delta_I * I_full * gr;
 			gsl_vector_set(v, k, v_c);
 
@@ -350,8 +364,5 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 	gsl_vector_free(v);
 	gsl_vector_free(shifts);
 
-	free(spots);
-	spots = find_intersections(image, image->indexed_cell, n, 0);
-	*pspots = spots;
-	return mean_partial_dev(image, spots, *n, sym, i_full, NULL);
+	return mean_partial_dev(image, reflections, sym, i_full, NULL);
 }

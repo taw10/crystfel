@@ -17,10 +17,12 @@
 #include <config.h>
 #endif
 
-extern struct cpeak *find_intersections(struct image *image, UnitCell *cell,
-                                        int *n, int output);
+#include "reflist.h"
 
-extern double integrate_all(struct image *image, struct cpeak *cpeaks, int n);
+extern RefList *find_intersections(struct image *image, UnitCell *cell,
+                                   int output);
+
+extern double integrate_all(struct image *image, RefList *reflections);
 
 
 #endif	/* GEOMETRY_H */

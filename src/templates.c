@@ -21,6 +21,7 @@
 #include "geometry.h"
 #include "hdf5-file.h"
 #include "peaks.h"
+#include "reflist.h"
 
 #include <assert.h>
 
@@ -42,8 +43,7 @@ struct _indexingprivate_template
 struct template {
 	double omega;
 	double phi;
-	int n;
-	struct cpeak *spots;
+	RefList *spots;
 };
 
 
@@ -164,24 +164,22 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 	for ( omega = 0.0; omega < omega_max-omega_step; omega += omega_step ) {
 	for ( phi = 0.0; phi < phi_max-phi_step; phi += phi_step ) {
 
-		int n;
-		struct cpeak *cpeaks;
+		RefList *reflections;
 		UnitCell *cell_rot;
 
 		assert(i < n_templates);
 
 		cell_rot = rotate_cell(cell, omega, phi, 0.0);
 
-		cpeaks = find_intersections(&image, cell_rot, &n, 0);
-		if ( cpeaks == NULL ) {
+		reflections = find_intersections(&image, cell_rot, 0);
+		if ( reflections == NULL ) {
 			ERROR("Template calculation failed.\n");
 			return NULL;
 		}
 
 		priv->templates[i].omega = omega;
 		priv->templates[i].phi = phi;
-		priv->templates[i].n = n;
-		priv->templates[i].spots = cpeaks;
+		priv->templates[i].spots = reflections;
 		i++;
 
 		free(cell_rot);
@@ -227,23 +225,28 @@ static int fast_integrate_peak(struct image *image, int xp, int yp)
 }
 
 
-static double integrate_all_rot(struct image *image, struct cpeak *cpeaks,
-                                int n, double rot)
+static double integrate_all_rot(struct image *image, RefList *reflections,
+                                double rot)
 {
 	double itot = 0.0;
-	int i;
 	double cosr, sinr;
 	int num_int = 0;
+	Reflection *refl;
 
 	cosr = cos(rot);
 	sinr = sin(rot);
 
-	for ( i=0; i<n; i++ ) {
+	for ( refl = first_refl(reflections);
+	      refl != NULL;
+	      refl = next_refl(refl) ) {
 
 		float xp, yp;
+		double x, y;
 
-		xp =  cosr*cpeaks[i].x + sinr*cpeaks[i].y;
-		yp = -sinr*cpeaks[i].x + cosr*cpeaks[i].y;
+		get_detector_pos(refl, &x, &y);
+
+		xp =  cosr*x + sinr*y;
+		yp = -sinr*x + cosr*y;
 
 		itot += fast_integrate_peak(image, rint(xp), rint(yp));
 		num_int++;
@@ -256,26 +259,31 @@ static double integrate_all_rot(struct image *image, struct cpeak *cpeaks,
 
 /* Return the mean of the distances between peaks in the image and peaks from
  * the given template. */
-static double mean_distance(struct image *image, struct cpeak *cpeaks,
-                            int n, double rot)
+static double mean_distance(struct image *image, RefList *reflections,
+                            double rot)
 {
 	double dtot = 0.0;
-	int i;
 	double cosr, sinr;
 	int num_dist = 0;
+	Reflection *refl;
 
 	cosr = cos(rot);
 	sinr = sin(rot);
 
 	/* For each template peak */
-	for ( i=0; i<n; i++ ) {
+	for ( refl = first_refl(reflections);
+	      refl != NULL;
+	      refl = next_refl(refl) ) {
 
 		float xp, yp;
 		int j;
 		double min_dsq;
+		double x, y;
 
-		xp =  cosr*cpeaks[i].x + sinr*cpeaks[i].y;
-		yp = -sinr*cpeaks[i].x + cosr*cpeaks[i].y;
+		get_detector_pos(refl, &x, &y);
+
+		xp =  cosr*x + sinr*y;
+		yp = -sinr*x + cosr*y;
 
 		/* Compare to every real peak */
 		min_dsq = +INFINITY;
@@ -328,11 +336,11 @@ void match_templates(struct image *image, IndexingPrivate *ipriv)
 
 		if ( !peaks ) {
 			val = integrate_all_rot(image, priv->templates[i].spots,
-			                        priv->templates[i].n, rot);
+			                        rot);
 			best = val > max;
 		} else {
 			val = mean_distance(image, priv->templates[i].spots,
-			                    priv->templates[i].n, rot);
+			                    rot);
 			best = val < max;
 		}
 
