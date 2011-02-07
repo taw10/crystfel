@@ -53,9 +53,6 @@ extern void set_scalable(Reflection *refl, int scalable);
 
 /* Insertion */
 extern Reflection *add_refl(RefList *list, INDICES);
-extern Reflection *add_refl_with_det_pos(RefList *list, INDICES, double exerr,
-                                        double x, double y);
-
 
 /* Deletion */
 extern void delete_refl(Reflection *refl);

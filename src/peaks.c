@@ -538,7 +538,9 @@ int find_projected_peaks(struct image *image, UnitCell *cell,
 				set_detector_pos(refl, dist, x, y);
 			}
 		} else {
-			add_refl_with_det_pos(reflections, h, k, l, x, y, dist);
+			Reflection *new;
+			new = add_refl(reflections, h, k, l);
+			set_detector_pos(new, dist, x, y);
 			n_reflections++;
 		}
 
