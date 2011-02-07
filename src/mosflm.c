@@ -522,6 +522,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	write_spt(image, mosflm->sptfile);
 
 	snprintf(mosflm->newmatfile, 127, "xfel-%i.newmat", image->id);
+	remove(mosflm->newmatfile);
 
 	mosflm->pid = forkpty(&mosflm->pty, NULL, NULL, NULL);
 	if ( mosflm->pid == -1 ) {
