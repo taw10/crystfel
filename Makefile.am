@@ -7,6 +7,10 @@ bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
                src/calibrate_detector src/partialator src/reintegrate \
                src/estimate_background src/check_hkl
 
+noinst_PROGRAMS = tests/list_check
+
+TESTS = tests/list_check
+
 if HAVE_GTK
 bin_PROGRAMS += src/hdfsee
 endif
@@ -97,6 +101,8 @@ src_reintegrate_SOURCES = src/reintegrate.c src/cell.c src/hdf5-file.c \
 
 src_estimate_background_SOURCES = src/estimate_background.c src/stream.c \
                                   src/utils.c src/cell.c src/thread-pool.c
+
+tests_list_check_SOURCES = tests/list_check.c src/reflist.c
 
 INCLUDES = "-I$(top_srcdir)/data"
 

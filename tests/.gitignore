@@ -1,0 +1,4 @@
+*.o
+.deps
+list_check
+.dirstamp
