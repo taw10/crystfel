@@ -273,10 +273,8 @@ static double pr_iterate(struct image *image, const double *i_full,
 		signed int hind, kind, lind;
 		signed int ha, ka, la;
 		double I_full, delta_I;
-		float I_partial;
-		float xc, yc;
+		double I_partial;
 		int k;
-		double x, y;
 		double p;
 
 		get_indices(refl, &hind, &kind, &lind);
@@ -284,13 +282,7 @@ static double pr_iterate(struct image *image, const double *i_full,
 		if ( !get_scalable(refl) ) continue;
 
 		/* Actual measurement of this reflection from this pattern? */
-		get_detector_pos(refl, &x, &y);
-		/* FIXME: Get rid of this */
-		if ( integrate_peak(image, x, y,
-		                    &xc, &yc, &I_partial, NULL, NULL,
-		                    1, 0) ) {
-			continue;
-		}
+		I_partial = get_intensity(refl);
 
 		get_asymm(hind, kind, lind, &ha, &ka, &la, sym);
 		I_full = lookup_intensity(i_full, ha, ka, la);
