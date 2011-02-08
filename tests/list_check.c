@@ -86,7 +86,7 @@ static int test_lists(int num_items)
 		check[i].dup = duplicate;
 		check[i].found = 0;
 
-		if ( (h==-178) && (k==-45) && (l==55)) {
+		if ( (h==-45) && (k==55) && (l==73)) {
 			printf("added, now %i %i\n", check[i].dup, i);
 		}
 
@@ -154,9 +154,6 @@ static int test_lists(int num_items)
 
 			delete_refl(refl);
 			check[i].del = 1;
-			if ( (h==-119) && (k==20) && (l==-69)) {
-				printf("deleting, now %i\n", check[j].dup);
-			}
 
 			/* Update all counts */
 			for ( j=0; j<num_items; j++ ) {

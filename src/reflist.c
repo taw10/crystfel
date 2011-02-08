@@ -319,7 +319,6 @@ Reflection *add_refl(RefList *list, INDICES)
 void delete_refl(Reflection *refl)
 {
 	int i;
-	Reflection **parent_pos = NULL;
 
 	/* Is this a duplicate, and not the first one? */
 	if ( refl->prev != NULL ) {
@@ -334,11 +333,15 @@ void delete_refl(Reflection *refl)
 		refl->next->parent = refl->parent;
 		refl->next->child[0] = refl->child[0];
 		refl->next->child[1] = refl->child[1];
+		assert(refl->next->prev == refl);
 		refl->next->prev = NULL;
 
 		for ( i=0; i<2; i++ ) {
 			if ( refl->parent->child[i] == refl ) {
 				refl->parent->child[i] = refl->next;
+			}
+			if ( refl->child[i] != NULL ) {
+				refl->child[i]->parent = refl->next;
 			}
 		}
 
@@ -348,51 +351,50 @@ void delete_refl(Reflection *refl)
 
 	}
 
-	/* Remove parent's reference */
-	for ( i=0; i<2; i++ ) {
-		if ( refl->parent->child[i] == refl ) {
-			parent_pos = &refl->parent->child[i];
-			*parent_pos = NULL;
-		}
-	}
-	assert(parent_pos != NULL);
-
 	/* Two child nodes? */
 	if ( (refl->child[0] != NULL) && (refl->child[1] != NULL ) ) {
 
-		if ( random() > RAND_MAX/2 ) {
+		//if ( random() > RAND_MAX/2 ) {
 
-			Reflection *pre;
-			pre = refl->child[0];
+			Reflection *pre = refl->child[0];
 			while ( pre->child[1] != NULL ) pre = pre->child[1];
 
 			refl->data = pre->data;
 			refl->serial = pre->serial;
+			if ( refl->next != NULL ) refl->next->prev = refl;
 			delete_refl(pre);
 
-		} else {
+		//} else {
 
-			Reflection *pre;
-			pre = refl->child[1];
-			while ( pre->child[0] != NULL ) pre = pre->child[0];
+		//	Reflection *pre = refl->child[1];
+		//	while ( pre->child[0] != NULL ) pre = pre->child[0];
 
-			refl->data = pre->data;
-			refl->serial = pre->serial;
-			delete_refl(pre);
+		//	refl->data = pre->data;
+		//	refl->serial = pre->serial;
+		//	if ( refl->next != NULL ) refl->next->prev = refl;
+		//	delete_refl(pre);
 
-		}
+		//}
 
 	} else if ( refl->child[0] != NULL ) {
 
 		/* One child, left */
-		*parent_pos = refl->child[0];
+		for ( i=0; i<2; i++ ) {
+			if ( refl->parent->child[i] == refl ) {
+				refl->parent->child[i] = refl->child[0];
+			}
+		}
 		refl->child[0]->parent = refl->parent;
 		free(refl);
 
 	} else if (refl->child[1] != NULL ) {
 
 		/* One child, right */
-		*parent_pos = refl->child[1];
+		for ( i=0; i<2; i++ ) {
+			if ( refl->parent->child[i] == refl ) {
+				refl->parent->child[i] = refl->child[1];
+			}
+		}
 		refl->child[1]->parent = refl->parent;
 		free(refl);
 
