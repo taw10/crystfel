@@ -19,7 +19,6 @@
 struct _reflection {
 
 	/* Listy stuff */
-	RefList *list;
 	unsigned int serial;          /* Unique serial number, key */
 	struct _reflection *child[2]; /* Child nodes */
 	struct _reflection *parent;   /* Parent node */
@@ -221,32 +220,6 @@ void set_partial(Reflection *refl, double r1, double r2, double p,
 	refl->p = p;
 	refl->clamp1 = clamp_low;
 	refl->clamp2 = clamp_high;
-}
-
-
-void set_indices(Reflection *refl, signed int h, signed int k, signed int l)
-{
-	/* Tricky, because the indices determine the position in the tree */
-	Reflection copy;
-	Reflection *new;
-	Reflection transfer;
-
-	/* Copy all data */
-	copy = *refl;
-
-	/* Delete and re-add with new indices */
-	delete_refl(refl);
-	new = add_refl(copy.list, h, k, l);
-
-	/* Transfer data back */
-	transfer = *new;
-	*new = copy;
-	new->list = transfer.list;
-	new->parent = transfer.parent;
-	new->child[0] = transfer.child[0];
-	new->child[1] = transfer.child[1];
-	new->h = transfer.h;  new->k = transfer.k;  new->l = transfer.l;
-	new->serial = transfer.serial;
 }
 
 

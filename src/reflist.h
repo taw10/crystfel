@@ -46,8 +46,6 @@ extern void set_detector_pos(Reflection *refl, double exerr,
                              double x, double y);
 extern void set_partial(Reflection *refl, double r1, double r2, double p,
                         double clamp_low, double clamp_high);
-extern void set_indices(Reflection *refl,
-                        signed int h, signed int k, signed int l);
 extern void set_int(Reflection *refl, double intensity);
 extern void set_scalable(Reflection *refl, int scalable);
 

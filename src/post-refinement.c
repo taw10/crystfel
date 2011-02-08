@@ -28,6 +28,28 @@
 #include "cell.h"
 
 
+/* Maximum number of iterations of NLSq to do for each image per macrocycle. */
+#define MAX_CYCLES (100)
+
+
+/* Refineable parameters */
+enum {
+	REF_SCALE,
+	REF_DIV,
+	REF_R,
+	REF_ASX,
+	REF_BSX,
+	REF_CSX,
+	REF_ASY,
+	REF_BSY,
+	REF_CSY,
+	REF_ASZ,
+	REF_BSZ,
+	REF_CSZ,
+	NUM_PARAMS
+};
+
+
 /* Returns dp/dr at "r" */
 static double partiality_gradient(double r, double profile_radius)
 {
@@ -65,7 +87,7 @@ static double partiality_rgradient(double r, double profile_radius)
 
 
 /* Return the gradient of parameter 'k' given the current status of 'image'. */
-double gradient(struct image *image, int k, Reflection *refl, double r)
+static double gradient(struct image *image, int k, Reflection *refl, double r)
 {
 	double ds, tt, azi;
 	double nom, den;
@@ -187,7 +209,7 @@ static void apply_cell_shift(UnitCell *cell, int k, double shift)
 
 
 /* Apply the given shift to the 'k'th parameter of 'image'. */
-void apply_shift(struct image *image, int k, double shift)
+static void apply_shift(struct image *image, int k, double shift)
 {
 	switch ( k ) {
 
@@ -226,67 +248,19 @@ void apply_shift(struct image *image, int k, double shift)
 }
 
 
-double mean_partial_dev(struct image *image, RefList *reflections,
-                        const char *sym, double *i_full, FILE *graph)
-{
-	int n_used;
-	double delta_I = 0.0;
-	Reflection *refl;
-
-	n_used = 0;
-	for ( refl = first_refl(reflections);
-	      refl != NULL;
-	      refl = next_refl(refl) ) {
-
-		signed int hind, kind, lind;
-		signed int ha, ka, la;
-		double I_full;
-		float I_partial;
-		float xc, yc;
-		double x, y;
-		double p;
-
-		get_indices(refl, &hind, &kind, &lind);
-
-		if ( !get_scalable(refl) ) continue;
-
-		/* Actual measurement of this reflection from this pattern? */
-		get_detector_pos(refl, &x, &y);
-		/* FIXME: Get rid of this */
-		if ( integrate_peak(image, x, y,
-		                    &xc, &yc, &I_partial, NULL, NULL,
-		                    1, 0) ) {
-			continue;
-		}
-
-		get_asymm(hind, kind, lind, &ha, &ka, &la, sym);
-		I_full = lookup_intensity(i_full, ha, ka, la);
-		p = get_partiality(refl);
-		delta_I += fabs(I_partial - (p * I_full / image->osf));
-		n_used++;
-
-		if ( graph != NULL ) {
-			fprintf(graph, "%3i %3i %3i %5.2f (at %5.2f,%5.2f)"
-			               " %5.2f %5.2f\n",
-			       hind, kind, lind, I_partial/p, xc, yc,
-			       p, I_partial / I_full);
-		}
-
-	}
-
-	return delta_I / (double)n_used;
-}
-
-
 /* Perform one cycle of post refinement on 'image' against 'i_full' */
-double pr_iterate(struct image *image, double *i_full, const char *sym,
-                  RefList *reflections)
+static double pr_iterate(struct image *image, const double *i_full,
+                         const char *sym)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
 	gsl_vector *shifts;
 	int param;
 	Reflection *refl;
+	RefList *reflections;
+	double max_shift;
+
+	reflections = image->reflections;
 
 	M = gsl_matrix_calloc(NUM_PARAMS, NUM_PARAMS);
 	v = gsl_vector_calloc(NUM_PARAMS);
@@ -355,14 +329,31 @@ double pr_iterate(struct image *image, double *i_full, const char *sym,
 
 	shifts = gsl_vector_alloc(NUM_PARAMS);
 	gsl_linalg_HH_solve(M, v, shifts);
+
+	max_shift = 0.0;
 	for ( param=0; param<NUM_PARAMS; param++ ) {
 		double shift = gsl_vector_get(shifts, param);
 		apply_shift(image, param, shift);
+		if ( fabs(shift) > max_shift ) max_shift = fabs(shift);
 	}
 
 	gsl_matrix_free(M);
 	gsl_vector_free(v);
 	gsl_vector_free(shifts);
 
-	return mean_partial_dev(image, reflections, sym, i_full, NULL);
+	return max_shift;
+}
+
+
+void pr_refine(struct image *image, const double *i_full, const char *sym)
+{
+	double max_shift;
+	int i;
+
+	i = 0;
+	do {
+		max_shift = pr_iterate(image, i_full, sym);
+		STATUS("Iteration %2i: max shift = %5.2f\n", i, max_shift);
+		i++;
+	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );
 }

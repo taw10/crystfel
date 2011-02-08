@@ -37,10 +37,6 @@
 #include "reflist.h"
 
 
-/* Maximum number of iterations of NLSq to do for each image per macrocycle. */
-#define MAX_CYCLES (100)
-
-
 static void show_help(const char *s)
 {
 	printf("Syntax: %s [options]\n\n", s);
@@ -57,9 +53,6 @@ static void show_help(const char *s)
 "                              initial values for parameters, and nominal\n"
 "                              wavelengths if no per-shot value is found in \n"
 "                              an HDF5 file.\n"
-"  -x, --prefix=<p>           Prefix filenames from input file with <p>.\n"
-"      --basename             Remove the directory parts of the filenames.\n"
-"      --no-check-prefix      Don't attempt to correct the --prefix.\n"
 "  -y, --symmetry=<sym>       Merge according to symmetry <sym>.\n"
 "  -n, --iterations=<n>       Run <n> cycles of scaling and post-refinement.\n"
 "\n"
@@ -83,58 +76,8 @@ static void refine_image(int mytask, void *tasks)
 	struct refine_args *all_args = tasks;
 	struct refine_args *pargs = &all_args[mytask];
 	struct image *image = pargs->image;
-	double nominal_photon_energy = pargs->image->beam->photon_energy;
-	struct hdfile *hdfile;
-	int i;
-	double dev, last_dev;
-	RefList *reflections;
 
-	hdfile = hdfile_open(image->filename);
-	if ( hdfile == NULL ) {
-		ERROR("Couldn't open '%s'\n", image->filename);
-		return;
-	} else if ( hdfile_set_image(hdfile, "/data/data0") ) {
-		ERROR("Couldn't select path\n");
-		hdfile_close(hdfile);
-		return;
-	}
-
-	if ( hdf5_read(hdfile, pargs->image, 0, nominal_photon_energy) ) {
-		ERROR("Couldn't read '%s'\n", image->filename);
-		hdfile_close(hdfile);
-		return;
-	}
-
-	double a, b, c, al, be, ga;
-	cell_get_parameters(image->indexed_cell, &a, &b, &c, &al, &be, &ga);
-	STATUS("Initial cell: %5.2f %5.2f %5.2f nm %5.2f %5.2f %5.2f deg\n",
-	       a/1.0e-9, b/1.0e-9, c/1.0e-9,
-	       rad2deg(al), rad2deg(be), rad2deg(ga));
-
-	/* FIXME: Don't do this each time */
-	reflections = find_intersections(image, image->indexed_cell, 0);
-	dev = +INFINITY;
-	i = 0;
-	do {
-		last_dev = dev;
-		dev = pr_iterate(image, pargs->i_full, pargs->sym, reflections);
-		STATUS("Iteration %2i: mean dev = %5.2f\n", i, dev);
-		i++;
-	} while ( (fabs(last_dev - dev) > 1.0) && (i < MAX_CYCLES) );
-	mean_partial_dev(image, reflections, pargs->sym,
-	                 pargs->i_full, pargs->graph);
-	if ( pargs->pgraph ) {
-		fprintf(pargs->pgraph, "%5i %5.2f\n", mytask, dev);
-	}
-
-	free(image->data);
-	if ( image->flags != NULL ) free(image->flags);
-	hdfile_close(hdfile);
-	reflist_free(reflections);
-
-	/* Muppet proofing */
-	image->data = NULL;
-	image->flags = NULL;
+	pr_refine(image, pargs->i_full, pargs->sym);
 }
 
 
@@ -162,87 +105,6 @@ static void refine_all(struct image *images, int n_total_patterns,
 	                 refine_image, tasks);
 
 	free(tasks);
-}
-
-
-static void uniquify(Reflection *refl, const char *sym)
-{
-	signed int h, k, l;
-	signed int ha, ka, la;
-
-	get_indices(refl, &h, &k, &l);
-	get_asymm(h, k, l, &ha, &ka, &la, sym);
-	set_indices(refl, h, k, l);
-}
-
-
-/* FIXME: Get rid of this */
-static void integrate_image(struct image *image, ReflItemList *obs,
-                            const char *sym)
-{
-	RefList *reflections;
-	Reflection *refl;
-	struct hdfile *hdfile;
-	double nominal_photon_energy = image->beam->photon_energy;
-
-	hdfile = hdfile_open(image->filename);
-	if ( hdfile == NULL ) {
-		ERROR("Couldn't open '%s'\n", image->filename);
-		return;
-	} else if ( hdfile_set_image(hdfile, "/data/data0") ) {
-		ERROR("Couldn't select path\n");
-		hdfile_close(hdfile);
-		return;
-	}
-
-	if ( hdf5_read(hdfile, image, 0, nominal_photon_energy) ) {
-		ERROR("Couldn't read '%s'\n", image->filename);
-		hdfile_close(hdfile);
-		return;
-	}
-
-	/* Figure out which spots should appear in this pattern */
-	reflections = find_intersections(image, image->indexed_cell, 0);
-
-	/* For each reflection, estimate the partiality */
-	for ( refl = first_refl(reflections);
-	      refl != NULL;
-	      refl = next_refl(refl) ) {
-
-		signed int h, k, l;
-		float i_partial;
-		float xc, yc;
-		double x, y;
-
-		uniquify(refl, sym);
-		get_indices(refl, &h, &k, &l);
-
-		/* Don't attempt to use spots with very small
-		 * partialities, since it won't be accurate. */
-		if ( get_partiality(refl) < 0.1 ) continue;
-
-		/* Actual measurement of this reflection from this pattern? */
-		get_detector_pos(refl, &x, &y);
-		if ( integrate_peak(image, x, y,
-		                    &xc, &yc, &i_partial, NULL, NULL, 1, 0) ) {
-			delete_refl(refl);
-			continue;
-		}
-
-		set_int(refl, i_partial);
-
-		if ( !find_item(obs, h, k, l) ) add_item(obs, h, k, l);
-
-	}
-	image->reflections = reflections;
-
-	free(image->data);
-	if ( image->flags != NULL ) free(image->flags);
-	hdfile_close(hdfile);
-
-	/* Muppet proofing */
-	image->data = NULL;
-	image->flags = NULL;
 }
 
 
@@ -280,12 +142,9 @@ int main(int argc, char *argv[])
 	char *infile = NULL;
 	char *outfile = NULL;
 	char *geomfile = NULL;
-	char *prefix = NULL;
 	char *sym = NULL;
 	FILE *fh;
 	int nthreads = 1;
-	int config_basename = 0;
-	int config_checkprefix = 1;
 	struct detector *det;
 	unsigned int *cts;
 	ReflItemList *obs;
@@ -303,9 +162,6 @@ int main(int argc, char *argv[])
 		{"output",             1, NULL,               'o'},
 		{"geometry",           1, NULL,               'g'},
 		{"beam",               1, NULL,               'b'},
-		{"prefix",             1, NULL,               'x'},
-		{"basename",           0, &config_basename,    1},
-		{"no-check-prefix",    0, &config_checkprefix, 0},
 		{"symmetry",           1, NULL,               'y'},
 		{"iterations",         1, NULL,               'n'},
 		{0, 0, NULL, 0}
@@ -327,10 +183,6 @@ int main(int argc, char *argv[])
 
 		case 'g' :
 			geomfile = strdup(optarg);
-			break;
-
-		case 'x' :
-			prefix = strdup(optarg);
 			break;
 
 		case 'j' :
@@ -387,15 +239,6 @@ int main(int argc, char *argv[])
 		outfile = strdup("facetron.hkl");
 	}
 
-	/* Sanitise prefix */
-	if ( prefix == NULL ) {
-		prefix = strdup("");
-	} else {
-		if ( config_checkprefix ) {
-			prefix = check_prefix(prefix);
-		}
-	}
-
 	if ( sym == NULL ) sym = strdup("1");
 
 	/* Get detector geometry */
@@ -427,7 +270,11 @@ int main(int argc, char *argv[])
 
 		UnitCell *cell;
 		char *filename;
-		char *fnamereal;
+		char *rval;
+		char line[1024];
+		RefList *peaks;
+		RefList *transfer;
+		Reflection *refl;
 
 		if ( find_chunk(fh, &cell, &filename) == 1 ) {
 			ERROR("Couldn't get all of the filenames and cells"
@@ -437,38 +284,83 @@ int main(int argc, char *argv[])
 
 		images[i].indexed_cell = cell;
 
-		/* Mangle the filename now */
-		if ( config_basename ) {
-			char *tmp;
-			tmp = safe_basename(filename);
-			free(filename);
-			filename = tmp;
-		}
-		fnamereal = malloc(1024);
-		snprintf(fnamereal, 1023, "%s%s", prefix, filename);
-		free(filename);
-
-		images[i].filename = fnamereal;
+		images[i].filename = filename;
 		images[i].div = beam->divergence;
 		images[i].bw = beam->bandwidth;
 		images[i].det = det;
 		images[i].beam = beam;
 		images[i].osf = 1.0;
 		images[i].profile_radius = 0.005e9;
+		images[i].reflections = reflist_new();
 
 		/* Muppet proofing */
 		images[i].data = NULL;
 		images[i].flags = NULL;
 
-		/* Get reflections from this image.
-		 * FIXME: Use the ones from the stream */
-		integrate_image(&images[i], obs, sym);
+		/* Read integrated intensities from pattern */
+		peaks = reflist_new();
+		do {
+
+			Reflection *refl;
+			signed int h, k, l;
+			float intensity;
+			int r;
+
+			rval = fgets(line, 1023, fh);
+			chomp(line);
+
+			if ( (strlen(line) == 0) || (rval == NULL) ) break;
+
+			r = sscanf(line, "%i %i %i %f", &h, &k, &l, &intensity);
+			if ( r != 4 ) continue;
+
+			/* Not interested in the central beam */
+			if ( (h==0) && (k==0) && (l==0) ) continue;
+
+			refl = add_refl(peaks, h, k, l);
+			set_int(refl, intensity);
+
+		} while ( (strlen(line) != 0) && (rval != NULL) );
+
+		/* Calculate initial partialities and fill in intensities from
+		 * the stream */
+		transfer = find_intersections(&images[i], cell, 0);
+		images[i].reflections = reflist_new();
+
+		for ( refl = first_refl(transfer);
+		      refl != NULL;
+		      refl = next_refl(refl) ) {
+
+			Reflection *peak;
+			Reflection *new;
+			signed int h, k, l, ha, ka, la;
+			double r1, r2, p, x, y;
+			int clamp1, clamp2;
+
+			get_indices(refl, &h, &k, &l);
+			peak = find_refl(peaks, h, k, l);
+			if ( peak == NULL ) {
+				if ( (h==0) && (k==0) && (l==0) ) continue;
+				STATUS("%3i %3i %3i not found\n", h, k, l);
+				continue;
+			}
+
+			get_asymm(h, k, l, &ha, &ka, &la, sym);
+			add_item(obs, ha, ka, la);
+			new = add_refl(images[i].reflections, ha, ka, la);
+			get_partial(refl, &r1, &r2, &p, &clamp1, &clamp2);
+			get_detector_pos(refl, &x, &y);
+			set_partial(new, r1, r2, p, clamp1, clamp2);
+			set_detector_pos(new, 0.0, x, y);
+
+		}
+		reflist_free(peaks);
+		reflist_free(transfer);
 
 		progress_bar(i, n_total_patterns-1, "Loading pattern data");
 
 	}
 	fclose(fh);
-	free(prefix);
 
 	cts = new_list_count();
 
