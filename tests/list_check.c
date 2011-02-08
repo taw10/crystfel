@@ -27,6 +27,7 @@ struct refltemp {
 	signed int l;
 	int del;
 	int dup;
+	int found;
 };
 
 #define RANDOM_INDEX (128*random()/RAND_MAX - 256*random()/RAND_MAX)
@@ -38,6 +39,8 @@ static int test_lists(int num_items)
 	RefList *list;
 	int i;
 	signed int h, k, l;
+	Reflection *refl;
+	RefListIterator *iter;
 
 	check = malloc(num_items * sizeof(struct refltemp));
 	list = reflist_new();
@@ -53,11 +56,11 @@ static int test_lists(int num_items)
 		int j;
 		int duplicate = 0;
 
-		if ( random() > RAND_MAX/2 ) {
+		//if ( random() > RAND_MAX/2 ) {
 			h = RANDOM_INDEX;
 			k = RANDOM_INDEX;
 			l = RANDOM_INDEX;
-		} /* else use the same as last time */
+		//} /* else use the same as last time */
 
 		/* Count the number of times this reflection appeared before */
 		for ( j=0; j<i; j++ ) {
@@ -83,7 +86,47 @@ static int test_lists(int num_items)
 		check[i].l = l;
 		check[i].del = 0;
 		check[i].dup = duplicate;
+		check[i].found = 0;
 
+	}
+
+	/* Iterate over the list and check we find everything */
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
+
+		signed int h, k, l;
+
+		get_indices(refl, &h, &k, &l);
+		printf("%3i %3i %3i\n", h, k, l);
+
+		for ( i=0; i<num_items; i++ ) {
+			if ( (check[i].h == h)
+			  && (check[i].k == k)
+			  && (check[i].l == l)
+			  && (check[i].found == 0) ) {
+				check[i].found = 1;
+			}
+		}
+
+	}
+	for ( i=0; i<num_items; i++ ) {
+		if ( check[i].found == 0 ) {
+
+			Reflection *test;
+
+			fprintf(stderr, "Iteration didn't find %3i %3i %3i %i\n",
+			        check[i].h, check[i].k, check[i].l, i);
+			test = find_refl(list, check[i].h, check[i].k,
+			                 check[i].l);
+			if ( test == NULL ) {
+				fprintf(stderr, "Not in list\n");
+			} else {
+				fprintf(stderr, "But found in list.\n");
+			}
+			return 1;
+
+		}
 	}
 
 	/* Check that all the reflections can be found,
@@ -187,7 +230,7 @@ int main(int argc, char *argv[])
 	printf("Running list test...");
 	fflush(stdout);
 
-	for ( i=0; i<100; i++ ) {
+	for ( i=0; i<1; i++ ) {
 		if ( test_lists(4096*random()/RAND_MAX) ) return 1;
 	}
 

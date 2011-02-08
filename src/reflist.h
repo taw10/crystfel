@@ -19,6 +19,7 @@
 
 typedef struct _reflist RefList;
 typedef struct _reflection Reflection;
+typedef struct _reflistiterator RefListIterator;
 
 #define INDICES signed int h, signed int k, signed int l
 
@@ -56,8 +57,8 @@ extern Reflection *add_refl(RefList *list, INDICES);
 extern void delete_refl(Reflection *refl);
 
 /* Iteration */
-extern Reflection *first_refl(RefList *list);
-extern Reflection *next_refl(Reflection *refl);
+extern Reflection *first_refl(RefList *list, RefListIterator **iterator);
+extern Reflection *next_refl(Reflection *refl, RefListIterator *iter);
 
 /* Voodoo */
 extern void optimise_reflist(RefList *list);

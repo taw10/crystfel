@@ -257,6 +257,7 @@ static double pr_iterate(struct image *image, const double *i_full,
 	gsl_vector *shifts;
 	int param;
 	Reflection *refl;
+	RefListIterator *iter;
 	RefList *reflections;
 	double max_shift;
 
@@ -266,9 +267,9 @@ static double pr_iterate(struct image *image, const double *i_full,
 	v = gsl_vector_calloc(NUM_PARAMS);
 
 	/* Construct the equations, one per reflection in this image */
-	for ( refl = first_refl(reflections);
+	for ( refl = first_refl(reflections, &iter);
 	      refl != NULL;
-	      refl = next_refl(refl) ) {
+	      refl = next_refl(refl, iter) ) {
 
 		signed int hind, kind, lind;
 		signed int ha, ka, la;

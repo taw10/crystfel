@@ -24,6 +24,7 @@ struct _reflection {
 	struct _reflection *parent;   /* Parent node */
 	struct _reflection *next;     /* Another reflection with the same
 	                               * indices, or NULL */
+	struct _reflection *prev;
 
 	signed int h;
 	signed int k;
@@ -71,6 +72,7 @@ static Reflection *new_node(unsigned int serial)
 	new = calloc(1, sizeof(struct _reflection));
 	new->serial = serial;
 	new->next = NULL;
+	new->prev = NULL;
 	new->child[0] = NULL;
 	new->child[1] = NULL;
 
@@ -110,37 +112,41 @@ void reflist_free(RefList *list)
 
 /********************************** Search ************************************/
 
-static Reflection *recursive_search(Reflection *refl, unsigned int search)
+/* Return the first reflection in 'list' with the given indices, or NULL */
+Reflection *find_refl(RefList *list, INDICES)
 {
-	int i;
+	unsigned int search = SERIAL(h, k, l);
+	Reflection *refl = list->head->child[0];
 
-	/* Hit the bottom of the tree? */
-	if ( refl == NULL ) return NULL;
-
-	/* Is this the correct reflection? */
-	if ( refl->serial == search ) return refl;
-
-	for ( i=0; i<2; i++ ) {
+	while ( refl != NULL ) {
 
 		if ( search < refl->serial ) {
-			return recursive_search(refl->child[0], search);
-		}
 
-		if ( search >= refl->serial ) {
-			return recursive_search(refl->child[1], search);
+			if ( refl->child[0] != NULL ) {
+				refl = refl->child[0];
+			} else {
+				/* Hit the bottom of the tree */
+				return NULL;
+			}
+
+		} else if ( search > refl->serial ) {
+
+			if ( refl->child[1] != NULL ) {
+				refl = refl->child[1];
+			} else {
+				/* Hit the bottom of the tree */
+				return NULL;
+			}
+
+		} else {
+
+			return refl;
+
 		}
 
 	}
 
 	return NULL;
-}
-
-
-/* Return the first reflection in 'list' with the given indices, or NULL */
-Reflection *find_refl(RefList *list, INDICES)
-{
-	unsigned int search = SERIAL(h, k, l);
-	return recursive_search(list->head, search);
 }
 
 
@@ -247,6 +253,7 @@ static void insert_node(Reflection *head, Reflection *new)
 	while ( refl != NULL ) {
 
 		if ( new->serial < refl->serial ) {
+
 			if ( refl->child[0] != NULL ) {
 				refl = refl->child[0];
 			} else {
@@ -254,7 +261,9 @@ static void insert_node(Reflection *head, Reflection *new)
 				new->parent = refl;
 				return;
 			}
-		} else {
+
+		} else if ( new->serial > refl->serial ) {
+
 			if ( refl->child[1] != NULL ) {
 				refl = refl->child[1];
 			} else {
@@ -262,8 +271,20 @@ static void insert_node(Reflection *head, Reflection *new)
 				new->parent = refl;
 				return;
 			}
-		}
 
+		} else {
+
+			/* New reflection is identical to a previous one */
+			do {
+				if ( refl->next == NULL ) {
+					refl->next = new;
+					new->prev = refl;
+					return;
+				}
+				refl = refl->next;
+			} while ( 1 );
+
+		}
 
 	}
 }
@@ -293,6 +314,33 @@ void delete_refl(Reflection *refl)
 {
 	int i;
 	Reflection **parent_pos = NULL;
+
+	/* Is this a duplicate, and not the first one? */
+	if ( refl->prev != NULL ) {
+		refl->prev->next = refl->next;
+		free(refl);
+		return;
+	}
+
+	/* Is this the first duplicate of many? */
+	if ( refl->next != NULL ) {
+
+		refl->next->parent = refl->parent;
+		refl->next->child[0] = refl->child[0];
+		refl->next->child[1] = refl->child[1];
+		refl->next->prev = NULL;
+
+		for ( i=0; i<2; i++ ) {
+			if ( refl->parent->child[i] == refl ) {
+				refl->parent->child[i] = refl->next;
+			}
+		}
+
+		free(refl);
+
+		return;
+
+	}
 
 	/* Remove parent's reference */
 	for ( i=0; i<2; i++ ) {
@@ -344,24 +392,80 @@ void delete_refl(Reflection *refl)
 
 /********************************* Iteration **********************************/
 
-Reflection *first_refl(RefList *list)
+
+struct _reflistiterator {
+
+	int stack_size;
+	int stack_ptr;
+	Reflection **stack;
+
+};
+
+Reflection *first_refl(RefList *list, RefListIterator **piter)
 {
-	return list->head->child[0];
+	RefListIterator *iter;
+
+	iter = malloc(sizeof(struct _reflistiterator));
+	iter->stack_size = 32;
+	iter->stack = malloc(iter->stack_size*sizeof(Reflection *));
+	iter->stack_ptr = 0;
+	*piter = iter;
+
+	Reflection *refl = list->head->child[0];
+
+	do {
+
+		if ( refl != NULL ) {
+			iter->stack[iter->stack_ptr++] = refl;
+			if ( iter->stack_ptr == iter->stack_size ) {
+				iter->stack_size += 32;
+				iter->stack = realloc(iter->stack,
+				         iter->stack_size*sizeof(Reflection *));
+			}
+			refl = refl->child[0];
+			continue;
+		}
+
+		if ( iter->stack_ptr == 0 ) {
+			free(iter->stack);
+			free(iter);
+			return NULL;
+		}
+
+		refl = iter->stack[iter->stack_ptr--];
+
+		return refl;
+
+	} while ( 1 );
 }
 
 
-Reflection *next_refl(Reflection *refl)
+Reflection *next_refl(Reflection *refl, RefListIterator *iter)
 {
-	/* Does a left child exist? */
-	if ( refl->child[0] != NULL ) return refl->child[0];
+	do {
 
-	/* Otherwise move up the tree to find the next right child */
-	while ( refl->child[1] != NULL ) {
-		refl = refl->parent;
-		if ( refl == NULL ) return NULL;
-	}
+		refl = refl->child[1];;
 
-	return refl->child[1];
+		if ( refl != NULL ) {
+			iter->stack[iter->stack_ptr++] = refl;
+			if ( iter->stack_ptr == iter->stack_size ) {
+				iter->stack_size += 32;
+				iter->stack = realloc(iter->stack,
+				         iter->stack_size*sizeof(Reflection *));
+			}
+			refl = refl->child[0];
+			continue;
+		}
+		if ( iter->stack_ptr == 0 ) {
+			free(iter->stack);
+			free(iter);
+			return NULL;
+		}
+		refl = iter->stack[iter->stack_ptr--];
+
+		return refl;
+
+	} while ( 1 );
 }
 
 

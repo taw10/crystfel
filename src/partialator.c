@@ -116,10 +116,11 @@ static void select_scalable_reflections(struct image *images, int n)
 	for ( m=0; m<n; m++ ) {
 
 		Reflection *refl;
+		RefListIterator *iter;
 
-		for ( refl = first_refl(images[m].reflections);
+		for ( refl = first_refl(images[m].reflections, &iter);
 		      refl != NULL;
-		      refl = next_refl(refl) ) {
+		      refl = next_refl(refl, iter) ) {
 
 			int scalable = 1;
 			double v;
@@ -275,6 +276,7 @@ int main(int argc, char *argv[])
 		RefList *peaks;
 		RefList *transfer;
 		Reflection *refl;
+		RefListIterator *iter;
 
 		if ( find_chunk(fh, &cell, &filename) == 1 ) {
 			ERROR("Couldn't get all of the filenames and cells"
@@ -327,9 +329,9 @@ int main(int argc, char *argv[])
 		transfer = find_intersections(&images[i], cell, 0);
 		images[i].reflections = reflist_new();
 
-		for ( refl = first_refl(transfer);
+		for ( refl = first_refl(transfer, &iter);
 		      refl != NULL;
-		      refl = next_refl(refl) ) {
+		      refl = next_refl(refl, iter) ) {
 
 			Reflection *peak;
 			Reflection *new;
@@ -338,6 +340,8 @@ int main(int argc, char *argv[])
 			int clamp1, clamp2;
 
 			get_indices(refl, &h, &k, &l);
+			STATUS("%3i %3i %3i\n", h, k, l);
+
 			peak = find_refl(peaks, h, k, l);
 			if ( peak == NULL ) {
 				if ( (h==0) && (k==0) && (l==0) ) continue;

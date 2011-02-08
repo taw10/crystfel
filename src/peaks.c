@@ -669,6 +669,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	Reflection *refl;
+	RefListIterator *iter;
 
 	if ( image->reflections == NULL ) {
 		find_projected_peaks(image, cell, circular_domain, domain_r);
@@ -683,9 +684,9 @@ void output_intensities(struct image *image, UnitCell *cell,
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
 
-	for ( refl = first_refl(image->reflections);
+	for ( refl = first_refl(image->reflections, &iter);
 	      refl != NULL;
-	      refl = next_refl(refl) ) {
+	      refl = next_refl(refl, iter) ) {
 
 		float x, y, intensity;
 		double d;

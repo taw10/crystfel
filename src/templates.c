@@ -232,13 +232,14 @@ static double integrate_all_rot(struct image *image, RefList *reflections,
 	double cosr, sinr;
 	int num_int = 0;
 	Reflection *refl;
+	RefListIterator *iter;
 
 	cosr = cos(rot);
 	sinr = sin(rot);
 
-	for ( refl = first_refl(reflections);
+	for ( refl = first_refl(reflections, &iter);
 	      refl != NULL;
-	      refl = next_refl(refl) ) {
+	      refl = next_refl(refl, iter) ) {
 
 		float xp, yp;
 		double x, y;
@@ -266,14 +267,15 @@ static double mean_distance(struct image *image, RefList *reflections,
 	double cosr, sinr;
 	int num_dist = 0;
 	Reflection *refl;
+	RefListIterator *iter;
 
 	cosr = cos(rot);
 	sinr = sin(rot);
 
 	/* For each template peak */
-	for ( refl = first_refl(reflections);
+	for ( refl = first_refl(reflections, &iter);
 	      refl != NULL;
-	      refl = next_refl(refl) ) {
+	      refl = next_refl(refl, iter) ) {
 
 		float xp, yp;
 		int j;

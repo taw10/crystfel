@@ -263,10 +263,11 @@ double integrate_all(struct image *image, RefList *reflections)
 {
 	double itot = 0.0;
 	Reflection *refl;
+	RefListIterator *iter;
 
-	for ( refl = first_refl(reflections);
+	for ( refl = first_refl(reflections, &iter);
 	      refl != NULL;
-	      refl = next_refl(refl) ) {
+	      refl = next_refl(refl, iter) ) {
 
 		float x, y, intensity;
 		double xp, yp;
