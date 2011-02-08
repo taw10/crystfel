@@ -45,8 +45,6 @@ static int test_lists(int num_items)
 	check = malloc(num_items * sizeof(struct refltemp));
 	list = reflist_new();
 
-	printf("Testing with %i\n", num_items);
-
 	h = RANDOM_INDEX;
 	k = RANDOM_INDEX;
 	l = RANDOM_INDEX;
@@ -98,7 +96,6 @@ static int test_lists(int num_items)
 		signed int h, k, l;
 
 		get_indices(refl, &h, &k, &l);
-		printf("%3i %3i %3i\n", h, k, l);
 
 		for ( i=0; i<num_items; i++ ) {
 			if ( (check[i].h == h)

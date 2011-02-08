@@ -432,7 +432,7 @@ Reflection *first_refl(RefList *list, RefListIterator **piter)
 			return NULL;
 		}
 
-		refl = iter->stack[iter->stack_ptr--];
+		refl = iter->stack[--iter->stack_ptr];
 
 		return refl;
 
@@ -442,11 +442,15 @@ Reflection *first_refl(RefList *list, RefListIterator **piter)
 
 Reflection *next_refl(Reflection *refl, RefListIterator *iter)
 {
+	int returned = 1;
+
 	do {
 
-		refl = refl->child[1];;
+		if ( returned ) refl = refl->child[1];
+		returned = 0;
 
 		if ( refl != NULL ) {
+
 			iter->stack[iter->stack_ptr++] = refl;
 			if ( iter->stack_ptr == iter->stack_size ) {
 				iter->stack_size += 32;
@@ -455,15 +459,15 @@ Reflection *next_refl(Reflection *refl, RefListIterator *iter)
 			}
 			refl = refl->child[0];
 			continue;
+
 		}
 		if ( iter->stack_ptr == 0 ) {
 			free(iter->stack);
 			free(iter);
 			return NULL;
 		}
-		refl = iter->stack[iter->stack_ptr--];
 
-		return refl;
+		return iter->stack[--iter->stack_ptr];
 
 	} while ( 1 );
 }
