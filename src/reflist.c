@@ -85,7 +85,8 @@ RefList *reflist_new()
 
 	new = malloc(sizeof(struct _reflist));
 
-	/* Create pseudo-root with invalid indices */
+	/* Create pseudo-root with invalid indices.
+	 * The "real" root will be the left child of this. */
 	new->head = new_node(SERIAL(257, 257, 257));
 
 	return new;
@@ -345,7 +346,7 @@ void delete_refl(Reflection *refl)
 
 Reflection *first_refl(RefList *list)
 {
-	return list->head;
+	return list->head->child[0];
 }
 
 
