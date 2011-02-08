@@ -54,11 +54,11 @@ static int test_lists(int num_items)
 		int j;
 		int duplicate = 0;
 
-		//if ( random() > RAND_MAX/2 ) {
+		if ( random() > RAND_MAX/2 ) {
 			h = RANDOM_INDEX;
 			k = RANDOM_INDEX;
 			l = RANDOM_INDEX;
-		//} /* else use the same as last time */
+		} /* else use the same as last time */
 
 		/* Count the number of times this reflection appeared before */
 		for ( j=0; j<i; j++ ) {
@@ -85,6 +85,10 @@ static int test_lists(int num_items)
 		check[i].del = 0;
 		check[i].dup = duplicate;
 		check[i].found = 0;
+
+		if ( (h==-178) && (k==-45) && (l==55)) {
+			printf("added, now %i %i\n", check[i].dup, i);
+		}
 
 	}
 
@@ -150,13 +154,17 @@ static int test_lists(int num_items)
 
 			delete_refl(refl);
 			check[i].del = 1;
+			if ( (h==-119) && (k==20) && (l==-69)) {
+				printf("deleting, now %i\n", check[j].dup);
+			}
 
 			/* Update all counts */
-			for ( j=0; j<i; j++ ) {
+			for ( j=0; j<num_items; j++ ) {
 				if ( (check[j].h == h)
 				  && (check[j].k == k)
 				  && (check[j].l == l) ) {
 					check[j].dup--;
+
 				}
 			}
 
@@ -179,7 +187,7 @@ static int test_lists(int num_items)
 		if ( refl != NULL ) {
 
 			/* Whoops, found it.  Was it a duplicate? */
-			if ( check[i].dup == 0 ) {
+			if ( check[i].dup == -1 ) {
 				fprintf(stderr, "Found %3i %i %3i after"
 				        " deletion.\n", h, k, l);
 				return 1;
@@ -188,7 +196,7 @@ static int test_lists(int num_items)
 				int j;
 				Reflection *c;
 
-				for ( j=0; j<check[i].dup; j++ ) {
+				for ( j=0; j<check[i].dup+1; j++ ) {
 					Reflection *r2;
 					r2 = find_refl(list, h, k, l);
 					if ( r2 == NULL ) {

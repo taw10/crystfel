@@ -16,15 +16,7 @@
 #include "reflist.h"
 
 
-struct _reflection {
-
-	/* Listy stuff */
-	unsigned int serial;          /* Unique serial number, key */
-	struct _reflection *child[2]; /* Child nodes */
-	struct _reflection *parent;   /* Parent node */
-	struct _reflection *next;     /* Another reflection with the same
-	                               * indices, or NULL */
-	struct _reflection *prev;
+struct _refldata {
 
 	signed int h;
 	signed int k;
@@ -50,6 +42,20 @@ struct _reflection {
 
 	/* Intensity */
 	double intensity;
+};
+
+
+struct _reflection {
+
+	/* Listy stuff */
+	unsigned int serial;          /* Unique serial number, key */
+	struct _reflection *child[2]; /* Child nodes */
+	struct _reflection *parent;   /* Parent node */
+	struct _reflection *next;     /* Another reflection with the same
+	                               * indices, or NULL */
+	struct _reflection *prev;
+
+	struct _refldata data;
 };
 
 
@@ -161,51 +167,51 @@ Reflection *next_found_refl(Reflection *refl)
 
 double get_excitation_error(Reflection *refl)
 {
-	return refl->excitation_error;
+	return refl->data.excitation_error;
 }
 
 
 void get_detector_pos(Reflection *refl, double *x, double *y)
 {
-	*x = refl->x;
-	*y = refl->y;
+	*x = refl->data.x;
+	*y = refl->data.y;
 }
 
 
 void get_indices(Reflection *refl, signed int *h, signed int *k, signed int *l)
 {
-	*h = refl->h;
-	*k = refl->k;
-	*l = refl->l;
+	*h = refl->data.h;
+	*k = refl->data.k;
+	*l = refl->data.l;
 }
 
 
 double get_partiality(Reflection *refl)
 {
-	return refl->p;
+	return refl->data.p;
 }
 
 
 double get_intensity(Reflection *refl)
 {
-	return refl->intensity;
+	return refl->data.intensity;
 }
 
 
 void get_partial(Reflection *refl, double *r1, double *r2, double *p,
                  int *clamp_low, int *clamp_high)
 {
-	*r1 = refl->r1;
-	*r2 = refl->r2;
+	*r1 = refl->data.r1;
+	*r2 = refl->data.r2;
 	*p = get_partiality(refl);
-	*clamp_low = refl->clamp1;
-	*clamp_high = refl->clamp2;
+	*clamp_low = refl->data.clamp1;
+	*clamp_high = refl->data.clamp2;
 }
 
 
 int get_scalable(Reflection *refl)
 {
-	return refl->scalable;
+	return refl->data.scalable;
 }
 
 
@@ -213,32 +219,32 @@ int get_scalable(Reflection *refl)
 
 void set_detector_pos(Reflection *refl, double exerr, double x, double y)
 {
-	refl->excitation_error = exerr;
-	refl->x = x;
-	refl->y = y;
+	refl->data.excitation_error = exerr;
+	refl->data.x = x;
+	refl->data.y = y;
 }
 
 
 void set_partial(Reflection *refl, double r1, double r2, double p,
                  double clamp_low, double clamp_high)
 {
-	refl->r1 = r1;
-	refl->r2 = r2;
-	refl->p = p;
-	refl->clamp1 = clamp_low;
-	refl->clamp2 = clamp_high;
+	refl->data.r1 = r1;
+	refl->data.r2 = r2;
+	refl->data.p = p;
+	refl->data.clamp1 = clamp_low;
+	refl->data.clamp2 = clamp_high;
 }
 
 
 void set_int(Reflection *refl, double intensity)
 {
-	refl->intensity = intensity;
+	refl->data.intensity = intensity;
 }
 
 
 void set_scalable(Reflection *refl, int scalable)
 {
-	refl->scalable = scalable;
+	refl->data.scalable = scalable;
 }
 
 
@@ -295,7 +301,7 @@ Reflection *add_refl(RefList *list, INDICES)
 	Reflection *new;
 
 	new = new_node(SERIAL(h, k, l));
-	new->h = h;  new->k = k,  new->l = l;
+	new->data.h = h;  new->data.k = k,  new->data.l = l;
 
 	if ( list->head == NULL ) {
 		list->head = new;
@@ -356,19 +362,23 @@ void delete_refl(Reflection *refl)
 
 		if ( random() > RAND_MAX/2 ) {
 
-			*parent_pos = refl->child[0];
-			refl->child[0]->parent = refl->parent;
+			Reflection *pre;
+			pre = refl->child[0];
+			while ( pre->child[1] != NULL ) pre = pre->child[1];
 
-			/* Now sort out the right child */
-			insert_node(refl->child[0], refl->child[1]);
+			refl->data = pre->data;
+			refl->serial = pre->serial;
+			delete_refl(pre);
 
 		} else {
 
-			*parent_pos = refl->child[1];
-			refl->child[1]->parent = refl->parent;
+			Reflection *pre;
+			pre = refl->child[1];
+			while ( pre->child[0] != NULL ) pre = pre->child[0];
 
-			/* Now sort out the left child */
-			insert_node(refl->child[1], refl->child[0]);
+			refl->data = pre->data;
+			refl->serial = pre->serial;
+			delete_refl(pre);
 
 		}
 
@@ -377,16 +387,21 @@ void delete_refl(Reflection *refl)
 		/* One child, left */
 		*parent_pos = refl->child[0];
 		refl->child[0]->parent = refl->parent;
+		free(refl);
 
 	} else if (refl->child[1] != NULL ) {
 
 		/* One child, right */
 		*parent_pos = refl->child[1];
 		refl->child[1]->parent = refl->parent;
+		free(refl);
 
-	} /* else it was just a leaf node */
+	} else {
 
-	free(refl);
+		/* Leaf node */
+		free(refl);
+
+	}
 }
 
 
