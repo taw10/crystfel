@@ -62,7 +62,22 @@ struct _reflist {
 
 #define SERIAL(h, k, l) (((h)+256)*512*512 + ((k)+256)*512 + ((l)+256))
 
+
 /**************************** Creation / deletion *****************************/
+
+static Reflection *new_node(unsigned int serial)
+{
+	Reflection *new;
+
+	new = calloc(1, sizeof(struct _reflection));
+	new->serial = serial;
+	new->next = NULL;
+	new->child[0] = NULL;
+	new->child[1] = NULL;
+
+	return new;
+}
+
 
 /* Create a reflection list */
 RefList *reflist_new()
@@ -70,7 +85,9 @@ RefList *reflist_new()
 	RefList *new;
 
 	new = malloc(sizeof(struct _reflist));
-	new->head = NULL;
+
+	/* Create pseudo-root with invalid indices */
+	new->head = new_node(SERIAL(257, 257, 257));
 
 	return new;
 }
@@ -247,48 +264,34 @@ void set_scalable(Reflection *refl, int scalable)
 
 /********************************* Insertion **********************************/
 
-static int recursive_insert(Reflection *refl, Reflection *new)
+static void insert_node(Reflection *head, Reflection *new)
 {
-	int i;
+	Reflection *refl;
 
-	if ( refl->serial == new->serial ) {
+	refl = head;
 
-		/* Found a reflection with identical indices */
-		do {
-			refl = refl->next;
-		} while ( refl != NULL );
-		refl->next = new;
-		new->parent = refl;
-
-		return 1;
-	}
-
-	for ( i=0; i<2; i++ ) {
+	while ( refl != NULL ) {
 
 		if ( new->serial < refl->serial ) {
 			if ( refl->child[0] != NULL ) {
-				return recursive_insert(refl->child[0], new);
+				refl = refl->child[0];
 			} else {
 				refl->child[0] = new;
 				new->parent = refl;
-				return 1;
+				return;
 			}
-		}
-
-		if ( new->serial >= refl->serial ) {
+		} else {
 			if ( refl->child[1] != NULL ) {
-				return recursive_insert(refl->child[1], new);
+				refl = refl->child[1];
 			} else {
 				refl->child[1] = new;
 				new->parent = refl;
-				return 1;
+				return;
 			}
 		}
 
 
 	}
-
-	return 0;
 }
 
 
@@ -296,18 +299,14 @@ Reflection *add_refl(RefList *list, INDICES)
 {
 	Reflection *new;
 
-	new = calloc(1, sizeof(struct _reflection));
+	new = new_node(SERIAL(h, k, l));
 	new->h = h;  new->k = k,  new->l = l;
-	new->serial = SERIAL(h, k, l);
-	new->next = NULL;
-	new->child[0] = NULL;
-	new->child[1] = NULL;
 
 	if ( list->head == NULL ) {
 		list->head = new;
 		new->parent = NULL;
 	} else {
-		recursive_insert(list->head, new);
+		insert_node(list->head, new);
 	}
 
 	return new;
@@ -336,15 +335,18 @@ void delete_refl(Reflection *refl)
 		if ( random() > RAND_MAX/2 ) {
 
 			*parent_pos = refl->child[0];
+			refl->child[0]->parent = refl->parent;
 
 			/* Now sort out the right child */
-			recursive_insert(refl->child[0], refl->child[1]);
+			insert_node(refl->child[0], refl->child[1]);
+
 		} else {
 
 			*parent_pos = refl->child[1];
+			refl->child[1]->parent = refl->parent;
 
 			/* Now sort out the left child */
-			recursive_insert(refl->child[1], refl->child[0]);
+			insert_node(refl->child[1], refl->child[0]);
 
 		}
 
@@ -352,11 +354,13 @@ void delete_refl(Reflection *refl)
 
 		/* One child, left */
 		*parent_pos = refl->child[0];
+		refl->child[0]->parent = refl->parent;
 
 	} else if (refl->child[1] != NULL ) {
 
 		/* One child, right */
 		*parent_pos = refl->child[1];
+		refl->child[1]->parent = refl->parent;
 
 	} /* else it was just a leaf node */
 

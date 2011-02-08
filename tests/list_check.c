@@ -38,6 +38,8 @@ static int test_lists(int num_items)
 	RefList *list;
 	int i;
 
+	fprintf(stderr, "Testing with %i items.\n", num_items);
+
 	check = malloc(num_items * sizeof(struct refltemp));
 	list = reflist_new();
 
@@ -47,17 +49,22 @@ static int test_lists(int num_items)
 		int j;
 		int duplicate = 0;
 
-		h = RANDOM_INDEX;
-		k = RANDOM_INDEX;
-		l = RANDOM_INDEX;
+		do {
+			duplicate = 0;
 
-		for ( j=0; j<i; j++ ) {
-			if ( (check[j].h == h)
-			  && (check[j].k == k)
-			  && (check[j].l == l) ) {
-				duplicate++;
+			h = RANDOM_INDEX;
+			k = RANDOM_INDEX;
+			l = RANDOM_INDEX;
+
+			for ( j=0; j<i; j++ ) {
+				if ( (check[j].h == h)
+				  && (check[j].k == k)
+				  && (check[j].l == l) ) {
+					duplicate++;
+				}
 			}
-		}
+
+		} while ( duplicate );
 
 		add_refl(list, h, k, l);
 		check[i].h = h;
@@ -90,28 +97,7 @@ static int test_lists(int num_items)
 
 	}
 
-	for ( i=0; i<num_items/2; i++ ) {
-
-		signed int h, k, l;
-		Reflection *refl;
-
-		h = check[i].h;
-		k = check[i].k;
-		l = check[i].l;
-
-		refl = find_refl(list, h, k, l);
-		if ( refl == NULL ) {
-			fprintf(stderr, "Couldn't find %3i %3i %3i\n", h, k, l);
-			return 1;
-		}
-
-		if ( i<num_items/2 ) {
-			delete_refl(refl);
-			check[i].del = 1;
-		}
-
-	}
-
+	reflist_free(list);
 	free(check);
 
 	return 0;
@@ -122,7 +108,7 @@ int main(int argc, char *argv[])
 	int i;
 
 	for ( i=0; i<100; i++ ) {
-		if ( test_lists(random()) ) return 1;
+		if ( test_lists(4096*random()/RAND_MAX) ) return 1;
 	}
 
 	return 0;
