@@ -52,10 +52,10 @@ struct _reflection {
 	unsigned int serial;          /* Unique serial number, key */
 	struct _reflection *child[2]; /* Child nodes */
 	struct _reflection *parent;   /* Parent node */
-	struct _reflection *next;     /* Another reflection with the same
-	                               * indices, or NULL */
-	struct _reflection *prev;
+	struct _reflection *next;     /* Next and previous in doubly linked */
+	struct _reflection *prev;     /* list of duplicate reflections */
 
+	/* Payload */
 	struct _refldata data;
 };
 
@@ -160,6 +160,8 @@ Reflection *find_refl(RefList *list, INDICES)
 /* Find the next reflection in 'refl's list with the same indices, or NULL */
 Reflection *next_found_refl(Reflection *refl)
 {
+	if ( refl->next != NULL ) assert(refl->serial == refl->next->serial);
+
 	return refl->next;  /* Well, that was easy... */
 }
 
@@ -282,14 +284,13 @@ static void insert_node(Reflection *head, Reflection *new)
 		} else {
 
 			/* New reflection is identical to a previous one */
-			do {
-				if ( refl->next == NULL ) {
-					refl->next = new;
-					new->prev = refl;
-					return;
-				}
+			assert(refl->serial == new->serial);
+			while ( refl->next != NULL ) {
 				refl = refl->next;
-			} while ( 1 );
+			}
+			refl->next = new;
+			new->prev = refl;
+			return;
 
 		}
 
@@ -326,14 +327,13 @@ static void lr_delete(Reflection *refl, int side)
 	pre = refl->child[side];
 	while ( pre->child[other] != NULL ) pre = pre->child[other];
 
-	assert(refl->next == NULL); /* Should have been */
-	assert(refl->prev == NULL); /*  caught above. */
+	assert(refl->next == NULL);
+	assert(refl->prev == NULL); /* Should have been caught previously */
 
 	refl->data = pre->data;
 	refl->serial = pre->serial;
 
-	/* If the predecessor node had duplicates, we need to
-	 * fix things up. */
+	/* If the predecessor node had duplicates, we need to fix things up. */
 	assert(pre->prev == NULL);
 	refl->next = pre->next;
 	if ( pre->next != NULL ) {
@@ -368,6 +368,7 @@ void delete_refl(Reflection *refl)
 	if ( refl->next != NULL ) {
 
 		assert(refl->next->prev == refl);
+		assert(refl->prev == NULL);
 		refl->next->parent = refl->parent;
 		refl->next->prev = NULL;
 
@@ -386,6 +387,9 @@ void delete_refl(Reflection *refl)
 		return;
 
 	}
+
+	assert(refl->next == NULL);
+	assert(refl->prev == NULL);
 
 	/* Two child nodes? */
 	if ( (refl->child[0] != NULL) && (refl->child[1] != NULL ) ) {
