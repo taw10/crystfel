@@ -201,15 +201,14 @@ static int test_lists(int num_items)
 		l = check[i].l;
 		refl = find_refl(list, h, k, l);
 
-		printf("%i copies remaining, %p\n", check[i].num, refl);
-
 		do {
 			int j;
 			signed int ha, ka, la;
+			Reflection *next;
 			get_indices(refl, &ha, &ka, &la);
-			printf("removing %p %i %i %i\n", refl, ha, ka, la);
+			next = next_found_refl(refl);
 			delete_refl(refl);
-			refl = next_found_refl(refl);
+			refl = next;
 			for ( j=0; j<num_items; j++ ) {
 				if ( (check[j].h == h) && (check[j].k == k)
 				  && (check[j].l == l) ) check[j].num--;
