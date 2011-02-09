@@ -277,10 +277,11 @@ int main(int argc, char *argv[])
 		RefList *transfer;
 		Reflection *refl;
 		RefListIterator *iter;
+		double ph_en;
 
-		if ( find_chunk(fh, &cell, &filename) == 1 ) {
-			ERROR("Couldn't get all of the filenames and cells"
-			      " from the input stream.\n");
+		if ( find_chunk(fh, &cell, &filename, &ph_en) == 1 ) {
+			ERROR("Couldn't get all of the filenames, cells and"
+			      "wavelengths from the input stream.\n");
 			return 1;
 		}
 
@@ -294,6 +295,7 @@ int main(int argc, char *argv[])
 		images[i].osf = 1.0;
 		images[i].profile_radius = 0.005e9;
 		images[i].reflections = reflist_new();
+		images[i].lambda = ph_en_to_lambda(eV_to_J(ph_en));
 
 		/* Muppet proofing */
 		images[i].data = NULL;

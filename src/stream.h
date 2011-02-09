@@ -18,7 +18,7 @@
 
 
 extern int count_patterns(FILE *fh);
-extern int find_chunk(FILE *fh, UnitCell **cell, char **filename);
+extern int find_chunk(FILE *fh, UnitCell **cell, char **filename, double *ev);
 
 
 #endif	/* STREAM_H */

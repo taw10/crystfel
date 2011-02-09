@@ -657,6 +657,9 @@ static void output_header(FILE *ofh, UnitCell *cell, struct image *image)
 		fprintf(ofh, "f0 = invalid\n");
 	}
 
+	fprintf(ofh, "photon_energy_eV = %f\n",
+	        J_to_eV(ph_lambda_to_en(image->lambda)));
+
 }
 
 

@@ -154,8 +154,9 @@ int main(int argc, char *argv[])
 		char *filename;
 		char line[1024];
 		int done = 0;
+		double ph_ev;
 
-		rval = find_chunk(fh, &cell, &filename);
+		rval = find_chunk(fh, &cell, &filename, &ph_ev);
 		if ( rval != 0 ) break;
 
 		do {

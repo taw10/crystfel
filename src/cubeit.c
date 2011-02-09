@@ -392,9 +392,10 @@ static void *get_image(void *qp)
 	struct queue_args *qargs = qp;
 	UnitCell *cell;
 	char *filename;
+	double ph_ev;
 
 	/* Get the next filename */
-	if ( find_chunk(qargs->fh, &cell, &filename) ) {
+	if ( find_chunk(qargs->fh, &cell, &filename, &ph_ev) ) {
 		return NULL;
 	}
 

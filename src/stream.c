@@ -147,7 +147,7 @@ static UnitCell *read_orientation_matrix_rick(FILE *fh)
 }
 
 
-int find_chunk(FILE *fh, UnitCell **cell, char **filename)
+int find_chunk(FILE *fh, UnitCell **cell, char **filename, double *ev)
 {
 	char line[1024];
 	char *rval = NULL;
@@ -158,6 +158,10 @@ int find_chunk(FILE *fh, UnitCell **cell, char **filename)
 		if ( rval == NULL ) continue;
 
 		chomp(line);
+
+		if ( strncmp(line, "photon_energy_eV = ", 19) == 0 ) {
+			*ev = atof(line+19);
+		}
 
 		/* Look for the first line of a chunk */
 		if ( (strncmp(line, "Reflections from indexing", 25) != 0)
