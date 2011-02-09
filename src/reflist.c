@@ -438,7 +438,6 @@ void delete_refl(Reflection *refl)
 
 /********************************* Iteration **********************************/
 
-
 struct _reflistiterator {
 
 	int stack_size;
@@ -446,6 +445,7 @@ struct _reflistiterator {
 	Reflection **stack;
 
 };
+
 
 Reflection *first_refl(RefList *list, RefListIterator **piter)
 {
