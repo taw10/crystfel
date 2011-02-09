@@ -53,6 +53,7 @@ static int test_lists(int num_items)
 
 		int j;
 		int duplicate = 0;
+		Reflection *refl;
 
 		if ( random() > RAND_MAX/2 ) {
 			h = RANDOM_INDEX;
@@ -78,17 +79,13 @@ static int test_lists(int num_items)
 			}
 		}
 
-		add_refl(list, h, k, l);
+		refl = add_refl(list, h, k, l);
 		check[i].h = h;
 		check[i].k = k;
 		check[i].l = l;
 		check[i].del = 0;
 		check[i].dup = duplicate;
 		check[i].found = 0;
-
-		if ( (h==-45) && (k==55) && (l==73)) {
-			printf("added, now %i %i\n", check[i].dup, i);
-		}
 
 	}
 
@@ -232,7 +229,7 @@ int main(int argc, char *argv[])
 	printf("Running list test...");
 	fflush(stdout);
 
-	for ( i=0; i<1; i++ ) {
+	for ( i=0; i<100; i++ ) {
 		if ( test_lists(4096*random()/RAND_MAX) ) return 1;
 	}
 

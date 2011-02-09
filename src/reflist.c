@@ -12,6 +12,7 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "reflist.h"
 
@@ -316,6 +317,41 @@ Reflection *add_refl(RefList *list, INDICES)
 
 /********************************** Deletion **********************************/
 
+static void lr_delete(Reflection *refl, int side)
+{
+	int other = 1-side;
+	int i;
+	Reflection *pre;
+
+	pre = refl->child[side];
+	while ( pre->child[other] != NULL ) pre = pre->child[other];
+
+	assert(refl->next == NULL); /* Should have been */
+	assert(refl->prev == NULL); /*  caught above. */
+
+	refl->data = pre->data;
+	refl->serial = pre->serial;
+
+	/* If the predecessor node had duplicates, we need to
+	 * fix things up. */
+	assert(pre->prev == NULL);
+	refl->next = pre->next;
+	if ( pre->next != NULL ) {
+		refl->next->prev = refl;
+	}
+
+	for ( i=0; i<2; i++ ) {
+		if ( pre->parent->child[i] == pre ) {
+			pre->parent->child[i] = pre->child[side];
+		}
+	}
+	if ( pre->child[side] != NULL ) {
+		pre->child[side]->parent = pre->parent;
+	}
+	free(pre);
+}
+
+
 void delete_refl(Reflection *refl)
 {
 	int i;
@@ -323,6 +359,7 @@ void delete_refl(Reflection *refl)
 	/* Is this a duplicate, and not the first one? */
 	if ( refl->prev != NULL ) {
 		refl->prev->next = refl->next;
+		if ( refl->next != NULL ) refl->next->prev = refl->prev;
 		free(refl);
 		return;
 	}
@@ -330,13 +367,12 @@ void delete_refl(Reflection *refl)
 	/* Is this the first duplicate of many? */
 	if ( refl->next != NULL ) {
 
-		refl->next->parent = refl->parent;
-		refl->next->child[0] = refl->child[0];
-		refl->next->child[1] = refl->child[1];
 		assert(refl->next->prev == refl);
+		refl->next->parent = refl->parent;
 		refl->next->prev = NULL;
 
 		for ( i=0; i<2; i++ ) {
+			refl->next->child[i] = refl->child[i];
 			if ( refl->parent->child[i] == refl ) {
 				refl->parent->child[i] = refl->next;
 			}
@@ -354,27 +390,11 @@ void delete_refl(Reflection *refl)
 	/* Two child nodes? */
 	if ( (refl->child[0] != NULL) && (refl->child[1] != NULL ) ) {
 
-		//if ( random() > RAND_MAX/2 ) {
-
-			Reflection *pre = refl->child[0];
-			while ( pre->child[1] != NULL ) pre = pre->child[1];
-
-			refl->data = pre->data;
-			refl->serial = pre->serial;
-			if ( refl->next != NULL ) refl->next->prev = refl;
-			delete_refl(pre);
-
-		//} else {
-
-		//	Reflection *pre = refl->child[1];
-		//	while ( pre->child[0] != NULL ) pre = pre->child[0];
-
-		//	refl->data = pre->data;
-		//	refl->serial = pre->serial;
-		//	if ( refl->next != NULL ) refl->next->prev = refl;
-		//	delete_refl(pre);
-
-		//}
+		if ( random() > RAND_MAX/2 ) {
+			lr_delete(refl, 0);
+		} else {
+			lr_delete(refl, 1);
+		}
 
 	} else if ( refl->child[0] != NULL ) {
 
@@ -401,6 +421,11 @@ void delete_refl(Reflection *refl)
 	} else {
 
 		/* Leaf node */
+		for ( i=0; i<2; i++ ) {
+			if ( refl->parent->child[i] == refl ) {
+				refl->parent->child[i] = NULL;
+			}
+		}
 		free(refl);
 
 	}
