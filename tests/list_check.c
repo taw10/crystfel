@@ -25,8 +25,7 @@ struct refltemp {
 	signed int h;
 	signed int k;
 	signed int l;
-	int del;
-	int dup;
+	int num;
 	int found;
 };
 
@@ -52,8 +51,7 @@ static int test_lists(int num_items)
 	for ( i=0; i<num_items; i++ ) {
 
 		int j;
-		int duplicate = 0;
-		Reflection *refl;
+		int num;
 
 		if ( random() > RAND_MAX/2 ) {
 			h = RANDOM_INDEX;
@@ -62,11 +60,12 @@ static int test_lists(int num_items)
 		} /* else use the same as last time */
 
 		/* Count the number of times this reflection appeared before */
+		num = 1;
 		for ( j=0; j<i; j++ ) {
 			if ( (check[j].h == h)
 			  && (check[j].k == k)
 			  && (check[j].l == l) ) {
-				duplicate++;
+				num++;
 			}
 		}
 
@@ -75,16 +74,15 @@ static int test_lists(int num_items)
 			if ( (check[j].h == h)
 			  && (check[j].k == k)
 			  && (check[j].l == l) ) {
-				check[j].dup = duplicate;
+				check[j].num = num;
 			}
 		}
 
-		refl = add_refl(list, h, k, l);
+		add_refl(list, h, k, l);
 		check[i].h = h;
 		check[i].k = k;
 		check[i].l = l;
-		check[i].del = 0;
-		check[i].dup = duplicate;
+		check[i].num = num;
 		check[i].found = 0;
 
 	}
@@ -127,8 +125,7 @@ static int test_lists(int num_items)
 		}
 	}
 
-	/* Check that all the reflections can be found,
-	 * and delete the first few. */
+	/* Check that all the reflections can be found */
 	for ( i=0; i<num_items; i++ ) {
 
 		signed int h, k, l;
@@ -144,32 +141,12 @@ static int test_lists(int num_items)
 			return 1;
 		}
 
-		/* Delete some reflections */
-		if ( i<num_items/2 ) {
-
-			int j;
-
-			delete_refl(refl);
-			check[i].del = 1;
-
-			/* Update all counts */
-			for ( j=0; j<num_items; j++ ) {
-				if ( (check[j].h == h)
-				  && (check[j].k == k)
-				  && (check[j].l == l) ) {
-					check[j].dup--;
-
-				}
-			}
-
-		}
-
 	}
 
-	/* Check that the deleted reflections can no longer be found, unless
-	 * duplicated.  If duplicated, remove all the remaining copies. */
+	/* Delete some reflections */
 	for ( i=0; i<num_items/2; i++ ) {
 
+		int j;
 		signed int h, k, l;
 		Reflection *refl;
 
@@ -178,40 +155,78 @@ static int test_lists(int num_items)
 		l = check[i].l;
 
 		refl = find_refl(list, h, k, l);
+		delete_refl(refl);
+
+		/* Update all counts */
+		for ( j=0; j<num_items; j++ ) {
+			if ( (check[j].h == h) && (check[j].k == k)
+			  && (check[j].l == l) ) check[j].num--;
+		}
+
+	}
+
+	/* Check that the deleted reflections can no longer be found */
+	for ( i=0; i<num_items; i++ ) {
+
+		signed int h, k, l;
+		Reflection *refl;
+
+		h = check[i].h;
+		k = check[i].k;
+		l = check[i].l;
+
+		if ( check[i].num > 0 ) continue;
+
+		refl = find_refl(list, h, k, l);
 		if ( refl != NULL ) {
 
-			/* Whoops, found it.  Was it a duplicate? */
-			if ( check[i].dup == -1 ) {
-				fprintf(stderr, "Found %3i %i %3i after"
-				        " deletion.\n", h, k, l);
-				return 1;
-			} else {
+			fprintf(stderr, "Found %3i %i %3i after  deletion.\n",
+			                h, k, l);
+			return 1;
 
-				int j;
-				Reflection *c;
+		}
 
-				for ( j=0; j<check[i].dup+1; j++ ) {
-					Reflection *r2;
-					r2 = find_refl(list, h, k, l);
-					if ( r2 == NULL ) {
-						fprintf(stderr, "Found too few"
-						        " duplicates for"
-						        " %3i %3i %3i\n",
-						        h, k, l);
-						return 1;
-					}
-					delete_refl(r2);
-				}
+	}
 
-				c = find_refl(list, h, k, l);
-				if ( c != NULL ) {
-					fprintf(stderr, "Found too many "
-					        "duplicates for %3i %3i %3i\n",
-					        h, k, l);
-					return 1;
-				}
+	/* Delete remaining duplicates */
+	for ( i=0; i<num_items; i++ ) {
 
+		signed int h, k, l;
+		Reflection *refl;
+
+		if ( check[i].num == 0 ) continue;
+
+		h = check[i].h;
+		k = check[i].k;
+		l = check[i].l;
+		refl = find_refl(list, h, k, l);
+
+		printf("%i copies remaining, %p\n", check[i].num, refl);
+
+		do {
+			int j;
+			signed int ha, ka, la;
+			get_indices(refl, &ha, &ka, &la);
+			printf("removing %p %i %i %i\n", refl, ha, ka, la);
+			delete_refl(refl);
+			refl = next_found_refl(refl);
+			for ( j=0; j<num_items; j++ ) {
+				if ( (check[j].h == h) && (check[j].k == k)
+				  && (check[j].l == l) ) check[j].num--;
 			}
+		} while ( refl != NULL );
+
+		if ( check[i].num != 0 ) {
+			fprintf(stderr, "Found too few duplicates (%i) for "
+			                "%3i %3i %3i\n", check[i].num, h, k, l);
+			return 1;
+		}
+
+		refl = find_refl(list, h, k, l);
+		if ( refl != NULL ) {
+			fprintf(stderr, "Found too many duplicates for "
+			                "%3i %3i %3i\n", h, k, l);
+			return 1;
 		}
 
 	}
