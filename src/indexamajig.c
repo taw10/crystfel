@@ -38,6 +38,7 @@
 #include "thread-pool.h"
 #include "beam-parameters.h"
 #include "symmetry.h"
+#include "geometry.h"
 
 
 enum {
@@ -262,9 +263,6 @@ static struct image *get_simage(struct image *template, int alternate)
 	image->indexed_cell = template->indexed_cell;
 	image->f0 = template->f0;
 
-	/* Prevent muppetry */
-	image->reflections = NULL;
-
 	return image;
 }
 
@@ -325,7 +323,6 @@ static void process_image(void *pp, int cookie)
 	image.indexed_cell = NULL;
 	image.id = cookie;
 	image.filename = filename;
-	image.reflections = NULL;
 	image.det = pargs->static_args.det;
 
 	STATUS("Processing '%s'\n", image.filename);
@@ -397,11 +394,22 @@ static void process_image(void *pp, int cookie)
 
 	/* Measure intensities if requested */
 	if ( config_nearbragg ) {
-		output_intensities(&image, image.indexed_cell,
+
+		RefList *reflections;
+
+		//reflections = find_intersections(&image, image.indexed_cell,
+		//                                 0);
+		reflections = find_projected_peaks(&image, image.indexed_cell,
+		                                   0, 0.1);
+
+		output_intensities(&image, image.indexed_cell, reflections,
 		                   pargs->static_args.output_mutex,
 		                   config_polar,
 		                   pargs->static_args.config_closer,
-		                   pargs->static_args.ofh, 0, 0.1);
+		                   pargs->static_args.ofh);
+
+		reflist_free(reflections);
+
 	}
 
 	simage = get_simage(&image, config_alternate);
@@ -432,7 +440,6 @@ done:
 	free(image.data);
 	free(image.flags);
 	image_feature_list_free(image.features);
-	reflist_free(image.reflections);
 	hdfile_close(hdfile);
 }
 

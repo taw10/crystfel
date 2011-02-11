@@ -218,7 +218,6 @@ static void sum_image(void *pg, int cookie)
 	image.flags = NULL;
 	image.indexed_cell = NULL;
 	image.filename = apargs->filename;
-	image.reflections = NULL;
 	image.det = pargs->det;
 
 	STATUS("Processing '%s'\n", apargs->filename);

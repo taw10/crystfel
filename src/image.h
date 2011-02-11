@@ -65,7 +65,6 @@ struct image {
 	struct detector         *det;
 	struct beam_params      *beam;  /* The nominal beam parameters */
 	char                    *filename;
-	RefList                 *reflections;
 
 	int                     id;   /* ID number of the thread
 	                               * handling this image */
@@ -86,6 +85,10 @@ struct image {
 	int                     width;
 	int                     height;
 
+	/* Reflections (used for scaling ONLY) */
+	RefList                 *reflections;
+
+	/* Detected peaks */
 	ImageFeatureList        *features;
 
 };

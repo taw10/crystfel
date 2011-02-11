@@ -564,10 +564,17 @@ int main(int argc, char *argv[])
 		record_image(&image, !config_nonoise);
 
 		if ( config_nearbragg ) {
-			find_projected_peaks(&image, cell, 0, 0.1);
-			output_intensities(&image, cell, NULL, 0, 0, stdout,
-			                   0, 0.1);
-			reflist_free(image.reflections);
+
+			RefList *reflections;
+
+			reflections = find_projected_peaks(&image, cell,
+			                                   0, 0.1);
+
+			output_intensities(&image, cell, reflections, NULL,
+			                   0, 0, stdout);
+
+			reflist_free(reflections);
+
 		}
 
 		if ( powder_fn != NULL ) {

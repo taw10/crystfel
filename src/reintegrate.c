@@ -110,7 +110,6 @@ static void process_image(void *pg, int cookie)
 	image.flags = NULL;
 	image.indexed_cell = NULL;
 	image.filename = apargs->filename;
-	image.reflections = NULL;
 	image.det = pargs->det;
 
 	STATUS("Processing '%s'\n", apargs->filename);
@@ -137,9 +136,18 @@ static void process_image(void *pg, int cookie)
 
 	} else {
 
-		output_intensities(&image, apargs->cell,
-		                   pargs->output_mutex, pargs->config_polar,
-		                   pargs->config_closer, pargs->ofh, 0, 0.1);
+		RefList *reflections;
+
+		reflections = find_projected_peaks(&image, image.indexed_cell,
+		                                   0, 0.1);
+
+		output_intensities(&image, image.indexed_cell, reflections,
+		                   pargs->output_mutex,
+		                   pargs->config_polar,
+		                   pargs->config_closer,
+		                   pargs->ofh);
+
+		reflist_free(reflections);
 	}
 
 	free(image.data);

@@ -168,7 +168,6 @@ static void add_image(void *args, int cookie)
 	image.flags = NULL;
 	image.indexed_cell = NULL;
 	image.filename = pargs->filename;
-	image.reflections = NULL;
 	image.det = NULL;
 
 	STATUS("%3i: Processing '%s'\n", cookie, pargs->filename);

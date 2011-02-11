@@ -473,8 +473,8 @@ void dump_peaks(struct image *image, FILE *ofh, pthread_mutex_t *mutex)
 }
 
 
-int find_projected_peaks(struct image *image, UnitCell *cell,
-                         int circular_domain, double domain_r)
+RefList *find_projected_peaks(struct image *image, UnitCell *cell,
+                              int circular_domain, double domain_r)
 {
 	int x, y;
 	double ax, ay, az;
@@ -550,9 +550,7 @@ int find_projected_peaks(struct image *image, UnitCell *cell,
 	optimise_reflist(reflections);
 
 	STATUS("Found %i reflections\n", n_reflections);
-	image->reflections = reflections;
-
-	return n_reflections;
+	return reflections;
 }
 
 
@@ -664,19 +662,14 @@ static void output_header(FILE *ofh, UnitCell *cell, struct image *image)
 
 
 void output_intensities(struct image *image, UnitCell *cell,
-                        pthread_mutex_t *mutex, int polar,
-                        int use_closer, FILE *ofh,
-                        int circular_domain, double domain_r)
+                        RefList *reflections, pthread_mutex_t *mutex, int polar,
+                        int use_closer, FILE *ofh)
 {
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	Reflection *refl;
 	RefListIterator *iter;
-
-	if ( image->reflections == NULL ) {
-		find_projected_peaks(image, cell, circular_domain, domain_r);
-	}
 
 	/* Get exclusive access to the output stream if necessary */
 	if ( mutex != NULL ) pthread_mutex_lock(mutex);
@@ -687,7 +680,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
 
-	for ( refl = first_refl(image->reflections, &iter);
+	for ( refl = first_refl(reflections, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 
@@ -768,7 +761,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 		/* Write h,k,l, integrated intensity and centroid coordinates */
 		get_indices(refl, &h, &k, &l);
 		fprintf(ofh, "%3i %3i %3i %6f (at %5.2f,%5.2f) max=%6f bg=%6f\n",
-		        h, l, l, intensity, x, y, max, bg);
+		        h, k, l, intensity, x, y, max, bg);
 
 	}
 
