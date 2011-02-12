@@ -79,10 +79,12 @@ int find_chunk(FILE *fh, UnitCell **cell, char **filename, double *ev)
 	char *rval = NULL;
 	int have_ev = 0;
 	int have_cell = 0;
+	int have_filename = 0;
+	long start_of_chunk = 0;
 
 	do {
 
-		long pos = ftell(fh);
+		const long start_of_line = ftell(fh);
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
@@ -96,11 +98,15 @@ int find_chunk(FILE *fh, UnitCell **cell, char **filename, double *ev)
 			*ev = 0.0;
 			have_cell = 0;
 			have_ev = 0;
+			have_filename = 1;
+			start_of_chunk = ftell(fh);
 
 		}
 
+		if ( !have_filename ) continue;
+
 		if ( strncmp(line, "astar = ", 8) == 0 ) {
-			fseek(fh, pos, 0);
+			fseek(fh, start_of_line, 0);
 			*cell = read_orientation_matrix(fh);
 			have_cell = 1;
 		}
@@ -111,8 +117,8 @@ int find_chunk(FILE *fh, UnitCell **cell, char **filename, double *ev)
 		}
 
 		if ( strlen(line) == 0 ) {
-			if ( have_cell && have_ev ) {
-				fseek(fh, pos, 0);
+			if ( have_filename && have_cell && have_ev ) {
+				fseek(fh, start_of_chunk, 0);
 				return 0;
 			}
 		}

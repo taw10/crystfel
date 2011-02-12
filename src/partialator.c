@@ -155,6 +155,9 @@ int main(int argc, char *argv[])
 	int n_iter = 10;
 	struct beam_params *beam = NULL;
 	double *I_full;
+	int n_found = 0;
+	int n_expected = 0;
+	int n_notfound = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -339,14 +342,15 @@ int main(int argc, char *argv[])
 			int clamp1, clamp2;
 
 			get_indices(refl, &h, &k, &l);
-			STATUS("%3i %3i %3i\n", h, k, l);
+			get_detector_pos(refl, &x, &y);
+			n_expected++;
 
 			peak = find_refl(peaks, h, k, l);
 			if ( peak == NULL ) {
-				if ( (h==0) && (k==0) && (l==0) ) continue;
-				STATUS("%3i %3i %3i not found\n", h, k, l);
+				n_notfound++;
 				continue;
 			}
+			n_found++;
 
 			get_asymm(h, k, l, &ha, &ka, &la, sym);
 			add_item(obs, ha, ka, la);
@@ -364,6 +368,9 @@ int main(int argc, char *argv[])
 
 	}
 	fclose(fh);
+	STATUS("Found %5.2f%% of the expected peaks (%i %i %i).\n",
+	       100.0 * (double)n_found / n_expected,
+	       n_found, n_notfound, n_expected);
 
 	cts = new_list_count();
 
