@@ -76,7 +76,7 @@ struct static_index_args
 	int gpu_dev;
 	int peaks;
 	int cellr;
-	double nominal_photon_energy;
+	struct beam_params *beam;
 
 	/* Output stream */
 	pthread_mutex_t *output_mutex;  /* Protects the output stream */
@@ -317,6 +317,7 @@ static void process_image(void *pp, int cookie)
 	const unsigned char *flags = pargs->static_args.flags;
 	struct gpu_context *gctx = pargs->static_args.gctx;
 	const char *sym = pargs->static_args.sym;
+	const struct beam_params *beam = pargs->static_args.beam;
 
 	image.features = NULL;
 	image.data = NULL;
@@ -338,7 +339,7 @@ static void process_image(void *pp, int cookie)
 	}
 
 	hdf5_read(hdfile, &image, pargs->static_args.config_satcorr,
-	          pargs->static_args.nominal_photon_energy);
+	          beam->photon_energy);
 
 	if ( config_cmfilter ) {
 		filter_cm(&image);
@@ -397,10 +398,14 @@ static void process_image(void *pp, int cookie)
 
 		RefList *reflections;
 
-		//reflections = find_intersections(&image, image.indexed_cell,
-		//                                 0);
-		reflections = find_projected_peaks(&image, image.indexed_cell,
-		                                   0, 0.1);
+		image.div = beam->divergence;
+		image.bw = beam->bandwidth;
+		image.profile_radius = 0.005e9;
+
+		reflections = find_intersections(&image, image.indexed_cell,
+		                                 0);
+		//reflections = find_projected_peaks(&image, image.indexed_cell,
+		//                                   0, 0.1);
 
 		output_intensities(&image, image.indexed_cell, reflections,
 		                   pargs->static_args.output_mutex,
@@ -888,7 +893,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.peaks = peaks;
 	qargs.static_args.output_mutex = &output_mutex;
 	qargs.static_args.ofh = ofh;
-	qargs.static_args.nominal_photon_energy = nominal_photon_energy;
+	qargs.static_args.beam = beam;
 
 	qargs.fh = fh;
 	qargs.prefix = prefix;
