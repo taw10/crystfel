@@ -807,6 +807,7 @@ enable_option_checking
 enable_dependency_tracking
 enable_silent_rules
 with_hdf5
+with_gsl
 enable_gsl_fudge
 enable_opencl
 enable_gtk
@@ -1474,6 +1475,8 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-hdf5             specify location of HDF5 library
+  --with-gsl              specify location of GSL (instead of using
+                          pkg-config)
   --with-libtiff          specify location of libTIFF library
 
 Some influential environment variables:
@@ -6334,6 +6337,12 @@ $as_echo "no" >&6; }
 	fi
 fi
 
+# Check whether --with-gsl was given.
+if test "${with_gsl+set}" = set; then :
+  withval=$with_gsl; GSL_CFLAGS="-I$withval/include"
+ GSL_LIBS="-L$withval/lib -lgsl -lgslcblas -lm"
+else
+
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for GSL" >&5
 $as_echo_n "checking for GSL... " >&6; }
@@ -6391,13 +6400,13 @@ fi
 	echo "$GSL_PKG_ERRORS" >&5
 
 
-   as_fn_error $? "GSL is required" "$LINENO" 5
+    as_fn_error $? "GSL is required" "$LINENO" 5
 
 elif test $pkg_failed = untried; then
      	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
-   as_fn_error $? "GSL is required" "$LINENO" 5
+    as_fn_error $? "GSL is required" "$LINENO" 5
 
 else
 	GSL_CFLAGS=$pkg_cv_GSL_CFLAGS
@@ -6406,6 +6415,9 @@ else
 $as_echo "yes" >&6; }
 
 fi
+
+fi
+
 
 
 # Check whether --enable-gsl-fudge was given.

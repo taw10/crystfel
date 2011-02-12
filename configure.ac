@@ -30,9 +30,14 @@ AC_ARG_WITH(hdf5,
 [HDF5_LIBS="-lhdf5"])
 
 
-PKG_CHECK_MODULES([GSL], [gsl], [],
-[
-   AC_ERROR([GSL is required])
+AC_ARG_WITH(gsl,
+[AS_HELP_STRING([--with-gsl], [specify location of GSL (instead of using pkg-config)])],
+[GSL_CFLAGS="-I$withval/include"
+ GSL_LIBS="-L$withval/lib -lgsl -lgslcblas -lm"],
+[PKG_CHECK_MODULES([GSL], [gsl], [],
+ [
+    AC_ERROR([GSL is required])
+ ])
 ])
 
 
