@@ -318,9 +318,6 @@ int main(int argc, char *argv[])
 			r = sscanf(line, "%i %i %i %f", &h, &k, &l, &intensity);
 			if ( r != 4 ) continue;
 
-			/* Not interested in the central beam */
-			if ( (h==0) && (k==0) && (l==0) ) continue;
-
 			refl = add_refl(peaks, h, k, l);
 			set_int(refl, intensity);
 
