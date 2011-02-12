@@ -353,7 +353,9 @@ int main(int argc, char *argv[])
 			n_found++;
 
 			get_asymm(h, k, l, &ha, &ka, &la, sym);
-			add_item(obs, ha, ka, la);
+			if ( find_item(obs, ha, ka, la) == 0 ) {
+				add_item(obs, ha, ka, la);
+			}
 			new = add_refl(images[i].reflections, ha, ka, la);
 			get_partial(refl, &r1, &r2, &p, &clamp1, &clamp2);
 			get_detector_pos(refl, &x, &y);
