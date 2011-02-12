@@ -53,7 +53,7 @@ struct _reflection {
 	struct _reflection *child[2]; /* Child nodes */
 	struct _reflection *parent;   /* Parent node */
 	struct _reflection *next;     /* Next and previous in doubly linked */
-	struct _reflection *prev;     /* list of duplicate reflections */
+	struct _reflection *prev;     /*  list of duplicate reflections */
 
 	/* Payload */
 	struct _refldata data;

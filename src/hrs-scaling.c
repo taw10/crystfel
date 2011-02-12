@@ -52,7 +52,6 @@ static void s_uhavha(signed int hat, signed int kat, signed int lat,
 		if ( !get_scalable(refl) ) continue;
 
 		ic = get_intensity(refl) / get_partiality(refl);
-		STATUS("%f / %f = %f\n", get_intensity(refl), get_partiality(refl), ic);
 		sigi = sqrt(fabs(ic));
 
 		uha_val += 1.0 / pow(sigi, 2.0);
@@ -118,7 +117,6 @@ static double iterate_scale(struct image *images, int n,
 
 	uh_arr = new_list_intensity();
 	vh_arr = new_list_intensity();
-	STATUS("%i\n", n_ref);
 	for ( h=0; h<n_ref; h++ ) {
 
 		double uh, vh;
@@ -126,7 +124,6 @@ static double iterate_scale(struct image *images, int n,
 
 		uh = s_uh(images, n, it->h, it->k, it->l, sym);
 		vh = s_vh(images, n, it->h, it->k, it->l, sym);
-		STATUS("%f %f\n", uh, vh);
 
 		set_intensity(uh_arr, it->h, it->k, it->l, uh);
 		set_intensity(vh_arr, it->h, it->k, it->l, vh);

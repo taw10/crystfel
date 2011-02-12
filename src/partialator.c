@@ -112,6 +112,7 @@ static void refine_all(struct image *images, int n_total_patterns,
 static void select_scalable_reflections(struct image *images, int n)
 {
 	int m;
+	int n_scalable = 0;
 
 	for ( m=0; m<n; m++ ) {
 
@@ -130,10 +131,12 @@ static void select_scalable_reflections(struct image *images, int n)
 			if ( v < 0.1 ) scalable = 0;
 
 			set_scalable(refl, scalable);
+			if ( scalable ) n_scalable++;
 
 		}
 
 	}
+	STATUS("%i reflections selected as scalable.\n", n_scalable);
 }
 
 
@@ -289,7 +292,6 @@ int main(int argc, char *argv[])
 		}
 
 		images[i].indexed_cell = cell;
-
 		images[i].filename = filename;
 		images[i].div = beam->divergence;
 		images[i].bw = beam->bandwidth;
@@ -359,6 +361,7 @@ int main(int argc, char *argv[])
 			new = add_refl(images[i].reflections, ha, ka, la);
 			get_partial(refl, &r1, &r2, &p, &clamp1, &clamp2);
 			get_detector_pos(refl, &x, &y);
+			set_int(new, get_intensity(peak));
 			set_partial(new, r1, r2, p, clamp1, clamp2);
 			set_detector_pos(new, 0.0, x, y);
 
