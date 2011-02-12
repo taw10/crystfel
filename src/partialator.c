@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
 
 		if ( find_chunk(fh, &cell, &filename, &ph_en) == 1 ) {
 			ERROR("Couldn't get all of the filenames, cells and"
-			      "wavelengths from the input stream.\n");
+			      " wavelengths from the input stream.\n");
 			return 1;
 		}
 
