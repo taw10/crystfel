@@ -294,7 +294,6 @@ int main(int argc, char *argv[])
 		images[i].div = beam->divergence;
 		images[i].bw = beam->bandwidth;
 		images[i].det = det;
-		images[i].beam = beam;
 		images[i].osf = 1.0;
 		images[i].profile_radius = 0.005e9;
 		images[i].reflections = reflist_new();
@@ -303,6 +302,7 @@ int main(int argc, char *argv[])
 		/* Muppet proofing */
 		images[i].data = NULL;
 		images[i].flags = NULL;
+		images[i].beam = NULL;
 
 		/* Read integrated intensities from pattern */
 		peaks = reflist_new();
