@@ -370,9 +370,8 @@ int main(int argc, char *argv[])
 
 	}
 	fclose(fh);
-	STATUS("Found %5.2f%% of the expected peaks (%i %i %i).\n",
-	       100.0 * (double)n_found / n_expected,
-	       n_found, n_notfound, n_expected);
+	STATUS("Found %5.2f%% of the expected peaks (missed %i of %i).\n",
+	       100.0 * (double)n_found / n_expected, n_notfound, n_expected);
 
 	cts = new_list_count();
 
