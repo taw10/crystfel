@@ -248,8 +248,6 @@ RefList *find_intersections(struct image *image, UnitCell *cell,
 	for ( h=-hmax; h<hmax; h++ ) {
 	for ( k=-kmax; k<kmax; k++ ) {
 	for ( l=-lmax; l<lmax; l++ ) {
-		/* Ignore central beam */
-		if ( (h==0) && (k==0) && (l==0) ) continue;
 		check_reflection(image, mres, output, reflections, h, k, l,
 		                 asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
 	}
