@@ -148,6 +148,10 @@ Reflection *find_refl(RefList *list, INDICES)
 
 		} else {
 
+			assert(search == refl->serial);
+			assert(h == refl->data.h);
+			assert(k == refl->data.k);
+			assert(l == refl->data.l);
 			return refl;
 
 		}
