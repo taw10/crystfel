@@ -87,6 +87,8 @@ static int test_lists(int num_items)
 
 	}
 
+	optimise_reflist(list);
+
 	/* Iterate over the list and check we find everything */
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;

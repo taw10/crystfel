@@ -18,6 +18,9 @@
 #endif
 
 
+#include <pthread.h>
+
+extern pthread_mutex_t stderr_lock;
 extern signed int get_status_label(void);
 
 

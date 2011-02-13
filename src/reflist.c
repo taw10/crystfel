@@ -15,6 +15,7 @@
 #include <stdio.h>
 
 #include "reflist.h"
+#include "utils.h"
 
 
 struct _refldata {
@@ -526,6 +527,121 @@ Reflection *next_refl(Reflection *refl, RefListIterator *iter)
 
 /*********************************** Voodoo ***********************************/
 
+static int recursive_depth(Reflection *refl)
+{
+	int depth_left, depth_right;
+
+	if ( refl == NULL ) return 0;
+
+	depth_left = recursive_depth(refl->child[0]);
+	depth_right = recursive_depth(refl->child[1]);
+
+	return 1 + biggest(depth_left, depth_right);
+}
+
+
+static int recursive_count(Reflection *refl)
+{
+	int count_left, count_right;
+
+	if ( refl == NULL ) return 1;
+
+	count_left = recursive_count(refl->child[0]);
+	count_right = recursive_count(refl->child[1]);
+
+	return 1 + count_left + count_right;
+}
+
+
+static int tree_to_vine(Reflection *root)
+{
+	Reflection *vine_tail = root;
+	Reflection *remainder = vine_tail->child[0];
+	int size = 0;
+
+	while ( remainder != NULL ) {
+
+		if ( remainder->child[1] == NULL ) {
+			vine_tail = remainder;
+			remainder = remainder->child[0];
+			size++;
+		} else {
+			Reflection *tmp = remainder->child[1];
+			remainder->child[1] = tmp->child[0];
+			if ( tmp->child[0] != NULL ) {
+				tmp->child[0]->parent = remainder;
+			}
+			tmp->child[0] = remainder;
+			if ( remainder != NULL ) remainder->parent = tmp;
+			remainder = tmp;
+			vine_tail->child[0] = tmp;
+			if ( tmp != NULL ) tmp->parent = vine_tail;
+		}
+
+	}
+
+	return size;
+}
+
+
+static void compress(Reflection *root, int count)
+{
+	Reflection *scan = root;
+	int i;
+
+	for ( i=1; i<=count; i++ ) {
+		Reflection *child;
+		child = scan->child[0];
+		scan->child[0] = child->child[0];
+		if ( child->child[0] != NULL ) {
+			child->child[0]->parent = scan;
+		}
+		scan = scan->child[0];
+		child->child[0] = scan->child[1];
+		if ( scan->child[1] != NULL ) {
+			scan->child[1]->parent = child;
+		}
+		scan->child[1] = child;
+		if ( child != NULL ) {
+			child->parent = scan;
+		}
+	}
+}
+
+
+static void vine_to_tree(Reflection *root, int size)
+{
+	int leaf_count = size + 1 - pow(2.0, floor(log(size+1)/log(2.0)));
+
+	compress(root, leaf_count);
+	size -= leaf_count;
+	while ( size > 1 ) {
+		compress(root, size / 2);
+		size = size / 2;
+	}
+}
+
+
 void optimise_reflist(RefList *list)
 {
+	int n_items;
+	int size;
+	const int verbose = 0;
+
+	n_items = recursive_count(list->head->child[0]);
+	if ( verbose ) {
+		STATUS("Tree depth = %i\n",
+		       recursive_depth(list->head->child[0]));
+		STATUS("Number of items = %i\n", n_items);
+		STATUS("Optimum depth = %5.2f\n", floor(log(n_items)/log(2.0)));
+	}
+
+	/* Now use the DSW algorithm to rebalance the tree */
+	size = tree_to_vine(list->head);
+	vine_to_tree(list->head, size);
+
+	if ( verbose ) {
+		STATUS("Tree depth after rebalancing = %i\n",
+		       recursive_depth(list->head->child[0]));
+	}
 }
