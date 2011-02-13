@@ -110,6 +110,7 @@ static double iterate_scale(struct image *images, int n,
 	double *vha_arr;
 	int h;  /* Reflection index */
 	int frame;
+	int refidx;
 
 	M = gsl_matrix_calloc(n, n);
 	v = gsl_vector_calloc(n);
@@ -133,10 +134,10 @@ static double iterate_scale(struct image *images, int n,
 	uha_arr = malloc(n*sizeof(double));
 	vha_arr = malloc(n*sizeof(double));
 
-	for ( h=0; h<n_ref; h++ ) {
+	for ( refidx=0; refidx<n_ref; refidx++ ) {
 
 		int a;
-		struct refl_item *it = get_item(obs, h);
+		struct refl_item *it = get_item(obs, refidx);
 		const signed int h = it->h;
 		const signed int k = it->k;
 		const signed int l = it->l;
@@ -201,6 +202,7 @@ static double iterate_scale(struct image *images, int n,
 			gsl_vector_set(v, a, vval+vc);
 
 		}
+		progress_bar(refidx, n_ref, "Filling matrix");
 
 	}
 
