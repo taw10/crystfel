@@ -368,6 +368,7 @@ int main(int argc, char *argv[])
 		}
 		reflist_free(peaks);
 		reflist_free(transfer);
+		optimise_reflist(images[i].reflections);
 
 		progress_bar(i, n_total_patterns-1, "Loading pattern data");
 
