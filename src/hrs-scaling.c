@@ -202,7 +202,6 @@ static double iterate_scale(struct image *images, int n,
 			gsl_vector_set(v, a, vval+vc);
 
 		}
-		progress_bar(refidx, n_ref, "Filling matrix");
 
 	}
 
