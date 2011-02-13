@@ -376,6 +376,8 @@ int main(int argc, char *argv[])
 	fclose(fh);
 	STATUS("Found %5.2f%% of the expected peaks (missed %i of %i).\n",
 	       100.0 * (double)n_found / n_expected, n_notfound, n_expected);
+	STATUS("Mean measurements per unique reflection: %5.2f\n",
+	       (double)n_found / num_items(obs));
 
 	cts = new_list_count();
 
