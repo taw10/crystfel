@@ -20,5 +20,6 @@ src/cubeit
 src/reintegrate
 src/estimate_background
 src/check_hkl
+src/sum_stack
 src/.dirstamp
 *~

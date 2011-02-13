@@ -5,7 +5,7 @@ ACLOCAL_AMFLAGS = -I m4
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
                src/compare_hkl src/powder_plot src/render_hkl \
                src/calibrate_detector src/partialator src/reintegrate \
-               src/estimate_background src/check_hkl
+               src/estimate_background src/check_hkl src/sum_stack
 
 noinst_PROGRAMS = tests/list_check
 
@@ -75,10 +75,13 @@ src_render_hkl_SOURCES = src/render_hkl.c src/cell.c src/reflections.c \
                          src/hdf5-file.c src/image.c src/filters.c \
                          src/thread-pool.c
 
+src_sum_stack_SOURCES = src/sum_stack.c src/utils.c src/hdf5-file.c \
+                        src/image.c src/filters.c src/peaks.c src/detector.c \
+                        src/cell.c src/thread-pool.c src/reflist.c
+
 src_calibrate_detector_SOURCES = src/calibrate_detector.c src/utils.c \
-                                 src/hdf5-file.c src/image.c src/filters.c \
-                                 src/peaks.c src/detector.c src/cell.c \
-                                 src/thread-pool.c src/reflist.c
+                                 src/hdf5-file.c src/image.c src/thread-pool.c \
+                                 src/detector.c
 
 src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
                           src/utils.c src/detector.c src/peaks.c src/image.c \
