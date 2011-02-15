@@ -30,14 +30,60 @@
 
 static void show_help(const char *s)
 {
-	printf("Syntax: %s [options] <file.h5>\n\n", s);
+	printf("Syntax: %s [options] -i <file.h5>\n\n", s);
 	printf(
-"Plot a powder pattern as a 1D graph using the detector geometry.\n"
+"Optimise detector geometry.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
 "  -g. --geometry=<file>      Get detector geometry from file.\n"
 "  -i, --input=<file>         Input filename.\n"
+"      --split                Break up input file into panels according to\n"
+"                              the detector geometry description.\n"
 "\n");
+}
+
+
+static void split_image(struct image *image)
+{
+	int i;
+	const struct detector *det = image->det;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		int x, y;
+		struct panel *p;
+		float *data;
+		int width, height;
+		char filename[1024];
+
+		p = &det->panels[i];
+
+		width = 1 + p->max_x - p->min_x;
+		height = 1 + p->max_y - p->min_y;
+		data = malloc(width*height*sizeof(float));
+		snprintf(filename, 1023, "%s-%i.h5", image->filename, i);
+
+		STATUS("Panel %i, %i by %i pixels -> %s\n", i, width, height,
+		                                            filename);
+
+		for ( x=0; x<width; x++ ) {
+		for ( y=0; y<height; y++ ) {
+
+			int im_x, im_y;
+
+			im_x = x+p->min_x;
+			im_y = y+p->min_y;
+
+			data[x+width*y] = image->data[im_x+image->width*im_y];
+
+		}
+		}
+
+		hdf5_write(filename, data, width, height, H5T_NATIVE_FLOAT);
+
+		free(data);
+
+	}
 }
 
 
@@ -49,12 +95,14 @@ int main(int argc, char *argv[])
 	struct hdfile *hdfile;
 	char *filename = NULL;
 	char *geometry = NULL;
+	int split = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
 		{"geometry",           1, NULL,               'g'},
+		{"split",              0, &split,              1},
 		{0, 0, NULL, 0}
 	};
 
@@ -87,6 +135,7 @@ int main(int argc, char *argv[])
 		ERROR("You must specify the input filename with -i\n");
 		return 1;
 	}
+	image.filename = filename;
 
 	if ( geometry == NULL ) {
 		ERROR("You need to specify a geometry file with --geometry\n");
@@ -103,6 +152,11 @@ int main(int argc, char *argv[])
 	hdfile = hdfile_open(filename);
 	hdfile_set_image(hdfile, "/data/data");
 	hdf5_read(hdfile, &image, 1, 2000.0);
+
+	if ( split ) {
+		split_image(&image);
+		exit(0);
+	}
 
 	for ( x=0; x<image.width; x++ ) {
 	for ( y=0; y<image.height; y++ ) {
