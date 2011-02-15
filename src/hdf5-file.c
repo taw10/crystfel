@@ -280,17 +280,25 @@ static double get_wavelength(struct hdfile *f)
 	herr_t r;
 	hid_t dh;
 	double lambda;
+	int nm = 1;
 
 	dh = H5Dopen(f->fh, "/LCLS/photon_wavelength_nm", H5P_DEFAULT);
-	if ( dh < 0 ) return -1.0;
+	if ( dh < 0 ) {
+		dh = H5Dopen(f->fh, "/LCLS/photon_wavelength_A", H5P_DEFAULT);
+		if ( dh < 0 ) return -1.0;
+		nm = 0;
+
+	}
 
 	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
 	            H5P_DEFAULT, &lambda);
 	H5Dclose(dh);
+
 	if ( r < 0 ) return -1.0;
 
 	/* Convert nm -> m */
-	return lambda / 1.0e9;
+	if ( nm ) return lambda / 1.0e9;
+	return lambda / 1.0e10;
 }
 
 
