@@ -317,10 +317,11 @@ struct detector *get_detector_geometry(const char *filename)
 		} else if ( strcmp(path[1], "badrow_direction") == 0 ) {
 			det->panels[np].badrow = bits[2][0];
 			if ( (det->panels[np].badrow != 'x')
-			  && (det->panels[np].badrow != 'y') ) {
-				ERROR("badrow_direction must be 'x' or 'y'\n");
-				ERROR("Assuming 'x'\n.");
-				det->panels[np].badrow = 'x';
+			  && (det->panels[np].badrow != 'y')
+			  && (det->panels[np].badrow != '-') ) {
+				ERROR("badrow_direction must be x, y or '-'\n");
+				ERROR("Assuming '-'\n.");
+				det->panels[np].badrow = '-';
 			}
 		} else if ( strcmp(path[1], "no_index") == 0 ) {
 			det->panels[np].no_index = atob(bits[2]);

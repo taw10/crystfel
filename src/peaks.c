@@ -115,10 +115,7 @@ static int cull_peaks_in_panel(struct image *image, struct panel *p)
 				if ( fabs(f->y - g->y) < 2.0 ) ncol++;
 			} else if ( p->badrow == 'y' ) {
 				if ( fabs(f->x - g->x) < 2.0 ) ncol++;
-			} else {
-				ERROR("Invalid badrow direction.\n");
-				abort();
-			}
+			} /* else do nothing */
 
 		}
 
