@@ -35,6 +35,45 @@
 #define MAX_CYCLES (30)
 
 
+char *find_common_reflections(struct image *images, int n)
+{
+	int i;
+	char *cref;
+
+	cref = calloc(n*n, sizeof(char));
+
+	for ( i=0; i<n; i++ ) {
+
+		Reflection *refl;
+		RefListIterator *iter;
+
+		for ( refl = first_refl(images[i].reflections, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) ) {
+
+			signed int h, k, l;
+			int j;
+
+			get_indices(refl, &h, &k, &l);
+
+			for ( j=0; j<i; j++ ) {
+				Reflection *r2;
+				r2 = find_refl(images[j].reflections, h, k, l);
+				if ( r2 != NULL ) {
+					cref[i+n*j] = 1;
+					cref[j+n*i] = 1;
+					break;
+				}
+			}
+
+		}
+
+	}
+
+	return cref;
+}
+
+
 static void s_uhavha(signed int hat, signed int kat, signed int lat,
                      struct image *image, double *uha, double *vha)
 {
@@ -97,7 +136,7 @@ static double s_vh(struct image *images, int n,
 
 
 static double iterate_scale(struct image *images, int n,
-                            ReflItemList *obs, const char *sym)
+                            ReflItemList *obs, const char *sym, char *cref)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
@@ -180,6 +219,9 @@ static double iterate_scale(struct image *images, int n,
 
 				/* Matrix is symmetric */
 				if ( b > a ) continue;
+
+				/* Zero if no common reflections */
+				if ( cref[a+n*b] != 0 ) continue;
 
 				uhb = uha_arr[b];
 				vhb = vha_arr[b];
@@ -336,7 +378,7 @@ static void normalise_osfs(struct image *images, int n)
 
 /* Scale the stack of images */
 double *scale_intensities(struct image *images, int n, const char *sym,
-                          ReflItemList *obs)
+                          ReflItemList *obs, char *cref)
 {
 	int m;
 	double *I_full;
@@ -350,7 +392,7 @@ double *scale_intensities(struct image *images, int n, const char *sym,
 	i = 0;
 	do {
 
-		max_shift = iterate_scale(images, n, obs, sym);
+		max_shift = iterate_scale(images, n, obs, sym, cref);
 		STATUS("Iteration %2i: max shift = %5.2f\n", i, max_shift);
 		i++;
 		normalise_osfs(images, n);

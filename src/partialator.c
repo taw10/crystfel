@@ -161,6 +161,7 @@ int main(int argc, char *argv[])
 	int n_found = 0;
 	int n_expected = 0;
 	int n_notfound = 0;
+	char *cref;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -379,12 +380,13 @@ int main(int argc, char *argv[])
 	STATUS("Mean measurements per unique reflection: %5.2f\n",
 	       (double)n_found / num_items(obs));
 
+	cref = find_common_reflections(images, n_total_patterns);
 	cts = new_list_count();
 
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
 	select_scalable_reflections(images, n_total_patterns);
-	I_full = scale_intensities(images, n_total_patterns, sym, obs);
+	I_full = scale_intensities(images, n_total_patterns, sym, obs, cref);
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -416,7 +418,8 @@ int main(int argc, char *argv[])
 		/* Re-estimate all the full intensities */
 		free(I_full);
 		select_scalable_reflections(images, n_total_patterns);
-		I_full = scale_intensities(images, n_total_patterns, sym, obs);
+		I_full = scale_intensities(images, n_total_patterns,
+		                           sym, obs, cref);
 
 		fclose(fhg);
 		fclose(fhp);
@@ -443,6 +446,7 @@ int main(int argc, char *argv[])
 	free(det);
 	free(beam);
 	free(cts);
+	free(cref);
 	for ( i=0; i<n_total_patterns; i++ ) {
 		cell_free(images[i].indexed_cell);
 		free(images[i].filename);
