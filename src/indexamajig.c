@@ -587,7 +587,7 @@ int main(int argc, char *argv[])
 		{"no-check-prefix",    0, &config_checkprefix, 0},
 		{"no-closer-peak",     0, &config_closer,      0},
 		{"gpu-dev",            1, NULL,                5},
-		{"insane",             1, &config_insane,      1},
+		{"insane",             0, &config_insane,      1},
 		{0, 0, NULL, 0}
 	};
 
