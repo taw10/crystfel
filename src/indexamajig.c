@@ -771,6 +771,7 @@ int main(int argc, char *argv[])
 		       "If that isn't what you wanted, re-run with"
 		       " --indexing=<method>.\n");
 		indm = NULL;
+		indexer_needs_cell = 0;
 	} else {
 		indm = build_indexer_list(indm_str, &indexer_needs_cell);
 		if ( indm == NULL ) {
@@ -799,6 +800,9 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	free(scellr);  /* free(NULL) is OK. */
+
+	/* No indexing -> no reduction */
+	if ( indm == NULL ) reduction_needs_cell = 0;
 
 	if ( geometry == NULL ) {
 		ERROR("You need to specify a geometry file with --geometry\n");
