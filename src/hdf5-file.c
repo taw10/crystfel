@@ -89,18 +89,6 @@ int hdfile_set_image(struct hdfile *f, const char *path)
 }
 
 
-int hdfile_get_width(struct hdfile *f)
-{
-	return f->ny;
-}
-
-
-int hdfile_get_height(struct hdfile *f)
-{
-	return f->nx;
-}
-
-
 int get_peaks(struct image *image, struct hdfile *f)
 {
 	hid_t dh, sh;
@@ -408,9 +396,8 @@ int hdf5_read(struct hdfile *f, struct image *image, int satcorr,
 	uint16_t *flags;
 	hid_t mask_dh;
 
-	image->width = hdfile_get_width(f);
-	image->height = hdfile_get_height(f);
-	STATUS("%i, %i\n", image->width, image->height);
+	image->width = f->ny;
+	image->height = f->nx; /* Note axis swap */
 
 	buf = malloc(sizeof(float)*f->nx*f->ny);
 

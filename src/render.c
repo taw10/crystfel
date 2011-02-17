@@ -139,13 +139,18 @@ void render_scale(float val, float max, int scale,
 
 #ifdef HAVE_GTK
 
-
-static void *render_bin(float *in, int inw, int inh, int binning, float *maxp)
+static float *get_binned_image(struct image *image, int binning, float *pmax)
 {
 	float *data;
 	int x, y;
 	int w, h;
+	int inw, inh;
+	float *in;
 	float max;
+
+	inw = image->width;
+	inh = image->height;
+	in = image->data;
 
 	w = inw / binning;
 	h = inh / binning;      /* Some pixels might get discarded */
@@ -174,44 +179,9 @@ static void *render_bin(float *in, int inw, int inh, int binning, float *maxp)
 	}
 	}
 
-	*maxp = max;
+	*pmax = max;
 	return data;
-}
 
-
-float *render_get_image_binned(DisplayWindow *dw, int binning, float *max)
-{
-	struct image *image;
-	float *data;
-
-	if ( (dw->image == NULL) || (dw->image_dirty) ) {
-
-		image = malloc(sizeof(struct image));
-		if ( image == NULL ) return NULL;
-		image->features = NULL;
-		image->data = NULL;
-
-		/* We don't care about the photon energy here */
-		hdf5_read(dw->hdfile, image, 1, 0.0);
-		dw->image_dirty = 0;
-		if ( dw->cmfilter ) filter_cm(image);
-		if ( dw->noisefilter ) filter_noise(image, NULL);
-
-		/* Deal with the old image, if existing */
-		if ( dw->image != NULL ) {
-			image->features = dw->image->features;
-			if ( dw->image->data != NULL ) free(dw->image->data);
-			free(dw->image);
-		}
-
-		dw->image = image;
-
-	}
-
-	data = render_bin(dw->image->data, dw->image->width, dw->image->height,
-	                  binning, max);
-
-	return data;
 }
 
 
@@ -267,21 +237,23 @@ static void show_marked_features(struct image *image, guchar *data,
 /* Return a pixbuf containing a rendered version of the image after binning.
  * This pixbuf might be scaled later - hopefully mostly in a downward
  * direction. */
-GdkPixbuf *render_get_image(DisplayWindow *dw)
+GdkPixbuf *render_get_image(struct image *image, int binning, int scale,
+                            double boost)
 {
-	int mw, mh, w, h;
+	int w, h;
 	guchar *data;
 	float *hdr;
-	size_t x, y;
+	int x, y;
 	float max;
+	int mw, mh;
 
-	mw = hdfile_get_width(dw->hdfile);
-	mh = hdfile_get_height(dw->hdfile);
-	w = mw / dw->binning;
-	h = mh / dw->binning;
+	mw = image->width;
+	mh = image->height;
+	w = mw / binning;
+	h = mh / binning;
 
 	/* High dynamic range version */
-	hdr = render_get_image_binned(dw, dw->binning, &max);
+	hdr = get_binned_image(image, binning, &max);
 	if ( hdr == NULL ) return NULL;
 
 	/* Rendered (colourful) version */
@@ -291,7 +263,7 @@ GdkPixbuf *render_get_image(DisplayWindow *dw)
 		return NULL;
 	}
 
-	max /= dw->boostint;
+	max /= boost;
 	if ( max <= 6 ) { max = 10; }
 	/* These x,y coordinates are measured relative to the bottom-left
 	 * corner */
@@ -302,7 +274,7 @@ GdkPixbuf *render_get_image(DisplayWindow *dw)
 		float r, g, b;
 
 		val = hdr[x+w*y];
-		render_scale(val, max, dw->scale, &r, &g, &b);
+		render_scale(val, max, scale, &r, &g, &b);
 
 		/* Stuff inside square brackets makes this pixel go to
 		 * the expected location in the pixbuf (which measures
@@ -314,7 +286,7 @@ GdkPixbuf *render_get_image(DisplayWindow *dw)
 	}
 	}
 
-	show_marked_features(dw->image, data, w, h, dw->binning);
+	show_marked_features(image, data, w, h, binning);
 
 	/* Finished with this */
 	free(hdr);
@@ -323,6 +295,7 @@ GdkPixbuf *render_get_image(DisplayWindow *dw)
 	return gdk_pixbuf_new_from_data(data, GDK_COLORSPACE_RGB, FALSE, 8,
 					w, h, w*3, render_free_data, NULL);
 }
+
 
 GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
 {
@@ -360,121 +333,19 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
 }
 
 
-int render_png(DisplayWindow *dw, const char *filename)
+int render_png(GdkPixbuf *pixbuf, const char *filename)
 {
-#ifdef HAVE_LIBPNG
-	FILE *fh;
-	png_structp png_ptr;
-	png_infop info_ptr;
-	png_bytep *row_pointers;
-	int x, y;
-	float *hdr;
-	float max;
-	int w, h;
-
-	w = dw->width;
-	h = dw->height;
-
-	hdr = render_get_image_binned(dw, dw->binning, &max);
-	if ( hdr == NULL ) return 1;
-
-	fh = fopen(filename, "wb");
-	if ( !fh ) {
-		ERROR("Couldn't open output file.\n");
-		return 1;
-	}
-	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
-	                                  NULL, NULL, NULL);
-	if ( !png_ptr ) {
-		ERROR("Couldn't create PNG write structure.\n");
-		fclose(fh);
-		return 1;
-	}
-	info_ptr = png_create_info_struct(png_ptr);
-	if ( !info_ptr ) {
-		png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
-		ERROR("Couldn't create PNG info structure.\n");
-		fclose(fh);
-		return 1;
-	}
-	if ( setjmp(png_jmpbuf(png_ptr)) ) {
-		png_destroy_write_struct(&png_ptr, &info_ptr);
-		fclose(fh);
-		ERROR( "PNG write failed.\n");
-		return 1;
-	}
-	png_init_io(png_ptr, fh);
-
-	png_set_IHDR(png_ptr, info_ptr, w, h, 8,
-	             PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
-	             PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
-
-	row_pointers = malloc(h*sizeof(png_bytep *));
-
-	/* Write the image data */
-	max /= dw->boostint;
-	if ( max <= 6 ) { max = 10; }
-
-	for ( y=0; y<h; y++ ) {
-
-		row_pointers[y] = malloc(w*3);
-
-		for ( x=0; x<w; x++ ) {
-
-			float r, g, b;
-			float val;
-
-			val = hdr[x+w*y];
-
-			render_scale(val, max, dw->scale, &r, &g, &b);
-			row_pointers[y][3*x] = (png_byte)255*r;
-			row_pointers[y][3*x+1] = (png_byte)255*g;
-			row_pointers[y][3*x+2] = (png_byte)255*b;
-
-		}
-	}
-
-	for ( y=0; y<h/2+1; y++ ) {
-		png_bytep scratch;
-		scratch = row_pointers[y];
-		row_pointers[y] = row_pointers[h-y-1];
-		row_pointers[h-y-1] = scratch;
-	}
-
-	png_set_rows(png_ptr, info_ptr, row_pointers);
-	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
-
-	png_destroy_write_struct(&png_ptr, &info_ptr);
-	for ( y=0; y<h; y++ ) {
-		free(row_pointers[y]);
-	}
-	free(row_pointers);
-	fclose(fh);
-
-	free(hdr);
-#else
-	STATUS("No PNG support.\n");
-#endif
+	gdk_pixbuf_save(pixbuf, filename, "png", NULL, NULL);
 	return 0;
 }
 
 
-int render_tiff_fp(DisplayWindow *dw, const char *filename)
+int render_tiff_fp(struct image *image, const char *filename)
 {
 #ifdef HAVE_TIFF
 	TIFF *th;
-	struct image *image;
 	float *line;
 	int y;
-
-	/* Get raw, unbinned image data */
-	image = malloc(sizeof(struct image));
-	if ( image == NULL ) return 1;
-	image->features = NULL;
-	image->data = NULL;
-	hdf5_read(dw->hdfile, image, 1, 0.0);
-	if ( dw->cmfilter ) filter_cm(image);
-	if ( dw->noisefilter ) filter_noise(image, NULL);
 
 	th = TIFFOpen(filename, "w");
 	if ( th == NULL ) return 1;
@@ -507,23 +378,13 @@ int render_tiff_fp(DisplayWindow *dw, const char *filename)
 }
 
 
-int render_tiff_int16(DisplayWindow *dw, const char *filename)
+int render_tiff_int16(struct image *image, const char *filename, double boost)
 {
 #ifdef HAVE_TIFF
 	TIFF *th;
-	struct image *image;
 	int16_t *line;
 	int x, y;
 	float max;
-
-	/* Get raw, unbinned image data */
-	image = malloc(sizeof(struct image));
-	if ( image == NULL ) return 1;
-	image->features = NULL;
-	image->data = NULL;
-	hdf5_read(dw->hdfile, image, 1, 0.0);
-	if ( dw->cmfilter ) filter_cm(image);
-	if ( dw->noisefilter ) filter_noise(image, NULL);
 
 	th = TIFFOpen(filename, "w");
 	if ( th == NULL ) return 1;
@@ -556,7 +417,7 @@ int render_tiff_int16(DisplayWindow *dw, const char *filename)
 			float val;
 
 			val = image->data[x+(image->height-1-y)*image->width];
-			val *= ((float)dw->boostint/max);
+			val *= ((float)boost/max);
 
 			/* Clamp to 16-bit range,
 			 * and work round inability of most readers to deal

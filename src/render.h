@@ -20,7 +20,6 @@
 
 #include <stddef.h>
 
-
 #include "image.h"
 
 enum {
@@ -29,6 +28,7 @@ enum {
 	SCALE_INVMONO
 };
 
+/* Colour scale lookup */
 extern void render_scale(float val, float max, int scale,
                          float *rp, float *gp, float *bp);
 
@@ -36,14 +36,15 @@ extern void render_scale(float val, float max, int scale,
 #ifdef HAVE_GTK
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
-#include "displaywindow.h"
 
-extern GdkPixbuf *render_get_image(DisplayWindow *dw);
+extern GdkPixbuf *render_get_image(struct image *image,
+                                   int binning, int scale, double boost);
 extern GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale);
 
-extern int render_png(DisplayWindow *dw, const char *filename);
-extern int render_tiff_fp(DisplayWindow *dw, const char *filename);
-extern int render_tiff_int16(DisplayWindow *dw, const char *filename);
+extern int render_png(GdkPixbuf *pixbuf, const char *filename);
+extern int render_tiff_fp(struct image *image, const char *filename);
+extern int render_tiff_int16(struct image *image, const char *filename,
+                             double boost);
 
 #endif /* HAVE_GTK */
 

@@ -32,8 +32,6 @@ extern int hdf5_read(struct hdfile *f, struct image *image, int satcorr,
 
 extern struct hdfile *hdfile_open(const char *filename);
 extern int hdfile_set_image(struct hdfile *f, const char *path);
-extern int hdfile_get_width(struct hdfile *f);
-extern int hdfile_get_height(struct hdfile *f);
 extern int16_t *hdfile_get_image_binned(struct hdfile *hdfile,
                                          int binning, int16_t *maxp);
 extern char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,

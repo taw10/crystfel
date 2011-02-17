@@ -52,7 +52,6 @@ typedef struct {
 
 	struct hdfile	*hdfile;
 	struct image	*image;
-	int		image_dirty;
 
 	/* Dialog boxes */
 	BinningDialog	*binning_dialog;

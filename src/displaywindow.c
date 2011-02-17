@@ -49,9 +49,9 @@ static void displaywindow_update(DisplayWindow *dw)
 	gint width;
 	GdkGeometry geom;
 
-	if ( dw->hdfile != NULL ) {
-		dw->width = hdfile_get_width(dw->hdfile)/dw->binning;
-		dw->height = hdfile_get_height(dw->hdfile)/dw->binning;
+	if ( dw->image != NULL ) {
+		dw->width = dw->image->width/dw->binning;
+		dw->height = dw->image->height/dw->binning;
 	} else {
 		dw->width = 320;
 		dw->height = 320;
@@ -73,8 +73,9 @@ static void displaywindow_update(DisplayWindow *dw)
 	if ( dw->pixbuf != NULL ) {
 		gdk_pixbuf_unref(dw->pixbuf);
 	}
-	if ( dw->hdfile != NULL ) {
-		dw->pixbuf = render_get_image(dw);
+	if ( dw->image != NULL ) {
+		dw->pixbuf = render_get_image(dw->image, dw->binning, dw->scale,
+		                              dw->boostint);
 	} else {
 		dw->pixbuf = NULL;
 	}
@@ -164,8 +165,8 @@ static gint displaywindow_set_binning_response(GtkWidget *widget, gint response,
 				"binning factor.");
 			done = 0;
 		} else {
-			if ((binning < hdfile_get_width(dw->hdfile)/10)
-			 && (binning < hdfile_get_height(dw->hdfile)/10)) {
+			if ((binning < dw->image->width/10)
+			 && (binning < dw->image->height/10)) {
 				dw->binning = binning;
 				displaywindow_update(dw);
 			} else {
@@ -250,8 +251,7 @@ static gint displaywindow_set_binning(GtkWidget *widget, DisplayWindow *dw)
 				  1, 3, 1, 2);
 
 	snprintf(tmp, 63, "Raw image size: %i by %i pixels",
-		 (int)hdfile_get_width(dw->hdfile),
-		 (int)hdfile_get_height(dw->hdfile));
+		 dw->image->width, dw->image->height);
 	label = gtk_label_new(tmp);
 	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(label),
 				  1, 3, 2, 3);
@@ -539,11 +539,11 @@ static gint displaywindow_save_response(GtkWidget *d, gint response,
 		type = gtk_combo_box_get_active(GTK_COMBO_BOX(cd->cb));
 
 		if ( type == 0 ) {
-			r = render_png(dw, file);
+			r = render_png(dw->pixbuf, file);
 		} else if ( type == 1 ) {
-			r = render_tiff_fp(dw, file);
+			r = render_tiff_fp(dw->image, file);
 		} else if ( type == 2 ) {
-			r = render_tiff_int16(dw, file);
+			r = render_tiff_int16(dw->image, file, dw->boostint);
 		} else {
 			r = -1;
 		}
@@ -879,7 +879,7 @@ struct newhdf {
 static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 {
 	hdfile_set_image(nh->dw->hdfile, nh->name);
-	nh->dw->image_dirty = 1;  /* dw->image now contains the wrong thing */
+	hdf5_read(nh->dw->hdfile, nh->dw->image, 0, 0.0);
 	displaywindow_update(nh->dw);
 	return 0;
 }
@@ -1083,6 +1083,7 @@ static gint displaywindow_motion(GtkWidget *widget, GdkEventMotion *event,
 
 }
 
+
 static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
                                 DisplayWindow *dw)
 {
@@ -1130,7 +1131,6 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->motion_callback = 0;
 	dw->numbers_window = NULL;
 	dw->image = NULL;
-	dw->image_dirty = 0;
 
 	dw->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
@@ -1163,11 +1163,14 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 
 		dw->hdfile = hdfile_open(filename);
 		if ( dw->hdfile == NULL ) {
-			fprintf(stderr, "Couldn't open file '%s'\n", filename);
+			ERROR("Couldn't open file '%s'\n", filename);
 			displaywindow_disable(dw);
 		} else if ( hdfile_set_first_image(dw->hdfile, "/") ) {
-			fprintf(stderr, "Couldn't select path\n");
+			ERROR("Couldn't select path\n");
 			displaywindow_disable(dw);
+		} else {
+			dw->image = calloc(1, sizeof(struct image));
+			hdf5_read(dw->hdfile, dw->image, 0, 0.0);
 		}
 
 	} else {
