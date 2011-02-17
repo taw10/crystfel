@@ -639,14 +639,6 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
 	float ltl = 5.0;     /* percent */
 	float angtol = deg2rad(1.5);
 
-	if ( verbose ) {
-		STATUS("Matching with this model cell: "
-		       "----------------------------\n");
-		cell_print(template);
-		STATUS("-------------------------------"
-		       "----------------------------\n");
-	}
-
 	if ( cell_get_reciprocal(template, &asx, &asy, &asz,
 	                         &bsx, &bsy, &bsz,
 	                         &csx, &csy, &csz) ) {
