@@ -3,7 +3,7 @@
  *
  * Render a high dynamic range buffer in some sensible way
  *
- * (c) 2006-2010 Thomas White <taw@physics.org>
+ * (c) 2006-2011 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
@@ -193,6 +193,7 @@ static void render_free_data(guchar *data, gpointer p)
 }
 
 
+/* FIXME: This doesn't belong here at all */
 static void show_marked_features(struct image *image, guchar *data,
                                  int w, int h, int binning)
 {

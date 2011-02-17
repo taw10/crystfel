@@ -467,8 +467,6 @@ static gint displaywindow_about(GtkWidget *widget, DisplayWindow *dw)
 
 	const gchar *authors[] = {
 		"Thomas White <taw@physics.org>",
-		"Erica Bithell <egb10@cam.ac.uk>",
-		"Alex Eggeman <ase25@cam.ac.uk>",
 		NULL
 	};
 
@@ -479,11 +477,11 @@ static gint displaywindow_about(GtkWidget *widget, DisplayWindow *dw)
 	gtk_about_dialog_set_name(GTK_ABOUT_DIALOG(window), "hdfsee");
 	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window), PACKAGE_VERSION);
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window),
-		"(c) 2006-2010 Thomas White <taw@physics.org> and others");
+		"(c) 2006-2011 Thomas White <taw@physics.org> and others");
 	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(window),
 		"Quick viewer for HDF files");
 	gtk_about_dialog_set_license(GTK_ABOUT_DIALOG(window),
-		"(c) 2006-2010 Thomas White <taw@physics.org>\n");
+		"(c) 2006-2011 Thomas White <taw@physics.org>\n");
 	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(window),
 		"http://www.bitwiz.org.uk/");
 	gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(window), authors);
