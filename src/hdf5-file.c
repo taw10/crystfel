@@ -46,7 +46,7 @@ struct hdfile *hdfile_open(const char *filename)
 	if ( f == NULL ) return NULL;
 
 	/* Please stop spamming my terminal */
-	H5Eset_auto(H5E_DEFAULT, NULL, NULL);
+	H5Eset_auto2(H5E_DEFAULT, NULL, NULL);
 
 	f->fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( f->fh < 0 ) {
@@ -67,7 +67,7 @@ int hdfile_set_image(struct hdfile *f, const char *path)
 	hsize_t max_size[2];
 	hid_t sh;
 
-	f->dh = H5Dopen(f->fh, path, H5P_DEFAULT);
+	f->dh = H5Dopen2(f->fh, path, H5P_DEFAULT);
 	if ( f->dh < 0 ) {
 		ERROR("Couldn't open dataset\n");
 		return -1;
@@ -110,9 +110,9 @@ int get_peaks(struct image *image, struct hdfile *f)
 	float *buf;
 	herr_t r;
 
-	dh = H5Dopen(f->fh, "/processing/hitfinder/peakinfo", H5P_DEFAULT);
+	dh = H5Dopen2(f->fh, "/processing/hitfinder/peakinfo", H5P_DEFAULT);
 
-	if ( dh < 0 ) dh = H5Dopen(f->fh, "/data/peakinfo", H5P_DEFAULT);
+	if ( dh < 0 ) dh = H5Dopen2(f->fh, "/data/peakinfo", H5P_DEFAULT);
 
 	if ( dh < 0 ) {
 		ERROR("No peak list found!\n");
@@ -234,7 +234,7 @@ int hdf5_write(const char *filename, const void *data,
 		return 1;
 	}
 
-	gh = H5Gcreate(fh, "data", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	gh = H5Gcreate2(fh, "data", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	if ( gh < 0 ) {
 		ERROR("Couldn't create group\n");
 		H5Fclose(fh);
@@ -247,8 +247,8 @@ int hdf5_write(const char *filename, const void *data,
 	max_size[1] = width;
 	sh = H5Screate_simple(2, size, max_size);
 
-	dh = H5Dcreate(gh, "data", type, sh,
-	               H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	dh = H5Dcreate2(gh, "data", type, sh,
+	                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Couldn't create dataset\n");
 		H5Fclose(fh);
@@ -282,9 +282,9 @@ static double get_wavelength(struct hdfile *f)
 	double lambda;
 	int nm = 1;
 
-	dh = H5Dopen(f->fh, "/LCLS/photon_wavelength_nm", H5P_DEFAULT);
+	dh = H5Dopen2(f->fh, "/LCLS/photon_wavelength_nm", H5P_DEFAULT);
 	if ( dh < 0 ) {
-		dh = H5Dopen(f->fh, "/LCLS/photon_wavelength_A", H5P_DEFAULT);
+		dh = H5Dopen2(f->fh, "/LCLS/photon_wavelength_A", H5P_DEFAULT);
 		if ( dh < 0 ) return -1.0;
 		nm = 0;
 
@@ -308,7 +308,7 @@ static double get_f0(struct hdfile *f)
 	hid_t dh;
 	double f0;
 
-	dh = H5Dopen(f->fh, "/LCLS/f_11_ENRC", H5P_DEFAULT);
+	dh = H5Dopen2(f->fh, "/LCLS/f_11_ENRC", H5P_DEFAULT);
 	if ( dh < 0 ) return -1.0;
 
 	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
@@ -329,8 +329,8 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 	float *buf;
 	herr_t r;
 
-	dh = H5Dopen(f->fh, "/processing/hitfinder/peakinfo_saturated",
-	             H5P_DEFAULT);
+	dh = H5Dopen2(f->fh, "/processing/hitfinder/peakinfo_saturated",
+	              H5P_DEFAULT);
 
 	if ( dh < 0 ) {
 		/* This isn't an error */
@@ -410,6 +410,7 @@ int hdf5_read(struct hdfile *f, struct image *image, int satcorr,
 
 	image->width = hdfile_get_width(f);
 	image->height = hdfile_get_height(f);
+	STATUS("%i, %i\n", image->width, image->height);
 
 	buf = malloc(sizeof(float)*f->nx*f->ny);
 
@@ -422,7 +423,7 @@ int hdf5_read(struct hdfile *f, struct image *image, int satcorr,
 	}
 	image->data = buf;
 
-	mask_dh = H5Dopen(f->fh, "/processing/hitfinder/masks", H5P_DEFAULT);
+	mask_dh = H5Dopen2(f->fh, "/processing/hitfinder/masks", H5P_DEFAULT);
 	if ( mask_dh <= 0 ) {
 		ERROR("Couldn't open flags\n");
 		image->flags = NULL;
@@ -492,7 +493,7 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name)
 	hid_t type;
 	hid_t class;
 
-	dh = H5Dopen(f->fh, name, H5P_DEFAULT);
+	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
 	if ( dh < 0 ) return NULL;
 
 	type = H5Dget_type(dh);
@@ -586,7 +587,7 @@ char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
 	int *is_group;
 	int *is_image;
 
-	gh = H5Gopen(f->fh, parent, H5P_DEFAULT);
+	gh = H5Gopen2(f->fh, parent, H5P_DEFAULT);
 	if ( gh < 0 ) {
 		*n = 0;
 		return NULL;
@@ -626,7 +627,7 @@ char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
 			is_group[i] = 1;
 		} else if ( type == H5G_DATASET ) {
 			hid_t dh;
-			dh = H5Dopen(gh, res[i], H5P_DEFAULT);
+			dh = H5Dopen2(gh, res[i], H5P_DEFAULT);
 			is_image[i] = looks_like_image(dh);
 			H5Dclose(dh);
 		}
