@@ -80,6 +80,8 @@ extern double resolution(UnitCell *cell,
                          signed int h, signed int k, signed int l);
 
 extern UnitCell *cell_rotate(UnitCell *in, struct quaternion quat);
+extern UnitCell *rotate_cell(UnitCell *in, double omega, double phi,
+                             double rot);
 
 extern void cell_print(UnitCell *cell);
 

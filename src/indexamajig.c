@@ -400,12 +400,12 @@ static void process_image(void *pp, int cookie)
 
 		image.div = beam->divergence;
 		image.bw = beam->bandwidth;
-		image.profile_radius = 0.005e9;
+		image.profile_radius = 0.0001e9;
 
-		reflections = find_intersections(&image, image.indexed_cell,
-		                                 0);
-		//reflections = find_projected_peaks(&image, image.indexed_cell,
-		//                                   0, 0.1);
+		//reflections = find_intersections(&image, image.indexed_cell,
+		//                                 0);
+		reflections = find_projected_peaks(&image, image.indexed_cell,
+		                                   0, 0.1);
 
 		output_intensities(&image, image.indexed_cell, reflections,
 		                   pargs->static_args.output_mutex,

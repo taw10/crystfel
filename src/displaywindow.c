@@ -857,7 +857,7 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 	g_signal_connect(dw->ui, "add_widget",
 			 G_CALLBACK(displaywindow_addui_callback), vbox);
 	if ( gtk_ui_manager_add_ui_from_file(dw->ui,
-	     DATADIR"/hdfsee/displaywindow.ui", &error) == 0 ) {
+	     DATADIR"/crystfel/hdfsee.ui", &error) == 0 ) {
 		fprintf(stderr, "Error loading message window menu bar: %s\n",
 			error->message);
 		return;

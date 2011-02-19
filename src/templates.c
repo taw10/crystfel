@@ -47,66 +47,6 @@ struct template {
 };
 
 
-UnitCell *rotate_cell(UnitCell *in, double omega, double phi, double rot)
-{
-	UnitCell *out;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	double xnew, ynew, znew;
-
-	cell_get_reciprocal(in, &asx, &asy, &asz, &bsx, &bsy,
-	                        &bsz, &csx, &csy, &csz);
-
-	/* Rotate by "omega" about +z (parallel to c* and c unless triclinic) */
-	xnew = asx*cos(omega) + asy*sin(omega);
-	ynew = -asx*sin(omega) + asy*cos(omega);
-	znew = asz;
-	asx = xnew;  asy = ynew;  asz = znew;
-	xnew = bsx*cos(omega) + bsy*sin(omega);
-	ynew = -bsx*sin(omega) + bsy*cos(omega);
-	znew = bsz;
-	bsx = xnew;  bsy = ynew;  bsz = znew;
-	xnew = csx*cos(omega) + csy*sin(omega);
-	ynew = -csx*sin(omega) + csy*cos(omega);
-	znew = csz;
-	csx = xnew;  csy = ynew;  csz = znew;
-
-	/* Rotate by "phi" about +x (not parallel to anything specific) */
-	xnew = asx;
-	ynew = asy*cos(phi) + asz*sin(phi);
-	znew = -asy*sin(phi) + asz*cos(phi);
-	asx = xnew;  asy = ynew;  asz = znew;
-	xnew = bsx;
-	ynew = bsy*cos(phi) + bsz*sin(phi);
-	znew = -bsy*sin(phi) + bsz*cos(phi);
-	bsx = xnew;  bsy = ynew;  bsz = znew;
-	xnew = csx;
-	ynew = csy*cos(phi) + csz*sin(phi);
-	znew = -csy*sin(phi) + csz*cos(phi);
-	csx = xnew;  csy = ynew;  csz = znew;
-
-	/* Rotate by "rot" about the new +z (in-plane rotation) */
-	xnew = asx*cos(rot) + asy*sin(rot);
-	ynew = -asx*sin(rot) + asy*cos(rot);
-	znew = asz;
-	asx = xnew;  asy = ynew;  asz = znew;
-	xnew = bsx*cos(rot) + bsy*sin(rot);
-	ynew = -bsx*sin(rot) + bsy*cos(rot);
-	znew = bsz;
-	bsx = xnew;  bsy = ynew;  bsz = znew;
-	xnew = csx*cos(rot) + csy*sin(rot);
-	ynew = -csx*sin(rot) + csy*cos(rot);
-	znew = csz;
-	csx = xnew;  csy = ynew;  csz = znew;
-
-	out = cell_new_from_cell(in);
-	cell_set_reciprocal(out, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
-
-	return out;
-}
-
-
 /* Generate templates for the given cell using a representative image */
 IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
                                     struct detector *det,

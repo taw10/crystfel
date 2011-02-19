@@ -12,7 +12,7 @@ noinst_PROGRAMS = tests/list_check
 TESTS = tests/list_check
 
 if HAVE_GTK
-bin_PROGRAMS += src/hdfsee
+bin_PROGRAMS += src/hdfsee src/geomatic
 endif
 
 if HAVE_CAIRO
@@ -53,6 +53,11 @@ if HAVE_GTK
 src_hdfsee_SOURCES = src/hdfsee.c src/displaywindow.c src/render.c \
                      src/hdf5-file.c src/utils.c src/image.c src/filters.c \
                      src/thread-pool.c
+
+src_geomatic_SOURCES = src/geomatic.c src/dw-geomatic.c src/render.c \
+                     src/hdf5-file.c src/utils.c src/image.c src/filters.c \
+                     src/thread-pool.c src/cell.c src/reflist.c src/geometry.c \
+                     src/peaks.c src/detector.c
 endif
 
 src_get_hkl_SOURCES = src/get_hkl.c src/sfac.c src/cell.c src/utils.c \
@@ -117,21 +122,21 @@ EXTRA_DIST += src/cell.h src/hdf5-file.h src/image.h src/utils.h \
               src/index.h src/filters.h src/diffraction-gpu.h src/cl-utils.h \
               src/symmetry.h src/povray.h src/index-priv.h src/geometry.h \
               src/templates.h src/render_hkl.h src/stream.h src/thread-pool.h \
-              src/beam-parameters.h src/post-refinement.h src/hrs-scaling.h
-
-hdfseedir = $(datadir)/hdfsee
-hdfsee_DATA = data/displaywindow.ui
+              src/beam-parameters.h src/post-refinement.h src/hrs-scaling.h \
+              src/dw-geomatic.h
 
 crystfeldir = $(datadir)/crystfel
 crystfel_DATA = data/diffraction.cl data/defs.h data/sfac/Ca.nff \
                 data/sfac/C.nff data/sfac/Fe.nff data/sfac/H.nff \
                 data/sfac/Mg.nff data/sfac/N.nff data/sfac/O.nff \
-                data/sfac/P.nff data/sfac/S.nff data/sfac/f0_WaasKirf.dat
+                data/sfac/P.nff data/sfac/S.nff data/sfac/f0_WaasKirf.dat \
+                data/hdfsee.ui data/geomatic.ui
 
 EXTRA_DIST += data/sfac/Ca.nff data/sfac/C.nff data/sfac/Fe.nff \
               data/sfac/H.nff data/sfac/Mg.nff data/sfac/N.nff data/sfac/O.nff \
               data/sfac/P.nff data/sfac/S.nff data/sfac/f0_WaasKirf.dat \
-              data/defs.h data/diffraction.cl data/displaywindow.ui
+              data/defs.h data/diffraction.cl data/hdfsee.ui \
+              data/geomatic.ui
 
 crystfeldocdir = $(docdir)
 crystfeldoc_DATA = doc/geometry.txt doc/indexamajig.txt doc/pattern_sim.txt \
