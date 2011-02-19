@@ -33,6 +33,11 @@ struct panel
 	char     badrow;   /* 'x' or 'y' */
 	int      no_index; /* Don't index peaks in this panel if non-zero */
 	float    peak_sep; /* Characteristic peak separation */
+
+	signed int fsx;
+	signed int fsy;
+	signed int ssx;
+	signed int ssy;
 };
 
 struct detector

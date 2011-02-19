@@ -23,7 +23,7 @@
 #include "beam-parameters.h"
 
 
-int atob(const char *a)
+static int atob(const char *a)
 {
 	if ( strcasecmp(a, "true") == 0 ) return 1;
 	if ( strcasecmp(a, "false") == 0 ) return 0;
@@ -31,22 +31,58 @@ int atob(const char *a)
 }
 
 
-struct rvec get_q(struct image *image, double xs, double ys,
+static int dir_conv(const char *a, signed int *sx, signed int *sy)
+{
+	if ( strcmp(a, "-x") == 0 ) {
+		*sx = -1;  *sy = 0;
+		return 0;
+	}
+	if ( strcmp(a, "x") == 0 ) {
+		*sx = 1;  *sy = 0;
+		return 0;
+	}
+	if ( strcmp(a, "+x") == 0 ) {
+		*sx = 1;  *sy = 0;
+		return 0;
+	}
+	if ( strcmp(a, "-y") == 0 ) {
+		*sx = 0;  *sy = -1;
+		return 0;
+	}
+	if ( strcmp(a, "y") == 0 ) {
+		*sx = 0;  *sy = 1;
+		return 0;
+	}
+	if ( strcmp(a, "+y") == 0 ) {
+		*sx = 0;  *sy = 1;
+		return 0;
+	}
+	return 1;
+}
+
+
+struct rvec get_q(struct image *image, double fs, double ss,
                   unsigned int sampling, float *ttp, float k)
 {
 	struct rvec q;
 	double twotheta, r, az;
 	double rx, ry;
 	struct panel *p;
+	double xs, ys;
 
 	/* Determine which panel to use */
-	const unsigned int x = xs / sampling;
-	const unsigned int y = ys / sampling;
+	const unsigned int x = fs;
+	const unsigned int y = ss;
 	p = find_panel(image->det, x, y);
 	assert(p != NULL);
 
-	rx = (xs - (sampling*p->cx)) / (sampling * p->res);
-	ry = (ys - (sampling*p->cy)) / (sampling * p->res);
+	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
+	 * to x and y */
+	xs = fs*p->fsx + ss*p->ssx;
+	ys = fs*p->fsy + ss*p->ssy;
+
+	rx = (xs + p->cx) / p->res;
+	ry = (ys + p->cy) / p->res;
 
 	/* Calculate q-vector for this sub-pixel */
 	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
@@ -202,7 +238,7 @@ struct detector *get_detector_geometry(const char *filename)
 	char *rval;
 	char **bits;
 	int i;
-	int reject;
+	int reject = 0;
 	int x, y, max_x, max_y;
 
 	fh = fopen(filename, "r");
@@ -264,9 +300,13 @@ struct detector *get_detector_geometry(const char *filename)
 				det->panels[i].cy = -1;
 				det->panels[i].clen = -1;
 				det->panels[i].res = -1;
-				det->panels[i].badrow = '0';
+				det->panels[i].badrow = '-';
 				det->panels[i].no_index = 0;
 				det->panels[i].peak_sep = 50.0;
+				det->panels[i].fsx = 1;
+				det->panels[i].fsy = 0;
+				det->panels[i].ssx = 0;
+				det->panels[i].ssy = 1;
 			}
 
 			continue;
@@ -305,9 +345,9 @@ struct detector *get_detector_geometry(const char *filename)
 			det->panels[np].min_y = atof(bits[2]);
 		} else if ( strcmp(path[1], "max_y") == 0 ) {
 			det->panels[np].max_y = atof(bits[2]);
-		} else if ( strcmp(path[1], "cx") == 0 ) {
+		} else if ( strcmp(path[1], "corner_x") == 0 ) {
 			det->panels[np].cx = atof(bits[2]);
-		} else if ( strcmp(path[1], "cy") == 0 ) {
+		} else if ( strcmp(path[1], "corner_y") == 0 ) {
 			det->panels[np].cy = atof(bits[2]);
 		} else if ( strcmp(path[1], "clen") == 0 ) {
 			det->panels[np].clen = atof(bits[2]);
@@ -326,6 +366,20 @@ struct detector *get_detector_geometry(const char *filename)
 			}
 		} else if ( strcmp(path[1], "no_index") == 0 ) {
 			det->panels[np].no_index = atob(bits[2]);
+		} else if ( strcmp(path[1], "fs") == 0 ) {
+			if ( dir_conv(bits[2], &det->panels[np].fsx,
+			                       &det->panels[np].fsy) != 0 ) {
+				ERROR("Invalid fast scan direction '%s'\n",
+				      bits[2]);
+				reject = 1;
+			}
+		} else if ( strcmp(path[1], "ss") == 0 ) {
+			if ( dir_conv(bits[2], &det->panels[np].ssx,
+			                       &det->panels[np].ssy) != 0 ) {
+				ERROR("Invalid slow scan direction '%s'\n",
+				      bits[2]);
+				reject = 1;
+			}
 		} else {
 			ERROR("Unrecognised field '%s'\n", path[1]);
 		}
@@ -345,7 +399,6 @@ struct detector *get_detector_geometry(const char *filename)
 		return NULL;
 	}
 
-	reject = 0;
 	max_x = 0;
 	max_y = 0;
 	for ( i=0; i<det->n_panels; i++ ) {
