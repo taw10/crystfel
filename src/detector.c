@@ -78,8 +78,8 @@ struct rvec get_q(struct image *image, double fs, double ss,
 
 	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
 	 * to x and y */
-	xs = fs*p->fsx + ss*p->ssx;
-	ys = fs*p->fsy + ss*p->ssy;
+	xs = (fs-p->min_x)*p->fsx + (ss-p->min_y)*p->ssx;
+	ys = (fs-p->min_x)*p->fsy + (ss-p->min_y)*p->ssy;
 
 	rx = (xs + p->cx) / p->res;
 	ry = (ys + p->cy) / p->res;
