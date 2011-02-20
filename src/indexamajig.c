@@ -29,15 +29,12 @@
 #include "hdf5-file.h"
 #include "index.h"
 #include "peaks.h"
-#include "diffraction.h"
-#include "diffraction-gpu.h"
 #include "detector.h"
 #include "sfac.h"
 #include "filters.h"
 #include "reflections.h"
 #include "thread-pool.h"
 #include "beam-parameters.h"
-#include "symmetry.h"
 #include "geometry.h"
 
 
@@ -50,16 +47,12 @@ enum {
 /* Information about the indexing process which is common to all patterns */
 struct static_index_args
 {
-	pthread_mutex_t *gpu_mutex;     /* Protects "gctx" */
 	UnitCell *cell;
 	int config_cmfilter;
 	int config_noisefilter;
 	int config_dumpfound;
 	int config_verbose;
-	int config_alternate;
 	int config_nearbragg;
-	int config_gpu;
-	int config_simulate;
 	int config_polar;
 	int config_satcorr;
 	int config_closer;
@@ -69,11 +62,6 @@ struct static_index_args
 	struct detector *det;
 	IndexingMethod *indm;
 	IndexingPrivate **ipriv;
-	const double *intensities;
-	const unsigned char *flags;
-	const char *sym;  /* Symmetry of "intensities" and "flags" */
-	struct gpu_context *gctx;
-	int gpu_dev;
 	int peaks;
 	int cellr;
 	struct beam_params *beam;
@@ -153,11 +141,6 @@ static void show_help(const char *s)
 "                           was located by the initial peak search close to\n"
 "                           the \"near Bragg\" location, its coordinates will\n"
 "                           be taken as the centre instead.\n"
-"     --simulate           Simulate the diffraction pattern using the indexed\n"
-"                           unit cell.  The simulated pattern will be saved\n"
-"                           as \"simulated.h5\".  You can TRY to combine this\n"
-"                           with \"-j <n>\" with n greater than 1, but it's\n"
-"                           not a good idea.\n"
 "     --dump-peaks         Write the results of the peak search to stdout.\n"
 "                           The intensities in this list are from the\n"
 "                           centroid/integration procedure.\n"
@@ -182,16 +165,8 @@ static void show_help(const char *s)
 "     --min-gradient=<n>   Minimum gradient for Zaefferer peak search.\n"
 "                           Default: 100,000.\n"
 "\n"
-"\nIf you used --simulate, you may also want:\n\n"
-"     --intensities=<file> Specify file containing reflection intensities\n"
-"                           to use when simulating.\n"
-" -y, --symmetry=<sym>     The symmetry of the intensities file.\n"
-"\n"
 "\nOptions for greater performance or verbosity:\n\n"
 "     --verbose            Be verbose about indexing.\n"
-"     --gpu                Use the GPU to speed up the simulation.\n"
-"     --gpu-dev=<n>        Use GPU device <n>.  Omit this option to see the\n"
-"                           available devices.\n"
 " -j <n>                   Run <n> analyses in parallel.  Default 1.\n"
 "\n"
 "\nOptions you probably won't need:\n\n"
@@ -205,100 +180,11 @@ static void show_help(const char *s)
 }
 
 
-static struct image *get_simage(struct image *template, int alternate)
-{
-	struct image *image;
-	struct panel panels[2];
-
-	image = malloc(sizeof(*image));
-
-	/* Simulate a diffraction pattern */
-	image->twotheta = NULL;
-	image->data = NULL;
-	image->det = template->det;
-	image->flags = NULL;
-	image->f0_available = 0;
-	image->f0 = 1.0;
-
-	/* Detector geometry for the simulation
-	 * - not necessarily the same as the original. */
-	image->width = 1024;
-	image->height = 1024;
-	image->det->n_panels = 2;
-
-	if ( alternate ) {
-
-		/* Upper */
-		panels[0].min_fs = 0;
-		panels[0].max_fs = 1023;
-		panels[0].min_ss = 512;
-		panels[0].max_ss = 1023;
-		panels[0].cx = 523.6;
-		panels[0].cy = 502.5;
-		panels[0].clen = 56.4e-2;  /* 56.4 cm */
-		panels[0].res = 13333.3;   /* 75 microns/pixel */
-
-		/* Lower */
-		panels[1].min_fs = 0;
-		panels[1].max_fs = 1023;
-		panels[1].min_ss = 0;
-		panels[1].max_ss = 511;
-		panels[1].cx = 520.8;
-		panels[1].cy = 525.0;
-		panels[1].clen = 56.7e-2;  /* 56.7 cm */
-		panels[1].res = 13333.3;   /* 75 microns/pixel */
-
-		image->det->panels = panels;
-
-	} else {
-
-		/* Copy pointer to old geometry */
-		image->det->panels = template->det->panels;
-
-	}
-
-	image->lambda = ph_en_to_lambda(eV_to_J(1.8e3));
-	image->features = template->features;
-	image->filename = template->filename;
-	image->indexed_cell = template->indexed_cell;
-	image->f0 = template->f0;
-
-	return image;
-}
-
-
-static void simulate_and_write(struct image *simage, struct gpu_context **gctx,
-                               const double *intensities,
-                               const unsigned char *flags, UnitCell *cell,
-                               int gpu_dev, const char *sym)
-{
-	/* Set up GPU if necessary.
-	 * Unfortunately, setup has to go here since until now we don't know
-	 * enough about the situation. */
-	if ( (gctx != NULL) && (*gctx == NULL) ) {
-		*gctx = setup_gpu(0, simage, intensities, flags, sym, gpu_dev);
-	}
-
-	if ( (gctx != NULL) && (*gctx != NULL) ) {
-		get_diffraction_gpu(*gctx, simage, 24, 24, 40, cell);
-	} else {
-		get_diffraction(simage, 24, 24, 40,
-		                intensities, NULL, flags, cell, 0,
-		                GRADIENT_MOSAIC, sym);
-	}
-	record_image(simage, 0);
-
-	hdf5_write("simulated.h5", simage->data, simage->width, simage->height,
-		   H5T_NATIVE_FLOAT);
-}
-
-
 static void process_image(void *pp, int cookie)
 {
 	struct index_args *pargs = pp;
 	struct hdfile *hdfile;
 	struct image image;
-	struct image *simage;
 	float *data_for_measurement;
 	size_t data_size;
 	char *filename = pargs->filename;
@@ -307,16 +193,9 @@ static void process_image(void *pp, int cookie)
 	int config_noisefilter = pargs->static_args.config_noisefilter;
 	int config_dumpfound = pargs->static_args.config_dumpfound;
 	int config_verbose = pargs->static_args.config_verbose;
-	int config_alternate  = pargs->static_args.config_alternate;
 	int config_nearbragg = pargs->static_args.config_nearbragg;
-	int config_gpu = pargs->static_args.config_gpu;
-	int config_simulate = pargs->static_args.config_simulate;
 	int config_polar = pargs->static_args.config_polar;
 	IndexingMethod *indm = pargs->static_args.indm;
-	const double *intensities = pargs->static_args.intensities;
-	const unsigned char *flags = pargs->static_args.flags;
-	struct gpu_context *gctx = pargs->static_args.gctx;
-	const char *sym = pargs->static_args.sym;
 	const struct beam_params *beam = pargs->static_args.beam;
 
 	image.features = NULL;
@@ -417,27 +296,6 @@ static void process_image(void *pp, int cookie)
 
 	}
 
-	simage = get_simage(&image, config_alternate);
-
-	/* Simulate if requested */
-	if ( config_simulate ) {
-		if ( config_gpu ) {
-			pthread_mutex_lock(pargs->static_args.gpu_mutex);
-			simulate_and_write(simage, &gctx, intensities, flags,
-			                   image.indexed_cell,
-			                   pargs->static_args.gpu_dev, sym);
-			pthread_mutex_unlock(pargs->static_args.gpu_mutex);
-		} else {
-			simulate_and_write(simage, NULL, intensities, flags,
-			                   image.indexed_cell, 0, sym);
-		}
-	}
-
-	/* Finished with alternate image */
-	if ( simage->twotheta != NULL ) free(simage->twotheta);
-	if ( simage->data != NULL ) free(simage->data);
-	free(simage);
-
 	/* Only free cell if found */
 	cell_free(image.indexed_cell);
 
@@ -504,7 +362,6 @@ static void finalise_image(void *qp, void *pp)
 int main(int argc, char *argv[])
 {
 	int c;
-	struct gpu_context *gctx = NULL;
 	char *filename = NULL;
 	char *outfile = NULL;
 	FILE *fh;
@@ -514,12 +371,9 @@ int main(int argc, char *argv[])
 	int config_noindex = 0;
 	int config_dumpfound = 0;
 	int config_nearbragg = 0;
-	int config_simulate = 0;
 	int config_cmfilter = 0;
 	int config_noisefilter = 0;
-	int config_gpu = 0;
 	int config_verbose = 0;
-	int config_alternate = 0;
 	int config_polar = 1;
 	int config_satcorr = 1;
 	int config_checkprefix = 1;
@@ -535,9 +389,6 @@ int main(int argc, char *argv[])
 	int reduction_needs_cell;
 	char *indm_str = NULL;
 	UnitCell *cell;
-	double *intensities = NULL;
-	unsigned char *flags;
-	char *intfile = NULL;
 	char *pdb = NULL;
 	char *prefix = NULL;
 	char *speaks = NULL;
@@ -547,21 +398,17 @@ int main(int argc, char *argv[])
 	int nthreads = 1;
 	int i;
 	pthread_mutex_t output_mutex = PTHREAD_MUTEX_INITIALIZER;
-	pthread_mutex_t gpu_mutex = PTHREAD_MUTEX_INITIALIZER;
 	char prepare_line[1024];
 	char prepare_filename[1024];
 	struct queue_args qargs;
 	struct beam_params *beam = NULL;
 	double nominal_photon_energy;
-	int gpu_dev = -1;
-	char *sym = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
-		{"gpu",                0, &config_gpu,         1},
 		{"no-index",           0, &config_noindex,     1},
 		{"dump-peaks",         0, &config_dumpfound,   1},
 		{"peaks",              1, NULL,                2},
@@ -570,13 +417,9 @@ int main(int argc, char *argv[])
 		{"indexing",           1, NULL,               'z'},
 		{"geometry",           1, NULL,               'g'},
 		{"beam",               1, NULL,               'b'},
-		{"simulate",           0, &config_simulate,    1},
 		{"filter-cm",          0, &config_cmfilter,    1},
 		{"filter-noise",       0, &config_noisefilter, 1},
 		{"verbose",            0, &config_verbose,     1},
-		{"alternate",          0, &config_alternate,   1},
-		{"intensities",        1, NULL,               'q'},
-		{"symmetry",           1, NULL,               'y'},
 		{"pdb",                1, NULL,               'p'},
 		{"prefix",             1, NULL,               'x'},
 		{"unpolarized",        0, &config_polar,       0},
@@ -586,13 +429,12 @@ int main(int argc, char *argv[])
 		{"min-gradient",       1, NULL,                4},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
 		{"no-closer-peak",     0, &config_closer,      0},
-		{"gpu-dev",            1, NULL,                5},
 		{"insane",             0, &config_insane,      1},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:wp:j:x:g:t:o:b:y:",
+	while ((c = getopt_long(argc, argv, "hi:wp:j:x:g:t:o:b:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -610,10 +452,6 @@ int main(int argc, char *argv[])
 
 		case 'z' :
 			indm_str = strdup(optarg);
-			break;
-
-		case 'q' :
-			intfile = strdup(optarg);
 			break;
 
 		case 'p' :
@@ -636,10 +474,6 @@ int main(int argc, char *argv[])
 			threshold = strtof(optarg, NULL);
 			break;
 
-		case 'y' :
-			sym = strdup(optarg);
-			break;
-
 		case 'b' :
 			beam = get_beam_parameters(optarg);
 			if ( beam == NULL ) {
@@ -659,10 +493,6 @@ int main(int argc, char *argv[])
 
 		case 4 :
 			min_gradient = strtof(optarg, NULL);
-			break;
-
-		case 5 :
-			gpu_dev = atoi(optarg);
 			break;
 
 		case 0 :
@@ -702,8 +532,6 @@ int main(int argc, char *argv[])
 	}
 	free(outfile);
 
-	if ( sym == NULL ) sym = strdup("1");
-
 	if ( speaks == NULL ) {
 		speaks = strdup("zaef");
 		STATUS("You didn't specify a peak detection method.\n");
@@ -718,35 +546,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	free(speaks);
-
-	if ( intfile != NULL ) {
-
-		ReflItemList *items;
-		int i;
-
-		items = read_reflections(intfile, intensities,
-		                         NULL, NULL, NULL);
-
-		flags = new_list_flag();
-		for ( i=0; i<num_items(items); i++ ) {
-			struct refl_item *it = get_item(items, i);
-			set_flag(flags, it->h, it->k, it->l, 1);
-		}
-
-		if ( check_symmetry(items, sym) ) {
-			ERROR("The input reflection list does not appear to"
-			      " have symmetry %s\n", sym);
-			return 1;
-		}
-
-		delete_items(items);
-
-	} else {
-
-		intensities = NULL;
-		flags = NULL;
-
-	}
 
 	if ( pdb == NULL ) {
 		pdb = strdup("molecule.pdb");
@@ -869,16 +668,12 @@ int main(int argc, char *argv[])
 
 	gsl_set_error_handler_off();
 
-	qargs.static_args.gpu_mutex = &gpu_mutex;
 	qargs.static_args.cell = cell;
 	qargs.static_args.config_cmfilter = config_cmfilter;
 	qargs.static_args.config_noisefilter = config_noisefilter;
 	qargs.static_args.config_dumpfound = config_dumpfound;
 	qargs.static_args.config_verbose = config_verbose;
-	qargs.static_args.config_alternate = config_alternate;
 	qargs.static_args.config_nearbragg = config_nearbragg;
-	qargs.static_args.config_gpu = config_gpu;
-	qargs.static_args.config_simulate = config_simulate;
 	qargs.static_args.config_polar = config_polar;
 	qargs.static_args.config_satcorr = config_satcorr;
 	qargs.static_args.config_closer = config_closer;
@@ -889,11 +684,6 @@ int main(int argc, char *argv[])
 	qargs.static_args.det = det;
 	qargs.static_args.indm = indm;
 	qargs.static_args.ipriv = ipriv;
-	qargs.static_args.intensities = intensities;
-	qargs.static_args.flags = flags;
-	qargs.static_args.sym = sym;
-	qargs.static_args.gctx = gctx;
-	qargs.static_args.gpu_dev = gpu_dev;
 	qargs.static_args.peaks = peaks;
 	qargs.static_args.output_mutex = &output_mutex;
 	qargs.static_args.ofh = ofh;
@@ -916,14 +706,9 @@ int main(int argc, char *argv[])
 	cell_free(cell);
 	if ( fh != stdin ) fclose(fh);
 	if ( ofh != stdout ) fclose(ofh);
-	free(sym);
 
 	STATUS("There were %i images, of which %i could be indexed.\n",
 	        n_images, qargs.n_indexable);
-
-	if ( gctx != NULL ) {
-		cleanup_gpu(gctx);
-	}
 
 	return 0;
 }
