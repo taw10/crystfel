@@ -162,7 +162,7 @@ static int cull_peaks(struct image *image)
 
 	for ( i=0; i<image->det->n_panels; i++ ) {
 		p = &image->det->panels[i];
-		if ( p->badrow != '0' ) {
+		if ( p->badrow != '-' ) {
 			nelim += cull_peaks_in_panel(image, p);
 		}
 	}
