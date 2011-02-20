@@ -367,8 +367,8 @@ static gint displaywindow_loadgeom_response(GtkWidget *d, gint response,
 		}
 
 		/* Validate geometry */
-		if ( (1+det->max_x != dw->image->width)
-		  || (1+det->max_y != dw->image->height) ) {
+		if ( (1+det->max_fs != dw->image->width)
+		  || (1+det->max_ss != dw->image->height) ) {
 
 			displaywindow_error(dw,
 			                  "Geometry does not match image size");

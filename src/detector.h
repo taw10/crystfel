@@ -22,11 +22,11 @@ struct image;
 
 struct panel
 {
-	int      min_x;    /* Smallest x value considered to be in this panel */
-	int      max_x;    /* Largest x value considered to be in this panel */
-	int      min_y;    /* ... and so on */
-	int      max_y;
-	float    cx;       /* Location of centre in pixels */
+	int      min_fs;  /* Smallest FS value considered to be in the panel */
+	int      max_fs;  /* Largest FS value considered to be in this panel */
+	int      min_ss;  /* ... and so on */
+	int      max_ss;
+	float    cx;       /* Location of corner (min_fs,min_ss) in pixels */
 	float    cy;
 	float    clen;     /* Camera length in metres */
 	float    res;      /* Resolution in pixels per metre */
@@ -44,8 +44,8 @@ struct detector
 {
 	struct panel *panels;
 	int           n_panels;
-	int           max_x;
-	int           max_y;  /* Size of overall array needed, minus 1 */
+	int           max_fs;
+	int           max_ss;  /* Size of overall array needed, minus 1 */
 };
 
 extern struct rvec get_q(struct image *image, double xs, double ys,

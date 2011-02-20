@@ -58,8 +58,8 @@ static void split_image(struct image *image)
 
 		p = &det->panels[i];
 
-		width = 1 + p->max_x - p->min_x;
-		height = 1 + p->max_y - p->min_y;
+		width = 1 + p->max_fs - p->min_fs;
+		height = 1 + p->max_ss - p->min_ss;
 		data = malloc(width*height*sizeof(float));
 		snprintf(filename, 1023, "%s-%i.h5", image->filename, i);
 
@@ -71,8 +71,8 @@ static void split_image(struct image *image)
 
 			int im_x, im_y;
 
-			im_x = x+p->min_x;
-			im_y = y+p->min_y;
+			im_x = x+p->min_fs;
+			im_y = y+p->min_ss;
 
 			data[x+width*y] = image->data[im_x+image->width*im_y];
 

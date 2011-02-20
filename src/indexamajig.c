@@ -229,20 +229,20 @@ static struct image *get_simage(struct image *template, int alternate)
 	if ( alternate ) {
 
 		/* Upper */
-		panels[0].min_x = 0;
-		panels[0].max_x = 1023;
-		panels[0].min_y = 512;
-		panels[0].max_y = 1023;
+		panels[0].min_fs = 0;
+		panels[0].max_fs = 1023;
+		panels[0].min_ss = 512;
+		panels[0].max_ss = 1023;
 		panels[0].cx = 523.6;
 		panels[0].cy = 502.5;
 		panels[0].clen = 56.4e-2;  /* 56.4 cm */
 		panels[0].res = 13333.3;   /* 75 microns/pixel */
 
 		/* Lower */
-		panels[1].min_x = 0;
-		panels[1].max_x = 1023;
-		panels[1].min_y = 0;
-		panels[1].max_y = 511;
+		panels[1].min_fs = 0;
+		panels[1].max_fs = 1023;
+		panels[1].min_ss = 0;
+		panels[1].max_ss = 511;
 		panels[1].cx = 520.8;
 		panels[1].cy = 525.0;
 		panels[1].clen = 56.7e-2;  /* 56.7 cm */

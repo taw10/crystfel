@@ -95,10 +95,10 @@ static int cull_peaks_in_panel(struct image *image, struct panel *p)
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		if ( f->x < p->min_x ) continue;
-		if ( f->x > p->max_x ) continue;
-		if ( f->y < p->min_y ) continue;
-		if ( f->y > p->max_y ) continue;
+		if ( f->x < p->min_fs ) continue;
+		if ( f->x > p->max_fs ) continue;
+		if ( f->y < p->min_ss ) continue;
+		if ( f->y > p->max_ss ) continue;
 
 		/* How many peaks are in the same column? */
 		ncol = 0;

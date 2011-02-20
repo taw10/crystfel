@@ -78,8 +78,8 @@ struct rvec get_q(struct image *image, double fs, double ss,
 
 	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
 	 * to x and y */
-	xs = (fs-p->min_x)*p->fsx + (ss-p->min_y)*p->ssx;
-	ys = (fs-p->min_x)*p->fsy + (ss-p->min_y)*p->ssy;
+	xs = (fs-p->min_fs)*p->fsx + (ss-p->min_ss)*p->ssx;
+	ys = (fs-p->min_fs)*p->fsy + (ss-p->min_ss)*p->ssy;
 
 	rx = (xs + p->cx) / p->res;
 	ry = (ys + p->cy) / p->res;
@@ -99,15 +99,24 @@ struct rvec get_q(struct image *image, double fs, double ss,
 }
 
 
-double get_tt(struct image *image, double xs, double ys)
+double get_tt(struct image *image, double fs, double ss)
 {
-	float r, rx, ry;
+	double r, rx, ry;
 	struct panel *p;
+	double xs, ys;
 
-	p = find_panel(image->det, xs, ys);
+	p = find_panel(image->det, fs, ss);
 
-	rx = ((float)xs - p->cx) / p->res;
-	ry = ((float)ys - p->cy) / p->res;
+	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
+	 * to x and y */
+	xs = (fs-p->min_fs)*p->fsx + (ss-p->min_ss)*p->ssx;
+	ys = (fs-p->min_fs)*p->fsy + (ss-p->min_ss)*p->ssy;
+
+	rx = (xs + p->cx) / p->res;
+	ry = (ys + p->cy) / p->res;
+
+	/* Calculate q-vector for this sub-pixel */
+	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
 
 	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
 
@@ -218,10 +227,10 @@ struct panel *find_panel(struct detector *det, int x, int y)
 	int p;
 
 	for ( p=0; p<det->n_panels; p++ ) {
-		if ( (x >= det->panels[p].min_x)
-		  && (x <= det->panels[p].max_x)
-		  && (y >= det->panels[p].min_y)
-		  && (y <= det->panels[p].max_y) ) {
+		if ( (x >= det->panels[p].min_fs)
+		  && (x <= det->panels[p].max_fs)
+		  && (y >= det->panels[p].min_ss)
+		  && (y <= det->panels[p].max_ss) ) {
 			return &det->panels[p];
 		}
 	}
@@ -239,7 +248,7 @@ struct detector *get_detector_geometry(const char *filename)
 	char **bits;
 	int i;
 	int reject = 0;
-	int x, y, max_x, max_y;
+	int x, y, max_fs, max_ss;
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) return NULL;
@@ -292,10 +301,10 @@ struct detector *get_detector_geometry(const char *filename)
 			free(bits);
 
 			for ( i=0; i<det->n_panels; i++ ) {
-				det->panels[i].min_x = -1;
-				det->panels[i].min_y = -1;
-				det->panels[i].max_x = -1;
-				det->panels[i].max_y = -1;
+				det->panels[i].min_fs = -1;
+				det->panels[i].min_ss = -1;
+				det->panels[i].max_fs = -1;
+				det->panels[i].max_ss = -1;
 				det->panels[i].cx = -1;
 				det->panels[i].cy = -1;
 				det->panels[i].clen = -1;
@@ -337,14 +346,14 @@ struct detector *get_detector_geometry(const char *filename)
 			return NULL;
 		}
 
-		if ( strcmp(path[1], "min_x") == 0 ) {
-			det->panels[np].min_x = atof(bits[2]);
-		} else if ( strcmp(path[1], "max_x") == 0 ) {
-			det->panels[np].max_x = atof(bits[2]);
-		} else if ( strcmp(path[1], "min_y") == 0 ) {
-			det->panels[np].min_y = atof(bits[2]);
-		} else if ( strcmp(path[1], "max_y") == 0 ) {
-			det->panels[np].max_y = atof(bits[2]);
+		if ( strcmp(path[1], "min_fs") == 0 ) {
+			det->panels[np].min_fs = atof(bits[2]);
+		} else if ( strcmp(path[1], "max_fs") == 0 ) {
+			det->panels[np].max_fs = atof(bits[2]);
+		} else if ( strcmp(path[1], "min_ss") == 0 ) {
+			det->panels[np].min_ss = atof(bits[2]);
+		} else if ( strcmp(path[1], "max_ss") == 0 ) {
+			det->panels[np].max_ss = atof(bits[2]);
 		} else if ( strcmp(path[1], "corner_x") == 0 ) {
 			det->panels[np].cx = atof(bits[2]);
 		} else if ( strcmp(path[1], "corner_y") == 0 ) {
@@ -399,37 +408,37 @@ struct detector *get_detector_geometry(const char *filename)
 		return NULL;
 	}
 
-	max_x = 0;
-	max_y = 0;
+	max_fs = 0;
+	max_ss = 0;
 	for ( i=0; i<det->n_panels; i++ ) {
 
-		if ( det->panels[i].min_x == -1 ) {
-			ERROR("Please specify the minimum x coordinate for"
+		if ( det->panels[i].min_fs == -1 ) {
+			ERROR("Please specify the minimum FS coordinate for"
 			      " panel %i\n", i);
 			reject = 1;
 		}
-		if ( det->panels[i].max_x == -1 ) {
-			ERROR("Please specify the maximum x coordinate for"
+		if ( det->panels[i].max_fs == -1 ) {
+			ERROR("Please specify the maximum FS coordinate for"
 			      " panel %i\n", i);
 			reject = 1;
 		}
-		if ( det->panels[i].min_y == -1 ) {
-			ERROR("Please specify the minimum y coordinate for"
+		if ( det->panels[i].min_ss == -1 ) {
+			ERROR("Please specify the minimum SS coordinate for"
 			      " panel %i\n", i);
 			reject = 1;
 		}
-		if ( det->panels[i].max_y == -1 ) {
-			ERROR("Please specify the maximum y coordinate for"
+		if ( det->panels[i].max_ss == -1 ) {
+			ERROR("Please specify the maximum SS coordinate for"
 			      " panel %i\n", i);
 			reject = 1;
 		}
 		if ( det->panels[i].cx == -1 ) {
-			ERROR("Please specify the centre x coordinate for"
+			ERROR("Please specify the corner X coordinate for"
 			      " panel %i\n", i);
 			reject = 1;
 		}
 		if ( det->panels[i].cy == -1 ) {
-			ERROR("Please specify the centre y coordinate for"
+			ERROR("Please specify the corner Y coordinate for"
 			      " panel %i\n", i);
 			reject = 1;
 		}
@@ -447,17 +456,17 @@ struct detector *get_detector_geometry(const char *filename)
 		/* It's not a problem if "no_index" is still zero */
 		/* The default peak_sep is OK (maybe) */
 
-		if ( det->panels[i].max_x > max_x ) {
-			max_x = det->panels[i].max_x;
+		if ( det->panels[i].max_fs > max_fs ) {
+			max_fs = det->panels[i].max_fs;
 		}
-		if ( det->panels[i].max_y > max_y ) {
-			max_y = det->panels[i].max_y;
+		if ( det->panels[i].max_ss > max_ss ) {
+			max_ss = det->panels[i].max_ss;
 		}
 
 	}
 
-	for ( x=0; x<=max_x; x++ ) {
-	for ( y=0; y<=max_y; y++ ) {
+	for ( x=0; x<=max_fs; x++ ) {
+	for ( y=0; y<=max_ss; y++ ) {
 		if ( find_panel(det, x, y) == NULL ) {
 			ERROR("Detector geometry invalid: contains gaps.\n");
 			reject = 1;
@@ -466,8 +475,8 @@ struct detector *get_detector_geometry(const char *filename)
 	}
 	}
 out:
-	det->max_x = max_x;
-	det->max_y = max_y;
+	det->max_fs = max_fs;
+	det->max_ss = max_ss;
 
 	if ( reject ) return NULL;
 

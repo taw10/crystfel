@@ -58,10 +58,10 @@ static signed int locate_peak(double x, double y, double z, double k,
 		yda = yd + det->panels[p].cy;
 
 		/* Now, is this on this panel? */
-		if ( xda < det->panels[p].min_x ) continue;
-		if ( xda > det->panels[p].max_x ) continue;
-		if ( yda < det->panels[p].min_y ) continue;
-		if ( yda > det->panels[p].max_y ) continue;
+		if ( xda < det->panels[p].min_fs ) continue;
+		if ( xda > det->panels[p].max_fs ) continue;
+		if ( yda < det->panels[p].min_ss ) continue;
+		if ( yda > det->panels[p].max_ss ) continue;
 
 		/* If peak appears on multiple panels, reject it */
 		if ( found != -1 ) return -1;
