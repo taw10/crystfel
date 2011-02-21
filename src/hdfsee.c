@@ -49,6 +49,8 @@ static void show_help(const char *s)
 "                                    colour  : Colour scale:\n"
 "                                               black-blue-pink-red-orange-\n"
 "                                               -yellow-white.\n"
+"  -e, --image=<element>            Start up displaying this image from the\n"
+"                                    HDF5 file.  Example: /data/data0.\n"
 "\n");
 }
 
@@ -91,6 +93,7 @@ int main(int argc, char *argv[])
 	int config_noisefilter = 0;
 	int colscale = SCALE_COLOUR;
 	char *cscale = NULL;
+	char *element = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -101,13 +104,14 @@ int main(int argc, char *argv[])
 		{"filter-cm",          0, &config_cmfilter,    1},
 		{"filter-noise",       0, &config_noisefilter, 1},
 		{"colscale",           1, NULL,               'c'},
+		{"image",              1, NULL,               'e'},
 		{0, 0, NULL, 0}
 	};
 
 	gtk_init(&argc, &argv);
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hp:b:i:c:",
+	while ((c = getopt_long(argc, argv, "hp:b:i:c:e:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -136,6 +140,10 @@ int main(int argc, char *argv[])
 
 		case 'c' :
 			cscale = strdup(optarg);
+			break;
+
+		case 'e' :
+			element = strdup(optarg);
 			break;
 
 		case 0 :
@@ -169,13 +177,12 @@ int main(int argc, char *argv[])
 	}
 	free(cscale);
 
-
 	for ( i=0; i<nfiles; i++ ) {
 		main_window_list[i] = displaywindow_open(argv[optind+i], peaks,
 		                                         boost, binning,
 		                                         config_cmfilter,
 		                                         config_noisefilter,
-		                                         colscale);
+		                                         colscale, element);
 		if ( main_window_list[i] == NULL ) {
 			ERROR("Couldn't open display window\n");
 		} else {

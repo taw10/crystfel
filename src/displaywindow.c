@@ -1112,7 +1112,8 @@ static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
 
 DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
                                   int boost, int binning, int cmfilter,
-                                  int noisefilter, int colscale)
+                                  int noisefilter, int colscale,
+                                  const char *element)
 {
 	DisplayWindow *dw;
 	char *title;
@@ -1163,12 +1164,22 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 		if ( dw->hdfile == NULL ) {
 			ERROR("Couldn't open file '%s'\n", filename);
 			displaywindow_disable(dw);
-		} else if ( hdfile_set_first_image(dw->hdfile, "/") ) {
-			ERROR("Couldn't select path\n");
-			displaywindow_disable(dw);
 		} else {
-			dw->image = calloc(1, sizeof(struct image));
-			hdf5_read(dw->hdfile, dw->image, 0, 0.0);
+			int fail = -1;
+
+			if ( element == NULL ) {
+				fail = hdfile_set_first_image(dw->hdfile, "/");
+			} else {
+				fail = hdfile_set_image(dw->hdfile, element);
+			}
+
+			if ( !fail ) {
+				dw->image = calloc(1, sizeof(struct image));
+				hdf5_read(dw->hdfile, dw->image, 0, 0.0);
+			} else {
+				ERROR("Couldn't select path\n");
+				displaywindow_disable(dw);
+			}
 		}
 
 	} else {
