@@ -61,7 +61,7 @@ typedef struct {
 	int		width;
 	int		height;		/* Size of the drawing area */
 	int		binning;
-	int		boostint;
+	double		boostint;
 	int		cmfilter;	/* Use CM subtraction */
 	int		noisefilter;	/* Use aggressive noise filter */
 

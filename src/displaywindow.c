@@ -327,15 +327,15 @@ static gint displaywindow_set_boostint_response(GtkWidget *widget,
 	if ( response == GTK_RESPONSE_OK ) {
 
 		const char *sboostint;
-		unsigned int boostint;
+		float boostint;
 		int scanval;
 
 		sboostint = gtk_entry_get_text(
 		 			GTK_ENTRY(dw->boostint_dialog->entry));
-		scanval = sscanf(sboostint, "%u", &boostint);
+		scanval = sscanf(sboostint, "%f", &boostint);
 		if ( (scanval != 1) || (boostint <= 0) ) {
 			displaywindow_error(dw, "Please enter a positive "
-					"integer for the intensity boost "
+					"number for the intensity boost "
 					"factor.");
 			done = 0;
 		} else {
@@ -413,7 +413,7 @@ static gint displaywindow_set_boostint(GtkWidget *widget, DisplayWindow *dw)
 				  1, 2, 3, 4);
 
 	bd->entry = gtk_entry_new();
-	snprintf(tmp, 63, "%i", dw->boostint);
+	snprintf(tmp, 63, "%.2f", dw->boostint);
 	gtk_entry_set_text(GTK_ENTRY(bd->entry), tmp);
 	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(bd->entry),
 				  2, 3, 3, 4);
