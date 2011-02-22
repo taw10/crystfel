@@ -107,6 +107,7 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 				     DisplayWindow *dw)
 {
 	cairo_t *cr;
+	int i;
 
 	cr = gdk_cairo_create(da->window);
 
@@ -115,8 +116,6 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 			da->allocation.height);
 	cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
 	cairo_fill(cr);
-
-	cairo_destroy(cr);
 
 	if ( dw->pixbuf != NULL ) {
 		gdk_draw_pixbuf(da->window,
@@ -133,6 +132,44 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 				0, 0, dw->width, 0, 20, dw->height,
 				GDK_RGB_DITHER_NONE, 0, 0);
 	}
+
+	if ( dw->image->features == NULL ) return FALSE;
+
+	for ( i=0; i<image_feature_count(dw->image->features); i++ ) {
+
+		double x, y;
+		struct imagefeature *f;
+
+		f = image_get_feature(dw->image->features, i);
+		if ( f == NULL ) continue;
+
+		x = f->x / (double)dw->binning;
+		y = dw->height - f->y / (double)dw->binning;
+
+		cairo_new_path(cr);
+		cairo_arc(cr, x, y, 7.0/dw->binning, 0.0, 2.0*M_PI);
+		switch ( dw->scale ) {
+
+			case SCALE_COLOUR :
+			cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+			break;
+
+			case SCALE_MONO :
+			cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+			break;
+
+			case SCALE_INVMONO:
+			cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+			break;
+
+		}
+
+		cairo_set_line_width(cr, 0.75);
+		cairo_stroke(cr);
+
+	}
+
+	cairo_destroy(cr);
 
 	return FALSE;
 }

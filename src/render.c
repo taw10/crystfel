@@ -193,48 +193,6 @@ static void render_free_data(guchar *data, gpointer p)
 }
 
 
-/* FIXME: This doesn't belong here at all */
-static void show_marked_features(struct image *image, guchar *data,
-                                 int w, int h, int binning)
-{
-	int i;
-	float r = 10.0/binning;
-
-	if ( image->features == NULL ) return;
-
-	for ( i=0; i<image_feature_count(image->features); i++ ) {
-
-		struct imagefeature *f;
-		float x, y;
-		double th;
-
-		f = image_get_feature(image->features, i);
-		if ( f == NULL ) continue;
-
-		x = f->x / (float)binning;
-		y = f->y / (float)binning;
-
-		for ( th=0; th<2*M_PI; th+=M_PI/40.0 ) {
-
-			int nx, ny;
-
-			nx = x + r*cos(th);
-			ny = y + r*sin(th);
-
-			if ( nx < 0 ) continue;
-			if ( ny < 0 ) continue;
-			if ( nx >= w ) continue;
-			if ( ny >= h ) continue;
-
-			data[3*( nx+w*(h-1-ny) )+0] = 128;
-			data[3*( nx+w*(h-1-ny) )+1] = 128;
-			data[3*( nx+w*(h-1-ny) )+2] = 30;
-
-		}
-	}
-}
-
-
 /* Return a pixbuf containing a rendered version of the image after binning.
  * This pixbuf might be scaled later - hopefully mostly in a downward
  * direction. */
@@ -286,8 +244,6 @@ GdkPixbuf *render_get_image(struct image *image, int binning, int scale,
 
 	}
 	}
-
-	show_marked_features(image, data, w, h, binning);
 
 	/* Finished with this */
 	free(hdr);
