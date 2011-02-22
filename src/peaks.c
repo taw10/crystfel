@@ -275,14 +275,15 @@ int integrate_peak(struct image *image, int xp, int yp,
 }
 
 
-void search_peaks(struct image *image, float threshold, float min_gradient)
+static void search_peaks_in_panel(struct image *image, float threshold,
+                                  float min_gradient, struct panel *p)
 {
-	int x, y, width, height;
+	int fs, ss, stride;
 	float *data;
 	double d;
 	int idx;
-	float fx = 0.0;
-	float fy = 0.0;
+	float f_fs = 0.0;
+	float f_ss = 0.0;
 	float intensity = 0.0;
 	int nrej_dis = 0;
 	int nrej_hot = 0;
@@ -293,42 +294,28 @@ void search_peaks(struct image *image, float threshold, float min_gradient)
 	int ncull;
 
 	data = image->data;
-	width = image->width;
-	height = image->height;
+	stride = image->width;
 
-	if ( image->features != NULL ) {
-		image_feature_list_free(image->features);
-	}
-	image->features = image_feature_list_new();
-
-	for ( x=1; x<image->width-1; x++ ) {
-	for ( y=1; y<image->height-1; y++ ) {
+	for ( fs = p->min_fs+1; fs <= p->max_fs-1; fs++ ) {
+	for ( ss = p->min_ss+1; ss <= p->max_ss-1; ss++ ) {
 
 		double dx1, dx2, dy1, dy2;
 		double dxs, dys;
 		double grad;
-		int mask_x, mask_y;
-		int sx, sy;
+		int mask_fs, mask_ss;
+		int s_fs, s_ss;
 		double max;
 		unsigned int did_something;
 		int r;
-		struct panel *p;
 
 		/* Overall threshold */
-		if ( data[x+width*y] < threshold ) continue;
-
-		p = find_panel(image->det, x, y);
-		if ( !p ) continue;
-		if ( p->no_index ) continue;
-
-		/* Ignore streak */
-		if ( in_streak(x, y) ) continue;
+		if ( data[fs+stride*ss] < threshold ) continue;
 
 		/* Get gradients */
-		dx1 = data[x+width*y] - data[(x+1)+width*y];
-		dx2 = data[(x-1)+width*y] - data[x+width*y];
-		dy1 = data[x+width*y] - data[(x+1)+width*(y+1)];
-		dy2 = data[x+width*(y-1)] - data[x+width*y];
+		dx1 = data[fs+stride*ss] - data[(fs+1)+stride*ss];
+		dx2 = data[(fs-1)+stride*ss] - data[fs+stride*ss];
+		dy1 = data[fs+stride*ss] - data[(fs+1)+stride*(ss+1)];
+		dy2 = data[fs+stride*(ss-1)] - data[fs+stride*ss];
 
 		/* Average gradient measurements from both sides */
 		dxs = ((dx1*dx1) + (dx2*dx2)) / 2;
@@ -339,25 +326,29 @@ void search_peaks(struct image *image, float threshold, float min_gradient)
 
 		if ( grad < min_gradient ) continue;
 
-		mask_x = x;
-		mask_y = y;
+		mask_fs = fs;
+		mask_ss = ss;
 
 		do {
 
-			max = data[mask_x+width*mask_y];
+			max = data[mask_fs+stride*mask_ss];
 			did_something = 0;
 
-			for ( sy=biggest(mask_y-PEAK_WINDOW_SIZE/2, 0);
-			      sy<smallest(mask_y+PEAK_WINDOW_SIZE/2, height-1);
-			      sy++ ) {
-			for ( sx=biggest(mask_x-PEAK_WINDOW_SIZE/2, 0);
-			      sx<smallest(mask_x+PEAK_WINDOW_SIZE/2, width-1);
-			      sx++ ) {
+			for ( s_ss=biggest(mask_ss-PEAK_WINDOW_SIZE/2,
+			                   p->min_ss);
+			      s_ss<=smallest(mask_ss+PEAK_WINDOW_SIZE/2,
+			                     p->max_ss);
+			      s_ss++ ) {
+			for ( s_fs=biggest(mask_fs-PEAK_WINDOW_SIZE/2,
+			                   p->min_fs);
+			      s_fs<=smallest(mask_fs+PEAK_WINDOW_SIZE/2,
+			                     p->max_fs);
+			      s_fs++ ) {
 
-				if ( data[sx+width*sy] > max ) {
-					max = data[sx+width*sy];
-					mask_x = sx;
-					mask_y = sy;
+				if ( data[s_fs+stride*s_ss] > max ) {
+					max = data[s_fs+stride*s_ss];
+					mask_fs = s_fs;
+					mask_ss = s_ss;
 					did_something = 1;
 				}
 
@@ -365,35 +356,30 @@ void search_peaks(struct image *image, float threshold, float min_gradient)
 			}
 
 			/* Abort if drifted too far from the foot point */
-			if ( distance(mask_x, mask_y, x, y) > p->peak_sep ) {
+			if ( distance(mask_fs, mask_ss, fs, ss)
+			   > p->peak_sep ) {
 				break;
 			}
 
 		} while ( did_something );
 
 		/* Too far from foot point? */
-		if ( distance(mask_x, mask_y, x, y) > p->peak_sep ) {
+		if ( distance(mask_fs, mask_ss, fs, ss) > p->peak_sep ) {
 			nrej_dis++;
 			continue;
 		}
 
 		/* Should be enforced by bounds used above.  Muppet check. */
-		assert(mask_x < image->width);
-		assert(mask_y < image->height);
-		assert(mask_x >= 0);
-		assert(mask_y >= 0);
-
-		/* Isolated hot pixel? */
-		if ( is_hot_pixel(image, mask_x, mask_y) ) {
-			nrej_hot++;
-			continue;
-		}
+		assert(mask_fs <= p->max_fs);
+		assert(mask_ss <= p->max_ss);
+		assert(mask_fs >= p->min_fs);
+		assert(mask_ss >= p->min_ss);
 
 		/* Centroid peak and get better coordinates.
 		 * Don't bother doing polarisation/SA correction, because the
 		 * intensity of this peak is only an estimate at this stage. */
-		r = integrate_peak(image, mask_x, mask_y,
-		                   &fx, &fy, &intensity, NULL, NULL, 0, 1);
+		r = integrate_peak(image, mask_fs, mask_ss,
+		                   &f_fs, &f_ss, &intensity, NULL, NULL, 0, 1);
 		if ( r ) {
 			/* Bad region - don't detect peak */
 			nrej_bad++;
@@ -401,21 +387,21 @@ void search_peaks(struct image *image, float threshold, float min_gradient)
 		}
 
 		/* It is possible for the centroid to fall outside the image */
-		if ( (fx < 0.0) || (fx > image->width)
-		  || (fy < 0.0) || (fy > image->height) ) {
+		if ( (f_fs < p->min_fs) || (f_fs > p->max_fs)
+		  || (f_ss < p->min_ss) || (f_ss > p->max_ss) ) {
 			nrej_fra++;
 			continue;
 		}
 
 		/* Check for a nearby feature */
-		image_feature_closest(image->features, fx, fy, &d, &idx);
+		image_feature_closest(image->features, f_fs, f_ss, &d, &idx);
 		if ( d < p->peak_sep ) {
 			nrej_pro++;
 			continue;
 		}
 
 		/* Add using "better" coordinates */
-		image_add_feature(image->features, fx, fy, image, intensity,
+		image_add_feature(image->features, f_fs, f_ss, image, intensity,
 		                  NULL);
 		nacc++;
 
@@ -431,9 +417,30 @@ void search_peaks(struct image *image, float threshold, float min_gradient)
 		ncull = 0;
 	}
 
-	STATUS("%i accepted, %i box, %i hot, %i proximity, %i outside frame, "
+	STATUS("%i accepted, %i box, %i hot, %i proximity, %i outside panel, "
 	       "%i in bad regions, %i badrow culled.\n",
 	       nacc, nrej_dis, nrej_hot, nrej_pro, nrej_fra, nrej_bad, ncull);
+}
+
+
+void search_peaks(struct image *image, float threshold, float min_gradient)
+{
+	int i;
+
+	if ( image->features != NULL ) {
+		image_feature_list_free(image->features);
+	}
+	image->features = image_feature_list_new();
+
+
+	for ( i=0; i<image->det->n_panels; i++ ) {
+
+		struct panel *p = &image->det->panels[i];
+
+		if ( p->no_index ) continue;
+		search_peaks_in_panel(image, threshold, min_gradient, p);
+
+	}
 }
 
 
