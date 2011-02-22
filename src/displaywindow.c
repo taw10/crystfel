@@ -931,8 +931,8 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 			                  G_CALLBACK(displaywindow_newhdf), nh);
 			}
 
-			STATUS("'%s' '%s'\n", names[i], selectme);
-			if ( strcmp(names[i], selectme) == 0 ) {
+			if ( (selectme != NULL)
+			  && (strcmp(names[i], selectme) == 0) ) {
 				gtk_check_menu_item_set_active(
 				               GTK_CHECK_MENU_ITEM(item), TRUE);
 			} else {
