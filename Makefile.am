@@ -52,7 +52,7 @@ endif
 if HAVE_GTK
 src_hdfsee_SOURCES = src/hdfsee.c src/displaywindow.c src/render.c \
                      src/hdf5-file.c src/utils.c src/image.c src/filters.c \
-                     src/thread-pool.c
+                     src/thread-pool.c src/detector.c
 
 src_geomatic_SOURCES = src/geomatic.c src/dw-geomatic.c src/render.c \
                      src/hdf5-file.c src/utils.c src/image.c src/filters.c \

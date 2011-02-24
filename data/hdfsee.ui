@@ -23,6 +23,7 @@
 		<menu name="tools" action="ToolsAction">
 			<menuitem name="numbers" action="NumbersAction" />
 			<menuitem name="peaks" action="PeaksAction" />
+			<menuitem name="geometry" action="LoadGeomAction" />
 		</menu>
 
 		<menu name="help" action="HelpAction">

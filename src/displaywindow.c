@@ -532,6 +532,65 @@ static gint displaywindow_about(GtkWidget *widget, DisplayWindow *dw)
 }
 
 
+static int load_geometry_file(DisplayWindow *dw, struct image *image,
+                               const char *filename)
+{
+	struct detector *geom;
+
+	geom = get_detector_geometry(filename);
+	if ( geom == NULL ) return -1;
+
+	if ( image->det != NULL ) free_detector_geometry(image->det);
+	image->det = geom;
+	return 0;
+}
+
+
+static gint displaywindow_loadgeom_response(GtkWidget *d, gint response,
+                                            DisplayWindow *dw)
+{
+	if ( response == GTK_RESPONSE_ACCEPT ) {
+
+		char *filename;
+
+		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
+
+		if ( load_geometry_file(dw, dw->image, filename) == 0 ) {
+			displaywindow_update(dw);
+		} else {
+			displaywindow_error(dw, "Failed to load geometry file");
+		}
+
+		g_free(filename);
+
+	}
+
+	gtk_widget_destroy(d);
+
+	return 0;
+}
+
+
+static gint displaywindow_load_geom(GtkWidget *widget, DisplayWindow *dw)
+{
+	GtkWidget *d;
+
+	d = gtk_file_chooser_dialog_new("Load Geometry File",
+	                                GTK_WINDOW(dw->window),
+	                                GTK_FILE_CHOOSER_ACTION_OPEN,
+	                                GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+	                                GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+	                                NULL);
+
+	g_signal_connect(G_OBJECT(d), "response",
+	                 G_CALLBACK(displaywindow_loadgeom_response), dw);
+
+	gtk_widget_show_all(d);
+
+	return 0;
+}
+
+
 static gint displaywindow_peak_overlay(GtkWidget *widget, DisplayWindow *dw)
 {
 	GtkWidget *d;
@@ -550,6 +609,14 @@ static gint displaywindow_peak_overlay(GtkWidget *widget, DisplayWindow *dw)
 
 	return 0;
 }
+
+
+static gint displaywindow_set_usegeom(GtkWidget *d, gint response,
+                                      DisplayWindow *dw)
+{
+	return 0;
+}
+
 
 
 struct savedialog {
@@ -850,12 +917,16 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 			G_CALLBACK(displaywindow_set_binning) },
 		{ "BoostIntAction", NULL, "Boost Intensity...", "F5", NULL,
 			G_CALLBACK(displaywindow_set_boostint) },
+		{ "GeometryAction", NULL, "Use Detector Geometry", NULL, NULL,
+			G_CALLBACK(displaywindow_set_usegeom) },
 
 		{ "ToolsAction", NULL, "_Tools", NULL, NULL, NULL },
 		{ "NumbersAction", NULL, "View Numbers...", "F2", NULL,
 			G_CALLBACK(displaywindow_show_numbers) },
 		{ "PeaksAction", NULL, "Peak Position Overlay...", NULL, NULL,
 			G_CALLBACK(displaywindow_peak_overlay) },
+		{ "LoadGeomAction", NULL, "Load Geometry File...", NULL, NULL,
+			G_CALLBACK(displaywindow_load_geom) },
 
 		{ "HelpAction", NULL, "_Help", NULL, NULL, NULL },
 		{ "AboutAction", GTK_STOCK_ABOUT, "_About hdfsee...",

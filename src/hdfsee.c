@@ -51,6 +51,7 @@ static void show_help(const char *s)
 "                                               -yellow-white.\n"
 "  -e, --image=<element>            Start up displaying this image from the\n"
 "                                    HDF5 file.  Example: /data/data0.\n"
+"  -g, --geometry=<filename>        Use geometry from file for display.\n"
 "\n");
 }
 

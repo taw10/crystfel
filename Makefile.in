@@ -146,12 +146,13 @@ src_get_hkl_LDADD = $(LDADD)
 src_get_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am__src_hdfsee_SOURCES_DIST = src/hdfsee.c src/displaywindow.c \
 	src/render.c src/hdf5-file.c src/utils.c src/image.c \
-	src/filters.c src/thread-pool.c
+	src/filters.c src/thread-pool.c src/detector.c
 @HAVE_GTK_TRUE@am_src_hdfsee_OBJECTS = src/hdfsee.$(OBJEXT) \
 @HAVE_GTK_TRUE@	src/displaywindow.$(OBJEXT) \
 @HAVE_GTK_TRUE@	src/render.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
 @HAVE_GTK_TRUE@	src/utils.$(OBJEXT) src/image.$(OBJEXT) \
-@HAVE_GTK_TRUE@	src/filters.$(OBJEXT) src/thread-pool.$(OBJEXT)
+@HAVE_GTK_TRUE@	src/filters.$(OBJEXT) src/thread-pool.$(OBJEXT) \
+@HAVE_GTK_TRUE@	src/detector.$(OBJEXT)
 src_hdfsee_OBJECTS = $(am_src_hdfsee_OBJECTS)
 src_hdfsee_LDADD = $(LDADD)
 src_hdfsee_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
@@ -616,7 +617,7 @@ src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c \
 	src/beam-parameters.c src/reflist.c $(am__append_4)
 @HAVE_GTK_TRUE@src_hdfsee_SOURCES = src/hdfsee.c src/displaywindow.c src/render.c \
 @HAVE_GTK_TRUE@                     src/hdf5-file.c src/utils.c src/image.c src/filters.c \
-@HAVE_GTK_TRUE@                     src/thread-pool.c
+@HAVE_GTK_TRUE@                     src/thread-pool.c src/detector.c
 
 @HAVE_GTK_TRUE@src_geomatic_SOURCES = src/geomatic.c src/dw-geomatic.c src/render.c \
 @HAVE_GTK_TRUE@                     src/hdf5-file.c src/utils.c src/image.c src/filters.c \
