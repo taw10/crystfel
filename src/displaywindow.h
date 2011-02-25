@@ -47,8 +47,12 @@ typedef struct {
 	GtkWidget	*drawingarea;
 	GtkUIManager	*ui;
 	GtkActionGroup	*action_group;
-	GdkPixbuf	*pixbuf;
+	int             n_pixbufs;
+	GdkPixbuf	**pixbufs;
 	gulong		motion_callback;
+
+	struct detector *loaded_geom;
+	struct detector *simple_geom;
 
 	struct hdfile	*hdfile;
 	struct image	*image;
@@ -64,6 +68,7 @@ typedef struct {
 	double		boostint;
 	int		cmfilter;	/* Use CM subtraction */
 	int		noisefilter;	/* Use aggressive noise filter */
+	int             use_geom;
 
 	int		show_col_scale;
 	int		scale;

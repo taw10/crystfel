@@ -491,3 +491,27 @@ void free_detector_geometry(struct detector *det)
 	free(det->panels);
 	free(det);
 }
+
+
+struct detector *simple_geometry(const struct image *image)
+{
+	struct detector *geom;
+
+	geom = calloc(1, sizeof(struct detector));
+
+	geom->n_panels = 1;
+	geom->panels = calloc(1, sizeof(struct panel));
+
+	geom->panels[0].min_fs = 0;
+	geom->panels[0].max_fs = image->width-1;
+	geom->panels[0].min_ss = 0;
+	geom->panels[0].max_ss = image->height-1;
+	geom->panels[0].cx = -image->width / 2.0;
+	geom->panels[0].cy = -image->height / 2.0;
+	geom->panels[0].fsx = 1;
+	geom->panels[0].fsy = 0;
+	geom->panels[0].ssx = 0;
+	geom->panels[0].ssy = 1;
+
+	return geom;
+}

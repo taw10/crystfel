@@ -12,6 +12,7 @@
 			<separator />
 			<menuitem name="binning" action="BinningAction" />
 			<menuitem name="boostint" action="BoostIntAction" />
+			<menuitem name="usegeom" action="GeometryAction" />
 			<separator />
 			<menuitem name="col" action="ColAction" />
 			<menuitem name="monoscale" action="MonoAction" />

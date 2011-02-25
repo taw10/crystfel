@@ -185,6 +185,50 @@ static float *get_binned_image(struct image *image, int binning, float *pmax)
 }
 
 
+static float *get_binned_panel(struct image *image, int binning,
+                               int min_fs, int max_fs, int min_ss, int max_ss)
+{
+	float *data;
+	int x, y;
+	int w, h;
+	int fw;
+	float *in;
+
+	fw = image->width;
+	in = image->data;
+
+	/* Some pixels might get discarded */
+	w = (max_fs - min_fs + 1) / binning;
+	h = (max_ss - min_ss + 1) / binning;
+
+	data = malloc(w*h*sizeof(float));
+
+	for ( x=0; x<w; x++ ) {
+	for ( y=0; y<h; y++ ) {
+
+		double total;
+		size_t xb, yb;
+
+		total = 0;
+		for ( xb=0; xb<binning; xb++ ) {
+		for ( yb=0; yb<binning; yb++ ) {
+
+			double v;
+			v = in[binning*x+xb+min_fs + (binning*y+yb+min_ss)*fw];
+			total += v;
+
+		}
+		}
+
+		data[x+w*y] = total / ((double)binning * (double)binning);
+
+	}
+	}
+
+	return data;
+}
+
+
 /* NB This function is shared between render_get_image() and
  * render_get_colour_scale() */
 static void render_free_data(guchar *data, gpointer p)
@@ -251,6 +295,104 @@ GdkPixbuf *render_get_image(struct image *image, int binning, int scale,
 	/* Create the pixbuf from the 8-bit display data */
 	return gdk_pixbuf_new_from_data(data, GDK_COLORSPACE_RGB, FALSE, 8,
 					w, h, w*3, render_free_data, NULL);
+}
+
+
+static GdkPixbuf *render_panel(struct image *image,
+                               int binning, int scale, double boost,
+                               int min_fs, int max_fs, int min_ss, int max_ss)
+{
+	int w, h;
+	guchar *data;
+	float *hdr;
+	int x, y;
+	double max;
+	int pw, ph;
+	int i;
+
+	/* Calculate panel width and height
+	 * (add one because min and max are inclusive) */
+	pw = max_fs - min_fs + 1;
+	ph = max_ss - min_ss + 1;
+	w = pw / binning;
+	h = ph / binning;
+
+	/* High dynamic range version */
+	max = 0.0;
+	for ( i=0; i<image->width*image->height; i++ ) {
+		if ( image->data[i] > max ) max = image->data[i];
+	}
+	hdr = get_binned_panel(image, binning, min_fs, max_fs, min_ss, max_ss);
+	if ( hdr == NULL ) return NULL;
+
+	/* Rendered (colourful) version */
+	data = malloc(3*w*h);
+	if ( data == NULL ) {
+		free(hdr);
+		return NULL;
+	}
+
+	max /= boost;
+	if ( max <= 6 ) { max = 10; }
+	/* These x,y coordinates are measured relative to the bottom-left
+	 * corner */
+	for ( y=0; y<h; y++ ) {
+	for ( x=0; x<w; x++ ) {
+
+		float val;
+		float r, g, b;
+
+		val = hdr[x+w*y];
+		render_scale(val, max, scale, &r, &g, &b);
+
+		/* Stuff inside square brackets makes this pixel go to
+		 * the expected location in the pixbuf (which measures
+		 * from the top-left corner */
+		data[3*( x+w*(h-1-y) )+0] = 255*r;
+		data[3*( x+w*(h-1-y) )+1] = 255*g;
+		data[3*( x+w*(h-1-y) )+2] = 255*b;
+
+	}
+	}
+
+	/* Finished with this */
+	free(hdr);
+
+	/* Create the pixbuf from the 8-bit display data */
+	return gdk_pixbuf_new_from_data(data, GDK_COLORSPACE_RGB, FALSE, 8,
+					w, h, w*3, render_free_data, NULL);
+
+}
+
+
+/* Render an image into multiple pixbufs according to geometry */
+GdkPixbuf **render_panels(struct image *image,
+                          int binning, int scale, double boost,
+                          int *n_pixbufs)
+{
+	int i;
+	int np = image->det->n_panels;
+	GdkPixbuf **pixbufs;
+
+	pixbufs = calloc(np, sizeof(GdkPixbuf*));
+	if ( pixbufs == NULL ) {
+		*n_pixbufs = 0;
+		return NULL;
+	}
+
+	for ( i=0; i<np; i++ ) {
+
+		pixbufs[i] = render_panel(image, binning, scale, boost,
+		                          image->det->panels[i].min_fs,
+		                          image->det->panels[i].max_fs,
+		                          image->det->panels[i].min_ss,
+		                          image->det->panels[i].max_ss);
+
+	}
+
+	*n_pixbufs = np;
+
+	return pixbufs;
 }
 
 

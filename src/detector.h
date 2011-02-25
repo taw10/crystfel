@@ -60,4 +60,6 @@ extern struct panel *find_panel(struct detector *det, int x, int y);
 extern struct detector *get_detector_geometry(const char *filename);
 extern void free_detector_geometry(struct detector *det);
 
+extern struct detector *simple_geometry(const struct image *image);
+
 #endif	/* DETECTOR_H */

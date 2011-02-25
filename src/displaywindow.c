@@ -70,21 +70,29 @@ static void displaywindow_update(DisplayWindow *dw)
 				      GTK_WIDGET(dw->drawingarea), &geom,
 				      GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE);
 
-	if ( dw->pixbuf != NULL ) {
-		gdk_pixbuf_unref(dw->pixbuf);
+	/* Free old pixbufs */
+	if ( dw->pixbufs != NULL ) {
+		int i;
+		for ( i=0; i<dw->n_pixbufs; i++ ) {
+			gdk_pixbuf_unref(dw->pixbufs[i]);
+		}
+		free(dw->pixbufs);
 	}
-	if ( dw->image != NULL ) {
-		dw->pixbuf = render_get_image(dw->image, dw->binning, dw->scale,
-		                              dw->boostint);
-	} else {
-		dw->pixbuf = NULL;
-	}
-
 	if ( dw->col_scale != NULL ) {
 		gdk_pixbuf_unref(dw->col_scale);
 	}
+
+	if ( dw->image != NULL ) {
+		dw->pixbufs = render_panels(dw->image, dw->binning,
+		                            dw->scale, dw->boostint,
+		                            &dw->n_pixbufs);
+	} else {
+		dw->pixbufs = NULL;
+	}
+
 	dw->col_scale = render_get_colour_scale(20, dw->height, dw->scale);
 
+	/* Schedule redraw */
 	gdk_window_invalidate_rect(dw->drawingarea->window, NULL, FALSE);
 }
 
@@ -114,26 +122,49 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 	/* Blank white background */
 	cairo_rectangle(cr, 0.0, 0.0, da->allocation.width,
 			da->allocation.height);
-	cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+	cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
 	cairo_fill(cr);
 
-	if ( dw->pixbuf != NULL ) {
-		gdk_draw_pixbuf(da->window,
-				da->style->bg_gc[GTK_WIDGET_STATE(da)],
-				dw->pixbuf,
-				0, 0, 0, 0, dw->width, dw->height,
-				GDK_RGB_DITHER_NONE, 0, 0);
+	if ( dw->pixbufs != NULL ) {
+
+		int i;
+
+		for ( i=0; i<dw->image->det->n_panels; i++ ) {
+
+			struct panel p = dw->image->det->panels[i];
+			int w = gdk_pixbuf_get_width(dw->pixbufs[i]);
+			int h = gdk_pixbuf_get_height(dw->pixbufs[i]);
+			cairo_matrix_t m;
+
+			cairo_identity_matrix(cr);
+			cairo_translate(cr, dw->width/2.0, dw->height/2.0);
+			cairo_translate(cr, p.cx/dw->binning, p.cy/dw->binning);
+
+			cairo_matrix_init(&m, p.fsx, p.fsy, p.ssx, p.ssy,
+			                      0.0, 0.0);
+			cairo_transform(cr, &m);
+
+			gdk_cairo_set_source_pixbuf(cr, dw->pixbufs[i],
+			                            0.0, 0.0);
+			cairo_rectangle(cr, 0.0, 0.0, w, h);
+			cairo_fill(cr);
+
+		}
+
 	}
 
 	if ( (dw->show_col_scale) && (dw->col_scale != NULL) ) {
-		gdk_draw_pixbuf(da->window,
-				da->style->bg_gc[GTK_WIDGET_STATE(da)],
-				dw->col_scale,
-				0, 0, dw->width, 0, 20, dw->height,
-				GDK_RGB_DITHER_NONE, 0, 0);
+		cairo_identity_matrix(cr);
+		cairo_translate(cr, dw->width, 0.0);
+		cairo_rectangle(cr, 0.0, 0.0, 20.0, dw->height);
+		gdk_cairo_set_source_pixbuf(cr, dw->col_scale, 0.0, 0.0);
+		cairo_fill(cr);
 	}
 
-	if ( dw->image->features == NULL ) return FALSE;
+	if ( dw->image->features == NULL ) {
+		cairo_destroy(cr);
+		return FALSE;
+	}
 
 	for ( i=0; i<image_feature_count(dw->image->features); i++ ) {
 
@@ -533,15 +564,36 @@ static gint displaywindow_about(GtkWidget *widget, DisplayWindow *dw)
 
 
 static int load_geometry_file(DisplayWindow *dw, struct image *image,
-                               const char *filename)
+                              const char *filename)
 {
 	struct detector *geom;
+	GtkWidget *w;
 
 	geom = get_detector_geometry(filename);
-	if ( geom == NULL ) return -1;
+	if ( geom == NULL ) {
+		displaywindow_error(dw, "Failed to load geometry file");
+		return -1;
+	}
 
-	if ( image->det != NULL ) free_detector_geometry(image->det);
-	image->det = geom;
+	if ( (1+geom->max_fs != dw->image->width)
+	  || (1+geom->max_ss != dw->image->height) ) {
+
+		displaywindow_error(dw, "Geometry doesn't match image.");
+		return -1;
+
+	}
+
+	if ( dw->loaded_geom != NULL ) free_detector_geometry(dw->loaded_geom);
+	dw->loaded_geom = geom;
+
+
+	w = gtk_ui_manager_get_widget(dw->ui,
+				      "/ui/displaywindow/view/usegeom");
+	gtk_widget_set_sensitive(GTK_WIDGET(w), TRUE);
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), TRUE);
+	dw->use_geom = 1;
+	displaywindow_update(dw);
+
 	return 0;
 }
 
@@ -557,8 +609,6 @@ static gint displaywindow_loadgeom_response(GtkWidget *d, gint response,
 
 		if ( load_geometry_file(dw, dw->image, filename) == 0 ) {
 			displaywindow_update(dw);
-		} else {
-			displaywindow_error(dw, "Failed to load geometry file");
 		}
 
 		g_free(filename);
@@ -611,9 +661,23 @@ static gint displaywindow_peak_overlay(GtkWidget *widget, DisplayWindow *dw)
 }
 
 
-static gint displaywindow_set_usegeom(GtkWidget *d, gint response,
-                                      DisplayWindow *dw)
+static gint displaywindow_set_usegeom(GtkWidget *d, DisplayWindow *dw)
 {
+	GtkWidget *w;
+
+	/* Get new value */
+	w =  gtk_ui_manager_get_widget(dw->ui,
+				      "/ui/displaywindow/view/usegeom");
+	dw->use_geom = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(w));
+
+	if ( dw->use_geom ) {
+		dw->image->det = dw->loaded_geom;
+	} else {
+		dw->image->det = dw->simple_geom;
+	}
+
+	displaywindow_update(dw);
+
 	return 0;
 }
 
@@ -641,7 +705,8 @@ static gint displaywindow_save_response(GtkWidget *d, gint response,
 		type = gtk_combo_box_get_active(GTK_COMBO_BOX(cd->cb));
 
 		if ( type == 0 ) {
-			r = render_png(dw->pixbuf, file);
+			/* FIXME: Use Cairo or something */
+			r = render_png(dw->pixbufs[0], file);
 		} else if ( type == 1 ) {
 			r = render_tiff_fp(dw->image, file);
 		} else if ( type == 2 ) {
@@ -917,8 +982,6 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 			G_CALLBACK(displaywindow_set_binning) },
 		{ "BoostIntAction", NULL, "Boost Intensity...", "F5", NULL,
 			G_CALLBACK(displaywindow_set_boostint) },
-		{ "GeometryAction", NULL, "Use Detector Geometry", NULL, NULL,
-			G_CALLBACK(displaywindow_set_usegeom) },
 
 		{ "ToolsAction", NULL, "_Tools", NULL, NULL, NULL },
 		{ "NumbersAction", NULL, "View Numbers...", "F2", NULL,
@@ -939,6 +1002,8 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 	GtkToggleActionEntry toggles[] = {
 		{ "ColScaleAction", NULL, "Show Colour Scale", NULL, NULL,
 			G_CALLBACK(displaywindow_set_colscale), FALSE },
+		{ "GeometryAction", NULL, "Use Detector Geometry", NULL, NULL,
+			G_CALLBACK(displaywindow_set_usegeom), FALSE },
 	};
 	guint n_toggles = G_N_ELEMENTS(toggles);
 	GtkRadioActionEntry radios[] = {
@@ -977,6 +1042,16 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 }
 
 
+
+static int geometry_fits(struct image *image, struct detector *geom)
+{
+	if ( (1+geom->max_fs != image->width)
+	  || (1+geom->max_ss != image->height) ) return 0;
+
+	return 1;
+}
+
+
 struct newhdf {
 	DisplayWindow *dw;
 	char name[1024];
@@ -986,6 +1061,34 @@ static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 {
 	hdfile_set_image(nh->dw->hdfile, nh->name);
 	hdf5_read(nh->dw->hdfile, nh->dw->image, 0, 0.0);
+
+	/* Check that the geometry still fits */
+	if ( !geometry_fits(nh->dw->image, nh->dw->simple_geom) ) {
+		free_detector_geometry(nh->dw->simple_geom);
+		nh->dw->simple_geom = simple_geometry(nh->dw->image);
+	}
+
+	if ( (nh->dw->loaded_geom != NULL )
+	  && (!geometry_fits(nh->dw->image, nh->dw->loaded_geom)) ) {
+
+		GtkWidget *w;
+
+		free_detector_geometry(nh->dw->loaded_geom);
+
+		w = gtk_ui_manager_get_widget(nh->dw->ui,
+				      "/ui/displaywindow/view/usegeom");
+		gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), FALSE);
+		nh->dw->use_geom = 0;
+
+	}
+
+	if ( nh->dw->use_geom ) {
+		nh->dw->image->det = nh->dw->loaded_geom;
+	} else {
+		nh->dw->image->det = nh->dw->simple_geom;
+	}
+
 	displaywindow_update(nh->dw);
 	return 0;
 }
@@ -1229,10 +1332,11 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	DisplayWindow *dw;
 	char *title;
 	GtkWidget *vbox;
+	GtkWidget *w;
 
 	dw = malloc(sizeof(DisplayWindow));
 	if ( dw == NULL ) return NULL;
-	dw->pixbuf = NULL;
+	dw->pixbufs = NULL;
 	dw->binning_dialog = NULL;
 	dw->show_col_scale = 0;
 	dw->col_scale = NULL;
@@ -1241,6 +1345,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->motion_callback = 0;
 	dw->numbers_window = NULL;
 	dw->image = NULL;
+	dw->use_geom = 0;
 
 	dw->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
@@ -1300,6 +1405,14 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 
 	gtk_window_set_resizable(GTK_WINDOW(dw->window), FALSE);
 	gtk_widget_show_all(dw->window);
+
+	/* No geometry loaded initially */
+	w = gtk_ui_manager_get_widget(dw->ui,
+				      "/ui/displaywindow/view/usegeom");
+	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
+	dw->loaded_geom = NULL;
+	dw->simple_geom = simple_geometry(dw->image);
+	dw->image->det = dw->simple_geom;
 
 	dw->scale = colscale;
 	dw->binning = binning;
