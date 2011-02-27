@@ -224,18 +224,22 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 		cairo_fill(cr);
 	}
 
-	/* Mark the beam */
-	cairo_set_matrix(cr, &basic_m);
-	cairo_arc(cr, 0.0, 0.0, 5.0/dw->binning, 0.0, 2.0*M_PI);
-	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-	cairo_fill(cr);
+	if ( dw->show_rings ) {
 
-	/* Draw resolution circles */
-	show_ring(cr, dw, 5.0e-10, "5A");
-	show_ring(cr, dw, 4.0e-10, "4A");
-	show_ring(cr, dw, 3.0e-10, "3A");
-	show_ring(cr, dw, 2.0e-10, "2A");
-	show_ring(cr, dw, 1.0e-10, "1A");
+		/* Mark the beam */
+		cairo_set_matrix(cr, &basic_m);
+		cairo_arc(cr, 0.0, 0.0, 5.0/dw->binning, 0.0, 2.0*M_PI);
+		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+		cairo_fill(cr);
+
+		/* Draw resolution circles */
+		show_ring(cr, dw, 5.0e-10, "5A");
+		show_ring(cr, dw, 4.0e-10, "4A");
+		show_ring(cr, dw, 3.0e-10, "3A");
+		show_ring(cr, dw, 2.0e-10, "2A");
+		show_ring(cr, dw, 1.0e-10, "1A");
+
+	}
 
 	if ( dw->image->features == NULL ) {
 		cairo_destroy(cr);
@@ -758,6 +762,21 @@ static gint displaywindow_set_usegeom(GtkWidget *d, DisplayWindow *dw)
 }
 
 
+static gint displaywindow_set_rings(GtkWidget *d, DisplayWindow *dw)
+{
+	GtkWidget *w;
+
+	/* Get new value */
+	w =  gtk_ui_manager_get_widget(dw->ui,
+				      "/ui/displaywindow/view/rings");
+	dw->show_rings = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(w));
+
+	gdk_window_invalidate_rect(dw->drawingarea->window, NULL, FALSE);
+
+	return 0;
+}
+
+
 
 struct savedialog {
 	DisplayWindow *dw;
@@ -1080,6 +1099,8 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 			G_CALLBACK(displaywindow_set_colscale), FALSE },
 		{ "GeometryAction", NULL, "Use Detector Geometry", NULL, NULL,
 			G_CALLBACK(displaywindow_set_usegeom), FALSE },
+		{ "RingsAction", NULL, "Show Resolution Rings", NULL, NULL,
+			G_CALLBACK(displaywindow_set_rings), FALSE },
 	};
 	guint n_toggles = G_N_ELEMENTS(toggles);
 	GtkRadioActionEntry radios[] = {
@@ -1320,6 +1341,10 @@ static void displaywindow_disable(DisplayWindow *dw)
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
 
 	w = gtk_ui_manager_get_widget(dw->ui,
+				      "/ui/displaywindow/file/rings");
+	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
+
+	w = gtk_ui_manager_get_widget(dw->ui,
 				      "/ui/displaywindow/view/binning");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
 
@@ -1410,7 +1435,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	GtkWidget *vbox;
 	GtkWidget *w;
 
-	dw = malloc(sizeof(DisplayWindow));
+	dw = calloc(1, sizeof(DisplayWindow));
 	if ( dw == NULL ) return NULL;
 	dw->pixbufs = NULL;
 	dw->binning_dialog = NULL;
@@ -1422,6 +1447,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->numbers_window = NULL;
 	dw->image = NULL;
 	dw->use_geom = 0;
+	dw->show_rings = 0;
 
 	dw->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 

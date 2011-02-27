@@ -74,6 +74,7 @@ typedef struct {
 	int		cmfilter;	/* Use CM subtraction */
 	int		noisefilter;	/* Use aggressive noise filter */
 	int             use_geom;
+	int             show_rings;
 
 	int		show_col_scale;
 	int		scale;
