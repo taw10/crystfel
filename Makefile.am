@@ -12,7 +12,7 @@ noinst_PROGRAMS = tests/list_check
 TESTS = tests/list_check
 
 if HAVE_GTK
-bin_PROGRAMS += src/hdfsee src/geomatic
+bin_PROGRAMS += src/hdfsee
 endif
 
 if HAVE_CAIRO
@@ -53,11 +53,6 @@ if HAVE_GTK
 src_hdfsee_SOURCES = src/hdfsee.c src/displaywindow.c src/render.c \
                      src/hdf5-file.c src/utils.c src/image.c src/filters.c \
                      src/thread-pool.c src/detector.c
-
-src_geomatic_SOURCES = src/geomatic.c src/dw-geomatic.c src/render.c \
-                     src/hdf5-file.c src/utils.c src/image.c src/filters.c \
-                     src/thread-pool.c src/cell.c src/reflist.c src/geometry.c \
-                     src/peaks.c src/detector.c
 endif
 
 src_get_hkl_SOURCES = src/get_hkl.c src/sfac.c src/cell.c src/utils.c \

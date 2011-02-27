@@ -139,52 +139,6 @@ void render_scale(float val, float max, int scale,
 
 #ifdef HAVE_GTK
 
-static float *get_binned_image(struct image *image, int binning, float *pmax)
-{
-	float *data;
-	int x, y;
-	int w, h;
-	int inw, inh;
-	float *in;
-	float max;
-
-	inw = image->width;
-	inh = image->height;
-	in = image->data;
-
-	w = inw / binning;
-	h = inh / binning;      /* Some pixels might get discarded */
-
-	data = malloc(w*h*sizeof(float));
-	max = 0.0;
-
-	for ( x=0; x<w; x++ ) {
-	for ( y=0; y<h; y++ ) {
-
-		double total;
-		size_t xb, yb;
-
-		total = 0;
-		for ( xb=0; xb<binning; xb++ ) {
-		for ( yb=0; yb<binning; yb++ ) {
-
-			total += in[binning*x+xb + (binning*y+yb)*inw];
-
-		}
-		}
-
-		data[x+w*y] = total / ((double)binning * (double)binning);
-		if ( data[x+w*y] > max ) max = data[x+w*y];
-
-	}
-	}
-
-	*pmax = max;
-	return data;
-
-}
-
-
 static float *get_binned_panel(struct image *image, int binning,
                                int min_fs, int max_fs, int min_ss, int max_ss)
 {
@@ -234,67 +188,6 @@ static float *get_binned_panel(struct image *image, int binning,
 static void render_free_data(guchar *data, gpointer p)
 {
 	free(data);
-}
-
-
-/* Return a pixbuf containing a rendered version of the image after binning.
- * This pixbuf might be scaled later - hopefully mostly in a downward
- * direction. */
-GdkPixbuf *render_get_image(struct image *image, int binning, int scale,
-                            double boost)
-{
-	int w, h;
-	guchar *data;
-	float *hdr;
-	int x, y;
-	float max;
-	int mw, mh;
-
-	mw = image->width;
-	mh = image->height;
-	w = mw / binning;
-	h = mh / binning;
-
-	/* High dynamic range version */
-	hdr = get_binned_image(image, binning, &max);
-	if ( hdr == NULL ) return NULL;
-
-	/* Rendered (colourful) version */
-	data = malloc(3*w*h);
-	if ( data == NULL ) {
-		free(hdr);
-		return NULL;
-	}
-
-	max /= boost;
-	if ( max <= 6 ) { max = 10; }
-	/* These x,y coordinates are measured relative to the bottom-left
-	 * corner */
-	for ( y=0; y<h; y++ ) {
-	for ( x=0; x<w; x++ ) {
-
-		float val;
-		float r, g, b;
-
-		val = hdr[x+w*y];
-		render_scale(val, max, scale, &r, &g, &b);
-
-		/* Stuff inside square brackets makes this pixel go to
-		 * the expected location in the pixbuf (which measures
-		 * from the top-left corner */
-		data[3*( x+w*(h-1-y) )+0] = 255*r;
-		data[3*( x+w*(h-1-y) )+1] = 255*g;
-		data[3*( x+w*(h-1-y) )+2] = 255*b;
-
-	}
-	}
-
-	/* Finished with this */
-	free(hdr);
-
-	/* Create the pixbuf from the 8-bit display data */
-	return gdk_pixbuf_new_from_data(data, GDK_COLORSPACE_RGB, FALSE, 8,
-					w, h, w*3, render_free_data, NULL);
 }
 
 

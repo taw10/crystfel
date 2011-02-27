@@ -37,9 +37,6 @@ extern void render_scale(float val, float max, int scale,
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
-extern GdkPixbuf *render_get_image(struct image *image,
-                                   int binning, int scale, double boost);
-
 extern GdkPixbuf **render_panels(struct image *image,
                                   int binning, int scale, double boost,
                                   int *n_pixbufs);

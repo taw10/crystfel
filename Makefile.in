@@ -44,7 +44,7 @@ bin_PROGRAMS = src/pattern_sim$(EXEEXT) src/process_hkl$(EXEEXT) \
 	src/sum_stack$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 noinst_PROGRAMS = tests/list_check$(EXEEXT)
 TESTS = tests/list_check$(EXEEXT)
-@HAVE_GTK_TRUE@am__append_1 = src/hdfsee src/geomatic
+@HAVE_GTK_TRUE@am__append_1 = src/hdfsee
 @HAVE_CAIRO_TRUE@am__append_2 = src/cubeit
 @HAVE_OPENCL_TRUE@am__append_3 = src/diffraction-gpu.c src/cl-utils.c
 @HAVE_OPENCL_TRUE@am__append_4 = src/diffraction-gpu.c src/cl-utils.c
@@ -74,8 +74,7 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-@HAVE_GTK_TRUE@am__EXEEXT_1 = src/hdfsee$(EXEEXT) \
-@HAVE_GTK_TRUE@	src/geomatic$(EXEEXT)
+@HAVE_GTK_TRUE@am__EXEEXT_1 = src/hdfsee$(EXEEXT)
 @HAVE_CAIRO_TRUE@am__EXEEXT_2 = src/cubeit$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(crystfeldir)" \
 	"$(DESTDIR)$(crystfeldocdir)" "$(DESTDIR)$(scriptdir)"
@@ -123,20 +122,6 @@ src_estimate_background_OBJECTS =  \
 	$(am_src_estimate_background_OBJECTS)
 src_estimate_background_LDADD = $(LDADD)
 src_estimate_background_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
-am__src_geomatic_SOURCES_DIST = src/geomatic.c src/dw-geomatic.c \
-	src/render.c src/hdf5-file.c src/utils.c src/image.c \
-	src/filters.c src/thread-pool.c src/cell.c src/reflist.c \
-	src/geometry.c src/peaks.c src/detector.c
-@HAVE_GTK_TRUE@am_src_geomatic_OBJECTS = src/geomatic.$(OBJEXT) \
-@HAVE_GTK_TRUE@	src/dw-geomatic.$(OBJEXT) src/render.$(OBJEXT) \
-@HAVE_GTK_TRUE@	src/hdf5-file.$(OBJEXT) src/utils.$(OBJEXT) \
-@HAVE_GTK_TRUE@	src/image.$(OBJEXT) src/filters.$(OBJEXT) \
-@HAVE_GTK_TRUE@	src/thread-pool.$(OBJEXT) src/cell.$(OBJEXT) \
-@HAVE_GTK_TRUE@	src/reflist.$(OBJEXT) src/geometry.$(OBJEXT) \
-@HAVE_GTK_TRUE@	src/peaks.$(OBJEXT) src/detector.$(OBJEXT)
-src_geomatic_OBJECTS = $(am_src_geomatic_OBJECTS)
-src_geomatic_LDADD = $(LDADD)
-src_geomatic_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_get_hkl_OBJECTS = src/get_hkl.$(OBJEXT) src/sfac.$(OBJEXT) \
 	src/cell.$(OBJEXT) src/utils.$(OBJEXT) \
 	src/reflections.$(OBJEXT) src/symmetry.$(OBJEXT) \
@@ -274,18 +259,16 @@ am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN   " $@;
 SOURCES = $(src_calibrate_detector_SOURCES) $(src_check_hkl_SOURCES) \
 	$(src_compare_hkl_SOURCES) $(src_cubeit_SOURCES) \
-	$(src_estimate_background_SOURCES) $(src_geomatic_SOURCES) \
-	$(src_get_hkl_SOURCES) $(src_hdfsee_SOURCES) \
-	$(src_indexamajig_SOURCES) $(src_partialator_SOURCES) \
-	$(src_pattern_sim_SOURCES) $(src_powder_plot_SOURCES) \
-	$(src_process_hkl_SOURCES) $(src_reintegrate_SOURCES) \
-	$(src_render_hkl_SOURCES) $(src_sum_stack_SOURCES) \
-	$(tests_list_check_SOURCES)
+	$(src_estimate_background_SOURCES) $(src_get_hkl_SOURCES) \
+	$(src_hdfsee_SOURCES) $(src_indexamajig_SOURCES) \
+	$(src_partialator_SOURCES) $(src_pattern_sim_SOURCES) \
+	$(src_powder_plot_SOURCES) $(src_process_hkl_SOURCES) \
+	$(src_reintegrate_SOURCES) $(src_render_hkl_SOURCES) \
+	$(src_sum_stack_SOURCES) $(tests_list_check_SOURCES)
 DIST_SOURCES = $(src_calibrate_detector_SOURCES) \
 	$(src_check_hkl_SOURCES) $(src_compare_hkl_SOURCES) \
 	$(am__src_cubeit_SOURCES_DIST) \
-	$(src_estimate_background_SOURCES) \
-	$(am__src_geomatic_SOURCES_DIST) $(src_get_hkl_SOURCES) \
+	$(src_estimate_background_SOURCES) $(src_get_hkl_SOURCES) \
 	$(am__src_hdfsee_SOURCES_DIST) \
 	$(am__src_indexamajig_SOURCES_DIST) $(src_partialator_SOURCES) \
 	$(am__src_pattern_sim_SOURCES_DIST) $(src_powder_plot_SOURCES) \
@@ -619,11 +602,6 @@ src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c \
 @HAVE_GTK_TRUE@                     src/hdf5-file.c src/utils.c src/image.c src/filters.c \
 @HAVE_GTK_TRUE@                     src/thread-pool.c src/detector.c
 
-@HAVE_GTK_TRUE@src_geomatic_SOURCES = src/geomatic.c src/dw-geomatic.c src/render.c \
-@HAVE_GTK_TRUE@                     src/hdf5-file.c src/utils.c src/image.c src/filters.c \
-@HAVE_GTK_TRUE@                     src/thread-pool.c src/cell.c src/reflist.c src/geometry.c \
-@HAVE_GTK_TRUE@                     src/peaks.c src/detector.c
-
 src_get_hkl_SOURCES = src/get_hkl.c src/sfac.c src/cell.c src/utils.c \
                       src/reflections.c src/symmetry.c src/beam-parameters.c \
                       src/thread-pool.c
@@ -855,18 +833,6 @@ src/estimate_background.$(OBJEXT): src/$(am__dirstamp) \
 src/estimate_background$(EXEEXT): $(src_estimate_background_OBJECTS) $(src_estimate_background_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/estimate_background$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_estimate_background_OBJECTS) $(src_estimate_background_LDADD) $(LIBS)
-src/geomatic.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/dw-geomatic.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/reflist.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/geometry.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/peaks.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/geomatic$(EXEEXT): $(src_geomatic_OBJECTS) $(src_geomatic_DEPENDENCIES) src/$(am__dirstamp)
-	@rm -f src/geomatic$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(src_geomatic_OBJECTS) $(src_geomatic_LDADD) $(LIBS)
 src/get_hkl.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/beam-parameters.$(OBJEXT): src/$(am__dirstamp) \
@@ -883,6 +849,7 @@ src/hdfsee$(EXEEXT): $(src_hdfsee_OBJECTS) $(src_hdfsee_DEPENDENCIES) src/$(am__
 	$(AM_V_CCLD)$(LINK) $(src_hdfsee_OBJECTS) $(src_hdfsee_LDADD) $(LIBS)
 src/indexamajig.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/peaks.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/index.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/diffraction.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -890,6 +857,10 @@ src/dirax.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/mosflm.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/templates.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/geometry.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/reflist.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/diffraction-gpu.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -965,10 +936,8 @@ mostlyclean-compile:
 	-rm -f src/diffraction.$(OBJEXT)
 	-rm -f src/dirax.$(OBJEXT)
 	-rm -f src/displaywindow.$(OBJEXT)
-	-rm -f src/dw-geomatic.$(OBJEXT)
 	-rm -f src/estimate_background.$(OBJEXT)
 	-rm -f src/filters.$(OBJEXT)
-	-rm -f src/geomatic.$(OBJEXT)
 	-rm -f src/geometry.$(OBJEXT)
 	-rm -f src/get_hkl.$(OBJEXT)
 	-rm -f src/hdf5-file.$(OBJEXT)
@@ -1015,10 +984,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/dirax.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/displaywindow.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/dw-geomatic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/estimate_background.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/filters.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/geomatic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/geometry.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/get_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/hdf5-file.Po@am__quote@
