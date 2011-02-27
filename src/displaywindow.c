@@ -49,12 +49,31 @@ static void displaywindow_update(DisplayWindow *dw)
 	gint width;
 	GdkGeometry geom;
 
-	if ( dw->image != NULL ) {
-		dw->width = dw->image->width/dw->binning;
-		dw->height = dw->image->height/dw->binning;
-	} else {
+	if ( dw->image == NULL ) {
 		dw->width = 320;
 		dw->height = 320;
+	} else {
+
+		double min_x, min_y, max_x, max_y;
+
+		get_pixel_extents(dw->image->det,
+		                  &min_x, &min_y, &max_x, &max_y);
+
+		if ( min_x > 0.0 ) min_x = 0.0;
+		if ( max_x < 0.0 ) max_x = 0.0;
+		if ( min_y > 0.0 ) min_y = 0.0;
+		if ( max_y < 0.0 ) max_y = 0.0;
+		dw->min_x = min_x;
+		dw->max_x = max_x;
+		dw->min_y = min_y;
+		dw->max_y = max_y;
+
+		dw->width = (max_x - min_x) / dw->binning;
+		dw->height = (max_y - min_y) / dw->binning;
+
+		/* Add a thin border */
+		dw->width += 2.0;
+		dw->height += 2.0;
 	}
 
 	width = dw->width;
@@ -130,10 +149,15 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 	/* Set up basic coordinate system
 	 *  - origin in the centre, y upwards. */
 	cairo_identity_matrix(cr);
-	cairo_translate(cr, dw->width/2.0, dw->height/2.0);
 	cairo_matrix_init(&m, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0);
+	cairo_translate(cr, -dw->min_x/dw->binning, dw->max_y/dw->binning);
 	cairo_transform(cr, &m);
 	cairo_get_matrix(cr, &basic_m);
+
+	/* Mark the beam */
+	cairo_arc(cr, 0.0, 0.0, 5.0/dw->binning, 0.0, 2.0*M_PI);
+	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+	cairo_fill(cr);
 
 	if ( dw->pixbufs != NULL ) {
 
@@ -165,12 +189,6 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 		}
 
 	}
-
-	cairo_identity_matrix(cr);
-	cairo_translate(cr, dw->width/2.0, dw->height/2.0);
-	cairo_arc(cr, 0.0, 0.0, 5.0/dw->binning, 0.0, 2.0*M_PI);
-	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-	cairo_fill(cr);
 
 	if ( (dw->show_col_scale) && (dw->col_scale != NULL) ) {
 		cairo_identity_matrix(cr);

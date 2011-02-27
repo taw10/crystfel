@@ -61,5 +61,8 @@ extern struct detector *get_detector_geometry(const char *filename);
 extern void free_detector_geometry(struct detector *det);
 
 extern struct detector *simple_geometry(const struct image *image);
+extern void get_pixel_extents(struct detector *det,
+                              double *min_x, double *min_y,
+                              double *max_x, double *max_y);
 
 #endif	/* DETECTOR_H */

@@ -515,3 +515,59 @@ struct detector *simple_geometry(const struct image *image)
 
 	return geom;
 }
+
+
+static void check_extents(struct panel p, double *min_x, double *min_y,
+                          double *max_x, double *max_y, double fs, double ss)
+{
+	double xs, ys, rx, ry;
+
+	xs = fs*p.fsx + ss*p.ssx;
+	ys = fs*p.fsy + ss*p.ssy;
+
+	rx = xs + p.cx;
+	ry = ys + p.cy;
+
+	if ( rx > *max_x ) *max_x = rx;
+	if ( ry > *max_y ) *max_y = ry;
+	if ( rx < *min_x ) *min_x = rx;
+	if ( ry < *min_y ) *min_y = ry;
+}
+
+
+void get_pixel_extents(struct detector *det,
+                       double *min_x, double *min_y,
+                       double *max_x, double *max_y)
+{
+	int i;
+
+	*min_x = 0.0;
+	*max_x = 0.0;
+	*min_y = 0.0;
+	*max_y = 0.0;
+
+	/* To determine the maximum extents of the detector, put all four
+	 * corners of each panel through the transformations and watch for the
+	 * biggest */
+
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		check_extents(det->panels[i], min_x, min_y, max_x, max_y,
+		              0.0,
+		              0.0);
+
+		check_extents(det->panels[i], min_x, min_y, max_x, max_y,
+		              0.0,
+		              det->panels[i].max_ss-det->panels[i].min_ss+1);
+
+		check_extents(det->panels[i], min_x, min_y, max_x, max_y,
+		              det->panels[i].max_fs-det->panels[i].min_fs+1,
+		              0.0);
+
+		check_extents(det->panels[i], min_x, min_y, max_x, max_y,
+		              det->panels[i].max_fs-det->panels[i].min_fs+1,
+		              det->panels[i].max_ss-det->panels[i].min_ss+1);
+
+
+	}
+}

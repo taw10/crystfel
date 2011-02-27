@@ -64,6 +64,11 @@ typedef struct {
 
 	int		width;
 	int		height;		/* Size of the drawing area */
+	double          min_x;
+	double          min_y;
+	double          max_x;
+	double          max_y;
+
 	int		binning;
 	double		boostint;
 	int		cmfilter;	/* Use CM subtraction */
