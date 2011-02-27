@@ -348,9 +348,9 @@ static GdkPixbuf *render_panel(struct image *image,
 		/* Stuff inside square brackets makes this pixel go to
 		 * the expected location in the pixbuf (which measures
 		 * from the top-left corner */
-		data[3*( x+w*(h-1-y) )+0] = 255*r;
-		data[3*( x+w*(h-1-y) )+1] = 255*g;
-		data[3*( x+w*(h-1-y) )+2] = 255*b;
+		data[3*( x+w*y )+0] = 255*r;
+		data[3*( x+w*y )+1] = 255*g;
+		data[3*( x+w*y )+2] = 255*b;
 
 	}
 	}

@@ -116,6 +116,8 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 {
 	cairo_t *cr;
 	int i;
+	cairo_matrix_t basic_m;
+	cairo_matrix_t m;
 
 	cr = gdk_cairo_create(da->window);
 
@@ -124,6 +126,14 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 			da->allocation.height);
 	cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
 	cairo_fill(cr);
+
+	/* Set up basic coordinate system
+	 *  - origin in the centre, y upwards. */
+	cairo_identity_matrix(cr);
+	cairo_translate(cr, dw->width/2.0, dw->height/2.0);
+	cairo_matrix_init(&m, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0);
+	cairo_transform(cr, &m);
+	cairo_get_matrix(cr, &basic_m);
 
 	if ( dw->pixbufs != NULL ) {
 
@@ -136,10 +146,13 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 			int h = gdk_pixbuf_get_height(dw->pixbufs[i]);
 			cairo_matrix_t m;
 
-			cairo_identity_matrix(cr);
-			cairo_translate(cr, dw->width/2.0, dw->height/2.0);
+			/* Start with the basic coordinate system */
+			cairo_set_matrix(cr, &basic_m);
+
+			/* Move to the right location */
 			cairo_translate(cr, p.cx/dw->binning, p.cy/dw->binning);
 
+			/* Twiddle directions according to matrix */
 			cairo_matrix_init(&m, p.fsx, p.fsy, p.ssx, p.ssy,
 			                      0.0, 0.0);
 			cairo_transform(cr, &m);
@@ -152,6 +165,12 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 		}
 
 	}
+
+	cairo_identity_matrix(cr);
+	cairo_translate(cr, dw->width/2.0, dw->height/2.0);
+	cairo_arc(cr, 0.0, 0.0, 5.0/dw->binning, 0.0, 2.0*M_PI);
+	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+	cairo_fill(cr);
 
 	if ( (dw->show_col_scale) && (dw->col_scale != NULL) ) {
 		cairo_identity_matrix(cr);
