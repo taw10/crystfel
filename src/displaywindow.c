@@ -1163,8 +1163,15 @@ static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 
 	/* Check that the geometry still fits */
 	if ( !geometry_fits(nh->dw->image, nh->dw->simple_geom) ) {
+		int using = 0;
+		if ( nh->dw->simple_geom == nh->dw->image->det ) {
+			using = 1;
+		}
 		free_detector_geometry(nh->dw->simple_geom);
 		nh->dw->simple_geom = simple_geometry(nh->dw->image);
+		if ( using ) {
+			nh->dw->image->det = nh->dw->simple_geom;
+		}
 	}
 
 	if ( (nh->dw->loaded_geom != NULL )
@@ -1173,12 +1180,15 @@ static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 		GtkWidget *w;
 
 		free_detector_geometry(nh->dw->loaded_geom);
+		nh->dw->loaded_geom = NULL;
 
+		/* Force out of "use geometry" mode */
 		w = gtk_ui_manager_get_widget(nh->dw->ui,
 				      "/ui/displaywindow/view/usegeom");
 		gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), FALSE);
 		nh->dw->use_geom = 0;
+		nh->dw->image->det = nh->dw->simple_geom;
 
 	}
 
