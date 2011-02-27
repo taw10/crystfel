@@ -51,6 +51,8 @@ typedef struct {
 	GdkPixbuf	**pixbufs;
 	gulong		motion_callback;
 
+	int             not_ready_yet;
+
 	struct detector *loaded_geom;
 	struct detector *simple_geom;
 
@@ -87,7 +89,8 @@ extern DisplayWindow *displaywindow_open(const char *filename,
                                          const char *peaks, int boost,
                                          int binning, int cmfilter,
                                          int noisefilter, int colscale,
-                                         const char *element);
+                                         const char *element,
+                                         const char *geometry);
 
 
 #endif	/* DISPLAYWINDOW_H */

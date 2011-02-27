@@ -177,6 +177,8 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 	cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
 	cairo_fill(cr);
 
+	if ( dw->image == NULL ) return 0;
+
 	/* Set up basic coordinate system
 	 *  - origin in the centre, y upwards. */
 	cairo_identity_matrix(cr);
@@ -666,13 +668,11 @@ static int load_geometry_file(DisplayWindow *dw, struct image *image,
 	if ( dw->loaded_geom != NULL ) free_detector_geometry(dw->loaded_geom);
 	dw->loaded_geom = geom;
 
-
 	w = gtk_ui_manager_get_widget(dw->ui,
 				      "/ui/displaywindow/view/usegeom");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), TRUE);
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), TRUE);
 	dw->use_geom = 1;
-	displaywindow_update(dw);
 
 	return 0;
 }
@@ -777,7 +777,6 @@ static gint displaywindow_set_rings(GtkWidget *d, DisplayWindow *dw)
 }
 
 
-
 struct savedialog {
 	DisplayWindow *dw;
 	GtkWidget *cb;
@@ -852,7 +851,8 @@ static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
 	gtk_combo_box_append_text(GTK_COMBO_BOX(cb),
 	       "TIFF - Floating point (mono, unbinned, filtered, not boosted)");
 	gtk_combo_box_append_text(GTK_COMBO_BOX(cb),
-	       "TIFF - 16 bit signed integer (mono, unbinned, filtered, boosted)");
+	       "TIFF - 16 bit signed integer "
+	       "(mono, unbinned, filtered, boosted)");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(cb), 0);
 
 	cd = malloc(sizeof(*cd));
@@ -1156,6 +1156,8 @@ struct newhdf {
 
 static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 {
+	if ( nh->dw->not_ready_yet ) return 0;
+
 	hdfile_set_image(nh->dw->hdfile, nh->name);
 	hdf5_read(nh->dw->hdfile, nh->dw->image, 0, 0.0);
 
@@ -1233,7 +1235,7 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 
 			nh = malloc(sizeof(struct newhdf));
 			if ( nh != NULL ) {
-				strncpy(nh->name, names[i], 1023);
+		        	strncpy(nh->name, names[i], 1023);
 				nh->dw = dw;
 				g_signal_connect(G_OBJECT(item), "activate",
 			                  G_CALLBACK(displaywindow_newhdf), nh);
@@ -1241,7 +1243,7 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 
 			if ( (selectme != NULL)
 			  && (strcmp(names[i], selectme) == 0) ) {
-				gtk_check_menu_item_set_active(
+			  	gtk_check_menu_item_set_active(
 				               GTK_CHECK_MENU_ITEM(item), TRUE);
 			} else {
 				gtk_check_menu_item_set_active(
@@ -1299,66 +1301,22 @@ static GtkWidget *displaywindow_createhdfmenus(struct hdfile *hdfile,
 }
 
 
-static void displaywindow_update_menus(DisplayWindow *dw, const char *selectme)
+static int displaywindow_update_menus(DisplayWindow *dw, const char *selectme)
 {
 	GtkWidget *ms;
 	GtkWidget *w;
 
 	ms = displaywindow_createhdfmenus(dw->hdfile, dw, selectme);
 
-	if ( ms == NULL ) {
-
-		/* Too bad.  You'd better hope that /data/data exists... */
-		ERROR("Couldn't get list of images in HDF file\n");
-		w = gtk_ui_manager_get_widget(dw->ui,
-					      "/ui/displaywindow/view/images");
-		gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-
-		/* Add a dummy menu so that the user knows what's going on */
-		ms = gtk_menu_new();
-		w = gtk_ui_manager_get_widget(dw->ui,
-		                              "/ui/displaywindow/view/images");
-		gtk_menu_item_set_submenu(GTK_MENU_ITEM(w), ms);
-
-		return;
-
-	}
+	if ( ms == NULL ) return 1;
 
 	/* Make new menu be the submenu for File->Images */
 	w = gtk_ui_manager_get_widget(dw->ui, "/ui/displaywindow/view/images");
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(w), ms);
 
 	gtk_widget_show_all(ms);
-}
 
-
-static void displaywindow_disable(DisplayWindow *dw)
-{
-	GtkWidget *w;
-
-	w = gtk_ui_manager_get_widget(dw->ui,
-				      "/ui/displaywindow/file/images");
-	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-
-	w = gtk_ui_manager_get_widget(dw->ui,
-				      "/ui/displaywindow/file/rings");
-	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-
-	w = gtk_ui_manager_get_widget(dw->ui,
-				      "/ui/displaywindow/view/binning");
-	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-
-	w = gtk_ui_manager_get_widget(dw->ui,
-				      "/ui/displaywindow/view/boostint");
-	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-
-	w = gtk_ui_manager_get_widget(dw->ui,
-				      "/ui/displaywindow/tools/numbers");
-	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-
-	w = gtk_ui_manager_get_widget(dw->ui,
-				      "/ui/displaywindow/tools/peaks");
-	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
+	return 0;
 }
 
 
@@ -1428,7 +1386,7 @@ static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
 DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
                                   int boost, int binning, int cmfilter,
                                   int noisefilter, int colscale,
-                                  const char *element)
+                                  const char *element, const char *geometry)
 {
 	DisplayWindow *dw;
 	char *title;
@@ -1448,17 +1406,59 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->image = NULL;
 	dw->use_geom = 0;
 	dw->show_rings = 0;
+	dw->scale = colscale;
+	dw->binning = binning;
+	dw->boostint = boost;
+	dw->cmfilter = cmfilter;
+	dw->noisefilter = noisefilter;
+	dw->not_ready_yet = 1;
+
+	/* Open the file, if any */
+	if ( filename != NULL ) {
+
+		dw->hdfile = hdfile_open(filename);
+		if ( dw->hdfile == NULL ) {
+			ERROR("Couldn't open file '%s'\n", filename);
+			free(dw);
+			return NULL;
+		} else {
+			int fail = -1;
+
+			if ( element == NULL ) {
+				fail = hdfile_set_first_image(dw->hdfile, "/");
+			} else {
+				fail = hdfile_set_image(dw->hdfile, element);
+			}
+
+			if ( !fail ) {
+				dw->image = calloc(1, sizeof(struct image));
+				hdf5_read(dw->hdfile, dw->image, 0, 0.0);
+			} else {
+				ERROR("Couldn't select path\n");
+				free(dw);
+				return NULL;
+			}
+		}
+
+	} else {
+		free(dw);
+		return NULL;
+	}
+
+	dw->loaded_geom = NULL;
+	dw->simple_geom = simple_geometry(dw->image);
+	dw->image->det = dw->simple_geom;
+
+	/* Peak list provided at startup? */
+	if ( peaks != NULL ) {
+		load_features_from_file(dw->image, peaks);
+	}
 
 	dw->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-
-	if ( filename == NULL ) {
-		title = strdup("No file - hdfsee");
-	} else {
-		char *bn = safe_basename(filename);
-		title = malloc(strlen(bn)+14);
-		sprintf(title, "%s - hdfsee", bn);
-		free(bn);
-	}
+	char *bn = safe_basename(filename);
+	title = malloc(strlen(bn)+14);
+	sprintf(title, "%s - hdfsee", bn);
+	free(bn);
 	gtk_window_set_title(GTK_WINDOW(dw->window), title);
 	free(title);
 
@@ -1475,59 +1475,16 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	g_signal_connect(GTK_OBJECT(dw->drawingarea), "expose-event",
 			 G_CALLBACK(displaywindow_expose), dw);
 
-	/* Open the file, if any */
-	if ( filename != NULL ) {
-
-		dw->hdfile = hdfile_open(filename);
-		if ( dw->hdfile == NULL ) {
-			ERROR("Couldn't open file '%s'\n", filename);
-			displaywindow_disable(dw);
-		} else {
-			int fail = -1;
-
-			if ( element == NULL ) {
-				fail = hdfile_set_first_image(dw->hdfile, "/");
-			} else {
-				fail = hdfile_set_image(dw->hdfile, element);
-			}
-
-			if ( !fail ) {
-				dw->image = calloc(1, sizeof(struct image));
-				hdf5_read(dw->hdfile, dw->image, 0, 0.0);
-			} else {
-				ERROR("Couldn't select path\n");
-				displaywindow_disable(dw);
-			}
-		}
-
-	} else {
-		dw->hdfile = NULL;
-		displaywindow_disable(dw);
-	}
-
 	gtk_window_set_resizable(GTK_WINDOW(dw->window), FALSE);
 	gtk_widget_show_all(dw->window);
 
-	/* No geometry loaded initially */
-	w = gtk_ui_manager_get_widget(dw->ui,
-				      "/ui/displaywindow/view/usegeom");
+	w = gtk_ui_manager_get_widget(dw->ui, "/ui/displaywindow/view/usegeom");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-	dw->loaded_geom = NULL;
-	dw->simple_geom = simple_geometry(dw->image);
-	dw->image->det = dw->simple_geom;
-
-	dw->scale = colscale;
-	dw->binning = binning;
-	dw->boostint = boost;
-	dw->cmfilter = cmfilter;
-	dw->noisefilter = noisefilter;
-	displaywindow_update(dw);
-
-	/* Peak list provided at startup? */
-	if ( (dw->hdfile != NULL) && (peaks != NULL) ) {
-		load_features_from_file(dw->image, peaks);
-		displaywindow_update(dw);
+	if ( geometry != NULL ) {
+		load_geometry_file(dw, dw->image, geometry);
 	}
+
+	displaywindow_update(dw);
 
 	gtk_widget_add_events(GTK_WIDGET(dw->drawingarea),
 	                      GDK_BUTTON_PRESS_MASK
@@ -1540,7 +1497,8 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	g_signal_connect(GTK_OBJECT(dw->drawingarea), "button-release-event",
 	                 G_CALLBACK(displaywindow_release), dw);
 
-	if ( dw->hdfile != NULL ) displaywindow_update_menus(dw, element);
+	displaywindow_update_menus(dw, element);
+	dw->not_ready_yet = 0;
 
 	return dw;
 }

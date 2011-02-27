@@ -95,6 +95,7 @@ int main(int argc, char *argv[])
 	int colscale = SCALE_COLOUR;
 	char *cscale = NULL;
 	char *element = NULL;
+	char *geometry = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -106,6 +107,7 @@ int main(int argc, char *argv[])
 		{"filter-noise",       0, &config_noisefilter, 1},
 		{"colscale",           1, NULL,               'c'},
 		{"image",              1, NULL,               'e'},
+		{"geometry",           1, NULL,               'g'},
 		{0, 0, NULL, 0}
 	};
 
@@ -147,6 +149,10 @@ int main(int argc, char *argv[])
 			element = strdup(optarg);
 			break;
 
+		case 'g' :
+			geometry = strdup(optarg);
+			break;
+
 		case 0 :
 			break;
 
@@ -183,13 +189,16 @@ int main(int argc, char *argv[])
 		                                         boost, binning,
 		                                         config_cmfilter,
 		                                         config_noisefilter,
-		                                         colscale, element);
+		                                         colscale, element,
+		                                         geometry);
 		if ( main_window_list[i] == NULL ) {
 			ERROR("Couldn't open display window\n");
 		} else {
 			main_n_windows++;
 		}
 	}
+
+	if ( main_n_windows == 0 ) return 0;
 	gtk_main();
 
 	return 0;
