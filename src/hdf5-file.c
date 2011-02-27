@@ -229,6 +229,8 @@ int hdf5_write(const char *filename, const void *data,
 		return 1;
 	}
 
+	/* Note the "swap" here, according to section 3.2.5,
+	 * "C versus Fortran Dataspaces", of the HDF5 user's guide. */
 	size[0] = height;
 	size[1] = width;
 	max_size[0] = height;
@@ -396,8 +398,10 @@ int hdf5_read(struct hdfile *f, struct image *image, int satcorr,
 	uint16_t *flags;
 	hid_t mask_dh;
 
+	/* Note the "swap" here, according to section 3.2.5,
+	 * "C versus Fortran Dataspaces", of the HDF5 user's guide. */
 	image->width = f->ny;
-	image->height = f->nx; /* Note axis swap */
+	image->height = f->nx;
 
 	buf = malloc(sizeof(float)*f->nx*f->ny);
 
