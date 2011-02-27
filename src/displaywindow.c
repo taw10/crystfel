@@ -130,6 +130,37 @@ static gint displaywindow_closed(GtkWidget *window, DisplayWindow *dw)
 }
 
 
+static double ring_radius(struct image *image, double d)
+{
+	double theta, r, r_px;
+
+	theta = asin(image->lambda / (2.0*d));
+	r = image->det->panels[0].clen * tan(2.0*theta);
+	r_px = r * image->det->panels[0].res;
+
+	return r_px;
+}
+
+
+static void show_ring(cairo_t *cr, DisplayWindow *dw,
+                      double d, const char *label)
+{
+	cairo_identity_matrix(cr);
+	cairo_translate(cr, -dw->min_x/dw->binning, dw->max_y/dw->binning);
+	cairo_arc(cr, 0.0, 0.0, ring_radius(dw->image, d)/dw->binning,
+	          0.0, 2.0*M_PI);
+	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+	cairo_set_line_width(cr, 1.0);
+	cairo_stroke(cr);
+	cairo_rotate(cr, -M_PI/4.0);
+	cairo_translate(cr, 0.0,
+	                ring_radius(dw->image, d)/dw->binning-5.0);
+	cairo_set_font_size(cr, 20.0);
+	cairo_show_text(cr, label);
+	cairo_fill(cr);
+}
+
+
 static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 				     DisplayWindow *dw)
 {
@@ -153,11 +184,6 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 	cairo_translate(cr, -dw->min_x/dw->binning, dw->max_y/dw->binning);
 	cairo_transform(cr, &m);
 	cairo_get_matrix(cr, &basic_m);
-
-	/* Mark the beam */
-	cairo_arc(cr, 0.0, 0.0, 5.0/dw->binning, 0.0, 2.0*M_PI);
-	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-	cairo_fill(cr);
 
 	if ( dw->pixbufs != NULL ) {
 
@@ -197,6 +223,19 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 		gdk_cairo_set_source_pixbuf(cr, dw->col_scale, 0.0, 0.0);
 		cairo_fill(cr);
 	}
+
+	/* Mark the beam */
+	cairo_set_matrix(cr, &basic_m);
+	cairo_arc(cr, 0.0, 0.0, 5.0/dw->binning, 0.0, 2.0*M_PI);
+	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+	cairo_fill(cr);
+
+	/* Draw resolution circles */
+	show_ring(cr, dw, 5.0e-10, "5A");
+	show_ring(cr, dw, 4.0e-10, "4A");
+	show_ring(cr, dw, 3.0e-10, "3A");
+	show_ring(cr, dw, 2.0e-10, "2A");
+	show_ring(cr, dw, 1.0e-10, "1A");
 
 	if ( dw->image->features == NULL ) {
 		cairo_destroy(cr);
