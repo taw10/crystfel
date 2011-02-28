@@ -475,6 +475,62 @@ static int looks_like_image(hid_t h)
 }
 
 
+double get_value(struct hdfile *f, const char *name)
+{
+	hid_t dh;
+	hid_t sh;
+	hsize_t size;
+	hsize_t max_size;
+	hid_t type;
+	hid_t class;
+	herr_t r;
+	double buf;
+
+	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Couldn't open data\n");
+		return 0.0;
+	}
+
+	type = H5Dget_type(dh);
+	class = H5Tget_class(type);
+
+	if ( class != H5T_FLOAT ) {
+		ERROR("Not a floating point value.\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return 0.0;
+	}
+
+	sh = H5Dget_space(dh);
+	if ( H5Sget_simple_extent_ndims(sh) != 1 ) {
+		ERROR("Not a scalar value.\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return 0.0;
+	}
+
+	H5Sget_simple_extent_dims(sh, &size, &max_size);
+	if ( size != 1 ) {
+		ERROR("Not a scalar value.\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return 0.0;
+	}
+
+	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
+	            H5P_DEFAULT, &buf);
+	if ( r < 0 )  {
+		ERROR("Couldn't read value.\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return 0.0;
+	}
+
+	return buf;
+}
+
+
 char *hdfile_get_string_value(struct hdfile *f, const char *name)
 {
 	hid_t dh;

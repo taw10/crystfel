@@ -21,6 +21,7 @@
 #include "diffraction.h"
 #include "detector.h"
 #include "beam-parameters.h"
+#include "hdf5-file.h"
 
 
 static int atob(const char *a)
@@ -240,6 +241,24 @@ struct panel *find_panel(struct detector *det, int x, int y)
 }
 
 
+void fill_in_values(struct detector *det, struct hdfile *f)
+{
+	int i;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		struct panel *p = &det->panels[i];
+
+		if ( p->clen_from != NULL ) {
+			p->clen = get_value(f, p->clen_from) * 1.0e-3;
+			free(p->clen_from);
+			p->clen_from = NULL;
+		}
+
+	}
+}
+
+
 struct detector *get_detector_geometry(const char *filename)
 {
 	FILE *fh;
@@ -359,7 +378,18 @@ struct detector *get_detector_geometry(const char *filename)
 		} else if ( strcmp(path[1], "corner_y") == 0 ) {
 			det->panels[np].cy = atof(bits[2]);
 		} else if ( strcmp(path[1], "clen") == 0 ) {
-			det->panels[np].clen = atof(bits[2]);
+
+			char *end;
+			double v = strtod(bits[2], &end);
+			if ( end == bits[2] ) {
+				/* This means "fill in later" */
+				det->panels[np].clen = -1.0;
+				det->panels[np].clen_from = strdup(bits[2]);
+			} else {
+				det->panels[np].clen = v;
+				det->panels[np].clen_from = NULL;
+			}
+
 		} else if ( strcmp(path[1], "res") == 0 ) {
 			det->panels[np].res = atof(bits[2]);
 		} else if ( strcmp(path[1], "peak_sep") == 0 ) {
@@ -442,7 +472,8 @@ struct detector *get_detector_geometry(const char *filename)
 			      " panel %i\n", i);
 			reject = 1;
 		}
-		if ( det->panels[i].clen == -1 ) {
+		if ( (det->panels[i].clen < 0.0)
+		  && (det->panels[i].clen_from == NULL) ) {
 			ERROR("Please specify the camera length for"
 			      " panel %i\n", i);
 			reject = 1;

@@ -41,5 +41,6 @@ extern void hdfile_close(struct hdfile *f);
 
 extern char *hdfile_get_string_value(struct hdfile *f, const char *name);
 extern int get_peaks(struct image *image, struct hdfile *f);
+extern double get_value(struct hdfile *f, const char *name);
 
 #endif	/* HDF5_H */

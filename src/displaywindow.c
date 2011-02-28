@@ -656,6 +656,7 @@ static int load_geometry_file(DisplayWindow *dw, struct image *image,
 		displaywindow_error(dw, "Failed to load geometry file");
 		return -1;
 	}
+	fill_in_values(geom, dw->hdfile);
 
 	if ( (1+geom->max_fs != dw->image->width)
 	  || (1+geom->max_ss != dw->image->height) ) {
