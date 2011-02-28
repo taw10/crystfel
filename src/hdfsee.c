@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 	gtk_init(&argc, &argv);
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hp:b:i:c:e:",
+	while ((c = getopt_long(argc, argv, "hp:b:i:c:e:g:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
