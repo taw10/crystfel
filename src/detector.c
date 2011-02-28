@@ -82,8 +82,8 @@ struct rvec get_q(struct image *image, double fs, double ss,
 	xs = (fs-p->min_fs)*p->fsx + (ss-p->min_ss)*p->ssx;
 	ys = (fs-p->min_fs)*p->fsy + (ss-p->min_ss)*p->ssy;
 
-	rx = (xs + p->cx) / p->res;
-	ry = (ys + p->cy) / p->res;
+	rx = (xs + p->cnx) / p->res;
+	ry = (ys + p->cny) / p->res;
 
 	/* Calculate q-vector for this sub-pixel */
 	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
@@ -113,11 +113,8 @@ double get_tt(struct image *image, double fs, double ss)
 	xs = (fs-p->min_fs)*p->fsx + (ss-p->min_ss)*p->ssx;
 	ys = (fs-p->min_fs)*p->fsy + (ss-p->min_ss)*p->ssy;
 
-	rx = (xs + p->cx) / p->res;
-	ry = (ys + p->cy) / p->res;
-
-	/* Calculate q-vector for this sub-pixel */
-	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
+	rx = (xs + p->cnx) / p->res;
+	ry = (ys + p->cny) / p->res;
 
 	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
 
@@ -150,6 +147,7 @@ void record_image(struct image *image, int do_poisson)
 		double cf;
 		double intensity, sa;
 		double pix_area, Lsq;
+		double xs, ys, rx, ry;
 		double dsq, proj_area;
 		struct panel *p;
 
@@ -174,8 +172,11 @@ void record_image(struct image *image, int do_poisson)
 		proj_area = pix_area * cos(image->twotheta[x + image->width*y]);
 
 		/* Calculate distance from crystal to pixel */
-		dsq = pow(((double)x - p->cx) / p->res, 2.0);
-		dsq += pow(((double)y - p->cy) / p->res, 2.0);
+		xs = (x-p->min_fs)*p->fsx + (y-p->min_ss)*p->ssx;
+		ys = (x-p->min_fs)*p->fsy + (y-p->min_ss)*p->ssy;
+		rx = (xs + p->cnx) / p->res;
+		ry = (ys + p->cny) / p->res;
+		dsq = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
 
 		/* Projected area of pixel divided by distance squared */
 		sa = proj_area / (dsq + Lsq);
@@ -324,8 +325,8 @@ struct detector *get_detector_geometry(const char *filename)
 				det->panels[i].min_ss = -1;
 				det->panels[i].max_fs = -1;
 				det->panels[i].max_ss = -1;
-				det->panels[i].cx = -1;
-				det->panels[i].cy = -1;
+				det->panels[i].cnx = -1;
+				det->panels[i].cny = -1;
 				det->panels[i].clen = -1;
 				det->panels[i].res = -1;
 				det->panels[i].badrow = '-';
@@ -374,9 +375,9 @@ struct detector *get_detector_geometry(const char *filename)
 		} else if ( strcmp(path[1], "max_ss") == 0 ) {
 			det->panels[np].max_ss = atof(bits[2]);
 		} else if ( strcmp(path[1], "corner_x") == 0 ) {
-			det->panels[np].cx = atof(bits[2]);
+			det->panels[np].cnx = atof(bits[2]);
 		} else if ( strcmp(path[1], "corner_y") == 0 ) {
-			det->panels[np].cy = atof(bits[2]);
+			det->panels[np].cny = atof(bits[2]);
 		} else if ( strcmp(path[1], "clen") == 0 ) {
 
 			char *end;
@@ -462,12 +463,12 @@ struct detector *get_detector_geometry(const char *filename)
 			      " panel %i\n", i);
 			reject = 1;
 		}
-		if ( det->panels[i].cx == -1 ) {
+		if ( det->panels[i].cnx == -1 ) {
 			ERROR("Please specify the corner X coordinate for"
 			      " panel %i\n", i);
 			reject = 1;
 		}
-		if ( det->panels[i].cy == -1 ) {
+		if ( det->panels[i].cny == -1 ) {
 			ERROR("Please specify the corner Y coordinate for"
 			      " panel %i\n", i);
 			reject = 1;
@@ -509,6 +510,27 @@ out:
 	det->max_fs = max_fs;
 	det->max_ss = max_ss;
 
+	/* Calculate matrix inverse */
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		struct panel *p;
+		double d;
+
+		p = &det->panels[i];
+
+		if ( p->fsx*p->ssy == p->ssx*p->fsy ) {
+			ERROR("Panel %i transformation singular.\n", i);
+			reject = 1;
+		}
+
+		d = (double)p->fsx*p->ssy - p->ssx*p->fsy;
+		p->xfs = p->ssy / d;
+		p->yfs = -p->ssx / d;
+		p->xss = -p->fsy / d;
+		p->yss = p->fsx / d;
+
+	}
+
 	if ( reject ) return NULL;
 
 	fclose(fh);
@@ -537,8 +559,8 @@ struct detector *simple_geometry(const struct image *image)
 	geom->panels[0].max_fs = image->width-1;
 	geom->panels[0].min_ss = 0;
 	geom->panels[0].max_ss = image->height-1;
-	geom->panels[0].cx = -image->width / 2.0;
-	geom->panels[0].cy = -image->height / 2.0;
+	geom->panels[0].cnx = -image->width / 2.0;
+	geom->panels[0].cny = -image->height / 2.0;
 	geom->panels[0].fsx = 1;
 	geom->panels[0].fsy = 0;
 	geom->panels[0].ssx = 0;
@@ -556,8 +578,8 @@ static void check_extents(struct panel p, double *min_x, double *min_y,
 	xs = fs*p.fsx + ss*p.ssx;
 	ys = fs*p.fsy + ss*p.ssy;
 
-	rx = xs + p.cx;
-	ry = ys + p.cy;
+	rx = xs + p.cnx;
+	ry = ys + p.cny;
 
 	if ( rx > *max_x ) *max_x = rx;
 	if ( ry > *max_y ) *max_y = ry;

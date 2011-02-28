@@ -857,6 +857,7 @@ void output_pixels(struct image *image, UnitCell *cell,
 			double pix_area, Lsq, proj_area, dsq, sa;
 			double phi, pa, pb, pol;
 			float tt = 0.0;
+			double xs, ys, rx, ry;
 
 			/* Veto if we want to integrate a bad region */
 			if ( image->flags != NULL ) {
@@ -881,8 +882,11 @@ void output_pixels(struct image *image, UnitCell *cell,
 			proj_area = pix_area * cos(tt);
 
 			/* Calculate distance from crystal to pixel */
-			dsq = pow(((double)x - p->cx) / p->res, 2.0);
-			dsq += pow(((double)y - p->cy) / p->res, 2.0);
+			xs = (x-p->min_fs)*p->fsx + (y-p->min_ss)*p->ssx;
+			ys = (x-p->min_fs)*p->fsy + (y-p->min_ss)*p->ssy;
+			rx = (xs + p->cnx) / p->res;
+			ry = (ys + p->cny) / p->res;
+			dsq = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
 
 			/* Projected area of pixel / distance squared */
 			sa = 1.0e7 * proj_area / (dsq + Lsq);

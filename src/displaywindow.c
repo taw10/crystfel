@@ -202,7 +202,8 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 			cairo_set_matrix(cr, &basic_m);
 
 			/* Move to the right location */
-			cairo_translate(cr, p.cx/dw->binning, p.cy/dw->binning);
+			cairo_translate(cr, p.cnx/dw->binning,
+			                    p.cny/dw->binning);
 
 			/* Twiddle directions according to matrix */
 			cairo_matrix_init(&m, p.fsx, p.fsy, p.ssx, p.ssy,
@@ -248,6 +249,7 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 		return FALSE;
 	}
 
+	cairo_identity_matrix(cr);
 	for ( i=0; i<image_feature_count(dw->image->features); i++ ) {
 
 		double x, y;

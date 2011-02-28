@@ -31,45 +31,54 @@
 static signed int locate_peak(double x, double y, double z, double k,
                               struct detector *det, double *xdap, double *ydap)
 {
-	int p;
+	int i;
 	signed int found = -1;
 	const double den = k + z;
 
 	*xdap = -1;  *ydap = -1;
 
-	for ( p=0; p<det->n_panels; p++ ) {
+	for ( i=0; i<det->n_panels; i++ ) {
 
 		double xd, yd, cl;
-		double xda, yda;
+		double fs, ss, plx, ply;
+		struct panel *p;
+
+		p = &det->panels[i];
 
 		/* Camera length for this panel */
-		cl = det->panels[p].clen;
+		cl = p->clen;
 
 		/* Coordinates of peak relative to central beam, in m */
 		xd = cl * x / den;
 		yd = cl * y / den;
 
 		/* Convert to pixels */
-		xd *= det->panels[p].res;
-		yd *= det->panels[p].res;
+		xd *= p->res;
+		yd *= p->res;
 
-		/* Add the coordinates of the central beam */
-		xda = xd + det->panels[p].cx;
-		yda = yd + det->panels[p].cy;
+		/* Convert to relative to the panel corner */
+		plx = xd - p->cnx;
+		ply = yd - p->cny;
+
+		fs = p->xfs*plx + p->yfs*ply;
+		ss = p->xss*plx + p->yss*ply;
+
+		fs += p->min_fs;
+		ss += p->min_ss;
 
 		/* Now, is this on this panel? */
-		if ( xda < det->panels[p].min_fs ) continue;
-		if ( xda > det->panels[p].max_fs ) continue;
-		if ( yda < det->panels[p].min_ss ) continue;
-		if ( yda > det->panels[p].max_ss ) continue;
+		if ( fs < p->min_fs ) continue;
+		if ( fs > p->max_fs ) continue;
+		if ( ss < p->min_ss ) continue;
+		if ( ss > p->max_ss ) continue;
 
 		/* If peak appears on multiple panels, reject it */
 		if ( found != -1 ) return -1;
 
 		/* Woohoo! */
-		found = p;
-		*xdap = xda;
-		*ydap = yda;
+		found = i;
+		*xdap = fs;
+		*ydap = ss;
 
 	}
 

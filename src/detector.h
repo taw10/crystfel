@@ -29,8 +29,8 @@ struct panel
 	int      max_fs;  /* Largest FS value considered to be in this panel */
 	int      min_ss;  /* ... and so on */
 	int      max_ss;
-	double   cx;       /* Location of corner (min_fs,min_ss) in pixels */
-	double   cy;
+	double   cnx;       /* Location of corner (min_fs,min_ss) in pixels */
+	double   cny;
 	double   clen;     /* Camera length in metres */
 	char    *clen_from;
 	double   res;      /* Resolution in pixels per metre */
@@ -42,6 +42,11 @@ struct panel
 	signed int fsy;
 	signed int ssx;
 	signed int ssy;
+
+	double xfs;
+	double yfs;
+	double xss;
+	double yss;
 };
 
 struct detector

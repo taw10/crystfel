@@ -199,19 +199,25 @@ static void write_spt(struct image *image, const char *filename)
 	for ( i=0; i<nPeaks; i++ ) {
 
 		struct imagefeature *f;
+		struct panel *p;
+		double xs, ys, rx, ry;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		struct panel *pan;
-		pan = find_panel(image->det, f->x, f->y);
-		if ( pan == NULL ) continue;
+		p = find_panel(image->det, f->x, f->y);
+		if ( p == NULL ) continue;
 
-		pix = 1000/pan->res; /* pixel size in mm */
+		pix = 1000.0/p->res; /* pixel size in mm */
 		height = f->intensity;
 
-		sptlines[i].x = (f->y - pan->cy)*pix*fclen/pan->clen/1000;
-		sptlines[i].y = -(f->x - pan->cx)*pix*fclen/pan->clen/1000;
+		xs = (f->x-p->min_fs)*p->fsx + (f->y-p->min_ss)*p->ssx;
+		ys = (f->x-p->min_fs)*p->fsy + (f->y-p->min_ss)*p->ssy;
+		rx = xs + p->cnx;
+		ry = ys + p->cny;
+
+		sptlines[i].x = ry*pix*fclen/p->clen/1000.0;
+		sptlines[i].y = -rx*pix*fclen/p->clen/1000.0;
 		sptlines[i].h = height;
 		sptlines[i].s = sigma;
 
