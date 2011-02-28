@@ -1101,7 +1101,7 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 		{ "GeometryAction", NULL, "Use Detector Geometry", NULL, NULL,
 			G_CALLBACK(displaywindow_set_usegeom), FALSE },
 		{ "RingsAction", NULL, "Show Resolution Rings", NULL, NULL,
-			G_CALLBACK(displaywindow_set_rings), FALSE },
+			G_CALLBACK(displaywindow_set_rings), dw->show_rings },
 	};
 	guint n_toggles = G_N_ELEMENTS(toggles);
 	GtkRadioActionEntry radios[] = {
