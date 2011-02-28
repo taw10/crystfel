@@ -249,20 +249,35 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 		return FALSE;
 	}
 
-	cairo_identity_matrix(cr);
+	/* Ensure a clean Cairo context, since the rings often cause
+	 * matrix trouble */
+	cairo_destroy(cr);
+	cr = gdk_cairo_create(da->window);
+
+	cairo_set_matrix(cr, &basic_m);
 	for ( i=0; i<image_feature_count(dw->image->features); i++ ) {
 
-		double x, y;
+		double fs, ss;
+		double x, y, xs, ys;
 		struct imagefeature *f;
+		struct panel *p;
 
 		f = image_get_feature(dw->image->features, i);
 		if ( f == NULL ) continue;
 
-		x = f->x / (double)dw->binning;
-		y = dw->height - f->y / (double)dw->binning;
+		fs = f->x;
+		ss = f->y;
 
-		cairo_new_path(cr);
-		cairo_arc(cr, x, y, 7.0/dw->binning, 0.0, 2.0*M_PI);
+		p = find_panel(dw->image->det, fs, ss);
+		if ( p == NULL ) continue;
+
+		xs = (fs-p->min_fs)*p->fsx + (ss-p->min_ss)*p->ssx;
+		ys = (fs-p->min_fs)*p->fsy + (ss-p->min_ss)*p->ssy;
+		x = xs + p->cnx;
+		y = ys + p->cny;
+
+		cairo_arc(cr, x/dw->binning, y/dw->binning,
+		          7.0/dw->binning, 0.0, 2.0*M_PI);
 		switch ( dw->scale ) {
 
 			case SCALE_COLOUR :
