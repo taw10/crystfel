@@ -1396,7 +1396,8 @@ static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
 DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
                                   int boost, int binning, int cmfilter,
                                   int noisefilter, int colscale,
-                                  const char *element, const char *geometry)
+                                  const char *element, const char *geometry,
+                                  int show_rings)
 {
 	DisplayWindow *dw;
 	char *title;
@@ -1415,7 +1416,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->numbers_window = NULL;
 	dw->image = NULL;
 	dw->use_geom = 0;
-	dw->show_rings = 0;
+	dw->show_rings = show_rings;
 	dw->scale = colscale;
 	dw->binning = binning;
 	dw->boostint = boost;

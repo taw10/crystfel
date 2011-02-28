@@ -90,7 +90,7 @@ extern DisplayWindow *displaywindow_open(const char *filename,
                                          int binning, int cmfilter,
                                          int noisefilter, int colscale,
                                          const char *element,
-                                         const char *geometry);
+                                         const char *geometry, int show_rings);
 
 
 #endif	/* DISPLAYWINDOW_H */

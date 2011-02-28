@@ -92,6 +92,7 @@ int main(int argc, char *argv[])
 	int binning = 2;
 	int config_cmfilter = 0;
 	int config_noisefilter = 0;
+	int config_showrings = 0;
 	int colscale = SCALE_COLOUR;
 	char *cscale = NULL;
 	char *element = NULL;
@@ -108,6 +109,7 @@ int main(int argc, char *argv[])
 		{"colscale",           1, NULL,               'c'},
 		{"image",              1, NULL,               'e'},
 		{"geometry",           1, NULL,               'g'},
+		{"show-rings",         0, &config_showrings,   1},
 		{0, 0, NULL, 0}
 	};
 
@@ -190,7 +192,8 @@ int main(int argc, char *argv[])
 		                                         config_cmfilter,
 		                                         config_noisefilter,
 		                                         colscale, element,
-		                                         geometry);
+		                                         geometry,
+		                                         config_showrings);
 		if ( main_window_list[i] == NULL ) {
 			ERROR("Couldn't open display window\n");
 		} else {
