@@ -236,7 +236,6 @@ struct panel *find_panel(struct detector *det, int x, int y)
 			return &det->panels[p];
 		}
 	}
-	ERROR("No mapping found for %i,%i\n", x, y);
 
 	return NULL;
 }
