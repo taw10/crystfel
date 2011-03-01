@@ -325,13 +325,6 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
 }
 
 
-int render_png(GdkPixbuf *pixbuf, const char *filename)
-{
-	gdk_pixbuf_save(pixbuf, filename, "png", NULL, NULL);
-	return 0;
-}
-
-
 int render_tiff_fp(struct image *image, const char *filename)
 {
 #ifdef HAVE_TIFF

@@ -161,19 +161,17 @@ static void show_ring(cairo_t *cr, DisplayWindow *dw,
 }
 
 
-static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
-				     DisplayWindow *dw)
+static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 {
 	cairo_t *cr;
 	int i;
 	cairo_matrix_t basic_m;
 	cairo_matrix_t m;
 
-	cr = gdk_cairo_create(da->window);
+	cr = cairo_create(surf);
 
 	/* Blank white background */
-	cairo_rectangle(cr, 0.0, 0.0, da->allocation.width,
-			da->allocation.height);
+	cairo_rectangle(cr, 0.0, 0.0, dw->width, dw->height);
 	cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
 	cairo_fill(cr);
 
@@ -246,13 +244,13 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 
 	if ( dw->image->features == NULL ) {
 		cairo_destroy(cr);
-		return FALSE;
+		return 0;
 	}
 
 	/* Ensure a clean Cairo context, since the rings often cause
 	 * matrix trouble */
 	cairo_destroy(cr);
-	cr = gdk_cairo_create(da->window);
+	cr = cairo_create(surf);
 
 	cairo_set_matrix(cr, &basic_m);
 	for ( i=0; i<image_feature_count(dw->image->features); i++ ) {
@@ -301,7 +299,44 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 
 	cairo_destroy(cr);
 
+	return 0;
+}
+
+
+static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
+				     DisplayWindow *dw)
+{
+	cairo_t *cr;
+	cairo_surface_t *surf;
+
+	cr = gdk_cairo_create(da->window);
+	surf = cairo_get_target(cr);
+	draw_stuff(surf, dw);
+	cairo_destroy(cr);
+
 	return FALSE;
+}
+
+
+static int write_png(const char *filename, DisplayWindow *dw)
+{
+	cairo_status_t r;
+	cairo_t *cr;
+	cairo_surface_t *surf;
+
+	surf = gdk_window_create_similar_surface(dw->drawingarea->window,
+	                                         CAIRO_CONTENT_COLOR,
+	                                         dw->width, dw->height);
+
+	draw_stuff(surf, dw);
+
+	r = cairo_surface_write_to_png(surf, filename);
+	if ( r != CAIRO_STATUS_SUCCESS ) return 1;
+
+	cairo_destroy(cr);
+	cairo_surface_destroy(surf);
+
+	return 0;
 }
 
 
@@ -817,8 +852,7 @@ static gint displaywindow_save_response(GtkWidget *d, gint response,
 		type = gtk_combo_box_get_active(GTK_COMBO_BOX(cd->cb));
 
 		if ( type == 0 ) {
-			/* FIXME: Use Cairo or something */
-			r = render_png(dw->pixbufs[0], file);
+			r = write_png(file, dw);
 		} else if ( type == 1 ) {
 			r = render_tiff_fp(dw->image, file);
 		} else if ( type == 2 ) {

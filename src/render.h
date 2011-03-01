@@ -43,7 +43,6 @@ extern GdkPixbuf **render_panels(struct image *image,
 
 extern GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale);
 
-extern int render_png(GdkPixbuf *pixbuf, const char *filename);
 extern int render_tiff_fp(struct image *image, const char *filename);
 extern int render_tiff_int16(struct image *image, const char *filename,
                              double boost);
