@@ -112,13 +112,13 @@ INCLUDES = "-I$(top_srcdir)/data"
 
 EXTRA_DIST += src/cell.h src/hdf5-file.h src/image.h src/utils.h \
               src/diffraction.h src/detector.h src/sfac.h src/reflections.h \
-              src/list_tmp.h src/statistics.h src/displaywindow.h \
+              src/list_tmp.h src/statistics.h src/dw-hdfsee.h \
               src/render.h src/hdfsee.h src/dirax.h src/mosflm.h src/peaks.h \
               src/index.h src/filters.h src/diffraction-gpu.h src/cl-utils.h \
               src/symmetry.h src/povray.h src/index-priv.h src/geometry.h \
               src/templates.h src/render_hkl.h src/stream.h src/thread-pool.h \
               src/beam-parameters.h src/post-refinement.h src/hrs-scaling.h \
-              src/dw-geomatic.h
+              src/reflist.h
 
 crystfeldir = $(datadir)/crystfel
 crystfel_DATA = data/diffraction.cl data/defs.h data/sfac/Ca.nff \
@@ -130,8 +130,7 @@ crystfel_DATA = data/diffraction.cl data/defs.h data/sfac/Ca.nff \
 EXTRA_DIST += data/sfac/Ca.nff data/sfac/C.nff data/sfac/Fe.nff \
               data/sfac/H.nff data/sfac/Mg.nff data/sfac/N.nff data/sfac/O.nff \
               data/sfac/P.nff data/sfac/S.nff data/sfac/f0_WaasKirf.dat \
-              data/defs.h data/diffraction.cl data/hdfsee.ui \
-              data/geomatic.ui
+              data/defs.h data/diffraction.cl data/hdfsee.ui
 
 crystfeldocdir = $(docdir)
 crystfeldoc_DATA = doc/geometry.txt doc/indexamajig.txt doc/pattern_sim.txt \
@@ -143,13 +142,17 @@ crystfeldoc_DATA = doc/geometry.txt doc/indexamajig.txt doc/pattern_sim.txt \
                    doc/examples/lcls-june.beam \
                    doc/examples/lcls-xpp-estimate.geom \
                    doc/examples/lcls-xpp-estimate.beam \
-                   doc/examples/simple.geom
+                   doc/examples/simple.geom \
+                   doc/examples/cspad-feb2011.geom
 
 EXTRA_DIST += doc/geometry.txt doc/indexamajig.txt doc/pattern_sim.txt \
               doc/process_hkl.txt doc/symmetry.txt doc/twin-calculator.pdf \
               doc/0-INDEX doc/examples/lcls-dec.geom \
               doc/examples/lcls-june-r0013-r0128.geom \
-              doc/examples/lcls-xpp-estimate.geom doc/examples/simple.geom
+              doc/examples/lcls-xpp-estimate.geom doc/examples/simple.geom \
+              doc/examples/lcls-dec.beam doc/examples/lcls-june.beam \
+              doc/examples/lcls-xpp-estimate.beam \
+              doc/examples/cspad-feb2011.geom
 
 scriptdir = $(docdir)/scripts
 script_DATA = scripts/check-near-bragg scripts/double-hit \
