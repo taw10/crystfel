@@ -235,6 +235,8 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 		cairo_fill(cr);
 
 		/* Draw resolution circles */
+		show_ring(cr, dw, 10.0e-10, "10A");
+		show_ring(cr, dw, 8.0e-10, "8A");
 		show_ring(cr, dw, 5.0e-10, "5A");
 		show_ring(cr, dw, 4.0e-10, "4A");
 		show_ring(cr, dw, 3.0e-10, "3A");
