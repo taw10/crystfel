@@ -17,7 +17,7 @@
 #include <gtk/gtk.h>
 #include <getopt.h>
 
-#include "displaywindow.h"
+#include "dw-hdfsee.h"
 #include "utils.h"
 #include "render.h"
 

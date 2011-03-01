@@ -17,7 +17,7 @@
 #ifndef HDFSEE_H
 #define HDFSEE_H
 
-#include "displaywindow.h"
+#include "dw-hdfsee.h"
 
 extern void hdfsee_window_closed(DisplayWindow *dw);
 

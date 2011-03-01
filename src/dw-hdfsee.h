@@ -1,5 +1,5 @@
 /*
- * displaywindow.h
+ * dw-hdfsee.h
  *
  * Quick yet non-crappy HDF viewer
  *

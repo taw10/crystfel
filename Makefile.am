@@ -50,7 +50,7 @@ endif
 
 
 if HAVE_GTK
-src_hdfsee_SOURCES = src/hdfsee.c src/displaywindow.c src/render.c \
+src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/render.c \
                      src/hdf5-file.c src/utils.c src/image.c src/filters.c \
                      src/thread-pool.c src/detector.c
 endif

@@ -1,5 +1,5 @@
 /*
- * displaywindow.c
+ * dw-hdfsee.c
  *
  * Quick yet non-crappy HDF viewer
  *
@@ -21,7 +21,7 @@
 #include <cairo.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
-#include "displaywindow.h"
+#include "dw-hdfsee.h"
 #include "render.h"
 #include "hdf5-file.h"
 #include "hdfsee.h"
