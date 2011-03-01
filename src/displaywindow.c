@@ -26,6 +26,7 @@
 #include "hdf5-file.h"
 #include "hdfsee.h"
 #include "utils.h"
+#include "detector.h"
 
 
 static void displaywindow_error(DisplayWindow *dw, const char *message)
@@ -1032,22 +1033,25 @@ static void numbers_update(DisplayWindow *dw)
 		float val;
 		GtkWidget *l;
 		int x, y;
-		int valid;
+		int invalid;
+		double dfs, dss;
+		int fs, ss;
 
 		x = dw->binning * dw->numbers_window->cx + (px-8);
 		y = dw->binning * dw->numbers_window->cy + (17-py-8);
+		x += dw->min_x;
+		y += dw->min_y;
 
-		if ( (x>=dw->image->width) || (y>=dw->image->height) ) {
-			valid = 0;
-			val = 0;
-		} else {
-			val = dw->image->data[x+y*dw->image->width];
-			valid = 1;
+		/* Map from unbinned mapped pixel coordinates to a panel */
+		invalid = reverse_2d_mapping(x, y, &dfs, &dss, dw->image->det);
+		fs = dfs;  ss = dss;
+		if ( !invalid ) {
+			val = dw->image->data[fs+ss*dw->image->width];
 		}
 
-		if ( (x>0) && (y>0) && valid ) {
-			if ( val > 0 ) {
-				if ( log(val)/log(10) < 5 ) {
+		if ( !invalid ) {
+			if ( val > 0.0 ) {
+				if ( log(val)/log(10.0) < 5 ) {
 					snprintf(s, 31, "%.0f", val);
 				} else {
 					snprintf(s, 31, "HUGE");
@@ -1060,7 +1064,7 @@ static void numbers_update(DisplayWindow *dw)
 				}
 			}
 		} else {
-			strcpy(s, "--");
+			strcpy(s, "-");
 		}
 		l = dw->numbers_window->labels[px+17*py];
 		gtk_label_set_text(GTK_LABEL(l), s);

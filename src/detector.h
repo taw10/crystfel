@@ -78,5 +78,7 @@ extern void get_pixel_extents(struct detector *det,
 
 extern void fill_in_values(struct detector *det, struct hdfile *f);
 
+extern int reverse_2d_mapping(double x, double y, double *pfs, double *pss,
+                              struct detector *det);
 
 #endif	/* DETECTOR_H */

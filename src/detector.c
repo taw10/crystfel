@@ -561,12 +561,52 @@ struct detector *simple_geometry(const struct image *image)
 	geom->panels[0].max_ss = image->height-1;
 	geom->panels[0].cnx = -image->width / 2.0;
 	geom->panels[0].cny = -image->height / 2.0;
+
 	geom->panels[0].fsx = 1;
 	geom->panels[0].fsy = 0;
 	geom->panels[0].ssx = 0;
 	geom->panels[0].ssy = 1;
 
+	geom->panels[0].xfs = 1;
+	geom->panels[0].xss = 0;
+	geom->panels[0].yfs = 0;
+	geom->panels[0].yss = 1;
+
 	return geom;
+}
+
+
+int reverse_2d_mapping(double x, double y, double *pfs, double *pss,
+                       struct detector *det)
+{
+	int i;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		struct panel *p = &det->panels[i];
+		double cx, cy, fs, ss;
+
+		/* Get position relative to corner */
+		cx = x - p->cnx;
+		cy = y - p->cny;
+
+		/* Reverse the transformation matrix */
+		fs = cx*p->xfs + cy*p->yfs;
+		ss = cx*p->xss + cy*p->yss;
+
+		/* In range? */
+		if ( fs < 0 ) continue;
+		if ( ss < 0 ) continue;
+		if ( fs > (p->max_fs-p->min_fs+1) ) continue;
+		if ( ss > (p->max_ss-p->min_ss+1) ) continue;
+
+		*pfs = fs + p->min_fs;
+		*pss = ss + p->min_ss;
+		return 0;
+
+	}
+
+	return 1;
 }
 
 
