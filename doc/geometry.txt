@@ -2,78 +2,83 @@ CrystFEL detector geometry files
 --------------------------------
 
 The detector geometry is taken from a text file rather than hardcoded into the
-program.  Programs which care about the geometry (indexamajig, pattern_sim and
-powder_plot) take an argument "--geometry=<file>" (or "-g <file>"), where <file>
-contains the geometry.  CrystFEL's representation of a detector is broken down
-into one or more "panels", each of which has its own location for the centre of
-the panel (i.e. the location of the central beam), its own camera length,
-resolution and so on.  Each panel fits into the overall image taken from the
-HDF5 file, defined by minimum and maximum coordinates in x and y.  The
-coordinates are specified inclusively, meaning that a minimum of 0 and a maximum
-of 9 results in ten items.  Counting begins from zero.  All pixels in the image
-must be assigned to a panel.
+program.  Programs which care about the geometry (particularly indexamajig,
+pattern_sim and powder_plot) take an argument "--geometry=<file>"
+(or "-g <file>"), where <file> contains the geometry.
 
-See "A note on data orientation" below for important information about how
-CrystFEL defines the axes.  All coordinates (including the centre coordinates
-for each panel) are measured according to these axes:  there is no coordinate
-system local to a panel.
+A flexible (and pedantic) representation of the detector has been developed to
+avoid all possible sources of ambiguity.  CrystFEL's representation of a
+detector is broken down into one or more "panels", each of which has its own
+camera length, geometry, resolution and so on.  Each panel fits into the overall
+image taken from the HDF5 file, defined by minimum and maximum coordinates in
+the "fast scan" and "slow scan" directions.  "Fast scan" refers to the direction
+whose coordinate changes most quickly as the bytes in the HDF5 file are moved
+through.  The coordinates are specified inclusively, meaning that a minimum of 0
+and a maximum of 9 results in a width of ten pixels.  Counting begins from zero.
+All pixels in the image must be assigned to a panel - gaps are not permitted.
 
-The syntax for a simple geometry might be as follows:
+In the current version, panels are assumed to be perpendicular to the incident
+beam and to have their edges parallel.  Within these limitations, any geometry
+can be constructed.
 
-; The number of panels
-n_panels = 1
+The job of the geometry file is to establish a relationship between the array
+of pixel values in the HDF5 file, defined in terms only of the "fast scan" and
+"slow scan" directions, and the laboratory coordinate system defined as follows:
 
-; "0/" specifies the first (and only) panel.  If we had more panels, there would
-; be a copy of the following lines but prefixes with "1/", "2/" and so on.
++z is the beam direction, and points along the beam (i.e. away from the source)
++y points towards the zenith (ceiling).
++x completes the right-handed coordinate system.
 
-; The region of the image which belongs to this panel:
-0/min_x = 0
-0/max_x = 1023
-0/min_y = 512
-0/max_y = 1023
+Naively speaking, this means that CrystFEL at the images from the "into the
+beam" perspective, but please avoid thinking of things in this way.  It's much
+better to consider the precise way in which the coordinates are mapped.
 
-; The coordinates of the central beam which should be
-; used for pixels in this panel:
-0/cx = 491.9
-0/cy = 440.7
+The syntax for a simple geometry might include several entires of the following
+form:
 
-; The camera length (in metres) for this panel
-0/clen = 67.8e-3
+; Lines beginning with a semicolon are ignored.
+; The number of panels must be specified first
+n_panels = 64
 
-; The resolution (in pixels per metre) for this panel
-0/res = 13333.3  ; 75 micron pixel size
+; The number before the slash indicates which panel is referred to.
+; The range of pixels in the HDF5 file which correspond to a panel are given:
+0/min_fs = 0
+0/min_ss = 0
+0/max_fs = 193
+0/max_ss = 184
 
 ; The readout direction (x, y or 0).  If more than three peaks are found in
 ; the same readout region, they are all discarded.  This helps to avoid
 ; problems due to streaks appearing along the readout direction.
-; If the badrow direction is '0', then the culling described above will not
+; If the badrow direction is '-', then the culling described above will not
 ; be performed for this panel.
-0/badrow_direction = y
+0/badrow_direction = -
 
-; If "no_index" is "true", then peaks in this panel will not be used for
-; indexing nor integrated and recorded in the stream.
-0/no_index = false
+; The resolution (in pixels per metre) for this panel
+0/res = 9090.91
 
-; The lower bound on true peak separation is about 50 pixels
-0/peak_sep = 50
+; The characteristic peak separation.  The peak detection will assume that
+; genuine peaks are separated by at least this amount.
+0/peak_sep = 6.0
+
+; The camera length (in metres) for this panel
+; You can also specify the HDF path to a scalar floating point value containing
+; the camera length in millimetres.
+0/clen = /LCLS/detectorPosition
+
+; For this panel, the fast and slow scan directions correspond to the given
+; directions in the lab coordinate system described above.
+0/fs = +y
+0/ss = -x
+
+; The corner of this panel, defined as the first point in the panel to appear in
+; the HDF5 file, is now given a position in the lab coordinate system.
+0/corner_x = 429.39
+0/corner_y = -17.30
+
+; You can suppress indexing for this panel if required, by setting "no_index" to
+; "true" or "1".
+0/no_index = 0
 
 
 See the "examples" folder for some examples.
-
-
-A note on data orientation
---------------------------
-
-In the image data extracted from the HDF5 file, CrystFEL defines "x" as the most
-quickly varying coordinate in the data, and "y" as the second most quickly
-varying coordinate in the data.  It doesn't know what to do with any extra
-dimensions in the HDF5 dataset beyond the second.
-
-The origin, which is considered the lower left corner of the image, is defined
-by CrystFEL as the first element in the image data.  Positive x points in a
-direction to the right, and positive y points upwards.  CrystFEL considers the
-positive z direction to be the direction of the incident beam completing the
-right-handed set of axes.
-
-The detector surface is currently always assumed to be perpendicular to the
-incident beam.
