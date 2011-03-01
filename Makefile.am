@@ -125,7 +125,7 @@ crystfel_DATA = data/diffraction.cl data/defs.h data/sfac/Ca.nff \
                 data/sfac/C.nff data/sfac/Fe.nff data/sfac/H.nff \
                 data/sfac/Mg.nff data/sfac/N.nff data/sfac/O.nff \
                 data/sfac/P.nff data/sfac/S.nff data/sfac/f0_WaasKirf.dat \
-                data/hdfsee.ui data/geomatic.ui
+                data/hdfsee.ui
 
 EXTRA_DIST += data/sfac/Ca.nff data/sfac/C.nff data/sfac/Fe.nff \
               data/sfac/H.nff data/sfac/Mg.nff data/sfac/N.nff data/sfac/O.nff \
