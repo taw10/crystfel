@@ -42,15 +42,6 @@
 /* Thomson scattering length (m) */
 #define THOMSON_LENGTH (2.81794e-15)
 
-/* Density of water in kg/m^3 */
-#define WATER_DENSITY (1.0e6)
-
-/* Molar mass of water, in kg/mol */
-#define WATER_MOLAR_MASS (18.01528e3)
-
-/* Avogadro's number */
-#define AVOGADRO (6.022e23)
-
 
 /* ------------------------------ Quaternions ------------------------------- */
 

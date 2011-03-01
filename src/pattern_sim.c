@@ -97,7 +97,6 @@ static void show_help(const char *s)
 "speed, or for testing, you can choose to disable certain things using the\n"
 "following options.\n"
 "\n"
-"     --no-water            Do not simulate water background.\n"
 "     --no-noise            Do not calculate Poisson noise.\n"
 );
 }
@@ -123,10 +122,6 @@ static void show_details()
 "This is multiplied by a model of the underlying molecular transform, I_mol(q).\n"
 "This can be approximated to varying levels of accuracy by the methods given by\n"
 "the '--gradients' option.\n"
-"\n"
-"Intensity from water is added according to the first term of equation 5\n"
-"from Phys Chem Chem Phys 2003 (5) 1981--1991.  This simulates the\n"
-"coherent, elastic part of the diffuse scattering from the water jet only.\n"
 "\n"
 "Expected intensities at the CCD are then calculated using:\n"
 "\n"
@@ -208,7 +203,6 @@ int main(int argc, char *argv[])
 	int config_nearbragg = 0;
 	int config_randomquat = 0;
 	int config_noimages = 0;
-	int config_nowater = 0;
 	int config_nonoise = 0;
 	int config_nosfac = 0;
 	int config_gpu = 0;
@@ -241,7 +235,6 @@ int main(int argc, char *argv[])
 		{"random-orientation", 0, NULL,               'r'},
 		{"number",             1, NULL,               'n'},
 		{"no-images",          0, &config_noimages,    1},
-		{"no-water",           0, &config_nowater,     1},
 		{"no-noise",           0, &config_nonoise,     1},
 		{"intensities",        1, NULL,               'i'},
 		{"symmetry",           1, NULL,               'y'},
@@ -373,12 +366,6 @@ int main(int argc, char *argv[])
 	if ( config_simdetails ) {
 		show_details();
 		return 0;
-	}
-
-	if ( (!config_nowater) && config_gpu ) {
-		ERROR("Cannot simulate water scattering on the GPU.\n");
-		ERROR("Please try again with the --no-water option.\n");
-		return 1;
 	}
 
 	if ( grad_str == NULL ) {
@@ -553,8 +540,7 @@ int main(int argc, char *argv[])
 			get_diffraction_gpu(gctx, &image, na, nb, nc, cell);
 		} else {
 			get_diffraction(&image, na, nb, nc, intensities, phases,
-			                flags, cell, !config_nowater, grad,
-			                sym);
+			                flags, cell, grad, sym);
 		}
 		if ( image.data == NULL ) {
 			ERROR("Diffraction calculation failed.\n");

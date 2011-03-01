@@ -319,55 +319,10 @@ static double molecule_factor(const double *intensities, const double *phases,
 }
 
 
-double water_diffraction(struct rvec q, double en,
-                         double beam_r, double water_r)
-{
-	double complex fH, fO;
-	double s, modq;
-	double width;
-	double complex ifac;
-
-	/* Interatomic distances in water molecule */
-	const double rOH = 0.09584e-9;
-	const double rHH = 0.1515e-9;
-
-	/* Volume of water column, approximated as:
-	 * (2water_r) * (2beam_r) * smallest(2beam_r, 2water_r)
-	 * neglecting the curvature of the faces of the volume */
-	if ( beam_r > water_r ) {
-		width = 2.0 * water_r;
-	} else {
-		width = 2.0 * beam_r;
-	}
-	const double water_v = 2.0*beam_r * 2.0*water_r * width;
-
-	/* Number of water molecules */
-	const double n_water = water_v * WATER_DENSITY
-	                                        * (AVOGADRO / WATER_MOLAR_MASS);
-
-	/* s = sin(theta)/lambda = 1/2d = |q|/2 */
-	modq = modulus(q.u, q.v, q.w);
-	s = modq / 2.0;
-
-	fH = get_sfac("H", s, en);
-	fO = get_sfac("O", s, en);
-
-	/* Four O-H cross terms */
-	ifac = 4.0*fH*fO * sin(2.0*M_PI*modq*rOH)/(2.0*M_PI*modq*rOH);
-
-	/* Three H-H cross terms */
-	ifac += 3.0*fH*fH * sin(2.0*M_PI*modq*rHH)/(2.0*M_PI*modq*rHH);
-
-	/* Three diagonal terms */
-	ifac += 2.0*fH*fH + fO*fO;
-
-	return cabs(ifac) * n_water;
-}
-
 
 void get_diffraction(struct image *image, int na, int nb, int nc,
                      const double *intensities, const double *phases,
-                     const unsigned char *flags, UnitCell *cell, int do_water,
+                     const unsigned char *flags, UnitCell *cell,
                      GradientMethod m, const char *sym)
 {
 	unsigned int xs, ys;
@@ -433,21 +388,6 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 
 			intensity = sw * kw * I_lattice * I_molecule;
 			image->data[x + image->width*y] += intensity;
-
-		}
-
-		if ( do_water ) {
-
-			/* Bandwidth not simulated for water */
-			struct rvec q;
-
-			q = get_q(image, x, y, 1, NULL, 1.0/image->lambda);
-
-			/* Add intensity contribution from water */
-			image->data[x + image->width*y] += water_diffraction(q,
-			                        ph_lambda_to_en(image->lambda),
-			                        image->beam->beam_radius,
-			                        image->beam->water_radius) * sw;
 
 		}
 

@@ -31,8 +31,6 @@ struct beam_params
 
 	double dqe;            /* Detector DQE (fraction) */
 	double adu_per_photon; /* Detector "gain" */
-
-	double water_radius;   /* metres */
 };
 
 

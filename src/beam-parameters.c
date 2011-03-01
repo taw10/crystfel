@@ -41,7 +41,6 @@ struct beam_params *get_beam_parameters(const char *filename)
 	b->divergence = -1.0;
 	b->dqe = -1.0;
 	b->adu_per_photon = -1.0;
-	b->water_radius = -1.0;
 
 	do {
 
@@ -81,8 +80,6 @@ struct beam_params *get_beam_parameters(const char *filename)
 			b->dqe = atof(bits[2]);
 		} else if ( strcmp(bits[0], "detector/adu_per_photon") == 0 ) {
 			b->adu_per_photon = atof(bits[2]);
-		} else if ( strcmp(bits[0], "jet/radius") == 0 ) {
-			b->water_radius = atof(bits[2]);
 		} else {
 			ERROR("Unrecognised field '%s'\n", bits[0]);
 		}
@@ -123,10 +120,6 @@ struct beam_params *get_beam_parameters(const char *filename)
 	if ( b->adu_per_photon < 0.0 ) {
 		ERROR("Invalid or unspecified value for"
 		      " 'detector/adu_per_photon'.\n");
-		reject = 1;
-	}
-	if ( b->water_radius < 0.0 ) {
-		ERROR("Invalid or unspecified value for 'jet/radius'.\n");
 		reject = 1;
 	}
 

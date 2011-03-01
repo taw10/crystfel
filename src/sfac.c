@@ -240,7 +240,7 @@ static double get_waas_kirf(const char *n, double s)
 
 /* Get complex scattering factors for element 'n' at energy 'en' (J/photon),
  * at resolution 's' = sin(theta)/lambda (in m^-1) */
-double complex get_sfac(const char *n, double s, double en)
+static double complex get_sfac(const char *n, double s, double en)
 {
 	double complex f1f2;
 	double fq;
