@@ -37,7 +37,9 @@ while ( $line = <FH> ) {
 	if ( $line =~ /^$/ ) {
 		close(TMP);
 		#$filename = "images-old/".basename($filename);
-		system("hdfsee ".$filename." --peak-overlay=list.tmp --binning=1 --int-boost=10");
+		printf(STDERR "Viewing %s\n", $filename);
+		system("hdfsee ".$filename.
+		       " --peak-overlay=list.tmp --binning=1 --int-boost=10");
 		if ( $? != 0 ) { exit; }
 		unlink("list.tmp");
 		open(TMP, "> list.tmp");
