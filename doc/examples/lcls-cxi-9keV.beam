@@ -1,0 +1,23 @@
+ Number of photons per pulse
+beam/fluence = 1.0e12
+
+; Radius of X-ray beam
+beam/radius = 10.0e-6
+
+; Photon energy in eV
+beam/photon_energy = 9340.0
+
+; Bandwidth: FWHM(wavelength) over wavelength.
+; Note: current simulation code just uses a rectangular
+;       distribution with this as its (full) width.
+beam/bandwidth = 0.001
+
+; Beam divergence in radians
+beam/divergence = 0.008
+
+
+; Detector's quantum efficiency
+detector/dqe = 1.0
+
+; Number of detector ADU per photon
+detector/adu_per_photon = 1.0
