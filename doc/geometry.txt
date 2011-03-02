@@ -67,7 +67,7 @@ n_panels = 64
 0/clen = /LCLS/detectorPosition
 
 ; For this panel, the fast and slow scan directions correspond to the given
-; directions in the lab coordinate system described above.
+; directions in the lab coordinate system described above, measured in pixels.
 0/fs = +y
 0/ss = -x
 
