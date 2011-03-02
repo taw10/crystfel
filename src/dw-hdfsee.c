@@ -158,7 +158,7 @@ static void show_ring(cairo_t *cr, DisplayWindow *dw,
 	cairo_rotate(cr, -M_PI/4.0);
 	cairo_translate(cr, 0.0,
 	                ring_radius(dw->image, d)/dw->binning-5.0);
-	cairo_set_font_size(cr, 20.0);
+	cairo_set_font_size(cr, 17.0);
 	cairo_text_extents(cr, label, &size);
 	cairo_translate(cr, -size.width/2.0, 0.0);
 
