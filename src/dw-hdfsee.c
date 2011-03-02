@@ -711,6 +711,8 @@ static int load_geometry_file(DisplayWindow *dw, struct image *image,
 {
 	struct detector *geom;
 	GtkWidget *w;
+	int using_loaded = 0;
+	if ( dw->image->det == dw->loaded_geom ) using_loaded = 1;
 
 	geom = get_detector_geometry(filename);
 	if ( geom == NULL ) {
@@ -727,8 +729,12 @@ static int load_geometry_file(DisplayWindow *dw, struct image *image,
 
 	}
 
+	/* Sort out the mess */
 	if ( dw->loaded_geom != NULL ) free_detector_geometry(dw->loaded_geom);
 	dw->loaded_geom = geom;
+	if ( using_loaded ) {
+		dw->image->det = dw->loaded_geom;
+	}
 
 	w = gtk_ui_manager_get_widget(dw->ui,
 				      "/ui/displaywindow/view/usegeom");
