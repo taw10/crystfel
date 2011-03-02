@@ -24,7 +24,7 @@ const sampler_t sampler_c = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT
                              | CLK_FILTER_LINEAR;
 
 
-float4 get_q(int fs, int ss, float res, float clen, float k,
+float4 get_q(float fs, float ss, float res, float clen, float k,
              float *ttp, float corner_x, float corner_y,
              float fsx, float fsy, float ssx, float ssy)
 {

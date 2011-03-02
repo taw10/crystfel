@@ -180,7 +180,6 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	int n_neg = 0;
 	int n_nan = 0;
 
-
 	if ( gctx == NULL ) {
 		ERROR("GPU setup failed.\n");
 		return;
@@ -208,7 +207,11 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 	if ( setmem(gctx, 0, gctx->diff) ) return;
 	if ( setmem(gctx, 1, gctx->tt) ) return;
+	if ( sfloat(gctx, 2, klow) ) return;
+	if ( setint(gctx, 3, image->width) ) return;
 	if ( setmem(gctx, 9, gctx->intensities) ) return;
+	if ( setint(gctx, 12, sampling) ) return;
+	if ( sfloat(gctx, 14, bwstep) ) return;
 	if ( setmem(gctx, 15, gctx->sinc_luts[na-1]) ) return;
 	if ( setmem(gctx, 16, gctx->sinc_luts[nb-1]) ) return;
 	if ( setmem(gctx, 17, gctx->sinc_luts[nc-1]) ) return;
@@ -228,12 +231,6 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		ERROR("Couldn't set local memory: %s\n", clError(err));
 		return;
 	}
-
-
-	if ( sfloat(gctx, 2, klow) ) return;
-	if ( setint(gctx, 3, image->width) ) return;
-	if ( setint(gctx, 12, sampling) ) return;
-	if ( sfloat(gctx, 14, bwstep) ) return;
 
 	/* Iterate over panels */
 	event = malloc(image->det->n_panels * sizeof(cl_event));
