@@ -121,7 +121,7 @@ void map_all_peaks(struct image *image)
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		r = get_q(image, f->x, f->y, 1, NULL, 1.0/image->lambda);
+		r = get_q(image, f->x, f->y, NULL, 1.0/image->lambda);
 		f->rx = r.u;  f->ry = r.v;  f->rz = r.w;
 
 	}

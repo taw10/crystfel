@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 		int intensity;
 		struct rvec r;
 
-		r = get_q(&image, x, y, 1, NULL, 1.0/image.lambda);
+		r = get_q(&image, x, y, NULL, 1.0/image.lambda);
 		q = modulus(r.u, r.v, r.w);
 
 		intensity = image.data[x + image.width*y];

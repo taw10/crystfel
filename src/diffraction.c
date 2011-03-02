@@ -16,6 +16,7 @@
 #include <string.h>
 #include <complex.h>
 #include <assert.h>
+#include <fenv.h>
 
 #include "image.h"
 #include "utils.h"
@@ -319,13 +320,12 @@ static double molecule_factor(const double *intensities, const double *phases,
 }
 
 
-
 void get_diffraction(struct image *image, int na, int nb, int nc,
                      const double *intensities, const double *phases,
                      const unsigned char *flags, UnitCell *cell,
                      GradientMethod m, const char *sym)
 {
-	unsigned int xs, ys;
+	unsigned int fs, ss;
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
@@ -343,31 +343,36 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	khigh = 1.0/(image->lambda*(1.0 - image->beam->bandwidth/2.0));
 	bwstep = (khigh-klow) / BWSAMPLING;
 
-	for ( xs=0; xs<image->width*SAMPLING; xs++ ) {
-	for ( ys=0; ys<image->height*SAMPLING; ys++ ) {
+	for ( fs=0; fs<image->width*SAMPLING; fs++ ) {
+	for ( ss=0; ss<image->height*SAMPLING; ss++ ) {
 
 		struct rvec q;
-		float twotheta;
+		double twotheta;
 		double sw = 1.0/(SAMPLING*SAMPLING);  /* Sample weight */
 
-		const unsigned int x = xs / SAMPLING;
-		const unsigned int y = ys / SAMPLING; /* Integer part only */
+		const double dfs = fs / SAMPLING;
+		const double dss = ss / SAMPLING;
 
 		int kstep;
 
 		for ( kstep=0; kstep<BWSAMPLING; kstep++ ) {
 
-			float k;
+			double k;
 			double kw = 1.0/BWSAMPLING;
 			double intensity;
 			double f_lattice, I_lattice;
 			double I_molecule;
+			int sfs, sss;
 
 			/* Calculate k this time round */
 			k = klow + kstep * bwstep;
 
-			q = get_q(image, xs, ys, SAMPLING, &twotheta, k);
-			image->twotheta[x + image->width*y] = twotheta;
+			q = get_q(image, dfs, dss, &twotheta, k);
+
+			/* Determine which pixel this subsample belongs to */
+			fesetround(1);  /* Round to nearest */
+			sfs = round(dfs);  sss = round(dss);
+			image->twotheta[sfs + image->width*sss] = twotheta;
 
 			f_lattice = lattice_factor(q, ax, ay, az,
 			                              bx, by, bz,
@@ -387,12 +392,12 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 			I_lattice = pow(f_lattice, 2.0);
 
 			intensity = sw * kw * I_lattice * I_molecule;
-			image->data[x + image->width*y] += intensity;
+			image->data[sfs + image->width*sss] += intensity;
 
 		}
 
 
 	}
-	progress_bar(xs, SAMPLING*image->width-1, "Calculating diffraction");
+	progress_bar(fs, SAMPLING*image->width-1, "Calculating diffraction");
 	}
 }

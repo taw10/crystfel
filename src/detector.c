@@ -63,7 +63,7 @@ static int dir_conv(const char *a, signed int *sx, signed int *sy)
 
 
 struct rvec get_q(struct image *image, double fs, double ss,
-                  unsigned int sampling, float *ttp, float k)
+                  double *ttp, double k)
 {
 	struct rvec q;
 	double twotheta, r, az;

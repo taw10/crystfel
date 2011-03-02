@@ -463,7 +463,7 @@ void dump_peaks(struct image *image, FILE *ofh, pthread_mutex_t *mutex)
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		r = get_q(image, f->x, f->y, 1, NULL, 1.0/image->lambda);
+		r = get_q(image, f->x, f->y, NULL, 1.0/image->lambda);
 		q = modulus(r.u, r.v, r.w);
 
 		fprintf(ofh, "%8.3f %8.3f %8.3f    %12.3f\n",
@@ -480,7 +480,7 @@ void dump_peaks(struct image *image, FILE *ofh, pthread_mutex_t *mutex)
 RefList *find_projected_peaks(struct image *image, UnitCell *cell,
                               int circular_domain, double domain_r)
 {
-	int x, y;
+	int fs, ss;
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
@@ -499,8 +499,8 @@ RefList *find_projected_peaks(struct image *image, UnitCell *cell,
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
 	fesetround(1);  /* Round towards nearest */
-	for ( x=0; x<image->width; x++ ) {
-	for ( y=0; y<image->height; y++ ) {
+	for ( fs=0; fs<image->width; fs++ ) {
+	for ( ss=0; ss<image->height; ss++ ) {
 
 		double hd, kd, ld;  /* Indices with decimal places */
 		double dh, dk, dl;  /* Distances in h,k,l directions */
@@ -510,7 +510,7 @@ RefList *find_projected_peaks(struct image *image, UnitCell *cell,
 		Reflection *refl;
 		double cur_dist;
 
-		q = get_q(image, x, y, 1, NULL, 1.0/image->lambda);
+		q = get_q(image, fs, ss, NULL, 1.0/image->lambda);
 
 		hd = q.u * ax + q.v * ay + q.w * az;
 		kd = q.u * bx + q.v * by + q.w * bz;
@@ -539,12 +539,12 @@ RefList *find_projected_peaks(struct image *image, UnitCell *cell,
 		if ( refl != NULL ) {
 			cur_dist = get_excitation_error(refl);
 			if ( dist < cur_dist ) {
-				set_detector_pos(refl, dist, x, y);
+				set_detector_pos(refl, dist, fs, ss);
 			}
 		} else {
 			Reflection *new;
 			new = add_refl(reflections, h, k, l);
-			set_detector_pos(new, dist, x, y);
+			set_detector_pos(new, dist, fs, ss);
 			n_reflections++;
 		}
 
@@ -592,7 +592,7 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
 		n_feat++;
 
 		/* Get closest hkl */
-		q = get_q(image, f->x, f->y, 1, NULL, 1.0/image->lambda);
+		q = get_q(image, f->x, f->y, NULL, 1.0/image->lambda);
 
 		hd = q.u * ax + q.v * ay + q.w * az;
 		kd = q.u * bx + q.v * by + q.w * bz;
@@ -784,7 +784,7 @@ void output_pixels(struct image *image, UnitCell *cell,
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-	int x, y;
+	int fs, ss;
 	double aslen, bslen, cslen;
 	double *intensities;
 	double *xmom;
@@ -812,8 +812,8 @@ void output_pixels(struct image *image, UnitCell *cell,
 	                         &cx, &cy, &cz);
 	/* For each pixel */
 	fesetround(1);  /* Round towards nearest */
-	for ( x=0; x<image->width; x++ ) {
-	for ( y=0; y<image->height; y++ ) {
+	for ( fs=0; fs<image->width; fs++ ) {
+	for ( ss=0; ss<image->height; ss++ ) {
 
 		double hd, kd, ld;  /* Indices with decimal places */
 		double dh, dk, dl;  /* Distances in h,k,l directions */
@@ -821,12 +821,13 @@ void output_pixels(struct image *image, UnitCell *cell,
 		struct rvec q;
 		double dist;
 		struct panel *p;
+		double twotheta;
 
-		p = find_panel(image->det, x, y);
+		p = find_panel(image->det, fs, ss);
 		if ( p == NULL ) continue;
 		if ( p->no_index ) continue;
 
-		q = get_q(image, x, y, 1, NULL, 1.0/image->lambda);
+		q = get_q(image, fs, ss, &twotheta, 1.0/image->lambda);
 
 		hd = q.u * ax + q.v * ay + q.w * az;
 		kd = q.u * bx + q.v * by + q.w * bz;
@@ -853,37 +854,29 @@ void output_pixels(struct image *image, UnitCell *cell,
 		if ( dist < domain_r ) {
 
 			double val;
-			struct panel *p;
 			double pix_area, Lsq, proj_area, dsq, sa;
 			double phi, pa, pb, pol;
-			float tt = 0.0;
 			double xs, ys, rx, ry;
 
 			/* Veto if we want to integrate a bad region */
 			if ( image->flags != NULL ) {
 				int flags;
-				flags = image->flags[x+image->width*y];
+				flags = image->flags[fs+image->width*ss];
 				if ( !(flags & 0x01) ) continue;
 			}
 
-			val = image->data[x+image->width*y];
-
-			p = find_panel(image->det, x, y);
-			if ( p == NULL ) continue;
-
-			if ( p->no_index ) continue;
+			val = image->data[fs+image->width*ss];
 
 			/* Area of one pixel */
 			pix_area = pow(1.0/p->res, 2.0);
 			Lsq = pow(p->clen, 2.0);
 
 			/* Area of pixel as seen from crystal  */
-			tt = get_tt(image, x, y);
-			proj_area = pix_area * cos(tt);
+			proj_area = pix_area * cos(twotheta);
 
 			/* Calculate distance from crystal to pixel */
-			xs = (x-p->min_fs)*p->fsx + (y-p->min_ss)*p->ssx;
-			ys = (x-p->min_fs)*p->fsy + (y-p->min_ss)*p->ssy;
+			xs = (fs-p->min_fs)*p->fsx + (ss-p->min_ss)*p->ssx;
+			ys = (fs-p->min_fs)*p->fsy + (ss-p->min_ss)*p->ssy;
 			rx = (xs + p->cnx) / p->res;
 			ry = (ys + p->cny) / p->res;
 			dsq = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
@@ -896,11 +889,9 @@ void output_pixels(struct image *image, UnitCell *cell,
 
 			if ( do_polar ) {
 
-				tt = get_tt(image, x, y);
-
-				phi = atan2(y, x);
-				pa = pow(sin(phi)*sin(tt), 2.0);
-				pb = pow(cos(tt), 2.0);
+				phi = atan2(ry, rx);
+				pa = pow(sin(phi)*sin(twotheta), 2.0);
+				pb = pow(cos(twotheta), 2.0);
 				pol = 1.0 - 2.0*POL*(1-pa) + POL*(1.0+pb);
 
 				val /= pol;
@@ -910,8 +901,8 @@ void output_pixels(struct image *image, UnitCell *cell,
 			/* Add value to sum */
 			integrate_intensity(intensities, h, k, l, val);
 
-			integrate_intensity(xmom, h, k, l, val*x);
-			integrate_intensity(ymom, h, k, l, val*y);
+			integrate_intensity(xmom, h, k, l, val*fs);
+			integrate_intensity(ymom, h, k, l, val*ss);
 
 			if ( !find_item(obs, h, k, l) ) {
 				add_item(obs, h, k, l);

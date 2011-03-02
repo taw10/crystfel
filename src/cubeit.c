@@ -247,7 +247,7 @@ static void sum_image(void *pg, int cookie)
 		struct rvec q;
 		signed int ha, ka, la;
 
-		q = get_q(&image, x, y, 1, NULL, 1.0/image.lambda);
+		q = get_q(&image, x, y, NULL, 1.0/image.lambda);
 
 		hd = q.u * ax + q.v * ay + q.w * az;
 		kd = q.u * bx + q.v * by + q.w * bz;

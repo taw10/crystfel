@@ -58,7 +58,7 @@ struct detector
 };
 
 extern struct rvec get_q(struct image *image, double xs, double ys,
-                         unsigned int sampling, float *ttp, float k);
+                         double *ttp, double k);
 
 extern double get_tt(struct image *image, double xs, double ys);
 
