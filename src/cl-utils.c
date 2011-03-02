@@ -3,17 +3,25 @@
  *
  * OpenCL utility functions
  *
- * (c) 2006-2010 Thomas White <taw@physics.org>
+ * (c) 2006-2011 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef HAVE_CL_CL_H
+#include <CL/cl.h>
+#else
 #include <cl.h>
+#endif
 
 #include "utils.h"
 

@@ -24,15 +24,20 @@ const sampler_t sampler_c = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT
                              | CLK_FILTER_LINEAR;
 
 
-float4 get_q(int x, int y, float cx, float cy, float res, float clen, float k,
-             float *ttp, int sampling)
+float4 get_q(int fs, int ss, float res, float clen, float k,
+             float *ttp, float corner_x, float corner_y,
+             float fsx, float fsy, float ssx, float ssy)
 {
 	float rx, ry, r;
 	float az, tt;
 	float4 q;
+	float xs, ys;
 
-	rx = ((float)x - sampling*cx)/(res*sampling);
-	ry = ((float)y - sampling*cy)/(res*sampling);
+	xs = fs*fsx + ss*ssx;
+	ys = fs*fsy + ss*ssy;
+
+	rx = (xs + corner_x) / res;
+	ry = (ys + corner_y) / res;
 
 	r = sqrt(pow(rx, 2.0f) + pow(ry, 2.0f));
 
@@ -185,19 +190,19 @@ float molecule_factor(global float *intensities, global float *flags,
 
 
 kernel void diffraction(global float *diff, global float *tt, float klow,
-                       int w, float cx, float cy,
+                       int w, float corner_x, float corner_y,
                        float res, float clen, float16 cell,
                        global float *intensities,
-                       int xmin, int ymin, int sampling, local float *tmp,
+                       int min_fs, int min_ss, int sampling, local float *tmp,
                        float kstep,
                        read_only image2d_t func_a,
                        read_only image2d_t func_b,
                        read_only image2d_t func_c,
-                       global float *flags)
+                       global float *flags,
+                       float fsx, float fsy, float ssx, float ssy)
 {
 	float ttv;
-	const int x = get_global_id(0) + (xmin*sampling);
-	const int y = get_global_id(1) + (ymin*sampling);
+	float fs, ss;
 	float f_lattice, I_lattice;
 	float I_molecule;
 	float4 q;
@@ -205,12 +210,21 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
 	const int ly = get_local_id(1);
 	const int lb = get_local_id(2);
 	float k = klow + kstep * get_local_id(2);
-	const int ax = x / sampling;
-	const int ay = y / sampling;
+	const int afs = fs / sampling;
+	const int ass = ss / sampling; /* Array index of target pixel */
 	float intensity;
 
-	/* Calculate value */
-	q = get_q(x, y, cx, cy, res, clen, k, &ttv, sampling);
+	/* Calculate fractional coordinates in fs/ss */
+	fs = convert_float(get_global_id(0) + (min_fs*sampling))
+	      / convert_float(sampling);
+	ss = convert_float(get_global_id(1) + (min_ss*sampling))
+	      / convert_float(sampling);
+
+	/* Get the scattering vector */
+	q = get_q(fs, ss, res, clen, k, &ttv,
+	          corner_x, corner_y, fsx, fsy, ssx, ssy);
+
+	/* Calculate the diffraction */
 	f_lattice = lattice_factor(cell, q, func_a, func_b, func_c);
 	I_molecule = molecule_factor(intensities, flags, cell, q);
 	I_lattice = pow(f_lattice, 2.0f);
@@ -228,16 +242,19 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
 		int i;
 		float sum = 0.0;
 		float val;
+		int idx;
+
+		idx = convert_int_rtz(fs)+w*convert_int_rtz(ss);
 
 		for ( i=0; i<sampling*sampling*get_local_size(2); i++ )
 			sum += tmp[i];
 
-		val = sum / (float)(sampling*sampling*get_local_size(2));
-		diff[ax+w*ay] = val;
+		val = sum / convert_float(sampling*sampling*get_local_size(2));
+		diff[idx] = val;
 
 		/* Leader thread also records the 2theta value.
 		 * This should really be averaged across all pixels, but
 		 * I strongly suspect this would be a waste of time. */
-		tt[ax+w*ay] = ttv;
+		tt[idx] = ttv;
 	}
 }

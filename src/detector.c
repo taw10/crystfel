@@ -129,6 +129,12 @@ void record_image(struct image *image, int do_poisson)
 	double ph_per_e;
 	double area;
 	double max_tt = 0.0;
+	int n_inf1 = 0;
+	int n_neg1 = 0;
+	int n_nan1 = 0;
+	int n_inf2 = 0;
+	int n_neg2 = 0;
+	int n_nan2 = 0;
 
 	/* How many photons are scattered per electron? */
 	area = M_PI*pow(image->beam->beam_radius, 2.0);
@@ -152,15 +158,9 @@ void record_image(struct image *image, int do_poisson)
 		struct panel *p;
 
 		intensity = (double)image->data[x + image->width*y];
-		if ( isinf(intensity) ) {
-			ERROR("Infinity at %i,%i\n", x, y);
-		}
-		if ( intensity < 0.0 ) {
-			ERROR("Negative at %i,%i\n", x, y);
-		}
-		if ( isnan(intensity) ) {
-			ERROR("NaN at %i,%i\n", x, y);
-		}
+		if ( isinf(intensity) ) n_inf1++;
+		if ( intensity < 0.0 ) n_neg1++;
+		if ( isnan(intensity) ) n_nan1++;
 
 		p = find_panel(image->det, x, y);
 
@@ -191,15 +191,11 @@ void record_image(struct image *image, int do_poisson)
 
 		image->data[x + image->width*y] = counts
 		                                  * image->beam->adu_per_photon;
-		if ( isinf(image->data[x+image->width*y]) ) {
-			ERROR("Processed infinity at %i,%i\n", x, y);
-		}
-		if ( isnan(image->data[x+image->width*y]) ) {
-			ERROR("Processed NaN at %i,%i\n", x, y);
-		}
-		if ( image->data[x+image->width*y] < 0.0 ) {
-			ERROR("Processed negative at %i,%i %f\n", x, y, counts);
-		}
+
+		/* Sanity checks */
+		if ( isinf(image->data[x+image->width*y]) ) n_inf2++;
+		if ( isnan(image->data[x+image->width*y]) ) n_nan2++;
+		if ( image->data[x+image->width*y] < 0.0 ) n_neg2++;
 
 		if ( image->twotheta[x + image->width*y] > max_tt ) {
 			max_tt = image->twotheta[x + image->width*y];
@@ -221,6 +217,15 @@ void record_image(struct image *image, int do_poisson)
 	        rad2deg(tt_side), (image->lambda/(2.0*sin(tt_side/2.0)))/1e-9);
 
 	STATUS("Halve the d values to get the voxel size for a synthesis.\n");
+
+	if ( n_neg1 + n_inf1 + n_nan1 + n_neg2 + n_inf2 + n_nan2 ) {
+		ERROR("WARNING: The raw calculation produced %i negative"
+		      " values, %i infinities and %i NaNs.\n",
+		      n_neg1, n_inf1, n_nan1);
+		ERROR("WARNING: After processing, there were %i negative"
+		      " values, %i infinities and %i NaNs.\n",
+		      n_neg2, n_inf2, n_nan2);
+	}
 }
 
 

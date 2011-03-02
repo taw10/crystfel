@@ -3,19 +3,27 @@
  *
  * Calculate diffraction patterns by Fourier methods (GPU version)
  *
- * (c) 2006-2010 Thomas White <taw@physics.org>
+ * (c) 2006-2011 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <complex.h>
+
+#ifdef HAVE_CL_CL_H
+#include <CL/cl.h>
+#else
 #include <cl.h>
+#endif
 
 #include "image.h"
 #include "utils.h"
@@ -107,6 +115,50 @@ static void check_sinc_lut(struct gpu_context *gctx, int n)
 }
 
 
+static int sfloat(struct gpu_context *gctx, int idx, float val)
+{
+	cl_int err;
+	err = clSetKernelArg(gctx->kern, idx, sizeof(cl_float), &val);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set kernel argument %i: %s\n",
+		      idx, clError(err));
+		return 1;
+	}
+
+	return 0;
+}
+
+
+static int setint(struct gpu_context *gctx, int idx, int val)
+{
+	cl_int err;
+
+	err = clSetKernelArg(gctx->kern, idx, sizeof(cl_int), &val);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set kernel argument %i: %s\n",
+		      idx, clError(err));
+		return 1;
+	}
+
+	return 0;
+}
+
+
+static int setmem(struct gpu_context *gctx, int idx, cl_mem val)
+{
+	cl_int err;
+
+	err = clSetKernelArg(gctx->kern, idx, sizeof(cl_mem), &val);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set kernel argument %i: %s\n",
+		      idx, clError(err));
+		return 1;
+	}
+
+	return 0;
+}
+
+
 void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
                          int na, int nb, int nc, UnitCell *ucell)
 {
@@ -124,6 +176,10 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	cl_int4 ncells;
 	const int sampling = SAMPLING;
 	cl_float bwstep;
+	int n_inf = 0;
+	int n_neg = 0;
+	int n_nan = 0;
+
 
 	if ( gctx == NULL ) {
 		ERROR("GPU setup failed.\n");
@@ -150,82 +206,34 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	check_sinc_lut(gctx, nb);
 	check_sinc_lut(gctx, nc);
 
-	err = clSetKernelArg(gctx->kern, 0, sizeof(cl_mem), &gctx->diff);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 0: %s\n", clError(err));
-		return;
-	}
-	clSetKernelArg(gctx->kern, 1, sizeof(cl_mem), &gctx->tt);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 1: %s\n", clError(err));
-		return;
-	}
-	clSetKernelArg(gctx->kern, 2, sizeof(cl_float), &klow);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 2: %s\n", clError(err));
-		return;
-	}
-	clSetKernelArg(gctx->kern, 3, sizeof(cl_int), &image->width);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 3: %s\n", clError(err));
-		return;
-	}
+	if ( setmem(gctx, 0, gctx->diff) ) return;
+	if ( setmem(gctx, 1, gctx->tt) ) return;
+	if ( setmem(gctx, 9, gctx->intensities) ) return;
+	if ( setmem(gctx, 15, gctx->sinc_luts[na-1]) ) return;
+	if ( setmem(gctx, 16, gctx->sinc_luts[nb-1]) ) return;
+	if ( setmem(gctx, 17, gctx->sinc_luts[nc-1]) ) return;
+	if ( setmem(gctx, 18, gctx->flags) ) return;
+
+	/* Unit cell */
 	clSetKernelArg(gctx->kern, 8, sizeof(cl_float16), &cell);
 	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 8: %s\n", clError(err));
+		ERROR("Couldn't set unit cell: %s\n", clError(err));
 		return;
 	}
-	clSetKernelArg(gctx->kern, 9, sizeof(cl_mem), &gctx->intensities);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 9: %s\n", clError(err));
-		return;
-	}
-	clSetKernelArg(gctx->kern, 12, sizeof(cl_int), &sampling);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 12: %s\n", clError(err));
-		return;
-	}
+
 	/* Local memory for reduction */
 	clSetKernelArg(gctx->kern, 13,
 	               BWSAMPLING*SAMPLING*SAMPLING*sizeof(cl_float), NULL);
 	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 13: %s\n", clError(err));
-		return;
-	}
-	/* Bandwidth sampling step */
-	clSetKernelArg(gctx->kern, 14, sizeof(cl_float), &bwstep);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 14: %s\n", clError(err));
+		ERROR("Couldn't set local memory: %s\n", clError(err));
 		return;
 	}
 
-	/* LUT in 'a' direction */
-	clSetKernelArg(gctx->kern, 15, sizeof(cl_mem), &gctx->sinc_luts[na-1]);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 15: %s\n", clError(err));
-		return;
-	}
 
-	/* LUT in 'b' direction */
-	clSetKernelArg(gctx->kern, 16, sizeof(cl_mem), &gctx->sinc_luts[nb-1]);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 16: %s\n", clError(err));
-		return;
-	}
-
-	/* LUT in 'c' direction */
-	clSetKernelArg(gctx->kern, 17, sizeof(cl_mem), &gctx->sinc_luts[nc-1]);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set arg 17: %s\n", clError(err));
-		return;
-	}
-
-	/* Flag array */
-	clSetKernelArg(gctx->kern, 18, sizeof(cl_mem), &gctx->flags);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set flag array: %s\n", clError(err));
-		return;
-	}
+	if ( sfloat(gctx, 2, klow) ) return;
+	if ( setint(gctx, 3, image->width) ) return;
+	if ( setint(gctx, 12, sampling) ) return;
+	if ( sfloat(gctx, 14, bwstep) ) return;
 
 	/* Iterate over panels */
 	event = malloc(image->det->n_panels * sizeof(cl_event));
@@ -236,48 +244,24 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 		/* In a future version of OpenCL, this could be done
 		 * with a global work offset.  But not yet... */
-		dims[0] = 1+image->det->panels[0].max_x-image->det->panels[0].min_x;
-		dims[1] = 1+image->det->panels[0].max_y-image->det->panels[0].min_y;
+		dims[0] = 1+image->det->panels[p].max_fs
+		           -image->det->panels[p].min_fs;
+		dims[1] = 1+image->det->panels[p].max_ss
+		           -image->det->panels[p].min_ss;
 		dims[0] *= SAMPLING;
 		dims[1] *= SAMPLING;
 		dims[2] = BWSAMPLING;
 
-		clSetKernelArg(gctx->kern, 4, sizeof(cl_float),
-		               &image->det->panels[p].cx);
-		if ( err != CL_SUCCESS ) {
-			ERROR("Couldn't set arg 4: %s\n", clError(err));
-			return;
-		}
-		clSetKernelArg(gctx->kern, 5, sizeof(cl_float),
-		               &image->det->panels[p].cy);
-		if ( err != CL_SUCCESS ) {
-			ERROR("Couldn't set arg 5: %s\n", clError(err));
-			return;
-		}
-		clSetKernelArg(gctx->kern, 6, sizeof(cl_float),
-		               &image->det->panels[p].res);
-		if ( err != CL_SUCCESS ) {
-			ERROR("Couldn't set arg 6: %s\n", clError(err));
-			return;
-		}
-		clSetKernelArg(gctx->kern, 7, sizeof(cl_float),
-		               &image->det->panels[p].clen);
-		if ( err != CL_SUCCESS ) {
-			ERROR("Couldn't set arg 7: %s\n", clError(err));
-			return;
-		}
-		clSetKernelArg(gctx->kern, 10, sizeof(cl_int),
-		               &image->det->panels[p].min_x);
-		if ( err != CL_SUCCESS ) {
-			ERROR("Couldn't set arg 10: %s\n", clError(err));
-			return;
-		}
-		clSetKernelArg(gctx->kern, 11, sizeof(cl_int),
-		               &image->det->panels[p].min_y);
-		if ( err != CL_SUCCESS ) {
-			ERROR("Couldn't set arg 11: %s\n", clError(err));
-			return;
-		}
+		if ( sfloat(gctx, 4, image->det->panels[p].cnx) ) return;
+		if ( sfloat(gctx, 5, image->det->panels[p].cny) ) return;
+		if ( sfloat(gctx, 6, image->det->panels[p].res) ) return;
+		if ( sfloat(gctx, 7, image->det->panels[p].clen) ) return;
+		if ( setint(gctx, 10, image->det->panels[p].min_fs) ) return;
+		if ( setint(gctx, 11, image->det->panels[p].min_ss) ) return;
+		if ( sfloat(gctx, 19, image->det->panels[p].fsx) ) return;
+		if ( sfloat(gctx, 19, image->det->panels[p].fsy) ) return;
+		if ( sfloat(gctx, 20, image->det->panels[p].ssx) ) return;
+		if ( sfloat(gctx, 21, image->det->panels[p].ssy) ) return;
 
 		err = clEnqueueNDRangeKernel(gctx->cq, gctx->kern, 3, NULL,
 		                             dims, ldims, 0, NULL, &event[p]);
@@ -314,21 +298,21 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		float val, tt;
 
 		val = diff_ptr[x + image->width*y];
-		if ( isinf(val) ) {
-			ERROR("Extracting infinity at %i,%i\n", x, y);
-		}
-		if ( val < 0.0 ) {
-			ERROR("Extracting negative at %i,%i\n", x, y);
-		}
-		if ( isnan(val) ) {
-			ERROR("Extracting NaN at %i,%i\n", x, y);
-		}
+		if ( isinf(val) ) n_inf++;
+		if ( val < 0.0 ) n_neg++;
+		if ( isnan(val) ) n_nan++;
 		tt = tt_ptr[x + image->width*y];
 
 		image->data[x + image->width*y] = val;
 		image->twotheta[x + image->width*y] = tt;
 
 	}
+	}
+
+	if ( n_neg + n_inf + n_nan ) {
+		ERROR("WARNING: The GPU calculation produced %i negative"
+		      " values, %i infinities and %i NaNs.\n",
+		      n_neg, n_inf, n_nan);
 	}
 
 	clEnqueueUnmapMemObject(gctx->cq, gctx->diff, diff_ptr, 0, NULL, NULL);

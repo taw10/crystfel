@@ -18,6 +18,9 @@
 /* Define to 1 if Cairo is available */
 #undef HAVE_CAIRO
 
+/* Define to 1 if CL/cl.h should be used */
+#undef HAVE_CL_CL_H
+
 /* Define to 1 if you have the declaration of `strndup', and to 0 if you
    don't. */
 #undef HAVE_DECL_STRNDUP
@@ -156,10 +159,6 @@
 
 /* Define if you have the 'wchar_t' type. */
 #undef HAVE_WCHAR_T
-
-/* Define to 1 if you have the
-   </System/Library/Frameworks/OpenCL.framework/Headers/cl.h> header file. */
-#undef HAVE__SYSTEM_LIBRARY_FRAMEWORKS_OPENCL_FRAMEWORK_HEADERS_CL_H
 
 /* Define to a substitute value for mmap()'s MAP_ANONYMOUS flag. */
 #undef MAP_ANONYMOUS

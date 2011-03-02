@@ -809,7 +809,7 @@ enable_silent_rules
 with_hdf5
 with_gsl
 enable_gsl_fudge
-enable_opencl
+with_opencl
 enable_gtk
 enable_gtktest
 enable_png
@@ -1464,7 +1464,6 @@ Optional Features:
   --disable-silent-rules         verbose build output (undo: `make V=0')
   --enable-gsl-fudge      Use this option if you get lots of linker errors
                           concerning GSL and CBLAS
-  --enable-opencl         Enable the use of OpenCL
   --disable-gtk           Disable GTK+/GLib
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --disable-png           Disable the use of libPNG
@@ -1477,6 +1476,7 @@ Optional Packages:
   --with-hdf5             specify location of HDF5 library
   --with-gsl              specify location of GSL (instead of using
                           pkg-config)
+  --with-opencl           Use OpenCL
   --with-libtiff          specify location of libTIFF library
 
 Some influential environment variables:
@@ -6442,37 +6442,56 @@ $as_echo "no" >&6; }
 
 fi
 
-# Check whether --enable-opencl was given.
-if test "${enable_opencl+set}" = set; then :
-  enableval=$enable_opencl;
+
+
+# Check whether --with-opencl was given.
+if test "${with_opencl+set}" = set; then :
+  withval=$with_opencl;
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use OpenCL" >&5
 $as_echo_n "checking whether to use OpenCL... " >&6; }
-if test "x$enable_opencl" == "xyes"; then :
+if test "x$with_opencl" == "xyes"; then :
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-   for ac_header in /System/Library/Frameworks/OpenCL.framework/Headers/cl.h
-do :
-  ac_fn_c_check_header_mongrel "$LINENO" "/System/Library/Frameworks/OpenCL.framework/Headers/cl.h" "ac_cv_header__System_Library_Frameworks_OpenCL_framework_Headers_cl_h" "$ac_includes_default"
-if test "x$ac_cv_header__System_Library_Frameworks_OpenCL_framework_Headers_cl_h" = x""yes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE__SYSTEM_LIBRARY_FRAMEWORKS_OPENCL_FRAMEWORK_HEADERS_CL_H 1
-_ACEOF
 
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking cl.h" >&5
+$as_echo_n "checking cl.h... " >&6; }
+   if test -f /System/Library/Frameworks/OpenCL.framework/Headers/cl.h; then :
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: /System/Library/Frameworks/OpenCL.framework/Headers/cl.h" >&5
+$as_echo "/System/Library/Frameworks/OpenCL.framework/Headers/cl.h" >&6; }
       OPENCL_CFLAGS="-I/System/Library/Frameworks/OpenCL.framework/Headers"
       OPENCL_LIBS="-framework OpenCL"
 
-else
+fi
+   if test -f /usr/local/cuda/cuda/include/CL/cl.h; then :
 
-      OPENCL_CFLAGS="-I/usr/include/CL"
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: /usr/local/cuda/cuda/include/CL/cl.h" >&5
+$as_echo "/usr/local/cuda/cuda/include/CL/cl.h" >&6; }
+      OPENCL_CFLAGS="-I/usr/local/cuda/cuda/include"
       OPENCL_LIBS="-lOpenCL"
+      cl_cl_h=true
 
 fi
+   if test -f /usr/local/cuda/include/CL/cl.h; then :
 
-done
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: /usr/local/cuda/include/CL/cl.h" >&5
+$as_echo "/usr/local/cuda/include/CL/cl.h" >&6; }
+      OPENCL_CFLAGS="-I/usr/local/cuda/include"
+      OPENCL_LIBS="-lOpenCL"
+      cl_cl_h=true
 
+else
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found, assuming /usr/include/CL/cl.h" >&5
+$as_echo "not found, assuming /usr/include/CL/cl.h" >&6; }
+      OPENCL_CFLAGS=""
+      OPENCL_LIBS="-lOpenCL"
+      cl_cl_h=true
+
+fi
 
 $as_echo "#define HAVE_OPENCL 1" >>confdefs.h
 
@@ -6492,7 +6511,13 @@ else
   HAVE_OPENCL_FALSE=
 fi
 
+if test "x$cl_cl_h" == "xtrue"; then :
 
+
+$as_echo "#define HAVE_CL_CL_H 1" >>confdefs.h
+
+
+fi
 
 # Check whether --enable-gtk was given.
 if test "${enable_gtk+set}" = set; then :

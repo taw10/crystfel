@@ -53,28 +53,49 @@ AS_IF([test "x$enable_gsl_fudge" == "xyes"],
    AC_MSG_RESULT([no])
 ])
 
-AC_ARG_ENABLE(opencl, AS_HELP_STRING([--enable-opencl], [Enable the use of OpenCL]))
+
+AC_ARG_WITH(opencl, AS_HELP_STRING([--with-opencl], [Use OpenCL]))
 AC_MSG_CHECKING([whether to use OpenCL])
-AS_IF([test "x$enable_opencl" == "xyes"],
+AS_IF([test "x$with_opencl" == "xyes"],
 [
    AC_MSG_RESULT([yes])
-   AC_CHECK_HEADERS([/System/Library/Frameworks/OpenCL.framework/Headers/cl.h],
+
+   AC_MSG_CHECKING([cl.h])
+   AS_IF([test -f /System/Library/Frameworks/OpenCL.framework/Headers/cl.h],
    [
+      AC_MSG_RESULT([/System/Library/Frameworks/OpenCL.framework/Headers/cl.h])
       OPENCL_CFLAGS="-I/System/Library/Frameworks/OpenCL.framework/Headers"
       OPENCL_LIBS="-framework OpenCL"
-   ],
+   ])
+   AS_IF([test -f /usr/local/cuda/cuda/include/CL/cl.h],
    [
-      OPENCL_CFLAGS="-I/usr/include/CL"
+      AC_MSG_RESULT([/usr/local/cuda/cuda/include/CL/cl.h])
+      OPENCL_CFLAGS="-I/usr/local/cuda/cuda/include"
       OPENCL_LIBS="-lOpenCL"
+      cl_cl_h=true
+   ])
+   AS_IF([test -f /usr/local/cuda/include/CL/cl.h],
+   [
+      AC_MSG_RESULT([/usr/local/cuda/include/CL/cl.h])
+      OPENCL_CFLAGS="-I/usr/local/cuda/include"
+      OPENCL_LIBS="-lOpenCL"
+      cl_cl_h=true
+   ], [
+      AC_MSG_RESULT([not found, assuming /usr/include/CL/cl.h])
+      OPENCL_CFLAGS=""
+      OPENCL_LIBS="-lOpenCL"
+      cl_cl_h=true
    ])
    AC_DEFINE([HAVE_OPENCL], [1], [Define to 1 if OpenCL is available])
    have_opencl=true
-],
-[
+], [
    AC_MSG_RESULT([no])
 ])
 AM_CONDITIONAL([HAVE_OPENCL], test x$have_opencl = xtrue)
-
+AS_IF([test "x$cl_cl_h" == "xtrue"],
+[
+   AC_DEFINE([HAVE_CL_CL_H], [1], [Define to 1 if CL/cl.h should be used])
+])
 
 AC_ARG_ENABLE(gtk, AS_HELP_STRING([--disable-gtk], [Disable GTK+/GLib]))
 havegtk=false
