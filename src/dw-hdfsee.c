@@ -224,14 +224,6 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 
 	}
 
-	if ( (dw->show_col_scale) && (dw->col_scale != NULL) ) {
-		cairo_identity_matrix(cr);
-		cairo_translate(cr, dw->width, 0.0);
-		cairo_rectangle(cr, 0.0, 0.0, 20.0, dw->height);
-		gdk_cairo_set_source_pixbuf(cr, dw->col_scale, 0.0, 0.0);
-		cairo_fill(cr);
-	}
-
 	if ( dw->show_rings ) {
 
 		/* Mark the beam */
@@ -249,6 +241,14 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 		show_ring(cr, dw, 2.0e-10, "2A");
 		show_ring(cr, dw, 1.0e-10, "1A");
 
+	}
+
+	if ( (dw->show_col_scale) && (dw->col_scale != NULL) ) {
+		cairo_identity_matrix(cr);
+		cairo_translate(cr, dw->width, 0.0);
+		cairo_rectangle(cr, 0.0, 0.0, 20.0, dw->height);
+		gdk_cairo_set_source_pixbuf(cr, dw->col_scale, 0.0, 0.0);
+		cairo_fill(cr);
 	}
 
 	if ( dw->image->features == NULL ) {
