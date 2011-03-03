@@ -242,7 +242,8 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
 		float val;
 		int idx;
 
-		idx = convert_int_rtz(fs)+w*convert_int_rtz(ss);
+		idx = (min_fs + convert_int_rtz(fs))
+		      + w*(min_ss + convert_int_rtz(ss));
 
 		for ( i=0; i<sampling*sampling*get_local_size(2); i++ )
 			sum += tmp[i];
