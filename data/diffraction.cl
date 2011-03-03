@@ -190,16 +190,16 @@ float molecule_factor(global float *intensities, global float *flags,
 
 
 kernel void diffraction(global float *diff, global float *tt, float klow,
-                       int w, float corner_x, float corner_y,
-                       float res, float clen, float16 cell,
-                       global float *intensities,
-                       int min_fs, int min_ss, int sampling, local float *tmp,
-                       float kstep,
-                       read_only image2d_t func_a,
-                       read_only image2d_t func_b,
-                       read_only image2d_t func_c,
-                       global float *flags,
-                       float fsx, float fsy, float ssx, float ssy)
+                        int w, float corner_x, float corner_y,
+                        float res, float clen, float16 cell,
+                        global float *intensities,
+                        int min_fs, int min_ss, int sampling, local float *tmp,
+                        float kstep,
+                        read_only image2d_t func_a,
+                        read_only image2d_t func_b,
+                        read_only image2d_t func_c,
+                        global float *flags,
+                        float fsx, float fsy, float ssx, float ssy)
 {
 	float ttv;
 	float fs, ss;
@@ -210,8 +210,6 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
 	const int ly = get_local_id(1);
 	const int lb = get_local_id(2);
 	float k = klow + kstep * get_local_id(2);
-	const int afs = fs / sampling;
-	const int ass = ss / sampling; /* Array index of target pixel */
 	float intensity;
 
 	/* Calculate fractional coordinates in fs/ss */
