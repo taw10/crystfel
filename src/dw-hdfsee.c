@@ -333,9 +333,8 @@ static int write_png(const char *filename, DisplayWindow *dw)
 	cairo_t *cr;
 	cairo_surface_t *surf;
 
-	surf = gdk_window_create_similar_surface(dw->drawingarea->window,
-	                                         CAIRO_CONTENT_COLOR,
-	                                         dw->width, dw->height);
+	surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+	                                  dw->width, dw->height);
 
 	draw_stuff(surf, dw);
 
