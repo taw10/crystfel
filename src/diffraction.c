@@ -296,6 +296,7 @@ static double molecule_factor(const double *intensities, const double *phases,
 
 	switch ( m ) {
 	case GRADIENT_MOSAIC :
+		fesetround(1);  /* Round to nearest */
 		h = (signed int)rint(hd);
 		k = (signed int)rint(kd);
 		l = (signed int)rint(ld);
