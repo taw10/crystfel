@@ -14,6 +14,7 @@
 			<menuitem name="boostint" action="BoostIntAction" />
 			<menuitem name="usegeom" action="GeometryAction" />
 			<menuitem name="rings" action="RingsAction" />
+			<menuitem name="showpeaks" action="ShowPeaksAction" />
 			<separator />
 			<menuitem name="col" action="ColAction" />
 			<menuitem name="monoscale" action="MonoAction" />

@@ -77,6 +77,7 @@ typedef struct {
 	int		noisefilter;	/* Use aggressive noise filter */
 	int             use_geom;
 	int             show_rings;
+	int		show_peaks;
 
 	int		show_col_scale;
 	int		scale;

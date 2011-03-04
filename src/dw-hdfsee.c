@@ -171,7 +171,6 @@ static void show_ring(cairo_t *cr, DisplayWindow *dw,
 static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 {
 	cairo_t *cr;
-	int i;
 	cairo_matrix_t basic_m;
 	cairo_matrix_t m;
 
@@ -251,58 +250,60 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 		cairo_fill(cr);
 	}
 
-	if ( dw->image->features == NULL ) {
-		cairo_destroy(cr);
-		return 0;
-	}
-
 	/* Ensure a clean Cairo context, since the rings often cause
 	 * matrix trouble */
 	cairo_destroy(cr);
 	cr = cairo_create(surf);
 
-	cairo_set_matrix(cr, &basic_m);
-	for ( i=0; i<image_feature_count(dw->image->features); i++ ) {
+	if ( (dw->image->features != NULL) && (dw->show_peaks) ) {
 
-		double fs, ss;
-		double x, y, xs, ys;
-		struct imagefeature *f;
-		struct panel *p;
+		int i;
 
-		f = image_get_feature(dw->image->features, i);
-		if ( f == NULL ) continue;
+		cairo_set_matrix(cr, &basic_m);
 
-		fs = f->x;
-		ss = f->y;
+		for ( i=0; i<image_feature_count(dw->image->features); i++ ) {
 
-		p = find_panel(dw->image->det, fs, ss);
-		if ( p == NULL ) continue;
+			double fs, ss;
+			double x, y, xs, ys;
+			struct imagefeature *f;
+			struct panel *p;
 
-		xs = (fs-p->min_fs)*p->fsx + (ss-p->min_ss)*p->ssx;
-		ys = (fs-p->min_fs)*p->fsy + (ss-p->min_ss)*p->ssy;
-		x = xs + p->cnx;
-		y = ys + p->cny;
+			f = image_get_feature(dw->image->features, i);
+			if ( f == NULL ) continue;
 
-		cairo_arc(cr, x/dw->binning, y/dw->binning,
-		          7.0/dw->binning, 0.0, 2.0*M_PI);
-		switch ( dw->scale ) {
+			fs = f->x;
+			ss = f->y;
 
-			case SCALE_COLOUR :
-			cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-			break;
+			p = find_panel(dw->image->det, fs, ss);
+			if ( p == NULL ) continue;
 
-			case SCALE_MONO :
-			cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-			break;
+			xs = (fs-p->min_fs)*p->fsx + (ss-p->min_ss)*p->ssx;
+			ys = (fs-p->min_fs)*p->fsy + (ss-p->min_ss)*p->ssy;
+			x = xs + p->cnx;
+			y = ys + p->cny;
 
-			case SCALE_INVMONO:
-			cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-			break;
+			cairo_arc(cr, x/dw->binning, y/dw->binning,
+				  7.0/dw->binning, 0.0, 2.0*M_PI);
+			switch ( dw->scale ) {
+
+				case SCALE_COLOUR :
+				cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+				break;
+
+				case SCALE_MONO :
+				cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+				break;
+
+				case SCALE_INVMONO:
+				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+				break;
+
+			}
+
+			cairo_set_line_width(cr, 0.75);
+			cairo_stroke(cr);
 
 		}
-
-		cairo_set_line_width(cr, 0.75);
-		cairo_stroke(cr);
 
 	}
 
@@ -655,10 +656,16 @@ static gint displaywindow_peaklist_response(GtkWidget *d, gint response,
 	if ( response == GTK_RESPONSE_ACCEPT ) {
 
 		char *filename;
+		GtkWidget *w;
 
 		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
 
 		load_features_from_file(dw->image, filename);
+		dw->show_peaks = 1;
+		w =  gtk_ui_manager_get_widget(dw->ui,
+					      "/ui/displaywindow/view/showpeaks");
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), TRUE);
+
 		displaywindow_update(dw);
 
 		g_free(filename);
@@ -942,6 +949,14 @@ static gint displaywindow_set_colscale(GtkWidget *widget, DisplayWindow *dw)
 }
 
 
+static gint displaywindow_set_peaks(GtkWidget *widget, DisplayWindow *dw)
+{
+	dw->show_peaks = 1 - dw->show_peaks;
+	gdk_window_invalidate_rect(dw->drawingarea->window, NULL, FALSE);
+	return 0;
+}
+
+
 static gint displaywindow_numbers_response(GtkWidget *widget,
                                            gint response, DisplayWindow *dw)
 {
@@ -1150,7 +1165,7 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 		{ "ToolsAction", NULL, "_Tools", NULL, NULL, NULL },
 		{ "NumbersAction", NULL, "View Numbers...", "F2", NULL,
 			G_CALLBACK(displaywindow_show_numbers) },
-		{ "PeaksAction", NULL, "Peak Position Overlay...", NULL, NULL,
+		{ "PeaksAction", NULL, "Load Feature List...", NULL, NULL,
 			G_CALLBACK(displaywindow_peak_overlay) },
 		{ "LoadGeomAction", NULL, "Load Geometry File...", NULL, NULL,
 			G_CALLBACK(displaywindow_load_geom) },
@@ -1164,12 +1179,14 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 	guint n_entries = G_N_ELEMENTS(entries);
 
 	GtkToggleActionEntry toggles[] = {
-		{ "ColScaleAction", NULL, "Show Colour Scale", NULL, NULL,
-			G_CALLBACK(displaywindow_set_colscale), FALSE },
 		{ "GeometryAction", NULL, "Use Detector Geometry", NULL, NULL,
 			G_CALLBACK(displaywindow_set_usegeom), FALSE },
-		{ "RingsAction", NULL, "Show Resolution Rings", NULL, NULL,
+		{ "ColScaleAction", NULL, "Colour Scale", NULL, NULL,
+			G_CALLBACK(displaywindow_set_colscale), FALSE },
+		{ "RingsAction", NULL, "Resolution Rings", NULL, NULL,
 			G_CALLBACK(displaywindow_set_rings), dw->show_rings },
+		{ "ShowPeaksAction", NULL, "Features", NULL, NULL,
+			G_CALLBACK(displaywindow_set_peaks), dw->show_peaks },
 	};
 	guint n_toggles = G_N_ELEMENTS(toggles);
 	GtkRadioActionEntry radios[] = {
@@ -1486,6 +1503,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->image = NULL;
 	dw->use_geom = 0;
 	dw->show_rings = show_rings;
+	dw->show_peaks = 0;
 	dw->scale = colscale;
 	dw->binning = binning;
 	dw->boostint = boost;
@@ -1532,6 +1550,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	/* Peak list provided at startup? */
 	if ( peaks != NULL ) {
 		load_features_from_file(dw->image, peaks);
+		dw->show_peaks = 1;
 	}
 
 	dw->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
