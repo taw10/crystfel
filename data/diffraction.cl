@@ -213,10 +213,8 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
 	float intensity;
 
 	/* Calculate fractional coordinates in fs/ss */
-	fs = convert_float(get_global_id(0) + (min_fs*sampling))
-	      / convert_float(sampling);
-	ss = convert_float(get_global_id(1) + (min_ss*sampling))
-	      / convert_float(sampling);
+	fs = convert_float(get_global_id(0)) / convert_float(sampling);
+	ss = convert_float(get_global_id(1)) / convert_float(sampling);
 
 	/* Get the scattering vector */
 	q = get_q(fs, ss, res, clen, k, &ttv,
@@ -242,18 +240,17 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
 		float val;
 		int idx;
 
-		idx = (min_fs + convert_int_rtz(fs))
-		      + w*(min_ss + convert_int_rtz(ss));
+		idx = convert_int_rtz(fs) + w*convert_int_rtz(ss);
 
 		for ( i=0; i<sampling*sampling*get_local_size(2); i++ )
 			sum += tmp[i];
 
-		val = sum / convert_float(sampling*sampling*get_local_size(2));
+		val = sum / convert_float(get_local_size(0)*get_local_size(1)
+		                                           *get_local_size(2));
 		diff[idx] = val;
 
-		/* Leader thread also records the 2theta value.
-		 * This should really be averaged across all pixels, but
-		 * I strongly suspect this would be a waste of time. */
+		/* Leader thread also records the 2theta value */
 		tt[idx] = ttv;
+
 	}
 }
