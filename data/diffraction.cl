@@ -16,11 +16,14 @@
 #endif
 
 
-const sampler_t sampler_a = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT
+const sampler_t sampler_a = CLK_NORMALIZED_COORDS_TRUE
+                             | CLK_ADDRESS_REPEAT
                              | CLK_FILTER_LINEAR;
-const sampler_t sampler_b = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT
+const sampler_t sampler_b = CLK_NORMALIZED_COORDS_TRUE
+                             | CLK_ADDRESS_REPEAT
                              | CLK_FILTER_LINEAR;
-const sampler_t sampler_c = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT
+const sampler_t sampler_c = CLK_NORMALIZED_COORDS_TRUE
+                             | CLK_ADDRESS_REPEAT
                              | CLK_FILTER_LINEAR;
 
 
