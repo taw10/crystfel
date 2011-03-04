@@ -395,6 +395,6 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 
 
 	}
-	progress_bar(fs, SAMPLING*image->width-1, "Calculating diffraction");
+	progress_bar(fs, image->width-1, "Calculating diffraction");
 	}
 }
