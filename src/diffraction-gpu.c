@@ -205,14 +205,14 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	if ( set_arg_mem(gctx, 18, gctx->flags) ) return;
 
 	/* Unit cell */
-	clSetKernelArg(gctx->kern, 8, sizeof(cl_float16), &cell);
+	err = clSetKernelArg(gctx->kern, 8, sizeof(cl_float16), &cell);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set unit cell: %s\n", clError(err));
 		return;
 	}
 
 	/* Local memory for reduction */
-	clSetKernelArg(gctx->kern, 13,
+	err = clSetKernelArg(gctx->kern, 13,
 	               BWSAMPLING*SAMPLING*SAMPLING*sizeof(cl_float), NULL);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set local memory: %s\n", clError(err));
