@@ -32,7 +32,7 @@ static int atob(const char *a)
 }
 
 
-static int dir_conv(const char *a, signed int *sx, signed int *sy)
+static int dir_conv(const char *a, double *sx, double *sy)
 {
 	if ( strcmp(a, "-x") == 0 ) {
 		*sx = -1;  *sy = 0;
@@ -79,8 +79,8 @@ struct rvec get_q(struct image *image, double fs, double ss,
 
 	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
 	 * to x and y */
-	xs = (fs-p->min_fs)*p->fsx + (ss-p->min_ss)*p->ssx;
-	ys = (fs-p->min_fs)*p->fsy + (ss-p->min_ss)*p->ssy;
+	xs = (fs-(double)p->min_fs)*p->fsx + (ss-(double)p->min_ss)*p->ssx;
+	ys = (fs-(double)p->min_fs)*p->fsy + (ss-(double)p->min_ss)*p->ssy;
 
 	rx = (xs + p->cnx) / p->res;
 	ry = (ys + p->cny) / p->res;

@@ -38,10 +38,10 @@ struct panel
 	int      no_index; /* Don't index peaks in this panel if non-zero */
 	double   peak_sep; /* Characteristic peak separation */
 
-	signed int fsx;
-	signed int fsy;
-	signed int ssx;
-	signed int ssy;
+	double fsx;
+	double fsy;
+	double ssx;
+	double ssy;
 
 	double xfs;
 	double yfs;
