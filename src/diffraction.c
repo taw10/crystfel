@@ -61,13 +61,13 @@ static double interpolate_lut(double *lut, double val)
 	double i, pos, f;
 	unsigned int low, high;
 
-	pos = SINC_LUT_ELEMENTS * modf(val, &i);
+	pos = SINC_LUT_ELEMENTS * modf(fabs(val), &i);
 	low = (int)pos;  /* Discard fractional part */
 	high = low + 1;
 	f = modf(pos, &i);  /* Fraction */
 	if ( high == SINC_LUT_ELEMENTS ) high = 0;
 
-	return (1.0-f)*low + f*high;
+	return (1.0-f)*lut[low] + f*lut[high];
 }
 
 
@@ -85,8 +85,8 @@ static double lattice_factor(struct rvec q, double ax, double ay, double az,
 	Udotq.w = cx*q.u + cy*q.v + cz*q.w;
 
 	f1 = interpolate_lut(lut_a, Udotq.u);
-	f2 = interpolate_lut(lut_b, Udotq.u);
-	f3 = interpolate_lut(lut_c, Udotq.u);
+	f2 = interpolate_lut(lut_b, Udotq.v);
+	f3 = interpolate_lut(lut_c, Udotq.w);
 
 	return f1 * f2 * f3;
 }
