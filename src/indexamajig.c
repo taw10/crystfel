@@ -90,6 +90,7 @@ struct queue_args
 {
 	FILE *fh;
 	char *prefix;
+	int config_basename;
 	struct static_index_args static_args;
 
 	int n_indexable;
@@ -122,6 +123,7 @@ static void show_help(const char *s)
 "                           the HDF5 files.\n"
 " -p, --pdb=<file>         PDB file from which to get the unit cell to match.\n"
 "                           Default: 'molecule.pdb'.\n"
+"     --basename           Remove the directory parts of the filenames.\n"
 " -x, --prefix=<p>         Prefix filenames from input file with <p>.\n"
 "     --peaks=<method>     Use 'method' for finding peaks.  Choose from:\n"
 "                           zaef  : Use Zaefferer (2000) gradient detection.\n"
@@ -331,7 +333,7 @@ done:
 
 static void *get_image(void *qp)
 {
-	char line[1024];
+	char *line;
 	struct index_args *pargs;
 	char *rval;
 	struct queue_args *qargs = qp;
@@ -344,26 +346,33 @@ static void *get_image(void *qp)
 	/* Get the next filename */
 	if ( qargs->use_this_one_instead != NULL ) {
 
-		pargs->filename = malloc(strlen(qargs->prefix) +
-		                       strlen(qargs->use_this_one_instead) + 1);
-
-		snprintf(pargs->filename, 1023, "%s%s", qargs->prefix,
-		         qargs->use_this_one_instead);
-
+		line = qargs->use_this_one_instead;
 		qargs->use_this_one_instead = NULL;
 
 	} else {
 
+		line = malloc(1024*sizeof(char));
 		rval = fgets(line, 1023, qargs->fh);
 		if ( rval == NULL ) {
 			free(pargs);
 			return NULL;
 		}
 		chomp(line);
-		pargs->filename = malloc(strlen(qargs->prefix)+strlen(line)+1);
-		snprintf(pargs->filename, 1023, "%s%s", qargs->prefix, line);
 
 	}
+
+	if ( qargs->config_basename ) {
+		char *tmp;
+		tmp = safe_basename(line);
+		free(line);
+		line = tmp;
+	}
+
+	pargs->filename = malloc(strlen(qargs->prefix)+strlen(line)+1);
+
+	snprintf(pargs->filename, 1023, "%s%s", qargs->prefix, line);
+
+	free(line);
 
 	return pargs;
 }
@@ -401,6 +410,7 @@ int main(int argc, char *argv[])
 	int config_checkprefix = 1;
 	int config_closer = 1;
 	int config_insane = 0;
+	int config_basename = 0;
 	float threshold = 800.0;
 	float min_gradient = 100000.0;
 	struct detector *det;
@@ -420,7 +430,7 @@ int main(int argc, char *argv[])
 	int nthreads = 1;
 	int i;
 	pthread_mutex_t output_mutex = PTHREAD_MUTEX_INITIALIZER;
-	char prepare_line[1024];
+	char *prepare_line;
 	char prepare_filename[1024];
 	struct queue_args qargs;
 	struct beam_params *beam = NULL;
@@ -454,6 +464,7 @@ int main(int argc, char *argv[])
 		{"no-closer-peak",     0, &config_closer,      0},
 		{"insane",             0, &config_insane,      1},
 		{"image",              1, NULL,               'e'},
+		{"basename",           0, &config_basename,    1},
 		{0, 0, NULL, 0}
 	};
 
@@ -682,12 +693,19 @@ int main(int argc, char *argv[])
 	}
 
 	/* Get first filename and use it to set up the indexing */
+	prepare_line = malloc(1024*sizeof(char));
 	rval = fgets(prepare_line, 1023, fh);
 	if ( rval == NULL ) {
 		ERROR("Failed to get filename to prepare indexing.\n");
 		return 1;
 	}
 	chomp(prepare_line);
+	if ( config_basename ) {
+		char *tmp;
+		tmp = safe_basename(prepare_line);
+		free(prepare_line);
+		prepare_line = tmp;
+	}
 	snprintf(prepare_filename, 1023, "%s%s", prefix, prepare_line);
 	qargs.use_this_one_instead = prepare_line;
 
@@ -729,6 +747,7 @@ int main(int argc, char *argv[])
 
 	qargs.fh = fh;
 	qargs.prefix = prefix;
+	qargs.config_basename = config_basename;
 	qargs.n_indexable = 0;
 
 	n_images = run_threads(nthreads, process_image, get_image,
