@@ -388,11 +388,13 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 			double I_molecule;
 			struct rvec q;
 			double twotheta;
-			const double dfs = fs + (fs_step / SAMPLING);
-			const double dss = ss + (ss_step / SAMPLING);
+			const double dfs = (double)fs
+			                    + ((double)fs_step / SAMPLING);
+			const double dss = (double)ss
+			                    + ((double)ss_step / SAMPLING);
 
 			/* Calculate k this time round */
-			k = klow + kstep * bwstep;
+			k = klow + (double)kstep * bwstep;
 
 			q = get_q(image, dfs, dss, &twotheta, k);
 
