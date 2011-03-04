@@ -592,41 +592,50 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( indm_str == NULL ) {
-		STATUS("You didn't specify an indexing method, so I won't"
-		       " try to index anything.\n"
-		       "If that isn't what you wanted, re-run with"
-		       " --indexing=<method>.\n");
-		indm = NULL;
+	if ( strcmp(indm_str, "none") == 0 ) {
+		STATUS("Not indexing anything.\n");
 		indexer_needs_cell = 0;
+		reduction_needs_cell = 0;
+		indm = NULL;
+		cellr = CELLR_NONE;
 	} else {
-		indm = build_indexer_list(indm_str, &indexer_needs_cell);
-		if ( indm == NULL ) {
-			ERROR("Invalid indexer list '%s'\n", indm_str);
+		if ( indm_str == NULL ) {
+			STATUS("You didn't specify an indexing method, so I "
+			       " won't try to index anything.\n"
+			       "If that isn't what you wanted, re-run with"
+			       " --indexing=<method>.\n");
+			indm = NULL;
+			indexer_needs_cell = 0;
+		} else {
+			indm = build_indexer_list(indm_str, &indexer_needs_cell);
+			if ( indm == NULL ) {
+				ERROR("Invalid indexer list '%s'\n", indm_str);
+				return 1;
+			}
+			free(indm_str);
+		}
+
+		reduction_needs_cell = 0;
+		if ( scellr == NULL ) {
+			STATUS("You didn't specify a cell reduction method, so"
+			       " I'm going to use 'reduce'.\n");
+			cellr = CELLR_REDUCE;
+			reduction_needs_cell = 1;
+		} else if ( strcmp(scellr, "none") == 0 ) {
+			cellr = CELLR_NONE;
+		} else if ( strcmp(scellr, "reduce") == 0) {
+			cellr = CELLR_REDUCE;
+			reduction_needs_cell = 1;
+		} else if ( strcmp(scellr, "compare") == 0) {
+			cellr = CELLR_COMPARE;
+			reduction_needs_cell = 1;
+		} else {
+			ERROR("Unrecognised cell reduction method '%s'\n",
+			      scellr);
 			return 1;
 		}
-		free(indm_str);
+		free(scellr);  /* free(NULL) is OK. */
 	}
-
-	reduction_needs_cell = 0;
-	if ( scellr == NULL ) {
-		STATUS("You didn't specify a cell reduction method, so I'm"
-		       " going to use 'reduce'.\n");
-		cellr = CELLR_REDUCE;
-		reduction_needs_cell = 1;
-	} else if ( strcmp(scellr, "none") == 0 ) {
-		cellr = CELLR_NONE;
-	} else if ( strcmp(scellr, "reduce") == 0) {
-		cellr = CELLR_REDUCE;
-		reduction_needs_cell = 1;
-	} else if ( strcmp(scellr, "compare") == 0) {
-		cellr = CELLR_COMPARE;
-		reduction_needs_cell = 1;
-	} else {
-		ERROR("Unrecognised cell reduction method '%s'\n", scellr);
-		return 1;
-	}
-	free(scellr);  /* free(NULL) is OK. */
 
 	/* No indexing -> no reduction */
 	if ( indm == NULL ) reduction_needs_cell = 0;
