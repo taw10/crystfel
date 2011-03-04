@@ -65,6 +65,7 @@ struct static_index_args
 	int peaks;
 	int cellr;
 	struct beam_params *beam;
+	const char *element;
 
 	/* Output stream */
 	pthread_mutex_t *output_mutex;  /* Protects the output stream */
@@ -164,6 +165,9 @@ static void show_help(const char *s)
 "     --threshold=<n>      Only accept peaks above <n> ADU.  Default: 800.\n"
 "     --min-gradient=<n>   Minimum gradient for Zaefferer peak search.\n"
 "                           Default: 100,000.\n"
+" -e, --image=<element>    Use this image from the HDF5 file.\n"
+"                           Example: /data/data0."
+"                           Default: The first one found.\n"
 "\n"
 "\nOptions for greater performance or verbosity:\n\n"
 "     --verbose            Be verbose about indexing.\n"
@@ -210,11 +214,29 @@ static void process_image(void *pp, int cookie)
 	pargs->indexable = 0;
 
 	hdfile = hdfile_open(filename);
-	if ( hdfile == NULL ) {
-		return;
-	} else if ( hdfile_set_first_image(hdfile, "/") ) {
-		ERROR("Couldn't select path\n");
-		return;
+	if ( hdfile == NULL ) return;
+
+	if ( pargs->static_args.element != NULL ) {
+
+		int r;
+		r = hdfile_set_image(hdfile, pargs->static_args.element);
+		if ( r ) {
+			ERROR("Couldn't select path '%s'\n",
+			      pargs->static_args.element);
+			hdfile_close(hdfile);
+			return;
+		}
+
+	} else {
+
+		int r;
+		r = hdfile_set_first_image(hdfile, "/");
+		if ( r ) {
+			ERROR("Couldn't select first path\n");
+			hdfile_close(hdfile);
+			return;
+		}
+
 	}
 
 	hdf5_read(hdfile, &image, pargs->static_args.config_satcorr,
@@ -402,6 +424,7 @@ int main(int argc, char *argv[])
 	char prepare_filename[1024];
 	struct queue_args qargs;
 	struct beam_params *beam = NULL;
+	char *element = NULL;
 	double nominal_photon_energy;
 
 	/* Long options */
@@ -430,11 +453,12 @@ int main(int argc, char *argv[])
 		{"no-check-prefix",    0, &config_checkprefix, 0},
 		{"no-closer-peak",     0, &config_closer,      0},
 		{"insane",             0, &config_insane,      1},
+		{"image",              1, NULL,               'e'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:wp:j:x:g:t:o:b:",
+	while ((c = getopt_long(argc, argv, "hi:wp:j:x:g:t:o:b:e:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -493,6 +517,10 @@ int main(int argc, char *argv[])
 
 		case 4 :
 			min_gradient = strtof(optarg, NULL);
+			break;
+
+		case 'e' :
+			element = strdup(optarg);
 			break;
 
 		case 0 :
@@ -688,6 +716,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.output_mutex = &output_mutex;
 	qargs.static_args.ofh = ofh;
 	qargs.static_args.beam = beam;
+	qargs.static_args.element = element;
 
 	qargs.fh = fh;
 	qargs.prefix = prefix;
@@ -703,6 +732,7 @@ int main(int argc, char *argv[])
 	free(prefix);
 	free(det->panels);
 	free(det);
+	free(element);
 	cell_free(cell);
 	if ( fh != stdin ) fclose(fh);
 	if ( ofh != stdout ) fclose(ofh);
