@@ -36,7 +36,6 @@
 
 #define SAMPLING (4)
 #define BWSAMPLING (10)
-
 #define SINC_LUT_ELEMENTS (4096)
 
 

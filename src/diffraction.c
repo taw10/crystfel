@@ -29,12 +29,53 @@
 
 #define SAMPLING (4)
 #define BWSAMPLING (10)
+#define SINC_LUT_ELEMENTS (4096)
+
+
+static double *get_sinc_lut(int n)
+{
+	int i;
+	double *lut;
+
+	lut = malloc(SINC_LUT_ELEMENTS*sizeof(double));
+	lut[0] = n;
+	if ( n == 1 ) {
+		for ( i=1; i<SINC_LUT_ELEMENTS; i++ ) {
+			lut[i] = 1.0;
+		}
+	} else {
+		for ( i=1; i<SINC_LUT_ELEMENTS; i++ ) {
+			double x, val;
+			x = (double)i/SINC_LUT_ELEMENTS;
+			val = fabs(sin(M_PI*n*x)/sin(M_PI*x));
+			lut[i] = val;
+		}
+	}
+
+	return lut;
+}
+
+
+static double interpolate_lut(double *lut, double val)
+{
+	double i, pos, f;
+	unsigned int low, high;
+
+	pos = SINC_LUT_ELEMENTS * modf(val, &i);
+	low = (int)pos;  /* Discard fractional part */
+	high = low + 1;
+	f = modf(pos, &i);  /* Fraction */
+	if ( high == SINC_LUT_ELEMENTS ) high = 0;
+
+	return (1.0-f)*low + f*high;
+}
 
 
 static double lattice_factor(struct rvec q, double ax, double ay, double az,
                                             double bx, double by, double bz,
                                             double cx, double cy, double cz,
-                                            int na, int nb, int nc)
+                                            double *lut_a, double *lut_b,
+                                            double *lut_c)
 {
 	struct rvec Udotq;
 	double f1, f2, f3;
@@ -43,30 +84,10 @@ static double lattice_factor(struct rvec q, double ax, double ay, double az,
 	Udotq.v = bx*q.u + by*q.v + bz*q.w;
 	Udotq.w = cx*q.u + cy*q.v + cz*q.w;
 
-	/* At exact Bragg condition, f1 = na */
-	if ( na > 1 ) {
-		f1 = sin(M_PI*(double)na*Udotq.u) / sin(M_PI*Udotq.u);
-	} else {
-		f1 = 1.0;
-	}
+	f1 = interpolate_lut(lut_a, Udotq.u);
+	f2 = interpolate_lut(lut_b, Udotq.u);
+	f3 = interpolate_lut(lut_c, Udotq.u);
 
-	/* At exact Bragg condition, f2 = nb */
-	if ( nb > 1 ) {
-		f2 = sin(M_PI*(double)nb*Udotq.v) / sin(M_PI*Udotq.v);
-	} else {
-		f2 = 1.0;
-	}
-
-	/* At exact Bragg condition, f3 = nc */
-	if ( nc > 1 ) {
-		f3 = sin(M_PI*(double)nc*Udotq.w) / sin(M_PI*Udotq.w);
-	} else {
-		f3 = 1.0;
-	}
-
-	/* At exact Bragg condition, this will multiply the molecular
-	 * part of the structure factor by the number of unit cells,
-	 * as desired (more scattering from bigger crystal!) */
 	return f1 * f2 * f3;
 }
 
@@ -331,6 +352,9 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	double bx, by, bz;
 	double cx, cy, cz;
 	float klow, khigh, bwstep;
+	double *lut_a;
+	double *lut_b;
+	double *lut_c;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -343,6 +367,10 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	klow = 1.0/(image->lambda*(1.0 + image->beam->bandwidth/2.0));
 	khigh = 1.0/(image->lambda*(1.0 - image->beam->bandwidth/2.0));
 	bwstep = (khigh-klow) / BWSAMPLING;
+
+	lut_a = get_sinc_lut(na);
+	lut_b = get_sinc_lut(nb);
+	lut_c = get_sinc_lut(nc);
 
 	for ( fs=0; fs<image->width; fs++ ) {
 	for ( ss=0; ss<image->height; ss++ ) {
@@ -371,7 +399,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 			f_lattice = lattice_factor(q, ax, ay, az,
 			                              bx, by, bz,
 			                              cx, cy, cz,
-			                              na, nb, nc);
+			                              lut_a, lut_b, lut_c);
 
 			I_molecule = molecule_factor(intensities,
 			                             phases, flags, q,
@@ -397,4 +425,8 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	}
 	progress_bar(fs, image->width-1, "Calculating diffraction");
 	}
+
+	free(lut_a);
+	free(lut_b);
+	free(lut_c);
 }
