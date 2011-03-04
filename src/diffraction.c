@@ -343,58 +343,54 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	khigh = 1.0/(image->lambda*(1.0 - image->beam->bandwidth/2.0));
 	bwstep = (khigh-klow) / BWSAMPLING;
 
-	for ( fs=0; fs<image->width*SAMPLING; fs++ ) {
-	for ( ss=0; ss<image->height*SAMPLING; ss++ ) {
+	for ( fs=0; fs<image->width; fs++ ) {
+	for ( ss=0; ss<image->height; ss++ ) {
 
-		struct rvec q;
-		double twotheta;
-		double sw = 1.0/(SAMPLING*SAMPLING);  /* Sample weight */
+		int fs_step, ss_step, kstep;
+		int idx = fs + image->width*ss;
 
-		const double dfs = fs / SAMPLING;
-		const double dss = ss / SAMPLING;
-
-		int kstep;
-
+		for ( fs_step=0; fs_step<SAMPLING; fs_step++ ) {
+		for ( ss_step=0; ss_step<SAMPLING; ss_step++ ) {
 		for ( kstep=0; kstep<BWSAMPLING; kstep++ ) {
 
 			double k;
-			double kw = 1.0/BWSAMPLING;
 			double intensity;
 			double f_lattice, I_lattice;
 			double I_molecule;
-			int sfs, sss;
+			struct rvec q;
+			double twotheta;
+			const double dfs = fs + (fs_step / SAMPLING);
+			const double dss = ss + (ss_step / SAMPLING);
 
 			/* Calculate k this time round */
 			k = klow + kstep * bwstep;
 
 			q = get_q(image, dfs, dss, &twotheta, k);
 
-			/* Determine which pixel this subsample belongs to */
-			fesetround(1);  /* Round to nearest */
-			sfs = round(dfs);  sss = round(dss);
-			image->twotheta[sfs + image->width*sss] = twotheta;
-
 			f_lattice = lattice_factor(q, ax, ay, az,
 			                              bx, by, bz,
 			                              cx, cy, cz,
 			                              na, nb, nc);
 
-			if ( intensities == NULL ) {
-				I_molecule = 1.0e10;
-			} else {
-				I_molecule = molecule_factor(intensities,
-				                             phases, flags, q,
-			                                     ax,ay,az,
-			                                     bx,by,bz,cx,cy,cz,
-				                             m, sym);
-			}
+			I_molecule = molecule_factor(intensities,
+			                             phases, flags, q,
+			                             ax,ay,az,bx,by,bz,cx,cy,cz,
+			                             m, sym);
 
 			I_lattice = pow(f_lattice, 2.0);
+			intensity = I_lattice * I_molecule;
 
-			intensity = sw * kw * I_lattice * I_molecule;
-			image->data[sfs + image->width*sss] += intensity;
+			image->data[idx] += intensity;
+
+			if ( fs_step + ss_step + kstep == 0 ) {
+				image->twotheta[idx] = twotheta;
+			}
 
 		}
+		}
+		}
+
+		image->data[idx] /= SAMPLING*SAMPLING*BWSAMPLING;
 
 
 	}
