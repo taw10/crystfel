@@ -331,7 +331,6 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 static int write_png(const char *filename, DisplayWindow *dw)
 {
 	cairo_status_t r;
-	cairo_t *cr;
 	cairo_surface_t *surf;
 
 	surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
@@ -341,9 +340,6 @@ static int write_png(const char *filename, DisplayWindow *dw)
 
 	r = cairo_surface_write_to_png(surf, filename);
 	if ( r != CAIRO_STATUS_SUCCESS ) return 1;
-
-	cairo_destroy(cr);
-	cairo_surface_destroy(surf);
 
 	return 0;
 }
