@@ -102,8 +102,8 @@ static void show_help(const char *s)
 "                           pixels in each 3x3 region to zero if any of them\n"
 "                           have negative values.\n"
 "\n"
-" -j <n>                   Run <n> analyses in parallel.  Default 1.\n"
-" -x, --prefix=<p>         Prefix filenames from input file with 'p'.\n");
+"  -j <n>                  Run <n> analyses in parallel.  Default 1.\n"
+"  -x, --prefix=<p>        Prefix filenames from input file with 'p'.\n");
 }
 
 
