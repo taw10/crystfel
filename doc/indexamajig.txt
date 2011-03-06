@@ -93,11 +93,9 @@ reduction step says that the cell is a "hit".  Choose from:
 
  dirax    : invoke DirAx
  mosflm   : invoke MOSFLM (DPS)
- template : index by template matching
 
 Depending on what you have installed.  For "dirax" and "mosflm", you need to
-have the dirax or ipmosflm binaries in your PATH.  "template" is not ready for
-use at the moment, so don't choose that option.
+have the dirax or ipmosflm binaries in your PATH.
 
 Example:  --indexing=dirax,mosflm
 
