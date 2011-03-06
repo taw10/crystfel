@@ -41,7 +41,7 @@ src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c src/utils.c \
                           src/cell.c src/image.c src/peaks.c src/index.c \
                           src/filters.c src/diffraction.c src/detector.c \
                           src/sfac.c src/dirax.c src/mosflm.c \
-                          src/reflections.c src/templates.c src/symmetry.c \
+                          src/reflections.c src/symmetry.c \
                           src/geometry.c src/thread-pool.c \
                           src/beam-parameters.c src/reflist.c
 if HAVE_OPENCL
@@ -100,7 +100,7 @@ endif
 src_reintegrate_SOURCES = src/reintegrate.c src/cell.c src/hdf5-file.c \
                           src/utils.c src/detector.c src/peaks.c src/image.c \
                           src/stream.c src/index.c src/dirax.c src/mosflm.c \
-                          src/templates.c src/geometry.c src/symmetry.c \
+                          src/geometry.c src/symmetry.c \
                           src/thread-pool.c src/reflist.c
 
 src_estimate_background_SOURCES = src/estimate_background.c src/stream.c \
@@ -117,7 +117,7 @@ EXTRA_DIST += src/cell.h src/hdf5-file.h src/image.h src/utils.h \
               src/render.h src/hdfsee.h src/dirax.h src/mosflm.h src/peaks.h \
               src/index.h src/filters.h src/diffraction-gpu.h src/cl-utils.h \
               src/symmetry.h src/povray.h src/index-priv.h src/geometry.h \
-              src/templates.h src/render_hkl.h src/stream.h src/thread-pool.h \
+              src/render_hkl.h src/stream.h src/thread-pool.h \
               src/beam-parameters.h src/post-refinement.h src/hrs-scaling.h \
               src/reflist.h
 

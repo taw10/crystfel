@@ -30,7 +30,6 @@
 #include "detector.h"
 #include "index.h"
 #include "index-priv.h"
-#include "templates.h"
 
 
 /* Base class constructor for unspecialised indexing private data */
@@ -67,10 +66,6 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 		case INDEXING_MOSFLM :
 			iprivs[n] = indexing_private(indm[n]);
 			break;
-		case INDEXING_TEMPLATE :
-			iprivs[n] = generate_templates(cell, filename, det,
-				                       nominal_photon_energy);
-			break;
 		}
 
 	}
@@ -98,8 +93,6 @@ void cleanup_indexing(IndexingPrivate **priv)
 		case INDEXING_MOSFLM :
 			free(priv[n]);
 			break;
-		case INDEXING_TEMPLATE :
-			free_templates(priv[n]);
 		}
 
 		n++;
@@ -153,18 +146,14 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 			STATUS("Running MOSFLM...\n");
 			run_mosflm(image, cell);
 			break;
-		case INDEXING_TEMPLATE :
-			match_templates(image, ipriv[n]);
-			break;
 		}
-
 		if ( image->ncells == 0 ) {
 			STATUS("No candidate cells found.\n");
 			n++;
 			continue;
 		}
 
-		if ( (cellr == CELLR_NONE) || (indm[n] == INDEXING_TEMPLATE) ) {
+		if ( cellr == CELLR_NONE ) {
 			image->indexed_cell = cell_new_from_cell(
 			                             image->candidate_cells[0]);
 			if ( verbose ) {
@@ -254,9 +243,6 @@ IndexingMethod *build_indexer_list(const char *str, int *need_cell)
 			list[i] = INDEXING_DIRAX;
 		} else if ( strcmp(methods[i], "mosflm") == 0) {
 			list[i] = INDEXING_MOSFLM;
-		} else if ( strcmp(methods[i], "template") == 0) {
-			list[i] = INDEXING_TEMPLATE;
-			*need_cell = 1;
 		} else {
 			ERROR("Unrecognised indexing method '%s'\n",
 			      methods[i]);
