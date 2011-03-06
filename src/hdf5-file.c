@@ -628,6 +628,7 @@ char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
 	int i;
 	int *is_group;
 	int *is_image;
+	H5G_info_t ginfo;
 
 	gh = H5Gopen2(f->fh, parent, H5P_DEFAULT);
 	if ( gh < 0 ) {
@@ -635,13 +636,14 @@ char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
 		return NULL;
 	}
 
-	if ( H5Gget_num_objs(gh, &num) < 0 ) {
+	if ( H5Gget_info(gh, &ginfo) < 0 ) {
 		/* Whoopsie */
 		*n = 0;
 		return NULL;
 	}
+	num = ginfo.nlinks;
 	*n = num;
-	if ( num == 0 ) return NULL;  /* Bail out now */
+	if ( num == 0 ) return NULL;
 
 	res = malloc(num*sizeof(char *));
 	is_image = malloc(num*sizeof(int));
@@ -652,9 +654,11 @@ char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
 	for ( i=0; i<num; i++ ) {
 
 		char buf[256];
-		int type;
+		hid_t dh;
+		H5I_type_t type;
 
-		H5Gget_objname_by_idx(gh, i, buf, 255);
+		H5Lget_name_by_idx(gh, ".", H5_INDEX_NAME, H5_ITER_NATIVE,
+		                   i, buf, 255, H5P_DEFAULT);
 		res[i] = malloc(256);
 		if ( strlen(parent) > 1 ) {
 			snprintf(res[i], 255, "%s/%s", parent, buf);
@@ -662,17 +666,18 @@ char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
 			snprintf(res[i], 255, "%s%s", parent, buf);
 		} /* ick */
 
-		type = H5Gget_objtype_by_idx(gh, i);
 		is_image[i] = 0;
 		is_group[i] = 0;
-		if ( type == H5G_GROUP ) {
+		dh = H5Oopen(gh, buf, H5P_DEFAULT);
+		if ( dh < 0 ) continue;
+		type = H5Iget_type(dh);
+
+		if ( type == H5I_GROUP ) {
 			is_group[i] = 1;
-		} else if ( type == H5G_DATASET ) {
-			hid_t dh;
-			dh = H5Dopen2(gh, res[i], H5P_DEFAULT);
+		} else if ( type == H5I_DATASET ) {
 			is_image[i] = looks_like_image(dh);
-			H5Dclose(dh);
 		}
+		H5Oclose(dh);
 
 	}
 
