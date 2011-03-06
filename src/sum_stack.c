@@ -48,6 +48,7 @@ struct sum_args
 	int h;
 	SumMethod sum_method;
 	double threshold;
+	double min_gradient;
 };
 
 
@@ -62,6 +63,7 @@ struct queue_args
 	int h;
 	SumMethod sum_method;
 	double threshold;
+	double min_gradient;
 };
 
 
@@ -90,7 +92,9 @@ static void show_help(const char *s)
 "                           peaks : sum 10px radius circles around peaks.\n"
 "                           threshold : sum thresholded images.\n"
 "  -t, --threshold=<n>     Set the threshold if summing using the 'threshold'\n"
-"                           method.\n"
+"                           method.  Default: 400 adu\n"
+"      --min-gradient=<n>   Minimum gradient for Zaefferer peak search.\n"
+"                            Default: 100,000.\n"
 "\n"
 "      --filter-cm         Perform common-mode noise subtraction on images\n"
 "                           before proceeding.\n"
@@ -103,14 +107,14 @@ static void show_help(const char *s)
 }
 
 
-static void sum_peaks(struct image *image, double *sum)
+static void sum_peaks(struct image *image, double *sum, double threshold,
+                      double min_gradient)
 {
 	int x, y, i;
 	int w = image->width;
 	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
 
-	/* FIXME: Get threshold value from command line */
-	search_peaks(image, 800.0, 100000.0);
+	search_peaks(image, threshold, min_gradient);
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
@@ -204,7 +208,8 @@ static void add_image(void *args, int cookie)
 		break;
 
 	case SUM_PEAKS :
-		sum_peaks(&image, pargs->sum);
+		sum_peaks(&image, pargs->sum, pargs->threshold,
+		          pargs->min_gradient);
 		break;
 
 	}
@@ -237,6 +242,7 @@ static void *get_image(void *qp)
 	pargs->h = qargs->h;
 	pargs->sum_method = qargs->sum_method;
 	pargs->threshold = qargs->threshold;
+	pargs->min_gradient = qargs->min_gradient;
 	pargs->config_cmfilter = qargs->config_cmfilter;
 	pargs->config_noisefilter = qargs->config_noisefilter;
 	pargs->sum = qargs->sum;
@@ -262,6 +268,7 @@ int main(int argc, char *argv[])
 	char *sum_str = NULL;
 	char *intermediate = NULL;
 	double threshold = 400.0;
+	float min_gradient = 100000.0;
 	SumMethod sum;
 	int nthreads = 1;
 	struct queue_args qargs;
@@ -279,6 +286,7 @@ int main(int argc, char *argv[])
 		{"sum",                1, NULL,               's'},
 		{"intermediate",       1, NULL,               'p'},
 		{"threshold",          1, NULL,               't'},
+		{"min-gradient",       1, NULL,                4},
 		{0, 0, NULL, 0}
 	};
 
@@ -317,6 +325,10 @@ int main(int argc, char *argv[])
 
 		case 't' :
 			threshold = atof(optarg);
+			break;
+
+		case 4 :
+			min_gradient = strtof(optarg, NULL);
 			break;
 
 		case 0 :
