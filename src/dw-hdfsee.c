@@ -1245,7 +1245,7 @@ static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 	if ( nh->dw->not_ready_yet ) return 0;
 
 	hdfile_set_image(nh->dw->hdfile, nh->name);
-	hdf5_read(nh->dw->hdfile, nh->dw->image, 0, 0.0);
+	hdf5_read(nh->dw->hdfile, nh->dw->image, 0);
 
 	/* Check that the geometry still fits */
 	if ( !geometry_fits(nh->dw->image, nh->dw->simple_geom) ) {
@@ -1530,7 +1530,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 
 			if ( !fail ) {
 				dw->image = calloc(1, sizeof(struct image));
-				hdf5_read(dw->hdfile, dw->image, 0, 0.0);
+				hdf5_read(dw->hdfile, dw->image, 0);
 			} else {
 				ERROR("Couldn't select path\n");
 				free(dw);

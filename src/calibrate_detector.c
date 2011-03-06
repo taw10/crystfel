@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
 
 	hdfile = hdfile_open(filename);
 	hdfile_set_image(hdfile, "/data/data");
-	hdf5_read(hdfile, &image, 1, 2000.0);
+	hdf5_read(hdfile, &image, 1);
 
 	if ( split ) {
 		split_image(&image);

@@ -185,8 +185,7 @@ static void add_image(void *args, int cookie)
 		return;
 	}
 
-	/* FIXME: Nominal photon energy */
-	hdf5_read(hdfile, &image, 1, 2000.0);
+	hdf5_read(hdfile, &image, 1);
 
 	if ( pargs->config_cmfilter ) {
 		filter_cm(&image);

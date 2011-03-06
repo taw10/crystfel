@@ -26,6 +26,7 @@
 #include "detector.h"
 #include "index.h"
 #include "hdf5-file.h"
+#include "beam-parameters.h"
 
 
 static void show_help(const char *s)
@@ -37,6 +38,8 @@ static void show_help(const char *s)
 "  -h, --help                 Display this help message.\n"
 "  -g. --geometry=<file>      Get detector geometry from file.\n"
 "  -i, --input=<file>         Input filename.\n"
+"  -b, --beam=<file>          Get beam parameters (specifically, wavelength)"
+"                              from file if non present in the HDF5 file.\n"
 "\n");
 }
 
@@ -49,12 +52,15 @@ int main(int argc, char *argv[])
 	struct hdfile *hdfile;
 	char *filename = NULL;
 	char *geometry = NULL;
+	char *beamf = NULL;
+	struct beam_params *beam = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
 		{"geometry",           1, NULL,               'g'},
+		{"beam",               1, NULL,               'b'},
 		{0, 0, NULL, 0}
 	};
 
@@ -77,6 +83,10 @@ int main(int argc, char *argv[])
 			geometry = strdup(optarg);
 			break;
 
+		case 'b' :
+			beamf = strdup(optarg);
+			break;
+
 		default :
 			return 1;
 		}
@@ -93,6 +103,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if ( beamf != NULL ) {
+		beam = get_beam_parameters(beamf);
+		free(beamf);
+	}
+
 	image.det = get_detector_geometry(geometry);
 	if ( image.det == NULL ) {
 		ERROR("Failed to read detector geometry from '%s'\n", geometry);
@@ -102,7 +117,16 @@ int main(int argc, char *argv[])
 
 	hdfile = hdfile_open(filename);
 	hdfile_set_image(hdfile, "/data/data");
-	hdf5_read(hdfile, &image, 1, 2000.0); /* FIXME: Hardcoded */
+	hdf5_read(hdfile, &image, 1);
+	if ( image.lambda < 0.0 ) {
+		if ( beam != NULL ) {
+			image.lambda = beam->photon_energy;
+		} else {
+			ERROR("No wavelength in file, so you need to give "
+			      "a beam parameters file with -b.\n");
+			return 1;
+		}
+	}
 
 	for ( x=0; x<image.width; x++ ) {
 	for ( y=0; y<image.height; y++ ) {
@@ -120,6 +144,8 @@ int main(int argc, char *argv[])
 
 	}
 	}
+
+	free(beamf);
 
 	return 0;
 }

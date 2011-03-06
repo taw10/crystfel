@@ -68,7 +68,8 @@ src_check_hkl_SOURCES = src/check_hkl.c src/sfac.c src/cell.c src/utils.c \
                         src/thread-pool.c
 
 src_powder_plot_SOURCES = src/powder_plot.c src/cell.c src/utils.c src/image.c \
-                          src/hdf5-file.c src/detector.c src/thread-pool.c
+                          src/hdf5-file.c src/detector.c src/thread-pool.c \
+                          src/beam-parameters.c
 
 src_render_hkl_SOURCES = src/render_hkl.c src/cell.c src/reflections.c \
                          src/utils.c  src/povray.c src/symmetry.c src/render.c \

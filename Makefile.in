@@ -192,7 +192,7 @@ src_pattern_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_powder_plot_OBJECTS = src/powder_plot.$(OBJEXT) \
 	src/cell.$(OBJEXT) src/utils.$(OBJEXT) src/image.$(OBJEXT) \
 	src/hdf5-file.$(OBJEXT) src/detector.$(OBJEXT) \
-	src/thread-pool.$(OBJEXT)
+	src/thread-pool.$(OBJEXT) src/beam-parameters.$(OBJEXT)
 src_powder_plot_OBJECTS = $(am_src_powder_plot_OBJECTS)
 src_powder_plot_LDADD = $(LDADD)
 src_powder_plot_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
@@ -617,7 +617,8 @@ src_check_hkl_SOURCES = src/check_hkl.c src/sfac.c src/cell.c src/utils.c \
                         src/thread-pool.c
 
 src_powder_plot_SOURCES = src/powder_plot.c src/cell.c src/utils.c src/image.c \
-                          src/hdf5-file.c src/detector.c src/thread-pool.c
+                          src/hdf5-file.c src/detector.c src/thread-pool.c \
+                          src/beam-parameters.c
 
 src_render_hkl_SOURCES = src/render_hkl.c src/cell.c src/reflections.c \
                          src/utils.c  src/povray.c src/symmetry.c src/render.c \

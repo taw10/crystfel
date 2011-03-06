@@ -70,9 +70,10 @@ IndexingPrivate *generate_templates(UnitCell *cell, const char *filename,
 		ERROR("Couldn't select path\n");
 		return NULL;
 	}
-	hdf5_read(hdfile, &image, 0, nominal_photon_energy);
+	hdf5_read(hdfile, &image, 0);
 	hdfile_close(hdfile);
 	image.det = det;
+	if ( image.lambda < 0.0 ) image.lambda = nominal_photon_energy;
 
 	priv = calloc(1, sizeof(struct _indexingprivate_template));
 	priv->base.indm = INDEXING_TEMPLATE;

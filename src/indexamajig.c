@@ -241,8 +241,17 @@ static void process_image(void *pp, int cookie)
 
 	}
 
-	hdf5_read(hdfile, &image, pargs->static_args.config_satcorr,
-	          beam->photon_energy);
+	hdf5_read(hdfile, &image, pargs->static_args.config_satcorr);
+	if ( image.lambda < 0.0 ) {
+		if ( beam != NULL ) {
+			image.lambda = beam->photon_energy;
+		} else {
+			ERROR("No wavelength in file, so you need to give "
+			      "a beam parameters file with -b.\n");
+			hdfile_close(hdfile);
+			return;
+		}
+	}
 
 	if ( config_cmfilter ) {
 		filter_cm(&image);

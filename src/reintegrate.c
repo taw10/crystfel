@@ -123,8 +123,7 @@ static void process_image(void *pg, int cookie)
 		return;
 	}
 
-	/* FIXME: Nominal photon energy */
-	hdf5_read(hdfile, &image, pargs->config_satcorr, 2000.0);
+	hdf5_read(hdfile, &image, pargs->config_satcorr);
 
 	map_all_peaks(&image);
 
