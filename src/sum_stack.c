@@ -55,7 +55,6 @@ struct sum_args
 struct queue_args
 {
 	FILE *fh;
-	char *prefix;
 	int config_cmfilter;
 	int config_noisefilter;
 	double *sum;
@@ -64,6 +63,10 @@ struct queue_args
 	SumMethod sum_method;
 	double threshold;
 	double min_gradient;
+
+	char *use_this_one_instead;
+	char *prefix;
+	int config_basename;
 };
 
 
@@ -226,14 +229,10 @@ out:
 
 static void *get_image(void *qp)
 {
-	char line[1024];
+	char *line;
 	struct sum_args *pargs;
 	char *rval;
 	struct queue_args *qargs = qp;
-
-	/* Get the next filename */
-	rval = fgets(line, 1023, qargs->fh);
-	if ( rval == NULL ) return NULL;
 
 	pargs = malloc(sizeof(struct sum_args));
 
@@ -246,9 +245,34 @@ static void *get_image(void *qp)
 	pargs->config_noisefilter = qargs->config_noisefilter;
 	pargs->sum = qargs->sum;
 
-	chomp(line);
-	pargs->filename = malloc(strlen(qargs->prefix) + strlen(line) + 1);
+	/* Get the next filename */
+	if ( qargs->use_this_one_instead != NULL ) {
+
+		line = qargs->use_this_one_instead;
+		qargs->use_this_one_instead = NULL;
+
+	} else {
+
+		line = malloc(1024*sizeof(char));
+		rval = fgets(line, 1023, qargs->fh);
+		if ( rval == NULL ) {
+			free(pargs);
+			return NULL;
+		}
+		chomp(line);
+
+	}
+
+	if ( qargs->config_basename ) {
+		char *tmp;
+		tmp = safe_basename(line);
+		free(line);
+		line = tmp;
+	}
+
+	pargs->filename = malloc(strlen(qargs->prefix)+strlen(line)+1);
 	snprintf(pargs->filename, 1023, "%s%s", qargs->prefix, line);
+	free(line);
 
 	return pargs;
 }
@@ -273,6 +297,12 @@ int main(int argc, char *argv[])
 	struct queue_args qargs;
 	int n_done;
 	const int chunk_size = 1000;
+	struct hdfile *hdfile;
+	struct image image;
+	char *prepare_line;
+	char prepare_filename[1024];
+	char *rval;
+	int config_basename = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -286,6 +316,7 @@ int main(int argc, char *argv[])
 		{"intermediate",       1, NULL,               'p'},
 		{"threshold",          1, NULL,               't'},
 		{"min-gradient",       1, NULL,                4},
+		{"basename",           0, &config_basename,    1},
 		{0, 0, NULL, 0}
 	};
 
@@ -380,10 +411,41 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	qargs.w = 1024;  /* FIXME! */
-	qargs.h = 1024;  /* FIXME! */
+	/* Get first filename and use it to set up the summed array */
+	prepare_line = malloc(1024*sizeof(char));
+	rval = fgets(prepare_line, 1023, fh);
+	if ( rval == NULL ) {
+		ERROR("Failed to get filename to prepare indexing.\n");
+		return 1;
+	}
+	chomp(prepare_line);
+	if ( config_basename ) {
+		char *tmp;
+		tmp = safe_basename(prepare_line);
+		free(prepare_line);
+		prepare_line = tmp;
+	}
+	snprintf(prepare_filename, 1023, "%s%s", prefix, prepare_line);
+	qargs.use_this_one_instead = prepare_line;
+
+	hdfile = hdfile_open(prepare_filename);
+	if ( hdfile == NULL ) {
+		ERROR("Couldn't open '%s'\n", prepare_filename);
+		return 1;
+	}
+
+	if ( hdf5_read(hdfile, &image, 0) ) {
+		ERROR("Couldn't read '%s'\n", prepare_filename);
+		return 1;
+	}
+
+	hdfile_close(hdfile);
+	qargs.w = image.width;
+	qargs.h = image.height;
+
 	qargs.sum_method = sum;
 	qargs.threshold = threshold;
+	qargs.config_basename = config_basename;
 	qargs.config_cmfilter = config_cmfilter;
 	qargs.config_noisefilter = config_noisefilter;
 	qargs.sum = calloc(qargs.w*qargs.h, sizeof(double));
