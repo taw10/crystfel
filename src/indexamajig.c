@@ -208,7 +208,7 @@ static void process_image(void *pp, int cookie)
 	image.indexed_cell = NULL;
 	image.id = cookie;
 	image.filename = filename;
-	image.det = pargs->static_args.det;
+	image.det = copy_geom(pargs->static_args.det);
 
 	STATUS("Processing '%s'\n", image.filename);
 
@@ -251,6 +251,7 @@ static void process_image(void *pp, int cookie)
 			return;
 		}
 	}
+	fill_in_values(image.det, hdfile);
 
 	if ( config_cmfilter ) {
 		filter_cm(&image);

@@ -550,6 +550,35 @@ void free_detector_geometry(struct detector *det)
 }
 
 
+struct detector *copy_geom(const struct detector *in)
+{
+	struct detector *out;
+	int i;
+
+	out = malloc(sizeof(struct detector));
+	memcpy(out, in, sizeof(struct detector));
+
+	out->panels = malloc(out->n_panels * sizeof(struct panel));
+	memcpy(out->panels, in->panels, out->n_panels * sizeof(struct panel));
+
+	for ( i=0; i<out->n_panels; i++ ) {
+
+		struct panel *p;
+
+		p = &out->panels[i];
+
+		if ( p->clen_from != NULL ) {
+			/* Make a copy of the clen_from fields unique to this
+			 * copy of the structure. */
+			p->clen_from = strdup(p->clen_from);
+		}
+
+	}
+
+	return out;
+}
+
+
 struct detector *simple_geometry(const struct image *image)
 {
 	struct detector *geom;
