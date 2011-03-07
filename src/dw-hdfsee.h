@@ -50,6 +50,7 @@ typedef struct {
 	int             n_pixbufs;
 	GdkPixbuf	**pixbufs;
 	gulong		motion_callback;
+	cairo_surface_t *surf;
 
 	int             not_ready_yet;
 

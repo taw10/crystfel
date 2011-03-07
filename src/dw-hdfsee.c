@@ -45,78 +45,6 @@ static void displaywindow_error(DisplayWindow *dw, const char *message)
 }
 
 
-static void displaywindow_update(DisplayWindow *dw)
-{
-	gint width;
-	GdkGeometry geom;
-
-	if ( dw->image == NULL ) {
-		dw->width = 320;
-		dw->height = 320;
-	} else {
-
-		double min_x, min_y, max_x, max_y;
-
-		get_pixel_extents(dw->image->det,
-		                  &min_x, &min_y, &max_x, &max_y);
-
-		if ( min_x > 0.0 ) min_x = 0.0;
-		if ( max_x < 0.0 ) max_x = 0.0;
-		if ( min_y > 0.0 ) min_y = 0.0;
-		if ( max_y < 0.0 ) max_y = 0.0;
-		dw->min_x = min_x;
-		dw->max_x = max_x;
-		dw->min_y = min_y;
-		dw->max_y = max_y;
-
-		dw->width = (max_x - min_x) / dw->binning;
-		dw->height = (max_y - min_y) / dw->binning;
-
-		/* Add a thin border */
-		dw->width += 2.0;
-		dw->height += 2.0;
-	}
-
-	width = dw->width;
-	if ( dw->show_col_scale ) width += 20;
-
-	gtk_widget_set_size_request(GTK_WIDGET(dw->drawingarea), width,
-				    dw->height);
-	geom.min_width = -1;
-	geom.min_height = -1;
-	geom.max_width = -1;
-	geom.max_height = -1;
-	gtk_window_set_geometry_hints(GTK_WINDOW(dw->window),
-				      GTK_WIDGET(dw->drawingarea), &geom,
-				      GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE);
-
-	/* Free old pixbufs */
-	if ( dw->pixbufs != NULL ) {
-		int i;
-		for ( i=0; i<dw->n_pixbufs; i++ ) {
-			gdk_pixbuf_unref(dw->pixbufs[i]);
-		}
-		free(dw->pixbufs);
-	}
-	if ( dw->col_scale != NULL ) {
-		gdk_pixbuf_unref(dw->col_scale);
-	}
-
-	if ( dw->image != NULL ) {
-		dw->pixbufs = render_panels(dw->image, dw->binning,
-		                            dw->scale, dw->boostint,
-		                            &dw->n_pixbufs);
-	} else {
-		dw->pixbufs = NULL;
-	}
-
-	dw->col_scale = render_get_colour_scale(20, dw->height, dw->scale);
-
-	/* Schedule redraw */
-	gdk_window_invalidate_rect(dw->drawingarea->window, NULL, FALSE);
-}
-
-
 /* Window closed - clean up */
 static gint displaywindow_closed(GtkWidget *window, DisplayWindow *dw)
 {
@@ -313,15 +241,95 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 }
 
 
+static void displaywindow_update(DisplayWindow *dw)
+{
+	gint width;
+	GdkGeometry geom;
+
+	if ( dw->image == NULL ) {
+		dw->width = 320;
+		dw->height = 320;
+	} else {
+
+		double min_x, min_y, max_x, max_y;
+
+		get_pixel_extents(dw->image->det,
+		                  &min_x, &min_y, &max_x, &max_y);
+
+		if ( min_x > 0.0 ) min_x = 0.0;
+		if ( max_x < 0.0 ) max_x = 0.0;
+		if ( min_y > 0.0 ) min_y = 0.0;
+		if ( max_y < 0.0 ) max_y = 0.0;
+		dw->min_x = min_x;
+		dw->max_x = max_x;
+		dw->min_y = min_y;
+		dw->max_y = max_y;
+
+		dw->width = (max_x - min_x) / dw->binning;
+		dw->height = (max_y - min_y) / dw->binning;
+
+		/* Add a thin border */
+		dw->width += 2.0;
+		dw->height += 2.0;
+	}
+
+	width = dw->width;
+	if ( dw->show_col_scale ) width += 20;
+
+	gtk_widget_set_size_request(GTK_WIDGET(dw->drawingarea), width,
+				    dw->height);
+	geom.min_width = -1;
+	geom.min_height = -1;
+	geom.max_width = -1;
+	geom.max_height = -1;
+	gtk_window_set_geometry_hints(GTK_WINDOW(dw->window),
+				      GTK_WIDGET(dw->drawingarea), &geom,
+				      GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE);
+
+	/* Free old pixbufs */
+	if ( dw->pixbufs != NULL ) {
+		int i;
+		for ( i=0; i<dw->n_pixbufs; i++ ) {
+			gdk_pixbuf_unref(dw->pixbufs[i]);
+		}
+		free(dw->pixbufs);
+	}
+	if ( dw->col_scale != NULL ) {
+		gdk_pixbuf_unref(dw->col_scale);
+	}
+
+	if ( dw->image != NULL ) {
+		dw->pixbufs = render_panels(dw->image, dw->binning,
+		                            dw->scale, dw->boostint,
+		                            &dw->n_pixbufs);
+	} else {
+		dw->pixbufs = NULL;
+	}
+
+	dw->col_scale = render_get_colour_scale(20, dw->height, dw->scale);
+
+	if ( dw->surf != NULL ) cairo_surface_destroy(dw->surf);
+	dw->surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+	                                      dw->width, dw->height);
+	draw_stuff(dw->surf, dw);
+
+	/* Schedule redraw */
+	gdk_window_invalidate_rect(dw->drawingarea->window, NULL, FALSE);
+}
+
+
 static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 				     DisplayWindow *dw)
 {
 	cairo_t *cr;
-	cairo_surface_t *surf;
 
 	cr = gdk_cairo_create(da->window);
-	surf = cairo_get_target(cr);
-	draw_stuff(surf, dw);
+
+	cairo_set_source_surface(cr, dw->surf, 0.0, 0.0);
+	cairo_rectangle(cr, event->area.x, event->area.y,
+	                event->area.width, event->area.height);
+	cairo_fill(cr);
+
 	cairo_destroy(cr);
 
 	return FALSE;
@@ -347,6 +355,7 @@ static int write_png(const char *filename, DisplayWindow *dw)
 
 static gint displaywindow_close(GtkWidget *widget, DisplayWindow *dw)
 {
+	cairo_surface_destroy(dw->surf);
 	gtk_widget_destroy(dw->window);
 	return 0;
 }
@@ -1506,6 +1515,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->cmfilter = cmfilter;
 	dw->noisefilter = noisefilter;
 	dw->not_ready_yet = 1;
+	dw->surf = NULL;
 
 	/* Open the file, if any */
 	if ( filename != NULL ) {
