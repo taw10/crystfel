@@ -7,7 +7,7 @@ bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
                src/calibrate_detector src/partialator src/reintegrate \
                src/estimate_background src/check_hkl src/sum_stack
 
-noinst_PROGRAMS = tests/list_check
+noinst_PROGRAMS = tests/list_check tests/gpu_sim_check
 
 TESTS = tests/list_check
 
@@ -30,6 +30,7 @@ src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c src/utils.c \
                           src/symmetry.c src/thread-pool.c src/reflist.c
 if HAVE_OPENCL
 src_pattern_sim_SOURCES += src/diffraction-gpu.c src/cl-utils.c
+TESTS += tests/gpu_sim_check
 endif
 
 src_process_hkl_SOURCES = src/process_hkl.c src/sfac.c src/statistics.c \
@@ -108,6 +109,12 @@ src_estimate_background_SOURCES = src/estimate_background.c src/stream.c \
 
 tests_list_check_SOURCES = tests/list_check.c src/reflist.c src/thread-pool.c \
                            src/utils.c
+
+tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c src/utils.c \
+                              src/diffraction.c src/diffraction-gpu.c \
+                              src/thread-pool.c src/cell.c src/cl-utils.c \
+                              src/symmetry.c src/detector.c src/hdf5-file.c \
+                              src/image.c
 
 INCLUDES = "-I$(top_srcdir)/data"
 

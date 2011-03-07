@@ -416,20 +416,29 @@ struct gpu_context *setup_gpu(int no_sfac,
 	}
 	free(intensities_ptr);
 
-	if ( strcmp(sym, "1") == 0 ) {
-		strncat(cflags, "-DPG1 ", 511-strlen(cflags));
-	} else if ( strcmp(sym, "-1") == 0 ) {
-		strncat(cflags, "-DPG1BAR ", 511-strlen(cflags));
-	} else if ( strcmp(sym, "6/mmm") == 0 ) {
-		strncat(cflags, "-DPG6MMM ", 511-strlen(cflags));
-	} else if ( strcmp(sym, "6") == 0 ) {
-		strncat(cflags, "-DPG6 ", 511-strlen(cflags));
-	} else if ( strcmp(sym, "6/m") == 0 ) {
-		strncat(cflags, "-DPG6M ", 511-strlen(cflags));
+	if ( sym != NULL ) {
+		if ( strcmp(sym, "1") == 0 ) {
+			strncat(cflags, "-DPG1 ", 511-strlen(cflags));
+		} else if ( strcmp(sym, "-1") == 0 ) {
+			strncat(cflags, "-DPG1BAR ", 511-strlen(cflags));
+		} else if ( strcmp(sym, "6/mmm") == 0 ) {
+			strncat(cflags, "-DPG6MMM ", 511-strlen(cflags));
+		} else if ( strcmp(sym, "6") == 0 ) {
+			strncat(cflags, "-DPG6 ", 511-strlen(cflags));
+		} else if ( strcmp(sym, "6/m") == 0 ) {
+			strncat(cflags, "-DPG6M ", 511-strlen(cflags));
+		} else {
+			ERROR("Sorry!  Point group '%s' is not currently"
+			      " supported on the GPU."
+			      " I'm using '1' instead.\n", sym);
+			strncat(cflags, "-DPG1 ", 511-strlen(cflags));
+		}
 	} else {
-		ERROR("Sorry!  Point group '%s' is not currently supported"
-		      " on the GPU.  I'm using '1' instead.\n", sym);
-		strncat(cflags, "-DPG1 ", 511-strlen(cflags));
+		if ( intensities != NULL ) {
+			ERROR("You gave me an intensities file but no point"
+			      " group.  I'm assuming '1'.\n");
+			strncat(cflags, "-DPG1 ", 511-strlen(cflags));
+		}
 	}
 
 	/* Create a flag array */

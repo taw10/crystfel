@@ -1,4 +1,5 @@
 *.o
 .deps
 list_check
+gpu_sim_check
 .dirstamp
