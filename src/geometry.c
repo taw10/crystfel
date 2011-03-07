@@ -248,8 +248,7 @@ RefList *find_intersections(struct image *image, UnitCell *cell,
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
 
-	/* FIXME: Get this from image */
-	mres = 1.0 / 8.0e-10;  /* 8 Angstroms */
+	mres = largest_q(image);
 	hmax = mres / modulus(asx, asy, asz);
 	kmax = mres / modulus(bsx, bsy, bsz);
 	lmax = mres / modulus(csx, csy, csz);

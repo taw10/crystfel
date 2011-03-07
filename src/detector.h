@@ -83,4 +83,6 @@ extern struct detector *copy_geom(const struct detector *in);
 extern int reverse_2d_mapping(double x, double y, double *pfs, double *pss,
                               struct detector *det);
 
+extern double largest_q(struct image *image);
+
 #endif	/* DETECTOR_H */
