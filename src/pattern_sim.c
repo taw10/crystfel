@@ -533,7 +533,7 @@ int main(int argc, char *argv[])
 
 		if ( config_gpu ) {
 			if ( gctx == NULL ) {
-				gctx = setup_gpu(config_nosfac, &image,
+				gctx = setup_gpu(config_nosfac,
 				                 intensities, flags, sym,
 				                 gpu_dev);
 			}

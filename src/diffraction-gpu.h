@@ -25,7 +25,7 @@ struct gpu_context;
 
 extern void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
                                 int na, int nb, int nc, UnitCell *ucell);
-extern struct gpu_context *setup_gpu(int no_sfac, struct image *image,
+extern struct gpu_context *setup_gpu(int no_sfac,
                                      const double *intensities,
                                      const unsigned char *flags,
                                      const char *sym, int dev_num);
@@ -40,7 +40,7 @@ static void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	ERROR("This copy of CrystFEL was not compiled with OpenCL support.\n");
 }
 
-static struct gpu_context *setup_gpu(int no_sfac, struct image *image,
+static struct gpu_context *setup_gpu(int no_sfac,
                                      const double *intensities,
                                      const unsigned char *flags,
                                      const char *sym, int dev_num)
