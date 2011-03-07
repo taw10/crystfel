@@ -57,7 +57,7 @@ struct detector
 	int           max_ss;  /* Size of overall array needed, minus 1 */
 };
 
-extern struct rvec get_q(struct image *image, double xs, double ys,
+extern struct rvec get_q(struct image *image, double fs, double ss,
                          double *ttp, double k);
 
 extern double get_tt(struct image *image, double xs, double ys);
