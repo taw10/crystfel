@@ -242,14 +242,11 @@ int main(int argc, char *argv[])
 {
 	int i;
 
-	printf("Running list test...");
-	fflush(stdout);
+	printf("Running list test...\n");
 
 	for ( i=0; i<100; i++ ) {
 		if ( test_lists(4096*random()/RAND_MAX) ) return 1;
 	}
-
-	printf("\r");
 
 	return 0;
 }
