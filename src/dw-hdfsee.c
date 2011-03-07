@@ -52,6 +52,26 @@ static gint displaywindow_closed(GtkWidget *window, DisplayWindow *dw)
 		hdfile_close(dw->hdfile);
 	}
 
+	if ( dw->surf != NULL ) cairo_surface_destroy(dw->surf);
+
+	if ( dw->pixbufs != NULL ) {
+		int i;
+		for ( i=0; i<dw->n_pixbufs; i++ ) {
+			gdk_pixbuf_unref(dw->pixbufs[i]);
+		}
+		free(dw->pixbufs);
+	}
+
+	if ( dw->col_scale != NULL ) {
+		gdk_pixbuf_unref(dw->col_scale);
+	}
+
+	if ( dw->image != NULL ) {
+		free(dw->image->data);
+		free(dw->image->flags);
+		free(dw->image);
+	}
+
 	/* Notify 'main', so it can update the master list */
 	hdfsee_window_closed(dw);
 
@@ -355,7 +375,6 @@ static int write_png(const char *filename, DisplayWindow *dw)
 
 static gint displaywindow_close(GtkWidget *widget, DisplayWindow *dw)
 {
-	cairo_surface_destroy(dw->surf);
 	gtk_widget_destroy(dw->window);
 	return 0;
 }
