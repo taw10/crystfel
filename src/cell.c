@@ -236,9 +236,6 @@ static int cell_crystallographic_to_cartesian(UnitCell *cell,
 {
 	double tmp, V, cosalphastar, cstar;
 
-	/* Note: Please consider and possibly change the ranges for template
-	 * matching (in templates.c) if the calculations below are altered. */
-
 	/* Firstly: Get a in terms of x, y and z
 	 * +a (cryst) is defined to lie along +x (cart) */
 	*ax = cell->a;
