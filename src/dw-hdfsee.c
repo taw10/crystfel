@@ -261,6 +261,17 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 }
 
 
+static void redraw_window(DisplayWindow *dw)
+{
+	if ( dw->surf != NULL ) cairo_surface_destroy(dw->surf);
+	dw->surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+	                                      dw->width, dw->height);
+	draw_stuff(dw->surf, dw);
+
+	gdk_window_invalidate_rect(dw->drawingarea->window, NULL, FALSE);
+}
+
+
 static void displaywindow_update(DisplayWindow *dw)
 {
 	gint width;
@@ -328,13 +339,7 @@ static void displaywindow_update(DisplayWindow *dw)
 
 	dw->col_scale = render_get_colour_scale(20, dw->height, dw->scale);
 
-	if ( dw->surf != NULL ) cairo_surface_destroy(dw->surf);
-	dw->surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
-	                                      dw->width, dw->height);
-	draw_stuff(dw->surf, dw);
-
-	/* Schedule redraw */
-	gdk_window_invalidate_rect(dw->drawingarea->window, NULL, FALSE);
+	redraw_window(dw);
 }
 
 
@@ -869,7 +874,7 @@ static gint displaywindow_set_rings(GtkWidget *d, DisplayWindow *dw)
 				      "/ui/displaywindow/view/rings");
 	dw->show_rings = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(w));
 
-	gdk_window_invalidate_rect(dw->drawingarea->window, NULL, FALSE);
+	redraw_window(dw);
 
 	return 0;
 }
@@ -976,7 +981,7 @@ static gint displaywindow_set_colscale(GtkWidget *widget, DisplayWindow *dw)
 static gint displaywindow_set_peaks(GtkWidget *widget, DisplayWindow *dw)
 {
 	dw->show_peaks = 1 - dw->show_peaks;
-	gdk_window_invalidate_rect(dw->drawingarea->window, NULL, FALSE);
+	redraw_window(dw);
 	return 0;
 }
 
