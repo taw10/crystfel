@@ -619,7 +619,6 @@ struct detector *get_detector_geometry(const char *filename)
 
 	for ( i=0; i<det->n_bad; i++ ) {
 
-		STATUS("Checking bad region '%s'\n", det->bad[i].name);
 		if ( isnan(det->bad[i].min_x) ) {
 			ERROR("Please specify the minimum x coordinate for"
 			      " bad region %s\n", det->bad[i].name);
