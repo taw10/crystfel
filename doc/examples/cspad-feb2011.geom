@@ -1,19 +1,19 @@
 n_panels = 64
 
 ; Quadrant 0, asic 0
-0/min_fs = 0
-0/min_ss = 0
-0/max_fs = 193
-0/max_ss = 184
-0/badrow_direction = -
-0/res = 9090.91
-0/peak_sep = 6.0
-0/clen = /LCLS/detectorPosition
-0/fs = +y
-0/ss = -x
-0/corner_x = 429.39
-0/corner_y = -17.30
-0/no_index = 0
+q0a0/min_fs = 0
+q0a0/min_ss = 0
+q0a0/max_fs = 193
+q0a0/max_ss = 184
+q0a0/badrow_direction = -
+q0a0/res = 9090.91
+q0a0/peak_sep = 6.0
+q0a0/clen = /LCLS/detectorPosition
+q0a0/fs = +y
+q0a0/ss = -x
+q0a0/corner_x = 425.39
+q0a0/corner_y = -13.30
+q0a0/no_index = 0
 
 ; Quadrant 0, asic 1
 1/min_fs = 194
@@ -26,8 +26,8 @@ n_panels = 64
 1/clen = /LCLS/detectorPosition
 1/fs = +y
 1/ss = -x
-1/corner_x = 429.39
-1/corner_y = 181.70
+1/corner_x = 425.39
+1/corner_y = 184.80
 1/no_index = 0
 
 ; Quadrant 1, asic 0
@@ -71,8 +71,8 @@ n_panels = 64
 4/clen = /LCLS/detectorPosition
 4/fs = -y
 4/ss = +x
-4/corner_x = -428.12
-4/corner_y = 12.64
+4/corner_x = -426.12
+4/corner_y = 7.64
 4/no_index = 0
 
 ; Quadrant 2, asic 1
@@ -86,8 +86,8 @@ n_panels = 64
 5/clen = /LCLS/detectorPosition
 5/fs = -y
 5/ss = +x
-5/corner_x = -428.12
-5/corner_y = -186.36
+5/corner_x = -426.12
+5/corner_y = -191.36
 5/no_index = 0
 
 ; Quadrant 3, asic 0
@@ -131,7 +131,7 @@ n_panels = 64
 8/clen = /LCLS/detectorPosition
 8/fs = +y
 8/ss = -x
-8/corner_x = 214.99
+8/corner_x = 210.99
 8/corner_y = -15.01
 8/no_index = 0
 
@@ -146,7 +146,7 @@ n_panels = 64
 9/clen = /LCLS/detectorPosition
 9/fs = +y
 9/ss = -x
-9/corner_x = 214.99
+9/corner_x = 210.99
 9/corner_y = 183.99
 9/no_index = 0
 
@@ -251,8 +251,8 @@ n_panels = 64
 16/clen = /LCLS/detectorPosition
 16/fs = -x
 16/ss = -y
-16/corner_x = 851.64
-16/corner_y = 392.87
+16/corner_x = 845.64
+16/corner_y = 384.87
 16/no_index = 0
 
 ; Quadrant 0, asic 5
@@ -266,8 +266,8 @@ n_panels = 64
 17/clen = /LCLS/detectorPosition
 17/fs = -x
 17/ss = -y
-17/corner_x = 652.64
-17/corner_y = 392.87
+17/corner_x = 645.64
+17/corner_y = 384.87
 17/no_index = 0
 
 ; Quadrant 1, asic 4
@@ -281,8 +281,8 @@ n_panels = 64
 18/clen = /LCLS/detectorPosition
 18/fs = -y
 18/ss = +x
-18/corner_x = -381.23
-18/corner_y = 847.15
+18/corner_x = -394.23
+18/corner_y = 839.55
 18/no_index = 0
 
 ; Quadrant 1, asic 5
@@ -296,8 +296,8 @@ n_panels = 64
 19/clen = /LCLS/detectorPosition
 19/fs = -y
 19/ss = +x
-19/corner_x = -381.23
-19/corner_y = 648.15
+19/corner_x = -394.23
+19/corner_y = 642.15
 19/no_index = 0
 
 ; Quadrant 2, asic 4
@@ -312,7 +312,7 @@ n_panels = 64
 20/fs = +x
 20/ss = +y
 20/corner_x = -849.25
-20/corner_y = -383.71
+20/corner_y = -387.71
 20/no_index = 0
 
 ; Quadrant 2, asic 5
@@ -327,7 +327,7 @@ n_panels = 64
 21/fs = +x
 21/ss = +y
 21/corner_x = -650.25
-21/corner_y = -383.71
+21/corner_y = -387.71
 21/no_index = 0
 
 ; Quadrant 3, asic 4
@@ -342,7 +342,7 @@ n_panels = 64
 22/fs = +y
 22/ss = -x
 22/corner_x = 389.50
-22/corner_y = -846.40
+22/corner_y = -847.40
 22/no_index = 0
 
 ; Quadrant 3, asic 5
@@ -357,7 +357,7 @@ n_panels = 64
 23/fs = +y
 23/ss = -x
 23/corner_x = 389.50
-23/corner_y = -647.40
+23/corner_y = -648.40
 23/no_index = 0
 
 ; Quadrant 0, asic 6
@@ -371,8 +371,8 @@ n_panels = 64
 24/clen = /LCLS/detectorPosition
 24/fs = -x
 24/ss = -y
-24/corner_x = 855.29
-24/corner_y = 180.48
+24/corner_x = 845.29
+24/corner_y = 173.48
 24/no_index = 0
 
 ; Quadrant 0, asic 7
@@ -386,8 +386,8 @@ n_panels = 64
 25/clen = /LCLS/detectorPosition
 25/fs = -x
 25/ss = -y
-25/corner_x = 656.29
-25/corner_y = 180.48
+25/corner_x = 646.29
+25/corner_y = 173.48
 25/no_index = 0
 
 ; Quadrant 1, asic 6
@@ -401,8 +401,8 @@ n_panels = 64
 26/clen = /LCLS/detectorPosition
 26/fs = -y
 26/ss = +x
-26/corner_x = -167.72
-26/corner_y = 848.43
+26/corner_x = -180.72
+26/corner_y = 839.43
 26/no_index = 0
 
 ; Quadrant 1, asic 7
@@ -416,8 +416,8 @@ n_panels = 64
 27/clen = /LCLS/detectorPosition
 27/fs = -y
 27/ss = +x
-27/corner_x = -167.72
-27/corner_y = 649.43
+27/corner_x = -180.72
+27/corner_y = 641.43
 27/no_index = 0
 
 ; Quadrant 2, asic 6
@@ -462,7 +462,7 @@ n_panels = 64
 30/fs = +y
 30/ss = -x
 30/corner_x = 174.81
-30/corner_y = -849.86
+30/corner_y = -848.66
 30/no_index = 0
 
 ; Quadrant 3, asic 7
@@ -492,7 +492,7 @@ n_panels = 64
 32/fs = -y
 32/ss = +x
 32/corner_x = 450.39
-32/corner_y = 804.70
+32/corner_y = 812.70
 32/no_index = 0
 
 ; Quadrant 0, asic 9
@@ -507,7 +507,7 @@ n_panels = 64
 33/fs = -y
 33/ss = +x
 33/corner_x = 450.39
-33/corner_y = 605.70
+33/corner_y = 613.90
 33/no_index = 0
 
 ; Quadrant 1, asic 8
@@ -521,7 +521,7 @@ n_panels = 64
 34/clen = /LCLS/detectorPosition
 34/fs = +x
 34/ss = +y
-34/corner_x = -808.26
+34/corner_x = -802.26
 34/corner_y = 437.34
 34/no_index = 0
 
@@ -536,7 +536,7 @@ n_panels = 64
 35/clen = /LCLS/detectorPosition
 35/fs = +x
 35/ss = +y
-35/corner_x = -609.26
+35/corner_x = -602.26
 35/corner_y = 437.34
 35/no_index = 0
 
@@ -552,7 +552,7 @@ n_panels = 64
 36/fs = +y
 36/ss = -x
 36/corner_x = -450.89
-36/corner_y = -804.28
+36/corner_y = -811.28
 36/no_index = 0
 
 ; Quadrant 2, asic 9
@@ -567,7 +567,7 @@ n_panels = 64
 37/fs = +y
 37/ss = -x
 37/corner_x = -450.89
-37/corner_y = -605.28
+37/corner_y = -615.28
 37/no_index = 0
 
 ; Quadrant 3, asic 8
@@ -582,7 +582,7 @@ n_panels = 64
 38/fs = -x
 38/ss = -y
 38/corner_x = 799.39
-38/corner_y = -440.30
+38/corner_y = -443.30
 38/no_index = 0
 
 ; Quadrant 3, asic 9
@@ -612,7 +612,7 @@ n_panels = 64
 40/fs = -y
 40/ss = +x
 40/corner_x = 642.39
-40/corner_y = 876.70
+40/corner_y = 830.70
 40/no_index = 0
 
 ; Quadrant 0, asic 11
@@ -627,7 +627,7 @@ n_panels = 64
 41/fs = -y
 41/ss = +x
 41/corner_x = 642.39
-41/corner_y = 677.70
+41/corner_y = 630.70
 41/no_index = 0
 
 ; Quadrant 1, asic 10
@@ -641,8 +641,8 @@ n_panels = 64
 42/clen = /LCLS/detectorPosition
 42/fs = +x
 42/ss = +y
-42/corner_x = -809.61
-42/corner_y = 647.70
+42/corner_x = -801.61
+42/corner_y = 643.70
 42/no_index = 0
 
 ; Quadrant 1, asic 11
@@ -656,8 +656,8 @@ n_panels = 64
 43/clen = /LCLS/detectorPosition
 43/fs = +x
 43/ss = +y
-43/corner_x = -610.61
-43/corner_y = 647.70
+43/corner_x = -602.61
+43/corner_y = 643.70
 43/no_index = 0
 
 ; Quadrant 2, asic 10
@@ -672,7 +672,7 @@ n_panels = 64
 44/fs = +y
 44/ss = -x
 44/corner_x = -657.61
-44/corner_y = -788.30
+44/corner_y = -811.30
 44/no_index = 0
 
 ; Quadrant 2, asic 11
@@ -687,7 +687,7 @@ n_panels = 64
 45/fs = +y
 45/ss = -x
 45/corner_x = -657.61
-45/corner_y = -589.30
+45/corner_y = -613.30
 45/no_index = 0
 
 ; Quadrant 3, asic 10
@@ -701,8 +701,8 @@ n_panels = 64
 46/clen = /LCLS/detectorPosition
 46/fs = -x
 46/ss = -y
-46/corner_x = 793.39
-46/corner_y = -655.30
+46/corner_x = 805.39
+46/corner_y = -659.80
 46/no_index = 0
 
 ; Quadrant 3, asic 11
@@ -716,8 +716,8 @@ n_panels = 64
 47/clen = /LCLS/detectorPosition
 47/fs = -x
 47/ss = -y
-47/corner_x = 594.39
-47/corner_y = -655.30
+47/corner_x = 606.39
+47/corner_y = -659.80
 47/no_index = 0
 
 ; Quadrant 0, asic 12
@@ -762,7 +762,7 @@ n_panels = 64
 50/fs = -y
 50/ss = +x
 50/corner_x = -783.68
-50/corner_y = 411.77
+50/corner_y = 418.77
 50/no_index = 0
 
 ; Quadrant 1, asic 13
@@ -777,7 +777,7 @@ n_panels = 64
 51/fs = -y
 51/ss = +x
 51/corner_x = -783.68
-51/corner_y = 212.77
+51/corner_y = 219.77
 51/no_index = 0
 
 ; Quadrant 2, asic 12
@@ -791,7 +791,7 @@ n_panels = 64
 52/clen = /LCLS/detectorPosition
 52/fs = +x
 52/ss = +y
-52/corner_x = -433.03
+52/corner_x = -416.40
 52/corner_y = -788.57
 52/no_index = 0
 
@@ -806,7 +806,7 @@ n_panels = 64
 53/clen = /LCLS/detectorPosition
 53/fs = +x
 53/ss = +y
-53/corner_x = -234.03
+53/corner_x = -219.03
 53/corner_y = -788.57
 53/no_index = 0
 
@@ -821,8 +821,8 @@ n_panels = 64
 54/clen = /LCLS/detectorPosition
 54/fs = +y
 54/ss = -x
-54/corner_x = 835.39
-54/corner_y = -395.30
+54/corner_x = 815.39
+54/corner_y = -415.30
 54/no_index = 0
 
 ; Quadrant 3, asic 13
@@ -836,8 +836,8 @@ n_panels = 64
 55/clen = /LCLS/detectorPosition
 55/fs = +y
 55/ss = -x
-55/corner_x = 835.39
-55/corner_y = -196.30
+55/corner_x = 815.39
+55/corner_y = -216.30
 55/no_index = 0
 
 ; Quadrant 0, asic 14
@@ -866,7 +866,7 @@ n_panels = 64
 57/clen = /LCLS/detectorPosition
 57/fs = -x
 57/ss = -y
-57/corner_x = 226.57
+57/corner_x = 220.57
 57/corner_y = 578.42
 57/no_index = 0
 
@@ -942,7 +942,7 @@ n_panels = 64
 62/fs = +y
 62/ss = -x
 62/corner_x = 577.59
-62/corner_y = -426.89
+62/corner_y = -425.10
 62/no_index = 0
 
 ; Quadrant 3, asic 15
@@ -957,5 +957,5 @@ n_panels = 64
 63/fs = +y
 63/ss = -x
 63/corner_x = 577.59
-63/corner_y = -227.89
+63/corner_y = -226.19
 63/no_index = 0
