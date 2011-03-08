@@ -36,49 +36,54 @@ better to consider the precise way in which the coordinates are mapped.
 The syntax for a simple geometry might include several entires of the following
 form:
 
-; Lines beginning with a semicolon are ignored.
-; The number of panels must be specified first
-n_panels = 64
-
-; The number before the slash indicates which panel is referred to.
+; The name before the slash indicates which panel is referred to.  You can use
+; any name as long as it doesn't start with "bad" (see below).
 ; The range of pixels in the HDF5 file which correspond to a panel are given:
-0/min_fs = 0
-0/min_ss = 0
-0/max_fs = 193
-0/max_ss = 184
+panel0/min_fs = 0
+panel0/min_ss = 0
+panel0/max_fs = 193
+panel0/max_ss = 184
 
 ; The readout direction (x, y or 0).  If more than three peaks are found in
 ; the same readout region, they are all discarded.  This helps to avoid
 ; problems due to streaks appearing along the readout direction.
 ; If the badrow direction is '-', then the culling described above will not
 ; be performed for this panel.
-0/badrow_direction = -
+panel0/badrow_direction = -
 
 ; The resolution (in pixels per metre) for this panel
-0/res = 9090.91
+panel0/res = 9090.91
 
 ; The characteristic peak separation.  The peak detection will assume that
 ; genuine peaks are separated by at least this amount.
-0/peak_sep = 6.0
+panel0/peak_sep = 6.0
 
 ; The camera length (in metres) for this panel
 ; You can also specify the HDF path to a scalar floating point value containing
 ; the camera length in millimetres.
-0/clen = /LCLS/detectorPosition
+panel0/clen = /LCLS/detectorPosition
 
 ; For this panel, the fast and slow scan directions correspond to the given
 ; directions in the lab coordinate system described above, measured in pixels.
-0/fs = +y
-0/ss = -x
+panel0/fs = +y
+panel0/ss = -x
 
 ; The corner of this panel, defined as the first point in the panel to appear in
 ; the HDF5 file, is now given a position in the lab coordinate system.
-0/corner_x = 429.39
-0/corner_y = -17.30
+panel0/corner_x = 429.39
+panel0/corner_y = -17.30
 
 ; You can suppress indexing for this panel if required, by setting "no_index" to
 ; "true" or "1".
-0/no_index = 0
+panel0/no_index = 0
+
+; You can also specify bad regions.  Peaks with centroid locations within such
+; a region will not be integrated nor indexed
+badregionA/min_x = -20.0
+badregionA/max_x = +20.0
+badregionA/min_y = -100.0
+badregionA/max_y = +100.0
+
 
 
 See the "examples" folder for some examples.
