@@ -94,6 +94,8 @@ static double ring_radius(struct image *image, double d)
 static void show_ring(cairo_t *cr, DisplayWindow *dw,
                       double d, const char *label)
 {
+	if ( !dw->use_geom ) return;
+
 	cairo_text_extents_t size;
 	cairo_identity_matrix(cr);
 	cairo_translate(cr, -dw->min_x/dw->binning, dw->max_y/dw->binning);
