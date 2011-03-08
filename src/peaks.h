@@ -39,7 +39,7 @@ extern int peak_sanity_check(struct image *image, UnitCell *cell,
 extern RefList *find_projected_peaks(struct image *image, UnitCell *cell,
                                      int circular_domain, double domain_r);
 extern int integrate_peak(struct image *image, int xp, int yp,
-                          float *xc, float *yc, float *intensity,
+                          double *xc, double *yc, double *intensity,
                           double *pbg, double *pmax,
                           int do_polar, int centroid);
 

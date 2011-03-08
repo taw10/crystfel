@@ -276,7 +276,7 @@ double integrate_all(struct image *image, RefList *reflections)
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 
-		float x, y, intensity;
+		double x, y, intensity;
 		double xp, yp;
 		get_detector_pos(refl, &xp, &yp);
 

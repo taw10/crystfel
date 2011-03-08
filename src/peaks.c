@@ -166,15 +166,15 @@ static int cull_peaks(struct image *image)
 /* Returns non-zero if peak has been vetoed.
  * i.e. don't use result if return value is not zero. */
 int integrate_peak(struct image *image, int xp, int yp,
-                   float *xc, float *yc, float *intensity,
+                   double *xc, double *yc, double *intensity,
                    double *pbg, double *pmax,
                    int do_polar, int centroid)
 {
 	signed int x, y;
 	int lim, out_lim;
 	double total = 0.0;
-	int xct = 0;
-	int yct = 0;
+	double xct = 0.0;
+	double yct = 0.0;
 	double noise = 0.0;
 	int noise_counts = 0;
 	double max = 0.0;
@@ -184,14 +184,14 @@ int integrate_peak(struct image *image, int xp, int yp,
 	if ( p == NULL ) return 1;
 	if ( p->no_index ) return 1;
 
-	lim = p->peak_sep/2;
+	lim = p->peak_sep/4.0;
 	out_lim = lim + 1;
 
 	for ( x=-out_lim; x<+out_lim; x++ ) {
 	for ( y=-out_lim; y<+out_lim; y++ ) {
 
 		double val;
-		float tt = 0.0;
+		double tt = 0.0;
 		double phi, pa, pb, pol;
 		uint16_t flags;
 		struct panel *p2;
@@ -247,12 +247,12 @@ int integrate_peak(struct image *image, int xp, int yp,
 
 	/* The centroid is excitingly undefined if there is no intensity */
 	if ( centroid && (total != 0) ) {
-		*xc = (float)xct / total;
-		*yc = (float)yct / total;
+		*xc = (double)xct / total;
+		*yc = (double)yct / total;
 		*intensity = total;
 	} else {
-		*xc = (float)xp;
-		*yc = (float)yp;
+		*xc = (double)xp;
+		*yc = (double)yp;
 		*intensity = total;
 	}
 
@@ -274,9 +274,9 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	float *data;
 	double d;
 	int idx;
-	float f_fs = 0.0;
-	float f_ss = 0.0;
-	float intensity = 0.0;
+	double f_fs = 0.0;
+	double f_ss = 0.0;
+	double intensity = 0.0;
 	int nrej_dis = 0;
 	int nrej_hot = 0;
 	int nrej_pro = 0;
@@ -685,7 +685,7 @@ void output_intensities(struct image *image, UnitCell *cell,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 
-		float x, y, intensity;
+		double x, y, intensity;
 		double d;
 		int idx;
 		double bg, max;
