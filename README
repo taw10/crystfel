@@ -94,6 +94,7 @@ system.  In short, it's:
 
 $ ./configure
 $ make
+$ make check
 $ sudo make install
 
 You might want to substitute something based on one of the following for the
