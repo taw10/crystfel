@@ -263,16 +263,20 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 
 static void redraw_window(DisplayWindow *dw)
 {
+	int width;
+
+	width = dw->width;
+	if ( dw->show_col_scale ) width += 20;
 	if ( dw->surf != NULL ) cairo_surface_destroy(dw->surf);
 	dw->surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
-	                                      dw->width, dw->height);
+	                                      width, dw->height);
 	draw_stuff(dw->surf, dw);
 
 	gdk_window_invalidate_rect(dw->drawingarea->window, NULL, FALSE);
 }
 
 
-static void displaywindow_update(DisplayWindow *dw)
+static void set_window_size(DisplayWindow *dw)
 {
 	gint width;
 	GdkGeometry geom;
@@ -316,6 +320,22 @@ static void displaywindow_update(DisplayWindow *dw)
 	gtk_window_set_geometry_hints(GTK_WINDOW(dw->window),
 				      GTK_WIDGET(dw->drawingarea), &geom,
 				      GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE);
+}
+
+
+static void update_colscale(DisplayWindow *dw)
+{
+	if ( dw->col_scale != NULL ) {
+		gdk_pixbuf_unref(dw->col_scale);
+	}
+	dw->col_scale = render_get_colour_scale(20, dw->height, dw->scale);
+}
+
+
+static void displaywindow_update(DisplayWindow *dw)
+{
+	set_window_size(dw);
+	update_colscale(dw);
 
 	/* Free old pixbufs */
 	if ( dw->pixbufs != NULL ) {
@@ -325,9 +345,6 @@ static void displaywindow_update(DisplayWindow *dw)
 		}
 		free(dw->pixbufs);
 	}
-	if ( dw->col_scale != NULL ) {
-		gdk_pixbuf_unref(dw->col_scale);
-	}
 
 	if ( dw->image != NULL ) {
 		dw->pixbufs = render_panels(dw->image, dw->binning,
@@ -336,8 +353,6 @@ static void displaywindow_update(DisplayWindow *dw)
 	} else {
 		dw->pixbufs = NULL;
 	}
-
-	dw->col_scale = render_get_colour_scale(20, dw->height, dw->scale);
 
 	redraw_window(dw);
 }
@@ -692,10 +707,10 @@ static gint displaywindow_peaklist_response(GtkWidget *d, gint response,
 		load_features_from_file(dw->image, filename);
 		dw->show_peaks = 1;
 		w =  gtk_ui_manager_get_widget(dw->ui,
-					      "/ui/displaywindow/view/showpeaks");
+					    "/ui/displaywindow/view/showpeaks");
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), TRUE);
 
-		displaywindow_update(dw);
+		redraw_window(dw);
 
 		g_free(filename);
 
@@ -973,7 +988,8 @@ static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
 static gint displaywindow_set_colscale(GtkWidget *widget, DisplayWindow *dw)
 {
 	dw->show_col_scale = 1 - dw->show_col_scale;
-	displaywindow_update(dw);
+	set_window_size(dw);
+	redraw_window(dw);
 	return 0;
 }
 
@@ -1166,7 +1182,8 @@ static gint displaywindow_setscale(GtkWidget *widget, GtkRadioAction *action,
 		case 1 : dw->scale = SCALE_MONO; break;
 		case 2 : dw->scale = SCALE_INVMONO; break;
 	}
-	displaywindow_update(dw);
+	update_colscale(dw);
+	redraw_window(dw);
 
 	return 0;
 }
@@ -1266,12 +1283,18 @@ static int geometry_fits(struct image *image, struct detector *geom)
 
 struct newhdf {
 	DisplayWindow *dw;
+	GtkWidget *widget;
 	char name[1024];
 };
 
 static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 {
+	gboolean a;
+
 	if ( nh->dw->not_ready_yet ) return 0;
+
+	a = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(nh->widget));
+	if ( !a ) return 0;
 
 	hdfile_set_image(nh->dw->hdfile, nh->name);
 	hdf5_read(nh->dw->hdfile, nh->dw->image, 0);
@@ -1362,7 +1385,8 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 			if ( nh != NULL ) {
 		        	strncpy(nh->name, names[i], 1023);
 				nh->dw = dw;
-				g_signal_connect(G_OBJECT(item), "activate",
+				nh->widget = item;
+				g_signal_connect(G_OBJECT(item), "toggled",
 			                  G_CALLBACK(displaywindow_newhdf), nh);
 			}
 
