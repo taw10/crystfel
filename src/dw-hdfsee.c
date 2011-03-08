@@ -102,7 +102,7 @@ static void show_ring(cairo_t *cr, DisplayWindow *dw,
 	cairo_arc(cr, 0.0, 0.0, ring_radius(dw->image, d)/dw->binning,
 	          0.0, 2.0*M_PI);
 	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-	cairo_set_line_width(cr, 1.0);
+	cairo_set_line_width(cr, 3.0/dw->binning);
 	cairo_stroke(cr);
 
 	cairo_rotate(cr, -M_PI/4.0);
@@ -250,7 +250,7 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 
 			}
 
-			cairo_set_line_width(cr, 0.75);
+			cairo_set_line_width(cr, 0.75/dw->binning);
 			cairo_stroke(cr);
 
 		}
