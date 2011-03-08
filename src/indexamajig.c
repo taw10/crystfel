@@ -337,6 +337,7 @@ done:
 	free(image.flags);
 	image_feature_list_free(image.features);
 	hdfile_close(hdfile);
+	free_detector_geometry(image.det);
 }
 
 
