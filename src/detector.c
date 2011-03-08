@@ -100,6 +100,42 @@ struct rvec get_q(struct image *image, double fs, double ss,
 }
 
 
+int in_bad_region(struct detector *det, double fs, double ss)
+{
+	double rx, ry;
+	struct panel *p;
+	double xs, ys;
+	int i;
+
+	/* Determine which panel to use */
+	const unsigned int x = fs;
+	const unsigned int y = ss;
+	p = find_panel(det, x, y);
+
+	/* No panel found -> definitely bad! */
+	if ( p == NULL ) return 1;
+
+	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
+	 * to x and y */
+	xs = (fs-(double)p->min_fs)*p->fsx + (ss-(double)p->min_ss)*p->ssx;
+	ys = (fs-(double)p->min_fs)*p->fsy + (ss-(double)p->min_ss)*p->ssy;
+
+	rx = (xs + p->cnx) / p->res;
+	ry = (ys + p->cny) / p->res;
+
+	for ( i=0; i<det->n_bad; i++ ) {
+		struct badregion *b = &det->bad[i];
+		if ( rx < b->min_x ) continue;
+		if ( rx > b->max_x ) continue;
+		if ( ry < b->min_y ) continue;
+		if ( ry > b->max_y ) continue;
+		return 1;
+	}
+
+	return 0;
+}
+
+
 double get_tt(struct image *image, double fs, double ss)
 {
 	double r, rx, ry;

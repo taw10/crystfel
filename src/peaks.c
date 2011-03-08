@@ -47,14 +47,6 @@
 #define PEAK_WINDOW_SIZE (10)
 
 
-static int in_streak(int x, int y)
-{
-	if ( (y>512) && (y<600) && (abs(x-489)<15) ) return 1;
-	if ( (y>600) && (abs(x-480)<25) ) return 1;
-	return 0;
-}
-
-
 static int is_hot_pixel(struct image *image, int x, int y)
 {
 	int dx, dy;
@@ -382,6 +374,11 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		                   &f_fs, &f_ss, &intensity, NULL, NULL, 0, 1);
 		if ( r ) {
 			/* Bad region - don't detect peak */
+			nrej_bad++;
+			continue;
+		}
+
+		if ( in_bad_region(image->det, f_fs, f_ss) ) {
 			nrej_bad++;
 			continue;
 		}
