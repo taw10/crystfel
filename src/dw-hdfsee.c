@@ -112,7 +112,6 @@ static void show_ring(cairo_t *cr, DisplayWindow *dw,
 	cairo_text_extents(cr, label, &size);
 	cairo_translate(cr, -size.width/2.0, 0.0);
 
-
 	cairo_show_text(cr, label);
 	cairo_fill(cr);
 }
