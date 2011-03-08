@@ -264,6 +264,167 @@ void fill_in_values(struct detector *det, struct hdfile *f)
 }
 
 
+static struct panel *new_panel(struct detector *det, const char *name)
+{
+	struct panel *new;
+
+	det->n_panels++;
+	det->panels = realloc(det->panels, det->n_panels*sizeof(struct panel));
+
+	new = &det->panels[det->n_panels-1];
+	new->min_fs = -1;
+	new->min_ss = -1;
+	new->max_fs = -1;
+	new->max_ss = -1;
+	new->cnx = NAN;
+	new->cny = NAN;
+	new->clen = -1.0;
+	new->res = -1.0;
+	new->badrow = '-';
+	new->no_index = 0;
+	new->peak_sep = 50.0;
+	new->fsx = 1.0;
+	new->fsy = 0.0;
+	new->ssx = 0.0;
+	new->ssy = 1.0;
+	strcpy(new->name, name);
+
+	return new;
+}
+
+
+static struct badregion *new_bad_region(struct detector *det, const char *name)
+{
+	struct badregion *new;
+
+	det->n_bad++;
+	det->bad = realloc(det->bad, det->n_bad*sizeof(struct badregion));
+
+	new = &det->bad[det->n_bad-1];
+	new->min_x = NAN;
+	new->max_x = NAN;
+	new->min_y = NAN;
+	new->max_y = NAN;
+	strcpy(new->name, name);
+
+	return new;
+}
+
+
+static struct panel *find_panel_by_name(struct detector *det, const char *name)
+{
+	int i;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+		if ( strcmp(det->panels[i].name, name) == 0 ) {
+			return &det->panels[i];
+		}
+	}
+
+	return NULL;
+}
+
+
+static struct badregion *find_bad_region_by_name(struct detector *det,
+                                                 const char *name)
+{
+	int i;
+
+	for ( i=0; i<det->n_bad; i++ ) {
+		if ( strcmp(det->bad[i].name, name) == 0 ) {
+			return &det->bad[i];
+		}
+	}
+
+	return NULL;
+}
+
+
+static int parse_field_for_panel(struct panel *panel, const char *key,
+                                  const char *val)
+{
+	int reject = 0;
+
+	if ( strcmp(key, "min_fs") == 0 ) {
+		panel->min_fs = atof(val);
+	} else if ( strcmp(key, "max_fs") == 0 ) {
+		panel->max_fs = atof(val);
+	} else if ( strcmp(key, "min_ss") == 0 ) {
+		panel->min_ss = atof(val);
+	} else if ( strcmp(key, "max_ss") == 0 ) {
+		panel->max_ss = atof(val);
+	} else if ( strcmp(key, "corner_x") == 0 ) {
+		panel->cnx = atof(val);
+	} else if ( strcmp(key, "corner_y") == 0 ) {
+		panel->cny = atof(val);
+	} else if ( strcmp(key, "clen") == 0 ) {
+
+		char *end;
+		double v = strtod(val, &end);
+		if ( end == val ) {
+			/* This means "fill in later" */
+			panel->clen = -1.0;
+			panel->clen_from = strdup(val);
+		} else {
+			panel->clen = v;
+			panel->clen_from = NULL;
+		}
+
+	} else if ( strcmp(key, "res") == 0 ) {
+		panel->res = atof(val);
+	} else if ( strcmp(key, "peak_sep") == 0 ) {
+		panel->peak_sep = atof(val);
+	} else if ( strcmp(key, "badrow_direction") == 0 ) {
+		panel->badrow = val[0]; /* First character only */
+		if ( (panel->badrow != 'x') && (panel->badrow != 'y')
+		  && (panel->badrow != '-') ) {
+			ERROR("badrow_direction must be x, y or '-'\n");
+			ERROR("Assuming '-'\n.");
+			panel->badrow = '-';
+		}
+	} else if ( strcmp(key, "no_index") == 0 ) {
+		panel->no_index = atob(val);
+	} else if ( strcmp(key, "fs") == 0 ) {
+		if ( dir_conv(val, &panel->fsx, &panel->fsy) != 0 ) {
+			ERROR("Invalid fast scan direction '%s'\n",
+			      val);
+			reject = 1;
+		}
+	} else if ( strcmp(key, "ss") == 0 ) {
+		if ( dir_conv(val, &panel->ssx, &panel->ssy) != 0 ) {
+			ERROR("Invalid slow scan direction '%s'\n",
+			      val);
+			reject = 1;
+		}
+	} else {
+		ERROR("Unrecognised field '%s'\n", key);
+	}
+
+	return reject;
+}
+
+
+static int parse_field_bad(struct badregion *panel, const char *key,
+                                  const char *val)
+{
+	int reject = 0;
+
+	if ( strcmp(key, "min_x") == 0 ) {
+		panel->min_x = atof(val);
+	} else if ( strcmp(key, "max_x") == 0 ) {
+		panel->max_x = atof(val);
+	} else if ( strcmp(key, "min_y") == 0 ) {
+		panel->min_y = atof(val);
+	} else if ( strcmp(key, "max_y") == 0 ) {
+		panel->max_y = atof(val);
+	} else {
+		ERROR("Unrecognised field '%s'\n", key);
+	}
+
+	return reject;
+}
+
+
 struct detector *get_detector_geometry(const char *filename)
 {
 	FILE *fh;
@@ -282,15 +443,19 @@ struct detector *get_detector_geometry(const char *filename)
 		fclose(fh);
 		return NULL;
 	}
-	det->n_panels = -1;
+	det->n_panels = 0;
 	det->panels = NULL;
+	det->n_bad = 0;
+	det->bad = NULL;
 
 	do {
 
 		int n1, n2;
 		char **path;
 		char line[1024];
-		int np;
+		struct badregion *badregion = NULL;
+		struct panel *panel = NULL;
+		char *key;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) break;
@@ -309,42 +474,6 @@ struct detector *get_detector_geometry(const char *filename)
 			continue;
 		}
 
-		if ( strcmp(bits[0], "n_panels") == 0 ) {
-			if ( det->n_panels != -1 ) {
-				ERROR("Duplicate n_panels statement.\n");
-				fclose(fh);
-				free(det);
-				for ( i=0; i<n1; i++ ) free(bits[i]);
-				free(bits);
-				return NULL;
-			}
-			det->n_panels = atoi(bits[2]);
-			det->panels = malloc(det->n_panels
-			                      * sizeof(struct panel));
-			for ( i=0; i<n1; i++ ) free(bits[i]);
-			free(bits);
-
-			for ( i=0; i<det->n_panels; i++ ) {
-				det->panels[i].min_fs = -1;
-				det->panels[i].min_ss = -1;
-				det->panels[i].max_fs = -1;
-				det->panels[i].max_ss = -1;
-				det->panels[i].cnx = -1;
-				det->panels[i].cny = -1;
-				det->panels[i].clen = -1;
-				det->panels[i].res = -1;
-				det->panels[i].badrow = '-';
-				det->panels[i].no_index = 0;
-				det->panels[i].peak_sep = 50.0;
-				det->panels[i].fsx = 1;
-				det->panels[i].fsy = 0;
-				det->panels[i].ssx = 0;
-				det->panels[i].ssy = 1;
-			}
-
-			continue;
-		}
-
 		n2 = assplode(bits[0], "/\\.", &path, ASSPLODE_NONE);
 		if ( n2 < 2 ) {
 			/* This was a top-level option, but not handled above. */
@@ -355,77 +484,28 @@ struct detector *get_detector_geometry(const char *filename)
 			continue;
 		}
 
-		np = atoi(path[0]);
-		if ( det->n_panels == -1 ) {
-			ERROR("n_panels statement must come first in "
-			      "detector geometry file.\n");
-			return NULL;
+		if ( strncmp(path[0], "bad", 3) == 0 ) {
+			badregion = find_bad_region_by_name(det, path[0]);
+			if ( badregion == NULL ) {
+				badregion = new_bad_region(det, path[0]);
+			}
+		} else {
+			panel = find_panel_by_name(det, path[0]);
+			if ( panel == NULL ) {
+				panel = new_panel(det, path[0]);
+			}
 		}
 
-		if ( np > det->n_panels ) {
-			ERROR("The detector geometry file said there were %i "
-			      "panels, but then tried to specify number %i\n",
-			      det->n_panels, np);
-			ERROR("Note: panel indices are counted from zero.\n");
-			return NULL;
-		}
+		key = path[1];
 
-		if ( strcmp(path[1], "min_fs") == 0 ) {
-			det->panels[np].min_fs = atof(bits[2]);
-		} else if ( strcmp(path[1], "max_fs") == 0 ) {
-			det->panels[np].max_fs = atof(bits[2]);
-		} else if ( strcmp(path[1], "min_ss") == 0 ) {
-			det->panels[np].min_ss = atof(bits[2]);
-		} else if ( strcmp(path[1], "max_ss") == 0 ) {
-			det->panels[np].max_ss = atof(bits[2]);
-		} else if ( strcmp(path[1], "corner_x") == 0 ) {
-			det->panels[np].cnx = atof(bits[2]);
-		} else if ( strcmp(path[1], "corner_y") == 0 ) {
-			det->panels[np].cny = atof(bits[2]);
-		} else if ( strcmp(path[1], "clen") == 0 ) {
-
-			char *end;
-			double v = strtod(bits[2], &end);
-			if ( end == bits[2] ) {
-				/* This means "fill in later" */
-				det->panels[np].clen = -1.0;
-				det->panels[np].clen_from = strdup(bits[2]);
-			} else {
-				det->panels[np].clen = v;
-				det->panels[np].clen_from = NULL;
-			}
-
-		} else if ( strcmp(path[1], "res") == 0 ) {
-			det->panels[np].res = atof(bits[2]);
-		} else if ( strcmp(path[1], "peak_sep") == 0 ) {
-			det->panels[np].peak_sep = atof(bits[2]);
-		} else if ( strcmp(path[1], "badrow_direction") == 0 ) {
-			det->panels[np].badrow = bits[2][0];
-			if ( (det->panels[np].badrow != 'x')
-			  && (det->panels[np].badrow != 'y')
-			  && (det->panels[np].badrow != '-') ) {
-				ERROR("badrow_direction must be x, y or '-'\n");
-				ERROR("Assuming '-'\n.");
-				det->panels[np].badrow = '-';
-			}
-		} else if ( strcmp(path[1], "no_index") == 0 ) {
-			det->panels[np].no_index = atob(bits[2]);
-		} else if ( strcmp(path[1], "fs") == 0 ) {
-			if ( dir_conv(bits[2], &det->panels[np].fsx,
-			                       &det->panels[np].fsy) != 0 ) {
-				ERROR("Invalid fast scan direction '%s'\n",
-				      bits[2]);
-				reject = 1;
-			}
-		} else if ( strcmp(path[1], "ss") == 0 ) {
-			if ( dir_conv(bits[2], &det->panels[np].ssx,
-			                       &det->panels[np].ssy) != 0 ) {
-				ERROR("Invalid slow scan direction '%s'\n",
-				      bits[2]);
+		if ( panel != NULL ) {
+			if ( parse_field_for_panel(panel, path[1], bits[2]) ) {
 				reject = 1;
 			}
 		} else {
-			ERROR("Unrecognised field '%s'\n", path[1]);
+			if ( parse_field_bad(badregion, path[1], bits[2]) ) {
+				reject = 1;
+			}
 		}
 
 		for ( i=0; i<n1; i++ ) free(bits[i]);
@@ -438,7 +518,6 @@ struct detector *get_detector_geometry(const char *filename)
 	if ( det->n_panels == -1 ) {
 		ERROR("No panel descriptions in geometry file.\n");
 		fclose(fh);
-		if ( det->panels != NULL ) free(det->panels);
 		free(det);
 		return NULL;
 	}
@@ -447,50 +526,51 @@ struct detector *get_detector_geometry(const char *filename)
 	max_ss = 0;
 	for ( i=0; i<det->n_panels; i++ ) {
 
-		if ( det->panels[i].min_fs == -1 ) {
+		if ( det->panels[i].min_fs < 0 ) {
 			ERROR("Please specify the minimum FS coordinate for"
-			      " panel %i\n", i);
+			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( det->panels[i].max_fs == -1 ) {
+		if ( det->panels[i].max_fs < 0 ) {
 			ERROR("Please specify the maximum FS coordinate for"
-			      " panel %i\n", i);
+			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( det->panels[i].min_ss == -1 ) {
+		if ( det->panels[i].min_ss < 0 ) {
 			ERROR("Please specify the minimum SS coordinate for"
-			      " panel %i\n", i);
+			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( det->panels[i].max_ss == -1 ) {
+		if ( det->panels[i].max_ss < 0 ) {
 			ERROR("Please specify the maximum SS coordinate for"
-			      " panel %i\n", i);
+			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( det->panels[i].cnx == -1 ) {
+		if ( isnan(det->panels[i].cnx)  ) {
 			ERROR("Please specify the corner X coordinate for"
-			      " panel %i\n", i);
+			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( det->panels[i].cny == -1 ) {
+		if ( isnan(det->panels[i].cny) ) {
 			ERROR("Please specify the corner Y coordinate for"
-			      " panel %i\n", i);
+			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
 		if ( (det->panels[i].clen < 0.0)
 		  && (det->panels[i].clen_from == NULL) ) {
 			ERROR("Please specify the camera length for"
-			      " panel %i\n", i);
+			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( det->panels[i].res == -1 ) {
+		if ( det->panels[i].res < 0 ) {
 			ERROR("Please specify the resolution for"
-			      " panel %i\n", i);
+			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
 		/* It's OK if the badrow direction is '0' */
 		/* It's not a problem if "no_index" is still zero */
 		/* The default peak_sep is OK (maybe) */
+		/* The default transformation matrix is at least valid */
 
 		if ( det->panels[i].max_fs > max_fs ) {
 			max_fs = det->panels[i].max_fs;
@@ -499,6 +579,31 @@ struct detector *get_detector_geometry(const char *filename)
 			max_ss = det->panels[i].max_ss;
 		}
 
+	}
+
+	for ( i=0; i<det->n_bad; i++ ) {
+
+		STATUS("Checking bad region '%s'\n", det->bad[i].name);
+		if ( isnan(det->bad[i].min_x) ) {
+			ERROR("Please specify the minimum x coordinate for"
+			      " bad region %s\n", det->bad[i].name);
+			reject = 1;
+		}
+		if ( isnan(det->bad[i].min_y) ) {
+			ERROR("Please specify the minimum y coordinate for"
+			      " bad region %s\n", det->bad[i].name);
+			reject = 1;
+		}
+		if ( isnan(det->bad[i].max_x) ) {
+			ERROR("Please specify the maximum x coordinate for"
+			      " bad region %s\n", det->bad[i].name);
+			reject = 1;
+		}
+		if ( isnan(det->bad[i].max_y) ) {
+			ERROR("Please specify the maximum y coordinate for"
+			      " bad region %s\n", det->bad[i].name);
+			reject = 1;
+		}
 	}
 
 	for ( x=0; x<=max_fs; x++ ) {
@@ -546,6 +651,7 @@ out:
 void free_detector_geometry(struct detector *det)
 {
 	free(det->panels);
+	free(det->bad);
 	free(det);
 }
 

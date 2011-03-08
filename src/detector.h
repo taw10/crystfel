@@ -25,6 +25,8 @@ struct hdfile;
 
 struct panel
 {
+	char     name[1024];  /* Name for this panel */
+
 	int      min_fs;  /* Smallest FS value considered to be in the panel */
 	int      max_fs;  /* Largest FS value considered to be in this panel */
 	int      min_ss;  /* ... and so on */
@@ -49,13 +51,29 @@ struct panel
 	double yss;
 };
 
+
+struct badregion
+{
+	char name[1024];
+	double min_x;
+	double max_x;
+	double min_y;
+	double max_y;
+};
+
+
 struct detector
 {
-	struct panel *panels;
-	int           n_panels;
-	int           max_fs;
-	int           max_ss;  /* Size of overall array needed, minus 1 */
+	struct panel     *panels;
+	int               n_panels;
+
+	int               max_fs;
+	int               max_ss;  /* Size of overall array needed, minus 1 */
+
+	struct badregion *bad;
+	int               n_bad;
 };
+
 
 extern struct rvec get_q(struct image *image, double fs, double ss,
                          double *ttp, double k);
