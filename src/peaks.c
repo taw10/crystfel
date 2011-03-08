@@ -47,31 +47,6 @@
 #define PEAK_WINDOW_SIZE (10)
 
 
-static int is_hot_pixel(struct image *image, int x, int y)
-{
-	int dx, dy;
-	int w, v;
-
-	w = image->width;
-	v = (1*image->data[x+w*y])/2;
-
-	if ( x+1 >= image->width ) return 0;
-	if ( x-1 < 0 ) return 0;
-	if ( y+1 >= image->height ) return 0;
-	if ( y-1 < 0 ) return 0;
-
-	/* Must be at least one adjacent bright pixel */
-	for ( dx=-1; dx<=+1; dx++ ) {
-	for ( dy=-1; dy<=+1; dy++ ) {
-		if ( (dx==0) && (dy==0) ) continue;
-		if ( image->data[(x+dx)+w*(y+dy)] >= v ) return 0;
-	}
-	}
-
-	return 1;
-}
-
-
 static int cull_peaks_in_panel(struct image *image, struct panel *p)
 {
 	int i, n;
