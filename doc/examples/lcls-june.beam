@@ -21,7 +21,3 @@ detector/dqe = 0.9
 
 ; Number of detector ADU per photon
 detector/adu_per_photon = 20.9
-
-
-; Radius in metres
-jet/radius = 1.5e-6
