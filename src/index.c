@@ -3,7 +3,7 @@
  *
  * Perform indexing (somehow)
  *
- * (c) 2006-2010 Thomas White <taw@physics.org>
+ * (c) 2006-2011 Thomas White <taw@physics.org>
  * (c) 2010 Richard Kirian <rkirian@asu.edu>
  *
  * Part of CrystFEL - crystallography with a FEL
