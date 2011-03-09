@@ -140,57 +140,60 @@ static int cull_peaks(struct image *image)
 
 /* Returns non-zero if peak has been vetoed.
  * i.e. don't use result if return value is not zero. */
-int integrate_peak(struct image *image, int xp, int yp,
-                   double *xc, double *yc, double *intensity,
+int integrate_peak(struct image *image, int cfs, int css,
+                   double *pfs, double *pss, double *intensity,
                    double *pbg, double *pmax,
                    int do_polar, int centroid)
 {
-	signed int x, y;
+	signed int fs, ss;
 	int lim, out_lim;
 	double total = 0.0;
-	double xct = 0.0;
-	double yct = 0.0;
+	double fsct = 0.0;
+	double ssct = 0.0;
 	double noise = 0.0;
 	int noise_counts = 0;
 	double max = 0.0;
 	struct panel *p = NULL;
 
-	p = find_panel(image->det, xp, yp);
+	p = find_panel(image->det, cfs, css);
 	if ( p == NULL ) return 1;
 	if ( p->no_index ) return 1;
 
 	lim = p->peak_sep/4.0;
 	out_lim = lim + 1;
 
-	for ( x=-out_lim; x<+out_lim; x++ ) {
-	for ( y=-out_lim; y<+out_lim; y++ ) {
+	for ( fs=-out_lim; fs<+out_lim; fs++ ) {
+	for ( ss=-out_lim; ss<+out_lim; ss++ ) {
 
 		double val;
 		double tt = 0.0;
 		double phi, pa, pb, pol;
 		uint16_t flags;
 		struct panel *p2;
+		int idx;
 
 		/* Outer mask radius */
-		if ( x*x + y*y > out_lim ) continue;
+		if ( fs*fs + ss*ss > out_lim ) continue;
 
-		if ( ((x+xp)>=image->width) || ((x+xp)<0) ) continue;
-		if ( ((y+yp)>=image->height) || ((y+yp)<0) ) continue;
+		if ( ((fs+cfs)>=image->width) || ((fs+cfs)<0) ) continue;
+		if ( ((ss+css)>=image->height) || ((ss+css)<0) ) continue;
 
 		/* Strayed off one panel? */
-		p2 = find_panel(image->det, x+xp, y+yp);
+		p2 = find_panel(image->det, fs+cfs, ss+css);
 		if ( p2 != p ) return 1;
+
+		idx = fs+cfs+image->width*(ss+css);
 
 		/* Veto this peak if we tried to integrate in a bad region */
 		if ( image->flags != NULL ) {
-			flags = image->flags[(x+xp)+image->width*(y+yp)];
+			flags = image->flags[idx];
 			if ( !(flags & 0x01) ) return 1;
 		}
 
-		val = image->data[(x+xp)+image->width*(y+yp)];
+		val = image->data[idx];
 
 		/* Inner mask */
-		if ( x*x + y*y > lim ) {
+		if ( fs*fs + ss*ss > lim ) {
 			/* Estimate noise from this region */
 			noise += fabs(val);
 			noise_counts++;
@@ -201,9 +204,9 @@ int integrate_peak(struct image *image, int xp, int yp,
 
 		if ( do_polar ) {
 
-			tt = get_tt(image, x+xp, y+yp);
+			tt = get_tt(image, fs+cfs, ss+css);
 
-			phi = atan2(y+yp, x+xp);
+			phi = atan2(ss+css, fs+cfs);
 			pa = pow(sin(phi)*sin(tt), 2.0);
 			pb = pow(cos(tt), 2.0);
 			pol = 1.0 - 2.0*POL*(1-pa) + POL*(1.0+pb);
@@ -214,26 +217,24 @@ int integrate_peak(struct image *image, int xp, int yp,
 
 		total += val;
 
-		xct += val*(xp+x);
-		yct += val*(yp+y);
+		fsct += val*(cfs+fs);
+		ssct += val*(css+ss);
 
 	}
 	}
 
 	/* The centroid is excitingly undefined if there is no intensity */
 	if ( centroid && (total != 0) ) {
-		*xc = (double)xct / total;
-		*yc = (double)yct / total;
+		*pfs = (double)fsct / total;
+		*pss = (double)ssct / total;
 		*intensity = total;
 	} else {
-		*xc = (double)xp;
-		*yc = (double)yp;
+		*pfs = (double)cfs;
+		*pss = (double)css;
 		*intensity = total;
 	}
 
-	if ( in_bad_region(image->det, *xc, *yc) ) {
-		return 1;
-	}
+	if ( in_bad_region(image->det, *pfs, *pss) ) return 1;
 
 	if ( pbg != NULL ) {
 		*pbg = (noise / noise_counts);
