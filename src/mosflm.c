@@ -590,7 +590,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 
 	close(mosflm->pty);
 	free(mosflm->rbuffer);
-	waitpid(mosflm->pid, &status, __WNOTHREAD);
+	waitpid(mosflm->pid, &status, 0);
 
 	/* Read the mosflm NEWMAT file and set cell candidate *
 	 * Existence of this file means possible success. Pretty shady. */
