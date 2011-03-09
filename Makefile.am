@@ -11,11 +11,11 @@ noinst_PROGRAMS = tests/list_check
 
 TESTS = tests/list_check
 
-if HAVE_GTK
+if BUILD_HDFSEE
 bin_PROGRAMS += src/hdfsee
 endif
 
-if HAVE_CAIRO
+if BUILD_CUBEIT
 bin_PROGRAMS += src/cubeit
 endif
 
@@ -58,7 +58,7 @@ src_indexamajig_SOURCES += src/diffraction-gpu.c src/cl-utils.c
 endif
 
 
-if HAVE_GTK
+if BUILD_HDFSEE
 src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/render.c \
                      src/hdf5-file.c src/utils.c src/image.c src/filters.c \
                      src/thread-pool.c src/detector.c
@@ -100,7 +100,7 @@ src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
                           src/symmetry.c src/post-refinement.c \
                           src/hrs-scaling.c src/reflist.c
 
-if HAVE_CAIRO
+if BUILD_CUBEIT
 src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
                      src/detector.c src/render.c src/filters.c src/image.c \
                      src/symmetry.c src/stream.c src/thread-pool.c

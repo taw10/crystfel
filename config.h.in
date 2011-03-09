@@ -41,6 +41,9 @@
 /* Define to 1 if a Linux-style forkpty is available */
 #undef HAVE_FORKPTY_LINUX
 
+/* Define to 1 if gdk-pixbuf is available */
+#undef HAVE_GDK_PIXBUF
+
 /* Define to 1 if GTK and GDK are available */
 #undef HAVE_GTK
 

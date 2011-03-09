@@ -602,22 +602,22 @@ gl_LIBOBJS
 am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
+BUILD_CUBEIT_FALSE
+BUILD_CUBEIT_TRUE
+BUILD_HDFSEE_FALSE
+BUILD_HDFSEE_TRUE
+HAVE_OPENCL_FALSE
+HAVE_OPENCL_TRUE
 GDK_pixbuf_2_LIBS
 GDK_pixbuf_2_CFLAGS
 GDK_pixbuf_LIBS
 GDK_pixbuf_CFLAGS
-HAVE_CAIRO_FALSE
-HAVE_CAIRO_TRUE
 Cairo_LIBS
 Cairo_CFLAGS
 libPNG_LIBS
 libPNG_CFLAGS
-HAVE_GTK_FALSE
-HAVE_GTK_TRUE
 GTK_LIBS
 GTK_CFLAGS
-HAVE_OPENCL_FALSE
-HAVE_OPENCL_TRUE
 GSL_LIBS
 GSL_CFLAGS
 PKG_CONFIG_LIBDIR
@@ -6503,14 +6503,6 @@ else
 $as_echo "no" >&6; }
 
 fi
- if test x$have_opencl = xtrue; then
-  HAVE_OPENCL_TRUE=
-  HAVE_OPENCL_FALSE='#'
-else
-  HAVE_OPENCL_TRUE='#'
-  HAVE_OPENCL_FALSE=
-fi
-
 if test "x$cl_cl_h" == "xtrue"; then :
 
 
@@ -6524,7 +6516,7 @@ if test "${enable_gtk+set}" = set; then :
   enableval=$enable_gtk;
 fi
 
-havegtk=false
+have_gtk=false
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use GTK" >&5
 $as_echo_n "checking whether to use GTK... " >&6; }
 if test "x$enable_gtk" != "xno"; then :
@@ -6733,7 +6725,7 @@ fi
      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes (version $gtk_config_major_version.$gtk_config_minor_version.$gtk_config_micro_version)" >&5
 $as_echo "yes (version $gtk_config_major_version.$gtk_config_minor_version.$gtk_config_micro_version)" >&6; }
 
-      havegtk=true
+      have_gtk=true
 
 $as_echo "#define HAVE_GTK 1" >>confdefs.h
 
@@ -6805,14 +6797,6 @@ else
 $as_echo "no" >&6; }
 
 fi
- if test "x$havegtk" = "xtrue"; then
-  HAVE_GTK_TRUE=
-  HAVE_GTK_FALSE='#'
-else
-  HAVE_GTK_TRUE='#'
-  HAVE_GTK_FALSE=
-fi
-
 
 
 for ac_func in forkpty
@@ -6981,6 +6965,7 @@ $as_echo "yes" >&6; }
 
 $as_echo "#define HAVE_LIBPNG 1" >>confdefs.h
 
+     have_libpng=true
 
 fi
 
@@ -7004,10 +6989,14 @@ if test "x$enable_tiff" != "xno"; then :
 
 # Check whether --with-libtiff was given.
 if test "${with_libtiff+set}" = set; then :
-  withval=$with_libtiff; LIBTIFF_CFLAGS="-I$withval/include"
-    LIBTIFF_LIBS="-L$withval/lib -ltiff"
+  withval=$with_libtiff;
+      LIBTIFF_CFLAGS="-I$withval/include"
+      LIBTIFF_LIBS="-L$withval/lib -ltiff"
+
 else
-  LIBTIFF_LIBS="-ltiff"
+
+      LIBTIFF_LIBS="-ltiff"
+
 fi
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
@@ -7125,7 +7114,7 @@ else
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
-     havecairo=true
+      have_cairo=true
 
 $as_echo "#define HAVE_CAIRO 1" >>confdefs.h
 
@@ -7138,14 +7127,6 @@ else
 $as_echo "no" >&6; }
 
 fi
- if test x$havecairo = xtrue; then
-  HAVE_CAIRO_TRUE=
-  HAVE_CAIRO_FALSE='#'
-else
-  HAVE_CAIRO_TRUE='#'
-  HAVE_CAIRO_FALSE=
-fi
-
 
 
 
@@ -7263,20 +7244,43 @@ fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$GDK_pixbuf_2_PKG_ERRORS" >&5
 
+	as_fn_error $? "Package requirements (gdk-pixbuf-2.0) were not met:
 
-      as_fn_error $? "gdk-pixbuf is required." "$LINENO" 5
+$GDK_pixbuf_2_PKG_ERRORS
+
+Consider adjusting the PKG_CONFIG_PATH environment variable if you
+installed software in a non-standard prefix.
+
+Alternatively, you may set the environment variables GDK_pixbuf_2_CFLAGS
+and GDK_pixbuf_2_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details." "$LINENO" 5
 
 elif test $pkg_failed = untried; then
      	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
+	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "The pkg-config script could not be found or is too old.  Make sure it
+is in your PATH or set the PKG_CONFIG environment variable to the full
+path to pkg-config.
 
-      as_fn_error $? "gdk-pixbuf is required." "$LINENO" 5
+Alternatively, you may set the environment variables GDK_pixbuf_2_CFLAGS
+and GDK_pixbuf_2_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.
+
+To get pkg-config, see <http://pkg-config.freedesktop.org/>.
+See \`config.log' for more details" "$LINENO" 5; }
 
 else
 	GDK_pixbuf_2_CFLAGS=$pkg_cv_GDK_pixbuf_2_CFLAGS
 	GDK_pixbuf_2_LIBS=$pkg_cv_GDK_pixbuf_2_LIBS
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
+
+
+$as_echo "#define HAVE_GDK_PIXBUF 1" >>confdefs.h
+
+      have_gdk_pixbuf=true
 
 fi
 
@@ -7341,20 +7345,43 @@ fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$GDK_pixbuf_2_PKG_ERRORS" >&5
 
+	as_fn_error $? "Package requirements (gdk-pixbuf-2.0) were not met:
 
-      as_fn_error $? "gdk-pixbuf is required." "$LINENO" 5
+$GDK_pixbuf_2_PKG_ERRORS
+
+Consider adjusting the PKG_CONFIG_PATH environment variable if you
+installed software in a non-standard prefix.
+
+Alternatively, you may set the environment variables GDK_pixbuf_2_CFLAGS
+and GDK_pixbuf_2_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details." "$LINENO" 5
 
 elif test $pkg_failed = untried; then
      	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
+	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "The pkg-config script could not be found or is too old.  Make sure it
+is in your PATH or set the PKG_CONFIG environment variable to the full
+path to pkg-config.
 
-      as_fn_error $? "gdk-pixbuf is required." "$LINENO" 5
+Alternatively, you may set the environment variables GDK_pixbuf_2_CFLAGS
+and GDK_pixbuf_2_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.
+
+To get pkg-config, see <http://pkg-config.freedesktop.org/>.
+See \`config.log' for more details" "$LINENO" 5; }
 
 else
 	GDK_pixbuf_2_CFLAGS=$pkg_cv_GDK_pixbuf_2_CFLAGS
 	GDK_pixbuf_2_LIBS=$pkg_cv_GDK_pixbuf_2_LIBS
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
+
+
+$as_echo "#define HAVE_GDK_PIXBUF 1" >>confdefs.h
+
+      have_gdk_pixbuf=true
 
 fi
 
@@ -7365,6 +7392,37 @@ else
 $as_echo "yes" >&6; }
 
 fi
+
+
+ if test x$have_opencl = xtrue; then
+  HAVE_OPENCL_TRUE=
+  HAVE_OPENCL_FALSE='#'
+else
+  HAVE_OPENCL_TRUE='#'
+  HAVE_OPENCL_FALSE=
+fi
+
+
+ if test x$have_gdk_pixbuf = xtrue \
+                                -a "x$have_gtk" = "xtrue" \
+                                -a "x$have_cairo" = "xtrue"; then
+  BUILD_HDFSEE_TRUE=
+  BUILD_HDFSEE_FALSE='#'
+else
+  BUILD_HDFSEE_TRUE='#'
+  BUILD_HDFSEE_FALSE=
+fi
+
+
+ if test x$have_cairo = xtrue \
+                                 -a x$have_libpng = xtrue; then
+  BUILD_CUBEIT_TRUE=
+  BUILD_CUBEIT_FALSE='#'
+else
+  BUILD_CUBEIT_TRUE='#'
+  BUILD_CUBEIT_FALSE=
+fi
+
 
 
 
@@ -7590,12 +7648,12 @@ if test -z "${HAVE_OPENCL_TRUE}" && test -z "${HAVE_OPENCL_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_OPENCL\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${HAVE_GTK_TRUE}" && test -z "${HAVE_GTK_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_GTK\" was never defined.
+if test -z "${BUILD_HDFSEE_TRUE}" && test -z "${BUILD_HDFSEE_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_HDFSEE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${HAVE_CAIRO_TRUE}" && test -z "${HAVE_CAIRO_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_CAIRO\" was never defined.
+if test -z "${BUILD_CUBEIT_TRUE}" && test -z "${BUILD_CUBEIT_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_CUBEIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 

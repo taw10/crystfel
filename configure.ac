@@ -91,21 +91,20 @@ AS_IF([test "x$with_opencl" == "xyes"],
 ], [
    AC_MSG_RESULT([no])
 ])
-AM_CONDITIONAL([HAVE_OPENCL], test x$have_opencl = xtrue)
 AS_IF([test "x$cl_cl_h" == "xtrue"],
 [
    AC_DEFINE([HAVE_CL_CL_H], [1], [Define to 1 if CL/cl.h should be used])
 ])
 
 AC_ARG_ENABLE(gtk, AS_HELP_STRING([--disable-gtk], [Disable GTK+/GLib]))
-havegtk=false
+have_gtk=false
 AC_MSG_CHECKING([whether to use GTK])
 AS_IF([test "x$enable_gtk" != "xno"],
 [
    AC_MSG_RESULT([yes])
    AM_PATH_GTK_2_0(2.0.0,
    [
-      havegtk=true
+      have_gtk=true
       AC_DEFINE([HAVE_GTK], [1], [Define to 1 if GTK and GDK are available])
    ],
    [
@@ -115,7 +114,6 @@ AS_IF([test "x$enable_gtk" != "xno"],
 [
    AC_MSG_RESULT([no])
 ])
-AM_CONDITIONAL([HAVE_GTK], test "x$havegtk" = "xtrue")
 
 
 AC_CHECK_FUNCS(forkpty,
@@ -139,7 +137,8 @@ AS_IF([test "x$enable_png" != "xno"],
    PKG_CHECK_MODULES([libPNG], [libpng >= 1.2.0],
    [
      AC_DEFINE([HAVE_LIBPNG], [1], [Define to 1 if libPNG is available])
-   ])
+     have_libpng=true
+   ], [])
 ],[
    AC_MSG_RESULT([no])
 ])
@@ -152,9 +151,12 @@ AS_IF([test "x$enable_tiff" != "xno"],
 [
    AC_ARG_WITH(libtiff,
    [AS_HELP_STRING([--with-libtiff], [specify location of libTIFF library])],
-   [LIBTIFF_CFLAGS="-I$withval/include"
-    LIBTIFF_LIBS="-L$withval/lib -ltiff"],
-   [LIBTIFF_LIBS="-ltiff"])
+   [
+      LIBTIFF_CFLAGS="-I$withval/include"
+      LIBTIFF_LIBS="-L$withval/lib -ltiff"
+   ], [
+      LIBTIFF_LIBS="-ltiff"
+   ])
    AC_MSG_RESULT([yes])
    AC_DEFINE([HAVE_TIFF], [1], [Define to 1 if libTIFF is available])
 ],
@@ -171,23 +173,35 @@ AS_IF([test "x$enable_cairo" != "xno"],
    AC_MSG_RESULT([yes])
    PKG_CHECK_MODULES([Cairo], [cairo >= 1.2.0],
    [
-     havecairo=true
-     AC_DEFINE([HAVE_CAIRO], [1], [Define to 1 if Cairo is available])
-   ])
+      have_cairo=true
+      AC_DEFINE([HAVE_CAIRO], [1], [Define to 1 if Cairo is available])
+   ], [])
 ],
 [
    AC_MSG_RESULT([no])
 ])
-AM_CONDITIONAL([HAVE_CAIRO], test x$havecairo = xtrue)
 
 
 PKG_CHECK_MODULES([GDK_pixbuf], [gdk-pixbuf], [],
 [
-   PKG_CHECK_MODULES([GDK_pixbuf_2], [gdk-pixbuf-2.0], [],
+   PKG_CHECK_MODULES([GDK_pixbuf_2], [gdk-pixbuf-2.0],
    [
-      AC_ERROR([gdk-pixbuf is required.])
-   ])
+      AC_DEFINE([HAVE_GDK_PIXBUF], [1],
+         [Define to 1 if gdk-pixbuf is available])
+      have_gdk_pixbuf=true
+   ], [])
 ])
+
+
+dnl Conditionals...
+AM_CONDITIONAL([HAVE_OPENCL], test x$have_opencl = xtrue)
+
+AM_CONDITIONAL([BUILD_HDFSEE], test x$have_gdk_pixbuf = xtrue \
+                                -a "x$have_gtk" = "xtrue" \
+                                -a "x$have_cairo" = "xtrue")
+
+AM_CONDITIONAL([BUILD_CUBEIT], test x$have_cairo = xtrue \
+                                 -a x$have_libpng = xtrue)
 
 
 gl_IGNORE_UNUSED_LIBRARIES
