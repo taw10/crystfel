@@ -31,14 +31,11 @@ AC_ARG_WITH(hdf5,
 
 
 AC_ARG_WITH(gsl,
-[AS_HELP_STRING([--with-gsl], [specify location of GSL (instead of using pkg-config)])],
+[AS_HELP_STRING([--with-gsl],
+                [specify location of GSL (instead of using pkg-config)])],
 [GSL_CFLAGS="-I$withval/include"
  GSL_LIBS="-L$withval/lib -lgsl -lgslcblas -lm"],
-[PKG_CHECK_MODULES([GSL], [gsl], [],
- [
-    AC_ERROR([GSL is required])
- ])
-])
+[PKG_CHECK_MODULES([GSL], [gsl])])
 
 
 AC_ARG_ENABLE(gsl-fudge, AS_HELP_STRING([--enable-gsl-fudge],
@@ -96,6 +93,7 @@ AS_IF([test "x$cl_cl_h" == "xtrue"],
    AC_DEFINE([HAVE_CL_CL_H], [1], [Define to 1 if CL/cl.h should be used])
 ])
 
+
 AC_ARG_ENABLE(gtk, AS_HELP_STRING([--disable-gtk], [Disable GTK+/GLib]))
 have_gtk=false
 AC_MSG_CHECKING([whether to use GTK])
@@ -136,9 +134,11 @@ AS_IF([test "x$enable_png" != "xno"],
    AC_MSG_RESULT([yes])
    PKG_CHECK_MODULES([libPNG], [libpng >= 1.2.0],
    [
-     AC_DEFINE([HAVE_LIBPNG], [1], [Define to 1 if libPNG is available])
-     have_libpng=true
-   ], [])
+      AC_DEFINE([HAVE_LIBPNG], [1], [Define to 1 if libPNG is available])
+      have_libpng=true
+   ], [
+      have_libpng=false
+   ])
 ],[
    AC_MSG_RESULT([no])
 ])
@@ -149,6 +149,7 @@ AC_ARG_ENABLE([tiff],
     AS_HELP_STRING([--disable-tiff], [Disable the use of libTIFF]))
 AS_IF([test "x$enable_tiff" != "xno"],
 [
+   AC_MSG_RESULT([yes])
    AC_ARG_WITH(libtiff,
    [AS_HELP_STRING([--with-libtiff], [specify location of libTIFF library])],
    [
@@ -157,10 +158,8 @@ AS_IF([test "x$enable_tiff" != "xno"],
    ], [
       LIBTIFF_LIBS="-ltiff"
    ])
-   AC_MSG_RESULT([yes])
    AC_DEFINE([HAVE_TIFF], [1], [Define to 1 if libTIFF is available])
-],
-[
+], [
    AC_MSG_RESULT([no])
 ])
 
@@ -176,20 +175,28 @@ AS_IF([test "x$enable_cairo" != "xno"],
       have_cairo=true
       AC_DEFINE([HAVE_CAIRO], [1], [Define to 1 if Cairo is available])
    ], [])
-],
-[
+], [
    AC_MSG_RESULT([no])
 ])
 
 
-PKG_CHECK_MODULES([GDK_pixbuf], [gdk-pixbuf], [],
+AC_MSG_CHECKING([whether to use GDK-pixbuf])
+AC_ARG_ENABLE([gdk-pixbuf], AS_HELP_STRING([--disable-gdk-pixbuf],
+                                           [Disable the use of gtk-pixbuf]))
+AS_IF([test "x$enable_gdk_pixbuf" != "xno"],
 [
-   PKG_CHECK_MODULES([GDK_pixbuf_2], [gdk-pixbuf-2.0],
+   AC_MSG_RESULT([yes])
+   PKG_CHECK_MODULES([GDK_pixbuf], [gdk-pixbuf], [],
    [
-      AC_DEFINE([HAVE_GDK_PIXBUF], [1],
-         [Define to 1 if gdk-pixbuf is available])
-      have_gdk_pixbuf=true
-   ], [])
+      PKG_CHECK_MODULES([GDK_pixbuf_2], [gdk-pixbuf-2.0],
+      [
+         AC_DEFINE([HAVE_GDK_PIXBUF], [1],
+                   [Define to 1 if gdk-pixbuf is available])
+         have_gdk_pixbuf=true
+      ], [])
+   ])
+], [
+   AC_MSG_RESULT([no])
 ])
 
 
