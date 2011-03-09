@@ -6522,7 +6522,7 @@ else
 $as_echo "no" >&6; }
 
 fi
-if test "x$cl_cl_h" == "xtrue"; then :
+if test "x$cl_cl_h" = "xtrue"; then :
 
 
 $as_echo "#define HAVE_CL_CL_H 1" >>confdefs.h

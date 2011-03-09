@@ -88,7 +88,7 @@ AS_IF([test "x$with_opencl" == "xyes"],
 ], [
    AC_MSG_RESULT([no])
 ])
-AS_IF([test "x$cl_cl_h" == "xtrue"],
+AS_IF([test "x$cl_cl_h" = "xtrue"],
 [
    AC_DEFINE([HAVE_CL_CL_H], [1], [Define to 1 if CL/cl.h should be used])
 ])
