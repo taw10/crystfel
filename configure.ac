@@ -159,7 +159,10 @@ AS_IF([test "x$enable_tiff" != "xno"],
       LIBTIFF_LIBS="-L$withval/lib -ltiff"
       have_libtiff=true
    ], [
-      AC_CHECK_LIB([tiff], [TIFFOpen], [], [have_libtiff=true])
+      AC_CHECK_LIB([tiff], [TIFFOpen], [
+         have_libtiff=true
+         LIBTIFF_LIBS="-ltiff"
+      ])
    ])
 ], [
    AC_MSG_RESULT([no])

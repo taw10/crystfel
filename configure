@@ -7043,14 +7043,10 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_tiff_TIFFOpen" >&5
 $as_echo "$ac_cv_lib_tiff_TIFFOpen" >&6; }
 if test "x$ac_cv_lib_tiff_TIFFOpen" = x""yes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBTIFF 1
-_ACEOF
 
-  LIBS="-ltiff $LIBS"
+         have_libtiff=true
+         LIBTIFF_LIBS="-ltiff"
 
-else
-  have_libtiff=true
 fi
 
 
