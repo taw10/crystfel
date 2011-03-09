@@ -79,40 +79,88 @@ static gint displaywindow_closed(GtkWidget *window, DisplayWindow *dw)
 }
 
 
-static double ring_radius(struct image *image, double d)
+static double ring_radius(struct image *image, int p, double d)
 {
 	double theta, r, r_px;
 
 	theta = asin(image->lambda / (2.0*d));
-	r = image->det->panels[0].clen * tan(2.0*theta);
-	r_px = r * image->det->panels[0].res;
+	r = image->det->panels[p].clen * tan(2.0*theta);
+	r_px = r * image->det->panels[p].res;
 
 	return r_px;
 }
 
 
-static void show_ring(cairo_t *cr, DisplayWindow *dw,
-                      double d, const char *label)
+static void draw_panel_rectangle(cairo_t *cr, cairo_matrix_t *basic_m,
+                                 DisplayWindow *dw, int i)
 {
+	struct panel p = dw->image->det->panels[i];
+	int w = gdk_pixbuf_get_width(dw->pixbufs[i]);
+	int h = gdk_pixbuf_get_height(dw->pixbufs[i]);
+	cairo_matrix_t m;
+
+	/* Start with the basic coordinate system */
+	cairo_set_matrix(cr, basic_m);
+
+	/* Move to the right location */
+	cairo_translate(cr, p.cnx/dw->binning,
+	                    p.cny/dw->binning);
+
+	/* Twiddle directions according to matrix */
+	cairo_matrix_init(&m, p.fsx, p.fsy, p.ssx, p.ssy,
+	                      0.0, 0.0);
+	cairo_transform(cr, &m);
+
+	gdk_cairo_set_source_pixbuf(cr, dw->pixbufs[i],
+	                            0.0, 0.0);
+	cairo_rectangle(cr, 0.0, 0.0, w, h);
+}
+
+
+static void show_ring(cairo_t *cr, DisplayWindow *dw,
+                      double d, const char *label, cairo_matrix_t *basic_m)
+{
+	struct detector *det;
+	int i;
+
 	if ( !dw->use_geom ) return;
 
-	cairo_text_extents_t size;
-	cairo_identity_matrix(cr);
-	cairo_translate(cr, -dw->min_x/dw->binning, dw->max_y/dw->binning);
-	cairo_arc(cr, 0.0, 0.0, ring_radius(dw->image, d)/dw->binning,
-	          0.0, 2.0*M_PI);
-	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-	cairo_set_line_width(cr, 3.0/dw->binning);
-	cairo_stroke(cr);
+	det = dw->image->det;
 
-	cairo_rotate(cr, -M_PI/4.0);
-	cairo_translate(cr, 0.0, ring_radius(dw->image, d)/dw->binning-5.0);
-	cairo_set_font_size(cr, 17.0);
-	cairo_text_extents(cr, label, &size);
-	cairo_translate(cr, -size.width/2.0, 0.0);
+	for ( i=0; i<det->n_panels; i++ ) {
 
-	cairo_show_text(cr, label);
-	cairo_fill(cr);
+		draw_panel_rectangle(cr, basic_m, dw, i);
+		cairo_clip(cr);
+
+		cairo_text_extents_t size;
+		cairo_identity_matrix(cr);
+		cairo_translate(cr, -dw->min_x/dw->binning,
+		                     dw->max_y/dw->binning);
+		cairo_arc(cr, 0.0, 0.0,
+		          ring_radius(dw->image, i, d)/dw->binning,
+			  0.0, 2.0*M_PI);
+		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+		cairo_set_line_width(cr, 3.0/dw->binning);
+		cairo_stroke(cr);
+
+		cairo_reset_clip(cr);
+
+		/* Any ideas for a better way of doing this? */
+		if ( i == 0 ) {
+
+			cairo_rotate(cr, -M_PI/4.0);
+			cairo_translate(cr, 0.0,
+				 ring_radius(dw->image, i, d)/dw->binning-5.0);
+			cairo_set_font_size(cr, 17.0);
+			cairo_text_extents(cr, label, &size);
+			cairo_translate(cr, -size.width/2.0, 0.0);
+
+			cairo_show_text(cr, label);
+			cairo_fill(cr);
+
+		}
+
+	}
 }
 
 
@@ -145,26 +193,7 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 
 		for ( i=0; i<dw->image->det->n_panels; i++ ) {
 
-			struct panel p = dw->image->det->panels[i];
-			int w = gdk_pixbuf_get_width(dw->pixbufs[i]);
-			int h = gdk_pixbuf_get_height(dw->pixbufs[i]);
-			cairo_matrix_t m;
-
-			/* Start with the basic coordinate system */
-			cairo_set_matrix(cr, &basic_m);
-
-			/* Move to the right location */
-			cairo_translate(cr, p.cnx/dw->binning,
-			                    p.cny/dw->binning);
-
-			/* Twiddle directions according to matrix */
-			cairo_matrix_init(&m, p.fsx, p.fsy, p.ssx, p.ssy,
-			                      0.0, 0.0);
-			cairo_transform(cr, &m);
-
-			gdk_cairo_set_source_pixbuf(cr, dw->pixbufs[i],
-			                            0.0, 0.0);
-			cairo_rectangle(cr, 0.0, 0.0, w, h);
+			draw_panel_rectangle(cr, &basic_m, dw, i);
 			cairo_fill(cr);
 
 		}
@@ -180,13 +209,13 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 		cairo_fill(cr);
 
 		/* Draw resolution circles */
-		show_ring(cr, dw, 10.0e-10, "10A");
-		show_ring(cr, dw, 8.0e-10, "8A");
-		show_ring(cr, dw, 5.0e-10, "5A");
-		show_ring(cr, dw, 4.0e-10, "4A");
-		show_ring(cr, dw, 3.0e-10, "3A");
-		show_ring(cr, dw, 2.0e-10, "2A");
-		show_ring(cr, dw, 1.0e-10, "1A");
+		show_ring(cr, dw, 10.0e-10, "10A", &basic_m);
+		show_ring(cr, dw, 8.0e-10, "8A", &basic_m);
+		show_ring(cr, dw, 5.0e-10, "5A", &basic_m);
+		show_ring(cr, dw, 4.0e-10, "4A", &basic_m);
+		show_ring(cr, dw, 3.0e-10, "3A", &basic_m);
+		show_ring(cr, dw, 2.0e-10, "2A", &basic_m);
+		show_ring(cr, dw, 1.0e-10, "1A", &basic_m);
 
 	}
 
