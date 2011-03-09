@@ -231,6 +231,10 @@ int integrate_peak(struct image *image, int xp, int yp,
 		*intensity = total;
 	}
 
+	if ( in_bad_region(image->det, *xc, *yc) ) {
+		return 1;
+	}
+
 	if ( pbg != NULL ) {
 		*pbg = (noise / noise_counts);
 	}
@@ -349,11 +353,6 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		                   &f_fs, &f_ss, &intensity, NULL, NULL, 0, 1);
 		if ( r ) {
 			/* Bad region - don't detect peak */
-			nrej_bad++;
-			continue;
-		}
-
-		if ( in_bad_region(image->det, f_fs, f_ss) ) {
 			nrej_bad++;
 			continue;
 		}
