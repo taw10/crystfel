@@ -174,7 +174,9 @@ AS_IF([test "x$enable_cairo" != "xno"],
    [
       have_cairo=true
       AC_DEFINE([HAVE_CAIRO], [1], [Define to 1 if Cairo is available])
-   ], [])
+   ], [
+      have_cairo=false
+   ])
 ], [
    AC_MSG_RESULT([no])
 ])
@@ -193,7 +195,9 @@ AS_IF([test "x$enable_gdk_pixbuf" != "xno"],
          AC_DEFINE([HAVE_GDK_PIXBUF], [1],
                    [Define to 1 if gdk-pixbuf is available])
          have_gdk_pixbuf=true
-      ], [])
+      ], [
+         have_gdk_pixbuf=false
+      ])
    ])
 ], [
    AC_MSG_RESULT([no])
