@@ -6484,31 +6484,37 @@ $as_echo "/System/Library/Frameworks/OpenCL.framework/Headers/cl.h" >&6; }
       OPENCL_CFLAGS="-I/System/Library/Frameworks/OpenCL.framework/Headers"
       OPENCL_LIBS="-framework OpenCL"
 
-fi
-   if test -f /usr/local/cuda/cuda/include/CL/cl.h; then :
+else
 
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: /usr/local/cuda/cuda/include/CL/cl.h" >&5
+      if test -f /usr/local/cuda/cuda/include/CL/cl.h; then :
+
+         { $as_echo "$as_me:${as_lineno-$LINENO}: result: /usr/local/cuda/cuda/include/CL/cl.h" >&5
 $as_echo "/usr/local/cuda/cuda/include/CL/cl.h" >&6; }
-      OPENCL_CFLAGS="-I/usr/local/cuda/cuda/include"
-      OPENCL_LIBS="-lOpenCL"
-      cl_cl_h=true
-
-fi
-   if test -f /usr/local/cuda/include/CL/cl.h; then :
-
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: /usr/local/cuda/include/CL/cl.h" >&5
-$as_echo "/usr/local/cuda/include/CL/cl.h" >&6; }
-      OPENCL_CFLAGS="-I/usr/local/cuda/include"
-      OPENCL_LIBS="-lOpenCL"
-      cl_cl_h=true
+         OPENCL_CFLAGS="-I/usr/local/cuda/cuda/include"
+         OPENCL_LIBS="-lOpenCL"
+         cl_cl_h=true
 
 else
 
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found, assuming /usr/include/CL/cl.h" >&5
+         if test -f /usr/local/cuda/include/CL/cl.h; then :
+
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: /usr/local/cuda/include/CL/cl.h" >&5
+$as_echo "/usr/local/cuda/include/CL/cl.h" >&6; }
+            OPENCL_CFLAGS="-I/usr/local/cuda/include"
+            OPENCL_LIBS="-lOpenCL"
+            cl_cl_h=true
+
+else
+
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found, assuming /usr/include/CL/cl.h" >&5
 $as_echo "not found, assuming /usr/include/CL/cl.h" >&6; }
-      OPENCL_CFLAGS=""
-      OPENCL_LIBS="-lOpenCL"
-      cl_cl_h=true
+            OPENCL_CFLAGS=""
+            OPENCL_LIBS="-lOpenCL"
+            cl_cl_h=true
+
+fi
+
+fi
 
 fi
 
@@ -6522,7 +6528,7 @@ else
 $as_echo "no" >&6; }
 
 fi
-if test "x$cl_cl_h" = "xtrue"; then :
+if test x$cl_cl_h = xtrue; then :
 
 
 $as_echo "#define HAVE_CL_CL_H 1" >>confdefs.h
