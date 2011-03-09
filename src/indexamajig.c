@@ -613,7 +613,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( strcmp(indm_str, "none") == 0 ) {
+	if ( (indm_str == NULL) ||
+	     ((indm_str != NULL) && (strcmp(indm_str, "none") == 0)) ) {
 		STATUS("Not indexing anything.\n");
 		indexer_needs_cell = 0;
 		reduction_needs_cell = 0;
