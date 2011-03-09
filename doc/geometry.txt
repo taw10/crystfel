@@ -70,6 +70,9 @@ panel0/ss = -x
 
 ; The corner of this panel, defined as the first point in the panel to appear in
 ; the HDF5 file, is now given a position in the lab coordinate system.
+; Note that "first point in the panel" is a conceptual simplification.  We refer
+; to that corner, and to the very corner of the pixel - NOT, for example, to the
+; centre of the first pixel to appear.
 panel0/corner_x = 429.39
 panel0/corner_y = -17.30
 
