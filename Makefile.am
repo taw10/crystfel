@@ -153,7 +153,8 @@ crystfeldoc_DATA = doc/geometry.txt doc/indexamajig.txt doc/pattern_sim.txt \
                    doc/examples/lcls-xpp-estimate.geom \
                    doc/examples/lcls-xpp-estimate.beam \
                    doc/examples/simple.geom \
-                   doc/examples/cspad-feb2011.geom
+                   doc/examples/cspad-feb2011.geom \
+                   doc/examples/lcls-cxi-9keV.beam
 
 EXTRA_DIST += doc/geometry.txt doc/indexamajig.txt doc/pattern_sim.txt \
               doc/process_hkl.txt doc/symmetry.txt doc/twin-calculator.pdf \
