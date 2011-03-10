@@ -1211,8 +1211,7 @@ static gint displaywindow_setscale(GtkWidget *widget, GtkRadioAction *action,
 		case 1 : dw->scale = SCALE_MONO; break;
 		case 2 : dw->scale = SCALE_INVMONO; break;
 	}
-	update_colscale(dw);
-	redraw_window(dw);
+	displaywindow_update(dw);
 
 	return 0;
 }
