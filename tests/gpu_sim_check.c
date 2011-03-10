@@ -141,7 +141,20 @@ int main(int argc, char *argv[])
 	free_detector_geometry(det);
 	free(beam);
 
-	if ( perc > 1.0 ) return 1;
+	if ( perc > 1.0 ) {
+
+		STATUS("Test failed!  I'm writing cpu-sim.h5 and gpu-sim.h5"
+		       " for you to inspect.\n");
+
+		hdf5_write("cpu-sim.h5", cpu_image.data, cpu_image.width,
+		            cpu_image.height, H5T_NATIVE_FLOAT);
+
+		hdf5_write("gpu-sim.h5", gpu_image.data, gpu_image.width,
+		            gpu_image.height, H5T_NATIVE_FLOAT);
+
+		return 1;
+
+	}
 
 	return 0;
 }
