@@ -128,6 +128,8 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 	int i;
 	int n = 0;
 
+	if ( indm == NULL ) return;
+
 	map_all_peaks(image);
 
 	while ( indm[n] != INDEXING_NONE ) {

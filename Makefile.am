@@ -44,7 +44,8 @@ endif
 src_process_hkl_SOURCES = src/process_hkl.c src/sfac.c src/statistics.c \
                           src/cell.c src/utils.c src/reflections.c \
                           src/symmetry.c src/stream.c src/beam-parameters.c \
-                          src/thread-pool.c
+                          src/thread-pool.c src/image.c src/detector.c \
+                          src/hdf5-file.c
 
 src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c src/utils.c \
                           src/cell.c src/image.c src/peaks.c src/index.c \
@@ -52,7 +53,7 @@ src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c src/utils.c \
                           src/sfac.c src/dirax.c src/mosflm.c \
                           src/reflections.c src/symmetry.c \
                           src/geometry.c src/thread-pool.c \
-                          src/beam-parameters.c src/reflist.c
+                          src/beam-parameters.c src/reflist.c src/stream.c
 if HAVE_OPENCL
 src_indexamajig_SOURCES += src/diffraction-gpu.c src/cl-utils.c
 endif

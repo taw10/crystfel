@@ -416,39 +416,6 @@ void search_peaks(struct image *image, float threshold, float min_gradient)
 }
 
 
-void dump_peaks(struct image *image, FILE *ofh, pthread_mutex_t *mutex)
-{
-	int i;
-
-	/* Get exclusive access to the output stream if necessary */
-	if ( mutex != NULL ) pthread_mutex_lock(mutex);
-
-	fprintf(ofh, "Peaks from peak search in %s\n", image->filename);
-	fprintf(ofh, "  x/px     y/px   (1/d)/nm^-1    Intensity\n");
-
-	for ( i=0; i<image_feature_count(image->features); i++ ) {
-
-		struct imagefeature *f;
-		struct rvec r;
-		double q;
-
-		f = image_get_feature(image->features, i);
-		if ( f == NULL ) continue;
-
-		r = get_q(image, f->x, f->y, NULL, 1.0/image->lambda);
-		q = modulus(r.u, r.v, r.w);
-
-		fprintf(ofh, "%8.3f %8.3f %8.3f    %12.3f\n",
-		       f->x, f->y, q/1.0e9, f->intensity);
-
-	}
-
-	fprintf(ofh, "\n");
-
-	if ( mutex != NULL ) pthread_mutex_unlock(mutex);
-}
-
-
 RefList *find_projected_peaks(struct image *image, UnitCell *cell,
                               int circular_domain, double domain_r)
 {
@@ -600,63 +567,13 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
 }
 
 
-static void output_header(FILE *ofh, UnitCell *cell, struct image *image)
+/* Integrate the list of predicted reflections in "image" */
+void integrate_reflections(struct image *image, int polar, int use_closer)
 {
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	double a, b, c, al, be, ga;
-
-	fprintf(ofh, "Reflections from indexing in %s\n", image->filename);
-
-	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
-	fprintf(ofh, "Cell parameters %7.5f %7.5f %7.5f nm, %7.5f %7.5f %7.5f deg\n",
-	       a*1.0e9, b*1.0e9, c*1.0e9,
-	       rad2deg(al), rad2deg(be), rad2deg(ga));
-
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	fprintf(ofh, "astar = %+9.7f %+9.7f %+9.7f nm^-1\n",
-	       asx/1e9, asy/1e9, asz/1e9);
-	fprintf(ofh, "bstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
-	       bsx/1e9, bsy/1e9, bsz/1e9);
-	fprintf(ofh, "cstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
-	       csx/1e9, csy/1e9, csz/1e9);
-
-	if ( image->f0_available ) {
-		fprintf(ofh, "f0 = %7.5f (arbitrary gas detector units)\n",
-		       image->f0);
-	} else {
-		fprintf(ofh, "f0 = invalid\n");
-	}
-
-	fprintf(ofh, "photon_energy_eV = %f\n",
-	        J_to_eV(ph_lambda_to_en(image->lambda)));
-
-}
-
-
-void output_intensities(struct image *image, UnitCell *cell,
-                        RefList *reflections, pthread_mutex_t *mutex, int polar,
-                        int use_closer, FILE *ofh)
-{
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
 	Reflection *refl;
 	RefListIterator *iter;
 
-	/* Get exclusive access to the output stream if necessary */
-	if ( mutex != NULL ) pthread_mutex_lock(mutex);
-
-	output_header(ofh, cell, image);
-
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-
-	for ( refl = first_refl(reflections, &iter);
+	for ( refl = first_refl(image->reflections, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 
@@ -666,7 +583,6 @@ void output_intensities(struct image *image, UnitCell *cell,
 		double bg, max;
 		struct panel *p;
 		double px, py;
-		signed int h, k, l;
 
 		get_detector_pos(refl, &px, &py);
 		p = find_panel(image->det, px, py);
@@ -734,23 +650,14 @@ void output_intensities(struct image *image, UnitCell *cell,
 
 		}
 
-		/* Write h,k,l, integrated intensity and centroid coordinates */
-		get_indices(refl, &h, &k, &l);
-		fprintf(ofh, "%3i %3i %3i %6f (at %5.2f,%5.2f) max=%6f bg=%6f\n",
-		        h, k, l, intensity, x, y, max, bg);
+		set_int(refl, intensity);
 
 	}
-
-	/* Blank line at end */
-	fprintf(ofh, "\n");
-
-	if ( mutex != NULL ) pthread_mutex_unlock(mutex);
 }
 
 
-void output_pixels(struct image *image, UnitCell *cell,
-                   pthread_mutex_t *mutex, int do_polar,
-                   FILE *ofh, int circular_domain, double domain_r)
+RefList *integrate_pixels(struct image *image, int circular_domain,
+                          double domain_r, int do_polar)
 {
 	int i;
 	double ax, ay, az;
@@ -762,26 +669,25 @@ void output_pixels(struct image *image, UnitCell *cell,
 	double *xmom;
 	double *ymom;
 	ReflItemList *obs;
-
-	/* Get exclusive access to the output stream if necessary */
-	if ( mutex != NULL ) pthread_mutex_lock(mutex);
-
-	output_header(ofh, cell, image);
+	RefList *reflections;
 
 	obs = new_items();
 	intensities = new_list_intensity();
 	xmom = new_list_intensity();
 	ymom = new_list_intensity();
+	reflections = reflist_new();
 
 	/* "Borrow" direction values to get reciprocal lengths */
-	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	cell_get_reciprocal(image->indexed_cell, &ax, &ay, &az,
+	                                         &bx, &by, &bz,
+	                                         &cx, &cy, &cz);
 	aslen = modulus(ax, ay, az);
 	bslen = modulus(bx, by, bz);
 	cslen = modulus(cx, cy, cz);
 
-	cell_get_cartesian(cell, &ax, &ay, &az,
-	                         &bx, &by, &bz,
-	                         &cx, &cy, &cz);
+	cell_get_cartesian(image->indexed_cell, &ax, &ay, &az,
+	                                        &bx, &by, &bz,
+	                                        &cx, &cy, &cz);
 	/* For each pixel */
 	fesetround(1);  /* Round towards nearest */
 	for ( fs=0; fs<image->width; fs++ ) {
@@ -890,6 +796,7 @@ void output_pixels(struct image *image, UnitCell *cell,
 		struct refl_item *it;
 		double intensity, xmomv, ymomv;
 		double xp, yp;
+		Reflection *refl;
 
 		it = get_item(obs, i);
 		intensity = lookup_intensity(intensities, it->h, it->k, it->l);
@@ -899,19 +806,16 @@ void output_pixels(struct image *image, UnitCell *cell,
 		xp = xmomv / (double)intensity;
 		yp = ymomv / (double)intensity;
 
-		fprintf(ofh, "%3i %3i %3i %6f (at %5.2f,%5.2f)\n",
-		       it->h, it->k, it->l, intensity, xp, yp);
+		refl = add_refl(reflections, it->h, it->k, it->l);
+		set_int(refl, intensity);
+		set_detector_pos(refl, 0.0, xp, yp);
 
 	}
-
-	fprintf(ofh, "No peak statistics, because output_pixels() was used.\n");
-	/* Blank line at end */
-	fprintf(ofh, "\n");
 
 	free(xmom);
 	free(ymom);
 	free(intensities);
 	delete_items(obs);
 
-	if ( mutex != NULL ) pthread_mutex_unlock(mutex);
+	return reflections;
 }

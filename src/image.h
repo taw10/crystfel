@@ -85,7 +85,7 @@ struct image {
 	int                     width;
 	int                     height;
 
-	/* Reflections (used for scaling ONLY) */
+	/* Integrated (or about-to-be-integrated) reflections */
 	RefList                 *reflections;
 
 	/* Detected peaks */

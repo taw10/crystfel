@@ -20,6 +20,7 @@
 
 #include "cell.h"
 #include "utils.h"
+#include "image.h"
 
 
 int count_patterns(FILE *fh)
@@ -70,6 +71,84 @@ static UnitCell *read_orientation_matrix(FILE *fh)
 	cell = cell_new_from_axes(as, bs, cs);
 
 	return cell;
+}
+
+
+static void write_reflections(struct image *image, FILE *ofh)
+{
+}
+
+
+static void write_peaks(struct image *image, FILE *ofh)
+{
+	int i;
+
+	fprintf(ofh, "Peaks from peak search in %s\n", image->filename);
+	fprintf(ofh, "  x/px     y/px   (1/d)/nm^-1    Intensity\n");
+
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
+
+		struct imagefeature *f;
+		struct rvec r;
+		double q;
+
+		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
+
+		r = get_q(image, f->x, f->y, NULL, 1.0/image->lambda);
+		q = modulus(r.u, r.v, r.w);
+
+		fprintf(ofh, "%8.3f %8.3f %8.3f    %12.3f\n",
+		       f->x, f->y, q/1.0e9, f->intensity);
+
+	}
+
+	fprintf(ofh, "\n");
+}
+
+
+
+void write_chunk(FILE *ofh, struct image *image, int flags)
+{
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	double a, b, c, al, be, ga;
+
+	fprintf(ofh, "----- Begin chunk -----\n");
+
+	fprintf(ofh, "Image filename: %s\n", image->filename);
+
+	cell_get_parameters(image->indexed_cell, &a, &b, &c, &al, &be, &ga);
+	fprintf(ofh, "Cell parameters %7.5f %7.5f %7.5f nm,"
+	             " %7.5f %7.5f %7.5f deg\n",
+	             a*1.0e9, b*1.0e9, c*1.0e9,
+	             rad2deg(al), rad2deg(be), rad2deg(ga));
+
+	cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+	fprintf(ofh, "astar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+	        asx/1e9, asy/1e9, asz/1e9);
+	fprintf(ofh, "bstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+	        bsx/1e9, bsy/1e9, bsz/1e9);
+	fprintf(ofh, "cstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+	       csx/1e9, csy/1e9, csz/1e9);
+
+	if ( image->f0_available ) {
+		fprintf(ofh, "I0 = %7.5f (arbitrary gas detector units)\n",
+		       image->f0);
+	} else {
+		fprintf(ofh, "I0 = invalid\n");
+	}
+
+	fprintf(ofh, "photon_energy_eV = %f\n",
+	        J_to_eV(ph_lambda_to_en(image->lambda)));
+
+	write_peaks(image, ofh);
+	write_reflections(image, ofh);
+
+	fprintf(ofh, "----- End chunk -----\n\n");
 }
 
 

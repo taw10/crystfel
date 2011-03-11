@@ -36,6 +36,7 @@
 #include "thread-pool.h"
 #include "beam-parameters.h"
 #include "geometry.h"
+#include "stream.h"
 
 
 enum {
@@ -50,9 +51,8 @@ struct static_index_args
 	UnitCell *cell;
 	int config_cmfilter;
 	int config_noisefilter;
-	int config_dumpfound;
 	int config_verbose;
-	int config_nearbragg;
+	int stream_flags;
 	int config_polar;
 	int config_satcorr;
 	int config_closer;
@@ -109,7 +109,8 @@ static void show_help(const char *s)
 "\n"
 " -i, --input=<filename>   Specify file containing list of images to process.\n"
 "                           '-' means stdin, which is the default.\n"
-" -o, --output=<filename>  Write indexed stream to this file. '-' for stdout.\n"
+" -o, --output=<filename>  Write output stream to this file. '-' for stdout.\n"
+"                           Default: indexamajig.stream\n"
 "\n"
 "     --indexing=<methods> Use 'methods' for indexing.  Provide one or more\n"
 "                           methods separated by commas.  Choose from:\n"
@@ -129,25 +130,19 @@ static void show_help(const char *s)
 "                                    This is the default method.\n"
 "                           hdf5  : Get from /processing/hitfinder/peakinfo\n"
 "                                    in the HDF5 file.\n"
-"\n"
-"\nWith just the above options, this program does not do much of practical use."
-"\nYou should also enable some of the following:\n\n"
-"     --near-bragg         Output a list of reflection intensities to stdout.\n"
-"                           When pixels with fractional indices within 0.1 of\n"
-"                           integer values (the Bragg condition) are found,\n"
-"                           the integral of pixels within a ten pixel radius\n"
-"                           of the nearest-to-Bragg pixel will be reported as\n"
-"                           the intensity.  The centroid of the pixels will\n"
-"                           be given as the coordinates, as well as the h,k,l\n"
-"                           (integer) indices of the reflection.  If a peak\n"
-"                           was located by the initial peak search close to\n"
-"                           the \"near Bragg\" location, its coordinates will\n"
-"                           be taken as the centre instead.\n"
-"     --dump-peaks         Write the results of the peak search to stdout.\n"
-"                           The intensities in this list are from the\n"
-"                           centroid/integration procedure.\n"
-"\n"
-"\nFor more control over the process, you might need:\n\n"
+"\n\n"
+"You can control what information is included in the output stream using\n"
+"' --record=<flags>'.  Possible flags are:\n"
+"pixels         Include a list of sums of pixel values within the\n"
+"                integration domain, correcting for individual pixel\n"
+"                solid angles.\n"
+"integrated     Include a list of reflection intensities, produced by\n"
+"                integrating around predicted peak locations.\n"
+"                The flags 'pixels' and 'integrated' are mutually exclusive.\n"
+"peaks          Include peak locations and intensities from the peak search.\n"
+"peaksifindexed Include peak locations only if the pattern could be indexed.\n"
+"\n\n"
+"For more control over the process, you might need:\n\n"
 "     --cell-reduction=<m> Use <m> as the cell reduction method. Choose from:\n"
 "                           none    : no matching, just use the raw cell.\n"
 "                           reduce  : full cell reduction.\n"
@@ -196,9 +191,7 @@ static void process_image(void *pp, int cookie)
 	UnitCell *cell = pargs->static_args.cell;
 	int config_cmfilter = pargs->static_args.config_cmfilter;
 	int config_noisefilter = pargs->static_args.config_noisefilter;
-	int config_dumpfound = pargs->static_args.config_dumpfound;
 	int config_verbose = pargs->static_args.config_verbose;
-	int config_nearbragg = pargs->static_args.config_nearbragg;
 	int config_polar = pargs->static_args.config_polar;
 	IndexingMethod *indm = pargs->static_args.indm;
 	const struct beam_params *beam = pargs->static_args.beam;
@@ -274,7 +267,6 @@ static void process_image(void *pp, int cookie)
 		/* Get peaks from HDF5 */
 		if ( get_peaks(&image, hdfile) ) {
 			ERROR("Failed to get peaks from HDF5 file.\n");
-			return;
 		}
 		break;
 	case PEAK_ZAEF :
@@ -288,51 +280,44 @@ static void process_image(void *pp, int cookie)
 	free(image.data);
 	image.data = data_for_measurement;
 
-	if ( config_dumpfound ) {
-		dump_peaks(&image, pargs->static_args.ofh,
-		           pargs->static_args.output_mutex);
-	}
-
-	/* Not indexing? Then there's nothing left to do. */
-	if ( indm == NULL ) goto done;
-
 	/* Calculate orientation matrix (by magic) */
 	index_pattern(&image, cell, indm, pargs->static_args.cellr,
 		      config_verbose, pargs->static_args.ipriv,
 		      pargs->static_args.config_insane);
 
 	/* No cell at this point?  Then we're done. */
-	if ( image.indexed_cell == NULL ) goto done;
-	pargs->indexable = 1;
+	if ( image.indexed_cell != NULL ) pargs->indexable = 1;
 
 	/* Measure intensities if requested */
-	if ( config_nearbragg ) {
 
-		RefList *reflections;
+	/* Do EITHER: */
 
-		image.div = beam->divergence;
-		image.bw = beam->bandwidth;
-		image.profile_radius = 0.0001e9;
+	//image.div = beam->divergence;
+	//image.bw = beam->bandwidth;
+	//image.profile_radius = 0.0001e9;
+	//image.reflections = find_intersections(&image,
+	//                                       image.indexed_cell, 0);
 
-		//reflections = find_intersections(&image, image.indexed_cell,
-		//                                 0);
-		reflections = find_projected_peaks(&image, image.indexed_cell,
-		                                   0, 0.1);
+	image.reflections = find_projected_peaks(&image,
+	                                         image.indexed_cell,
+	                                         0, 0.1);
 
-		output_intensities(&image, image.indexed_cell, reflections,
-		                   pargs->static_args.output_mutex,
-		                   config_polar,
-		                   pargs->static_args.config_closer,
-		                   pargs->static_args.ofh);
+	integrate_reflections(&image, config_polar,
+	                      pargs->static_args.config_closer);
 
-		reflist_free(reflections);
+	/* OR */
 
-	}
+	//image.reflections = integrate_pixels(&image, 0, 0.1,
+	//                                     config_polar);
+
+	pthread_mutex_lock(pargs->static_args.output_mutex);
+	write_chunk(pargs->static_args.ofh, &image,
+	            pargs->static_args.stream_flags);
+	pthread_mutex_unlock(pargs->static_args.output_mutex);
 
 	/* Only free cell if found */
 	cell_free(image.indexed_cell);
 
-done:
 	free(image.data);
 	free(image.flags);
 	image_feature_list_free(image.features);
@@ -737,9 +722,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.cell = cell;
 	qargs.static_args.config_cmfilter = config_cmfilter;
 	qargs.static_args.config_noisefilter = config_noisefilter;
-	qargs.static_args.config_dumpfound = config_dumpfound;
 	qargs.static_args.config_verbose = config_verbose;
-	qargs.static_args.config_nearbragg = config_nearbragg;
 	qargs.static_args.config_polar = config_polar;
 	qargs.static_args.config_satcorr = config_satcorr;
 	qargs.static_args.config_closer = config_closer;

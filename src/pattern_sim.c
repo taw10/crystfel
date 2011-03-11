@@ -551,15 +551,23 @@ int main(int argc, char *argv[])
 
 		if ( config_nearbragg ) {
 
-			RefList *reflections;
+			/* Do EITHER: */
 
-			reflections = find_projected_peaks(&image, cell,
-			                                   0, 0.1);
+			//image.div = beam->divergence;
+			//image.bw = beam->bandwidth;
+			//image.profile_radius = 0.0001e9;
+			//image.reflections = find_intersections(&image,
+			//                               image.indexed_cell, 0);
 
-			output_intensities(&image, cell, reflections, NULL,
-			                   0, 0, stdout);
+			image.reflections = find_projected_peaks(&image,
+			                            image.indexed_cell, 0, 0.1);
 
-			reflist_free(reflections);
+			integrate_reflections(&image, 0, 0);
+
+			/* OR */
+
+			//image.reflections = integrate_pixels(&image, 0, 0.1,
+			//                                     config_polar);
 
 		}
 

@@ -140,14 +140,13 @@ static void process_image(void *pg, int cookie)
 		reflections = find_projected_peaks(&image, image.indexed_cell,
 		                                   0, 0.1);
 
-		output_intensities(&image, image.indexed_cell, reflections,
-		                   pargs->output_mutex,
-		                   pargs->config_polar,
-		                   pargs->config_closer,
-		                   pargs->ofh);
-
 		reflist_free(reflections);
 	}
+
+	pthread_mutex_lock(pargs->output_mutex);
+	write_chunk(pargs->ofh, &image, pargs->stream_flags);
+	pthread_mutex_unlock(pargs->output_mutex);
+
 
 	free(image.data);
 	if ( image.flags != NULL ) free(image.flags);
