@@ -199,6 +199,7 @@ void write_chunk(FILE *ofh, struct image *i, int f)
 	fprintf(ofh, "Image filename: %s\n", i->filename);
 
 	if ( i->indexed_cell != NULL ) {
+
 		cell_get_parameters(i->indexed_cell, &a, &b, &c,
 		                                         &al, &be, &ga);
 		fprintf(ofh, "Cell parameters %7.5f %7.5f %7.5f nm,"
