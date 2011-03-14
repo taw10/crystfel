@@ -413,11 +413,14 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 	} else if ( strcmp(key, "badrow_direction") == 0 ) {
 		panel->badrow = val[0]; /* First character only */
 		if ( (panel->badrow != 'x') && (panel->badrow != 'y')
+		  && (panel->badrow != 'f') && (panel->badrow != 's')
 		  && (panel->badrow != '-') ) {
-			ERROR("badrow_direction must be x, y or '-'\n");
+			ERROR("badrow_direction must be x, y, f, s or '-'\n");
 			ERROR("Assuming '-'\n.");
 			panel->badrow = '-';
 		}
+		if ( panel->badrow == 'x' ) panel->badrow = 'f';
+		if ( panel->badrow == 'y' ) panel->badrow = 's';
 	} else if ( strcmp(key, "no_index") == 0 ) {
 		panel->no_index = atob(val);
 	} else if ( strcmp(key, "fs") == 0 ) {
