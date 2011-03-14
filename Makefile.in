@@ -39,9 +39,9 @@ bin_PROGRAMS = src/pattern_sim$(EXEEXT) src/process_hkl$(EXEEXT) \
 	src/get_hkl$(EXEEXT) src/indexamajig$(EXEEXT) \
 	src/compare_hkl$(EXEEXT) src/powder_plot$(EXEEXT) \
 	src/render_hkl$(EXEEXT) src/calibrate_detector$(EXEEXT) \
-	src/partialator$(EXEEXT) src/reintegrate$(EXEEXT) \
-	src/estimate_background$(EXEEXT) src/check_hkl$(EXEEXT) \
-	src/sum_stack$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
+	src/partialator$(EXEEXT) src/estimate_background$(EXEEXT) \
+	src/check_hkl$(EXEEXT) src/sum_stack$(EXEEXT) $(am__EXEEXT_1) \
+	$(am__EXEEXT_2)
 noinst_PROGRAMS = tests/list_check$(EXEEXT) $(am__EXEEXT_3)
 TESTS = tests/list_check$(EXEEXT) $(am__EXEEXT_3)
 @BUILD_HDFSEE_TRUE@am__append_1 = src/hdfsee
@@ -209,16 +209,6 @@ am_src_process_hkl_OBJECTS = src/process_hkl.$(OBJEXT) \
 src_process_hkl_OBJECTS = $(am_src_process_hkl_OBJECTS)
 src_process_hkl_LDADD = $(LDADD)
 src_process_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
-am_src_reintegrate_OBJECTS = src/reintegrate.$(OBJEXT) \
-	src/cell.$(OBJEXT) src/hdf5-file.$(OBJEXT) src/utils.$(OBJEXT) \
-	src/detector.$(OBJEXT) src/peaks.$(OBJEXT) src/image.$(OBJEXT) \
-	src/stream.$(OBJEXT) src/index.$(OBJEXT) src/dirax.$(OBJEXT) \
-	src/mosflm.$(OBJEXT) src/geometry.$(OBJEXT) \
-	src/symmetry.$(OBJEXT) src/thread-pool.$(OBJEXT) \
-	src/reflist.$(OBJEXT)
-src_reintegrate_OBJECTS = $(am_src_reintegrate_OBJECTS)
-src_reintegrate_LDADD = $(LDADD)
-src_reintegrate_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_render_hkl_OBJECTS = src/render_hkl.$(OBJEXT) \
 	src/cell.$(OBJEXT) src/reflections.$(OBJEXT) \
 	src/utils.$(OBJEXT) src/povray.$(OBJEXT) \
@@ -285,9 +275,8 @@ SOURCES = $(src_calibrate_detector_SOURCES) $(src_check_hkl_SOURCES) \
 	$(src_hdfsee_SOURCES) $(src_indexamajig_SOURCES) \
 	$(src_partialator_SOURCES) $(src_pattern_sim_SOURCES) \
 	$(src_powder_plot_SOURCES) $(src_process_hkl_SOURCES) \
-	$(src_reintegrate_SOURCES) $(src_render_hkl_SOURCES) \
-	$(src_sum_stack_SOURCES) $(tests_gpu_sim_check_SOURCES) \
-	$(tests_list_check_SOURCES)
+	$(src_render_hkl_SOURCES) $(src_sum_stack_SOURCES) \
+	$(tests_gpu_sim_check_SOURCES) $(tests_list_check_SOURCES)
 DIST_SOURCES = $(src_calibrate_detector_SOURCES) \
 	$(src_check_hkl_SOURCES) $(src_compare_hkl_SOURCES) \
 	$(am__src_cubeit_SOURCES_DIST) \
@@ -295,8 +284,8 @@ DIST_SOURCES = $(src_calibrate_detector_SOURCES) \
 	$(am__src_hdfsee_SOURCES_DIST) \
 	$(am__src_indexamajig_SOURCES_DIST) $(src_partialator_SOURCES) \
 	$(am__src_pattern_sim_SOURCES_DIST) $(src_powder_plot_SOURCES) \
-	$(src_process_hkl_SOURCES) $(src_reintegrate_SOURCES) \
-	$(src_render_hkl_SOURCES) $(src_sum_stack_SOURCES) \
+	$(src_process_hkl_SOURCES) $(src_render_hkl_SOURCES) \
+	$(src_sum_stack_SOURCES) \
 	$(am__tests_gpu_sim_check_SOURCES_DIST) \
 	$(tests_list_check_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -674,12 +663,6 @@ src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
 @BUILD_CUBEIT_TRUE@                     src/detector.c src/render.c src/filters.c src/image.c \
 @BUILD_CUBEIT_TRUE@                     src/symmetry.c src/stream.c src/thread-pool.c
 
-src_reintegrate_SOURCES = src/reintegrate.c src/cell.c src/hdf5-file.c \
-                          src/utils.c src/detector.c src/peaks.c src/image.c \
-                          src/stream.c src/index.c src/dirax.c src/mosflm.c \
-                          src/geometry.c src/symmetry.c \
-                          src/thread-pool.c src/reflist.c
-
 src_estimate_background_SOURCES = src/estimate_background.c src/stream.c \
                                   src/utils.c src/cell.c src/thread-pool.c
 
@@ -926,11 +909,6 @@ src/process_hkl.$(OBJEXT): src/$(am__dirstamp) \
 src/process_hkl$(EXEEXT): $(src_process_hkl_OBJECTS) $(src_process_hkl_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/process_hkl$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_process_hkl_OBJECTS) $(src_process_hkl_LDADD) $(LIBS)
-src/reintegrate.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/reintegrate$(EXEEXT): $(src_reintegrate_OBJECTS) $(src_reintegrate_DEPENDENCIES) src/$(am__dirstamp)
-	@rm -f src/reintegrate$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(src_reintegrate_OBJECTS) $(src_reintegrate_LDADD) $(LIBS)
 src/render_hkl.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/povray.$(OBJEXT): src/$(am__dirstamp) \
@@ -994,7 +972,6 @@ mostlyclean-compile:
 	-rm -f src/process_hkl.$(OBJEXT)
 	-rm -f src/reflections.$(OBJEXT)
 	-rm -f src/reflist.$(OBJEXT)
-	-rm -f src/reintegrate.$(OBJEXT)
 	-rm -f src/render.$(OBJEXT)
 	-rm -f src/render_hkl.$(OBJEXT)
 	-rm -f src/sfac.$(OBJEXT)
@@ -1042,7 +1019,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/process_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reflections.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reflist.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reintegrate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/sfac.Po@am__quote@
