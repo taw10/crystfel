@@ -751,6 +751,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.ofh = ofh;
 	qargs.static_args.beam = beam;
 	qargs.static_args.element = element;
+	qargs.static_args.stream_flags = stream_flags;
 
 	qargs.fh = fh;
 	qargs.prefix = prefix;
