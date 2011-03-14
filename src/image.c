@@ -68,7 +68,7 @@ ImageList *image_list_new()
 }
 
 
-void image_add_feature(ImageFeatureList *flist, double x, double y,
+void image_add_feature(ImageFeatureList *flist, double fs, double ss,
                        struct image *parent, double intensity, const char *name)
 {
 	if ( flist->features ) {
@@ -80,8 +80,8 @@ void image_add_feature(ImageFeatureList *flist, double x, double y,
 		flist->features = malloc(sizeof(struct imagefeature));
 	}
 
-	flist->features[flist->n_features].x = x;
-	flist->features[flist->n_features].y = y;
+	flist->features[flist->n_features].fs = fs;
+	flist->features[flist->n_features].ss = ss;
 	flist->features[flist->n_features].intensity = intensity;
 	flist->features[flist->n_features].parent = parent;
 	flist->features[flist->n_features].name = name;
@@ -115,7 +115,7 @@ void image_feature_list_free(ImageFeatureList *flist)
 
 
 struct imagefeature *image_feature_closest(ImageFeatureList *flist,
-                                           double x, double y,
+                                           double fs, double ss,
                                            double *d, int *idx)
 {
 	int i;
@@ -126,7 +126,8 @@ struct imagefeature *image_feature_closest(ImageFeatureList *flist,
 
 		double ds;
 
-		ds = distance(flist->features[i].x, flist->features[i].y, x, y);
+		ds = distance(flist->features[i].fs, flist->features[i].ss,
+		              fs, ss);
 
 		if ( ds < dmin ) {
 			dmin = ds;

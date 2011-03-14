@@ -113,8 +113,9 @@ static void show_help(const char *s)
 static void sum_peaks(struct image *image, double *sum, double threshold,
                       double min_gradient)
 {
-	int x, y, i;
+	int i;
 	int w = image->width;
+	int h = image->height;
 	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
 
 	search_peaks(image, threshold, min_gradient);
@@ -122,25 +123,26 @@ static void sum_peaks(struct image *image, double *sum, double threshold,
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f = image_get_feature(image->features, i);
-		int xp, yp;
+		int pfs, pss;
+		int fs, ss;
 
 		/* This is not an error. */
 		if ( f == NULL ) continue;
 
-		xp = f->x;
-		yp = f->y;
+		pfs = f->fs;
+		pss = f->ss;
 
-		for ( x=-INTEGRATION_RADIUS; x<+INTEGRATION_RADIUS; x++ ) {
-		for ( y=-INTEGRATION_RADIUS; y<+INTEGRATION_RADIUS; y++ ) {
+		for ( fs=-INTEGRATION_RADIUS; fs<+INTEGRATION_RADIUS; fs++ ) {
+		for ( ss=-INTEGRATION_RADIUS; ss<+INTEGRATION_RADIUS; ss++ ) {
 
 			/* Circular mask */
-			if ( x*x + y*y > lim ) continue;
+			if ( fs*fs + ss*ss > lim ) continue;
 
-			if ( ((x+xp)>=image->width) || ((x+xp)<0) ) continue;
-			if ( ((y+yp)>=image->height) || ((y+yp)<0) ) continue;
+			if ( ((fs+pfs)>=w) || ((fs+pfs)<0) ) continue;
+			if ( ((ss+pss)>=h) || ((ss+pss)<0) ) continue;
 
-			float val = image->data[(x+xp)+w*(y+yp)];
-			sum[(x+xp)+w*(y+yp)] += val;
+			float val = image->data[(fs+pfs)+w*(ss+pss)];
+			sum[(fs+pfs)+w*(ss+pss)] += val;
 
 		}
 		}

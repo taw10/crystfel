@@ -248,8 +248,8 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 			f = image_get_feature(dw->image->features, i);
 			if ( f == NULL ) continue;
 
-			fs = f->x;
-			ss = f->y;
+			fs = f->fs;
+			ss = f->ss;
 
 			p = find_panel(dw->image->det, fs, ss);
 			if ( p == NULL ) continue;

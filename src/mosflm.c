@@ -205,14 +205,14 @@ static void write_spt(struct image *image, const char *filename)
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		p = find_panel(image->det, f->x, f->y);
+		p = find_panel(image->det, f->fs, f->ss);
 		if ( p == NULL ) continue;
 
 		pix = 1000.0/p->res; /* pixel size in mm */
 		height = f->intensity;
 
-		xs = (f->x-p->min_fs)*p->fsx + (f->y-p->min_ss)*p->ssx;
-		ys = (f->x-p->min_fs)*p->fsy + (f->y-p->min_ss)*p->ssy;
+		xs = (f->fs-p->min_fs)*p->fsx + (f->ss-p->min_ss)*p->ssx;
+		ys = (f->ss-p->min_fs)*p->fsy + (f->ss-p->min_ss)*p->ssy;
 		rx = xs + p->cnx;
 		ry = ys + p->cny;
 

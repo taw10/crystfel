@@ -62,10 +62,10 @@ static int cull_peaks_in_panel(struct image *image, struct panel *p)
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		if ( f->x < p->min_fs ) continue;
-		if ( f->x > p->max_fs ) continue;
-		if ( f->y < p->min_ss ) continue;
-		if ( f->y > p->max_ss ) continue;
+		if ( f->fs < p->min_fs ) continue;
+		if ( f->fs > p->max_fs ) continue;
+		if ( f->ss < p->min_ss ) continue;
+		if ( f->ss > p->max_ss ) continue;
 
 		/* How many peaks are in the same column? */
 		ncol = 0;
@@ -78,10 +78,10 @@ static int cull_peaks_in_panel(struct image *image, struct panel *p)
 			g = image_get_feature(image->features, j);
 			if ( g == NULL ) continue;
 
-			if ( p->badrow == 'x' ) {
-				if ( fabs(f->y - g->y) < 2.0 ) ncol++;
-			} else if ( p->badrow == 'y' ) {
-				if ( fabs(f->x - g->x) < 2.0 ) ncol++;
+			if ( p->badrow == 'f' ) {
+				if ( fabs(f->ss - g->ss) < 2.0 ) ncol++;
+			} else if ( p->badrow == 's' ) {
+				if ( fabs(f->fs - g->fs) < 2.0 ) ncol++;
 			} /* else do nothing */
 
 		}
@@ -95,14 +95,14 @@ static int cull_peaks_in_panel(struct image *image, struct panel *p)
 			struct imagefeature *g;
 			g = image_get_feature(image->features, j);
 			if ( g == NULL ) continue;
-			if ( p->badrow == 'x' ) {
-				if ( fabs(f->y - g->y) < 2.0 ) {
+			if ( p->badrow == 'f' ) {
+				if ( fabs(f->ss - g->ss) < 2.0 ) {
 					image_remove_feature(image->features,
 					                     j);
 					nelim++;
 				}
-			} else if ( p->badrow == 'y' ) {
-				if ( fabs(f->x - g->x) < 2.0 ) {
+			} else if ( p->badrow == 's' ) {
+				if ( fabs(f->fs - g->ss) < 2.0 ) {
 					image_remove_feature(image->features,
 					                     j);
 					nelim++;
@@ -531,7 +531,7 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
 		n_feat++;
 
 		/* Get closest hkl */
-		q = get_q(image, f->x, f->y, NULL, 1.0/image->lambda);
+		q = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
 
 		hd = q.u * ax + q.v * ay + q.w * az;
 		kd = q.u * bx + q.v * by + q.w * bz;
@@ -577,15 +577,15 @@ void integrate_reflections(struct image *image, int polar, int use_closer)
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 
-		double x, y, intensity;
+		double fs, ss, intensity;
 		double d;
 		int idx;
 		double bg, max;
 		struct panel *p;
-		double px, py;
+		double pfs, pss;
 
-		get_detector_pos(refl, &px, &py);
-		p = find_panel(image->det, px, py);
+		get_detector_pos(refl, &pfs, &pss);
+		p = find_panel(image->det, pfs, pss);
 		if ( p == NULL ) continue;
 		if ( p->no_index ) continue;
 
@@ -596,7 +596,7 @@ void integrate_reflections(struct image *image, int polar, int use_closer)
 
 			if ( image->features != NULL ) {
 				f = image_feature_closest(image->features,
-					                  px, py, &d, &idx);
+					                  pfs, pss, &d, &idx);
 			} else {
 				f = NULL;
 			}
@@ -608,9 +608,9 @@ void integrate_reflections(struct image *image, int polar, int use_closer)
 				 * pattern, so instead re-integrate using old
 				 * coordinates. This will produce further
 				 * revised coordinates. */
-				r = integrate_peak(image, f->x, f->y, &x, &y,
-					           &intensity, &bg, &max,
-					           polar, 1);
+				r = integrate_peak(image, f->fs, f->ss,
+					           &fs, &ss, &intensity, &bg,
+					           &max, polar, 1);
 				if ( r ) {
 					/* The original peak (which also went
 					 * through integrate_peak(), but with
@@ -627,7 +627,7 @@ void integrate_reflections(struct image *image, int polar, int use_closer)
 
 				int r;
 
-				r = integrate_peak(image, px, py, &x, &y,
+				r = integrate_peak(image, pfs, pss, &fs, &ss,
 				                   &intensity, &bg, &max,
 					           polar, 1);
 				if ( r ) {
@@ -641,7 +641,7 @@ void integrate_reflections(struct image *image, int polar, int use_closer)
 
 			int r;
 
-			r = integrate_peak(image, px, py, &x, &y,
+			r = integrate_peak(image, pfs, pss, &fs, &ss,
 			                   &intensity, &bg, &max, polar, 0);
 			if ( r ) {
 				/* Plain old ordinary peak veto */
