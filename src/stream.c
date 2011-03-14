@@ -1,9 +1,9 @@
 /*
  * stream.c
  *
- * Indexed stream tools
+ * Stream tools
  *
- * (c) 2006-2010 Thomas White <taw@physics.org>
+ * (c) 2006-2011 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
@@ -47,24 +47,28 @@ int parse_stream_flags(const char *a)
 				return -1;
 			}
 			ret |= STREAM_PIXELS;
+
 		} else if ( strcmp(flags[i], "integrated") == 0) {
 			if ( ret & STREAM_PIXELS ) {
 				exclusive("pixels", "integrated");
 				return -1;
 			}
 			ret |= STREAM_INTEGRATED;
+
 		} else if ( strcmp(flags[i], "peaks") == 0) {
 			if ( ret & STREAM_PEAKS_IF_INDEXED ) {
 				exclusive("peaks", "peaksifindexed");
 				return -1;
 			}
 			ret |= STREAM_PEAKS;
+
 		} else if ( strcmp(flags[i], "peaksifindexed") == 0) {
 			if ( ret & STREAM_PEAKS ) {
 				exclusive("peaks", "peaksifindexed");
 				return -1;
 			}
 			ret |= STREAM_PEAKS_IF_INDEXED;
+
 		} else {
 			ERROR("Unrecognised stream flag '%s'\n", flags[i]);
 			return 0;
