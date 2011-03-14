@@ -170,7 +170,7 @@ static void write_peaks(struct image *image, FILE *ofh)
 	int i;
 
 	fprintf(ofh, "Peaks from peak search\n");
-	fprintf(ofh, "  x/px     y/px   (1/d)/nm^-1    Intensity\n");
+	fprintf(ofh, " fs/px    ss/px   (1/d)/nm^-1    Intensity\n");
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
@@ -181,11 +181,11 @@ static void write_peaks(struct image *image, FILE *ofh)
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		r = get_q(image, f->x, f->y, NULL, 1.0/image->lambda);
+		r = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
 		q = modulus(r.u, r.v, r.w);
 
 		fprintf(ofh, "%8.3f %8.3f %8.3f    %12.3f\n",
-		       f->x, f->y, q/1.0e9, f->intensity);
+		       f->fs, f->ss, q/1.0e9, f->intensity);
 
 	}
 }
