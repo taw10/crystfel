@@ -19,9 +19,23 @@
 
 struct image;
 
+/* Possible options dictating what goes into the output stream */
+enum
+{
+	STREAM_NONE             = 0,
+	STREAM_INTEGRATED       = 1<<0,
+	STREAM_PIXELS           = 1<<1,
+	STREAM_PEAKS            = 1<<2,
+	STREAM_PEAKS_IF_INDEXED = 1<<3,
+};
+
+
 extern int count_patterns(FILE *fh);
+
 extern int find_chunk(FILE *fh, UnitCell **cell, char **filename, double *ev);
+
 extern void write_chunk(FILE *ofh, struct image *image, int flags);
 
+extern int parse_stream_flags(const char *a);
 
 #endif	/* STREAM_H */

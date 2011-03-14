@@ -106,21 +106,25 @@ src_compare_hkl_LDADD = $(LDADD)
 src_compare_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am__src_cubeit_SOURCES_DIST = src/cubeit.c src/cell.c src/hdf5-file.c \
 	src/utils.c src/detector.c src/render.c src/filters.c \
-	src/image.c src/symmetry.c src/stream.c src/thread-pool.c
+	src/image.c src/symmetry.c src/stream.c src/thread-pool.c \
+	src/reflist.c
 @BUILD_CUBEIT_TRUE@am_src_cubeit_OBJECTS = src/cubeit.$(OBJEXT) \
 @BUILD_CUBEIT_TRUE@	src/cell.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
 @BUILD_CUBEIT_TRUE@	src/utils.$(OBJEXT) src/detector.$(OBJEXT) \
 @BUILD_CUBEIT_TRUE@	src/render.$(OBJEXT) src/filters.$(OBJEXT) \
 @BUILD_CUBEIT_TRUE@	src/image.$(OBJEXT) src/symmetry.$(OBJEXT) \
 @BUILD_CUBEIT_TRUE@	src/stream.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/thread-pool.$(OBJEXT)
+@BUILD_CUBEIT_TRUE@	src/thread-pool.$(OBJEXT) \
+@BUILD_CUBEIT_TRUE@	src/reflist.$(OBJEXT)
 src_cubeit_OBJECTS = $(am_src_cubeit_OBJECTS)
 src_cubeit_LDADD = $(LDADD)
 src_cubeit_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_estimate_background_OBJECTS =  \
 	src/estimate_background.$(OBJEXT) src/stream.$(OBJEXT) \
 	src/utils.$(OBJEXT) src/cell.$(OBJEXT) \
-	src/thread-pool.$(OBJEXT)
+	src/thread-pool.$(OBJEXT) src/image.$(OBJEXT) \
+	src/detector.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
+	src/reflist.$(OBJEXT)
 src_estimate_background_OBJECTS =  \
 	$(am_src_estimate_background_OBJECTS)
 src_estimate_background_LDADD = $(LDADD)
@@ -205,7 +209,7 @@ am_src_process_hkl_OBJECTS = src/process_hkl.$(OBJEXT) \
 	src/symmetry.$(OBJEXT) src/stream.$(OBJEXT) \
 	src/beam-parameters.$(OBJEXT) src/thread-pool.$(OBJEXT) \
 	src/image.$(OBJEXT) src/detector.$(OBJEXT) \
-	src/hdf5-file.$(OBJEXT)
+	src/hdf5-file.$(OBJEXT) src/reflist.$(OBJEXT)
 src_process_hkl_OBJECTS = $(am_src_process_hkl_OBJECTS)
 src_process_hkl_LDADD = $(LDADD)
 src_process_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
@@ -611,7 +615,7 @@ src_process_hkl_SOURCES = src/process_hkl.c src/sfac.c src/statistics.c \
                           src/cell.c src/utils.c src/reflections.c \
                           src/symmetry.c src/stream.c src/beam-parameters.c \
                           src/thread-pool.c src/image.c src/detector.c \
-                          src/hdf5-file.c
+                          src/hdf5-file.c src/reflist.c
 
 src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c \
 	src/utils.c src/cell.c src/image.c src/peaks.c src/index.c \
@@ -661,10 +665,12 @@ src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
 
 @BUILD_CUBEIT_TRUE@src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
 @BUILD_CUBEIT_TRUE@                     src/detector.c src/render.c src/filters.c src/image.c \
-@BUILD_CUBEIT_TRUE@                     src/symmetry.c src/stream.c src/thread-pool.c
+@BUILD_CUBEIT_TRUE@                     src/symmetry.c src/stream.c src/thread-pool.c src/reflist.c
 
 src_estimate_background_SOURCES = src/estimate_background.c src/stream.c \
-                                  src/utils.c src/cell.c src/thread-pool.c
+                                  src/utils.c src/cell.c src/thread-pool.c \
+                                  src/image.c src/detector.c src/hdf5-file.c \
+                                  src/reflist.c
 
 tests_list_check_SOURCES = tests/list_check.c src/reflist.c src/thread-pool.c \
                            src/utils.c
@@ -843,6 +849,8 @@ src/filters.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/stream.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/reflist.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/cubeit$(EXEEXT): $(src_cubeit_OBJECTS) $(src_cubeit_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/cubeit$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_cubeit_OBJECTS) $(src_cubeit_LDADD) $(LIBS)
@@ -875,8 +883,6 @@ src/dirax.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/mosflm.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/geometry.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/reflist.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/diffraction-gpu.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)

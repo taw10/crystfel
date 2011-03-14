@@ -45,7 +45,7 @@ src_process_hkl_SOURCES = src/process_hkl.c src/sfac.c src/statistics.c \
                           src/cell.c src/utils.c src/reflections.c \
                           src/symmetry.c src/stream.c src/beam-parameters.c \
                           src/thread-pool.c src/image.c src/detector.c \
-                          src/hdf5-file.c
+                          src/hdf5-file.c src/reflist.c
 
 src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c src/utils.c \
                           src/cell.c src/image.c src/peaks.c src/index.c \
@@ -104,11 +104,13 @@ src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
 if BUILD_CUBEIT
 src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
                      src/detector.c src/render.c src/filters.c src/image.c \
-                     src/symmetry.c src/stream.c src/thread-pool.c
+                     src/symmetry.c src/stream.c src/thread-pool.c src/reflist.c
 endif
 
 src_estimate_background_SOURCES = src/estimate_background.c src/stream.c \
-                                  src/utils.c src/cell.c src/thread-pool.c
+                                  src/utils.c src/cell.c src/thread-pool.c \
+                                  src/image.c src/detector.c src/hdf5-file.c \
+                                  src/reflist.c
 
 tests_list_check_SOURCES = tests/list_check.c src/reflist.c src/thread-pool.c \
                            src/utils.c

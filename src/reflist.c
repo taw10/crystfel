@@ -44,6 +44,7 @@ struct _refldata {
 
 	/* Intensity */
 	double intensity;
+	double esd_i;
 };
 
 

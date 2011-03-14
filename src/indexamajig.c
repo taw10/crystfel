@@ -52,7 +52,7 @@ struct static_index_args
 	int config_cmfilter;
 	int config_noisefilter;
 	int config_verbose;
-	int stream_flags;
+	int stream_flags;         /* What goes into the output? */
 	int config_polar;
 	int config_satcorr;
 	int config_closer;
@@ -62,7 +62,7 @@ struct static_index_args
 	struct detector *det;
 	IndexingMethod *indm;
 	IndexingPrivate **ipriv;
-	int peaks;
+	int peaks;                /* Peak detection method */
 	int cellr;
 	struct beam_params *beam;
 	const char *element;
@@ -132,15 +132,20 @@ static void show_help(const char *s)
 "                                    in the HDF5 file.\n"
 "\n\n"
 "You can control what information is included in the output stream using\n"
-"' --record=<flags>'.  Possible flags are:\n"
-"pixels         Include a list of sums of pixel values within the\n"
-"                integration domain, correcting for individual pixel\n"
-"                solid angles.\n"
-"integrated     Include a list of reflection intensities, produced by\n"
-"                integrating around predicted peak locations.\n"
-"                The flags 'pixels' and 'integrated' are mutually exclusive.\n"
-"peaks          Include peak locations and intensities from the peak search.\n"
-"peaksifindexed Include peak locations only if the pattern could be indexed.\n"
+"' --record=<flags>'.  Possible flags are:\n\n"
+" pixels         Include a list of sums of pixel values within the\n"
+"                 integration domain, correcting for individual pixel\n"
+"                 solid angles.\n"
+"\n"
+" integrated     Include a list of reflection intensities, produced by\n"
+"                 integrating around predicted peak locations.\n"
+"\n"
+" peaks          Include peak locations and intensities from the peak search.\n"
+"\n"
+" peaksifindexed As 'peaks', but only if the pattern could be indexed.\n\n"
+"\n"
+"The default is '--record=integrated'.  The flags 'pixels' and 'integrated'\n"
+"are mutually exclusive, as are the flags 'peaks' and 'peaksifindexed'.\n"
 "\n\n"
 "For more control over the process, you might need:\n\n"
 "     --cell-reduction=<m> Use <m> as the cell reduction method. Choose from:\n"
@@ -162,7 +167,7 @@ static void show_help(const char *s)
 "     --min-gradient=<n>   Minimum gradient for Zaefferer peak search.\n"
 "                           Default: 100,000.\n"
 " -e, --image=<element>    Use this image from the HDF5 file.\n"
-"                           Example: /data/data0."
+"                           Example: /data/data0.\n"
 "                           Default: The first one found.\n"
 "\n"
 "\nOptions for greater performance or verbosity:\n\n"
@@ -431,6 +436,7 @@ int main(int argc, char *argv[])
 	struct beam_params *beam = NULL;
 	char *element = NULL;
 	double nominal_photon_energy;
+	int stream_flags = STREAM_INTEGRATED;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -460,6 +466,7 @@ int main(int argc, char *argv[])
 		{"insane",             0, &config_insane,      1},
 		{"image",              1, NULL,               'e'},
 		{"basename",           0, &config_basename,    1},
+		{"record",             1, NULL,                5},
 		{0, 0, NULL, 0}
 	};
 
@@ -527,6 +534,11 @@ int main(int argc, char *argv[])
 
 		case 'e' :
 			element = strdup(optarg);
+			break;
+
+		case 5 :
+			stream_flags = parse_stream_flags(optarg);
+			if ( stream_flags < 0 ) return 1;
 			break;
 
 		case 0 :
@@ -673,6 +685,7 @@ int main(int argc, char *argv[])
 	free(pdb);
 
 	/* Start by writing the entire command line to stdout */
+	fprintf(ofh, "CrystFEL stream format 2.0\n");
 	fprintf(ofh, "Command line:");
 	for ( i=0; i<argc; i++ ) {
 		fprintf(ofh, " %s", argv[i]);

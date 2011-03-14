@@ -76,8 +76,8 @@ struct image {
 	double                  lambda;        /* Wavelength in m */
 	double                  div;           /* Divergence in radians */
 	double                  bw;            /* Bandwidth as a fraction */
-	double                  f0;            /* Incident intensity */
-	int                     f0_available;  /* 0 if f0 wasn't available
+	double                  i0;            /* Incident intensity */
+	int                     i0_available;  /* 0 if f0 wasn't available
 	                                        * from the input. */
 	double                  osf;           /* Overall scaling factor */
 	double                  profile_radius; /* Radius of reflection */

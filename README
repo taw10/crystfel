@@ -61,12 +61,7 @@ In addition, there is also:
 	- estimate_background, for calculating signal to noise ratios from
 	                       the indexed peaks.
 
-	- calibrate_detector, which splits
-
-	- reintegrate, which is like "indexamajig" but without the indexing
-                       step, instead getting the orientation matrix from the
-                       output of a previous run of either "indexamajig" or
-                       "reintegrate".
+	- calibrate_detector, which does nothing useful at the moment.
 
 
 Included at no extra cost are:
