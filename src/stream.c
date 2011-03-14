@@ -24,6 +24,10 @@
 #include "stream.h"
 
 
+#define CHUNK_START_MARKER "----- Begin chunk -----"
+#define CHUNK_END_MARKER "----- End chunk -----"
+
+
 static void exclusive(const char *a, const char *b)
 {
 	ERROR("The stream options '%s' and '%s' are mutually exclusive.\n",
@@ -198,7 +202,7 @@ void write_chunk(FILE *ofh, struct image *i, int f)
 	double csx, csy, csz;
 	double a, b, c, al, be, ga;
 
-	fprintf(ofh, "----- Begin chunk -----\n");
+	fprintf(ofh, CHUNK_START_MARKER"\n");
 
 	fprintf(ofh, "Image filename: %s\n", i->filename);
 
@@ -247,7 +251,99 @@ void write_chunk(FILE *ofh, struct image *i, int f)
 		write_reflections(i, ofh);
 	}
 
-	fprintf(ofh, "----- End chunk -----\n\n");
+	fprintf(ofh, CHUNK_END_MARKER"\n\n");
+}
+
+
+static int find_start_of_chunk(FILE *fh)
+{
+	char *rval = NULL;
+	char line[1024];
+
+	do {
+
+		rval = fgets(line, 1023, fh);
+
+		/* Trouble? */
+		if ( rval == NULL ) return 1;
+
+		chomp(line);
+
+	} while ( strcmp(line, CHUNK_START_MARKER) != 0 );
+
+	return 0;
+}
+
+
+/* Read the next chunk from a stream and fill in 'image' */
+int read_chunk(FILE *fh, struct image *image)
+{
+	char line[1024];
+	char *rval = NULL;
+	struct rvec as, bs, cs;
+	int have_as = 0;
+	int have_bs = 0;
+	int have_cs = 0;
+	int have_filename = 0;
+	int have_cell = 0;
+	int have_ev = 0;
+
+	if ( find_start_of_chunk(fh) ) return 1;
+
+	image->i0_available = 0;
+
+	do {
+
+		float u, v, w;
+
+		rval = fgets(line, 1023, fh);
+
+		/* Trouble? */
+		if ( rval == NULL ) return 1;
+
+		chomp(line);
+
+		if ( strncmp(line, "Image filename: ", 16) == 0 ) {
+			image->filename = strdup(line+16);
+			have_filename = 1;
+		}
+
+		if ( strncmp(line, "I0 = ", 5) == 0 ) {
+			image->i0 = atof(line+5);
+			image->i0_available = 1;
+		}
+
+		if ( sscanf(line, "astar = %f %f %f", &u, &v, &w) == 3 ) {
+			as.u = u*1e9;  as.v = v*1e9;  as.w = w*1e9;
+			have_as = 1;
+		}
+
+		if ( sscanf(line, "bstar = %f %f %f", &u, &v, &w) == 3 ) {
+			bs.u = u*1e9;  bs.v = v*1e9;  bs.w = w*1e9;
+			have_bs = 1;
+		}
+
+		if ( sscanf(line, "cstar = %f %f %f", &u, &v, &w) == 3 ) {
+			cs.u = u*1e9;  cs.v = v*1e9;  cs.w = w*1e9;
+			have_cs = 1;
+		}
+
+		if ( have_as && have_bs && have_cs ) {
+			image->indexed_cell = cell_new_from_axes(as, bs, cs);
+			have_cell = 1;
+		}
+
+		if ( strncmp(line, "photon_energy_eV = ", 19) == 0 ) {
+			image->lambda = ph_en_to_lambda(eV_to_J(atof(line+19)));
+			have_ev = 1;
+		}
+
+	} while ( strcmp(line, CHUNK_END_MARKER) != 0 );
+
+	if ( have_filename && have_cell && have_ev ) return 0;
+
+	ERROR("Incomplete chunk found in input file.\n");
+	return 1;
 }
 
 
