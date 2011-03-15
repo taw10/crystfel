@@ -23,6 +23,7 @@
 #include "image.h"
 #include "stream.h"
 #include "reflist.h"
+#include "reflist-utils.h"
 
 
 #define CHUNK_START_MARKER "----- Begin chunk -----"
@@ -31,7 +32,6 @@
 #define PEAK_LIST_END_MARKER "End of peak list"
 #define REFLECTION_START_MARKER "Reflections measured after indexing"
 #define REFLECTION_END_MARKER "End of reflections"
-
 
 static void exclusive(const char *a, const char *b)
 {
@@ -103,10 +103,9 @@ int count_patterns(FILE *fh)
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
-		if ( (strncmp(line, "Reflections from indexing", 25) == 0)
-		    || (strncmp(line, "New pattern", 11) == 0) ) {
-		    n_total_patterns++;
-		}
+		chomp(line);
+		if ( strcmp(line, CHUNK_END_MARKER) == 0 ) n_total_patterns++;
+
 	} while ( rval != NULL );
 
 	return n_total_patterns;
@@ -147,6 +146,7 @@ static UnitCell *read_orientation_matrix(FILE *fh)
 static int read_reflections(FILE *fh, struct image *image)
 {
 	char *rval = NULL;
+	int first = 1;
 
 	image->reflections = reflist_new();
 
@@ -164,17 +164,20 @@ static int read_reflections(FILE *fh, struct image *image)
 		if ( rval == NULL ) continue;
 		chomp(line);
 
-		if ( strcmp(line, PEAK_LIST_END_MARKER) == 0 ) return 0;
+		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return 0;
 
 		r = sscanf(line, "%i %i %i %f %s %f %f %i %f %f",
 		           &h, &k, &l, &intensity, phs, &sigma, &res, &cts,
 		           &fs, &ss);
-		if ( r != 10 ) return 1;
+		if ( (r != 10) && (!first) ) return 1;
 
-		refl = add_refl(image->reflections, h, k, l);
-		set_int(refl, intensity);
-		set_detector_pos(refl, fs, ss, 0.0);
-		/* FIXME: Set ESD */
+		first = 0;
+		if ( r == 10 ) {
+			refl = add_refl(image->reflections, h, k, l);
+			set_int(refl, intensity);
+			set_detector_pos(refl, fs, ss, 0.0);
+			set_esd_intensity(refl, sigma);
+		}
 
 	} while ( rval != NULL );
 
@@ -184,45 +187,10 @@ static int read_reflections(FILE *fh, struct image *image)
 }
 
 
-static void write_reflections(struct image *image, FILE *ofh)
-{
-	Reflection *refl;
-	RefListIterator *iter;
-
-	fprintf(ofh, REFLECTION_START_MARKER"\n");
-	/* FIXME: Unify this with write_reflections() over in reflections.c */
-	fprintf(ofh, "  h   k   l          I    phase   sigma(I) "
-		     " 1/d(nm^-1)  counts  fs/px  ss/px\n");
-
-	for ( refl = first_refl(image->reflections, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
-		signed int h, k, l;
-		double intensity, esd_i, s;
-		double fs, ss;
-
-		get_indices(refl, &h, &k, &l);
-		get_detector_pos(refl, &fs, &ss);
-		intensity = get_intensity(refl);
-		esd_i = 0.0; /* FIXME! */
-		s = 0.0; /* FIXME! */
-
-		/* h, k, l, I, sigma(I), s */
-		fprintf(ofh,
-		       "%3i %3i %3i %10.2f %s %10.2f  %10.2f %7i %6.1f %6.1f\n",
-		       h, k, l, intensity, "       -", esd_i, s/1.0e9, 1,
-		       fs, ss);
-
-	}
-
-	fprintf(ofh, REFLECTION_END_MARKER"\n");
-}
-
-
 static int read_peaks(FILE *fh, struct image *image)
 {
 	char *rval = NULL;
+	int first = 1;
 
 	image->features = image_feature_list_new();
 
@@ -239,9 +207,17 @@ static int read_peaks(FILE *fh, struct image *image)
 		if ( strcmp(line, PEAK_LIST_END_MARKER) == 0 ) return 0;
 
 		r = sscanf(line, "%f %f %f %f", &x, &y, &d, &intensity);
-		if ( r != 4 ) return 1;
+		if ( (r != 4) && (!first) ) {
+			ERROR("Failed to parse peak list line.\n");
+			ERROR("The failed line was: '%s'\n", line);
+			return 1;
+		}
 
-		image_add_feature(image->features, x, y, image, 1.0, NULL);
+		first = 0;
+		if ( r == 4 ) {
+			image_add_feature(image->features, x, y,
+			                  image, 1.0, NULL);
+		}
 
 	} while ( rval != NULL );
 
@@ -255,7 +231,7 @@ static void write_peaks(struct image *image, FILE *ofh)
 	int i;
 
 	fprintf(ofh, PEAK_LIST_START_MARKER"\n");
-	fprintf(ofh, " fs/px    ss/px   (1/d)/nm^-1    Intensity\n");
+	fprintf(ofh, " fs/px  ss/px  (1/d)/nm^-1   Intensity\n");
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
@@ -269,7 +245,7 @@ static void write_peaks(struct image *image, FILE *ofh)
 		r = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
 		q = modulus(r.u, r.v, r.w);
 
-		fprintf(ofh, "%8.3f %8.3f %8.3f    %12.3f\n",
+		fprintf(ofh, "%6.1f %6.1f   %10.2f  %10.2f\n",
 		       f->fs, f->ss, q/1.0e9, f->intensity);
 
 	}
@@ -330,8 +306,12 @@ void write_chunk(FILE *ofh, struct image *i, int f)
 	}
 
 	if ( (f & STREAM_PIXELS) || (f & STREAM_INTEGRATED) ) {
+
 		fprintf(ofh, "\n");
-		write_reflections(i, ofh);
+		fprintf(ofh, REFLECTION_START_MARKER"\n");
+		write_reflections_to_file(ofh, i->reflections, i->indexed_cell);
+		fprintf(ofh, REFLECTION_END_MARKER"\n");
+
 	}
 
 	fprintf(ofh, CHUNK_END_MARKER"\n\n");
@@ -374,10 +354,11 @@ int read_chunk(FILE *fh, struct image *image)
 	if ( find_start_of_chunk(fh) ) return 1;
 
 	image->i0_available = 0;
-	if ( image->features != NULL ) {
-		image_feature_list_free(image->features);
-		image->features = NULL;
-	}
+	image->i0 = 1.0;
+	image->lambda = -1.0;
+	image->features = NULL;
+	image->reflections = NULL;
+	image->indexed_cell = NULL;
 
 	do {
 
@@ -426,16 +407,22 @@ int read_chunk(FILE *fh, struct image *image)
 		}
 
 		if ( strcmp(line, PEAK_LIST_START_MARKER) == 0 ) {
-			if ( read_peaks(fh, image) ) return 1;
+			if ( read_peaks(fh, image) ) {
+				ERROR("Failed while reading peaks\n");
+				return 1;
+			}
 		}
 
 		if ( strcmp(line, REFLECTION_START_MARKER) == 0 ) {
-			if ( read_reflections(fh, image) ) return 1;
+			if ( read_reflections(fh, image) ) {
+				ERROR("Failed while reading reflections\n");
+				return 1;
+			}
 		}
 
 	} while ( strcmp(line, CHUNK_END_MARKER) != 0 );
 
-	if ( have_filename && have_cell && have_ev ) return 0;
+	if ( have_filename && have_ev ) return 0;
 
 	ERROR("Incomplete chunk found in input file.\n");
 	return 1;
@@ -491,6 +478,27 @@ int find_chunk(FILE *fh, UnitCell **cell, char **filename, double *ev)
 				return 0;
 			}
 		}
+
+	} while ( rval != NULL );
+
+	return 1;
+}
+
+
+int skip_some_files(FILE *fh, int n)
+{
+	char *rval = NULL;
+	int n_patterns = 0;
+
+	do {
+
+		char line[1024];
+
+		if ( n_patterns == n ) return 0;
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
+		if ( strcmp(line, CHUNK_END_MARKER) == 0 ) n_patterns++;
 
 	} while ( rval != NULL );
 

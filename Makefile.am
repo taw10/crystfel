@@ -42,10 +42,10 @@ tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c src/utils.c \
 endif
 
 src_process_hkl_SOURCES = src/process_hkl.c src/sfac.c src/statistics.c \
-                          src/cell.c src/utils.c src/reflections.c \
+                          src/cell.c src/utils.c \
                           src/symmetry.c src/stream.c src/beam-parameters.c \
                           src/thread-pool.c src/image.c src/detector.c \
-                          src/hdf5-file.c src/reflist.c
+                          src/hdf5-file.c src/reflist.c src/reflist-utils.c
 
 src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c src/utils.c \
                           src/cell.c src/image.c src/peaks.c src/index.c \
@@ -53,7 +53,8 @@ src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c src/utils.c \
                           src/sfac.c src/dirax.c src/mosflm.c \
                           src/reflections.c src/symmetry.c \
                           src/geometry.c src/thread-pool.c \
-                          src/beam-parameters.c src/reflist.c src/stream.c
+                          src/beam-parameters.c src/reflist.c src/stream.c \
+                          src/reflist-utils.c
 if HAVE_OPENCL
 src_indexamajig_SOURCES += src/diffraction-gpu.c src/cl-utils.c
 endif
@@ -99,18 +100,19 @@ src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
                           src/geometry.c src/reflections.c src/stream.c \
                           src/thread-pool.c src/beam-parameters.c \
                           src/symmetry.c src/post-refinement.c \
-                          src/hrs-scaling.c src/reflist.c
+                          src/hrs-scaling.c src/reflist.c src/reflist-utils.c
 
 if BUILD_CUBEIT
 src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
                      src/detector.c src/render.c src/filters.c src/image.c \
-                     src/symmetry.c src/stream.c src/thread-pool.c src/reflist.c
+                     src/symmetry.c src/stream.c src/thread-pool.c \
+                     src/reflist.c src/reflist-utils.c
 endif
 
 src_estimate_background_SOURCES = src/estimate_background.c src/stream.c \
                                   src/utils.c src/cell.c src/thread-pool.c \
                                   src/image.c src/detector.c src/hdf5-file.c \
-                                  src/reflist.c
+                                  src/reflist.c src/reflist-utils.c
 
 tests_list_check_SOURCES = tests/list_check.c src/reflist.c src/thread-pool.c \
                            src/utils.c

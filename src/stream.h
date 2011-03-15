@@ -38,4 +38,8 @@ extern void write_chunk(FILE *ofh, struct image *image, int flags);
 
 extern int parse_stream_flags(const char *a);
 
+extern int read_chunk(FILE *fh, struct image *image);
+
+extern int skip_some_files(FILE *fh, int n);
+
 #endif	/* STREAM_H */

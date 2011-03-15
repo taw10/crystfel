@@ -45,6 +45,13 @@ struct _refldata {
 	/* Intensity */
 	double intensity;
 	double esd_i;
+
+	/* Redundancy */
+	int redundancy;
+
+	/* Total squared difference between all estimates of this reflection
+	 * and the estimated mean value */
+	double sum_squared_dev;
 };
 
 
@@ -225,6 +232,24 @@ int get_scalable(Reflection *refl)
 }
 
 
+int get_redundancy(Reflection *refl)
+{
+	return refl->data.redundancy;
+}
+
+
+double get_sum_squared_dev(Reflection *refl)
+{
+	return refl->data.sum_squared_dev;
+}
+
+
+double get_esd_intensity(Reflection *refl)
+{
+	return refl->data.esd_i;
+}
+
+
 /********************************** Setters ***********************************/
 
 void set_detector_pos(Reflection *refl, double exerr, double x, double y)
@@ -255,6 +280,24 @@ void set_int(Reflection *refl, double intensity)
 void set_scalable(Reflection *refl, int scalable)
 {
 	refl->data.scalable = scalable;
+}
+
+
+void set_redundancy(Reflection *refl, int red)
+{
+	refl->data.redundancy = red;
+}
+
+
+void set_sum_squared_dev(Reflection *refl, double dev)
+{
+	refl->data.sum_squared_dev = dev;
+}
+
+
+void set_esd_intensity(Reflection *refl, double esd)
+{
+	refl->data.esd_i = esd;
 }
 
 

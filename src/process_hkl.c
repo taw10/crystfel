@@ -3,7 +3,7 @@
  *
  * Assemble and process FEL Bragg intensities
  *
- * (c) 2006-2010 Thomas White <taw@physics.org>
+ * (c) 2006-2011 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
@@ -24,10 +24,12 @@
 #include "utils.h"
 #include "statistics.h"
 #include "sfac.h"
-#include "reflections.h"
+#include "reflist-utils.h"
 #include "symmetry.h"
 #include "stream.h"
 #include "beam-parameters.h"
+#include "reflist.h"
+#include "image.h"
 
 
 /* Number of divisions for intensity histograms */
@@ -43,7 +45,7 @@ static void show_help(const char *s)
 "  -h, --help                Display this help message.\n"
 "  -i, --input=<filename>    Specify input filename (\"-\" for stdin).\n"
 "  -o, --output=<filename>   Specify output filename for merged intensities\n"
-"                             (don't specify for no output).\n"
+"                             Default: processed.hkl).\n"
 "  -p, --pdb=<filename>      PDB file to use (default: molecule.pdb).\n"
 "  -b, --beam=<file>         Get beam parameters from file (used for sigmas).\n"
 "\n"
@@ -66,13 +68,10 @@ static void show_help(const char *s)
 "      --scale               Scale each pattern for best fit with the current\n"
 "                             model.\n"
 "  -y, --symmetry=<sym>      Merge according to point group <sym>.\n"
-"  -a, --input-symmetry=<a>  Specify the apparent (input) symmetry.\n"
 "      --reference=<file>    Compare against intensities from <file> when\n"
 "                             scaling or resolving ambiguities.\n"
 "                             The symmetry of the reference list must be the\n"
 "                             same as that given with '-y'.\n"
-"      --outstream=<file>    Write an annotated version of the input stream\n"
-"                             to <file>.\n"
 );
 }
 
@@ -119,175 +118,55 @@ static void plot_histogram(double *vals, int n)
 }
 
 
-/* Note "holo" needn't actually be a holohedral point group, if you want to try
- * something strange like resolving from a low-symmetry group into an even
- * lower symmetry one.
- */
-static ReflItemList *get_twin_possibilities(const char *holo, const char *mero)
+static void merge_pattern(RefList *model, RefList *new, int max_only,
+                          const char *sym,
+                          double *hist_vals, signed int hist_h,
+                          signed int hist_k, signed int hist_l, int *hist_n)
 {
-	ReflItemList *test_items;
-	ReflItemList *twins;
-	int np;
+	Reflection *refl;
+	RefListIterator *iter;
 
-	np = num_general_equivs(holo) / num_general_equivs(mero);
-
-	test_items = new_items();
-
-	/* Some arbitrarily chosen reflections which can't be special
-	 * reflections in any point group, i.e. lots of odd numbers,
-	 * prime numbers and so on.  There's probably an analytical
-	 * way of working these out, but this will do. */
-	add_item(test_items, 1, 2, 3);
-	add_item(test_items, 3, 7, 13);
-	add_item(test_items, 5, 2, 1);
-
-	twins = get_twins(test_items, holo, mero);
-	delete_items(test_items);
-
-	/* Idiot check.  Wouldn't be necessary if I could prove that the above
-	 * set of arbitrarily chosen reflections were always general. */
-	if ( num_items(twins) != np ) {
-		ERROR("Whoops! Couldn't find all the twinning possiblities.\n");
-		abort();
-	}
-
-	return twins;
-}
-
-
-static int resolve_twin(const double *model, ReflItemList *observed,
-                        const double *patt, ReflItemList *items,
-                        ReflItemList *twins, const char *holo, const char *mero)
-{
-	int n, i;
-	double best_fom = 0.0;
-	int best_op = 0;
-
-	n = num_items(twins);
-
-	for ( i=0; i<n; i++ ) {
-
-		int j;
-		int op;
-		double *trial_ints = new_list_intensity();
-		unsigned int *trial_counts = new_list_count();
-		double fom;
-		ReflItemList *intersection;
-
-		op = get_item(twins, i)->op;
-
-		for ( j=0; j<num_items(items); j++ ) {
-
-			signed int h, k, l;
-			struct refl_item *r = get_item(items, j);
-
-			get_general_equiv(r->h, r->k, r->l, &h, &k, &l,
-			                  holo, op);
-			get_asymm(h, k, l, &h, &k, &l, mero);
-
-			set_intensity(trial_ints, h, k, l,
-			              lookup_intensity(patt, r->h, r->k, r->l));
-			set_count(trial_counts, h, k, l, 1);
-
-		}
-
-		intersection = intersection_items(observed, items);
-		fom = stat_pearson_i(trial_ints, model, intersection);
-		delete_items(intersection);
-
-		free(trial_ints);
-		free(trial_counts);
-
-		//printf(" %f", fom);
-		if ( fom > best_fom ) {
-			best_fom = fom;
-			best_op = op;
-		}
-
-	}
-	//printf("\n");
-
-	return best_op;
-}
-
-
-static void merge_pattern(double *model, ReflItemList *observed,
-                          const double *new,  ReflItemList *items,
-                          unsigned int *model_counts,  int mo,
-                          ReflItemList *twins,
-                          const char *holo, const char *mero,
-                          ReflItemList *reference, const double *reference_i,
-                          double *hist_vals,
-                          signed int hist_h, signed int hist_k,
-                          signed int hist_l, int *hist_n, double *devs,
-                          double *means, FILE *outfh)
-{
-	int i;
-	int twin;
-	ReflItemList *sym_items = new_items();
-
-	if ( twins != NULL ) {
-		if ( reference != NULL ) {
-			twin = resolve_twin(reference_i, reference, new, items,
-			                    twins, holo, mero);
-		} else {
-			twin = resolve_twin(model, observed, new, items,
-			                    twins, holo, mero);
-		}
-	} else {
-		twin = 0;
-	}
-
-	if ( outfh != NULL ) {
-		fprintf(outfh, "twin=%i\n", twin);
-	}
-
-	for ( i=0; i<num_items(items); i++ ) {
+	for ( refl = first_refl(new, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
 
 		double intensity;
-		signed int hs, ks, ls;
 		signed int h, k, l;
-		struct refl_item *item;
+		Reflection *model_version;
+		double model_int;
 
-		item = get_item(items, i);
-
-		hs = item->h;
-		ks = item->k;
-		ls = item->l;
-
-		/* Transform into correct side of the twin law.
-		 * "twin" is always zero if no de-twinning is performed. */
-		get_general_equiv(hs, ks, ls, &h, &k, &l, holo, twin);
+		get_indices(refl, &h, &k, &l);
+		model_version = find_refl(model, h, k, l);
+		if ( model_version == NULL ) {
+			model_version = add_refl(model, h, k, l);
+		}
 
 		/* Put into the asymmetric unit for the target group */
-		get_asymm(h, k, l, &h, &k, &l, mero);
+		get_asymm(h, k, l, &h, &k, &l, sym);
 
 		/* Read the intensity from the original location
 		 * (i.e. before screwing around with symmetry) */
-		intensity = lookup_intensity(new, hs, ks, ls);
+		intensity = get_intensity(refl);
+
+		/* Get the current model intensity */
+		model_int = get_intensity(model_version);
 
 		/* User asked for max only? */
-		if ( !mo ) {
-			integrate_intensity(model, h, k, l, intensity);
+		if ( !max_only ) {
+			set_int(model_version, model_int + intensity);
 		} else {
-			if ( intensity > lookup_intensity(model, h, k, l) ) {
-				set_intensity(model, h, k, l, intensity);
+			if ( intensity > get_intensity(model_version) ) {
+				set_int(model_version, intensity);
 			}
 		}
 
-		if ( devs != NULL ) {
-			double m;
-			m = lookup_intensity(means, h, k, l);
-			integrate_intensity(devs, h, k, l,
-			                    pow(intensity-m, 2.0));
-		}
+		double dev = get_sum_squared_dev(model_version);
+		set_sum_squared_dev(model_version,
+		                    dev + pow(intensity-model_int, 2.0));
 
-		if ( !find_item(sym_items, h, k, l) ) {
-			add_item(sym_items, h, k, l);
-		}
-
-		/* Increase count */
-		integrate_count(model_counts, h, k, l, 1);
+		/* Increase redundancy */
+		int cur_redundancy = get_redundancy(model_version);
+		set_redundancy(model_version, cur_redundancy+1);
 
 		if ( hist_vals != NULL ) {
 			int p = *hist_n;
@@ -298,11 +177,6 @@ static void merge_pattern(double *model, ReflItemList *observed,
 		}
 
 	}
-
-	/* Dump the reflections in this pattern into the overall list */
-	union_items(observed, sym_items);
-
-	delete_items(sym_items);
 }
 
 
@@ -314,34 +188,36 @@ enum {
 };
 
 
-static void scale_intensities(const double *model, ReflItemList *model_items,
-                              double *new_pattern, ReflItemList *new_items,
-                              double f0, int f0_valid, const char *sym)
+static void scale_intensities(RefList *model, RefList *new, const char *sym)
 {
 	double s;
 	double top = 0.0;
 	double bot = 0.0;
-	unsigned int i;
 	const int scaling = SCALE_INTPERBRAGG;
+	Reflection *refl;
+	RefListIterator *iter;
+	Reflection *model_version;
 
-	for ( i=0; i<num_items(new_items); i++ ) {
+	for ( refl = first_refl(new, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
 
 		double i1, i2;
-		struct refl_item *it;
 		signed int hu, ku, lu;
+		signed int h, k, l;
 
-		/* Get the next item in the list of new reflections */
-		it = get_item(new_items, i);
+		get_indices(refl, &h, &k, &l);
 
 		switch ( scaling ) {
 		case SCALE_TWOPASS :
 
-			/* Find the (only) partner in the model */
-			find_unique_equiv(model_items, it->h, it->k, it->l, sym,
-				          &hu, &ku, &lu);
+			model_version = find_refl(model, h, k, l);
+			if ( model_version == NULL ) continue;
 
-			i1 = lookup_intensity(model, hu, ku, lu);
-			i2 = lookup_intensity(new_pattern, it->h, it->k, it->l);
+			get_asymm(h, k, l, &hu, &ku, &lu, sym);
+
+			i1 = get_intensity(model_version);
+			i2 = get_intensity(refl);
 
 			/* Calculate LSQ estimate of scaling factor */
 			top += i1 * i2;
@@ -352,7 +228,7 @@ static void scale_intensities(const double *model, ReflItemList *model_items,
 		case SCALE_CONSTINT :
 
 			/* Sum up the intensity in the pattern */
-			i2 = lookup_intensity(new_pattern, it->h, it->k, it->l);
+			i2 = get_intensity(refl);
 			top += i2;
 
 			break;
@@ -360,7 +236,7 @@ static void scale_intensities(const double *model, ReflItemList *model_items,
 		case SCALE_INTPERBRAGG :
 
 			/* Sum up the intensity in the pattern */
-			i2 = lookup_intensity(new_pattern, it->h, it->k, it->l);
+			i2 = get_intensity(refl);
 			top += i2;
 			bot += 1.0;
 
@@ -381,162 +257,108 @@ static void scale_intensities(const double *model, ReflItemList *model_items,
 		s = 1000.0 / (top/bot);
 		break;
 	}
-	//if ( f0_valid ) printf("%f %f\n", s, f0);
 
 	/* Multiply the new pattern up by "s" */
-	for ( i=0; i<LIST_SIZE; i++ ) {
-		new_pattern[i] *= s;
+	for ( refl = first_refl(new, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
+
+		double intensity = get_intensity(refl);
+		set_int(refl, intensity*s);
+
 	}
 }
 
 
-static void merge_all(FILE *fh, double **pmodel, ReflItemList **pobserved,
-                      unsigned int **pcounts,
+static void merge_all(FILE *fh, RefList *model,
                       int config_maxonly, int config_scale, int config_sum,
                       int config_startafter, int config_stopafter,
-                      ReflItemList *twins, const char *holo, const char *mero,
+                      const char *sym,
                       int n_total_patterns,
-                      ReflItemList *reference, double *reference_i,
-                      double *hist_vals,
-                      signed int hist_h, signed int hist_k, signed int hist_l,
-                      int *hist_i, double *devs, double *means, FILE *outfh)
+                      double *hist_vals, signed int hist_h,
+                      signed int hist_k, signed int hist_l,
+                      int *hist_i)
 {
-	char *rval;
-	float f0;
-	int n_nof0 = 0;
-	int f0_valid = 0;
+	int rval;
 	int n_patterns = 0;
-	double *new_pattern = new_list_intensity();
-	ReflItemList *items = new_items();
-	ReflItemList *observed = new_items();
-	double *model = new_list_intensity();
-	unsigned int *counts = new_list_count();
-	int i;
+	int n_used = 0;
+	Reflection *refl;
+	RefListIterator *iter;
 
-	if ( config_startafter != 0 ) {
-
-		do {
-
-			char line[1024];
-
-			rval = fgets(line, 1023, fh);
-			if ( (strncmp(line, "Reflections from indexing", 25)
-			                                                   == 0)
-			    || (strncmp(line, "New pattern", 11) == 0) ) {
-				n_patterns++;
-			}
-
-			if ( n_patterns == config_startafter ) break;
-
-		} while ( rval != NULL );
-
+	if ( skip_some_files(fh, config_startafter) ) {
+		ERROR("Failed to skip first %i files.\n", config_startafter);
+		return;
 	}
 
 	do {
 
-		char line[1024];
-		signed int h, k, l;
-		float intensity;
-		int r;
+		struct image image;
 
-		rval = fgets(line, 1023, fh);
-		if ( ((strncmp(line, "Reflections from indexing", 25) == 0)
-		  || (rval == NULL)) && (num_items(items)>0) ) {
+		/* Get data from next chunk */
+		rval = read_chunk(fh, &image);
+		if ( rval ) continue;
 
-			/* Assume a default I0 if we don't have one by now */
-			if ( config_scale && !f0_valid ) {
-				n_nof0++;
-				f0 = 1.0;
-			}
+		n_patterns++;
+
+		if ( (image.reflections != NULL) && (image.indexed_cell) ) {
 
 			/* Scale if requested */
 			if ( config_scale ) {
-				if ( reference == NULL ) {
-					scale_intensities(model, observed,
-					                  new_pattern, items,
-					                  f0, f0_valid, mero);
-				} else {
-					scale_intensities(reference_i,
-					                  reference,
-					                  new_pattern, items,
-					                  f0, f0_valid, mero);
-				}
+				scale_intensities(model, image.reflections,
+				                  sym);
 			}
 
-			/* Start of second or later pattern */
-			merge_pattern(model, observed, new_pattern, items,
-			              counts, config_maxonly,
-			              twins, holo, mero,
-			              reference, reference_i,
-			              hist_vals, hist_h, hist_k, hist_l,
-			              hist_i, devs, means, outfh);
+			merge_pattern(model, image.reflections, config_maxonly,
+			              sym, hist_vals, hist_h, hist_k, hist_l,
+			              hist_i);
 
-			n_patterns++;
-			if ( n_patterns == config_stopafter ) {
-				progress_bar(n_total_patterns, n_total_patterns,
-				             "Merging");
-				break;
-			}
-			progress_bar(n_patterns, n_total_patterns, "Merging");
-
-			/* Reset for the next pattern */
-			clear_items(items);
-
-			f0_valid = 0;
+			n_used++;
 
 		}
 
-		if ( outfh != NULL ) {
-			fprintf(outfh, "%s", line);
-		}
+		reflist_free(image.reflections);
+		image_feature_list_free(image.features);
+		cell_free(image.indexed_cell);
 
-		if ( strncmp(line, "f0 = ", 5) == 0 ) {
-			r = sscanf(line, "f0 = %f", &f0);
-			if ( r != 1 ) {
-				f0 = 1.0;
-				f0_valid = 0;
-				continue;
-			}
-			f0_valid = 1;
-		}
+		progress_bar(n_patterns, n_total_patterns-config_startafter,
+		             "Merging");
 
-		r = sscanf(line, "%i %i %i %f", &h, &k, &l, &intensity);
-		if ( r != 4 ) continue;
+	} while ( rval == 0 );
 
-		/* Not interested in the central beam */
-		if ( (h==0) && (k==0) && (l==0) ) continue;
-
-		/* The same raw indices (before mapping into the asymmetric
-		 * unit should not turn up twice in one pattern. */
-		if ( find_item(items, h, k, l) != 0 ) {
-			ERROR("More than one measurement for %i %i %i in"
-			      " pattern number %i\n", h, k, l, n_patterns);
-		}
-		set_intensity(new_pattern, h, k, l, intensity);
-
-		/* NB: This list contains raw indices, before working out
-		 * where they belong in the asymmetric unit. */
-		add_item(items, h, k, l);
-
-	} while ( rval != NULL );
-
-	delete_items(items);
-	free(new_pattern);
-
-	/* Calculate mean intensity if necessary */
+	/* Divide by counts to get mean intensity if necessary */
 	if ( !config_sum && !config_maxonly ) {
-		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
-			if ( counts[i] > 0 ) {
-				model[i] /= (double)counts[i];
-			}
+
+		Reflection *refl;
+		RefListIterator *iter;
+
+		for ( refl = first_refl(model, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) ) {
+
+			double intensity = get_intensity(refl);
+			double sum_squared_dev = get_sum_squared_dev(refl);
+			int red = get_redundancy(refl);
+
+			set_int(refl, intensity / (double)red);
+			set_sum_squared_dev(refl, sum_squared_dev/(double)red);
+
 		}
+
 	}
 
-	*pmodel = model;
-	*pcounts = counts;
-	*pobserved = observed;
+	/* Calculate ESDs */
+	for ( refl = first_refl(model, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
 
-	STATUS("%i patterns had no f0 valid value.\n", n_nof0);
+		double sum_squared_dev = get_sum_squared_dev(refl);
+		int red = get_redundancy(refl);
+
+		set_esd_intensity(refl, sum_squared_dev/(double)red);
+
+	}
+
+	STATUS("%i of the patterns could be used.\n", n_used);
 }
 
 
@@ -546,35 +368,22 @@ int main(int argc, char *argv[])
 	char *filename = NULL;
 	char *output = NULL;
 	FILE *fh;
-	double *model;
-	unsigned int *counts;
+	RefList *model;
 	UnitCell *cell = NULL;
 	int config_maxonly = 0;
 	int config_startafter = 0;
 	int config_stopafter = 0;
 	int config_sum = 0;
 	int config_scale = 0;
-	int config_rmerge = 0;
 	unsigned int n_total_patterns;
 	char *sym = NULL;
-	char *in_sym = NULL;
 	char *pdb = NULL;
-	ReflItemList *twins;
-	ReflItemList *observed;
-	int i;
 	char *histo = NULL;
 	signed int hist_h, hist_k, hist_l;
 	double *hist_vals = NULL;
 	int hist_i;
-	char *outstream = NULL;
-	char *reference = NULL;
-	ReflItemList *reference_items;
-	double *reference_i;
-	FILE *outfh = NULL;
 	struct beam_params *beam = NULL;
 	int space_for_hist = 0;
-	double *devs;
-	double *esds;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -588,18 +397,14 @@ int main(int argc, char *argv[])
 		{"sum",                0, &config_sum,         1},
 		{"scale",              0, &config_scale,       1},
 		{"symmetry",           1, NULL,               'y'},
-		{"input-symmetry",     1, NULL,               'a'},
 		{"pdb",                1, NULL,               'p'},
 		{"histogram",          1, NULL,               'g'},
-		{"rmerge",             0, &config_rmerge,      1},
-		{"outstream",          1, NULL,                2},
-		{"reference",          1, NULL,               'r'},
 		{"beam",               1, NULL,               'b'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:e:r:o:p:y:g:f:a:b:",
+	while ((c = getopt_long(argc, argv, "hi:e:o:p:y:g:f:b:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -635,18 +440,6 @@ int main(int argc, char *argv[])
 			histo = strdup(optarg);
 			break;
 
-		case 'r' :
-			reference = strdup(optarg);
-			break;
-
-		case 2 :
-			outstream = strdup(optarg);
-			break;
-
-		case 'a' :
-			in_sym = strdup(optarg);
-			break;
-
 		case 'b' :
 			beam = get_beam_parameters(optarg);
 			if ( beam == NULL ) {
@@ -665,15 +458,13 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( config_sum && config_rmerge ) {
-		ERROR("Options --sum and --rmerge do not make sense"
-		      " together.\n");
-		return 1;
-	}
-
 	if ( filename == NULL ) {
 		ERROR("Please specify filename using the -i option\n");
 		return 1;
+	}
+
+	if ( output == NULL ) {
+		output = strdup("processed.hkl");
 	}
 
 	if ( pdb == NULL ) {
@@ -684,35 +475,6 @@ int main(int argc, char *argv[])
 	free(pdb);
 
 	if ( sym == NULL ) sym = strdup("1");
-
-	/* Show useful symmetry information */
-	if ( (sym != NULL) && (in_sym != NULL) ) {
-
-		int np = num_general_equivs(in_sym) / num_general_equivs(sym);
-		if ( np > 1 ) {
-
-			STATUS("Resolving point group %s into %s "
-			       "(%i possibilities)\n",
-			       in_sym, sym, np);
-			/* Get the list of twin/Bijvoet possibilities */
-			twins = get_twin_possibilities(in_sym, sym);
-			STATUS("Twin operation indices from %s are:", in_sym);
-			for ( i=0; i<num_items(twins); i++ ) {
-				STATUS(" %i", get_item(twins, i)->op);
-			}
-			STATUS("\n");
-
-		} else {
-			STATUS("No resolution required to get from %s to %s\n",
-			       in_sym, sym);
-			twins = NULL;
-		}
-
-	} else {
-		STATUS("No twin resolution requested (use -a otherwise).\n");
-		twins = NULL;
-		in_sym = strdup(sym);
-	}
 
 	/* Open the data stream */
 	if ( strcmp(filename, "-") == 0 ) {
@@ -726,32 +488,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* Read the reference reflections */
-	if ( reference != NULL ) {
-		reference_i = new_list_intensity();
-		reference_items = read_reflections(reference, reference_i,
-		                                   NULL, NULL, NULL);
-		if ( reference_items == NULL ) {
-			ERROR("Couldn't read '%s'\n", reference);
-			return 1;
-		}
-	} else {
-		reference_items = NULL;
-		reference_i = NULL;
-	}
-
-	if ( outstream != NULL ) {
-		outfh = fopen(outstream, "w");
-		if ( outfh == NULL ) {
-			ERROR("Couldn't open '%s'\n", outstream);
-			return 1;
-		}
-	}
-
 	/* Count the number of patterns in the file */
 	n_total_patterns = count_patterns(fh);
 	STATUS("There are %i patterns to process\n", n_total_patterns);
 	rewind(fh);
+
+	model = reflist_new();
 
 	if ( histo != NULL ) {
 		int r;
@@ -771,13 +513,10 @@ int main(int argc, char *argv[])
 	}
 
 	hist_i = 0;
-	merge_all(fh, &model, &observed, &counts,
-	          config_maxonly, config_scale, config_sum,
+	merge_all(fh, model, config_maxonly, config_scale, config_sum,
 	          config_startafter, config_stopafter,
-                  twins, in_sym, sym, n_total_patterns,
-                  reference_items, reference_i,
-                  hist_vals, hist_h, hist_k, hist_l, &hist_i, NULL, NULL,
-                  outfh);
+                  sym, n_total_patterns,
+                  hist_vals, hist_h, hist_k, hist_l, &hist_i);
 	rewind(fh);
 	if ( space_for_hist && (hist_i >= space_for_hist) ) {
 		ERROR("Histogram array was too small!\n");
@@ -790,60 +529,17 @@ int main(int argc, char *argv[])
 	}
 
 	STATUS("Extra pass to calculate ESDs...\n");
-	devs = new_list_intensity();
-	esds = new_list_sigma();
 	rewind(fh);
-	merge_all(fh, &model, &observed, &counts,
-	          config_maxonly, config_scale, 0,
-	          config_startafter, config_stopafter,
-	          twins, in_sym, sym,
-	          n_total_patterns, reference_items, reference_i,
-	          NULL, 0, 0, 0, NULL, devs, model, NULL);
+	merge_all(fh, model, config_maxonly, config_scale, 0,
+	          config_startafter, config_stopafter, sym, n_total_patterns,
+	          NULL, 0, 0, 0, NULL);
 
-	for ( i=0; i<num_items(observed); i++ ) {
+	write_reflist(output, model, cell);
 
-		struct refl_item *it;
-		signed int h, k, l;
-		double dev, esd;
-		unsigned int count;
-
-		it = get_item(observed, i);
-		h = it->h;  k = it->k,  l = it->l;
-
-		dev = lookup_intensity(devs, h, k, l);
-		count = lookup_count(counts, h, k, l);
-
-		if ( count < 2 ) {
-			/* If we have only one measurement, the error is 100% */
-			esd = lookup_sigma(model, h, k, l);
-		} else {
-			esd = sqrt(dev) / (double)count;
-		}
-		set_sigma(esds, h, k, l, esd);
-
-	}
-
-	if ( output != NULL ) {
-
-		double adu_per_photon;
-
-		if ( beam == NULL ) {
-			adu_per_photon = 167.0;
-			STATUS("No beam parameters file provided (use -b), "
-			       "so I'm assuming 167.0 ADU per photon.\n");
-		} else {
-			adu_per_photon = beam->adu_per_photon;
-		}
-
-		write_reflections(output, observed, model, esds,
-		                  NULL, counts, cell);
-
-	}
-
+	cell_free(cell);
 	fclose(fh);
 	free(sym);
-	free(model);
-	free(counts);
+	reflist_free(model);
 	free(output);
 	if ( cell != NULL ) cell_free(cell);
 
