@@ -136,13 +136,14 @@ static void merge_pattern(RefList *model, RefList *new, int max_only,
 		double model_int;
 
 		get_indices(refl, &h, &k, &l);
+
+		/* Put into the asymmetric unit for the target group */
+		get_asymm(h, k, l, &h, &k, &l, sym);
+
 		model_version = find_refl(model, h, k, l);
 		if ( model_version == NULL ) {
 			model_version = add_refl(model, h, k, l);
 		}
-
-		/* Put into the asymmetric unit for the target group */
-		get_asymm(h, k, l, &h, &k, &l, sym);
 
 		/* Read the intensity from the original location
 		 * (i.e. before screwing around with symmetry) */
