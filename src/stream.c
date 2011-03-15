@@ -397,8 +397,13 @@ int read_chunk(FILE *fh, struct image *image)
 		}
 
 		if ( have_as && have_bs && have_cs ) {
+			if ( image->indexed_cell != NULL ) {
+				ERROR("Duplicate cell found in stream!\n");
+				cell_free(image->indexed_cell);
+			}
 			image->indexed_cell = cell_new_from_axes(as, bs, cs);
 			have_cell = 1;
+			have_as = 0;  have_bs = 0;  have_cs = 0;
 		}
 
 		if ( strncmp(line, "photon_energy_eV = ", 19) == 0 ) {

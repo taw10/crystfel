@@ -316,6 +316,7 @@ static void merge_all(FILE *fh, RefList *model,
 
 		}
 
+		free(image.filename);
 		reflist_free(image.reflections);
 		image_feature_list_free(image.features);
 		cell_free(image.indexed_cell);
