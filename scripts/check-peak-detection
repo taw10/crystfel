@@ -19,7 +19,7 @@ while ( $line = <FH> ) {
 		$handled = 1;
 	}
 
-	if ( $line =~ /^Reflections\ measured\ after\ indexing$/ ) {
+	if ( $line =~ /^Peaks\ from\ peak\ search$/ ) {
 		$in_image = 1;
 		$handled = 1;
 	}
@@ -29,7 +29,7 @@ while ( $line = <FH> ) {
 		$handled = 1;
 	}
 
-	if ( $line =~ /^End\ of\ reflections$/ ) {
+	if ( $line =~ /^End\ of\ peak\ list$/ ) {
 
 		close(TMP);
 

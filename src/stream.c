@@ -22,10 +22,15 @@
 #include "utils.h"
 #include "image.h"
 #include "stream.h"
+#include "reflist.h"
 
 
 #define CHUNK_START_MARKER "----- Begin chunk -----"
 #define CHUNK_END_MARKER "----- End chunk -----"
+#define PEAK_LIST_START_MARKER "Peaks from peak search"
+#define PEAK_LIST_END_MARKER "End of peak list"
+#define REFLECTION_START_MARKER "Reflections measured after indexing"
+#define REFLECTION_END_MARKER "End of reflections"
 
 
 static void exclusive(const char *a, const char *b)
@@ -139,15 +144,55 @@ static UnitCell *read_orientation_matrix(FILE *fh)
 }
 
 
+static int read_reflections(FILE *fh, struct image *image)
+{
+	char *rval = NULL;
+
+	image->reflections = reflist_new();
+
+	do {
+
+		char line[1024];
+		signed int h, k, l;
+		float intensity, sigma, res, fs, ss;
+		char phs[1024];
+		int cts;
+		int r;
+		Reflection *refl;
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
+		chomp(line);
+
+		if ( strcmp(line, PEAK_LIST_END_MARKER) == 0 ) return 0;
+
+		r = sscanf(line, "%i %i %i %f %s %f %f %i %f %f",
+		           &h, &k, &l, &intensity, phs, &sigma, &res, &cts,
+		           &fs, &ss);
+		if ( r != 10 ) return 1;
+
+		refl = add_refl(image->reflections, h, k, l);
+		set_int(refl, intensity);
+		set_detector_pos(refl, fs, ss, 0.0);
+		/* FIXME: Set ESD */
+
+	} while ( rval != NULL );
+
+	/* Got read error of some kind before finding PEAK_LIST_END_MARKER */
+	return 1;
+
+}
+
+
 static void write_reflections(struct image *image, FILE *ofh)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 
-	fprintf(ofh, "Reflections measured after indexing\n");
+	fprintf(ofh, REFLECTION_START_MARKER"\n");
 	/* FIXME: Unify this with write_reflections() over in reflections.c */
 	fprintf(ofh, "  h   k   l          I    phase   sigma(I) "
-		     " 1/d(nm^-1)  counts\n");
+		     " 1/d(nm^-1)  counts  fs/px  ss/px\n");
 
 	for ( refl = first_refl(image->reflections, &iter);
 	      refl != NULL;
@@ -155,17 +200,53 @@ static void write_reflections(struct image *image, FILE *ofh)
 
 		signed int h, k, l;
 		double intensity, esd_i, s;
+		double fs, ss;
 
 		get_indices(refl, &h, &k, &l);
+		get_detector_pos(refl, &fs, &ss);
 		intensity = get_intensity(refl);
 		esd_i = 0.0; /* FIXME! */
 		s = 0.0; /* FIXME! */
 
 		/* h, k, l, I, sigma(I), s */
-		fprintf(ofh, "%3i %3i %3i %10.2f %s %10.2f  %10.2f %7i\n",
-		        h, k, l, intensity, "       -", esd_i, s/1.0e9, 1);
+		fprintf(ofh,
+		       "%3i %3i %3i %10.2f %s %10.2f  %10.2f %7i %6.1f %6.1f\n",
+		       h, k, l, intensity, "       -", esd_i, s/1.0e9, 1,
+		       fs, ss);
 
 	}
+
+	fprintf(ofh, REFLECTION_END_MARKER"\n");
+}
+
+
+static int read_peaks(FILE *fh, struct image *image)
+{
+	char *rval = NULL;
+
+	image->features = image_feature_list_new();
+
+	do {
+
+		char line[1024];
+		float x, y, d, intensity;
+		int r;
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
+		chomp(line);
+
+		if ( strcmp(line, PEAK_LIST_END_MARKER) == 0 ) return 0;
+
+		r = sscanf(line, "%f %f %f %f", &x, &y, &d, &intensity);
+		if ( r != 4 ) return 1;
+
+		image_add_feature(image->features, x, y, image, 1.0, NULL);
+
+	} while ( rval != NULL );
+
+	/* Got read error of some kind before finding PEAK_LIST_END_MARKER */
+	return 1;
 }
 
 
@@ -173,7 +254,7 @@ static void write_peaks(struct image *image, FILE *ofh)
 {
 	int i;
 
-	fprintf(ofh, "Peaks from peak search\n");
+	fprintf(ofh, PEAK_LIST_START_MARKER"\n");
 	fprintf(ofh, " fs/px    ss/px   (1/d)/nm^-1    Intensity\n");
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
@@ -192,6 +273,8 @@ static void write_peaks(struct image *image, FILE *ofh)
 		       f->fs, f->ss, q/1.0e9, f->intensity);
 
 	}
+
+	fprintf(ofh, PEAK_LIST_END_MARKER"\n");
 }
 
 
@@ -291,6 +374,10 @@ int read_chunk(FILE *fh, struct image *image)
 	if ( find_start_of_chunk(fh) ) return 1;
 
 	image->i0_available = 0;
+	if ( image->features != NULL ) {
+		image_feature_list_free(image->features);
+		image->features = NULL;
+	}
 
 	do {
 
@@ -336,6 +423,14 @@ int read_chunk(FILE *fh, struct image *image)
 		if ( strncmp(line, "photon_energy_eV = ", 19) == 0 ) {
 			image->lambda = ph_en_to_lambda(eV_to_J(atof(line+19)));
 			have_ev = 1;
+		}
+
+		if ( strcmp(line, PEAK_LIST_START_MARKER) == 0 ) {
+			if ( read_peaks(fh, image) ) return 1;
+		}
+
+		if ( strcmp(line, REFLECTION_START_MARKER) == 0 ) {
+			if ( read_reflections(fh, image) ) return 1;
 		}
 
 	} while ( strcmp(line, CHUNK_END_MARKER) != 0 );
