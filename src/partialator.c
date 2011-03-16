@@ -276,99 +276,86 @@ int main(int argc, char *argv[])
 	obs = new_items();
 	for ( i=0; i<n_total_patterns; i++ ) {
 
-		UnitCell *cell;
-		char *filename;
-		char *rval;
-		char line[1024];
-		RefList *peaks;
-		RefList *transfer;
+		RefList *predicted;
+		RefList *measured;
 		Reflection *refl;
 		RefListIterator *iter;
-		double ph_en;
 
-		if ( find_chunk(fh, &cell, &filename, &ph_en) == 1 ) {
+		if ( read_chunk(fh, &images[i]) == 1 ) {
 			ERROR("Couldn't get all of the filenames, cells and"
 			      " wavelengths from the input stream.\n");
 			return 1;
 		}
 
-		images[i].indexed_cell = cell;
-		images[i].filename = filename;
+		/* Won't be needing this, if it exists */
+		image_feature_list_free(images[i].features);
+		images[i].features = NULL;
+
 		images[i].div = beam->divergence;
 		images[i].bw = beam->bandwidth;
 		images[i].det = det;
+		images[i].width = det->max_fs;
+		images[i].height = det->max_ss;
 		images[i].osf = 1.0;
 		images[i].profile_radius = 0.005e9;
-		images[i].reflections = reflist_new();
-		images[i].lambda = ph_en_to_lambda(eV_to_J(ph_en));
 
 		/* Muppet proofing */
 		images[i].data = NULL;
 		images[i].flags = NULL;
 		images[i].beam = NULL;
 
-		/* Read integrated intensities from pattern */
-		peaks = reflist_new();
-		do {
-
-			Reflection *refl;
-			signed int h, k, l;
-			float intensity;
-			int r;
-
-			rval = fgets(line, 1023, fh);
-			chomp(line);
-
-			if ( (strlen(line) == 0) || (rval == NULL) ) break;
-
-			r = sscanf(line, "%i %i %i %f", &h, &k, &l, &intensity);
-			if ( r != 4 ) continue;
-
-			refl = add_refl(peaks, h, k, l);
-			set_int(refl, intensity);
-
-		} while ( (strlen(line) != 0) && (rval != NULL) );
-
 		/* Calculate initial partialities and fill in intensities from
 		 * the stream */
-		transfer = find_intersections(&images[i], cell, 0);
+		predicted = find_intersections(&images[i],
+		                               images[i].indexed_cell, 0);
+
+		/* We start again with a new reflection list, this time with
+		 * the asymmetric indices */
+		measured = images[i].reflections;
 		images[i].reflections = reflist_new();
 
-		for ( refl = first_refl(transfer, &iter);
+		for ( refl = first_refl(predicted, &iter);
 		      refl != NULL;
 		      refl = next_refl(refl, iter) ) {
 
-			Reflection *peak;
+			Reflection *peak_in_pattern;
 			Reflection *new;
 			signed int h, k, l, ha, ka, la;
 			double r1, r2, p, x, y;
 			int clamp1, clamp2;
 
+			/* Get predicted indices and location */
 			get_indices(refl, &h, &k, &l);
 			get_detector_pos(refl, &x, &y);
 			n_expected++;
 
-			peak = find_refl(peaks, h, k, l);
-			if ( peak == NULL ) {
+			/* Look for this reflection in the pattern */
+			peak_in_pattern = find_refl(measured, h, k, l);
+			if ( peak_in_pattern == NULL ) {
 				n_notfound++;
 				continue;
 			}
 			n_found++;
 
+			/* Put it into the asymmetric cell */
 			get_asymm(h, k, l, &ha, &ka, &la, sym);
 			if ( find_item(obs, ha, ka, la) == 0 ) {
 				add_item(obs, ha, ka, la);
 			}
+
+			/* Create new reflection and copy data across */
 			new = add_refl(images[i].reflections, ha, ka, la);
 			get_partial(refl, &r1, &r2, &p, &clamp1, &clamp2);
 			get_detector_pos(refl, &x, &y);
-			set_int(new, get_intensity(peak));
+			set_int(new, get_intensity(peak_in_pattern));
 			set_partial(new, r1, r2, p, clamp1, clamp2);
 			set_detector_pos(new, 0.0, x, y);
 
 		}
-		reflist_free(peaks);
-		reflist_free(transfer);
+		reflist_free(measured);
+		reflist_free(predicted);
+
+		/* Do magic on the reflection list to make things go faster */
 		optimise_reflist(images[i].reflections);
 
 		progress_bar(i, n_total_patterns-1, "Loading pattern data");
