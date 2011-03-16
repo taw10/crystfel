@@ -22,11 +22,12 @@ struct image;
 /* Possible options dictating what goes into the output stream */
 enum
 {
-	STREAM_NONE             = 0,
-	STREAM_INTEGRATED       = 1<<0,
-	STREAM_PIXELS           = 1<<1,
-	STREAM_PEAKS            = 1<<2,
-	STREAM_PEAKS_IF_INDEXED = 1<<3,
+	STREAM_NONE                 = 0,
+	STREAM_INTEGRATED           = 1<<0,
+	STREAM_PIXELS               = 1<<1,
+	STREAM_PEAKS                = 1<<2,
+	STREAM_PEAKS_IF_INDEXED     = 1<<3,
+	STREAM_PEAKS_IF_NOT_INDEXED = 1<<4,
 };
 
 

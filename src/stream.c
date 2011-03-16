@@ -69,6 +69,10 @@ int parse_stream_flags(const char *a)
 				exclusive("peaks", "peaksifindexed");
 				return -1;
 			}
+			if ( ret & STREAM_PEAKS_IF_NOT_INDEXED ) {
+				exclusive("peaks", "peaksifnotindexed");
+				return -1;
+			}
 			ret |= STREAM_PEAKS;
 
 		} else if ( strcmp(flags[i], "peaksifindexed") == 0) {
@@ -76,7 +80,24 @@ int parse_stream_flags(const char *a)
 				exclusive("peaks", "peaksifindexed");
 				return -1;
 			}
+			if ( ret & STREAM_PEAKS_IF_NOT_INDEXED ) {
+				exclusive("peaksifnotindexed",
+				          "peaksifindexed");
+				return -1;
+			}
 			ret |= STREAM_PEAKS_IF_INDEXED;
+
+		} else if ( strcmp(flags[i], "peaksifnotindexed") == 0) {
+			if ( ret & STREAM_PEAKS ) {
+				exclusive("peaks", "peaksifnotindexed");
+				return -1;
+			}
+			if ( ret & STREAM_PEAKS_IF_INDEXED ) {
+				exclusive("peaksifnotindexed",
+				          "peaksifindexed");
+				return -1;
+			}
+			ret |= STREAM_PEAKS_IF_NOT_INDEXED;
 
 		} else {
 			ERROR("Unrecognised stream flag '%s'\n", flags[i]);
@@ -267,7 +288,9 @@ void write_chunk(FILE *ofh, struct image *i, int f)
 	        J_to_eV(ph_lambda_to_en(i->lambda)));
 
 	if ( (f & STREAM_PEAKS)
-	  || ((f & STREAM_PEAKS_IF_INDEXED) && (i->indexed_cell != NULL)) ) {
+	  || ((f & STREAM_PEAKS_IF_INDEXED) && (i->indexed_cell != NULL))
+	  || ((f & STREAM_PEAKS_IF_NOT_INDEXED) && (i->indexed_cell == NULL)) )
+	{
 		fprintf(ofh, "\n");
 		write_peaks(i, ofh);
 	}
