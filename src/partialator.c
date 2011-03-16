@@ -282,8 +282,7 @@ int main(int argc, char *argv[])
 		RefListIterator *iter;
 
 		if ( read_chunk(fh, &images[i]) == 1 ) {
-			ERROR("Couldn't get all of the filenames, cells and"
-			      " wavelengths from the input stream.\n");
+			ERROR("Failed to read chunk from the input stream.\n");
 			return 1;
 		}
 
