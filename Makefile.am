@@ -5,7 +5,7 @@ ACLOCAL_AMFLAGS = -I m4
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
                src/compare_hkl src/powder_plot src/render_hkl \
                src/calibrate_detector src/partialator \
-               src/estimate_background src/check_hkl src/sum_stack
+               src/check_hkl src/sum_stack
 
 noinst_PROGRAMS = tests/list_check
 
@@ -108,11 +108,6 @@ src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
                      src/symmetry.c src/stream.c src/thread-pool.c \
                      src/reflist.c src/reflist-utils.c
 endif
-
-src_estimate_background_SOURCES = src/estimate_background.c src/stream.c \
-                                  src/utils.c src/cell.c src/thread-pool.c \
-                                  src/image.c src/detector.c src/hdf5-file.c \
-                                  src/reflist.c src/reflist-utils.c
 
 tests_list_check_SOURCES = tests/list_check.c src/reflist.c src/thread-pool.c \
                            src/utils.c

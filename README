@@ -58,9 +58,6 @@ In addition, there is also:
 
 	- cubeit, for summing patterns in 3D to inspect the peak profiles.
 
-	- estimate_background, for calculating signal to noise ratios from
-	                       the indexed peaks.
-
 	- calibrate_detector, which does nothing useful at the moment.
 
 
