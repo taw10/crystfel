@@ -22,7 +22,6 @@
 #include "utils.h"
 #include "cell.h"
 #include "diffraction.h"
-#include "sfac.h"
 #include "beam-parameters.h"
 #include "symmetry.h"
 

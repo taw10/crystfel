@@ -36,7 +36,6 @@
 #include "image.h"
 #include "dirax.h"
 #include "utils.h"
-#include "sfac.h"
 #include "peaks.h"
 
 

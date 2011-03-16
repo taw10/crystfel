@@ -30,7 +30,6 @@
 #include "index.h"
 #include "peaks.h"
 #include "detector.h"
-#include "sfac.h"
 #include "filters.h"
 #include "reflections.h"
 #include "thread-pool.h"

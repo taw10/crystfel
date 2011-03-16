@@ -26,7 +26,6 @@
 #include "peaks.h"
 #include "dirax.h"
 #include "mosflm.h"
-#include "sfac.h"
 #include "detector.h"
 #include "index.h"
 #include "index-priv.h"

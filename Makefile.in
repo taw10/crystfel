@@ -89,15 +89,15 @@ am_src_calibrate_detector_OBJECTS = src/calibrate_detector.$(OBJEXT) \
 src_calibrate_detector_OBJECTS = $(am_src_calibrate_detector_OBJECTS)
 src_calibrate_detector_LDADD = $(LDADD)
 src_calibrate_detector_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
-am_src_check_hkl_OBJECTS = src/check_hkl.$(OBJEXT) src/sfac.$(OBJEXT) \
-	src/cell.$(OBJEXT) src/utils.$(OBJEXT) \
-	src/reflections.$(OBJEXT) src/statistics.$(OBJEXT) \
-	src/symmetry.$(OBJEXT) src/thread-pool.$(OBJEXT)
+am_src_check_hkl_OBJECTS = src/check_hkl.$(OBJEXT) src/cell.$(OBJEXT) \
+	src/utils.$(OBJEXT) src/reflections.$(OBJEXT) \
+	src/statistics.$(OBJEXT) src/symmetry.$(OBJEXT) \
+	src/thread-pool.$(OBJEXT)
 src_check_hkl_OBJECTS = $(am_src_check_hkl_OBJECTS)
 src_check_hkl_LDADD = $(LDADD)
 src_check_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_compare_hkl_OBJECTS = src/compare_hkl.$(OBJEXT) \
-	src/sfac.$(OBJEXT) src/cell.$(OBJEXT) src/utils.$(OBJEXT) \
+	src/cell.$(OBJEXT) src/utils.$(OBJEXT) \
 	src/reflections.$(OBJEXT) src/statistics.$(OBJEXT) \
 	src/symmetry.$(OBJEXT) src/thread-pool.$(OBJEXT)
 src_compare_hkl_OBJECTS = $(am_src_compare_hkl_OBJECTS)
@@ -119,10 +119,10 @@ am__src_cubeit_SOURCES_DIST = src/cubeit.c src/cell.c src/hdf5-file.c \
 src_cubeit_OBJECTS = $(am_src_cubeit_OBJECTS)
 src_cubeit_LDADD = $(LDADD)
 src_cubeit_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
-am_src_get_hkl_OBJECTS = src/get_hkl.$(OBJEXT) src/sfac.$(OBJEXT) \
-	src/cell.$(OBJEXT) src/utils.$(OBJEXT) \
-	src/reflections.$(OBJEXT) src/symmetry.$(OBJEXT) \
-	src/beam-parameters.$(OBJEXT) src/thread-pool.$(OBJEXT)
+am_src_get_hkl_OBJECTS = src/get_hkl.$(OBJEXT) src/cell.$(OBJEXT) \
+	src/utils.$(OBJEXT) src/reflections.$(OBJEXT) \
+	src/symmetry.$(OBJEXT) src/beam-parameters.$(OBJEXT) \
+	src/thread-pool.$(OBJEXT)
 src_get_hkl_OBJECTS = $(am_src_get_hkl_OBJECTS)
 src_get_hkl_LDADD = $(LDADD)
 src_get_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
@@ -141,18 +141,18 @@ src_hdfsee_LDADD = $(LDADD)
 src_hdfsee_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am__src_indexamajig_SOURCES_DIST = src/indexamajig.c src/hdf5-file.c \
 	src/utils.c src/cell.c src/image.c src/peaks.c src/index.c \
-	src/filters.c src/diffraction.c src/detector.c src/sfac.c \
-	src/dirax.c src/mosflm.c src/reflections.c src/symmetry.c \
-	src/geometry.c src/thread-pool.c src/beam-parameters.c \
-	src/reflist.c src/stream.c src/reflist-utils.c \
-	src/diffraction-gpu.c src/cl-utils.c
+	src/filters.c src/diffraction.c src/detector.c src/dirax.c \
+	src/mosflm.c src/reflections.c src/symmetry.c src/geometry.c \
+	src/thread-pool.c src/beam-parameters.c src/reflist.c \
+	src/stream.c src/reflist-utils.c src/diffraction-gpu.c \
+	src/cl-utils.c
 @HAVE_OPENCL_TRUE@am__objects_1 = src/diffraction-gpu.$(OBJEXT) \
 @HAVE_OPENCL_TRUE@	src/cl-utils.$(OBJEXT)
 am_src_indexamajig_OBJECTS = src/indexamajig.$(OBJEXT) \
 	src/hdf5-file.$(OBJEXT) src/utils.$(OBJEXT) src/cell.$(OBJEXT) \
 	src/image.$(OBJEXT) src/peaks.$(OBJEXT) src/index.$(OBJEXT) \
 	src/filters.$(OBJEXT) src/diffraction.$(OBJEXT) \
-	src/detector.$(OBJEXT) src/sfac.$(OBJEXT) src/dirax.$(OBJEXT) \
+	src/detector.$(OBJEXT) src/dirax.$(OBJEXT) \
 	src/mosflm.$(OBJEXT) src/reflections.$(OBJEXT) \
 	src/symmetry.$(OBJEXT) src/geometry.$(OBJEXT) \
 	src/thread-pool.$(OBJEXT) src/beam-parameters.$(OBJEXT) \
@@ -174,13 +174,13 @@ src_partialator_LDADD = $(LDADD)
 src_partialator_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am__src_pattern_sim_SOURCES_DIST = src/pattern_sim.c src/diffraction.c \
 	src/utils.c src/image.c src/cell.c src/hdf5-file.c \
-	src/detector.c src/sfac.c src/peaks.c src/reflections.c \
+	src/detector.c src/peaks.c src/reflections.c \
 	src/beam-parameters.c src/symmetry.c src/thread-pool.c \
 	src/reflist.c src/diffraction-gpu.c src/cl-utils.c
 am_src_pattern_sim_OBJECTS = src/pattern_sim.$(OBJEXT) \
 	src/diffraction.$(OBJEXT) src/utils.$(OBJEXT) \
 	src/image.$(OBJEXT) src/cell.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
-	src/detector.$(OBJEXT) src/sfac.$(OBJEXT) src/peaks.$(OBJEXT) \
+	src/detector.$(OBJEXT) src/peaks.$(OBJEXT) \
 	src/reflections.$(OBJEXT) src/beam-parameters.$(OBJEXT) \
 	src/symmetry.$(OBJEXT) src/thread-pool.$(OBJEXT) \
 	src/reflist.$(OBJEXT) $(am__objects_1)
@@ -195,7 +195,7 @@ src_powder_plot_OBJECTS = $(am_src_powder_plot_OBJECTS)
 src_powder_plot_LDADD = $(LDADD)
 src_powder_plot_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_process_hkl_OBJECTS = src/process_hkl.$(OBJEXT) \
-	src/sfac.$(OBJEXT) src/statistics.$(OBJEXT) src/cell.$(OBJEXT) \
+	src/statistics.$(OBJEXT) src/cell.$(OBJEXT) \
 	src/utils.$(OBJEXT) src/symmetry.$(OBJEXT) \
 	src/stream.$(OBJEXT) src/beam-parameters.$(OBJEXT) \
 	src/thread-pool.$(OBJEXT) src/image.$(OBJEXT) \
@@ -558,18 +558,14 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 EXTRA_DIST = configure m4/gnulib-cache.m4 src/cell.h src/hdf5-file.h \
 	src/image.h src/utils.h src/diffraction.h src/detector.h \
-	src/sfac.h src/reflections.h src/list_tmp.h src/statistics.h \
+	src/reflections.h src/list_tmp.h src/statistics.h \
 	src/dw-hdfsee.h src/render.h src/hdfsee.h src/dirax.h \
 	src/mosflm.h src/peaks.h src/index.h src/filters.h \
 	src/diffraction-gpu.h src/cl-utils.h src/symmetry.h \
 	src/povray.h src/index-priv.h src/geometry.h src/render_hkl.h \
 	src/stream.h src/thread-pool.h src/beam-parameters.h \
 	src/post-refinement.h src/hrs-scaling.h src/reflist.h \
-	data/sfac/Ca.nff data/sfac/C.nff data/sfac/Fe.nff \
-	data/sfac/H.nff data/sfac/Mg.nff data/sfac/N.nff \
-	data/sfac/O.nff data/sfac/P.nff data/sfac/S.nff \
-	data/sfac/f0_WaasKirf.dat data/defs.h data/diffraction.cl \
-	data/hdfsee.ui doc/geometry.txt doc/indexamajig.txt \
+	$(crystfel_DATA) doc/geometry.txt doc/indexamajig.txt \
 	doc/pattern_sim.txt doc/process_hkl.txt doc/symmetry.txt \
 	doc/twin-calculator.pdf doc/0-INDEX doc/examples/lcls-dec.geom \
 	doc/examples/lcls-june-r0013-r0128.geom \
@@ -592,7 +588,7 @@ AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib -I$(top_srcdir)/l
 LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@
 src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c \
 	src/utils.c src/image.c src/cell.c src/hdf5-file.c \
-	src/detector.c src/sfac.c src/peaks.c src/reflections.c \
+	src/detector.c src/peaks.c src/reflections.c \
 	src/beam-parameters.c src/symmetry.c src/thread-pool.c \
 	src/reflist.c $(am__append_3)
 @HAVE_OPENCL_TRUE@tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c src/utils.c \
@@ -601,7 +597,7 @@ src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c \
 @HAVE_OPENCL_TRUE@                              src/symmetry.c src/detector.c src/hdf5-file.c \
 @HAVE_OPENCL_TRUE@                              src/image.c
 
-src_process_hkl_SOURCES = src/process_hkl.c src/sfac.c src/statistics.c \
+src_process_hkl_SOURCES = src/process_hkl.c src/statistics.c \
                           src/cell.c src/utils.c \
                           src/symmetry.c src/stream.c src/beam-parameters.c \
                           src/thread-pool.c src/image.c src/detector.c \
@@ -609,23 +605,23 @@ src_process_hkl_SOURCES = src/process_hkl.c src/sfac.c src/statistics.c \
 
 src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c \
 	src/utils.c src/cell.c src/image.c src/peaks.c src/index.c \
-	src/filters.c src/diffraction.c src/detector.c src/sfac.c \
-	src/dirax.c src/mosflm.c src/reflections.c src/symmetry.c \
-	src/geometry.c src/thread-pool.c src/beam-parameters.c \
-	src/reflist.c src/stream.c src/reflist-utils.c $(am__append_6)
+	src/filters.c src/diffraction.c src/detector.c src/dirax.c \
+	src/mosflm.c src/reflections.c src/symmetry.c src/geometry.c \
+	src/thread-pool.c src/beam-parameters.c src/reflist.c \
+	src/stream.c src/reflist-utils.c $(am__append_6)
 @BUILD_HDFSEE_TRUE@src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/render.c \
 @BUILD_HDFSEE_TRUE@                     src/hdf5-file.c src/utils.c src/image.c src/filters.c \
 @BUILD_HDFSEE_TRUE@                     src/thread-pool.c src/detector.c
 
-src_get_hkl_SOURCES = src/get_hkl.c src/sfac.c src/cell.c src/utils.c \
+src_get_hkl_SOURCES = src/get_hkl.c src/cell.c src/utils.c \
                       src/reflections.c src/symmetry.c src/beam-parameters.c \
                       src/thread-pool.c
 
-src_compare_hkl_SOURCES = src/compare_hkl.c src/sfac.c src/cell.c src/utils.c \
+src_compare_hkl_SOURCES = src/compare_hkl.c src/cell.c src/utils.c \
                           src/reflections.c src/statistics.c src/symmetry.c \
                           src/thread-pool.c
 
-src_check_hkl_SOURCES = src/check_hkl.c src/sfac.c src/cell.c src/utils.c \
+src_check_hkl_SOURCES = src/check_hkl.c src/cell.c src/utils.c \
                         src/reflections.c src/statistics.c src/symmetry.c \
                         src/thread-pool.c
 
@@ -663,12 +659,7 @@ tests_list_check_SOURCES = tests/list_check.c src/reflist.c src/thread-pool.c \
 
 INCLUDES = "-I$(top_srcdir)/data"
 crystfeldir = $(datadir)/crystfel
-crystfel_DATA = data/diffraction.cl data/defs.h data/sfac/Ca.nff \
-                data/sfac/C.nff data/sfac/Fe.nff data/sfac/H.nff \
-                data/sfac/Mg.nff data/sfac/N.nff data/sfac/O.nff \
-                data/sfac/P.nff data/sfac/S.nff data/sfac/f0_WaasKirf.dat \
-                data/hdfsee.ui
-
+crystfel_DATA = data/diffraction.cl data/defs.h data/hdfsee.ui
 crystfeldocdir = $(docdir)
 crystfeldoc_DATA = doc/geometry.txt doc/indexamajig.txt doc/pattern_sim.txt \
                    doc/process_hkl.txt doc/symmetry.txt \
@@ -811,7 +802,6 @@ src/calibrate_detector$(EXEEXT): $(src_calibrate_detector_OBJECTS) $(src_calibra
 	$(AM_V_CCLD)$(LINK) $(src_calibrate_detector_OBJECTS) $(src_calibrate_detector_LDADD) $(LIBS)
 src/check_hkl.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
-src/sfac.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/cell.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/reflections.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -963,7 +953,6 @@ mostlyclean-compile:
 	-rm -f src/reflist.$(OBJEXT)
 	-rm -f src/render.$(OBJEXT)
 	-rm -f src/render_hkl.$(OBJEXT)
-	-rm -f src/sfac.$(OBJEXT)
 	-rm -f src/statistics.$(OBJEXT)
 	-rm -f src/stream.$(OBJEXT)
 	-rm -f src/sum_stack.$(OBJEXT)
@@ -1010,7 +999,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reflist.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render_hkl.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/sfac.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/statistics.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/stream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/sum_stack.Po@am__quote@

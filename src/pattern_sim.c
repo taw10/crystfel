@@ -29,7 +29,6 @@
 #include "hdf5-file.h"
 #include "detector.h"
 #include "peaks.h"
-#include "sfac.h"
 #include "reflections.h"
 #include "beam-parameters.h"
 #include "symmetry.h"

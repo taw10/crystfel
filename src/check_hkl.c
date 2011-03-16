@@ -22,7 +22,6 @@
 #include <getopt.h>
 
 #include "utils.h"
-#include "sfac.h"
 #include "reflections.h"
 #include "statistics.h"
 #include "symmetry.h"

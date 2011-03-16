@@ -1,9 +1,9 @@
 /*
  * get_hkl.c
  *
- * Small program to write out a list of h,k,l,I values given a structure
+ * Small program to manipulate reflection lists
  *
- * (c) 2006-2010 Thomas White <taw@physics.org>
+ * (c) 2006-2011 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
@@ -22,7 +22,6 @@
 #include <getopt.h>
 
 #include "utils.h"
-#include "sfac.h"
 #include "reflections.h"
 #include "symmetry.h"
 #include "beam-parameters.h"
@@ -32,27 +31,34 @@ static void show_help(const char *s)
 {
 	printf("Syntax: %s [options]\n\n", s);
 	printf(
-"Create reflections lists.\n"
+"Manipulate reflection lists.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
 "\n"
-"  -t, --template=<filename>  Only include reflections mentioned in file.\n"
+"  -i, --input=<file>         Read reflections from <file>.\n"
+"  -y, --symmetry=<sym>       The symmetry of the input reflection list.\n"
+"\n"
+"You can add noise to the reflections with either of:\n"
 "      --poisson              Simulate Poisson samples.\n"
 "      --noise                Add 10%% random noise.\n"
-"  -y, --symmetry=<sym>       The symmetry of the input file (-i).\n"
+"\n"
+"To calculate Poisson samples accurately, you must also give:\n"
+"  -b, --beam=<file>          Get beam parameters from file.\n"
+"\n"
+"You can artificially 'twin' the reflections, or expand them out:\n"
 "  -w, --twin=<sym>           Generate twinned data according to the given\n"
 "                              point group.\n"
 "  -e, --expand=<sym>         Expand reflections to this point group.\n"
-"  -o, --output=<filename>    Output filename (default: stdout).\n"
-"  -i, --intensities=<file>   Read intensities from file instead of\n"
-"                              calculating them from scratch.  You might use\n"
-"                              this if you need to apply noise or twinning.\n"
-"  -p, --pdb=<file>           PDB file from which to get the structure.\n"
-"      --no-phases            Do not try to use phases in the input file.\n"
+"\n"
+"You can restrict which reflections are written out:\n"
+"  -t, --template=<filename>  Only include reflections mentioned in file.\n"
+"\n"
+"You might sometimes need to do this:\n"
 "      --multiplicity         Multiply intensities by the number of\n"
 "                              equivalent reflections.\n"
-"  -b, --beam=<file>          Get beam parameters from file (used for sigmas).\n"
-"      --max-res=<d>          Calculate structure factors out to d=<d> nm.\n"
+"\n"
+"Don't forget to specify the output filename:\n"
+"  -o, --output=<filename>    Output filename (default: stdout).\n"
 );
 }
 
@@ -253,7 +259,6 @@ int main(int argc, char *argv[])
 	double *ideal_ref;
 	double *phases;
 	double *esds;
-	struct molecule *mol;
 	char *template = NULL;
 	int config_noise = 0;
 	int config_poisson = 0;
@@ -269,10 +274,7 @@ int main(int argc, char *argv[])
 	ReflItemList *write_items;
 	UnitCell *cell = NULL;
 	char *beamfile = NULL;
-	char *rval;
-	struct beam_params *beam;  /* Beam parameters for SF calculation */
-	int have_max_res = 0;
-	double max_res = 0.0;
+	struct beam_params *beam;  /* Beam parameters for Poisson calculation */
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -285,16 +287,13 @@ int main(int argc, char *argv[])
 		{"twin",               1, NULL,               'w'},
 		{"expand",             1, NULL,               'e'},
 		{"intensities",        1, NULL,               'i'},
-		{"pdb",                1, NULL,               'p'},
-		{"no-phases",          0, &config_nophase,     1},
 		{"multiplicity",       0, &config_multi,       1},
 		{"beam",               1, NULL,               'b'},
-		{"max-res",            1, NULL,                2},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ht:o:i:p:w:y:e:b:",
+	while ((c = getopt_long(argc, argv, "ht:o:i:w:y:e:b:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -314,10 +313,6 @@ int main(int argc, char *argv[])
 			input = strdup(optarg);
 			break;
 
-		case 'p' :
-			filename = strdup(optarg);
-			break;
-
 		case 'y' :
 			mero = strdup(optarg);
 			break;
@@ -332,16 +327,6 @@ int main(int argc, char *argv[])
 
 		case 'b' :
 			beamfile = strdup(optarg);
-			break;
-
-		case 2 :
-			max_res = strtod(optarg, &rval);
-			if ( *rval != '\0' ) {
-				ERROR("Invalid maximum resolution.\n");
-				return 1;
-			}
-			max_res = 1.0 / (max_res * 1.0e-9);
-			have_max_res = 1;
 			break;
 
 		case 0 :
@@ -363,7 +348,6 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	mol = load_molecule(filename);
 	cell = load_cell_from_pdb(filename);
 	if ( !config_nophase ) {
 		phases = new_list_phase();
@@ -371,44 +355,15 @@ int main(int argc, char *argv[])
 		phases = NULL;
 	}
 	esds = new_list_sigma();
-	if ( input == NULL ) {
 
-		if ( beamfile == NULL ) {
-			ERROR("To calculate structure factors, you must"
-			      " provide a beam parameters file (use -b)\n");
-			return 1;
-		}
-
-		beam = get_beam_parameters(beamfile);
-		if ( beam == NULL ) {
-			ERROR("Failed to read beam parameters from '%s'\n", beamfile);
-			return 1;
-		}
-		free(beamfile);
-
-		if ( !have_max_res ) {
-			STATUS("You didn't specify the maximum resolution to"
-			       " calculate structure factors.  I'll go to"
-			       " d = 0.5 nm.\n");
-			max_res = 1.0/0.5e-9;
-		}
-
-		input_items = new_items();
-		ideal_ref = get_reflections(mol, eV_to_J(beam->photon_energy),
-		                            max_res, phases, input_items);
-
-	} else {
-
-		ideal_ref = new_list_intensity();
-		input_items = read_reflections(input, ideal_ref, phases,
-		                               NULL, esds);
-		free(input);
-		if ( check_symmetry(input_items, mero) ) {
-			ERROR("The input reflection list does not appear to"
-			      " have symmetry %s\n", mero);
-			return 1;
-		}
-
+	ideal_ref = new_list_intensity();
+	input_items = read_reflections(input, ideal_ref, phases,
+	                               NULL, esds);
+	free(input);
+	if ( check_symmetry(input_items, mero) ) {
+		ERROR("The input reflection list does not appear to"
+		      " have symmetry %s\n", mero);
+		return 1;
 	}
 
 	if ( config_poisson ) poisson_reflections(ideal_ref, input_items);

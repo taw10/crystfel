@@ -61,7 +61,6 @@
 #include "image.h"
 #include "mosflm.h"
 #include "utils.h"
-#include "sfac.h"
 #include "peaks.h"
 
 
