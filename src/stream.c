@@ -89,7 +89,6 @@ int parse_stream_flags(const char *a)
 	free(flags);
 
 	return ret;
-
 }
 
 
@@ -183,7 +182,6 @@ static int read_reflections(FILE *fh, struct image *image)
 
 	/* Got read error of some kind before finding PEAK_LIST_END_MARKER */
 	return 1;
-
 }
 
 

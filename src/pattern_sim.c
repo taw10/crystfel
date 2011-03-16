@@ -528,7 +528,8 @@ int main(int argc, char *argv[])
 		image.twotheta = NULL;
 
 		cell_get_parameters(cell, &a, &b, &c, &d, &d, &d);
-		STATUS("Particle size = %i x %i x %i (=%5.2f x %5.2f x %5.2f nm)\n",
+		STATUS("Particle size = %i x %i x %i"
+		       " ( = %5.2f x %5.2f x %5.2f nm)\n",
 	               na, nb, nc, na*a/1.0e-9, nb*b/1.0e-9, nc*c/1.0e-9);
 
 		if ( config_gpu ) {
