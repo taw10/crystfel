@@ -32,8 +32,6 @@ enum
 
 extern int count_patterns(FILE *fh);
 
-extern int find_chunk(FILE *fh, UnitCell **cell, char **filename, double *ev);
-
 extern void write_chunk(FILE *ofh, struct image *image, int flags);
 
 extern int parse_stream_flags(const char *a);
