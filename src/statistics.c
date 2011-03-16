@@ -25,9 +25,8 @@
 
 
 struct r_params {
-	const double *ref1;
-	const double *ref2;
-	ReflItemList *items;  /* Which reflections to use */
+	RefList *list1;
+	RefList *list2;
 	int fom;              /* Which FoM to use (see the enum just below) */
 };
 
@@ -43,27 +42,30 @@ enum {
 
 
 /* Return the least squares optimal scaling factor when comparing intensities.
- * ref1,ref2 are the two intensity lists to compare.  "items" is a ReflItemList
+ * list1,list2 are the two intensity lists to compare.  "items" is a ReflItemList
  * containing the reflections which should be taken into account.
  */
-double stat_scale_intensity(const double *ref1, const double *ref2,
-                            ReflItemList *items)
+double stat_scale_intensity(RefList *list1, RefList *list2)
 {
 	double top = 0.0;
 	double bot = 0.0;
-	int i;
+	Reflection *refl1;
+	RefListIterator *iter;
 
-	for ( i=0; i<num_items(items); i++ ) {
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) ) {
 
 		double i1, i2;
-		struct refl_item *it;
 		signed int h, k, l;
+		Reflection *refl2;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
-		i1 = lookup_intensity(ref1, h, k, l);
-		i2 = lookup_intensity(ref2, h, k, l);
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 
 		top += i1 * i2;
 		bot += i2 * i2;
@@ -77,30 +79,36 @@ double stat_scale_intensity(const double *ref1, const double *ref2,
 /* Return the least squares optimal scaling factor when comparing the square
  * roots of the intensities (i.e. one approximation to the structure factor
  * moduli).
- * ref1,ref2 are the two intensity lists to compare (they contain intensities,
+ * list1,list2 are the two intensity lists to compare (they contain intensities,
  * not square rooted intensities).  "items" is a ReflItemList containing the
  * reflections which should be taken into account.
  */
-static double stat_scale_sqrti(const double *ref1, const double *ref2,
-                               ReflItemList *items)
+static double stat_scale_sqrti(RefList *list1, RefList *list2)
 {
 	double top = 0.0;
 	double bot = 0.0;
-	int i;
+	Reflection *refl1;
+	RefListIterator *iter;
 
-	for ( i=0; i<num_items(items); i++ ) {
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) ) {
 
-		double i1, i2, f1, f2;
-		struct refl_item *it;
+		double i1, i2;
+		double f1, f2;
 		signed int h, k, l;
+		Reflection *refl2;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
-		i1 = lookup_intensity(ref1, h, k, l);
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
+
 		if ( i1 < 0.0 ) continue;
 		f1 = sqrt(i1);
-		i2 = lookup_intensity(ref2, h, k, l);
+
 		if ( i2 < 0.0 ) continue;
 		f2 = sqrt(i2);
 
@@ -113,26 +121,33 @@ static double stat_scale_sqrti(const double *ref1, const double *ref2,
 }
 
 
-static double internal_r1_ignorenegs(const double *ref1, const double *ref2,
-                                     ReflItemList *items, double scale)
+static double internal_r1_ignorenegs(RefList *list1, RefList *list2,
+                                     double scale)
 {
 	double top = 0.0;
 	double bot = 0.0;
-	int i;
+	Reflection *refl1;
+	RefListIterator *iter;
 
-	for ( i=0; i<num_items(items); i++ ) {
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) ) {
 
-		double i1, f1, i2, f2;
-		struct refl_item *it;
+		double i1, i2;
+		double f1, f2;
 		signed int h, k, l;
+		Reflection *refl2;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
-		i1 = lookup_intensity(ref1, h, k, l);
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
+
 		if ( i1 < 0.0 ) continue;
 		f1 = sqrt(i1);
-		i2 = lookup_intensity(ref2, h, k, l);
+
 		if ( i2 < 0.0 ) continue;
 		f2 = sqrt(i2);
 		f2 *= scale;
@@ -146,25 +161,32 @@ static double internal_r1_ignorenegs(const double *ref1, const double *ref2,
 }
 
 
-static double internal_r1_negstozero(const double *ref1, const double *ref2,
-                                     ReflItemList *items, double scale)
+static double internal_r1_negstozero(RefList *list1, RefList *list2,
+                                     double scale)
 {
 	double top = 0.0;
 	double bot = 0.0;
-	int i;
+	Reflection *refl1;
+	RefListIterator *iter;
 
-	for ( i=0; i<num_items(items); i++ ) {
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) ) {
 
-		double i1, f1, i2, f2;
-		struct refl_item *it;
+		double i1, i2;
+		double f1, f2;
 		signed int h, k, l;
+		Reflection *refl2;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
-		i1 = lookup_intensity(ref1, h, k, l);
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
+
 		f1 = i1 > 0.0 ? sqrt(i1) : 0.0;
-		i2 = lookup_intensity(ref2, h, k, l);
+
 		f2 = i2 > 0.0 ? sqrt(i2) : 0.0;
 		f2 *= scale;
 
@@ -177,24 +199,27 @@ static double internal_r1_negstozero(const double *ref1, const double *ref2,
 }
 
 
-static double internal_r2(const double *ref1, const double *ref2,
-                          ReflItemList *items, double scale)
+static double internal_r2(RefList *list1, RefList *list2, double scale)
 {
 	double top = 0.0;
 	double bot = 0.0;
-	int i;
+	Reflection *refl1;
+	RefListIterator *iter;
 
-	for ( i=0; i<num_items(items); i++ ) {
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) ) {
 
 		double i1, i2;
-		struct refl_item *it;
 		signed int h, k, l;
+		Reflection *refl2;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
-		i1 = lookup_intensity(ref1, h, k, l);
-		i2 = scale * lookup_intensity(ref2, h, k, l);
+		i1 = get_intensity(refl1);
+		i2 = scale * get_intensity(refl2);
 
 		top += pow(i1 - i2, 2.0);
 		bot += pow(i1, 2.0);
@@ -205,24 +230,27 @@ static double internal_r2(const double *ref1, const double *ref2,
 }
 
 
-static double internal_r_i(const double *ref1, const double *ref2,
-                          ReflItemList *items, double scale)
+static double internal_r_i(RefList *list1, RefList *list2, double scale)
 {
 	double top = 0.0;
 	double bot = 0.0;
-	int i;
+	Reflection *refl1;
+	RefListIterator *iter;
 
-	for ( i=0; i<num_items(items); i++ ) {
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) ) {
 
 		double i1, i2;
-		struct refl_item *it;
 		signed int h, k, l;
+		Reflection *refl2;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
-		i1 = lookup_intensity(ref1, h, k, l);
-		i2 = scale * lookup_intensity(ref2, h, k, l);
+		i1 = get_intensity(refl1);
+		i2 = scale * get_intensity(refl2);
 
 		top += fabs(i1-i2);
 		bot += fabs(i1);
@@ -233,24 +261,29 @@ static double internal_r_i(const double *ref1, const double *ref2,
 }
 
 
-static double internal_rdiff_intensity(const double *ref1, const double *ref2,
-                                       ReflItemList *items, double scale)
+static double internal_rdiff_intensity(RefList *list1, RefList *list2,
+                                       double scale)
 {
 	double top = 0.0;
 	double bot = 0.0;
-	int i;
+	Reflection *refl1;
+	RefListIterator *iter;
 
-	for ( i=0; i<num_items(items); i++ ) {
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) ) {
 
 		double i1, i2;
-		struct refl_item *it;
 		signed int h, k, l;
+		Reflection *refl2;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
-		i1 = lookup_intensity(ref1, h, k, l);
-		i2 = lookup_intensity(ref2, h, k, l);
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
+
 		i2 *= scale;
 
 		top += fabs(i1 - i2);
@@ -262,25 +295,32 @@ static double internal_rdiff_intensity(const double *ref1, const double *ref2,
 }
 
 
-static double internal_rdiff_negstozero(const double *ref1, const double *ref2,
-                                        ReflItemList *items, double scale)
+static double internal_rdiff_negstozero(RefList *list1, RefList *list2,
+                                        double scale)
 {
 	double top = 0.0;
 	double bot = 0.0;
-	int i;
+	Reflection *refl1;
+	RefListIterator *iter;
 
-	for ( i=0; i<num_items(items); i++ ) {
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) ) {
 
-		double i1, i2, f1, f2;
-		struct refl_item *it;
+		double i1, i2;
+		double f1, f2;
 		signed int h, k, l;
+		Reflection *refl2;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
-		i1 = lookup_intensity(ref1, h, k, l);
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
+
 		f1 = i1 > 0.0 ? sqrt(i1) : 0.0;
-		i2 = lookup_intensity(ref2, h, k, l);
+
 		f2 = i2 > 0.0 ? sqrt(i2) : 0.0;
 		f2 *= scale;
 
@@ -293,26 +333,33 @@ static double internal_rdiff_negstozero(const double *ref1, const double *ref2,
 }
 
 
-static double internal_rdiff_ignorenegs(const double *ref1, const double *ref2,
-                                        ReflItemList *items, double scale)
+static double internal_rdiff_ignorenegs(RefList *list1, RefList *list2,
+                                        double scale)
 {
 	double top = 0.0;
 	double bot = 0.0;
-	int i;
+	Reflection *refl1;
+	RefListIterator *iter;
 
-	for ( i=0; i<num_items(items); i++ ) {
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) ) {
 
-		double i1, i2, f1, f2;
-		struct refl_item *it;
+		double i1, i2;
+		double f1, f2;
 		signed int h, k, l;
+		Reflection *refl2;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
-		i1 = lookup_intensity(ref1, h, k, l);
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
+
 		if ( i1 < 0.0 ) continue;
 		f1 = sqrt(i1);
-		i2 = lookup_intensity(ref2, h, k, l);
+
 		if ( i2 < 0.0 ) continue;
 		f2 = sqrt(i2);
 		f2 *= scale;
@@ -332,26 +379,21 @@ static double calc_r(double scale, void *params)
 
 	switch ( rp->fom) {
 	case R_1_ZERO :
-		return internal_r1_negstozero(rp->ref1, rp->ref2,
-		                              rp->items, scale);
+		return internal_r1_negstozero(rp->list1, rp->list2, scale);
 	case R_1_IGNORE :
-		return internal_r1_ignorenegs(rp->ref1, rp->ref2,
-		                              rp->items, scale);
+		return internal_r1_ignorenegs(rp->list1, rp->list2, scale);
 	case R_2 :
-		return internal_r2(rp->ref1, rp->ref2, rp->items, scale);
+		return internal_r2(rp->list1, rp->list2, scale);
 
 	case R_1_I :
-		return internal_r_i(rp->ref1, rp->ref2, rp->items, scale);
+		return internal_r_i(rp->list1, rp->list2, scale);
 
 	case R_DIFF_ZERO :
-		return internal_rdiff_negstozero(rp->ref1, rp->ref2,
-		                                 rp->items, scale);
+		return internal_rdiff_negstozero(rp->list1, rp->list2,scale);
 	case R_DIFF_IGNORE :
-		return internal_rdiff_ignorenegs(rp->ref1, rp->ref2,
-		                                 rp->items, scale);
+		return internal_rdiff_ignorenegs(rp->list1, rp->list2, scale);
 	case R_DIFF_INTENSITY :
-		return internal_rdiff_intensity(rp->ref1, rp->ref2,
-		                                rp->items, scale);
+		return internal_rdiff_intensity(rp->list1, rp->list2, scale);
 	}
 
 	ERROR("No such FoM!\n");
@@ -359,8 +401,8 @@ static double calc_r(double scale, void *params)
 }
 
 
-static double r_minimised(const double *ref1, const double *ref2,
-                          ReflItemList *items, double *scalep, int fom)
+static double r_minimised(RefList *list1, RefList *list2,
+                          double *scalep, int fom)
 {
 	gsl_function F;
 	gsl_min_fminimizer *s;
@@ -369,9 +411,8 @@ static double r_minimised(const double *ref1, const double *ref2,
 	struct r_params rp;
 	int iter = 0;
 
-	rp.ref1 = ref1;
-	rp.ref2 = ref2;
-	rp.items = items;
+	rp.list1 = list1;
+	rp.list2 = list2;
 	rp.fom = fom;
 
 	F.function = &calc_r;
@@ -385,12 +426,12 @@ static double r_minimised(const double *ref1, const double *ref2,
 	case R_1_IGNORE :
 	case R_DIFF_ZERO :
 	case R_DIFF_IGNORE :
-		scale = stat_scale_sqrti(ref1, ref2, items);
+		scale = stat_scale_sqrti(list1, list2);
 		break;
 	case R_2 :
 	case R_1_I :
 	case R_DIFF_INTENSITY :
-		scale = stat_scale_intensity(ref1, ref2, items);
+		scale = stat_scale_intensity(list1, list2);
 		break;
 	}
 	//STATUS("Initial scale factor estimate: %5.2e\n", scale);
@@ -429,77 +470,74 @@ static double r_minimised(const double *ref1, const double *ref2,
 }
 
 
-double stat_r1_ignore(const double *ref1, const double *ref2,
-                      ReflItemList *items, double *scalep)
+double stat_r1_ignore(RefList *list1, RefList *list2, double *scalep)
 {
-	return r_minimised(ref1, ref2, items, scalep, R_1_IGNORE);
+	return r_minimised(list1, list2, scalep, R_1_IGNORE);
 }
 
 
-double stat_r1_zero(const double *ref1, const double *ref2,
-                    ReflItemList *items, double *scalep)
+double stat_r1_zero(RefList *list1, RefList *list2, double *scalep)
 {
-	return r_minimised(ref1, ref2, items, scalep, R_1_ZERO);
+	return r_minimised(list1, list2, scalep, R_1_ZERO);
 }
 
 
-double stat_r2(const double *ref1, const double *ref2,
-               ReflItemList *items, double *scalep)
+double stat_r2(RefList *list1, RefList *list2, double *scalep)
 {
-	return r_minimised(ref1, ref2, items, scalep, R_2);
+	return r_minimised(list1, list2, scalep, R_2);
 }
 
 
-double stat_r1_i(const double *ref1, const double *ref2,
-                 ReflItemList *items, double *scalep)
+double stat_r1_i(RefList *list1, RefList *list2, double *scalep)
 {
-	return r_minimised(ref1, ref2, items, scalep, R_1_I);
+	return r_minimised(list1, list2, scalep, R_1_I);
 }
 
 
-double stat_rdiff_zero(const double *ref1, const double *ref2,
-                       ReflItemList *items, double *scalep)
+double stat_rdiff_zero(RefList *list1, RefList *list2, double *scalep)
 {
-	return r_minimised(ref1, ref2, items, scalep, R_DIFF_ZERO);
+	return r_minimised(list1, list2, scalep, R_DIFF_ZERO);
 }
 
 
-double stat_rdiff_ignore(const double *ref1, const double *ref2,
-                         ReflItemList *items, double *scalep)
+double stat_rdiff_ignore(RefList *list1, RefList *list2, double *scalep)
 {
-	return r_minimised(ref1, ref2, items, scalep, R_DIFF_IGNORE);
+	return r_minimised(list1, list2, scalep, R_DIFF_IGNORE);
 }
 
 
-double stat_rdiff_intensity(const double *ref1, const double *ref2,
-                            ReflItemList *items, double *scalep)
+double stat_rdiff_intensity(RefList *list1, RefList *list2, double *scalep)
 {
-	return r_minimised(ref1, ref2, items, scalep, R_DIFF_INTENSITY);
+	return r_minimised(list1, list2,  scalep, R_DIFF_INTENSITY);
 }
 
-double stat_pearson_i(const double *ref1, const double *ref2,
-                      ReflItemList *items)
+
+double stat_pearson_i(RefList *list1, RefList *list2)
 {
 	double *vec1, *vec2;
-	int i = 0;
-	int ni = num_items(items);
+	int ni = num_reflections(list1) + num_reflections(list2);
 	double val;
 	int nacc = 0;
+	Reflection *refl1;
+	RefListIterator *iter;
 
 	vec1 = malloc(ni*sizeof(double));
 	vec2 = malloc(ni*sizeof(double));
 
-	for ( i=0; i<ni; i++ ) {
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) ) {
 
 		double i1, i2;
-		struct refl_item *it;
 		signed int h, k, l;
+		Reflection *refl2;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
-		i1 = lookup_intensity(ref1, h, k, l);
-		i2 = lookup_intensity(ref2, h, k, l);
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 
 		vec1[nacc] = i1;
 		vec2[nacc] = i2;
@@ -514,40 +552,42 @@ double stat_pearson_i(const double *ref1, const double *ref2,
 }
 
 
-double stat_pearson_f_ignore(const double *ref1, const double *ref2,
-                             ReflItemList *items)
+double stat_pearson_f_ignore(RefList *list1, RefList *list2)
 {
 	double *vec1, *vec2;
-	int i = 0;
-	int ni = num_items(items);
+	int ni = num_reflections(list1) + num_reflections(list2);
 	double val;
 	int nacc = 0;
+	Reflection *refl1;
+	RefListIterator *iter;
 
 	vec1 = malloc(ni*sizeof(double));
 	vec2 = malloc(ni*sizeof(double));
 
-	for ( i=0; i<ni; i++ ) {
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) ) {
 
-		double i1, i2, f1, f2;
-		struct refl_item *it;
+		double i1, i2;
+		double f1, f2;
 		signed int h, k, l;
+		Reflection *refl2;
 		int ig = 0;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
-		i1 = lookup_intensity(ref1, h, k, l);
-		if ( i1 < 0.0 ) {
-			ig=1;
-		}
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
+
+		if ( i1 < 0.0 ) ig = 1;
 		f1 = sqrt(i1);
-		i2 = lookup_intensity(ref2, h, k, l);
-		if ( i2 < 0.0 ) {
-			ig=1;
-		}
+
+		if ( i2 < 0.0 ) ig = 1;
 		f2 = sqrt(i2);
 
-		if ( ig  ) continue;
+		if ( ig ) continue;
 
 		vec1[nacc] = f1;
 		vec2[nacc] = f2;
@@ -563,30 +603,35 @@ double stat_pearson_f_ignore(const double *ref1, const double *ref2,
 }
 
 
-double stat_pearson_f_zero(const double *ref1, const double *ref2,
-                      ReflItemList *items)
+double stat_pearson_f_zero(RefList *list1, RefList *list2)
 {
 	double *vec1, *vec2;
-	int i = 0;
-	int ni = num_items(items);
+	int ni = num_reflections(list1) + num_reflections(list2);
 	double val;
 	int nacc = 0;
+	Reflection *refl1;
+	RefListIterator *iter;
 
 	vec1 = malloc(ni*sizeof(double));
 	vec2 = malloc(ni*sizeof(double));
 
-	for ( i=0; i<ni; i++ ) {
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) ) {
 
-		double i1, i2, f1, f2;
-		struct refl_item *it;
+		double i1, i2;
+		double f1, f2;
 		signed int h, k, l;
+		Reflection *refl2;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
-		i1 = lookup_intensity(ref1, h, k, l);
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
+
 		f1 = i1 > 0.0 ? sqrt(i1) : 0.0;
-		i2 = lookup_intensity(ref2, h, k, l);
 		f2 = i2 > 0.0 ? sqrt(i2) : 0.0;
 
 		vec1[nacc] = f1;

@@ -26,11 +26,12 @@
 #endif
 
 #include "utils.h"
-#include "reflections.h"
 #include "povray.h"
 #include "symmetry.h"
 #include "render.h"
 #include "render_hkl.h"
+#include "reflist.h"
+#include "reflist-utils.h"
 
 
 static void show_help(const char *s)
@@ -81,8 +82,7 @@ static void show_help(const char *s)
 static void draw_circles(signed int xh, signed int xk, signed int xl,
                          signed int yh, signed int yk, signed int yl,
                          signed int zh, signed int zk, signed int zl,
-                         double *ref, unsigned int *counts, ReflItemList *items,
-                         const char *sym,
+                         RefList *list, const char *sym,
                          cairo_t *dctx, int wght, double boost, int colscale,
                          UnitCell *cell, double radius, double theta,
                          double as, double bs, double cx, double cy,
@@ -98,36 +98,36 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 		*max_res = 0.0;  *max_ux = 0;  *max_uy = 0;
 	}
 
-	/* Loop across the two basis directions */
+	/* Iterate over possible reflections in this zone */
 	for ( xi=-INDMAX; xi<INDMAX; xi++ ) {
 	for ( yi=-INDMAX; yi<INDMAX; yi++ ) {
 
 		double u, v, val, res;
 		signed int h, k, l;
-		signed int he, ke, le;
+		Reflection *refl;
 
 		h = xi*xh + yi*yh;
 		k = xi*xk + yi*yk;
 		l = xi*xl + yi*yl;
 
 		/* Got this reflection? */
-		if ( find_unique_equiv(items, h, k, l, sym,
-		                       &he, &ke, &le) == 0 ) continue;
+		refl = find_refl(list, h, k, l);
+		if ( refl == NULL ) continue;
 
 		switch ( wght ) {
 		case WGHT_I :
-			val = lookup_intensity(ref, he, ke, le);
+			val = get_intensity(refl);
 			break;
 		case WGHT_SQRTI :
-			val = lookup_intensity(ref, he, ke, le);
+			val = get_intensity(refl);
 			val = (val>0.0) ? sqrt(val) : 0.0;
 			break;
 		case WGHT_COUNTS :
-			val = lookup_count(counts, he, ke, le);
-			val /= (float)num_equivs(he, ke, le, sym);
+			val = get_redundancy(refl);
+			val /= (float)num_equivs(h, k, l, sym);
 			break;
 		case WGHT_RAWCOUNTS :
-			val = lookup_count(counts, he, ke, le);
+			val = get_redundancy(refl);
 			break;
 		default :
 			ERROR("Invalid weighting.\n");
@@ -228,8 +228,7 @@ static void render_overlined_indices(cairo_t *dctx,
 }
 
 
-static void render_za(UnitCell *cell, ReflItemList *items,
-                      double *ref, unsigned int *counts,
+static void render_za(UnitCell *cell, RefList *list,
                       double boost, const char *sym, int wght, int colscale,
                       signed int xh, signed int xk, signed int xl,
                       signed int yh, signed int yk, signed int yl,
@@ -284,7 +283,7 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 
 	scale = 1.0;
 	draw_circles(xh, xk, xl, yh, yk, yl, zh, zk, zl,
-	             ref, counts, items, sym, NULL, wght, boost, colscale, cell,
+	             list, sym, NULL, wght, boost, colscale, cell,
 	             0.0, theta, as, bs, 0.0, 0.0, scale,
 	             &max_ux, &max_uy, &max_val, &max_u, &max_v, &max_res);
 
@@ -342,7 +341,7 @@ static void render_za(UnitCell *cell, ReflItemList *items,
 	cy = 512.0 - 20.0;
 
 	draw_circles(xh, xk, xl, yh, yk, yl, zh, zk, zl,
-	             ref, counts, items, sym, dctx, wght, boost, colscale, cell,
+	             list, sym, dctx, wght, boost, colscale, cell,
 	             max_r, theta, as, bs, cx, cy, scale,
 	             NULL, NULL, &max_val, NULL, NULL, NULL);
 
@@ -462,8 +461,8 @@ int main(int argc, char *argv[])
 {
 	int c;
 	UnitCell *cell;
+	RefList *list;
 	char *infile;
-	double *ref;
 	int config_povray = 0;
 	int config_zoneaxis = 0;
 	int config_sqrt = 0;
@@ -477,7 +476,6 @@ int main(int argc, char *argv[])
 	int wght;
 	int colscale;
 	char *cscale = NULL;
-	unsigned int *cts;
 	signed int dh=1, dk=0, dl=0;
 	signed int rh=0, rk=1, rl=0;
 	char *down = NULL;
@@ -613,7 +611,8 @@ int main(int argc, char *argv[])
 	if ( config_zoneaxis ) {
 		if ( (( down == NULL ) && ( right != NULL ))
 		  || (( down != NULL ) && ( right == NULL )) ) {
-			ERROR("Either specify both 'down' and 'right', or neither.\n");
+			ERROR("Either specify both 'down' and 'right',"
+			      " or neither.\n");
 			return 1;
 		}
 		if ( down != NULL ) {
@@ -641,24 +640,22 @@ int main(int argc, char *argv[])
 		ERROR("Couldn't load unit cell from %s\n", pdb);
 		return 1;
 	}
-	ref = new_list_intensity();
-	cts = new_list_count();
-	ReflItemList *items = read_reflections(infile, ref, NULL, cts, NULL);
-	if ( items == NULL ) {
-		ERROR("Couldn't open file '%s'\n", infile);
+	list = read_reflections(infile);
+	if ( list == NULL ) {
+		ERROR("Couldn't read file '%s'\n", infile);
 		return 1;
 	}
-	if ( check_symmetry(items, sym) ) {
+	if ( check_list_symmetry(list, sym) ) {
 		ERROR("The input reflection list does not appear to"
 		      " have symmetry %s\n", sym);
 		return 1;
 	}
 
 	if ( config_povray ) {
-		r = povray_render_animation(cell, ref, cts, items,
+		r = povray_render_animation(cell, list,
 		                            nproc, sym, wght, boost);
 	} else if ( config_zoneaxis ) {
-		render_za(cell, items, ref, cts, boost, sym, wght, colscale,
+		render_za(cell, list, boost, sym, wght, colscale,
 		          rh, rk, rl, dh, dk, dl, outfile);
 	} else {
 		ERROR("Try again with either --povray or --zone-axis.\n");
@@ -666,7 +663,7 @@ int main(int argc, char *argv[])
 
 	free(pdb);
 	free(sym);
-	delete_items(items);
+	reflist_free(list);
 	if ( outfile != NULL ) free(outfile);
 
 	return r;

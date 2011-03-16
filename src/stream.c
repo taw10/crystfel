@@ -31,7 +31,8 @@
 #define PEAK_LIST_START_MARKER "Peaks from peak search"
 #define PEAK_LIST_END_MARKER "End of peak list"
 #define REFLECTION_START_MARKER "Reflections measured after indexing"
-#define REFLECTION_END_MARKER "End of reflections"
+/* REFLECTION_END_MARKER is over in reflist-utils.h because it is also
+ * used to terminate a standalone list of reflections */
 
 static void exclusive(const char *a, const char *b)
 {
@@ -129,49 +130,6 @@ int count_patterns(FILE *fh)
 	} while ( rval != NULL );
 
 	return n_total_patterns;
-}
-
-
-static int read_reflections(FILE *fh, struct image *image)
-{
-	char *rval = NULL;
-	int first = 1;
-
-	image->reflections = reflist_new();
-
-	do {
-
-		char line[1024];
-		signed int h, k, l;
-		float intensity, sigma, res, fs, ss;
-		char phs[1024];
-		int cts;
-		int r;
-		Reflection *refl;
-
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
-		chomp(line);
-
-		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return 0;
-
-		r = sscanf(line, "%i %i %i %f %s %f %f %i %f %f",
-		           &h, &k, &l, &intensity, phs, &sigma, &res, &cts,
-		           &fs, &ss);
-		if ( (r != 10) && (!first) ) return 1;
-
-		first = 0;
-		if ( r == 10 ) {
-			refl = add_refl(image->reflections, h, k, l);
-			set_int(refl, intensity);
-			set_detector_pos(refl, fs, ss, 0.0);
-			set_esd_intensity(refl, sigma);
-		}
-
-	} while ( rval != NULL );
-
-	/* Got read error of some kind before finding PEAK_LIST_END_MARKER */
-	return 1;
 }
 
 
@@ -409,7 +367,8 @@ int read_chunk(FILE *fh, struct image *image)
 		}
 
 		if ( strcmp(line, REFLECTION_START_MARKER) == 0 ) {
-			if ( read_reflections(fh, image) ) {
+			image->reflections = read_reflections_from_file(fh);
+			if ( image->reflections == NULL ) {
 				ERROR("Failed while reading reflections\n");
 				return 1;
 			}

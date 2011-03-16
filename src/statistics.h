@@ -17,35 +17,25 @@
 #define STATISTICS_H
 
 
-#include "utils.h"
+#include "reflist.h"
 
-extern double stat_scale_intensity(const double *ref1, const double *ref2,
-                                   ReflItemList *items);
+extern double stat_scale_intensity(RefList *list1, RefList *list2);
 
-extern double stat_r1_zero(const double *ref1, const double *ref2,
-                           ReflItemList *items, double *scalep);
-extern double stat_r1_ignore(const double *ref1, const double *ref2,
-                             ReflItemList *items, double *scalep);
+extern double stat_r1_zero(RefList *list1, RefList *list2, double *scalep);
+extern double stat_r1_ignore(RefList *list1, RefList *list2, double *scalep);
 
-extern double stat_r2(const double *ref1, const double *ref2,
-                      ReflItemList *items, double *scalep);
+extern double stat_r2(RefList *list1, RefList *list2, double *scalep);
 
-extern double stat_r1_i(const double *ref1, const double *ref2,
-                        ReflItemList *items, double *scalep);
+extern double stat_r1_i(RefList *list1, RefList *list2, double *scalep);
 
-extern double stat_rdiff_zero(const double *ref1, const double *ref2,
-                         ReflItemList *items, double *scalep);
-extern double stat_rdiff_ignore(const double *ref1, const double *ref2,
-                         ReflItemList *items, double *scalep);
-extern double stat_rdiff_intensity(const double *ref1, const double *ref2,
-                         ReflItemList *items, double *scalep);
+extern double stat_rdiff_zero(RefList *list1, RefList *list2, double *scalep);
+extern double stat_rdiff_ignore(RefList *list1, RefList *list2, double *scalep);
+extern double stat_rdiff_intensity(RefList *list1, RefList *list2,
+                                   double *scalep);
 
-extern double stat_pearson_i(const double *ref1, const double *ref2,
-                             ReflItemList *items);
-extern double stat_pearson_f_zero(const double *ref1, const double *ref2,
-                                  ReflItemList *items);
-extern double stat_pearson_f_ignore(const double *ref1, const double *ref2,
-                                    ReflItemList *items);
+extern double stat_pearson_i(RefList *list1, RefList *list2);
+extern double stat_pearson_f_zero(RefList *list1, RefList *list2);
+extern double stat_pearson_f_ignore(RefList *list1, RefList *list2);
 
 
 #endif	/* STATISTICS_H */

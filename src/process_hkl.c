@@ -468,11 +468,11 @@ int main(int argc, char *argv[])
 		output = strdup("processed.hkl");
 	}
 
-	if ( pdb == NULL ) {
-		pdb = strdup("molecule.pdb");
-	}
-
 	cell = load_cell_from_pdb(pdb);
+	if ( cell == NULL ) {
+		ERROR("Failed to load cell from '%s'\n", pdb);
+		return 1;
+	}
 	free(pdb);
 
 	if ( sym == NULL ) sym = strdup("1");
@@ -537,7 +537,6 @@ int main(int argc, char *argv[])
 
 	write_reflist(output, model, cell);
 
-	cell_free(cell);
 	fclose(fh);
 	free(sym);
 	reflist_free(model);

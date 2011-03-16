@@ -44,8 +44,10 @@ extern int get_scalable(Reflection *refl);
 extern int get_redundancy(Reflection *refl);
 extern double get_sum_squared_dev(Reflection *refl);
 extern double get_esd_intensity(Reflection *refl);
+extern double get_phase(Reflection *refl);
 
 /* Set */
+extern void copy_data(Reflection *to, Reflection *from);
 extern void set_detector_pos(Reflection *refl, double exerr,
                              double x, double y);
 extern void set_partial(Reflection *refl, double r1, double r2, double p,
@@ -55,6 +57,7 @@ extern void set_scalable(Reflection *refl, int scalable);
 extern void set_redundancy(Reflection *refl, int red);
 extern void set_sum_squared_dev(Reflection *refl, double dev);
 extern void set_esd_intensity(Reflection *refl, double esd);
+extern void set_ph(Reflection *refl, double phase);
 
 /* Insertion */
 extern Reflection *add_refl(RefList *list, INDICES);
@@ -66,7 +69,8 @@ extern void delete_refl(Reflection *refl);
 extern Reflection *first_refl(RefList *list, RefListIterator **iterator);
 extern Reflection *next_refl(Reflection *refl, RefListIterator *iter);
 
-/* Voodoo */
+/* Misc */
 extern void optimise_reflist(RefList *list);
+extern int num_reflections(RefList *list);
 
 #endif	/* REFLIST_H */

@@ -23,13 +23,13 @@
 #include "utils.h"
 #include "symmetry.h"
 #include "render_hkl.h"
+#include "povray.h"
 
 
 #define MAX_PROC (256)
 
 
-int povray_render_animation(UnitCell *cell, double *ref, unsigned int *counts,
-                            ReflItemList *items, unsigned int nproc,
+int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
                             const char *sym, int wght, double boost)
 {
 	FILE *fh;
@@ -39,6 +39,8 @@ int povray_render_animation(UnitCell *cell, double *ref, unsigned int *counts,
 	pid_t pids[MAX_PROC];
 	float max;
 	int i;
+	Reflection *refl;
+	RefListIterator *iter;
 
 	if ( (nproc > MAX_PROC) || (nproc < 1) ) {
 		ERROR("Number of processes must be a number between 1 and %i\n",
@@ -165,27 +167,29 @@ int povray_render_animation(UnitCell *cell, double *ref, unsigned int *counts,
 	fprintf(fh, "}\n");
 
 	max = 0.0;
-	for ( i=0; i<num_items(items); i++ ) {
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
 
-		struct refl_item *it;
 		float val;
+		signed int h, k, l;
 
-		it = get_item(items, i);
+		get_indices(refl, &h, &k, &l);
 
 		switch ( wght ) {
 		case WGHT_I :
-			val = lookup_intensity(ref, it->h, it->k, it->l);
+			val = get_intensity(refl);
 			break;
 		case WGHT_SQRTI :
-			val = lookup_intensity(ref, it->h, it->k, it->l);
+			val = get_intensity(refl);
 			val = (val>0.0) ? sqrt(val) : 0.0;
 			break;
 		case WGHT_COUNTS :
-			val = lookup_count(counts, it->h, it->k, it->l);
-			val /= (float)num_equivs(it->h, it->k, it->l, sym);
+			val = get_redundancy(refl);
+			val /= (float)num_equivs(h, k, l, sym);
 			break;
 		case WGHT_RAWCOUNTS :
-			val = lookup_count(counts, it->h, it->k, it->l);
+			val = get_redundancy(refl);
 			break;
 		default :
 			ERROR("Invalid weighting.\n");
@@ -197,30 +201,31 @@ int povray_render_animation(UnitCell *cell, double *ref, unsigned int *counts,
 	}
 	max /= boost;
 
-	for ( i=0; i<num_items(items); i++ ) {
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
 
-		struct refl_item *it;
-		float radius;
+		signed int h, k, l;float radius;
 		int s;
 		float val, p, r, g, b, trans;
 		int j;
 
-		it = get_item(items, i);
+		get_indices(refl, &h, &k, &l);
 
 		switch ( wght ) {
 		case WGHT_I :
-			val = lookup_intensity(ref, it->h, it->k, it->l);
+			val = get_intensity(refl);
 			break;
 		case WGHT_SQRTI :
-			val = lookup_intensity(ref, it->h, it->k, it->l);
+			val = get_intensity(refl);
 			val = (val>0.0) ? sqrt(val) : 0.0;
 			break;
 		case WGHT_COUNTS :
-			val = lookup_count(counts, it->h, it->k, it->l);
-			val /= (float)num_equivs(it->h, it->k, it->l, sym);
+			val = get_redundancy(refl);
+			val /= (float)num_equivs(h, k, l, sym);
 			break;
 		case WGHT_RAWCOUNTS :
-			val = lookup_count(counts, it->h, it->k, it->l);
+			val = get_redundancy(refl);
 			break;
 		default :
 			ERROR("Invalid weighting.\n");
@@ -269,12 +274,12 @@ int povray_render_animation(UnitCell *cell, double *ref, unsigned int *counts,
 		trans = 1.0-(val/max);
 
 		/* For each equivalent */
-		for ( j=0; j<num_equivs(it->h, it->k, it->l, sym); j++ ) {
+		for ( j=0; j<num_equivs(h, k, l, sym); j++ ) {
 
 			signed int he, ke, le;
 			float x, y, z;
 
-			get_equiv(it->h, it->k, it->l, &he, &ke, &le, sym, j);
+			get_equiv(h, k, l, &he, &ke, &le, sym, j);
 
 			x = asx*he + bsx*ke + csx*le;
 			y = asy*he + bsy*ke + csy*le;

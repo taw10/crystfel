@@ -22,7 +22,7 @@
 #include <getopt.h>
 
 #include "utils.h"
-#include "reflections.h"
+#include "reflist-utils.h"
 #include "symmetry.h"
 #include "beam-parameters.h"
 
@@ -45,7 +45,8 @@ static void show_help(const char *s)
 "To calculate Poisson samples accurately, you must also give:\n"
 "  -b, --beam=<file>          Get beam parameters from file.\n"
 "\n"
-"You can artificially 'twin' the reflections, or expand them out:\n"
+"You can artificially 'twin' the reflections, or expand them out.  You can also"
+" do both, in which case the 'twinning' will be done first:\n"
 "  -w, --twin=<sym>           Generate twinned data according to the given\n"
 "                              point group.\n"
 "  -e, --expand=<sym>         Expand reflections to this point group.\n"
@@ -59,99 +60,123 @@ static void show_help(const char *s)
 "\n"
 "Don't forget to specify the output filename:\n"
 "  -o, --output=<filename>    Output filename (default: stdout).\n"
+"  -p, --pdb=<filename>       Use unit cell parameters from this PDB file to\n"
+"                              generate resolution values in the output file.\n"
 );
 }
 
 
 /* Apply Poisson noise to all reflections */
-static void poisson_reflections(double *ref, ReflItemList *items,
-                                double adu_per_photon)
+static void poisson_reflections(RefList *list, double adu_per_photon)
 {
-	int i;
-	const int n = num_items(items);
+	Reflection *refl;
+	RefListIterator *iter;
 
-	for ( i=0; i<n; i++ ) {
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
 
-		struct refl_item *it;
-		double val;
-		int c;
+		double val, c;
 
-		it = get_item(items, i);
+		val = get_intensity(refl);
 
-		val = lookup_intensity(ref, it->h, it->k, it->l);
 		c = adu_per_photon * poisson_noise(val/adu_per_photon);
-		set_intensity(ref, it->h, it->k, it->l, c);
-
-		progress_bar(i, n-1, "Simulating noise");
+		set_int(refl, c);
 
 	}
 }
 
 
 /* Apply 10% uniform noise to all reflections */
-static void noise_reflections(double *ref, ReflItemList *items)
+static void noise_reflections(RefList *list)
 {
-	int i;
-	const int n = num_items(items);
+	Reflection *refl;
+	RefListIterator *iter;
 
-	for ( i=0; i<n; i++ ) {
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
 
-		struct refl_item *it;
-		double val;
-		double r;
+		double val, r;
 
-		it = get_item(items, i);
-
-		val = lookup_intensity(ref, it->h, it->k, it->l);
+		val = get_intensity(refl);
 
 		r = (double)random()/RAND_MAX;
 		val += 0.1 * val * r;
 
-		set_intensity(ref, it->h, it->k, it->l, val);
-
-		progress_bar(i, n-1, "Simulating noise");
+		set_int(refl, val);
 
 	}
 }
 
 
-static ReflItemList *twin_reflections(double *ref, ReflItemList *items,
-                                      const char *holo, const char *mero,
-                                      double *esds)
+static RefList *template_reflections(RefList *list, RefList *template)
 {
-	int i;
-	ReflItemList *new;
+	Reflection *refl;
+	RefListIterator *iter;
+	RefList *out;
 
-	new = new_items();
+	out = reflist_new();
+
+	for ( refl = first_refl(template, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
+
+		signed int h, k, l;
+		Reflection *new;
+		Reflection *old;
+
+		get_indices(refl, &h, &k, &l);
+
+		old = find_refl(list, h, k, l);
+		if ( old == NULL ) continue;
+
+		new = add_refl(out, h, k, l);
+		copy_data(new, old);
+
+	}
+
+	return out;
+}
+
+
+static RefList *twin_reflections(RefList *in,
+                                 const char *holo, const char *mero)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	RefList *out;
 
 	if ( num_general_equivs(holo) < num_general_equivs(mero) ) {
 		ERROR("%s is not a subgroup of %s!\n", mero, holo);
 		return NULL;
 	}
 
-	for ( i=0; i<num_items(items); i++ ) {
+	out = reflist_new();
+
+	for ( refl = first_refl(in, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
 
 		double total, sigma;
-		struct refl_item *it;
 		signed int h, k, l;
 		int n, j;
 		int skip;
 
-		it = get_item(items, i);
+		get_indices(refl, &h, &k, &l);
 
 		/* There is a many-to-one correspondence between reflections
 		 * in the merohedral and holohedral groups.  Do the calculation
 		 * only once for each reflection in the holohedral group, which
 		 * contains fewer reflections.
 		 */
-		get_asymm(it->h, it->k, it->l, &h, &k, &l, holo);
-		if ( find_item(new, h, k, l) ) continue;
-
-		n = num_equivs(h, k, l, holo);
+		get_asymm(h, k, l, &h, &k, &l, holo);
+		if ( find_refl(out, h, k, l) != NULL ) continue;
 
 		total = 0.0;
 		sigma = 0.0;
 		skip = 0;
+		n = num_equivs(h, k, l, holo);
 		for ( j=0; j<n; j++ ) {
 
 			signed int he, ke, le;
@@ -164,8 +189,8 @@ static ReflItemList *twin_reflections(double *ref, ReflItemList *items,
 			 * equivalent which belongs to our definition of the
 			 * asymmetric unit cell, so check them all.
 			 */
-			if ( !find_unique_equiv(items, he, ke, le, mero,
-			                        &hu, &ku, &lu) ) {
+			if ( !find_equiv_in_list(in, he, ke, le, mero,
+			                         &hu, &ku, &lu) ) {
 				/* Don't have this reflection, so bail out */
 				ERROR("Twinning %i %i %i requires the %i %i %i "
 				      "reflection (or an equivalent in %s), "
@@ -176,61 +201,57 @@ static ReflItemList *twin_reflections(double *ref, ReflItemList *items,
 				break;
 			}
 
-			total += lookup_intensity(ref, hu, ku, lu);
-			sigma += pow(lookup_sigma(esds, hu, ku, lu), 2.0);
+			total += get_intensity(refl);
+			sigma += pow(get_esd_intensity(refl), 2.0);
 
 		}
 
 		if ( !skip ) {
 
-			set_intensity(ref, h, k, l, total);
-			set_sigma(esds, h, k, l, sqrt(sigma));
-			add_item(new, h, k, l);
+			Reflection *new = add_refl(out, h, k, l);
+			set_int(new, total);
+			set_esd_intensity(new, sqrt(sigma));
 
 		}
 
 	}
 
-	return new;
+	return out;
 }
 
 
-static ReflItemList *expand_reflections(double *ref, ReflItemList *items,
-                                        const char *target, const char *initial)
+static RefList *expand_reflections(RefList *in,
+                                   const char *target, const char *initial)
 {
-	int i;
-	ReflItemList *new;
-
-	new = new_items();
+	Reflection *refl;
+	RefListIterator *iter;
+	RefList *out;
 
 	if ( num_general_equivs(target) > num_general_equivs(initial) ) {
 		ERROR("%s is not a subgroup of %s!\n", initial, target);
 		return NULL;
 	}
 
-	for ( i=0; i<num_items(items); i++ ) {
+	out = reflist_new();
 
-		struct refl_item *it;
+	for ( refl = first_refl(in, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
+
 		signed int h, k, l;
-		signed int hd, kd, ld;
 		int n, j;
 		double intensity;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl, &h, &k, &l);
+		intensity = get_intensity(refl);
 
-		/* Actually we don't really care what the equivalent is,
-		 * we just want to be sure that there is nly be one version of
-		 * this reflection. */
-		find_unique_equiv(items, h, k, l, initial, &hd, &kd, &ld);
-
-		/* Now find out how many reflections need to be filled in */
 		n = num_equivs(h, k, l, initial);
-		intensity = lookup_intensity(ref, h, k, l);
 
+		/* For each equivalent in the higher symmetry group */
 		for ( j=0; j<n; j++ ) {
 
 			signed int he, ke, le;
+			Reflection *new;
 
 			/* Get the equivalent */
 			get_equiv(h, k, l, &he, &ke, &le, initial, j);
@@ -239,43 +260,33 @@ static ReflItemList *expand_reflections(double *ref, ReflItemList *items,
 			get_asymm(he, ke, le, &he, &ke, &le, target);
 
 			/* Make sure the intensity is in the right place */
-			set_intensity(ref, he, ke, le, intensity);
-
-			/* Add the reflection, but only once */
-			if ( !find_item(new, he, ke, le) ) {
-				add_item(new, he, ke, le);
-			}
+			new = add_refl(out, he, ke, le);
+			copy_data(new, refl);
 
 		}
 
 	}
 
-	return new;
+	return out;
 }
 
 
 int main(int argc, char *argv[])
 {
 	int c;
-	double *input_ref;
-	double *phases;
-	double *esds;
-	char *template = NULL;
 	int config_noise = 0;
 	int config_poisson = 0;
-	int config_nophase = 0;
 	int config_multi = 0;
 	char *holo = NULL;
 	char *mero = NULL;
 	char *expand = NULL;
+	char *input_file = NULL;
+	char *template = NULL;
 	char *output = NULL;
-	char *input = NULL;
-	char *filename = NULL;
-	ReflItemList *input_items;
-	ReflItemList *write_items;
-	UnitCell *cell = NULL;
 	char *beamfile = NULL;
 	struct beam_params *beam = NULL;
+	RefList *input;
+	UnitCell *cell = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -290,6 +301,7 @@ int main(int argc, char *argv[])
 		{"intensities",        1, NULL,               'i'},
 		{"multiplicity",       0, &config_multi,       1},
 		{"beam",               1, NULL,               'b'},
+		{"pdb",                1, NULL,               'p'},
 		{0, 0, NULL, 0}
 	};
 
@@ -311,7 +323,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'i' :
-			input = strdup(optarg);
+			input_file = strdup(optarg);
 			break;
 
 		case 'y' :
@@ -330,6 +342,14 @@ int main(int argc, char *argv[])
 			beamfile = strdup(optarg);
 			break;
 
+		case 'p' :
+			cell = load_cell_from_pdb(optarg);
+			if ( cell == NULL ) {
+				ERROR("Failed to get cell from '%s'\n", optarg);
+				return 1;
+			}
+			break;
+
 		case 0 :
 			break;
 
@@ -337,10 +357,6 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-	}
-
-	if ( filename == NULL ) {
-		filename = strdup("molecule.pdb");
 	}
 
 	if ( (holo != NULL) && (expand != NULL) ) {
@@ -358,19 +374,14 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	cell = load_cell_from_pdb(filename);
-	if ( !config_nophase ) {
-		phases = new_list_phase();
-	} else {
-		phases = NULL;
+	if ( cell == NULL ) {
+		ERROR("You need to give a PDB file with the unit cell.\n");
+		return 1;
 	}
-	esds = new_list_sigma();
 
-	input_ref = new_list_intensity();
-	input_items = read_reflections(input, input_ref, phases,
-	                               NULL, esds);
+	input = read_reflections(input_file);
 	free(input);
-	if ( check_symmetry(input_items, mero) ) {
+	if ( check_list_symmetry(input, mero) ) {
 		ERROR("The input reflection list does not appear to"
 		      " have symmetry %s\n", mero);
 		return 1;
@@ -378,8 +389,7 @@ int main(int argc, char *argv[])
 
 	if ( config_poisson ) {
 		if ( beam != NULL ) {
-			poisson_reflections(input_ref, input_items,
-			                    beam->adu_per_photon);
+			poisson_reflections(input, beam->adu_per_photon);
 		} else {
 			ERROR("You must give a beam parameters file in order"
 			      " to calculate Poisson noise.\n");
@@ -387,72 +397,69 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if ( config_noise ) noise_reflections(input_ref, input_items);
+	if ( config_noise ) noise_reflections(input);
 
 	if ( holo != NULL ) {
 
-		ReflItemList *new;
+		RefList *new;
 		STATUS("Twinning from %s into %s\n", mero, holo);
-		new = twin_reflections(input_ref, input_items,
-		                       holo, mero, esds);
-		delete_items(input_items);
-		input_items = new;
+		new = twin_reflections(input, holo, mero);
+
+		/* Replace old with new */
+		reflist_free(input);
+		input = new;
+
+		/* The symmetry of the list has changed */
+		free(mero);
+		mero = holo;
 
 	}
 
 	if ( expand != NULL ) {
 
-		ReflItemList *new;
+		RefList *new;
 		STATUS("Expanding from %s into %s\n", mero, expand);
-		new = expand_reflections(input_ref, input_items, expand, mero);
-		delete_items(input_items);
-		input_items = new;
+		new = expand_reflections(input, expand, mero);
+
+		/* Replace old with new */
+		reflist_free(input);
+		input = new;
 
 	}
 
 	if ( config_multi ) {
 
-		int i;
+		Reflection *refl;
+		RefListIterator *iter;
 
-		for ( i=0; i<num_items(input_items); i++ ) {
+		for ( refl = first_refl(input, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) ) {
 
-			struct refl_item *it;
 			double inty;
+			signed int h, k, l;
 
-			it = get_item(input_items, i);
-			inty = lookup_intensity(input_ref, it->h, it->k, it->l);
-			inty *= num_equivs(it->h, it->k, it->l, mero);
-			set_intensity(input_ref, it->h, it->k, it->l, inty);
-			STATUS("%i %i %i %i\n", it->h, it->k, it->l,
-			       num_equivs(it->h, it->k, it->l, mero));
+			get_indices(refl, &h, &k, &l);
+			inty = get_intensity(refl);
+
+			inty *= (double)num_equivs(h, k, l, mero);
+			set_int(refl, inty);
 
 		}
 	}
 
 	if ( template ) {
 
-		/* Write out only reflections which are in the template
-		 * (and which we have in the input) */
-		ReflItemList *template_items;
-		template_items = read_reflections(template,
-		                                  NULL, NULL, NULL, NULL);
-		write_items = intersection_items(input_items, template_items);
-		delete_items(template_items);
-
-	} else {
-
-		/* Write out all reflections */
-		write_items = new_items();
-		/* (quick way of copying a list) */
-		union_items(write_items, input_items);
+		RefList *t = read_reflections(template);
+		RefList *new = template_reflections(input, t);
+		reflist_free(input);
+		input = new;
 
 	}
 
-	write_reflections(output, write_items, input_ref, esds, phases,
-	                  NULL, cell);
+	write_reflist(output, input, cell);
 
-	delete_items(input_items);
-	delete_items(write_items);
+	reflist_free(input);
 
 	return 0;
 }

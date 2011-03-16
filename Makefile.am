@@ -26,7 +26,7 @@ LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@
 src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c src/utils.c \
                           src/image.c src/cell.c src/hdf5-file.c \
                           src/detector.c src/peaks.c \
-                          src/reflections.c src/beam-parameters.c \
+                          src/reflist-utils.c src/beam-parameters.c \
                           src/symmetry.c src/thread-pool.c src/reflist.c
 if HAVE_OPENCL
 src_pattern_sim_SOURCES += src/diffraction-gpu.c src/cl-utils.c
@@ -51,10 +51,10 @@ src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c src/utils.c \
                           src/cell.c src/image.c src/peaks.c src/index.c \
                           src/filters.c src/diffraction.c src/detector.c \
                           src/dirax.c src/mosflm.c \
-                          src/reflections.c src/symmetry.c \
+                          src/reflist-utils.c src/symmetry.c \
                           src/geometry.c src/thread-pool.c \
-                          src/beam-parameters.c src/reflist.c src/stream.c \
-                          src/reflist-utils.c
+                          src/beam-parameters.c src/reflist.c src/stream.c
+
 if HAVE_OPENCL
 src_indexamajig_SOURCES += src/diffraction-gpu.c src/cl-utils.c
 endif
@@ -67,25 +67,25 @@ src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/render.c \
 endif
 
 src_get_hkl_SOURCES = src/get_hkl.c src/cell.c src/utils.c \
-                      src/reflections.c src/symmetry.c src/beam-parameters.c \
-                      src/thread-pool.c
+                      src/reflist-utils.c src/symmetry.c src/beam-parameters.c \
+                      src/thread-pool.c src/reflist.c
 
 src_compare_hkl_SOURCES = src/compare_hkl.c src/cell.c src/utils.c \
-                          src/reflections.c src/statistics.c src/symmetry.c \
-                          src/thread-pool.c
+                          src/reflist-utils.c src/statistics.c src/symmetry.c \
+                          src/thread-pool.c src/reflist.c
 
 src_check_hkl_SOURCES = src/check_hkl.c src/cell.c src/utils.c \
-                        src/reflections.c src/statistics.c src/symmetry.c \
-                        src/thread-pool.c
+                        src/reflist-utils.c src/statistics.c src/symmetry.c \
+                        src/thread-pool.c src/reflist.c
 
 src_powder_plot_SOURCES = src/powder_plot.c src/cell.c src/utils.c src/image.c \
                           src/hdf5-file.c src/detector.c src/thread-pool.c \
                           src/beam-parameters.c
 
-src_render_hkl_SOURCES = src/render_hkl.c src/cell.c src/reflections.c \
-                         src/utils.c  src/povray.c src/symmetry.c src/render.c \
+src_render_hkl_SOURCES = src/render_hkl.c src/cell.c src/reflist-utils.c \
+                         src/utils.c src/povray.c src/symmetry.c src/render.c \
                          src/hdf5-file.c src/image.c src/filters.c \
-                         src/thread-pool.c
+                         src/thread-pool.c src/reflist.c
 
 src_sum_stack_SOURCES = src/sum_stack.c src/utils.c src/hdf5-file.c \
                         src/image.c src/filters.c src/peaks.c src/detector.c \
@@ -97,10 +97,10 @@ src_calibrate_detector_SOURCES = src/calibrate_detector.c src/utils.c \
 
 src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
                           src/utils.c src/detector.c src/peaks.c src/image.c \
-                          src/geometry.c src/reflections.c src/stream.c \
+                          src/geometry.c src/reflist-utils.c src/stream.c \
                           src/thread-pool.c src/beam-parameters.c \
                           src/symmetry.c src/post-refinement.c \
-                          src/hrs-scaling.c src/reflist.c src/reflist-utils.c
+                          src/hrs-scaling.c src/reflist.c
 
 if BUILD_CUBEIT
 src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
@@ -115,7 +115,7 @@ tests_list_check_SOURCES = tests/list_check.c src/reflist.c src/thread-pool.c \
 INCLUDES = "-I$(top_srcdir)/data"
 
 EXTRA_DIST += src/cell.h src/hdf5-file.h src/image.h src/utils.h \
-              src/diffraction.h src/detector.h src/reflections.h \
+              src/diffraction.h src/detector.h src/reflist-utils.h \
               src/list_tmp.h src/statistics.h src/dw-hdfsee.h \
               src/render.h src/hdfsee.h src/dirax.h src/mosflm.h src/peaks.h \
               src/index.h src/filters.h src/diffraction-gpu.h src/cl-utils.h \

@@ -46,6 +46,9 @@ struct _refldata {
 	double intensity;
 	double esd_i;
 
+	/* Phase */
+	double phase;
+
 	/* Redundancy */
 	int redundancy;
 
@@ -250,7 +253,19 @@ double get_esd_intensity(Reflection *refl)
 }
 
 
+double get_phase(Reflection *refl)
+{
+	return refl->data.phase;
+}
+
+
 /********************************** Setters ***********************************/
+
+void copy_data(Reflection *to, Reflection *from)
+{
+	memcpy(&to->data, &from->data, sizeof(struct _refldata));
+}
+
 
 void set_detector_pos(Reflection *refl, double exerr, double x, double y)
 {
@@ -298,6 +313,12 @@ void set_sum_squared_dev(Reflection *refl, double dev)
 void set_esd_intensity(Reflection *refl, double esd)
 {
 	refl->data.esd_i = esd;
+}
+
+
+void set_ph(Reflection *refl, double phase)
+{
+	refl->data.phase = phase;
 }
 
 
@@ -688,4 +709,10 @@ void optimise_reflist(RefList *list)
 		STATUS("Tree depth after rebalancing = %i\n",
 		       recursive_depth(list->head->child[0]));
 	}
+}
+
+
+int num_reflections(RefList *list)
+{
+	return recursive_count(list->head->child[0]);
 }

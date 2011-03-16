@@ -29,9 +29,10 @@
 #include "hdf5-file.h"
 #include "detector.h"
 #include "peaks.h"
-#include "reflections.h"
 #include "beam-parameters.h"
 #include "symmetry.h"
+#include "reflist.h"
+#include "reflist-utils.h"
 
 
 static void show_help(const char *s)
@@ -412,34 +413,29 @@ int main(int argc, char *argv[])
 
 	} else {
 
-		int i;
-		ReflItemList *items;
+		RefList *reflections;
+
+		reflections = read_reflections(intfile);
+		free(intfile);
 
 		if ( grad == GRADIENT_PHASED ) {
-			phases = new_list_phase();
+			phases = phases_from_list(reflections);
 		} else {
 			phases = NULL;
 		}
-		intensities = new_list_intensity();
-		phases = new_list_phase();
-		flags = new_list_flag();
-		items = read_reflections(intfile, intensities, phases,
-		                         NULL, NULL);
-		free(intfile);
-
-		for ( i=0; i<num_items(items); i++ ) {
-			struct refl_item *it = get_item(items, i);
-			set_flag(flags, it->h, it->k, it->l, 1);
-		}
+		intensities = intensities_from_list(reflections);
+		phases = phases_from_list(reflections);
+		flags = flags_from_list(reflections);
 
 		/* Check that the intensities have the correct symmetry */
-		if ( check_symmetry(items, sym) ) {
+		if ( check_list_symmetry(reflections, sym) ) {
 			ERROR("The input reflection list does not appear to"
 			      " have symmetry %s\n", sym);
 			return 1;
 		}
 
-		delete_items(items);
+		reflist_free(reflections);
+
 	}
 
 	image.det = get_detector_geometry(geometry);

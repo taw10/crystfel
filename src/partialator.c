@@ -26,7 +26,6 @@
 #include "utils.h"
 #include "hdf5-file.h"
 #include "symmetry.h"
-#include "reflections.h"
 #include "stream.h"
 #include "geometry.h"
 #include "peaks.h"
@@ -35,6 +34,7 @@
 #include "post-refinement.h"
 #include "hrs-scaling.h"
 #include "reflist.h"
+#include "reflist-utils.h"
 
 
 static void show_help(const char *s)
@@ -418,7 +418,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Output results */
-	write_reflections(outfile, obs, I_full, NULL, NULL, cts, NULL);
+	//write_reflist(outfile, obs, I_full, NULL, NULL, cts, NULL);
 
 	/* Clean up */
 	for ( i=0; i<n_total_patterns; i++ ) {

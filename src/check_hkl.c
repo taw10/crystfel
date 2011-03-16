@@ -22,9 +22,10 @@
 #include <getopt.h>
 
 #include "utils.h"
-#include "reflections.h"
 #include "statistics.h"
 #include "symmetry.h"
+#include "reflist.h"
+#include "reflist-utils.h"
 
 
 /* Number of bins for plot of resolution shells */
@@ -46,9 +47,8 @@ static void show_help(const char *s)
 }
 
 
-static void plot_shells(const double *ref, ReflItemList *items, UnitCell *cell,
-                        const char *sym, unsigned int *counts,
-                        const double *sigma, double rmin_fix, double rmax_fix)
+static void plot_shells(RefList *list, UnitCell *cell, const char *sym,
+                        double rmin_fix, double rmax_fix)
 {
 	double num[NBINS];
 	int cts[NBINS];
@@ -70,6 +70,8 @@ static void plot_shells(const double *ref, ReflItemList *items, UnitCell *cell,
 	int nmeas = 0;
 	int nmeastot = 0;
 	int nout = 0;
+	Reflection *refl;
+	RefListIterator *iter;
 
 	if ( cell == NULL ) {
 		ERROR("Need the unit cell to plot resolution shells.\n");
@@ -93,16 +95,17 @@ static void plot_shells(const double *ref, ReflItemList *items, UnitCell *cell,
 		mean[i] = 0;
 	}
 
-	rmin = +INFINITY;
-	rmax = 0.0;
-	for ( i=0; i<num_items(items); i++ ) {
+	/* Iterate over all common reflections and calculate min and max
+	 * resolution */
+	rmin = +INFINITY;  rmax = 0.0;
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
 
-		struct refl_item *it;
 		signed int h, k, l;
 		double d;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl, &h, &k, &l);
 
 		d = resolution(cell, h, k, l) * 2.0;
 		if ( d > rmax ) rmax = d;
@@ -179,16 +182,16 @@ static void plot_shells(const double *ref, ReflItemList *items, UnitCell *cell,
 	free(counted);
 
 	/* Calculate means */
-	for ( i=0; i<num_items(items); i++ ) {
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
 
-		struct refl_item *it;
 		signed int h, k, l;
 		double d;
 		int bin;
 		int j;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl, &h, &k, &l);
 
 		d = resolution(cell, h, k, l) * 2.0;
 
@@ -205,7 +208,7 @@ static void plot_shells(const double *ref, ReflItemList *items, UnitCell *cell,
 		}
 
 		measured[bin]++;
-		mean[bin] += lookup_intensity(ref, h, k, l);
+		mean[bin] += get_intensity(refl);
 
 	}
 
@@ -214,21 +217,21 @@ static void plot_shells(const double *ref, ReflItemList *items, UnitCell *cell,
 	}
 
 	/* Characterise the data set */
-	for ( i=0; i<num_items(items); i++ ) {
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
 
-		struct refl_item *it;
 		signed int h, k, l;
 		double d;
 		int bin;
 		int j;
 		double val, esd;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl, &h, &k, &l);
 
 		d = resolution(cell, h, k, l) * 2.0;
-		val = lookup_intensity(ref, h, k, l);
-		esd = lookup_sigma(sigma, h, k, l);
+		val = get_intensity(refl);
+		esd = get_esd_intensity(refl);
 
 		bin = -1;
 		for ( j=0; j<NBINS; j++ ) {
@@ -245,11 +248,11 @@ static void plot_shells(const double *ref, ReflItemList *items, UnitCell *cell,
 		if ( !isfinite(val/esd) ) continue;
 
 		/* measured[bin] was done earlier */
-		measurements[bin] += lookup_count(counts, h, k, l);
+		measurements[bin] += get_redundancy(refl);
 		snr[bin] += val / esd;
 		snr_total += val / esd;
 		nmeas++;
-		nmeastot += lookup_count(counts, h, k, l);
+		nmeastot += get_redundancy(refl);
 
 		var[bin] += pow(val-mean[bin], 2.0);
 
@@ -289,17 +292,15 @@ static void plot_shells(const double *ref, ReflItemList *items, UnitCell *cell,
 int main(int argc, char *argv[])
 {
 	int c;
-	double *ref;
 	UnitCell *cell;
 	char *file = NULL;
 	char *sym = NULL;
-	int i;
-	ReflItemList *items;
-	ReflItemList *good_items;
+	RefList *raw_list;
+	RefList *list;
+	Reflection *refl;
+	RefListIterator *iter;
 	char *pdb = NULL;
-	double *esd;
 	int rej = 0;
-	unsigned int *cts;
 	float rmin_fix = -1.0;
 	float rmax_fix = -1.0;
 
@@ -369,37 +370,35 @@ int main(int argc, char *argv[])
 	cell = load_cell_from_pdb(pdb);
 	free(pdb);
 
-	ref = new_list_intensity();
-	esd = new_list_sigma();
-	cts = new_list_count();
-	items = read_reflections(file, ref, NULL, cts, esd);
-	if ( items == NULL ) {
-		ERROR("Couldn't open file '%s'\n", file);
+	raw_list = read_reflections(file);
+	if ( raw_list == NULL ) {
+		ERROR("Couldn't read file '%s'\n", file);
 		return 1;
 	}
 
 	/* Check that the intensities have the correct symmetry */
-	if ( check_symmetry(items, sym) ) {
+	if ( check_list_symmetry(raw_list, sym) ) {
 		ERROR("The input reflection list does not appear to"
 		      " have symmetry %s\n", sym);
 		return 1;
 	}
 
-	/* Reject reflections */
-	good_items = new_items();
-	for ( i=0; i<num_items(items); i++ ) {
+	/* Reject some reflections */
+	list = reflist_new();
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
 
-		struct refl_item *it;
 		signed int h, k, l;
 		double val, sig;
 		int ig = 0;
 		double d;
+		Reflection *new;
 
-		it = get_item(items, i);
-		h = it->h;  k = it->k;  l = it->l;
+		get_indices(refl, &h, &k, &l);
 
-		val = lookup_intensity(ref, h, k, l);
-		sig = lookup_sigma(esd, h, k, l);
+		val = get_intensity(refl);
+		sig = get_esd_intensity(refl);
 
 		if ( val < 3.0 * sig ) {
 			rej++;
@@ -412,11 +411,12 @@ int main(int argc, char *argv[])
 
 		//if ( ig ) continue;
 
-		add_item(good_items, h, k, l);
+		new = add_refl(list, h, k, l);
+		copy_data(new, refl);
 
 	}
 
-	plot_shells(ref, items, cell, sym, cts, esd, rmin_fix, rmax_fix);
+	plot_shells(list, cell, sym, rmin_fix, rmax_fix);
 
 	return 0;
 }
