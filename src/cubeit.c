@@ -211,7 +211,7 @@ static void sum_image(void *pg, int cookie)
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-	int x, y;
+	int fs, ss;
 
 	image.features = NULL;
 	image.data = NULL;
@@ -234,19 +234,19 @@ static void sum_image(void *pg, int cookie)
 	hdf5_read(hdfile, &image, 1);
 
 	cell_get_cartesian(apargs->cell, &ax, &ay, &az, &bx, &by,
-	                                &bz, &cx, &cy, &cz);
+	                                 &bz, &cx, &cy, &cz);
 
 	fesetround(1);  /* Round towards nearest */
-	for ( x=0; x<image.width; x++ ) {
-	for ( y=0; y<image.height; y++ ) {
+	for ( fs=0; fs<image.width; fs++ ) {
+	for ( ss=0; ss<image.height; ss++ ) {
 
 		double hd, kd, ld;
 		signed int h, k, l;
 		double dh, dk, dl;
 		struct rvec q;
-		signed int ha, ka, la;
+		//signed int ha, ka, la;
 
-		q = get_q(&image, x, y, NULL, 1.0/image.lambda);
+		q = get_q(&image, fs, ss, NULL, 1.0/image.lambda);
 
 		hd = q.u * ax + q.v * ay + q.w * az;
 		kd = q.u * bx + q.v * by + q.w * bz;
@@ -256,21 +256,22 @@ static void sum_image(void *pg, int cookie)
 		k = lrint(kd);
 		l = lrint(ld);
 
-		/* FIXME: This is really, really slow.
+		/* Uncomment this to use symmetry if you only want to look
+		 * at a particular reflection.  But it's really really slow.
 		 * And wrong.  To get useful information from symmetry
 		 * averaging, the pattern must be transformed by the
 		 * appropriate symmetry operator(s) to bring it into
 		 * alignment. */
-		get_asymm(h, k, l, &ha, &ka, &la, pargs->sym);
-		if ( (ha!=pargs->ht) || (ka!=pargs->kt) || (la!=pargs->lt) ) {
-			continue;
-		}
+		//get_asymm(h, k, l, &ha, &ka, &la, pargs->sym);
+		//if ( (ha!=pargs->ht) || (ka!=pargs->kt) || (la!=pargs->lt) ) {
+		//	continue;
+		//}
 
 		dh = hd - h;
 		dk = kd - k;
 		dl = ld - l;
 
-		double v = image.data[x+image.width*y];
+		double v = image.data[fs+image.width*ss];
 
 		pthread_mutex_lock(pargs->vals_mutex);
 		interpolate_onto_grid(pargs->vals, v, pargs->xs, pargs->ys,
