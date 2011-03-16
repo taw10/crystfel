@@ -3,7 +3,7 @@
  *
  * "Full integration" of diffraction data
  *
- * (c) 2006-2010 Thomas White <taw@physics.org>
+ * (c) 2006-2011 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
@@ -388,31 +388,36 @@ static void *get_image(void *qp)
 {
 	struct sum_args *pargs;
 	struct queue_args *qargs = qp;
-	UnitCell *cell;
-	char *filename;
-	double ph_ev;
+	struct image image;
 
 	/* Get the next filename */
-	if ( find_chunk(qargs->fh, &cell, &filename, &ph_ev) ) {
+	if ( read_chunk(qargs->fh, &image) == 1 ) {
+		ERROR("Failed to read chunk from the input stream.\n");
 		return NULL;
 	}
+
+	/* Won't be needing these */
+	image_feature_list_free(image.features);
+	image.features = NULL;
+	reflist_free(image.reflections);
+
 
 	pargs = malloc(sizeof(struct sum_args));
 
 	if ( qargs->config_basename ) {
 		char *tmp;
-		tmp = safe_basename(filename);
-		free(filename);
-		filename = tmp;
+		tmp = safe_basename(image.filename);
+		free(image.filename);
+		image.filename = tmp;
 	}
 
 	memcpy(&pargs->static_args, &qargs->static_args,
 	       sizeof(struct static_sum_args));
 
-	pargs->cell = cell;
+	pargs->cell = image.indexed_cell;
 	pargs->filename = malloc(1024);
-	snprintf(pargs->filename, 1023, "%s%s", qargs->prefix, filename);
-	free(filename);
+	snprintf(pargs->filename, 1023, "%s%s", qargs->prefix, image.filename);
+	free(image.filename);
 
 	return pargs;
 }
