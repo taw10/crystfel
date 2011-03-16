@@ -64,7 +64,8 @@ static void show_help(const char *s)
 
 
 /* Apply Poisson noise to all reflections */
-static void poisson_reflections(double *ref, ReflItemList *items)
+static void poisson_reflections(double *ref, ReflItemList *items,
+                                double adu_per_photon)
 {
 	int i;
 	const int n = num_items(items);
@@ -78,7 +79,7 @@ static void poisson_reflections(double *ref, ReflItemList *items)
 		it = get_item(items, i);
 
 		val = lookup_intensity(ref, it->h, it->k, it->l);
-		c = poisson_noise(val);
+		c = adu_per_photon * poisson_noise(val/adu_per_photon);
 		set_intensity(ref, it->h, it->k, it->l, c);
 
 		progress_bar(i, n-1, "Simulating noise");
@@ -256,7 +257,7 @@ static ReflItemList *expand_reflections(double *ref, ReflItemList *items,
 int main(int argc, char *argv[])
 {
 	int c;
-	double *ideal_ref;
+	double *input_ref;
 	double *phases;
 	double *esds;
 	char *template = NULL;
@@ -274,7 +275,7 @@ int main(int argc, char *argv[])
 	ReflItemList *write_items;
 	UnitCell *cell = NULL;
 	char *beamfile = NULL;
-	struct beam_params *beam;  /* Beam parameters for Poisson calculation */
+	struct beam_params *beam = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -345,7 +346,16 @@ int main(int argc, char *argv[])
 	if ( (holo != NULL) && (expand != NULL) ) {
 		ERROR("You cannot 'twin' and 'expand' at the same time.\n");
 		ERROR("Decide which one you want to do first.\n");
-		exit(1);
+		return 1;
+	}
+
+	if ( beamfile != NULL ) {
+		beam = get_beam_parameters(beamfile);
+		if ( beam == NULL ) {
+			ERROR("Failed to load beam parameters from '%s'\n",
+			      beamfile);
+			return 1;
+		}
 	}
 
 	cell = load_cell_from_pdb(filename);
@@ -356,8 +366,8 @@ int main(int argc, char *argv[])
 	}
 	esds = new_list_sigma();
 
-	ideal_ref = new_list_intensity();
-	input_items = read_reflections(input, ideal_ref, phases,
+	input_ref = new_list_intensity();
+	input_items = read_reflections(input, input_ref, phases,
 	                               NULL, esds);
 	free(input);
 	if ( check_symmetry(input_items, mero) ) {
@@ -366,24 +376,38 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( config_poisson ) poisson_reflections(ideal_ref, input_items);
-	if ( config_noise ) noise_reflections(ideal_ref, input_items);
+	if ( config_poisson ) {
+		if ( beam != NULL ) {
+			poisson_reflections(input_ref, input_items,
+			                    beam->adu_per_photon);
+		} else {
+			ERROR("You must give a beam parameters file in order"
+			      " to calculate Poisson noise.\n");
+			return 1;
+		}
+	}
+
+	if ( config_noise ) noise_reflections(input_ref, input_items);
 
 	if ( holo != NULL ) {
+
 		ReflItemList *new;
 		STATUS("Twinning from %s into %s\n", mero, holo);
-		new = twin_reflections(ideal_ref, input_items,
+		new = twin_reflections(input_ref, input_items,
 		                       holo, mero, esds);
 		delete_items(input_items);
 		input_items = new;
+
 	}
 
 	if ( expand != NULL ) {
+
 		ReflItemList *new;
 		STATUS("Expanding from %s into %s\n", mero, expand);
-		new = expand_reflections(ideal_ref, input_items, expand, mero);
+		new = expand_reflections(input_ref, input_items, expand, mero);
 		delete_items(input_items);
 		input_items = new;
+
 	}
 
 	if ( config_multi ) {
@@ -396,9 +420,9 @@ int main(int argc, char *argv[])
 			double inty;
 
 			it = get_item(input_items, i);
-			inty = lookup_intensity(ideal_ref, it->h, it->k, it->l);
+			inty = lookup_intensity(input_ref, it->h, it->k, it->l);
 			inty *= num_equivs(it->h, it->k, it->l, mero);
-			set_intensity(ideal_ref, it->h, it->k, it->l, inty);
+			set_intensity(input_ref, it->h, it->k, it->l, inty);
 			STATUS("%i %i %i %i\n", it->h, it->k, it->l,
 			       num_equivs(it->h, it->k, it->l, mero));
 
@@ -406,6 +430,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ( template ) {
+
 		/* Write out only reflections which are in the template
 		 * (and which we have in the input) */
 		ReflItemList *template_items;
@@ -413,14 +438,17 @@ int main(int argc, char *argv[])
 		                                  NULL, NULL, NULL, NULL);
 		write_items = intersection_items(input_items, template_items);
 		delete_items(template_items);
+
 	} else {
+
 		/* Write out all reflections */
 		write_items = new_items();
 		/* (quick way of copying a list) */
 		union_items(write_items, input_items);
+
 	}
 
-	write_reflections(output, write_items, ideal_ref, esds, phases,
+	write_reflections(output, write_items, input_ref, esds, phases,
 	                  NULL, cell);
 
 	delete_items(input_items);
