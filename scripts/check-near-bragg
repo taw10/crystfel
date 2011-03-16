@@ -47,8 +47,4 @@ while ( $line = <FH> ) {
 
 	}
 
-	if ( !$handled ) {
-		printf(STDERR "Unhandled: '%s'\n", $line);
-	}
-
 }
