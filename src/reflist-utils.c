@@ -220,6 +220,7 @@ int write_reflist(const char *filename, RefList *list, UnitCell *cell)
 	}
 
 	write_reflections_to_file(fh, list, cell);
+	fprintf(fh, REFLECTION_END_MARKER"\n");
 
 	fclose(fh);
 
