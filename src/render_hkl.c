@@ -104,15 +104,18 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 
 		double u, v, val, res;
 		signed int h, k, l;
+		signed int he, ke, le;
 		Reflection *refl;
+		int r;
 
 		h = xi*xh + yi*yh;
 		k = xi*xk + yi*yk;
 		l = xi*xl + yi*yl;
 
 		/* Got this reflection? */
-		refl = find_refl(list, h, k, l);
-		if ( refl == NULL ) continue;
+		r = find_equiv_in_list(list, h, k, l, sym, &he, &ke, &le);
+		if ( !r ) continue;
+		refl = find_refl(list, he, ke, le);
 
 		switch ( wght ) {
 		case WGHT_I :
@@ -171,6 +174,7 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 			/* Find max resolution */
 			res = resolution(cell, h, k, l);
 			if ( res > *max_res ) *max_res = res;
+
 		}
 
 	}
