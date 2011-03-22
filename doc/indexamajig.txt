@@ -11,47 +11,55 @@ For minimal basic use, you need to provide the list of diffraction patterns,
 the method which will be used to index, a file describing the geometry of the
 detector, a PDB file which contains the unit cell which will be used for the
 indexing, and that you'd like the program to output a list of intensities for
-each successfully indexed pattern.  Here is what the minimal use looks like on
-the command line, with each argument shown on a separate line.  In practice,
-you'd put this all on one line:
+each successfully indexed pattern.  Here is what the minimal use might look like
+on the command line:
 
-indexamajig
--i mypatternlist.lst
---indexing=dirax
---geometry mygeometry.geom
--p mystructure.pdb
---near-bragg
--o myoutputfile.txt
+indexamajig -i mypatterns.lst -j 10 \
+            -g mygeometry.geom \
+            --indexing=mosflm,dirax --peaks=hdf5 \
+            --cell-reduction=reduce \
+            -b myxfel..beam \
+            -o test.stream -p mycell.pdb \
+            --record=integrated
 
 More typical use includes all the above, but might also include a noise or
 common mode filter (--filter-noise or --filter-cm respectively) if detector
 noise causes problems for the peak detection.  The HDF5 files might be in some
 folder a long way from the current directory, so you might want to specify a
 full pathname to be added in front of each filename.  You'll probably want to
-run more than one indexing job at a time (-j <n>), and you might want to correct
-the intensities of saturated peaks according to a list stored elsewhere in the
-HDF5 file:
+run more than one indexing job at a time (-j <n>).
 
-indexamajig
--i mypatternlist.lst
---indexing=dirax
---geometry mygeometry.geom
--p mystructure.pdb
---near-bragg
---filter-noise
---prefix=/some/horribly/long/pathname/ending/in/a/slash/
--j 16
---sat-corr
--o myoutputfile.txt
-
-The table of saturation values for --sat-corr should be located in the HDF5 file
-as follows: /processing/hitfinder/peakinfo_saturated.  It should be an n*3 two
-dimensional array, where the first two columns contain x and y coordinates and
-the third contains the value which should belong in a peak at location x,y.  The
-value will be divided by 5 and spread in a small cross centred on that location.
+You can include a table of saturation values for in the HDF5 file, if you have
+a method for estimating the intensities of saturated peaks.  It goes in
+/processing/hitfinder/peakinfo_saturated, and should be an n*3 two dimensional
+array, where the first two columns contain fast scan and slow scan coordinates
+(in that order) and the third contains the value which should belong in a peak
+at the given location.  The value will be divided by 5 and spread in a small
+cross centred on that location.
 
 See doc/geometry for information about how to create a geometry description
 file.
+
+You can control what information is included in the output stream using
+' --record=<flags>'.  Possible flags are:
+
+ pixels            Include a list of sums of pixel values within the
+                    integration domain, correcting for individual pixel
+                    solid angles.
+
+ integrated        Include a list of reflection intensities, produced by
+                    integrating around predicted peak locations.
+
+ peaks             Include peak locations and intensities from the peak
+                    search.
+
+ peaksifindexed    As 'peaks', but only if the pattern could be indexed.
+
+ peaksifnotindexed As 'peaks', but only if the pattern could NOT be indexed.
+
+So, if you just want the integrated intensities of indexed peaks, use
+"--record=integrated".  If you just want to check that the peak detection is
+working, used "--record=peaks".
 
 
 Peak Detection
@@ -174,5 +182,6 @@ can be "/dev/null" if you're only interested in the other.
 ---------
 
 Don't run more than one indexamajig jobs simultaneously in the same working
-directory - they'll overwrite each other's DirAx files, causing subtle problems
+directory - they'll overwrite each other's DirAx or MOSFLM files, causing subtle
+problems
 which can't easily be detected.
