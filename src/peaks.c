@@ -648,6 +648,7 @@ void integrate_reflections(struct image *image, int polar, int use_closer)
 		}
 
 		set_int(refl, intensity);
+		set_redundancy(refl, 1);
 
 	}
 }
