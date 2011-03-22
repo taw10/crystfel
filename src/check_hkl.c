@@ -3,7 +3,7 @@
  *
  * Characterise reflection lists
  *
- * (c) 2006-2010 Thomas White <taw@physics.org>
+ * (c) 2006-2011 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
@@ -385,7 +385,7 @@ int main(int argc, char *argv[])
 
 	/* Reject some reflections */
 	list = reflist_new();
-	for ( refl = first_refl(list, &iter);
+	for ( refl = first_refl(raw_list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 

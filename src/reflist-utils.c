@@ -271,6 +271,7 @@ RefList *read_reflections_from_file(FILE *fh)
 			set_int(refl, intensity);
 			set_detector_pos(refl, fs, ss, 0.0);
 			set_esd_intensity(refl, sigma);
+			set_redundancy(refl, cts);
 
 			ph = strtod(phs, &v);
 			if ( v != NULL ) set_ph(refl, ph);
