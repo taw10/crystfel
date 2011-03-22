@@ -1,9 +1,9 @@
 /*
- * hdf5.h
+ * hdf5-file.h
  *
  * Read/write HDF5 data files
  *
- * (c) 2006-2010 Thomas White <taw@physics.org>
+ * (c) 2006-2011 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *

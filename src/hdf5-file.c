@@ -1,5 +1,5 @@
 /*
- * hdf5.c
+ * hdf5-file.c
  *
  * Read/write HDF5 data files
  *
@@ -152,14 +152,13 @@ int get_peaks(struct image *image, struct hdfile *f)
 
 	for ( i=0; i<size[0]; i++ ) {
 
-		unsigned int x, y;
-		float val;
+		float fs, ss, val;
 
-		x = buf[3*i+0];
-		y = buf[3*i+1];
+		fs = buf[3*i+0];
+		ss = buf[3*i+1];
 		val = buf[3*i+2];
 
-		image_add_feature(image->features, x, y, image, val, NULL);
+		image_add_feature(image->features, fs, ss, image, val, NULL);
 
 	}
 	STATUS("Got %i peaks from peak list.\n", (int)size[0]);
