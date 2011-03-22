@@ -795,11 +795,6 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
 	}
 	}
 
-	if ( new_cell != NULL ) {
-		STATUS("Success! --------------- \n");
-		cell_print(new_cell);
-	}
-
 	free(cand[0]);
 	free(cand[1]);
 	free(cand[2]);

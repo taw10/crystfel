@@ -161,7 +161,6 @@ int get_peaks(struct image *image, struct hdfile *f)
 		image_add_feature(image->features, fs, ss, image, val, NULL);
 
 	}
-	STATUS("Got %i peaks from peak list.\n", (int)size[0]);
 
 	free(buf);
 	H5Sclose(sh);
@@ -323,7 +322,6 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 
 	if ( dh < 0 ) {
 		/* This isn't an error */
-		STATUS("No saturation table found.\n");
 		return;
 	}
 

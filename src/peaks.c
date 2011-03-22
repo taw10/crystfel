@@ -492,7 +492,6 @@ RefList *find_projected_peaks(struct image *image, UnitCell *cell,
 
 	optimise_reflist(reflections);
 
-	STATUS("Found %i reflections\n", n_reflections);
 	return reflections;
 }
 
@@ -559,8 +558,6 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
 
 	}
 
-	STATUS("Sanity factor: %f / %f = %f\n", (float)n_sane, (float)n_feat,
-                                                (float)n_sane / (float)n_feat);
 	if ( (float)n_sane / (float)n_feat < 0.1 ) return 0;
 
 	return 1;

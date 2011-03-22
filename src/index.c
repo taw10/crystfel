@@ -140,16 +140,13 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 		case INDEXING_NONE :
 			return;
 		case INDEXING_DIRAX :
-			STATUS("Running DirAx...\n");
 			run_dirax(image);
 			break;
 		case INDEXING_MOSFLM :
-			STATUS("Running MOSFLM...\n");
 			run_mosflm(image, cell);
 			break;
 		}
 		if ( image->ncells == 0 ) {
-			STATUS("No candidate cells found.\n");
 			n++;
 			continue;
 		}
@@ -200,7 +197,6 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 			/* Sanity check */
 			if ( !config_insane &&
 			     !peak_sanity_check(image, new_cell, 0, 0.1) ) {
-				STATUS("Failed peak sanity check.\n");
 				cell_free(new_cell);
 				continue;
 			}

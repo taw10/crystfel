@@ -23,7 +23,7 @@
 #include <hdf5.h>
 #include <gsl/gsl_errno.h>
 #include <pthread.h>
-#include <sys/time.h>
+#include <time.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -36,6 +36,10 @@
 #include "geometry.h"
 #include "stream.h"
 #include "reflist-utils.h"
+
+
+
+#define STATS_EVERY_N_SECONDS (5)
 
 
 enum {
@@ -92,9 +96,13 @@ struct queue_args
 	int config_basename;
 	struct static_index_args static_args;
 
-	int n_indexable;
-
 	char *use_this_one_instead;
+
+	int n_indexable;
+	int n_processed;
+	int n_indexable_last_stats;
+	int n_processed_last_stats;
+	int t_last_stats;
 };
 
 
@@ -209,8 +217,6 @@ static void process_image(void *pp, int cookie)
 	image.id = cookie;
 	image.filename = filename;
 	image.det = copy_geom(pargs->static_args.det);
-
-	STATUS("Processing '%s'\n", image.filename);
 
 	pargs->indexable = 0;
 
@@ -384,8 +390,26 @@ static void finalise_image(void *qp, void *pp)
 {
 	struct queue_args *qargs = qp;
 	struct index_args *pargs = pp;
+	struct timespec tp;
 
 	qargs->n_indexable += pargs->indexable;
+	qargs->n_processed++;
+
+	clock_gettime(CLOCK_REALTIME, &tp);
+	if ( tp.tv_sec > qargs->t_last_stats+STATS_EVERY_N_SECONDS ) {
+
+		STATUS("%i out of %i indexed so far,"
+		       " %i out of %i in the last %i seconds.\n",
+		       qargs->n_indexable, qargs->n_processed,
+		       qargs->n_indexable - qargs->n_indexable_last_stats,
+		       qargs->n_processed - qargs->n_processed_last_stats,
+		       STATS_EVERY_N_SECONDS);
+
+		qargs->n_processed_last_stats = qargs->n_processed;
+		qargs->n_indexable_last_stats = qargs->n_indexable;
+		qargs->t_last_stats = tp.tv_sec;
+
+	}
 
 	free(pargs->filename);
 	free(pargs);
@@ -439,6 +463,7 @@ int main(int argc, char *argv[])
 	char *element = NULL;
 	double nominal_photon_energy;
 	int stream_flags = STREAM_INTEGRATED;
+	struct timespec tp;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -759,6 +784,12 @@ int main(int argc, char *argv[])
 	qargs.prefix = prefix;
 	qargs.config_basename = config_basename;
 	qargs.n_indexable = 0;
+	qargs.n_processed = 0;
+	qargs.n_indexable_last_stats = 0;
+	qargs.n_processed_last_stats = 0;
+	clock_gettime(CLOCK_REALTIME, &tp);
+	qargs.t_last_stats = tp.tv_sec;
+
 
 	n_images = run_threads(nthreads, process_image, get_image,
 	                       finalise_image, &qargs, 0);
