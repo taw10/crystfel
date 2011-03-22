@@ -213,6 +213,12 @@ AS_IF([test "x$enable_gdk_pixbuf" != "xno"],
 ])
 
 
+AC_CHECK_LIB([pthread], [sched_setaffinity], [
+   AC_DEFINE([HAVE_CPU_AFFINITY], [1],
+             [Define to 1 if sched_setaffinity is available.])
+])
+
+
 dnl Conditionals...
 AM_CONDITIONAL([HAVE_OPENCL], test x$have_opencl = xtrue)
 

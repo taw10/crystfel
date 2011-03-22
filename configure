@@ -7413,6 +7413,52 @@ $as_echo "no" >&6; }
 fi
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for sched_setaffinity in -lpthread" >&5
+$as_echo_n "checking for sched_setaffinity in -lpthread... " >&6; }
+if test "${ac_cv_lib_pthread_sched_setaffinity+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpthread  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char sched_setaffinity ();
+int
+main ()
+{
+return sched_setaffinity ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_pthread_sched_setaffinity=yes
+else
+  ac_cv_lib_pthread_sched_setaffinity=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthread_sched_setaffinity" >&5
+$as_echo "$ac_cv_lib_pthread_sched_setaffinity" >&6; }
+if test "x$ac_cv_lib_pthread_sched_setaffinity" = x""yes; then :
+
+
+$as_echo "#define HAVE_CPU_AFFINITY 1" >>confdefs.h
+
+
+fi
+
+
+
  if test x$have_opencl = xtrue; then
   HAVE_OPENCL_TRUE=
   HAVE_OPENCL_FALSE='#'

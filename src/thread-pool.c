@@ -23,8 +23,62 @@
 #include <pthread.h>
 #include <assert.h>
 
+#ifdef HAVE_CPU_AFFINITY
+#include <sched.h>
+#endif
+
+
 #include "utils.h"
 
+
+/* ------------------------------ CPU affinity ------------------------------ */
+
+#ifdef HAVE_CPU_AFFINITY
+
+static int next_cpu(int cur)
+{
+	cur++;
+
+	if ( cur == 73 ) cur = 0;
+
+	return cur;
+}
+
+
+static void set_affinity(int cpu)
+{
+	cpu_set_t c;
+
+	CPU_ZERO(&c);
+	CPU_SET(cpu, &c);
+	if ( sched_setaffinity(0, sizeof(cpu_set_t), &c) ) {
+
+		/* Cannot use ERROR() just yet */
+		fprintf(stderr, "Failed to set CPU affinity.\n");
+
+	} else {
+
+		fprintf(stderr, "Successfully set CPU affinity to %i\n", cpu);
+
+	}
+}
+
+#else /* HAVE_CPU_AFFINITY */
+
+static int next_cpu(int cur)
+{
+	return 0;
+}
+
+
+static void set_affinity(int cpu)
+{
+}
+
+#endif /* HAVE_CPU_AFFINITY */
+
+
+/* --------------------------- Status label stuff --------------------------- */
 
 static int use_status_labels = 0;
 static pthread_key_t status_label_key;
@@ -35,6 +89,7 @@ struct worker_args
 	struct task_queue_range *tqr;
 	struct task_queue *tq;
 	int id;
+	int cpu;
 };
 
 
@@ -80,6 +135,8 @@ static void *range_worker(void *pargsv)
 	struct worker_args *w = pargsv;
 	struct task_queue_range *q = w->tqr;
 	int *cookie;
+
+	set_affinity(w->cpu);
 
 	cookie = malloc(sizeof(int));
 	*cookie = w->id;
@@ -132,6 +189,7 @@ void run_thread_range(int n_tasks, int n_threads, const char *text,
 {
 	pthread_t *workers;
 	int i;
+	int cpu = 0;
 	struct task_queue_range q;
 
 	/* The nation of CrystFEL prides itself on having 0% unemployment. */
@@ -166,6 +224,8 @@ void run_thread_range(int n_tasks, int n_threads, const char *text,
 		w->tqr = &q;
 		w->tq = NULL;
 		w->id = i;
+		w->cpu = cpu;
+		cpu = next_cpu(cpu);
 
 		if ( pthread_create(&workers[i], NULL, range_worker, w) ) {
 			/* Not ERROR() here */
@@ -210,6 +270,8 @@ static void *task_worker(void *pargsv)
 	struct worker_args *w = pargsv;
 	struct task_queue *q = w->tq;
 	int *cookie;
+
+	set_affinity(w->cpu);
 
 	cookie = malloc(sizeof(int));
 	*cookie = w->id;
@@ -265,6 +327,7 @@ int run_threads(int n_threads, void (*work)(void *, int),
 	pthread_t *workers;
 	int i;
 	struct task_queue q;
+	int cpu = 0;
 
 	pthread_key_create(&status_label_key, NULL);
 
@@ -292,6 +355,8 @@ int run_threads(int n_threads, void (*work)(void *, int),
 		w->tq = &q;
 		w->tqr = NULL;
 		w->id = i;
+		w->cpu = cpu;
+		cpu = next_cpu(cpu);
 
 		if ( pthread_create(&workers[i], NULL, task_worker, w) ) {
 			/* Not ERROR() here */

@@ -21,6 +21,9 @@
 /* Define to 1 if CL/cl.h should be used */
 #undef HAVE_CL_CL_H
 
+/* Define to 1 if sched_setaffinity is available. */
+#undef HAVE_CPU_AFFINITY
+
 /* Define to 1 if you have the declaration of `strndup', and to 0 if you
    don't. */
 #undef HAVE_DECL_STRNDUP
