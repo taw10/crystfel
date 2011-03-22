@@ -189,7 +189,7 @@ void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell)
 		red = get_redundancy(refl);
 
 		if ( cell != NULL ) {
-			s = resolution(cell, h, k, l);
+			s = 2.0 * resolution(cell, h, k, l);
 			snprintf(res, 16, "%10.2f", s/1e9);
 		} else {
 			strcpy(res, "         -");
