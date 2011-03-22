@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
 
 	/* Sanitise output filename */
 	if ( outfile == NULL ) {
-		outfile = strdup("facetron.hkl");
+		outfile = strdup("partialator.hkl");
 	}
 
 	if ( sym == NULL ) sym = strdup("1");
