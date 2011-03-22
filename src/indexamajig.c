@@ -38,7 +38,7 @@
 #include "reflist-utils.h"
 
 
-
+/* Write statistics at APPROXIMATELY this interval */
 #define STATS_EVERY_N_SECONDS (5)
 
 
@@ -396,14 +396,13 @@ static void finalise_image(void *qp, void *pp)
 	qargs->n_processed++;
 
 	clock_gettime(CLOCK_REALTIME, &tp);
-	if ( tp.tv_sec > qargs->t_last_stats+STATS_EVERY_N_SECONDS ) {
+	if ( tp.tv_sec >= qargs->t_last_stats+STATS_EVERY_N_SECONDS ) {
 
 		STATUS("%i out of %i indexed so far,"
-		       " %i out of %i in the last %i seconds.\n",
+		       " %i out of %i since the last message.\n",
 		       qargs->n_indexable, qargs->n_processed,
 		       qargs->n_indexable - qargs->n_indexable_last_stats,
-		       qargs->n_processed - qargs->n_processed_last_stats,
-		       STATS_EVERY_N_SECONDS);
+		       qargs->n_processed - qargs->n_processed_last_stats);
 
 		qargs->n_processed_last_stats = qargs->n_processed;
 		qargs->n_indexable_last_stats = qargs->n_indexable;
