@@ -133,7 +133,7 @@ void reflist_free(RefList *list)
 /********************************** Search ************************************/
 
 /* Return the first reflection in 'list' with the given indices, or NULL */
-Reflection *find_refl(RefList *list, INDICES)
+Reflection *find_refl(const RefList *list, INDICES)
 {
 	unsigned int search = SERIAL(h, k, l);
 	Reflection *refl = list->head->child[0];
@@ -185,20 +185,21 @@ Reflection *next_found_refl(Reflection *refl)
 
 /********************************** Getters ***********************************/
 
-double get_excitation_error(Reflection *refl)
+double get_excitation_error(const Reflection *refl)
 {
 	return refl->data.excitation_error;
 }
 
 
-void get_detector_pos(Reflection *refl, double *x, double *y)
+void get_detector_pos(const Reflection *refl, double *x, double *y)
 {
 	*x = refl->data.x;
 	*y = refl->data.y;
 }
 
 
-void get_indices(Reflection *refl, signed int *h, signed int *k, signed int *l)
+void get_indices(const Reflection *refl,
+                 signed int *h, signed int *k, signed int *l)
 {
 	*h = refl->data.h;
 	*k = refl->data.k;
@@ -206,19 +207,19 @@ void get_indices(Reflection *refl, signed int *h, signed int *k, signed int *l)
 }
 
 
-double get_partiality(Reflection *refl)
+double get_partiality(const Reflection *refl)
 {
 	return refl->data.p;
 }
 
 
-double get_intensity(Reflection *refl)
+double get_intensity(const Reflection *refl)
 {
 	return refl->data.intensity;
 }
 
 
-void get_partial(Reflection *refl, double *r1, double *r2, double *p,
+void get_partial(const Reflection *refl, double *r1, double *r2, double *p,
                  int *clamp_low, int *clamp_high)
 {
 	*r1 = refl->data.r1;
@@ -229,31 +230,31 @@ void get_partial(Reflection *refl, double *r1, double *r2, double *p,
 }
 
 
-int get_scalable(Reflection *refl)
+int get_scalable(const Reflection *refl)
 {
 	return refl->data.scalable;
 }
 
 
-int get_redundancy(Reflection *refl)
+int get_redundancy(const Reflection *refl)
 {
 	return refl->data.redundancy;
 }
 
 
-double get_sum_squared_dev(Reflection *refl)
+double get_sum_squared_dev(const Reflection *refl)
 {
 	return refl->data.sum_squared_dev;
 }
 
 
-double get_esd_intensity(Reflection *refl)
+double get_esd_intensity(const Reflection *refl)
 {
 	return refl->data.esd_i;
 }
 
 
-double get_phase(Reflection *refl)
+double get_phase(const Reflection *refl)
 {
 	return refl->data.phase;
 }
@@ -261,7 +262,7 @@ double get_phase(Reflection *refl)
 
 /********************************** Setters ***********************************/
 
-void copy_data(Reflection *to, Reflection *from)
+void copy_data(Reflection *to, const Reflection *from)
 {
 	memcpy(&to->data, &from->data, sizeof(struct _refldata));
 }

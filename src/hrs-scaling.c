@@ -311,19 +311,20 @@ static double iterate_scale(struct image *images, int n,
 }
 
 
-static double *lsq_intensities(struct image *images, int n,
-                               ReflItemList *obs, const char *sym)
+static RefList *lsq_intensities(struct image *images, int n,
+                                ReflItemList *obs, const char *sym)
 {
-	double *I_full;
+	RefList *full;
 	int i;
 
-	I_full = new_list_intensity();
+	full = reflist_new();
 	for ( i=0; i<num_items(obs); i++ ) {
 
 		struct refl_item *it = get_item(obs, i);
 		double num = 0.0;
 		double den = 0.0;
 		int m;
+		Reflection *new;
 
 		/* For each frame */
 		for ( m=0; m<n; m++ ) {
@@ -351,11 +352,12 @@ static double *lsq_intensities(struct image *images, int n,
 
 		}
 
-		set_intensity(I_full, it->h, it->k, it->l, num/den);
+		new = add_refl(full, it->h, it->k, it->l);
+		set_int(new, num/den);
 
 	}
 
-	return I_full;
+	return full;
 }
 
 
@@ -377,11 +379,11 @@ static void normalise_osfs(struct image *images, int n)
 
 
 /* Scale the stack of images */
-double *scale_intensities(struct image *images, int n, const char *sym,
-                          ReflItemList *obs, char *cref)
+RefList *scale_intensities(struct image *images, int n, const char *sym,
+                           ReflItemList *obs, char *cref)
 {
 	int m;
-	double *I_full;
+	RefList *full;
 	int i;
 	double max_shift;
 
@@ -399,6 +401,6 @@ double *scale_intensities(struct image *images, int n, const char *sym,
 
 	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );
 
-	I_full = lsq_intensities(images, n, obs, sym);
-	return I_full;
+	full = lsq_intensities(images, n, obs, sym);
+	return full;
 }

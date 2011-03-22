@@ -248,8 +248,8 @@ static void apply_shift(struct image *image, int k, double shift)
 }
 
 
-/* Perform one cycle of post refinement on 'image' against 'i_full' */
-static double pr_iterate(struct image *image, const double *i_full,
+/* Perform one cycle of post refinement on 'image' against 'full' */
+static double pr_iterate(struct image *image, const RefList *full,
                          const char *sym)
 {
 	gsl_matrix *M;
@@ -277,6 +277,7 @@ static double pr_iterate(struct image *image, const double *i_full,
 		double I_partial;
 		int k;
 		double p;
+		Reflection *match;
 
 		get_indices(refl, &hind, &kind, &lind);
 
@@ -286,7 +287,9 @@ static double pr_iterate(struct image *image, const double *i_full,
 		I_partial = get_intensity(refl);
 
 		get_asymm(hind, kind, lind, &ha, &ka, &la, sym);
-		I_full = lookup_intensity(i_full, ha, ka, la);
+		match = find_refl(full, ha, ka, la);
+		assert(match != NULL);
+		I_full = get_intensity(match);
 		p = get_partiality(refl);
 		delta_I = I_partial - (p * I_full / image->osf);
 
@@ -338,14 +341,14 @@ static double pr_iterate(struct image *image, const double *i_full,
 }
 
 
-void pr_refine(struct image *image, const double *i_full, const char *sym)
+void pr_refine(struct image *image, const RefList *full, const char *sym)
 {
 	double max_shift;
 	int i;
 
 	i = 0;
 	do {
-		max_shift = pr_iterate(image, i_full, sym);
+		max_shift = pr_iterate(image, full, sym);
 		STATUS("Iteration %2i: max shift = %5.2f\n", i, max_shift);
 		i++;
 	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );

@@ -24,7 +24,7 @@
 #include "utils.h"
 
 
-extern void pr_refine(struct image *image, const double *i_full,
+extern void pr_refine(struct image *image, const RefList *full,
                       const char *sym);
 
 

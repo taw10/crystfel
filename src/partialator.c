@@ -64,7 +64,7 @@ struct refine_args
 {
 	const char *sym;
 	ReflItemList *obs;
-	double *i_full;
+	RefList *full;
 	struct image *image;
 	FILE *graph;
 	FILE *pgraph;
@@ -77,13 +77,13 @@ static void refine_image(int mytask, void *tasks)
 	struct refine_args *pargs = &all_args[mytask];
 	struct image *image = pargs->image;
 
-	pr_refine(image, pargs->i_full, pargs->sym);
+	pr_refine(image, pargs->full, pargs->sym);
 }
 
 
 static void refine_all(struct image *images, int n_total_patterns,
                        struct detector *det, const char *sym,
-                       ReflItemList *obs, double *i_full, int nthreads,
+                       ReflItemList *obs, RefList *full, int nthreads,
                        FILE *graph, FILE *pgraph)
 {
 	struct refine_args *tasks;
@@ -94,7 +94,7 @@ static void refine_all(struct image *images, int n_total_patterns,
 
 		tasks[i].sym = sym;
 		tasks[i].obs = obs;
-		tasks[i].i_full = i_full;
+		tasks[i].full = full;
 		tasks[i].image = &images[i];
 		tasks[i].graph = graph;
 		tasks[i].pgraph = pgraph;
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
 	struct image *images;
 	int n_iter = 10;
 	struct beam_params *beam = NULL;
-	double *I_full;
+	RefList *full;
 	int n_found = 0;
 	int n_expected = 0;
 	int n_notfound = 0;
@@ -286,6 +286,9 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
+		/* FIXME: This leaves gaps in the array */
+		if ( images[i].indexed_cell == NULL ) continue;
+
 		/* Won't be needing this, if it exists */
 		image_feature_list_free(images[i].features);
 		images[i].features = NULL;
@@ -372,7 +375,7 @@ int main(int argc, char *argv[])
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
 	select_scalable_reflections(images, n_total_patterns);
-	I_full = scale_intensities(images, n_total_patterns, sym, obs, cref);
+	full = scale_intensities(images, n_total_patterns, sym, obs, cref);
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -398,14 +401,14 @@ int main(int argc, char *argv[])
 		}
 
 		/* Refine the geometry of all patterns to get the best fit */
-		refine_all(images, n_total_patterns, det, sym, obs, I_full,
+		refine_all(images, n_total_patterns, det, sym, obs, full,
 		           nthreads, fhg, fhp);
 
 		/* Re-estimate all the full intensities */
-		free(I_full);
+		reflist_free(full);
 		select_scalable_reflections(images, n_total_patterns);
-		I_full = scale_intensities(images, n_total_patterns,
-		                           sym, obs, cref);
+		full = scale_intensities(images, n_total_patterns,
+		                         sym, obs, cref);
 
 		fclose(fhg);
 		fclose(fhp);
@@ -418,13 +421,13 @@ int main(int argc, char *argv[])
 	}
 
 	/* Output results */
-	//write_reflist(outfile, obs, I_full, NULL, NULL, cts, NULL);
+	write_reflist(outfile, full, images[0].indexed_cell);
 
 	/* Clean up */
 	for ( i=0; i<n_total_patterns; i++ ) {
 		reflist_free(images[i].reflections);
 	}
-	free(I_full);
+	reflist_free(full);
 	delete_items(obs);
 	free(sym);
 	free(outfile);

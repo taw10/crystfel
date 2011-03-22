@@ -20,8 +20,8 @@
 
 #include "image.h"
 
-extern double *scale_intensities(struct image *images, int n, const char *sym,
-                                 ReflItemList *obs, char *cref);
+extern RefList *scale_intensities(struct image *images, int n, const char *sym,
+                                  ReflItemList *obs, char *cref);
 
 extern char *find_common_reflections(struct image *images, int n);
 

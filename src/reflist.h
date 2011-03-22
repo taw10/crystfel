@@ -28,26 +28,26 @@ extern RefList *reflist_new(void);
 extern void reflist_free(RefList *list);
 
 /* Search */
-extern Reflection *find_refl(RefList *list, INDICES);
+extern Reflection *find_refl(const RefList *list, INDICES);
 extern Reflection *next_found_refl(Reflection *refl);
 
 /* Get */
-extern double get_excitation_error(Reflection *refl);
-extern void get_detector_pos(Reflection *refl, double *x, double *y);
-extern void get_indices(Reflection *refl,
+extern double get_excitation_error(const Reflection *refl);
+extern void get_detector_pos(const Reflection *refl, double *x, double *y);
+extern void get_indices(const Reflection *refl,
                         signed int *h, signed int *k, signed int *l);
-extern double get_partiality(Reflection *refl);
-extern double get_intensity(Reflection *refl);
-extern void get_partial(Reflection *refl, double *r1, double *r2, double *p,
+extern double get_partiality(const Reflection *refl);
+extern double get_intensity(const Reflection *refl);
+extern void get_partial(const Reflection *refl, double *r1, double *r2, double *p,
                         int *clamp_low, int *clamp_high);
-extern int get_scalable(Reflection *refl);
-extern int get_redundancy(Reflection *refl);
-extern double get_sum_squared_dev(Reflection *refl);
-extern double get_esd_intensity(Reflection *refl);
-extern double get_phase(Reflection *refl);
+extern int get_scalable(const Reflection *refl);
+extern int get_redundancy(const Reflection *refl);
+extern double get_sum_squared_dev(const Reflection *refl);
+extern double get_esd_intensity(const Reflection *refl);
+extern double get_phase(const Reflection *refl);
 
 /* Set */
-extern void copy_data(Reflection *to, Reflection *from);
+extern void copy_data(Reflection *to, const Reflection *from);
 extern void set_detector_pos(Reflection *refl, double exerr,
                              double x, double y);
 extern void set_partial(Reflection *refl, double r1, double r2, double p,
