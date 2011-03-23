@@ -258,7 +258,6 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	double f_ss = 0.0;
 	double intensity = 0.0;
 	int nrej_dis = 0;
-	int nrej_hot = 0;
 	int nrej_pro = 0;
 	int nrej_fra = 0;
 	int nrej_bad = 0;
@@ -389,9 +388,9 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		ncull = 0;
 	}
 
-//	STATUS("%i accepted, %i box, %i hot, %i proximity, %i outside panel, "
+//	STATUS("%i accepted, %i box, %i proximity, %i outside panel, "
 //	       "%i in bad regions, %i badrow culled.\n",
-//	       nacc, nrej_dis, nrej_hot, nrej_pro, nrej_fra, nrej_bad, ncull);
+//	       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_bad, ncull);
 }
 
 
