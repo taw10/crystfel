@@ -151,19 +151,6 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 			continue;
 		}
 
-		if ( cellr == CELLR_NONE ) {
-			image->indexed_cell = cell_new_from_cell(
-			                             image->candidate_cells[0]);
-			if ( verbose ) {
-				STATUS("--------------------\n");
-				STATUS("The indexed cell (matching not"
-				       " performed):\n");
-				cell_print(image->indexed_cell);
-				STATUS("--------------------\n");
-			}
-			goto done;
-		}
-
 		for ( i=0; i<image->ncells; i++ ) {
 
 			UnitCell *new_cell = NULL;
@@ -179,7 +166,8 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 			/* Match or reduce the cell as appropriate */
 			switch ( cellr ) {
 			case CELLR_NONE :
-				/* Never happens */
+				new_cell = cell_new_from_cell(image
+				                          ->candidate_cells[i]);
 				break;
 			case CELLR_REDUCE :
 				new_cell = match_cell(image->candidate_cells[i],
@@ -218,7 +206,7 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 
 done:
 	for ( i=0; i<image->ncells; i++ ) {
-		/* May free(NULL) if all algorithms were tried */
+		/* May free(NULL) if all algorithms were tried and no success */
 		cell_free(image->candidate_cells[i]);
 	}
 }
