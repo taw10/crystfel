@@ -65,11 +65,11 @@ static void set_affinity(int n, int cpu_num, int cpu_groupsize, int cpu_offset)
 	if ( sched_setaffinity(0, sizeof(cpu_set_t), &c) ) {
 
 		/* Cannot use ERROR() just yet */
-		fprintf(stderr, "Failed to set CPU affinity.\n");
+		fprintf(stderr, "%i: Failed to set CPU affinity.\n", n);
 
 	} else {
 
-		fprintf(stderr, "Successfully set CPU affinity.\n");
+		fprintf(stderr, "%i: Successfully set CPU affinity.\n", n);
 
 	}
 }
