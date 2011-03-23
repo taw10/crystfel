@@ -27,3 +27,13 @@ n_panels = 2
 1/res = 13333.3  ; 75 micron pixel size
 1/badrow_direction = y
 1/peak_sep = 50
+
+bad_jetneartobeam/min_x = -15.0
+bad_jetneartobeam/max_x = +15.0
+bad_jetneartobeam/min_y = 71.3
+bad_jetneartobeam/max_y = 159.3
+
+bad_jetfarfrombeam/min_x = -25.0
+bad_jetfarfrombeam/max_x = +25.0
+bad_jetfarfrombeam/min_y = 159.3
+bad_jetfarfrombeam/max_y = 600.0
