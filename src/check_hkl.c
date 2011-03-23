@@ -72,6 +72,10 @@ static void plot_shells(RefList *list, UnitCell *cell, const char *sym,
 	int nout = 0;
 	Reflection *refl;
 	RefListIterator *iter;
+	int hmax, kmax, lmax;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
 
 	if ( cell == NULL ) {
 		ERROR("Need the unit cell to plot resolution shells.\n");
@@ -151,9 +155,15 @@ static void plot_shells(RefList *list, UnitCell *cell, const char *sym,
 
 	/* Count the number of reflections possible in each shell */
 	counted = new_list_count();
-	for ( h=-150; h<=+150; h++ ) {
-	for ( k=-150; k<=+150; k++ ) {
-	for ( l=-150; l<=+150; l++ ) {
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+	hmax = rmax / modulus(asx, asy, asz);
+	kmax = rmax / modulus(bsx, bsy, bsz);
+	lmax = rmax / modulus(csx, csy, csz);
+	for ( h=-hmax; h<hmax; h++ ) {
+	for ( k=-kmax; k<kmax; k++ ) {
+	for ( l=-lmax; l<lmax; l++ ) {
 
 		double d;
 		signed int hs, ks, ls;
