@@ -432,8 +432,6 @@ int main(int argc, char *argv[])
 	char *rval = NULL;
 	int n_images;
 	int config_noindex = 0;
-	int config_dumpfound = 0;
-	int config_nearbragg = 0;
 	int config_cmfilter = 0;
 	int config_noisefilter = 0;
 	int config_verbose = 0;
@@ -477,10 +475,8 @@ int main(int argc, char *argv[])
 		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
 		{"no-index",           0, &config_noindex,     1},
-		{"dump-peaks",         0, &config_dumpfound,   1},
 		{"peaks",              1, NULL,                2},
 		{"cell-reduction",     1, NULL,                3},
-		{"near-bragg",         0, &config_nearbragg,   1},
 		{"indexing",           1, NULL,               'z'},
 		{"geometry",           1, NULL,               'g'},
 		{"beam",               1, NULL,               'b'},
