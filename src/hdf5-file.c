@@ -333,8 +333,6 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 	}
 
 	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
-		ERROR("Saturation table has the wrong dimensionality (%i).\n",
-		      H5Sget_simple_extent_ndims(sh));
 		H5Sclose(sh);
 		H5Dclose(dh);
 		return;
@@ -345,6 +343,7 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 	if ( size[1] != 3 ) {
 		H5Sclose(sh);
 		H5Dclose(dh);
+		ERROR("Saturation table has the wrong dimensions.\n");
 		return;
 	}
 
