@@ -265,15 +265,15 @@ void record_image(struct image *image, int do_poisson)
 }
 
 
-struct panel *find_panel(struct detector *det, int x, int y)
+struct panel *find_panel(struct detector *det, int fs, int ss)
 {
 	int p;
 
 	for ( p=0; p<det->n_panels; p++ ) {
-		if ( (x >= det->panels[p].min_fs)
-		  && (x <= det->panels[p].max_fs)
-		  && (y >= det->panels[p].min_ss)
-		  && (y <= det->panels[p].max_ss) ) {
+		if ( (fs >= det->panels[p].min_fs)
+		  && (fs <= det->panels[p].max_fs)
+		  && (ss >= det->panels[p].min_ss)
+		  && (ss <= det->panels[p].max_ss) ) {
 			return &det->panels[p];
 		}
 	}

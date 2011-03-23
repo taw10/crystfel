@@ -32,8 +32,8 @@ struct _refldata {
 	int clamp2; /* Clamp status for r2 */
 
 	/* Location in image */
-	double x;
-	double y;
+	double fs;
+	double ss;
 
 	/* The distance from the exact Bragg position to the coordinates
 	 * given above. */
@@ -191,10 +191,10 @@ double get_excitation_error(const Reflection *refl)
 }
 
 
-void get_detector_pos(const Reflection *refl, double *x, double *y)
+void get_detector_pos(const Reflection *refl, double *fs, double *ss)
 {
-	*x = refl->data.x;
-	*y = refl->data.y;
+	*fs = refl->data.fs;
+	*ss = refl->data.ss;
 }
 
 
@@ -268,11 +268,11 @@ void copy_data(Reflection *to, const Reflection *from)
 }
 
 
-void set_detector_pos(Reflection *refl, double exerr, double x, double y)
+void set_detector_pos(Reflection *refl, double exerr, double fs, double ss)
 {
 	refl->data.excitation_error = exerr;
-	refl->data.x = x;
-	refl->data.y = y;
+	refl->data.fs = fs;
+	refl->data.ss = ss;
 }
 
 

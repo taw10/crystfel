@@ -33,7 +33,7 @@ extern Reflection *next_found_refl(Reflection *refl);
 
 /* Get */
 extern double get_excitation_error(const Reflection *refl);
-extern void get_detector_pos(const Reflection *refl, double *x, double *y);
+extern void get_detector_pos(const Reflection *refl, double *fs, double *ss);
 extern void get_indices(const Reflection *refl,
                         signed int *h, signed int *k, signed int *l);
 extern double get_partiality(const Reflection *refl);
@@ -49,7 +49,7 @@ extern double get_phase(const Reflection *refl);
 /* Set */
 extern void copy_data(Reflection *to, const Reflection *from);
 extern void set_detector_pos(Reflection *refl, double exerr,
-                             double x, double y);
+                             double fs, double ss);
 extern void set_partial(Reflection *refl, double r1, double r2, double p,
                         double clamp_low, double clamp_high);
 extern void set_int(Reflection *refl, double intensity);

@@ -115,8 +115,8 @@ extern void image_add_feature(ImageFeatureList *flist, double x, double y,
 extern void image_remove_feature(ImageFeatureList *flist, int idx);
 
 extern struct imagefeature *image_feature_closest(ImageFeatureList *flist,
-                                                  double x, double y, double *d,
-                                                  int *idx);
+                                                  double fs, double ss,
+                                                  double *d, int *idx);
 
 extern int image_feature_count(ImageFeatureList *flist);
 extern struct imagefeature *image_get_feature(ImageFeatureList *flist, int idx);
