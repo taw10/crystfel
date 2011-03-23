@@ -4,6 +4,7 @@
  * Peak search and other image analysis
  *
  * (c) 2006-2011 Thomas White <taw@physics.org>
+ *	    2011 Andrew Martin
  *
  * Part of CrystFEL - crystallography with a FEL
  *
@@ -142,7 +143,7 @@ static int cull_peaks(struct image *image)
  * i.e. don't use result if return value is not zero. */
 int integrate_peak(struct image *image, int cfs, int css,
                    double *pfs, double *pss, double *intensity,
-                   double *pbg, double *pmax,
+                   double *pbg, double *pmax, double *sigma,
                    int do_polar, int centroid)
 {
 	signed int fs, ss;
@@ -155,6 +156,10 @@ int integrate_peak(struct image *image, int cfs, int css,
 	int noise_counts = 0;
 	double max = 0.0;
 	struct panel *p = NULL;
+        int pixel_counts = 0;
+        double noise_mean = 0.0;
+	double noise_meansq = 0.0;
+
 
 	p = find_panel(image->det, cfs, css);
 	if ( p == NULL ) return 1;
@@ -203,16 +208,6 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 		val = image->data[idx];
 
-		/* Inner mask */
-		if ( fs*fs + ss*ss > lim_sq ) {
-			/* Estimate noise from this region */
-			noise += fabs(val);
-			noise_counts++;
-			continue;
-		}
-
-		if ( val > max ) max = val;
-
 		if ( do_polar ) {
 
 			tt = get_tt(image, fs+cfs, ss+css);
@@ -226,26 +221,53 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 		}
 
-		total += val;
+		if ( val > max ) max = val;
 
+		/* Inner mask */
+		if ( fs*fs + ss*ss > lim_sq ) {
+			/* Estimate noise from this region */
+			noise += val; //fabs(val);
+			noise_counts++;
+			/* Estimate the standard deviation of the noise */
+			noise_meansq += fabs(val)*fabs(val) ;
+			continue;
+		}
+
+		pixel_counts ++;
+		total += val;
 		fsct += val*(cfs+fs);
 		ssct += val*(css+ss);
 
 	}
 	}
 
+        noise_mean = noise / noise_counts;
+
 	/* The centroid is excitingly undefined if there is no intensity */
 	if ( centroid && (total != 0) ) {
 		*pfs = (double)fsct / total;
 		*pss = (double)ssct / total;
-		*intensity = total;
+		*intensity = total - pixel_counts*noise_mean;
 	} else {
 		*pfs = (double)cfs;
 		*pss = (double)css;
-		*intensity = total;
+		*intensity = total - pixel_counts*noise_mean;
 	}
 
 	if ( in_bad_region(image->det, *pfs, *pss) ) return 1;
+
+        if ( sigma != NULL ) {
+		/*
+		 * first term is standard deviation of background per pixel
+		 * sqrt(pixel_counts) - increase of error for integrated value
+		 * sqrt(2) - increase of error for background subtraction
+		*/
+		*sigma = sqrt( noise_meansq/noise_counts - (noise_mean * noise_mean))
+							*sqrt(2.0*pixel_counts);
+		/* printf(" counts %d %d \n", noise_counts, pixel_counts);
+		   printf(" intensity, bg, diff, %f, %f, %f \n", total, pixel_counts*noise_mean, total - pixel_counts*noise_mean);
+		   printf(" sigma = %f \n", *sigma);	*/
+	}
 
 	if ( pbg != NULL ) {
 		*pbg = (noise / noise_counts);
@@ -362,7 +384,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		 * Don't bother doing polarisation/SA correction, because the
 		 * intensity of this peak is only an estimate at this stage. */
 		r = integrate_peak(image, mask_fs, mask_ss,
-		                   &f_fs, &f_ss, &intensity, NULL, NULL, 0, 1);
+		                   &f_fs, &f_ss, &intensity, NULL, NULL, NULL, 0, 1);
 		if ( r ) {
 			/* Bad region - don't detect peak */
 			nrej_bad++;
@@ -587,6 +609,7 @@ void integrate_reflections(struct image *image, int polar, int use_closer)
 		double d;
 		int idx;
 		double bg, max;
+		double sigma;
 		struct panel *p;
 		double pfs, pss;
 		int r;
@@ -616,11 +639,12 @@ void integrate_reflections(struct image *image, int polar, int use_closer)
 		}
 
 		r = integrate_peak(image, pfs, pss, &fs, &ss,
-		                   &intensity, &bg, &max, polar, 0);
+		                   &intensity, &bg, &max, &sigma, polar, 0);
 
 		/* Record intensity and set redundancy to 1 on success */
 		if ( r == 0 ) {
 			set_int(refl, intensity);
+			set_esd_intensity(refl,sigma);
 			set_redundancy(refl, 1);
 		}
 

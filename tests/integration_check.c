@@ -27,7 +27,7 @@
 int main(int argc, char *argv[])
 {
 	struct image image;
-	double fsp, ssp, intensity, bg, max;
+	double fsp, ssp, intensity, bg, max, sigma;
 	int fs, ss;
 
 	image.data = malloc(128*128*sizeof(float));
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 	image.beam->adu_per_photon = 100.0;
 
 	/* First check: no intensity -> zero intensity and bg */
-	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &bg, &max, 0, 1);
+	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &bg, &max, &sigma, 0, 1);
 	STATUS(" First check: intensity = %.2f bg = %.2f max = %.2f\n",
 	       intensity, bg, max);
 	if ( intensity != 0.0 ) {
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 		image.data[fs+image.width*ss] = 1000.0;
 	}
 	}
-	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &bg, &max, 0, 1);
+	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &bg, &max, &sigma, 0, 1);
 	STATUS("Second check: intensity = %.2f, bg = %.2f, max = %.2f\n",
 	       intensity, bg, max);
 	if ( fabs(intensity - M_PI*9.0*9.0*1000.0) > 4000.0 ) {
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
 		image.data[fs+image.width*ss] = poisson_noise(10.0) - 10.0;
 	}
 	}
-	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &bg, &max, 0, 1);
+	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &bg, &max, &sigma, 0, 1);
 	STATUS(" Third check: intensity = %.2f, bg = %.2f, max = %.2f\n",
 	       intensity, bg, max);
 	if ( fabs(intensity) > 100.0 ) {
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
 		image.data[fs+image.width*ss] = 1000.0;
 	}
 	}
-	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &bg, &max, 0, 1);
+	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &bg, &max, &sigma, 0, 1);
 	STATUS("Fourth check: intensity = %.2f, bg = %.2f, max = %.2f\n",
 	       intensity, bg, max);
 	if ( fabs(intensity - M_PI*9.0*9.0*1000.0) > 4000.0 ) {

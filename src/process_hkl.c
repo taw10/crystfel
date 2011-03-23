@@ -4,7 +4,7 @@
  * Assemble and process FEL Bragg intensities
  *
  * (c) 2006-2011 Thomas White <taw@physics.org>
- *
+ *  	    2011 Andrew Martin
  * Part of CrystFEL - crystallography with a FEL
  *
  */
@@ -171,8 +171,12 @@ static void merge_pattern(RefList *model, RefList *new, int max_only,
 		} else if ( pass == 2 ) {
 
 			double dev = get_sum_squared_dev(model_version);
-			set_sum_squared_dev(model_version,
-			                   dev + pow(intensity-model_int, 2.0));
+			double refl_esd = get_esd_intensity(refl);
+			
+			set_sum_squared_dev(model_version, 
+					      	  	// dev + pow(refl_esd,2.0) ); 
+						        dev    + pow(intensity, 2.0) ); 
+				                  // dev + pow(intensity-model_int, 2.0));			
 
 			if ( hist_vals != NULL ) {
 				int p = *hist_n;
@@ -188,6 +192,8 @@ static void merge_pattern(RefList *model, RefList *new, int max_only,
 		}
 
 	}
+
+
 }
 
 
@@ -365,11 +371,19 @@ static void merge_all(FILE *fh, RefList *model,
 		      refl = next_refl(refl, iter) ) {
 
 			double sum_squared_dev = get_sum_squared_dev(refl);
+			double intensity = get_intensity(refl);
 			int red = get_redundancy(refl);
-
-			set_esd_intensity(refl,
-			                  sqrt(sum_squared_dev)/(double)red);
-
+			int h, k, l;
+			get_indices(refl,&h,&k,&l);
+	 
+			/*
+			 set_esd_intensity(refl,
+			         sqrt(sum_squared_dev)/(double)red); 
+			 */
+								
+			 set_esd_intensity(refl,
+			        sqrt((sum_squared_dev/(double)red) - pow(intensity,2.0) )/(double)red);
+			
 		}
 	}
 

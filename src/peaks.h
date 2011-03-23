@@ -35,7 +35,7 @@ extern RefList *find_projected_peaks(struct image *image, UnitCell *cell,
 
 extern int integrate_peak(struct image *image, int xp, int yp,
                           double *xc, double *yc, double *intensity,
-                          double *pbg, double *pmax,
+                          double *pbg, double *pmax, double *sigma,
                           int do_polar, int centroid);
 
 #endif	/* PEAKS_H */
