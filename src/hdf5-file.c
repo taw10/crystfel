@@ -345,7 +345,6 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 	if ( size[1] != 3 ) {
 		H5Sclose(sh);
 		H5Dclose(dh);
-		ERROR("Saturation table has the wrong dimensions.\n");
 		return;
 	}
 
@@ -379,7 +378,6 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 		image->data[x+image->width*(y-1)] = val / 5.0;
 
 	}
-	STATUS("Corrected %i saturation values\n", (int)size[0]);
 
 	free(buf);
 	H5Sclose(sh);
