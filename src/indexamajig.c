@@ -311,17 +311,24 @@ static void process_image(void *pp, int cookie)
 	//image.reflections = find_intersections(&image,
 	//                                       image.indexed_cell, 0);
 
-	image.reflections = find_projected_peaks(&image,
-	                                         image.indexed_cell,
-	                                         0, 0.1);
+	if ( image.indexed_cell != NULL ) {
+		image.reflections = find_projected_peaks(&image,
+			                                 image.indexed_cell,
+			                                 0, 0.1);
 
-	integrate_reflections(&image, config_polar,
-	                      pargs->static_args.config_closer);
+		integrate_reflections(&image, config_polar,
+			              pargs->static_args.config_closer);
 
-	/* OR */
+		/* OR */
 
-	//image.reflections = integrate_pixels(&image, 0, 0.1,
-	//                                     config_polar);
+		//image.reflections = integrate_pixels(&image, 0, 0.1,
+		//                                     config_polar);
+
+	} else {
+
+		image.reflections = NULL;
+
+	}
 
 	pthread_mutex_lock(pargs->static_args.output_mutex);
 	write_chunk(pargs->static_args.ofh, &image,

@@ -255,11 +255,15 @@ void write_chunk(FILE *ofh, struct image *i, int f)
 
 	if ( (f & STREAM_PIXELS) || (f & STREAM_INTEGRATED) ) {
 
-		fprintf(ofh, "\n");
-		fprintf(ofh, REFLECTION_START_MARKER"\n");
-		write_reflections_to_file(ofh, i->reflections, i->indexed_cell);
-		fprintf(ofh, REFLECTION_END_MARKER"\n");
+		if ( i->reflections != NULL ) {
 
+			fprintf(ofh, "\n");
+			fprintf(ofh, REFLECTION_START_MARKER"\n");
+			write_reflections_to_file(ofh, i->reflections,
+			                               i->indexed_cell);
+			fprintf(ofh, REFLECTION_END_MARKER"\n");
+
+		}
 	}
 
 	fprintf(ofh, CHUNK_END_MARKER"\n\n");
