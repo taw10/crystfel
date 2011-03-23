@@ -191,6 +191,11 @@ static void show_help(const char *s)
 "                           lattice point.\n"
 "     --insane             Don't check that the reduced cell accounts for at\n"
 "                           least 10%% of the located peaks.\n"
+"\n"
+"You can tune the CPU affinities for enhanced performance on NUMA machines:\n"
+"     --cpus=<n>           Specify number of CPUs.\n"
+"     --cpugroup=<n>       Batch threads in groups of this size.\n"
+"     --cpuoffset=<n>      Start using CPUs at this group number.\n"
 );
 }
 
@@ -468,6 +473,10 @@ int main(int argc, char *argv[])
 	double nominal_photon_energy;
 	int stream_flags = STREAM_INTEGRATED;
 	struct timespec tp;
+	int cpu_num = 0;
+	int cpu_groupsize = 1;
+	int cpu_offset = 0;
+	char *endptr;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -496,6 +505,9 @@ int main(int argc, char *argv[])
 		{"image",              1, NULL,               'e'},
 		{"basename",           0, &config_basename,    1},
 		{"record",             1, NULL,                5},
+		{"cpus",               1, NULL,                6},
+		{"cpugroup",           1, NULL,                7},
+		{"cpuoffset",         1, NULL,                8},
 		{0, 0, NULL, 0}
 	};
 
@@ -570,6 +582,42 @@ int main(int argc, char *argv[])
 			if ( stream_flags < 0 ) return 1;
 			break;
 
+		case 6 :
+			cpu_num = strtol(optarg, &endptr, 10);
+			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') ) ) {
+				ERROR("Invalid number of CPUs ('%s')\n",
+				      optarg);
+				return 1;
+			}
+			break;
+
+		case 7 :
+			cpu_groupsize = strtol(optarg, &endptr, 10);
+			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') ) ) {
+				ERROR("Invalid CPU group size ('%s')\n",
+				      optarg);
+				return 1;
+			}
+			if ( cpu_groupsize < 1 ) {
+				ERROR("CPU group size cannot be"
+				      " less than 1.\n");
+				return 1;
+			}
+			break;
+
+		case 8 :
+			cpu_offset = strtol(optarg, &endptr, 10);
+			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') ) ) {
+				ERROR("Invalid CPU offset ('%s')\n",
+				      optarg);
+				return 1;
+			}
+			if ( cpu_offset < 0 ) {
+				ERROR("CPU offset must be positive.\n");
+				return 1;
+			}
+			break;
+
 		case 0 :
 			break;
 
@@ -578,6 +626,13 @@ int main(int argc, char *argv[])
 		}
 
 	}
+
+	if ( (cpu_num > 0) && (cpu_num % cpu_groupsize != 0) ) {
+		ERROR("Number of CPUs must be divisible by"
+		      " the CPU group size.\n");
+		return 1;
+	}
+
 
 	if ( filename == NULL ) {
 		filename = strdup("-");
@@ -792,9 +847,9 @@ int main(int argc, char *argv[])
 	clock_gettime(CLOCK_REALTIME, &tp);
 	qargs.t_last_stats = tp.tv_sec;
 
-
 	n_images = run_threads(nthreads, process_image, get_image,
-	                       finalise_image, &qargs, 0);
+	                       finalise_image, &qargs, 0,
+	                       cpu_num, cpu_groupsize, cpu_offset);
 
 	cleanup_indexing(ipriv);
 

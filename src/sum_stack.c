@@ -457,7 +457,7 @@ int main(int argc, char *argv[])
 	do {
 
 		n_done = run_threads(nthreads, add_image, get_image,
-		                     (void *)&qargs, NULL, chunk_size);
+		                     (void *)&qargs, NULL, chunk_size, 0, 0, 0);
 
 		n_images += n_done;
 

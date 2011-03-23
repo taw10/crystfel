@@ -35,22 +35,33 @@
 
 #ifdef HAVE_CPU_AFFINITY
 
-static int next_cpu(int cur)
-{
-	cur++;
-
-	if ( cur == 73 ) cur = 0;
-
-	return cur;
-}
-
-
-static void set_affinity(int cpu)
+static void set_affinity(int n, int cpu_num, int cpu_groupsize, int cpu_offset)
 {
 	cpu_set_t c;
+	int group;
+	int n_cpu_groups;
+	int i;
+
+	if ( cpu_num == 0 ) return;
 
 	CPU_ZERO(&c);
-	CPU_SET(cpu, &c);
+
+	/* Work out which group this thread belongs to */
+	group = (n / cpu_groupsize) + cpu_offset;
+
+	/* Work out which CPUs should be used for this group */
+	n_cpu_groups = cpu_num / cpu_groupsize;
+	group = group % n_cpu_groups;
+
+	/* Set flags */
+	for ( i=0; i<cpu_groupsize; i++ ) {
+
+		int cpu = cpu_groupsize*group + i;
+
+		CPU_SET(cpu, &c);
+
+	}
+
 	if ( sched_setaffinity(0, sizeof(cpu_set_t), &c) ) {
 
 		/* Cannot use ERROR() just yet */
@@ -58,21 +69,16 @@ static void set_affinity(int cpu)
 
 	} else {
 
-		fprintf(stderr, "Successfully set CPU affinity to %i\n", cpu);
+		fprintf(stderr, "Successfully set CPU affinity.\n");
 
 	}
 }
 
 #else /* HAVE_CPU_AFFINITY */
 
-static int next_cpu(int cur)
+static void set_affinity(int n, int cpu_num, int cpu_groupsize, int cpu_offset)
 {
 	return 0;
-}
-
-
-static void set_affinity(int cpu)
-{
 }
 
 #endif /* HAVE_CPU_AFFINITY */
@@ -89,7 +95,9 @@ struct worker_args
 	struct task_queue_range *tqr;
 	struct task_queue *tq;
 	int id;
-	int cpu;
+	int cpu_num;
+	int cpu_groupsize;
+	int cpu_offset;
 };
 
 
@@ -136,7 +144,7 @@ static void *range_worker(void *pargsv)
 	struct task_queue_range *q = w->tqr;
 	int *cookie;
 
-	set_affinity(w->cpu);
+	set_affinity(w->id, w->cpu_num, w->cpu_groupsize, w->cpu_offset);
 
 	cookie = malloc(sizeof(int));
 	*cookie = w->id;
@@ -185,11 +193,11 @@ static void *range_worker(void *pargsv)
 
 
 void run_thread_range(int n_tasks, int n_threads, const char *text,
-                      void (*work)(int, void *), void *work_args)
+                      void (*work)(int, void *), void *work_args,
+                      int cpu_num, int cpu_groupsize, int cpu_offset)
 {
 	pthread_t *workers;
 	int i;
-	int cpu = 0;
 	struct task_queue_range q;
 
 	/* The nation of CrystFEL prides itself on having 0% unemployment. */
@@ -224,8 +232,9 @@ void run_thread_range(int n_tasks, int n_threads, const char *text,
 		w->tqr = &q;
 		w->tq = NULL;
 		w->id = i;
-		w->cpu = cpu;
-		cpu = next_cpu(cpu);
+		w->cpu_num = cpu_num;
+		w->cpu_groupsize = cpu_groupsize;
+		w->cpu_offset = cpu_offset;
 
 		if ( pthread_create(&workers[i], NULL, range_worker, w) ) {
 			/* Not ERROR() here */
@@ -271,7 +280,7 @@ static void *task_worker(void *pargsv)
 	struct task_queue *q = w->tq;
 	int *cookie;
 
-	set_affinity(w->cpu);
+	set_affinity(w->id, w->cpu_num, w->cpu_groupsize, w->cpu_offset);
 
 	cookie = malloc(sizeof(int));
 	*cookie = w->id;
@@ -322,12 +331,12 @@ static void *task_worker(void *pargsv)
 
 int run_threads(int n_threads, void (*work)(void *, int),
                 void *(*get_task)(void *), void (*final)(void *, void *),
-                void *queue_args, int max)
+                void *queue_args, int max,
+                int cpu_num, int cpu_groupsize, int cpu_offset)
 {
 	pthread_t *workers;
 	int i;
 	struct task_queue q;
-	int cpu = 0;
 
 	pthread_key_create(&status_label_key, NULL);
 
@@ -355,8 +364,9 @@ int run_threads(int n_threads, void (*work)(void *, int),
 		w->tq = &q;
 		w->tqr = NULL;
 		w->id = i;
-		w->cpu = cpu;
-		cpu = next_cpu(cpu);
+		w->cpu_num = cpu_num;
+		w->cpu_groupsize = cpu_groupsize;
+		w->cpu_offset = cpu_offset;
 
 		if ( pthread_create(&workers[i], NULL, task_worker, w) ) {
 			/* Not ERROR() here */

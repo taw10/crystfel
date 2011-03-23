@@ -28,7 +28,8 @@ extern signed int get_status_label(void);
  * unique and in the range 0..n_tasks.  A progress bar will be shown using
  * "text" and the progress through the tasks, unless "text" is NULL. */
 extern void run_thread_range(int n_tasks, int n_threads, const char *text,
-                             void (*work)(int, void *), void *work_args);
+                             void (*work)(int, void *), void *work_args,
+                             int cpu_num, int cpu_groupsize, int cpu_offset);
 
 
 /* get_task() will be called every time a worker is idle.  It returns either
@@ -41,7 +42,8 @@ extern void run_thread_range(int n_tasks, int n_threads, const char *text,
  * Returns: the number of tasks processed. */
 extern int run_threads(int n_threads, void (*work)(void *, int),
                        void *(*get_task)(void *), void (*final)(void *, void *),
-                       void *queue_args, int max);
+                       void *queue_args, int max,
+                       int cpu_num, int cpu_groupsize, int cpu_offset);
 
 
 #endif	/* THREAD_POOL_H */

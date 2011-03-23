@@ -102,7 +102,7 @@ static void refine_all(struct image *images, int n_total_patterns,
 	}
 
 	run_thread_range(n_total_patterns, nthreads, "Refining",
-	                 refine_image, tasks);
+	                 refine_image, tasks, 0, 0, 0);
 
 	free(tasks);
 }
