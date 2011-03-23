@@ -122,7 +122,6 @@ static int read_newmat(const char *filename, struct image *image)
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
-		STATUS("No NEWMAT file (autoindexing was unsuccessful).\n");
 		return 1;
 	}
 	n  = fscanf(fh, "%f %f %f\n", &asx, &bsx, &csx);
@@ -595,7 +594,6 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	 * Existence of this file means possible success. Pretty shady. */
 	fail = read_newmat(mosflm->newmatfile, image);
 	if ( fail ) {
-		ERROR("Failed to read MOSFLM's NEWMAT file.\n");
 		return;
 	}
 

@@ -237,7 +237,6 @@ static void dirax_send_next(struct image *image, struct dirax_data *dirax)
 
 	case 8 :
 		if ( dirax->best_acl_nh == 0 ) {
-			STATUS("No more cells to try.\n");
 			/* At this point, DirAx is presenting its ACL prompt
 			 * and waiting for a single number.  Use an extra
 			 * newline to choose automatic ACL selection before
