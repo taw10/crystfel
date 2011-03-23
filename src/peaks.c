@@ -389,9 +389,9 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		ncull = 0;
 	}
 
-	STATUS("%i accepted, %i box, %i hot, %i proximity, %i outside panel, "
-	       "%i in bad regions, %i badrow culled.\n",
-	       nacc, nrej_dis, nrej_hot, nrej_pro, nrej_fra, nrej_bad, ncull);
+//	STATUS("%i accepted, %i box, %i hot, %i proximity, %i outside panel, "
+//	       "%i in bad regions, %i badrow culled.\n",
+//	       nacc, nrej_dis, nrej_hot, nrej_pro, nrej_fra, nrej_bad, ncull);
 }
 
 
