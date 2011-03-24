@@ -468,12 +468,16 @@ int main(int argc, char *argv[])
 		output = strdup("processed.hkl");
 	}
 
-	cell = load_cell_from_pdb(pdb);
-	if ( cell == NULL ) {
-		ERROR("Failed to load cell from '%s'\n", pdb);
-		return 1;
+	if ( pdb != NULL ) {
+		cell = load_cell_from_pdb(pdb);
+		if ( cell == NULL ) {
+			ERROR("Failed to load cell from '%s'\n", pdb);
+			return 1;
+		}
+		free(pdb);
+	} else {
+		cell = NULL;
 	}
-	free(pdb);
 
 	if ( sym == NULL ) sym = strdup("1");
 
