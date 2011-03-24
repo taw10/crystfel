@@ -440,6 +440,11 @@ int main(int argc, char *argv[])
 
 	}
 
+	if ( ratiofile != NULL ) {
+		write_reflist(ratiofile, ratio, cell);
+	}
+	reflist_free(ratio);
+
 	STATUS("%i reflections in '%s' had I < 3.0*sigma(I)\n", rej1, afile);
 	STATUS("%i reflections in '%s' had I < 3.0*sigma(I)\n", rej2, bfile);
 
@@ -509,10 +514,6 @@ int main(int argc, char *argv[])
 	if ( config_shells ) {
 		plot_shells(list1, list2_transformed, scale_r1fi,
 		            cell, sym, rmin_fix, rmax_fix);
-	}
-
-	if ( ratiofile != NULL ) {
-		write_reflist(ratiofile, ratio, cell);
 	}
 
 	return 0;
