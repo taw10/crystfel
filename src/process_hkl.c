@@ -120,7 +120,8 @@ static void plot_histogram(double *vals, int n)
 static void merge_pattern(RefList *model, RefList *new, int max_only,
                           const char *sym,
                           double *hist_vals, signed int hist_h,
-                          signed int hist_k, signed int hist_l, int *hist_n)
+                          signed int hist_k, signed int hist_l, int *hist_n,
+                          int pass)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -151,29 +152,39 @@ static void merge_pattern(RefList *model, RefList *new, int max_only,
 		/* Get the current model intensity */
 		model_int = get_intensity(model_version);
 
-		/* User asked for max only? */
-		if ( !max_only ) {
-			set_int(model_version, model_int + intensity);
-		} else {
-			if ( intensity > get_intensity(model_version) ) {
-				set_int(model_version, intensity);
+		if ( pass == 1 ) {
+
+			/* User asked for max only? */
+			if ( !max_only ) {
+				set_int(model_version, model_int + intensity);
+			} else {
+				if ( intensity>get_intensity(model_version) ) {
+					set_int(model_version, intensity);
+				}
 			}
-		}
 
-		double dev = get_sum_squared_dev(model_version);
-		set_sum_squared_dev(model_version,
-		                    dev + pow(intensity-model_int, 2.0));
 
-		/* Increase redundancy */
-		int cur_redundancy = get_redundancy(model_version);
-		set_redundancy(model_version, cur_redundancy+1);
+			/* Increase redundancy */
+			int cur_redundancy = get_redundancy(model_version);
+			set_redundancy(model_version, cur_redundancy+1);
 
-		if ( hist_vals != NULL ) {
-			int p = *hist_n;
-			if ( (h==hist_h) && (k==hist_k) && (l==hist_l) ) {
-				hist_vals[p] = intensity;
-				*hist_n = p+1;
+		} else if ( pass == 2 ) {
+
+			double dev = get_sum_squared_dev(model_version);
+			set_sum_squared_dev(model_version,
+			                   dev + pow(intensity-model_int, 2.0));
+
+			if ( hist_vals != NULL ) {
+				int p = *hist_n;
+				if ( (h==hist_h) && (k==hist_k)
+				  && (l==hist_l) )
+				{
+					hist_vals[p] = intensity;
+					*hist_n = p+1;
+				}
+
 			}
+
 		}
 
 	}
@@ -277,7 +288,7 @@ static void merge_all(FILE *fh, RefList *model,
                       int n_total_patterns,
                       double *hist_vals, signed int hist_h,
                       signed int hist_k, signed int hist_l,
-                      int *hist_i)
+                      int *hist_i, int pass)
 {
 	int rval;
 	int n_patterns = 0;
@@ -310,7 +321,7 @@ static void merge_all(FILE *fh, RefList *model,
 
 			merge_pattern(model, image.reflections, config_maxonly,
 			              sym, hist_vals, hist_h, hist_k, hist_l,
-			              hist_i);
+			              hist_i, pass);
 
 			n_used++;
 
@@ -327,7 +338,7 @@ static void merge_all(FILE *fh, RefList *model,
 	} while ( rval == 0 );
 
 	/* Divide by counts to get mean intensity if necessary */
-	if ( !config_sum && !config_maxonly ) {
+	if ( (pass == 1) && !config_sum && !config_maxonly ) {
 
 		Reflection *refl;
 		RefListIterator *iter;
@@ -337,29 +348,32 @@ static void merge_all(FILE *fh, RefList *model,
 		      refl = next_refl(refl, iter) ) {
 
 			double intensity = get_intensity(refl);
-			double sum_squared_dev = get_sum_squared_dev(refl);
 			int red = get_redundancy(refl);
 
 			set_int(refl, intensity / (double)red);
-			set_sum_squared_dev(refl, sum_squared_dev/(double)red);
 
 		}
 
 	}
 
 	/* Calculate ESDs */
-	for ( refl = first_refl(model, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
+	if ( pass == 2 ) {
+		for ( refl = first_refl(model, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) ) {
 
-		double sum_squared_dev = get_sum_squared_dev(refl);
-		int red = get_redundancy(refl);
+			double sum_squared_dev = get_sum_squared_dev(refl);
+			int red = get_redundancy(refl);
 
-		set_esd_intensity(refl, sum_squared_dev/(double)red);
+			set_esd_intensity(refl,
+			                  sqrt(sum_squared_dev)/(double)red);
 
+		}
 	}
 
-	STATUS("%i of the patterns could be used.\n", n_used);
+	if ( pass == 1 ) {
+		STATUS("%i of the patterns could be used.\n", n_used);
+	}
 }
 
 
@@ -521,7 +535,7 @@ int main(int argc, char *argv[])
 	merge_all(fh, model, config_maxonly, config_scale, config_sum,
 	          config_startafter, config_stopafter,
                   sym, n_total_patterns,
-                  hist_vals, hist_h, hist_k, hist_l, &hist_i);
+                  hist_vals, hist_h, hist_k, hist_l, &hist_i, 1);
 	rewind(fh);
 	if ( space_for_hist && (hist_i >= space_for_hist) ) {
 		ERROR("Histogram array was too small!\n");
@@ -537,7 +551,7 @@ int main(int argc, char *argv[])
 	rewind(fh);
 	merge_all(fh, model, config_maxonly, config_scale, 0,
 	          config_startafter, config_stopafter, sym, n_total_patterns,
-	          NULL, 0, 0, 0, NULL);
+	          NULL, 0, 0, 0, NULL, 2);
 
 	write_reflist(output, model, cell);
 
