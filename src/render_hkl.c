@@ -161,7 +161,9 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 			if ( fabs(v) > fabs(*max_v) ) *max_v = fabs(v);
 
 			/* Find max value for colour scale */
-			if ( fabs(val) > fabs(*max_val) ) {
+			if ( !isnan(val) && !isinf(val)
+			  && (fabs(val) > fabs(*max_val)) )
+			{
 				*max_val = fabs(val);
 			}
 
