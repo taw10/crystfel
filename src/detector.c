@@ -265,7 +265,7 @@ void record_image(struct image *image, int do_poisson)
 }
 
 
-struct panel *find_panel(struct detector *det, int fs, int ss)
+struct panel *find_panel(struct detector *det, double fs, double ss)
 {
 	int p;
 
