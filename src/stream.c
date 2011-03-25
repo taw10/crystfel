@@ -249,6 +249,7 @@ void write_chunk(FILE *ofh, struct image *i, int f)
 
 	fprintf(ofh, "photon_energy_eV = %f\n",
 	        J_to_eV(ph_lambda_to_en(i->lambda)));
+	fprintf(ofh, "camera_length = %f\n",i->det->panels[0].clen);
 
 	if ( (f & STREAM_PEAKS)
 	  || ((f & STREAM_PEAKS_IF_INDEXED) && (i->indexed_cell != NULL))
