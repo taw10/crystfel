@@ -102,7 +102,7 @@ int parse_stream_flags(const char *a)
 
 		} else {
 			ERROR("Unrecognised stream flag '%s'\n", flags[i]);
-			return 0;
+			return -1;
 		}
 
 		free(flags[i]);
