@@ -21,6 +21,6 @@
 
 extern int povray_render_animation(UnitCell *cell, RefList *list,
                                    unsigned int nproc, const char *sym,
-                                   int wght, double boost);
+                                   int wght, double boost, double scale_top);
 
 #endif	/* POVRAY_H */

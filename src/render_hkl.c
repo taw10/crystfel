@@ -143,7 +143,7 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 
 		if ( dctx != NULL ) {
 
-			float r, g, b;
+			double r, g, b;
 
 			cairo_arc(dctx, ((double)cx)+u*scale,
 			                ((double)cy)+v*scale,
@@ -238,7 +238,7 @@ static void render_za(UnitCell *cell, RefList *list,
                       double boost, const char *sym, int wght, int colscale,
                       signed int xh, signed int xk, signed int xl,
                       signed int yh, signed int yk, signed int yl,
-                      const char *outfile)
+                      const char *outfile, double scale_top)
 {
 	cairo_surface_t *surface;
 	cairo_t *dctx;
@@ -259,6 +259,7 @@ static void render_za(UnitCell *cell, RefList *list,
 	cairo_text_extents_t size;
 	double cx, cy;
 	const double border = 200.0;
+	int png;
 
 	/* Vector product to determine the zone axis. */
 	zh = xk*yl - xl*yk;
@@ -302,6 +303,11 @@ static void render_za(UnitCell *cell, RefList *list,
 		return;
 	}
 
+	/* Use manual scale top if specified */
+	if ( scale_top > 0.0 ) {
+		max_val = scale_top;
+	}
+
 	/* Choose whichever scaling factor gives the smallest value */
 	scale_u = ((double)wh-border) / (2.0*max_u);
 	scale_v = ((double)ht-border) / (2.0*max_v);
@@ -318,7 +324,15 @@ static void render_za(UnitCell *cell, RefList *list,
 	}
 
 	if ( outfile == NULL ) outfile = "za.pdf";
-	surface = cairo_pdf_surface_create(outfile, wh, ht);
+
+	if ( strcmp(outfile+strlen(outfile)-4, ".png") == 0 ) {
+		png = 1;
+		surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+		                                     wh, ht);
+	} else {
+		png = 0;
+		surface = cairo_pdf_surface_create(outfile, wh, ht);
+	}
 
 	if ( cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS ) {
 		ERROR("Couldn't create Cairo surface\n");
@@ -390,20 +404,34 @@ static void render_za(UnitCell *cell, RefList *list,
 	render_overlined_indices(dctx, yh, yk, yl);
 	cairo_fill(dctx);
 
+	if ( png ) {
+		int r = cairo_surface_write_to_png(surface, outfile);
+		if ( r != CAIRO_STATUS_SUCCESS ) {
+			ERROR("Failed to write PNG to '%s'\n", outfile);
+		}
+	}
+
 	cairo_surface_finish(surface);
 	cairo_destroy(dctx);
 }
 
 
-static int render_key(int colscale)
+static int render_key(int colscale, double scale_top)
 {
 	cairo_surface_t *surface;
 	cairo_t *dctx;
-	float wh, ht;
-	float y;
+	double top, wh, ht, y;
+	double slice;
 
-	wh = 128;
-	ht = 1024;
+	wh = 128.0;
+	ht = 1024.0;
+	slice = 1.0;
+
+	if ( scale_top > 0.0 ) {
+		top = scale_top;
+	} else {
+		top = 1.0;
+	}
 
 	surface = cairo_pdf_surface_create("key.pdf", wh, ht);
 
@@ -415,18 +443,60 @@ static int render_key(int colscale)
 
 	dctx = cairo_create(surface);
 
-	for ( y=0; y<ht; y++ ) {
+	for ( y=0.0; y<ht; y+=slice ) {
 
-		float r, g, b;
+		double r, g, b;
+		double val;
+		double v = y;
 
-		cairo_rectangle(dctx, 0.0, y, wh, y+1.0);
+		cairo_rectangle(dctx, 0.0, ht-y, wh/2.0, slice);
 
-		render_scale(ht-y, ht, colscale, &r, &g, &b);
+		if ( colscale == SCALE_RATIO ) {
+			if ( v < ht/2.0 ) {
+				val = v/(ht/2.0);
+			} else {
+				val = (((v-ht/2.0)/(ht/2.0))*(top-1.0))+1.0;
+			}
+		} else {
+			val = v/ht;
+		}
+
+		render_scale(val, top, colscale, &r, &g, &b);
 		cairo_set_source_rgb(dctx, r, g, b);
 
+		cairo_stroke_preserve(dctx);
 		cairo_fill(dctx);
 
 	}
+
+	if ( colscale == SCALE_RATIO ) {
+
+		cairo_text_extents_t size;
+		char tmp[32];
+
+		cairo_rectangle(dctx, 0.0, ht/2.0-2.0, wh/2.0, 4.0);
+		cairo_set_source_rgb(dctx, 0.0, 0.0, 0.0);
+		cairo_stroke_preserve(dctx);
+		cairo_fill(dctx);
+
+		cairo_set_font_size(dctx, 20.0);
+		cairo_text_extents(dctx, "1.0", &size);
+		cairo_move_to(dctx, wh/2.0+5.0, ht/2.0+size.height/2.0);
+		cairo_show_text(dctx, "1.0");
+
+		cairo_set_font_size(dctx, 20.0);
+		cairo_text_extents(dctx, "0.0", &size);
+		cairo_move_to(dctx, wh/2.0+5.0, ht-5.0);
+		cairo_show_text(dctx, "0.0");
+
+		cairo_set_font_size(dctx, 20.0);
+		snprintf(tmp, 31, "%.1f", top);
+		cairo_text_extents(dctx, tmp, &size);
+		cairo_move_to(dctx, wh/2.0+5.0, size.height+5.0);
+		cairo_show_text(dctx, tmp);
+
+	}
+
 
 	cairo_surface_finish(surface);
 	cairo_destroy(dctx);
@@ -487,6 +557,8 @@ int main(int argc, char *argv[])
 	char *down = NULL;
 	char *right = NULL;
 	char *outfile = NULL;
+	double scale_top = -1.0;
+	char *endptr;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -503,6 +575,7 @@ int main(int argc, char *argv[])
 		{"right",              1, NULL,               'r'},
 		{"counts",             0, &config_sqrt,        1},
 		{"colour-key",         0, &config_colkey,      1},
+		{"scale-top",          1, NULL,                2},
 		{0, 0, NULL, 0}
 	};
 
@@ -551,6 +624,21 @@ int main(int argc, char *argv[])
 			outfile = strdup(optarg);
 			break;
 
+		case 2 :
+			errno = 0;
+			scale_top = strtod(optarg, &endptr);
+			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') )
+			   || (errno != 0) )
+			{
+				ERROR("Invalid scale top('%s')\n", optarg);
+				return 1;
+			}
+			if ( scale_top < 0.0 ) {
+				ERROR("Scale top must be positive.\n");
+				return 1;
+			}
+			break;
+
 		case 0 :
 			break;
 
@@ -560,8 +648,9 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( pdb == NULL ) {
-		pdb = strdup("molecule.pdb");
+	if ( (pdb == NULL) && !config_colkey ) {
+		ERROR("You must specify the PDB containing the unit cell.\n");
+		return 1;
 	}
 
 	if ( sym == NULL ) {
@@ -604,6 +693,8 @@ int main(int argc, char *argv[])
 		colscale = SCALE_COLOUR;
 	} else if ( strcmp(cscale, "color") == 0 ) {
 		colscale = SCALE_COLOUR;
+	} else if ( strcmp(cscale, "ratio") == 0 ) {
+		colscale = SCALE_RATIO;
 	} else {
 		ERROR("Unrecognised colour scale '%s'\n", cscale);
 		return 1;
@@ -611,7 +702,7 @@ int main(int argc, char *argv[])
 	free(cscale);
 
 	if ( config_colkey ) {
-		return render_key(colscale);
+		return render_key(colscale, scale_top);
 	}
 
 	if ( config_zoneaxis ) {
@@ -659,10 +750,10 @@ int main(int argc, char *argv[])
 
 	if ( config_povray ) {
 		r = povray_render_animation(cell, list,
-		                            nproc, sym, wght, boost);
+		                            nproc, sym, wght, boost, scale_top);
 	} else if ( config_zoneaxis ) {
 		render_za(cell, list, boost, sym, wght, colscale,
-		          rh, rk, rl, dh, dk, dl, outfile);
+		          rh, rk, rl, dh, dk, dl, outfile, scale_top);
 	} else {
 		ERROR("Try again with either --povray or --zone-axis.\n");
 	}

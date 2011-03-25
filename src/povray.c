@@ -30,7 +30,8 @@
 
 
 int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
-                            const char *sym, int wght, double boost)
+                            const char *sym, int wght, double boost,
+                            double scale_top)
 {
 	FILE *fh;
 	double asx, asy, asz;
@@ -200,6 +201,12 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 
 	}
 	max /= boost;
+
+	/* Use manual scale top if specified */
+	if ( scale_top > 0.0 ) {
+		max = scale_top;
+	}
+
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;

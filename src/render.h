@@ -25,12 +25,13 @@
 enum {
 	SCALE_COLOUR,
 	SCALE_MONO,
-	SCALE_INVMONO
+	SCALE_INVMONO,
+	SCALE_RATIO
 };
 
 /* Colour scale lookup */
-extern void render_scale(float val, float max, int scale,
-                         float *rp, float *gp, float *bp);
+extern void render_scale(double val, double max, int scale,
+                         double *rp, double *gp, double *bp);
 
 
 #ifdef HAVE_GTK
@@ -38,8 +39,8 @@ extern void render_scale(float val, float max, int scale,
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
 extern GdkPixbuf **render_panels(struct image *image,
-                                  int binning, int scale, double boost,
-                                  int *n_pixbufs);
+                                 int binning, int scale, double boost,
+                                 int *n_pixbufs);
 
 extern GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale);
 

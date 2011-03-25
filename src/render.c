@@ -38,11 +38,12 @@
 #include "utils.h"
 
 
-static void render_rgb(float val, float max, float *rp, float *gp, float *bp)
+static void render_rgb(double val, double max,
+                       double *rp, double *gp, double *bp)
 {
 	int s;
-	float p;
-	float r, g, b;
+	double p;
+	double r, g, b;
 
 	s = val / (max/6);
 	p = fmod(val, max/6.0);
@@ -94,9 +95,23 @@ static void render_rgb(float val, float max, float *rp, float *gp, float *bp)
 }
 
 
-static void render_mono(float val, float max, float *rp, float *gp, float *bp)
+static void render_ratio(double val, double max,
+                         double *rp, double *gp, double *bp)
 {
-	float p;
+	if ( val <= 1.0 ) {
+		render_rgb(val, 2.0, rp, gp, bp);
+	} else {
+		/* Your homework is to simplify this expression */
+		val = ((val-1.0)/(max-1.0)) * (max/2.0) + max/2.0;
+		render_rgb(val, max, rp, gp, bp);
+	}
+}
+
+
+static void render_mono(double val, double max,
+                        double *rp, double *gp, double *bp)
+{
+	double p;
 	p = val / max;
 	if ( val < 0.0 ) p = 0.0;
 	if ( val > max ) p = 1.0;
@@ -106,10 +121,10 @@ static void render_mono(float val, float max, float *rp, float *gp, float *bp)
 }
 
 
-static void render_invmono(float val, float max,
-                           float *rp, float *gp, float *bp)
+static void render_invmono(double val, double max,
+                           double *rp, double *gp, double *bp)
 {
-	float p;
+	double p;
 	p = val / max;
 	p = 1.0 - p;
 	if ( val < 0.0 ) p = 1.0;
@@ -120,8 +135,8 @@ static void render_invmono(float val, float max,
 }
 
 
-void render_scale(float val, float max, int scale,
-                  float *rp, float *gp, float *bp)
+void render_scale(double val, double max, int scale,
+                  double *rp, double *gp, double *bp)
 {
 	switch ( scale ) {
 	case SCALE_COLOUR :
@@ -132,6 +147,9 @@ void render_scale(float val, float max, int scale,
 		break;
 	case SCALE_INVMONO :
 		render_invmono(val, max, rp, gp, bp);
+		break;
+	case SCALE_RATIO :
+		render_ratio(val, max, rp, gp, bp);
 		break;
 	}
 }
@@ -232,8 +250,8 @@ static GdkPixbuf *render_panel(struct image *image,
 	for ( y=0; y<h; y++ ) {
 	for ( x=0; x<w; x++ ) {
 
-		float val;
-		float r, g, b;
+		double val;
+		double r, g, b;
 
 		val = hdr[x+w*y];
 		render_scale(val, max, scale, &r, &g, &b);
@@ -302,7 +320,7 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
 
 	for ( y=0; y<h; y++ ) {
 
-		float r, g, b;
+		double r, g, b;
 		int val;
 
 		val = y;
@@ -369,7 +387,7 @@ int render_tiff_int16(struct image *image, const char *filename, double boost)
 	TIFF *th;
 	int16_t *line;
 	int x, y;
-	float max;
+	double max;
 
 	th = TIFFOpen(filename, "w");
 	if ( th == NULL ) return 1;
@@ -389,7 +407,7 @@ int render_tiff_int16(struct image *image, const char *filename, double boost)
 	max = 0.0;
 	for ( y=0; y<image->height; y++ ) {
 	for ( x=0;x<image->width; x++ ) {
-		float val;
+		double val;
 		val = image->data[x+image->height*y];
 		if ( val > max ) max = val;
 	}
@@ -399,10 +417,10 @@ int render_tiff_int16(struct image *image, const char *filename, double boost)
 	for ( y=0; y<image->height; y++ ) {
 		for ( x=0;x<image->width; x++ ) {
 
-			float val;
+			double val;
 
 			val = image->data[x+(image->height-1-y)*image->width];
-			val *= ((float)boost/max);
+			val *= ((double)boost/max);
 
 			/* Clamp to 16-bit range,
 			 * and work round inability of most readers to deal

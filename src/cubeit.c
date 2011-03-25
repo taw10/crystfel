@@ -361,8 +361,8 @@ static void write_slice(const char *filename, double *vals, int z,
 	for ( y=0; y<h; y++ ) {
 	for ( x=0; x<w; x++ ) {
 
-		float r, g, b;
-		float val;
+		double r, g, b;
+		double val;
 
 		val = vals[xs*ys*z + xs*y + x];
 
