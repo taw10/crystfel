@@ -161,7 +161,7 @@ script_DATA = scripts/check-near-bragg scripts/double-hit \
               scripts/alternate-stream scripts/README scripts/indexing-rate \
               scripts/observed-peak-rate scripts/cell-please \
               scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
-              scripts/compare-hkl.gp
+              scripts/compare-hkl.gp scripts/check-peak-detection
 
 EXTRA_DIST += scripts/check-near-bragg scripts/double-hit scripts/random-image \
               scripts/stream-split scripts/wibbletron scripts/zone-axis \
@@ -170,4 +170,5 @@ EXTRA_DIST += scripts/check-near-bragg scripts/double-hit scripts/random-image \
               scripts/zone-axes scripts/alternate-stream scripts/README \
               scripts/indexing-rate scripts/observed-peak-rate \
               scripts/cell-please scripts/check-hkl-completeness.gp \
-              scripts/check-hkl-quality.gp scripts/compare-hkl.gp
+              scripts/check-hkl-quality.gp scripts/compare-hkl.gp \
+              scripts/check-peak-detection

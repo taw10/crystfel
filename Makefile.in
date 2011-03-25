@@ -580,7 +580,7 @@ EXTRA_DIST = configure m4/gnulib-cache.m4 src/cell.h src/hdf5-file.h \
 	scripts/alternate-stream scripts/README scripts/indexing-rate \
 	scripts/observed-peak-rate scripts/cell-please \
 	scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
-	scripts/compare-hkl.gp
+	scripts/compare-hkl.gp scripts/check-peak-detection
 SUBDIRS = lib
 ACLOCAL_AMFLAGS = -I m4
 AM_CFLAGS = -Wall
@@ -683,7 +683,7 @@ script_DATA = scripts/check-near-bragg scripts/double-hit \
               scripts/alternate-stream scripts/README scripts/indexing-rate \
               scripts/observed-peak-rate scripts/cell-please \
               scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
-              scripts/compare-hkl.gp
+              scripts/compare-hkl.gp scripts/check-peak-detection
 
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
