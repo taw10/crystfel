@@ -116,7 +116,8 @@ static void dirax_parseline(const char *line, struct image *image,
 		r = sscanf(line, "%f %f %f %f %f %f",
 		           &d, &d, &d, &ax, &ay, &az);
 		if ( r != 6 ) {
-			ERROR("Couldn't understand cell line\n");
+			ERROR("Couldn't understand cell line:\n");
+			ERROR("'%s'\n", line);
 			dirax->read_cell = 0;
 			free(image->candidate_cells[image->ncells]);
 			return;
@@ -132,7 +133,8 @@ static void dirax_parseline(const char *line, struct image *image,
 		r = sscanf(line, "%f %f %f %f %f %f",
 		           &d, &d, &d, &bx, &by, &bz);
 		if ( r != 6 ) {
-			ERROR("Couldn't understand cell line\n");
+			ERROR("Couldn't understand cell line:\n");
+			ERROR("'%s'\n", line);
 			dirax->read_cell = 0;
 			free(image->candidate_cells[image->ncells]);
 			return;
@@ -148,7 +150,8 @@ static void dirax_parseline(const char *line, struct image *image,
 		r = sscanf(line, "%f %f %f %f %f %f",
 		           &d, &d, &d, &cx, &cy, &cz);
 		if ( r != 6 ) {
-			ERROR("Couldn't understand cell line\n");
+			ERROR("Couldn't understand cell line:\n");
+			ERROR("'%s'\n", line);
 			dirax->read_cell = 0;
 			free(image->candidate_cells[image->ncells]);
 			return;
