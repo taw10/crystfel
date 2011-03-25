@@ -280,6 +280,23 @@ struct panel *find_panel(struct detector *det, double fs, double ss)
 }
 
 
+int find_panel_number(struct detector *det, int fs, int ss)
+{
+   int p;
+
+   for ( p=0; p<det->n_panels; p++ ) {
+      if ( (fs >= det->panels[p].min_fs)
+        && (fs <= det->panels[p].max_fs)
+        && (ss >= det->panels[p].min_ss)
+        && (ss <= det->panels[p].max_ss) ) {
+         return p;
+      }
+   }
+
+   return -1;
+}
+
+
 void fill_in_values(struct detector *det, struct hdfile *f)
 {
 	int i;

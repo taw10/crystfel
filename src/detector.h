@@ -93,6 +93,8 @@ extern void record_image(struct image *image, int do_poisson);
 
 extern struct panel *find_panel(struct detector *det, double fs, double ss);
 
+extern int find_panel_number(struct detector *det, int fs, int ss);
+
 extern struct detector *get_detector_geometry(const char *filename);
 
 extern void free_detector_geometry(struct detector *det);
