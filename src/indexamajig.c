@@ -193,7 +193,8 @@ static void show_help(const char *s)
 "                           least 10%% of the located peaks.\n"
 "\n"
 "You can tune the CPU affinities for enhanced performance on NUMA machines:\n"
-"     --cpus=<n>           Specify number of CPUs.\n"
+"     --cpus=<n>           Specify number of CPUs.  This is NOT the same as\n"
+"                           giving the number of analyses to run in parallel.\n"
 "     --cpugroup=<n>       Batch threads in groups of this size.\n"
 "     --cpuoffset=<n>      Start using CPUs at this group number.\n"
 );
