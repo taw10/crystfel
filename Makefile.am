@@ -100,7 +100,9 @@ src_sum_stack_SOURCES = src/sum_stack.c src/utils.c src/hdf5-file.c \
 
 src_calibrate_detector_SOURCES = src/calibrate_detector.c src/utils.c \
                                  src/hdf5-file.c src/image.c src/thread-pool.c \
-                                 src/detector.c
+                                 src/detector.c src/stream.c src/cell.c \
+                                 src/reflist-utils.c src/reflist.c src/symmetry.c \
+                                 src/peaks.c 
 
 src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
                           src/utils.c src/detector.c src/peaks.c src/image.c \

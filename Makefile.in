@@ -89,7 +89,9 @@ am__dirstamp = $(am__leading_dot)dirstamp
 am_src_calibrate_detector_OBJECTS = src/calibrate_detector.$(OBJEXT) \
 	src/utils.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
 	src/image.$(OBJEXT) src/thread-pool.$(OBJEXT) \
-	src/detector.$(OBJEXT)
+	src/detector.$(OBJEXT) src/stream.$(OBJEXT) src/cell.$(OBJEXT) \
+	src/reflist-utils.$(OBJEXT) src/reflist.$(OBJEXT) \
+	src/symmetry.$(OBJEXT) src/peaks.$(OBJEXT)
 src_calibrate_detector_OBJECTS = $(am_src_calibrate_detector_OBJECTS)
 src_calibrate_detector_LDADD = $(LDADD)
 src_calibrate_detector_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
@@ -488,12 +490,9 @@ PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
 PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
-PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
-PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
-PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 PRAGMA_COLUMNS = @PRAGMA_COLUMNS@
 PRAGMA_SYSTEM_HEADER = @PRAGMA_SYSTEM_HEADER@
 RANLIB = @RANLIB@
@@ -660,7 +659,9 @@ src_sum_stack_SOURCES = src/sum_stack.c src/utils.c src/hdf5-file.c \
 
 src_calibrate_detector_SOURCES = src/calibrate_detector.c src/utils.c \
                                  src/hdf5-file.c src/image.c src/thread-pool.c \
-                                 src/detector.c
+                                 src/detector.c src/stream.c src/cell.c \
+                                 src/reflist-utils.c src/reflist.c src/symmetry.c \
+                                 src/peaks.c 
 
 src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
                           src/utils.c src/detector.c src/peaks.c src/image.c \
@@ -820,19 +821,22 @@ src/thread-pool.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/detector.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/stream.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/cell.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/reflist-utils.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/reflist.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/symmetry.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/peaks.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/calibrate_detector$(EXEEXT): $(src_calibrate_detector_OBJECTS) $(src_calibrate_detector_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/calibrate_detector$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_calibrate_detector_OBJECTS) $(src_calibrate_detector_LDADD) $(LIBS)
 src/check_hkl.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
-src/cell.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/reflist-utils.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
 src/statistics.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/symmetry.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/reflist.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/check_hkl$(EXEEXT): $(src_check_hkl_OBJECTS) $(src_check_hkl_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/check_hkl$(EXEEXT)
@@ -847,8 +851,6 @@ src/cubeit.$(OBJEXT): src/$(am__dirstamp) \
 src/render.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/filters.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/stream.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/cubeit$(EXEEXT): $(src_cubeit_OBJECTS) $(src_cubeit_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/cubeit$(EXEEXT)
@@ -869,7 +871,6 @@ src/hdfsee$(EXEEXT): $(src_hdfsee_OBJECTS) $(src_hdfsee_DEPENDENCIES) src/$(am__
 	$(AM_V_CCLD)$(LINK) $(src_hdfsee_OBJECTS) $(src_hdfsee_LDADD) $(LIBS)
 src/indexamajig.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
-src/peaks.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/index.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/diffraction.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
