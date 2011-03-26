@@ -150,7 +150,6 @@ int main(int argc, char *argv[])
 	FILE *fh;
 	int nthreads = 1;
 	struct detector *det;
-	unsigned int *cts;
 	ReflItemList *obs;
 	int i;
 	int n_total_patterns;
@@ -370,7 +369,6 @@ int main(int argc, char *argv[])
 	       (double)n_found / num_items(obs));
 
 	cref = find_common_reflections(images, n_total_patterns);
-	cts = new_list_count();
 
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
@@ -434,7 +432,6 @@ int main(int argc, char *argv[])
 	free(det->panels);
 	free(det);
 	free(beam);
-	free(cts);
 	free(cref);
 	for ( i=0; i<n_total_patterns; i++ ) {
 		cell_free(images[i].indexed_cell);
