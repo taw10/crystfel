@@ -576,7 +576,8 @@ EXTRA_DIST = configure m4/gnulib-cache.m4 src/cell.h src/hdf5-file.h \
 	doc/examples/lcls-xpp-estimate.geom doc/examples/simple.geom \
 	doc/examples/lcls-dec.beam doc/examples/lcls-june.beam \
 	doc/examples/lcls-xpp-estimate.beam \
-	doc/examples/cspad-feb2011.geom scripts/check-near-bragg \
+	doc/examples/cspad-feb2011.geom \
+	doc/examples/lcls-cxi-9keV.beam scripts/check-near-bragg \
 	scripts/double-hit scripts/random-image scripts/stream-split \
 	scripts/wibbletron scripts/zone-axis scripts/create-mtz \
 	scripts/frequency scripts/i0-analysis scripts/mtz2hkl \

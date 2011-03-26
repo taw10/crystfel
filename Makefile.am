@@ -150,7 +150,8 @@ EXTRA_DIST += doc/geometry.txt doc/indexamajig.txt doc/pattern_sim.txt \
               doc/examples/lcls-xpp-estimate.geom doc/examples/simple.geom \
               doc/examples/lcls-dec.beam doc/examples/lcls-june.beam \
               doc/examples/lcls-xpp-estimate.beam \
-              doc/examples/cspad-feb2011.geom
+              doc/examples/cspad-feb2011.geom \
+              doc/examples/lcls-cxi-9keV.beam
 
 scriptdir = $(docdir)/scripts
 script_DATA = scripts/check-near-bragg scripts/double-hit \
