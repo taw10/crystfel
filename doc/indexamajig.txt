@@ -59,7 +59,11 @@ You can control what information is included in the output stream using
 
 So, if you just want the integrated intensities of indexed peaks, use
 "--record=integrated".  If you just want to check that the peak detection is
-working, used "--record=peaks".
+working, used "--record=peaks".  If you want the integrated peaks for the
+indexable patterns, but also want to check the peak detection for the patterns
+which could not be indexed, you might use
+"--record=integrated,peaksifnotindexed" and then use "check-peak-detection" from
+the "scripts" folder to visualise the results of the peak detection.
 
 
 Peak Detection
@@ -154,6 +158,51 @@ F), you should be careful when using "compare" for the cell reduction, since
 be converted to the non-primitive conventional cell from the PDB.
 
 
+Tuning CPU affinities for NUMA hardware
+---------------------------------------
+
+If you are running indexamajig on a NUMA (non-uniform memory architecture)
+machine, a performance gain can sometimes be made by preventing the kernel from
+allowing a process or thread to run on a CPU which is distant from the one on
+which it started.  Distance, in this context, might mean that the CPU is able to
+access all the memory visible to the original CPU, but perhaps only relatively
+slowly via a cable link.  In many cases a group of CPUs will have direct access
+to a certain region of memory, and so the process may be scheduled on any CPU in
+that group without any penalty.  However, scheduling the process to any CPU
+outside the group may be slow.  When running under Linux, indexamajig is able to
+avoid such sub-optimal process scheduling by setting CPU affinities for its
+threads.  The CPU affinities are also inherited by subprocesses (e.g. MOSFLM or
+DirAx).
+
+To do this usefully, you need to give indexamajig some information about your
+hardware's architecture.  Specify the size of the CPU groups using
+"--cpugroup=<n>".  You also need to specify the overall number of CPUs, so that
+the program knows when to 'wrap around'.  Using "--cpuoffset=<n>", where "n" is
+a group number (not a CPU number), allows you to manually skip a few CPUs, which
+may be useful if you do not want to use all the available CPUs but want to avoid
+running all your jobs on the same ones.
+
+Note that specifying the above options is NOT the same thing as giving the
+number of analyses to run in parallel (the 'number of threads'), which is done
+with "-j <n>".  The CPU tuning options provide information to indexamajig about
+how to set the CPU affinities for its threads, but it does not specify how many
+threads to use.
+
+Example: 72-core Altix UV 100 machine at the author's institution
+
+This machine consists of six blades, each containing two 6-core CPUs and some
+local memory.  Any CPU on any blade can access the memory on any other blade,
+but the access will be slow compared to accessing memory on the same blade.
+When running two instances of indexamajig, a sensible choice of parameters might
+be:
+
+1: --cpus=72 --cpugroup=12 --cpuoffset=0 -j 36
+2: --cpus=72 --cpugroup=12 --cpuoffset=36 -j 36
+
+This would dedicate half of the CPUs to one instance, and the other half to the
+other.
+
+
 A Note about Unit Cell Settings
 -------------------------------
 
@@ -162,26 +211,9 @@ You must use the same setting.  That means that the unique axis (for cells which
 have one) must be "c".
 
 
-Unconventional Use
-------------------
-
-There are some less often used options, for example "--dump-peaks" to dump the
-peak locations found by the peak search (in turn presented to the indexer).
-This might be useful if you want to check the performance of the peak finder.
-If you run a large dataset with bot --dump-peaks and --near-bragg enabled,
-you'll generate a large amount of data.  To separate the peaks from the
-indexed peaks, use scripts/stream-split as follows:
-
-scripts/stream-split myoutputfile.txt indexed.txt peaks.txt
-
-.. to generate both indexed.txt and peaks.txt.  One of the last two arguments
-can be "/dev/null" if you're only interested in the other.
-
-
 "Gotchas"
 ---------
 
 Don't run more than one indexamajig jobs simultaneously in the same working
 directory - they'll overwrite each other's DirAx or MOSFLM files, causing subtle
-problems
-which can't easily be detected.
+problems which can't easily be detected.

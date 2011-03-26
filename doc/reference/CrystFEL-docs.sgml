@@ -10,9 +10,13 @@
     <releaseinfo>
       For CrystFEL 0.2.0.
     </releaseinfo>
+    <abstract>
     This is the internal documentation for CrystFEL.  Unless you are looking at
     the code, writing new programs or fixing bugs, you should not need to read
-    this.
+    this.  You might use the information here when reading the code or to better
+    understand how the software works, or refer to it when creating a new
+    program within the suite.
+    </abstract>
   </bookinfo>
 
   <chapter>
@@ -22,6 +26,7 @@
 
   <chapter>
     <title>Handling reflection data</title>
+        <abstract>There are three main reflection list thingies.</abstract>
         <xi:include href="xml/reflist.xml"/>
         <xi:include href="xml/reflitemlist.xml"/>
   </chapter>

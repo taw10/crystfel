@@ -166,12 +166,42 @@ int poisson_noise(double expected)
 }
 
 
+/**
+ * SECTION:quaternion
+ * @short_description: Simple quaternion handling
+ * @title: Quaternion
+ * @section_id:
+ * @see_also:
+ * @include: "utils.h"
+ * @Image:
+ *
+ * There is a simple quaternion structure in CrystFEL.  At the moment, it is
+ * only used when simulating patterns, as an argument to %cell_rotate to
+ * orient the unit cell.
+ */
+
+/**
+ * quaternion_modulus:
+ * @q: A %quaternion
+ *
+ * If a quaternion represents a pure rotation, its modulus should be unity.
+ *
+ * Returns: the modulus of the given quaternion.
+ **/
 double quaternion_modulus(struct quaternion q)
 {
 	return sqrt(q.w*q.w + q.x*q.x + q.y*q.y + q.z*q.z);
 }
 
 
+/**
+ * normalise_quaternion:
+ * @q: A %quaternion
+ *
+ * Rescales the quaternion such that its modulus is unity.
+ *
+ * Returns: the normalised version of @q
+ **/
 struct quaternion normalise_quaternion(struct quaternion q)
 {
 	double mod;
@@ -188,6 +218,11 @@ struct quaternion normalise_quaternion(struct quaternion q)
 }
 
 
+/**
+ * random_quaternion:
+ *
+ * Returns: a randomly generated, normalised, quaternion.
+ **/
 struct quaternion random_quaternion()
 {
 	struct quaternion q;
@@ -202,6 +237,18 @@ struct quaternion random_quaternion()
 }
 
 
+/**
+ * quaternion_valid:
+ * @q: A %quaternion
+ *
+ * Checks if the given quaternion is normalised.
+ *
+ * This function performs a nasty floating point comparison of the form
+ * <code>(modulus > 0.999) && (modulus < 1.001)</code>, and so should not be
+ * relied upon to spot anything other than the most obvious input error.
+ *
+ * Returns: 1 if the quaternion is normalised, 0 if not.
+ **/
 int quaternion_valid(struct quaternion q)
 {
 	double qmod;
@@ -216,6 +263,15 @@ int quaternion_valid(struct quaternion q)
 }
 
 
+/**
+ * quat_rot
+ * @q: A vector (in the form of an %rvec)
+ * @z: A %quaternion
+ *
+ * Rotates a vector according to a quaternion.
+ *
+ * Returns: A rotated version of @p.
+ **/
 struct rvec quat_rot(struct rvec q, struct quaternion z)
 {
 	struct rvec res;

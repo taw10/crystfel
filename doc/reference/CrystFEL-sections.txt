@@ -33,6 +33,12 @@ show_matrix_eqn
 <SECTION>
 <FILE>quaternion</FILE>
 quaternion
+<SUBSECTION>
+quaternion_modulus
+normalise_quaternion
+random_quaternion
+quaternion_valid
+quat_rot
 </SECTION>
 
 <SECTION>

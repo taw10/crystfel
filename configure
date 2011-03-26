@@ -1489,7 +1489,7 @@ Optional Features:
   --disable-tiff          Disable the use of libTIFF
   --disable-cairo         Disable the use of Cairo
   --disable-gdk-pixbuf    Disable the use of gtk-pixbuf
-  --enable-gtk-doc        use gtk-doc to build documentation [[default=no]]
+  --enable-gtk-doc        use gtk-doc to build documentation [[default=yes]]
   --enable-gtk-doc-html   build documentation in html format [[default=yes]]
   --enable-gtk-doc-pdf    build documentation in pdf format [[default=no]]
 
@@ -7723,7 +7723,7 @@ fi
 if test "${enable_gtk_doc+set}" = set; then :
   enableval=$enable_gtk_doc;
 else
-  enable_gtk_doc=no
+  enable_gtk_doc=yes
 fi
 
 
