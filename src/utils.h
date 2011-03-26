@@ -180,19 +180,9 @@ static inline double angle_between(double x1, double y1, double z1,
 #define TYPE double
 #include "list_tmp.h"
 
-/* As above, but for complex structure factors */
-#define LABEL(x) x##_sfac
-#define TYPE double complex
-#include "list_tmp.h"
-
 /* As above, but for (unsigned) integer counts */
 #define LABEL(x) x##_count
 #define TYPE unsigned int
-#include "list_tmp.h"
-
-/* As above, but for sigmas */
-#define LABEL(x) x##_sigma
-#define TYPE double
 #include "list_tmp.h"
 
 /* As above, but for simple flags */
