@@ -1,5 +1,5 @@
 EXTRA_DIST = configure m4/gnulib-cache.m4
-SUBDIRS = lib
+SUBDIRS = lib doc/reference
 ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
@@ -172,3 +172,6 @@ EXTRA_DIST += scripts/check-near-bragg scripts/double-hit scripts/random-image \
               scripts/cell-please scripts/check-hkl-completeness.gp \
               scripts/check-hkl-quality.gp scripts/compare-hkl.gp \
               scripts/check-peak-detection
+
+
+DISTCHECK_CONFIGURE_FLAGS=--enable-gtk-doc

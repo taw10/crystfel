@@ -59,7 +59,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/00gnulib.m4 \
 	$(top_srcdir)/m4/extensions.m4 \
 	$(top_srcdir)/m4/gnulib-common.m4 \
-	$(top_srcdir)/m4/gnulib-comp.m4 \
+	$(top_srcdir)/m4/gnulib-comp.m4 $(top_srcdir)/m4/gtk-doc.m4 \
 	$(top_srcdir)/m4/include_next.m4 \
 	$(top_srcdir)/m4/lib-ignore.m4 $(top_srcdir)/m4/memchr.m4 \
 	$(top_srcdir)/m4/mmap-anon.m4 $(top_srcdir)/m4/onceonly.m4 \
@@ -421,6 +421,9 @@ GNULIB_STRVERSCMP = @GNULIB_STRVERSCMP@
 GREP = @GREP@
 GSL_CFLAGS = @GSL_CFLAGS@
 GSL_LIBS = @GSL_LIBS@
+GTKDOC_CHECK = @GTKDOC_CHECK@
+GTKDOC_MKPDF = @GTKDOC_MKPDF@
+GTKDOC_REBASE = @GTKDOC_REBASE@
 GTK_CFLAGS = @GTK_CFLAGS@
 GTK_LIBS = @GTK_LIBS@
 HAVE_DECL_MEMMEM = @HAVE_DECL_MEMMEM@
@@ -443,6 +446,7 @@ HAVE_STRPBRK = @HAVE_STRPBRK@
 HAVE_STRSEP = @HAVE_STRSEP@
 HAVE_STRVERSCMP = @HAVE_STRVERSCMP@
 HAVE_WCHAR_T = @HAVE_WCHAR_T@
+HTML_DIR = @HTML_DIR@
 IGNORE_UNUSED_LIBRARIES_CFLAGS = @IGNORE_UNUSED_LIBRARIES_CFLAGS@
 INCLUDE_NEXT = @INCLUDE_NEXT@
 INCLUDE_NEXT_AS_FIRST_DIRECTIVE = @INCLUDE_NEXT_AS_FIRST_DIRECTIVE@
@@ -581,7 +585,7 @@ EXTRA_DIST = configure m4/gnulib-cache.m4 src/cell.h src/hdf5-file.h \
 	scripts/observed-peak-rate scripts/cell-please \
 	scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
 	scripts/compare-hkl.gp scripts/check-peak-detection
-SUBDIRS = lib
+SUBDIRS = lib doc/reference
 ACLOCAL_AMFLAGS = -I m4
 AM_CFLAGS = -Wall
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib -I$(top_srcdir)/lib
@@ -685,6 +689,7 @@ script_DATA = scripts/check-near-bragg scripts/double-hit \
               scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
               scripts/compare-hkl.gp scripts/check-peak-detection
 
+DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 

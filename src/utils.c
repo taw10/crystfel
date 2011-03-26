@@ -23,6 +23,28 @@
 #include "image.h"
 
 
+/**
+ * SECTION:utils
+ * @short_description: Miscellaneous utilities
+ * @title: Utilities
+ * @section_id:
+ * @see_also:
+ * @include: "utils.h"
+ * @Image:
+ *
+ * Wibble
+ */
+
+/**
+ * show_matrix_eqn:
+ * @M: A matrix
+ * @v: A vector
+ * @r: The number of elements in @v and the side length of @M.
+ *
+ * Displays a matrix equation of the form @M.a = @v.
+ *
+ * @M must be square.
+ **/
 void show_matrix_eqn(gsl_matrix *M, gsl_vector *v, int r)
 {
 	int i, j;
@@ -312,6 +334,17 @@ int assplode(const char *a, const char *delims, char ***pbits,
 	return n;
 }
 
+/**
+ * SECTION:reflitemlist
+ * @short_description: The index list and indexed arrays
+ * @title: ReflItemList
+ * @section_id:
+ * @see_also:
+ * @include: "utils.h"
+ * @Image:
+ *
+ * Wibble
+ */
 
 struct _reflitemlist {
 	struct refl_item *items;
@@ -333,10 +366,18 @@ static void alloc_items(ReflItemList *items)
 }
 
 
+/**
+ * new_items:
+ *
+ * Creates a new %ReflItemList.
+ *
+ * Returns: The new list, or NULL.
+ **/
 ReflItemList *new_items()
 {
 	ReflItemList *new;
 	new = malloc(sizeof(ReflItemList));
+	if ( new == NULL ) return NULL;
 	new->max_items = 1024;
 	new->n_items = 0;
 	new->items = NULL;

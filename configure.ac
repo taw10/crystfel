@@ -241,5 +241,9 @@ LIBS="$LIBS $LIBTIFF_LIBS $libPNG_LIBS $Cairo_LIBS $GDK_pixbuf_LIBS"
 LIBS="$LIBS $GDK_pixbuf_2_LIBS $LDFLAGS"
 
 
-AC_CONFIG_FILES(Makefile lib/Makefile)
+GTK_DOC_CHECK([1.14],[--flavour no-tmpl])
+AC_CONFIG_MACRO_DIR(m4)
+
+
+AC_CONFIG_FILES(Makefile lib/Makefile doc/reference/Makefile)
 AC_OUTPUT

@@ -602,6 +602,20 @@ gl_LIBOBJS
 am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
+GTK_DOC_USE_REBASE_FALSE
+GTK_DOC_USE_REBASE_TRUE
+GTK_DOC_USE_LIBTOOL_FALSE
+GTK_DOC_USE_LIBTOOL_TRUE
+GTK_DOC_BUILD_PDF_FALSE
+GTK_DOC_BUILD_PDF_TRUE
+GTK_DOC_BUILD_HTML_FALSE
+GTK_DOC_BUILD_HTML_TRUE
+ENABLE_GTK_DOC_FALSE
+ENABLE_GTK_DOC_TRUE
+HTML_DIR
+GTKDOC_MKPDF
+GTKDOC_REBASE
+GTKDOC_CHECK
 BUILD_CUBEIT_FALSE
 BUILD_CUBEIT_TRUE
 BUILD_HDFSEE_FALSE
@@ -817,6 +831,10 @@ enable_tiff
 with_libtiff
 enable_cairo
 enable_gdk_pixbuf
+with_html_dir
+enable_gtk_doc
+enable_gtk_doc_html
+enable_gtk_doc_pdf
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1471,6 +1489,9 @@ Optional Features:
   --disable-tiff          Disable the use of libTIFF
   --disable-cairo         Disable the use of Cairo
   --disable-gdk-pixbuf    Disable the use of gtk-pixbuf
+  --enable-gtk-doc        use gtk-doc to build documentation [[default=no]]
+  --enable-gtk-doc-html   build documentation in html format [[default=yes]]
+  --enable-gtk-doc-pdf    build documentation in pdf format [[default=no]]
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1480,6 +1501,7 @@ Optional Packages:
                           pkg-config)
   --with-opencl           Use OpenCL
   --with-libtiff          specify location of libTIFF library
+  --with-html-dir=PATH    path to installed docs
 
 Some influential environment variables:
   CC          C compiler command
@@ -7557,7 +7579,237 @@ LIBS="$LIBS $LIBTIFF_LIBS $libPNG_LIBS $Cairo_LIBS $GDK_pixbuf_LIBS"
 LIBS="$LIBS $GDK_pixbuf_2_LIBS $LDFLAGS"
 
 
-ac_config_files="$ac_config_files Makefile lib/Makefile"
+
+
+    # Extract the first word of "gtkdoc-check", so it can be a program name with args.
+set dummy gtkdoc-check; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_path_GTKDOC_CHECK+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $GTKDOC_CHECK in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_GTKDOC_CHECK="$GTKDOC_CHECK" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_GTKDOC_CHECK="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+GTKDOC_CHECK=$ac_cv_path_GTKDOC_CHECK
+if test -n "$GTKDOC_CHECK"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GTKDOC_CHECK" >&5
+$as_echo "$GTKDOC_CHECK" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  for ac_prog in gtkdoc-rebase
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_path_GTKDOC_REBASE+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $GTKDOC_REBASE in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_GTKDOC_REBASE="$GTKDOC_REBASE" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_GTKDOC_REBASE="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+GTKDOC_REBASE=$ac_cv_path_GTKDOC_REBASE
+if test -n "$GTKDOC_REBASE"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GTKDOC_REBASE" >&5
+$as_echo "$GTKDOC_REBASE" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$GTKDOC_REBASE" && break
+done
+test -n "$GTKDOC_REBASE" || GTKDOC_REBASE="true"
+
+  # Extract the first word of "gtkdoc-mkpdf", so it can be a program name with args.
+set dummy gtkdoc-mkpdf; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_path_GTKDOC_MKPDF+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $GTKDOC_MKPDF in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_GTKDOC_MKPDF="$GTKDOC_MKPDF" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_GTKDOC_MKPDF="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+GTKDOC_MKPDF=$ac_cv_path_GTKDOC_MKPDF
+if test -n "$GTKDOC_MKPDF"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GTKDOC_MKPDF" >&5
+$as_echo "$GTKDOC_MKPDF" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+
+
+# Check whether --with-html-dir was given.
+if test "${with_html_dir+set}" = set; then :
+  withval=$with_html_dir;
+else
+  with_html_dir='${datadir}/gtk-doc/html'
+fi
+
+  HTML_DIR="$with_html_dir"
+
+
+    # Check whether --enable-gtk-doc was given.
+if test "${enable_gtk_doc+set}" = set; then :
+  enableval=$enable_gtk_doc;
+else
+  enable_gtk_doc=no
+fi
+
+
+  if test x$enable_gtk_doc = xyes; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gtk-doc >= 1.14\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "gtk-doc >= 1.14") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  :
+else
+  as_fn_error $? "You need to have gtk-doc >= 1.14 installed to build $PACKAGE_NAME" "$LINENO" 5
+fi
+  fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build gtk-doc documentation" >&5
+$as_echo_n "checking whether to build gtk-doc documentation... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_gtk_doc" >&5
+$as_echo "$enable_gtk_doc" >&6; }
+
+    # Check whether --enable-gtk-doc-html was given.
+if test "${enable_gtk_doc_html+set}" = set; then :
+  enableval=$enable_gtk_doc_html;
+else
+  enable_gtk_doc_html=yes
+fi
+
+    # Check whether --enable-gtk-doc-pdf was given.
+if test "${enable_gtk_doc_pdf+set}" = set; then :
+  enableval=$enable_gtk_doc_pdf;
+else
+  enable_gtk_doc_pdf=no
+fi
+
+
+  if test -z "$GTKDOC_MKPDF"; then
+    enable_gtk_doc_pdf=no
+  fi
+
+
+   if test x$enable_gtk_doc = xyes; then
+  ENABLE_GTK_DOC_TRUE=
+  ENABLE_GTK_DOC_FALSE='#'
+else
+  ENABLE_GTK_DOC_TRUE='#'
+  ENABLE_GTK_DOC_FALSE=
+fi
+
+   if test x$enable_gtk_doc_html = xyes; then
+  GTK_DOC_BUILD_HTML_TRUE=
+  GTK_DOC_BUILD_HTML_FALSE='#'
+else
+  GTK_DOC_BUILD_HTML_TRUE='#'
+  GTK_DOC_BUILD_HTML_FALSE=
+fi
+
+   if test x$enable_gtk_doc_pdf = xyes; then
+  GTK_DOC_BUILD_PDF_TRUE=
+  GTK_DOC_BUILD_PDF_FALSE='#'
+else
+  GTK_DOC_BUILD_PDF_TRUE='#'
+  GTK_DOC_BUILD_PDF_FALSE=
+fi
+
+   if test -n "$LIBTOOL"; then
+  GTK_DOC_USE_LIBTOOL_TRUE=
+  GTK_DOC_USE_LIBTOOL_FALSE='#'
+else
+  GTK_DOC_USE_LIBTOOL_TRUE='#'
+  GTK_DOC_USE_LIBTOOL_FALSE=
+fi
+
+   if test -n "$GTKDOC_REBASE"; then
+  GTK_DOC_USE_REBASE_TRUE=
+  GTK_DOC_USE_REBASE_FALSE='#'
+else
+  GTK_DOC_USE_REBASE_TRUE='#'
+  GTK_DOC_USE_REBASE_FALSE=
+fi
+
+
+
+
+
+ac_config_files="$ac_config_files Makefile lib/Makefile doc/reference/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -7719,6 +7971,26 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_CUBEIT_TRUE}" && test -z "${BUILD_CUBEIT_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_CUBEIT\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_GTK_DOC_TRUE}" && test -z "${ENABLE_GTK_DOC_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_GTK_DOC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${GTK_DOC_BUILD_HTML_TRUE}" && test -z "${GTK_DOC_BUILD_HTML_FALSE}"; then
+  as_fn_error $? "conditional \"GTK_DOC_BUILD_HTML\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${GTK_DOC_BUILD_PDF_TRUE}" && test -z "${GTK_DOC_BUILD_PDF_FALSE}"; then
+  as_fn_error $? "conditional \"GTK_DOC_BUILD_PDF\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${GTK_DOC_USE_LIBTOOL_TRUE}" && test -z "${GTK_DOC_USE_LIBTOOL_FALSE}"; then
+  as_fn_error $? "conditional \"GTK_DOC_USE_LIBTOOL\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${GTK_DOC_USE_REBASE_TRUE}" && test -z "${GTK_DOC_USE_REBASE_FALSE}"; then
+  as_fn_error $? "conditional \"GTK_DOC_USE_REBASE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -8322,6 +8594,7 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "lib/Makefile") CONFIG_FILES="$CONFIG_FILES lib/Makefile" ;;
+    "doc/reference/Makefile") CONFIG_FILES="$CONFIG_FILES doc/reference/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

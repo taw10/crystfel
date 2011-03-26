@@ -16,30 +16,40 @@
 #include <config.h>
 #endif
 
-
+/**
+ * RefList:
+ *
+ * This data structure is opaque.  You must use the available accessor functions
+ * to read and write its contents.
+ */
 typedef struct _reflist RefList;
+
+/**
+ * Reflection:
+ *
+ * This data structure is opaque.  You must use the available accessor functions
+ * to read and write its contents.
+ */
 typedef struct _reflection Reflection;
 typedef struct _reflistiterator RefListIterator;
-
-#define INDICES signed int h, signed int k, signed int l
 
 /* Creation/deletion */
 extern RefList *reflist_new(void);
 extern void reflist_free(RefList *list);
 
 /* Search */
-extern Reflection *find_refl(const RefList *list, INDICES);
+extern Reflection *find_refl(const RefList *list, signed int h, signed int k, signed int l);
 extern Reflection *next_found_refl(Reflection *refl);
 
 /* Get */
 extern double get_excitation_error(const Reflection *refl);
 extern void get_detector_pos(const Reflection *refl, double *fs, double *ss);
+extern double get_partiality(const Reflection *refl);
 extern void get_indices(const Reflection *refl,
                         signed int *h, signed int *k, signed int *l);
-extern double get_partiality(const Reflection *refl);
 extern double get_intensity(const Reflection *refl);
-extern void get_partial(const Reflection *refl, double *r1, double *r2, double *p,
-                        int *clamp_low, int *clamp_high);
+extern void get_partial(const Reflection *refl, double *r1, double *r2,
+                        double *p, int *clamp_low, int *clamp_high);
 extern int get_scalable(const Reflection *refl);
 extern int get_redundancy(const Reflection *refl);
 extern double get_sum_squared_dev(const Reflection *refl);
@@ -60,7 +70,8 @@ extern void set_esd_intensity(Reflection *refl, double esd);
 extern void set_ph(Reflection *refl, double phase);
 
 /* Insertion */
-extern Reflection *add_refl(RefList *list, INDICES);
+extern Reflection *add_refl(RefList *list,
+                            signed int h, signed int k, signed int l);
 
 /* Deletion */
 extern void delete_refl(Reflection *refl);

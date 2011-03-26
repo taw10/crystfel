@@ -45,8 +45,25 @@
 
 /* ------------------------------ Quaternions ------------------------------- */
 
-struct quaternion
-{
+/**
+ * quaternion:
+ *
+ * <programlisting>
+ * struct quaternion
+ * {
+ *    double w
+ *    double x
+ *    double y
+ *    double z
+ * };
+ * </programlisting>
+ *
+ * A structure representing a quaternion.
+ *
+ **/
+struct quaternion;
+
+struct quaternion {
 	double w;
 	double x;
 	double y;
@@ -186,7 +203,12 @@ static inline double angle_between(double x1, double y1, double z1,
 
 /* ----------- Reflection lists indexed by sequence (not indices) ----------- */
 
-typedef struct _reflitemlist ReflItemList;  /* Opaque */
+/**
+ * ReflItemList
+ *
+ * Opaque type.
+ **/
+typedef struct _reflitemlist ReflItemList;
 
 struct refl_item {
 	signed int h;

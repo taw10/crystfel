@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+               "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd"
+[
+  <!ENTITY % local.common.attrib "xmlns:xi  CDATA  #FIXED 'http://www.w3.org/2003/XInclude'">
+]>
+<book id="index">
+  <bookinfo>
+    <title>CrystFEL Reference Manual</title>
+    <releaseinfo>
+      For CrystFEL 0.2.0.
+    </releaseinfo>
+    This is the internal documentation for CrystFEL.  Unless you are looking at
+    the code, writing new programs or fixing bugs, you should not need to read
+    this.
+  </bookinfo>
+
+  <chapter>
+    <title>Images</title>
+        <xi:include href="xml/image.xml"/>
+  </chapter>
+
+  <chapter>
+    <title>Handling reflection data</title>
+        <xi:include href="xml/reflist.xml"/>
+        <xi:include href="xml/reflitemlist.xml"/>
+  </chapter>
+
+  <chapter>
+    <title>Miscellaneous</title>
+        <xi:include href="xml/quaternion.xml"/>
+        <xi:include href="xml/utils.xml"/>
+  </chapter>
+
+  <index id="api-index-full">
+    <title>API Index</title>
+    <xi:include href="xml/api-index-full.xml"><xi:fallback /></xi:include>
+  </index>
+</book>

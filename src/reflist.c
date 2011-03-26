@@ -17,6 +17,31 @@
 #include "reflist.h"
 #include "utils.h"
 
+/**
+ * SECTION:reflist
+ * @short_description: The fast reflection list
+ * @title: RefList
+ * @section_id:
+ * @see_also:
+ * @include: "reflist.h"
+ * @Image:
+ *
+ * The fast reflection list stores reflections in a binary search tree indexed
+ * by the Miller indices h, k and l.  Provided the tree has been optimised (by
+ * using optimise_reflist()), any reflection can be found in a maximum length
+ * of time which scales logarithmically with the number of reflections in the
+ * list.
+ *
+ * A RefList can contain any number of reflections, and can store more than
+ * one reflection with a given set of indices, for example when two distinct
+ * reflections are to be stored according to their asymmetric indices.
+ *
+ * There are getters and setters which can be used to get and set values for an
+ * individual reflection.  The reflection list does not calculate any values,
+ * only stores what it was given earlier.  As such, you will need to carefully
+ * examine which fields your prior processing steps have filled in.
+ */
+
 
 struct _refldata {
 
@@ -99,12 +124,19 @@ static Reflection *new_node(unsigned int serial)
 }
 
 
-/* Create a reflection list */
+/**
+ * reflist_new:
+ *
+ * Creates a new reflection list.
+ *
+ * Returns: the new reflection list, or NULL on error.
+ */
 RefList *reflist_new()
 {
 	RefList *new;
 
 	new = malloc(sizeof(struct _reflist));
+	if ( new == NULL ) return NULL;
 
 	/* Create pseudo-root with invalid indices.
 	 * The "real" root will be the left child of this. */
@@ -122,6 +154,12 @@ static void recursive_free(Reflection *refl)
 }
 
 
+/**
+ * reflist_free:
+ * @list: The reflection list to free.
+ *
+ * Destroys a reflection list.
+ */
 void reflist_free(RefList *list)
 {
 	if ( list == NULL ) return;
@@ -132,8 +170,22 @@ void reflist_free(RefList *list)
 
 /********************************** Search ************************************/
 
-/* Return the first reflection in 'list' with the given indices, or NULL */
-Reflection *find_refl(const RefList *list, INDICES)
+/**
+ * find_refl:
+ * @list: The reflection list to search in
+ * @h: The 'h' index to search for
+ * @k: The 'k' index to search for
+ * @l: The 'l' index to search for
+ *
+ * This function finds the first reflection in 'list' with the given indices.
+ *
+ * Since a %RefList can contain multiple reflections with the same indices, you
+ * may need to use next_found_refl() to get the other reflections.
+ *
+ * Returns: The found reflection, or NULL if no reflection with the given
+ * indices could be found.
+ **/
+Reflection *find_refl(const RefList *list, signed int h, signed int k, signed int l)
 {
 	unsigned int search = SERIAL(h, k, l);
 	Reflection *refl = list->head->child[0];
@@ -174,7 +226,16 @@ Reflection *find_refl(const RefList *list, INDICES)
 }
 
 
-/* Find the next reflection in 'refl's list with the same indices, or NULL */
+/**
+ * next_found_refl:
+ * @refl: A reflection returned by find_refl() or next_found_refl()
+ *
+ * This function returns the next reflection in @refl's list with the same
+ * indices.
+ *
+ * Returns: The found reflection, or NULL if there are no more reflections with
+ * the same indices.
+ **/
 Reflection *next_found_refl(Reflection *refl)
 {
 	if ( refl->next != NULL ) assert(refl->serial == refl->next->serial);
@@ -185,12 +246,25 @@ Reflection *next_found_refl(Reflection *refl)
 
 /********************************** Getters ***********************************/
 
+/**
+ * get_excitation_error:
+ * @refl: A %Reflection
+ *
+ * Returns: The excitation error for the reflection.
+ **/
 double get_excitation_error(const Reflection *refl)
 {
 	return refl->data.excitation_error;
 }
 
 
+/**
+ * get_detector_pos:
+ * @refl: A %Reflection
+ * @fs: Location at which to store the fast scan offset of the reflection
+ * @ss: Location at which to store the slow scan offset of the reflection
+ *
+ **/
 void get_detector_pos(const Reflection *refl, double *fs, double *ss)
 {
 	*fs = refl->data.fs;
@@ -198,6 +272,14 @@ void get_detector_pos(const Reflection *refl, double *fs, double *ss)
 }
 
 
+/**
+ * get_indices:
+ * @refl: A %Reflection
+ * @h: Location at which to store the 'h' index of the reflection
+ * @k: Location at which to store the 'k' index of the reflection
+ * @l: Location at which to store the 'l' index of the reflection
+ *
+ **/
 void get_indices(const Reflection *refl,
                  signed int *h, signed int *k, signed int *l)
 {
@@ -207,18 +289,43 @@ void get_indices(const Reflection *refl,
 }
 
 
+/**
+ * get_partiality:
+ * @refl: A %Reflection
+ *
+ * Returns: The partiality of the reflection.
+ **/
 double get_partiality(const Reflection *refl)
 {
 	return refl->data.p;
 }
 
 
+/**
+ * get_intensity:
+ * @refl: A %Reflection
+ *
+ * Returns: The intensity of the reflection.
+ **/
 double get_intensity(const Reflection *refl)
 {
 	return refl->data.intensity;
 }
 
 
+/**
+ * get_partial:
+ * @refl: A %Reflection
+ * @r1: Location at which to store the first excitation error
+ * @r2: Location at which to store the second excitation error
+ * @p: Location at which to store the partiality
+ * @clamp_low: Location at which to store the first clamp status
+ * @clamp_high: Location at which to store the second clamp status
+ *
+ * This function is used during post refinement to get access to the details of
+ * the partiality calculation.
+ *
+ **/
 void get_partial(const Reflection *refl, double *r1, double *r2, double *p,
                  int *clamp_low, int *clamp_high)
 {
@@ -370,7 +477,7 @@ static void insert_node(Reflection *head, Reflection *new)
 }
 
 
-Reflection *add_refl(RefList *list, INDICES)
+Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 {
 	Reflection *new;
 
@@ -688,6 +795,21 @@ static void vine_to_tree(Reflection *root, int size)
 }
 
 
+/**
+ * optimise_reflist:
+ * @list: The reflection list to optimise
+ *
+ * Optimises the ordering of reflections in the list such that the list can be
+ * searched in the fastest possible way.
+ *
+ * This is a relatively expensive operation, so in typical usage you would call
+ * it only after adding or removing many reflections from a list, when the list
+ * is unlikely to be significantly modified for a long period of time.
+ *
+ * Note that only adding or deleting reflections may reduce the efficiency of
+ * the list.  Changing the contents of the reflections (e.g. updating intensity
+ * values) does not.
+ **/
 void optimise_reflist(RefList *list)
 {
 	int n_items;
