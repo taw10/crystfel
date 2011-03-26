@@ -32,53 +32,12 @@
  * same or different crystals.
  */
 
-struct _imagelist
-{
-	int		n_images;
-	struct image	*images;
-};
-
 
 struct _imagefeaturelist
 {
 	struct imagefeature	*features;
 	int			n_features;
 };
-
-
-int image_add(ImageList *list, struct image *image)
-{
-	if ( list->images ) {
-		list->images = realloc(list->images,
-		                       (list->n_images+1)*sizeof(struct image));
-	} else {
-		assert(list->n_images == 0);
-		list->images = malloc(sizeof(struct image));
-	}
-
-	/* Copy the metadata */
-	list->images[list->n_images] = *image;
-
-	/* Fill out some extra fields */
-	list->images[list->n_images].features = NULL;
-
-	list->n_images++;
-
-	return list->n_images - 1;
-}
-
-
-ImageList *image_list_new()
-{
-	ImageList *list;
-
-	list = malloc(sizeof(ImageList));
-
-	list->n_images = 0;
-	list->images = NULL;
-
-	return list;
-}
 
 
 void image_add_feature(ImageFeatureList *flist, double fs, double ss,

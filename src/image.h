@@ -147,15 +147,6 @@ struct image {
 
 };
 
-/* An opaque type representing a list of images */
-typedef struct _imagelist ImageList;
-
-
-/* Image lists */
-extern ImageList *image_list_new(void);
-
-extern int image_add(ImageList *list, struct image *image);
-
 
 /* Feature lists */
 extern ImageFeatureList *image_feature_list_new(void);
