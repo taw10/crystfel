@@ -241,7 +241,7 @@ LIBS="$LIBS $LIBTIFF_LIBS $libPNG_LIBS $Cairo_LIBS $GDK_pixbuf_LIBS"
 LIBS="$LIBS $GDK_pixbuf_2_LIBS $LDFLAGS"
 
 
-GTK_DOC_CHECK([1.14],[--flavour no-tmpl])
+GTK_DOC_CHECK([1.11],[--flavour no-tmpl])
 AC_CONFIG_MACRO_DIR(m4)
 
 

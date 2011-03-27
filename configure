@@ -7729,14 +7729,14 @@ fi
 
   if test x$enable_gtk_doc = xyes; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gtk-doc >= 1.14\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "gtk-doc >= 1.14") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gtk-doc >= 1.11\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "gtk-doc >= 1.11") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   :
 else
-  as_fn_error $? "You need to have gtk-doc >= 1.14 installed to build $PACKAGE_NAME" "$LINENO" 5
+  as_fn_error $? "You need to have gtk-doc >= 1.11 installed to build $PACKAGE_NAME" "$LINENO" 5
 fi
   fi
 
