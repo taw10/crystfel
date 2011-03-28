@@ -43,4 +43,6 @@ extern int read_chunk(FILE *fh, struct image *image);
 
 extern int skip_some_files(FILE *fh, int n);
 
+extern int is_stream(const char *filename);
+
 #endif	/* STREAM_H */

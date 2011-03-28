@@ -168,7 +168,7 @@ static int read_peaks(FILE *fh, struct image *image)
 		first = 0;
 		if ( r == 4 ) {
 			image_add_feature(image->features, x, y,
-			                  image, 1.0, NULL);
+			                  image, intensity, NULL);
 		}
 
 	} while ( rval != NULL );
@@ -449,4 +449,23 @@ int skip_some_files(FILE *fh, int n)
 	} while ( rval != NULL );
 
 	return 1;
+}
+
+int is_stream(const char *filename) {
+	FILE *fh;	
+	char line[1024];
+	char *rval = NULL;	
+	fh = fopen(filename, "r");
+	rval = fgets(line, 1023, fh);
+	fclose(fh);	
+	if ( rval == NULL ) {
+		return -1;
+	}
+	if ( strncmp(line, "CrystFEL stream format 2.0", 26) == 0 ) {
+		return 1;
+	}
+	else {
+		return 0;
+	}
+	return -1;
 }

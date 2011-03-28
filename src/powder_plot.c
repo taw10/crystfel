@@ -3,7 +3,8 @@
  *
  * Plot powder patterns
  *
- * (c) 2006-2010 Thomas White <taw@physics.org>
+ * (c) 2011 Andrew Aquila <andrew.aquila@cfel.de>
+ * (c) 2006-2010 Thomas White  <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
@@ -21,62 +22,609 @@
 #include <unistd.h>
 #include <getopt.h>
 
+#include "stream.h"
+#include "reflist.h"
 #include "utils.h"
 #include "image.h"
 #include "detector.h"
 #include "index.h"
 #include "hdf5-file.h"
 #include "beam-parameters.h"
+#include "reflist-utils.h"
+#include "symmetry.h"
 
+struct bin_stats {
+	unsigned int N;	
+	double total;
+	double mean;
+	double std_dev;
+	double q_min;
+	double q_max;
+	double q_value;
+	double fract;
+};
 
-static void show_help(const char *s)
+struct histogram_info {
+	double q_max;
+	double q_min;
+	double q_delta;
+	unsigned int histsize;
+	int spacing; //linear, q^2, & equal volume
+};
+
+enum {
+	PLOT_PEAKS,
+	PLOT_HKL,
+	PLOT_REFL,
+	PLOT_H5,
+	PLOT_D
+};
+
+enum {
+	FILE_STREAM,
+	FILE_HKL,
+	FILE_H5
+};
+
+enum {
+	LINEAR,
+	q2,
+	VOLUME
+};
+
+static int find_q_bin_index(double q, struct histogram_info *info, 
+                               struct bin_stats *hist)
 {
-	printf("Syntax: %s [options] <file.h5>\n\n", s);
-	printf(
-"Plot a powder pattern as a 1D graph using the detector geometry.\n"
-"\n"
-"  -h, --help                 Display this help message.\n"
-"  -g. --geometry=<file>      Get detector geometry from file.\n"
-"  -i, --input=<file>         Input filename.\n"
-"  -b, --beam=<file>          Get beam parameters (specifically, wavelength)"
-"                              from file if non present in the HDF5 file.\n"
-"\n");
+	/* bisection search alg. find q_bin index of order Log(n) time */	
+	int mid;
+	int min = 0;
+	int max = (*info).histsize-1;
+	if (q < hist[min].q_max) {return min;}
+	if (q > hist[max].q_min) {return max;}
+	do {
+		mid = (min + max) / 2;
+		if (q < hist[mid].q_min) {
+			max = mid;
+		} else if (q > hist[mid].q_max){
+			min = mid ;
+		} else {
+			return mid;
+		}
+	} while(max - min > 1);
+	return mid;
+}
+
+static int add_peak_to_histogram(double fs, double ss, double intensity, 
+                           struct image *image, struct histogram_info *info, 
+                           struct bin_stats *hist)
+{
+	/* used for h5 files, peak/feature list and stream positions*/	
+	/* See Knuth TAOCP vol 2, 3rd ed, pg 232 for running variance*/	
+	struct rvec r;
+	double q, delta;
+	int i;
+
+	r = get_q(image, fs, ss, NULL, 1.0/ (*image).lambda);
+	q = modulus(r.u, r.v, r.w);
+	
+	/* ignore q value if outside of range */
+	if ((q<(*info).q_min) || (q>(*info).q_max)) {
+		return 1;
+	}	
+	i = find_q_bin_index(q, info, hist);
+	
+	delta = intensity - hist[i].mean;
+	hist[i].N++;
+	hist[i].total += intensity;	
+	hist[i].mean = hist[i].mean + delta /hist[i].N;
+	hist[i].std_dev = hist[i].std_dev + 
+	                      (delta *(intensity - hist[i].mean));
+	return 0;	
+}
+
+static int add_d_to_histogram(double q, double intensity,
+                        struct histogram_info *info, struct bin_stats *hist)
+{
+	/* used for d and hkl of stream files where redundancy = 1 */
+	double delta;
+	int i;
+
+	/* ignore q value if outside of range */
+	if ((q<(*info).q_min) || (q>(*info).q_max)) {
+		return 1;
+	}
+	i = find_q_bin_index(q, info, hist);
+	
+	delta = intensity - hist[i].mean;
+	hist[i].N++;
+	hist[i].total += intensity;	
+	hist[i].mean = hist[i].mean + delta /hist[i].N;
+	hist[i].std_dev = hist[i].std_dev + 
+	                      (delta *(intensity - hist[i].mean));
+	return 0;		
+}
+
+static int add_hkl_to_histogram(double q, double intensity,
+   int redundancy, int q_scaling, struct histogram_info *info, 
+   struct bin_stats *hist)
+{
+	int i = 0; 
+
+	/* ignore q value if outside of range */
+	if ((q<(*info).q_min) || (q>(*info).q_max)) {
+		return 1;
+	}
+	
+	/* The accounting is the intensity of the reflection times the 
+	   The number of occurance of that reflection smeered out over the
+	   surface area which is 4 Pi q^2  the 4 pi is left out as it is a 
+	   common consant and the total is in arbiturary units.
+	*/
+	for (i=0; i<redundancy; i++) {
+		if (q_scaling) {
+			add_d_to_histogram(q, intensity/(q*q), info, hist);
+		} else {
+			add_d_to_histogram(q, intensity, info, hist);
+		}
+	}
+	return 0;	
 }
 
 
+static int histogram_setup(struct histogram_info *info, 
+                           struct bin_stats *histdata)
+{
+	int i;
+	double x;
+	/* setup histogram*/
+	if ((*info).spacing == LINEAR) {x = 1.0;}
+	else if ((*info).spacing == q2) {x = 2.0;}
+	else {x = 3.0;}
+	for ( i=0; i<(*info).histsize; i++) {
+		histdata[i].N             =   0;
+		histdata[i].total         = 0.0;
+		histdata[i].mean          = 0.0;
+		histdata[i].std_dev       = 0.0;
+		histdata[i].fract = 0.0;
+		histdata[i].q_min         = pow((  i    *(*info).q_delta) +
+		                             pow((*info).q_min, x), 1.0/x);
+		histdata[i].q_max         = pow(((i+1.0)*(*info).q_delta) + 
+		                             pow((*info).q_min, x), 1.0/x);
+		histdata[i].q_value       = pow(((i+0.5)*(*info).q_delta) +
+		                             pow((*info).q_min, x), 1.0/x);		
+	}
+	return 0;
+}
+
+static int ring_fraction_calc(struct histogram_info *info,
+              struct bin_stats *hist, struct image *image)
+{
+	struct panel *p;
+	struct rvec r;
+	int i,fs,ss;
+	double q, q_fs, q_ss;
+	double pi = 3.14159265;
+
+	/* check if detector geometry is loaded */
+	if ( ((*image).det == NULL) || ((*image).lambda < 0.0)) {
+		return 1;
+	}
+
+	/* loop over all pixels */	
+	for ( ss=0; ss<(*image).height; ss++ ) {
+	for ( fs=0; fs<(*image).width;  fs++ ) {
+		r = get_q(image, fs, ss, NULL, 1.0/ (*image).lambda);
+		q = modulus(r.u, r.v, r.w);
+		
+		/* if pixel is valid (not a bad pixel and not out of range) */		
+		if ( (q>(*info).q_min) && (q<(*info).q_max) && 
+		     (in_bad_region((*image).det,fs,ss) == 0) ) {
+		
+		/* using the panel to determine the pixel size 
+		   takes care of edge pixels correctly */
+			p = find_panel((*image).det, fs, ss);
+			r = get_q_for_panel(p, (fs+1)-(double)p->min_fs,
+			       ss-(double)p->min_ss, 
+			       NULL, 1.0/(*image).lambda);
+			q_fs =  modulus(r.u, r.v, r.w);
+			r = get_q_for_panel(p, fs-(double)p->min_fs,
+			       (ss+1) -(double)p->min_ss, 
+			        NULL, 1.0/(*image).lambda);
+			q_ss =  modulus(r.u, r.v, r.w);
+			i = find_q_bin_index(q, info, hist);
+			hist[i].fract = hist[i].fract + 
+			   fabs((q_fs - q) * (q_ss - q)); //approx pixel size
+		}  
+	}
+	}
+	/* divide measured area by ring area */
+	for ( i=0; i<(*info).histsize; i++) {
+		hist[i].fract = hist[i].fract /
+		   (pi * (pow(hist[i].q_max,2.0) - pow(hist[i].q_min,2.0)));
+	}
+	return 0;
+}
+
+static unsigned int process_h5(struct image *image, struct histogram_info *info,
+                     struct bin_stats *histdata, unsigned int processing_total)
+{
+	int fs, ss;
+	double intensity;
+	for ( ss=0; ss<(*image).height; ss++ ) {
+	for ( fs=0; fs<(*image).width; fs++ ) {
+		intensity = (*image).data[fs + (*image).width*ss];
+		progress_bar(fs + (*image).width*ss, processing_total,
+                             "Processing");	
+		if (in_bad_region((*image).det,fs,ss) == 0) {
+			add_peak_to_histogram(fs, ss, intensity, 
+		                              image, info, histdata);
+			}
+		}
+		}
+	return 0;	
+}	
+
+static unsigned int process_hkl(struct image *image, char *sym, UnitCell *cell,
+                       struct histogram_info *info, struct bin_stats *histdata,
+                       int q_scaling,unsigned int processing_total, int use_redundency)
+{
+		Reflection *refl;
+		RefListIterator *iter;
+		unsigned int i = 0;
+		unsigned int n_peaks = 0;
+		int h,k,l,redundancy; 
+		double q, intensity;
+		for ( refl = first_refl((*image).reflections, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) ) {
+			i++;	
+			progress_bar(i, processing_total, "Processing");
+			get_indices(refl, &h, &k, &l);
+			intensity = get_intensity(refl);
+			if (use_redundency == 1) {
+				redundancy = get_redundancy(refl);
+			} else {			
+				redundancy = num_equivs(h, k, l, sym);
+			}
+			 /*note: resolution returns 1/d/2 in m */
+			q = 2.0 * resolution(cell, h, k, l);
+			//sigma = get_esd_intensity(refl);
+			add_hkl_to_histogram(q, intensity, redundancy,
+			   q_scaling, info, histdata);
+			n_peaks+=redundancy;
+		}
+	return n_peaks;
+}
+
+static unsigned int process_stream_reflection(FILE *fh,  struct image *image,
+      struct histogram_info *info, struct bin_stats *histdata, 
+      unsigned int processing_total, unsigned int *n_patterns)
+{
+	int rval;
+	unsigned int i = 0;
+	unsigned int n_peaks = 0;
+	Reflection *refl;
+	RefListIterator *iter;
+	double intensity, fs_double, ss_double;
+	do {
+	/* Get data from next chunk */
+		rval = read_chunk(fh, image);				
+		if ( rval ) continue;
+		i++;
+		progress_bar(i, processing_total, "Processing");			
+		// check if the pattern indexed, if so use those peaks	
+		if ((*image).reflections != NULL) { 
+			(*n_patterns)++; //inc number of patterns used
+			for ( refl = first_refl((*image).reflections, &iter);
+		      	      refl != NULL;	
+		      	      refl = next_refl(refl, iter) ) {
+				/* note added fs_double as fs is an int */										
+				intensity = get_intensity(refl);
+				get_detector_pos(refl, &fs_double, &ss_double);
+				if(add_peak_to_histogram(fs_double, ss_double, 
+				    intensity, image, info, histdata) == 0) {
+					n_peaks++;
+				}
+			}
+		}
+		free((*image).filename);
+		reflist_free((*image).reflections);
+		image_feature_list_free((*image).features);
+		cell_free((*image).indexed_cell);	
+	} while (rval == 0);	
+	return n_peaks;
+}
+
+static unsigned int process_stream_d(FILE *fh,  struct image *image,
+      struct histogram_info *info, struct bin_stats *histdata, 
+      unsigned int processing_total, unsigned int *n_patterns)
+{
+	int h, k, l, rval; 
+	unsigned int i = 0;
+	unsigned int n_peaks = 0;	
+	Reflection *refl;
+	RefListIterator *iter;
+	double intensity, q;
+	do {
+	/* Get data from next chunk */
+		rval = read_chunk(fh, image);				
+		if ( rval ) continue;
+		i++;
+		progress_bar(i, processing_total, "Processing");			
+		// check if the pattern indexed, if so use those peaks				
+		if ((*image).reflections != NULL) { 
+			(*n_patterns)++; //inc number of patterns used
+			for ( refl = first_refl((*image).reflections, &iter);
+	      		      refl != NULL;	
+      			      refl = next_refl(refl, iter) ) {
+				get_indices(refl, &h, &k, &l);
+				intensity = get_intensity(refl);
+				/*resolution returns 1/d/2 in nm */
+				q = 2.0 * resolution((*image).indexed_cell, h, k, l); 
+				if (add_d_to_histogram(q, intensity, info, 
+				                       histdata) == 0) {
+					n_peaks++;
+				}
+			}
+		}
+		free((*image).filename);
+		reflist_free((*image).reflections);
+		image_feature_list_free((*image).features);
+		cell_free((*image).indexed_cell);	
+	} while (rval == 0);	
+	return n_peaks;
+}
+
+
+static unsigned int process_stream_hkl(FILE *fh,  struct image *image,
+      struct histogram_info *info, struct bin_stats *histdata,  UnitCell *cell,
+      unsigned int processing_total, unsigned int *n_patterns)
+{
+	int h, k, l, rval; 
+	unsigned int i = 0;
+	unsigned int n_peaks = 0;	
+	Reflection *refl;
+	RefListIterator *iter;
+	double intensity, q;
+	do {
+	/* Get data from next chunk */
+		rval = read_chunk(fh, image);				
+		if ( rval ) continue;
+		i++;
+		progress_bar(i, processing_total, "Processing");
+		if ((*image).reflections != NULL) {
+			n_patterns++; //inc number of patterns used
+			for ( refl = first_refl((*image).reflections, &iter);
+		      	      refl != NULL;
+		      	      refl = next_refl(refl, iter) ) {
+				get_indices(refl, &h, &k, &l);
+				intensity = get_intensity(refl);
+				q = 2.0 * resolution(cell, h, k, l);
+				if(add_d_to_histogram(q, intensity, info,
+				                      histdata) == 0) {
+					n_peaks++;
+				}
+			}
+		}	
+		free((*image).filename);
+		reflist_free((*image).reflections);
+		image_feature_list_free((*image).features);
+		cell_free((*image).indexed_cell);	
+	} while (rval == 0);	
+	return n_peaks;
+}
+
+static unsigned int process_stream_peaks(FILE *fh,  struct image *image,
+      struct histogram_info *info, struct bin_stats *histdata, 
+      unsigned int processing_total, unsigned int *n_patterns, int only_indexed)
+{
+	struct imagefeature *f;	
+	int rval; 
+	unsigned int i = 0;
+	unsigned int n_peaks = 0;
+	unsigned int j;		
+	do {
+	/* Get data from next chunk */
+		rval = read_chunk(fh, image);				
+		if ( rval ) continue;
+		i++;
+		progress_bar(i, processing_total, "Processing");
+		if ((*image).features != NULL) {
+			if ((only_indexed == 0) || 
+			   ((only_indexed == 1) && 
+			    ((*image).reflections != NULL))) {											
+				(*n_patterns)++;	
+				for (j = 0;
+				     j<image_feature_count((*image).features);
+				     j++) {			
+					f = image_get_feature((*image).features, j);
+					if (in_bad_region((*image).det,
+					   (*f).fs,(*f).ss) == 0) {
+						if (add_peak_to_histogram((*f).fs,
+						   (*f).ss, (*f).intensity, image,
+						   info, histdata) == 0) {
+							n_peaks++;
+						}
+					}
+				}
+			}
+		}
+		free((*image).filename);
+		reflist_free((*image).reflections);
+		image_feature_list_free((*image).features);
+		cell_free((*image).indexed_cell);	
+	} while (rval == 0);	
+	return n_peaks;
+}
+
+static unsigned int process_stream_h5(FILE *fh,  struct image *image,
+      struct histogram_info *info, struct bin_stats *histdata, int config_satcorr, 
+       int only_indexed, unsigned int processing_total, unsigned int *n_patterns)
+{
+	int fs, ss, rval;
+	double intensity;
+	unsigned int i = 0;
+	unsigned int n_peaks = 0;
+	struct hdfile *hdfile = NULL;	
+	do {
+	/* Get data from next chunk */
+		rval = read_chunk(fh, image);				
+		if ( rval ) continue;
+		i++;
+		progress_bar(i, processing_total, "Processing");
+		if ((only_indexed == 0) || 
+		   ((only_indexed == 1) && 
+		    ((*image).reflections != NULL))) {	
+			hdfile = hdfile_open((*image).filename);
+			hdfile_set_image(hdfile, "/data/data");
+			hdf5_read(hdfile, image, config_satcorr);
+			hdfile_close(hdfile);
+			n_patterns++;
+			for ( ss=0; ss<(*image).height; ss++ ) {
+			for ( fs=0; fs<(*image).width;  fs++ ) {
+				intensity = (*image).data[fs + (*image).width*ss];
+				if (in_bad_region((*image).det,fs,ss) == 0) {
+					add_peak_to_histogram(fs, ss, intensity, 
+					   image, info, histdata);
+				}
+			}
+			}
+		}
+		free((*image).data);
+		free((*image).filename);
+		reflist_free((*image).reflections);
+		image_feature_list_free((*image).features);
+		cell_free((*image).indexed_cell);		
+	} while (rval == 0);	
+	return n_peaks;
+}
+
+static void show_help(const char *s)
+{
+	printf("Syntax: %s [options]\n\n", s);
+	printf(
+"Plot a powder pattern as a 1D graph using the detector geometry.\n"
+"\n"
+"  -h, --help              Display this help message.\n"
+"  -i, --input=<file>      Input filename. (*.stream, *.hkl, or *.h5)\n"
+"  -o, --output=<file>     Output filename.  (default stdout)\n"
+"  -g. --geometry=<file>   Get detector geometry from file.\n"
+"  -b, --beam=<file>       Get beam parameters (wavelength) from file.\n"
+"  -p, --pdb=<file>        Get unit cell from PDB file. (.hkl files only)\n"
+"  -y, --symmetry=<sym>    The symmetry of crystal (.hkl files only)\n"
+"  -s, --bins=n            Makes histogram wiht n bins (default is 100).\n"
+"      --spacing=<type>    Use 'type' to select the q spacing.\n"
+"                          Choose from:\n"
+"                            linear      : linear (default)\n"
+"                            q2          : even spacing in Wilson plots\n"
+"                            volume      : constant volume spacing\n"
+"      --q-max=n           The max q to be considered in plot.\n"
+"      --q-min=n           The min q to be considered in plot.\n"
+"  -d, --data=<type>       Use to select the kind of stream data in histogram.\n"
+"                          Choose from:\n"
+"                            reflection  : uses peak positons from indexed\n"
+"                                          reflection \n"
+"                            hkl         : uses the hkl list from indexed\n"
+"                                          reflections (requires pdb file)\n"
+"                            d           : uses the 1/d list from indexed\n"
+"                                          reflections (default)\n"
+"                            peaks       : uses all peaks found from peak\n"
+"                                          search\n"
+"                            h5          : all points in h5, excluding bad\n"
+"                                          regions\n"
+"     --no-sat-corr        Don't correct values of saturated peaks using a\n"
+"                            table included in the HDF5 file.\n"
+"     --only-indexed       Use wiht -data=peaks or h5 if you want to use the\n"
+"                            peak list of only indexed patterns\n"
+"     --no-q-scaling       Use with .hkl files if you want to not scale the\n"
+"                            powder by 1/q^2\n"
+"     --ring-corr          Use if you want to scale the powder plot to\n"
+"                            correct for the fractional area sampled of the\n"
+"                            powder ring\n"
+"    --use-redundency      Use with .hkl files if you want to use the number\n"
+"                            of measurements and not the number of symetrical\n"
+"                            equivelent reflections as the number of time a\n"
+"                            reflection occurs in the powder\n"
+"\n");
+}
+
 int main(int argc, char *argv[])
 {
-	int c;
-	struct image image;
-	int x, y;
-	struct hdfile *hdfile;
+	FILE *fh = NULL;
+	UnitCell *cell = NULL;	
+	struct image image;	
+	struct hdfile *hdfile = NULL;
+	struct bin_stats *histdata = NULL;
+	struct histogram_info hist_info;
+
+	hist_info.histsize =  100;	//default settings
+	hist_info.q_min    = -1.0;
+	hist_info.q_max    = -1.0;
+	hist_info.spacing  = LINEAR;
+	image.lambda = -1.0;
+	image.beam = NULL;
+	image.det  = NULL;
+	
+	unsigned int n_patterns = 0;
+	unsigned int n_peaks    = 0;	
+	
+	int c, rval, file_type, data_type;
+	int config_satcorr = 1; //true by default
+	int need_geometry  = 0; //false
+	int need_beam      = 0; //false
+	int need_pdb       = 0; //false
+	int only_indexed   = 0; //false
+	int q_scaling      = 1; //true by default
+	int ring_corr      = 0; //false
+	int use_redundency = 0; //false
+	unsigned int i, processing_total;	
+	
 	char *filename = NULL;
 	char *geometry = NULL;
-	char *beamf = NULL;
-	struct beam_params *beam = NULL;
+	char *beamf    = NULL;
+	char *pdb      = NULL;
+	char *output   = NULL;
+	char *datatype = NULL;
+	char *sym      = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
+		{"output",             1, NULL,               'o'},
 		{"geometry",           1, NULL,               'g'},
 		{"beam",               1, NULL,               'b'},
+		{"pdb",                1, NULL,               'p'},
+		{"symmetry",           1, NULL,               'y'},
+		{"bins",               1, NULL,               's'},
+		{"q-max",              1, NULL,                1 },
+		{"q-min",              1, NULL,                2 },
+		{"spacing",            1, NULL,                3 },
+		{"no-sat-corr",        0, &config_satcorr,     0 },
+		{"sat-corr",           0, &config_satcorr,     1 },
+		{"only-indexed",       0, &only_indexed,       1 },
+		{"no-q-scaling",       0, &q_scaling,          0 },
+		{"ring-corr",          0, &ring_corr,          1 },
+		{"use-redundency",     0, &use_redundency,     1 },
+		{"data",               1, NULL,               'd'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:g:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hi:o:g:b:p:s:d:y:", 
+	        longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' :
 			show_help(argv[0]);
 			return 0;
 
-		case 0 :
-			break;
-
 		case 'i' :
 			filename = strdup(optarg);
+			break;
+
+		case 'o' :
+			output = strdup(optarg);
 			break;
 
 		case 'g' :
@@ -87,65 +635,338 @@ int main(int argc, char *argv[])
 			beamf = strdup(optarg);
 			break;
 
+		case 'p' :
+			pdb = strdup(optarg);
+			break;
+
+		case 'y' :
+			sym = strdup(optarg);
+			break;
+
+		case 's' :
+			hist_info.histsize = atoi(optarg);
+			break;
+
+		case 1 :			
+			hist_info.q_max = atof(optarg);
+			break;
+
+		case 2 :			
+			hist_info.q_min = atof(optarg);
+			break;
+
+		case 3 :			
+			if (strcmp(optarg, "linear") == 0 ) {
+				hist_info.spacing = LINEAR;
+			} else if (strcmp(optarg, "q2") == 0 ) {
+				hist_info.spacing = q2;
+			} else if (strcmp(optarg, "volume") == 0) {
+				hist_info.spacing = VOLUME;
+			} else {
+				ERROR("Failed to read spacing plot type: '%s'\n",
+				      optarg);
+				return 1;
+			}
+			break;
+
+		case 'd' :
+			datatype = strdup(optarg);
+			break;
+
+		case 0 :
+			break;
+
 		default :
 			return 1;
 		}
-
 	}
 
+	/* Process input file type */
 	if ( filename == NULL ) {
 		ERROR("You must specify the input filename with -i\n");
 		return 1;
-	}
-
-	if ( geometry == NULL ) {
-		ERROR("You need to specify a geometry file with --geometry\n");
-		return 1;
-	}
-
-	if ( beamf != NULL ) {
-		beam = get_beam_parameters(beamf);
-		free(beamf);
-	}
-
-	image.det = get_detector_geometry(geometry);
-	if ( image.det == NULL ) {
-		ERROR("Failed to read detector geometry from '%s'\n", geometry);
-		return 1;
-	}
-	free(geometry);
-
-	hdfile = hdfile_open(filename);
-	hdfile_set_image(hdfile, "/data/data");
-	hdf5_read(hdfile, &image, 1);
-	if ( image.lambda < 0.0 ) {
-		if ( beam != NULL ) {
-			image.lambda = beam->photon_energy;
+	} else if ( is_stream(filename) == 1 ) { //open .stream file
+		file_type = FILE_STREAM;
+		fh = fopen(filename, "r");
+		if ( fh == NULL ) {
+			ERROR("Failed to open input file\n");
+			return 1;
+		}
+		rval = read_chunk(fh, &image); //read chunk to get wavelength
+		rewind(fh);
+		processing_total = count_patterns(fh);
+		rewind(fh);
+		
+	} else if ( H5Fis_hdf5(filename) > 0) { //open .h5 file
+		file_type = FILE_H5;
+		need_geometry = 1; //true
+		hdfile = hdfile_open(filename);
+		hdfile_set_image(hdfile, "/data/data");
+		hdf5_read(hdfile, &image, config_satcorr);
+		hdfile_close(hdfile);
+		processing_total = image.width * image.height;
+	} else {
+		image.reflections = read_reflections(filename);
+		if (image.reflections != NULL) { //open .hkl file
+			file_type = FILE_HKL;
+			need_pdb = 1;
+			processing_total = num_reflections(image.reflections);
 		} else {
-			ERROR("No wavelength in file, so you need to give "
-			      "a beam parameters file with -b.\n");
+			ERROR("Input file: %s is an invalid type.\n",filename);
+			return 1;
+		}
+	}
+	free(filename);
+
+	/*Process data read type */
+	if ( datatype == NULL ) {
+		data_type = PLOT_D;
+		if ((hist_info.q_min < 0.0) || (hist_info.q_max < 0.0)) {
+			need_geometry = 1;
+		}
+	} else if ( strcmp(datatype, "reflection") == 0 ) {
+		data_type = PLOT_REFL;
+		need_geometry = 1;
+	} else if ( strcmp(datatype, "hkl") == 0 ) {
+		data_type = PLOT_HKL;
+		need_pdb = 1;
+		if ((hist_info.q_min <= 0.0) || (hist_info.q_max <= 0.0)) {
+			need_geometry = 1;
+		}
+	} else if ( strcmp(datatype, "d") == 0 ) {
+		data_type = PLOT_D;
+		if ((hist_info.q_min <= 0.0) || (hist_info.q_max <= 0.0)) {
+			need_geometry = 1;
+		}
+	} else if ( strcmp(datatype, "peaks") == 0 ) {
+		data_type = PLOT_PEAKS;
+		need_geometry = 1;
+	}
+	else if ( strcmp(datatype, "h5") == 0 ) {
+		data_type = PLOT_H5;
+		need_geometry = 1;
+	} else {
+		ERROR("Failed to read data plot type: '%s'\n", datatype);
+		return 1;
+	}
+
+	/* logic checks */	
+	if ((need_geometry) && (image.lambda < 0.0)) {
+		need_beam = 1;
+	}
+	if ( hist_info.histsize <= 0 ) {
+		ERROR("You need to specify a histogram with more then 0 "
+                      "bins\n");
+		return 1;
+	}
+	if (hist_info.q_min > hist_info.q_max) {
+		ERROR("the minimum q value of: %e "
+	              "is greator then your max q value of: %e\n", 
+                      hist_info.q_min, hist_info.q_max);
+		return 1;
+	}
+
+	/*get geometry, beam and pdb files and parameters as needed */
+	if (need_geometry) {
+		if (geometry == NULL) {
+			ERROR("You need to specify a geometry file with "
+		              "--geometry\n");
+			return 1;
+		} else {
+			image.det = get_detector_geometry(geometry);
+			if ( image.det == NULL ) {
+				ERROR("Failed to read detector geometry "
+				      "from '%s'\n", geometry);
+				return 1;
+			}
+			image.width  = image.det->max_fs;
+			image.height = image.det->max_ss;
+		}
+	}	
+	free(geometry);
+	
+	if (need_beam) {
+		if ( beamf == NULL ) {
+			ERROR("No wavelength in file, so you need to specify "
+			      "a beam parameters file with --beam\n");
+			return 1;
+		} else {
+			image.beam = get_beam_parameters(beamf);
+			if ( image.beam == NULL ) {
+				ERROR("Failed to read beam from '%s'\n",
+				      beamf);
+				return 1;
+			}
+			image.lambda = ph_en_to_lambda(eV_to_J(
+			                 image.beam->photon_energy));
+		}
+	}
+	free(beamf);
+
+	if (need_pdb) {
+		if (pdb == NULL) {
+			ERROR("You need to specify a pdb file with --pdb.\n");
+			return 1;
+		} else {
+			cell = load_cell_from_pdb(pdb);
+			if ( cell == NULL ) {
+				ERROR("Couldn't read unit cell (from %s)\n",
+				       pdb);
+				return 1;
+			}
+		}
+	}
+	free(pdb);
+
+	if ( sym == NULL ) {
+		sym = strdup("1");
+	}
+
+	/* setup histogram info*/
+	if (hist_info.q_min <= 0 ) {
+		hist_info.q_min = smallest_q(&image);
+	}
+	if (hist_info.q_max <= 0 ) {
+		hist_info.q_max = largest_q(&image);
+	}
+	if (hist_info.spacing == LINEAR) {
+		hist_info.q_delta = (hist_info.q_max - hist_info.q_min)/
+		                    hist_info.histsize;
+	} else if (hist_info.spacing == q2) {
+		hist_info.q_delta = (pow(hist_info.q_max, 2.0) - 
+		                     pow(hist_info.q_min, 2.0)) / 
+		                     hist_info.histsize;
+	} else {  //by default must be in VOLUME
+		hist_info.q_delta = (pow(hist_info.q_max, 3.0) -
+		                     pow(hist_info.q_min, 3.0)) / 
+		                     hist_info.histsize;
+	}
+	/* setup histogram data */
+	histdata = malloc((hist_info.histsize) * sizeof(struct bin_stats));
+	histogram_setup(&hist_info, histdata);
+
+	/* setup ring scaling */
+	if (ring_corr == 1) {
+		if (ring_fraction_calc(&hist_info, histdata, &image) == 1) {
+			ERROR("Detector is not loaded could not correct for"
+			" finiate ring measurement. Do not use --ring-corr\n");
 			return 1;
 		}
 	}
 
-	for ( x=0; x<image.width; x++ ) {
-	for ( y=0; y<image.height; y++ ) {
+	/* process reflections based on file type and data type*/
+	switch (file_type) {
+	case FILE_H5 :
+		n_patterns++;
+		n_peaks = process_h5(&image, &hist_info, histdata, processing_total);
+		free(image.data);
+		break;
 
-		double q;
-		int intensity;
-		struct rvec r;
+	case FILE_HKL :
+		n_patterns++; //inc number of patterns used
+		n_peaks = process_hkl(&image, sym, cell, &hist_info, histdata,
+                                      q_scaling, processing_total, use_redundency);
+		break;
 
-		r = get_q(&image, x, y, NULL, 1.0/image.lambda);
-		q = modulus(r.u, r.v, r.w);
+	case FILE_STREAM :
+			switch (data_type) {
+			case PLOT_REFL :
+				n_peaks = process_stream_reflection(fh, &image,
+				             &hist_info, histdata, processing_total,
+				             &n_patterns);
+				break;
+			case PLOT_D :
+				n_peaks = process_stream_d(fh, &image, &hist_info, 
+					     histdata, processing_total,
+				             &n_patterns);
+				break;
+			case PLOT_HKL :
+				n_peaks = process_stream_hkl(fh, &image, &hist_info, 
+					     histdata, cell, processing_total,
+				             &n_patterns);				
+				break;
+			case PLOT_PEAKS :
+				n_peaks = process_stream_peaks(fh, &image, &hist_info,
+				             histdata, processing_total, 
+					     &n_patterns, only_indexed);
+				break;
+			case PLOT_H5 : 			
+				n_peaks =  process_stream_h5(fh, &image, &hist_info,
+				             histdata, config_satcorr, only_indexed,
+				             processing_total, &n_patterns);
+				break;
+			default :
+				break;
+			}
+		fclose(fh);
+		break;
 
-		intensity = image.data[x + image.width*y];
-
-		printf("%5i\t%5i\t%7.3f\t%7i\n", x, y, q/1.0e9, intensity);
+	default :
+		break;
 
 	}
+
+	/* sqrt the variance to get the std_dev */	
+
+	for(i=0; i<hist_info.histsize; i++) {		
+		if (histdata[i].N > 1) {
+			histdata[i].std_dev = sqrt(histdata[i].std_dev/
+			                          (histdata[i].N-1));
+		}
+	}
+	if (ring_corr == 1) {
+		for(i=0; i<hist_info.histsize; i++) {
+			histdata[i].N       = histdata[i].N      / 
+			                      histdata[i].fract;
+			histdata[i].total   = histdata[i].total  / 
+			                      histdata[i].fract;
+			histdata[i].mean    = histdata[i].mean   / 
+			                      histdata[i].fract;
+			histdata[i].std_dev = histdata[i].total  / 
+			                      histdata[i].fract;
+		}
 	}
 
-	free(beamf);
+	/* print out the results */
+	if (output != NULL) {
+		fh = fopen(output, "w");
+		if ( fh == NULL ) {
+			ERROR("Failed to open output file\n");
+			return 1;
+		}
+		fprintf(fh,"I read %i patterns with %i peaks\n", 
+		        n_patterns, n_peaks);
+		fprintf(fh,"q\tN\ttotal\tmean\tstd dev\t std dev of mean\n");
+	}
+	else {	
+		printf("I read %i patterns with %i peaks\n",
+		       n_patterns, n_peaks);
+		printf("q\tN\ttotal\tmean\tstd dev\t std dev of mean\n");
+	}	
+	for(i=0; i<hist_info.histsize; i++) {
+		if (output != NULL) {
+			fprintf(fh,"%5e\t%i\t%5e\t%5e\t%5e\t%5e\n", 
+			   histdata[i].q_min, histdata[i].N, histdata[i].total,
+		           histdata[i].mean, histdata[i].std_dev,
+			   histdata[i].std_dev/sqrt(histdata[i].N));
+		}
+		else {
+			printf("%5e\t%i\t%5e\t%5e\t%5e\t%5e\n",
+		          histdata[i].q_min, histdata[i].N, histdata[i].total,
+			  histdata[i].mean, histdata[i].std_dev,
+		          histdata[i].std_dev/sqrt(histdata[i].N));
+		}
+	}
+
+	if ( cell != NULL ) cell_free(cell);
+	if ( image.det  != NULL ) free(image.det);
+	if ( image.beam != NULL ) free(image.beam);
+	if (output != NULL) {
+		fclose(fh);
+		free(output);
+	}
+	free(histdata);
+	free(sym);
 
 	return 0;
 }

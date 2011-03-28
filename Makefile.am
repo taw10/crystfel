@@ -94,7 +94,8 @@ src_check_hkl_SOURCES = src/check_hkl.c src/cell.c src/utils.c \
 
 src_powder_plot_SOURCES = src/powder_plot.c src/cell.c src/utils.c src/image.c \
                           src/hdf5-file.c src/detector.c src/thread-pool.c \
-                          src/beam-parameters.c
+                          src/reflist-utils.c src/beam-parameters.c src/stream.c \
+                          src/reflist.c src/symmetry.c
 
 src_render_hkl_SOURCES = src/render_hkl.c src/cell.c src/reflist-utils.c \
                          src/utils.c src/povray.c src/symmetry.c src/render.c \
@@ -117,6 +118,8 @@ src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
                           src/thread-pool.c src/beam-parameters.c \
                           src/symmetry.c src/post-refinement.c \
                           src/hrs-scaling.c src/reflist.c
+
+src_stream_SOURCES = src/reflist-utils.c
 
 if BUILD_CUBEIT
 src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \

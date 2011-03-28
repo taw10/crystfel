@@ -919,6 +919,29 @@ double largest_q(struct image *image)
 	return qmax;
 }
 
+double smallest_q(struct image *image)
+{
+	int fs, ss;
+	double ttm  = +INFINITY;
+	double qmin = +INFINITY;
+	for ( fs=0; fs<image->width; fs++ ) {
+	for ( ss=0; ss<image->height; ss++ ) {
+
+		struct rvec q;
+		double tt;
+
+		q = get_q(image, fs, ss, &tt, 1.0/image->lambda);
+
+		if ( tt < ttm ) {
+			qmin = modulus(q.u, q.v, q.w);
+			ttm = tt;
+		}
+
+	}
+	}
+
+	return qmin;
+}
 
 void get_pixel_extents(struct detector *det,
                        double *min_x, double *min_y,
