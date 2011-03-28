@@ -164,6 +164,20 @@ int find_equiv_in_list(RefList *list, signed int h, signed int k,
 }
 
 
+/**
+ * write_reflections_to_file:
+ * @fh: File handle to write to
+ * @list: The reflection list to write
+ * @cell: Unit cell to use for generating 1/d values, or NULL.
+ *
+ * This function writes the contents of @list to @fh, using @cell to generate
+ * 1/d values to ease later processing.  If @cell is NULL, 1/d values will not
+ * be included ('-' will be written in their place).
+ *
+ * Reflections which have a redundancy of zero will not be written.
+ *
+ * The resulting list can be read back with read_reflections_from_file().
+ **/
 void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell)
 {
 	Reflection *refl;
@@ -207,6 +221,24 @@ void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell)
 }
 
 
+/**
+ * write_reflist:
+ * @filename: Filename
+ * @list: The reflection list to write
+ * @cell: Unit cell to use for generating 1/d values, or NULL.
+ *
+ * This function writes the contents of @list to @file, using @cell to generate
+ * 1/d values to ease later processing.  If @cell is NULL, 1/d values will not
+ * be included ('-' will be written in their place).
+ *
+ * Reflections which have a redundancy of zero will not be written.
+ *
+ * The resulting list can be read back with read_reflections_from_file() or
+ * read_reflections().
+ *
+ * This is a convenience function which simply opens @file and then calls
+ * write_reflections_to_file.
+ **/
 int write_reflist(const char *filename, RefList *list, UnitCell *cell)
 {
 	FILE *fh;

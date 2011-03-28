@@ -26,6 +26,20 @@
 #include "image.h"
 
 
+/**
+ * SECTION:unitcell
+ * @short_description: Unit cell
+ * @title: UnitCell
+ * @section_id:
+ * @see_also:
+ * @include: "cell.h"
+ * @Image:
+ *
+ * This structure represents a unit cell.
+ */
+
+
+
 /* Weighting factor of lengths relative to angles */
 #define LWEIGHT (10.0e-9)
 
@@ -64,6 +78,15 @@ struct _unitcell {
 
 /************************** Setters and Constructors **************************/
 
+
+/**
+ * cell_new:
+ *
+ * Create a new %UnitCell.
+ *
+ * Returns: the new unit cell, or NULL on failure.
+ *
+ */
 UnitCell *cell_new()
 {
 	UnitCell *cell;

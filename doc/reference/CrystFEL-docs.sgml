@@ -32,6 +32,11 @@
   </chapter>
 
   <chapter>
+    <title>Unit cells</title>
+        <xi:include href="xml/unitcell.xml"/>
+  </chapter>
+
+  <chapter>
     <title>Miscellaneous</title>
         <xi:include href="xml/quaternion.xml"/>
         <xi:include href="xml/utils.xml"/>

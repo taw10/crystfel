@@ -26,6 +26,13 @@ struct rvec
 	double   w;
 };
 
+
+/**
+ * UnitCell:
+ *
+ * This data structure is opaque.  You must use the available accessor functions
+ * to read and write its contents.
+ **/
 typedef struct _unitcell UnitCell;
 
 extern UnitCell *cell_new(void);

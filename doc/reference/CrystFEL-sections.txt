@@ -16,6 +16,11 @@ get_indices
 get_partiality
 get_intensity
 get_partial
+<SUBSECTION>
+write_reflist
+write_reflections_to_file
+read_reflections
+read_reflections_from_file
 </SECTION>
 
 <SECTION>
@@ -23,6 +28,13 @@ get_partial
 ReflItemList
 <SUBSECTION>
 new_items
+</SECTION>
+
+<SECTION>
+<FILE>unitcell</FILE>
+UnitCell
+<SUBSECTION>
+cell_new
 </SECTION>
 
 <SECTION>
