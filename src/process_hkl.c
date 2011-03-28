@@ -307,7 +307,7 @@ static void merge_all(FILE *fh, RefList *model,
 
 		/* Get data from next chunk */
 		rval = read_chunk(fh, &image);
-		if ( rval ) continue;
+		if ( rval ) break;
 
 		n_patterns++;
 
@@ -509,6 +509,10 @@ int main(int argc, char *argv[])
 
 	/* Count the number of patterns in the file */
 	n_total_patterns = count_patterns(fh);
+	if ( n_total_patterns == 0 ) {
+		ERROR("No patterns to process.\n");
+		return 1;
+	}
 	STATUS("There are %i patterns to process\n", n_total_patterns);
 	rewind(fh);
 
@@ -536,6 +540,10 @@ int main(int argc, char *argv[])
 	          config_startafter, config_stopafter,
                   sym, n_total_patterns,
                   hist_vals, hist_h, hist_k, hist_l, &hist_i, 1);
+	if ( ferror(fh) ) {
+		ERROR("Stream read error.\n");
+		return 1;
+	}
 	rewind(fh);
 	if ( space_for_hist && (hist_i >= space_for_hist) ) {
 		ERROR("Histogram array was too small!\n");
@@ -552,6 +560,10 @@ int main(int argc, char *argv[])
 	merge_all(fh, model, config_maxonly, config_scale, 0,
 	          config_startafter, config_stopafter, sym, n_total_patterns,
 	          NULL, 0, 0, 0, NULL, 2);
+	if ( ferror(fh) ) {
+		ERROR("Stream read error.\n");
+		return 1;
+	}
 
 	write_reflist(output, model, cell);
 

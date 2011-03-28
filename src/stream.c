@@ -129,6 +129,11 @@ int count_patterns(FILE *fh)
 
 	} while ( rval != NULL );
 
+	if ( ferror(fh) ) {
+		ERROR("Read error while counting patterns.\n");
+		return 0;
+	}
+
 	return n_total_patterns;
 }
 
@@ -319,7 +324,7 @@ int read_chunk(FILE *fh, struct image *image)
 		rval = fgets(line, 1023, fh);
 
 		/* Trouble? */
-		if ( rval == NULL ) return 1;
+		if ( rval == NULL ) break;
 
 		chomp(line);
 
@@ -378,12 +383,16 @@ int read_chunk(FILE *fh, struct image *image)
 			}
 		}
 
-	} while ( strcmp(line, CHUNK_END_MARKER) != 0 );
+		if ( strcmp(line, CHUNK_END_MARKER) == 0 ) {
+			if ( have_filename && have_ev ) return 0;
+			ERROR("Incomplete chunk found in input file.\n");
+			return 1;
+		}
 
-	if ( have_filename && have_ev ) return 0;
+	} while ( 1 );
 
-	ERROR("Incomplete chunk found in input file.\n");
-	return 1;
+	return 1;  /* Either error or EOF, don't care because we will complain
+	            * on the terminal if it was an error. */
 }
 
 

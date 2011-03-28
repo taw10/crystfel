@@ -262,6 +262,10 @@ int main(int argc, char *argv[])
 	}
 
 	n_total_patterns = count_patterns(fh);
+	if ( n_total_patterns == 0 ) {
+		ERROR("No patterns to process.\n");
+		return 1;
+	}
 	STATUS("There are %i patterns to process\n", n_total_patterns);
 
 	images = malloc(n_total_patterns * sizeof(struct image));
@@ -280,7 +284,9 @@ int main(int argc, char *argv[])
 		Reflection *refl;
 		RefListIterator *iter;
 
-		if ( read_chunk(fh, &images[i]) == 1 ) {
+		if ( read_chunk(fh, &images[i]) != 0 ) {
+			/* Should not happen, because we counted the patterns
+			 * earlier. */
 			ERROR("Failed to read chunk from the input stream.\n");
 			return 1;
 		}

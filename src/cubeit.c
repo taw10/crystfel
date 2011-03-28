@@ -393,7 +393,9 @@ static void *get_image(void *qp)
 
 	/* Get the next filename */
 	if ( read_chunk(qargs->fh, &image) == 1 ) {
-		ERROR("Failed to read chunk from the input stream.\n");
+		if ( ferror(qargs->fh) ) {
+			ERROR("Stream read error.\n");
+		}
 		return NULL;
 	}
 
