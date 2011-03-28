@@ -188,6 +188,9 @@ void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell)
 		esd_i = get_esd_intensity(refl);
 		red = get_redundancy(refl);
 
+		/* Reflections with redundancy = 0 are not written */
+		if ( red == 0 ) continue;
+
 		if ( cell != NULL ) {
 			s = 2.0 * resolution(cell, h, k, l);
 			snprintf(res, 16, "%10.2f", s/1e9);
