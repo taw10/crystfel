@@ -412,7 +412,7 @@ int hdf5_read(struct hdfile *f, struct image *image, int satcorr)
 	}
 	image->data = buf;
 
-	if ( image->det->mask != NULL ) {
+	if ( (image->det != NULL) && (image->det->mask != NULL) ) {
 
 		mask_dh = H5Dopen2(f->fh, image->det->mask, H5P_DEFAULT);
 		if ( mask_dh <= 0 ) {
