@@ -182,7 +182,7 @@ static void write_peaks(struct image *image, FILE *ofh)
 	int i;
 
 	fprintf(ofh, PEAK_LIST_START_MARKER"\n");
-	fprintf(ofh, " fs/px  ss/px  (1/d)/nm^-1   Intensity\n");
+	fprintf(ofh, "  fs/px   ss/px  (1/d)/nm^-1   Intensity\n");
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
@@ -196,7 +196,7 @@ static void write_peaks(struct image *image, FILE *ofh)
 		r = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
 		q = modulus(r.u, r.v, r.w);
 
-		fprintf(ofh, "%6.1f %6.1f   %10.2f  %10.2f\n",
+		fprintf(ofh, "%7.2f %7.2f   %10.2f  %10.2f\n",
 		       f->fs, f->ss, q/1.0e9, f->intensity);
 
 	}
