@@ -153,10 +153,15 @@ int get_peaks(struct image *image, struct hdfile *f)
 	for ( i=0; i<size[0]; i++ ) {
 
 		float fs, ss, val;
+		struct panel *p;
 
 		fs = buf[3*i+0];
 		ss = buf[3*i+1];
 		val = buf[3*i+2];
+
+		p = find_panel(image->det, fs, ss);
+		if ( p == NULL ) continue;
+		if ( p->no_index ) continue;
 
 		image_add_feature(image->features, fs, ss, image, val, NULL);
 

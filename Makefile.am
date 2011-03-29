@@ -85,7 +85,7 @@ src_powder_plot_SOURCES = src/powder_plot.c src/cell.c src/utils.c src/image.c \
 src_render_hkl_SOURCES = src/render_hkl.c src/cell.c src/reflist-utils.c \
                          src/utils.c src/povray.c src/symmetry.c src/render.c \
                          src/hdf5-file.c src/image.c src/filters.c \
-                         src/thread-pool.c src/reflist.c
+                         src/thread-pool.c src/reflist.c src/detector.c
 
 src_sum_stack_SOURCES = src/sum_stack.c src/utils.c src/hdf5-file.c \
                         src/image.c src/filters.c src/peaks.c src/detector.c \
