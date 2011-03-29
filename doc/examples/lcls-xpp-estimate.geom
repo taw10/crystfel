@@ -1,5 +1,3 @@
-n_panels = 1
-
 0/min_fs = 0
 0/max_fs = 1455
 0/min_ss = 0

@@ -72,6 +72,10 @@ struct detector
 
 	struct badregion *bad;
 	int               n_bad;
+
+	char              *mask;
+	unsigned int       mask_bad;
+	unsigned int       mask_good;
 };
 
 

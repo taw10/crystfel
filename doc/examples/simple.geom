@@ -1,5 +1,3 @@
-n_panels = 2
-
 ; Upper panel
 0/min_fs = 0
 0/max_fs = 1023

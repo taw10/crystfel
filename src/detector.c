@@ -464,6 +464,36 @@ static int parse_field_bad(struct badregion *panel, const char *key,
 }
 
 
+static void parse_toplevel(struct detector *det, const char *key,
+                           const char *val)
+{
+	if ( strcmp(key, "mask") == 0 ) {
+
+		det->mask = strdup(val);
+
+	} else if ( strcmp(key, "mask_bad") == 0 ) {
+
+		char *end;
+		double v = strtod(val, &end);
+
+		if ( end != val ) {
+			det->mask_bad = v;
+		}
+
+	} else if ( strcmp(key, "mask_good") == 0 ) {
+
+		char *end;
+		double v = strtod(val, &end);
+
+		if ( end != val ) {
+			det->mask_good = v;
+		}
+
+	} else {
+		ERROR("Unrecognised top level field '%s'\n", key);
+	}
+}
+
 struct detector *get_detector_geometry(const char *filename)
 {
 	FILE *fh;
@@ -516,6 +546,7 @@ struct detector *get_detector_geometry(const char *filename)
 		n2 = assplode(bits[0], "/\\.", &path, ASSPLODE_NONE);
 		if ( n2 < 2 ) {
 			/* This was a top-level option, but not handled above. */
+			parse_toplevel(det, bits[0], bits[2]);
 			for ( i=0; i<n1; i++ ) free(bits[i]);
 			free(bits);
 			for ( i=0; i<n2; i++ ) free(path[i]);

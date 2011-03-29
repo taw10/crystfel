@@ -186,8 +186,16 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 		/* Veto this peak if we tried to integrate in a bad region */
 		if ( image->flags != NULL ) {
+
 			flags = image->flags[idx];
-			if ( !(flags & 0x01) ) return 1;
+
+			/* It must have all the "good" bits to be valid */
+			if ( !((flags & image->det->mask_good)
+			                   == image->det->mask_good) ) return 1;
+
+			/* If it has any of the "bad" bits, reject */
+			if ( flags & image->det->mask_bad ) return 1;
+
 		}
 
 		val = image->data[idx];

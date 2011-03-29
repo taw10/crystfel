@@ -1,3 +1,7 @@
+mask = /processing/hitfinder/masks
+mask_good = 0x07
+mask_bad = 0x00
+
 upper/min_fs = 0
 upper/max_fs = 1023
 upper/min_ss = 512

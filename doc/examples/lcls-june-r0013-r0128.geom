@@ -1,4 +1,6 @@
-n_panels = 2
+mask = /processing/hitfinder/masks
+mask_good = 0x27
+mask_bad = 0x00
 
 ; Upper panel (nearest the beam)
 0/min_fs = 0

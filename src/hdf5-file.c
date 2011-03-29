@@ -412,22 +412,26 @@ int hdf5_read(struct hdfile *f, struct image *image, int satcorr)
 	}
 	image->data = buf;
 
-	mask_dh = H5Dopen2(f->fh, "/processing/hitfinder/masks", H5P_DEFAULT);
-	if ( mask_dh <= 0 ) {
-		ERROR("Couldn't open flags\n");
-		image->flags = NULL;
-	} else {
-		flags = malloc(sizeof(uint16_t)*f->nx*f->ny);
-		r = H5Dread(mask_dh, H5T_NATIVE_UINT16, H5S_ALL, H5S_ALL,
-		            H5P_DEFAULT, flags);
-		if ( r < 0 ) {
-			ERROR("Couldn't read flags\n");
-			free(flags);
+	if ( image->det->mask != NULL ) {
+
+		mask_dh = H5Dopen2(f->fh, image->det->mask, H5P_DEFAULT);
+		if ( mask_dh <= 0 ) {
+			ERROR("Couldn't open flags\n");
 			image->flags = NULL;
 		} else {
-			image->flags = flags;
+			flags = malloc(sizeof(uint16_t)*f->nx*f->ny);
+			r = H5Dread(mask_dh, H5T_NATIVE_UINT16, H5S_ALL, H5S_ALL,
+				    H5P_DEFAULT, flags);
+			if ( r < 0 ) {
+				ERROR("Couldn't read flags\n");
+				free(flags);
+				image->flags = NULL;
+			} else {
+				image->flags = flags;
+			}
+			H5Dclose(mask_dh);
 		}
-		H5Dclose(mask_dh);
+
 	}
 
 	/* Read wavelength from file */
