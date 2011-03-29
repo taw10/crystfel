@@ -36,6 +36,8 @@ better to consider the precise way in which the coordinates are mapped.
 The syntax for a simple geometry might include several entires of the following
 form:
 
+; Lines which should be ignored start with a semicolon.
+
 ; The name before the slash indicates which panel is referred to.  You can use
 ; any name as long as it doesn't start with "bad" (see below).
 ; The range of pixels in the HDF5 file which correspond to a panel are given:
@@ -81,11 +83,22 @@ panel0/corner_y = -17.30
 panel0/no_index = 0
 
 ; You can also specify bad regions.  Peaks with centroid locations within such
-; a region will not be integrated nor indexed
+; a region will not be integrated nor indexed.  Bad regions are specified in
+; pixel units, but in the lab coordinate system (i.e. "y" points at the ceiling,
+; "z" is the beam direction and "x" completes the right-handed system).
 badregionA/min_x = -20.0
 badregionA/max_x = +20.0
 badregionA/min_y = -100.0
 badregionA/max_y = +100.0
+
+; If you have a bad pixel mask, you can include it in the HDF5 file as an
+; unsigned 16-bit integer array of the same size as the data.  You need to
+; give its path within each HDF5 file, and two bitmasks.  The pixel is
+; considered good if all of the bits which are set in "mask_good" are set, AND
+; if none of the bits which are set in "mask_bad" are set.
+mask = /processing/hitfinder/masks
+mask_good = 0x27
+mask_bad = 0x00
 
 
 
