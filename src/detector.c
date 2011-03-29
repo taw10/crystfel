@@ -531,6 +531,8 @@ struct detector *get_detector_geometry(const char *filename)
 		if ( rval == NULL ) break;
 		chomp(line);
 
+		if ( line[0] == ';' ) continue;
+
 		n1 = assplode(line, " \t", &bits, ASSPLODE_NONE);
 		if ( n1 < 3 ) {
 			for ( i=0; i<n1; i++ ) free(bits[i]);
