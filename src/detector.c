@@ -377,7 +377,7 @@ static struct badregion *find_bad_region_by_name(struct detector *det,
 
 
 static int parse_field_for_panel(struct panel *panel, const char *key,
-                                  const char *val)
+                                 const char *val)
 {
 	int reject = 0;
 
