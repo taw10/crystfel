@@ -108,9 +108,7 @@ int in_bad_region(struct detector *det, double fs, double ss)
 	int i;
 
 	/* Determine which panel to use */
-	const unsigned int x = fs;
-	const unsigned int y = ss;
-	p = find_panel(det, x, y);
+	p = find_panel(det, fs, ss);
 
 	/* No panel found -> definitely bad! */
 	if ( p == NULL ) return 1;
@@ -120,8 +118,8 @@ int in_bad_region(struct detector *det, double fs, double ss)
 	xs = (fs-(double)p->min_fs)*p->fsx + (ss-(double)p->min_ss)*p->ssx;
 	ys = (fs-(double)p->min_fs)*p->fsy + (ss-(double)p->min_ss)*p->ssy;
 
-	rx = (xs + p->cnx) / p->res;
-	ry = (ys + p->cny) / p->res;
+	rx = xs + p->cnx;
+	ry = ys + p->cny;
 
 	for ( i=0; i<det->n_bad; i++ ) {
 		struct badregion *b = &det->bad[i];
