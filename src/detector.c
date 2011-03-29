@@ -516,6 +516,9 @@ struct detector *get_detector_geometry(const char *filename)
 	det->panels = NULL;
 	det->n_bad = 0;
 	det->bad = NULL;
+	det->mask_good = 0;
+	det->mask_bad = 0;
+	det->mask = NULL;
 
 	do {
 
