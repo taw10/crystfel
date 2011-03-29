@@ -220,6 +220,7 @@ static void process_image(void *pp, int cookie)
 
 	image.features = NULL;
 	image.data = NULL;
+	image.flags = NULL;
 	image.indexed_cell = NULL;
 	image.id = cookie;
 	image.filename = filename;
@@ -346,7 +347,7 @@ static void process_image(void *pp, int cookie)
 	cell_free(image.indexed_cell);
 
 	free(image.data);
-	free(image.flags);
+	if ( image.flags != NULL ) free(image.flags);
 	image_feature_list_free(image.features);
 	hdfile_close(hdfile);
 	free_detector_geometry(image.det);
