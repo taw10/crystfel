@@ -39,3 +39,8 @@ bad_jetfarfrombeam/min_x = -25.0
 bad_jetfarfrombeam/max_x = +25.0
 bad_jetfarfrombeam/min_y = 159.3
 bad_jetfarfrombeam/max_y = 600.0
+
+bad_rectangle/min_x = -520.0
+bad_rectangle/max_x = +520.0
+bad_rectangle/min_y = -469.0
+bad_rectangle/max_y = 0.0
