@@ -28,6 +28,7 @@
     <title>Handling reflection data</title>
         <abstract>There are three main reflection list thingies.</abstract>
         <xi:include href="xml/reflist.xml"/>
+        <xi:include href="xml/reflist-utils.xml"/>
         <xi:include href="xml/reflitemlist.xml"/>
   </chapter>
 

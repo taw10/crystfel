@@ -20,6 +20,19 @@
 #include "symmetry.h"
 
 
+/**
+ * SECTION:reflist-utils
+ * @short_description: Reflection list utilities
+ * @title: RefList utilities
+ * @section_id:
+ * @see_also:
+ * @include: "reflist-utils.h"
+ * @Image:
+ *
+ * There are some utility functions associated with the core %RefList.
+ **/
+
+
 double *intensities_from_list(RefList *list)
 {
 	Reflection *refl;

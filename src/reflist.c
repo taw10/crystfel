@@ -322,8 +322,8 @@ double get_intensity(const Reflection *refl)
  * @clamp_low: Location at which to store the first clamp status
  * @clamp_high: Location at which to store the second clamp status
  *
- * This function is used during post refinement to get access to the details of
- * the partiality calculation.
+ * This function is used during post refinement (in conjunction with
+ * set_partial()) to get access to the details of the partiality calculation.
  *
  **/
 void get_partial(const Reflection *refl, double *r1, double *r2, double *p,
@@ -337,30 +337,79 @@ void get_partial(const Reflection *refl, double *r1, double *r2, double *p,
 }
 
 
+/**
+ * get_scalable:
+ * @refl: A %Reflection
+ *
+ * Returns: non-zero if this reflection was marked as useful for scaling and
+ * post refinement.
+ *
+ **/
 int get_scalable(const Reflection *refl)
 {
 	return refl->data.scalable;
 }
 
 
+/**
+ * get_redundancy:
+ * @refl: A %Reflection
+ *
+ * The redundancy of the reflection is the number of measurements that have been
+ * made of it.  Note that a redundancy of zero may have a special meaning, such
+ * as that the reflection was impossible to integrate.  Note further that each
+ * reflection in the list has its own redundancy, even if there are multiple
+ * copies of the reflection in the list.  The total number of reflection
+ * measurements should always be the sum of the redundancies in the entire list.
+ *
+ * Returns: the number of measurements of this reflection.
+ *
+ **/
 int get_redundancy(const Reflection *refl)
 {
 	return refl->data.redundancy;
 }
 
 
+/**
+ * get_sum_squared_dev:
+ * @refl: A %Reflection
+ *
+ * The sum squared deviation is used to estimate the standard errors on the
+ * intensities during 'Monte Carlo' merging.
+ *
+ * Returns: the sum of the squared deviations between the intensities and the
+ * mean intensity from all measurements of the reflection (and probably its
+ * symmetry equivalents according to some point group).
+ *
+ **/
 double get_sum_squared_dev(const Reflection *refl)
 {
 	return refl->data.sum_squared_dev;
 }
 
 
+/**
+ * get_esd_intensity:
+ * @refl: A %Reflection
+ *
+ * Returns: the standard error in the intensity measurement (as returned by
+ * get_intensity()) for this reflection.
+ *
+ **/
 double get_esd_intensity(const Reflection *refl)
 {
 	return refl->data.esd_i;
 }
 
 
+/**
+ * get_phase:
+ * @refl: A %Reflection
+ *
+ * Returns: the phase for this reflection.
+ *
+ **/
 double get_phase(const Reflection *refl)
 {
 	return refl->data.phase;
@@ -369,6 +418,18 @@ double get_phase(const Reflection *refl)
 
 /********************************** Setters ***********************************/
 
+/**
+ * copy_data:
+ * @to: %Reflection to copy data into
+ * @from: %Reflection to copy data from
+ *
+ * This function is used to copy the data (which is everything listed above in
+ * the list of getters and setters, apart from the indices themselves) from one
+ * reflection to another.  This might be used when creating a new list from an
+ * old one, perhaps using the asymmetric indices instead of the raw indices for
+ * the new list.
+ *
+ **/
 void copy_data(Reflection *to, const Reflection *from)
 {
 	memcpy(&to->data, &from->data, sizeof(struct _refldata));
