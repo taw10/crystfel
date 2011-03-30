@@ -78,7 +78,7 @@ static void set_affinity(int n, int cpu_num, int cpu_groupsize, int cpu_offset)
 
 static void set_affinity(int n, int cpu_num, int cpu_groupsize, int cpu_offset)
 {
-	return 0;
+	/* Do absolutely nothing */
 }
 
 #endif /* HAVE_CPU_AFFINITY */
