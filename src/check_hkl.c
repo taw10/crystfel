@@ -282,7 +282,8 @@ static void plot_shells(RefList *list, UnitCell *cell, const char *sym,
 
 		double cen;
 		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
-		fprintf(fh, "%10.3f %8i %8i %6.2f %10i %5.1f %5.2f %10.2f %10.2f\n",
+		fprintf(fh, "%10.3f %8i %8i %6.2f %10i %5.1f"
+		            " %5.2f %10.2f %10.2f\n",
 		        cen*1.0e-9,
 		        measured[i],
 		        possible[i],
