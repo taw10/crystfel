@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
 				double dfs, dss; /* observed - predicted */
 				int pi;
 				double thisWeight;
-
+				//int fail;
 	
 				/* if we find a feature, determine peak position */
 				thisFeature = image_get_feature(image.features,i);	
@@ -243,10 +243,14 @@ int main(int argc, char *argv[])
 				}
 				if ( p->no_index ) continue;
 
+
+
 				/* now determine the predicted peak position */
 
 				/* scattering vector of this peak */
 				q = get_q(&image, fs, ss, &twotheta, 1.0/image.lambda);
+
+				//fail = calculate_projected_peak();
 
 				/* miller indices of nearest Bragg reflection */
 				cell_get_cartesian(image.indexed_cell, &ax, &ay, &az,
@@ -349,6 +353,7 @@ int main(int argc, char *argv[])
 		}
 		
 		/* now generate a new geometry file */
+		/* first populate the image structure with new geometry */
 		for (pi=0; pi < image.det->n_panels; pi++) {
 	
 			p = image.det->panels[pi];
@@ -379,50 +384,20 @@ int main(int argc, char *argv[])
 
 			}
 
+			/* now dump this refined panel goemetry into a file */
+
+			image.det->panels[pi].cnx = cnx;
+			image.det->panels[pi].cny = cny;
+			if ( peaksFound[pi] < minpeaks) image.det->panels[pi].no_index = 1;
+
 			printf("panel %s, # peaks: %10d, mean shifts: %f %f\n",p.name, peaksFound[pi],xsh,ysh);
 
-			//FIXME: there should be a function in geometry.c to write 
-			//       these values to text file, since it will be useful on 
-			//       other places as well (e.g. writing the geometry to 
-			//       the data stream)
-			fprintf(outfh,"%s/min_fs = %d\n",p.name,p.min_fs);
-			fprintf(outfh,"%s/min_ss = %d\n",p.name,p.min_ss);
-			fprintf(outfh,"%s/max_fs = %d\n",p.name,p.max_fs);
-	      fprintf(outfh,"%s/max_ss = %d\n",p.name,p.max_ss);
-			fprintf(outfh,"%s/badrow_direction = %C\n",p.name,p.badrow);
-			fprintf(outfh,"%s/res = %g\n",p.name,p.res);
-			fprintf(outfh,"%s/peak_sep = %g\n",p.name,p.peak_sep);
-			fprintf(outfh,"%s/clen = %s\n",p.name,p.clen_from);
-			//FIXME: the following is sketchy, but it will work for now.  we need
-			//       to generalise the parser in detector.c
-			char coord;
-			char sign;
-			if (p.fsx != 0){
-				if (p.fsx>0){sign='+';}else{sign='-';}
-				coord = 'x';
-			} else {
-				if (p.fsy>0){sign='+';}else{sign='-';}
-				coord = 'y';
-			}
-			fprintf(outfh,"%s/fs = %C%C\n",p.name, sign, coord);
-			if (p.ssx != 0){
-            if (p.ssx>0){sign='+';}else{sign='-';}
-            coord = 'x';
-         } else {
-            if (p.ssy>0){sign='+';}else{sign='-';}
-            coord = 'y';
-         }
-			fprintf(outfh,"%s/ss = %C%C\n",p.name, sign, coord);
-			fprintf(outfh,"%s/corner_x = %g\n",p.name,cnx);
-	      fprintf(outfh,"%s/corner_y = %g\n",p.name,cny);
-			if ( peaksFound[pi] < minpeaks ) {
-				fprintf(outfh,"%s/no_index = %d\n",p.name,1);
-			} else {
-				fprintf(outfh,"%s/no_index = %d\n",p.name,p.no_index);
-			}
-			fprintf(outfh,"\n\n");
-	
+			//fprintf_panel(outfh,&p);
+			//fprintf(outfh,"\n");
+
 		}
+
+		print_detector_geometry(outfh,&image);
 
 	} else {
 
