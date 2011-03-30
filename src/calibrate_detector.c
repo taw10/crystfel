@@ -43,9 +43,8 @@ static void show_help(const char *s)
 "  -h, --help                 Display this help message.\n"
 "  -g. --geometry=<file>      Get detector geometry from file.\n"
 "  -i, --input=<file>         Input filename.\n"
-"  -m, --method=<method>      The calibration method.  Possiblities are\n"
+"  -m, --method=<method>      The calibration method.\n"
 "               xy            Determine panel shifts in plane of detector\n"
-"                             (i.e. ignore camera length calibration\n"
 "  -o, --output=<file>        Output results here"
 "  -n, --npeaks=<number>      Don't refine unless this many peaks observed\n"
 "                             (in the whole stream, not a single shot)\n"
@@ -208,15 +207,6 @@ int main(int argc, char *argv[])
 				continue;
 			}
 
-				/* update reflection list since geometry may have changed 
-            from what is in the data stream (e.g. if iterating this
-            calibration procedure) */
- 	 		//image.reflections = 
-         //	find_projected_peaks(&image,image.indexed_cell,0, 0.1);
-
-			//printf("chunk %d\n",nChunks);
-			//cell_print(image.indexed_cell);
-
 			// now loop through peaks to determine mean panel shift
 			nFeatures = image_feature_count(image.features);
 
@@ -254,6 +244,8 @@ int main(int argc, char *argv[])
 				if ( p->no_index ) continue;
 
 				/* now determine the predicted peak position */
+
+				/* scattering vector of this peak */
 				q = get_q(&image, fs, ss, &twotheta, 1.0/image.lambda);
 
 				/* miller indices of nearest Bragg reflection */
@@ -268,7 +260,6 @@ int main(int argc, char *argv[])
 				h = lrint(hd);
 				k = lrint(kd);
 				l = lrint(ld);
-
 
 				/* now get scattering vector for reflectin [hkl]
 				 * this means solving the equation U*q = h */
@@ -285,33 +276,33 @@ int main(int argc, char *argv[])
 				gsl_vector_view b
 					= gsl_vector_view_array (hvec, 3);
      
-				gsl_vector *xx = gsl_vector_alloc (3);
+				gsl_vector *x = gsl_vector_alloc (3);
        
 				int s;
      
 				gsl_permutation * perm = gsl_permutation_alloc (3);
 				gsl_linalg_LU_decomp (&m.matrix, perm, &s);
-				gsl_linalg_LU_solve (&m.matrix, perm, &b.vector, xx);
+				gsl_linalg_LU_solve (&m.matrix, perm, &b.vector, x);
    
 
-				// outgoing wavevector 
-				double x = xx->data[0];
-				double y = xx->data[1];
-				double z = xx->data[2];
+				/* outgoing wavevector for [hkl] */
+				double gx = x->data[0];
+				double gy = x->data[1];
+				double gz = x->data[2];
 
 				double kk;
 				double xd, yd, cl;
 				double plx, ply;
 
 				kk = 1/image.lambda;
-				const double den = kk + z;
+				const double den = kk + gz;
 
 				/* Camera length for this panel */
 				cl = p->clen;
 
 				/* Coordinates of peak relative to central beam, in m */
-				xd = cl * x / den;
-				yd = cl * y / den;
+				xd = cl * gx / den;
+				yd = cl * gy / den;
 				
 				/* Convert to pixels */
 				xd *= p->res;
