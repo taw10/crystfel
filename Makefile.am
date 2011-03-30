@@ -10,7 +10,7 @@ bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
 noinst_PROGRAMS = tests/list_check
 
 TESTS = tests/list_check tests/first_merge_check tests/second_merge_check \
-        tests/third_merge_check
+        tests/third_merge_check tests/fourth_merge_check
 
 if BUILD_HDFSEE
 bin_PROGRAMS += src/hdfsee
