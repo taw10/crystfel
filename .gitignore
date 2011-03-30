@@ -17,11 +17,8 @@ src/render_hkl
 src/calibrate_detector
 src/partialator
 src/cubeit
-src/reintegrate
-src/estimate_background
 src/check_hkl
 src/sum_stack
-src/geomatic
 src/.dirstamp
 *~
 doc/reference/*
