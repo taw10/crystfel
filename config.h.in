@@ -18,6 +18,9 @@
 /* Define to 1 if Cairo is available */
 #undef HAVE_CAIRO
 
+/* Define to 1 if clock_gettime is available. */
+#undef HAVE_CLOCK_GETTIME
+
 /* Define to 1 if CL/cl.h should be used */
 #undef HAVE_CL_CL_H
 

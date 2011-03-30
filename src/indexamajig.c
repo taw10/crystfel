@@ -23,7 +23,12 @@
 #include <hdf5.h>
 #include <gsl/gsl_errno.h>
 #include <pthread.h>
+
+#ifdef HAVE_CLOCK_GETTIME
 #include <time.h>
+#else
+#include <sys/time.h>
+#endif
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -401,17 +406,40 @@ static void *get_image(void *qp)
 }
 
 
+#ifdef HAVE_CLOCK_GETTIME
+
+static time_t get_monotonic_seconds()
+{
+	struct timespec tp;
+	clock_gettime(CLOCK_MONOTONIC, &tp);
+	return tp.tv_sec;
+}
+
+#else
+
+/* Fallback version of the above.  The time according to gettimeofday() is not
+ * monotonic, so measuring intervals based on it will screw up if there's a
+ * timezone change (e.g. daylight savings) while the program is running. */
+static time_t get_monotonic_seconds()
+{
+	struct timeval tp;
+	gettimeofday(&tp, NULL);
+	return tp.tv_sec;
+}
+
+#endif
+
 static void finalise_image(void *qp, void *pp)
 {
 	struct queue_args *qargs = qp;
 	struct index_args *pargs = pp;
-	struct timespec tp;
+	time_t monotonic_seconds;
 
 	qargs->n_indexable += pargs->indexable;
 	qargs->n_processed++;
 
-	clock_gettime(CLOCK_REALTIME, &tp);
-	if ( tp.tv_sec >= qargs->t_last_stats+STATS_EVERY_N_SECONDS ) {
+	monotonic_seconds = get_monotonic_seconds();
+	if ( monotonic_seconds >= qargs->t_last_stats+STATS_EVERY_N_SECONDS ) {
 
 		STATUS("%i out of %i indexed so far,"
 		       " %i out of %i since the last message.\n",
@@ -421,7 +449,7 @@ static void finalise_image(void *qp, void *pp)
 
 		qargs->n_processed_last_stats = qargs->n_processed;
 		qargs->n_indexable_last_stats = qargs->n_indexable;
-		qargs->t_last_stats = tp.tv_sec;
+		qargs->t_last_stats = monotonic_seconds;
 
 	}
 
@@ -475,7 +503,6 @@ int main(int argc, char *argv[])
 	char *element = NULL;
 	double nominal_photon_energy;
 	int stream_flags = STREAM_INTEGRATED;
-	struct timespec tp;
 	int cpu_num = 0;
 	int cpu_groupsize = 1;
 	int cpu_offset = 0;
@@ -847,8 +874,7 @@ int main(int argc, char *argv[])
 	qargs.n_processed = 0;
 	qargs.n_indexable_last_stats = 0;
 	qargs.n_processed_last_stats = 0;
-	clock_gettime(CLOCK_REALTIME, &tp);
-	qargs.t_last_stats = tp.tv_sec;
+	qargs.t_last_stats = get_monotonic_seconds();
 
 	n_images = run_threads(nthreads, process_image, get_image,
 	                       finalise_image, &qargs, 0,

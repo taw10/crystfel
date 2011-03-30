@@ -219,6 +219,16 @@ AC_CHECK_LIB([pthread], [sched_setaffinity], [
 ])
 
 
+AC_CHECK_LIB([rt], [clock_gettime], [
+   AC_DEFINE([HAVE_CLOCK_GETTIME], [1],
+             [Define to 1 if clock_gettime is available.])
+   TIMER_LIBS="-lrt"
+], [
+   AC_MSG_WARN([Falling back on gettimeofday().])
+   AC_MSG_WARN([Time intervals may not be correct in certain circumstances.])
+])
+
+
 dnl Conditionals...
 AM_CONDITIONAL([HAVE_OPENCL], test x$have_opencl = xtrue)
 
@@ -236,9 +246,10 @@ gl_IGNORE_UNUSED_LIBRARIES
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread $GTK_CFLAGS"
 CFLAGS="$CFLAGS $LIBTIFF_CFLAGS -D_GNU_SOURCE $libPNG_CFLAGS $Cairo_CFLAGS"
 CFLAGS="$CFLAGS $GDK_pixbuf_CFLAGS $GDK_pixbuf_2_CFLAGS"
-LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread -lrt"
+
+LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
 LIBS="$LIBS $LIBTIFF_LIBS $libPNG_LIBS $Cairo_LIBS $GDK_pixbuf_LIBS"
-LIBS="$LIBS $GDK_pixbuf_2_LIBS $LDFLAGS"
+LIBS="$LIBS $GDK_pixbuf_2_LIBS $TIMER_LIBS $LDFLAGS"
 
 
 GTK_DOC_CHECK([1.11],[--flavour no-tmpl])
