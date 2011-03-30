@@ -51,6 +51,103 @@ static void show_help(const char *s)
 "\n");
 }
 
+//FIXME: should this function be in detector.h?
+int calculate_projected_peak(struct panel *panel, struct rvec q, 
+                             double kk, double *fs, double *ss) 
+{
+
+	if (panel == NULL) return 1;
+	
+	double xd, yd, cl;
+	double plx, ply;
+	
+	const double den = kk + q.w;
+	
+	/* Camera length for this panel */
+	cl = panel->clen;
+	
+	/* Coordinates of peak relative to central beam, in m */
+	xd = cl * q.u / den;
+	yd = cl * q.v / den;
+	
+	/* Convert to pixels */
+	xd *= panel->res;
+	yd *= panel->res;
+	
+	/* Convert to relative to the panel corner */
+	plx = xd - panel->cnx;
+	ply = yd - panel->cny;
+	
+	*fs = panel->xfs*plx + panel->yfs*ply;
+	*ss = panel->xss*plx + panel->yss*ply;
+	
+	*fs += panel->min_fs;
+	*ss += panel->min_ss;
+	
+	/* Now, is this on this panel? */
+	if ( *fs < panel->min_fs ) return 3;
+	if ( *fs > panel->max_fs ) return 3;
+	if ( *ss < panel->min_ss ) return 3;
+	if ( *ss > panel->max_ss ) return 3;
+	
+	return 0;
+
+}
+
+//FIXME: should this function be in detector.h?
+struct rvec nearest_bragg(struct image image, struct rvec q)
+{
+
+	struct rvec g;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	double hd, kd, ld;
+	double h, k, l;
+
+	/* miller indices of nearest Bragg reflection */
+	cell_get_cartesian(image.indexed_cell, &ax, &ay, &az,
+	                                       &bx, &by, &bz,
+	                                       &cx, &cy, &cz);
+
+	hd = q.u * ax + q.v * ay + q.w * az;
+	kd = q.u * bx + q.v * by + q.w * bz;
+	ld = q.u * cx + q.v * cy + q.w * cz;
+	
+	h = lrint(hd);
+	k = lrint(kd);
+	l = lrint(ld);
+
+	/* now get scattering vector for reflectin [hkl]
+	 * this means solving the equation U*q = h */
+	double U[] = {ax, ay, az,
+	              bx, by, bz,
+	              cx, cy, cz};
+
+	double hvec[] = {h,k,l};
+
+	gsl_matrix_view m 
+		= gsl_matrix_view_array (U, 3, 3);
+
+	gsl_vector_view b
+		= gsl_vector_view_array (hvec, 3);
+
+	gsl_vector *x = gsl_vector_alloc (3);
+
+	int s;
+
+	gsl_permutation * perm = gsl_permutation_alloc (3);
+	gsl_linalg_LU_decomp (&m.matrix, perm, &s);
+	gsl_linalg_LU_solve (&m.matrix, perm, &b.vector, x);
+
+	/* outgoing wavevector for [hkl] */
+	g.u = x->data[0];
+	g.v = x->data[1];
+	g.w = x->data[2];
+
+	return g;
+
+}
 
 
 int main(int argc, char *argv[])
@@ -214,13 +311,9 @@ int main(int argc, char *argv[])
 
 				struct panel * p;
 				struct imagefeature * thisFeature;			
-				double ax, ay, az;
-				double bx, by, bz;
-				double cx, cy, cz;
-				double hd, kd, ld;  /* Indices with decimal places */
-				signed int h, k, l;
 				struct rvec q;
 				double twotheta;
+				struct rvec g;
 				double fs, ss;   /* observed peaks */
 				double pfs, pss; /* predicted peaks */
 				double dfs, dss; /* observed - predicted */
@@ -243,90 +336,19 @@ int main(int argc, char *argv[])
 				}
 				if ( p->no_index ) continue;
 
-
-
 				/* now determine the predicted peak position */
 
 				/* scattering vector of this peak */
 				q = get_q(&image, fs, ss, &twotheta, 1.0/image.lambda);
 
-				//fail = calculate_projected_peak();
+				/* scattering vector of nearest bragg peak */
+				g = nearest_bragg(image, q);
 
-				/* miller indices of nearest Bragg reflection */
-				cell_get_cartesian(image.indexed_cell, &ax, &ay, &az,
-				                                       &bx, &by, &bz,
-				                                       &cx, &cy, &cz);
-			
-				hd = q.u * ax + q.v * ay + q.w * az;
-				kd = q.u * bx + q.v * by + q.w * bz;
-				ld = q.u * cx + q.v * cy + q.w * cz;
-				
-				h = lrint(hd);
-				k = lrint(kd);
-				l = lrint(ld);
+				/* coordinate of this predicted peak */
+				fail = calculate_projected_peak(p,g,1/image.lambda,&pfs,&pss);
 
-				/* now get scattering vector for reflectin [hkl]
-				 * this means solving the equation U*q = h */
-
-				double U[] = {ax, ay, az,
-				              bx, by, bz,
-				              cx, cy, cz};
-     
-				double hvec[] = {h,k,l};
-     
-				gsl_matrix_view m 
-					= gsl_matrix_view_array (U, 3, 3);
-     
-				gsl_vector_view b
-					= gsl_vector_view_array (hvec, 3);
-     
-				gsl_vector *x = gsl_vector_alloc (3);
-       
-				int s;
-     
-				gsl_permutation * perm = gsl_permutation_alloc (3);
-				gsl_linalg_LU_decomp (&m.matrix, perm, &s);
-				gsl_linalg_LU_solve (&m.matrix, perm, &b.vector, x);
-   
-
-				/* outgoing wavevector for [hkl] */
-				double gx = x->data[0];
-				double gy = x->data[1];
-				double gz = x->data[2];
-
-				double kk;
-				double xd, yd, cl;
-				double plx, ply;
-
-				kk = 1/image.lambda;
-				const double den = kk + gz;
-
-				/* Camera length for this panel */
-				cl = p->clen;
-
-				/* Coordinates of peak relative to central beam, in m */
-				xd = cl * gx / den;
-				yd = cl * gy / den;
-				
-				/* Convert to pixels */
-				xd *= p->res;
-				yd *= p->res;
-				
-				/* Convert to relative to the panel corner */
-				plx = xd - p->cnx;
-				ply = yd - p->cny;
-				
-				pfs = p->xfs*plx + p->yfs*ply;
-				pss = p->xss*plx + p->yss*ply;
-				
-				pfs += p->min_fs;
-				pss += p->min_ss;
-
-				/* Now, is this on this panel? */
-				if ( fs < p->min_fs ) continue;
-				if ( fs > p->max_fs ) continue;
-				if ( ss < p->min_ss ) continue;
-				if ( ss > p->max_ss ) continue;
+				/* check for error, e.g. out of panel */
+				if ( fail != 0 ) continue;
 
 				/* Finally, we have the shift in position of this peak */				
 				dfs = pfs - fs;
@@ -344,16 +366,13 @@ int main(int argc, char *argv[])
 			
 		} /* end loop through stream chunks */
  
-
-
 		/* calculate weighted average shift in peak positions */
 		for (pi=0; pi < image.det->n_panels; pi++) {
 			meanShiftFS[pi] = weightedSumFS[pi]/summedWeights[pi];
 			meanShiftSS[pi] = weightedSumSS[pi]/summedWeights[pi];
 		}
 		
-		/* now generate a new geometry file */
-		/* first populate the image structure with new geometry */
+		/* first populate the image structure with new geometry info */
 		for (pi=0; pi < image.det->n_panels; pi++) {
 	
 			p = image.det->panels[pi];
@@ -363,8 +382,6 @@ int main(int argc, char *argv[])
 	
 			if ( peaksFound[pi] >= minpeaks ) {
 
-				//printf("meanShift: %f %f\n",meanShiftFS[pi],meanShiftSS[pi]);
-
 				/* convert shifts from raw coords to lab frame */
 				xsh = meanShiftFS[pi]*p.fsx + meanShiftSS[pi]*p.ssx;
 				ysh = meanShiftFS[pi]*p.fsy + meanShiftSS[pi]*p.ssy;
@@ -373,18 +390,11 @@ int main(int argc, char *argv[])
 				cnx = p.cnx + xsh;
 				cny = p.cny + ysh;
 	
-				//printf("new panel shift: %f %f\n",cnx,cny);
-
-	
 			} else {
-
-				/* not refined: use original coordinates */
+				/* not refined? use original coordinates */
 				cnx = p.cnx;
 				cny = p.cny;
-
 			}
-
-			/* now dump this refined panel goemetry into a file */
 
 			image.det->panels[pi].cnx = cnx;
 			image.det->panels[pi].cny = cny;
@@ -392,11 +402,9 @@ int main(int argc, char *argv[])
 
 			printf("panel %s, # peaks: %10d, mean shifts: %f %f\n",p.name, peaksFound[pi],xsh,ysh);
 
-			//fprintf_panel(outfh,&p);
-			//fprintf(outfh,"\n");
-
 		}
 
+		/* write the new geometry file */
 		print_detector_geometry(outfh,&image);
 
 	} else {
@@ -406,11 +414,8 @@ int main(int argc, char *argv[])
 
 	}
 	
-	if ( !(outputfile == NULL) ) {
-      fclose(outfh);
-   }
 
-	
+	fclose(outfh);
 
 	printf("Done!\n");
 
