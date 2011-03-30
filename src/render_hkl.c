@@ -508,7 +508,7 @@ static int render_key(int colscale, double scale_top)
 #else  /* HAVE_CAIRO */
 
 
-static int render_key(int colscale)
+static int render_key(int colscale, double scale_top)
 {
 	ERROR("This version of CrystFEL was compiled without Cairo");
 	ERROR(" support, which is required to draw the colour");
@@ -517,12 +517,11 @@ static int render_key(int colscale)
 }
 
 
-static void render_za(UnitCell *cell, ReflItemList *items,
-                      double *ref, unsigned int *counts,
+static void render_za(UnitCell *cell, RefList *list,
                       double boost, const char *sym, int wght, int colscale,
                       signed int xh, signed int xk, signed int xl,
                       signed int yh, signed int yk, signed int yl,
-                      const char *outfile)
+                      const char *outfile, double scale_top)
 {
 	ERROR("This version of CrystFEL was compiled without Cairo");
 	ERROR(" support, which is required to plot a zone axis");
