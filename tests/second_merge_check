@@ -1,0 +1,43 @@
+#!/bin/sh
+
+cat > second_merge_check.stream << EOF
+CrystFEL stream format 2.0
+Command line: indexamajig -i dummy.lst -o dummy.stream --kraken=prawn
+----- Begin chunk -----
+Image filename: dummy.h5
+No unit cell from indexing.
+Cell parameters 27.74398 27.84377 16.90346 nm, 88.53688 91.11774 118.75944 deg
+astar = -0.0283891 +0.0149254 -0.0257273 nm^-1
+bstar = -0.0068281 +0.0403989 -0.0005196 nm^-1
+cstar = +0.0406926 +0.0052233 -0.0426520 nm^-1
+I0 = 1.0 (arbitrary units)
+photon_energy_eV = 2000.0
+Reflections measured after indexing
+  h   k   l          I    phase   sigma(I)  1/d(nm^-1)  counts  fs/px  ss/px
+  1   0   0     100.00        -       0.00         1.0       1  938.0  629.0
+End of reflections
+----- End chunk -----
+
+----- Begin chunk -----
+Image filename: dummy.h5
+No unit cell from indexing.
+Cell parameters 27.74398 27.84377 16.90346 nm, 88.53688 91.11774 118.75944 deg
+astar = -0.0283891 +0.0149254 -0.0257273 nm^-1
+bstar = -0.0068281 +0.0403989 -0.0005196 nm^-1
+cstar = +0.0406926 +0.0052233 -0.0426520 nm^-1
+I0 = 1.0 (arbitrary units)
+photon_energy_eV = 2000.0
+Reflections measured after indexing
+  h   k   l          I    phase   sigma(I)  1/d(nm^-1)  counts  fs/px  ss/px
+ -1   0   0     200.00        -       0.00         1.0       1  938.0  629.0
+End of reflections
+----- End chunk -----
+EOF
+
+src/process_hkl -y -1 -i second_merge_check.stream -o second_merge_check.hkl
+diff second_merge_check.hkl tests/first_merge_check.hkl
+if [ $? -ne 0 ]; then
+	exit 1
+fi
+rm -f second_merge_check.stream second_merge_check.hkl
+exit 0

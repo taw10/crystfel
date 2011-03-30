@@ -42,7 +42,9 @@ bin_PROGRAMS = src/pattern_sim$(EXEEXT) src/process_hkl$(EXEEXT) \
 	src/partialator$(EXEEXT) src/check_hkl$(EXEEXT) \
 	src/sum_stack$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 noinst_PROGRAMS = tests/list_check$(EXEEXT) $(am__EXEEXT_3)
-TESTS = tests/list_check$(EXEEXT) $(am__EXEEXT_3)
+TESTS = tests/list_check$(EXEEXT) tests/first_merge_check \
+	tests/second_merge_check tests/third_merge_check \
+	$(am__EXEEXT_3)
 @BUILD_HDFSEE_TRUE@am__append_1 = src/hdfsee
 @BUILD_CUBEIT_TRUE@am__append_2 = src/cubeit
 @HAVE_OPENCL_TRUE@am__append_3 = src/diffraction-gpu.c src/cl-utils.c
