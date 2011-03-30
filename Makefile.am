@@ -12,6 +12,11 @@ noinst_PROGRAMS = tests/list_check
 TESTS = tests/list_check tests/first_merge_check tests/second_merge_check \
         tests/third_merge_check tests/fourth_merge_check
 
+EXTRA_DIST += tests/first_merge_check tests/second_merge_check \
+              tests/third_merge_check tests/fourth_merge_check \
+              tests/first_merge_check.hkl tests/third_merge_check.hkl \
+              tests/fourth_merge_check.hkl
+
 if BUILD_HDFSEE
 bin_PROGRAMS += src/hdfsee
 endif
@@ -155,25 +160,19 @@ EXTRA_DIST += doc/geometry.txt doc/indexamajig.txt doc/pattern_sim.txt \
               doc/examples/lcls-cxi-9keV.beam
 
 scriptdir = $(docdir)/scripts
-script_DATA = scripts/check-near-bragg scripts/double-hit \
-              scripts/random-image scripts/stream-split scripts/wibbletron \
-              scripts/zone-axis scripts/create-mtz scripts/frequency \
-              scripts/i0-analysis scripts/mtz2hkl scripts/sequence-image \
-              scripts/test-facetron scripts/zone-axes \
-              scripts/alternate-stream scripts/README scripts/indexing-rate \
-              scripts/observed-peak-rate scripts/cell-please \
+script_DATA = scripts/check-near-bragg  scripts/random-image \
+              scripts/wibbletron scripts/create-mtz scripts/mtz2hkl \
+              scripts/sequence-image scripts/zone-axes \
+              scripts/alternate-stream scripts/README scripts/cell-please \
               scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
               scripts/compare-hkl.gp scripts/check-peak-detection
 
-EXTRA_DIST += scripts/check-near-bragg scripts/double-hit scripts/random-image \
-              scripts/stream-split scripts/wibbletron scripts/zone-axis \
-              scripts/create-mtz scripts/frequency scripts/i0-analysis \
-              scripts/mtz2hkl scripts/sequence-image scripts/test-facetron \
-              scripts/zone-axes scripts/alternate-stream scripts/README \
-              scripts/indexing-rate scripts/observed-peak-rate \
-              scripts/cell-please scripts/check-hkl-completeness.gp \
-              scripts/check-hkl-quality.gp scripts/compare-hkl.gp \
-              scripts/check-peak-detection
+EXTRA_DIST += scripts/check-near-bragg  scripts/random-image \
+              scripts/wibbletron scripts/create-mtz scripts/mtz2hkl \
+              scripts/sequence-image scripts/zone-axes \
+              scripts/alternate-stream scripts/README scripts/cell-please \
+              scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
+              scripts/compare-hkl.gp scripts/check-peak-detection
 
 
 DISTCHECK_CONFIGURE_FLAGS=--enable-gtk-doc

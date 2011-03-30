@@ -562,30 +562,31 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-EXTRA_DIST = configure m4/gnulib-cache.m4 src/cell.h src/hdf5-file.h \
-	src/image.h src/utils.h src/diffraction.h src/detector.h \
-	src/reflist-utils.h src/list_tmp.h src/statistics.h \
-	src/dw-hdfsee.h src/render.h src/hdfsee.h src/dirax.h \
-	src/mosflm.h src/peaks.h src/index.h src/filters.h \
-	src/diffraction-gpu.h src/cl-utils.h src/symmetry.h \
-	src/povray.h src/index-priv.h src/geometry.h src/render_hkl.h \
-	src/stream.h src/thread-pool.h src/beam-parameters.h \
-	src/post-refinement.h src/hrs-scaling.h src/reflist.h \
-	$(crystfel_DATA) doc/geometry.txt doc/indexamajig.txt \
-	doc/pattern_sim.txt doc/process_hkl.txt doc/symmetry.txt \
-	doc/twin-calculator.pdf doc/0-INDEX doc/examples/lcls-dec.geom \
+EXTRA_DIST = configure m4/gnulib-cache.m4 tests/first_merge_check \
+	tests/second_merge_check tests/third_merge_check \
+	tests/fourth_merge_check tests/first_merge_check.hkl \
+	tests/third_merge_check.hkl tests/fourth_merge_check.hkl \
+	src/cell.h src/hdf5-file.h src/image.h src/utils.h \
+	src/diffraction.h src/detector.h src/reflist-utils.h \
+	src/list_tmp.h src/statistics.h src/dw-hdfsee.h src/render.h \
+	src/hdfsee.h src/dirax.h src/mosflm.h src/peaks.h src/index.h \
+	src/filters.h src/diffraction-gpu.h src/cl-utils.h \
+	src/symmetry.h src/povray.h src/index-priv.h src/geometry.h \
+	src/render_hkl.h src/stream.h src/thread-pool.h \
+	src/beam-parameters.h src/post-refinement.h src/hrs-scaling.h \
+	src/reflist.h $(crystfel_DATA) doc/geometry.txt \
+	doc/indexamajig.txt doc/pattern_sim.txt doc/process_hkl.txt \
+	doc/symmetry.txt doc/twin-calculator.pdf doc/0-INDEX \
+	doc/examples/lcls-dec.geom \
 	doc/examples/lcls-june-r0013-r0128.geom \
 	doc/examples/lcls-xpp-estimate.geom doc/examples/simple.geom \
 	doc/examples/lcls-dec.beam doc/examples/lcls-june.beam \
 	doc/examples/lcls-xpp-estimate.beam \
 	doc/examples/cspad-feb2011.geom \
 	doc/examples/lcls-cxi-9keV.beam scripts/check-near-bragg \
-	scripts/double-hit scripts/random-image scripts/stream-split \
-	scripts/wibbletron scripts/zone-axis scripts/create-mtz \
-	scripts/frequency scripts/i0-analysis scripts/mtz2hkl \
-	scripts/sequence-image scripts/test-facetron scripts/zone-axes \
-	scripts/alternate-stream scripts/README scripts/indexing-rate \
-	scripts/observed-peak-rate scripts/cell-please \
+	scripts/random-image scripts/wibbletron scripts/create-mtz \
+	scripts/mtz2hkl scripts/sequence-image scripts/zone-axes \
+	scripts/alternate-stream scripts/README scripts/cell-please \
 	scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
 	scripts/compare-hkl.gp scripts/check-peak-detection
 SUBDIRS = lib doc/reference
@@ -682,13 +683,10 @@ crystfeldoc_DATA = doc/geometry.txt doc/indexamajig.txt doc/pattern_sim.txt \
                    doc/examples/lcls-cxi-9keV.beam
 
 scriptdir = $(docdir)/scripts
-script_DATA = scripts/check-near-bragg scripts/double-hit \
-              scripts/random-image scripts/stream-split scripts/wibbletron \
-              scripts/zone-axis scripts/create-mtz scripts/frequency \
-              scripts/i0-analysis scripts/mtz2hkl scripts/sequence-image \
-              scripts/test-facetron scripts/zone-axes \
-              scripts/alternate-stream scripts/README scripts/indexing-rate \
-              scripts/observed-peak-rate scripts/cell-please \
+script_DATA = scripts/check-near-bragg  scripts/random-image \
+              scripts/wibbletron scripts/create-mtz scripts/mtz2hkl \
+              scripts/sequence-image scripts/zone-axes \
+              scripts/alternate-stream scripts/README scripts/cell-please \
               scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
               scripts/compare-hkl.gp scripts/check-peak-detection
 

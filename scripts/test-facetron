@@ -1,7 +1,0 @@
-#!/bin/sh
-
-echo $1 | ~/crystfel/src/indexamajig --indexing=dirax -i - \
-                      -g ~/crystfel/examples/lcls-dec.geom \
-                      -p ~/lcls/1JB0.pdb \
-                      --near-bragg \
-        | ~/crystfel/src/facetron -g ~/crystfel/examples/lcls-dec.geom

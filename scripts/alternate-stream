@@ -11,7 +11,7 @@ my $alt = 0;
 
 while ( $line = <FH> ) {
 
-	if ( $line =~ /^Reflections\ from\ indexing/ ) {
+	if ( $line =~ /^-----\ Begin chunk\ -----$/ ) {
 		$alt = 1 - $alt;
 	}
 
