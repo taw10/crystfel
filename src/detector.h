@@ -39,6 +39,7 @@ struct panel
 	char     badrow;   /* 'x' or 'y' */
 	int      no_index; /* Don't index peaks in this panel if non-zero */
 	double   peak_sep; /* Characteristic peak separation */
+	double   integr_radius;  /* Peak integration radius */
 
 	double fsx;
 	double fsy;
@@ -76,6 +77,8 @@ struct detector
 	char              *mask;
 	unsigned int       mask_bad;
 	unsigned int       mask_good;
+
+	struct panel       defaults;
 };
 
 

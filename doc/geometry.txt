@@ -56,9 +56,13 @@ panel0/badrow_direction = -
 ; The resolution (in pixels per metre) for this panel
 panel0/res = 9090.91
 
-; The characteristic peak separation.  The peak detection will assume that
-; genuine peaks are separated by at least this amount.
+; The characteristic peak separation in pixels.  The peak detection will assume
+; that genuine peaks are separated by at least this amount.
 panel0/peak_sep = 6.0
+
+; You need to specify the peak integration radius, which should be a little
+; larger than the actual radii of the peaks in pixels
+panel0/integr_radius = 2.0
 
 ; The camera length (in metres) for this panel
 ; You can also specify the HDF path to a scalar floating point value containing
@@ -100,6 +104,9 @@ mask = /processing/hitfinder/masks
 mask_good = 0x27
 mask_bad = 0x00
 
+; Any of the per-panel values can be given without a panel prefix, for example:
+peak_sep = 6.0
+; in which case the value will be used for all *subsequent* panels.
 
 
-See the "examples" folder for some examples.
+See the "examples" folder for some examples (look at the ones ending in .geom).

@@ -306,21 +306,12 @@ static struct panel *new_panel(struct detector *det, const char *name)
 	det->panels = realloc(det->panels, det->n_panels*sizeof(struct panel));
 
 	new = &det->panels[det->n_panels-1];
-	new->min_fs = -1;
-	new->min_ss = -1;
-	new->max_fs = -1;
-	new->max_ss = -1;
-	new->cnx = NAN;
-	new->cny = NAN;
-	new->clen = -1.0;
-	new->res = -1.0;
-	new->badrow = '-';
-	new->no_index = 0;
-	new->peak_sep = 50.0;
-	new->fsx = 1.0;
-	new->fsy = 0.0;
-	new->ssx = 0.0;
-	new->ssy = 1.0;
+	memcpy(new, &det->defaults, sizeof(struct panel));
+
+	/* Create a new copy of the camera length location if needed */
+	if ( new->clen_from != NULL ) {
+		new->clen_from = strdup(new->clen_from);
+	}
 	strcpy(new->name, name);
 
 	return new;
@@ -408,6 +399,8 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 		panel->res = atof(val);
 	} else if ( strcmp(key, "peak_sep") == 0 ) {
 		panel->peak_sep = atof(val);
+	} else if ( strcmp(key, "integr_radius") == 0 ) {
+		panel->integr_radius = atof(val);
 	} else if ( strcmp(key, "badrow_direction") == 0 ) {
 		panel->badrow = val[0]; /* First character only */
 		if ( (panel->badrow != 'x') && (panel->badrow != 'y')
@@ -487,7 +480,11 @@ static void parse_toplevel(struct detector *det, const char *key,
 			det->mask_good = v;
 		}
 
-	} else {
+	}  else if ( strcmp(key, "peak_sep") == 0 ) {
+		det->defaults.peak_sep = atof(val);
+	} else if ( strcmp(key, "integr_radius") == 0 ) {
+		det->defaults.integr_radius = atof(val);
+	} else if ( parse_field_for_panel(&det->defaults, key, val) ) {
 		ERROR("Unrecognised top level field '%s'\n", key);
 	}
 }
@@ -505,11 +502,12 @@ struct detector *get_detector_geometry(const char *filename)
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) return NULL;
 
-	det = malloc(sizeof(struct detector));
+	det = calloc(1, sizeof(struct detector));
 	if ( det == NULL ) {
 		fclose(fh);
 		return NULL;
 	}
+
 	det->n_panels = 0;
 	det->panels = NULL;
 	det->n_bad = 0;
@@ -517,6 +515,25 @@ struct detector *get_detector_geometry(const char *filename)
 	det->mask_good = 0;
 	det->mask_bad = 0;
 	det->mask = NULL;
+
+	/* The default defaults... */
+	det->defaults.min_fs = -1;
+	det->defaults.min_ss = -1;
+	det->defaults.max_fs = -1;
+	det->defaults.max_ss = -1;
+	det->defaults.cnx = NAN;
+	det->defaults.cny = NAN;
+	det->defaults.clen = -1.0;
+	det->defaults.res = -1.0;
+	det->defaults.badrow = '-';
+	det->defaults.no_index = 0;
+	det->defaults.peak_sep = 50.0;
+	det->defaults.integr_radius = 10.0;
+	det->defaults.fsx = 1.0;
+	det->defaults.fsy = 0.0;
+	det->defaults.ssx = 0.0;
+	det->defaults.ssy = 1.0;
+	strncpy(det->defaults.name, "", 1023);
 
 	do {
 

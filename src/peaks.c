@@ -160,8 +160,8 @@ int integrate_peak(struct image *image, int cfs, int css,
 	if ( p == NULL ) return 1;
 	if ( p->no_index ) return 1;
 
-	lim = p->peak_sep/4.0;
-	out_lim = 1.0 + lim;
+	lim = p->integr_radius;
+	out_lim = 2.0 + lim;
 	lim_sq = pow(lim, 2.0);
 	out_lim_sq = pow(out_lim, 2.0);
 
@@ -338,15 +338,16 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 			}
 
 			/* Abort if drifted too far from the foot point */
-			if ( distance(mask_fs, mask_ss, fs, ss)
-			   > p->peak_sep ) {
+			if ( distance(mask_fs, mask_ss, fs, ss) >
+			     p->peak_sep/2.0 )
+			{
 				break;
 			}
 
 		} while ( did_something );
 
 		/* Too far from foot point? */
-		if ( distance(mask_fs, mask_ss, fs, ss) > p->peak_sep ) {
+		if ( distance(mask_fs, mask_ss, fs, ss) > p->peak_sep/2.0 ) {
 			nrej_dis++;
 			continue;
 		}
@@ -377,7 +378,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 
 		/* Check for a nearby feature */
 		image_feature_closest(image->features, f_fs, f_ss, &d, &idx);
-		if ( d < p->peak_sep ) {
+		if ( d < p->peak_sep/2.0 ) {
 			nrej_pro++;
 			continue;
 		}

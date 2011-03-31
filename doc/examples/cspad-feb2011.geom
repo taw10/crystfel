@@ -1,3 +1,6 @@
+; Parameters common to all panels
+integr_radius = 2.0
+
 ; Quadrant 0, asic 0
 q0a0/min_fs = 0
 q0a0/min_ss = 0

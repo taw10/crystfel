@@ -2,6 +2,10 @@ mask = /processing/hitfinder/masks
 mask_good = 0x07
 mask_bad = 0x00
 
+; These default values will be used unless overridden by the per-panel values
+peak_sep = 50.0
+integr_radius = 10.0
+
 upper/min_fs = 0
 upper/max_fs = 1023
 upper/min_ss = 512
@@ -13,7 +17,6 @@ upper/ss = y
 upper/clen = 67.8e-3
 upper/res = 13333.3  ; 75 micron pixel size
 upper/badrow_direction = y
-upper/peak_sep = 50
 
 lower/min_fs = 0
 lower/max_fs = 1023
@@ -26,7 +29,6 @@ lower/ss = y
 lower/clen = 70.8e-3
 lower/res = 13333.3  ; 75 micron pixel size
 lower/badrow_direction = y
-lower/peak_sep = 50
 
 bad_jetneartobeam/min_x = -15.0
 bad_jetneartobeam/max_x = +15.0
