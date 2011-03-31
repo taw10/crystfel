@@ -47,4 +47,10 @@
     <title>API Index</title>
     <xi:include href="xml/api-index-full.xml"><xi:fallback /></xi:include>
   </index>
+
+  <chapter>
+    <title>Information for developers</title>
+        <xi:include href="xml/coding-standards.xml"><xi:fallback /></xi:include>
+  </chapter>
+
 </book>
