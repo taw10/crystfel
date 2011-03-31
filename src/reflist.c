@@ -45,10 +45,6 @@
 
 struct _refldata {
 
-	signed int h;
-	signed int k;
-	signed int l;
-
 	/* Partiality and related geometrical stuff */
 	double r1;  /* First excitation error */
 	double r2;  /* Second excitation error */
@@ -104,8 +100,10 @@ struct _reflist {
 };
 
 
-#define SERIAL(h, k, l) (((h)+256)*512*512 + ((k)+256)*512 + ((l)+256))
-
+#define SERIAL(h, k, l) ((((h)+256)<<18) + (((k)+256)<<9) + ((l)+256))
+#define GET_H(serial) ((((serial) & 0xfffc0000)>>18)-256)
+#define GET_K(serial) ((((serial) & 0x0003fe00)>>9)-256)
+#define GET_L(serial) (((serial) & 0x000001ff)-256)
 
 /**************************** Creation / deletion *****************************/
 
@@ -140,7 +138,7 @@ RefList *reflist_new()
 
 	/* Create pseudo-root with invalid indices.
 	 * The "real" root will be the left child of this. */
-	new->head = new_node(SERIAL(257, 257, 257));
+	new->head = new_node(1<<31);
 
 	return new;
 }
@@ -213,9 +211,9 @@ Reflection *find_refl(const RefList *list, signed int h, signed int k, signed in
 		} else {
 
 			assert(search == refl->serial);
-			assert(h == refl->data.h);
-			assert(k == refl->data.k);
-			assert(l == refl->data.l);
+			assert(h == GET_H(refl->serial));
+			assert(k == GET_K(refl->serial));
+			assert(l == GET_L(refl->serial));
 			return refl;
 
 		}
@@ -283,9 +281,9 @@ void get_detector_pos(const Reflection *refl, double *fs, double *ss)
 void get_indices(const Reflection *refl,
                  signed int *h, signed int *k, signed int *l)
 {
-	*h = refl->data.h;
-	*k = refl->data.k;
-	*l = refl->data.l;
+	*h = GET_H(refl->serial);
+	*k = GET_K(refl->serial);
+	*l = GET_L(refl->serial);
 }
 
 
@@ -543,7 +541,6 @@ Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 	Reflection *new;
 
 	new = new_node(SERIAL(h, k, l));
-	new->data.h = h;  new->data.k = k,  new->data.l = l;
 
 	if ( list->head == NULL ) {
 		list->head = new;
