@@ -39,13 +39,45 @@ Whenever you edit a source file, don't forget to update the copyright dates at t
 <para>
 <emphasis>Indentation</emphasis> is done with <emphasis>tabs</emphasis> and
 <emphasis>alignment</emphasis> is done with spaces.  This way, the code looks
-neat whatever width you configure your editor to display tabs as.
+neat whatever width you configure your editor to display tabs as.  This means,
+for example:
+</para>
+<para>
+<programlisting>
+struct something
+{
+	int thing;                   /* &lt;--- spaces used to align comments */
+	int thing_with_longer_name;  /* &lt;--- spaces used to align comments */
+}
+
+void somefunction(int something)
+{
+	/* &lt;--- Tab character used at the start of this line */
+}
+</programlisting>
 </para>
 <para>
 However, code must be <emphasis>strictly</emphasis> wrapped at 80 columns, or
 what would be 80 columns if the tabs were displayed as 8 spaces.
 If you think you need more width, you're at too many levels of indentation and
 need to break things down a bit.
+</para>
+<para>
+When performing a two or three dimensional iteration, for example over image
+coordinates or Miller indices, it is acceptable to indent as follows:
+</para>
+<para>
+<programlisting>
+for ( h=-10; h&lt;+10; h++ ) {
+for ( k=-10; k&lt;+10; k++ ) {
+for ( l=-10; l&lt;+10; l++ ) {
+
+	/* Do stuff */
+
+}
+}
+}
+</programlisting>
 </para>
 </refsect1>
 
