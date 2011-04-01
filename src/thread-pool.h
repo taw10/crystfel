@@ -24,14 +24,6 @@ extern pthread_mutex_t stderr_lock;
 extern signed int get_status_label(void);
 
 
-/* work() will be called with a number and work_args.  The number will be
- * unique and in the range 0..n_tasks.  A progress bar will be shown using
- * "text" and the progress through the tasks, unless "text" is NULL. */
-extern void run_thread_range(int n_tasks, int n_threads, const char *text,
-                             void (*work)(int, void *), void *work_args,
-                             int cpu_num, int cpu_groupsize, int cpu_offset);
-
-
 /* get_task() will be called every time a worker is idle.  It returns either
  * NULL, indicating that no further work is available, or a pointer which will
  * be passed to work().  Work will stop after 'max' tasks have been processed.

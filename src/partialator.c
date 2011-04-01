@@ -71,13 +71,50 @@ struct refine_args
 };
 
 
-static void refine_image(int mytask, void *tasks)
+struct queue_args
 {
-	struct refine_args *all_args = tasks;
-	struct refine_args *pargs = &all_args[mytask];
+	int n;
+	int n_done;
+	int n_total_patterns;
+	struct image *images;
+	struct refine_args task_defaults;
+};
+
+
+static void refine_image(void *task, int id)
+{
+	struct refine_args *pargs = task;
 	struct image *image = pargs->image;
+	image->id = id;
 
 	pr_refine(image, pargs->full, pargs->sym);
+}
+
+
+static void *get_image(void *vqargs)
+{
+	struct refine_args *task;
+	struct queue_args *qargs = vqargs;
+
+	task = malloc(sizeof(struct refine_args));
+	memcpy(task, &qargs->task_defaults, sizeof(struct refine_args));
+
+	task->image = &qargs->images[qargs->n];
+
+	qargs->n++;
+
+	return task;
+}
+
+
+static void done_image(void *vqargs, void *task)
+{
+	struct queue_args *qargs = vqargs;
+
+	qargs->n_done++;
+
+	progress_bar(qargs->n_done, qargs->n_total_patterns, "Refining");
+	free(task);
 }
 
 
@@ -86,25 +123,24 @@ static void refine_all(struct image *images, int n_total_patterns,
                        ReflItemList *obs, RefList *full, int nthreads,
                        FILE *graph, FILE *pgraph)
 {
-	struct refine_args *tasks;
-	int i;
+	struct refine_args task_defaults;
+	struct queue_args qargs;
 
-	tasks = malloc(n_total_patterns * sizeof(struct refine_args));
-	for ( i=0; i<n_total_patterns; i++ ) {
+	task_defaults.sym = sym;
+	task_defaults.obs = obs;
+	task_defaults.full = full;
+	task_defaults.image = NULL;
+	task_defaults.graph = graph;
+	task_defaults.pgraph = pgraph;
 
-		tasks[i].sym = sym;
-		tasks[i].obs = obs;
-		tasks[i].full = full;
-		tasks[i].image = &images[i];
-		tasks[i].graph = graph;
-		tasks[i].pgraph = pgraph;
+	qargs.task_defaults = task_defaults;
+	qargs.n = 0;
+	qargs.n_done = 0;
+	qargs.n_total_patterns = n_total_patterns;
+	qargs.images = images;
 
-	}
-
-	run_thread_range(n_total_patterns, nthreads, "Refining",
-	                 refine_image, tasks, 0, 0, 0);
-
-	free(tasks);
+	run_threads(nthreads, refine_image, get_image, done_image,
+	            &qargs, n_total_patterns, 0, 0, 0);
 }
 
 
