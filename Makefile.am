@@ -7,10 +7,11 @@ bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
                src/calibrate_detector src/partialator \
                src/check_hkl src/sum_stack
 
-noinst_PROGRAMS = tests/list_check
+noinst_PROGRAMS = tests/list_check tests/integration_check
 
 TESTS = tests/list_check tests/first_merge_check tests/second_merge_check \
-        tests/third_merge_check tests/fourth_merge_check
+        tests/third_merge_check tests/fourth_merge_check \
+        tests/integration_check
 
 EXTRA_DIST += tests/first_merge_check tests/second_merge_check \
               tests/third_merge_check tests/fourth_merge_check \
@@ -117,6 +118,11 @@ endif
 
 tests_list_check_SOURCES = tests/list_check.c src/reflist.c src/thread-pool.c \
                            src/utils.c
+
+tests_integration_check_SOURCES = tests/integration_check.c src/peaks.c \
+                                  src/reflist.c src/cell.c src/detector.c \
+                                  src/thread-pool.c src/utils.c src/image.c \
+                                  src/hdf5-file.c
 
 INCLUDES = "-I$(top_srcdir)/data"
 

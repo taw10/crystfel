@@ -2,4 +2,5 @@
 .deps
 list_check
 gpu_sim_check
+integration_check
 .dirstamp
