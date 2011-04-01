@@ -1,6 +1,9 @@
 Index to the CrystFEL documentation
 -----------------------------------
 
+quickstart.txt
+	Basic usage information and suggested workflow.
+
 indexamajig.txt
 pattern_sim.txt
 process_hkl.txt

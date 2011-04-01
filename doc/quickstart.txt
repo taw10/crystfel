@@ -1,0 +1,5 @@
+Quick start guide for CrystFEL
+------------------------------
+
+So, you have a folder full of thousands of diffraction patterns, and you want to
+analyse them.  You've come to the right place.
