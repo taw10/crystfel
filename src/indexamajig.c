@@ -537,7 +537,7 @@ int main(int argc, char *argv[])
 		{"record",             1, NULL,                5},
 		{"cpus",               1, NULL,                6},
 		{"cpugroup",           1, NULL,                7},
-		{"cpuoffset",         1, NULL,                8},
+		{"cpuoffset",         1, NULL,                 8},
 		{0, 0, NULL, 0}
 	};
 
