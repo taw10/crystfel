@@ -67,10 +67,6 @@ static void set_affinity(int n, int cpu_num, int cpu_groupsize, int cpu_offset)
 		/* Cannot use ERROR() just yet */
 		fprintf(stderr, "%i: Failed to set CPU affinity.\n", n);
 
-	} else {
-
-		fprintf(stderr, "%i: Successfully set CPU affinity.\n", n);
-
 	}
 }
 
