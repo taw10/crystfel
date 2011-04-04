@@ -38,19 +38,24 @@
   </chapter>
 
   <chapter>
+    <title>Parallel programming</title>
+        <xi:include href="xml/thread-pool.xml"><xi:fallback /></xi:include>
+  </chapter>
+
+  <chapter>
     <title>Miscellaneous</title>
         <xi:include href="xml/quaternion.xml"/>
         <xi:include href="xml/utils.xml"/>
+  </chapter>
+
+  <chapter>
+    <title>Information for developers</title>
+        <xi:include href="xml/coding-standards.xml"><xi:fallback /></xi:include>
   </chapter>
 
   <index id="api-index-full">
     <title>API Index</title>
     <xi:include href="xml/api-index-full.xml"><xi:fallback /></xi:include>
   </index>
-
-  <chapter>
-    <title>Information for developers</title>
-        <xi:include href="xml/coding-standards.xml"><xi:fallback /></xi:include>
-  </chapter>
 
 </book>

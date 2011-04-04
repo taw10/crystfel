@@ -67,3 +67,8 @@ quat_rot
 <FILE>image</FILE>
 image
 </SECTION>
+
+<SECTION>
+<FILE>thread-pool</FILE>
+run_threads
+</SECTION>

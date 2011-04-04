@@ -31,6 +31,20 @@
 #include "utils.h"
 
 
+/**
+ * SECTION:thread-pool
+ * @short_description: The thread pool
+ * @title: The thread pool
+ * @section_id:
+ * @see_also:
+ * @include: "thread-pool.h"
+ * @Image:
+ *
+ * The thread pool helps when running many tasks in parallel.  It takes care of
+ * starting and stopping threads, and presents a relatively simple interface to
+ * the individual programs.
+ */
+
 /* ------------------------------ CPU affinity ------------------------------ */
 
 #ifdef HAVE_CPU_AFFINITY
@@ -182,6 +196,20 @@ static void *task_worker(void *pargsv)
 }
 
 
+/**
+ * run_threads:
+ * @n_threads: The number of threads to run in parallel
+ * @work: The function to be called to do the work
+ * @get_task: The function which will determine the next unassigned task
+ * @final: The function which will be called to clean up after a task
+ * @queue_args: A pointer to any data required to determine the next task
+ * @max: Stop calling get_task() after starting this number of jobs
+ * @cpu_num: The number of CPUs in the system
+ * @cpu_groupsize: The group size into which the CPUs are grouped
+ * @cpu_offset: The CPU group number at which to start pinning threads
+ *
+ * Returns: The number of tasks completed.
+ **/
 int run_threads(int n_threads, void (*work)(void *, int),
                 void *(*get_task)(void *), void (*final)(void *, void *),
                 void *queue_args, int max,
