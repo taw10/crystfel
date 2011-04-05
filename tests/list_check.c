@@ -90,6 +90,7 @@ static int test_lists(int num_items)
 	optimise_reflist(list);
 
 	/* Iterate over the list and check we find everything */
+	int count = 0;
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
@@ -107,7 +108,15 @@ static int test_lists(int num_items)
 			}
 		}
 
+		count++;
+
 	}
+	if ( count != num_reflections(list) ) {
+		fprintf(stderr, "num_reflections gave %i, iteration gave %i\n",
+		        num_reflections(list), count);
+		return 1;
+	}
+
 	for ( i=0; i<num_items; i++ ) {
 		if ( check[i].found == 0 ) {
 

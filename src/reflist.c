@@ -775,7 +775,7 @@ static int recursive_count(Reflection *refl)
 {
 	int count_left, count_right;
 
-	if ( refl == NULL ) return 1;
+	if ( refl == NULL ) return 0;
 
 	count_left = recursive_count(refl->child[0]);
 	count_right = recursive_count(refl->child[1]);
