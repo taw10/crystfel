@@ -3,6 +3,7 @@
  *
  * Attempt to refine detector geometry
  *
+ * (c) 2011 Rick Kirian <rkirian@asu.edu>
  * (c) 2006-2011 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL

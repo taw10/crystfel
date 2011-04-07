@@ -4,6 +4,7 @@
  * Detector properties
  *
  * (c) 2006-2011 Thomas White <taw@physics.org>
+ * (c) 2011 Rick Kirian <rkirian@asu.edu>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
@@ -992,6 +993,3 @@ int print_detector_geometry(FILE * file, struct image * image) {
 	return 0;
 
 }
-
-
-
