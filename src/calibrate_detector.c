@@ -129,7 +129,7 @@ static struct rvec nearest_bragg(struct image *image, struct rvec q)
 	gsl_vector_view b = gsl_vector_view_array(hvec, 3);
 	gsl_vector *x = gsl_vector_alloc(3);
 
-	gsl_permutation * perm = gsl_permutation_alloc(3);
+	gsl_permutation *perm = gsl_permutation_alloc(3);
 	gsl_linalg_LU_decomp(&m.matrix, perm, &s);
 	gsl_linalg_LU_solve(&m.matrix, perm, &b.vector, x);
 
