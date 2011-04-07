@@ -156,12 +156,12 @@ static void refine_xy(FILE *fh, struct image *image, int minpeaks,
 	int pi;
 	int nChunks;
 
-	weightedSumFS = calloc(sizeof(double), image->det->n_panels);
-	weightedSumSS = calloc(sizeof(double), image->det->n_panels);
-	summedWeights = calloc(sizeof(double), image->det->n_panels);
-	peaksFound = calloc(sizeof(int), image->det->n_panels);
-	meanShiftFS = calloc(sizeof(double), image->det->n_panels);
-	meanShiftSS = calloc(sizeof(double), image->det->n_panels);
+	weightedSumFS = calloc(image->det->n_panels, sizeof(double));
+	weightedSumSS = calloc(image->det->n_panels, sizeof(double));
+	summedWeights = calloc(image->det->n_panels, sizeof(double));
+	peaksFound = calloc(image->det->n_panels, sizeof(double));
+	meanShiftFS = calloc(image->det->n_panels, sizeof(double));
+	meanShiftSS = calloc(image->det->n_panels, sizeof(double));
 
 	/* Initialize arrays  */
 	for (pi=0; pi<image->det->n_panels; pi++) {
