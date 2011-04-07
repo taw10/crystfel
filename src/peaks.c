@@ -591,13 +591,14 @@ void integrate_reflections(struct image *image, int polar, int use_closer)
 		double bg, max;
 		struct panel *p;
 		double pfs, pss;
+		int r;
 
 		get_detector_pos(refl, &pfs, &pss);
 		p = find_panel(image->det, pfs, pss);
 		if ( p == NULL ) continue;
 		if ( p->no_index ) continue;
 
-		/* Wait.. is there a really close feature which was detected? */
+		/* Is there a really close feature which was detected? */
 		if ( use_closer ) {
 
 			struct imagefeature *f;
@@ -610,56 +611,20 @@ void integrate_reflections(struct image *image, int polar, int use_closer)
 			}
 			if ( (f != NULL) && (d < PEAK_REALLY_CLOSE) ) {
 
-				int r;
-
-				/* f->intensity was measured on the filtered
-				 * pattern, so instead re-integrate using old
-				 * coordinates. This will produce further
-				 * revised coordinates. */
-				r = integrate_peak(image, f->fs, f->ss,
-					           &fs, &ss, &intensity, &bg,
-					           &max, polar, 1);
-				if ( r ) {
-					/* The original peak (which also went
-					 * through integrate_peak(), but with
-					 * the mangled image data) would have
-					 * been rejected if it was in a bad
-					 * region.  Integration of the same
-					 * peak included a bad region this time.
-					 */
-					continue;
-				}
-				intensity = f->intensity;
-
-			} else {
-
-				int r;
-
-				r = integrate_peak(image, pfs, pss, &fs, &ss,
-				                   &intensity, &bg, &max,
-					           polar, 1);
-				if ( r ) {
-					/* Plain old ordinary peak veto */
-					continue;
-				}
+				pfs = f->fs;
+				pss = f->ss;
 
 			}
-
-		} else {
-
-			int r;
-
-			r = integrate_peak(image, pfs, pss, &fs, &ss,
-			                   &intensity, &bg, &max, polar, 0);
-			if ( r ) {
-				/* Plain old ordinary peak veto */
-				continue;
-			}
-
 		}
 
-		set_int(refl, intensity);
-		set_redundancy(refl, 1);
+		r = integrate_peak(image, pfs, pss, &fs, &ss,
+		                   &intensity, &bg, &max, polar, 0);
+
+		/* Record intensity and set redundancy to 1 on success */
+		if ( r == 0 ) {
+			set_int(refl, intensity);
+			set_redundancy(refl, 1);
+		}
 
 	}
 }
