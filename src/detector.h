@@ -115,7 +115,7 @@ extern int reverse_2d_mapping(double x, double y, double *pfs, double *pss,
 
 extern double largest_q(struct image *image);
 
-extern int print_detector_geometry(FILE * file, struct image * image);
+extern int write_detector_geometry(const char *filename, struct detector *det);
 
 
 

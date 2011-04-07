@@ -941,55 +941,76 @@ void get_pixel_extents(struct detector *det,
 }
 
 
-int print_detector_geometry(FILE * file, struct image * image) {
-
-	struct panel * p;
+int write_detector_geometry(const char *filename, struct detector *det)
+{
+	struct panel *p;
 	int pi;
+	FILE *fh;
 
-	if ( image == NULL ) return 1;
-	if ( file == NULL ) return 2;
-	if ( image->det->n_panels < 1 ) return 3;
+	if ( filename == NULL ) return 2;
+	if ( det->n_panels < 1 ) return 3;
 
-	for (pi=0; pi<image->det->n_panels; pi++) {
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) return 1;
 
-		p = &(image->det->panels[pi]);
+	for ( pi=0; pi<det->n_panels; pi++) {
+
+		char coord;
+		char sign;
+
+		p = &(det->panels[pi]);
 
 		if ( p == NULL ) return 4;
 
-		fprintf(file,"%s/min_fs = %d\n",p->name,p->min_fs);
-		fprintf(file,"%s/min_ss = %d\n",p->name,p->min_ss);
-		fprintf(file,"%s/max_fs = %d\n",p->name,p->max_fs);
-		fprintf(file,"%s/max_ss = %d\n",p->name,p->max_ss);
-		fprintf(file,"%s/badrow_direction = %C\n",p->name,p->badrow);
-		fprintf(file,"%s/res = %g\n",p->name,p->res);
-		fprintf(file,"%s/peak_sep = %g\n",p->name,p->peak_sep);
-		fprintf(file,"%s/clen = %s\n",p->name,p->clen_from);
-		//FIXME: the following is sketchy, but it will work for now.  we need
-		//       to generalise the parser in detector.c
-		char coord;
-		char sign;
-		if (p->fsx != 0){
-			if (p->fsx>0){sign='+';}else{sign='-';}
+		fprintf(fh, "%s/min_fs = %d\n", p->name, p->min_fs);
+		fprintf(fh, "%s/min_ss = %d\n", p->name, p->min_ss);
+		fprintf(fh, "%s/max_fs = %d\n", p->name, p->max_fs);
+		fprintf(fh, "%s/max_ss = %d\n", p->name, p->max_ss);
+		fprintf(fh, "%s/badrow_direction = %C\n", p->name, p->badrow);
+		fprintf(fh, "%s/res = %g\n", p->name, p->res);
+		fprintf(fh, "%s/peak_sep = %g\n", p->name, p->peak_sep);
+		fprintf(fh, "%s/clen = %s\n", p->name, p->clen_from);
+
+		/* FIXME: The following is sketchy, but it will work for now.
+		 * We need to generalise the parser in detector.c */
+		if ( p->fsx != 0 ) {
+			if ( p->fsx > 0 ) {
+				sign='+';
+			} else {
+				sign='-';
+			}
 			coord = 'x';
 		} else {
-			if (p->fsy>0){sign='+';}else{sign='-';}
+			if ( p->fsy > 0 ) {
+				sign='+';
+			} else {
+				sign='-';
+			}
 			coord = 'y';
 		}
-		fprintf(file,"%s/fs = %C%C\n",p->name, sign, coord);
+		fprintf(fh, "%s/fs = %C%C\n", p->name, sign, coord);
 		if (p->ssx != 0){
-			if (p->ssx>0){sign='+';}else{sign='-';}
+			if ( p->ssx > 0 ) {
+				sign='+';
+			} else {
+				sign='-';
+			}
 			coord = 'x';
 		} else {
-			if (p->ssy>0){sign='+';}else{sign='-';}
+			if ( p->ssy > 0 ) {
+				sign='+';
+			} else {
+				sign='-';
+			}
 			coord = 'y';
 		}
-		fprintf(file,"%s/ss = %C%C\n",p->name, sign, coord);
-		fprintf(file,"%s/corner_x = %g\n",p->name,p->cnx);
-		fprintf(file,"%s/corner_y = %g\n",p->name,p->cny);
-		fprintf(file,"%s/no_index = %d\n",p->name,p->no_index);
+		fprintf(fh, "%s/ss = %C%C\n", p->name, sign, coord);
+		fprintf(fh, "%s/corner_x = %g\n", p->name, p->cnx);
+		fprintf(fh, "%s/corner_y = %g\n", p->name, p->cny);
+		fprintf(fh, "%s/no_index = %d\n", p->name, p->no_index);
 
 	}
+	fclose(fh);
 
 	return 0;
-
 }

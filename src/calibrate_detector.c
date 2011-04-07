@@ -34,7 +34,6 @@
 #include "peaks.h"
 
 
-
 static void show_help(const char *s)
 {
 	printf("Syntax: %s [options] -i <file.h5>\n\n", s);
@@ -47,21 +46,19 @@ static void show_help(const char *s)
 "  -m, --method=<method>      The calibration method.\n"
 "               xy            Determine panel shifts in plane of detector\n"
 "  -o, --output=<file>        Output results here"
-"  -n, --npeaks=<number>      Don't refine unless this many peaks observed\n"
-"                             (in the whole stream, not a single shot)\n"
+"  -n, --npeaks=<number>      Don't refine unless this many peaks are found\n"
+"                              in the whole stream.\n"
 "\n");
 }
 
-//FIXME: should this function be in detector.h?
-int calculate_projected_peak(struct panel *panel, struct rvec q,
-                             double kk, double *fs, double *ss)
-{
 
-	if (panel == NULL) return 1;
+static int calculate_projected_peak(struct panel *panel, struct rvec q,
+                                    double kk, double *fs, double *ss)
+{
+	if ( panel == NULL ) return 1;
 
 	double xd, yd, cl;
 	double plx, ply;
-
 	const double den = kk + q.w;
 
 	/* Camera length for this panel */
@@ -92,22 +89,23 @@ int calculate_projected_peak(struct panel *panel, struct rvec q,
 	if ( *ss > panel->max_ss ) return 3;
 
 	return 0;
-
 }
 
-//FIXME: should this function be in detector.h?
-struct rvec nearest_bragg(struct image image, struct rvec q)
-{
 
+static struct rvec nearest_bragg(struct image *image, struct rvec q)
+{
 	struct rvec g;
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
 	double hd, kd, ld;
 	double h, k, l;
+	int s;
+	double U[9];
+	double hvec[3];
 
-	/* miller indices of nearest Bragg reflection */
-	cell_get_cartesian(image.indexed_cell, &ax, &ay, &az,
+	/* Miller indices of nearest Bragg reflection */
+	cell_get_cartesian(image->indexed_cell, &ax, &ay, &az,
 	                                       &bx, &by, &bz,
 	                                       &cx, &cy, &cz);
 
@@ -119,56 +117,202 @@ struct rvec nearest_bragg(struct image image, struct rvec q)
 	k = lrint(kd);
 	l = lrint(ld);
 
-	/* now get scattering vector for reflectin [hkl]
-	 * this means solving the equation U*q = h */
-	double U[] = {ax, ay, az,
-	              bx, by, bz,
-	              cx, cy, cz};
+	/* Now get scattering vector for reflection hkl
+	 * by solving the equation U*q = h */
+	U[0] = ax;  U[1] = ay;  U[2] = az;
+	U[3] = bx;  U[4] = by;  U[5] = bz;
+	U[6] = cx;  U[7] = cy;  U[8] = cz;
 
-	double hvec[] = {h,k,l};
+	hvec[0] = h;  hvec[1] = k;  hvec[2] = l;
 
-	gsl_matrix_view m
-		= gsl_matrix_view_array (U, 3, 3);
+	gsl_matrix_view m = gsl_matrix_view_array(U, 3, 3);
+	gsl_vector_view b = gsl_vector_view_array(hvec, 3);
+	gsl_vector *x = gsl_vector_alloc(3);
 
-	gsl_vector_view b
-		= gsl_vector_view_array (hvec, 3);
+	gsl_permutation * perm = gsl_permutation_alloc(3);
+	gsl_linalg_LU_decomp(&m.matrix, perm, &s);
+	gsl_linalg_LU_solve(&m.matrix, perm, &b.vector, x);
 
-	gsl_vector *x = gsl_vector_alloc (3);
-
-	int s;
-
-	gsl_permutation * perm = gsl_permutation_alloc (3);
-	gsl_linalg_LU_decomp (&m.matrix, perm, &s);
-	gsl_linalg_LU_solve (&m.matrix, perm, &b.vector, x);
-
-	/* outgoing wavevector for [hkl] */
+	/* Outgoing wavevector for hkl */
 	g.u = x->data[0];
 	g.v = x->data[1];
 	g.w = x->data[2];
 
 	return g;
+}
 
+
+static void refine_xy(FILE *fh, struct image *image, int minpeaks,
+                       const char *outfilename)
+{
+	double *weightedSumFS;
+	double *weightedSumSS;
+	double *summedWeights;
+	double *meanShiftFS;
+	double *meanShiftSS;
+	int *peaksFound;
+	double cnx, cny;
+	double xsh, ysh;
+	int pi;
+	int nChunks;
+
+	weightedSumFS = calloc(sizeof(double), image->det->n_panels);
+	weightedSumSS = calloc(sizeof(double), image->det->n_panels);
+	summedWeights = calloc(sizeof(double), image->det->n_panels);
+	peaksFound = calloc(sizeof(int), image->det->n_panels);
+	meanShiftFS = calloc(sizeof(double), image->det->n_panels);
+	meanShiftSS = calloc(sizeof(double), image->det->n_panels);
+
+	/* Initialize arrays  */
+	for (pi=0; pi<image->det->n_panels; pi++) {
+		weightedSumFS[pi] = 0;
+		weightedSumSS[pi] = 0;
+		summedWeights[pi] = 0;
+		peaksFound[pi] = 0;
+		meanShiftFS[pi] = 0;
+		meanShiftSS[pi] = 0;
+	}
+
+	fesetround(1);  /* Round towards nearest */
+
+	nChunks = 0;
+	while ( 1 )  {
+
+		int fail;
+		int nFeatures;
+		int i;
+
+		/* Get next chunk */
+		fail = read_chunk(fh, image);
+		if ( fail ) break;
+		nChunks += 1;
+
+		/* Skip if no peaks found */
+		if ( image->features == NULL ) {
+			continue;
+		}
+
+		/* Loop through peaks to determine mean panel shift */
+		nFeatures = image_feature_count(image->features);
+
+		for ( i=0; i<nFeatures; i++ ) {
+
+			struct panel *p;
+			struct imagefeature *thisFeature;
+			struct rvec q;
+			double twotheta;
+			struct rvec g;
+			double fs, ss;   /* Observed peaks */
+			double pfs, pss; /* Predicted peaks */
+			double dfs, dss; /* Observed - predicted */
+			int pi;
+			double thisWeight;
+
+			/* If we find a feature, determine peak
+			 * position */
+			thisFeature = image_get_feature(image->features, i);
+			if ( thisFeature == NULL ) {
+				continue;
+			}
+
+			fs = thisFeature->fs;
+			ss = thisFeature->ss;
+
+			p = find_panel(image->det, fs, ss);
+			if ( p == NULL ) {
+				continue;
+			}
+			if ( p->no_index ) continue;
+
+			/* Now determine the predicted peak position.
+			 * Scattering vector of this peak */
+			q = get_q(image, fs, ss, &twotheta, 1.0/image->lambda);
+
+			/* Scattering vector of nearest bragg peak */
+			g = nearest_bragg(image, q);
+
+			/* Coordinate of this predicted peak */
+			fail = calculate_projected_peak(p, g, 1.0/image->lambda,
+			                                &pfs, &pss);
+			if ( fail != 0 ) continue;
+
+			/* Finally, we have the shift for this peak */
+			dfs = pfs - fs;
+			dss = pss - ss;
+
+			/* Add this shift to the weighted sum over shifts */
+			pi = find_panel_number(image->det,fs,ss);
+			thisWeight = 1.0;
+			weightedSumFS[pi] += thisWeight*dfs;
+			weightedSumSS[pi] += thisWeight*dss;
+			summedWeights[pi] += thisWeight;
+			peaksFound[pi] += 1;
+
+		}
+
+	}
+
+	/* Calculate weighted average shift in peak positions */
+	for ( pi=0; pi<image->det->n_panels; pi++ ) {
+		meanShiftFS[pi] = weightedSumFS[pi]/summedWeights[pi];
+		meanShiftSS[pi] = weightedSumSS[pi]/summedWeights[pi];
+	}
+
+	/* Populate the image structure with new geometry info */
+	for ( pi=0; pi<image->det->n_panels; pi++ ) {
+
+		struct panel *p;
+
+		p = &image->det->panels[pi];
+
+		xsh = 0;
+		ysh = 0;
+
+		if ( peaksFound[pi] >= minpeaks ) {
+
+			/* Convert shifts from raw coords to lab frame */
+			xsh = meanShiftFS[pi]*p->fsx + meanShiftSS[pi]*p->ssx;
+			ysh = meanShiftFS[pi]*p->fsy + meanShiftSS[pi]*p->ssy;
+
+			/* Add shifts to original panel corner locations */
+			cnx = p->cnx + xsh;
+			cny = p->cny + ysh;
+
+		} else {
+
+			/* Not refined? use original coordinates */
+			cnx = p->cnx;
+			cny = p->cny;
+
+		}
+
+		image->det->panels[pi].cnx = cnx;
+		image->det->panels[pi].cny = cny;
+		if ( peaksFound[pi] < minpeaks) {
+			image->det->panels[pi].no_index = 1;
+		}
+
+		STATUS("Panel %s, # peaks: %10d, mean shifts: %f %f\n",
+		       p->name, peaksFound[pi], xsh, ysh);
+
+	}
+
+	/* Write the new geometry file */
+	write_detector_geometry(outfilename, image->det);
 }
 
 
 int main(int argc, char *argv[])
 {
-
-
 	char c;
 	struct image image;
-	struct panel p;
 	char *filename = NULL;
 	char *geometry = NULL;
 	char *method = NULL;
 	char *outputfile = NULL;
 	FILE *fh = NULL;
 	FILE *outfh = NULL;
-	int nFeatures;
-	int i;
-	int fail;
-	int nChunks;
-	int minpeaks=0;
+	int minpeaks = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -182,14 +326,13 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:g:m:o:n:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "hi:g:m:o:n:",
+	                        longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' :
 			show_help(argv[0]);
 			return 0;
-		case 0 :
-			break;
 		case 'i' :
 			filename = strdup(optarg);
 			break;
@@ -205,6 +348,8 @@ int main(int argc, char *argv[])
 		case 'n' :
 			minpeaks = atoi(optarg);
 			break;
+		case 0 :
+			break;
 		default :
 			return 1;
 		}
@@ -215,12 +360,12 @@ int main(int argc, char *argv[])
 		ERROR("You must specify the input filename with -i\n");
 		return 1;
 	}
+
 	fh = fopen(filename,"r");
-   if ( fh == NULL ) {
-		ERROR("Problem opening file\n");
+	if ( fh == NULL ) {
+		ERROR("Couldn't open file '%s'\n", filename);
 		return 1;
 	}
-	printf("Read stream file: %s\n",filename);
 
 	if ( geometry == NULL ) {
 		ERROR("You need to specify a geometry file with --geometry\n");
@@ -232,193 +377,45 @@ int main(int argc, char *argv[])
 		ERROR("Failed to read detector geometry from %s\n", geometry);
 		return 1;
 	}
-	printf("Read geometry file: %s\n",geometry);
-	image.width = image.det->max_fs;
-	image.height = image.det->max_ss;
 	free(geometry);
 
-	if ( !(outputfile == NULL) ) {
-		printf("Writing result to file: %s\n",outputfile);
-      outfh = fopen(outputfile,"w");
-   } else {
-		ERROR("You did not specify an output file.\n");
+	image.width = image.det->max_fs;
+	image.height = image.det->max_ss;
+
+	if ( outputfile != NULL ) {
+		STATUS("Writing result to '%s'\n", outputfile);
+		outfh = fopen(outputfile, "w");
+	} else {
+		ERROR("You need to specify an output file.\n");
 		return 1;
 	}
+
 	if ( minpeaks == 0 ) {
 		minpeaks = 1;
-		printf("You did not specify minimum number of peaks."
-             " Setting default value of %d\n",minpeaks);
+		STATUS("You did not specify minimum number of peaks.\n");
+		STATUS("Using default value of %d\n", minpeaks);
 	}
 
 	if ( method == NULL ) {
-		printf("You did not specify a refinement method-- setting default.\n");
+		STATUS("You did not specify a refinement method "
+		       "- using default.\n");
 		method = strdup("xy");
 	}
 
+	if ( strcmp(method,"xy") == 0 ) {
 
-	if ( !strcmp(method,"xy" ) ) {
+		STATUS("Using refinement method %s\n", method);
 
-		printf("Using refinement method %s\n",method);
-
-		double * weightedSumFS, * weightedSumSS;
-		double * summedWeights;
-		double * meanShiftFS, * meanShiftSS;
-		int * peaksFound;
-		double cnx, cny;
-		double xsh, ysh;
-
-		weightedSumFS = (double *)calloc(sizeof(double), image.det->n_panels);
-		weightedSumSS = (double *)calloc(sizeof(double), image.det->n_panels);
-		summedWeights = (double *)calloc(sizeof(double), image.det->n_panels);
-		peaksFound = (int *)calloc(sizeof(int), image.det->n_panels);
-		meanShiftFS = (double *)calloc(sizeof(double), image.det->n_panels);
-		meanShiftSS = (double *)calloc(sizeof(double), image.det->n_panels);
-
-		/* initialize arrays (is there a standard function to do this?)  */
-		int pi;
-		for (pi=0; pi<image.det->n_panels; pi++) {
-			weightedSumFS[pi] = 0;
-	      weightedSumSS[pi] = 0;
-   	   summedWeights[pi] = 0;
-     		peaksFound[pi] = 0;
-      	meanShiftFS[pi] = 0;
-      	meanShiftSS[pi] = 0;
-		}
-
-
-		fesetround(1);  /* Round towards nearest */
-
-		nChunks = 0;
-		while (1) {
-
-		   // check for peaks in next file
-			fail = read_chunk(fh, &image);
-		   if ( fail == 1 ) {
-		      // FIXME:should check if this is EOF, or broken file handle
-		      break;
-		   }
-			nChunks += 1;
-
-
-			// move on to the next chunk if no peaks found
-			if ( image.features == NULL ) {
-				continue;
-			}
-
-			// now loop through peaks to determine mean panel shift
-			nFeatures = image_feature_count(image.features);
-
-			for (i=0; i<nFeatures; i++) {
-
-				struct panel * p;
-				struct imagefeature * thisFeature;
-				struct rvec q;
-				double twotheta;
-				struct rvec g;
-				double fs, ss;   /* observed peaks */
-				double pfs, pss; /* predicted peaks */
-				double dfs, dss; /* observed - predicted */
-				int pi;
-				double thisWeight;
-				//int fail;
-
-				/* if we find a feature, determine peak position */
-				thisFeature = image_get_feature(image.features,i);
-				if ( thisFeature == NULL ) {
-					continue;
-				}
-
-				fs = thisFeature->fs;
-				ss = thisFeature->ss;
-
-				p = find_panel(image.det, fs, ss);
-				if ( p == NULL ) {
-					continue;
-				}
-				if ( p->no_index ) continue;
-
-				/* now determine the predicted peak position */
-
-				/* scattering vector of this peak */
-				q = get_q(&image, fs, ss, &twotheta, 1.0/image.lambda);
-
-				/* scattering vector of nearest bragg peak */
-				g = nearest_bragg(image, q);
-
-				/* coordinate of this predicted peak */
-				fail = calculate_projected_peak(p,g,1/image.lambda,&pfs,&pss);
-
-				/* check for error, e.g. out of panel */
-				if ( fail != 0 ) continue;
-
-				/* Finally, we have the shift in position of this peak */
-				dfs = pfs - fs;
-				dss = pss - ss;
-
-				/* Add this shift to the weighted sum over shifts */
-				pi = find_panel_number(image.det,fs,ss);
-				thisWeight = 1; // FIXME: use real weighting some day
-				weightedSumFS[pi] += thisWeight*dfs;
-				weightedSumSS[pi] += thisWeight*dss;
-				summedWeights[pi] += thisWeight;
-				peaksFound[pi] += 1;
-
-			} /* end loop through image features */
-
-		} /* end loop through stream chunks */
-
-		/* calculate weighted average shift in peak positions */
-		for (pi=0; pi < image.det->n_panels; pi++) {
-			meanShiftFS[pi] = weightedSumFS[pi]/summedWeights[pi];
-			meanShiftSS[pi] = weightedSumSS[pi]/summedWeights[pi];
-		}
-
-		/* first populate the image structure with new geometry info */
-		for (pi=0; pi < image.det->n_panels; pi++) {
-
-			p = image.det->panels[pi];
-
-			xsh = 0;
-			ysh = 0;
-
-			if ( peaksFound[pi] >= minpeaks ) {
-
-				/* convert shifts from raw coords to lab frame */
-				xsh = meanShiftFS[pi]*p.fsx + meanShiftSS[pi]*p.ssx;
-				ysh = meanShiftFS[pi]*p.fsy + meanShiftSS[pi]*p.ssy;
-
-				/* add shifts to original panel corner locations */
-				cnx = p.cnx + xsh;
-				cny = p.cny + ysh;
-
-			} else {
-				/* not refined? use original coordinates */
-				cnx = p.cnx;
-				cny = p.cny;
-			}
-
-			image.det->panels[pi].cnx = cnx;
-			image.det->panels[pi].cny = cny;
-			if ( peaksFound[pi] < minpeaks) image.det->panels[pi].no_index = 1;
-
-			printf("panel %s, # peaks: %10d, mean shifts: %f %f\n",p.name, peaksFound[pi],xsh,ysh);
-
-		}
-
-		/* write the new geometry file */
-		print_detector_geometry(outfh,&image);
+		refine_xy(fh, &image, minpeaks, outputfile);
 
 	} else {
 
 		printf("Refinement method %s not recognized\n",method);
-   	return 1;
+   		return 1;
 
 	}
 
-
 	fclose(outfh);
-
-	printf("Done!\n");
 
 	return 0;
 }
