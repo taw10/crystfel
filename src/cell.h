@@ -47,9 +47,9 @@ extern UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs,
                                     struct rvec cs);
 
 extern void cell_set_cartesian(UnitCell *cell,
-			double ax, double ay, double az,
-			double bx, double by, double bz,
-			double cx, double cy, double cz);
+                               double ax, double ay, double az,
+                               double bx, double by, double bz,
+                               double cx, double cy, double cz);
 
 extern void cell_set_parameters(UnitCell *cell, double a, double b, double c,
 				double alpha, double beta, double gamma);
@@ -62,12 +62,12 @@ extern void cell_set_pointgroup(UnitCell *cell, const char *sym);
 
 
 extern int cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
-                                double *alpha, double *beta, double *gamma);
+                               double *alpha, double *beta, double *gamma);
 
 extern int cell_get_cartesian(UnitCell *cell,
-                               double *ax, double *ay, double *az,
-                               double *bx, double *by, double *bz,
-                               double *cx, double *cy, double *cz);
+                              double *ax, double *ay, double *az,
+                              double *bx, double *by, double *bz,
+                              double *cx, double *cy, double *cz);
 
 extern int cell_get_reciprocal(UnitCell *cell,
                                double *asx, double *asy, double *asz,
@@ -75,9 +75,9 @@ extern int cell_get_reciprocal(UnitCell *cell,
                                double *csx, double *csy, double *csz);
 
 extern void cell_set_reciprocal(UnitCell *cell,
-                               double asx, double asy, double asz,
-                               double bsx, double bsy, double bsz,
-                               double csx, double csy, double csz);
+                                double asx, double asy, double asz,
+                                double bsx, double bsy, double bsz,
+                                double csx, double csy, double csz);
 
 extern const char *cell_get_pointgroup(UnitCell *cell);
 
