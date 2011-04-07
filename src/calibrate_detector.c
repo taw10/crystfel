@@ -43,9 +43,9 @@ static void show_help(const char *s)
 "  -h, --help                 Display this help message.\n"
 "  -g. --geometry=<file>      Get detector geometry from file.\n"
 "  -i, --input=<file>         Input filename.\n"
-"  -m, --method=<method>      The calibration method.\n"
+"  -m, --method=<method>      The calibration method.  Choose from:\n"
 "               xy            Determine panel shifts in plane of detector\n"
-"  -o, --output=<file>        Output results here"
+"  -o, --output=<file>        Name of output geometry file.\n"
 "  -n, --npeaks=<number>      Don't refine unless this many peaks are found\n"
 "                              in the whole stream.\n"
 "\n");
@@ -106,8 +106,8 @@ static struct rvec nearest_bragg(struct image *image, struct rvec q)
 
 	/* Miller indices of nearest Bragg reflection */
 	cell_get_cartesian(image->indexed_cell, &ax, &ay, &az,
-	                                       &bx, &by, &bz,
-	                                       &cx, &cy, &cz);
+	                                        &bx, &by, &bz,
+	                                        &cx, &cy, &cz);
 
 	hd = q.u * ax + q.v * ay + q.w * az;
 	kd = q.u * bx + q.v * by + q.w * bz;

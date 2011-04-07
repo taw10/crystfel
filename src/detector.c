@@ -507,6 +507,7 @@ static void parse_toplevel(struct detector *det, const char *key,
 	}
 }
 
+
 struct detector *get_detector_geometry(const char *filename)
 {
 	FILE *fh;
