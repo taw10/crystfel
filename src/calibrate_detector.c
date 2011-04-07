@@ -52,44 +52,44 @@ static void show_help(const char *s)
 }
 
 //FIXME: should this function be in detector.h?
-int calculate_projected_peak(struct panel *panel, struct rvec q, 
-                             double kk, double *fs, double *ss) 
+int calculate_projected_peak(struct panel *panel, struct rvec q,
+                             double kk, double *fs, double *ss)
 {
 
 	if (panel == NULL) return 1;
-	
+
 	double xd, yd, cl;
 	double plx, ply;
-	
+
 	const double den = kk + q.w;
-	
+
 	/* Camera length for this panel */
 	cl = panel->clen;
-	
+
 	/* Coordinates of peak relative to central beam, in m */
 	xd = cl * q.u / den;
 	yd = cl * q.v / den;
-	
+
 	/* Convert to pixels */
 	xd *= panel->res;
 	yd *= panel->res;
-	
+
 	/* Convert to relative to the panel corner */
 	plx = xd - panel->cnx;
 	ply = yd - panel->cny;
-	
+
 	*fs = panel->xfs*plx + panel->yfs*ply;
 	*ss = panel->xss*plx + panel->yss*ply;
-	
+
 	*fs += panel->min_fs;
 	*ss += panel->min_ss;
-	
+
 	/* Now, is this on this panel? */
 	if ( *fs < panel->min_fs ) return 3;
 	if ( *fs > panel->max_fs ) return 3;
 	if ( *ss < panel->min_ss ) return 3;
 	if ( *ss > panel->max_ss ) return 3;
-	
+
 	return 0;
 
 }
@@ -113,7 +113,7 @@ struct rvec nearest_bragg(struct image image, struct rvec q)
 	hd = q.u * ax + q.v * ay + q.w * az;
 	kd = q.u * bx + q.v * by + q.w * bz;
 	ld = q.u * cx + q.v * cy + q.w * cz;
-	
+
 	h = lrint(hd);
 	k = lrint(kd);
 	l = lrint(ld);
@@ -126,7 +126,7 @@ struct rvec nearest_bragg(struct image image, struct rvec q)
 
 	double hvec[] = {h,k,l};
 
-	gsl_matrix_view m 
+	gsl_matrix_view m
 		= gsl_matrix_view_array (U, 3, 3);
 
 	gsl_vector_view b
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 	int i;
 	int fail;
 	int nChunks;
-	int minpeaks=0;	
+	int minpeaks=0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
 	if ( geometry == NULL ) {
 		ERROR("You need to specify a geometry file with --geometry\n");
 		return 1;
-	}	
+	}
 
 	image.det = get_detector_geometry(geometry);
 	if ( image.det == NULL ) {
@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
 		printf("You did not specify minimum number of peaks."
              " Setting default value of %d\n",minpeaks);
 	}
-	
+
 	if ( method == NULL ) {
 		printf("You did not specify a refinement method-- setting default.\n");
 		method = strdup("xy");
@@ -310,7 +310,7 @@ int main(int argc, char *argv[])
 			for (i=0; i<nFeatures; i++) {
 
 				struct panel * p;
-				struct imagefeature * thisFeature;			
+				struct imagefeature * thisFeature;
 				struct rvec q;
 				double twotheta;
 				struct rvec g;
@@ -320,9 +320,9 @@ int main(int argc, char *argv[])
 				int pi;
 				double thisWeight;
 				//int fail;
-	
+
 				/* if we find a feature, determine peak position */
-				thisFeature = image_get_feature(image.features,i);	
+				thisFeature = image_get_feature(image.features,i);
 				if ( thisFeature == NULL ) {
 					continue;
 				}
@@ -350,7 +350,7 @@ int main(int argc, char *argv[])
 				/* check for error, e.g. out of panel */
 				if ( fail != 0 ) continue;
 
-				/* Finally, we have the shift in position of this peak */				
+				/* Finally, we have the shift in position of this peak */
 				dfs = pfs - fs;
 				dss = pss - ss;
 
@@ -363,33 +363,33 @@ int main(int argc, char *argv[])
 				peaksFound[pi] += 1;
 
 			} /* end loop through image features */
-			
+
 		} /* end loop through stream chunks */
- 
+
 		/* calculate weighted average shift in peak positions */
 		for (pi=0; pi < image.det->n_panels; pi++) {
 			meanShiftFS[pi] = weightedSumFS[pi]/summedWeights[pi];
 			meanShiftSS[pi] = weightedSumSS[pi]/summedWeights[pi];
 		}
-		
+
 		/* first populate the image structure with new geometry info */
 		for (pi=0; pi < image.det->n_panels; pi++) {
-	
+
 			p = image.det->panels[pi];
 
 			xsh = 0;
 			ysh = 0;
-	
+
 			if ( peaksFound[pi] >= minpeaks ) {
 
 				/* convert shifts from raw coords to lab frame */
 				xsh = meanShiftFS[pi]*p.fsx + meanShiftSS[pi]*p.ssx;
 				ysh = meanShiftFS[pi]*p.fsy + meanShiftSS[pi]*p.ssy;
-		
+
 				/* add shifts to original panel corner locations */
 				cnx = p.cnx + xsh;
 				cny = p.cny + ysh;
-	
+
 			} else {
 				/* not refined? use original coordinates */
 				cnx = p.cnx;
@@ -413,7 +413,7 @@ int main(int argc, char *argv[])
    	return 1;
 
 	}
-	
+
 
 	fclose(outfh);
 

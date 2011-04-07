@@ -249,8 +249,8 @@ void write_chunk(FILE *ofh, struct image *i, int f)
 
 	fprintf(ofh, "photon_energy_eV = %f\n",
 	        J_to_eV(ph_lambda_to_en(i->lambda)));
-	
-	//FIXME:we're writing camera length from first panel only. 
+
+	//FIXME:we're writing camera length from first panel only.
 	//this should actually write camera length for all panels.
 	fprintf(ofh, "camera_length = %f\n",i->det->panels[0].clen);
 
@@ -338,7 +338,7 @@ int read_chunk(FILE *fh, struct image *image)
 		}
 
 		if ( strncmp(line, "camera_length = ",16) == 0 ) {
-			//FIXME: assuming here that we have loaded detector 
+			//FIXME: assuming here that we have loaded detector
 			//geometry into image prior to calling this routine.
 			//otherise, we don't know how many panels there are!
 			if ( !( image->det == NULL ) ) {
@@ -346,10 +346,10 @@ int read_chunk(FILE *fh, struct image *image)
 				double clen;
 				clen = atof( line+16 );
 				for ( k=0; k< image->det->n_panels; k++ ) {
-					image->det->panels[k].clen = clen;	
+					image->det->panels[k].clen = clen;
 				}
 			}
-		} 
+		}
 
 		if ( strncmp(line, "I0 = ", 5) == 0 ) {
 			image->i0 = atof(line+5);
