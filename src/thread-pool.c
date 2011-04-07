@@ -208,6 +208,19 @@ static void *task_worker(void *pargsv)
  * @cpu_groupsize: The group size into which the CPUs are grouped
  * @cpu_offset: The CPU group number at which to start pinning threads
  *
+ * get_task() will be called every time a worker is idle.  It returns either
+ * NULL, indicating that no further work is available, or a pointer which will
+ * be passed to work().
+ *
+ * final() will be called once per image, and will be given both queue_args
+ * and the last task pointer.
+ *
+ * get_task() and final() will be called only under lock, and so do NOT need to
+ * be re-entrant or otherwise thread safe.
+ *
+ * Work will stop after 'max' tasks have been processed whether get_task()
+ * returned NULL or not.  If "max" is zero, all tasks will be processed.
+ *
  * Returns: The number of tasks completed.
  **/
 int run_threads(int n_threads, void (*work)(void *, int),
