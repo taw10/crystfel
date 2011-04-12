@@ -437,6 +437,7 @@ int main(int argc, char *argv[])
 		/* Add divided version to 'output' list */
 		tr = add_refl(ratio, h, k, l);
 		set_int(tr, val1/val2);
+		set_redundancy(tr, 1);
 
 	}
 
