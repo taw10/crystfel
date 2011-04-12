@@ -63,25 +63,18 @@ static int dir_conv(const char *a, double *sx, double *sy)
 }
 
 
-struct rvec get_q(struct image *image, double fs, double ss,
-                  double *ttp, double k)
+struct rvec get_q_for_panel(struct panel *p, double fs, double ss,
+                            double *ttp, double k)
 {
 	struct rvec q;
 	double twotheta, r, az;
 	double rx, ry;
-	struct panel *p;
 	double xs, ys;
-
-	/* Determine which panel to use */
-	const unsigned int x = fs;
-	const unsigned int y = ss;
-	p = find_panel(image->det, x, y);
-	assert(p != NULL);
 
 	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
 	 * to x and y */
-	xs = (fs-(double)p->min_fs)*p->fsx + (ss-(double)p->min_ss)*p->ssx;
-	ys = (fs-(double)p->min_fs)*p->fsy + (ss-(double)p->min_ss)*p->ssy;
+	xs = fs*p->fsx + ss*p->ssx;
+	ys = fs*p->fsy + ss*p->ssy;
 
 	rx = (xs + p->cnx) / p->res;
 	ry = (ys + p->cny) / p->res;
@@ -98,6 +91,22 @@ struct rvec get_q(struct image *image, double fs, double ss,
 	q.w = k * (cos(twotheta) - 1.0);
 
 	return q;
+}
+
+
+struct rvec get_q(struct image *image, double fs, double ss,
+                  double *ttp, double k)
+{
+	struct panel *p;
+	const unsigned int fsi = fs;
+	const unsigned int ssi = ss;  /* Explicit rounding */
+
+	/* Determine which panel to use */
+	p = find_panel(image->det, fsi, ssi);
+	assert(p != NULL);
+
+	return get_q_for_panel(p, fs-(double)p->min_fs, ss-(double)p->min_ss,
+	                       ttp, k);
 }
 
 
