@@ -782,6 +782,8 @@ struct detector *copy_geom(const struct detector *in)
 	out = malloc(sizeof(struct detector));
 	memcpy(out, in, sizeof(struct detector));
 
+	out->mask = strdup(in->mask);
+
 	out->panels = malloc(out->n_panels * sizeof(struct panel));
 	memcpy(out->panels, in->panels, out->n_panels * sizeof(struct panel));
 
