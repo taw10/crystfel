@@ -351,6 +351,7 @@ static void process_image(void *pp, int cookie)
 	/* Only free cell if found */
 	cell_free(image.indexed_cell);
 
+	reflist_free(image.reflections);
 	free(image.data);
 	if ( image.flags != NULL ) free(image.flags);
 	image_feature_list_free(image.features);
@@ -383,6 +384,7 @@ static void *get_image(void *qp)
 		rval = fgets(line, 1023, qargs->fh);
 		if ( rval == NULL ) {
 			free(pargs);
+			free(line);
 			return NULL;
 		}
 		chomp(line);
@@ -877,8 +879,8 @@ int main(int argc, char *argv[])
 	free(indm);
 	free(ipriv);
 	free(prefix);
-	free(det->panels);
-	free(det);
+	free_detector_geometry(det);
+	free(beam);
 	free(element);
 	cell_free(cell);
 	if ( fh != stdin ) fclose(fh);

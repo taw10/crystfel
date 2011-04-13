@@ -505,7 +505,6 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 
 void run_mosflm(struct image *image, UnitCell *cell)
 {
-	int fail;
 	struct mosflm_data *mosflm;
 	unsigned int opts;
 	int status;
@@ -531,6 +530,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	mosflm->pid = forkpty(&mosflm->pty, NULL, NULL, NULL);
 	if ( mosflm->pid == -1 ) {
 		ERROR("Failed to fork for MOSFLM\n");
+		free(mosflm);
 		return;
 	}
 	if ( mosflm->pid == 0 ) {
@@ -590,12 +590,8 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	free(mosflm->rbuffer);
 	waitpid(mosflm->pid, &status, 0);
 
-	/* Read the mosflm NEWMAT file and set cell candidate *
-	 * Existence of this file means possible success. Pretty shady. */
-	fail = read_newmat(mosflm->newmatfile, image);
-	if ( fail ) {
-		return;
-	}
+	/* Read the mosflm NEWMAT file and set cell candidate if found */
+	read_newmat(mosflm->newmatfile, image);
 
 	free(mosflm);
 }
