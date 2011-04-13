@@ -769,6 +769,7 @@ void free_detector_geometry(struct detector *det)
 {
 	free(det->panels);
 	free(det->bad);
+	free(det->mask);
 	free(det);
 }
 
