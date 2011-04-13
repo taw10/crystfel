@@ -33,7 +33,8 @@
 
 /* For each reflection in "partial", fill in what the intensity would be
  * according to "full" */
-static void calculate_partials(RefList *partial, RefList *full, const char *sym)
+static void calculate_partials(RefList *partial, double osf,
+                               RefList *full, const char *sym)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -55,7 +56,7 @@ static void calculate_partials(RefList *partial, RefList *full, const char *sym)
 		if ( rfull == NULL ) {
 			set_redundancy(refl, 0);
 		} else {
-			Ip = p * get_intensity(rfull);
+			Ip = osf * p * get_intensity(rfull);
 			set_int(refl, Ip);
 		}
 
@@ -235,7 +236,7 @@ int main(int argc, char *argv[])
 	image.i0_available = 0;
 	image.filename = "(simulated 1)";
 	image.reflections = find_intersections(&image, image.indexed_cell, 0);
-	calculate_partials(image.reflections, full, sym);
+	calculate_partials(image.reflections, 1.0, full, sym);
 	write_chunk(ofh, &image, STREAM_INTEGRATED);
 	reflist_free(image.reflections);
 
@@ -248,7 +249,7 @@ int main(int argc, char *argv[])
 
 	/* Write another chunk */
 	image.reflections = find_intersections(&image, image.indexed_cell, 0);
-	calculate_partials(image.reflections, full, sym);
+	calculate_partials(image.reflections, 0.5, full, sym);
 	write_chunk(ofh, &image, STREAM_INTEGRATED);
 	reflist_free(image.reflections);
 
