@@ -494,7 +494,6 @@ int main(int argc, char *argv[])
 	int cellr;
 	int peaks;
 	int nthreads = 1;
-	int i;
 	pthread_mutex_t output_mutex = PTHREAD_MUTEX_INITIALIZER;
 	char *prepare_line;
 	char prepare_filename[1024];
@@ -798,14 +797,7 @@ int main(int argc, char *argv[])
 	}
 	free(pdb);
 
-	/* Start by writing the entire command line to stdout */
-	fprintf(ofh, "CrystFEL stream format 2.0\n");
-	fprintf(ofh, "Command line:");
-	for ( i=0; i<argc; i++ ) {
-		fprintf(ofh, " %s", argv[i]);
-	}
-	fprintf(ofh, "\n");
-	fflush(ofh);
+	write_stream_header(ofh, argc, argv);
 
 	if ( beam != NULL ) {
 		nominal_photon_energy = beam->photon_energy;

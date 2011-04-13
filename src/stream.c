@@ -415,6 +415,20 @@ int read_chunk(FILE *fh, struct image *image)
 }
 
 
+void write_stream_header(FILE *ofh, int argc, char *argv[])
+{
+	int i;
+
+	fprintf(ofh, "CrystFEL stream format 2.0\n");
+	fprintf(ofh, "Command line:");
+	for ( i=0; i<argc; i++ ) {
+		fprintf(ofh, " %s", argv[i]);
+	}
+	fprintf(ofh, "\n");
+	fflush(ofh);
+}
+
+
 int skip_some_files(FILE *fh, int n)
 {
 	char *rval = NULL;
