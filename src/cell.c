@@ -539,7 +539,7 @@ UnitCell *cell_rotate(UnitCell *in, struct quaternion quat)
 {
 	struct rvec a, b, c;
 	struct rvec an, bn, cn;
-	UnitCell *out = cell_new();
+	UnitCell *out = cell_new_from_cell(in);
 
 	cell_get_cartesian(in, &a.u, &a.v, &a.w,
 	                       &b.u, &b.v, &b.w,
