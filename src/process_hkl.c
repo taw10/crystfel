@@ -305,6 +305,8 @@ static void merge_all(FILE *fh, RefList *model,
 
 		struct image image;
 
+		image.det = NULL;
+
 		/* Get data from next chunk */
 		rval = read_chunk(fh, &image);
 		if ( rval ) break;
