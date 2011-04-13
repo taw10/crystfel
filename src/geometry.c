@@ -249,14 +249,17 @@ RefList *find_intersections(struct image *image, UnitCell *cell,
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
 
-	mres = largest_q(image);
+	/* We add a horrific 20% fudge factor because bandwidth, divergence
+	 * and so on mean reflections appear beyond the largest q */
+	mres = 1.2 * largest_q(image);
+
 	hmax = mres / modulus(asx, asy, asz);
 	kmax = mres / modulus(bsx, bsy, bsz);
 	lmax = mres / modulus(csx, csy, csz);
 
-	for ( h=-hmax; h<hmax; h++ ) {
-	for ( k=-kmax; k<kmax; k++ ) {
-	for ( l=-lmax; l<lmax; l++ ) {
+	for ( h=-hmax; h<=hmax; h++ ) {
+	for ( k=-kmax; k<=kmax; k++ ) {
+	for ( l=-lmax; l<=lmax; l++ ) {
 		check_reflection(image, mres, output, reflections, h, k, l,
 		                 asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
 	}
