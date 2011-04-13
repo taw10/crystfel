@@ -5,7 +5,7 @@ ACLOCAL_AMFLAGS = -I m4
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
                src/compare_hkl src/powder_plot src/render_hkl \
                src/calibrate_detector src/partialator \
-               src/check_hkl src/sum_stack
+               src/check_hkl src/sum_stack src/partial_sim
 
 noinst_PROGRAMS = tests/list_check tests/integration_check
 
@@ -29,6 +29,12 @@ endif
 AM_CFLAGS = -Wall
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib -I$(top_srcdir)/lib
 LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@
+
+src_partial_sim_SOURCES = src/partial_sim.c src/cell.c src/detector.c \
+                          src/beam-parameters.c src/thread-pool.c src/utils.c \
+                          src/reflist-utils.c src/reflist.c src/symmetry.c \
+                          src/hdf5-file.c src/image.c src/geometry.c \
+                          src/peaks.c src/stream.c
 
 src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c src/utils.c \
                           src/image.c src/cell.c src/hdf5-file.c \
@@ -102,7 +108,7 @@ src_calibrate_detector_SOURCES = src/calibrate_detector.c src/utils.c \
                                  src/hdf5-file.c src/image.c src/thread-pool.c \
                                  src/detector.c src/stream.c src/cell.c \
                                  src/reflist-utils.c src/reflist.c src/symmetry.c \
-                                 src/peaks.c 
+                                 src/peaks.c
 
 src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
                           src/utils.c src/detector.c src/peaks.c src/image.c \

@@ -19,6 +19,7 @@ src/partialator
 src/cubeit
 src/check_hkl
 src/sum_stack
+src/partial_sim
 src/.dirstamp
 *~
 doc/reference/*
