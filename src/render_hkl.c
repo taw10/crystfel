@@ -34,6 +34,9 @@
 #include "reflist-utils.h"
 
 
+#define KEY_FILENAME "key.pdf"
+
+
 static void show_help(const char *s)
 {
 	printf("Syntax: %s [options] <file.hkl>\n\n", s);
@@ -433,7 +436,7 @@ static int render_key(int colscale, double scale_top)
 		top = 1.0;
 	}
 
-	surface = cairo_pdf_surface_create("key.pdf", wh, ht);
+	surface = cairo_pdf_surface_create(KEY_FILENAME, wh, ht);
 
 	if ( cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS ) {
 		fprintf(stderr, "Couldn't create Cairo surface\n");
@@ -500,6 +503,8 @@ static int render_key(int colscale, double scale_top)
 
 	cairo_surface_finish(surface);
 	cairo_destroy(dctx);
+
+	STATUS("Colour key written to "KEY_FILENAME"\n");
 
 	return 0;
 }
