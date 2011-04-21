@@ -251,6 +251,8 @@ void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell)
  *
  * This is a convenience function which simply opens @file and then calls
  * write_reflections_to_file.
+ *
+ * Returns: zero on success, non-zero on failure.
  **/
 int write_reflist(const char *filename, RefList *list, UnitCell *cell)
 {
