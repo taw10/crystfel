@@ -31,6 +31,18 @@
 #include "stream.h"
 
 
+
+static void mess_up_cell(UnitCell *cell)
+{
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	ax += 0.01 * ax;
+	cell_set_cartesian(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
+}
+
 /* For each reflection in "partial", fill in what the intensity would be
  * according to "full" */
 static void calculate_partials(RefList *partial, double osf,
@@ -97,7 +109,6 @@ int main(int argc, char *argv[])
 	RefList *full;
 	char *sym = NULL;
 	UnitCell *cell = NULL;
-	UnitCell *rcell;
 	struct quaternion orientation;
 	struct image image;
 	FILE *ofh;
@@ -240,11 +251,8 @@ int main(int argc, char *argv[])
 	write_chunk(ofh, &image, STREAM_INTEGRATED);
 	reflist_free(image.reflections);
 
-	/* Rotate the cell by a tiny amount */
-	rcell = rotate_cell(image.indexed_cell,
-	                    deg2rad(0.2), deg2rad(0.0), deg2rad(0.0));
-	cell_free(image.indexed_cell);
-	image.indexed_cell = rcell;
+	/* Alter the cell by a tiny amount */
+	mess_up_cell(image.indexed_cell);
 	image.filename = "(simulated 2)";
 
 	/* Write another chunk */
