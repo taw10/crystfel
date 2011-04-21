@@ -1,3 +1,9 @@
+Makefile.in
+configure
+config.h.in
+lib/Makefile.in
+doc/reference/Makefile.in
+aclocal.m4
 Makefile
 autom4te.cache
 config.h
