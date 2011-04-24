@@ -262,7 +262,9 @@ static void process_image(void *pp, int cookie)
 	hdf5_read(hdfile, &image, pargs->static_args.config_satcorr);
 	if ( image.lambda < 0.0 ) {
 		if ( beam != NULL ) {
-			image.lambda = beam->photon_energy;
+			ERROR("Using nominal photon enery of %.2f eV\n",
+                              beam->photon_energy);
+			image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
 		} else {
 			ERROR("No wavelength in file, so you need to give "
 			      "a beam parameters file with -b.\n");

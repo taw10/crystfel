@@ -278,9 +278,11 @@ static double get_wavelength(struct hdfile *f)
 	dh = H5Dopen2(f->fh, "/LCLS/photon_wavelength_nm", H5P_DEFAULT);
 	if ( dh < 0 ) {
 		dh = H5Dopen2(f->fh, "/LCLS/photon_wavelength_A", H5P_DEFAULT);
-		if ( dh < 0 ) return -1.0;
+		if ( dh < 0 ) {
+			ERROR("Couldn't get photon wavelength from HDF5 file.\n");
+			return -1.0;
+		}
 		nm = 0;
-
 	}
 
 	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
