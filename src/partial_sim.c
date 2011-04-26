@@ -39,9 +39,10 @@ static void mess_up_cell(UnitCell *cell)
 	double cx, cy, cz;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	ax += 0.01 * ax;
+	ax += 0.005*ax;
 	cell_set_cartesian(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
 }
+
 
 /* For each reflection in "partial", fill in what the intensity would be
  * according to "full" */
@@ -112,6 +113,7 @@ int main(int argc, char *argv[])
 	struct quaternion orientation;
 	struct image image;
 	FILE *ofh;
+	UnitCell *new;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -252,12 +254,17 @@ int main(int argc, char *argv[])
 	reflist_free(image.reflections);
 
 	/* Alter the cell by a tiny amount */
-	mess_up_cell(image.indexed_cell);
 	image.filename = "(simulated 2)";
+	new = rotate_cell(cell, deg2rad(0.001), deg2rad(0.0), 0.0);
+	cell_free(image.indexed_cell);
+	image.indexed_cell = new;
 
-	/* Write another chunk */
+	/* Calculate new partials */
 	image.reflections = find_intersections(&image, image.indexed_cell, 0);
 	calculate_partials(image.reflections, 0.5, full, sym);
+
+	/* Give a slightly incorrect cell in the stream */
+	//mess_up_cell(image.indexed_cell);
 	write_chunk(ofh, &image, STREAM_INTEGRATED);
 	reflist_free(image.reflections);
 

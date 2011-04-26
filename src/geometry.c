@@ -292,6 +292,34 @@ double integrate_all(struct image *image, RefList *reflections)
 }
 
 
+/* Decide which reflections can be scaled */
+static int select_scalable_reflections(RefList *list)
+{
+	int n_scalable = 0;
+
+	Reflection *refl;
+	RefListIterator *iter;
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
+
+		int scalable = 1;
+		double v;
+
+		if ( get_partiality(refl) < 0.1 ) scalable = 0;
+		v = fabs(get_intensity(refl));
+		if ( v < 0.1 ) scalable = 0;
+
+		set_scalable(refl, scalable);
+		if ( scalable ) n_scalable++;
+
+	}
+
+	return n_scalable;
+}
+
+
 /* Calculate partialities and apply them to the image's raw_reflections */
 void update_partialities(struct image *image, const char *sym,
                          int *n_expected, int *n_found, int *n_notfound)
@@ -355,6 +383,7 @@ void update_partialities_and_asymm(struct image *image, const char *sym,
 	 * to get the list used for scaling and post refinement */
 	image->reflections = asymmetric_indices(image->raw_reflections,
 	                                        sym, obs);
+	select_scalable_reflections(image->reflections);
 
 	/* Need these lists to work fast */
 	optimise_reflist(image->reflections);

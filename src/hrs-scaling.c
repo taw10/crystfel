@@ -338,11 +338,10 @@ static RefList *lsq_intensities(struct image *images, int n,
 			for ( refl = find_refl(images[m].reflections,
 			                       it->h, it->k, it->l);
 			      refl != NULL;
-			      refl = next_found_refl(refl) ) {
+			      refl = next_found_refl(refl) )
+			{
 
 				double p;
-
-				if ( !get_scalable(refl) ) continue;
 
 				p = get_partiality(refl);
 
@@ -353,8 +352,14 @@ static RefList *lsq_intensities(struct image *images, int n,
 
 		}
 
-		new = add_refl(full, it->h, it->k, it->l);
-		set_int(new, num/den);
+		if ( !isnan(num/den) ) {
+			new = add_refl(full, it->h, it->k, it->l);
+			set_int(new, num/den);
+		} else {
+			ERROR("Couldn't calculate LSQ full intensity for"
+			      "%3i %3i %3i\n", it->h, it->k, it->l);
+			/* Doom is probably impending */
+		}
 
 	}
 

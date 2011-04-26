@@ -136,43 +136,12 @@ static void refine_all(struct image *images, int n_total_patterns,
 	qargs.task_defaults = task_defaults;
 	qargs.n = 0;
 	qargs.n_done = 0;
-	qargs.n_total_patterns = n_total_patterns;
-	qargs.images = images;
+	/* FIXME: Not refining the first image, for now */
+	qargs.n_total_patterns = n_total_patterns-1;
+	qargs.images = images+1;
 
 	run_threads(nthreads, refine_image, get_image, done_image,
-	            &qargs, n_total_patterns, 0, 0, 0);
-}
-
-
-/* Decide which reflections can be scaled */
-static void select_scalable_reflections(struct image *images, int n)
-{
-	int m;
-	int n_scalable = 0;
-
-	for ( m=0; m<n; m++ ) {
-
-		Reflection *refl;
-		RefListIterator *iter;
-
-		for ( refl = first_refl(images[m].reflections, &iter);
-		      refl != NULL;
-		      refl = next_refl(refl, iter) ) {
-
-			int scalable = 1;
-			double v;
-
-			if ( get_partiality(refl) < 0.1 ) scalable = 0;
-			v = fabs(get_intensity(refl));
-			if ( v < 0.1 ) scalable = 0;
-
-			set_scalable(refl, scalable);
-			if ( scalable ) n_scalable++;
-
-		}
-
-	}
-	STATUS("%i reflections selected as scalable.\n", n_scalable);
+	            &qargs, n_total_patterns-1, 0, 0, 0);
 }
 
 
@@ -369,7 +338,6 @@ int main(int argc, char *argv[])
 
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
-	select_scalable_reflections(images, n_total_patterns);
 	full = scale_intensities(images, n_usable_patterns, sym, obs, cref);
 
 	/* Iterate */
@@ -401,7 +369,6 @@ int main(int argc, char *argv[])
 
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
-		select_scalable_reflections(images, n_usable_patterns);
 		full = scale_intensities(images, n_usable_patterns,
 		                         sym, obs, cref);
 

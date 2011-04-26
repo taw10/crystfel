@@ -29,15 +29,13 @@
 
 
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
-#define MAX_CYCLES (100)
+#define MAX_CYCLES (10)
 
 
 /* Refineable parameters */
 enum {
-	REF_SCALE,
-	REF_DIV,
-	REF_R,
 	REF_ASX,
+	NUM_PARAMS,
 	REF_BSX,
 	REF_CSX,
 	REF_ASY,
@@ -46,7 +44,9 @@ enum {
 	REF_ASZ,
 	REF_BSZ,
 	REF_CSZ,
-	NUM_PARAMS
+	REF_SCALE,
+	REF_DIV,
+	REF_R,
 };
 
 
@@ -321,7 +321,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 		}
 
 	}
-	show_matrix_eqn(M, v, NUM_PARAMS);
+	//show_matrix_eqn(M, v, NUM_PARAMS);
 
 	shifts = gsl_vector_alloc(NUM_PARAMS);
 	gsl_linalg_HH_solve(M, v, shifts);
@@ -341,10 +341,77 @@ static double pr_iterate(struct image *image, const RefList *full,
 }
 
 
+static double mean_partial_dev(struct image *image,
+                               const RefList *full, const char *sym)
+{
+	double dev = 0.0;
+
+	/* For each reflection */
+	Reflection *refl;
+	RefListIterator *iter;
+
+	for ( refl = first_refl(image->reflections, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
+
+		double G, p;
+		signed int h, k, l;
+		Reflection *full_version;
+		double I_full, I_partial;
+
+		if ( !get_scalable(refl) ) continue;
+
+		get_indices(refl, &h, &k, &l);
+		G = image->osf;
+
+		full_version = find_refl(full, h, k, l);
+		assert(full_version != NULL);
+
+		p = get_partiality(refl);
+		I_partial = get_intensity(refl);
+		I_full = get_intensity(full_version);
+		//STATUS("%3i %3i %3i  %5.2f  %5.2f  %5.2f  %5.2f\n",
+		//       h, k, l, G, p, I_partial, I_full);
+
+		dev += pow(I_partial - p*G*I_full, 2.0);
+
+	}
+
+	return dev;
+}
+
+
 void pr_refine(struct image *image, const RefList *full, const char *sym)
 {
 	double max_shift;
 	int i;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	UnitCell *cell = image->indexed_cell;
+	double shval, origval;
+
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	shval = 0.001*ax;
+	origval = ax;
+
+	for ( i=-10; i<=10; i++ ) {
+
+		double dev;
+
+		cell_get_cartesian(cell, &ax, &ay, &az, &bx,
+		                         &by, &bz, &cx, &cy, &cz);
+		ax = origval + (double)i*shval;
+		cell_set_cartesian(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
+
+		update_partialities_and_asymm(image, sym,
+		                              NULL, NULL, NULL, NULL);
+
+		dev = mean_partial_dev(image, full, sym);
+		STATUS("%i %e %e\n", i, ax, dev);
+
+	}
+	return;
 
 	i = 0;
 	do {
