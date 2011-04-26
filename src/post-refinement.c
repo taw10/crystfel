@@ -44,7 +44,6 @@ enum {
 	REF_ASZ,
 	REF_BSZ,
 	REF_CSZ,
-	REF_SCALE,
 	REF_DIV,
 	REF_R,
 };
@@ -128,9 +127,6 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 	 * of excitation error wrt whatever. */
 	switch ( k ) {
 
-	case REF_SCALE :
-		return -p*pow(image->osf, -2.0);
-
 	case REF_DIV :
 		nom = sqrt(2.0) * ds * sin(image->div/2.0);
 		den = sqrt(1.0 - cos(image->div/2.0));
@@ -212,11 +208,6 @@ static void apply_cell_shift(UnitCell *cell, int k, double shift)
 static void apply_shift(struct image *image, int k, double shift)
 {
 	switch ( k ) {
-
-	case REF_SCALE :
-		image->osf += shift;
-		STATUS("New OSF = %f (shift %e)\n", image->osf, shift);
-		break;
 
 	case REF_DIV :
 		STATUS("Shifting div by %e\n", shift);
