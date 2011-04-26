@@ -24,5 +24,8 @@ extern RefList *find_intersections(struct image *image, UnitCell *cell,
 
 extern double integrate_all(struct image *image, RefList *reflections);
 
-
+extern void update_partialities_and_asymm(struct image *image, const char *sym,
+                                          ReflItemList *obs,
+                                          int *n_expected, int *n_found,
+                                          int *n_notfound);
 #endif	/* GEOMETRY_H */

@@ -87,6 +87,7 @@ typedef struct _imagefeaturelist ImageFeatureList;
  *    int                     height;
  *
  *    RefList                 *reflections;
+ *    RefList                 *raw_reflections;
  *
  *    ImageFeatureList        *features;
  * };
@@ -149,6 +150,9 @@ struct image {
 
 	/* Integrated (or about-to-be-integrated) reflections */
 	RefList                 *reflections;
+
+	/* Raw version of "reflections", e.g. in point group 1 */
+	RefList                 *raw_reflections;
 
 	/* Detected peaks */
 	ImageFeatureList        *features;

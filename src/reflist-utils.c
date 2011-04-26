@@ -11,6 +11,7 @@
 
 
 #include <stdio.h>
+#include <assert.h>
 
 
 #include "reflist.h"
@@ -358,4 +359,41 @@ RefList *read_reflections(const char *filename)
 	fclose(fh);
 
 	return out;
+}
+
+
+RefList *asymmetric_indices(RefList *in, const char *sym, ReflItemList *obs)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	RefList *new;
+
+	new = reflist_new();
+
+	for ( refl = first_refl(in, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
+
+		signed int h, k, l;
+		signed int ha, ka, la;
+		Reflection *cr;
+
+		get_indices(refl, &h, &k, &l);
+
+		get_asymm(h, k, l, &ha, &ka, &la, sym);
+
+		cr = add_refl(new, ha, ka, la);
+		assert(cr != NULL);
+
+		copy_data(cr, refl);
+
+		if ( obs != NULL ) {
+			if ( !find_item(obs, ha, ka, la) ) {
+				add_item(obs, ha, ka, la);
+			}
+		}
+
+	}
+
+	return new;
 }

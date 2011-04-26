@@ -197,6 +197,7 @@ int main(int argc, char *argv[])
 	int n_expected = 0;
 	int n_notfound = 0;
 	char *cref;
+	int n_usable_patterns = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -315,93 +316,47 @@ int main(int argc, char *argv[])
 	obs = new_items();
 	for ( i=0; i<n_total_patterns; i++ ) {
 
-		RefList *predicted;
-		RefList *measured;
-		Reflection *refl;
-		RefListIterator *iter;
+		images[n_usable_patterns].det = NULL;
 
-		if ( read_chunk(fh, &images[i]) != 0 ) {
+		if ( read_chunk(fh, &images[n_usable_patterns]) != 0 ) {
 			/* Should not happen, because we counted the patterns
 			 * earlier. */
 			ERROR("Failed to read chunk from the input stream.\n");
 			return 1;
 		}
 
-		/* FIXME: This leaves gaps in the array */
-		if ( images[i].indexed_cell == NULL ) continue;
-
 		/* Won't be needing this, if it exists */
-		image_feature_list_free(images[i].features);
-		images[i].features = NULL;
+		image_feature_list_free(images[n_usable_patterns].features);
+		images[n_usable_patterns].features = NULL;
 
-		images[i].div = beam->divergence;
-		images[i].bw = beam->bandwidth;
-		images[i].det = det;
-		images[i].width = det->max_fs;
-		images[i].height = det->max_ss;
-		images[i].osf = 1.0;
-		images[i].profile_radius = 0.005e9;
+		/* "n_usable_patterns" will not be incremented in this case */
+		if ( images[n_usable_patterns].indexed_cell == NULL ) continue;
+
+		/* Fill in initial estimates of stuff */
+		images[n_usable_patterns].div = beam->divergence;
+		images[n_usable_patterns].bw = beam->bandwidth;
+		images[n_usable_patterns].det = det;
+		images[n_usable_patterns].width = det->max_fs;
+		images[n_usable_patterns].height = det->max_ss;
+		images[n_usable_patterns].osf = 1.0;
+		images[n_usable_patterns].profile_radius = 0.005e9;
 
 		/* Muppet proofing */
-		images[i].data = NULL;
-		images[i].flags = NULL;
-		images[i].beam = NULL;
+		images[n_usable_patterns].data = NULL;
+		images[n_usable_patterns].flags = NULL;
+		images[n_usable_patterns].beam = NULL;
 
-		/* Calculate initial partialities and fill in intensities from
-		 * the stream */
-		predicted = find_intersections(&images[i],
-		                               images[i].indexed_cell, 0);
+		/* This is the raw list of reflections */
+		images[n_usable_patterns].raw_reflections =
+		                          images[n_usable_patterns].reflections;
+		images[n_usable_patterns].reflections = NULL;
 
-		/* We start again with a new reflection list, this time with
-		 * the asymmetric indices */
-		measured = images[i].reflections;
-		images[i].reflections = reflist_new();
-
-		for ( refl = first_refl(predicted, &iter);
-		      refl != NULL;
-		      refl = next_refl(refl, iter) ) {
-
-			Reflection *peak_in_pattern;
-			Reflection *new;
-			signed int h, k, l, ha, ka, la;
-			double r1, r2, p, x, y;
-			int clamp1, clamp2;
-
-			/* Get predicted indices and location */
-			get_indices(refl, &h, &k, &l);
-			get_detector_pos(refl, &x, &y);
-			n_expected++;
-
-			/* Look for this reflection in the pattern */
-			peak_in_pattern = find_refl(measured, h, k, l);
-			if ( peak_in_pattern == NULL ) {
-				n_notfound++;
-				continue;
-			}
-			n_found++;
-
-			/* Put it into the asymmetric cell */
-			get_asymm(h, k, l, &ha, &ka, &la, sym);
-			if ( find_item(obs, ha, ka, la) == 0 ) {
-				add_item(obs, ha, ka, la);
-			}
-
-			/* Create new reflection and copy data across */
-			new = add_refl(images[i].reflections, ha, ka, la);
-			get_partial(refl, &r1, &r2, &p, &clamp1, &clamp2);
-			get_detector_pos(refl, &x, &y);
-			set_int(new, get_intensity(peak_in_pattern));
-			set_partial(new, r1, r2, p, clamp1, clamp2);
-			set_detector_pos(new, 0.0, x, y);
-
-		}
-		reflist_free(measured);
-		reflist_free(predicted);
-
-		/* Do magic on the reflection list to make things go faster */
-		optimise_reflist(images[i].reflections);
+		update_partialities_and_asymm(&images[n_usable_patterns], sym,
+		                              obs, &n_expected, &n_found,
+		                              &n_notfound);
 
 		progress_bar(i, n_total_patterns-1, "Loading pattern data");
+		n_usable_patterns++;
 
 	}
 	fclose(fh);
@@ -410,12 +365,12 @@ int main(int argc, char *argv[])
 	STATUS("Mean measurements per unique reflection: %5.2f\n",
 	       (double)n_found / num_items(obs));
 
-	cref = find_common_reflections(images, n_total_patterns);
+	cref = find_common_reflections(images, n_usable_patterns);
 
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
 	select_scalable_reflections(images, n_total_patterns);
-	full = scale_intensities(images, n_total_patterns, sym, obs, cref);
+	full = scale_intensities(images, n_usable_patterns, sym, obs, cref);
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -446,8 +401,8 @@ int main(int argc, char *argv[])
 
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
-		select_scalable_reflections(images, n_total_patterns);
-		full = scale_intensities(images, n_total_patterns,
+		select_scalable_reflections(images, n_usable_patterns);
+		full = scale_intensities(images, n_usable_patterns,
 		                         sym, obs, cref);
 
 		fclose(fhg);
@@ -456,7 +411,7 @@ int main(int argc, char *argv[])
 	}
 
 	STATUS("Final scale factors:\n");
-	for ( i=0; i<n_total_patterns; i++ ) {
+	for ( i=0; i<n_usable_patterns; i++ ) {
 		STATUS("%4i : %5.2f\n", i, images[i].osf);
 	}
 
@@ -464,18 +419,18 @@ int main(int argc, char *argv[])
 	write_reflist(outfile, full, images[0].indexed_cell);
 
 	/* Clean up */
-	for ( i=0; i<n_total_patterns; i++ ) {
+	for ( i=0; i<n_usable_patterns; i++ ) {
 		reflist_free(images[i].reflections);
+		reflist_free(images[i].raw_reflections);
 	}
 	reflist_free(full);
 	delete_items(obs);
 	free(sym);
 	free(outfile);
-	free(det->panels);
-	free(det);
+	free_detector_geometry(det);
 	free(beam);
 	free(cref);
-	for ( i=0; i<n_total_patterns; i++ ) {
+	for ( i=0; i<n_usable_patterns; i++ ) {
 		cell_free(images[i].indexed_cell);
 		free(images[i].filename);
 	}

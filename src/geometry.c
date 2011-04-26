@@ -23,9 +23,7 @@
 #include "peaks.h"
 #include "beam-parameters.h"
 #include "reflist.h"
-
-
-#define MAX_CPEAKS (256 * 256)
+#include "reflist-utils.h"
 
 
 static signed int locate_peak(double x, double y, double z, double k,
@@ -291,4 +289,73 @@ double integrate_all(struct image *image, RefList *reflections)
 	}
 
 	return itot;
+}
+
+
+/* Calculate partialities and apply them to the image's raw_reflections */
+void update_partialities(struct image *image, const char *sym,
+                         int *n_expected, int *n_found, int *n_notfound)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	RefList *predicted;
+
+	predicted = find_intersections(image, image->indexed_cell, 0);
+
+	for ( refl = first_refl(predicted, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+
+		Reflection *peak_in_pattern;
+		double r1, r2, p, x, y;
+		signed int h, k, l;
+		int clamp1, clamp2, scalable;
+
+		/* Get predicted indices and location */
+		get_indices(refl, &h, &k, &l);
+		get_detector_pos(refl, &x, &y);
+		if ( n_expected != NULL ) (*n_expected)++;
+
+		/* Look for this reflection in the pattern */
+		peak_in_pattern = find_refl(image->raw_reflections, h, k, l);
+		if ( peak_in_pattern == NULL ) {
+			if ( n_notfound != NULL ) (*n_notfound)++;
+			continue;
+		}
+		if ( n_found != NULL ) (*n_found)++;
+
+		/* Transfer partiality stuff */
+		get_partial(refl, &r1, &r2, &p, &clamp1, &clamp2);
+		set_partial(peak_in_pattern, r1, r2, p, clamp1, clamp2);
+
+		/* Transfer detector location */
+		get_detector_pos(refl, &x, &y);
+		set_detector_pos(peak_in_pattern, 0.0, x, y);
+
+	}
+
+	reflist_free(predicted);
+}
+
+
+void update_partialities_and_asymm(struct image *image, const char *sym,
+                                   ReflItemList *obs,
+                                   int *n_expected, int *n_found,
+                                   int *n_notfound)
+{
+	/* Get rid of the old list, about to be replaced */
+	reflist_free(image->reflections);
+	image->reflections = NULL;
+
+	/* Fill in partialities */
+	update_partialities(image, sym, n_expected, n_found, n_notfound);
+
+	/* Rewrite the reflections with the asymmetric indices
+	 * to get the list used for scaling and post refinement */
+	image->reflections = asymmetric_indices(image->raw_reflections,
+	                                        sym, obs);
+
+	/* Need these lists to work fast */
+	optimise_reflist(image->reflections);
 }

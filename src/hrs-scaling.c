@@ -302,6 +302,7 @@ static double iterate_scale(struct image *images, int n,
 
 	gsl_vector_free(shifts);
 	gsl_vector_free(sprime);
+	gsl_vector_free(rprime);
 	gsl_matrix_free(e_vec);
 	gsl_vector_free(e_val);
 	gsl_matrix_free(M);
