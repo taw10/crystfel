@@ -310,7 +310,7 @@ void update_partialities(struct image *image, const char *sym,
 		Reflection *peak_in_pattern;
 		double r1, r2, p, x, y;
 		signed int h, k, l;
-		int clamp1, clamp2, scalable;
+		int clamp1, clamp2;
 
 		/* Get predicted indices and location */
 		get_indices(refl, &h, &k, &l);
