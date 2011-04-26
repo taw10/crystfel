@@ -271,57 +271,63 @@ static double pr_iterate(struct image *image, const RefList *full,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 
-		signed int hind, kind, lind;
 		signed int ha, ka, la;
 		double I_full, delta_I;
 		double I_partial;
 		int k;
 		double p;
 		Reflection *match;
-
-		get_indices(refl, &hind, &kind, &lind);
+		double gradients[NUM_PARAMS];
 
 		if ( !get_scalable(refl) ) continue;
 
+		/* Find the full version */
+		get_indices(refl, &ha, &ka, &la);
+		match = find_refl(full, ha, ka, la);
+		assert(match != NULL);  /* Never happens because all scalable
+		                         * reflections had their LSQ intensities
+		                         * calculated in lsq_intensities(). */
+		I_full = get_intensity(match);
+
 		/* Actual measurement of this reflection from this pattern? */
 		I_partial = get_intensity(refl);
-
-		get_asymm(hind, kind, lind, &ha, &ka, &la, sym);
-		match = find_refl(full, ha, ka, la);
-		assert(match != NULL);
-		I_full = get_intensity(match);
 		p = get_partiality(refl);
-		delta_I = I_partial - (p * I_full / image->osf);
+		delta_I = I_partial - (p * image->osf * I_full);
+
+		/* Calculate all gradients for this reflection */
+		for ( k=0; k<NUM_PARAMS; k++ ) {
+			double gr;
+			gr = gradient(image, k, refl, image->profile_radius);
+			gradients[k] = gr;
+		}
 
 		for ( k=0; k<NUM_PARAMS; k++ ) {
 
 			int g;
-			double v_c, gr;
+			double v_c, v_curr;
+			double gr;
 
 			for ( g=0; g<NUM_PARAMS; g++ ) {
 
-				double M_curr, M_c;
+				double M_c, M_curr;
 
-				M_curr = gsl_matrix_get(M, g, k);
-
-				M_c = gradient(image, g, refl,
-				               image->profile_radius)
-				    * gradient(image, k, refl,
-				               image->profile_radius);
+				M_c = gradients[g] * gradients[k];
 				M_c *= pow(I_full, 2.0);
 
+				M_curr = gsl_matrix_get(M, g, k);
 				gsl_matrix_set(M, g, k, M_curr + M_c);
 
 			}
 
 			gr = gradient(image, k, refl, image->profile_radius);
 			v_c = delta_I * I_full * gr;
-			gsl_vector_set(v, k, v_c);
+			v_curr = gsl_vector_get(v, k);
+			gsl_vector_set(v, k, v_curr + v_c);
 
 		}
 
 	}
-	//show_matrix_eqn(M, v, NUM_PARAMS);
+	show_matrix_eqn(M, v, NUM_PARAMS);
 
 	shifts = gsl_vector_alloc(NUM_PARAMS);
 	gsl_linalg_HH_solve(M, v, shifts);
@@ -381,15 +387,15 @@ static double mean_partial_dev(struct image *image,
 }
 
 
-void pr_refine(struct image *image, const RefList *full, const char *sym)
+static void plot_curve(struct image *image, const RefList *full,
+                       const char *sym)
 {
-	double max_shift;
-	int i;
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
 	UnitCell *cell = image->indexed_cell;
 	double shval, origval;
+	int i;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	shval = 0.001*ax;
@@ -411,12 +417,32 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 		STATUS("%i %e %e\n", i, ax, dev);
 
 	}
-	return;
+}
+
+
+void pr_refine(struct image *image, const RefList *full, const char *sym)
+{
+	double max_shift;
+	int i;
+
+	/* FIXME: This is for debugging */
+	//plot_curve(image, full, sym);
+	//return;
 
 	i = 0;
 	do {
+
+		double dev;
+
 		max_shift = pr_iterate(image, full, sym);
-		STATUS("Iteration %2i: max shift = %5.2f\n", i, max_shift);
+		update_partialities_and_asymm(image, sym,
+		                              NULL, NULL, NULL, NULL);
+
+		dev = mean_partial_dev(image, full, sym);
+		STATUS("PR Iteration %2i: max shift = %5.2f dev = %5.2f\n",
+		       i, max_shift, dev);
+
 		i++;
+
 	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );
 }

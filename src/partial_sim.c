@@ -39,7 +39,7 @@ static void mess_up_cell(UnitCell *cell)
 	double cx, cy, cz;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	ax += 0.005*ax;
+	ax += 0.008*ax;
 	cell_set_cartesian(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
 }
 
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 
 	/* Alter the cell by a tiny amount */
 	image.filename = "(simulated 2)";
-	new = rotate_cell(cell, deg2rad(0.001), deg2rad(0.0), 0.0);
+	new = rotate_cell(cell, deg2rad(1.0), deg2rad(0.0), 0.0);
 	cell_free(image.indexed_cell);
 	image.indexed_cell = new;
 
@@ -264,7 +264,7 @@ int main(int argc, char *argv[])
 	calculate_partials(image.reflections, 0.5, full, sym);
 
 	/* Give a slightly incorrect cell in the stream */
-	//mess_up_cell(image.indexed_cell);
+	mess_up_cell(image.indexed_cell);
 	write_chunk(ofh, &image, STREAM_INTEGRATED);
 	reflist_free(image.reflections);
 
