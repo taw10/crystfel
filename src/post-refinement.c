@@ -133,10 +133,10 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 		return (nom/den) * g;
 
 	case REF_R :
-		if ( clamp_low == 0 ) {
+		if ( !clamp_low ) {
 			g += partiality_rgradient(r1, r);
 		}
-		if ( clamp_high == 0 ) {
+		if ( !clamp_high ) {
 			g += partiality_rgradient(r2, r);
 		}
 		return g;
