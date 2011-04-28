@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 
 	/* Alter the cell by a tiny amount */
 	image.filename = "(simulated 2)";
-	new = rotate_cell(cell, deg2rad(1.0), deg2rad(0.0), 0.0);
+	new = rotate_cell(image.indexed_cell, deg2rad(1.0), deg2rad(0.0), 0.0);
 	cell_free(image.indexed_cell);
 	image.indexed_cell = new;
 
