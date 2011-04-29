@@ -88,7 +88,7 @@ static double partiality_rgradient(double r, double profile_radius)
 /* Return the gradient of parameter 'k' given the current status of 'image'. */
 static double gradient(struct image *image, int k, Reflection *refl, double r)
 {
-	double ds, tt, azi;
+	double ds, tt;
 	double nom, den;
 	double g = 0.0;
 	double asx, asy, asz;
@@ -110,7 +110,6 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 
 	ds = 2.0 * resolution(image->indexed_cell, hi, ki, li);
 	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+k);
-	azi = angle_between(1.0, 0.0, 0.0, xl, yl, 0.0);
 
 	get_partial(refl, &r1, &r2, &p, &clamp_low, &clamp_high);
 
@@ -122,7 +121,6 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 		g += partiality_gradient(r2, r);
 	}
 
-	double t;
 	/* For many gradients, just multiply the above number by the gradient
 	 * of excitation error wrt whatever. */
 	switch ( k ) {
@@ -143,26 +141,23 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 
 	/* Cell parameters and orientation */
 	case REF_ASX :
-		t = hi * pow(sin(tt), -1.0) * cos(azi);
-		STATUS("dr/da = %5.2e, dp/dr = %5.2e -> dp/da %5.2e\n",
-		       t, g, t*g);
-		return t*g; // 7.77e-6
+		return hi * sin(tt) * g;
 	case REF_BSX :
-		return ki * pow(sin(tt), -1.0) * cos(azi) * g;
+		return ki * sin(tt) * g;
 	case REF_CSX :
-		return li * pow(sin(tt), -1.0) * cos(azi) * g;
+		return li * sin(tt) * g;
 	case REF_ASY :
-		return hi * pow(sin(tt), -1.0) * sin(azi) * g;
+		return hi * sin(tt) * g;
 	case REF_BSY :
-		return ki * pow(sin(tt), -1.0) * sin(azi) * g;
+		return ki * sin(tt) * g;
 	case REF_CSY :
-		return li * pow(sin(tt), -1.0) * sin(azi) * g;
+		return li * sin(tt) * g;
 	case REF_ASZ :
-		return hi * pow(cos(tt), -1.0) * g;
+		return hi * cos(tt) * g;
 	case REF_BSZ :
-		return ki * pow(cos(tt), -1.0) * g;
+		return ki * cos(tt) * g;
 	case REF_CSZ :
-		return li * pow(cos(tt), -1.0) * g;
+		return li * cos(tt) * g;
 
 	}
 
