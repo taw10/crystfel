@@ -318,6 +318,8 @@ static double pr_iterate(struct image *image, const RefList *full,
 		}
 
 	}
+	double tg = gsl_matrix_get(M, 0, 0);
+	STATUS("total gradient = %e\n", tg);
 	//show_matrix_eqn(M, v, NUM_PARAMS);
 
 	shifts = gsl_vector_alloc(NUM_PARAMS);
