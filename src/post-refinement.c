@@ -88,7 +88,7 @@ static double partiality_rgradient(double r, double profile_radius)
 /* Return the gradient of parameter 'k' given the current status of 'image'. */
 static double gradient(struct image *image, int k, Reflection *refl, double r)
 {
-	double ds, tt;
+	double ds, tt, azi;
 	double nom, den;
 	double g = 0.0;
 	double asx, asy, asz;
@@ -110,6 +110,7 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 
 	ds = 2.0 * resolution(image->indexed_cell, hi, ki, li);
 	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+k);
+	azi = angle_between(1.0, 0.0, 0.0, xl, yl, 0.0);
 
 	get_partial(refl, &r1, &r2, &p, &clamp_low, &clamp_high);
 
@@ -141,7 +142,7 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 
 	/* Cell parameters and orientation */
 	case REF_ASX :
-		return hi * sin(tt) * g;
+		return hi * sin(tt) * cos(azi) * g;
 	case REF_BSX :
 		return ki * sin(tt) * g;
 	case REF_CSX :
