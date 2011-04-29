@@ -123,6 +123,7 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 		g += partiality_gradient(r2, r);
 	}
 
+	double t;
 	/* For many gradients, just multiply the above number by the gradient
 	 * of excitation error wrt whatever. */
 	switch ( k ) {
@@ -143,7 +144,10 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 
 	/* Cell parameters and orientation */
 	case REF_ASX :
-		return hi * pow(sin(tt), -1.0) * cos(azi) * g;
+		t = hi * pow(sin(tt), -1.0) * cos(azi);
+		STATUS("dr/da = %5.2e, dp/dr = %5.2e -> dp/da %5.2e\n",
+		       t, g, t*g);
+		return t*g; // 7.77e-6
 	case REF_BSX :
 		return ki * pow(sin(tt), -1.0) * cos(azi) * g;
 	case REF_CSX :
@@ -179,7 +183,9 @@ static void apply_cell_shift(UnitCell *cell, int k, double shift)
 	                          &csx, &csy, &csz);
 	switch ( k )
 	{
-		case REF_ASX :  asx += shift;  break;
+		case REF_ASX :  asx += shift;
+			STATUS("shifting asx by %e\n", shift);
+			break;
 		case REF_ASY :  asy += shift;  break;
 		case REF_ASZ :  asz += shift;  break;
 		case REF_BSX :  bsx += shift;  break;
@@ -274,21 +280,31 @@ static double pr_iterate(struct image *image, const RefList *full,
 
 		/* Find the full version */
 		get_indices(refl, &ha, &ka, &la);
+		if ( (ha!=23) || (ka!=12) || (la!=3) ) continue;
 		match = find_refl(full, ha, ka, la);
 		assert(match != NULL);  /* Never happens because all scalable
 		                         * reflections had their LSQ intensities
 		                         * calculated in lsq_intensities(). */
-		I_full = get_intensity(match);
+		I_full = image->osf * get_intensity(match);
 
 		/* Actual measurement of this reflection from this pattern? */
 		I_partial = get_intensity(refl);
 		p = get_partiality(refl);
-		delta_I = I_partial - (p * image->osf * I_full);
+		delta_I = I_partial - (p * I_full);
+		STATUS("Ifull = %5.2e, osf = %f\n", I_full, image->osf);
+		STATUS("Ipartial = %5.2e p = %5.2f\n", I_partial, p);
+
+		STATUS("I think pobs = %5.2f\n", I_partial/I_full);
+		STATUS("I think delta I = %5.2f\n", delta_I);
 
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<NUM_PARAMS; k++ ) {
 			double gr;
-			gr = gradient(image, k, refl, image->profile_radius);
+			signed int hi, ki, li;
+			get_indices(refl, &hi, &ki, &li);
+			gr = gradient(image, k, refl,
+			              image->profile_radius);
+			STATUS("gradient = %5.2e\n", gr);
 			gradients[k] = gr;
 		}
 
@@ -359,16 +375,21 @@ static double mean_partial_dev(struct image *image,
 		if ( !get_scalable(refl) ) continue;
 
 		get_indices(refl, &h, &k, &l);
-		G = image->osf;
+		assert ((h!=0) || (k!=0) || (l!=0));
+
+		/* FIXME: Testing with one reflection */
+		if ( (h!=23) || (k!=12) || (l!=3) ) continue;
 
 		full_version = find_refl(full, h, k, l);
 		assert(full_version != NULL);
 
+		G = image->osf;
 		p = get_partiality(refl);
 		I_partial = get_intensity(refl);
 		I_full = get_intensity(full_version);
-		//STATUS("%3i %3i %3i  %5.2f  %5.2f  %5.2f  %5.2f\n",
-		//       h, k, l, G, p, I_partial, I_full);
+		//STATUS("%3i %3i %3i  %5.2f  %5.2f  %5.2f  %5.2f  %5.2f\n",
+		//       h, k, l, G, p, I_partial, I_full,
+		//       I_partial - p*G*I_full);
 
 		dev += pow(I_partial - p*G*I_full, 2.0);
 
@@ -413,12 +434,15 @@ static void plot_curve(struct image *image, const RefList *full,
 
 void pr_refine(struct image *image, const RefList *full, const char *sym)
 {
-	double max_shift;
+	double max_shift, dev;
 	int i;
 
 	/* FIXME: This is for debugging */
 	//plot_curve(image, full, sym);
 	//return;
+
+	dev = mean_partial_dev(image, full, sym);
+	STATUS("PR starting dev = %5.2f\n", dev);
 
 	i = 0;
 	do {
