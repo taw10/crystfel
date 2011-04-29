@@ -108,7 +108,6 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 	yl = hi*asy + ki*bsy + li*csy;
 	zl = hi*asz + ki*bsz + li*csz;
 
-
 	ds = 2.0 * resolution(image->indexed_cell, hi, ki, li);
 	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+k);
 	azi = angle_between(1.0, 0.0, 0.0, xl, yl, 0.0);
