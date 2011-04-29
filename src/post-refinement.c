@@ -326,7 +326,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 
 			}
 
-			gr = gradient(image, k, refl, image->profile_radius);
+			gr = gradients[k];
 			v_c = delta_I * I_full * gr;
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
