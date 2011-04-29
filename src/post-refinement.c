@@ -177,9 +177,7 @@ static void apply_cell_shift(UnitCell *cell, int k, double shift)
 	                          &csx, &csy, &csz);
 	switch ( k )
 	{
-		case REF_ASX :  asx += shift;
-			STATUS("shifting asx by %e\n", shift);
-			break;
+		case REF_ASX :  asx += shift;  break;
 		case REF_ASY :  asy += shift;  break;
 		case REF_ASZ :  asz += shift;  break;
 		case REF_BSX :  bsx += shift;  break;
@@ -210,12 +208,10 @@ static void apply_shift(struct image *image, int k, double shift)
 	switch ( k ) {
 
 	case REF_DIV :
-		STATUS("Shifting div by %e\n", shift);
 		image->div += shift;
 		break;
 
 	case REF_R :
-		STATUS("Shifting r by %e\n", shift);
 		image->profile_radius += shift;
 		break;
 
@@ -274,7 +270,6 @@ static double pr_iterate(struct image *image, const RefList *full,
 
 		/* Find the full version */
 		get_indices(refl, &ha, &ka, &la);
-		if ( (ha!=23) || (ka!=12) || (la!=3) ) continue;
 		match = find_refl(full, ha, ka, la);
 		assert(match != NULL);  /* Never happens because all scalable
 		                         * reflections had their LSQ intensities
@@ -285,11 +280,6 @@ static double pr_iterate(struct image *image, const RefList *full,
 		I_partial = get_intensity(refl);
 		p = get_partiality(refl);
 		delta_I = I_partial - (p * I_full);
-		STATUS("Ifull = %5.2e, osf = %f\n", I_full, image->osf);
-		STATUS("Ipartial = %5.2e p = %5.2f\n", I_partial, p);
-
-		STATUS("I think pobs = %5.2f\n", I_partial/I_full);
-		STATUS("I think delta I = %5.2f\n", delta_I);
 
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<NUM_PARAMS; k++ ) {
@@ -298,7 +288,6 @@ static double pr_iterate(struct image *image, const RefList *full,
 			get_indices(refl, &hi, &ki, &li);
 			gr = gradient(image, k, refl,
 			              image->profile_radius);
-			STATUS("gradient = %5.2e\n", gr);
 			gradients[k] = gr;
 		}
 
@@ -328,7 +317,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 		}
 
 	}
-	show_matrix_eqn(M, v, NUM_PARAMS);
+	//show_matrix_eqn(M, v, NUM_PARAMS);
 
 	shifts = gsl_vector_alloc(NUM_PARAMS);
 	gsl_linalg_HH_solve(M, v, shifts);
@@ -370,9 +359,6 @@ static double mean_partial_dev(struct image *image,
 
 		get_indices(refl, &h, &k, &l);
 		assert ((h!=0) || (k!=0) || (l!=0));
-
-		/* FIXME: Testing with one reflection */
-		if ( (h!=23) || (k!=12) || (l!=3) ) continue;
 
 		full_version = find_refl(full, h, k, l);
 		assert(full_version != NULL);
