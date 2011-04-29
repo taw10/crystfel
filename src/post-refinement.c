@@ -388,7 +388,7 @@ static void plot_curve(struct image *image, const RefList *full,
 	double shval, origval;
 	int i;
 
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	shval = 0.001*ax;
 	origval = ax;
 
@@ -396,10 +396,10 @@ static void plot_curve(struct image *image, const RefList *full,
 
 		double dev;
 
-		cell_get_cartesian(cell, &ax, &ay, &az, &bx,
+		cell_get_reciprocal(cell, &ax, &ay, &az, &bx,
 		                         &by, &bz, &cx, &cy, &cz);
 		ax = origval + (double)i*shval;
-		cell_set_cartesian(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
+		cell_set_reciprocal(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
 
 		update_partialities_and_asymm(image, sym,
 		                              NULL, NULL, NULL, NULL);

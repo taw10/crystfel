@@ -38,9 +38,9 @@ static void mess_up_cell(UnitCell *cell)
 	double bx, by, bz;
 	double cx, cy, cz;
 
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	ax += 0.008*ax;
-	cell_set_cartesian(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
+	cell_set_reciprocal(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
 }
 
 
