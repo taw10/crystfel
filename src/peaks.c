@@ -565,8 +565,6 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
 			if ( dist <= domain_r ) n_sane++;
 		}
 
-
-
 	}
 
 	if ( (float)n_sane / (float)n_feat < 0.1 ) return 0;
