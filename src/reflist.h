@@ -47,6 +47,9 @@ extern void get_detector_pos(const Reflection *refl, double *fs, double *ss);
 extern double get_partiality(const Reflection *refl);
 extern void get_indices(const Reflection *refl,
                         signed int *h, signed int *k, signed int *l);
+extern void get_symmetric_indices(const Reflection *refl,
+                                  signed int *hs, signed int *ks,
+                                  signed int *ls);
 extern double get_intensity(const Reflection *refl);
 extern void get_partial(const Reflection *refl, double *r1, double *r2,
                         double *p, int *clamp_low, int *clamp_high);
@@ -68,6 +71,8 @@ extern void set_redundancy(Reflection *refl, int red);
 extern void set_sum_squared_dev(Reflection *refl, double dev);
 extern void set_esd_intensity(Reflection *refl, double esd);
 extern void set_ph(Reflection *refl, double phase);
+extern void set_symmetric_indices(Reflection *refl,
+                                  signed int hs, signed int ks, signed int ls);
 
 /* Insertion */
 extern Reflection *add_refl(RefList *list,

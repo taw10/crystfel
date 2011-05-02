@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
 	FILE *fh;
 	int nthreads = 1;
 	struct detector *det;
-	ReflItemList *obs;
+	ReflItemList *scalable;
 	int i;
 	int n_total_patterns;
 	struct image *images;
@@ -282,8 +282,10 @@ int main(int argc, char *argv[])
 
 	/* Fill in what we know about the images so far */
 	rewind(fh);
-	obs = new_items();
+	scalable = new_items();
 	for ( i=0; i<n_total_patterns; i++ ) {
+
+		RefList *as;
 
 		images[n_usable_patterns].det = NULL;
 
@@ -316,13 +318,14 @@ int main(int argc, char *argv[])
 		images[n_usable_patterns].beam = NULL;
 
 		/* This is the raw list of reflections */
-		images[n_usable_patterns].raw_reflections =
-		                          images[n_usable_patterns].reflections;
-		images[n_usable_patterns].reflections = NULL;
+		as = asymmetric_indices(images[n_usable_patterns].reflections,
+		                        sym);
+		optimise_reflist(as);
+		reflist_free(images[n_usable_patterns].reflections);
+		images[n_usable_patterns].reflections = as;
 
-		update_partialities_and_asymm(&images[n_usable_patterns], sym,
-		                              obs, &n_expected, &n_found,
-		                              &n_notfound);
+		update_partialities(&images[n_usable_patterns], sym, scalable,
+		                    &n_expected, &n_found, &n_notfound);
 
 		progress_bar(i, n_total_patterns-1, "Loading pattern data");
 		n_usable_patterns++;
@@ -331,14 +334,15 @@ int main(int argc, char *argv[])
 	fclose(fh);
 	STATUS("Found %5.2f%% of the expected peaks (missed %i of %i).\n",
 	       100.0 * (double)n_found / n_expected, n_notfound, n_expected);
-	STATUS("Mean measurements per unique reflection: %5.2f\n",
-	       (double)n_found / num_items(obs));
+	STATUS("Mean measurements per scalable unique reflection: %5.2f\n",
+	       (double)n_found / num_items(scalable));
 
 	cref = find_common_reflections(images, n_usable_patterns);
 
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
-	full = scale_intensities(images, n_usable_patterns, sym, obs, cref);
+	full = scale_intensities(images, n_usable_patterns, sym,
+	                         scalable, cref);
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -364,13 +368,13 @@ int main(int argc, char *argv[])
 		}
 
 		/* Refine the geometry of all patterns to get the best fit */
-		refine_all(images, n_total_patterns, det, sym, obs, full,
+		refine_all(images, n_total_patterns, det, sym, scalable, full,
 		           nthreads, fhg, fhp);
 
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
 		full = scale_intensities(images, n_usable_patterns,
-		                         sym, obs, cref);
+		                         sym, scalable, cref);
 
 		fclose(fhg);
 		fclose(fhp);
@@ -388,10 +392,9 @@ int main(int argc, char *argv[])
 	/* Clean up */
 	for ( i=0; i<n_usable_patterns; i++ ) {
 		reflist_free(images[i].reflections);
-		reflist_free(images[i].raw_reflections);
 	}
 	reflist_free(full);
-	delete_items(obs);
+	delete_items(scalable);
 	free(sym);
 	free(outfile);
 	free_detector_geometry(det);

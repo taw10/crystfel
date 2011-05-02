@@ -24,6 +24,7 @@
 #include "beam-parameters.h"
 #include "reflist.h"
 #include "reflist-utils.h"
+#include "symmetry.h"
 
 
 static signed int locate_peak(double x, double y, double z, double k,
@@ -293,10 +294,8 @@ double integrate_all(struct image *image, RefList *reflections)
 
 
 /* Decide which reflections can be scaled */
-static int select_scalable_reflections(RefList *list)
+static void select_scalable_reflections(RefList *list, ReflItemList *sc_l)
 {
-	int n_scalable = 0;
-
 	Reflection *refl;
 	RefListIterator *iter;
 
@@ -312,16 +311,27 @@ static int select_scalable_reflections(RefList *list)
 		if ( v < 0.1 ) scalable = 0;
 
 		set_scalable(refl, scalable);
-		if ( scalable ) n_scalable++;
+		if ( scalable && (sc_l != NULL) ) {
+
+			signed int h, k, l;
+
+			get_indices(refl, &h, &k, &l);  /* Should already be
+			                                 * asymmetric */
+			if ( !find_item(sc_l, h, k, l) ) {
+				add_item(sc_l, h, k, l);
+			}
+
+		}
 
 	}
-
-	return n_scalable;
 }
 
 
-/* Calculate partialities and apply them to the image's raw_reflections */
+/* Calculate partialities and apply them to the image's raw_reflections,
+ * returning a ReflItemList of the currentl scalable (asymmetric) reflections.
+ */
 void update_partialities(struct image *image, const char *sym,
+                         ReflItemList *scalable,
                          int *n_expected, int *n_found, int *n_notfound)
 {
 	Reflection *refl;
@@ -335,56 +345,54 @@ void update_partialities(struct image *image, const char *sym,
 	      refl = next_refl(refl, iter) )
 	{
 
-		Reflection *peak_in_pattern;
+		Reflection *p_peak;
 		double r1, r2, p, x, y;
 		signed int h, k, l;
+		signed int ha, ka, la;
 		int clamp1, clamp2;
+		int found = 0;
 
 		/* Get predicted indices and location */
 		get_indices(refl, &h, &k, &l);
 		get_detector_pos(refl, &x, &y);
 		if ( n_expected != NULL ) (*n_expected)++;
 
+		/* Get the asymmetric indices, with which the reflection in the
+		 * image's list will be indexed. */
+		get_asymm(h, k, l, &ha, &ka, &la, sym);
+
 		/* Look for this reflection in the pattern */
-		peak_in_pattern = find_refl(image->raw_reflections, h, k, l);
-		if ( peak_in_pattern == NULL ) {
-			if ( n_notfound != NULL ) (*n_notfound)++;
+		p_peak = find_refl(image->reflections, ha, ka, la);
+		do {
+
+			signed int hs, ks, ls;
+
+			if ( p_peak != NULL ) {
+				get_symmetric_indices(p_peak, &hs, &ks, &ls);
+				if ( (hs==h) && (ks==k) && (ls==l) ) found = 1;
+			}
+
+			if ( !found && (p_peak != NULL ) ) {
+				p_peak = next_found_refl(p_peak);
+			}
+
+		} while ( !found && (p_peak != NULL) );
+		if ( !found ) {
+			if (n_notfound != NULL) (*n_notfound)++;
 			continue;
 		}
 		if ( n_found != NULL ) (*n_found)++;
 
 		/* Transfer partiality stuff */
 		get_partial(refl, &r1, &r2, &p, &clamp1, &clamp2);
-		set_partial(peak_in_pattern, r1, r2, p, clamp1, clamp2);
+		set_partial(p_peak, r1, r2, p, clamp1, clamp2);
 
 		/* Transfer detector location */
 		get_detector_pos(refl, &x, &y);
-		set_detector_pos(peak_in_pattern, 0.0, x, y);
+		set_detector_pos(p_peak, 0.0, x, y);
 
 	}
 
 	reflist_free(predicted);
-}
-
-
-void update_partialities_and_asymm(struct image *image, const char *sym,
-                                   ReflItemList *obs,
-                                   int *n_expected, int *n_found,
-                                   int *n_notfound)
-{
-	/* Get rid of the old list, about to be replaced */
-	reflist_free(image->reflections);
-	image->reflections = NULL;
-
-	/* Fill in partialities */
-	update_partialities(image, sym, n_expected, n_found, n_notfound);
-
-	/* Rewrite the reflections with the asymmetric indices
-	 * to get the list used for scaling and post refinement */
-	image->reflections = asymmetric_indices(image->raw_reflections,
-	                                        sym, obs);
-	select_scalable_reflections(image->reflections);
-
-	/* Need these lists to work fast */
-	optimise_reflist(image->reflections);
+	select_scalable_reflections(image->reflections, scalable);
 }

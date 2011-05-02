@@ -362,7 +362,7 @@ RefList *read_reflections(const char *filename)
 }
 
 
-RefList *asymmetric_indices(RefList *in, const char *sym, ReflItemList *obs)
+RefList *asymmetric_indices(RefList *in, const char *sym)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -386,12 +386,7 @@ RefList *asymmetric_indices(RefList *in, const char *sym, ReflItemList *obs)
 		assert(cr != NULL);
 
 		copy_data(cr, refl);
-
-		if ( obs != NULL ) {
-			if ( !find_item(obs, ha, ka, la) ) {
-				add_item(obs, ha, ka, la);
-			}
-		}
+		set_symmetric_indices(cr, h, k, l);
 
 	}
 

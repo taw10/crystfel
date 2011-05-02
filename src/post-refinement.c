@@ -95,21 +95,21 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	double xl, yl, zl;
-	signed int hi, ki, li;
+	signed int hs, ks, ls;
 	double r1, r2, p;
 	int clamp_low, clamp_high;
 
-	get_indices(refl, &hi, &ki, &li);
+	get_symmetric_indices(refl, &hs, &ks, &ls);
 
 	cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
 	                                         &bsx, &bsy, &bsz,
 	                                         &csx, &csy, &csz);
-	xl = hi*asx + ki*bsx + li*csx;
-	yl = hi*asy + ki*bsy + li*csy;
-	zl = hi*asz + ki*bsz + li*csz;
+	xl = hs*asx + ks*bsx + ls*csx;
+	yl = hs*asy + ks*bsy + ls*csy;
+	zl = hs*asz + ks*bsz + ls*csz;
 
-	ds = 2.0 * resolution(image->indexed_cell, hi, ki, li);
-	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+k);
+	ds = 2.0 * resolution(image->indexed_cell, hs, ks, ls);
+	tt = angle_between(0.0, 0.0, 1.0, xl, yl, zl+1.0/image->lambda);
 	azi = angle_between(1.0, 0.0, 0.0, xl, yl, 0.0);
 
 	get_partial(refl, &r1, &r2, &p, &clamp_low, &clamp_high);
@@ -142,23 +142,23 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 
 	/* Cell parameters and orientation */
 	case REF_ASX :
-		return hi * sin(tt) * cos(azi) * g;
+		return hs * sin(tt) * cos(azi) * g;
 	case REF_BSX :
-		return ki * sin(tt) * g;
+		return ks * sin(tt) * g;
 	case REF_CSX :
-		return li * sin(tt) * g;
+		return ls * sin(tt) * g;
 	case REF_ASY :
-		return hi * sin(tt) * g;
+		return hs * sin(tt) * g;
 	case REF_BSY :
-		return ki * sin(tt) * g;
+		return ks * sin(tt) * g;
 	case REF_CSY :
-		return li * sin(tt) * g;
+		return ls * sin(tt) * g;
 	case REF_ASZ :
-		return hi * cos(tt) * g;
+		return hs * cos(tt) * g;
 	case REF_BSZ :
-		return ki * cos(tt) * g;
+		return ks * cos(tt) * g;
 	case REF_CSZ :
-		return li * cos(tt) * g;
+		return ls * cos(tt) * g;
 
 	}
 
@@ -285,8 +285,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<NUM_PARAMS; k++ ) {
 			double gr;
-			gr = gradient(image, k, refl,
-			              image->profile_radius);
+			gr = gradient(image, k, refl, image->profile_radius);
 			gradients[k] = gr;
 		}
 
@@ -403,8 +402,7 @@ static void plot_curve(struct image *image, const RefList *full,
 		ax = origval + (double)i*shval;
 		cell_set_reciprocal(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
 
-		update_partialities_and_asymm(image, sym,
-		                              NULL, NULL, NULL, NULL);
+		update_partialities(image, sym, NULL, NULL, NULL, NULL);
 
 		dev = mean_partial_dev(image, full, sym);
 		STATUS("%i %e %e\n", i, ax, dev);
@@ -431,8 +429,7 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 		double dev;
 
 		max_shift = pr_iterate(image, full, sym);
-		update_partialities_and_asymm(image, sym,
-		                              NULL, NULL, NULL, NULL);
+		update_partialities(image, sym, NULL, NULL, NULL, NULL);
 
 		dev = mean_partial_dev(image, full, sym);
 		STATUS("PR Iteration %2i: max shift = %5.2f dev = %5.2f\n",

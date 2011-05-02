@@ -41,7 +41,6 @@ extern int find_equiv_in_list(RefList *list, signed int h, signed int k,
                               signed int l, const char *sym, signed int *hu,
                               signed int *ku, signed int *lu);
 
-extern RefList *asymmetric_indices(RefList *in, const char *sym,
-                                   ReflItemList *obs);
+extern RefList *asymmetric_indices(RefList *in, const char *sym);
 
 #endif	/* REFLIST_UTILS_H */

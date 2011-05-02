@@ -45,6 +45,11 @@
 
 struct _refldata {
 
+	/* Symmetric indices (i.e. the "real" indices) */
+	signed int hs;
+	signed int ks;
+	signed int ls;
+
 	/* Partiality and related geometrical stuff */
 	double r1;  /* First excitation error */
 	double r2;  /* Second excitation error */
@@ -288,6 +293,29 @@ void get_indices(const Reflection *refl,
 
 
 /**
+ * get_symmetric_indices:
+ * @refl: A %Reflection
+ * @h: Location at which to store the 'h' index of the reflection
+ * @k: Location at which to store the 'k' index of the reflection
+ * @l: Location at which to store the 'l' index of the reflection
+ *
+ * This function gives the symmetric indices, that is, the "real" indices before
+ * squashing down to the asymmetric reciprocal unit.  This may be useful if the
+ * list is indexed according to the asymmetric indices, but you still need
+ * access to the symmetric version.  This happens during post-refinement.
+ *
+ **/
+void get_symmetric_indices(const Reflection *refl,
+                                  signed int *hs, signed int *ks,
+                                  signed int *ls)
+{
+	*hs = refl->data.hs;
+	*ks = refl->data.ks;
+	*ls = refl->data.ls;
+}
+
+
+/**
  * get_partiality:
  * @refl: A %Reflection
  *
@@ -486,6 +514,15 @@ void set_esd_intensity(Reflection *refl, double esd)
 void set_ph(Reflection *refl, double phase)
 {
 	refl->data.phase = phase;
+}
+
+
+void set_symmetric_indices(Reflection *refl,
+                           signed int hs, signed int ks, signed int ls)
+{
+	refl->data.hs = hs;
+	refl->data.ks = ks;
+	refl->data.ls = ls;
 }
 
 
