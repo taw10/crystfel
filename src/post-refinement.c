@@ -285,8 +285,6 @@ static double pr_iterate(struct image *image, const RefList *full,
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<NUM_PARAMS; k++ ) {
 			double gr;
-			signed int hi, ki, li;
-			get_indices(refl, &hi, &ki, &li);
 			gr = gradient(image, k, refl,
 			              image->profile_radius);
 			gradients[k] = gr;
