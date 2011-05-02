@@ -320,13 +320,17 @@ static double pr_iterate(struct image *image, const RefList *full,
 	//show_matrix_eqn(M, v, NUM_PARAMS);
 
 	shifts = gsl_vector_alloc(NUM_PARAMS);
-	gsl_linalg_HH_solve(M, v, shifts);
-
 	max_shift = 0.0;
-	for ( param=0; param<NUM_PARAMS; param++ ) {
-		double shift = gsl_vector_get(shifts, param);
-		apply_shift(image, param, shift);
-		if ( fabs(shift) > max_shift ) max_shift = fabs(shift);
+	if ( gsl_linalg_HH_solve(M, v, shifts) ) {
+		ERROR("Couldn't solve normal equations!\n");
+	} else {
+
+		for ( param=0; param<NUM_PARAMS; param++ ) {
+			double shift = gsl_vector_get(shifts, param);
+			apply_shift(image, param, shift);
+			if ( fabs(shift) > max_shift ) max_shift = fabs(shift);
+		}
+
 	}
 
 	gsl_matrix_free(M);

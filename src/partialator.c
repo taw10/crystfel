@@ -22,6 +22,7 @@
 #include <getopt.h>
 #include <assert.h>
 #include <pthread.h>
+#include <gsl/gsl_errno.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -273,6 +274,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	STATUS("There are %i patterns to process\n", n_total_patterns);
+
+	gsl_set_error_handler_off();
 
 	images = malloc(n_total_patterns * sizeof(struct image));
 	if ( images == NULL ) {

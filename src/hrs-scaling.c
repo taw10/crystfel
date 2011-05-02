@@ -263,6 +263,10 @@ static double iterate_scale(struct image *images, int n,
 	e_val = gsl_vector_alloc(n);
 	e_vec = gsl_matrix_alloc(n, n);
 	val = gsl_eigen_symmv(M, e_val, e_vec, work);
+	if ( val ) {
+		ERROR("Couldn't diagonalise matrix.\n");
+		return 0.0;
+	}
 	gsl_eigen_symmv_free(work);
 	val = gsl_eigen_symmv_sort(e_val, e_vec, GSL_EIGEN_SORT_ABS_DESC);
 
