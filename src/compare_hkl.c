@@ -513,7 +513,7 @@ int main(int argc, char *argv[])
 	       pearson);
 
 	if ( config_shells ) {
-		plot_shells(list1, list2_transformed, scale_r1fi,
+		plot_shells(list1, list2_transformed, scale_r1i,
 		            cell, sym, rmin_fix, rmax_fix);
 	}
 
