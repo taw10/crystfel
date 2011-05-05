@@ -90,7 +90,7 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 {
 	double ds, tt, azi;
 	double nom, den;
-	double g = 0.0;
+	double g;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
@@ -115,6 +115,7 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 	get_partial(refl, &r1, &r2, &p, &clamp_low, &clamp_high);
 
 	/* Calculate the gradient of partiality wrt excitation error. */
+	g = 0.0;
 	if ( clamp_low == 0 ) {
 		g += partiality_gradient(r1, r);
 	}
@@ -132,6 +133,7 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 		return (nom/den) * g;
 
 	case REF_R :
+		g = 0.0;
 		if ( clamp_low == 0 ) {
 			g += partiality_rgradient(r1, r);
 		}
