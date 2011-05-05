@@ -381,7 +381,7 @@ static double mean_partial_dev(struct image *image,
 
 	}
 
-	return dev;
+	return sqrt(dev);
 }
 
 
