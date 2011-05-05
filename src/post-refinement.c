@@ -29,7 +29,7 @@
 
 
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
-#define MAX_CYCLES (10)
+#define MAX_CYCLES (50)
 
 
 /* Refineable parameters */
@@ -56,6 +56,7 @@ static double partiality_gradient(double r, double profile_radius)
 
 	/* Calculate degree of penetration */
 	q = (r + profile_radius)/(2.0*profile_radius);
+	STATUS("q=%f\n", q);
 
 	/* dp/dq */
 	dpdq = 6.0*(q-pow(q, 2.0));
@@ -107,10 +108,13 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 	xl = hs*asx + ks*bsx + ls*csx;
 	yl = hs*asy + ks*bsy + ls*csy;
 	zl = hs*asz + ks*bsz + ls*csz;
+	STATUS("%3i %3i %3i\n", hs, ks, ls);
 
 	ds = 2.0 * resolution(image->indexed_cell, hs, ks, ls);
 	tt = angle_between(0.0, 0.0, 1.0, xl, yl, zl+1.0/image->lambda);
 	azi = angle_between(1.0, 0.0, 0.0, xl, yl, 0.0);
+	STATUS("d*=%.2e, 2theta=%.2f deg, azi=%.2f deg\n",
+	       ds, rad2deg(tt), rad2deg(azi));
 
 	get_partial(refl, &r1, &r2, &p, &clamp_low, &clamp_high);
 
@@ -122,6 +126,9 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 	if ( clamp_high == 0 ) {
 		g += partiality_gradient(r2, r);
 	}
+	STATUS("clamp status low=%i high=%i\n", clamp_low, clamp_high);
+	STATUS("excitation errors %e %e\n", r1, r2);
+	STATUS("dp/dr = %e\n", g);
 
 	/* For many gradients, just multiply the above number by the gradient
 	 * of excitation error wrt whatever. */
@@ -144,7 +151,7 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 
 	/* Cell parameters and orientation */
 	case REF_ASX :
-		return hs * sin(tt) * cos(azi) * g;
+		return hs * sin(tt) * cos(azi) * g / image->osf;
 	case REF_BSX :
 		return ks * sin(tt) * g;
 	case REF_CSX :
@@ -273,6 +280,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 
 		/* Find the full version */
 		get_indices(refl, &ha, &ka, &la);
+		if ( (ha!=23) || (ka!=12) || (la!=3) ) continue;
 		match = find_refl(full, ha, ka, la);
 		assert(match != NULL);  /* Never happens because all scalable
 		                         * reflections had their LSQ intensities
@@ -364,6 +372,7 @@ static double mean_partial_dev(struct image *image,
 		if ( !get_scalable(refl) ) continue;
 
 		get_indices(refl, &h, &k, &l);
+		if ( (h!=23) || (k!=12) || (l!=3) ) continue;
 		assert ((h!=0) || (k!=0) || (l!=0));
 
 		full_version = find_refl(full, h, k, l);
