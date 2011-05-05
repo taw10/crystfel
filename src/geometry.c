@@ -204,6 +204,7 @@ static int check_reflection(struct image *image, double mres, int output,
 		rhigh = +image->profile_radius;
 		clamp_high = +1;
 	}
+	assert(clamp_low <= clamp_high);
 	/* The six possible combinations of clamp_{low,high} (including
 	 * zero) correspond to the six situations in Table 3 of Rossmann
 	 * et al. (1979). */
