@@ -97,7 +97,7 @@ static double excitation_error(double xl, double yl, double zl,
 
 	r = ( ds * sin(al) / sin(tt) ) - k;
 
-	delta = sqrt(2.0 * pow(ds, 2.0) * (1-cos(divergence)));
+	delta = sqrt(2.0 * pow(ds, 2.0) * (1.0-cos(divergence)));
 	if ( divergence > 0.0 ) {
 		r += delta;
 	} else {
