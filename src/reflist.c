@@ -577,6 +577,10 @@ Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 {
 	Reflection *new;
 
+	assert(abs(h)<256);
+	assert(abs(k)<256);
+	assert(abs(l)<256);
+
 	new = new_node(SERIAL(h, k, l));
 
 	if ( list->head == NULL ) {
