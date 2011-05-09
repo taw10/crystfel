@@ -39,7 +39,7 @@ static void mess_up_cell(UnitCell *cell)
 	double cx, cy, cz;
 
 	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	ax += 0.008*ax;
+	ax += 0.05*ax;
 	cell_set_reciprocal(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
 }
 
