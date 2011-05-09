@@ -151,11 +151,11 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 
 	/* Cell parameters and orientation */
 	case REF_ASX :
-		return hs * sin(tt) * cos(azi) * g / image->osf;
+		return -hs * sin(tt) * cos(azi) * g;
 	case REF_BSX :
-		return ks * sin(tt) * g;
+		return -ks * sin(tt) * cos(azi) * g;
 	case REF_CSX :
-		return ls * sin(tt) * g;
+		return -ls * sin(tt) * cos(azi) * g;
 	case REF_ASY :
 		return hs * sin(tt) * g;
 	case REF_BSY :
@@ -286,12 +286,12 @@ static double pr_iterate(struct image *image, const RefList *full,
 		assert(match != NULL);  /* Never happens because all scalable
 		                         * reflections had their LSQ intensities
 		                         * calculated in lsq_intensities(). */
-		I_full = image->osf * get_intensity(match);
+		I_full = get_intensity(match);
 
 		/* Actual measurement of this reflection from this pattern? */
 		I_partial = get_intensity(refl);
 		p = get_partiality(refl);
-		delta_I = I_partial - (p * I_full);
+		delta_I = I_partial - (p * image->osf * I_full);
 
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<NUM_PARAMS; k++ ) {
@@ -311,7 +311,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 				double M_c, M_curr;
 
 				M_c = gradients[g] * gradients[k];
-				M_c *= pow(I_full, 2.0);
+				M_c *= pow(image->osf * I_full, 2.0);
 
 				M_curr = gsl_matrix_get(M, g, k);
 				gsl_matrix_set(M, g, k, M_curr + M_c);
@@ -319,7 +319,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 			}
 
 			gr = gradients[k];
-			v_c = delta_I * I_full * gr;
+			v_c = delta_I * image->osf * I_full * gr;
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
 
