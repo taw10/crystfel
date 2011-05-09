@@ -56,7 +56,7 @@ static double partiality_gradient(double r, double profile_radius)
 
 	/* Calculate degree of penetration */
 	q = (r + profile_radius)/(2.0*profile_radius);
-	STATUS("q=%f\n", q);
+	//STATUS("q=%f\n", q);
 
 	/* dp/dq */
 	dpdq = 6.0*(q-pow(q, 2.0));
@@ -108,13 +108,13 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 	xl = hs*asx + ks*bsx + ls*csx;
 	yl = hs*asy + ks*bsy + ls*csy;
 	zl = hs*asz + ks*bsz + ls*csz;
-	STATUS("%3i %3i %3i\n", hs, ks, ls);
+	//STATUS("%3i %3i %3i\n", hs, ks, ls);
 
 	ds = 2.0 * resolution(image->indexed_cell, hs, ks, ls);
 	tt = angle_between(0.0, 0.0, 1.0, xl, yl, zl+1.0/image->lambda);
 	azi = angle_between(1.0, 0.0, 0.0, xl, yl, 0.0);
-	STATUS("d*=%.2e, 2theta=%.2f deg, azi=%.2f deg\n",
-	       ds, rad2deg(tt), rad2deg(azi));
+	//STATUS("d*=%.2e, 2theta=%.2f deg, azi=%.2f deg\n",
+	//       ds, rad2deg(tt), rad2deg(azi));
 
 	get_partial(refl, &r1, &r2, &p, &clamp_low, &clamp_high);
 
@@ -126,9 +126,9 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 	if ( clamp_high == 0 ) {
 		g += partiality_gradient(r2, r);
 	}
-	STATUS("clamp status low=%i high=%i\n", clamp_low, clamp_high);
-	STATUS("excitation errors %e %e\n", r1, r2);
-	STATUS("dp/dr = %e\n", g);
+	//STATUS("clamp status low=%i high=%i\n", clamp_low, clamp_high);
+	//STATUS("excitation errors %e %e\n", r1, r2);
+	//STATUS("dp/dr = %e\n", g);
 
 	/* For many gradients, just multiply the above number by the gradient
 	 * of excitation error wrt whatever. */
@@ -185,6 +185,7 @@ static void apply_cell_shift(UnitCell *cell, int k, double shift)
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
+	STATUS("Shifting by %e\n", shift);
 	switch ( k )
 	{
 		case REF_ASX :  asx += shift;  break;
@@ -327,7 +328,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 	}
 	double tg = gsl_matrix_get(M, 0, 0);
 	STATUS("total gradient = %e\n", tg);
-	//show_matrix_eqn(M, v, NUM_PARAMS);
+	show_matrix_eqn(M, v, NUM_PARAMS);
 
 	shifts = gsl_vector_alloc(NUM_PARAMS);
 	max_shift = 0.0;
@@ -390,7 +391,7 @@ static double mean_partial_dev(struct image *image,
 
 	}
 
-	return sqrt(dev);
+	return dev;
 }
 
 
