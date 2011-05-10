@@ -124,7 +124,7 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 		g += partiality_gradient(r1, r);
 	}
 	if ( clamp_high == 0 ) {
-		g += partiality_gradient(r2, r);
+		g -= partiality_gradient(r2, r);
 	}
 	//STATUS("clamp status low=%i high=%i\n", clamp_low, clamp_high);
 	//STATUS("excitation errors %e %e\n", r1, r2);
@@ -157,11 +157,11 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 	case REF_CSX :
 		return -ls * sin(tt) * cos(azi) * g;
 	case REF_ASY :
-		return hs * sin(tt) * g;
+		return hs * sin(tt) * sin(azi) * g;
 	case REF_BSY :
-		return ks * sin(tt) * g;
+		return ks * sin(tt) * sin(azi) * g;
 	case REF_CSY :
-		return ls * sin(tt) * g;
+		return ls * sin(tt) * sin(azi) * g;
 	case REF_ASZ :
 		return hs * cos(tt) * g;
 	case REF_BSZ :
