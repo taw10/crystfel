@@ -121,10 +121,10 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 	/* Calculate the gradient of partiality wrt excitation error. */
 	g = 0.0;
 	if ( clamp_low == 0 ) {
-		g += partiality_gradient(r1, r);
+		g -= partiality_gradient(r1, r);
 	}
 	if ( clamp_high == 0 ) {
-		g -= partiality_gradient(r2, r);
+		g += partiality_gradient(r2, r);
 	}
 	//STATUS("clamp status low=%i high=%i\n", clamp_low, clamp_high);
 	//STATUS("excitation errors %e %e\n", r1, r2);
@@ -151,11 +151,11 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 
 	/* Cell parameters and orientation */
 	case REF_ASX :
-		return -hs * sin(tt) * cos(azi) * g;
+		return hs * sin(tt) * cos(azi) * g;
 	case REF_BSX :
-		return -ks * sin(tt) * cos(azi) * g;
+		return ks * sin(tt) * cos(azi) * g;
 	case REF_CSX :
-		return -ls * sin(tt) * cos(azi) * g;
+		return ls * sin(tt) * cos(azi) * g;
 	case REF_ASY :
 		return hs * sin(tt) * sin(azi) * g;
 	case REF_BSY :
