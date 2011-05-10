@@ -29,7 +29,7 @@
 
 
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
-#define MAX_CYCLES (10)
+#define MAX_CYCLES (5)
 
 
 /* Refineable parameters */
