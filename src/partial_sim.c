@@ -39,7 +39,9 @@ static void mess_up_cell(UnitCell *cell)
 	double cx, cy, cz;
 
 	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	STATUS("The correct ax* is %e\n", ax);
 	ax += 0.05*ax;
+	STATUS("The starting ax* is %e\n", ax);
 	cell_set_reciprocal(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
 }
 
