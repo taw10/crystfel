@@ -348,6 +348,7 @@ static RefList *lsq_intensities(struct image *images, int n,
 
 				double p;
 
+				if ( !get_scalable(refl) ) continue;
 				p = get_partiality(refl);
 
 				num += get_intensity(refl) * p * G;
