@@ -37,10 +37,10 @@ enum {
 	REF_ASX,
 	REF_BSX,
 	REF_CSX,
-	NUM_PARAMS,
 	REF_ASY,
 	REF_BSY,
 	REF_CSY,
+	NUM_PARAMS,
 	REF_ASZ,
 	REF_BSZ,
 	REF_CSZ,
@@ -89,7 +89,7 @@ static double partiality_rgradient(double r, double profile_radius)
 /* Return the gradient of parameter 'k' given the current status of 'image'. */
 static double gradient(struct image *image, int k, Reflection *refl, double r)
 {
-	double ds, tt, azi;
+	double ds, tt, azix, aziy;
 	double nom, den;
 	double g;
 	double asx, asy, asz;
@@ -112,7 +112,8 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 
 	ds = 2.0 * resolution(image->indexed_cell, hs, ks, ls);
 	tt = angle_between(0.0, 0.0, 1.0, xl, yl, zl+1.0/image->lambda);
-	azi = angle_between(1.0, 0.0, 0.0, xl, yl, 0.0);
+	azix = angle_between(1.0, 0.0, 0.0, xl, yl, 0.0);
+	aziy = angle_between(0.0, 1.0, 0.0, xl, yl, 0.0);
 	//STATUS("d*=%.2e, 2theta=%.2f deg, azi=%.2f deg\n",
 	//       ds, rad2deg(tt), rad2deg(azi));
 
@@ -151,17 +152,17 @@ static double gradient(struct image *image, int k, Reflection *refl, double r)
 
 	/* Cell parameters and orientation */
 	case REF_ASX :
-		return hs * sin(tt) * cos(azi) * g;
+		return hs * sin(tt) * cos(azix) * g;
 	case REF_BSX :
-		return ks * sin(tt) * cos(azi) * g;
+		return ks * sin(tt) * cos(azix) * g;
 	case REF_CSX :
-		return ls * sin(tt) * cos(azi) * g;
+		return ls * sin(tt) * cos(azix) * g;
 	case REF_ASY :
-		return hs * sin(tt) * sin(azi) * g;
+		return hs * sin(tt) * cos(aziy) * g;
 	case REF_BSY :
-		return ks * sin(tt) * sin(azi) * g;
+		return ks * sin(tt) * cos(aziy) * g;
 	case REF_CSY :
-		return ls * sin(tt) * sin(azi) * g;
+		return ls * sin(tt) * cos(aziy) * g;
 	case REF_ASZ :
 		return hs * cos(tt) * g;
 	case REF_BSZ :
