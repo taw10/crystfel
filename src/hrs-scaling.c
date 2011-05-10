@@ -329,6 +329,7 @@ static RefList *lsq_intensities(struct image *images, int n,
 		double num = 0.0;
 		double den = 0.0;
 		int m;
+		int redundancy = 0;
 		Reflection *new;
 
 		/* For each frame */
@@ -351,6 +352,7 @@ static RefList *lsq_intensities(struct image *images, int n,
 
 				num += get_intensity(refl) * p * G;
 				den += pow(p, 2.0) * pow(G, 2.0);
+				redundancy++;
 
 			}
 
@@ -359,6 +361,7 @@ static RefList *lsq_intensities(struct image *images, int n,
 		if ( !isnan(num/den) ) {
 			new = add_refl(full, it->h, it->k, it->l);
 			set_int(new, num/den);
+			set_redundancy(new, redundancy);
 		} else {
 			ERROR("Couldn't calculate LSQ full intensity for"
 			      "%3i %3i %3i\n", it->h, it->k, it->l);
