@@ -40,10 +40,10 @@ enum {
 	REF_ASY,
 	REF_BSY,
 	REF_CSY,
-	NUM_PARAMS,
 	REF_ASZ,
 	REF_BSZ,
 	REF_CSZ,
+	NUM_PARAMS,
 	REF_DIV,
 	REF_R,
 };
@@ -205,14 +205,6 @@ static void apply_cell_shift(UnitCell *cell, int k, double shift)
 	cell_set_reciprocal(cell, asx, asy, asz,
 	                          bsx, bsy, bsz,
 	                          csx, csy, csz);
-
-	if ( k == REF_CSZ ) {
-		double a, b, c, al, be, ga;
-		cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
-		STATUS("New cell: %5.2f %5.2f %5.2f nm %5.2f %5.2f %5.2f deg\n",
-		       a/1.0e-9, b/1.0e-9, c/1.0e-9,
-		       rad2deg(al), rad2deg(be), rad2deg(ga));
-	}
 }
 
 
@@ -329,7 +321,6 @@ static double pr_iterate(struct image *image, const RefList *full,
 		}
 
 	}
-	//STATUS("total gradient = %e\n",  gsl_matrix_get(M, 0, 0));
 	//show_matrix_eqn(M, v, NUM_PARAMS);
 
 	shifts = gsl_vector_alloc(NUM_PARAMS);
