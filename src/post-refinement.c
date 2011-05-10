@@ -433,7 +433,8 @@ static void plot_curve(struct image *image, const RefList *full,
 	int i;
 
 	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	shval = 0.001*ax;
+	STATUS("Starting ax* = %e\n", ax);
+	shval = 0.01*ax;
 	origval = ax;
 
 	for ( i=-10; i<=10; i++ ) {
