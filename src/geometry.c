@@ -318,7 +318,7 @@ static void select_scalable_reflections(RefList *list, ReflItemList *sc_l)
 
 			get_indices(refl, &h, &k, &l);  /* Should already be
 			                                 * asymmetric */
-			if ( !find_item(sc_l, h, k, l) ) {
+			if ( (sc_l != NULL) && (!find_item(sc_l, h, k, l)) ) {
 				add_item(sc_l, h, k, l);
 			}
 
