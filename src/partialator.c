@@ -347,6 +347,39 @@ int main(int argc, char *argv[])
 	full = scale_intensities(images, n_usable_patterns, sym,
 	                         scalable, cref);
 
+	for ( i=0; i<num_items(scalable); i++ ) {
+		Reflection *f;
+		struct refl_item *it = get_item(scalable, i);
+		f = find_refl(full, it->h, it->k, it->l);
+		if ( f == NULL ) {
+			ERROR("%3i %3i %3i was designated scalable, but no"
+			      " full intensity was recorded.\n",
+			      it->h, it->k, it->l);
+		}
+	}
+
+	for ( i=0; i<n_usable_patterns; i++ ) {
+
+		Reflection *refl;
+		RefListIterator *iter;
+
+		for ( refl = first_refl(images[i].reflections, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) )
+		{
+			signed int h, k, l;
+
+			if ( !get_scalable(refl) ) continue;
+			get_indices(refl, &h, &k, &l);
+
+			if ( find_item(scalable, h, k, l) == 0 ) {
+				ERROR("%3i %3i %3i in image %i is scalable"
+				      " but is not in the list of scalable"
+				      " reflections.\n", h, k, l, i);
+			}
+		}
+	}
+
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
 
