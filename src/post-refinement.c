@@ -485,7 +485,7 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 
 		dev = mean_partial_dev(image, full, sym);
 		STATUS("PR Iteration %2i: max shift = %5.2f dev = %5.2f\n",
-		       i, max_shift, dev);
+		       i+1, max_shift, dev);
 
 		i++;
 
