@@ -35,9 +35,9 @@
 /* Refineable parameters */
 enum {
 	REF_ASX,
-	NUM_PARAMS,
 	REF_BSX,
 	REF_CSX,
+	NUM_PARAMS,
 	REF_ASY,
 	REF_BSY,
 	REF_CSY,
