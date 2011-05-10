@@ -345,28 +345,6 @@ static double pr_iterate(struct image *image, const RefList *full,
 }
 
 
-static void check_scalable(RefList *check)
-{
-	Reflection *refl;
-	RefListIterator *iter;
-
-	STATUS("------ Scalability check ------\n");
-	for ( refl = first_refl(check, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-
-		signed int h, k, l;
-		if ( get_scalable(refl) ) continue;
-
-		get_indices(refl, &h, &k, &l);
-		STATUS("%3i %3i %3i is not scalable.\n", h, k, l);
-
-	}
-	STATUS("------ End of scalability check ------\n");
-}
-
-
 static double mean_partial_dev(struct image *image,
                                const RefList *full, const char *sym)
 {
@@ -414,39 +392,6 @@ static double mean_partial_dev(struct image *image,
 }
 
 
-static void plot_curve(struct image *image, const RefList *full,
-                       const char *sym)
-{
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
-	UnitCell *cell = image->indexed_cell;
-	double shval, origval;
-	int i;
-
-	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	STATUS("Starting ax* = %e\n", ax);
-	shval = 0.01*ax;
-	origval = ax;
-
-	for ( i=-10; i<=10; i++ ) {
-
-		double dev;
-
-		cell_get_reciprocal(cell, &ax, &ay, &az, &bx,
-		                         &by, &bz, &cx, &cy, &cz);
-		ax = origval + (double)i*shval;
-		cell_set_reciprocal(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
-
-		update_partialities(image, sym, NULL, NULL, NULL, NULL);
-
-		dev = mean_partial_dev(image, full, sym);
-		STATUS("%i %e %e\n", i, ax, dev);
-
-	}
-}
-
-
 void pr_refine(struct image *image, const RefList *full, const char *sym)
 {
 	double max_shift, dev;
@@ -461,10 +406,6 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 
 	dev = mean_partial_dev(image, full, sym);
 	STATUS("PR starting dev = %5.2f\n", dev);
-
-	/* FIXME: This is for debugging */
-	//plot_curve(image, full, sym);
-	//return;
 
 	i = 0;
 	do {
