@@ -185,7 +185,9 @@ static void apply_cell_shift(UnitCell *cell, int k, double shift)
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
-	STATUS("Shifting by %e\n", shift);
+
+	//STATUS("Shifting by %e\n", shift);
+
 	switch ( k )
 	{
 		case REF_ASX :  asx += shift;  break;
@@ -281,11 +283,11 @@ static double pr_iterate(struct image *image, const RefList *full,
 
 		/* Find the full version */
 		get_indices(refl, &ha, &ka, &la);
-		if ( (ha!=23) || (ka!=12) || (la!=3) ) continue;
 		match = find_refl(full, ha, ka, la);
-		assert(match != NULL);  /* Never happens because all scalable
-		                         * reflections had their LSQ intensities
-		                         * calculated in lsq_intensities(). */
+		if ( match == NULL ) continue;
+		/* Some reflections may have recently become scalable, but
+		 * scale_intensities() might not yet have been called, so the
+		 * full version may not have been calculated yet. */
 		I_full = get_intensity(match);
 
 		/* Actual measurement of this reflection from this pattern? */
@@ -326,9 +328,8 @@ static double pr_iterate(struct image *image, const RefList *full,
 		}
 
 	}
-	double tg = gsl_matrix_get(M, 0, 0);
-	STATUS("total gradient = %e\n", tg);
-	show_matrix_eqn(M, v, NUM_PARAMS);
+	//STATUS("total gradient = %e\n",  gsl_matrix_get(M, 0, 0));
+	//show_matrix_eqn(M, v, NUM_PARAMS);
 
 	shifts = gsl_vector_alloc(NUM_PARAMS);
 	max_shift = 0.0;
@@ -349,6 +350,28 @@ static double pr_iterate(struct image *image, const RefList *full,
 	gsl_vector_free(shifts);
 
 	return max_shift;
+}
+
+
+static void check_scalable(RefList *check)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+
+	STATUS("------ Scalability check ------\n");
+	for ( refl = first_refl(check, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+
+		signed int h, k, l;
+		if ( get_scalable(refl) ) continue;
+
+		get_indices(refl, &h, &k, &l);
+		STATUS("%3i %3i %3i is not scalable.\n", h, k, l);
+
+	}
+	STATUS("------ End of scalability check ------\n");
 }
 
 
@@ -373,11 +396,15 @@ static double mean_partial_dev(struct image *image,
 		if ( !get_scalable(refl) ) continue;
 
 		get_indices(refl, &h, &k, &l);
-		if ( (h!=23) || (k!=12) || (l!=3) ) continue;
 		assert ((h!=0) || (k!=0) || (l!=0));
 
+		if ( !get_scalable(refl) ) continue;
+
 		full_version = find_refl(full, h, k, l);
-		assert(full_version != NULL);
+		if ( full_version == NULL ) continue;
+		/* Some reflections may have recently become scalable, but
+		 * scale_intensities() might not yet have been called, so the
+		 * full version may not have been calculated yet. */
 
 		G = image->osf;
 		p = get_partiality(refl);
@@ -431,13 +458,20 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 {
 	double max_shift, dev;
 	int i;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+
+	cell_get_reciprocal(image->indexed_cell, &ax, &ay, &az,
+	                    &bx, &by, &bz, &cx, &cy, &cz);
+	STATUS("At start of post refinement, ax*=%e\n", ax);
+
+	dev = mean_partial_dev(image, full, sym);
+	//STATUS("PR starting dev = %5.2f\n", dev);
 
 	/* FIXME: This is for debugging */
 	//plot_curve(image, full, sym);
 	//return;
-
-	dev = mean_partial_dev(image, full, sym);
-	STATUS("PR starting dev = %5.2f\n", dev);
 
 	i = 0;
 	do {
@@ -445,6 +479,7 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 		double dev;
 
 		max_shift = pr_iterate(image, full, sym);
+
 		update_partialities(image, sym, NULL, NULL, NULL, NULL);
 
 		dev = mean_partial_dev(image, full, sym);
@@ -454,4 +489,8 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 		i++;
 
 	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );
+
+	cell_get_reciprocal(image->indexed_cell, &ax, &ay, &az,
+	                    &bx, &by, &bz, &cx, &cy, &cz);
+	STATUS("At end of post refinement, ax*=%e\n", ax);
 }
