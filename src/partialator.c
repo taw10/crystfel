@@ -114,7 +114,7 @@ static void done_image(void *vqargs, void *task)
 
 	qargs->n_done++;
 
-	progress_bar(qargs->n_done, qargs->n_total_patterns, "Refining");
+	progress_bar(qargs->n_done+1, qargs->n_total_patterns, "Refining");
 	free(task);
 }
 
