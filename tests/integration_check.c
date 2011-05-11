@@ -63,15 +63,16 @@ int main(int argc, char *argv[])
 	image.beam->adu_per_photon = 100.0;
 
 	/* First check: no intensity -> zero intensity and bg */
-	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &bg, &max, &sigma, 0, 1);
-	STATUS(" First check: intensity = %.2f bg = %.2f max = %.2f\n",
-	       intensity, bg, max);
+	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity,
+	               &bg, &max, &sigma, 0, 1);
+	STATUS(" First check: intensity = %.2f, bg = %.2f, max = %.2f,"
+	       " sigma = %.2f\n", intensity, bg, max, sigma);
 	if ( intensity != 0.0 ) {
 		ERROR("Intensity should be zero.\n");
 		return 1;
 	}
 	if ( bg != 0.0 ) {
-		ERROR("Background should be zero\n");
+		ERROR("Background should be zero.\n");
 		return 1;
 	}
 
@@ -82,55 +83,75 @@ int main(int argc, char *argv[])
 		image.data[fs+image.width*ss] = 1000.0;
 	}
 	}
-	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &bg, &max, &sigma, 0, 1);
-	STATUS("Second check: intensity = %.2f, bg = %.2f, max = %.2f\n",
-	       intensity, bg, max);
+	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity,
+	               &bg, &max, &sigma, 0, 1);
+	STATUS("Second check: intensity = %.2f, bg = %.2f, max = %.2f,"
+	       " sigma = %.2f\n", intensity, bg, max, sigma);
 	if ( fabs(intensity - M_PI*9.0*9.0*1000.0) > 4000.0 ) {
 		ERROR("Intensity should be close to 1000*pi*integr_r^2\n");
 		return 1;
 	}
 	if ( bg != 0.0 ) {
-		ERROR("Background should be zero\n");
+		ERROR("Background should be zero.\n");
 		return 1;
 	}
 	if ( max != 1000.0 ) {
-		ERROR("Max should be 1000\n");
+		ERROR("Max should be 1000.\n");
+		return 1;
+	}
+	if ( sigma != 0.0 ) {
+		ERROR("Sigma should be zero.\n");
 		return 1;
 	}
 
-	/* Third check: flat Poisson background should hoover up bg only */
+	/* Third check: Poisson background should get mostly subtracted */
 	for ( fs=0; fs<image.width; fs++ ) {
 	for ( ss=0; ss<image.height; ss++ ) {
-		image.data[fs+image.width*ss] = poisson_noise(10.0) - 10.0;
+		image.data[fs+image.width*ss] = poisson_noise(10.0);
 	}
 	}
-	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &bg, &max, &sigma, 0, 1);
-	STATUS(" Third check: intensity = %.2f, bg = %.2f, max = %.2f\n",
-	       intensity, bg, max);
+	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity,
+	               &bg, &max, &sigma, 0, 1);
+	STATUS(" Third check: intensity = %.2f, bg = %.2f, max = %.2f,"
+	       " sigma = %.2f\n", intensity, bg, max, sigma);
 	if ( fabs(intensity) > 100.0 ) {
-		ERROR("Intensity should be close to zero\n");
+		ERROR("Intensity should be close to zero.\n");
 		return 1;
 	}
-	if ( fabs(bg - sqrt(10.0)) > 1.0 ) {
-		ERROR("Background should be close to sqrt(10)\n");
+	if ( fabs(bg-10.0) > 10.0 ) {
+		ERROR("Background should be close to ten.\n");
+		return 1;
+	}
+	if ( fabs(intensity) > sigma ) {
+		ERROR("Intensity should be less than sigma.\n");
+		return 1;
+	}
+	if ( fabs(sigma-71.0) > 10.0 ) {
+		ERROR("Sigma should be close to 71.\n");
 		return 1;
 	}
 
+	/* Fourth check: peak on Poisson background */
 	for ( fs=0; fs<image.width; fs++ ) {
 	for ( ss=0; ss<image.height; ss++ ) {
 		if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
 		image.data[fs+image.width*ss] = 1000.0;
 	}
 	}
-	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &bg, &max, &sigma, 0, 1);
-	STATUS("Fourth check: intensity = %.2f, bg = %.2f, max = %.2f\n",
-	       intensity, bg, max);
-	if ( fabs(intensity - M_PI*9.0*9.0*1000.0) > 4000.0 ) {
-		ERROR("Intensity should be close to 1000*pi*peak_r^2\n");
+	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity,
+	               &bg, &max, &sigma, 0, 1);
+	STATUS("Fourth check: intensity = %.2f, bg = %.2f, max = %.2f,"
+	       " sigma = %.2f\n", intensity, bg, max, sigma);
+	if ( fabs(intensity - M_PI*9.0*9.0*1000.0) > 10000.0 ) {
+		ERROR("Intensity should be close to 1000*pi*integr_r^2.\n");
 		return 1;
 	}
-	if ( fabs(bg - sqrt(10.0)) > 1.0 ) {
-		ERROR("Background should be close to sqrt(10)\n");
+	if ( fabs(bg - 10.0) > 1.0 ) {
+		ERROR("Background should be close to 10.\n");
+		return 1;
+	}
+	if ( fabs(sigma-71.0) > 10.0 ) {
+		ERROR("Sigma should be close to 71.\n");
 		return 1;
 	}
 
