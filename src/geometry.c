@@ -284,8 +284,8 @@ double integrate_all(struct image *image, RefList *reflections)
 		double xp, yp;
 		get_detector_pos(refl, &xp, &yp);
 
-		if ( integrate_peak(image, xp, yp, &x, &y,
-                                    &intensity, NULL, NULL, NULL, 0, 0) ) continue;
+		if ( integrate_peak(image, xp, yp, &x, &y, &intensity, NULL,
+		                    NULL, NULL, 0, 0) ) continue;
 
 		itot += intensity;
 	}

@@ -380,7 +380,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		 * Don't bother doing polarisation/SA correction, because the
 		 * intensity of this peak is only an estimate at this stage. */
 		r = integrate_peak(image, mask_fs, mask_ss,
-		                   &f_fs, &f_ss, &intensity, NULL, NULL, NULL, 0, 1);
+		                   &f_fs, &f_ss, &intensity,
+		                   NULL, NULL, NULL, 0, 1);
 		if ( r ) {
 			/* Bad region - don't detect peak */
 			nrej_bad++;
@@ -640,7 +641,7 @@ void integrate_reflections(struct image *image, int polar, int use_closer)
 		/* Record intensity and set redundancy to 1 on success */
 		if ( r == 0 ) {
 			set_int(refl, intensity);
-			set_esd_intensity(refl,sigma);
+			set_esd_intensity(refl, sigma);
 			set_redundancy(refl, 1);
 		}
 
