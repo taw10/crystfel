@@ -31,7 +31,6 @@
 #include "stream.h"
 
 
-
 static void mess_up_cell(UnitCell *cell)
 {
 	double ax, ay, az;
