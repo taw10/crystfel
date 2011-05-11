@@ -31,6 +31,25 @@
 #include "stream.h"
 
 
+static int gaussian_noise(double expected, double variance)
+{
+	double x1, x2, w;
+	double noise;
+
+	do {
+
+		x1 = 2.0 * ((double)random()/RAND_MAX) - 1.0;
+		x2 = 2.0 * ((double)random()/RAND_MAX) - 1.0;
+		w = pow(x1, 2.0) + pow(x2, 2.0);
+
+	} while ( w >= 1.0 );
+
+	w = sqrt((-2.0*log(w))/w);
+	noise = w * x1;
+
+	return expected + noise*sqrt(variance);
+}
+
 static void mess_up_cell(UnitCell *cell)
 {
 	double ax, ay, az;
@@ -38,7 +57,15 @@ static void mess_up_cell(UnitCell *cell)
 	double cx, cy, cz;
 
 	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	ax += 0.05*ax;
+	ax = gaussian_noise(ax, fabs(ax)/50.0);
+	ay = gaussian_noise(ay, fabs(ay)/50.0);
+	az = gaussian_noise(az, fabs(az)/50.0);
+	bx = gaussian_noise(bx, fabs(bx)/50.0);
+	by = gaussian_noise(by, fabs(by)/50.0);
+	bz = gaussian_noise(bz, fabs(bz)/50.0);
+	cx = gaussian_noise(cx, fabs(cx)/50.0);
+	cy = gaussian_noise(cy, fabs(cy)/50.0);
+	cz = gaussian_noise(cz, fabs(cz)/50.0);
 	cell_set_reciprocal(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
 }
 
