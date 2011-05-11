@@ -93,6 +93,7 @@ static void show_help(const char *s)
 " -p, --pdb=<file>        PDB file from which to get the unit cell.\n"
 "\n"
 " -y, --symmetry=<sym>    Symmetry of the input reflection list.\n"
+" -n <n>                  Simulate <n> patterns.  Default: 2\n"
 );
 }
 
@@ -113,7 +114,8 @@ int main(int argc, char *argv[])
 	struct quaternion orientation;
 	struct image image;
 	FILE *ofh;
-	UnitCell *new;
+	int n = 2;
+	int i;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -128,7 +130,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:o:b:p:g:y:",
+	while ((c = getopt_long(argc, argv, "hi:o:b:p:g:y:n:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -158,6 +160,10 @@ int main(int argc, char *argv[])
 
 		case 'y' :
 			sym = strdup(optarg);
+			break;
+
+		case 'n' :
+			n = atoi(optarg);
 			break;
 
 		case 0 :
@@ -222,6 +228,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if ( n < 1 ) {
+		ERROR("Number of patterns must be at least 1.\n");
+		return 1;
+	}
+
 	if ( output_file == NULL ) {
 		ERROR("You must pgive a filename for the output.\n");
 		return 1;
@@ -234,10 +245,6 @@ int main(int argc, char *argv[])
 	free(output_file);
 	write_stream_header(ofh, argc, argv);
 
-	/* Set up a random orientation */
-	orientation = random_quaternion();
-	image.indexed_cell = cell_rotate(cell, orientation);
-
 	image.det = det;
 	image.width = det->max_fs;
 	image.height = det->max_ss;
@@ -247,26 +254,30 @@ int main(int argc, char *argv[])
 	image.bw = beam->bandwidth;
 	image.profile_radius = 0.005e9;
 	image.i0_available = 0;
-	image.filename = "(simulated 1)";
-	image.reflections = find_intersections(&image, image.indexed_cell, 0);
-	calculate_partials(image.reflections, 1.0, full, sym);
-	write_chunk(ofh, &image, STREAM_INTEGRATED);
-	reflist_free(image.reflections);
+	image.filename = malloc(256);
 
-	/* Alter the cell by a tiny amount */
-	image.filename = "(simulated 2)";
-	new = rotate_cell(image.indexed_cell, deg2rad(1.0), deg2rad(0.0), 0.0);
-	cell_free(image.indexed_cell);
-	image.indexed_cell = new;
+	for ( i=0; i<n; i++ ) {
 
-	/* Calculate new partials */
-	image.reflections = find_intersections(&image, image.indexed_cell, 0);
-	calculate_partials(image.reflections, 0.5, full, sym);
+		/* Set up a random orientation */
+		orientation = random_quaternion();
+		image.indexed_cell = cell_rotate(cell, orientation);
 
-	/* Give a slightly incorrect cell in the stream */
-	mess_up_cell(image.indexed_cell);
-	write_chunk(ofh, &image, STREAM_INTEGRATED);
-	reflist_free(image.reflections);
+		snprintf(image.filename, 255, "(simulated %i)", i);
+		image.reflections = find_intersections(&image,
+		                                       image.indexed_cell, 0);
+		calculate_partials(image.reflections, 1.0, full, sym);
+
+		/* Give a slightly incorrect cell in the stream */
+		mess_up_cell(image.indexed_cell);
+		write_chunk(ofh, &image, STREAM_INTEGRATED);
+
+		reflist_free(image.reflections);
+		cell_free(image.indexed_cell);
+
+		progress_bar(i+1, n, "Simulating");
+
+	}
+
 
 	fclose(ofh);
 	cell_free(cell);
@@ -274,6 +285,7 @@ int main(int argc, char *argv[])
 	free(beam);
 	free(sym);
 	reflist_free(full);
+	free(image.filename);
 
 	return 0;
 }
