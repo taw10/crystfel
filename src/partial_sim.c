@@ -31,24 +31,19 @@
 #include "stream.h"
 
 
-static int gaussian_noise(double expected, double variance)
+static double gaussian_noise(double expected, double variance)
 {
-	double x1, x2, w;
-	double noise;
+	double x1, x2, noise;
 
-	do {
+	/* A uniformly distributed random number between 0 and 1 */
+	x1 = ((double)random()/RAND_MAX);
+	x2 = ((double)random()/RAND_MAX);
 
-		x1 = 2.0 * ((double)random()/RAND_MAX) - 1.0;
-		x2 = 2.0 * ((double)random()/RAND_MAX) - 1.0;
-		w = pow(x1, 2.0) + pow(x2, 2.0);
+	noise = sqrt(-2.0*log(x1)) * cos(2.0*M_PI*x2);
 
-	} while ( w >= 1.0 );
-
-	w = sqrt((-2.0*log(w))/w);
-	noise = w * x1;
-
-	return expected + noise*sqrt(variance);
+	return expected + noise*variance;
 }
+
 
 static void mess_up_cell(UnitCell *cell)
 {
