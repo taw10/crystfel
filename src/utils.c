@@ -110,9 +110,11 @@ void progress_bar(int val, int total, const char *text)
 	for ( i=0; i<n; i++ ) s[i] = '=';
 	for ( i=n; i<width; i++ ) s[i] = '.';
 	s[width] = '\0';
-	STATUS("\r%s: |%s|", text, s);
 
-	if ( val == total ) STATUS("\n");
+	pthread_mutex_lock(&stderr_lock);
+	fprintf(stderr, "\r%s: |%s|", text, s);
+	if ( val == total ) fprintf(stderr, "\n");
+	pthread_mutex_unlock(&stderr_lock);
 
 	fflush(stdout);
 }
