@@ -37,16 +37,19 @@ static void mess_up_cell(UnitCell *cell)
 	double bx, by, bz;
 	double cx, cy, cz;
 
+	/* Cell noise in percent */
+	const double cnoise = 2.0;
+
 	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	ax = gaussian_noise(ax, fabs(ax)/50.0);
-	ay = gaussian_noise(ay, fabs(ay)/50.0);
-	az = gaussian_noise(az, fabs(az)/50.0);
-	bx = gaussian_noise(bx, fabs(bx)/50.0);
-	by = gaussian_noise(by, fabs(by)/50.0);
-	bz = gaussian_noise(bz, fabs(bz)/50.0);
-	cx = gaussian_noise(cx, fabs(cx)/50.0);
-	cy = gaussian_noise(cy, fabs(cy)/50.0);
-	cz = gaussian_noise(cz, fabs(cz)/50.0);
+	ax = gaussian_noise(ax, cnoise*fabs(ax)/100.0);
+	ay = gaussian_noise(ay, cnoise*fabs(ay)/100.0);
+	az = gaussian_noise(az, cnoise*fabs(az)/100.0);
+	bx = gaussian_noise(bx, cnoise*fabs(bx)/100.0);
+	by = gaussian_noise(by, cnoise*fabs(by)/100.0);
+	bz = gaussian_noise(bz, cnoise*fabs(bz)/100.0);
+	cx = gaussian_noise(cx, cnoise*fabs(cx)/100.0);
+	cy = gaussian_noise(cy, cnoise*fabs(cy)/100.0);
+	cz = gaussian_noise(cz, cnoise*fabs(cz)/100.0);
 	cell_set_reciprocal(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
 }
 
