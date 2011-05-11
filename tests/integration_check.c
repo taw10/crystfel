@@ -4,6 +4,7 @@
  * Check peak integration
  *
  * (c) 2011 Thomas White <taw@physics.org>
+ * (c) 2011 Andrew Martin <andrew.martin@desy.de>
  *
  * Part of CrystFEL - crystallography with a FEL
  *

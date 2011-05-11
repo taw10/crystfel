@@ -4,7 +4,8 @@
  * Assemble and process FEL Bragg intensities
  *
  * (c) 2006-2011 Thomas White <taw@physics.org>
- *  	    2011 Andrew Martin
+ * (c) 2011      Andrew Martin <andrew.martin@desy.de>
+ *
  * Part of CrystFEL - crystallography with a FEL
  *
  */
@@ -171,12 +172,16 @@ static void merge_pattern(RefList *model, RefList *new, int max_only,
 		} else if ( pass == 2 ) {
 
 			double dev = get_sum_squared_dev(model_version);
-			double refl_esd = get_esd_intensity(refl);
-			
-			set_sum_squared_dev(model_version, 
-					      	  	// dev + pow(refl_esd,2.0) ); 
-						        dev    + pow(intensity, 2.0) ); 
-				                  // dev + pow(intensity-model_int, 2.0));			
+
+			/* Other ways of estimating the sigma are possible,
+			 * choose from:
+			 *    dev += pow(get_esd_intensity(refl), 2.0);
+			 *    dev += pow(intensity, 2.0);
+			 * But alter the other part of the calculation below
+			 * as well. */
+			dev += pow(intensity - model_int, 2.0);
+
+			set_sum_squared_dev(model_version, dev);
 
 			if ( hist_vals != NULL ) {
 				int p = *hist_n;
@@ -371,19 +376,24 @@ static void merge_all(FILE *fh, RefList *model,
 		      refl = next_refl(refl, iter) ) {
 
 			double sum_squared_dev = get_sum_squared_dev(refl);
-			double intensity = get_intensity(refl);
 			int red = get_redundancy(refl);
 			int h, k, l;
+			double esd;
 			get_indices(refl,&h,&k,&l);
-	 
-			/*
-			 set_esd_intensity(refl,
-			         sqrt(sum_squared_dev)/(double)red); 
-			 */
-								
-			 set_esd_intensity(refl,
-			        sqrt((sum_squared_dev/(double)red) - pow(intensity,2.0) )/(double)red);
-			
+
+			/* Other ways of estimating the sigma are possible,
+			 * such as:
+			 *
+			 *    double intensity = get_intensity(refl);
+			 *    esd = sqrt( (sum_squared_dev/(double)red)
+			 *              - pow(intensity,2.0) ) );
+			 *
+			 * But alter the other part of the calculation above
+			 * as well. */
+			esd = sqrt(sum_squared_dev)/(double)red;
+
+			set_esd_intensity(refl, esd);
+
 		}
 	}
 
