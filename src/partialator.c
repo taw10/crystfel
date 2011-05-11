@@ -137,9 +137,8 @@ static void refine_all(struct image *images, int n_total_patterns,
 	qargs.task_defaults = task_defaults;
 	qargs.n = 0;
 	qargs.n_done = 0;
-	/* FIXME: Not refining the first image, for now */
-	qargs.n_total_patterns = n_total_patterns-1;
-	qargs.images = images+1;
+	qargs.n_total_patterns = n_total_patterns;
+	qargs.images = images;
 
 	run_threads(nthreads, refine_image, get_image, done_image,
 	            &qargs, n_total_patterns-1, 0, 0, 0);
