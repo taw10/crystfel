@@ -119,7 +119,7 @@ static void show_help(const char *s)
 " -p, --pdb=<file>        PDB file from which to get the unit cell.\n"
 "\n"
 " -y, --symmetry=<sym>    Symmetry of the input reflection list.\n"
-" -n <n>                  Simulate <n> patterns.  Default: 2\n"
+" -n <n>                  Simulate <n> patterns.  Default: 2.\n"
 );
 }
 
