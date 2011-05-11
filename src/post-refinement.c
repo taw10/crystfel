@@ -315,9 +315,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 
 	shifts = gsl_vector_alloc(NUM_PARAMS);
 	max_shift = 0.0;
-	if ( gsl_linalg_HH_solve(M, v, shifts) ) {
-		ERROR("Couldn't solve normal equations!\n");
-	} else {
+	if ( gsl_linalg_HH_solve(M, v, shifts) == 0 ) {
 
 		for ( param=0; param<NUM_PARAMS; param++ ) {
 			double shift = gsl_vector_get(shifts, param);
@@ -325,7 +323,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 			if ( fabs(shift) > max_shift ) max_shift = fabs(shift);
 		}
 
-	}
+	} /* else problem with the equations, so leave things as they were */
 
 	gsl_matrix_free(M);
 	gsl_vector_free(v);
