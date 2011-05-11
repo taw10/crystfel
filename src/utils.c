@@ -120,24 +120,23 @@ void progress_bar(int val, int total, const char *text)
 }
 
 
+double gaussian_noise(double expected, double stddev)
+{
+	double x1, x2, noise;
+
+	/* A uniformly distributed random number between 0 and 1 */
+	x1 = ((double)random()/RAND_MAX);
+	x2 = ((double)random()/RAND_MAX);
+
+	noise = sqrt(-2.0*log(x1)) * cos(2.0*M_PI*x2);
+
+	return expected + noise*stddev;
+}
+
+
 static int fake_poisson_noise(double expected)
 {
-	double x1, x2, w;
-	double noise, rf;
-
-	do {
-
-		x1 = 2.0 * ((double)random()/RAND_MAX) - 1.0;
-		x2 = 2.0 * ((double)random()/RAND_MAX) - 1.0;
-		w = pow(x1, 2.0) + pow(x2, 2.0);
-
-	} while ( w >= 1.0 );
-
-	w = sqrt((-2.0*log(w))/w);
-	noise = w * x1;
-
-	rf = expected + noise*sqrt(expected);
-
+	double rf = gaussian_noise(expected, sqrt(expected));
 	return (int)rf;
 }
 

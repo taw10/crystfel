@@ -91,6 +91,7 @@ extern int assplode(const char *a, const char *delims, char ***pbits,
                     AssplodeFlag flags);
 
 extern void progress_bar(int val, int total, const char *text);
+extern double gaussian_noise(double expected, double stddev);
 extern int poisson_noise(double expected);
 
 /* Keep these ones inline, to avoid function call overhead */
