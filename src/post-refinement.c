@@ -386,16 +386,12 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 {
 	double max_shift, dev;
 	int i;
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
+	const int verbose = 0;
 
-	cell_get_reciprocal(image->indexed_cell, &ax, &ay, &az,
-	                    &bx, &by, &bz, &cx, &cy, &cz);
-	STATUS("At start of post refinement, ax*=%e\n", ax);
-
-	dev = mean_partial_dev(image, full, sym);
-	STATUS("PR starting dev = %5.2f\n", dev);
+	if ( verbose ) {
+		dev = mean_partial_dev(image, full, sym);
+		STATUS("PR starting dev = %5.2f\n", dev);
+	}
 
 	i = 0;
 	do {
@@ -406,15 +402,13 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 
 		update_partialities(image, sym, NULL, NULL, NULL, NULL);
 
-		dev = mean_partial_dev(image, full, sym);
-		STATUS("PR Iteration %2i: max shift = %5.2f dev = %5.2f\n",
-		       i+1, max_shift, dev);
+		if ( verbose ) {
+			dev = mean_partial_dev(image, full, sym);
+			STATUS("PR Iteration %2i: max shift = %5.2f"
+			       " dev = %5.2f\n", i+1, max_shift, dev);
+		}
 
 		i++;
 
 	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );
-
-	cell_get_reciprocal(image->indexed_cell, &ax, &ay, &az,
-	                    &bx, &by, &bz, &cx, &cy, &cz);
-	STATUS("At end of post refinement, ax*=%e\n", ax);
 }
