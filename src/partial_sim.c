@@ -279,6 +279,14 @@ int main(int argc, char *argv[])
 
 	for ( i=0; i<n; i++ ) {
 
+		double osf;
+
+		if ( random() > RAND_MAX/2 ) {
+			osf = 1.0;
+		} else {
+			osf = 2.0;
+		}
+
 		/* Set up a random orientation */
 		orientation = random_quaternion();
 		image.indexed_cell = cell_rotate(cell, orientation);
@@ -286,7 +294,7 @@ int main(int argc, char *argv[])
 		snprintf(image.filename, 255, "(simulated %i)", i);
 		image.reflections = find_intersections(&image,
 		                                       image.indexed_cell, 0);
-		calculate_partials(image.reflections, 1.0, full, sym);
+		calculate_partials(image.reflections, osf, full, sym);
 
 		/* Give a slightly incorrect cell in the stream */
 		mess_up_cell(image.indexed_cell);
