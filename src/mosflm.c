@@ -174,11 +174,11 @@ static void write_spt(struct image *image, const char *filename)
 {
 	FILE *fh;
 	int i;
-	double fclen=67.8;  /* fake camera length in mm */
-	double fpix=0.075;  /* fake pixel size in mm */
+	double fclen = 67.8;  /* fake camera length in mm */
+	double fpix = 0.075;  /* fake pixel size in mm */
 	double pix;
-	double height=100;
-	double sigma=1;
+	double height = 100.0;
+	double sigma = 1.0;
 	int nPeaks = image_feature_count(image->features);
 	struct sptline *sptlines;
 

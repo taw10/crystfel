@@ -160,7 +160,6 @@ int integrate_peak(struct image *image, int cfs, int css,
         double noise_mean = 0.0;
 	double noise_meansq = 0.0;
 
-
 	p = find_panel(image->det, cfs, css);
 	if ( p == NULL ) return 1;
 	if ( p->no_index ) return 1;

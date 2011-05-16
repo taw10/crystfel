@@ -264,7 +264,8 @@ static void process_image(void *pp, int cookie)
 		if ( beam != NULL ) {
 			ERROR("Using nominal photon enery of %.2f eV\n",
                               beam->photon_energy);
-			image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
+			image.lambda = ph_en_to_lambda(
+			                          eV_to_J(beam->photon_energy));
 		} else {
 			ERROR("No wavelength in file, so you need to give "
 			      "a beam parameters file with -b.\n");
@@ -313,7 +314,8 @@ static void process_image(void *pp, int cookie)
 		      config_verbose, pargs->static_args.ipriv,
 		      pargs->static_args.config_insane);
 
-	/* No cell at this point?  Then we're done. */
+
+
 	if ( image.indexed_cell != NULL ) pargs->indexable = 1;
 
 	/* Measure intensities if requested */
