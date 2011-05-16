@@ -844,6 +844,117 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
 }
 
 
+/* FIXME: Unify with proper match_cell(), or work out if it's even possible.
+ * FIXME: Negative vectors are allowable, but keep a right-handed unit cell.
+ * FIXME: Make sure unit cell is right handed.  */
+UnitCell *match_cell_ab(UnitCell *cell, UnitCell *template)
+{
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	int i;
+	double lengths[3];
+	int used[3];
+	double real_ax, real_ay, real_az;
+	double real_bx, real_by, real_bz;
+	double real_cx, real_cy, real_cz;
+	double params[3][3];
+	double alen, blen, clen;
+	float ltl = 5.0;     /* percent */
+	int have_real_a;
+	int have_real_b;
+	int have_real_c;
+	UnitCell *new_cell;
+
+	/* Get the lengths to match */
+	if ( cell_get_cartesian(template, &ax, &ay, &az,
+	                                  &bx, &by, &bz,
+	                                  &cx, &cy, &cz) )
+	{
+		ERROR("Couldn't get cell for template.\n");
+		return NULL;
+	}
+	alen = modulus(ax, ay, az);
+	blen = modulus(bx, by, bz);
+	clen = modulus(cx, cy, cz);
+
+	/* Get the lengths from the cell and turn them into anonymous vectors */
+	if ( cell_get_cartesian(cell, &ax, &ay, &az,
+	                              &bx, &by, &bz,
+	                              &cx, &cy, &cz) )
+	{
+		ERROR("Couldn't get cell.\n");
+		return NULL;
+	}
+	lengths[0] = modulus(ax, ay, az);
+	lengths[1] = modulus(bx, by, bz);
+	lengths[2] = modulus(cx, cy, cz);
+	used[0] = 0;
+	used[1] = 0;
+	used[2] = 0;
+	params[0][0] = ax;  params[0][1] = ay;  params[0][2] = az;
+	params[1][0] = bx;  params[1][1] = by;  params[1][2] = bz;
+	params[2][0] = cx;  params[2][1] = cy;  params[2][2] = cz;
+
+	real_ax = 0.0;  real_ay = 0.0;  real_az = 0.0;
+	real_bx = 0.0;  real_by = 0.0;  real_bz = 0.0;
+	real_cx = 0.0;  real_cy = 0.0;  real_cz = 0.0;
+
+	/* Check each vector against a and b */
+	have_real_a = 0;
+	have_real_b = 0;
+	for ( i=0; i<3; i++ ) {
+		if ( within_tolerance(lengths[i], alen, ltl) && !used[i]
+		     && !have_real_a )
+		{
+			used[i] = 1;
+			real_ax = params[i][0];
+			real_ay = params[i][1];
+			real_az = params[i][2];
+			have_real_a = 1;
+		}
+		if ( within_tolerance(lengths[i], blen, ltl) && !used[i]
+		     && !have_real_b )
+		{
+			used[i] = 1;
+			real_bx = params[i][0];
+			real_by = params[i][1];
+			real_bz = params[i][2];
+			have_real_b = 1;
+		}
+	}
+
+	/* Have we matched both a and b? */
+	if ( !(have_real_a && have_real_b) ) {
+		return NULL;
+	}
+
+	/* "c" is "the other one" */
+	have_real_c = 0;
+	for ( i=0; i<3; i++ ) {
+		if ( !used[i] ) {
+			real_cx = params[i][0];
+			real_cy = params[i][1];
+			real_cz = params[i][2];
+			have_real_c = 1;
+		}
+	}
+
+	if ( !have_real_c ) {
+		ERROR("Huh?  Couldn't find the third vector.\n");
+		ERROR("Matches: %i %i %i\n", used[0], used[1], used[2]);
+		return NULL;
+	}
+
+	new_cell = cell_new();
+	cell_set_cartesian(new_cell, real_ax, real_ay, real_az,
+	                             real_bx, real_by, real_bz,
+	                             real_cx, real_cy, real_cz);
+
+	return new_cell;
+}
+
+
 /* Return sin(theta)/lambda = 1/2d.  Multiply by two if you want 1/d */
 double resolution(UnitCell *cell, signed int h, signed int k, signed int l)
 {

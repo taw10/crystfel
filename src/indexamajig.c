@@ -168,6 +168,7 @@ static void show_help(const char *s)
 "                           reduce  : full cell reduction.\n"
 "                           compare : match by at most changing the order of\n"
 "                                     the indices.\n"
+"                           compare_ab : compare 'a' and 'b' lengths only.\n"
 "     --filter-cm          Perform common-mode noise subtraction on images\n"
 "                           before proceeding.  Intensities will be extracted\n"
 "                           from the image as it is after this processing.\n"
@@ -461,6 +462,29 @@ static void finalise_image(void *qp, void *pp)
 
 	free(pargs->filename);
 	free(pargs);
+}
+
+
+static int parse_cell_reduction(const char *scellr, int *err,
+                                int *reduction_needs_cell)
+{
+	if ( strcmp(scellr, "none") == 0 ) {
+		*reduction_needs_cell = 0;
+		return CELLR_NONE;
+	} else if ( strcmp(scellr, "reduce") == 0) {
+		*reduction_needs_cell = 1;
+		return CELLR_REDUCE;
+	} else if ( strcmp(scellr, "compare") == 0) {
+		*reduction_needs_cell = 1;
+		return CELLR_COMPARE;
+	} else if ( strcmp(scellr, "compare_ab") == 0) {
+		*reduction_needs_cell = 1;
+		return CELLR_COMPARE_AB;
+	} else {
+		*err = 1;
+		*reduction_needs_cell = 0;
+		return CELLR_NONE;
+	}
 }
 
 
@@ -759,20 +783,17 @@ int main(int argc, char *argv[])
 			       " I'm going to use 'reduce'.\n");
 			cellr = CELLR_REDUCE;
 			reduction_needs_cell = 1;
-		} else if ( strcmp(scellr, "none") == 0 ) {
-			cellr = CELLR_NONE;
-		} else if ( strcmp(scellr, "reduce") == 0) {
-			cellr = CELLR_REDUCE;
-			reduction_needs_cell = 1;
-		} else if ( strcmp(scellr, "compare") == 0) {
-			cellr = CELLR_COMPARE;
-			reduction_needs_cell = 1;
 		} else {
-			ERROR("Unrecognised cell reduction method '%s'\n",
-			      scellr);
-			return 1;
+			int err;
+			cellr = parse_cell_reduction(scellr, &err,
+			                             &reduction_needs_cell);
+			if ( err ) {
+				ERROR("Unrecognised cell reduction '%s'\n",
+			              scellr);
+				return 1;
+			}
+			free(scellr);
 		}
-		free(scellr);  /* free(NULL) is OK. */
 	}
 
 	/* No indexing -> no reduction */

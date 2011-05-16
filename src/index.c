@@ -154,6 +154,7 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 		for ( i=0; i<image->ncells; i++ ) {
 
 			UnitCell *new_cell = NULL;
+			UnitCell *cand = image->candidate_cells[i];
 
 			if ( verbose ) {
 				STATUS("--------------------\n");
@@ -166,16 +167,16 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 			/* Match or reduce the cell as appropriate */
 			switch ( cellr ) {
 			case CELLR_NONE :
-				new_cell = cell_new_from_cell(image
-				                          ->candidate_cells[i]);
+				new_cell = cell_new_from_cell(cand);
 				break;
 			case CELLR_REDUCE :
-				new_cell = match_cell(image->candidate_cells[i],
-					              cell, verbose, 1);
+				new_cell = match_cell(cand, cell, verbose, 1);
 				break;
 			case CELLR_COMPARE :
-				new_cell = match_cell(image->candidate_cells[i],
-					              cell, verbose, 0);
+				new_cell = match_cell(cand, cell, verbose, 0);
+				break;
+			case CELLR_COMPARE_AB :
+				new_cell = match_cell_ab(cand, cell);
 				break;
 			}
 

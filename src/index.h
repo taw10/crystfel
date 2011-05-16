@@ -35,7 +35,8 @@ typedef enum {
 enum {
 	CELLR_NONE,
 	CELLR_REDUCE,
-	CELLR_COMPARE
+	CELLR_COMPARE,
+	CELLR_COMPARE_AB,
 };
 
 
