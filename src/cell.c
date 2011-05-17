@@ -688,7 +688,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
 	if ( reduce ) {
 		ilow = -2;  ihigh = 4;
 	} else {
-		ilow = 1;  ihigh = 1;
+		ilow = 0;  ihigh = 1;
 	}
 
 	/* Negative values mean 1/n, positive means n, zero means zero */
