@@ -208,12 +208,12 @@ UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs, struct rvec cs)
 UnitCell *cell_new_from_cell(UnitCell *orig)
 {
 	UnitCell *new;
-	double a, b, c, al, be, ga;
+	double ax, ay, az, bx, by, bz, cx, cy, cz;
 
 	new = cell_new();
 
-	cell_get_parameters(orig, &a, &b, &c, &al, &be, &ga);
-	cell_set_parameters(new, a, b, c, al, be, ga);
+	cell_get_cartesian(orig, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	cell_set_cartesian(new, ax, ay, az, bx, by, bz, cx, cy, cz);
 	cell_set_pointgroup(new, orig->pointgroup);
 	cell_set_spacegroup(new, orig->spacegroup);
 
