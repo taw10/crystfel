@@ -468,6 +468,7 @@ static void finalise_image(void *qp, void *pp)
 static int parse_cell_reduction(const char *scellr, int *err,
                                 int *reduction_needs_cell)
 {
+	*err = 0;
 	if ( strcmp(scellr, "none") == 0 ) {
 		*reduction_needs_cell = 0;
 		return CELLR_NONE;
