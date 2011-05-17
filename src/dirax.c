@@ -119,7 +119,7 @@ static void dirax_parseline(const char *line, struct image *image,
 			ERROR("Couldn't understand cell line:\n");
 			ERROR("'%s'\n", line);
 			dirax->read_cell = 0;
-			free(image->candidate_cells[image->ncells]);
+			cell_free(image->candidate_cells[image->ncells]);
 			return;
 		}
 		cell_set_cartesian_a(image->candidate_cells[image->ncells],
@@ -136,7 +136,7 @@ static void dirax_parseline(const char *line, struct image *image,
 			ERROR("Couldn't understand cell line:\n");
 			ERROR("'%s'\n", line);
 			dirax->read_cell = 0;
-			free(image->candidate_cells[image->ncells]);
+			cell_free(image->candidate_cells[image->ncells]);
 			return;
 		}
 		cell_set_cartesian_b(image->candidate_cells[image->ncells],
@@ -153,7 +153,7 @@ static void dirax_parseline(const char *line, struct image *image,
 			ERROR("Couldn't understand cell line:\n");
 			ERROR("'%s'\n", line);
 			dirax->read_cell = 0;
-			free(image->candidate_cells[image->ncells]);
+			cell_free(image->candidate_cells[image->ncells]);
 			return;
 		}
 		cell_set_cartesian_c(image->candidate_cells[image->ncells++],
