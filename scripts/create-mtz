@@ -35,15 +35,7 @@ SYMM P1
 SKIP 1
 LABOUT H K L IMEAN SIGIMEAN
 CTYPE  H H H J     Q
-FORMAT '(F8.0,1X,F8.0,1X,F8.0,1X,F20.2,1X,F20.2)'
-EOF
-
-if [ $? -ne 0 ]; then echo "Failed."; exit; fi
-
-# Get the unit cell contents
-echo "Running 'rwcontents'..."
-rwcontents XYZIN $PDB >> out.html << EOF
-NHOH 2.3 lowt
+FORMAT '(3(F3.0,1X),F10.2,10X,F10.2)'
 EOF
 
 if [ $? -ne 0 ]; then echo "Failed."; exit; fi
@@ -56,7 +48,6 @@ TRUNCATE NO
 NOHARVEST
 LABIN H=H K=K L=L IMEAN=IMEAN SIGIMEAN=SIGIMEAN
 LABOUT H=H K=K L=L IMEAN=IMEAN SIGIMEAN=SIGIMEAN F=F SIGF=SIGF
-CONTENTS C 16938  N 3310  O 3548  MG 96  P 3  S 89  CA 1  FE 12  H 17645
 EOF
 
 if [ $? -ne 0 ]; then echo "Failed."; exit; fi
