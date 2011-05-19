@@ -43,8 +43,11 @@ extern void cell_free(UnitCell *cell);
 extern UnitCell *cell_new_from_parameters(double a, double b, double c,
 				double alpha, double beta, double gamma);
 
-extern UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs,
-                                    struct rvec cs);
+extern UnitCell *cell_new_from_reciprocal_axes(struct rvec as, struct rvec bs,
+                                               struct rvec cs);
+
+extern UnitCell *cell_new_from_direct_axes(struct rvec as, struct rvec bs,
+                                           struct rvec cs);
 
 extern void cell_set_cartesian(UnitCell *cell,
                                double ax, double ay, double az,

@@ -188,7 +188,8 @@ UnitCell *cell_new_from_parameters(double a, double b, double c,
 }
 
 
-UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs, struct rvec cs)
+UnitCell *cell_new_from_reciprocal_axes(struct rvec as, struct rvec bs,
+                                        struct rvec cs)
 {
 	UnitCell *cell;
 
@@ -200,6 +201,23 @@ UnitCell *cell_new_from_axes(struct rvec as, struct rvec bs, struct rvec cs)
 	cell->cxs = cs.u;  cell->cys = cs.v;  cell->czs = cs.w;
 
 	cell->rep = CELL_REP_RECIP;
+
+	return cell;
+}
+
+
+UnitCell *cell_new_from_direct_axes(struct rvec a, struct rvec b, struct rvec c)
+{
+	UnitCell *cell;
+
+	cell = cell_new();
+	if ( cell == NULL ) return NULL;
+
+	cell->ax = a.u;  cell->ay = a.v;  cell->az = a.w;
+	cell->bx = b.u;  cell->by = b.v;  cell->bz = b.w;
+	cell->cx = c.u;  cell->cy = c.v;  cell->cz = c.w;
+
+	cell->rep = CELL_REP_CART;
 
 	return cell;
 }
@@ -807,9 +825,9 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
 
 			if ( fom3 < best_fom ) {
 				if ( new_cell != NULL ) free(new_cell);
-				new_cell = cell_new_from_axes(cand[0][i].vec,
-			                                      cand[1][j].vec,
-			                                      cand[2][k].vec);
+				new_cell = cell_new_from_reciprocal_axes(
+				                 cand[0][i].vec, cand[1][j].vec,
+			                         cand[2][k].vec);
 				best_fom = fom3;
 			}
 

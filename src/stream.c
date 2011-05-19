@@ -377,7 +377,9 @@ int read_chunk(FILE *fh, struct image *image)
 				ERROR("Duplicate cell found in stream!\n");
 				cell_free(image->indexed_cell);
 			}
-			image->indexed_cell = cell_new_from_axes(as, bs, cs);
+			image->indexed_cell = cell_new_from_reciprocal_axes(as,
+			                                                    bs,
+			                                                    cs);
 			have_cell = 1;
 			have_as = 0;  have_bs = 0;  have_cs = 0;
 		}
