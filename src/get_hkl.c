@@ -380,7 +380,7 @@ int main(int argc, char *argv[])
 	}
 
 	input = read_reflections(input_file);
-	free(input);
+	free(input_file);
 	if ( check_list_symmetry(input, mero) ) {
 		ERROR("The input reflection list does not appear to"
 		      " have symmetry %s\n", mero);
