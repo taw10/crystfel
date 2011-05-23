@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
+#include <gsl/gsl_blas.h>
 
 #include "utils.h"
 #include "image.h"
@@ -634,3 +635,12 @@ char *safe_basename(const char *in)
 
 	return res;
 }
+
+
+#ifdef GSL_FUDGE
+/* Force the linker to bring in CBLAS to make GSL happy */
+void utils_fudge_gslcblas()
+{
+        STATUS("%p\n", cblas_sgemm);
+}
+#endif
