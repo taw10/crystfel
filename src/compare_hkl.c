@@ -49,7 +49,7 @@ static void show_help(const char *s)
 }
 
 
-static void plot_shells(RefList *list1, RefList *list2, double scale,
+static void plot_shells(RefList *list1, double *arr2, double scale,
                         UnitCell *cell, const char *sym,
                         double rmin_fix, double rmax_fix)
 {
@@ -106,11 +106,8 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 
 		signed int h, k, l;
 		double d;
-		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		refl2 = find_refl(list2, h, k, l);
-		if ( refl2 == NULL ) continue;  /* No common reflection */
 
 		d = resolution(cell, h, k, l) * 2.0;
 		if ( d > rmax ) rmax = d;
@@ -207,11 +204,8 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 		int bin;
 		double i1, i2;
 		int j;
-		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		refl2 = find_refl(list2, h, k, l);
-		if ( refl2 == NULL ) continue;  /* No common reflection */
 
 		d = resolution(cell, h, k, l) * 2.0;
 
@@ -230,8 +224,7 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 		}
 
 		i1 = get_intensity(refl1);
-		i2 = get_intensity(refl2);
-		i2 *= scale;
+		i2 = scale * lookup_intensity(arr2, h, k, l);
 
 		num[bin] += fabs(i1 - i2);
 		den += i1;
@@ -282,6 +275,7 @@ int main(int argc, char *argv[])
 	float rmax_fix = -1.0;
 	Reflection *refl1;
 	RefListIterator *iter;
+	double *arr2;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -471,49 +465,54 @@ int main(int argc, char *argv[])
 	reflist_free(deleteme);
 	reflist_free(list2);
 
-	R1 = stat_r1_ignore(list1, list2_transformed, &scale_r1fi);
+	/* Trimming the other way round is not necessary,
+	 * because of these two lines */
+	arr2 = intensities_from_list(list2_transformed);
+	reflist_free(list2_transformed);
+
+	R1 = stat_r1_ignore(list1, arr2, &scale_r1fi);
 	STATUS("R1(F) = %5.4f %% (scale=%5.2e)"
 	       " (ignoring negative intensities)\n",
 	       R1*100.0, scale_r1fi);
 
-	R1 = stat_r1_zero(list1, list2_transformed, &scale_r1);
+	R1 = stat_r1_zero(list1, arr2, &scale_r1);
 	STATUS("R1(F) = %5.4f %% (scale=%5.2e)"
 	       " (zeroing negative intensities)\n",
 	       R1*100.0, scale_r1);
 
-	R2 = stat_r2(list1, list2_transformed, &scale_r2);
+	R2 = stat_r2(list1, arr2, &scale_r2);
 	STATUS("R2(I) = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale_r2);
 
-	R1i = stat_r1_i(list1, list2_transformed, &scale_r1i);
+	R1i = stat_r1_i(list1, arr2, &scale_r1i);
 	STATUS("R1(I) = %5.4f %% (scale=%5.2e)\n", R1i*100.0, scale_r1i);
 
-	Rdiff = stat_rdiff_ignore(list1, list2_transformed, &scale_rdig);
+	Rdiff = stat_rdiff_ignore(list1, arr2, &scale_rdig);
 	STATUS("Rint(F) = %5.4f %% (scale=%5.2e)"
 	       " (ignoring negative intensities)\n",
 	       Rdiff*100.0, scale_rdig);
 
-	Rdiff = stat_rdiff_zero(list1, list2_transformed, &scale);
+	Rdiff = stat_rdiff_zero(list1, arr2, &scale);
 	STATUS("Rint(F) = %5.4f %% (scale=%5.2e)"
 	       " (zeroing negative intensities)\n",
 	       Rdiff*100.0, scale);
 
-	Rdiff = stat_rdiff_intensity(list1, list2_transformed, &scale_rintint);
+	Rdiff = stat_rdiff_intensity(list1, arr2, &scale_rintint);
 	STATUS("Rint(I) = %5.4f %% (scale=%5.2e)\n",
 	       Rdiff*100.0, scale_rintint);
 
-	pearson = stat_pearson_i(list1, list2_transformed);
+	pearson = stat_pearson_i(list1, arr2);
 	STATUS("Pearson r(I) = %5.4f\n", pearson);
 
-	pearson = stat_pearson_f_ignore(list1, list2_transformed);
+	pearson = stat_pearson_f_ignore(list1, arr2);
 	STATUS("Pearson r(F) = %5.4f (ignoring negative intensities)\n",
 	       pearson);
 
-	pearson = stat_pearson_f_zero(list1, list2_transformed);
+	pearson = stat_pearson_f_zero(list1, arr2);
 	STATUS("Pearson r(F) = %5.4f (zeroing negative intensities)\n",
 	       pearson);
 
 	if ( config_shells ) {
-		plot_shells(list1, list2_transformed, scale_r1i,
+		plot_shells(list1, arr2, scale_r1i,
 		            cell, sym, rmin_fix, rmax_fix);
 	}
 
