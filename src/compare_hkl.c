@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <assert.h>
+#include <gsl/gsl_errno.h>
 
 #include "utils.h"
 #include "statistics.h"
@@ -439,6 +440,8 @@ int main(int argc, char *argv[])
 		write_reflist(ratiofile, ratio, cell);
 	}
 	reflist_free(ratio);
+
+	gsl_set_error_handler_off();
 
 	STATUS("%i reflections in '%s' had I < 3.0*sigma(I)\n", rej1, afile);
 	STATUS("%i reflections in '%s' had I < 3.0*sigma(I)\n", rej2, bfile);

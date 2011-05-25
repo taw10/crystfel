@@ -418,7 +418,10 @@ static double r_minimised(RefList *list1, double *arr2, double *scalep, int fom)
 		double lo, up;
 
 		/* Iterate */
-		gsl_min_fminimizer_iterate(s);
+		if ( gsl_min_fminimizer_iterate(s) ) {
+			ERROR("Failed to find scale factor.\n");
+			return NAN;
+		}
 
 		/* Get the current estimate */
 		scale = gsl_min_fminimizer_x_minimum(s);
