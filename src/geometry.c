@@ -217,6 +217,7 @@ static int check_reflection(struct image *image, double mres, int output,
 	refl = add_refl(reflections, h, k, l);
 	set_detector_pos(refl, 0.0, xda, yda);
 	set_partial(refl, rlow, rhigh, part, clamp_low, clamp_high);
+	set_symmetric_indices(refl, h, k, l);
 	set_redundancy(refl, 1);
 
 	if ( output ) {

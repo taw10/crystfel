@@ -24,8 +24,28 @@
 #include "utils.h"
 
 
+/* Refineable parameters */
+enum {
+	REF_ASX,
+	REF_BSX,
+	REF_CSX,
+	REF_ASY,
+	REF_BSY,
+	REF_CSY,
+	REF_ASZ,
+	REF_BSZ,
+	REF_CSZ,
+	NUM_PARAMS,
+	REF_DIV,
+	REF_R,
+};
+
+
 extern void pr_refine(struct image *image, const RefList *full,
                       const char *sym);
+
+/* Exported so it can be poked by tests/pr_gradient_check */
+extern double gradient(struct image *image, int k, Reflection *refl, double r);
 
 
 #endif	/* POST_REFINEMENT_H */

@@ -43,11 +43,12 @@ bin_PROGRAMS = src/pattern_sim$(EXEEXT) src/process_hkl$(EXEEXT) \
 	src/sum_stack$(EXEEXT) src/partial_sim$(EXEEXT) \
 	$(am__EXEEXT_1) $(am__EXEEXT_2)
 noinst_PROGRAMS = tests/list_check$(EXEEXT) \
-	tests/integration_check$(EXEEXT) $(am__EXEEXT_3)
+	tests/integration_check$(EXEEXT) \
+	tests/pr_gradient_check$(EXEEXT) $(am__EXEEXT_3)
 TESTS = tests/list_check$(EXEEXT) tests/first_merge_check \
 	tests/second_merge_check tests/third_merge_check \
 	tests/fourth_merge_check tests/integration_check$(EXEEXT) \
-	$(am__EXEEXT_3)
+	tests/pr_gradient_check$(EXEEXT) $(am__EXEEXT_3)
 @BUILD_HDFSEE_TRUE@am__append_1 = src/hdfsee
 @BUILD_CUBEIT_TRUE@am__append_2 = src/cubeit
 @HAVE_OPENCL_TRUE@am__append_3 = src/diffraction-gpu.c src/cl-utils.c
@@ -275,6 +276,17 @@ am_tests_list_check_OBJECTS = tests/list_check.$(OBJEXT) \
 tests_list_check_OBJECTS = $(am_tests_list_check_OBJECTS)
 tests_list_check_LDADD = $(LDADD)
 tests_list_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+am_tests_pr_gradient_check_OBJECTS =  \
+	tests/pr_gradient_check.$(OBJEXT) src/detector.$(OBJEXT) \
+	src/cell.$(OBJEXT) src/geometry.$(OBJEXT) \
+	src/reflist.$(OBJEXT) src/thread-pool.$(OBJEXT) \
+	src/utils.$(OBJEXT) src/peaks.$(OBJEXT) src/symmetry.$(OBJEXT) \
+	src/image.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
+	src/post-refinement.$(OBJEXT)
+tests_pr_gradient_check_OBJECTS =  \
+	$(am_tests_pr_gradient_check_OBJECTS)
+tests_pr_gradient_check_LDADD = $(LDADD)
+tests_pr_gradient_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
@@ -303,7 +315,8 @@ SOURCES = $(src_calibrate_detector_SOURCES) $(src_check_hkl_SOURCES) \
 	$(src_powder_plot_SOURCES) $(src_process_hkl_SOURCES) \
 	$(src_render_hkl_SOURCES) $(src_sum_stack_SOURCES) \
 	$(tests_gpu_sim_check_SOURCES) \
-	$(tests_integration_check_SOURCES) $(tests_list_check_SOURCES)
+	$(tests_integration_check_SOURCES) $(tests_list_check_SOURCES) \
+	$(tests_pr_gradient_check_SOURCES)
 DIST_SOURCES = $(src_calibrate_detector_SOURCES) \
 	$(src_check_hkl_SOURCES) $(src_compare_hkl_SOURCES) \
 	$(am__src_cubeit_SOURCES_DIST) $(src_get_hkl_SOURCES) \
@@ -313,7 +326,8 @@ DIST_SOURCES = $(src_calibrate_detector_SOURCES) \
 	$(src_powder_plot_SOURCES) $(src_process_hkl_SOURCES) \
 	$(src_render_hkl_SOURCES) $(src_sum_stack_SOURCES) \
 	$(am__tests_gpu_sim_check_SOURCES_DIST) \
-	$(tests_integration_check_SOURCES) $(tests_list_check_SOURCES)
+	$(tests_integration_check_SOURCES) $(tests_list_check_SOURCES) \
+	$(tests_pr_gradient_check_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -711,6 +725,12 @@ tests_integration_check_SOURCES = tests/integration_check.c src/peaks.c \
                                   src/thread-pool.c src/utils.c src/image.c \
                                   src/hdf5-file.c
 
+tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c src/detector.c \
+                                  src/cell.c src/geometry.c src/reflist.c \
+                                  src/thread-pool.c src/utils.c src/peaks.c \
+                                  src/symmetry.c src/image.c src/hdf5-file.c \
+                                  src/post-refinement.c
+
 INCLUDES = "-I$(top_srcdir)/data"
 crystfeldir = $(datadir)/crystfel
 crystfel_DATA = data/diffraction.cl data/defs.h data/hdfsee.ui
@@ -976,6 +996,11 @@ tests/list_check.$(OBJEXT): tests/$(am__dirstamp) \
 tests/list_check$(EXEEXT): $(tests_list_check_OBJECTS) $(tests_list_check_DEPENDENCIES) tests/$(am__dirstamp)
 	@rm -f tests/list_check$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(tests_list_check_OBJECTS) $(tests_list_check_LDADD) $(LIBS)
+tests/pr_gradient_check.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+tests/pr_gradient_check$(EXEEXT): $(tests_pr_gradient_check_OBJECTS) $(tests_pr_gradient_check_DEPENDENCIES) tests/$(am__dirstamp)
+	@rm -f tests/pr_gradient_check$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(tests_pr_gradient_check_OBJECTS) $(tests_pr_gradient_check_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -1022,6 +1047,7 @@ mostlyclean-compile:
 	-rm -f tests/gpu_sim_check.$(OBJEXT)
 	-rm -f tests/integration_check.$(OBJEXT)
 	-rm -f tests/list_check.$(OBJEXT)
+	-rm -f tests/pr_gradient_check.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -1069,6 +1095,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/gpu_sim_check.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/integration_check.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/list_check.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/pr_gradient_check.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\

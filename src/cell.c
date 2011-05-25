@@ -614,14 +614,6 @@ void cell_print(UnitCell *cell)
 
 #define MAX_CAND (1024)
 
-static int within_tolerance(double a, double b, double percent)
-{
-	double tol = a * (percent/100.0);
-	if ( fabs(b-a) < tol ) return 1;
-	return 0;
-}
-
-
 static int right_handed(struct rvec a, struct rvec b, struct rvec c)
 {
 	struct rvec aCb;

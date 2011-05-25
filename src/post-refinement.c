@@ -32,23 +32,6 @@
 #define MAX_CYCLES (5)
 
 
-/* Refineable parameters */
-enum {
-	REF_ASX,
-	REF_BSX,
-	REF_CSX,
-	REF_ASY,
-	REF_BSY,
-	REF_CSY,
-	REF_ASZ,
-	REF_BSZ,
-	REF_CSZ,
-	NUM_PARAMS,
-	REF_DIV,
-	REF_R,
-};
-
-
 /* Returns dp/dr at "r" */
 static double partiality_gradient(double r, double profile_radius)
 {
@@ -86,7 +69,7 @@ static double partiality_rgradient(double r, double profile_radius)
 
 
 /* Return the gradient of parameter 'k' given the current status of 'image'. */
-static double gradient(struct image *image, int k, Reflection *refl, double r)
+double gradient(struct image *image, int k, Reflection *refl, double r)
 {
 	double ds, tt, azix, aziy;
 	double nom, den;
