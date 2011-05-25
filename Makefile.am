@@ -27,7 +27,8 @@ bin_PROGRAMS += src/cubeit
 endif
 
 AM_CFLAGS = -Wall
-AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib -I$(top_srcdir)/lib
+AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib
+AM_CPPFLAGS += -I$(top_srcdir)/lib
 LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@
 
 src_partial_sim_SOURCES = src/partial_sim.c src/cell.c src/detector.c \
@@ -107,8 +108,8 @@ src_sum_stack_SOURCES = src/sum_stack.c src/utils.c src/hdf5-file.c \
 src_calibrate_detector_SOURCES = src/calibrate_detector.c src/utils.c \
                                  src/hdf5-file.c src/image.c src/thread-pool.c \
                                  src/detector.c src/stream.c src/cell.c \
-                                 src/reflist-utils.c src/reflist.c src/symmetry.c \
-                                 src/peaks.c
+                                 src/reflist-utils.c src/reflist.c \
+                                 src/symmetry.c src/peaks.c
 
 src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
                           src/utils.c src/detector.c src/peaks.c src/image.c \
