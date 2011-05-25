@@ -25,6 +25,30 @@
 #include "../src/utils.h"
 
 
+#ifdef HAVE_CLOCK_GETTIME
+
+static double get_hires_seconds()
+{
+	struct timespec tp;
+	clock_gettime(CLOCK_MONOTONIC, &tp);
+	return (double)tp.tv_sec + ((double)tp.tv_nsec/1e9);
+}
+
+#else
+
+/* Fallback version of the above.  The time according to gettimeofday() is not
+ * monotonic, so measuring intervals based on it will screw up if there's a
+ * timezone change (e.g. daylight savings) while the program is running. */
+static double get_hires_seconds()
+{
+	struct timeval tp;
+	gettimeofday(&tp, NULL);
+	return (double)tp.tv_sec + ((double)tp.tv_nsec/1e9);
+}
+
+#endif
+
+
 int main(int argc, char *argv[])
 {
 	struct gpu_context *gctx;
@@ -39,6 +63,8 @@ int main(int argc, char *argv[])
 	double cpu_min, cpu_max, cpu_tot;
 	double dev, perc;
 	const double sep = 20.0;
+	double start, end;
+	double gpu_time, cpu_time;
 
 	gctx = setup_gpu(1, NULL, NULL, NULL, 0);
 	if ( gctx == NULL ) {
@@ -110,9 +136,18 @@ int main(int argc, char *argv[])
 	cpu_image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
 	gpu_image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
 
+	start = get_hires_seconds();
 	get_diffraction_gpu(gctx, &gpu_image, 8, 8, 8, cell);
+	end = get_hires_seconds();
+	gpu_time = end - start;
+
+	start = get_hires_seconds();
 	get_diffraction(&cpu_image, 8, 8, 8, NULL, NULL, NULL, cell,
 	                GRADIENT_MOSAIC, "1");
+	end = get_hires_seconds();
+	cpu_time = end - start;
+
+	STATUS("The GPU version was %5.2f times faster.\n", cpu_time/gpu_time);
 
 	gpu_min = +INFINITY;  gpu_max = -INFINITY;  gpu_tot = 0.0;
 	cpu_min = +INFINITY;  cpu_max = -INFINITY;  cpu_tot = 0.0;
