@@ -215,6 +215,7 @@ int hdf5_write(const char *filename, const void *data,
                int width, int height, int type)
 {
 	hid_t fh, gh, sh, dh;	/* File, group, dataspace and data handles */
+	hid_t ph;  /* Property list */
 	herr_t r;
 	hsize_t size[2];
 	hsize_t max_size[2];
@@ -240,8 +241,13 @@ int hdf5_write(const char *filename, const void *data,
 	max_size[1] = width;
 	sh = H5Screate_simple(2, size, max_size);
 
+	/* Set compression */
+	ph = H5Pcreate(H5P_DATASET_CREATE);
+	H5Pset_chunk(ph, 2, size);
+	H5Pset_deflate(ph, 3);
+
 	dh = H5Dcreate2(gh, "data", type, sh,
-	                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	                H5P_DEFAULT, ph, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Couldn't create dataset\n");
 		H5Fclose(fh);
@@ -260,6 +266,7 @@ int hdf5_write(const char *filename, const void *data,
 		return 1;
 	}
 
+	H5Pclose(ph);
 	H5Gclose(gh);
 	H5Dclose(dh);
 	H5Fclose(fh);
