@@ -214,7 +214,7 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 int main(int argc, char *argv[])
 {
 	struct image image;
-	const double incr_frac = 1.0/1000.0;
+	const double incr_frac = 1.0/1000000.0;
 	double incr_val;
 	double ax, ay, az;
 	double bx, by, bz;
