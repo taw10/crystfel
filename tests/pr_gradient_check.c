@@ -210,6 +210,7 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 	return 0;
 }
 
+
 int main(int argc, char *argv[])
 {
 	struct image image;
