@@ -221,6 +221,7 @@ int main(int argc, char *argv[])
 	double cx, cy, cz;
 	UnitCell *cell;
 	struct quaternion orientation;
+	int i;
 
 	image.width = 1024;
 	image.height = 1024;
@@ -234,39 +235,44 @@ int main(int argc, char *argv[])
 	image.i0_available = 0;
 	image.filename = malloc(256);
 
-	cell = cell_new_from_parameters(10.0e-9,
-	                                              10.0e-9,
-	                                              10.0e-9,
-	                                              deg2rad(90.0),
-	                                              deg2rad(90.0),
-	                                              deg2rad(90.0));
+	cell = cell_new_from_parameters(10.0e-9, 10.0e-9, 10.0e-9,
+	                                deg2rad(90.0),
+	                                deg2rad(90.0),
+	                                deg2rad(90.0));
 
-	orientation = random_quaternion();
-	image.indexed_cell = cell_rotate(cell, orientation);
+	//for ( i=0; i<10; i++ ) {
 
-	cell_get_reciprocal(image.indexed_cell,
-	                    &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+		orientation = random_quaternion();
+		image.indexed_cell = cell_rotate(cell, orientation);
 
-	incr_val = incr_frac * ax;
-	test_gradients(&image, incr_val, REF_ASX, "ax*");
-	incr_val = incr_frac * ay;
-	test_gradients(&image, incr_val, REF_ASY, "ay*");
-	incr_val = incr_frac * az;
-	test_gradients(&image, incr_val, REF_ASZ, "az*");
+		cell_get_reciprocal(image.indexed_cell,
+			            &ax, &ay, &az, &bx, &by,
+			            &bz, &cx, &cy, &cz);
 
-	incr_val = incr_frac * bx;
-	test_gradients(&image, incr_val, REF_BSX, "bx*");
-	incr_val = incr_frac * by;
-	test_gradients(&image, incr_val, REF_BSY, "by*");
-	incr_val = incr_frac * bz;
-	test_gradients(&image, incr_val, REF_BSZ, "bz*");
+		plot_graph(&image, incr_frac, REF_ASX);
 
-	incr_val = incr_frac * cx;
-	test_gradients(&image, incr_val, REF_CSX, "cx*");
-	incr_val = incr_frac * cy;
-	test_gradients(&image, incr_val, REF_CSY, "cy*");
-	incr_val = incr_frac * cz;
-	test_gradients(&image, incr_val, REF_CSZ, "cz*");
+		incr_val = incr_frac * ax;
+		test_gradients(&image, incr_val, REF_ASX, "ax*");
+		incr_val = incr_frac * ay;
+		test_gradients(&image, incr_val, REF_ASY, "ay*");
+		incr_val = incr_frac * az;
+		test_gradients(&image, incr_val, REF_ASZ, "az*");
+
+		incr_val = incr_frac * bx;
+		test_gradients(&image, incr_val, REF_BSX, "bx*");
+		incr_val = incr_frac * by;
+		test_gradients(&image, incr_val, REF_BSY, "by*");
+		incr_val = incr_frac * bz;
+		test_gradients(&image, incr_val, REF_BSZ, "bz*");
+
+		incr_val = incr_frac * cx;
+		test_gradients(&image, incr_val, REF_CSX, "cx*");
+		incr_val = incr_frac * cy;
+		test_gradients(&image, incr_val, REF_CSY, "cy*");
+		incr_val = incr_frac * cz;
+		test_gradients(&image, incr_val, REF_CSZ, "cz*");
+
+	//}
 
 	return 0;
 }
