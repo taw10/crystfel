@@ -56,6 +56,9 @@ static void show_help(const char *s)
 "                              an HDF5 file.\n"
 "  -y, --symmetry=<sym>       Merge according to symmetry <sym>.\n"
 "  -n, --iterations=<n>       Run <n> cycles of scaling and post-refinement.\n"
+"      --reference=<file>     Refine images against reflections in <file>,\n"
+"                              instead of taking the mean of the intensity\n"
+"                              estimates.\n"
 "\n"
 "  -j <n>                     Run <n> analyses in parallel.\n");
 }
@@ -167,6 +170,8 @@ int main(int argc, char *argv[])
 	int n_notfound = 0;
 	char *cref;
 	int n_usable_patterns = 0;
+	char *reference_file = NULL;
+	RefList *reference;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -177,6 +182,7 @@ int main(int argc, char *argv[])
 		{"beam",               1, NULL,               'b'},
 		{"symmetry",           1, NULL,               'y'},
 		{"iterations",         1, NULL,               'n'},
+		{"reference",          1, NULL,                1},
 		{0, 0, NULL, 0}
 	};
 
@@ -223,6 +229,10 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+		case 1 :
+			reference = strdup(optarg);
+			break;
+
 		case 0 :
 			break;
 
@@ -265,6 +275,12 @@ int main(int argc, char *argv[])
 	if ( beam == NULL ) {
 		ERROR("You must provide a beam parameters file.\n");
 		return 1;
+	}
+
+	if ( reference_file != NULL ) {
+		reference = read_reflections(reference_file);
+		free(reference_file);
+		if ( reference == NULL ) return 1;
 	}
 
 	n_total_patterns = count_patterns(fh);
