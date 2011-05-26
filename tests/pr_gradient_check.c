@@ -26,7 +26,7 @@
 
 
 static void scan_partialities(RefList *reflections, RefList *compare,
-                              int *valid, double *vals[3], int idx)
+                              int *valid, long double *vals[3], int idx)
 {
 	int i;
 	Reflection *refl;
@@ -101,7 +101,7 @@ static UnitCell *new_shifted_cell(UnitCell *input, int k, double shift)
 
 
 static void calc_either_side(struct image *image, double incr_val,
-                             int *valid, double *vals[3], int refine)
+                             int *valid, long double *vals[3], int refine)
 {
 	RefList *compare;
 	UnitCell *cell;
@@ -123,7 +123,7 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 {
 	Reflection *refl;
 	RefListIterator *iter;
-	double *vals[3];
+	long double *vals[3];
 	int i;
 	int *valid;
 	int nref;
@@ -137,9 +137,9 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 		return -1;
 	}
 
-	vals[0] = malloc(nref*sizeof(double));
-	vals[1] = malloc(nref*sizeof(double));
-	vals[2] = malloc(nref*sizeof(double));
+	vals[0] = malloc(nref*sizeof(long double));
+	vals[1] = malloc(nref*sizeof(long double));
+	vals[2] = malloc(nref*sizeof(long double));
 	if ( (vals[0] == NULL) || (vals[1] == NULL) || (vals[2] == NULL) ) {
 		ERROR("Couldn't allocate memory.\n");
 		return -1;
@@ -164,7 +164,7 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 	      refl = next_refl(refl, iter) )
 	{
 
-		double grad1, grad2, grad;
+		long double grad1, grad2, grad;
 		double cgrad;
 		signed int h, k, l;
 
@@ -182,15 +182,16 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 			                 image->profile_radius);
 
 			if ( !within_tolerance(grad, cgrad, 10.0) ) {
-				STATUS("!- %s %5.2f %5.2f %5.2f"
-				       " -> %10.2e %10.2e -> %10.2e %10.2e\n",
-				       str, vals[0][i], vals[1][i], vals[2][i],
+				STATUS("!- %s %3i %3i %3i %5.2Lf %5.2Lf %5.2Lf"
+				       " -> %10.2Le %10.2Le"
+				       " -> %10.2Le %10.2e\n", str, h, k, l,
+				       vals[0][i], vals[1][i], vals[2][i],
 				       grad1, grad2, grad, cgrad);
 			} else {
 				//STATUS("OK %s %5.2f %5.2f %5.2f"
-				//       " -> %10.2e %10.2e"
-				//       " -> %10.2e %10.2e\n",
-				//       str, vals[0][i], vals[1][i], vals[2][i],
+				//       " -> %10.2Le %10.2Le"
+				//       " -> %10.2Le %10.2e\n", str,
+				//       vals[0][i], vals[1][i], vals[2][i],
 				//       grad1, grad2, grad, cgrad);
 				n_acc++;
 			}
