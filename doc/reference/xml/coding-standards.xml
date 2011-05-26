@@ -60,7 +60,7 @@ void somefunction(int something)
 However, code must be <emphasis>strictly</emphasis> wrapped at 80 columns, or
 what would be 80 columns if the tabs were displayed as 8 spaces.
 If you think you need more width, you're at too many levels of indentation and
-need to break things down a bit.
+need to break things down a bit.  There are no exceptions whatsoever.
 </para>
 <para>
 When performing a two or three dimensional iteration, for example over image
@@ -112,10 +112,19 @@ void somefunction(int someparam)
 /* Comments use proper capitalisation to make things look neat */
 </programlisting>
 </para>
-<para>
-'struct' blocks can have the braces like functions or 'if' statements.  Usually
-the former looks nicer if the struct is large.
-</para>
+<para>'struct' blocks can have the braces like functions or 'if' statements.  Usually the former looks nicer if the struct is large.</para>
+<para>Parentheses should have spaces after them in 'if' statements, but not in function calls. Function arguments should have spaces after the comma.  There should be no space between the function name and the opening bracket.  That means:</para>
+<para><programlisting>
+if ( something ) {
+	do_something(a, b, c);
+}
+</programlisting></para>
+<para>instead of:</para>
+<para><programlisting>
+if (something) {
+	do_something (a,b,c);
+}
+</programlisting></para>
 </refsect1>
 
 
@@ -126,6 +135,13 @@ Yes, we all know you can insert a new node into an RB-tree while simultaneously
 calculating Pi to 150 decimal places in one line of code.  You don't need to
 prove it here.  As a general rule, if you think you're about to do something clever, <emphasis>don't do it at all</emphasis>.
 </para>
+</refsect1>
+
+
+<refsect1 id="CrystFEL-coding-standards.commitmessages">
+<title>VCS commit messages</title>
+<para>The first line of your commit message should include a one line summary of the changes, in the form "Do XYZ".  That is, not "Did XYZ".</para>
+<para>Make the minimum possible changes in each commit.  Try to really distill your changes down to the bare bones, and keep 'cleaning up' in separate commits.  Remember that Git thinks about 'changes' rather than 'versions'.</para>
 </refsect1>
 
 
