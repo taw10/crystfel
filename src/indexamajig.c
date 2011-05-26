@@ -43,7 +43,6 @@
 #include "reflist-utils.h"
 
 
-
 /* Write statistics at APPROXIMATELY this interval */
 #define STATS_EVERY_N_SECONDS (5)
 

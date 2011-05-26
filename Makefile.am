@@ -119,8 +119,6 @@ src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
                           src/symmetry.c src/post-refinement.c \
                           src/hrs-scaling.c src/reflist.c
 
-src_stream_SOURCES = src/reflist-utils.c
-
 if BUILD_CUBEIT
 src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
                      src/detector.c src/render.c src/filters.c src/image.c \
