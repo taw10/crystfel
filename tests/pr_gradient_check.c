@@ -211,6 +211,12 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 }
 
 
+static void plot_graph(struct image *image, double incr_frac, int refine)
+{
+
+}
+
+
 int main(int argc, char *argv[])
 {
 	struct image image;
