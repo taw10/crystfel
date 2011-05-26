@@ -246,7 +246,7 @@ int main(int argc, char *argv[])
 	                                deg2rad(90.0),
 	                                deg2rad(90.0));
 
-	//for ( i=0; i<10; i++ ) {
+	for ( i=0; i<1; i++ ) {
 
 		orientation = random_quaternion();
 		image.indexed_cell = cell_rotate(cell, orientation);
@@ -278,7 +278,7 @@ int main(int argc, char *argv[])
 		incr_val = incr_frac * cz;
 		test_gradients(&image, incr_val, REF_CSZ, "cz*");
 
-	//}
+	}
 
 	return 0;
 }
