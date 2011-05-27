@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
 	char *cref;
 	int n_usable_patterns = 0;
 	char *reference_file = NULL;
-	RefList *reference;
+	double *reference = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -230,7 +230,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 1 :
-			reference = strdup(optarg);
+			reference_file = strdup(optarg);
 			break;
 
 		case 0 :
@@ -278,9 +278,15 @@ int main(int argc, char *argv[])
 	}
 
 	if ( reference_file != NULL ) {
-		reference = read_reflections(reference_file);
+		RefList *list;
+		RefList *symmed;
+		list = read_reflections(reference_file);
 		free(reference_file);
-		if ( reference == NULL ) return 1;
+		if ( list == NULL ) return 1;
+		symmed = asymmetric_indices(list, sym);
+		reflist_free(list);
+		reference = intensities_from_list(symmed);
+		reflist_free(symmed);
 	}
 
 	n_total_patterns = count_patterns(fh);
@@ -360,7 +366,7 @@ int main(int argc, char *argv[])
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
 	full = scale_intensities(images, n_usable_patterns, sym,
-	                         scalable, cref);
+	                         scalable, cref, reference);
 
 	for ( i=0; i<num_items(scalable); i++ ) {
 		Reflection *f;
@@ -425,7 +431,7 @@ int main(int argc, char *argv[])
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
 		full = scale_intensities(images, n_usable_patterns,
-		                         sym, scalable, cref);
+		                         sym, scalable, cref, reference);
 
 		fclose(fhg);
 		fclose(fhp);
@@ -451,6 +457,7 @@ int main(int argc, char *argv[])
 	free_detector_geometry(det);
 	free(beam);
 	free(cref);
+	free(reference);
 	for ( i=0; i<n_usable_patterns; i++ ) {
 		cell_free(images[i].indexed_cell);
 		free(images[i].filename);
