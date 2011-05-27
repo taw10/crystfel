@@ -425,6 +425,8 @@ int main(int argc, char *argv[])
 		}
 
 		/* Refine the geometry of all patterns to get the best fit */
+		/* FIXME: Refine against reference intensity if present */
+		/* FIXME: Speedup by using array instead of RefList for 'full'? */
 		refine_all(images, n_total_patterns, det, sym, scalable, full,
 		           nthreads, fhg, fhp);
 
