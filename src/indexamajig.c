@@ -315,8 +315,6 @@ static void process_image(void *pp, int cookie)
 		      config_verbose, pargs->static_args.ipriv,
 		      pargs->static_args.config_insane);
 
-
-
 	if ( image.indexed_cell != NULL ) pargs->indexable = 1;
 
 	/* Measure intensities if requested */

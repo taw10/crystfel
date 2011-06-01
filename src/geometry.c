@@ -270,30 +270,6 @@ RefList *find_intersections(struct image *image, UnitCell *cell,
 }
 
 
-double integrate_all(struct image *image, RefList *reflections)
-{
-	double itot = 0.0;
-	Reflection *refl;
-	RefListIterator *iter;
-
-	for ( refl = first_refl(reflections, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
-		double x, y, intensity;
-		double xp, yp;
-		get_detector_pos(refl, &xp, &yp);
-
-		if ( integrate_peak(image, xp, yp, &x, &y, &intensity, NULL,
-		                    NULL, NULL, 0, 0) ) continue;
-
-		itot += intensity;
-	}
-
-	return itot;
-}
-
-
 /* Decide which reflections can be scaled */
 static void select_scalable_reflections(RefList *list, ReflItemList *sc_l)
 {

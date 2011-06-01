@@ -22,8 +22,6 @@
 extern RefList *find_intersections(struct image *image, UnitCell *cell,
                                    int output);
 
-extern double integrate_all(struct image *image, RefList *reflections);
-
 extern void update_partialities(struct image *image, const char *sym,
                                 ReflItemList *scalable,
                                 int *n_expected, int *n_found, int *n_notfound);
