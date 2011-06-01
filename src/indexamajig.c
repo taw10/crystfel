@@ -65,6 +65,7 @@ struct static_index_args
 	int config_satcorr;
 	int config_closer;
 	int config_insane;
+	int config_bgsub;
 	float threshold;
 	float min_gradient;
 	struct detector *det;
@@ -179,6 +180,8 @@ static void show_help(const char *s)
 "     --unpolarized        Don't correct for the polarisation of the X-rays.\n"
 "     --no-sat-corr        Don't correct values of saturated peaks using a\n"
 "                           table included in the HDF5 file.\n"
+"     --bg-sub             Subtract local background estimates from\n"
+"                           integrated intensities.\n"
 "     --threshold=<n>      Only accept peaks above <n> ADU.  Default: 800.\n"
 "     --min-gradient=<n>   Minimum gradient for Zaefferer peak search.\n"
 "                           Default: 100,000.\n"
@@ -333,7 +336,8 @@ static void process_image(void *pp, int cookie)
 			                                 0, 0.1);
 
 		integrate_reflections(&image, config_polar,
-			              pargs->static_args.config_closer);
+			              pargs->static_args.config_closer,
+			              pargs->static_args.config_bgsub);
 
 		/* OR */
 
@@ -505,6 +509,7 @@ int main(int argc, char *argv[])
 	int config_checkprefix = 1;
 	int config_closer = 1;
 	int config_insane = 0;
+	int config_bgsub = 0;
 	int config_basename = 0;
 	float threshold = 800.0;
 	float min_gradient = 100000.0;
@@ -565,7 +570,8 @@ int main(int argc, char *argv[])
 		{"record",             1, NULL,                5},
 		{"cpus",               1, NULL,                6},
 		{"cpugroup",           1, NULL,                7},
-		{"cpuoffset",         1, NULL,                 8},
+		{"cpuoffset",          1, NULL,                8},
+		{"bg-sub",             1, &config_bgsub,       0},
 		{0, 0, NULL, 0}
 	};
 
@@ -872,6 +878,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.config_satcorr = config_satcorr;
 	qargs.static_args.config_closer = config_closer;
 	qargs.static_args.config_insane = config_insane;
+	qargs.static_args.config_bgsub = config_bgsub;
 	qargs.static_args.cellr = cellr;
 	qargs.static_args.threshold = threshold;
 	qargs.static_args.min_gradient = min_gradient;

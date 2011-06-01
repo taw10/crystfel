@@ -558,7 +558,7 @@ int main(int argc, char *argv[])
 			image.reflections = find_projected_peaks(&image,
 			                            image.indexed_cell, 0, 0.1);
 
-			integrate_reflections(&image, 0, 0);
+			integrate_reflections(&image, 0, 0, 0);
 
 			/* OR */
 

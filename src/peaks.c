@@ -144,7 +144,7 @@ static int cull_peaks(struct image *image)
 int integrate_peak(struct image *image, int cfs, int css,
                    double *pfs, double *pss, double *intensity,
                    double *pbg, double *pmax, double *sigma,
-                   int do_polar, int centroid)
+                   int do_polar, int centroid, int bgsub)
 {
 	signed int fs, ss;
 	double lim, out_lim;
@@ -246,11 +246,14 @@ int integrate_peak(struct image *image, int cfs, int css,
 	if ( centroid && (total != 0) ) {
 		*pfs = (double)fsct / total;
 		*pss = (double)ssct / total;
-		*intensity = total - pixel_counts*noise_mean;
 	} else {
 		*pfs = (double)cfs;
 		*pss = (double)css;
+	}
+	if ( bgsub ) {
 		*intensity = total - pixel_counts*noise_mean;
+	} else {
+		*intensity = total;
 	}
 
 	if ( in_bad_region(image->det, *pfs, *pss) ) return 1;
@@ -380,7 +383,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		 * intensity of this peak is only an estimate at this stage. */
 		r = integrate_peak(image, mask_fs, mask_ss,
 		                   &f_fs, &f_ss, &intensity,
-		                   NULL, NULL, NULL, 0, 1);
+		                   NULL, NULL, NULL, 0, 1, 0);
 		if ( r ) {
 			/* Bad region - don't detect peak */
 			nrej_bad++;
@@ -592,7 +595,8 @@ int peak_sanity_check(struct image *image, UnitCell *cell,
 
 
 /* Integrate the list of predicted reflections in "image" */
-void integrate_reflections(struct image *image, int polar, int use_closer)
+void integrate_reflections(struct image *image, int polar, int use_closer,
+                           int bgsub)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -635,7 +639,8 @@ void integrate_reflections(struct image *image, int polar, int use_closer)
 		}
 
 		r = integrate_peak(image, pfs, pss, &fs, &ss,
-		                   &intensity, &bg, &max, &sigma, polar, 0);
+		                   &intensity, &bg, &max, &sigma, polar, 0,
+		                   bgsub);
 
 		/* Record intensity and set redundancy to 1 on success */
 		if ( r == 0 ) {
