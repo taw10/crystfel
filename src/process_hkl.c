@@ -63,7 +63,6 @@ static void show_help(const char *s)
 "                             the default.\n"
 "  -g, --histogram=<h,k,l>   Calculate the histogram of measurements for this\n"
 "                             reflection.\n"
-"      --rmerge              Calculate and report Rmerge and Rpim\n"
 "\n"
 "      --scale               Scale each pattern for best fit with the current\n"
 "                             model.\n"
