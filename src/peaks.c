@@ -222,20 +222,22 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 		if ( val > max ) max = val;
 
-		/* Inner mask */
+		/* If outside inner mask, estimate noise from this region */
 		if ( fs*fs + ss*ss > lim_sq ) {
-			/* Estimate noise from this region */
-			noise += val; //fabs(val);
-			noise_counts++;
-			/* Estimate the standard deviation of the noise */
-			noise_meansq += fabs(val)*fabs(val) ;
-			continue;
-		}
 
-		pixel_counts ++;
-		total += val;
-		fsct += val*(cfs+fs);
-		ssct += val*(css+ss);
+			/* Noise */
+			noise += val;
+			noise_counts++;
+			noise_meansq += pow(val, 2.0);
+
+		} else {
+
+			/* Peak */
+			pixel_counts++;
+			total += val;
+			fsct += val*(cfs+fs);
+			ssct += val*(css+ss);
+		}
 
 	}
 	}
