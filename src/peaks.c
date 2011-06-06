@@ -260,11 +260,10 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 	if ( in_bad_region(image->det, *pfs, *pss) ) return 1;
 
-        if ( sigma != NULL ) {
+	if ( sigma != NULL ) {
 		/* First term is standard deviation of background per pixel
 		 * sqrt(pixel_counts) - increase of error for integrated value
-		 * sqrt(2) - increase of error for background subtraction
-		*/
+		 * sqrt(2) - increase of error for background subtraction  */
 		*sigma = sqrt(noise_meansq/noise_counts-(noise_mean*noise_mean))
 		          * sqrt(2.0*pixel_counts);
 	}
