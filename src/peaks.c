@@ -147,8 +147,8 @@ int integrate_peak(struct image *image, int cfs, int css,
                    int do_polar, int centroid, int bgsub)
 {
 	signed int fs, ss;
-	double lim, out_lim;
-	double lim_sq, out_lim_sq;
+	double lim, out_lim, mid_lim;
+	double lim_sq, out_lim_sq, mid_lim_sq;
 	double total = 0.0;
 	double fsct = 0.0;
 	double ssct = 0.0;
@@ -165,8 +165,10 @@ int integrate_peak(struct image *image, int cfs, int css,
 	if ( p->no_index ) return 1;
 
 	lim = p->integr_radius;
-	out_lim = 2.0 + lim;
+	mid_lim = 2.0 + lim;	
+	out_lim = 4.0 + lim;
 	lim_sq = pow(lim, 2.0);
+	mid_lim_sq = pow(mid_lim, 2.0);
 	out_lim_sq = pow(out_lim, 2.0);
 
 	for ( fs=-out_lim; fs<+out_lim; fs++ ) {
@@ -223,14 +225,14 @@ int integrate_peak(struct image *image, int cfs, int css,
 		if ( val > max ) max = val;
 
 		/* If outside inner mask, estimate noise from this region */
-		if ( fs*fs + ss*ss > lim_sq ) {
+		if ( fs*fs + ss*ss > mid_lim_sq ) {
 
 			/* Noise */
 			noise += val;
 			noise_counts++;
 			noise_meansq += pow(val, 2.0);
 
-		} else {
+		} else if ( fs*fs + ss*ss < lim_sq ) {
 
 			/* Peak */
 			pixel_counts++;
