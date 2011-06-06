@@ -34,7 +34,8 @@
 
 
 #define SAMPLING (4)
-#define BWSAMPLING (10)
+#define BWSAMPLING (1)
+#define DIVSAMPLING (4)
 #define SINC_LUT_ELEMENTS (4096)
 
 
@@ -166,7 +167,10 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	cl_float bwstep;
 	int n_inf = 0;
 	int n_neg = 0;
+	cl_float divxlow, divxstep;
+	cl_float divylow, divystep;
 	int n_nan = 0;
+	int sprod;
 
 	if ( gctx == NULL ) {
 		ERROR("GPU setup failed.\n");
@@ -182,6 +186,12 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	klow = 1.0/(image->lambda*(1.0 + image->beam->bandwidth/2.0));
 	khigh = 1.0/(image->lambda*(1.0 - image->beam->bandwidth/2.0));
 	bwstep = (khigh-klow) / BWSAMPLING;
+
+	/* Calculate divergence stuff */
+	divxlow = -image->beam->divergence/2.0;
+	divylow = -image->beam->divergence/2.0;
+	divxstep = image->beam->divergence / DIVSAMPLING;
+	divystep = image->beam->divergence / DIVSAMPLING;
 
 	ncells.s[0] = na;
 	ncells.s[1] = nb;
@@ -201,6 +211,12 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	if ( set_arg_mem(gctx, 16, gctx->sinc_luts[nb-1]) ) return;
 	if ( set_arg_mem(gctx, 17, gctx->sinc_luts[nc-1]) ) return;
 	if ( set_arg_mem(gctx, 18, gctx->flags) ) return;
+	if ( set_arg_float(gctx, 23, divxlow) ) return;
+	if ( set_arg_float(gctx, 24, divxstep) ) return;
+	if ( set_arg_int(gctx, 25, DIVSAMPLING) ) return;
+	if ( set_arg_float(gctx, 26, divylow) ) return;
+	if ( set_arg_float(gctx, 27, divystep) ) return;
+	if ( set_arg_int(gctx, 28, DIVSAMPLING) ) return;
 
 	/* Unit cell */
 	err = clSetKernelArg(gctx->kern, 8, sizeof(cl_float16), &cell);
@@ -210,8 +226,8 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	}
 
 	/* Local memory for reduction */
-	err = clSetKernelArg(gctx->kern, 13,
-	               BWSAMPLING*SAMPLING*SAMPLING*sizeof(cl_float), NULL);
+	sprod = BWSAMPLING*SAMPLING*SAMPLING*DIVSAMPLING*DIVSAMPLING;
+	err = clSetKernelArg(gctx->kern, 13, sprod*sizeof(cl_float), NULL);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set local memory: %s\n", clError(err));
 		return;
@@ -225,7 +241,8 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	for ( i=0; i<image->det->n_panels; i++ ) {
 
 		size_t dims[3];
-		size_t ldims[3] = {SAMPLING, SAMPLING, BWSAMPLING};
+		size_t ldims[3] = {SAMPLING, SAMPLING,
+		                   BWSAMPLING * DIVSAMPLING * DIVSAMPLING};
 		struct panel *p;
 		cl_mem tt;
 		size_t tt_size;
@@ -273,7 +290,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 		dims[0] = pan_width * SAMPLING;
 		dims[1] = pan_height * SAMPLING;
-		dims[2] = BWSAMPLING;
+		dims[2] = BWSAMPLING * DIVSAMPLING * DIVSAMPLING;
 
 		err = clEnqueueNDRangeKernel(gctx->cq, gctx->kern, 3, NULL,
 		                             dims, ldims, 0, NULL, NULL);

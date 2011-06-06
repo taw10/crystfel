@@ -29,12 +29,14 @@ const sampler_t sampler_c = CLK_NORMALIZED_COORDS_TRUE
 
 float4 get_q(float fs, float ss, float res, float clen, float k,
              float *ttp, float corner_x, float corner_y,
-             float fsx, float fsy, float ssx, float ssy)
+             float fsx, float fsy, float ssx, float ssy,
+             float xdiv, float ydiv)
 {
 	float rx, ry, r;
 	float az, tt;
 	float4 q;
 	float xs, ys;
+	float kx, ky, kz;
 
 	xs = fs*fsx + ss*ssx;
 	ys = fs*fsy + ss*ssy;
@@ -49,9 +51,19 @@ float4 get_q(float fs, float ss, float res, float clen, float k,
 
 	az = atan2(ry, rx);
 
-	q = (float4)(k*native_sin(tt)*native_cos(az),
-	             k*native_sin(tt)*native_sin(az),
-	             k*(native_cos(tt)-1.0), 0.0);
+	kx = k*native_sin(tt)*native_cos(az);
+	ky = k*native_sin(tt)*native_sin(az);
+	kz = k*(native_cos(tt)-1.0);
+
+	/* x divergence */
+	kx =  kx*cos(xdiv) +kz*sin(xdiv);
+	kz = -kx*sin(xdiv) +kz*cos(xdiv);
+
+	/* y divergence */
+	ky =  ky*cos(ydiv) +kz*sin(ydiv);
+	kz = -ky*sin(ydiv) +kz*cos(ydiv);
+
+	q = (float4)(kx, ky, kz, 0.0);
 
 	return q;
 }
@@ -202,18 +214,32 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
                         read_only image2d_t func_b,
                         read_only image2d_t func_c,
                         global float *flags,
-                        float fsx, float fsy, float ssx, float ssy)
+                        float fsx, float fsy, float ssx, float ssy,
+                        float divxlow, float divxstep, int divxsamp,
+                        float divylow, float divystep, int divysamp)
 {
 	float ttv;
 	float fs, ss;
 	float f_lattice, I_lattice;
 	float I_molecule;
 	float4 q;
-	const int lx = get_local_id(0);
-	const int ly = get_local_id(1);
-	const int lb = get_local_id(2);
 	float k = klow + kstep * get_local_id(2);
 	float intensity;
+	const int ls0 = get_local_size(0);
+	const int ls1 = get_local_size(1);
+	const int ls2 = get_local_size(2) / (divxsamp*divysamp);
+	const int ls3 = divxsamp;
+	const int ls4 = divysamp;
+	const int li0 = get_local_id(0);
+	const int li1 = get_local_id(1);
+	const int li234 = get_local_id(2);
+	const int li2 = li234 / (ls3*ls4);
+	const int li234leftover = li234 % (ls3*ls4);
+	const int li3 = li234leftover / ls4;
+	const int li4 = li234leftover % ls4;
+	const int ls = ls0 * ls1 * ls2 * ls3 * ls4;
+	float xdiv = divxlow + divxstep*ls4;
+	float ydiv = divylow + divystep*ls3;
 
 	/* Calculate fractional coordinates in fs/ss */
 	fs = convert_float(get_global_id(0)) / convert_float(sampling);
@@ -221,7 +247,7 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
 
 	/* Get the scattering vector */
 	q = get_q(fs, ss, res, clen, k, &ttv,
-	          corner_x, corner_y, fsx, fsy, ssx, ssy);
+	          corner_x, corner_y, fsx, fsy, ssx, ssy, xdiv, ydiv);
 
 	/* Calculate the diffraction */
 	f_lattice = lattice_factor(cell, q, func_a, func_b, func_c);
@@ -230,13 +256,14 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
 
 	/* Write the value to local memory */
 	intensity = I_molecule * I_lattice;
-	tmp[lx+sampling*ly+sampling*sampling*lb] = intensity;
+	tmp[li0 + ls0*li1 + ls0*ls1*li2 + ls0*ls1*ls2*li3
+	        + ls0*ls1*ls2*ls3*li4] = intensity;
 
 	/* Memory fence */
 	barrier(CLK_LOCAL_MEM_FENCE);
 
 	/* Leader thread sums the values */
-	if ( lx + ly + lb == 0 ) {
+	if ( li0 + li1 + li2 + li3 + li4 == 0 ) {
 
 		int i;
 		float sum = 0.0;
@@ -245,11 +272,9 @@ kernel void diffraction(global float *diff, global float *tt, float klow,
 
 		idx = convert_int_rtz(fs) + w*convert_int_rtz(ss);
 
-		for ( i=0; i<sampling*sampling*get_local_size(2); i++ )
-			sum += tmp[i];
+		for ( i=0; i<ls; i++ ) sum += tmp[i];
 
-		val = sum / convert_float(get_local_size(0)*get_local_size(1)
-		                                           *get_local_size(2));
+		val = sum / convert_float(ls);
 		diff[idx] = val;
 
 		/* Leader thread also records the 2theta value */
