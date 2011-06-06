@@ -355,6 +355,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	double *lut_a;
 	double *lut_b;
 	double *lut_c;
+	double divxlow, divylow, divxstep, divystep;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -368,6 +369,11 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	khigh = 1.0/(image->lambda*(1.0 - image->beam->bandwidth/2.0));
 	bwstep = (khigh-klow) / BWSAMPLING;
 
+	divxlow = -image->beam->divergence/2.0;
+	divylow = -image->beam->divergence/2.0;
+	divxstep = image->beam->divergence / DIVSAMPLING;
+	divystep = image->beam->divergence / DIVSAMPLING;
+
 	lut_a = get_sinc_lut(na);
 	lut_b = get_sinc_lut(nb);
 	lut_c = get_sinc_lut(nc);
@@ -376,27 +382,44 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	for ( ss=0; ss<image->height; ss++ ) {
 
 		int fs_step, ss_step, kstep;
+		int divxval, divyval;
 		int idx = fs + image->width*ss;
 
 		for ( fs_step=0; fs_step<SAMPLING; fs_step++ ) {
 		for ( ss_step=0; ss_step<SAMPLING; ss_step++ ) {
 		for ( kstep=0; kstep<BWSAMPLING; kstep++ ) {
+		for ( divxval=0; divxval<DIVSAMPLING; divxval++ ) {
+		for ( divyval=0; divyval<DIVSAMPLING; divyval++ ) {
 
 			double k;
 			double intensity;
 			double f_lattice, I_lattice;
 			double I_molecule;
-			struct rvec q;
+			struct rvec q, qn;
 			double twotheta;
 			const double dfs = (double)fs
 			                    + ((double)fs_step / SAMPLING);
 			const double dss = (double)ss
 			                    + ((double)ss_step / SAMPLING);
 
+			double xdiv = divxlow + divxstep*(double)divxval;
+			double ydiv = divylow + divystep*(double)divyval;
+
 			/* Calculate k this time round */
 			k = klow + (double)kstep * bwstep;
 
-			q = get_q(image, dfs, dss, &twotheta, k);
+			qn = get_q(image, dfs, dss, &twotheta, k);
+
+			/* x divergence */
+			q.u =  qn.u*cos(xdiv) +qn.w*sin(xdiv);
+			q.v = qn.v;
+			q.w = -qn.u*sin(xdiv) +qn.w*cos(xdiv);
+
+			qn = q;
+
+			/* y divergence */
+			q.v =  qn.v*cos(ydiv) +qn.w*sin(ydiv);
+			q.w = -qn.v*sin(ydiv) +qn.w*cos(ydiv);
 
 			f_lattice = lattice_factor(q, ax, ay, az,
 			                              bx, by, bz,
@@ -420,8 +443,11 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 		}
 		}
 		}
+		}
+		}
 
-		image->data[idx] /= SAMPLING*SAMPLING*BWSAMPLING;
+		image->data[idx] /= (SAMPLING*SAMPLING*BWSAMPLING
+		                     *DIVSAMPLING*DIVSAMPLING);
 
 
 	}

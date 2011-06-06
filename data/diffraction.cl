@@ -37,6 +37,7 @@ float4 get_q(float fs, float ss, float res, float clen, float k,
 	float4 q;
 	float xs, ys;
 	float kx, ky, kz;
+	float kxn, kyn, kzn;
 
 	xs = fs*fsx + ss*ssx;
 	ys = fs*fsy + ss*ssy;
@@ -51,17 +52,18 @@ float4 get_q(float fs, float ss, float res, float clen, float k,
 
 	az = atan2(ry, rx);
 
-	kx = k*native_sin(tt)*native_cos(az);
-	ky = k*native_sin(tt)*native_sin(az);
-	kz = k*(native_cos(tt)-1.0);
+	kxn = k*native_sin(tt)*native_cos(az);
+	kyn = k*native_sin(tt)*native_sin(az);
+	kzn = k*(native_cos(tt)-1.0);
 
 	/* x divergence */
-	kx =  kx*cos(xdiv) +kz*sin(xdiv);
-	kz = -kx*sin(xdiv) +kz*cos(xdiv);
+	kx =  kxn*cos(xdiv) +kzn*sin(xdiv);
+	kz = -kxn*sin(xdiv) +kzn*cos(xdiv);
+	kxn = kx;  kzn = kz;
 
 	/* y divergence */
-	ky =  ky*cos(ydiv) +kz*sin(ydiv);
-	kz = -ky*sin(ydiv) +kz*cos(ydiv);
+	ky =  kyn*cos(ydiv) +kzn*sin(ydiv);
+	kz = -kyn*sin(ydiv) +kzn*cos(ydiv);
 
 	q = (float4)(kx, ky, kz, 0.0);
 
