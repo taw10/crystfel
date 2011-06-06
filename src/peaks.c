@@ -165,8 +165,8 @@ int integrate_peak(struct image *image, int cfs, int css,
 	if ( p->no_index ) return 1;
 
 	lim = p->integr_radius;
-	mid_lim = 2.0 + lim;	
-	out_lim = 4.0 + lim;
+	mid_lim = 3.0 + lim;	
+	out_lim = 6.0 + lim;
 	lim_sq = pow(lim, 2.0);
 	mid_lim_sq = pow(mid_lim, 2.0);
 	out_lim_sq = pow(out_lim, 2.0);
@@ -247,6 +247,7 @@ int integrate_peak(struct image *image, int cfs, int css,
         noise_mean = noise / noise_counts;
 
 	/* The centroid is excitingly undefined if there is no intensity */
+	centroid = 0;
 	if ( centroid && (total != 0) ) {
 		*pfs = ((double)fsct / total) + 0.5;
 		*pss = ((double)ssct / total) + 0.5;

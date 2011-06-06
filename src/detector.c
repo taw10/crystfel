@@ -666,7 +666,7 @@ struct detector *get_detector_geometry(const char *filename)
 	det->defaults.badrow = '-';
 	det->defaults.no_index = 0;
 	det->defaults.peak_sep = 50.0;
-	det->defaults.integr_radius = 10.0;
+	det->defaults.integr_radius = 3.0;
 	det->defaults.fsx = 1.0;
 	det->defaults.fsy = 0.0;
 	det->defaults.ssx = 0.0;
