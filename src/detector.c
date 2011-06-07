@@ -1120,9 +1120,6 @@ int write_detector_geometry(const char *filename, struct detector *det)
 		fprintf(fh, "%s/peak_sep = %g\n", p->name, p->peak_sep);
 		fprintf(fh, "%s/clen = %s\n", p->name, p->clen_from);
 
-		/* FIXME: The following is sketchy, but it will work for now.
-		 * We need to generalise the parser in detector.c */
-
 		if ( p->fsx >= 0 ) {
 			signx='+';
 		} else {
