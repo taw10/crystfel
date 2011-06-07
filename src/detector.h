@@ -34,6 +34,7 @@ struct panel
 	int      max_ss;
 	double   cnx;       /* Location of corner (min_fs,min_ss) in pixels */
 	double   cny;
+	double   coffset;
 	double   clen;     /* Camera length in metres */
 	char    *clen_from;
 	double   res;      /* Resolution in pixels per metre */
