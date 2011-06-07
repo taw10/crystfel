@@ -68,11 +68,11 @@ static int dir_conv(const char *a, double *sx, double *sy)
 	char **bits;
 
 	n1 = assplode(*a, " \t", &bits, ASSPLODE_NONE);
-	
+
 	for(i = 0; i < strlen(bits); i++ ) {
 		for (ii = 0; ii < strlen(bits[0]); ii++){
-			str[j] =  bits[i][ii];	
-			j++;	
+			str[j] =  bits[i][ii];
+			j++;
 		}
 	}
 
@@ -80,7 +80,7 @@ static int dir_conv(const char *a, double *sx, double *sy)
 
 static int dir_conv_extract_coeff(const char *a, int *sign, int *axis, double *coeff)
 {
-	int len;	
+	int len;
 	len = strlen(a);
 	int index = 1;
 	char tempstr[len];
@@ -125,9 +125,9 @@ static int dir_conv_extract_coeff(const char *a, int *sign, int *axis, double *c
 		*coeff = test;
 	}
 
-	
+
 	if ( a[len-1] == 'x' ) {
-		*axis = 1;		
+		*axis = 1;
 	} else if ( a[len-1] == 'y' ) {
 		*axis = 0;
 	}
@@ -148,20 +148,20 @@ static int dir_conv(const char *a, double *sx, double *sy)
 	//	remove_white_space(a);
 
 	n1 = assplode(a, "+-\t", &bits, ASSPLODE_NONE);
-		
+
 	/* parse the first entry */
-	dir_conv_extract_coeff(bits[0], &sign, &axis, &coeff) ;		
+	dir_conv_extract_coeff(bits[0], &sign, &axis, &coeff) ;
 	//printf("sign %d; axis %d; coeff %g\n", sign, axis, coeff);
-	
+
 	if ( a[0] == '+')	{
-			sign = 1;		
+			sign = 1;
 	} else if ( a[0] == '-' ) {
-			sign = -1;	
+			sign = -1;
 	} else {
 			sign = 1;
 			index = 0;
-	} 
-		
+	}
+
 	if (axis == 1) {
 		*sx = sign*coeff;
 		*sy = 0.0;
@@ -172,18 +172,18 @@ static int dir_conv(const char *a, double *sx, double *sy)
 		printf("testing ; axis %d\n", axis);
 		return 1;
 	}
-	
+
 	//printf("first part: sx %f, sy %f \n", *sx, *sy );
 	index += strlen(bits[0]);
 
-	/* now parse the second part if it exists*/	
+	/* now parse the second part if it exists*/
 	if (n1 == 2) {
-		dir_conv_extract_coeff(bits[1], &sign, &axis, &coeff) ;	
+		dir_conv_extract_coeff(bits[1], &sign, &axis, &coeff) ;
 		//printf("sign %d; axis %d; coeff %g\n", sign, axis, coeff);
-		if ( a[index] == '+' ) {		
-			sign = 1;		
+		if ( a[index] == '+' ) {
+			sign = 1;
 		} else if ( a[index] == '-' ) {
-			sign = -1;	
+			sign = -1;
 		} else {
 			sign = 1;
 		}
@@ -195,11 +195,11 @@ static int dir_conv(const char *a, double *sx, double *sy)
 		} else {
 			return 1;
 		}
-		
+
 	}
-	
+
 	//printf("second part : sx %f, sy %f \n", *sx, *sy );
-	
+
 	return 0;
 }
 
@@ -566,7 +566,7 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 			panel->clen = v;
 			panel->clen_from = NULL;
 		}
-	
+
 	} else if ( strcmp(key, "coffset") == 0) {
 		panel->coffset = atof(val);
 	} else if ( strcmp(key, "res") == 0 ) {
@@ -743,7 +743,7 @@ struct detector *get_detector_geometry(const char *filename)
 		/* remove the blank spaces from the input */
 		strcpy(variable,bits[2]);
 		if (n1 > 3) {
-			//strcat(bits[2]," ");		    
+			//strcat(bits[2]," ");
 			for (i=3; i<n1;i++) {
 				    strcat(variable,bits[i]);
 			}
