@@ -57,11 +57,13 @@ float4 get_q(float fs, float ss, float res, float clen, float k,
 	kzn = k*(native_cos(tt)-1.0);
 
 	/* x divergence */
-	kx =  kxn*cos(xdiv) +kzn*sin(xdiv);
-	kz = -kxn*sin(xdiv) +kzn*cos(xdiv);
-	kxn = kx;  kzn = kz;
+	kx =  kxn*native_cos(xdiv) +kzn*native_sin(xdiv);
+	ky =  kyn;
+	kz = -kxn*native_sin(xdiv) +kzn*native_cos(xdiv);
+	kxn = kx;  kyn = ky;  kzn = kz;
 
 	/* y divergence */
+	kx =  kxn;
 	ky =  kyn*cos(ydiv) +kzn*sin(ydiv);
 	kz = -kyn*sin(ydiv) +kzn*cos(ydiv);
 

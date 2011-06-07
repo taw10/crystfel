@@ -412,7 +412,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 
 			/* x divergence */
 			q.u =  qn.u*cos(xdiv) +qn.w*sin(xdiv);
-			q.v = qn.v;
+			q.v =  qn.v;
 			q.w = -qn.u*sin(xdiv) +qn.w*cos(xdiv);
 
 			qn = q;
