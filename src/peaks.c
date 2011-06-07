@@ -246,11 +246,11 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 	/* The centroid is excitingly undefined if there is no intensity */
 	if ( centroid && (total != 0) ) {
-		*pfs = (double)fsct / total;
-		*pss = (double)ssct / total;
+		*pfs = ((double)fsct / total) + 0.5;
+		*pss = ((double)ssct / total) + 0.5;
 	} else {
-		*pfs = (double)cfs;
-		*pss = (double)css;
+		*pfs = (double)cfs + 0.5;
+		*pss = (double)css + 0.5;
 	}
 	if ( bgsub ) {
 		*intensity = total - pixel_counts*noise_mean;
