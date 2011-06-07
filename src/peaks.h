@@ -30,9 +30,6 @@ extern void integrate_reflections(struct image *image,
 extern int peak_sanity_check(struct image *image, UnitCell *cell,
                              int circular_domain, double domain_r);
 
-extern RefList *find_projected_peaks(struct image *image, UnitCell *cell,
-                                     int circular_domain, double domain_r);
-
 /* Exported so it can be poked by integration_check */
 extern int integrate_peak(struct image *image, int cfs, int css,
                           double *pfs, double *pss, double *intensity,

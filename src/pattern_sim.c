@@ -33,6 +33,7 @@
 #include "symmetry.h"
 #include "reflist.h"
 #include "reflist-utils.h"
+#include "geometry.h"
 
 
 static void show_help(const char *s)
@@ -547,23 +548,13 @@ int main(int argc, char *argv[])
 
 		if ( config_nearbragg ) {
 
-			/* Do EITHER: */
-
-			//image.div = beam->divergence;
-			//image.bw = beam->bandwidth;
-			//image.profile_radius = 0.0001e9;
-			//image.reflections = find_intersections(&image,
-			//                               image.indexed_cell, 0);
-
-			image.reflections = find_projected_peaks(&image,
-			                            image.indexed_cell, 0, 0.1);
+			image.div = image.beam->divergence;
+			image.bw = image.beam->bandwidth;
+			image.profile_radius = 0.0001e9;
+			image.reflections = find_intersections(&image,
+			                               image.indexed_cell, 0);
 
 			integrate_reflections(&image, 0, 0, 0);
-
-			/* OR */
-
-			//image.reflections = integrate_pixels(&image, 0, 0.1,
-			//                                     config_polar);
 
 		}
 

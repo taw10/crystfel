@@ -146,10 +146,6 @@ static void show_help(const char *s)
 "\n\n"
 "You can control what information is included in the output stream using\n"
 "' --record=<flag1>,<flag2>,<flag3>' and so on.  Possible flags are:\n\n"
-" pixels            Include a list of sums of pixel values within the\n"
-"                    integration domain, correcting for individual pixel\n"
-"                    solid angles.\n"
-"\n"
 " integrated        Include a list of reflection intensities, produced by\n"
 "                    integrating around predicted peak locations.\n"
 "\n"
@@ -160,8 +156,7 @@ static void show_help(const char *s)
 "\n"
 " peaksifnotindexed As 'peaks', but only if the pattern could NOT be indexed.\n"
 "\n\n"
-"The default is '--record=integrated'.  The flags 'pixels' and 'integrated'\n"
-"are mutually exclusive, as are the flags 'peaks' and 'peaksifindexed'.\n"
+"The default is '--record=integrated'.\n"
 "\n\n"
 "For more control over the process, you might need:\n\n"
 "     --cell-reduction=<m> Use <m> as the cell reduction method. Choose from:\n"
@@ -324,25 +319,18 @@ static void process_image(void *pp, int cookie)
 
 	/* Do EITHER: */
 
-	//image.div = beam->divergence;
-	//image.bw = beam->bandwidth;
-	//image.profile_radius = 0.0001e9;
-	//image.reflections = find_intersections(&image,
-	//                                       image.indexed_cell, 0);
 
 	if ( image.indexed_cell != NULL ) {
-		image.reflections = find_projected_peaks(&image,
-			                                 image.indexed_cell,
-			                                 0, 0.1);
+
+		image.div = beam->divergence;
+		image.bw = beam->bandwidth;
+		image.profile_radius = 0.0001e9;
+		image.reflections = find_intersections(&image,
+			                               image.indexed_cell, 0);
 
 		integrate_reflections(&image, config_polar,
 			              pargs->static_args.config_closer,
 			              pargs->static_args.config_bgsub);
-
-		/* OR */
-
-		//image.reflections = integrate_pixels(&image, 0, 0.1,
-		//                                     config_polar);
 
 	} else {
 
