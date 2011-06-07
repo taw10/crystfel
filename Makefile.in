@@ -193,15 +193,14 @@ am__src_pattern_sim_SOURCES_DIST = src/pattern_sim.c src/diffraction.c \
 	src/utils.c src/image.c src/cell.c src/hdf5-file.c \
 	src/detector.c src/peaks.c src/reflist-utils.c \
 	src/beam-parameters.c src/symmetry.c src/thread-pool.c \
-	src/reflist.c src/geometry.c src/diffraction-gpu.c \
-	src/cl-utils.c
+	src/reflist.c src/diffraction-gpu.c src/cl-utils.c
 am_src_pattern_sim_OBJECTS = src/pattern_sim.$(OBJEXT) \
 	src/diffraction.$(OBJEXT) src/utils.$(OBJEXT) \
 	src/image.$(OBJEXT) src/cell.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
 	src/detector.$(OBJEXT) src/peaks.$(OBJEXT) \
 	src/reflist-utils.$(OBJEXT) src/beam-parameters.$(OBJEXT) \
 	src/symmetry.$(OBJEXT) src/thread-pool.$(OBJEXT) \
-	src/reflist.$(OBJEXT) src/geometry.$(OBJEXT) $(am__objects_1)
+	src/reflist.$(OBJEXT) $(am__objects_1)
 src_pattern_sim_OBJECTS = $(am_src_pattern_sim_OBJECTS)
 src_pattern_sim_LDADD = $(LDADD)
 src_pattern_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
@@ -635,7 +634,7 @@ src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c \
 	src/utils.c src/image.c src/cell.c src/hdf5-file.c \
 	src/detector.c src/peaks.c src/reflist-utils.c \
 	src/beam-parameters.c src/symmetry.c src/thread-pool.c \
-	src/reflist.c src/geometry.c $(am__append_3)
+	src/reflist.c $(am__append_3)
 @HAVE_OPENCL_TRUE@tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c src/utils.c \
 @HAVE_OPENCL_TRUE@                              src/diffraction.c src/diffraction-gpu.c \
 @HAVE_OPENCL_TRUE@                              src/thread-pool.c src/cell.c src/cl-utils.c \

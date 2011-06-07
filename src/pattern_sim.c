@@ -33,7 +33,6 @@
 #include "symmetry.h"
 #include "reflist.h"
 #include "reflist-utils.h"
-#include "geometry.h"
 
 
 static void show_help(const char *s)
@@ -55,7 +54,6 @@ static void show_help(const char *s)
 " -g, --geometry=<file>     Get detector geometry from file.\n"
 " -b, --beam=<file>         Get beam parameters from file.\n"
 "\n"
-"     --near-bragg          Output h,k,l,I near Bragg conditions.\n"
 " -n, --number=<N>          Generate N images.  Default 1.\n"
 "     --no-images           Do not output any HDF5 files.\n"
 " -o, --output=<filename>   Output HDF5 filename.  Default: sim.h5.\n"
@@ -201,7 +199,6 @@ int main(int argc, char *argv[])
 	double *phases;
 	unsigned char *flags;
 	int config_simdetails = 0;
-	int config_nearbragg = 0;
 	int config_randomquat = 0;
 	int config_noimages = 0;
 	int config_nonoise = 0;
@@ -232,7 +229,6 @@ int main(int argc, char *argv[])
 		{"help",               0, NULL,               'h'},
 		{"simulation-details", 0, &config_simdetails,  1},
 		{"gpu",                0, &config_gpu,         1},
-		{"near-bragg",         0, &config_nearbragg,   1},
 		{"random-orientation", 0, NULL,               'r'},
 		{"number",             1, NULL,               'n'},
 		{"no-images",          0, &config_noimages,    1},
@@ -545,18 +541,6 @@ int main(int argc, char *argv[])
 		}
 
 		record_image(&image, !config_nonoise);
-
-		if ( config_nearbragg ) {
-
-			image.div = image.beam->divergence;
-			image.bw = image.beam->bandwidth;
-			image.profile_radius = 0.0001e9;
-			image.reflections = find_intersections(&image,
-			                               image.indexed_cell, 0);
-
-			integrate_reflections(&image, 0, 0, 0);
-
-		}
 
 		if ( powder_fn != NULL ) {
 

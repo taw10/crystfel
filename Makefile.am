@@ -41,8 +41,7 @@ src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c src/utils.c \
                           src/image.c src/cell.c src/hdf5-file.c \
                           src/detector.c src/peaks.c \
                           src/reflist-utils.c src/beam-parameters.c \
-                          src/symmetry.c src/thread-pool.c src/reflist.c \
-                          src/geometry.c
+                          src/symmetry.c src/thread-pool.c src/reflist.c
 if HAVE_OPENCL
 src_pattern_sim_SOURCES += src/diffraction-gpu.c src/cl-utils.c
 
