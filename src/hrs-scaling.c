@@ -324,7 +324,7 @@ static double iterate_scale(struct image *images, int n,
 		shifts = solve_by_eigenvalue_filtration(v, M);
 	} else {
 		shifts = gsl_vector_alloc(n);
-		for ( frame=0; frame<n-1; frame++ ) {
+		for ( frame=0; frame<n; frame++ ) {
 			double num, den;
 			num = gsl_vector_get(v, frame);
 			den = gsl_matrix_get(M, frame, frame);
