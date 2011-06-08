@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <ctype.h>
 
 #include "image.h"
 #include "utils.h"
@@ -33,119 +34,137 @@ static int atob(const char *a)
 }
 
 
-static int dir_conv_extract_coeff(const char *a, int *sign, int *axis,
-                                  double *coeff)
+static int assplode_algebraic(const char *a_orig, char ***pbits)
 {
-	int len;
-	int index = 1;
-	char tempstr[len];
-	double test=0.0;
-	int i;
+	int len, i;
+	int nexp;
+	char **bits;
+	char *a;
+	int idx, istr;
 
-	len = strlen(a);
-	for ( i=0; i<len-1; i++ ) tempstr[i] = '0';
-	tempstr[len-1] = '\0';
+	len = strlen(a_orig);
 
-	if ( a[0] == '+') {
-		*sign = 1;
-		printf("found +\n");
-	} else if ( strcmp(&a[0],"-") == 0 ) {
-		*sign = -1;
-		printf("found -\n");
+	/* Add plus at start if no sign there already */
+	if ( (a_orig[0] != '+') && (a_orig[0] != '-') ) {
+		len += 1;
+		a = malloc(len+1);
+		snprintf(a, len+1, "+%s", a_orig);
+		a[len] = '\0';
+
 	} else {
-		*sign = 1;
-		index = 0;
+		a = strdup(a_orig);
 	}
 
-	if ( (len - index) < 2 ) {
+	/* Count the expressions */
+	nexp = 0;
+	for ( i=0; i<len; i++ ) {
+		if ( (a[i] == '+') || (a[i] == '-') ) nexp++;
+	}
 
-		*coeff = 1.0;
+	bits = calloc(nexp, sizeof(char *));
 
-	} else if ( (len - index) > 2 ) {
+	/* Break the string up */
+	idx = -1;
+	istr = 0;
+	assert((a[0] == '+') || (a[0] == '-'));
+	for ( i=0; i<len; i++ ) {
 
-		if (index == 0 ) {
-			strncpy(tempstr,a,len-2);
-		} else {
-			strncpy(tempstr,a+1,len-2);
+		char ch;
+
+		ch = a[i];
+
+		if ( (ch == '+') || (ch == '-') ) {
+			if ( idx >= 0 ) bits[idx][istr] = '\0';
+			idx++;
+			bits[idx] = malloc(len+1);
+			istr = 0;
 		}
 
-		tempstr[len] = '\0';
-		test = atof(tempstr);
-		*coeff = test;
+		if ( !isdigit(ch) && (ch != '.') && (ch != 'x') && (ch != 'y')
+		  && (ch != '+') && (ch != '-') )
+		{
+			ERROR("Invalid character '%C' found.\n", ch);
+			return 0;
+		}
+
+		assert(idx >= 0);
+		bits[idx][istr++] = ch;
 
 	}
+	if ( idx >= 0 ) bits[idx][istr] = '\0';
 
-	if ( a[len-1] == 'x' ) {
-		*axis = 1;
-	} else if ( a[len-1] == 'y' ) {
-		*axis = 0;
-	}
+	*pbits = bits;
+	free(a);
 
-	return 0;
+	return nexp;
 }
 
 
-/* Parses the scan directions (accounting for possible rotation) */
-/* Assumes all white spaces have been already removed */
-/* FIXME: doesn't handle many errors */
+/* Parses the scan directions (accounting for possible rotation)
+ * Assumes all white spaces have been already removed */
 static int dir_conv(const char *a, double *sx, double *sy)
 {
-	int n1;
+	int n;
 	char **bits;
-	int axis = 2;
-	int sign = 0;
-	double coeff = 0.0;
-	int index = 1;
+	int i;
 
-	n1 = assplode(a, "+-\t", &bits, ASSPLODE_NONE);
+	*sx = 0.0;  *sy = 0.0;
 
-	/* Parse the first entry */
-	dir_conv_extract_coeff(bits[0], &sign, &axis, &coeff) ;
+	n = assplode_algebraic(a, &bits);
 
-	if ( a[0] == '+') {
-		sign = 1;
-	} else if ( a[0] == '-' ) {
-		sign = -1;
-	} else {
-		sign = 1;
-		index = 0;
-	}
-
-	if ( axis == 1 ) {
-		*sx = sign*coeff;
-		*sy = 0.0;
-	} else if (axis == 0) {
-		*sx = 0.0;
-		*sy = sign*coeff;
-	} else {
-		printf("testing ; axis %d\n", axis);
+	if ( n == 0 ) {
+		ERROR("Invalid direction '%s'\n", a);
 		return 1;
 	}
 
-	index += strlen(bits[0]);
+	for ( i=0; i<n; i++ ) {
 
-	/* Now parse the second part if it exist s*/
-	if ( n1 == 2 ) {
+		int len;
+		double val;
+		char axis;
+		int j;
 
-		dir_conv_extract_coeff(bits[1], &sign, &axis, &coeff) ;
-
-		if ( a[index] == '+' ) {
-			sign = 1;
-		} else if ( a[index] == '-' ) {
-			sign = -1;
-		} else {
-			sign = 1;
-		}
-
-		if ( axis == 1 ) {
-			*sx = sign*coeff;
-		} else if ( axis == 0 ) {
-			*sy = sign*coeff;
-		} else {
+		len = strlen(bits[i]);
+		assert(len != 0);
+		axis = bits[i][len-1];
+		if ( (axis != 'x') && (axis != 'y') ) {
+			ERROR("Invalid symbol '%C' - must be x or y.\n", axis);
 			return 1;
 		}
 
+		/* Chop off the symbol now it's dealt with */
+		bits[i][len-1] = '\0';
+
+		/* Check for anything that isn't part of a number */
+		for ( j=0; j<strlen(bits[i]); j++ ) {
+			if ( isdigit(bits[i][j]) ) continue;
+			if ( bits[i][j] == '+' ) continue;
+			if ( bits[i][j] == '-' ) continue;
+			if ( bits[i][j] == '.' ) continue;
+			ERROR("Invalid coefficient '%s'\n", bits[i]);
+		}
+
+		if ( strlen(bits[i]) == 0 ) {
+			val = 1.0;
+		} else {
+			val = atof(bits[i]);
+		}
+		if ( strlen(bits[i]) == 1 ) {
+			if ( bits[i][0] == '+' ) val = 1.0;
+			if ( bits[i][0] == '-' ) val = -1.0;
+		}
+		if ( axis == 'x' ) {
+			*sx += val;
+		} else if ( axis == 'y' ) {
+			*sy += val;
+		}
+
+		free(bits[i]);
+
 	}
+	free(bits);
+
+	//STATUS("'%s' -> %5.2fx + %5.2fy\n", a, *sx, *sy);
 
 	return 0;
 }
@@ -535,14 +554,12 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 		panel->no_index = atob(val);
 	} else if ( strcmp(key, "fs") == 0 ) {
 		if ( dir_conv(val, &panel->fsx, &panel->fsy) != 0 ) {
-			ERROR("Invalid fast scan direction '%s'\n",
-			      val);
+			ERROR("Invalid fast scan direction '%s'\n", val);
 			reject = 1;
 		}
 	} else if ( strcmp(key, "ss") == 0 ) {
 		if ( dir_conv(val, &panel->ssx, &panel->ssy) != 0 ) {
-			ERROR("Invalid slow scan direction '%s'\n",
-			      val);
+			ERROR("Invalid slow scan direction '%s'\n", val);
 			reject = 1;
 		}
 	} else {
@@ -599,7 +616,7 @@ static void parse_toplevel(struct detector *det, const char *key,
 			det->mask_good = v;
 		}
 
-	}  else if ( strcmp(key, "peak_sep") == 0 ) {
+	} else if ( strcmp(key, "peak_sep") == 0 ) {
 		det->defaults.peak_sep = atof(val);
 	} else if ( strcmp(key, "integr_radius") == 0 ) {
 		det->defaults.integr_radius = atof(val);
@@ -615,7 +632,6 @@ struct detector *get_detector_geometry(const char *filename)
 	struct detector *det;
 	char *rval;
 	char **bits;
-        char variable[128];
 	int i;
 	int reject = 0;
 	int x, y, max_fs, max_ss;
@@ -628,11 +644,6 @@ struct detector *get_detector_geometry(const char *filename)
 		fclose(fh);
 		return NULL;
 	}
-
-	variable[0] = '\0';
-	/*for (i=0;i<128;i++){
-		variable[i] = 'a';
-	} */
 
 	det->n_panels = 0;
 	det->panels = NULL;
@@ -670,6 +681,7 @@ struct detector *get_detector_geometry(const char *filename)
 		struct badregion *badregion = NULL;
 		struct panel *panel = NULL;
 		char *key;
+		char wholeval[1024];
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) break;
@@ -684,12 +696,11 @@ struct detector *get_detector_geometry(const char *filename)
 			continue;
 		}
 
-		/* Remove the blank spaces from the input */
-		strcpy(variable,bits[2]);
-		if ( n1 > 3 ) {
-			for ( i=3; i<n1; i++ ) {
-				strcat(variable,bits[i]);
-			}
+		/* Stitch the pieces of the "value" back together */
+		wholeval[0] = '\0';  /* Empty string */
+		for ( i=2; i<n1; i++ ) {
+			if ( bits[i][0] == ';' ) break;  /* Stop on comment */
+			strncat(wholeval, bits[i], 1023);
 		}
 
 		if ( bits[1][0] != '=' ) {
@@ -724,11 +735,11 @@ struct detector *get_detector_geometry(const char *filename)
 		key = path[1];
 
 		if ( panel != NULL ) {
-			if ( parse_field_for_panel(panel, path[1], variable) ) {
+			if ( parse_field_for_panel(panel, path[1], wholeval) ) {
 				reject = 1;
 			}
 		} else {
-			if ( parse_field_bad(badregion, path[1], variable) ) {
+			if ( parse_field_bad(badregion, path[1], wholeval) ) {
 				reject = 1;
 			}
 		}
@@ -1105,8 +1116,6 @@ int write_detector_geometry(const char *filename, struct detector *det)
 
 	for ( pi=0; pi<det->n_panels; pi++) {
 
-		char signx,signy;
-
 		p = &(det->panels[pi]);
 
 		if ( p == NULL ) return 4;
@@ -1119,38 +1128,8 @@ int write_detector_geometry(const char *filename, struct detector *det)
 		fprintf(fh, "%s/res = %g\n", p->name, p->res);
 		fprintf(fh, "%s/peak_sep = %g\n", p->name, p->peak_sep);
 		fprintf(fh, "%s/clen = %s\n", p->name, p->clen_from);
-
-		if ( p->fsx >= 0 ) {
-			signx='+';
-		} else {
-			signx=' ';
-		}
-
-
-		if ( p->fsy >= 0 ) {
-			signy='+';
-		} else {
-			signy=' ';
-		}
-
-		fprintf(fh, "%s/fs = %C%fx%C%fy\n", p->name,
-		        signx, p->fsx, signy, p->fsy);
-
-		if ( p->ssx >= 0 ) {
-			signx='+';
-		} else {
-			signx=' ';
-		}
-
-		if ( p->ssy >= 0 ) {
-			signy='+';
-		} else {
-			signy=' ';
-		}
-
-		fprintf(fh, "%s/ss = %C%fx%C%fy\n", p->name,
-		        signx, p->ssx, signy, p->ssy);
-
+		fprintf(fh, "%s/fs = %+fx %+fy\n", p->name, p->fsx, p->fsy);
+		fprintf(fh, "%s/ss = %+fx %+fy\n", p->name, p->ssx, p->ssy);
 		fprintf(fh, "%s/corner_x = %g\n", p->name, p->cnx);
 		fprintf(fh, "%s/corner_y = %g\n", p->name, p->cny);
 		fprintf(fh, "%s/no_index = %d\n", p->name, p->no_index);
