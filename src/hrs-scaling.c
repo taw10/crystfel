@@ -259,7 +259,6 @@ static double iterate_scale(struct image *images, int n,
 			vha = vha_arr[a];
 			uh = lookup_intensity(uh_arr, h, k, l);
 
-
 			if ( !reference ) {
 				double vh;
 				vh = lookup_intensity(vh_arr, h, k, l);
