@@ -325,10 +325,18 @@ static double iterate_scale(struct image *images, int n,
 	} else {
 		shifts = gsl_vector_alloc(n);
 		for ( frame=0; frame<n; frame++ ) {
-			double num, den;
+
+			double num, den, sh;
+
 			num = gsl_vector_get(v, frame);
 			den = gsl_matrix_get(M, frame, frame);
-			gsl_vector_set(shifts, frame, num/den);
+			sh = num/den;
+
+			if ( isnan(sh) ) {
+				gsl_vector_set(shifts, frame, 0.0);
+			} else {
+				gsl_vector_set(shifts, frame, sh);
+			}
 		}
 	}
 
