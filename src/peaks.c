@@ -568,6 +568,8 @@ void integrate_reflections(struct image *image, int polar, int use_closer,
 			set_int(refl, intensity);
 			set_esd_intensity(refl, sigma);
 			set_redundancy(refl, 1);
+		} else {
+			set_redundancy(refl, 0);
 		}
 
 	}
