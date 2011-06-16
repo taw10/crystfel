@@ -91,7 +91,7 @@ static void s_uhavha(signed int hat, signed int kat, signed int lat,
 		if ( !get_scalable(refl) ) continue;
 
 		ic = get_intensity(refl) / get_partiality(refl);
-		sigi = sqrt(fabs(ic)); /* FIXME */
+		sigi = fabs(ic)/10.0; /* FIXME */
 
 		uha_val += 1.0 / pow(sigi, 2.0);
 		vha_val += ic / pow(sigi, 2.0);
@@ -353,6 +353,9 @@ static double iterate_scale(struct image *images, int n,
 
 		images[frame].osf += shift;
 
+		STATUS("Shift %i: %5.2f: -> %5.2f\n",
+		       frame, shift, images[frame].osf);
+
 		if ( fabs(shift) > fabs(max_shift) ) {
 			max_shift = fabs(shift);
 		}
@@ -461,7 +464,7 @@ RefList *scale_intensities(struct image *images, int n, const char *sym,
 		STATUS("Scaling iteration %2i: max shift = %5.2f\n",
 		       i, max_shift);
 		i++;
-		normalise_osfs(images, n);
+		//normalise_osfs(images, n);
 
 	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );
 

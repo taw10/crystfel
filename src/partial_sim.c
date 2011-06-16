@@ -61,6 +61,7 @@ static void calculate_partials(RefList *partial, double osf,
 {
 	Reflection *refl;
 	RefListIterator *iter;
+	int first = 1;
 
 	for ( refl = first_refl(partial, &iter);
 	      refl != NULL;
@@ -74,6 +75,7 @@ static void calculate_partials(RefList *partial, double osf,
 		get_indices(refl, &h, &k, &l);
 		get_asymm(h, k, l, &h, &k, &l, sym);
 		p = get_partiality(refl);
+		p = 1.0; /* FIXME!!! */
 
 		rfull = find_refl(full, h, k, l);
 		if ( rfull == NULL ) {
@@ -82,6 +84,9 @@ static void calculate_partials(RefList *partial, double osf,
 			Ip = osf * p * get_intensity(rfull);
 			set_int(refl, Ip);
 		}
+
+		if ( !first ) set_redundancy(refl, 0);
+		first = 0;
 
 	}
 }
@@ -275,6 +280,7 @@ int main(int argc, char *argv[])
 		} else {
 			osf = 2.0;
 		}
+		STATUS("Image %i scale factor %f\n", i, osf);
 
 		/* Set up a random orientation */
 		orientation = random_quaternion();
