@@ -7,10 +7,8 @@
 .\"
 
 .TH CRYSTFEL\_GEOMETRY 1
-.SH NAME
-CrystFEL detector geometry files
 
-.SH OVERVIEW
+.SH CRYSTFEL DETECTOR GEOMETRY FILES
 
 The detector geometry is taken from a text file rather than hardcoded into the
 program.  Programs which care about the geometry (particularly indexamajig,
@@ -37,7 +35,9 @@ of pixel values in the HDF5 file, defined in terms only of the "fast scan" and
 "slow scan" directions, and the laboratory coordinate system defined as follows:
 
 +z is the beam direction, and points along the beam (i.e. away from the source)
+.br
 +y points towards the zenith (ceiling).
+.br
 +x completes the right-handed coordinate system.
 
 Naively speaking, this means that CrystFEL at the images from the "into the
@@ -50,73 +50,119 @@ form:
 ; Lines which should be ignored start with a semicolon.
 
 ; The name before the slash indicates which panel is referred to.  You can use
+.br
 ; any name as long as it doesn't start with "bad" (see below).
+.br
 ; The range of pixels in the HDF5 file which correspond to a panel are given:
+.br
 panel0/min_fs = 0
+.br
 panel0/min_ss = 0
+.br
 panel0/max_fs = 193
+.br
 panel0/max_ss = 184
 
 ; The readout direction (x, y or 0).  If more than three peaks are found in
+.br
 ; the same readout region, they are all discarded.  This helps to avoid
+.br
 ; problems due to streaks appearing along the readout direction.
+.br
 ; If the badrow direction is '-', then the culling described above will not
+.br
 ; be performed for this panel.
+.br
 panel0/badrow_direction = -
 
 ; The resolution (in pixels per metre) for this panel
+.br
 panel0/res = 9090.91
 
 ; The characteristic peak separation in pixels.  The peak detection will assume
+.br
 ; that genuine peaks are separated by at least this amount.
+.br
 panel0/peak_sep = 6.0
 
 ; You need to specify the peak integration radius, which should be a little
+.br
 ; larger than the actual radii of the peaks in pixels
+.br
 panel0/integr_radius = 2.0
 
 ; The camera length (in metres) for this panel
+.br
 ; You can also specify the HDF path to a scalar floating point value containing
+.br
 ; the camera length in millimetres.
+.br
 panel0/clen = /LCLS/detectorPosition
 
 ; For this panel, the fast and slow scan directions correspond to the given
+.br
 ; directions in the lab coordinate system described above, measured in pixels.
+.br
 panel0/fs = +y
+.br
 panel0/ss = -x
 
 ; The corner of this panel, defined as the first point in the panel to appear in
+.br
 ; the HDF5 file, is now given a position in the lab coordinate system.
+.br
 ; Note that "first point in the panel" is a conceptual simplification.  We refer
+.br
 ; to that corner, and to the very corner of the pixel - NOT, for example, to the
+.br
 ; centre of the first pixel to appear.
+.br
 panel0/corner_x = 429.39
+.br
 panel0/corner_y = -17.30
 
 ; You can suppress indexing for this panel if required, by setting "no_index" to
+.br
 ; "true" or "1".
+.br
 panel0/no_index = 0
 
 ; You can also specify bad regions.  Peaks with centroid locations within such
+.br
 ; a region will not be integrated nor indexed.  Bad regions are specified in
+.br
 ; pixel units, but in the lab coordinate system (i.e. "y" points at the ceiling,
+.br
 ; "z" is the beam direction and "x" completes the right-handed system).
+.br
 badregionA/min_x = -20.0
+.br
 badregionA/max_x = +20.0
+.br
 badregionA/min_y = -100.0
+.br
 badregionA/max_y = +100.0
 
 ; If you have a bad pixel mask, you can include it in the HDF5 file as an
+.br
 ; unsigned 16-bit integer array of the same size as the data.  You need to
+.br
 ; give its path within each HDF5 file, and two bitmasks.  The pixel is
+.br
 ; considered good if all of the bits which are set in "mask_good" are set, AND
+.br
 ; if none of the bits which are set in "mask_bad" are set.
+.br
 mask = /processing/hitfinder/masks
+.br
 mask_good = 0x27
+.br
 mask_bad = 0x00
 
 ; Any of the per-panel values can be given without a panel prefix, for example:
+.br
 peak_sep = 6.0
+.br
 ; in which case the value will be used for all *subsequent* panels.
 
 

@@ -29,7 +29,11 @@ indexing, and that you'd like the program to output a list of intensities for
 each successfully indexed pattern.  Here is what the minimal use might look like
 on the command line:
 
-indexamajig -i mypatterns.lst -j 10 -g mygeometry.geom --indexing=mosflm,dirax --peaks=hdf5 --cell-reduction=reduce -b myxfel..beam -o test.stream -p mycell.pdb --record=integrated
+indexamajig -i mypatterns.lst -j 10 -g mygeometry.geom \
+.br
+            --indexing=mosflm,dirax --peaks=hdf5 --cell-reduction=reduce
+.br
+            -b myxfel.beam -o test.stream -p mycell.pdb --record=integrated
 
 More typical use includes all the above, but might also include a noise or
 common mode filter (--filter-noise or --filter-cm respectively) if detector
@@ -46,21 +50,16 @@ array, where the first two columns contain fast scan and slow scan coordinates
 at the given location.  The value will be spread in a small cross centred on
 that location.
 
-See doc/geometry for information about how to create a geometry description
-file.
+See `man crystfel_geometry' for information about how to create a geometry description file.
 
 You can control what information is included in the output stream using
 ' --record=<flags>'.  Possible flags are:
 
- pixels            Include a list of sums of pixel values within the
-                    integration domain, correcting for individual pixel
-                    solid angles.
-
  integrated        Include a list of reflection intensities, produced by
-                    integrating around predicted peak locations.
+                   integrating around predicted peak locations.
 
  peaks             Include peak locations and intensities from the peak
-                    search.
+                   search.
 
  peaksifindexed    As 'peaks', but only if the pattern could be indexed.
 
