@@ -1,12 +1,25 @@
+.\"
+.\" pattern_sim man page
+.\"
+.\" (c) 2009-2011 Thomas White <taw@physics.org>
+.\"
+.\" Part of CrystFEL - crystallography with a FEL
+.\"
+
+.TH PATTERN\_SIM 1
+.SH NAME
+pattern\_sim \- Simulation of nanocrystallographic diffraction patterns
+.SH SYNOPSIS
+.PP
+.B pattern\_sim
+[options]
+
+.SH DESCRIPTION
+
 pattern_sim does not know about symmetry, so your input reflection list
 (give with "-i") must be expanded.  You can do this with:
 
 $ get_hkl -i myfile.hkl -o output.hkl -y mypointgroup -e 1
-
-
-
-The symmetry of the molecular model (the space group)
------------------------------------------------------
 
 get_hkl does not currently understand symmetry, which means you'll have to
 expand any molecular model (the PDB) out to P1 to get the correct results.  You
@@ -18,10 +31,6 @@ $ echo symgen P63 | pdbset xyzin model.pdb xyzout model-P1.pdb
 While on this subject, you might also want to include hydrogens in the model
 using something like:
 $ echo HYDROGENS APPEND | hgen xyzin model.pdb xyzout model-with-H.pdb
-
-
-A Note about Unit Cell Settings
--------------------------------
 
 Please be sure to read the "Note about Unit Cell Settings" in the documentation
 for indexamajig.

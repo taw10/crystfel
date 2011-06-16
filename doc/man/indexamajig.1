@@ -1,5 +1,20 @@
-indexamajig - bulk indexing and data reduction program
-------------------------------------------------------
+.\"
+.\" indexamajig man page
+.\"
+.\" (c) 2009-2011 Thomas White <taw@physics.org>
+.\"
+.\" Part of CrystFEL - crystallography with a FEL
+.\"
+
+.TH INDEXAMAJIG 1
+.SH NAME
+indexamajig \- bulk indexing and data reduction program
+.SH SYNOPSIS
+.PP
+.B indexamajig
+[options]
+
+.SH DESCRIPTION
 
 The "indexamajig" program takes as input a list of diffraction image files,
 currently in HDF5 format.  For each image, it attempts to find peaks and then
@@ -14,13 +29,7 @@ indexing, and that you'd like the program to output a list of intensities for
 each successfully indexed pattern.  Here is what the minimal use might look like
 on the command line:
 
-indexamajig -i mypatterns.lst -j 10 \
-            -g mygeometry.geom \
-            --indexing=mosflm,dirax --peaks=hdf5 \
-            --cell-reduction=reduce \
-            -b myxfel..beam \
-            -o test.stream -p mycell.pdb \
-            --record=integrated
+indexamajig -i mypatterns.lst -j 10 -g mygeometry.geom --indexing=mosflm,dirax --peaks=hdf5 --cell-reduction=reduce -b myxfel..beam -o test.stream -p mycell.pdb --record=integrated
 
 More typical use includes all the above, but might also include a noise or
 common mode filter (--filter-noise or --filter-cm respectively) if detector
@@ -34,8 +43,8 @@ a method for estimating the intensities of saturated peaks.  It goes in
 /processing/hitfinder/peakinfo_saturated, and should be an n*3 two dimensional
 array, where the first two columns contain fast scan and slow scan coordinates
 (in that order) and the third contains the value which should belong in a peak
-at the given location.  The value will be divided by 5 and spread in a small
-cross centred on that location.
+at the given location.  The value will be spread in a small cross centred on
+that location.
 
 See doc/geometry for information about how to create a geometry description
 file.
@@ -65,9 +74,7 @@ which could not be indexed, you might use
 "--record=integrated,peaksifnotindexed" and then use "check-peak-detection" from
 the "scripts" folder to visualise the results of the peak detection.
 
-
-Peak Detection
---------------
+.SH PEAK DETECTION
 
 You can control the peak detection on the command line.  Firstly, you can choose
 the peak detection method using "--peaks=<method>".  Currently, two possible
@@ -96,8 +103,7 @@ You can suppress peak detection altogether for a panel in the geometry file by
 specifying the "no_index" value for the panel as non-zero.
 
 
-Indexing Methods
-----------------
+.SH INDEXING METHODS
 
 You can choose between a variety of indexing methods.  You can choose more than
 one method, in which case each method will be tried in turn until the later cell
@@ -111,9 +117,7 @@ have the dirax or ipmosflm binaries in your PATH.
 
 Example:  --indexing=dirax,mosflm
 
-
-Cell Reduction
---------------
+.SH CELL REDUCTION
 
 You can choose from various options for cell reduction with the
 "--cell-reduction=" option.  The choices are "none", "reduce" and "compare".
@@ -158,8 +162,7 @@ F), you should be careful when using "compare" for the cell reduction, since
 be converted to the non-primitive conventional cell from the PDB.
 
 
-Tuning CPU affinities for NUMA hardware
----------------------------------------
+.SH TUNING CPU AFFINITIES FOR NUMA HARDWARE
 
 If you are running indexamajig on a NUMA (non-uniform memory architecture)
 machine, a performance gain can sometimes be made by preventing the kernel from
@@ -203,16 +206,14 @@ This would dedicate half of the CPUs to one instance, and the other half to the
 other.
 
 
-A Note about Unit Cell Settings
--------------------------------
+.SH A NOTE ABOUT UNIT CELL SETTINGS
 
 CrystFEL's core symmetry module only knows about one setting for each unit cell.
 You must use the same setting.  That means that the unique axis (for cells which
 have one) must be "c".
 
 
-"Gotchas"
----------
+.SH KNOWN BUGS
 
 Don't run more than one indexamajig jobs simultaneously in the same working
 directory - they'll overwrite each other's DirAx or MOSFLM files, causing subtle

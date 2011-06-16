@@ -1,5 +1,20 @@
-process_hkl - data scaling and merging program
-----------------------------------------------
+.\"
+.\" process_hkl man page
+.\"
+.\" (c) 2009-2011 Thomas White <taw@physics.org>
+.\"
+.\" Part of CrystFEL - crystallography with a FEL
+.\"
+
+.TH PROCESS\_HKL 1
+.SH NAME
+process\_hkl \- Monte Carlo merging program
+.SH SYNOPSIS
+.PP
+.B process\_hkl
+-i mypatterns.stream -o mydata.hkl -y mypointgroup [options]
+
+.SH DESCRIPTION
 
 This program takes as input the data stream from "indexamajig".  It merges the
 many individual intensities together to form a single list of reflection
@@ -9,9 +24,7 @@ Typical usage is of the form:
 
 $ process_hkl -i mypatterns.stream -o mydata.hkl -y mypointgroup
 
-
-How to choose the point group
------------------------------
+.SH CHOICE OF POINT GROUP FOR MERGING
 
 One of the main features of serial crystallography is that the orientations of
 individual crystals are random.  That means that the orientation of each
@@ -33,14 +46,6 @@ Laue class nor the holohedral Laue class).  If you use the "-a" option to give
 this information, process_hkl will try to resolve the remaining orientational
 ambiguities to get from the apparent symmetry to the true symmetry (given with
 "-y").  Currently, it won't do a very good job of it.
-
-Commit number 5cdcaad6277c on the 13th of October 2010 altered indexamajig such
-that it always finds a right-handed unit cell.  That means that no ambiguity due
-to inversion exists in streams produced by versions later than that.  For
-streams produced by copies of indexamajig older than that, you DO need to use
-the corresponding holohedral Laue class (not point group) as the apparent
-symmetry (with -a).  However, since the ambiguity resolution used by process_hkl
-doesn't really work, this detail is somewhat academic.
 
 The document twin-calculator.pdf contains more detailed information about this
 issue, as well as tables which contain all the required information.

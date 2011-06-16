@@ -151,11 +151,11 @@ crystfel_DATA = data/diffraction.cl data/defs.h data/hdfsee.ui
 
 EXTRA_DIST += $(crystfel_DATA)
 
+man_MANS = doc/man/indexamajig.1 doc/man/process_hkl.1 doc/man/pattern_sim.1 \
+           doc/man/crystfel_geometry.1
+
 crystfeldocdir = $(docdir)
-crystfeldoc_DATA = doc/geometry.txt doc/indexamajig.txt doc/pattern_sim.txt \
-                   doc/process_hkl.txt doc/symmetry.txt \
-                   doc/twin-calculator.pdf \
-                   doc/0-INDEX doc/examples/lcls-dec.geom \
+crystfeldoc_DATA = doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
                    doc/examples/lcls-dec.beam \
                    doc/examples/lcls-june-r0013-r0128.geom \
                    doc/examples/lcls-june.beam \
@@ -165,9 +165,7 @@ crystfeldoc_DATA = doc/geometry.txt doc/indexamajig.txt doc/pattern_sim.txt \
                    doc/examples/cspad-feb2011.geom \
                    doc/examples/lcls-cxi-9keV.beam
 
-EXTRA_DIST += doc/geometry.txt doc/indexamajig.txt doc/pattern_sim.txt \
-              doc/process_hkl.txt doc/symmetry.txt doc/twin-calculator.pdf \
-              doc/0-INDEX doc/examples/lcls-dec.geom \
+EXTRA_DIST += doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
               doc/examples/lcls-june-r0013-r0128.geom \
               doc/examples/lcls-xpp-estimate.geom doc/examples/simple.geom \
               doc/examples/lcls-dec.beam doc/examples/lcls-june.beam \
