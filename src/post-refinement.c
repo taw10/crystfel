@@ -337,7 +337,7 @@ static double mean_partial_dev(struct image *image,
 		if ( !get_scalable(refl) ) continue;
 
 		get_indices(refl, &h, &k, &l);
-		assert ((h!=0) || (k!=0) || (l!=0));
+		assert((h!=0) || (k!=0) || (l!=0));
 
 		if ( !get_scalable(refl) ) continue;
 
