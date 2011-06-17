@@ -91,47 +91,41 @@ static void s_uhavha(signed int hat, signed int kat, signed int lat,
 		if ( !get_scalable(refl) ) continue;
 
 		ic = get_intensity(refl) / get_partiality(refl);
-		sigi = fabs(ic)/10.0; /* FIXME */
+		sigi = 10.0; /* FIXME */
 
 		uha_val += 1.0 / pow(sigi, 2.0);
 		vha_val += ic / pow(sigi, 2.0);
 
 	}
 
-	if ( uha != NULL ) *uha = uha_val;
-	if ( vha != NULL ) *vha = vha_val;
+	*uha = uha_val;
+	*vha = vha_val;
 }
 
 
-static double s_uh(struct image *images, int n,
-                   signed int h, signed int k, signed int l, const char *sym)
+static void s_uhvh(struct image *images, int n,
+                   signed int h, signed int k, signed int l, const char *sym,
+                   double *uhp, double *vhp)
 {
 	int a;
-	double val = 0.0;
+	double uh = 0.0;
+	double vh = 0.0;
 
 	for ( a=0; a<n; a++ ) {
-		double uha;
-		s_uhavha(h, k, l, &images[a], &uha, NULL);
-		val += pow(images[a].osf, 2.0) * uha;
+
+		double uha, vha;
+
+		s_uhavha(h, k, l, &images[a], &uha, &vha);
+
+		uh += pow(images[a].osf, 2.0) * uha;
+		vh += images[a].osf * vha;
+		STATUS("uha = %e\n", uha);
+		STATUS("vha = %e\n", vha);
+
 	}
 
-	return val;
-}
-
-
-static double s_vh(struct image *images, int n,
-                   signed int h, signed int k, signed int l, const char *sym)
-{
-	int a;
-	double val = 0.0;
-
-	for ( a=0; a<n; a++ ) {
-		double vha;
-		s_uhavha(h, k, l, &images[a], NULL, &vha);
-		val += images[a].osf * vha;
-	}
-
-	return val;
+	*uhp = uh;
+	*vhp = vh;
 }
 
 
@@ -216,8 +210,7 @@ static double iterate_scale(struct image *images, int n,
 		double uh, vh;
 		struct refl_item *it = get_item(obs, h);
 
-		uh = s_uh(images, n, it->h, it->k, it->l, sym);
-		vh = s_vh(images, n, it->h, it->k, it->l, sym);
+		s_uhvh(images, n, it->h, it->k, it->l, sym, &uh, &vh);
 
 		set_intensity(uh_arr, it->h, it->k, it->l, uh);
 		set_intensity(vh_arr, it->h, it->k, it->l, vh);
