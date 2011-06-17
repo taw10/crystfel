@@ -175,6 +175,7 @@ int main(int argc, char *argv[])
 	int n_usable_patterns = 0;
 	char *reference_file = NULL;
 	double *reference = NULL;
+	RefList *reference_list = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -283,14 +284,14 @@ int main(int argc, char *argv[])
 	if ( reference_file != NULL ) {
 
 		RefList *list;
-		RefList *symmed;
+
 		list = read_reflections(reference_file);
 		free(reference_file);
 		if ( list == NULL ) return 1;
-		symmed = asymmetric_indices(list, sym);
+		reference_list = asymmetric_indices(list, sym);
 		reflist_free(list);
-		reference = intensities_from_list(symmed);
-		reflist_free(symmed);
+		reference = intensities_from_list(reference_list);
+
 	}
 
 	n_total_patterns = count_patterns(fh);
@@ -429,11 +430,11 @@ int main(int argc, char *argv[])
 			/* Nothing will be written later */
 		}
 
+		if ( reference == NULL ) reference_list = full;
+
 		/* Refine the geometry of all patterns to get the best fit */
-		/* FIXME: Refine against reference intensity if present */
-		/* FIXME: Speedup by using array instead of RefList for 'full'? */
-		refine_all(images, n_total_patterns, det, sym, scalable, full,
-		           nthreads, fhg, fhp);
+		refine_all(images, n_usable_patterns, det, sym, scalable,
+		           reference_list, nthreads, fhg, fhp);
 
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
@@ -465,6 +466,7 @@ int main(int argc, char *argv[])
 	free(beam);
 	free(cref);
 	free(reference);
+	reflist_free(reference_list);
 	for ( i=0; i<n_usable_patterns; i++ ) {
 		cell_free(images[i].indexed_cell);
 		free(images[i].filename);
