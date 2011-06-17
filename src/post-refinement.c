@@ -367,11 +367,15 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 {
 	double max_shift, dev;
 	int i;
-	const int verbose = 0;
+	const int verbose = 1;
+	int nexp, nfound, nnotfound;
+
+	update_partialities(image, sym, NULL, &nexp, &nfound, &nnotfound);
 
 	if ( verbose ) {
 		dev = mean_partial_dev(image, full, sym);
-		STATUS("PR starting dev = %5.2f\n", dev);
+		STATUS("PR starting dev = %5.2f (%i out of %i found)\n",
+		       dev, nfound, nexp);
 	}
 
 	i = 0;
@@ -381,12 +385,14 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 
 		max_shift = pr_iterate(image, full, sym);
 
-		update_partialities(image, sym, NULL, NULL, NULL, NULL);
+		update_partialities(image, sym, NULL,
+		                    &nexp, &nfound, &nnotfound);
 
 		if ( verbose ) {
 			dev = mean_partial_dev(image, full, sym);
 			STATUS("PR Iteration %2i: max shift = %5.2f"
-			       " dev = %5.2f\n", i+1, max_shift, dev);
+			       " dev = %5.2f (%i out of %i found)\n",
+			       i+1, max_shift, dev, nfound, nexp);
 		}
 
 		i++;
