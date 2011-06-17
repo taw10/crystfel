@@ -32,7 +32,7 @@
 
 
 /* Maximum number of iterations of NLSq scaling per macrocycle. */
-#define MAX_CYCLES (30)
+#define MAX_CYCLES (10)
 
 
 char *find_common_reflections(struct image *images, int n)
@@ -91,7 +91,7 @@ static void s_uhavha(signed int hat, signed int kat, signed int lat,
 		if ( !get_scalable(refl) ) continue;
 
 		ic = get_intensity(refl) / get_partiality(refl);
-		sigi = 10.0; /* FIXME */
+		sigi = ic / 10.0; /* FIXME */
 
 		uha_val += 1.0 / pow(sigi, 2.0);
 		vha_val += ic / pow(sigi, 2.0);
@@ -119,8 +119,6 @@ static void s_uhvh(struct image *images, int n,
 
 		uh += pow(images[a].osf, 2.0) * uha;
 		vh += images[a].osf * vha;
-		STATUS("uha = %e\n", uha);
-		STATUS("vha = %e\n", vha);
 
 	}
 

@@ -61,7 +61,6 @@ static void calculate_partials(RefList *partial, double osf,
 {
 	Reflection *refl;
 	RefListIterator *iter;
-	int first = 1;
 
 	for ( refl = first_refl(partial, &iter);
 	      refl != NULL;
@@ -75,7 +74,6 @@ static void calculate_partials(RefList *partial, double osf,
 		get_indices(refl, &h, &k, &l);
 		get_asymm(h, k, l, &h, &k, &l, sym);
 		p = get_partiality(refl);
-		p = 1.0; /* FIXME!!! */
 
 		rfull = find_refl(full, h, k, l);
 		if ( rfull == NULL ) {
@@ -84,10 +82,6 @@ static void calculate_partials(RefList *partial, double osf,
 			Ip = osf * p * get_intensity(rfull);
 			set_int(refl, Ip);
 		}
-
-		if ( !first ) set_redundancy(refl, 0);
-		first = 0;
-
 	}
 }
 
@@ -292,7 +286,7 @@ int main(int argc, char *argv[])
 		calculate_partials(image.reflections, osf, full, sym);
 
 		/* Give a slightly incorrect cell in the stream */
-		mess_up_cell(image.indexed_cell);
+		//mess_up_cell(image.indexed_cell);
 		write_chunk(ofh, &image, STREAM_INTEGRATED);
 
 		reflist_free(image.reflections);
