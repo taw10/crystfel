@@ -343,7 +343,7 @@ static double iterate_scale(struct image *images, int n,
 	free(uha_arr);
 	free(vha_arr);
 
-	show_matrix_eqn(M, v, n);
+	//show_matrix_eqn(M, v, n);
 
 	if ( reference == NULL ) {
 		shifts = solve_by_eigenvalue_filtration(v, M);
@@ -364,8 +364,8 @@ static double iterate_scale(struct image *images, int n,
 
 		images[frame].osf += shift;
 
-		STATUS("Shift %i: %5.2f: -> %5.2f\n",
-		       frame, shift, images[frame].osf);
+		//STATUS("Shift %i: %5.2f: -> %5.2f\n",
+		//       frame, shift, images[frame].osf);
 
 		if ( fabs(shift) > fabs(max_shift) ) {
 			max_shift = fabs(shift);
