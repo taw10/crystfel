@@ -310,8 +310,8 @@ static void select_scalable_reflections(RefList *list, ReflItemList *sc_l)
 
 
 /* Calculate partialities and apply them to the image's raw_reflections,
- * returning a ReflItemList of the currentl scalable (asymmetric) reflections.
- */
+ * while adding to a ReflItemList of the currentl scalable (asymmetric)
+ * reflections. */
 void update_partialities(struct image *image, const char *sym,
                          ReflItemList *scalable,
                          int *n_expected, int *n_found, int *n_notfound)

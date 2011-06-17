@@ -281,6 +281,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ( reference_file != NULL ) {
+
 		RefList *list;
 		RefList *symmed;
 		list = read_reflections(reference_file);
@@ -402,6 +403,7 @@ int main(int argc, char *argv[])
 				      " reflections.\n", h, k, l, i);
 			}
 		}
+
 	}
 
 	/* Iterate */
