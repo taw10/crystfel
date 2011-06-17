@@ -182,6 +182,37 @@ static gsl_vector *solve_by_eigenvalue_filtration(gsl_vector *v, gsl_matrix *M)
 }
 
 
+static gsl_vector *solve_diagonal(gsl_vector *v, gsl_matrix *M)
+{
+	gsl_vector *shifts;
+	int n, frame;
+
+	n = v->size;
+	if ( v->size != M->size1 ) return NULL;
+	if ( v->size != M->size2 ) return NULL;
+
+	shifts = gsl_vector_alloc(n);
+	if ( shifts == NULL ) return NULL;
+
+	for ( frame=0; frame<n; frame++ ) {
+
+		double num, den, sh;
+
+		num = gsl_vector_get(v, frame);
+		den = gsl_matrix_get(M, frame, frame);
+		sh = num/den;
+
+		if ( isnan(sh) ) {
+			gsl_vector_set(shifts, frame, 0.0);
+		} else {
+			gsl_vector_set(shifts, frame, sh);
+		}
+	}
+
+	return shifts;
+}
+
+
 static double iterate_scale(struct image *images, int n,
                             ReflItemList *obs, const char *sym, char *cref,
                             double *reference)
@@ -316,21 +347,7 @@ static double iterate_scale(struct image *images, int n,
 	if ( reference == NULL ) {
 		shifts = solve_by_eigenvalue_filtration(v, M);
 	} else {
-		shifts = gsl_vector_alloc(n);
-		for ( frame=0; frame<n; frame++ ) {
-
-			double num, den, sh;
-
-			num = gsl_vector_get(v, frame);
-			den = gsl_matrix_get(M, frame, frame);
-			sh = num/den;
-
-			if ( isnan(sh) ) {
-				gsl_vector_set(shifts, frame, 0.0);
-			} else {
-				gsl_vector_set(shifts, frame, sh);
-			}
-		}
+		shifts = solve_diagonal(v, M);
 	}
 
 	gsl_matrix_free(M);
