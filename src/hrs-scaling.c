@@ -319,6 +319,8 @@ static double iterate_scale(struct image *images, int n,
 				mc = (rha*vhb + vha*rhb - vha*vhb) / uh;
 				if ( isnan(mc) ) mc = 0.0; /* 0 / 0 = 0 */
 
+				if ( reference != NULL ) mc = 0.0;
+
 				if ( a == b ) {
 					mc += pow(Ih, 2.0) * uha;
 				}
