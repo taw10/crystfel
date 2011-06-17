@@ -205,6 +205,7 @@ static gsl_vector *solve_diagonal(gsl_vector *v, gsl_matrix *M)
 		} else {
 			gsl_vector_set(shifts, frame, sh);
 		}
+
 	}
 
 	return shifts;
