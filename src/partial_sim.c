@@ -286,7 +286,7 @@ int main(int argc, char *argv[])
 		calculate_partials(image.reflections, osf, full, sym);
 
 		/* Give a slightly incorrect cell in the stream */
-		//mess_up_cell(image.indexed_cell);
+		mess_up_cell(image.indexed_cell);
 		write_chunk(ofh, &image, STREAM_INTEGRATED);
 
 		reflist_free(image.reflections);
