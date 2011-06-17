@@ -122,13 +122,14 @@ static double partiality(double r1, double r2, double r)
 }
 
 
-static int check_reflection(struct image *image, double mres, int output,
+static int check_reflection(struct image *image, double mres,
                             RefList *reflections,
                             signed int h, signed int k, signed int l,
                             double asx, double asy, double asz,
                             double bsx, double bsy, double bsz,
                             double csx, double csy, double csz)
 {
+	const int output = 0;
 	double xl, yl, zl;
 	double ds, ds_sq;
 	double rlow, rhigh;     /* "Excitation error" */
@@ -229,8 +230,7 @@ static int check_reflection(struct image *image, double mres, int output,
 }
 
 
-RefList *find_intersections(struct image *image, UnitCell *cell,
-                            int output)
+RefList *find_intersections(struct image *image, UnitCell *cell)
 {
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
@@ -265,7 +265,7 @@ RefList *find_intersections(struct image *image, UnitCell *cell,
 	for ( h=-hmax; h<=hmax; h++ ) {
 	for ( k=-kmax; k<=kmax; k++ ) {
 	for ( l=-lmax; l<=lmax; l++ ) {
-		check_reflection(image, mres, output, reflections, h, k, l,
+		check_reflection(image, mres, reflections, h, k, l,
 		                 asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
 	}
 	}
@@ -320,7 +320,7 @@ void update_partialities(struct image *image, const char *sym,
 	RefListIterator *iter;
 	RefList *predicted;
 
-	predicted = find_intersections(image, image->indexed_cell, 0);
+	predicted = find_intersections(image, image->indexed_cell);
 
 	for ( refl = first_refl(predicted, &iter);
 	      refl != NULL;

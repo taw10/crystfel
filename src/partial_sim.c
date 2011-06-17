@@ -282,7 +282,7 @@ int main(int argc, char *argv[])
 
 		snprintf(image.filename, 255, "(simulated %i)", i);
 		image.reflections = find_intersections(&image,
-		                                       image.indexed_cell, 0);
+		                                       image.indexed_cell);
 		calculate_partials(image.reflections, osf, full, sym);
 
 		/* Give a slightly incorrect cell in the stream */

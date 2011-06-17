@@ -107,12 +107,12 @@ static void calc_either_side(struct image *image, double incr_val,
 	UnitCell *cell;
 
 	cell = new_shifted_cell(image->indexed_cell, refine, -incr_val);
-	compare = find_intersections(image, cell, 0);
+	compare = find_intersections(image, cell);
 	scan_partialities(image->reflections, compare, valid, vals, 0);
 	cell_free(cell);
 
 	cell = new_shifted_cell(image->indexed_cell, refine, +incr_val);
-	compare = find_intersections(image, cell, 0);
+	compare = find_intersections(image, cell);
 	scan_partialities(image->reflections, compare, valid, vals, 2);
 	cell_free(cell);
 }
@@ -129,7 +129,7 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 	int nref;
 	int n_acc, n_valid;
 
-	image->reflections = find_intersections(image, image->indexed_cell, 0);
+	image->reflections = find_intersections(image, image->indexed_cell);
 
 	nref = num_reflections(image->reflections);
 	if ( nref < 10 ) {

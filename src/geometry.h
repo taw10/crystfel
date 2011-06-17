@@ -19,8 +19,7 @@
 
 #include "reflist.h"
 
-extern RefList *find_intersections(struct image *image, UnitCell *cell,
-                                   int output);
+extern RefList *find_intersections(struct image *image, UnitCell *cell);
 
 extern void update_partialities(struct image *image, const char *sym,
                                 ReflItemList *scalable,

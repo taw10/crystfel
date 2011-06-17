@@ -322,7 +322,7 @@ static void process_image(void *pp, int cookie)
 		image.bw = beam->bandwidth;
 		image.profile_radius = 0.0001e9;
 		image.reflections = find_intersections(&image,
-			                               image.indexed_cell, 0);
+			                               image.indexed_cell);
 
 		integrate_reflections(&image, config_polar,
 			              pargs->static_args.config_closer,
