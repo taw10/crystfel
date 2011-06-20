@@ -165,7 +165,7 @@ int integrate_peak(struct image *image, int cfs, int css,
 	if ( p->no_index ) return 1;
 
 	lim = p->integr_radius;
-	mid_lim = 3.0 + lim;	
+	mid_lim = 3.0 + lim;
 	out_lim = 6.0 + lim;
 	lim_sq = pow(lim, 2.0);
 	mid_lim_sq = pow(mid_lim, 2.0);
