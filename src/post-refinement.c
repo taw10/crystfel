@@ -270,6 +270,46 @@ static gsl_vector *solve_by_eigenvalue_filtration(gsl_vector *v, gsl_matrix *M)
 }
 
 
+static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
+{
+	gsl_matrix *s_vec;
+	gsl_vector *s_val;
+	int err, n;
+	gsl_vector *shifts;
+
+	n = v->size;
+	if ( v->size != M->size1 ) return NULL;
+	if ( v->size != M->size2 ) return NULL;
+
+	s_val = gsl_vector_calloc(n);
+	s_vec = gsl_matrix_calloc(n, n);
+
+	err = gsl_linalg_SV_decomp_jacobi(M, s_vec, s_val);
+	if ( err ) {
+		ERROR("SVD failed: %s\n", gsl_strerror(err));
+		gsl_matrix_free(s_vec);
+		gsl_vector_free(s_val);
+		return NULL;
+	}
+	/* "M" is now "U" */
+
+	shifts = gsl_vector_calloc(n);
+	err = gsl_linalg_SV_solve(M, s_vec, s_val, v, shifts);
+	if ( err ) {
+		ERROR("Matrix solution failed: %s\n", gsl_strerror(err));
+		gsl_matrix_free(s_vec);
+		gsl_vector_free(s_val);
+		gsl_vector_free(shifts);
+		return NULL;
+	}
+
+	gsl_matrix_free(s_vec);
+	gsl_vector_free(s_val);
+
+	return shifts;
+}
+
+
 static gsl_vector *solve_householder(gsl_vector *v, gsl_matrix *M)
 {
 	int n, err;
@@ -387,6 +427,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 	max_shift = 0.0;
 	//shifts = solve_by_eigenvalue_filtration(v, M);
 	shifts = solve_householder(v, M);
+	//shifts = solve_svd(v, M);
 	if ( shifts != NULL ) {
 
 		for ( param=0; param<NUM_PARAMS; param++ ) {
