@@ -414,7 +414,7 @@ int main(int argc, char *argv[])
 		FILE *fhp;
 		char filename[1024];
 
-		STATUS("Post refinement iteration %i of %i\n", i+1, n_iter);
+		STATUS("Post refinement cycle %i of %i\n", i+1, n_iter);
 
 		snprintf(filename, 1023, "p-iteration-%i.dat", i+1);
 		fhg = fopen(filename, "w");
