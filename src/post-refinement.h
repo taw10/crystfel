@@ -27,15 +27,15 @@
 /* Refineable parameters */
 enum {
 	REF_ASX,
-	REF_BSX,
-	REF_CSX,
 	REF_ASY,
-	REF_BSY,
-	REF_CSY,
 	REF_ASZ,
-	REF_BSZ,
-	REF_CSZ,
 	NUM_PARAMS,
+	REF_BSX,
+	REF_BSY,
+	REF_BSZ,
+	REF_CSX,
+	REF_CSY,
+	REF_CSZ,
 	REF_DIV,
 	REF_R,
 };
