@@ -320,6 +320,10 @@ void update_partialities(struct image *image, const char *sym,
 	RefListIterator *iter;
 	RefList *predicted;
 
+	*n_expected = 0;
+	*n_found = 0;
+	*n_notfound = 0;
+
 	predicted = find_intersections(image, image->indexed_cell);
 
 	for ( refl = first_refl(predicted, &iter);
