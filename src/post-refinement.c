@@ -19,6 +19,8 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_eigen.h>
+#include <gsl/gsl_blas.h>
 
 #include "image.h"
 #include "post-refinement.h"
@@ -214,6 +216,83 @@ static void apply_shift(struct image *image, int k, double shift)
 }
 
 
+/* NB This is DIFFERENT to the solve_by_eigenvalue_filtration routing in
+ * hrs-scaling.c */
+static gsl_vector *solve_by_eigenvalue_filtration(gsl_vector *v, gsl_matrix *M)
+{
+	gsl_eigen_symmv_workspace *work;
+	gsl_vector *e_val;
+	gsl_matrix *e_vec;
+	int val, n, frame;
+	gsl_vector *shifts;
+
+	n = v->size;
+	if ( v->size != M->size1 ) return NULL;
+	if ( v->size != M->size2 ) return NULL;
+
+	/* Diagonalise */
+	work = gsl_eigen_symmv_alloc(n);
+	e_val = gsl_vector_alloc(n);
+	e_vec = gsl_matrix_alloc(n, n);
+	val = gsl_eigen_symmv(M, e_val, e_vec, work);
+	if ( val ) {
+		ERROR("Couldn't diagonalise matrix.\n");
+		return NULL;
+	}
+	gsl_eigen_symmv_free(work);
+	val = gsl_eigen_symmv_sort(e_val, e_vec, GSL_EIGEN_SORT_ABS_DESC);
+
+	/* Rotate the "solution vector" */
+	gsl_vector *rprime;
+	rprime = gsl_vector_alloc(n);
+	val = gsl_blas_dgemv(CblasTrans, 1.0, e_vec, v, 0.0, rprime);
+
+	/* Solve (now easy) */
+	gsl_vector *sprime;
+	sprime = gsl_vector_alloc(n);
+	for ( frame=0; frame<n; frame++ ) {
+		double num, den;
+		num = gsl_vector_get(rprime, frame);
+		den = gsl_vector_get(e_val, frame);
+		gsl_vector_set(sprime, frame, num/den);
+	}
+
+	/* Rotate back */
+	shifts = gsl_vector_alloc(n);
+	val = gsl_blas_dgemv(CblasNoTrans, 1.0, e_vec, sprime, 0.0, shifts);
+
+	gsl_vector_free(sprime);
+	gsl_vector_free(rprime);
+	gsl_matrix_free(e_vec);
+	gsl_vector_free(e_val);
+
+	return shifts;
+}
+
+
+static gsl_vector *solve_householder(gsl_vector *v, gsl_matrix *M)
+{
+	int n, err;
+	gsl_vector *shifts;
+
+	n = v->size;
+	if ( v->size != M->size1 ) return NULL;
+	if ( v->size != M->size2 ) return NULL;
+
+	shifts = gsl_vector_alloc(n);
+
+	err = gsl_linalg_HH_solve(M, v, shifts);
+
+	if ( err != 0 ) {
+		ERROR("Failed to solve equations: %s\n", gsl_strerror(err));
+		gsl_vector_free(shifts);
+		return NULL;
+	}
+
+	return shifts;
+}
+
+
 /* Perform one cycle of post refinement on 'image' against 'full' */
 static double pr_iterate(struct image *image, const RefList *full,
                          const char *sym)
@@ -226,6 +305,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 	RefListIterator *iter;
 	RefList *reflections;
 	double max_shift;
+	int nref = 0;
 
 	reflections = image->reflections;
 
@@ -293,20 +373,33 @@ static double pr_iterate(struct image *image, const RefList *full,
 
 		}
 
+		nref++;
+
 	}
 	//show_matrix_eqn(M, v, NUM_PARAMS);
 
-	shifts = gsl_vector_alloc(NUM_PARAMS);
+	STATUS("%i reflections were scalable\n", nref);
+	if ( nref == 0 ) {
+		ERROR("No reflections left to scale!\n");
+		return 0.0;
+	}
+
 	max_shift = 0.0;
-	if ( gsl_linalg_HH_solve(M, v, shifts) == 0 ) {
+	//shifts = solve_by_eigenvalue_filtration(v, M);
+	shifts = solve_householder(v, M);
+	if ( shifts != NULL ) {
 
 		for ( param=0; param<NUM_PARAMS; param++ ) {
 			double shift = gsl_vector_get(shifts, param);
 			apply_shift(image, param, shift);
+			//STATUS("Shift %i: %e\n", param, shift);
 			if ( fabs(shift) > max_shift ) max_shift = fabs(shift);
 		}
 
-	} /* else problem with the equations, so leave things as they were */
+	} else {
+		ERROR("Problem solving equations.\n");
+		/* Leave things as they were */
+	}
 
 	gsl_matrix_free(M);
 	gsl_vector_free(v);
