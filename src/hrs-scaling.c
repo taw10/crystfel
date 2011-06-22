@@ -475,7 +475,7 @@ RefList *scale_intensities(struct image *images, int n, const char *sym,
 		STATUS("Scaling iteration %2i: max shift = %5.2f\n",
 		       i+1, max_shift);
 		i++;
-		if ( n > 1 ) normalise_osfs(images, n);
+		if ( reference == NULL ) normalise_osfs(images, n);
 
 	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );
 
