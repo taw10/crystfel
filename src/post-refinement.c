@@ -298,29 +298,6 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
 }
 
 
-static gsl_vector *solve_householder(gsl_vector *v, gsl_matrix *M)
-{
-	int n, err;
-	gsl_vector *shifts;
-
-	n = v->size;
-	if ( v->size != M->size1 ) return NULL;
-	if ( v->size != M->size2 ) return NULL;
-
-	shifts = gsl_vector_alloc(n);
-
-	err = gsl_linalg_HH_solve(M, v, shifts);
-
-	if ( err != 0 ) {
-		ERROR("Failed to solve equations: %s\n", gsl_strerror(err));
-		gsl_vector_free(shifts);
-		return NULL;
-	}
-
-	return shifts;
-}
-
-
 /* Perform one cycle of post refinement on 'image' against 'full' */
 static double pr_iterate(struct image *image, const RefList *full,
                          const char *sym)
@@ -415,7 +392,6 @@ static double pr_iterate(struct image *image, const RefList *full,
 	}
 
 	max_shift = 0.0;
-	//shifts = solve_householder(v, M);
 	shifts = solve_svd(v, M);
 	if ( shifts != NULL ) {
 
