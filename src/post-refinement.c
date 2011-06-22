@@ -221,6 +221,7 @@ static void show_eigen(gsl_vector *e_val)
 	int i;
 	double vmax, vmin;
 	const int n = e_val->size;
+	const double max_condition = 1e6;
 
 	STATUS("Eigenvalues:\n");
 	vmin = +INFINITY;
@@ -231,7 +232,23 @@ static void show_eigen(gsl_vector *e_val)
 		if ( val > vmax ) vmax = val;
 		if ( val < vmin ) vmin = val;
 	}
-	STATUS("Condition number: %e / %e = %e\n", vmin, vmax, vmin/vmax);
+
+	for ( i=0; i<n; i++ ) {
+		double val = gsl_vector_get(e_val, i);
+		if ( val < vmax/max_condition ) {
+			gsl_vector_set(e_val, i, 0.0);
+		}
+	}
+
+	vmin = +INFINITY;
+	vmax = 0.0;
+	for ( i=0; i<n; i++ ) {
+		double val = gsl_vector_get(e_val, i);
+		if ( val == 0.0 ) continue;
+		if ( val > vmax ) vmax = val;
+		if ( val < vmin ) vmin = val;
+	}
+	STATUS("Condition number: %e / %e = %5.2f\n", vmax, vmin, vmax/vmin);
 }
 
 
