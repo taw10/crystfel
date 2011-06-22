@@ -144,7 +144,7 @@ static void refine_all(struct image *images, int n_total_patterns,
 	qargs.images = images;
 
 	/* Don't have threads which are doing nothing */
-	if ( n_total_patterns > nthreads ) nthreads = n_total_patterns;
+	if ( n_total_patterns < nthreads ) nthreads = n_total_patterns;
 
 	run_threads(nthreads, refine_image, get_image, done_image,
 	            &qargs, n_total_patterns, 0, 0, 0);
