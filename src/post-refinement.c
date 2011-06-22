@@ -477,6 +477,12 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 		       dev, nfound, nexp);
 	}
 
+	if ( (double)nfound/(double)nexp < 0.5 ) {
+		ERROR("Refusing to refine this image: %i out of %i found\n",
+		       nfound, nexp);
+		return;
+	}
+
 	i = 0;
 	do {
 
