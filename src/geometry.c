@@ -257,6 +257,14 @@ RefList *find_intersections(struct image *image, UnitCell *cell,
 	kmax = mres / modulus(bsx, bsy, bsz);
 	lmax = mres / modulus(csx, csy, csz);
 
+	if ( (hmax >= 256) || (kmax >= 256) || (lmax >= 256) ) {
+		ERROR("Unit cell is stupidly large.\n");
+		cell_print(cell);
+		if ( hmax >= 256 ) hmax = 255;
+		if ( kmax >= 256 ) kmax = 255;
+		if ( lmax >= 256 ) lmax = 255;
+	}
+
 	for ( h=-hmax; h<=hmax; h++ ) {
 	for ( k=-kmax; k<=kmax; k++ ) {
 	for ( l=-lmax; l<=lmax; l++ ) {
