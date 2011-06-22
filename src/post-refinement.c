@@ -341,12 +341,11 @@ static double pr_iterate(struct image *image, const RefList *full,
 		/* Some reflections may have recently become scalable, but
 		 * scale_intensities() might not yet have been called, so the
 		 * full version may not have been calculated yet. */
-		I_full = get_intensity(match);
+		I_full = image->osf * get_intensity(match);
 
 		/* Actual measurement of this reflection from this pattern? */
 		I_partial = get_intensity(refl);
 		p = get_partiality(refl);
-		delta_I = I_partial - (p * image->osf * I_full);
 
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<NUM_PARAMS; k++ ) {
@@ -359,22 +358,25 @@ static double pr_iterate(struct image *image, const RefList *full,
 
 			int g;
 			double v_c, v_curr;
-			double gr;
 
 			for ( g=0; g<NUM_PARAMS; g++ ) {
 
 				double M_c, M_curr;
 
+				/* Matrix is symmetric */
+				if ( g > k ) continue;
+
 				M_c = gradients[g] * gradients[k];
 				M_c *= pow(image->osf * I_full, 2.0);
 
-				M_curr = gsl_matrix_get(M, g, k);
+				M_curr = gsl_matrix_get(M, k, g);
+				gsl_matrix_set(M, k, g, M_curr + M_c);
 				gsl_matrix_set(M, g, k, M_curr + M_c);
 
 			}
 
-			gr = gradients[k];
-			v_c = delta_I * image->osf * I_full * gr;
+			delta_I = I_partial - (p * I_full);
+			v_c = delta_I * I_full * gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
 
