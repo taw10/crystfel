@@ -216,19 +216,20 @@ static void apply_shift(struct image *image, int k, double shift)
 }
 
 
-static void show_eigen(gsl_vector *e_val)
+static void check_eigen(gsl_vector *e_val)
 {
 	int i;
 	double vmax, vmin;
 	const int n = e_val->size;
 	const double max_condition = 1e6;
+	const int verbose = 0;
 
-	STATUS("Eigenvalues:\n");
+	if ( verbose ) STATUS("Eigenvalues:\n");
 	vmin = +INFINITY;
 	vmax = 0.0;
 	for ( i=0; i<n; i++ ) {
 		double val = gsl_vector_get(e_val, i);
-		STATUS("%i: %e\n", i, val);
+		if ( verbose ) STATUS("%i: %e\n", i, val);
 		if ( val > vmax ) vmax = val;
 		if ( val < vmin ) vmin = val;
 	}
@@ -248,7 +249,10 @@ static void show_eigen(gsl_vector *e_val)
 		if ( val > vmax ) vmax = val;
 		if ( val < vmin ) vmin = val;
 	}
-	STATUS("Condition number: %e / %e = %5.2f\n", vmax, vmin, vmax/vmin);
+	if ( verbose ) {
+		STATUS("Condition number: %e / %e = %5.2f\n",
+		       vmax, vmin, vmax/vmin);
+	}
 }
 
 
@@ -275,7 +279,7 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
 	}
 	/* "M" is now "U" */
 
-	show_eigen(s_val);
+	check_eigen(s_val);
 
 	shifts = gsl_vector_calloc(n);
 	err = gsl_linalg_SV_solve(M, s_vec, s_val, v, shifts);
@@ -404,7 +408,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 	}
 	//show_matrix_eqn(M, v, NUM_PARAMS);
 
-	STATUS("%i reflections were scalable\n", nref);
+	//STATUS("%i reflections were scalable\n", nref);
 	if ( nref == 0 ) {
 		ERROR("No reflections left to scale!\n");
 		return 0.0;
