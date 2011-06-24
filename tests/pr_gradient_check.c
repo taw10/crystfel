@@ -196,18 +196,23 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 			if ( (fabs(cgrad) > 1e-9) &&
 			     !within_tolerance(grad, cgrad, 10.0) )
 			{
+
 				STATUS("!- %s %3i %3i %3i"
 				       " %10.2Le %10.2e ratio = %5.2Lf"
 				       " %10.2e %10.2e\n",
 				       str, h, k, l, grad, cgrad, cgrad/grad,
 				       r1, r2);
+
 			} else {
+
 				//STATUS("OK %s %3i %3i %3i"
 				//       " %10.2Le %10.2e ratio = %5.2Lf"
 				//       " %10.2e %10.2e\n",
 				//       str, h, k, l, grad, cgrad, cgrad/grad,
 				//       r1, r2);
-				       n_acc++;
+
+				n_acc++;
+
 			}
 
 			fprintf(fh, "%e %f\n",
