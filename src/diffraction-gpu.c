@@ -34,8 +34,8 @@
 
 
 #define SAMPLING (4)
-#define BWSAMPLING (1)
-#define DIVSAMPLING (4)
+#define BWSAMPLING (10)
+#define DIVSAMPLING (1)
 #define SINC_LUT_ELEMENTS (4096)
 
 
