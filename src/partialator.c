@@ -465,8 +465,10 @@ int main(int argc, char *argv[])
 	free_detector_geometry(det);
 	free(beam);
 	free(cref);
-	free(reference);
-	reflist_free(reference_list);
+	if ( reference != NULL ) {
+		free(reference);
+		reflist_free(reference_list);
+	}
 	for ( i=0; i<n_usable_patterns; i++ ) {
 		cell_free(images[i].indexed_cell);
 		free(images[i].filename);
