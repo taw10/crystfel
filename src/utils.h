@@ -142,8 +142,8 @@ static inline double angle_between(double x1, double y1, double z1,
 
 static inline int within_tolerance(double a, double b, double percent)
 {
-	double tol = a * (percent/100.0);
-	if ( fabs(b-a) < fabs(tol) ) return 1;
+	double tol = fabs(a) * (percent/100.0);
+	if ( fabs(b-a) < tol ) return 1;
 	return 0;
 }
 
