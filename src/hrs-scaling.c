@@ -401,6 +401,10 @@ static RefList *lsq_intensities(struct image *images, int n,
 			double G;
 			Reflection *refl;
 
+			/* Don't scale intensities from this image if
+			 * post refinement failed on the last step. */
+			if ( images[m].pr_dud ) continue;
+
 			G = images[m].osf;
 
 			for ( refl = find_refl(images[m].reflections,

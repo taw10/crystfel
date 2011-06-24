@@ -486,7 +486,16 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 	i = 0;
 	do {
 
+		double asx, asy, asz;
+		double bsx, bsy, bsz;
+		double csx, csy, csz;
 		double dev;
+		int old_nexp, old_nfound;
+
+		cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
+			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
+		old_nexp = nexp;
+		old_nfound = nfound;
 
 		max_shift = pr_iterate(image, full, sym);
 
@@ -498,6 +507,27 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 			STATUS("PR Iteration %2i: max shift = %5.2f"
 			       " dev = %5.2f (%i out of %i found)\n",
 			       i+1, max_shift, dev, nfound, nexp);
+		}
+
+		if ( (double)nfound / (double)nexp < 0.5 ) {
+
+			if ( verbose ) {
+				ERROR("Bad refinement step - backtracking.\n");
+				ERROR("I'll come back to this image later.\n");
+			}
+
+			cell_set_reciprocal(image->indexed_cell, asx, asy, asz,
+				                  bsx, bsy, bsz, csx, csy, csz);
+
+			update_partialities(image, sym, NULL,
+		                            &nexp, &nfound, &nnotfound);
+
+			image->pr_dud = 1;
+
+			return;
+
+		} else {
+			image->pr_dud = 0;
 		}
 
 		i++;
