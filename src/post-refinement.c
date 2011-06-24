@@ -94,6 +94,7 @@ double gradient(struct image *image, int k, Reflection *refl, double r)
 	zl = hs*asz + ks*bsz + ls*csz;
 
 	ds = 2.0 * resolution(image->indexed_cell, hs, ks, ls);
+	/* FIXME: Should use k value corresponding to clamp status here */
 	tt = angle_between(0.0, 0.0, 1.0, xl, yl, zl+1.0/image->lambda);
 	azix = angle_between(1.0, 0.0, 0.0, xl, yl, 0.0);
 	aziy = angle_between(0.0, 1.0, 0.0, xl, yl, 0.0);
