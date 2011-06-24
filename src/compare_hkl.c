@@ -389,8 +389,8 @@ int main(int argc, char *argv[])
 	deleteme = reflist_new();
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
+	      refl1 = next_refl(refl1, iter) )
+	{
 		signed int h, k, l;
 		signed int he, ke, le;
 		double val1, val2;
