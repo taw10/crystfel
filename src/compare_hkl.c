@@ -277,6 +277,7 @@ int main(int argc, char *argv[])
 	Reflection *refl1;
 	RefListIterator *iter;
 	double *arr2;
+	int config_unity = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -291,7 +292,9 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ho:y:p:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ho:y:p:u",
+	                        longopts, NULL)) != -1)
+	{
 
 		switch (c) {
 		case 'h' :
@@ -308,6 +311,10 @@ int main(int argc, char *argv[])
 
 		case 'p' :
 			pdb = strdup(optarg);
+			break;
+
+		case 'u' :
+			config_unity = 1;
 			break;
 
 		case 0 :
@@ -473,33 +480,33 @@ int main(int argc, char *argv[])
 	arr2 = intensities_from_list(list2_transformed);
 	reflist_free(list2_transformed);
 
-	R1 = stat_r1_ignore(list1, arr2, &scale_r1fi);
+	R1 = stat_r1_ignore(list1, arr2, &scale_r1fi, config_unity);
 	STATUS("R1(F) = %5.4f %% (scale=%5.2e)"
 	       " (ignoring negative intensities)\n",
 	       R1*100.0, scale_r1fi);
 
-	R1 = stat_r1_zero(list1, arr2, &scale_r1);
+	R1 = stat_r1_zero(list1, arr2, &scale_r1, config_unity);
 	STATUS("R1(F) = %5.4f %% (scale=%5.2e)"
 	       " (zeroing negative intensities)\n",
 	       R1*100.0, scale_r1);
 
-	R2 = stat_r2(list1, arr2, &scale_r2);
+	R2 = stat_r2(list1, arr2, &scale_r2, config_unity);
 	STATUS("R2(I) = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale_r2);
 
-	R1i = stat_r1_i(list1, arr2, &scale_r1i);
+	R1i = stat_r1_i(list1, arr2, &scale_r1i, config_unity);
 	STATUS("R1(I) = %5.4f %% (scale=%5.2e)\n", R1i*100.0, scale_r1i);
 
-	Rdiff = stat_rdiff_ignore(list1, arr2, &scale_rdig);
+	Rdiff = stat_rdiff_ignore(list1, arr2, &scale_rdig, config_unity);
 	STATUS("Rint(F) = %5.4f %% (scale=%5.2e)"
 	       " (ignoring negative intensities)\n",
 	       Rdiff*100.0, scale_rdig);
 
-	Rdiff = stat_rdiff_zero(list1, arr2, &scale);
+	Rdiff = stat_rdiff_zero(list1, arr2, &scale, config_unity);
 	STATUS("Rint(F) = %5.4f %% (scale=%5.2e)"
 	       " (zeroing negative intensities)\n",
 	       Rdiff*100.0, scale);
 
-	Rdiff = stat_rdiff_intensity(list1, arr2, &scale_rintint);
+	Rdiff = stat_rdiff_intensity(list1, arr2, &scale_rintint, config_unity);
 	STATUS("Rint(I) = %5.4f %% (scale=%5.2e)\n",
 	       Rdiff*100.0, scale_rintint);
 

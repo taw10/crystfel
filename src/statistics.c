@@ -376,7 +376,8 @@ static double calc_r(double scale, void *params)
 }
 
 
-static double r_minimised(RefList *list1, double *arr2, double *scalep, int fom)
+static double r_minimised(RefList *list1, double *arr2, double *scalep, int fom,
+                          int u)
 {
 	gsl_function F;
 	gsl_min_fminimizer *s;
@@ -389,57 +390,65 @@ static double r_minimised(RefList *list1, double *arr2, double *scalep, int fom)
 	rp.arr2 = arr2;
 	rp.fom = fom;
 
-	F.function = &calc_r;
-	F.params = &rp;
+	if ( u ) {
 
-	s = gsl_min_fminimizer_alloc(gsl_min_fminimizer_brent);
+		scale = 1.0;
 
-	/* Initial guess */
-	switch ( fom ) {
-	case R_1_ZERO :
-	case R_1_IGNORE :
-	case R_DIFF_ZERO :
-	case R_DIFF_IGNORE :
-		scale = stat_scale_sqrti(list1, arr2);
-		break;
-	case R_2 :
-	case R_1_I :
-	case R_DIFF_INTENSITY :
-		scale = stat_scale_intensity(list1, arr2);
-		break;
-	}
-	//STATUS("Initial scale factor estimate: %5.2e\n", scale);
+	} else {
 
-	/* Probably within an order of magnitude either side */
-	gsl_min_fminimizer_set(s, &F, scale, scale/10.0, scale*10.0);
+		F.function = &calc_r;
+		F.params = &rp;
 
-	do {
+		s = gsl_min_fminimizer_alloc(gsl_min_fminimizer_brent);
 
-		double lo, up;
+		/* Initial guess */
+		switch ( fom ) {
+		case R_1_ZERO :
+		case R_1_IGNORE :
+		case R_DIFF_ZERO :
+		case R_DIFF_IGNORE :
+			scale = stat_scale_sqrti(list1, arr2);
+			break;
+		case R_2 :
+		case R_1_I :
+		case R_DIFF_INTENSITY :
+			scale = stat_scale_intensity(list1, arr2);
+			break;
+		}
+		//STATUS("Initial scale factor estimate: %5.2e\n", scale);
 
-		/* Iterate */
-		if ( gsl_min_fminimizer_iterate(s) ) {
-			ERROR("Failed to find scale factor.\n");
-			return NAN;
+		/* Probably within an order of magnitude either side */
+		gsl_min_fminimizer_set(s, &F, scale, scale/10.0, scale*10.0);
+
+		do {
+
+			double lo, up;
+
+			/* Iterate */
+			if ( gsl_min_fminimizer_iterate(s) ) {
+				ERROR("Failed to find scale factor.\n");
+				return NAN;
+			}
+
+			/* Get the current estimate */
+			scale = gsl_min_fminimizer_x_minimum(s);
+			lo = gsl_min_fminimizer_x_lower(s);
+			up = gsl_min_fminimizer_x_upper(s);
+
+			/* Check for convergence */
+			status = gsl_min_test_interval(lo, up, 0.001, 0.0);
+
+			iter++;
+
+		} while ( status == GSL_CONTINUE );
+
+		if ( status != GSL_SUCCESS ) {
+			ERROR("Scale factor minimisation failed.\n");
 		}
 
-		/* Get the current estimate */
-		scale = gsl_min_fminimizer_x_minimum(s);
-		lo = gsl_min_fminimizer_x_lower(s);
-		up = gsl_min_fminimizer_x_upper(s);
+		gsl_min_fminimizer_free(s);
 
-		/* Check for convergence */
-		status = gsl_min_test_interval(lo, up, 0.001, 0.0);
-
-		iter++;
-
-	} while ( status == GSL_CONTINUE );
-
-	if (status != GSL_SUCCESS) {
-		ERROR("Scale factor minimisation failed.\n");
 	}
-
-	gsl_min_fminimizer_free(s);
 
 	//STATUS("Final scale factor: %5.2e\n", scale);
 	*scalep = scale;
@@ -447,45 +456,45 @@ static double r_minimised(RefList *list1, double *arr2, double *scalep, int fom)
 }
 
 
-double stat_r1_ignore(RefList *list1, double *arr2, double *scalep)
+double stat_r1_ignore(RefList *list1, double *arr2, double *scalep, int u)
 {
-	return r_minimised(list1, arr2, scalep, R_1_IGNORE);
+	return r_minimised(list1, arr2, scalep, R_1_IGNORE, u);
 }
 
 
-double stat_r1_zero(RefList *list1, double *arr2, double *scalep)
+double stat_r1_zero(RefList *list1, double *arr2, double *scalep, int u)
 {
-	return r_minimised(list1, arr2, scalep, R_1_ZERO);
+	return r_minimised(list1, arr2, scalep, R_1_ZERO, u);
 }
 
 
-double stat_r2(RefList *list1, double *arr2, double *scalep)
+double stat_r2(RefList *list1, double *arr2, double *scalep, int u)
 {
-	return r_minimised(list1, arr2, scalep, R_2);
+	return r_minimised(list1, arr2, scalep, R_2, u);
 }
 
 
-double stat_r1_i(RefList *list1, double *arr2, double *scalep)
+double stat_r1_i(RefList *list1, double *arr2, double *scalep, int u)
 {
-	return r_minimised(list1, arr2, scalep, R_1_I);
+	return r_minimised(list1, arr2, scalep, R_1_I, u);
 }
 
 
-double stat_rdiff_zero(RefList *list1, double *arr2, double *scalep)
+double stat_rdiff_zero(RefList *list1, double *arr2, double *scalep, int u)
 {
-	return r_minimised(list1, arr2, scalep, R_DIFF_ZERO);
+	return r_minimised(list1, arr2, scalep, R_DIFF_ZERO, u);
 }
 
 
-double stat_rdiff_ignore(RefList *list1, double *arr2, double *scalep)
+double stat_rdiff_ignore(RefList *list1, double *arr2, double *scalep, int u)
 {
-	return r_minimised(list1, arr2, scalep, R_DIFF_IGNORE);
+	return r_minimised(list1, arr2, scalep, R_DIFF_IGNORE, u);
 }
 
 
-double stat_rdiff_intensity(RefList *list1, double *arr2, double *scalep)
+double stat_rdiff_intensity(RefList *list1, double *arr2, double *scalep, int u)
 {
-	return r_minimised(list1, arr2,  scalep, R_DIFF_INTENSITY);
+	return r_minimised(list1, arr2,  scalep, R_DIFF_INTENSITY, u);
 }
 
 
