@@ -165,7 +165,7 @@ static void fifth_integration_check(struct image *image, int n_trials,
 		for ( ss=0; ss<image->height; ss++ ) {
 			int idx = fs+image->width*ss;
 			image->data[idx] = poisson_noise(10.0);
-			if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) <= 10*10 ) {
+			if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) < 10*10 ) {
 				pcount++;
 			}
 		}
@@ -189,7 +189,7 @@ static void fifth_integration_check(struct image *image, int n_trials,
 	       " max = %.2f, sigma = %.2f\n",
 	       mean_intensity, mean_bg, mean_max, mean_sigma);
 	double s = pcount*10.0;
-	if ( fabs(mean_intensity - s) > 1.0 ) {
+	if ( fabs(mean_intensity - s) > 5.0 ) {
 		ERROR("Mean intensity should be close to %f.\n", pcount*10.0);
 		*fail = 1;
 	}
@@ -227,7 +227,7 @@ static void sixth_integration_check(struct image *image, int n_trials,
 			if ( r < 9*9 ) {
 				image->data[idx] += 1000.0;
 				pcount++;
-			} else if ( r <= 10*10 ) {
+			} else if ( r < 10*10 ) {
 				npcount++;
 			}
 		}
