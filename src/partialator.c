@@ -176,6 +176,7 @@ int main(int argc, char *argv[])
 	char *reference_file = NULL;
 	double *reference = NULL;
 	RefList *reference_list = NULL;
+	int n_dud;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -448,9 +449,12 @@ int main(int argc, char *argv[])
 	}
 
 	STATUS("Final scale factors:\n");
+	n_dud = 0;
 	for ( i=0; i<n_usable_patterns; i++ ) {
+		if ( images[i].pr_dud ) n_dud++;
 		STATUS("%4i : %5.2f\n", i, images[i].osf);
 	}
+	STATUS("%i images could not be refined on the last cycle.\n", n_dud);
 
 	/* Output results */
 	write_reflist(outfile, full, images[0].indexed_cell);
