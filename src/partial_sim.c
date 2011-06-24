@@ -302,7 +302,6 @@ int main(int argc, char *argv[])
 
 	}
 
-
 	fclose(ofh);
 	cell_free(cell);
 	free_detector_geometry(det);
