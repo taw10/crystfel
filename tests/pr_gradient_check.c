@@ -174,6 +174,9 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 			n_valid--;
 		} else {
 
+			double r1, r2, p;
+			int cl, ch;
+
 			grad1 = (vals[1][i] - vals[0][i]) / incr_val;
 			grad2 = (vals[2][i] - vals[1][i]) / incr_val;
 			grad = (grad1 + grad2) / 2.0;
@@ -181,19 +184,23 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 			cgrad = gradient(image, refine, refl,
 			                 image->profile_radius);
 
-			if ( !within_tolerance(grad, cgrad, 10.0) ) {
-				STATUS("!- %s %3i %3i %3i %5.2Lf %5.2Lf %5.2Lf"
-				       " -> %10.2Le %10.2Le"
-				       " -> %10.2Le %10.2e\n", str, h, k, l,
-				       vals[0][i], vals[1][i], vals[2][i],
-				       grad1, grad2, grad, cgrad);
+			get_partial(refl, &r1, &r2, &p, &cl, &ch);
+
+			if ( (fabs(cgrad) > 1e-9) &&
+			     !within_tolerance(grad, cgrad, 10.0) )
+			{
+				STATUS("!- %s %3i %3i %3i"
+				       " %10.2Le %10.2e ratio = %5.2Lf"
+				       " %10.2e %10.2e\n",
+				       str, h, k, l, grad, cgrad, cgrad/grad,
+				       r1, r2);
 			} else {
-				//STATUS("OK %s %5.2f %5.2f %5.2f"
-				//       " -> %10.2Le %10.2Le"
-				//       " -> %10.2Le %10.2e\n", str,
-				//       vals[0][i], vals[1][i], vals[2][i],
-				//       grad1, grad2, grad, cgrad);
-				n_acc++;
+				//STATUS("OK %s %3i %3i %3i"
+				//       " %10.2Le %10.2e ratio = %5.2Lf"
+				//       " %10.2e %10.2e\n",
+				//       str, h, k, l, grad, cgrad, cgrad/grad,
+				//       r1, r2);
+				       n_acc++;
 			}
 
 		}
