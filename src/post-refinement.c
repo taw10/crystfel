@@ -73,7 +73,8 @@ static double partiality_rgradient(double r, double profile_radius)
 /* Return the gradient of parameter 'k' given the current status of 'image'. */
 double gradient(struct image *image, int k, Reflection *refl, double r)
 {
-	double ds, tt, azix, aziy;
+	double ds, azix, aziy;
+	double ttlow, tthigh, tt;
 	double nom, den;
 	double g;
 	double asx, asy, asz;
@@ -83,6 +84,7 @@ double gradient(struct image *image, int k, Reflection *refl, double r)
 	signed int hs, ks, ls;
 	double r1, r2, p;
 	int clamp_low, clamp_high;
+	double klow, khigh;
 
 	get_symmetric_indices(refl, &hs, &ks, &ls);
 
@@ -94,11 +96,25 @@ double gradient(struct image *image, int k, Reflection *refl, double r)
 	zl = hs*asz + ks*bsz + ls*csz;
 
 	ds = 2.0 * resolution(image->indexed_cell, hs, ks, ls);
-	/* FIXME: Should use k value corresponding to clamp status here */
-	tt = angle_between(0.0, 0.0, 1.0, xl, yl, zl+1.0/image->lambda);
+	get_partial(refl, &r1, &r2, &p, &clamp_low, &clamp_high);
+
+	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
+	khigh = 1.0/(image->lambda + image->lambda*image->bw/2.0);
+	ttlow = angle_between(0.0, 0.0, 1.0, xl, yl, zl+klow);
+	tthigh = angle_between(0.0, 0.0, 1.0, xl, yl, zl+khigh);
+	if ( (clamp_low == 0) && (clamp_high == 0) ) {
+		tt = (ttlow+tthigh)/2.0;
+	} else if ( clamp_high == 0 ) {
+		tt = tthigh;
+	} else if ( clamp_low == 0 ) {
+		tt = ttlow;
+	} else {
+		tt = 0.0;
+		/* Gradient should come out as zero in this case */
+	}
+
 	azix = angle_between(1.0, 0.0, 0.0, xl, yl, 0.0);
 	aziy = angle_between(0.0, 1.0, 0.0, xl, yl, 0.0);
-	get_partial(refl, &r1, &r2, &p, &clamp_low, &clamp_high);
 
 	/* Calculate the gradient of partiality wrt excitation error. */
 	g = 0.0;
