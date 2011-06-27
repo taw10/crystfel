@@ -534,14 +534,10 @@ void integrate_reflections(struct image *image, int polar, int use_closer,
 		int idx;
 		double bg, max;
 		double sigma;
-		struct panel *p;
 		double pfs, pss;
 		int r;
 
 		get_detector_pos(refl, &pfs, &pss);
-		p = find_panel(image->det, pfs, pss);
-		if ( p == NULL ) continue;
-		if ( p->no_index ) continue;
 
 		/* Is there a really close feature which was detected? */
 		if ( use_closer ) {
