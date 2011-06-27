@@ -426,11 +426,10 @@ static RefList *lsq_intensities(struct image *images, int n,
 
 		}
 
-		set_redundancy(new, redundancy);
-
 		if ( !isnan(num/den) ) {
 			new = add_refl(full, it->h, it->k, it->l);
 			set_int(new, num/den);
+			set_redundancy(new, redundancy);
 		} else {
 			ERROR("Couldn't calculate LSQ full intensity for"
 			      "%3i %3i %3i\n", it->h, it->k, it->l);
