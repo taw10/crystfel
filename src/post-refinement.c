@@ -550,6 +550,4 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 		i++;
 
 	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );
-
-	cell_print(image->indexed_cell);
 }
