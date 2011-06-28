@@ -126,8 +126,8 @@ int main(int argc, char *argv[])
 	beam->fluence = 1.0e15;  /* Does nothing */
 	beam->beam_radius = 1.0e-6;
 	beam->photon_energy = 9000.0;
-	beam->bandwidth = 0.0 / 100.0;
-	beam->divergence = 0.001;
+	beam->bandwidth = 0.1 / 100.0;
+	beam->divergence = 0.0;
 	beam->dqe = 1.0;
 	beam->adu_per_photon = 1.0;
 	cpu_image.beam = beam;
