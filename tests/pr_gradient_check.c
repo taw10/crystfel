@@ -254,6 +254,7 @@ int main(int argc, char *argv[])
 	UnitCell *cell;
 	struct quaternion orientation;
 	int i;
+	int val;
 
 	image.width = 1024;
 	image.height = 1024;
@@ -275,6 +276,8 @@ int main(int argc, char *argv[])
 	                                deg2rad(90.0),
 	                                deg2rad(90.0));
 
+	val = 0;
+
 	for ( i=0; i<1; i++ ) {
 
 		orientation = random_quaternion();
@@ -287,27 +290,27 @@ int main(int argc, char *argv[])
 		plot_graph(&image, incr_frac, REF_ASX);
 
 		incr_val = incr_frac * ax;
-		test_gradients(&image, incr_val, REF_ASX, "ax*");
+		val += test_gradients(&image, incr_val, REF_ASX, "ax*");
 		incr_val = incr_frac * ay;
-		test_gradients(&image, incr_val, REF_ASY, "ay*");
+		val += test_gradients(&image, incr_val, REF_ASY, "ay*");
 		incr_val = incr_frac * az;
-		test_gradients(&image, incr_val, REF_ASZ, "az*");
+		val += test_gradients(&image, incr_val, REF_ASZ, "az*");
 
 		incr_val = incr_frac * bx;
-		test_gradients(&image, incr_val, REF_BSX, "bx*");
+		val += test_gradients(&image, incr_val, REF_BSX, "bx*");
 		incr_val = incr_frac * by;
-		test_gradients(&image, incr_val, REF_BSY, "by*");
+		val += test_gradients(&image, incr_val, REF_BSY, "by*");
 		incr_val = incr_frac * bz;
-		test_gradients(&image, incr_val, REF_BSZ, "bz*");
+		val += test_gradients(&image, incr_val, REF_BSZ, "bz*");
 
 		incr_val = incr_frac * cx;
-		test_gradients(&image, incr_val, REF_CSX, "cx*");
+		val += test_gradients(&image, incr_val, REF_CSX, "cx*");
 		incr_val = incr_frac * cy;
-		test_gradients(&image, incr_val, REF_CSY, "cy*");
+		val += test_gradients(&image, incr_val, REF_CSY, "cy*");
 		incr_val = incr_frac * cz;
-		test_gradients(&image, incr_val, REF_CSZ, "cz*");
+		val += test_gradients(&image, incr_val, REF_CSZ, "cz*");
 
 	}
 
-	return 0;
+	return val;
 }
