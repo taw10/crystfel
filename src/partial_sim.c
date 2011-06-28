@@ -40,8 +40,8 @@ static void mess_up_cell(UnitCell *cell)
 	/* Cell noise in percent */
 	const double cnoise = 0.5;
 
-	STATUS("Real:\n");
-	cell_print(cell);
+	//STATUS("Real:\n");
+	//cell_print(cell);
 
 	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	ax = gaussian_noise(ax, cnoise*fabs(ax)/100.0);
@@ -55,8 +55,8 @@ static void mess_up_cell(UnitCell *cell)
 	cz = gaussian_noise(cz, cnoise*fabs(cz)/100.0);
 	cell_set_reciprocal(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
 
-	STATUS("Changed:\n");
-	cell_print(cell);
+	//STATUS("Changed:\n");
+	//cell_print(cell);
 }
 
 
@@ -280,7 +280,7 @@ int main(int argc, char *argv[])
 		} else {
 			osf = 2.0;
 		}
-		STATUS("Image %i scale factor %f\n", i, osf);
+		//STATUS("Image %i scale factor %f\n", i, osf);
 
 		/* Set up a random orientation */
 		orientation = random_quaternion();
