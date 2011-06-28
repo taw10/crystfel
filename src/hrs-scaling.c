@@ -32,7 +32,7 @@
 
 
 /* Maximum number of iterations of NLSq scaling per macrocycle. */
-#define MAX_CYCLES (10)
+#define MAX_CYCLES (50)
 
 
 char *find_common_reflections(struct image *images, int n)
