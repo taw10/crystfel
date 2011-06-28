@@ -286,7 +286,7 @@ int main(int argc, char *argv[])
 		orientation = random_quaternion();
 		image.indexed_cell = cell_rotate(cell, orientation);
 
-		snprintf(image.filename, 255, "(simulated %i)", i);
+		snprintf(image.filename, 255, "dummy.h5");
 		image.reflections = find_intersections(&image,
 		                                       image.indexed_cell);
 		calculate_partials(image.reflections, osf, full, sym);
