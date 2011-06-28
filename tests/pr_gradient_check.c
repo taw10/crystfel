@@ -193,7 +193,7 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 
 			get_partial(refl, &r1, &r2, &p, &cl, &ch);
 
-			if ( (fabs(cgrad) > 1e-9) &&
+			if ( (fabs(cgrad) > 5e-8) &&
 			     !within_tolerance(grad, cgrad, 10.0) )
 			{
 
