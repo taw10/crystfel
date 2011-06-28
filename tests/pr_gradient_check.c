@@ -128,7 +128,7 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 	int *valid;
 	int nref;
 	int n_acc, n_valid;
-	FILE *fh;
+	//FILE *fh;
 
 	image->reflections = find_intersections(image, image->indexed_cell);
 
@@ -158,7 +158,7 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 
 	calc_either_side(image, incr_val, valid, vals, refine);
 
-	fh = fopen("wrongness.dat", "a");
+	//fh = fopen("wrongness.dat", "a");
 
 	n_valid = nref;  n_acc = 0;
 	i = 0;
@@ -215,11 +215,11 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 
 			}
 
-			fprintf(fh, "%e %f\n",
+			//fprintf(fh, "%e %f\n",
 			        //resolution(image->indexed_cell, h, k, l),
 			        //rad2deg(tt),
-			        cgrad,
-			        fabs((grad-cgrad)/grad));
+			//        cgrad,
+			//        fabs((grad-cgrad)/grad));
 
 		}
 
@@ -229,7 +229,7 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 
 	STATUS("%s: %i out of %i valid gradients were accurate.\n",
 	       str, n_acc, n_valid);
-	fclose(fh);
+	//fclose(fh);
 
 	if ( n_acc != n_valid ) return 1;
 
