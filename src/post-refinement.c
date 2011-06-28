@@ -105,9 +105,9 @@ double gradient(struct image *image, int k, Reflection *refl, double r)
 	if ( (clamp_low == 0) && (clamp_high == 0) ) {
 		tt = (ttlow+tthigh)/2.0;
 	} else if ( clamp_high == 0 ) {
-		tt = tthigh;
+		tt = tthigh + image->div;
 	} else if ( clamp_low == 0 ) {
-		tt = ttlow;
+		tt = ttlow - image->div;
 	} else {
 		tt = 0.0;
 		/* Gradient should come out as zero in this case */
