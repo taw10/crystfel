@@ -258,9 +258,12 @@ int main(int argc, char *argv[])
 	image.width = 1024;
 	image.height = 1024;
 	image.det = simple_geometry(&image);
+	image.det->panels[0].res = 13333.3;
+	image.det->panels[0].clen = 80e-3;
+	image.det->panels[0].coffset = 0.0;
 
-	image.lambda = ph_en_to_lambda(eV_to_J(2000.0));
-	image.div = 0.009;
+	image.lambda = ph_en_to_lambda(eV_to_J(8000.0));
+	image.div = 1e-3;
 	image.bw = 0.01;
 	image.m = 0.0;
 	image.profile_radius = 0.005e9;
