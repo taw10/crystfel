@@ -217,7 +217,9 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 
 			fprintf(fh, "%e %f\n",
 			        //resolution(image->indexed_cell, h, k, l),
-			        rad2deg(tt), fabs((grad-cgrad)/grad));
+			        //rad2deg(tt),
+			        cgrad,
+			        fabs((grad-cgrad)/grad));
 
 		}
 
