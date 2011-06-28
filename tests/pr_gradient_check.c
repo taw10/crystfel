@@ -158,7 +158,7 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 
 	calc_either_side(image, incr_val, valid, vals, refine);
 
-	fh = fopen("wrongness.dat", "w+");
+	fh = fopen("wrongness.dat", "a");
 
 	n_valid = nref;  n_acc = 0;
 	i = 0;
