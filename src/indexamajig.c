@@ -315,11 +315,7 @@ static void process_image(void *pp, int cookie)
 
 	if ( image.indexed_cell != NULL ) pargs->indexable = 1;
 
-	/* Measure intensities if requested */
-
-	/* Do EITHER: */
-
-
+	/* Measure intensities */
 	if ( image.indexed_cell != NULL ) {
 
 		image.div = beam->divergence;

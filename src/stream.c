@@ -234,7 +234,7 @@ void write_chunk(FILE *ofh, struct image *i, int f)
 		fprintf(ofh, "bstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
 			bsx/1e9, bsy/1e9, bsz/1e9);
 		fprintf(ofh, "cstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
-		       csx/1e9, csy/1e9, csz/1e9);
+		        csx/1e9, csy/1e9, csz/1e9);
 
 	} else {
 
@@ -452,12 +452,12 @@ int skip_some_files(FILE *fh, int n)
 }
 
 int is_stream(const char *filename) {
-	FILE *fh;	
+	FILE *fh;
 	char line[1024];
-	char *rval = NULL;	
+	char *rval = NULL;
 	fh = fopen(filename, "r");
 	rval = fgets(line, 1023, fh);
-	fclose(fh);	
+	fclose(fh);
 	if ( rval == NULL ) {
 		return -1;
 	}
