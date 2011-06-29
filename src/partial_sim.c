@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	det = get_detector_geometry(geomfile);
-	if ( cell == NULL ) {
+	if ( det == NULL ) {
 		ERROR("Failed to read geometry from '%s'\n", geomfile);
 		return 1;
 	}
