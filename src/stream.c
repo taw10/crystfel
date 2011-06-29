@@ -253,7 +253,9 @@ void write_chunk(FILE *ofh, struct image *i, int f)
 
 	//FIXME:we're writing camera length from first panel only.
 	//this should actually write camera length for all panels.
-	fprintf(ofh, "camera_length = %f\n",i->det->panels[0].clen);
+	if ( i->det != NULL ) {
+		fprintf(ofh, "camera_length = %f\n", i->det->panels[0].clen);
+	}
 
 	if ( (f & STREAM_PEAKS)
 	  || ((f & STREAM_PEAKS_IF_INDEXED) && (i->indexed_cell != NULL))
