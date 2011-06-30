@@ -317,7 +317,7 @@ int main(int argc, char *argv[])
 
 		RefList *as;
 
-		images[n_usable_patterns].det = NULL;
+		images[n_usable_patterns].det = det;
 
 		if ( read_chunk(fh, &images[n_usable_patterns]) != 0 ) {
 			/* Should not happen, because we counted the patterns
@@ -336,7 +336,6 @@ int main(int argc, char *argv[])
 		/* Fill in initial estimates of stuff */
 		images[n_usable_patterns].div = beam->divergence;
 		images[n_usable_patterns].bw = beam->bandwidth;
-		images[n_usable_patterns].det = det;
 		images[n_usable_patterns].width = det->max_fs;
 		images[n_usable_patterns].height = det->max_ss;
 		images[n_usable_patterns].osf = 1.0;
