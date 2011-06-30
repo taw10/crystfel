@@ -29,3 +29,7 @@ src/partial_sim
 src/.dirstamp
 *~
 doc/reference/*
+contrib/.deps
+contrib/*.o
+contrib/.dirstamp
+contrib/alter_stream

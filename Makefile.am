@@ -5,7 +5,8 @@ ACLOCAL_AMFLAGS = -I m4
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
                src/compare_hkl src/powder_plot src/render_hkl \
                src/calibrate_detector src/partialator \
-               src/check_hkl src/sum_stack src/partial_sim
+               src/check_hkl src/sum_stack src/partial_sim \
+               contrib/alter_stream
 
 noinst_PROGRAMS = tests/list_check tests/integration_check \
                   tests/pr_gradient_check
@@ -126,6 +127,12 @@ src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
                      src/symmetry.c src/stream.c src/thread-pool.c \
                      src/reflist.c src/reflist-utils.c
 endif
+
+contrib_alter_stream_SOURCES = contrib/alter_stream.c src/stream.c src/image.c \
+                               src/thread-pool.c src/detector.c src/utils.c \
+                               src/cell.c src/reflist-utils.c src/reflist.c \
+                               src/symmetry.c src/hdf5-file.c \
+                               src/beam-parameters.c src/geometry.c src/peaks.c
 
 tests_list_check_SOURCES = tests/list_check.c src/reflist.c src/thread-pool.c \
                            src/utils.c

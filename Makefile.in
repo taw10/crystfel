@@ -41,7 +41,7 @@ bin_PROGRAMS = src/pattern_sim$(EXEEXT) src/process_hkl$(EXEEXT) \
 	src/render_hkl$(EXEEXT) src/calibrate_detector$(EXEEXT) \
 	src/partialator$(EXEEXT) src/check_hkl$(EXEEXT) \
 	src/sum_stack$(EXEEXT) src/partial_sim$(EXEEXT) \
-	$(am__EXEEXT_1) $(am__EXEEXT_2)
+	contrib/alter_stream$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 noinst_PROGRAMS = tests/list_check$(EXEEXT) \
 	tests/integration_check$(EXEEXT) \
 	tests/pr_gradient_check$(EXEEXT) $(am__EXEEXT_3)
@@ -89,6 +89,17 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" \
 @HAVE_OPENCL_TRUE@am__EXEEXT_3 = tests/gpu_sim_check$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
+am_contrib_alter_stream_OBJECTS = contrib/alter_stream.$(OBJEXT) \
+	src/stream.$(OBJEXT) src/image.$(OBJEXT) \
+	src/thread-pool.$(OBJEXT) src/detector.$(OBJEXT) \
+	src/utils.$(OBJEXT) src/cell.$(OBJEXT) \
+	src/reflist-utils.$(OBJEXT) src/reflist.$(OBJEXT) \
+	src/symmetry.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
+	src/beam-parameters.$(OBJEXT) src/geometry.$(OBJEXT) \
+	src/peaks.$(OBJEXT)
+contrib_alter_stream_OBJECTS = $(am_contrib_alter_stream_OBJECTS)
+contrib_alter_stream_LDADD = $(LDADD)
+contrib_alter_stream_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_calibrate_detector_OBJECTS = src/calibrate_detector.$(OBJEXT) \
 	src/utils.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
 	src/image.$(OBJEXT) src/thread-pool.$(OBJEXT) \
@@ -307,7 +318,8 @@ am__v_CCLD_0 = @echo "  CCLD  " $@;
 AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN   " $@;
-SOURCES = $(src_calibrate_detector_SOURCES) $(src_check_hkl_SOURCES) \
+SOURCES = $(contrib_alter_stream_SOURCES) \
+	$(src_calibrate_detector_SOURCES) $(src_check_hkl_SOURCES) \
 	$(src_compare_hkl_SOURCES) $(src_cubeit_SOURCES) \
 	$(src_get_hkl_SOURCES) $(src_hdfsee_SOURCES) \
 	$(src_indexamajig_SOURCES) $(src_partial_sim_SOURCES) \
@@ -317,10 +329,10 @@ SOURCES = $(src_calibrate_detector_SOURCES) $(src_check_hkl_SOURCES) \
 	$(tests_gpu_sim_check_SOURCES) \
 	$(tests_integration_check_SOURCES) $(tests_list_check_SOURCES) \
 	$(tests_pr_gradient_check_SOURCES)
-DIST_SOURCES = $(src_calibrate_detector_SOURCES) \
-	$(src_check_hkl_SOURCES) $(src_compare_hkl_SOURCES) \
-	$(am__src_cubeit_SOURCES_DIST) $(src_get_hkl_SOURCES) \
-	$(am__src_hdfsee_SOURCES_DIST) \
+DIST_SOURCES = $(contrib_alter_stream_SOURCES) \
+	$(src_calibrate_detector_SOURCES) $(src_check_hkl_SOURCES) \
+	$(src_compare_hkl_SOURCES) $(am__src_cubeit_SOURCES_DIST) \
+	$(src_get_hkl_SOURCES) $(am__src_hdfsee_SOURCES_DIST) \
 	$(am__src_indexamajig_SOURCES_DIST) $(src_partial_sim_SOURCES) \
 	$(src_partialator_SOURCES) $(am__src_pattern_sim_SOURCES_DIST) \
 	$(src_powder_plot_SOURCES) $(src_process_hkl_SOURCES) \
@@ -717,6 +729,12 @@ src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
 @BUILD_CUBEIT_TRUE@                     src/symmetry.c src/stream.c src/thread-pool.c \
 @BUILD_CUBEIT_TRUE@                     src/reflist.c src/reflist-utils.c
 
+contrib_alter_stream_SOURCES = contrib/alter_stream.c src/stream.c src/image.c \
+                               src/thread-pool.c src/detector.c src/utils.c \
+                               src/cell.c src/reflist-utils.c src/reflist.c \
+                               src/symmetry.c src/hdf5-file.c \
+                               src/beam-parameters.c src/geometry.c src/peaks.c
+
 tests_list_check_SOURCES = tests/list_check.c src/reflist.c src/thread-pool.c \
                            src/utils.c
 
@@ -853,24 +871,28 @@ clean-binPROGRAMS:
 
 clean-noinstPROGRAMS:
 	-test -z "$(noinst_PROGRAMS)" || rm -f $(noinst_PROGRAMS)
+contrib/$(am__dirstamp):
+	@$(MKDIR_P) contrib
+	@: > contrib/$(am__dirstamp)
+contrib/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) contrib/$(DEPDIR)
+	@: > contrib/$(DEPDIR)/$(am__dirstamp)
+contrib/alter_stream.$(OBJEXT): contrib/$(am__dirstamp) \
+	contrib/$(DEPDIR)/$(am__dirstamp)
 src/$(am__dirstamp):
 	@$(MKDIR_P) src
 	@: > src/$(am__dirstamp)
 src/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) src/$(DEPDIR)
 	@: > src/$(DEPDIR)/$(am__dirstamp)
-src/calibrate_detector.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/utils.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/hdf5-file.$(OBJEXT): src/$(am__dirstamp) \
+src/stream.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/image.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/thread-pool.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/detector.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
-src/stream.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
+src/utils.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/cell.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/reflist-utils.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -878,7 +900,18 @@ src/reflist.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/symmetry.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/hdf5-file.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/beam-parameters.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/geometry.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/peaks.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+contrib/alter_stream$(EXEEXT): $(contrib_alter_stream_OBJECTS) $(contrib_alter_stream_DEPENDENCIES) contrib/$(am__dirstamp)
+	@rm -f contrib/alter_stream$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(contrib_alter_stream_OBJECTS) $(contrib_alter_stream_LDADD) $(LIBS)
+src/calibrate_detector.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/calibrate_detector$(EXEEXT): $(src_calibrate_detector_OBJECTS) $(src_calibrate_detector_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/calibrate_detector$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_calibrate_detector_OBJECTS) $(src_calibrate_detector_LDADD) $(LIBS)
@@ -905,8 +938,6 @@ src/cubeit$(EXEEXT): $(src_cubeit_OBJECTS) $(src_cubeit_DEPENDENCIES) src/$(am__
 	$(AM_V_CCLD)$(LINK) $(src_cubeit_OBJECTS) $(src_cubeit_LDADD) $(LIBS)
 src/get_hkl.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
-src/beam-parameters.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
 src/get_hkl$(EXEEXT): $(src_get_hkl_OBJECTS) $(src_get_hkl_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/get_hkl$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_get_hkl_OBJECTS) $(src_get_hkl_LDADD) $(LIBS)
@@ -924,8 +955,6 @@ src/diffraction.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/dirax.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/mosflm.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/geometry.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/diffraction-gpu.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1004,6 +1033,7 @@ tests/pr_gradient_check$(EXEEXT): $(tests_pr_gradient_check_OBJECTS) $(tests_pr_
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f contrib/alter_stream.$(OBJEXT)
 	-rm -f src/beam-parameters.$(OBJEXT)
 	-rm -f src/calibrate_detector.$(OBJEXT)
 	-rm -f src/cell.$(OBJEXT)
@@ -1052,6 +1082,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@contrib/$(DEPDIR)/alter_stream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/beam-parameters.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/calibrate_detector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cell.Po@am__quote@
@@ -1658,6 +1689,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f contrib/$(DEPDIR)/$(am__dirstamp)
+	-rm -f contrib/$(am__dirstamp)
 	-rm -f src/$(DEPDIR)/$(am__dirstamp)
 	-rm -f src/$(am__dirstamp)
 	-rm -f tests/$(DEPDIR)/$(am__dirstamp)
@@ -1673,7 +1706,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-noinstPROGRAMS \
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf src/$(DEPDIR) tests/$(DEPDIR)
+	-rm -rf contrib/$(DEPDIR) src/$(DEPDIR) tests/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -1722,7 +1755,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf src/$(DEPDIR) tests/$(DEPDIR)
+	-rm -rf contrib/$(DEPDIR) src/$(DEPDIR) tests/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
