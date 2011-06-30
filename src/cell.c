@@ -840,7 +840,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
 }
 
 
-/* FIXME: Unify with proper match_cell(), or work out if it's even possible. */
+
 UnitCell *match_cell_ab(UnitCell *cell, UnitCell *template)
 {
 	double ax, ay, az;
