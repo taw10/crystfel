@@ -1686,7 +1686,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
                                   int boost, int binning, int cmfilter,
                                   int noisefilter, int colscale,
                                   const char *element, const char *geometry,
-                                  int show_rings)
+                                  int show_rings, double ring_size)
 {
 	DisplayWindow *dw;
 	char *title;
@@ -1714,7 +1714,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->noisefilter = noisefilter;
 	dw->not_ready_yet = 1;
 	dw->surf = NULL;
-	dw->ring_radius = 5.0;
+	dw->ring_radius = ring_size;
 
 	/* Open the file, if any */
 	if ( filename != NULL ) {

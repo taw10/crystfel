@@ -36,6 +36,7 @@ static void show_help(const char *s)
 "  -h, --help                       Display this help message.\n"
 "\n"
 "  -p, --peak-overlay=<filename>    Draw circles in positions listed in file.\n"
+"      --ring-size=<n>              Set the size for those circles.\n"
 "  -i, --int-boost=<n>              Multiply intensity by <n>.\n"
 "  -b, --binning=<n>                Set display binning to <n>.\n"
 "      --filter-cm                  Perform common-mode noise subtraction.\n"
@@ -97,6 +98,7 @@ int main(int argc, char *argv[])
 	char *cscale = NULL;
 	char *element = NULL;
 	char *geometry = NULL;
+	double ring_size = 5.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -110,14 +112,17 @@ int main(int argc, char *argv[])
 		{"image",              1, NULL,               'e'},
 		{"geometry",           1, NULL,               'g'},
 		{"show-rings",         0, &config_showrings,   1},
+		{"ring-size",          1, NULL,                2},
 		{0, 0, NULL, 0}
 	};
 
 	gtk_init(&argc, &argv);
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hp:b:i:c:e:g:",
+	while ((c = getopt_long(argc, argv, "hp:b:i:c:e:g:2:",
 	                        longopts, NULL)) != -1) {
+
+		char *test;
 
 		switch (c) {
 		case 'h' :
@@ -133,13 +138,15 @@ int main(int argc, char *argv[])
 			if ( boost < 1 ) {
 				ERROR("Intensity boost must be a positive"
 				      " integer.\n");
+				return 1;
 			}
 			break;
 
 		case 'b' :
 			binning = atoi(optarg);
-			if ( boost < 1 ) {
+			if ( binning < 1 ) {
 				ERROR("Binning must be a positive integer.\n");
+				return 1;
 			}
 			break;
 
@@ -154,6 +161,13 @@ int main(int argc, char *argv[])
 		case 'g' :
 			geometry = strdup(optarg);
 			break;
+
+		case 2 :
+			ring_size = strtod(optarg, &test);
+			if ( test == optarg ) {
+				ERROR("Ring size must be numerical.\n");
+				return 1;
+			}
 
 		case 0 :
 			break;
@@ -193,7 +207,8 @@ int main(int argc, char *argv[])
 		                                         config_noisefilter,
 		                                         colscale, element,
 		                                         geometry,
-		                                         config_showrings);
+		                                         config_showrings,
+		                                         ring_size);
 		if ( main_window_list[i] == NULL ) {
 			ERROR("Couldn't open display window\n");
 		} else {
