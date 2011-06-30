@@ -38,18 +38,15 @@ static signed int locate_peak(double x, double y, double z, double k,
 
 	for ( i=0; i<det->n_panels; i++ ) {
 
-		double xd, yd, cl;
+		double xd, yd;
 		double fs, ss, plx, ply;
 		struct panel *p;
 
 		p = &det->panels[i];
 
-		/* Camera length for this panel */
-		cl = p->clen;
-
 		/* Coordinates of peak relative to central beam, in m */
-		xd = cl * x / den;
-		yd = cl * y / den;
+		xd = p->clen * x / den;
+		yd = p->clen * y / den;
 
 		/* Convert to pixels */
 		xd *= p->res;
@@ -160,7 +157,6 @@ static int check_reflection(struct image *image, double mres, int output,
 	xl = h*asx + k*bsx + l*csx;
 	yl = h*asy + k*bsy + l*csy;
 
-	/* Calculate reciprocal lattice point modulus (and square) */
 	ds_sq = modulus_squared(xl, yl, zl);  /* d*^2 */
 	ds = sqrt(ds_sq);
 	if ( ds > mres ) return 0;  /* Outside resolution range */
