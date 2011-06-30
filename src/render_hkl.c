@@ -94,95 +94,102 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
                          double *max_val, double *max_u, double *max_v,
                          double *max_res)
 {
-	signed int xi, yi;
+	Reflection *refl;
+	RefListIterator *iter;
 
 	if ( dctx == NULL ) {
 		*max_u = 0.0;  *max_v = 0.0;  *max_val = 0.0;
 		*max_res = 0.0;  *max_ux = 0;  *max_uy = 0;
 	}
 
-	/* Iterate over possible reflections in this zone */
-	for ( xi=-INDMAX; xi<INDMAX; xi++ ) {
-	for ( yi=-INDMAX; yi<INDMAX; yi++ ) {
+	/* Iterate over all reflections */
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
 
 		double u, v, val, res;
-		signed int h, k, l;
-		signed int he, ke, le;
-		Reflection *refl;
-		int r;
+		signed int ha, ka, la;
+		int xi, yi;
+		int i;
 
-		h = xi*xh + yi*yh;
-		k = xi*xk + yi*yk;
-		l = xi*xl + yi*yl;
+		get_indices(refl, &ha, &ka, &la);
 
-		/* Got this reflection? */
-		r = find_equiv_in_list(list, h, k, l, sym, &he, &ke, &le);
-		if ( !r ) continue;
-		refl = find_refl(list, he, ke, le);
+		for ( i=0; i<num_equivs(ha, ka, la, sym); i++ ) {
 
-		switch ( wght ) {
-		case WGHT_I :
-			val = get_intensity(refl);
-			break;
-		case WGHT_SQRTI :
-			val = get_intensity(refl);
-			val = (val>0.0) ? sqrt(val) : 0.0;
-			break;
-		case WGHT_COUNTS :
-			val = get_redundancy(refl);
-			val /= (float)num_equivs(h, k, l, sym);
-			break;
-		case WGHT_RAWCOUNTS :
-			val = get_redundancy(refl);
-			break;
-		default :
-			ERROR("Invalid weighting.\n");
-			abort();
-		}
+			signed int h, k, l;
 
-		/* Absolute location in image based on 2D basis */
-		u = (double)xi*as*sin(theta);
-		v = (double)xi*as*cos(theta) + (double)yi*bs;
+			get_equiv(ha, ka, la, &h, &k, &l, sym, i);
 
-		if ( dctx != NULL ) {
+			/* Is the reflection in the zone? */
+			if ( h*zh + k*zk + l*zl != 0 ) continue;
 
-			double r, g, b;
+			xi = h*xh + k*xk + l*xl;
+			yi = h*yh + k*yk + l*yl;
 
-			cairo_arc(dctx, ((double)cx)+u*scale,
-			                ((double)cy)+v*scale,
-			                radius, 0, 2*M_PI);
-
-			render_scale(val, *max_val/boost, colscale,
-			             &r, &g, &b);
-			cairo_set_source_rgb(dctx, r, g, b);
-			cairo_fill(dctx);
-
-		} else {
-
-			/* Find max vectors in plane for scaling */
-			if ( fabs(u) > fabs(*max_u) ) *max_u = fabs(u);
-			if ( fabs(v) > fabs(*max_v) ) *max_v = fabs(v);
-
-			/* Find max value for colour scale */
-			if ( !isnan(val) && !isinf(val)
-			  && (fabs(val) > fabs(*max_val)) )
-			{
-				*max_val = fabs(val);
+			switch ( wght) {
+			case WGHT_I :
+				val = get_intensity(refl);
+				break;
+			case WGHT_SQRTI :
+				val = get_intensity(refl);
+				val = (val>0.0) ? sqrt(val) : 0.0;
+				break;
+			case WGHT_COUNTS :
+				val = get_redundancy(refl);
+				val /= (float)num_equivs(h, k, l, sym);
+				break;
+			case WGHT_RAWCOUNTS :
+				val = get_redundancy(refl);
+				break;
+			default :
+				ERROR("Invalid weighting.\n");
+				abort();
 			}
 
-			/* Find max indices */
-			if ( (yi==0) && (fabs(xi) > *max_ux) )
-				*max_ux = fabs(xi);
-			if ( (xi==0) && (fabs(yi) > *max_uy) )
-				*max_uy = fabs(yi);
+			/* Absolute location in image based on 2D basis */
+			u = (double)xi*as*sin(theta);
+			v = (double)xi*as*cos(theta) + (double)yi*bs;
 
-			/* Find max resolution */
-			res = resolution(cell, h, k, l);
-			if ( res > *max_res ) *max_res = res;
+			if ( dctx != NULL ) {
+
+				double r, g, b;
+
+				cairo_arc(dctx, ((double)cx)+u*scale,
+					        ((double)cy)+v*scale,
+					        radius, 0, 2*M_PI);
+
+				render_scale(val, *max_val/boost, colscale,
+					     &r, &g, &b);
+				cairo_set_source_rgb(dctx, r, g, b);
+				cairo_fill(dctx);
+
+			} else {
+
+				/* Find max vectors in plane for scaling */
+				if ( fabs(u) > fabs(*max_u) ) *max_u = fabs(u);
+				if ( fabs(v) > fabs(*max_v) ) *max_v = fabs(v);
+
+				/* Find max value for colour scale */
+				if ( !isnan(val) && !isinf(val)
+				  && (fabs(val) > fabs(*max_val)) )
+				{
+					*max_val = fabs(val);
+				}
+
+				/* Find max indices */
+				if ( (yi==0) && (fabs(xi) > *max_ux) )
+					*max_ux = fabs(xi);
+				if ( (xi==0) && (fabs(yi) > *max_uy) )
+					*max_uy = fabs(yi);
+
+				/* Find max resolution */
+				res = resolution(cell, h, k, l);
+				if ( res > *max_res ) *max_res = res;
+
+			}
 
 		}
 
-	}
 	}
 }
 
