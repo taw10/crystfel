@@ -713,6 +713,10 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
 		n2 = (n2l>=0) ? (n2l) : (1.0/n2l);
 		n3 = (n3l>=0) ? (n3l) : (1.0/n3l);
 
+		if ( !reduce ) {
+			if ( n1l + n2l + n3l > 1 ) continue;
+		}
+
 		/* 'bit' values can be +1 or -1 */
 		for ( b1=-1; b1<=1; b1+=2 ) {
 		for ( b2=-1; b2<=1; b2+=2 ) {
