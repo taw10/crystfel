@@ -1226,7 +1226,8 @@ static gint displaywindow_show_numbers(GtkWidget *widget, DisplayWindow *dw)
 	label = gtk_label_new("Feature:");
 	gtk_box_pack_start(GTK_BOX(hbox2), GTK_WIDGET(label), FALSE, FALSE, 5);
 	nw->feat = gtk_label_new("-");
-	gtk_box_pack_start(GTK_BOX(hbox2), GTK_WIDGET(nw->feat), FALSE, FALSE, 5);
+	gtk_box_pack_start(GTK_BOX(hbox2), GTK_WIDGET(nw->feat),
+	                   FALSE, FALSE, 5);
 
 	g_signal_connect(G_OBJECT(nw->window), "response",
 			 G_CALLBACK(displaywindow_numbers_response), dw);
