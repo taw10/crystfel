@@ -340,7 +340,7 @@ int main(int argc, char *argv[])
 		images[n_usable_patterns].width = det->max_fs;
 		images[n_usable_patterns].height = det->max_ss;
 		images[n_usable_patterns].osf = 1.0;
-		images[n_usable_patterns].profile_radius = 0.005e9;
+		images[n_usable_patterns].profile_radius = 0.0001e9;
 		images[n_usable_patterns].pr_dud = 0;
 
 		/* Muppet proofing */
