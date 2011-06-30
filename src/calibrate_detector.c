@@ -52,6 +52,45 @@ static void show_help(const char *s)
 }
 
 
+static int write_detector_geometry(const char *filename, struct detector *det)
+{
+	struct panel *p;
+	int pi;
+	FILE *fh;
+
+	if ( filename == NULL ) return 2;
+	if ( det->n_panels < 1 ) return 3;
+
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) return 1;
+
+	for ( pi=0; pi<det->n_panels; pi++) {
+
+		p = &(det->panels[pi]);
+
+		if ( p == NULL ) return 4;
+
+		fprintf(fh, "%s/min_fs = %d\n", p->name, p->min_fs);
+		fprintf(fh, "%s/min_ss = %d\n", p->name, p->min_ss);
+		fprintf(fh, "%s/max_fs = %d\n", p->name, p->max_fs);
+		fprintf(fh, "%s/max_ss = %d\n", p->name, p->max_ss);
+		fprintf(fh, "%s/badrow_direction = %C\n", p->name, p->badrow);
+		fprintf(fh, "%s/res = %g\n", p->name, p->res);
+		fprintf(fh, "%s/peak_sep = %g\n", p->name, p->peak_sep);
+		fprintf(fh, "%s/clen = %s\n", p->name, p->clen_from);
+		fprintf(fh, "%s/fs = %+fx %+fy\n", p->name, p->fsx, p->fsy);
+		fprintf(fh, "%s/ss = %+fx %+fy\n", p->name, p->ssx, p->ssy);
+		fprintf(fh, "%s/corner_x = %g\n", p->name, p->cnx);
+		fprintf(fh, "%s/corner_y = %g\n", p->name, p->cny);
+		fprintf(fh, "%s/no_index = %d\n", p->name, p->no_index);
+
+	}
+	fclose(fh);
+
+	return 0;
+}
+
+
 static int calculate_projected_peak(struct panel *panel, struct rvec q,
                                     double kk, double *fs, double *ss)
 {
