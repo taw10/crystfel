@@ -44,10 +44,6 @@
 /* Degree of polarisation of X-ray beam */
 #define POL (1.0)
 
-/* Window size for Zaefferer peak detection */
-#define PEAK_WINDOW_SIZE (10)
-
-
 static int cull_peaks_in_panel(struct image *image, struct panel *p)
 {
 	int i, n;
@@ -298,6 +294,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	int nrej_bad = 0;
 	int nacc = 0;
 	int ncull;
+	const int pws = p->peak_sep/2;
 
 	data = image->data;
 	stride = image->width;
@@ -340,14 +337,14 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 			max = data[mask_fs+stride*mask_ss];
 			did_something = 0;
 
-			for ( s_ss=biggest(mask_ss-PEAK_WINDOW_SIZE/2,
+			for ( s_ss=biggest(mask_ss-pws/2,
 			                   p->min_ss);
-			      s_ss<=smallest(mask_ss+PEAK_WINDOW_SIZE/2,
+			      s_ss<=smallest(mask_ss+pws/2,
 			                     p->max_ss);
 			      s_ss++ ) {
-			for ( s_fs=biggest(mask_fs-PEAK_WINDOW_SIZE/2,
+			for ( s_fs=biggest(mask_fs-pws/2,
 			                   p->min_fs);
-			      s_fs<=smallest(mask_fs+PEAK_WINDOW_SIZE/2,
+			      s_fs<=smallest(mask_fs+pws/2,
 			                     p->max_fs);
 			      s_fs++ ) {
 
