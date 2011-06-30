@@ -121,7 +121,7 @@ extern double largest_q(struct image *image);
 
 extern double smallest_q(struct image *image);
 
-extern int write_detector_geometry(const char *filename, struct detector *det);
+extern struct panel *find_panel_by_name(struct detector *det, const char *name);
 
 
 #endif	/* DETECTOR_H */

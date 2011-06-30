@@ -251,10 +251,15 @@ void write_chunk(FILE *ofh, struct image *i, int f)
 	fprintf(ofh, "photon_energy_eV = %f\n",
 	        J_to_eV(ph_lambda_to_en(i->lambda)));
 
-	//FIXME:we're writing camera length from first panel only.
-	//this should actually write camera length for all panels.
 	if ( i->det != NULL ) {
-		fprintf(ofh, "camera_length = %f\n", i->det->panels[0].clen);
+
+		int j;
+
+		for ( j=0; j<i->det->n_panels; j++ ) {
+			fprintf(ofh, "camera_length_%s = %f\n",
+			        i->det->panels[j].name, i->det->panels[j].clen);
+		}
+
 	}
 
 	if ( (f & STREAM_PEAKS)
@@ -340,17 +345,32 @@ int read_chunk(FILE *fh, struct image *image)
 			have_filename = 1;
 		}
 
-		if ( strncmp(line, "camera_length = ",16) == 0 ) {
-			//FIXME: assuming here that we have loaded detector
-			//geometry into image prior to calling this routine.
-			//otherise, we don't know how many panels there are!
-			if ( !( image->det == NULL ) ) {
+		if ( strncmp(line, "camera_length_", 14) == 0 ) {
+			if ( image->det == NULL ) {
+				ERROR("Stream had a camera length, but "
+				      "geometry is not currently loaded.\n");
+			} else {
+
 				int k;
-				double clen;
-				clen = atof( line+16 );
-				for ( k=0; k< image->det->n_panels; k++ ) {
-					image->det->panels[k].clen = clen;
+				char name[1024];
+				struct panel *p;
+
+				for ( k=0; k<strlen(line)-14; k++ ) {
+					char ch = line[k+14];
+					name[k] = ch;
+					if ( (ch == ' ') || (ch == '=') ) {
+						name[k] = '\0';
+						break;
+					}
 				}
+
+				p = find_panel_by_name(image->det, name);
+				if ( p == NULL ) {
+					ERROR("No panel '%s'\n", name);
+				} else {
+					p->clen = atof(line+14+k+3);
+				}
+
 			}
 		}
 

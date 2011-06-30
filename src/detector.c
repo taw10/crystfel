@@ -472,7 +472,7 @@ static struct badregion *new_bad_region(struct detector *det, const char *name)
 }
 
 
-static struct panel *find_panel_by_name(struct detector *det, const char *name)
+struct panel *find_panel_by_name(struct detector *det, const char *name)
 {
 	int i;
 
