@@ -244,6 +244,7 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 			double x, y, xs, ys;
 			struct imagefeature *f;
 			struct panel *p;
+			double radius = dw->ring_radius;
 
 			f = image_get_feature(dw->image->features, i);
 			if ( f == NULL ) continue;
@@ -260,7 +261,7 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 			y = ys + p->cny;
 
 			cairo_arc(cr, x/dw->binning, y/dw->binning,
-				  7.0/dw->binning, 0.0, 2.0*M_PI);
+				  radius, 0.0, 2.0*M_PI);
 			switch ( dw->scale ) {
 
 				case SCALE_COLOUR :
@@ -675,6 +676,121 @@ static gint displaywindow_set_boostint(GtkWidget *widget, DisplayWindow *dw)
 	gtk_window_set_resizable(GTK_WINDOW(bd->window), FALSE);
 	gtk_widget_show_all(bd->window);
 	gtk_widget_grab_focus(GTK_WIDGET(bd->entry));
+
+	return 0;
+}
+
+
+static gint displaywindow_set_ringradius_response(GtkWidget *widget,
+                                                  gint response,
+                                                  DisplayWindow *dw)
+{
+	int done = 1;
+
+	if ( response == GTK_RESPONSE_OK ) {
+
+		const char *srad;
+		float ringrad;
+		int scanval;
+
+		srad = gtk_entry_get_text(
+		                       GTK_ENTRY(dw->ringradius_dialog->entry));
+		scanval = sscanf(srad, "%f", &ringrad);
+		if ( (scanval != 1) || (ringrad <= 0) ) {
+			displaywindow_error(dw, "Please enter a positive "
+					"number for the ring radius "
+					"factor.");
+			done = 0;
+		} else {
+			dw->ring_radius = ringrad;
+			displaywindow_update(dw);
+		}
+	}
+
+	if ( done ) {
+		gtk_widget_destroy(dw->ringradius_dialog->window);
+	}
+
+	return 0;
+}
+
+
+static gint displaywindow_set_ringradius_destroy(GtkWidget *widget,
+                                                 DisplayWindow *dw)
+{
+	free(dw->ringradius_dialog);
+	dw->ringradius_dialog = NULL;
+	return 0;
+}
+
+
+static gint displaywindow_set_ringradius_response_ac(GtkWidget *widget,
+                                                     DisplayWindow *dw)
+{
+	return displaywindow_set_ringradius_response(widget, GTK_RESPONSE_OK,
+	                                             dw);
+}
+
+/* Create a window to ask the user for a new ring radius */
+static gint displaywindow_set_ringradius(GtkWidget *widget, DisplayWindow *dw)
+{
+	RingRadiusDialog *rd;
+	GtkWidget *vbox;
+	GtkWidget *hbox;
+	GtkWidget *table;
+	GtkWidget *label;
+	char tmp[64];
+
+	if ( dw->ringradius_dialog != NULL ) {
+		return 0;
+	}
+
+	if ( dw->hdfile == NULL ) {
+		return 0;
+	}
+
+	rd = malloc(sizeof(RingRadiusDialog));
+	if ( rd == NULL ) return 0;
+	dw->ringradius_dialog = rd;
+
+	rd->window = gtk_dialog_new_with_buttons("Ring Radius",
+					GTK_WINDOW(dw->window),
+					GTK_DIALOG_DESTROY_WITH_PARENT,
+					GTK_STOCK_CANCEL, GTK_RESPONSE_CLOSE,
+					GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
+
+	vbox = gtk_vbox_new(FALSE, 0);
+	hbox = gtk_hbox_new(TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(rd->window)->vbox),
+			   GTK_WIDGET(hbox), FALSE, FALSE, 7);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(vbox), FALSE, FALSE, 5);
+
+	table = gtk_table_new(3, 2, FALSE);
+	gtk_table_set_row_spacings(GTK_TABLE(table), 5);
+	gtk_table_set_col_spacings(GTK_TABLE(table), 5);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(table), FALSE, FALSE, 0);
+
+	label = gtk_label_new("Ring Radius:");
+	gtk_misc_set_alignment(GTK_MISC(label), 1, 0.5);
+	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(label),
+				  1, 2, 3, 4);
+
+	rd->entry = gtk_entry_new();
+	snprintf(tmp, 63, "%.2f", dw->ring_radius);
+	gtk_entry_set_text(GTK_ENTRY(rd->entry), tmp);
+	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(rd->entry),
+				  2, 3, 3, 4);
+
+	g_signal_connect(G_OBJECT(rd->entry), "activate",
+			 G_CALLBACK(displaywindow_set_ringradius_response_ac),
+			 dw);
+	g_signal_connect(G_OBJECT(rd->window), "response",
+			 G_CALLBACK(displaywindow_set_ringradius_response), dw);
+	g_signal_connect(G_OBJECT(rd->window), "destroy",
+			 G_CALLBACK(displaywindow_set_ringradius_destroy), dw);
+	gtk_window_set_resizable(GTK_WINDOW(rd->window), FALSE);
+	gtk_widget_show_all(rd->window);
+	gtk_widget_grab_focus(GTK_WIDGET(rd->entry));
 
 	return 0;
 }
@@ -1238,6 +1354,8 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 			G_CALLBACK(displaywindow_set_binning) },
 		{ "BoostIntAction", NULL, "Boost Intensity...", "F5", NULL,
 			G_CALLBACK(displaywindow_set_boostint) },
+		{ "RingRadiusAction", NULL, "Ring Radius...", "F6", NULL,
+			G_CALLBACK(displaywindow_set_ringradius) },
 
 		{ "ToolsAction", NULL, "_Tools", NULL, NULL, NULL },
 		{ "NumbersAction", NULL, "View Numbers...", "F2", NULL,
@@ -1595,6 +1713,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->noisefilter = noisefilter;
 	dw->not_ready_yet = 1;
 	dw->surf = NULL;
+	dw->ring_radius = 5.0;
 
 	/* Open the file, if any */
 	if ( filename != NULL ) {

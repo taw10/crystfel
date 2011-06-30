@@ -15,6 +15,7 @@
 			<menuitem name="usegeom" action="GeometryAction" />
 			<menuitem name="rings" action="RingsAction" />
 			<menuitem name="showpeaks" action="ShowPeaksAction" />
+			<menuitem name="ringradius" action="RingRadiusAction" />
 			<separator />
 			<menuitem name="col" action="ColAction" />
 			<menuitem name="monoscale" action="MonoAction" />

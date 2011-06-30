@@ -32,6 +32,12 @@ typedef struct {
 } BoostIntDialog;
 
 
+typedef struct {
+	GtkWidget	*window;
+	GtkWidget	*entry;
+} RingRadiusDialog;
+
+
 struct numberswindow {
 	GtkWidget *window;
 	GtkWidget *labels[17*17];
@@ -63,6 +69,7 @@ typedef struct {
 	/* Dialog boxes */
 	BinningDialog	*binning_dialog;
 	BoostIntDialog	*boostint_dialog;
+	RingRadiusDialog *ringradius_dialog;
 	struct numberswindow *numbers_window;
 
 	int		width;
@@ -79,6 +86,7 @@ typedef struct {
 	int             use_geom;
 	int             show_rings;
 	int		show_peaks;
+	double          ring_radius;
 
 	int		show_col_scale;
 	int		scale;
