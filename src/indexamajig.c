@@ -555,7 +555,7 @@ int main(int argc, char *argv[])
 		{"cpus",               1, NULL,                6},
 		{"cpugroup",           1, NULL,                7},
 		{"cpuoffset",          1, NULL,                8},
-		{"bg-sub",             0, &config_bgsub,       1},
+		{"bg-sub",             0, &config_bgsub,       1}, /* Compat */
 		{"no-bg-sub",          0, &config_bgsub,       0},
 		{0, 0, NULL, 0}
 	};
