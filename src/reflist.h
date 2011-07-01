@@ -84,5 +84,6 @@ extern Reflection *next_refl(Reflection *refl, RefListIterator *iter);
 
 /* Misc */
 extern int num_reflections(RefList *list);
+extern int tree_depth(RefList *list);
 
 #endif	/* REFLIST_H */

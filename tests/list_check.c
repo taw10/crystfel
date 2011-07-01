@@ -87,6 +87,9 @@ static int test_lists(int num_items)
 
 	}
 
+	printf("num_reflections is %i, tree depth is %i\n",
+	       num_reflections(list), tree_depth(list));
+
 	/* Iterate over the list and check we find everything */
 	int count = 0;
 	for ( refl = first_refl(list, &iter);

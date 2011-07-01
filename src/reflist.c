@@ -26,11 +26,10 @@
  * @include: "reflist.h"
  * @Image:
  *
- * The fast reflection list stores reflections in a binary search tree indexed
- * by the Miller indices h, k and l.  Provided the tree has been optimised (by
- * using optimise_reflist()), any reflection can be found in a maximum length
- * of time which scales logarithmically with the number of reflections in the
- * list.
+ * The fast reflection list stores reflections in an RB-tree indexed
+ * by the Miller indices h, k and l.  Any reflection can be found in a
+ * length of time which scales logarithmically with the number of reflections in
+ * the list.
  *
  * A RefList can contain any number of reflections, and can store more than
  * one reflection with a given set of indices, for example when two distinct
@@ -95,7 +94,6 @@ struct _reflection {
 	/* Listy stuff */
 	unsigned int serial;          /* Unique serial number, key */
 	struct _reflection *child[2]; /* Child nodes */
-	struct _reflection *parent;   /* Parent node */
 	struct _reflection *next;     /* Next and previous in doubly linked */
 	struct _reflection *prev;     /*  list of duplicate reflections */
 	enum _nodecol col;            /* Colour (red or black) */
@@ -534,6 +532,33 @@ void set_symmetric_indices(Reflection *refl,
 
 /********************************* Insertion **********************************/
 
+static Reflection *rotate_once(Reflection *refl, int dir)
+{
+	Reflection *s = refl->child[!dir];
+
+	refl->child[!dir] = s->child[dir];
+	s->child[dir] = refl;
+
+	refl->col = RED;
+	s->col = BLACK;
+
+	return s;
+}
+
+
+static Reflection *rotate_twice(Reflection *refl, int dir)
+{
+	refl->child[!dir] = rotate_once(refl->child[!dir], !dir);
+	return rotate_once(refl, dir);
+}
+
+
+static int is_red(Reflection *refl)
+{
+	return (refl != NULL) && (refl->col == RED);
+}
+
+
 static Reflection *insert_node(Reflection *refl, Reflection *new)
 {
 	if ( refl == NULL ) {
@@ -543,9 +568,31 @@ static Reflection *insert_node(Reflection *refl, Reflection *new)
 	} else {
 
 		int dir;
+		Reflection *rcd;
+
 		assert(new->serial != refl->serial);
 		dir = new->serial > refl->serial;
 		refl->child[dir] = insert_node(refl->child[dir], new);
+
+		rcd = refl->child[dir];
+		if ( is_red(rcd) ) {
+
+			if ( is_red(refl->child[!dir]) ) {
+
+				refl->col = RED;
+				refl->child[0]->col = BLACK;
+				refl->child[1]->col = BLACK;
+
+			} else {
+
+				if ( is_red(rcd->child[dir] ) ) {
+					refl = rotate_once(refl, !dir);
+				} else if ( is_red(rcd->child[!dir] ) ) {
+					refl = rotate_twice(refl, !dir);
+				}
+
+			}
+		}
 
 	}
 
@@ -698,4 +745,10 @@ static int recursive_count(Reflection *refl)
 int num_reflections(RefList *list)
 {
 	return recursive_count(list->head);
+}
+
+
+int tree_depth(RefList *list)
+{
+	return recursive_depth(list->head);
 }
