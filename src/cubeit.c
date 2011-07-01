@@ -56,6 +56,7 @@ struct static_sum_args
 	double *gas;
 
 	struct detector *det;
+	char *element;
 	signed int ht;
 	signed int kt;
 	signed int lt;
@@ -96,7 +97,10 @@ static void show_help(const char *s)
 "  -x, --prefix=<p>           Prefix filenames from input file with <p>.\n"
 "      --basename             Remove the directory parts of the filenames.\n"
 "      --no-check-prefix      Don't attempt to correct the --prefix.\n"
-"  -j <n>                     Run <n> analyses in parallel.\n");
+"  -j <n>                     Run <n> analyses in parallel.\n"
+"  -e, --image=<element>      Use this image from the HDF5 file.\n"
+"                              Example: /data/data0.\n"
+"                              Default: The first one found.\n");
 }
 
 
@@ -223,12 +227,28 @@ static void sum_image(void *pg, int cookie)
 	STATUS("Processing '%s'\n", apargs->filename);
 
 	hdfile = hdfile_open(apargs->filename);
-	if ( hdfile == NULL ) {
-		return;
-	} else if ( hdfile_set_first_image(hdfile, "/") ) {
-		ERROR("Couldn't select path\n");
-		hdfile_close(hdfile);
-		return;
+	if ( hdfile == NULL ) return;
+	if ( pargs->element != NULL ) {
+
+		int r;
+		r = hdfile_set_image(hdfile, pargs->element);
+		if ( r ) {
+			ERROR("Couldn't select path '%s'\n",
+			      pargs->element);
+			hdfile_close(hdfile);
+			return;
+		}
+
+	} else {
+
+		int r;
+		r = hdfile_set_first_image(hdfile, "/");
+		if ( r ) {
+			ERROR("Couldn't select first path\n");
+			hdfile_close(hdfile);
+			return;
+		}
+
 	}
 
 	hdf5_read(hdfile, &image, 1);
@@ -455,6 +475,7 @@ int main(int argc, char *argv[])
 	double als;
 	double bes;
 	double gas;
+	char *element = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -464,6 +485,7 @@ int main(int argc, char *argv[])
 		{"prefix",             1, NULL,               'x'},
 		{"basename",           0, &config_basename,    1},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
+		{"image",              1, NULL,               'e'},
 		{0, 0, NULL, 0}
 	};
 
@@ -490,6 +512,10 @@ int main(int argc, char *argv[])
 
 		case 'j' :
 			nthreads = atoi(optarg);
+			break;
+
+		case 'e' :
+			element = strdup(optarg);
 			break;
 
 		case 0 :
@@ -571,6 +597,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.als = &als;
 	qargs.static_args.bes = &bes;
 	qargs.static_args.gas = &gas;
+	qargs.static_args.element = element;
 
 	n_images = run_threads(nthreads, sum_image, get_image, NULL, &qargs, 0,
 	                       0, 0, 0);
