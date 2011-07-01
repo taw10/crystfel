@@ -84,6 +84,12 @@ struct _refldata {
 };
 
 
+enum _nodecol {
+	RED,
+	BLACK
+};
+
+
 struct _reflection {
 
 	/* Listy stuff */
@@ -92,6 +98,7 @@ struct _reflection {
 	struct _reflection *parent;   /* Parent node */
 	struct _reflection *next;     /* Next and previous in doubly linked */
 	struct _reflection *prev;     /*  list of duplicate reflections */
+	enum _nodecol col;            /* Colour (red or black) */
 
 	/* Payload */
 	struct _refldata data;
@@ -123,6 +130,7 @@ static Reflection *new_node(unsigned int serial)
 	new->prev = NULL;
 	new->child[0] = NULL;
 	new->child[1] = NULL;
+	new->col = RED;
 
 	return new;
 }
@@ -144,8 +152,7 @@ RefList *reflist_new()
 
 	/* Create pseudo-root with invalid indices.
 	 * The "real" root will be the left child of this. */
-	new->head = new_node(1<<31);
-	new->tail = new->head;
+	new->head = NULL;//new_node(1<<31);
 
 	return new;
 }
@@ -194,35 +201,31 @@ Reflection *find_refl(const RefList *list,
                       signed int h, signed int k, signed int l)
 {
 	unsigned int search = SERIAL(h, k, l);
-	Reflection *refl = list->head->child[0];
+	Reflection *refl;
+
+	if ( list->head == NULL ) return NULL;
+
+	refl = list->head;
 
 	while ( refl != NULL ) {
 
-		if ( search < refl->serial ) {
-
-			if ( refl->child[0] != NULL ) {
-				refl = refl->child[0];
-			} else {
-				/* Hit the bottom of the tree */
-				return NULL;
-			}
-
-		} else if ( search > refl->serial ) {
-
-			if ( refl->child[1] != NULL ) {
-				refl = refl->child[1];
-			} else {
-				/* Hit the bottom of the tree */
-				return NULL;
-			}
-
-		} else {
+		if ( refl->serial == search ) {
 
 			assert(search == refl->serial);
 			assert(h == GET_H(refl->serial));
 			assert(k == GET_K(refl->serial));
 			assert(l == GET_L(refl->serial));
 			return refl;
+
+		} else {
+
+			int dir = search > refl->serial;
+			if ( refl->child[dir] != NULL ) {
+				refl = refl->child[dir];
+			} else {
+				/* Hit the bottom of the tree */
+				return NULL;
+			}
 
 		}
 
@@ -531,54 +534,29 @@ void set_symmetric_indices(Reflection *refl,
 
 /********************************* Insertion **********************************/
 
-static void insert_node(Reflection *head, Reflection *new)
+static Reflection *insert_node(Reflection *refl, Reflection *new)
 {
-	Reflection *refl;
+	if ( refl == NULL ) {
 
-	refl = head;
+		refl = new;
 
-	while ( refl != NULL ) {
+	} else {
 
-		if ( new->serial < refl->serial ) {
-
-			if ( refl->child[0] != NULL ) {
-				refl = refl->child[0];
-			} else {
-				refl->child[0] = new;
-				new->parent = refl;
-				return;
-			}
-
-		} else if ( new->serial > refl->serial ) {
-
-			if ( refl->child[1] != NULL ) {
-				refl = refl->child[1];
-			} else {
-				refl->child[1] = new;
-				new->parent = refl;
-				return;
-			}
-
-		} else {
-
-			/* New reflection is identical to a previous one */
-			assert(refl->serial == new->serial);
-			while ( refl->next != NULL ) {
-				refl = refl->next;
-			}
-			refl->next = new;
-			new->prev = refl;
-			return;
-
-		}
+		int dir;
+		assert(new->serial != refl->serial);
+		dir = new->serial > refl->serial;
+		refl->child[dir] = insert_node(refl->child[dir], new);
 
 	}
+
+	return refl;
 }
 
 
 Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 {
 	Reflection *new;
+	Reflection *f;
 
 	assert(abs(h)<256);
 	assert(abs(k)<256);
@@ -586,173 +564,23 @@ Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 
 	new = new_node(SERIAL(h, k, l));
 
-	insert_node(list->head, new);
+	f = find_refl(list, h, k, l);
+	if ( f == NULL ) {
 
-	return new;
-}
-
-
-/**
- * add_serialised_refl:
- * @list: A reflections list
- * @h, @k, @l: Indices of new reflection
- *
- * Returns: The newly added reflection
- *
- * Adds a new reflection from a serialised (i.e. sorted by ascending
- * search key) data source.  If you know the reflections you are adding to the
- * list are in the required order, using this function is quicker than using
- * add_refl().  You can only add reflections using this function to an empty
- * list, or one that has only been added to using this function.  After adding
- * all the reflections, you need to call optimise_reflist() or the list will
- * exhibit worst-case performance.
- *
- * If you don't understand exactly what this function does and why it needs to
- * exist, don't use it at all.
- **/
-Reflection *add_serialised_refl(RefList *list,
-                                signed int h, signed int k, signed int l)
-{
-	Reflection *new;
-
-	assert(abs(h)<256);
-	assert(abs(k)<256);
-	assert(abs(l)<256);
-
-	new = new_node(SERIAL(h, k, l));
-
-	new->parent = list->tail;
-	assert(list->tail->child[0] == NULL);
-	assert(list->tail->child[1] == NULL);
-	if ( list->tail == list->head ) {
-		list->tail->child[0] = new;
-	} else {
-		assert(new->serial > list->tail->serial);
-		list->tail->child[1] = new;
-	}
-	list->tail = new;
-
-	return new;
-}
-
-
-/********************************** Deletion **********************************/
-
-static void lr_delete(Reflection *refl, int side)
-{
-	int other = 1-side;
-	int i;
-	Reflection *pre;
-
-	pre = refl->child[side];
-	while ( pre->child[other] != NULL ) pre = pre->child[other];
-
-	assert(refl->next == NULL);
-	assert(refl->prev == NULL); /* Should have been caught previously */
-
-	refl->data = pre->data;
-	refl->serial = pre->serial;
-
-	/* If the predecessor node had duplicates, we need to fix things up. */
-	assert(pre->prev == NULL);
-	refl->next = pre->next;
-	if ( pre->next != NULL ) {
-		refl->next->prev = refl;
-	}
-
-	for ( i=0; i<2; i++ ) {
-		if ( pre->parent->child[i] == pre ) {
-			pre->parent->child[i] = pre->child[side];
-		}
-	}
-	if ( pre->child[side] != NULL ) {
-		pre->child[side]->parent = pre->parent;
-	}
-	free(pre);
-}
-
-
-void delete_refl(Reflection *refl)
-{
-	int i;
-
-	/* Is this a duplicate, and not the first one? */
-	if ( refl->prev != NULL ) {
-		refl->prev->next = refl->next;
-		if ( refl->next != NULL ) refl->next->prev = refl->prev;
-		free(refl);
-		return;
-	}
-
-	/* Is this the first duplicate of many? */
-	if ( refl->next != NULL ) {
-
-		assert(refl->next->prev == refl);
-		assert(refl->prev == NULL);
-		refl->next->parent = refl->parent;
-		refl->next->prev = NULL;
-
-		for ( i=0; i<2; i++ ) {
-			refl->next->child[i] = refl->child[i];
-			if ( refl->parent->child[i] == refl ) {
-				refl->parent->child[i] = refl->next;
-			}
-			if ( refl->child[i] != NULL ) {
-				refl->child[i]->parent = refl->next;
-			}
-		}
-
-		free(refl);
-
-		return;
-
-	}
-
-	assert(refl->next == NULL);
-	assert(refl->prev == NULL);
-
-	/* Two child nodes? */
-	if ( (refl->child[0] != NULL) && (refl->child[1] != NULL ) ) {
-
-		if ( random() > RAND_MAX/2 ) {
-			lr_delete(refl, 0);
-		} else {
-			lr_delete(refl, 1);
-		}
-
-	} else if ( refl->child[0] != NULL ) {
-
-		/* One child, left */
-		for ( i=0; i<2; i++ ) {
-			if ( refl->parent->child[i] == refl ) {
-				refl->parent->child[i] = refl->child[0];
-			}
-		}
-		refl->child[0]->parent = refl->parent;
-		free(refl);
-
-	} else if (refl->child[1] != NULL ) {
-
-		/* One child, right */
-		for ( i=0; i<2; i++ ) {
-			if ( refl->parent->child[i] == refl ) {
-				refl->parent->child[i] = refl->child[1];
-			}
-		}
-		refl->child[1]->parent = refl->parent;
-		free(refl);
+		list->head = insert_node(list->head, new);
+		list->head->col = BLACK;
 
 	} else {
 
-		/* Leaf node */
-		for ( i=0; i<2; i++ ) {
-			if ( refl->parent->child[i] == refl ) {
-				refl->parent->child[i] = NULL;
-			}
+		/* New reflection is identical to a previous one */
+		while ( f->next != NULL ) {
+			f = f->next;
 		}
-		free(refl);
-
+		f->next = new;
+		new->prev = f;
 	}
+
+	return new;
 }
 
 
@@ -777,7 +605,7 @@ Reflection *first_refl(RefList *list, RefListIterator **piter)
 	iter->stack_ptr = 0;
 	*piter = iter;
 
-	Reflection *refl = list->head->child[0];
+	Reflection *refl = list->head;
 
 	do {
 
@@ -867,116 +695,7 @@ static int recursive_count(Reflection *refl)
 }
 
 
-static int tree_to_vine(Reflection *root)
-{
-	Reflection *vine_tail = root;
-	Reflection *remainder = vine_tail->child[0];
-	int size = 0;
-
-	while ( remainder != NULL ) {
-
-		if ( remainder->child[1] == NULL ) {
-			vine_tail = remainder;
-			remainder = remainder->child[0];
-			size++;
-		} else {
-			Reflection *tmp = remainder->child[1];
-			remainder->child[1] = tmp->child[0];
-			if ( tmp->child[0] != NULL ) {
-				tmp->child[0]->parent = remainder;
-			}
-			tmp->child[0] = remainder;
-			if ( remainder != NULL ) remainder->parent = tmp;
-			remainder = tmp;
-			vine_tail->child[0] = tmp;
-			if ( tmp != NULL ) tmp->parent = vine_tail;
-		}
-
-	}
-
-	return size;
-}
-
-
-static void compress(Reflection *root, int count)
-{
-	Reflection *scan = root;
-	int i;
-
-	for ( i=1; i<=count; i++ ) {
-		Reflection *child;
-		child = scan->child[0];
-		scan->child[0] = child->child[0];
-		if ( child->child[0] != NULL ) {
-			child->child[0]->parent = scan;
-		}
-		scan = scan->child[0];
-		child->child[0] = scan->child[1];
-		if ( scan->child[1] != NULL ) {
-			scan->child[1]->parent = child;
-		}
-		scan->child[1] = child;
-		if ( child != NULL ) {
-			child->parent = scan;
-		}
-	}
-}
-
-
-static void vine_to_tree(Reflection *root, int size)
-{
-	int leaf_count = size + 1 - pow(2.0, floor(log(size+1)/log(2.0)));
-
-	compress(root, leaf_count);
-	size -= leaf_count;
-	while ( size > 1 ) {
-		compress(root, size / 2);
-		size = size / 2;
-	}
-}
-
-
-/**
- * optimise_reflist:
- * @list: The reflection list to optimise
- *
- * Optimises the ordering of reflections in the list such that the list can be
- * searched in the fastest possible way.
- *
- * This is a relatively expensive operation, so in typical usage you would call
- * it only after adding or removing many reflections from a list, when the list
- * is unlikely to be significantly modified for a long period of time.
- *
- * Note that only adding or deleting reflections may reduce the efficiency of
- * the list.  Changing the contents of the reflections (e.g. updating intensity
- * values) does not.
- **/
-void optimise_reflist(RefList *list)
-{
-	int n_items;
-	int size;
-	const int verbose = 0;
-
-	n_items = recursive_count(list->head->child[0]);
-	if ( verbose ) {
-		STATUS("Tree depth = %i\n",
-		       recursive_depth(list->head->child[0]));
-		STATUS("Number of items = %i\n", n_items);
-		STATUS("Optimum depth = %5.2f\n", floor(log(n_items)/log(2.0)));
-	}
-
-	/* Now use the DSW algorithm to rebalance the tree */
-	size = tree_to_vine(list->head);
-	vine_to_tree(list->head, size);
-
-	if ( verbose ) {
-		STATUS("Tree depth after rebalancing = %i\n",
-		       recursive_depth(list->head->child[0]));
-	}
-}
-
-
 int num_reflections(RefList *list)
 {
-	return recursive_count(list->head->child[0]);
+	return recursive_count(list->head);
 }

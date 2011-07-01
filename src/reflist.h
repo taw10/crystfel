@@ -77,18 +77,12 @@ extern void set_symmetric_indices(Reflection *refl,
 /* Insertion */
 extern Reflection *add_refl(RefList *list,
                             signed int h, signed int k, signed int l);
-extern Reflection *add_serialised_refl(RefList *list, signed int h,
-                                       signed int k, signed int l);
-
-/* Deletion */
-extern void delete_refl(Reflection *refl);
 
 /* Iteration */
 extern Reflection *first_refl(RefList *list, RefListIterator **iterator);
 extern Reflection *next_refl(Reflection *refl, RefListIterator *iter);
 
 /* Misc */
-extern void optimise_reflist(RefList *list);
 extern int num_reflections(RefList *list);
 
 #endif	/* REFLIST_H */
