@@ -432,7 +432,7 @@ static unsigned int process_stream_d(FILE *fh, struct image *image,
 
 		if ( image->reflections != NULL ) {
 
-			(*n_patterns)++; //inc number of patterns used
+			(*n_patterns)++;
 
 			for ( refl = first_refl(image->reflections, &iter);
 			      refl != NULL;
