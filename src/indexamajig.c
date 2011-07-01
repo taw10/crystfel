@@ -175,8 +175,6 @@ static void show_help(const char *s)
 "     --unpolarized        Don't correct for the polarisation of the X-rays.\n"
 "     --no-sat-corr        Don't correct values of saturated peaks using a\n"
 "                           table included in the HDF5 file.\n"
-"     --bg-sub             Subtract local background estimates from\n"
-"                           integrated intensities.\n"
 "     --threshold=<n>      Only accept peaks above <n> ADU.  Default: 800.\n"
 "     --min-gradient=<n>   Minimum gradient for Zaefferer peak search.\n"
 "                           Default: 100,000.\n"
@@ -195,6 +193,8 @@ static void show_help(const char *s)
 "                           lattice point.\n"
 "     --insane             Don't check that the reduced cell accounts for at\n"
 "                           least 10%% of the located peaks.\n"
+"     --no-bg-sub          Don't subtract local background estimates from\n"
+"                           integrated intensities.\n"
 "\n"
 "\nYou can tune the CPU affinities for enhanced performance on NUMA machines:\n"
 "\n"
@@ -493,7 +493,7 @@ int main(int argc, char *argv[])
 	int config_checkprefix = 1;
 	int config_closer = 1;
 	int config_insane = 0;
-	int config_bgsub = 0;
+	int config_bgsub = 1;
 	int config_basename = 0;
 	float threshold = 800.0;
 	float min_gradient = 100000.0;
@@ -555,7 +555,8 @@ int main(int argc, char *argv[])
 		{"cpus",               1, NULL,                6},
 		{"cpugroup",           1, NULL,                7},
 		{"cpuoffset",          1, NULL,                8},
-		{"bg-sub",             1, &config_bgsub,       0},
+		{"bg-sub",             0, &config_bgsub,       1},
+		{"no-bg-sub",          0, &config_bgsub,       0},
 		{0, 0, NULL, 0}
 	};
 
