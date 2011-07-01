@@ -77,6 +77,8 @@ extern void set_symmetric_indices(Reflection *refl,
 /* Insertion */
 extern Reflection *add_refl(RefList *list,
                             signed int h, signed int k, signed int l);
+extern Reflection *add_serialised_refl(RefList *list, signed int h,
+                                       signed int k, signed int l);
 
 /* Deletion */
 extern void delete_refl(Reflection *refl);

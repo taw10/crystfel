@@ -302,7 +302,10 @@ RefList *read_reflections_from_file(FILE *fh)
 		if ( rval == NULL ) continue;
 		chomp(line);
 
-		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
+		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) {
+			optimise_reflist(out);
+			return out;
+		}
 
 		r = sscanf(line, "%i %i %i %f %s %f %s %i %f %f",
 		           &h, &k, &l, &intensity, phs, &sigma, ress, &cts,
@@ -318,7 +321,7 @@ RefList *read_reflections_from_file(FILE *fh)
 			double ph;
 			char *v;
 
-			refl = add_refl(out, h, k, l);
+			refl = add_serialised_refl(out, h, k, l);
 			set_int(refl, intensity);
 			set_detector_pos(refl, 0.0, fs, ss);
 			set_esd_intensity(refl, sigma);

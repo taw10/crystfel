@@ -101,6 +101,7 @@ struct _reflection {
 struct _reflist {
 
 	struct _reflection *head;
+	struct _reflection *tail;
 
 };
 
@@ -144,6 +145,7 @@ RefList *reflist_new()
 	/* Create pseudo-root with invalid indices.
 	 * The "real" root will be the left child of this. */
 	new->head = new_node(1<<31);
+	new->tail = new->head;
 
 	return new;
 }
@@ -188,7 +190,8 @@ void reflist_free(RefList *list)
  * Returns: The found reflection, or NULL if no reflection with the given
  * indices could be found.
  **/
-Reflection *find_refl(const RefList *list, signed int h, signed int k, signed int l)
+Reflection *find_refl(const RefList *list,
+                      signed int h, signed int k, signed int l)
 {
 	unsigned int search = SERIAL(h, k, l);
 	Reflection *refl = list->head->child[0];
@@ -583,12 +586,51 @@ Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 
 	new = new_node(SERIAL(h, k, l));
 
-	if ( list->head == NULL ) {
-		list->head = new;
-		new->parent = NULL;
+	insert_node(list->head, new);
+
+	return new;
+}
+
+
+/**
+ * add_serialised_refl:
+ * @list: A reflections list
+ * @h, @k, @l: Indices of new reflection
+ *
+ * Returns: The newly added reflection
+ *
+ * Adds a new reflection from a serialised (i.e. sorted by ascending
+ * search key) data source.  If you know the reflections you are adding to the
+ * list are in the required order, using this function is quicker than using
+ * add_refl().  You can only add reflections using this function to an empty
+ * list, or one that has only been added to using this function.  After adding
+ * all the reflections, you need to call optimise_reflist() or the list will
+ * exhibit worst-case performance.
+ *
+ * If you don't understand exactly what this function does and why it needs to
+ * exist, don't use it at all.
+ **/
+Reflection *add_serialised_refl(RefList *list,
+                                signed int h, signed int k, signed int l)
+{
+	Reflection *new;
+
+	assert(abs(h)<256);
+	assert(abs(k)<256);
+	assert(abs(l)<256);
+
+	new = new_node(SERIAL(h, k, l));
+
+	new->parent = list->tail;
+	assert(list->tail->child[0] == NULL);
+	assert(list->tail->child[1] == NULL);
+	if ( list->tail == list->head ) {
+		list->tail->child[0] = new;
 	} else {
-		insert_node(list->head, new);
+		assert(new->serial > list->tail->serial);
+		list->tail->child[1] = new;
 	}
+	list->tail = new;
 
 	return new;
 }
