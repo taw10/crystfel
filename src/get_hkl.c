@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ht:o:i:w:y:e:b:",
+	while ((c = getopt_long(argc, argv, "ht:o:i:w:y:e:b:p:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
