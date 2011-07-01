@@ -49,6 +49,7 @@ struct sum_args
 	SumMethod sum_method;
 	double threshold;
 	double min_gradient;
+	char *element;
 };
 
 
@@ -63,6 +64,7 @@ struct queue_args
 	SumMethod sum_method;
 	double threshold;
 	double min_gradient;
+	char *element;
 
 	char *use_this_one_instead;
 	char *prefix;
@@ -98,6 +100,9 @@ static void show_help(const char *s)
 "                           method.  Default: 400 adu\n"
 "      --min-gradient=<n>   Minimum gradient for Zaefferer peak search.\n"
 "                            Default: 100,000.\n"
+" -e, --image=<element>    Use this image from the HDF5 file.\n"
+"                           Example: /data/data0.\n"
+"                           Default: The first one found.\n"
 "\n"
 "      --filter-cm         Perform common-mode noise subtraction on images\n"
 "                           before proceeding.\n"
@@ -182,12 +187,25 @@ static void add_image(void *args, int cookie)
 	STATUS("%3i: Processing '%s'\n", cookie, pargs->filename);
 
 	hdfile = hdfile_open(pargs->filename);
-	if ( hdfile == NULL ) {
-		return;
-	} else if ( hdfile_set_first_image(hdfile, "/") ) {
-		ERROR("Couldn't select path\n");
-		hdfile_close(hdfile);
-		return;
+	if ( hdfile == NULL ) return;
+
+	if ( pargs->element != NULL ) {
+		int r;
+		r = hdfile_set_image(hdfile, pargs->element);
+		if ( r ) {
+			ERROR("Couldn't select path '%s'\n", pargs->element);
+			hdfile_close(hdfile);
+			return;
+		}
+	} else {
+		int r;
+		r = hdfile_set_first_image(hdfile, "/");
+		if ( r ) {
+			ERROR("Couldn't select first path\n");
+			hdfile_close(hdfile);
+			return;
+		}
+
 	}
 
 	hdf5_read(hdfile, &image, 1);
@@ -305,6 +323,7 @@ int main(int argc, char *argv[])
 	char prepare_filename[1024];
 	char *rval;
 	int config_basename = 0;
+	char *element = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -319,6 +338,7 @@ int main(int argc, char *argv[])
 		{"threshold",          1, NULL,               't'},
 		{"min-gradient",       1, NULL,                4},
 		{"basename",           0, &config_basename,    1},
+		{"image",              1, NULL,               'e'},
 		{0, 0, NULL, 0}
 	};
 
@@ -357,6 +377,10 @@ int main(int argc, char *argv[])
 
 		case 't' :
 			threshold = atof(optarg);
+			break;
+
+		case 'e' :
+			element = strdup(optarg);
 			break;
 
 		case 4 :
@@ -453,6 +477,7 @@ int main(int argc, char *argv[])
 	qargs.sum = calloc(qargs.w*qargs.h, sizeof(double));
 	qargs.prefix = prefix;
 	qargs.fh = fh;
+	qargs.element = element;
 
 	do {
 

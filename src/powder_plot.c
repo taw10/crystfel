@@ -597,7 +597,8 @@ static unsigned int process_stream_h5(FILE *fh, struct image *image,
                                       struct histogram_info *info,
                                       struct bin_stats *histdata,
                                       int config_satcorr, int only_indexed,
-                                      unsigned int *n_patterns)
+                                      unsigned int *n_patterns,
+                                      const char *element)
 {
 	int fs, ss, rval;
 	double intensity;
@@ -614,11 +615,29 @@ static unsigned int process_stream_h5(FILE *fh, struct image *image,
 		/* Get data from next chunk */
 		rval = read_chunk(fh, image);
 		if ( rval ) continue;
-		if ((only_indexed == 0) ||
-		   ((only_indexed == 1) &&
-		    ((*image).reflections != NULL))) {
-			hdfile = hdfile_open((*image).filename);
-			hdfile_set_image(hdfile, "/data/data");
+		if ( !only_indexed ||
+		   ( only_indexed && (image->reflections != NULL) ) )
+		{
+			hdfile = hdfile_open(image->filename);
+			if ( element != NULL ) {
+				int r;
+				r = hdfile_set_image(hdfile, element);
+				if ( r ) {
+					ERROR("Couldn't select path '%s'\n",
+					     element);
+					hdfile_close(hdfile);
+					return 0;
+				}
+			} else {
+				int r;
+				r = hdfile_set_first_image(hdfile, "/");
+				if ( r ) {
+					ERROR("Couldn't select first path\n");
+					hdfile_close(hdfile);
+					return 0;
+				}
+
+			}
 			hdf5_read(hdfile, image, config_satcorr);
 			hdfile_close(hdfile);
 			n_patterns++;
@@ -699,6 +718,10 @@ static void show_help(const char *s)
 "                            of measurements and not the number of symetrical\n"
 "                            equivelent reflections as the number of time a\n"
 "                            reflection occurs in the powder\n"
+" -e, --image=<element>    Use this image when reading an HDF5 file.\n"
+"                           Example: /data/data0.\n"
+"                           Default: The first one found.\n"
+
 "\n");
 }
 
@@ -720,6 +743,7 @@ int main(int argc, char *argv[])
 	image.lambda = -1.0;
 	image.beam = NULL;
 	image.det  = NULL;
+	char *element = NULL;
 
 	unsigned int n_patterns = 0;
 	unsigned int n_peaks    = 0;
@@ -763,6 +787,7 @@ int main(int argc, char *argv[])
 		{"ring-corr",          0, &ring_corr,          1 },
 		{"use-redundancy",     0, &use_redundancy,     1 },
 		{"data",               1, NULL,               'd'},
+		{"image",              1, NULL,               'e'},
 		{0, 0, NULL, 0}
 	};
 
@@ -803,6 +828,10 @@ int main(int argc, char *argv[])
 
 		case 's' :
 			hist_info.histsize = atoi(optarg);
+			break;
+
+		case 'e' :
+			element = strdup(optarg);
 			break;
 
 		case 1 :
@@ -864,7 +893,25 @@ int main(int argc, char *argv[])
 		file_type = FILE_H5;
 		need_geometry = 1;
 		hdfile = hdfile_open(filename);
-		hdfile_set_image(hdfile, "/data/data");
+		if ( element != NULL ) {
+			int r;
+			r = hdfile_set_image(hdfile, element);
+			if ( r ) {
+				ERROR("Couldn't select path '%s'\n",
+				     element);
+				hdfile_close(hdfile);
+				return 0;
+			}
+		} else {
+			int r;
+			r = hdfile_set_first_image(hdfile, "/");
+			if ( r ) {
+				ERROR("Couldn't select first path\n");
+				hdfile_close(hdfile);
+				return 0;
+			}
+
+		}
 		hdf5_read(hdfile, &image, config_satcorr);
 		hdfile_close(hdfile);
 
@@ -1066,7 +1113,7 @@ int main(int argc, char *argv[])
 		case PLOT_H5 :
 			n_peaks =  process_stream_h5(fh, &image, &hist_info,
 			             histdata, config_satcorr, only_indexed,
-			             &n_patterns);
+			             &n_patterns, element);
 			break;
 		default :
 			break;
