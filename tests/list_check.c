@@ -87,8 +87,6 @@ static int test_lists(int num_items)
 
 	}
 
-	optimise_reflist(list);
-
 	/* Iterate over the list and check we find everything */
 	int count = 0;
 	for ( refl = first_refl(list, &iter);
@@ -149,93 +147,6 @@ static int test_lists(int num_items)
 		refl = find_refl(list, h, k, l);
 		if ( refl == NULL ) {
 			fprintf(stderr, "Couldn't find %3i %3i %3i\n", h, k, l);
-			return 1;
-		}
-
-	}
-
-	/* Delete some reflections */
-	for ( i=0; i<num_items/2; i++ ) {
-
-		int j;
-		signed int h, k, l;
-		Reflection *refl;
-
-		h = check[i].h;
-		k = check[i].k;
-		l = check[i].l;
-
-		refl = find_refl(list, h, k, l);
-		delete_refl(refl);
-
-		/* Update all counts */
-		for ( j=0; j<num_items; j++ ) {
-			if ( (check[j].h == h) && (check[j].k == k)
-			  && (check[j].l == l) ) check[j].num--;
-		}
-
-	}
-
-	/* Check that the deleted reflections can no longer be found */
-	for ( i=0; i<num_items; i++ ) {
-
-		signed int h, k, l;
-		Reflection *refl;
-
-		h = check[i].h;
-		k = check[i].k;
-		l = check[i].l;
-
-		if ( check[i].num > 0 ) continue;
-
-		refl = find_refl(list, h, k, l);
-		if ( refl != NULL ) {
-
-			fprintf(stderr, "Found %3i %i %3i after  deletion.\n",
-			                h, k, l);
-			return 1;
-
-		}
-
-	}
-
-	/* Delete remaining duplicates */
-	for ( i=0; i<num_items; i++ ) {
-
-		signed int h, k, l;
-		Reflection *refl;
-
-		if ( check[i].num == 0 ) continue;
-
-		h = check[i].h;
-		k = check[i].k;
-		l = check[i].l;
-		refl = find_refl(list, h, k, l);
-
-		do {
-			int j;
-			signed int ha, ka, la;
-			Reflection *next;
-			get_indices(refl, &ha, &ka, &la);
-			next = next_found_refl(refl);
-			delete_refl(refl);
-			refl = next;
-			for ( j=0; j<num_items; j++ ) {
-				if ( (check[j].h == h) && (check[j].k == k)
-				  && (check[j].l == l) ) check[j].num--;
-			}
-		} while ( refl != NULL );
-
-		if ( check[i].num != 0 ) {
-			fprintf(stderr, "Found too few duplicates (%i) for "
-			                "%3i %3i %3i\n", check[i].num, h, k, l);
-			return 1;
-		}
-
-		refl = find_refl(list, h, k, l);
-		if ( refl != NULL ) {
-			fprintf(stderr, "Found too many duplicates for "
-			                "%3i %3i %3i\n", h, k, l);
 			return 1;
 		}
 

@@ -350,7 +350,6 @@ int main(int argc, char *argv[])
 		/* This is the raw list of reflections */
 		as = asymmetric_indices(images[n_usable_patterns].reflections,
 		                        sym);
-		optimise_reflist(as);
 		reflist_free(images[n_usable_patterns].reflections);
 		images[n_usable_patterns].reflections = as;
 
