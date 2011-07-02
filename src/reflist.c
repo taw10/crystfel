@@ -710,6 +710,7 @@ Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 	assert(abs(l)<256);
 
 	new = new_node(SERIAL(h, k, l));
+	if ( new == NULL ) return NULL;
 
 	f = find_refl(list, h, k, l);
 	if ( f == NULL ) {
