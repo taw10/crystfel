@@ -178,7 +178,7 @@ int poisson_noise(double expected)
  * @Image:
  *
  * There is a simple quaternion structure in CrystFEL.  At the moment, it is
- * only used when simulating patterns, as an argument to %cell_rotate to
+ * only used when simulating patterns, as an argument to cell_rotate() to
  * orient the unit cell.
  */
 

@@ -38,6 +38,33 @@
   </chapter>
 
   <chapter>
+    <title>Statistics and R-factors</title>
+        <xi:include href="xml/statistics.xml"><xi:fallback /></xi:include>
+  </chapter>
+
+  <chapter>
+    <title>Symmetry</title>
+        <xi:include href="xml/symmetry.xml"><xi:fallback /></xi:include>
+  </chapter>
+
+  <chapter>
+    <title>Simulation</title>
+        <xi:include href="xml/simulation.xml"><xi:fallback /></xi:include>
+  </chapter>
+
+  <chapter>
+    <title>Indexing</title>
+        <xi:include href="xml/indexing.xml"><xi:fallback /></xi:include>
+  </chapter>
+
+  <chapter>
+    <title>Detector</title>
+        <xi:include href="xml/detector.xml"><xi:fallback /></xi:include>
+  </chapter>
+
+
+
+  <chapter>
     <title>Parallel programming</title>
         <xi:include href="xml/thread-pool.xml"><xi:fallback /></xi:include>
   </chapter>

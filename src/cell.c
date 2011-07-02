@@ -110,6 +110,13 @@ UnitCell *cell_new()
 }
 
 
+/**
+ * cell_free:
+ * @cell: A %UnitCell to free.
+ *
+ * Frees a %UnitCell, and all internal resources concerning that cell.
+ *
+ */
 void cell_free(UnitCell *cell)
 {
 	if ( cell == NULL ) return;
@@ -553,6 +560,16 @@ static const char *cell_rep(UnitCell *cell)
 }
 
 
+/**
+ * cell_rotate:
+ * @in: A %UnitCell to rotate
+ * @quat: A %quaternion
+ *
+ * Rotate a %UnitCell using a %quaternion.
+ *
+ * Returns: a newly allocated rotated copy of @in.
+ *
+ */
 UnitCell *cell_rotate(UnitCell *in, struct quaternion quat)
 {
 	struct rvec a, b, c;

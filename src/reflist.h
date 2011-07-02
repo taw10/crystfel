@@ -19,18 +19,32 @@
 /**
  * RefList:
  *
+ * A %RefList represents a list of Bragg reflections.
+ *
  * This data structure is opaque.  You must use the available accessor functions
  * to read and write its contents.
- */
+ *
+ **/
 typedef struct _reflist RefList;
 
 /**
  * Reflection:
  *
+ * A %Reflection represents a single Bragg reflection.
+ *
  * This data structure is opaque.  You must use the available accessor functions
  * to read and write its contents.
- */
+ *
+ **/
 typedef struct _reflection Reflection;
+
+/**
+ * RefListIterator:
+ *
+ * A %RefListIterator is an opaque data type used when iterating over a
+ * %RefList.
+ *
+ **/
 typedef struct _reflistiterator RefListIterator;
 
 /* Creation/deletion */
@@ -79,7 +93,7 @@ extern Reflection *add_refl(RefList *list,
                             signed int h, signed int k, signed int l);
 
 /* Iteration */
-extern Reflection *first_refl(RefList *list, RefListIterator **iterator);
+extern Reflection *first_refl(RefList *list, RefListIterator **piter);
 extern Reflection *next_refl(Reflection *refl, RefListIterator *iter);
 
 /* Misc */

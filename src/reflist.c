@@ -299,9 +299,9 @@ void get_indices(const Reflection *refl,
 /**
  * get_symmetric_indices:
  * @refl: A %Reflection
- * @h: Location at which to store the 'h' index of the reflection
- * @k: Location at which to store the 'k' index of the reflection
- * @l: Location at which to store the 'l' index of the reflection
+ * @hs: Location at which to store the 'h' index of the reflection
+ * @ks: Location at which to store the 'k' index of the reflection
+ * @ls: Location at which to store the 'l' index of the reflection
  *
  * This function gives the symmetric indices, that is, the "real" indices before
  * squashing down to the asymmetric reciprocal unit.  This may be useful if the
@@ -466,6 +466,14 @@ void copy_data(Reflection *to, const Reflection *from)
 }
 
 
+/**
+ * set_detector_pos:
+ * @refl: A %Reflection
+ * @exerr: The excitation error for this reflection
+ * @fs: The fast scan offset of the reflection
+ * @ss: The slow scan offset of the reflection
+ *
+ **/
 void set_detector_pos(Reflection *refl, double exerr, double fs, double ss)
 {
 	refl->data.excitation_error = exerr;
@@ -474,6 +482,19 @@ void set_detector_pos(Reflection *refl, double exerr, double fs, double ss)
 }
 
 
+/**
+ * set_partial:
+ * @refl: A %Reflection
+ * @r1: The first excitation error
+ * @r2: The second excitation error
+ * @p: The partiality
+ * @clamp_low: The first clamp status
+ * @clamp_high: The second clamp status
+ *
+ * This function is used during post refinement (in conjunction with
+ * get_partial()) to get access to the details of the partiality calculation.
+ *
+ **/
 void set_partial(Reflection *refl, double r1, double r2, double p,
                  double clamp_low, double clamp_high)
 {
@@ -485,42 +506,107 @@ void set_partial(Reflection *refl, double r1, double r2, double p,
 }
 
 
+/**
+ * set_int:
+ * @refl: A %Reflection
+ * @intensity: The intensity for the reflection.
+ *
+ * Set the intensity for the reflection.  Note that retrieval is done with
+ * get_intensity().
+ **/
 void set_int(Reflection *refl, double intensity)
 {
 	refl->data.intensity = intensity;
 }
 
 
+/**
+ * set_scalable:
+ * @refl: A %Reflection
+ * @scalable: Non-zero if this reflection was marked as useful for scaling and
+ * post refinement.
+ *
+ **/
 void set_scalable(Reflection *refl, int scalable)
 {
 	refl->data.scalable = scalable;
 }
 
 
+/**
+ * set_redundancy:
+ * @refl: A %Reflection
+ * @red: New redundancy for the reflection
+ *
+ * The redundancy of the reflection is the number of measurements that have been
+ * made of it.  Note that a redundancy of zero may have a special meaning, such
+ * as that the reflection was impossible to integrate.  Note further that each
+ * reflection in the list has its own redundancy, even if there are multiple
+ * copies of the reflection in the list.  The total number of reflection
+ * measurements should always be the sum of the redundancies in the entire list.
+ *
+ **/
 void set_redundancy(Reflection *refl, int red)
 {
 	refl->data.redundancy = red;
 }
 
 
+/**
+ * set_sum_squared_dev:
+ * @refl: A %Reflection
+ * @dev: New sum squared deviation for the reflection
+ *
+ * The sum squared deviation is used to estimate the standard errors on the
+ * intensities during 'Monte Carlo' merging.  It is defined as the sum of the
+ * squared deviations between the intensities and the mean intensity from all
+ * measurements of the reflection (and probably its symmetry equivalents
+ * according to some point group).
+ *
+ **/
 void set_sum_squared_dev(Reflection *refl, double dev)
 {
 	refl->data.sum_squared_dev = dev;
 }
 
 
+/**
+ * set_esd_intensity:
+ * @refl: A %Reflection
+ * @esd: New standard error for this reflection's intensity measurement
+ *
+ **/
 void set_esd_intensity(Reflection *refl, double esd)
 {
 	refl->data.esd_i = esd;
 }
 
 
+/**
+ * set_ph:
+ * @refl: A %Reflection
+ * @phase: New phase for the reflection
+ *
+ **/
 void set_ph(Reflection *refl, double phase)
 {
 	refl->data.phase = phase;
 }
 
 
+/**
+ * set_symmetric_indices:
+ * @refl: A %Reflection
+ * @hs: The 'h' index of the reflection
+ * @ks: The 'k' index of the reflection
+ * @ls: The 'l' index of the reflection
+ *
+ * This function gives the symmetric indices, that is, the "real" indices before
+ * squashing down to the asymmetric reciprocal unit.  This may be useful if the
+ * list is indexed according to the asymmetric indices, but you still need
+ * access to the symmetric version.  This happens during post-refinement.
+ *
+ **/
 void set_symmetric_indices(Reflection *refl,
                            signed int hs, signed int ks, signed int ls)
 {
@@ -600,6 +686,20 @@ static Reflection *insert_node(Reflection *refl, Reflection *new)
 }
 
 
+/**
+ * add_refl
+ * @list: A %RefList
+ * @h: The 'h' index of the reflection
+ * @k: The 'k' index of the reflection
+ * @l: The 'l' index of the reflection
+ *
+ * Adds a new reflection to @list.  Note that the implementation allows there to
+ * be multiple reflections with the same indices in the list, so this function
+ * should succeed even if the given indices already feature in the list.
+ *
+ * Returns: The newly created reflection, or NULL on failure.
+ *
+ **/
 Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 {
 	Reflection *new;
@@ -642,6 +742,18 @@ struct _reflistiterator {
 };
 
 
+/**
+ * first_refl:
+ * @list: A %RefList to iterate over
+ * @piter: Address at which to store a %RefListIterator
+ *
+ * This function sets up the state required for iteration over the entire list,
+ * and then returns the first reflection in the list.  An iterator object will
+ * be created and its address stored at the location given in piter.
+ *
+ * Returns: the first reflection in the list.
+ *
+ **/
 Reflection *first_refl(RefList *list, RefListIterator **piter)
 {
 	RefListIterator *iter;
@@ -681,6 +793,17 @@ Reflection *first_refl(RefList *list, RefListIterator **piter)
 }
 
 
+/**
+ * next_refl:
+ * @refl: A reflection
+ * @iter: A %RefListIterator
+ *
+ * This function looks up the next reflection in the list that was given earlier
+ * to first_refl().
+ *
+ * Returns: the next reflection in the list, or NULL if no more.
+ *
+ **/
 Reflection *next_refl(Reflection *refl, RefListIterator *iter)
 {
 	int returned = 1;
@@ -742,12 +865,29 @@ static int recursive_count(Reflection *refl)
 }
 
 
+/**
+ * num_reflections:
+ * @list: A %RefList
+ *
+ * Returns: the number of reflections in @list.
+ *
+ **/
 int num_reflections(RefList *list)
 {
 	return recursive_count(list->head);
 }
 
 
+/**
+ * tree_depth:
+ * @list: A %RefList
+ *
+ * If the depth of the tree is more than about 20, access to the list will be
+ * slow.  This should never happen.
+ *
+ * Returns: the depth of the RB-tree used internally to represent @list.
+ *
+ **/
 int tree_depth(RefList *list)
 {
 	return recursive_depth(list->head);
