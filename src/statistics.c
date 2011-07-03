@@ -23,6 +23,18 @@
 #include "statistics.h"
 #include "utils.h"
 
+/**
+ * SECTION:statistics
+ * @short_description: Intensity statistics and R-factors
+ * @title: Statistics
+ * @section_id:
+ * @see_also:
+ * @include: "statistics.h"
+ * @Image:
+ *
+ * These functions are for calculating various figures of merit.
+ */
+
 
 struct r_params {
 	RefList *list1;

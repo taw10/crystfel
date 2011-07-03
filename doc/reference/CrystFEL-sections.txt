@@ -129,6 +129,8 @@ modulus
 poisson_noise
 notrail
 smallest
+ph_en_to_lambda
+ph_lambda_to_en
 </SECTION>
 
 <SECTION>

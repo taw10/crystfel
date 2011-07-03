@@ -26,6 +26,19 @@
 #include "hdf5-file.h"
 
 
+/**
+ * SECTION:detector
+ * @short_description: Detector geometry
+ * @title: Detector
+ * @section_id:
+ * @see_also:
+ * @include: "detector.h"
+ * @Image:
+ *
+ * This structure represents the detector geometry
+ */
+
+
 static int atob(const char *a)
 {
 	if ( strcasecmp(a, "true") == 0 ) return 1;

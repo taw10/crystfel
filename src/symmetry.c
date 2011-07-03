@@ -26,6 +26,18 @@
 #define SYM_DEBUG(...)
 #endif /* DEBUG */
 
+/**
+ * SECTION:symmetry
+ * @short_description: Point symmetry handling
+ * @title: Symmetry
+ * @section_id:
+ * @see_also:
+ * @include: "symmetry.h"
+ * @Image:
+ *
+ * Routines to handle point symmetry.
+ */
+
 
 /* Check if a reflection is in the asymmetric unit cell */
 static int check_cond(signed int h, signed int k, signed int l, const char *sym)
