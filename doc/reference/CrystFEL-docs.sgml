@@ -62,7 +62,20 @@
         <xi:include href="xml/detector.xml"><xi:fallback /></xi:include>
   </chapter>
 
+  <chapter>
+    <title>HDF5</title>
+        <xi:include href="xml/hdf5-file.xml"><xi:fallback /></xi:include>
+  </chapter>
 
+  <chapter>
+    <title>Stream</title>
+        <xi:include href="xml/stream.xml"><xi:fallback /></xi:include>
+  </chapter>
+
+  <chapter>
+    <title>Render</title>
+        <xi:include href="xml/render.xml"><xi:fallback /></xi:include>
+  </chapter>
 
   <chapter>
     <title>Parallel programming</title>
