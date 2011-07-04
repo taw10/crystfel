@@ -68,6 +68,7 @@ extern double get_intensity(const Reflection *refl);
 extern void get_partial(const Reflection *refl, double *r1, double *r2,
                         double *p, int *clamp_low, int *clamp_high);
 extern int get_scalable(const Reflection *refl);
+extern int get_refinable(const Reflection *refl);
 extern int get_redundancy(const Reflection *refl);
 extern double get_sum_squared_dev(const Reflection *refl);
 extern double get_esd_intensity(const Reflection *refl);
@@ -81,6 +82,7 @@ extern void set_partial(Reflection *refl, double r1, double r2, double p,
                         double clamp_low, double clamp_high);
 extern void set_int(Reflection *refl, double intensity);
 extern void set_scalable(Reflection *refl, int scalable);
+extern void set_refinable(Reflection *refl, int refinable);
 extern void set_redundancy(Reflection *refl, int red);
 extern void set_sum_squared_dev(Reflection *refl, double dev);
 extern void set_esd_intensity(Reflection *refl, double esd);

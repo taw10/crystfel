@@ -191,6 +191,35 @@ static int select_scalable_reflections(RefList *list, ReflItemList *sc_l)
 }
 
 
+static void select_reflections_for_refinement(struct image *images, int n,
+                                              ReflItemList *scalable)
+{
+	int i;
+
+	for ( i=0; i<n; i++ ) {
+
+		Reflection *refl;
+		RefListIterator *iter;
+
+		for ( refl = first_refl(images[i].reflections, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) )
+		{
+			signed int h, k, l;
+			int sc;
+
+			get_indices(refl, &h, &k, &l);
+			sc = get_scalable(refl);
+
+			if ( sc && find_item(scalable, h, k, l) ) {
+				set_refinable(refl, 1);
+			}
+		}
+
+	}
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -397,8 +426,8 @@ int main(int argc, char *argv[])
 		reflist_free(cur->reflections);
 		cur->reflections = as;
 
-		update_partialities(cur, sym,
-		                    &n_expected, &n_found, &n_notfound);
+		predict_corresponding_reflections(cur, sym, &n_expected,
+		                                 &n_found, &n_notfound);
 
 		nobs += select_scalable_reflections(cur->reflections, scalable);
 
@@ -418,6 +447,8 @@ int main(int argc, char *argv[])
 	STATUS("Performing initial scaling.\n");
 	full = scale_intensities(images, n_usable_patterns, sym,
 	                         scalable, cref, reference);
+
+	select_reflections_for_refinement(images, n_usable_patterns, scalable);
 
 	for ( i=0; i<num_items(scalable); i++ ) {
 		Reflection *f;
@@ -459,6 +490,7 @@ int main(int argc, char *argv[])
 		FILE *fhg;
 		FILE *fhp;
 		char filename[1024];
+		int j;
 
 		STATUS("Post refinement cycle %i of %i\n", i+1, n_iter);
 
@@ -484,9 +516,14 @@ int main(int argc, char *argv[])
 
 		nobs = 0;
 		clear_items(scalable);
-		for ( i=0; i<n_usable_patterns; i++ ) {
+		for ( j=0; j<n_usable_patterns; j++ ) {
 
-			struct image *cur = &images[i];
+			struct image *cur = &images[j];
+
+			predict_corresponding_reflections(cur, sym, &n_expected,
+		                                          &n_found,
+		                                          &n_notfound);
+
 			nobs += select_scalable_reflections(cur->reflections,
 			                                    scalable);
 

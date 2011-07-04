@@ -21,7 +21,11 @@
 
 extern RefList *find_intersections(struct image *image, UnitCell *cell);
 
-extern void update_partialities(struct image *image, const char *sym,
-                                int *n_expected, int *n_found, int *n_notfound);
+extern void predict_corresponding_reflections(struct image *image,
+                                              const char *sym, int *n_expected,
+                                              int *n_found, int *n_notfound);
+
+extern void update_partialities(struct image *image, const char *sym);
+
 
 #endif	/* GEOMETRY_H */

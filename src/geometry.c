@@ -275,11 +275,10 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 }
 
 
-/* Calculate partialities and apply them to the image's raw_reflections,
- * while adding to a ReflItemList of the currentl scalable (asymmetric)
- * reflections. */
-void update_partialities(struct image *image, const char *sym,
-                         int *n_expected, int *n_found, int *n_notfound)
+/* Predict reflections in "image" */
+void predict_corresponding_reflections(struct image *image, const char *sym,
+                                       int *n_expected, int *n_found,
+                                       int *n_notfound)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -341,6 +340,45 @@ void update_partialities(struct image *image, const char *sym,
 		/* Transfer detector location */
 		get_detector_pos(refl, &x, &y);
 		set_detector_pos(p_peak, 0.0, x, y);
+
+	}
+
+	reflist_free(predicted);
+}
+
+
+/* Calculate partialities and apply them to the image's raw_reflections */
+void update_partialities(struct image *image, const char *sym)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	RefList *predicted;
+
+	predicted = find_intersections(image, image->indexed_cell);
+
+	for ( refl = first_refl(image->reflections, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+
+		Reflection *p_peak;
+		double r1, r2, p;
+		signed int h, k, l;
+		int clamp1, clamp2;
+
+		/* Get predicted indices and location */
+		get_symmetric_indices(refl, &h, &k, &l);
+
+		/* Look for this reflection in the pattern */
+		p_peak = find_refl(predicted, h, k, l);
+		if ( p_peak == NULL ) {
+			set_partial(refl, 0.0, 0.0, 0.0, -1, +1);
+			continue;
+		} else {
+			/* Transfer partiality stuff */
+			get_partial(p_peak, &r1, &r2, &p, &clamp1, &clamp2);
+			set_partial(refl, r1, r2, p, clamp1, clamp2);
+		}
 
 	}
 

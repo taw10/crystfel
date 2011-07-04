@@ -31,7 +31,7 @@
 
 
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
-#define MAX_CYCLES (5)
+#define MAX_CYCLES (10)
 
 
 /* Returns dp/dr at "r" */
@@ -347,7 +347,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 		Reflection *match;
 		double gradients[NUM_PARAMS];
 
-		if ( !get_scalable(refl) ) continue;
+		if ( !get_refinable(refl) ) continue;
 
 		/* Find the full version */
 		get_indices(refl, &ha, &ka, &la);
@@ -484,66 +484,33 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 	double max_shift, dev;
 	int i;
 	const int verbose = 1;
-	int nexp, nfound, nnotfound;
-
-	update_partialities(image, sym, &nexp, &nfound, &nnotfound);
 
 	if ( verbose ) {
 		dev = mean_partial_dev(image, full, sym);
-		STATUS("PR starting dev = %5.2f (%i out of %i found)\n",
-		       dev, nfound, nexp);
-	}
-
-	if ( (double)nfound/(double)nexp < 0.5 ) {
-		ERROR("Refusing to refine this image: %i out of %i found\n",
-		       nfound, nexp);
-		return;
+		STATUS("PR starting dev = %5.2f\n", dev);
 	}
 
 	i = 0;
+	image->pr_dud = 0;
 	do {
 
 		double asx, asy, asz;
 		double bsx, bsy, bsz;
 		double csx, csy, csz;
 		double dev;
-		int old_nexp, old_nfound;
 
 		cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
-		old_nexp = nexp;
-		old_nfound = nfound;
 
 		max_shift = pr_iterate(image, full, sym);
 
-		update_partialities(image, sym, &nexp, &nfound, &nnotfound);
+		update_partialities(image, sym);
 
 		if ( verbose ) {
 			dev = mean_partial_dev(image, full, sym);
-			STATUS("PR Iteration %2i: max shift = %5.2f"
-			       " dev = %5.2f (%i out of %i found)\n",
-			       i+1, max_shift, dev, nfound, nexp);
-		}
-
-		if ( (double)nfound / (double)nexp < 0.5 ) {
-
-			if ( verbose ) {
-				ERROR("Bad refinement step - backtracking.\n");
-				ERROR("I'll come back to this image later.\n");
-			}
-
-			cell_set_reciprocal(image->indexed_cell, asx, asy, asz,
-				                  bsx, bsy, bsz, csx, csy, csz);
-
-			update_partialities(image, sym,
-		                            &nexp, &nfound, &nnotfound);
-
-			image->pr_dud = 1;
-
-			return;
-
-		} else {
-			image->pr_dud = 0;
+			STATUS("PR Iteration %2i: max shift = %10.2f"
+			       " dev = %10.5e\n",
+			       i+1, max_shift, dev);
 		}
 
 		i++;
