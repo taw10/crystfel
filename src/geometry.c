@@ -275,45 +275,10 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 }
 
 
-/* Decide which reflections can be scaled */
-static void select_scalable_reflections(RefList *list, ReflItemList *sc_l)
-{
-	Reflection *refl;
-	RefListIterator *iter;
-
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
-		int scalable = 1;
-		double v;
-
-		if ( get_partiality(refl) < 0.1 ) scalable = 0;
-		v = fabs(get_intensity(refl));
-		if ( v < 0.1 ) scalable = 0;
-
-		set_scalable(refl, scalable);
-		if ( scalable && (sc_l != NULL) ) {
-
-			signed int h, k, l;
-
-			get_indices(refl, &h, &k, &l);  /* Should already be
-			                                 * asymmetric */
-			if ( (sc_l != NULL) && (!find_item(sc_l, h, k, l)) ) {
-				add_item(sc_l, h, k, l);
-			}
-
-		}
-
-	}
-}
-
-
 /* Calculate partialities and apply them to the image's raw_reflections,
  * while adding to a ReflItemList of the currentl scalable (asymmetric)
  * reflections. */
 void update_partialities(struct image *image, const char *sym,
-                         ReflItemList *scalable,
                          int *n_expected, int *n_found, int *n_notfound)
 {
 	Reflection *refl;
@@ -380,5 +345,4 @@ void update_partialities(struct image *image, const char *sym,
 	}
 
 	reflist_free(predicted);
-	select_scalable_reflections(image->reflections, scalable);
 }

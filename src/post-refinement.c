@@ -486,7 +486,7 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 	const int verbose = 1;
 	int nexp, nfound, nnotfound;
 
-	update_partialities(image, sym, NULL, &nexp, &nfound, &nnotfound);
+	update_partialities(image, sym, &nexp, &nfound, &nnotfound);
 
 	if ( verbose ) {
 		dev = mean_partial_dev(image, full, sym);
@@ -516,8 +516,7 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 
 		max_shift = pr_iterate(image, full, sym);
 
-		update_partialities(image, sym, NULL,
-		                    &nexp, &nfound, &nnotfound);
+		update_partialities(image, sym, &nexp, &nfound, &nnotfound);
 
 		if ( verbose ) {
 			dev = mean_partial_dev(image, full, sym);
@@ -536,7 +535,7 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 			cell_set_reciprocal(image->indexed_cell, asx, asy, asz,
 				                  bsx, bsy, bsz, csx, csy, csz);
 
-			update_partialities(image, sym, NULL,
+			update_partialities(image, sym,
 		                            &nexp, &nfound, &nnotfound);
 
 			image->pr_dud = 1;
