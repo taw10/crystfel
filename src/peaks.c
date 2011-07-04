@@ -235,6 +235,7 @@ int integrate_peak(struct image *image, int cfs, int css,
 			total += val;
 			fsct += val*(cfs+fs);
 			ssct += val*(css+ss);
+
 		}
 
 	}
