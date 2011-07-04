@@ -316,10 +316,13 @@ int main(int argc, char *argv[])
 	for ( i=0; i<n_total_patterns; i++ ) {
 
 		RefList *as;
+		struct image *cur;
 
-		images[n_usable_patterns].det = det;
+		cur = &images[n_usable_patterns];
 
-		if ( read_chunk(fh, &images[n_usable_patterns]) != 0 ) {
+		cur->det = det;
+
+		if ( read_chunk(fh, cur) != 0 ) {
 			/* Should not happen, because we counted the patterns
 			 * earlier. */
 			ERROR("Failed to read chunk from the input stream.\n");
@@ -327,33 +330,32 @@ int main(int argc, char *argv[])
 		}
 
 		/* Won't be needing this, if it exists */
-		image_feature_list_free(images[n_usable_patterns].features);
-		images[n_usable_patterns].features = NULL;
+		image_feature_list_free(cur->features);
+		cur->features = NULL;
 
 		/* "n_usable_patterns" will not be incremented in this case */
-		if ( images[n_usable_patterns].indexed_cell == NULL ) continue;
+		if ( cur->indexed_cell == NULL ) continue;
 
 		/* Fill in initial estimates of stuff */
-		images[n_usable_patterns].div = beam->divergence;
-		images[n_usable_patterns].bw = beam->bandwidth;
-		images[n_usable_patterns].width = det->max_fs;
-		images[n_usable_patterns].height = det->max_ss;
-		images[n_usable_patterns].osf = 1.0;
-		images[n_usable_patterns].profile_radius = 0.0001e9;
-		images[n_usable_patterns].pr_dud = 0;
+		cur->div = beam->divergence;
+		cur->bw = beam->bandwidth;
+		cur->width = det->max_fs;
+		cur->height = det->max_ss;
+		cur->osf = 1.0;
+		cur->profile_radius = 0.0001e9;
+		cur->pr_dud = 0;
 
 		/* Muppet proofing */
-		images[n_usable_patterns].data = NULL;
-		images[n_usable_patterns].flags = NULL;
-		images[n_usable_patterns].beam = NULL;
+		cur->data = NULL;
+		cur->flags = NULL;
+		cur->beam = NULL;
 
 		/* This is the raw list of reflections */
-		as = asymmetric_indices(images[n_usable_patterns].reflections,
-		                        sym);
-		reflist_free(images[n_usable_patterns].reflections);
-		images[n_usable_patterns].reflections = as;
+		as = asymmetric_indices(cur->reflections, sym);
+		reflist_free(cur->reflections);
+		cur->reflections = as;
 
-		update_partialities(&images[n_usable_patterns], sym, scalable,
+		update_partialities(cur, sym, scalable,
 		                    &n_expected, &n_found, &n_notfound);
 
 		progress_bar(i, n_total_patterns-1, "Loading pattern data");
