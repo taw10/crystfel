@@ -38,7 +38,7 @@ static void mess_up_cell(UnitCell *cell)
 	double cx, cy, cz;
 
 	/* Cell noise in percent */
-	const double cnoise = 0.5;
+	const double cnoise = 0.2;
 
 	//STATUS("Real:\n");
 	//cell_print(cell);
@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
 	image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
 	image.div = beam->divergence;
 	image.bw = beam->bandwidth;
-	image.profile_radius = 0.0001e9;
+	image.profile_radius = 0.003e9;
 	image.i0_available = 0;
 	image.filename = malloc(256);
 
