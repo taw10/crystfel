@@ -177,7 +177,9 @@ static void recursive_free(Reflection *refl)
 void reflist_free(RefList *list)
 {
 	if ( list == NULL ) return;
-	recursive_free(list->head);
+	if ( list->head != NULL ) {
+		recursive_free(list->head);
+	} /* else empty list */
 	free(list);
 }
 
