@@ -206,9 +206,8 @@ static int check_reflection(struct image *image, double mres,
 	 * zero) correspond to the six situations in Table 3 of Rossmann
 	 * et al. (1979). */
 
-	/* Calculate partiality and reject if too small */
+	/* Calculate partiality */
 	part = partiality(rlow, rhigh, image->profile_radius);
-	if ( part < 0.1 ) return 0;
 
 	/* Locate peak on detector. */
 	p = locate_peak(xl, yl, zl, kcen, image->det, &xda, &yda);
