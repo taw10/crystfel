@@ -487,7 +487,9 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 
 	if ( verbose ) {
 		dev = mean_partial_dev(image, full, sym);
-		STATUS("PR starting dev = %5.2f\n", dev);
+		STATUS("\n");  /* Deal with progress bar */
+		STATUS("Before iteration:                       dev = %10.5e\n",
+		       dev);
 	}
 
 	i = 0;
