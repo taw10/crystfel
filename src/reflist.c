@@ -152,9 +152,7 @@ RefList *reflist_new()
 	new = malloc(sizeof(struct _reflist));
 	if ( new == NULL ) return NULL;
 
-	/* Create pseudo-root with invalid indices.
-	 * The "real" root will be the left child of this. */
-	new->head = NULL;//new_node(1<<31);
+	new->head = NULL;
 
 	return new;
 }
