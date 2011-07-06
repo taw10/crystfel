@@ -20,10 +20,8 @@
 
 #include "image.h"
 
-extern RefList *scale_intensities(struct image *images, int n, const char *sym,
-                                  ReflItemList *obs, char *cref,
-                                  double *reference);
+extern RefList *scale_intensities(struct image *images, int n,
+                                  RefList *reference);
 
-extern char *find_common_reflections(struct image *images, int n);
 
 #endif	/* HRS_SCALING_H */

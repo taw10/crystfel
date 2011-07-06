@@ -347,7 +347,7 @@ void predict_corresponding_reflections(struct image *image, const char *sym,
 
 
 /* Calculate partialities and apply them to the image's raw_reflections */
-void update_partialities(struct image *image, const char *sym)
+void update_partialities(struct image *image)
 {
 	Reflection *refl;
 	RefListIterator *iter;

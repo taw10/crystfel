@@ -316,8 +316,7 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
 
 
 /* Perform one cycle of post refinement on 'image' against 'full' */
-static double pr_iterate(struct image *image, const RefList *full,
-                         const char *sym)
+static double pr_iterate(struct image *image, const RefList *full)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
@@ -352,10 +351,11 @@ static double pr_iterate(struct image *image, const RefList *full,
 		/* Find the full version */
 		get_indices(refl, &ha, &ka, &la);
 		match = find_refl(full, ha, ka, la);
-		if ( match == NULL ) continue;
-		/* Some reflections may have recently become scalable, but
-		 * scale_intensities() might not yet have been called, so the
-		 * full version may not have been calculated yet. */
+		if ( match == NULL ) {
+			ERROR("%3i %3i %3i isn't in the reference list, so why "
+			      " is it marked as refinable?\n", ha, ka, la);
+			continue;
+		}
 		I_full = image->osf * get_intensity(match);
 
 		/* Actual measurement of this reflection from this pattern? */
@@ -402,9 +402,9 @@ static double pr_iterate(struct image *image, const RefList *full,
 	}
 	//show_matrix_eqn(M, v, NUM_PARAMS);
 
-	//STATUS("%i reflections were scalable\n", nref);
+	//STATUS("%i reflections went into the equations.\n", nref);
 	if ( nref == 0 ) {
-		ERROR("No reflections left to scale!\n");
+		ERROR("No guide reflections to refine with!\n");
 		gsl_matrix_free(M);
 		gsl_vector_free(v);
 		return 0.0;
@@ -434,8 +434,7 @@ static double pr_iterate(struct image *image, const RefList *full,
 }
 
 
-static double mean_partial_dev(struct image *image,
-                               const RefList *full, const char *sym)
+static double guide_dev(struct image *image, const RefList *full)
 {
 	double dev = 0.0;
 
@@ -452,12 +451,10 @@ static double mean_partial_dev(struct image *image,
 		Reflection *full_version;
 		double I_full, I_partial;
 
-		if ( !get_scalable(refl) ) continue;
+		if ( !get_refinable(refl) ) continue;
 
 		get_indices(refl, &h, &k, &l);
 		assert((h!=0) || (k!=0) || (l!=0));
-
-		if ( !get_scalable(refl) ) continue;
 
 		full_version = find_refl(full, h, k, l);
 		if ( full_version == NULL ) continue;
@@ -481,14 +478,14 @@ static double mean_partial_dev(struct image *image,
 }
 
 
-void pr_refine(struct image *image, const RefList *full, const char *sym)
+void pr_refine(struct image *image, const RefList *full)
 {
 	double max_shift, dev;
 	int i;
 	const int verbose = 1;
 
 	if ( verbose ) {
-		dev = mean_partial_dev(image, full, sym);
+		dev = guide_dev(image, full);
 		STATUS("\n");  /* Deal with progress bar */
 		STATUS("Before iteration:                       dev = %10.5e\n",
 		       dev);
@@ -506,15 +503,14 @@ void pr_refine(struct image *image, const RefList *full, const char *sym)
 		cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
-		max_shift = pr_iterate(image, full, sym);
+		max_shift = pr_iterate(image, full);
 
-		update_partialities(image, sym);
+		update_partialities(image);
 
 		if ( verbose ) {
-			dev = mean_partial_dev(image, full, sym);
+			dev = guide_dev(image, full);
 			STATUS("PR Iteration %2i: max shift = %10.2f"
-			       " dev = %10.5e\n",
-			       i+1, max_shift, dev);
+			       " dev = %10.5e\n", i+1, max_shift, dev);
 		}
 
 		i++;

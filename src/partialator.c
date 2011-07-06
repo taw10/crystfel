@@ -66,8 +66,6 @@ static void show_help(const char *s)
 
 struct refine_args
 {
-	const char *sym;
-	ReflItemList *obs;
 	RefList *full;
 	struct image *image;
 	FILE *graph;
@@ -91,7 +89,7 @@ static void refine_image(void *task, int id)
 	struct image *image = pargs->image;
 	image->id = id;
 
-	pr_refine(image, pargs->full, pargs->sym);
+	pr_refine(image, pargs->full);
 }
 
 
@@ -123,15 +121,13 @@ static void done_image(void *vqargs, void *task)
 
 
 static void refine_all(struct image *images, int n_total_patterns,
-                       struct detector *det, const char *sym,
-                       ReflItemList *obs, RefList *full, int nthreads,
+                       struct detector *det,
+                       RefList *full, int nthreads,
                        FILE *graph, FILE *pgraph)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
 
-	task_defaults.sym = sym;
-	task_defaults.obs = obs;
 	task_defaults.full = full;
 	task_defaults.image = NULL;
 	task_defaults.graph = graph;
@@ -152,7 +148,7 @@ static void refine_all(struct image *images, int n_total_patterns,
 
 
 /* Decide which reflections can be scaled */
-static int select_scalable_reflections(RefList *list, ReflItemList *sc_l)
+static int select_scalable_reflections(RefList *list, RefList *reference)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -162,29 +158,24 @@ static int select_scalable_reflections(RefList *list, ReflItemList *sc_l)
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 
-		int scalable = 1;
+		int sc = 1;
 		double v;
 
-		if ( get_partiality(refl) < 0.1 ) scalable = 0;
+		if ( get_partiality(refl) < 0.1 ) sc = 0;
 		v = fabs(get_intensity(refl));
-		if ( v < 0.1 ) scalable = 0;
-		set_scalable(refl, scalable);
+		if ( v < 0.1 ) sc = 0;
 
-		if ( scalable ) {
-
+		/* If we are scaling against a reference set, we additionally
+		 * require that this reflection is in the reference list. */
+		if ( reference != NULL ) {
 			signed int h, k, l;
-
-			nobs++;
-
-			/* Add (asymmetric) indices to list */
 			get_indices(refl, &h, &k, &l);
-
-			if ( !find_item(sc_l, h, k, l) ) {
-				add_item(sc_l, h, k, l);
-			}
-
+			if ( find_refl(reference, h, k, l) == NULL ) sc = 0;
 		}
 
+		set_scalable(refl, sc);
+
+		if ( sc ) nobs++;
 	}
 
 	return nobs;
@@ -192,7 +183,7 @@ static int select_scalable_reflections(RefList *list, ReflItemList *sc_l)
 
 
 static void select_reflections_for_refinement(struct image *images, int n,
-                                              ReflItemList *scalable)
+                                              RefList *full, int have_reference)
 {
 	int i;
 
@@ -200,6 +191,11 @@ static void select_reflections_for_refinement(struct image *images, int n,
 
 		Reflection *refl;
 		RefListIterator *iter;
+		int n_acc = 0;
+		int n_nomatch = 0;
+		int n_noscale = 0;
+		int n_fewmatch = 0;
+		int n_ref = 0;
 
 		for ( refl = first_refl(images[i].reflections, &iter);
 		      refl != NULL;
@@ -208,13 +204,46 @@ static void select_reflections_for_refinement(struct image *images, int n,
 			signed int h, k, l;
 			int sc;
 
+			n_ref++;
+
+			/* We require that the reflection itself is scalable
+			 * (i.e. sensible partiality and intensity) and that
+			 * the "full" estimate of this reflection is made from
+			 * at least two parts. */
 			get_indices(refl, &h, &k, &l);
 			sc = get_scalable(refl);
+			if ( !sc ) {
 
-			if ( sc && find_item(scalable, h, k, l) ) {
-				set_refinable(refl, 1);
+				n_noscale++;
+
+			} else {
+
+				Reflection *f = find_refl(full, h, k, l);
+
+				if ( f != NULL ) {
+
+					int r = get_redundancy(f);
+					if ( (r >= 2) || have_reference ) {
+						set_refinable(refl, 1);
+						n_acc++;
+					} else {
+						n_fewmatch++;
+					}
+
+				} else {
+					n_nomatch++;
+				}
+
 			}
 		}
+
+		STATUS("Image %4i: %i guide reflections accepted "
+		       "(%i not scalable, %i few matches, %i total)\n",
+		       i, n_acc, n_noscale, n_fewmatch, n_ref);
+
+		/* This would be a silly situation, since there must be a match
+		 * if THIS pattern has a scalable part of the reflection! */
+		assert(n_nomatch == 0);
 
 	}
 }
@@ -230,7 +259,6 @@ int main(int argc, char *argv[])
 	FILE *fh;
 	int nthreads = 1;
 	struct detector *det;
-	ReflItemList *scalable;
 	int i;
 	int n_total_patterns;
 	struct image *images;
@@ -240,13 +268,12 @@ int main(int argc, char *argv[])
 	int n_found = 0;
 	int n_expected = 0;
 	int n_notfound = 0;
-	char *cref;
 	int n_usable_patterns = 0;
 	int nobs;
 	char *reference_file = NULL;
-	double *reference = NULL;
-	RefList *reference_list = NULL;
+	RefList *reference = NULL;
 	int n_dud;
+	int have_reference = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -359,9 +386,9 @@ int main(int argc, char *argv[])
 		list = read_reflections(reference_file);
 		free(reference_file);
 		if ( list == NULL ) return 1;
-		reference_list = asymmetric_indices(list, sym);
+		reference = asymmetric_indices(list, sym);
 		reflist_free(list);
-		reference = intensities_from_list(reference_list);
+		have_reference = 1;
 
 	}
 
@@ -382,7 +409,6 @@ int main(int argc, char *argv[])
 
 	/* Fill in what we know about the images so far */
 	rewind(fh);
-	scalable = new_items();
 	nobs = 0;
 	for ( i=0; i<n_total_patterns; i++ ) {
 
@@ -427,9 +453,10 @@ int main(int argc, char *argv[])
 		cur->reflections = as;
 
 		predict_corresponding_reflections(cur, sym, &n_expected,
-		                                 &n_found, &n_notfound);
+		                                  &n_found, &n_notfound);
 
-		nobs += select_scalable_reflections(cur->reflections, scalable);
+		nobs += select_scalable_reflections(cur->reflections,
+		                                    reference);
 
 		progress_bar(i, n_total_patterns-1, "Loading pattern data");
 		n_usable_patterns++;
@@ -438,51 +465,13 @@ int main(int argc, char *argv[])
 	fclose(fh);
 	STATUS("Found %5.2f%% of the expected peaks (missed %i of %i).\n",
 	       100.0 * (double)n_found / n_expected, n_notfound, n_expected);
-	STATUS("Mean measurements per scalable unique reflection: %5.2f\n",
-	       (double)nobs / num_items(scalable));
-
-	cref = find_common_reflections(images, n_usable_patterns);
 
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
-	full = scale_intensities(images, n_usable_patterns, sym,
-	                         scalable, cref, reference);
+	full = scale_intensities(images, n_usable_patterns, reference);
 
-	select_reflections_for_refinement(images, n_usable_patterns, scalable);
-
-	for ( i=0; i<num_items(scalable); i++ ) {
-		Reflection *f;
-		struct refl_item *it = get_item(scalable, i);
-		f = find_refl(full, it->h, it->k, it->l);
-		if ( f == NULL ) {
-			ERROR("%3i %3i %3i was designated scalable, but no"
-			      " full intensity was recorded.\n",
-			      it->h, it->k, it->l);
-		}
-	}
-
-	for ( i=0; i<n_usable_patterns; i++ ) {
-
-		Reflection *refl;
-		RefListIterator *iter;
-
-		for ( refl = first_refl(images[i].reflections, &iter);
-		      refl != NULL;
-		      refl = next_refl(refl, iter) )
-		{
-			signed int h, k, l;
-
-			if ( !get_scalable(refl) ) continue;
-			get_indices(refl, &h, &k, &l);
-
-			if ( find_item(scalable, h, k, l) == 0 ) {
-				ERROR("%3i %3i %3i in image %i is scalable"
-				      " but is not in the list of scalable"
-				      " reflections.\n", h, k, l, i);
-			}
-		}
-
-	}
+	select_reflections_for_refinement(images, n_usable_patterns, full,
+	                                  have_reference);
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -491,6 +480,7 @@ int main(int argc, char *argv[])
 		FILE *fhp;
 		char filename[1024];
 		int j;
+		RefList *comp;
 
 		STATUS("Post refinement cycle %i of %i\n", i+1, n_iter);
 
@@ -508,14 +498,17 @@ int main(int argc, char *argv[])
 			/* Nothing will be written later */
 		}
 
-		if ( reference == NULL ) reference_list = full;
+		if ( reference == NULL ) {
+			comp = full;
+		} else {
+			comp = reference;
+		}
 
 		/* Refine the geometry of all patterns to get the best fit */
-		refine_all(images, n_usable_patterns, det, sym, scalable,
-		           reference_list, nthreads, fhg, fhp);
+		refine_all(images, n_usable_patterns, det,
+		           comp, nthreads, fhg, fhp);
 
 		nobs = 0;
-		clear_items(scalable);
 		for ( j=0; j<n_usable_patterns; j++ ) {
 
 			struct image *cur = &images[j];
@@ -525,16 +518,17 @@ int main(int argc, char *argv[])
 		                                          &n_notfound);
 
 			nobs += select_scalable_reflections(cur->reflections,
-			                                    scalable);
+			                                    reference);
 
 		}
-		STATUS("Mean measurements per scalable unique "
-		       "reflection: %5.2f\n", (double)nobs/num_items(scalable));
 
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
 		full = scale_intensities(images, n_usable_patterns,
-		                         sym, scalable, cref, reference);
+		                         reference);
+
+		select_reflections_for_refinement(images, n_usable_patterns,
+		                                  full, have_reference);
 
 		fclose(fhg);
 		fclose(fhp);
@@ -557,15 +551,12 @@ int main(int argc, char *argv[])
 		reflist_free(images[i].reflections);
 	}
 	reflist_free(full);
-	delete_items(scalable);
 	free(sym);
 	free(outfile);
 	free_detector_geometry(det);
 	free(beam);
-	free(cref);
 	if ( reference != NULL ) {
-		free(reference);
-		reflist_free(reference_list);
+		reflist_free(reference);
 	}
 	for ( i=0; i<n_usable_patterns; i++ ) {
 		cell_free(images[i].indexed_cell);

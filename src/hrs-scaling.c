@@ -35,7 +35,7 @@
 #define MAX_CYCLES (50)
 
 
-char *find_common_reflections(struct image *images, int n)
+static char *find_common_reflections(struct image *images, int n)
 {
 	int i;
 	char *cref;
@@ -53,6 +53,8 @@ char *find_common_reflections(struct image *images, int n)
 
 			signed int h, k, l;
 			int j;
+
+			if ( !get_scalable(refl) ) continue;
 
 			get_indices(refl, &h, &k, &l);
 
@@ -84,8 +86,8 @@ static void s_uhavha(signed int hat, signed int kat, signed int lat,
 
 	for ( refl = find_refl(reflections, hat, kat, lat);
 	      refl != NULL;
-	      refl = next_found_refl(refl) ) {
-
+	      refl = next_found_refl(refl) )
+	{
 		double ic, sigi;
 
 		if ( !get_scalable(refl) ) continue;
@@ -95,7 +97,6 @@ static void s_uhavha(signed int hat, signed int kat, signed int lat,
 
 		uha_val += 1.0 / pow(sigi, 2.0);
 		vha_val += ic / pow(sigi, 2.0);
-
 	}
 
 	*uha = uha_val;
@@ -104,7 +105,7 @@ static void s_uhavha(signed int hat, signed int kat, signed int lat,
 
 
 static void s_uhvh(struct image *images, int n,
-                   signed int h, signed int k, signed int l, const char *sym,
+                   signed int h, signed int k, signed int l,
                    double *uhp, double *vhp)
 {
 	int a;
@@ -212,51 +213,52 @@ static gsl_vector *solve_diagonal(gsl_vector *v, gsl_matrix *M)
 }
 
 
-static double iterate_scale(struct image *images, int n,
-                            ReflItemList *obs, const char *sym, char *cref,
-                            double *reference)
+static double iterate_scale(struct image *images, int n, RefList *scalable,
+                            char *cref, RefList *reference)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
 	gsl_vector *shifts;
 	double max_shift;
-	int n_ref;
 	double *uh_arr;
 	double *vh_arr;
 	double *uha_arr;
 	double *vha_arr;
-	int h;  /* Reflection index */
 	int frame;
-	int refidx;
+	Reflection *refl;
+	RefListIterator *iter;
 
 	M = gsl_matrix_calloc(n, n);
 	v = gsl_vector_calloc(n);
-	n_ref = num_items(obs);
 
 	uh_arr = new_list_intensity();
 	vh_arr = new_list_intensity();
-	for ( h=0; h<n_ref; h++ ) {
-
+	for ( refl = first_refl(scalable, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
 		double uh, vh;
-		struct refl_item *it = get_item(obs, h);
+		signed int h, k, l;
 
-		s_uhvh(images, n, it->h, it->k, it->l, sym, &uh, &vh);
+		get_indices(refl, &h, &k, &l);
 
-		set_intensity(uh_arr, it->h, it->k, it->l, uh);
-		set_intensity(vh_arr, it->h, it->k, it->l, vh);
+		s_uhvh(images, n, h, k, l, &uh, &vh);
 
+		set_intensity(uh_arr, h, k, l, uh);
+		set_intensity(vh_arr, h, k, l, vh);
 	}
 
 	uha_arr = malloc(n*sizeof(double));
 	vha_arr = malloc(n*sizeof(double));
 
-	for ( refidx=0; refidx<n_ref; refidx++ ) {
-
+	for ( refl = first_refl(scalable, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
 		int a;
-		struct refl_item *it = get_item(obs, refidx);
-		const signed int h = it->h;
-		const signed int k = it->k;
-		const signed int l = it->l;
+		signed int h, k, l;
+
+		get_indices(refl, &h, &k, &l);
 
 		/* For this reflection, calculate all the possible
 		 * values of uha and vha */
@@ -290,7 +292,15 @@ static double iterate_scale(struct image *images, int n,
 				if ( isnan(Ih) ) Ih = 0.0;
 			} else {
 				/* Look up by asymmetric indices */
-				Ih = lookup_intensity(reference, h, k, l);
+				Reflection *r = find_refl(reference, h, k, l);
+				if ( r == NULL ) {
+					ERROR("%3i %3i %3i isn't in the "
+					      "reference list, so why is it "
+					      "marked as scalable?\n", h, k, l);
+					Ih = 0.0;
+				} else {
+					Ih = get_intensity(r);
+				}
 			}
 
 			rha = vha - image_a->osf * uha * Ih;
@@ -310,7 +320,9 @@ static double iterate_scale(struct image *images, int n,
 				if ( (reference != NULL) && (a!=b) ) continue;
 
 				/* Zero if no common reflections */
-				if ( cref[a+n*b] != 0 ) continue;
+				if ( (reference == NULL) && cref[a+n*b] != 0 ) {
+					continue;
+				}
 
 				uhb = uha_arr[b];
 				vhb = vha_arr[b];
@@ -335,7 +347,6 @@ static double iterate_scale(struct image *images, int n,
 			gsl_vector_set(v, a, vval+vc);
 
 		}
-
 	}
 
 	free(uh_arr);
@@ -379,27 +390,28 @@ static double iterate_scale(struct image *images, int n,
 }
 
 
-static RefList *lsq_intensities(struct image *images, int n,
-                                ReflItemList *obs, const char *sym)
+static void lsq_intensities(struct image *images, int n, RefList *full)
 {
-	RefList *full;
-	int i;
+	Reflection *refl;
+	RefListIterator *iter;
 
-	full = reflist_new();
-	for ( i=0; i<num_items(obs); i++ ) {
-
-		struct refl_item *it = get_item(obs, i);
+	for ( refl = first_refl(full, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
 		double num = 0.0;
 		double den = 0.0;
 		int m;
 		int redundancy = 0;
-		Reflection *new;
+		signed int h, k, l;
+
+		get_indices(refl, &h, &k, &l);
 
 		/* For each frame */
 		for ( m=0; m<n; m++ ) {
 
 			double G;
-			Reflection *refl;
+			Reflection *f;
 
 			/* Don't scale intensities from this image if
 			 * post refinement failed on the last step. */
@@ -407,18 +419,16 @@ static RefList *lsq_intensities(struct image *images, int n,
 
 			G = images[m].osf;
 
-			for ( refl = find_refl(images[m].reflections,
-			                       it->h, it->k, it->l);
-			      refl != NULL;
-			      refl = next_found_refl(refl) )
+			for ( f = find_refl(images[m].reflections, h, k, l);
+			      f != NULL;  f = next_found_refl(refl) )
 			{
 
 				double p;
 
-				if ( !get_scalable(refl) ) continue;
-				p = get_partiality(refl);
+				if ( !get_scalable(f) ) continue;
+				p = get_partiality(f);
 
-				num += get_intensity(refl) * p * G;
+				num += get_intensity(f) * p * G;
 				den += pow(p, 2.0) * pow(G, 2.0);
 				redundancy++;
 
@@ -426,19 +436,17 @@ static RefList *lsq_intensities(struct image *images, int n,
 
 		}
 
-		if ( !isnan(num/den) ) {
-			new = add_refl(full, it->h, it->k, it->l);
-			set_int(new, num/den);
-			set_redundancy(new, redundancy);
-		} else {
-			ERROR("Couldn't calculate LSQ full intensity for"
-			      "%3i %3i %3i\n", it->h, it->k, it->l);
-			/* Doom is probably impending */
+		set_int(refl, num/den);
+
+		//STATUS("%3i %3i %3i %i %i\n", h, k, l,
+		//        redundancy, get_redundancy(refl));
+
+		if ( get_redundancy(refl) != redundancy ) {
+			ERROR("Didn't find all the expected parts for"
+			      " %3i %3i %3i\n", h, k, l);
 		}
 
 	}
-
-	return full;
 }
 
 
@@ -459,23 +467,78 @@ static void normalise_osfs(struct image *images, int n)
 }
 
 
+static RefList *guess_scaled_reflections(struct image *images, int n)
+{
+	RefList *scalable;
+	int i;
+
+	scalable = reflist_new();
+	for ( i=0; i<n; i++ ) {
+
+		Reflection *refl;
+		RefListIterator *iter;
+
+		/* Don't scale intensities from this image if
+		 * post refinement failed on the last step. */
+		if ( images[i].pr_dud ) continue;
+
+		for ( refl = first_refl(images[i].reflections, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) )
+		{
+			if ( get_scalable(refl) ) {
+
+				signed int h, k, l;
+				Reflection *f;
+				int red;
+
+				get_indices(refl, &h, &k, &l);
+				f = find_refl(scalable, h, k, l);
+				if ( f == NULL ) {
+					f = add_refl(scalable, h, k, l);
+				}
+
+				red = get_redundancy(f);
+				set_redundancy(f, red+1);
+
+			}
+		}
+
+	}
+
+	return scalable;
+}
+
+
+static void show_scale_factors(struct image *images, int n)
+{
+	int i;
+	for ( i=0; i<n; i++ ) {
+		STATUS("Image %4i: scale factor %5.2f\n", i, images[i].osf);
+	}
+}
+
+
 /* Scale the stack of images */
-RefList *scale_intensities(struct image *images, int n, const char *sym,
-                           ReflItemList *obs, char *cref, double *reference)
+RefList *scale_intensities(struct image *images, int n, RefList *reference)
 {
 	int m;
 	RefList *full;
 	int i;
 	double max_shift;
+	char *cref;
 
 	/* Start with all scale factors equal */
 	for ( m=0; m<n; m++ ) images[m].osf = 1.0;
+
+	cref = find_common_reflections(images, n);
+	full = guess_scaled_reflections(images, n);
 
 	/* Iterate */
 	i = 0;
 	do {
 
-		max_shift = iterate_scale(images, n, obs, sym, cref, reference);
+		max_shift = iterate_scale(images, n, full, cref, reference);
 		STATUS("Scaling iteration %2i: max shift = %5.2f\n",
 		       i+1, max_shift);
 		i++;
@@ -483,6 +546,10 @@ RefList *scale_intensities(struct image *images, int n, const char *sym,
 
 	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );
 
-	full = lsq_intensities(images, n, obs, sym);
+	free(cref);
+
+	show_scale_factors(images, n);
+
+	lsq_intensities(images, n, full);
 	return full;
 }

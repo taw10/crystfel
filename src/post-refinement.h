@@ -41,8 +41,7 @@ enum {
 };
 
 
-extern void pr_refine(struct image *image, const RefList *full,
-                      const char *sym);
+extern void pr_refine(struct image *image, const RefList *full);
 
 /* Exported so it can be poked by tests/pr_gradient_check */
 extern double gradient(struct image *image, int k, Reflection *refl, double r);
