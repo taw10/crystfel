@@ -63,7 +63,8 @@ static void mess_up_cell(UnitCell *cell)
 /* For each reflection in "partial", fill in what the intensity would be
  * according to "full" */
 static void calculate_partials(RefList *partial, double osf,
-                               RefList *full, const char *sym)
+                               RefList *full, const char *sym,
+                               int random_intensities)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -76,6 +77,7 @@ static void calculate_partials(RefList *partial, double osf,
 		Reflection *rfull;
 		double p;
 		double Ip;
+		double If;
 
 		get_indices(refl, &h, &k, &l);
 		get_asymm(h, k, l, &h, &k, &l, sym);
@@ -83,11 +85,20 @@ static void calculate_partials(RefList *partial, double osf,
 
 		rfull = find_refl(full, h, k, l);
 		if ( rfull == NULL ) {
-			set_redundancy(refl, 0);
-		} else {
-			Ip = osf * p * get_intensity(rfull);
-			set_int(refl, Ip);
+			if ( random_intensities ) {
+				rfull = add_refl(full, h, k, l);
+				If = fabs(gaussian_noise(0.0, 1000.0));
+				set_int(rfull, If);
+				set_redundancy(rfull, 1);
+			} else {
+				set_redundancy(refl, 0);
+				If = 0.0;
+			}
 		}
+
+		Ip = osf * p * If;
+		set_int(refl, Ip);
+
 	}
 }
 
@@ -123,7 +134,7 @@ int main(int argc, char *argv[])
 	char *cellfile = NULL;
 	struct detector *det = NULL;
 	struct beam_params *beam = NULL;
-	RefList *full;
+	RefList *full = NULL;
 	char *sym = NULL;
 	UnitCell *cell = NULL;
 	struct quaternion orientation;
@@ -131,6 +142,7 @@ int main(int argc, char *argv[])
 	FILE *ofh;
 	int n = 2;
 	int i;
+	int random_intensities = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -227,20 +239,23 @@ int main(int argc, char *argv[])
 	free(geomfile);
 
 	/* Load (full) reflections */
-	if ( input_file == NULL ) {
-		ERROR("You must provide a reflection list.\n");
-		return 1;
-	}
-	full = read_reflections(input_file);
-	if ( full == NULL ) {
-		ERROR("Failed to read reflections from '%s'\n", input_file);
-		return 1;
-	}
-	free(input_file);
-	if ( check_list_symmetry(full, sym) ) {
-		ERROR("The input reflection list does not appear to"
-		      " have symmetry %s\n", sym);
-		return 1;
+	if ( input_file != NULL ) {
+
+		full = read_reflections(input_file);
+		if ( full == NULL ) {
+			ERROR("Failed to read reflections from '%s'\n",
+			      input_file);
+			return 1;
+		}
+		free(input_file);
+		if ( check_list_symmetry(full, sym) ) {
+			ERROR("The input reflection list does not appear to"
+			      " have symmetry %s\n", sym);
+			return 1;
+		}
+
+	} else {
+		random_intensities = 1;
 	}
 
 	if ( n < 1 ) {
@@ -271,6 +286,10 @@ int main(int argc, char *argv[])
 	image.i0_available = 0;
 	image.filename = malloc(256);
 
+	if ( random_intensities ) {
+		full = reflist_new();
+	}
+
 	for ( i=0; i<n; i++ ) {
 
 		double osf;
@@ -289,7 +308,8 @@ int main(int argc, char *argv[])
 		snprintf(image.filename, 255, "dummy.h5");
 		image.reflections = find_intersections(&image,
 		                                       image.indexed_cell);
-		calculate_partials(image.reflections, osf, full, sym);
+		calculate_partials(image.reflections, osf, full, sym,
+		                   random_intensities);
 
 		/* Give a slightly incorrect cell in the stream */
 		mess_up_cell(image.indexed_cell);
@@ -300,6 +320,11 @@ int main(int argc, char *argv[])
 
 		progress_bar(i+1, n, "Simulating");
 
+	}
+
+	if ( random_intensities ) {
+		STATUS("Writing full intensities to partial_sim.hkl\n");
+		write_reflist("partial_sim.hkl", full, cell);
 	}
 
 	fclose(ofh);
