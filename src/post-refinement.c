@@ -405,6 +405,8 @@ static double pr_iterate(struct image *image, const RefList *full,
 	//STATUS("%i reflections were scalable\n", nref);
 	if ( nref == 0 ) {
 		ERROR("No reflections left to scale!\n");
+		gsl_matrix_free(M);
+		gsl_vector_free(v);
 		return 0.0;
 	}
 
