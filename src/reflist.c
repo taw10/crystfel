@@ -162,7 +162,12 @@ static void recursive_free(Reflection *refl)
 {
 	if ( refl->child[0] != NULL ) recursive_free(refl->child[0]);
 	if ( refl->child[1] != NULL ) recursive_free(refl->child[1]);
-	free(refl);
+
+	while ( refl != NULL ) {
+		Reflection *next = refl->next;
+		free(refl);
+		refl = next;
+	}
 }
 
 
