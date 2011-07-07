@@ -164,8 +164,8 @@ int main(int argc, char *argv[])
 
 	/* Short options */
 	while ((c = getopt_long(argc, argv, "hi:o:b:p:g:y:n:",
-	                        longopts, NULL)) != -1) {
-
+	                        longopts, NULL)) != -1)
+	{
 		switch (c) {
 		case 'h' :
 			show_help(argv[0]);
