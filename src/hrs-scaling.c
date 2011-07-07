@@ -261,7 +261,6 @@ static double iterate_scale(struct image *images, int n, RefList *scalable,
 			}
 		}
 
-
 		/* For this reflection, calculate all the possible
 		 * values of uha and vha */
 		for ( a=0; a<n; a++ ) {
