@@ -122,12 +122,11 @@ static double partiality(double r1, double r2, double r)
 }
 
 
-static int check_reflection(struct image *image, double mres,
-                            RefList *reflections,
-                            signed int h, signed int k, signed int l,
-                            double asx, double asy, double asz,
-                            double bsx, double bsy, double bsz,
-                            double csx, double csy, double csz)
+static Reflection *check_reflection(struct image *image, RefList *reflections,
+                                    signed int h, signed int k, signed int l,
+                                    double asx, double asy, double asz,
+                                    double bsx, double bsy, double bsz,
+                                    double csx, double csy, double csz)
 {
 	const int output = 0;
 	double xl, yl, zl;
@@ -154,13 +153,12 @@ static int check_reflection(struct image *image, double mres,
 	/* Get the coordinates of the reciprocal lattice point */
 	zl = h*asz + k*bsz + l*csz;
 	/* Throw out if it's "in front".  A tiny bit "in front" is OK. */
-	if ( zl > image->profile_radius ) return 0;
+	if ( zl > image->profile_radius ) return NULL;
 	xl = h*asx + k*bsx + l*csx;
 	yl = h*asy + k*bsy + l*csy;
 
 	ds_sq = modulus_squared(xl, yl, zl);  /* d*^2 */
 	ds = sqrt(ds_sq);
-	if ( ds > mres ) return 0;  /* Outside resolution range */
 
 	/* Calculate excitation errors */
 	rlow = excitation_error(xl, yl, zl, ds, klow, -divergence);
@@ -179,7 +177,7 @@ static int check_reflection(struct image *image, double mres,
 	if ( inside ) close = 0;
 
 	/* Neither?  Skip it. */
-	if ( !(close || inside) ) return 0;
+	if ( !(close || inside) ) return NULL;
 
 	/* If the "lower" Ewald sphere is a long way away, use the
 	 * position at which the Ewald sphere would just touch the
@@ -211,7 +209,7 @@ static int check_reflection(struct image *image, double mres,
 
 	/* Locate peak on detector. */
 	p = locate_peak(xl, yl, zl, kcen, image->det, &xda, &yda);
-	if ( p == -1 ) return 0;
+	if ( p == -1 ) return NULL;
 
 	/* Add peak to list */
 	refl = add_refl(reflections, h, k, l);
@@ -225,7 +223,7 @@ static int check_reflection(struct image *image, double mres,
 		       h, k, l, 0.0, xda, yda, part);
 	}
 
-	return 1;
+	return refl;
 }
 
 
@@ -264,7 +262,7 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 	for ( h=-hmax; h<=hmax; h++ ) {
 	for ( k=-kmax; k<=kmax; k++ ) {
 	for ( l=-lmax; l<=lmax; l++ ) {
-		check_reflection(image, mres, reflections, h, k, l,
+		check_reflection(image, reflections, h, k, l,
 		                 asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
 	}
 	}
@@ -282,63 +280,49 @@ void predict_corresponding_reflections(struct image *image, const char *sym,
 	Reflection *refl;
 	RefListIterator *iter;
 	RefList *predicted;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
 
 	*n_expected = 0;
 	*n_found = 0;
 	*n_notfound = 0;
 
-	predicted = find_intersections(image, image->indexed_cell);
+	cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
+	                    &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
-	for ( refl = first_refl(predicted, &iter);
+	/* Scratch list to give check_reflection() something to add to */
+	predicted = reflist_new();
+
+	for ( refl = first_refl(image->reflections, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-
-		Reflection *p_peak;
+		Reflection *vals;
 		double r1, r2, p, x, y;
 		signed int h, k, l;
-		signed int ha, ka, la;
 		int clamp1, clamp2;
-		int found = 0;
 
-		/* Get predicted indices and location */
-		get_indices(refl, &h, &k, &l);
-		get_detector_pos(refl, &x, &y);
 		if ( n_expected != NULL ) (*n_expected)++;
 
-		/* Get the asymmetric indices, with which the reflection in the
-		 * image's list will be indexed. */
-		get_asymm(h, k, l, &ha, &ka, &la, sym);
+		get_symmetric_indices(refl, &h, &k, &l);
 
-		/* Look for this reflection in the pattern */
-		p_peak = find_refl(image->reflections, ha, ka, la);
-		do {
+		vals = check_reflection(image, predicted, h, k, l,
+		                        asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
 
-			signed int hs, ks, ls;
-
-			if ( p_peak != NULL ) {
-				get_symmetric_indices(p_peak, &hs, &ks, &ls);
-				if ( (hs==h) && (ks==k) && (ls==l) ) found = 1;
-			}
-
-			if ( !found && (p_peak != NULL ) ) {
-				p_peak = next_found_refl(p_peak);
-			}
-
-		} while ( !found && (p_peak != NULL) );
-		if ( !found ) {
-			if (n_notfound != NULL) (*n_notfound)++;
+		if ( vals == NULL ) {
+			(*n_notfound)++;
 			continue;
 		}
-		if ( n_found != NULL ) (*n_found)++;
+		(*n_found)++;
 
 		/* Transfer partiality stuff */
-		get_partial(refl, &r1, &r2, &p, &clamp1, &clamp2);
-		set_partial(p_peak, r1, r2, p, clamp1, clamp2);
+		get_partial(vals, &r1, &r2, &p, &clamp1, &clamp2);
+		set_partial(refl, r1, r2, p, clamp1, clamp2);
 
 		/* Transfer detector location */
-		get_detector_pos(refl, &x, &y);
-		set_detector_pos(p_peak, 0.0, x, y);
+		get_detector_pos(vals, &x, &y);
+		set_detector_pos(refl, 0.0, x, y);
 
 	}
 
