@@ -93,7 +93,9 @@ static void s_uhavha(signed int hat, signed int kat, signed int lat,
 		if ( !get_scalable(refl) ) continue;
 
 		ic = get_intensity(refl) / get_partiality(refl);
-		sigi = ic / 10.0; /* FIXME */
+
+		/* Get the error in the estimated full intensity */
+		sigi = get_esd_intensity(refl) / get_partiality(refl);
 
 		uha_val += 1.0 / pow(sigi, 2.0);
 		vha_val += ic / pow(sigi, 2.0);
