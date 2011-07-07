@@ -257,8 +257,31 @@ static double iterate_scale(struct image *images, int n, RefList *scalable,
 	{
 		int a;
 		signed int h, k, l;
+		double uh, Ih;
 
 		get_indices(refl, &h, &k, &l);
+
+		uh = lookup_intensity(uh_arr, h, k, l);
+
+		if ( !reference ) {
+			double vh;
+			vh = lookup_intensity(vh_arr, h, k, l);
+			Ih = vh / uh;
+			/* 0 / 0 = 0, not NaN */
+			if ( isnan(Ih) ) Ih = 0.0;
+		} else {
+			/* Look up by asymmetric indices */
+			Reflection *r = find_refl(reference, h, k, l);
+			if ( r == NULL ) {
+				ERROR("%3i %3i %3i isn't in the "
+				      "reference list, so why is it "
+				      "marked as scalable?\n", h, k, l);
+				Ih = 0.0;
+			} else {
+				Ih = get_intensity(r);
+			}
+		}
+
 
 		/* For this reflection, calculate all the possible
 		 * values of uha and vha */
@@ -276,33 +299,12 @@ static double iterate_scale(struct image *images, int n, RefList *scalable,
 
 			int b;  /* Frame (scale factor) number */
 			struct image *image_a = &images[a];
-			double vc, Ih, uh, rha, vha, uha;
+			double vc, rha, vha, uha;
 			double vval;
 
 			/* Determine the "solution" vector component */
 			uha = uha_arr[a];
 			vha = vha_arr[a];
-			uh = lookup_intensity(uh_arr, h, k, l);
-
-			if ( !reference ) {
-				double vh;
-				vh = lookup_intensity(vh_arr, h, k, l);
-				Ih = vh / uh;
-				/* 0 / 0 = 0, not NaN */
-				if ( isnan(Ih) ) Ih = 0.0;
-			} else {
-				/* Look up by asymmetric indices */
-				Reflection *r = find_refl(reference, h, k, l);
-				if ( r == NULL ) {
-					ERROR("%3i %3i %3i isn't in the "
-					      "reference list, so why is it "
-					      "marked as scalable?\n", h, k, l);
-					Ih = 0.0;
-				} else {
-					Ih = get_intensity(r);
-				}
-			}
-
 			rha = vha - image_a->osf * uha * Ih;
 			vc = Ih * rha;
 
