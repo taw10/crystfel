@@ -220,8 +220,6 @@ static double iterate_scale(struct image *images, int n, RefList *scalable,
 	gsl_vector *v;
 	gsl_vector *shifts;
 	double max_shift;
-	double *uh_arr;
-	double *vh_arr;
 	double *uha_arr;
 	double *vha_arr;
 	int frame;
@@ -230,23 +228,6 @@ static double iterate_scale(struct image *images, int n, RefList *scalable,
 
 	M = gsl_matrix_calloc(n, n);
 	v = gsl_vector_calloc(n);
-
-	uh_arr = new_list_intensity();
-	vh_arr = new_list_intensity();
-	for ( refl = first_refl(scalable, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		double uh, vh;
-		signed int h, k, l;
-
-		get_indices(refl, &h, &k, &l);
-
-		s_uhvh(images, n, h, k, l, &uh, &vh);
-
-		set_intensity(uh_arr, h, k, l, uh);
-		set_intensity(vh_arr, h, k, l, vh);
-	}
 
 	uha_arr = malloc(n*sizeof(double));
 	vha_arr = malloc(n*sizeof(double));
@@ -257,15 +238,13 @@ static double iterate_scale(struct image *images, int n, RefList *scalable,
 	{
 		int a;
 		signed int h, k, l;
-		double uh, Ih;
+		double uh, vh, Ih;
 
 		get_indices(refl, &h, &k, &l);
 
-		uh = lookup_intensity(uh_arr, h, k, l);
+		s_uhvh(images, n, h, k, l, &uh, &vh);
 
 		if ( !reference ) {
-			double vh;
-			vh = lookup_intensity(vh_arr, h, k, l);
 			Ih = vh / uh;
 			/* 0 / 0 = 0, not NaN */
 			if ( isnan(Ih) ) Ih = 0.0;
@@ -351,8 +330,6 @@ static double iterate_scale(struct image *images, int n, RefList *scalable,
 		}
 	}
 
-	free(uh_arr);
-	free(vh_arr);
 	free(uha_arr);
 	free(vha_arr);
 
