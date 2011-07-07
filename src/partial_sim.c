@@ -94,6 +94,8 @@ static void calculate_partials(RefList *partial, double osf,
 				set_redundancy(refl, 0);
 				If = 0.0;
 			}
+		} else {
+			If = get_intensity(rfull);
 		}
 
 		Ip = osf * p * If;
