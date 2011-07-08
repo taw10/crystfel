@@ -239,6 +239,8 @@ AM_CONDITIONAL([BUILD_HDFSEE], test x$have_gdk_pixbuf = xtrue \
 AM_CONDITIONAL([BUILD_CUBEIT], test x$have_cairo = xtrue \
                                  -a x$have_libpng = xtrue)
 
+AM_CONDITIONAL([HAVE_CAIRO], test x$have_cairo = xtrue)
+
 
 gl_IGNORE_UNUSED_LIBRARIES
 

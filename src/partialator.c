@@ -36,6 +36,7 @@
 #include "hrs-scaling.h"
 #include "reflist.h"
 #include "reflist-utils.h"
+#include "scaling-report.h"
 
 
 static void show_help(const char *s)
@@ -357,7 +358,6 @@ int main(int argc, char *argv[])
 		ERROR("Failed to open input file '%s'\n", infile);
 		return 1;
 	}
-	free(infile);
 
 	/* Sanitise output filename */
 	if ( outfile == NULL ) {
@@ -544,6 +544,8 @@ int main(int argc, char *argv[])
 	/* Output results */
 	write_reflist(outfile, full, images[0].indexed_cell);
 
+	scaling_report("scaling-report.pdf", images, n_usable_patterns, infile);
+
 	/* Clean up */
 	for ( i=0; i<n_usable_patterns; i++ ) {
 		reflist_free(images[i].reflections);
@@ -561,6 +563,7 @@ int main(int argc, char *argv[])
 		free(images[i].filename);
 	}
 	free(images);
+	free(infile);
 
 	return 0;
 }

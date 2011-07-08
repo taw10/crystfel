@@ -55,6 +55,7 @@ TESTS = tests/list_check$(EXEEXT) tests/first_merge_check \
 @HAVE_OPENCL_TRUE@am__append_4 = tests/gpu_sim_check
 @HAVE_OPENCL_TRUE@am__append_5 = tests/gpu_sim_check
 @HAVE_OPENCL_TRUE@am__append_6 = src/diffraction-gpu.c src/cl-utils.c
+@HAVE_CAIRO_TRUE@am__append_7 = src/scaling-report.c
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -191,6 +192,13 @@ am_src_partial_sim_OBJECTS = src/partial_sim.$(OBJEXT) \
 src_partial_sim_OBJECTS = $(am_src_partial_sim_OBJECTS)
 src_partial_sim_LDADD = $(LDADD)
 src_partial_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+am__src_partialator_SOURCES_DIST = src/partialator.c src/cell.c \
+	src/hdf5-file.c src/utils.c src/detector.c src/peaks.c \
+	src/image.c src/geometry.c src/reflist-utils.c src/stream.c \
+	src/thread-pool.c src/beam-parameters.c src/symmetry.c \
+	src/post-refinement.c src/hrs-scaling.c src/reflist.c \
+	src/scaling-report.c
+@HAVE_CAIRO_TRUE@am__objects_2 = src/scaling-report.$(OBJEXT)
 am_src_partialator_OBJECTS = src/partialator.$(OBJEXT) \
 	src/cell.$(OBJEXT) src/hdf5-file.$(OBJEXT) src/utils.$(OBJEXT) \
 	src/detector.$(OBJEXT) src/peaks.$(OBJEXT) src/image.$(OBJEXT) \
@@ -198,7 +206,7 @@ am_src_partialator_OBJECTS = src/partialator.$(OBJEXT) \
 	src/stream.$(OBJEXT) src/thread-pool.$(OBJEXT) \
 	src/beam-parameters.$(OBJEXT) src/symmetry.$(OBJEXT) \
 	src/post-refinement.$(OBJEXT) src/hrs-scaling.$(OBJEXT) \
-	src/reflist.$(OBJEXT)
+	src/reflist.$(OBJEXT) $(am__objects_2)
 src_partialator_OBJECTS = $(am_src_partialator_OBJECTS)
 src_partialator_LDADD = $(LDADD)
 src_partialator_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
@@ -334,9 +342,10 @@ DIST_SOURCES = $(contrib_alter_stream_SOURCES) \
 	$(src_compare_hkl_SOURCES) $(am__src_cubeit_SOURCES_DIST) \
 	$(src_get_hkl_SOURCES) $(am__src_hdfsee_SOURCES_DIST) \
 	$(am__src_indexamajig_SOURCES_DIST) $(src_partial_sim_SOURCES) \
-	$(src_partialator_SOURCES) $(am__src_pattern_sim_SOURCES_DIST) \
-	$(src_powder_plot_SOURCES) $(src_process_hkl_SOURCES) \
-	$(src_render_hkl_SOURCES) $(src_sum_stack_SOURCES) \
+	$(am__src_partialator_SOURCES_DIST) \
+	$(am__src_pattern_sim_SOURCES_DIST) $(src_powder_plot_SOURCES) \
+	$(src_process_hkl_SOURCES) $(src_render_hkl_SOURCES) \
+	$(src_sum_stack_SOURCES) \
 	$(am__tests_gpu_sim_check_SOURCES_DIST) \
 	$(tests_integration_check_SOURCES) $(tests_list_check_SOURCES) \
 	$(tests_pr_gradient_check_SOURCES)
@@ -633,8 +642,8 @@ EXTRA_DIST = configure m4/gnulib-cache.m4 tests/first_merge_check \
 	src/symmetry.h src/povray.h src/index-priv.h src/geometry.h \
 	src/render_hkl.h src/stream.h src/thread-pool.h \
 	src/beam-parameters.h src/post-refinement.h src/hrs-scaling.h \
-	src/reflist.h $(crystfel_DATA) doc/twin-calculator.pdf \
-	doc/examples/lcls-dec.geom \
+	src/reflist.h src/scaling-report.h $(crystfel_DATA) \
+	doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
 	doc/examples/lcls-june-r0013-r0128.geom \
 	doc/examples/lcls-xpp-estimate.geom doc/examples/simple.geom \
 	doc/examples/lcls-dec.beam doc/examples/lcls-june.beam \
@@ -718,12 +727,11 @@ src_calibrate_detector_SOURCES = src/calibrate_detector.c src/utils.c \
                                  src/symmetry.c src/peaks.c
 
 src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
-                          src/utils.c src/detector.c src/peaks.c src/image.c \
-                          src/geometry.c src/reflist-utils.c src/stream.c \
-                          src/thread-pool.c src/beam-parameters.c \
-                          src/symmetry.c src/post-refinement.c \
-                          src/hrs-scaling.c src/reflist.c
-
+	src/utils.c src/detector.c src/peaks.c src/image.c \
+	src/geometry.c src/reflist-utils.c src/stream.c \
+	src/thread-pool.c src/beam-parameters.c src/symmetry.c \
+	src/post-refinement.c src/hrs-scaling.c src/reflist.c \
+	$(am__append_7)
 @BUILD_CUBEIT_TRUE@src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
 @BUILD_CUBEIT_TRUE@                     src/detector.c src/render.c src/filters.c src/image.c \
 @BUILD_CUBEIT_TRUE@                     src/symmetry.c src/stream.c src/thread-pool.c \
@@ -974,6 +982,8 @@ src/post-refinement.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/hrs-scaling.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/scaling-report.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/partialator$(EXEEXT): $(src_partialator_OBJECTS) $(src_partialator_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/partialator$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_partialator_OBJECTS) $(src_partialator_LDADD) $(LIBS)
@@ -1068,6 +1078,7 @@ mostlyclean-compile:
 	-rm -f src/reflist.$(OBJEXT)
 	-rm -f src/render.$(OBJEXT)
 	-rm -f src/render_hkl.$(OBJEXT)
+	-rm -f src/scaling-report.$(OBJEXT)
 	-rm -f src/statistics.$(OBJEXT)
 	-rm -f src/stream.$(OBJEXT)
 	-rm -f src/sum_stack.$(OBJEXT)
@@ -1117,6 +1128,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reflist.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render_hkl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/scaling-report.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/statistics.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/stream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/sum_stack.Po@am__quote@

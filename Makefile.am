@@ -121,6 +121,10 @@ src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
                           src/symmetry.c src/post-refinement.c \
                           src/hrs-scaling.c src/reflist.c
 
+if HAVE_CAIRO
+src_partialator_SOURCES += src/scaling-report.c
+endif
+
 if BUILD_CUBEIT
 src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
                      src/detector.c src/render.c src/filters.c src/image.c \
@@ -158,7 +162,7 @@ EXTRA_DIST += src/cell.h src/hdf5-file.h src/image.h src/utils.h \
               src/symmetry.h src/povray.h src/index-priv.h src/geometry.h \
               src/render_hkl.h src/stream.h src/thread-pool.h \
               src/beam-parameters.h src/post-refinement.h src/hrs-scaling.h \
-              src/reflist.h
+              src/reflist.h src/scaling-report.h
 
 crystfeldir = $(datadir)/crystfel
 crystfel_DATA = data/diffraction.cl data/defs.h data/hdfsee.ui
