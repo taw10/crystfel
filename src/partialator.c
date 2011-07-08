@@ -452,8 +452,7 @@ int main(int argc, char *argv[])
 		reflist_free(cur->reflections);
 		cur->reflections = as;
 
-		predict_corresponding_reflections(cur, sym, &n_expected,
-		                                  &n_found, &n_notfound);
+		update_partialities(cur, &n_expected, &n_found, &n_notfound);
 
 		nobs += select_scalable_reflections(cur->reflections,
 		                                    reference);
@@ -513,9 +512,8 @@ int main(int argc, char *argv[])
 
 			struct image *cur = &images[j];
 
-			predict_corresponding_reflections(cur, sym, &n_expected,
-		                                          &n_found,
-		                                          &n_notfound);
+			update_partialities(cur, &n_expected,
+			                    &n_found, &n_notfound);
 
 			nobs += select_scalable_reflections(cur->reflections,
 			                                    reference);

@@ -505,7 +505,7 @@ void pr_refine(struct image *image, const RefList *full)
 
 		max_shift = pr_iterate(image, full);
 
-		update_partialities(image);
+		update_partialities(image, NULL, NULL, NULL);
 
 		if ( verbose ) {
 			dev = guide_dev(image, full);
