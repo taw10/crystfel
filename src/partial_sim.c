@@ -101,7 +101,7 @@ static void calculate_partials(RefList *partial, double osf,
 		Ip = gaussian_noise(Ip, Ip/10.0);
 
 		set_int(refl, Ip);
-		set_esd_intensity(refl, Ip/10.0);
+		set_esd_intensity(refl, 1000.0);
 
 	}
 }
