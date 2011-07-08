@@ -287,6 +287,8 @@ static double iterate_scale(struct image *images, int n, RefList *scalable,
 			vha = vha_arr[a];
 			rha = vha - image_a->osf * uha * Ih;
 			vc = Ih * rha;
+			vval = gsl_vector_get(v, a);
+			gsl_vector_set(v, a, vval+vc);
 
 			/* Determine the matrix component */
 			for ( b=0; b<n; b++ ) {
@@ -324,9 +326,6 @@ static double iterate_scale(struct image *images, int n, RefList *scalable,
 				gsl_matrix_set(M, b, a, tval+mc);
 
 			}
-
-			vval = gsl_vector_get(v, a);
-			gsl_vector_set(v, a, vval+vc);
 
 		}
 	}
