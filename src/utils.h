@@ -171,6 +171,7 @@ static inline int within_tolerance(double a, double b, double percent)
 /* Joules to eV */
 #define J_to_eV(a) ((a)/ELECTRON_CHARGE)
 
+#define UNUSED __attribute__((unused))
 
 /* -------------------- Indexed lists for specified types ------------------- */
 

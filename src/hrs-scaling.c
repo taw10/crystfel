@@ -489,11 +489,68 @@ static RefList *guess_scaled_reflections(struct image *images, int n)
 }
 
 
-static void show_scale_factors(struct image *images, int n)
+static UNUSED void show_scale_factors(struct image *images, int n)
 {
 	int i;
 	for ( i=0; i<n; i++ ) {
 		STATUS("Image %4i: scale factor %5.2f\n", i, images[i].osf);
+	}
+}
+
+
+static UNUSED double total_dev(struct image *image, const RefList *full)
+{
+	double dev = 0.0;
+
+	/* For each reflection */
+	Reflection *refl;
+	RefListIterator *iter;
+
+	for ( refl = first_refl(image->reflections, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
+
+		double G, p;
+		signed int h, k, l;
+		Reflection *full_version;
+		double I_full, I_partial;
+
+		if ( !get_scalable(refl) ) continue;
+
+		get_indices(refl, &h, &k, &l);
+		assert((h!=0) || (k!=0) || (l!=0));
+
+		full_version = find_refl(full, h, k, l);
+		if ( full_version == NULL ) continue;
+		/* Some reflections may have recently become scalable, but
+		 * scale_intensities() might not yet have been called, so the
+		 * full version may not have been calculated yet. */
+
+		G = image->osf;
+		p = get_partiality(refl);
+		I_partial = get_intensity(refl);
+		I_full = get_intensity(full_version);
+		//STATUS("%3i %3i %3i  %5.2f  %5.2f  %5.2f  %5.2f  %5.2f\n",
+		//       h, k, l, G, p, I_partial, I_full,
+		//       I_partial - p*G*I_full);
+
+		dev += pow(I_partial - p*G*I_full, 2.0);
+
+	}
+
+	return dev;
+}
+
+
+static UNUSED void plot_graph(struct image *image, RefList *reference)
+{
+	double sc;
+
+	for ( sc=0.0; sc<3.0; sc+=0.1 ) {
+
+		image->osf = sc;
+		STATUS("%5.2f: %e\n", sc, total_dev(image, reference));
+
 	}
 }
 
@@ -509,6 +566,8 @@ RefList *scale_intensities(struct image *images, int n, RefList *reference)
 
 	/* Start with all scale factors equal */
 	for ( m=0; m<n; m++ ) images[m].osf = 1.0;
+
+	//plot_graph(images, reference);
 
 	cref = find_common_reflections(images, n);
 	full = guess_scaled_reflections(images, n);
@@ -527,7 +586,7 @@ RefList *scale_intensities(struct image *images, int n, RefList *reference)
 
 	free(cref);
 
-	show_scale_factors(images, n);
+	//show_scale_factors(images, n);
 
 	lsq_intensities(images, n, full);
 	return full;
