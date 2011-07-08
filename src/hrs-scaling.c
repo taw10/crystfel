@@ -130,67 +130,13 @@ static void s_uhvh(struct image *images, int n,
 }
 
 
-static gsl_vector *solve_by_eigenvalue_filtration(gsl_vector *v, gsl_matrix *M)
-{
-	gsl_eigen_symmv_workspace *work;
-	gsl_vector *e_val;
-	gsl_matrix *e_vec;
-	int val, n, frame;
-	gsl_vector *shifts;
-
-	n = v->size;
-	if ( v->size != M->size1 ) return NULL;
-	if ( v->size != M->size2 ) return NULL;
-
-	/* Diagonalise */
-	work = gsl_eigen_symmv_alloc(n);
-	e_val = gsl_vector_alloc(n);
-	e_vec = gsl_matrix_alloc(n, n);
-	val = gsl_eigen_symmv(M, e_val, e_vec, work);
-	if ( val ) {
-		ERROR("Couldn't diagonalise matrix.\n");
-		return NULL;
-	}
-	gsl_eigen_symmv_free(work);
-	val = gsl_eigen_symmv_sort(e_val, e_vec, GSL_EIGEN_SORT_ABS_DESC);
-
-	/* Rotate the "solution vector" */
-	gsl_vector *rprime;
-	rprime = gsl_vector_alloc(n);
-	val = gsl_blas_dgemv(CblasTrans, 1.0, e_vec, v, 0.0, rprime);
-
-	/* Solve (now easy) */
-	gsl_vector *sprime;
-	sprime = gsl_vector_alloc(n);
-	for ( frame=0; frame<n-1; frame++ ) {
-		double num, den;
-		num = gsl_vector_get(rprime, frame);
-		den = gsl_vector_get(e_val, frame);
-		gsl_vector_set(sprime, frame, num/den);
-	}
-	gsl_vector_set(sprime, n-1, 0.0);  /* Set last shift to zero */
-
-	/* Rotate back */
-	shifts = gsl_vector_alloc(n);
-	val = gsl_blas_dgemv(CblasNoTrans, 1.0, e_vec, sprime, 0.0, shifts);
-
-	gsl_vector_free(sprime);
-	gsl_vector_free(rprime);
-	gsl_matrix_free(e_vec);
-	gsl_vector_free(e_val);
-
-	return shifts;
-}
-
-
-static gsl_vector *solve_diagonal(gsl_vector *v, gsl_matrix *M)
+static gsl_vector *solve_diagonal(gsl_vector *v, gsl_vector *M)
 {
 	gsl_vector *shifts;
 	int n, frame;
 
 	n = v->size;
-	if ( v->size != M->size1 ) return NULL;
-	if ( v->size != M->size2 ) return NULL;
+	if ( v->size != M->size ) return NULL;
 
 	shifts = gsl_vector_alloc(n);
 	if ( shifts == NULL ) return NULL;
@@ -200,7 +146,7 @@ static gsl_vector *solve_diagonal(gsl_vector *v, gsl_matrix *M)
 		double num, den, sh;
 
 		num = gsl_vector_get(v, frame);
-		den = gsl_matrix_get(M, frame, frame);
+		den = gsl_vector_get(M, frame);
 		sh = num/den;
 
 		if ( isnan(sh) ) {
@@ -218,21 +164,16 @@ static gsl_vector *solve_diagonal(gsl_vector *v, gsl_matrix *M)
 static double iterate_scale(struct image *images, int n, RefList *scalable,
                             char *cref, RefList *reference)
 {
-	gsl_matrix *M;
+	gsl_vector *M;
 	gsl_vector *v;
 	gsl_vector *shifts;
 	double max_shift;
-	double *uha_arr;
-	double *vha_arr;
 	int frame;
 	Reflection *refl;
 	RefListIterator *iter;
 
-	M = gsl_matrix_calloc(n, n);
+	M = gsl_vector_calloc(n);
 	v = gsl_vector_calloc(n);
-
-	uha_arr = malloc(n*sizeof(double));
-	vha_arr = malloc(n*sizeof(double));
 
 	for ( refl = first_refl(scalable, &iter);
 	      refl != NULL;
@@ -263,85 +204,27 @@ static double iterate_scale(struct image *images, int n, RefList *scalable,
 			}
 		}
 
-		/* For this reflection, calculate all the possible
-		 * values of uha and vha */
 		for ( a=0; a<n; a++ ) {
 
-			double uha, vha;
-
-			s_uhavha(h, k, l, &images[a], &uha, &vha);
-			uha_arr[a] = uha;
-			vha_arr[a] = vha;
-
-		}
-
-		for ( a=0; a<n; a++ ) {
-
-			int b;  /* Frame (scale factor) number */
-			struct image *image_a = &images[a];
+			struct image *image = &images[a];
 			double vc, rha, vha, uha;
 			double vval;
 
 			/* Determine the "solution" vector component */
-			uha = uha_arr[a];
-			vha = vha_arr[a];
-			rha = vha - image_a->osf * uha * Ih;
+			s_uhavha(h, k, l, image, &uha, &vha);
+			rha = vha - image->osf * uha * Ih;
 			vc = Ih * rha;
 			vval = gsl_vector_get(v, a);
 			gsl_vector_set(v, a, vval+vc);
 
-			/* Determine the matrix component */
-			for ( b=0; b<n; b++ ) {
-
-				double mc = 0.0;
-				double tval, rhb, vhb, uhb;
-				struct image *image_b = &images[b];
-
-				/* Matrix is symmetric */
-				if ( b > a ) continue;
-
-				/* Off-diagonals zero if reference available */
-				if ( (reference != NULL) && (a!=b) ) continue;
-
-				/* Zero if no common reflections */
-				if ( (reference == NULL) && cref[a+n*b] != 0 ) {
-					continue;
-				}
-
-				uhb = uha_arr[b];
-				vhb = vha_arr[b];
-				rhb = vhb - image_b->osf * uhb * Ih;
-
-				mc = (rha*vhb + vha*rhb - vha*vhb) / uh;
-				if ( isnan(mc) ) mc = 0.0; /* 0 / 0 = 0 */
-
-				if ( reference != NULL ) mc = 0.0;
-
-				if ( a == b ) {
-					mc += pow(Ih, 2.0) * uha;
-				}
-
-				tval = gsl_matrix_get(M, a, b);
-				gsl_matrix_set(M, a, b, tval+mc);
-				gsl_matrix_set(M, b, a, tval+mc);
-
-			}
+			vval = gsl_vector_get(M, a);
+			gsl_vector_set(M, a, vval+(pow(Ih, 2.0) * uha));
 
 		}
 	}
 
-	free(uha_arr);
-	free(vha_arr);
-
-	//show_matrix_eqn(M, v, n);
-
-	if ( reference == NULL ) {
-		shifts = solve_by_eigenvalue_filtration(v, M);
-	} else {
-		shifts = solve_diagonal(v, M);
-	}
-
-	gsl_matrix_free(M);
+	shifts = solve_diagonal(v, M);
+	gsl_vector_free(M);
 	gsl_vector_free(v);
 
 	if ( shifts == NULL ) return 0.0;
@@ -555,28 +438,23 @@ static UNUSED void plot_graph(struct image *image, RefList *reference)
 }
 
 
-/* Scale the stack of images */
-RefList *scale_intensities(struct image *images, int n, RefList *reference)
+static void scale_matrix(struct image *images, int n, RefList *scalable,
+                         RefList *reference)
 {
-	int m;
-	RefList *full;
-	int i;
+	int i, m;
 	double max_shift;
 	char *cref;
 
 	/* Start with all scale factors equal */
 	for ( m=0; m<n; m++ ) images[m].osf = 1.0;
 
-	//plot_graph(images, reference);
-
 	cref = find_common_reflections(images, n);
-	full = guess_scaled_reflections(images, n);
 
 	/* Iterate */
 	i = 0;
 	do {
 
-		max_shift = iterate_scale(images, n, full, cref, reference);
+		max_shift = iterate_scale(images, n, scalable, cref, reference);
 		STATUS("Scaling iteration %2i: max shift = %5.2f\n",
 		       i+1, max_shift);
 		i++;
@@ -585,8 +463,54 @@ RefList *scale_intensities(struct image *images, int n, RefList *reference)
 	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );
 
 	free(cref);
+}
 
-	//show_scale_factors(images, n);
+
+static void scale_megatron(struct image *images, int n, RefList *scalable)
+{
+	int i, m;
+	double max_shift;
+	double *old_osfs;
+
+	old_osfs = calloc(n, sizeof(double));
+
+	/* Start with all scale factors equal */
+	for ( m=0; m<n; m++ ) {
+		images[m].osf = 1.0;
+		old_osfs[m] = images[m].osf;
+	}
+
+	lsq_intensities(images, n, scalable);
+
+	/* Iterate */
+	i = 0;
+	do {
+
+		max_shift = iterate_scale(images, n, scalable, NULL, scalable);
+		STATUS("Scaling iteration %2i: max shift = %5.2f\n",
+		       i+1, max_shift);
+		i++;
+
+		for ( m=0; m<n; m++ ) {
+			images[m].osf *= old_osfs[m];
+		}
+
+	} while ( (max_shift > 0.01) && (i < MAX_CYCLES) );
+}
+
+
+/* Scale the stack of images */
+RefList *scale_intensities(struct image *images, int n, RefList *reference)
+{
+	RefList *full;
+
+	full = guess_scaled_reflections(images, n);
+
+	if ( reference != NULL ) {
+		scale_matrix(images, n, full, reference);
+	} else {
+		scale_megatron(images, n, full);
+	}
 
 	lsq_intensities(images, n, full);
 	return full;
