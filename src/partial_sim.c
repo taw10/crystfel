@@ -75,9 +75,7 @@ static void calculate_partials(RefList *partial, double osf,
 
 		signed int h, k, l;
 		Reflection *rfull;
-		double p;
-		double Ip;
-		double If;
+		double p, Ip, If;
 
 		get_indices(refl, &h, &k, &l);
 		get_asymm(h, k, l, &h, &k, &l, sym);
