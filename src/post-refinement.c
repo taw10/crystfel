@@ -482,7 +482,7 @@ void pr_refine(struct image *image, const RefList *full)
 {
 	double max_shift, dev;
 	int i;
-	const int verbose = 1;
+	const int verbose = 0;
 
 	if ( verbose ) {
 		dev = guide_dev(image, full);
