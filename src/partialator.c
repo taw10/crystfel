@@ -416,6 +416,7 @@ int main(int argc, char *argv[])
 
 		RefList *as;
 		struct image *cur;
+		int nn_expected, nn_found, nn_notfound;
 
 		cur = &images[n_usable_patterns];
 
@@ -454,7 +455,10 @@ int main(int argc, char *argv[])
 		reflist_free(cur->reflections);
 		cur->reflections = as;
 
-		update_partialities(cur, &n_expected, &n_found, &n_notfound);
+		update_partialities(cur, &nn_expected, &nn_found, &nn_notfound);
+		n_expected += nn_expected;
+		n_found += nn_found;
+		n_notfound += nn_notfound;
 
 		nobs += select_scalable_reflections(cur->reflections,
 		                                    reference);
