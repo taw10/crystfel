@@ -216,6 +216,7 @@ static void select_reflections_for_refinement(struct image *images, int n,
 			if ( !sc ) {
 
 				n_noscale++;
+				set_refinable(refl, 0);
 
 			} else {
 
@@ -233,6 +234,7 @@ static void select_reflections_for_refinement(struct image *images, int n,
 
 				} else {
 					n_nomatch++;
+					set_refinable(refl, 0);
 				}
 
 			}
