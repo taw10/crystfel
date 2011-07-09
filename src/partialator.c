@@ -475,9 +475,6 @@ int main(int argc, char *argv[])
 	STATUS("Performing initial scaling.\n");
 	full = scale_intensities(images, n_usable_patterns, reference);
 
-	select_reflections_for_refinement(images, n_usable_patterns, full,
-	                                  have_reference);
-
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
 
@@ -510,6 +507,8 @@ int main(int argc, char *argv[])
 		}
 
 		/* Refine the geometry of all patterns to get the best fit */
+		select_reflections_for_refinement(images, n_usable_patterns,
+		                                  comp, have_reference);
 		refine_all(images, n_usable_patterns, det,
 		           comp, nthreads, fhg, fhp);
 
@@ -517,9 +516,6 @@ int main(int argc, char *argv[])
 		for ( j=0; j<n_usable_patterns; j++ ) {
 
 			struct image *cur = &images[j];
-
-			update_partialities(cur, &n_expected,
-			                    &n_found, &n_notfound);
 
 			nobs += select_scalable_reflections(cur->reflections,
 			                                    reference);
@@ -530,9 +526,6 @@ int main(int argc, char *argv[])
 		reflist_free(full);
 		full = scale_intensities(images, n_usable_patterns,
 		                         reference);
-
-		select_reflections_for_refinement(images, n_usable_patterns,
-		                                  full, have_reference);
 
 		fclose(fhg);
 		fclose(fhp);
