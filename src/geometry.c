@@ -311,9 +311,11 @@ void update_partialities(struct image *image,
 
 		if ( vals == NULL ) {
 			if ( n_notfound != NULL) (*n_notfound)++;
+			set_redundancy(refl, 0);
 			continue;
 		}
 		if ( n_found != NULL) (*n_found)++;
+		set_redundancy(refl, 1);
 
 		/* Transfer partiality stuff */
 		get_partial(vals, &r1, &r2, &p, &clamp1, &clamp2);

@@ -162,6 +162,9 @@ static int select_scalable_reflections(RefList *list, RefList *reference)
 		int sc = 1;
 		double v;
 
+		/* This means the reflection was not found on the last check */
+		if ( get_redundancy(refl) == 0 ) sc = 0;
+
 		if ( get_partiality(refl) < 0.1 ) sc = 0;
 		v = fabs(get_intensity(refl));
 		if ( v < 0.1 ) sc = 0;
