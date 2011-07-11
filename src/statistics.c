@@ -54,8 +54,7 @@ enum {
 
 
 /* Return the least squares optimal scaling factor when comparing intensities.
- * list1,arr2 are the two intensity lists to compare.  "items" is a ReflItemList
- * containing the reflections which should be taken into account.
+ * list1,arr2 are the two intensity lists to compare.
  */
 double stat_scale_intensity(RefList *list1, double *arr2)
 {
@@ -89,8 +88,7 @@ double stat_scale_intensity(RefList *list1, double *arr2)
  * roots of the intensities (i.e. one approximation to the structure factor
  * moduli).
  * list1,arr2 are the two intensity lists to compare (they contain intensities,
- * not square rooted intensities).  "items" is a ReflItemList containing the
- * reflections which should be taken into account.
+ * not square rooted intensities).
  */
 static double stat_scale_sqrti(RefList *list1, double *arr2)
 {
