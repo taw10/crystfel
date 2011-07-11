@@ -81,9 +81,9 @@ struct _refldata {
 	/* Redundancy */
 	int redundancy;
 
-	/* Total squared difference between all estimates of this reflection
-	 * and the estimated mean value */
-	double sum_squared_dev;
+	/* User-specified temporary values */
+	double temp1;
+	double temp2;
 };
 
 
@@ -423,24 +423,6 @@ int get_redundancy(const Reflection *refl)
 
 
 /**
- * get_sum_squared_dev:
- * @refl: A %Reflection
- *
- * The sum squared deviation is used to estimate the standard errors on the
- * intensities during 'Monte Carlo' merging.
- *
- * Returns: the sum of the squared deviations between the intensities and the
- * mean intensity from all measurements of the reflection (and probably its
- * symmetry equivalents according to some point group).
- *
- **/
-double get_sum_squared_dev(const Reflection *refl)
-{
-	return refl->data.sum_squared_dev;
-}
-
-
-/**
  * get_esd_intensity:
  * @refl: A %Reflection
  *
@@ -464,6 +446,38 @@ double get_esd_intensity(const Reflection *refl)
 double get_phase(const Reflection *refl)
 {
 	return refl->data.phase;
+}
+
+
+/**
+ * get_temp1:
+ * @refl: A %Reflection
+ *
+ * The temporary values can be used according to the needs of the calling
+ * program.
+ *
+ * Returns: the first temporary value for this reflection.
+ *
+ **/
+double get_temp1(const Reflection *refl)
+{
+	return refl->data.temp1;
+}
+
+
+/**
+ * get_temp2:
+ * @refl: A %Reflection
+ *
+ * The temporary values can be used according to the needs of the calling
+ * program.
+ *
+ * Returns: the second temporary value for this reflection.
+ *
+ **/
+double get_temp2(const Reflection *refl)
+{
+	return refl->data.temp2;
 }
 
 
@@ -585,24 +599,6 @@ void set_redundancy(Reflection *refl, int red)
 
 
 /**
- * set_sum_squared_dev:
- * @refl: A %Reflection
- * @dev: New sum squared deviation for the reflection
- *
- * The sum squared deviation is used to estimate the standard errors on the
- * intensities during 'Monte Carlo' merging.  It is defined as the sum of the
- * squared deviations between the intensities and the mean intensity from all
- * measurements of the reflection (and probably its symmetry equivalents
- * according to some point group).
- *
- **/
-void set_sum_squared_dev(Reflection *refl, double dev)
-{
-	refl->data.sum_squared_dev = dev;
-}
-
-
-/**
  * set_esd_intensity:
  * @refl: A %Reflection
  * @esd: New standard error for this reflection's intensity measurement
@@ -645,6 +641,36 @@ void set_symmetric_indices(Reflection *refl,
 	refl->data.hs = hs;
 	refl->data.ks = ks;
 	refl->data.ls = ls;
+}
+
+
+/**
+ * set_temp1
+ * @refl: A %Reflection
+ * @temp: New temporary value for the reflection
+ *
+ * The temporary values can be used according to the needs of the calling
+ * program.
+ *
+ **/
+void set_temp1(Reflection *refl, double temp)
+{
+	refl->data.temp1 = temp;
+}
+
+
+/**
+ * set_temp2
+ * @refl: A %Reflection
+ * @temp: New temporary value for the reflection
+ *
+ * The temporary values can be used according to the needs of the calling
+ * program.
+ *
+ **/
+void set_temp2(Reflection *refl, double temp)
+{
+	refl->data.temp2 = temp;
 }
 
 

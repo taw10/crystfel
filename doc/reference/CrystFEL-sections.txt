@@ -25,9 +25,10 @@ get_partial
 get_scalable
 get_refinable
 get_redundancy
-get_sum_squared_dev
 get_esd_intensity
 get_phase
+get_temp1
+get_temp2
 <SUBSECTION>
 set_detector_pos
 set_partial
@@ -35,10 +36,11 @@ set_int
 set_scalable
 set_refinable
 set_redundancy
-set_sum_squared_dev
 set_esd_intensity
 set_ph
 set_symmetric_indices
+set_temp1
+set_temp2
 <SUBSECTION>
 copy_data
 num_reflections

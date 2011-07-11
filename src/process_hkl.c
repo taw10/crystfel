@@ -170,7 +170,7 @@ static void merge_pattern(RefList *model, RefList *new, int max_only,
 
 		} else if ( pass == 2 ) {
 
-			double dev = get_sum_squared_dev(model_version);
+			double dev = get_temp1(model_version);
 
 			/* Other ways of estimating the sigma are possible,
 			 * choose from:
@@ -180,7 +180,7 @@ static void merge_pattern(RefList *model, RefList *new, int max_only,
 			 * as well. */
 			dev += pow(intensity - model_int, 2.0);
 
-			set_sum_squared_dev(model_version, dev);
+			set_temp1(model_version, dev);
 
 			if ( hist_vals != NULL ) {
 				int p = *hist_n;
@@ -374,7 +374,7 @@ static void merge_all(FILE *fh, RefList *model,
 		      refl != NULL;
 		      refl = next_refl(refl, iter) ) {
 
-			double sum_squared_dev = get_sum_squared_dev(refl);
+			double sum_squared_dev = get_temp1(refl);
 			int red = get_redundancy(refl);
 			int h, k, l;
 			double esd;
