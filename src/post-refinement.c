@@ -404,7 +404,7 @@ static double pr_iterate(struct image *image, const RefList *full)
 
 	//STATUS("%i reflections went into the equations.\n", nref);
 	if ( nref == 0 ) {
-		ERROR("No guide reflections to refine with!\n");
+		image->pr_dud = 1;
 		gsl_matrix_free(M);
 		gsl_vector_free(v);
 		return 0.0;
