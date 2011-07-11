@@ -55,23 +55,6 @@ asymmetric_indices
 </SECTION>
 
 <SECTION>
-<FILE>reflitemlist</FILE>
-ReflItemList
-<SUBSECTION>
-new_items
-add_item
-add_item_with_op
-clear_items
-delete_items
-find_item
-num_items
-union_items
-union_op_items
-intersection_items
-get_item
-</SECTION>
-
-<SECTION>
 <FILE>unitcell</FILE>
 UnitCell
 <SUBSECTION>

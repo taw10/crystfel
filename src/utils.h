@@ -200,39 +200,6 @@ static inline int within_tolerance(double a, double b, double percent)
 #include "list_tmp.h"
 
 
-/* ----------- Reflection lists indexed by sequence (not indices) ----------- */
-
-/**
- * ReflItemList
- *
- * Opaque type.
- **/
-typedef struct _reflitemlist ReflItemList;
-
-struct refl_item {
-	signed int h;
-	signed int k;
-	signed int l;
-	int op;
-};
-
-extern void clear_items(ReflItemList *items);
-extern ReflItemList *new_items(void);
-extern void delete_items(ReflItemList *items);
-extern void add_item(ReflItemList *items,
-                     signed int h, signed int k, signed int l);
-extern void add_item_with_op(ReflItemList *items,
-                             signed int h, signed int k, signed int l, int op);
-extern int find_item(ReflItemList *items,
-                     signed int h, signed int k, signed int l);
-extern struct refl_item *get_item(ReflItemList *items, int i);
-extern int num_items(const ReflItemList *items);
-extern unsigned int *items_to_counts(ReflItemList *items);
-extern void union_op_items(ReflItemList *items, ReflItemList *newi);
-extern void union_items(ReflItemList *items, ReflItemList *newi);
-extern ReflItemList *intersection_items(ReflItemList *i1, ReflItemList *i2);
-
-
 /* ------------------------------ Message macros ---------------------------- */
 
 extern pthread_mutex_t stderr_lock;

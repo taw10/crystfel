@@ -17,6 +17,13 @@
 #include <config.h>
 #endif
 
+/**
+ * SymOpList
+ *
+ * Opaque type.
+ **/
+typedef struct _symoplist SymOpList;
+
 
 extern void get_asymm(signed int h, signed int k, signed int l,
                       signed int *hp, signed int *kp, signed int *lp,
@@ -35,14 +42,7 @@ extern void get_general_equiv(signed int h, signed int k, signed int l,
                               signed int *he, signed int *ke, signed int *le,
                               const char *sym, int idx);
 
-extern ReflItemList *get_twins(ReflItemList *items,
-                               const char *holo, const char *mero);
-
-extern int find_unique_equiv(ReflItemList *items, signed int h, signed int k,
-                             signed int l, const char *mero, signed int *hu,
-                             signed int *ku, signed int *lu);
-
-extern int check_symmetry(ReflItemList *items, const char *sym);
+extern SymOpList *get_twins(const char *holo, const char *mero);
 
 /* Properties of point groups */
 extern int is_polyhedral(const char *sym);

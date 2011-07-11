@@ -16,9 +16,12 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 
+#include "symmetry.h"
 #include "utils.h"
+
 
 #ifdef DEBUG
 #define SYM_DEBUG STATUS
@@ -37,6 +40,181 @@
  *
  * Routines to handle point symmetry.
  */
+
+
+struct sym_op {
+	signed int h;
+	signed int k;
+	signed int l;
+	int op;
+};
+
+
+/**
+ * SECTION:symoplist
+ * @short_description: A list of point symmetry operations
+ * @title: SymOpList
+ * @section_id:
+ * @see_also:
+ * @include: "symmetry.h"
+ * @Image:
+ *
+ * Wibble
+ */
+
+struct _symoplist {
+	struct sym_op *items;
+	int n_ops;
+	int max_ops;
+};
+
+
+
+static void alloc_items(SymOpList *items)
+{
+	items->items = realloc(items->items,
+	                       items->max_ops*sizeof(struct sym_op));
+}
+
+
+/**
+ * new_items:
+ *
+ * Creates a new %SymOpList.
+ *
+ * Returns: The new list, or NULL.
+ **/
+SymOpList *new_items()
+{
+	SymOpList *new;
+	new = malloc(sizeof(SymOpList));
+	if ( new == NULL ) return NULL;
+	new->max_ops = 1024;
+	new->n_ops = 0;
+	new->items = NULL;
+	alloc_items(new);
+	return new;
+}
+
+
+void delete_items(SymOpList *items)
+{
+	if ( items == NULL ) return;
+	if ( items->items != NULL ) free(items->items);
+	free(items);
+}
+
+
+void add_item_with_op(SymOpList *items, signed int h, signed int k,
+                      signed int l, int op)
+{
+	if ( items->n_ops == items->max_ops ) {
+		items->max_ops += 1024;
+		alloc_items(items);
+	}
+
+	items->items[items->n_ops].h = h;
+	items->items[items->n_ops].k = k;
+	items->items[items->n_ops].l = l;
+	items->items[items->n_ops].op = op;
+	items->n_ops++;
+}
+
+
+void add_item(SymOpList *items, signed int h, signed int k, signed int l)
+{
+	add_item_with_op(items, h, k, l, 0);
+}
+
+
+int find_item(SymOpList *items,
+                     signed int h, signed int k, signed int l)
+{
+	int i;
+
+	for ( i=0; i<items->n_ops; i++ ) {
+		if ( items->items[i].h != h ) continue;
+		if ( items->items[i].k != k ) continue;
+		if ( items->items[i].l != l ) continue;
+		return 1;
+	}
+	return 0;
+}
+
+
+static int find_op(SymOpList *items, int op)
+{
+	int i;
+
+	for ( i=0; i<items->n_ops; i++ ) {
+		if ( items->items[i].op == op ) return 1;
+	}
+	return 0;
+}
+
+
+struct sym_op *get_item(SymOpList *items, int i)
+{
+	if ( i >= items->n_ops ) return NULL;
+	return &items->items[i];
+}
+
+
+int num_items(const SymOpList *items)
+{
+	return items->n_ops;
+}
+
+
+void union_op_items(SymOpList *items, SymOpList *newi)
+{
+	int n, i;
+
+	n = num_items(newi);
+	for ( i=0; i<n; i++ ) {
+
+		struct sym_op *r = get_item(newi, i);
+		if ( find_op(items, r->op) ) continue;
+
+		add_item_with_op(items, r->h, r->k, r->l, r->op);
+
+	}
+}
+
+
+void union_ops(SymOpList *items, SymOpList *newi)
+{
+	int n, i;
+
+	n = num_items(newi);
+	for ( i=0; i<n; i++ ) {
+
+		struct sym_op *r = get_item(newi, i);
+		if ( find_item(items, r->h, r->k, r->l) ) continue;
+
+		add_item_with_op(items, r->h, r->k, r->l, r->op);
+
+	}
+}
+
+
+SymOpList *intersection_ops(SymOpList *i1, SymOpList *i2)
+{
+	int n, i;
+	SymOpList *res = new_items();
+
+	n = num_items(i1);
+	for ( i=0; i<n; i++ ) {
+
+		struct sym_op *r = get_item(i1, i);
+		if ( find_item(i2, r->h, r->k, r->l) ) {
+			add_item_with_op(res, r->h, r->k, r->l, r->op);
+		}
+
+	}
+
+	return res;
+}
 
 
 /* Check if a reflection is in the asymmetric unit cell */
@@ -294,7 +472,7 @@ static int special_position(signed int hs, signed int ks, signed int ls,
 {
 	int n_general;
 	int i;
-	ReflItemList *equivs;
+	SymOpList *equivs;
 	int n_equivs = 0;
 
 	if ( idx == 0 ) {
@@ -374,13 +552,13 @@ void get_asymm(signed int h, signed int k, signed int l,
  *
  * To count the number of possibilities, use num_items() on the result.
  */
-static ReflItemList *coset_decomp(signed int hs, signed int ks, signed int ls,
-                                  const char *holo, const char *mero)
+static SymOpList *coset_decomp(signed int hs, signed int ks, signed int ls,
+                               const char *holo, const char *mero)
 {
 	int n_mero, n_holo;
 	int i;
 	signed int h, k, l;
-	ReflItemList *twins = new_items();
+	SymOpList *twins = new_items();
 
 	/* Start by putting the given reflection into the asymmetric cell
 	 * for its (probably merohedral) point group. */
@@ -422,11 +600,12 @@ static ReflItemList *coset_decomp(signed int hs, signed int ks, signed int ls,
  * To use the result, call get_general_equiv() on each reflection using
  * the holohedral point group (use get_holohedral() for this), and for "idx"
  * give each "op" field from the list returned by this function. */
-ReflItemList *get_twins(ReflItemList *items, const char *holo, const char *mero)
+SymOpList *get_twins(const char *holo, const char *mero)
 {
 	int i;
-	ReflItemList *ops = new_items();
+	SymOpList *ops = new_items();
 	int expected, actual;
+	SymOpList *items;
 
 	/* Run the coset decomposition for every reflection in the "pattern",
 	 * and see which gives the highest number of possibilities.  This
@@ -435,8 +614,8 @@ ReflItemList *get_twins(ReflItemList *items, const char *holo, const char *mero)
 	for ( i=0; i<num_items(items); i++ ) {
 
 		signed int h, k, l;
-		struct refl_item *item;
-		ReflItemList *new_ops;
+		struct sym_op *item;
+		SymOpList *new_ops;
 
 		item = get_item(items, i);
 
@@ -466,7 +645,7 @@ ReflItemList *get_twins(ReflItemList *items, const char *holo, const char *mero)
 }
 
 
-int find_unique_equiv(ReflItemList *items, signed int h, signed int k,
+int find_unique_equiv(SymOpList *items, signed int h, signed int k,
                       signed int l, const char *mero, signed int *hu,
                       signed int *ku, signed int *lu)
 {
@@ -612,21 +791,21 @@ int has_bisecting_mirror_or_diad(const char *sym)
 }
 
 
-int check_symmetry(ReflItemList *items, const char *sym)
+int check_symmetry(SymOpList *items, const char *sym)
 {
 	int i;
 	unsigned char *flags;
 
 	flags = new_list_flag();
 	for ( i=0; i<num_items(items); i++ ) {
-		struct refl_item *it = get_item(items, i);
+		struct sym_op *it = get_item(items, i);
 		set_flag(flags, it->h, it->k, it->l, 1);
 	}
 
 	for ( i=0; i<num_items(items); i++ ) {
 
 		int j;
-		struct refl_item *it = get_item(items, i);
+		struct sym_op *it = get_item(items, i);
 		int found = 0;
 
 		for ( j=0; j<num_equivs(it->h, it->k, it->l, sym); j++ ) {
