@@ -94,6 +94,10 @@ static void calculate_partials(RefList *partial, double osf,
 			}
 		} else {
 			If = get_intensity(rfull);
+			if ( random_intensities ) {
+				int red = get_redundancy(rfull);
+				set_redundancy(rfull, red+1);
+			}
 		}
 
 		Ip = osf * p * If;
