@@ -201,6 +201,8 @@ static void select_reflections_for_refinement(struct image *images, int n,
 		int n_fewmatch = 0;
 		int n_ref = 0;
 
+		if ( images[i].pr_dud ) continue;
+
 		for ( refl = first_refl(images[i].reflections, &iter);
 		      refl != NULL;
 		      refl = next_refl(refl, iter) )

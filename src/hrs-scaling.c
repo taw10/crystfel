@@ -54,6 +54,8 @@ static double iterate_scale(struct image *images, int n, RefList *reference)
 		double den = 0.0;
 		double corr;
 
+		if ( image->pr_dud ) continue;
+
 		for ( refl = first_refl(image->reflections, &iter);
 		      refl != NULL;
 		      refl = next_refl(refl, iter) )
