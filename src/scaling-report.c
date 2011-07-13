@@ -137,6 +137,14 @@ static void plot_point(cairo_t *cr, double g_width, double g_height,
 		pcalc = 1.01;
 		bad = 1;
 	}
+	if ( pobs < 0.0 ) {
+		pobs = -0.01;
+		bad = 1;
+	}
+	if ( pcalc < 0.0 ) {
+		pobs = -0.01;
+		bad = 1;
+	}
 
 	if ( bad ) {
 		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
@@ -166,6 +174,13 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 	                      NULL, -M_PI_2, J_CENTER);
 	show_text_simple(cr, "Calculated partiality", g_width/2.0, g_height+20.0,
 	                      NULL, 0.0, J_CENTER);
+
+	show_text_simple(cr, "0.0", -20.0, g_height, NULL, 0.0, J_CENTER);
+	show_text_simple(cr, "1.0", -20.0, 0.0, NULL, 0.0, J_CENTER);
+	show_text_simple(cr, "0.0", 0.0, g_height+10.0, NULL,
+	                     -M_PI/3.0, J_RIGHT);
+	show_text_simple(cr, "1.0", g_width, g_height+10.0, NULL,
+	                     -M_PI/3.0, J_RIGHT);
 
 	for ( i=0; i<nbins; i++ ) {
 		totals[i] = 0.0;
@@ -199,7 +214,7 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 			Ipart = get_intensity(refl);
 			Ifull = get_intensity(f);
 
-			pobs = Ipart/Ifull;
+			pobs = Ipart/(images[i].osf*Ifull);
 			pcalc = get_partiality(refl);
 
 			bin = nbins * pcalc;
@@ -249,14 +264,16 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 	double osf_high[nbins];
 	int counts[nbins];
 	const double g_width = 320.0;
-	const double g_height = 200.0;
+	const double g_height = 180.0;
 	char tmp[32];
 
 	show_text_simple(cr, title, g_width/2.0, -18.0,
 	                      "Sans Bold 10", 0.0, J_CENTER);
 
-	show_text_simple(cr, "Frequency", -50.0, g_height/2.0,
+	show_text_simple(cr, "Frequency", -15.0, g_height/2.0,
 	                      NULL, -M_PI_2, J_CENTER);
+	show_text_simple(cr, "Inverse scale factor", g_width/2.0, g_height+12.0,
+	                      NULL, 0.0, J_CENTER);
 
 	osf_max = 0.0;
 	for ( i=0; i<n; i++ ) {
@@ -277,7 +294,7 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 		double osf = images[i].osf;
 
 		for ( b=0; b<nbins; b++ ) {
-			if ( (osf > osf_low[b]) && (osf < osf_high[b]) ) {
+			if ( (osf >= osf_low[b]) && (osf < osf_high[b]) ) {
 				counts[b]++;
 				break;
 			}
