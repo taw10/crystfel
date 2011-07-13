@@ -16,54 +16,384 @@
 #include <cairo.h>
 #include <cairo-pdf.h>
 #include <pango/pangocairo.h>
+#include <math.h>
 
 #include "image.h"
+#include "scaling-report.h"
 
 
-static void write_title(cairo_t *cr, const char *filename, double w, double h)
+#define PAGE_WIDTH (842.0)
+
+enum justification
 {
-	char text[1024];
+	J_CENTER,
+	J_LEFT,
+	J_RIGHT,
+};
+
+
+struct _srcontext
+{
+	cairo_surface_t *surf;
+	cairo_t *cr;
+	double w;
+	double h;
+};
+
+
+static void show_text(cairo_t *cr, const char *text, double y,
+                      enum justification j, char *font)
+{
 	PangoLayout *layout;
 	PangoFontDescription *fontdesc;
 	int width, height;
+	PangoAlignment just;
 
-	snprintf(text, 1023, "Scaling report: %s", filename);
+	if ( font == NULL ) font = "Sans 10";
 
 	layout = pango_cairo_create_layout(cr);
+	pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_NONE);
+	pango_layout_set_width(layout, PANGO_SCALE*(PAGE_WIDTH-20.0));
+
+	switch ( j )
+	{
+		case J_CENTER : just = PANGO_ALIGN_CENTER; break;
+		case J_LEFT : just = PANGO_ALIGN_LEFT; break;
+		case J_RIGHT : just = PANGO_ALIGN_RIGHT; break;
+		default: just = PANGO_ALIGN_LEFT; break;
+	}
+
+	pango_layout_set_alignment(layout, just);
+	pango_layout_set_wrap(layout, PANGO_WRAP_CHAR);
+	pango_layout_set_spacing(layout, 4.0*PANGO_SCALE);
+
 	pango_layout_set_text(layout, text, -1);
-	fontdesc = pango_font_description_from_string("Sans 14 Bold");
+
+	fontdesc = pango_font_description_from_string(font);
 	pango_layout_set_font_description(layout, fontdesc);
 
 	pango_cairo_update_layout(cr, layout);
 	pango_layout_get_size(layout, &width, &height);
 
-	cairo_move_to(cr, 0.5-width/PANGO_SCALE, 10.0);
-
+	cairo_move_to(cr, 10.0, y);
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	pango_cairo_show_layout(cr, layout);
 }
 
 
-void scaling_report(const char *filename, const struct image *images, int n,
-                    const char *stream_filename)
+static void show_text_simple(cairo_t *cr, const char *text, double x, double y,
+                             char *font, double rot, enum justification j)
 {
-	cairo_surface_t *surface;
-	cairo_t *cr;
-	const double w = 842.0;
-	const double h = 595.0;
+	PangoLayout *layout;
+	PangoFontDescription *fontdesc;
+	int width, height;
 
-	surface = cairo_pdf_surface_create(filename, w, h);
+	cairo_save(cr);
 
-	if ( cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS ) {
-		fprintf(stderr, "Couldn't create Cairo surface\n");
-		cairo_surface_destroy(surface);
-		return;
+	if ( font == NULL ) font = "Sans 10";
+
+	layout = pango_cairo_create_layout(cr);
+	pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_NONE);
+	pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
+
+	pango_layout_set_text(layout, text, -1);
+
+	fontdesc = pango_font_description_from_string(font);
+	pango_layout_set_font_description(layout, fontdesc);
+
+	pango_cairo_update_layout(cr, layout);
+	pango_layout_get_size(layout, &width, &height);
+
+	cairo_new_path(cr);
+	cairo_translate(cr, x, y);
+	cairo_rotate(cr, rot);
+	if ( j == J_CENTER ) {
+		cairo_translate(cr, -(width/2.0)/PANGO_SCALE,
+		                    -(height/2.0)/PANGO_SCALE);
+	} else if ( j == J_RIGHT ) {
+		cairo_translate(cr, -width/PANGO_SCALE,
+		                    -(height/2.0)/PANGO_SCALE);
+	} else {
+		cairo_translate(cr, 0.0, -(height/2.0)/PANGO_SCALE);
+	}
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	pango_cairo_show_layout(cr, layout);
+
+	cairo_restore(cr);
+}
+
+
+static void plot_point(cairo_t *cr, double g_width, double g_height,
+                       double pcalc, double pobs)
+{
+	int bad = 0;
+
+	if ( pobs > 1.0 ) {
+		pobs = 1.01;
+		bad = 1;
+
+	}
+	if ( pcalc > 1.0 ) {
+		pcalc = 1.01;
+		bad = 1;
 	}
 
-	cr = cairo_create(surface);
+	if ( bad ) {
+		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+	}
 
-	write_title(cr, stream_filename, w, h);
+	cairo_arc(cr, g_width*pcalc, g_height*(1.0-pobs),
+		      1.0, 0.0, 2.0*M_PI);
+	cairo_fill(cr);
 
-	cairo_surface_finish(surface);
-	cairo_destroy(cr);
+	if ( bad ) {
+		cairo_set_source_rgb(cr, 0.0, 0.7, 0.0);
+	}
+}
+
+static void partiality_graph(cairo_t *cr, const struct image *images, int n,
+                             RefList *full)
+{
+	const double g_width = 200.0;
+	const double g_height = 200.0;
+	int i;
+	const int nbins = 50;
+	double totals[nbins];
+	int counts[nbins];
+	double prob;
+
+	show_text_simple(cr, "Observed partiality", -20.0, g_height/2.0,
+	                      NULL, -M_PI_2, J_CENTER);
+	show_text_simple(cr, "Calculated partiality", g_width/2.0, g_height+20.0,
+	                      NULL, 0.0, J_CENTER);
+
+	for ( i=0; i<nbins; i++ ) {
+		totals[i] = 0.0;
+		counts[i] = 0;
+	}
+
+	cairo_set_source_rgb(cr, 0.0, 0.7, 0.0);
+	prob = 1.0 / n;
+	for ( i=0; i<n; i++ ) {
+
+		Reflection *refl;
+		RefListIterator *iter;
+
+		if ( images[i].pr_dud ) continue;
+
+		for ( refl = first_refl(images[i].reflections, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) )
+		{
+			double Ipart, Ifull, pobs, pcalc;
+			signed int h, k, l;
+			Reflection *f;
+			int bin;
+
+			if ( !get_scalable(refl) ) continue;
+
+			get_indices(refl, &h, &k, &l);
+			f = find_refl(full, h, k, l);
+			if ( f == NULL ) continue;
+
+			Ipart = get_intensity(refl);
+			Ifull = get_intensity(f);
+
+			pobs = Ipart/Ifull;
+			pcalc = get_partiality(refl);
+
+			bin = nbins * pcalc;
+			totals[bin] += pobs;
+			counts[bin]++;
+
+			if ( (double)random()/RAND_MAX < prob ) {
+				plot_point(cr, g_width, g_height, pcalc, pobs);
+			}
+
+		}
+
+	}
+
+	cairo_new_path(cr);
+	cairo_rectangle(cr, 0.0, 0.0, g_width, g_height);
+	cairo_clip(cr);
+
+	cairo_new_path(cr);
+	cairo_move_to(cr, 0.0, g_height);
+	for ( i=0; i<nbins; i++ ) {
+		if ( counts[i] == 0 ) continue;
+		cairo_line_to(cr, g_width*(double)i/nbins,
+		                  g_height - g_height*(totals[i]/counts[i]));
+	}
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_stroke(cr);
+
+	cairo_reset_clip(cr);
+
+	cairo_new_path(cr);
+	cairo_rectangle(cr, 0.0, 0.0, g_width, g_height);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_set_line_width(cr, 1.5);
+	cairo_stroke(cr);
+}
+
+
+static void scale_factor_histogram(cairo_t *cr, const struct image *images,
+                                   int n, const char *title)
+{
+	int f_max;
+	int i, b;
+	const int nbins = 100;
+	double osf_max, osf_inc;
+	double osf_low[nbins];
+	double osf_high[nbins];
+	int counts[nbins];
+	const double g_width = 320.0;
+	const double g_height = 200.0;
+	char tmp[32];
+
+	show_text_simple(cr, title, g_width/2.0, -18.0,
+	                      "Sans Bold 10", 0.0, J_CENTER);
+
+	show_text_simple(cr, "Frequency", -50.0, g_height/2.0,
+	                      NULL, -M_PI_2, J_CENTER);
+
+	osf_max = 0.0;
+	for ( i=0; i<n; i++ ) {
+		double osf = images[i].osf;
+		if ( osf > osf_max ) osf_max = osf;
+	}
+	osf_max = ceil(osf_max);
+	osf_inc = osf_max / nbins;
+
+	for ( b=0; b<nbins; b++ ) {
+		osf_low[b] = b*osf_inc;
+		osf_high[b] = (b+1)*osf_inc;
+		counts[b] = 0;
+	}
+
+	for ( i=0; i<n; i++ ) {
+
+		double osf = images[i].osf;
+
+		for ( b=0; b<nbins; b++ ) {
+			if ( (osf > osf_low[b]) && (osf < osf_high[b]) ) {
+				counts[b]++;
+				break;
+			}
+		}
+	}
+
+	f_max = 0;
+	for ( b=0; b<nbins; b++ ) {
+		if ( counts[b] > f_max ) f_max = counts[b];
+	}
+	f_max = (f_max/10)*10 + 10;
+
+	show_text_simple(cr, "0", -10.0, g_height, NULL, 0.0, J_RIGHT);
+	snprintf(tmp, 31, "%i", f_max);
+	show_text_simple(cr, tmp, -10.0, 0.0, NULL, 0.0, J_RIGHT);
+
+	show_text_simple(cr, "0.00", 0.0, g_height+10.0,
+	                     NULL, -M_PI/3.0, J_RIGHT);
+	snprintf(tmp, 32, "%5.2f", osf_max);
+	show_text_simple(cr, tmp, g_width, g_height+10.0,
+	                     NULL, -M_PI/3.0, J_RIGHT);
+
+	for ( b=0; b<nbins; b++ ) {
+
+		double bar_height;
+
+		bar_height = ((double)counts[b]/f_max)*g_height;
+
+		cairo_new_path(cr);
+		cairo_rectangle(cr, (g_width/nbins)*b, g_height,
+		                    g_width/nbins, -bar_height);
+		cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+		cairo_set_line_width(cr, 1.0);
+		cairo_stroke(cr);
+
+	}
+
+	cairo_new_path(cr);
+	cairo_rectangle(cr, 0.0, 0.0, g_width, g_height);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_set_line_width(cr, 1.5);
+	cairo_stroke(cr);
+}
+
+
+static void watermark(struct _srcontext *sr)
+{
+	show_text(sr->cr, "Written by partialator from CrystFEL"
+	                 " version "PACKAGE_VERSION, sr->h-15.0, J_RIGHT,
+	                 "Sans 7");
+}
+
+
+SRContext *sr_header(const char *filename, const char *stream_filename,
+                     const char *cmdline)
+{
+	char tmp[1024];
+	struct _srcontext *sr;
+
+	sr = malloc(sizeof(*sr));
+	if ( sr == NULL ) return NULL;
+
+	sr->w = PAGE_WIDTH;
+	sr->h = 595.0;
+
+	sr->surf = cairo_pdf_surface_create(filename, sr->w, sr->h);
+
+	if ( cairo_surface_status(sr->surf) != CAIRO_STATUS_SUCCESS ) {
+		fprintf(stderr, "Couldn't create Cairo surface\n");
+		cairo_surface_destroy(sr->surf);
+		free(sr);
+		return NULL;
+	}
+
+	sr->cr = cairo_create(sr->surf);
+
+	snprintf(tmp, 1023, "Scaling report: %s", stream_filename);
+	show_text(sr->cr, tmp, 10.0, J_CENTER, "Sans Bold 16");
+	snprintf(tmp, 1023, "partialator %s", cmdline);
+	show_text(sr->cr, tmp, 45.0, J_LEFT, "Mono 7");
+	watermark(sr);
+
+	return sr;
+}
+
+
+void sr_before(SRContext *sr, struct image *images, int n, RefList *full)
+{
+	if ( sr == NULL ) return;
+
+	cairo_save(sr->cr);
+	cairo_translate(sr->cr, 75.0, 100.0);
+	scale_factor_histogram(sr->cr, images, n, "Before refinement");
+	cairo_translate(sr->cr, 60.0, 235.0);
+	partiality_graph(sr->cr, images, n, full);
+	cairo_restore(sr->cr);
+}
+
+
+void sr_after(SRContext *sr, struct image *images, int n, RefList *full)
+{
+	if ( sr == NULL ) return;
+
+	cairo_save(sr->cr);
+	cairo_translate(sr->cr, 475.0, 100.0);
+	scale_factor_histogram(sr->cr, images, n, "After refinement");
+	cairo_translate(sr->cr, 60.0, 235.0);
+	partiality_graph(sr->cr, images, n, full);
+	cairo_restore(sr->cr);
+
+	cairo_surface_show_page(sr->surf);
+	watermark(sr);
+
+
+	cairo_surface_finish(sr->surf);
+	cairo_destroy(sr->cr);
+
+	free(sr);
 }

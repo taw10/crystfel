@@ -282,6 +282,8 @@ int main(int argc, char *argv[])
 	RefList *reference = NULL;
 	int n_dud;
 	int have_reference = 0;
+	char cmdline[1024];
+	SRContext *sr;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -295,6 +297,12 @@ int main(int argc, char *argv[])
 		{"reference",          1, NULL,                1},
 		{0, 0, NULL, 0}
 	};
+
+	cmdline[0] = '\0';
+	for ( i=1; i<argc; i++ ) {
+		strncat(cmdline, argv[i], 1023-strlen(cmdline));
+		strncat(cmdline, " ", 1023-strlen(cmdline));
+	}
 
 	/* Short options */
 	while ((c = getopt_long(argc, argv, "hi:g:x:j:y:o:b:",
@@ -414,6 +422,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	sr = sr_header("scaling-report.pdf", infile, cmdline);
+
 	/* Fill in what we know about the images so far */
 	rewind(fh);
 	nobs = 0;
@@ -480,6 +490,8 @@ int main(int argc, char *argv[])
 	STATUS("Performing initial scaling.\n");
 	full = scale_intensities(images, n_usable_patterns, reference);
 
+	sr_before(sr, images, n_usable_patterns, full);
+
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
 
@@ -537,18 +549,16 @@ int main(int argc, char *argv[])
 
 	}
 
-	STATUS("Final scale factors:\n");
 	n_dud = 0;
 	for ( i=0; i<n_usable_patterns; i++ ) {
 		if ( images[i].pr_dud ) n_dud++;
-		STATUS("%4i : %5.2f\n", i, images[i].osf);
 	}
 	STATUS("%i images could not be refined on the last cycle.\n", n_dud);
 
 	/* Output results */
 	write_reflist(outfile, full, images[0].indexed_cell);
 
-	scaling_report("scaling-report.pdf", images, n_usable_patterns, infile);
+	sr_after(sr, images, n_usable_patterns, full);
 
 	/* Clean up */
 	for ( i=0; i<n_usable_patterns; i++ ) {

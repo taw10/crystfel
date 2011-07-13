@@ -19,16 +19,35 @@
 
 #include "utils.h"
 
+typedef struct _srcontext SRContext;  /* Opaque */
+
 #ifdef HAVE_CAIRO
-extern void scaling_report(const char *filename, const struct image *images,
-                           int n, const char *stream_filename);
+
+extern SRContext *sr_header(const char *filename, const char *stream_filename,
+                            const char *cmdline);
+
+extern void sr_before(SRContext *sr, struct image *images, int n,
+                      RefList *full);
+
+extern void sr_after(SRContext *sr, struct image *images, int n,
+                     RefList *full);
+
 #else
-static inline void scaling_report(const char *filename,
-                                  const struct image *images, int n,
-                                  const char *stream_filename)
+
+SRContext *sr_header(const char *filename, const char *stream_filename,
+                     const char *cmdline)
 {
-	ERROR("Not writing scaling report - no Cairo support.\n");
+	return NULL;
 }
+
+void sr_before(SRContext *sr, struct image *images, int n, RefList *full)
+{
+}
+
+void sr_after(SRContext *sr, struct image *images, int n, RefList *full)
+{
+}
+
 #endif
 
 #endif	/* SCALING_REPORT_H */
