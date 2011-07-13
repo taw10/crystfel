@@ -373,6 +373,7 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 	const double g_width = 320.0;
 	const double g_height = 180.0;
 	char tmp[32];
+	int n_zero, n_half;
 
 	show_text_simple(cr, title, g_width/2.0, -18.0,
 	                      "Sans Bold 10", 0.0, J_CENTER);
@@ -388,25 +389,44 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 		if ( osf > osf_max ) osf_max = osf;
 	}
 	osf_max = ceil(osf_max);
-	osf_inc = osf_max / nbins;
 
-	for ( b=0; b<nbins; b++ ) {
-		osf_low[b] = b*osf_inc;
-		osf_high[b] = (b+1)*osf_inc;
-		counts[b] = 0;
-	}
+	do {
 
-	for ( i=0; i<n; i++ ) {
-
-		double osf = images[i].osf;
+		osf_inc = osf_max / nbins;
 
 		for ( b=0; b<nbins; b++ ) {
-			if ( (osf >= osf_low[b]) && (osf < osf_high[b]) ) {
-				counts[b]++;
-				break;
+			osf_low[b] = b*osf_inc;
+			osf_high[b] = (b+1)*osf_inc;
+			counts[b] = 0;
+		}
+
+		for ( i=0; i<n; i++ ) {
+
+			double osf = images[i].osf;
+
+			for ( b=0; b<nbins; b++ ) {
+				if ( (osf >= osf_low[b])
+				  && (osf < osf_high[b]) )
+				{
+					counts[b]++;
+					break;
+				}
 			}
 		}
-	}
+
+		/* Count the number of bins with no counts, subtract 1 from
+		 * the maximum value until this isn't the case */
+		n_zero = 0;
+		n_half = 0;
+		for ( b=0; b<nbins; b++ ) {
+			if ( counts[b] == 0 ) n_zero++;
+			n_half++;
+		}
+		n_half /= 2;
+
+		if ( n_zero > n_half ) osf_max -= 1.0;
+
+	} while ( n_zero > n_half );
 
 	f_max = 0;
 	for ( b=0; b<nbins; b++ ) {
