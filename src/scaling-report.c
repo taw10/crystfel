@@ -389,6 +389,10 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 		if ( osf > osf_max ) osf_max = osf;
 	}
 	osf_max = ceil(osf_max);
+	if ( osf_max > 1000.0 ) {
+		ERROR("Silly scale factor detected.  Using 100.0 instead.\n");
+		osf_max = 100.0;
+	}
 
 	do {
 
