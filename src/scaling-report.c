@@ -418,17 +418,21 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 			}
 		}
 
-		/* Count the number of bins with no counts, subtract 1 from
-		 * the maximum value until this isn't the case */
 		n_zero = 0;
 		n_half = 0;
-		for ( b=0; b<nbins; b++ ) {
-			if ( counts[b] == 0 ) n_zero++;
-			n_half++;
-		}
-		n_half /= 2;
+		if ( osf_max > 10.0 ) {
 
-		if ( n_zero > n_half ) osf_max -= 1.0;
+			/* Count the number of bins with no counts, subtract 1
+			 * from the maximum value until this isn't the case */
+			for ( b=0; b<nbins; b++ ) {
+				if ( counts[b] == 0 ) n_zero++;
+				n_half++;
+			}
+			n_half /= 2;
+
+			if ( n_zero > n_half ) osf_max -= 1.0;
+
+		}
 
 	} while ( n_zero > n_half );
 
