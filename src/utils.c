@@ -121,6 +121,19 @@ void progress_bar(int val, int total, const char *text)
 }
 
 
+double random_flat(double max)
+{
+	return max * (double)random()/RAND_MAX;
+}
+
+
+double flat_noise(double expected, double width)
+{
+	double noise = random_flat(2.0*width);
+	return expected+noise-width;
+}
+
+
 double gaussian_noise(double expected, double stddev)
 {
 	double x1, x2, noise;
