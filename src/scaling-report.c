@@ -159,13 +159,14 @@ static void plot_point(cairo_t *cr, double g_width, double g_height,
 	}
 }
 
+
 static void partiality_graph(cairo_t *cr, const struct image *images, int n,
                              RefList *full)
 {
 	const double g_width = 200.0;
 	const double g_height = 200.0;
 	int i;
-	const int nbins = 50;
+	const int nbins = 25;
 	double totals[nbins];
 	int counts[nbins];
 	double prob;
