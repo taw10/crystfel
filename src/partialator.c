@@ -69,8 +69,6 @@ struct refine_args
 {
 	RefList *full;
 	struct image *image;
-	FILE *graph;
-	FILE *pgraph;
 };
 
 
@@ -123,16 +121,13 @@ static void done_image(void *vqargs, void *task)
 
 static void refine_all(struct image *images, int n_total_patterns,
                        struct detector *det,
-                       RefList *full, int nthreads,
-                       FILE *graph, FILE *pgraph)
+                       RefList *full, int nthreads)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
 
 	task_defaults.full = full;
 	task_defaults.image = NULL;
-	task_defaults.graph = graph;
-	task_defaults.pgraph = pgraph;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n = 0;
@@ -495,27 +490,10 @@ int main(int argc, char *argv[])
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
 
-		FILE *fhg;
-		FILE *fhp;
-		char filename[1024];
 		int j;
 		RefList *comp;
 
 		STATUS("Post refinement cycle %i of %i\n", i+1, n_iter);
-
-		snprintf(filename, 1023, "p-iteration-%i.dat", i+1);
-		fhg = fopen(filename, "w");
-		if ( fhg == NULL ) {
-			ERROR("Failed to open '%s'\n", filename);
-			/* Nothing will be written later */
-		}
-
-		snprintf(filename, 1023, "g-iteration-%i.dat", i+1);
-		fhp = fopen(filename, "w");
-		if ( fhp == NULL ) {
-			ERROR("Failed to open '%s'\n", filename);
-			/* Nothing will be written later */
-		}
 
 		if ( reference == NULL ) {
 			comp = full;
@@ -526,8 +504,7 @@ int main(int argc, char *argv[])
 		/* Refine the geometry of all patterns to get the best fit */
 		select_reflections_for_refinement(images, n_usable_patterns,
 		                                  comp, have_reference);
-		refine_all(images, n_usable_patterns, det,
-		           comp, nthreads, fhg, fhp);
+		refine_all(images, n_usable_patterns, det, comp, nthreads);
 
 		nobs = 0;
 		for ( j=0; j<n_usable_patterns; j++ ) {
@@ -543,9 +520,6 @@ int main(int argc, char *argv[])
 		reflist_free(full);
 		full = scale_intensities(images, n_usable_patterns,
 		                         reference);
-
-		fclose(fhg);
-		fclose(fhp);
 
 	}
 
