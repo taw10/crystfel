@@ -254,6 +254,112 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 }
 
 
+static void partiality_histogram(cairo_t *cr, const struct image *images,
+                                 int n, RefList *full, int calc)
+{
+	int f_max;
+	int i, b;
+	const int nbins = 100;
+	int counts[nbins];
+	const double g_width = 320.0;
+	const double g_height = 180.0;
+	char tmp[32];
+
+
+	show_text_simple(cr, "Frequency", -15.0, g_height/2.0,
+	                      NULL, -M_PI_2, J_CENTER);
+	if ( calc ) {
+		show_text_simple(cr, "Distribution of calculated partialities",
+		                     g_width/2.0, -18.0, "Sans Bold 10", 0.0,
+		                     J_CENTER);
+		show_text_simple(cr, "Calculated partiality", g_width/2.0,
+		                     g_height+12.0, NULL, 0.0, J_CENTER);
+	} else {
+		show_text_simple(cr, "Distribution of observed partialities",
+		                     g_width/2.0, -18.0, "Sans Bold 10", 0.0,
+		                     J_CENTER);
+		show_text_simple(cr, "Observed partiality", g_width/2.0,
+		                     g_height+12.0, NULL, 0.0, J_CENTER);
+	}
+
+	for ( b=0; b<nbins; b++ ) {
+		counts[b] = 0;
+	}
+
+	for ( i=0; i<n; i++ ) {
+
+		Reflection *refl;
+		RefListIterator *iter;
+
+		if ( images[i].pr_dud ) continue;
+
+		for ( refl = first_refl(images[i].reflections, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) )
+		{
+			double Ipart, Ifull, pobs, pcalc;
+			signed int h, k, l;
+			Reflection *f;
+
+			if ( !get_scalable(refl) ) continue;
+
+			get_indices(refl, &h, &k, &l);
+			f = find_refl(full, h, k, l);
+			if ( f == NULL ) continue;
+
+			Ipart = get_intensity(refl);
+			Ifull = get_intensity(f);
+
+			pobs = Ipart/(images[i].osf*Ifull);
+			pcalc = get_partiality(refl);
+
+			if ( calc ) {
+				b = pcalc*nbins;
+			} else {
+				b = pobs*nbins;
+			}
+			if ( (b>=0) && (b<nbins) ) counts[b]++;
+		}
+	}
+
+	f_max = 0;
+	for ( b=0; b<nbins; b++ ) {
+		if ( counts[b] > f_max ) f_max = counts[b];
+	}
+	f_max = (f_max/10)*10 + 10;
+
+	show_text_simple(cr, "0", -10.0, g_height, NULL, 0.0, J_RIGHT);
+	snprintf(tmp, 31, "%i", f_max);
+	show_text_simple(cr, tmp, -10.0, 0.0, NULL, 0.0, J_RIGHT);
+
+	show_text_simple(cr, "0.0", 0.0, g_height+10.0,
+	                     NULL, -M_PI/3.0, J_RIGHT);
+	show_text_simple(cr, "1.0", g_width, g_height+10.0,
+	                     NULL, -M_PI/3.0, J_RIGHT);
+
+	for ( b=0; b<nbins; b++ ) {
+
+		double bar_height;
+
+		bar_height = ((double)counts[b]/f_max)*g_height;
+
+		cairo_new_path(cr);
+		cairo_rectangle(cr, (g_width/nbins)*b, g_height,
+		                    g_width/nbins, -bar_height);
+		cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+		cairo_set_line_width(cr, 1.0);
+		cairo_stroke(cr);
+
+	}
+
+	cairo_new_path(cr);
+	cairo_rectangle(cr, 0.0, 0.0, g_width, g_height);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_set_line_width(cr, 1.5);
+	cairo_stroke(cr);
+}
+
+
 static void scale_factor_histogram(cairo_t *cr, const struct image *images,
                                    int n, const char *title)
 {
@@ -409,6 +515,12 @@ void sr_after(SRContext *sr, struct image *images, int n, RefList *full)
 	cairo_surface_show_page(sr->surf);
 	watermark(sr);
 
+	cairo_save(sr->cr);
+	cairo_translate(sr->cr, 75.0, 50.0);
+	partiality_histogram(sr->cr, images, n, full, 1);
+	cairo_translate(sr->cr, 400.0, 0.0);
+	partiality_histogram(sr->cr, images, n, full, 0);
+	cairo_restore(sr->cr);
 
 	cairo_surface_finish(sr->surf);
 	cairo_destroy(sr->cr);
