@@ -447,6 +447,171 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 }
 
 
+static void intensity_histogram(cairo_t *cr, const struct image *images,
+                                int n, signed int h, signed int k, signed int l)
+{
+	int f_max;
+	int i, b;
+	const int nbins = 100;
+	double int_max, int_inc;
+	double int_low[nbins];
+	double int_high[nbins];
+	int counts[nbins];
+	const double g_width = 200.0;
+	const double g_height = 100.0;
+	char tmp[64];
+
+	snprintf(tmp, 63, "%i  %i  %i", h, k, l);
+	show_text_simple(cr, tmp, g_width/2.0, -18.0,
+	                      "Sans Bold 10", 0.0, J_CENTER);
+
+	show_text_simple(cr, "Frequency", -15.0, g_height/2.0,
+	                      NULL, -M_PI_2, J_CENTER);
+	show_text_simple(cr, "Full scaled intensity",
+	                      g_width/2.0, g_height+12.0,
+	                      NULL, 0.0, J_CENTER);
+
+	int_max = 0.0;
+	int nmeas = 0;
+	for ( i=0; i<n; i++ ) {
+
+		Reflection *f;
+		double osf;
+
+		if ( images[i].pr_dud ) continue;
+
+		osf = images[i].osf;
+
+		for ( f = find_refl(images[i].reflections, h, k, l);
+		      f != NULL;
+		      f = next_found_refl(f) )
+		{
+			double Iobs, pcalc, Ifull_est;
+
+			if ( !get_scalable(f) ) continue;
+
+			pcalc = get_partiality(f);
+			Iobs = get_intensity(f);
+			Ifull_est = Iobs / (pcalc * osf);
+
+			if ( Ifull_est > int_max ) int_max = Ifull_est;
+			nmeas++;
+		}
+
+	}
+	int_max *= 1.1;
+	int_inc = int_max / nbins;
+	STATUS("%i measurements\n", nmeas);
+
+	for ( b=0; b<nbins; b++ ) {
+		int_low[b] = b*int_inc;
+		int_high[b] = (b+1)*int_inc;
+		counts[b] = 0;
+	}
+
+	for ( i=0; i<n; i++ ) {
+
+		Reflection *f;
+		double osf;
+
+		if ( images[i].pr_dud ) continue;
+
+		osf = images[i].osf;
+
+		for ( f = find_refl(images[i].reflections, h, k, l);
+		      f != NULL;
+		      f = next_found_refl(f) )
+		{
+			double Iobs, pcalc, Ifull_est;
+
+			if ( !get_scalable(f) ) continue;
+
+			pcalc = get_partiality(f);
+			Iobs = get_intensity(f);
+			Ifull_est = Iobs / (pcalc * osf);
+
+			for ( b=0; b<nbins; b++ ) {
+				if ( (Ifull_est >= int_low[b])
+				  && (Ifull_est < int_high[b]) ) {
+					counts[b]++;
+					break;
+				}
+			}
+
+		}
+
+
+	}
+
+	f_max = 0;
+	for ( b=0; b<nbins; b++ ) {
+		if ( counts[b] > f_max ) f_max = counts[b];
+	}
+	f_max = (f_max/10)*10 + 10;
+
+	show_text_simple(cr, "0", -10.0, g_height, NULL, 0.0, J_RIGHT);
+	snprintf(tmp, 31, "%i", f_max);
+	show_text_simple(cr, tmp, -10.0, 0.0, NULL, 0.0, J_RIGHT);
+
+	show_text_simple(cr, "0.00", 0.0, g_height+10.0,
+	                     NULL, -M_PI/3.0, J_RIGHT);
+	snprintf(tmp, 32, "%5.2f", int_max);
+	show_text_simple(cr, tmp, g_width, g_height+10.0,
+	                     NULL, -M_PI/3.0, J_RIGHT);
+
+	for ( b=0; b<nbins; b++ ) {
+
+		double bar_height;
+
+		bar_height = ((double)counts[b]/f_max)*g_height;
+
+		cairo_new_path(cr);
+		cairo_rectangle(cr, (g_width/nbins)*b, g_height,
+		                    g_width/nbins, -bar_height);
+		cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+		cairo_set_line_width(cr, 1.0);
+		cairo_stroke(cr);
+
+	}
+
+	cairo_new_path(cr);
+	cairo_rectangle(cr, 0.0, 0.0, g_width, g_height);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_set_line_width(cr, 1.5);
+	cairo_stroke(cr);
+}
+
+
+static void random_indices(RefList *list,
+                           signed int *hp, signed int *kp, signed int *lp)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	int n;
+	double p;
+	Reflection *chosen = NULL;
+
+	n = num_reflections(list);
+	p = 1.0/n;
+
+	do {
+
+		for ( refl = first_refl(list, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) )
+		{
+			if ( random_flat(1.0) < p ) {
+				chosen = refl;
+			}
+		}
+
+	} while ( chosen == NULL );
+
+	get_indices(chosen, hp, kp, lp);
+}
+
+
+
 static void watermark(struct _srcontext *sr)
 {
 	show_text(sr->cr, "Written by partialator from CrystFEL"
@@ -503,6 +668,8 @@ void sr_before(SRContext *sr, struct image *images, int n, RefList *full)
 
 void sr_after(SRContext *sr, struct image *images, int n, RefList *full)
 {
+	int x, y;
+
 	if ( sr == NULL ) return;
 
 	cairo_save(sr->cr);
@@ -521,6 +688,23 @@ void sr_after(SRContext *sr, struct image *images, int n, RefList *full)
 	cairo_translate(sr->cr, 400.0, 0.0);
 	partiality_histogram(sr->cr, images, n, full, 0);
 	cairo_restore(sr->cr);
+
+	cairo_surface_show_page(sr->surf);
+	watermark(sr);
+
+	for ( x=0; x<3; x++ ) {
+	for ( y=0; y<3; y++ ) {
+
+		signed int h, k, l;
+
+		cairo_save(sr->cr);
+		cairo_translate(sr->cr, 50.0+280.0*x, 50.0+180.0*y);
+		random_indices(full, &h, &k, &l);
+		intensity_histogram(sr->cr, images, n, h, k, l);
+		cairo_restore(sr->cr);
+
+	}
+	}
 
 	cairo_surface_finish(sr->surf);
 	cairo_destroy(sr->cr);
