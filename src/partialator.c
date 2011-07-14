@@ -394,8 +394,11 @@ int main(int argc, char *argv[])
 		RefList *list;
 
 		list = read_reflections(reference_file);
+		if ( list == NULL ) {
+			ERROR("Failed to read '%s'\n", reference_file);
+			return 1;
+		}
 		free(reference_file);
-		if ( list == NULL ) return 1;
 		reference = asymmetric_indices(list, sym);
 		reflist_free(list);
 		have_reference = 1;
