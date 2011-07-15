@@ -195,17 +195,14 @@ indexingprivate
 
 <SECTION>
 <FILE>symmetry</FILE>
-check_list_symmetry
-check_symmetry
-has_bisecting_mirror_or_diad
-has_perpendicular_mirror
-is_polyhedral
-rotational_order
-num_equivs
-num_general_equivs
-get_asymm
+SymOpList
+<SUBSECTION>
+free_symoplist
+num_ops
+get_pointgroup
 get_equiv
-get_general_equiv
+special_position
+get_asymm
 get_twins
 </SECTION>
 
