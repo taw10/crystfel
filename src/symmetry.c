@@ -409,39 +409,20 @@ SymOpList *special_position(SymOpList *ops,
 	SymOpList *equivs;
 	int n_equivs = 0;
 
-	if ( idx == 0 ) {
-		/* Index zero is always the original reflection */
-		*hp = hs;  *kp = ks;  *lp = ls;
-		return 0;
-	}
-
 	equivs = new_symoplist();
-	n_general = num_general_equivs(ops);
 
-	for ( i=0; i<n_general; i++ ) {
+	for ( i=0; i<num_ops(ops); i++ ) {
 
-		signed int h, k, l;
+		signed int ht, kt, lt;
 
 		/* Get equivalent according to the point group */
-		get_general_equiv(ops, i, hs, ks, ls, &h, &k, &l);
+		get_equiv(ops, i, h, k, l, &ht, &kt, &lt);
 
-		/* Already got this one? */
-		if ( find_item(equivs, h, k, l) ) continue;
-
-		if ( n_equivs == idx ) {
-			*hp = h;
-			*kp = k;
-			*lp = l;
-			delete_ops(equivs);
-			return n_equivs;
-		}
-		add_item(equivs, h, k, l);
-		n_equivs++;
+		if (
 
 	}
 
-	delete_ops(equivs);
-	return n_equivs;
+	return equivs;
 }
 
 
@@ -451,12 +432,31 @@ void get_asymm(SymOpList *ops, int idx,
 {
 	int nequiv = num_equivs(h, k, l, sym);
 	int p;
+	signed int best_h, best_k, best_l;
 
+	best_h = h;  best_k = k;  best_l = l;
 	for ( p=0; p<nequiv; p++ ) {
-		signed int he, ke, le;
-		get_equiv(h, k, l, &he, &ke, &le, sym, p);
-		CHECK_COND(he, ke, le, sym);
+
+		get_equiv(h, k, l, hp, kp, lp, sym, p);
+
+		if ( h > best_h ) {
+			best_h = h;  best_k = k;  best_l = l;
+			continue;
+		}
+
+		if ( k > best_k ) {
+			best_h = h;  best_k = k;  best_l = l;
+			continue;
+		}
+
+		if ( l > best_l ) {
+			best_h = h;  best_k = k;  best_l = l;
+			continue;
+		}
+
 	}
+
+	*hp = best_h;  *kp = best_k;  *lp = best_l;
 }
 
 
