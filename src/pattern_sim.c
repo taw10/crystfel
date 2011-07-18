@@ -222,7 +222,8 @@ int main(int argc, char *argv[])
 	int random_size = 0;
 	double min_size = 0.0;
 	double max_size = 0.0;
-	char *sym = NULL;
+	char *sym_str = NULL;
+	SymOpList *sym;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -298,7 +299,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'y' :
-			sym = strdup(optarg);
+			sym_str = strdup(optarg);
 			break;
 
 		case 2 :
@@ -358,7 +359,9 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if ( sym == NULL ) sym = strdup("1");
+	if ( sym_str == NULL ) sym_str = strdup("1");
+	sym = get_pointgroup(sym_str);
+	/* sym_str is used below */
 
 	if ( config_simdetails ) {
 		show_details();
@@ -427,7 +430,7 @@ int main(int argc, char *argv[])
 		/* Check that the intensities have the correct symmetry */
 		if ( check_list_symmetry(reflections, sym) ) {
 			ERROR("The input reflection list does not appear to"
-			      " have symmetry %s\n", sym);
+			      " have symmetry %s\n", symmetry_name(sym));
 			return 1;
 		}
 
@@ -527,7 +530,7 @@ int main(int argc, char *argv[])
 		if ( config_gpu ) {
 			if ( gctx == NULL ) {
 				gctx = setup_gpu(config_nosfac,
-				                 intensities, flags, sym,
+				                 intensities, flags, sym_str,
 				                 gpu_dev);
 			}
 			get_diffraction_gpu(gctx, &image, na, nb, nc, cell);
@@ -604,7 +607,8 @@ skip:
 	free(intensities);
 	free(outfile);
 	free(filename);
-	free(sym);
+	free(sym_str);
+	free_symoplist(sym);
 
 	return 0;
 }
