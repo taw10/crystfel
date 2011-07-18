@@ -198,7 +198,7 @@ indexingprivate
 SymOpList
 <SUBSECTION>
 free_symoplist
-num_ops
+num_equivs
 get_pointgroup
 get_equiv
 special_position
