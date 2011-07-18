@@ -18,9 +18,10 @@
 
 #include "reflist.h"
 #include "cell.h"
+#include "symmetry.h"
 
 extern int povray_render_animation(UnitCell *cell, RefList *list,
-                                   unsigned int nproc, const char *sym,
+                                   unsigned int nproc, const SymOpList *sym,
                                    int wght, double boost, double scale_top);
 
 #endif	/* POVRAY_H */

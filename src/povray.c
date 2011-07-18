@@ -30,7 +30,7 @@
 
 
 int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
-                            const char *sym, int wght, double boost,
+                            const SymOpList *sym, int wght, double boost,
                             double scale_top)
 {
 	FILE *fh;
@@ -174,8 +174,10 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 
 		float val;
 		signed int h, k, l;
+		SymOpList *sp;
 
 		get_indices(refl, &h, &k, &l);
+		sp = special_position(sym, h, k, l);
 
 		switch ( wght ) {
 		case WGHT_I :
@@ -187,7 +189,7 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 			break;
 		case WGHT_COUNTS :
 			val = get_redundancy(refl);
-			val /= (float)num_equivs(h, k, l, sym);
+			val /= (double)num_equivs(sp);
 			break;
 		case WGHT_RAWCOUNTS :
 			val = get_redundancy(refl);
@@ -198,6 +200,8 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 		}
 
 		if ( val > max ) max = val;
+
+		free_symoplist(sp);
 
 	}
 	max /= boost;
@@ -216,8 +220,12 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 		int s;
 		float val, p, r, g, b, trans;
 		int j;
+		SymOpList *sp;
+		int neq;
 
 		get_indices(refl, &h, &k, &l);
+		sp = special_position(sym, h, k, l);
+		neq = num_equivs(sp);
 
 		switch ( wght ) {
 		case WGHT_I :
@@ -229,7 +237,7 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 			break;
 		case WGHT_COUNTS :
 			val = get_redundancy(refl);
-			val /= (float)num_equivs(h, k, l, sym);
+			val /= (double)neq;
 			break;
 		case WGHT_RAWCOUNTS :
 			val = get_redundancy(refl);
@@ -281,12 +289,12 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 		trans = 1.0-(val/max);
 
 		/* For each equivalent */
-		for ( j=0; j<num_equivs(h, k, l, sym); j++ ) {
+		for ( j=0; j<neq; j++ ) {
 
 			signed int he, ke, le;
 			float x, y, z;
 
-			get_equiv(h, k, l, &he, &ke, &le, sym, j);
+			get_equiv(sp, j, h, k, l, &he, &ke, &le);
 
 			x = asx*he + bsx*ke + csx*le;
 			y = asy*he + bsy*ke + csy*le;
@@ -302,6 +310,8 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 			            r, g, b, trans, 0.1*(1.0-trans));
 
 		}
+
+		free_symoplist(sp);
 
 	}
 

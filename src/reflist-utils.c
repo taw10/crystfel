@@ -104,7 +104,7 @@ unsigned char *flags_from_list(RefList *list)
 }
 
 
-int check_list_symmetry(RefList *list, const char *sym)
+int check_list_symmetry(RefList *list, const SymOpList *sym)
 {
 	unsigned char *flags;
 	Reflection *refl;
@@ -122,10 +122,10 @@ int check_list_symmetry(RefList *list, const char *sym)
 
 		get_indices(refl, &h, &k, &l);
 
-		for ( j=0; j<num_equivs(h, k, l, sym); j++ ) {
+		for ( j=0; j<num_equivs(sym); j++ ) {
 
 			signed int he, ke, le;
-			get_equiv(h, k, l, &he, &ke, &le, sym, j);
+			get_equiv(sym, j, h, k, l, &he, &ke, &le);
 
 			if ( abs(he) > INDMAX ) continue;
 			if ( abs(le) > INDMAX ) continue;
@@ -149,17 +149,17 @@ int check_list_symmetry(RefList *list, const char *sym)
 
 
 int find_equiv_in_list(RefList *list, signed int h, signed int k,
-                       signed int l, const char *sym, signed int *hu,
+                       signed int l, const SymOpList *sym, signed int *hu,
                        signed int *ku, signed int *lu)
 {
 	int i;
 	int found = 0;
 
-	for ( i=0; i<num_equivs(h, k, l, sym); i++ ) {
+	for ( i=0; i<num_equivs( sym); i++ ) {
 
 		signed int he, ke, le;
 		Reflection *f;
-		get_equiv(h, k, l, &he, &ke, &le, sym, i);
+		get_equiv(sym, i, h, k, l, &he, &ke, &le);
 		f = find_refl(list, he, ke, le);
 
 		/* There must only be one equivalent.  If there are more, it
@@ -362,7 +362,7 @@ RefList *read_reflections(const char *filename)
 }
 
 
-RefList *asymmetric_indices(RefList *in, const char *sym)
+RefList *asymmetric_indices(RefList *in, const SymOpList *sym)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -380,7 +380,7 @@ RefList *asymmetric_indices(RefList *in, const char *sym)
 
 		get_indices(refl, &h, &k, &l);
 
-		get_asymm(h, k, l, &ha, &ka, &la, sym);
+		get_asymm(sym, h, k, l, &ha, &ka, &la);
 
 		cr = add_refl(new, ha, ka, la);
 		assert(cr != NULL);

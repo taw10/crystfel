@@ -18,6 +18,7 @@
 
 #include "image.h"
 #include "cell.h"
+#include "symmetry.h"
 
 typedef enum {
 	GRADIENT_MOSAIC,
@@ -28,6 +29,6 @@ typedef enum {
 extern void get_diffraction(struct image *image, int na, int nb, int nc,
                             const double *intensities, const double *phases,
                             const unsigned char *flags, UnitCell *cell,
-                            GradientMethod m, const char *sym);
+                            GradientMethod m, const SymOpList *sym);
 
 #endif	/* DIFFRACTION_H */

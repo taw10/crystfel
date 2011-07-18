@@ -305,7 +305,8 @@ static unsigned int process_h5(struct image *image, struct histogram_info *info,
 }
 
 
-static unsigned int process_hkl(struct image *image, char *sym, UnitCell *cell,
+static unsigned int process_hkl(struct image *image, const SymOpList *sym,
+                                UnitCell *cell,
                                 struct histogram_info *info,
                                 struct bin_stats *histdata,
                                 int q_scaling, int use_redundancy)
@@ -329,7 +330,9 @@ static unsigned int process_hkl(struct image *image, char *sym, UnitCell *cell,
 		if ( use_redundancy ) {
 			redundancy = get_redundancy(refl);
 		} else {
-			redundancy = num_equivs(h, k, l, sym);
+			SymOpList *sp = special_position(sym, h, k, l);
+			redundancy = num_equivs(sp);
+			free_symoplist(sp);
 		}
 
 		/* Multiply by 2 to get 1/d (in m^-1) */
@@ -734,6 +737,7 @@ int main(int argc, char *argv[])
 	struct hdfile *hdfile = NULL;
 	struct bin_stats *histdata = NULL;
 	struct histogram_info hist_info;
+	SymOpList *sym;
 
 	/* Default settings */
 	hist_info.histsize =  100;
@@ -765,7 +769,7 @@ int main(int argc, char *argv[])
 	char *pdb      = NULL;
 	char *output   = NULL;
 	char *datatype = NULL;
-	char *sym      = NULL;
+	char *sym_str  = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -823,7 +827,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'y' :
-			sym = strdup(optarg);
+			sym_str = strdup(optarg);
 			break;
 
 		case 's' :
@@ -1040,9 +1044,11 @@ int main(int argc, char *argv[])
 	}
 	free(pdb);
 
-	if ( sym == NULL ) {
-		sym = strdup("1");
+	if ( sym_str == NULL ) {
+		sym_str = strdup("1");
 	}
+	sym = get_pointgroup(sym_str);
+	free(sym_str);
 
 	/* Set up histogram info*/
 	if (hist_info.q_min <= 0.0 ) {
@@ -1173,7 +1179,6 @@ int main(int argc, char *argv[])
 	if ( image.beam != NULL ) free(image.beam);
 	fclose(fh);
 	free(histdata);
-	free(sym);
 
 	return 0;
 }

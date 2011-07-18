@@ -28,26 +28,21 @@ extern void free_symoplist(SymOpList *ops);
 
 extern SymOpList *get_pointgroup(const char *sym);
 
-extern SymOpList *special_position(SymOpList *ops,
+extern const char *symmetry_name(const SymOpList *ops);
+
+extern SymOpList *special_position(const SymOpList *ops,
                                    signed int h, signed int k, signed int l);
 
-extern void get_asymm(signed int h, signed int k, signed int l,
-                      signed int *hp, signed int *kp, signed int *lp,
-                      const char *sym);
+extern void get_asymm(const SymOpList *ops,
+                      signed int h, signed int k, signed int l,
+                      signed int *hp, signed int *kp, signed int *lp);
 
-extern int num_equivs(signed int h, signed int k, signed int l,
-                      const char *sym);
+extern int num_equivs(const SymOpList *ops);
 
-extern int num_general_equivs(const char *sym);
+extern void get_equiv(const SymOpList *ops, int idx,
+                      signed int h, signed int k, signed int l,
+                      signed int *he, signed int *ke, signed int *le);
 
-extern void get_equiv(signed int h, signed int k, signed int l,
-                      signed int *he, signed int *ke, signed int *le,
-                      const char *sym, int idx);
-
-extern void get_general_equiv(signed int h, signed int k, signed int l,
-                              signed int *he, signed int *ke, signed int *le,
-                              const char *sym, int idx);
-
-extern SymOpList *get_twins(SymOpList *source, SymOpList *target);
+extern SymOpList *get_twins(const SymOpList *source, const SymOpList *target);
 
 #endif	/* SYMMETRY_H */

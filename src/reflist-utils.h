@@ -19,6 +19,7 @@
 
 #include "reflist.h"
 #include "cell.h"
+#include "symmetry.h"
 
 
 #define REFLECTION_END_MARKER "End of reflections"
@@ -36,11 +37,11 @@ extern double *intensities_from_list(RefList *list);
 extern double *phases_from_list(RefList *list);
 extern unsigned char *flags_from_list(RefList *list);
 
-extern int check_list_symmetry(RefList *list, const char *sym);
+extern int check_list_symmetry(RefList *list, const SymOpList *sym);
 extern int find_equiv_in_list(RefList *list, signed int h, signed int k,
-                              signed int l, const char *sym, signed int *hu,
+                              signed int l, const SymOpList *sym, signed int *hu,
                               signed int *ku, signed int *lu);
 
-extern RefList *asymmetric_indices(RefList *in, const char *sym);
+extern RefList *asymmetric_indices(RefList *in, const SymOpList *sym);
 
 #endif	/* REFLIST_UTILS_H */

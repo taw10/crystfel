@@ -78,6 +78,7 @@ struct _symoplist
 	struct sym_op *ops;
 	int n_ops;
 	int max_ops;
+	char *name;
 };
 
 
@@ -97,6 +98,7 @@ static SymOpList *new_symoplist()
 	new->max_ops = 16;
 	new->n_ops = 0;
 	new->ops = NULL;
+	new->name = NULL;
 	alloc_ops(new);
 	return new;
 }
@@ -118,6 +120,7 @@ void free_symoplist(SymOpList *ops)
 		free(ops->ops[i].l);
 	}
 	if ( ops->ops != NULL ) free(ops->ops);
+	if ( ops->name != NULL ) free(ops->name);
 	free(ops);
 }
 
@@ -253,6 +256,7 @@ static SymOpList *make_1bar()
 {
 	SymOpList *new = new_symoplist();
 	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1));  /* -I */
+	new->name = strdup("-1");
 	return new;
 }
 
@@ -260,6 +264,7 @@ static SymOpList *make_1bar()
 static SymOpList *make_1()
 {
 	SymOpList *new = new_symoplist();
+	new->name = strdup("1");
 	return new;
 }
 
@@ -271,6 +276,7 @@ static SymOpList *make_2m()
 	SymOpList *new = new_symoplist();
 	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 */
 	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m */
+	new->name = strdup("2/m");
 	return NULL;
 }
 
@@ -279,6 +285,7 @@ static SymOpList *make_2()
 {
 	SymOpList *new = new_symoplist();
 	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 */
+	new->name = strdup("2");
 	return NULL;
 }
 
@@ -287,6 +294,7 @@ static SymOpList *make_m()
 {
 	SymOpList *new = new_symoplist();
 	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m */
+	new->name = strdup("m");
 	return NULL;
 }
 
@@ -299,6 +307,7 @@ static SymOpList *make_mmm()
 	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 */
 	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 */
 	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m */
+	new->name = strdup("mmm");
 	return NULL;
 }
 
@@ -308,6 +317,7 @@ static SymOpList *make_222()
 	SymOpList *new = new_symoplist();
 	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 */
 	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 */
+	new->name = strdup("222");
 	return NULL;
 }
 
@@ -317,6 +327,7 @@ static SymOpList *make_mm2()
 	SymOpList *new = new_symoplist();
 	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 */
 	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m */
+	new->name = strdup("mm2");
 	return NULL;
 }
 
@@ -455,7 +466,7 @@ SymOpList *get_pointgroup(const char *sym)
 }
 
 
-static void do_op(struct sym_op *op,
+static void do_op(const struct sym_op *op,
                   signed int h, signed int k, signed int l,
                   signed int *he, signed int *ke, signed int *le)
 {
@@ -485,7 +496,7 @@ static void do_op(struct sym_op *op,
  * given reflection is a special high-symmetry one), call special_position()
  * first to get a "specialised" SymOpList and use that instead.
  **/
-void get_equiv(SymOpList *ops, int idx,
+void get_equiv(const SymOpList *ops, int idx,
                signed int h, signed int k, signed int l,
                signed int *he, signed int *ke, signed int *le)
 {
@@ -531,7 +542,7 @@ void get_equiv(SymOpList *ops, int idx,
  *
  * Returns: the "specialised" %SymOpList.
  **/
-SymOpList *special_position(SymOpList *ops,
+SymOpList *special_position(const SymOpList *ops,
                             signed int h, signed int k, signed int l)
 {
 	int i, n;
@@ -554,7 +565,7 @@ SymOpList *special_position(SymOpList *ops,
 }
 
 
-void get_asymm(SymOpList *ops, int idx,
+void get_asymm(const SymOpList *ops,
                signed int h, signed int k, signed int l,
                signed int *hp, signed int *kp, signed int *lp)
 {
@@ -595,7 +606,7 @@ void get_asymm(SymOpList *ops, int idx,
  *
  * To count the number of possibilities, use num_ops() on the result.
  */
-SymOpList *get_twins(SymOpList *source, SymOpList *target)
+SymOpList *get_twins(const SymOpList *source, const SymOpList *target)
 {
 	int n_src, n_tgt;
 	int i;
@@ -610,4 +621,10 @@ SymOpList *get_twins(SymOpList *source, SymOpList *target)
 	}
 
 	return twins;
+}
+
+
+const char *symmetry_name(const SymOpList *ops)
+{
+	return ops->name;
 }

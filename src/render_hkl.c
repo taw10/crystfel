@@ -85,7 +85,7 @@ static void show_help(const char *s)
 static void draw_circles(signed int xh, signed int xk, signed int xl,
                          signed int yh, signed int yk, signed int yl,
                          signed int zh, signed int zk, signed int zl,
-                         RefList *list, const char *sym,
+                         RefList *list, const SymOpList *sym,
                          cairo_t *dctx, int wght, double boost, int colscale,
                          UnitCell *cell, double radius, double theta,
                          double as, double bs, double cx, double cy,
@@ -110,15 +110,19 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 		double u, v, val, res;
 		signed int ha, ka, la;
 		int xi, yi;
-		int i;
+		int i, n;
+		SymOpList *sp;
 
 		get_indices(refl, &ha, &ka, &la);
 
-		for ( i=0; i<num_equivs(ha, ka, la, sym); i++ ) {
+		sp = special_position(sym, ha, ka, la);
+		n = num_equivs(sp);
+
+		for ( i=0; i<n; i++ ) {
 
 			signed int h, k, l;
 
-			get_equiv(ha, ka, la, &h, &k, &l, sym, i);
+			get_equiv(sp, i, ha, ka, la, &h, &k, &l);
 
 			/* Is the reflection in the zone? */
 			if ( h*zh + k*zk + l*zl != 0 ) continue;
@@ -136,7 +140,7 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 				break;
 			case WGHT_COUNTS :
 				val = get_redundancy(refl);
-				val /= (float)num_equivs(h, k, l, sym);
+				val /= (double)n;
 				break;
 			case WGHT_RAWCOUNTS :
 				val = get_redundancy(refl);
@@ -189,6 +193,8 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 			}
 
 		}
+
+		free_symoplist(sp);
 
 	}
 }
@@ -245,7 +251,8 @@ static void render_overlined_indices(cairo_t *dctx,
 
 
 static void render_za(UnitCell *cell, RefList *list,
-                      double boost, const char *sym, int wght, int colscale,
+                      double boost, const SymOpList *sym, int wght,
+                      int colscale,
                       signed int xh, signed int xk, signed int xl,
                       signed int yh, signed int yk, signed int yl,
                       const char *outfile, double scale_top)
@@ -558,7 +565,8 @@ int main(int argc, char *argv[])
 	char *pdb = NULL;
 	int r = 0;
 	double boost = 1.0;
-	char *sym = NULL;
+	char *sym_str = NULL;
+	SymOpList *sym;
 	char *weighting = NULL;
 	int wght;
 	int colscale;
@@ -612,7 +620,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'y' :
-			sym = strdup(optarg);
+			sym_str = strdup(optarg);
 			break;
 
 		case 'w' :
@@ -664,9 +672,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( sym == NULL ) {
-		sym = strdup("1");
+	if ( sym_str == NULL ) {
+		sym_str = strdup("1");
 	}
+	sym = get_pointgroup(sym_str);
+	free(sym_str);
 
 	if ( weighting == NULL ) {
 		weighting = strdup("I");
@@ -755,7 +765,7 @@ int main(int argc, char *argv[])
 	}
 	if ( check_list_symmetry(list, sym) ) {
 		ERROR("The input reflection list does not appear to"
-		      " have symmetry %s\n", sym);
+		      " have symmetry %s\n", symmetry_name(sym));
 		return 1;
 	}
 
@@ -770,7 +780,7 @@ int main(int argc, char *argv[])
 	}
 
 	free(pdb);
-	free(sym);
+	free_symoplist(sym);
 	reflist_free(list);
 	if ( outfile != NULL ) free(outfile);
 

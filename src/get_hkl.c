@@ -141,14 +141,16 @@ static RefList *template_reflections(RefList *list, RefList *template)
 
 
 static RefList *twin_reflections(RefList *in,
-                                 const char *holo, const char *mero)
+                                 const SymOpList *holo, const SymOpList *mero)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 	RefList *out;
 
-	if ( num_general_equivs(holo) < num_general_equivs(mero) ) {
-		ERROR("%s is not a subgroup of %s!\n", mero, holo);
+	/* FIXME: Check properly by coset decomposition */
+	if ( num_equivs(holo) < num_equivs(mero) ) {
+		ERROR("%s is not a subgroup of %s!\n", symmetry_name(mero),
+		                                       symmetry_name(holo));
 		return NULL;
 	}
 
@@ -170,19 +172,19 @@ static RefList *twin_reflections(RefList *in,
 		 * only once for each reflection in the holohedral group, which
 		 * contains fewer reflections.
 		 */
-		get_asymm(h, k, l, &h, &k, &l, holo);
+		get_asymm(holo, h, k, l, &h, &k, &l);
 		if ( find_refl(out, h, k, l) != NULL ) continue;
 
 		total = 0.0;
 		sigma = 0.0;
 		skip = 0;
-		n = num_equivs(h, k, l, holo);
+		n = num_equivs(holo);
 		for ( j=0; j<n; j++ ) {
 
 			signed int he, ke, le;
 			signed int hu, ku, lu;
 
-			get_equiv(h, k, l, &he, &ke, &le, holo, j);
+			get_equiv(holo, j, h, k, l, &he, &ke, &le);
 
 			/* Do we have this reflection?
 			 * We might not have the particular (merohedral)
@@ -196,7 +198,8 @@ static RefList *twin_reflections(RefList *in,
 				      "reflection (or an equivalent in %s), "
 				      "which I don't have. %i %i %i won't "
 				      "appear in the output\n",
-				      h, k, l, he, ke, le, mero, h, k, l);
+				      h, k, l, he, ke, le, symmetry_name(mero),
+				      h, k, l);
 				skip = 1;
 				break;
 			}
@@ -220,15 +223,17 @@ static RefList *twin_reflections(RefList *in,
 }
 
 
-static RefList *expand_reflections(RefList *in,
-                                   const char *target, const char *initial)
+static RefList *expand_reflections(RefList *in, const SymOpList *target,
+                                                const SymOpList *initial)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 	RefList *out;
 
-	if ( num_general_equivs(target) > num_general_equivs(initial) ) {
-		ERROR("%s is not a subgroup of %s!\n", initial, target);
+	/* FIXME: Check properly */
+	if ( num_equivs(target) > num_equivs(initial) ) {
+		ERROR("%s is not a subgroup of %s!\n", symmetry_name(initial),
+		                                       symmetry_name(target));
 		return NULL;
 	}
 
@@ -245,7 +250,7 @@ static RefList *expand_reflections(RefList *in,
 		get_indices(refl, &h, &k, &l);
 		intensity = get_intensity(refl);
 
-		n = num_equivs(h, k, l, initial);
+		n = num_equivs(initial);
 
 		/* For each equivalent in the higher symmetry group */
 		for ( j=0; j<n; j++ ) {
@@ -254,10 +259,10 @@ static RefList *expand_reflections(RefList *in,
 			Reflection *new;
 
 			/* Get the equivalent */
-			get_equiv(h, k, l, &he, &ke, &le, initial, j);
+			get_equiv(initial, j, h, k, l, &he, &ke, &le);
 
 			/* Put it into the asymmetric unit for the target */
-			get_asymm(he, ke, le, &he, &ke, &le, target);
+			get_asymm(target, he, ke, le, &he, &ke, &le);
 
 			/* Make sure the intensity is in the right place */
 			new = add_refl(out, he, ke, le);
@@ -277,9 +282,12 @@ int main(int argc, char *argv[])
 	int config_noise = 0;
 	int config_poisson = 0;
 	int config_multi = 0;
-	char *holo = NULL;
-	char *mero = NULL;
-	char *expand = NULL;
+	char *holo_str = NULL;
+	char *mero_str = NULL;
+	char *expand_str = NULL;
+	SymOpList *holo;
+	SymOpList *mero;
+	SymOpList *expand;
 	char *input_file = NULL;
 	char *template = NULL;
 	char *output = NULL;
@@ -327,15 +335,15 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'y' :
-			mero = strdup(optarg);
+			mero_str = strdup(optarg);
 			break;
 
 		case 'w' :
-			holo = strdup(optarg);
+			holo_str = strdup(optarg);
 			break;
 
 		case 'e' :
-			expand = strdup(optarg);
+			expand_str = strdup(optarg);
 			break;
 
 		case 'b' :
@@ -359,7 +367,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( (holo != NULL) && (expand != NULL) ) {
+	if ( (holo_str != NULL) && (expand_str != NULL) ) {
 		ERROR("You cannot 'twin' and 'expand' at the same time.\n");
 		ERROR("Decide which one you want to do first.\n");
 		return 1;
@@ -379,11 +387,30 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if ( holo_str != NULL ) {
+		holo = get_pointgroup(holo_str);
+		free(holo_str);
+	} else {
+		holo = NULL;
+	}
+	if ( mero_str != NULL ) {
+		mero = get_pointgroup(mero_str);
+		free(mero_str);
+	} else {
+		mero = NULL;
+	}
+	if ( expand_str != NULL ) {
+		expand = get_pointgroup(expand_str);
+		free(expand_str);
+	} else {
+		expand = NULL;
+	}
+
 	input = read_reflections(input_file);
 	free(input_file);
 	if ( check_list_symmetry(input, mero) ) {
 		ERROR("The input reflection list does not appear to"
-		      " have symmetry %s\n", mero);
+		      " have symmetry %s\n", symmetry_name(mero));
 		return 1;
 	}
 
@@ -402,7 +429,8 @@ int main(int argc, char *argv[])
 	if ( holo != NULL ) {
 
 		RefList *new;
-		STATUS("Twinning from %s into %s\n", mero, holo);
+		STATUS("Twinning from %s into %s\n", symmetry_name(mero),
+		                                     symmetry_name(holo));
 		new = twin_reflections(input, holo, mero);
 
 		/* Replace old with new */
@@ -418,7 +446,8 @@ int main(int argc, char *argv[])
 	if ( expand != NULL ) {
 
 		RefList *new;
-		STATUS("Expanding from %s into %s\n", mero, expand);
+		STATUS("Expanding from %s into %s\n", symmetry_name(mero),
+		                                      symmetry_name(expand));
 		new = expand_reflections(input, expand, mero);
 
 		/* Replace old with new */
@@ -442,7 +471,7 @@ int main(int argc, char *argv[])
 			get_indices(refl, &h, &k, &l);
 			inty = get_intensity(refl);
 
-			inty *= (double)num_equivs(h, k, l, mero);
+			inty *= (double)num_equivs(mero);
 			set_int(refl, inty);
 
 		}

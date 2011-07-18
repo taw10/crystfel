@@ -118,7 +118,7 @@ static void plot_histogram(double *vals, int n)
 
 
 static void merge_pattern(RefList *model, RefList *new, int max_only,
-                          const char *sym,
+                          const SymOpList *sym,
                           double *hist_vals, signed int hist_h,
                           signed int hist_k, signed int hist_l, int *hist_n,
                           int pass)
@@ -138,7 +138,7 @@ static void merge_pattern(RefList *model, RefList *new, int max_only,
 		get_indices(refl, &h, &k, &l);
 
 		/* Put into the asymmetric unit for the target group */
-		get_asymm(h, k, l, &h, &k, &l, sym);
+		get_asymm(sym, h, k, l, &h, &k, &l);
 
 		model_version = find_refl(model, h, k, l);
 		if ( model_version == NULL ) {
@@ -209,7 +209,7 @@ enum {
 };
 
 
-static void scale_intensities(RefList *model, RefList *new, const char *sym)
+static void scale_intensities(RefList *model, RefList *new, const SymOpList *sym)
 {
 	double s;
 	double top = 0.0;
@@ -235,7 +235,7 @@ static void scale_intensities(RefList *model, RefList *new, const char *sym)
 			model_version = find_refl(model, h, k, l);
 			if ( model_version == NULL ) continue;
 
-			get_asymm(h, k, l, &hu, &ku, &lu, sym);
+			get_asymm(sym, h, k, l, &hu, &ku, &lu);
 
 			i1 = get_intensity(model_version);
 			i2 = get_intensity(refl);
@@ -294,7 +294,7 @@ static void scale_intensities(RefList *model, RefList *new, const char *sym)
 static void merge_all(FILE *fh, RefList *model,
                       int config_maxonly, int config_scale, int config_sum,
                       int config_startafter, int config_stopafter,
-                      const char *sym,
+                      const SymOpList *sym,
                       int n_total_patterns,
                       double *hist_vals, signed int hist_h,
                       signed int hist_k, signed int hist_l,
@@ -416,7 +416,8 @@ int main(int argc, char *argv[])
 	int config_sum = 0;
 	int config_scale = 0;
 	unsigned int n_total_patterns;
-	char *sym = NULL;
+	char *sym_str = NULL;
+	SymOpList *sym;
 	char *pdb = NULL;
 	char *histo = NULL;
 	signed int hist_h, hist_k, hist_l;
@@ -473,7 +474,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'y' :
-			sym = strdup(optarg);
+			sym_str = strdup(optarg);
 			break;
 
 		case 'g' :
@@ -518,7 +519,9 @@ int main(int argc, char *argv[])
 		cell = NULL;
 	}
 
-	if ( sym == NULL ) sym = strdup("1");
+	if ( sym_str == NULL ) sym_str = strdup("1");
+	sym = get_pointgroup(sym_str);
+	free(sym_str);
 
 	/* Open the data stream */
 	if ( strcmp(filename, "-") == 0 ) {
@@ -550,13 +553,13 @@ int main(int argc, char *argv[])
 			ERROR("Invalid indices for '--histogram'\n");
 			return 1;
 		}
-		space_for_hist = n_total_patterns * num_general_equivs(sym);
+		space_for_hist = n_total_patterns * num_equivs(sym);
 		hist_vals = malloc(space_for_hist * sizeof(double));
 		free(histo);
 		STATUS("Histogramming %i %i %i -> ", hist_h, hist_k, hist_l);
 		/* Put into the asymmetric cell for the target group */
-		get_asymm(hist_h, hist_k, hist_l,
-		          &hist_h, &hist_k, &hist_l, sym);
+		get_asymm(sym, hist_h, hist_k, hist_l,
+		          &hist_h, &hist_k, &hist_l);
 		STATUS("%i %i %i\n", hist_h, hist_k, hist_l);
 	}
 
