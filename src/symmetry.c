@@ -79,6 +79,7 @@ struct _symoplist
 	int n_ops;
 	int max_ops;
 	char *name;
+	int *divisors;
 };
 
 
@@ -86,6 +87,7 @@ struct _symoplist
 static void alloc_ops(SymOpList *ops)
 {
 	ops->ops = realloc(ops->ops, ops->max_ops*sizeof(struct sym_op));
+	ops->divisors = realloc(ops->divisors, ops->max_ops*sizeof(int));
 }
 
 
@@ -174,7 +176,7 @@ static int order_of_op(signed int *hin, signed int *kin, signed int *lin)
 
 	}
 
-	return n;
+	return n+1;
 }
 
 
@@ -182,7 +184,7 @@ static int order_of_op(signed int *hin, signed int *kin, signed int *lin)
 static void add_symop(SymOpList *ops,
                       signed int *h, signed int *k, signed int *l)
 {
-	int n;
+	int n, i;
 
 	if ( ops->n_ops == ops->max_ops ) {
 		/* Pretty sure this never happens, but still... */
@@ -196,6 +198,11 @@ static void add_symop(SymOpList *ops,
 	ops->ops[n].l = l;
 	ops->ops[n].order = order_of_op(h, k, l);
 	ops->n_ops++;
+
+	ops->divisors[0] = 1;
+	for ( i=1; i<ops->n_ops; i++ ) {
+		ops->divisors[i] = ops->divisors[i-1]*ops->ops[i].order;
+	}
 }
 
 
@@ -277,7 +284,7 @@ static SymOpList *make_2m()
 	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 */
 	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m */
 	new->name = strdup("2/m");
-	return NULL;
+	return new;
 }
 
 
@@ -286,7 +293,7 @@ static SymOpList *make_2()
 	SymOpList *new = new_symoplist();
 	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 */
 	new->name = strdup("2");
-	return NULL;
+	return new;
 }
 
 
@@ -295,7 +302,7 @@ static SymOpList *make_m()
 	SymOpList *new = new_symoplist();
 	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m */
 	new->name = strdup("m");
-	return NULL;
+	return new;
 }
 
 
@@ -308,7 +315,7 @@ static SymOpList *make_mmm()
 	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 */
 	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m */
 	new->name = strdup("mmm");
-	return NULL;
+	return new;
 }
 
 
@@ -318,7 +325,7 @@ static SymOpList *make_222()
 	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 */
 	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 */
 	new->name = strdup("222");
-	return NULL;
+	return new;
 }
 
 
@@ -328,7 +335,7 @@ static SymOpList *make_mm2()
 	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 */
 	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m */
 	new->name = strdup("mm2");
-	return NULL;
+	return new;
 }
 
 
@@ -501,18 +508,13 @@ void get_equiv(const SymOpList *ops, int idx,
                signed int *he, signed int *ke, signed int *le)
 {
 	int sig[32];
-	int divisors[32];
 	int i, n, r;
 
 	n = num_ops(ops);
-	divisors[0] = 1;
-	for ( i=1; i<n; i++ ) {
-		divisors[i] = divisors[i-1]*ops->ops[i].order;
-	}
 	r = idx;
 	for ( i=n-1; i>=0; i-- ) {
-		sig[i] = r / divisors[i];
-		r = r % divisors[i];
+		sig[i] = r / ops->divisors[i];
+		r = r % ops->divisors[i];
 		assert(sig[i] < ops->ops[i].order);
 	}
 
@@ -569,9 +571,11 @@ void get_asymm(const SymOpList *ops,
                signed int h, signed int k, signed int l,
                signed int *hp, signed int *kp, signed int *lp)
 {
-	int nequiv = num_equivs(ops);
+	int nequiv;
 	int p;
 	signed int best_h, best_k, best_l;
+
+	nequiv = num_equivs(ops);
 
 	best_h = h;  best_k = k;  best_l = l;
 	for ( p=0; p<nequiv; p++ ) {
