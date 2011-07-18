@@ -63,7 +63,7 @@ static void mess_up_cell(UnitCell *cell)
 /* For each reflection in "partial", fill in what the intensity would be
  * according to "full" */
 static void calculate_partials(RefList *partial, double osf,
-                               RefList *full, const char *sym,
+                               RefList *full, const SymOpList *sym,
                                int random_intensities)
 {
 	Reflection *refl;
@@ -78,7 +78,7 @@ static void calculate_partials(RefList *partial, double osf,
 		double p, Ip, If;
 
 		get_indices(refl, &h, &k, &l);
-		get_asymm(h, k, l, &h, &k, &l, sym);
+		get_asymm(sym, h, k, l, &h, &k, &l);
 		p = get_partiality(refl);
 
 		rfull = find_refl(full, h, k, l);
@@ -143,7 +143,8 @@ int main(int argc, char *argv[])
 	struct detector *det = NULL;
 	struct beam_params *beam = NULL;
 	RefList *full = NULL;
-	char *sym = NULL;
+	char *sym_str = NULL;
+	SymOpList *sym;
 	UnitCell *cell = NULL;
 	struct quaternion orientation;
 	struct image image;
@@ -194,7 +195,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'y' :
-			sym = strdup(optarg);
+			sym_str = strdup(optarg);
 			break;
 
 		case 'n' :
@@ -246,6 +247,10 @@ int main(int argc, char *argv[])
 	}
 	free(geomfile);
 
+	if ( sym_str == NULL ) sym_str = strdup("1");
+	sym = get_pointgroup(sym_str);
+	free(sym_str);
+
 	/* Load (full) reflections */
 	if ( input_file != NULL ) {
 
@@ -258,7 +263,7 @@ int main(int argc, char *argv[])
 		free(input_file);
 		if ( check_list_symmetry(full, sym) ) {
 			ERROR("The input reflection list does not appear to"
-			      " have symmetry %s\n", sym);
+			      " have symmetry %s\n", symmetry_name(sym));
 			return 1;
 		}
 
@@ -339,7 +344,7 @@ int main(int argc, char *argv[])
 	cell_free(cell);
 	free_detector_geometry(det);
 	free(beam);
-	free(sym);
+	free_symoplist(sym);
 	reflist_free(full);
 	free(image.filename);
 

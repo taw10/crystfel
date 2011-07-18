@@ -60,7 +60,7 @@ struct static_sum_args
 	signed int ht;
 	signed int kt;
 	signed int lt;
-	char *sym;
+	SymOpList *sym;
 };
 
 
@@ -282,7 +282,7 @@ static void sum_image(void *pg, int cookie)
 		 * averaging, the pattern must be transformed by the
 		 * appropriate symmetry operator(s) to bring it into
 		 * alignment. */
-		//get_asymm(h, k, l, &ha, &ka, &la, pargs->sym);
+		//get_asymm(pargs->sym, h, k, l, &ha, &ka, &la);
 		//if ( (ha!=pargs->ht) || (ka!=pargs->kt) || (la!=pargs->lt) ) {
 		//	continue;
 		//}
@@ -464,7 +464,7 @@ int main(int argc, char *argv[])
 	unsigned int angles[180];
 	int config_angles = 0;
 	signed int ht, kt, lt;
-	char *sym = NULL;
+	SymOpList *sym;
 	struct queue_args qargs;
 	pthread_mutex_t vals_mutex = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t angles_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -556,7 +556,7 @@ int main(int argc, char *argv[])
 	}
 	free(geomfile);
 
-	sym = strdup("6/mmm");  /* FIXME: Should be on command line */
+	sym = get_pointgroup("6/mmm");  /* FIXME: Should be on command line */
 
 	/* Initialise histogram */
 	for ( i=0; i<180; i++ ) angles[i] = 0;
@@ -570,7 +570,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* FIXME: Get indices on command line (or elsewhere) */
-	get_asymm(3, 4, 5, &ht, &kt, &lt, sym);
+	get_asymm(sym, 3, 4, 5, &ht, &kt, &lt);
 
 	as = 0.0; bs = 0.0; cs = 0.0; als = 0.0; bes = 0.0; gas = 0.0;
 

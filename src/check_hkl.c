@@ -47,7 +47,7 @@ static void show_help(const char *s)
 }
 
 
-static void plot_shells(RefList *list, UnitCell *cell, const char *sym,
+static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
                         double rmin_fix, double rmax_fix)
 {
 	double num[NBINS];
@@ -180,7 +180,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const char *sym,
 		}
 		if ( bin == -1 ) continue;
 
-		get_asymm(h, k, l, &hs, &ks, &ls, sym);
+		get_asymm(sym, h, k, l, &hs, &ks, &ls);
 		if ( lookup_count(counted, hs, ks, ls) ) continue;
 		set_count(counted, hs, ks, ls, 1);
 
@@ -305,7 +305,8 @@ int main(int argc, char *argv[])
 	int c;
 	UnitCell *cell;
 	char *file = NULL;
-	char *sym = NULL;
+	char *sym_str = NULL;
+	SymOpList *sym;
 	RefList *raw_list;
 	RefList *list;
 	Reflection *refl;
@@ -334,7 +335,7 @@ int main(int argc, char *argv[])
 			return 0;
 
 		case 'y' :
-			sym = strdup(optarg);
+			sym_str = strdup(optarg);
 			break;
 
 		case 'p' :
@@ -369,9 +370,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( sym == NULL ) {
-		sym = strdup("1");
+	if ( sym_str == NULL ) {
+		sym_str = strdup("1");
 	}
+	sym = get_pointgroup(sym_str);
+	free(sym_str);
 
 	file = strdup(argv[optind++]);
 
@@ -390,7 +393,7 @@ int main(int argc, char *argv[])
 	/* Check that the intensities have the correct symmetry */
 	if ( check_list_symmetry(raw_list, sym) ) {
 		ERROR("The input reflection list does not appear to"
-		      " have symmetry %s\n", sym);
+		      " have symmetry %s\n", symmetry_name(sym));
 		return 1;
 	}
 

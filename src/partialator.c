@@ -258,7 +258,8 @@ int main(int argc, char *argv[])
 	char *infile = NULL;
 	char *outfile = NULL;
 	char *geomfile = NULL;
-	char *sym = NULL;
+	char *sym_str = NULL;
+	SymOpList *sym;
 	FILE *fh;
 	int nthreads = 1;
 	struct detector *det;
@@ -322,7 +323,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'y' :
-			sym = strdup(optarg);
+			sym_str = strdup(optarg);
 			break;
 
 		case 'o' :
@@ -374,7 +375,9 @@ int main(int argc, char *argv[])
 		outfile = strdup("partialator.hkl");
 	}
 
-	if ( sym == NULL ) sym = strdup("1");
+	if ( sym_str == NULL ) sym_str = strdup("1");
+	sym = get_pointgroup(sym_str);
+	free(sym_str);
 
 	/* Get detector geometry */
 	det = get_detector_geometry(geomfile);

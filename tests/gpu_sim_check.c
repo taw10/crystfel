@@ -23,6 +23,7 @@
 #include "../src/detector.h"
 #include "../src/beam-parameters.h"
 #include "../src/utils.h"
+#include "../src/symmetry.h"
 
 
 #ifdef HAVE_CLOCK_GETTIME
@@ -65,6 +66,7 @@ int main(int argc, char *argv[])
 	const double sep = 20.0;
 	double start, end;
 	double gpu_time, cpu_time;
+	SymOpList *sym;
 
 	gctx = setup_gpu(1, NULL, NULL, NULL, 0);
 	if ( gctx == NULL ) {
@@ -141,11 +143,15 @@ int main(int argc, char *argv[])
 	end = get_hires_seconds();
 	gpu_time = end - start;
 
+	sym = get_pointgroup("1");
+
 	start = get_hires_seconds();
 	get_diffraction(&cpu_image, 8, 8, 8, NULL, NULL, NULL, cell,
-	                GRADIENT_MOSAIC, "1");
+	                GRADIENT_MOSAIC, sym);
 	end = get_hires_seconds();
 	cpu_time = end - start;
+
+	free_symoplist(sym);
 
 	STATUS("The GPU version was %5.2f times faster.\n", cpu_time/gpu_time);
 
