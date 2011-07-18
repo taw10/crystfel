@@ -80,6 +80,7 @@ struct _symoplist
 	int max_ops;
 	char *name;
 	int *divisors;
+	int num_equivs;
 };
 
 
@@ -101,6 +102,7 @@ static SymOpList *new_symoplist()
 	new->n_ops = 0;
 	new->ops = NULL;
 	new->name = NULL;
+	new->num_equivs = 1;
 	alloc_ops(new);
 	return new;
 }
@@ -180,6 +182,29 @@ static int order_of_op(signed int *hin, signed int *kin, signed int *lin)
 }
 
 
+/* This returns the number of operations in "ops".  To get the number of
+ * symmetric equivalents this generates, use num_equivs() instead. */
+static int num_ops(const SymOpList *ops)
+{
+	return ops->n_ops;
+}
+
+
+static void update_num_equivs(SymOpList *ops)
+{
+	int i, n, tot;
+
+	n = num_ops(ops);
+	tot = 1;
+
+	for ( i=0; i<n; i++ ) {
+		tot *= ops->ops[i].order;
+	}
+
+	ops->num_equivs = tot;
+}
+
+
 /* Add a operation to a SymOpList */
 static void add_symop(SymOpList *ops,
                       signed int *h, signed int *k, signed int *l)
@@ -203,6 +228,8 @@ static void add_symop(SymOpList *ops,
 	for ( i=1; i<ops->n_ops; i++ ) {
 		ops->divisors[i] = ops->divisors[i-1]*ops->ops[i].order;
 	}
+
+	update_num_equivs(ops);
 }
 
 
@@ -219,14 +246,6 @@ static void add_copied_symop(SymOpList *ops, struct sym_op *copyme)
 }
 
 
-/* This returns the number of operations in "ops".  To get the number of
- * symmetric equivalents this generates, use num_equivs() instead. */
-static int num_ops(const SymOpList *ops)
-{
-	return ops->n_ops;
-}
-
-
 /**
  * num_equivs:
  *
@@ -235,16 +254,7 @@ static int num_ops(const SymOpList *ops)
  **/
 int num_equivs(const SymOpList *ops)
 {
-	int i, n, tot;
-
-	n = num_ops(ops);
-	tot = 1;
-
-	for ( i=0; i<n; i++ ) {
-		tot *= ops->ops[i].order;
-	}
-
-	return tot;
+	return ops->num_equivs;
 }
 
 
