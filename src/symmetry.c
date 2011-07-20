@@ -405,8 +405,9 @@ static SymOpList *make_4m()
 static SymOpList *make_4()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1), 4); /* 4 */
-	return NULL;
+	add_symop(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1), 4); /* 4 */
+	new->name = strdup("4");
+	return expand_ops(new);
 }
 
 
@@ -670,6 +671,28 @@ void get_asymm(const SymOpList *ops,
 	}
 
 	*hp = best_h;  *kp = best_k;  *lp = best_l;
+}
+
+
+static int is_inversion(const struct sym_op *op)
+{
+	if ( (op->h[0]!=-1) || (op->h[1]!=0) || (op->h[2]!=0) ) return 0;
+	if ( (op->k[0]!=0) || (op->k[1]!=-1) || (op->k[2]!=0) ) return 0;
+	if ( (op->l[0]!=0) || (op->l[1]!=0) || (op->l[2]!=-1) ) return 0;
+	return 1;
+}
+
+
+int is_centrosymmetric(const SymOpList *s)
+{
+	int i, n;
+
+	n = num_ops(s);
+	for ( i=0; i<n; i++ ) {
+		if ( is_inversion(&s->ops[i]) ) return 1;
+	}
+
+	return 0;
 }
 
 

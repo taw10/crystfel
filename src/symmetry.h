@@ -48,6 +48,7 @@ extern void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
                       signed int h, signed int k, signed int l,
                       signed int *he, signed int *ke, signed int *le);
 
+extern int is_centrosymmetric(const SymOpList *s);
 extern SymOpList *get_twins(const SymOpList *source, const SymOpList *target);
 
 #endif	/* SYMMETRY_H */
