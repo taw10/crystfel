@@ -4,4 +4,5 @@ list_check
 gpu_sim_check
 integration_check
 pr_gradient_check
+symmetry_check
 .dirstamp

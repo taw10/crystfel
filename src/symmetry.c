@@ -235,71 +235,41 @@ static void combine_ops(signed int *h1, signed int *k1, signed int *l1,
 }
 
 
-static void expand_all_ops(signed int *hs, signed int *ks, signed int *ls,
-                           int skip, SymOpList *s, SymOpList *expanded)
+static void combine_and_add_symop(struct sym_op *opi, int oi,
+                                  struct sym_op *opj,
+                                  SymOpList *s)
 {
-	int i, n;
+	int i;
+	signed int *h, *k, *l;
 
-	n = num_ops(s);
+	h = malloc(3*sizeof(signed int));
+	k = malloc(3*sizeof(signed int));
+	l = malloc(3*sizeof(signed int));
+	assert(h != NULL);
+	assert(k != NULL);
+	assert(l != NULL);
 
-	for ( i=0; i<n; i++ ) {
+	memcpy(h, opj->h, 3*sizeof(signed int));
+	memcpy(k, opj->k, 3*sizeof(signed int));
+	memcpy(l, opj->l, 3*sizeof(signed int));
 
-		int oi;
-		struct sym_op *opi = &s->ops[i];
+	for ( i=0; i<oi; i++ ) {
 
-		for ( oi=0; oi<opi->order; oi++ ) {
+		signed int hfs[3], kfs[3], lfs[3];
 
-			int oi_it;
-			signed int *h_ordered, *k_ordered, *l_ordered;
+		combine_ops(h, k, l, opi->h, opi->k, opi->l, hfs, kfs, lfs);
 
-			h_ordered = malloc(3*sizeof(signed int));
-			k_ordered = malloc(3*sizeof(signed int));
-			l_ordered = malloc(3*sizeof(signed int));
-			assert(h_ordered != NULL);
-			assert(k_ordered != NULL);
-			assert(l_ordered != NULL);
-
-			memcpy(h_ordered, hs, 3*sizeof(signed int));
-			memcpy(k_ordered, ks, 3*sizeof(signed int));
-			memcpy(l_ordered, ls, 3*sizeof(signed int));
-
-			/* Apply "opi" this number of times */
-			for ( oi_it=0; oi_it<oi; oi_it++ ) {
-
-				signed int hfs[3], kfs[3], lfs[3];
-
-				combine_ops(h_ordered, k_ordered, l_ordered,
-				            opi->h, opi->k, opi->l,
-				            hfs, kfs, lfs);
-
-				if ( i != skip ) {
-
-					memcpy(h_ordered, hfs,
-					       3*sizeof(signed int));
-					memcpy(k_ordered, kfs,
-					       3*sizeof(signed int));
-					memcpy(l_ordered, lfs,
-					       3*sizeof(signed int));
-
-				}
-			}
-
-			STATUS("i=%i, oi=%i\n", i, oi);
-			STATUS("Creating %3i %3i %3i\n", h_ordered[0],
-			                                 h_ordered[1],
-			                                 h_ordered[2]);
-			STATUS("         %3i %3i %3i\n", k_ordered[0],
-			                                 k_ordered[1],
-			                                 k_ordered[2]);
-			STATUS("         %3i %3i %3i\n", l_ordered[0],
-			                                 l_ordered[1],
-			                                 l_ordered[2]);
-			STATUS("\n");
-			add_symop(expanded, h_ordered, k_ordered, l_ordered, 1);
-
-		}
+		memcpy(h, hfs, 3*sizeof(signed int));
+		memcpy(k, kfs, 3*sizeof(signed int));
+		memcpy(l, lfs, 3*sizeof(signed int));
 
 	}
+
+//	STATUS("Creating %3i %3i %3i\n", h[0], h[1], h[2]);
+//	STATUS("         %3i %3i %3i\n", k[0], k[1], k[2]);
+//	STATUS("         %3i %3i %3i\n", l[0], l[1], l[2]);
+
+	add_symop(s, h, k, l, 1);
 }
 
 
@@ -308,47 +278,29 @@ static void expand_all_ops(signed int *hs, signed int *ks, signed int *ls,
 static SymOpList *expand_ops(SymOpList *s)
 {
 	int n, i;
-	SymOpList *expanded;
+	SymOpList *e;
+
+	e = new_symoplist();
+	if ( e == NULL ) return NULL;
+	e->name = strdup(symmetry_name(s));
+
+	add_symop(e, v(1,0,0,0), v(0,1,0,0), v(0,0,0,1), 1);  /* I */
 
 	n = num_ops(s);
-	expanded = new_symoplist();
-	if ( expanded == NULL ) return NULL;
-	expanded->name = strdup(symmetry_name(s));
-	STATUS("%i ops to expand.\n", n);
-
 	for ( i=0; i<n; i++ ) {
 
-		int oi;
+		int j, nj;
 		struct sym_op *opi = &s->ops[i];
-		STATUS("Op %i, order=%i\n", i, opi->order);
 
-		for ( oi=0; oi<opi->order; oi++ ) {
+		/* Apply op 'i' to all the current ops in the list */
+		nj = num_ops(e);
+		for ( j=0; j<nj; j++ ) {
 
-			int oi_it;
-			signed int h_ordered[3], k_ordered[3], l_ordered[3];
+			int oi;
 
-			h_ordered[0] = 1;  h_ordered[1] = 0;  h_ordered[2] = 0;
-			k_ordered[0] = 0;  k_ordered[1] = 1;  k_ordered[2] = 0;
-			l_ordered[0] = 0;  l_ordered[1] = 0;  l_ordered[2] = 1;
-
-			/* Apply "opi" this number of times */
-			for ( oi_it=0; oi_it<oi; oi_it++ ) {
-
-				signed int hfs[3], kfs[3], lfs[3];
-
-				combine_ops(h_ordered, k_ordered, l_ordered,
-				            opi->h, opi->k, opi->l,
-				            hfs, kfs, lfs);
-
-				memcpy(h_ordered, hfs, 3*sizeof(signed int));
-				memcpy(k_ordered, kfs, 3*sizeof(signed int));
-				memcpy(l_ordered, lfs, 3*sizeof(signed int));
-
+			for ( oi=0; oi<opi->order-1; oi++ ) {
+				combine_and_add_symop(opi, oi+1, &e->ops[j], e);
 			}
-
-			STATUS("Upper: i=%i, oi=%i\n", i, oi);
-			expand_all_ops(h_ordered, k_ordered, l_ordered, i,
-			               s, expanded);
 
 		}
 
@@ -356,7 +308,7 @@ static SymOpList *expand_ops(SymOpList *s)
 
 	free_symoplist(s);
 
-	return expanded;
+	return e;
 }
 
 
@@ -365,7 +317,7 @@ static SymOpList *expand_ops(SymOpList *s)
 static SymOpList *make_1bar()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,1), 2);  /* -I */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1), 2);  /* -I */
 	new->name = strdup("-1");
 	return expand_ops(new);
 }
@@ -374,7 +326,6 @@ static SymOpList *make_1bar()
 static SymOpList *make_1()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,1), 1);  /* I */
 	new->name = strdup("1");
 	return expand_ops(new);
 }
