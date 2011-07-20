@@ -318,6 +318,9 @@ static unsigned int process_hkl(struct image *image, const SymOpList *sym,
 	int h, k, l, redundancy;
 	double q, intensity;
 	unsigned int nref;
+	SymOpMask *m;
+
+	m = new_symopmask(sym);
 
 	nref = num_reflections(image->reflections);
 
@@ -330,9 +333,8 @@ static unsigned int process_hkl(struct image *image, const SymOpList *sym,
 		if ( use_redundancy ) {
 			redundancy = get_redundancy(refl);
 		} else {
-			SymOpList *sp = special_position(sym, h, k, l);
-			redundancy = num_equivs(sp);
-			free_symoplist(sp);
+			special_position(sym, m, h, k, l);
+			redundancy = num_equivs(sym, m);
 		}
 
 		/* Multiply by 2 to get 1/d (in m^-1) */
@@ -347,6 +349,8 @@ static unsigned int process_hkl(struct image *image, const SymOpList *sym,
 		progress_bar(i, nref, "Processing");
 
 	}
+
+	free_symopmask(m);
 
 	return n_peaks;
 }

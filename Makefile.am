@@ -9,11 +9,12 @@ bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
                contrib/alter_stream
 
 noinst_PROGRAMS = tests/list_check tests/integration_check \
-                  tests/pr_gradient_check
+                  tests/pr_gradient_check tests/symmetry_check
 
 TESTS = tests/list_check tests/first_merge_check tests/second_merge_check \
         tests/third_merge_check tests/fourth_merge_check \
-        tests/integration_check tests/pr_gradient_check
+        tests/integration_check tests/pr_gradient_check \
+        tests/symmetry_check
 
 EXTRA_DIST += tests/first_merge_check tests/second_merge_check \
               tests/third_merge_check tests/fourth_merge_check \
@@ -145,6 +146,10 @@ tests_integration_check_SOURCES = tests/integration_check.c src/peaks.c \
                                   src/reflist.c src/cell.c src/detector.c \
                                   src/thread-pool.c src/utils.c src/image.c \
                                   src/hdf5-file.c
+
+tests_symmetry_check_SOURCES = tests/symmetry_check.c src/symmetry.c \
+                               src/utils.c src/thread-pool.c
+
 
 tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c src/detector.c \
                                   src/cell.c src/geometry.c src/reflist.c \

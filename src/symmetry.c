@@ -37,19 +37,6 @@
  */
 
 
-enum lattice_type
-{
-	L_TRICLINIC,
-	L_MONOCLINIC,
-	L_ORTHORHOMBIC,
-	L_TETRAGONAL,
-	L_RHOMBOHEDRAL,
-	L_TRIGONAL,
-	L_HEXAGONAL,
-	L_CUBIC,
-};
-
-
 struct sym_op
 {
 	signed int *h;
@@ -84,11 +71,47 @@ struct _symoplist
 };
 
 
+struct _symopmask
+{
+	const SymOpList *list;
+	int *mask;
+};
+
+
 
 static void alloc_ops(SymOpList *ops)
 {
 	ops->ops = realloc(ops->ops, ops->max_ops*sizeof(struct sym_op));
 	ops->divisors = realloc(ops->divisors, ops->max_ops*sizeof(int));
+}
+
+
+/**
+ * new_symopmask:
+ *
+ * Returns: a new %SymOpMask, which you can use when filtering out special
+ * reflections.
+ **/
+SymOpMask *new_symopmask(const SymOpList *list)
+{
+	SymOpMask *m;
+	int i;
+
+	m = malloc(sizeof(struct _symopmask));
+	if ( m == NULL ) return NULL;
+
+	m->list = list;
+	m->mask = malloc(sizeof(int)*list->n_ops);
+	if ( m->mask == NULL ) {
+		free(m);
+		return NULL;
+	}
+
+	for ( i=0; i<list->n_ops; i++ ) {
+		m->mask[i] = 1;
+	}
+
+	return m;
 }
 
 
@@ -101,6 +124,7 @@ static SymOpList *new_symoplist()
 	new->max_ops = 16;
 	new->n_ops = 0;
 	new->ops = NULL;
+	new->divisors = NULL;
 	new->name = NULL;
 	new->num_equivs = 1;
 	alloc_ops(new);
@@ -128,88 +152,33 @@ void free_symoplist(SymOpList *ops)
 	free(ops);
 }
 
-
-static int is_identity(signed int *h, signed int *k, signed int *l)
+/**
+ * free_symopmask:
+ *
+ * Frees a %SymOpMask and all associated resources.
+ **/
+void free_symopmask(SymOpMask *m)
 {
-	if ( (h[0]!=1) || (h[1]!=0) || (h[2]!=0) ) return 0;
-	if ( (k[0]!=0) || (k[1]!=1) || (k[2]!=0) ) return 0;
-	if ( (l[0]!=0) || (l[1]!=0) || (l[2]!=1) ) return 0;
-	return 1;
+	if ( m == NULL ) return;
+	free(m->mask);
+	free(m);
 }
 
 
-/* Calculate the order of the operation "M", which is the lowest
- * integer n such that M^n = I. */
-static int order_of_op(signed int *hin, signed int *kin, signed int *lin)
-{
-	int n;
-	signed int h[3];
-	signed int k[3];
-	signed int l[3];
-
-	memcpy(h, hin, 3*sizeof(signed int));
-	memcpy(k, kin, 3*sizeof(signed int));
-	memcpy(l, lin, 3*sizeof(signed int));
-
-	for ( n=1; n<6; n++ ) {
-
-		signed int hnew[3];
-		signed int knew[3];
-		signed int lnew[3];
-
-		/* Yay matrices */
-		hnew[0] = h[0]*h[0] + h[1]*k[0] + h[2]*l[0];
-		hnew[1] = h[0]*h[1] + h[1]*k[1] + h[2]*l[1];
-		hnew[2] = h[0]*h[2] + h[1]*k[2] + h[2]*l[2];
-
-		knew[0] = k[0]*h[0] + k[1]*k[0] + k[2]*l[0];
-		knew[1] = k[0]*h[1] + k[1]*k[1] + k[2]*l[1];
-		knew[2] = k[0]*h[2] + k[1]*k[2] + k[2]*l[2];
-
-		lnew[0] = l[0]*h[0] + l[1]*k[0] + l[2]*l[0];
-		lnew[1] = l[0]*h[1] + l[1]*k[1] + l[2]*l[1];
-		lnew[2] = l[0]*h[2] + l[1]*k[2] + l[2]*l[2];
-
-		if ( is_identity(hnew, knew, lnew) ) break;
-
-		memcpy(h, hnew, 3*sizeof(signed int));
-		memcpy(k, knew, 3*sizeof(signed int));
-		memcpy(l, lnew, 3*sizeof(signed int));
-
-	}
-
-	return n+1;
-}
-
-
-/* This returns the number of operations in "ops".  To get the number of
- * symmetric equivalents this generates, use num_equivs() instead. */
+/* This returns the number of operations in "ops".  This might be different
+ * to num_equivs() if the point group is being constructed. */
 static int num_ops(const SymOpList *ops)
 {
 	return ops->n_ops;
 }
 
 
-static void update_num_equivs(SymOpList *ops)
-{
-	int i, n, tot;
-
-	n = num_ops(ops);
-	tot = 1;
-
-	for ( i=0; i<n; i++ ) {
-		tot *= ops->ops[i].order;
-	}
-
-	ops->num_equivs = tot;
-}
-
-
 /* Add a operation to a SymOpList */
 static void add_symop(SymOpList *ops,
-                      signed int *h, signed int *k, signed int *l)
+                      signed int *h, signed int *k, signed int *l,
+                      int order)
 {
-	int n, i;
+	int n;
 
 	if ( ops->n_ops == ops->max_ops ) {
 		/* Pretty sure this never happens, but still... */
@@ -221,27 +190,7 @@ static void add_symop(SymOpList *ops,
 	ops->ops[n].h = h;
 	ops->ops[n].k = k;
 	ops->ops[n].l = l;
-	ops->ops[n].order = order_of_op(h, k, l);
-	ops->n_ops++;
-
-	ops->divisors[0] = 1;
-	for ( i=1; i<ops->n_ops; i++ ) {
-		ops->divisors[i] = ops->divisors[i-1]*ops->ops[i].order;
-	}
-
-	update_num_equivs(ops);
-}
-
-
-static void add_copied_symop(SymOpList *ops, struct sym_op *copyme)
-{
-	if ( ops->n_ops == ops->max_ops ) {
-		/* Pretty sure this never happens, but still... */
-		ops->max_ops += 16;
-		alloc_ops(ops);
-	}
-
-	memcpy(&ops->ops[ops->n_ops], copyme, sizeof(*copyme));
+	ops->ops[n].order = order;
 	ops->n_ops++;
 }
 
@@ -252,9 +201,9 @@ static void add_copied_symop(SymOpList *ops, struct sym_op *copyme)
  * Returns: the number of equivalent reflections for a general reflection
  * in point group "ops".
  **/
-int num_equivs(const SymOpList *ops)
+int num_equivs(const SymOpList *ops, const SymOpMask *m)
 {
-	return ops->num_equivs;
+	return num_ops(ops);
 }
 
 
@@ -267,22 +216,167 @@ static signed int *v(signed int h, signed int k, signed int i, signed int l)
 }
 
 
+static void combine_ops(signed int *h1, signed int *k1, signed int *l1,
+                        signed int *h2, signed int *k2, signed int *l2,
+                        signed int *hnew, signed int *knew, signed int *lnew)
+{
+	/* Yay matrices */
+	hnew[0] = h1[0]*h2[0] + h1[1]*k2[0] + h1[2]*l2[0];
+	hnew[1] = h1[0]*h2[1] + h1[1]*k2[1] + h1[2]*l2[1];
+	hnew[2] = h1[0]*h2[2] + h1[1]*k2[2] + h1[2]*l2[2];
+
+	knew[0] = k1[0]*h2[0] + k1[1]*k2[0] + k1[2]*l2[0];
+	knew[1] = k1[0]*h2[1] + k1[1]*k2[1] + k1[2]*l2[1];
+	knew[2] = k1[0]*h2[2] + k1[1]*k2[2] + k1[2]*l2[2];
+
+	lnew[0] = l1[0]*h2[0] + l1[1]*k2[0] + l1[2]*l2[0];
+	lnew[1] = l1[0]*h2[1] + l1[1]*k2[1] + l1[2]*l2[1];
+	lnew[2] = l1[0]*h2[2] + l1[1]*k2[2] + l1[2]*l2[2];
+}
+
+
+static void expand_all_ops(signed int *hs, signed int *ks, signed int *ls,
+                           int skip, SymOpList *s, SymOpList *expanded)
+{
+	int i, n;
+
+	n = num_ops(s);
+
+	for ( i=0; i<n; i++ ) {
+
+		int oi;
+		struct sym_op *opi = &s->ops[i];
+
+		for ( oi=0; oi<opi->order; oi++ ) {
+
+			int oi_it;
+			signed int *h_ordered, *k_ordered, *l_ordered;
+
+			h_ordered = malloc(3*sizeof(signed int));
+			k_ordered = malloc(3*sizeof(signed int));
+			l_ordered = malloc(3*sizeof(signed int));
+			assert(h_ordered != NULL);
+			assert(k_ordered != NULL);
+			assert(l_ordered != NULL);
+
+			memcpy(h_ordered, hs, 3*sizeof(signed int));
+			memcpy(k_ordered, ks, 3*sizeof(signed int));
+			memcpy(l_ordered, ls, 3*sizeof(signed int));
+
+			/* Apply "opi" this number of times */
+			for ( oi_it=0; oi_it<oi; oi_it++ ) {
+
+				signed int hfs[3], kfs[3], lfs[3];
+
+				combine_ops(h_ordered, k_ordered, l_ordered,
+				            opi->h, opi->k, opi->l,
+				            hfs, kfs, lfs);
+
+				if ( i != skip ) {
+
+					memcpy(h_ordered, hfs,
+					       3*sizeof(signed int));
+					memcpy(k_ordered, kfs,
+					       3*sizeof(signed int));
+					memcpy(l_ordered, lfs,
+					       3*sizeof(signed int));
+
+				}
+			}
+
+			STATUS("i=%i, oi=%i\n", i, oi);
+			STATUS("Creating %3i %3i %3i\n", h_ordered[0],
+			                                 h_ordered[1],
+			                                 h_ordered[2]);
+			STATUS("         %3i %3i %3i\n", k_ordered[0],
+			                                 k_ordered[1],
+			                                 k_ordered[2]);
+			STATUS("         %3i %3i %3i\n", l_ordered[0],
+			                                 l_ordered[1],
+			                                 l_ordered[2]);
+			STATUS("\n");
+			add_symop(expanded, h_ordered, k_ordered, l_ordered, 1);
+
+		}
+
+	}
+}
+
+
+/* Fill in the other operations for a point group starting from its
+ * generators */
+static SymOpList *expand_ops(SymOpList *s)
+{
+	int n, i;
+	SymOpList *expanded;
+
+	n = num_ops(s);
+	expanded = new_symoplist();
+	if ( expanded == NULL ) return NULL;
+	expanded->name = strdup(symmetry_name(s));
+	STATUS("%i ops to expand.\n", n);
+
+	for ( i=0; i<n; i++ ) {
+
+		int oi;
+		struct sym_op *opi = &s->ops[i];
+		STATUS("Op %i, order=%i\n", i, opi->order);
+
+		for ( oi=0; oi<opi->order; oi++ ) {
+
+			int oi_it;
+			signed int h_ordered[3], k_ordered[3], l_ordered[3];
+
+			h_ordered[0] = 1;  h_ordered[1] = 0;  h_ordered[2] = 0;
+			k_ordered[0] = 0;  k_ordered[1] = 1;  k_ordered[2] = 0;
+			l_ordered[0] = 0;  l_ordered[1] = 0;  l_ordered[2] = 1;
+
+			/* Apply "opi" this number of times */
+			for ( oi_it=0; oi_it<oi; oi_it++ ) {
+
+				signed int hfs[3], kfs[3], lfs[3];
+
+				combine_ops(h_ordered, k_ordered, l_ordered,
+				            opi->h, opi->k, opi->l,
+				            hfs, kfs, lfs);
+
+				memcpy(h_ordered, hfs, 3*sizeof(signed int));
+				memcpy(k_ordered, kfs, 3*sizeof(signed int));
+				memcpy(l_ordered, lfs, 3*sizeof(signed int));
+
+			}
+
+			STATUS("Upper: i=%i, oi=%i\n", i, oi);
+			expand_all_ops(h_ordered, k_ordered, l_ordered, i,
+			               s, expanded);
+
+		}
+
+	}
+
+	free_symoplist(s);
+
+	return expanded;
+}
+
+
 /********************************* Triclinic **********************************/
 
 static SymOpList *make_1bar()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1));  /* -I */
+	add_symop(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,1), 2);  /* -I */
 	new->name = strdup("-1");
-	return new;
+	return expand_ops(new);
 }
 
 
 static SymOpList *make_1()
 {
 	SymOpList *new = new_symoplist();
+	add_symop(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,1), 1);  /* I */
 	new->name = strdup("1");
-	return new;
+	return expand_ops(new);
 }
 
 
@@ -291,28 +385,28 @@ static SymOpList *make_1()
 static SymOpList *make_2m()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 */
-	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 */
+	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2);  /* m */
 	new->name = strdup("2/m");
-	return new;
+	return expand_ops(new);
 }
 
 
 static SymOpList *make_2()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 */
 	new->name = strdup("2");
-	return new;
+	return expand_ops(new);
 }
 
 
 static SymOpList *make_m()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m */
+	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2);  /* m */
 	new->name = strdup("m");
-	return new;
+	return expand_ops(new);
 }
 
 
@@ -321,31 +415,31 @@ static SymOpList *make_m()
 static SymOpList *make_mmm()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 */
-	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 */
-	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* 2 */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 */
+	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2);  /* m */
 	new->name = strdup("mmm");
-	return new;
+	return expand_ops(new);
 }
 
 
 static SymOpList *make_222()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 */
-	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* 2 */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 */
 	new->name = strdup("222");
-	return new;
+	return expand_ops(new);
 }
 
 
 static SymOpList *make_mm2()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 */
-	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* 2 */
+	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2);  /* m */
 	new->name = strdup("mm2");
-	return new;
+	return expand_ops(new);
 }
 
 
@@ -360,7 +454,7 @@ static SymOpList *make_4m()
 static SymOpList *make_4()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1)); /* 4 */
+	add_symop(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1), 4); /* 4 */
 	return NULL;
 }
 
@@ -488,8 +582,8 @@ static void do_op(const struct sym_op *op,
                   signed int *he, signed int *ke, signed int *le)
 {
 	*he = h*op->h[0] + k*op->h[1] + l*op->h[2];
-	*ke = h*op->k[0] + k*op->h[1] + l*op->k[2];
-	*le = h*op->l[0] + k*op->h[1] + l*op->l[2];
+	*ke = h*op->k[0] + k*op->k[1] + l*op->k[2];
+	*le = h*op->l[0] + k*op->l[1] + l*op->l[2];
 }
 
 
@@ -513,37 +607,31 @@ static void do_op(const struct sym_op *op,
  * given reflection is a special high-symmetry one), call special_position()
  * first to get a "specialised" SymOpList and use that instead.
  **/
-void get_equiv(const SymOpList *ops, int idx,
+void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
                signed int h, signed int k, signed int l,
                signed int *he, signed int *ke, signed int *le)
 {
-	int sig[32];
-	int i, n, r;
+	int i, n;
 
 	n = num_ops(ops);
-	r = idx;
-	for ( i=n-1; i>=0; i-- ) {
-		sig[i] = r / ops->divisors[i];
-		r = r % ops->divisors[i];
-		assert(sig[i] < ops->ops[i].order);
-	}
-
-	for ( i=0; i<n; i++ ) {
-
-		int s;
-
-		/* Do this operation "sig[i]" times */
-		for ( s=0; s<sig[i]; s++ ) {
-			do_op(&ops->ops[i], h, k, l, &h, &k, &l);
+	for ( i=idx; i<n; i++ ) {
+		if ( (m == NULL) || m->mask[i] ) {
+			do_op(&ops->ops[i], h, k, l, he, ke, le);
+			return;
 		}
-
 	}
+
+	ERROR("Index %i out of range for point group '%s'\n", idx,
+	      symmetry_name(ops));
+
+	*he = 0;  *ke = 0;  *le = 0;
 }
 
 
 /**
  * special_position:
  * @ops: A %SymOpList, usually corresponding to a point group
+ * @m: A %SymOpMask created with new_symopmask()
  * @h: index of a reflection
  * @k: index of a reflection
  * @l: index of a reflection
@@ -554,26 +642,47 @@ void get_equiv(const SymOpList *ops, int idx,
  *
  * Returns: the "specialised" %SymOpList.
  **/
-SymOpList *special_position(const SymOpList *ops,
-                            signed int h, signed int k, signed int l)
+void special_position(const SymOpList *ops, SymOpMask *m,
+                      signed int h, signed int k, signed int l)
 {
 	int i, n;
-	SymOpList *specialised;
+	signed int *htest;
+	signed int *ktest;
+	signed int *ltest;
 
-	n = num_ops(ops);
-	specialised = new_symoplist();
+	assert(m->list = ops);
+
+	n = num_equivs(ops, NULL);
+	htest = malloc(n*sizeof(signed int));
+	ktest = malloc(n*sizeof(signed int));
+	ltest = malloc(n*sizeof(signed int));
 
 	for ( i=0; i<n; i++ ) {
 
-		signed int ht, kt, lt;
+		signed int he, ke, le;
+		int j;
 
-		do_op(&ops->ops[i], h, k, l, &ht, &kt, &lt);
-		if ( (h==ht) || (k==kt) || (l==lt) ) continue;
-		add_copied_symop(specialised, &ops->ops[i]);
+		get_equiv(ops, NULL, i, h, k, l, &he, &ke, &le);
+
+		m->mask[i] = 1;
+		for ( j=0; j<i; j++ ) {
+			if ( (he==htest[j]) && (ke==ktest[j])
+			  && (le==ltest[j]) )
+			{
+				m->mask[i] = 0;
+				break;  /* Only need to find one */
+			}
+		}
+
+		htest[i] = he;
+		ktest[i] = ke;
+		ltest[i] = le;
 
 	}
 
-	return specialised;
+	free(htest);
+	free(ktest);
+	free(ltest);
 }
 
 
@@ -585,12 +694,12 @@ void get_asymm(const SymOpList *ops,
 	int p;
 	signed int best_h, best_k, best_l;
 
-	nequiv = num_equivs(ops);
+	nequiv = num_equivs(ops, NULL);
 
 	best_h = h;  best_k = k;  best_l = l;
 	for ( p=0; p<nequiv; p++ ) {
 
-		get_equiv(ops, p, h, k, l, hp, kp, lp);
+		get_equiv(ops, NULL, p, h, k, l, hp, kp, lp);
 
 		if ( h > best_h ) {
 			best_h = h;  best_k = k;  best_l = l;

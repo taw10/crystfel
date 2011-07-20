@@ -42,6 +42,7 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 	int i;
 	Reflection *refl;
 	RefListIterator *iter;
+	SymOpMask *m;
 
 	if ( (nproc > MAX_PROC) || (nproc < 1) ) {
 		ERROR("Number of processes must be a number between 1 and %i\n",
@@ -167,6 +168,8 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 
 	fprintf(fh, "}\n");
 
+	m = new_symopmask(sym);
+
 	max = 0.0;
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -174,10 +177,9 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 
 		float val;
 		signed int h, k, l;
-		SymOpList *sp;
 
 		get_indices(refl, &h, &k, &l);
-		sp = special_position(sym, h, k, l);
+		special_position(sym, m, h, k, l);
 
 		switch ( wght ) {
 		case WGHT_I :
@@ -189,7 +191,7 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 			break;
 		case WGHT_COUNTS :
 			val = get_redundancy(refl);
-			val /= (double)num_equivs(sp);
+			val /= (double)num_equivs(sym, m);
 			break;
 		case WGHT_RAWCOUNTS :
 			val = get_redundancy(refl);
@@ -201,8 +203,6 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 
 		if ( val > max ) max = val;
 
-		free_symoplist(sp);
-
 	}
 	max /= boost;
 
@@ -210,7 +210,6 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 	if ( scale_top > 0.0 ) {
 		max = scale_top;
 	}
-
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -220,12 +219,11 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 		int s;
 		float val, p, r, g, b, trans;
 		int j;
-		SymOpList *sp;
 		int neq;
 
 		get_indices(refl, &h, &k, &l);
-		sp = special_position(sym, h, k, l);
-		neq = num_equivs(sp);
+		special_position(sym, m, h, k, l);
+		neq = num_equivs(sym, m);
 
 		switch ( wght ) {
 		case WGHT_I :
@@ -294,7 +292,7 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 			signed int he, ke, le;
 			float x, y, z;
 
-			get_equiv(sp, j, h, k, l, &he, &ke, &le);
+			get_equiv(sym, m, j, h, k, l, &he, &ke, &le);
 
 			x = asx*he + bsx*ke + csx*le;
 			y = asy*he + bsy*ke + csy*le;
@@ -311,9 +309,9 @@ int povray_render_animation(UnitCell *cell, RefList *list, unsigned int nproc,
 
 		}
 
-		free_symoplist(sp);
-
 	}
+
+	free_symopmask(m);
 
 	fprintf(fh, "\n");
 	fclose(fh);

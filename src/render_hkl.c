@@ -96,11 +96,14 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 {
 	Reflection *refl;
 	RefListIterator *iter;
+	SymOpMask *m;
 
 	if ( dctx == NULL ) {
 		*max_u = 0.0;  *max_v = 0.0;  *max_val = 0.0;
 		*max_res = 0.0;  *max_ux = 0;  *max_uy = 0;
 	}
+
+	m = new_symopmask(sym);
 
 	/* Iterate over all reflections */
 	for ( refl = first_refl(list, &iter);
@@ -111,18 +114,17 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 		signed int ha, ka, la;
 		int xi, yi;
 		int i, n;
-		SymOpList *sp;
 
 		get_indices(refl, &ha, &ka, &la);
 
-		sp = special_position(sym, ha, ka, la);
-		n = num_equivs(sp);
+		special_position(sym, m, ha, ka, la);
+		n = num_equivs(sym, m);
 
 		for ( i=0; i<n; i++ ) {
 
 			signed int h, k, l;
 
-			get_equiv(sp, i, ha, ka, la, &h, &k, &l);
+			get_equiv(sym, m, i, ha, ka, la, &h, &k, &l);
 
 			/* Is the reflection in the zone? */
 			if ( h*zh + k*zk + l*zl != 0 ) continue;
@@ -194,9 +196,9 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 
 		}
 
-		free_symoplist(sp);
-
 	}
+
+	free_symopmask(m);
 }
 
 

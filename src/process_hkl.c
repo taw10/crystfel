@@ -521,6 +521,7 @@ int main(int argc, char *argv[])
 
 	if ( sym_str == NULL ) sym_str = strdup("1");
 	sym = get_pointgroup(sym_str);
+	STATUS("%s -> %p\n", sym_str, sym);
 	free(sym_str);
 
 	/* Open the data stream */
@@ -553,7 +554,7 @@ int main(int argc, char *argv[])
 			ERROR("Invalid indices for '--histogram'\n");
 			return 1;
 		}
-		space_for_hist = n_total_patterns * num_equivs(sym);
+		space_for_hist = n_total_patterns * num_equivs(sym, NULL);
 		hist_vals = malloc(space_for_hist * sizeof(double));
 		free(histo);
 		STATUS("Histogramming %i %i %i -> ", hist_h, hist_k, hist_l);

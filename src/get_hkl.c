@@ -146,15 +146,17 @@ static RefList *twin_reflections(RefList *in,
 	Reflection *refl;
 	RefListIterator *iter;
 	RefList *out;
+	SymOpMask *m;
 
 	/* FIXME: Check properly by coset decomposition */
-	if ( num_equivs(holo) < num_equivs(mero) ) {
+	if ( num_equivs(holo, NULL) < num_equivs(mero, NULL) ) {
 		ERROR("%s is not a subgroup of %s!\n", symmetry_name(mero),
 		                                       symmetry_name(holo));
 		return NULL;
 	}
 
 	out = reflist_new();
+	m = new_symopmask(holo);
 
 	for ( refl = first_refl(in, &iter);
 	      refl != NULL;
@@ -178,13 +180,15 @@ static RefList *twin_reflections(RefList *in,
 		total = 0.0;
 		sigma = 0.0;
 		skip = 0;
-		n = num_equivs(holo);
+		special_position(holo, m, h, k, l);
+		n = num_equivs(holo, m);
+
 		for ( j=0; j<n; j++ ) {
 
 			signed int he, ke, le;
 			signed int hu, ku, lu;
 
-			get_equiv(holo, j, h, k, l, &he, &ke, &le);
+			get_equiv(holo, m, j, h, k, l, &he, &ke, &le);
 
 			/* Do we have this reflection?
 			 * We might not have the particular (merohedral)
@@ -229,15 +233,17 @@ static RefList *expand_reflections(RefList *in, const SymOpList *target,
 	Reflection *refl;
 	RefListIterator *iter;
 	RefList *out;
+	SymOpMask *m;
 
 	/* FIXME: Check properly */
-	if ( num_equivs(target) > num_equivs(initial) ) {
+	if ( num_equivs(target, NULL) > num_equivs(initial, NULL) ) {
 		ERROR("%s is not a subgroup of %s!\n", symmetry_name(initial),
 		                                       symmetry_name(target));
 		return NULL;
 	}
 
 	out = reflist_new();
+	m = new_symopmask(initial);
 
 	for ( refl = first_refl(in, &iter);
 	      refl != NULL;
@@ -250,7 +256,8 @@ static RefList *expand_reflections(RefList *in, const SymOpList *target,
 		get_indices(refl, &h, &k, &l);
 		intensity = get_intensity(refl);
 
-		n = num_equivs(initial);
+		special_position(initial, m, h, k, l);
+		n = num_equivs(initial, m);
 
 		/* For each equivalent in the higher symmetry group */
 		for ( j=0; j<n; j++ ) {
@@ -259,7 +266,7 @@ static RefList *expand_reflections(RefList *in, const SymOpList *target,
 			Reflection *new;
 
 			/* Get the equivalent */
-			get_equiv(initial, j, h, k, l, &he, &ke, &le);
+			get_equiv(initial, m, j, h, k, l, &he, &ke, &le);
 
 			/* Put it into the asymmetric unit for the target */
 			get_asymm(target, he, ke, le, &he, &ke, &le);
@@ -271,6 +278,8 @@ static RefList *expand_reflections(RefList *in, const SymOpList *target,
 		}
 
 	}
+
+	free_symopmask(m);
 
 	return out;
 }
@@ -460,6 +469,9 @@ int main(int argc, char *argv[])
 
 		Reflection *refl;
 		RefListIterator *iter;
+		SymOpMask *m;
+
+		m = new_symopmask(mero);
 
 		for ( refl = first_refl(input, &iter);
 		      refl != NULL;
@@ -471,10 +483,13 @@ int main(int argc, char *argv[])
 			get_indices(refl, &h, &k, &l);
 			inty = get_intensity(refl);
 
-			inty *= (double)num_equivs(mero);
+			special_position(mero, m, h, k, l);
+			inty *= (double)num_equivs(mero, m);
 			set_int(refl, inty);
 
 		}
+
+		free_symopmask(m);
 	}
 
 	if ( template ) {

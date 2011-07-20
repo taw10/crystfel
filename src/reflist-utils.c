@@ -109,8 +109,14 @@ int check_list_symmetry(RefList *list, const SymOpList *sym)
 	unsigned char *flags;
 	Reflection *refl;
 	RefListIterator *iter;
+	SymOpMask *mask;
 
 	flags = flags_from_list(list);
+	mask = new_symopmask(sym);
+	if ( mask == NULL ) {
+		ERROR("Couldn't create mask for list symmetry check.\n");
+		return 1;
+	}
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -119,13 +125,19 @@ int check_list_symmetry(RefList *list, const SymOpList *sym)
 		int j;
 		int found = 0;
 		signed int h, k, l;
+		int n;
 
 		get_indices(refl, &h, &k, &l);
 
-		for ( j=0; j<num_equivs(sym); j++ ) {
+		special_position(sym, mask, h, k, l);
+		n = num_equivs(sym, mask);
+		STATUS("%i equivs: %3i %3i %3i\n", n, h, k, l);
+
+		for ( j=0; j<n; j++ ) {
 
 			signed int he, ke, le;
-			get_equiv(sym, j, h, k, l, &he, &ke, &le);
+			get_equiv(sym, mask, j, h, k, l, &he, &ke, &le);
+			STATUS("%3i: %3i %3i %3i\n", j, he, ke, le);
 
 			if ( abs(he) > INDMAX ) continue;
 			if ( abs(le) > INDMAX ) continue;
@@ -137,12 +149,15 @@ int check_list_symmetry(RefList *list, const SymOpList *sym)
 
 		if ( found > 1 ) {
 			free(flags);
+			free_symopmask(mask);
+			STATUS("Found %i %i %i twice\n", h, k, l);
 			return 1;  /* Symmetry is wrong! */
 		}
 
 	}
 
 	free(flags);
+	free_symopmask(mask);
 
 	return 0;
 }
@@ -155,11 +170,11 @@ int find_equiv_in_list(RefList *list, signed int h, signed int k,
 	int i;
 	int found = 0;
 
-	for ( i=0; i<num_equivs( sym); i++ ) {
+	for ( i=0; i<num_equivs(sym, NULL); i++ ) {
 
 		signed int he, ke, le;
 		Reflection *f;
-		get_equiv(sym, i, h, k, l, &he, &ke, &le);
+		get_equiv(sym, NULL, i, h, k, l, &he, &ke, &le);
 		f = find_refl(list, he, ke, le);
 
 		/* There must only be one equivalent.  If there are more, it
