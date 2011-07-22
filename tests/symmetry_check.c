@@ -65,6 +65,28 @@ static void check_pg_props(const char *pg, int answer, int centro, int *fail)
 }
 
 
+static void check_subgroup(const char *ssource, const char *starget,
+                           int *fail)
+{
+	SymOpList *source;
+	SymOpList *target;
+	SymOpList *twins;
+
+	source = get_pointgroup(ssource);
+	target = get_pointgroup(starget);
+	if ( (source == NULL) || (target == NULL) ) {
+		*fail = 1;
+		return;
+	}
+
+	twins = get_ambiguities(source, target);
+	describe_symmetry(twins);
+
+	free_symoplist(target);
+	free_symoplist(source);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int fail = 0;
@@ -126,6 +148,8 @@ int main(int argc, char *argv[])
 	check_pg_props( "-432",  24,  0, &fail);
 	check_pg_props( "m-3m",  48,  1, &fail);
 	STATUS("\n");
+
+	check_subgroup("2/m", "m", &fail);
 
 	return fail;
 }

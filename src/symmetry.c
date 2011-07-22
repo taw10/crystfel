@@ -198,6 +198,36 @@ static void add_symop(SymOpList *ops,
 }
 
 
+/* Add a operation to a SymOpList */
+static void add_copied_op(SymOpList *ops, struct sym_op *copyme)
+{
+	int n;
+	signed int *h, *k, *l;
+
+	if ( ops->n_ops == ops->max_ops ) {
+		ops->max_ops += 16;
+		alloc_ops(ops);
+	}
+
+	n = ops->n_ops;
+
+	h = malloc(3*sizeof(signed int));
+	k = malloc(3*sizeof(signed int));
+	l = malloc(3*sizeof(signed int));
+
+	memcpy(h, copyme->h, 3*sizeof(signed int));
+	memcpy(k, copyme->k, 3*sizeof(signed int));
+	memcpy(l, copyme->l, 3*sizeof(signed int));
+
+	ops->ops[n].h = h;
+	ops->ops[n].k = k;
+	ops->ops[n].l = l;
+	ops->ops[n].order = copyme->order;
+
+	ops->n_ops++;
+}
+
+
 /**
  * num_equivs:
  * @ops: A %SymOpList
@@ -974,6 +1004,33 @@ static int is_inversion(const struct sym_op *op)
 }
 
 
+static int is_identity(const struct sym_op *op)
+{
+	if ( (op->h[0]!=1) || (op->h[1]!=0) || (op->h[2]!=0) ) return 0;
+	if ( (op->k[0]!=0) || (op->k[1]!=1) || (op->k[2]!=0) ) return 0;
+	if ( (op->l[0]!=0) || (op->l[1]!=0) || (op->l[2]!=1) ) return 0;
+	return 1;
+}
+
+
+static signed int determinant(const struct sym_op *op)
+{
+	signed int det = 0;
+
+	det += op->h[0] * (op->k[1]*op->l[2] - op->k[2]*op->l[1]);
+	det -= op->h[1] * (op->k[0]*op->l[2] - op->k[2]*op->l[0]);
+	det += op->h[2] * (op->k[0]*op->l[1] - op->k[1]*op->l[0]);
+
+	return det;
+}
+
+
+/**
+ * is_centrosymmetric:
+ * @s: A %SymOpList
+ *
+ * Returns: non-zero if @s contains an inversion operation
+ */
 int is_centrosymmetric(const SymOpList *s)
 {
 	int i, n;
@@ -987,26 +1044,177 @@ int is_centrosymmetric(const SymOpList *s)
 }
 
 
+static int ops_equal(const struct sym_op *op,
+                     signed int *h, signed int *k, signed int *l)
+{
+	if ( (op->h[0]!=h[0]) || (op->h[1]!=h[1]) || (op->h[2]!=h[2]) )
+		return 0;
+	if ( (op->k[0]!=k[0]) || (op->k[1]!=k[1]) || (op->k[2]!=k[2]) )
+		return 0;
+	if ( (op->l[0]!=l[0]) || (op->l[1]!=l[1]) || (op->l[2]!=l[2]) )
+		return 0;
+	return 1;
+}
+
+
+/* Return true if a*b = ans */
+static int check_mult(const struct sym_op *ans,
+                      const struct sym_op *a, const struct sym_op *b)
+{
+	signed int *ans_h, *ans_k, *ans_l;
+	int val;
+
+	ans_h = malloc(3*sizeof(signed int));
+	ans_k = malloc(3*sizeof(signed int));
+	ans_l = malloc(3*sizeof(signed int));
+
+	combine_ops(a->h, a->k, a->l, b->h, b->k, b->l, ans_h, ans_k, ans_l);
+	val = ops_equal(ans, ans_h, ans_k, ans_l);
+
+	free(ans_h);
+	free(ans_k);
+	free(ans_l);
+
+	return val;
+}
+
+
 /**
- * get_twins:
- *
- * Calculate twinning laws.
- *
+ * get_ambiguities:
+ * @source: The "source" symmetry, a %SymOpList
+ * @target: The "target" symmetry, a %SymOpList
+
+ * Calculates twinning laws.  Returns a %SymOpList containing the twinning
+ * operators, which are the symmetry operations which can be added to @target
+ * to generate @source.  Only rotations are allowable - no mirrors nor
+ * inversions.
  * To count the number of possibilities, use num_ops() on the result.
+ *
+ * Returns: A %SymOpList containing the twinning operators
  */
-SymOpList *get_twins(const SymOpList *source, const SymOpList *target)
+SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target)
 {
 	int n_src, n_tgt;
 	int i;
-	SymOpList *twins = new_symoplist();
+	SymOpList *twins;
+	SymOpList *src_reordered;
+	SymOpMask *used;
+	char *name;
 
 	n_src = num_ops(source);
 	n_tgt = num_ops(target);
 
+	src_reordered = new_symoplist();
+	used = new_symopmask(source);
+
+	/* Find identity */
+	for ( i=0; i<n_src; i++ ) {
+		if ( used->mask[i] == 0 ) continue;
+		if ( is_identity(&source->ops[i]) ) {
+			add_copied_op(src_reordered, &source->ops[i]);
+			used->mask[i] = 0;
+		}
+	}
+
+	/* Find binary options (order=2) of first kind (determinant positive) */
+	for ( i=0; i<n_src; i++ ) {
+		if ( used->mask[i] == 0 ) continue;
+		if ( (source->ops[i].order == 2)
+		  && (determinant(&source->ops[i]) > 0) ) {
+			add_copied_op(src_reordered, &source->ops[i]);
+			used->mask[i] = 0;
+		}
+	}
+
+	/* Find other operations of first kind (determinant positive) */
+	for ( i=0; i<n_src; i++ ) {
+		if ( used->mask[i] == 0 ) continue;
+		if ( determinant(&source->ops[i]) > 0 ) {
+			add_copied_op(src_reordered, &source->ops[i]);
+			used->mask[i] = 0;
+		}
+	}
+
+	/* Find inversion */
+	for ( i=0; i<n_src; i++ ) {
+		if ( used->mask[i] == 0 ) continue;
+		if ( is_inversion(&source->ops[i]) ) {
+			add_copied_op(src_reordered, &source->ops[i]);
+			used->mask[i] = 0;
+		}
+	}
+
+	/* Find binary options of second kind (determinant negative) */
+	for ( i=0; i<n_src; i++ ) {
+		if ( used->mask[i] == 0 ) continue;
+		if ( (source->ops[i].order == 2)
+		  && (determinant(&source->ops[i]) < 0) ) {
+			add_copied_op(src_reordered, &source->ops[i]);
+			used->mask[i] = 0;
+		}
+	}
+
+	/* Find other operations of second kind (determinant negative) */
+	for ( i=0; i<n_src; i++ ) {
+		if ( used->mask[i] == 0 ) continue;
+		if ( determinant(&source->ops[i]) < 0 ) {
+			add_copied_op(src_reordered, &source->ops[i]);
+			used->mask[i] = 0;
+		}
+	}
+
+	int n_left_over = 0;
+	for ( i=0; i<n_src; i++ ) {
+		if ( used->mask[i] == 0 ) continue;
+		n_left_over++;
+	}
+	if ( n_left_over != 0 ) {
+		ERROR("%i operations left over after rearranging for"
+		      " left coset decomposition.\n", n_left_over);
+	}
+
+	if ( num_ops(src_reordered) != num_ops(source) ) {
+		ERROR("%i ops went to %i after rearranging.\n",
+		      num_ops(src_reordered), num_ops(source));
+	}
+
+	free_symopmask(used);
+	used = new_symopmask(src_reordered);
+
 	for ( i=0; i<n_src; i++ ) {
 
+		int j;
+		if ( used->mask[i] == 0 ) continue;
+
+		for ( j=1; j<n_tgt; j++ ) {
+
+			int k;
+			for ( k=i+1; k<n_src; k++ ) {
+				if ( check_mult(&src_reordered->ops[k],
+				                &src_reordered->ops[i],
+				                &target->ops[j]) )
+				{
+					used->mask[k] = 0;
+				}
+			}
+
+		}
 
 	}
+
+	twins = new_symoplist();
+	for ( i=0; i<n_src; i++ ) {
+		if ( used->mask[i] == 0 ) continue;
+		add_copied_op(twins, &src_reordered->ops[i]);
+	}
+
+	free_symopmask(used);
+	free_symoplist(src_reordered);
+
+	name = malloc(64);
+	snprintf(name, 63, "%s -> %s", symmetry_name(source),
+	                               symmetry_name(target));
+	twins->name = name;
 
 	return twins;
 }
