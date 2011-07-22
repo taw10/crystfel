@@ -150,6 +150,15 @@ int main(int argc, char *argv[])
 	STATUS("\n");
 
 	check_subgroup("2/m", "m", &fail);
+	check_subgroup("mmm", "mm2", &fail);
+	check_subgroup("-4m2", "-4", &fail);
+	check_subgroup("-42m", "-4", &fail);
+	check_subgroup("-3m1_H", "-3_H", &fail);
+	check_subgroup("-31m_H", "-3_H", &fail);
+	check_subgroup("6/mmm", "-3_H", &fail);
+	check_subgroup("-432", "m-3m", &fail);
+	check_subgroup("m-3", "m-3m", &fail);
+	check_subgroup("23", "432", &fail);
 
 	return fail;
 }
