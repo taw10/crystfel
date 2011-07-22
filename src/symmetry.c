@@ -336,8 +336,8 @@ static SymOpList *make_1()
 static SymOpList *make_2m()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 */
-	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2);  /* m */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 // k */
+	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2);  /* m -| k */
 	new->name = strdup("2/m");
 	return expand_ops(new);
 }
@@ -346,7 +346,7 @@ static SymOpList *make_2m()
 static SymOpList *make_2()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 // k */
 	new->name = strdup("2");
 	return expand_ops(new);
 }
@@ -355,7 +355,7 @@ static SymOpList *make_2()
 static SymOpList *make_m()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2);  /* m */
+	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2);  /* m -| k */
 	new->name = strdup("m");
 	return expand_ops(new);
 }
@@ -366,9 +366,9 @@ static SymOpList *make_m()
 static SymOpList *make_mmm()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* 2 */
-	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 */
-	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2);  /* m */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* 2 // l */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 // k */
+	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2);  /* m -| k */
 	new->name = strdup("mmm");
 	return expand_ops(new);
 }
@@ -377,8 +377,8 @@ static SymOpList *make_mmm()
 static SymOpList *make_222()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* 2 */
-	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* 2 // l */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 // k */
 	new->name = strdup("222");
 	return expand_ops(new);
 }
@@ -387,8 +387,8 @@ static SymOpList *make_222()
 static SymOpList *make_mm2()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* 2 */
-	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2);  /* m */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* 2 // l */
+	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2);  /* m -| k */
 	new->name = strdup("mm2");
 	return expand_ops(new);
 }
@@ -398,97 +398,357 @@ static SymOpList *make_mm2()
 
 static SymOpList *make_4m()
 {
-	return NULL;
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1), 4); /* 4 // l */
+	add_symop(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* m -| l */
+	new->name = strdup("4/m");
+	return expand_ops(new);
 }
 
 
 static SymOpList *make_4()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1), 4); /* 4 */
+	add_symop(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1), 4); /* 4 // l */
 	new->name = strdup("4");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_4mm()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1), 4); /* 4 // l */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,1), 2); /* m -| l */
+	new->name = strdup("4mmm");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_422()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1), 4);  /* 4 // l */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 // k */
+	new->name = strdup("422");
 	return expand_ops(new);
 }
 
 
 static SymOpList *make_4bar()
 {
-	return NULL;
-}
-
-
-static SymOpList *make_4mmm()
-{
-	return NULL;
-}
-
-
-static SymOpList *make_422()
-{
-	return NULL;
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,1,0,0), v(-1,0,0,0), v(0,0,0,-1), 4); /* -4 // l */
+	new->name = strdup("-4");
+	return expand_ops(new);
 }
 
 
 static SymOpList *make_4bar2m()
 {
-	return NULL;
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,1,0,0), v(-1,0,0,0), v(0,0,0,-1), 4); /* -4 // l */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 // k */
+	new->name = strdup("-42m");
+	return expand_ops(new);
 }
 
 
-static SymOpList *make_4mm()
+static SymOpList *make_4barm2()
 {
-	return NULL;
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,1,0,0), v(-1,0,0,0), v(0,0,0,-1), 4); /* -4 // l */
+	add_symop(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,-1), 2); /* 2 // h+k */
+	new->name = strdup("-4m2");
+	return expand_ops(new);
 }
 
 
-/******************************** Rhombohedral ********************************/
+static SymOpList *make_4mmm()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1), 4); /* 4 // l */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,1), 2); /* m -| k */
+	add_symop(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* m -| l */
+	new->name = strdup("4/mmm");
+	return expand_ops(new);
+}
+
+
+/************************** Trigonal (Rhombohedral) ***************************/
+
+static SymOpList *make_3_R()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0), 3); /* 3 // h+k+l */
+	new->name = strdup("3_R");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_3bar_R()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0), 3); /* -3 // h+k+l */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1), 2); /* -I */
+	new->name = strdup("-3_R");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_32_R()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0), 3); /* 3 // h+k+l */
+	add_symop(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,-1), 2); /* 2 -| 3 */
+	new->name = strdup("32_R");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_3m_R()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0), 3); /* 3 // h+k+l */
+	add_symop(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1), 2); /* m */
+	new->name = strdup("3m_R");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_3barm_R()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0), 3); /* -3 // h+k+l */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1), 2); /* -I */
+	add_symop(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1), 2);    /* m */
+	new->name = strdup("-3m_R");
+	return expand_ops(new);
+}
+
+
+/*************************** Trigonal (Hexagonal) *****************************/
+
+static SymOpList *make_3_H()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1), 3); /* 3 // l */
+	new->name = strdup("3_H");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_3bar_H()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1), 3);    /* 3 // l */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1), 2); /* -I */
+	new->name = strdup("-3_H");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_321_H()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1), 3);  /* 3 // l */
+	add_symop(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,-1), 2); /* 2 // h */
+	new->name = strdup("321_H");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_312_H()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1), 3);    /* 3 // l */
+	add_symop(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,-1), 2); /* 2 // h+k */
+	new->name = strdup("312_H");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_3m1_H()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1), 3); /* 3 // l */
+	add_symop(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,1), 2); /* m -| i */
+	new->name = strdup("3m1_H");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_31m_H()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1), 3); /* 3 // l */
+	add_symop(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1), 2); /* m -| (k+i) */
+	new->name = strdup("31m_H");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_3barm1_H()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1), 3);    /* 3 // l */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1), 2); /* -I */
+	add_symop(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,-1), 2);   /* 2 // h */
+	new->name = strdup("-3m1_H");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_3bar1m_H()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1), 3);    /* 3 // l */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1), 2); /* -I */
+	add_symop(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,-1), 2); /* 2 // h+k */
+	new->name = strdup("-31m_H");
+	return expand_ops(new);
+}
 
 
 /********************************** Hexgonal **********************************/
 
-static SymOpList *make_6m()
-{
-	return NULL;
-}
-
-
 static SymOpList *make_6()
 {
-	return NULL;
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,-1,0), v(-1,0,0,0), v(0,0,0,1), 6); /* 6 // l */
+	new->name = strdup("6");
+	return expand_ops(new);
 }
 
 
 static SymOpList *make_6bar()
 {
-	return NULL;
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,-1), 6); /* -6 // l */
+	new->name = strdup("-6");
+	return expand_ops(new);
 }
 
 
-static SymOpList *make_6mmm()
+static SymOpList *make_6m()
 {
-	return NULL;
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,-1,0), v(-1,0,0,0), v(0,0,0,1), 6); /* 6 // l */
+	add_symop(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2);  /* m -| l */
+	new->name = strdup("6/m");
+	return expand_ops(new);
 }
 
 
 static SymOpList *make_622()
 {
-	return NULL;
-}
-
-
-static SymOpList *make_6bar2m()
-{
-	return NULL;
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,-1,0), v(-1,0,0,0), v(0,0,0,1), 6); /* 6 // l */
+	add_symop(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,-1), 2);   /* 2 // h */
+	new->name = strdup("622");
+	return expand_ops(new);
 }
 
 
 static SymOpList *make_6mm()
 {
-	return NULL;
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,-1,0), v(-1,0,0,0), v(0,0,0,1), 6); /* 6 // l */
+	add_symop(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,1), 2); /* m -| i */
+	new->name = strdup("6mm");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_6barm2()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,-1), 6); /* -6 // l */
+	add_symop(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,1), 2); /* m -| i */
+	new->name = strdup("-6m2");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_6bar2m()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,-1), 6); /* -6 // l */
+	add_symop(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1), 2);  /* m -| (k+i) */
+	new->name = strdup("-62m");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_6mmm()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,-1), 6); /* -6 // l */
+	add_symop(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,1), 2); /* m -| i */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1), 2); /* -I */
+	new->name = strdup("6/mmm");
+	return expand_ops(new);
 }
 
 
 /************************************ Cubic ***********************************/
+
+static SymOpList *make_23()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* 2// l */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2// k */
+	add_symop(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0), 3); /* 3// h+k+l */
+	new->name = strdup("23");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_m3bar()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* 2// l */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2// k */
+	add_symop(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0), 3); /* 3// h+k+l */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1), 2); /* -I */
+	new->name = strdup("m-3");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_432()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1), 4); /* 4 // l */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2);/* 2 // k */
+	add_symop(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0), 3);  /* 3 // h+k+l */
+	new->name = strdup("432");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_4bar3m()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,1,0,0), v(-1,0,0,0), v(0,0,0,-1), 4); /* -4 // l */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2);/* 2 // k */
+	add_symop(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0), 3);  /* 3 // h+k+l */
+	new->name = strdup("-43m");
+	return expand_ops(new);
+}
+
+
+static SymOpList *make_m3barm()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1), 4); /* 4 // l */
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2);/* 2 // k */
+	add_symop(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0), 3);  /* 3 // h+k+l */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1), 2); /* -I */
+	new->name = strdup("m-3m");
+	return expand_ops(new);
+}
+
 
 SymOpList *get_pointgroup(const char *sym)
 {
@@ -509,20 +769,46 @@ SymOpList *get_pointgroup(const char *sym)
 	/* Tetragonal */
 	if ( strcmp(sym, "4/m") == 0 ) return make_4m();
 	if ( strcmp(sym, "4") == 0 ) return make_4();
-	if ( strcmp(sym, "4bar") == 0 ) return make_4bar();
+	if ( strcmp(sym, "-4") == 0 ) return make_4bar();
 	if ( strcmp(sym, "4/mmm") == 0 ) return make_4mmm();
 	if ( strcmp(sym, "422") == 0 ) return make_422();
-	if ( strcmp(sym, "4bar2m") == 0 ) return make_4bar2m();
+	if ( strcmp(sym, "-42m") == 0 ) return make_4bar2m();
+	if ( strcmp(sym, "-4m2") == 0 ) return make_4barm2();
 	if ( strcmp(sym, "4mm") == 0 ) return make_4mm();
+
+	/* Trigonal (rhombohedral) */
+	if ( strcmp(sym, "3_R") == 0 ) return make_3_R();
+	if ( strcmp(sym, "-3_R") == 0 ) return make_3bar_R();
+	if ( strcmp(sym, "32_R") == 0 ) return make_32_R();
+	if ( strcmp(sym, "3m_R") == 0 ) return make_3m_R();
+	if ( strcmp(sym, "-3m_R") == 0 ) return make_3barm_R();
+
+	/* Trigonal (hexagonal) */
+	if ( strcmp(sym, "3_H") == 0 ) return make_3_H();
+	if ( strcmp(sym, "-3_H") == 0 ) return make_3bar_H();
+	if ( strcmp(sym, "321_H") == 0 ) return make_321_H();
+	if ( strcmp(sym, "312_H") == 0 ) return make_312_H();
+	if ( strcmp(sym, "3m1_H") == 0 ) return make_3m1_H();
+	if ( strcmp(sym, "31m_H") == 0 ) return make_31m_H();
+	if ( strcmp(sym, "-3m1_H") == 0 ) return make_3barm1_H();
+	if ( strcmp(sym, "-31m_H") == 0 ) return make_3bar1m_H();
 
 	/* Hexagonal */
 	if ( strcmp(sym, "6/m") == 0 ) return make_6m();
 	if ( strcmp(sym, "6") == 0 ) return make_6();
-	if ( strcmp(sym, "6bar") == 0 ) return make_6bar();
+	if ( strcmp(sym, "-6") == 0 ) return make_6bar();
 	if ( strcmp(sym, "6/mmm") == 0 ) return make_6mmm();
 	if ( strcmp(sym, "622") == 0 ) return make_622();
-	if ( strcmp(sym, "6bar2m") == 0 ) return make_6bar2m();
+	if ( strcmp(sym, "-62m") == 0 ) return make_6bar2m();
+	if ( strcmp(sym, "-6m2") == 0 ) return make_6barm2();
 	if ( strcmp(sym, "6mm") == 0 ) return make_6mm();
+
+	/* Cubic */
+	if ( strcmp(sym, "23") == 0 ) return make_23();
+	if ( strcmp(sym, "m-3") == 0 ) return make_m3bar();
+	if ( strcmp(sym, "432") == 0 ) return make_432();
+	if ( strcmp(sym, "-432") == 0 ) return make_4bar3m();
+	if ( strcmp(sym, "m-3m") == 0 ) return make_m3barm();
 
 	ERROR("Unknown point group '%s'\n", sym);
 	return NULL;
@@ -718,6 +1004,101 @@ SymOpList *get_twins(const SymOpList *source, const SymOpList *target)
 	}
 
 	return twins;
+}
+
+
+static void add_chars(char *t, const char *s, int max_len)
+{
+	char *tmp;
+
+	tmp = strdup(t);
+
+	snprintf(t, max_len, "%s%s", tmp, s);
+	free(tmp);
+}
+
+
+static char *get_matrix_name(signed int *v)
+{
+	char *text;
+	const int max_len = 9;
+	int i;
+	int printed = 0;
+
+	text = malloc(max_len+1);
+	text[0] = '\0';
+
+	for ( i=0; i<3; i++ ) {
+
+		if ( v[i] == 0 ) continue;
+
+		if ( (i==0) && (v[0]==v[1]) ) {
+			if ( v[i]>0 ) add_chars(text, "-", max_len);
+			add_chars(text, "i", max_len);
+			v[1] -= v[0];
+			continue;
+		}
+
+		if ( printed ) add_chars(text, "+", max_len);
+
+		if ( v[i]<0 ) add_chars(text, "-", max_len);
+
+		if ( abs(v[i])>1 ) {
+			char num[3];
+			snprintf(num, 2, "%i", abs(v[i]));
+			add_chars(text, num, max_len);
+		}
+
+		switch ( i )
+		{
+			case 0  : add_chars(text, "h", max_len); break;
+			case 1  : add_chars(text, "k", max_len); break;
+			case 2  : add_chars(text, "l", max_len); break;
+			default : add_chars(text, "X", max_len); break;
+		}
+
+		printed = 1;
+
+	}
+
+	return text;
+}
+
+
+static char *name_equiv(const struct sym_op *op)
+{
+	char *h, *k, *l;
+	char *name;
+
+	h = get_matrix_name(op->h);
+	k = get_matrix_name(op->k);
+	l = get_matrix_name(op->l);
+	name = malloc(32);
+
+	snprintf(name, 31, "%s%s%s", h, k, l);
+	free(h);
+	free(k);
+	free(l);
+
+	return name;
+}
+
+
+void describe_symmetry(const SymOpList *s)
+{
+	int i, n;
+
+	n = num_equivs(s, NULL);
+
+	STATUS("%10s :", symmetry_name(s));
+
+	for ( i=0; i<n; i++ ) {
+		char *name = name_equiv(&s->ops[i]);
+		STATUS(" %6s", name);
+		free(name);
+		if ( (i!=0) && (i%8==0) ) STATUS("\n%10s  ", "");
+	}
+	STATUS("\n");
 }
 
 
