@@ -196,6 +196,7 @@ indexingprivate
 <SECTION>
 <FILE>symmetry</FILE>
 SymOpList
+SymOpMask
 <SUBSECTION>
 free_symoplist
 num_equivs
@@ -203,7 +204,14 @@ get_pointgroup
 get_equiv
 special_position
 get_asymm
-get_twins
+get_ambiguities
+is_centrosymmetric
+<SUBSECTION>
+new_symopmask
+free_symopmask
+<SUBSECTION>
+describe_symmetry
+symmetry_name
 </SECTION>
 
 <SECTION>

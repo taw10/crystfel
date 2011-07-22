@@ -33,9 +33,8 @@ typedef struct _symopmask SymOpMask;
 
 extern void free_symoplist(SymOpList *ops);
 extern SymOpList *get_pointgroup(const char *sym);
-extern const char *symmetry_name(const SymOpList *ops);
 
-extern SymOpMask *new_symopmask(const SymOpList *ops);
+extern SymOpMask *new_symopmask(const SymOpList *list);
 extern void free_symopmask(SymOpMask *m);
 
 extern void special_position(const SymOpList *ops, SymOpMask *m,
@@ -48,8 +47,10 @@ extern void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
                       signed int h, signed int k, signed int l,
                       signed int *he, signed int *ke, signed int *le);
 
+extern SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target);
+
 extern int is_centrosymmetric(const SymOpList *s);
-extern SymOpList *get_twins(const SymOpList *source, const SymOpList *target);
+extern const char *symmetry_name(const SymOpList *ops);
 extern void describe_symmetry(const SymOpList *s);
 
 #endif	/* SYMMETRY_H */

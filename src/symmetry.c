@@ -88,6 +88,7 @@ static void alloc_ops(SymOpList *ops)
 
 /**
  * new_symopmask:
+ * @list: A %SymOpList
  *
  * Returns: a new %SymOpMask, which you can use when filtering out special
  * reflections.
@@ -134,6 +135,7 @@ static SymOpList *new_symoplist()
 
 /**
  * free_symoplist:
+ * @ops: A %SymOpList to free
  *
  * Frees a %SymOpList and all associated resources.
  **/
@@ -154,6 +156,7 @@ void free_symoplist(SymOpList *ops)
 
 /**
  * free_symopmask:
+ * @m: A %SymOpMask to free
  *
  * Frees a %SymOpMask and all associated resources.
  **/
@@ -197,9 +200,12 @@ static void add_symop(SymOpList *ops,
 
 /**
  * num_equivs:
+ * @ops: A %SymOpList
+ * @m: A %SymOpMask, which has been shown to special_position()
  *
  * Returns: the number of equivalent reflections for a general reflection
- * in point group "ops".
+ * in point group "ops", which were not flagged by your call to
+ * special_position().
  **/
 int num_equivs(const SymOpList *ops, const SymOpMask *m)
 {
@@ -828,6 +834,7 @@ static void do_op(const struct sym_op *op,
 /**
  * get_equiv:
  * @ops: A %SymOpList
+ * @m: A %SymOpMask, which has been shown to special_position()
  * @idx: Index of the operation to use
  * @h: index of reflection
  * @k: index of reflection
@@ -875,10 +882,8 @@ void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
  * @l: index of a reflection
  *
  * This function determines which operations in @ops map the reflection @h, @k,
- * @l onto itself, and returns a new %SymOpList containing only the operations
- * from @ops which do not do so.
+ * @l onto itself, and uses @m to flag the operations in @ops which cause this.
  *
- * Returns: the "specialised" %SymOpList.
  **/
 void special_position(const SymOpList *ops, SymOpMask *m,
                       signed int h, signed int k, signed int l)
@@ -1084,6 +1089,12 @@ static char *name_equiv(const struct sym_op *op)
 }
 
 
+/**
+ * describe_symmetry:
+ * @s: A %SymOpList
+ *
+ * Writes the name and a list of operations to stderr.
+ */
 void describe_symmetry(const SymOpList *s)
 {
 	int i, n;
