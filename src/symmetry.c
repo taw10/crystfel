@@ -974,18 +974,18 @@ void get_asymm(const SymOpList *ops,
 
 		get_equiv(ops, NULL, p, h, k, l, hp, kp, lp);
 
-		if ( h > best_h ) {
-			best_h = h;  best_k = k;  best_l = l;
+		if ( *hp > best_h ) {
+			best_h = *hp;  best_k = *kp;  best_l = *lp;
 			continue;
 		}
 
-		if ( k > best_k ) {
-			best_h = h;  best_k = k;  best_l = l;
+		if ( *kp > best_k ) {
+			best_h = *hp;  best_k = *kp;  best_l = *lp;
 			continue;
 		}
 
-		if ( l > best_l ) {
-			best_h = h;  best_k = k;  best_l = l;
+		if ( *lp > best_l ) {
+			best_h = *hp;  best_k = *kp;  best_l = *lp;
 			continue;
 		}
 
