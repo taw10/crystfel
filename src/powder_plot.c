@@ -80,7 +80,7 @@ static int find_q_bin_index(double q, struct histogram_info *info,
 	/* bisection search alg. find q_bin index of order Log(n) time */
 	int mid;
 	int min = 0;
-	int max = (*info).histsize-1;
+	int max = info->histsize-1;
 	if (q < hist[min].q_max) {return min;}
 	if (q > hist[max].q_min) {return max;}
 	do {
@@ -107,11 +107,11 @@ static int add_peak_to_histogram(double fs, double ss, double intensity,
 	double q, delta;
 	int i;
 
-	r = get_q(image, fs, ss, NULL, 1.0/ (*image).lambda);
+	r = get_q(image, fs, ss, NULL, 1.0/ image->lambda);
 	q = modulus(r.u, r.v, r.w);
 
 	/* Ignore q value if outside of range */
-	if ( (q<(*info).q_min) || (q>(*info).q_max) ) {
+	if ( (q<info->q_min) || (q>info->q_max) ) {
 		return 1;
 	}
 	i = find_q_bin_index(q, info, hist);
@@ -136,7 +136,7 @@ static int add_d_to_histogram(double q, double intensity,
 	int i;
 
 	/* Ignore q value if outside of range */
-	if ( (q<(*info).q_min) || (q>(*info).q_max) ) {
+	if ( (q<info->q_min) || (q>info->q_max) ) {
 		return 1;
 	}
 	i = find_q_bin_index(q, info, hist);
@@ -158,7 +158,7 @@ static int add_hkl_to_histogram(double q, double intensity, int redundancy,
 	int i = 0;
 
 	/* Ignore q value if outside of range */
-	if ( (q<(*info).q_min) || (q>(*info).q_max) ) {
+	if ( (q<info->q_min) || (q>info->q_max) ) {
 		return 1;
 	}
 
@@ -227,8 +227,8 @@ static int ring_fraction_calc(struct histogram_info *info,
 	if ( (image->det == NULL) || (image->lambda < 0.0) ) return 1;
 
 	/* Loop over all pixels */
-	for ( ss=0; ss<(*image).height; ss++ ) {
-	for ( fs=0; fs<(*image).width;  fs++ ) {
+	for ( ss=0; ss<image->height; ss++ ) {
+	for ( fs=0; fs<image->width;  fs++ ) {
 
 		struct panel *p;
 		struct rvec r;
@@ -648,8 +648,8 @@ static unsigned int process_stream_h5(FILE *fh, struct image *image,
 			hdf5_read(hdfile, image, config_satcorr);
 			hdfile_close(hdfile);
 			n_patterns++;
-			for ( ss=0; ss<(*image).height; ss++ ) {
-			for ( fs=0; fs<(*image).width;  fs++ ) {
+			for ( ss=0; ss<image->height; ss++ ) {
+			for ( fs=0; fs<image->width;  fs++ ) {
 
 				intensity = image->data[fs + image->width*ss];
 				if ( !in_bad_region(image->det,fs,ss) ) {
