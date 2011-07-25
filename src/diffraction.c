@@ -171,7 +171,8 @@ static double interpolate_linear(const double *ref, const unsigned char *flags,
 
 
 static double interpolate_bilinear(const double *ref,
-                                   const unsigned char *flags, const SymOpList *sym,
+                                   const unsigned char *flags,
+                                   const SymOpList *sym,
                                    float hd, float kd, signed int l)
 {
 	signed int k;
@@ -191,7 +192,8 @@ static double interpolate_bilinear(const double *ref,
 
 
 static double interpolate_intensity(const double *ref,
-                                    const unsigned char *flags, const SymOpList *sym,
+                                    const unsigned char *flags,
+                                    const SymOpList *sym,
                                     float hd, float kd, float ld)
 {
 	signed int l;
