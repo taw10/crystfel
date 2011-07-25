@@ -239,7 +239,18 @@ static void add_copied_op(SymOpList *ops, struct sym_op *copyme)
  **/
 int num_equivs(const SymOpList *ops, const SymOpMask *m)
 {
-	return num_ops(ops);
+	int n = num_ops(ops);
+	int i;
+	int c;
+
+	if ( m == NULL ) return n;
+
+	c = 0;
+	for ( i=0; i<n; i++ ) {
+		if ( m->mask[i] ) c++;
+	}
+
+	return c;
 }
 
 
@@ -886,20 +897,49 @@ void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
                signed int h, signed int k, signed int l,
                signed int *he, signed int *ke, signed int *le)
 {
-	int i, n;
+	const int n = num_ops(ops);
 
-	n = num_ops(ops);
-	for ( i=idx; i<n; i++ ) {
-		if ( (m == NULL) || m->mask[i] ) {
-			do_op(&ops->ops[i], h, k, l, he, ke, le);
-			return;
+	if ( m != NULL ) {
+
+		int i, c;
+
+		c = 0;
+		for ( i=0; i<n; i++ ) {
+
+			if ( (c == idx) && m->mask[i] ) {
+				do_op(&ops->ops[i], h, k, l, he, ke, le);
+				return;
+			}
+
+			if ( m->mask[i] ) {
+				c++;
+			}
+
 		}
+
+		ERROR("Index %i out of range for point group '%s' with"
+		      " reflection %i %i %i\n",
+		      idx, symmetry_name(ops), h, k, l);
+
+		*he = 0;  *ke = 0;  *le = 0;
+
+		return;
+
 	}
 
-	ERROR("Index %i out of range for point group '%s'\n", idx,
-	      symmetry_name(ops));
 
-	*he = 0;  *ke = 0;  *le = 0;
+
+	if ( idx >= n ) {
+
+		ERROR("Index %i out of range for point group '%s'\n", idx,
+		      symmetry_name(ops));
+
+		*he = 0;  *ke = 0;  *le = 0;
+		return;
+
+	}
+
+	do_op(&ops->ops[idx], h, k, l, he, ke, le);
 }
 
 
