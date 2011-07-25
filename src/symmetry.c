@@ -456,7 +456,7 @@ static SymOpList *make_4mm()
 	SymOpList *new = new_symoplist();
 	add_symop(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1), 4); /* 4 // l */
 	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,1), 2); /* m -| l */
-	new->name = strdup("4mmm");
+	new->name = strdup("4mm");
 	return expand_ops(new);
 }
 
@@ -843,7 +843,7 @@ SymOpList *get_pointgroup(const char *sym)
 	if ( strcmp(sym, "23") == 0 ) return make_23();
 	if ( strcmp(sym, "m-3") == 0 ) return make_m3bar();
 	if ( strcmp(sym, "432") == 0 ) return make_432();
-	if ( strcmp(sym, "-432") == 0 ) return make_4bar3m();
+	if ( strcmp(sym, "-43m") == 0 ) return make_4bar3m();
 	if ( strcmp(sym, "m-3m") == 0 ) return make_m3barm();
 
 	ERROR("Unknown point group '%s'\n", sym);
@@ -1057,6 +1057,13 @@ static int ops_equal(const struct sym_op *op,
 }
 
 
+static int struct_ops_equal(const struct sym_op *op1, const struct sym_op *op2)
+{
+	return ops_equal(op1, op2->h, op2->k, op2->l);
+}
+
+
+
 /* Return true if a*b = ans */
 static int check_mult(const struct sym_op *ans,
                       const struct sym_op *a, const struct sym_op *b)
@@ -1076,6 +1083,39 @@ static int check_mult(const struct sym_op *ans,
 	free(ans_l);
 
 	return val;
+}
+
+
+/* Check that every operation in "target" is also in "source" */
+int is_subgroup(const SymOpList *source, const SymOpList *target)
+{
+	int n_src, n_tgt;
+	int i;
+
+	n_src = num_ops(source);
+	n_tgt = num_ops(target);
+
+	for ( i=0; i<n_tgt; i++ ) {
+
+		int j;
+		int found = 0;
+
+		for ( j=0; j<n_src; j++ ) {
+
+			if ( struct_ops_equal(&target->ops[i],
+			                      &source->ops[j] ) )
+			{
+				found = 1;
+				break;
+			}
+
+		}
+
+		if ( !found ) return 0;
+
+	}
+
+	return 1;
 }
 
 
@@ -1100,9 +1140,22 @@ SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target)
 	SymOpList *src_reordered;
 	SymOpMask *used;
 	char *name;
+	int index;
 
 	n_src = num_ops(source);
 	n_tgt = num_ops(target);
+
+	if ( !is_subgroup(source, target) ) {
+		ERROR("'%s' is not a subgroup of '%s'\n",
+		      symmetry_name(target), symmetry_name(source));
+		return NULL;
+	}
+
+	if ( n_src % n_tgt != 0 ) {
+		ERROR("Subgroup index would be fractional.\n");
+		return NULL;
+	}
+	index = n_src / n_tgt;
 
 	src_reordered = new_symoplist();
 	used = new_symopmask(source);
@@ -1205,6 +1258,15 @@ SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target)
 	twins = new_symoplist();
 	for ( i=0; i<n_src; i++ ) {
 		if ( used->mask[i] == 0 ) continue;
+		if ( determinant(&src_reordered->ops[i]) < 0 ) {
+			/* A mirror or inversion turned up in the list.
+			 * That means that no pure rotational ambiguity can
+			 * account for this subgroup relationship. */
+			free_symoplist(twins);
+			free_symopmask(used);
+			free_symoplist(src_reordered);
+			return NULL;
+		}
 		add_copied_op(twins, &src_reordered->ops[i]);
 	}
 
@@ -1309,13 +1371,13 @@ void describe_symmetry(const SymOpList *s)
 
 	n = num_equivs(s, NULL);
 
-	STATUS("%10s :", symmetry_name(s));
+	STATUS("%15s :", symmetry_name(s));
 
 	for ( i=0; i<n; i++ ) {
 		char *name = name_equiv(&s->ops[i]);
 		STATUS(" %6s", name);
 		free(name);
-		if ( (i!=0) && (i%8==0) ) STATUS("\n%10s  ", "");
+		if ( (i!=0) && (i%8==0) ) STATUS("\n%15s  ", "");
 	}
 	STATUS("\n");
 }

@@ -47,7 +47,9 @@ extern void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
                       signed int h, signed int k, signed int l,
                       signed int *he, signed int *ke, signed int *le);
 
-extern SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target);
+extern SymOpList *get_ambiguities(const SymOpList *source,
+                                  const SymOpList *target);
+extern int is_subgroup(const SymOpList *source, const SymOpList *target);
 
 extern int is_centrosymmetric(const SymOpList *s);
 extern const char *symmetry_name(const SymOpList *ops);
