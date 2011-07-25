@@ -131,13 +131,11 @@ int check_list_symmetry(RefList *list, const SymOpList *sym)
 
 		special_position(sym, mask, h, k, l);
 		n = num_equivs(sym, mask);
-		STATUS("%i equivs: %3i %3i %3i\n", n, h, k, l);
 
 		for ( j=0; j<n; j++ ) {
 
 			signed int he, ke, le;
 			get_equiv(sym, mask, j, h, k, l, &he, &ke, &le);
-			STATUS("%3i: %3i %3i %3i\n", j, he, ke, le);
 
 			if ( abs(he) > INDMAX ) continue;
 			if ( abs(le) > INDMAX ) continue;
