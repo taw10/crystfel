@@ -298,5 +298,19 @@ int main(int argc, char *argv[])
 	                     "-62m", "-31m_H", "6/mmm", "6/m", "6mm", NULL);
 	find_all_ambiguities("23", "432", "-43m", "m-3", "m-3m", NULL);
 
+
+	STATUS("\nPseudo-merohedral ambiguities:\n\n");
+	find_all_ambiguities("1", "-1", "2", "m", "2/m", "mm2", "mmm", "222",
+	                     "4", "-4", "-42m", "-4m2", "4mm", "4/m", "422",
+	                     "4/mmm", "23", "432", "-43m", "m-3", "m-3m", NULL);
+
+	find_all_ambiguities("1", "-1", "3_R", "32_R", "-3_R", "3m_R", "-3m_R",
+	                     NULL);
+
+	find_all_ambiguities("1", "-1", "2", "m", "2/m", "6", "3_H", "312_H",
+	                     "321_H", "622", "-3_H", "3m1_H", "-6", "31m_H",
+	                     "-3m1_H", "-6m2", "-62m", "-31m_H", "6/mmm", "6/m",
+	                     "6mm", NULL);
+
 	return fail;
 }
