@@ -263,7 +263,7 @@ void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell)
  * The resulting list can be read back with read_reflections_from_file() or
  * read_reflections().
  *
- * This is a convenience function which simply opens @file and then calls
+ * This is a convenience function which simply opens @filename and then calls
  * write_reflections_to_file.
  *
  * Returns: zero on success, non-zero on failure.
@@ -375,6 +375,18 @@ RefList *read_reflections(const char *filename)
 }
 
 
+/**
+ * asymmetric_indices:
+ * @in: A %RefList
+ * @sym: A %SymOpList
+ *
+ * This function creates a newly allocated copy of @in, but indexed using the
+ * asymmetric indices according to @sym instead of the original indices.  The
+ * original indices are stored and can be retrieved using
+ * get_symmetric_indices() if required.
+ *
+ * Returns: the new %RefList, or NULL on failure.
+ **/
 RefList *asymmetric_indices(RefList *in, const SymOpList *sym)
 {
 	Reflection *refl;

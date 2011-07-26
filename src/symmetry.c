@@ -1012,6 +1012,13 @@ void special_position(const SymOpList *ops, SymOpMask *m,
  * This function determines the asymmetric version of the reflection @h, @k, @l
  * in symmetry group @ops, and puts the result in @hp, @kp, @lp.
  *
+ * This is a relatively expensive operation because of its generality.
+ * Therefore, if you know you'll need to make repeated use of the asymmetric
+ * indices, consider creating a new %RefList indexed according to the asymmetric
+ * indices themselves with asymmetric_indices().  If you do that, you'll still
+ * be able to get the original versions of the indices with
+ * get_symmetric_indices().
+ *
  **/
 void get_asymm(const SymOpList *ops,
                signed int h, signed int k, signed int l,
@@ -1189,7 +1196,9 @@ int is_subgroup(const SymOpList *source, const SymOpList *target)
  * inversions.
  * To count the number of possibilities, use num_ops() on the result.
  *
- * Returns: A %SymOpList containing the twinning operators
+ * Returns: A %SymOpList containing the twinning operators, or NULL if the
+ * source symmetry cannot be generated from that target symmetry without using
+ * mirror or inversion operations.
  */
 SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target)
 {
@@ -1293,6 +1302,7 @@ SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target)
 	free_symopmask(used);
 	used = new_symopmask(src_reordered);
 
+	/* This is the first method from Flack (1987) */
 	for ( i=0; i<n_src; i++ ) {
 
 		int j;
