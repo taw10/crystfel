@@ -570,7 +570,7 @@ void set_scalable(Reflection *refl, int scalable)
 /**
  * set_refinable:
  * @refl: A %Reflection
- * @scalable: Non-zero if this reflection can be used for post refinement.
+ * @refinable: Non-zero if this reflection can be used for post refinement.
  *
  **/
 void set_refinable(Reflection *refl, int refinable)

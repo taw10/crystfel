@@ -205,13 +205,14 @@ get_equiv
 special_position
 get_asymm
 get_ambiguities
-is_centrosymmetric
+is_subgroup
 <SUBSECTION>
 new_symopmask
 free_symopmask
 <SUBSECTION>
 describe_symmetry
 symmetry_name
+is_centrosymmetric
 </SECTION>
 
 <SECTION>

@@ -46,20 +46,6 @@ struct sym_op
 };
 
 
-/**
- * SECTION:symoplist
- * @short_description: A list of point symmetry operations
- * @title: SymOpList
- * @section_id:
- * @see_also:
- * @include: "symmetry.h"
- * @Image:
- *
- * The SymOpList is an opaque data structure containing a list of point symmetry
- * operations.  It could represent an point group or a list of indexing
- * ambiguities (twin laws), or similar.
- */
-
 struct _symoplist
 {
 	struct sym_op *ops;
@@ -797,6 +783,20 @@ static SymOpList *make_m3barm()
 }
 
 
+/**
+ * get_pointgroup:
+ * @sym: A string representation of a point group
+ *
+ * This function parses @sym and returns the corresponding %SymOpList.
+ * In the string representation of the point group, use a preceding minus sign
+ * for any character which would have a "bar".  Trigonal groups must be suffixed
+ * with either "_H" or "_R" for a hexagonal or rhombohedral lattice
+ * respectively.
+ *
+ * Examples: -1 1 2/m 2 m mmm 222 mm2 4/m 4 -4 4/mmm 422 -42m -4m2 4mm
+ * 3_R -3_R 32_R 3m_R -3m_R 3_H -3_H 321_H 312_H 3m1_H 31m_H -3m1_H -31m_H
+ * 6/m 6 -6 6/mmm 622 -62m -6m2 6mm 23 m-3 432 -43m m-3m.
+ **/
 SymOpList *get_pointgroup(const char *sym)
 {
 	/* Triclinic */
@@ -999,6 +999,20 @@ void special_position(const SymOpList *ops, SymOpMask *m,
 }
 
 
+/**
+ * get_asymm:
+ * @ops: A %SymOpList, usually corresponding to a point group
+ * @h: index of a reflection
+ * @k: index of a reflection
+ * @l: index of a reflection
+ * @hp: location for asymmetric index of reflection
+ * @kp: location for asymmetric index of reflection
+ * @lp: location for asymmetric index of reflection
+ *
+ * This function determines the asymmetric version of the reflection @h, @k, @l
+ * in symmetry group @ops, and puts the result in @hp, @kp, @lp.
+ *
+ **/
 void get_asymm(const SymOpList *ops,
                signed int h, signed int k, signed int l,
                signed int *hp, signed int *kp, signed int *lp)
@@ -1103,7 +1117,6 @@ static int struct_ops_equal(const struct sym_op *op1, const struct sym_op *op2)
 }
 
 
-
 /* Return true if a*b = ans */
 static int check_mult(const struct sym_op *ans,
                       const struct sym_op *a, const struct sym_op *b)
@@ -1126,7 +1139,13 @@ static int check_mult(const struct sym_op *ans,
 }
 
 
-/* Check that every operation in "target" is also in "source" */
+/**
+ * is_subgroup:
+ * @source: A %SymOpList
+ * @target: Another %SymOpList, which might be a subgroup of @source.
+ *
+ * Returns: non-zero if every operation in @target is also in @source.
+ **/
 int is_subgroup(const SymOpList *source, const SymOpList *target)
 {
 	int n_src, n_tgt;
@@ -1423,6 +1442,12 @@ void describe_symmetry(const SymOpList *s)
 }
 
 
+/**
+ * symmetry_name:
+ * @ops: A %SymOpList
+ *
+ * Returns: a text description of @ops.
+ */
 const char *symmetry_name(const SymOpList *ops)
 {
 	return ops->name;

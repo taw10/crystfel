@@ -85,8 +85,8 @@ extern void set_int(Reflection *refl, double intensity);
 extern void set_scalable(Reflection *refl, int scalable);
 extern void set_refinable(Reflection *refl, int refinable);
 extern void set_redundancy(Reflection *refl, int red);
-extern void set_temp1(Reflection *refl, double dev);
-extern void set_temp2(Reflection *refl, double dev);
+extern void set_temp1(Reflection *refl, double temp);
+extern void set_temp2(Reflection *refl, double temp);
 extern void set_esd_intensity(Reflection *refl, double esd);
 extern void set_ph(Reflection *refl, double phase);
 extern void set_symmetric_indices(Reflection *refl,
