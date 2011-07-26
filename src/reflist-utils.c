@@ -394,6 +394,7 @@ RefList *asymmetric_indices(RefList *in, const SymOpList *sym)
 	RefList *new;
 
 	new = reflist_new();
+	if ( new == NULL ) return NULL;
 
 	for ( refl = first_refl(in, &iter);
 	      refl != NULL;
