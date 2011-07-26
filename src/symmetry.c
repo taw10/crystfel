@@ -999,6 +999,15 @@ void special_position(const SymOpList *ops, SymOpMask *m,
 }
 
 
+static int any_negative(signed int h, signed int k, signed int l)
+{
+	if ( h < 0 ) return 1;
+	if ( k < 0 ) return 1;
+	if ( l < 0 ) return 1;
+	return 0;
+}
+
+
 /**
  * get_asymm:
  * @ops: A %SymOpList, usually corresponding to a point group
@@ -1027,26 +1036,46 @@ void get_asymm(const SymOpList *ops,
 	int nequiv;
 	int p;
 	signed int best_h, best_k, best_l;
+	int have_negs;
 
 	nequiv = num_equivs(ops, NULL);
 
 	best_h = h;  best_k = k;  best_l = l;
+	have_negs = any_negative(best_h, best_k, best_l);
 	for ( p=0; p<nequiv; p++ ) {
+
+		int will_have_negs;
 
 		get_equiv(ops, NULL, p, h, k, l, hp, kp, lp);
 
-		if ( *hp > best_h ) {
+		will_have_negs = any_negative(*hp, *kp, *lp);
+
+		/* Don't lose "no negs" status */
+		if ( !have_negs && will_have_negs ) continue;
+
+		if ( have_negs && !will_have_negs ) {
 			best_h = *hp;  best_k = *kp;  best_l = *lp;
+			have_negs = 0;
 			continue;
 		}
+
+		if ( *hp > best_h ) {
+			best_h = *hp;  best_k = *kp;  best_l = *lp;
+			have_negs = any_negative(best_h, best_k, best_l);
+			continue;
+		}
+		if ( *hp < best_h ) continue;
 
 		if ( *kp > best_k ) {
 			best_h = *hp;  best_k = *kp;  best_l = *lp;
+			have_negs = any_negative(best_h, best_k, best_l);
 			continue;
 		}
+		if ( *kp < best_k ) continue;
 
 		if ( *lp > best_l ) {
 			best_h = *hp;  best_k = *kp;  best_l = *lp;
+			have_negs = any_negative(best_h, best_k, best_l);
 			continue;
 		}
 
