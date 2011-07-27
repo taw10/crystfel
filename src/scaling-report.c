@@ -225,7 +225,6 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 			if ( random_flat(1.0) < prob ) {
 				plot_point(cr, g_width, g_height, pcalc, pobs);
 			}
-
 		}
 
 	}
