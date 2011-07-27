@@ -610,36 +610,6 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 }
 
 
-static void random_indices(RefList *list,
-                           signed int *hp, signed int *kp, signed int *lp)
-{
-	Reflection *refl;
-	RefListIterator *iter;
-	int n;
-	double p;
-	Reflection *chosen = NULL;
-
-	n = num_reflections(list);
-	p = 1.0/n;
-
-	do {
-
-		for ( refl = first_refl(list, &iter);
-		      refl != NULL;
-		      refl = next_refl(refl, iter) )
-		{
-			if ( random_flat(1.0) < p ) {
-				chosen = refl;
-			}
-		}
-
-	} while ( chosen == NULL );
-
-	get_indices(chosen, hp, kp, lp);
-}
-
-
-
 static void watermark(struct _srcontext *sr)
 {
 	show_text(sr->cr, "Written by partialator from CrystFEL"
@@ -694,9 +664,60 @@ void sr_before(SRContext *sr, struct image *images, int n, RefList *full)
 }
 
 
+static void find_most_sampled_reflections(RefList *list, signed int *h,
+                                          signed int *k, signed int *l,
+                                          int n)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	int *samples;
+
+	samples = calloc(n, sizeof(int));
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		int red;
+		int i;
+
+		red = get_redundancy(refl);
+
+		for ( i=0; i<n; i++ ) {
+
+			if ( red > samples[i] ) {
+
+				int j;
+
+				/* Shift everything down */
+				for ( j=n-2; j>i; j-- ) {
+					h[j+1] = h[j];
+					k[j+1] = k[j];
+					l[j+1] = l[j];
+					samples[j+1] = samples[j];
+				}
+
+				/* Add this in its place */
+				get_indices(refl, &h[i], &k[i], &l[i]);
+				samples[i] = red;
+
+				/* Don't compare against the others */
+				break;
+
+			}
+
+		}
+
+	}
+
+	free(samples);
+}
+
+
 void sr_after(SRContext *sr, struct image *images, int n, RefList *full)
 {
-	int x, y;
+	int i;
+	signed int h[9], k[9], l[9];
 
 	if ( sr == NULL ) return;
 
@@ -720,18 +741,20 @@ void sr_after(SRContext *sr, struct image *images, int n, RefList *full)
 	cairo_surface_show_page(sr->surf);
 	watermark(sr);
 
-	for ( x=0; x<3; x++ ) {
-	for ( y=0; y<3; y++ ) {
+	find_most_sampled_reflections(full, h, k, l, 9);
 
-		signed int h, k, l;
+	for ( i=0; i<9; i++ ) {
+
+		int x, y;
+
+		x = i % 3;
+		y = i / 3;
 
 		cairo_save(sr->cr);
 		cairo_translate(sr->cr, 50.0+280.0*x, 50.0+180.0*y);
-		random_indices(full, &h, &k, &l);
-		intensity_histogram(sr->cr, images, n, h, k, l);
+		intensity_histogram(sr->cr, images, n, h[i], k[i], l[i]);
 		cairo_restore(sr->cr);
 
-	}
 	}
 
 	cairo_surface_finish(sr->surf);
