@@ -106,12 +106,10 @@ unsigned char *flags_from_list(RefList *list)
 
 int check_list_symmetry(RefList *list, const SymOpList *sym)
 {
-	unsigned char *flags;
 	Reflection *refl;
 	RefListIterator *iter;
 	SymOpMask *mask;
 
-	flags = flags_from_list(list);
 	mask = new_symopmask(sym);
 	if ( mask == NULL ) {
 		ERROR("Couldn't create mask for list symmetry check.\n");
@@ -135,26 +133,24 @@ int check_list_symmetry(RefList *list, const SymOpList *sym)
 		for ( j=0; j<n; j++ ) {
 
 			signed int he, ke, le;
+			Reflection *f;
+
 			get_equiv(sym, mask, j, h, k, l, &he, &ke, &le);
 
-			if ( abs(he) > INDMAX ) continue;
-			if ( abs(le) > INDMAX ) continue;
-			if ( abs(ke) > INDMAX ) continue;
-
-			found += lookup_flag(flags, he, ke, le);
+			f = find_refl(list, he, ke, le);
+			if ( f != NULL ) found++;
 
 		}
 
+		assert(found != 0);  /* That'd just be silly */
 		if ( found > 1 ) {
-			free(flags);
 			free_symopmask(mask);
-			STATUS("Found %i %i %i twice\n", h, k, l);
+			STATUS("Found %i %i %i: %i times\n", h, k, l, found);
 			return 1;  /* Symmetry is wrong! */
 		}
 
 	}
 
-	free(flags);
 	free_symopmask(mask);
 
 	return 0;

@@ -212,6 +212,14 @@ Reflection *find_refl(const RefList *list,
 
 	if ( list->head == NULL ) return NULL;
 
+	/* Indices greater than or equal to 256 are filtered out when
+	 * reflections are added, so don't even bother looking.
+	 * (also, looking for such reflections causes trouble because the search
+	 * serial number would be invalid) */
+	if ( abs(h) >= 256 ) return NULL;
+	if ( abs(k) >= 256 ) return NULL;
+	if ( abs(l) >= 256 ) return NULL;
+
 	refl = list->head;
 
 	while ( refl != NULL ) {
