@@ -68,11 +68,8 @@ static void find_all_ambiguities(const char *first, ...)
 				continue;
 			}
 
-			if ( num_equivs(twins, NULL) == 2 ) {
-				STATUS(" %5s ", symmetry_name(test[j]));
-			} else {
-				STATUS(" %5s*", symmetry_name(test[j]));
-			}
+			STATUS(" %s(%i)", symmetry_name(test[j]),
+			                   num_equivs(twins, NULL));
 
 		}
 		STATUS("\n");
