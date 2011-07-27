@@ -19,8 +19,8 @@ indexamajig \- bulk indexing and data reduction program
 The "indexamajig" program takes as input a list of diffraction image files,
 currently in HDF5 format.  For each image, it attempts to find peaks and then
 index the pattern.  If successful, it will measure the intensities of the peaks
-at Bragg locations and produce a list in the form "h k l I", with some extra
-information about the locations of the peaks.
+at Bragg locations and produce a list of integrated peaks and intensities (and
+so on) in an output text file known as a "stream".
 
 For minimal basic use, you need to provide the list of diffraction patterns,
 the method which will be used to index, a file describing the geometry of the
@@ -208,8 +208,12 @@ other.
 .SH A NOTE ABOUT UNIT CELL SETTINGS
 
 CrystFEL's core symmetry module only knows about one setting for each unit cell.
-You must use the same setting.  That means that the unique axis (for cells which
-have one) must be "c".
+You must use the same setting for now, but this will be improved in future
+versions.  The cell settings are the standard ones from the International
+Tables (2006).  For monoclinic cells, the unique axis should be "b".  For
+orthorhombic cells in point group mm2, the twofold axis should be along "c",
+i.e. no mirror perpendicular to "c".  For tetragonal cells and hexagonal
+lattices, the unique axis should be "c".
 
 
 .SH KNOWN BUGS
