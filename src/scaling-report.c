@@ -529,7 +529,6 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 	}
 	int_max *= 1.1;
 	int_inc = int_max / nbins;
-	STATUS("%i measurements\n", nmeas);
 
 	for ( b=0; b<nbins; b++ ) {
 		int_low[b] = b*int_inc;
