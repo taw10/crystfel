@@ -369,8 +369,8 @@ static SymOpList *make_1()
 static SymOpList *make_2m()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 // k */
-	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2);  /* m -| k */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* 2 // l */
+	add_symop(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2);  /* m -| l */
 	new->name = strdup("2/m");
 	return expand_ops(new);
 }
@@ -379,7 +379,7 @@ static SymOpList *make_2m()
 static SymOpList *make_2()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 // k */
+	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* 2 // l */
 	new->name = strdup("2");
 	return expand_ops(new);
 }
@@ -388,7 +388,7 @@ static SymOpList *make_2()
 static SymOpList *make_m()
 {
 	SymOpList *new = new_symoplist();
-	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2);  /* m -| k */
+	add_symop(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2);  /* m -| l */
 	new->name = strdup("m");
 	return expand_ops(new);
 }
