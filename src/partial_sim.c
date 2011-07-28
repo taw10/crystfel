@@ -120,14 +120,16 @@ static void show_help(const char *s)
 " -h, --help              Display this help message.\n"
 "\n"
 "You need to provide the following basic options:\n"
-" -i, --input=<file>      Read reflections from <file>.\n"
-" -o, --output=<file>     Write partials in stream format to <file>.\n"
-" -g. --geometry=<file>   Get detector geometry from file.\n"
-" -b, --beam=<file>       Get beam parameters from file\n"
-" -p, --pdb=<file>        PDB file from which to get the unit cell.\n"
+" -i, --input=<file>       Read reflections from <file>.\n"
+"                           Default: generate random ones instead (see -r).\n"
+" -o, --output=<file>      Write partials in stream format to <file>.\n"
+" -g. --geometry=<file>    Get detector geometry from file.\n"
+" -b, --beam=<file>        Get beam parameters from file\n"
+" -p, --pdb=<file>         PDB file from which to get the unit cell.\n"
 "\n"
-" -y, --symmetry=<sym>    Symmetry of the input reflection list.\n"
-" -n <n>                  Simulate <n> patterns.  Default: 2.\n"
+" -y, --symmetry=<sym>     Symmetry of the input reflection list.\n"
+" -n <n>                   Simulate <n> patterns.  Default: 2.\n"
+" -r, --save-random=<file> Save randomly generated intensities to file.\n"
 );
 }
 
@@ -152,6 +154,7 @@ int main(int argc, char *argv[])
 	int n = 2;
 	int i;
 	int random_intensities = 0;
+	char *save_file = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -162,11 +165,12 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"geometry",           1, NULL,               'g'},
 		{"symmetry",           1, NULL,               'y'},
+		{"save-random",        1, NULL,               'r'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:o:b:p:g:y:n:",
+	while ((c = getopt_long(argc, argv, "hi:o:b:p:g:y:n:r:",
 	                        longopts, NULL)) != -1)
 	{
 		switch (c) {
@@ -202,13 +206,16 @@ int main(int argc, char *argv[])
 			n = atoi(optarg);
 			break;
 
+		case 'r' :
+			save_file = strdup(optarg);
+			break;
+
 		case 0 :
 			break;
 
 		default :
 			return 1;
 		}
-
 	}
 
 	/* Load beam */
@@ -250,6 +257,8 @@ int main(int argc, char *argv[])
 	if ( sym_str == NULL ) sym_str = strdup("1");
 	sym = get_pointgroup(sym_str);
 	free(sym_str);
+
+	if ( save_file == NULL ) save_file = strdup("partial_sim.hkl");
 
 	/* Load (full) reflections */
 	if ( input_file != NULL ) {
@@ -336,8 +345,8 @@ int main(int argc, char *argv[])
 	}
 
 	if ( random_intensities ) {
-		STATUS("Writing full intensities to partial_sim.hkl\n");
-		write_reflist("partial_sim.hkl", full, cell);
+		STATUS("Writing full intensities to %s\n", save_file);
+		write_reflist(save_file, full, cell);
 	}
 
 	fclose(ofh);
