@@ -312,5 +312,10 @@ int main(int argc, char *argv[])
 	                     "-3m1_H", "-6m2", "-62m", "-31m_H", "6/mmm", "6/m",
 	                     "6mm", NULL);
 
+	/* Check some pseudo-meroheral subgroups */
+	check_subgroup("3_R",  "1", 1, 1,  3, &fail);
+	check_subgroup("-3_R",  "-1", 1, 1,  3, &fail);
+	check_subgroup("6",  "2", 1, 1,  3, &fail);
+
 	return fail;
 }
