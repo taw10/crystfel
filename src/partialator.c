@@ -57,7 +57,7 @@ static void show_help(const char *s)
 "                              an HDF5 file.\n"
 "  -y, --symmetry=<sym>       Merge according to symmetry <sym>.\n"
 "  -n, --iterations=<n>       Run <n> cycles of scaling and post-refinement.\n"
-"      --reference=<file>     Refine images against reflections in <file>,\n"
+"  -r, --reference=<file>     Refine images against reflections in <file>,\n"
 "                              instead of taking the mean of the intensity\n"
 "                              estimates.\n"
 "\n"
@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
 		{"beam",               1, NULL,               'b'},
 		{"symmetry",           1, NULL,               'y'},
 		{"iterations",         1, NULL,               'n'},
-		{"reference",          1, NULL,                1},
+		{"reference",          1, NULL,               'r'},
 		{0, 0, NULL, 0}
 	};
 
@@ -301,7 +301,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:g:x:j:y:o:b:",
+	while ((c = getopt_long(argc, argv, "hi:g:x:j:y:o:b:r:",
 	                        longopts, NULL)) != -1)
 	{
 
@@ -343,7 +343,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-		case 1 :
+		case 'r' :
 			reference_file = strdup(optarg);
 			break;
 
