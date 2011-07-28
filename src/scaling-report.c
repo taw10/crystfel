@@ -405,7 +405,7 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 		double osf = images[i].osf;
 		if ( osf > osf_max ) osf_max = osf;
 	}
-	osf_max = ceil(osf_max);
+	osf_max = ceil(osf_max+osf_max/10000.0);
 	if ( osf_max > 1000.0 ) {
 		ERROR("Silly scale factor detected.  Using 100.0 instead.\n");
 		osf_max = 100.0;
@@ -657,7 +657,7 @@ SRContext *sr_header(const char *filename, const char *stream_filename,
 
 	sr->cr = cairo_create(sr->surf);
 
-	snprintf(tmp, 1023, "Scaling report: %s", stream_filename);
+	snprintf(tmp, 1023, "%s", stream_filename);
 	show_text(sr->cr, tmp, 10.0, J_CENTER, "Sans Bold 16");
 	snprintf(tmp, 1023, "partialator %s", cmdline);
 	show_text(sr->cr, tmp, 45.0, J_LEFT, "Mono 7");
