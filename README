@@ -41,12 +41,11 @@ above characteristics.  The main programs are:
 
 In addition, there is also:
 
-	- get_hkl, for generating a list of squared structure factors for
-	           comparison to simulated or experimental data.
+	- get_hkl, for doing various simple operations on reflection lists.
 
-	- powder_plot, for turning an image into a list of reciprocal space
-	               vector moduli and intensities (i.e. a powder diffraction
-	               trace).
+	- powder_plot, for turning image or reflection data into a histogram of
+	               reciprocal space vector moduli and intensities (i.e. a
+	               1D powder diffraction  trace).
 
 	- compare_hkl, for working out the differences (e.g. a q-dependent
 	               scaling factor) between two lists of reflections.
@@ -58,7 +57,9 @@ In addition, there is also:
 
 	- cubeit, for summing patterns in 3D to inspect the peak profiles.
 
-	- calibrate_detector, which does nothing useful at the moment.
+	- calibrate_detector, for refining detector geometry.
+
+	- partial_sim, for calculating partial reflection intensities.
 
 
 Included at no extra cost are:
@@ -67,30 +68,32 @@ Included at no extra cost are:
 
 	- render_hkl, for turning reflection lists into pretty graphics.
 
-There is also a big folder of scripts for achieving many related tasks.
+There is also a folder full of scripts for achieving many related tasks.
 
-CrystFEL mostly works with images stored in HDF5 format, unit cell and atomic
-coordinate data in PDB format, and reflection lists in plain text format (i.e.
-not MTZ).  There is a script for turning a plain text reflection list into an
-MTZ file for later import into CCP4.
+CrystFEL mostly works with images stored in HDF5 format, unit cell data in PDB
+format, and reflection lists in plain text format (i.e. not MTZ).  There are
+scripts for converting both ways between plain text reflection lists and MTZ
+files.
 
-For documentation on the individual programs and topics, see the files inside
-the "doc" directory.
+Standard "man" pages are provided for documentation, or you can invoke any
+program with the argument "--help" to get a summary of options.  There are some
+example geometry and beam description files in doc/examples, and development
+documentation created using GTK-Doc.
 
 
 Installation
 ------------
 
 See the "INSTALL" file for the generic instructions on how to use the build
-system.  In short, it's:
+system.  In short, it's the usual:
 
 $ ./configure
 $ make
 $ make check
 $ sudo make install
 
-You might want to substitute something based on one of the following for the
-first step:
+If you have libraries installed in strange places, you might want to do
+something similar to one of these instead of the first step:
 
 $ ./configure --with-opencl
 $ ./configure --with-hdf5=/some/strange/location
@@ -142,8 +145,9 @@ In most cases, it will be more appropriate to refer to the overall suite than to
 one of its constituent programs.
 
 The following are NOT acceptable forms: "CRYSTFEL", "crystFEL", "Crystfel",
-"INDEXAMAJIG" and "PATTERN_SIM".  If you use any of these, the Capitalisation
-Monster will hunt you down and eat you.
+"INDEXAMAJIG" and "PATTERN_SIM".  If you use any of these (particularly the
+first one and the last two), the Capitalisation Monster will hunt you down and
+eat you.
 
 In addition, CrystFEL is made up of "programs", not "routines" nor "procedures".
 (The "programs" in turn are made up from "routines" and "procedures", but unless
