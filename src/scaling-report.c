@@ -170,6 +170,8 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 	double totals[nbins];
 	int counts[nbins];
 	double prob;
+	double pcalcmin[nbins];
+	double pcalcmax[nbins];
 
 	show_text_simple(cr, "Observed partiality", -20.0, g_height/2.0,
 	                      NULL, -M_PI_2, J_CENTER);
@@ -186,7 +188,10 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 	for ( i=0; i<nbins; i++ ) {
 		totals[i] = 0.0;
 		counts[i] = 0;
+		pcalcmin[i] = (double)i/nbins;
+		pcalcmax[i] = (double)(i+1)/nbins;
 	}
+	pcalcmax[nbins-1] += 0.001;  /* Make sure it include pcalc = 1 */
 
 	cairo_set_source_rgb(cr, 0.0, 0.7, 0.0);
 	prob = 1.0 / n;
@@ -218,9 +223,19 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 			pobs = Ipart/(images[i].osf*Ifull);
 			pcalc = get_partiality(refl);
 
+			//STATUS("%4i %4i %4i : %9.6f %9.6f %e %e %e\n", h, k, l,
+			//       pobs, pcalc, Ipart, Ifull, images[i].osf);
+
+			for ( bin=0; bin<nbins; bin++ ) {
+				if ( (pcalc >= pcalcmin[bin])
+				  && (pcalc < pcalcmax[bin]) )
+				{
+					totals[bin] += pobs;
+					counts[bin]++;
+				}
+			}
+
 			bin = nbins * pcalc;
-			totals[bin] += pobs;
-			counts[bin]++;
 
 			if ( random_flat(1.0) < prob ) {
 				plot_point(cr, g_width, g_height, pcalc, pobs);
@@ -236,8 +251,11 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 	cairo_new_path(cr);
 	cairo_move_to(cr, 0.0, g_height);
 	for ( i=0; i<nbins; i++ ) {
+
+		double pos = pcalcmin[i] + (pcalcmax[i] - pcalcmin[i])/2.0;
+
 		if ( counts[i] == 0 ) continue;
-		cairo_line_to(cr, g_width*((double)i+0.5)/nbins,
+		cairo_line_to(cr, g_width*pos,
 		                  g_height - g_height*(totals[i]/counts[i]));
 	}
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
