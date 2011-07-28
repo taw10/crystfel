@@ -168,7 +168,7 @@ am__src_indexamajig_SOURCES_DIST = src/indexamajig.c src/hdf5-file.c \
 	src/filters.c src/diffraction.c src/detector.c src/dirax.c \
 	src/mosflm.c src/reflist-utils.c src/symmetry.c src/geometry.c \
 	src/thread-pool.c src/beam-parameters.c src/reflist.c \
-	src/stream.c src/diffraction-gpu.c src/cl-utils.c
+	src/stream.c src/reax.c src/diffraction-gpu.c src/cl-utils.c
 @HAVE_OPENCL_TRUE@am__objects_1 = src/diffraction-gpu.$(OBJEXT) \
 @HAVE_OPENCL_TRUE@	src/cl-utils.$(OBJEXT)
 am_src_indexamajig_OBJECTS = src/indexamajig.$(OBJEXT) \
@@ -179,7 +179,8 @@ am_src_indexamajig_OBJECTS = src/indexamajig.$(OBJEXT) \
 	src/mosflm.$(OBJEXT) src/reflist-utils.$(OBJEXT) \
 	src/symmetry.$(OBJEXT) src/geometry.$(OBJEXT) \
 	src/thread-pool.$(OBJEXT) src/beam-parameters.$(OBJEXT) \
-	src/reflist.$(OBJEXT) src/stream.$(OBJEXT) $(am__objects_1)
+	src/reflist.$(OBJEXT) src/stream.$(OBJEXT) src/reax.$(OBJEXT) \
+	$(am__objects_1)
 src_indexamajig_OBJECTS = $(am_src_indexamajig_OBJECTS)
 src_indexamajig_LDADD = $(LDADD)
 src_indexamajig_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
@@ -652,7 +653,7 @@ EXTRA_DIST = configure m4/gnulib-cache.m4 tests/first_merge_check \
 	src/symmetry.h src/povray.h src/index-priv.h src/geometry.h \
 	src/render_hkl.h src/stream.h src/thread-pool.h \
 	src/beam-parameters.h src/post-refinement.h src/hrs-scaling.h \
-	src/reflist.h src/scaling-report.h $(crystfel_DATA) \
+	src/reflist.h src/scaling-report.h src/reax.h $(crystfel_DATA) \
 	doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
 	doc/examples/lcls-june-r0013-r0128.geom \
 	doc/examples/lcls-xpp-estimate.geom doc/examples/simple.geom \
@@ -699,7 +700,7 @@ src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c \
 	src/filters.c src/diffraction.c src/detector.c src/dirax.c \
 	src/mosflm.c src/reflist-utils.c src/symmetry.c src/geometry.c \
 	src/thread-pool.c src/beam-parameters.c src/reflist.c \
-	src/stream.c $(am__append_6)
+	src/stream.c src/reax.c $(am__append_6)
 @BUILD_HDFSEE_TRUE@src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/render.c \
 @BUILD_HDFSEE_TRUE@                     src/hdf5-file.c src/utils.c src/image.c src/filters.c \
 @BUILD_HDFSEE_TRUE@                     src/thread-pool.c src/detector.c
@@ -977,6 +978,7 @@ src/diffraction.$(OBJEXT): src/$(am__dirstamp) \
 src/dirax.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/mosflm.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/reax.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/diffraction-gpu.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/cl-utils.$(OBJEXT): src/$(am__dirstamp) \
@@ -1092,6 +1094,7 @@ mostlyclean-compile:
 	-rm -f src/povray.$(OBJEXT)
 	-rm -f src/powder_plot.$(OBJEXT)
 	-rm -f src/process_hkl.$(OBJEXT)
+	-rm -f src/reax.$(OBJEXT)
 	-rm -f src/reflist-utils.$(OBJEXT)
 	-rm -f src/reflist.$(OBJEXT)
 	-rm -f src/render.$(OBJEXT)
@@ -1143,6 +1146,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/povray.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/powder_plot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/process_hkl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reax.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reflist-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reflist.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render.Po@am__quote@

@@ -28,6 +28,7 @@ typedef enum {
 	INDEXING_NONE,
 	INDEXING_DIRAX,
 	INDEXING_MOSFLM,
+	INDEXING_REAX,
 } IndexingMethod;
 
 
@@ -41,6 +42,8 @@ enum {
 
 
 typedef struct _indexingprivate IndexingPrivate;
+
+extern IndexingPrivate *indexing_private(IndexingMethod indm);
 
 extern IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
                                          const char *filename,

@@ -70,7 +70,8 @@ src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c src/utils.c \
                           src/dirax.c src/mosflm.c \
                           src/reflist-utils.c src/symmetry.c \
                           src/geometry.c src/thread-pool.c \
-                          src/beam-parameters.c src/reflist.c src/stream.c
+                          src/beam-parameters.c src/reflist.c src/stream.c \
+                          src/reax.c
 
 if HAVE_OPENCL
 src_indexamajig_SOURCES += src/diffraction-gpu.c src/cl-utils.c
@@ -167,7 +168,7 @@ EXTRA_DIST += src/cell.h src/hdf5-file.h src/image.h src/utils.h \
               src/symmetry.h src/povray.h src/index-priv.h src/geometry.h \
               src/render_hkl.h src/stream.h src/thread-pool.h \
               src/beam-parameters.h src/post-refinement.h src/hrs-scaling.h \
-              src/reflist.h src/scaling-report.h
+              src/reflist.h src/scaling-report.h src/reax.h
 
 crystfeldir = $(datadir)/crystfel
 crystfel_DATA = data/diffraction.cl data/defs.h data/hdfsee.ui

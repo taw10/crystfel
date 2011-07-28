@@ -29,10 +29,11 @@
 #include "detector.h"
 #include "index.h"
 #include "index-priv.h"
+#include "reax.h"
 
 
 /* Base class constructor for unspecialised indexing private data */
-static IndexingPrivate *indexing_private(IndexingMethod indm)
+IndexingPrivate *indexing_private(IndexingMethod indm)
 {
 	struct _indexingprivate *priv;
 	priv = calloc(1, sizeof(struct _indexingprivate));
@@ -65,6 +66,9 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 		case INDEXING_MOSFLM :
 			iprivs[n] = indexing_private(indm[n]);
 			break;
+		case INDEXING_REAX :
+			iprivs[n] = reax_prepare();
+			break;
 		}
 
 	}
@@ -90,6 +94,9 @@ void cleanup_indexing(IndexingPrivate **priv)
 			free(priv[n]);
 			break;
 		case INDEXING_MOSFLM :
+			free(priv[n]);
+			break;
+		case INDEXING_REAX :
 			free(priv[n]);
 			break;
 		}
@@ -144,6 +151,9 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 			break;
 		case INDEXING_MOSFLM :
 			run_mosflm(image, cell);
+			break;
+		case INDEXING_REAX :
+			reax_index(image, cell);
 			break;
 		}
 		if ( image->ncells == 0 ) {
@@ -229,6 +239,8 @@ IndexingMethod *build_indexer_list(const char *str, int *need_cell)
 			list[i] = INDEXING_DIRAX;
 		} else if ( strcmp(methods[i], "mosflm") == 0) {
 			list[i] = INDEXING_MOSFLM;
+		} else if ( strcmp(methods[i], "reax") == 0) {
+			list[i] = INDEXING_REAX;
 		} else {
 			ERROR("Unrecognised indexing method '%s'\n",
 			      methods[i]);
