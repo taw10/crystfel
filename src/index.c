@@ -160,7 +160,7 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 			run_mosflm(image, cell);
 			break;
 		case INDEXING_REAX :
-			reax_index(image, cell);
+			reax_index(ipriv[n], image, cell);
 			break;
 		}
 		if ( image->ncells == 0 ) {

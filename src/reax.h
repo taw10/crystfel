@@ -21,7 +21,7 @@
 
 extern IndexingPrivate *reax_prepare(void);
 
-extern void reax_index(struct image *image, UnitCell *cell);
+extern void reax_index(IndexingPrivate *p, struct image *image, UnitCell *cell);
 
 
 #endif	/* REAX_H */

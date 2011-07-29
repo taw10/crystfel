@@ -90,7 +90,7 @@ IndexingPrivate *reax_prepare()
 }
 
 
-void reax_index(struct image *image, UnitCell *cell)
+void reax_index(IndexingPrivate *p, struct image *image, UnitCell *cell)
 {
 
 }
