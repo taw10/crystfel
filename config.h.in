@@ -38,6 +38,9 @@
 /* Define to 1 if you have the <fcntl.h> header file. */
 #undef HAVE_FCNTL_H
 
+/* Define to 1 if FFTW is available. */
+#undef HAVE_FFTW
+
 /* Define to 1 if you have the `forkpty' function. */
 #undef HAVE_FORKPTY
 

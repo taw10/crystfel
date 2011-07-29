@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <assert.h>
+#include <fftw3.h>
 
 #include "image.h"
 #include "utils.h"
@@ -39,7 +41,114 @@ struct reax_private
 {
 	IndexingPrivate base;
 	struct dvec *directions;
+	int n_dir;
 };
+
+
+static double check_dir(struct dvec *dir, ImageFeatureList *flist, double modv,
+                        double pmax, double *fft_in, fftw_complex *fft_out,
+                        fftw_plan plan)
+{
+	int n, i, v;
+	double *vals;
+
+	n = image_feature_count(flist);
+
+	vals = malloc(n*sizeof(double));
+	v = 0;
+	for ( i=0; i<n; i++ ) {
+
+		struct imagefeature *f;
+
+		f = image_get_feature(flist, i);
+		if ( f == NULL ) continue;
+
+		vals[v] = f->rx*dir->x + f->ry*dir->y + f->rz*dir->z;
+
+		v++;  /* Yuk, yuk, yuk */
+
+	}
+
+
+
+
+	free(vals);
+
+	return 0.0;
+}
+
+
+void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
+{
+	int i;
+	struct reax_private *p;
+	double fom;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	double mod_as;
+	double dx, dy, dz;
+	int nel, n;
+	double pmax;
+	double *fft_in;
+	fftw_complex *fft_out;
+	fftw_plan plan;
+	const double cellmax = 50.0e9;  /* 50 nm max cell size */
+
+	assert(pp->indm == INDEXING_REAX);
+	p = (struct reax_private *)pp;
+
+	cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
+	                                         &bsx, &bsy, &bsz,
+	                                         &csx, &csy, &csz);
+	mod_as = modulus(asx, asy, asz);
+
+	n = image_feature_count(image->features);
+	pmax = 0.0;
+	for ( i=0; i<n; i++ ) {
+
+		struct imagefeature *f;
+		double val;
+
+		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
+
+		val = modulus(f->rx, f->ry, f->rz);
+
+		if ( val > pmax ) pmax = val;
+
+	}
+	nel = 2.0*pmax*5.0*cellmax;
+
+	fft_in = fftw_malloc(nel*sizeof(double));
+	fft_out = fftw_malloc((nel/2 + 1)*sizeof(fftw_complex));
+
+	plan = fftw_plan_dft_r2c_1d(nel, fft_in, fft_out, FFTW_ESTIMATE);
+
+	/* Search for a* */
+	fom = 0.0;  dx = 0.0;  dy = 0.0;  dz = 0.0;
+	for ( i=0; i<p->n_dir; i++ ) {
+
+		double new_fom;
+
+		new_fom = check_dir(&p->directions[i], image->features, mod_as,
+		                    pmax, fft_in, fft_out, plan);
+		if ( new_fom > fom ) {
+			fom = new_fom;
+			dx = p->directions[i].x;
+			dy = p->directions[i].x;
+			dz = p->directions[i].x;
+		}
+
+	}
+
+	fftw_destroy_plan(plan);
+	fftw_free(fft_in);
+	fftw_free(fft_out);
+
+	/* No improvement from zero? */
+	if ( fom == 0.0 ) return;
+}
 
 
 IndexingPrivate *reax_prepare()
@@ -58,12 +167,14 @@ IndexingPrivate *reax_prepare()
 	angular_inc = 0.03;  /* From Steller (1997) */
 	samp = (2.0 * M_PI) / angular_inc;
 
-	priv->directions = malloc(samp*samp*sizeof(struct dvec));
+	priv->n_dir = samp*samp;
+	priv->directions = malloc(priv->n_dir*sizeof(struct dvec));
 	if ( priv == NULL) {
 		free(priv);
 		return NULL;
 	}
 
+	/* Generate vectors for 1D Fourier transforms */
 	for ( ui=0; ui<samp; ui++ ) {
 	for ( vi=0; vi<samp; vi++ ) {
 
@@ -74,8 +185,9 @@ IndexingPrivate *reax_prepare()
 		u = (double)ui/samp;
 		v = (double)vi/samp;
 
+		/* Uniform sampling of a hemisphere */
 		th = 2.0 * M_PI * u;
-		ph = acos(2.0*v - 1.0);
+		ph = acos(v);
 
 		dir = &priv->directions[ui + vi*samp];
 
@@ -87,10 +199,4 @@ IndexingPrivate *reax_prepare()
 	}
 
 	return (IndexingPrivate *)priv;
-}
-
-
-void reax_index(IndexingPrivate *p, struct image *image, UnitCell *cell)
-{
-
 }
