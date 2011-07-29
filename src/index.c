@@ -42,6 +42,13 @@ IndexingPrivate *indexing_private(IndexingMethod indm)
 }
 
 
+static const char *maybes(int n)
+{
+	if ( n == 1 ) return "";
+	return "s";
+}
+
+
 IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
                                    const char *filename, struct detector *det,
                                    double nominal_photon_energy)
@@ -51,7 +58,7 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 	IndexingPrivate **iprivs;
 
 	while ( indm[nm] != INDEXING_NONE ) nm++;
-	STATUS("Preparing %i indexing methods.\n", nm);
+	STATUS("Preparing %i indexing method%s.\n", nm, maybes(nm));
 	iprivs = malloc((nm+1) * sizeof(IndexingPrivate *));
 
 	for ( n=0; n<nm; n++ ) {
