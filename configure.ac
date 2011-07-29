@@ -219,7 +219,8 @@ AC_CHECK_LIB([pthread], [sched_setaffinity], [
 ])
 
 
-AC_CHECK_LIB([rt], [clock_gettime], [
+AC_CHECK_LIB([rt], [clock_gettime],
+[
    AC_DEFINE([HAVE_CLOCK_GETTIME], [1],
              [Define to 1 if clock_gettime is available.])
    TIMER_LIBS="-lrt"
