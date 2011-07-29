@@ -248,6 +248,7 @@ IndexingMethod *build_indexer_list(const char *str, int *need_cell)
 			list[i] = INDEXING_MOSFLM;
 		} else if ( strcmp(methods[i], "reax") == 0) {
 			list[i] = INDEXING_REAX;
+			*need_cell = 1;
 		} else {
 			ERROR("Unrecognised indexing method '%s'\n",
 			      methods[i]);
