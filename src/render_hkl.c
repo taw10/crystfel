@@ -94,8 +94,12 @@ static void draw_circles(double xh, double xk, double xl,
 	Reflection *refl;
 	RefListIterator *iter;
 	SymOpMask *m;
+	double nx, ny;
 
 	m = new_symopmask(sym);
+
+	nx = xh*xh + xk*xk + xl*xl;
+	ny = yh*yh + yk*yk + yl*yl;
 
 	/* Iterate over all reflections */
 	for ( refl = first_refl(list, &iter);
@@ -121,8 +125,8 @@ static void draw_circles(double xh, double xk, double xl,
 			/* Is the reflection in the zone? */
 			if ( h*zh + k*zk + l*zl != 0 ) continue;
 
-			xi = h*xh + k*xk + l*xl;
-			yi = h*yh + k*yk + l*yl;
+			xi = (h*xh + k*xk + l*xl) / nx;
+			yi = (h*yh + k*yk + l*yl) / ny;
 
 			switch ( wght) {
 			case WGHT_I :
