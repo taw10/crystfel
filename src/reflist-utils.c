@@ -414,3 +414,64 @@ RefList *asymmetric_indices(RefList *in, const SymOpList *sym)
 
 	return new;
 }
+
+
+/**
+ * resolution_limits:
+ * @list: A %RefList
+ * @cell: A %UnitCell
+ * @rmin: Place to store the minimum 1/d value
+ * @rmax: Place to store the maximum 1/d value
+ *
+ * This function calculates the minimum and maximum values of 1/d, where
+ * 2dsin(theta) = wavelength.  The answers are in m^-1.
+ **/
+void resolution_limits(RefList *list, UnitCell *cell,
+                       double *rmin, double *rmax)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+
+	*rmin = INFINITY;
+	*rmax = 0.0;
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double r;
+		signed int h, k, l;
+
+		get_indices(refl, &h, &k, &l);
+		r = 2.0 * resolution(cell, h, k, l);
+
+		if ( r > *rmax ) *rmax = r;
+		if ( r < *rmin ) *rmin = r;
+	}
+}
+
+
+/**
+ * max_intensity:
+ * @list: A %RefList
+ *
+ * Returns: The maximum intensity in @list.
+ **/
+double max_intensity(RefList *list)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	double max;
+
+	max = -INFINITY;
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double val = get_intensity(refl);
+		if ( val > max ) max = val;
+	}
+
+	return max;
+}

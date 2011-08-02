@@ -82,26 +82,18 @@ static void show_help(const char *s)
 #ifdef HAVE_CAIRO
 
 
-static void draw_circles(signed int xh, signed int xk, signed int xl,
-                         signed int yh, signed int yk, signed int yl,
+static void draw_circles(double xh, double xk, double xl,
+                         double yh, double yk, double yl,
                          signed int zh, signed int zk, signed int zl,
                          RefList *list, const SymOpList *sym,
                          cairo_t *dctx, int wght, double boost, int colscale,
                          UnitCell *cell, double radius, double theta,
                          double as, double bs, double cx, double cy,
-                         double scale,
-                         signed int *max_ux, signed int *max_uy,
-                         double *max_val, double *max_u, double *max_v,
-                         double *max_res)
+                         double scale, double *max_val)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 	SymOpMask *m;
-
-	if ( dctx == NULL ) {
-		*max_u = 0.0;  *max_v = 0.0;  *max_val = 0.0;
-		*max_res = 0.0;  *max_ux = 0;  *max_uy = 0;
-	}
 
 	m = new_symopmask(sym);
 
@@ -110,9 +102,8 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 
-		double u, v, val, res;
+		double u, v, val;
 		signed int ha, ka, la;
-		int xi, yi;
 		int i, n;
 
 		get_indices(refl, &ha, &ka, &la);
@@ -123,6 +114,7 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 		for ( i=0; i<n; i++ ) {
 
 			signed int h, k, l;
+			double xi, yi;
 
 			get_equiv(sym, m, i, ha, ka, la, &h, &k, &l);
 
@@ -171,26 +163,12 @@ static void draw_circles(signed int xh, signed int xk, signed int xl,
 
 			} else {
 
-				/* Find max vectors in plane for scaling */
-				if ( fabs(u) > fabs(*max_u) ) *max_u = fabs(u);
-				if ( fabs(v) > fabs(*max_v) ) *max_v = fabs(v);
-
 				/* Find max value for colour scale */
 				if ( !isnan(val) && !isinf(val)
 				  && (fabs(val) > fabs(*max_val)) )
 				{
 					*max_val = fabs(val);
 				}
-
-				/* Find max indices */
-				if ( (yi==0) && (fabs(xi) > *max_ux) )
-					*max_ux = fabs(xi);
-				if ( (xi==0) && (fabs(yi) > *max_uy) )
-					*max_uy = fabs(yi);
-
-				/* Find max resolution */
-				res = resolution(cell, h, k, l);
-				if ( res > *max_res ) *max_res = res;
 
 			}
 
@@ -261,11 +239,10 @@ static void render_za(UnitCell *cell, RefList *list,
 {
 	cairo_surface_t *surface;
 	cairo_t *dctx;
-	double max_u, max_v, max_res, max_val;
-	double scale_u, scale_v, scale;
+	double max_val;
+	double scale1, scale2, scale;
 	double sep_u, sep_v, max_r;
 	double u, v;
-	signed int max_ux, max_uy;
 	double as, bs, theta;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
@@ -279,6 +256,7 @@ static void render_za(UnitCell *cell, RefList *list,
 	double cx, cy;
 	const double border = 200.0;
 	int png;
+	double rmin, rmax;
 
 	/* Vector product to determine the zone axis. */
 	zh = xk*yl - xl*yk;
@@ -304,19 +282,16 @@ static void render_za(UnitCell *cell, RefList *list,
 	yy = yh*asy + yk*bsy + yl*csy;
 	yz = yh*asz + yk*bsz + yl*csz;
 	theta = angle_between(xx, xy, xz, yx, yy, yz);
-	as = modulus(xx, xy, xz) / 1e9;
-	bs = modulus(yx, yy, yz) / 1e9;
+	as = modulus(xx, xy, xz);
+	bs = modulus(yx, yy, yz);
 
-	scale = 1.0;
-	draw_circles(xh, xk, xl, yh, yk, yl, zh, zk, zl,
-	             list, sym, NULL, wght, boost, colscale, cell,
-	             0.0, theta, as, bs, 0.0, 0.0, scale,
-	             &max_ux, &max_uy, &max_val, &max_u, &max_v, &max_res);
+	resolution_limits(list, cell, &rmin, &rmax);
+	printf("Resolution limits: 1/d = %.2f - %.2f nm^-1"
+	       " (d = %.2f - %.2f A)\n",
+	       rmin/1e9, rmax/1e9, (1.0/rmin)/1e-10, (1.0/rmax)/1e-10);
 
-	max_res /= 1e9;
-	printf("Maximum resolution is 1/d = %5.3f nm^-1, d = %5.3f nm\n",
-	       max_res*2.0, 1.0/(max_res*2.0));
 
+	max_val = max_intensity(list);
 	if ( max_val <= 0.0 ) {
 		STATUS("Couldn't find max value.\n");
 		return;
@@ -327,23 +302,18 @@ static void render_za(UnitCell *cell, RefList *list,
 		max_val = scale_top;
 	}
 
-	/* Choose whichever scaling factor gives the smallest value */
-	scale_u = ((double)wh-border) / (2.0*max_u);
-	scale_v = ((double)ht-border) / (2.0*max_v);
-	scale = (scale_u < scale_v) ? scale_u : scale_v;
+	scale1 = ((double)wh-border) / (2.0*rmax);
+	scale2 = ((double)ht-border) / (2.0*rmax);
+	scale = (scale1 < scale2) ? scale1 : scale2;
 
+	/* Work out the spot radius */
 	sep_u = scale*as;
 	sep_v = scale*bs;
-	/* We are interested in the smaller of the two separations */
 	max_r = (sep_u < sep_v) ? sep_u : sep_v;
 	max_r /= 2.0;  /* Max radius is half the separation */
 	max_r -= 1.0;  /* Add a tiny separation between circles */
-	if ( max_r < 1.0 ) {
-		ERROR("Circle radius is probably too small (%f).\n", max_r);
-	}
 
-	if ( outfile == NULL ) outfile = "za.pdf";
-
+	/* Create surface */
 	if ( strcmp(outfile+strlen(outfile)-4, ".png") == 0 ) {
 		png = 1;
 		surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
@@ -382,7 +352,7 @@ static void render_za(UnitCell *cell, RefList *list,
 	draw_circles(xh, xk, xl, yh, yk, yl, zh, zk, zl,
 	             list, sym, dctx, wght, boost, colscale, cell,
 	             max_r, theta, as, bs, cx, cy, scale,
-	             NULL, NULL, &max_val, NULL, NULL, NULL);
+	             &max_val);
 
 	/* Centre marker */
 	cairo_arc(dctx, (double)cx,
@@ -394,8 +364,8 @@ static void render_za(UnitCell *cell, RefList *list,
 	cairo_set_line_cap(dctx, CAIRO_LINE_CAP_ROUND);
 	cairo_set_line_width(dctx, 4.0);
 	cairo_move_to(dctx, (double)cx, (double)cy);
-	u = (2.0+max_ux)*as*sin(theta);
-	v = (2.0+max_ux)*as*cos(theta);
+	u = rmax*sin(theta);
+	v = rmax*cos(theta);
 	cairo_line_to(dctx, cx+u*scale, cy+v*scale);
 	cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
 	cairo_stroke(dctx);
@@ -412,14 +382,12 @@ static void render_za(UnitCell *cell, RefList *list,
 	cairo_text_extents(dctx, tmp, &size);
 
 	cairo_move_to(dctx, (double)cx, (double)cy);
-	u = 0.0;
-	v = (2.0+max_uy)*bs;
-	cairo_line_to(dctx, cx+u*scale, cy+v*scale);
+	cairo_line_to(dctx, cx, cy+rmax*scale);
 	cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
 	cairo_stroke(dctx);
 
-	cairo_move_to(dctx, cx+u*scale - size.width/2.0,
-	                    cy+v*scale + size.height + 20.0);
+	cairo_move_to(dctx, cx - size.width/2.0,
+	                    cy+rmax*scale + size.height + 20.0);
 	render_overlined_indices(dctx, yh, yk, yl);
 	cairo_fill(dctx);
 
@@ -683,6 +651,9 @@ int main(int argc, char *argv[])
 	if ( weighting == NULL ) {
 		weighting = strdup("I");
 	}
+
+	if ( outfile == NULL ) outfile = "za.pdf";
+
 
 	if ( strcmp(weighting, "I") == 0 ) {
 		wght = WGHT_I;

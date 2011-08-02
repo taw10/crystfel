@@ -44,4 +44,9 @@ extern int find_equiv_in_list(RefList *list, signed int h, signed int k,
 
 extern RefList *asymmetric_indices(RefList *in, const SymOpList *sym);
 
+extern void resolution_limits(RefList *list, UnitCell *cell,
+                              double *rmin, double *rmax);
+
+extern double max_intensity(RefList *list);
+
 #endif	/* REFLIST_UTILS_H */
