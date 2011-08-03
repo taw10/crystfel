@@ -25,12 +25,12 @@ useful for crystallography.
 The output of powder_plot consists of a 2 line header followed by a tab 
 delimitated list of 6 values:
 
-q of the histogram bin
-the total number of peaks (N)
-the total intensity in the N peaks
-the mean intensity of the N peaks
-the 1 sigma (standard deviation) of the distribution
-the 1 sigma (standard deviation) of the mean of the data
+ q of the histogram bin
+ the total number of peaks (N)
+ the total intensity in the N peaks 
+ the mean intensity of the N peaks
+ the 1 sigma (standard deviation) of the distribution
+ the 1 sigma (standard deviation) of the mean of the data
 
 Please note that the sigma of the mean is not the sigma of the distribution, 
 however they are related by the sqrt(N).
@@ -46,53 +46,40 @@ selected.
 .SH HISTOGRAM OPTIONS
 
 You can choose to set the min and maximum q value [units are inverse meters] 
-with:
---q_min=<number>
-and 
---q_max=<number>
-The default value is to use the entire detector setup in the .geom file
-(loaded wiht the -g flag).
+with: --q_min=<number> and  --q_max=<number> The default value is to use the 
+entire detector setup in the .geom file (loaded wiht the -g flag).
 
 You can also adjust the number of histogram bins wiht:
 --bins=<intiger>
 
 Scaling can be set to produce linearly, quadratically or cubicly spaced q
-values using:
- --spacing=<type>  possible types are:
-	linear      : linear (default)
-	q2          : even spacing in Wilson plots (quadratic)
-	volume      : constant volume (cubic)
+values using: --spacing=<type>  possible types are:
+ linear      : linear (default)
+ q2          : even spacing in Wilson plots (quadratic)
+ volume      : constant volume (cubic)
 
 .SH DATA TYPE OPTIONS
 
 Powder_plot can accept .stream, .hkl, or .h5 files as input parameters.  For
 the stream many choices exist for assembling the powder these can be accesed
 using the --data=<type> flag.  Possible flags are:
-	reflection  : uses peak positons from indexed reflection 
-	hkl         : uses the hkl list from indexed reflections (requires pdb 
-	              file)
-	d           : uses the 1/d list from indexed reflections (default)
-	peaks       : uses all peaks found from peak search
-	h5          : all points in h5, excluding bad regions
+ reflection  : uses peak positons from indexed reflection 
+ hkl         : uses the hkl list from indexed reflections (requires pdb 
+ 	              file)
+ d           : uses the 1/d list from indexed reflections (default)
+ peaks       : uses all peaks found from peak search
+ h5          : all points in h5, excluding bad regions
 
 Reflection differs from hkl or d as each crystal may index with a sligtly
 different unit cell size.  The peaks option uses the peak lists and includes
 and peaks (regardless if they indexed).
 
 A few other implemented flags to give better control are:
---no-sat-corr	Don't correct values of saturated peaks using a table included
-		in the HDF5 file.
---only-indexed	Use with -data=peaks or h5 if you want to use the peak list of
-		only indexed patterns. (Useful for seeing changes from paterns
-		that do not index.)
---no-q-scaling	Use with .hkl files if you want to not scale the powder by 1/q^2
---ring-corr	Use if you want to scale the powder plot to correct for the 
-		fractional area sampled of the powder ring. (Useful for
-		detectors with gaps.)
---use-redundancy	Use with .hkl files if you want to use the number of 
-			measurements and not the number of symetrical equivelent
-			reflections as the number of time a reflection occurs 
-			in the powder
+ --no-sat-corr		Don't correct values of saturated peaks using a table included in the HDF5 file.
+ --only-indexed	Use with -data=peaks or h5 if you want to use the peak list of only indexed patterns. (Useful for seeing changes from paterns that do not index.)
+ --no-q-scaling	Use with .hkl files if you want to not scale the powder by 1/q^2
+ --ring-corr		Use if you want to scale the powder plot to correct for the fractional area sampled of the powder ring. (Useful for detectors with gaps.)
+ --use-redundancy	Use with .hkl files if you want to use the number of measurements and not the number of symetrical equivelent reflections as the number of time a reflection occurs in the powder
 
 .SH NOTE ON SUMMING H5 FILES
 
