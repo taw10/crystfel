@@ -1,5 +1,4 @@
-.\"
-.\" powder_plot man page
+\" powder_plot man page
 .\"
 .\" (c) 2011 Andrew Aquila <andrew.aquila@cfel.de>
 .\" (c) 2009-2011 Thomas White <taw@physics.org>
@@ -47,9 +46,9 @@ selected.
 
 You can choose to set the min and maximum q value [units are inverse meters] 
 with: --q_min=<number> and  --q_max=<number> The default value is to use the 
-entire detector setup in the .geom file (loaded wiht the -g flag).
+entire detector setup in the .geom file (loaded with the -g flag).
 
-You can also adjust the number of histogram bins wiht:
+You can also adjust the number of histogram bins with:
 --bins=<intiger>
 
 Scaling can be set to produce linearly, quadratically or cubicly spaced q
@@ -61,25 +60,25 @@ values using: --spacing=<type>  possible types are:
 .SH DATA TYPE OPTIONS
 
 Powder_plot can accept .stream, .hkl, or .h5 files as input parameters.  For
-the stream many choices exist for assembling the powder these can be accesed
+the stream many choices exist for assembling the powder these can be accessed
 using the --data=<type> flag.  Possible flags are:
- reflection  : uses peak positons from indexed reflection 
+ reflection  : uses peak positions from indexed reflection 
  hkl         : uses the hkl list from indexed reflections (requires pdb 
- 	              file)
+                      file)
  d           : uses the 1/d list from indexed reflections (default)
  peaks       : uses all peaks found from peak search
  h5          : all points in h5, excluding bad regions
 
-Reflection differs from hkl or d as each crystal may index with a sligtly
+Reflection differs from hkl or d as each crystal may index with a slightly
 different unit cell size.  The peaks option uses the peak lists and includes
 and peaks (regardless if they indexed).
 
 A few other implemented flags to give better control are:
- --no-sat-corr		Don't correct values of saturated peaks using a table included in the HDF5 file.
- --only-indexed	Use with -data=peaks or h5 if you want to use the peak list of only indexed patterns. (Useful for seeing changes from paterns that do not index.)
- --no-q-scaling	Use with .hkl files if you want to not scale the powder by 1/q^2
- --ring-corr		Use if you want to scale the powder plot to correct for the fractional area sampled of the powder ring. (Useful for detectors with gaps.)
- --use-redundancy	Use with .hkl files if you want to use the number of measurements and not the number of symetrical equivelent reflections as the number of time a reflection occurs in the powder
+ --no-sat-corr          Don't correct values of saturated peaks using a table included in the HDF5 file.
+ --only-indexed Use with -data=peaks or h5 if you want to use the peak list of only indexed patterns. (Useful for seeing changes from patterns that do not index.)
+ --no-q-scaling Use with .hkl files if you want to not scale the powder by 1/q^2
+ --ring-corr            Use if you want to scale the powder plot to correct for the fractional area sampled of the powder ring. (Useful for detectors with gaps.)
+ --use-redundancy       Use with .hkl files if you want to use the number of measurements and not the number of symmetrical equivalent reflections as the number of time a reflection occurs in the powder
 
 .SH NOTE ON SUMMING H5 FILES
 
@@ -89,5 +88,3 @@ can then be used as the input to powder_plot.  This will produce the goal of
 summing a list of h5 files into a powder.  Also powder_plot , can sum h5 files
 if they are located in a .stream file.  This is useful with the --only-indexed,
 to compare the powder from all the data to the power from only indexed patterns.
-
-
