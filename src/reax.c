@@ -45,11 +45,13 @@ struct reax_private
 };
 
 
-static double check_dir(struct dvec *dir, ImageFeatureList *flist, double modv,
+static double check_dir(struct dvec *dir, ImageFeatureList *flist,
                         int nel, double pmax, double *fft_in,
-                        fftw_complex *fft_out, fftw_plan plan)
+                        fftw_complex *fft_out, fftw_plan plan,
+                        int smin, int smax)
 {
 	int n, i;
+	double tot;
 
 	for ( i=0; i<nel; i++ ) {
 		fft_in[i] = 0.0;
@@ -74,7 +76,15 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist, double modv,
 
 	fftw_execute(plan);
 
-	return 0.0;
+	tot = 0.0;
+	for ( i=smin; i<=smax; i++ ) {
+		double re, im;
+		re = fft_out[i][0];
+		im = fft_out[i][1];
+		tot += sqrt(re*re + im*im);
+	}
+
+	return tot;
 }
 
 
@@ -86,14 +96,21 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
-	double mod_as;
+	double mod_as, mod_bs, mod_cs;
+	double als, bes, gas;
 	double dx, dy, dz;
 	int nel, n;
 	double pmax;
 	double *fft_in;
 	fftw_complex *fft_out;
 	fftw_plan plan;
+	int smin, smax;
+	double astmin, astmax;
+	double bstmin, bstmax;
+	double cstmin, cstmax;
 	const double cellmax = 50.0e-9;  /* 50 nm max cell size */
+	const double ltol = 5.0;  /* Cell "wiggle" in percent */
+	const double angtol = deg2rad(1.5);  /* Angle tolerance in degrees */
 
 	assert(pp->indm == INDEXING_REAX);
 	p = (struct reax_private *)pp;
@@ -102,6 +119,20 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
 	mod_as = modulus(asx, asy, asz);
+	astmin = mod_as * (1.0-ltol/100.0);
+	astmax = mod_as * (1.0+ltol/100.0);
+
+	mod_bs = modulus(bsx, bsy, bsz);
+	bstmin = mod_bs * (1.0-ltol/100.0);
+	bstmax = mod_bs * (1.0+ltol/100.0);
+
+	mod_cs = modulus(csx, csy, csz);
+	cstmin = mod_cs * (1.0-ltol/100.0);
+	cstmax = mod_cs * (1.0+ltol/100.0);
+
+	als = angle_between(bsx, bsy, bsz, csx, csy, csz);
+	bes = angle_between(asx, asy, asz, csx, csy, csz);
+	gas = angle_between(asx, asy, asz, bsx, bsy, bsz);
 
 	n = image_feature_count(image->features);
 	pmax = 0.0;
@@ -120,6 +151,13 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	}
 	nel = 2.0*pmax*5.0*cellmax;
 
+	smin = 2.0*pmax / astmax;
+	smax = 2.0*pmax / astmin;
+
+	/* Take the smallest power of 2 greater than "nel"
+	 * to make the FFT go fast */
+	nel = pow(2.0, floor((log(nel)/log(2.0))) + 1.0);
+
 	fft_in = fftw_malloc(nel*sizeof(double));
 	fft_out = fftw_malloc((nel/2 + 1)*sizeof(fftw_complex));
 
@@ -131,23 +169,80 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 		double new_fom;
 
-		new_fom = check_dir(&p->directions[i], image->features, mod_as,
-		                    nel, pmax, fft_in, fft_out, plan);
+		new_fom = check_dir(&p->directions[i], image->features,
+		                    nel, pmax, fft_in, fft_out, plan,
+		                    smin, smax);
 		if ( new_fom > fom ) {
 			fom = new_fom;
 			dx = p->directions[i].x;
-			dy = p->directions[i].x;
-			dz = p->directions[i].x;
+			dy = p->directions[i].y;
+			dz = p->directions[i].z;
 		}
 
 	}
+	asx = dx*mod_as;  asy = dy*mod_as;  asz = dz*mod_as;
+
+	/* Search for b* */
+	smin = 2.0*pmax / bstmax;
+	smax = 2.0*pmax / bstmin;
+	fom = 0.0;  dx = 0.0;  dy = 0.0;  dz = 0.0;
+	for ( i=0; i<p->n_dir; i++ ) {
+
+		double new_fom, ang;
+
+		ang = angle_between(p->directions[i].x, p->directions[i].y,
+		                    p->directions[i].z, asx, asy, asz);
+		if ( fabs(ang-gas) > angtol ) continue;
+
+		new_fom = check_dir(&p->directions[i], image->features,
+		                    nel, pmax, fft_in, fft_out, plan,
+		                    smin, smax);
+		if ( new_fom > fom ) {
+			fom = new_fom;
+			dx = p->directions[i].x;
+			dy = p->directions[i].y;
+			dz = p->directions[i].z;
+		}
+
+	}
+	bsx = dx*mod_bs;  bsy = dy*mod_bs;  bsz = dz*mod_bs;
+
+	/* Search for c* */
+	smin = 2.0*pmax / cstmax;
+	smax = 2.0*pmax / cstmin;
+	fom = 0.0;  dx = 0.0;  dy = 0.0;  dz = 0.0;
+	for ( i=0; i<p->n_dir; i++ ) {
+
+		double new_fom, ang;
+
+		ang = angle_between(p->directions[i].x, p->directions[i].y,
+		                    p->directions[i].z, asx, asy, asz);
+		if ( fabs(ang-bes) > angtol ) continue;
+
+		ang = angle_between(p->directions[i].x, p->directions[i].y,
+		                    p->directions[i].z, bsx, bsy, bsz);
+		if ( fabs(ang-als) > angtol ) continue;
+
+		new_fom = check_dir(&p->directions[i], image->features,
+		                    nel, pmax, fft_in, fft_out, plan,
+		                    smin, smax);
+		if ( new_fom > fom ) {
+			fom = new_fom;
+			dx = p->directions[i].x;
+			dy = p->directions[i].y;
+			dz = p->directions[i].z;
+		}
+
+	}
+	csx = dx*mod_cs;  csy = dy*mod_cs;  csz = dz*mod_cs;
 
 	fftw_destroy_plan(plan);
 	fftw_free(fft_in);
 	fftw_free(fft_out);
 
-	/* No improvement from zero? */
-	if ( fom == 0.0 ) return;
+	image->indexed_cell = cell_new();
+	cell_set_reciprocal(image->indexed_cell, asx, asy, asz,
+	                    bsx, bsy, bsz, csx, csy, csz);
 }
 
 
