@@ -46,33 +46,33 @@ struct reax_private
 
 
 static double check_dir(struct dvec *dir, ImageFeatureList *flist, double modv,
-                        double pmax, double *fft_in, fftw_complex *fft_out,
-                        fftw_plan plan)
+                        int nel, double pmax, double *fft_in,
+                        fftw_complex *fft_out, fftw_plan plan)
 {
-	int n, i, v;
-	double *vals;
+	int n, i;
+
+	for ( i=0; i<nel; i++ ) {
+		fft_in[i] = 0.0;
+	}
 
 	n = image_feature_count(flist);
-
-	vals = malloc(n*sizeof(double));
-	v = 0;
 	for ( i=0; i<n; i++ ) {
 
 		struct imagefeature *f;
+		double val;
+		int idx;
 
 		f = image_get_feature(flist, i);
 		if ( f == NULL ) continue;
 
-		vals[v] = f->rx*dir->x + f->ry*dir->y + f->rz*dir->z;
+		val = f->rx*dir->x + f->ry*dir->y + f->rz*dir->z;
 
-		v++;  /* Yuk, yuk, yuk */
+		idx = nel/2 + nel*val/(2.0*pmax);
+		fft_in[idx]++;
 
 	}
 
-
-
-
-	free(vals);
+	fftw_execute(plan);
 
 	return 0.0;
 }
@@ -93,14 +93,14 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	double *fft_in;
 	fftw_complex *fft_out;
 	fftw_plan plan;
-	const double cellmax = 50.0e9;  /* 50 nm max cell size */
+	const double cellmax = 50.0e-9;  /* 50 nm max cell size */
 
 	assert(pp->indm == INDEXING_REAX);
 	p = (struct reax_private *)pp;
 
-	cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
-	                                         &bsx, &bsy, &bsz,
-	                                         &csx, &csy, &csz);
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
 	mod_as = modulus(asx, asy, asz);
 
 	n = image_feature_count(image->features);
@@ -132,7 +132,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 		double new_fom;
 
 		new_fom = check_dir(&p->directions[i], image->features, mod_as,
-		                    pmax, fft_in, fft_out, plan);
+		                    nel, pmax, fft_in, fft_out, plan);
 		if ( new_fom > fom ) {
 			fom = new_fom;
 			dx = p->directions[i].x;
@@ -186,13 +186,13 @@ IndexingPrivate *reax_prepare()
 		v = (double)vi/samp;
 
 		/* Uniform sampling of a hemisphere */
-		th = 2.0 * M_PI * u;
-		ph = acos(v);
+		th = 2.0 * M_PI * u;  /* "Longitude" */
+		ph = acos(v);         /* "Latitude" */
 
 		dir = &priv->directions[ui + vi*samp];
 
 		dir->x = cos(th) * sin(ph);
-		dir->y = sin(th) * sin(th);
+		dir->y = sin(th) * sin(ph);
 		dir->z = cos(ph);
 
 	}
