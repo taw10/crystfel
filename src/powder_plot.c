@@ -952,13 +952,13 @@ int main(int argc, char *argv[])
 	} else if ( strcmp(datatype, "hkl") == 0 ) {
 		data_type = PLOT_HKL;
 		need_pdb = 1;
-		if ((hist_info.q_min <= 0.0) || (hist_info.q_max <= 0.0)) {
+		if ((hist_info.q_min < 0.0) || (hist_info.q_max < 0.0)) {
 			need_geometry = 1;
 		}
 
 	} else if ( strcmp(datatype, "d") == 0 ) {
 		data_type = PLOT_D;
-		if ((hist_info.q_min <= 0.0) || (hist_info.q_max <= 0.0)) {
+		if ((hist_info.q_min < 0.0) || (hist_info.q_max < 0.0)) {
 			need_geometry = 1;
 		}
 
@@ -983,12 +983,6 @@ int main(int argc, char *argv[])
 	if ( hist_info.histsize <= 0 ) {
 		ERROR("You need to specify a histogram with more then 0 "
                       "bins\n");
-		return 1;
-	}
-	if ( hist_info.q_min > hist_info.q_max ) {
-		ERROR("the minimum q value of: %e "
-	              "is greator then your max q value of: %e\n",
-                      hist_info.q_min, hist_info.q_max);
 		return 1;
 	}
 
@@ -1055,12 +1049,18 @@ int main(int argc, char *argv[])
 	free(sym_str);
 
 	/* Set up histogram info*/
-	if (hist_info.q_min <= 0.0 ) {
+	if (hist_info.q_min < 0.0 ) {
 		hist_info.q_min = smallest_q(&image);
 	}
-	if (hist_info.q_max <= 0.0 ) {
+	if (hist_info.q_max < 0.0 ) {
 		hist_info.q_max = largest_q(&image);
 	}
+	if ( hist_info.q_min >= hist_info.q_max ) {
+		ERROR("the minimum q value of: %e "
+	              "is greator then your max q value of: %e\n",
+                      hist_info.q_min, hist_info.q_max);
+		return 1;
+	}	
 	if (hist_info.spacing == LINEAR) {
 		hist_info.q_delta = (hist_info.q_max - hist_info.q_min)/
 		                    hist_info.histsize;
