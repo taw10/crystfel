@@ -63,6 +63,7 @@ struct dirax_data {
 
 	/* DirAx auto-indexing high-level stuff */
 	int                     step;
+	int                     finished_ok;
 	int                     read_cell;
 	int                     best_acl;
 	int                     best_acl_nh;
@@ -232,6 +233,7 @@ static void dirax_send_next(struct image *image, struct dirax_data *dirax)
 
 	case 6 :
 		dirax_sendline("go\n", dirax);
+		dirax->finished_ok = 1;
 		break;
 
 	case 7 :
@@ -483,6 +485,7 @@ void run_dirax(struct image *image)
 	fcntl(dirax->pty, F_SETFL, opts | O_NONBLOCK);
 
 	dirax->step = 1;	/* This starts the "initialisation" procedure */
+	dirax->finished_ok = 0;
 	dirax->read_cell = 0;
 	dirax->n_acls_tried = 0;
 	dirax->best_acl_nh = 0;
@@ -517,6 +520,10 @@ void run_dirax(struct image *image)
 	close(dirax->pty);
 	free(dirax->rbuffer);
 	waitpid(dirax->pid, &status, 0);
+
+	if ( dirax->finished_ok == 0 ) {
+		ERROR("DirAx doesn't seem to be working properly.\n");
+	}
 
 	free(dirax);
 }

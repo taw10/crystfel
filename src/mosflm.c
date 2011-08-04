@@ -88,6 +88,7 @@ struct mosflm_data {
 	char                    imagefile[128];
 	char                    sptfile[128];
 	int                     step;
+	int                     finished_ok;
 	UnitCell                *target_cell;
 
 };
@@ -374,6 +375,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 
 	case 10 :
 		mosflm_sendline("GO\n", mosflm);
+		mosflm->finished_ok = 1;
 		break;
 
 	default:
@@ -558,6 +560,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	fcntl(mosflm->pty, F_SETFL, opts | O_NONBLOCK);
 
 	mosflm->step = 1;	/* This starts the "initialisation" procedure */
+	mosflm->finished_ok = 0;
 
 	do {
 
@@ -590,8 +593,12 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	free(mosflm->rbuffer);
 	waitpid(mosflm->pid, &status, 0);
 
-	/* Read the mosflm NEWMAT file and set cell candidate if found */
-	read_newmat(mosflm->newmatfile, image);
+	if ( mosflm->finished_ok == 0 ) {
+		ERROR("MOSFLM doesn't seem to be working properly.\n");
+	} else {
+		/* Read the mosflm NEWMAT file and get cell if found */
+		read_newmat(mosflm->newmatfile, image);
+	}
 
 	free(mosflm);
 }
