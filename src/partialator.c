@@ -162,7 +162,7 @@ static int select_scalable_reflections(RefList *list, RefList *reference)
 
 		if ( get_partiality(refl) < 0.1 ) sc = 0;
 		v = fabs(get_intensity(refl));
-		if ( v < 0.1 ) sc = 0;
+		if ( v < 0.1 ) sc = 0;  /* FIXME: Yuk */
 
 		/* If we are scaling against a reference set, we additionally
 		 * require that this reflection is in the reference list. */
