@@ -20,8 +20,8 @@
 #include "cell.h"
 
 extern IndexingPrivate *reax_prepare(void);
+extern void reax_cleanup(IndexingPrivate *pp);
 
 extern void reax_index(IndexingPrivate *p, struct image *image, UnitCell *cell);
-
 
 #endif	/* REAX_H */

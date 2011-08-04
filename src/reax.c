@@ -43,6 +43,10 @@ struct reax_private
 	struct dvec *directions;
 	int n_dir;
 	double angular_inc;
+	double *fft_in;
+	fftw_complex *fft_out;
+	fftw_plan plan;
+	int nel;
 };
 
 
@@ -75,7 +79,7 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 
 	}
 
-	fftw_execute(plan);
+	fftw_execute_dft_r2c(plan, fft_in, fft_out);
 
 	tot = 0.0;
 	for ( i=smin; i<=smax; i++ ) {
@@ -209,16 +213,14 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	double mod_as, mod_bs, mod_cs;
 	double als, bes, gas;
 	double dx, dy, dz;
-	int nel, n;
-	double pmax;
 	double *fft_in;
 	fftw_complex *fft_out;
-	fftw_plan plan;
 	int smin, smax;
 	double astmin, astmax;
 	double bstmin, bstmax;
 	double cstmin, cstmax;
-	const double cellmax = 50.0e-9;  /* 50 nm max cell size */
+	double pmax;
+	int n;
 	const double ltol = 5.0;             /* Direct space axis length
 	                                      * tolerance in percent */
 	const double angtol = deg2rad(1.5);  /* Reciprocal angle tolerance
@@ -226,6 +228,9 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	assert(pp->indm == INDEXING_REAX);
 	p = (struct reax_private *)pp;
+
+	fft_in = fftw_malloc(p->nel*sizeof(double));
+	fft_out = fftw_malloc((p->nel/2 + 1)*sizeof(fftw_complex));
 
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
@@ -246,8 +251,8 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	bes = angle_between(asx, asy, asz, csx, csy, csz);
 	gas = angle_between(asx, asy, asz, bsx, bsy, bsz);
 
-	n = image_feature_count(image->features);
 	pmax = 0.0;
+	n = image_feature_count(image->features);
 	for ( i=0; i<n; i++ ) {
 
 		struct imagefeature *f;
@@ -257,23 +262,12 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 		if ( f == NULL ) continue;
 
 		val = modulus(f->rx, f->ry, f->rz);
-
 		if ( val > pmax ) pmax = val;
 
 	}
-	nel = 2.0*pmax*5.0*cellmax;
 
 	smin = 2.0*pmax / astmax;
 	smax = 2.0*pmax / astmin;
-
-	/* Take the smallest power of 2 greater than "nel"
-	 * to make the FFT go fast */
-	nel = pow(2.0, floor((log(nel)/log(2.0))) + 1.0);
-
-	fft_in = fftw_malloc(nel*sizeof(double));
-	fft_out = fftw_malloc((nel/2 + 1)*sizeof(fftw_complex));
-
-	plan = fftw_plan_dft_r2c_1d(nel, fft_in, fft_out, FFTW_ESTIMATE);
 
 	/* Search for a* */
 	fom = 0.0;  dx = 0.0;  dy = 0.0;  dz = 0.0;
@@ -282,7 +276,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 		double new_fom;
 
 		new_fom = check_dir(&p->directions[i], image->features,
-		                    nel, pmax, fft_in, fft_out, plan,
+		                    p->nel, pmax, fft_in, fft_out, p->plan,
 		                    smin, smax);
 		if ( new_fom > fom ) {
 			fom = new_fom;
@@ -292,8 +286,8 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 		}
 
 	}
-	fine_search(p, image->features, nel, pmax, fft_in, fft_out, plan,
-	            smin, smax, dx, dy, dz, &asx, &asy, &asz, mod_as);
+	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
+	            p->plan, smin, smax, dx, dy, dz, &asx, &asy, &asz, mod_as);
 
 	/* Search for b* */
 	smin = 2.0*pmax / bstmax;
@@ -308,7 +302,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 		if ( fabs(ang-gas) > angtol ) continue;
 
 		new_fom = check_dir(&p->directions[i], image->features,
-		                    nel, pmax, fft_in, fft_out, plan,
+		                    p->nel, pmax, fft_in, fft_out, p->plan,
 		                    smin, smax);
 		if ( new_fom > fom ) {
 			fom = new_fom;
@@ -318,8 +312,8 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 		}
 
 	}
-	fine_search(p, image->features, nel, pmax, fft_in, fft_out, plan,
-	            smin, smax, dx, dy, dz, &bsx, &bsy, &bsz, mod_bs);
+	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
+	            p->plan, smin, smax, dx, dy, dz, &bsx, &bsy, &bsz, mod_bs);
 
 	/* Search for c* */
 	smin = 2.0*pmax / cstmax;
@@ -338,7 +332,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 		if ( fabs(ang-als) > angtol ) continue;
 
 		new_fom = check_dir(&p->directions[i], image->features,
-		                    nel, pmax, fft_in, fft_out, plan,
+		                    p->nel, pmax, fft_in, fft_out, p->plan,
 		                    smin, smax);
 		if ( new_fom > fom ) {
 			fom = new_fom;
@@ -348,38 +342,37 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 		}
 
 	}
-	fine_search(p, image->features, nel, pmax, fft_in, fft_out, plan,
-	            smin, smax, dx, dy, dz, &csx, &csy, &csz, mod_cs);
-
-	fftw_destroy_plan(plan);
-	fftw_free(fft_in);
-	fftw_free(fft_out);
+	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
+	            p->plan, smin, smax, dx, dy, dz, &csx, &csy, &csz, mod_cs);
 
 	image->indexed_cell = cell_new();
 	cell_set_reciprocal(image->indexed_cell, asx, asy, asz,
 	                    bsx, bsy, bsz, csx, csy, csz);
+
+	fftw_free(fft_in);
+	fftw_free(fft_out);
 }
 
 
 IndexingPrivate *reax_prepare()
 {
-	struct reax_private *priv;
+	struct reax_private *p;
 	int ui, vi;
 	int samp;
 
-	priv = calloc(1, sizeof(*priv));
-	if ( priv == NULL ) return NULL;
+	p = calloc(1, sizeof(*p));
+	if ( p == NULL ) return NULL;
 
-	priv->base.indm = INDEXING_REAX;
+	p->base.indm = INDEXING_REAX;
 
 	/* Decide on sampling interval */
-	priv->angular_inc = 0.03;  /* From Steller (1997) */
-	samp = (2.0 * M_PI) / priv->angular_inc;
+	p->angular_inc = 0.03;  /* From Steller (1997) */
+	samp = (2.0 * M_PI) / p->angular_inc;
 
-	priv->n_dir = samp*samp;
-	priv->directions = malloc(priv->n_dir*sizeof(struct dvec));
-	if ( priv == NULL) {
-		free(priv);
+	p->n_dir = samp*samp;
+	p->directions = malloc(p->n_dir*sizeof(struct dvec));
+	if ( p == NULL) {
+		free(p);
 		return NULL;
 	}
 
@@ -398,7 +391,7 @@ IndexingPrivate *reax_prepare()
 		th = 2.0 * M_PI * u;  /* "Longitude" */
 		ph = acos(v);         /* "Latitude" */
 
-		dir = &priv->directions[ui + vi*samp];
+		dir = &p->directions[ui + vi*samp];
 
 		dir->x = cos(th) * sin(ph);
 		dir->y = sin(th) * sin(ph);
@@ -407,5 +400,31 @@ IndexingPrivate *reax_prepare()
 	}
 	}
 
-	return (IndexingPrivate *)priv;
+	p->nel = 1024;
+
+	/* These arrays are not actually used */
+	p->fft_in = fftw_malloc(p->nel*sizeof(double));
+	p->fft_out = fftw_malloc((p->nel/2 + 1)*sizeof(fftw_complex));
+
+	p->plan = fftw_plan_dft_r2c_1d(p->nel, p->fft_in, p->fft_out,
+	                               FFTW_MEASURE);
+
+
+	return (IndexingPrivate *)p;
+}
+
+
+void reax_cleanup(IndexingPrivate *pp)
+{
+	struct reax_private *p;
+
+	assert(pp->indm == INDEXING_REAX);
+	p = (struct reax_private *)pp;
+
+	fftw_destroy_plan(p->plan);
+	fftw_free(p->fft_in);
+	fftw_free(p->fft_out);
+
+
+	free(p);
 }

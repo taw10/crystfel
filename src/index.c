@@ -104,7 +104,7 @@ void cleanup_indexing(IndexingPrivate **priv)
 			free(priv[n]);
 			break;
 		case INDEXING_REAX :
-			free(priv[n]);
+			reax_cleanup(priv[n]);
 			break;
 		}
 
