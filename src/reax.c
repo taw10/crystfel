@@ -142,7 +142,7 @@ static void walk_graph(double *x, double *y, double *z, int smin, int smax,
 		smax = new_s + 1;
 		mult++;
 
-	} while ( smax < nel/2+1 );
+	} while ( mult<5 );
 
 	modv = 2.0*pmax / (double)s;
 	modv *= mult-1;
