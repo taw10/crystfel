@@ -489,8 +489,7 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 				mosflm->rbuffer = realloc(
 				                    mosflm->rbuffer,
 				                    mosflm->rbuflen + 256);
-				mosflm->rbuflen = mosflm->rbuflen
-				                                          + 256;
+				mosflm->rbuflen = mosflm->rbuflen + 256;
 				/* The new space gets used at the next
 				 * read, shortly... */
 
