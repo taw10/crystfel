@@ -89,22 +89,82 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 }
 
 
+#define idx_to_m(a) ( 1.0/((2.0*pmax/(double)(a))) )
+
+static void walk_graph(double *x, double *y, double *z, int smin, int smax,
+                       fftw_complex *fft_out, int nel, double pmax,
+                       double modv_exp)
+{
+	int i, s, mult;
+	double max, modv;
+
+	FILE *fh = fopen("fft.dat", "w");
+	for ( i=0; i<nel/2+1; i++ ) {
+		double re, im, m;
+		re = fft_out[i][0];
+		im = fft_out[i][1];
+		m = sqrt(re*re + im*im);
+		fprintf(fh, "%i %f\n", i, m);
+	}
+	fclose(fh);
+
+	//*x *= modv_exp;  *y *= modv_exp;  *z *= modv_exp;
+	//return;
+
+	mult = 1;
+	do {
+
+		double new_s;
+
+		s = -1;
+		max = 0.0;
+		for ( i=smin; i<=smax; i++ ) {
+			double re, im, m;
+			re = fft_out[i][0];
+			im = fft_out[i][1];
+			m = sqrt(re*re + im*im);
+			if ( m > max ) {
+				max = m;
+				s = i;
+			}
+		}
+		assert(s>0);
+
+		//STATUS("Estimated axis length:%.5f nm\n",
+		//       (idx_to_m(s)/mult)*1e9);
+
+		new_s = (double)s*(mult+1)/mult;
+		smin = new_s - 1;
+		smax = new_s + 1;
+		mult++;
+
+	} while ( mult<5 );
+
+	modv = 2.0*pmax / (double)s;
+	modv *= mult-1;
+	*x *= modv;  *y *= modv;  *z *= modv;
+
+	//exit(1);
+}
+
+
 static void fine_search(struct reax_private *p, ImageFeatureList *flist,
                         int nel, double pmax, double *fft_in,
                         fftw_complex *fft_out, fftw_plan plan,
-                        int smin, int smax, double modv,
+                        int smin, int smax,
                         double dx, double dy, double dz,
-                        double *x, double *y, double *z)
+                        double *x, double *y, double *z,
+                        double modv_exp)
 {
 	const int fine_samp = 100;
 	double fom = 0.0;
 	signed int ui, vi;
+	struct dvec dir;
 
 	for ( ui=-fine_samp; ui<fine_samp; ui++ ) {
 	for ( vi=-fine_samp; vi<fine_samp; vi++ ) {
 
 		double u, v;
-		struct dvec dir;
 		double new_fom;
 		double tx, ty, tz;
 
@@ -126,11 +186,15 @@ static void fine_search(struct reax_private *p, ImageFeatureList *flist,
 
 		if ( new_fom > fom ) {
 			fom = new_fom;
-			*x = dir.x*modv;  *y = dir.y*modv;  *z = dir.z*modv;
+			*x = dir.x;  *y = dir.y;  *z = dir.z;
 		}
 
 	}
 	}
+
+	dir.x = *x;  dir.y = *y;  dir.z = *z;
+	check_dir(&dir, flist, nel, pmax, fft_in, fft_out, plan, smin, smax);
+	walk_graph(x, y, z, smin, smax, fft_out, nel, pmax, modv_exp);
 }
 
 
@@ -229,7 +293,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	}
 	fine_search(p, image->features, nel, pmax, fft_in, fft_out, plan,
-	            smin, smax, mod_as, dx, dy, dz, &asx, &asy, &asz);
+	            smin, smax, dx, dy, dz, &asx, &asy, &asz, mod_as);
 
 	/* Search for b* */
 	smin = 2.0*pmax / bstmax;
@@ -255,7 +319,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	}
 	fine_search(p, image->features, nel, pmax, fft_in, fft_out, plan,
-	            smin, smax, mod_bs, dx, dy, dz, &bsx, &bsy, &bsz);
+	            smin, smax, dx, dy, dz, &bsx, &bsy, &bsz, mod_bs);
 
 	/* Search for c* */
 	smin = 2.0*pmax / cstmax;
@@ -285,7 +349,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	}
 	fine_search(p, image->features, nel, pmax, fft_in, fft_out, plan,
-	            smin, smax, mod_cs, dx, dy, dz, &csx, &csy, &csz);
+	            smin, smax, dx, dy, dz, &csx, &csy, &csz, mod_cs);
 
 	fftw_destroy_plan(plan);
 	fftw_free(fft_in);
