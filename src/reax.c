@@ -20,6 +20,7 @@
 #include <math.h>
 #include <assert.h>
 #include <fftw3.h>
+#include <fenv.h>
 
 #include "image.h"
 #include "utils.h"
@@ -357,48 +358,52 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 IndexingPrivate *reax_prepare()
 {
 	struct reax_private *p;
-	int ui, vi;
 	int samp;
+	double th;
 
 	p = calloc(1, sizeof(*p));
 	if ( p == NULL ) return NULL;
 
 	p->base.indm = INDEXING_REAX;
 
-	/* Decide on sampling interval */
-	p->angular_inc = 0.03;  /* From Steller (1997) */
-	samp = (2.0 * M_PI) / p->angular_inc;
+	p->angular_inc = deg2rad(1.7);  /* From Steller (1997) */
 
-	p->n_dir = samp*samp;
-	p->directions = malloc(p->n_dir*sizeof(struct dvec));
+	/* Reserve memory, over-estimating the number of directions */
+	samp = 2.0*M_PI / p->angular_inc;
+	p->directions = malloc(samp*samp*sizeof(struct dvec));
 	if ( p == NULL) {
 		free(p);
 		return NULL;
 	}
+	STATUS("Allocated space for %i directions\n", samp*samp);
 
 	/* Generate vectors for 1D Fourier transforms */
-	for ( ui=0; ui<samp; ui++ ) {
-	for ( vi=0; vi<samp; vi++ ) {
+	fesetround(1);  /* Round to nearest */
+	p->n_dir = 0;
+	for ( th=0.0; th<M_PI_2; th+=p->angular_inc ) {
 
-		double u, v;
-		double th, ph;
-		struct dvec *dir;
+		double ph, phstep, n_phstep;
 
-		u = (double)ui/samp;
-		v = (double)vi/samp;
+		n_phstep = 2.0*M_PI*sin(th)/p->angular_inc;
+		n_phstep = nearbyint(n_phstep);
+		phstep = 2.0*M_PI/n_phstep;
 
-		/* Uniform sampling of a hemisphere */
-		th = 2.0 * M_PI * u;  /* "Longitude" */
-		ph = acos(v);         /* "Latitude" */
+		for ( ph=0.0; ph<2.0*M_PI; ph+=phstep ) {
 
-		dir = &p->directions[ui + vi*samp];
+			struct dvec *dir;
 
-		dir->x = cos(th) * sin(ph);
-		dir->y = sin(th) * sin(ph);
-		dir->z = cos(ph);
+			assert(p->n_dir<samp*samp);
 
+			dir = &p->directions[p->n_dir++];
+
+			dir->x = cos(ph) * sin(th);
+			dir->y = sin(ph) * sin(th);
+			dir->z = cos(th);
+
+		}
 	}
-	}
+	STATUS("Generated %i directions (angular increment %.3f deg)\n",
+	       p->n_dir, rad2deg(p->angular_inc));
 
 	p->nel = 1024;
 
