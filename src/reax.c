@@ -102,56 +102,28 @@ static void walk_graph(double *x, double *y, double *z, int smin, int smax,
                        fftw_complex *fft_out, int nel, double pmax,
                        double modv_exp)
 {
-	int i, s, mult;
+	int i, s;
 	double max, modv;
 
-	FILE *fh = fopen("fft.dat", "w");
-	for ( i=0; i<nel/2+1; i++ ) {
+	s = -1;
+	max = 0.0;
+	for ( i=smin; i<=smax; i++ ) {
+
 		double re, im, m;
+
 		re = fft_out[i][0];
 		im = fft_out[i][1];
 		m = sqrt(re*re + im*im);
-		fprintf(fh, "%i %f\n", i, m);
-	}
-	fclose(fh);
-
-	//*x *= modv_exp;  *y *= modv_exp;  *z *= modv_exp;
-	//return;
-
-	mult = 1;
-	do {
-
-		double new_s;
-
-		s = -1;
-		max = 0.0;
-		for ( i=smin; i<=smax; i++ ) {
-			double re, im, m;
-			re = fft_out[i][0];
-			im = fft_out[i][1];
-			m = sqrt(re*re + im*im);
-			if ( m > max ) {
-				max = m;
-				s = i;
-			}
+		if ( m > max ) {
+			max = m;
+			s = i;
 		}
-		assert(s>0);
 
-		//STATUS("Estimated axis length:%.5f nm\n",
-		//       (idx_to_m(s)/mult)*1e9);
-
-		new_s = (double)s*(mult+1)/mult;
-		smin = new_s - 1;
-		smax = new_s + 1;
-		mult++;
-
-	} while ( mult<5 );
+	}
+	assert(s>0);
 
 	modv = 2.0*pmax / (double)s;
-	modv *= mult-1;
 	*x *= modv;  *y *= modv;  *z *= modv;
-
-	//exit(1);
 }
 
 
