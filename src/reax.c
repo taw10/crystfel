@@ -35,6 +35,8 @@ struct dvec
 	double x;
 	double y;
 	double z;
+	double th;
+	double ph;
 };
 
 
@@ -156,35 +158,25 @@ static void walk_graph(double *x, double *y, double *z, int smin, int smax,
 static void fine_search(struct reax_private *p, ImageFeatureList *flist,
                         int nel, double pmax, double *fft_in,
                         fftw_complex *fft_out, fftw_plan plan,
-                        int smin, int smax,
-                        double dx, double dy, double dz,
+                        int smin, int smax, double th_cen, double ph_cen,
                         double *x, double *y, double *z,
                         double modv_exp)
 {
-	const int fine_samp = 100;
 	double fom = 0.0;
-	signed int ui, vi;
+	double th, ph;
+	double inc;
 	struct dvec dir;
 
-	for ( ui=-fine_samp; ui<fine_samp; ui++ ) {
-	for ( vi=-fine_samp; vi<fine_samp; vi++ ) {
+	inc = p->angular_inc / 100.0;
 
-		double u, v;
+	for ( th=th_cen-p->angular_inc; th<=th_cen+p->angular_inc; th+=inc ) {
+	for ( ph=ph_cen-p->angular_inc; ph<=ph_cen+p->angular_inc; ph+=inc ) {
+
 		double new_fom;
-		double tx, ty, tz;
 
-		u = (double)ui/fine_samp;
-		v = (double)vi/fine_samp;
-
-		u *= p->angular_inc/fine_samp;
-		v *= p->angular_inc/fine_samp;
-
-		tx = dx*cos(u) - dy*sin(u);
-		ty = dx*sin(u) + dy*cos(u);
-		tz = dz;
-		dir.x = tx;
-		dir.y = tz*sin(v) + ty*cos(v);
-		dir.z = tz*cos(v) - ty*sin(v);
+		dir.x = cos(ph) * sin(th);
+		dir.y = sin(ph) * sin(th);
+		dir.z = cos(th);
 
 		new_fom = check_dir(&dir, flist, nel, pmax, fft_in, fft_out,
 		                    plan, smin, smax);
@@ -213,7 +205,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	double csx, csy, csz;
 	double mod_as, mod_bs, mod_cs;
 	double als, bes, gas;
-	double dx, dy, dz;
+	double th, ph;
 	double *fft_in;
 	fftw_complex *fft_out;
 	int smin, smax;
@@ -271,7 +263,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	smax = 2.0*pmax / astmin;
 
 	/* Search for a* */
-	fom = 0.0;  dx = 0.0;  dy = 0.0;  dz = 0.0;
+	fom = 0.0;  th = 0.0;  ph = 0.0;
 	for ( i=0; i<p->n_dir; i++ ) {
 
 		double new_fom;
@@ -281,19 +273,18 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 		                    smin, smax);
 		if ( new_fom > fom ) {
 			fom = new_fom;
-			dx = p->directions[i].x;
-			dy = p->directions[i].y;
-			dz = p->directions[i].z;
+			th = p->directions[i].th;
+			ph = p->directions[i].ph;
 		}
 
 	}
 	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
-	            p->plan, smin, smax, dx, dy, dz, &asx, &asy, &asz, mod_as);
+	            p->plan, smin, smax, th, ph, &asx, &asy, &asz, mod_as);
 
 	/* Search for b* */
 	smin = 2.0*pmax / bstmax;
 	smax = 2.0*pmax / bstmin;
-	fom = 0.0;  dx = 0.0;  dy = 0.0;  dz = 0.0;
+	fom = 0.0;  th = 0.0;  ph = 0.0;
 	for ( i=0; i<p->n_dir; i++ ) {
 
 		double new_fom, ang;
@@ -307,19 +298,18 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 		                    smin, smax);
 		if ( new_fom > fom ) {
 			fom = new_fom;
-			dx = p->directions[i].x;
-			dy = p->directions[i].y;
-			dz = p->directions[i].z;
+			th = p->directions[i].th;
+			ph = p->directions[i].ph;
 		}
 
 	}
 	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
-	            p->plan, smin, smax, dx, dy, dz, &bsx, &bsy, &bsz, mod_bs);
+	            p->plan, smin, smax, th, ph, &bsx, &bsy, &bsz, mod_bs);
 
 	/* Search for c* */
 	smin = 2.0*pmax / cstmax;
 	smax = 2.0*pmax / cstmin;
-	fom = 0.0;  dx = 0.0;  dy = 0.0;  dz = 0.0;
+	fom = 0.0;  th = 0.0;  ph = 0.0;
 	for ( i=0; i<p->n_dir; i++ ) {
 
 		double new_fom, ang;
@@ -337,14 +327,13 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 		                    smin, smax);
 		if ( new_fom > fom ) {
 			fom = new_fom;
-			dx = p->directions[i].x;
-			dy = p->directions[i].y;
-			dz = p->directions[i].z;
+			th = p->directions[i].th;
+			ph = p->directions[i].ph;
 		}
 
 	}
 	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
-	            p->plan, smin, smax, dx, dy, dz, &csx, &csy, &csz, mod_cs);
+	            p->plan, smin, smax, th, ph, &csx, &csy, &csz, mod_cs);
 
 	image->indexed_cell = cell_new();
 	cell_set_reciprocal(image->indexed_cell, asx, asy, asz,
@@ -399,6 +388,8 @@ IndexingPrivate *reax_prepare()
 			dir->x = cos(ph) * sin(th);
 			dir->y = sin(ph) * sin(th);
 			dir->z = cos(th);
+			dir->th = th;
+			dir->ph = ph;
 
 		}
 	}
