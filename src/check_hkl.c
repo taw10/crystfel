@@ -43,6 +43,7 @@ static void show_help(const char *s)
 "  -p, --pdb=<filename>       PDB file to use (default: molecule.pdb).\n"
 "      --rmin=<res>           Fix lower resolution limit for --shells (m^-1).\n"
 "      --rmax=<res>           Fix upper resolution limit for --shells (m^-1).\n"
+"      --sigma-cutoff=<n>     Discard reflections with I/sigma(I) < n.\n"
 "\n");
 }
 
@@ -315,14 +316,16 @@ int main(int argc, char *argv[])
 	int rej = 0;
 	float rmin_fix = -1.0;
 	float rmax_fix = -1.0;
+	float sigma_cutoff = -INFINITY;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"symmetry",           1, NULL,               'y'},
 		{"pdb",                1, NULL,               'p'},
-		{"rmin",               1, NULL,               2},
-		{"rmax",               1, NULL,               3},
+		{"rmin",               1, NULL,                2},
+		{"rmax",               1, NULL,                3},
+		{"sigma-cutoff",       1, NULL,                4},
 		{0, 0, NULL, 0}
 	};
 
@@ -355,6 +358,13 @@ int main(int argc, char *argv[])
 		case 3 :
 			if ( sscanf(optarg, "%e", &rmax_fix) != 1 ) {
 				ERROR("Invalid value for --rmax\n");
+				return 1;
+			}
+			break;
+
+		case 4 :
+			if ( sscanf(optarg, "%f", &sigma_cutoff) != 1 ) {
+				ERROR("Invalid value for --sigma-cutoff\n");
 				return 1;
 			}
 			break;
@@ -406,7 +416,6 @@ int main(int argc, char *argv[])
 		signed int h, k, l;
 		double val, sig;
 		int ig = 0;
-		double d;
 		Reflection *new;
 
 		get_indices(refl, &h, &k, &l);
@@ -414,21 +423,19 @@ int main(int argc, char *argv[])
 		val = get_intensity(refl);
 		sig = get_esd_intensity(refl);
 
-		if ( val < 3.0 * sig ) {
+		if ( val < sigma_cutoff * sig ) {
 			rej++;
 			ig = 1;
 		}
 
-		d = 0.5/resolution(cell, h, k, l);
-		if ( d > 55.0e-10 ) ig = 1;
-		//if ( d < 15.0e-10 ) ig = 1;
-
-		//if ( ig ) continue;
+		if ( ig ) continue;
 
 		new = add_refl(list, h, k, l);
 		copy_data(new, refl);
 
 	}
+	STATUS("Discarded %i reflections (out of %i) with I/sigma(I) < %f\n",
+	       rej, num_reflections(raw_list), sigma_cutoff);
 
 	plot_shells(list, cell, sym, rmin_fix, rmax_fix);
 
