@@ -21,6 +21,11 @@
 #include <assert.h>
 #include <fftw3.h>
 #include <fenv.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_linalg.h>
+#include <gsl/gsl_eigen.h>
+#include <gsl/gsl_blas.h>
 
 #include "image.h"
 #include "utils.h"
@@ -96,34 +101,102 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 }
 
 
-#define idx_to_m(a) ( 1.0/((2.0*pmax/(double)(a))) )
-
-static void walk_graph(double *x, double *y, double *z, int smin, int smax,
-                       fftw_complex *fft_out, int nel, double pmax,
-                       double modv_exp)
+/* Refine a direct space vector.  From Clegg (1984) */
+static void refine_vector(double *x, double *y, double *z,
+                          ImageFeatureList *flist)
 {
-	int i, s;
-	double max, modv;
+	int fi, n, err;
+	gsl_matrix *C;
+	gsl_vector *A;
+	gsl_vector *t;
+	gsl_matrix *s_vec;
+	gsl_vector *s_val;
 
-	s = -1;
-	max = 0.0;
-	for ( i=smin; i<=smax; i++ ) {
+	A = gsl_vector_calloc(3);
+	C = gsl_matrix_calloc(3, 3);
 
-		double re, im, m;
+	n = image_feature_count(flist);
+	fesetround(1);
+	for ( fi=0; fi<n; fi++ ) {
 
-		re = fft_out[i][0];
-		im = fft_out[i][1];
-		m = sqrt(re*re + im*im);
-		if ( m > max ) {
-			max = m;
-			s = i;
+		struct imagefeature *f;
+		double val;
+		double kn, kno;
+		double xv[3];
+		int i, j;
+
+		f = image_get_feature(flist, fi);
+		if ( f == NULL ) continue;
+
+		kno = f->rx*(*x) + f->ry*(*y) + f->rz*(*z);  /* Sorry ... */
+		kn = nearbyint(kno);
+		if ( kn - kno > 0.2 ) continue;
+
+		xv[0] = f->rx;  xv[1] = f->ry;  xv[2] = f->rz;
+
+		for ( i=0; i<3; i++ ) {
+
+			val = gsl_vector_get(A, i);
+			gsl_vector_set(A, i, val+xv[i]*kn);
+
+			for ( j=0; j<3; j++ ) {
+				val = gsl_matrix_get(C, i, j);
+				gsl_matrix_set(C, i, j, val+xv[i]*xv[j]);
+			}
+
 		}
 
 	}
-	assert(s>0);
 
-	modv = 2.0*pmax / (double)s;
-	*x *= modv;  *y *= modv;  *z *= modv;
+	s_val = gsl_vector_calloc(3);
+	s_vec = gsl_matrix_calloc(3, 3);
+	err = gsl_linalg_SV_decomp_jacobi(C, s_vec, s_val);
+	if ( err ) {
+		ERROR("SVD failed: %s\n", gsl_strerror(err));
+		gsl_matrix_free(s_vec);
+		gsl_vector_free(s_val);
+		gsl_matrix_free(C);
+		gsl_vector_free(A);
+		return;
+	}
+
+	t = gsl_vector_calloc(3);
+	err = gsl_linalg_SV_solve(C, s_vec, s_val, A, t);
+	if ( err ) {
+		ERROR("Matrix solution failed: %s\n", gsl_strerror(err));
+		gsl_matrix_free(s_vec);
+		gsl_vector_free(s_val);
+		gsl_matrix_free(C);
+		gsl_vector_free(A);
+		gsl_vector_free(t);
+		return;
+	}
+
+	gsl_matrix_free(s_vec);
+	gsl_vector_free(s_val);
+
+	*x = gsl_vector_get(t, 0);
+	*y = gsl_vector_get(t, 1);
+	*z = gsl_vector_get(t, 2);
+
+	gsl_matrix_free(C);
+	gsl_vector_free(A);
+}
+
+
+static void refine_cell(UnitCell *cell, ImageFeatureList *flist)
+{
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+
+	refine_vector(&ax, &ay, &az, flist);
+	refine_vector(&bx, &by, &bz, flist);
+	refine_vector(&cx, &cy, &cz, flist);
+
+	cell_set_cartesian(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
 }
 
 
@@ -138,6 +211,8 @@ static void fine_search(struct reax_private *p, ImageFeatureList *flist,
 	double th, ph;
 	double inc;
 	struct dvec dir;
+	int i, s;
+	double max, modv;
 
 	inc = p->angular_inc / 100.0;
 
@@ -161,9 +236,25 @@ static void fine_search(struct reax_private *p, ImageFeatureList *flist,
 	}
 	}
 
-	dir.x = *x;  dir.y = *y;  dir.z = *z;
-	check_dir(&dir, flist, nel, pmax, fft_in, fft_out, plan, smin, smax);
-	walk_graph(x, y, z, smin, smax, fft_out, nel, pmax, modv_exp);
+	s = -1;
+	max = 0.0;
+	for ( i=smin; i<=smax; i++ ) {
+
+		double re, im, m;
+
+		re = fft_out[i][0];
+		im = fft_out[i][1];
+		m = sqrt(re*re + im*im);
+		if ( m > max ) {
+			max = m;
+			s = i;
+		}
+
+	}
+	assert(s>0);
+
+	modv = 2.0*pmax / (double)s;
+	*x *= modv;  *y *= modv;  *z *= modv;
 }
 
 
@@ -310,6 +401,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	image->indexed_cell = cell_new();
 	cell_set_reciprocal(image->indexed_cell, asx, asy, asz,
 	                    bsx, bsy, bsz, csx, csy, csz);
+	refine_cell(image->indexed_cell, image->features);
 
 	fftw_free(fft_in);
 	fftw_free(fft_out);
