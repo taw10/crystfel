@@ -175,7 +175,7 @@ crystfel_DATA = data/diffraction.cl data/defs.h data/hdfsee.ui
 EXTRA_DIST += $(crystfel_DATA)
 
 man_MANS = doc/man/indexamajig.1 doc/man/process_hkl.1 doc/man/pattern_sim.1 \
-           doc/man/crystfel_geometry.1
+           doc/man/crystfel_geometry.1 doc/man/powder_plot.1
 
 crystfeldocdir = $(docdir)
 crystfeldoc_DATA = doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
