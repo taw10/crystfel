@@ -476,6 +476,7 @@ IndexingPrivate *reax_prepare()
 			dir->ph = ph;
 
 		}
+
 	}
 	STATUS("Generated %i directions (angular increment %.3f deg)\n",
 	       p->n_dir, rad2deg(p->angular_inc));
