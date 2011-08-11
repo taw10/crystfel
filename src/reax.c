@@ -224,8 +224,7 @@ static void fine_search(struct reax_private *p, ImageFeatureList *flist,
                         int nel, double pmax, double *fft_in,
                         fftw_complex *fft_out, fftw_plan plan,
                         int smin, int smax, double th_cen, double ph_cen,
-                        double *x, double *y, double *z,
-                        double modv_exp)
+                        double *x, double *y, double *z)
 {
 	double fom = 0.0;
 	double th, ph;
@@ -359,7 +358,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	}
 	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
-	            p->plan, smin, smax, th, ph, &ax, &ay, &az, mod_a);
+	            p->plan, smin, smax, th, ph, &ax, &ay, &az);
 
 	/* Search for b */
 	smin = 2.0*pmax * bmin;
@@ -384,7 +383,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	}
 	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
-	            p->plan, smin, smax, th, ph, &bx, &by, &bz, mod_b);
+	            p->plan, smin, smax, th, ph, &bx, &by, &bz);
 
 	/* Search for c */
 	smin = 2.0*pmax * cmin;
@@ -413,7 +412,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	}
 	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
-	            p->plan, smin, smax, th, ph, &cx, &cy, &cz, mod_c);
+	            p->plan, smin, smax, th, ph, &cx, &cy, &cz);
 
 	image->indexed_cell = cell_new();
 	cell_set_cartesian(image->indexed_cell, ax, ay, az,
