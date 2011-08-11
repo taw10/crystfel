@@ -270,12 +270,13 @@ static void fine_search(struct reax_private *p, ImageFeatureList *flist,
 			max = m;
 			s = i;
 		}
-
 	}
 	assert(s>0);
 
-	modv = 2.0*pmax / (double)s;
+	modv = (double)s / (2.0*pmax);
 	*x *= modv;  *y *= modv;  *z *= modv;
+
+	refine_vector(x, y, z, flist);
 }
 
 
@@ -284,23 +285,23 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	int i;
 	struct reax_private *p;
 	double fom;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	double mod_as, mod_bs, mod_cs;
-	double als, bes, gas;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	double mod_a, mod_b, mod_c;
+	double al, be, ga;
 	double th, ph;
 	double *fft_in;
 	fftw_complex *fft_out;
 	int smin, smax;
-	double astmin, astmax;
-	double bstmin, bstmax;
-	double cstmin, cstmax;
+	double amin, amax;
+	double bmin, bmax;
+	double cmin, cmax;
 	double pmax;
 	int n;
 	const double ltol = 5.0;             /* Direct space axis length
 	                                      * tolerance in percent */
-	const double angtol = deg2rad(1.5);  /* Reciprocal angle tolerance
+	const double angtol = deg2rad(1.5);  /* Direct space angle tolerance
 	                                      * in radians */
 
 	assert(pp->indm == INDEXING_REAX);
@@ -309,24 +310,22 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	fft_in = fftw_malloc(p->nel*sizeof(double));
 	fft_out = fftw_malloc((p->nel/2 + 1)*sizeof(fftw_complex));
 
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	mod_as = modulus(asx, asy, asz);
-	astmin = mod_as * (1.0-ltol/100.0);
-	astmax = mod_as * (1.0+ltol/100.0);
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	mod_a = modulus(ax, ay, az);
+	amin = mod_a * (1.0-ltol/100.0);
+	amax = mod_a * (1.0+ltol/100.0);
 
-	mod_bs = modulus(bsx, bsy, bsz);
-	bstmin = mod_bs * (1.0-ltol/100.0);
-	bstmax = mod_bs * (1.0+ltol/100.0);
+	mod_b = modulus(bx, by, bz);
+	bmin = mod_b * (1.0-ltol/100.0);
+	bmax = mod_b * (1.0+ltol/100.0);
 
-	mod_cs = modulus(csx, csy, csz);
-	cstmin = mod_cs * (1.0-ltol/100.0);
-	cstmax = mod_cs * (1.0+ltol/100.0);
+	mod_c = modulus(cx, cy, cz);
+	cmin = mod_c * (1.0-ltol/100.0);
+	cmax = mod_c * (1.0+ltol/100.0);
 
-	als = angle_between(bsx, bsy, bsz, csx, csy, csz);
-	bes = angle_between(asx, asy, asz, csx, csy, csz);
-	gas = angle_between(asx, asy, asz, bsx, bsy, bsz);
+	al = angle_between(bx, by, bz, cx, cy, cz);
+	be = angle_between(ax, ay, az, cx, cy, cz);
+	ga = angle_between(ax, ay, az, bx, by, bz);
 
 	pmax = 0.0;
 	n = image_feature_count(image->features);
@@ -343,10 +342,9 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	}
 
-	smin = 2.0*pmax / astmax;
-	smax = 2.0*pmax / astmin;
-
-	/* Search for a* */
+	/* Search for a */
+	smin = 2.0*pmax * amin;
+	smax = 2.0*pmax * amax;
 	fom = 0.0;  th = 0.0;  ph = 0.0;
 	for ( i=0; i<p->n_dir; i++ ) {
 
@@ -363,19 +361,19 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	}
 	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
-	            p->plan, smin, smax, th, ph, &asx, &asy, &asz, mod_as);
+	            p->plan, smin, smax, th, ph, &ax, &ay, &az, mod_a);
 
-	/* Search for b* */
-	smin = 2.0*pmax / bstmax;
-	smax = 2.0*pmax / bstmin;
+	/* Search for b */
+	smin = 2.0*pmax * bmin;
+	smax = 2.0*pmax * bmax;
 	fom = 0.0;  th = 0.0;  ph = 0.0;
 	for ( i=0; i<p->n_dir; i++ ) {
 
 		double new_fom, ang;
 
 		ang = angle_between(p->directions[i].x, p->directions[i].y,
-		                    p->directions[i].z, asx, asy, asz);
-		if ( fabs(ang-gas) > angtol ) continue;
+		                    p->directions[i].z, ax, ay, az);
+		if ( fabs(ang-ga) > angtol ) continue;
 
 		new_fom = check_dir(&p->directions[i], image->features,
 		                    p->nel, pmax, fft_in, fft_out, p->plan,
@@ -388,23 +386,23 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	}
 	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
-	            p->plan, smin, smax, th, ph, &bsx, &bsy, &bsz, mod_bs);
+	            p->plan, smin, smax, th, ph, &bx, &by, &bz, mod_b);
 
-	/* Search for c* */
-	smin = 2.0*pmax / cstmax;
-	smax = 2.0*pmax / cstmin;
+	/* Search for c */
+	smin = 2.0*pmax * cmin;
+	smax = 2.0*pmax * cmax;
 	fom = 0.0;  th = 0.0;  ph = 0.0;
 	for ( i=0; i<p->n_dir; i++ ) {
 
 		double new_fom, ang;
 
 		ang = angle_between(p->directions[i].x, p->directions[i].y,
-		                    p->directions[i].z, asx, asy, asz);
-		if ( fabs(ang-bes) > angtol ) continue;
+		                    p->directions[i].z, ax, ay, az);
+		if ( fabs(ang-be) > angtol ) continue;
 
 		ang = angle_between(p->directions[i].x, p->directions[i].y,
-		                    p->directions[i].z, bsx, bsy, bsz);
-		if ( fabs(ang-als) > angtol ) continue;
+		                    p->directions[i].z, bx, by, bz);
+		if ( fabs(ang-al) > angtol ) continue;
 
 		new_fom = check_dir(&p->directions[i], image->features,
 		                    p->nel, pmax, fft_in, fft_out, p->plan,
@@ -417,11 +415,11 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	}
 	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
-	            p->plan, smin, smax, th, ph, &csx, &csy, &csz, mod_cs);
+	            p->plan, smin, smax, th, ph, &cx, &cy, &cz, mod_c);
 
 	image->indexed_cell = cell_new();
-	cell_set_reciprocal(image->indexed_cell, asx, asy, asz,
-	                    bsx, bsy, bsz, csx, csy, csz);
+	cell_set_cartesian(image->indexed_cell, ax, ay, az,
+	                                        bx, by, bz, cx, cy, cz);
 	refine_cell(image, image->indexed_cell, image->features);
 
 	fftw_free(fft_in);
