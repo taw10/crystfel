@@ -102,8 +102,8 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 
 
 /* Refine a direct space vector.  From Clegg (1984) */
-static double refine_vector(double *x, double *y, double *z,
-                          ImageFeatureList *flist)
+static double iterate_refine_vector(double *x, double *y, double *z,
+                                    ImageFeatureList *flist)
 {
 	int fi, n, err;
 	gsl_matrix *C;
@@ -200,19 +200,18 @@ static void refine_cell(struct image *image, UnitCell *cell,
 	int i;
 	double sm;
 
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	i = 0;
 	do {
 
-		cell_get_cartesian(cell, &ax, &ay, &az,
-		                         &bx, &by, &bz,
-		                         &cx, &cy, &cz);
-		sm  = refine_vector(&ax, &ay, &az, flist);
-		sm += refine_vector(&bx, &by, &bz, flist);
-		sm += refine_vector(&cx, &cy, &cz, flist);
-		cell_set_cartesian(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
+		sm  = iterate_refine_vector(&ax, &ay, &az, flist);
+		sm += iterate_refine_vector(&bx, &by, &bz, flist);
+		sm += iterate_refine_vector(&cx, &cy, &cz, flist);
 		i++;
 
 	} while ( (sm > 0.001e-9) && (i<10) );
+
+	cell_set_cartesian(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
 
 	if ( i == 10 ) {
 		cell_free(image->indexed_cell);
@@ -270,13 +269,12 @@ static void fine_search(struct reax_private *p, ImageFeatureList *flist,
 			max = m;
 			s = i;
 		}
+
 	}
 	assert(s>0);
 
 	modv = (double)s / (2.0*pmax);
 	*x *= modv;  *y *= modv;  *z *= modv;
-
-	refine_vector(x, y, z, flist);
 }
 
 
@@ -424,6 +422,9 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	fftw_free(fft_in);
 	fftw_free(fft_out);
+
+	/* We fill in indexed_cell but none of the candidate_cells, which
+	 * bypasses any cell reduction which is selected. */
 }
 
 
