@@ -102,7 +102,7 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 
 
 /* Refine a direct space vector.  From Clegg (1984) */
-static void refine_vector(double *x, double *y, double *z,
+static double refine_vector(double *x, double *y, double *z,
                           ImageFeatureList *flist)
 {
 	int fi, n, err;
@@ -111,6 +111,7 @@ static void refine_vector(double *x, double *y, double *z,
 	gsl_vector *t;
 	gsl_matrix *s_vec;
 	gsl_vector *s_val;
+	double dtmax;
 
 	A = gsl_vector_calloc(3);
 	C = gsl_matrix_calloc(3, 3);
@@ -130,7 +131,7 @@ static void refine_vector(double *x, double *y, double *z,
 
 		kno = f->rx*(*x) + f->ry*(*y) + f->rz*(*z);  /* Sorry ... */
 		kn = nearbyint(kno);
-		if ( kn - kno > 0.2 ) continue;
+		if ( kn - kno > 0.3 ) continue;
 
 		xv[0] = f->rx;  xv[1] = f->ry;  xv[2] = f->rz;
 
@@ -157,7 +158,7 @@ static void refine_vector(double *x, double *y, double *z,
 		gsl_vector_free(s_val);
 		gsl_matrix_free(C);
 		gsl_vector_free(A);
-		return;
+		return 0.0;
 	}
 
 	t = gsl_vector_calloc(3);
@@ -169,11 +170,15 @@ static void refine_vector(double *x, double *y, double *z,
 		gsl_matrix_free(C);
 		gsl_vector_free(A);
 		gsl_vector_free(t);
-		return;
+		return 0.0;
 	}
 
 	gsl_matrix_free(s_vec);
 	gsl_vector_free(s_val);
+
+	dtmax  = fabs(*x - gsl_vector_get(t, 0));
+	dtmax += fabs(*y - gsl_vector_get(t, 1));
+	dtmax += fabs(*z - gsl_vector_get(t, 2));
 
 	*x = gsl_vector_get(t, 0);
 	*y = gsl_vector_get(t, 1);
@@ -181,22 +186,38 @@ static void refine_vector(double *x, double *y, double *z,
 
 	gsl_matrix_free(C);
 	gsl_vector_free(A);
+
+	return dtmax;
 }
 
 
-static void refine_cell(UnitCell *cell, ImageFeatureList *flist)
+static void refine_cell(struct image *image, UnitCell *cell,
+                        ImageFeatureList *flist)
 {
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
+	int i;
+	double sm;
 
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	i = 0;
+	do {
 
-	refine_vector(&ax, &ay, &az, flist);
-	refine_vector(&bx, &by, &bz, flist);
-	refine_vector(&cx, &cy, &cz, flist);
+		cell_get_cartesian(cell, &ax, &ay, &az,
+		                         &bx, &by, &bz,
+		                         &cx, &cy, &cz);
+		sm  = refine_vector(&ax, &ay, &az, flist);
+		sm += refine_vector(&bx, &by, &bz, flist);
+		sm += refine_vector(&cx, &cy, &cz, flist);
+		cell_set_cartesian(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
+		i++;
 
-	cell_set_cartesian(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
+	} while ( (sm > 0.001e-9) && (i<10) );
+
+	if ( i == 10 ) {
+		cell_free(image->indexed_cell);
+		image->indexed_cell = NULL;
+	}
 }
 
 
@@ -401,7 +422,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	image->indexed_cell = cell_new();
 	cell_set_reciprocal(image->indexed_cell, asx, asy, asz,
 	                    bsx, bsy, bsz, csx, csy, csz);
-	refine_cell(image->indexed_cell, image->features);
+	refine_cell(image, image->indexed_cell, image->features);
 
 	fftw_free(fft_in);
 	fftw_free(fft_out);
