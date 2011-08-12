@@ -339,6 +339,9 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	}
 
+	/* Sanity check */
+	if ( pmax < 1e4 ) return;
+
 	/* Search for a */
 	smin = 2.0*pmax * amin;
 	smax = 2.0*pmax * amax;
