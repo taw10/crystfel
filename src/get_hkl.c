@@ -416,6 +416,10 @@ int main(int argc, char *argv[])
 	}
 
 	input = read_reflections(input_file);
+	if (input == NULL) {
+        ERROR("Problem reading input file %s\n",input_file);
+        return 1;
+    }
 	free(input_file);
 	if ( check_list_symmetry(input, mero) ) {
 		ERROR("The input reflection list does not appear to"
