@@ -416,6 +416,10 @@ int main(int argc, char *argv[])
 		RefList *reflections;
 
 		reflections = read_reflections(intfile);
+        if (reflections == NULL) {
+            ERROR("Problem reading input file %s\n",intfile);
+            return 1;
+        }
 		free(intfile);
 
 		if ( grad == GRADIENT_PHASED ) {
