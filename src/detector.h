@@ -42,6 +42,7 @@ struct panel
 	int      no_index; /* Don't index peaks in this panel if non-zero */
 	double   peak_sep; /* Characteristic peak separation */
 	double   integr_radius;  /* Peak integration radius */
+	char    *rigid_group;  /* Rigid group, or -1 for none */
 
 	double fsx;
 	double fsy;
@@ -79,6 +80,9 @@ struct detector
 	char              *mask;
 	unsigned int       mask_bad;
 	unsigned int       mask_good;
+
+	char             **rigid_groups;
+	int                num_rigid_groups;
 
 	struct panel       defaults;
 };

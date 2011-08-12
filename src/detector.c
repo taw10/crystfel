@@ -514,8 +514,37 @@ static struct badregion *find_bad_region_by_name(struct detector *det,
 }
 
 
+static char *find_or_add_rg(struct detector *det, const char *name)
+{
+	int i;
+	char **new;
+	char *tmp;
+
+	for ( i=0; i<det->num_rigid_groups; i++ ) {
+
+		if ( strcmp(det->rigid_groups[i], name) == 0 ) {
+			return det->rigid_groups[i];
+		}
+
+	}
+
+	new = realloc(det->rigid_groups,
+	              (1+det->num_rigid_groups)*sizeof(char *));
+	if ( new == NULL ) return NULL;
+
+	det->rigid_groups = new;
+
+	tmp = strdup(name);
+	det->rigid_groups[det->num_rigid_groups] = tmp;
+
+	det->num_rigid_groups++;
+
+	return tmp;
+}
+
+
 static int parse_field_for_panel(struct panel *panel, const char *key,
-                                 const char *val)
+                                 const char *val, struct detector *det)
 {
 	int reject = 0;
 
@@ -531,6 +560,8 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 		panel->cnx = atof(val);
 	} else if ( strcmp(key, "corner_y") == 0 ) {
 		panel->cny = atof(val);
+	} else if ( strcmp(key, "rigid_group") == 0 ) {
+		panel->rigid_group = find_or_add_rg(det, val);
 	} else if ( strcmp(key, "clen") == 0 ) {
 
 		char *end;
@@ -633,7 +664,7 @@ static void parse_toplevel(struct detector *det, const char *key,
 		det->defaults.peak_sep = atof(val);
 	} else if ( strcmp(key, "integr_radius") == 0 ) {
 		det->defaults.integr_radius = atof(val);
-	} else if ( parse_field_for_panel(&det->defaults, key, val) ) {
+	} else if ( parse_field_for_panel(&det->defaults, key, val, det) ) {
 		ERROR("Unrecognised top level field '%s'\n", key);
 	}
 }
@@ -665,6 +696,8 @@ struct detector *get_detector_geometry(const char *filename)
 	det->mask_good = 0;
 	det->mask_bad = 0;
 	det->mask = NULL;
+	det->num_rigid_groups = 0;
+	det->rigid_groups = NULL;
 
 	/* The default defaults... */
 	det->defaults.min_fs = -1;
@@ -684,6 +717,7 @@ struct detector *get_detector_geometry(const char *filename)
 	det->defaults.fsy = 0.0;
 	det->defaults.ssx = 0.0;
 	det->defaults.ssy = 1.0;
+	det->defaults.rigid_group = NULL;
 	strncpy(det->defaults.name, "", 1023);
 
 	do {
@@ -748,7 +782,9 @@ struct detector *get_detector_geometry(const char *filename)
 		key = path[1];
 
 		if ( panel != NULL ) {
-			if ( parse_field_for_panel(panel, path[1], wholeval) ) {
+			if ( parse_field_for_panel(panel, path[1],
+			                           wholeval, det) )
+			{
 				reject = 1;
 			}
 		} else {
@@ -899,6 +935,13 @@ out:
 
 void free_detector_geometry(struct detector *det)
 {
+	int i;
+
+	for ( i=0; i<det->num_rigid_groups; i++ ) {
+		free(det->rigid_groups[i]);
+	}
+	free(det->rigid_groups);
+
 	free(det->panels);
 	free(det->bad);
 	free(det->mask);
@@ -926,6 +969,18 @@ struct detector *copy_geom(const struct detector *in)
 	out->bad = malloc(out->n_bad * sizeof(struct badregion));
 	memcpy(out->bad, in->bad, out->n_bad * sizeof(struct badregion));
 
+	if ( in->rigid_groups != NULL ) {
+
+		out->rigid_groups = malloc(out->num_rigid_groups*sizeof(char *));
+		memcpy(out->rigid_groups, in->rigid_groups,
+		       out->num_rigid_groups*sizeof(char *));
+
+		for ( i=0; i<in->num_rigid_groups; i++ ) {
+			out->rigid_groups[i] = strdup(in->rigid_groups[i]);
+		}
+
+	}
+
 	for ( i=0; i<out->n_panels; i++ ) {
 
 		struct panel *p;
@@ -936,6 +991,22 @@ struct detector *copy_geom(const struct detector *in)
 			/* Make a copy of the clen_from fields unique to this
 			 * copy of the structure. */
 			p->clen_from = strdup(p->clen_from);
+		}
+
+	}
+
+	for ( i=0; i<in->num_rigid_groups; i++ ) {
+
+		int j;
+		char *rg = in->rigid_groups[i];
+		char *rgn = out->rigid_groups[i];
+
+		for ( j=0; j<in->n_panels; j++ ) {
+
+			if ( in->panels[j].rigid_group == rg ) {
+				out->panels[j].rigid_group = rgn;
+			}
+
 		}
 
 	}
@@ -959,6 +1030,7 @@ struct detector *simple_geometry(const struct image *image)
 	geom->panels[0].max_ss = image->height-1;
 	geom->panels[0].cnx = -image->width / 2.0;
 	geom->panels[0].cny = -image->height / 2.0;
+	geom->panels[0].rigid_group = NULL;
 
 	geom->panels[0].fsx = 1;
 	geom->panels[0].fsy = 0;
