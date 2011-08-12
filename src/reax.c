@@ -61,7 +61,8 @@ struct reax_private
 static double check_dir(struct dvec *dir, ImageFeatureList *flist,
                         int nel, double pmax, double *fft_in,
                         fftw_complex *fft_out, fftw_plan plan,
-                        int smin, int smax)
+                        int smin, int smax,
+                        const char *rg, struct detector *det)
 {
 	int n, i;
 	double tot;
@@ -79,6 +80,17 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 
 		f = image_get_feature(flist, i);
 		if ( f == NULL ) continue;
+
+		if ( rg != NULL ) {
+
+			struct panel *p;
+
+			p = find_panel(det, f->fs, f->ss);
+			assert(p != NULL);
+
+			if ( p->rigid_group != rg ) continue;
+
+		}
 
 		val = f->rx*dir->x + f->ry*dir->y + f->rz*dir->z;
 
@@ -245,7 +257,7 @@ static void fine_search(struct reax_private *p, ImageFeatureList *flist,
 		dir.z = cos(th);
 
 		new_fom = check_dir(&dir, flist, nel, pmax, fft_in, fft_out,
-		                    plan, smin, smax);
+		                    plan, smin, smax, NULL, NULL);
 
 		if ( new_fom > fom ) {
 			fom = new_fom;
@@ -274,6 +286,93 @@ static void fine_search(struct reax_private *p, ImageFeatureList *flist,
 
 	modv = (double)s / (2.0*pmax);
 	*x *= modv;  *y *= modv;  *z *= modv;
+}
+
+
+static double get_model_phase(double x, double y, double z, ImageFeatureList *f,
+                              int nel, double pmax, double *fft_in,
+                              fftw_complex *fft_out, fftw_plan plan,
+                              int smin, int smax, const char *rg,
+                              struct detector *det)
+{
+	struct dvec dir;
+	int s, i;
+	double max;
+	double re, im;
+
+	dir.x = x;  dir.y = y;  dir.z = z;
+
+	check_dir(&dir, f, nel, pmax, fft_in,fft_out, plan, smin, smax,
+	          rg, det);
+
+	s = -1;
+	max = 0.0;
+	for ( i=smin; i<=smax; i++ ) {
+
+		double re, im, m;
+
+		re = fft_out[i][0];
+		im = fft_out[i][1];
+		m = sqrt(re*re + im*im);
+		if ( m > max ) {
+			max = m;
+			s = i;
+		}
+
+	}
+
+	re = fft_out[s][0];
+	im = fft_out[s][1];
+
+	return atan2(im, re);
+}
+
+
+static void refine_rigid_group(struct image *image, UnitCell *cell,
+                               const char *rg, int nel, double pmax,
+                               double *fft_in, fftw_complex *fft_out,
+                               fftw_plan plan, int smin, int smax,
+                               struct detector *det)
+{
+	double ax, ay, az, ma;
+	double bx, by, bz, mb;
+	double cx, cy, cz, mc;
+	double pha, phb, phc;
+
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+
+	ma = modulus(ax, ay, az);
+	mb = modulus(bx, by, bz);
+	mc = modulus(cx, cy, cz);
+
+	ax /= ma;  ay /= ma;  az /= ma;
+	bx /= mb;  by /= mb;  bz /= mb;
+	cx /= mc;  cy /= mc;  cz /= mc;
+
+	pha = get_model_phase(ax, ay, az, image->features, nel, pmax, fft_in,
+	                      fft_out, plan, smin, smax, rg, det);
+	phb = get_model_phase(bx, by, bz, image->features, nel, pmax, fft_in,
+	                      fft_out, plan, smin, smax, rg, det);
+	phc = get_model_phase(cx, cy, cz, image->features, nel, pmax, fft_in,
+	                      fft_out, plan, smin, smax, rg, det);
+
+
+}
+
+
+static void refine_all_rigid_groups(struct image *image, UnitCell *cell,
+                                    int nel, double pmax,
+                                    double *fft_in, fftw_complex *fft_out,
+                                    fftw_plan plan, int smin, int smax,
+                                    struct detector *det)
+{
+	int i;
+
+	for ( i=0; i<image->det->num_rigid_groups; i++ ) {
+		refine_rigid_group(image, cell, image->det->rigid_groups[i],
+		                   nel, pmax, fft_in, fft_out, plan, smin, smax,
+		                   det);
+	}
 }
 
 
@@ -352,7 +451,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 		new_fom = check_dir(&p->directions[i], image->features,
 		                    p->nel, pmax, fft_in, fft_out, p->plan,
-		                    smin, smax);
+		                    smin, smax, NULL, NULL);
 		if ( new_fom > fom ) {
 			fom = new_fom;
 			th = p->directions[i].th;
@@ -377,7 +476,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 		new_fom = check_dir(&p->directions[i], image->features,
 		                    p->nel, pmax, fft_in, fft_out, p->plan,
-		                    smin, smax);
+		                    smin, smax, NULL, NULL);
 		if ( new_fom > fom ) {
 			fom = new_fom;
 			th = p->directions[i].th;
@@ -406,7 +505,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 		new_fom = check_dir(&p->directions[i], image->features,
 		                    p->nel, pmax, fft_in, fft_out, p->plan,
-		                    smin, smax);
+		                    smin, smax, NULL, NULL);
 		if ( new_fom > fom ) {
 			fom = new_fom;
 			th = p->directions[i].th;
@@ -417,16 +516,20 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
 	            p->plan, smin, smax, th, ph, &cx, &cy, &cz);
 
-	image->indexed_cell = cell_new();
-	cell_set_cartesian(image->indexed_cell, ax, ay, az,
-	                                        bx, by, bz, cx, cy, cz);
-	refine_cell(image, image->indexed_cell, image->features);
+	image->candidate_cells[0] = cell_new();
+	cell_set_cartesian(image->candidate_cells[0],
+	                   ax, ay, az, bx, by, bz, cx, cy, cz);
+
+	refine_all_rigid_groups(image, image->candidate_cells[0], p->nel, pmax,
+	                        fft_in, fft_out, p->plan, smin, smax,
+	                        image->det);
+	map_all_peaks(image);
+	refine_cell(image, image->candidate_cells[0], image->features);
 
 	fftw_free(fft_in);
 	fftw_free(fft_out);
 
-	/* We fill in indexed_cell but none of the candidate_cells, which
-	 * bypasses any cell reduction which is selected. */
+	image->ncells = 1;
 }
 
 
