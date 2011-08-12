@@ -930,6 +930,9 @@ int main(int argc, char *argv[])
 		if ( image.reflections != NULL ) {
 			file_type = FILE_HKL;
 			need_pdb = 1;
+			need_geometry = 0;
+			need_beam = 0;
+			image.lambda = 0.0;
 		} else {
 			ERROR("Couldn't recognise %s as reflection list,"
 			      " stream or image.\n", filename);
@@ -985,6 +988,11 @@ int main(int argc, char *argv[])
                       "bins\n");
 		return 1;
 	}
+
+	if ( file_type == FILE_HKL ) {
+		need_geometry = 0;
+		need_beam = 0;
+	} 
 
 	/* Get geometry, beam and pdb files and parameters as needed */
 	if ( need_geometry ) {
@@ -1049,12 +1057,20 @@ int main(int argc, char *argv[])
 	free(sym_str);
 
 	/* Set up histogram info*/
-	if (hist_info.q_min < 0.0 ) {
-		hist_info.q_min = smallest_q(&image);
+	if ( file_type == FILE_HKL ) {
+		/* get q range from Miller indices in hkl 
+		   file. */
+		resolution_limits(image.reflections, cell,
+			&hist_info.q_min, &hist_info.q_max);
+	} else {
+		if (hist_info.q_min < 0.0 ) {
+			hist_info.q_min = smallest_q(&image);
+		}
+		if (hist_info.q_max < 0.0 ) {
+			hist_info.q_max = largest_q(&image);
+		}
 	}
-	if (hist_info.q_max < 0.0 ) {
-		hist_info.q_max = largest_q(&image);
-	}
+
 	if ( hist_info.q_min >= hist_info.q_max ) {
 		ERROR("the minimum q value of: %e "
 	              "is greator then your max q value of: %e\n",
