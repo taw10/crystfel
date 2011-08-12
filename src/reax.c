@@ -51,10 +51,17 @@ struct reax_private
 	struct dvec *directions;
 	int n_dir;
 	double angular_inc;
+
 	double *fft_in;
 	fftw_complex *fft_out;
 	fftw_plan plan;
 	int nel;
+
+	fftw_complex *r_fft_in;
+	fftw_complex *r_fft_out;
+	fftw_plan r_plan;
+	int ch;
+	int cw;
 };
 
 
@@ -332,12 +339,22 @@ static void refine_rigid_group(struct image *image, UnitCell *cell,
                                const char *rg, int nel, double pmax,
                                double *fft_in, fftw_complex *fft_out,
                                fftw_plan plan, int smin, int smax,
-                               struct detector *det)
+                               struct detector *det, struct reax_private *pr)
 {
 	double ax, ay, az, ma;
 	double bx, by, bz, mb;
 	double cx, cy, cz, mc;
 	double pha, phb, phc;
+	struct panel *p;
+	int i, j;
+	fftw_complex *r_fft_in;
+	fftw_complex *r_fft_out;
+	double m2m;
+	signed int aix, aiy;
+	signed int bix, biy;
+	signed int cix, ciy;
+	double max;
+	int max_i, max_j;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -345,18 +362,101 @@ static void refine_rigid_group(struct image *image, UnitCell *cell,
 	mb = modulus(bx, by, bz);
 	mc = modulus(cx, cy, cz);
 
-	ax /= ma;  ay /= ma;  az /= ma;
-	bx /= mb;  by /= mb;  bz /= mb;
-	cx /= mc;  cy /= mc;  cz /= mc;
+	pha = get_model_phase(ax/ma, ay/ma, az/ma, image->features, nel, pmax,
+	                      fft_in, fft_out, plan, smin, smax, rg, det);
+	phb = get_model_phase(bx/mb, by/mb, bz/mb, image->features, nel, pmax,
+	                      fft_in, fft_out, plan, smin, smax, rg, det);
+	phc = get_model_phase(cx/mc, cy/mc, cz/mc, image->features, nel, pmax,
+	                      fft_in, fft_out, plan, smin, smax, rg, det);
 
-	pha = get_model_phase(ax, ay, az, image->features, nel, pmax, fft_in,
-	                      fft_out, plan, smin, smax, rg, det);
-	phb = get_model_phase(bx, by, bz, image->features, nel, pmax, fft_in,
-	                      fft_out, plan, smin, smax, rg, det);
-	phc = get_model_phase(cx, cy, cz, image->features, nel, pmax, fft_in,
-	                      fft_out, plan, smin, smax, rg, det);
+	for ( i=0; i<det->n_panels; i++ ) {
+		if ( det->panels[i].rigid_group == rg ) {
+			p = &det->panels[i];
+			break;
+		}
+	}
 
+	r_fft_in = fftw_malloc(pr->cw*pr->ch*sizeof(fftw_complex));
+	r_fft_out = fftw_malloc(pr->cw*pr->ch*sizeof(fftw_complex));
+	for ( i=0; i<pr->cw; i++ ) {
+	for ( j=0; j<pr->ch; j++ ) {
+		r_fft_in[i+pr->cw*j][0] = 0.0;
+		r_fft_in[i+pr->cw*j][1] = 0.0;
+	}
+	}
 
+	ma = modulus(ax, ay, 0.0);
+	mb = modulus(bx, by, 0.0);
+	mc = modulus(cx, cy, 0.0);
+	m2m = ma;
+	if ( mb > m2m ) m2m = mb;
+	if ( mc > m2m ) m2m = mc;
+
+	aix = (pr->cw/2)*ax/m2m;  aiy = (pr->ch/2)*ay/m2m;
+	bix = (pr->cw/2)*bx/m2m;  biy = (pr->ch/2)*by/m2m;
+	cix = (pr->cw/2)*cx/m2m;  ciy = (pr->ch/2)*cy/m2m;
+
+	if ( aix < 0 ) aix += pr->cw/2;
+	if ( bix < 0 ) bix += pr->cw/2;
+	if ( cix < 0 ) cix += pr->cw/2;
+
+	if ( aiy < 0 ) aiy += pr->ch/2;
+	if ( biy < 0 ) biy += pr->ch/2;
+	if ( ciy < 0 ) ciy += pr->ch/2;
+
+	r_fft_in[aix + pr->cw*aiy][0] = cos(pha);
+	r_fft_in[aix + pr->cw*aiy][1] = sin(pha);
+	r_fft_in[pr->cw-aix + pr->cw*(pr->ch-aiy)][0] = cos(pha);
+	r_fft_in[pr->cw-aix + pr->cw*(pr->ch-aiy)][1] = -sin(pha);
+
+	r_fft_in[bix + pr->cw*biy][0] = cos(phb);
+	r_fft_in[bix + pr->cw*biy][1] = sin(phb);
+	r_fft_in[pr->cw-bix + pr->cw*(pr->ch-biy)][0] = cos(phb);
+	r_fft_in[pr->cw-bix + pr->cw*(pr->ch-biy)][1] = -sin(phb);
+
+	r_fft_in[cix + pr->cw*ciy][0] = cos(phc);
+	r_fft_in[cix + pr->cw*ciy][1] = sin(phc);
+	r_fft_in[pr->cw-cix + pr->cw*(pr->ch-ciy)][0] = cos(phc);
+	r_fft_in[pr->cw-cix + pr->cw*(pr->ch-ciy)][1] = -sin(phc);
+
+	const int tidx = 1;
+	r_fft_in[tidx][0] = 1.0;
+	r_fft_in[tidx][1] = 0.0;
+
+//	STATUS("%i %i\n", aix, aiy);
+//	STATUS("%i %i\n", bix, biy);
+//	STATUS("%i %i\n", cix, ciy);
+
+	fftw_execute_dft(pr->r_plan, r_fft_in, r_fft_out);
+
+	max = 0.0;
+	FILE *fh = fopen("centering.dat", "w");
+	for ( i=0; i<pr->cw; i++ ) {
+	for ( j=0; j<pr->ch; j++ ) {
+
+		double re, im, am, ph;
+
+		re = r_fft_out[i + pr->cw*j][0];
+		im = r_fft_out[i + pr->cw*j][1];
+		am = sqrt(re*re + im*im);
+		ph = atan2(im, re);
+
+		if ( am > max ) {
+			max = am;
+			max_i = i;
+			max_j = j;
+		}
+
+		fprintf(fh, "%f ", am);
+
+	}
+	fprintf(fh, "\n");
+	}
+//	STATUS("Max at %i, %i\n", max_i, max_j);
+	fclose(fh);
+	exit(1);
+
+//	STATUS("Offsets for '%s': %.2f, %.2f pixels\n", rg, dx, dy);
 }
 
 
@@ -364,14 +464,15 @@ static void refine_all_rigid_groups(struct image *image, UnitCell *cell,
                                     int nel, double pmax,
                                     double *fft_in, fftw_complex *fft_out,
                                     fftw_plan plan, int smin, int smax,
-                                    struct detector *det)
+                                    struct detector *det,
+                                    struct reax_private *p)
 {
 	int i;
 
 	for ( i=0; i<image->det->num_rigid_groups; i++ ) {
 		refine_rigid_group(image, cell, image->det->rigid_groups[i],
 		                   nel, pmax, fft_in, fft_out, plan, smin, smax,
-		                   det);
+		                   det, p);
 	}
 }
 
@@ -522,7 +623,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	refine_all_rigid_groups(image, image->candidate_cells[0], p->nel, pmax,
 	                        fft_in, fft_out, p->plan, smin, smax,
-	                        image->det);
+	                        image->det, p);
 	map_all_peaks(image);
 	refine_cell(image, image->candidate_cells[0], image->features);
 
@@ -595,6 +696,14 @@ IndexingPrivate *reax_prepare()
 	p->plan = fftw_plan_dft_r2c_1d(p->nel, p->fft_in, p->fft_out,
 	                               FFTW_MEASURE);
 
+	p->cw = 128; p->ch = 128;
+
+	/* Also not used */
+	p->r_fft_in = fftw_malloc(p->cw*p->ch*sizeof(fftw_complex));
+	p->r_fft_out = fftw_malloc(p->cw*p->ch*sizeof(fftw_complex));
+
+	p->r_plan = fftw_plan_dft_2d(p->cw, p->ch, p->r_fft_in, p->r_fft_out,
+	                             1, FFTW_MEASURE);
 
 	return (IndexingPrivate *)p;
 }
@@ -611,6 +720,9 @@ void reax_cleanup(IndexingPrivate *pp)
 	fftw_free(p->fft_in);
 	fftw_free(p->fft_out);
 
+	fftw_destroy_plan(p->r_plan);
+	fftw_free(p->r_fft_in);
+	fftw_free(p->r_fft_out);
 
 	free(p);
 }
