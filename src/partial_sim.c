@@ -316,12 +316,13 @@ int main(int argc, char *argv[])
 
 		double osf;
 
-		if ( random() > RAND_MAX/2 ) {
-			osf = 1.0;
-		} else {
-			osf = 2.0;
-		}
+		//if ( random() > RAND_MAX/2 ) {
+		//	osf = 1.0;
+		//} else {
+		//	osf = 2.0;
+		//}
 		//STATUS("Image %i scale factor %f\n", i, osf);
+		osf = gaussian_noise(1.0, 0.3);
 
 		/* Set up a random orientation */
 		orientation = random_quaternion();
