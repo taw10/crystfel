@@ -108,11 +108,14 @@ You can choose between a variety of indexing methods.  You can choose more than
 one method, in which case each method will be tried in turn until the later cell
 reduction step says that the cell is a "hit".  Choose from:
 
+ none     : No indexing (default)
  dirax    : invoke DirAx
  mosflm   : invoke MOSFLM (DPS)
+ reax     : Use the DPS algorithm with known cell parameters
 
 Depending on what you have installed.  For "dirax" and "mosflm", you need to
-have the dirax or ipmosflm binaries in your PATH.
+have the dirax or ipmosflm binaries in your PATH.  For "reax", you have to
+provide a known unit cell.
 
 Example:  --indexing=dirax,mosflm
 

@@ -130,6 +130,7 @@ static void show_help(const char *s)
 "                            none     : no indexing (default)\n"
 "                            dirax    : invoke DirAx\n"
 "                            mosflm   : invoke MOSFLM (DPS)\n"
+"                            reax     : DPS algorithm with known unit cell\n"
 " -g. --geometry=<file>    Get detector geometry from file.\n"
 " -b, --beam=<file>        Get beam parameters from file (provides nominal\n"
 "                           wavelength value if no per-shot value is found in\n"
