@@ -887,41 +887,11 @@ int main(int argc, char *argv[])
 	if ( is_stream(filename) == 1 ) {
 
 		file_type = FILE_STREAM;
-		fh = fopen(filename, "r");
-		if ( fh == NULL ) {
-			ERROR("Failed to open input file\n");
-			return 1;
-		}
-		/* Use wavelength from first chunk */
-		rval = read_chunk(fh, &image);
-		rewind(fh);
 
 	} else if ( H5Fis_hdf5(filename) > 0 ) {
 
 		file_type = FILE_H5;
 		need_geometry = 1;
-		hdfile = hdfile_open(filename);
-		if ( element != NULL ) {
-			int r;
-			r = hdfile_set_image(hdfile, element);
-			if ( r ) {
-				ERROR("Couldn't select path '%s'\n",
-				     element);
-				hdfile_close(hdfile);
-				return 0;
-			}
-		} else {
-			int r;
-			r = hdfile_set_first_image(hdfile, "/");
-			if ( r ) {
-				ERROR("Couldn't select first path\n");
-				hdfile_close(hdfile);
-				return 0;
-			}
-
-		}
-		hdf5_read(hdfile, &image, config_satcorr);
-		hdfile_close(hdfile);
 
 	} else {
 
@@ -940,7 +910,6 @@ int main(int argc, char *argv[])
 		}
 
 	}
-	free(filename);
 
 	if ( datatype == NULL ) {
 		data_type = PLOT_D;
@@ -955,9 +924,6 @@ int main(int argc, char *argv[])
 	} else if ( strcmp(datatype, "hkl") == 0 ) {
 		data_type = PLOT_HKL;
 		need_pdb = 1;
-		if ((hist_info.q_min < 0.0) || (hist_info.q_max < 0.0)) {
-			need_geometry = 1;
-		}
 
 	} else if ( strcmp(datatype, "d") == 0 ) {
 		data_type = PLOT_D;
@@ -979,16 +945,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* Logic checks */
-	if ( need_geometry && (image.lambda < 0.0) ) {
-		need_beam = 1;
-	}
-	if ( hist_info.histsize <= 0 ) {
-		ERROR("You need to specify a histogram with more then 0 "
-                      "bins\n");
-		return 1;
-	}
-
+	/* doubt this is needed, but double check just in case */
 	if ( file_type == FILE_HKL ) {
 		need_geometry = 0;
 		need_beam = 0;
@@ -1012,6 +969,53 @@ int main(int argc, char *argv[])
 		}
 	}
 	free(geometry);
+
+	/* Open files to get wavelength if it exists & camera length
+	   if they are not found in the geometry file */
+	if (file_type == FILE_STREAM) {
+		fh = fopen(filename, "r");
+		if ( fh == NULL ) {
+			ERROR("Failed to open input file\n");
+			return 1;
+		}
+		/* Use wavelength from first chunk */
+		rval = read_chunk(fh, &image);
+		rewind(fh);
+	} else if (file_type == FILE_H5) {
+		hdfile = hdfile_open(filename);
+		if ( element != NULL ) {
+			int r;
+			r = hdfile_set_image(hdfile, element);
+			if ( r ) {
+				ERROR("Couldn't select path '%s'\n",
+				     element);
+				hdfile_close(hdfile);
+				return 0;
+			}
+		} else {
+			int r;
+			r = hdfile_set_first_image(hdfile, "/");
+			if ( r ) {
+				ERROR("Couldn't select first path\n");
+				hdfile_close(hdfile);
+				return 0;
+			}
+
+		}
+		hdf5_read(hdfile, &image, config_satcorr);
+		hdfile_close(hdfile);
+	}
+	free(filename);
+
+	/* Logic checks */
+	if ( need_geometry && (image.lambda < 0.0) ) {
+		need_beam = 1;
+	}
+	if ( hist_info.histsize <= 0 ) {
+		ERROR("You need to specify a histogram with more then 0 "
+                      "bins\n");
+		return 1;
+	}
 
 	if ( need_beam ) {
 
@@ -1046,7 +1050,6 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 		}
-
 	}
 	free(pdb);
 
@@ -1057,11 +1060,21 @@ int main(int argc, char *argv[])
 	free(sym_str);
 
 	/* Set up histogram info*/
-	if ( file_type == FILE_HKL ) {
+	if ( file_type == FILE_HKL || data_type == PLOT_HKL) {
 		/* get q range from Miller indices in hkl
 		   file. */
-		resolution_limits(image.reflections, cell,
+		if ((hist_info.q_min < 0.0) && (hist_info.q_max < 0.0)) {
+			resolution_limits(image.reflections, cell,
 		                  &hist_info.q_min, &hist_info.q_max);
+		} else if (hist_info.q_min < 0.0) {
+			double dummy;
+			resolution_limits(image.reflections, cell,
+		                  &hist_info.q_min, &dummy);
+		} else if (hist_info.q_max < 0.0) {
+			double dummy;
+			resolution_limits(image.reflections, cell,
+		                  &dummy, &hist_info.q_max);
+		}
 	} else {
 		if ( hist_info.q_min < 0.0 ) {
 			hist_info.q_min = smallest_q(&image);
