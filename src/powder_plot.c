@@ -992,7 +992,7 @@ int main(int argc, char *argv[])
 	if ( file_type == FILE_HKL ) {
 		need_geometry = 0;
 		need_beam = 0;
-	} 
+	}
 
 	/* Get geometry, beam and pdb files and parameters as needed */
 	if ( need_geometry ) {
@@ -1058,15 +1058,15 @@ int main(int argc, char *argv[])
 
 	/* Set up histogram info*/
 	if ( file_type == FILE_HKL ) {
-		/* get q range from Miller indices in hkl 
+		/* get q range from Miller indices in hkl
 		   file. */
 		resolution_limits(image.reflections, cell,
-			&hist_info.q_min, &hist_info.q_max);
+		                  &hist_info.q_min, &hist_info.q_max);
 	} else {
-		if (hist_info.q_min < 0.0 ) {
+		if ( hist_info.q_min < 0.0 ) {
 			hist_info.q_min = smallest_q(&image);
 		}
-		if (hist_info.q_max < 0.0 ) {
+		if ( hist_info.q_max < 0.0 ) {
 			hist_info.q_max = largest_q(&image);
 		}
 	}
@@ -1076,11 +1076,11 @@ int main(int argc, char *argv[])
 	              "is greator then your max q value of: %e\n",
                       hist_info.q_min, hist_info.q_max);
 		return 1;
-	}	
-	if (hist_info.spacing == LINEAR) {
+	}
+	if ( hist_info.spacing == LINEAR) {
 		hist_info.q_delta = (hist_info.q_max - hist_info.q_min)/
 		                    hist_info.histsize;
-	} else if (hist_info.spacing == q2) {
+	} else if ( hist_info.spacing == q2) {
 		hist_info.q_delta = (pow(hist_info.q_max, 2.0) -
 		                     pow(hist_info.q_min, 2.0)) /
 		                     hist_info.histsize;
