@@ -203,14 +203,16 @@ script_DATA = scripts/check-near-bragg  scripts/random-image \
               scripts/sequence-image scripts/zone-axes \
               scripts/alternate-stream scripts/README scripts/cell-please \
               scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
-              scripts/compare-hkl.gp scripts/check-peak-detection
+              scripts/compare-hkl.gp scripts/check-peak-detection \
+              scripts/indexed-filenames
 
 EXTRA_DIST += scripts/check-near-bragg  scripts/random-image \
               scripts/wibbletron scripts/create-mtz scripts/mtz2hkl \
               scripts/sequence-image scripts/zone-axes \
               scripts/alternate-stream scripts/README scripts/cell-please \
               scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
-              scripts/compare-hkl.gp scripts/check-peak-detection
+              scripts/compare-hkl.gp scripts/check-peak-detection \
+              scripts/indexed-filenames
 
 
 DISTCHECK_CONFIGURE_FLAGS=--enable-gtk-doc
