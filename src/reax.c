@@ -429,32 +429,32 @@ static void refine_rigid_group(struct image *image, UnitCell *cell,
 
 	fftw_execute_dft(pr->r_plan, r_fft_in, r_fft_out);
 
-	max = 0.0;
-	FILE *fh = fopen("centering.dat", "w");
-	for ( i=0; i<pr->cw; i++ ) {
-	for ( j=0; j<pr->ch; j++ ) {
-
-		double re, im, am, ph;
-
-		re = r_fft_out[i + pr->cw*j][0];
-		im = r_fft_out[i + pr->cw*j][1];
-		am = sqrt(re*re + im*im);
-		ph = atan2(im, re);
-
-		if ( am > max ) {
-			max = am;
-			max_i = i;
-			max_j = j;
-		}
-
-		fprintf(fh, "%f ", am);
-
-	}
-	fprintf(fh, "\n");
-	}
+//	max = 0.0;
+//	FILE *fh = fopen("centering.dat", "w");
+//	for ( i=0; i<pr->cw; i++ ) {
+//	for ( j=0; j<pr->ch; j++ ) {
+//
+//		double re, im, am, ph;
+//
+//		re = r_fft_out[i + pr->cw*j][0];
+//		im = r_fft_out[i + pr->cw*j][1];
+//		am = sqrt(re*re + im*im);
+//		ph = atan2(im, re);
+//
+//		if ( am > max ) {
+//			max = am;
+//			max_i = i;
+//			max_j = j;
+//		}
+//
+//		fprintf(fh, "%f ", am);
+//
+//	}
+//	fprintf(fh, "\n");
+//	}
 //	STATUS("Max at %i, %i\n", max_i, max_j);
-	fclose(fh);
-	exit(1);
+//	fclose(fh);
+//	exit(1);
 
 //	STATUS("Offsets for '%s': %.2f, %.2f pixels\n", rg, dx, dy);
 }
