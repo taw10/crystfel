@@ -656,7 +656,7 @@ int main(int argc, char *argv[])
 		weighting = strdup("I");
 	}
 
-	if ( outfile == NULL ) outfile = "za.pdf";
+	if ( outfile == NULL ) outfile = strdup("za.pdf");
 
 
 	if ( strcmp(weighting, "I") == 0 ) {
