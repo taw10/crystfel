@@ -144,8 +144,24 @@ int check_list_symmetry(RefList *list, const SymOpList *sym)
 
 		assert(found != 0);  /* That'd just be silly */
 		if ( found > 1 ) {
+
 			free_symopmask(mask);
-			STATUS("Found %i %i %i: %i times\n", h, k, l, found);
+			STATUS("Found %i %i %i: %i times:\n", h, k, l, found);
+
+			for ( j=0; j<n; j++ ) {
+
+				signed int he, ke, le;
+				Reflection *f;
+
+				get_equiv(sym, mask, j, h, k, l, &he, &ke, &le);
+
+				f = find_refl(list, he, ke, le);
+				if ( f != NULL ) {
+					STATUS("%3i %3i %3i\n", he, ke, le);
+				}
+
+			}
+
 			return 1;  /* Symmetry is wrong! */
 		}
 
