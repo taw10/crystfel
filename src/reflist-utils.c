@@ -145,7 +145,6 @@ int check_list_symmetry(RefList *list, const SymOpList *sym)
 		assert(found != 0);  /* That'd just be silly */
 		if ( found > 1 ) {
 
-			free_symopmask(mask);
 			STATUS("Found %i %i %i: %i times:\n", h, k, l, found);
 
 			for ( j=0; j<n; j++ ) {
@@ -161,6 +160,7 @@ int check_list_symmetry(RefList *list, const SymOpList *sym)
 				}
 
 			}
+			free_symopmask(mask);
 
 			return 1;  /* Symmetry is wrong! */
 		}
