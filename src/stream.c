@@ -52,18 +52,8 @@ int parse_stream_flags(const char *a)
 
 	for ( i=0; i<n; i++ ) {
 
-		if ( strcmp(flags[i], "pixels") == 0) {
-			if ( ret & STREAM_INTEGRATED ) {
-				exclusive("pixels", "integrated");
-				return -1;
-			}
-			ret |= STREAM_PIXELS;
+		if ( strcmp(flags[i], "integrated") == 0) {
 
-		} else if ( strcmp(flags[i], "integrated") == 0) {
-			if ( ret & STREAM_PIXELS ) {
-				exclusive("pixels", "integrated");
-				return -1;
-			}
 			ret |= STREAM_INTEGRATED;
 
 		} else if ( strcmp(flags[i], "peaks") == 0) {
@@ -270,7 +260,7 @@ void write_chunk(FILE *ofh, struct image *i, int f)
 		write_peaks(i, ofh);
 	}
 
-	if ( (f & STREAM_PIXELS) || (f & STREAM_INTEGRATED) ) {
+	if ( f & STREAM_INTEGRATED ) {
 
 		fprintf(ofh, "\n");
 
