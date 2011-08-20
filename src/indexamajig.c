@@ -325,9 +325,11 @@ static void process_image(void *pp, int cookie)
 		image.reflections = find_intersections(&image,
 			                               image.indexed_cell);
 
-		integrate_reflections(&image, config_polar,
-			              pargs->static_args.config_closer,
-			              pargs->static_args.config_bgsub);
+		if ( image.reflections != NULL ) {
+			integrate_reflections(&image, config_polar,
+					      pargs->static_args.config_closer,
+					      pargs->static_args.config_bgsub);
+		}
 
 	} else {
 
