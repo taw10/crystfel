@@ -116,10 +116,12 @@ void cleanup_indexing(IndexingPrivate **priv)
 
 void map_all_peaks(struct image *image)
 {
-	int i;
+	int i, n;
+
+	n = image_feature_count(image->features);
 
 	/* Map positions to 3D */
-	for ( i=0; i<image_feature_count(image->features); i++ ) {
+	for ( i=0; i<n; i++ ) {
 
 		struct imagefeature *f;
 		struct rvec r;
