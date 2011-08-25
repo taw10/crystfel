@@ -438,7 +438,6 @@ void search_peaks(struct image *image, float threshold, float min_gradient)
 	}
 	image->features = image_feature_list_new();
 
-
 	for ( i=0; i<image->det->n_panels; i++ ) {
 
 		struct panel *p = &image->det->panels[i];
