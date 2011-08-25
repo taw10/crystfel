@@ -626,6 +626,8 @@ BUILD_HDFSEE_FALSE
 BUILD_HDFSEE_TRUE
 HAVE_OPENCL_FALSE
 HAVE_OPENCL_TRUE
+FFTW_LIBS
+FFTW_CFLAGS
 GDK_pixbuf_2_LIBS
 GDK_pixbuf_2_CFLAGS
 GDK_pixbuf_LIBS
@@ -861,7 +863,9 @@ Cairo_LIBS
 GDK_pixbuf_CFLAGS
 GDK_pixbuf_LIBS
 GDK_pixbuf_2_CFLAGS
-GDK_pixbuf_2_LIBS'
+GDK_pixbuf_2_LIBS
+FFTW_CFLAGS
+FFTW_LIBS'
 
 
 # Initialize some variables set by options.
@@ -1537,6 +1541,8 @@ Some influential environment variables:
               C compiler flags for GDK_pixbuf_2, overriding pkg-config
   GDK_pixbuf_2_LIBS
               linker flags for GDK_pixbuf_2, overriding pkg-config
+  FFTW_CFLAGS C compiler flags for FFTW, overriding pkg-config
+  FFTW_LIBS   linker flags for FFTW, overriding pkg-config
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -7539,59 +7545,88 @@ fi
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for fftw_plan_dft_r2c_1d in -lfftw3" >&5
-$as_echo_n "checking for fftw_plan_dft_r2c_1d in -lfftw3... " >&6; }
-if test "${ac_cv_lib_fftw3_fftw_plan_dft_r2c_1d+set}" = set; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lfftw3  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
 
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char fftw_plan_dft_r2c_1d ();
-int
-main ()
-{
-return fftw_plan_dft_r2c_1d ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_fftw3_fftw_plan_dft_r2c_1d=yes
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for FFTW" >&5
+$as_echo_n "checking for FFTW... " >&6; }
+
+if test -n "$FFTW_CFLAGS"; then
+    pkg_cv_FFTW_CFLAGS="$FFTW_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"fftw3\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "fftw3") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_FFTW_CFLAGS=`$PKG_CONFIG --cflags "fftw3" 2>/dev/null`
 else
-  ac_cv_lib_fftw3_fftw_plan_dft_r2c_1d=no
+  pkg_failed=yes
 fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
+ else
+    pkg_failed=untried
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_fftw3_fftw_plan_dft_r2c_1d" >&5
-$as_echo "$ac_cv_lib_fftw3_fftw_plan_dft_r2c_1d" >&6; }
-if test "x$ac_cv_lib_fftw3_fftw_plan_dft_r2c_1d" = x""yes; then :
-
-
-$as_echo "#define HAVE_FFTW 1" >>confdefs.h
-
-   FFTW_LIBS="-lfftw3"
-   have_fftw=true
-
+if test -n "$FFTW_LIBS"; then
+    pkg_cv_FFTW_LIBS="$FFTW_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"fftw3\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "fftw3") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_FFTW_LIBS=`$PKG_CONFIG --libs "fftw3" 2>/dev/null`
 else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        FFTW_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "fftw3" 2>&1`
+        else
+	        FFTW_PKG_ERRORS=`$PKG_CONFIG --print-errors "fftw3" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$FFTW_PKG_ERRORS" >&5
+
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: ReAx indexing will not be available." >&5
 $as_echo "$as_me: WARNING: ReAx indexing will not be available." >&2;}
    have_fftw=false
 
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: ReAx indexing will not be available." >&5
+$as_echo "$as_me: WARNING: ReAx indexing will not be available." >&2;}
+   have_fftw=false
+
+else
+	FFTW_CFLAGS=$pkg_cv_FFTW_CFLAGS
+	FFTW_LIBS=$pkg_cv_FFTW_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+   have_fftw=true
+
+$as_echo "#define HAVE_FFTW 1" >>confdefs.h
+
+
 fi
-
-
 
  if test x$have_opencl = xtrue; then
   HAVE_OPENCL_TRUE=
@@ -7702,7 +7737,7 @@ $as_echo "$gl_cv_prog_c_ignore_unused_libraries" >&6; }
 
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread $GTK_CFLAGS"
 CFLAGS="$CFLAGS $LIBTIFF_CFLAGS -D_GNU_SOURCE $libPNG_CFLAGS $Cairo_CFLAGS"
-CFLAGS="$CFLAGS $GDK_pixbuf_CFLAGS $GDK_pixbuf_2_CFLAGS"
+CFLAGS="$CFLAGS $GDK_pixbuf_CFLAGS $GDK_pixbuf_2_CFLAGS $FFTW_CFLAGS"
 
 LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
 LIBS="$LIBS $LIBTIFF_LIBS $libPNG_LIBS $Cairo_LIBS $GDK_pixbuf_LIBS"

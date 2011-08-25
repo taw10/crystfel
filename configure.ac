@@ -230,17 +230,14 @@ AC_CHECK_LIB([rt], [clock_gettime],
 ])
 
 
-AC_CHECK_LIB([fftw3], [fftw_plan_dft_r2c_1d],
+PKG_CHECK_MODULES([FFTW], [fftw3],
 [
-   AC_DEFINE([HAVE_FFTW], [1],
-             [Define to 1 if FFTW is available.])
-   FFTW_LIBS="-lfftw3"
    have_fftw=true
+   AC_DEFINE([HAVE_FFTW], [1], [Define to 1 if FFTW is available])
 ], [
    AC_MSG_WARN([ReAx indexing will not be available.])
    have_fftw=false
 ])
-
 
 dnl Conditionals...
 AM_CONDITIONAL([HAVE_OPENCL], test x$have_opencl = xtrue)
@@ -261,7 +258,7 @@ gl_IGNORE_UNUSED_LIBRARIES
 
 CFLAGS="$CFLAGS $HDF5_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread $GTK_CFLAGS"
 CFLAGS="$CFLAGS $LIBTIFF_CFLAGS -D_GNU_SOURCE $libPNG_CFLAGS $Cairo_CFLAGS"
-CFLAGS="$CFLAGS $GDK_pixbuf_CFLAGS $GDK_pixbuf_2_CFLAGS"
+CFLAGS="$CFLAGS $GDK_pixbuf_CFLAGS $GDK_pixbuf_2_CFLAGS $FFTW_CFLAGS"
 
 LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
 LIBS="$LIBS $LIBTIFF_LIBS $libPNG_LIBS $Cairo_LIBS $GDK_pixbuf_LIBS"
