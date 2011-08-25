@@ -238,6 +238,9 @@ IndexingMethod *build_indexer_list(const char *str, int *need_cell)
 	int n, i;
 	char **methods;
 	IndexingMethod *list;
+	int tmp;
+
+	if ( need_cell == NULL ) need_cell = &tmp;
 	*need_cell = 0;
 
 	n = assplode(str, ",", &methods, ASSPLODE_NONE);
