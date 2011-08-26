@@ -297,6 +297,7 @@ static double get_wavelength(struct hdfile *f)
 	H5Dclose(dh);
 
 	if ( r < 0 ) return -1.0;
+	if ( isnan(lambda) ) return -1.0;
 
 	/* Convert nm -> m */
 	if ( nm ) return lambda / 1.0e9;
