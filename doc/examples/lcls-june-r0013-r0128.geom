@@ -18,6 +18,7 @@ integr_radius = 10.0
 0/clen = 64.78e-3
 0/res = 13333.3  ; 75 micron pixel size
 0/badrow_direction = y
+0/rigid_group = 0
 
 ; Lower panel (furthest from the beam)
 1/min_fs = 0
@@ -31,6 +32,7 @@ integr_radius = 10.0
 1/clen = 67.73e-3
 1/res = 13333.3  ; 75 micron pixel size
 1/badrow_direction = y
+1/rigid_group = 1
 
 bad_jetneartobeam/min_x = -15.0
 bad_jetneartobeam/max_x = +15.0
