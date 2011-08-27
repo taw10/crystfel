@@ -166,6 +166,27 @@ static void show_ring(cairo_t *cr, DisplayWindow *dw,
 }
 
 
+static void show_simple_ring(cairo_t *cr, DisplayWindow *dw,
+                             double d, cairo_matrix_t *basic_m)
+{
+	struct detector *det;
+	int i;
+
+	if ( !dw->use_geom ) return;
+
+	det = dw->image->det;
+
+	cairo_text_extents_t size;
+	cairo_identity_matrix(cr);
+	cairo_translate(cr, -dw->min_x/dw->binning,
+	                     dw->max_y/dw->binning);
+	cairo_arc(cr, 0.0, 0.0, d / dw->binning, 0.0, 2.0*M_PI);
+	cairo_set_source_rgb(cr, 0.3, 1.0, 0.3);
+	cairo_set_line_width(cr, 1.0/dw->binning);
+	cairo_stroke(cr);
+}
+
+
 static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 {
 	cairo_t *cr;
@@ -209,6 +230,15 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 		cairo_arc(cr, 0.0, 0.0, 5.0/dw->binning, 0.0, 2.0*M_PI);
 		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
 		cairo_fill(cr);
+
+		cairo_rectangle(cr, -370.0, 800.0, 120.0, 60.0);
+		cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.3);
+		cairo_fill(cr);
+
+		show_simple_ring(cr, dw, 186.0, &basic_m);
+		show_simple_ring(cr, dw, 250.0, &basic_m);
+		show_simple_ring(cr, dw, 300.0, &basic_m);
+		show_simple_ring(cr, dw, 380.0, &basic_m);
 
 		/* Draw resolution circles */
 		show_ring(cr, dw, 10.0e-10, "10A", &basic_m, 1.0, 0.0, 0.0);
