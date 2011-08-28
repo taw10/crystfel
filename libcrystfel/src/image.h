@@ -84,6 +84,7 @@ typedef struct _imagefeaturelist ImageFeatureList;
  *    double                  osf;
  *    double                  profile_radius;
  *    int                     pr_dud;
+ *    double                  diffracting_resolution;
  *
  *    int                     width;
  *    int                     height;
@@ -150,6 +151,7 @@ struct image {
 	double                  osf;           /* Overall scaling factor */
 	double                  profile_radius; /* Radius of reflection */
 	int                     pr_dud;        /* Post refinement failed */
+	double                  diffracting_resolution;  /* Max 1/d in m^-1 */
 
 	int                     width;
 	int                     height;

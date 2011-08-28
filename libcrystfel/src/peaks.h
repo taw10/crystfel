@@ -35,4 +35,7 @@ extern int integrate_peak(struct image *image, int cfs, int css,
                           double *pbg, double *pmax, double *sigma,
                           int do_polar, int centroid, int bgsub);
 
+extern void estimate_resolution(RefList *list, UnitCell *cell,
+                                double *min, double *max);
+
 #endif	/* PEAKS_H */

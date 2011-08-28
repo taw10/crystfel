@@ -45,4 +45,7 @@ extern void resolution_limits(RefList *list, UnitCell *cell,
 
 extern double max_intensity(RefList *list);
 
+extern RefList *res_cutoff(RefList *list, UnitCell *cell,
+                           double min, double max);
+
 #endif	/* REFLIST_UTILS_H */

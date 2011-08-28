@@ -59,6 +59,7 @@ write_reflections_to_file
 read_reflections
 read_reflections_from_file
 asymmetric_indices
+res_cutoff
 </SECTION>
 
 <SECTION>

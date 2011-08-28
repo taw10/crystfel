@@ -434,3 +434,40 @@ double max_intensity(RefList *list)
 
 	return max;
 }
+
+
+/**
+ * res_cutoff:
+ * @list: A %RefList
+ *
+ * Returns: A new %RefList with resolution cutoff applied
+ **/
+RefList *res_cutoff(RefList *list, UnitCell *cell, double min, double max)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	RefList *new;
+
+	new = reflist_new();
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double one_over_d;
+		signed int h, k, l;
+		Reflection *n;
+
+		get_indices(refl, &h, &k, &l);
+
+		one_over_d = 2.0 * resolution(cell, h, k, l);
+		if ( one_over_d < min ) continue;
+		if ( one_over_d > max ) continue;
+
+		n = add_refl(new, h, k, l);
+		copy_data(n, refl);
+	}
+
+	reflist_free(list);
+	return new;
+}

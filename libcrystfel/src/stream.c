@@ -241,6 +241,15 @@ void write_chunk(FILE *ofh, struct image *i, struct hdfile *hdfile, int f)
 	fprintf(ofh, "photon_energy_eV = %f\n",
 	        J_to_eV(ph_lambda_to_en(i->lambda)));
 
+	if ( i->reflections != NULL ) {
+
+		fprintf(ofh, "diffraction_resolution_limit"
+		             " = %.2f nm^-1 or %.2f A\n",
+		             i->diffracting_resolution/1e9,
+		             1e9 / i->diffracting_resolution);
+
+	}
+
 	if ( i->det != NULL ) {
 
 		int j;

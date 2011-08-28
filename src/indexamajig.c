@@ -358,9 +358,20 @@ static void process_image(void *pp, int cookie)
 		pargs->indexable = 1;
 
 		if ( image.reflections != NULL ) {
+
+			double min, max;
+
 			integrate_reflections(&image, config_polar,
 					      pargs->static_args.config_closer,
 					      pargs->static_args.config_bgsub);
+
+			estimate_resolution(image.reflections,
+			                    image.indexed_cell, &min, &max);
+			image.reflections = res_cutoff(image.reflections,
+			                               image.indexed_cell,
+			                               min, max);
+			image.diffracting_resolution = max;
+
 		}
 
 	} else {
