@@ -776,7 +776,8 @@ int main(int argc, char *argv[])
 			indm = NULL;
 			indexer_needs_cell = 0;
 		} else {
-			indm = build_indexer_list(indm_str, &indexer_needs_cell);
+			indm = build_indexer_list(indm_str,
+			                          &indexer_needs_cell);
 			if ( indm == NULL ) {
 				ERROR("Invalid indexer list '%s'\n", indm_str);
 				return 1;
