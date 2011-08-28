@@ -97,6 +97,7 @@ int get_peaks(struct image *image, struct hdfile *f)
 	int i;
 	float *buf;
 	herr_t r;
+	int tw;
 
 	dh = H5Dopen2(f->fh, "/processing/hitfinder/peakinfo", H5P_DEFAULT);
 
@@ -124,7 +125,8 @@ int get_peaks(struct image *image, struct hdfile *f)
 
 	H5Sget_simple_extent_dims(sh, size, max_size);
 
-	if ( size[1] != 3 ) {
+	tw = size[1];
+	if ( (tw != 3) && (tw != 4) ) {
 		H5Sclose(sh);
 		H5Dclose(dh);
 		ERROR("Peak list has the wrong dimensions.\n");
@@ -155,9 +157,9 @@ int get_peaks(struct image *image, struct hdfile *f)
 		float fs, ss, val;
 		struct panel *p;
 
-		fs = buf[3*i+0];
-		ss = buf[3*i+1];
-		val = buf[3*i+2];
+		fs = buf[tw*i+0];
+		ss = buf[tw*i+1];
+		val = buf[tw*i+2];
 
 		p = find_panel(image->det, fs, ss);
 		if ( p == NULL ) continue;
