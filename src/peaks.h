@@ -27,8 +27,7 @@ extern void search_peaks(struct image *image, float threshold,
 extern void integrate_reflections(struct image *image,
                                   int polar, int use_closer, int bgsub);
 
-extern int peak_sanity_check(struct image *image, UnitCell *cell,
-                             int circular_domain, double domain_r);
+extern int peak_sanity_check(RefList *rlist, ImageFeatureList *flist);
 
 /* Exported so it can be poked by integration_check */
 extern int integrate_peak(struct image *image, int cfs, int css,

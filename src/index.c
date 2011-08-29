@@ -30,6 +30,7 @@
 #include "index.h"
 #include "index-priv.h"
 #include "reax.h"
+#include "geometry.h"
 
 
 /* Base class constructor for unspecialised indexing private data */
@@ -204,8 +205,12 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 			if ( new_cell == NULL ) continue;
 
 			/* Sanity check */
+			image->reflections = find_intersections(image,
+			                                        new_cell);
 			if ( !config_insane &&
-			     !peak_sanity_check(image, new_cell, 0, 0.1) ) {
+			     !peak_sanity_check(image->reflections,
+			                        image->features) )
+			{
 				cell_free(new_cell);
 				continue;
 			}

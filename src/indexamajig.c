@@ -314,20 +314,16 @@ static void process_image(void *pp, int cookie)
 	image.data = data_for_measurement;
 
 	/* Calculate orientation matrix (by magic) */
+	image.div = beam->divergence;
+	image.bw = beam->bandwidth;
+	image.profile_radius = 0.0001e9;
 	index_pattern(&image, cell, indm, pargs->static_args.cellr,
 		      config_verbose, pargs->static_args.ipriv,
 		      pargs->static_args.config_insane);
 
-	if ( image.indexed_cell != NULL ) pargs->indexable = 1;
-
-	/* Measure intensities */
 	if ( image.indexed_cell != NULL ) {
 
-		image.div = beam->divergence;
-		image.bw = beam->bandwidth;
-		image.profile_radius = 0.0001e9;
-		image.reflections = find_intersections(&image,
-			                               image.indexed_cell);
+		pargs->indexable = 1;
 
 		if ( image.reflections != NULL ) {
 			integrate_reflections(&image, config_polar,

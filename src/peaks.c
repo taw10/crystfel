@@ -31,6 +31,7 @@
 #include "detector.h"
 #include "filters.h"
 #include "diffraction.h"
+#include "reflist-utils.h"
 
 
 /* How close a peak must be to an indexed position to be considered "close"
@@ -449,62 +450,36 @@ void search_peaks(struct image *image, float threshold, float min_gradient)
 }
 
 
-int peak_sanity_check(struct image *image, UnitCell *cell,
-                      int circular_domain, double domain_r)
+int peak_sanity_check(RefList *rlist, ImageFeatureList *flist)
 {
 	int i;
 	int n_feat = 0;
 	int n_sane = 0;
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
-	double aslen, bslen, cslen;
 
-	/* "Borrow" direction values to get reciprocal lengths */
-	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	aslen = modulus(ax, ay, az);
-	bslen = modulus(bx, by, bz);
-	cslen = modulus(cx, cy, cz);
-
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-
-	fesetround(1);  /* Round towards nearest */
-	for ( i=0; i<image_feature_count(image->features); i++ ) {
+	for ( i=0; i<image_feature_count(flist); i++ ) {
 
 		double dist;
-		struct rvec q;
 		struct imagefeature *f;
-		double hd, kd, ld;
-		signed int h, k, l;
-		double dh, dk, dl;
+		Reflection *refl;
+		RefListIterator *iter;
 
-		f = image_get_feature(image->features, i);
+		f = image_get_feature(flist, i);
 		if ( f == NULL ) continue;
 		n_feat++;
 
-		/* Get closest hkl */
-		q = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
+		/* Find closest predicted peak */
 
-		hd = q.u * ax + q.v * ay + q.w * az;
-		kd = q.u * bx + q.v * by + q.w * bz;
-		ld = q.u * cx + q.v * cy + q.w * cz;
-
-		h = lrint(hd);  k = lrint(kd);  l = lrint(ld);
-
-		dh = hd - h;  dk = kd - k;  dl = ld - l;
-
-		if ( circular_domain ) {
-
-			/* Circular integration domain */
-			dist = sqrt(pow(dh*aslen, 2.0) + pow(dk*bslen, 2.0)
-			                              + pow(dl*cslen, 2.0));
-			if ( dist <= domain_r ) n_sane++;
-
-		} else {
-
-			/* "Crystallographic" integration domain */
-			dist = sqrt(pow(dh, 2.0) + pow(dk, 2.0) + pow(dl, 2.0));
-			if ( dist <= domain_r ) n_sane++;
+		for ( refl = first_refl(rlist, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) )
+		{
+			double fs, ss;
+			get_detector_pos(refl, &fs, &ss);
+			dist = sqrt(pow(fs-f->fs, 2.0) + pow(ss-f->ss, 2.0));
+			if ( dist < PEAK_CLOSE ) {
+				n_sane++;
+				continue;
+			}
 		}
 
 	}
