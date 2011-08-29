@@ -118,7 +118,8 @@ static void draw_panel_rectangle(cairo_t *cr, cairo_matrix_t *basic_m,
 
 
 static void show_ring(cairo_t *cr, DisplayWindow *dw,
-                      double d, const char *label, cairo_matrix_t *basic_m)
+                      double d, const char *label, cairo_matrix_t *basic_m,
+                      double r, double g, double b)
 {
 	struct detector *det;
 	int i;
@@ -139,7 +140,7 @@ static void show_ring(cairo_t *cr, DisplayWindow *dw,
 		cairo_arc(cr, 0.0, 0.0,
 		          ring_radius(dw->image, i, d)/dw->binning,
 			  0.0, 2.0*M_PI);
-		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+		cairo_set_source_rgb(cr, r, g, b);
 		cairo_set_line_width(cr, 3.0/dw->binning);
 		cairo_stroke(cr);
 
@@ -209,13 +210,16 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 		cairo_fill(cr);
 
 		/* Draw resolution circles */
-		show_ring(cr, dw, 10.0e-10, "10A", &basic_m);
-		show_ring(cr, dw, 8.0e-10, "8A", &basic_m);
-		show_ring(cr, dw, 5.0e-10, "5A", &basic_m);
-		show_ring(cr, dw, 4.0e-10, "4A", &basic_m);
-		show_ring(cr, dw, 3.0e-10, "3A", &basic_m);
-		show_ring(cr, dw, 2.0e-10, "2A", &basic_m);
-		show_ring(cr, dw, 1.0e-10, "1A", &basic_m);
+		show_ring(cr, dw, 10.0e-10, "10A", &basic_m, 1.0, 0.0, 0.0);
+		show_ring(cr, dw, 9.0e-10, "9A", &basic_m, 1.0, 0.0, 0.0);
+		show_ring(cr, dw, 8.0e-10, "8A", &basic_m, 1.0, 0.0, 0.0);
+		show_ring(cr, dw, 7.0e-10, "7A", &basic_m, 1.0, 0.5, 0.0);
+		show_ring(cr, dw, 6.0e-10, "6A", &basic_m, 1.0, 1.0, 0.0);
+		show_ring(cr, dw, 5.0e-10, "5A", &basic_m, 0.0, 1.0, 0.0);
+		show_ring(cr, dw, 4.0e-10, "4A", &basic_m, 0.0, 1.0, 0.0);
+//		show_ring(cr, dw, 3.0e-10, "3A", &basic_m);
+//		show_ring(cr, dw, 2.0e-10, "2A", &basic_m);
+//		show_ring(cr, dw, 1.0e-10, "1A", &basic_m);
 
 	}
 
