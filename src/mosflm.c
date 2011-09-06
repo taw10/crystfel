@@ -368,8 +368,14 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		break;
 
 	case 9 :
-		snprintf(tmp, 255, "AUTOINDEX DPS FILE %s IMAGE 1\n",
+		snprintf(tmp, 255, "AUTOINDEX DPS FILE %s"
+		                   " IMAGE 1 MAXCELL 1000 REFINE\n",
 		         mosflm->sptfile);
+
+		/* "This option is only available if you e-mail Andrew Leslie
+		 * and ask for it." - MOSFLM
+		 * snprintf(tmp, 255, "AUTOINDEX NODISPLAY IMAGE 1 FILE %s\n",
+		 *         mosflm->sptfile); */
 		mosflm_sendline(tmp, mosflm);
 		break;
 
