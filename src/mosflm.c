@@ -218,7 +218,7 @@ static void write_spt(struct image *image, const char *filename)
 		sptlines[i].x = ry*pix*fclen/p->clen/1000.0;
 		sptlines[i].y = -rx*pix*fclen/p->clen/1000.0;
 		sptlines[i].h = height;
-		sptlines[i].s = sigma;
+		sptlines[i].s = sigma/1000.0;
 
 	}
 
