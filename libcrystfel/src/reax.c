@@ -45,6 +45,31 @@ struct dvec
 };
 
 
+struct reax_candidate
+{
+	struct dvec v;   /* This is the vector for the candidate */
+	double strength; /* How much intensity fell into the range */
+};
+
+
+struct reax_search_v
+{
+	unsigned int smin;
+	unsigned int smax;  /* Search for vector in this range */
+
+	struct reax_candidate *cand;  /* Candidate vectors go here */
+	int n_cand;                   /* There are this many candidates */
+};
+
+
+struct reax_search
+{
+	struct reax_search_v *search;  /* Search for these vectors */
+	int n_search;                  /* There are this many vectors to find */
+	double pmax;                   /* The maximum feature resolution */
+};
+
+
 struct reax_private
 {
 	IndexingPrivate base;
@@ -65,14 +90,12 @@ struct reax_private
 };
 
 
-static double check_dir(struct dvec *dir, ImageFeatureList *flist,
+static void fill_and_transform(struct dvec *dir, ImageFeatureList *flist,
                         int nel, double pmax, double *fft_in,
                         fftw_complex *fft_out, fftw_plan plan,
-                        int smin, int smax,
                         const char *rg, struct detector *det)
 {
 	int n, i;
-	double tot;
 
 	for ( i=0; i<nel; i++ ) {
 		fft_in[i] = 0.0;
@@ -107,16 +130,222 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 	}
 
 	fftw_execute_dft_r2c(plan, fft_in, fft_out);
+}
+
+
+static double check_dir(struct dvec *dir, ImageFeatureList *flist,
+                        int nel, double pmax, double *fft_in,
+                        fftw_complex *fft_out, fftw_plan plan,
+                        struct reax_search *s,
+                        const char *rg, struct detector *det)
+{
+	int i;
+	double tot;
+
+	fill_and_transform(dir, flist, nel, pmax, fft_in, fft_out,
+	                   plan, rg, det);
 
 	tot = 0.0;
-	for ( i=smin; i<=smax; i++ ) {
-		double re, im;
-		re = fft_out[i][0];
-		im = fft_out[i][1];
-		tot += sqrt(re*re + im*im);
+	for ( i=0; i<s->n_search; i++ ) {
+
+		double tot = 0.0;
+		double peak = 0.0;
+		double peak_mod = 0.0;
+		int j;
+
+		for ( j=s->search[i].smin; j<=s->search[i].smax; j++ ) {
+
+			double re, im;
+
+			re = fft_out[j][0];
+			im = fft_out[j][1];
+			peak += sqrt(re*re + im*im);
+
+		}
+
+		for ( j=0; j<nel; j++ ) {
+
+			double re, im, am;
+
+			re = fft_out[j][0];
+			im = fft_out[j][1];
+			am = sqrt(re*re + im*im);
+
+			tot += am;
+			if ( (j>=s->search[i].smin)
+			  && (j<=s->search[i].smax) ) {
+				if ( am > peak ) {
+					peak = am;
+					peak_mod = (double)j/(2.0*pmax);
+				}
+			}
+
+		}
+
+		/* If sufficiently strong, add to list of candidates */
+		if ( peak > 2.0*(tot/nel) ) {
+
+			size_t ns;
+			struct reax_candidate *cnew;
+			int cpos;
+
+			cpos = s->search[i].n_cand;
+
+			ns = (cpos+1) * sizeof(struct reax_candidate);
+			cnew = realloc(s->search[i].cand, ns);
+			if ( cnew == NULL ) {
+				ERROR("Failed to add candidate.\n");
+			} else {
+
+				s->search[i].cand = cnew;
+				s->search[i].cand[cpos].v.x = dir->x*peak_mod;
+				s->search[i].cand[cpos].v.y = dir->y*peak_mod;
+				s->search[i].cand[cpos].v.z = dir->z*peak_mod;
+				s->search[i].cand[cpos].v.th = dir->th;
+				s->search[i].cand[cpos].v.ph = dir->ph;
+				s->search[i].n_cand++;
+
+			}
+
+		}
+
 	}
 
 	return tot;
+}
+
+
+static void fine_search(struct reax_private *p, ImageFeatureList *flist,
+                        double pmax, double *fft_in, fftw_complex *fft_out,
+                        struct reax_search_v *sv, struct reax_candidate *c,
+                        const char *rg, struct detector *det)
+{
+	double fom = 0.0;
+	double th, ph;
+	double inc;
+	struct dvec dir;
+	int i, s;
+	double max;
+
+	inc = p->angular_inc / 100.0;
+
+	for ( th=c->v.th-p->angular_inc; th<=c->v.th+p->angular_inc; th+=inc ) {
+	for ( ph=c->v.ph-p->angular_inc; ph<=c->v.ph+p->angular_inc; ph+=inc ) {
+
+		double new_fom;
+
+		dir.x = cos(ph) * sin(th);
+		dir.y = sin(ph) * sin(th);
+		dir.z = cos(th);
+		dir.th = th;
+		dir.ph = ph;
+
+		fill_and_transform(&dir, flist, p->nel, pmax, fft_in, fft_out,
+		                   p->plan, rg, det);
+
+		for ( i=sv->smin; i<=sv->smax; i++ ) {
+
+			double re, im, m;
+
+			re = fft_out[i][0];
+			im = fft_out[i][1];
+			m = sqrt(re*re + im*im);
+			if ( m > max ) {
+				max = m;
+				s = i;
+			}
+		}
+
+		if ( new_fom > fom ) {
+			fom = new_fom;
+			c->v = dir;
+		}
+
+	}
+	}
+}
+
+
+static double find_candidates(struct reax_private *p,
+                              ImageFeatureList *flist, double pmax,
+                              double *fft_in, fftw_complex *fft_out,
+                              struct reax_search *s,
+                              const char *rg, struct detector *det)
+{
+	double fom = 0.0;
+	int i;
+	double th, ph;
+
+	fom = 0.0;  th = 0.0;  ph = 0.0;
+	for ( i=0; i<p->n_dir; i++ ) {
+
+		double new_fom;
+
+		new_fom = check_dir(&p->directions[i], flist,
+		                    p->nel, pmax, fft_in, fft_out, p->plan,
+		                    s, NULL, NULL);
+		if ( new_fom > fom ) {
+			fom = new_fom;
+			th = p->directions[i].th;
+			ph = p->directions[i].ph;
+		}
+
+	}
+
+	for ( i=0; i<s->n_search; i++ ) {
+
+		struct reax_search_v *sv;
+		int j;
+
+		sv = &s->search[i];
+		for ( j=0; j<sv->n_cand; j++ ) {
+			fine_search(p, flist, pmax, fft_in, fft_out, sv,
+			            &sv->cand[j], rg, det);
+		}
+	}
+
+	return fom;
+}
+
+
+/* Set up search parameters to look for all three cell axes */
+static struct reax_search *search_all_axes(UnitCell *cell, double pmax)
+{
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	double mod_a, mod_b, mod_c;
+	double amin, amax;
+	double bmin, bmax;
+	double cmin, cmax;
+	unsigned int smin, smax;
+	const double ltol = 5.0; /* Direct space axis length tolerance in % */
+	struct reax_search *s;
+
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	mod_a = modulus(ax, ay, az);
+	amin = mod_a * (1.0-ltol/100.0);
+	amax = mod_a * (1.0+ltol/100.0);
+
+	mod_b = modulus(bx, by, bz);
+	bmin = mod_b * (1.0-ltol/100.0);
+	bmax = mod_b * (1.0+ltol/100.0);
+
+	mod_c = modulus(cx, cy, cz);
+	cmin = mod_c * (1.0-ltol/100.0);
+	cmax = mod_c * (1.0+ltol/100.0);
+
+	s = malloc(3*sizeof(*s));
+	s->pmax = pmax;
+	s->n_search = 1;
+	smin = 2.0*pmax * amin;  smax = 2.0*pmax * amax;
+	s->search[0].smin = smin;  s->search[0].smax = smax;
+	smin = 2.0*pmax * bmin;  smax = 2.0*pmax * bmax;
+	s->search[1].smin = smin;  s->search[1].smax = smax;
+	smin = 2.0*pmax * cmin;  smax = 2.0*pmax * cmax;
+	s->search[2].smin = smin;  s->search[2].smax = smax;
+
+	return s;
 }
 
 
@@ -239,63 +468,6 @@ static void refine_cell(struct image *image, UnitCell *cell,
 }
 
 
-static void fine_search(struct reax_private *p, ImageFeatureList *flist,
-                        int nel, double pmax, double *fft_in,
-                        fftw_complex *fft_out, fftw_plan plan,
-                        int smin, int smax, double th_cen, double ph_cen,
-                        double *x, double *y, double *z)
-{
-	double fom = 0.0;
-	double th, ph;
-	double inc;
-	struct dvec dir;
-	int i, s;
-	double max, modv;
-
-	inc = p->angular_inc / 100.0;
-
-	for ( th=th_cen-p->angular_inc; th<=th_cen+p->angular_inc; th+=inc ) {
-	for ( ph=ph_cen-p->angular_inc; ph<=ph_cen+p->angular_inc; ph+=inc ) {
-
-		double new_fom;
-
-		dir.x = cos(ph) * sin(th);
-		dir.y = sin(ph) * sin(th);
-		dir.z = cos(th);
-
-		new_fom = check_dir(&dir, flist, nel, pmax, fft_in, fft_out,
-		                    plan, smin, smax, NULL, NULL);
-
-		if ( new_fom > fom ) {
-			fom = new_fom;
-			*x = dir.x;  *y = dir.y;  *z = dir.z;
-		}
-
-	}
-	}
-
-	s = -1;
-	max = 0.0;
-	for ( i=smin; i<=smax; i++ ) {
-
-		double re, im, m;
-
-		re = fft_out[i][0];
-		im = fft_out[i][1];
-		m = sqrt(re*re + im*im);
-		if ( m > max ) {
-			max = m;
-			s = i;
-		}
-
-	}
-	assert(s>0);
-
-	modv = (double)s / (2.0*pmax);
-	*x *= modv;  *y *= modv;  *z *= modv;
-}
-
-
 static double get_model_phase(double x, double y, double z, ImageFeatureList *f,
                               int nel, double pmax, double *fft_in,
                               fftw_complex *fft_out, fftw_plan plan,
@@ -309,8 +481,7 @@ static double get_model_phase(double x, double y, double z, ImageFeatureList *f,
 
 	dir.x = x;  dir.y = y;  dir.z = z;
 
-	check_dir(&dir, f, nel, pmax, fft_in,fft_out, plan, smin, smax,
-	          rg, det);
+	fill_and_transform(&dir, f, nel, pmax, fft_in, fft_out, plan, rg, det);
 
 	s = -1;
 	max = 0.0;
@@ -336,7 +507,7 @@ static double get_model_phase(double x, double y, double z, ImageFeatureList *f,
 
 
 static void refine_rigid_group(struct image *image, UnitCell *cell,
-                               const char *rg, int nel, double pmax,
+                               const char *rg, double pmax,
                                double *fft_in, fftw_complex *fft_out,
                                fftw_plan plan, int smin, int smax,
                                struct detector *det, struct reax_private *pr)
@@ -353,8 +524,6 @@ static void refine_rigid_group(struct image *image, UnitCell *cell,
 	signed int aix, aiy;
 	signed int bix, biy;
 	signed int cix, ciy;
-	double max;
-	int max_i, max_j;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -362,12 +531,15 @@ static void refine_rigid_group(struct image *image, UnitCell *cell,
 	mb = modulus(bx, by, bz);
 	mc = modulus(cx, cy, cz);
 
-	pha = get_model_phase(ax/ma, ay/ma, az/ma, image->features, nel, pmax,
-	                      fft_in, fft_out, plan, smin, smax, rg, det);
-	phb = get_model_phase(bx/mb, by/mb, bz/mb, image->features, nel, pmax,
-	                      fft_in, fft_out, plan, smin, smax, rg, det);
-	phc = get_model_phase(cx/mc, cy/mc, cz/mc, image->features, nel, pmax,
-	                      fft_in, fft_out, plan, smin, smax, rg, det);
+	pha = get_model_phase(ax/ma, ay/ma, az/ma, image->features,
+	                      pr->nel, pmax, fft_in, fft_out, plan,
+	                      smin, smax, rg, det);
+	phb = get_model_phase(bx/mb, by/mb, bz/mb, image->features,
+	                      pr->nel, pmax, fft_in, fft_out, plan,
+	                      smin, smax, rg, det);
+	phc = get_model_phase(cx/mc, cy/mc, cz/mc, image->features,
+	                      pr->nel, pmax, fft_in, fft_out, plan,
+	                      smin, smax, rg, det);
 
 	for ( i=0; i<det->n_panels; i++ ) {
 		if ( det->panels[i].rigid_group == rg ) {
@@ -461,7 +633,7 @@ static void refine_rigid_group(struct image *image, UnitCell *cell,
 
 
 static void refine_all_rigid_groups(struct image *image, UnitCell *cell,
-                                    int nel, double pmax,
+                                    double pmax,
                                     double *fft_in, fftw_complex *fft_out,
                                     fftw_plan plan, int smin, int smax,
                                     struct detector *det,
@@ -471,67 +643,25 @@ static void refine_all_rigid_groups(struct image *image, UnitCell *cell,
 
 	for ( i=0; i<image->det->num_rigid_groups; i++ ) {
 		refine_rigid_group(image, cell, image->det->rigid_groups[i],
-		                   nel, pmax, fft_in, fft_out, plan, smin, smax,
+		                   pmax, fft_in, fft_out, plan, smin, smax,
 		                   det, p);
 	}
 }
 
 
-void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
+static double max_feature_resolution(ImageFeatureList *flist)
 {
-	int i;
-	struct reax_private *p;
-	double fom;
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
-	double mod_a, mod_b, mod_c;
-	double al, be, ga;
-	double th, ph;
-	double *fft_in;
-	fftw_complex *fft_out;
-	int smin, smax;
-	double amin, amax;
-	double bmin, bmax;
-	double cmin, cmax;
 	double pmax;
-	int n;
-	const double ltol = 5.0;             /* Direct space axis length
-	                                      * tolerance in percent */
-	const double angtol = deg2rad(1.5);  /* Direct space angle tolerance
-	                                      * in radians */
-
-	assert(pp->indm == INDEXING_REAX);
-	p = (struct reax_private *)pp;
-
-	fft_in = fftw_malloc(p->nel*sizeof(double));
-	fft_out = fftw_malloc((p->nel/2 + 1)*sizeof(fftw_complex));
-
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	mod_a = modulus(ax, ay, az);
-	amin = mod_a * (1.0-ltol/100.0);
-	amax = mod_a * (1.0+ltol/100.0);
-
-	mod_b = modulus(bx, by, bz);
-	bmin = mod_b * (1.0-ltol/100.0);
-	bmax = mod_b * (1.0+ltol/100.0);
-
-	mod_c = modulus(cx, cy, cz);
-	cmin = mod_c * (1.0-ltol/100.0);
-	cmax = mod_c * (1.0+ltol/100.0);
-
-	al = angle_between(bx, by, bz, cx, cy, cz);
-	be = angle_between(ax, ay, az, cx, cy, cz);
-	ga = angle_between(ax, ay, az, bx, by, bz);
+	int i, n;
 
 	pmax = 0.0;
-	n = image_feature_count(image->features);
+	n = image_feature_count(flist);
 	for ( i=0; i<n; i++ ) {
 
 		struct imagefeature *f;
 		double val;
 
-		f = image_get_feature(image->features, i);
+		f = image_get_feature(flist, i);
 		if ( f == NULL ) continue;
 
 		val = modulus(f->rx, f->ry, f->rz);
@@ -539,92 +669,40 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	}
 
+	return pmax;
+}
+
+
+void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
+{
+	struct reax_private *p;
+	double *fft_in;
+	fftw_complex *fft_out;
+	double pmax;
+	struct reax_search *s;
+
+	assert(pp->indm == INDEXING_REAX);
+	p = (struct reax_private *)pp;
+
+	fft_in = fftw_malloc(p->nel*sizeof(double));
+	fft_out = fftw_malloc((p->nel/2 + 1)*sizeof(fftw_complex));
+
+	pmax = max_feature_resolution(image->features);
+	s = search_all_axes(cell, pmax);
+
 	/* Sanity check */
 	if ( pmax < 1e4 ) return;
 
-	/* Search for a */
-	smin = 2.0*pmax * amin;
-	smax = 2.0*pmax * amax;
-	fom = 0.0;  th = 0.0;  ph = 0.0;
-	for ( i=0; i<p->n_dir; i++ ) {
-
-		double new_fom;
-
-		new_fom = check_dir(&p->directions[i], image->features,
-		                    p->nel, pmax, fft_in, fft_out, p->plan,
-		                    smin, smax, NULL, NULL);
-		if ( new_fom > fom ) {
-			fom = new_fom;
-			th = p->directions[i].th;
-			ph = p->directions[i].ph;
-		}
-
-	}
-	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
-	            p->plan, smin, smax, th, ph, &ax, &ay, &az);
-
-	/* Search for b */
-	smin = 2.0*pmax * bmin;
-	smax = 2.0*pmax * bmax;
-	fom = 0.0;  th = 0.0;  ph = 0.0;
-	for ( i=0; i<p->n_dir; i++ ) {
-
-		double new_fom, ang;
-
-		ang = angle_between(p->directions[i].x, p->directions[i].y,
-		                    p->directions[i].z, ax, ay, az);
-		if ( fabs(ang-ga) > angtol ) continue;
-
-		new_fom = check_dir(&p->directions[i], image->features,
-		                    p->nel, pmax, fft_in, fft_out, p->plan,
-		                    smin, smax, NULL, NULL);
-		if ( new_fom > fom ) {
-			fom = new_fom;
-			th = p->directions[i].th;
-			ph = p->directions[i].ph;
-		}
-
-	}
-	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
-	            p->plan, smin, smax, th, ph, &bx, &by, &bz);
-
-	/* Search for c */
-	smin = 2.0*pmax * cmin;
-	smax = 2.0*pmax * cmax;
-	fom = 0.0;  th = 0.0;  ph = 0.0;
-	for ( i=0; i<p->n_dir; i++ ) {
-
-		double new_fom, ang;
-
-		ang = angle_between(p->directions[i].x, p->directions[i].y,
-		                    p->directions[i].z, ax, ay, az);
-		if ( fabs(ang-be) > angtol ) continue;
-
-		ang = angle_between(p->directions[i].x, p->directions[i].y,
-		                    p->directions[i].z, bx, by, bz);
-		if ( fabs(ang-al) > angtol ) continue;
-
-		new_fom = check_dir(&p->directions[i], image->features,
-		                    p->nel, pmax, fft_in, fft_out, p->plan,
-		                    smin, smax, NULL, NULL);
-		if ( new_fom > fom ) {
-			fom = new_fom;
-			th = p->directions[i].th;
-			ph = p->directions[i].ph;
-		}
-
-	}
-	fine_search(p, image->features, p->nel, pmax, fft_in, fft_out,
-	            p->plan, smin, smax, th, ph, &cx, &cy, &cz);
+	find_candidates(p, image->features, pmax, fft_in, fft_out, s,
+	                NULL, image->det);
 
 	image->candidate_cells[0] = cell_new();
-	cell_set_cartesian(image->candidate_cells[0],
-	                   ax, ay, az, bx, by, bz, cx, cy, cz);
+	/* FIXME: Assemble cell from candidates */
 
-	refine_all_rigid_groups(image, image->candidate_cells[0], p->nel, pmax,
-	                        fft_in, fft_out, p->plan, smin, smax,
-	                        image->det, p);
-	map_all_peaks(image);
+//	refine_all_rigid_groups(image, image->candidate_cells[0], pmax,
+//	                        fft_in, fft_out, p->plan, smin, smax,
+//	                        image->det, p);
+//	map_all_peaks(image);
 	refine_cell(image, image->candidate_cells[0], image->features);
 
 	fftw_free(fft_in);
