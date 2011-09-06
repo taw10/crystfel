@@ -89,7 +89,7 @@ int hdfile_set_image(struct hdfile *f, const char *path)
 }
 
 
-int get_peaks(struct image *image, struct hdfile *f)
+int get_peaks(struct image *image, struct hdfile *f, const char *p)
 {
 	hid_t dh, sh;
 	hsize_t size[2];
@@ -99,12 +99,9 @@ int get_peaks(struct image *image, struct hdfile *f)
 	herr_t r;
 	int tw;
 
-	dh = H5Dopen2(f->fh, "/processing/hitfinder/peakinfo", H5P_DEFAULT);
-
-	if ( dh < 0 ) dh = H5Dopen2(f->fh, "/data/peakinfo", H5P_DEFAULT);
-
+	dh = H5Dopen2(f->fh, p, H5P_DEFAULT);
 	if ( dh < 0 ) {
-		ERROR("No peak list found!\n");
+		ERROR("Peak list (%s) not found.\n", p);
 		return 1;
 	}
 

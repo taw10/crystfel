@@ -75,6 +75,7 @@ struct static_index_args
 	int cellr;
 	struct beam_params *beam;
 	const char *element;
+	const char *hdf5_peak_path;
 
 	/* Output stream */
 	pthread_mutex_t *output_mutex;  /* Protects the output stream */
@@ -142,8 +143,9 @@ static void show_help(const char *s)
 "     --peaks=<method>     Use 'method' for finding peaks.  Choose from:\n"
 "                           zaef  : Use Zaefferer (2000) gradient detection.\n"
 "                                    This is the default method.\n"
-"                           hdf5  : Get from /processing/hitfinder/peakinfo\n"
-"                                    in the HDF5 file.\n"
+"                           hdf5  : Get from a table in HDF5 file.\n"
+"     --hdf5-peaks=<p>     Find peaks table in HDF5 file here.\n"
+"                           Default: /processing/hitfinder/peakinfo\n"
 "\n\n"
 "You can control what information is included in the output stream using\n"
 "' --record=<flag1>,<flag2>,<flag3>' and so on.  Possible flags are:\n\n"
@@ -294,7 +296,9 @@ static void process_image(void *pp, int cookie)
 	{
 	case PEAK_HDF5 :
 		/* Get peaks from HDF5 */
-		if ( get_peaks(&image, hdfile) ) {
+		if ( get_peaks(&image, hdfile,
+		               pargs->static_args.hdf5_peak_path) )
+		{
 			ERROR("Failed to get peaks from HDF5 file.\n");
 		}
 		break;
@@ -527,6 +531,7 @@ int main(int argc, char *argv[])
 	int cpu_groupsize = 1;
 	int cpu_offset = 0;
 	char *endptr;
+	char *hdf5_peak_path = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -560,6 +565,7 @@ int main(int argc, char *argv[])
 		{"cpuoffset",          1, NULL,                8},
 		{"bg-sub",             0, &config_bgsub,       1}, /* Compat */
 		{"no-bg-sub",          0, &config_bgsub,       0},
+		{"hdf5-peaks",         1, NULL,                9},
 		{0, 0, NULL, 0}
 	};
 
@@ -670,6 +676,10 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+		case 9 :
+			hdf5_peak_path = strdup(optarg);
+			break;
+
 		case 0 :
 			break;
 
@@ -713,6 +723,10 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	free(outfile);
+
+	if ( hdf5_peak_path == NULL ) {
+		hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
+	}
 
 	if ( speaks == NULL ) {
 		speaks = strdup("zaef");
@@ -879,6 +893,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.beam = beam;
 	qargs.static_args.element = element;
 	qargs.static_args.stream_flags = stream_flags;
+	qargs.static_args.hdf5_peak_path = hdf5_peak_path;
 
 	qargs.fh = fh;
 	qargs.prefix = prefix;
@@ -901,6 +916,7 @@ int main(int argc, char *argv[])
 	free_detector_geometry(det);
 	free(beam);
 	free(element);
+	free(hdf5_peak_path);
 	cell_free(cell);
 	if ( fh != stdin ) fclose(fh);
 	if ( ofh != stdout ) fclose(ofh);
