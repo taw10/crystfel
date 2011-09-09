@@ -249,6 +249,8 @@ static void plot_shells(RefList *list1, double *arr2, double scale,
 	}
 
 	fclose(fh);
+
+	STATUS("Resolution shell information written to shells.dat.\n");
 }
 
 

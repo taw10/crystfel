@@ -298,6 +298,8 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	}
 
 	fclose(fh);
+
+	STATUS("Resolution shell information written to shells.dat.\n");
 }
 
 
