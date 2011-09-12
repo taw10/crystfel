@@ -236,23 +236,16 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 	int hmax, kmax, lmax;
 	double mres;
 	signed int h, k, l;
-	double a, b, c, al, be, ga;
 
 	reflections = reflist_new();
 
 	/* Cell angle check from Foadi and Evans (2011) */
-	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
-	if (   al + be + ga >= 2.0*M_PI ) return NULL;
-	if (   al + be - ga >= 2.0*M_PI ) return NULL;
-	if (   al - be + ga >= 2.0*M_PI ) return NULL;
-	if ( - al + be + ga >= 2.0*M_PI ) return NULL;
-	if (   al + be + ga <= 0.0 ) return NULL;
-	if (   al + be - ga <= 0.0 ) return NULL;
-	if (   al - be + ga <= 0.0 ) return NULL;
-	if ( - al + be + ga <= 0.0 ) return NULL;
-	if ( isnan(al) ) return NULL;
-	if ( isnan(be) ) return NULL;
-	if ( isnan(ga) ) return NULL;
+	if ( !cell_is_sensible(cell) ) {
+		ERROR("Invalid unit cell parameters given to"
+		      " find_intersections()\n");
+		cell_print(cell);
+		return NULL;
+	}
 
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,

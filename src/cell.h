@@ -102,5 +102,6 @@ extern UnitCell *match_cell_ab(UnitCell *cell, UnitCell *template);
 
 extern UnitCell *load_cell_from_pdb(const char *filename);
 
+extern int cell_is_sensible(UnitCell *cell);
 
 #endif	/* CELL_H */

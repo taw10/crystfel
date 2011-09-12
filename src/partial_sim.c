@@ -242,6 +242,12 @@ int main(int argc, char *argv[])
 	}
 	free(cellfile);
 
+	if ( !cell_is_sensible(cell) ) {
+		ERROR("Invalid unit cell parameters:\n");
+		cell_print(cell);
+		return 1;
+	}
+
 	/* Load geometry */
 	if ( geomfile == NULL ) {
 		ERROR("You need to give a geometry file.\n");

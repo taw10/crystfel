@@ -1142,3 +1142,23 @@ UnitCell *rotate_cell(UnitCell *in, double omega, double phi, double rot)
 
 	return out;
 }
+
+
+int cell_is_sensible(UnitCell *cell)
+{
+	double a, b, c, al, be, ga;
+
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+	if (   al + be + ga >= 2.0*M_PI ) return 0;
+	if (   al + be - ga >= 2.0*M_PI ) return 0;
+	if (   al - be + ga >= 2.0*M_PI ) return 0;
+	if ( - al + be + ga >= 2.0*M_PI ) return 0;
+	if (   al + be + ga <= 0.0 ) return 0;
+	if (   al + be - ga <= 0.0 ) return 0;
+	if (   al - be + ga <= 0.0 ) return 0;
+	if ( - al + be + ga <= 0.0 ) return 0;
+	if ( isnan(al) ) return 0;
+	if ( isnan(be) ) return 0;
+	if ( isnan(ga) ) return 0;
+	return 1;
+}
