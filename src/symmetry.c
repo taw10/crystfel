@@ -376,6 +376,15 @@ static SymOpList *make_2m()
 }
 
 
+static SymOpList *make_2_uab()
+{
+	SymOpList *new = new_symoplist();
+	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 // k */
+	new->name = strdup("2_uab");
+	return expand_ops(new);
+}
+
+
 static SymOpList *make_2()
 {
 	SymOpList *new = new_symoplist();
@@ -806,6 +815,7 @@ SymOpList *get_pointgroup(const char *sym)
 	/* Monoclinic */
 	if ( strcmp(sym, "2/m") == 0 ) return make_2m();
 	if ( strcmp(sym, "2") == 0 ) return make_2();
+	if ( strcmp(sym, "2_uab") == 0 ) return make_2_uab();
 	if ( strcmp(sym, "m") == 0 ) return make_m();
 
 	/* Orthorhombic */
