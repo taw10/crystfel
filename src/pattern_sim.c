@@ -599,6 +599,12 @@ skip:
 
 	} while ( !done );
 
+	if ( powder_fn != NULL ) {
+		hdf5_write(powder_fn, powder,
+		           image.width, image.height,
+		           H5T_NATIVE_DOUBLE);
+	}
+
 	if ( gctx != NULL ) {
 		cleanup_gpu(gctx);
 	}
