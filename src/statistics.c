@@ -38,7 +38,7 @@
 
 struct r_params {
 	RefList *list1;
-	double *arr2;
+	RefList *list2;
 	int fom;              /* Which FoM to use (see the enum just below) */
 };
 
@@ -54,9 +54,9 @@ enum {
 
 
 /* Return the least squares optimal scaling factor when comparing intensities.
- * list1,arr2 are the two intensity lists to compare.
+ * list1,list2 are the two intensity lists to compare.
  */
-double stat_scale_intensity(RefList *list1, double *arr2)
+double stat_scale_intensity(RefList *list1, RefList *list2)
 {
 	double top = 0.0;
 	double bot = 0.0;
@@ -65,15 +65,18 @@ double stat_scale_intensity(RefList *list1, double *arr2)
 
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
+	      refl1 = next_refl(refl1, iter) )
+	{
 		double i1, i2;
 		signed int h, k, l;
+		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		i2 = lookup_intensity(arr2, h, k, l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
 		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 
 		top += i1 * i2;
 		bot += i2 * i2;
@@ -87,10 +90,10 @@ double stat_scale_intensity(RefList *list1, double *arr2)
 /* Return the least squares optimal scaling factor when comparing the square
  * roots of the intensities (i.e. one approximation to the structure factor
  * moduli).
- * list1,arr2 are the two intensity lists to compare (they contain intensities,
+ * list1,list2 are the two intensity lists to compare (they contain intensities,
  * not square rooted intensities).
  */
-static double stat_scale_sqrti(RefList *list1, double *arr2)
+static double stat_scale_sqrti(RefList *list1, RefList *list2)
 {
 	double top = 0.0;
 	double bot = 0.0;
@@ -99,16 +102,19 @@ static double stat_scale_sqrti(RefList *list1, double *arr2)
 
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
+	      refl1 = next_refl(refl1, iter) )
+	{
 		double i1, i2;
 		double f1, f2;
 		signed int h, k, l;
+		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		i2 = lookup_intensity(arr2, h, k, l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
 		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 
 		if ( i1 < 0.0 ) continue;
 		f1 = sqrt(i1);
@@ -125,7 +131,7 @@ static double stat_scale_sqrti(RefList *list1, double *arr2)
 }
 
 
-static double internal_r1_ignorenegs(RefList *list1, double *arr2,
+static double internal_r1_ignorenegs(RefList *list1, RefList *list2,
                                      double scale)
 {
 	double top = 0.0;
@@ -135,16 +141,19 @@ static double internal_r1_ignorenegs(RefList *list1, double *arr2,
 
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
+	      refl1 = next_refl(refl1, iter) )
+	{
 		double i1, i2;
 		double f1, f2;
 		signed int h, k, l;
+		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		i2 = lookup_intensity(arr2, h, k, l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
 		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 
 		if ( i1 < 0.0 ) continue;
 		f1 = sqrt(i1);
@@ -162,7 +171,7 @@ static double internal_r1_ignorenegs(RefList *list1, double *arr2,
 }
 
 
-static double internal_r1_negstozero(RefList *list1, double *arr2,
+static double internal_r1_negstozero(RefList *list1, RefList *list2,
                                      double scale)
 {
 	double top = 0.0;
@@ -172,16 +181,19 @@ static double internal_r1_negstozero(RefList *list1, double *arr2,
 
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
+	      refl1 = next_refl(refl1, iter) )
+	{
 		double i1, i2;
 		double f1, f2;
 		signed int h, k, l;
+		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		i2 = lookup_intensity(arr2, h, k, l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
 		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 
 		f1 = i1 > 0.0 ? sqrt(i1) : 0.0;
 
@@ -197,7 +209,7 @@ static double internal_r1_negstozero(RefList *list1, double *arr2,
 }
 
 
-static double internal_r2(RefList *list1, double *arr2, double scale)
+static double internal_r2(RefList *list1, RefList *list2, double scale)
 {
 	double top = 0.0;
 	double bot = 0.0;
@@ -206,15 +218,19 @@ static double internal_r2(RefList *list1, double *arr2, double scale)
 
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
+	      refl1 = next_refl(refl1, iter) )
+	{
 		double i1, i2;
 		signed int h, k, l;
+		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		i2 = lookup_intensity(arr2, h, k, l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
 		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
+
 		i2 *= scale;
 
 		top += pow(i1 - i2, 2.0);
@@ -226,7 +242,7 @@ static double internal_r2(RefList *list1, double *arr2, double scale)
 }
 
 
-static double internal_r_i(RefList *list1, double *arr2, double scale)
+static double internal_r_i(RefList *list1, RefList *list2, double scale)
 {
 	double top = 0.0;
 	double bot = 0.0;
@@ -235,15 +251,18 @@ static double internal_r_i(RefList *list1, double *arr2, double scale)
 
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
+	      refl1 = next_refl(refl1, iter) )
+	{
 		double i1, i2;
 		signed int h, k, l;
+		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		i2 = lookup_intensity(arr2, h, k, l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
 		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 		i2 *= scale;
 
 		top += fabs(i1-i2);
@@ -255,7 +274,7 @@ static double internal_r_i(RefList *list1, double *arr2, double scale)
 }
 
 
-static double internal_rdiff_intensity(RefList *list1, double *arr2,
+static double internal_rdiff_intensity(RefList *list1, RefList *list2,
                                        double scale)
 {
 	double top = 0.0;
@@ -265,16 +284,18 @@ static double internal_rdiff_intensity(RefList *list1, double *arr2,
 
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
+	      refl1 = next_refl(refl1, iter) )
+	{
 		double i1, i2;
 		signed int h, k, l;
+		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		i2 = lookup_intensity(arr2, h, k, l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
 		i1 = get_intensity(refl1);
-
+		i2 = get_intensity(refl2);
 		i2 *= scale;
 
 		top += fabs(i1 - i2);
@@ -286,7 +307,7 @@ static double internal_rdiff_intensity(RefList *list1, double *arr2,
 }
 
 
-static double internal_rdiff_negstozero(RefList *list1, double *arr2,
+static double internal_rdiff_negstozero(RefList *list1, RefList *list2,
                                         double scale)
 {
 	double top = 0.0;
@@ -296,16 +317,19 @@ static double internal_rdiff_negstozero(RefList *list1, double *arr2,
 
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
+	      refl1 = next_refl(refl1, iter) )
+	{
 		double i1, i2;
 		double f1, f2;
 		signed int h, k, l;
+		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		i2 = lookup_intensity(arr2, h, k, l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
 		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 
 		f1 = i1 > 0.0 ? sqrt(i1) : 0.0;
 
@@ -321,7 +345,7 @@ static double internal_rdiff_negstozero(RefList *list1, double *arr2,
 }
 
 
-static double internal_rdiff_ignorenegs(RefList *list1, double *arr2,
+static double internal_rdiff_ignorenegs(RefList *list1, RefList *list2,
                                         double scale)
 {
 	double top = 0.0;
@@ -331,16 +355,19 @@ static double internal_rdiff_ignorenegs(RefList *list1, double *arr2,
 
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
+	      refl1 = next_refl(refl1, iter) )
+	{
 		double i1, i2;
 		double f1, f2;
 		signed int h, k, l;
+		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		i2 = lookup_intensity(arr2, h, k, l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
 		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 
 		if ( i1 < 0.0 ) continue;
 		f1 = sqrt(i1);
@@ -362,23 +389,23 @@ static double calc_r(double scale, void *params)
 {
 	struct r_params *rp = params;
 
-	switch ( rp->fom) {
+	switch ( rp->fom ) {
 	case R_1_ZERO :
-		return internal_r1_negstozero(rp->list1, rp->arr2, scale);
+		return internal_r1_negstozero(rp->list1, rp->list2, scale);
 	case R_1_IGNORE :
-		return internal_r1_ignorenegs(rp->list1, rp->arr2, scale);
+		return internal_r1_ignorenegs(rp->list1, rp->list2, scale);
 	case R_2 :
-		return internal_r2(rp->list1, rp->arr2, scale);
+		return internal_r2(rp->list1, rp->list2, scale);
 
 	case R_1_I :
-		return internal_r_i(rp->list1, rp->arr2, scale);
+		return internal_r_i(rp->list1, rp->list2, scale);
 
 	case R_DIFF_ZERO :
-		return internal_rdiff_negstozero(rp->list1, rp->arr2,scale);
+		return internal_rdiff_negstozero(rp->list1, rp->list2,scale);
 	case R_DIFF_IGNORE :
-		return internal_rdiff_ignorenegs(rp->list1, rp->arr2, scale);
+		return internal_rdiff_ignorenegs(rp->list1, rp->list2, scale);
 	case R_DIFF_INTENSITY :
-		return internal_rdiff_intensity(rp->list1, rp->arr2, scale);
+		return internal_rdiff_intensity(rp->list1, rp->list2, scale);
 	}
 
 	ERROR("No such FoM!\n");
@@ -386,7 +413,7 @@ static double calc_r(double scale, void *params)
 }
 
 
-static double r_minimised(RefList *list1, double *arr2, double *scalep, int fom,
+static double r_minimised(RefList *list1, RefList *list2, double *scalep, int fom,
                           int u)
 {
 	gsl_function F;
@@ -397,7 +424,7 @@ static double r_minimised(RefList *list1, double *arr2, double *scalep, int fom,
 	int iter = 0;
 
 	rp.list1 = list1;
-	rp.arr2 = arr2;
+	rp.list2 = list2;
 	rp.fom = fom;
 
 	if ( u ) {
@@ -417,12 +444,12 @@ static double r_minimised(RefList *list1, double *arr2, double *scalep, int fom,
 		case R_1_IGNORE :
 		case R_DIFF_ZERO :
 		case R_DIFF_IGNORE :
-			scale = stat_scale_sqrti(list1, arr2);
+			scale = stat_scale_sqrti(list1, list2);
 			break;
 		case R_2 :
 		case R_1_I :
 		case R_DIFF_INTENSITY :
-			scale = stat_scale_intensity(list1, arr2);
+			scale = stat_scale_intensity(list1, list2);
 			break;
 		}
 		//STATUS("Initial scale factor estimate: %5.2e\n", scale);
@@ -466,49 +493,49 @@ static double r_minimised(RefList *list1, double *arr2, double *scalep, int fom,
 }
 
 
-double stat_r1_ignore(RefList *list1, double *arr2, double *scalep, int u)
+double stat_r1_ignore(RefList *list1, RefList *list2, double *scalep, int u)
 {
-	return r_minimised(list1, arr2, scalep, R_1_IGNORE, u);
+	return r_minimised(list1, list2, scalep, R_1_IGNORE, u);
 }
 
 
-double stat_r1_zero(RefList *list1, double *arr2, double *scalep, int u)
+double stat_r1_zero(RefList *list1, RefList *list2, double *scalep, int u)
 {
-	return r_minimised(list1, arr2, scalep, R_1_ZERO, u);
+	return r_minimised(list1, list2, scalep, R_1_ZERO, u);
 }
 
 
-double stat_r2(RefList *list1, double *arr2, double *scalep, int u)
+double stat_r2(RefList *list1, RefList *list2, double *scalep, int u)
 {
-	return r_minimised(list1, arr2, scalep, R_2, u);
+	return r_minimised(list1, list2, scalep, R_2, u);
 }
 
 
-double stat_r1_i(RefList *list1, double *arr2, double *scalep, int u)
+double stat_r1_i(RefList *list1, RefList *list2, double *scalep, int u)
 {
-	return r_minimised(list1, arr2, scalep, R_1_I, u);
+	return r_minimised(list1, list2, scalep, R_1_I, u);
 }
 
 
-double stat_rdiff_zero(RefList *list1, double *arr2, double *scalep, int u)
+double stat_rdiff_zero(RefList *list1, RefList *list2, double *scalep, int u)
 {
-	return r_minimised(list1, arr2, scalep, R_DIFF_ZERO, u);
+	return r_minimised(list1, list2, scalep, R_DIFF_ZERO, u);
 }
 
 
-double stat_rdiff_ignore(RefList *list1, double *arr2, double *scalep, int u)
+double stat_rdiff_ignore(RefList *list1, RefList *list2, double *scalep, int u)
 {
-	return r_minimised(list1, arr2, scalep, R_DIFF_IGNORE, u);
+	return r_minimised(list1, list2, scalep, R_DIFF_IGNORE, u);
 }
 
 
-double stat_rdiff_intensity(RefList *list1, double *arr2, double *scalep, int u)
+double stat_rdiff_intensity(RefList *list1, RefList *list2, double *scalep, int u)
 {
-	return r_minimised(list1, arr2,  scalep, R_DIFF_INTENSITY, u);
+	return r_minimised(list1, list2,  scalep, R_DIFF_INTENSITY, u);
 }
 
 
-double stat_pearson_i(RefList *list1, double *arr2)
+double stat_pearson_i(RefList *list1, RefList *list2)
 {
 	double *vec1, *vec2;
 	int ni = num_reflections(list1);
@@ -522,15 +549,18 @@ double stat_pearson_i(RefList *list1, double *arr2)
 
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
+	      refl1 = next_refl(refl1, iter) )
+	{
 		double i1, i2;
 		signed int h, k, l;
+		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		i2 = lookup_intensity(arr2, h, k, l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
 		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 
 		vec1[nacc] = i1;
 		vec2[nacc] = i2;
@@ -545,7 +575,7 @@ double stat_pearson_i(RefList *list1, double *arr2)
 }
 
 
-double stat_pearson_f_ignore(RefList *list1, double *arr2)
+double stat_pearson_f_ignore(RefList *list1, RefList *list2)
 {
 	double *vec1, *vec2;
 	int ni = num_reflections(list1);
@@ -559,25 +589,25 @@ double stat_pearson_f_ignore(RefList *list1, double *arr2)
 
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
+	      refl1 = next_refl(refl1, iter) )
+	{
 		double i1, i2;
 		double f1, f2;
 		signed int h, k, l;
-		int ig = 0;
+		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		i2 = lookup_intensity(arr2, h, k, l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
 		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 
-		if ( i1 < 0.0 ) ig = 1;
+		if ( i1 < 0.0 ) continue;
+		if ( i2 < 0.0 ) continue;
+
 		f1 = sqrt(i1);
-
-		if ( i2 < 0.0 ) ig = 1;
 		f2 = sqrt(i2);
-
-		if ( ig ) continue;
 
 		vec1[nacc] = f1;
 		vec2[nacc] = f2;
@@ -593,7 +623,7 @@ double stat_pearson_f_ignore(RefList *list1, double *arr2)
 }
 
 
-double stat_pearson_f_zero(RefList *list1, double *arr2)
+double stat_pearson_f_zero(RefList *list1, RefList *list2)
 {
 	double *vec1, *vec2;
 	int ni = num_reflections(list1);
@@ -607,16 +637,19 @@ double stat_pearson_f_zero(RefList *list1, double *arr2)
 
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
+	      refl1 = next_refl(refl1, iter) )
+	{
 		double i1, i2;
 		double f1, f2;
 		signed int h, k, l;
+		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		i2 = lookup_intensity(arr2, h, k, l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;  /* No common reflection */
 
 		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 
 		f1 = i1 > 0.0 ? sqrt(i1) : 0.0;
 		f2 = i2 > 0.0 ? sqrt(i2) : 0.0;

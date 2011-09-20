@@ -50,33 +50,24 @@ static void show_help(const char *s)
 }
 
 
-static void plot_shells(RefList *list1, double *arr2, double scale,
-                        UnitCell *cell, const SymOpList *sym,
-                        double rmin_fix, double rmax_fix)
+static void plot_shells(RefList *list1, RefList *list2, double scale,
+                        UnitCell *cell, double rmin_fix, double rmax_fix)
 {
 	double num[NBINS];
 	int cts[NBINS];
-	int possible[NBINS];
-	unsigned int *counted;
 	unsigned int measurements[NBINS];
 	unsigned int measured[NBINS];
 	double total_vol, vol_per_shell;
 	double rmins[NBINS];
 	double rmaxs[NBINS];
 	double snr[NBINS];
-	double den;
 	double rmin, rmax;
-	signed int h, k, l;
 	int i;
-	int ctot;
-	FILE *fh;
-	int nout = 0;
 	Reflection *refl1;
 	RefListIterator *iter;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	int hmax, kmax, lmax;
+	FILE *fh;
+	double den;
+	int ctot, nout;
 
 	if ( cell == NULL ) {
 		ERROR("Need the unit cell to plot resolution shells.\n");
@@ -86,30 +77,13 @@ static void plot_shells(RefList *list1, double *arr2, double scale,
 	for ( i=0; i<NBINS; i++ ) {
 		num[i] = 0.0;
 		cts[i] = 0;
-		possible[i] = 0;
 		measured[i] = 0;
 		measurements[i] = 0;
 		snr[i] = 0;
 	}
 
-	/* Iterate over all common reflections and calculate min and max
-	 * resolution */
-	rmin = +INFINITY;  rmax = 0.0;
-	for ( refl1 = first_refl(list1, &iter);
-	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
-		signed int h, k, l;
-		double d;
-
-		get_indices(refl1, &h, &k, &l);
-
-		d = resolution(cell, h, k, l) * 2.0;
-		if ( d > rmax ) rmax = d;
-		if ( d < rmin ) rmin = d;
-
-	}
-
+	/* Find resolution limits */
+	resolution_limits(list1, cell, &rmin, &rmax);
 	STATUS("1/d goes from %f to %f nm^-1\n", rmin/1e9, rmax/1e9);
 
 	/* Widen the range just a little bit */
@@ -147,62 +121,20 @@ static void plot_shells(RefList *list1, double *arr2, double scale,
 	STATUS("Shell %i: %f to %f\n", NBINS-1,
 	       rmins[NBINS-1]/1e9, rmaxs[NBINS-1]/1e9);
 
-	/* Count the number of reflections possible in each shell */
-	counted = new_list_count();
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	hmax = rmax / modulus(asx, asy, asz);
-	kmax = rmax / modulus(bsx, bsy, bsz);
-	lmax = rmax / modulus(csx, csy, csz);
-
-	for ( h=-hmax; h<hmax; h++ ) {
-	for ( k=-kmax; k<kmax; k++ ) {
-	for ( l=-lmax; l<lmax; l++ ) {
-
-		double d;
-		signed int hs, ks, ls;
-		int bin;
-
-		get_asymm(sym, h, k, l, &hs, &ks, &ls);
-		if ( lookup_count(counted, hs, ks, ls) ) continue;
-		set_count(counted, hs, ks, ls, 1);
-
-		d = resolution(cell, h, k, l) * 2.0;
-
-		bin = -1;
-		for ( i=0; i<NBINS; i++ ) {
-			if ( (d>rmins[i]) && (d<=rmaxs[i]) ) {
-				bin = i;
-				break;
-			}
-		}
-		if ( bin == -1 ) continue;
-
-		possible[bin]++;
-
-	}
-	}
-	}
-	free(counted);
-
-	den = 0.0;
-	ctot = 0;
-	nout = 0;
-
+	den = 0.0;  ctot = 0;  nout = 0;
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) ) {
-
+	      refl1 = next_refl(refl1, iter) )
+	{
 		signed int h, k, l;
 		double d;
 		int bin;
 		double i1, i2;
 		int j;
+		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-
-		d = resolution(cell, h, k, l) * 2.0;
+		d = 2.0 * resolution(cell, h, k, l);
 
 		bin = -1;
 		for ( j=0; j<NBINS; j++ ) {
@@ -218,14 +150,16 @@ static void plot_shells(RefList *list1, double *arr2, double scale,
 			continue;
 		}
 
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;
+
 		i1 = get_intensity(refl1);
-		i2 = scale * lookup_intensity(arr2, h, k, l);
+		i2 = scale * get_intensity(refl2);
 
 		num[bin] += fabs(i1 - i2);
 		den += i1 + i2;
 		ctot++;
 		cts[bin]++;
-
 	}
 
 	if ( nout ) {
@@ -270,18 +204,15 @@ int main(int argc, char *argv[])
 	int ncom;
 	RefList *list1;
 	RefList *list2;
-	RefList *list1_transformed;
-	RefList *list2_transformed;
+	RefList *list1_raw;
+	RefList *list2_raw;
 	RefList *ratio;
 	int config_shells = 0;
 	char *pdb = NULL;
-	int rej1 = 0;
-	int rej2 = 0;
 	float rmin_fix = -1.0;
 	float rmax_fix = -1.0;
 	Reflection *refl1;
 	RefListIterator *iter;
-	double *arr2;
 	int config_unity = 0;
 
 	/* Long options */
@@ -366,88 +297,59 @@ int main(int argc, char *argv[])
 	cell = load_cell_from_pdb(pdb);
 	free(pdb);
 
-	list1 = read_reflections(afile);
-	if ( list1 == NULL ) {
+	list1_raw = read_reflections(afile);
+	if ( list1_raw == NULL ) {
 		ERROR("Couldn't read file '%s'\n", afile);
 		return 1;
 	}
 
-	list2 = read_reflections(bfile);
-	if ( list2 == NULL ) {
+	list2_raw = read_reflections(bfile);
+	if ( list2_raw == NULL ) {
 		ERROR("Couldn't read file '%s'\n", bfile);
 		return 1;
 	}
 
 	/* Check that the intensities have the correct symmetry */
-	if ( check_list_symmetry(list1, sym) ) {
+	if ( check_list_symmetry(list1_raw, sym) ) {
 		ERROR("The first input reflection list does not appear to"
 		      " have symmetry %s\n", symmetry_name(sym));
 		return 1;
 	}
-	if ( check_list_symmetry(list2, sym) ) {
+	if ( check_list_symmetry(list2_raw, sym) ) {
 		ERROR("The second input reflection list does not appear to"
 		      " have symmetry %s\n", symmetry_name(sym));
 		return 1;
 	}
 
-	/* Find common reflections (taking symmetry into account) */
-	list1_transformed = reflist_new();
-	list2_transformed = reflist_new();
+	list1 = asymmetric_indices(list1_raw, sym);
+	list2 = asymmetric_indices(list2_raw, sym);
+
+	/* Find common reflections and calculate ratio */
 	ratio = reflist_new();
+	ncom = 0;
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
 	      refl1 = next_refl(refl1, iter) )
 	{
 		signed int h, k, l;
-		signed int he, ke, le;
 		double val1, val2;
-		double sig1, sig2;
-		int ig = 0;
-		double d;
 		Reflection *refl2;
 		Reflection *tr;
 
 		get_indices(refl1, &h, &k, &l);
 
-		if ( !find_equiv_in_list(list2, h, k, l, sym, &he, &ke, &le) ) {
-			continue;
-		}
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;
 
-		copy_data(add_refl(list1_transformed, h, k, l), refl1);
-
-		refl2 = find_refl(list2, he, ke, le);
-		assert(refl2 != NULL);
+		ncom++;
 
 		val1 = get_intensity(refl1);
 		val2 = get_intensity(refl2);
-		sig1 = get_esd_intensity(refl1);
-		sig2 = get_esd_intensity(refl2);
-
-		if ( val1 < 3.0 * sig1 ) {
-			rej1++;
-			ig = 1;
-		}
-		if ( val2 < 3.0 * sig2 ) {
-			rej2++;
-			ig = 1;
-		}
-
-		d = 0.5/resolution(cell, h, k, l);
-		if ( d > 55.0e-10 ) ig = 1;
-		//if ( d < 15.0e-10 ) ig = 1;
-
-		//if ( ig ) continue;
-
-		/* Add the old data from 'refl2' to a new list with the same
-		 * indices as its equivalent in 'list1' */
-		tr = add_refl(list2_transformed, h, k, l);
-		copy_data(tr, refl2);
 
 		/* Add divided version to 'output' list */
 		tr = add_refl(ratio, h, k, l);
 		set_int(tr, val1/val2);
 		set_redundancy(tr, 1);
-
 	}
 
 	if ( ratiofile != NULL ) {
@@ -457,67 +359,55 @@ int main(int argc, char *argv[])
 
 	gsl_set_error_handler_off();
 
-	STATUS("%i reflections in '%s' had I < 3.0*sigma(I)\n", rej1, afile);
-	STATUS("%i reflections in '%s' had I < 3.0*sigma(I)\n", rej2, bfile);
-
-	ncom = num_reflections(list2_transformed);
 	STATUS("%i,%i reflections: %i in common\n",
 	       num_reflections(list1), num_reflections(list2), ncom);
 
-	reflist_free(list1);
-	reflist_free(list2);
-
-	/* Trimming the other way round is not necessary,
-	 * because of these two lines */
-	arr2 = intensities_from_list(list2_transformed);
-	reflist_free(list2_transformed);
-
-	R1 = stat_r1_ignore(list1_transformed, arr2, &scale_r1fi, config_unity);
+	R1 = stat_r1_ignore(list1, list2, &scale_r1fi, config_unity);
 	STATUS("R1(F) = %5.4f %% (scale=%5.2e)"
 	       " (ignoring negative intensities)\n",
 	       R1*100.0, scale_r1fi);
 
-	R1 = stat_r1_zero(list1_transformed, arr2, &scale_r1, config_unity);
+	R1 = stat_r1_zero(list1, list2, &scale_r1, config_unity);
 	STATUS("R1(F) = %5.4f %% (scale=%5.2e)"
 	       " (zeroing negative intensities)\n",
 	       R1*100.0, scale_r1);
 
-	R2 = stat_r2(list1_transformed, arr2, &scale_r2, config_unity);
+	R2 = stat_r2(list1, list2, &scale_r2, config_unity);
 	STATUS("R2(I) = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale_r2);
 
-	R1i = stat_r1_i(list1_transformed, arr2, &scale_r1i, config_unity);
+	R1i = stat_r1_i(list1, list2, &scale_r1i, config_unity);
 	STATUS("R1(I) = %5.4f %% (scale=%5.2e)\n", R1i*100.0, scale_r1i);
 
-	Rdiff = stat_rdiff_ignore(list1_transformed, arr2, &scale_rdig,
+	Rdiff = stat_rdiff_ignore(list1, list2, &scale_rdig,
 	                          config_unity);
 	STATUS("Rint(F) = %5.4f %% (scale=%5.2e)"
 	       " (ignoring negative intensities)\n",
 	       Rdiff*100.0, scale_rdig);
 
-	Rdiff = stat_rdiff_zero(list1_transformed, arr2, &scale, config_unity);
+	Rdiff = stat_rdiff_zero(list1, list2, &scale, config_unity);
 	STATUS("Rint(F) = %5.4f %% (scale=%5.2e)"
 	       " (zeroing negative intensities)\n",
 	       Rdiff*100.0, scale);
 
-	Rdiff = stat_rdiff_intensity(list1_transformed, arr2, &scale_rintint,
+	Rdiff = stat_rdiff_intensity(list1, list2, &scale_rintint,
 	                             config_unity);
 	STATUS("Rint(I) = %5.4f %% (scale=%5.2e)\n",
 	       Rdiff*100.0, scale_rintint);
 
-	pearson = stat_pearson_i(list1_transformed, arr2);
+	pearson = stat_pearson_i(list1, list2);
 	STATUS("Pearson r(I) = %5.4f\n", pearson);
 
-	pearson = stat_pearson_f_ignore(list1_transformed, arr2);
+	pearson = stat_pearson_f_ignore(list1, list2);
 	STATUS("Pearson r(F) = %5.4f (ignoring negative intensities)\n",
 	       pearson);
 
-	pearson = stat_pearson_f_zero(list1_transformed, arr2);
+	pearson = stat_pearson_f_zero(list1, list2);
 	STATUS("Pearson r(F) = %5.4f (zeroing negative intensities)\n",
 	       pearson);
 
 	if ( config_shells ) {
-		plot_shells(list1_transformed, arr2, scale_r1i,
-		            cell, sym, rmin_fix, rmax_fix);
+		plot_shells(list1, list2, scale_r1i,
+		            cell, rmin_fix, rmax_fix);
 	}
 
 	return 0;

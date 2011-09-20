@@ -54,7 +54,6 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	double num[NBINS];
 	int cts[NBINS];
 	int possible[NBINS];
-	unsigned int *counted;
 	unsigned int measurements[NBINS];
 	unsigned int measured[NBINS];
 	double total_vol, vol_per_shell;
@@ -73,6 +72,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	int nout = 0;
 	Reflection *refl;
 	RefListIterator *iter;
+	RefList *counted;
 	int hmax, kmax, lmax;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
@@ -100,24 +100,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		mean[i] = 0;
 	}
 
-	/* Iterate over all common reflections and calculate min and max
-	 * resolution */
-	rmin = +INFINITY;  rmax = 0.0;
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
-		signed int h, k, l;
-		double d;
-
-		get_indices(refl, &h, &k, &l);
-
-		d = resolution(cell, h, k, l) * 2.0;
-		if ( d > rmax ) rmax = d;
-		if ( d < rmin ) rmin = d;
-
-	}
-
+	resolution_limits(list, cell, &rmin, &rmax);
 	STATUS("1/d goes from %f to %f nm^-1\n", rmin/1e9, rmax/1e9);
 
 	/* Widen the range just a little bit */
@@ -155,7 +138,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	       rmins[NBINS-1]/1e9, rmaxs[NBINS-1]/1e9);
 
 	/* Count the number of reflections possible in each shell */
-	counted = new_list_count();
+	counted = reflist_new();
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
@@ -170,7 +153,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		signed int hs, ks, ls;
 		int bin;
 
-		d = resolution(cell, h, k, l) * 2.0;
+		d = 2.0 * resolution(cell, h, k, l);
 
 		bin = -1;
 		for ( i=0; i<NBINS; i++ ) {
@@ -182,21 +165,21 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		if ( bin == -1 ) continue;
 
 		get_asymm(sym, h, k, l, &hs, &ks, &ls);
-		if ( lookup_count(counted, hs, ks, ls) ) continue;
-		set_count(counted, hs, ks, ls, 1);
+		if ( find_refl(counted, hs, ks, ls) != NULL ) continue;
+		add_refl(counted, hs, ks, ls);
 
 		possible[bin]++;
 
 	}
 	}
 	}
-	free(counted);
+	reflist_free(counted);
 
 	/* Calculate means */
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
+	      refl = next_refl(refl, iter) )
+	{
 		signed int h, k, l;
 		double d;
 		int bin;
@@ -213,14 +196,10 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 				break;
 			}
 		}
-		if ( bin == -1 ) {
-			nout++;
-			continue;
-		}
+		if ( bin == -1 ) continue;
 
 		measured[bin]++;
 		mean[bin] += get_intensity(refl);
-
 	}
 
 	for ( i=0; i<NBINS; i++ ) {
@@ -230,8 +209,8 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	/* Characterise the data set */
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
+	      refl = next_refl(refl, iter) )
+	{
 		signed int h, k, l;
 		double d;
 		int bin;
@@ -266,7 +245,6 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		nmeastot += get_redundancy(refl);
 
 		var[bin] += pow(val-mean[bin], 2.0);
-
 	}
 	STATUS("overall <snr> = %f\n", snr_total/(double)nmeas);
 	STATUS("%i measurements in total.\n", nmeastot);
