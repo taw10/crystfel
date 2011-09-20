@@ -82,6 +82,55 @@ static void show_help(const char *s)
 #ifdef HAVE_CAIRO
 
 
+static double max_value(RefList *list, int wght, const SymOpList *sym)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	double max = -INFINITY;
+	SymOpMask *m;
+
+	m = new_symopmask(sym);
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double val;
+		int n;
+		signed int h, k, l;
+
+		get_indices(refl, &h, &k, &l);
+
+		special_position(sym, m, h, k, l);
+		n = num_equivs(sym, m);
+
+		switch ( wght) {
+		case WGHT_I :
+			val = get_intensity(refl);
+			break;
+		case WGHT_SQRTI :
+			val = get_intensity(refl);
+			val = (val>0.0) ? sqrt(val) : 0.0;
+			break;
+		case WGHT_COUNTS :
+			val = get_redundancy(refl);
+			val /= (double)n;
+			break;
+		case WGHT_RAWCOUNTS :
+			val = get_redundancy(refl);
+			break;
+		default :
+			ERROR("Invalid weighting.\n");
+			abort();
+		}
+
+		if ( val > max ) max = val;
+	}
+
+	return max;
+}
+
+
 static void draw_circles(double xh, double xk, double xl,
                          double yh, double yk, double yl,
                          signed int zh, signed int zk, signed int zl,
@@ -89,7 +138,7 @@ static void draw_circles(double xh, double xk, double xl,
                          cairo_t *dctx, int wght, double boost, int colscale,
                          UnitCell *cell, double radius, double theta,
                          double as, double bs, double cx, double cy,
-                         double scale, double *max_val)
+                         double scale, double max_val)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -104,11 +153,12 @@ static void draw_circles(double xh, double xk, double xl,
 	/* Iterate over all reflections */
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
+	      refl = next_refl(refl, iter) )
+	{
 		double u, v, val;
 		signed int ha, ka, la;
 		int i, n;
+		double r, g, b;
 
 		get_indices(refl, &ha, &ka, &la);
 
@@ -152,29 +202,14 @@ static void draw_circles(double xh, double xk, double xl,
 			u = (double)xi*as*sin(theta);
 			v = (double)xi*as*cos(theta) + (double)yi*bs;
 
-			if ( dctx != NULL ) {
+			cairo_arc(dctx, ((double)cx)+u*scale,
+				        ((double)cy)+v*scale,
+				        radius, 0.0, 2.0*M_PI);
 
-				double r, g, b;
-
-				cairo_arc(dctx, ((double)cx)+u*scale,
-					        ((double)cy)+v*scale,
-					        radius, 0, 2*M_PI);
-
-				render_scale(val, *max_val/boost, colscale,
-					     &r, &g, &b);
-				cairo_set_source_rgb(dctx, r, g, b);
-				cairo_fill(dctx);
-
-			} else {
-
-				/* Find max value for colour scale */
-				if ( !isnan(val) && !isinf(val)
-				  && (fabs(val) > fabs(*max_val)) )
-				{
-					*max_val = fabs(val);
-				}
-
-			}
+			render_scale(val, max_val/boost, colscale,
+				     &r, &g, &b);
+			cairo_set_source_rgb(dctx, r, g, b);
+			cairo_fill(dctx);
 
 		}
 
@@ -294,8 +329,7 @@ static void render_za(UnitCell *cell, RefList *list,
 	       " (d = %.2f - %.2f A)\n",
 	       rmin/1e9, rmax/1e9, (1.0/rmin)/1e-10, (1.0/rmax)/1e-10);
 
-
-	max_val = max_intensity(list);
+	max_val = max_value(list, wght, sym);
 	if ( max_val <= 0.0 ) {
 		STATUS("Couldn't find max value.\n");
 		return;
@@ -315,7 +349,7 @@ static void render_za(UnitCell *cell, RefList *list,
 	sep_v = scale*bs;
 	max_r = (sep_u < sep_v) ? sep_u : sep_v;
 	max_r /= 2.0;  /* Max radius is half the separation */
-	max_r -= 1.0;  /* Add a tiny separation between circles */
+	max_r -= (max_r/10.0);  /* Add a tiny separation between circles */
 
 	/* Create surface */
 	if ( strcmp(outfile+strlen(outfile)-4, ".png") == 0 ) {
@@ -356,7 +390,7 @@ static void render_za(UnitCell *cell, RefList *list,
 	draw_circles(xh, xk, xl, yh, yk, yl, zh, zk, zl,
 	             list, sym, dctx, wght, boost, colscale, cell,
 	             max_r, theta, as, bs, cx, cy, scale,
-	             &max_val);
+	             max_val);
 
 	/* Centre marker */
 	cairo_arc(dctx, (double)cx,
