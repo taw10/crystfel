@@ -83,12 +83,6 @@ static void plot_shells(RefList *list1, double *arr2, double scale,
 		return;
 	}
 
-	fh = fopen("shells.dat", "w");
-	if ( fh == NULL ) {
-		ERROR("Couldn't open 'shells.dat'\n");
-		return;
-	}
-
 	for ( i=0; i<NBINS; i++ ) {
 		num[i] = 0.0;
 		cts[i] = 0;
@@ -228,7 +222,7 @@ static void plot_shells(RefList *list1, double *arr2, double scale,
 		i2 = scale * lookup_intensity(arr2, h, k, l);
 
 		num[bin] += fabs(i1 - i2);
-		den += i1;
+		den += i1 + i2;
 		ctot++;
 		cts[bin]++;
 
@@ -239,12 +233,20 @@ static void plot_shells(RefList *list1, double *arr2, double scale,
 		       nout);
 	}
 
+	fh = fopen("shells.dat", "w");
+	if ( fh == NULL ) {
+		ERROR("Couldn't open 'shells.dat'\n");
+		return;
+	}
+
+	fprintf(fh, "1/d centre   Rsplit / %%\n");
+
 	for ( i=0; i<NBINS; i++ ) {
 
 		double r, cen;
 		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
-		r = (num[i]/den)*((double)ctot/cts[i]);
-		fprintf(fh, "%f %f\n", cen*1.0e-9, r*100.0);
+		r = (2.0*(num[i]/den)*((double)ctot/cts[i]))/sqrt(2.0);
+		fprintf(fh, "%10.3f %10.2f\n", cen*1.0e-9, r*100.0);
 
 	}
 
