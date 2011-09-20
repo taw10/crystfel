@@ -35,6 +35,16 @@
 #include "index-priv.h"
 
 
+/* Minimum number of standard deviations above the mean a peak must be in the
+ * 1D FT to qualify as a candidate vector */
+#define MIN_SIGMAS (7.0)
+
+
+/* Maximum number of times the angular tolerance that vectors are permitted to
+ * be together before they get merged by squash_vectors() */
+#define INC_TOL_MULTIPLIER (3.0)
+
+
 struct dvec
 {
 	double x;
@@ -48,7 +58,7 @@ struct dvec
 struct reax_candidate
 {
 	struct dvec v;   /* This is the vector for the candidate */
-	double strength; /* How much intensity fell into the range */
+	double fom;
 };
 
 
@@ -151,19 +161,12 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 		double tot = 0.0;
 		double peak = 0.0;
 		double peak_mod = 0.0;
+		double mean;
+		double sd = 0.0;
 		int j;
+		int n;
 
-		for ( j=s->search[i].smin; j<=s->search[i].smax; j++ ) {
-
-			double re, im;
-
-			re = fft_out[j][0];
-			im = fft_out[j][1];
-			peak += sqrt(re*re + im*im);
-
-		}
-
-		for ( j=0; j<nel; j++ ) {
+		for ( j=0; j<nel/2+1; j++ ) {
 
 			double re, im, am;
 
@@ -172,8 +175,10 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 			am = sqrt(re*re + im*im);
 
 			tot += am;
-			if ( (j>=s->search[i].smin)
-			  && (j<=s->search[i].smax) ) {
+			n++;
+
+			if ( ( j >= s->search[i].smin )
+			  && ( j <= s->search[i].smax ) ) {
 				if ( am > peak ) {
 					peak = am;
 					peak_mod = (double)j/(2.0*pmax);
@@ -181,9 +186,23 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 			}
 
 		}
+		mean = tot/(double)n;
+
+		for ( j=0; j<nel/2+1; j++ ) {
+
+			double re, im, am;
+
+			re = fft_out[j][0];
+			im = fft_out[j][1];
+			am = sqrt(re*re + im*im);
+
+			sd += pow(am - mean, 2.0);
+
+		}
+		sd = sqrt(sd/(double)n);
 
 		/* If sufficiently strong, add to list of candidates */
-		if ( peak > 2.0*(tot/nel) ) {
+		if ( peak > mean+MIN_SIGMAS*sd ) {
 
 			size_t ns;
 			struct reax_candidate *cnew;
@@ -197,13 +216,21 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 				ERROR("Failed to add candidate.\n");
 			} else {
 
+				double fom;
+
+				fom = (peak-mean)/sd;
+
 				s->search[i].cand = cnew;
 				s->search[i].cand[cpos].v.x = dir->x*peak_mod;
 				s->search[i].cand[cpos].v.y = dir->y*peak_mod;
 				s->search[i].cand[cpos].v.z = dir->z*peak_mod;
 				s->search[i].cand[cpos].v.th = dir->th;
 				s->search[i].cand[cpos].v.ph = dir->ph;
+				s->search[i].cand[cpos].fom = fom;
 				s->search[i].n_cand++;
+
+				STATUS("Candidate %.2f %.2f %.2f %.2f sigma\n",
+				       dir->x, dir->y, dir->z, fom);
 
 			}
 
@@ -266,15 +293,95 @@ static void fine_search(struct reax_private *p, ImageFeatureList *flist,
 }
 
 
-static double find_candidates(struct reax_private *p,
-                              ImageFeatureList *flist, double pmax,
-                              double *fft_in, fftw_complex *fft_out,
-                              struct reax_search *s,
-                              const char *rg, struct detector *det)
+static void squash_vectors(struct reax_search *s, double tol)
 {
-	double fom = 0.0;
+	int i;
+
+	for ( i=0; i<s->n_search; i++ ) {
+
+		struct reax_search_v *sv;
+		struct reax_candidate *new;
+		int j, k;
+		int n_invalid = 0;
+		int n_copied;
+
+		sv = &s->search[i];
+
+		for ( j=0; j<sv->n_cand; j++ ) {
+		for ( k=0; k<sv->n_cand; k++ ) {
+
+			struct reax_candidate *v1, *v2;
+
+			if ( j == k ) continue;
+
+			v1 = &sv->cand[j];
+			v2 = &sv->cand[k];
+
+			if ( angle_between(v1->v.x, v1->v.y, v1->v.z,
+			                   v2->v.x, v2->v.y, v2->v.z) < tol )
+			{
+				if ( !isnan(v1->fom) && !isnan(v2->fom ) ) {
+					if ( v1->fom > v2->fom ) {
+						v2->fom = NAN;
+					} else {
+						v1->fom = NAN;
+					}
+					n_invalid++;
+				}
+			}
+
+		}
+		}
+
+		new = calloc(sv->n_cand-n_invalid,
+		             sizeof(struct reax_candidate));
+		if ( new == NULL ) {
+			ERROR("Failed to allocate memory for squashed"
+			      " candidate list.\n");
+			return;
+		}
+
+		n_copied = 0;
+		for ( j=0; j<sv->n_cand; j++ ) {
+			if ( !isnan(sv->cand[j].fom) ) {
+
+				new[n_copied] = sv->cand[j];
+				n_copied++;
+
+			}
+		}
+		assert(sv->n_cand - n_invalid == n_copied);
+
+		free(sv->cand);
+		STATUS("Search vector %i: squashed %i candidates down to %i\n",
+		       i, sv->n_cand, n_copied);
+		sv->n_cand = n_copied;
+		sv->cand = new;
+
+		for ( j=0; j<sv->n_cand; j++ ) {
+			STATUS("%i: %+6.2f %+6.2f %+6.2f %.2f\n",
+			       j, sv->cand[j].v.x, sv->cand[j].v.y,
+			       sv->cand[j].v.z, sv->cand[j].fom);
+		}
+
+	}
+}
+
+
+static void find_candidates(struct reax_private *p,
+                            ImageFeatureList *flist, double pmax,
+                            double *fft_in, fftw_complex *fft_out,
+                            struct reax_search *s,
+                            const char *rg, struct detector *det)
+{
 	int i;
 	double th, ph;
+	double fom;
+
+	for ( i=0; i<s->n_search; i++ ) {
+		s->search[i].cand = NULL;
+		s->search[i].n_cand = 0;
+	}
 
 	fom = 0.0;  th = 0.0;  ph = 0.0;
 	for ( i=0; i<p->n_dir; i++ ) {
@@ -292,19 +399,21 @@ static double find_candidates(struct reax_private *p,
 
 	}
 
+	squash_vectors(s, INC_TOL_MULTIPLIER*p->angular_inc);
+
 	for ( i=0; i<s->n_search; i++ ) {
 
 		struct reax_search_v *sv;
 		int j;
 
 		sv = &s->search[i];
+		STATUS("Search %i: doing fine search for %i candidates\n",
+		       i, sv->n_cand);
 		for ( j=0; j<sv->n_cand; j++ ) {
 			fine_search(p, flist, pmax, fft_in, fft_out, sv,
 			            &sv->cand[j], rg, det);
 		}
 	}
-
-	return fom;
 }
 
 
@@ -337,7 +446,8 @@ static struct reax_search *search_all_axes(UnitCell *cell, double pmax)
 
 	s = malloc(3*sizeof(*s));
 	s->pmax = pmax;
-	s->n_search = 1;
+	s->n_search = 3;
+	s->search = malloc(3*sizeof(struct reax_search_v));
 	smin = 2.0*pmax * amin;  smax = 2.0*pmax * amax;
 	s->search[0].smin = smin;  s->search[0].smax = smax;
 	smin = 2.0*pmax * bmin;  smax = 2.0*pmax * bmax;
@@ -346,125 +456,6 @@ static struct reax_search *search_all_axes(UnitCell *cell, double pmax)
 	s->search[2].smin = smin;  s->search[2].smax = smax;
 
 	return s;
-}
-
-
-/* Refine a direct space vector.  From Clegg (1984) */
-static double iterate_refine_vector(double *x, double *y, double *z,
-                                    ImageFeatureList *flist)
-{
-	int fi, n, err;
-	gsl_matrix *C;
-	gsl_vector *A;
-	gsl_vector *t;
-	gsl_matrix *s_vec;
-	gsl_vector *s_val;
-	double dtmax;
-
-	A = gsl_vector_calloc(3);
-	C = gsl_matrix_calloc(3, 3);
-
-	n = image_feature_count(flist);
-	fesetround(1);
-	for ( fi=0; fi<n; fi++ ) {
-
-		struct imagefeature *f;
-		double val;
-		double kn, kno;
-		double xv[3];
-		int i, j;
-
-		f = image_get_feature(flist, fi);
-		if ( f == NULL ) continue;
-
-		kno = f->rx*(*x) + f->ry*(*y) + f->rz*(*z);  /* Sorry ... */
-		kn = nearbyint(kno);
-		if ( kn - kno > 0.3 ) continue;
-
-		xv[0] = f->rx;  xv[1] = f->ry;  xv[2] = f->rz;
-
-		for ( i=0; i<3; i++ ) {
-
-			val = gsl_vector_get(A, i);
-			gsl_vector_set(A, i, val+xv[i]*kn);
-
-			for ( j=0; j<3; j++ ) {
-				val = gsl_matrix_get(C, i, j);
-				gsl_matrix_set(C, i, j, val+xv[i]*xv[j]);
-			}
-
-		}
-
-	}
-
-	s_val = gsl_vector_calloc(3);
-	s_vec = gsl_matrix_calloc(3, 3);
-	err = gsl_linalg_SV_decomp_jacobi(C, s_vec, s_val);
-	if ( err ) {
-		ERROR("SVD failed: %s\n", gsl_strerror(err));
-		gsl_matrix_free(s_vec);
-		gsl_vector_free(s_val);
-		gsl_matrix_free(C);
-		gsl_vector_free(A);
-		return 0.0;
-	}
-
-	t = gsl_vector_calloc(3);
-	err = gsl_linalg_SV_solve(C, s_vec, s_val, A, t);
-	if ( err ) {
-		ERROR("Matrix solution failed: %s\n", gsl_strerror(err));
-		gsl_matrix_free(s_vec);
-		gsl_vector_free(s_val);
-		gsl_matrix_free(C);
-		gsl_vector_free(A);
-		gsl_vector_free(t);
-		return 0.0;
-	}
-
-	gsl_matrix_free(s_vec);
-	gsl_vector_free(s_val);
-
-	dtmax  = fabs(*x - gsl_vector_get(t, 0));
-	dtmax += fabs(*y - gsl_vector_get(t, 1));
-	dtmax += fabs(*z - gsl_vector_get(t, 2));
-
-	*x = gsl_vector_get(t, 0);
-	*y = gsl_vector_get(t, 1);
-	*z = gsl_vector_get(t, 2);
-
-	gsl_matrix_free(C);
-	gsl_vector_free(A);
-
-	return dtmax;
-}
-
-
-static void refine_cell(struct image *image, UnitCell *cell,
-                        ImageFeatureList *flist)
-{
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
-	int i;
-	double sm;
-
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	i = 0;
-	do {
-
-		sm  = iterate_refine_vector(&ax, &ay, &az, flist);
-		sm += iterate_refine_vector(&bx, &by, &bz, flist);
-		sm += iterate_refine_vector(&cx, &cy, &cz, flist);
-		i++;
-
-	} while ( (sm > 0.001e-9) && (i<10) );
-
-	cell_set_cartesian(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
-
-	if ( i == 10 ) {
-		cell_free(image->indexed_cell);
-		image->indexed_cell = NULL;
-	}
 }
 
 
@@ -673,6 +664,13 @@ static double max_feature_resolution(ImageFeatureList *flist)
 }
 
 
+static void assemble_cells_from_candidates(struct image *image,
+                                           struct reax_search *s,
+                                           UnitCell *cell)
+{
+}
+
+
 void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 {
 	struct reax_private *p;
@@ -688,22 +686,19 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	fft_out = fftw_malloc((p->nel/2 + 1)*sizeof(fftw_complex));
 
 	pmax = max_feature_resolution(image->features);
-	s = search_all_axes(cell, pmax);
 
 	/* Sanity check */
 	if ( pmax < 1e4 ) return;
 
+	s = search_all_axes(cell, pmax);
 	find_candidates(p, image->features, pmax, fft_in, fft_out, s,
 	                NULL, image->det);
-
-	image->candidate_cells[0] = cell_new();
-	/* FIXME: Assemble cell from candidates */
 
 //	refine_all_rigid_groups(image, image->candidate_cells[0], pmax,
 //	                        fft_in, fft_out, p->plan, smin, smax,
 //	                        image->det, p);
-//	map_all_peaks(image);
-	refine_cell(image, image->candidate_cells[0], image->features);
+
+	assemble_cells_from_candidates(image, s, cell);
 
 	fftw_free(fft_in);
 	fftw_free(fft_out);
