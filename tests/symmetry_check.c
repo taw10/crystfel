@@ -23,6 +23,55 @@
 #include "../src/utils.h"
 
 
+static int is_nonmirror_subgroup(SymOpList *holo, SymOpList *mero)
+{
+	SymOpList *twins;
+	int index;
+
+	if ( !is_subgroup(holo, mero) ) return 0;
+
+	twins = get_ambiguities(holo, mero);
+	if ( twins == NULL ) return 0;
+
+	index = num_equivs(twins, NULL);
+	free_symoplist(twins);
+
+	return index;
+}
+
+
+static int is_maximal_nonmirror_subgroup(SymOpList *holo, SymOpList *mero,
+                                         SymOpList **list, int n)
+{
+	int i;
+	int index;
+
+	index = is_nonmirror_subgroup(holo, mero);
+	if ( index == 0 ) return 0;
+
+	/* Try to find a group ... */
+	for ( i=0; i<n; i++ ) {
+
+		SymOpList *try_mero = list[i];
+
+		/* ... apart from "mero" ... */
+		if ( try_mero == mero ) continue;
+
+		/* ... and apart from "holo" ... */
+		if ( try_mero == holo ) continue;
+
+		/* ... which is also a subgroup of "holo" ... */
+		if ( !is_nonmirror_subgroup(holo, try_mero) ) continue;
+
+		/* ... of which "mero" is also a subgroup. */
+		if ( is_nonmirror_subgroup(try_mero, mero) ) return 0;
+
+	}
+
+	return index;
+}
+
+
 static void find_all_ambiguities(const char *first, ...)
 {
 	va_list vp;
@@ -34,7 +83,6 @@ static void find_all_ambiguities(const char *first, ...)
 	test[n++] = get_pointgroup(first);
 
 	va_start(vp, first);
-
 
 	do {
 
@@ -54,22 +102,15 @@ static void find_all_ambiguities(const char *first, ...)
 		STATUS("%7s :", symmetry_name(holo));
 		for ( j=0; j<n; j++ ) {
 
-			SymOpList *twins;
+			int index;
 
 			if ( i == j ) continue;
 
-			if ( !is_subgroup(holo, test[j]) ) continue;
+			index = is_maximal_nonmirror_subgroup(holo, test[j],
+			                                      test, n);
+			if ( index == 0 ) continue;
 
-			twins = get_ambiguities(holo, test[j]);
-			if ( twins == NULL ) continue;
-
-			if ( num_equivs(twins, NULL) == 1 ) {
-				free_symoplist(twins);
-				continue;
-			}
-
-			STATUS(" %s(%i)", symmetry_name(test[j]),
-			                   num_equivs(twins, NULL));
+			STATUS(" %s(%i)", symmetry_name(test[j]), index);
 
 		}
 		STATUS("\n");
@@ -295,8 +336,31 @@ int main(int argc, char *argv[])
 	                     "-62m", "-31m_H", "6/mmm", "6/m", "6mm", NULL);
 	find_all_ambiguities("23", "432", "-43m", "m-3", "m-3m", NULL);
 
-
 	STATUS("\nPseudo-merohedral ambiguities:\n\n");
+	STATUS("Triclinic to monoclinic:\n");
+	find_all_ambiguities("1", "-1",
+	                     "2", "m", "2/m",
+	                     NULL);
+
+	STATUS("Triclinic to rhombohedral:\n");
+	find_all_ambiguities("1", "-1",
+	                     "3_R", "32_R", "-3_R", "3m_R", "-3m_R",
+	                     NULL);
+
+	STATUS("Triclinic to orthorhombic:\n");
+	find_all_ambiguities("1", "-1",
+	                     "mm2", "mmm", "222",
+	                     NULL);
+
+	STATUS("Orthorhombic to tetragonal:\n");
+	find_all_ambiguities("mm2", "mmm", "222",
+	                     "4", "-4", "-42m", "-4m2", "4mm", "4/m", "422",
+	                          "4/mmm",
+	                     NULL);
+
+	STATUS("Monoclinic to tetragonal:\n");
+
+	STATUS("All:\n");
 	find_all_ambiguities("1", "-1", "2", "m", "2/m", "mm2", "mmm", "222",
 	                     "4", "-4", "-42m", "-4m2", "4mm", "4/m", "422",
 	                     "4/mmm", "23", "432", "-43m", "m-3", "m-3m", NULL);
