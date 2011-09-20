@@ -83,13 +83,13 @@ static signed int locate_peak(double x, double y, double z, double k,
 
 
 static double excitation_error(double xl, double yl, double zl,
-                               double ds, double k, double divergence)
+                               double ds, double k, double divergence,
+                               double tt)
 {
-	double tt, al;
+	double al;
 	double r;
 	double delta;
 
-	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+k);
 	al = M_PI_2 - asin(-zl/ds);
 
 	r = ( ds * sin(al) / sin(tt) ) - k;
@@ -143,6 +143,7 @@ static Reflection *check_reflection(struct image *image, RefList *reflections,
 	double lambda = image->lambda;
 	double klow, kcen, khigh;    /* Wavenumber */
 	Reflection *refl;
+	double tt;
 
 	/* "low" gives the largest Ewald sphere,
 	 * "high" gives the smallest Ewald sphere. */
@@ -157,12 +158,15 @@ static Reflection *check_reflection(struct image *image, RefList *reflections,
 	xl = h*asx + k*bsx + l*csx;
 	yl = h*asy + k*bsy + l*csy;
 
+	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+kcen);
+	if ( tt > deg2rad(90.0) ) return NULL;
+
 	ds_sq = modulus_squared(xl, yl, zl);  /* d*^2 */
 	ds = sqrt(ds_sq);
 
 	/* Calculate excitation errors */
-	rlow = excitation_error(xl, yl, zl, ds, klow, -divergence);
-	rhigh = excitation_error(xl, yl, zl, ds, khigh, +divergence);
+	rlow = excitation_error(xl, yl, zl, ds, klow, -divergence, tt);
+	rhigh = excitation_error(xl, yl, zl, ds, khigh, +divergence, tt);
 
 	/* Is the reciprocal lattice point close to either extreme of
 	 * the sphere, maybe just outside the "Ewald volume"? */
