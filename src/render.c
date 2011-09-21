@@ -22,10 +22,6 @@
 #include <math.h>
 #include <stdint.h>
 
-#ifdef HAVE_LIBPNG
-#include <png.h>
-#endif
-
 #ifdef HAVE_TIFF
 #include <tiffio.h>
 #endif
