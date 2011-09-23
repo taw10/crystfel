@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "utils.h"
 #include "reflist-utils.h"
@@ -29,6 +30,7 @@
 #include "detector.h"
 #include "geometry.h"
 #include "stream.h"
+#include "thread-pool.h"
 
 
 static void mess_up_cell(UnitCell *cell)
@@ -64,7 +66,8 @@ static void mess_up_cell(UnitCell *cell)
  * according to "full" */
 static void calculate_partials(RefList *partial, double osf,
                                RefList *full, const SymOpList *sym,
-                               int random_intensities)
+                               int random_intensities,
+                               pthread_mutex_t *full_lock)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -81,13 +84,24 @@ static void calculate_partials(RefList *partial, double osf,
 		get_asymm(sym, h, k, l, &h, &k, &l);
 		p = get_partiality(refl);
 
+		pthread_mutex_lock(full_lock);
 		rfull = find_refl(full, h, k, l);
+		pthread_mutex_unlock(full_lock);
+
 		if ( rfull == NULL ) {
 			if ( random_intensities ) {
+
+				/* The full reflection is immutable (in this
+				 * program) once created, but creating it must
+				 * be an atomic operation.  So do the whole
+				 * thing under lock. */
+				pthread_mutex_lock(full_lock);
 				rfull = add_refl(full, h, k, l);
 				If = fabs(gaussian_noise(0.0, 1000.0));
 				set_int(rfull, If);
 				set_redundancy(rfull, 1);
+				pthread_mutex_unlock(full_lock);
+
 			} else {
 				set_redundancy(refl, 0);
 				If = 0.0;
@@ -134,6 +148,87 @@ static void show_help(const char *s)
 }
 
 
+
+struct queue_args
+{
+	RefList *full;
+	pthread_mutex_t full_lock;
+
+	int n_done;
+	int n_to_do;
+
+	SymOpList *sym;
+	int random_intensities;
+	UnitCell *cell;
+
+	struct image *template_image;
+
+	FILE *stream;
+};
+
+
+struct worker_args
+{
+	struct queue_args *qargs;
+	struct image image;
+};
+
+
+static void *create_job(void *vqargs)
+{
+	struct worker_args *wargs;
+	struct queue_args *qargs = vqargs;
+
+	wargs = malloc(sizeof(struct worker_args));
+
+	wargs->qargs = qargs;
+	wargs->image = *qargs->template_image;
+
+	return wargs;
+}
+
+
+static void run_job(void *vwargs, int cookie)
+{
+	double osf;
+	struct quaternion orientation;
+	struct worker_args *wargs = vwargs;
+	struct queue_args *qargs = wargs->qargs;
+
+	osf = gaussian_noise(1.0, 0.3);
+
+	/* Set up a random orientation */
+	orientation = random_quaternion();
+	wargs->image.indexed_cell = cell_rotate(qargs->cell, orientation);
+
+	snprintf(wargs->image.filename, 255, "dummy.h5");
+	wargs->image.reflections = find_intersections(&wargs->image,
+	                                       wargs->image.indexed_cell);
+	calculate_partials(wargs->image.reflections, osf, qargs->full,
+	                   qargs->sym, qargs->random_intensities,
+	                   &qargs->full_lock);
+
+	/* Give a slightly incorrect cell in the stream */
+	mess_up_cell(wargs->image.indexed_cell);
+}
+
+
+static void finalise_job(void *vqargs, void *vwargs)
+{
+	struct worker_args *wargs = vwargs;
+	struct queue_args *qargs = vqargs;
+
+	write_chunk(qargs->stream, &wargs->image, STREAM_INTEGRATED);
+
+	reflist_free(wargs->image.reflections);
+	cell_free(wargs->image.indexed_cell);
+	free(wargs);
+
+	qargs->n_done++;
+	progress_bar(qargs->n_done, qargs->n_to_do, "Simulating");
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -148,13 +243,13 @@ int main(int argc, char *argv[])
 	char *sym_str = NULL;
 	SymOpList *sym;
 	UnitCell *cell = NULL;
-	struct quaternion orientation;
-	struct image image;
 	FILE *ofh;
 	int n = 2;
-	int i;
 	int random_intensities = 0;
 	char *save_file = NULL;
+	struct queue_args qargs;
+	struct image image;
+	int n_threads = 1;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -170,7 +265,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:o:b:p:g:y:n:r:",
+	while ((c = getopt_long(argc, argv, "hi:o:b:p:g:y:n:r:j:",
 	                        longopts, NULL)) != -1)
 	{
 		switch (c) {
@@ -210,12 +305,21 @@ int main(int argc, char *argv[])
 			save_file = strdup(optarg);
 			break;
 
+		case 'j' :
+			n_threads = atoi(optarg);
+			break;
+
 		case 0 :
 			break;
 
 		default :
 			return 1;
 		}
+	}
+
+	if ( n_threads < 1 ) {
+		ERROR("Invalid number of threads.\n");
+		return 1;
 	}
 
 	/* Load beam */
@@ -318,38 +422,18 @@ int main(int argc, char *argv[])
 		full = reflist_new();
 	}
 
-	for ( i=0; i<n; i++ ) {
+	qargs.full = full;
+	pthread_mutex_init(&qargs.full_lock, NULL);
+	qargs.n_to_do = n;
+	qargs.n_done = 0;
+	qargs.sym = sym;
+	qargs.random_intensities = random_intensities;
+	qargs.cell = cell;
+	qargs.template_image = &image;
+	qargs.stream = ofh;
 
-		double osf;
-
-		//if ( random() > RAND_MAX/2 ) {
-		//	osf = 1.0;
-		//} else {
-		//	osf = 2.0;
-		//}
-		//STATUS("Image %i scale factor %f\n", i, osf);
-		osf = gaussian_noise(1.0, 0.3);
-
-		/* Set up a random orientation */
-		orientation = random_quaternion();
-		image.indexed_cell = cell_rotate(cell, orientation);
-
-		snprintf(image.filename, 255, "dummy.h5");
-		image.reflections = find_intersections(&image,
-		                                       image.indexed_cell);
-		calculate_partials(image.reflections, osf, full, sym,
-		                   random_intensities);
-
-		/* Give a slightly incorrect cell in the stream */
-		mess_up_cell(image.indexed_cell);
-		write_chunk(ofh, &image, STREAM_INTEGRATED);
-
-		reflist_free(image.reflections);
-		cell_free(image.indexed_cell);
-
-		progress_bar(i+1, n, "Simulating");
-
-	}
+	run_threads(n_threads, run_job, create_job, finalise_job,
+	            &qargs, n, n, 1, 0);
 
 	if ( random_intensities ) {
 		STATUS("Writing full intensities to %s\n", save_file);
