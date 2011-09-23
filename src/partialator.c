@@ -356,6 +356,11 @@ int main(int argc, char *argv[])
 
 	}
 
+	if ( nthreads < 1 ) {
+		ERROR("Invalid number of threads.\n");
+		return 1;
+	}
+
 	/* Sanitise input filename and open */
 	if ( infile == NULL ) {
 		infile = strdup("-");
