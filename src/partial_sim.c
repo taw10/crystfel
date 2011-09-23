@@ -74,8 +74,8 @@ static void calculate_partials(RefList *partial, double osf,
 
 	for ( refl = first_refl(partial, &iter);
 	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
+	      refl = next_refl(refl, iter) )
+	{
 		signed int h, k, l;
 		Reflection *rfull;
 		double p, Ip, If;
@@ -120,7 +120,6 @@ static void calculate_partials(RefList *partial, double osf,
 
 		set_int(refl, Ip);
 		set_esd_intensity(refl, 100.0);
-
 	}
 }
 
