@@ -45,6 +45,8 @@ set_temp2
 copy_data
 num_reflections
 tree_depth
+lock_reflection
+unlock_reflection
 </SECTION>
 
 <SECTION>

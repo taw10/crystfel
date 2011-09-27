@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
+#include <pthread.h>
 
 #include "reflist.h"
 #include "utils.h"
@@ -103,6 +104,7 @@ struct _reflection {
 	enum _nodecol col;            /* Colour (red or black) */
 
 	/* Payload */
+	pthread_mutex_t lock;         /* Protects the contents of "data" */
 	struct _refldata data;
 };
 
@@ -133,6 +135,7 @@ static Reflection *new_node(unsigned int serial)
 	new->child[0] = NULL;
 	new->child[1] = NULL;
 	new->col = RED;
+	pthread_mutex_init(&new->lock, NULL);
 
 	return new;
 }
@@ -958,4 +961,28 @@ int num_reflections(RefList *list)
 int tree_depth(RefList *list)
 {
 	return recursive_depth(list->head);
+}
+
+
+/**
+ * lock_reflection:
+ * @refl: A %Reflection
+ *
+ * Acquires a lock on the reflection.
+ */
+void lock_reflection(Reflection *refl)
+{
+	pthread_mutex_lock(&refl->lock);
+}
+
+
+/**
+ * unlock_reflection:
+ * @refl: A %Reflection
+ *
+ * Releases a lock on the reflection.
+ */
+void unlock_reflection(Reflection *refl)
+{
+	pthread_mutex_unlock(&refl->lock);
 }

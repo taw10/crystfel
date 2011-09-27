@@ -103,5 +103,7 @@ extern Reflection *next_refl(Reflection *refl, RefListIterator *iter);
 /* Misc */
 extern int num_reflections(RefList *list);
 extern int tree_depth(RefList *list);
+extern void lock_reflection(Reflection *refl);
+extern void unlock_reflection(Reflection *refl);
 
 #endif	/* REFLIST_H */
