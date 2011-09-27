@@ -40,7 +40,7 @@ static void mess_up_cell(UnitCell *cell)
 	double cx, cy, cz;
 
 	/* Cell noise in percent */
-	const double cnoise = 0.2;
+	const double cnoise = 1.0;
 
 	//STATUS("Real:\n");
 	//cell_print(cell);
