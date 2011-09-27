@@ -403,6 +403,7 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 	osf_max = 0.0;
 	for ( i=0; i<n; i++ ) {
 		double osf = images[i].osf;
+		if ( images[i].pr_dud ) continue;
 		if ( osf > osf_max ) osf_max = osf;
 	}
 	osf_max = ceil(osf_max+osf_max/10000.0);
@@ -424,6 +425,8 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 		for ( i=0; i<n; i++ ) {
 
 			double osf = images[i].osf;
+
+			if ( images[i].pr_dud ) continue;
 
 			for ( b=0; b<nbins; b++ ) {
 				if ( (osf >= osf_low[b])
