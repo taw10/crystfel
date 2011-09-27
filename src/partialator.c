@@ -240,9 +240,9 @@ static void select_reflections_for_refinement(struct image *images, int n,
 			}
 		}
 
-		STATUS("Image %4i: %i guide reflections accepted "
-		       "(%i not scalable, %i few matches, %i total)\n",
-		       i, n_acc, n_noscale, n_fewmatch, n_ref);
+		//STATUS("Image %4i: %i guide reflections accepted "
+		//       "(%i not scalable, %i few matches, %i total)\n",
+		//       i, n_acc, n_noscale, n_fewmatch, n_ref);
 
 		/* This would be a silly situation, since there must be a match
 		 * if THIS pattern has a scalable part of the reflection! */
