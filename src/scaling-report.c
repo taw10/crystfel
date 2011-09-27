@@ -38,6 +38,12 @@ struct _srcontext
 	cairo_t *cr;
 	double w;
 	double h;
+
+	/* Most sampled reflections */
+	signed int ms_h[9];
+	signed int ms_k[9];
+	signed int ms_l[9];
+
 };
 
 
@@ -272,32 +278,27 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 
 
 static void partiality_histogram(cairo_t *cr, const struct image *images,
-                                 int n, RefList *full, int calc)
+                                 int n, RefList *full, int calc, int backwards)
 {
 	int f_max;
 	int i, b;
 	const int nbins = 100;
 	int counts[nbins];
-	const double g_width = 320.0;
-	const double g_height = 180.0;
+	const double g_width = 200.0;
+	const double g_height = 120.0;
 	char tmp[32];
+	double text_rot, axis_pos;
 
-
-	show_text_simple(cr, "Frequency", -15.0, g_height/2.0,
-	                      NULL, -M_PI_2, J_CENTER);
-	if ( calc ) {
-		show_text_simple(cr, "Distribution of calculated partialities",
-		                     g_width/2.0, -18.0, "Sans Bold 10", 0.0,
-		                     J_CENTER);
-		show_text_simple(cr, "Calculated partiality", g_width/2.0,
-		                     g_height+12.0, NULL, 0.0, J_CENTER);
+	if ( backwards ) {
+		text_rot = M_PI_2;
+		axis_pos = 215.0;
 	} else {
-		show_text_simple(cr, "Distribution of observed partialities",
-		                     g_width/2.0, -18.0, "Sans Bold 10", 0.0,
-		                     J_CENTER);
-		show_text_simple(cr, "Observed partiality", g_width/2.0,
-		                     g_height+12.0, NULL, 0.0, J_CENTER);
+		text_rot = -M_PI_2;
+		axis_pos = -15.0;
 	}
+
+	show_text_simple(cr, "Frequency", axis_pos, g_height/2.0,
+	                      NULL, text_rot, J_CENTER);
 
 	for ( b=0; b<nbins; b++ ) {
 		counts[b] = 0;
@@ -345,14 +346,21 @@ static void partiality_histogram(cairo_t *cr, const struct image *images,
 	}
 	f_max = (f_max/10)*10 + 10;
 
-	show_text_simple(cr, "0", -10.0, g_height, NULL, 0.0, J_RIGHT);
+	if ( !backwards ) {
+		show_text_simple(cr, "0", axis_pos, g_height,
+		                 NULL, 0.0, J_RIGHT);
+	} else {
+		show_text_simple(cr, "0", axis_pos, 0.0,
+		                 NULL, M_PI, J_RIGHT);
+	}
 	snprintf(tmp, 31, "%i", f_max);
-	show_text_simple(cr, tmp, -10.0, 0.0, NULL, 0.0, J_RIGHT);
-
-	show_text_simple(cr, "0.0", 0.0, g_height+10.0,
-	                     NULL, -M_PI/3.0, J_RIGHT);
-	show_text_simple(cr, "1.0", g_width, g_height+10.0,
-	                     NULL, -M_PI/3.0, J_RIGHT);
+	if ( !backwards ) {
+		show_text_simple(cr, tmp, axis_pos, 0.0,
+		                 NULL, 0.0, J_RIGHT);
+	} else {
+		show_text_simple(cr, tmp, axis_pos, g_height,
+		                 NULL, M_PI, J_RIGHT);
+	}
 
 	for ( b=0; b<nbins; b++ ) {
 
@@ -361,8 +369,13 @@ static void partiality_histogram(cairo_t *cr, const struct image *images,
 		bar_height = ((double)counts[b]/f_max)*g_height;
 
 		cairo_new_path(cr);
-		cairo_rectangle(cr, (g_width/nbins)*b, g_height,
-		                    g_width/nbins, -bar_height);
+		if ( !backwards ) {
+			cairo_rectangle(cr, (g_width/nbins)*b, g_height,
+			                    g_width/nbins, -bar_height);
+		} else {
+			cairo_rectangle(cr, (g_width/nbins)*b, 0.0,
+			                    g_width/nbins, bar_height);
+		}
 		cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
 		cairo_set_line_width(cr, 1.0);
 		cairo_stroke(cr);
@@ -505,19 +518,13 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 	double int_low[nbins];
 	double int_high[nbins];
 	int counts[nbins];
-	const double g_width = 200.0;
-	const double g_height = 100.0;
+	const double g_width = 115.0;
+	const double g_height = 55.0;
 	char tmp[64];
 
 	snprintf(tmp, 63, "%i  %i  %i", h, k, l);
-	show_text_simple(cr, tmp, g_width/2.0, -18.0,
+	show_text_simple(cr, tmp, g_width/2.0, -10.0,
 	                      "Sans Bold 10", 0.0, J_CENTER);
-
-	show_text_simple(cr, "Frequency", -15.0, g_height/2.0,
-	                      NULL, -M_PI_2, J_CENTER);
-	show_text_simple(cr, "Full scaled intensity",
-	                      g_width/2.0, g_height+12.0,
-	                      NULL, 0.0, J_CENTER);
 
 	int_max = 0.0;
 	int nmeas = 0;
@@ -596,15 +603,11 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 	}
 	f_max = (f_max/10)*10 + 10;
 
-	show_text_simple(cr, "0", -10.0, g_height, NULL, 0.0, J_RIGHT);
-	snprintf(tmp, 31, "%i", f_max);
-	show_text_simple(cr, tmp, -10.0, 0.0, NULL, 0.0, J_RIGHT);
+	snprintf(tmp, 31, "Max n=%i", f_max);
+	show_text_simple(cr, tmp, 10.0, 22.0, "Sans 9", 0.0, J_LEFT);
 
-	show_text_simple(cr, "0.00", 0.0, g_height+10.0,
-	                     NULL, -M_PI/3.0, J_RIGHT);
-	snprintf(tmp, 32, "%5.2f", int_max);
-	show_text_simple(cr, tmp, g_width, g_height+10.0,
-	                     NULL, -M_PI/3.0, J_RIGHT);
+	snprintf(tmp, 32, "Max I=%.0f", int_max);
+	show_text_simple(cr, tmp, 10.0, 10.0, "Sans 9", 0.0, J_LEFT);
 
 	for ( b=0; b<nbins; b++ ) {
 
@@ -637,55 +640,15 @@ static void watermark(struct _srcontext *sr)
 }
 
 
-SRContext *sr_header(const char *filename, const char *stream_filename,
-                     const char *cmdline)
+static void new_page(struct _srcontext *sr)
 {
-	char tmp[1024];
-	struct _srcontext *sr;
-
-	sr = malloc(sizeof(*sr));
-	if ( sr == NULL ) return NULL;
-
-	sr->w = PAGE_WIDTH;
-	sr->h = 595.0;
-
-	sr->surf = cairo_pdf_surface_create(filename, sr->w, sr->h);
-
-	if ( cairo_surface_status(sr->surf) != CAIRO_STATUS_SUCCESS ) {
-		fprintf(stderr, "Couldn't create Cairo surface\n");
-		cairo_surface_destroy(sr->surf);
-		free(sr);
-		return NULL;
-	}
-
-	sr->cr = cairo_create(sr->surf);
-
-	snprintf(tmp, 1023, "%s", stream_filename);
-	show_text(sr->cr, tmp, 10.0, J_CENTER, "Sans Bold 16");
-	snprintf(tmp, 1023, "partialator %s", cmdline);
-	show_text(sr->cr, tmp, 45.0, J_LEFT, "Mono 7");
+	cairo_surface_show_page(sr->surf);
 	watermark(sr);
-
-	return sr;
 }
 
 
-void sr_before(SRContext *sr, struct image *images, int n, RefList *full)
-{
-	if ( sr == NULL ) return;
-
-	cairo_save(sr->cr);
-	cairo_translate(sr->cr, 75.0, 100.0);
-	scale_factor_histogram(sr->cr, images, n, "Before refinement");
-	cairo_translate(sr->cr, 60.0, 235.0);
-	partiality_graph(sr->cr, images, n, full);
-	cairo_restore(sr->cr);
-}
-
-
-static void find_most_sampled_reflections(RefList *list, signed int *h,
-                                          signed int *k, signed int *l,
-                                          int n)
+static void find_most_sampled_reflections(RefList *list, int n, signed int *h,
+                                          signed int *k, signed int *l)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -733,34 +696,99 @@ static void find_most_sampled_reflections(RefList *list, signed int *h,
 }
 
 
-void sr_after(SRContext *sr, struct image *images, int n, RefList *full)
+
+SRContext *sr_titlepage(struct image *images, int n,
+                        const char *filename, const char *stream_filename,
+                        const char *cmdline)
+{
+	char tmp[1024];
+	struct _srcontext *sr;
+
+	sr = malloc(sizeof(*sr));
+	if ( sr == NULL ) return NULL;
+
+	sr->w = PAGE_WIDTH;
+	sr->h = 595.0;
+
+	sr->surf = cairo_pdf_surface_create(filename, sr->w, sr->h);
+
+	if ( cairo_surface_status(sr->surf) != CAIRO_STATUS_SUCCESS ) {
+		fprintf(stderr, "Couldn't create Cairo surface\n");
+		cairo_surface_destroy(sr->surf);
+		free(sr);
+		return NULL;
+	}
+
+	sr->cr = cairo_create(sr->surf);
+	watermark(sr);
+
+	snprintf(tmp, 1023, "%s", stream_filename);
+	show_text(sr->cr, tmp, 10.0, J_CENTER, "Sans Bold 16");
+	snprintf(tmp, 1023, "partialator %s", cmdline);
+	show_text(sr->cr, tmp, 45.0, J_LEFT, "Mono 7");
+
+	return sr;
+}
+
+
+void sr_iteration(SRContext *sr, int iteration, struct image *images, int n,
+                  RefList *full)
 {
 	int i;
-	signed int h[9], k[9], l[9];
+	char page_title[1024];
+	double dash[] = {2.0, 2.0};
 
 	if ( sr == NULL ) return;
 
+	snprintf(page_title, 1023, "After %i iteration%s",
+	         iteration, iteration==1?"":"s");
+
+	new_page(sr);
+	show_text(sr->cr, page_title, 10.0, J_CENTER, "Sans Bold 16");
+
 	cairo_save(sr->cr);
-	cairo_translate(sr->cr, 475.0, 100.0);
-	scale_factor_histogram(sr->cr, images, n, "After refinement");
-	cairo_translate(sr->cr, 60.0, 235.0);
+	cairo_translate(sr->cr, 480.0, 350.0);
+	scale_factor_histogram(sr->cr, images, n,
+	                       "Distribution of overall scale factors");
+	cairo_restore(sr->cr);
+
+	/* Draw partiality plots (three graphs together) */
+	cairo_save(sr->cr);
+
+	cairo_translate(sr->cr, 70.0, 330.0);
 	partiality_graph(sr->cr, images, n, full);
-	cairo_restore(sr->cr);
-
-	cairo_surface_show_page(sr->surf);
-	watermark(sr);
 
 	cairo_save(sr->cr);
-	cairo_translate(sr->cr, 75.0, 50.0);
-	partiality_histogram(sr->cr, images, n, full, 1);
-	cairo_translate(sr->cr, 400.0, 0.0);
-	partiality_histogram(sr->cr, images, n, full, 0);
+	cairo_move_to(sr->cr, 0.0, 0.0);
+	cairo_line_to(sr->cr, 0.0, -30.0);
+	cairo_move_to(sr->cr, 200.0, 0.0);
+	cairo_line_to(sr->cr, 200.0, -30.0);
+	cairo_set_dash(sr->cr, dash, 2, 0.0);
+	cairo_stroke(sr->cr);
+	cairo_set_dash(sr->cr, NULL, 0, 0.0);
+	cairo_translate(sr->cr, 0.0, -150.0);
+	partiality_histogram(sr->cr, images, n, full, 0, 0);
 	cairo_restore(sr->cr);
 
-	cairo_surface_show_page(sr->surf);
-	watermark(sr);
+	cairo_save(sr->cr);
+	cairo_move_to(sr->cr, 200.0, 0.0);
+	cairo_line_to(sr->cr, 230.0, 00.0);
+	cairo_move_to(sr->cr, 200.0, 200.0);
+	cairo_line_to(sr->cr, 230.0, 200.0);
+	cairo_set_dash(sr->cr, dash, 2, 0.0);
+	cairo_stroke(sr->cr);
+	cairo_set_dash(sr->cr, NULL, 0, 0.0);
+	cairo_translate(sr->cr, 230.0, 200.0);
+	cairo_rotate(sr->cr, -M_PI_2);
+	partiality_histogram(sr->cr, images, n, full, 1, 1);
+	cairo_restore(sr->cr);
 
-	find_most_sampled_reflections(full, h, k, l, 9);
+	cairo_restore(sr->cr);
+
+	if ( iteration == 0 ) {
+		find_most_sampled_reflections(full, 9,
+		                              sr->ms_h, sr->ms_k, sr->ms_l);
+	}
 
 	for ( i=0; i<9; i++ ) {
 
@@ -770,14 +798,17 @@ void sr_after(SRContext *sr, struct image *images, int n, RefList *full)
 		y = i / 3;
 
 		cairo_save(sr->cr);
-		cairo_translate(sr->cr, 50.0+280.0*x, 50.0+180.0*y);
-		intensity_histogram(sr->cr, images, n, h[i], k[i], l[i]);
+		cairo_translate(sr->cr, 400.0+140.0*x, 60.0+80.0*y);
+		intensity_histogram(sr->cr, images, n,
+		                    sr->ms_h[i], sr->ms_k[i], sr->ms_l[i]);
 		cairo_restore(sr->cr);
 
 	}
+}
 
+
+void sr_finish(SRContext *sr)
+{
 	cairo_surface_finish(sr->surf);
 	cairo_destroy(sr->cr);
-
-	free(sr);
 }

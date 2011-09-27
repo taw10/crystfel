@@ -23,31 +23,34 @@ typedef struct _srcontext SRContext;  /* Opaque */
 
 #ifdef HAVE_CAIRO
 
-extern SRContext *sr_header(const char *filename, const char *stream_filename,
-                            const char *cmdline);
+extern SRContext *sr_titlepage(struct image *images, int n,
+                               const char *filename,
+                               const char *stream_filename,
+                               const char *cmdline);
 
-extern void sr_before(SRContext *sr, struct image *images, int n,
-                      RefList *full);
+extern void sr_iteration(SRContext *sr, int iteration, struct image *images,
+                         int n, RefList *full);
 
-extern void sr_after(SRContext *sr, struct image *images, int n,
-                     RefList *full);
+extern void sr_finish(SRContext *sr);
 
 #else
 
-SRContext *sr_header(const char *filename, const char *stream_filename,
-                     const char *cmdline)
+SRContext *sr_titlepage(struct image *images, int n, const char *filename,
+                        const char *stream_filename, const char *cmdline)
 {
 	return NULL;
 }
 
-void sr_before(SRContext *sr, struct image *images, int n, RefList *full)
+void sr_iteration(SRContext *sr, int iteration, struct image *images, int n,
+                  RefList *full)
 {
 }
 
-void sr_after(SRContext *sr, struct image *images, int n, RefList *full)
+void sr_finish(SRContext *sr)
 {
 }
 
 #endif
+
 
 #endif	/* SCALING_REPORT_H */

@@ -428,8 +428,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	sr = sr_header("scaling-report.pdf", infile, cmdline);
-
 	/* Fill in what we know about the images so far */
 	rewind(fh);
 	nobs = 0;
@@ -496,7 +494,9 @@ int main(int argc, char *argv[])
 	STATUS("Performing initial scaling.\n");
 	full = scale_intensities(images, n_usable_patterns, reference);
 
-	sr_before(sr, images, n_usable_patterns, full);
+	sr = sr_titlepage(images, n_usable_patterns, "scaling-report.pdf",
+	                  infile, cmdline);
+	sr_iteration(sr, 0, images, n_usable_patterns, full);
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -532,7 +532,11 @@ int main(int argc, char *argv[])
 		full = scale_intensities(images, n_usable_patterns,
 		                         reference);
 
+		sr_iteration(sr, i+1, images, n_usable_patterns, full);
+
 	}
+
+	sr_finish(sr);
 
 	n_dud = 0;
 	for ( i=0; i<n_usable_patterns; i++ ) {
@@ -542,8 +546,6 @@ int main(int argc, char *argv[])
 
 	/* Output results */
 	write_reflist(outfile, full, images[0].indexed_cell);
-
-	sr_after(sr, images, n_usable_patterns, full);
 
 	/* Clean up */
 	for ( i=0; i<n_usable_patterns; i++ ) {
