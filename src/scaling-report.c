@@ -328,6 +328,8 @@ static void partiality_histogram(cairo_t *cr, const struct image *images,
 			Ipart = get_intensity(refl);
 			Ifull = get_intensity(f);
 
+			if ( Ifull < 10 ) continue;  /* FIXME: Ugh */
+
 			pobs = Ipart/(images[i].osf*Ifull);
 			pcalc = get_partiality(refl);
 
