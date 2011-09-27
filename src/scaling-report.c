@@ -767,7 +767,7 @@ void sr_iteration(SRContext *sr, int iteration, struct image *images, int n,
 	cairo_stroke(sr->cr);
 	cairo_set_dash(sr->cr, NULL, 0, 0.0);
 	cairo_translate(sr->cr, 0.0, -150.0);
-	partiality_histogram(sr->cr, images, n, full, 0, 0);
+	partiality_histogram(sr->cr, images, n, full, 1, 0);
 	cairo_restore(sr->cr);
 
 	cairo_save(sr->cr);
@@ -780,7 +780,7 @@ void sr_iteration(SRContext *sr, int iteration, struct image *images, int n,
 	cairo_set_dash(sr->cr, NULL, 0, 0.0);
 	cairo_translate(sr->cr, 230.0, 200.0);
 	cairo_rotate(sr->cr, -M_PI_2);
-	partiality_histogram(sr->cr, images, n, full, 1, 1);
+	partiality_histogram(sr->cr, images, n, full, 0, 1);
 	cairo_restore(sr->cr);
 
 	cairo_restore(sr->cr);
