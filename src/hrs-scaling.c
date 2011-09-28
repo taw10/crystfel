@@ -102,7 +102,7 @@ static double iterate_scale(struct image *images, int n, RefList *reference)
 }
 
 
-static RefList *lsq_intensities(struct image *images, int n)
+static RefList *estimate_full_intensities(struct image *images, int n)
 {
 	RefList *full;
 	int frame;
@@ -124,9 +124,9 @@ static RefList *lsq_intensities(struct image *images, int n)
 		{
 			Reflection *f;
 			signed int h, k, l;
-			double num, den;
+			double total;
 			int red;
-			double Ihl, esd;
+			double Ihj;
 
 			if ( !get_scalable(refl) ) continue;
 
@@ -134,24 +134,18 @@ static RefList *lsq_intensities(struct image *images, int n)
 			f = find_refl(full, h, k, l);
 			if ( f == NULL ) {
 				f = add_refl(full, h, k, l);
-				num = 0.0;
-				den = 0.0;
+				total = 0.0;
 				red = 0;
 			} else {
-				num = get_temp1(f);
-				den = get_temp2(f);
+				total = get_temp1(f);
 				red = get_redundancy(f);
 			}
 
-			Ihl = get_intensity(refl) / get_partiality(refl);
-			esd = get_esd_intensity(refl) / get_partiality(refl);
-
-			num += (Ihl/G) / pow(esd/G, 2.0);
-			den += 1.0 / pow(esd/G, 2.0);
+			Ihj = get_intensity(refl) / get_partiality(refl);
+			total += Ihj / G;
 			red++;
 
-			set_temp1(f, num);
-			set_temp2(f, den);
+			set_temp1(f, total);
 			set_redundancy(f, red);
 		}
 
@@ -161,9 +155,7 @@ static RefList *lsq_intensities(struct image *images, int n)
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		double Ih;
-
-		Ih = get_temp1(refl) / get_temp2(refl);
+		double Ih = get_temp1(refl) / (double)get_redundancy(refl);
 		set_int(refl, Ih);
 
 	}
@@ -251,7 +243,7 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref)
 
 	/* No reference -> create an initial list to refine against */
 	if ( gref == NULL ) {
-		full = lsq_intensities(images, n);
+		full = estimate_full_intensities(images, n);
 	}
 
 	/* Iterate */
@@ -274,7 +266,7 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref)
 		/* No reference -> generate list for next iteration */
 		if ( gref == NULL ) {
 			reflist_free(full);
-			full = lsq_intensities(images, n);
+			full = estimate_full_intensities(images, n);
 		}
 
 		//show_scale_factors(images, n);
@@ -284,7 +276,7 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref)
 	} while ( (max_corr > 0.01) && (i < MAX_CYCLES) );
 
 	if ( gref != NULL ) {
-		full = lsq_intensities(images, n);
+		full = estimate_full_intensities(images, n);
 	} /* else we already did it */
 
 	return full;
