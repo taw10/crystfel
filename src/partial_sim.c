@@ -33,14 +33,11 @@
 #include "thread-pool.h"
 
 
-static void mess_up_cell(UnitCell *cell)
+static void mess_up_cell(UnitCell *cell, double cnoise)
 {
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-
-	/* Cell noise in percent */
-	const double cnoise = 1.0;
 
 	//STATUS("Real:\n");
 	//cell_print(cell);
@@ -143,6 +140,10 @@ static void show_help(const char *s)
 " -y, --symmetry=<sym>     Symmetry of the input reflection list.\n"
 " -n <n>                   Simulate <n> patterns.  Default: 2.\n"
 " -r, --save-random=<file> Save randomly generated intensities to file.\n"
+" -c, --cnoise=<val>       Add random noise, with a flat distribution, to the\n"
+"                          reciprocal lattice vector components given in the\n"
+"                          stream, with maximum error +/- <val> percent.\n"
+"\n"
 );
 }
 
@@ -159,6 +160,7 @@ struct queue_args
 	SymOpList *sym;
 	int random_intensities;
 	UnitCell *cell;
+	double cnoise;
 
 	struct image *template_image;
 
@@ -208,7 +210,7 @@ static void run_job(void *vwargs, int cookie)
 	                   &qargs->full_lock);
 
 	/* Give a slightly incorrect cell in the stream */
-	mess_up_cell(wargs->image.indexed_cell);
+	mess_up_cell(wargs->image.indexed_cell, qargs->cnoise);
 }
 
 
@@ -249,6 +251,8 @@ int main(int argc, char *argv[])
 	struct queue_args qargs;
 	struct image image;
 	int n_threads = 1;
+	double cnoise = 0.0;
+	char *rval;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -260,11 +264,12 @@ int main(int argc, char *argv[])
 		{"geometry",           1, NULL,               'g'},
 		{"symmetry",           1, NULL,               'y'},
 		{"save-random",        1, NULL,               'r'},
+		{"cnoise",             1, NULL,               'c'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:o:b:p:g:y:n:r:j:",
+	while ((c = getopt_long(argc, argv, "hi:o:b:p:g:y:n:r:j:c:",
 	                        longopts, NULL)) != -1)
 	{
 		switch (c) {
@@ -306,6 +311,14 @@ int main(int argc, char *argv[])
 
 		case 'j' :
 			n_threads = atoi(optarg);
+			break;
+
+		case 'c' :
+			cnoise = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid cell noise value.\n");
+				return 1;
+			}
 			break;
 
 		case 0 :
@@ -430,6 +443,7 @@ int main(int argc, char *argv[])
 	qargs.cell = cell;
 	qargs.template_image = &image;
 	qargs.stream = ofh;
+	qargs.cnoise = cnoise;
 
 	run_threads(n_threads, run_job, create_job, finalise_job,
 	            &qargs, n, n, 1, 0);
