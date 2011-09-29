@@ -492,7 +492,8 @@ int main(int argc, char *argv[])
 
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
-	full = scale_intensities(images, n_usable_patterns, reference);
+	full = scale_intensities(images, n_usable_patterns, reference,
+	                         nthreads);
 
 	sr = sr_titlepage(images, n_usable_patterns, "scaling-report.pdf",
 	                  infile, cmdline);
@@ -530,7 +531,7 @@ int main(int argc, char *argv[])
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
 		full = scale_intensities(images, n_usable_patterns,
-		                         reference);
+		                         reference, nthreads);
 
 		sr_iteration(sr, i+1, images, n_usable_patterns, full);
 
