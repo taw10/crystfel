@@ -445,7 +445,7 @@ int main(int argc, char *argv[])
 	qargs.cnoise = cnoise;
 
 	run_threads(n_threads, run_job, create_job, finalise_job,
-	            &qargs, n, n, 1, 0);
+	            &qargs, n, 0, 0, 0);
 
 	if ( random_intensities ) {
 		STATUS("Writing full intensities to %s\n", save_file);
