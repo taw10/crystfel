@@ -313,10 +313,6 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref,
 	double max_corr;
 	RefList *full = NULL;
 
-	for ( i=0; i<n; i++ ) {
-		images[i].osf = 1.0;
-	}
-
 	/* No reference -> create an initial list to refine against */
 	if ( gref == NULL ) {
 		full = lsq_intensities(images, n);
