@@ -52,7 +52,8 @@ static double iterate_scale(struct image *images, int n, RefList *reference)
 		RefListIterator *iter;
 		double num = 0.0;
 		double den = 0.0;
-		double corr;
+		double new_sf;
+		double corr = 0.0;
 
 		if ( image->pr_dud ) continue;
 
@@ -61,7 +62,7 @@ static double iterate_scale(struct image *images, int n, RefList *reference)
 		      refl = next_refl(refl, iter) )
 		{
 			signed int h, k, l;
-			double Ih, Ihl, esd;
+			double Ih, Ihl;
 			Reflection *r;
 
 			if ( !get_scalable(refl) ) continue;
@@ -80,21 +81,18 @@ static double iterate_scale(struct image *images, int n, RefList *reference)
 			}
 
 			Ihl = get_intensity(refl) / get_partiality(refl);
-			esd = get_esd_intensity(refl) / get_partiality(refl);
 
-			num += Ih * (Ihl/image->osf) / pow(esd/image->osf, 2.0);
-			den += pow(Ih, 2.0)/pow(esd/image->osf, 2.0);
+			num += Ih * Ihl;
+			den += Ihl * Ihl;
 
 		}
 
-		//num += image->osf / pow(SCALING_RESTRAINT, 2.0);
-		//den += pow(image->osf, 2.0)/pow(SCALING_RESTRAINT, 2.0);
-
-		corr = num / den;
-		if ( !isnan(corr) && !isinf(corr) ) {
-			image->osf *= corr;
+		new_sf = num / den;
+		if ( !isnan(new_sf) && !isinf(new_sf) ) {
+			corr = image->osf - new_sf;
+			image->osf = new_sf;
 		}
-		if ( fabs(corr-1.0) > max_shift ) max_shift = fabs(corr-1.0);
+		if ( fabs(corr) > max_shift ) max_shift = fabs(corr);
 
 	}
 
