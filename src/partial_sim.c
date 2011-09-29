@@ -148,7 +148,6 @@ static void show_help(const char *s)
 }
 
 
-
 struct queue_args
 {
 	RefList *full;
