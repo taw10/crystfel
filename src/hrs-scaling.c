@@ -83,16 +83,16 @@ static double iterate_scale(struct image *images, int n, RefList *reference)
 			Ihl = get_intensity(refl) / get_partiality(refl);
 
 			num += Ih * Ihl;
-			den += Ihl * Ihl;
+			den += Ih * Ih;
 
 		}
 
 		new_sf = num / den;
 		if ( !isnan(new_sf) && !isinf(new_sf) ) {
-			corr = image->osf - new_sf;
+			corr = fabs(image->osf - new_sf);
 			image->osf = new_sf;
 		}
-		if ( fabs(corr) > max_shift ) max_shift = fabs(corr);
+		if ( corr > max_shift ) max_shift = corr;
 
 	}
 
