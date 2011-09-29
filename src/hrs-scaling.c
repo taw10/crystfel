@@ -161,6 +161,7 @@ static double iterate_scale(struct image *images, int n, RefList *reference,
 	qargs.n_started = 0;
 	qargs.n_to_do = n;
 	qargs.images = images;
+	qargs.max_shift = 0.0;
 
 	run_threads(n_threads, run_job, create_job, finalise_job,
 	            &qargs, n, 0, 0, 0);
