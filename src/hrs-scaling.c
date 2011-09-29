@@ -38,67 +38,134 @@
 #define SCALING_RESTRAINT (1.0)
 
 
-static double iterate_scale(struct image *images, int n, RefList *reference)
+struct queue_args
 {
-	double max_shift = 0.0;
-	int frame;
+	RefList *reference;
+	struct image *images;
+	int n_started;
+	int n_to_do;
+	double max_shift;
+};
 
-	assert(reference != NULL);
 
-	for ( frame=0; frame<n; frame++ ) {
+struct worker_args
+{
+	struct queue_args *qargs;
+	struct image *image;
+	double shift;
+	RefList *reference;
+};
 
-		struct image *image = &images[frame];
-		Reflection *refl;
-		RefListIterator *iter;
-		double num = 0.0;
-		double den = 0.0;
-		double corr;
 
-		if ( image->pr_dud ) continue;
+static void *create_job(void *vqargs)
+{
+	struct worker_args *wargs;
+	struct queue_args *qargs = vqargs;
 
-		for ( refl = first_refl(image->reflections, &iter);
-		      refl != NULL;
-		      refl = next_refl(refl, iter) )
-		{
-			signed int h, k, l;
-			double Ih, Ihl, esd;
-			Reflection *r;
+	wargs = malloc(sizeof(struct worker_args));
+	wargs->reference = qargs->reference;
 
-			if ( !get_scalable(refl) ) continue;
+	wargs->image = NULL;
+	do {
 
-			/* Look up by asymmetric indices */
-			get_indices(refl, &h, &k, &l);
-			r = find_refl(reference, h, k, l);
-			if ( r == NULL ) {
-				ERROR("%3i %3i %3i isn't in the "
-				      "reference list, so why is it "
-				      "marked as scalable?\n", h, k, l);
-				Ih = 0.0;
-			} else {
-				if ( get_redundancy(r) < 2 ) continue;
-				Ih = get_intensity(r);
-			}
-
-			Ihl = get_intensity(refl) / get_partiality(refl);
-			esd = get_esd_intensity(refl) / get_partiality(refl);
-
-			num += Ih * (Ihl/image->osf) / pow(esd/image->osf, 2.0);
-			den += pow(Ih, 2.0)/pow(esd/image->osf, 2.0);
-
+		if ( !qargs->images[qargs->n_started].pr_dud ) {
+			wargs->image = &qargs->images[qargs->n_started];
+			break;
 		}
 
-		//num += image->osf / pow(SCALING_RESTRAINT, 2.0);
-		//den += pow(image->osf, 2.0)/pow(SCALING_RESTRAINT, 2.0);
+		qargs->n_started++;
 
-		corr = num / den;
-		if ( !isnan(corr) && !isinf(corr) ) {
-			image->osf *= corr;
+	} while ( qargs->n_started >= qargs->n_to_do );
+
+	if ( wargs->image == NULL ) {
+		free(wargs);
+		return NULL;
+	}
+
+	return wargs;
+}
+
+
+static void run_job(void *vwargs, int cookie)
+{
+	struct worker_args *wargs = vwargs;
+	struct image *image = wargs->image;
+	RefList *reference = wargs->reference;
+	Reflection *refl;
+	RefListIterator *iter;
+	double num = 0.0;
+	double den = 0.0;
+	double corr;
+
+	for ( refl = first_refl(image->reflections, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		double Ih, Ihl, esd;
+		Reflection *r;
+
+		if ( !get_scalable(refl) ) continue;
+
+		/* Look up by asymmetric indices */
+		get_indices(refl, &h, &k, &l);
+		r = find_refl(reference, h, k, l);
+		if ( r == NULL ) {
+			ERROR("%3i %3i %3i isn't in the "
+			      "reference list, so why is it "
+			      "marked as scalable?\n", h, k, l);
+			Ih = 0.0;
+		} else {
+			if ( get_redundancy(r) < 2 ) continue;
+			Ih = get_intensity(r);
 		}
-		if ( fabs(corr-1.0) > max_shift ) max_shift = fabs(corr-1.0);
+
+		Ihl = get_intensity(refl) / get_partiality(refl);
+		esd = get_esd_intensity(refl) / get_partiality(refl);
+
+		num += Ih * (Ihl/image->osf) / pow(esd/image->osf, 2.0);
+		den += pow(Ih, 2.0)/pow(esd/image->osf, 2.0);
 
 	}
 
-	return max_shift;
+	//num += image->osf / pow(SCALING_RESTRAINT, 2.0);
+	//den += pow(image->osf, 2.0)/pow(SCALING_RESTRAINT, 2.0);
+
+	corr = num / den;
+	if ( !isnan(corr) && !isinf(corr) ) {
+		image->osf *= corr;
+	}
+	wargs->shift = fabs(corr-1.0);
+
+}
+
+
+static void finalise_job(void *vqargs, void *vwargs)
+{
+	struct queue_args *qargs = vqargs;
+	struct worker_args *wargs = vwargs;
+
+	if ( wargs->shift > qargs->max_shift ) qargs->max_shift = wargs->shift;
+	free(wargs);
+}
+
+
+static double iterate_scale(struct image *images, int n, RefList *reference,
+                            int n_threads)
+{
+	struct queue_args qargs;
+
+	assert(reference != NULL);
+
+	qargs.reference = reference;
+	qargs.n_started = 0;
+	qargs.n_to_do = n;
+	qargs.images = images;
+
+	run_threads(n_threads, run_job, create_job, finalise_job,
+	            &qargs, n, 0, 0, 0);
+
+	return qargs.max_shift;
 }
 
 
@@ -239,7 +306,8 @@ static UNUSED void plot_graph(struct image *image, RefList *reference)
 
 
 /* Scale the stack of images */
-RefList *scale_intensities(struct image *images, int n, RefList *gref)
+RefList *scale_intensities(struct image *images, int n, RefList *gref,
+                           int n_threads)
 {
 	int i;
 	double max_corr;
@@ -267,7 +335,7 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref)
 			reference = full;
 		}
 
-		max_corr = iterate_scale(images, n, reference);
+		max_corr = iterate_scale(images, n, reference, n_threads);
 		STATUS("Scaling iteration %2i: max correction = %5.2f\n",
 		       i+1, max_corr);
 
