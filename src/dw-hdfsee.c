@@ -173,7 +173,7 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 
 	cr = cairo_create(surf);
 
-	/* Blank white background */
+	/* Blank grey background */
 	cairo_rectangle(cr, 0.0, 0.0, dw->width, dw->height);
 	cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
 	cairo_fill(cr);
