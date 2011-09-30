@@ -65,22 +65,7 @@ static void *create_job(void *vqargs)
 	wargs = malloc(sizeof(struct worker_args));
 	wargs->reference = qargs->reference;
 
-	wargs->image = NULL;
-	do {
-
-		if ( !qargs->images[qargs->n_started].pr_dud ) {
-			wargs->image = &qargs->images[qargs->n_started];
-			break;
-		}
-
-		qargs->n_started++;
-
-	} while ( qargs->n_started >= qargs->n_to_do );
-
-	if ( wargs->image == NULL ) {
-		free(wargs);
-		return NULL;
-	}
+	wargs->image = &qargs->images[qargs->n_started++];
 
 	return wargs;
 }
@@ -96,6 +81,11 @@ static void run_job(void *vwargs, int cookie)
 	double num = 0.0;
 	double den = 0.0;
 	double corr;
+
+	if ( image->pr_dud ) {
+		wargs->shift = 0.0;
+		return;
+	}
 
 	for ( refl = first_refl(image->reflections, &iter);
 	      refl != NULL;
