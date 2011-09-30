@@ -218,11 +218,11 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 			int bin;
 
 			if ( !get_scalable(refl) ) continue;
-			if ( get_redundancy(refl) < 2 ) continue;
 
 			get_indices(refl, &h, &k, &l);
 			f = find_refl(full, h, k, l);
 			if ( f == NULL ) continue;
+			if ( get_redundancy(f) < 2 ) continue;
 
 			Ipart = get_intensity(refl);
 			Ifull = get_intensity(f);
