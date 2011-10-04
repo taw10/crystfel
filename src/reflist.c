@@ -168,6 +168,7 @@ static void recursive_free(Reflection *refl)
 
 	while ( refl != NULL ) {
 		Reflection *next = refl->next;
+		pthread_mutex_destroy(&refl->lock);
 		free(refl);
 		refl = next;
 	}
