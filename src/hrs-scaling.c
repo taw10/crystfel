@@ -50,7 +50,6 @@ struct queue_args
 
 struct worker_args
 {
-	struct queue_args *qargs;
 	struct image *image;
 	double shift;
 	RefList *reference;
@@ -160,139 +159,133 @@ static double iterate_scale(struct image *images, int n, RefList *reference,
 }
 
 
-static RefList *lsq_intensities(struct image *images, int n)
+struct merge_queue_args
 {
 	RefList *full;
-	int frame;
+	pthread_mutex_t full_lock;
+	struct image *images;
+	int n_started;
+	int n_to_do;
+};
+
+
+struct merge_worker_args
+{
+	struct image *image;
+	RefList *full;
+	pthread_mutex_t *full_lock;
+};
+
+
+static void *create_merge_job(void *vqargs)
+{
+	struct merge_worker_args *wargs;
+	struct merge_queue_args *qargs = vqargs;
+
+	wargs = malloc(sizeof(struct merge_worker_args));
+	wargs->full = qargs->full;
+	wargs->full_lock = &qargs->full_lock;
+
+	wargs->image = &qargs->images[qargs->n_started++];
+
+	return wargs;
+}
+
+
+static void run_merge_job(void *vwargs, int cookie)
+{
+	struct merge_worker_args *wargs = vwargs;
+	struct image *image = wargs->image;
+	RefList *full = wargs->full;
+	Reflection *refl;
+	RefListIterator *iter;
+	double G;
+
+	if ( image->pr_dud ) return;
+
+	G = image->osf;
+
+	for ( refl = first_refl(image->reflections, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		Reflection *f;
+		signed int h, k, l;
+		double num, den;
+		int red;
+		double Ihl, esd;
+
+		if ( !get_scalable(refl) ) continue;
+
+		get_indices(refl, &h, &k, &l);
+		pthread_mutex_lock(wargs->full_lock);
+		f = find_refl(full, h, k, l);
+		if ( f == NULL ) {
+			f = add_refl(full, h, k, l);
+			lock_reflection(f);
+			pthread_mutex_unlock(wargs->full_lock);
+			num = 0.0;
+			den = 0.0;
+			red = 0;
+		} else {
+			lock_reflection(f);
+			pthread_mutex_unlock(wargs->full_lock);
+			num = get_temp1(f);
+			den = get_temp2(f);
+			red = get_redundancy(f);
+		}
+
+		Ihl = get_intensity(refl) / get_partiality(refl);
+		esd = get_esd_intensity(refl) / get_partiality(refl);
+
+		num += (Ihl/G) / pow(esd/G, 2.0);
+		den += 1.0 / pow(esd/G, 2.0);
+		red++;
+
+		set_temp1(f, num);
+		set_temp2(f, den);
+		set_redundancy(f, red);
+		unlock_reflection(f);
+	}
+}
+
+
+static void finalise_merge_job(void *vqargs, void *vwargs)
+{
+	free(vwargs);
+}
+
+
+static RefList *lsq_intensities(struct image *images, int n, int n_threads)
+{
+	RefList *full;
+	struct merge_queue_args qargs;
 	Reflection *refl;
 	RefListIterator *iter;
 
 	full = reflist_new();
 
-	for ( frame=0; frame<n; frame++ ) {
+	qargs.full = full;
+	qargs.n_started = 0;
+	qargs.n_to_do = n;
+	qargs.images = images;
+	pthread_mutex_init(&qargs.full_lock, NULL);
 
-		double G;
+	run_threads(n_threads, run_merge_job, create_merge_job,
+	            finalise_merge_job, &qargs, n, 0, 0, 0);
 
-		if ( images[frame].pr_dud ) continue;
-		G = images[frame].osf;
-
-		for ( refl = first_refl(images[frame].reflections, &iter);
-		      refl != NULL;
-		      refl = next_refl(refl, iter) )
-		{
-			Reflection *f;
-			signed int h, k, l;
-			double num, den;
-			int red;
-			double Ihl, esd;
-
-			if ( !get_scalable(refl) ) continue;
-
-			get_indices(refl, &h, &k, &l);
-			f = find_refl(full, h, k, l);
-			if ( f == NULL ) {
-				f = add_refl(full, h, k, l);
-				num = 0.0;
-				den = 0.0;
-				red = 0;
-			} else {
-				num = get_temp1(f);
-				den = get_temp2(f);
-				red = get_redundancy(f);
-			}
-
-			Ihl = get_intensity(refl) / get_partiality(refl);
-			esd = get_esd_intensity(refl) / get_partiality(refl);
-
-			num += (Ihl/G) / pow(esd/G, 2.0);
-			den += 1.0 / pow(esd/G, 2.0);
-			red++;
-
-			set_temp1(f, num);
-			set_temp2(f, den);
-			set_redundancy(f, red);
-		}
-
-	}
+	pthread_mutex_destroy(&qargs.full_lock);
 
 	for ( refl = first_refl(full, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
 		double Ih;
-
 		Ih = get_temp1(refl) / get_temp2(refl);
 		set_int(refl, Ih);
-
 	}
 
 	return full;
-}
-
-
-static UNUSED void show_scale_factors(struct image *images, int n)
-{
-	int i;
-	for ( i=0; i<n; i++ ) {
-		STATUS("Image %4i: scale factor %5.2f\n", i, images[i].osf);
-	}
-}
-
-
-static UNUSED double total_dev(struct image *image, const RefList *full)
-{
-	double dev = 0.0;
-
-	/* For each reflection */
-	Reflection *refl;
-	RefListIterator *iter;
-
-	for ( refl = first_refl(image->reflections, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
-		double G, p;
-		signed int h, k, l;
-		Reflection *full_version;
-		double I_full, I_partial;
-
-		if ( !get_scalable(refl) ) continue;
-
-		get_indices(refl, &h, &k, &l);
-		assert((h!=0) || (k!=0) || (l!=0));
-
-		full_version = find_refl(full, h, k, l);
-		if ( full_version == NULL ) continue;
-		/* Some reflections may have recently become scalable, but
-		 * scale_intensities() might not yet have been called, so the
-		 * full version may not have been calculated yet. */
-
-		G = image->osf;
-		p = get_partiality(refl);
-		I_partial = get_intensity(refl);
-		I_full = get_intensity(full_version);
-		//STATUS("%3i %3i %3i  %5.2f  %5.2f  %5.2f  %5.2f  %5.2f\n",
-		//       h, k, l, G, p, I_partial, I_full,
-		//       I_partial - p*G*I_full);
-
-		dev += pow(I_partial - p*G*I_full, 2.0);
-
-	}
-
-	return dev;
-}
-
-
-static UNUSED void plot_graph(struct image *image, RefList *reference)
-{
-	double sc;
-
-	for ( sc=0.0; sc<3.0; sc+=0.1 ) {
-
-		image->osf = sc;
-		STATUS("%5.2f: %e\n", sc, total_dev(image, reference));
-
-	}
 }
 
 
@@ -306,7 +299,7 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref,
 
 	/* No reference -> create an initial list to refine against */
 	if ( gref == NULL ) {
-		full = lsq_intensities(images, n);
+		full = lsq_intensities(images, n, n_threads);
 	}
 
 	/* Iterate */
@@ -329,7 +322,7 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref,
 		/* No reference -> generate list for next iteration */
 		if ( gref == NULL ) {
 			reflist_free(full);
-			full = lsq_intensities(images, n);
+			full = lsq_intensities(images, n, n_threads);
 		}
 
 		//show_scale_factors(images, n);
@@ -339,7 +332,7 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref,
 	} while ( (max_corr > 0.01) && (i < MAX_CYCLES) );
 
 	if ( gref != NULL ) {
-		full = lsq_intensities(images, n);
+		full = lsq_intensities(images, n, n_threads);
 	} /* else we already did it */
 
 	return full;
