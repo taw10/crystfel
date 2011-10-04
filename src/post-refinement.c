@@ -336,8 +336,8 @@ static double pr_iterate(struct image *image, const RefList *full)
 	/* Construct the equations, one per reflection in this image */
 	for ( refl = first_refl(reflections, &iter);
 	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
+	      refl = next_refl(refl, iter) )
+	{
 		signed int ha, ka, la;
 		double I_full, delta_I;
 		double I_partial;
@@ -398,7 +398,6 @@ static double pr_iterate(struct image *image, const RefList *full)
 		}
 
 		nref++;
-
 	}
 	//show_matrix_eqn(M, v, NUM_PARAMS);
 
