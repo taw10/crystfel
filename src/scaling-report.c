@@ -517,7 +517,7 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 {
 	int f_max;
 	int i, b;
-	const int nbins = 100;
+	const int nbins = 30;
 	double int_max, int_inc;
 	double int_low[nbins];
 	double int_high[nbins];
