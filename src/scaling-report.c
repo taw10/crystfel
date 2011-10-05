@@ -594,9 +594,7 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 					break;
 				}
 			}
-
 		}
-
 
 	}
 
