@@ -512,7 +512,8 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 
 
 static void intensity_histogram(cairo_t *cr, const struct image *images,
-                                int n, signed int h, signed int k, signed int l)
+                                int n, RefList *full,
+                                signed int h, signed int k, signed int l)
 {
 	int f_max;
 	int i, b;
@@ -524,6 +525,18 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 	const double g_width = 115.0;
 	const double g_height = 55.0;
 	char tmp[64];
+	Reflection *f;
+	double Ifull, pos;
+	int have_full;
+
+	f = find_refl(full, h, k, l);
+	if ( f != NULL ) {
+		Ifull = get_intensity(f);
+		have_full = 1;
+	} else {
+		Ifull = 0.0;
+		have_full = 0;
+	}
 
 	snprintf(tmp, 63, "%i  %i  %i", h, k, l);
 	show_text_simple(cr, tmp, g_width/2.0, -10.0,
@@ -533,7 +546,6 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 	int nmeas = 0;
 	for ( i=0; i<n; i++ ) {
 
-		Reflection *f;
 		double osf;
 
 		if ( images[i].pr_dud ) continue;
@@ -568,7 +580,6 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 
 	for ( i=0; i<n; i++ ) {
 
-		Reflection *f;
 		double osf;
 
 		if ( images[i].pr_dud ) continue;
@@ -630,6 +641,15 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_set_line_width(cr, 1.5);
 	cairo_stroke(cr);
+
+	pos = Ifull/int_high[nbins-1];
+	cairo_arc(cr, g_width*pos, g_height, g_width/30.0, 0.0, 2.0*M_PI);
+	if ( have_full ) {
+		cairo_set_source_rgb(cr, 0.0, 0.69, 1.0);
+	} else {
+		cairo_set_source_rgb(cr, 0.86, 0.0, 0.0);
+	}
+	cairo_fill(cr);
 }
 
 
@@ -800,7 +820,7 @@ void sr_iteration(SRContext *sr, int iteration, struct image *images, int n,
 
 		cairo_save(sr->cr);
 		cairo_translate(sr->cr, 400.0+140.0*x, 60.0+80.0*y);
-		intensity_histogram(sr->cr, images, n,
+		intensity_histogram(sr->cr, images, n, full,
 		                    sr->ms_h[i], sr->ms_k[i], sr->ms_l[i]);
 		cairo_restore(sr->cr);
 
