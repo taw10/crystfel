@@ -38,17 +38,16 @@
 #define SCALING_RESTRAINT (1.0)
 
 
-struct queue_args
+struct scale_queue_args
 {
 	RefList *reference;
 	struct image *images;
 	int n_started;
-	int n_to_do;
 	double max_shift;
 };
 
 
-struct worker_args
+struct scale_worker_args
 {
 	struct image *image;
 	double shift;
@@ -56,12 +55,12 @@ struct worker_args
 };
 
 
-static void *create_job(void *vqargs)
+static void *create_scale_job(void *vqargs)
 {
-	struct worker_args *wargs;
-	struct queue_args *qargs = vqargs;
+	struct scale_worker_args *wargs;
+	struct scale_queue_args *qargs = vqargs;
 
-	wargs = malloc(sizeof(struct worker_args));
+	wargs = malloc(sizeof(struct scale_worker_args));
 	wargs->reference = qargs->reference;
 
 	wargs->image = &qargs->images[qargs->n_started++];
@@ -70,9 +69,9 @@ static void *create_job(void *vqargs)
 }
 
 
-static void run_job(void *vwargs, int cookie)
+static void run_scale_job(void *vwargs, int cookie)
 {
-	struct worker_args *wargs = vwargs;
+	struct scale_worker_args *wargs = vwargs;
 	struct image *image = wargs->image;
 	RefList *reference = wargs->reference;
 	Reflection *refl;
@@ -129,10 +128,10 @@ static void run_job(void *vwargs, int cookie)
 }
 
 
-static void finalise_job(void *vqargs, void *vwargs)
+static void finalise_scale_job(void *vqargs, void *vwargs)
 {
-	struct queue_args *qargs = vqargs;
-	struct worker_args *wargs = vwargs;
+	struct scale_queue_args *qargs = vqargs;
+	struct scale_worker_args *wargs = vwargs;
 
 	if ( wargs->shift > qargs->max_shift ) qargs->max_shift = wargs->shift;
 	free(wargs);
@@ -142,18 +141,17 @@ static void finalise_job(void *vqargs, void *vwargs)
 static double iterate_scale(struct image *images, int n, RefList *reference,
                             int n_threads)
 {
-	struct queue_args qargs;
+	struct scale_queue_args qargs;
 
 	assert(reference != NULL);
 
 	qargs.reference = reference;
 	qargs.n_started = 0;
-	qargs.n_to_do = n;
 	qargs.images = images;
 	qargs.max_shift = 0.0;
 
-	run_threads(n_threads, run_job, create_job, finalise_job,
-	            &qargs, n, 0, 0, 0);
+	run_threads(n_threads, run_scale_job, create_scale_job,
+	            finalise_scale_job, &qargs, n, 0, 0, 0);
 
 	return qargs.max_shift;
 }
@@ -165,7 +163,6 @@ struct merge_queue_args
 	pthread_mutex_t full_lock;
 	struct image *images;
 	int n_started;
-	int n_to_do;
 };
 
 
@@ -268,7 +265,6 @@ static RefList *lsq_intensities(struct image *images, int n, int n_threads)
 
 	qargs.full = full;
 	qargs.n_started = 0;
-	qargs.n_to_do = n;
 	qargs.images = images;
 	pthread_mutex_init(&qargs.full_lock, NULL);
 
@@ -290,6 +286,124 @@ static RefList *lsq_intensities(struct image *images, int n, int n_threads)
 }
 
 
+
+struct esd_queue_args
+{
+	RefList *full;
+	struct image *images;
+	int n_started;
+};
+
+
+struct esd_worker_args
+{
+	struct image *image;
+	RefList *full;
+};
+
+
+static void *create_esd_job(void *vqargs)
+{
+	struct esd_worker_args *wargs;
+	struct esd_queue_args *qargs = vqargs;
+
+	wargs = malloc(sizeof(struct esd_worker_args));
+	wargs->full = qargs->full;
+
+	wargs->image = &qargs->images[qargs->n_started++];
+
+	return wargs;
+}
+
+
+static void run_esd_job(void *vwargs, int cookie)
+{
+	struct esd_worker_args *wargs = vwargs;
+	struct image *image = wargs->image;
+	RefList *full = wargs->full;
+	Reflection *refl;
+	RefListIterator *iter;
+	double G;
+
+	if ( image->pr_dud ) return;
+
+	G = image->osf;
+
+	for ( refl = first_refl(image->reflections, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		Reflection *f;
+		signed int h, k, l;
+		double num;
+		double Ihl, Ih;
+
+		if ( !get_scalable(refl) ) continue;
+
+		get_indices(refl, &h, &k, &l);
+		f = find_refl(full, h, k, l);
+		assert(f != NULL);
+
+		lock_reflection(f);
+
+		num = get_temp1(f);
+
+		Ih = get_intensity(f);
+		Ihl = get_intensity(refl) / (get_partiality(refl) * G);
+
+		num += pow(Ihl - Ih, 2.0);
+
+		set_temp1(f, num);
+		unlock_reflection(f);
+	}
+}
+
+
+static void finalise_esd_job(void *vqargs, void *vwargs)
+{
+	free(vwargs);
+}
+
+
+static void calculate_esds(struct image *images, int n, RefList *full,
+                           int n_threads, int min_red)
+{
+	struct esd_queue_args qargs;
+	Reflection *refl;
+	RefListIterator *iter;
+
+	qargs.full = full;
+	qargs.n_started = 0;
+	qargs.images = images;
+
+	for ( refl = first_refl(full, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		set_temp1(refl, 0.0);
+		set_temp2(refl, 0.0);
+	}
+
+	run_threads(n_threads, run_esd_job, create_esd_job,
+	            finalise_esd_job, &qargs, n, 0, 0, 0);
+
+	for ( refl = first_refl(full, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double esd;
+		int red = get_redundancy(refl);
+		esd = sqrt(get_temp1(refl));
+		esd /= (double)red;
+		set_esd_intensity(refl, esd);
+
+		if ( red < min_red ) {
+			set_redundancy(refl, 0);
+		}
+	}
+}
+
+
 /* Scale the stack of images */
 RefList *scale_intensities(struct image *images, int n, RefList *gref,
                            int n_threads)
@@ -297,6 +411,7 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref,
 	int i;
 	double max_corr;
 	RefList *full = NULL;
+	const int min_redundancy = 3;
 
 	/* No reference -> create an initial list to refine against */
 	if ( gref == NULL ) {
@@ -335,6 +450,8 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref,
 	if ( gref != NULL ) {
 		full = lsq_intensities(images, n, n_threads);
 	} /* else we already did it */
+
+	calculate_esds(images, n, full, n_threads, min_redundancy);
 
 	return full;
 }

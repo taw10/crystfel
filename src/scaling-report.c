@@ -506,7 +506,7 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 	cairo_new_path(cr);
 	cairo_rectangle(cr, 0.0, 0.0, g_width, g_height);
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-	cairo_set_line_width(cr, 1.5);
+	cairo_set_line_width(cr, 1.0);
 	cairo_stroke(cr);
 }
 
@@ -526,15 +526,17 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 	const double g_height = 55.0;
 	char tmp[64];
 	Reflection *f;
-	double Ifull, pos;
+	double Ifull, esd_Ifull, pos, mI, bit;
 	int have_full;
 
 	f = find_refl(full, h, k, l);
 	if ( f != NULL ) {
 		Ifull = get_intensity(f);
+		esd_Ifull = get_esd_intensity(f);
 		have_full = 1;
 	} else {
 		Ifull = 0.0;
+		esd_Ifull = 0.0;
 		have_full = 0;
 	}
 
@@ -642,14 +644,35 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 	cairo_set_line_width(cr, 1.5);
 	cairo_stroke(cr);
 
-	pos = Ifull/int_high[nbins-1];
-	cairo_arc(cr, g_width*pos, g_height, g_width/30.0, 0.0, 2.0*M_PI);
+	mI = int_high[nbins-1];
+	pos = Ifull/mI;
+	bit = g_height / 15.0;
+	cairo_arc(cr, g_width*pos, g_height+bit, bit, 0.0, 2.0*M_PI);
 	if ( have_full ) {
-		cairo_set_source_rgb(cr, 0.0, 0.69, 1.0);
+		cairo_set_source_rgb(cr, 0.0, 0.67, 0.45);
 	} else {
 		cairo_set_source_rgb(cr, 0.86, 0.0, 0.0);
 	}
 	cairo_fill(cr);
+
+	if ( have_full ) {
+
+		double eW = g_width*esd_Ifull/mI;
+
+		cairo_new_path(cr);
+		cairo_rectangle(cr, 0.0, g_height+bit*2.0,
+		                    g_width, g_height+bit*2.0);
+		//cairo_clip(cr);
+
+		cairo_new_path(cr);
+		cairo_move_to(cr, g_width*pos - eW, g_height+bit);
+		cairo_line_to(cr, g_width*pos + eW, g_height+bit);
+		cairo_set_source_rgb(cr, 0.0, 0.67, 0.45);
+		cairo_set_line_width(cr, 2.0);
+		cairo_stroke(cr);
+
+		cairo_reset_clip(cr);
+	}
 }
 
 
