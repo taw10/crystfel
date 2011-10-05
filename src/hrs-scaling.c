@@ -218,6 +218,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		if ( !get_scalable(refl) ) continue;
 
 		get_indices(refl, &h, &k, &l);
+		 /* FIXME (somehow): Huge contention on this lock */
 		pthread_mutex_lock(wargs->full_lock);
 		f = find_refl(full, h, k, l);
 		if ( f == NULL ) {
