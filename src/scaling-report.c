@@ -526,17 +526,17 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 	const double g_height = 55.0;
 	char tmp[64];
 	Reflection *f;
-	double Ifull, esd_Ifull, pos, mI, bit;
+	double Ifull, dsd_Ifull, pos, mI, bit;
 	int have_full;
 
 	f = find_refl(full, h, k, l);
 	if ( f != NULL ) {
 		Ifull = get_intensity(f);
-		esd_Ifull = get_esd_intensity(f);
+		dsd_Ifull = get_esd_intensity(f) * sqrt(get_redundancy(f));
 		have_full = 1;
 	} else {
 		Ifull = 0.0;
-		esd_Ifull = 0.0;
+		dsd_Ifull = 0.0;
 		have_full = 0;
 	}
 
@@ -657,7 +657,7 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 
 	if ( have_full ) {
 
-		double eW = g_width*esd_Ifull/mI;
+		double eW = g_width*dsd_Ifull/mI;
 
 		cairo_new_path(cr);
 		cairo_rectangle(cr, 0.0, g_height+bit*2.0,
