@@ -52,7 +52,7 @@ TESTS = tests/list_check$(EXEEXT) tests/first_merge_check \
 	tests/pr_gradient_check$(EXEEXT) tests/symmetry_check$(EXEEXT) \
 	$(am__EXEEXT_3)
 @BUILD_HDFSEE_TRUE@am__append_1 = src/hdfsee
-@BUILD_CUBEIT_TRUE@am__append_2 = src/cubeit
+@BUILD_CUBEIT_TRUE@am__append_2 = contrib/cubeit
 @HAVE_OPENCL_TRUE@am__append_3 = src/diffraction-gpu.c src/cl-utils.c
 @HAVE_OPENCL_TRUE@am__append_4 = tests/gpu_sim_check
 @HAVE_OPENCL_TRUE@am__append_5 = tests/gpu_sim_check
@@ -85,7 +85,7 @@ CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @BUILD_HDFSEE_TRUE@am__EXEEXT_1 = src/hdfsee$(EXEEXT)
-@BUILD_CUBEIT_TRUE@am__EXEEXT_2 = src/cubeit$(EXEEXT)
+@BUILD_CUBEIT_TRUE@am__EXEEXT_2 = contrib/cubeit$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" \
 	"$(DESTDIR)$(crystfeldir)" "$(DESTDIR)$(crystfeldocdir)" \
 	"$(DESTDIR)$(scriptdir)"
@@ -103,6 +103,22 @@ am_contrib_alter_stream_OBJECTS = contrib/alter_stream.$(OBJEXT) \
 contrib_alter_stream_OBJECTS = $(am_contrib_alter_stream_OBJECTS)
 contrib_alter_stream_LDADD = $(LDADD)
 contrib_alter_stream_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+am__contrib_cubeit_SOURCES_DIST = contrib/cubeit.c src/cell.c \
+	src/hdf5-file.c src/utils.c src/detector.c src/render.c \
+	src/filters.c src/image.c src/symmetry.c src/stream.c \
+	src/thread-pool.c src/reflist.c src/reflist-utils.c
+@BUILD_CUBEIT_TRUE@am_contrib_cubeit_OBJECTS =  \
+@BUILD_CUBEIT_TRUE@	contrib/cubeit.$(OBJEXT) src/cell.$(OBJEXT) \
+@BUILD_CUBEIT_TRUE@	src/hdf5-file.$(OBJEXT) src/utils.$(OBJEXT) \
+@BUILD_CUBEIT_TRUE@	src/detector.$(OBJEXT) src/render.$(OBJEXT) \
+@BUILD_CUBEIT_TRUE@	src/filters.$(OBJEXT) src/image.$(OBJEXT) \
+@BUILD_CUBEIT_TRUE@	src/symmetry.$(OBJEXT) src/stream.$(OBJEXT) \
+@BUILD_CUBEIT_TRUE@	src/thread-pool.$(OBJEXT) \
+@BUILD_CUBEIT_TRUE@	src/reflist.$(OBJEXT) \
+@BUILD_CUBEIT_TRUE@	src/reflist-utils.$(OBJEXT)
+contrib_cubeit_OBJECTS = $(am_contrib_cubeit_OBJECTS)
+contrib_cubeit_LDADD = $(LDADD)
+contrib_cubeit_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_calibrate_detector_OBJECTS = src/calibrate_detector.$(OBJEXT) \
 	src/utils.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
 	src/image.$(OBJEXT) src/thread-pool.$(OBJEXT) \
@@ -127,22 +143,6 @@ am_src_compare_hkl_OBJECTS = src/compare_hkl.$(OBJEXT) \
 src_compare_hkl_OBJECTS = $(am_src_compare_hkl_OBJECTS)
 src_compare_hkl_LDADD = $(LDADD)
 src_compare_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
-am__src_cubeit_SOURCES_DIST = src/cubeit.c src/cell.c src/hdf5-file.c \
-	src/utils.c src/detector.c src/render.c src/filters.c \
-	src/image.c src/symmetry.c src/stream.c src/thread-pool.c \
-	src/reflist.c src/reflist-utils.c
-@BUILD_CUBEIT_TRUE@am_src_cubeit_OBJECTS = src/cubeit.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/cell.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/utils.$(OBJEXT) src/detector.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/render.$(OBJEXT) src/filters.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/image.$(OBJEXT) src/symmetry.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/stream.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/thread-pool.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/reflist.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/reflist-utils.$(OBJEXT)
-src_cubeit_OBJECTS = $(am_src_cubeit_OBJECTS)
-src_cubeit_LDADD = $(LDADD)
-src_cubeit_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_get_hkl_OBJECTS = src/get_hkl.$(OBJEXT) src/cell.$(OBJEXT) \
 	src/utils.$(OBJEXT) src/reflist-utils.$(OBJEXT) \
 	src/symmetry.$(OBJEXT) src/beam-parameters.$(OBJEXT) \
@@ -335,22 +335,22 @@ am__v_CCLD_0 = @echo "  CCLD  " $@;
 AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN   " $@;
-SOURCES = $(contrib_alter_stream_SOURCES) \
+SOURCES = $(contrib_alter_stream_SOURCES) $(contrib_cubeit_SOURCES) \
 	$(src_calibrate_detector_SOURCES) $(src_check_hkl_SOURCES) \
-	$(src_compare_hkl_SOURCES) $(src_cubeit_SOURCES) \
-	$(src_get_hkl_SOURCES) $(src_hdfsee_SOURCES) \
-	$(src_indexamajig_SOURCES) $(src_partial_sim_SOURCES) \
-	$(src_partialator_SOURCES) $(src_pattern_sim_SOURCES) \
-	$(src_powder_plot_SOURCES) $(src_process_hkl_SOURCES) \
-	$(src_render_hkl_SOURCES) $(src_sum_stack_SOURCES) \
-	$(tests_gpu_sim_check_SOURCES) \
+	$(src_compare_hkl_SOURCES) $(src_get_hkl_SOURCES) \
+	$(src_hdfsee_SOURCES) $(src_indexamajig_SOURCES) \
+	$(src_partial_sim_SOURCES) $(src_partialator_SOURCES) \
+	$(src_pattern_sim_SOURCES) $(src_powder_plot_SOURCES) \
+	$(src_process_hkl_SOURCES) $(src_render_hkl_SOURCES) \
+	$(src_sum_stack_SOURCES) $(tests_gpu_sim_check_SOURCES) \
 	$(tests_integration_check_SOURCES) $(tests_list_check_SOURCES) \
 	$(tests_pr_gradient_check_SOURCES) \
 	$(tests_symmetry_check_SOURCES)
 DIST_SOURCES = $(contrib_alter_stream_SOURCES) \
+	$(am__contrib_cubeit_SOURCES_DIST) \
 	$(src_calibrate_detector_SOURCES) $(src_check_hkl_SOURCES) \
-	$(src_compare_hkl_SOURCES) $(am__src_cubeit_SOURCES_DIST) \
-	$(src_get_hkl_SOURCES) $(am__src_hdfsee_SOURCES_DIST) \
+	$(src_compare_hkl_SOURCES) $(src_get_hkl_SOURCES) \
+	$(am__src_hdfsee_SOURCES_DIST) \
 	$(am__src_indexamajig_SOURCES_DIST) $(src_partial_sim_SOURCES) \
 	$(am__src_partialator_SOURCES_DIST) \
 	$(am__src_pattern_sim_SOURCES_DIST) $(src_powder_plot_SOURCES) \
@@ -746,9 +746,9 @@ src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
 	src/thread-pool.c src/beam-parameters.c src/symmetry.c \
 	src/post-refinement.c src/hrs-scaling.c src/reflist.c \
 	$(am__append_7)
-@BUILD_CUBEIT_TRUE@src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
-@BUILD_CUBEIT_TRUE@                     src/detector.c src/render.c src/filters.c src/image.c \
-@BUILD_CUBEIT_TRUE@                     src/symmetry.c src/stream.c src/thread-pool.c \
+@BUILD_CUBEIT_TRUE@contrib_cubeit_SOURCES = contrib/cubeit.c src/cell.c src/hdf5-file.c \
+@BUILD_CUBEIT_TRUE@                     src/utils.c src/detector.c src/render.c src/filters.c \
+@BUILD_CUBEIT_TRUE@                     src/image.c src/symmetry.c src/stream.c src/thread-pool.c \
 @BUILD_CUBEIT_TRUE@                     src/reflist.c src/reflist-utils.c
 
 contrib_alter_stream_SOURCES = contrib/alter_stream.c src/stream.c src/image.c \
@@ -936,6 +936,15 @@ src/peaks.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 contrib/alter_stream$(EXEEXT): $(contrib_alter_stream_OBJECTS) $(contrib_alter_stream_DEPENDENCIES) contrib/$(am__dirstamp)
 	@rm -f contrib/alter_stream$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(contrib_alter_stream_OBJECTS) $(contrib_alter_stream_LDADD) $(LIBS)
+contrib/cubeit.$(OBJEXT): contrib/$(am__dirstamp) \
+	contrib/$(DEPDIR)/$(am__dirstamp)
+src/render.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/filters.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+contrib/cubeit$(EXEEXT): $(contrib_cubeit_OBJECTS) $(contrib_cubeit_DEPENDENCIES) contrib/$(am__dirstamp)
+	@rm -f contrib/cubeit$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(contrib_cubeit_OBJECTS) $(contrib_cubeit_LDADD) $(LIBS)
 src/calibrate_detector.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/calibrate_detector$(EXEEXT): $(src_calibrate_detector_OBJECTS) $(src_calibrate_detector_DEPENDENCIES) src/$(am__dirstamp)
@@ -953,15 +962,6 @@ src/compare_hkl.$(OBJEXT): src/$(am__dirstamp) \
 src/compare_hkl$(EXEEXT): $(src_compare_hkl_OBJECTS) $(src_compare_hkl_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/compare_hkl$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_compare_hkl_OBJECTS) $(src_compare_hkl_LDADD) $(LIBS)
-src/cubeit.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/render.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/filters.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/cubeit$(EXEEXT): $(src_cubeit_OBJECTS) $(src_cubeit_DEPENDENCIES) src/$(am__dirstamp)
-	@rm -f src/cubeit$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(src_cubeit_OBJECTS) $(src_cubeit_LDADD) $(LIBS)
 src/get_hkl.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/get_hkl$(EXEEXT): $(src_get_hkl_OBJECTS) $(src_get_hkl_DEPENDENCIES) src/$(am__dirstamp)
@@ -1068,13 +1068,13 @@ tests/symmetry_check$(EXEEXT): $(tests_symmetry_check_OBJECTS) $(tests_symmetry_
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f contrib/alter_stream.$(OBJEXT)
+	-rm -f contrib/cubeit.$(OBJEXT)
 	-rm -f src/beam-parameters.$(OBJEXT)
 	-rm -f src/calibrate_detector.$(OBJEXT)
 	-rm -f src/cell.$(OBJEXT)
 	-rm -f src/check_hkl.$(OBJEXT)
 	-rm -f src/cl-utils.$(OBJEXT)
 	-rm -f src/compare_hkl.$(OBJEXT)
-	-rm -f src/cubeit.$(OBJEXT)
 	-rm -f src/detector.$(OBJEXT)
 	-rm -f src/diffraction-gpu.$(OBJEXT)
 	-rm -f src/diffraction.$(OBJEXT)
@@ -1120,13 +1120,13 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@contrib/$(DEPDIR)/alter_stream.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@contrib/$(DEPDIR)/cubeit.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/beam-parameters.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/calibrate_detector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cell.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/check_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cl-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/compare_hkl.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cubeit.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/detector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction-gpu.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction.Po@am__quote@

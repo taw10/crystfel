@@ -26,7 +26,7 @@ bin_PROGRAMS += src/hdfsee
 endif
 
 if BUILD_CUBEIT
-bin_PROGRAMS += src/cubeit
+bin_PROGRAMS += contrib/cubeit
 endif
 
 AM_CFLAGS = -Wall
@@ -128,9 +128,9 @@ src_partialator_SOURCES += src/scaling-report.c
 endif
 
 if BUILD_CUBEIT
-src_cubeit_SOURCES = src/cubeit.c src/cell.c src/hdf5-file.c src/utils.c \
-                     src/detector.c src/render.c src/filters.c src/image.c \
-                     src/symmetry.c src/stream.c src/thread-pool.c \
+contrib_cubeit_SOURCES = contrib/cubeit.c src/cell.c src/hdf5-file.c \
+                     src/utils.c src/detector.c src/render.c src/filters.c \
+                     src/image.c src/symmetry.c src/stream.c src/thread-pool.c \
                      src/reflist.c src/reflist-utils.c
 endif
 

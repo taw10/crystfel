@@ -27,13 +27,13 @@
 #include <libgen.h>
 #include <cairo.h>
 
-#include "utils.h"
-#include "hdf5-file.h"
-#include "diffraction.h"
-#include "render.h"
-#include "symmetry.h"
-#include "stream.h"
-#include "thread-pool.h"
+#include "../src/utils.h"
+#include "../src/hdf5-file.h"
+#include "../src/diffraction.h"
+#include "../src/render.h"
+#include "../src/symmetry.h"
+#include "../src/stream.h"
+#include "../src/thread-pool.h"
 
 
 struct static_sum_args
