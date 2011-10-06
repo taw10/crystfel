@@ -341,10 +341,7 @@ int read_chunk(FILE *fh, struct image *image)
 		}
 
 		if ( strncmp(line, "camera_length_", 14) == 0 ) {
-			if ( image->det == NULL ) {
-				ERROR("Stream had a camera length, but "
-				      "geometry is not currently loaded.\n");
-			} else {
+			if ( image->det != NULL ) {
 
 				int k;
 				char name[1024];
