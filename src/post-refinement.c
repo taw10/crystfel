@@ -217,6 +217,7 @@ static void apply_shift(struct image *image, int k, double shift)
 
 	case REF_DIV :
 		image->div += shift;
+		if ( image->div < 0.0 ) image->div = 0.0;
 		break;
 
 	case REF_R :
