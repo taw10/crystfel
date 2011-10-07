@@ -100,22 +100,58 @@ static UnitCell *new_shifted_cell(UnitCell *input, int k, double shift)
 }
 
 
+static void shift_parameter(struct image *image, int k, double shift)
+{
+	switch ( k )
+	{
+		case REF_DIV : image->div += shift;  break;
+	}
+}
+
+
 static void calc_either_side(struct image *image, double incr_val,
                              int *valid, long double *vals[3], int refine)
 {
 	RefList *compare;
 	UnitCell *cell;
 
-	cell = new_shifted_cell(image->indexed_cell, refine, -incr_val);
-	compare = find_intersections(image, cell);
-	scan_partialities(image->reflections, compare, valid, vals, 0);
-	cell_free(cell);
+	if ( (refine != REF_DIV) && (refine != REF_R) ) {
 
-	cell = new_shifted_cell(image->indexed_cell, refine, +incr_val);
-	compare = find_intersections(image, cell);
-	scan_partialities(image->reflections, compare, valid, vals, 2);
-	cell_free(cell);
+		cell = new_shifted_cell(image->indexed_cell, refine, -incr_val);
+		compare = find_intersections(image, cell);
+		scan_partialities(image->reflections, compare, valid, vals, 0);
+		cell_free(cell);
+		reflist_free(compare);
+
+		cell = new_shifted_cell(image->indexed_cell, refine, +incr_val);
+		compare = find_intersections(image, cell);
+		scan_partialities(image->reflections, compare, valid, vals, 2);
+		cell_free(cell);
+		reflist_free(compare);
+
+	} else {
+
+		struct image im_moved;
+
+		im_moved = *image;
+		shift_parameter(&im_moved, refine, -incr_val);
+		compare = find_intersections(&im_moved, im_moved.indexed_cell);
+		scan_partialities(im_moved.reflections, compare,
+		                  valid, vals, 0);
+		cell_free(cell);
+		reflist_free(compare);
+
+		im_moved = *image;
+		shift_parameter(&im_moved, refine, +incr_val);
+		compare = find_intersections(&im_moved, im_moved.indexed_cell);
+		scan_partialities(im_moved.reflections, compare,
+		                  valid, vals, 2);
+		cell_free(cell);
+		reflist_free(compare);
+
+	}
 }
+
 
 
 static int test_gradients(struct image *image, double incr_val, int refine,
@@ -237,12 +273,6 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 }
 
 
-static void plot_graph(struct image *image, double incr_frac, int refine)
-{
-
-}
-
-
 int main(int argc, char *argv[])
 {
 	struct image image;
@@ -287,7 +317,8 @@ int main(int argc, char *argv[])
 			            &ax, &ay, &az, &bx, &by,
 			            &bz, &cx, &cy, &cz);
 
-		plot_graph(&image, incr_frac, REF_ASX);
+		incr_val = incr_frac * image.div;
+		val += test_gradients(&image, incr_val, REF_DIV, "div");
 
 		incr_val = incr_frac * ax;
 		val += test_gradients(&image, incr_val, REF_ASX, "ax*");
