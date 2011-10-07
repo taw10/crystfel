@@ -165,8 +165,8 @@ static Reflection *check_reflection(struct image *image, RefList *reflections,
 	ds = sqrt(ds_sq);
 
 	/* Calculate excitation errors */
-	rlow = excitation_error(xl, yl, zl, ds, klow, -divergence, tt);
-	rhigh = excitation_error(xl, yl, zl, ds, khigh, +divergence, tt);
+	rlow = excitation_error(xl, yl, zl, ds, klow, -divergence/2.0, tt);
+	rhigh = excitation_error(xl, yl, zl, ds, khigh, +divergence/2.0, tt);
 
 	/* Is the reciprocal lattice point close to either extreme of
 	 * the sphere, maybe just outside the "Ewald volume"? */
