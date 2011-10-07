@@ -351,6 +351,7 @@ static double pr_iterate(struct image *image, const RefList *full)
 	{
 		signed int ha, ka, la;
 		double I_full, delta_I;
+		double w;
 		double I_partial;
 		int k;
 		double p;
@@ -373,6 +374,11 @@ static double pr_iterate(struct image *image, const RefList *full)
 		I_partial = get_intensity(refl);
 		p = get_partiality(refl);
 
+		/* Calculate the weight for this reflection */
+		w =  pow(get_esd_intensity(refl), 2.0);
+		w += p * I_full * pow(get_esd_intensity(match), 2.0);
+		w = pow(w, -1.0);
+
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<NUM_PARAMS; k++ ) {
 			double gr;
@@ -393,7 +399,7 @@ static double pr_iterate(struct image *image, const RefList *full)
 				if ( g > k ) continue;
 
 				M_c = gradients[g] * gradients[k];
-				M_c *= pow(image->osf * I_full, 2.0);
+				M_c *= w * pow(image->osf * I_full, 2.0);
 
 				M_curr = gsl_matrix_get(M, k, g);
 				gsl_matrix_set(M, k, g, M_curr + M_c);
@@ -402,7 +408,7 @@ static double pr_iterate(struct image *image, const RefList *full)
 			}
 
 			delta_I = I_partial - (p * I_full);
-			v_c = delta_I * I_full * gradients[k];
+			v_c = w * delta_I * I_full * gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
 
