@@ -85,6 +85,7 @@ double gradient(struct image *image, int k, Reflection *refl, double r)
 	double r1, r2, p;
 	int clamp_low, clamp_high;
 	double klow, khigh;
+	double gr;
 
 	get_symmetric_indices(refl, &hs, &ks, &ls);
 
@@ -130,9 +131,18 @@ double gradient(struct image *image, int k, Reflection *refl, double r)
 	switch ( k ) {
 
 	case REF_DIV :
-		nom = sqrt(2.0) * ds * sin(image->div/2.0);
-		den = sqrt(1.0 - cos(image->div/2.0));
-		return (nom/den) * g;
+		gr = 0.0;
+		if ( clamp_low == 0 ) {
+			nom = sqrt(2.0) * ds * sin(image->div/2.0);
+			den = sqrt(1.0 - cos(image->div/2.0));
+			gr -= (nom/den) * g;
+		}
+		if ( clamp_high == 0 ) {
+			nom = sqrt(2.0) * ds * sin(image->div/2.0);
+			den = sqrt(1.0 - cos(image->div/2.0));
+			gr += (nom/den) * g;
+		}
+		return gr / 4.0;  /* FIXME: Shameless fudge factor */
 
 	case REF_R :
 		g = 0.0;
