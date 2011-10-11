@@ -521,7 +521,6 @@ int main(int argc, char *argv[])
 
 	if ( sym_str == NULL ) sym_str = strdup("1");
 	sym = get_pointgroup(sym_str);
-	STATUS("%s -> %p\n", sym_str, sym);
 	free(sym_str);
 
 	/* Open the data stream */
