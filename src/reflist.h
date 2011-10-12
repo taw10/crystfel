@@ -73,7 +73,7 @@ extern int get_redundancy(const Reflection *refl);
 extern double get_temp1(const Reflection *refl);
 extern double get_temp2(const Reflection *refl);
 extern double get_esd_intensity(const Reflection *refl);
-extern double get_phase(const Reflection *refl);
+extern double get_phase(const Reflection *refl, int *have_phase);
 
 /* Set */
 extern void copy_data(Reflection *to, const Reflection *from);

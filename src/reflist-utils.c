@@ -68,7 +68,7 @@ double *phases_from_list(RefList *list)
 	      refl = next_refl(refl, iter) ) {
 
 		signed int h, k, l;
-		double phase = get_phase(refl);
+		double phase = get_phase(refl, NULL);
 
 		get_indices(refl, &h, &k, &l);
 
@@ -230,16 +230,19 @@ void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell)
 	      refl = next_refl(refl, iter) ) {
 
 		signed int h, k, l;
-		double intensity, esd_i, s;
+		double intensity, esd_i, s, ph;
 		int red;
 		double fs, ss;
 		char res[16];
+		char phs[16];
+		int have_phase;
 
 		get_indices(refl, &h, &k, &l);
 		get_detector_pos(refl, &fs, &ss);
 		intensity = get_intensity(refl);
 		esd_i = get_esd_intensity(refl);
 		red = get_redundancy(refl);
+		ph = get_phase(refl, &have_phase);
 
 		/* Reflections with redundancy = 0 are not written */
 		if ( red == 0 ) continue;
@@ -251,9 +254,15 @@ void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell)
 			strcpy(res, "         -");
 		}
 
+		if ( have_phase ) {
+			snprintf(phs, 16, "%8.2f", rad2deg(ph));
+		} else {
+			strncpy(phs, "       -", 15);
+		}
+
 		fprintf(fh,
 		       "%3i %3i %3i %10.2f %s %10.2f  %s %7i %6.1f %6.1f\n",
-		       h, k, l, intensity, "       -", esd_i, res, red,
+		       h, k, l, intensity, phs, esd_i, res, red,
 		       fs, ss);
 
 	}
@@ -350,7 +359,7 @@ RefList *read_reflections_from_file(FILE *fh)
 			set_redundancy(refl, cts);
 
 			ph = strtod(phs, &v);
-			if ( v != NULL ) set_ph(refl, ph);
+			if ( v != NULL ) set_ph(refl, deg2rad(ph));
 
 			/* The 1/d value is actually ignored. */
 

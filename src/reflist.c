@@ -78,6 +78,7 @@ struct _refldata {
 
 	/* Phase */
 	double phase;
+	int have_phase;
 
 	/* Redundancy */
 	int redundancy;
@@ -451,12 +452,14 @@ double get_esd_intensity(const Reflection *refl)
 /**
  * get_phase:
  * @refl: A %Reflection
+ * @have_phase: Place to store a non-zero value if the phase is set, or NULL.
  *
  * Returns: the phase for this reflection.
  *
  **/
-double get_phase(const Reflection *refl)
+double get_phase(const Reflection *refl, int *have_phase)
 {
+	if ( have_phase != NULL ) *have_phase = refl->data.have_phase;
 	return refl->data.phase;
 }
 
@@ -631,6 +634,7 @@ void set_esd_intensity(Reflection *refl, double esd)
 void set_ph(Reflection *refl, double phase)
 {
 	refl->data.phase = phase;
+	refl->data.have_phase = 1;
 }
 
 
