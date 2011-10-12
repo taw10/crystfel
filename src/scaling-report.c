@@ -178,6 +178,7 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 	double prob;
 	double pcalcmin[nbins];
 	double pcalcmax[nbins];
+	int num_nondud;
 
 	show_text_simple(cr, "Observed partiality", -20.0, g_height/2.0,
 	                      NULL, -M_PI_2, J_CENTER);
@@ -199,8 +200,14 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 	}
 	pcalcmax[nbins-1] += 0.001;  /* Make sure it include pcalc = 1 */
 
+	num_nondud = 0;
+	for ( i=0; i<n; i++ ) {
+		if ( images[i].pr_dud ) continue;
+		num_nondud++;
+	}
+
 	cairo_set_source_rgb(cr, 0.0, 0.7, 0.0);
-	prob = 1.0 / n;
+	prob = 1.0 / num_nondud;
 	for ( i=0; i<n; i++ ) {
 
 		Reflection *refl;
