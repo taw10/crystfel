@@ -275,6 +275,9 @@ static RefList *expand_reflections(RefList *in, const SymOpList *target,
 			new = add_refl(out, he, ke, le);
 			copy_data(new, refl);
 
+			/* FIXME: Make phase negative if the reflection is
+			 * separated from the original via an inversion */
+
 		}
 
 	}
