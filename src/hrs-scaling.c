@@ -210,7 +210,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		signed int h, k, l;
 		double num, den;
 		int red;
-		double Ihl, esd;
+		double Ihl, esd, pcalc;
 
 		if ( !get_scalable(refl) ) continue;
 
@@ -233,8 +233,9 @@ static void run_merge_job(void *vwargs, int cookie)
 			red = get_redundancy(f);
 		}
 
-		Ihl = get_intensity(refl) / get_partiality(refl);
-		esd = get_esd_intensity(refl) / get_partiality(refl);
+		pcalc = get_partiality(refl);
+		Ihl = get_intensity(refl) / pcalc;
+		esd = get_esd_intensity(refl) / pcalc;
 
 		num += (Ihl/G) / pow(esd/G, 2.0);
 		den += 1.0 / pow(esd/G, 2.0);
