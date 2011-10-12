@@ -142,6 +142,7 @@ double gradient(struct image *image, int k, Reflection *refl, double r)
 			den = sqrt(1.0 - cos(image->div/2.0));
 			gr += (nom/den) * g;
 		}
+		if ( isnan(gr) ) gr = 0.0;  /* FIXME: This isn't true (?) */
 		return gr / 4.0;  /* FIXME: Shameless fudge factor */
 
 	case REF_R :
@@ -216,8 +217,12 @@ static void apply_shift(struct image *image, int k, double shift)
 	switch ( k ) {
 
 	case REF_DIV :
-		image->div += shift;
-		if ( image->div < 0.0 ) image->div = 0.0;
+		if ( isnan(shift) ) {
+			ERROR("NaN divergence shift\n");
+		} else {
+			image->div += shift;
+			if ( image->div < 0.0 ) image->div = 0.0;
+		}
 		break;
 
 	case REF_R :
