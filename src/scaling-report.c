@@ -266,6 +266,7 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 		if ( counts[i] == 0 ) continue;
 		cairo_line_to(cr, g_width*pos,
 		                  g_height - g_height*(totals[i]/counts[i]));
+
 	}
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_stroke(cr);
