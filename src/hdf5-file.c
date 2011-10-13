@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <hdf5.h>
+#include <assert.h>
 
 #include "image.h"
 #include "hdf5-file.h"
@@ -535,6 +536,74 @@ double get_value(struct hdfile *f, const char *name)
 	}
 
 	return buf;
+}
+
+
+struct copy_hdf5_field
+{
+	char **fields;
+	int n_fields;
+	int max_fields;
+};
+
+
+struct copy_hdf5_field *new_copy_hdf5_field_list()
+{
+	struct copy_hdf5_field *n;
+
+	n = calloc(1, sizeof(struct copy_hdf5_field));
+	if ( n == NULL ) return NULL;
+
+	n->max_fields = 32;
+	n->fields = malloc(n->max_fields*sizeof(char *));
+	if ( n->fields == NULL ) {
+		free(n);
+		return NULL;
+	}
+
+	return n;
+}
+
+
+void add_copy_hdf5_field(struct copy_hdf5_field *copyme,
+                         const char *name)
+{
+	assert(copyme->n_fields < copyme->max_fields);  /* FIXME */
+
+	copyme->fields[copyme->n_fields] = strdup(name);
+	if ( copyme->fields[copyme->n_fields] == NULL ) {
+		ERROR("Failed to add field for copying '%s'\n", name);
+		return;
+	}
+
+	copyme->n_fields++;
+}
+
+
+void copy_hdf5_fields(struct hdfile *f, const struct copy_hdf5_field *copyme,
+                      FILE *fh)
+{
+	int i;
+
+	if ( copyme == NULL ) return;
+
+	for ( i=0; i<copyme->n_fields; i++ ) {
+
+		char *val;
+		char *field;
+
+		field = copyme->fields[i];
+		val = hdfile_get_string_value(f, field);
+
+		if ( field[0] == '/' ) {
+			fprintf(fh, "hdf5%s = %s\n", field, val);
+		} else {
+			fprintf(fh, "hdf5/%s = %s\n", field, val);
+		}
+
+		free(val);
+
+	}
 }
 
 

@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
 			image.reflections = find_intersections(&image,
 			                               image.indexed_cell);
 
-			write_chunk(ofh, &image, STREAM_INTEGRATED);
+			write_chunk(ofh, &image, NULL, STREAM_INTEGRATED);
 
 		}
 

@@ -80,6 +80,7 @@ struct static_index_args
 	/* Output stream */
 	pthread_mutex_t *output_mutex;  /* Protects the output stream */
 	FILE *ofh;
+	const struct copy_hdf5_field *copyme;
 };
 
 
@@ -185,6 +186,10 @@ static void show_help(const char *s)
 "                           Example: /data/data0.\n"
 "                           Default: The first one found.\n"
 "\n"
+"\nFor time-resolved stuff, you might want to use:\n\n"
+"     --copy-hdf5-field <f>  Copy the value of field <f> into the stream. You\n"
+"                             can use this option as many times as you need.\n"
+"\n"
 "\nOptions for greater performance or verbosity:\n\n"
 "     --verbose            Be verbose about indexing.\n"
 " -j <n>                   Run <n> analyses in parallel.  Default 1.\n"
@@ -232,6 +237,7 @@ static void process_image(void *pp, int cookie)
 	image.id = cookie;
 	image.filename = filename;
 	image.det = copy_geom(pargs->static_args.det);
+	image.copyme = pargs->static_args.copyme;
 
 	pargs->indexable = 0;
 
@@ -338,7 +344,7 @@ static void process_image(void *pp, int cookie)
 	}
 
 	pthread_mutex_lock(pargs->static_args.output_mutex);
-	write_chunk(pargs->static_args.ofh, &image,
+	write_chunk(pargs->static_args.ofh, &image, hdfile,
 	            pargs->static_args.stream_flags);
 	pthread_mutex_unlock(pargs->static_args.output_mutex);
 
@@ -528,6 +534,13 @@ int main(int argc, char *argv[])
 	int cpu_offset = 0;
 	char *endptr;
 	char *hdf5_peak_path = NULL;
+	struct copy_hdf5_field *copyme;
+
+	copyme = new_copy_hdf5_field_list();
+	if ( copyme == NULL ) {
+		ERROR("Couldn't allocate HDF5 field list.\n");
+		return 1;
+	}
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -562,6 +575,7 @@ int main(int argc, char *argv[])
 		{"bg-sub",             0, &config_bgsub,       1}, /* Compat */
 		{"no-bg-sub",          0, &config_bgsub,       0},
 		{"hdf5-peaks",         1, NULL,                9},
+		{"copy-hdf5-field",    1, NULL,               10},
 		{0, 0, NULL, 0}
 	};
 
@@ -674,6 +688,10 @@ int main(int argc, char *argv[])
 
 		case 9 :
 			hdf5_peak_path = strdup(optarg);
+			break;
+
+		case 10 :
+			add_copy_hdf5_field(copyme, optarg);
 			break;
 
 		case 0 :
@@ -891,6 +909,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.element = element;
 	qargs.static_args.stream_flags = stream_flags;
 	qargs.static_args.hdf5_peak_path = hdf5_peak_path;
+	qargs.static_args.copyme = copyme;
 
 	qargs.fh = fh;
 	qargs.prefix = prefix;

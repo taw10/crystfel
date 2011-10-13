@@ -18,6 +18,7 @@
 
 
 struct image;
+struct hdfile;
 
 /* Possible options dictating what goes into the output stream */
 enum
@@ -34,7 +35,8 @@ extern int count_patterns(FILE *fh);
 
 extern void write_stream_header(FILE *ofh, int argc, char *argv[]);
 
-extern void write_chunk(FILE *ofh, struct image *image, int flags);
+extern void write_chunk(FILE *ofh, struct image *image, struct hdfile *hdfile,
+                        int flags);
 
 extern int parse_stream_flags(const char *a);
 

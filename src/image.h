@@ -70,6 +70,7 @@ typedef struct _imagefeaturelist ImageFeatureList;
  *    struct detector         *det;
  *    struct beam_params      *beam;
  *    char                    *filename;
+ *    const struct copy_hdf5_field *copyme;
  *
  *    int                     id;
  *
@@ -112,6 +113,9 @@ typedef struct _imagefeaturelist ImageFeatureList;
  * after cell reduction or matching has been performed.  The job of the cell
  * reduction is to convert the list of candidate cells into a single indexed
  * cell, or <function>NULL</function> on failure.
+ *
+ * <structfield>copyme</structfield> represents a list of HDF5 fields to copy
+ * to the output stream.
  **/
 struct image;
 
@@ -128,6 +132,7 @@ struct image {
 	struct detector         *det;
 	struct beam_params      *beam;  /* The nominal beam parameters */
 	char                    *filename;
+	const struct copy_hdf5_field *copyme;
 
 	int                     id;   /* ID number of the thread
 	                               * handling this image */

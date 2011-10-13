@@ -196,7 +196,7 @@ static void write_peaks(struct image *image, FILE *ofh)
 }
 
 
-void write_chunk(FILE *ofh, struct image *i, int f)
+void write_chunk(FILE *ofh, struct image *i, struct hdfile *hdfile, int f)
 {
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
@@ -251,6 +251,8 @@ void write_chunk(FILE *ofh, struct image *i, int f)
 		}
 
 	}
+
+	copy_hdf5_fields(hdfile, i->copyme, ofh);
 
 	if ( (f & STREAM_PEAKS)
 	  || ((f & STREAM_PEAKS_IF_INDEXED) && (i->indexed_cell != NULL))

@@ -23,6 +23,8 @@
 
 struct hdfile;
 
+struct copy_hdf5_field;
+
 
 extern int hdf5_write(const char *filename, const void *data,
                       int width, int height, int type);
@@ -41,5 +43,12 @@ extern void hdfile_close(struct hdfile *f);
 extern char *hdfile_get_string_value(struct hdfile *f, const char *name);
 extern int get_peaks(struct image *image, struct hdfile *f, const char *p);
 extern double get_value(struct hdfile *f, const char *name);
+
+extern struct copy_hdf5_field *new_copy_hdf5_field_list(void);
+extern void copy_hdf5_fields(struct hdfile *f,
+                             const struct copy_hdf5_field *copyme, FILE *fh);
+extern void add_copy_hdf5_field(struct copy_hdf5_field *copyme,
+                                const char *name);
+
 
 #endif	/* HDF5_H */

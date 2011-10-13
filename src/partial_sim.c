@@ -218,7 +218,7 @@ static void finalise_job(void *vqargs, void *vwargs)
 	struct worker_args *wargs = vwargs;
 	struct queue_args *qargs = vqargs;
 
-	write_chunk(qargs->stream, &wargs->image, STREAM_INTEGRATED);
+	write_chunk(qargs->stream, &wargs->image, NULL, STREAM_INTEGRATED);
 
 	reflist_free(wargs->image.reflections);
 	cell_free(wargs->image.indexed_cell);
