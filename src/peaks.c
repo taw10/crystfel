@@ -290,6 +290,9 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	double f_fs = 0.0;
 	double f_ss = 0.0;
 	double intensity = 0.0;
+	double sigma = 0.0;
+	double pbg = 0.0;
+	double pmax = 0.0;
 	int nrej_dis = 0;
 	int nrej_pro = 0;
 	int nrej_fra = 0;
@@ -386,7 +389,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		 * intensity of this peak is only an estimate at this stage. */
 		r = integrate_peak(image, mask_fs, mask_ss,
 		                   &f_fs, &f_ss, &intensity,
-		                   NULL, NULL, NULL, 0, 1, 0);
+		                   &pbg, &pmax, &sigma, 0, 1, 1);	
+
 		if ( r ) {
 			/* Bad region - don't detect peak */
 			nrej_bad++;
@@ -397,6 +401,11 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		if ( (f_fs < p->min_fs) || (f_fs > p->max_fs)
 		  || (f_ss < p->min_ss) || (f_ss > p->max_ss) ) {
 			nrej_fra++;
+			continue;
+		}
+
+		if (intensity/sigma < 5) {
+			//printf("SNR: %g\n",intensity/sigma);
 			continue;
 		}
 
