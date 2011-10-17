@@ -49,6 +49,7 @@ struct sum_args
 	SumMethod sum_method;
 	double threshold;
 	double min_gradient;
+	double min_snr;
 	char *element;
 };
 
@@ -64,6 +65,7 @@ struct queue_args
 	SumMethod sum_method;
 	double threshold;
 	double min_gradient;
+	double min_snr;
 	char *element;
 
 	char *use_this_one_instead;
@@ -100,6 +102,8 @@ static void show_help(const char *s)
 "                           method.  Default: 400 adu\n"
 "      --min-gradient=<n>   Minimum gradient for Zaefferer peak search.\n"
 "                            Default: 100,000.\n"
+"      --min-snr=<n>        Minimum signal-to-noise ration for peaks.\n"
+"                            Default: 5.\n"
 " -e, --image=<element>    Use this image from the HDF5 file.\n"
 "                           Example: /data/data0.\n"
 "                           Default: The first one found.\n"
@@ -116,14 +120,14 @@ static void show_help(const char *s)
 
 
 static void sum_peaks(struct image *image, double *sum, double threshold,
-                      double min_gradient)
+                      double min_gradient, double min_snr)
 {
 	int i;
 	int w = image->width;
 	int h = image->height;
 	const int lim = INTEGRATION_RADIUS * INTEGRATION_RADIUS;
 
-	search_peaks(image, threshold, min_gradient);
+	search_peaks(image, threshold, min_gradient, min_snr);
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
@@ -231,7 +235,7 @@ static void add_image(void *args, int cookie)
 
 	case SUM_PEAKS :
 		sum_peaks(&image, pargs->sum, pargs->threshold,
-		          pargs->min_gradient);
+		          pargs->min_gradient, pargs->min_snr);
 		break;
 
 	}
@@ -261,6 +265,7 @@ static void *get_image(void *qp)
 	pargs->sum_method = qargs->sum_method;
 	pargs->threshold = qargs->threshold;
 	pargs->min_gradient = qargs->min_gradient;
+	pargs->min_snr = qargs->min_snr;
 	pargs->config_cmfilter = qargs->config_cmfilter;
 	pargs->config_noisefilter = qargs->config_noisefilter;
 	pargs->sum = qargs->sum;
@@ -312,6 +317,7 @@ int main(int argc, char *argv[])
 	char *intermediate = NULL;
 	double threshold = 400.0;
 	float min_gradient = 100000.0;
+	float min_snr = 5;
 	SumMethod sum;
 	int nthreads = 1;
 	struct queue_args qargs;
@@ -337,6 +343,7 @@ int main(int argc, char *argv[])
 		{"intermediate",       1, NULL,               'p'},
 		{"threshold",          1, NULL,               't'},
 		{"min-gradient",       1, NULL,                4},
+		{"min-snr",            1, NULL,               11},
 		{"basename",           0, &config_basename,    1},
 		{"image",              1, NULL,               'e'},
 		{0, 0, NULL, 0}
@@ -385,6 +392,10 @@ int main(int argc, char *argv[])
 
 		case 4 :
 			min_gradient = strtof(optarg, NULL);
+			break;
+
+		case 11 :
+			min_snr = strtof(optarg, NULL);
 			break;
 
 		case 0 :

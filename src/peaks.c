@@ -281,7 +281,8 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 
 static void search_peaks_in_panel(struct image *image, float threshold,
-                                  float min_gradient, struct panel *p)
+                                  float min_gradient, float min_snr,
+                                  struct panel *p)
 {
 	int fs, ss, stride;
 	float *data;
@@ -297,6 +298,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	int nrej_pro = 0;
 	int nrej_fra = 0;
 	int nrej_bad = 0;
+	int nrej_snr = 0;
 	int nacc = 0;
 	int ncull;
 	const int pws = p->peak_sep/2;
@@ -404,8 +406,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 			continue;
 		}
 
-		if (intensity/sigma < 5) {
-			//printf("SNR: %g\n",intensity/sigma);
+		if (intensity/sigma < min_snr) {
+			nrej_snr++;
 			continue;
 		}
 
@@ -434,12 +436,13 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	}
 
 //	STATUS("%i accepted, %i box, %i proximity, %i outside panel, "
-//	       "%i in bad regions, %i badrow culled.\n",
-//	       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_bad, ncull);
+//	       "%i in bad regions, %i with SNR < %g, %i badrow culled.\n",
+//	       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_bad, nrej_snr, min_snr, ncull);
 }
 
 
-void search_peaks(struct image *image, float threshold, float min_gradient)
+void search_peaks(struct image *image, float threshold, float min_gradient,
+                  float min_snr)
 {
 	int i;
 
@@ -453,7 +456,7 @@ void search_peaks(struct image *image, float threshold, float min_gradient)
 		struct panel *p = &image->det->panels[i];
 
 		if ( p->no_index ) continue;
-		search_peaks_in_panel(image, threshold, min_gradient, p);
+		search_peaks_in_panel(image, threshold, min_gradient, min_snr, p);
 
 	}
 }

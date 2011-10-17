@@ -68,6 +68,7 @@ struct static_index_args
 	int config_bgsub;
 	float threshold;
 	float min_gradient;
+	float min_snr;
 	struct detector *det;
 	IndexingMethod *indm;
 	IndexingPrivate **ipriv;
@@ -182,6 +183,8 @@ static void show_help(const char *s)
 "     --threshold=<n>      Only accept peaks above <n> ADU.  Default: 800.\n"
 "     --min-gradient=<n>   Minimum gradient for Zaefferer peak search.\n"
 "                           Default: 100,000.\n"
+"     --min-snr=<n>        Minimum signal-to-noise ratio for peaks.\n"
+"                           Default: 5.\n"
 " -e, --image=<element>    Use this image from the HDF5 file.\n"
 "                           Example: /data/data0.\n"
 "                           Default: The first one found.\n"
@@ -310,7 +313,8 @@ static void process_image(void *pp, int cookie)
 		break;
 	case PEAK_ZAEF :
 		search_peaks(&image, pargs->static_args.threshold,
-		             pargs->static_args.min_gradient);
+		             pargs->static_args.min_gradient,
+		             pargs->static_args.min_snr);
 		break;
 	}
 
@@ -506,6 +510,7 @@ int main(int argc, char *argv[])
 	int config_basename = 0;
 	float threshold = 800.0;
 	float min_gradient = 100000.0;
+	float min_snr = 5;
 	struct detector *det;
 	char *geometry = NULL;
 	IndexingMethod *indm;
@@ -563,6 +568,7 @@ int main(int argc, char *argv[])
 		{"sat-corr",           0, &config_satcorr,     1}, /* Compat */
 		{"threshold",          1, NULL,               't'},
 		{"min-gradient",       1, NULL,                4},
+		{"min-snr",            1, NULL,               11},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
 		{"no-closer-peak",     0, &config_closer,      0},
 		{"insane",             0, &config_insane,      1},
@@ -639,6 +645,10 @@ int main(int argc, char *argv[])
 
 		case 4 :
 			min_gradient = strtof(optarg, NULL);
+			break;
+
+		case 11 :
+			min_snr = strtof(optarg, NULL);
 			break;
 
 		case 'e' :
@@ -899,6 +909,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.cellr = cellr;
 	qargs.static_args.threshold = threshold;
 	qargs.static_args.min_gradient = min_gradient;
+	qargs.static_args.min_snr = min_snr;
 	qargs.static_args.det = det;
 	qargs.static_args.indm = indm;
 	qargs.static_args.ipriv = ipriv;
