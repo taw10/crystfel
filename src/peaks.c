@@ -462,44 +462,106 @@ void search_peaks(struct image *image, float threshold, float min_gradient,
 }
 
 
-int peak_sanity_check(RefList *rlist, ImageFeatureList *flist)
+int peak_sanity_check(struct image *image)
 {
+	
 	int i;
 	int n_feat = 0;
 	int n_sane = 0;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;	
+	double min_dist = 0.25;
 
-	for ( i=0; i<image_feature_count(flist); i++ ) {
+	/* Round towards nearest */
+	fesetround(1);
 
-		double dist;
+	/* Cell basis vectors for this image */
+	cell_get_cartesian(image->indexed_cell, &ax, &ay, &az, 
+	                                        &bx, &by, &bz,
+	                                        &cx, &cy, &cz);
+	
+	/* Loop over peaks, checking proximity to nearest reflection */
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
+
 		struct imagefeature *f;
-		Reflection *refl;
-		RefListIterator *iter;
+		struct rvec q;
+		double h,k,l,hd,kd,ld;
 
-		f = image_get_feature(flist, i);
+		/* Assume all image "features" are genuine peaks */
+		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 		n_feat++;
 
-		/* Find closest predicted peak */
+		/* Reciprocal space position of found peak */
+		q = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
 
-		for ( refl = first_refl(rlist, &iter);
-		      refl != NULL;
-		      refl = next_refl(refl, iter) )
-		{
-			double fs, ss;
-			get_detector_pos(refl, &fs, &ss);
-			dist = sqrt(pow(fs-f->fs, 2.0) + pow(ss-f->ss, 2.0));
-			if ( dist < PEAK_CLOSE ) {
-				n_sane++;
-				continue;
-			}
+		/* Decimal and fractional Miller indices of nearest Bragg reflection */
+		hd = q.u * ax + q.v * ay + q.w * az;
+		kd = q.u * bx + q.v * by + q.w * bz;
+		ld = q.u * cx + q.v * cy + q.w * cz;
+		h = lrint(hd);
+		k = lrint(kd);
+		l = lrint(ld);
+
+		/* Check distance */
+		if ( fabs(h - hd) < min_dist && 
+			  fabs(k - kd) < min_dist &&
+			  fabs(l - ld) < min_dist ) {
+			// printf("%6.1f %6.1f %3g %3g %3g %6.2f %6.2f %6.2f\n",f->fs,f->ss,h,k,l,hd,kd,ld);
+			n_sane++;
+			continue;
 		}
 
 	}
 
-	if ( (float)n_sane / (float)n_feat < 0.1 ) return 0;
+	/* return 0 means fail test, return 1 means pass test */
+	// printf("%d out of %d peaks are \"sane\"\n",n_sane,n_feat);
+	if ( (float)n_sane / (float)n_feat < 0.5 ) return 0;
 
 	return 1;
 }
+
+
+
+//int peak_sanity_check(RefList *rlist, ImageFeatureList *flist)
+//{
+//	int i;
+//	int n_feat = 0;
+//	int n_sane = 0;
+//
+//	for ( i=0; i<image_feature_count(flist); i++ ) {
+//
+//		double dist;
+//		struct imagefeature *f;
+//		Reflection *refl;
+//		RefListIterator *iter;
+//
+//		f = image_get_feature(flist, i);
+//		if ( f == NULL ) continue;
+//		n_feat++;
+//
+//		/* Find closest predicted peak */
+//
+//		for ( refl = first_refl(rlist, &iter);
+//		      refl != NULL;
+//		      refl = next_refl(refl, iter) )
+//		{
+//			double fs, ss;
+//			get_detector_pos(refl, &fs, &ss);
+//			dist = sqrt(pow(fs-f->fs, 2.0) + pow(ss-f->ss, 2.0));
+//			if ( dist < PEAK_CLOSE ) {
+//				n_sane++;
+//				continue;
+//			}
+//		}
+//
+//	}
+//
+//	if ( (float)n_sane / (float)n_feat < 0.1 ) return 0;
+//
+//	return 1;
+//}
 
 
 /* Integrate the list of predicted reflections in "image" */

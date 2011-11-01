@@ -205,17 +205,15 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 			if ( new_cell == NULL ) continue;
 
 			/* Sanity check */
-			image->reflections = find_intersections(image,
-			                                        new_cell);
-			if ( !config_insane &&
-			     !peak_sanity_check(image->reflections,
-			                        image->features) )
-			{
+			image->reflections = find_intersections(image, new_cell);
+			image->indexed_cell = new_cell;
+			
+			if ( !config_insane && !peak_sanity_check(image) ) {
 				cell_free(new_cell);
+				image->indexed_cell = NULL;
 				continue;
 			}
 
-			image->indexed_cell = new_cell;
 			goto done;  /* Success */
 
 		}
