@@ -428,6 +428,7 @@ int main(int argc, char *argv[])
 	image.profile_radius = 0.003e9;
 	image.i0_available = 0;
 	image.filename = malloc(256);
+	image.copyme = NULL;
 
 	if ( random_intensities ) {
 		full = reflist_new();
