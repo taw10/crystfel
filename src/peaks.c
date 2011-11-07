@@ -391,7 +391,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		 * intensity of this peak is only an estimate at this stage. */
 		r = integrate_peak(image, mask_fs, mask_ss,
 		                   &f_fs, &f_ss, &intensity,
-		                   &pbg, &pmax, &sigma, 0, 1, 1);	
+		                   &pbg, &pmax, &sigma, 0, 1, 1);
 
 		if ( r ) {
 			/* Bad region - don't detect peak */
@@ -437,7 +437,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 
 //	STATUS("%i accepted, %i box, %i proximity, %i outside panel, "
 //	       "%i in bad regions, %i with SNR < %g, %i badrow culled.\n",
-//	       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_bad, nrej_snr, min_snr, ncull);
+//	       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_bad,
+//	       nrej_snr, min_snr, ncull);
 }
 
 
@@ -464,23 +465,23 @@ void search_peaks(struct image *image, float threshold, float min_gradient,
 
 int peak_sanity_check(struct image *image)
 {
-	
+
 	int i;
 	int n_feat = 0;
 	int n_sane = 0;
 	double ax, ay, az;
 	double bx, by, bz;
-	double cx, cy, cz;	
+	double cx, cy, cz;
 	double min_dist = 0.25;
 
 	/* Round towards nearest */
 	fesetround(1);
 
 	/* Cell basis vectors for this image */
-	cell_get_cartesian(image->indexed_cell, &ax, &ay, &az, 
+	cell_get_cartesian(image->indexed_cell, &ax, &ay, &az,
 	                                        &bx, &by, &bz,
 	                                        &cx, &cy, &cz);
-	
+
 	/* Loop over peaks, checking proximity to nearest reflection */
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
@@ -496,7 +497,8 @@ int peak_sanity_check(struct image *image)
 		/* Reciprocal space position of found peak */
 		q = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
 
-		/* Decimal and fractional Miller indices of nearest Bragg reflection */
+		/* Decimal and fractional Miller indices of nearest
+		 * reciprocal lattice point */
 		hd = q.u * ax + q.v * ay + q.w * az;
 		kd = q.u * bx + q.v * by + q.w * bz;
 		ld = q.u * cx + q.v * cy + q.w * cz;
@@ -505,10 +507,9 @@ int peak_sanity_check(struct image *image)
 		l = lrint(ld);
 
 		/* Check distance */
-		if ( fabs(h - hd) < min_dist && 
-			  fabs(k - kd) < min_dist &&
-			  fabs(l - ld) < min_dist ) {
-			// printf("%6.1f %6.1f %3g %3g %3g %6.2f %6.2f %6.2f\n",f->fs,f->ss,h,k,l,hd,kd,ld);
+		if ( (fabs(h - hd) < min_dist) && (fabs(k - kd) < min_dist)
+		  && (fabs(l - ld) < min_dist) )
+		{
 			n_sane++;
 			continue;
 		}
@@ -521,47 +522,6 @@ int peak_sanity_check(struct image *image)
 
 	return 1;
 }
-
-
-
-//int peak_sanity_check(RefList *rlist, ImageFeatureList *flist)
-//{
-//	int i;
-//	int n_feat = 0;
-//	int n_sane = 0;
-//
-//	for ( i=0; i<image_feature_count(flist); i++ ) {
-//
-//		double dist;
-//		struct imagefeature *f;
-//		Reflection *refl;
-//		RefListIterator *iter;
-//
-//		f = image_get_feature(flist, i);
-//		if ( f == NULL ) continue;
-//		n_feat++;
-//
-//		/* Find closest predicted peak */
-//
-//		for ( refl = first_refl(rlist, &iter);
-//		      refl != NULL;
-//		      refl = next_refl(refl, iter) )
-//		{
-//			double fs, ss;
-//			get_detector_pos(refl, &fs, &ss);
-//			dist = sqrt(pow(fs-f->fs, 2.0) + pow(ss-f->ss, 2.0));
-//			if ( dist < PEAK_CLOSE ) {
-//				n_sane++;
-//				continue;
-//			}
-//		}
-//
-//	}
-//
-//	if ( (float)n_sane / (float)n_feat < 0.1 ) return 0;
-//
-//	return 1;
-//}
 
 
 /* Integrate the list of predicted reflections in "image" */
