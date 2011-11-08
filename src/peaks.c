@@ -32,6 +32,7 @@
 #include "filters.h"
 #include "diffraction.h"
 #include "reflist-utils.h"
+#include "beam-parameters.h"
 
 
 /* How close a peak must be to an indexed position to be considered "close"
@@ -156,6 +157,7 @@ int integrate_peak(struct image *image, int cfs, int css,
         int pixel_counts = 0;
         double noise_mean = 0.0;
 	double noise_meansq = 0.0;
+	const double aduph = image->beam->adu_per_photon;
 
 	p = find_panel(image->det, cfs, css);
 	if ( p == NULL ) return 1;
@@ -224,8 +226,9 @@ int integrate_peak(struct image *image, int cfs, int css,
 		/* If outside inner mask, estimate noise from this region */
 		if ( fs*fs + ss*ss > mid_lim_sq ) {
 
-			/* Noise */
-			noise += val;
+			/* Noise
+			 * noise and noise_meansq are both in photons (^2) */
+			noise += val / image->beam->adu_per_photon;
 			noise_counts++;
 			noise_meansq += pow(val, 2.0);
 
@@ -242,7 +245,7 @@ int integrate_peak(struct image *image, int cfs, int css,
 	}
 	}
 
-        noise_mean = noise / noise_counts;
+	noise_mean = noise / noise_counts;  /* photons */
 
 	/* The centroid is excitingly undefined if there is no intensity */
 	centroid = 0;
@@ -254,23 +257,25 @@ int integrate_peak(struct image *image, int cfs, int css,
 		*pss = (double)css + 0.5;
 	}
 	if ( bgsub ) {
-		*intensity = total - pixel_counts*noise_mean;
+		*intensity = total - aduph * pixel_counts*noise_mean; /* ADU */
 	} else {
-		*intensity = total;
+		*intensity = total;  /* ADU */
 	}
 
 	if ( in_bad_region(image->det, *pfs, *pss) ) return 1;
 
 	if ( sigma != NULL ) {
+
 		/* First term is standard deviation of background per pixel
 		 * sqrt(pixel_counts) - increase of error for integrated value
 		 * sqrt(2) - increase of error for background subtraction  */
 		*sigma = sqrt(noise_meansq/noise_counts-(noise_mean*noise_mean))
-		          * sqrt(2.0*pixel_counts);
+		          * sqrt(2.0*pixel_counts) * aduph;
+
 	}
 
 	if ( pbg != NULL ) {
-		*pbg = (noise / noise_counts);
+		*pbg = aduph * (noise / noise_counts);
 	}
 	if ( pmax != NULL ) {
 		*pmax = max;
