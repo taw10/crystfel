@@ -155,14 +155,15 @@ static int select_scalable_reflections(RefList *list, RefList *reference)
 	      refl = next_refl(refl, iter) ) {
 
 		int sc = 1;
-		double v;
+		double v, esd;
 
 		/* This means the reflection was not found on the last check */
 		if ( get_redundancy(refl) == 0 ) sc = 0;
 
 		if ( get_partiality(refl) < 0.1 ) sc = 0;
 		v = fabs(get_intensity(refl));
-		if ( v < 0.1 ) sc = 0;  /* FIXME: Yuk */
+		esd = get_esd_intensity(refl);
+		if ( v < 0.5*esd ) sc = 0;
 
 		/* If we are scaling against a reference set, we additionally
 		 * require that this reflection is in the reference list. */
