@@ -180,7 +180,8 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 		double r, cen;
 		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
 		r = (2.0*(num[i]/den)*((double)ctot/cts[i]))/sqrt(2.0);
-		fprintf(fh, "%10.3f %10.2f\n", cen*1.0e-9, r*100.0);
+		fprintf(fh, "%10.3f %10.2f %10i\n",
+		        cen*1.0e-9, r*100.0, cts[i]);
 
 	}
 
