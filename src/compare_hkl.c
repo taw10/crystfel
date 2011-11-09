@@ -406,7 +406,7 @@ int main(int argc, char *argv[])
 	       pearson);
 
 	if ( config_shells ) {
-		plot_shells(list1, list2, scale_r1i,
+		plot_shells(list1, list2, scale_rintint,
 		            cell, rmin_fix, rmax_fix);
 	}
 
