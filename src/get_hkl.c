@@ -264,6 +264,8 @@ static RefList *expand_reflections(RefList *in, const SymOpList *target,
 
 			signed int he, ke, le;
 			Reflection *new;
+			int have_phase;
+			double ph;
 
 			/* Get the equivalent */
 			get_equiv(initial, m, j, h, k, l, &he, &ke, &le);
@@ -277,6 +279,10 @@ static RefList *expand_reflections(RefList *in, const SymOpList *target,
 
 			/* FIXME: Make phase negative if the reflection is
 			 * separated from the original via an inversion */
+			get_phase(refl, &have_phase);
+			if ( have_phase ) {
+				set_ph(new, -ph);
+			}
 
 		}
 
