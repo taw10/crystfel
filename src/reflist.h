@@ -50,6 +50,8 @@ typedef struct _reflistiterator RefListIterator;
 /* Creation/deletion */
 extern RefList *reflist_new(void);
 extern void reflist_free(RefList *list);
+extern Reflection *reflection_new(signed int h, signed int k, signed int l);
+extern void reflection_free(Reflection *refl);
 
 /* Search */
 extern Reflection *find_refl(const RefList *list, signed int h, signed int k, signed int l);
@@ -95,6 +97,7 @@ extern void set_symmetric_indices(Reflection *refl,
 /* Insertion */
 extern Reflection *add_refl(RefList *list,
                             signed int h, signed int k, signed int l);
+extern Reflection *add_refl_to_list(Reflection *refl, RefList *list);
 
 /* Iteration */
 extern Reflection *first_refl(RefList *list, RefListIterator **piter);

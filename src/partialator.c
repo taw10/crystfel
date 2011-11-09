@@ -269,9 +269,6 @@ int main(int argc, char *argv[])
 	int n_iter = 10;
 	struct beam_params *beam = NULL;
 	RefList *full;
-	int n_found = 0;
-	int n_expected = 0;
-	int n_notfound = 0;
 	int n_usable_patterns = 0;
 	int nobs;
 	char *reference_file = NULL;
@@ -435,7 +432,6 @@ int main(int argc, char *argv[])
 
 		RefList *as;
 		struct image *cur;
-		int nn_expected, nn_found, nn_notfound;
 
 		cur = &images[n_usable_patterns];
 
@@ -474,10 +470,7 @@ int main(int argc, char *argv[])
 		reflist_free(cur->reflections);
 		cur->reflections = as;
 
-		update_partialities(cur, &nn_expected, &nn_found, &nn_notfound);
-		n_expected += nn_expected;
-		n_found += nn_found;
-		n_notfound += nn_notfound;
+		update_partialities(cur);
 
 		nobs += select_scalable_reflections(cur->reflections,
 		                                    reference);
@@ -487,8 +480,6 @@ int main(int argc, char *argv[])
 
 	}
 	fclose(fh);
-	STATUS("Found %5.2f%% of the expected peaks (missed %i of %i).\n",
-	       100.0 * (double)n_found / n_expected, n_notfound, n_expected);
 
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");

@@ -122,7 +122,7 @@ static double partiality(double r1, double r2, double r)
 }
 
 
-static Reflection *check_reflection(struct image *image, RefList *reflections,
+static Reflection *check_reflection(struct image *image,
                                     signed int h, signed int k, signed int l,
                                     double asx, double asy, double asz,
                                     double bsx, double bsy, double bsz,
@@ -216,7 +216,7 @@ static Reflection *check_reflection(struct image *image, RefList *reflections,
 	if ( p == -1 ) return NULL;
 
 	/* Add peak to list */
-	refl = add_refl(reflections, h, k, l);
+	refl = reflection_new(h, k, l);
 	set_detector_pos(refl, 0.0, xda, yda);
 	set_partial(refl, rlow, rhigh, part, clamp_low, clamp_high);
 	set_symmetric_indices(refl, h, k, l);
@@ -274,8 +274,16 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 	for ( h=-hmax; h<=hmax; h++ ) {
 	for ( k=-kmax; k<=kmax; k++ ) {
 	for ( l=-lmax; l<=lmax; l++ ) {
-		check_reflection(image, reflections, h, k, l,
-		                 asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
+
+		Reflection *refl;
+
+		refl = check_reflection(image, h, k, l,
+		                        asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
+
+		if ( refl != NULL ) {
+			refl = add_refl_to_list(refl, reflections);
+		}
+
 	}
 	}
 	}
@@ -285,8 +293,7 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 
 
 /* Calculate partialities and apply them to the image's reflections */
-void update_partialities(struct image *image,
-                         int *n_expected, int *n_found, int *n_notfound)
+void update_partialities(struct image *image)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -294,10 +301,6 @@ void update_partialities(struct image *image,
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
-
-	if ( n_expected != NULL ) *n_expected = 0;
-	if ( n_found != NULL) *n_found = 0;
-	if ( n_notfound != NULL) *n_notfound = 0;
 
 	cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
 	                    &bsx, &bsy, &bsz, &csx, &csy, &csz);
@@ -314,19 +317,15 @@ void update_partialities(struct image *image,
 		signed int h, k, l;
 		int clamp1, clamp2;
 
-		if ( n_expected != NULL ) (*n_expected)++;
-
 		get_symmetric_indices(refl, &h, &k, &l);
 
-		vals = check_reflection(image, predicted, h, k, l,
+		vals = check_reflection(image, h, k, l,
 		                        asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
 
 		if ( vals == NULL ) {
-			if ( n_notfound != NULL) (*n_notfound)++;
 			set_redundancy(refl, 0);
 			continue;
 		}
-		if ( n_found != NULL) (*n_found)++;
 		set_redundancy(refl, 1);
 
 		/* Transfer partiality stuff */

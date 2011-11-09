@@ -162,6 +162,34 @@ RefList *reflist_new()
 }
 
 
+/**
+ * reflection_new:
+ * @h: The h index of the new reflection
+ * @k: The k index of the new reflection
+ * @l: The l index of the new reflection
+ *
+ * Creates a new individual reflection.  You'll probably want to use
+ * add_refl_to_list() at some later point.
+ */
+Reflection *reflection_new(signed int h, signed int k, signed int l)
+{
+	return new_node(SERIAL(h, k, l));
+}
+
+
+/**
+ * reflection_free:
+ * @refl: The reflection to free.
+ *
+ * Destroys an individual reflection.
+ */
+void reflection_free(Reflection *refl)
+{
+	pthread_mutex_destroy(&refl->lock);
+	free(refl);
+}
+
+
 static void recursive_free(Reflection *refl)
 {
 	if ( refl->child[0] != NULL ) recursive_free(refl->child[0]);
@@ -169,8 +197,7 @@ static void recursive_free(Reflection *refl)
 
 	while ( refl != NULL ) {
 		Reflection *next = refl->next;
-		pthread_mutex_destroy(&refl->lock);
-		free(refl);
+		reflection_free(refl);
 		refl = next;
 	}
 }
@@ -803,6 +830,34 @@ Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 	}
 
 	return new;
+}
+
+
+/**
+ * add_refl_to_list
+ * @refl: A %Reflection
+ * @list: A %RefList
+ *
+ * Adds a reflection to @list.  The reflection that actually gets added will be
+ * a newly created one, and all the data will be copied across.  The original
+ * reflection will be destroyed and the new reflection returned.
+ *
+ * Returns: The newly created reflection, or NULL on failure.
+ *
+ **/
+Reflection *add_refl_to_list(Reflection *refl, RefList *list)
+{
+	signed int h, k, l;
+	Reflection *r_added;
+
+	get_indices(refl, &h, &k, &l);
+	r_added = add_refl(list, h, k, l);
+	if ( r_added == NULL ) return NULL;
+
+	copy_data(r_added, refl);
+	reflection_free(refl);
+
+	return r_added;
 }
 
 

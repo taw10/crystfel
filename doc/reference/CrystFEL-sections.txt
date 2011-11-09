@@ -6,8 +6,11 @@ RefListIterator
 <SUBSECTION>
 reflist_new
 reflist_free
+reflection_new
+reflection_free
 <SUBSECTION>
 add_refl
+add_refl_to_list
 <SUBSECTION>
 first_refl
 next_refl
