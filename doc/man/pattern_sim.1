@@ -26,10 +26,10 @@ The result will be written to an HDF5 file in the current directory with the nam
 
 .SH REFLECTION LISTS
 
-pattern_sim does not know about symmetry, so your input reflection list
-(give with "-i") must be expanded.  You can do this with:
+You'll need to create a file containing the intensities of the reflections.  The normal way to do this is to use CCP4 via the "gen-sfs" script in CrystFEL's script folder.  Run it like this:
 
-$ get_hkl -i myfile.hkl -o output.hkl -y mypointgroup -e 1
+$ gen-sfs mymodel.pdb "P6" 3
 
-Please be sure to read the "Note about Unit Cell Settings" in the documentation
-for indexamajig.
+You need to give the PDB model, the symmetry of the output reflections (use the lowest symmetry space group with the right point group), and optionally the maximum resolution in Angstroms.  If you don't specify the resolution, it'll use 3 Angstroms.
+
+The reflections will be output as "mymodel.pdb.hkl" ready for input to pattern_sim.  You'll need to give the Laue class of the symmetry you gave to gen-sfs, "6/m" in this case, to pattern_sim with the "-y" option.  By default, gen-sfs calculates the values for CuKa radiation (8.3 keV, 1.5 A).  It will not calculate the anomalous contribution to scattering, i.e. the differences in intensities between Bijoet pairs.  Both of these are the default behaviour for "sfall" in CCP4, so read the manual for that for further details.  If you need something different, get the "ano_sfall.com" script from James Holton and turn the output into a CrystFEL reflection list in a similar way.

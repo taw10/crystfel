@@ -1,0 +1,80 @@
+#!/bin/sh
+
+PDB=$1
+SYMM=$2
+RESOLUTION=$3
+
+if [ "x$PDB" = "x" ]; then
+	echo "Syntax: $0 <PDB file> <space group> [<resolution>]"
+	exit
+fi
+
+if [ "x$SYMM" = "x" ]; then
+	echo "Syntax: $0 <PDB file> <space group> [<resolution>]"
+	exit
+fi
+
+if [ "x$RESOLUTION" = "x" ]; then
+	echo "Resolution not given.  Using 3 Angstroms."
+	RESOLUTION=3
+fi
+
+echo "Running sfall to calculate structure factors..."
+sfall XYZIN $PDB HKLOUT ${PDB}.mtz > gen-sfs.html << EOF
+MODE SFCALC XYZIN
+RESOLUTION $RESOLUTION 1000
+FORM NGAUSS 5
+SYMM $SYMM
+END
+EOF
+if [ $? -ne 0 ]; then exit 1; fi
+
+echo "Running cad to get the right asymmetric unit..."
+cad HKLIN1 ${PDB}.mtz HKLOUT ${PDB}-sorted.mtz >> gen-sfs.html <<EOF
+TITLE Sorted blah
+LABIN FILE 1 E1=FC E2=PHIC
+CTYPE FILE 1 E1=F  E2=P
+EOF
+if [ $? -ne 0 ]; then exit 1; fi
+
+echo "Converting structure factors to text..."
+mtz2various hklin ${PDB}-sorted.mtz hklout ${PDB}-temp.hkl >> gen-sfs.html <<EOF
+LABIN H=H K=K L=L FC=FC PHIC=PHIC
+OUTPUT USER '(3I4,2F9.1)'
+EOF
+if [ $? -ne 0 ]; then exit 1; fi
+rm -f ${PDB}.mtz
+perl < ${PDB}-temp.hkl > ${PDB}.hkl << WIBBLE
+use strict;
+
+my \$line;
+open(FILE, "${PDB}-temp.hkl");
+
+printf("  h   k   l          I    phase   sigma(I)  1/d(nm^-1)  ".
+       "counts  fs/px  ss/px\\n");
+
+while ( \$line = <FILE> ) {
+
+        if ( \$line =~ /^\s*([\d\-]+)\s+([\d\-]+)\s+([\d\-]+)\s+([\d\-\.]+)\s+([\d\-\.]+)/ ) {
+
+                my \$h = \$1;
+                my \$k = \$2;
+                my \$l = \$3;
+                my \$intensity = \$4*\$4;  # Square to convert F->I
+                my \$phase = \$5;
+
+                printf("%3i %3i %3i %10.2f %8.2f %10.2f  %s %7i %6.1f %6.1f\n",
+                       \$h, \$k, \$l, \$intensity, \$phase, 0.0,
+                       "         -", 1, 0.0, 0.0);
+
+        } else {
+        	printf(STDERR "Couldn't understand line '%s'\n", \$line);
+        }
+
+}
+close(FILE);
+printf("End of reflections\n");
+WIBBLE
+exit
+
+rm -f ${PDB}-temp.hkl
