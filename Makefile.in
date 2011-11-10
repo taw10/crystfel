@@ -668,7 +668,7 @@ EXTRA_DIST = configure m4/gnulib-cache.m4 tests/first_merge_check \
 	scripts/alternate-stream scripts/README scripts/cell-please \
 	scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
 	scripts/compare-hkl.gp scripts/check-peak-detection \
-	scripts/indexed-filenames
+	scripts/indexed-filenames scripts/gen-sfs
 SUBDIRS = lib doc/reference
 ACLOCAL_AMFLAGS = -I m4
 AM_CFLAGS = -Wall
@@ -798,7 +798,7 @@ script_DATA = scripts/check-near-bragg  scripts/random-image \
               scripts/alternate-stream scripts/README scripts/cell-please \
               scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
               scripts/compare-hkl.gp scripts/check-peak-detection \
-              scripts/indexed-filenames
+              scripts/indexed-filenames scripts/gen-sfs
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
 all: config.h
