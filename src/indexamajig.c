@@ -302,6 +302,7 @@ static void process_image(void *pp, int cookie)
 			ERROR("No wavelength in file, so you need to give "
 			      "a beam parameters file with -b.\n");
 			hdfile_close(hdfile);
+			free_detector_geometry(image.det);
 			return;
 		}
 	}
