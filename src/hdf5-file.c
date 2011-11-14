@@ -565,6 +565,17 @@ struct copy_hdf5_field *new_copy_hdf5_field_list()
 }
 
 
+void free_copy_hdf5_field_list(struct copy_hdf5_field *n)
+{
+	int i;
+	for ( i=0; i<n->n_fields; i++ ) {
+		free(n->fields[i]);
+	}
+	free(n->fields);
+	free(n);
+}
+
+
 void add_copy_hdf5_field(struct copy_hdf5_field *copyme,
                          const char *name)
 {

@@ -951,6 +951,7 @@ int main(int argc, char *argv[])
 	free(beam);
 	free(element);
 	free(hdf5_peak_path);
+	free_copy_hdf5_field_list(copyme);
 	cell_free(cell);
 	if ( fh != stdin ) fclose(fh);
 	if ( ofh != stdout ) fclose(ofh);

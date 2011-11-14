@@ -45,6 +45,7 @@ extern int get_peaks(struct image *image, struct hdfile *f, const char *p);
 extern double get_value(struct hdfile *f, const char *name);
 
 extern struct copy_hdf5_field *new_copy_hdf5_field_list(void);
+extern void free_copy_hdf5_field_list(struct copy_hdf5_field *f);
 extern void copy_hdf5_fields(struct hdfile *f,
                              const struct copy_hdf5_field *copyme, FILE *fh);
 extern void add_copy_hdf5_field(struct copy_hdf5_field *copyme,
