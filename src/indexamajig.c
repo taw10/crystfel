@@ -231,7 +231,7 @@ static void process_image(void *pp, int cookie)
 	int config_verbose = pargs->static_args.config_verbose;
 	int config_polar = pargs->static_args.config_polar;
 	IndexingMethod *indm = pargs->static_args.indm;
-	const struct beam_params *beam = pargs->static_args.beam;
+	struct beam_params *beam = pargs->static_args.beam;
 
 	image.features = NULL;
 	image.data = NULL;
@@ -241,6 +241,13 @@ static void process_image(void *pp, int cookie)
 	image.filename = filename;
 	image.det = copy_geom(pargs->static_args.det);
 	image.copyme = pargs->static_args.copyme;
+	image.beam = beam;
+
+	if ( beam == NULL ) {
+		ERROR("Warning: no beam parameters file.\n");
+		ERROR("I'm going to assume 1 ADU per photon, which is almost");
+		ERROR(" certainly wrong.  Peak sigmas will be incorrect.\n");
+	}
 
 	pargs->indexable = 0;
 

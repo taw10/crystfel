@@ -157,7 +157,15 @@ int integrate_peak(struct image *image, int cfs, int css,
         int pixel_counts = 0;
         double noise_mean = 0.0;
 	double noise_meansq = 0.0;
-	const double aduph = image->beam->adu_per_photon;
+	struct beam_params *beam;
+	double aduph;
+
+	beam = image->beam;
+	if ( beam != NULL ) {
+		aduph = image->beam->adu_per_photon;
+	} else {
+		aduph = 1.0;
+	}
 
 	p = find_panel(image->det, cfs, css);
 	if ( p == NULL ) return 1;
