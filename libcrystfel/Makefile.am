@@ -1,4 +1,5 @@
-lib_LTLIBRARIES        = libcrystfel.la
+lib_LTLIBRARIES = libcrystfel.la
+LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@
 
 libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/thread-pool.c src/image.c src/hdf5-file.c \

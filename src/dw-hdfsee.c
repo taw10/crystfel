@@ -22,6 +22,7 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
 #include "dw-hdfsee.h"
+#include "hdfsee-render.h"
 #include "render.h"
 #include "hdf5-file.h"
 #include "hdfsee.h"

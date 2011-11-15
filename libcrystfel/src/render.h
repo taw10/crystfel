@@ -18,10 +18,6 @@
 #define RENDER_H
 
 
-#include <stddef.h>
-
-#include "image.h"
-
 enum {
 	SCALE_COLOUR,
 	SCALE_MONO,
@@ -32,24 +28,6 @@ enum {
 /* Colour scale lookup */
 extern void render_scale(double val, double max, int scale,
                          double *rp, double *gp, double *bp);
-
-
-#ifdef HAVE_GTK
-
-#include <gdk-pixbuf/gdk-pixbuf.h>
-
-extern GdkPixbuf **render_panels(struct image *image,
-                                 int binning, int scale, double boost,
-                                 int *n_pixbufs);
-
-extern GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale);
-
-extern int render_tiff_fp(struct image *image, const char *filename);
-extern int render_tiff_int16(struct image *image, const char *filename,
-                             double boost);
-
-#endif /* HAVE_GTK */
-
 
 
 #endif	/* RENDER_H */

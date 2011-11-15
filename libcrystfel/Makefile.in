@@ -346,6 +346,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 lib_LTLIBRARIES = libcrystfel.la
+LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@
 libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/thread-pool.c src/image.c src/hdf5-file.c \
                          src/beam-parameters.c src/geometry.c src/statistics.c \
