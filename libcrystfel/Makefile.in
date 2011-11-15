@@ -15,6 +15,7 @@
 
 @SET_MAKE@
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -35,7 +36,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 subdir = libcrystfel
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
+DIST_COMMON = $(libcrystfel_la_include_HEADERS) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/00gnulib.m4 \
 	$(top_srcdir)/m4/extensions.m4 \
@@ -77,7 +79,8 @@ am__nobase_list = $(am__nobase_strip_setup); \
 am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__installdirs = "$(DESTDIR)$(libdir)"
+am__installdirs = "$(DESTDIR)$(libdir)" \
+	"$(DESTDIR)$(libcrystfel_la_includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libcrystfel_la_LIBADD =
 am__dirstamp = $(am__leading_dot)dirstamp
@@ -119,6 +122,7 @@ am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN   " $@;
 SOURCES = $(libcrystfel_la_SOURCES)
 DIST_SOURCES = $(libcrystfel_la_SOURCES)
+HEADERS = $(libcrystfel_la_include_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -349,6 +353,16 @@ libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/reflist-utils.c src/filters.c src/diffraction.c \
                          src/diffraction-gpu.c src/cl-utils.c
 
+libcrystfel_la_includedir = $(includedir)/crystfel/
+libcrystfel_la_include_HEADERS = src/beam-parameters.h src/diffraction-gpu.h \
+                                 src/hdf5-file.h src/reflist.h src/symmetry.h \
+                                 src/cell.h src/diffraction.h src/image.h \
+                                 src/reflist-utils.h src/thread-pool.h \
+                                 src/cl-utils.h src/filters.h src/list_tmp.h \
+                                 src/statistics.h src/utils.h src/detector.h \
+                                 src/geometry.h src/peaks.h src/stream.h \
+                                 ../data/defs.h
+
 INCLUDES = "-I$(top_srcdir)/data"
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib \
 	-I$(top_srcdir)/lib
@@ -541,6 +555,26 @@ mostlyclean-libtool:
 clean-libtool:
 	-rm -rf .libs _libs
 	-rm -rf src/.libs src/_libs
+install-libcrystfel_la_includeHEADERS: $(libcrystfel_la_include_HEADERS)
+	@$(NORMAL_INSTALL)
+	test -z "$(libcrystfel_la_includedir)" || $(MKDIR_P) "$(DESTDIR)$(libcrystfel_la_includedir)"
+	@list='$(libcrystfel_la_include_HEADERS)'; test -n "$(libcrystfel_la_includedir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(libcrystfel_la_includedir)'"; \
+	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(libcrystfel_la_includedir)" || exit $$?; \
+	done
+
+uninstall-libcrystfel_la_includeHEADERS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(libcrystfel_la_include_HEADERS)'; test -n "$(libcrystfel_la_includedir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	test -n "$$files" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(libcrystfel_la_includedir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(libcrystfel_la_includedir)" && rm -f $$files
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -626,9 +660,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LTLIBRARIES)
+all-am: Makefile $(LTLIBRARIES) $(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(libcrystfel_la_includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -681,7 +715,7 @@ info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-libcrystfel_la_includeHEADERS
 
 install-dvi: install-dvi-am
 
@@ -727,7 +761,8 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-libLTLIBRARIES
+uninstall-am: uninstall-libLTLIBRARIES \
+	uninstall-libcrystfel_la_includeHEADERS
 
 .MAKE: install-am install-strip
 
@@ -738,12 +773,14 @@ uninstall-am: uninstall-libLTLIBRARIES
 	install install-am install-data install-data-am install-dvi \
 	install-dvi-am install-exec install-exec-am install-html \
 	install-html-am install-info install-info-am \
-	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-libLTLIBRARIES
+	install-libLTLIBRARIES install-libcrystfel_la_includeHEADERS \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
+	uninstall-am uninstall-libLTLIBRARIES \
+	uninstall-libcrystfel_la_includeHEADERS
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

@@ -6,6 +6,16 @@ libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/reflist-utils.c src/filters.c src/diffraction.c \
                          src/diffraction-gpu.c src/cl-utils.c
 
+libcrystfel_la_includedir=$(includedir)/crystfel/
+libcrystfel_la_include_HEADERS = src/beam-parameters.h src/diffraction-gpu.h \
+                                 src/hdf5-file.h src/reflist.h src/symmetry.h \
+                                 src/cell.h src/diffraction.h src/image.h \
+                                 src/reflist-utils.h src/thread-pool.h \
+                                 src/cl-utils.h src/filters.h src/list_tmp.h \
+                                 src/statistics.h src/utils.h src/detector.h \
+                                 src/geometry.h src/peaks.h src/stream.h \
+                                 ../data/defs.h
+
 INCLUDES = "-I$(top_srcdir)/data"
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib
 AM_CPPFLAGS += -I$(top_srcdir)/lib
