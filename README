@@ -115,6 +115,10 @@ If you get a screen full of errors of the following form:
 <stuff>: undefined reference to `cblas_<something>'
 Add "--enable-gsl-fudge" to your configuration parameters.
 
+If you get an error mentioning fftw3 and telling you to recompile with -fPIC,
+then your version of FFTW3 is not compiled in a suitable way.  You'll need to
+install it again (from source) adding "--enable-shared" to its ./configure
+command line.
 
 
 Program name
