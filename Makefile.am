@@ -35,12 +35,12 @@ LDADD += $(top_builddir)/libcrystfel/libcrystfel.la
 
 src_partial_sim_SOURCES = src/partial_sim.c
 
-src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c src/cl-utils.c \
-                          src/diffraction-gpu.c
+src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c
+
 if HAVE_OPENCL
+src_pattern_sim_SOURCES += src/cl-utils.c src/diffraction-gpu.c
 TESTS += tests/gpu_sim_check
 noinst_PROGRAMS += tests/gpu_sim_check
-
 tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c src/diffraction.c \
                               src/diffraction-gpu.c
 endif

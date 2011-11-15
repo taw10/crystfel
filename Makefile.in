@@ -52,9 +52,10 @@ TESTS = tests/list_check$(EXEEXT) tests/first_merge_check \
 	$(am__EXEEXT_3)
 @BUILD_HDFSEE_TRUE@am__append_1 = src/hdfsee
 @HAVE_CAIRO_TRUE@am__append_2 = src/render_hkl
-@HAVE_OPENCL_TRUE@am__append_3 = tests/gpu_sim_check
+@HAVE_OPENCL_TRUE@am__append_3 = src/cl-utils.c src/diffraction-gpu.c
 @HAVE_OPENCL_TRUE@am__append_4 = tests/gpu_sim_check
-@HAVE_CAIRO_TRUE@am__append_5 = src/scaling-report.c
+@HAVE_OPENCL_TRUE@am__append_5 = tests/gpu_sim_check
+@HAVE_CAIRO_TRUE@am__append_6 = src/scaling-report.c
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -142,9 +143,12 @@ src_partialator_OBJECTS = $(am_src_partialator_OBJECTS)
 src_partialator_LDADD = $(LDADD)
 src_partialator_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
+am__src_pattern_sim_SOURCES_DIST = src/pattern_sim.c src/diffraction.c \
+	src/cl-utils.c src/diffraction-gpu.c
+@HAVE_OPENCL_TRUE@am__objects_2 = src/cl-utils.$(OBJEXT) \
+@HAVE_OPENCL_TRUE@	src/diffraction-gpu.$(OBJEXT)
 am_src_pattern_sim_OBJECTS = src/pattern_sim.$(OBJEXT) \
-	src/diffraction.$(OBJEXT) src/cl-utils.$(OBJEXT) \
-	src/diffraction-gpu.$(OBJEXT)
+	src/diffraction.$(OBJEXT) $(am__objects_2)
 src_pattern_sim_OBJECTS = $(am_src_pattern_sim_OBJECTS)
 src_pattern_sim_LDADD = $(LDADD)
 src_pattern_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
@@ -240,9 +244,9 @@ DIST_SOURCES = $(src_calibrate_detector_SOURCES) \
 	$(src_check_hkl_SOURCES) $(src_compare_hkl_SOURCES) \
 	$(src_get_hkl_SOURCES) $(am__src_hdfsee_SOURCES_DIST) \
 	$(src_indexamajig_SOURCES) $(src_partial_sim_SOURCES) \
-	$(am__src_partialator_SOURCES_DIST) $(src_pattern_sim_SOURCES) \
-	$(src_powder_plot_SOURCES) $(src_process_hkl_SOURCES) \
-	$(am__src_render_hkl_SOURCES_DIST) \
+	$(am__src_partialator_SOURCES_DIST) \
+	$(am__src_pattern_sim_SOURCES_DIST) $(src_powder_plot_SOURCES) \
+	$(src_process_hkl_SOURCES) $(am__src_render_hkl_SOURCES_DIST) \
 	$(am__tests_gpu_sim_check_SOURCES_DIST) \
 	$(tests_integration_check_SOURCES) $(tests_list_check_SOURCES) \
 	$(tests_pr_gradient_check_SOURCES) \
@@ -572,9 +576,8 @@ AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib \
 LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@ \
 	$(top_builddir)/libcrystfel/libcrystfel.la
 src_partial_sim_SOURCES = src/partial_sim.c
-src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c src/cl-utils.c \
-                          src/diffraction-gpu.c
-
+src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c \
+	$(am__append_3)
 @HAVE_OPENCL_TRUE@tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c src/diffraction.c \
 @HAVE_OPENCL_TRUE@                              src/diffraction-gpu.c
 
@@ -588,7 +591,7 @@ src_powder_plot_SOURCES = src/powder_plot.c
 @HAVE_CAIRO_TRUE@src_render_hkl_SOURCES = src/render_hkl.c
 src_calibrate_detector_SOURCES = src/calibrate_detector.c
 src_partialator_SOURCES = src/partialator.c src/post-refinement.c \
-	src/hrs-scaling.c $(am__append_5)
+	src/hrs-scaling.c $(am__append_6)
 tests_list_check_SOURCES = tests/list_check.c
 tests_integration_check_SOURCES = tests/integration_check.c
 tests_symmetry_check_SOURCES = tests/symmetry_check.c
