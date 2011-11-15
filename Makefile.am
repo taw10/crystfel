@@ -35,7 +35,7 @@ LDADD += $(top_builddir)/libcrystfel/libcrystfel.la
 
 src_partial_sim_SOURCES = src/partial_sim.c
 
-src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c \
+src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c src/cl-utils.c \
                           src/diffraction-gpu.c
 if HAVE_OPENCL
 TESTS += tests/gpu_sim_check
@@ -87,7 +87,8 @@ tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c \
 INCLUDES = -I$(top_srcdir)/libcrystfel/src -I$(top_srcdir)/data
 
 EXTRA_DIST += src/dw-hdfsee.h src/hdfsee.h src/render_hkl.h \
-              src/post-refinement.h src/hrs-scaling.h src/scaling-report.h
+              src/post-refinement.h src/hrs-scaling.h src/scaling-report.h \
+              src/cl-utils.h
 
 crystfeldir = $(datadir)/crystfel
 crystfel_DATA = data/diffraction.cl data/hdfsee.ui

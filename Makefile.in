@@ -143,7 +143,8 @@ src_partialator_LDADD = $(LDADD)
 src_partialator_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
 am_src_pattern_sim_OBJECTS = src/pattern_sim.$(OBJEXT) \
-	src/diffraction.$(OBJEXT) src/diffraction-gpu.$(OBJEXT)
+	src/diffraction.$(OBJEXT) src/cl-utils.$(OBJEXT) \
+	src/diffraction-gpu.$(OBJEXT)
 src_pattern_sim_OBJECTS = $(am_src_pattern_sim_OBJECTS)
 src_pattern_sim_LDADD = $(LDADD)
 src_pattern_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
@@ -549,7 +550,7 @@ EXTRA_DIST = configure m4/gnulib-cache.m4 tests/first_merge_check \
 	tests/third_merge_check.hkl tests/fourth_merge_check.hkl \
 	src/dw-hdfsee.h src/hdfsee.h src/render_hkl.h \
 	src/post-refinement.h src/hrs-scaling.h src/scaling-report.h \
-	$(crystfel_DATA) doc/twin-calculator.pdf \
+	src/cl-utils.h $(crystfel_DATA) doc/twin-calculator.pdf \
 	doc/examples/lcls-dec.geom \
 	doc/examples/lcls-june-r0013-r0128.geom \
 	doc/examples/lcls-xpp-estimate.geom doc/examples/simple.geom \
@@ -571,7 +572,7 @@ AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib \
 LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@ \
 	$(top_builddir)/libcrystfel/libcrystfel.la
 src_partial_sim_SOURCES = src/partial_sim.c
-src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c \
+src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c src/cl-utils.c \
                           src/diffraction-gpu.c
 
 @HAVE_OPENCL_TRUE@tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c src/diffraction.c \
@@ -787,6 +788,8 @@ src/pattern_sim.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/diffraction.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/cl-utils.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/diffraction-gpu.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/pattern_sim$(EXEEXT): $(src_pattern_sim_OBJECTS) $(src_pattern_sim_DEPENDENCIES) src/$(am__dirstamp)
@@ -843,6 +846,7 @@ mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f src/calibrate_detector.$(OBJEXT)
 	-rm -f src/check_hkl.$(OBJEXT)
+	-rm -f src/cl-utils.$(OBJEXT)
 	-rm -f src/compare_hkl.$(OBJEXT)
 	-rm -f src/diffraction-gpu.$(OBJEXT)
 	-rm -f src/diffraction.$(OBJEXT)
@@ -870,6 +874,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/calibrate_detector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/check_hkl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cl-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/compare_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction-gpu.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction.Po@am__quote@
