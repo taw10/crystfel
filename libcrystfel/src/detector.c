@@ -20,7 +20,6 @@
 
 #include "image.h"
 #include "utils.h"
-#include "diffraction.h"
 #include "detector.h"
 #include "beam-parameters.h"
 #include "hdf5-file.h"

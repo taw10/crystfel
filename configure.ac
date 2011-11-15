@@ -11,7 +11,7 @@ AM_PROG_CC_C_O
 AC_PROG_AWK
 AC_PROG_INSTALL
 AC_PROG_LN_S
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 AM_SILENT_RULES([yes])
 
 AC_HEADER_STDC
@@ -269,5 +269,5 @@ GTK_DOC_CHECK([1.11],[--flavour no-tmpl])
 AC_CONFIG_MACRO_DIR(m4)
 
 
-AC_CONFIG_FILES(Makefile lib/Makefile doc/reference/Makefile)
+AC_CONFIG_FILES(Makefile lib/Makefile doc/reference/Makefile libcrystfel/Makefile)
 AC_OUTPUT

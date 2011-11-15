@@ -234,7 +234,7 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 			Ipart = get_intensity(refl);
 			Ifull = get_intensity(f);
 
-			if ( Ifull < 10 ) continue;  /* FIXME: Ugh */
+			//if ( Ifull < 10 ) continue;  /* FIXME: Ugh */
 
 			pobs = Ipart/(images[i].osf*Ifull);
 			pcalc = get_partiality(refl);

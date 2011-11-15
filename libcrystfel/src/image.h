@@ -21,10 +21,10 @@
 #include <complex.h>
 #include <sys/types.h>
 
-#include <utils.h>
-#include <cell.h>
-#include <detector.h>
-#include <reflist.h>
+#include "utils.h"
+#include "cell.h"
+#include "detector.h"
+#include "reflist.h"
 
 
 #define MAX_CELL_CANDIDATES (32)

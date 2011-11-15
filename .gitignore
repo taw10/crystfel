@@ -10,8 +10,16 @@ config.h
 config.log
 config.status
 stamp-h1
+libcrystfel/libcrystfel.la
+libcrystfel/src/*.o
+libcrystfel/src/*.lo
+libcrystfel/src/.dirstamp
+libcrystfel/src/*.deps
+libcrystfel/*.libs
+libcrystfel/src/*.libs
 src/*.o
 src/.deps
+src/.libs
 src/pattern_sim
 src/process_hkl
 src/get_hkl
@@ -28,8 +36,3 @@ src/partial_sim
 src/.dirstamp
 *~
 doc/reference/*
-contrib/.deps
-contrib/*.o
-contrib/.dirstamp
-contrib/alter_stream
-contrib/cubeit

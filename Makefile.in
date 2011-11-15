@@ -41,41 +41,42 @@ bin_PROGRAMS = src/pattern_sim$(EXEEXT) src/process_hkl$(EXEEXT) \
 	src/render_hkl$(EXEEXT) src/calibrate_detector$(EXEEXT) \
 	src/partialator$(EXEEXT) src/check_hkl$(EXEEXT) \
 	src/sum_stack$(EXEEXT) src/partial_sim$(EXEEXT) \
-	contrib/alter_stream$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
+	$(am__EXEEXT_1)
 noinst_PROGRAMS = tests/list_check$(EXEEXT) \
 	tests/integration_check$(EXEEXT) \
 	tests/pr_gradient_check$(EXEEXT) tests/symmetry_check$(EXEEXT) \
-	$(am__EXEEXT_3)
+	$(am__EXEEXT_2)
 TESTS = tests/list_check$(EXEEXT) tests/first_merge_check \
 	tests/second_merge_check tests/third_merge_check \
 	tests/fourth_merge_check tests/integration_check$(EXEEXT) \
 	tests/pr_gradient_check$(EXEEXT) tests/symmetry_check$(EXEEXT) \
-	$(am__EXEEXT_3)
+	$(am__EXEEXT_2)
 @BUILD_HDFSEE_TRUE@am__append_1 = src/hdfsee
-@BUILD_CUBEIT_TRUE@am__append_2 = contrib/cubeit
-@HAVE_OPENCL_TRUE@am__append_3 = src/diffraction-gpu.c src/cl-utils.c
+@HAVE_OPENCL_TRUE@am__append_2 = src/diffraction-gpu.c src/cl-utils.c
+@HAVE_OPENCL_TRUE@am__append_3 = tests/gpu_sim_check
 @HAVE_OPENCL_TRUE@am__append_4 = tests/gpu_sim_check
-@HAVE_OPENCL_TRUE@am__append_5 = tests/gpu_sim_check
-@HAVE_OPENCL_TRUE@am__append_6 = src/diffraction-gpu.c src/cl-utils.c
-@HAVE_CAIRO_TRUE@am__append_7 = src/scaling-report.c
+@HAVE_CAIRO_TRUE@am__append_5 = src/scaling-report.c
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
 	build-aux/compile build-aux/config.guess build-aux/config.sub \
-	build-aux/depcomp build-aux/install-sh build-aux/missing
+	build-aux/depcomp build-aux/install-sh build-aux/ltmain.sh \
+	build-aux/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/00gnulib.m4 \
 	$(top_srcdir)/m4/extensions.m4 \
 	$(top_srcdir)/m4/gnulib-common.m4 \
 	$(top_srcdir)/m4/gnulib-comp.m4 $(top_srcdir)/m4/gtk-doc.m4 \
 	$(top_srcdir)/m4/include_next.m4 \
-	$(top_srcdir)/m4/lib-ignore.m4 $(top_srcdir)/m4/memchr.m4 \
-	$(top_srcdir)/m4/mmap-anon.m4 $(top_srcdir)/m4/onceonly.m4 \
-	$(top_srcdir)/m4/stddef_h.m4 $(top_srcdir)/m4/string_h.m4 \
-	$(top_srcdir)/m4/strndup.m4 $(top_srcdir)/m4/strnlen.m4 \
-	$(top_srcdir)/m4/warn-on-use.m4 $(top_srcdir)/m4/wchar_t.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/lib-ignore.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/memchr.m4 $(top_srcdir)/m4/mmap-anon.m4 \
+	$(top_srcdir)/m4/onceonly.m4 $(top_srcdir)/m4/stddef_h.m4 \
+	$(top_srcdir)/m4/string_h.m4 $(top_srcdir)/m4/strndup.m4 \
+	$(top_srcdir)/m4/strnlen.m4 $(top_srcdir)/m4/warn-on-use.m4 \
+	$(top_srcdir)/m4/wchar_t.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -85,242 +86,173 @@ CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @BUILD_HDFSEE_TRUE@am__EXEEXT_1 = src/hdfsee$(EXEEXT)
-@BUILD_CUBEIT_TRUE@am__EXEEXT_2 = contrib/cubeit$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" \
 	"$(DESTDIR)$(crystfeldir)" "$(DESTDIR)$(crystfeldocdir)" \
 	"$(DESTDIR)$(scriptdir)"
-@HAVE_OPENCL_TRUE@am__EXEEXT_3 = tests/gpu_sim_check$(EXEEXT)
+@HAVE_OPENCL_TRUE@am__EXEEXT_2 = tests/gpu_sim_check$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
-am_contrib_alter_stream_OBJECTS = contrib/alter_stream.$(OBJEXT) \
-	src/stream.$(OBJEXT) src/image.$(OBJEXT) \
-	src/thread-pool.$(OBJEXT) src/detector.$(OBJEXT) \
-	src/utils.$(OBJEXT) src/cell.$(OBJEXT) \
-	src/reflist-utils.$(OBJEXT) src/reflist.$(OBJEXT) \
-	src/symmetry.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
-	src/beam-parameters.$(OBJEXT) src/geometry.$(OBJEXT) \
-	src/peaks.$(OBJEXT)
-contrib_alter_stream_OBJECTS = $(am_contrib_alter_stream_OBJECTS)
-contrib_alter_stream_LDADD = $(LDADD)
-contrib_alter_stream_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
-am__contrib_cubeit_SOURCES_DIST = contrib/cubeit.c src/cell.c \
-	src/hdf5-file.c src/utils.c src/detector.c src/render.c \
-	src/filters.c src/image.c src/symmetry.c src/stream.c \
-	src/thread-pool.c src/reflist.c src/reflist-utils.c
-@BUILD_CUBEIT_TRUE@am_contrib_cubeit_OBJECTS =  \
-@BUILD_CUBEIT_TRUE@	contrib/cubeit.$(OBJEXT) src/cell.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/hdf5-file.$(OBJEXT) src/utils.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/detector.$(OBJEXT) src/render.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/filters.$(OBJEXT) src/image.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/symmetry.$(OBJEXT) src/stream.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/thread-pool.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/reflist.$(OBJEXT) \
-@BUILD_CUBEIT_TRUE@	src/reflist-utils.$(OBJEXT)
-contrib_cubeit_OBJECTS = $(am_contrib_cubeit_OBJECTS)
-contrib_cubeit_LDADD = $(LDADD)
-contrib_cubeit_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
 am_src_calibrate_detector_OBJECTS = src/calibrate_detector.$(OBJEXT) \
-	src/utils.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
-	src/image.$(OBJEXT) src/thread-pool.$(OBJEXT) \
-	src/detector.$(OBJEXT) src/stream.$(OBJEXT) src/cell.$(OBJEXT) \
-	src/reflist-utils.$(OBJEXT) src/reflist.$(OBJEXT) \
+	src/stream.$(OBJEXT) src/reflist-utils.$(OBJEXT) \
 	src/symmetry.$(OBJEXT) src/peaks.$(OBJEXT)
 src_calibrate_detector_OBJECTS = $(am_src_calibrate_detector_OBJECTS)
 src_calibrate_detector_LDADD = $(LDADD)
-src_calibrate_detector_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
-am_src_check_hkl_OBJECTS = src/check_hkl.$(OBJEXT) src/cell.$(OBJEXT) \
-	src/utils.$(OBJEXT) src/reflist-utils.$(OBJEXT) \
-	src/statistics.$(OBJEXT) src/symmetry.$(OBJEXT) \
-	src/thread-pool.$(OBJEXT) src/reflist.$(OBJEXT)
+src_calibrate_detector_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
+AM_V_lt = $(am__v_lt_$(V))
+am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
+am__v_lt_0 = --silent
+am_src_check_hkl_OBJECTS = src/check_hkl.$(OBJEXT) \
+	src/reflist-utils.$(OBJEXT) src/statistics.$(OBJEXT) \
+	src/symmetry.$(OBJEXT)
 src_check_hkl_OBJECTS = $(am_src_check_hkl_OBJECTS)
 src_check_hkl_LDADD = $(LDADD)
-src_check_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+src_check_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
 am_src_compare_hkl_OBJECTS = src/compare_hkl.$(OBJEXT) \
-	src/cell.$(OBJEXT) src/utils.$(OBJEXT) \
 	src/reflist-utils.$(OBJEXT) src/statistics.$(OBJEXT) \
-	src/symmetry.$(OBJEXT) src/thread-pool.$(OBJEXT) \
-	src/reflist.$(OBJEXT)
+	src/symmetry.$(OBJEXT)
 src_compare_hkl_OBJECTS = $(am_src_compare_hkl_OBJECTS)
 src_compare_hkl_LDADD = $(LDADD)
-src_compare_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
-am_src_get_hkl_OBJECTS = src/get_hkl.$(OBJEXT) src/cell.$(OBJEXT) \
-	src/utils.$(OBJEXT) src/reflist-utils.$(OBJEXT) \
-	src/symmetry.$(OBJEXT) src/beam-parameters.$(OBJEXT) \
-	src/thread-pool.$(OBJEXT) src/reflist.$(OBJEXT)
+src_compare_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
+am_src_get_hkl_OBJECTS = src/get_hkl.$(OBJEXT) \
+	src/reflist-utils.$(OBJEXT) src/symmetry.$(OBJEXT)
 src_get_hkl_OBJECTS = $(am_src_get_hkl_OBJECTS)
 src_get_hkl_LDADD = $(LDADD)
-src_get_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+src_get_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
 am__src_hdfsee_SOURCES_DIST = src/hdfsee.c src/dw-hdfsee.c \
-	src/render.c src/hdf5-file.c src/utils.c src/image.c \
-	src/filters.c src/thread-pool.c src/detector.c
+	src/render.c src/filters.c
 @BUILD_HDFSEE_TRUE@am_src_hdfsee_OBJECTS = src/hdfsee.$(OBJEXT) \
 @BUILD_HDFSEE_TRUE@	src/dw-hdfsee.$(OBJEXT) \
-@BUILD_HDFSEE_TRUE@	src/render.$(OBJEXT) \
-@BUILD_HDFSEE_TRUE@	src/hdf5-file.$(OBJEXT) src/utils.$(OBJEXT) \
-@BUILD_HDFSEE_TRUE@	src/image.$(OBJEXT) src/filters.$(OBJEXT) \
-@BUILD_HDFSEE_TRUE@	src/thread-pool.$(OBJEXT) \
-@BUILD_HDFSEE_TRUE@	src/detector.$(OBJEXT)
+@BUILD_HDFSEE_TRUE@	src/render.$(OBJEXT) src/filters.$(OBJEXT)
 src_hdfsee_OBJECTS = $(am_src_hdfsee_OBJECTS)
 src_hdfsee_LDADD = $(LDADD)
-src_hdfsee_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
-am__src_indexamajig_SOURCES_DIST = src/indexamajig.c src/hdf5-file.c \
-	src/utils.c src/cell.c src/image.c src/peaks.c src/index.c \
-	src/filters.c src/diffraction.c src/detector.c src/dirax.c \
-	src/mosflm.c src/reflist-utils.c src/symmetry.c src/geometry.c \
-	src/thread-pool.c src/beam-parameters.c src/reflist.c \
-	src/stream.c src/reax.c src/diffraction-gpu.c src/cl-utils.c
-@HAVE_OPENCL_TRUE@am__objects_1 = src/diffraction-gpu.$(OBJEXT) \
-@HAVE_OPENCL_TRUE@	src/cl-utils.$(OBJEXT)
+src_hdfsee_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
 am_src_indexamajig_OBJECTS = src/indexamajig.$(OBJEXT) \
-	src/hdf5-file.$(OBJEXT) src/utils.$(OBJEXT) src/cell.$(OBJEXT) \
-	src/image.$(OBJEXT) src/peaks.$(OBJEXT) src/index.$(OBJEXT) \
-	src/filters.$(OBJEXT) src/diffraction.$(OBJEXT) \
-	src/detector.$(OBJEXT) src/dirax.$(OBJEXT) \
+	src/peaks.$(OBJEXT) src/index.$(OBJEXT) src/filters.$(OBJEXT) \
+	src/diffraction.$(OBJEXT) src/dirax.$(OBJEXT) \
 	src/mosflm.$(OBJEXT) src/reflist-utils.$(OBJEXT) \
 	src/symmetry.$(OBJEXT) src/geometry.$(OBJEXT) \
-	src/thread-pool.$(OBJEXT) src/beam-parameters.$(OBJEXT) \
-	src/reflist.$(OBJEXT) src/stream.$(OBJEXT) src/reax.$(OBJEXT) \
-	$(am__objects_1)
+	src/stream.$(OBJEXT) src/reax.$(OBJEXT)
 src_indexamajig_OBJECTS = $(am_src_indexamajig_OBJECTS)
 src_indexamajig_LDADD = $(LDADD)
-src_indexamajig_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+src_indexamajig_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
 am_src_partial_sim_OBJECTS = src/partial_sim.$(OBJEXT) \
-	src/cell.$(OBJEXT) src/detector.$(OBJEXT) \
-	src/beam-parameters.$(OBJEXT) src/thread-pool.$(OBJEXT) \
-	src/utils.$(OBJEXT) src/reflist-utils.$(OBJEXT) \
-	src/reflist.$(OBJEXT) src/symmetry.$(OBJEXT) \
-	src/hdf5-file.$(OBJEXT) src/image.$(OBJEXT) \
+	src/reflist-utils.$(OBJEXT) src/symmetry.$(OBJEXT) \
 	src/geometry.$(OBJEXT) src/peaks.$(OBJEXT) \
 	src/stream.$(OBJEXT)
 src_partial_sim_OBJECTS = $(am_src_partial_sim_OBJECTS)
 src_partial_sim_LDADD = $(LDADD)
-src_partial_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
-am__src_partialator_SOURCES_DIST = src/partialator.c src/cell.c \
-	src/hdf5-file.c src/utils.c src/detector.c src/peaks.c \
-	src/image.c src/geometry.c src/reflist-utils.c src/stream.c \
-	src/thread-pool.c src/beam-parameters.c src/symmetry.c \
-	src/post-refinement.c src/hrs-scaling.c src/reflist.c \
-	src/scaling-report.c
-@HAVE_CAIRO_TRUE@am__objects_2 = src/scaling-report.$(OBJEXT)
+src_partial_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
+am__src_partialator_SOURCES_DIST = src/partialator.c src/peaks.c \
+	src/geometry.c src/reflist-utils.c src/stream.c src/symmetry.c \
+	src/post-refinement.c src/hrs-scaling.c src/scaling-report.c
+@HAVE_CAIRO_TRUE@am__objects_1 = src/scaling-report.$(OBJEXT)
 am_src_partialator_OBJECTS = src/partialator.$(OBJEXT) \
-	src/cell.$(OBJEXT) src/hdf5-file.$(OBJEXT) src/utils.$(OBJEXT) \
-	src/detector.$(OBJEXT) src/peaks.$(OBJEXT) src/image.$(OBJEXT) \
-	src/geometry.$(OBJEXT) src/reflist-utils.$(OBJEXT) \
-	src/stream.$(OBJEXT) src/thread-pool.$(OBJEXT) \
-	src/beam-parameters.$(OBJEXT) src/symmetry.$(OBJEXT) \
-	src/post-refinement.$(OBJEXT) src/hrs-scaling.$(OBJEXT) \
-	src/reflist.$(OBJEXT) $(am__objects_2)
+	src/peaks.$(OBJEXT) src/geometry.$(OBJEXT) \
+	src/reflist-utils.$(OBJEXT) src/stream.$(OBJEXT) \
+	src/symmetry.$(OBJEXT) src/post-refinement.$(OBJEXT) \
+	src/hrs-scaling.$(OBJEXT) $(am__objects_1)
 src_partialator_OBJECTS = $(am_src_partialator_OBJECTS)
 src_partialator_LDADD = $(LDADD)
-src_partialator_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+src_partialator_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
 am__src_pattern_sim_SOURCES_DIST = src/pattern_sim.c src/diffraction.c \
-	src/utils.c src/image.c src/cell.c src/hdf5-file.c \
-	src/detector.c src/peaks.c src/reflist-utils.c \
-	src/beam-parameters.c src/symmetry.c src/thread-pool.c \
-	src/reflist.c src/diffraction-gpu.c src/cl-utils.c
+	src/peaks.c src/reflist-utils.c src/symmetry.c \
+	src/diffraction-gpu.c src/cl-utils.c
+@HAVE_OPENCL_TRUE@am__objects_2 = src/diffraction-gpu.$(OBJEXT) \
+@HAVE_OPENCL_TRUE@	src/cl-utils.$(OBJEXT)
 am_src_pattern_sim_OBJECTS = src/pattern_sim.$(OBJEXT) \
-	src/diffraction.$(OBJEXT) src/utils.$(OBJEXT) \
-	src/image.$(OBJEXT) src/cell.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
-	src/detector.$(OBJEXT) src/peaks.$(OBJEXT) \
-	src/reflist-utils.$(OBJEXT) src/beam-parameters.$(OBJEXT) \
-	src/symmetry.$(OBJEXT) src/thread-pool.$(OBJEXT) \
-	src/reflist.$(OBJEXT) $(am__objects_1)
+	src/diffraction.$(OBJEXT) src/peaks.$(OBJEXT) \
+	src/reflist-utils.$(OBJEXT) src/symmetry.$(OBJEXT) \
+	$(am__objects_2)
 src_pattern_sim_OBJECTS = $(am_src_pattern_sim_OBJECTS)
 src_pattern_sim_LDADD = $(LDADD)
-src_pattern_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+src_pattern_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
 am_src_powder_plot_OBJECTS = src/powder_plot.$(OBJEXT) \
-	src/cell.$(OBJEXT) src/utils.$(OBJEXT) src/image.$(OBJEXT) \
-	src/hdf5-file.$(OBJEXT) src/detector.$(OBJEXT) \
-	src/thread-pool.$(OBJEXT) src/reflist-utils.$(OBJEXT) \
-	src/beam-parameters.$(OBJEXT) src/stream.$(OBJEXT) \
-	src/reflist.$(OBJEXT) src/symmetry.$(OBJEXT)
+	src/reflist-utils.$(OBJEXT) src/stream.$(OBJEXT) \
+	src/symmetry.$(OBJEXT)
 src_powder_plot_OBJECTS = $(am_src_powder_plot_OBJECTS)
 src_powder_plot_LDADD = $(LDADD)
-src_powder_plot_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+src_powder_plot_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
 am_src_process_hkl_OBJECTS = src/process_hkl.$(OBJEXT) \
-	src/statistics.$(OBJEXT) src/cell.$(OBJEXT) \
-	src/utils.$(OBJEXT) src/symmetry.$(OBJEXT) \
-	src/stream.$(OBJEXT) src/beam-parameters.$(OBJEXT) \
-	src/thread-pool.$(OBJEXT) src/image.$(OBJEXT) \
-	src/detector.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
-	src/reflist.$(OBJEXT) src/reflist-utils.$(OBJEXT)
+	src/statistics.$(OBJEXT) src/symmetry.$(OBJEXT) \
+	src/stream.$(OBJEXT) src/reflist-utils.$(OBJEXT)
 src_process_hkl_OBJECTS = $(am_src_process_hkl_OBJECTS)
 src_process_hkl_LDADD = $(LDADD)
-src_process_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+src_process_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
 am_src_render_hkl_OBJECTS = src/render_hkl.$(OBJEXT) \
-	src/cell.$(OBJEXT) src/reflist-utils.$(OBJEXT) \
-	src/utils.$(OBJEXT) src/povray.$(OBJEXT) \
+	src/reflist-utils.$(OBJEXT) src/povray.$(OBJEXT) \
 	src/symmetry.$(OBJEXT) src/render.$(OBJEXT) \
-	src/hdf5-file.$(OBJEXT) src/image.$(OBJEXT) \
-	src/filters.$(OBJEXT) src/thread-pool.$(OBJEXT) \
-	src/reflist.$(OBJEXT) src/detector.$(OBJEXT)
+	src/filters.$(OBJEXT)
 src_render_hkl_OBJECTS = $(am_src_render_hkl_OBJECTS)
 src_render_hkl_LDADD = $(LDADD)
-src_render_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
-am_src_sum_stack_OBJECTS = src/sum_stack.$(OBJEXT) src/utils.$(OBJEXT) \
-	src/hdf5-file.$(OBJEXT) src/image.$(OBJEXT) \
-	src/filters.$(OBJEXT) src/peaks.$(OBJEXT) \
-	src/detector.$(OBJEXT) src/cell.$(OBJEXT) \
-	src/thread-pool.$(OBJEXT) src/reflist.$(OBJEXT)
+src_render_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
+am_src_sum_stack_OBJECTS = src/sum_stack.$(OBJEXT) \
+	src/filters.$(OBJEXT) src/peaks.$(OBJEXT)
 src_sum_stack_OBJECTS = $(am_src_sum_stack_OBJECTS)
 src_sum_stack_LDADD = $(LDADD)
-src_sum_stack_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+src_sum_stack_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
 am__tests_gpu_sim_check_SOURCES_DIST = tests/gpu_sim_check.c \
-	src/utils.c src/diffraction.c src/diffraction-gpu.c \
-	src/thread-pool.c src/cell.c src/cl-utils.c src/symmetry.c \
-	src/detector.c src/hdf5-file.c src/image.c
+	src/diffraction.c src/diffraction-gpu.c src/cl-utils.c \
+	src/symmetry.c
 @HAVE_OPENCL_TRUE@am_tests_gpu_sim_check_OBJECTS =  \
 @HAVE_OPENCL_TRUE@	tests/gpu_sim_check.$(OBJEXT) \
-@HAVE_OPENCL_TRUE@	src/utils.$(OBJEXT) \
 @HAVE_OPENCL_TRUE@	src/diffraction.$(OBJEXT) \
 @HAVE_OPENCL_TRUE@	src/diffraction-gpu.$(OBJEXT) \
-@HAVE_OPENCL_TRUE@	src/thread-pool.$(OBJEXT) src/cell.$(OBJEXT) \
 @HAVE_OPENCL_TRUE@	src/cl-utils.$(OBJEXT) \
-@HAVE_OPENCL_TRUE@	src/symmetry.$(OBJEXT) \
-@HAVE_OPENCL_TRUE@	src/detector.$(OBJEXT) \
-@HAVE_OPENCL_TRUE@	src/hdf5-file.$(OBJEXT) src/image.$(OBJEXT)
+@HAVE_OPENCL_TRUE@	src/symmetry.$(OBJEXT)
 tests_gpu_sim_check_OBJECTS = $(am_tests_gpu_sim_check_OBJECTS)
 tests_gpu_sim_check_LDADD = $(LDADD)
-tests_gpu_sim_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+tests_gpu_sim_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
 am_tests_integration_check_OBJECTS =  \
-	tests/integration_check.$(OBJEXT) src/peaks.$(OBJEXT) \
-	src/reflist.$(OBJEXT) src/cell.$(OBJEXT) \
-	src/detector.$(OBJEXT) src/thread-pool.$(OBJEXT) \
-	src/utils.$(OBJEXT) src/image.$(OBJEXT) \
-	src/hdf5-file.$(OBJEXT)
+	tests/integration_check.$(OBJEXT) src/peaks.$(OBJEXT)
 tests_integration_check_OBJECTS =  \
 	$(am_tests_integration_check_OBJECTS)
 tests_integration_check_LDADD = $(LDADD)
-tests_integration_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
-am_tests_list_check_OBJECTS = tests/list_check.$(OBJEXT) \
-	src/reflist.$(OBJEXT) src/thread-pool.$(OBJEXT) \
-	src/utils.$(OBJEXT)
+tests_integration_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
+am_tests_list_check_OBJECTS = tests/list_check.$(OBJEXT)
 tests_list_check_OBJECTS = $(am_tests_list_check_OBJECTS)
 tests_list_check_LDADD = $(LDADD)
-tests_list_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+tests_list_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
 am_tests_pr_gradient_check_OBJECTS =  \
-	tests/pr_gradient_check.$(OBJEXT) src/detector.$(OBJEXT) \
-	src/cell.$(OBJEXT) src/geometry.$(OBJEXT) \
-	src/reflist.$(OBJEXT) src/thread-pool.$(OBJEXT) \
-	src/utils.$(OBJEXT) src/peaks.$(OBJEXT) src/symmetry.$(OBJEXT) \
-	src/image.$(OBJEXT) src/hdf5-file.$(OBJEXT) \
-	src/post-refinement.$(OBJEXT)
+	tests/pr_gradient_check.$(OBJEXT) src/peaks.$(OBJEXT) \
+	src/symmetry.$(OBJEXT) src/post-refinement.$(OBJEXT) \
+	src/geometry.$(OBJEXT)
 tests_pr_gradient_check_OBJECTS =  \
 	$(am_tests_pr_gradient_check_OBJECTS)
 tests_pr_gradient_check_LDADD = $(LDADD)
-tests_pr_gradient_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+tests_pr_gradient_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
 am_tests_symmetry_check_OBJECTS = tests/symmetry_check.$(OBJEXT) \
-	src/symmetry.$(OBJEXT) src/utils.$(OBJEXT) \
-	src/thread-pool.$(OBJEXT)
+	src/symmetry.$(OBJEXT)
 tests_symmetry_check_OBJECTS = $(am_tests_symmetry_check_OBJECTS)
 tests_symmetry_check_LDADD = $(LDADD)
-tests_symmetry_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a
+tests_symmetry_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
+	$(top_builddir)/libcrystfel/libcrystfel.la
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS)
 AM_V_CC = $(am__v_CC_$(V))
 am__v_CC_ = $(am__v_CC_$(AM_DEFAULT_VERBOSITY))
 am__v_CC_0 = @echo "  CC    " $@;
@@ -328,15 +260,16 @@ AM_V_at = $(am__v_at_$(V))
 am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
 am__v_at_0 = @
 CCLD = $(CC)
-LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_CCLD = $(am__v_CCLD_$(V))
 am__v_CCLD_ = $(am__v_CCLD_$(AM_DEFAULT_VERBOSITY))
 am__v_CCLD_0 = @echo "  CCLD  " $@;
 AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN   " $@;
-SOURCES = $(contrib_alter_stream_SOURCES) $(contrib_cubeit_SOURCES) \
-	$(src_calibrate_detector_SOURCES) $(src_check_hkl_SOURCES) \
+SOURCES = $(src_calibrate_detector_SOURCES) $(src_check_hkl_SOURCES) \
 	$(src_compare_hkl_SOURCES) $(src_get_hkl_SOURCES) \
 	$(src_hdfsee_SOURCES) $(src_indexamajig_SOURCES) \
 	$(src_partial_sim_SOURCES) $(src_partialator_SOURCES) \
@@ -346,12 +279,10 @@ SOURCES = $(contrib_alter_stream_SOURCES) $(contrib_cubeit_SOURCES) \
 	$(tests_integration_check_SOURCES) $(tests_list_check_SOURCES) \
 	$(tests_pr_gradient_check_SOURCES) \
 	$(tests_symmetry_check_SOURCES)
-DIST_SOURCES = $(contrib_alter_stream_SOURCES) \
-	$(am__contrib_cubeit_SOURCES_DIST) \
-	$(src_calibrate_detector_SOURCES) $(src_check_hkl_SOURCES) \
-	$(src_compare_hkl_SOURCES) $(src_get_hkl_SOURCES) \
-	$(am__src_hdfsee_SOURCES_DIST) \
-	$(am__src_indexamajig_SOURCES_DIST) $(src_partial_sim_SOURCES) \
+DIST_SOURCES = $(src_calibrate_detector_SOURCES) \
+	$(src_check_hkl_SOURCES) $(src_compare_hkl_SOURCES) \
+	$(src_get_hkl_SOURCES) $(am__src_hdfsee_SOURCES_DIST) \
+	$(src_indexamajig_SOURCES) $(src_partial_sim_SOURCES) \
 	$(am__src_partialator_SOURCES_DIST) \
 	$(am__src_pattern_sim_SOURCES_DIST) $(src_powder_plot_SOURCES) \
 	$(src_process_hkl_SOURCES) $(src_render_hkl_SOURCES) \
@@ -441,6 +372,7 @@ distcleancheck_listfiles = find . -type f -print
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
+AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
@@ -455,6 +387,8 @@ Cairo_CFLAGS = @Cairo_CFLAGS@
 Cairo_LIBS = @Cairo_LIBS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DSYMUTIL = @DSYMUTIL@
+DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
@@ -462,6 +396,7 @@ EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FFTW_CFLAGS = @FFTW_CFLAGS@
 FFTW_LIBS = @FFTW_LIBS@
+FGREP = @FGREP@
 GDK_pixbuf_2_CFLAGS = @GDK_pixbuf_2_CFLAGS@
 GDK_pixbuf_2_LIBS = @GDK_pixbuf_2_LIBS@
 GDK_pixbuf_CFLAGS = @GDK_pixbuf_CFLAGS@
@@ -538,11 +473,14 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBGNU_LIBDEPS = @LIBGNU_LIBDEPS@
 LIBGNU_LTLIBDEPS = @LIBGNU_LTLIBDEPS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
+LIBTOOL = @LIBTOOL@
+LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
@@ -551,7 +489,12 @@ NEXT_AS_FIRST_DIRECTIVE_STDDEF_H = @NEXT_AS_FIRST_DIRECTIVE_STDDEF_H@
 NEXT_AS_FIRST_DIRECTIVE_STRING_H = @NEXT_AS_FIRST_DIRECTIVE_STRING_H@
 NEXT_STDDEF_H = @NEXT_STDDEF_H@
 NEXT_STRING_H = @NEXT_STRING_H@
+NM = @NM@
+NMEDIT = @NMEDIT@
+OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OTOOL = @OTOOL@
+OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -580,6 +523,7 @@ REPLACE_STRNLEN = @REPLACE_STRNLEN@
 REPLACE_STRSIGNAL = @REPLACE_STRSIGNAL@
 REPLACE_STRSTR = @REPLACE_STRSTR@
 REPLACE_STRTOK_R = @REPLACE_STRTOK_R@
+SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STDDEF_H = @STDDEF_H@
@@ -591,6 +535,7 @@ abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 ac_ct_CC = @ac_ct_CC@
+ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
@@ -647,14 +592,12 @@ EXTRA_DIST = configure m4/gnulib-cache.m4 tests/first_merge_check \
 	tests/second_merge_check tests/third_merge_check \
 	tests/fourth_merge_check tests/first_merge_check.hkl \
 	tests/third_merge_check.hkl tests/fourth_merge_check.hkl \
-	src/cell.h src/hdf5-file.h src/image.h src/utils.h \
-	src/diffraction.h src/detector.h src/reflist-utils.h \
-	src/list_tmp.h src/statistics.h src/dw-hdfsee.h src/render.h \
-	src/hdfsee.h src/dirax.h src/mosflm.h src/peaks.h src/index.h \
-	src/filters.h src/diffraction-gpu.h src/cl-utils.h \
-	src/symmetry.h src/povray.h src/index-priv.h src/geometry.h \
-	src/render_hkl.h src/stream.h src/thread-pool.h \
-	src/beam-parameters.h src/post-refinement.h src/hrs-scaling.h \
+	src/diffraction.h src/reflist-utils.h src/statistics.h \
+	src/dw-hdfsee.h src/render.h src/hdfsee.h src/dirax.h \
+	src/mosflm.h src/peaks.h src/index.h src/filters.h \
+	src/diffraction-gpu.h src/cl-utils.h src/symmetry.h \
+	src/povray.h src/index-priv.h src/geometry.h src/render_hkl.h \
+	src/stream.h src/post-refinement.h src/hrs-scaling.h \
 	src/reflist.h src/scaling-report.h src/reax.h $(crystfel_DATA) \
 	doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
 	doc/examples/lcls-june-r0013-r0128.geom \
@@ -669,112 +612,60 @@ EXTRA_DIST = configure m4/gnulib-cache.m4 tests/first_merge_check \
 	scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
 	scripts/compare-hkl.gp scripts/check-peak-detection \
 	scripts/indexed-filenames scripts/gen-sfs
-SUBDIRS = lib doc/reference
+SUBDIRS = lib doc/reference libcrystfel
 ACLOCAL_AMFLAGS = -I m4
 AM_CFLAGS = -Wall
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib \
 	-I$(top_srcdir)/lib
-LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@
-src_partial_sim_SOURCES = src/partial_sim.c src/cell.c src/detector.c \
-                          src/beam-parameters.c src/thread-pool.c src/utils.c \
-                          src/reflist-utils.c src/reflist.c src/symmetry.c \
-                          src/hdf5-file.c src/image.c src/geometry.c \
-                          src/peaks.c src/stream.c
+LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@ \
+	$(top_builddir)/libcrystfel/libcrystfel.la
+src_partial_sim_SOURCES = src/partial_sim.c src/reflist-utils.c src/symmetry.c \
+                          src/geometry.c src/peaks.c src/stream.c
 
 src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c \
-	src/utils.c src/image.c src/cell.c src/hdf5-file.c \
-	src/detector.c src/peaks.c src/reflist-utils.c \
-	src/beam-parameters.c src/symmetry.c src/thread-pool.c \
-	src/reflist.c $(am__append_3)
-@HAVE_OPENCL_TRUE@tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c src/utils.c \
-@HAVE_OPENCL_TRUE@                              src/diffraction.c src/diffraction-gpu.c \
-@HAVE_OPENCL_TRUE@                              src/thread-pool.c src/cell.c src/cl-utils.c \
-@HAVE_OPENCL_TRUE@                              src/symmetry.c src/detector.c src/hdf5-file.c \
-@HAVE_OPENCL_TRUE@                              src/image.c
+	src/peaks.c src/reflist-utils.c src/symmetry.c $(am__append_2)
+@HAVE_OPENCL_TRUE@tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c  src/diffraction.c \
+@HAVE_OPENCL_TRUE@                              src/diffraction-gpu.c src/cl-utils.c \
+@HAVE_OPENCL_TRUE@                              src/symmetry.c
 
-src_process_hkl_SOURCES = src/process_hkl.c src/statistics.c \
-                          src/cell.c src/utils.c \
-                          src/symmetry.c src/stream.c src/beam-parameters.c \
-                          src/thread-pool.c src/image.c src/detector.c \
-                          src/hdf5-file.c src/reflist.c src/reflist-utils.c
+src_process_hkl_SOURCES = src/process_hkl.c src/statistics.c src/symmetry.c \
+                          src/stream.c src/reflist-utils.c
 
-src_indexamajig_SOURCES = src/indexamajig.c src/hdf5-file.c \
-	src/utils.c src/cell.c src/image.c src/peaks.c src/index.c \
-	src/filters.c src/diffraction.c src/detector.c src/dirax.c \
-	src/mosflm.c src/reflist-utils.c src/symmetry.c src/geometry.c \
-	src/thread-pool.c src/beam-parameters.c src/reflist.c \
-	src/stream.c src/reax.c $(am__append_6)
-@BUILD_HDFSEE_TRUE@src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/render.c \
-@BUILD_HDFSEE_TRUE@                     src/hdf5-file.c src/utils.c src/image.c src/filters.c \
-@BUILD_HDFSEE_TRUE@                     src/thread-pool.c src/detector.c
+src_indexamajig_SOURCES = src/indexamajig.c src/peaks.c src/index.c \
+                          src/filters.c src/diffraction.c src/dirax.c \
+                          src/mosflm.c src/reflist-utils.c src/symmetry.c \
+                          src/geometry.c src/stream.c src/reax.c
 
-src_get_hkl_SOURCES = src/get_hkl.c src/cell.c src/utils.c \
-                      src/reflist-utils.c src/symmetry.c src/beam-parameters.c \
-                      src/thread-pool.c src/reflist.c
+@BUILD_HDFSEE_TRUE@src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/render.c src/filters.c
+src_get_hkl_SOURCES = src/get_hkl.c src/reflist-utils.c src/symmetry.c
+src_compare_hkl_SOURCES = src/compare_hkl.c  src/reflist-utils.c \
+                          src/statistics.c src/symmetry.c
 
-src_compare_hkl_SOURCES = src/compare_hkl.c src/cell.c src/utils.c \
-                          src/reflist-utils.c src/statistics.c src/symmetry.c \
-                          src/thread-pool.c src/reflist.c
+src_check_hkl_SOURCES = src/check_hkl.c src/reflist-utils.c src/statistics.c \
+                        src/symmetry.c
 
-src_check_hkl_SOURCES = src/check_hkl.c src/cell.c src/utils.c \
-                        src/reflist-utils.c src/statistics.c src/symmetry.c \
-                        src/thread-pool.c src/reflist.c
+src_powder_plot_SOURCES = src/powder_plot.c src/reflist-utils.c src/stream.c \
+                          src/symmetry.c
 
-src_powder_plot_SOURCES = src/powder_plot.c src/cell.c src/utils.c src/image.c \
-                          src/hdf5-file.c src/detector.c src/thread-pool.c \
-                          src/reflist-utils.c src/beam-parameters.c src/stream.c \
-                          src/reflist.c src/symmetry.c
+src_render_hkl_SOURCES = src/render_hkl.c src/reflist-utils.c src/povray.c \
+                         src/symmetry.c src/render.c src/filters.c
 
-src_render_hkl_SOURCES = src/render_hkl.c src/cell.c src/reflist-utils.c \
-                         src/utils.c src/povray.c src/symmetry.c src/render.c \
-                         src/hdf5-file.c src/image.c src/filters.c \
-                         src/thread-pool.c src/reflist.c src/detector.c
+src_sum_stack_SOURCES = src/sum_stack.c src/filters.c src/peaks.c
+src_calibrate_detector_SOURCES = src/calibrate_detector.c src/stream.c \
+                                 src/reflist-utils.c src/symmetry.c \
+                                 src/peaks.c
 
-src_sum_stack_SOURCES = src/sum_stack.c src/utils.c src/hdf5-file.c \
-                        src/image.c src/filters.c src/peaks.c src/detector.c \
-                        src/cell.c src/thread-pool.c src/reflist.c
+src_partialator_SOURCES = src/partialator.c src/peaks.c src/geometry.c \
+	src/reflist-utils.c src/stream.c src/symmetry.c \
+	src/post-refinement.c src/hrs-scaling.c $(am__append_5)
+tests_list_check_SOURCES = tests/list_check.c
+tests_integration_check_SOURCES = tests/integration_check.c src/peaks.c
+tests_symmetry_check_SOURCES = tests/symmetry_check.c src/symmetry.c
+tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c src/peaks.c \
+                                  src/symmetry.c src/post-refinement.c \
+                                  src/geometry.c
 
-src_calibrate_detector_SOURCES = src/calibrate_detector.c src/utils.c \
-                                 src/hdf5-file.c src/image.c src/thread-pool.c \
-                                 src/detector.c src/stream.c src/cell.c \
-                                 src/reflist-utils.c src/reflist.c \
-                                 src/symmetry.c src/peaks.c
-
-src_partialator_SOURCES = src/partialator.c src/cell.c src/hdf5-file.c \
-	src/utils.c src/detector.c src/peaks.c src/image.c \
-	src/geometry.c src/reflist-utils.c src/stream.c \
-	src/thread-pool.c src/beam-parameters.c src/symmetry.c \
-	src/post-refinement.c src/hrs-scaling.c src/reflist.c \
-	$(am__append_7)
-@BUILD_CUBEIT_TRUE@contrib_cubeit_SOURCES = contrib/cubeit.c src/cell.c src/hdf5-file.c \
-@BUILD_CUBEIT_TRUE@                     src/utils.c src/detector.c src/render.c src/filters.c \
-@BUILD_CUBEIT_TRUE@                     src/image.c src/symmetry.c src/stream.c src/thread-pool.c \
-@BUILD_CUBEIT_TRUE@                     src/reflist.c src/reflist-utils.c
-
-contrib_alter_stream_SOURCES = contrib/alter_stream.c src/stream.c src/image.c \
-                               src/thread-pool.c src/detector.c src/utils.c \
-                               src/cell.c src/reflist-utils.c src/reflist.c \
-                               src/symmetry.c src/hdf5-file.c \
-                               src/beam-parameters.c src/geometry.c src/peaks.c
-
-tests_list_check_SOURCES = tests/list_check.c src/reflist.c src/thread-pool.c \
-                           src/utils.c
-
-tests_integration_check_SOURCES = tests/integration_check.c src/peaks.c \
-                                  src/reflist.c src/cell.c src/detector.c \
-                                  src/thread-pool.c src/utils.c src/image.c \
-                                  src/hdf5-file.c
-
-tests_symmetry_check_SOURCES = tests/symmetry_check.c src/symmetry.c \
-                               src/utils.c src/thread-pool.c
-
-tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c src/detector.c \
-                                  src/cell.c src/geometry.c src/reflist.c \
-                                  src/thread-pool.c src/utils.c src/peaks.c \
-                                  src/symmetry.c src/image.c src/hdf5-file.c \
-                                  src/post-refinement.c
-
-INCLUDES = "-I$(top_srcdir)/data"
+INCLUDES = -I$(top_srcdir)/libcrystfel/src -I$(top_srcdir)/data
 crystfeldir = $(datadir)/crystfel
 crystfel_DATA = data/diffraction.cl data/defs.h data/hdfsee.ui
 man_MANS = doc/man/indexamajig.1 doc/man/process_hkl.1 doc/man/pattern_sim.1 \
@@ -805,7 +696,7 @@ all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .c .o .obj
+.SUFFIXES: .c .lo .o .obj
 am--refresh:
 	@:
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -863,7 +754,7 @@ install-binPROGRAMS: $(bin_PROGRAMS)
 	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
 	for p in $$list; do echo "$$p $$p"; done | \
 	sed 's/$(EXEEXT)$$//' | \
-	while read p p1; do if test -f $$p; \
+	while read p p1; do if test -f $$p || test -f $$p1; \
 	  then echo "$$p"; echo "$$p"; else :; fi; \
 	done | \
 	sed -e 'p;s,.*/,,;n;h' -e 's|.*|.|' \
@@ -877,8 +768,8 @@ install-binPROGRAMS: $(bin_PROGRAMS)
 	while read type dir files; do \
 	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
 	    test -z "$$files" || { \
-	      echo " $(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(bindir)$$dir'"; \
-	      $(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
+	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(bindir)$$dir'"; \
+	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
 	    } \
 	; done
 
@@ -893,60 +784,37 @@ uninstall-binPROGRAMS:
 	cd "$(DESTDIR)$(bindir)" && rm -f $$files
 
 clean-binPROGRAMS:
-	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+	@list='$(bin_PROGRAMS)'; test -n "$$list" || exit 0; \
+	echo " rm -f" $$list; \
+	rm -f $$list || exit $$?; \
+	test -n "$(EXEEXT)" || exit 0; \
+	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
+	echo " rm -f" $$list; \
+	rm -f $$list
 
 clean-noinstPROGRAMS:
-	-test -z "$(noinst_PROGRAMS)" || rm -f $(noinst_PROGRAMS)
-contrib/$(am__dirstamp):
-	@$(MKDIR_P) contrib
-	@: > contrib/$(am__dirstamp)
-contrib/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) contrib/$(DEPDIR)
-	@: > contrib/$(DEPDIR)/$(am__dirstamp)
-contrib/alter_stream.$(OBJEXT): contrib/$(am__dirstamp) \
-	contrib/$(DEPDIR)/$(am__dirstamp)
+	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
+	echo " rm -f" $$list; \
+	rm -f $$list || exit $$?; \
+	test -n "$(EXEEXT)" || exit 0; \
+	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
+	echo " rm -f" $$list; \
+	rm -f $$list
 src/$(am__dirstamp):
 	@$(MKDIR_P) src
 	@: > src/$(am__dirstamp)
 src/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) src/$(DEPDIR)
 	@: > src/$(DEPDIR)/$(am__dirstamp)
+src/calibrate_detector.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/stream.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
-src/image.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/thread-pool.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/detector.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/utils.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/cell.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/reflist-utils.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/reflist.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/symmetry.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
-src/hdf5-file.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/beam-parameters.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/geometry.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
 src/peaks.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-contrib/alter_stream$(EXEEXT): $(contrib_alter_stream_OBJECTS) $(contrib_alter_stream_DEPENDENCIES) contrib/$(am__dirstamp)
-	@rm -f contrib/alter_stream$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(contrib_alter_stream_OBJECTS) $(contrib_alter_stream_LDADD) $(LIBS)
-contrib/cubeit.$(OBJEXT): contrib/$(am__dirstamp) \
-	contrib/$(DEPDIR)/$(am__dirstamp)
-src/render.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/filters.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-contrib/cubeit$(EXEEXT): $(contrib_cubeit_OBJECTS) $(contrib_cubeit_DEPENDENCIES) contrib/$(am__dirstamp)
-	@rm -f contrib/cubeit$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(contrib_cubeit_OBJECTS) $(contrib_cubeit_LDADD) $(LIBS)
-src/calibrate_detector.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
 src/calibrate_detector$(EXEEXT): $(src_calibrate_detector_OBJECTS) $(src_calibrate_detector_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/calibrate_detector$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_calibrate_detector_OBJECTS) $(src_calibrate_detector_LDADD) $(LIBS)
@@ -971,6 +839,10 @@ src/hdfsee.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/dw-hdfsee.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/render.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/filters.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/hdfsee$(EXEEXT): $(src_hdfsee_OBJECTS) $(src_hdfsee_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/hdfsee$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_hdfsee_OBJECTS) $(src_hdfsee_LDADD) $(LIBS)
@@ -982,11 +854,9 @@ src/diffraction.$(OBJEXT): src/$(am__dirstamp) \
 src/dirax.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/mosflm.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/geometry.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/reax.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/diffraction-gpu.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/cl-utils.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
 src/indexamajig$(EXEEXT): $(src_indexamajig_OBJECTS) $(src_indexamajig_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/indexamajig$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_indexamajig_OBJECTS) $(src_indexamajig_LDADD) $(LIBS)
@@ -1007,6 +877,10 @@ src/partialator$(EXEEXT): $(src_partialator_OBJECTS) $(src_partialator_DEPENDENC
 	@rm -f src/partialator$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_partialator_OBJECTS) $(src_partialator_LDADD) $(LIBS)
 src/pattern_sim.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/diffraction-gpu.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/cl-utils.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/pattern_sim$(EXEEXT): $(src_pattern_sim_OBJECTS) $(src_pattern_sim_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/pattern_sim$(EXEEXT)
@@ -1067,15 +941,10 @@ tests/symmetry_check$(EXEEXT): $(tests_symmetry_check_OBJECTS) $(tests_symmetry_
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f contrib/alter_stream.$(OBJEXT)
-	-rm -f contrib/cubeit.$(OBJEXT)
-	-rm -f src/beam-parameters.$(OBJEXT)
 	-rm -f src/calibrate_detector.$(OBJEXT)
-	-rm -f src/cell.$(OBJEXT)
 	-rm -f src/check_hkl.$(OBJEXT)
 	-rm -f src/cl-utils.$(OBJEXT)
 	-rm -f src/compare_hkl.$(OBJEXT)
-	-rm -f src/detector.$(OBJEXT)
 	-rm -f src/diffraction-gpu.$(OBJEXT)
 	-rm -f src/diffraction.$(OBJEXT)
 	-rm -f src/dirax.$(OBJEXT)
@@ -1083,10 +952,8 @@ mostlyclean-compile:
 	-rm -f src/filters.$(OBJEXT)
 	-rm -f src/geometry.$(OBJEXT)
 	-rm -f src/get_hkl.$(OBJEXT)
-	-rm -f src/hdf5-file.$(OBJEXT)
 	-rm -f src/hdfsee.$(OBJEXT)
 	-rm -f src/hrs-scaling.$(OBJEXT)
-	-rm -f src/image.$(OBJEXT)
 	-rm -f src/index.$(OBJEXT)
 	-rm -f src/indexamajig.$(OBJEXT)
 	-rm -f src/mosflm.$(OBJEXT)
@@ -1100,7 +967,6 @@ mostlyclean-compile:
 	-rm -f src/process_hkl.$(OBJEXT)
 	-rm -f src/reax.$(OBJEXT)
 	-rm -f src/reflist-utils.$(OBJEXT)
-	-rm -f src/reflist.$(OBJEXT)
 	-rm -f src/render.$(OBJEXT)
 	-rm -f src/render_hkl.$(OBJEXT)
 	-rm -f src/scaling-report.$(OBJEXT)
@@ -1108,8 +974,6 @@ mostlyclean-compile:
 	-rm -f src/stream.$(OBJEXT)
 	-rm -f src/sum_stack.$(OBJEXT)
 	-rm -f src/symmetry.$(OBJEXT)
-	-rm -f src/thread-pool.$(OBJEXT)
-	-rm -f src/utils.$(OBJEXT)
 	-rm -f tests/gpu_sim_check.$(OBJEXT)
 	-rm -f tests/integration_check.$(OBJEXT)
 	-rm -f tests/list_check.$(OBJEXT)
@@ -1119,15 +983,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@contrib/$(DEPDIR)/alter_stream.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@contrib/$(DEPDIR)/cubeit.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/beam-parameters.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/calibrate_detector.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cell.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/check_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cl-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/compare_hkl.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/detector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction-gpu.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/dirax.Po@am__quote@
@@ -1135,10 +994,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/filters.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/geometry.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/get_hkl.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/hdf5-file.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/hdfsee.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/hrs-scaling.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/image.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/index.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/indexamajig.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/mosflm.Po@am__quote@
@@ -1152,7 +1009,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/process_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reax.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reflist-utils.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reflist.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/scaling-report.Po@am__quote@
@@ -1160,8 +1016,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/stream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/sum_stack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/symmetry.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/thread-pool.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/gpu_sim_check.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/integration_check.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/list_check.Po@am__quote@
@@ -1185,6 +1039,26 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.c.lo:
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+mostlyclean-libtool:
+	-rm -f *.lo
+
+clean-libtool:
+	-rm -rf .libs _libs
+	-rm -rf src/.libs src/_libs
+	-rm -rf tests/.libs tests/_libs
+
+distclean-libtool:
+	-rm -f libtool config.lt
 install-man1: $(man_MANS)
 	@$(NORMAL_INSTALL)
 	test -z "$(man1dir)" || $(MKDIR_P) "$(DESTDIR)$(man1dir)"
@@ -1729,8 +1603,6 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
-	-rm -f contrib/$(DEPDIR)/$(am__dirstamp)
-	-rm -f contrib/$(am__dirstamp)
 	-rm -f src/$(DEPDIR)/$(am__dirstamp)
 	-rm -f src/$(am__dirstamp)
 	-rm -f tests/$(DEPDIR)/$(am__dirstamp)
@@ -1741,15 +1613,15 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-recursive
 
-clean-am: clean-binPROGRAMS clean-generic clean-noinstPROGRAMS \
-	mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-libtool \
+	clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf contrib/$(DEPDIR) src/$(DEPDIR) tests/$(DEPDIR)
+	-rm -rf src/$(DEPDIR) tests/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
-	distclean-hdr distclean-tags
+	distclean-hdr distclean-libtool distclean-tags
 
 dvi: dvi-recursive
 
@@ -1795,13 +1667,14 @@ installcheck-am:
 maintainer-clean: maintainer-clean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf contrib/$(DEPDIR) src/$(DEPDIR) tests/$(DEPDIR)
+	-rm -rf src/$(DEPDIR) tests/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-recursive
 
-mostlyclean-am: mostlyclean-compile mostlyclean-generic
+mostlyclean-am: mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool
 
 pdf: pdf-recursive
 
@@ -1821,10 +1694,11 @@ uninstall-man: uninstall-man1
 
 .PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
 	all all-am am--refresh check check-TESTS check-am clean \
-	clean-binPROGRAMS clean-generic clean-noinstPROGRAMS ctags \
-	ctags-recursive dist dist-all dist-bzip2 dist-gzip dist-lzma \
-	dist-shar dist-tarZ dist-xz dist-zip distcheck distclean \
-	distclean-compile distclean-generic distclean-hdr \
+	clean-binPROGRAMS clean-generic clean-libtool \
+	clean-noinstPROGRAMS ctags ctags-recursive dist dist-all \
+	dist-bzip2 dist-gzip dist-lzma dist-shar dist-tarZ dist-xz \
+	dist-zip distcheck distclean distclean-compile \
+	distclean-generic distclean-hdr distclean-libtool \
 	distclean-tags distcleancheck distdir distuninstallcheck dvi \
 	dvi-am html html-am info info-am install install-am \
 	install-binPROGRAMS install-crystfelDATA \
@@ -1835,10 +1709,11 @@ uninstall-man: uninstall-man1
 	install-ps-am install-scriptDATA install-strip installcheck \
 	installcheck-am installdirs installdirs-am maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic pdf pdf-am ps ps-am tags tags-recursive \
-	uninstall uninstall-am uninstall-binPROGRAMS \
-	uninstall-crystfelDATA uninstall-crystfeldocDATA uninstall-man \
-	uninstall-man1 uninstall-scriptDATA
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags tags-recursive uninstall uninstall-am \
+	uninstall-binPROGRAMS uninstall-crystfelDATA \
+	uninstall-crystfeldocDATA uninstall-man uninstall-man1 \
+	uninstall-scriptDATA
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
