@@ -17,6 +17,7 @@ libcrystfel/src/.dirstamp
 libcrystfel/src/*.deps
 libcrystfel/*.libs
 libcrystfel/src/*.libs
+tests/.libs
 src/*.o
 src/.deps
 src/.libs
