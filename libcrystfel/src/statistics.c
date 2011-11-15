@@ -14,6 +14,7 @@
 #include <config.h>
 #endif
 
+#define _ISOC99_SOURCE
 #include <math.h>
 #include <stdlib.h>
 #include <gsl/gsl_errno.h>
