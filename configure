@@ -630,8 +630,6 @@ HAVE_FFTW_FALSE
 HAVE_FFTW_TRUE
 HAVE_CAIRO_FALSE
 HAVE_CAIRO_TRUE
-BUILD_CUBEIT_FALSE
-BUILD_CUBEIT_TRUE
 BUILD_HDFSEE_FALSE
 BUILD_HDFSEE_TRUE
 HAVE_OPENCL_FALSE
@@ -14001,16 +13999,6 @@ else
 fi
 
 
- if test x$have_cairo = xtrue \
-                                 -a x$have_libpng = xtrue; then
-  BUILD_CUBEIT_TRUE=
-  BUILD_CUBEIT_FALSE='#'
-else
-  BUILD_CUBEIT_TRUE='#'
-  BUILD_CUBEIT_FALSE=
-fi
-
-
  if test x$have_cairo = xtrue; then
   HAVE_CAIRO_TRUE=
   HAVE_CAIRO_FALSE='#'
@@ -14485,10 +14473,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_HDFSEE_TRUE}" && test -z "${BUILD_HDFSEE_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_HDFSEE\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${BUILD_CUBEIT_TRUE}" && test -z "${BUILD_CUBEIT_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_CUBEIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_CAIRO_TRUE}" && test -z "${HAVE_CAIRO_FALSE}"; then

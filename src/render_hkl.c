@@ -26,7 +26,6 @@
 #endif
 
 #include "utils.h"
-#include "povray.h"
 #include "symmetry.h"
 #include "render.h"
 #include "render_hkl.h"
@@ -41,12 +40,7 @@ static void show_help(const char *s)
 {
 	printf("Syntax: %s [options] <file.hkl>\n\n", s);
 	printf(
-"Render intensity lists in various ways.\n"
-"\n"
-"      --povray            Render a 3D animation using POV-ray.\n"
-#ifdef HAVE_CAIRO
-"      --zone-axis         Render a 2D zone axis pattern.\n"
-#endif
+"Render intensity lists in 2D slices.\n"
 "\n"
 "  -d, --down=<h>,<k>,<l>  Indices for the axis in the downward direction.\n"
 "                           Default: 1,0,0.\n"
@@ -565,7 +559,6 @@ int main(int argc, char *argv[])
 	UnitCell *cell;
 	RefList *list;
 	char *infile;
-	int config_povray = 0;
 	int config_zoneaxis = 0;
 	int config_sqrt = 0;
 	int config_colkey = 0;
@@ -590,7 +583,6 @@ int main(int argc, char *argv[])
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
-		{"povray",             0, &config_povray,      1},
 		{"zone-axis",          0, &config_zoneaxis,    1},
 		{"output",             1, NULL,               'o'},
 		{"pdb",                1, NULL,               'p'},
@@ -675,6 +667,11 @@ int main(int argc, char *argv[])
 
 	}
 
+	if ( config_zoneaxis ) {
+		ERROR("Friendly warning: The --zone-axis option isn't needed"
+		      " any longer (I ignored it for you).\n");
+	}
+
 	if ( (pdb == NULL) && !config_colkey ) {
 		ERROR("You must specify the PDB containing the unit cell.\n");
 		return 1;
@@ -691,7 +688,6 @@ int main(int argc, char *argv[])
 	}
 
 	if ( outfile == NULL ) outfile = strdup("za.pdf");
-
 
 	if ( strcmp(weighting, "I") == 0 ) {
 		wght = WGHT_I;
@@ -780,15 +776,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( config_povray ) {
-		r = povray_render_animation(cell, list,
-		                            nproc, sym, wght, boost, scale_top);
-	} else if ( config_zoneaxis ) {
-		render_za(cell, list, boost, sym, wght, colscale,
-		          rh, rk, rl, dh, dk, dl, outfile, scale_top);
-	} else {
-		ERROR("Try again with either --povray or --zone-axis.\n");
-	}
+	render_za(cell, list, boost, sym, wght, colscale,
+	          rh, rk, rl, dh, dk, dl, outfile, scale_top);
 
 	free(pdb);
 	free_symoplist(sym);

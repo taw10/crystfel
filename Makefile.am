@@ -3,9 +3,8 @@ SUBDIRS = lib doc/reference libcrystfel
 ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
-               src/compare_hkl src/powder_plot src/render_hkl \
-               src/calibrate_detector src/partialator \
-               src/check_hkl src/partial_sim
+               src/compare_hkl src/powder_plot src/calibrate_detector \
+               src/partialator src/check_hkl src/partial_sim
 
 noinst_PROGRAMS = tests/list_check tests/integration_check \
                   tests/pr_gradient_check tests/symmetry_check
@@ -22,6 +21,10 @@ EXTRA_DIST += tests/first_merge_check tests/second_merge_check \
 
 if BUILD_HDFSEE
 bin_PROGRAMS += src/hdfsee
+endif
+
+if HAVE_CAIRO
+bin_PROGRAMS += src/render_hkl
 endif
 
 AM_CFLAGS = -Wall
@@ -56,7 +59,9 @@ src_check_hkl_SOURCES = src/check_hkl.c
 
 src_powder_plot_SOURCES = src/powder_plot.c
 
-src_render_hkl_SOURCES = src/render_hkl.c src/povray.c
+if HAVE_CAIRO
+src_render_hkl_SOURCES = src/render_hkl.c
+endif
 
 src_calibrate_detector_SOURCES = src/calibrate_detector.c
 
@@ -79,9 +84,8 @@ tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c \
 
 INCLUDES = -I$(top_srcdir)/libcrystfel/src -I$(top_srcdir)/data
 
-EXTRA_DIST += src/dw-hdfsee.h src/hdfsee.h src/povray.h \
-              src/render_hkl.h src/post-refinement.h src/hrs-scaling.h \
-              src/scaling-report.h
+EXTRA_DIST += src/dw-hdfsee.h src/hdfsee.h src/render_hkl.h \
+              src/post-refinement.h src/hrs-scaling.h src/scaling-report.h
 
 crystfeldir = $(datadir)/crystfel
 crystfel_DATA = data/diffraction.cl data/defs.h data/hdfsee.ui
