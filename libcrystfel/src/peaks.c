@@ -29,7 +29,6 @@
 #include "peaks.h"
 #include "detector.h"
 #include "filters.h"
-#include "diffraction.h"
 #include "reflist-utils.h"
 #include "beam-parameters.h"
 

@@ -33,10 +33,6 @@ extern RefList *read_reflections_from_file(FILE *fh);
 
 extern RefList *read_reflections(const char *filename);
 
-extern double *intensities_from_list(RefList *list);
-extern double *phases_from_list(RefList *list);
-extern unsigned char *flags_from_list(RefList *list);
-
 extern int check_list_symmetry(RefList *list, const SymOpList *sym);
 extern int find_equiv_in_list(RefList *list, signed int h, signed int k,
                               signed int l, const SymOpList *sym, signed int *hu,

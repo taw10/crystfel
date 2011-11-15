@@ -88,9 +88,9 @@ am_libcrystfel_la_OBJECTS = src/reflist.lo src/utils.lo src/cell.lo \
 	src/detector.lo src/thread-pool.lo src/image.lo \
 	src/hdf5-file.lo src/beam-parameters.lo src/geometry.lo \
 	src/statistics.lo src/symmetry.lo src/stream.lo src/peaks.lo \
-	src/reflist-utils.lo src/filters.lo src/diffraction.lo \
-	src/diffraction-gpu.lo src/cl-utils.lo src/render.lo \
-	src/index.lo src/dirax.lo src/mosflm.lo src/reax.lo
+	src/reflist-utils.lo src/filters.lo src/cl-utils.lo \
+	src/render.lo src/index.lo src/dirax.lo src/mosflm.lo \
+	src/reax.lo
 libcrystfel_la_OBJECTS = $(am_libcrystfel_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
@@ -351,20 +351,18 @@ libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/thread-pool.c src/image.c src/hdf5-file.c \
                          src/beam-parameters.c src/geometry.c src/statistics.c \
                          src/symmetry.c src/stream.c src/peaks.c \
-                         src/reflist-utils.c src/filters.c src/diffraction.c \
-                         src/diffraction-gpu.c src/cl-utils.c src/render.c \
-                         src/index.c src/dirax.c src/mosflm.c src/reax.c
+                         src/reflist-utils.c src/filters.c src/cl-utils.c \
+                         src/render.c src/index.c src/dirax.c src/mosflm.c \
+                         src/reax.c
 
 libcrystfel_la_includedir = $(includedir)/crystfel/
-libcrystfel_la_include_HEADERS = src/beam-parameters.h src/diffraction-gpu.h \
-                                 src/hdf5-file.h src/reflist.h src/symmetry.h \
-                                 src/cell.h src/diffraction.h src/image.h \
+libcrystfel_la_include_HEADERS = src/beam-parameters.h src/hdf5-file.h \
+                                 src/reflist.h src/symmetry.h src/cell.h \
                                  src/reflist-utils.h src/thread-pool.h \
-                                 src/cl-utils.h src/filters.h src/list_tmp.h \
+                                 src/cl-utils.h src/filters.h \
                                  src/statistics.h src/utils.h src/detector.h \
                                  src/geometry.h src/peaks.h src/stream.h \
-                                 src/render.h src/index.h \
-                                 ../data/defs.h
+                                 src/render.h src/index.h src/image.h
 
 INCLUDES = "-I$(top_srcdir)/data"
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib \
@@ -457,9 +455,6 @@ src/peaks.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/reflist-utils.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/filters.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/diffraction.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/diffraction-gpu.lo: src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
 src/cl-utils.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/render.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/index.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
@@ -479,10 +474,6 @@ mostlyclean-compile:
 	-rm -f src/cl-utils.lo
 	-rm -f src/detector.$(OBJEXT)
 	-rm -f src/detector.lo
-	-rm -f src/diffraction-gpu.$(OBJEXT)
-	-rm -f src/diffraction-gpu.lo
-	-rm -f src/diffraction.$(OBJEXT)
-	-rm -f src/diffraction.lo
 	-rm -f src/dirax.$(OBJEXT)
 	-rm -f src/dirax.lo
 	-rm -f src/filters.$(OBJEXT)
@@ -525,8 +516,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cell.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cl-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/detector.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction-gpu.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/dirax.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/filters.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/geometry.Plo@am__quote@

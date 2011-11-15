@@ -10,7 +10,11 @@
  */
 
 
-#include <defs.h>
+/* Maxmimum index to hold values up to (can be increased if necessary)
+ * WARNING: Altering this value constitutes an ABI change, and means you must
+ * update src/pattern_sim.h then recompile and reinstall everything. */
+#define INDMAX 140
+
 #ifndef M_PI
 #define M_PI ((float)(3.14159265))
 #endif

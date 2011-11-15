@@ -175,32 +175,6 @@ static inline int within_tolerance(double a, double b, double percent)
 
 #define UNUSED __attribute__((unused))
 
-/* -------------------- Indexed lists for specified types ------------------- */
-
-#include "defs.h"
-
-#define LIST_SIZE (IDIM*IDIM*IDIM)
-
-/* Create functions for storing reflection intensities indexed as h,k,l */
-#define LABEL(x) x##_intensity
-#define TYPE double
-#include "list_tmp.h"
-
-/* CAs above, but for phase values */
-#define LABEL(x) x##_phase
-#define TYPE double
-#include "list_tmp.h"
-
-/* As above, but for (unsigned) integer counts */
-#define LABEL(x) x##_count
-#define TYPE unsigned int
-#include "list_tmp.h"
-
-/* As above, but for simple flags */
-#define LABEL(x) x##_flag
-#define TYPE unsigned char
-#include "list_tmp.h"
-
 
 /* ------------------------------ Message macros ---------------------------- */
 

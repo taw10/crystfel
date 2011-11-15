@@ -142,7 +142,8 @@ src_partialator_OBJECTS = $(am_src_partialator_OBJECTS)
 src_partialator_LDADD = $(LDADD)
 src_partialator_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am_src_pattern_sim_OBJECTS = src/pattern_sim.$(OBJEXT)
+am_src_pattern_sim_OBJECTS = src/pattern_sim.$(OBJEXT) \
+	src/diffraction.$(OBJEXT) src/diffraction-gpu.$(OBJEXT)
 src_pattern_sim_OBJECTS = $(am_src_pattern_sim_OBJECTS)
 src_pattern_sim_LDADD = $(LDADD)
 src_pattern_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
@@ -163,9 +164,12 @@ src_render_hkl_OBJECTS = $(am_src_render_hkl_OBJECTS)
 src_render_hkl_LDADD = $(LDADD)
 src_render_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am__tests_gpu_sim_check_SOURCES_DIST = tests/gpu_sim_check.c
+am__tests_gpu_sim_check_SOURCES_DIST = tests/gpu_sim_check.c \
+	src/diffraction.c src/diffraction-gpu.c
 @HAVE_OPENCL_TRUE@am_tests_gpu_sim_check_OBJECTS =  \
-@HAVE_OPENCL_TRUE@	tests/gpu_sim_check.$(OBJEXT)
+@HAVE_OPENCL_TRUE@	tests/gpu_sim_check.$(OBJEXT) \
+@HAVE_OPENCL_TRUE@	src/diffraction.$(OBJEXT) \
+@HAVE_OPENCL_TRUE@	src/diffraction-gpu.$(OBJEXT)
 tests_gpu_sim_check_OBJECTS = $(am_tests_gpu_sim_check_OBJECTS)
 tests_gpu_sim_check_LDADD = $(LDADD)
 tests_gpu_sim_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
@@ -567,8 +571,12 @@ AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib \
 LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@ \
 	$(top_builddir)/libcrystfel/libcrystfel.la
 src_partial_sim_SOURCES = src/partial_sim.c
-src_pattern_sim_SOURCES = src/pattern_sim.c
-@HAVE_OPENCL_TRUE@tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c
+src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c \
+                          src/diffraction-gpu.c
+
+@HAVE_OPENCL_TRUE@tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c src/diffraction.c \
+@HAVE_OPENCL_TRUE@                              src/diffraction-gpu.c
+
 src_process_hkl_SOURCES = src/process_hkl.c
 src_indexamajig_SOURCES = src/indexamajig.c
 @BUILD_HDFSEE_TRUE@src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c
@@ -588,7 +596,7 @@ tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c \
 
 INCLUDES = -I$(top_srcdir)/libcrystfel/src -I$(top_srcdir)/data
 crystfeldir = $(datadir)/crystfel
-crystfel_DATA = data/diffraction.cl data/defs.h data/hdfsee.ui
+crystfel_DATA = data/diffraction.cl data/hdfsee.ui
 man_MANS = doc/man/indexamajig.1 doc/man/process_hkl.1 doc/man/pattern_sim.1 \
            doc/man/crystfel_geometry.1 doc/man/powder_plot.1
 
@@ -777,6 +785,10 @@ src/partialator$(EXEEXT): $(src_partialator_OBJECTS) $(src_partialator_DEPENDENC
 	$(AM_V_CCLD)$(LINK) $(src_partialator_OBJECTS) $(src_partialator_LDADD) $(LIBS)
 src/pattern_sim.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/diffraction.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/diffraction-gpu.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/pattern_sim$(EXEEXT): $(src_pattern_sim_OBJECTS) $(src_pattern_sim_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/pattern_sim$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_pattern_sim_OBJECTS) $(src_pattern_sim_LDADD) $(LIBS)
@@ -832,6 +844,8 @@ mostlyclean-compile:
 	-rm -f src/calibrate_detector.$(OBJEXT)
 	-rm -f src/check_hkl.$(OBJEXT)
 	-rm -f src/compare_hkl.$(OBJEXT)
+	-rm -f src/diffraction-gpu.$(OBJEXT)
+	-rm -f src/diffraction.$(OBJEXT)
 	-rm -f src/dw-hdfsee.$(OBJEXT)
 	-rm -f src/get_hkl.$(OBJEXT)
 	-rm -f src/hdfsee.$(OBJEXT)
@@ -857,6 +871,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/calibrate_detector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/check_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/compare_hkl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction-gpu.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/dw-hdfsee.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/get_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/hdfsee.Po@am__quote@

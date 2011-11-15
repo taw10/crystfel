@@ -33,6 +33,7 @@
 #include "symmetry.h"
 #include "reflist.h"
 #include "reflist-utils.h"
+#include "pattern_sim.h"
 
 
 static void show_help(const char *s)
@@ -138,6 +139,76 @@ static void show_details()
 "would result in machine precision problems, a normal distribution with\n"
 "standard deviation sqrt(I) is used instead.\n"
 );
+}
+
+
+static double *intensities_from_list(RefList *list)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	double *out = new_list_intensity();
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
+
+		signed int h, k, l;
+		double intensity = get_intensity(refl);
+
+		get_indices(refl, &h, &k, &l);
+
+		set_intensity(out, h, k, l, intensity);
+
+	}
+
+	return out;
+}
+
+
+static double *phases_from_list(RefList *list)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	double *out = new_list_phase();
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
+
+		signed int h, k, l;
+		double phase = get_phase(refl, NULL);
+
+		get_indices(refl, &h, &k, &l);
+
+		set_phase(out, h, k, l, phase);
+
+	}
+
+	return out;
+
+}
+
+
+static unsigned char *flags_from_list(RefList *list)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	unsigned char *out = new_list_flag();
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
+
+		signed int h, k, l;
+
+		get_indices(refl, &h, &k, &l);
+
+		set_flag(out, h, k, l, 1);
+
+	}
+
+	return out;
+
 }
 
 

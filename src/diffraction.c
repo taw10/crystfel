@@ -24,6 +24,7 @@
 #include "diffraction.h"
 #include "beam-parameters.h"
 #include "symmetry.h"
+#include "pattern_sim.h"
 
 
 #define SAMPLING (4)
