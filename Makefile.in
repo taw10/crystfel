@@ -52,10 +52,9 @@ TESTS = tests/list_check$(EXEEXT) tests/first_merge_check \
 	tests/pr_gradient_check$(EXEEXT) tests/symmetry_check$(EXEEXT) \
 	$(am__EXEEXT_2)
 @BUILD_HDFSEE_TRUE@am__append_1 = src/hdfsee
-@HAVE_OPENCL_TRUE@am__append_2 = src/diffraction-gpu.c src/cl-utils.c
+@HAVE_OPENCL_TRUE@am__append_2 = tests/gpu_sim_check
 @HAVE_OPENCL_TRUE@am__append_3 = tests/gpu_sim_check
-@HAVE_OPENCL_TRUE@am__append_4 = tests/gpu_sim_check
-@HAVE_CAIRO_TRUE@am__append_5 = src/scaling-report.c
+@HAVE_CAIRO_TRUE@am__append_4 = src/scaling-report.c
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -92,9 +91,7 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" \
 @HAVE_OPENCL_TRUE@am__EXEEXT_2 = tests/gpu_sim_check$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
-am_src_calibrate_detector_OBJECTS = src/calibrate_detector.$(OBJEXT) \
-	src/stream.$(OBJEXT) src/reflist-utils.$(OBJEXT) \
-	src/symmetry.$(OBJEXT) src/peaks.$(OBJEXT)
+am_src_calibrate_detector_OBJECTS = src/calibrate_detector.$(OBJEXT)
 src_calibrate_detector_OBJECTS = $(am_src_calibrate_detector_OBJECTS)
 src_calibrate_detector_LDADD = $(LDADD)
 src_calibrate_detector_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
@@ -102,122 +99,87 @@ src_calibrate_detector_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
 am__v_lt_0 = --silent
-am_src_check_hkl_OBJECTS = src/check_hkl.$(OBJEXT) \
-	src/reflist-utils.$(OBJEXT) src/statistics.$(OBJEXT) \
-	src/symmetry.$(OBJEXT)
+am_src_check_hkl_OBJECTS = src/check_hkl.$(OBJEXT)
 src_check_hkl_OBJECTS = $(am_src_check_hkl_OBJECTS)
 src_check_hkl_LDADD = $(LDADD)
 src_check_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am_src_compare_hkl_OBJECTS = src/compare_hkl.$(OBJEXT) \
-	src/reflist-utils.$(OBJEXT) src/statistics.$(OBJEXT) \
-	src/symmetry.$(OBJEXT)
+am_src_compare_hkl_OBJECTS = src/compare_hkl.$(OBJEXT)
 src_compare_hkl_OBJECTS = $(am_src_compare_hkl_OBJECTS)
 src_compare_hkl_LDADD = $(LDADD)
 src_compare_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am_src_get_hkl_OBJECTS = src/get_hkl.$(OBJEXT) \
-	src/reflist-utils.$(OBJEXT) src/symmetry.$(OBJEXT)
+am_src_get_hkl_OBJECTS = src/get_hkl.$(OBJEXT)
 src_get_hkl_OBJECTS = $(am_src_get_hkl_OBJECTS)
 src_get_hkl_LDADD = $(LDADD)
 src_get_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
 am__src_hdfsee_SOURCES_DIST = src/hdfsee.c src/dw-hdfsee.c \
-	src/render.c src/filters.c
+	src/render.c
 @BUILD_HDFSEE_TRUE@am_src_hdfsee_OBJECTS = src/hdfsee.$(OBJEXT) \
 @BUILD_HDFSEE_TRUE@	src/dw-hdfsee.$(OBJEXT) \
-@BUILD_HDFSEE_TRUE@	src/render.$(OBJEXT) src/filters.$(OBJEXT)
+@BUILD_HDFSEE_TRUE@	src/render.$(OBJEXT)
 src_hdfsee_OBJECTS = $(am_src_hdfsee_OBJECTS)
 src_hdfsee_LDADD = $(LDADD)
 src_hdfsee_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
 am_src_indexamajig_OBJECTS = src/indexamajig.$(OBJEXT) \
-	src/peaks.$(OBJEXT) src/index.$(OBJEXT) src/filters.$(OBJEXT) \
-	src/diffraction.$(OBJEXT) src/dirax.$(OBJEXT) \
-	src/mosflm.$(OBJEXT) src/reflist-utils.$(OBJEXT) \
-	src/symmetry.$(OBJEXT) src/geometry.$(OBJEXT) \
-	src/stream.$(OBJEXT) src/reax.$(OBJEXT)
+	src/index.$(OBJEXT) src/dirax.$(OBJEXT) src/mosflm.$(OBJEXT) \
+	src/reax.$(OBJEXT)
 src_indexamajig_OBJECTS = $(am_src_indexamajig_OBJECTS)
 src_indexamajig_LDADD = $(LDADD)
 src_indexamajig_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am_src_partial_sim_OBJECTS = src/partial_sim.$(OBJEXT) \
-	src/reflist-utils.$(OBJEXT) src/symmetry.$(OBJEXT) \
-	src/geometry.$(OBJEXT) src/peaks.$(OBJEXT) \
-	src/stream.$(OBJEXT)
+am_src_partial_sim_OBJECTS = src/partial_sim.$(OBJEXT)
 src_partial_sim_OBJECTS = $(am_src_partial_sim_OBJECTS)
 src_partial_sim_LDADD = $(LDADD)
 src_partial_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am__src_partialator_SOURCES_DIST = src/partialator.c src/peaks.c \
-	src/geometry.c src/reflist-utils.c src/stream.c src/symmetry.c \
+am__src_partialator_SOURCES_DIST = src/partialator.c \
 	src/post-refinement.c src/hrs-scaling.c src/scaling-report.c
 @HAVE_CAIRO_TRUE@am__objects_1 = src/scaling-report.$(OBJEXT)
 am_src_partialator_OBJECTS = src/partialator.$(OBJEXT) \
-	src/peaks.$(OBJEXT) src/geometry.$(OBJEXT) \
-	src/reflist-utils.$(OBJEXT) src/stream.$(OBJEXT) \
-	src/symmetry.$(OBJEXT) src/post-refinement.$(OBJEXT) \
-	src/hrs-scaling.$(OBJEXT) $(am__objects_1)
+	src/post-refinement.$(OBJEXT) src/hrs-scaling.$(OBJEXT) \
+	$(am__objects_1)
 src_partialator_OBJECTS = $(am_src_partialator_OBJECTS)
 src_partialator_LDADD = $(LDADD)
 src_partialator_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am__src_pattern_sim_SOURCES_DIST = src/pattern_sim.c src/diffraction.c \
-	src/peaks.c src/reflist-utils.c src/symmetry.c \
-	src/diffraction-gpu.c src/cl-utils.c
-@HAVE_OPENCL_TRUE@am__objects_2 = src/diffraction-gpu.$(OBJEXT) \
-@HAVE_OPENCL_TRUE@	src/cl-utils.$(OBJEXT)
-am_src_pattern_sim_OBJECTS = src/pattern_sim.$(OBJEXT) \
-	src/diffraction.$(OBJEXT) src/peaks.$(OBJEXT) \
-	src/reflist-utils.$(OBJEXT) src/symmetry.$(OBJEXT) \
-	$(am__objects_2)
+am_src_pattern_sim_OBJECTS = src/pattern_sim.$(OBJEXT)
 src_pattern_sim_OBJECTS = $(am_src_pattern_sim_OBJECTS)
 src_pattern_sim_LDADD = $(LDADD)
 src_pattern_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am_src_powder_plot_OBJECTS = src/powder_plot.$(OBJEXT) \
-	src/reflist-utils.$(OBJEXT) src/stream.$(OBJEXT) \
-	src/symmetry.$(OBJEXT)
+am_src_powder_plot_OBJECTS = src/powder_plot.$(OBJEXT)
 src_powder_plot_OBJECTS = $(am_src_powder_plot_OBJECTS)
 src_powder_plot_LDADD = $(LDADD)
 src_powder_plot_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am_src_process_hkl_OBJECTS = src/process_hkl.$(OBJEXT) \
-	src/statistics.$(OBJEXT) src/symmetry.$(OBJEXT) \
-	src/stream.$(OBJEXT) src/reflist-utils.$(OBJEXT)
+am_src_process_hkl_OBJECTS = src/process_hkl.$(OBJEXT)
 src_process_hkl_OBJECTS = $(am_src_process_hkl_OBJECTS)
 src_process_hkl_LDADD = $(LDADD)
 src_process_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
 am_src_render_hkl_OBJECTS = src/render_hkl.$(OBJEXT) \
-	src/reflist-utils.$(OBJEXT) src/povray.$(OBJEXT) \
-	src/symmetry.$(OBJEXT) src/render.$(OBJEXT) \
-	src/filters.$(OBJEXT)
+	src/povray.$(OBJEXT) src/render.$(OBJEXT)
 src_render_hkl_OBJECTS = $(am_src_render_hkl_OBJECTS)
 src_render_hkl_LDADD = $(LDADD)
 src_render_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am_src_sum_stack_OBJECTS = src/sum_stack.$(OBJEXT) \
-	src/filters.$(OBJEXT) src/peaks.$(OBJEXT)
+am_src_sum_stack_OBJECTS = src/sum_stack.$(OBJEXT)
 src_sum_stack_OBJECTS = $(am_src_sum_stack_OBJECTS)
 src_sum_stack_LDADD = $(LDADD)
 src_sum_stack_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am__tests_gpu_sim_check_SOURCES_DIST = tests/gpu_sim_check.c \
-	src/diffraction.c src/diffraction-gpu.c src/cl-utils.c \
-	src/symmetry.c
+am__tests_gpu_sim_check_SOURCES_DIST = tests/gpu_sim_check.c
 @HAVE_OPENCL_TRUE@am_tests_gpu_sim_check_OBJECTS =  \
-@HAVE_OPENCL_TRUE@	tests/gpu_sim_check.$(OBJEXT) \
-@HAVE_OPENCL_TRUE@	src/diffraction.$(OBJEXT) \
-@HAVE_OPENCL_TRUE@	src/diffraction-gpu.$(OBJEXT) \
-@HAVE_OPENCL_TRUE@	src/cl-utils.$(OBJEXT) \
-@HAVE_OPENCL_TRUE@	src/symmetry.$(OBJEXT)
+@HAVE_OPENCL_TRUE@	tests/gpu_sim_check.$(OBJEXT)
 tests_gpu_sim_check_OBJECTS = $(am_tests_gpu_sim_check_OBJECTS)
 tests_gpu_sim_check_LDADD = $(LDADD)
 tests_gpu_sim_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
 am_tests_integration_check_OBJECTS =  \
-	tests/integration_check.$(OBJEXT) src/peaks.$(OBJEXT)
+	tests/integration_check.$(OBJEXT)
 tests_integration_check_OBJECTS =  \
 	$(am_tests_integration_check_OBJECTS)
 tests_integration_check_LDADD = $(LDADD)
@@ -229,16 +191,14 @@ tests_list_check_LDADD = $(LDADD)
 tests_list_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
 am_tests_pr_gradient_check_OBJECTS =  \
-	tests/pr_gradient_check.$(OBJEXT) src/peaks.$(OBJEXT) \
-	src/symmetry.$(OBJEXT) src/post-refinement.$(OBJEXT) \
-	src/geometry.$(OBJEXT)
+	tests/pr_gradient_check.$(OBJEXT) \
+	src/post-refinement.$(OBJEXT)
 tests_pr_gradient_check_OBJECTS =  \
 	$(am_tests_pr_gradient_check_OBJECTS)
 tests_pr_gradient_check_LDADD = $(LDADD)
 tests_pr_gradient_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am_tests_symmetry_check_OBJECTS = tests/symmetry_check.$(OBJEXT) \
-	src/symmetry.$(OBJEXT)
+am_tests_symmetry_check_OBJECTS = tests/symmetry_check.$(OBJEXT)
 tests_symmetry_check_OBJECTS = $(am_tests_symmetry_check_OBJECTS)
 tests_symmetry_check_LDADD = $(LDADD)
 tests_symmetry_check_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
@@ -283,10 +243,9 @@ DIST_SOURCES = $(src_calibrate_detector_SOURCES) \
 	$(src_check_hkl_SOURCES) $(src_compare_hkl_SOURCES) \
 	$(src_get_hkl_SOURCES) $(am__src_hdfsee_SOURCES_DIST) \
 	$(src_indexamajig_SOURCES) $(src_partial_sim_SOURCES) \
-	$(am__src_partialator_SOURCES_DIST) \
-	$(am__src_pattern_sim_SOURCES_DIST) $(src_powder_plot_SOURCES) \
-	$(src_process_hkl_SOURCES) $(src_render_hkl_SOURCES) \
-	$(src_sum_stack_SOURCES) \
+	$(am__src_partialator_SOURCES_DIST) $(src_pattern_sim_SOURCES) \
+	$(src_powder_plot_SOURCES) $(src_process_hkl_SOURCES) \
+	$(src_render_hkl_SOURCES) $(src_sum_stack_SOURCES) \
 	$(am__tests_gpu_sim_check_SOURCES_DIST) \
 	$(tests_integration_check_SOURCES) $(tests_list_check_SOURCES) \
 	$(tests_pr_gradient_check_SOURCES) \
@@ -592,13 +551,10 @@ EXTRA_DIST = configure m4/gnulib-cache.m4 tests/first_merge_check \
 	tests/second_merge_check tests/third_merge_check \
 	tests/fourth_merge_check tests/first_merge_check.hkl \
 	tests/third_merge_check.hkl tests/fourth_merge_check.hkl \
-	src/diffraction.h src/reflist-utils.h src/statistics.h \
 	src/dw-hdfsee.h src/render.h src/hdfsee.h src/dirax.h \
-	src/mosflm.h src/peaks.h src/index.h src/filters.h \
-	src/diffraction-gpu.h src/cl-utils.h src/symmetry.h \
-	src/povray.h src/index-priv.h src/geometry.h src/render_hkl.h \
-	src/stream.h src/post-refinement.h src/hrs-scaling.h \
-	src/reflist.h src/scaling-report.h src/reax.h $(crystfel_DATA) \
+	src/mosflm.h src/index.h src/povray.h src/index-priv.h \
+	src/render_hkl.h src/post-refinement.h src/hrs-scaling.h \
+	src/scaling-report.h src/reax.h $(crystfel_DATA) \
 	doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
 	doc/examples/lcls-june-r0013-r0128.geom \
 	doc/examples/lcls-xpp-estimate.geom doc/examples/simple.geom \
@@ -619,51 +575,28 @@ AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib \
 	-I$(top_srcdir)/lib
 LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@ \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-src_partial_sim_SOURCES = src/partial_sim.c src/reflist-utils.c src/symmetry.c \
-                          src/geometry.c src/peaks.c src/stream.c
+src_partial_sim_SOURCES = src/partial_sim.c
+src_pattern_sim_SOURCES = src/pattern_sim.c
+@HAVE_OPENCL_TRUE@tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c
+src_process_hkl_SOURCES = src/process_hkl.c
+src_indexamajig_SOURCES = src/indexamajig.c src/index.c src/dirax.c \
+                          src/mosflm.c src/reax.c
 
-src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c \
-	src/peaks.c src/reflist-utils.c src/symmetry.c $(am__append_2)
-@HAVE_OPENCL_TRUE@tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c  src/diffraction.c \
-@HAVE_OPENCL_TRUE@                              src/diffraction-gpu.c src/cl-utils.c \
-@HAVE_OPENCL_TRUE@                              src/symmetry.c
-
-src_process_hkl_SOURCES = src/process_hkl.c src/statistics.c src/symmetry.c \
-                          src/stream.c src/reflist-utils.c
-
-src_indexamajig_SOURCES = src/indexamajig.c src/peaks.c src/index.c \
-                          src/filters.c src/diffraction.c src/dirax.c \
-                          src/mosflm.c src/reflist-utils.c src/symmetry.c \
-                          src/geometry.c src/stream.c src/reax.c
-
-@BUILD_HDFSEE_TRUE@src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/render.c src/filters.c
-src_get_hkl_SOURCES = src/get_hkl.c src/reflist-utils.c src/symmetry.c
-src_compare_hkl_SOURCES = src/compare_hkl.c  src/reflist-utils.c \
-                          src/statistics.c src/symmetry.c
-
-src_check_hkl_SOURCES = src/check_hkl.c src/reflist-utils.c src/statistics.c \
-                        src/symmetry.c
-
-src_powder_plot_SOURCES = src/powder_plot.c src/reflist-utils.c src/stream.c \
-                          src/symmetry.c
-
-src_render_hkl_SOURCES = src/render_hkl.c src/reflist-utils.c src/povray.c \
-                         src/symmetry.c src/render.c src/filters.c
-
-src_sum_stack_SOURCES = src/sum_stack.c src/filters.c src/peaks.c
-src_calibrate_detector_SOURCES = src/calibrate_detector.c src/stream.c \
-                                 src/reflist-utils.c src/symmetry.c \
-                                 src/peaks.c
-
-src_partialator_SOURCES = src/partialator.c src/peaks.c src/geometry.c \
-	src/reflist-utils.c src/stream.c src/symmetry.c \
-	src/post-refinement.c src/hrs-scaling.c $(am__append_5)
+@BUILD_HDFSEE_TRUE@src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/render.c
+src_get_hkl_SOURCES = src/get_hkl.c
+src_compare_hkl_SOURCES = src/compare_hkl.c
+src_check_hkl_SOURCES = src/check_hkl.c
+src_powder_plot_SOURCES = src/powder_plot.c
+src_render_hkl_SOURCES = src/render_hkl.c src/povray.c src/render.c
+src_sum_stack_SOURCES = src/sum_stack.c
+src_calibrate_detector_SOURCES = src/calibrate_detector.c
+src_partialator_SOURCES = src/partialator.c src/post-refinement.c \
+	src/hrs-scaling.c $(am__append_4)
 tests_list_check_SOURCES = tests/list_check.c
-tests_integration_check_SOURCES = tests/integration_check.c src/peaks.c
-tests_symmetry_check_SOURCES = tests/symmetry_check.c src/symmetry.c
-tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c src/peaks.c \
-                                  src/symmetry.c src/post-refinement.c \
-                                  src/geometry.c
+tests_integration_check_SOURCES = tests/integration_check.c
+tests_symmetry_check_SOURCES = tests/symmetry_check.c
+tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c \
+                                  src/post-refinement.c
 
 INCLUDES = -I$(top_srcdir)/libcrystfel/src -I$(top_srcdir)/data
 crystfeldir = $(datadir)/crystfel
@@ -808,19 +741,10 @@ src/$(DEPDIR)/$(am__dirstamp):
 	@: > src/$(DEPDIR)/$(am__dirstamp)
 src/calibrate_detector.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
-src/stream.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/reflist-utils.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/symmetry.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/peaks.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/calibrate_detector$(EXEEXT): $(src_calibrate_detector_OBJECTS) $(src_calibrate_detector_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/calibrate_detector$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_calibrate_detector_OBJECTS) $(src_calibrate_detector_LDADD) $(LIBS)
 src/check_hkl.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/statistics.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/check_hkl$(EXEEXT): $(src_check_hkl_OBJECTS) $(src_check_hkl_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/check_hkl$(EXEEXT)
@@ -841,20 +765,14 @@ src/dw-hdfsee.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/render.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
-src/filters.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
 src/hdfsee$(EXEEXT): $(src_hdfsee_OBJECTS) $(src_hdfsee_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/hdfsee$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_hdfsee_OBJECTS) $(src_hdfsee_LDADD) $(LIBS)
 src/indexamajig.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/index.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/diffraction.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
 src/dirax.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/mosflm.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/geometry.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/reax.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/indexamajig$(EXEEXT): $(src_indexamajig_OBJECTS) $(src_indexamajig_DEPENDENCIES) src/$(am__dirstamp)
@@ -877,10 +795,6 @@ src/partialator$(EXEEXT): $(src_partialator_OBJECTS) $(src_partialator_DEPENDENC
 	@rm -f src/partialator$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_partialator_OBJECTS) $(src_partialator_LDADD) $(LIBS)
 src/pattern_sim.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/diffraction-gpu.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/cl-utils.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/pattern_sim$(EXEEXT): $(src_pattern_sim_OBJECTS) $(src_pattern_sim_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/pattern_sim$(EXEEXT)
@@ -943,14 +857,9 @@ mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f src/calibrate_detector.$(OBJEXT)
 	-rm -f src/check_hkl.$(OBJEXT)
-	-rm -f src/cl-utils.$(OBJEXT)
 	-rm -f src/compare_hkl.$(OBJEXT)
-	-rm -f src/diffraction-gpu.$(OBJEXT)
-	-rm -f src/diffraction.$(OBJEXT)
 	-rm -f src/dirax.$(OBJEXT)
 	-rm -f src/dw-hdfsee.$(OBJEXT)
-	-rm -f src/filters.$(OBJEXT)
-	-rm -f src/geometry.$(OBJEXT)
 	-rm -f src/get_hkl.$(OBJEXT)
 	-rm -f src/hdfsee.$(OBJEXT)
 	-rm -f src/hrs-scaling.$(OBJEXT)
@@ -960,20 +869,15 @@ mostlyclean-compile:
 	-rm -f src/partial_sim.$(OBJEXT)
 	-rm -f src/partialator.$(OBJEXT)
 	-rm -f src/pattern_sim.$(OBJEXT)
-	-rm -f src/peaks.$(OBJEXT)
 	-rm -f src/post-refinement.$(OBJEXT)
 	-rm -f src/povray.$(OBJEXT)
 	-rm -f src/powder_plot.$(OBJEXT)
 	-rm -f src/process_hkl.$(OBJEXT)
 	-rm -f src/reax.$(OBJEXT)
-	-rm -f src/reflist-utils.$(OBJEXT)
 	-rm -f src/render.$(OBJEXT)
 	-rm -f src/render_hkl.$(OBJEXT)
 	-rm -f src/scaling-report.$(OBJEXT)
-	-rm -f src/statistics.$(OBJEXT)
-	-rm -f src/stream.$(OBJEXT)
 	-rm -f src/sum_stack.$(OBJEXT)
-	-rm -f src/symmetry.$(OBJEXT)
 	-rm -f tests/gpu_sim_check.$(OBJEXT)
 	-rm -f tests/integration_check.$(OBJEXT)
 	-rm -f tests/list_check.$(OBJEXT)
@@ -985,14 +889,9 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/calibrate_detector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/check_hkl.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cl-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/compare_hkl.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction-gpu.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/dirax.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/dw-hdfsee.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/filters.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/geometry.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/get_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/hdfsee.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/hrs-scaling.Po@am__quote@
@@ -1002,20 +901,15 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/partial_sim.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/partialator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/pattern_sim.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/peaks.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/post-refinement.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/povray.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/powder_plot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/process_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reax.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reflist-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/scaling-report.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/statistics.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/stream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/sum_stack.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/symmetry.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/gpu_sim_check.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/integration_check.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/list_check.Po@am__quote@

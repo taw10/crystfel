@@ -26,7 +26,6 @@
 
 #include "image.h"
 #include "utils.h"
-#include "index.h"
 #include "peaks.h"
 #include "detector.h"
 #include "filters.h"

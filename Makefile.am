@@ -30,58 +30,41 @@ AM_CPPFLAGS += -I$(top_srcdir)/lib
 LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@
 LDADD += $(top_builddir)/libcrystfel/libcrystfel.la
 
-src_partial_sim_SOURCES = src/partial_sim.c src/reflist-utils.c src/symmetry.c \
-                          src/geometry.c src/peaks.c src/stream.c
+src_partial_sim_SOURCES = src/partial_sim.c
 
-src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c src/peaks.c \
-                          src/reflist-utils.c src/symmetry.c
+src_pattern_sim_SOURCES = src/pattern_sim.c
 if HAVE_OPENCL
-src_pattern_sim_SOURCES += src/diffraction-gpu.c src/cl-utils.c
-
 TESTS += tests/gpu_sim_check
 noinst_PROGRAMS += tests/gpu_sim_check
 
-tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c  src/diffraction.c \
-                              src/diffraction-gpu.c src/cl-utils.c \
-                              src/symmetry.c
+tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c
 endif
 
-src_process_hkl_SOURCES = src/process_hkl.c src/statistics.c src/symmetry.c \
-                          src/stream.c src/reflist-utils.c
+src_process_hkl_SOURCES = src/process_hkl.c
 
-src_indexamajig_SOURCES = src/indexamajig.c src/peaks.c src/index.c \
-                          src/filters.c src/diffraction.c src/dirax.c \
-                          src/mosflm.c src/reflist-utils.c src/symmetry.c \
-                          src/geometry.c src/stream.c src/reax.c
+src_indexamajig_SOURCES = src/indexamajig.c src/index.c src/dirax.c \
+                          src/mosflm.c src/reax.c
 
 if BUILD_HDFSEE
-src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/render.c src/filters.c
+src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/render.c
 endif
 
-src_get_hkl_SOURCES = src/get_hkl.c src/reflist-utils.c src/symmetry.c
+src_get_hkl_SOURCES = src/get_hkl.c
 
-src_compare_hkl_SOURCES = src/compare_hkl.c  src/reflist-utils.c \
-                          src/statistics.c src/symmetry.c
+src_compare_hkl_SOURCES = src/compare_hkl.c
 
-src_check_hkl_SOURCES = src/check_hkl.c src/reflist-utils.c src/statistics.c \
-                        src/symmetry.c
+src_check_hkl_SOURCES = src/check_hkl.c
 
-src_powder_plot_SOURCES = src/powder_plot.c src/reflist-utils.c src/stream.c \
-                          src/symmetry.c
+src_powder_plot_SOURCES = src/powder_plot.c
 
-src_render_hkl_SOURCES = src/render_hkl.c src/reflist-utils.c src/povray.c \
-                         src/symmetry.c src/render.c src/filters.c
+src_render_hkl_SOURCES = src/render_hkl.c src/povray.c src/render.c
 
-src_sum_stack_SOURCES = src/sum_stack.c src/filters.c src/peaks.c
+src_sum_stack_SOURCES = src/sum_stack.c
 
-src_calibrate_detector_SOURCES = src/calibrate_detector.c src/stream.c \
-                                 src/reflist-utils.c src/symmetry.c \
-                                 src/peaks.c
+src_calibrate_detector_SOURCES = src/calibrate_detector.c
 
-src_partialator_SOURCES = src/partialator.c src/peaks.c src/geometry.c \
-                          src/reflist-utils.c src/stream.c \
-                          src/symmetry.c \
-                          src/post-refinement.c src/hrs-scaling.c
+src_partialator_SOURCES = src/partialator.c src/post-refinement.c \
+                          src/hrs-scaling.c
 
 if HAVE_CAIRO
 src_partialator_SOURCES += src/scaling-report.c
@@ -89,25 +72,20 @@ endif
 
 tests_list_check_SOURCES = tests/list_check.c
 
-tests_integration_check_SOURCES = tests/integration_check.c src/peaks.c
+tests_integration_check_SOURCES = tests/integration_check.c
 
-tests_symmetry_check_SOURCES = tests/symmetry_check.c src/symmetry.c
+tests_symmetry_check_SOURCES = tests/symmetry_check.c
 
 
-tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c src/peaks.c \
-                                  src/symmetry.c src/post-refinement.c \
-                                  src/geometry.c
+tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c \
+                                  src/post-refinement.c
 
 INCLUDES = -I$(top_srcdir)/libcrystfel/src -I$(top_srcdir)/data
 
-EXTRA_DIST += src/diffraction.h src/reflist-utils.h \
-              src/statistics.h src/dw-hdfsee.h \
-              src/render.h src/hdfsee.h src/dirax.h src/mosflm.h src/peaks.h \
-              src/index.h src/filters.h src/diffraction-gpu.h src/cl-utils.h \
-              src/symmetry.h src/povray.h src/index-priv.h src/geometry.h \
-              src/render_hkl.h src/stream.h \
-              src/post-refinement.h src/hrs-scaling.h \
-              src/reflist.h src/scaling-report.h src/reax.h
+EXTRA_DIST += src/dw-hdfsee.h src/render.h src/hdfsee.h src/dirax.h \
+              src/mosflm.h src/index.h src/povray.h src/index-priv.h \
+              src/render_hkl.h src/post-refinement.h src/hrs-scaling.h \
+              src/scaling-report.h src/reax.h
 
 crystfeldir = $(datadir)/crystfel
 crystfel_DATA = data/diffraction.cl data/defs.h data/hdfsee.ui
