@@ -10,6 +10,7 @@
  */
 
 
+#define _ISOC99_SOURCE
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
