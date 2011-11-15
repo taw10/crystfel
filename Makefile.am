@@ -42,7 +42,7 @@ src_pattern_sim_SOURCES += src/cl-utils.c src/diffraction-gpu.c
 TESTS += tests/gpu_sim_check
 noinst_PROGRAMS += tests/gpu_sim_check
 tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c src/diffraction.c \
-                              src/diffraction-gpu.c
+                              src/diffraction-gpu.c src/cl-utils.c
 endif
 
 src_process_hkl_SOURCES = src/process_hkl.c
