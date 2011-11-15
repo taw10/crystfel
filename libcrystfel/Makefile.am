@@ -4,7 +4,8 @@ libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/beam-parameters.c src/geometry.c src/statistics.c \
                          src/symmetry.c src/stream.c src/peaks.c \
                          src/reflist-utils.c src/filters.c src/diffraction.c \
-                         src/diffraction-gpu.c src/cl-utils.c
+                         src/diffraction-gpu.c src/cl-utils.c src/render.c \
+                         src/index.c src/dirax.c src/mosflm.c src/reax.c
 
 libcrystfel_la_includedir=$(includedir)/crystfel/
 libcrystfel_la_include_HEADERS = src/beam-parameters.h src/diffraction-gpu.h \
@@ -14,6 +15,7 @@ libcrystfel_la_include_HEADERS = src/beam-parameters.h src/diffraction-gpu.h \
                                  src/cl-utils.h src/filters.h src/list_tmp.h \
                                  src/statistics.h src/utils.h src/detector.h \
                                  src/geometry.h src/peaks.h src/stream.h \
+                                 src/render.h src/index.h \
                                  ../data/defs.h
 
 INCLUDES = "-I$(top_srcdir)/data"

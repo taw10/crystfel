@@ -114,18 +114,14 @@ src_get_hkl_OBJECTS = $(am_src_get_hkl_OBJECTS)
 src_get_hkl_LDADD = $(LDADD)
 src_get_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am__src_hdfsee_SOURCES_DIST = src/hdfsee.c src/dw-hdfsee.c \
-	src/render.c
+am__src_hdfsee_SOURCES_DIST = src/hdfsee.c src/dw-hdfsee.c
 @BUILD_HDFSEE_TRUE@am_src_hdfsee_OBJECTS = src/hdfsee.$(OBJEXT) \
-@BUILD_HDFSEE_TRUE@	src/dw-hdfsee.$(OBJEXT) \
-@BUILD_HDFSEE_TRUE@	src/render.$(OBJEXT)
+@BUILD_HDFSEE_TRUE@	src/dw-hdfsee.$(OBJEXT)
 src_hdfsee_OBJECTS = $(am_src_hdfsee_OBJECTS)
 src_hdfsee_LDADD = $(LDADD)
 src_hdfsee_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am_src_indexamajig_OBJECTS = src/indexamajig.$(OBJEXT) \
-	src/index.$(OBJEXT) src/dirax.$(OBJEXT) src/mosflm.$(OBJEXT) \
-	src/reax.$(OBJEXT)
+am_src_indexamajig_OBJECTS = src/indexamajig.$(OBJEXT)
 src_indexamajig_OBJECTS = $(am_src_indexamajig_OBJECTS)
 src_indexamajig_LDADD = $(LDADD)
 src_indexamajig_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
@@ -161,7 +157,7 @@ src_process_hkl_LDADD = $(LDADD)
 src_process_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
 am_src_render_hkl_OBJECTS = src/render_hkl.$(OBJEXT) \
-	src/povray.$(OBJEXT) src/render.$(OBJEXT)
+	src/povray.$(OBJEXT)
 src_render_hkl_OBJECTS = $(am_src_render_hkl_OBJECTS)
 src_render_hkl_LDADD = $(LDADD)
 src_render_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
@@ -551,11 +547,10 @@ EXTRA_DIST = configure m4/gnulib-cache.m4 tests/first_merge_check \
 	tests/second_merge_check tests/third_merge_check \
 	tests/fourth_merge_check tests/first_merge_check.hkl \
 	tests/third_merge_check.hkl tests/fourth_merge_check.hkl \
-	src/dw-hdfsee.h src/render.h src/hdfsee.h src/dirax.h \
-	src/mosflm.h src/index.h src/povray.h src/index-priv.h \
-	src/render_hkl.h src/post-refinement.h src/hrs-scaling.h \
-	src/scaling-report.h src/reax.h $(crystfel_DATA) \
-	doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
+	src/dw-hdfsee.h src/hdfsee.h src/povray.h src/render_hkl.h \
+	src/post-refinement.h src/hrs-scaling.h src/scaling-report.h \
+	$(crystfel_DATA) doc/twin-calculator.pdf \
+	doc/examples/lcls-dec.geom \
 	doc/examples/lcls-june-r0013-r0128.geom \
 	doc/examples/lcls-xpp-estimate.geom doc/examples/simple.geom \
 	doc/examples/lcls-dec.beam doc/examples/lcls-june.beam \
@@ -579,15 +574,13 @@ src_partial_sim_SOURCES = src/partial_sim.c
 src_pattern_sim_SOURCES = src/pattern_sim.c
 @HAVE_OPENCL_TRUE@tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c
 src_process_hkl_SOURCES = src/process_hkl.c
-src_indexamajig_SOURCES = src/indexamajig.c src/index.c src/dirax.c \
-                          src/mosflm.c src/reax.c
-
-@BUILD_HDFSEE_TRUE@src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/render.c
+src_indexamajig_SOURCES = src/indexamajig.c
+@BUILD_HDFSEE_TRUE@src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c
 src_get_hkl_SOURCES = src/get_hkl.c
 src_compare_hkl_SOURCES = src/compare_hkl.c
 src_check_hkl_SOURCES = src/check_hkl.c
 src_powder_plot_SOURCES = src/powder_plot.c
-src_render_hkl_SOURCES = src/render_hkl.c src/povray.c src/render.c
+src_render_hkl_SOURCES = src/render_hkl.c src/povray.c
 src_sum_stack_SOURCES = src/sum_stack.c
 src_calibrate_detector_SOURCES = src/calibrate_detector.c
 src_partialator_SOURCES = src/partialator.c src/post-refinement.c \
@@ -763,18 +756,11 @@ src/hdfsee.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/dw-hdfsee.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
-src/render.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
 src/hdfsee$(EXEEXT): $(src_hdfsee_OBJECTS) $(src_hdfsee_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/hdfsee$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_hdfsee_OBJECTS) $(src_hdfsee_LDADD) $(LIBS)
 src/indexamajig.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
-src/index.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/dirax.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/mosflm.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/reax.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/indexamajig$(EXEEXT): $(src_indexamajig_OBJECTS) $(src_indexamajig_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/indexamajig$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_indexamajig_OBJECTS) $(src_indexamajig_LDADD) $(LIBS)
@@ -858,14 +844,11 @@ mostlyclean-compile:
 	-rm -f src/calibrate_detector.$(OBJEXT)
 	-rm -f src/check_hkl.$(OBJEXT)
 	-rm -f src/compare_hkl.$(OBJEXT)
-	-rm -f src/dirax.$(OBJEXT)
 	-rm -f src/dw-hdfsee.$(OBJEXT)
 	-rm -f src/get_hkl.$(OBJEXT)
 	-rm -f src/hdfsee.$(OBJEXT)
 	-rm -f src/hrs-scaling.$(OBJEXT)
-	-rm -f src/index.$(OBJEXT)
 	-rm -f src/indexamajig.$(OBJEXT)
-	-rm -f src/mosflm.$(OBJEXT)
 	-rm -f src/partial_sim.$(OBJEXT)
 	-rm -f src/partialator.$(OBJEXT)
 	-rm -f src/pattern_sim.$(OBJEXT)
@@ -873,8 +856,6 @@ mostlyclean-compile:
 	-rm -f src/povray.$(OBJEXT)
 	-rm -f src/powder_plot.$(OBJEXT)
 	-rm -f src/process_hkl.$(OBJEXT)
-	-rm -f src/reax.$(OBJEXT)
-	-rm -f src/render.$(OBJEXT)
 	-rm -f src/render_hkl.$(OBJEXT)
 	-rm -f src/scaling-report.$(OBJEXT)
 	-rm -f src/sum_stack.$(OBJEXT)
@@ -890,14 +871,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/calibrate_detector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/check_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/compare_hkl.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/dirax.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/dw-hdfsee.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/get_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/hdfsee.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/hrs-scaling.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/index.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/indexamajig.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/mosflm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/partial_sim.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/partialator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/pattern_sim.Po@am__quote@
@@ -905,8 +883,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/povray.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/powder_plot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/process_hkl.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reax.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/scaling-report.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/sum_stack.Po@am__quote@

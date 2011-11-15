@@ -42,11 +42,10 @@ endif
 
 src_process_hkl_SOURCES = src/process_hkl.c
 
-src_indexamajig_SOURCES = src/indexamajig.c src/index.c src/dirax.c \
-                          src/mosflm.c src/reax.c
+src_indexamajig_SOURCES = src/indexamajig.c
 
 if BUILD_HDFSEE
-src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/render.c
+src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c
 endif
 
 src_get_hkl_SOURCES = src/get_hkl.c
@@ -57,7 +56,7 @@ src_check_hkl_SOURCES = src/check_hkl.c
 
 src_powder_plot_SOURCES = src/powder_plot.c
 
-src_render_hkl_SOURCES = src/render_hkl.c src/povray.c src/render.c
+src_render_hkl_SOURCES = src/render_hkl.c src/povray.c
 
 src_sum_stack_SOURCES = src/sum_stack.c
 
@@ -82,10 +81,9 @@ tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c \
 
 INCLUDES = -I$(top_srcdir)/libcrystfel/src -I$(top_srcdir)/data
 
-EXTRA_DIST += src/dw-hdfsee.h src/render.h src/hdfsee.h src/dirax.h \
-              src/mosflm.h src/index.h src/povray.h src/index-priv.h \
+EXTRA_DIST += src/dw-hdfsee.h src/hdfsee.h src/povray.h \
               src/render_hkl.h src/post-refinement.h src/hrs-scaling.h \
-              src/scaling-report.h src/reax.h
+              src/scaling-report.h
 
 crystfeldir = $(datadir)/crystfel
 crystfel_DATA = data/diffraction.cl data/defs.h data/hdfsee.ui

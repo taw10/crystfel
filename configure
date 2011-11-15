@@ -14231,7 +14231,7 @@ fi
 if test "${with_html_dir+set}" = set; then :
   withval=$with_html_dir;
 else
-  with_html_dir='${docdir}/reference'
+  with_html_dir='${datadir}/gtk-doc/html'
 fi
 
   HTML_DIR="$with_html_dir"

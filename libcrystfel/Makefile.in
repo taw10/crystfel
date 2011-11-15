@@ -89,7 +89,8 @@ am_libcrystfel_la_OBJECTS = src/reflist.lo src/utils.lo src/cell.lo \
 	src/hdf5-file.lo src/beam-parameters.lo src/geometry.lo \
 	src/statistics.lo src/symmetry.lo src/stream.lo src/peaks.lo \
 	src/reflist-utils.lo src/filters.lo src/diffraction.lo \
-	src/diffraction-gpu.lo src/cl-utils.lo
+	src/diffraction-gpu.lo src/cl-utils.lo src/render.lo \
+	src/index.lo src/dirax.lo src/mosflm.lo src/reax.lo
 libcrystfel_la_OBJECTS = $(am_libcrystfel_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
@@ -351,7 +352,8 @@ libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/beam-parameters.c src/geometry.c src/statistics.c \
                          src/symmetry.c src/stream.c src/peaks.c \
                          src/reflist-utils.c src/filters.c src/diffraction.c \
-                         src/diffraction-gpu.c src/cl-utils.c
+                         src/diffraction-gpu.c src/cl-utils.c src/render.c \
+                         src/index.c src/dirax.c src/mosflm.c src/reax.c
 
 libcrystfel_la_includedir = $(includedir)/crystfel/
 libcrystfel_la_include_HEADERS = src/beam-parameters.h src/diffraction-gpu.h \
@@ -361,6 +363,7 @@ libcrystfel_la_include_HEADERS = src/beam-parameters.h src/diffraction-gpu.h \
                                  src/cl-utils.h src/filters.h src/list_tmp.h \
                                  src/statistics.h src/utils.h src/detector.h \
                                  src/geometry.h src/peaks.h src/stream.h \
+                                 src/render.h src/index.h \
                                  ../data/defs.h
 
 INCLUDES = "-I$(top_srcdir)/data"
@@ -458,6 +461,11 @@ src/diffraction.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/diffraction-gpu.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/cl-utils.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/render.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/index.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/dirax.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/mosflm.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/reax.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 libcrystfel.la: $(libcrystfel_la_OBJECTS) $(libcrystfel_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK) -rpath $(libdir) $(libcrystfel_la_OBJECTS) $(libcrystfel_la_LIBADD) $(LIBS)
 
@@ -475,6 +483,8 @@ mostlyclean-compile:
 	-rm -f src/diffraction-gpu.lo
 	-rm -f src/diffraction.$(OBJEXT)
 	-rm -f src/diffraction.lo
+	-rm -f src/dirax.$(OBJEXT)
+	-rm -f src/dirax.lo
 	-rm -f src/filters.$(OBJEXT)
 	-rm -f src/filters.lo
 	-rm -f src/geometry.$(OBJEXT)
@@ -483,12 +493,20 @@ mostlyclean-compile:
 	-rm -f src/hdf5-file.lo
 	-rm -f src/image.$(OBJEXT)
 	-rm -f src/image.lo
+	-rm -f src/index.$(OBJEXT)
+	-rm -f src/index.lo
+	-rm -f src/mosflm.$(OBJEXT)
+	-rm -f src/mosflm.lo
 	-rm -f src/peaks.$(OBJEXT)
 	-rm -f src/peaks.lo
+	-rm -f src/reax.$(OBJEXT)
+	-rm -f src/reax.lo
 	-rm -f src/reflist-utils.$(OBJEXT)
 	-rm -f src/reflist-utils.lo
 	-rm -f src/reflist.$(OBJEXT)
 	-rm -f src/reflist.lo
+	-rm -f src/render.$(OBJEXT)
+	-rm -f src/render.lo
 	-rm -f src/statistics.$(OBJEXT)
 	-rm -f src/statistics.lo
 	-rm -f src/stream.$(OBJEXT)
@@ -509,13 +527,18 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/detector.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction-gpu.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/diffraction.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/dirax.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/filters.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/geometry.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/hdf5-file.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/image.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/index.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/mosflm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/peaks.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reax.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reflist-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/reflist.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/statistics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/stream.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/symmetry.Plo@am__quote@
