@@ -40,8 +40,7 @@ bin_PROGRAMS = src/pattern_sim$(EXEEXT) src/process_hkl$(EXEEXT) \
 	src/compare_hkl$(EXEEXT) src/powder_plot$(EXEEXT) \
 	src/render_hkl$(EXEEXT) src/calibrate_detector$(EXEEXT) \
 	src/partialator$(EXEEXT) src/check_hkl$(EXEEXT) \
-	src/sum_stack$(EXEEXT) src/partial_sim$(EXEEXT) \
-	$(am__EXEEXT_1)
+	src/partial_sim$(EXEEXT) $(am__EXEEXT_1)
 noinst_PROGRAMS = tests/list_check$(EXEEXT) \
 	tests/integration_check$(EXEEXT) \
 	tests/pr_gradient_check$(EXEEXT) tests/symmetry_check$(EXEEXT) \
@@ -162,11 +161,6 @@ src_render_hkl_OBJECTS = $(am_src_render_hkl_OBJECTS)
 src_render_hkl_LDADD = $(LDADD)
 src_render_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
-am_src_sum_stack_OBJECTS = src/sum_stack.$(OBJEXT)
-src_sum_stack_OBJECTS = $(am_src_sum_stack_OBJECTS)
-src_sum_stack_LDADD = $(LDADD)
-src_sum_stack_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
-	$(top_builddir)/libcrystfel/libcrystfel.la
 am__tests_gpu_sim_check_SOURCES_DIST = tests/gpu_sim_check.c
 @HAVE_OPENCL_TRUE@am_tests_gpu_sim_check_OBJECTS =  \
 @HAVE_OPENCL_TRUE@	tests/gpu_sim_check.$(OBJEXT)
@@ -231,7 +225,7 @@ SOURCES = $(src_calibrate_detector_SOURCES) $(src_check_hkl_SOURCES) \
 	$(src_partial_sim_SOURCES) $(src_partialator_SOURCES) \
 	$(src_pattern_sim_SOURCES) $(src_powder_plot_SOURCES) \
 	$(src_process_hkl_SOURCES) $(src_render_hkl_SOURCES) \
-	$(src_sum_stack_SOURCES) $(tests_gpu_sim_check_SOURCES) \
+	$(tests_gpu_sim_check_SOURCES) \
 	$(tests_integration_check_SOURCES) $(tests_list_check_SOURCES) \
 	$(tests_pr_gradient_check_SOURCES) \
 	$(tests_symmetry_check_SOURCES)
@@ -241,7 +235,7 @@ DIST_SOURCES = $(src_calibrate_detector_SOURCES) \
 	$(src_indexamajig_SOURCES) $(src_partial_sim_SOURCES) \
 	$(am__src_partialator_SOURCES_DIST) $(src_pattern_sim_SOURCES) \
 	$(src_powder_plot_SOURCES) $(src_process_hkl_SOURCES) \
-	$(src_render_hkl_SOURCES) $(src_sum_stack_SOURCES) \
+	$(src_render_hkl_SOURCES) \
 	$(am__tests_gpu_sim_check_SOURCES_DIST) \
 	$(tests_integration_check_SOURCES) $(tests_list_check_SOURCES) \
 	$(tests_pr_gradient_check_SOURCES) \
@@ -581,7 +575,6 @@ src_compare_hkl_SOURCES = src/compare_hkl.c
 src_check_hkl_SOURCES = src/check_hkl.c
 src_powder_plot_SOURCES = src/powder_plot.c
 src_render_hkl_SOURCES = src/render_hkl.c src/povray.c
-src_sum_stack_SOURCES = src/sum_stack.c
 src_calibrate_detector_SOURCES = src/calibrate_detector.c
 src_partialator_SOURCES = src/partialator.c src/post-refinement.c \
 	src/hrs-scaling.c $(am__append_4)
@@ -802,11 +795,6 @@ src/povray.$(OBJEXT): src/$(am__dirstamp) \
 src/render_hkl$(EXEEXT): $(src_render_hkl_OBJECTS) $(src_render_hkl_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/render_hkl$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(src_render_hkl_OBJECTS) $(src_render_hkl_LDADD) $(LIBS)
-src/sum_stack.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/sum_stack$(EXEEXT): $(src_sum_stack_OBJECTS) $(src_sum_stack_DEPENDENCIES) src/$(am__dirstamp)
-	@rm -f src/sum_stack$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(src_sum_stack_OBJECTS) $(src_sum_stack_LDADD) $(LIBS)
 tests/$(am__dirstamp):
 	@$(MKDIR_P) tests
 	@: > tests/$(am__dirstamp)
@@ -858,7 +846,6 @@ mostlyclean-compile:
 	-rm -f src/process_hkl.$(OBJEXT)
 	-rm -f src/render_hkl.$(OBJEXT)
 	-rm -f src/scaling-report.$(OBJEXT)
-	-rm -f src/sum_stack.$(OBJEXT)
 	-rm -f tests/gpu_sim_check.$(OBJEXT)
 	-rm -f tests/integration_check.$(OBJEXT)
 	-rm -f tests/list_check.$(OBJEXT)
@@ -885,7 +872,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/process_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/render_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/scaling-report.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/sum_stack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/gpu_sim_check.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/integration_check.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/list_check.Po@am__quote@

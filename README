@@ -52,11 +52,6 @@ In addition, there is also:
 
 	- check_hkl, for determining things like completeness.
 
-	- sum_stack, for summing patterns after peak detection to use
-	             for calibrating your detector.
-
-	- cubeit, for summing patterns in 3D to inspect the peak profiles.
-
 	- calibrate_detector, for refining detector geometry.
 
 	- partial_sim, for calculating partial reflection intensities.

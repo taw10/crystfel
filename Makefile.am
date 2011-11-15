@@ -5,7 +5,7 @@ ACLOCAL_AMFLAGS = -I m4
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
                src/compare_hkl src/powder_plot src/render_hkl \
                src/calibrate_detector src/partialator \
-               src/check_hkl src/sum_stack src/partial_sim
+               src/check_hkl src/partial_sim
 
 noinst_PROGRAMS = tests/list_check tests/integration_check \
                   tests/pr_gradient_check tests/symmetry_check
@@ -57,8 +57,6 @@ src_check_hkl_SOURCES = src/check_hkl.c
 src_powder_plot_SOURCES = src/powder_plot.c
 
 src_render_hkl_SOURCES = src/render_hkl.c src/povray.c
-
-src_sum_stack_SOURCES = src/sum_stack.c
 
 src_calibrate_detector_SOURCES = src/calibrate_detector.c
 
