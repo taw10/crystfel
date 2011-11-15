@@ -438,6 +438,8 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
+LIBCRYSTFEL_CFLAGS = @LIBCRYSTFEL_CFLAGS@
+LIBCRYSTFEL_LIBS = @LIBCRYSTFEL_LIBS@
 LIBGNU_LIBDEPS = @LIBGNU_LIBDEPS@
 LIBGNU_LTLIBDEPS = @LIBGNU_LTLIBDEPS@
 LIBOBJS = @LIBOBJS@
@@ -446,6 +448,8 @@ LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+MAIN_CFLAGS = @MAIN_CFLAGS@
+MAIN_LIBS = @MAIN_LIBS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 NEXT_AS_FIRST_DIRECTIVE_STDDEF_H = @NEXT_AS_FIRST_DIRECTIVE_STDDEF_H@
@@ -573,11 +577,11 @@ EXTRA_DIST = configure m4/gnulib-cache.m4 tests/first_merge_check \
 	scripts/indexed-filenames scripts/gen-sfs
 SUBDIRS = lib doc/reference libcrystfel
 ACLOCAL_AMFLAGS = -I m4
-AM_CFLAGS = -Wall
+AM_CFLAGS = -Wall @MAIN_CFLAGS@
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib \
 	-I$(top_srcdir)/lib
 LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@ \
-	$(top_builddir)/libcrystfel/libcrystfel.la
+	$(top_builddir)/libcrystfel/libcrystfel.la @MAIN_LIBS@
 src_partial_sim_SOURCES = src/partial_sim.c
 src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c \
 	$(am__append_3)

@@ -1,5 +1,5 @@
 lib_LTLIBRARIES = libcrystfel.la
-LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@
+LDADD = $(top_builddir)/lib/libgnu.a @LIBCRYSTFEL_LIBS@
 
 libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/thread-pool.c src/image.c src/hdf5-file.c \
@@ -21,4 +21,4 @@ libcrystfel_la_include_HEADERS = src/beam-parameters.h src/hdf5-file.h \
 
 INCLUDES = "-I$(top_srcdir)/data"
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib
-AM_CPPFLAGS += -I$(top_srcdir)/lib
+AM_CPPFLAGS += -I$(top_srcdir)/lib @LIBCRYSTFEL_CFLAGS@

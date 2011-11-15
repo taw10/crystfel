@@ -232,6 +232,8 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
+LIBCRYSTFEL_CFLAGS = @LIBCRYSTFEL_CFLAGS@
+LIBCRYSTFEL_LIBS = @LIBCRYSTFEL_LIBS@
 LIBGNU_LIBDEPS = @LIBGNU_LIBDEPS@
 LIBGNU_LTLIBDEPS = @LIBGNU_LTLIBDEPS@
 LIBOBJS = @LIBOBJS@
@@ -240,6 +242,8 @@ LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+MAIN_CFLAGS = @MAIN_CFLAGS@
+MAIN_LIBS = @MAIN_LIBS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 NEXT_AS_FIRST_DIRECTIVE_STDDEF_H = @NEXT_AS_FIRST_DIRECTIVE_STDDEF_H@
@@ -346,7 +350,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 lib_LTLIBRARIES = libcrystfel.la
-LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@
+LDADD = $(top_builddir)/lib/libgnu.a @LIBCRYSTFEL_LIBS@
 libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/thread-pool.c src/image.c src/hdf5-file.c \
                          src/beam-parameters.c src/geometry.c src/statistics.c \
@@ -366,7 +370,7 @@ libcrystfel_la_include_HEADERS = src/beam-parameters.h src/hdf5-file.h \
 
 INCLUDES = "-I$(top_srcdir)/data"
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib \
-	-I$(top_srcdir)/lib
+	-I$(top_srcdir)/lib @LIBCRYSTFEL_CFLAGS@
 all: all-am
 
 .SUFFIXES:

@@ -27,11 +27,11 @@ if HAVE_CAIRO
 bin_PROGRAMS += src/render_hkl
 endif
 
-AM_CFLAGS = -Wall
+AM_CFLAGS = -Wall @MAIN_CFLAGS@
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib
 AM_CPPFLAGS += -I$(top_srcdir)/lib
 LDADD = $(top_builddir)/lib/libgnu.a @IGNORE_UNUSED_LIBRARIES_CFLAGS@
-LDADD += $(top_builddir)/libcrystfel/libcrystfel.la
+LDADD += $(top_builddir)/libcrystfel/libcrystfel.la @MAIN_LIBS@
 
 src_partial_sim_SOURCES = src/partial_sim.c
 
