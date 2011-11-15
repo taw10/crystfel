@@ -82,7 +82,7 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(libdir)" \
 	"$(DESTDIR)$(libcrystfel_la_includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libcrystfel_la_LIBADD =
+libcrystfel_la_DEPENDENCIES =
 am__dirstamp = $(am__leading_dot)dirstamp
 am_libcrystfel_la_OBJECTS = src/reflist.lo src/utils.lo src/cell.lo \
 	src/detector.lo src/thread-pool.lo src/image.lo \
@@ -350,7 +350,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 lib_LTLIBRARIES = libcrystfel.la
-LDADD = $(top_builddir)/lib/libgnu.a @LIBCRYSTFEL_LIBS@
+libcrystfel_la_LIBADD = @LIBCRYSTFEL_LIBS@
 libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/thread-pool.c src/image.c src/hdf5-file.c \
                          src/beam-parameters.c src/geometry.c src/statistics.c \
