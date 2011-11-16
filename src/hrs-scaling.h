@@ -21,7 +21,8 @@
 #include "image.h"
 
 extern RefList *scale_intensities(struct image *images, int n,
-                                  RefList *reference, int n_threads);
+                                  RefList *reference, int n_threads,
+                                  int noscale);
 
 
 #endif	/* HRS_SCALING_H */

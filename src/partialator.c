@@ -58,6 +58,7 @@ static void show_help(const char *s)
 "                              an HDF5 file.\n"
 "  -y, --symmetry=<sym>       Merge according to symmetry <sym>.\n"
 "  -n, --iterations=<n>       Run <n> cycles of scaling and post-refinement.\n"
+"      --no-scale             Fix all the scaling factors at unity.\n"
 "  -r, --reference=<file>     Refine images against reflections in <file>,\n"
 "                              instead of taking the mean of the intensity\n"
 "                              estimates.\n"
@@ -279,6 +280,7 @@ int main(int argc, char *argv[])
 	int have_reference = 0;
 	char cmdline[1024];
 	SRContext *sr;
+	int noscale = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -289,6 +291,7 @@ int main(int argc, char *argv[])
 		{"beam",               1, NULL,               'b'},
 		{"symmetry",           1, NULL,               'y'},
 		{"iterations",         1, NULL,               'n'},
+		{"no-scale",           0, &noscale,            1},
 		{"reference",          1, NULL,               'r'},
 		{0, 0, NULL, 0}
 	};
@@ -485,8 +488,9 @@ int main(int argc, char *argv[])
 
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
+	if ( noscale ) STATUS("Scale factors fixed at 1.\n");
 	full = scale_intensities(images, n_usable_patterns, reference,
-	                         nthreads);
+	                         nthreads, noscale);
 
 	sr = sr_titlepage(images, n_usable_patterns, "scaling-report.pdf",
 	                  infile, cmdline);
@@ -524,7 +528,7 @@ int main(int argc, char *argv[])
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
 		full = scale_intensities(images, n_usable_patterns,
-		                         reference, nthreads);
+		                         reference, nthreads, noscale);
 
 		sr_iteration(sr, i+1, images, n_usable_patterns, full);
 

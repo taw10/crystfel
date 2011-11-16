@@ -407,12 +407,19 @@ static void calculate_esds(struct image *images, int n, RefList *full,
 
 /* Scale the stack of images */
 RefList *scale_intensities(struct image *images, int n, RefList *gref,
-                           int n_threads)
+                           int n_threads, int noscale)
 {
 	int i;
 	double max_corr;
 	RefList *full = NULL;
 	const int min_redundancy = 3;
+
+	if ( noscale ) {
+		for ( i=0; i<n; i++ ) images[i].osf = 1.0;
+		full = lsq_intensities(images, n, n_threads);
+		calculate_esds(images, n, full, n_threads, min_redundancy);
+		return full;
+	}
 
 	/* No reference -> create an initial list to refine against */
 	if ( gref == NULL ) {
