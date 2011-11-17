@@ -173,8 +173,8 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 	const double g_height = 200.0;
 	int i;
 	const int nbins = 25;
-	double totals[nbins];
-	int counts[nbins];
+	double t_num[nbins];
+	double t_den[nbins];
 	double prob;
 	double pcalcmin[nbins];
 	double pcalcmax[nbins];
@@ -193,8 +193,8 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 	                     -M_PI/3.0, J_RIGHT);
 
 	for ( i=0; i<nbins; i++ ) {
-		totals[i] = 0.0;
-		counts[i] = 0;
+		t_num[i] = 0.0;
+		t_den[i] = 0.0;
 		pcalcmin[i] = (double)i/nbins;
 		pcalcmax[i] = (double)(i+1)/nbins;
 	}
@@ -232,11 +232,11 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 			if ( get_redundancy(f) < 2 ) continue;
 
 			Ipart = get_intensity(refl);
-			Ifull = get_intensity(f);
+			Ifull = images[i].osf * get_intensity(f);
 
 			//if ( Ifull < 10 ) continue;  /* FIXME: Ugh */
 
-			pobs = Ipart/(images[i].osf*Ifull);
+			pobs = Ipart/Ifull;
 			pcalc = get_partiality(refl);
 
 			//STATUS("%4i %4i %4i : %9.6f %9.6f %e %e %e\n", h, k, l,
@@ -246,8 +246,15 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 				if ( (pcalc >= pcalcmin[bin])
 				  && (pcalc < pcalcmax[bin]) )
 				{
-					totals[bin] += pobs;
-					counts[bin]++;
+					double esd_pobs, esd_Ip, esd_If;
+					esd_Ip = get_esd_intensity(refl);
+					esd_If = get_esd_intensity(f);
+					esd_If *= images[i].osf;
+					esd_pobs  = pow(esd_Ip/Ipart, 2.0);
+					esd_pobs += pow(esd_If/Ifull, 2.0);
+					esd_pobs = sqrt(esd_pobs);
+					t_num[bin] += pobs / esd_pobs;
+					t_den[bin] += 1.0 / esd_pobs;
 				}
 			}
 
@@ -270,9 +277,9 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 
 		double pos = pcalcmin[i] + (pcalcmax[i] - pcalcmin[i])/2.0;
 
-		if ( counts[i] == 0 ) continue;
+		if ( t_den[i] == 0.0 ) continue;
 		cairo_line_to(cr, g_width*pos,
-		                  g_height - g_height*(totals[i]/counts[i]));
+		                  g_height - g_height*(t_num[i]/t_den[i]));
 
 	}
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
