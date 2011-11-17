@@ -414,8 +414,9 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref,
 	RefList *full = NULL;
 	const int min_redundancy = 3;
 
+	for ( i=0; i<n; i++ ) images[i].osf = 1.0;
+
 	if ( noscale ) {
-		for ( i=0; i<n; i++ ) images[i].osf = 1.0;
 		full = lsq_intensities(images, n, n_threads);
 		calculate_esds(images, n, full, n_threads, min_redundancy);
 		return full;
