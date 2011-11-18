@@ -1,0 +1,72 @@
+#!/bin/sh
+
+PDB=$1
+SYMM=$2
+WAVEL=$3
+RESOLUTION=$4
+
+if [ "x$PDB" = "x" ]; then
+	echo "Syntax: $0 <PDB file> <space group> <wavelength in Angstroms> [<resolution>]"
+	exit
+fi
+
+if [ "x$SYMM" = "x" ]; then
+	echo "Syntax: $0 <PDB file> <space group> <wavelength in Anstroms> [<resolution>]"
+	exit
+fi
+
+if [ "x$RESOLUTION" = "x" ]; then
+	echo "Resolution not given.  Using 3 Angstroms."
+	RESOLUTION=3
+fi
+
+echo "Running ano_sfall.com to calculate structure factors..."
+ano_sfall.com ${PDB} ${RESOLUTION}A wave=${WAVEL}
+if [ $? -ne 0 ]; then exit 1; fi
+
+echo "Converting structure factors to text..."
+mtz2various hklin ideal_ano.mtz hklout ${PDB}-temp.hkl >> gen-sfs.html <<EOF
+LABIN H=H K=K L=L DUM1=Fplus DUM2=Fminus
+OUTPUT USER '(3I4,2F9.1)'
+EOF
+if [ $? -ne 0 ]; then exit 1; fi
+rm -f ${PDB}.mtz
+perl < ${PDB}-temp.hkl > ${PDB}.hkl << WIBBLE
+use strict;
+
+my \$line;
+open(FILE, "${PDB}-temp.hkl");
+
+printf("  h   k   l          I    phase   sigma(I)  1/d(nm^-1)  ".
+       "counts  fs/px  ss/px\\n");
+
+while ( \$line = <FILE> ) {
+
+        if ( \$line =~ /^\s*([\d\-]+)\s+([\d\-]+)\s+([\d\-]+)\s+([\d\-\.]+)\s+([\d\-\.]+)/ ) {
+
+                my \$h = \$1;
+                my \$k = \$2;
+                my \$l = \$3;
+                my \$iplus = \$4*\$4;  # Square to convert F->I
+                my \$iminus = \$5*\$5;
+
+                printf("%3i %3i %3i %10.2f -     0.0  %s %7i %6.1f %6.1f\n",
+                       \$h, \$k, \$l, \$iplus, 0.0,
+                       "         -", 1, 0.0, 0.0);
+
+                printf("%3i %3i %3i %10.2f -     0.0  %s %7i %6.1f %6.1f\n",
+                       -\$h, -\$k, -\$l, \$iminus, 0.0,
+                       "         -", 1, 0.0, 0.0);
+
+
+        } else {
+        	printf(STDERR "Couldn't understand line '%s'\n", \$line);
+        }
+
+}
+close(FILE);
+printf("End of reflections\n");
+WIBBLE
+exit
+
+rm -f ${PDB}-temp.hkl
