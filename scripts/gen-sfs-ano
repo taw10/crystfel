@@ -2,16 +2,27 @@
 
 PDB=$1
 SYMM=$2
-WAVEL=$3
-RESOLUTION=$4
+PG=$3
+WAVEL=$4
+RESOLUTION=$5
+
+function show_help()
+{
+	echo -n "Syntax: $0 <PDB file> <space group> <point group>"
+	echo "<wavelength in Angstroms> [<resolution>]"
+	echo
+	echo "The space group and point group must be consistent, it's just"
+	echo "that I don't know how to convert the space group to a point"
+	echo "group."
+}
 
 if [ "x$PDB" = "x" ]; then
-	echo "Syntax: $0 <PDB file> <space group> <wavelength in Angstroms> [<resolution>]"
+	show_help
 	exit
 fi
 
 if [ "x$SYMM" = "x" ]; then
-	echo "Syntax: $0 <PDB file> <space group> <wavelength in Anstroms> [<resolution>]"
+	show_help
 	exit
 fi
 
@@ -25,17 +36,17 @@ ano_sfall.com ${PDB} ${RESOLUTION}A wave=${WAVEL}
 if [ $? -ne 0 ]; then exit 1; fi
 
 echo "Converting structure factors to text..."
-mtz2various hklin ideal_ano.mtz hklout ${PDB}-temp.hkl >> gen-sfs.html <<EOF
+mtz2various hklin ideal_ano.mtz hklout ${PDB}-temp1.hkl >> gen-sfs.html <<EOF
 LABIN H=H K=K L=L DUM1=Fplus DUM2=Fminus
 OUTPUT USER '(3I4,2F9.1)'
 EOF
 if [ $? -ne 0 ]; then exit 1; fi
 rm -f ${PDB}.mtz
-perl < ${PDB}-temp.hkl > ${PDB}.hkl << WIBBLE
+perl > ${PDB}-temp2.hkl << WIBBLE
 use strict;
 
 my \$line;
-open(FILE, "${PDB}-temp.hkl");
+open(FILE, "${PDB}-temp1.hkl");
 
 printf("  h   k   l          I    phase   sigma(I)  1/d(nm^-1)  ".
        "counts  fs/px  ss/px\\n");
@@ -51,13 +62,10 @@ while ( \$line = <FILE> ) {
                 my \$iminus = \$5*\$5;
 
                 printf("%3i %3i %3i %10.2f -     0.0  %s %7i %6.1f %6.1f\n",
-                       \$h, \$k, \$l, \$iplus, 0.0,
-                       "         -", 1, 0.0, 0.0);
+                       \$h, \$k, \$l, \$iplus, "         -", 1, 0.0, 0.0);
 
                 printf("%3i %3i %3i %10.2f -     0.0  %s %7i %6.1f %6.1f\n",
-                       -\$h, -\$k, -\$l, \$iminus, 0.0,
-                       "         -", 1, 0.0, 0.0);
-
+                       -\$h, -\$k, -\$l, \$iminus, "         -", 1, 0.0, 0.0);
 
         } else {
         	printf(STDERR "Couldn't understand line '%s'\n", \$line);
@@ -67,6 +75,8 @@ while ( \$line = <FILE> ) {
 close(FILE);
 printf("End of reflections\n");
 WIBBLE
-exit
 
-rm -f ${PDB}-temp.hkl
+get_hkl -i ${PDB}-temp2.hkl -o ${PDB}.hkl -p ${PDB} -y ${PG} --trim-centrics
+
+rm -f ${PDB}-temp1.hkl
+rm -f ${PDB}-temp2.hkl

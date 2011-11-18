@@ -1,0 +1,10 @@
+#!/usr/bin/perl
+
+my $eV = $ARGV[0];
+
+printf("%5.2f eV\n", $eV);
+
+my $J = $eV*1.6021773e-19;
+my $lambda = (6.62606896e-34 * 299792458)/$J;
+
+printf("%5.2f eV = %5.5f A\n", $eV, $lambda*1e10);

@@ -51,6 +51,11 @@ static void show_help(const char *s)
 "                              point group.\n"
 "  -e, --expand=<sym>         Expand reflections to this point group.\n"
 "\n"
+"Use this option with care, and only if you understand why it might sometimes\n"
+" be necessary:\n"
+"  --trim-centrics            Remove reflections which are duplicated in the\n"
+"                              point group specified with the '-y' option.\n"
+"\n"
 "You can restrict which reflections are written out:\n"
 "  -t, --template=<filename>  Only include reflections mentioned in file.\n"
 "\n"
@@ -294,12 +299,49 @@ static RefList *expand_reflections(RefList *in, const SymOpList *target,
 }
 
 
+static RefList *trim_centrics(RefList *in, const SymOpList *sym)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	RefList *out;
+
+	out = reflist_new();
+
+	for ( refl = first_refl(in, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		signed int ha, ka, la;
+		Reflection *new;
+
+		get_indices(refl, &h, &k, &l);
+
+		/* Put it into the asymmetric unit */
+		get_asymm(sym, h, k, l, &ha, &ka, &la);
+
+		new = find_refl(out, ha, ka, la);
+		if ( new != NULL ) {
+			STATUS("Trimmed %i %i %i\n", h, k, l);
+			continue;
+		}
+
+		/* Add new reflection under asymmetric (unique) indices */
+		new = add_refl(out, ha, ka, la);
+		copy_data(new, refl);
+	}
+
+	return out;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
 	int config_noise = 0;
 	int config_poisson = 0;
 	int config_multi = 0;
+	int config_trimc = 0;
 	char *holo_str = NULL;
 	char *mero_str = NULL;
 	char *expand_str = NULL;
@@ -328,6 +370,7 @@ int main(int argc, char *argv[])
 		{"multiplicity",       0, &config_multi,       1},
 		{"beam",               1, NULL,               'b'},
 		{"pdb",                1, NULL,               'p'},
+		{"trim-centrics",      0, &config_trimc,       1},
 		{0, 0, NULL, 0}
 	};
 
@@ -430,7 +473,10 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	free(input_file);
-	if ( check_list_symmetry(input, mero) ) {
+
+	STATUS("%i reflections in input.\n", num_reflections(input));
+
+	if ( !config_trimc && check_list_symmetry(input, mero) ) {
 		ERROR("The input reflection list does not appear to"
 		      " have symmetry %s\n", symmetry_name(mero));
 		return 1;
@@ -475,6 +521,19 @@ int main(int argc, char *argv[])
 		/* Replace old with new */
 		reflist_free(input);
 		input = new;
+
+	}
+
+	if ( config_trimc ) {
+
+		RefList *new;
+
+		STATUS("Trimming duplicate reflections in %s\n",
+		       symmetry_name(mero));
+		new = trim_centrics(input, mero);
+		reflist_free(input);
+		input = new;
+		STATUS("%i output reflections\n", num_reflections(input));
 
 	}
 

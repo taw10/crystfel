@@ -559,9 +559,9 @@ int main(int argc, char *argv[])
 	UnitCell *cell;
 	RefList *list;
 	char *infile;
-	int config_zoneaxis = 0;
 	int config_sqrt = 0;
 	int config_colkey = 0;
+	int config_zawhinge = 0;
 	unsigned int nproc = 1;
 	char *pdb = NULL;
 	int r = 0;
@@ -583,7 +583,7 @@ int main(int argc, char *argv[])
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
-		{"zone-axis",          0, &config_zoneaxis,    1},
+		{"zone-axis",          0, &config_zawhinge,    1},
 		{"output",             1, NULL,               'o'},
 		{"pdb",                1, NULL,               'p'},
 		{"boost",              1, NULL,               'b'},
@@ -667,7 +667,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( config_zoneaxis ) {
+	if ( config_zawhinge ) {
 		ERROR("Friendly warning: The --zone-axis option isn't needed"
 		      " any longer (I ignored it for you).\n");
 	}
@@ -733,28 +733,26 @@ int main(int argc, char *argv[])
 		return render_key(colscale, scale_top);
 	}
 
-	if ( config_zoneaxis ) {
-		if ( (( down == NULL ) && ( right != NULL ))
-		  || (( down != NULL ) && ( right == NULL )) ) {
-			ERROR("Either specify both 'down' and 'right',"
-			      " or neither.\n");
+	if ( (( down == NULL ) && ( right != NULL ))
+	  || (( down != NULL ) && ( right == NULL )) ) {
+		ERROR("Either specify both 'down' and 'right',"
+		      " or neither.\n");
+		return 1;
+	}
+	if ( down != NULL ) {
+		int r;
+		r = sscanf(down, "%i,%i,%i", &dh, &dk, &dl);
+		if ( r != 3 ) {
+			ERROR("Invalid format for 'down'\n");
 			return 1;
 		}
-		if ( down != NULL ) {
-			int r;
-			r = sscanf(down, "%i,%i,%i", &dh, &dk, &dl);
-			if ( r != 3 ) {
-				ERROR("Invalid format for 'down'\n");
-				return 1;
-			}
-		}
-		if ( right != NULL ) {
-			int r;
-			r = sscanf(right, "%i,%i,%i", &rh, &rk, &rl);
-			if ( r != 3 ) {
-				ERROR("Invalid format for 'right'\n");
-				return 1;
-			}
+	}
+	if ( right != NULL ) {
+		int r;
+		r = sscanf(right, "%i,%i,%i", &rh, &rk, &rl);
+		if ( r != 3 ) {
+			ERROR("Invalid format for 'right'\n");
+			return 1;
 		}
 	}
 
