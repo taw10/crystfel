@@ -254,10 +254,6 @@ static void finalise_job(void *vqargs, void *vwargs)
 
 	write_chunk(qargs->stream, &wargs->image, NULL, STREAM_INTEGRATED);
 
-	reflist_free(wargs->image.reflections);
-	cell_free(wargs->image.indexed_cell);
-	free(wargs);
-
 	for ( i=0; i<NBINS; i++ ) {
 		qargs->n_ref[i] += wargs->n_ref[i];
 		qargs->p_hist[i] += wargs->p_hist[i];
@@ -265,6 +261,10 @@ static void finalise_job(void *vqargs, void *vwargs)
 
 	qargs->n_done++;
 	progress_bar(qargs->n_done, qargs->n_to_do, "Simulating");
+
+	reflist_free(wargs->image.reflections);
+	cell_free(wargs->image.indexed_cell);
+	free(wargs);
 }
 
 
