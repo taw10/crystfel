@@ -632,9 +632,6 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 	}
 	f_max = (f_max/10)*10 + 10;
 
-	snprintf(tmp, 31, "Max n=%i", f_max);
-	show_text_simple(cr, tmp, 10.0, 22.0, "Sans 9", 0.0, J_LEFT);
-
 	snprintf(tmp, 32, "Max I=%.0f", int_max);
 	show_text_simple(cr, tmp, 10.0, 10.0, "Sans 9", 0.0, J_LEFT);
 
