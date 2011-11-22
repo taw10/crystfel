@@ -123,6 +123,9 @@ static void calculate_partials(RefList *partial, double osf,
 		if ( (bin < NBINS) && (bin>=0) ) {
 			p_hist[bin] += p;
 			n_ref[bin]++;
+		} else {
+			STATUS("Reflection out of histogram range: %e %i %f\n",
+			       resolution(cell, h, k, l), bin,  p);
 		}
 
 		Ip = gaussian_noise(Ip, 100.0);
