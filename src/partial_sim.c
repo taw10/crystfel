@@ -469,7 +469,7 @@ int main(int argc, char *argv[])
 	image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
 	image.div = beam->divergence;
 	image.bw = beam->bandwidth;
-	image.profile_radius = 0.01e9;
+	image.profile_radius = 0.003e9;
 	image.i0_available = 0;
 	image.filename = malloc(256);
 	image.copyme = NULL;
