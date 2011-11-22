@@ -32,6 +32,9 @@
 #include <stream.h>
 #include <thread-pool.h>
 
+/* Number of bins for partiality graph */
+#define NBINS 50
+
 
 static void mess_up_cell(UnitCell *cell, double cnoise)
 {
@@ -64,7 +67,9 @@ static void mess_up_cell(UnitCell *cell, double cnoise)
 static void calculate_partials(RefList *partial, double osf,
                                RefList *full, const SymOpList *sym,
                                int random_intensities,
-                               pthread_mutex_t *full_lock)
+                               pthread_mutex_t *full_lock,
+                               unsigned long int *n_ref, double *p_hist,
+                               double max_q, UnitCell *cell)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -76,6 +81,7 @@ static void calculate_partials(RefList *partial, double osf,
 		signed int h, k, l;
 		Reflection *rfull;
 		double p, Ip, If;
+		int bin;
 
 		get_indices(refl, &h, &k, &l);
 		get_asymm(sym, h, k, l, &h, &k, &l);
@@ -112,6 +118,12 @@ static void calculate_partials(RefList *partial, double osf,
 		}
 
 		Ip = osf * p * If;
+
+		bin = NBINS*2.0*resolution(cell, h, k, l) / max_q;
+		if ( (bin < NBINS) && (bin>=0) ) {
+			p_hist[bin] += p;
+			n_ref[bin]++;
+		}
 
 		Ip = gaussian_noise(Ip, 100.0);
 
@@ -162,6 +174,11 @@ struct queue_args
 	double cnoise;
 
 	struct image *template_image;
+	double max_q;
+
+	/* The overall histogram */
+	double p_hist[NBINS];
+	unsigned long int n_ref[NBINS];
 
 	FILE *stream;
 };
@@ -171,6 +188,10 @@ struct worker_args
 {
 	struct queue_args *qargs;
 	struct image image;
+
+	/* Histogram for this image */
+	double p_hist[NBINS];
+	unsigned long int n_ref[NBINS];
 };
 
 
@@ -194,6 +215,7 @@ static void run_job(void *vwargs, int cookie)
 	struct quaternion orientation;
 	struct worker_args *wargs = vwargs;
 	struct queue_args *qargs = wargs->qargs;
+	int i;
 
 	osf = gaussian_noise(1.0, 0.3);
 
@@ -204,9 +226,17 @@ static void run_job(void *vwargs, int cookie)
 	snprintf(wargs->image.filename, 255, "dummy.h5");
 	wargs->image.reflections = find_intersections(&wargs->image,
 	                                       wargs->image.indexed_cell);
+
+	for ( i=0; i<NBINS; i++ ) {
+		wargs->n_ref[i] = 0;
+		wargs->p_hist[i] = 0.0;
+	}
+
 	calculate_partials(wargs->image.reflections, osf, qargs->full,
 	                   qargs->sym, qargs->random_intensities,
-	                   &qargs->full_lock);
+	                   &qargs->full_lock,
+	                   wargs->n_ref, wargs->p_hist, qargs->max_q,
+	                   wargs->image.indexed_cell);
 
 	/* Give a slightly incorrect cell in the stream */
 	mess_up_cell(wargs->image.indexed_cell, qargs->cnoise);
@@ -217,12 +247,18 @@ static void finalise_job(void *vqargs, void *vwargs)
 {
 	struct worker_args *wargs = vwargs;
 	struct queue_args *qargs = vqargs;
+	int i;
 
 	write_chunk(qargs->stream, &wargs->image, NULL, STREAM_INTEGRATED);
 
 	reflist_free(wargs->image.reflections);
 	cell_free(wargs->image.indexed_cell);
 	free(wargs);
+
+	for ( i=0; i<NBINS; i++ ) {
+		qargs->n_ref[i] += wargs->n_ref[i];
+		qargs->p_hist[i] += wargs->p_hist[i];
+	}
 
 	qargs->n_done++;
 	progress_bar(qargs->n_done, qargs->n_to_do, "Simulating");
@@ -252,6 +288,9 @@ int main(int argc, char *argv[])
 	int n_threads = 1;
 	double cnoise = 0.0;
 	char *rval;
+	int i;
+	FILE *fh;
+	char *phist_file = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -263,6 +302,7 @@ int main(int argc, char *argv[])
 		{"geometry",           1, NULL,               'g'},
 		{"symmetry",           1, NULL,               'y'},
 		{"save-random",        1, NULL,               'r'},
+		{"pgraph",             1, NULL,                2},
 		{"cnoise",             1, NULL,               'c'},
 		{0, 0, NULL, 0}
 	};
@@ -318,6 +358,10 @@ int main(int argc, char *argv[])
 				ERROR("Invalid cell noise value.\n");
 				return 1;
 			}
+			break;
+
+		case 2 :
+			phist_file = strdup(optarg);
 			break;
 
 		case 0 :
@@ -444,6 +488,12 @@ int main(int argc, char *argv[])
 	qargs.template_image = &image;
 	qargs.stream = ofh;
 	qargs.cnoise = cnoise;
+	qargs.max_q = largest_q(&image);
+
+	for ( i=0; i<NBINS; i++ ) {
+		qargs.n_ref[i] = 0;
+		qargs.p_hist[i] = 0.0;
+	}
 
 	run_threads(n_threads, run_job, create_job, finalise_job,
 	            &qargs, n, 0, 0, 0);
@@ -451,6 +501,31 @@ int main(int argc, char *argv[])
 	if ( random_intensities ) {
 		STATUS("Writing full intensities to %s\n", save_file);
 		write_reflist(save_file, full, cell);
+	}
+
+	if ( phist_file != NULL ) {
+		fh = fopen(phist_file, "w");
+	} else {
+		fh = NULL;
+	}
+	if ( fh != NULL ) {
+
+		for ( i=0; i<NBINS; i++ ) {
+
+			double rcen;
+
+			rcen = i/(double)NBINS*qargs.max_q
+			          + qargs.max_q/(2.0*NBINS);
+			fprintf(fh, "%.2f %7li %.3f\n", rcen/1.0e9,
+			        qargs.n_ref[i],
+				qargs.p_hist[i]/qargs.n_ref[i]);
+
+		}
+
+		fclose(fh);
+
+	} else {
+		ERROR("Failed to open file '%s' for writing.\n", phist_file);
 	}
 
 	fclose(ofh);
