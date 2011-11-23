@@ -160,7 +160,8 @@ void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell)
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
+	      refl = next_refl(refl, iter) )
+	{
 
 		signed int h, k, l;
 		double intensity, esd_i, s, ph;
