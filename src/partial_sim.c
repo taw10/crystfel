@@ -69,7 +69,7 @@ static void calculate_partials(RefList *partial, double osf,
                                int random_intensities,
                                pthread_mutex_t *full_lock,
                                unsigned long int *n_ref, double *p_hist,
-                               double max_q, UnitCell *cell)
+                               double *p_max, double max_q, UnitCell *cell)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -123,6 +123,7 @@ static void calculate_partials(RefList *partial, double osf,
 		if ( (bin < NBINS) && (bin>=0) ) {
 			p_hist[bin] += p;
 			n_ref[bin]++;
+			if ( p > p_max[bin] ) p_max[bin] = p;
 		} else {
 			STATUS("Reflection out of histogram range: %e %i %f\n",
 			       resolution(cell, h, k, l), bin,  p);
@@ -182,6 +183,7 @@ struct queue_args
 	/* The overall histogram */
 	double p_hist[NBINS];
 	unsigned long int n_ref[NBINS];
+	double p_max[NBINS];
 
 	FILE *stream;
 };
@@ -195,6 +197,7 @@ struct worker_args
 	/* Histogram for this image */
 	double p_hist[NBINS];
 	unsigned long int n_ref[NBINS];
+	double p_max[NBINS];
 };
 
 
@@ -233,13 +236,14 @@ static void run_job(void *vwargs, int cookie)
 	for ( i=0; i<NBINS; i++ ) {
 		wargs->n_ref[i] = 0;
 		wargs->p_hist[i] = 0.0;
+		wargs->p_max[i] = 0.0;
 	}
 
 	calculate_partials(wargs->image.reflections, osf, qargs->full,
 	                   qargs->sym, qargs->random_intensities,
 	                   &qargs->full_lock,
-	                   wargs->n_ref, wargs->p_hist, qargs->max_q,
-	                   wargs->image.indexed_cell);
+	                   wargs->n_ref, wargs->p_hist, wargs->p_max,
+	                   qargs->max_q, wargs->image.indexed_cell);
 
 	/* Give a slightly incorrect cell in the stream */
 	mess_up_cell(wargs->image.indexed_cell, qargs->cnoise);
@@ -257,6 +261,9 @@ static void finalise_job(void *vqargs, void *vwargs)
 	for ( i=0; i<NBINS; i++ ) {
 		qargs->n_ref[i] += wargs->n_ref[i];
 		qargs->p_hist[i] += wargs->p_hist[i];
+		if ( wargs->p_max[i] > qargs->p_max[i] ) {
+			qargs->p_max[i] = wargs->p_max[i];
+		}
 	}
 
 	qargs->n_done++;
@@ -496,6 +503,7 @@ int main(int argc, char *argv[])
 	for ( i=0; i<NBINS; i++ ) {
 		qargs.n_ref[i] = 0;
 		qargs.p_hist[i] = 0.0;
+		qargs.p_max[i] = 0.0;
 	}
 
 	run_threads(n_threads, run_job, create_job, finalise_job,
@@ -519,9 +527,10 @@ int main(int argc, char *argv[])
 
 			rcen = i/(double)NBINS*qargs.max_q
 			          + qargs.max_q/(2.0*NBINS);
-			fprintf(fh, "%.2f %7li %.3f\n", rcen/1.0e9,
+			fprintf(fh, "%.2f %7li %.3f %.3f\n", rcen/1.0e9,
 			        qargs.n_ref[i],
-				qargs.p_hist[i]/qargs.n_ref[i]);
+				qargs.p_hist[i]/qargs.n_ref[i],
+				qargs.p_max[i]);
 
 		}
 
