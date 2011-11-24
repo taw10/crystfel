@@ -185,7 +185,7 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 
 			case R_SHELL_RSPLIT :
 			num[bin] += fabs(i1 - scale*i2);
-			den += i1 + i2;
+			den += i1 + scale*i2;
 			break;
 
 			case R_SHELL_R1I :
