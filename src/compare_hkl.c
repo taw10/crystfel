@@ -217,7 +217,25 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 		return;
 	}
 
-	fprintf(fh, "1/d centre   Rsplit / %%\n");
+	switch ( config_shells ) {
+
+		case R_SHELL_RSPLIT :
+		fprintf(fh, "1/d centre   Rsplit / %%\n");
+		break;
+
+		case R_SHELL_R1I :
+		fprintf(fh, "1/d centre   R1(I) / %%\n");
+		break;
+
+		case R_SHELL_R1F :
+		fprintf(fh, "1/d centre   R1(F) ignoring -ves / %%\n");
+		break;
+
+		default :
+		fprintf(fh, "1/d centre   0.0\n");
+		break;
+
+	}
 
 	for ( i=0; i<NBINS; i++ ) {
 
