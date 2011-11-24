@@ -33,6 +33,27 @@
 #define NBINS (10)
 
 
+enum r_shell
+{
+	R_SHELL_NONE,
+	R_SHELL_R1I,
+	R_SHELL_R1F,
+	R_SHELL_RSPLIT,
+};
+
+
+static enum r_shell get_r_shell(const char *s)
+{
+	if ( strcmp(s, "r1i") == 0 ) return R_SHELL_R1I;
+	if ( strcmp(s, "r1f") == 0 ) return R_SHELL_R1F;
+	if ( strcmp(s, "rsplit") == 0 ) return R_SHELL_RSPLIT;
+
+	ERROR("Unknown R-factor '%s' - try '--shells=rsplit', or --help for"
+	      " more possibilities.\n", s);
+	exit(1);
+}
+
+
 static void show_help(const char *s)
 {
 	printf("Syntax: %s [options] <file1.hkl> <file2.hkl>\n\n", s);
@@ -43,7 +64,8 @@ static void show_help(const char *s)
 "  -o, --ratio=<filename>     Specify output filename for ratios.\n"
 "  -y, --symmetry=<sym>       The symmetry of both the input files.\n"
 "  -p, --pdb=<filename>       PDB file to use (default: molecule.pdb).\n"
-"      --shells               Plot the figures of merit by resolution.\n"
+"      --shells=<FoM>         Plot this figure of merit in resolution shells.\n"
+"                              Choose from: 'Rsplit', 'R1f' and 'R1i'.\n"
 "      --rmin=<res>           Fix lower resolution limit for --shells (m^-1).\n"
 "      --rmax=<res>           Fix upper resolution limit for --shells (m^-1).\n"
 "\n");
@@ -51,7 +73,8 @@ static void show_help(const char *s)
 
 
 static void plot_shells(RefList *list1, RefList *list2, double scale,
-                        UnitCell *cell, double rmin_fix, double rmax_fix)
+                        UnitCell *cell, double rmin_fix, double rmax_fix,
+                        enum r_shell config_shells)
 {
 	double num[NBINS];
 	int cts[NBINS];
@@ -129,7 +152,7 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 		signed int h, k, l;
 		double d;
 		int bin;
-		double i1, i2;
+		double i1, i2, f1, f2;
 		int j;
 		Reflection *refl2;
 
@@ -154,10 +177,31 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 		if ( refl2 == NULL ) continue;
 
 		i1 = get_intensity(refl1);
-		i2 = scale * get_intensity(refl2);
+		i2 = get_intensity(refl2);
+		f1 = i1 > 0.0 ? sqrt(i1) : 0.0;
+		f2 = i2 > 0.0 ? sqrt(i2) : 0.0;
 
-		num[bin] += fabs(i1 - i2);
-		den += i1 + i2;
+		switch ( config_shells ) {
+
+			case R_SHELL_RSPLIT :
+			num[bin] += fabs(i1 - scale*i2);
+			den += i1 + i2;
+			break;
+
+			case R_SHELL_R1I :
+			num[bin] += fabs(i1 - scale*i2);
+			den += i1;
+			break;
+
+			case R_SHELL_R1F :
+			num[bin] += fabs(f1 - scale*f2);
+			den += f1;
+			break;
+
+			default : break;
+
+		}
+
 		ctot++;
 		cts[bin]++;
 	}
@@ -179,7 +223,24 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 
 		double r, cen;
 		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
-		r = (2.0*(num[i]/den)*((double)ctot/cts[i]))/sqrt(2.0);
+
+		switch ( config_shells ) {
+
+			case R_SHELL_RSPLIT :
+			r = (2.0*(num[i]/den)*((double)ctot/cts[i]))/sqrt(2.0);
+			break;
+
+			case R_SHELL_R1I :
+			case R_SHELL_R1F :
+			r = (num[i]/den) * ((double)ctot/cts[i]);
+			break;
+
+			default :
+			r = 0.0;
+			break;
+
+		}
+
 		fprintf(fh, "%10.3f %10.2f %10i\n",
 		        cen*1.0e-9, r*100.0, cts[i]);
 
@@ -208,20 +269,21 @@ int main(int argc, char *argv[])
 	RefList *list1_raw;
 	RefList *list2_raw;
 	RefList *ratio;
-	int config_shells = 0;
+	enum r_shell config_shells = R_SHELL_NONE;
 	char *pdb = NULL;
 	float rmin_fix = -1.0;
 	float rmax_fix = -1.0;
 	Reflection *refl1;
 	RefListIterator *iter;
 	int config_unity = 0;
+	double scale_for_shells;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"ratio" ,             1, NULL,               'o'},
 		{"symmetry",           1, NULL,               'y'},
-		{"shells",             0, &config_shells,     1},
+		{"shells",             1, NULL,               4},
 		{"pdb",                1, NULL,               'p'},
 		{"rmin",               1, NULL,               2},
 		{"rmax",               1, NULL,               3},
@@ -269,6 +331,10 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --rmax\n");
 				return 1;
 			}
+			break;
+
+		case 4 :
+			config_shells = get_r_shell(optarg);
 			break;
 
 		default :
@@ -406,9 +472,16 @@ int main(int argc, char *argv[])
 	STATUS("Pearson r(F) = %5.4f (zeroing negative intensities)\n",
 	       pearson);
 
-	if ( config_shells ) {
-		plot_shells(list1, list2, scale_rintint,
-		            cell, rmin_fix, rmax_fix);
+	switch ( config_shells ) {
+		case R_SHELL_R1I : scale_for_shells = scale_r1i;  break;
+		case R_SHELL_R1F : scale_for_shells = scale_r1;  break;
+		case R_SHELL_RSPLIT : scale_for_shells = scale_rintint;  break;
+		default : scale_for_shells = 0.0;
+	}
+
+	if ( config_shells != R_SHELL_NONE ) {
+		plot_shells(list1, list2, scale_for_shells,
+		            cell, rmin_fix, rmax_fix, config_shells);
 	}
 
 	return 0;
