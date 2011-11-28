@@ -39,7 +39,7 @@ static void show_help(const char *s)
 "Characterise an intensity list.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
-"  -y, --symmetry=<sym>       The symmetry of both the input files.\n"
+"  -y, --symmetry=<sym>       The symmetry of the input file.\n"
 "  -p, --pdb=<filename>       PDB file to use (default: molecule.pdb).\n"
 "      --rmin=<res>           Fix lower resolution limit for --shells (m^-1).\n"
 "      --rmax=<res>           Fix upper resolution limit for --shells (m^-1).\n"
