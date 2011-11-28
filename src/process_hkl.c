@@ -163,7 +163,6 @@ static void merge_pattern(RefList *model, RefList *new, int max_only,
 				}
 			}
 
-
 			/* Increase redundancy */
 			int cur_redundancy = get_redundancy(model_version);
 			set_redundancy(model_version, cur_redundancy+1);

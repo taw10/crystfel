@@ -417,7 +417,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 			continue;
 		}
 
-		if (intensity/sigma < min_snr) {
+		if ( intensity/sigma < min_snr ) {
 			nrej_snr++;
 			continue;
 		}

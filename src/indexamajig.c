@@ -532,7 +532,7 @@ int main(int argc, char *argv[])
 	int config_basename = 0;
 	float threshold = 800.0;
 	float min_gradient = 100000.0;
-	float min_snr = 5;
+	float min_snr = 5.0;
 	struct detector *det;
 	char *geometry = NULL;
 	IndexingMethod *indm;
