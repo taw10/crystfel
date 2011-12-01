@@ -337,6 +337,8 @@ void update_partialities(struct image *image)
 		/* Transfer detector location */
 		get_detector_pos(vals, &x, &y);
 		set_detector_pos(refl, 0.0, x, y);
+
+		reflection_free(vals);
 	}
 
 	reflist_free(predicted);
