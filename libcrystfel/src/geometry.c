@@ -143,7 +143,7 @@ static Reflection *check_reflection(struct image *image,
 	double lambda = image->lambda;
 	double klow, kcen, khigh;    /* Wavenumber */
 	Reflection *refl;
-	double tt;
+	double tt, psi;
 
 	/* "low" gives the largest Ewald sphere,
 	 * "high" gives the smallest Ewald sphere. */
@@ -152,17 +152,19 @@ static Reflection *check_reflection(struct image *image,
 	khigh = 1.0/(lambda + lambda*bandwidth/2.0);
 
 	/* Get the coordinates of the reciprocal lattice point */
-	zl = h*asz + k*bsz + l*csz;
-	/* Throw out if it's "in front".  A tiny bit "in front" is OK. */
-	if ( zl > image->profile_radius ) return NULL;
 	xl = h*asx + k*bsx + l*csx;
 	yl = h*asy + k*bsy + l*csy;
-
-	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+kcen);
-	if ( tt > deg2rad(90.0) ) return NULL;
+	zl = h*asz + k*bsz + l*csz;
 
 	ds_sq = modulus_squared(xl, yl, zl);  /* d*^2 */
 	ds = sqrt(ds_sq);
+
+	/* Simple (fast) check to reject reflection if it's "in front" */
+	psi = atan2(zl, sqrt(xl*xl + yl*yl));
+	if ( psi - atan2(image->profile_radius, ds) > divergence ) return NULL;
+
+	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+kcen);
+	if ( tt > deg2rad(90.0) ) return NULL;
 
 	/* Calculate excitation errors */
 	rlow = excitation_error(xl, yl, zl, ds, klow, -divergence/2.0, tt);
