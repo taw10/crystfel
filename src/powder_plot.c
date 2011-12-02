@@ -884,14 +884,6 @@ int main(int argc, char *argv[])
 
 	}
 
-
-	/* need to check that the file even exists before moving on */
-	FILE * junk = fopen(filename,"r");
-	if ( junk == NULL ) {
-		ERROR("The file %s does not exist!\n",filename);
-		exit(1);
-	} 
-
 	if ( is_stream(filename) == 1 ) {
 
 		file_type = FILE_STREAM;

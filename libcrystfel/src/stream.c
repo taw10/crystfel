@@ -472,6 +472,9 @@ int is_stream(const char *filename) {
 	char line[1024];
 	char *rval = NULL;
 	fh = fopen(filename, "r");
+	if ( fh == NULL ) {
+		return -1;
+	}
 	rval = fgets(line, 1023, fh);
 	fclose(fh);
 	if ( rval == NULL ) {
@@ -483,5 +486,4 @@ int is_stream(const char *filename) {
 	else {
 		return 0;
 	}
-	return -1;
 }
