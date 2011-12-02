@@ -887,7 +887,7 @@ int main(int argc, char *argv[])
 	if ( is_stream(filename) == 1 ) {
 
 		file_type = FILE_STREAM;
-
+		
 	} else if ( H5Fis_hdf5(filename) > 0 ) {
 
 		file_type = FILE_H5;
@@ -949,6 +949,15 @@ int main(int argc, char *argv[])
 	if ( file_type == FILE_HKL ) {
 		need_geometry = 0;
 		need_beam = 0;
+
+	/* Logic checks */
+	if ( need_geometry && (image.lambda < 0.0) ) {
+		need_beam = 1;
+	}
+	if ( hist_info.histsize <= 0 ) {
+		ERROR("You need to specify a histogram with more then 0 "
+                      "bins\n");
+		return 1;
 	}
 
 	/* Get geometry, beam and pdb files and parameters as needed */
@@ -970,7 +979,7 @@ int main(int argc, char *argv[])
 	}
 	free(geometry);
 
-	/* Open files to get wavelength if it exists & camera length
+	/* Open files to get wavelength if it exists & camera length 
 	   if they are not found in the geometry file */
 	if (file_type == FILE_STREAM) {
 		fh = fopen(filename, "r");
@@ -1067,11 +1076,11 @@ int main(int argc, char *argv[])
 			resolution_limits(image.reflections, cell,
 		                  &hist_info.q_min, &hist_info.q_max);
 		} else if (hist_info.q_min < 0.0) {
-			double dummy;
+			double dummy;			
 			resolution_limits(image.reflections, cell,
 		                  &hist_info.q_min, &dummy);
 		} else if (hist_info.q_max < 0.0) {
-			double dummy;
+			double dummy;			
 			resolution_limits(image.reflections, cell,
 		                  &dummy, &hist_info.q_max);
 		}
@@ -1090,6 +1099,7 @@ int main(int argc, char *argv[])
                       hist_info.q_min, hist_info.q_max);
 		return 1;
 	}
+
 	if ( hist_info.spacing == LINEAR) {
 		hist_info.q_delta = (hist_info.q_max - hist_info.q_min)/
 		                    hist_info.histsize;

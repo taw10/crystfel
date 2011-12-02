@@ -1,0 +1,252 @@
+#!/usr/bin/perl -w
+#
+#
+#  Stream_grep  Splits a stream file based on tag name/value
+#
+#  Written by Andrew Aquila 2011
+#
+# Version 1.1 Dec 1 2011:
+# Now stdin and stdout work so piping is possible
+# Changed input options to match shell script test function for numbers
+# Added -v for invert-match option
+# Added cell parameter matching options
+#
+
+use Getopt::Long;
+use Switch;
+
+my ($input_stream_name, $tag_name, $output_stream_name, $help, $v,
+    $lt, $le, $eq, $ge, $gt, $ne, $cell_a, $cell_b, $cell_c, $cell_al,
+    $cell_be, $cell_ga) ;
+
+my $opts = GetOptions('help|?|h' => \$help, 'i|input=s' => \$input_stream_name,
+   'o|output=s' => \$output_stream_name, 'n|tag-name=s' => \$tag_name, 'v|invert-match' => \$v,
+   'eq=f'=>\$eq, 'lt=f'=>\$lt, 'le=f'=>\$le, 'ge=f'=>\$ge,'gt=f'=>\$gt,'ne=f'=>\$ne,
+   'g|greater-than' => \$gt, 'cell-a' => \$cell_a, 'cell-b' => \$cell_b, 'cell-c' => \$cell_c,
+   'cell-alpha' => \$cell_al, 'cell-beta' => \$cell_be, 'cell-gamma' => \$cell_ga);
+
+#sanity check and error message
+if (! $opts or defined $help) {
+print STDERR "@ARGV\n";
+	help_msgs();
+	exit;
+}
+
+#check if filtering a Cell parameter
+my $N_cell_types = 0;
+my $cell_type = 0;
+if (defined $tag_name) {
+	$N_cell_types++;
+}
+if (defined $cell_a) {
+	$tag_name =  "^Cell\ parameters\ ([0-9\.]+)\ [0-9\.]+\ [0-9\.]+";
+	$cell_type = 1;
+	$N_cell_types++;
+}
+if (defined $cell_b) {
+	$tag_name =  "^Cell\ parameters\ [0-9\.]+\ ([0-9\.]+)\ [0-9\.]+";
+	$cell_type = 1;
+	$N_cell_types++;
+}
+if (defined $cell_c) {
+	$tag_name =  "^Cell\ parameters\ [0-9\.]+\ [0-9\.]+\ ([0-9\.]+)";
+	$cell_type = 1;
+	$N_cell_types++;
+}
+if (defined $cell_al) {
+	$tag_name =  "([0-9\.]+)\ [0-9\.]+\ [0-9\.]+ deg\$";
+	$cell_type = 1;
+	$N_cell_types++;
+}
+if (defined $cell_be) {
+	$tag_name =  "[0-9\.]+\ ([0-9\.]+)\ [0-9\.]+ deg\$";
+	$cell_type = 1;
+	$N_cell_types++;
+}
+if (defined $cell_ga) {
+	$tag_name =  "[0-9\.]+\ [0-9\.]+\ ([0-9\.]+) deg\$";
+	$cell_type = 1;
+	$N_cell_types++;
+}
+# A bit of error checking on number of tags
+if ($N_cell_types>1) {
+	print STDERR "More then one tag-name/cell parameret is used!\n";
+	help_msgs();
+	exit;
+}
+if (!defined $tag_name) {
+	print STDERR "No tag-name/cell parameret is defined!\n";
+	help_msgs();
+	exit;
+}
+
+#set type and tag value
+my $tag_type = 0;
+my $tag_value = 0;
+my $N_tag_types = 0;
+if (defined $lt) {
+	$tag_type = 1;
+	$tag_value = $lt;
+	$N_tag_types++;
+} 
+if (defined $le) {
+	$tag_type = 2;
+	$tag_value = $le;
+	$N_tag_types++;
+}
+if (defined $eq) {
+	$tag_type = 3;
+	$tag_value = $eq;
+	$N_tag_types++;
+}
+if (defined $ge) {
+	$tag_type = 4;
+	$tag_value = $ge;
+	$N_tag_types++;
+}
+if (defined $gt) {
+	$tag_type = 5;
+	$tag_value = $gt;
+	$N_tag_types++;
+}
+if (defined $ne) {
+	$tag_type = 6;
+	$tag_value = $ne;
+	$N_tag_types++;
+}
+
+# sanity check for xor of numeric options
+if ($N_tag_types>1) {
+	print STDERR "More then one comparison is used!\n";
+	help_msgs();
+	exit;
+}
+
+#set inverse value
+if (defined $v) {$v = -1;} else {$v = 1;}
+
+# set input file handle
+my $FHin = STDIN;
+if (defined $input_stream_name) {
+	open( IN,"< $input_stream_name") || die "Can't open file $input_stream_name\n";
+	$FHin = IN;
+}
+
+# set output file handle
+my $FHout = STDOUT;
+if (defined $output_stream_name) {
+	open(OUT, "> $output_stream_name") || die "Can't open file $output_stream_name\n";
+	$FHout = OUT;
+}
+
+# initialize variables
+my @chunk =();
+my $N_chunks = 0;
+my $N_matches = 0;
+my $test_chunk;
+my $line;
+
+# loop over file
+while ($line = <$FHin>) {
+	if ($line =~ /^-----\ Begin\ chunk -----$/) { # new chunk!
+		if (@chunk != 0) { # ignore if empty (i.e. first chunk)
+			$test_chunk = check_match(\@chunk,$tag_name,$tag_value,$tag_type,$cell_type);
+			if (($test_chunk * $v) > 0) { # simple test including inverse
+				print_chunk(\@chunk,$FHout);
+				$N_matches++;
+			}
+		}
+		$N_chunks++;
+		@chunk = (); # clear chunk
+	}
+	if ($N_chunks == 0) { # check if in header
+		print $FHout $line; # print header
+	}
+	else {
+		push(@chunk, $line); # add line to end of the chunk
+	}
+}
+
+# don't forget the last chunk!
+$test_chunk = check_match(\@chunk,$tag_name,$tag_value,$tag_type,$cell_type);
+if (($test_chunk * $v) > 0) {
+	print_chunk(\@chunk,$FHout);
+	$N_matches++;
+}
+
+# close handles if files
+if (defined $input_stream_name) {
+	close(IN);
+}
+if (defined $output_stream_name) {
+	close(OUT);
+}
+
+# print useful data on the old and new streams
+print STDERR "I have read $N_chunks chunks.\n";
+print STDERR "Of those $N_matches matched the criteria.\n";
+
+# function to print the chunk
+sub print_chunk
+{
+	($chunk_ref, $fh) = @_;
+	print $fh @{$chunk_ref};
+}
+
+# function to match chunk
+# returns 1 if TRUE and -1 if FALSE
+sub check_match
+{
+	my ($chunk_ref, $name, $ref_value, $eq_type, $split_type) = @_;
+	my $junk;
+	my $value;
+	foreach (@{$chunk_ref}) {
+		if($_ =~ $name) {
+			if ($split_type) {
+				$value = $1; # evaluate cell parameter
+			} else {
+				($junk, $value) = split(/=/,$_); # evaluate everthing else
+			}
+			switch($eq_type) {
+				case 0 {return 1;}
+				case 1 {if ($value <  $ref_value) {return 1;}}
+				case 2 {if ($value <= $ref_value) {return 1;}}
+				case 3 {if ($value == $ref_value) {return 1;}}
+				case 4 {if ($value >= $ref_value) {return 1;}}
+				case 5 {if ($value >  $ref_value) {return 1;}}
+				case 6 {if ($value != $ref_value) {return 1;}}
+			}
+		}
+	}
+	return -1; # chunk is empty and nothing matches
+}
+
+sub help_msgs
+{
+	print STDERR "Unknown option: @_\n" if (@_);
+	print STDERR "Syntax: stream_grep [options] \n";
+	print STDERR "Stream_grep takes in a CrystFEL stream and outputs a stream \n";
+	print STDERR "with only chunks matching the specific tag-name and tag-value.\n\n";
+	print STDERR "-h, --help\t Displays this help message.\n";
+	print STDERR "-i, --input=<file>\t Input CrystFEL stream filename (default is stdin)\n";
+	print STDERR "-o, --output=<file>\t Output CrystFEL stream filename (default is stdout)\n";
+	print STDERR "-n, --tag-name=<name>\t Name of tag to match on\n";
+	print STDERR "-v, --invert-match\t Select non-matching chunks\n";
+	print STDERR "\n";
+	print STDERR "--cell-a\t Use the smallest unit cell length [nm] as the tag-name\n";
+	print STDERR "--cell-b\t Use the middle unit cell length [nm] as the tag-name\n";
+	print STDERR "--cell-c\t Use the largest unit cell length [nm] as the tag-name\n";
+	print STDERR "--cell-alpha\t Use the first rotation angle [deg] as the tag-name\n";
+	print STDERR "--cell-beta\t Use the second rotation angle [deg] as the tag-name\n";
+	print STDERR "--cell-gamma\t Use the third rotation angle [deg] as the tag-name\n";
+	print STDERR "\n";
+	print STDERR "-eq <value>,\t Match all chunks of the stream with tag values equal to the given value\n";
+	print STDERR "-ne <value>,\t Match all chunks of the stream with tag values not equal to the given value\n";
+	print STDERR "-lt <value>,\t Match all chunks of the stream with tag values less then the given value\n";
+	print STDERR "-le <value>,\t Match all chunks of the stream with tag values less then or equal to the given value\n";
+	print STDERR "-gt <value>,\t Match all chunks of the stream with tag values greater then the given value\n";
+	print STDERR "-ge <value>,\t Match all chunks of the stream with tag values greater then or equal to the given value\n";
+	print STDERR "\n";
+	print STDERR "Usage note: if --tag-name is specified without a comparison tag-value then ";
+	print STDERR "all chunks with the tag-name match.\n";
+}
