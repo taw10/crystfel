@@ -254,7 +254,6 @@ int integrate_peak(struct image *image, int cfs, int css,
 	noise_mean = noise / noise_counts;  /* photons */
 
 	/* The centroid is excitingly undefined if there is no intensity */
-	centroid = 0;
 	if ( centroid && (total != 0) ) {
 		*pfs = ((double)fsct / total) + 0.5;
 		*pss = ((double)ssct / total) + 0.5;
