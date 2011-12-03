@@ -949,6 +949,7 @@ int main(int argc, char *argv[])
 	if ( file_type == FILE_HKL ) {
 		need_geometry = 0;
 		need_beam = 0;
+	}
 
 	/* Logic checks */
 	if ( need_geometry && (image.lambda < 0.0) ) {
