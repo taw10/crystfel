@@ -1076,11 +1076,11 @@ int main(int argc, char *argv[])
 			resolution_limits(image.reflections, cell,
 		                  &hist_info.q_min, &hist_info.q_max);
 		} else if (hist_info.q_min < 0.0) {
-			double dummy;			
+			double dummy;
 			resolution_limits(image.reflections, cell,
 		                  &hist_info.q_min, &dummy);
 		} else if (hist_info.q_max < 0.0) {
-			double dummy;			
+			double dummy;
 			resolution_limits(image.reflections, cell,
 		                  &dummy, &hist_info.q_max);
 		}
