@@ -887,7 +887,7 @@ int main(int argc, char *argv[])
 	if ( is_stream(filename) == 1 ) {
 
 		file_type = FILE_STREAM;
-		
+
 	} else if ( H5Fis_hdf5(filename) > 0 ) {
 
 		file_type = FILE_H5;
@@ -980,7 +980,7 @@ int main(int argc, char *argv[])
 	}
 	free(geometry);
 
-	/* Open files to get wavelength if it exists & camera length 
+	/* Open files to get wavelength if it exists & camera length
 	   if they are not found in the geometry file */
 	if (file_type == FILE_STREAM) {
 		fh = fopen(filename, "r");

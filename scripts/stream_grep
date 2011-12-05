@@ -88,7 +88,7 @@ if (defined $lt) {
 	$tag_type = 1;
 	$tag_value = $lt;
 	$N_tag_types++;
-} 
+}
 if (defined $le) {
 	$tag_type = 2;
 	$tag_value = $le;
