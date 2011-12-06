@@ -67,7 +67,7 @@ static void show_help(const char *s)
 "                                     reflection (no 'epsilon' correction).\n"
 "\n"
 "      --colour-key        Draw (only) the key for the current colour scale.\n"
-"  -j <n>                  Run <n> instances of POV-ray in parallel.\n"
+"\n"
 "  -h, --help              Display this help message.\n"
 );
 }
@@ -562,7 +562,6 @@ int main(int argc, char *argv[])
 	int config_sqrt = 0;
 	int config_colkey = 0;
 	int config_zawhinge = 0;
-	unsigned int nproc = 1;
 	char *pdb = NULL;
 	int r = 0;
 	double boost = 1.0;
@@ -599,17 +598,13 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hj:p:w:c:y:d:r:o:",
+	while ((c = getopt_long(argc, argv, "hp:w:c:y:d:r:o:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
 		case 'h' :
 			show_help(argv[0]);
 			return 0;
-
-		case 'j' :
-			nproc = atoi(optarg);
-			break;
 
 		case 'p' :
 			pdb = strdup(optarg);
