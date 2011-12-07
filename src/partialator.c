@@ -50,7 +50,7 @@ static void show_help(const char *s)
 "\n"
 "  -i, --input=<filename>     Specify the name of the input 'stream'.\n"
 "                              (must be a file, not e.g. stdin)\n"
-"  -o, --output=<filename>    Output filename.  Default: facetron.hkl.\n"
+"  -o, --output=<filename>    Output filename.  Default: partialator.hkl.\n"
 "  -g. --geometry=<file>      Get detector geometry from file.\n"
 "  -b, --beam=<file>          Get beam parameters from file, which provides\n"
 "                              initial values for parameters, and nominal\n"
