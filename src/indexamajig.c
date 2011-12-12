@@ -69,6 +69,7 @@ struct static_index_args
 	float threshold;
 	float min_gradient;
 	float min_snr;
+	double min_int_snr;
 	struct detector *det;
 	IndexingMethod *indm;
 	IndexingPrivate **ipriv;
@@ -185,6 +186,8 @@ static void show_help(const char *s)
 "                           Default: 100,000.\n"
 "     --min-snr=<n>        Minimum signal-to-noise ratio for peaks.\n"
 "                           Default: 5.\n"
+"     --min-integration-snr=<n>  Minimum signal-to-noise ratio for peaks\n"
+"                                 during integration. Default: -infinity.\n"
 " -e, --image=<element>    Use this image from the HDF5 file.\n"
 "                           Example: /data/data0.\n"
 "                           Default: The first one found.\n"
@@ -363,7 +366,8 @@ static void process_image(void *pp, int cookie)
 
 			integrate_reflections(&image, config_polar,
 					      pargs->static_args.config_closer,
-					      pargs->static_args.config_bgsub);
+					      pargs->static_args.config_bgsub,
+					      pargs->static_args.min_int_snr);
 
 			estimate_resolution(image.reflections,
 			                    image.indexed_cell, &min, &max);
@@ -544,6 +548,7 @@ int main(int argc, char *argv[])
 	float threshold = 800.0;
 	float min_gradient = 100000.0;
 	float min_snr = 5.0;
+	double min_int_snr = -INFINITY;
 	struct detector *det;
 	char *geometry = NULL;
 	IndexingMethod *indm;
@@ -602,6 +607,7 @@ int main(int argc, char *argv[])
 		{"threshold",          1, NULL,               't'},
 		{"min-gradient",       1, NULL,                4},
 		{"min-snr",            1, NULL,               11},
+		{"min-integration-snr",1, NULL,               12},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
 		{"no-closer-peak",     0, &config_closer,      0},
 		{"insane",             0, &config_insane,      1},
@@ -682,6 +688,10 @@ int main(int argc, char *argv[])
 
 		case 11 :
 			min_snr = strtof(optarg, NULL);
+			break;
+
+		case 12 :
+			min_int_snr = strtof(optarg, NULL);
 			break;
 
 		case 'e' :

@@ -25,7 +25,8 @@ extern void search_peaks(struct image *image, float threshold,
                          float min_gradient, float min_snr);
 
 extern void integrate_reflections(struct image *image,
-                                  int polar, int use_closer, int bgsub);
+                                  int polar, int use_closer, int bgsub,
+                                  double min_snr);
 
 extern int peak_sanity_check(struct image * image);
 

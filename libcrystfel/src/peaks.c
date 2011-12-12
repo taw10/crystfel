@@ -564,7 +564,7 @@ int peak_sanity_check(struct image *image)
 
 /* Integrate the list of predicted reflections in "image" */
 void integrate_reflections(struct image *image, int polar, int use_closer,
-                           int bgsub)
+                           int bgsub, double min_snr)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -605,6 +605,9 @@ void integrate_reflections(struct image *image, int polar, int use_closer,
 		r = integrate_peak(image, pfs, pss, &fs, &ss,
 		                   &intensity, &bg, &max, &sigma, polar, 0,
 		                   bgsub);
+
+		/* I/sigma(I) cutoff */
+		if ( intensity/sigma < min_snr ) r = 0;
 
 		/* Record intensity and set redundancy to 1 on success */
 		if ( r == 0 ) {
