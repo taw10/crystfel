@@ -953,6 +953,7 @@ int main(int argc, char *argv[])
 	qargs.static_args.threshold = threshold;
 	qargs.static_args.min_gradient = min_gradient;
 	qargs.static_args.min_snr = min_snr;
+	qargs.static_args.min_int_snr = min_int_snr;
 	qargs.static_args.det = det;
 	qargs.static_args.indm = indm;
 	qargs.static_args.ipriv = ipriv;
