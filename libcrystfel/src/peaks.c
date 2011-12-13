@@ -314,7 +314,7 @@ void estimate_resolution(RefList *list, UnitCell *cell,
 	}
 
 	*min = 0.0;
-	*max = 0.0;
+	*max = INFINITY;
 }
 
 
