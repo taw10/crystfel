@@ -1066,8 +1066,8 @@ int reverse_2d_mapping(double x, double y, double *pfs, double *pss,
 		/* In range? */
 		if ( fs < 0 ) continue;
 		if ( ss < 0 ) continue;
-		if ( fs > (p->max_fs-p->min_fs+1) ) continue;
-		if ( ss > (p->max_ss-p->min_ss+1) ) continue;
+		if ( fs > p->max_fs-p->min_fs ) continue;
+		if ( ss > p->max_ss-p->min_ss ) continue;
 
 		*pfs = fs + p->min_fs;
 		*pss = ss + p->min_ss;
