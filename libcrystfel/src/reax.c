@@ -242,6 +242,125 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 }
 
 
+/* Refine a direct space vector.  From Clegg (1984) */
+static double iterate_refine_vector(double *x, double *y, double *z,
+                                    ImageFeatureList *flist)
+{
+	int fi, n, err;
+	gsl_matrix *C;
+	gsl_vector *A;
+	gsl_vector *t;
+	gsl_matrix *s_vec;
+	gsl_vector *s_val;
+	double dtmax;
+
+	A = gsl_vector_calloc(3);
+	C = gsl_matrix_calloc(3, 3);
+
+	n = image_feature_count(flist);
+	fesetround(1);
+	for ( fi=0; fi<n; fi++ ) {
+
+		struct imagefeature *f;
+		double val;
+		double kn, kno;
+		double xv[3];
+		int i, j;
+
+		f = image_get_feature(flist, fi);
+		if ( f == NULL ) continue;
+
+		kno = f->rx*(*x) + f->ry*(*y) + f->rz*(*z);  /* Sorry ... */
+		kn = nearbyint(kno);
+		if ( kn - kno > 0.3 ) continue;
+
+		xv[0] = f->rx;  xv[1] = f->ry;  xv[2] = f->rz;
+
+		for ( i=0; i<3; i++ ) {
+
+			val = gsl_vector_get(A, i);
+			gsl_vector_set(A, i, val+xv[i]*kn);
+
+			for ( j=0; j<3; j++ ) {
+				val = gsl_matrix_get(C, i, j);
+				gsl_matrix_set(C, i, j, val+xv[i]*xv[j]);
+			}
+
+		}
+
+	}
+
+	s_val = gsl_vector_calloc(3);
+	s_vec = gsl_matrix_calloc(3, 3);
+	err = gsl_linalg_SV_decomp_jacobi(C, s_vec, s_val);
+	if ( err ) {
+		ERROR("SVD failed: %s\n", gsl_strerror(err));
+		gsl_matrix_free(s_vec);
+		gsl_vector_free(s_val);
+		gsl_matrix_free(C);
+		gsl_vector_free(A);
+		return 0.0;
+	}
+
+	t = gsl_vector_calloc(3);
+	err = gsl_linalg_SV_solve(C, s_vec, s_val, A, t);
+	if ( err ) {
+		ERROR("Matrix solution failed: %s\n", gsl_strerror(err));
+		gsl_matrix_free(s_vec);
+		gsl_vector_free(s_val);
+		gsl_matrix_free(C);
+		gsl_vector_free(A);
+		gsl_vector_free(t);
+		return 0.0;
+	}
+
+	gsl_matrix_free(s_vec);
+	gsl_vector_free(s_val);
+
+	dtmax  = fabs(*x - gsl_vector_get(t, 0));
+	dtmax += fabs(*y - gsl_vector_get(t, 1));
+	dtmax += fabs(*z - gsl_vector_get(t, 2));
+
+	*x = gsl_vector_get(t, 0);
+	*y = gsl_vector_get(t, 1);
+	*z = gsl_vector_get(t, 2);
+
+	gsl_matrix_free(C);
+	gsl_vector_free(A);
+
+	return dtmax;
+}
+
+
+static void refine_cell(struct image *image, UnitCell *cell,
+                        ImageFeatureList *flist)
+{
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	int i;
+	double sm;
+
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	i = 0;
+	do {
+
+		sm  = iterate_refine_vector(&ax, &ay, &az, flist);
+		sm += iterate_refine_vector(&bx, &by, &bz, flist);
+		sm += iterate_refine_vector(&cx, &cy, &cz, flist);
+		i++;
+
+	} while ( (sm > 0.001e-9) && (i<10) );
+
+	cell_set_cartesian(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
+
+	if ( i == 10 ) {
+		cell_free(image->indexed_cell);
+		image->indexed_cell = NULL;
+	}
+}
+
+
 static void fine_search(struct reax_private *p, ImageFeatureList *flist,
                         double pmax, double *fft_in, fftw_complex *fft_out,
                         struct reax_search_v *sv, struct reax_candidate *c,
@@ -333,7 +452,7 @@ static void squash_vectors(struct reax_search *s, double tol)
 		}
 		}
 
-		new = calloc(sv->n_cand-n_invalid,
+		new = calloc(sv->n_cand - n_invalid,
 		             sizeof(struct reax_candidate));
 		if ( new == NULL ) {
 			ERROR("Failed to allocate memory for squashed"
@@ -359,9 +478,10 @@ static void squash_vectors(struct reax_search *s, double tol)
 		sv->cand = new;
 
 		for ( j=0; j<sv->n_cand; j++ ) {
-			STATUS("%i: %+6.2f %+6.2f %+6.2f %.2f\n",
-			       j, sv->cand[j].v.x, sv->cand[j].v.y,
-			       sv->cand[j].v.z, sv->cand[j].fom);
+			STATUS("%i: %+6.2f %+6.2f %+6.2f nm %.2f\n",
+			       j, sv->cand[j].v.x*1e9,
+			          sv->cand[j].v.y*1e9,
+			          sv->cand[j].v.z*1e9, sv->cand[j].fom);
 		}
 
 	}
@@ -412,6 +532,14 @@ static void find_candidates(struct reax_private *p,
 		for ( j=0; j<sv->n_cand; j++ ) {
 			fine_search(p, flist, pmax, fft_in, fft_out, sv,
 			            &sv->cand[j], rg, det);
+			STATUS("%i: %+6.2f %+6.2f %+6.2f, mod %.2f nm, %.2f\n",
+			       j, sv->cand[j].v.x*1e9,
+			          sv->cand[j].v.y*1e9,
+			          sv->cand[j].v.z*1e9,
+			          modulus(sv->cand[j].v.x,
+			                  sv->cand[j].v.y,
+			                  sv->cand[j].v.z)*1e9,
+			         sv->cand[j].fom);
 		}
 	}
 }
@@ -668,6 +796,8 @@ static void assemble_cells_from_candidates(struct image *image,
                                            struct reax_search *s,
                                            UnitCell *cell)
 {
+	/* FIXME: Implement this */
+	image->ncells = 0;
 }
 
 
@@ -702,8 +832,6 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	fftw_free(fft_in);
 	fftw_free(fft_out);
-
-	image->ncells = 1;
 }
 
 
