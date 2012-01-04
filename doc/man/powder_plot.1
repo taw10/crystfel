@@ -20,10 +20,10 @@ This program takes as input the data stream from "indexamajig" or an hkl file,
 or an HDF5 file.  It sums the many individual intensities, Bragg peaks or pixel
 locations in the HDF5 file, together to form a 1D powder histogram.
 
-The output of powder_plot consists of a two line header followed by a tab
+The output of powder_plot consists of a three line header followed by a tab
 delimited list of 6 values:
 
- q of the histogram bin
+ 1/d of the histogram bin where d is the Bragg law d spacing in meters
  the total number of peaks (N)
  the total intensity in the N peaks
  the mean intensity of the N peaks
@@ -43,17 +43,17 @@ selected.
 
 .SH HISTOGRAM OPTIONS
 
-You can choose to set the min and maximum q value [units are inverse meters]
-with: --q_min=<number> and  --q_max=<number> The default value is to use the
+You can choose to set the min and maximum 1/d value [units are inverse meters]
+with: --min=<number> and  --max=<number> The default value is to use the
 entire detector setup in the .geom file (loaded with the -g flag).
 
 You can also adjust the number of histogram bins with:
 --bins=<intiger>
 
-Scaling can be set to produce linearly, quadratically or cubicly spaced q
+Scaling can be set to produce linearly, quadratically or cubicly spaced 1/d
 values using: --spacing=<type>  possible types are:
  linear      : linear (default)
- q2          : even spacing in Wilson plots (quadratic)
+ wilson      : even spacing in Wilson plots (quadratic)
  volume      : constant volume (cubic)
 
 .SH DATA TYPE OPTIONS
@@ -75,7 +75,7 @@ and peaks (regardless if they indexed).
 A few other implemented flags to give better control are:
  --no-sat-corr          Don't correct values of saturated peaks using a table included in the HDF5 file.
  --only-indexed Use with -data=peaks or h5 if you want to use the peak list of only indexed patterns. (Useful for seeing changes from patterns that do not index.)
- --no-q-scaling Use with .hkl files if you want to not scale the powder by 1/q^2
+ --no-d-scaling Use with .hkl files if you want to not scale the powder by d^2
  --ring-corr            Use if you want to scale the powder plot to correct for the fractional area sampled of the powder ring. (Useful for detectors with gaps.)
  --use-redundancy       Use with .hkl files if you want to use the number of measurements and not the number of symmetrical equivalent reflections as the number of time a reflection occurs in the powder
 

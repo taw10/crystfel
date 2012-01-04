@@ -693,13 +693,13 @@ static void show_help(const char *s)
 "  -p, --pdb=<file>        Get unit cell from PDB file. (.hkl files only)\n"
 "  -y, --symmetry=<sym>    The symmetry of crystal (.hkl files only)\n"
 "  -s, --bins=n            Makes histogram with n bins (default is 100).\n"
-"      --spacing=<type>    Use 'type' to select the q spacing.\n"
+"      --spacing=<type>    Use 'type' to select the 1/d spacing.\n"
 "                          Choose from:\n"
 "                            linear      : linear (default)\n"
-"                            q2          : even spacing in Wilson plots\n"
+"                            wilson      : even spacing in Wilson plots\n"
 "                            volume      : constant volume\n"
-"      --q-max=n           The maximum q to be considered in plot.\n"
-"      --q-min=n           The minimum q to be considered in plot.\n"
+"      --max=n           The maximum 1/d to be considered in plot.\n"
+"      --min=n           The minimum 1/d to be considered in plot.\n"
 "  -d, --data=<type>       Use to select the kind of stream data in histogram.\n"
 "                          Choose from:\n"
 "                            reflection  : uses peak positons from indexed\n"
@@ -716,8 +716,8 @@ static void show_help(const char *s)
 "                            table included in the HDF5 file.\n"
 "     --only-indexed       Use with -data=peaks or h5 if you want to use the\n"
 "                            peak list of only indexed patterns\n"
-"     --no-q-scaling       Use with .hkl files if you want to not scale the\n"
-"                            powder by 1/q^2\n"
+"     --no-d-scaling       Use with .hkl files if you want to not scale the\n"
+"                            powder by d^2\n"
 "     --ring-corr          Use if you want to scale the powder plot to\n"
 "                            correct for the fractional area sampled of the\n"
 "                            powder ring\n"
@@ -785,13 +785,13 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"symmetry",           1, NULL,               'y'},
 		{"bins",               1, NULL,               's'},
-		{"q-max",              1, NULL,                1 },
-		{"q-min",              1, NULL,                2 },
+		{"max",              1, NULL,                1 },
+		{"min",              1, NULL,                2 },
 		{"spacing",            1, NULL,                3 },
 		{"no-sat-corr",        0, &config_satcorr,     0 },
 		{"sat-corr",           0, &config_satcorr,     1 },
 		{"only-indexed",       0, &only_indexed,       1 },
-		{"no-q-scaling",       0, &q_scaling,          0 },
+		{"no-d-scaling",       0, &q_scaling,          0 },
 		{"ring-corr",          0, &ring_corr,          1 },
 		{"use-redundancy",     0, &use_redundancy,     1 },
 		{"data",               1, NULL,               'd'},
@@ -853,7 +853,7 @@ int main(int argc, char *argv[])
 		case 3 :
 			if (strcmp(optarg, "linear") == 0 ) {
 				hist_info.spacing = LINEAR;
-			} else if (strcmp(optarg, "q2") == 0 ) {
+			} else if (strcmp(optarg, "wilson") == 0 ) {
 				hist_info.spacing = q2;
 			} else if (strcmp(optarg, "volume") == 0) {
 				hist_info.spacing = VOLUME;
@@ -1095,8 +1095,8 @@ int main(int argc, char *argv[])
 	}
 
 	if ( hist_info.q_min >= hist_info.q_max ) {
-		ERROR("the minimum q value of: %e "
-	              "is greator then your max q value of: %e\n",
+		ERROR("the minimum 1/d value of: %e "
+	              "is greator then your max 1/d value of: %e\n",
                       hist_info.q_min, hist_info.q_max);
 		return 1;
 	}
@@ -1207,8 +1207,14 @@ int main(int argc, char *argv[])
 		fh = stdout;
 	}
 
+	/* Print header */	
+	fprintf(fh, "Command line:");
+	for ( i=0; i<argc; i++ ) {
+		fprintf(fh, " %s", argv[i]);
+	}
+	fprintf(fh, "\n");
 	fprintf(fh, "I read %i patterns with %i peaks\n", n_patterns, n_peaks);
-	fprintf(fh, "q\tN\ttotal\tmean\tstd dev\t std dev of mean\n");
+	fprintf(fh, "1/d(m^-1)\tN\ttotal\tmean\tstd dev\t std dev of mean\n");
 
 	for( i=0; i<hist_info.histsize; i++ ) {
 		fprintf(fh, "%5e\t%i\t%5e\t%5e\t%5e\t%5e\n",
