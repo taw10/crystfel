@@ -785,8 +785,8 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"symmetry",           1, NULL,               'y'},
 		{"bins",               1, NULL,               's'},
-		{"max",              1, NULL,                1 },
-		{"min",              1, NULL,                2 },
+		{"max",                1, NULL,                1 },
+		{"min",                1, NULL,                2 },
 		{"spacing",            1, NULL,                3 },
 		{"no-sat-corr",        0, &config_satcorr,     0 },
 		{"sat-corr",           0, &config_satcorr,     1 },
@@ -1207,7 +1207,7 @@ int main(int argc, char *argv[])
 		fh = stdout;
 	}
 
-	/* Print header */	
+	/* Print header */
 	fprintf(fh, "Command line:");
 	for ( i=0; i<argc; i++ ) {
 		fprintf(fh, " %s", argv[i]);
