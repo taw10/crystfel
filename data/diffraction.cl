@@ -14,6 +14,7 @@
  * WARNING: Altering this value constitutes an ABI change, and means you must
  * update src/pattern_sim.h then recompile and reinstall everything. */
 #define INDMAX 200
+#define IDIM (INDMAX*2 +1)
 
 #ifndef M_PI
 #define M_PI ((float)(3.14159265))
