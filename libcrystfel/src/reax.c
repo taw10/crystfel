@@ -483,20 +483,20 @@ static void squash_vectors(struct reax_search *s, double tol)
 		assert(sv->n_cand - n_invalid == n_copied);
 
 		free(sv->cand);
-		STATUS("Search vector %i: squashed %i candidates down to %i\n",
-		       i, sv->n_cand, n_copied);
+		//STATUS("Search vector %i: squashed %i candidates down to %i\n",
+		//       i, sv->n_cand, n_copied);
 		sv->n_cand = n_copied;
 		sv->cand = new;
 
 		qsort(sv->cand, sv->n_cand, sizeof(sv->cand[0]),
 		      fom_compare);
 
-		for ( j=0; j<sv->n_cand; j++ ) {
-			STATUS("%i: %+6.2f %+6.2f %+6.2f nm %.2f\n",
-			       j, sv->cand[j].v.x*1e9,
-			          sv->cand[j].v.y*1e9,
-			          sv->cand[j].v.z*1e9, sv->cand[j].fom);
-		}
+		//for ( j=0; j<sv->n_cand; j++ ) {
+		//	STATUS("%i: %+6.2f %+6.2f %+6.2f nm %.2f\n",
+		//	       j, sv->cand[j].v.x*1e9,
+		//	          sv->cand[j].v.y*1e9,
+		//	          sv->cand[j].v.z*1e9, sv->cand[j].fom);
+		//}
 
 	}
 }
@@ -541,19 +541,19 @@ static void find_candidates(struct reax_private *p,
 		int j;
 
 		sv = &s->search[i];
-		STATUS("Search %i: doing fine search for %i candidates\n",
-		       i, sv->n_cand);
-		for ( j=0; j<sv->n_cand; j++ ) {
+		//STATUS("Search %i: doing fine search for %i candidates\n",
+		//       i, sv->n_cand);
+		for ( j=0; j<smallest(sv->n_cand, 3); j++ ) {
 			fine_search(p, flist, pmax, fft_in, fft_out, sv,
 			            &sv->cand[j], rg, det);
-			STATUS("%i: %+6.2f %+6.2f %+6.2f, mod %.2f nm, %.2f\n",
-			       j, sv->cand[j].v.x*1e9,
-			          sv->cand[j].v.y*1e9,
-			          sv->cand[j].v.z*1e9,
-			          modulus(sv->cand[j].v.x,
-			                  sv->cand[j].v.y,
-			                  sv->cand[j].v.z)*1e9,
-			         sv->cand[j].fom);
+			//STATUS("%i: %+6.2f %+6.2f %+6.2f, mod %.2f nm, %.2f\n",
+			//       j, sv->cand[j].v.x*1e9,
+			//       sv->cand[j].v.y*1e9,
+			//        sv->cand[j].v.z*1e9,
+			//        modulus(sv->cand[j].v.x,
+			//                sv->cand[j].v.y,
+			//                sv->cand[j].v.z)*1e9,
+			//       sv->cand[j].fom);
 		}
 	}
 }
@@ -570,7 +570,7 @@ static struct reax_search *search_all_axes(UnitCell *cell, double pmax)
 	double bmin, bmax;
 	double cmin, cmax;
 	unsigned int smin, smax;
-	const double ltol = 5.0; /* Direct space axis length tolerance in % */
+	const double ltol = 10.0; /* Direct space axis length tolerance in % */
 	struct reax_search *s;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
@@ -864,7 +864,7 @@ static int check_vector_combination(struct dvec *vi, struct dvec *vj,
 {
 	double ang;
 	double a, b, c, al, be, ga;
-	const double angtol = deg2rad(2.0);
+	const double angtol = deg2rad(5.0);
 
 	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
 
@@ -928,6 +928,7 @@ static void assemble_cells_from_candidates(struct image *image,
 			continue;
 		}
 
+		refine_cell(image, cnew, image->features);
 		cells[ncells++] = cnew;
 
 	}
@@ -940,12 +941,6 @@ static void assemble_cells_from_candidates(struct image *image,
 	image->ncells = ncells;
 	for ( i=0; i<ncells; i++ ) {
 		image->candidate_cells[i] = cells[i];
-	}
-
-	if ( ncells > 0 ) {
-		image->indexed_cell = cells[0];
-	} else {
-		image->indexed_cell = NULL;
 	}
 }
 
