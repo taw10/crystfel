@@ -45,6 +45,10 @@
 #define INC_TOL_MULTIPLIER (3.0)
 
 
+/* Maximum number of cells that can be found by the reduction */
+#define MAX_CELLS (48)
+
+
 struct dvec
 {
 	double x;
@@ -229,9 +233,6 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 				s->search[i].cand[cpos].fom = fom;
 				s->search[i].n_cand++;
 
-				STATUS("Candidate %.2f %.2f %.2f %.2f sigma\n",
-				       dir->x, dir->y, dir->z, fom);
-
 			}
 
 		}
@@ -412,6 +413,16 @@ static void fine_search(struct reax_private *p, ImageFeatureList *flist,
 }
 
 
+static int fom_compare(const void *av, const void *bv)
+{
+	const struct reax_candidate *a = av;
+	const struct reax_candidate *b = bv;
+
+	if ( a->fom > b->fom ) return -1;
+	return +1;
+}
+
+
 static void squash_vectors(struct reax_search *s, double tol)
 {
 	int i;
@@ -476,6 +487,9 @@ static void squash_vectors(struct reax_search *s, double tol)
 		       i, sv->n_cand, n_copied);
 		sv->n_cand = n_copied;
 		sv->cand = new;
+
+		qsort(sv->cand, sv->n_cand, sizeof(sv->cand[0]),
+		      fom_compare);
 
 		for ( j=0; j<sv->n_cand; j++ ) {
 			STATUS("%i: %+6.2f %+6.2f %+6.2f nm %.2f\n",
@@ -792,12 +806,147 @@ static double max_feature_resolution(ImageFeatureList *flist)
 }
 
 
+static int right_handed(struct rvec a, struct rvec b, struct rvec c)
+{
+	struct rvec aCb;
+	double aCb_dot_c;
+
+	/* "a" cross "b" */
+	aCb.u = a.v*b.w - a.w*b.v;
+	aCb.v = - (a.u*b.w - a.w*b.u);
+	aCb.w = a.u*b.v - a.v*b.u;
+
+	/* "a cross b" dot "c" */
+	aCb_dot_c = aCb.u*c.u + aCb.v*c.v + aCb.w*c.w;
+
+	if ( aCb_dot_c > 0.0 ) return 1;
+	return 0;
+}
+
+
+static int check_twinning(UnitCell *c1, UnitCell *c2)
+{
+	int i;
+
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+
+	for ( i=0; i<100; i++ ) {
+		signed int h, k, l;
+
+		h = flat_noise(0, 10);
+		k = flat_noise(0, 10);
+		l = flat_noise(0, 10);
+
+	}
+
+	return 0;
+}
+
+
+/* Return true if "cnew" accounts for more than 25% of the peaks predicted by
+ * any of the "ncells" cells in "cells". */
+static int twinned(UnitCell *cnew, UnitCell **cells, int ncells)
+{
+	int i;
+
+	for ( i=0; i<ncells; i++ ) {
+		if ( check_twinning(cnew, cells[i]) ) return 1;
+	}
+
+	return 0;
+}
+
+
+static int check_vector_combination(struct dvec *vi, struct dvec *vj,
+                                    struct dvec *vk, UnitCell *cell)
+{
+	double ang;
+	double a, b, c, al, be, ga;
+	const double angtol = deg2rad(2.0);
+
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+
+	ang = angle_between(vi->x, vi->y, vi->z, vj->x, vj->y, vj->z);
+	if ( fabs(ang-ga) > angtol ) return 0;
+
+	ang = angle_between(vi->x, vi->y, vi->z,
+	                    vk->x, vk->y, vk->z);
+	if ( fabs(ang-be) > angtol ) return 0;
+
+	ang = angle_between(vj->x, vj->y, vj->z,
+	                    vk->x, vk->y, vk->z);
+	if ( fabs(ang-al) > angtol ) return 0;
+
+	return 1;
+}
+
+
 static void assemble_cells_from_candidates(struct image *image,
                                            struct reax_search *s,
                                            UnitCell *cell)
 {
-	/* FIXME: Implement this */
-	image->ncells = 0;
+	int i, j, k;
+	signed int ti, tj, tk;
+	UnitCell *cells[MAX_CELLS];
+	int ncells = 0;
+
+	/* Find candidates for axes 0 and 1 which have the right angle */
+	for ( i=0; i<s->search[0].n_cand; i++ ) {
+	for ( j=0; j<s->search[1].n_cand; j++ ) {
+	for ( k=0; k<s->search[2].n_cand; k++ ) {
+	for ( ti=-1; ti<=1; ti+=2 ) {
+	for ( tj=-1; tj<=1; tj+=2 ) {
+	for ( tk=-1; tk<=1; tk+=2 ) {
+
+		struct dvec vi, vj, vk;
+		struct rvec ai, bi, ci;
+		UnitCell *cnew;
+
+		vi = s->search[0].cand[i].v;
+		vj = s->search[1].cand[j].v;
+		vk = s->search[2].cand[k].v;
+
+		vi.x *= ti;  vi.y *= ti;  vi.z *= ti;
+		vj.x *= tj;  vj.y *= tj;  vj.z *= tj;
+		vk.x *= tk;  vk.y *= tk;  vk.z *= tk;
+
+		if ( !check_vector_combination(&vi, &vj, &vk, cell) ) continue;
+
+		ai.u = vi.x;  ai.v = vi.y;  ai.w = vi.z;
+		bi.u = vj.x;  bi.v = vj.y;  bi.w = vj.z;
+		ci.u = vk.x;  ci.v = vk.y;  ci.w = vk.z;
+
+		if ( !right_handed(ai, bi, ci) ) continue;
+
+		/* We have three vectors with the right angles */
+		cnew = cell_new_from_direct_axes(ai, bi, ci);
+
+		if ( twinned(cnew, cells, ncells) ) {
+			cell_free(cnew);
+			continue;
+		}
+
+		cells[ncells++] = cnew;
+
+	}
+	}
+	}
+	}
+	}
+	}
+
+	image->ncells = ncells;
+	for ( i=0; i<ncells; i++ ) {
+		image->candidate_cells[i] = cells[i];
+	}
+
+	if ( ncells > 0 ) {
+		image->indexed_cell = cells[0];
+	} else {
+		image->indexed_cell = NULL;
+	}
 }
 
 
