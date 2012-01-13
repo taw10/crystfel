@@ -296,6 +296,9 @@ void estimate_resolution(RefList *list, UnitCell *cell,
 	Reflection *refl;
 	RefListIterator *iter;
 
+	*min = INFINITY;
+	*max = 0.0;
+
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
