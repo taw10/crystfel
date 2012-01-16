@@ -610,7 +610,7 @@ void integrate_reflections(struct image *image, int polar, int use_closer,
 		                   bgsub);
 
 		/* I/sigma(I) cutoff */
-		if ( intensity/sigma < min_snr ) r = 1;
+		if ( !r && (intensity/sigma < min_snr) ) r = 1;
 
 		/* Record intensity and set redundancy to 1 on success */
 		if ( r == 0 ) {
