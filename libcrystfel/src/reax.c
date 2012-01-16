@@ -45,10 +45,6 @@
 #define INC_TOL_MULTIPLIER (3.0)
 
 
-/* Maximum number of cells that can be found by the reduction */
-#define MAX_CELLS (48)
-
-
 struct dvec
 {
 	double x;
@@ -889,7 +885,7 @@ static void assemble_cells_from_candidates(struct image *image,
 {
 	int i, j, k;
 	signed int ti, tj, tk;
-	UnitCell *cells[MAX_CELLS];
+	UnitCell *cells[MAX_CELL_CANDIDATES];
 	int ncells = 0;
 
 	/* Find candidates for axes 0 and 1 which have the right angle */
@@ -929,7 +925,9 @@ static void assemble_cells_from_candidates(struct image *image,
 		}
 
 		refine_cell(image, cnew, image->features);
-		cells[ncells++] = cnew;
+		if ( ncells < MAX_CELL_CANDIDATES ) {
+			cells[ncells++] = cnew;
+		}
 
 	}
 	}
@@ -939,6 +937,7 @@ static void assemble_cells_from_candidates(struct image *image,
 	}
 
 	image->ncells = ncells;
+	assert(ncells <= MAX_CELL_CANDIDATES);
 	for ( i=0; i<ncells; i++ ) {
 		image->candidate_cells[i] = cells[i];
 	}
