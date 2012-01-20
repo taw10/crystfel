@@ -170,13 +170,11 @@ static void show_simple_ring(cairo_t *cr, DisplayWindow *dw,
                              double d, cairo_matrix_t *basic_m)
 {
 	struct detector *det;
-	int i;
 
 	if ( !dw->use_geom ) return;
 
 	det = dw->image->det;
 
-	cairo_text_extents_t size;
 	cairo_identity_matrix(cr);
 	cairo_translate(cr, -dw->min_x/dw->binning,
 	                     dw->max_y/dw->binning);
