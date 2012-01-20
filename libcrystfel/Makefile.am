@@ -1,6 +1,5 @@
 lib_LTLIBRARIES = libcrystfel.la
 libcrystfel_la_LIBADD = @LIBCRYSTFEL_LIBS@
-libcrystfel_la_LDFLAGS = -fPIC
 
 libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/thread-pool.c src/image.c src/hdf5-file.c \
