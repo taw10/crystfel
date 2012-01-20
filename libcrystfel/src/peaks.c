@@ -290,37 +290,6 @@ int integrate_peak(struct image *image, int cfs, int css,
 }
 
 
-void estimate_resolution(RefList *list, UnitCell *cell,
-                         double *min, double *max)
-{
-	Reflection *refl;
-	RefListIterator *iter;
-
-	*min = INFINITY;
-	*max = 0.0;
-
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		double one_over_d;
-		signed int h, k, l;
-
-		get_indices(refl, &h, &k, &l);
-		one_over_d = 2.0 * resolution(cell, h, k, l);
-
-		if ( one_over_d > *max ) *max = one_over_d;
-		if ( one_over_d < *min ) *min = one_over_d;
-
-		/* FIXME: Implement this */
-
-	}
-
-	*min = 0.0;
-	*max = INFINITY;
-}
-
-
 static void search_peaks_in_panel(struct image *image, float threshold,
                                   float min_gradient, float min_snr,
                                   struct panel *p)
