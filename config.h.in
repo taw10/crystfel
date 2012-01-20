@@ -88,6 +88,9 @@
 /* Define to 1 if Pango is available */
 #undef HAVE_PANGO
 
+/* Define to 1 if PangoCairo is available */
+#undef HAVE_PANGOCAIRO
+
 /* Define to 1 if memmem is declared even after undefining macros. */
 #undef HAVE_RAW_DECL_MEMMEM
 

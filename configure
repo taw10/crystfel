@@ -634,6 +634,8 @@ HAVE_FFTW_FALSE
 HAVE_FFTW_TRUE
 HAVE_PANGO_FALSE
 HAVE_PANGO_TRUE
+HAVE_PANGOCAIRO_FALSE
+HAVE_PANGOCAIRO_TRUE
 HAVE_CAIRO_FALSE
 HAVE_CAIRO_TRUE
 BUILD_HDFSEE_FALSE
@@ -646,6 +648,8 @@ GDK_pixbuf_2_LIBS
 GDK_pixbuf_2_CFLAGS
 GDK_pixbuf_LIBS
 GDK_pixbuf_CFLAGS
+PangoCairo_LIBS
+PangoCairo_CFLAGS
 Pango_LIBS
 Pango_CFLAGS
 Cairo_LIBS
@@ -899,6 +903,8 @@ Cairo_CFLAGS
 Cairo_LIBS
 Pango_CFLAGS
 Pango_LIBS
+PangoCairo_CFLAGS
+PangoCairo_LIBS
 GDK_pixbuf_CFLAGS
 GDK_pixbuf_LIBS
 GDK_pixbuf_2_CFLAGS
@@ -1584,6 +1590,10 @@ Some influential environment variables:
   Pango_CFLAGS
               C compiler flags for Pango, overriding pkg-config
   Pango_LIBS  linker flags for Pango, overriding pkg-config
+  PangoCairo_CFLAGS
+              C compiler flags for PangoCairo, overriding pkg-config
+  PangoCairo_LIBS
+              linker flags for PangoCairo, overriding pkg-config
   GDK_pixbuf_CFLAGS
               C compiler flags for GDK_pixbuf, overriding pkg-config
   GDK_pixbuf_LIBS
@@ -13654,6 +13664,85 @@ $as_echo "#define HAVE_PANGO 1" >>confdefs.h
 
 fi
 
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for PangoCairo" >&5
+$as_echo_n "checking for PangoCairo... " >&6; }
+
+if test -n "$PangoCairo_CFLAGS"; then
+    pkg_cv_PangoCairo_CFLAGS="$PangoCairo_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"pangocairo\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "pangocairo") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_PangoCairo_CFLAGS=`$PKG_CONFIG --cflags "pangocairo" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$PangoCairo_LIBS"; then
+    pkg_cv_PangoCairo_LIBS="$PangoCairo_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"pangocairo\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "pangocairo") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_PangoCairo_LIBS=`$PKG_CONFIG --libs "pangocairo" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        PangoCairo_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "pangocairo" 2>&1`
+        else
+	        PangoCairo_PKG_ERRORS=`$PKG_CONFIG --print-errors "pangocairo" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$PangoCairo_PKG_ERRORS" >&5
+
+
+      have_pangocairo=false
+
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+      have_pangocairo=false
+
+else
+	PangoCairo_CFLAGS=$pkg_cv_PangoCairo_CFLAGS
+	PangoCairo_LIBS=$pkg_cv_PangoCairo_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+      have_pangocairo=true
+
+$as_echo "#define HAVE_PANGOCAIRO 1" >>confdefs.h
+
+
+fi
+
+
 else
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -14121,6 +14210,15 @@ else
 fi
 
 
+ if test x$have_pangocairo = xtrue; then
+  HAVE_PANGOCAIRO_TRUE=
+  HAVE_PANGOCAIRO_FALSE='#'
+else
+  HAVE_PANGOCAIRO_TRUE='#'
+  HAVE_PANGOCAIRO_FALSE=
+fi
+
+
  if test x$have_pango = xtrue; then
   HAVE_PANGO_TRUE=
   HAVE_PANGO_FALSE='#'
@@ -14202,6 +14300,7 @@ MAIN_CFLAGS="$CFLAGS $HDF5_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread"
 MAIN_CFLAGS="$MAIN_CFLAGS $GTK_CFLAGS $LIBTIFF_CFLAGS -D_GNU_SOURCE "
 MAIN_CFLAGS="$MAIN_CFLAGS $libPNG_CFLAGS $Cairo_CFLAGS $GDK_pixbuf_CFLAGS"
 MAIN_CFLAGS="$MAIN_CFLAGS $GDK_pixbuf_2_CFLAGS $FFTW_CFLAGS $Pango_CFLAGS"
+MAIN_CFLAGS="$MAIN_CFLAGS $PangoCairo_CFLAGS"
 
 
 LIBCRYSTFEL_CFLAGS="$CFLAGS $HDF5_CFLAGS $GSL_CFLAGS $FFTW_CFLAGS"
@@ -14210,7 +14309,7 @@ LIBCRYSTFEL_CFLAGS="$CFLAGS $HDF5_CFLAGS $GSL_CFLAGS $FFTW_CFLAGS"
 MAIN_LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
 MAIN_LIBS="$MAIN_LIBS $LIBTIFF_LIBS $libPNG_LIBS $Cairo_LIBS $GDK_pixbuf_LIBS"
 MAIN_LIBS="$MAIN_LIBS $GDK_pixbuf_2_LIBS $TIMER_LIBS $FFTW_LIBS"
-MAIN_LIBS="$MAIN_LIBS $Pango_LIBS $LDFLAGS"
+MAIN_LIBS="$MAIN_LIBS $Pango_LIBS $PangoCairo_LIBS $LDFLAGS"
 
 
 LIBCRYSTFEL_LIBS="$LIBS $HDF5_LIBS $GSL_LIBS $FFTW_LIBS $LDFLAGS"
@@ -14608,6 +14707,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_CAIRO_TRUE}" && test -z "${HAVE_CAIRO_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_CAIRO\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_PANGOCAIRO_TRUE}" && test -z "${HAVE_PANGOCAIRO_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_PANGOCAIRO\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_PANGO_TRUE}" && test -z "${HAVE_PANGO_FALSE}"; then

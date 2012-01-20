@@ -204,6 +204,14 @@ AS_IF([test "x$enable_pango" != "xno"],
    ], [
       have_pango=false
    ])
+   PKG_CHECK_MODULES([PangoCairo], [pangocairo],
+   [
+      have_pangocairo=true
+      AC_DEFINE([HAVE_PANGOCAIRO], [1],
+                [Define to 1 if PangoCairo is available])
+   ], [
+      have_pangocairo=false
+   ])
 ], [
    AC_MSG_RESULT([no])
 ])
@@ -266,6 +274,8 @@ AM_CONDITIONAL([BUILD_HDFSEE], test x$have_gdk_pixbuf = xtrue \
 
 AM_CONDITIONAL([HAVE_CAIRO], test x$have_cairo = xtrue)
 
+AM_CONDITIONAL([HAVE_PANGOCAIRO], test x$have_pangocairo = xtrue)
+
 AM_CONDITIONAL([HAVE_PANGO], test x$have_pango = xtrue)
 
 AM_CONDITIONAL([HAVE_FFTW], test x$have_fftw = xtrue)
@@ -277,6 +287,7 @@ MAIN_CFLAGS="$CFLAGS $HDF5_CFLAGS $GSL_CFLAGS $OPENCL_CFLAGS -pthread"
 MAIN_CFLAGS="$MAIN_CFLAGS $GTK_CFLAGS $LIBTIFF_CFLAGS -D_GNU_SOURCE "
 MAIN_CFLAGS="$MAIN_CFLAGS $libPNG_CFLAGS $Cairo_CFLAGS $GDK_pixbuf_CFLAGS"
 MAIN_CFLAGS="$MAIN_CFLAGS $GDK_pixbuf_2_CFLAGS $FFTW_CFLAGS $Pango_CFLAGS"
+MAIN_CFLAGS="$MAIN_CFLAGS $PangoCairo_CFLAGS"
 AC_SUBST([MAIN_CFLAGS])
 
 LIBCRYSTFEL_CFLAGS="$CFLAGS $HDF5_CFLAGS $GSL_CFLAGS $FFTW_CFLAGS"
@@ -285,7 +296,7 @@ AC_SUBST([LIBCRYSTFEL_CFLAGS])
 MAIN_LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
 MAIN_LIBS="$MAIN_LIBS $LIBTIFF_LIBS $libPNG_LIBS $Cairo_LIBS $GDK_pixbuf_LIBS"
 MAIN_LIBS="$MAIN_LIBS $GDK_pixbuf_2_LIBS $TIMER_LIBS $FFTW_LIBS"
-MAIN_LIBS="$MAIN_LIBS $Pango_LIBS $LDFLAGS"
+MAIN_LIBS="$MAIN_LIBS $Pango_LIBS $PangoCairo_LIBS $LDFLAGS"
 AC_SUBST([MAIN_LIBS])
 
 LIBCRYSTFEL_LIBS="$LIBS $HDF5_LIBS $GSL_LIBS $FFTW_LIBS $LDFLAGS"

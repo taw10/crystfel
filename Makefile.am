@@ -72,7 +72,9 @@ src_partialator_SOURCES = src/partialator.c src/post-refinement.c \
 
 if HAVE_CAIRO
 if HAVE_PANGO
+if HAVE_PANGOCAIRO
 src_partialator_SOURCES += src/scaling-report.c
+endif
 endif
 endif
 
