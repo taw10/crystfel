@@ -534,16 +534,65 @@ int peak_sanity_check(struct image *image)
 }
 
 
+struct integr_ind
+{
+	signed int h;
+	signed int k;
+	signed int l;
+	double res;
+	Reflection *refl;
+};
+
+
+static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
+                                           int *n)
+{
+	struct integr_ind *il;
+	Reflection *refl;
+	RefListIterator *iter;
+	int i;
+
+	*n = num_reflections(list);
+
+	il = calloc(*n, sizeof(struct integr_ind));
+	if ( il == NULL ) return NULL;
+
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		double res;
+
+		get_indices(refl, &h, &k, &l);
+		res = resolution(cell, h, k, l);
+
+		il[i].h = h;
+		il[i].k = k;
+		il[i].l = l;
+		il[i].res = res;
+		il[i].refl = refl;
+	}
+
+	return il;
+}
+
+
 /* Integrate the list of predicted reflections in "image" */
 void integrate_reflections(struct image *image, int polar, int use_closer,
                            int bgsub, double min_snr)
 {
-	Reflection *refl;
-	RefListIterator *iter;
+	struct integr_ind *il;
+	int n, i;
 
-	for ( refl = first_refl(image->reflections, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
+	il = sort_reflections(image->reflections, image->indexed_cell, &n);
+	if ( il == NULL ) {
+		ERROR("Couldn't sort reflections\n");
+		return;
+	}
+
+	for ( i=0; i<n; i++ ) {
 
 		double fs, ss, intensity;
 		double d;
@@ -552,6 +601,9 @@ void integrate_reflections(struct image *image, int polar, int use_closer,
 		double sigma;
 		double pfs, pss;
 		int r;
+		Reflection *refl;
+
+		refl = il[i].refl;
 
 		get_detector_pos(refl, &pfs, &pss);
 
