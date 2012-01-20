@@ -360,21 +360,15 @@ static void process_image(void *pp, int cookie)
 
 		pargs->indexable = 1;
 
-		if ( image.reflections != NULL ) {
+		image.reflections = find_intersections(&image,
+		                                       image.indexed_cell);
 
-			double min, max;
+		if ( image.reflections != NULL ) {
 
 			integrate_reflections(&image, config_polar,
 					      pargs->static_args.config_closer,
 					      pargs->static_args.config_bgsub,
 					      pargs->static_args.min_int_snr);
-
-			estimate_resolution(image.reflections,
-			                    image.indexed_cell, &min, &max);
-			image.reflections = res_cutoff(image.reflections,
-			                               image.indexed_cell,
-			                               min, max);
-			image.diffracting_resolution = max;
 
 		}
 
