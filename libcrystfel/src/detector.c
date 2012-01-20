@@ -663,6 +663,8 @@ static void parse_toplevel(struct detector *det, const char *key,
 		det->defaults.peak_sep = atof(val);
 	} else if ( strcmp(key, "integr_radius") == 0 ) {
 		det->defaults.integr_radius = atof(val);
+	} else if ( strcmp(key, "coffset") == 0 ) {
+		det->defaults.coffset = atof(val);
 	} else if ( parse_field_for_panel(&det->defaults, key, val, det) ) {
 		ERROR("Unrecognised top level field '%s'\n", key);
 	}
