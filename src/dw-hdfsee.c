@@ -233,10 +233,11 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 		cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.3);
 		cairo_fill(cr);
 
-		show_simple_ring(cr, dw, 186.0, &basic_m);
-		show_simple_ring(cr, dw, 250.0, &basic_m);
-		show_simple_ring(cr, dw, 300.0, &basic_m);
-		show_simple_ring(cr, dw, 380.0, &basic_m);
+		//show_simple_ring(cr, dw, 80.0, &basic_m);
+		//show_simple_ring(cr, dw, 186.0, &basic_m);
+		//show_simple_ring(cr, dw, 230.0, &basic_m);
+		//show_simple_ring(cr, dw, 320.0, &basic_m);
+		//show_simple_ring(cr, dw, 380.0, &basic_m);
 
 		/* Draw resolution circles */
 		show_ring(cr, dw, 10.0e-10, "10A", &basic_m, 1.0, 0.0, 0.0);
