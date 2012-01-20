@@ -138,7 +138,6 @@ static void calc_either_side(struct image *image, double incr_val,
 		compare = find_intersections(&im_moved, im_moved.indexed_cell);
 		scan_partialities(im_moved.reflections, compare,
 		                  valid, vals, 0);
-		cell_free(cell);
 		reflist_free(compare);
 
 		im_moved = *image;
@@ -146,7 +145,6 @@ static void calc_either_side(struct image *image, double incr_val,
 		compare = find_intersections(&im_moved, im_moved.indexed_cell);
 		scan_partialities(im_moved.reflections, compare,
 		                  valid, vals, 2);
-		cell_free(cell);
 		reflist_free(compare);
 
 	}
