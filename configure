@@ -632,6 +632,8 @@ LIBCRYSTFEL_CFLAGS
 MAIN_CFLAGS
 HAVE_FFTW_FALSE
 HAVE_FFTW_TRUE
+HAVE_PANGO_FALSE
+HAVE_PANGO_TRUE
 HAVE_CAIRO_FALSE
 HAVE_CAIRO_TRUE
 BUILD_HDFSEE_FALSE
@@ -644,6 +646,8 @@ GDK_pixbuf_2_LIBS
 GDK_pixbuf_2_CFLAGS
 GDK_pixbuf_LIBS
 GDK_pixbuf_CFLAGS
+Pango_LIBS
+Pango_CFLAGS
 Cairo_LIBS
 Cairo_CFLAGS
 libPNG_LIBS
@@ -868,6 +872,7 @@ enable_png
 enable_tiff
 with_libtiff
 enable_cairo
+enable_pango
 enable_gdk_pixbuf
 with_html_dir
 enable_gtk_doc
@@ -892,6 +897,8 @@ libPNG_CFLAGS
 libPNG_LIBS
 Cairo_CFLAGS
 Cairo_LIBS
+Pango_CFLAGS
+Pango_LIBS
 GDK_pixbuf_CFLAGS
 GDK_pixbuf_LIBS
 GDK_pixbuf_2_CFLAGS
@@ -1533,6 +1540,7 @@ Optional Features:
   --disable-png           Disable the use of libPNG
   --disable-tiff          Disable the use of libTIFF
   --disable-cairo         Disable the use of Cairo
+  --disable-pango         Disable the use of Pango
   --disable-gdk-pixbuf    Disable the use of gtk-pixbuf
   --enable-gtk-doc        use gtk-doc to build documentation [[default=no]]
   --enable-gtk-doc-html   build documentation in html format [[default=yes]]
@@ -1573,6 +1581,9 @@ Some influential environment variables:
   Cairo_CFLAGS
               C compiler flags for Cairo, overriding pkg-config
   Cairo_LIBS  linker flags for Cairo, overriding pkg-config
+  Pango_CFLAGS
+              C compiler flags for Pango, overriding pkg-config
+  Pango_LIBS  linker flags for Pango, overriding pkg-config
   GDK_pixbuf_CFLAGS
               C compiler flags for GDK_pixbuf, overriding pkg-config
   GDK_pixbuf_LIBS
@@ -13553,6 +13564,104 @@ $as_echo "no" >&6; }
 fi
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use Pango" >&5
+$as_echo_n "checking whether to use Pango... " >&6; }
+# Check whether --enable-pango was given.
+if test "${enable_pango+set}" = set; then :
+  enableval=$enable_pango;
+fi
+
+if test "x$enable_pango" != "xno"; then :
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Pango" >&5
+$as_echo_n "checking for Pango... " >&6; }
+
+if test -n "$Pango_CFLAGS"; then
+    pkg_cv_Pango_CFLAGS="$Pango_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"pango >= 1.0.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "pango >= 1.0.0") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_Pango_CFLAGS=`$PKG_CONFIG --cflags "pango >= 1.0.0" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$Pango_LIBS"; then
+    pkg_cv_Pango_LIBS="$Pango_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"pango >= 1.0.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "pango >= 1.0.0") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_Pango_LIBS=`$PKG_CONFIG --libs "pango >= 1.0.0" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        Pango_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "pango >= 1.0.0" 2>&1`
+        else
+	        Pango_PKG_ERRORS=`$PKG_CONFIG --print-errors "pango >= 1.0.0" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$Pango_PKG_ERRORS" >&5
+
+
+      have_pango=false
+
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+      have_pango=false
+
+else
+	Pango_CFLAGS=$pkg_cv_Pango_CFLAGS
+	Pango_LIBS=$pkg_cv_Pango_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+      have_pango=true
+
+$as_echo "#define HAVE_PANGO 1" >>confdefs.h
+
+
+fi
+
+else
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use GDK-pixbuf" >&5
 $as_echo_n "checking whether to use GDK-pixbuf... " >&6; }
 # Check whether --enable-gdk-pixbuf was given.
@@ -14009,6 +14118,15 @@ fi
 else
   HAVE_CAIRO_TRUE='#'
   HAVE_CAIRO_FALSE=
+fi
+
+
+ if test x$have_pango = xtrue; then
+  HAVE_PANGO_TRUE=
+  HAVE_PANGO_FALSE='#'
+else
+  HAVE_PANGO_TRUE='#'
+  HAVE_PANGO_FALSE=
 fi
 
 
@@ -14489,6 +14607,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_CAIRO_TRUE}" && test -z "${HAVE_CAIRO_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_CAIRO\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_PANGO_TRUE}" && test -z "${HAVE_PANGO_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_PANGO\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_FFTW_TRUE}" && test -z "${HAVE_FFTW_FALSE}"; then

@@ -191,6 +191,24 @@ AS_IF([test "x$enable_cairo" != "xno"],
 ])
 
 
+AC_MSG_CHECKING([whether to use Pango])
+AC_ARG_ENABLE([pango],
+              AS_HELP_STRING([--disable-pango], [Disable the use of Pango]))
+AS_IF([test "x$enable_pango" != "xno"],
+[
+   AC_MSG_RESULT([yes])
+   PKG_CHECK_MODULES([Pango], [pango >= 1.0.0],
+   [
+      have_pango=true
+      AC_DEFINE([HAVE_PANGO], [1], [Define to 1 if Pango is available])
+   ], [
+      have_pango=false
+   ])
+], [
+   AC_MSG_RESULT([no])
+])
+
+
 AC_MSG_CHECKING([whether to use GDK-pixbuf])
 AC_ARG_ENABLE([gdk-pixbuf], AS_HELP_STRING([--disable-gdk-pixbuf],
                                            [Disable the use of gtk-pixbuf]))
@@ -247,6 +265,8 @@ AM_CONDITIONAL([BUILD_HDFSEE], test x$have_gdk_pixbuf = xtrue \
                                 -a "x$have_cairo" = "xtrue")
 
 AM_CONDITIONAL([HAVE_CAIRO], test x$have_cairo = xtrue)
+
+AM_CONDITIONAL([HAVE_PANGO], test x$have_pango = xtrue)
 
 AM_CONDITIONAL([HAVE_FFTW], test x$have_fftw = xtrue)
 

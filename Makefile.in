@@ -55,7 +55,7 @@ TESTS = tests/list_check$(EXEEXT) tests/first_merge_check \
 @HAVE_OPENCL_TRUE@am__append_3 = src/cl-utils.c src/diffraction-gpu.c
 @HAVE_OPENCL_TRUE@am__append_4 = tests/gpu_sim_check
 @HAVE_OPENCL_TRUE@am__append_5 = tests/gpu_sim_check
-@HAVE_CAIRO_TRUE@am__append_6 = src/scaling-report.c
+@HAVE_CAIRO_TRUE@@HAVE_PANGO_TRUE@am__append_6 = src/scaling-report.c
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -137,7 +137,7 @@ src_partial_sim_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
 am__src_partialator_SOURCES_DIST = src/partialator.c \
 	src/post-refinement.c src/hrs-scaling.c src/scaling-report.c
-@HAVE_CAIRO_TRUE@am__objects_1 = src/scaling-report.$(OBJEXT)
+@HAVE_CAIRO_TRUE@@HAVE_PANGO_TRUE@am__objects_1 = src/scaling-report.$(OBJEXT)
 am_src_partialator_OBJECTS = src/partialator.$(OBJEXT) \
 	src/post-refinement.$(OBJEXT) src/hrs-scaling.$(OBJEXT) \
 	$(am__objects_1)
@@ -475,6 +475,8 @@ PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 PRAGMA_COLUMNS = @PRAGMA_COLUMNS@
 PRAGMA_SYSTEM_HEADER = @PRAGMA_SYSTEM_HEADER@
+Pango_CFLAGS = @Pango_CFLAGS@
+Pango_LIBS = @Pango_LIBS@
 RANLIB = @RANLIB@
 REPLACE_MEMCHR = @REPLACE_MEMCHR@
 REPLACE_MEMMEM = @REPLACE_MEMMEM@

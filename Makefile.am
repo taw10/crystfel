@@ -71,7 +71,9 @@ src_partialator_SOURCES = src/partialator.c src/post-refinement.c \
                           src/hrs-scaling.c
 
 if HAVE_CAIRO
+if HAVE_PANGO
 src_partialator_SOURCES += src/scaling-report.c
+endif
 endif
 
 tests_list_check_SOURCES = tests/list_check.c

@@ -85,6 +85,9 @@
 /* Define to 1 if OpenCL is available */
 #undef HAVE_OPENCL
 
+/* Define to 1 if Pango is available */
+#undef HAVE_PANGO
+
 /* Define to 1 if memmem is declared even after undefining macros. */
 #undef HAVE_RAW_DECL_MEMMEM
 
