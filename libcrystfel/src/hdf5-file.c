@@ -496,7 +496,6 @@ double get_value(struct hdfile *f, const char *name)
 
 	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
 	if ( dh < 0 ) {
-		ERROR("Couldn't open data\n");
 		return 0.0;
 	}
 
