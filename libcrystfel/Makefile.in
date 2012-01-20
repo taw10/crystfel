@@ -94,6 +94,10 @@ libcrystfel_la_OBJECTS = $(am_libcrystfel_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
 am__v_lt_0 = --silent
+libcrystfel_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libcrystfel_la_LDFLAGS) $(LDFLAGS) -o \
+	$@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
@@ -355,6 +359,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 lib_LTLIBRARIES = libcrystfel.la
 libcrystfel_la_LIBADD = @LIBCRYSTFEL_LIBS@
+libcrystfel_la_LDFLAGS = -fPIC
 libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/thread-pool.c src/image.c src/hdf5-file.c \
                          src/beam-parameters.c src/geometry.c src/statistics.c \
@@ -469,7 +474,7 @@ src/dirax.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/mosflm.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/reax.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 libcrystfel.la: $(libcrystfel_la_OBJECTS) $(libcrystfel_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK) -rpath $(libdir) $(libcrystfel_la_OBJECTS) $(libcrystfel_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libcrystfel_la_LINK) -rpath $(libdir) $(libcrystfel_la_OBJECTS) $(libcrystfel_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
