@@ -3,7 +3,7 @@
  *
  * A new auto-indexer
  *
- * (c) 2011 Thomas White <taw@physics.org>
+ * (c) 2011-2012 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *

@@ -3,7 +3,7 @@
  *
  * Peak search and other image analysis
  *
- * (c) 2006-2011 Thomas White <taw@physics.org>
+ * (c) 2006-2012 Thomas White <taw@physics.org>
  *	    2011 Andrew Martin
  *
  * Part of CrystFEL - crystallography with a FEL

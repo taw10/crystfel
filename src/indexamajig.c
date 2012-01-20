@@ -3,7 +3,7 @@
  *
  * Index patterns, output hkl+intensity etc.
  *
- * (c) 2006-2011 Thomas White <taw@physics.org>
+ * (c) 2006-2012 Thomas White <taw@physics.org>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
