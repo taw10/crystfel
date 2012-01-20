@@ -573,6 +573,8 @@ static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
 		il[i].l = l;
 		il[i].res = res;
 		il[i].refl = refl;
+
+		i++;
 	}
 
 	return il;
