@@ -506,27 +506,17 @@ static void find_candidates(struct reax_private *p,
 {
 	int i;
 	double th, ph;
-	double fom;
 
 	for ( i=0; i<s->n_search; i++ ) {
 		s->search[i].cand = NULL;
 		s->search[i].n_cand = 0;
 	}
 
-	fom = 0.0;  th = 0.0;  ph = 0.0;
+	th = 0.0;  ph = 0.0;
 	for ( i=0; i<p->n_dir; i++ ) {
-
-		double new_fom;
-
-		new_fom = check_dir(&p->directions[i], flist,
+		check_dir(&p->directions[i], flist,
 		                    p->nel, pmax, fft_in, fft_out, p->plan,
 		                    s, NULL, NULL);
-		if ( new_fom > fom ) {
-			fom = new_fom;
-			th = p->directions[i].th;
-			ph = p->directions[i].ph;
-		}
-
 	}
 
 	squash_vectors(s, INC_TOL_MULTIPLIER*p->angular_inc);
