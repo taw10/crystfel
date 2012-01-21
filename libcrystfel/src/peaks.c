@@ -562,9 +562,10 @@ static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
 
 	*n = num_reflections(list);
 
+	if ( *n == 0 ) return NULL;
+
 	il = calloc(*n, sizeof(struct integr_ind));
 	if ( il == NULL ) return NULL;
-
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
