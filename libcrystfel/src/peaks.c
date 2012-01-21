@@ -544,6 +544,14 @@ struct integr_ind
 };
 
 
+static int compare_resolution(const void *av, const void *bv)
+{
+	const struct integr_ind *a = av;
+	const struct integr_ind *b = bv;
+
+	return a->res > b->res;
+}
+
 static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
                                            int *n)
 {
@@ -577,6 +585,8 @@ static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
 		i++;
 	}
 
+	qsort(il, *n, sizeof(struct integr_ind), compare_resolution);
+
 	return il;
 }
 
@@ -587,6 +597,8 @@ void integrate_reflections(struct image *image, int polar, int use_closer,
 {
 	struct integr_ind *il;
 	int n, i;
+	double av = 0.0;
+	int first = 1;
 
 	il = sort_reflections(image->reflections, image->indexed_cell, &n);
 	if ( il == NULL ) {
@@ -600,7 +612,7 @@ void integrate_reflections(struct image *image, int polar, int use_closer,
 		double d;
 		int idx;
 		double bg, max;
-		double sigma;
+		double sigma, snr;
 		double pfs, pss;
 		int r;
 		Reflection *refl;
@@ -626,6 +638,7 @@ void integrate_reflections(struct image *image, int polar, int use_closer,
 				pss = f->ss;
 
 			}
+
 		}
 
 		r = integrate_peak(image, pfs, pss, &fs, &ss,
@@ -644,5 +657,17 @@ void integrate_reflections(struct image *image, int polar, int use_closer,
 			set_redundancy(refl, 0);
 		}
 
+		snr = intensity / sigma;
+		if ( snr > 1.0 ) {
+			if ( first ) {
+				av = snr;
+				first = 0;
+			} else {
+				av = av + 0.1*(snr - av);
+			}
+			//STATUS("%5.2f A, %5.2f, av %5.2f\n",
+			//       1e10/il[i].res, snr, av);
+			//if ( av < 1.0 ) break;
+		}
 	}
 }
