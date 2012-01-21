@@ -403,6 +403,7 @@ static void fine_search(struct reax_private *p, ImageFeatureList *flist,
 				max = m;
 				s = i;
 			}
+
 		}
 
 		if ( new_fom > fom ) {
