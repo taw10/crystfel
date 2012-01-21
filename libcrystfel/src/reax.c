@@ -369,11 +369,17 @@ static void fine_search(struct reax_private *p, ImageFeatureList *flist,
 	struct dvec dir;
 	int i, s;
 	double max;
+	double th_min, th_max;
+	double ph_min, ph_max;
 
 	inc = p->angular_inc / 100.0;
 
-	for ( th=c->v.th-p->angular_inc; th<=c->v.th+p->angular_inc; th+=inc ) {
-	for ( ph=c->v.ph-p->angular_inc; ph<=c->v.ph+p->angular_inc; ph+=inc ) {
+	th_min = c->v.th - p->angular_inc;
+	th_max = c->v.th + p->angular_inc;
+	ph_min = c->v.ph - p->angular_inc;
+	ph_max = c->v.ph + p->angular_inc;
+	for ( th=th_min; th<=th_max; th+=inc ) {
+	for ( ph=ph_min; ph<=ph_max; ph+=inc ) {
 
 		double new_fom;
 
