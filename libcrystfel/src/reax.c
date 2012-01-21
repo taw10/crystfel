@@ -164,7 +164,7 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 		double mean;
 		double sd = 0.0;
 		int j;
-		int n;
+		int n = 0;
 
 		for ( j=0; j<nel/2+1; j++ ) {
 
