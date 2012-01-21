@@ -583,6 +583,7 @@ static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
 		il[i].refl = refl;
 
 		i++;
+		assert(i < *n);
 	}
 
 	qsort(il, *n, sizeof(struct integr_ind), compare_resolution);
