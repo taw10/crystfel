@@ -576,7 +576,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 		FD_ZERO(&fds);
 		FD_SET(mosflm->pty, &fds);
 
-		tv.tv_sec = 10;
+		tv.tv_sec = 30;
 		tv.tv_usec = 0;
 
 		sval = select(mosflm->pty+1, &fds, NULL, NULL, &tv);
