@@ -553,20 +553,22 @@ static int compare_resolution(const void *av, const void *bv)
 }
 
 static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
-                                           int *n)
+                                           int *np)
 {
 	struct integr_ind *il;
 	Reflection *refl;
 	RefListIterator *iter;
-	int i;
+	int i, n;
 
-	*n = num_reflections(list);
+	n = num_reflections(list);
+	*np = 0;  /* For now */
 
-	if ( *n == 0 ) return NULL;
+	if ( n == 0 ) return NULL;
 
-	il = calloc(*n, sizeof(struct integr_ind));
+	il = calloc(n, sizeof(struct integr_ind));
 	if ( il == NULL ) return NULL;
 
+	i = 0;
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
@@ -584,11 +586,12 @@ static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
 		il[i].refl = refl;
 
 		i++;
-		assert(i < *n);
+		assert(i <= n);
 	}
 
-	qsort(il, *n, sizeof(struct integr_ind), compare_resolution);
+	qsort(il, n, sizeof(struct integr_ind), compare_resolution);
 
+	*np = n;
 	return il;
 }
 
