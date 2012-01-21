@@ -670,4 +670,6 @@ void integrate_reflections(struct image *image, int polar, int use_closer,
 			//if ( av < 1.0 ) break;
 		}
 	}
+
+	free(il);
 }
