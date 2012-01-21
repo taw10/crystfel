@@ -486,8 +486,9 @@ static void squash_vectors(struct reax_search *s, double tol)
 		assert(sv->n_cand - n_invalid == n_copied);
 
 		free(sv->cand);
-		//STATUS("Search vector %i: squashed %i candidates down to %i\n",
-		//       i, sv->n_cand, n_copied);
+		//STATUS("Search vector %i:", i);
+		//STATUS(" squashed %i candidates down to %i\n",
+		//       sv->n_cand, n_copied);
 		sv->n_cand = n_copied;
 		sv->cand = new;
 
@@ -539,13 +540,14 @@ static void find_candidates(struct reax_private *p,
 		for ( j=0; j<smallest(sv->n_cand, 3); j++ ) {
 			fine_search(p, flist, pmax, fft_in, fft_out, sv,
 			            &sv->cand[j], rg, det);
-			//STATUS("%i: %+6.2f %+6.2f %+6.2f, mod %.2f nm, %.2f\n",
+			//STATUS("%i: %+6.2f %+6.2f %+6.2f, "
 			//       j, sv->cand[j].v.x*1e9,
 			//       sv->cand[j].v.y*1e9,
-			//        sv->cand[j].v.z*1e9,
-			//        modulus(sv->cand[j].v.x,
-			//                sv->cand[j].v.y,
-			//                sv->cand[j].v.z)*1e9,
+			//       sv->cand[j].v.z*1e9,
+			//STATUS("mod %.2f nm, %.2f\n",
+			//       modulus(sv->cand[j].v.x,
+			//               sv->cand[j].v.y,
+			//               sv->cand[j].v.z)*1e9,
 			//       sv->cand[j].fom);
 		}
 	}
