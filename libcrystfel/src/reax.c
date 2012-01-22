@@ -154,21 +154,20 @@ static void add_candidate(struct reax_search_v *s, struct dvec *dir,
 	size_t ns;
 	int i, cpos;
 
+	cpos = s->n_cand;
 	for ( i=0; i<s->n_cand; i++ ) {
-
 		if ( fom > s->cand[i].fom ) {
-			cshift = s->cand[i];
-			s->cand[i].v.x = dir->x*peak_mod;
-			s->cand[i].v.y = dir->y*peak_mod;
-			s->cand[i].v.z = dir->z*peak_mod;
-			s->cand[i].v.th = dir->th;
-			s->cand[i].v.ph = dir->ph;
-			s->cand[i].fom = fom;
 			cpos = i;
 			break;
 		}
-
 	}
+
+	cshift.v.x = dir->x*peak_mod;
+	cshift.v.y = dir->y*peak_mod;
+	cshift.v.z = dir->z*peak_mod;
+	cshift.v.th = dir->th;
+	cshift.v.ph = dir->ph;
+	cshift.fom = fom;
 
 	for ( i=cpos; i<s->n_cand; i++ ) {
 
