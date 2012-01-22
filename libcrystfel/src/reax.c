@@ -45,6 +45,10 @@
 #define INC_TOL_MULTIPLIER (3.0)
 
 
+/* Maximum number of candidate vectors to find (we will take the best ones) */
+#define MAX_CANDIDATES (32)
+
+
 struct dvec
 {
 	double x;
@@ -143,6 +147,46 @@ static void fill_and_transform(struct dvec *dir, ImageFeatureList *flist,
 }
 
 
+static void add_candidate(struct reax_search_v *s, struct dvec *dir,
+                          double fom, double peak_mod)
+{
+	struct reax_candidate cshift;
+	size_t ns;
+	int i, cpos;
+
+	for ( i=0; i<s->n_cand; i++ ) {
+
+		if ( fom > s->cand[i].fom ) {
+			cshift = s->cand[i];
+			s->cand[i].v.x = dir->x*peak_mod;
+			s->cand[i].v.y = dir->y*peak_mod;
+			s->cand[i].v.z = dir->z*peak_mod;
+			s->cand[i].v.th = dir->th;
+			s->cand[i].v.ph = dir->ph;
+			s->cand[i].fom = fom;
+			cpos = i;
+			break;
+		}
+
+	}
+
+	for ( i=cpos; i<s->n_cand; i++ ) {
+
+		struct reax_candidate cshift2;
+		cshift2 = s->cand[i];
+		s->cand[i] = cshift;
+		cshift = cshift2;
+
+	}
+
+	if ( s->n_cand >= MAX_CANDIDATES ) {
+		/* "cshift" just fell off the end of the list */
+	} else {
+		s->cand[s->n_cand++] = cshift;
+	}
+}
+
+
 static double check_dir(struct dvec *dir, ImageFeatureList *flist,
                         int nel, double pmax, double *fft_in,
                         fftw_complex *fft_out, fftw_plan plan,
@@ -204,32 +248,11 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 		/* If sufficiently strong, add to list of candidates */
 		if ( peak > mean+MIN_SIGMAS*sd ) {
 
-			size_t ns;
-			struct reax_candidate *cnew;
-			int cpos;
+			double fom;
 
-			cpos = s->search[i].n_cand;
+			fom = (peak-mean)/sd;
 
-			ns = (cpos+1) * sizeof(struct reax_candidate);
-			cnew = realloc(s->search[i].cand, ns);
-			if ( cnew == NULL ) {
-				ERROR("Failed to add candidate.\n");
-			} else {
-
-				double fom;
-
-				fom = (peak-mean)/sd;
-
-				s->search[i].cand = cnew;
-				s->search[i].cand[cpos].v.x = dir->x*peak_mod;
-				s->search[i].cand[cpos].v.y = dir->y*peak_mod;
-				s->search[i].cand[cpos].v.z = dir->z*peak_mod;
-				s->search[i].cand[cpos].v.th = dir->th;
-				s->search[i].cand[cpos].v.ph = dir->ph;
-				s->search[i].cand[cpos].fom = fom;
-				s->search[i].n_cand++;
-
-			}
+			add_candidate(&s->search[i], dir, fom, peak_mod);
 
 		}
 
@@ -516,7 +539,8 @@ static void find_candidates(struct reax_private *p,
 	double th, ph;
 
 	for ( i=0; i<s->n_search; i++ ) {
-		s->search[i].cand = NULL;
+		s->search[i].cand = calloc(MAX_CANDIDATES,
+		                           sizeof(struct reax_candidate));
 		s->search[i].n_cand = 0;
 	}
 
