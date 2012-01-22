@@ -37,7 +37,7 @@
 
 /* Minimum number of standard deviations above the mean a peak must be in the
  * 1D FT to qualify as a candidate vector */
-#define MIN_SIGMAS (5.0)
+#define MIN_SIGMAS (3.0)
 
 
 /* Maximum number of times the angular tolerance that vectors are permitted to
