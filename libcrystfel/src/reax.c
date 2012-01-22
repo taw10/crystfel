@@ -943,6 +943,8 @@ static void assemble_cells_from_candidates(struct image *image,
 		}
 
 		refine_cell(image, cnew, image->features);
+
+		/* FIXME: Rank according to quality of prediction */
 		if ( ncells < MAX_CELL_CANDIDATES ) {
 			cells[ncells++] = cnew;
 		}
