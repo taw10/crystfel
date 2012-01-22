@@ -438,16 +438,6 @@ static void fine_search(struct reax_private *p, ImageFeatureList *flist,
 }
 
 
-static int fom_compare(const void *av, const void *bv)
-{
-	const struct reax_candidate *a = av;
-	const struct reax_candidate *b = bv;
-
-	if ( a->fom > b->fom ) return -1;
-	return +1;
-}
-
-
 static void squash_vectors(struct reax_search *s, double tol)
 {
 	int i;
@@ -514,15 +504,26 @@ static void squash_vectors(struct reax_search *s, double tol)
 		sv->n_cand = n_copied;
 		sv->cand = new;
 
-		qsort(sv->cand, sv->n_cand, sizeof(sv->cand[0]),
-		      fom_compare);
+	}
+}
 
-		//for ( j=0; j<sv->n_cand; j++ ) {
-		//	STATUS("%i: %+6.2f %+6.2f %+6.2f nm %.2f\n",
-		//	       j, sv->cand[j].v.x*1e9,
-		//	          sv->cand[j].v.y*1e9,
-		//	          sv->cand[j].v.z*1e9, sv->cand[j].fom);
-		//}
+
+static void show_vectors(struct reax_search *s, const char *pre)
+{
+	int i;
+
+	/* For each direction being searched for */
+	for ( i=0; i<s->n_search; i++ ) {
+
+		int j;
+
+		for ( j=0; j<s->search[i].n_cand; j++ ) {
+			STATUS("%s: %i/%i: %+6.2f %+6.2f %+6.2f nm %.2f\n", pre,
+			       i, j, s->search[i].cand[j].v.x*1e9,
+			       s->search[i].cand[j].v.y*1e9,
+			       s->search[i].cand[j].v.z*1e9,
+			       s->search[i].cand[j].fom);
+		}
 
 	}
 }
@@ -550,7 +551,11 @@ static void find_candidates(struct reax_private *p,
 		                    s, NULL, NULL);
 	}
 
+	//show_vectors(s, "BEFORE");
+
 	squash_vectors(s, INC_TOL_MULTIPLIER*p->angular_inc);
+
+	//show_vectors(s, "AFTER");
 
 	for ( i=0; i<s->n_search; i++ ) {
 
@@ -558,22 +563,13 @@ static void find_candidates(struct reax_private *p,
 		int j;
 
 		sv = &s->search[i];
-		//STATUS("Search %i: doing fine search for %i candidates\n",
-		//       i, sv->n_cand);
 		for ( j=0; j<smallest(sv->n_cand, 3); j++ ) {
 			fine_search(p, flist, pmax, fft_in, fft_out, sv,
 			            &sv->cand[j], rg, det);
-			//STATUS("%i: %+6.2f %+6.2f %+6.2f, "
-			//       j, sv->cand[j].v.x*1e9,
-			//       sv->cand[j].v.y*1e9,
-			//       sv->cand[j].v.z*1e9,
-			//STATUS("mod %.2f nm, %.2f\n",
-			//       modulus(sv->cand[j].v.x,
-			//               sv->cand[j].v.y,
-			//               sv->cand[j].v.z)*1e9,
-			//       sv->cand[j].fom);
 		}
 	}
+
+	//show_vectors(s, "FINAL");
 }
 
 
