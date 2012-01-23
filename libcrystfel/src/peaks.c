@@ -467,7 +467,8 @@ void search_peaks(struct image *image, float threshold, float min_gradient,
 		struct panel *p = &image->det->panels[i];
 
 		if ( p->no_index ) continue;
-		search_peaks_in_panel(image, threshold, min_gradient, min_snr, p);
+		search_peaks_in_panel(image, threshold, min_gradient,
+		                      min_snr, p);
 
 	}
 }
