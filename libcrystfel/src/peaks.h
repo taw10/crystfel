@@ -28,7 +28,10 @@ extern void integrate_reflections(struct image *image,
                                   int polar, int use_closer, int bgsub,
                                   double min_snr);
 
-extern int peak_sanity_check(struct image * image);
+extern double peak_lattice_agreement(struct image *image, UnitCell *cell,
+                                     double *pst);
+
+extern int peak_sanity_check(struct image *image);
 
 /* Exported so it can be poked by integration_check */
 extern int integrate_peak(struct image *image, int cfs, int css,

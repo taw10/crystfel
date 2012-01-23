@@ -838,35 +838,97 @@ static int right_handed(struct rvec a, struct rvec b, struct rvec c)
 }
 
 
-static int check_twinning(UnitCell *c1, UnitCell *c2)
+struct cell_candidate
+{
+	UnitCell *cell;
+	double fom;
+};
+
+
+struct cell_candidate_list
+{
+	struct cell_candidate *cand;
+	int n_cand;
+};
+
+
+static int check_twinning(UnitCell *c1, UnitCell *c2, int verbose)
 {
 	int i;
+	int n_dup;
+	const int n_trials = 40;
 
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
 
-	for ( i=0; i<100; i++ ) {
+	cell_get_reciprocal(c1, &asx, &asy, &asz,
+	                        &bsx, &bsy, &bsz,
+	                        &csx, &csy, &csz);
+	cell_get_cartesian(c2, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+
+	n_dup = 0;
+	for ( i=0; i<n_trials; i++ ) {
+
 		signed int h, k, l;
+		double h2, k2, l2;
+		double rx, ry, rz;
+		double dev;
+		signed int h2i, k2i, l2i;
 
 		h = flat_noise(0, 10);
 		k = flat_noise(0, 10);
 		l = flat_noise(0, 10);
 
+		/* Position of this (randomly selected)
+		 * reciprocal lattice point */
+		rx = h*asx + k*bsx + l*csx;
+		ry = h*asy + k*bsy + l*csy;
+		rz = h*asz + k*bsz + l*csz;
+
+		/* Indices of this point in the basis of the other cell */
+		h2 = rx*ax + ry*ay + rz*az;
+		k2 = rx*bx + ry*by + rz*bz;
+		l2 = rx*cx + ry*cy + rz*cz;
+
+		h2i = lrint(h2);
+		k2i = lrint(k2);
+		l2i = lrint(l2);
+
+		dev = pow(h2i-h2, 2.0) + pow(k2i-k2, 2.0) + pow(l2i-l2, 2.0);
+
+		if ( verbose ) {
+			STATUS("%3i %3i %3i -> %5.2f %5.2f %5.2f -> "
+			       "%3i %3i %3i -> %5.2f\n", h, k, l,
+			       h2, k2, l2, h2i, k2i, l2i, dev);
+		}
+
+		if ( dev < 0.1 ) {
+			n_dup++;
+		}
+
 	}
 
+	if ( verbose ) {
+		STATUS("%i duplicates.\n", n_dup);
+	}
+
+	if ( n_dup > 10 ) return 1;
 	return 0;
 }
 
 
 /* Return true if "cnew" accounts for more than 25% of the peaks predicted by
  * any of the "ncells" cells in "cells". */
-static int twinned(UnitCell *cnew, UnitCell **cells, int ncells)
+static int twinned(UnitCell *cnew, struct cell_candidate_list *cl)
 {
 	int i;
 
-	for ( i=0; i<ncells; i++ ) {
-		if ( check_twinning(cnew, cells[i]) ) return 1;
+	for ( i=0; i<cl->n_cand; i++ ) {
+		if ( check_twinning(cnew, cl->cand[i].cell, 0) ) return 1;
 	}
 
 	return 0;
@@ -885,15 +947,47 @@ static int check_vector_combination(struct dvec *vi, struct dvec *vj,
 	ang = angle_between(vi->x, vi->y, vi->z, vj->x, vj->y, vj->z);
 	if ( fabs(ang-ga) > angtol ) return 0;
 
-	ang = angle_between(vi->x, vi->y, vi->z,
-	                    vk->x, vk->y, vk->z);
+	ang = angle_between(vi->x, vi->y, vi->z, vk->x, vk->y, vk->z);
 	if ( fabs(ang-be) > angtol ) return 0;
 
-	ang = angle_between(vj->x, vj->y, vj->z,
-	                    vk->x, vk->y, vk->z);
+	ang = angle_between(vj->x, vj->y, vj->z, vk->x, vk->y, vk->z);
 	if ( fabs(ang-al) > angtol ) return 0;
 
 	return 1;
+}
+
+
+static void add_cell_candidate(struct cell_candidate_list *cl, UnitCell *cnew,
+                               double fom)
+{
+	struct cell_candidate cshift;
+	int i, cpos;
+
+	cpos = cl->n_cand;
+	for ( i=0; i<cl->n_cand; i++ ) {
+		if ( fom > cl->cand[i].fom ) {
+			cpos = i;
+			break;
+		}
+	}
+
+	cshift.cell = cnew;
+	cshift.fom = fom;
+
+	for ( i=cpos; i<cl->n_cand; i++ ) {
+
+		struct cell_candidate cshift2;
+		cshift2 = cl->cand[i];
+		cl->cand[i] = cshift;
+		cshift = cshift2;
+
+	}
+
+	if ( cl->n_cand >= MAX_CELL_CANDIDATES ) {
+		/* "cshift" just fell off the end of the list */
+	} else {
+		cl->cand[cl->n_cand++] = cshift;
+	}
 }
 
 
@@ -903,8 +997,14 @@ static void assemble_cells_from_candidates(struct image *image,
 {
 	int i, j, k;
 	signed int ti, tj, tk;
-	UnitCell *cells[MAX_CELL_CANDIDATES];
-	int ncells = 0;
+	struct cell_candidate_list cl;
+
+	cl.cand = calloc(MAX_CELL_CANDIDATES, sizeof(struct cell_candidate));
+	if ( cl.cand == NULL ) {
+		ERROR("Failed to allocate cell candidate list.\n");
+		return;
+	}
+	cl.n_cand = 0;
 
 	/* Find candidates for axes 0 and 1 which have the right angle */
 	for ( i=0; i<s->search[0].n_cand; i++ ) {
@@ -917,6 +1017,7 @@ static void assemble_cells_from_candidates(struct image *image,
 		struct dvec vi, vj, vk;
 		struct rvec ai, bi, ci;
 		UnitCell *cnew;
+		double fom;
 
 		vi = s->search[0].cand[i].v;
 		vj = s->search[1].cand[j].v;
@@ -937,30 +1038,50 @@ static void assemble_cells_from_candidates(struct image *image,
 		/* We have three vectors with the right angles */
 		cnew = cell_new_from_direct_axes(ai, bi, ci);
 
-		if ( twinned(cnew, cells, ncells) ) {
+		refine_cell(image, cnew, image->features);
+
+		if ( twinned(cnew, &cl) ) {
 			cell_free(cnew);
 			continue;
 		}
 
-		refine_cell(image, cnew, image->features);
+		peak_lattice_agreement(image, cnew, &fom);
+		add_cell_candidate(&cl, cnew, fom);
 
-		/* FIXME: Rank according to quality of prediction */
-		if ( ncells < MAX_CELL_CANDIDATES ) {
-			cells[ncells++] = cnew;
+	}
+	}
+	}
+	}
+	}
+	}
+
+	for ( i=0; i<cl.n_cand; i++ ) {
+		double a, b, c, al, be, ga;
+		double aA, bA, cA, alA, beA, gaA;
+		int w = 0;
+//		STATUS("%i: %f\n", i, cl.cand[i].fom);
+		cell_get_parameters(cl.cand[i].cell, &a, &b, &c, &al, &be, &ga);
+		cell_get_parameters(cl.cand[i].cell, &aA, &bA, &cA,
+		                                     &alA, &beA, &gaA);
+		if ( (a - aA) > aA/10.0 ) w = 1;
+		if ( (b - bA) > bA/10.0 ) w = 1;
+		if ( (c - cA) > cA/10.0 ) w = 1;
+		if ( (al - alA) > deg2rad(5.0) ) w = 1;
+		if ( (be - beA) > deg2rad(5.0) ) w = 1;
+		if ( (ga - gaA) > deg2rad(5.0) ) w = 1;
+		if ( w ) {
+			STATUS("This cell is a long way from that sought:\n");
+			cell_print(cl.cand[i].cell);
 		}
-
-	}
-	}
-	}
-	}
-	}
 	}
 
-	image->ncells = ncells;
-	assert(ncells <= MAX_CELL_CANDIDATES);
-	for ( i=0; i<ncells; i++ ) {
-		image->candidate_cells[i] = cells[i];
+	image->ncells = cl.n_cand;
+	assert(image->ncells <= MAX_CELL_CANDIDATES);
+	for ( i=0; i<cl.n_cand; i++ ) {
+		image->candidate_cells[i] = cl.cand[i].cell;
 	}
+
+	free(cl.cand);
 }
 
 

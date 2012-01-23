@@ -473,9 +473,8 @@ void search_peaks(struct image *image, float threshold, float min_gradient,
 }
 
 
-int peak_sanity_check(struct image *image)
+double peak_lattice_agreement(struct image *image, UnitCell *cell, double *pst)
 {
-
 	int i;
 	int n_feat = 0;
 	int n_sane = 0;
@@ -483,14 +482,13 @@ int peak_sanity_check(struct image *image)
 	double bx, by, bz;
 	double cx, cy, cz;
 	double min_dist = 0.25;
+	double stot = 0.0;
 
 	/* Round towards nearest */
 	fesetround(1);
 
 	/* Cell basis vectors for this image */
-	cell_get_cartesian(image->indexed_cell, &ax, &ay, &az,
-	                                        &bx, &by, &bz,
-	                                        &cx, &cy, &cz);
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
 	/* Loop over peaks, checking proximity to nearest reflection */
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
@@ -520,17 +518,25 @@ int peak_sanity_check(struct image *image)
 		if ( (fabs(h - hd) < min_dist) && (fabs(k - kd) < min_dist)
 		  && (fabs(l - ld) < min_dist) )
 		{
+			double sval;
 			n_sane++;
+			sval = pow(h-hd, 2.0) + pow(k-kd, 2.0) + pow(l-ld, 2.0);
+			stot += 1.0 - sval;
 			continue;
 		}
 
 	}
 
-	/* return 0 means fail test, return 1 means pass test */
-	// printf("%d out of %d peaks are \"sane\"\n",n_sane,n_feat);
-	if ( (float)n_sane / (float)n_feat < 0.5 ) return 0;
+	*pst = stot;
+	return (double)n_sane / (float)n_feat;
+}
 
-	return 1;
+
+int peak_sanity_check(struct image *image)
+{
+	double stot;
+	/* 0 means failed test, 1 means passed test */
+	return peak_lattice_agreement(image, image->indexed_cell, &stot) >= 0.5;
 }
 
 
