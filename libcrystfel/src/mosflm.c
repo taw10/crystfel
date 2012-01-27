@@ -227,8 +227,7 @@ static void write_spt(struct image *image, const char *filename)
 	for ( i=0; i<nPeaks; i++ ) {
 
 		fprintf(fh, "%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
-		        sptlines[i].x, sptlines[i].y,
-		        0.0, 0.0,
+		        sptlines[i].x, sptlines[i].y, 0.0, 0.0,
 		        sptlines[i].h, sptlines[i].s);
 
 	}
