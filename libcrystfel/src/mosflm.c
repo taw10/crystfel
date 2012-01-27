@@ -150,38 +150,13 @@ static int read_newmat(const char *filename, struct image *image)
 }
 
 
-/* Need to sort mosflm peaks by intensity... */
-struct sptline {
-	double x; /* x coordinate of peak */
-	double y; /* y coordinate of peak */
-	double h; /* height of peak */
-	double s; /* sigma of peak */
-};
-
-
-static int compare_vals(const void *ap, const void *bp)
-{
-	const struct sptline a = *(struct sptline *)ap;
-	const struct sptline b = *(struct sptline *)bp;
-
-	if ( a.h < b.h ) return 1;
-	if ( a.h > b.h ) return -1;
-	return 0;
-}
-
-
 /* Write .spt file for mosflm */
 static void write_spt(struct image *image, const char *filename)
 {
 	FILE *fh;
-	int i;
-	double fclen = 67.8;  /* fake camera length in mm */
-	double fpix = 0.075;  /* fake pixel size in mm */
-	double pix;
-	double height = 100.0;
-	double sigma = 1.0;
-	int nPeaks = image_feature_count(image->features);
-	struct sptline *sptlines;
+	int i, nPeaks;
+	const double fclen = 100.0e-3;  /* Fake camera length in m */
+	const double fpix = 7.5e-6;     /* Fake pixel size in m */
 
 	fh = fopen(filename, "w");
 	if ( !fh ) {
@@ -189,17 +164,17 @@ static void write_spt(struct image *image, const char *filename)
 		return;
 	}
 
-	fprintf(fh, "%10d %10d %10.8f %10.6f %10.6f\n", 1, 1, fpix, 1.0, 0.0);
+	fprintf(fh, "%10d %10d %10.8f %10.6f %10.6f\n",
+	            1, 1, fpix*1e3, 1.0, 0.0);
 	fprintf(fh, "%10d %10d\n", 1, 1);
 	fprintf(fh, "%10.5f %10.5f\n", 0.0, 0.0);
 
-	sptlines = malloc(sizeof(struct sptline)*nPeaks);
-
+	nPeaks = image_feature_count(image->features);
 	for ( i=0; i<nPeaks; i++ ) {
 
 		struct imagefeature *f;
 		struct panel *p;
-		double xs, ys, rx, ry;
+		double xs, ys, rx, ry, x, y;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
@@ -207,32 +182,20 @@ static void write_spt(struct image *image, const char *filename)
 		p = find_panel(image->det, f->fs, f->ss);
 		if ( p == NULL ) continue;
 
-		pix = 1000.0/p->res; /* pixel size in mm */
-		height = f->intensity;
+		xs = (f->fs-(double)p->min_fs)*p->fsx
+		   + (f->ss-(double)p->min_ss)*p->ssx;
+		ys = (f->fs-(double)p->min_fs)*p->fsy
+		   + (f->ss-(double)p->min_ss)*p->ssy;
+		rx = (xs + p->cnx) / p->res;
+		ry = (ys + p->cny) / p->res;
 
-		xs = (f->fs-p->min_fs)*p->fsx + (f->ss-p->min_ss)*p->ssx;
-		ys = (f->fs-p->min_fs)*p->fsy + (f->ss-p->min_ss)*p->ssy;
-		rx = xs + p->cnx;
-		ry = ys + p->cny;
-
-		sptlines[i].x = ry*pix*fclen/p->clen/1000.0;
-		sptlines[i].y = -rx*pix*fclen/p->clen/1000.0;
-		sptlines[i].h = height;
-		sptlines[i].s = sigma/1000.0;
-
-	}
-
-	qsort(sptlines, nPeaks, sizeof(struct sptline), compare_vals);
-
-	for ( i=0; i<nPeaks; i++ ) {
+		x = rx*fclen/(fpix*p->clen);
+		y = ry*fclen/(fpix*p->clen);
 
 		fprintf(fh, "%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
-		        sptlines[i].x, sptlines[i].y, 0.0, 0.0,
-		        sptlines[i].h, sptlines[i].s);
+		            x, y, 0.0, 0.0, 100.0, 1.0);
 
 	}
-
-	free(sptlines);
 
 	fprintf(fh,"%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
 	           -999.0,-999.0,-999.0,-999.0,-999.0,-999.0);
@@ -343,7 +306,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		break;
 
 	case 4 :
-		mosflm_sendline("DISTANCE 67.8\n", mosflm);
+		mosflm_sendline("DISTANCE 100.0\n", mosflm);
 		break;
 
 	case 5 :
