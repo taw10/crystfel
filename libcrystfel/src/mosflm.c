@@ -178,9 +178,7 @@ static void write_spt(struct image *image, const char *filename)
 	double fclen = 67.8;  /* fake camera length in mm */
 	double fpix = 0.075;  /* fake pixel size in mm */
 	double pix;
-	double height = 100.0;
-	double sigma = 1.0;
-	int nPeaks = image_feature_count(image->features);
+	int n, nPeaks;
 	struct sptline *sptlines;
 
 	fh = fopen(filename, "w");
@@ -193,9 +191,11 @@ static void write_spt(struct image *image, const char *filename)
 	fprintf(fh, "%10d %10d\n", 1, 1);
 	fprintf(fh, "%10.5f %10.5f\n", 0.0, 0.0);
 
-	sptlines = malloc(sizeof(struct sptline)*nPeaks);
+	n = image_feature_count(image->features);
+	sptlines = malloc(sizeof(struct sptline)*n); /* Max possible size */
 
-	for ( i=0; i<nPeaks; i++ ) {
+	nPeaks = 0;
+	for ( i=0; i<n; i++ ) {
 
 		struct imagefeature *f;
 		struct panel *p;
@@ -208,7 +208,6 @@ static void write_spt(struct image *image, const char *filename)
 		if ( p == NULL ) continue;
 
 		pix = 1000.0/p->res; /* pixel size in mm */
-		height = f->intensity;
 
 		xs = (f->fs-p->min_fs)*p->fsx + (f->ss-p->min_ss)*p->ssx;
 		ys = (f->fs-p->min_fs)*p->fsy + (f->ss-p->min_ss)*p->ssy;
@@ -217,8 +216,10 @@ static void write_spt(struct image *image, const char *filename)
 
 		sptlines[i].x = ry*pix*fclen/p->clen/1000.0;
 		sptlines[i].y = -rx*pix*fclen/p->clen/1000.0;
-		sptlines[i].h = height;
-		sptlines[i].s = sigma/1000.0;
+		sptlines[i].h = 1000.0;
+		sptlines[i].s = 10.0;
+
+		nPeaks++;
 
 	}
 
