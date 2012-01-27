@@ -211,7 +211,7 @@ static void write_spt(struct image *image, const char *filename)
 		height = f->intensity;
 
 		xs = (f->fs-p->min_fs)*p->fsx + (f->ss-p->min_ss)*p->ssx;
-		ys = (f->ss-p->min_fs)*p->fsy + (f->ss-p->min_ss)*p->ssy;
+		ys = (f->fs-p->min_fs)*p->fsy + (f->ss-p->min_ss)*p->ssy;
 		rx = xs + p->cnx;
 		ry = ys + p->cny;
 
