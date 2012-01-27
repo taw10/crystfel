@@ -140,9 +140,9 @@ static int read_newmat(const char *filename, struct image *image)
 	image->candidate_cells[0] = cell_new();
 
 	cell_set_reciprocal(image->candidate_cells[0],
-                            asz*c, asy*c, asx*c,
-                            bsz*c, bsy*c, bsx*c,
-                            csz*c, csy*c, csx*c);
+                            asz*c, -asx*c, asy*c,
+                            bsz*c, -bsx*c, bsy*c,
+                            csz*c, -csx*c, csy*c);
 
         image->ncells = 1;
 
@@ -190,8 +190,8 @@ static void write_spt(struct image *image, const char *filename)
 		rx = xs + p->cnx;
 		ry = ys + p->cny;
 
-		x = ry*pix*fclen/p->clen/1000.0;
-		y = -rx*pix*fclen/p->clen/1000.0;
+		x = rx*pix*fclen/p->clen/1000.0;
+		y = ry*pix*fclen/p->clen/1000.0;
 
 		fprintf(fh, "%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
 		        x, y, 0.0, 0.0, 1000.0, 10.0);
