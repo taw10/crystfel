@@ -150,26 +150,6 @@ static int read_newmat(const char *filename, struct image *image)
 }
 
 
-/* Need to sort mosflm peaks by intensity... */
-struct sptline {
-	double x; /* x coordinate of peak */
-	double y; /* y coordinate of peak */
-	double h; /* height of peak */
-	double s; /* sigma of peak */
-};
-
-
-static int compare_vals(const void *ap, const void *bp)
-{
-	const struct sptline a = *(struct sptline *)ap;
-	const struct sptline b = *(struct sptline *)bp;
-
-	if ( a.h < b.h ) return 1;
-	if ( a.h > b.h ) return -1;
-	return 0;
-}
-
-
 /* Write .spt file for mosflm */
 static void write_spt(struct image *image, const char *filename)
 {
@@ -178,8 +158,7 @@ static void write_spt(struct image *image, const char *filename)
 	double fclen = 67.8;  /* fake camera length in mm */
 	double fpix = 0.075;  /* fake pixel size in mm */
 	double pix;
-	int n, nPeaks;
-	struct sptline *sptlines;
+	int n;
 
 	fh = fopen(filename, "w");
 	if ( !fh ) {
@@ -192,14 +171,11 @@ static void write_spt(struct image *image, const char *filename)
 	fprintf(fh, "%10.5f %10.5f\n", 0.0, 0.0);
 
 	n = image_feature_count(image->features);
-	sptlines = malloc(sizeof(struct sptline)*n); /* Max possible size */
-
-	nPeaks = 0;
 	for ( i=0; i<n; i++ ) {
 
 		struct imagefeature *f;
 		struct panel *p;
-		double xs, ys, rx, ry;
+		double xs, ys, rx, ry, x, y;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
@@ -214,26 +190,13 @@ static void write_spt(struct image *image, const char *filename)
 		rx = xs + p->cnx;
 		ry = ys + p->cny;
 
-		sptlines[i].x = ry*pix*fclen/p->clen/1000.0;
-		sptlines[i].y = -rx*pix*fclen/p->clen/1000.0;
-		sptlines[i].h = 1000.0;
-		sptlines[i].s = 10.0;
-
-		nPeaks++;
-
-	}
-
-	qsort(sptlines, nPeaks, sizeof(struct sptline), compare_vals);
-
-	for ( i=0; i<nPeaks; i++ ) {
+		x = ry*pix*fclen/p->clen/1000.0;
+		y = -rx*pix*fclen/p->clen/1000.0;
 
 		fprintf(fh, "%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
-		        sptlines[i].x, sptlines[i].y, 0.0, 0.0,
-		        sptlines[i].h, sptlines[i].s);
+		        x, y, 0.0, 0.0, 1000.0, 10.0);
 
 	}
-
-	free(sptlines);
 
 	fprintf(fh,"%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
 	           -999.0,-999.0,-999.0,-999.0,-999.0,-999.0);
