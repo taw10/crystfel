@@ -156,8 +156,6 @@ static void write_spt(struct image *image, const char *filename)
 	FILE *fh;
 	int i;
 	double fclen = 67.8;  /* fake camera length in mm */
-	double fpix = 0.075;  /* fake pixel size in mm */
-	double pix;
 	int n;
 
 	fh = fopen(filename, "w");
@@ -166,7 +164,7 @@ static void write_spt(struct image *image, const char *filename)
 		return;
 	}
 
-	fprintf(fh, "%10d %10d %10.8f %10.6f %10.6f\n", 1, 1, fpix, 1.0, 0.0);
+	fprintf(fh, "%10d %10d %10.8f %10.6f %10.6f\n", 1, 1, 0.0, 1.0, 0.0);
 	fprintf(fh, "%10d %10d\n", 1, 1);
 	fprintf(fh, "%10.5f %10.5f\n", 0.0, 0.0);
 
@@ -183,15 +181,13 @@ static void write_spt(struct image *image, const char *filename)
 		p = find_panel(image->det, f->fs, f->ss);
 		if ( p == NULL ) continue;
 
-		pix = 1000.0/p->res; /* pixel size in mm */
-
 		xs = (f->fs-p->min_fs)*p->fsx + (f->ss-p->min_ss)*p->ssx;
 		ys = (f->fs-p->min_fs)*p->fsy + (f->ss-p->min_ss)*p->ssy;
-		rx = xs + p->cnx;
-		ry = ys + p->cny;
+		rx = (xs + p->cnx) / p->res;
+		ry = (ys + p->cny) / p->res;
 
-		x = rx*pix*fclen/p->clen/1000.0;
-		y = ry*pix*fclen/p->clen/1000.0;
+		x = rx*fclen/p->clen;
+		y = ry*fclen/p->clen;  /* Peak positions in mm */
 
 		fprintf(fh, "%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
 		        x, y, 0.0, 0.0, 1000.0, 10.0);
