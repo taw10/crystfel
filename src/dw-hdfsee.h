@@ -87,6 +87,8 @@ typedef struct {
 	int             show_rings;
 	int		show_peaks;
 	double          ring_radius;
+	double          *ring_radii;
+	int             n_rings;
 
 	int		show_col_scale;
 	int		scale;
@@ -101,7 +103,7 @@ extern DisplayWindow *displaywindow_open(const char *filename,
                                          int noisefilter, int colscale,
                                          const char *element,
                                          const char *geometry, int show_rings,
-                                         double ring_size);
+                                         double *ring_radii, int n_rings, double ring_size);
 
 
 #endif	/* DISPLAYWINDOW_H */

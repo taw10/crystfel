@@ -240,16 +240,24 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 		//show_simple_ring(cr, dw, 380.0, &basic_m);
 
 		/* Draw resolution circles */
-		show_ring(cr, dw, 10.0e-10, "10A", &basic_m, 1.0, 0.0, 0.0);
-		show_ring(cr, dw, 9.0e-10, "9A", &basic_m, 1.0, 0.0, 0.0);
-		show_ring(cr, dw, 8.0e-10, "8A", &basic_m, 1.0, 0.0, 0.0);
-		show_ring(cr, dw, 7.0e-10, "7A", &basic_m, 1.0, 0.5, 0.0);
-		show_ring(cr, dw, 6.0e-10, "6A", &basic_m, 1.0, 1.0, 0.0);
-		show_ring(cr, dw, 5.0e-10, "5A", &basic_m, 0.0, 1.0, 0.0);
-		show_ring(cr, dw, 4.0e-10, "4A", &basic_m, 0.0, 1.0, 0.0);
-//		show_ring(cr, dw, 3.0e-10, "3A", &basic_m);
-//		show_ring(cr, dw, 2.0e-10, "2A", &basic_m);
-//		show_ring(cr, dw, 1.0e-10, "1A", &basic_m);
+		if ( dw->n_rings == -1 ) {
+			/* n_rings == -1 means default behavior */
+			show_ring(cr, dw, 10.0e-10, "10A", &basic_m, 1.0, 0.0, 0.0);
+			show_ring(cr, dw, 9.0e-10, "9A", &basic_m, 1.0, 0.0, 0.0);
+			show_ring(cr, dw, 8.0e-10, "8A", &basic_m, 1.0, 0.0, 0.0);
+			show_ring(cr, dw, 7.0e-10, "7A", &basic_m, 1.0, 0.5, 0.0);
+			show_ring(cr, dw, 6.0e-10, "6A", &basic_m, 1.0, 1.0, 0.0);
+			show_ring(cr, dw, 5.0e-10, "5A", &basic_m, 0.0, 1.0, 0.0);
+			show_ring(cr, dw, 4.0e-10, "4A", &basic_m, 0.0, 1.0, 0.0);
+			//show_ring(cr, dw, 3.0e-10, "3A", &basic_m);
+			//show_ring(cr, dw, 2.0e-10, "2A", &basic_m);
+			//show_ring(cr, dw, 1.0e-10, "1A", &basic_m);
+		} else {
+			int i;
+			for ( i=0; i<dw->n_rings; i++ ) {
+				show_simple_ring(cr, dw, dw->ring_radii[i], &basic_m);
+			}
+		}
 
 	}
 
@@ -1720,7 +1728,8 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
                                   int boost, int binning, int cmfilter,
                                   int noisefilter, int colscale,
                                   const char *element, const char *geometry,
-                                  int show_rings, double ring_size)
+                                  int show_rings, double *ring_radii, int n_rings, 
+                                  double ring_size)
 {
 	DisplayWindow *dw;
 	char *title;
@@ -1749,6 +1758,8 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->not_ready_yet = 1;
 	dw->surf = NULL;
 	dw->ring_radius = ring_size;
+	dw->ring_radii = ring_radii;
+	dw->n_rings = n_rings;
 
 	/* Open the file, if any */
 	if ( filename != NULL ) {

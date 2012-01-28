@@ -99,7 +99,10 @@ int main(int argc, char *argv[])
 	char *element = NULL;
 	char *geometry = NULL;
 	double ring_size = 5.0;
-
+	char *reslist = NULL;
+	double ring_radii[128];
+	int n_rings = -1;
+	
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
@@ -113,6 +116,7 @@ int main(int argc, char *argv[])
 		{"geometry",           1, NULL,               'g'},
 		{"show-rings",         0, &config_showrings,   1},
 		{"ring-size",          1, NULL,                2},
+		{"simple-rings",       1, NULL,               'r'},
 		{0, 0, NULL, 0}
 	};
 
@@ -168,7 +172,26 @@ int main(int argc, char *argv[])
 				ERROR("Ring size must be numerical.\n");
 				return 1;
 			}
-
+		case 'r' :
+			config_showrings = 1;
+			reslist = strdup(optarg);
+			int nchar = strlen(reslist);
+			char thisvalue[128];
+			int i;
+			int j=0;
+			n_rings = 0;
+			for ( i=0; i<=nchar; i++ ) {
+				if ( ( reslist[i] != ',' ) && ( reslist[i] != '\0' ) ) {
+					thisvalue[j] = reslist[i];
+					j++;
+				} else {
+					j=0;
+					thisvalue[i] = '\0';
+					ring_radii[n_rings] = atof(thisvalue);
+					n_rings++;
+				}
+			}
+			break;
 		case 0 :
 			break;
 
@@ -208,6 +231,8 @@ int main(int argc, char *argv[])
 		                                         colscale, element,
 		                                         geometry,
 		                                         config_showrings,
+		                                         ring_radii,
+		                                         n_rings,
 		                                         ring_size);
 		if ( main_window_list[i] == NULL ) {
 			ERROR("Couldn't open display window\n");
