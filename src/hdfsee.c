@@ -46,7 +46,7 @@ static void show_help(const char *s)
 "                                    values.\n"
 "      --show-rings                 Overlay rings that indicate resolution.\n"
 "      --simple-rings=XX,YY,...     Overlay rings at specified radii XX, YY, ...\n"
-"                                    in pixel units.\n" 
+"                                    in pixel units.\n"
 "  -c, --colscale=<scale>           Use the given colour scale.  Choose from:\n"
 "                                    mono    : Greyscale, black is zero.\n"
 "                                    invmono : Greyscale, white is zero.\n"
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 	char *reslist = NULL;
 	double ring_radii[128];
 	int n_rings = -1;
-	
+
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
@@ -175,26 +175,30 @@ int main(int argc, char *argv[])
 				ERROR("Ring size must be numerical.\n");
 				return 1;
 			}
+
 		case 'r' :
 			config_showrings = 1;
 			reslist = strdup(optarg);
 			int nchar = strlen(reslist);
 			char thisvalue[128];
 			int i;
-			int j=0;
+			int j = 0;
 			n_rings = 0;
 			for ( i=0; i<=nchar; i++ ) {
-				if ( ( reslist[i] != ',' ) && ( reslist[i] != '\0' ) ) {
+				if ( ( reslist[i] != ',' )
+				  && ( reslist[i] != '\0' ) )
+				{
 					thisvalue[j] = reslist[i];
 					j++;
 				} else {
-					j=0;
+					j = 0;
 					thisvalue[i] = '\0';
 					ring_radii[n_rings] = atof(thisvalue);
 					n_rings++;
 				}
 			}
 			break;
+
 		case 0 :
 			break;
 
