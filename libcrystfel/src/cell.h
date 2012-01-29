@@ -95,10 +95,10 @@ extern UnitCell *rotate_cell(UnitCell *in, double omega, double phi,
 
 extern void cell_print(UnitCell *cell);
 
-extern UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
+extern UnitCell *match_cell(UnitCell *cell, UnitCell *tempcell, int verbose,
                             int reduce);
 
-extern UnitCell *match_cell_ab(UnitCell *cell, UnitCell *template);
+extern UnitCell *match_cell_ab(UnitCell *cell, UnitCell *tempcell);
 
 extern UnitCell *load_cell_from_pdb(const char *filename);
 
