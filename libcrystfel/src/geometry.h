@@ -18,6 +18,7 @@
 #endif
 
 #include "reflist.h"
+#include "cell.h"
 
 extern RefList *find_intersections(struct image *image, UnitCell *cell);
 
