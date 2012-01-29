@@ -20,8 +20,16 @@
 #include "reflist.h"
 #include "cell.h"
 
-extern RefList *find_intersections(struct image *image, UnitCell *cell);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-extern void update_partialities(struct image *image);
+RefList *find_intersections(struct image *image, UnitCell *cell);
+
+void update_partialities(struct image *image);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* GEOMETRY_H */

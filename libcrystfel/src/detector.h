@@ -23,6 +23,9 @@ struct hdfile;
 #include "hdf5-file.h"
 #include "image.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct panel
 {
@@ -127,5 +130,8 @@ extern double smallest_q(struct image *image);
 
 extern struct panel *find_panel_by_name(struct detector *det, const char *name);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* DETECTOR_H */
