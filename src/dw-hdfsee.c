@@ -229,9 +229,9 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
 		cairo_fill(cr);
 
-		cairo_rectangle(cr, -370.0, 800.0, 120.0, 60.0);
-		cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.3);
-		cairo_fill(cr);
+		//cairo_rectangle(cr, -370.0, 800.0, 120.0, 60.0);
+		//cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.3);
+		//cairo_fill(cr);
 
 		//show_simple_ring(cr, dw, 80.0, &basic_m);
 		//show_simple_ring(cr, dw, 186.0, &basic_m);
