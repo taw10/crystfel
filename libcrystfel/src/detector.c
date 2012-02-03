@@ -421,11 +421,14 @@ struct panel *find_panel(struct detector *det, double fs, double ss)
 {
 	int p;
 
+	/* Fractional pixel coordinates are allowed to be a little further along
+	 * than "== max_{f,s}s" for an integer. */
+
 	for ( p=0; p<det->n_panels; p++ ) {
 		if ( (fs >= det->panels[p].min_fs)
-		  && (fs <= det->panels[p].max_fs)
+		  && (fs <= det->panels[p].max_fs+1)
 		  && (ss >= det->panels[p].min_ss)
-		  && (ss <= det->panels[p].max_ss) ) {
+		  && (ss <= det->panels[p].max_ss+1) ) {
 			return &det->panels[p];
 		}
 	}
