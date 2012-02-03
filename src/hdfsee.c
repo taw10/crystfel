@@ -191,10 +191,10 @@ int main(int argc, char *argv[])
 					thisvalue[j] = reslist[i];
 					j++;
 				} else {
-					j = 0;
-					thisvalue[i] = '\0';
+					thisvalue[j] = '\0';
 					ring_radii[n_rings] = atof(thisvalue);
 					n_rings++;
+					j = 0;
 				}
 			}
 			break;
