@@ -1756,8 +1756,8 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
                                   int boost, int binning, int cmfilter,
                                   int noisefilter, int colscale,
                                   const char *element, const char *geometry,
-                                  int show_rings, double *ring_radii, int n_rings,
-                                  double ring_size)
+                                  int show_rings, double *ring_radii,
+                                  int n_rings, double ring_size)
 {
 	DisplayWindow *dw;
 	char *title;
