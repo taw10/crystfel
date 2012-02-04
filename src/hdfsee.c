@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 	gtk_init(&argc, &argv);
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hp:b:i:c:e:g:2:",
+	while ((c = getopt_long(argc, argv, "hp:b:i:c:e:g:2:r:",
 	                        longopts, NULL)) != -1) {
 
 		char *test;
@@ -175,6 +175,7 @@ int main(int argc, char *argv[])
 				ERROR("Ring size must be numerical.\n");
 				return 1;
 			}
+			break;
 
 		case 'r' :
 			config_showrings = 1;

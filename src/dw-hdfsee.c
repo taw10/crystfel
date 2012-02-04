@@ -255,10 +255,15 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 			show_ring(cr, dw, 5.0e-10, "5A", &basic_m,
 			          0.0, 1.0, 0.0);
 			show_ring(cr, dw, 4.0e-10, "4A", &basic_m,
-			          0.0, 1.0, 0.0);
-			//show_ring(cr, dw, 3.0e-10, "3A", &basic_m);
-			//show_ring(cr, dw, 2.0e-10, "2A", &basic_m);
-			//show_ring(cr, dw, 1.0e-10, "1A", &basic_m);
+			          0.2, 1.0, 0.2);
+			show_ring(cr, dw, 3.0e-10, "3A", &basic_m,
+			          0.4, 1.0, 0.4);
+			show_ring(cr, dw, 2.0e-10, "2A", &basic_m,
+			          0.6, 1.0, 0.6);
+			show_ring(cr, dw, 1.0e-10, "1A", &basic_m,
+			          0.8, 1.0, 0.8);
+			show_ring(cr, dw, 1.0e-10, "0.5A", &basic_m,
+			          1.0, 1.0, 1.0);
 		} else {
 			int i;
 			for ( i=0; i<dw->n_rings; i++ ) {
