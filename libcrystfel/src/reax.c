@@ -351,90 +351,18 @@ static double iterate_refine_vector(double *x, double *y, double *z,
 }
 
 
-static void refine_cell(struct image *image, UnitCell *cell,
-                        ImageFeatureList *flist)
+static void refine_vector(ImageFeatureList *flist, struct dvec *dir)
 {
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
 	int i;
 	double sm;
 
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	i = 0;
 	do {
 
-		sm  = iterate_refine_vector(&ax, &ay, &az, flist);
-		sm += iterate_refine_vector(&bx, &by, &bz, flist);
-		sm += iterate_refine_vector(&cx, &cy, &cz, flist);
+		sm  = iterate_refine_vector(&dir->x, &dir->y, &dir->z, flist);
 		i++;
 
 	} while ( (sm > 0.001e-9) && (i<10) );
-
-	cell_set_cartesian(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
-
-	if ( i == 10 ) {
-		cell_free(image->indexed_cell);
-		image->indexed_cell = NULL;
-	}
-}
-
-
-static void fine_search(struct reax_private *p, ImageFeatureList *flist,
-                        double pmax, double *fft_in, fftw_complex *fft_out,
-                        struct reax_search_v *sv, struct reax_candidate *c,
-                        const char *rg, struct detector *det)
-{
-	double fom = 0.0;
-	double th, ph;
-	double inc;
-	struct dvec dir;
-	int i, s;
-	double max;
-	double th_min, th_max;
-	double ph_min, ph_max;
-
-	inc = p->angular_inc / 100.0;
-
-	th_min = c->v.th - p->angular_inc;
-	th_max = c->v.th + p->angular_inc;
-	ph_min = c->v.ph - p->angular_inc;
-	ph_max = c->v.ph + p->angular_inc;
-	for ( th=th_min; th<=th_max; th+=inc ) {
-	for ( ph=ph_min; ph<=ph_max; ph+=inc ) {
-
-		double new_fom;
-
-		dir.x = cos(ph) * sin(th);
-		dir.y = sin(ph) * sin(th);
-		dir.z = cos(th);
-		dir.th = th;
-		dir.ph = ph;
-
-		fill_and_transform(&dir, flist, p->nel, pmax, fft_in, fft_out,
-		                   p->plan, rg, det);
-
-		for ( i=sv->smin; i<=sv->smax; i++ ) {
-
-			double re, im, m;
-
-			re = fft_out[i][0];
-			im = fft_out[i][1];
-			m = sqrt(re*re + im*im);
-			if ( m > max ) {
-				max = m;
-				s = i;
-			}
-
-		}
-
-		if ( new_fom > fom ) {
-			fom = new_fom;
-			c->v = dir;
-		}
-
-	}
-	}
 }
 
 
@@ -553,10 +481,6 @@ static void find_candidates(struct reax_private *p,
 
 	//show_vectors(s, "BEFORE");
 
-	squash_vectors(s, INC_TOL_MULTIPLIER*p->angular_inc);
-
-	//show_vectors(s, "AFTER");
-
 	for ( i=0; i<s->n_search; i++ ) {
 
 		struct reax_search_v *sv;
@@ -564,10 +488,11 @@ static void find_candidates(struct reax_private *p,
 
 		sv = &s->search[i];
 		for ( j=0; j<smallest(sv->n_cand, 3); j++ ) {
-			fine_search(p, flist, pmax, fft_in, fft_out, sv,
-			            &sv->cand[j], rg, det);
+//			refine_vector(flist, &sv->cand[j].v);
 		}
 	}
+
+//	squash_vectors(s, INC_TOL_MULTIPLIER*p->angular_inc);
 
 	//show_vectors(s, "FINAL");
 }
@@ -1037,8 +962,6 @@ static void assemble_cells_from_candidates(struct image *image,
 
 		/* We have three vectors with the right angles */
 		cnew = cell_new_from_direct_axes(ai, bi, ci);
-
-		refine_cell(image, cnew, image->features);
 
 		if ( twinned(cnew, &cl) ) {
 			cell_free(cnew);
