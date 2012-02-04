@@ -291,7 +291,7 @@ static double iterate_refine_vector(double *x, double *y, double *z,
 
 		kno = f->rx*(*x) + f->ry*(*y) + f->rz*(*z);  /* Sorry ... */
 		kn = nearbyint(kno);
-		if ( kn - kno > 0.3 ) continue;
+		if ( fabs(kn - kno) > 0.3 ) continue;
 
 		xv[0] = f->rx;  xv[1] = f->ry;  xv[2] = f->rz;
 
