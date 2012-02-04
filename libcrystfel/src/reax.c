@@ -249,7 +249,7 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 
 			double fom;
 
-			fom = (peak-mean)/sd;
+			fom = peak;
 
 			add_candidate(&s->search[i], dir, fom, peak_mod);
 
