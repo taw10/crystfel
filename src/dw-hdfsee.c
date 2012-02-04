@@ -68,6 +68,7 @@ static gint displaywindow_closed(GtkWidget *window, DisplayWindow *dw)
 	}
 
 	if ( dw->image != NULL ) {
+		free(dw->image->filename);
 		free(dw->image->data);
 		free(dw->image->flags);
 		free(dw->image);
@@ -1148,6 +1149,7 @@ static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
 {
 	GtkWidget *d, *hbox, *l, *cb;
 	struct savedialog *cd;
+	char *fn, *bfn;
 
 	d = gtk_file_chooser_dialog_new("Save Image",
 	                                GTK_WINDOW(dw->window),
@@ -1155,6 +1157,19 @@ static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
 	                                GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 	                                GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
 	                                NULL);
+
+	bfn = safe_basename(dw->image->filename);
+	if ( bfn != NULL ) {
+		fn = malloc(strlen(bfn)+10);
+		if ( fn != NULL ) {
+			sprintf(fn, "%s.png", bfn);
+			STATUS("%s'\n", fn);
+			gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(d),
+			                                  fn);
+			free(fn);
+		}
+		free(bfn);
+	}
 
 	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(d),
 	                                               TRUE);
@@ -1793,6 +1808,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 
 			if ( !fail ) {
 				dw->image = calloc(1, sizeof(struct image));
+				dw->image->filename = strdup(filename);
 				hdf5_read(dw->hdfile, dw->image, 0);
 			} else {
 				ERROR("Couldn't select path\n");
