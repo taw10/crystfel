@@ -565,8 +565,10 @@ EXTRA_DIST = configure m4/gnulib-cache.m4 tests/first_merge_check \
 	tests/third_merge_check.hkl tests/fourth_merge_check.hkl \
 	src/dw-hdfsee.h src/hdfsee.h src/render_hkl.h \
 	src/post-refinement.h src/hrs-scaling.h src/scaling-report.h \
-	src/cl-utils.h src/hdfsee-render.h $(crystfel_DATA) \
-	doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
+	src/cl-utils.h src/hdfsee-render.h src/diffraction.h \
+	src/diffraction-gpu.h src/pattern_sim.h src/list_tmp.h \
+	$(crystfel_DATA) $(man_MANS) doc/twin-calculator.pdf \
+	doc/examples/lcls-dec.geom \
 	doc/examples/lcls-june-r0013-r0128.geom \
 	doc/examples/lcls-xpp-estimate.geom doc/examples/simple.geom \
 	doc/examples/lcls-dec.beam doc/examples/lcls-june.beam \

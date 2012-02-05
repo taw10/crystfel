@@ -376,7 +376,8 @@ libcrystfel_la_include_HEADERS = src/beam-parameters.h src/hdf5-file.h \
                                  src/statistics.h src/utils.h src/detector.h \
                                  src/geometry.h src/peaks.h src/stream.h \
                                  src/render.h src/index.h src/image.h \
-                                 src/filters.h
+                                 src/filters.h src/dirax.h src/mosflm.h \
+                                 src/index-priv.h src/reax.h
 
 INCLUDES = "-I$(top_srcdir)/data"
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib \
