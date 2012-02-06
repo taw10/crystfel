@@ -521,7 +521,7 @@ static SymOpList *make_4mmm_uaa()
 {
 	SymOpList *new = new_symoplist();
 	add_symop(new, v(1,0,0,0), v(0,0,0,1), v(0,-1,0,0), 4); /* 4 // h */
-	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,1), 2); /* m -| k */
+	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* m -| k */
 	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,1), 2); /* m -| h */
 	new->name = strdup("4/mmm_uaa");
 	return expand_ops(new);
