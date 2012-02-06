@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../src/reflist.h"
+#include <reflist.h>
 
 
 struct refltemp {

@@ -19,10 +19,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../src/image.h"
-#include "../src/peaks.h"
-#include "../src/utils.h"
-#include "../src/beam-parameters.h"
+#include <image.h>
+#include <peaks.h>
+#include <utils.h>
+#include <beam-parameters.h>
 
 
 /* The third integration check draws a Poisson background and checks that, on

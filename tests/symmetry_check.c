@@ -19,8 +19,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "../src/symmetry.h"
-#include "../src/utils.h"
+#include <symmetry.h>
+#include <utils.h>
 
 
 static int is_nonmirror_subgroup(SymOpList *holo, SymOpList *mero)

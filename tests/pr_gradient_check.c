@@ -18,10 +18,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../src/image.h"
-#include "../src/cell.h"
-#include "../src/geometry.h"
-#include "../src/reflist.h"
+#include <image.h>
+#include <cell.h>
+#include <geometry.h>
+#include <reflist.h>
 #include "../src/post-refinement.h"
 
 

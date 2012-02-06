@@ -20,10 +20,10 @@
 
 #include "../src/diffraction.h"
 #include "../src/diffraction-gpu.h"
-#include "../src/detector.h"
-#include "../src/beam-parameters.h"
-#include "../src/utils.h"
-#include "../src/symmetry.h"
+#include <detector.h>
+#include <beam-parameters.h>
+#include <utils.h>
+#include <symmetry.h>
 
 
 #ifdef HAVE_CLOCK_GETTIME
