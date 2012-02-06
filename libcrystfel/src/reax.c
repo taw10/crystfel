@@ -46,7 +46,7 @@
 
 
 /* Maximum number of candidate vectors to find (we will take the best ones) */
-#define MAX_CANDIDATES (32)
+#define MAX_CANDIDATES (1024)
 
 
 struct dvec
@@ -73,6 +73,7 @@ struct reax_search_v
 
 	struct reax_candidate *cand;  /* Candidate vectors go here */
 	int n_cand;                   /* There are this many candidates */
+	int max_warned;
 };
 
 
@@ -147,42 +148,22 @@ static void fill_and_transform(struct dvec *dir, ImageFeatureList *flist,
 }
 
 
-static void add_candidate(struct reax_search_v *s, struct dvec *dir,
-                          double fom, double peak_mod)
+static void add_candidate(struct reax_search_v *s, struct reax_candidate *c)
 {
-	struct reax_candidate cshift;
-	size_t ns;
-	int i, cpos;
+	int idx;
 
-	cpos = s->n_cand;
-	for ( i=0; i<s->n_cand; i++ ) {
-		if ( fom > s->cand[i].fom ) {
-			cpos = i;
-			break;
+	if ( s->n_cand == MAX_CANDIDATES ) {
+		if ( !s->max_warned ) {
+			ERROR("Warning: Too many candidates.\n");
+			s->max_warned = 1;
 		}
+		return;
 	}
 
-	cshift.v.x = dir->x*peak_mod;
-	cshift.v.y = dir->y*peak_mod;
-	cshift.v.z = dir->z*peak_mod;
-	cshift.v.th = dir->th;
-	cshift.v.ph = dir->ph;
-	cshift.fom = fom;
+	idx = s->n_cand++;
 
-	for ( i=cpos; i<s->n_cand; i++ ) {
-
-		struct reax_candidate cshift2;
-		cshift2 = s->cand[i];
-		s->cand[i] = cshift;
-		cshift = cshift2;
-
-	}
-
-	if ( s->n_cand >= MAX_CANDIDATES ) {
-		/* "cshift" just fell off the end of the list */
-	} else {
-		s->cand[s->n_cand++] = cshift;
-	}
+	s->cand[idx].v = c->v;
+	s->cand[idx].fom = c->fom;
 }
 
 
@@ -247,11 +228,14 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 		/* If sufficiently strong, add to list of candidates */
 		if ( peak > mean+MIN_SIGMAS*sd ) {
 
-			double fom;
+			struct reax_candidate c;
 
-			fom = peak;
+			c.v.x = dir->x * peak_mod;
+			c.v.y = dir->y * peak_mod;
+			c.v.z = dir->z * peak_mod;
+			c.fom = peak;
 
-			add_candidate(&s->search[i], dir, fom, peak_mod);
+			add_candidate(&s->search[i],  &c);
 
 		}
 
@@ -261,7 +245,9 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
 }
 
 
-/* Refine a direct space vector.  From Clegg (1984) */
+/* Refine a direct space vector.  From Clegg (1984)
+ * with added iteration because more reflections might get included as the
+ * refinement proceeds. */
 static double iterate_refine_vector(double *x, double *y, double *z,
                                     ImageFeatureList *flist)
 {
@@ -479,6 +465,8 @@ static void find_candidates(struct reax_private *p,
 		                    s, NULL, NULL);
 	}
 
+	squash_vectors(s, INC_TOL_MULTIPLIER*p->angular_inc);
+
 	//show_vectors(s, "BEFORE");
 
 	for ( i=0; i<s->n_search; i++ ) {
@@ -487,12 +475,9 @@ static void find_candidates(struct reax_private *p,
 		int j;
 
 		sv = &s->search[i];
-		for ( j=0; j<smallest(sv->n_cand, 3); j++ ) {
-//			refine_vector(flist, &sv->cand[j].v);
-		}
-	}
+		refine_vector(flist, &sv->cand[j].v);
 
-//	squash_vectors(s, INC_TOL_MULTIPLIER*p->angular_inc);
+	}
 
 	//show_vectors(s, "FINAL");
 }
@@ -531,10 +516,13 @@ static struct reax_search *search_all_axes(UnitCell *cell, double pmax)
 	s->search = malloc(3*sizeof(struct reax_search_v));
 	smin = 2.0*pmax * amin;  smax = 2.0*pmax * amax;
 	s->search[0].smin = smin;  s->search[0].smax = smax;
+	s->search[0].max_warned = 0;
 	smin = 2.0*pmax * bmin;  smax = 2.0*pmax * bmax;
 	s->search[1].smin = smin;  s->search[1].smax = smax;
+	s->search[1].max_warned = 0;
 	smin = 2.0*pmax * cmin;  smax = 2.0*pmax * cmax;
 	s->search[2].smin = smin;  s->search[2].smax = smax;
+	s->search[2].max_warned = 0;
 
 	return s;
 }
@@ -1053,7 +1041,7 @@ IndexingPrivate *reax_prepare()
 
 	p->base.indm = INDEXING_REAX;
 
-	p->angular_inc = deg2rad(1.7);  /* From Steller (1997) */
+	p->angular_inc = deg2rad(1.0);
 
 	/* Reserve memory, over-estimating the number of directions */
 	samp = 2.0*M_PI / p->angular_inc;
