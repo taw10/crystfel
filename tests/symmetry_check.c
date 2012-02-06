@@ -261,6 +261,7 @@ int main(int argc, char *argv[])
 	check_pg_props(  "-42m",  8,  0, &fail);
 	check_pg_props(  "-4m2",  8,  0, &fail);
 	check_pg_props( "4/mmm", 16,  1, &fail);
+	check_pg_props( "4/mmm_uaa", 16,  1, &fail);
 	STATUS("\n");
 
 	check_pg_props(  "3_R",   3,  0, &fail);
