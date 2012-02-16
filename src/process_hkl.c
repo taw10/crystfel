@@ -5,6 +5,7 @@
  *
  * (c) 2006-2011 Thomas White <taw@physics.org>
  * (c) 2011      Andrew Martin <andrew.martin@desy.de>
+ * (c) 2011      Lorenzo Galli <lorenzo.galli@desy.de>
  *
  * Part of CrystFEL - crystallography with a FEL
  *
