@@ -32,9 +32,6 @@
 #include "image.h"
 
 
-
-
-
 static void show_help(const char *s)
 {
 	printf("Syntax: %s [options]\n\n", s);
@@ -63,7 +60,7 @@ static void show_help(const char *s)
 "  -g, --histogram=<h,k,l>   Calculate the histogram of measurements for this\n"
 "                             reflection.\n"
 "  -z, --hist-parameters     Set the range for the histogram and the number of\n"
-"        =<min,max,nbins>     bins. \n"
+"          =<min,max,nbins>   bins. \n"
 "\n"
 "      --scale               Scale each pattern for best fit with the current\n"
 "                             model.\n"
@@ -100,7 +97,7 @@ static void plot_histogram(double *vals, int n, float hist_min, float hist_max, 
 		min = hist_min;
 		max = hist_max;
 	}
-	STATUS("min max nbins: \n %f %f %i\n", min, max, nbins);
+	STATUS("min max nbins: %f %f %i\n", min, max, nbins);
 	min--;  max++;
 
 	for ( i=0; i<nbins; i++ ) {
@@ -563,34 +560,44 @@ int main(int argc, char *argv[])
 	model = reflist_new();
 
 	if ( histo != NULL ) {
+
 		int r;
+
 		r = sscanf(histo, "%i,%i,%i", &hist_h, &hist_k, &hist_l);
 		if ( r != 3 ) {
 			ERROR("Invalid indices for '--histogram'\n");
 			return 1;
 		}
+
 		space_for_hist = n_total_patterns * num_equivs(sym, NULL);
 		hist_vals = malloc(space_for_hist * sizeof(double));
 		free(histo);
 		STATUS("Histogramming %i %i %i -> ", hist_h, hist_k, hist_l);
+
 		/* Put into the asymmetric cell for the target group */
 		get_asymm(sym, hist_h, hist_k, hist_l,
 		          &hist_h, &hist_k, &hist_l);
 		STATUS("%i %i %i\n", hist_h, hist_k, hist_l);
+
 	}
 
 	if ( histo_params != NULL ) {
+
 		int rr;
-		rr = sscanf(histo_params, "%f,%f,%i", &hist_min, &hist_max, &hist_nbins);
+
+		rr = sscanf(histo_params, "%f,%f,%i", &hist_min, &hist_max,
+		                                      &hist_nbins);
 		if ( rr != 3 ) {
 			ERROR("Invalid parameters for '--hist-parameters'\n");
 			return 1;
 		}
 		free(histo_params);
-		if ( (hist_max - hist_min) <=0 ) {
-			ERROR("Invalid range for '--hist-parameters' : check if min<max \n");
+		if ( hist_max <= hist_min ) {
+			ERROR("Invalid range for '--hist-parameters'. "
+			      "Make sure that 'max' is greater than 'min'.\n");
 			return 1;
 		}
+
 	}
 
 	hist_i = 0;
