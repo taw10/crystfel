@@ -32,8 +32,7 @@
 #include "image.h"
 
 
-/* Number of divisions for intensity histograms */
-#define NBINS (50)
+
 
 
 static void show_help(const char *s)
@@ -63,6 +62,8 @@ static void show_help(const char *s)
 "                             the default.\n"
 "  -g, --histogram=<h,k,l>   Calculate the histogram of measurements for this\n"
 "                             reflection.\n"
+"  -z, --hist-parameters     Set the range for the histogram and the number of\n"
+"        =<min,max,nbins>     bins. \n"
 "\n"
 "      --scale               Scale each pattern for best fit with the current\n"
 "                             model.\n"
@@ -75,13 +76,13 @@ static void show_help(const char *s)
 }
 
 
-static void plot_histogram(double *vals, int n)
+static void plot_histogram(double *vals, int n, float hist_min, float hist_max, int nbins)
 {
 	int i;
 	double max = -INFINITY;
 	double min = +INFINITY;
 	double step;
-	int histo[NBINS];
+	int histo[nbins];
 	FILE *fh;
 
 	fh = fopen("histogram.dat", "w");
@@ -90,26 +91,33 @@ static void plot_histogram(double *vals, int n)
 		return;
 	}
 
-	for ( i=0; i<n; i++ ) {
-		if ( vals[i] > max ) max = vals[i];
-		if ( vals[i] < min ) min = vals[i];
+	if ( hist_min == hist_max ) {
+		for ( i=0; i<n; i++ ) {
+			if ( vals[i] > max ) max = vals[i];
+			if ( vals[i] < min ) min = vals[i];
+		}
+	} else {
+		min = hist_min;
+		max = hist_max;
 	}
-	STATUS("%f %f\n", min, max);
+	STATUS("min max nbins: \n %f %f %i\n", min, max, nbins);
 	min--;  max++;
 
-	for ( i=0; i<NBINS; i++ ) {
+	for ( i=0; i<nbins; i++ ) {
 		histo[i] = 0;
 	}
 
-	step = (max-min)/NBINS;
+	step = (max-min)/nbins;
 
 	for ( i=0; i<n; i++ ) {
 		int bin;
-		bin = (vals[i]-min)/step;
-		histo[bin]++;
+		if ( (vals[i] > min) && (vals[i] < max) ) {
+			bin = (vals[i]-min)/step;
+			histo[bin]++;
+		}
 	}
 
-	for ( i=0; i<NBINS; i++ ) {
+	for ( i=0; i<nbins; i++ ) {
 		fprintf(fh, "%f %i\n", min+step*i, histo[i]);
 	}
 
@@ -166,6 +174,7 @@ static void merge_pattern(RefList *model, RefList *new, int max_only,
 			/* Increase redundancy */
 			int cur_redundancy = get_redundancy(model_version);
 			set_redundancy(model_version, cur_redundancy+1);
+
 
 		} else if ( pass == 2 ) {
 
@@ -420,10 +429,13 @@ int main(int argc, char *argv[])
 	char *pdb = NULL;
 	char *histo = NULL;
 	signed int hist_h, hist_k, hist_l;
+	signed int hist_nbins=50;
+	float hist_min=0.0, hist_max=0.0;
 	double *hist_vals = NULL;
 	int hist_i;
 	struct beam_params *beam = NULL;
 	int space_for_hist = 0;
+	char *histo_params = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -439,12 +451,13 @@ int main(int argc, char *argv[])
 		{"symmetry",           1, NULL,               'y'},
 		{"pdb",                1, NULL,               'p'},
 		{"histogram",          1, NULL,               'g'},
+		{"hist-parameters",    1, NULL,               'z'},
 		{"beam",               1, NULL,               'b'},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:e:o:p:y:g:f:b:",
+	while ((c = getopt_long(argc, argv, "hi:e:o:p:y:g:f:b:z:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -478,6 +491,10 @@ int main(int argc, char *argv[])
 
 		case 'g' :
 			histo = strdup(optarg);
+			break;
+
+		case 'z' :
+			histo_params = strdup(optarg);
 			break;
 
 		case 'b' :
@@ -562,16 +579,41 @@ int main(int argc, char *argv[])
 		STATUS("%i %i %i\n", hist_h, hist_k, hist_l);
 	}
 
+	if ( histo_params != NULL ) {
+		int rr;
+		rr = sscanf(histo_params, "%f,%f,%i", &hist_min, &hist_max, &hist_nbins);
+		if ( rr != 3 ) {
+			ERROR("Invalid parameters for '--hist-parameters'\n");
+			return 1;
+		}
+		free(histo_params);
+		if ( (hist_max - hist_min) <=0 ) {
+			ERROR("Invalid range for '--hist-parameters' : check if min<max \n");
+			return 1;
+		}
+	}
+
 	hist_i = 0;
 	merge_all(fh, model, config_maxonly, config_scale, config_sum,
 	          config_startafter, config_stopafter,
                   sym, n_total_patterns,
-                  hist_vals, hist_h, hist_k, hist_l, &hist_i, 1);
+                  NULL, 0, 0, 0, NULL, 1);
 	if ( ferror(fh) ) {
 		ERROR("Stream read error.\n");
 		return 1;
 	}
 	rewind(fh);
+
+	STATUS("Extra pass to calculate ESDs...\n");
+	rewind(fh);
+	merge_all(fh, model, config_maxonly, config_scale, 0,
+	          config_startafter, config_stopafter, sym, n_total_patterns,
+	          hist_vals, hist_h, hist_k, hist_l, &hist_i, 2);
+	if ( ferror(fh) ) {
+		ERROR("Stream read error.\n");
+		return 1;
+	}
+
 	if ( space_for_hist && (hist_i >= space_for_hist) ) {
 		ERROR("Histogram array was too small!\n");
 	}
@@ -579,22 +621,14 @@ int main(int argc, char *argv[])
 	if ( hist_vals != NULL ) {
 		STATUS("%i %i %i was seen %i times.\n", hist_h, hist_k, hist_l,
 		                                        hist_i);
-		plot_histogram(hist_vals, hist_i);
-	}
-
-	STATUS("Extra pass to calculate ESDs...\n");
-	rewind(fh);
-	merge_all(fh, model, config_maxonly, config_scale, 0,
-	          config_startafter, config_stopafter, sym, n_total_patterns,
-	          NULL, 0, 0, 0, NULL, 2);
-	if ( ferror(fh) ) {
-		ERROR("Stream read error.\n");
-		return 1;
+		plot_histogram(hist_vals, hist_i, hist_min, hist_max,
+		               hist_nbins);
 	}
 
 	write_reflist(output, model, cell);
 
 	fclose(fh);
+
 	free(sym);
 	reflist_free(model);
 	free(output);
