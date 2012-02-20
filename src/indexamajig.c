@@ -301,7 +301,7 @@ static void process_image(void *pp, int cookie)
 
 	if ( image.lambda < 0.0 ) {
 		if ( beam != NULL ) {
-			ERROR("Using nominal photon enery of %.2f eV\n",
+			ERROR("Using nominal photon energy of %.2f eV\n",
                               beam->photon_energy);
 			image.lambda = ph_en_to_lambda(
 			                          eV_to_J(beam->photon_energy));
