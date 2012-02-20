@@ -515,29 +515,31 @@ int main(int argc, char *argv[])
 	}
 
 	if ( phist_file != NULL ) {
+
 		fh = fopen(phist_file, "w");
-	} else {
-		fh = NULL;
-	}
-	if ( fh != NULL ) {
 
-		for ( i=0; i<NBINS; i++ ) {
+		if ( fh != NULL ) {
 
-			double rcen;
+			for ( i=0; i<NBINS; i++ ) {
 
-			rcen = i/(double)NBINS*qargs.max_q
-			          + qargs.max_q/(2.0*NBINS);
-			fprintf(fh, "%.2f %7li %.3f %.3f\n", rcen/1.0e9,
-			        qargs.n_ref[i],
-				qargs.p_hist[i]/qargs.n_ref[i],
-				qargs.p_max[i]);
+				double rcen;
 
+				rcen = i/(double)NBINS*qargs.max_q
+					  + qargs.max_q/(2.0*NBINS);
+				fprintf(fh, "%.2f %7li %.3f %.3f\n", rcen/1.0e9,
+					qargs.n_ref[i],
+					qargs.p_hist[i]/qargs.n_ref[i],
+					qargs.p_max[i]);
+
+			}
+
+			fclose(fh);
+
+		} else {
+			ERROR("Failed to open file '%s' for writing.\n",
+			      phist_file);
 		}
 
-		fclose(fh);
-
-	} else {
-		ERROR("Failed to open file '%s' for writing.\n", phist_file);
 	}
 
 	fclose(ofh);
