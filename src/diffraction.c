@@ -27,9 +27,6 @@
 #include "pattern_sim.h"
 
 
-#define SAMPLING (4)
-#define BWSAMPLING (10)
-#define DIVSAMPLING (1)
 #define SINC_LUT_ELEMENTS (4096)
 
 
@@ -355,11 +352,9 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-	float klow, khigh, bwstep;
 	double *lut_a;
 	double *lut_b;
 	double *lut_c;
-	double divxlow, divylow, divxstep, divystep;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -369,15 +364,6 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	/* Needed later for Lorentz calculation */
 	image->twotheta = malloc(image->width * image->height * sizeof(double));
 
-	klow = 1.0/(image->lambda*(1.0 + image->beam->bandwidth/2.0));
-	khigh = 1.0/(image->lambda*(1.0 - image->beam->bandwidth/2.0));
-	bwstep = (khigh-klow) / BWSAMPLING;
-
-	divxlow = -image->beam->divergence/2.0;
-	divylow = -image->beam->divergence/2.0;
-	divxstep = image->beam->divergence / DIVSAMPLING;
-	divystep = image->beam->divergence / DIVSAMPLING;
-
 	lut_a = get_sinc_lut(na);
 	lut_b = get_sinc_lut(nb);
 	lut_c = get_sinc_lut(nc);
@@ -385,73 +371,34 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	for ( fs=0; fs<image->width; fs++ ) {
 	for ( ss=0; ss<image->height; ss++ ) {
 
-		int fs_step, ss_step, kstep;
-		int divxval, divyval;
-		int idx = fs + image->width*ss;
+		int idx;
+		double k;
+		double intensity;
+		double f_lattice, I_lattice;
+		double I_molecule;
+		struct rvec q;
+		double twotheta;
 
-		for ( fs_step=0; fs_step<SAMPLING; fs_step++ ) {
-		for ( ss_step=0; ss_step<SAMPLING; ss_step++ ) {
-		for ( kstep=0; kstep<BWSAMPLING; kstep++ ) {
-		for ( divxval=0; divxval<DIVSAMPLING; divxval++ ) {
-		for ( divyval=0; divyval<DIVSAMPLING; divyval++ ) {
+		/* Calculate k this time round */
+		k = 1.0/image->lambda;
 
-			double k;
-			double intensity;
-			double f_lattice, I_lattice;
-			double I_molecule;
-			struct rvec q, qn;
-			double twotheta;
-			const double dfs = (double)fs
-			                    + ((double)fs_step / SAMPLING);
-			const double dss = (double)ss
-			                    + ((double)ss_step / SAMPLING);
+		q = get_q(image, fs, ss, &twotheta, k);
 
-			double xdiv = divxlow + divxstep*(double)divxval;
-			double ydiv = divylow + divystep*(double)divyval;
+		f_lattice = lattice_factor(q, ax, ay, az,
+		                              bx, by, bz,
+		                              cx, cy, cz,
+		                              lut_a, lut_b, lut_c);
 
-			/* Calculate k this time round */
-			k = klow + (double)kstep * bwstep;
+		I_molecule = molecule_factor(intensities,
+		                             phases, flags, q,
+		                             ax,ay,az,bx,by,bz,cx,cy,cz,
+		                             m, sym);
 
-			qn = get_q(image, dfs, dss, &twotheta, k);
+		I_lattice = pow(f_lattice, 2.0);
 
-			/* x divergence */
-			q.u =  qn.u*cos(xdiv) +qn.w*sin(xdiv);
-			q.v =  qn.v;
-			q.w = -qn.u*sin(xdiv) +qn.w*cos(xdiv);
-
-			qn = q;
-
-			/* y divergence */
-			q.v =  qn.v*cos(ydiv) +qn.w*sin(ydiv);
-			q.w = -qn.v*sin(ydiv) +qn.w*cos(ydiv);
-
-			f_lattice = lattice_factor(q, ax, ay, az,
-			                              bx, by, bz,
-			                              cx, cy, cz,
-			                              lut_a, lut_b, lut_c);
-
-			I_molecule = molecule_factor(intensities,
-			                             phases, flags, q,
-			                             ax,ay,az,bx,by,bz,cx,cy,cz,
-			                             m, sym);
-
-			I_lattice = pow(f_lattice, 2.0);
-			intensity = I_lattice * I_molecule;
-
-			image->data[idx] += intensity;
-
-			if ( fs_step + ss_step + kstep == 0 ) {
-				image->twotheta[idx] = twotheta;
-			}
-
-		}
-		}
-		}
-		}
-		}
-
-		image->data[idx] /= (SAMPLING*SAMPLING*BWSAMPLING
-		                     *DIVSAMPLING*DIVSAMPLING);
+		idx = fs + image->width*ss;
+		image->data[idx] = I_lattice * I_molecule;
+		image->twotheta[idx] = twotheta;
 
 
 	}

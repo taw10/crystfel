@@ -13,7 +13,7 @@
 /* Maxmimum index to hold values up to (can be increased if necessary)
  * WARNING: Altering this value constitutes an ABI change, and means you must
  * update src/pattern_sim.h then recompile and reinstall everything. */
-#define INDMAX 200
+#define INDMAX 120
 #define IDIM (INDMAX*2 +1)
 
 #ifndef M_PI
@@ -34,15 +34,13 @@ const sampler_t sampler_c = CLK_NORMALIZED_COORDS_TRUE
 
 float4 get_q(float fs, float ss, float res, float clen, float k,
              float *ttp, float corner_x, float corner_y,
-             float fsx, float fsy, float ssx, float ssy,
-             float xdiv, float ydiv)
+             float fsx, float fsy, float ssx, float ssy)
 {
 	float rx, ry, r;
 	float az, tt;
 	float4 q;
 	float xs, ys;
 	float kx, ky, kz;
-	float kxn, kyn, kzn;
 
 	xs = fs*fsx + ss*ssx;
 	ys = fs*fsy + ss*ssy;
@@ -57,20 +55,9 @@ float4 get_q(float fs, float ss, float res, float clen, float k,
 
 	az = atan2(ry, rx);
 
-	kxn = k*native_sin(tt)*native_cos(az);
-	kyn = k*native_sin(tt)*native_sin(az);
-	kzn = k*(native_cos(tt)-1.0);
-
-	/* x divergence */
-	kx =  kxn*native_cos(xdiv) +kzn*native_sin(xdiv);
-	ky =  kyn;
-	kz = -kxn*native_sin(xdiv) +kzn*native_cos(xdiv);
-	kxn = kx;  kyn = ky;  kzn = kz;
-
-	/* y divergence */
-	kx =  kxn;
-	ky =  kyn*cos(ydiv) +kzn*sin(ydiv);
-	kz = -kyn*sin(ydiv) +kzn*cos(ydiv);
+	kx = k*native_sin(tt)*native_cos(az);
+	ky = k*native_sin(tt)*native_sin(az);
+	kz = k*(native_cos(tt)-1.0);
 
 	q = (float4)(kx, ky, kz, 0.0);
 
@@ -224,81 +211,39 @@ float molecule_factor(global float *intensities, global float *flags,
 }
 
 
-kernel void diffraction(global float *diff, global float *tt, float klow,
+kernel void diffraction(global float *diff, global float *ttp, float k,
                         int w, float corner_x, float corner_y,
                         float res, float clen, float16 cell,
                         global float *intensities,
-                        int min_fs, int min_ss, int sampling, local float *tmp,
-                        float kstep,
                         read_only image2d_t func_a,
                         read_only image2d_t func_b,
                         read_only image2d_t func_c,
                         global float *flags,
-                        float fsx, float fsy, float ssx, float ssy,
-                        float divxlow, float divxstep, int divxsamp,
-                        float divylow, float divystep, int divysamp)
+                        float fsx, float fsy, float ssx, float ssy)
 {
-	float ttv;
+	float tt;
 	float fs, ss;
 	float f_lattice, I_lattice;
 	float I_molecule;
 	float4 q;
-	float k = klow + kstep * get_local_id(2);
 	float intensity;
-	const int ls0 = get_local_size(0);
-	const int ls1 = get_local_size(1);
-	const int ls2 = get_local_size(2) / (divxsamp*divysamp);
-	const int ls3 = divxsamp;
-	const int ls4 = divysamp;
-	const int li0 = get_local_id(0);
-	const int li1 = get_local_id(1);
-	const int li234 = get_local_id(2);
-	const int li2 = li234 / (ls3*ls4);
-	const int li234leftover = li234 % (ls3*ls4);
-	const int li3 = li234leftover / ls4;
-	const int li4 = li234leftover % ls4;
-	const int ls = ls0 * ls1 * ls2 * ls3 * ls4;
-	float xdiv = divxlow + divxstep*ls4;
-	float ydiv = divylow + divystep*ls3;
+	int idx;
 
 	/* Calculate fractional coordinates in fs/ss */
-	fs = convert_float(get_global_id(0)) / convert_float(sampling);
-	ss = convert_float(get_global_id(1)) / convert_float(sampling);
+	fs = convert_float(get_global_id(0));
+	ss = convert_float(get_global_id(1));
 
 	/* Get the scattering vector */
-	q = get_q(fs, ss, res, clen, k, &ttv,
-	          corner_x, corner_y, fsx, fsy, ssx, ssy, xdiv, ydiv);
+	q = get_q(fs, ss, res, clen, k, &tt,
+	          corner_x, corner_y, fsx, fsy, ssx, ssy);
 
 	/* Calculate the diffraction */
 	f_lattice = lattice_factor(cell, q, func_a, func_b, func_c);
 	I_molecule = molecule_factor(intensities, flags, cell, q);
 	I_lattice = pow(f_lattice, 2.0f);
 
-	/* Write the value to local memory */
-	intensity = I_molecule * I_lattice;
-	tmp[li0 + ls0*li1 + ls0*ls1*li2 + ls0*ls1*ls2*li3
-	        + ls0*ls1*ls2*ls3*li4] = intensity;
-
-	/* Memory fence */
-	barrier(CLK_LOCAL_MEM_FENCE);
-
-	/* Leader thread sums the values */
-	if ( li0 + li1 + li2 + li3 + li4 == 0 ) {
-
-		int i;
-		float sum = 0.0;
-		float val;
-		int idx;
-
-		idx = convert_int_rtz(fs) + w*convert_int_rtz(ss);
-
-		for ( i=0; i<ls; i++ ) sum += tmp[i];
-
-		val = sum / convert_float(ls);
-		diff[idx] = val;
-
-		/* Leader thread also records the 2theta value */
-		tt[idx] = ttv;
-
-	}
+	/* Write the value to memory */
+	idx = convert_int_rtz(fs) + w*convert_int_rtz(ss);
+	diff[idx] = I_molecule * I_lattice;
+	ttp[idx] = tt;
 }

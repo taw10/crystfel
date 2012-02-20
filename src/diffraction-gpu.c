@@ -34,9 +34,6 @@
 #include "pattern_sim.h"
 
 
-#define SAMPLING (4)
-#define BWSAMPLING (10)
-#define DIVSAMPLING (1)
 #define SINC_LUT_ELEMENTS (4096)
 
 
@@ -160,18 +157,12 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-	float klow, khigh;
 	int i;
 	cl_float16 cell;
 	cl_int4 ncells;
-	const int sampling = SAMPLING;
-	cl_float bwstep;
 	int n_inf = 0;
 	int n_neg = 0;
-	cl_float divxlow, divxstep;
-	cl_float divylow, divystep;
 	int n_nan = 0;
-	int sprod;
 
 	if ( gctx == NULL ) {
 		ERROR("GPU setup failed.\n");
@@ -183,17 +174,6 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	cell.s[3] = bx;  cell.s[4] = by;  cell.s[5] = bz;
 	cell.s[6] = cx;  cell.s[7] = cy;  cell.s[8] = cz;
 
-	/* Calculate wavelength */
-	klow = 1.0/(image->lambda*(1.0 + image->beam->bandwidth/2.0));
-	khigh = 1.0/(image->lambda*(1.0 - image->beam->bandwidth/2.0));
-	bwstep = (khigh-klow) / BWSAMPLING;
-
-	/* Calculate divergence stuff */
-	divxlow = -image->beam->divergence/2.0;
-	divylow = -image->beam->divergence/2.0;
-	divxstep = image->beam->divergence / DIVSAMPLING;
-	divystep = image->beam->divergence / DIVSAMPLING;
-
 	ncells.s[0] = na;
 	ncells.s[1] = nb;
 	ncells.s[2] = nc;
@@ -204,33 +184,17 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	check_sinc_lut(gctx, nb);
 	check_sinc_lut(gctx, nc);
 
-	if ( set_arg_float(gctx, 2, klow) ) return;
+	if ( set_arg_float(gctx, 2, 1.0/image->lambda) ) return;
 	if ( set_arg_mem(gctx, 9, gctx->intensities) ) return;
-	if ( set_arg_int(gctx, 12, sampling) ) return;
-	if ( set_arg_float(gctx, 14, bwstep) ) return;
-	if ( set_arg_mem(gctx, 15, gctx->sinc_luts[na-1]) ) return;
-	if ( set_arg_mem(gctx, 16, gctx->sinc_luts[nb-1]) ) return;
-	if ( set_arg_mem(gctx, 17, gctx->sinc_luts[nc-1]) ) return;
-	if ( set_arg_mem(gctx, 18, gctx->flags) ) return;
-	if ( set_arg_float(gctx, 23, divxlow) ) return;
-	if ( set_arg_float(gctx, 24, divxstep) ) return;
-	if ( set_arg_int(gctx, 25, DIVSAMPLING) ) return;
-	if ( set_arg_float(gctx, 26, divylow) ) return;
-	if ( set_arg_float(gctx, 27, divystep) ) return;
-	if ( set_arg_int(gctx, 28, DIVSAMPLING) ) return;
+	if ( set_arg_mem(gctx, 10, gctx->sinc_luts[na-1]) ) return;
+	if ( set_arg_mem(gctx, 11, gctx->sinc_luts[nb-1]) ) return;
+	if ( set_arg_mem(gctx, 12, gctx->sinc_luts[nc-1]) ) return;
+	if ( set_arg_mem(gctx, 13, gctx->flags) ) return;
 
 	/* Unit cell */
 	err = clSetKernelArg(gctx->kern, 8, sizeof(cl_float16), &cell);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set unit cell: %s\n", clError(err));
-		return;
-	}
-
-	/* Local memory for reduction */
-	sprod = BWSAMPLING*SAMPLING*SAMPLING*DIVSAMPLING*DIVSAMPLING;
-	err = clSetKernelArg(gctx->kern, 13, sprod*sizeof(cl_float), NULL);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set local memory: %s\n", clError(err));
 		return;
 	}
 
@@ -241,9 +205,8 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	/* Iterate over panels */
 	for ( i=0; i<image->det->n_panels; i++ ) {
 
-		size_t dims[3];
-		size_t ldims[3] = {SAMPLING, SAMPLING,
-		                   BWSAMPLING * DIVSAMPLING * DIVSAMPLING};
+		size_t dims[2];
+		size_t ldims[2] = {1, 1};
 		struct panel *p;
 		cl_mem tt;
 		size_t tt_size;
@@ -282,18 +245,15 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		if ( set_arg_float(gctx, 5, p->cny) ) return;
 		if ( set_arg_float(gctx, 6, p->res) ) return;
 		if ( set_arg_float(gctx, 7, p->clen) ) return;
-		if ( set_arg_int(gctx, 10, p->min_fs) ) return;
-		if ( set_arg_int(gctx, 11, p->min_ss) ) return;
-		if ( set_arg_float(gctx, 19, p->fsx) ) return;
-		if ( set_arg_float(gctx, 20, p->fsy) ) return;
-		if ( set_arg_float(gctx, 21, p->ssx) ) return;
-		if ( set_arg_float(gctx, 22, p->ssy) ) return;
+		if ( set_arg_float(gctx, 14, p->fsx) ) return;
+		if ( set_arg_float(gctx, 15, p->fsy) ) return;
+		if ( set_arg_float(gctx, 16, p->ssx) ) return;
+		if ( set_arg_float(gctx, 17, p->ssy) ) return;
 
-		dims[0] = pan_width * SAMPLING;
-		dims[1] = pan_height * SAMPLING;
-		dims[2] = BWSAMPLING * DIVSAMPLING * DIVSAMPLING;
+		dims[0] = pan_width;
+		dims[1] = pan_height;
 
-		err = clEnqueueNDRangeKernel(gctx->cq, gctx->kern, 3, NULL,
+		err = clEnqueueNDRangeKernel(gctx->cq, gctx->kern, 2, NULL,
 		                             dims, ldims, 0, NULL, NULL);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't enqueue diffraction kernel: %s\n",
