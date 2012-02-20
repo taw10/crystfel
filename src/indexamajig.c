@@ -75,6 +75,7 @@ struct static_index_args
 	IndexingPrivate **ipriv;
 	int peaks;                /* Peak detection method */
 	int cellr;
+	float tols[4];
 	struct beam_params *beam;
 	const char *element;
 	const char *hdf5_peak_path;
@@ -171,6 +172,9 @@ static void show_help(const char *s)
 "                           compare : match by at most changing the order of\n"
 "                                     the indices.\n"
 "                           compare_ab : compare 'a' and 'b' lengths only.\n"
+"     --tolerance=<a,b,c,angl>  Set the tolerance for a,b,c axis (in %%)\n"
+"                                and for the angles (in deg) when reducing\n"
+"                                or comparing (default is 5%% and 1.5deg)\n"
 "     --filter-cm          Perform common-mode noise subtraction on images\n"
 "                           before proceeding.  Intensities will be extracted\n"
 "                           from the image as it is after this processing.\n"
@@ -354,7 +358,7 @@ static void process_image(void *pp, int cookie)
 	image.profile_radius = 0.0001e9;
 	index_pattern(&image, cell, indm, pargs->static_args.cellr,
 		      config_verbose, pargs->static_args.ipriv,
-		      pargs->static_args.config_insane);
+		      pargs->static_args.config_insane, pargs->static_args.tols);
 
 	if ( image.indexed_cell != NULL ) {
 
@@ -555,6 +559,8 @@ int main(int argc, char *argv[])
 	char *prefix = NULL;
 	char *speaks = NULL;
 	char *scellr = NULL;
+	char *toler = NULL;
+	float tols[4] = {5.0, 5.0, 5.0, 1.5}; /* for a,b,c in % and for the angles in deg */
 	int cellr;
 	int peaks;
 	int nthreads = 1;
@@ -587,6 +593,7 @@ int main(int argc, char *argv[])
 		{"no-index",           0, &config_noindex,     1},
 		{"peaks",              1, NULL,                2},
 		{"cell-reduction",     1, NULL,                3},
+		{"tolerance",          1, NULL,               13},
 		{"indexing",           1, NULL,               'z'},
 		{"geometry",           1, NULL,               'g'},
 		{"beam",               1, NULL,               'b'},
@@ -674,6 +681,10 @@ int main(int argc, char *argv[])
 
 		case 3 :
 			scellr = strdup(optarg);
+			break;
+
+		case 13 :
+			toler = strdup(optarg);
 			break;
 
 		case 4 :
@@ -868,6 +879,15 @@ int main(int argc, char *argv[])
 	/* No indexing -> no reduction */
 	if ( indm == NULL ) reduction_needs_cell = 0;
 
+	if ( toler != NULL ) {
+		int ttt;
+		ttt = sscanf(toler, "%f,%f,%f,%f", &tols[0], &tols[1], &tols[2], &tols[3] );
+		if ( ttt != 4 ) {
+			ERROR("Invalid parameters for '--tolerance'\n");
+			return 1;
+		}
+	}
+
 	if ( geometry == NULL ) {
 		ERROR("You need to specify a geometry file with --geometry\n");
 		return 1;
@@ -944,6 +964,10 @@ int main(int argc, char *argv[])
 	qargs.static_args.config_insane = config_insane;
 	qargs.static_args.config_bgsub = config_bgsub;
 	qargs.static_args.cellr = cellr;
+	qargs.static_args.tols[0] = tols[0];
+	qargs.static_args.tols[1] = tols[1];
+	qargs.static_args.tols[2] = tols[2];
+	qargs.static_args.tols[3] = tols[3];
 	qargs.static_args.threshold = threshold;
 	qargs.static_args.min_gradient = min_gradient;
 	qargs.static_args.min_snr = min_snr;

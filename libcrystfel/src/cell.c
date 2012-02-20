@@ -669,7 +669,7 @@ static int same_vector(struct cvec a, struct cvec b)
 
 /* Attempt to make 'cell' fit into 'template' somehow */
 UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
-                     int reduce)
+                     float *tols, int reduce)
 {
 	signed int n1l, n2l, n3l;
 	double asx, asy, asz;
@@ -683,8 +683,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
 	float best_fom = +999999999.9; /* Large number.. */
 	int ncand[3] = {0,0,0};
 	signed int ilow, ihigh;
-	float ltl = 5.0;     /* percent */
-	float angtol = deg2rad(1.5);
+	float angtol = deg2rad(tols[3]);
 
 	if ( cell_get_reciprocal(template, &asx, &asy, &asz,
 	                         &bsx, &bsy, &bsz,
@@ -753,7 +752,7 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
 			/* Test modulus for agreement with moduli of template */
 			for ( i=0; i<3; i++ ) {
 
-				if ( !within_tolerance(lengths[i], tlen, ltl) )
+				if ( !within_tolerance(lengths[i], tlen, tols[i]) )
 					continue;
 
 				cand[i][ncand[i]].vec.u = tx;
