@@ -752,8 +752,11 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
 			/* Test modulus for agreement with moduli of template */
 			for ( i=0; i<3; i++ ) {
 
-				if ( !within_tolerance(lengths[i], tlen, tols[i]) )
+				if ( !within_tolerance(lengths[i], tlen,
+				                       tols[i]) )
+				{
 					continue;
+				}
 
 				cand[i][ncand[i]].vec.u = tx;
 				cand[i][ncand[i]].vec.v = ty;

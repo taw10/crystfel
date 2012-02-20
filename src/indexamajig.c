@@ -560,7 +560,7 @@ int main(int argc, char *argv[])
 	char *speaks = NULL;
 	char *scellr = NULL;
 	char *toler = NULL;
-	float tols[4] = {5.0, 5.0, 5.0, 1.5}; /* for a,b,c in % and for the angles in deg */
+	float tols[4] = {5.0, 5.0, 5.0, 1.5}; /* a,b,c,angles (%,%,%,deg) */
 	int cellr;
 	int peaks;
 	int nthreads = 1;
@@ -881,7 +881,8 @@ int main(int argc, char *argv[])
 
 	if ( toler != NULL ) {
 		int ttt;
-		ttt = sscanf(toler, "%f,%f,%f,%f", &tols[0], &tols[1], &tols[2], &tols[3] );
+		ttt = sscanf(toler, "%f,%f,%f,%f",
+		             &tols[0], &tols[1], &tols[2], &tols[3] );
 		if ( ttt != 4 ) {
 			ERROR("Invalid parameters for '--tolerance'\n");
 			return 1;

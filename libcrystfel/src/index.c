@@ -191,10 +191,12 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 				new_cell = cell_new_from_cell(cand);
 				break;
 			case CELLR_REDUCE :
-				new_cell = match_cell(cand, cell, verbose, ltl, 1);
+				new_cell = match_cell(cand, cell, verbose,
+				                      ltl, 1);
 				break;
 			case CELLR_COMPARE :
-				new_cell = match_cell(cand, cell, verbose, ltl, 0);
+				new_cell = match_cell(cand, cell, verbose,
+				                      ltl, 0);
 				break;
 			case CELLR_COMPARE_AB :
 				new_cell = match_cell_ab(cand, cell);
