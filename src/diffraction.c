@@ -373,7 +373,6 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 
 		int idx;
 		double k;
-		double intensity;
 		double f_lattice, I_lattice;
 		double I_molecule;
 		struct rvec q;
