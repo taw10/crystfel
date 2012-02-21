@@ -38,9 +38,8 @@ host_triplet = @host@
 bin_PROGRAMS = src/pattern_sim$(EXEEXT) src/process_hkl$(EXEEXT) \
 	src/get_hkl$(EXEEXT) src/indexamajig$(EXEEXT) \
 	src/compare_hkl$(EXEEXT) src/powder_plot$(EXEEXT) \
-	src/calibrate_detector$(EXEEXT) src/partialator$(EXEEXT) \
-	src/check_hkl$(EXEEXT) src/partial_sim$(EXEEXT) \
-	$(am__EXEEXT_1) $(am__EXEEXT_2)
+	src/partialator$(EXEEXT) src/check_hkl$(EXEEXT) \
+	src/partial_sim$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 noinst_PROGRAMS = tests/list_check$(EXEEXT) \
 	tests/integration_check$(EXEEXT) \
 	tests/pr_gradient_check$(EXEEXT) tests/symmetry_check$(EXEEXT) \
@@ -93,19 +92,14 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" \
 @HAVE_OPENCL_TRUE@am__EXEEXT_3 = tests/gpu_sim_check$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
-am_src_calibrate_detector_OBJECTS = src/calibrate_detector.$(OBJEXT)
-src_calibrate_detector_OBJECTS = $(am_src_calibrate_detector_OBJECTS)
-src_calibrate_detector_LDADD = $(LDADD)
-src_calibrate_detector_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
-	$(top_builddir)/libcrystfel/libcrystfel.la
-AM_V_lt = $(am__v_lt_$(V))
-am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
-am__v_lt_0 = --silent
 am_src_check_hkl_OBJECTS = src/check_hkl.$(OBJEXT)
 src_check_hkl_OBJECTS = $(am_src_check_hkl_OBJECTS)
 src_check_hkl_LDADD = $(LDADD)
 src_check_hkl_DEPENDENCIES = $(top_builddir)/lib/libgnu.a \
 	$(top_builddir)/libcrystfel/libcrystfel.la
+AM_V_lt = $(am__v_lt_$(V))
+am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
+am__v_lt_0 = --silent
 am_src_compare_hkl_OBJECTS = src/compare_hkl.$(OBJEXT)
 src_compare_hkl_OBJECTS = $(am_src_compare_hkl_OBJECTS)
 src_compare_hkl_LDADD = $(LDADD)
@@ -233,18 +227,16 @@ am__v_CCLD_0 = @echo "  CCLD  " $@;
 AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN   " $@;
-SOURCES = $(src_calibrate_detector_SOURCES) $(src_check_hkl_SOURCES) \
-	$(src_compare_hkl_SOURCES) $(src_get_hkl_SOURCES) \
-	$(src_hdfsee_SOURCES) $(src_indexamajig_SOURCES) \
-	$(src_partial_sim_SOURCES) $(src_partialator_SOURCES) \
-	$(src_pattern_sim_SOURCES) $(src_powder_plot_SOURCES) \
-	$(src_process_hkl_SOURCES) $(src_render_hkl_SOURCES) \
-	$(tests_gpu_sim_check_SOURCES) \
+SOURCES = $(src_check_hkl_SOURCES) $(src_compare_hkl_SOURCES) \
+	$(src_get_hkl_SOURCES) $(src_hdfsee_SOURCES) \
+	$(src_indexamajig_SOURCES) $(src_partial_sim_SOURCES) \
+	$(src_partialator_SOURCES) $(src_pattern_sim_SOURCES) \
+	$(src_powder_plot_SOURCES) $(src_process_hkl_SOURCES) \
+	$(src_render_hkl_SOURCES) $(tests_gpu_sim_check_SOURCES) \
 	$(tests_integration_check_SOURCES) $(tests_list_check_SOURCES) \
 	$(tests_pr_gradient_check_SOURCES) \
 	$(tests_symmetry_check_SOURCES)
-DIST_SOURCES = $(src_calibrate_detector_SOURCES) \
-	$(src_check_hkl_SOURCES) $(src_compare_hkl_SOURCES) \
+DIST_SOURCES = $(src_check_hkl_SOURCES) $(src_compare_hkl_SOURCES) \
 	$(src_get_hkl_SOURCES) $(am__src_hdfsee_SOURCES_DIST) \
 	$(src_indexamajig_SOURCES) $(src_partial_sim_SOURCES) \
 	$(am__src_partialator_SOURCES_DIST) \
@@ -602,7 +594,6 @@ src_compare_hkl_SOURCES = src/compare_hkl.c
 src_check_hkl_SOURCES = src/check_hkl.c
 src_powder_plot_SOURCES = src/powder_plot.c
 @HAVE_CAIRO_TRUE@src_render_hkl_SOURCES = src/render_hkl.c
-src_calibrate_detector_SOURCES = src/calibrate_detector.c
 src_partialator_SOURCES = src/partialator.c src/post-refinement.c \
 	src/hrs-scaling.c $(am__append_6)
 tests_list_check_SOURCES = tests/list_check.c
@@ -752,11 +743,6 @@ src/$(am__dirstamp):
 src/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) src/$(DEPDIR)
 	@: > src/$(DEPDIR)/$(am__dirstamp)
-src/calibrate_detector.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/calibrate_detector$(EXEEXT): $(src_calibrate_detector_OBJECTS) $(src_calibrate_detector_DEPENDENCIES) src/$(am__dirstamp)
-	@rm -f src/calibrate_detector$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(src_calibrate_detector_OBJECTS) $(src_calibrate_detector_LDADD) $(LIBS)
 src/check_hkl.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/check_hkl$(EXEEXT): $(src_check_hkl_OBJECTS) $(src_check_hkl_DEPENDENCIES) src/$(am__dirstamp)
@@ -862,7 +848,6 @@ tests/symmetry_check$(EXEEXT): $(tests_symmetry_check_OBJECTS) $(tests_symmetry_
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f src/calibrate_detector.$(OBJEXT)
 	-rm -f src/check_hkl.$(OBJEXT)
 	-rm -f src/cl-utils.$(OBJEXT)
 	-rm -f src/compare_hkl.$(OBJEXT)
@@ -891,7 +876,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/calibrate_detector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/check_hkl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cl-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/compare_hkl.Po@am__quote@

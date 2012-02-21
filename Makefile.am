@@ -3,7 +3,7 @@ SUBDIRS = lib doc/reference libcrystfel
 ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
-               src/compare_hkl src/powder_plot src/calibrate_detector \
+               src/compare_hkl src/powder_plot \
                src/partialator src/check_hkl src/partial_sim
 
 noinst_PROGRAMS = tests/list_check tests/integration_check \
@@ -64,8 +64,6 @@ src_powder_plot_SOURCES = src/powder_plot.c
 if HAVE_CAIRO
 src_render_hkl_SOURCES = src/render_hkl.c
 endif
-
-src_calibrate_detector_SOURCES = src/calibrate_detector.c
 
 src_partialator_SOURCES = src/partialator.c src/post-refinement.c \
                           src/hrs-scaling.c
