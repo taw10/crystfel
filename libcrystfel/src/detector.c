@@ -943,6 +943,10 @@ void free_detector_geometry(struct detector *det)
 	}
 	free(det->rigid_groups);
 
+	for ( i=0; i<det->n_panels; i++ ) {
+		free(det->panels[i].clen_from);
+	}
+
 	free(det->panels);
 	free(det->bad);
 	free(det->mask);

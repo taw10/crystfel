@@ -1013,7 +1013,11 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	pmax = max_feature_resolution(image->features);
 
 	/* Sanity check */
-	if ( pmax < 1e4 ) return;
+	if ( pmax < 1e4 ) {
+		fftw_free(fft_in);
+		fftw_free(fft_out);
+		return;
+	}
 
 	s = search_all_axes(cell, pmax);
 	find_candidates(p, image->features, pmax, fft_in, fft_out, s,
@@ -1111,6 +1115,8 @@ void reax_cleanup(IndexingPrivate *pp)
 
 	assert(pp->indm == INDEXING_REAX);
 	p = (struct reax_private *)pp;
+
+	free(p->directions);
 
 	fftw_destroy_plan(p->plan);
 	fftw_free(p->fft_in);
