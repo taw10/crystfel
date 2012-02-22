@@ -143,7 +143,7 @@ struct imagefeature *image_get_feature(ImageFeatureList *flist, int idx)
 {
 	/* Sanity check */
 	if ( flist == NULL ) return NULL;
-	if ( idx > flist->n_features ) return NULL;
+	if ( idx >= flist->n_features ) return NULL;
 
 	if ( flist->features[idx].valid == 0 ) return NULL;
 
