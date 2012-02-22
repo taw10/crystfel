@@ -1,1 +1,14 @@
-Thomas White <taw@physics.org>, CFEL, DESY
+* Thomas White <taw@physics.org>
+  Lead author, architecture, "vision" and so on.
+
+* Richard Kirian <rkirian@asu.edu>
+  MOSFLM auto-indexing, bug fixing.
+
+* Andrew Aquila <andrew.aquila@cfel.de>
+  powder_plot
+
+* Andrew Martin <andrew.martin@desy.de>
+  Fixes to peak integration and Monte Carlo merging
+
+* Lorenzo Galli <lorenzo.galli@desy.de>
+  Improvements to process_hkl

@@ -4,7 +4,7 @@
  * Stream tools
  *
  * Copyright © 2012 Thomas White <taw@physics.org>
- * Copyright © 2012 Rick Kirian <rkirian@asu.edu>
+ * Copyright © 2012 Richard Kirian <rkirian@asu.edu>
  *
  * This file is part of CrystFEL.
  *
