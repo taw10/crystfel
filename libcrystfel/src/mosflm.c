@@ -135,14 +135,15 @@ static int read_newmat(const char *filename, struct image *image)
 	fclose(fh);
 
 	/* MOSFLM "A" matrix is multiplied by lambda, so fix this */
-	c = 1/image->lambda;
+	c = 1.0/image->lambda;
 
 	image->candidate_cells[0] = cell_new();
 
+	/* No idea why the cell comes out in this strange coordinate system */
 	cell_set_reciprocal(image->candidate_cells[0],
-                            asz*c, -asx*c, asy*c,
-                            bsz*c, -bsx*c, bsy*c,
-                            csz*c, -csx*c, csy*c);
+                            asy*c, -asz*c, asx*c,
+                            bsy*c, -bsz*c, bsx*c,
+                            csy*c, -csz*c, csx*c);
 
         image->ncells = 1;
 
@@ -155,7 +156,7 @@ static void write_spt(struct image *image, const char *filename)
 {
 	FILE *fh;
 	int i;
-	double fclen = 67.8;  /* fake camera length in mm */
+	double fclen = 67.8e-3;  /* fake camera length in m */
 	int n;
 
 	fh = fopen(filename, "w");
@@ -187,10 +188,10 @@ static void write_spt(struct image *image, const char *filename)
 		ry = (ys + p->cny) / p->res;
 
 		x = rx*fclen/p->clen;
-		y = ry*fclen/p->clen;  /* Peak positions in mm */
+		y = ry*fclen/p->clen;  /* Peak positions in m */
 
 		fprintf(fh, "%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
-		        x, y, 0.0, 0.0, 1000.0, 10.0);
+		        x*1e3, y*1e3, 0.0, 0.0, 1000.0, 10.0);
 
 	}
 
