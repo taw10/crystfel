@@ -441,8 +441,8 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref,
 		}
 
 		max_corr = iterate_scale(images, n, reference, n_threads);
-		STATUS("Scaling iteration %2i: max correction = %5.2f\n",
-		       i+1, max_corr);
+		//STATUS("Scaling iteration %2i: max correction = %5.2f\n",
+		//       i+1, max_corr);
 
 		/* No reference -> generate list for next iteration */
 		if ( gref == NULL ) {
