@@ -1,7 +1,15 @@
 CrystFEL - Crystallography with a FEL
 -------------------------------------
 
-Thomas White <taw@physics.org>, CFEL, DESY Hamburg
+Copyright © 2012 Thomas White <taw@physics.org>
+Copyright © 2012 Andrew Aquila <andrew.aquila@cfel.de>
+Copyright © 2012 Andrew Martin <andrew.martin@desy.de>
+Copyright © 2012 Lorenzo Galli <lorenzo.galli@desy.de>
+Copyright © 2012 Richard Kirian <rkirian@asu.edu>
+Please read the AUTHORS file for a full list of contributions and contributors.
+See the COPYING file for licence conditions.  Summary: GPLv3+.
+
+Thank you for reading the documentation. :-)
 
 CrystFEL is a suite of programs for processing (and simulating) Bragg
 diffraction data acquired with a free electron laser.  Some of the particular
