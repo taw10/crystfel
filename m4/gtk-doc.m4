@@ -15,10 +15,9 @@ AC_DEFUN([GTK_DOC_CHECK],
   AC_PATH_PROG([GTKDOC_MKPDF],[gtkdoc-mkpdf])
 
   dnl for overriding the documentation installation directory
-  dnl Modified by TAW to customise default path
   AC_ARG_WITH([html-dir],
     AS_HELP_STRING([--with-html-dir=PATH], [path to installed docs]),,
-    [with_html_dir='${docdir}/reference'])
+    [with_html_dir='${datadir}/gtk-doc/html'])
   HTML_DIR="$with_html_dir"
   AC_SUBST([HTML_DIR])
 

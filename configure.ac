@@ -305,6 +305,8 @@ AC_SUBST([LIBCRYSTFEL_LIBS])
 GTK_DOC_CHECK([1.11],[--flavour no-tmpl])
 AC_CONFIG_MACRO_DIR(m4)
 
+HTML_DIR=${docdir}/reference
+
 
 AC_CONFIG_FILES(Makefile lib/Makefile doc/reference/Makefile libcrystfel/Makefile)
 AC_OUTPUT
