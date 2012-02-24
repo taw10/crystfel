@@ -296,7 +296,6 @@ int main(int argc, char *argv[])
 	image.bw = 0.01;
 	image.m = 0.0;
 	image.profile_radius = 0.005e9;
-	image.i0_available = 0;
 	image.filename = malloc(256);
 
 	cell = cell_new_from_parameters(10.0e-9, 10.0e-9, 10.0e-9,

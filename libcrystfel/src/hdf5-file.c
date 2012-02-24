@@ -459,15 +459,6 @@ int hdf5_read(struct hdfile *f, struct image *image, int satcorr)
 	/* Read wavelength from file */
 	image->lambda = get_wavelength(f);
 
-	image->i0 = get_i0(f);
-	if ( image->i0 < 0.0 ) {
-		ERROR("Couldn't read incident intensity - using 1.0.\n");
-		image->i0 = 1.0;
-		image->i0_available = 0;
-	} else {
-		image->i0_available = 1;
-	}
-
 	if ( satcorr ) debodge_saturation(f, image);
 
 	return 0;

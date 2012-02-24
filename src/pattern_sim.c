@@ -555,8 +555,6 @@ int main(int argc, char *argv[])
 	image.filename = NULL;
 	image.features = NULL;
 	image.flags = NULL;
-	image.i0 = 1.0;
-	image.i0_available = 1;
 
 	powder = calloc(image.width*image.height, sizeof(*powder));
 

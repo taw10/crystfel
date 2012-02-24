@@ -493,7 +493,6 @@ int main(int argc, char *argv[])
 	image.div = beam->divergence;
 	image.bw = beam->bandwidth;
 	image.profile_radius = 0.003e9;
-	image.i0_available = 0;
 	image.filename = malloc(256);
 	image.copyme = NULL;
 

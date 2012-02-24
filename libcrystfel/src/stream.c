@@ -245,12 +245,6 @@ void write_chunk(FILE *ofh, struct image *i, struct hdfile *hdfile, int f)
 
 	}
 
-	if ( i->i0_available ) {
-		fprintf(ofh, "I0 = %7.5f (arbitrary units)\n", i->i0);
-	} else {
-		fprintf(ofh, "I0 = invalid\n");
-	}
-
 	fprintf(ofh, "photon_energy_eV = %f\n",
 	        J_to_eV(ph_lambda_to_en(i->lambda)));
 
@@ -341,8 +335,6 @@ int read_chunk(FILE *fh, struct image *image)
 
 	if ( find_start_of_chunk(fh) ) return 1;
 
-	image->i0_available = 0;
-	image->i0 = 1.0;
 	image->lambda = -1.0;
 	image->features = NULL;
 	image->reflections = NULL;
@@ -388,11 +380,6 @@ int read_chunk(FILE *fh, struct image *image)
 				}
 
 			}
-		}
-
-		if ( strncmp(line, "I0 = ", 5) == 0 ) {
-			image->i0 = atof(line+5);
-			image->i0_available = 1;
 		}
 
 		if ( sscanf(line, "astar = %f %f %f", &u, &v, &w) == 3 ) {
