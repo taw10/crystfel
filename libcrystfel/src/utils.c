@@ -492,10 +492,8 @@ char *safe_basename(const char *in)
 }
 
 
-#ifdef GSL_FUDGE
 /* Force the linker to bring in CBLAS to make GSL happy */
 void utils_fudge_gslcblas()
 {
         STATUS("%p\n", cblas_sgemm);
 }
-#endif
