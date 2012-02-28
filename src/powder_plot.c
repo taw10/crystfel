@@ -94,8 +94,8 @@ static int find_q_bin_index(double q, struct histogram_info *info,
 	int mid;
 	int min = 0;
 	int max = info->histsize-1;
-	if (q < hist[min].q_max) {return min;}
-	if (q > hist[max].q_min) {return max;}
+	if (q < hist[min].q_max) return min;
+	if (q > hist[max].q_min) return max;
 	do {
 		mid = (min + max) / 2;
 		if (q < hist[mid].q_min) {
@@ -124,9 +124,8 @@ static int add_peak_to_histogram(double fs, double ss, double intensity,
 	q = modulus(r.u, r.v, r.w);
 
 	/* Ignore q value if outside of range */
-	if ( (q<info->q_min) || (q>info->q_max) ) {
-		return 1;
-	}
+	if ( (q<info->q_min) || (q>info->q_max) ) return 1;
+
 	i = find_q_bin_index(q, info, hist);
 
 	/* See Knuth TAOCP vol 2, 3rd ed, pg 232 for running variance */
@@ -149,9 +148,8 @@ static int add_d_to_histogram(double q, double intensity,
 	int i;
 
 	/* Ignore q value if outside of range */
-	if ( (q<info->q_min) || (q>info->q_max) ) {
-		return 1;
-	}
+	if ( (q<info->q_min) || (q>info->q_max) ) return 1;
+
 	i = find_q_bin_index(q, info, hist);
 
 	delta = intensity - hist[i].mean;
