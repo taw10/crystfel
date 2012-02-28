@@ -8,82 +8,87 @@
 
 .TH POWDER\_PLOT 1
 .SH NAME
-powder\_plot \- 1D powder pattern generating program
+powder\_plot \- generate 1D powder patterns
 .SH SYNOPSIS
 .PP
 .B powder\_plot
--i mypatterns.stream -o mydata.dat [options]
+-i mypatterns.{stream,hkl,h5} -o mydata.dat [options]
 
 .SH DESCRIPTION
 
-This program takes as input the data stream from "indexamajig" or an hkl file,
-or an HDF5 file.  It sums the many individual intensities, Bragg peaks or pixel
-locations in the HDF5 file, together to form a 1D powder histogram.
+This program takes as input the data stream from "indexamajig", an hkl file
+or an HDF5 file.  It sums the many individual intensities, Bragg peaks or pixels
+in the HDF5 file together to form a 1D powder histogram.
 
 The output of powder_plot consists of a three line header followed by a tab
 delimited list of 6 values:
 
- 1/d of the histogram bin where d is the Bragg law d spacing in meters
+ 1/d of the histogram bin, where d is the Bragg law d spacing in meters
  the total number of peaks (N)
  the total intensity in the N peaks
  the mean intensity of the N peaks
- the 1 sigma (standard deviation) of the distribution
- the 1 sigma (standard deviation) of the mean of the data
+ the standard deviation of the distribution
+ the standard deviation of the mean of the data
 
-Please note that the sigma of the mean is not the sigma of the distribution,
-however they are related by the sqrt(N).
-
-Typical usage is of the form:
-
-$ powder_plot -i mypatterns.stream -o mydata.dat [options]
-
-The options include added geometry, beam, PDB files or symmetry elements.  The
-program will prompt you as needed depending on the file type and data types
-selected.
+The sigma of the mean is not the same as the sigma of the intensities
+themselves.  The former quantity measures how accurately the mean intensity has
+been determined, whereas the latter quantity measures the spread of the
+intensities.
 
 .SH HISTOGRAM OPTIONS
 
-You can choose to set the min and maximum 1/d value [units are inverse meters]
-with: --min=<number> and  --max=<number> The default value is to use the
-entire detector setup in the .geom file (loaded with the -g flag).
+You can set the mininum and maximum 1/d values, in units of inverse meters,
+with the options --min=<n> and  --max=<n>.  The default behaviour is to use the
+entire detector extent from the geometry description file,loaded with the -g flag).
 
-You can also adjust the number of histogram bins with:
---bins=<intiger>
+You can also adjust the number of histogram bins with the option --bins=<n>,
+where n is an integer.
 
-Scaling can be set to produce linearly, quadratically or cubicly spaced 1/d
-values using: --spacing=<type>  possible types are:
+Scaling can be set to produce linearly, quadratically or cubically spaced 1/d
+values using --spacing=<type>.  Possible types of spacing are:
  linear      : linear (default)
  wilson      : even spacing in Wilson plots (quadratic)
  volume      : constant volume (cubic)
 
 .SH DATA TYPE OPTIONS
 
-Powder_plot can accept .stream, .hkl, or HDF5 files as input parameters.  For
-the stream many choices exist for assembling the powder these can be accessed
-using the --data=<type> flag.  Possible flags are:
- reflection  : uses peak positions from indexed reflection
- hkl         : uses the hkl list from indexed reflections (requires pdb
-                      file)
- d           : uses the 1/d list from indexed reflections (default)
- peaks       : uses all peaks found from peak search
- h5          : all points in HDF5, excluding bad regions
+When taking input from stream, the d-spacing for a particular intensity can be
+generated in a variety of different ways.  You can choose which one with
+--data=<type>.  Possible types are:
 
-Reflection differs from hkl or d as each crystal may index with a slightly
-different unit cell size.  The peaks option uses the peak lists and includes
-and peaks (regardless if they indexed).
+ reflection  : use peak positions from indexed reflections
+ hkl         : use the Miller indicies from indexed reflections, combined
+                 with a unit cell from PDB file provided with -p.
+ d           : use the 1/d values in the stream for indexed reflections,
+                 which were calculated at the time of indexing using the
+                 unit cell for the individual crystal.  The individual
+                 unit cell should be close to the actual cell, meaning
+                 that this option should give a result close to "hkl".
+ peaks       : use peak positions from peak search
+ h5          : use all pixels in the HDF5 file, excluding bad regions
 
-A few other implemented flags to give better control are:
- --no-sat-corr          Don't correct values of saturated peaks using a table included in the HDF5 file.
- --only-indexed Use with -data=peaks or h5 if you want to use the peak list of only indexed patterns. (Useful for seeing changes from patterns that do not index.)
- --no-d-scaling Use with .hkl files if you want to not scale the powder by d^2
- --ring-corr            Use if you want to scale the powder plot to correct for the fractional area sampled of the powder ring. (Useful for detectors with gaps.)
- --use-redundancy       Use with .hkl files if you want to use the number of measurements and not the number of symmetrical equivalent reflections as the number of time a reflection occurs in the powder
+The default is "--data=d".
 
-.SH NOTE ON SUMMING H5 FILES
+.SH OPTIONS FOR MORE CONTROL
 
-Powder_plot does not sum a stack of HDF5 files from a list of HDF5 files.  This
-task is already accomplished with sum_stack.  The output HDF5 file of sum_stack
-can then be used as the input to powder_plot.  This will produce the goal of
-summing a list of HDF5 files into a powder.  Also powder_plot can sum HDF5 files
-if they are located in a stream file.  This is useful with the --only-indexed,
-to compare the powder from all the data to the power from only indexed patterns.
+ --no-sat-corr
+Don't correct values of saturated peaks using the table included in the HDF5 file.
+See the help for indexamajig for more information.
+
+ --only-indexed
+Use with --data=peaks or h5 if you want to use the peak list of only indexed patterns.
+This is useful for finding differences between patterns which could be indexed and
+those which could not.
+
+ --no-d-scaling
+Do not scale the intensities in the powder plot by d^2.  This should be used when
+creating a powder plot from a reflection list.
+
+ --ring-corr
+Do not correct for the fractional area sampled of the powder ring.  This might be
+useful for detectors with gaps.
+
+ --use-redundancy
+Divide intensities by the number of measurements (the redundancy column in the
+reflection list), and not the number of symmetrical equivalent reflections as the
+number of times a reflection occurs in the powder.
