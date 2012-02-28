@@ -125,8 +125,10 @@ static void calculate_partials(RefList *partial, double osf,
 		} else {
 			If = get_intensity(rfull);
 			if ( random_intensities ) {
+				lock_reflection(rfull);
 				int red = get_redundancy(rfull);
 				set_redundancy(rfull, red+1);
+				unlock_reflection(rfull);
 			}
 		}
 
