@@ -247,9 +247,9 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 			/* Noise
 			 * noise and noise_meansq are both in photons (^2) */
-			noise += val / image->beam->adu_per_photon;
+			noise += val / aduph;
 			noise_counts++;
-			noise_meansq += pow(val, 2.0);
+			noise_meansq += pow(val/aduph, 2.0);
 
 		} else if ( fs*fs + ss*ss < lim_sq ) {
 
