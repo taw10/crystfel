@@ -12,27 +12,30 @@ powder_plot \- generate 1D powder patterns
 .SH SYNOPSIS
 .PP
 .B powder_plot
--i <input.{hkl,h5,stream}> -o <output.dat>
-[--min=<1/d> --max=<1/d>]
+\fB-i\fR \fIinput.hkl\fR | \fB-i\fR \fIinput.h5\fR | \fB-i\fR \fIinput.stream\fR
+\fB-o\fR \fIoutput.dat\fR
+[\fB--min=\fR\fI1/d\fR \fB--max=\fR\fI1/d\fR]
+[\fIoptions\fR\] \fB...\fR
 
 .PP
-.B powder_plot
--i file.hkl [..] [--use-redundancy] [--no-d-scaling]
+.BR powder_plot
+\fB-i\fR \fIfile.hkl\fR [\fIoptions\fR\] \fB...\fR [\fB--use-redundancy\fR] [\fB--no-d-scaling\fR]
 
 .PP
-.B powder\_plot
--i file.h5 [..] -g <geometry.geom> -b <beam.beam> [--no-sat-corr]
-[--ring-corr]
+.BR powder_plot
+\fB-i\fR \fIfile.h5\fR [\fIoptions\fR\] \fB...\fR
+\fB-g\fR \fIgeometry.geom\fR
+\fB-b\fR \fIbeam.beam\fR [\fB--no-sat-corr\fR] [\fB--ring-corr\fR]
 
 .PP
-.B powder_plot
--i file.stream [..] --data=<type>
-[-g <geometry.geom>] [-b <beam.beam>] [--no-sat-corr] [--only-indexed]
-[--use-redundancy] [--ring-corr] [--no-d-scaling]
+.BR powder_plot
+\fB-i\fR \fIfile.stream\fR [\fIoptions\fR\] \fB...\fR --data=\fItype\fR
+[-g \fIgeometry.geom\fR] [-b \fIbeam.beam\fR] [\fB--no-sat-corr\fR] [\fB--only-indexed\fR]
+[\fB--use-redundancy\fR] [\fB--ring-corr\fR] [\fB--no-d-scaling\fR]
 
 .PP
-.B powder_plot
---help
+.BR powder_plot
+\fB--help\fR
 
 .SH DESCRIPTION
 
@@ -126,9 +129,12 @@ This page was written by Andrew Aquila and Thomas White.
 .SH REPORTING BUGS
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
-.SH COPYRIGHT
+.SH COPYRIGHT AND DISCLAIMER
 Copyright © 2012 Andrew Aquila <andrew.aquila@cfel.de>
+.PD 0
+.LP
 Copyright © 2012 Thomas White <taw@physics.org>
+.PD
 .P
 powder_plot is part of CrystFEL.
 .P
@@ -141,6 +147,6 @@ You should have received a copy of the GNU General Public License along with Cry
 .SH SEE ALSO
 .BR indexamajig (1),
 .BR process_hkl (1),
-.BR check_hkl (1)
-and
+.BR check_hkl (1),
+.BR crystfel_geometry (5),
 .BR render_hkl (1) .

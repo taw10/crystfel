@@ -1,0 +1,113 @@
+.\"
+.\" CrystFEL main man page
+.\"
+.\" Copyright © 2012 Thomas White <taw@physics.org>
+.\"
+.\" Part of CrystFEL - crystallography with a FEL
+.\"
+
+.TH CRYSTFEL 7
+.SH NAME
+CrystFEL - data processing for FEL crystallography
+
+.SH DESCRIPTION
+CrystFEL is a suite of programs for processing Bragg diffraction data acquired with a free electron laser in a "serial" manner.  Some of the particular characteristics of such data which call for a specialised software suite are:
+
+.RS
+Each crystal is used for only one exposure, and there is no oscillation, rotation nor a large bandwidth or divergence.  Therefore, many or all reflections are partially integrated.
+.PP
+The crystals might be very small and the illumination highly coherent, leading to significant Fourier truncation effects on the detector.
+.PP
+Many patterns, numbering tens of thousands or more, are required, so high throughput automated processing is import.
+.PP
+The crystal orientations in each pattern are random and uncorrelated, which leads to special considerations during scaling and merging.
+.RE
+
+CrystFEL includes programs for simulating and processing patterns subject to the
+above characteristics.  Four programs form the core of CrystFEL.  They are:
+
+.IP \fBindexamajig\fR
+Batch indexing, integration and data reduction program, which produces a "stream" containing the indexing and integration results for each diffraction pattern.
+
+.IP \fBpattern_sim\fR
+A diffraction pattern simulation tool.
+
+.IP \fBprocess_hkl\fR
+A tool merging intensities from many patterns into a single reflection list, via the Monte Carlo method.
+
+.IP \fBpartialator\fR
+Full scaling and post-refinement process for accurate merging of data and outlier rejection.
+
+.PP
+In addition, there is also:
+
+.IP \fBget_hkl\fR
+A tool for manipulating reflection lists, such as performing symmetry expansion.
+
+.IP \fBpowder_plot\fR
+A tool for the calculation of one-dimensional "powder" traces.
+
+.IP \fBcompare_hkl\fR and \fBcheck_hkl\fR
+Tools for calculating figures of merit, such as completeness and R-factors.
+
+.IP \fBpartial_sim\fB
+A tool for calculating partial reflection intensities, perhaps for testing the convergence of Monte Carlo merging.
+
+.IP \fBhdfsee\fR
+A simple viewer for images stored in HDF5 format.
+
+.IP \fBrender_hkl\fR
+A tool for rendering slices of reciprocal space in two dimensions.
+
+.PP
+There is also a folder full of scripts for achieving many related tasks.
+
+.PP
+CrystFEL mostly works with images stored in HDF5 format, unit cell data in PDB
+format, and reflection lists in plain text format (i.e. not MTZ).  There are
+scripts for converting both ways between plain text reflection lists and MTZ
+files.
+
+.PP
+Please see the individual manual pages for the CrystFEL programs for detailed information.
+
+.SH AUTHOR
+This page was written by Thomas White.
+
+.SH REPORTING BUGS
+Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+
+.SH COPYRIGHT AND DISCLAIMER
+.PD 0
+Copyright © 2012 Thomas White <taw@physics.org>
+.LP
+Copyright © 2012 Richard Kirian <rkirian@asu.edu>
+.LP
+Copyright © 2012 Andrew Aquila <andrew.aquila@cfel.de>
+.LP
+Copyright © 2012 Andrew Martin <andrew.martin@desy.de>
+.LP
+Copyright © 2012 Lorenzo Galli <lorenzo.galli@desy.de>
+.PD
+.PP
+Please read the AUTHORS file in the CrystFEL source code distribution for a full list of contributions and contributors.
+.P
+CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+.P
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+.P
+You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+.SH SEE ALSO
+.BR indexamajig (1),
+.BR process_hkl (1),
+.BR partialator (1),
+.BR pattern_sim (1),
+.BR partial_sim (1),
+.BR compare_hkl (1),
+.BR check_hkl (1),
+.BR render_hkl (1),
+.BR powder_plot (1),
+.BR hdfsee (1),
+.BR get_hkl (1),
+.BR crystfel_geometry (1).

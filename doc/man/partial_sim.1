@@ -11,33 +11,21 @@
 partial_sim \- calculate partial reflections
 .SH SYNOPSIS
 .PP
-.B partial_sim
--o simulated.stream -g geometry.geom -b xrays.beam -p unitcell.pdb
-.BR [options]
+.BR partial_sim
+\fB-o\fR \fIsimulated.stream\fR
+\fB-g\fR \fIgeometry.geom\fR
+\fB-b\fR \fIxrays.beam\fR
+\fB-p\fR \fIunitcell.pdb\fR
+[\fIoptions\fR] \fB...\fR
 
-.B partial_sim
---help
+.BR partial_sim
+\fB--help\fR
 
 .SH DESCRIPTION
 partial_sim calculates the intensities of idealised partial reflections from crystals in random orientations, which is useful for testing the convergence of Monte Carlo integration or scaling/post-refinement techniques.
 
 .P
-You need to provide a CrystFEL geometry file (with
-.BR --geometry=my.geom
-or
-.BR "-g my.geom" ),
-a beam description file (with
-.BR --beam=my.beam
-or
-.BR "-b my.beam" ),
-a PDB file containing at least a CRYST1 line specifying the unit cell to use for the simulation (with
-.BR --pdb=my.pdb
-or
-.BR "-p my.pdb" ),
-and an output filename with
-.BR --output=my.stream
-or
-.BR "-o my.stream" .
+You need to provide a CrystFEL geometry file (with \fB--geometry=\fR\fImy.geom\fR or \fB-g\fR \fImy.geom\fR), a beam description file (with \fB--beam=\fR\fImy.beam\fR or \fB-b\fR \fImy.beam\fR), a PDB file containing at least a CRYST1 line specifying the unit cell to use for the simulation (with \fB--pdb=\fR\fImy.pdb\fR or \fB-p\fR \fImy.pdb\fR), and an output filename with \fB--output=\fR\fImy.stream\fR or \fB-o\fR \fImy.stream\fR.
 
 For each randomly generated orientation, partial_sim calculates which reflections would appear on the detector with the specified beam parameters.  It calculates the partiality for each reflection and multiplies it by the fully integrated intensity to produce a partial intensity.  The fully integrated intensities can be taken from a file you provide (see below), otherwise they will be randomly generated (by taking the absolute value of a Gaussian random number, mean zero and standard deviation 1000).  All the partial intensities for the orientation are multiplied by an overall scaling factor, which is randomly generated with a Gaussian distribution with mean 1 and standard deviation 0.3.  The partial intensities are written to the output stream, and the process repeated for as many different orientations as you ask for (see below, default: 2).
 
@@ -49,43 +37,39 @@ for information about CrystFEL geometry description files.
 .SH OPTIONS
 .PD 0
 .B
-.IP "-i <file.hkl>"
+.IP "-i \fIfile.hkl\fR"
 .B
-.IP --input=<file.hkl>
+.IP --input=\fIfile.hkl\fR
 .PD
-Take the fully integrated reflection intensities from <file.hkl>, instead of generating them randomly.
+Take the fully integrated reflection intensities from \fIfile.hkl\fR, instead of generating them randomly.
 
 .B
-.IP -n <n>
+.IP -n \fIn\fR
 Specify the number of different orientations to simulate.  Default: 2.
 
 .PD 0
 .B
-.IP "-r <random.hkl>"
+.IP "-r \fIrandom.hkl\fR"
 .B
-.IP --save-random=<random.hkl>
+.IP --save-random=\fIrandom.hkl\fR
 .PD
 If you did not provide your own fully integrated reflection intensities, they will be generated randomly for you.  Use this option to save the random intensities for future comparisons.
 
 .PD 0
 .B
-.IP "-y <pointgroup>"
+.IP "\fB-y\fR \fIpointgroup\fR"
 .B
-.IP --symmetry=<pointgroup>
+.IP \fB--symmetry=\fR\fIpointgroup\fR
 .PD
-Specifies the symmetry of the input reflection list (with
-.B -i ,
-or the symmetry of the randomly generated intensities.
+When combined with with \fB-i\fR, specifies the symmetry of the input reflection list.  Otherwise, specifies the symmetry of the randomly generated intensities.
 
 .PD 0
 .B
-.IP "-c <val>"
+.IP "\fB-c\fR \fIval\fR"
 .B
-.IP "--cnoise=<val>
+.IP "\fB--cnoise=\fR\fIval\fR
 .PD
-Add random values with a flat distribution to the components of the reciprocal lattice vectors written to the stream, simulating indexing errors.  The maximum value that will be added is +/-
-.BR <val>
-percent.
+Add random values with a flat distribution to the components of the reciprocal lattice vectors written to the stream, simulating indexing errors.  The maximum value that will be added is +/- \fIval\fR percent.
 
 .SH AUTHOR
 This page was written by Thomas White.
@@ -93,7 +77,7 @@ This page was written by Thomas White.
 .SH REPORTING BUGS
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
-.SH COPYRIGHT
+.SH COPYRIGHT AND DISCLAIMER
 Copyright © 2012 Thomas White <taw@physics.org>
 .P
 partial_sim is part of CrystFEL.
@@ -107,6 +91,5 @@ You should have received a copy of the GNU General Public License along with Cry
 .SH SEE ALSO
 .BR process_hkl (1),
 .BR partialator (1),
-.BR pattern_sim (1)
-and
-.BR crystfel_geometry (1).
+.BR pattern_sim (1),
+.BR crystfel_geometry (5).

@@ -2,10 +2,11 @@ CrystFEL - Crystallography with a FEL
 -------------------------------------
 
 Copyright © 2012 Thomas White <taw@physics.org>
+Copyright © 2012 Richard Kirian <rkirian@asu.edu>
 Copyright © 2012 Andrew Aquila <andrew.aquila@cfel.de>
 Copyright © 2012 Andrew Martin <andrew.martin@desy.de>
 Copyright © 2012 Lorenzo Galli <lorenzo.galli@desy.de>
-Copyright © 2012 Richard Kirian <rkirian@asu.edu>
+
 Please read the AUTHORS file for a full list of contributions and contributors.
 See the COPYING file for licence conditions.  Summary: GPLv3+.
 
@@ -59,8 +60,6 @@ In addition, there is also:
 	               scaling factor) between two lists of reflections.
 
 	- check_hkl, for determining things like completeness.
-
-	- calibrate_detector, for refining detector geometry.
 
 	- partial_sim, for calculating partial reflection intensities.
 

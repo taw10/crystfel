@@ -8,10 +8,94 @@
 
 .TH HDFSEE 1
 .SH NAME
-hdfsee \- HDF5 image viewer
+hdfsee - HDF5 image viewer
 .SH SYNOPSIS
 .PP
-.B hdfsee
-[options]
+.B hdfsee \fIimage.h5\fR [\fIoptions\fR] \fB...\fR
 
 .SH DESCRIPTION
+hdfsee is a simple image viewer for images stored in HDF5 files.
+
+.SH OPTIONS
+.PD 0
+.IP "\fB-p\fR \fIfilename\fR"
+.IP \fB--peak-overlay=\fR\fIfilename\fR
+.PD
+Peak locations will be read from \fIfilename\fR and displayed on the image.  The peak location file can use the format used in CrystFEL stream files for lists of integrated reflections, i.e. including the Miller indices.  If a line cannot be read using this format, it will be assumed to be a simple two-column list of fast scan and slow scan coordinates.  Any text beyond the second column will be ignored.  If the line cannot be read in either format, it will be ignored.
+
+.PD 0
+.IP \fB--ring-size=\fR\fIradius\fR
+.PD
+Set the radius of the rings used for displaying peak locations.  The radius is given in pixels on the screen, i.e. the circles are drawn \fIafter\fR binning the image data.
+
+.PD 0
+.IP "\fB-b\fR \fIb\fR"
+.IP \fB--binning=\fR\fIb\fR
+.PD
+Show the image after binning down by a factor of \fIb\fR.
+
+.PD 0
+.IP "\fB-e\fR \fIpath\fR"
+.IP \fB--image=\fR\fIpath\fR
+.PD
+Get the image data to display from \fIpath\fR inside the HDF5 file.  For example: \fI/data/rawdata\fR.
+
+.PD 0
+.IP "\fB-g\fR \fIfilename\fR"
+.IP \fB--geometry=\fR\fIfilename\fR
+.PD
+Display the image data according to the geometry description in \fIfilename\fR.  Out of plane components of the geometry will be ignored.  This is required, in addition to a wavelength in the HDF5 file (as /LCLS/photon_wavelength_nm or /LCLS/photon_wavelength_A), to display resolution rings.
+
+.PD 0
+.IP "\fB-i\fR \fIn\fR"
+.IP \fB--int-boost=\fR\fIn\fR
+.PD
+Multiply the intensity in the image by \fIn\fR before displaying.  With n=1, the top of the colour scale will represent the maximum pixel intensity found in the image.
+
+.PD 0
+.IP \fB--show-rings\fR
+.PD
+Show resolution rings on the image at 1 Angstrom intervals.
+
+.PD 0
+.IP \fB--simple-rings=\fR\fIradii\fR
+.PD
+Show rings on the image with the radii specified.  \fIradii\fR can be a comma-deliminated list of several values, for example \fI100,200\fR.  The radii have units of pixels on the detector before bininng.
+
+.PD 0
+.IP \fB-c\fR \fIscale\fR
+.IP \fB--colscale=\fR\fIscale\fR
+.PD
+Use \fIscale\fR as the colour scale.  Possible scales are: \fBmono\fR, \fBinvmono\fR and \fBcolour\fR.
+
+.PD 0
+.IP \fB--filter-cm\fR
+.PD
+Attempt to subtract common-mode noise from the image.
+
+.PD 0
+.IP \fB--filter-noise\fR
+.PD
+Apply a noise filter to the image with checks 3x3 squares of pixels and sets all of them to zero if any of the nine pixels have a negative value.
+
+.SH AUTHOR
+This page was written by Thomas White.
+
+.SH REPORTING BUGS
+Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+
+.SH COPYRIGHT
+Copyright © 2012 Thomas White <taw@physics.org>
+.P
+partial_sim is part of CrystFEL.
+.P
+CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+.P
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+.P
+You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+.SH SEE ALSO
+.BR pattern_sim (1)
+and
+.BR crystfel_geometry (5).
