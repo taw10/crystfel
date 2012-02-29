@@ -6,22 +6,39 @@
 .\" Part of CrystFEL - crystallography with a FEL
 .\"
 
-.TH POWDER\_PLOT 1
+.TH POWDER_PLOT 1
 .SH NAME
-powder\_plot \- generate 1D powder patterns
+powder_plot \- generate 1D powder patterns
 .SH SYNOPSIS
 .PP
+.B powder_plot
+-i <input.{hkl,h5,stream}> -o <output.dat>
+[--min=<1/d> --max=<1/d>]
+
+.PP
+.B powder_plot
+-i file.hkl [..] [--use-redundancy] [--no-d-scaling]
+
+.PP
 .B powder\_plot
--i mypatterns.{stream,hkl,h5} -o mydata.dat [options]
+-i file.h5 [..] -g <geometry.geom> -b <beam.beam> [--no-sat-corr]
+[--ring-corr]
+
+.PP
+.B powder_plot
+-i file.stream [..] --data=<type>
+[-g <geometry.geom>] [-b <beam.beam>] [--no-sat-corr] [--only-indexed]
+[--use-redundancy] [--ring-corr] [--no-d-scaling]
+
+.PP
+.B powder_plot
+--help
 
 .SH DESCRIPTION
 
-This program takes as input the data stream from "indexamajig", an hkl file
-or an HDF5 file.  It sums the many individual intensities, Bragg peaks or pixels
-in the HDF5 file together to form a 1D powder histogram.
+powder_plot calculates one dimensional powder traces by summing many individual intensities, Bragg peaks or pixels.  Its input can come from a CrystFEL stream (such as that written by "indexamajig"), an reflection list in CrystFEL format (".hkl" format), or an HDF5 file.
 
-The output of powder_plot consists of a three line header followed by a tab
-delimited list of 6 values:
+The output of powder_plot consists of a three line header followed by a tab-delimited list of six values:
 
  1/d of the histogram bin, where d is the Bragg law d spacing in meters
  the total number of peaks (N)
@@ -35,22 +52,7 @@ themselves.  The former quantity measures how accurately the mean intensity has
 been determined, whereas the latter quantity measures the spread of the
 intensities.
 
-.SH HISTOGRAM OPTIONS
-
-You can set the mininum and maximum 1/d values, in units of inverse meters,
-with the options --min=<n> and  --max=<n>.  The default behaviour is to use the
-entire detector extent from the geometry description file,loaded with the -g flag).
-
-You can also adjust the number of histogram bins with the option --bins=<n>,
-where n is an integer.
-
-Scaling can be set to produce linearly, quadratically or cubically spaced 1/d
-values using --spacing=<type>.  Possible types of spacing are:
- linear      : linear (default)
- wilson      : even spacing in Wilson plots (quadratic)
- volume      : constant volume (cubic)
-
-.SH DATA TYPE OPTIONS
+.SH DATA TYPE OPTIONS WHEN READING FROM A STREAM
 
 When taking input from stream, the d-spacing for a particular intensity can be
 generated in a variety of different ways.  You can choose which one with
@@ -67,28 +69,78 @@ generated in a variety of different ways.  You can choose which one with
  peaks       : use peak positions from peak search
  h5          : use all pixels in the HDF5 file, excluding bad regions
 
-The default is "--data=d".
+The default is
+.BR --data=d .
+
+
+.SH HISTOGRAM OPTIONS
+
+You can set the mininum and maximum 1/d values, in units of inverse meters,
+with the options
+.B --min=<n>
+and
+.B --max=<n> .
+When taking input from peak positions, The default behaviour is to use the entire detector extent from the geometry description file, which you  with the -g flag.
+
+You can also adjust the number of histogram bins with the option --bins=<n>,
+where n is an integer.
+
+Scaling can be set to produce linearly, quadratically or cubically spaced 1/d
+values using --spacing=<type>.  Possible types of spacing are:
+ linear      : linear (default)
+ wilson      : even spacing in Wilson plots (quadratic)
+ volume      : constant volume (cubic)
 
 .SH OPTIONS FOR MORE CONTROL
 
- --no-sat-corr
+.B
+.IP --no-sat-corr
 Don't correct values of saturated peaks using the table included in the HDF5 file.
 See the help for indexamajig for more information.
 
- --only-indexed
+.B
+.IP --only-indexed
 Use with --data=peaks or h5 if you want to use the peak list of only indexed patterns.
 This is useful for finding differences between patterns which could be indexed and
 those which could not.
 
- --no-d-scaling
+.B
+.IP --no-d-scaling
 Do not scale the intensities in the powder plot by d^2.  This should be used when
 creating a powder plot from a reflection list.
 
- --ring-corr
+.B
+.IP --ring-corr
 Do not correct for the fractional area sampled of the powder ring.  This might be
 useful for detectors with gaps.
 
- --use-redundancy
+.B
+.IP --use-redundancy
 Divide intensities by the number of measurements (the redundancy column in the
 reflection list), and not the number of symmetrical equivalent reflections as the
 number of times a reflection occurs in the powder.
+
+.SH AUTHOR
+This page was written by Andrew Aquila and Thomas White.
+
+.SH REPORTING BUGS
+Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+
+.SH COPYRIGHT
+Copyright © 2012 Andrew Aquila <andrew.aquila@cfel.de>
+Copyright © 2012 Thomas White <taw@physics.org>
+.P
+powder_plot is part of CrystFEL.
+.P
+CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+.P
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+.P
+You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+.SH SEE ALSO
+.BR indexamajig (1),
+.BR process_hkl (1),
+.BR check_hkl (1)
+and
+.BR render_hkl (1) .
