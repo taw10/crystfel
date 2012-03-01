@@ -59,40 +59,52 @@ intensities.
 
 When taking input from stream, the d-spacing for a particular intensity can be
 generated in a variety of different ways.  You can choose which one with
---data=<type>.  Possible types are:
-
- reflection  : use peak positions from indexed reflections
- hkl         : use the Miller indicies from indexed reflections, combined
-                 with a unit cell from PDB file provided with -p.
- d           : use the 1/d values in the stream for indexed reflections,
-                 which were calculated at the time of indexing using the
-                 unit cell for the individual crystal.  The individual
-                 unit cell should be close to the actual cell, meaning
-                 that this option should give a result close to "hkl".
- peaks       : use peak positions from peak search
- h5          : use all pixels in the HDF5 file, excluding bad regions
-
-The default is
-.BR --data=d .
+\fB--data=\fR\fItype\fR.  Possibilities for \fItype\fR are:
+.RS
+.IP \fBreflection\fR
+.PD
+Use peak positions from indexed reflections
+.IP \fBhkl\fR
+.PD
+Use the Miller indicies from indexed reflections, combined with a unit cell from PDB file provided with -p.
+.IP \fBd\fR
+.PD
+Use the 1/d values in the stream for indexed reflections, which were calculated at the time of indexing using the unit cell for the individual crystal.  The individual unit cell should be close to the actual cell, meaning that this option should give a result close to "hkl".
+.IP \fBpeaks\fR
+.PD
+Use peak positions from peak search
+.IP \fBh5\fR
+.PD
+Use all pixels in the HDF5 file, excluding bad regions
+.RE
+.PP
+The default is \fB--data=d\fR.
 
 
 .SH HISTOGRAM OPTIONS
 
 You can set the mininum and maximum 1/d values, in units of inverse meters,
-with the options
-.B --min=<n>
-and
-.B --max=<n> .
-When taking input from peak positions, The default behaviour is to use the entire detector extent from the geometry description file, which you  with the -g flag.
+with the options \fB-min=\fR\fIn\fR and \fB--max=\fR\fIn\fR.
+When taking input from peak positions, The default behaviour is to use the entire detector extent from the geometry description file, which you  with the \fB-g\fR flag.
 
 You can also adjust the number of histogram bins with the option --bins=<n>,
 where n is an integer.
 
 Scaling can be set to produce linearly, quadratically or cubically spaced 1/d
-values using --spacing=<type>.  Possible types of spacing are:
- linear      : linear (default)
- wilson      : even spacing in Wilson plots (quadratic)
- volume      : constant volume (cubic)
+values using \fB--spacing=\fR\fItype\fR.  Possibilities for \fItype\fR are:
+.RS
+.IP \fBlinear\fR
+.PD
+The resolution shells will have equal widths in terms of 1/d.
+.IP \fBwilson\fR
+.PD
+The resolution shells will be quadratically spaced, giving even spacing in a plot against 1/d^2 (a Wilson plot).
+.IP \fBvolume\fR
+.PD
+The resolution shells will all have equal volumes in reciprocal space.
+.RE
+.PP
+The default is \fB--spacing=linear\fR.
 
 .SH OPTIONS FOR MORE CONTROL
 
