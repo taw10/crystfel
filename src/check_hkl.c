@@ -53,9 +53,9 @@ static void show_help(const char *s)
 "\n"
 "  -h, --help                 Display this help message.\n"
 "  -y, --symmetry=<sym>       The symmetry of the input file.\n"
-"  -p, --pdb=<filename>       PDB file to use (default: molecule.pdb).\n"
-"      --rmin=<res>           Fix lower resolution limit for --shells (m^-1).\n"
-"      --rmax=<res>           Fix upper resolution limit for --shells (m^-1).\n"
+"  -p, --pdb=<filename>       PDB file to use.\n"
+"      --rmin=<res>           Fix lower resolution limit for resolution shells. (m^-1).\n"
+"      --rmax=<res>           Fix upper resolution limit for resolution shells. (m^-1).\n"
 "      --sigma-cutoff=<n>     Discard reflections with I/sigma(I) < n.\n"
 "\n");
 }
@@ -90,11 +90,6 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
-
-	if ( cell == NULL ) {
-		ERROR("Need the unit cell to plot resolution shells.\n");
-		return;
-	}
 
 	fh = fopen("shells.dat", "w");
 	if ( fh == NULL ) {
@@ -382,7 +377,9 @@ int main(int argc, char *argv[])
 	file = strdup(argv[optind++]);
 
 	if ( pdb == NULL ) {
-		pdb = strdup("molecule.pdb");
+		ERROR("You need to provide a PDB file containing"
+		       " the unit cell.\n");
+		return 1;
 	}
 	cell = load_cell_from_pdb(pdb);
 	free(pdb);

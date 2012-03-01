@@ -59,7 +59,7 @@ static void show_help(const char *s)
 "                           Default: 1,0,0.\n"
 "  -r, --right=<h>,<k>,<l> Indices for the axis in the 'right' (roughly)\n"
 "                           direction.  Default: 0,1,0.\n"
-"  -o, --output=<filename> Output filename (not for POV-ray).  Default: za.pdf\n"
+"  -o, --output=<filename> Output filename.  Default: za.pdf\n"
 "      --boost=<val>       Squash colour scale by <val>.\n"
 "  -p, --pdb=<file>        PDB file from which to get the unit cell.\n"
 "  -y, --symmetry=<sym>    Expand reflections according to point group <sym>.\n"
@@ -80,6 +80,8 @@ static void show_help(const char *s)
 "                                     reflection (no 'epsilon' correction).\n"
 "\n"
 "      --colour-key        Draw (only) the key for the current colour scale.\n"
+"                           The key will be written to 'key.pdf' in the\n"
+"                           current directory.\n"
 "\n"
 "  -h, --help              Display this help message.\n"
 );

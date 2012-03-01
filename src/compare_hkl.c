@@ -76,7 +76,7 @@ static void show_help(const char *s)
 "  -h, --help                 Display this help message.\n"
 "  -o, --ratio=<filename>     Specify output filename for ratios.\n"
 "  -y, --symmetry=<sym>       The symmetry of both the input files.\n"
-"  -p, --pdb=<filename>       PDB file to use (default: molecule.pdb).\n"
+"  -p, --pdb=<filename>       PDB file to use.\n"
 "      --shells=<FoM>         Plot this figure of merit in resolution shells.\n"
 "                              Choose from: 'Rsplit', 'R1f' and 'R1i'.\n"
 "      --rmin=<res>           Fix lower resolution limit for --shells (m^-1).\n"

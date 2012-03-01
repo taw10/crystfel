@@ -15,6 +15,8 @@ hdfsee - HDF5 image viewer
 
 .SH DESCRIPTION
 hdfsee is a simple image viewer for images stored in HDF5 files.
+.PP
+Most of the options that can be set on the command line can be changed via the user interface once the program is running.  The command line options are to help when running hdfsee from a script.
 
 .SH OPTIONS
 .PD 0
@@ -38,7 +40,7 @@ Show the image after binning down by a factor of \fIb\fR.
 .IP "\fB-e\fR \fIpath\fR"
 .IP \fB--image=\fR\fIpath\fR
 .PD
-Get the image data to display from \fIpath\fR inside the HDF5 file.  For example: \fI/data/rawdata\fR.
+Get the image data to display from \fIpath\fR inside the HDF5 file.  For example: \fI/data/rawdata\fR.  If this is not specified, the default behaviour is to display the first two-dimensional dataset with both dimensions greater than 64.
 
 .PD 0
 .IP "\fB-g\fR \fIfilename\fR"
@@ -87,7 +89,7 @@ Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>
 .SH COPYRIGHT
 Copyright © 2012 Thomas White <taw@physics.org>
 .P
-partial_sim is part of CrystFEL.
+hdfsee is part of CrystFEL.
 .P
 CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 .P

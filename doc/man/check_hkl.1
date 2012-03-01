@@ -11,7 +11,61 @@
 check_hkl \- calculate figures of merit for reflection data
 .SH SYNOPSIS
 .PP
-.B check_hkl
-[options]
+\fBcheck_hkl\fR [\fIoptions\fR] \fB...\fR \fIfile.hkl\fR \fB-p\fR \fIcell.pdb\fR
 
 .SH DESCRIPTION
+check_hkl calculates figures of merit for reflection data, such as completeness and average signal strengths, in resolution shells.  check_hkl accepts a single reflection list in CrystFEL's format, and you must also provide a unit cell (in a PDB file).
+
+.SH OPTIONS
+.PD 0
+.IP \fB-p\fR \fIunitcell.pdb\fR
+.IP \fB--pdb=\fR\fIunitcell.pdb\fR
+.PD
+Specify the name of the PDB file containing at least a CRYST1 line describing the unit cell.
+
+.PD 0
+.IP \fB-y\fR \fpointgroup\fR
+.IP \fB--symmetry=\fR\fIpointgroup\fR
+.PD
+Specify the symmetry of the reflections.
+
+.PD 0
+.IP \fB--sigma-cutoff=\fR\fIn\fR
+.PD
+Discard reflections with I/sigma(I) < \fIn\fR.  Default: -infinity (no cutoff).
+
+.PD 0
+.IP \fB-p\fR \fIunitcell.pdb\fR
+.IP \fB--pdb=\fR\fIunitcell.pdb\fR
+.PD
+Specify the name of the PDB file containing at least a CRYST1 line describing the unit cell.
+
+.PD 0
+.IP \fB--rmin=\fR\fI1/d\fR
+.PD
+Fix the lower resolution limit for the resolutions shells, as 1/d in m^-1.
+
+.PD 0
+.IP \fB--rmax=\fR\fI1/d\fR
+.PD
+Fix the upper resolution limit for the resolutions shells, as 1/d in m^-1.
+
+.SH AUTHOR
+This page was written by Thomas White.
+
+.SH REPORTING BUGS
+Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+
+.SH COPYRIGHT
+Copyright © 2012 Thomas White <taw@physics.org>
+.P
+check_hkl is part of CrystFEL.
+.P
+CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+.P
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+.P
+You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+.SH SEE ALSO
+.BR compare_hkl (1)
