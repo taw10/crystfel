@@ -113,7 +113,7 @@ static double max_value(RefList *list, int wght, const SymOpList *sym)
 		special_position(sym, m, h, k, l);
 		n = num_equivs(sym, m);
 
-		switch ( wght) {
+		switch ( wght ) {
 		case WGHT_I :
 			val = get_intensity(refl);
 			break;
