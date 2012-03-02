@@ -31,7 +31,8 @@
 
 #include "utils.h"
 
-/* A 3D vector in reciprocal space */
+/* A 3D vector in reciprocal space.
+ * Note: Heavily abused to serve as a real space vector as well */
 struct rvec
 {
 	double   u;
