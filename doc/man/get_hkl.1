@@ -11,7 +11,80 @@
 get_hkl \- manipulate reflection data
 .SH SYNOPSIS
 .PP
-.B get_hkl
-[options]
+\fBget_hkl -i\fR \fIreflections.hkl\fR \fB-y\fR \fIpointgroup\fR [\fBoptions\fR] \fB...\fR \fB-o\fR \fIoutput.hkl\fR
+.PP
+\fBget_hkl --help\fR
 
 .SH DESCRIPTION
+get_hkl performs various manipulations on reflection lists.  Possible manipulations include: expanding to a point group of lower symmetry, 'twinning' to a point group of higher symmetry, adding noise, restricting the list to contain only reflections included in another 'template' list, and some less common miscellaneous manipulations.
+.PP
+The input filename should be specified with \fB-i\fR \fIfilename\fR or \fB--input=\fR\fIfilename\fR.  The output filename should be specified with \fB-o\fR \fIfilename\fR or \fB--output=\fR\fIfilename\fR.  The symmetry of the input reflection list should be specified with \fB-y\fR \fIpointgroup\fR or \fB--symmetry=\fR\fIpointgroup\fR.  If you give the filename of a PDB file containing a CRYST1 line with unit cell parameters (using \fB-p\fR \fIfilename\fR or \fB--pdb=\fR\fIfilename\fR), the output reflection list will contain 1/d values.  Beyond these parameters, you can choose one of the manipulations described below.  The behaviour if multiple manipulations are requested is deliberately left undefined: it's much clearer to perform multiple manipulations in explicit separate steps.
+
+.SH EXPANDING REFLECTIONS INTO A POINT GROUP OF LOWER SYMMETRY
+.PD 0
+.IP "\fB-e\fR \fIpointgroup\fR"
+.IP \fB--expand=\fR\fIpointgroup\fR
+.PD 1
+.PP
+The reflections will be expanded out, according to the symmetry of the input reflections, to fill the asymmetric unit of \fIpointgroup\fR.
+
+.SH REDUCING REFLECTIONS INTO A POINT GROUP OF HIGHER SYMMETRY
+.PD 0
+.IP "\fB-w\fR \fIpointgroup\fR"
+.IP \fB--twin=\fR\fIpointgroup\fR
+.PD 1
+.PP
+Reflections in the list which are equivalent according to \fIpointgroup\fR will have their intensities summed.  The output reflection list will contain the summed intensities in the asymmetric unit for \fIpointgroup\fR.  Reflections for which any of the 'twin mates' are missing will not be written out.
+
+.SH ADDING NOISE
+.PD 0
+.IP \fB--poisson\fR
+.IP \fB--noise\fR
+.PD 1
+.PP
+Add either 10% flat random noise (with \fB--noise\fR) or generate Poisson noise (with \fB--poisson\fR).  If Poisson noise is to be generated, the reflection intensities will be assumed to be measured in arbitrary units, and the conversion factor to photons will come from the adu_per_photon field of the beam description file provided with \fB-b\fR \fIfilename\fR or \fB--beam=\fR\fIfilename\fR.
+
+.SH REMOVING DUPLICATED REFLECTIONS
+.PD 0
+.IP \fB--trim-centrics\fR
+.PD 1
+.PP
+Reflections which are duplicated, according to the symmetry of the input reflection list, will be removed.  This is sometimes useful when importing data from other programs.
+
+.SH RESTRICTING REFLECTIONS ACCORDING TO A TEMPLATE
+.PD 0
+.IP "\fB-t\fR \fIfilename\fR"
+.IP \fB--template=\fR\fIfilename\fR
+.PD 1
+.PP
+Only reflections in the input list which also appear in \fIfilename\fR will be written to the output.
+
+.SH MULTIPLICITY
+.PD 0
+.IP \fB--multiplicity\fR
+.PD 1
+.PP
+The intensities of the reflections will be multiplied by their symmetric multiplicities according to the point group of the input list.
+
+.SH AUTHOR
+This page was written by Thomas White.
+
+.SH REPORTING BUGS
+Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+
+.SH COPYRIGHT AND DISCLAIMER
+Copyright © 2012 Thomas White <taw@physics.org>
+.P
+get_hkl is part of CrystFEL.
+.P
+CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+.P
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+.P
+You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+.SH SEE ALSO
+.BR crystfel (7),
+.BR check_hkl (1),
+.BR compare_hkl (1),
+.BR pattern_sim (1)

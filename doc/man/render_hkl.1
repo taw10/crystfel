@@ -20,26 +20,26 @@ render_hkl takes a set of reflection data and plots 2D central sections of the r
 
 .SH OPTIONS
 .PD 0
-.IP \fB-d\fR \fIh,k,l\fR
+.IP "\fB-d\fR \fIh,k,l\fR"
 .IP \fB--down=\fR\fIh,k,l\fR
 .PD
 Specify the indices for the downward direction of the resulting plot.  Default: \fB--down=1,0,0\fR.
 
 
 .PD 0
-.IP \fB-r\fR \fIh,k,l\fR
+.IP "\fB-r\fR \fIh,k,l\fR"
 .IP \fB--right=\fR\fIh,k,l\fR
 .PD
 Specify the indices for the 'right' direction of the resulting plot.  The direction will be approximately to the right, the exact direction depending on the unit cell.  Default: \fB--right=0,1,0\fR.
 
 .PD 0
-.IP \fB-o\fR \fIfilename\fR
+.IP "\fB-o\fR \fIfilename\fR"
 .IP \fB--output=\fR\fIfilename\fR
 .PD
 Write the output (in PDF format) to \fIfilename\fR.  Default: \fB--output=za.pdf\fR.
 
 .PD 0
-.IP \fB-p\fR \fIfilename\fR
+.IP "\fB-p\fR \fIfilename\fR"
 .IP \fB--pdb=\fR\fIfilenamefR
 .PD
 Get the unit cell parameters from the CRYST1 line contained in \fIfilename\fR.
@@ -50,19 +50,19 @@ Get the unit cell parameters from the CRYST1 line contained in \fIfilename\fR.
 Squash the colour scale by a factor of \fIn\fR.  When \fIn\fR=1, the top of the colour scale will represent the highest intensity found in the \fIdata set\fR (not the highest intensity found in the \fIprojection\fR).
 
 .PD 0
-.IP \fB-y\fR \fIpointgroup\fR
+.IP "\fB-y\fR \fIpointgroup\fR"
 .IP \fB--symmetry=\fR\fIpointgroup\fR
 .PD
 Specify the symmetry of the reflection list.
 
 .PD 0
-.IP \fB-c\fR \fIscale\fR
+.IP "\fB-c\fR \fIscale\fR"
 .IP \fB--colscale=\fR\fIscale\fR
 .PD
 Use \fIscale\fR as the colour scale.  Possible scales are: \fBmono\fR, \fBinvmono\fR and \fBcolour\fR.
 
 .PD 0
-.IP \fB-w\fR \fIweight\fR
+.IP "\fB-w\fR \fIweight\fR"
 .IP \fB--weighting=\fR\fIweight\fR
 .PD
 Colour the reciprocal lattice points according to \fIweight\fR.  Possibilities for \fIweight\fR are:
@@ -106,6 +106,6 @@ CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARR
 You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
 
 .SH SEE ALSO
-.BR check_hkl (1)
-and
+.BR crystfel (7),
+.BR check_hkl (1),
 .BR hdfsee (1)
