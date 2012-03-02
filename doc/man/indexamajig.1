@@ -343,11 +343,13 @@ At the moment, CrystFEL's core symmetry module only knows about one setting for 
 
 
 .SH BUGS
-
 Don't run more than one indexamajig jobs simultaneously in the same working
 directory - they'll overwrite each other's DirAx or MOSFLM files, causing subtle
 problems which can't easily be detected.
-
+.PP
+The way indexamajig calculates the intensities and errors of peaks sucks, for want of a better word.  In particular, I/sigma(I) is not accurately estimated and many of the options don't make sense.  Development of improved integration algorithms is in progress, so this issue will be addressed in a future version of CrystFEL.
+.PP
+ReAx indexing is experimental.  It works very nicely for some people, and crashes for others.  In a future version, it will be improved and fully supported.
 
 .SH AUTHOR
 This page was written by Thomas White.
@@ -368,6 +370,6 @@ You should have received a copy of the GNU General Public License along with Cry
 
 .SH SEE ALSO
 .BR crystfel (7),
-.BR check_hkl (1),
-.BR compare_hkl (1),
-.BR pattern_sim (1)
+.BR crystfel_geometry (5),
+.BR process_hkl (1),
+.BR partialator (1)

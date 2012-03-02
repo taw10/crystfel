@@ -8,20 +8,17 @@
 
 .TH PROCESS\_HKL 1
 .SH NAME
-process\_hkl \- Monte Carlo merging program
+process\_hkl \- Monte Carlo merging of Bragg intensities
 .SH SYNOPSIS
 .PP
 .B process\_hkl
 -i mypatterns.stream -o mydata.hkl -y mypointgroup [options]
 
 .SH DESCRIPTION
-
-This program takes as input the data stream from "indexamajig".  It merges the
-many individual intensities together to form a single list of reflection
-intensities which are useful for crystallography.
+process_hkl takes a data stream from "indexamajig" and merges the many individual intensities together to form a single list of reflection intensities which are useful for crystallography.
 
 Typical usage is of the form:
-
+.PP
 $ process_hkl -i mypatterns.stream -o mydata.hkl -y mypointgroup
 
 .SH CHOICE OF POINT GROUP FOR MERGING
@@ -49,3 +46,28 @@ ambiguities to get from the apparent symmetry to the true symmetry (given with
 
 The document twin-calculator.pdf contains more detailed information about this
 issue, as well as tables which contain all the required information.
+
+.SH AUTHOR
+This page was written by Thomas White.
+
+.SH REPORTING BUGS
+Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+
+.SH COPYRIGHT AND DISCLAIMER
+Copyright © 2012 Thomas White <taw@physics.org>
+.P
+indexamajig is part of CrystFEL.
+.P
+CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+.P
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+.P
+You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+.SH SEE ALSO
+.BR crystfel (7),
+.BR indexamajig (5),
+.BR compare_hkl (1),
+.BR check_hkl (1),
+.BR render_hkl (1),
+.BR partialator (1)
