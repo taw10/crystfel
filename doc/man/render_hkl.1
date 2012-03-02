@@ -11,7 +11,101 @@
 render_hkl \- render 2D slices of reciprocal space from reflection data
 .SH SYNOPSIS
 .PP
-.B render_hkl
-[options]
+.B render_hkl [\fIoptions\fR] \fB...\fR \fB-p\fR \fIunitcell.pdb\fR \fIfile.hkl\fR
+.PP
+\fBrender_hkl --help\fI
 
 .SH DESCRIPTION
+render_hkl takes a set of reflection data and plots 2D central sections of the reciprocal lattice as circles using a colour scale in a PDF file.  You need to provide, at a minimum, the reflection data and a PDB file with at least a CRYST1 line containing the unit cell parameters.
+
+.SH OPTIONS
+.PD 0
+.IP \fB-d\fR \fIh,k,l\fR
+.IP \fB--down=\fR\fIh,k,l\fR
+.PD
+Specify the indices for the downward direction of the resulting plot.  Default: \fB--down=1,0,0\fR.
+
+
+.PD 0
+.IP \fB-r\fR \fIh,k,l\fR
+.IP \fB--right=\fR\fIh,k,l\fR
+.PD
+Specify the indices for the 'right' direction of the resulting plot.  The direction will be approximately to the right, the exact direction depending on the unit cell.  Default: \fB--right=0,1,0\fR.
+
+.PD 0
+.IP \fB-o\fR \fIfilename\fR
+.IP \fB--output=\fR\fIfilename\fR
+.PD
+Write the output (in PDF format) to \fIfilename\fR.  Default: \fB--output=za.pdf\fR.
+
+.PD 0
+.IP \fB-p\fR \fIfilename\fR
+.IP \fB--pdb=\fR\fIfilenamefR
+.PD
+Get the unit cell parameters from the CRYST1 line contained in \fIfilename\fR.
+
+.PD 0
+.IP \fB--boost=\fR\fIn\fR
+.PD
+Squash the colour scale by a factor of \fIn\fR.  When \fIn\fR=1, the top of the colour scale will represent the highest intensity found in the \fIdata set\fR (not the highest intensity found in the \fIprojection\fR).
+
+.PD 0
+.IP \fB-y\fR \fIpointgroup\fR
+.IP \fB--symmetry=\fR\fIpointgroup\fR
+.PD
+Specify the symmetry of the reflection list.
+
+.PD 0
+.IP \fB-c\fR \fIscale\fR
+.IP \fB--colscale=\fR\fIscale\fR
+.PD
+Use \fIscale\fR as the colour scale.  Possible scales are: \fBmono\fR, \fBinvmono\fR and \fBcolour\fR.
+
+.PD 0
+.IP \fB-w\fR \fIweight\fR
+.IP \fB--weighting=\fR\fIweight\fR
+.PD
+Colour the reciprocal lattice points according to \fIweight\fR.  Possibilities for \fIweight\fR are:
+.RS
+.IP \fBI\fR
+.PD
+The intensities of the reflections
+.IP \fBsqrtI\fR
+.PD
+The square roots of the intensities of the reflections.  Negative intensities will be set to zero.
+.IP \fBcount\fR
+.PD
+The numbers of observations of the reflections.  The numbers will be corrected for the point group multiplicities of the reflections according to the given symmetry (see \fB--symmetry\fR).
+.IP \fBrawcts\fR
+.PD
+The raw numbers of observations of the reflections, without performing the correction described for \fBcount\fR.
+.RE
+.PP
+The default is \fB--weighting=I\fR.
+
+.PD 0
+.IP \fB--colour-key\fR
+.PD
+Write the selected colour scale out to 'key.pdf' in the current directory.
+
+.SH AUTHOR
+This page was written by Thomas White.
+
+.SH REPORTING BUGS
+Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+
+.SH COPYRIGHT
+Copyright © 2012 Thomas White <taw@physics.org>
+.P
+render_hkl is part of CrystFEL.
+.P
+CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+.P
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+.P
+You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+.SH SEE ALSO
+.BR check_hkl (1)
+and
+.BR hdfsee (1)
