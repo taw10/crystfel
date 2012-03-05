@@ -61,7 +61,6 @@ static void show_help(const char *s)
 " -p, --pdb=<file>          PDB file from which to get the unit cell.\n"
 "                            (The actual Bragg intensities come from the\n"
 "                            intensities file)\n"
-"     --simulation-details  Show technical details of the simulation.\n"
 "     --gpu                 Use the GPU to speed up the calculation.\n"
 "     --gpu-dev=<n>         Use GPU device <n>.  Omit this option to see the\n"
 "                            available devices.\n"
@@ -111,46 +110,6 @@ static void show_help(const char *s)
 "following options.\n"
 "\n"
 "     --no-noise            Do not calculate Poisson noise.\n"
-);
-}
-
-
-static void show_details()
-{
-	printf(
-"This program simulates diffraction patterns from small crystals illuminated\n"
-"with femtosecond X-ray pulses from a free electron laser.\n"
-"\n"
-"The lattice transform from the specified number of unit cells is calculated\n"
-"using the closed-form solution for a truncated lattice faceted on the\n"
-"(001), (010) and (100) planes:\n"
-"\n"
-"I_latt(q) =  sin^2(pi*na*q.a)/sin^2(pi*q.a)\n"
-"           * sin^2(pi*nb*q.b)/sin^2(pi*q.b)\n"
-"           * sin^2(pi*nc*q.c)/sin^2(pi*q.c)\n"
-"\n"
-"na = number of unit cells in 'a' direction (likewise nb, nc)\n"
-" q = reciprocal vector (1/d convention, not 2pi/d)\n"
-"\n"
-"This is multiplied by a model of the underlying molecular transform, I_mol(q).\n"
-"This can be approximated to varying levels of accuracy by the methods given by\n"
-"the '--gradients' option.\n"
-"\n"
-"Expected intensities at the CCD are then calculated using:\n"
-"\n"
-"I(q) = I0 * r^2 * I_latt(q) * I_mol(q) * S\n"
-"\n"
-"I0 = number of photons per unit area in the incident beam\n"
-" r = Thomson radius\n"
-" S = solid angle of corresponding pixel\n"
-"\n"
-"Polarisation is not currently included in pattern_sim, although it is included\n"
-"in the analysis of Bragg peaks by 'indexamajig'.\n"
-"\n"
-"Poisson counts are generated from the expected intensities using Knuth's\n"
-"algorithm.  When the intensity is sufficiently high that Knuth's algorithm\n"
-"would result in machine precision problems, a normal distribution with\n"
-"standard deviation sqrt(I) is used instead.\n"
 );
 }
 
@@ -282,7 +241,6 @@ int main(int argc, char *argv[])
 	char *rval;
 	double *phases;
 	unsigned char *flags;
-	int config_simdetails = 0;
 	int config_randomquat = 0;
 	int config_noimages = 0;
 	int config_nonoise = 0;
@@ -312,7 +270,6 @@ int main(int argc, char *argv[])
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
-		{"simulation-details", 0, &config_simdetails,  1},
 		{"gpu",                0, &config_gpu,         1},
 		{"random-orientation", 0, NULL,               'r'},
 		{"number",             1, NULL,               'n'},
@@ -446,11 +403,6 @@ int main(int argc, char *argv[])
 	if ( sym_str == NULL ) sym_str = strdup("1");
 	sym = get_pointgroup(sym_str);
 	/* sym_str is used below */
-
-	if ( config_simdetails ) {
-		show_details();
-		return 0;
-	}
 
 	if ( grad_str == NULL ) {
 		STATUS("You didn't specify a gradient calculation method, so"
