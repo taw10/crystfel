@@ -243,7 +243,8 @@ static void scale_intensities(RefList *model, RefList *new, const SymOpList *sym
 		get_indices(refl, &h, &k, &l);
 
 		switch ( scaling ) {
-		case SCALE_TWOPASS :
+
+			case SCALE_TWOPASS :
 
 			model_version = find_refl(model, h, k, l);
 			if ( model_version == NULL ) continue;
@@ -256,24 +257,19 @@ static void scale_intensities(RefList *model, RefList *new, const SymOpList *sym
 			/* Calculate LSQ estimate of scaling factor */
 			top += i1 * i2;
 			bot += i2 * i2;
-
 			break;
 
-		case SCALE_CONSTINT :
-
+			case SCALE_CONSTINT :
 			/* Sum up the intensity in the pattern */
 			i2 = get_intensity(refl);
 			top += i2;
-
 			break;
 
-		case SCALE_INTPERBRAGG :
-
+			case SCALE_INTPERBRAGG :
 			/* Sum up the intensity in the pattern */
 			i2 = get_intensity(refl);
 			top += i2;
 			bot += 1.0;
-
 			break;
 
 		}
@@ -281,15 +277,19 @@ static void scale_intensities(RefList *model, RefList *new, const SymOpList *sym
 	}
 
 	switch ( scaling ) {
-	case SCALE_TWOPASS :
+
+		case SCALE_TWOPASS :
 		s = top / bot;
 		break;
-	case SCALE_CONSTINT :
+
+		case SCALE_CONSTINT :
 		s = 1000.0 / top;
 		break;
-	case SCALE_INTPERBRAGG :
+
+		case SCALE_INTPERBRAGG :
 		s = 1000.0 / (top/bot);
 		break;
+
 	}
 
 	/* Multiply the new pattern up by "s" */
