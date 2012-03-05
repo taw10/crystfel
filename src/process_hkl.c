@@ -41,7 +41,6 @@
 #include "reflist-utils.h"
 #include "symmetry.h"
 #include "stream.h"
-#include "beam-parameters.h"
 #include "reflist.h"
 #include "image.h"
 
@@ -57,7 +56,6 @@ static void show_help(const char *s)
 "  -o, --output=<filename>   Specify output filename for merged intensities\n"
 "                             Default: processed.hkl).\n"
 "  -p, --pdb=<filename>      PDB file to use (default: molecule.pdb).\n"
-"  -b, --beam=<file>         Get beam parameters from file (used for sigmas).\n"
 "\n"
 "      --max-only            Take the integrated intensity to be equal to the\n"
 "                             maximum intensity measured for that reflection.\n"
@@ -444,7 +442,6 @@ int main(int argc, char *argv[])
 	float hist_min=0.0, hist_max=0.0;
 	double *hist_vals = NULL;
 	int hist_i;
-	struct beam_params *beam = NULL;
 	int space_for_hist = 0;
 	char *histo_params = NULL;
 
@@ -463,7 +460,6 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"histogram",          1, NULL,               'g'},
 		{"hist-parameters",    1, NULL,               'z'},
-		{"beam",               1, NULL,               'b'},
 		{0, 0, NULL, 0}
 	};
 
@@ -506,15 +502,6 @@ int main(int argc, char *argv[])
 
 		case 'z' :
 			histo_params = strdup(optarg);
-			break;
-
-		case 'b' :
-			beam = get_beam_parameters(optarg);
-			if ( beam == NULL ) {
-				ERROR("Failed to load beam parameters"
-				      " from '%s'\n", optarg);
-				return 1;
-			}
 			break;
 
 		case 0 :
