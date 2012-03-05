@@ -8,13 +8,16 @@
 
 .TH CRYSTFEL\_GEOMETRY 5
 
+.SH CRYSTFEL DETECTOR GEOMETRY AND BEAM DESCRIPTION FILES
+
+See below for information about CrystFEL's beam description files.
+
 .SH CRYSTFEL DETECTOR GEOMETRY FILES
-
 The detector geometry is taken from a text file rather than hardcoded into the
-program.  Programs which care about the geometry (particularly indexamajig,
-pattern_sim and powder_plot) take an argument "--geometry=<file>"
-(or "-g <file>"), where <file> contains the geometry.
-
+program.  Programs which care about the geometry (particularly
+\fBindexamajig\fR, \fBpattern_sim\fR and \fBpowder_plot\fR) take an argument
+\fB--geometry=\fR\fIfilename\fR, where \fIfilename\fR contains the geometry.
+.PP
 A flexible (and pedantic) representation of the detector has been developed to
 avoid all possible sources of ambiguity.  CrystFEL's representation of a
 detector is broken down into one or more "panels", each of which has its own
@@ -25,7 +28,7 @@ whose coordinate changes most quickly as the bytes in the HDF5 file are moved
 through.  The coordinates are specified inclusively, meaning that a minimum of 0
 and a maximum of 9 results in a width of ten pixels.  Counting begins from zero.
 All pixels in the image must be assigned to a panel - gaps are not permitted.
-
+.PP
 In the current version, panels are assumed to be perpendicular to the incident
 beam and to have their edges parallel.  Within these limitations, any geometry
 can be constructed.
@@ -34,12 +37,16 @@ The job of the geometry file is to establish a relationship between the array
 of pixel values in the HDF5 file, defined in terms only of the "fast scan" and
 "slow scan" directions, and the laboratory coordinate system defined as follows:
 
+.IP
 +z is the beam direction, and points along the beam (i.e. away from the source)
-.br
+
+.IP
 +y points towards the zenith (ceiling).
-.br
+
+.IP
 +x completes the right-handed coordinate system.
 
+.PP
 Naively speaking, this means that CrystFEL at the images from the "into the
 beam" perspective, but please avoid thinking of things in this way.  It's much
 better to consider the precise way in which the coordinates are mapped.
@@ -165,9 +172,48 @@ peak_sep = 6.0
 .br
 ; in which case the value will be used for all *subsequent* panels.
 
-
+.PP
 See the "examples" folder for some examples (look at the ones ending in .geom).
 
+.SH CRYSTFEL BEAM DESCRIPTION FILES
+CrystFEL beam description files, usually given with fB--beam=\fR\fIfilename\fR,
+describe the beam parameters.  The fields are as follows:
+
+; Number of photons per pulse
+.br
+beam/fluence = 2.0e11
+
+; Radius of X-ray beam
+.br
+beam/radius = 1.5e-6
+
+; Photon energy in eV
+.br
+beam/photon_energy = 2000.0
+
+; Bandwidth: FWHM(wavelength) over wavelength.
+.br
+; Note: current simulation code just uses a rectangular
+.br
+;       distribution with this as its (full) width.
+.br
+beam/bandwidth = 0.001
+
+; Beam divergence (full convergence angle, \fBnot\fR the half-angle) in radians
+.br
+beam/divergence = 0.001
+
+; Detector's quantum efficiency
+.br
+detector/dqe = 0.9
+
+; Number of detector ADU per photon
+.br
+detector/adu_per_photon = 167.0
+
+.PP
+The "detector" parameters will be moved to the detector geometry description in
+a future version of CrystFEL.
 
 .SH AUTHOR
 This page was written by Thomas White.
