@@ -55,6 +55,7 @@ static void show_help(const char *s)
 "  -i, --input=<filename>    Specify input filename (\"-\" for stdin).\n"
 "  -o, --output=<filename>   Specify output filename for merged intensities\n"
 "                             Default: processed.hkl).\n"
+"  -y, --symmetry=<sym>      Merge according to point group <sym>.\n"
 "\n"
 "      --max-only            Take the integrated intensity to be equal to the\n"
 "                             maximum intensity measured for that reflection.\n"
@@ -75,11 +76,8 @@ static void show_help(const char *s)
 "\n"
 "      --scale               Scale each pattern for best fit with the current\n"
 "                             model.\n"
-"  -y, --symmetry=<sym>      Merge according to point group <sym>.\n"
 "      --reference=<file>    Compare against intensities from <file> when\n"
-"                             scaling or resolving ambiguities.\n"
-"                             The symmetry of the reference list must be the\n"
-"                             same as that given with '-y'.\n"
+"                             scaling. \n"
 );
 }
 
