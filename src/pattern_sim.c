@@ -104,11 +104,6 @@ static void show_help(const char *s)
 "                            required.\n"
 "     --max-size=<s>        Use <s> as the maximum crystal size in nm.\n"
 "                            --min-size is also required.\n"
-"\n"
-"By default, the simulation aims to be as accurate as possible.  For greater\n"
-"speed, or for testing, you can choose to disable certain things using the\n"
-"following options.\n"
-"\n"
 "     --no-noise            Do not calculate Poisson noise.\n"
 );
 }
