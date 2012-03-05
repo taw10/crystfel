@@ -55,7 +55,6 @@ static void show_help(const char *s)
 "  -i, --input=<filename>    Specify input filename (\"-\" for stdin).\n"
 "  -o, --output=<filename>   Specify output filename for merged intensities\n"
 "                             Default: processed.hkl).\n"
-"  -p, --pdb=<filename>      PDB file to use (default: molecule.pdb).\n"
 "\n"
 "      --max-only            Take the integrated intensity to be equal to the\n"
 "                             maximum intensity measured for that reflection.\n"
@@ -426,7 +425,6 @@ int main(int argc, char *argv[])
 	char *output = NULL;
 	FILE *fh;
 	RefList *model;
-	UnitCell *cell = NULL;
 	int config_maxonly = 0;
 	int config_startafter = 0;
 	int config_stopafter = 0;
@@ -457,7 +455,6 @@ int main(int argc, char *argv[])
 		{"sum",                0, &config_sum,         1},
 		{"scale",              0, &config_scale,       1},
 		{"symmetry",           1, NULL,               'y'},
-		{"pdb",                1, NULL,               'p'},
 		{"histogram",          1, NULL,               'g'},
 		{"hist-parameters",    1, NULL,               'z'},
 		{0, 0, NULL, 0}
@@ -520,17 +517,6 @@ int main(int argc, char *argv[])
 
 	if ( output == NULL ) {
 		output = strdup("processed.hkl");
-	}
-
-	if ( pdb != NULL ) {
-		cell = load_cell_from_pdb(pdb);
-		if ( cell == NULL ) {
-			ERROR("Failed to load cell from '%s'\n", pdb);
-			return 1;
-		}
-		free(pdb);
-	} else {
-		cell = NULL;
 	}
 
 	if ( sym_str == NULL ) sym_str = strdup("1");
@@ -633,14 +619,13 @@ int main(int argc, char *argv[])
 		               hist_nbins);
 	}
 
-	write_reflist(output, model, cell);
+	write_reflist(output, model, NULL);
 
 	fclose(fh);
 
 	free(sym);
 	reflist_free(model);
 	free(output);
-	if ( cell != NULL ) cell_free(cell);
 
 	return 0;
 }
