@@ -84,7 +84,8 @@ static void show_help(const char *s)
 }
 
 
-static void plot_histogram(double *vals, int n, float hist_min, float hist_max, int nbins)
+static void plot_histogram(double *vals, int n, float hist_min, float hist_max,
+                           int nbins)
 {
 	int i;
 	double max = -INFINITY;
