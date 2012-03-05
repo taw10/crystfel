@@ -6,46 +6,108 @@
 .\" Part of CrystFEL - crystallography with a FEL
 .\"
 
-.TH PROCESS\_HKL 1
+.TH PROCESS_HKL 1
 .SH NAME
-process\_hkl \- Monte Carlo merging of Bragg intensities
+process_hkl \- Monte Carlo merging of Bragg intensities
 .SH SYNOPSIS
 .PP
-.B process\_hkl
--i mypatterns.stream -o mydata.hkl -y mypointgroup [options]
+.B process_hkl
+\fB-i\fR \fImypatterns.stream\fR \fB-o\fR \fImydata.hkl\fR \fB-y\fR \fIpointgroup\fR [\fBoptions\fR] \fB...\fR
+.PP
+.B process_hkl
+\fB--help\fR
 
 .SH DESCRIPTION
-process_hkl takes a data stream from "indexamajig" and merges the many individual intensities together to form a single list of reflection intensities which are useful for crystallography.
+process_hkl takes a data stream, such as that from \fBindexamajig\fR, and merges
+the many individual intensities together to form a single list of reflection
+intensities which are useful for crystallography.  Merging is done by the Monte
+Carlo method, otherwise known as taking the mean of the individual values.
 
-Typical usage is of the form:
-.PP
-$ process_hkl -i mypatterns.stream -o mydata.hkl -y mypointgroup
+.SH OPTIONS
+.PD 0
+.IP "\fB-i\fR \fIfilename\fR"
+.IP \fB--input=\fR\fIfilename\fR
+.PD
+Give the name of the input stream.  \fB--input=-\fR means to use stdin.
+
+.PD 0
+.IP "\fB-o\fR \fIfilename\fR"
+.IP \fB--output=\fR\fIfilename\fR
+.PD
+Give the name of the output file.  The default is \fB--output=processed.hkl\fR.
+
+.PD 0
+.IP "\fB-y\fR \fIpointgroup\fR"
+.IP \fB--symmetry=\fR\fIpointgroup\fR
+.PD
+Merge according to symmetry \fIpointgroup\fR.
+
+.PD 0
+.IP "\fB-g\fR \fIh,k,l\fR"
+.IP \fB--histogram=\fR\fIh,k,l\fR
+.PD
+Calculate a histogram of intensities for \fIh,k,l\fR, which will be written as
+\fBhistogram.dat\fR in the current directory.
+
+.PD 0
+.IP "\fB-z\fR \fImin,max,nbinsfR"
+.IP \fB--hist-parameters=\fR\fImin,max,nbins\fR
+.PD
+Set the minimum and maximum values, and the number of bins, to \fImin\fR, \fImax\fR and \fInbins\fR, respectively.
+
+.PD 0
+.IP \fB--start-after=\fR\fIn\fR
+.PD
+Ignore the first \fIn\fR patterns in the stream.
+
+.PD 0
+.IP \fB--stop-after=\fR\fIn\fR
+.PD
+Stop after processing \fIn\fR patterns.
+
+.PD 0
+.IP \fB--start-after=\fR\fIn\fR
+.PD
+Ignore the first \fIn\fR patterns in the stream, not including those skipped
+with \fB--start-after\fR, if any.
+
+.PD 0
+.IP \fB--reference=\fR\fIfilename\fR
+.PD
+Use intensities from \fIfilename\fR as the reference when scaling, instead of
+the current model.
+
+.PD 0
+.IP \fB--scale\fR
+.PD
+Attempt to scale each pattern for best fit with the current model.
+
+Scaling using process_hkl doesn't work very well: use \fBpartialator\fR if you
+need more advanced merging techniques.
+
+.PD 0
+.IP \fB--sum\fR
+.PD
+Sum the intensities, instead of averaging them.  This might be useful for
+comparing results to radially summed powder patterns, but usually gives less
+useful final intensities.  \fBpowder_plot\fR has more advanced features for
+calculating 'powder' patterns.
+
+.PD 0
+.IP \fB--max-only\fR
+.PD
+Output the maximum intensity for each reflection rather than the mean value of
+all intensities.  This is usually not useful.
+
 
 .SH CHOICE OF POINT GROUP FOR MERGING
 
 One of the main features of serial crystallography is that the orientations of
 individual crystals are random.  That means that the orientation of each
 crystal must be determined independently, with no information about its
-relationship to the orientation of crystals in other patterns (as would be the
-case for a rotation series of patterns).
+relationship to the orientation of crystals in other patterns.
 
-Some Laue classes are merohedral.  This means that the orientation will have an
-ambiguity, but this time more serious.  The two (or more) possible
-orientations could be called "twins", but the mechanism of their formation is
-somewhat different to the conventional use of the term.  In these cases, you
-will need to merge according to the point group corresponding holohedral Laue
-class.
-
-You can also tell process_hkl the "apparent" symmetry, which is the symmetry as
-far as whatever produced the stream was concerned.  In the case of most indexing
-algorithms, this will be the corresponding holohedral point group (not the
-Laue class nor the holohedral Laue class).  If you use the "-a" option to give
-this information, process_hkl will try to resolve the remaining orientational
-ambiguities to get from the apparent symmetry to the true symmetry (given with
-"-y").  Currently, it won't do a very good job of it.
-
-The document twin-calculator.pdf contains more detailed information about this
-issue, as well as tables which contain all the required information.
+Some symmetry classes are merohedral, which means that they have lower symmetry than their lattices. This means that the orientation determined by indexing will have an ambiguity.  In such cases, you will need to merge according to corresponding holohedral point group.  To determine what this is, consult the tables in \fRtwin-calculator.pdf\fB.  For further information, see the theory page of the CrystFEL website.
 
 .SH AUTHOR
 This page was written by Thomas White.
@@ -56,7 +118,7 @@ Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>
 .SH COPYRIGHT AND DISCLAIMER
 Copyright © 2012 Thomas White <taw@physics.org>
 .P
-indexamajig is part of CrystFEL.
+process_hkl is part of CrystFEL.
 .P
 CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 .P
@@ -70,4 +132,5 @@ You should have received a copy of the GNU General Public License along with Cry
 .BR compare_hkl (1),
 .BR check_hkl (1),
 .BR render_hkl (1),
+.BR powder_plot (1),
 .BR partialator (1)
