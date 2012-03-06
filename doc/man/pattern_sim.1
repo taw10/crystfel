@@ -6,17 +6,21 @@
 .\" Part of CrystFEL - crystallography with a FEL
 .\"
 
-.TH PATTERN\_SIM 1
+.TH PATTERN_SIM 1
 .SH NAME
-pattern\_sim \- Simulation of nanocrystal diffraction patterns
+pattern_sim \- Simulation of nanocrystal diffraction patterns
 .SH SYNOPSIS
 .PP
-.B pattern\_sim
-[options]
+.B pattern_sim
+\fB-g\fR \fIdetector.geom\fR \fB-b\fR \fImy.beam\fR \fB-p\fR \fImy.pdb\fR
+[\fBoptions\fR] \fB...\fR
+.PP
+.B pattern_sim
+\fB--help\fR
 
 .SH DESCRIPTION
 
-Pattern_sim simulaties diffraction patterns from small crystals probed with femtosecond pulses of X-rays from a free electron laser.  Typical use might be of the form:
+pattern_sim simulaties diffraction patterns from small crystals probed with femtosecond pulses of X-rays from a free electron laser.  Typical use might be of the form:
 
 pattern_sim -g mydetector.geom -b my.beam -p my.pdb -r -i myintensities.hkl
 
@@ -24,12 +28,72 @@ The unit cell geometry will be taken from the CRYST1 line in the PDB file you pr
 
 The result will be written to an HDF5 file in the current directory with the name `sim.h5'.
 
+.SH OPTIONS
+
+
 .SH REFLECTION LISTS
 
 You'll need to create a file containing the intensities of the reflections.  The normal way to do this is to use CCP4 via the "gen-sfs" script in CrystFEL's script folder.  Run it like this:
 
-$ gen-sfs mymodel.pdb "P6" 3
+$ \fBgen-sfs\fR \fImymodel.pdb\fR \fB"\fR\fIP6\fR\fB"\fR \fI3\fR
 
 You need to give the PDB model, the symmetry of the output reflections (use the lowest symmetry space group with the right point group), and optionally the maximum resolution in Angstroms.  If you don't specify the resolution, it'll use 3 Angstroms.
 
-The reflections will be output as "mymodel.pdb.hkl" ready for input to pattern_sim.  You'll need to give the Laue class of the symmetry you gave to gen-sfs, "6/m" in this case, to pattern_sim with the "-y" option.  By default, gen-sfs calculates the values for CuKa radiation (8.3 keV, 1.5 A).  It will not calculate the anomalous contribution to scattering, i.e. the differences in intensities between Bijoet pairs.  Both of these are the default behaviour for "sfall" in CCP4, so read the manual for that for further details.  If you need something different, get the "ano_sfall.com" script from James Holton and turn the output into a CrystFEL reflection list in a similar way.
+The reflections will be output as \fImymodel.pdb\fR.hkl ready for input to pattern_sim.  You'll need to give the Laue class of the symmetry you gave to gen-sfs, "6/m" in this case, to pattern_sim with \fB-y\fR.  By default, \fBgen-sfs\fR calculates the values for CuKa radiation (8.3 keV, 1.5 A).  It will not calculate the anomalous contribution to scattering, i.e. the differences in intensities between Bijoet pairs.  Both of these are the default behaviour for "sfall" in CCP4, so read the manual for that for further details.  If you need something different, get the "ano_sfall.com" script from James Holton and use the
+\fBgen-sfs-ano\fR script instead of \fBgen-sfs\fR.
+
+.SH CALCULATION DETAILS
+
+The lattice transform from the specified number of unit cells is calculated
+using the closed-form solution for a truncated lattice faceted on the
+(001), (010) and (100) planes:
+.IP
+I_latt(q) =  sin^2(pi*na*g.a)/sin^2(pi*g.a)
+           * sin^2(pi*nb*g.b)/sin^2(pi*g.b)
+           * sin^2(pi*nc*g.c)/sin^2(pi*g.c)
+.IP
+na = number of unit cells in 'a' direction (likewise nb, nc)
+.br
+ g = reciprocal vector (1/d convention, not 2pi/d)
+.PP
+This is multiplied by a model of the underlying molecular transform, I_mol(g).
+This can be approximated to varying levels of accuracy by the methods given by
+\fB--gradients\fR.
+.PP
+Expected intensities at the CCD are then calculated using:
+.IP
+I(g) = I0 * r^2 * I_latt(g) * I_mol(g) * S
+.IP
+I0 = number of photons per unit area in the incident beam
+ r = Thomson radius
+ S = solid angle of corresponding pixel
+.PP
+Polarisation is not currently included in pattern_sim, although it is included
+in the analysis of Bragg peaks done by \fBindexamajig\fR.
+.PP
+Poisson counts are generated from the expected intensities using Knuth's
+algorithm.  When the intensity is sufficiently high that Knuth's algorithm
+would result in machine precision problems, a normal distribution with
+standard deviation sqrt(I) is used instead.
+
+.SH AUTHOR
+This page was written by Thomas White.
+
+.SH REPORTING BUGS
+Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+
+.SH COPYRIGHT AND DISCLAIMER
+Copyright © 2012 Thomas White <taw@physics.org>
+.P
+pattern_sim is part of CrystFEL.
+.P
+CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+.P
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+.P
+You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+.SH SEE ALSO
+.BR crystfel (7)
+and
+.BR crystfel_geometry (5).
