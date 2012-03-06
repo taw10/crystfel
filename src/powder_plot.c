@@ -70,8 +70,7 @@ enum {
 	PLOT_PEAKS,
 	PLOT_HKL,
 	PLOT_REFL,
-	PLOT_H5,
-	PLOT_D
+	PLOT_H5
 };
 
 enum {
@@ -410,59 +409,6 @@ static unsigned int process_stream_reflection(FILE *fh, struct image *image,
 
 			}
 
-		}
-
-		free(image->filename);
-		reflist_free(image->reflections);
-		image_feature_list_free(image->features);
-		cell_free(image->indexed_cell);
-
-		i++;
-		progress_bar(i, processing_total, "Processing");
-
-	} while ( rval == 0 );
-
-	return n_peaks;
-}
-
-
-static unsigned int process_stream_d(FILE *fh, struct image *image,
-                                     struct histogram_info *info,
-                                     struct bin_stats *histdata,
-                                     unsigned int *n_patterns)
-{
-	int h, k, l, rval;
-	unsigned int i = 0;
-	unsigned int n_peaks = 0;
-	Reflection *refl;
-	RefListIterator *iter;
-	double intensity, q;
-	unsigned int processing_total;
-
-	processing_total = count_patterns(fh);
-	rewind(fh);
-
-	do {
-
-		/* Get data from next chunk */
-		rval = read_chunk(fh, image);
-		if ( rval ) continue;
-
-		if ( image->reflections != NULL ) {
-
-			(*n_patterns)++;
-
-			for ( refl = first_refl(image->reflections, &iter);
-			      refl != NULL;
-			      refl = next_refl(refl, iter) )
-			{
-				get_indices(refl, &h, &k, &l);
-				intensity = get_intensity(refl);
-				q = 2.0 * resolution(image->indexed_cell,
-				                     h, k, l);
-				if ( !add_d_to_histogram(q, intensity, info,
-				                        histdata)) n_peaks++;
-			}
 		}
 
 		free(image->filename);
@@ -923,10 +869,11 @@ int main(int argc, char *argv[])
 	}
 
 	if ( datatype == NULL ) {
-		data_type = PLOT_D;
+		data_type = PLOT_HKL;
 		if ((hist_info.q_min < 0.0) || (hist_info.q_max < 0.0)) {
 			need_geometry = 1;
 		}
+		need_pdb = 1;
 
 	} else if ( strcmp(datatype, "reflection") == 0 ) {
 		data_type = PLOT_REFL;
@@ -935,12 +882,6 @@ int main(int argc, char *argv[])
 	} else if ( strcmp(datatype, "hkl") == 0 ) {
 		data_type = PLOT_HKL;
 		need_pdb = 1;
-
-	} else if ( strcmp(datatype, "d") == 0 ) {
-		data_type = PLOT_D;
-		if ((hist_info.q_min < 0.0) || (hist_info.q_max < 0.0)) {
-			need_geometry = 1;
-		}
 
 	} else if ( strcmp(datatype, "peaks") == 0 ) {
 		data_type = PLOT_PEAKS;
@@ -1158,10 +1099,6 @@ int main(int argc, char *argv[])
 		case PLOT_REFL :
 			n_peaks = process_stream_reflection(fh, &image,
 			             &hist_info, histdata, &n_patterns);
-			break;
-		case PLOT_D :
-			n_peaks = process_stream_d(fh, &image, &hist_info,
-				     histdata, &n_patterns);
 			break;
 		case PLOT_HKL :
 			n_peaks = process_stream_hkl(fh, &image, &hist_info,
