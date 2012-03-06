@@ -556,7 +556,7 @@ int main(int argc, char *argv[])
 	STATUS("%i images could not be refined on the last cycle.\n", n_dud);
 
 	/* Output results */
-	write_reflist(outfile, full, images[0].indexed_cell);
+	write_reflist(outfile, full);
 
 	/* Clean up */
 	for ( i=0; i<n_usable_patterns; i++ ) {

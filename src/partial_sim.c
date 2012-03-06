@@ -525,7 +525,7 @@ int main(int argc, char *argv[])
 
 	if ( random_intensities ) {
 		STATUS("Writing full intensities to %s\n", save_file);
-		write_reflist(save_file, full, cell);
+		write_reflist(save_file, full);
 	}
 
 	if ( phist_file != NULL ) {

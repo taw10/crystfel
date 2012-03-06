@@ -617,7 +617,7 @@ int main(int argc, char *argv[])
 		               hist_nbins);
 	}
 
-	write_reflist(output, model, NULL);
+	write_reflist(output, model);
 
 	fclose(fh);
 

@@ -38,9 +38,9 @@
 #define REFLECTION_END_MARKER "End of reflections"
 
 
-extern void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell);
+extern void write_reflections_to_file(FILE *fh, RefList *list);
 
-extern int write_reflist(const char *filename, RefList *list, UnitCell *cell);
+extern int write_reflist(const char *filename, RefList *list);
 
 extern RefList *read_reflections_from_file(FILE *fh);
 

@@ -152,23 +152,20 @@ int find_equiv_in_list(RefList *list, signed int h, signed int k,
  * write_reflections_to_file:
  * @fh: File handle to write to
  * @list: The reflection list to write
- * @cell: Unit cell to use for generating 1/d values, or NULL.
  *
- * This function writes the contents of @list to @fh, using @cell to generate
- * 1/d values to ease later processing.  If @cell is NULL, 1/d values will not
- * be included ('-' will be written in their place).
+ * This function writes the contents of @list to @fh,
  *
  * Reflections which have a redundancy of zero will not be written.
  *
  * The resulting list can be read back with read_reflections_from_file().
  **/
-void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell)
+void write_reflections_to_file(FILE *fh, RefList *list)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 
 	fprintf(fh, "  h   k   l          I    phase   sigma(I) "
-		     " 1/d(nm^-1)  counts  fs/px  ss/px\n");
+		     " counts  fs/px  ss/px\n");
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -193,13 +190,6 @@ void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell)
 		/* Reflections with redundancy = 0 are not written */
 		if ( red == 0 ) continue;
 
-		if ( cell != NULL ) {
-			s = 2.0 * resolution(cell, h, k, l);
-			snprintf(res, 16, "%10.2f", s/1e9);
-		} else {
-			strcpy(res, "         -");
-		}
-
 		if ( have_phase ) {
 			snprintf(phs, 16, "%8.2f", rad2deg(ph));
 		} else {
@@ -207,9 +197,8 @@ void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell)
 		}
 
 		fprintf(fh,
-		       "%3i %3i %3i %10.2f %s %10.2f  %s %7i %6.1f %6.1f\n",
-		       h, k, l, intensity, phs, esd_i, res, red,
-		       fs, ss);
+		       "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f\n",
+		       h, k, l, intensity, phs, esd_i, red,  fs, ss);
 
 	}
 }
@@ -219,11 +208,8 @@ void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell)
  * write_reflist:
  * @filename: Filename
  * @list: The reflection list to write
- * @cell: Unit cell to use for generating 1/d values, or NULL.
  *
- * This function writes the contents of @list to @file, using @cell to generate
- * 1/d values to ease later processing.  If @cell is NULL, 1/d values will not
- * be included ('-' will be written in their place).
+ * This function writes the contents of @list to @file,
  *
  * Reflections which have a redundancy of zero will not be written.
  *
@@ -235,7 +221,7 @@ void write_reflections_to_file(FILE *fh, RefList *list, UnitCell *cell)
  *
  * Returns: zero on success, non-zero on failure.
  **/
-int write_reflist(const char *filename, RefList *list, UnitCell *cell)
+int write_reflist(const char *filename, RefList *list)
 {
 	FILE *fh;
 
@@ -250,7 +236,7 @@ int write_reflist(const char *filename, RefList *list, UnitCell *cell)
 		return 1;
 	}
 
-	write_reflections_to_file(fh, list, cell);
+	write_reflections_to_file(fh, list);
 	fprintf(fh, REFLECTION_END_MARKER"\n");
 
 	fclose(fh);
@@ -284,10 +270,9 @@ RefList *read_reflections_from_file(FILE *fh)
 
 		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
 
-		r = sscanf(line, "%i %i %i %f %s %f %s %i %f %f",
-		           &h, &k, &l, &intensity, phs, &sigma, ress, &cts,
-		           &fs, &ss);
-		if ( (r != 10) && (!first) ) {
+		r = sscanf(line, "%i %i %i %f %s %f %i %f %f",
+		           &h, &k, &l, &intensity, phs, &sigma, &cts, &fs, &ss);
+		if ( (r != 9) && (!first) ) {
 			reflist_free(out);
 			return NULL;
 		}

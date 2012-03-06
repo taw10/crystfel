@@ -50,8 +50,7 @@ use strict;
 my \$line;
 open(FILE, "${PDB}-temp.hkl");
 
-printf("  h   k   l          I    phase   sigma(I)  1/d(nm^-1)  ".
-       "counts  fs/px  ss/px\\n");
+printf("  h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px\\n");
 
 while ( \$line = <FILE> ) {
 
@@ -63,9 +62,8 @@ while ( \$line = <FILE> ) {
                 my \$intensity = \$4*\$4;  # Square to convert F->I
                 my \$phase = \$5;
 
-                printf("%3i %3i %3i %10.2f %8.2f %10.2f  %s %7i %6.1f %6.1f\n",
-                       \$h, \$k, \$l, \$intensity, \$phase, 0.0,
-                       "         -", 1, 0.0, 0.0);
+                printf("%3i %3i %3i %10.2f %8.2f %10.2f %7i %6.1f %6.1f\n",
+                       \$h, \$k, \$l, \$intensity, \$phase, 0.0, 1, 0.0, 0.0);
 
         } else {
         	printf(STDERR "Couldn't understand line '%s'\n", \$line);

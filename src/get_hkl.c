@@ -77,8 +77,6 @@ static void show_help(const char *s)
 "\n"
 "Don't forget to specify the output filename:\n"
 "  -o, --output=<filename>    Output filename (default: stdout).\n"
-"  -p, --pdb=<filename>       Use unit cell parameters from this PDB file to\n"
-"                              generate resolution values in the output file.\n"
 );
 }
 
@@ -364,7 +362,6 @@ int main(int argc, char *argv[])
 	char *beamfile = NULL;
 	struct beam_params *beam = NULL;
 	RefList *input;
-	UnitCell *cell = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -379,7 +376,6 @@ int main(int argc, char *argv[])
 		{"intensities",        1, NULL,               'i'},
 		{"multiplicity",       0, &config_multi,       1},
 		{"beam",               1, NULL,               'b'},
-		{"pdb",                1, NULL,               'p'},
 		{"trim-centrics",      0, &config_trimc,       1},
 		{0, 0, NULL, 0}
 	};
@@ -421,14 +417,6 @@ int main(int argc, char *argv[])
 			beamfile = strdup(optarg);
 			break;
 
-		case 'p' :
-			cell = load_cell_from_pdb(optarg);
-			if ( cell == NULL ) {
-				ERROR("Failed to get cell from '%s'\n", optarg);
-				return 1;
-			}
-			break;
-
 		case 0 :
 			break;
 
@@ -451,11 +439,6 @@ int main(int argc, char *argv[])
 			      beamfile);
 			return 1;
 		}
-	}
-
-	if ( cell == NULL ) {
-		ERROR("You need to give a PDB file with the unit cell.\n");
-		return 1;
 	}
 
 	if ( holo_str != NULL ) {
@@ -583,7 +566,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	write_reflist(output, input, cell);
+	write_reflist(output, input);
 
 	reflist_free(input);
 

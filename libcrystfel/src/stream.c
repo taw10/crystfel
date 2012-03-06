@@ -285,8 +285,7 @@ void write_chunk(FILE *ofh, struct image *i, struct hdfile *hdfile, int f)
 		if ( i->reflections != NULL ) {
 
 			fprintf(ofh, REFLECTION_START_MARKER"\n");
-			write_reflections_to_file(ofh, i->reflections,
-			                               i->indexed_cell);
+			write_reflections_to_file(ofh, i->reflections);
 			fprintf(ofh, REFLECTION_END_MARKER"\n");
 
 		} else {
