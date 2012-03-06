@@ -27,7 +27,10 @@ FORM NGAUSS 5
 SYMM $SYMM
 END
 EOF
-if [ $? -ne 0 ]; then exit 1; fi
+if [ $? -ne 0 ]; then
+	echo "Failed!  Please examine gen-sfs.html for more information."
+	exit 1
+fi
 
 echo "Running cad to get the right asymmetric unit..."
 cad HKLIN1 ${PDB}.mtz HKLOUT ${PDB}-sorted.mtz >> gen-sfs.html <<EOF
@@ -35,15 +38,23 @@ TITLE Sorted blah
 LABIN FILE 1 E1=FC E2=PHIC
 CTYPE FILE 1 E1=F  E2=P
 EOF
-if [ $? -ne 0 ]; then exit 1; fi
+if [ $? -ne 0 ]; then
+	echo "Failed!  Please examine gen-sfs.html for more information."
+	exit 1
+fi
 
 echo "Converting structure factors to text..."
 mtz2various hklin ${PDB}-sorted.mtz hklout ${PDB}-temp.hkl >> gen-sfs.html <<EOF
 LABIN H=H K=K L=L FC=FC PHIC=PHIC
 OUTPUT USER '(3I4,2F9.1)'
 EOF
-if [ $? -ne 0 ]; then exit 1; fi
+if [ $? -ne 0 ]; then then
+	echo "Failed!  Please examine gen-sfs.html for more information."
+	exit 1
+fi
+
 rm -f ${PDB}.mtz
+
 perl < ${PDB}-temp.hkl > ${PDB}.hkl << WIBBLE
 use strict;
 
