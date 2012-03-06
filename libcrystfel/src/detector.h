@@ -110,7 +110,7 @@ extern struct rvec get_q(struct image *image, double fs, double ss,
 extern struct rvec get_q_for_panel(struct panel *p, double fs, double ss,
                                    double *ttp, double k);
 
-extern double get_tt(struct image *image, double xs, double ys);
+extern double get_tt(struct image *image, double xs, double ys, int *err);
 
 extern int in_bad_region(struct detector *det, double fs, double ss);
 

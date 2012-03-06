@@ -277,13 +277,19 @@ int in_bad_region(struct detector *det, double fs, double ss)
 }
 
 
-double get_tt(struct image *image, double fs, double ss)
+double get_tt(struct image *image, double fs, double ss, int *err)
 {
 	double r, rx, ry;
 	struct panel *p;
 	double xs, ys;
 
+	*err = 0;
+
 	p = find_panel(image->det, fs, ss);
+	if ( p == NULL ) {
+		*err = 1;
+		return 0.0;
+	}
 
 	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
 	 * to x and y */

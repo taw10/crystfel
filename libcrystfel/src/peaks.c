@@ -229,7 +229,9 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 		if ( do_polar ) {
 
-			tt = get_tt(image, fs+cfs, ss+css);
+			int err;
+
+			tt = get_tt(image, fs+cfs, ss+css, &err);
 
 			phi = atan2(ss+css, fs+cfs);
 			pa = pow(sin(phi)*sin(tt), 2.0);
