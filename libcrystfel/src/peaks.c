@@ -672,7 +672,7 @@ void integrate_reflections(struct image *image, int polar, int use_closer,
 
 		/* Record intensity and set redundancy to 1 on success */
 		if ( r == 0 ) {
-			set_int(refl, intensity);
+			set_intensity(refl, intensity);
 			set_esd_intensity(refl, sigma);
 			set_redundancy(refl, 1);
 		} else {

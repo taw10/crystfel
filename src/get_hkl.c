@@ -98,7 +98,7 @@ static void poisson_reflections(RefList *list, double adu_per_photon)
 		val = get_intensity(refl);
 
 		c = adu_per_photon * poisson_noise(val/adu_per_photon);
-		set_int(refl, c);
+		set_intensity(refl, c);
 
 	}
 }
@@ -121,7 +121,7 @@ static void noise_reflections(RefList *list)
 		r = (double)random()/RAND_MAX;
 		val += 0.1 * val * r;
 
-		set_int(refl, val);
+		set_intensity(refl, val);
 
 	}
 }
@@ -233,7 +233,7 @@ static RefList *twin_reflections(RefList *in,
 		if ( !skip ) {
 
 			Reflection *new = add_refl(out, h, k, l);
-			set_int(new, total);
+			set_intensity(new, total);
 			set_esd_intensity(new, sqrt(sigma));
 
 		}
@@ -297,9 +297,7 @@ static RefList *expand_reflections(RefList *in, const SymOpList *target,
 			/* FIXME: Make phase negative if the reflection is
 			 * separated from the original via an inversion */
 			get_phase(refl, &have_phase);
-			if ( have_phase ) {
-				set_ph(new, -ph);
-			}
+			if ( have_phase ) set_phase(new, -ph);
 
 		}
 
@@ -569,7 +567,7 @@ int main(int argc, char *argv[])
 
 			special_position(mero, m, h, k, l);
 			inty *= (double)num_equivs(mero, m);
-			set_int(refl, inty);
+			set_intensity(refl, inty);
 
 		}
 

@@ -114,7 +114,7 @@ static void calculate_partials(RefList *partial, double osf,
 				pthread_mutex_lock(full_lock);
 				rfull = add_refl(full, h, k, l);
 				If = fabs(gaussian_noise(0.0, 1000.0));
-				set_int(rfull, If);
+				set_intensity(rfull, If);
 				set_redundancy(rfull, 1);
 				pthread_mutex_unlock(full_lock);
 
@@ -146,7 +146,7 @@ static void calculate_partials(RefList *partial, double osf,
 
 		Ip = gaussian_noise(Ip, 100.0);
 
-		set_int(refl, Ip);
+		set_intensity(refl, Ip);
 		set_esd_intensity(refl, 100.0);
 	}
 }

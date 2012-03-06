@@ -596,14 +596,14 @@ void set_partial(Reflection *refl, double r1, double r2, double p,
 
 
 /**
- * set_int:
+ * set_intensity:
  * @refl: A %Reflection
  * @intensity: The intensity for the reflection.
  *
  * Set the intensity for the reflection.  Note that retrieval is done with
  * get_intensity().
  **/
-void set_int(Reflection *refl, double intensity)
+void set_intensity(Reflection *refl, double intensity)
 {
 	refl->data.intensity = intensity;
 }
@@ -665,12 +665,12 @@ void set_esd_intensity(Reflection *refl, double esd)
 
 
 /**
- * set_ph:
+ * set_phase:
  * @refl: A %Reflection
  * @phase: New phase for the reflection
  *
  **/
-void set_ph(Reflection *refl, double phase)
+void set_phase(Reflection *refl, double phase)
 {
 	refl->data.phase = phase;
 	refl->data.have_phase = 1;

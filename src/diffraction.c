@@ -120,8 +120,8 @@ static double sym_lookup_intensity(const double *intensities,
 
 		get_equiv(sym, NULL, i, h, k, l, &he, &ke, &le);
 
-		f = (double)lookup_flag(flags, he, ke, le);
-		val = lookup_intensity(intensities, he, ke, le);
+		f = (double)lookup_arr_flag(flags, he, ke, le);
+		val = lookup_arr_intensity(intensities, he, ke, le);
 
 		ret += f*val;
 
@@ -147,8 +147,8 @@ static double sym_lookup_phase(const double *phases,
 
 		get_equiv(sym, NULL, i, h, k, l, &he, &ke, &le);
 
-		f = (double)lookup_flag(flags, he, ke, le);
-		val = lookup_phase(phases, he, ke, le);
+		f = (double)lookup_arr_flag(flags, he, ke, le);
+		val = lookup_arr_phase(phases, he, ke, le);
 
 		ret += f*val;
 

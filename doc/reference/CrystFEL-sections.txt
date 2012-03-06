@@ -35,12 +35,12 @@ get_temp2
 <SUBSECTION>
 set_detector_pos
 set_partial
-set_int
+set_intensity
 set_scalable
 set_refinable
 set_redundancy
 set_esd_intensity
-set_ph
+set_phase
 set_symmetric_indices
 set_temp1
 set_temp2

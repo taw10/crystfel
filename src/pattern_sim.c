@@ -113,7 +113,7 @@ static double *intensities_from_list(RefList *list)
 {
 	Reflection *refl;
 	RefListIterator *iter;
-	double *out = new_list_intensity();
+	double *out = new_arr_intensity();
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -124,7 +124,7 @@ static double *intensities_from_list(RefList *list)
 
 		get_indices(refl, &h, &k, &l);
 
-		set_intensity(out, h, k, l, intensity);
+		set_arr_intensity(out, h, k, l, intensity);
 
 	}
 
@@ -136,7 +136,7 @@ static double *phases_from_list(RefList *list)
 {
 	Reflection *refl;
 	RefListIterator *iter;
-	double *out = new_list_phase();
+	double *out = new_arr_phase();
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -147,7 +147,7 @@ static double *phases_from_list(RefList *list)
 
 		get_indices(refl, &h, &k, &l);
 
-		set_phase(out, h, k, l, phase);
+		set_arr_phase(out, h, k, l, phase);
 
 	}
 
@@ -160,7 +160,7 @@ static unsigned char *flags_from_list(RefList *list)
 {
 	Reflection *refl;
 	RefListIterator *iter;
-	unsigned char *out = new_list_flag();
+	unsigned char *out = new_arr_flag();
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -170,7 +170,7 @@ static unsigned char *flags_from_list(RefList *list)
 
 		get_indices(refl, &h, &k, &l);
 
-		set_flag(out, h, k, l, 1);
+		set_arr_flag(out, h, k, l, 1);
 
 	}
 

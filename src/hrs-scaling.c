@@ -293,7 +293,7 @@ static RefList *lsq_intensities(struct image *images, int n, int n_threads)
 	{
 		double Ih;
 		Ih = get_temp1(refl) / get_temp2(refl);
-		set_int(refl, Ih);
+		set_intensity(refl, Ih);
 	}
 
 	return full;

@@ -446,12 +446,12 @@ int main(int argc, char *argv[])
 
 		/* Add divided version to 'output' list */
 		tr = add_refl(ratio, h, k, l);
-		set_int(tr, val1/val2);
+		set_intensity(tr, val1/val2);
 		set_redundancy(tr, 1);
 	}
 
 	if ( ratiofile != NULL ) {
-		write_reflist(ratiofile, ratio, cell);
+		write_reflist(ratiofile, ratio);
 	}
 	reflist_free(ratio);
 

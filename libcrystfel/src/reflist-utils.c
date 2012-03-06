@@ -299,13 +299,13 @@ RefList *read_reflections_from_file(FILE *fh)
 			char *v;
 
 			refl = add_refl(out, h, k, l);
-			set_int(refl, intensity);
+			set_intensity(refl, intensity);
 			set_detector_pos(refl, 0.0, fs, ss);
 			set_esd_intensity(refl, sigma);
 			set_redundancy(refl, cts);
 
 			ph = strtod(phs, &v);
-			if ( v != NULL ) set_ph(refl, deg2rad(ph));
+			if ( v != NULL ) set_phase(refl, deg2rad(ph));
 
 			/* The 1/d value is actually ignored. */
 

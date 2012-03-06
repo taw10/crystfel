@@ -169,10 +169,11 @@ static void merge_pattern(RefList *model, RefList *new, int max_only,
 
 			/* User asked for max only? */
 			if ( !max_only ) {
-				set_int(model_version, model_int + intensity);
+				set_intensity(model_version,
+				              model_int + intensity);
 			} else {
 				if ( intensity>get_intensity(model_version) ) {
-					set_int(model_version, intensity);
+					set_intensity(model_version, intensity);
 				}
 			}
 
@@ -298,7 +299,7 @@ static void scale_intensities(RefList *model, RefList *new, const SymOpList *sym
 	      refl = next_refl(refl, iter) ) {
 
 		double intensity = get_intensity(refl);
-		set_int(refl, intensity*s);
+		set_intensity(refl, intensity*s);
 
 	}
 }
@@ -375,7 +376,7 @@ static void merge_all(FILE *fh, RefList *model,
 			double intensity = get_intensity(refl);
 			int red = get_redundancy(refl);
 
-			set_int(refl, intensity / (double)red);
+			set_intensity(refl, intensity / (double)red);
 
 		}
 

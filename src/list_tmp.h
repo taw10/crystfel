@@ -42,28 +42,8 @@
 
 #define ERROR_T(...) fprintf(stderr, __VA_ARGS__)
 
-static inline void LABEL(integrate)(TYPE *ref, signed int h,
-                                    signed int k, signed int l,
-                                    TYPE i)
-{
-	int idx;
 
-	if ( (abs(h) > INDMAX) || (abs(k) > INDMAX) || (abs(l) > INDMAX) ) {
-		ERROR_T("\nReflection %i %i %i is out of range!\n", h, k, l);
-		ERROR_T("You need to re-configure INDMAX and re-run.\n");
-		exit(1);
-	}
-
-	if ( h < 0 ) h += IDIM;
-	if ( k < 0 ) k += IDIM;
-	if ( l < 0 ) l += IDIM;
-
-	idx = h + (IDIM*k) + (IDIM*IDIM*l);
-	ref[idx] += i;
-}
-
-
-static inline void LABEL(set)(TYPE *ref, signed int h,
+static inline void LABEL(set_arr)(TYPE *ref, signed int h,
                               signed int k, signed int l,
                               TYPE i)
 {
@@ -84,7 +64,7 @@ static inline void LABEL(set)(TYPE *ref, signed int h,
 }
 
 
-static inline TYPE LABEL(lookup)(const TYPE *ref, signed int h,
+static inline TYPE LABEL(lookup_arr)(const TYPE *ref, signed int h,
                                  signed int k, signed int l)
 {
 	int idx;
@@ -104,7 +84,7 @@ static inline TYPE LABEL(lookup)(const TYPE *ref, signed int h,
 }
 
 
-static inline TYPE *LABEL(new_list)(void)
+static inline TYPE *LABEL(new_arr)(void)
 {
 	TYPE *r;
 	size_t r_size;
@@ -112,12 +92,6 @@ static inline TYPE *LABEL(new_list)(void)
 	r = malloc(r_size);
 	memset(r, 0, r_size);
 	return r;
-}
-
-
-static inline void LABEL(zero_list)(TYPE *ref)
-{
-	memset(ref, 0, IDIM*IDIM*IDIM*sizeof(TYPE));
 }
 
 
