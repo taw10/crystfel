@@ -137,8 +137,7 @@ the journal capitalises them at the proof stage. It's as if they think it
 somehow makes the name look more "computery", or perhaps "trademark-y".
 
 Well, it's not 1970 any more, and programs are no longer input on punched cards.
-That means we can have capitalisation any way we choose.  I hope you can forgive
-me for being fussy about how my work is referred to in publications and talks.
+That means we can have capitalisation any way we choose.
 
 The name for the overall software suite is "CrystFEL", with this being the only
 acceptable capitalisation.  The individual programs should always be referred to
@@ -158,3 +157,5 @@ eat you.
 In addition, CrystFEL is made up of "programs", not "routines" nor "procedures".
 (The "programs" in turn are made up from "routines" and "procedures", but unless
 you are exploring the source code, there's no need for you to know about that).
+
+I hope you can forgive the fussiness.
