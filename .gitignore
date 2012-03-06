@@ -3,6 +3,7 @@ configure
 config.h.in
 lib/Makefile.in
 libtool
+INSTALL
 doc/reference/Makefile.in
 aclocal.m4
 Makefile
