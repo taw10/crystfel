@@ -12,6 +12,110 @@ partialator \- scaling and post-refinement of partial reflections
 .SH SYNOPSIS
 .PP
 .B partialator
-[options]
+\fB-i\fR \fIinput.stream\fR
+\fB-o\fR \fIoutput.hkl\fR
+\fB-g\fR \fIdetector.geom\fR
+\fB-b\fR \fIbeamline.beam\fR
+\fB-y\fR \fIpointgroup\fR
+[\fBoptions\fR] \fB...\fR
+.PP
+.B partialator
+\fB--help\fR
 
 .SH DESCRIPTION
+\fBpartialator\fR merges reflections by scaling and post refinement, accounting
+for the partialities of the reflections.  That means that it models the geometry
+of diffraction for each pattern (crystal orientation, unit cell parameters,
+X-ray bandwidth and so on) and attempts to optimise the geometrical parameters
+to make the fully integrated intensities calculated using the model agree as
+closely as possible between the many patterns.
+.PP
+This program is \fIexperimental\fR in this version of CrystFEL.  It is not yet
+considered ready for processing experimental data.
+
+.SH OPTIONS
+.PD 0
+.IP "\fB-i\fR \fIfilename\fR"
+.IP \fB--input=\fR\fIfilename\fR
+.PD
+Give the name of the input stream..
+
+.PD 0
+.IP "\fB-o\fR \fIfilename\fR"
+.IP \fB--output=\fR\fIfilename\fR
+.PD
+Give the name of the output file.  The default is
+\fB--output=partialator.hkl\fR.
+
+.PD 0
+.IP "\fB-y\fR \fIpointgroup\fR"
+.IP \fB--symmetry=\fR\fIpointgroup\fR
+.PD
+Merge according to symmetry \fIpointgroup\fR.
+
+.PD 0
+.IP "\fB-g\fR \fIfilename\fR"
+.IP \fB--geometry=\fR\fIfilename\fR
+.PD
+Read the detector geometry description from \fIfilename\fR.  See \fBman crystfel_geometry\fR for more information.
+
+.PD 0
+.IP "\fB-b\fR \fIfilename\fR"
+.IP \fB--beam=\fR\fIfilename\fR
+.PD
+Read the beam description from \fIfilename\fR.  See \fBman crystfel_geometry\fR for more information.
+
+.PD 0
+.IP "\fB-n\fR \fIn\fR"
+.IP \fB--iterations=\fR\fIn\fR
+.PD
+Run \fIn\fR cycles of scaling and post refinement.
+
+.PD 0
+.IP \fB--no-scale\fR
+.PD
+Fix all the overall scaling factors to be unity.
+
+.PD 0
+.IP "\fB-r\fR \fIfilename\fR"
+.IP \fB--reference=\fR\fIfilename\fR
+.PD
+Refine and scale patterns against the reflections in \fIfilename\fR, instead of
+comparing them against each other.
+
+.PD 0
+.IP "\fB-j\fR \fIn\fR"
+.PD
+Run \fIn\fR analyses in parallel.
+
+
+.SH BUGS
+This program is an \fIexperimental\fR in this version of CrystFEL.  It is not
+yet considered ready for processing experimental data.  Your pet kitten may
+explode if you attempt to solve a structure using intensities calculated by this
+program.
+
+
+.SH AUTHOR
+This page was written by Thomas White.
+
+.SH REPORTING BUGS
+Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+
+.SH COPYRIGHT AND DISCLAIMER
+Copyright © 2012 Thomas White <taw@physics.org>
+.P
+partialator is part of CrystFEL.
+.P
+CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+.P
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+.P
+You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+.SH SEE ALSO
+.BR crystfel (7),
+.BR indexamajig (1),
+.BR process_hkl (1),
+.BR partial_sim (1),
+.BR crystfel_geometry (5).
