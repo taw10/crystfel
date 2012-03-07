@@ -6,6 +6,7 @@ libtool
 INSTALL
 doc/reference/Makefile.in
 aclocal.m4
+m4/gtk-doc.m4
 Makefile
 autom4te.cache
 config.h
@@ -38,3 +39,5 @@ src/partial_sim
 src/.dirstamp
 *~
 doc/reference/*
+gtk-doc.make
+
