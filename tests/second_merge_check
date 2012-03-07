@@ -13,8 +13,8 @@ cstar = +0.0406926 +0.0052233 -0.0426520 nm^-1
 I0 = 1.0 (arbitrary units)
 photon_energy_eV = 2000.0
 Reflections measured after indexing
-  h   k   l          I    phase   sigma(I)  1/d(nm^-1)  counts  fs/px  ss/px
-  1   0   0     100.00        -       0.00         1.0       1  938.0  629.0
+  h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
+  1   0   0     100.00        -       0.00       1  938.0  629.0
 End of reflections
 ----- End chunk -----
 
@@ -28,8 +28,8 @@ cstar = +0.0406926 +0.0052233 -0.0426520 nm^-1
 I0 = 1.0 (arbitrary units)
 photon_energy_eV = 2000.0
 Reflections measured after indexing
-  h   k   l          I    phase   sigma(I)  1/d(nm^-1)  counts  fs/px  ss/px
- -1   0   0     200.00        -       0.00         1.0       1  938.0  629.0
+  h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
+ -1   0   0     200.00        -       0.00       1  938.0  629.0
 End of reflections
 ----- End chunk -----
 EOF
