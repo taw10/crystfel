@@ -74,7 +74,6 @@ struct static_index_args
 	int config_noisefilter;
 	int config_verbose;
 	int stream_flags;         /* What goes into the output? */
-	int config_polar;
 	int config_satcorr;
 	int config_closer;
 	int config_insane;
@@ -195,7 +194,6 @@ static void show_help(const char *s)
 "                           pixels in each 3x3 region to zero if any of them\n"
 "                           have negative values.  Intensity measurement will\n"
 "                           be performed on the image as it was before this.\n"
-"     --unpolarized        Don't correct for the polarisation of the X-rays.\n"
 "     --no-sat-corr        Don't correct values of saturated peaks using a\n"
 "                           table included in the HDF5 file.\n"
 "     --threshold=<n>      Only accept peaks above <n> ADU.  Default: 800.\n"
@@ -249,7 +247,6 @@ static void process_image(void *pp, int cookie)
 	int config_cmfilter = pargs->static_args.config_cmfilter;
 	int config_noisefilter = pargs->static_args.config_noisefilter;
 	int config_verbose = pargs->static_args.config_verbose;
-	int config_polar = pargs->static_args.config_polar;
 	IndexingMethod *indm = pargs->static_args.indm;
 	struct beam_params *beam = pargs->static_args.beam;
 
@@ -382,7 +379,7 @@ static void process_image(void *pp, int cookie)
 
 		if ( image.reflections != NULL ) {
 
-			integrate_reflections(&image, config_polar,
+			integrate_reflections(&image,
 					      pargs->static_args.config_closer,
 					      pargs->static_args.config_bgsub,
 					      pargs->static_args.min_int_snr);
@@ -549,7 +546,6 @@ int main(int argc, char *argv[])
 	int config_cmfilter = 0;
 	int config_noisefilter = 0;
 	int config_verbose = 0;
-	int config_polar = 1;
 	int config_satcorr = 1;
 	int config_checkprefix = 1;
 	int config_closer = 1;
@@ -615,7 +611,6 @@ int main(int argc, char *argv[])
 		{"verbose",            0, &config_verbose,     1},
 		{"pdb",                1, NULL,               'p'},
 		{"prefix",             1, NULL,               'x'},
-		{"unpolarized",        0, &config_polar,       0},
 		{"no-sat-corr",        0, &config_satcorr,     0},
 		{"sat-corr",           0, &config_satcorr,     1}, /* Compat */
 		{"threshold",          1, NULL,               't'},
@@ -972,7 +967,6 @@ int main(int argc, char *argv[])
 	qargs.static_args.config_cmfilter = config_cmfilter;
 	qargs.static_args.config_noisefilter = config_noisefilter;
 	qargs.static_args.config_verbose = config_verbose;
-	qargs.static_args.config_polar = config_polar;
 	qargs.static_args.config_satcorr = config_satcorr;
 	qargs.static_args.config_closer = config_closer;
 	qargs.static_args.config_insane = config_insane;

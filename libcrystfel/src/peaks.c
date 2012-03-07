@@ -153,7 +153,7 @@ static int cull_peaks(struct image *image)
 int integrate_peak(struct image *image, int cfs, int css,
                    double *pfs, double *pss, double *intensity,
                    double *pbg, double *pmax, double *sigma,
-                   int do_polar, int centroid, int bgsub)
+                   int centroid, int bgsub)
 {
 	signed int fs, ss;
 	double lim, out_lim, mid_lim;
@@ -226,21 +226,6 @@ int integrate_peak(struct image *image, int cfs, int css,
 		}
 
 		val = image->data[idx];
-
-		if ( do_polar ) {
-
-			int err;
-
-			tt = get_tt(image, fs+cfs, ss+css, &err);
-
-			phi = atan2(ss+css, fs+cfs);
-			pa = pow(sin(phi)*sin(tt), 2.0);
-			pb = pow(cos(tt), 2.0);
-			pol = 1.0 - 2.0*POL*(1-pa) + POL*(1.0+pb);
-
-			val /= pol;
-
-		}
 
 		if ( val > max ) max = val;
 
@@ -416,7 +401,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		 * intensity of this peak is only an estimate at this stage. */
 		r = integrate_peak(image, mask_fs, mask_ss,
 		                   &f_fs, &f_ss, &intensity,
-		                   &pbg, &pmax, &sigma, 0, 1, 1);
+		                   &pbg, &pmax, &sigma, 1, 1);
 
 		if ( r ) {
 			/* Bad region - don't detect peak */
@@ -619,8 +604,8 @@ static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
 
 
 /* Integrate the list of predicted reflections in "image" */
-void integrate_reflections(struct image *image, int polar, int use_closer,
-                           int bgsub, double min_snr)
+void integrate_reflections(struct image *image, int use_closer, int bgsub,
+                           double min_snr)
 {
 	struct integr_ind *il;
 	int n, i;
@@ -669,8 +654,7 @@ void integrate_reflections(struct image *image, int polar, int use_closer,
 		}
 
 		r = integrate_peak(image, pfs, pss, &fs, &ss,
-		                   &intensity, &bg, &max, &sigma, polar, 0,
-		                   bgsub);
+		                   &intensity, &bg, &max, &sigma, 0, bgsub);
 
 		/* Record intensity and set redundancy to 1 on success */
 		if ( r == 0 ) {

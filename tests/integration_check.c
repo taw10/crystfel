@@ -60,7 +60,7 @@ static void third_integration_check(struct image *image, int n_trials,
 		}
 		}
 		integrate_peak(image, 64, 64, &fsp, &ssp, &intensity,
-			       &bg, &max, &sigma, 0, 1, 1);
+			       &bg, &max, &sigma, 1, 1);
 
 		mean_intensity += intensity;
 		mean_bg += bg;
@@ -123,7 +123,7 @@ static void fourth_integration_check(struct image *image, int n_trials,
 		}
 		}
 		integrate_peak(image, 64, 64, &fsp, &ssp, &intensity,
-			       &bg, &max, &sigma, 0, 1, 1);
+			       &bg, &max, &sigma, 1, 1);
 
 		mean_intensity += intensity;
 		mean_bg += bg;
@@ -183,7 +183,7 @@ static void fifth_integration_check(struct image *image, int n_trials,
 		}
 		}
 		integrate_peak(image, 64, 64, &fsp, &ssp, &intensity,
-			       &bg, &max, &sigma, 0, 1, 0);
+			       &bg, &max, &sigma, 1, 0);
 
 		mean_intensity += intensity;
 		mean_bg += bg;
@@ -245,7 +245,7 @@ static void sixth_integration_check(struct image *image, int n_trials,
 		}
 		}
 		integrate_peak(image, 64, 64, &fsp, &ssp, &intensity,
-			       &bg, &max, &sigma, 0, 1, 0);
+			       &bg, &max, &sigma, 1, 0);
 
 		mean_intensity += intensity;
 		mean_bg += bg;
@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
 
 	/* First check: no intensity -> zero intensity and bg */
 	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity,
-	               &bg, &max, &sigma, 0, 1, 1);
+	               &bg, &max, &sigma, 1, 1);
 	STATUS("  First check: intensity = %.2f, bg = %.2f, max = %.2f,"
 	       " sigma = %.2f\n", intensity, bg, max, sigma);
 	if ( intensity != 0.0 ) {
@@ -347,7 +347,7 @@ int main(int argc, char *argv[])
 	}
 	}
 	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity,
-	               &bg, &max, &sigma, 0, 1, 1);
+	               &bg, &max, &sigma, 1, 1);
 	STATUS(" Second check: intensity = %.2f, bg = %.2f, max = %.2f,"
 	       " sigma = %.2f\n", intensity, bg, max, sigma);
 	if ( fabs(intensity - M_PI*9.0*9.0*1000.0) > 4000.0 ) {

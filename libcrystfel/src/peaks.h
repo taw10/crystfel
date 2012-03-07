@@ -37,8 +37,7 @@ extern void search_peaks(struct image *image, float threshold,
                          float min_gradient, float min_snr);
 
 extern void integrate_reflections(struct image *image,
-                                  int polar, int use_closer, int bgsub,
-                                  double min_snr);
+                                  int use_closer, int bgsub, double min_snr);
 
 extern double peak_lattice_agreement(struct image *image, UnitCell *cell,
                                      double *pst);
@@ -49,7 +48,7 @@ extern int peak_sanity_check(struct image *image);
 extern int integrate_peak(struct image *image, int cfs, int css,
                           double *pfs, double *pss, double *intensity,
                           double *pbg, double *pmax, double *sigma,
-                          int do_polar, int centroid, int bgsub);
+                          int centroid, int bgsub);
 
 extern void estimate_resolution(RefList *list, UnitCell *cell,
                                 double *min, double *max);

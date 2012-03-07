@@ -218,11 +218,6 @@ Attempt to subtract common-mode noise from the image.  The filtered image will b
 Apply a noise filter to the image with checks 3x3 squares of pixels and sets all of them to zero if any of the nine pixels have a negative value.  This filter may help with peak detection under certain circumstances, and the \fIunfiltered\fR image will be used for the final integration of the peaks.   It is usually better to do a careful job of cleaning the images up before using indexamajig, so this option should not normally be used.
 
 .PD 0
-.IP \fB--unpolarized\fR
-.PD
-Do not correct the integrated peaks for the polarisation of the X-rays.
-
-.PD 0
 .IP \fB--no-sat-corr\fR
 .PD
 This option is here for historical purposes only, to disable a correction which is done if certain extra information is included in the HDF5 file.
