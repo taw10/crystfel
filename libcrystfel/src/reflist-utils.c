@@ -278,7 +278,7 @@ RefList *read_reflections_from_file(FILE *fh)
 		}
 
 		first = 0;
-		if ( r == 10 ) {
+		if ( r == 9 ) {
 
 			double ph;
 			char *v;
