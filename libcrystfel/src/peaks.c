@@ -3,8 +3,12 @@
  *
  * Peak search and other image analysis
  *
- * Copyright © 2012 Thomas White <taw@physics.org>
- * Copyright © 2012 Andrew Martin <andrew.martin@desy.de>
+ * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
+ *                  a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2009-2012 Thomas White <taw@physics.org>
+ *   2011      Andrew Martin <andrew.martin@desy.de>
  *
  * This file is part of CrystFEL.
  *
