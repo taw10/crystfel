@@ -48,23 +48,29 @@ static void third_integration_check(struct image *image, int n_trials,
 	double mean_sigma = 0.0;
 	int i;
 	int fs, ss;
+	int nfail = 0;
 
 	for ( i=0; i<n_trials; i++ ) {
 
-		double intensity, bg, max, sigma;
+		double intensity, sigma;
 		double fsp, ssp;
+		int r;
 
 		for ( fs=0; fs<image->width; fs++ ) {
 		for ( ss=0; ss<image->height; ss++ ) {
 			image->data[fs+image->width*ss] = poisson_noise(10.0);
 		}
 		}
-		integrate_peak(image, 64, 64, &fsp, &ssp, &intensity, &sigma);
 
-		mean_intensity += intensity;
-		mean_bg += bg;
-		mean_max += max;
-		mean_sigma += sigma;
+		r = integrate_peak(image, 64, 64, &fsp, &ssp,
+		                   &intensity, &sigma);
+
+		if ( r == 0 ) {
+			mean_intensity += intensity;
+			mean_sigma += sigma;
+		} else {
+			nfail++;
+		}
 
 	}
 	mean_intensity /= n_trials;
@@ -72,19 +78,16 @@ static void third_integration_check(struct image *image, int n_trials,
 	mean_max /= n_trials;
 	mean_sigma /= n_trials;
 
-	STATUS("  Third check (mean values): intensity = %.2f, bg = %.2f,"
-	       " max = %.2f, sigma = %.2f\n",
-	       mean_intensity, mean_bg, mean_max, mean_sigma);
+	STATUS("  Third check (mean values): intensity = %.2f, sigma = %.2f,"
+	       " integration failed %i/%i times\n",
+	       mean_intensity, mean_sigma, nfail, n_trials);
+
 	if ( fabs(mean_intensity) > 5.0 ) {
 		ERROR("Mean intensity should be close to zero.\n");
 		*fail = 1;
 	}
-	if ( fabs(mean_bg-10.0) > 0.3 ) {
-		ERROR("Mean background should be close to ten.\n");
-		*fail = 1;
-	}
-	if ( fabs(mean_intensity) > mean_sigma ) {
-		ERROR("Mean intensity should be less than mean sigma.\n");
+	if ( fabs(mean_intensity) > mean_sigma/10.0 ) {
+		ERROR("Mean intensity should be much less than mean sigma.\n");
 		*fail = 1;
 	}
 }
@@ -103,11 +106,13 @@ static void fourth_integration_check(struct image *image, int n_trials,
 	int i;
 	int fs, ss;
 	int pcount = 0;
+	int nfail = 0;
 
 	for ( i=0; i<n_trials; i++ ) {
 
-		double intensity, bg, max, sigma;
+		double intensity, sigma;
 		double fsp, ssp;
+		int r;
 
 		for ( fs=0; fs<image->width; fs++ ) {
 		for ( ss=0; ss<image->height; ss++ ) {
@@ -121,12 +126,16 @@ static void fourth_integration_check(struct image *image, int n_trials,
 			}
 		}
 		}
-		integrate_peak(image, 64, 64, &fsp, &ssp, &intensity, &sigma);
 
-		mean_intensity += intensity;
-		mean_bg += bg;
-		mean_max += max;
-		mean_sigma += sigma;
+		r = integrate_peak(image, 64, 64, &fsp, &ssp,
+		                   &intensity, &sigma);
+
+		if ( r == 0 ) {
+			mean_intensity += intensity;
+			mean_sigma += sigma;
+		} else {
+			nfail++;
+		}
 
 	}
 	mean_intensity /= n_trials;
@@ -135,9 +144,10 @@ static void fourth_integration_check(struct image *image, int n_trials,
 	mean_sigma /= n_trials;
 	pcount /= n_trials;
 
-	STATUS(" Fourth check (mean values): intensity = %.2f, bg = %.2f,"
-	       " max = %.2f, sigma = %.2f\n",
-	       mean_intensity, mean_bg, mean_max, mean_sigma);
+	STATUS(" Fourth check (mean values): intensity = %.2f, sigma = %.2f,"
+	       " integration failed %i/%i times\n",
+	       mean_intensity, mean_sigma, nfail, n_trials);
+
 	if ( fabs(mean_intensity - pcount*1000.0) > 4000.0 ) {
 		ERROR("Mean intensity should be close to %f\n", pcount*1000.0);
 		*fail = 1;
@@ -283,6 +293,7 @@ int main(int argc, char *argv[])
 	unsigned int seed;
 	int fail = 0;
 	const int n_trials = 1000;
+	int r, npx;
 
 	fh = fopen("/dev/urandom", "r");
 	fread(&seed, sizeof(seed), 1, fh);
@@ -321,34 +332,52 @@ int main(int argc, char *argv[])
 	image.height = 128;
 	memset(image.data, 0, 128*128*sizeof(float));
 
-	image.beam = NULL;
+	/* First check: no intensity -> no peak, or very low intensity */
+	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma);
+	STATUS("  First check: integrate_peak() returned %i", r);
+	if ( r == 0 ) {
 
-	/* First check: no intensity -> zero intensity and bg */
-	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma);
-	STATUS("  First check: intensity = %.2f, sigma = %.2f\n",
-	       intensity, sigma);
-	if ( intensity != 0.0 ) {
-		ERROR("Intensity should be zero.\n");
-		fail = 1;
+		STATUS("\n");
+		STATUS("Intensity = %.2f, sigma = %.2f\n", intensity, sigma);
+
+		if ( fabs(intensity) > 0.01 ) {
+			ERROR("Intensity should be very close to zero.\n");
+			fail = 1;
+		}
+
+	} else {
+		STATUS(" (correct)\n");
 	}
 
-	/* Second check: uniform peak gives correct value and no bg */
+	/* Second check: uniform peak gives correct I and low sigma(I) */
+	npx = 0;
 	for ( fs=0; fs<image.width; fs++ ) {
 	for ( ss=0; ss<image.height; ss++ ) {
 		if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
 		image.data[fs+image.width*ss] = 1000.0;
+		npx++;
 	}
 	}
-	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma);
-	STATUS(" Second check: intensity = %.2f, sigma = %.2f\n",
-	       intensity, sigma);
-	if ( fabs(intensity - M_PI*9.0*9.0*1000.0) > 4000.0 ) {
-		ERROR("Intensity should be close to 1000*pi*integr_r^2\n");
+
+	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma);
+	if ( r ) {
+		ERROR(" Second check: integrate_peak() returned %i (wrong).\n",
+		      r);
 		fail = 1;
-	}
-	if ( sigma != 0.0 ) {
-		ERROR("Sigma should be zero.\n");
-		fail = 1;
+	} else {
+
+		STATUS(" Second check: intensity = %.2f, sigma = %.2f\n",
+		       intensity, sigma);
+
+		if ( fabs(intensity - M_PI*9.0*9.0*1000.0) > 4000.0 ) {
+			ERROR("Intensity should be close to %f\n", npx*1000.0);
+			fail = 1;
+		}
+		if ( fabs(sigma-sqrt(intensity)) > 2.0 ) {
+			ERROR("Sigma should be roughly %f.\n", sqrt(intensity));
+			fail = 1;
+		}
+
 	}
 
 	/* Third check: Poisson background should get mostly subtracted */
