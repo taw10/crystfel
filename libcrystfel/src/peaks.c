@@ -186,8 +186,6 @@ int integrate_peak(struct image *image, int cfs, int css,
 	for ( ss=-ir_out; ss<+ir_out; ss++ ) {
 
 		double val;
-		double tt = 0.0;
-		double phi, pa, pb, pol;
 		uint16_t flags;
 		struct panel *p2;
 		int idx;
@@ -237,8 +235,6 @@ int integrate_peak(struct image *image, int cfs, int css,
 	for ( ss=-ir_inn; ss<+ir_inn; ss++ ) {
 
 		double val;
-		double tt = 0.0;
-		double phi, pa, pb, pol;
 		uint16_t flags;
 		struct panel *p2;
 		int idx;
@@ -309,8 +305,6 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	double f_ss = 0.0;
 	double intensity = 0.0;
 	double sigma = 0.0;
-	double pbg = 0.0;
-	double pmax = 0.0;
 	int nrej_dis = 0;
 	int nrej_pro = 0;
 	int nrej_fra = 0;
@@ -564,6 +558,7 @@ static int compare_resolution(const void *av, const void *bv)
 	return a->res > b->res;
 }
 
+
 static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
                                            int *np)
 {
@@ -629,7 +624,6 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 		double fs, ss, intensity;
 		double d;
 		int idx;
-		double bg, max;
 		double sigma, snr;
 		double pfs, pss;
 		int r;

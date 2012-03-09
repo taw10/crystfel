@@ -101,8 +101,6 @@ static void fourth_integration_check(struct image *image, int n_trials,
                                      int *fail)
 {
 	double mean_intensity = 0.0;
-	double mean_bg = 0.0;
-	double mean_max = 0.0;
 	double mean_sigma = 0.0;
 	int i;
 	int fs, ss;

@@ -317,24 +317,6 @@ static double get_wavelength(struct hdfile *f)
 }
 
 
-static double get_i0(struct hdfile *f)
-{
-	herr_t r;
-	hid_t dh;
-	double i0;
-
-	dh = H5Dopen2(f->fh, "/LCLS/f_11_ENRC", H5P_DEFAULT);
-	if ( dh < 0 ) return -1.0;
-
-	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
-		            H5P_DEFAULT, &i0);
-	H5Dclose(dh);
-	if ( r < 0 ) return -1.0;
-
-	return i0;
-}
-
-
 static void debodge_saturation(struct hdfile *f, struct image *image)
 {
 	hid_t dh, sh;
