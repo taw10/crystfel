@@ -59,8 +59,7 @@ static void third_integration_check(struct image *image, int n_trials,
 			image->data[fs+image->width*ss] = poisson_noise(10.0);
 		}
 		}
-		integrate_peak(image, 64, 64, &fsp, &ssp, &intensity,
-			       &bg, &max, &sigma, 1, 1);
+		integrate_peak(image, 64, 64, &fsp, &ssp, &intensity, &sigma);
 
 		mean_intensity += intensity;
 		mean_bg += bg;
@@ -122,8 +121,7 @@ static void fourth_integration_check(struct image *image, int n_trials,
 			}
 		}
 		}
-		integrate_peak(image, 64, 64, &fsp, &ssp, &intensity,
-			       &bg, &max, &sigma, 1, 1);
+		integrate_peak(image, 64, 64, &fsp, &ssp, &intensity, &sigma);
 
 		mean_intensity += intensity;
 		mean_bg += bg;
@@ -182,8 +180,7 @@ static void fifth_integration_check(struct image *image, int n_trials,
 			}
 		}
 		}
-		integrate_peak(image, 64, 64, &fsp, &ssp, &intensity,
-			       &bg, &max, &sigma, 1, 0);
+		integrate_peak(image, 64, 64, &fsp, &ssp, &intensity, &sigma);
 
 		mean_intensity += intensity;
 		mean_bg += bg;
@@ -244,8 +241,7 @@ static void sixth_integration_check(struct image *image, int n_trials,
 			}
 		}
 		}
-		integrate_peak(image, 64, 64, &fsp, &ssp, &intensity,
-			       &bg, &max, &sigma, 1, 0);
+		integrate_peak(image, 64, 64, &fsp, &ssp, &intensity, &sigma);
 
 		mean_intensity += intensity;
 		mean_bg += bg;
@@ -281,7 +277,7 @@ static void sixth_integration_check(struct image *image, int n_trials,
 int main(int argc, char *argv[])
 {
 	struct image image;
-	double fsp, ssp, intensity, bg, max, sigma;
+	double fsp, ssp, intensity, sigma;
 	int fs, ss;
 	FILE *fh;
 	unsigned int seed;
@@ -326,16 +322,11 @@ int main(int argc, char *argv[])
 	image.beam->adu_per_photon = 100.0;
 
 	/* First check: no intensity -> zero intensity and bg */
-	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity,
-	               &bg, &max, &sigma, 1, 1);
-	STATUS("  First check: intensity = %.2f, bg = %.2f, max = %.2f,"
-	       " sigma = %.2f\n", intensity, bg, max, sigma);
+	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma);
+	STATUS("  First check: intensity = %.2f, sigma = %.2f\n",
+	       intensity, sigma);
 	if ( intensity != 0.0 ) {
 		ERROR("Intensity should be zero.\n");
-		fail = 1;
-	}
-	if ( bg != 0.0 ) {
-		ERROR("Background should be zero.\n");
 		fail = 1;
 	}
 
@@ -346,20 +337,11 @@ int main(int argc, char *argv[])
 		image.data[fs+image.width*ss] = 1000.0;
 	}
 	}
-	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity,
-	               &bg, &max, &sigma, 1, 1);
-	STATUS(" Second check: intensity = %.2f, bg = %.2f, max = %.2f,"
-	       " sigma = %.2f\n", intensity, bg, max, sigma);
+	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma);
+	STATUS(" Second check: intensity = %.2f, sigma = %.2f\n",
+	       intensity, sigma);
 	if ( fabs(intensity - M_PI*9.0*9.0*1000.0) > 4000.0 ) {
 		ERROR("Intensity should be close to 1000*pi*integr_r^2\n");
-		fail = 1;
-	}
-	if ( bg != 0.0 ) {
-		ERROR("Background should be zero.\n");
-		fail = 1;
-	}
-	if ( max != 1000.0 ) {
-		ERROR("Max should be 1000.\n");
 		fail = 1;
 	}
 	if ( sigma != 0.0 ) {

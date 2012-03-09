@@ -151,23 +151,20 @@ static int cull_peaks(struct image *image)
 /* Returns non-zero if peak has been vetoed.
  * i.e. don't use result if return value is not zero. */
 int integrate_peak(struct image *image, int cfs, int css,
-                   double *pfs, double *pss, double *intensity,
-                   double *pbg, double *pmax, double *sigma,
-                   int centroid, int bgsub)
+                   double *pfs, double *pss, double *intensity, double *sigma)
 {
 	signed int fs, ss;
 	double lim, out_lim, mid_lim;
 	double lim_sq, out_lim_sq, mid_lim_sq;
-	double total = 0.0;
-	double fsct = 0.0;
-	double ssct = 0.0;
-	double noise = 0.0;
-	int noise_counts = 0;
-	double max = 0.0;
-	struct panel *p = NULL;
-        int pixel_counts = 0;
-        double noise_mean = 0.0;
-	double noise_meansq = 0.0;
+	double pk_total;
+	int pk_counts;
+	double fsct, ssct;
+	double bg_tot = 0.0;
+	int bg_counts = 0;
+	struct panel *p;
+	double bg_mean, bg_var;
+	double bg_tot_sq = 0.0;
+	double var;
 	struct beam_params *beam;
 	double aduph;
 
@@ -189,6 +186,7 @@ int integrate_peak(struct image *image, int cfs, int css,
 	mid_lim_sq = pow(mid_lim, 2.0);
 	out_lim_sq = pow(out_lim, 2.0);
 
+	/* Estimate the background */
 	for ( fs=-out_lim; fs<+out_lim; fs++ ) {
 	for ( ss=-out_lim; ss<+out_lim; ss++ ) {
 
@@ -199,11 +197,9 @@ int integrate_peak(struct image *image, int cfs, int css,
 		struct panel *p2;
 		int idx;
 
-		/* Outer mask radius */
+		/* Restrict to annulus */
 		if ( fs*fs + ss*ss > out_lim_sq ) continue;
-
-		if ( ((fs+cfs)>=image->width) || ((fs+cfs)<0) ) continue;
-		if ( ((ss+css)>=image->height) || ((ss+css)<0) ) continue;
+		if ( fs*fs + ss*ss < mid_lim_sq ) continue;
 
 		/* Strayed off one panel? */
 		p2 = find_panel(image->det, fs+cfs, ss+css);
@@ -227,64 +223,79 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 		val = image->data[idx];
 
-		if ( val > max ) max = val;
+		bg_tot += val;
+		bg_tot_sq += pow(val, 2.0);
+		bg_counts++;
 
-		/* If outside inner mask, estimate noise from this region */
-		if ( fs*fs + ss*ss > mid_lim_sq ) {
+	}
+	}
 
-			/* Noise
-			 * noise and noise_meansq are both in photons (^2) */
-			noise += val / aduph;
-			noise_counts++;
-			noise_meansq += pow(val/aduph, 2.0);
+	if ( bg_counts == 0 ) return 1;
+	bg_mean = bg_tot / bg_counts;
+	bg_var = (bg_tot_sq/bg_counts) - pow(bg_mean, 2.0);
 
-		} else if ( fs*fs + ss*ss < lim_sq ) {
+	/* Measure the peak */
+	pk_total = 0.0;
+	pk_counts = 0;
+	fsct = 0.0;  ssct = 0.0;
+	for ( fs=-lim; fs<+lim; fs++ ) {
+	for ( ss=-lim; ss<+lim; ss++ ) {
 
-			/* Peak */
-			pixel_counts++;
-			total += val;
-			fsct += val*(cfs+fs);
-			ssct += val*(css+ss);
+		double val;
+		double tt = 0.0;
+		double phi, pa, pb, pol;
+		uint16_t flags;
+		struct panel *p2;
+		int idx;
+
+		/* Inner mask radius */
+		if ( fs*fs + ss*ss > lim_sq ) continue;
+
+		/* Strayed off one panel? */
+		p2 = find_panel(image->det, fs+cfs, ss+css);
+		if ( p2 != p ) return 1;
+
+		idx = fs+cfs+image->width*(ss+css);
+
+		/* Veto this peak if we tried to integrate in a bad region */
+		if ( image->flags != NULL ) {
+
+			flags = image->flags[idx];
+
+			/* It must have all the "good" bits to be valid */
+			if ( !((flags & image->det->mask_good)
+			                   == image->det->mask_good) ) return 1;
+
+			/* If it has any of the "bad" bits, reject */
+			if ( flags & image->det->mask_bad ) return 1;
 
 		}
 
-	}
-	}
+		val = image->data[idx] - bg_mean;
 
-	noise_mean = noise / noise_counts;  /* photons */
+		/* At least half a photon? */
+		if ( val < aduph / 2.0 ) continue;
 
-	/* The centroid is excitingly undefined if there is no intensity */
-	if ( centroid && (total != 0) ) {
-		*pfs = ((double)fsct / total) + 0.5;
-		*pss = ((double)ssct / total) + 0.5;
-	} else {
-		*pfs = (double)cfs + 0.5;
-		*pss = (double)css + 0.5;
-	}
-	if ( bgsub ) {
-		*intensity = total - aduph * pixel_counts*noise_mean; /* ADU */
-	} else {
-		*intensity = total;  /* ADU */
-	}
+		pk_counts++;
+		pk_total += val;
 
-	if ( in_bad_region(image->det, *pfs, *pss) ) return 1;
-
-	if ( sigma != NULL ) {
-
-		/* First term is standard deviation of background per pixel
-		 * sqrt(pixel_counts) - increase of error for integrated value
-		 * sqrt(2) - increase of error for background subtraction  */
-		*sigma = sqrt(noise_meansq/noise_counts-(noise_mean*noise_mean))
-		          * sqrt(2.0*pixel_counts) * aduph;
+		fsct += val*(cfs+fs);
+		ssct += val*(css+ss);
 
 	}
+	}
 
-	if ( pbg != NULL ) {
-		*pbg = aduph * (noise / noise_counts);
-	}
-	if ( pmax != NULL ) {
-		*pmax = max;
-	}
+	if ( pk_counts == 0 ) return 1;
+
+	*pfs = ((double)fsct / pk_total) + 0.5;
+	*pss = ((double)ssct / pk_total) + 0.5;
+
+	var = pk_counts * bg_var;
+	var += aduph * pk_total;
+	if ( var < 0.0 ) return 1;
+
+	if ( intensity != NULL ) *intensity = pk_total;
+	if ( sigma != NULL ) *sigma = sqrt(var);
 
 	return 0;
 }
@@ -396,12 +407,9 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		assert(mask_fs >= p->min_fs);
 		assert(mask_ss >= p->min_ss);
 
-		/* Centroid peak and get better coordinates.
-		 * Don't bother doing polarisation/SA correction, because the
-		 * intensity of this peak is only an estimate at this stage. */
+		/* Centroid peak and get better coordinates. */
 		r = integrate_peak(image, mask_fs, mask_ss,
-		                   &f_fs, &f_ss, &intensity,
-		                   &pbg, &pmax, &sigma, 1, 1);
+		                   &f_fs, &f_ss, &intensity, &sigma);
 
 		if ( r ) {
 			/* Bad region - don't detect peak */
@@ -654,7 +662,7 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 		}
 
 		r = integrate_peak(image, pfs, pss, &fs, &ss,
-		                   &intensity, &bg, &max, &sigma, 0, bgsub);
+		                   &intensity, &sigma);
 
 		/* Record intensity and set redundancy to 1 on success */
 		if ( r == 0 ) {

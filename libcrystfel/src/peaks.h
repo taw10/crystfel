@@ -45,10 +45,10 @@ extern double peak_lattice_agreement(struct image *image, UnitCell *cell,
 extern int peak_sanity_check(struct image *image);
 
 /* Exported so it can be poked by integration_check */
-extern int integrate_peak(struct image *image, int cfs, int css,
-                          double *pfs, double *pss, double *intensity,
-                          double *pbg, double *pmax, double *sigma,
-                          int centroid, int bgsub);
+extern int integrate_peak(struct image *image,
+                          int cfs, int css,
+                          double *pfs, double *pss,
+                          double *intensity, double *sigma);
 
 extern void estimate_resolution(RefList *list, UnitCell *cell,
                                 double *min, double *max);
