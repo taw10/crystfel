@@ -264,9 +264,6 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 		val = image->data[idx] - bg_mean;
 
-		/* At least half a photon? */
-		if ( val < aduph / 2.0 ) continue;
-
 		pk_counts++;
 		pk_total += val;
 
