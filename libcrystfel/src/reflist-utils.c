@@ -437,6 +437,9 @@ double max_intensity(RefList *list)
  * res_cutoff:
  * @list: A %RefList
  *
+ * Applies a resolution cutoff to @list, returning the new version and freeing
+ * the old version.
+ *
  * Returns: A new %RefList with resolution cutoff applied
  **/
 RefList *res_cutoff(RefList *list, UnitCell *cell, double min, double max)
