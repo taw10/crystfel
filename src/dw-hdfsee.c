@@ -1382,7 +1382,7 @@ static void numbers_update(DisplayWindow *dw)
 	                          dw->binning * dw->numbers_window->cx,
 	                          dw->binning * dw->numbers_window->cy,
 	                          &dmin, &imin);
-	if ( dmin < 20.0 ) {
+	if ( dmin < dw->ring_radius*dw->binning ) {
 		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat),
                                    f->name);
         } else {
