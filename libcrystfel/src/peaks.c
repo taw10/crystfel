@@ -155,10 +155,10 @@ static int cull_peaks(struct image *image)
 /* Returns non-zero if peak has been vetoed.
  * i.e. don't use result if return value is not zero. */
 int integrate_peak(struct image *image, int cfs, int css,
-                   double *pfs, double *pss, double *intensity, double *sigma)
+                   double *pfs, double *pss, double *intensity, double *sigma,
+                   double ir_inn, double ir_mid, double ir_out)
 {
 	signed int fs, ss;
-	double lim, out_lim, mid_lim;
 	double lim_sq, out_lim_sq, mid_lim_sq;
 	double pk_total;
 	int pk_counts;
@@ -177,16 +177,13 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 	aduph = p->adu_per_eV * ph_lambda_to_eV(image->lambda);
 
-	lim = p->integr_radius;
-	mid_lim = 3.0 + lim;
-	out_lim = 6.0 + lim;
-	lim_sq = pow(lim, 2.0);
-	mid_lim_sq = pow(mid_lim, 2.0);
-	out_lim_sq = pow(out_lim, 2.0);
+	lim_sq = pow(ir_inn, 2.0);
+	mid_lim_sq = pow(ir_mid, 2.0);
+	out_lim_sq = pow(ir_out, 2.0);
 
 	/* Estimate the background */
-	for ( fs=-out_lim; fs<+out_lim; fs++ ) {
-	for ( ss=-out_lim; ss<+out_lim; ss++ ) {
+	for ( fs=-ir_out; fs<+ir_out; fs++ ) {
+	for ( ss=-ir_out; ss<+ir_out; ss++ ) {
 
 		double val;
 		double tt = 0.0;
@@ -236,8 +233,8 @@ int integrate_peak(struct image *image, int cfs, int css,
 	pk_total = 0.0;
 	pk_counts = 0;
 	fsct = 0.0;  ssct = 0.0;
-	for ( fs=-lim; fs<+lim; fs++ ) {
-	for ( ss=-lim; ss<+lim; ss++ ) {
+	for ( fs=-ir_inn; fs<+ir_inn; fs++ ) {
+	for ( ss=-ir_inn; ss<+ir_inn; ss++ ) {
 
 		double val;
 		double tt = 0.0;
@@ -301,7 +298,8 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 static void search_peaks_in_panel(struct image *image, float threshold,
                                   float min_gradient, float min_snr,
-                                  struct panel *p)
+                                  struct panel *p,
+                                  double ir_inn, double ir_mid, double ir_out)
 {
 	int fs, ss, stride;
 	float *data;
@@ -407,7 +405,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 
 		/* Centroid peak and get better coordinates. */
 		r = integrate_peak(image, mask_fs, mask_ss,
-		                   &f_fs, &f_ss, &intensity, &sigma);
+		                   &f_fs, &f_ss, &intensity, &sigma,
+		                   ir_inn, ir_mid, ir_out);
 
 		if ( r ) {
 			/* Bad region - don't detect peak */
@@ -459,7 +458,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 
 
 void search_peaks(struct image *image, float threshold, float min_gradient,
-                  float min_snr)
+                  float min_snr, double ir_inn, double ir_mid, double ir_out)
 {
 	int i;
 
@@ -474,7 +473,7 @@ void search_peaks(struct image *image, float threshold, float min_gradient,
 
 		if ( p->no_index ) continue;
 		search_peaks_in_panel(image, threshold, min_gradient,
-		                      min_snr, p);
+		                      min_snr, p, ir_inn, ir_mid, ir_out);
 
 	}
 }
@@ -611,7 +610,8 @@ static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
 
 /* Integrate the list of predicted reflections in "image" */
 void integrate_reflections(struct image *image, int use_closer, int bgsub,
-                           double min_snr)
+                           double min_snr,
+                           double ir_inn, double ir_mid, double ir_out)
 {
 	struct integr_ind *il;
 	int n, i;
@@ -660,7 +660,7 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 		}
 
 		r = integrate_peak(image, pfs, pss, &fs, &ss,
-		                   &intensity, &sigma);
+		                   &intensity, &sigma, ir_inn, ir_mid, ir_out);
 
 		/* Record intensity and set redundancy to 1 on success */
 		if ( r == 0 ) {

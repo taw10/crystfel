@@ -91,6 +91,9 @@ struct static_index_args
 	struct beam_params *beam;
 	const char *element;
 	const char *hdf5_peak_path;
+	double ir_inn;
+	double ir_mid;
+	double ir_out;
 
 	/* Output stream */
 	pthread_mutex_t *output_mutex;  /* Protects the output stream */
@@ -178,34 +181,34 @@ static void show_help(const char *s)
 "The default is '--record=integrated'.\n"
 "\n\n"
 "For more control over the process, you might need:\n\n"
-"     --cell-reduction=<m> Use <m> as the cell reduction method. Choose from:\n"
-"                           none    : no matching, just use the raw cell.\n"
-"                           reduce  : full cell reduction.\n"
-"                           compare : match by at most changing the order of\n"
-"                                     the indices.\n"
-"                           compare_ab : compare 'a' and 'b' lengths only.\n"
-"     --tolerance=<a,b,c,angl>  Set the tolerance for a,b,c axis (in %%)\n"
-"                                and for the angles (in deg) when reducing\n"
-"                                or comparing (default is 5%% and 1.5deg)\n"
-"     --filter-cm          Perform common-mode noise subtraction on images\n"
-"                           before proceeding.  Intensities will be extracted\n"
-"                           from the image as it is after this processing.\n"
-"     --filter-noise       Apply an aggressive noise filter which sets all\n"
-"                           pixels in each 3x3 region to zero if any of them\n"
-"                           have negative values.  Intensity measurement will\n"
-"                           be performed on the image as it was before this.\n"
-"     --no-sat-corr        Don't correct values of saturated peaks using a\n"
-"                           table included in the HDF5 file.\n"
-"     --threshold=<n>      Only accept peaks above <n> ADU.  Default: 800.\n"
-"     --min-gradient=<n>   Minimum gradient for Zaefferer peak search.\n"
-"                           Default: 100,000.\n"
-"     --min-snr=<n>        Minimum signal-to-noise ratio for peaks.\n"
-"                           Default: 5.\n"
-"     --min-integration-snr=<n>  Minimum signal-to-noise ratio for peaks\n"
-"                                 during integration. Default: -infinity.\n"
-" -e, --image=<element>    Use this image from the HDF5 file.\n"
-"                           Example: /data/data0.\n"
-"                           Default: The first one found.\n"
+"  --cell-reduction=<m>  Use <m> as the cell reduction method. Choose from:\n"
+"                         none    : no matching, just use the raw cell.\n"
+"                         reduce  : full cell reduction.\n"
+"                         compare : match by at most changing the order of\n"
+"                                   the indices.\n"
+"                         compare_ab : compare 'a' and 'b' lengths only.\n"
+"    --tolerance=<tol>   Set the tolerances for cell reduction.\n"
+"                          Default: 5,5,5,1.5.\n"
+"    --filter-cm         Perform common-mode noise subtraction on images\n"
+"                         before proceeding.  Intensities will be extracted\n"
+"                         from the image as it is after this processing.\n"
+"    --filter-noise      Apply an aggressive noise filter which sets all\n"
+"                         pixels in each 3x3 region to zero if any of them\n"
+"                         have negative values.  Intensity measurement will\n"
+"                         be performed on the image as it was before this.\n"
+"    --no-sat-corr       Don't correct values of saturated peaks using a\n"
+"                         table included in the HDF5 file.\n"
+"    --threshold=<n>     Only accept peaks above <n> ADU.  Default: 800.\n"
+"    --min-gradient=<n>  Minimum gradient for Zaefferer peak search.\n"
+"                         Default: 100,000.\n"
+"    --min-snr=<n>       Minimum signal-to-noise ratio for peaks.\n"
+"                         Default: 5.\n"
+"    --min-integration-snr=<n> Minimum signal-to-noise ratio for peaks\n"
+"                         during integration. Default: -infinity.\n"
+"    --int-radius=<r>    Set the integration radii.  Default: 4,5,7.\n"
+"-e, --image=<element>   Use this image from the HDF5 file.\n"
+"                          Example: /data/data0.\n"
+"                          Default: The first one found.\n"
 "\n"
 "\nFor time-resolved stuff, you might want to use:\n\n"
 "     --copy-hdf5-field <f>  Copy the value of field <f> into the stream. You\n"
@@ -353,7 +356,10 @@ static void process_image(void *pp, int cookie)
 	case PEAK_ZAEF :
 		search_peaks(&image, pargs->static_args.threshold,
 		             pargs->static_args.min_gradient,
-		             pargs->static_args.min_snr);
+		             pargs->static_args.min_snr,
+		             pargs->static_args.ir_inn,
+		             pargs->static_args.ir_mid,
+		             pargs->static_args.ir_out);
 		break;
 	}
 
@@ -382,7 +388,10 @@ static void process_image(void *pp, int cookie)
 			integrate_reflections(&image,
 					      pargs->static_args.config_closer,
 					      pargs->static_args.config_bgsub,
-					      pargs->static_args.min_int_snr);
+					      pargs->static_args.min_int_snr,
+					      pargs->static_args.ir_inn,
+					      pargs->static_args.ir_mid,
+					      pargs->static_args.ir_out);
 
 		}
 
@@ -587,6 +596,10 @@ int main(int argc, char *argv[])
 	char *endptr;
 	char *hdf5_peak_path = NULL;
 	struct copy_hdf5_field *copyme;
+	char *intrad = NULL;
+	float ir_inn = 4.0;
+	float ir_mid = 5.0;
+	float ir_out = 7.0;
 
 	copyme = new_copy_hdf5_field_list();
 	if ( copyme == NULL ) {
@@ -631,6 +644,7 @@ int main(int argc, char *argv[])
 		{"min-snr",            1, NULL,               11},
 		{"min-integration-snr",1, NULL,               12},
 		{"tolerance",          1, NULL,               13},
+		{"int-radius",         1, NULL,               14},
 		{0, 0, NULL, 0}
 	};
 
@@ -760,6 +774,10 @@ int main(int argc, char *argv[])
 
 			case 13 :
 			toler = strdup(optarg);
+			break;
+
+			case 14 :
+			intrad = strdup(optarg);
 			break;
 
 			case 0 :
@@ -900,6 +918,19 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if ( intrad != NULL ) {
+		int r;
+		r = sscanf(intrad, "%f,%f,%f", &ir_inn, &ir_mid, &ir_out);
+		if ( r != 3 ) {
+			ERROR("Invalid parameters for '--int-radius'\n");
+			return 1;
+		}
+	} else {
+		STATUS("WARNING: You did not specify --int-radius.\n");
+		STATUS("WARNING: I will use the default values, which are"
+		       " probably not appropriate for your patterns.\n");
+	}
+
 	if ( geometry == NULL ) {
 		ERROR("You need to specify a geometry file with --geometry\n");
 		return 1;
@@ -994,6 +1025,9 @@ int main(int argc, char *argv[])
 	qargs.static_args.stream_flags = stream_flags;
 	qargs.static_args.hdf5_peak_path = hdf5_peak_path;
 	qargs.static_args.copyme = copyme;
+	qargs.static_args.ir_inn = ir_inn;
+	qargs.static_args.ir_mid = ir_mid;
+	qargs.static_args.ir_out = ir_out;
 
 	qargs.fh = fh;
 	qargs.prefix = prefix;

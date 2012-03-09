@@ -32,9 +32,10 @@
 #include <stdio.h>
 
 #include <image.h>
-#include <peaks.h>
 #include <utils.h>
 #include <beam-parameters.h>
+
+#include "../libcrystfel/src/peaks.c"
 
 
 /* The third integration check draws a Poisson background and checks that, on
@@ -63,7 +64,7 @@ static void third_integration_check(struct image *image, int n_trials,
 		}
 
 		r = integrate_peak(image, 64, 64, &fsp, &ssp,
-		                   &intensity, &sigma);
+		                   &intensity, &sigma, 10.0, 15.0, 17.0);
 
 		if ( r == 0 ) {
 			mean_intensity += intensity;
@@ -128,7 +129,7 @@ static void fourth_integration_check(struct image *image, int n_trials,
 		}
 
 		r = integrate_peak(image, 64, 64, &fsp, &ssp,
-		                   &intensity, &sigma);
+		                   &intensity, &sigma, 10.0, 15.0, 17.0);
 
 		if ( r == 0 ) {
 			mean_intensity += intensity;
@@ -333,7 +334,8 @@ int main(int argc, char *argv[])
 	memset(image.data, 0, 128*128*sizeof(float));
 
 	/* First check: no intensity -> no peak, or very low intensity */
-	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma);
+	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma,
+	                   10.0, 15.0, 17.0);
 	STATUS("  First check: integrate_peak() returned %i", r);
 	if ( r == 0 ) {
 
@@ -359,7 +361,8 @@ int main(int argc, char *argv[])
 	}
 	}
 
-	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma);
+	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma,
+	                   10.0, 15.0, 17.0);
 	if ( r ) {
 		ERROR(" Second check: integrate_peak() returned %i (wrong).\n",
 		      r);

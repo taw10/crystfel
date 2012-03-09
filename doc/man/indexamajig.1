@@ -131,6 +131,30 @@ If the unit cell is centered (i.e. if the space group begins with I, F, H, A, B,
 .PP
 The default is \fB--cell-reduction=none\fR.
 
+.SH PEAK INTEGRATION
+If the pattern could be successfully indexed and the cell reduction gave a
+positive match, peaks will be predicted in the pattern and their intensities
+measured.  The peak integration relies on knowing an accurate radius to
+integrate the peak within, and that the annulus used to estimate the background
+level is not so big that that it covers neighbouring peaks.  However,
+indexamajig cannot (yet) determine these values for you.  You need to specify
+them using the \fB--int-radius\fR option (see below).
+.PP
+To determine appropriate values, index some patterns with the default values and
+view the results using \fBcheck-near-bragg\fR (in the scripts folder).  Set the
+binning in \fBhdfsee\fR to 1, and adjust the ring radius until none of the rings
+overlap for any of the patterns.  This ring radius is the outer radius to use.
+Then reduce the radius until the circles match the sizes of the peaks as
+closely as possible.  This value is the inner radius.  The middle radius should
+be between the two, ideally between two and three pixels smaller than the outer
+radius.
+.PP
+If it's difficult to do this without setting the middle radius to the
+same value as the inner radius, then the peaks are too close together to be
+accurately integrated.  Perhaps you got greedy with the resolution and put the
+detector too close to the interaction region?  Improved integration algorithms,
+designed to handle such difficult cases, are under development.
+
 .SH OPTIONS
 .PD 0
 .IP "\fB-i\fR \fIfilename\fR"
@@ -341,8 +365,6 @@ At the moment, CrystFEL's core symmetry module only knows about one setting for 
 Don't run more than one indexamajig jobs simultaneously in the same working
 directory - they'll overwrite each other's DirAx or MOSFLM files, causing subtle
 problems which can't easily be detected.
-.PP
-The way indexamajig calculates the intensities and errors of peaks sucks, for want of a better word.  In particular, I/sigma(I) is not accurately estimated and many of the options don't make sense.  Development of improved integration algorithms is in progress, so this issue will be addressed in a future version of CrystFEL.
 .PP
 ReAx indexing is experimental.  It works very nicely for some people, and crashes for others.  In a future version, it will be improved and fully supported.
 
