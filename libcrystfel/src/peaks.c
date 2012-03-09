@@ -169,19 +169,13 @@ int integrate_peak(struct image *image, int cfs, int css,
 	double bg_mean, bg_var;
 	double bg_tot_sq = 0.0;
 	double var;
-	struct beam_params *beam;
 	double aduph;
-
-	beam = image->beam;
-	if ( beam != NULL ) {
-		aduph = image->beam->adu_per_photon;
-	} else {
-		aduph = 1.0;
-	}
 
 	p = find_panel(image->det, cfs, css);
 	if ( p == NULL ) return 1;
 	if ( p->no_index ) return 1;
+
+	aduph = p->adu_per_eV * ph_lambda_to_eV(image->lambda);
 
 	lim = p->integr_radius;
 	mid_lim = 3.0 + lim;

@@ -321,8 +321,7 @@ int main(int argc, char *argv[])
 	image.height = 128;
 	memset(image.data, 0, 128*128*sizeof(float));
 
-	image.beam = calloc(1, sizeof(struct beam_params));
-	image.beam->adu_per_photon = 100.0;
+	image.beam = NULL;
 
 	/* First check: no intensity -> zero intensity and bg */
 	integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma);
