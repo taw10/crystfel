@@ -56,7 +56,7 @@ static void show_help(const char *s)
 "      --noise                Add 10%% random noise.\n"
 "\n"
 "To calculate Poisson samples accurately, you must also give:\n"
-"  -b, --beam=<file>          Get beam parameters from file.\n"
+"      --adu-per-photon=<n>   Number of ADU per photon.\n"
 "\n"
 "You can artificially 'twin' the reflections, or expand them out.\n"
 "  -w, --twin=<sym>           Generate twinned data according to the given\n"
@@ -362,6 +362,8 @@ int main(int argc, char *argv[])
 	char *beamfile = NULL;
 	struct beam_params *beam = NULL;
 	RefList *input;
+	double adu_per_photon = 0.0;
+	int have_adu_per_photon = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -375,8 +377,8 @@ int main(int argc, char *argv[])
 		{"expand",             1, NULL,               'e'},
 		{"intensities",        1, NULL,               'i'},
 		{"multiplicity",       0, &config_multi,       1},
-		{"beam",               1, NULL,               'b'},
 		{"trim-centrics",      0, &config_trimc,       1},
+		{"adu-per-photon",     1, NULL,                2},
 		{0, 0, NULL, 0}
 	};
 
@@ -413,8 +415,9 @@ int main(int argc, char *argv[])
 			expand_str = strdup(optarg);
 			break;
 
-		case 'b' :
-			beamfile = strdup(optarg);
+		case 2 :
+			adu_per_photon = strtof(optarg, NULL);
+			have_adu_per_photon = 1;
 			break;
 
 		case 0 :
@@ -476,11 +479,11 @@ int main(int argc, char *argv[])
 	}
 
 	if ( config_poisson ) {
-		if ( beam != NULL ) {
-			poisson_reflections(input, beam->adu_per_photon);
+		if ( have_adu_per_photon ) {
+			poisson_reflections(input, adu_per_photon);
 		} else {
-			ERROR("You must give a beam parameters file in order"
-			      " to calculate Poisson noise.\n");
+			ERROR("You must give the number of ADU per photon to "
+			      "use --poisson.\n");
 			return 1;
 		}
 	}

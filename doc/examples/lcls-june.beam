@@ -14,10 +14,3 @@ beam/bandwidth = 0.01
 
 ; Beam divergence in radians
 beam/divergence = 0.0087
-
-
-; Detector's quantum efficiency
-detector/dqe = 0.9
-
-; Number of detector ADU per photon
-detector/adu_per_photon = 20.9

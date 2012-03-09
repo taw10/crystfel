@@ -59,6 +59,7 @@ struct panel
 	double   peak_sep; /* Characteristic peak separation */
 	double   integr_radius;  /* Peak integration radius */
 	char    *rigid_group;  /* Rigid group, or -1 for none */
+	double   adu_per_eV;   /* Number of ADU per eV */
 
 	double fsx;
 	double fsy;

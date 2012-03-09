@@ -115,6 +115,7 @@ int main(int argc, char *argv[])
 	det->panels[0].cny = -512.0-sep;
 	det->panels[0].clen = 100.0e-3;
 	det->panels[0].res = 9090.91;
+	det->panels[0].adu_per_eV = 1.0;
 
 	det->panels[1].min_fs = 0;
 	det->panels[1].max_fs = 1023;
@@ -132,6 +133,7 @@ int main(int argc, char *argv[])
 	det->panels[1].cny = sep;
 	det->panels[1].clen = 100.0e-3;
 	det->panels[1].res = 9090.91;
+	det->panels[0].adu_per_eV = 1.0;
 
 	cpu_image.det = det;
 	gpu_image.det = det;
@@ -142,8 +144,6 @@ int main(int argc, char *argv[])
 	beam->photon_energy = 9000.0;
 	beam->bandwidth = 0.1 / 100.0;
 	beam->divergence = 0.0;
-	beam->dqe = 1.0;
-	beam->adu_per_photon = 1.0;
 	cpu_image.beam = beam;
 	gpu_image.beam = beam;
 

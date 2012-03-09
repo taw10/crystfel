@@ -1,3 +1,5 @@
+adu_per_eV = 1.0
+
 q0a0/min_fs =    0
 q0a0/min_ss =    0
 q0a0/max_fs =  193

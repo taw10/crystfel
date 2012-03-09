@@ -365,15 +365,14 @@ void record_image(struct image *image, int do_poisson)
 		sa = proj_area / (dsq + Lsq);
 
 		if ( do_poisson ) {
-			counts = poisson_noise(intensity * ph_per_e
-			                              * sa * image->beam->dqe );
+			counts = poisson_noise(intensity * ph_per_e * sa);
 		} else {
-			cf = intensity * ph_per_e * sa * image->beam->dqe;
+			cf = intensity * ph_per_e * sa;
 			counts = cf;
 		}
 
-		image->data[x + image->width*y] = counts
-		                                  * image->beam->adu_per_photon;
+		image->data[x + image->width*y] = counts * p->adu_per_eV
+		                               * ph_lambda_to_eV(image->lambda);
 
 		/* Sanity checks */
 		if ( isinf(image->data[x+image->width*y]) ) n_inf2++;
@@ -577,6 +576,8 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 		panel->cnx = atof(val);
 	} else if ( strcmp(key, "corner_y") == 0 ) {
 		panel->cny = atof(val);
+	} else if ( strcmp(key, "adu_per_eV") == 0 ) {
+		panel->adu_per_eV = atof(val);
 	} else if ( strcmp(key, "rigid_group") == 0 ) {
 		panel->rigid_group = find_or_add_rg(det, val);
 	} else if ( strcmp(key, "clen") == 0 ) {
@@ -737,6 +738,7 @@ struct detector *get_detector_geometry(const char *filename)
 	det->defaults.ssx = 0.0;
 	det->defaults.ssy = 1.0;
 	det->defaults.rigid_group = NULL;
+	det->defaults.adu_per_eV = NAN;
 	strncpy(det->defaults.name, "", 1023);
 
 	do {
@@ -868,6 +870,11 @@ struct detector *get_detector_geometry(const char *filename)
 		}
 		if ( det->panels[i].res < 0 ) {
 			ERROR("Please specify the resolution for"
+			      " panel %s\n", det->panels[i].name);
+			reject = 1;
+		}
+		if ( isnan(det->panels[i].adu_per_eV) ) {
+			ERROR("Please specify the number of ADU per eV for"
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
@@ -1242,6 +1249,7 @@ int write_detector_geometry(const char *filename, struct detector *det)
 		fprintf(fh, "%s/ss = %+fx %+fy\n", p->name, p->ssx, p->ssy);
 		fprintf(fh, "%s/corner_x = %g\n", p->name, p->cnx);
 		fprintf(fh, "%s/corner_y = %g\n", p->name, p->cny);
+		fprintf(fh, "%s/adu_per_eV = %g\n", p->name, p->adu_per_eV);
 
 		if ( p->no_index ) {
 			fprintf(fh, "%s/no_index = 1\n", p->name);

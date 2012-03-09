@@ -186,6 +186,12 @@ static inline int within_tolerance(double a, double b, double percent)
 /* Joules to eV */
 #define J_to_eV(a) ((a)/ELECTRON_CHARGE)
 
+/* Photon wavelength (m) to energy (eV) */
+#define ph_lambda_to_eV(a) J_to_eV(ph_lambda_to_en(a))
+
+/* Photon energy (eV) to wavelength (m) */
+#define ph_eV_to_lambda(a) ph_en_to_lambda(eV_to_J(a))
+
 #define UNUSED __attribute__((unused))
 
 

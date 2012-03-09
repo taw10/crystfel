@@ -1,3 +1,5 @@
+adu_per_eV = 1.0
+
 ; Upper panel
 0/min_fs = 0
 0/max_fs = 1023

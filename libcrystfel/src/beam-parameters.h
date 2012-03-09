@@ -40,9 +40,6 @@ struct beam_params
 	                        *        a rectangular distribution with this as
 	                        *        its (full) width. */
 	double divergence;     /* divergence (radians) */
-
-	double dqe;            /* Detector DQE (fraction) */
-	double adu_per_photon; /* Detector "gain" */
 };
 
 

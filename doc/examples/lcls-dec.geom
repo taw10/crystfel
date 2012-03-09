@@ -5,6 +5,7 @@ mask_bad = 0x00
 ; These default values will be used unless overridden by the per-panel values
 peak_sep = 50.0
 integr_radius = 10.0
+adu_per_eV = 0.0835
 
 upper/min_fs = 0
 upper/max_fs = 1023
