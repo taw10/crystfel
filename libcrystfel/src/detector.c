@@ -603,8 +603,6 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 		panel->res = atof(val);
 	} else if ( strcmp(key, "peak_sep") == 0 ) {
 		panel->peak_sep = atof(val);
-	} else if ( strcmp(key, "integr_radius") == 0 ) {
-		panel->integr_radius = atof(val);
 	} else if ( strcmp(key, "badrow_direction") == 0 ) {
 		panel->badrow = val[0]; /* First character only */
 		if ( (panel->badrow != 'x') && (panel->badrow != 'y')
@@ -684,8 +682,6 @@ static void parse_toplevel(struct detector *det, const char *key,
 
 	} else if ( strcmp(key, "peak_sep") == 0 ) {
 		det->defaults.peak_sep = atof(val);
-	} else if ( strcmp(key, "integr_radius") == 0 ) {
-		det->defaults.integr_radius = atof(val);
 	} else if ( strcmp(key, "coffset") == 0 ) {
 		det->defaults.coffset = atof(val);
 	} else if ( parse_field_for_panel(&det->defaults, key, val, det) ) {
@@ -736,7 +732,6 @@ struct detector *get_detector_geometry(const char *filename)
 	det->defaults.badrow = '-';
 	det->defaults.no_index = 0;
 	det->defaults.peak_sep = 50.0;
-	det->defaults.integr_radius = 3.0;
 	det->defaults.fsx = 1.0;
 	det->defaults.fsy = 0.0;
 	det->defaults.ssx = 0.0;
