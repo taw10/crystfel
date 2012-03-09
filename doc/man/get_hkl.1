@@ -24,46 +24,47 @@ The input filename should be specified with \fB-i\fR \fIfilename\fR or \fB--inpu
 .PD 0
 .IP "\fB-e\fR \fIpointgroup\fR"
 .IP \fB--expand=\fR\fIpointgroup\fR
-.PD 1
-.PP
+.PD
 The reflections will be expanded out, according to the symmetry of the input reflections, to fill the asymmetric unit of \fIpointgroup\fR.
 
 .SH REDUCING REFLECTIONS INTO A POINT GROUP OF HIGHER SYMMETRY
 .PD 0
 .IP "\fB-w\fR \fIpointgroup\fR"
 .IP \fB--twin=\fR\fIpointgroup\fR
-.PD 1
-.PP
+.PD
 Reflections in the list which are equivalent according to \fIpointgroup\fR will have their intensities summed.  The output reflection list will contain the summed intensities in the asymmetric unit for \fIpointgroup\fR.  Reflections for which any of the 'twin mates' are missing will not be written out.
 
 .SH ADDING NOISE
 .PD 0
 .IP \fB--poisson\fR
 .IP \fB--noise\fR
-.PD 1
-.PP
-Add either 10% flat random noise (with \fB--noise\fR) or generate Poisson noise (with \fB--poisson\fR).  If Poisson noise is to be generated, the reflection intensities will be assumed to be measured in arbitrary units, and the conversion factor to photons will come from the adu_per_photon field of the beam description file provided with \fB-b\fR \fIfilename\fR or \fB--beam=\fR\fIfilename\fR.
+.PD
+Add either 10% flat random noise (with \fB--noise\fR) or generate Poisson noise (with \fB--poisson\fR).  If Poisson noise is to be generated, the reflection intensities will be assumed to be measured in arbitrary units, and the conversion factor to photons must be given using \fB--adu-per-photon=\fR\fIn\fR, where
+\fIn\fR is the conversion factor.
+
+.PD 0
+.IP \fB--adu-per-photon=\fR\fIn\fR
+.PD
+See \fB--poisson\fR.
+
 
 .SH REMOVING DUPLICATED REFLECTIONS
 .PD 0
 .IP \fB--trim-centrics\fR
-.PD 1
-.PP
+.PD
 Reflections which are duplicated, according to the symmetry of the input reflection list, will be removed.  This is sometimes useful when importing data from other programs.
 
 .SH RESTRICTING REFLECTIONS ACCORDING TO A TEMPLATE
 .PD 0
 .IP "\fB-t\fR \fIfilename\fR"
 .IP \fB--template=\fR\fIfilename\fR
-.PD 1
-.PP
+.PD
 Only reflections in the input list which also appear in \fIfilename\fR will be written to the output.
 
 .SH MULTIPLICITY
 .PD 0
 .IP \fB--multiplicity\fR
-.PD 1
-.PP
+.PD
 The intensities of the reflections will be multiplied by their symmetric multiplicities according to the point group of the input list.
 
 .SH AUTHOR
