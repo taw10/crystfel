@@ -1,11 +1,15 @@
 CrystFEL - Crystallography with a FEL
 -------------------------------------
 
-Copyright © 2012 Thomas White <taw@physics.org>
-Copyright © 2012 Richard Kirian <rkirian@asu.edu>
-Copyright © 2012 Andrew Aquila <andrew.aquila@cfel.de>
-Copyright © 2012 Andrew Martin <andrew.martin@desy.de>
-Copyright © 2012 Lorenzo Galli <lorenzo.galli@desy.de>
+Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
+                 a research centre of the Helmholtz Association.
+
+Authors:
+  Thomas White <taw@physics.org>
+  Richard Kirian <rkirian@asu.edu>
+  Andrew Aquila <andrew.aquila@cfel.de>
+  Andrew Martin <andrew.martin@desy.de>
+  Lorenzo Galli <lorenzo.galli@desy.de>
 
 Please read the AUTHORS file for a full list of contributions and contributors.
 See the COPYING file for licence conditions.  Summary: GPLv3+.

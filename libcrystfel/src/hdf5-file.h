@@ -3,7 +3,11 @@
  *
  * Read/write HDF5 data files
  *
- * Copyright © 2012 Thomas White <taw@physics.org>
+ * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
+ *                  a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2009-2012 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *

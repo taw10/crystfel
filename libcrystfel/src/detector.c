@@ -3,8 +3,12 @@
  *
  * Detector properties
  *
- * Copyright © 2012 Thomas White <taw@physics.org>
- * Copyright © 2012 Richard Kirian <rkirian@asu.edu>
+ * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
+ *                  a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2009-2012 Thomas White <taw@physics.org>
+ *   2012 Richard Kirian <rkirian@asu.edu>
  *
  * This file is part of CrystFEL.
  *

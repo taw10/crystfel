@@ -3,9 +3,13 @@
  *
  * Assemble and process FEL Bragg intensities
  *
- * Copyright © 2012 Thomas White <taw@physics.org>
- * Copyright © 2012 Andrew Martin <andrew.martin@desy.de>
- * Copyright © 2012 Lorenzo Galli <lorenzo.galli@desy.de>
+ * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
+ *                  a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2009-2012 Thomas White <taw@physics.org>
+ *   2010-2011 Andrew Martin <andrew.martin@desy.de>
+ *   2012 Lorenzo Galli <lorenzo.galli@desy.de>
  *
  * This file is part of CrystFEL.
  *

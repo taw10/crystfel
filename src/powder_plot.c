@@ -3,8 +3,12 @@
  *
  * Plot powder patterns
  *
- * Copyright © 2012 Thomas White <taw@physics.org>
- * Copyright © 2012 Andrew Aquila <andrew.aquila@cfel.de>
+ * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
+ *                  a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2009-2012 Thomas White <taw@physics.org>
+ *   2010-2012 Andrew Aquila <andrew.aquila@cfel.de>
  *
  * This file is part of CrystFEL.
  *
