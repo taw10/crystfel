@@ -600,9 +600,6 @@ int main(int argc, char *argv[])
 		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
 		{"no-index",           0, &config_noindex,     1},
-		{"peaks",              1, NULL,                2},
-		{"cell-reduction",     1, NULL,                3},
-		{"tolerance",          1, NULL,               13},
 		{"indexing",           1, NULL,               'z'},
 		{"geometry",           1, NULL,               'g'},
 		{"beam",               1, NULL,               'b'},
@@ -614,67 +611,72 @@ int main(int argc, char *argv[])
 		{"no-sat-corr",        0, &config_satcorr,     0},
 		{"sat-corr",           0, &config_satcorr,     1}, /* Compat */
 		{"threshold",          1, NULL,               't'},
-		{"min-gradient",       1, NULL,                4},
-		{"min-snr",            1, NULL,               11},
-		{"min-integration-snr",1, NULL,               12},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
 		{"no-closer-peak",     0, &config_closer,      0},
 		{"insane",             0, &config_insane,      1},
 		{"image",              1, NULL,               'e'},
 		{"basename",           0, &config_basename,    1},
+		{"bg-sub",             0, &config_bgsub,       1}, /* Compat */
+		{"no-bg-sub",          0, &config_bgsub,       0},
+
+		{"peaks",              1, NULL,                2},
+		{"cell-reduction",     1, NULL,                3},
+		{"min-gradient",       1, NULL,                4},
 		{"record",             1, NULL,                5},
 		{"cpus",               1, NULL,                6},
 		{"cpugroup",           1, NULL,                7},
 		{"cpuoffset",          1, NULL,                8},
-		{"bg-sub",             0, &config_bgsub,       1}, /* Compat */
-		{"no-bg-sub",          0, &config_bgsub,       0},
 		{"hdf5-peaks",         1, NULL,                9},
 		{"copy-hdf5-field",    1, NULL,               10},
+		{"min-snr",            1, NULL,               11},
+		{"min-integration-snr",1, NULL,               12},
+		{"tolerance",          1, NULL,               13},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
 	while ((c = getopt_long(argc, argv, "hi:wp:j:x:g:t:o:b:e:",
-	                        longopts, NULL)) != -1) {
-
+	                        longopts, NULL)) != -1)
+	{
 		switch (c) {
-		case 'h' :
+
+			case 'h' :
 			show_help(argv[0]);
 			return 0;
 
-		case 'i' :
+			case 'i' :
 			filename = strdup(optarg);
 			break;
 
-		case 'o' :
+			case 'o' :
 			outfile = strdup(optarg);
 			break;
 
-		case 'z' :
+			case 'z' :
 			indm_str = strdup(optarg);
 			break;
 
-		case 'p' :
+			case 'p' :
 			pdb = strdup(optarg);
 			break;
 
-		case 'x' :
+			case 'x' :
 			prefix = strdup(optarg);
 			break;
 
-		case 'j' :
+			case 'j' :
 			nthreads = atoi(optarg);
 			break;
 
-		case 'g' :
+			case 'g' :
 			geometry = strdup(optarg);
 			break;
 
-		case 't' :
+			case 't' :
 			threshold = strtof(optarg, NULL);
 			break;
 
-		case 'b' :
+			case 'b' :
 			beam = get_beam_parameters(optarg);
 			if ( beam == NULL ) {
 				ERROR("Failed to load beam parameters"
@@ -683,40 +685,28 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-		case 2 :
-			speaks = strdup(optarg);
-			break;
-
-		case 3 :
-			scellr = strdup(optarg);
-			break;
-
-		case 13 :
-			toler = strdup(optarg);
-			break;
-
-		case 4 :
-			min_gradient = strtof(optarg, NULL);
-			break;
-
-		case 11 :
-			min_snr = strtof(optarg, NULL);
-			break;
-
-		case 12 :
-			min_int_snr = strtof(optarg, NULL);
-			break;
-
-		case 'e' :
+			case 'e' :
 			element = strdup(optarg);
 			break;
 
-		case 5 :
+			case 2 :
+			speaks = strdup(optarg);
+			break;
+
+			case 3 :
+			scellr = strdup(optarg);
+			break;
+
+			case 4 :
+			min_gradient = strtof(optarg, NULL);
+			break;
+
+			case 5 :
 			stream_flags = parse_stream_flags(optarg);
 			if ( stream_flags < 0 ) return 1;
 			break;
 
-		case 6 :
+			case 6 :
 			cpu_num = strtol(optarg, &endptr, 10);
 			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') ) ) {
 				ERROR("Invalid number of CPUs ('%s')\n",
@@ -725,7 +715,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-		case 7 :
+			case 7 :
 			cpu_groupsize = strtol(optarg, &endptr, 10);
 			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') ) ) {
 				ERROR("Invalid CPU group size ('%s')\n",
@@ -739,7 +729,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-		case 8 :
+			case 8 :
 			cpu_offset = strtol(optarg, &endptr, 10);
 			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') ) ) {
 				ERROR("Invalid CPU offset ('%s')\n",
@@ -752,19 +742,32 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-		case 9 :
+			case 9 :
 			hdf5_peak_path = strdup(optarg);
 			break;
 
-		case 10 :
+			case 10 :
 			add_copy_hdf5_field(copyme, optarg);
 			break;
 
-		case 0 :
+			case 11 :
+			min_snr = strtof(optarg, NULL);
 			break;
 
-		default :
+			case 12 :
+			min_int_snr = strtof(optarg, NULL);
+			break;
+
+			case 13 :
+			toler = strdup(optarg);
+			break;
+
+			case 0 :
+			break;
+
+			default :
 			return 1;
+
 		}
 
 	}
