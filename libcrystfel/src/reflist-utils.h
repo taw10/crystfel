@@ -61,4 +61,6 @@ extern double max_intensity(RefList *list);
 extern RefList *res_cutoff(RefList *list, UnitCell *cell,
                            double min, double max);
 
+extern RefList *copy_reflist(RefList *list);
+
 #endif	/* REFLIST_UTILS_H */

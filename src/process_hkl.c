@@ -57,14 +57,6 @@ static void show_help(const char *s)
 "                             Default: processed.hkl).\n"
 "  -y, --symmetry=<sym>      Merge according to point group <sym>.\n"
 "\n"
-"      --max-only            Take the integrated intensity to be equal to the\n"
-"                             maximum intensity measured for that reflection.\n"
-"                             The default is to use the mean value from all\n"
-"                             measurements.\n"
-"      --sum                 Sum (rather than average) the intensities for the\n"
-"                             final output list.  This is useful for comparing\n"
-"                             results to radially summed powder patterns, but\n"
-"                             will break R-factor analysis.\n"
 "      --start-after=<n>     Skip n patterns at the start of the stream.\n"
 "      --stop-after=<n>      Stop after processing n patterns.\n"
 "  -g, --histogram=<h,k,l>   Calculate the histogram of measurements for this\n"
@@ -130,23 +122,80 @@ static void plot_histogram(double *vals, int n, float hist_min, float hist_max,
 }
 
 
-static void merge_pattern(RefList *model, RefList *new, int max_only,
-                          const SymOpList *sym,
-                          double *hist_vals, signed int hist_h,
-                          signed int hist_k, signed int hist_l, int *hist_n,
-                          int pass)
+static double scale_intensities(RefList *reference, RefList *new,
+                              const SymOpList *sym)
 {
+	double s;
+	double top = 0.0;
+	double bot = 0.0;
 	Reflection *refl;
 	RefListIterator *iter;
 
 	for ( refl = first_refl(new, &iter);
 	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
+	      refl = next_refl(refl, iter) )
+	{
 
-		double intensity;
+		double i1, i2;
+		signed int hu, ku, lu;
 		signed int h, k, l;
+		Reflection *reference_version;
+
+		get_indices(refl, &h, &k, &l);
+		get_asymm(sym, h, k, l, &hu, &ku, &lu);
+
+		reference_version = find_refl(reference, hu, ku, lu);
+		if ( reference_version == NULL ) continue;
+
+		i1 = get_intensity(reference_version);
+		i2 = get_intensity(refl);
+
+		/* Calculate LSQ estimate of scaling factor */
+		top += i1 * i2;
+		bot += i2 * i2;
+
+	}
+
+	s = top / bot;
+
+	return s;
+}
+
+
+static int merge_pattern(RefList *model, struct image *new, RefList *reference,
+                         const SymOpList *sym,
+                         double *hist_vals, signed int hist_h,
+                         signed int hist_k, signed int hist_l, int *hist_n)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	double scale;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+
+	if ( reference != NULL ) {
+		scale = scale_intensities(reference, new->reflections, sym);
+	} else {
+		scale = 1.0;
+	}
+	if ( isnan(scale) ) return 1;
+
+	cell_get_reciprocal(new->indexed_cell, &asx, &asy, &asz,
+	                                       &bsx, &bsy, &bsz,
+	                                       &csx, &csy, &csz);
+
+	for ( refl = first_refl(new->reflections, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double intensity;
+		double xl, yl, zl;
+		double pol, pa, pb, phi, tt, ool;
+		signed int h, k, l;
+		int cur_redundancy;
+		double cur_intensity, cur_sumsq;
 		Reflection *model_version;
-		double model_int;
 
 		get_indices(refl, &h, &k, &l);
 
@@ -158,161 +207,53 @@ static void merge_pattern(RefList *model, RefList *new, int max_only,
 			model_version = add_refl(model, h, k, l);
 		}
 
-		/* Read the intensity from the original location
-		 * (i.e. before screwing around with symmetry) */
-		intensity = get_intensity(refl);
+		intensity = scale * get_intensity(refl);
 
-		/* Get the current model intensity */
-		model_int = get_intensity(model_version);
+		/* Polarisation correction assuming 100% polarisation along the
+		 * x direction */
+		xl = h*asx + k*bsx + l*csx;
+		yl = h*asy + k*bsy + l*csy;
+		zl = h*asz + k*bsz + l*csz;
 
-		if ( pass == 1 ) {
+		ool = 1.0 / new->lambda;
+		tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+ool);
+		phi = atan2(yl, xl);
+		pa = pow(sin(phi)*sin(tt), 2.0);
+		pb = pow(cos(tt), 2.0);
+		pol = 1.0 - 2.0*(1.0-pa) + (1.0+pb);
+		intensity /= pol;
 
-			/* User asked for max only? */
-			if ( !max_only ) {
-				set_intensity(model_version,
-				              model_int + intensity);
-			} else {
-				if ( intensity>get_intensity(model_version) ) {
-					set_intensity(model_version, intensity);
-				}
-			}
+		cur_intensity = get_intensity(model_version);
+		set_intensity(model_version, cur_intensity + intensity);
 
-			/* Increase redundancy */
-			int cur_redundancy = get_redundancy(model_version);
-			set_redundancy(model_version, cur_redundancy+1);
+		cur_redundancy = get_redundancy(model_version);
+		set_redundancy(model_version, cur_redundancy+1);
 
+		cur_sumsq = get_temp1(model_version);
+		set_temp1(model_version, cur_sumsq + pow(intensity, 2.0));
 
-		} else if ( pass == 2 ) {
+		if ( hist_vals != NULL ) {
 
-			double dev = get_temp1(model_version);
-
-			/* Other ways of estimating the sigma are possible,
-			 * choose from:
-			 *    dev += pow(get_esd_intensity(refl), 2.0);
-			 *    dev += pow(intensity, 2.0);
-			 * But alter the other part of the calculation below
-			 * as well. */
-			dev += pow(intensity - model_int, 2.0);
-
-			set_temp1(model_version, dev);
-
-			if ( hist_vals != NULL ) {
-				int p = *hist_n;
-				if ( (h==hist_h) && (k==hist_k)
-				  && (l==hist_l) )
-				{
-					hist_vals[p] = intensity;
-					*hist_n = p+1;
-				}
-
+			if ( (h==hist_h) && (k==hist_k) && (l==hist_l) ) {
+				hist_vals[*hist_n] = intensity;
+				*hist_n += 1;
 			}
 
 		}
 
 	}
 
-
+	return 0;
 }
 
 
-enum {
-	SCALE_NONE,
-	SCALE_CONSTINT,
-	SCALE_INTPERBRAGG,
-	SCALE_TWOPASS,
-};
-
-
-static void scale_intensities(RefList *model, RefList *new, const SymOpList *sym)
-{
-	double s;
-	double top = 0.0;
-	double bot = 0.0;
-	const int scaling = SCALE_INTPERBRAGG;
-	Reflection *refl;
-	RefListIterator *iter;
-	Reflection *model_version;
-
-	for ( refl = first_refl(new, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
-		double i1, i2;
-		signed int hu, ku, lu;
-		signed int h, k, l;
-
-		get_indices(refl, &h, &k, &l);
-
-		switch ( scaling ) {
-
-			case SCALE_TWOPASS :
-
-			model_version = find_refl(model, h, k, l);
-			if ( model_version == NULL ) continue;
-
-			get_asymm(sym, h, k, l, &hu, &ku, &lu);
-
-			i1 = get_intensity(model_version);
-			i2 = get_intensity(refl);
-
-			/* Calculate LSQ estimate of scaling factor */
-			top += i1 * i2;
-			bot += i2 * i2;
-			break;
-
-			case SCALE_CONSTINT :
-			/* Sum up the intensity in the pattern */
-			i2 = get_intensity(refl);
-			top += i2;
-			break;
-
-			case SCALE_INTPERBRAGG :
-			/* Sum up the intensity in the pattern */
-			i2 = get_intensity(refl);
-			top += i2;
-			bot += 1.0;
-			break;
-
-		}
-
-	}
-
-	switch ( scaling ) {
-
-		case SCALE_TWOPASS :
-		s = top / bot;
-		break;
-
-		case SCALE_CONSTINT :
-		s = 1000.0 / top;
-		break;
-
-		case SCALE_INTPERBRAGG :
-		s = 1000.0 / (top/bot);
-		break;
-
-	}
-
-	/* Multiply the new pattern up by "s" */
-	for ( refl = first_refl(new, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
-		double intensity = get_intensity(refl);
-		set_intensity(refl, intensity*s);
-
-	}
-}
-
-
-static void merge_all(FILE *fh, RefList *model,
-                      int config_maxonly, int config_scale, int config_sum,
+static void merge_all(FILE *fh, RefList *model, RefList *reference,
                       int config_startafter, int config_stopafter,
                       const SymOpList *sym,
                       int n_total_patterns,
                       double *hist_vals, signed int hist_h,
                       signed int hist_k, signed int hist_l,
-                      int *hist_i, int pass)
+                      int *hist_i)
 {
 	int rval;
 	int n_patterns = 0;
@@ -339,17 +280,13 @@ static void merge_all(FILE *fh, RefList *model,
 
 		if ( (image.reflections != NULL) && (image.indexed_cell) ) {
 
-			/* Scale if requested */
-			if ( config_scale ) {
-				scale_intensities(model, image.reflections,
-				                  sym);
-			}
+			int r;
 
-			merge_pattern(model, image.reflections, config_maxonly,
-			              sym, hist_vals, hist_h, hist_k, hist_l,
-			              hist_i, pass);
+			r = merge_pattern(model, &image, reference, sym,
+			                  hist_vals, hist_h, hist_k, hist_l,
+			                  hist_i);
 
-			n_used++;
+			if ( r == 0 ) n_used++;
 
 		}
 
@@ -363,56 +300,29 @@ static void merge_all(FILE *fh, RefList *model,
 
 	} while ( rval == 0 );
 
-	/* Divide by counts to get mean intensity if necessary */
-	if ( (pass == 1) && !config_sum && !config_maxonly ) {
+	for ( refl = first_refl(model, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double intensity, sumsq, esd;
+		int red;
 
-		Reflection *refl;
-		RefListIterator *iter;
-
-		for ( refl = first_refl(model, &iter);
-		      refl != NULL;
-		      refl = next_refl(refl, iter) ) {
-
-			double intensity = get_intensity(refl);
-			int red = get_redundancy(refl);
-
-			set_intensity(refl, intensity / (double)red);
-
+		red = get_redundancy(refl);
+		if ( red == 1 ) {
+			set_redundancy(refl, 0);
+			continue;
 		}
 
+		intensity = get_intensity(refl) / red;
+		set_intensity(refl, intensity);
+
+		sumsq = get_temp1(refl) / red;
+		esd = sqrt(sumsq - pow(intensity, 2.0)) / sqrt(red);
+		set_esd_intensity(refl, esd);
+
 	}
 
-	/* Calculate ESDs */
-	if ( pass == 2 ) {
-		for ( refl = first_refl(model, &iter);
-		      refl != NULL;
-		      refl = next_refl(refl, iter) ) {
-
-			double sum_squared_dev = get_temp1(refl);
-			int red = get_redundancy(refl);
-			int h, k, l;
-			double esd;
-			get_indices(refl,&h,&k,&l);
-
-			/* Other ways of estimating the sigma are possible,
-			 * such as:
-			 *
-			 *    double intensity = get_intensity(refl);
-			 *    esd = sqrt( (sum_squared_dev/(double)red)
-			 *              - pow(intensity,2.0) ) );
-			 *
-			 * But alter the other part of the calculation above
-			 * as well. */
-			esd = sqrt(sum_squared_dev)/(double)red;
-
-			set_esd_intensity(refl, esd);
-
-		}
-	}
-
-	if ( pass == 1 ) {
-		STATUS("%i of the patterns could be used.\n", n_used);
-	}
+	STATUS("%i of the patterns could be used.\n", n_used);
 }
 
 
@@ -586,24 +496,39 @@ int main(int argc, char *argv[])
 	}
 
 	hist_i = 0;
-	merge_all(fh, model, config_maxonly, config_scale, config_sum,
-	          config_startafter, config_stopafter,
-                  sym, n_total_patterns,
-                  NULL, 0, 0, 0, NULL, 1);
+	merge_all(fh, model, NULL, config_startafter, config_stopafter,
+                  sym, n_total_patterns, NULL, 0, 0, 0, NULL);
 	if ( ferror(fh) ) {
 		ERROR("Stream read error.\n");
 		return 1;
 	}
 	rewind(fh);
 
-	STATUS("Extra pass to calculate ESDs...\n");
-	rewind(fh);
-	merge_all(fh, model, config_maxonly, config_scale, 0,
-	          config_startafter, config_stopafter, sym, n_total_patterns,
-	          hist_vals, hist_h, hist_k, hist_l, &hist_i, 2);
-	if ( ferror(fh) ) {
-		ERROR("Stream read error.\n");
-		return 1;
+	if ( config_scale ) {
+
+		RefList *reference;
+
+		STATUS("Extra pass for scaling...\n");
+
+		reference = copy_reflist(model);
+
+		reflist_free(model);
+		model = reflist_new();
+
+		rewind(fh);
+
+		merge_all(fh, model, reference,
+			  config_startafter, config_stopafter, sym,
+			  n_total_patterns,
+			  hist_vals, hist_h, hist_k, hist_l, &hist_i);
+
+		if ( ferror(fh) ) {
+			ERROR("Stream read error.\n");
+			return 1;
+		}
+
+		reflist_free(reference);
+
 	}
 
 	if ( space_for_hist && (hist_i >= space_for_hist) ) {

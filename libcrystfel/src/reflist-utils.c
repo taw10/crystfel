@@ -471,3 +471,34 @@ RefList *res_cutoff(RefList *list, UnitCell *cell, double min, double max)
 	reflist_free(list);
 	return new;
 }
+
+
+/**
+ * copy_reflist:
+ * @list: A %RefList
+ *
+ * Returns: A copy of %RefList.
+ **/
+RefList *copy_reflist(RefList *list)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	RefList *new;
+
+	new = reflist_new();
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		Reflection *n;
+
+		get_indices(refl, &h, &k, &l);
+
+		n = add_refl(new, h, k, l);
+		copy_data(n, refl);
+	}
+
+	return new;
+}
