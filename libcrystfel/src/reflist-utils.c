@@ -177,10 +177,9 @@ void write_reflections_to_file(FILE *fh, RefList *list)
 	{
 
 		signed int h, k, l;
-		double intensity, esd_i, s, ph;
+		double intensity, esd_i, ph;
 		int red;
 		double fs, ss;
-		char res[16];
 		char phs[16];
 		int have_phase;
 
@@ -263,7 +262,6 @@ RefList *read_reflections_from_file(FILE *fh)
 		signed int h, k, l;
 		float intensity, sigma, fs, ss;
 		char phs[1024];
-		char ress[1024];
 		int cts;
 		int r;
 		Reflection *refl;
