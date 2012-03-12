@@ -199,8 +199,8 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 
 	show_text_simple(cr, "Observed partiality", -20.0, g_height/2.0,
 	                      NULL, -M_PI_2, J_CENTER);
-	show_text_simple(cr, "Calculated partiality", g_width/2.0, g_height+20.0,
-	                      NULL, 0.0, J_CENTER);
+	show_text_simple(cr, "Calculated partiality",
+	                      g_width/2.0,g_height+20.0, NULL, 0.0, J_CENTER);
 
 	show_text_simple(cr, "0.0", -20.0, g_height, NULL, 0.0, J_CENTER);
 	show_text_simple(cr, "1.0", -20.0, 0.0, NULL, 0.0, J_CENTER);
@@ -256,8 +256,9 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 			pobs = Ipart/Ifull;
 			pcalc = get_partiality(refl);
 
-			//STATUS("%4i %4i %4i : %9.6f %9.6f %e %e %e\n", h, k, l,
-			//       pobs, pcalc, Ipart, Ifull, images[i].osf);
+			//STATUS("%4i %4i %4i : %9.6f %9.6f %e %e %e\n",
+			//       h, k, l, pobs, pcalc,
+			//       Ipart, Ifull, images[i].osf);
 
 			for ( bin=0; bin<nbins; bin++ ) {
 				if ( (pcalc >= pcalcmin[bin])
