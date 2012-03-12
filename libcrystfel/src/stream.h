@@ -7,7 +7,8 @@
  *                  a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2010-2012 Thomas White <taw@physics.org>
+ *   2011      Andrew Aquila
  *
  * This file is part of CrystFEL.
  *

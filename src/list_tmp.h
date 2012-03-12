@@ -23,7 +23,7 @@
  *                  a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2010,2012 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *

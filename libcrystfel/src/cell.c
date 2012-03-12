@@ -5,9 +5,13 @@
  *
  * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012 Richard Kirian
+ * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
  *   2009-2012 Thomas White <taw@physics.org>
+ *   2010      Richard Kirian
+ *   2012      Lorenzo Galli
  *
  * This file is part of CrystFEL.
  *
