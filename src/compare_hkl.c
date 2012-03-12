@@ -61,9 +61,9 @@ enum r_shell
 
 static enum r_shell get_r_shell(const char *s)
 {
-	if ( strcmp(s, "r1i") == 0 ) return R_SHELL_R1I;
-	if ( strcmp(s, "r1f") == 0 ) return R_SHELL_R1F;
-	if ( strcmp(s, "rsplit") == 0 ) return R_SHELL_RSPLIT;
+	if ( strcasecmp(s, "r1i") == 0 ) return R_SHELL_R1I;
+	if ( strcasecmp(s, "r1f") == 0 ) return R_SHELL_R1F;
+	if ( strcasecmp(s, "rsplit") == 0 ) return R_SHELL_RSPLIT;
 
 	ERROR("Unknown R-factor '%s' - try '--shells=rsplit', or --help for"
 	      " more possibilities.\n", s);
