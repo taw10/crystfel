@@ -114,7 +114,7 @@ extern void set_symmetric_indices(Reflection *refl,
 /* Insertion */
 extern Reflection *add_refl(RefList *list,
                             signed int h, signed int k, signed int l);
-extern Reflection *add_refl_to_list(Reflection *refl, RefList *list);
+extern void add_refl_to_list(Reflection *refl, RefList *list);
 
 /* Iteration */
 extern Reflection *first_refl(RefList *list, RefListIterator **piter);

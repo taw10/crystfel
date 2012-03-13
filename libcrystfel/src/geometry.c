@@ -300,7 +300,7 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 		                        asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
 
 		if ( refl != NULL ) {
-			refl = add_refl_to_list(refl, reflections);
+			add_refl_to_list(refl, reflections);
 		}
 
 	}

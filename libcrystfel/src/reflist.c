@@ -803,6 +803,29 @@ static Reflection *insert_node(Reflection *refl, Reflection *new)
 }
 
 
+static void add_to_list(RefList *list, Reflection *new,
+                        signed int h, signed int k, signed int l)
+{
+	Reflection *f;
+
+	f = find_refl(list, h, k, l);
+	if ( f == NULL ) {
+
+		list->head = insert_node(list->head, new);
+		list->head->col = BLACK;
+
+	} else {
+
+		/* New reflection is identical to a previous one */
+		while ( f->next != NULL ) {
+			f = f->next;
+		}
+		f->next = new;
+		new->prev = f;
+	}
+}
+
+
 /**
  * add_refl
  * @list: A %RefList
@@ -820,7 +843,6 @@ static Reflection *insert_node(Reflection *refl, Reflection *new)
 Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 {
 	Reflection *new;
-	Reflection *f;
 
 	assert(abs(h)<256);
 	assert(abs(k)<256);
@@ -829,21 +851,7 @@ Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 	new = new_node(SERIAL(h, k, l));
 	if ( new == NULL ) return NULL;
 
-	f = find_refl(list, h, k, l);
-	if ( f == NULL ) {
-
-		list->head = insert_node(list->head, new);
-		list->head->col = BLACK;
-
-	} else {
-
-		/* New reflection is identical to a previous one */
-		while ( f->next != NULL ) {
-			f = f->next;
-		}
-		f->next = new;
-		new->prev = f;
-	}
+	add_to_list(list, new, h, k, l);
 
 	return new;
 }
@@ -854,26 +862,16 @@ Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
  * @refl: A %Reflection
  * @list: A %RefList
  *
- * Adds a reflection to @list.  The reflection that actually gets added will be
- * a newly created one, and all the data will be copied across.  The original
- * reflection will be destroyed and the new reflection returned.
- *
- * Returns: The newly created reflection, or NULL on failure.
+ * Adds a @refl to @list.
  *
  **/
-Reflection *add_refl_to_list(Reflection *refl, RefList *list)
+void add_refl_to_list(Reflection *refl, RefList *list)
 {
 	signed int h, k, l;
-	Reflection *r_added;
 
 	get_indices(refl, &h, &k, &l);
-	r_added = add_refl(list, h, k, l);
-	if ( r_added == NULL ) return NULL;
 
-	copy_data(r_added, refl);
-	reflection_free(refl);
-
-	return r_added;
+	add_to_list(list, refl, h, k, l);
 }
 
 
