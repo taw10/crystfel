@@ -481,7 +481,9 @@ int skip_some_files(FILE *fh, int n)
 	return 1;
 }
 
-int is_stream(const char *filename) {
+
+int is_stream(const char *filename)
+{
 	FILE *fh;
 	char line[1024];
 	char *rval = NULL;
