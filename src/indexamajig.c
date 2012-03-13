@@ -353,7 +353,7 @@ static void process_image(void *pp, int cookie)
 
 	switch ( pargs->static_args.peaks )
 	{
-	case PEAK_HDF5 :
+		case PEAK_HDF5 :
 		/* Get peaks from HDF5 */
 		if ( get_peaks(&image, hdfile,
 		               pargs->static_args.hdf5_peak_path) )
@@ -361,7 +361,8 @@ static void process_image(void *pp, int cookie)
 			ERROR("Failed to get peaks from HDF5 file.\n");
 		}
 		break;
-	case PEAK_ZAEF :
+
+		case PEAK_ZAEF :
 		search_peaks(&image, pargs->static_args.threshold,
 		             pargs->static_args.min_gradient,
 		             pargs->static_args.min_snr,
@@ -382,7 +383,8 @@ static void process_image(void *pp, int cookie)
 	image.profile_radius = 0.0001e9;
 	index_pattern(&image, cell, indm, pargs->static_args.cellr,
 		      config_verbose, pargs->static_args.ipriv,
-		      pargs->static_args.config_insane, pargs->static_args.tols);
+		      pargs->static_args.config_insane,
+		      pargs->static_args.tols);
 
 	if ( image.indexed_cell != NULL ) {
 
