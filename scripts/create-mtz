@@ -1,16 +1,15 @@
 #!/bin/sh
 
 OUTFILE=`echo $1 | sed -e 's/\.hkl$/.mtz/'`
-TMPFILE=`echo $1 | sed -e 's/\.hkl$/.temp.mtz/'`
-PDB=../1JB0.pdb
+TMPHKL=`echo $1 | sed -e 's/\.hkl$/.temp.hkl/'`
 
 echo " Input: $1"
 echo "Output: $OUTFILE"
-if [ -e $TMPFILE -o -e $OUTFILE ]; then
+if [ -e $TMPHKL -o -e $OUTFILE ]; then
 	echo "   I'm about to write to the following files, but one or more"
 	echo "   of them already exist:"
-	echo "   " $TMPFILE
 	echo "   " $OUTFILE
+	echo "   " $TMPHKL
 	echo "   To confirm that you want to continue, which will DESTROY the"
 	echo "   current contents of these files, type 'y' and press enter."
 	read conf
@@ -22,15 +21,13 @@ if [ -e $TMPFILE -o -e $OUTFILE ]; then
 	fi
 fi
 
+grep -v "End of reflections" $1 > $TMPHKL
 
-# PS1: CELL 281 281 165.2  90  90 120
-# PS2: CELL 139 232 309  90  90 90
-# Start by putting the CrystFEL intensities into an MTZ file
 echo "Running 'f2mtz'..."
-f2mtz HKLIN $1 HKLOUT $TMPFILE > out.html << EOF
+f2mtz HKLIN $TMPHKL HKLOUT $OUTFILE > out.html << EOF
 TITLE Reflections from CrystFEL
 NAME PROJECT wibble CRYSTAL wibble DATASET wibble
-CELL 139 232 309  90  90 90
+CELL 100 100 100  90  90 90
 SYMM P1
 SKIP 1
 LABOUT H K L IMEAN SIGIMEAN
@@ -40,17 +37,4 @@ EOF
 
 if [ $? -ne 0 ]; then echo "Failed."; exit; fi
 
-
-# Run 'truncate' to turn Is into Fs
-echo "Running 'truncate'..."
-truncate HKLIN $TMPFILE HKLOUT $OUTFILE >> out.html << EOF
-TRUNCATE NO
-NOHARVEST
-LABIN H=H K=K L=L IMEAN=IMEAN SIGIMEAN=SIGIMEAN
-LABOUT H=H K=K L=L IMEAN=IMEAN SIGIMEAN=SIGIMEAN F=F SIGF=SIGF
-EOF
-
-if [ $? -ne 0 ]; then echo "Failed."; exit; fi
-
-rm -f $TMPFILE
 echo "Done."
