@@ -690,7 +690,6 @@ static void show_help(const char *s)
 " -e, --image=<element>    Use this image when reading an HDF5 file.\n"
 "                           Example: /data/data0.\n"
 "                           Default: The first one found.\n"
-
 "\n");
 }
 
