@@ -334,7 +334,8 @@ static double molecule_factor(const double *intensities, const double *phases,
 	if ( flags == NULL ) return 1.0e5;
 
 	switch ( m ) {
-	case GRADIENT_MOSAIC :
+
+		case GRADIENT_MOSAIC :
 		fesetround(1);  /* Round to nearest */
 		h = (signed int)rint(hd);
 		k = (signed int)rint(kd);
@@ -344,14 +345,17 @@ static double molecule_factor(const double *intensities, const double *phases,
 		else if ( abs(l) > INDMAX ) r = 0.0;
 		else r = sym_lookup_intensity(intensities, flags, sym, h, k, l);
 		break;
-	case GRADIENT_INTERPOLATE :
+
+		case GRADIENT_INTERPOLATE :
 		r = interpolate_intensity(intensities, flags, sym, hd, kd, ld);
 		break;
-	case GRADIENT_PHASED :
+
+		case GRADIENT_PHASED :
 		r = interpolate_phased_intensity(intensities, phases, flags,
 		                                 sym, hd, kd, ld);
 		break;
-	default:
+
+		default:
 		ERROR("This gradient method not implemented yet.\n");
 		exit(1);
 	}
