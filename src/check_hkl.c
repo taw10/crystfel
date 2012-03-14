@@ -84,9 +84,10 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	int i;
 	FILE *fh;
 	double snr_total = 0;
-	int nmeas = 0;
+	int nrefl = 0;
 	int nmeastot = 0;
 	int nout = 0;
+	int nsilly = 0;
 	Reflection *refl;
 	RefListIterator *iter;
 	RefList *counted;
@@ -193,13 +194,15 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	      refl = next_refl(refl, iter) )
 	{
 		signed int h, k, l;
-		double d;
+		double d, val, esd;
 		int bin;
 		int j;
 
 		get_indices(refl, &h, &k, &l);
 
 		d = resolution(cell, h, k, l) * 2.0;
+		val = get_intensity(refl);
+		esd = get_esd_intensity(refl);
 
 		bin = -1;
 		for ( j=0; j<NBINS; j++ ) {
@@ -209,6 +212,11 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 			}
 		}
 		if ( bin == -1 ) continue;
+
+		if ( !isfinite(val/esd) ) {
+			nsilly++;
+			continue;
+		}
 
 		measured[bin]++;
 		mean[bin] += get_intensity(refl);
@@ -253,19 +261,25 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		measurements[bin] += get_redundancy(refl);
 		snr[bin] += val / esd;
 		snr_total += val / esd;
-		nmeas++;
+		nrefl++;
 		nmeastot += get_redundancy(refl);
 
 		var[bin] += pow(val-mean[bin], 2.0);
 	}
-	STATUS("overall <snr> = %f\n", snr_total/(double)nmeas);
+	STATUS("overall <snr> = %f\n", snr_total/(double)nrefl);
 	STATUS("%i measurements in total.\n", nmeastot);
-	STATUS("%i reflections in total.\n", nmeas);
+	STATUS("%i reflections in total.\n", nrefl);
 
 	if ( nout ) {
 		STATUS("Warning; %i reflections outside resolution range.\n",
 		       nout);
 	}
+
+	if ( nsilly ) {
+		STATUS("Warning; %i reflections had infinite or invalid values"
+		       " of I/sigma(I).\n", nsilly);
+	}
+
 
 	fprintf(fh, "1/d centre   # refs Possible  Compl       "
 		    "Meas   Red   SNR    Std dev       Mean\n");
@@ -278,9 +292,9 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		        cen*1.0e-9,
 		        measured[i],
 		        possible[i],
-		        100.0*(float)measured[i]/possible[i],
+		        100.0*(double)measured[i]/possible[i],
 		        measurements[i],
-		        (float)measurements[i]/measured[i],
+		        (double)measurements[i]/measured[i],
 		        snr[i]/(double)measured[i],
 		        sqrt(var[i]/measured[i]),
 		        mean[i]);
