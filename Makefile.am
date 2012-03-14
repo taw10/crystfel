@@ -15,9 +15,7 @@ TESTS = tests/list_check tests/first_merge_check tests/second_merge_check \
         tests/symmetry_check
 
 EXTRA_DIST += tests/first_merge_check tests/second_merge_check \
-              tests/third_merge_check tests/fourth_merge_check \
-              tests/first_merge_check.hkl tests/third_merge_check.hkl \
-              tests/fourth_merge_check.hkl
+              tests/third_merge_check tests/fourth_merge_check
 
 if BUILD_HDFSEE
 bin_PROGRAMS += src/hdfsee

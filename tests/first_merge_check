@@ -5,7 +5,6 @@ CrystFEL stream format 2.0
 Command line: indexamajig -i dummy.lst -o dummy.stream --kraken=prawn
 ----- Begin chunk -----
 Image filename: dummy.h5
-No unit cell from indexing.
 Cell parameters 27.74398 27.84377 16.90346 nm, 88.53688 91.11774 118.75944 deg
 astar = -0.0283891 +0.0149254 -0.0257273 nm^-1
 bstar = -0.0068281 +0.0403989 -0.0005196 nm^-1
@@ -20,7 +19,6 @@ End of reflections
 
 ----- Begin chunk -----
 Image filename: dummy.h5
-No unit cell from indexing.
 Cell parameters 27.74398 27.84377 16.90346 nm, 88.53688 91.11774 118.75944 deg
 astar = -0.0283891 +0.0149254 -0.0257273 nm^-1
 bstar = -0.0068281 +0.0403989 -0.0005196 nm^-1
@@ -34,10 +32,16 @@ End of reflections
 ----- End chunk -----
 EOF
 
+cat > first_merge_check_ans.hkl << EOF
+  h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
+  1   0   0     150.03        -      35.36       2    0.0    0.0
+End of reflections
+EOF
+
 src/process_hkl -i first_merge_check.stream -o first_merge_check.hkl
-diff first_merge_check.hkl tests/first_merge_check.hkl
+diff first_merge_check.hkl first_merge_check_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1
 fi
-rm -f first_merge_check.stream first_merge_check.hkl
+rm -f first_merge_check.stream first_merge_check.hkl first_merge_check_ans.hkl
 exit 0
