@@ -661,8 +661,8 @@ static void show_help(const char *s)
 "                            linear      : linear (default)\n"
 "                            wilson      : even spacing in Wilson plots\n"
 "                            volume      : constant volume\n"
-"      --max=n           The maximum 1/d to be considered in plot.\n"
-"      --min=n           The minimum 1/d to be considered in plot.\n"
+"      --max=n             The maximum 1/d to be considered in plot.\n"
+"      --min=n             The minimum 1/d to be considered in plot.\n"
 "  -d, --data=<type>       Use to select the kind of stream data in histogram.\n"
 "                          Choose from:\n"
 "                            reflection  : uses peak positons from indexed\n"
@@ -692,6 +692,14 @@ static void show_help(const char *s)
 "                           Default: The first one found.\n"
 
 "\n");
+}
+
+
+static void rlim_bailout()
+{
+	ERROR("Unable to automatically determine the resolution limits.\n");
+	ERROR("Try again with --min and --max.\n");
+	exit(1);
 }
 
 
@@ -1031,14 +1039,17 @@ int main(int argc, char *argv[])
 		/* get q range from Miller indices in hkl
 		   file. */
 		if ((hist_info.q_min < 0.0) && (hist_info.q_max < 0.0)) {
+			if ( image.reflections == NULL ) rlim_bailout();
 			resolution_limits(image.reflections, cell,
 		                  &hist_info.q_min, &hist_info.q_max);
 		} else if (hist_info.q_min < 0.0) {
 			double dummy;
+			if ( image.reflections == NULL ) rlim_bailout();
 			resolution_limits(image.reflections, cell,
 		                  &hist_info.q_min, &dummy);
 		} else if (hist_info.q_max < 0.0) {
 			double dummy;
+			if ( image.reflections == NULL ) rlim_bailout();
 			resolution_limits(image.reflections, cell,
 		                  &dummy, &hist_info.q_max);
 		}
@@ -1052,8 +1063,8 @@ int main(int argc, char *argv[])
 	}
 
 	if ( hist_info.q_min >= hist_info.q_max ) {
-		ERROR("the minimum 1/d value of: %e "
-	              "is greator then your max 1/d value of: %e\n",
+		ERROR("the minimum 1/d value (%e) "
+	              "is greater then your max 1/d value (%e).\n",
                       hist_info.q_min, hist_info.q_max);
 		return 1;
 	}
