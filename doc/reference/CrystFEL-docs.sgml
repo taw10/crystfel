@@ -8,7 +8,7 @@
   <bookinfo>
     <title>CrystFEL Reference Manual</title>
     <releaseinfo>
-      For CrystFEL 0.2.0.
+      For libcrystfel from CrystFEL 0.3.0.
     </releaseinfo>
     <abstract>
     This is the internal documentation for CrystFEL.  Unless you are looking at
