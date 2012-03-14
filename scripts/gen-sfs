@@ -48,7 +48,7 @@ mtz2various hklin ${PDB}-sorted.mtz hklout ${PDB}-temp.hkl >> gen-sfs.html <<EOF
 LABIN H=H K=K L=L FC=FC PHIC=PHIC
 OUTPUT USER '(3I4,2F9.1)'
 EOF
-if [ $? -ne 0 ]; then then
+if [ $? -ne 0 ]; then
 	echo "Failed!  Please examine gen-sfs.html for more information."
 	exit 1
 fi
