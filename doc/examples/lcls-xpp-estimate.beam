@@ -1,11 +1,11 @@
 ; Number of photons per pulse
-beam/fluence = 5.0e13
+beam/fluence = 5.0e12
 
 ; Radius of X-ray beam
 beam/radius = 1.5e-6
 
 ; Photon energy in eV
-beam/photon_energy = 6000.0
+beam/photon_energy = 3000.0
 
 ; Bandwidth: FWHM(wavelength) over wavelength.
 ; Note: current simulation code just uses a rectangular
