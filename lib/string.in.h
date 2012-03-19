@@ -1,6 +1,6 @@
 /* A GNU-like <string.h>.
 
-   Copyright (C) 1995-1996, 2001-2010 Free Software Foundation, Inc.
+   Copyright (C) 1995-1996, 2001-2011 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,13 +37,8 @@
 # include <wchar.h>
 #endif
 
-#ifndef __attribute__
-/* This feature is available in gcc versions 2.5 and later.  */
-# if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 5)
-#  define __attribute__(Spec) /* empty */
-# endif
-#endif
-/* The attribute __pure__ was added in gcc 2.96.  */
+/* The __attribute__ feature is available in gcc versions 2.5 and later.
+   The attribute __pure__ was added in gcc 2.96.  */
 #if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 96)
 # define _GL_ATTRIBUTE_PURE __attribute__ ((__pure__))
 #else
@@ -282,17 +277,28 @@ _GL_WARN_ON_USE (strchr, "strchr cannot work correctly on character strings "
 
 /* Find the first occurrence of C in S or the final NUL byte.  */
 #if @GNULIB_STRCHRNUL@
-# if ! @HAVE_STRCHRNUL@
+# if @REPLACE_STRCHRNUL@
+#  if !(defined __cplusplus && defined GNULIB_NAMESPACE)
+#   define strchrnul rpl_strchrnul
+#  endif
+_GL_FUNCDECL_RPL (strchrnul, char *, (const char *__s, int __c_in)
+                                     _GL_ATTRIBUTE_PURE
+                                     _GL_ARG_NONNULL ((1)));
+_GL_CXXALIAS_RPL (strchrnul, char *,
+                  (const char *str, int ch));
+# else
+#  if ! @HAVE_STRCHRNUL@
 _GL_FUNCDECL_SYS (strchrnul, char *, (char const *__s, int __c_in)
                                      _GL_ATTRIBUTE_PURE
                                      _GL_ARG_NONNULL ((1)));
-# endif
+#  endif
   /* On some systems, this function is defined as an overloaded function:
        extern "C++" { const char * std::strchrnul (const char *, int); }
        extern "C++" { char * std::strchrnul (char *, int); }  */
 _GL_CXXALIAS_SYS_CAST2 (strchrnul,
                         char *, (char const *__s, int __c_in),
                         char const *, (char const *__s, int __c_in));
+# endif
 # if ((__GLIBC__ == 2 && __GLIBC_MINOR__ >= 10) && !defined __UCLIBC__) \
      && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
 _GL_CXXALIASWARN1 (strchrnul, char *, (char *__s, int __c_in));

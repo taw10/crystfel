@@ -1,5 +1,5 @@
 # DO NOT EDIT! GENERATED AUTOMATICALLY!
-# Copyright (C) 2002-2010 Free Software Foundation, Inc.
+# Copyright (C) 2002-2011 Free Software Foundation, Inc.
 #
 # This file is free software, distributed under the terms of the GNU
 # General Public License.  As a special exception to the GNU General
@@ -32,7 +32,6 @@ AC_DEFUN([gl_EARLY],
   AC_REQUIRE([gl_USE_SYSTEM_EXTENSIONS])
   # Code from module include_next:
   # Code from module lib-ignore:
-  # Code from module memchr:
   # Code from module stddef:
   # Code from module string:
   # Code from module strndup:
@@ -56,27 +55,13 @@ AC_DEFUN([gl_INIT],
   m4_pushdef([gl_LIBSOURCES_DIR], [])
   gl_COMMON
   gl_source_base='lib'
-  # Code from module arg-nonnull:
-  # Code from module c++defs:
-  # Code from module extensions:
-  # Code from module include_next:
-  # Code from module lib-ignore:
-  gl_IGNORE_UNUSED_LIBRARIES
-  # Code from module memchr:
-  gl_FUNC_MEMCHR
-  gl_STRING_MODULE_INDICATOR([memchr])
-  # Code from module stddef:
-  gl_STDDEF_H
-  # Code from module string:
-  gl_HEADER_STRING_H
-  # Code from module strndup:
-  gl_FUNC_STRNDUP
-  gl_STRING_MODULE_INDICATOR([strndup])
-  # Code from module strnlen:
-  gl_FUNC_STRNLEN
-  gl_STRING_MODULE_INDICATOR([strnlen])
-  # Code from module warn-on-use:
-  # Code from module dummy:
+gl_IGNORE_UNUSED_LIBRARIES
+gl_STDDEF_H
+gl_HEADER_STRING_H
+gl_FUNC_STRNDUP
+gl_STRING_MODULE_INDICATOR([strndup])
+gl_FUNC_STRNLEN
+gl_STRING_MODULE_INDICATOR([strnlen])
   # End of code from modules
   m4_ifval(gl_LIBSOURCES_LIST, [
     m4_syscmd([test ! -d ]m4_defn([gl_LIBSOURCES_DIR])[ ||
@@ -221,8 +206,6 @@ AC_DEFUN([gl_FILE_LIST], [
   build-aux/c++defs.h
   build-aux/warn-on-use.h
   lib/dummy.c
-  lib/memchr.c
-  lib/memchr.valgrind
   lib/stddef.in.h
   lib/string.in.h
   lib/strndup.c
@@ -232,8 +215,6 @@ AC_DEFUN([gl_FILE_LIST], [
   m4/gnulib-common.m4
   m4/include_next.m4
   m4/lib-ignore.m4
-  m4/memchr.m4
-  m4/mmap-anon.m4
   m4/onceonly.m4
   m4/stddef_h.m4
   m4/string_h.m4
