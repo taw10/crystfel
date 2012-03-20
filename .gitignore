@@ -39,4 +39,10 @@ src/.dirstamp
 *~
 doc/reference/*
 gtk-doc.make
-build-aux
+build-aux/compile
+build-aux/config.sub
+build-aux/install-sh
+build-aux/missing
+build-aux/config.guess
+build-aux/depcomp
+build-aux/ltmain.sh
