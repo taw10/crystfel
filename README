@@ -131,6 +131,30 @@ then your version of FFTW3 is not compiled in a suitable way.  You'll need to
 install it again (from source) adding "--enable-shared" to its ./configure
 command line.
 
+If you get an error about "cairo_surface_show_page" in src/scaling-report.c,
+simply edit the file and comment that line out.  Partialator will then not be
+able to produce a useful scaling report, but the rest of CrystFEL will work
+properly.
+
+If you are installing from Git, the following extra things apply:
+
+- You must run "./autogen.sh" to generate "configure" and other files before
+  proceeding as detailed above.
+
+- If you have an old version of Automake (less than 1.10), or an old version of
+  Autoconf (less than 2.60), you'll need to add the following line near the top
+  of Makefile.am:
+
+  docdir = ${datadir}/doc/${PACKAGE}
+
+- If your Automake version is less than 1.11, you'll need to comment out the
+  reference to AM_SILENT_RULES in configure.ac, like this:
+
+  dnl AM_SILENT_RULES([yes])
+
+- You will not be able to use the "--enable-gtk-doc" option to configure unless
+  you have at least version 1.9 of gtk-doc installed.
+
 
 Program name
 ------------
