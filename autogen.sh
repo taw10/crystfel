@@ -1,7 +1,7 @@
 #!/bin/sh
 
-   aclocal -I m4 \
-&& libtoolize --force --copy \
+libtoolize --force --copy \
+&& aclocal -I m4 --force \
 && gtkdocize --copy \
 && autoheader --force \
 && automake --add-missing --copy --force \
