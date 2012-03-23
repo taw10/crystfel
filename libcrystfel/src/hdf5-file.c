@@ -227,6 +227,8 @@ void hdfile_close(struct hdfile *f)
 }
 
 
+
+/* Deprecated */
 int hdf5_write(const char *filename, const void *data,
                int width, int height, int type)
 {
@@ -281,10 +283,115 @@ int hdf5_write(const char *filename, const void *data,
 		H5Fclose(fh);
 		return 1;
 	}
+	H5Dclose(dh);
+	H5Gclose(gh);
+	H5Pclose(ph);
+	H5Fclose(fh);
+
+	return 0;
+}
+
+
+int hdf5_write_image(const char *filename, struct image *image)
+{
+	hid_t fh, gh, sh, dh;	/* File, group, dataspace and data handles */
+	hid_t ph;  /* Property list */
+	herr_t r;
+	hsize_t size[2];
+	double lambda, eV;
+
+	fh = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	if ( fh < 0 ) {
+		ERROR("Couldn't create file: %s\n", filename);
+		return 1;
+	}
+
+	gh = H5Gcreate2(fh, "data", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if ( gh < 0 ) {
+		ERROR("Couldn't create group\n");
+		H5Fclose(fh);
+		return 1;
+	}
+
+	/* Note the "swap" here, according to section 3.2.5,
+	 * "C versus Fortran Dataspaces", of the HDF5 user's guide. */
+	size[0] = image->height;
+	size[1] = image->width;
+	sh = H5Screate_simple(2, size, NULL);
+
+	/* Set compression */
+	ph = H5Pcreate(H5P_DATASET_CREATE);
+	H5Pset_chunk(ph, 2, size);
+	H5Pset_deflate(ph, 3);
+
+	dh = H5Dcreate2(gh, "data", H5T_NATIVE_FLOAT, sh,
+	                H5P_DEFAULT, ph, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Couldn't create dataset\n");
+		H5Fclose(fh);
+		return 1;
+	}
+
+	/* Muppet check */
+	H5Sget_simple_extent_dims(sh, size, NULL);
+
+	r = H5Dwrite(dh, H5T_NATIVE_FLOAT, H5S_ALL,
+	             H5S_ALL, H5P_DEFAULT, image->data);
+	if ( r < 0 ) {
+		ERROR("Couldn't write data\n");
+		H5Dclose(dh);
+		H5Fclose(fh);
+		return 1;
+	}
+	H5Dclose(dh);
+
+	H5Gclose(gh);
+
+	gh = H5Gcreate2(fh, "LCLS", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if ( gh < 0 ) {
+		printf("Couldn't create group\n");
+		H5Fclose(fh);
+		return 1;
+	}
+
+	sh = H5Screate_simple(1, size, NULL);
+
+	dh = H5Dcreate2(gh, "photon_energy_eV", H5T_NATIVE_DOUBLE, sh,
+	                H5P_DEFAULT, ph, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		H5Fclose(fh);
+		return 1;
+	}
+	eV = ph_lambda_to_eV(image->lambda);
+	r = H5Dwrite(dh, H5T_NATIVE_DOUBLE, H5S_ALL,
+	             H5S_ALL, H5P_DEFAULT, &eV);
+	if ( r < 0 ) {
+		H5Dclose(dh);
+		H5Fclose(fh);
+		return 1;
+	}
+	H5Dclose(dh);
+
+	dh = H5Dcreate2(fh, "/LCLS/photon_wavelength_A", H5T_NATIVE_DOUBLE, sh,
+	                H5P_DEFAULT, ph, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		H5Fclose(fh);
+		return 1;
+	}
+	lambda = image->lambda * 1e10;
+	r = H5Dwrite(dh, H5T_NATIVE_DOUBLE, H5S_ALL,
+	             H5S_ALL, H5P_DEFAULT, &lambda);
+	if ( r < 0 ) {
+		H5Dclose(dh);
+		H5Fclose(fh);
+		return 1;
+	}
+	H5Dclose(dh);
+
+	H5Gclose(gh);
 
 	H5Pclose(ph);
-	H5Gclose(gh);
-	H5Dclose(dh);
+
 	H5Fclose(fh);
 
 	return 0;
