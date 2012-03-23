@@ -236,7 +236,6 @@ int hdf5_write(const char *filename, const void *data,
 	hid_t ph;  /* Property list */
 	herr_t r;
 	hsize_t size[2];
-	hsize_t max_size[2];
 
 	fh = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	if ( fh < 0 ) {
@@ -255,9 +254,7 @@ int hdf5_write(const char *filename, const void *data,
 	 * "C versus Fortran Dataspaces", of the HDF5 user's guide. */
 	size[0] = height;
 	size[1] = width;
-	max_size[0] = height;
-	max_size[1] = width;
-	sh = H5Screate_simple(2, size, max_size);
+	sh = H5Screate_simple(2, size, NULL);
 
 	/* Set compression */
 	ph = H5Pcreate(H5P_DATASET_CREATE);
@@ -273,7 +270,7 @@ int hdf5_write(const char *filename, const void *data,
 	}
 
 	/* Muppet check */
-	H5Sget_simple_extent_dims(sh, size, max_size);
+	H5Sget_simple_extent_dims(sh, size, NULL);
 
 	r = H5Dwrite(dh, type, H5S_ALL,
 	             H5S_ALL, H5P_DEFAULT, data);
