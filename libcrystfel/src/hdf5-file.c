@@ -351,10 +351,11 @@ int hdf5_write_image(const char *filename, struct image *image)
 		return 1;
 	}
 
+	size[0] = 1;
 	sh = H5Screate_simple(1, size, NULL);
 
 	dh = H5Dcreate2(gh, "photon_energy_eV", H5T_NATIVE_DOUBLE, sh,
-	                H5P_DEFAULT, ph, H5P_DEFAULT);
+	                H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		H5Fclose(fh);
 		return 1;
@@ -370,7 +371,7 @@ int hdf5_write_image(const char *filename, struct image *image)
 	H5Dclose(dh);
 
 	dh = H5Dcreate2(fh, "/LCLS/photon_wavelength_A", H5T_NATIVE_DOUBLE, sh,
-	                H5P_DEFAULT, ph, H5P_DEFAULT);
+	                H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		H5Fclose(fh);
 		return 1;
