@@ -678,5 +678,7 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 		}
 	}
 
+	image->diffracting_resolution = 0.0;
+
 	free(il);
 }
