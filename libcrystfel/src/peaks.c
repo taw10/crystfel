@@ -156,9 +156,10 @@ static int cull_peaks(struct image *image)
 
 /* Returns non-zero if peak has been vetoed.
  * i.e. don't use result if return value is not zero. */
-int integrate_peak(struct image *image, int cfs, int css,
-                   double *pfs, double *pss, double *intensity, double *sigma,
-                   double ir_inn, double ir_mid, double ir_out)
+static int integrate_peak(struct image *image, int cfs, int css,
+                          double *pfs, double *pss,
+                          double *intensity, double *sigma,
+                          double ir_inn, double ir_mid, double ir_out)
 {
 	signed int fs, ss;
 	double lim_sq, out_lim_sq, mid_lim_sq;
