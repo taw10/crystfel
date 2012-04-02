@@ -99,29 +99,6 @@ static signed int locate_peak(double x, double y, double z, double k,
 }
 
 
-static double excitation_error(double xl, double yl, double zl,
-                               double ds, double k, double divergence,
-                               double tt)
-{
-	double al;
-	double r;
-	double delta;
-
-	al = M_PI_2 - asin(-zl/ds);
-
-	r = ( ds * sin(al) / sin(tt) ) - k;
-
-	delta = sqrt(2.0 * pow(ds, 2.0) * (1.0-cos(divergence)));
-	if ( divergence > 0.0 ) {
-		r += delta;
-	} else {
-		r -= delta;
-	}
-
-	return r;
-}
-
-
 static double partiality(double r1, double r2, double r)
 {
 	double q1, q2;
@@ -146,46 +123,44 @@ static Reflection *check_reflection(struct image *image,
                                     double csx, double csy, double csz)
 {
 	const int output = 0;
-	double xl, yl, zl;
-	double ds, ds_sq;
+	double xl, yl, zl, tl;
 	double rlow, rhigh;     /* "Excitation error" */
 	signed int p;           /* Panel number */
 	double xda, yda;        /* Position on detector */
 	int close, inside;
 	double part;            /* Partiality */
-	int clamp_low = 0;
-	int clamp_high = 0;
-	double bandwidth = image->bw;
-	double divergence = image->div;
-	double lambda = image->lambda;
-	double klow, kcen, khigh;    /* Wavenumber */
+	int clamp_low, clamp_high;
+	double klow, khigh;    /* Wavenumber */
 	Reflection *refl;
-	double tt, psi;
+	double cet, cez;
 
 	/* "low" gives the largest Ewald sphere,
 	 * "high" gives the smallest Ewald sphere. */
-	klow = 1.0/(lambda - lambda*bandwidth/2.0);
-	kcen = 1.0/lambda;
-	khigh = 1.0/(lambda + lambda*bandwidth/2.0);
+	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
+	khigh = 1.0/(image->lambda + image->lambda*image->bw/2.0);
 
 	/* Get the coordinates of the reciprocal lattice point */
 	xl = h*asx + k*bsx + l*csx;
 	yl = h*asy + k*bsy + l*csy;
 	zl = h*asz + k*bsz + l*csz;
 
-	ds_sq = modulus_squared(xl, yl, zl);  /* d*^2 */
-	ds = sqrt(ds_sq);
+	/* If the point is looking "backscattery", reject it straight away */
+	if ( zl < -khigh/2.0 ) return NULL;
 
-	/* Simple (fast) check to reject reflection if it's "in front" */
-	psi = atan2(zl, sqrt(xl*xl + yl*yl));
-	if ( psi - atan2(image->profile_radius, ds) > divergence ) return NULL;
+	tl = sqrt(xl*xl + yl*yl);
 
-	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+kcen);
-	if ( tt > deg2rad(90.0) ) return NULL;
+	cet = -sin(image->div/2.0) * khigh;
+	cez = -cos(image->div/2.0) * khigh;
+	rhigh = khigh - distance(cet, cez, tl, zl);  /* Loss of precision */
 
-	/* Calculate excitation errors */
-	rlow = excitation_error(xl, yl, zl, ds, klow, -divergence/2.0, tt);
-	rhigh = excitation_error(xl, yl, zl, ds, khigh, +divergence/2.0, tt);
+	cet =  sin(image->div/2.0) * klow;
+	cez = -cos(image->div/2.0) * klow;
+	rlow = klow - distance(cet, cez, tl, zl);  /* Loss of precision */
+
+	if ( rlow < rhigh ) {
+		STATUS("%i %i %i\n", h, k, l);
+		return NULL;
+	}
 
 	/* Is the reciprocal lattice point close to either extreme of
 	 * the sphere, maybe just outside the "Ewald volume"? */
@@ -204,7 +179,13 @@ static Reflection *check_reflection(struct image *image,
 
 	/* If the "lower" Ewald sphere is a long way away, use the
 	 * position at which the Ewald sphere would just touch the
-	 * reflection. */
+	 * reflection.
+	 *
+	 * The six possible combinations of clamp_{low,high} (including
+	 * zero) correspond to the six situations in Table 3 of Rossmann
+	 * et al. (1979).
+	 */
+	clamp_low = 0;  clamp_high = 0;
 	if ( rlow < -image->profile_radius ) {
 		rlow = -image->profile_radius;
 		clamp_low = -1;
@@ -213,7 +194,6 @@ static Reflection *check_reflection(struct image *image,
 		rlow = +image->profile_radius;
 		clamp_low = +1;
 	}
-	/* Likewise the "higher" Ewald sphere */
 	if ( rhigh < -image->profile_radius ) {
 		rhigh = -image->profile_radius;
 		clamp_high = -1;
@@ -222,16 +202,13 @@ static Reflection *check_reflection(struct image *image,
 		rhigh = +image->profile_radius;
 		clamp_high = +1;
 	}
-	assert(clamp_low <= clamp_high);
-	/* The six possible combinations of clamp_{low,high} (including
-	 * zero) correspond to the six situations in Table 3 of Rossmann
-	 * et al. (1979). */
+	assert(clamp_low >= clamp_high);
 
 	/* Calculate partiality */
 	part = partiality(rlow, rhigh, image->profile_radius);
 
 	/* Locate peak on detector. */
-	p = locate_peak(xl, yl, zl, kcen, image->det, &xda, &yda);
+	p = locate_peak(xl, yl, zl, 1.0/image->lambda, image->det, &xda, &yda);
 	if ( p == -1 ) return NULL;
 
 	/* Add peak to list */
@@ -276,7 +253,7 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 
 	/* We add a horrific 20% fudge factor because bandwidth, divergence
 	 * and so on mean reflections appear beyond the largest q */
-	mres = 1.2 * largest_q(image);
+	mres = largest_q(image);
 
 	hmax = mres / modulus(asx, asy, asz);
 	kmax = mres / modulus(bsx, bsy, bsz);
