@@ -271,12 +271,6 @@ static void process_image(void *pp, int cookie)
 	image.copyme = pargs->static_args.copyme;
 	image.beam = beam;
 
-	if ( beam == NULL ) {
-		ERROR("Warning: no beam parameters file.\n");
-		ERROR("I'm going to assume 1 ADU per photon, which is almost");
-		ERROR(" certainly wrong.  Peak sigmas will be incorrect.\n");
-	}
-
 	pargs->indexable = 0;
 
 	hdfile = hdfile_open(filename);
@@ -973,6 +967,12 @@ int main(int argc, char *argv[])
 		STATUS("No beam parameters file was given, so I'm taking the"
 		       " nominal photon energy to be 2 keV.\n");
 		nominal_photon_energy = 2000.0;
+	}
+
+	if ( beam == NULL ) {
+		ERROR("Warning: no beam parameters file.\n");
+		ERROR("I'm going to assume 1 ADU per photon, which is almost");
+		ERROR(" certainly wrong.  Peak sigmas will be incorrect.\n");
 	}
 
 	/* Get first filename and use it to set up the indexing */
