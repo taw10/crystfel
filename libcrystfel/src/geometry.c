@@ -251,8 +251,6 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
 
-	/* We add a horrific 20% fudge factor because bandwidth, divergence
-	 * and so on mean reflections appear beyond the largest q */
 	mres = largest_q(image);
 
 	hmax = mres / modulus(asx, asy, asz);
