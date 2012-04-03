@@ -178,6 +178,8 @@ static void show_help(const char *s)
 " -c, --cnoise=<val>       Add random noise, with a flat distribution, to the\n"
 "                          reciprocal lattice vector components given in the\n"
 "                          stream, with maximum error +/- <val> percent.\n"
+"     --pgraph=<file>      Write reflection counts and partiality statistics\n"
+"                           to <file>.\n"
 "\n"
 );
 }
@@ -537,6 +539,8 @@ int main(int argc, char *argv[])
 		fh = fopen(phist_file, "w");
 
 		if ( fh != NULL ) {
+
+			fprintf(fh, "1/d_nm #refl  pmean  pmax\n");
 
 			for ( i=0; i<NBINS; i++ ) {
 
