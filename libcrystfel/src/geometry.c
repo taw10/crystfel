@@ -99,20 +99,20 @@ static signed int locate_peak(double x, double y, double z, double k,
 }
 
 
-static double partiality(double r1, double r2, double r)
+static double partiality(double rlow, double rhigh, double r)
 {
-	double q1, q2;
-	double p1, p2;
+	double qlow, qhigh;
+	double plow, phigh;
 
 	/* Calculate degrees of penetration */
-	q1 = (r1 + r)/(2.0*r);
-	q2 = (r2 + r)/(2.0*r);
+	qlow  = (rlow + r)/(2.0*r);
+	qhigh = (rhigh + r)/(2.0*r);
 
 	/* Convert to partiality */
-	p1 = 3.0*pow(q1,2.0) - 2.0*pow(q1,3.0);
-	p2 = 3.0*pow(q2,2.0) - 2.0*pow(q2,3.0);
+	plow  = 3.0*pow(qlow,2.0)  - 2.0*pow(qlow,3.0);
+	phigh = 3.0*pow(qhigh,2.0) - 2.0*pow(qhigh,3.0);
 
-	return p2 - p1;
+	return plow - phigh;
 }
 
 
