@@ -185,8 +185,8 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	out_lim_sq = pow(ir_out, 2.0);
 
 	/* Estimate the background */
-	for ( fs=-ir_out; fs<+ir_out; fs++ ) {
-	for ( ss=-ir_out; ss<+ir_out; ss++ ) {
+	for ( fs=-ir_out; fs<=+ir_out; fs++ ) {
+	for ( ss=-ir_out; ss<=+ir_out; ss++ ) {
 
 		double val;
 		uint16_t flags;
@@ -234,8 +234,8 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	pk_total = 0.0;
 	pk_counts = 0;
 	fsct = 0.0;  ssct = 0.0;
-	for ( fs=-ir_inn; fs<+ir_inn; fs++ ) {
-	for ( ss=-ir_inn; ss<+ir_inn; ss++ ) {
+	for ( fs=-ir_inn; fs<=+ir_inn; fs++ ) {
+	for ( ss=-ir_inn; ss<=+ir_inn; ss++ ) {
 
 		double val;
 		uint16_t flags;
