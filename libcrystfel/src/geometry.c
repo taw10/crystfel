@@ -118,12 +118,10 @@ static double partiality(double rlow, double rhigh, double r)
 
 static Reflection *check_reflection(struct image *image,
                                     signed int h, signed int k, signed int l,
-                                    double asx, double asy, double asz,
-                                    double bsx, double bsy, double bsz,
-                                    double csx, double csy, double csz)
+                                    double xl, double yl, double zl)
 {
 	const int output = 0;
-	double xl, yl, zl, tl;
+	double tl;
 	double rlow, rhigh;     /* "Excitation error" */
 	signed int p;           /* Panel number */
 	double xda, yda;        /* Position on detector */
@@ -139,10 +137,6 @@ static Reflection *check_reflection(struct image *image,
 	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
 	khigh = 1.0/(image->lambda + image->lambda*image->bw/2.0);
 
-	/* Get the coordinates of the reciprocal lattice point */
-	xl = h*asx + k*bsx + l*csx;
-	yl = h*asy + k*bsy + l*csy;
-	zl = h*asz + k*bsz + l*csz;
 
 	/* If the point is looking "backscattery", reject it straight away */
 	if ( zl < -khigh/2.0 ) return NULL;
@@ -229,6 +223,9 @@ static Reflection *check_reflection(struct image *image,
 
 RefList *find_intersections(struct image *image, UnitCell *cell)
 {
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
@@ -247,15 +244,13 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 		return NULL;
 	}
 
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
 	mres = largest_q(image);
 
-	hmax = mres / modulus(asx, asy, asz);
-	kmax = mres / modulus(bsx, bsy, bsz);
-	lmax = mres / modulus(csx, csy, csz);
+	hmax = mres * modulus(ax, ay, az);
+	kmax = mres * modulus(bx, by, bz);
+	lmax = mres * modulus(cx, cy, cz);
 
 	if ( (hmax >= 256) || (kmax >= 256) || (lmax >= 256) ) {
 		ERROR("Unit cell is stupidly large.\n");
@@ -265,14 +260,23 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 		if ( lmax >= 256 ) lmax = 255;
 	}
 
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+
 	for ( h=-hmax; h<=hmax; h++ ) {
 	for ( k=-kmax; k<=kmax; k++ ) {
 	for ( l=-lmax; l<=lmax; l++ ) {
 
 		Reflection *refl;
+		double xl, yl, zl;
 
-		refl = check_reflection(image, h, k, l,
-		                        asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
+		/* Get the coordinates of the reciprocal lattice point */
+		xl = h*asx + k*bsx + l*csx;
+		yl = h*asy + k*bsy + l*csy;
+		zl = h*asz + k*bsz + l*csz;
+
+		refl = check_reflection(image, h, k, l, xl, yl, zl);
 
 		if ( refl != NULL ) {
 			add_refl_to_list(refl, reflections);
@@ -308,13 +312,18 @@ void update_partialities(struct image *image)
 	{
 		Reflection *vals;
 		double r1, r2, p, x, y;
+		double xl, yl, zl;
 		signed int h, k, l;
 		int clamp1, clamp2;
 
 		get_symmetric_indices(refl, &h, &k, &l);
 
-		vals = check_reflection(image, h, k, l,
-		                        asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
+		/* Get the coordinates of the reciprocal lattice point */
+		xl = h*asx + k*bsx + l*csx;
+		yl = h*asy + k*bsy + l*csy;
+		zl = h*asz + k*bsz + l*csz;
+
+		vals = check_reflection(image, h, k, l, xl, yl, zl);
 
 		if ( vals == NULL ) {
 			set_redundancy(refl, 0);
