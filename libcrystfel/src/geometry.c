@@ -151,11 +151,6 @@ static Reflection *check_reflection(struct image *image,
 	cez = -cos(image->div/2.0) * klow;
 	rlow = klow - distance(cet, cez, tl, zl);  /* Loss of precision */
 
-	if ( rlow < rhigh ) {
-		STATUS("%i %i %i\n", h, k, l);
-		return NULL;
-	}
-
 	if ( (signbit(rlow) == signbit(rhigh))
 	     && (fabs(rlow) > image->profile_radius)
 	     && (fabs(rhigh) > image->profile_radius) ) return NULL;
