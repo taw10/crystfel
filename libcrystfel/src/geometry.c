@@ -125,15 +125,15 @@ static Reflection *check_reflection(struct image *image,
 	double rlow, rhigh;     /* "Excitation error" */
 	signed int p;           /* Panel number */
 	double xda, yda;        /* Position on detector */
-	int close, inside;
 	double part;            /* Partiality */
 	int clamp_low, clamp_high;
 	double klow, khigh;    /* Wavenumber */
 	Reflection *refl;
 	double cet, cez;
 
-	/* "low" gives the largest Ewald sphere,
-	 * "high" gives the smallest Ewald sphere. */
+	/* "low" gives the largest Ewald sphere (wavelength short => k large)
+	 * "high" gives the smallest Ewald sphere (wavelength long => k small)
+	 */
 	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
 	khigh = 1.0/(image->lambda + image->lambda*image->bw/2.0);
 
@@ -156,20 +156,9 @@ static Reflection *check_reflection(struct image *image,
 		return NULL;
 	}
 
-	/* Is the reciprocal lattice point close to either extreme of
-	 * the sphere, maybe just outside the "Ewald volume"? */
-	close = (fabs(rlow) < image->profile_radius)
-	     || (fabs(rhigh) < image->profile_radius);
-
-	/* Is the reciprocal lattice point somewhere between the
-	 * extremes of the sphere, i.e. inside the "Ewald volume"? */
-	inside = signbit(rlow) ^ signbit(rhigh);
-
-	/* Can't be both inside and close */
-	if ( inside ) close = 0;
-
-	/* Neither?  Skip it. */
-	if ( !(close || inside) ) return NULL;
+	if ( (signbit(rlow) == signbit(rhigh))
+	     && (fabs(rlow) > image->profile_radius)
+	     && (fabs(rhigh) > image->profile_radius) ) return NULL;
 
 	/* If the "lower" Ewald sphere is a long way away, use the
 	 * position at which the Ewald sphere would just touch the
