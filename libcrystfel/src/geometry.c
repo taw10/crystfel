@@ -137,7 +137,6 @@ static Reflection *check_reflection(struct image *image,
 	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
 	khigh = 1.0/(image->lambda + image->lambda*image->bw/2.0);
 
-
 	/* If the point is looking "backscattery", reject it straight away */
 	if ( zl < -khigh/2.0 ) return NULL;
 
