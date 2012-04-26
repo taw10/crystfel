@@ -1340,7 +1340,6 @@ static void numbers_update(DisplayWindow *dw)
 	for ( py=0; py<17; py++ ) {
 
 		char s[32];
-		float val;
 		GtkWidget *l;
 		int x, y;
 		int invalid;
@@ -1355,11 +1354,13 @@ static void numbers_update(DisplayWindow *dw)
 		/* Map from unbinned mapped pixel coordinates to a panel */
 		invalid = reverse_2d_mapping(x, y, &dfs, &dss, dw->image->det);
 		fs = dfs;  ss = dss;
-		if ( !invalid ) {
-			val = dw->image->data[fs+ss*dw->image->width];
-		}
 
 		if ( !invalid ) {
+
+			float val;
+
+			val = dw->image->data[fs+ss*dw->image->width];
+
 			if ( val > 0.0 ) {
 				if ( log(val)/log(10.0) < 5 ) {
 					snprintf(s, 31, "%.0f", val);
@@ -1373,6 +1374,7 @@ static void numbers_update(DisplayWindow *dw)
 					snprintf(s, 31, "-HUGE");
 				}
 			}
+
 		} else {
 			strcpy(s, "-");
 		}
