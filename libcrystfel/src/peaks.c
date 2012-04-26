@@ -53,10 +53,6 @@
 
 
 /* How close a peak must be to an indexed position to be considered "close"
- * for the purposes of double hit detection and sanity checking. */
-#define PEAK_CLOSE (30.0)
-
-/* How close a peak must be to an indexed position to be considered "close"
  * for the purposes of integration. */
 #define PEAK_REALLY_CLOSE (10.0)
 
