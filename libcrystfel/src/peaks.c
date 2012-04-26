@@ -636,8 +636,14 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 			/* FIXME: Horrible hardcoded value */
 			if ( (f != NULL) && (d < 10.0) ) {
 
+				double exe;
+
+				exe = get_excitation_error(refl);
+
 				pfs = f->fs;
 				pss = f->ss;
+
+				set_detector_pos(refl, exe, pfs, pss);
 
 			}
 
