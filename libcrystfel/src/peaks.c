@@ -52,10 +52,6 @@
 #include "beam-parameters.h"
 
 
-/* How close a peak must be to an indexed position to be considered "close"
- * for the purposes of integration. */
-#define PEAK_REALLY_CLOSE (10.0)
-
 /* Degree of polarisation of X-ray beam */
 #define POL (1.0)
 
@@ -640,7 +636,9 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 			} else {
 				f = NULL;
 			}
-			if ( (f != NULL) && (d < PEAK_REALLY_CLOSE) ) {
+
+			/* FIXME: Horrible hardcoded value */
+			if ( (f != NULL) && (d < 10.0) ) {
 
 				pfs = f->fs;
 				pss = f->ss;

@@ -228,9 +228,8 @@ static void show_help(const char *s)
 "\n"
 "\nOptions you probably won't need:\n\n"
 "     --no-check-prefix    Don't attempt to correct the --prefix.\n"
-"     --no-closer-peak     Don't integrate from the location of a nearby peak\n"
-"                           instead of the position closest to the reciprocal\n"
-"                           lattice point.\n"
+"     --closer-peak        Don't integrate from the location of a nearby peak\n"
+"                           instead of the predicted spot.  Don't use.\n"
 "     --insane             Don't check that the reduced cell accounts for at\n"
 "                           least 10%% of the located peaks.\n"
 "     --no-bg-sub          Don't subtract local background estimates from\n"
@@ -561,7 +560,7 @@ int main(int argc, char *argv[])
 	int config_verbose = 0;
 	int config_satcorr = 1;
 	int config_checkprefix = 1;
-	int config_closer = 1;
+	int config_closer = 0;
 	int config_insane = 0;
 	int config_bgsub = 1;
 	int config_basename = 0;
@@ -630,6 +629,7 @@ int main(int argc, char *argv[])
 		{"threshold",          1, NULL,               't'},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
 		{"no-closer-peak",     0, &config_closer,      0},
+		{"closer-peak",        0, &config_closer,      1},
 		{"insane",             0, &config_insane,      1},
 		{"image",              1, NULL,               'e'},
 		{"basename",           0, &config_basename,    1},
