@@ -534,9 +534,6 @@ int peak_sanity_check(struct image *image)
 
 struct integr_ind
 {
-	signed int h;
-	signed int k;
-	signed int l;
 	double res;
 	Reflection *refl;
 };
@@ -578,9 +575,6 @@ static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
 		get_indices(refl, &h, &k, &l);
 		res = resolution(cell, h, k, l);
 
-		il[i].h = h;
-		il[i].k = k;
-		il[i].l = l;
 		il[i].res = res;
 		il[i].refl = refl;
 
@@ -620,10 +614,12 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 		double pfs, pss;
 		int r;
 		Reflection *refl;
+		signed int h, k, l;
 
 		refl = il[i].refl;
 
 		get_detector_pos(refl, &pfs, &pss);
+		get_indices(refl, &h, &k, &l);
 
 		/* Is there a really close feature which was detected? */
 		if ( use_closer ) {
