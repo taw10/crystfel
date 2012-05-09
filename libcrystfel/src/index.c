@@ -50,6 +50,35 @@
 #include "reax.h"
 #include "geometry.h"
 
+#ifdef HAVE_CLOCK_GETTIME
+#include <time.h>
+#else
+#include <sys/time.h>
+#endif
+#ifdef HAVE_CLOCK_GETTIME
+static double get_time()
+{
+	struct timespec tp;
+	clock_gettime(CLOCK_MONOTONIC, &tp);
+	double sec = (double) tp.tv_sec+ (double) tp.tv_nsec/1000000000;
+	return sec; //nano resolution
+}
+#else
+/* Fallback version of the above.  The time according to gettimeofday() is not
+ * monotonic, so measuring intervals based on it will screw up if there's a
+ * timezone change (e.g. daylight savings) while the program is running. */
+static double get_time()
+{
+	struct timeval tp;
+	gettimeofday(&tp, NULL);
+	double sec = (double) tp.tv_sec+ (double) tp.tv_usec/1000000;
+	return sec; //micro resolution
+}
+#endif
+
+
+
+
 
 /* Base class constructor for unspecialised indexing private data */
 IndexingPrivate *indexing_private(IndexingMethod indm)
@@ -159,6 +188,8 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
                    int cellr, int verbose, IndexingPrivate **ipriv,
                    int config_insane, float *ltl)
 {
+//double t1,t2;  
+//t1 = get_time();
 	int i;
 	int n = 0;
 
@@ -166,6 +197,9 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 
 	map_all_peaks(image);
 	image->indexed_cell = NULL;
+
+double tDI,tDO;
+double tMI,tMO;
 
 	while ( indm[n] != INDEXING_NONE ) {
 
@@ -176,10 +210,16 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 		case INDEXING_NONE :
 			return;
 		case INDEXING_DIRAX :
+tDI = get_time();
 			run_dirax(image);
+tDO = get_time();
+ERROR("run_dirax DONE %.2f %.2f %.2f\n",tDI,tDO,tDO-tDI);
 			break;
 		case INDEXING_MOSFLM :
+tMI = get_time();
 			run_mosflm(image, cell);
+tMO = get_time();
+ERROR("run_mosflm DONE %.2f %.2f %.5f\n",tMI,tMO,tMO-tMI);
 			break;
 		case INDEXING_REAX :
 			reax_index(ipriv[n], image, cell);
@@ -251,6 +291,8 @@ done:
 		/* May free(NULL) if all algorithms were tried and no success */
 		cell_free(image->candidate_cells[i]);
 	}
+        //t2 = get_time();
+        //ERROR("index_pattern DONE %.2f %.2f %.5f\n",t1,t2,t2-t1);
 }
 
 
