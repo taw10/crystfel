@@ -502,7 +502,8 @@ int main(int argc, char *argv[])
 
 	hist_i = 0;
 	merge_all(fh, model, NULL, config_startafter, config_stopafter,
-                  sym, n_total_patterns, NULL, 0, 0, 0, NULL);
+		  sym, n_total_patterns, hist_vals, hist_h, hist_k, hist_l,
+		  &hist_i);
 	if ( ferror(fh) ) {
 		ERROR("Stream read error.\n");
 		return 1;
