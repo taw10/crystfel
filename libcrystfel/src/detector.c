@@ -606,6 +606,8 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 		panel->coffset = atof(val);
 	} else if ( strcmp(key, "res") == 0 ) {
 		panel->res = atof(val);
+	} else if ( strcmp(key, "max_adu") == 0 ) {
+		panel->max_adu = atof(val);
 	} else if ( strcmp(key, "peak_sep") == 0 ) {
 		panel->peak_sep = atof(val);
 	} else if ( strcmp(key, "badrow_direction") == 0 ) {
@@ -743,6 +745,7 @@ struct detector *get_detector_geometry(const char *filename)
 	det->defaults.ssy = 1.0;
 	det->defaults.rigid_group = NULL;
 	det->defaults.adu_per_eV = NAN;
+	det->defaults.max_adu = +INFINITY;
 	strncpy(det->defaults.name, "", 1023);
 
 	do {
