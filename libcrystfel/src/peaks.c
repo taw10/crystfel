@@ -263,7 +263,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		val = image->data[idx] - bg_mean;
 
 		/* Veto peak if it contains saturation */
-		if ( val > p->max_adu ) return 1;
+		if ( image->data[idx] > p->max_adu ) return 1;
 
 		pk_counts++;
 		pk_total += val;
