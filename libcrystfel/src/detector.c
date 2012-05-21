@@ -1257,6 +1257,7 @@ int write_detector_geometry(const char *filename, struct detector *det)
 		fprintf(fh, "%s/corner_x = %g\n", p->name, p->cnx);
 		fprintf(fh, "%s/corner_y = %g\n", p->name, p->cny);
 		fprintf(fh, "%s/adu_per_eV = %g\n", p->name, p->adu_per_eV);
+		fprintf(fh, "%s/max_adu = %g\n", p->name, p->max_adu);
 
 		if ( p->no_index ) {
 			fprintf(fh, "%s/no_index = 1\n", p->name);
