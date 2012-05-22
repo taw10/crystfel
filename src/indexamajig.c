@@ -242,13 +242,6 @@ static void show_help(const char *s)
 "                           least 10%% of the located peaks.\n"
 "     --no-bg-sub          Don't subtract local background estimates from\n"
 "                           integrated intensities.\n"
-"\n"
-"\nYou can tune the CPU affinities for enhanced performance on NUMA machines:\n"
-"\n"
-"     --cpus=<n>           Specify number of CPUs.  This is NOT the same as\n"
-"                           giving the number of analyses to run in parallel.\n"
-"     --cpugroup=<n>       Batch threads in groups of this size.\n"
-"     --cpuoffset=<n>      Start using CPUs at this group number.\n"
 );
 }
 
@@ -558,9 +551,6 @@ int main(int argc, char *argv[])
 	char *element = NULL;
 	double nominal_photon_energy;
 	int stream_flags = STREAM_INTEGRATED;
-	int cpu_num = 0;
-	int cpu_groupsize = 1;
-	int cpu_offset = 0;
 	char *endptr;
 	char *hdf5_peak_path = NULL;
 	struct copy_hdf5_field *copyme;
@@ -690,39 +680,10 @@ int main(int argc, char *argv[])
 			break;
 
 			case 6 :
-			cpu_num = strtol(optarg, &endptr, 10);
-			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') ) ) {
-				ERROR("Invalid number of CPUs ('%s')\n",
-				      optarg);
-				return 1;
-			}
-			break;
-
 			case 7 :
-			cpu_groupsize = strtol(optarg, &endptr, 10);
-			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') ) ) {
-				ERROR("Invalid CPU group size ('%s')\n",
-				      optarg);
-				return 1;
-			}
-			if ( cpu_groupsize < 1 ) {
-				ERROR("CPU group size cannot be"
-				      " less than 1.\n");
-				return 1;
-			}
-			break;
-
 			case 8 :
-			cpu_offset = strtol(optarg, &endptr, 10);
-			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') ) ) {
-				ERROR("Invalid CPU offset ('%s')\n",
-				      optarg);
-				return 1;
-			}
-			if ( cpu_offset < 0 ) {
-				ERROR("CPU offset must be positive.\n");
-				return 1;
-			}
+			ERROR("The options --cpus, --cpugroup and --cpuoffset"
+			      " are no longer used by indexamajig.\n");
 			break;
 
 			case 9 :
@@ -757,12 +718,6 @@ int main(int argc, char *argv[])
 
 		}
 
-	}
-
-	if ( (cpu_num > 0) && (cpu_num % cpu_groupsize != 0) ) {
-		ERROR("Number of CPUs must be divisible by"
-		      " the CPU group size.\n");
-		return 1;
 	}
 
 	if ( filename == NULL ) {
