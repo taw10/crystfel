@@ -216,7 +216,6 @@ these.  The defaults are probably not appropriate for your situation.
 .PD
 The default is \fB--int-radius=4,5,7\fR.
 
-
 .PD 0
 .IP \fB--basename\fR
 .PD
@@ -296,9 +295,18 @@ Run \fIn\fR analyses in parallel.  Default: 1.
 Don't attempt to correct the prefix (see \fB--prefix\fR) if it doesn't look correct.
 
 .PD 0
+.IP \fB--closer-peak\fR
+.PD
+If you use this option, indexamajig will integrate around the location of a detected peak instead of the predicted peak location if one is found close to the predicted position, within ten pixels.  \fBDon't use this option\fR, because
+there is currently no way to set the definition of 'nearby' to be appropriate
+for your data.
+
+.PD 0
 .IP \fB--no-closer-peak\fR
 .PD
-Normally, indexamajig will integrate around the location of a detected peak instead of the predicted peak location if one is found close to the predicted position.  This option disables this behaviour.  Normally it doesn't make much difference either way.
+This is the opposite of \fB--closer-peak\fR, and is provided for compatibility
+with old scripts because this option selects the behaviour which is now the
+default.
 
 .PD 0
 .IP \fB--insane\fR

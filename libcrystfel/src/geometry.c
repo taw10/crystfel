@@ -99,112 +99,70 @@ static signed int locate_peak(double x, double y, double z, double k,
 }
 
 
-static double excitation_error(double xl, double yl, double zl,
-                               double ds, double k, double divergence,
-                               double tt)
+static double partiality(double rlow, double rhigh, double r)
 {
-	double al;
-	double r;
-	double delta;
-
-	al = M_PI_2 - asin(-zl/ds);
-
-	r = ( ds * sin(al) / sin(tt) ) - k;
-
-	delta = sqrt(2.0 * pow(ds, 2.0) * (1.0-cos(divergence)));
-	if ( divergence > 0.0 ) {
-		r += delta;
-	} else {
-		r -= delta;
-	}
-
-	return r;
-}
-
-
-static double partiality(double r1, double r2, double r)
-{
-	double q1, q2;
-	double p1, p2;
+	double qlow, qhigh;
+	double plow, phigh;
 
 	/* Calculate degrees of penetration */
-	q1 = (r1 + r)/(2.0*r);
-	q2 = (r2 + r)/(2.0*r);
+	qlow  = (rlow + r)/(2.0*r);
+	qhigh = (rhigh + r)/(2.0*r);
 
 	/* Convert to partiality */
-	p1 = 3.0*pow(q1,2.0) - 2.0*pow(q1,3.0);
-	p2 = 3.0*pow(q2,2.0) - 2.0*pow(q2,3.0);
+	plow  = 3.0*pow(qlow,2.0)  - 2.0*pow(qlow,3.0);
+	phigh = 3.0*pow(qhigh,2.0) - 2.0*pow(qhigh,3.0);
 
-	return p2 - p1;
+	return plow - phigh;
 }
 
 
 static Reflection *check_reflection(struct image *image,
                                     signed int h, signed int k, signed int l,
-                                    double asx, double asy, double asz,
-                                    double bsx, double bsy, double bsz,
-                                    double csx, double csy, double csz)
+                                    double xl, double yl, double zl)
 {
 	const int output = 0;
-	double xl, yl, zl;
-	double ds, ds_sq;
+	double tl;
 	double rlow, rhigh;     /* "Excitation error" */
 	signed int p;           /* Panel number */
 	double xda, yda;        /* Position on detector */
-	int close, inside;
 	double part;            /* Partiality */
-	int clamp_low = 0;
-	int clamp_high = 0;
-	double bandwidth = image->bw;
-	double divergence = image->div;
-	double lambda = image->lambda;
-	double klow, kcen, khigh;    /* Wavenumber */
+	int clamp_low, clamp_high;
+	double klow, khigh;    /* Wavenumber */
 	Reflection *refl;
-	double tt, psi;
+	double cet, cez;
 
-	/* "low" gives the largest Ewald sphere,
-	 * "high" gives the smallest Ewald sphere. */
-	klow = 1.0/(lambda - lambda*bandwidth/2.0);
-	kcen = 1.0/lambda;
-	khigh = 1.0/(lambda + lambda*bandwidth/2.0);
+	/* "low" gives the largest Ewald sphere (wavelength short => k large)
+	 * "high" gives the smallest Ewald sphere (wavelength long => k small)
+	 */
+	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
+	khigh = 1.0/(image->lambda + image->lambda*image->bw/2.0);
 
-	/* Get the coordinates of the reciprocal lattice point */
-	xl = h*asx + k*bsx + l*csx;
-	yl = h*asy + k*bsy + l*csy;
-	zl = h*asz + k*bsz + l*csz;
+	/* If the point is looking "backscattery", reject it straight away */
+	if ( zl < -khigh/2.0 ) return NULL;
 
-	ds_sq = modulus_squared(xl, yl, zl);  /* d*^2 */
-	ds = sqrt(ds_sq);
+	tl = sqrt(xl*xl + yl*yl);
 
-	/* Simple (fast) check to reject reflection if it's "in front" */
-	psi = atan2(zl, sqrt(xl*xl + yl*yl));
-	if ( psi - atan2(image->profile_radius, ds) > divergence ) return NULL;
+	cet = -sin(image->div/2.0) * khigh;
+	cez = -cos(image->div/2.0) * khigh;
+	rhigh = khigh - distance(cet, cez, tl, zl);  /* Loss of precision */
 
-	tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+kcen);
-	if ( tt > deg2rad(90.0) ) return NULL;
+	cet =  sin(image->div/2.0) * klow;
+	cez = -cos(image->div/2.0) * klow;
+	rlow = klow - distance(cet, cez, tl, zl);  /* Loss of precision */
 
-	/* Calculate excitation errors */
-	rlow = excitation_error(xl, yl, zl, ds, klow, -divergence/2.0, tt);
-	rhigh = excitation_error(xl, yl, zl, ds, khigh, +divergence/2.0, tt);
-
-	/* Is the reciprocal lattice point close to either extreme of
-	 * the sphere, maybe just outside the "Ewald volume"? */
-	close = (fabs(rlow) < image->profile_radius)
-	     || (fabs(rhigh) < image->profile_radius);
-
-	/* Is the reciprocal lattice point somewhere between the
-	 * extremes of the sphere, i.e. inside the "Ewald volume"? */
-	inside = signbit(rlow) ^ signbit(rhigh);
-
-	/* Can't be both inside and close */
-	if ( inside ) close = 0;
-
-	/* Neither?  Skip it. */
-	if ( !(close || inside) ) return NULL;
+	if ( (signbit(rlow) == signbit(rhigh))
+	     && (fabs(rlow) > image->profile_radius)
+	     && (fabs(rhigh) > image->profile_radius) ) return NULL;
 
 	/* If the "lower" Ewald sphere is a long way away, use the
 	 * position at which the Ewald sphere would just touch the
-	 * reflection. */
+	 * reflection.
+	 *
+	 * The six possible combinations of clamp_{low,high} (including
+	 * zero) correspond to the six situations in Table 3 of Rossmann
+	 * et al. (1979).
+	 */
+	clamp_low = 0;  clamp_high = 0;
 	if ( rlow < -image->profile_radius ) {
 		rlow = -image->profile_radius;
 		clamp_low = -1;
@@ -213,7 +171,6 @@ static Reflection *check_reflection(struct image *image,
 		rlow = +image->profile_radius;
 		clamp_low = +1;
 	}
-	/* Likewise the "higher" Ewald sphere */
 	if ( rhigh < -image->profile_radius ) {
 		rhigh = -image->profile_radius;
 		clamp_high = -1;
@@ -222,16 +179,13 @@ static Reflection *check_reflection(struct image *image,
 		rhigh = +image->profile_radius;
 		clamp_high = +1;
 	}
-	assert(clamp_low <= clamp_high);
-	/* The six possible combinations of clamp_{low,high} (including
-	 * zero) correspond to the six situations in Table 3 of Rossmann
-	 * et al. (1979). */
+	assert(clamp_low >= clamp_high);
 
 	/* Calculate partiality */
 	part = partiality(rlow, rhigh, image->profile_radius);
 
 	/* Locate peak on detector. */
-	p = locate_peak(xl, yl, zl, kcen, image->det, &xda, &yda);
+	p = locate_peak(xl, yl, zl, 1.0/image->lambda, image->det, &xda, &yda);
 	if ( p == -1 ) return NULL;
 
 	/* Add peak to list */
@@ -252,6 +206,9 @@ static Reflection *check_reflection(struct image *image,
 
 RefList *find_intersections(struct image *image, UnitCell *cell)
 {
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
@@ -270,17 +227,13 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 		return NULL;
 	}
 
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
-	/* We add a horrific 20% fudge factor because bandwidth, divergence
-	 * and so on mean reflections appear beyond the largest q */
-	mres = 1.2 * largest_q(image);
+	mres = largest_q(image);
 
-	hmax = mres / modulus(asx, asy, asz);
-	kmax = mres / modulus(bsx, bsy, bsz);
-	lmax = mres / modulus(csx, csy, csz);
+	hmax = mres * modulus(ax, ay, az);
+	kmax = mres * modulus(bx, by, bz);
+	lmax = mres * modulus(cx, cy, cz);
 
 	if ( (hmax >= 256) || (kmax >= 256) || (lmax >= 256) ) {
 		ERROR("Unit cell is stupidly large.\n");
@@ -290,14 +243,23 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 		if ( lmax >= 256 ) lmax = 255;
 	}
 
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+
 	for ( h=-hmax; h<=hmax; h++ ) {
 	for ( k=-kmax; k<=kmax; k++ ) {
 	for ( l=-lmax; l<=lmax; l++ ) {
 
 		Reflection *refl;
+		double xl, yl, zl;
 
-		refl = check_reflection(image, h, k, l,
-		                        asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
+		/* Get the coordinates of the reciprocal lattice point */
+		xl = h*asx + k*bsx + l*csx;
+		yl = h*asy + k*bsy + l*csy;
+		zl = h*asz + k*bsz + l*csz;
+
+		refl = check_reflection(image, h, k, l, xl, yl, zl);
 
 		if ( refl != NULL ) {
 			add_refl_to_list(refl, reflections);
@@ -333,13 +295,18 @@ void update_partialities(struct image *image)
 	{
 		Reflection *vals;
 		double r1, r2, p, x, y;
+		double xl, yl, zl;
 		signed int h, k, l;
 		int clamp1, clamp2;
 
 		get_symmetric_indices(refl, &h, &k, &l);
 
-		vals = check_reflection(image, h, k, l,
-		                        asx,asy,asz,bsx,bsy,bsz,csx,csy,csz);
+		/* Get the coordinates of the reciprocal lattice point */
+		xl = h*asx + k*bsx + l*csx;
+		yl = h*asy + k*bsy + l*csy;
+		zl = h*asz + k*bsz + l*csz;
+
+		vals = check_reflection(image, h, k, l, xl, yl, zl);
 
 		if ( vals == NULL ) {
 			set_redundancy(refl, 0);

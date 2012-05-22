@@ -147,7 +147,7 @@ double gradient(struct image *image, int k, Reflection *refl, double r)
 	 * of excitation error wrt whatever. */
 	switch ( k ) {
 
-	case REF_DIV :
+		case REF_DIV :
 		gr = 0.0;
 		if ( clamp_low == 0 ) {
 			nom = sqrt(2.0) * ds * sin(image->div/2.0);
@@ -162,7 +162,7 @@ double gradient(struct image *image, int k, Reflection *refl, double r)
 		if ( isnan(gr) ) gr = 0.0;  /* FIXME: This isn't true (?) */
 		return gr / 4.0;  /* FIXME: Shameless fudge factor */
 
-	case REF_R :
+		case REF_R :
 		g = 0.0;
 		if ( clamp_low == 0 ) {
 			g += partiality_rgradient(r1, r);
@@ -172,24 +172,32 @@ double gradient(struct image *image, int k, Reflection *refl, double r)
 		}
 		return g;
 
-	/* Cell parameters and orientation */
-	case REF_ASX :
+		/* Cell parameters and orientation */
+		case REF_ASX :
 		return hs * sin(tt) * cos(azix) * g;
-	case REF_BSX :
+
+		case REF_BSX :
 		return ks * sin(tt) * cos(azix) * g;
-	case REF_CSX :
+
+		case REF_CSX :
 		return ls * sin(tt) * cos(azix) * g;
-	case REF_ASY :
+
+		case REF_ASY :
 		return hs * sin(tt) * cos(aziy) * g;
-	case REF_BSY :
+
+		case REF_BSY :
 		return ks * sin(tt) * cos(aziy) * g;
-	case REF_CSY :
+
+		case REF_CSY :
 		return ls * sin(tt) * cos(aziy) * g;
-	case REF_ASZ :
+
+		case REF_ASZ :
 		return hs * cos(tt) * g;
-	case REF_BSZ :
+
+		case REF_BSZ :
 		return ks * cos(tt) * g;
-	case REF_CSZ :
+
+		case REF_CSZ :
 		return ls * cos(tt) * g;
 
 	}

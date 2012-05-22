@@ -52,14 +52,6 @@
 #include "beam-parameters.h"
 
 
-/* How close a peak must be to an indexed position to be considered "close"
- * for the purposes of double hit detection and sanity checking. */
-#define PEAK_CLOSE (30.0)
-
-/* How close a peak must be to an indexed position to be considered "close"
- * for the purposes of integration. */
-#define PEAK_REALLY_CLOSE (10.0)
-
 /* Degree of polarisation of X-ray beam */
 #define POL (1.0)
 
@@ -184,8 +176,8 @@ int integrate_peak(struct image *image, int cfs, int css,
 	out_lim_sq = pow(ir_out, 2.0);
 
 	/* Estimate the background */
-	for ( fs=-ir_out; fs<+ir_out; fs++ ) {
-	for ( ss=-ir_out; ss<+ir_out; ss++ ) {
+	for ( fs=-ir_out; fs<=+ir_out; fs++ ) {
+	for ( ss=-ir_out; ss<=+ir_out; ss++ ) {
 
 		double val;
 		uint16_t flags;
@@ -233,8 +225,8 @@ int integrate_peak(struct image *image, int cfs, int css,
 	pk_total = 0.0;
 	pk_counts = 0;
 	fsct = 0.0;  ssct = 0.0;
-	for ( fs=-ir_inn; fs<+ir_inn; fs++ ) {
-	for ( ss=-ir_inn; ss<+ir_inn; ss++ ) {
+	for ( fs=-ir_inn; fs<=+ir_inn; fs++ ) {
+	for ( ss=-ir_inn; ss<=+ir_inn; ss++ ) {
 
 		double val;
 		uint16_t flags;
@@ -541,9 +533,6 @@ int peak_sanity_check(struct image *image)
 
 struct integr_ind
 {
-	signed int h;
-	signed int k;
-	signed int l;
 	double res;
 	Reflection *refl;
 };
@@ -585,9 +574,6 @@ static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
 		get_indices(refl, &h, &k, &l);
 		res = resolution(cell, h, k, l);
 
-		il[i].h = h;
-		il[i].k = k;
-		il[i].l = l;
 		il[i].res = res;
 		il[i].refl = refl;
 
@@ -627,10 +613,12 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 		double pfs, pss;
 		int r;
 		Reflection *refl;
+		signed int h, k, l;
 
 		refl = il[i].refl;
 
 		get_detector_pos(refl, &pfs, &pss);
+		get_indices(refl, &h, &k, &l);
 
 		/* Is there a really close feature which was detected? */
 		if ( use_closer ) {
@@ -643,10 +631,18 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 			} else {
 				f = NULL;
 			}
-			if ( (f != NULL) && (d < PEAK_REALLY_CLOSE) ) {
+
+			/* FIXME: Horrible hardcoded value */
+			if ( (f != NULL) && (d < 10.0) ) {
+
+				double exe;
+
+				exe = get_excitation_error(refl);
 
 				pfs = f->fs;
 				pss = f->ss;
+
+				set_detector_pos(refl, exe, pfs, pss);
 
 			}
 
