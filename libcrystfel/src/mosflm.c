@@ -82,37 +82,6 @@
 #include "peaks.h"
 
 
-
-
-#ifdef HAVE_CLOCK_GETTIME
-#include <time.h>
-#else
-#include <sys/time.h>
-#endif
-#ifdef HAVE_CLOCK_GETTIME
-static double get_time()
-{
-	struct timespec tp;
-	clock_gettime(CLOCK_MONOTONIC, &tp);
-	double sec = (double) tp.tv_sec+ (double) tp.tv_nsec/1000000000;
-	return sec; //nano resolution
-}
-#else
-/* Fallback version of the above.  The time according to gettimeofday() is not
- * monotonic, so measuring intervals based on it will screw up if there's a
- * timezone change (e.g. daylight savings) while the program is running. */
-static double get_time()
-{
-	struct timeval tp;
-	gettimeofday(&tp, NULL);
-	double sec = (double) tp.tv_sec+ (double) tp.tv_usec/1000000;
-	return sec; //micro resolution
-}
-#endif
-
-
-
-
 #define MOSFLM_VERBOSE 0
 
 
@@ -546,7 +515,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 
         // fork a new process operating in pseudoterminal
 	mosflm->pid = forkpty(&mosflm->pty, NULL, NULL, NULL);
-//ERROR("forkpty: %d\n",mosflm->pid);        
+//ERROR("forkpty: %d\n",mosflm->pid);
 	if ( mosflm->pid == -1 ) {
 		ERROR("Failed to fork for MOSFLM\n");
 		free(mosflm);
@@ -593,10 +562,10 @@ void run_mosflm(struct image *image, UnitCell *cell)
 		int sval;
 
 //t3 = get_time();
-	
+
 		FD_ZERO(&fds);
 		FD_SET(mosflm->pty, &fds); // file descriptor set
-	
+
 //t4 = get_time();
 
 		tv.tv_sec = 30;            // 30 second timeout
@@ -605,7 +574,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 //t5 = get_time();
                 //sval = 1;
 		sval = select(mosflm->pty+1, &fds, NULL, NULL, &tv); // is mosflm ready for reading?
-                
+
                 if (sval != 1){
                         ERROR("******************* sval: %d ",sval);
                 }
@@ -616,7 +585,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 			ERROR("select() failed: %s\n", strerror(err));
 			rval = 1;
 		} else if ( sval != 0 ) {
-//ERROR("mosflm_readable: %d %d %d ===",mosflm->pty,mosflm->rbuffer+mosflm->rbufpos, (int) mosflm->rbuflen-mosflm->rbufpos);                    
+//ERROR("mosflm_readable: %d %d %d ===",mosflm->pty,mosflm->rbuffer+mosflm->rbufpos, (int) mosflm->rbuflen-mosflm->rbufpos);
 			rval = mosflm_readable(image, mosflm); // read mosflm results
 		} else {
 			ERROR("No response from MOSFLM..\n");
@@ -627,11 +596,11 @@ void run_mosflm(struct image *image, UnitCell *cell)
                 //}
 
 //t7 = get_time();
-//ERROR("mosflm_do DONE %.5f %.5f %.5f %.5f %.5f %.5f\n",t2-t1,t3-t2,t4-t3,t5-t4,t6-t5,t7-t6);	
+//ERROR("mosflm_do DONE %.5f %.5f %.5f %.5f %.5f %.5f\n",t2-t1,t3-t2,t4-t3,t5-t4,t6-t5,t7-t6);
 
 	} while ( !rval );
         //ERROR("DONE\n");
-	
+
 
 
 
