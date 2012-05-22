@@ -346,7 +346,7 @@ static void process_image(void *qp, void *pp, int cookie)
 	}
 
 	// Take snapshot of image after CM subtraction but before
-	// the aggressive noise filter. 
+	// the aggressive noise filter.
 	data_size = image.width * image.height * sizeof (float);
 	data_for_measurement = malloc(data_size);
 
@@ -1015,7 +1015,7 @@ int main(int argc, char *argv[])
 	/* copy file set to tmpset */
 	memcpy((void *) &tmpset,(void *) &fdset, sizeof(fd_set));
 
-	/**** FORKING ****/	
+	/**** FORKING ****/
 	int power = 10; /* 2^power must be larger than nProcesses */
 	int pid[power];
 	double num = 0;
@@ -1074,12 +1074,12 @@ int main(int argc, char *argv[])
 			if (ready_fd > 0) {
 				for ( i=0; i<nProcesses; i++ ) {
 					/* is in file set that raised flag? */
-					if (FD_ISSET(fd_pipeIn[i][0],&fdset)) { 
+					if (FD_ISSET(fd_pipeIn[i][0],&fdset)) {
 						/* read from pipe and return number of bytes read */
 						if ((buff_count=read(fd_pipeIn[i][0],&buffR,BUFFER))<0) {
 							perror("read");
 						} else {
-							qargs.n_indexable += atoi(buffR); 
+							qargs.n_indexable += atoi(buffR);
 							qargs.n_processed++;
 							/* write to pipe */
 							if ((nextImage = get_pattern(fh)) == NULL){
@@ -1115,7 +1115,7 @@ int main(int argc, char *argv[])
 		}
 		/* close my pipes */
 		for ( i=0; i<nProcesses; i++ ) {
-			close(fd_pipeIn[i][0]); 
+			close(fd_pipeIn[i][0]);
 			close(fd_pipeOut[i][1]);
 		}
 		tEnd = get_monotonic_seconds();
