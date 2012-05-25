@@ -690,7 +690,7 @@ static int same_vector(struct cvec a, struct cvec b)
 
 /* Attempt to make 'cell' fit into 'template' somehow */
 UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
-                     float *tols, int reduce)
+                     const float *tols, int reduce)
 {
 	signed int n1l, n2l, n3l;
 	double asx, asy, asz;

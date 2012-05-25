@@ -70,10 +70,6 @@
 /* Write statistics at APPROXIMATELY this interval */
 #define STATS_EVERY_N_SECONDS (5)
 
-#define LINE_LENGTH 1024
-
-#define BUFFER PIPE_BUF
-
 enum {
 	PEAK_ZAEF,
 	PEAK_HDF5,
@@ -228,72 +224,73 @@ static void show_help(const char *s)
 static char *get_pattern(FILE *fh)
 {
 	char *rval;
-	char line[LINE_LENGTH];
-	rval = fgets(line, LINE_LENGTH - 1, fh);
+	char *line;
+
+	line = malloc(1024);
+	if ( line == NULL ) {
+		ERROR("Couldn't allocate memory for filename\n");
+		return NULL;
+	}
+
+	rval = fgets(line, 1023, fh);
 	if ( ferror(fh) ) {
 		ERROR("Failed to get next filename from list.\n");
 		rval = NULL;
 	}
+
 	return rval;
 }
 
 
-static void process_image(void *qp, void *pp, int cookie)
+static void process_image(const struct index_args *iargs,
+                          struct pattern_args *pargs, int cookie)
 {
-	struct index_args *pargs = pp;
-	struct queue_args *qargs = qp;
 	float *data_for_measurement;
 	size_t data_size;
-	UnitCell *cell = qargs->static_args.cell;
-	int config_cmfilter = qargs->static_args.config_cmfilter;
-	int config_noisefilter = qargs->static_args.config_noisefilter;
-	int config_verbose = qargs->static_args.config_verbose;
-	IndexingMethod *indm = qargs->static_args.indm;
-	struct beam_params *beam = qargs->static_args.beam;
+	UnitCell *cell = iargs->cell;
+	int config_cmfilter = iargs->config_cmfilter;
+	int config_noisefilter = iargs->config_noisefilter;
+	int config_verbose = iargs->config_verbose;
+	IndexingMethod *indm = iargs->indm;
+	struct beam_params *beam = iargs->beam;
 	int r, check;
 	struct hdfile *hdfile;
-	char *outfile = qargs->static_args.outfile;
-
+	char *outfile = iargs->outfile;
 	struct image image;
+	char *outfilename;
+	int fd;
+	FILE *fh;
+	struct flock fl = {F_WRLCK, SEEK_SET, 0, 0, 0};
+
 	image.features = NULL;
 	image.data = NULL;
 	image.flags = NULL;
 	image.indexed_cell = NULL;
-	image.det = copy_geom(qargs->static_args.det);
-	image.copyme = qargs->static_args.copyme;
+	image.det = copy_geom(iargs->det);
+	image.copyme = iargs->copyme;
 	image.beam = beam;
-	image.id = cookie; // MUST SET ID FOR MOSFLM TO WORK PROPERLY
+	image.id = cookie;
+	image.filename = pargs->filename;
 
-	if (beam == NULL) {
-		ERROR("Warning: no beam parameters file.\n");
-		ERROR("I'm going to assume 1 ADU per photon, which is almost");
-		ERROR(" certainly wrong.  Peak sigmas will be incorrect.\n");
-	}
+	hdfile = hdfile_open(image.filename);
+	if ( hdfile == NULL ) return;
 
-	char *filename = NULL;
-	char *imagename = pargs->filename;
-	chomp(imagename);
-	filename = malloc(strlen(qargs->prefix) + strlen(imagename) + 1);
-	snprintf(filename, LINE_LENGTH - 1, "%s%s", qargs->prefix, imagename);
-	image.filename = filename;
-	hdfile = hdfile_open(filename);
-	if (hdfile == NULL) return;
-
-	r = hdfile_set_first_image(hdfile, "/"); // Need this to read hdf5 files
-	if (r) {
+	r = hdfile_set_first_image(hdfile, "/");
+	if ( r ) {
 		ERROR("Couldn't select first path\n");
 		hdfile_close(hdfile);
 		return;
 	}
 
 	check = hdf5_read(hdfile, &image, 1);
-	if (check == 1) {
+	if ( check ) {
 		hdfile_close(hdfile);
 		return;
 	}
 
-	if ((image.width != image.det->max_fs + 1)
-		|| (image.height != image.det->max_ss + 1)) {
+	if ( (image.width != image.det->max_fs + 1 )
+	  || (image.height != image.det->max_ss + 1))
+	{
 		ERROR("Image size doesn't match geometry size"
 			" - rejecting image.\n");
 		ERROR("Image size: %i,%i.  Geometry size: %i,%i\n",
@@ -304,8 +301,8 @@ static void process_image(void *qp, void *pp, int cookie)
 		return;
 	}
 
-	if (image.lambda < 0.0) {
-		if (beam != NULL) {
+	if ( image.lambda < 0.0 ) {
+		if ( beam != NULL ) {
 			ERROR("Using nominal photon energy of %.2f eV\n",
 			beam->photon_energy);
 			image.lambda = ph_en_to_lambda(
@@ -320,37 +317,40 @@ static void process_image(void *qp, void *pp, int cookie)
 	}
 	fill_in_values(image.det, hdfile);
 
-	if (config_cmfilter) {
+	if ( config_cmfilter ) {
 		filter_cm(&image);
 	}
 
-	// Take snapshot of image after CM subtraction but before
-	// the aggressive noise filter.
-	data_size = image.width * image.height * sizeof (float);
+	/* Take snapshot of image after CM subtraction but before
+	 * the aggressive noise filter. */
+	data_size = image.width * image.height * sizeof(float);
 	data_for_measurement = malloc(data_size);
 
-	if (config_noisefilter) {
+	if ( config_noisefilter ) {
 		filter_noise(&image, data_for_measurement);
 	} else {
 		memcpy(data_for_measurement, image.data, data_size);
 	}
 
-	switch (qargs->static_args.peaks) {
+	switch ( iargs->peaks ) {
+
 		case PEAK_HDF5:
 		// Get peaks from HDF5
-			if (get_peaks(&image, hdfile,
-				qargs->static_args.hdf5_peak_path)) {
-				ERROR("Failed to get peaks from HDF5 file.\n");
-			}
-			break;
+		if (get_peaks(&image, hdfile,
+			iargs->hdf5_peak_path)) {
+			ERROR("Failed to get peaks from HDF5 file.\n");
+		}
+		break;
+
 		case PEAK_ZAEF:
-			search_peaks(&image, qargs->static_args.threshold,
-							qargs->static_args.min_gradient,
-							qargs->static_args.min_snr,
-							qargs->static_args.ir_inn,
-							qargs->static_args.ir_mid,
-							qargs->static_args.ir_out);
-			break;
+		search_peaks(&image, iargs->threshold,
+						iargs->min_gradient,
+						iargs->min_snr,
+						iargs->ir_inn,
+						iargs->ir_mid,
+						iargs->ir_out);
+		break;
+
 	}
 
 	/* Get rid of noise-filtered version at this point
@@ -364,37 +364,32 @@ static void process_image(void *qp, void *pp, int cookie)
 	image.profile_radius = 0.0001e9;
 
 	/* RUN INDEXING HERE */
-	index_pattern(&image, cell, indm, qargs->static_args.cellr,
-					config_verbose, qargs->static_args.ipriv,
-					qargs->static_args.config_insane, qargs->static_args.tols);
+	index_pattern(&image, cell, indm, iargs->cellr,
+	              config_verbose, iargs->ipriv,
+	              iargs->config_insane, iargs->tols);
 
-	if (image.indexed_cell != NULL) {
+	if ( image.indexed_cell != NULL ) {
 		pargs->indexable = 1;
 		image.reflections = find_intersections(&image,
 				image.indexed_cell);
 		if (image.reflections != NULL) {
 			integrate_reflections(&image,
-							qargs->static_args.config_closer,
-							qargs->static_args.config_bgsub,
-							qargs->static_args.min_int_snr,
-							qargs->static_args.ir_inn,
-							qargs->static_args.ir_mid,
-							qargs->static_args.ir_out);
+							iargs->config_closer,
+							iargs->config_bgsub,
+							iargs->min_int_snr,
+							iargs->ir_inn,
+							iargs->ir_mid,
+							iargs->ir_out);
 		}
 	} else {
 		image.reflections = NULL;
 	}
 
 	/* Write Lock */
-	struct flock fl = {F_WRLCK, SEEK_SET, 0, 0, 0};
-	int fd;
 	fl.l_pid = getpid();
 
-	char *outfilename = NULL;
-	chomp(outfile);
-	outfilename = malloc(strlen(outfile) + 1);
-	snprintf(outfilename, LINE_LENGTH - 1, "%s", outfile);
-	if ((fd = open(outfilename, O_WRONLY)) == -1) {
+	fd = open(outfile, O_WRONLY);
+	if ( fd == -1) {
 		ERROR("Error on opening\n");
 		exit(1);
 	}
@@ -404,24 +399,20 @@ static void process_image(void *qp, void *pp, int cookie)
 	}
 
 	/* LOCKED! Write chunk */
-	FILE *fh;
 	fh = fopen(outfilename, "a");
 	if (fh == NULL) {
 		ERROR("Error inside lock\n");
 	}
-	write_chunk(fh, &image, hdfile, qargs->static_args.stream_flags);
+	write_chunk(fh, &image, hdfile, iargs->stream_flags);
 	fclose(fh);
 
 	/* Unlock stream for other processes */
 	fl.l_type = F_UNLCK; /* set to unlock same region */
-	if (fcntl(fd, F_SETLK, &fl) == -1) {
+	if ( fcntl(fd, F_SETLK, &fl) == -1 ) {
 		ERROR("fcntl");
 		exit(1);
 	}
 	close(fd);
-
-	qargs->n_indexable += pargs->indexable;
-	qargs->n_processed++;
 
 	/* Only free cell if found */
 	cell_free(image.indexed_cell);
@@ -436,25 +427,42 @@ static void process_image(void *qp, void *pp, int cookie)
 
 
 static void run_work(const struct index_args *iargs,
-                     int filename_pipe, int results_pipe)
+                     int filename_pipe, int results_pipe, int cookie)
 {
 	int allDone = 0;
 
 	while ( !allDone ) {
 
-		/* read from pipe and return number of bytes read */
-		if ((buff_count=read(fd_pipeOut[batchNum-1][0],&buffR,BUFFER))<0) {
-			ERROR("read1");
-		} else if (buff_count > 0) {
-			/* process image */
-			pargs.filename = buffR;
+		struct pattern_args pargs;
+		int r, w;
+		char buf[1024];
+
+		r = read(filename_pipe, buf, 1024);
+
+		if ( r < 0 ) {
+
+			ERROR("read() failed!\n");
+
+		} else if ( r > 0 ) {
+
+			int c;
+
+			/* Process image */
+			pargs.filename = buf;
 			pargs.indexable = 0;
-			process_image(&qargs, &pargs, batchNum);
-			/* request another image */
-			buff_count = sprintf(buffW, "%d\n", pargs.indexable);
-			if(write (fd_pipeIn[batchNum-1][1], buffW, buff_count)<0)
+
+			STATUS("Got filename: '%s'\n", buf);
+
+			process_image(iargs, &pargs, cookie);
+
+			/* Request another image */
+			c = sprintf(buf, "%i\n", pargs.indexable);
+			w = write(results_pipe, buf, c);
+			if ( w < 0 ) {
 				ERROR("write P0");
-		} else if (buff_count == 0) {
+			}
+
+		} else {
 			allDone = 1;
 		}
 
@@ -553,14 +561,12 @@ int main(int argc, char *argv[])
 	int peaks;
 	int n_proc = 1;
 	char *prepare_line;
-	char prepare_filename[LINE_LENGTH];
-	struct queue_args qargs;
-	struct index_args pargs;
+	char prepare_filename[1024];
+	struct index_args iargs;
 	struct beam_params *beam = NULL;
 	char *element = NULL;
 	double nominal_photon_energy;
 	int stream_flags = STREAM_INTEGRATED;
-	char *endptr;
 	char *hdf5_peak_path = NULL;
 	struct copy_hdf5_field *copyme;
 	char *intrad = NULL;
@@ -573,6 +579,9 @@ int main(int argc, char *argv[])
 	pid_t *pids;
 	int *filename_pipes;
 	int *result_pipes;
+	fd_set fds;
+	int i;
+	int allDone, nFinished;
 
 	copyme = new_copy_hdf5_field_list();
 	if ( copyme == NULL ) {
@@ -793,7 +802,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if ( nProcesses == 0 ) {
+	if ( n_proc == 0 ) {
 		ERROR("Invalid number of processes.\n");
 		return 1;
 	}
@@ -900,18 +909,15 @@ int main(int argc, char *argv[])
 	} else {
 		STATUS("No beam parameters file was given, so I'm taking the"
 		       " nominal photon energy to be 2 keV.\n");
+		ERROR("I'm also going to assume 1 ADU per photon, which is");
+		ERROR(" almost certainly wrong.  Peak sigmas will be"
+		      " incorrect.\n");
 		nominal_photon_energy = 2000.0;
 	}
 
-	if ( beam == NULL ) {
-		ERROR("Warning: no beam parameters file.\n");
-		ERROR("I'm going to assume 1 ADU per photon, which is almost");
-		ERROR(" certainly wrong.  Peak sigmas will be incorrect.\n");
-	}
-
 	/* Get first filename and use it to set up the indexing */
-	prepare_line = malloc(LINE_LENGTH*sizeof(char));
-	rval = fgets(prepare_line, LINE_LENGTH-1, fh);
+	prepare_line = malloc(1024);
+	rval = fgets(prepare_line, 1023, fh);
 	if ( rval == NULL ) {
 		ERROR("Failed to get filename to prepare indexing.\n");
 		return 1;
@@ -923,7 +929,7 @@ int main(int argc, char *argv[])
 		free(prepare_line);
 		prepare_line = tmp;
 	}
-	snprintf(prepare_filename, LINE_LENGTH-1, "%s%s", prefix, prepare_line);
+	snprintf(prepare_filename, 1023, "%s%s", prefix, prepare_line);
 	rewind(fh);
 
 	/* Prepare the indexer */
@@ -979,6 +985,20 @@ int main(int argc, char *argv[])
 	n_processed_last_stats = 0;
 	t_last_stats = get_monotonic_seconds();
 
+	FD_ZERO(&fds);
+	filename_pipes = calloc(n_proc, sizeof(int));
+	result_pipes = calloc(n_proc, sizeof(int));
+	if ( (filename_pipes == NULL) || (result_pipes == NULL) ) {
+		ERROR("Couldn't allocate memory for pipes.\n");
+		return 1;
+	}
+
+	pids = calloc(n_proc, sizeof(pid_t));
+	if ( pids == NULL ) {
+		ERROR("Couldn't allocate memory for PIDs.\n");
+		return 1;
+	}
+
 	/* Fork the right number of times */
 	for ( i=0; i<n_proc; i++ ) {
 
@@ -991,7 +1011,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		if ( pipe(results_pipe) == - 1 ) {
+		if ( pipe(result_pipe) == - 1 ) {
 			ERROR("pipe() failed!\n");
 			return 1;
 		}
@@ -1007,80 +1027,116 @@ int main(int argc, char *argv[])
 			 * pipe, and the 'write' end of the result pipe. */
 			close(filename_pipe[1]);
 			close(result_pipe[0]);
-			run_work(&iargs, filename_pipe[0], result_pipe[1]);
+			run_work(&iargs, filename_pipe[0], result_pipe[1], i);
 			exit(0);
 		}
 
 		/* Parent process gets the 'write' end of the filename pipe
 		 * and the 'read' end of the result pipe. */
-		pid[i] = p;
+		pids[i] = p;
 		close(filename_pipe[0]);
 		close(result_pipe[1]);
 		filename_pipes[i] = filename_pipe[1];
 		result_pipes[i] = result_pipe[0];
 
+		FD_SET(result_pipes[i], &fds);
+
 	}
 
 	/* Send first image to all children */
-	char *nextImage = NULL;
-	for ( i=0; i<nProcesses; i++ ) {
+	for ( i=0; i<n_proc; i++ ) {
+
+		char *nextImage;
+
 		nextImage = get_pattern(fh);
-		buff_count = sprintf(buffW, "%s",nextImage);
-		write (fd_pipeOut[i][1], buffW, buff_count);
+
+		write(filename_pipes[i], nextImage, strlen(nextImage));
+		write(filename_pipes[i], "\n", 1);
+
 	}
-	int nFinished = 0;
-	while (!allDone) {
-		/* select from file set for reading */
-		if ((ready_fd = select(max_fd,&fdset,NULL,NULL,NULL)) < 0)
-			ERROR("select");
-		if (ready_fd > 0) {
-			for ( i=0; i<nProcesses; i++ ) {
-				/* is in file set that raised flag? */
-				if (FD_ISSET(fd_pipeIn[i][0],&fdset)) {
-					/* read from pipe and return number of bytes read */
-					if ((buff_count=read(fd_pipeIn[i][0],&buffR,BUFFER))<0) {
-						ERROR("read");
-					} else {
-						qargs.n_indexable += atoi(buffR);
-						qargs.n_processed++;
-						/* write to pipe */
-						if ((nextImage = get_pattern(fh)) == NULL){
-							nFinished++; /* no more images */
-							if ( nFinished == nProcesses )
-								allDone = 1; /* EXIT */
-						} else {
-							/* send out image */
-							buff_count = sprintf(buffW, "%s",nextImage);
-							if (write (fd_pipeOut[i][1], buffW, buff_count)<0)
-								ERROR("write pipe");
-						}
+
+	allDone = 0;
+	nFinished = 0;
+	while ( !allDone ) {
+
+		int r;
+		struct timeval tv;
+		fd_set fds_copy;
+		double tNow;
+
+		tv.tv_sec = 5;
+		tv.tv_usec = 0;
+
+		memcpy(&fds_copy, &fds, sizeof(fd_set));
+		r = select(n_proc, &fds, NULL, NULL, &tv);
+
+		if ( r < 0 ) {
+
+			ERROR("select() failed!\n");
+
+		} else {
+
+			for ( i=0; i<n_proc; i++ ) {
+
+				char *nextImage;
+				char results[1024];
+
+				if ( !FD_ISSET(result_pipes[i], &fds_copy) ) {
+					continue;
+				}
+
+				r = read(result_pipes[i], results, 1024);
+				if ( r < 0 ) {
+					ERROR("read() failed!");
+					continue;
+				}
+
+				n_indexable += atoi(results);
+				n_processed++;
+
+				/* Send next filename */
+				nextImage = get_pattern(fh);
+				if ( nextImage == NULL ) {
+					/* no more images */
+					nFinished++;
+					if ( nFinished == n_proc ) {
+						allDone = 1;
+					}
+				} else {
+
+					r = write(filename_pipes[i], nextImage,
+					          strlen(nextImage));
+					if ( r < 0 ) {
+						ERROR("write pipe");
 					}
 				}
+
 			}
-		}
-		/* file set is modified, so copy original from tmpset */
-		memcpy((void *) &fdset,(void *) &tmpset, sizeof(fd_set));
 
-		/* Update to screen */
-		double tNow = get_monotonic_seconds();
-		if ( tNow >= qargs.t_last_stats+STATS_EVERY_N_SECONDS ) {
-				STATUS("%i out of %i indexed so far,"
-			    " %i out of %i since the last message.\n\n",
-			    qargs.n_indexable, qargs.n_processed,
-			    qargs.n_indexable - qargs.n_indexable_last_stats,
-			    qargs.n_processed - qargs.n_processed_last_stats);
-
-				qargs.n_indexable_last_stats = qargs.n_indexable;
-				qargs.n_processed_last_stats = qargs.n_processed;
-				qargs.t_last_stats = tNow;
 		}
+
+		/* Update progress */
+		tNow = get_monotonic_seconds();
+		if ( tNow >= t_last_stats+STATS_EVERY_N_SECONDS ) {
+
+			STATUS("%i out of %i indexed so far,"
+			       " %i out of %i since the last message.\n\n",
+			       n_indexable, n_processed,
+			       n_indexable - n_indexable_last_stats,
+			       n_processed - n_processed_last_stats);
+
+			n_indexable_last_stats = n_indexable;
+			n_processed_last_stats = n_processed;
+			t_last_stats = tNow;
+
+		}
+
 	}
-	/* close my pipes */
-	for ( i=0; i<nProcesses; i++ ) {
-		close(fd_pipeIn[i][0]);
-		close(fd_pipeOut[i][1]);
+
+	for ( i=0; i<n_proc; i++ ) {
+		close(filename_pipes[i]);
+		close(result_pipes[i]);
 	}
-	tEnd = get_monotonic_seconds();
 
 	cleanup_indexing(ipriv);
 
@@ -1096,9 +1152,8 @@ int main(int argc, char *argv[])
 	if ( fh != stdin ) fclose(fh);
 	if ( ofh != stdout ) fclose(ofh);
 
-	if (batchNum == qargs.updateReader) {
-		STATUS("There were %i images, of which %i could be indexed.\n",
-				qargs.n_processed, qargs.n_indexable);
-	}
+	STATUS("There were %i images, of which %i could be indexed.\n",
+	       n_processed, n_indexable);
+
 	return 0;
 }
