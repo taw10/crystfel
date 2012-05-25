@@ -81,6 +81,38 @@ H. N. Chapman. "CrystFEL: a software suite for snapshot serial crystallography".
 Please let us know (see below) about your publication, so we can include it in
 the list of examples on the CrystFEL website.
 
+.SH SYMMETRY IN CRYSTFEL
+Without only a very few exceptions, CrystFEL is not interested in space groups.  Instead, it deals with point groups which embody the information about how data should be merged from different crystals.  Every space group belongs to exactly one point group, and you can look up the right one in the International Tables or using the symmetry tables accompanying the CrystFEL source (or to be found on the CrystFEL website in the Theory section).
+
+A limitation of symmetry in the current version of CrystFEL is that it can only accept point groups in standard settings.  That means that the highest-order rotation axis must always be parallel to c*, monoclinic unit cells should have \fIc\fR as the unique axis and so on.  This is a limitation of the way your input, for example using the \fB-y\fR argument of \fBprocess_hkl\fR, is turned into CrystFEL's internal representation of symmetry, and so future versions should very soon be able to handle any setting.
+
+The options are:
+
+.IP Triclinic
+\fB1\fR, \fB-1\fR.
+
+.IP Monoclinic
+\fB2/m\fR, \fB2\fR, \fBm\fR.
+
+.IP Orthorhombic
+\fBmmm\fR, \fB222\fR, \fBmm2\fR.
+
+.IP Tetragonal
+\fB4/m\fR, \fB4\fR, \fB-4\fR, \fB4/mmm\fR, \fB422\fR, \fB-42m\fR, \fB-4m2\fR, \fB4mm\fR.
+
+.IP "Trigonal (rhombohedral axes)"
+\fB3_R\fR, \fB-3_R\fR, \fB32_R\fR, \fB3m_R\fR, \fB-3m_R\fR.
+
+.IP "Trigonal (hexagonal axes)"
+\fB3_H\fR, \fB-3_H\fR, \fB321_H\fR, \fB312_H\fR, \fB3m1_H\fR, \fB31m_H\fR, \fB-3m1_H\fR, \fB-31m_H\fR.
+
+.IP Hexagonal
+\fB6/m\fR, \fB6\fR, \fB-6\fR, \fB6/mmm\fR, \fB622\fR, \fB-62m\fR, \fB-6m2\fR, \fB6mm\fR.
+
+.IP Cubic
+\fB23\fR, \fBm-3\fR, \fB432\fR, \fB-43m\fR, \fBm-3m\fR.
+
+
 .SH PROGRAM NAME
 There seems to be a tendency to capitalise all the letters in the names of
 programs in scientific publications.  Sometimes the authors do this, other times
