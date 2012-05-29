@@ -54,17 +54,17 @@
 #include <sys/time.h>
 #endif
 
-#include <crystfel/utils.h>
-#include <crystfel/hdf5-file.h>
-#include <crystfel/index.h>
-#include <crystfel/peaks.h>
-#include <crystfel/detector.h>
-#include <crystfel/filters.h>
-#include <crystfel/thread-pool.h>
-#include <crystfel/beam-parameters.h>
-#include <crystfel/geometry.h>
-#include <crystfel/stream.h>
-#include <crystfel/reflist-utils.h>
+#include "utils.h"
+#include "hdf5-file.h"
+#include "index.h"
+#include "peaks.h"
+#include "detector.h"
+#include "filters.h"
+#include "thread-pool.h"
+#include "beam-parameters.h"
+#include "geometry.h"
+#include "stream.h"
+#include "reflist-utils.h"
 
 
 /* Write statistics at APPROXIMATELY this interval */
