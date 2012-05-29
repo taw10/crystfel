@@ -470,7 +470,6 @@ static void run_work(const struct index_args *iargs,
 		char *rval;
 
 		line = malloc(1024*sizeof(char));
-		STATUS("Waiting for filename...\n");
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) {
 			free(line);
@@ -481,8 +480,6 @@ static void run_work(const struct index_args *iargs,
 		chomp(line);
 		pargs.filename = line;
 		pargs.indexable = 0;
-
-		STATUS("Got filename: '%s'\n", line);
 
 		process_image(iargs, &pargs, cookie);
 
@@ -1070,8 +1067,6 @@ int main(int argc, char *argv[])
 		filename_pipes[i] = filename_pipe[1];
 		result_pipes[i] = result_pipe[0];
 
-		FD_SET(result_pipes[i], &fds);
-
 	}
 
 	/* Send first image to all children */
@@ -1093,63 +1088,72 @@ int main(int argc, char *argv[])
 	nFinished = 0;
 	while ( !allDone ) {
 
-		int r;
+		int r, i;
 		struct timeval tv;
-		fd_set fds_copy;
+		fd_set fds;
 		double tNow;
+		int fdmax;
 
 		tv.tv_sec = 5;
 		tv.tv_usec = 0;
 
-		memcpy(&fds_copy, &fds, sizeof(fd_set));
-		r = select(n_proc, &fds, NULL, NULL, &tv);
+		FD_ZERO(&fds);
+		fdmax = 0;
+		for ( i=0; i<n_proc; i++ ) {
+			FD_SET(result_pipes[i], &fds);
+			if ( result_pipes[i] > fdmax ) {
+				fdmax = result_pipes[i];
+			}
+		}
 
-		if ( r < 0 ) {
+		r = select(fdmax+1, &fds, NULL, NULL, &tv);
 
+		if ( r == -1 ) {
 			ERROR("select() failed!\n");
+			continue;
+		}
 
-		} else {
+		if ( r == 0 ) {
+			STATUS("Timeout\n");
+			continue;
+		}
 
-			for ( i=0; i<n_proc; i++ ) {
+		for ( i=0; i<n_proc; i++ ) {
 
-				char *nextImage;
-				char results[1024];
+			char *nextImage;
+			char results[1024];
 
-				if ( !FD_ISSET(result_pipes[i], &fds_copy) ) {
-					continue;
+			if ( !FD_ISSET(result_pipes[i], &fds) ) continue;
+
+			r = read(result_pipes[i], results, 1024);
+			if ( r < 0 ) {
+				ERROR("read() failed!");
+				continue;
+			}
+
+			n_indexable += atoi(results);
+			n_processed++;
+
+			/* Send next filename */
+			nextImage = get_pattern(fh,
+			                        &use_this_one_instead,
+	                                        config_basename,
+	                                        prefix);
+
+			if ( nextImage == NULL ) {
+				/* no more images */
+				nFinished++;
+				if ( nFinished == n_proc ) {
+					allDone = 1;
 				}
+			} else {
 
-				r = read(result_pipes[i], results, 1024);
+				r = write(filename_pipes[i], nextImage,
+				          strlen(nextImage));
+				r -= write(filename_pipes[i], "\n", 1);
 				if ( r < 0 ) {
-					ERROR("read() failed!");
-					continue;
+					ERROR("write pipe");
 				}
-
-				n_indexable += atoi(results);
-				n_processed++;
-
-				/* Send next filename */
-				nextImage = get_pattern(fh,
-				                        &use_this_one_instead,
-		                                        config_basename,
-		                                        prefix);
-
-				if ( nextImage == NULL ) {
-					/* no more images */
-					nFinished++;
-					if ( nFinished == n_proc ) {
-						allDone = 1;
-					}
-				} else {
-
-					r = write(filename_pipes[i], nextImage,
-					          strlen(nextImage));
-					r -= write(filename_pipes[i], "\n", 1);
-					if ( r < 0 ) {
-						ERROR("write pipe");
-					}
-				}
-
 			}
 
 		}
