@@ -358,7 +358,6 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		break;
 
 	case 10 :
-//ERROR(">>>>>>>>>>>>>> OK\n");
 		mosflm_sendline("GO\n", mosflm);
 		mosflm->finished_ok = 1;
 		break;
@@ -377,12 +376,11 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 {
 	int rval;
 	int no_string = 0;
-//ERROR("read pty: %d %d %d ===",mosflm->pty,mosflm->rbuffer+mosflm->rbufpos, (int) mosflm->rbuflen-mosflm->rbufpos);
+
 	rval = read(mosflm->pty, mosflm->rbuffer+mosflm->rbufpos,
 	            mosflm->rbuflen-mosflm->rbufpos);
-//ERROR("read val: %d\n",rval);
 	if ( (rval == -1) || (rval == 0) ) return 1;
-//ERROR("Enter here\n");
+
 	mosflm->rbufpos += rval;
 	assert(mosflm->rbufpos <= mosflm->rbuflen);
 
@@ -437,7 +435,6 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 				break;
 
 			case MOSFLM_INPUT_PROMPT :
-//ERROR("Enter mosflm_send_next\n");
 				mosflm_send_next(image, mosflm);
 				endbit_length = i+7;
 				break;
@@ -513,16 +510,15 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	snprintf(mosflm->newmatfile, 127, "xfel-%i.newmat", image->id);
 	remove(mosflm->newmatfile);
 
-        // fork a new process operating in pseudoterminal
 	mosflm->pid = forkpty(&mosflm->pty, NULL, NULL, NULL);
-//ERROR("forkpty: %d\n",mosflm->pid);
+
 	if ( mosflm->pid == -1 ) {
 		ERROR("Failed to fork for MOSFLM\n");
 		free(mosflm);
 		return;
 	}
-	if ( mosflm->pid == 0 ) { // child process
-//ERROR("Enter the dragon\n");
+	if ( mosflm->pid == 0 ) {
+
 		/* Child process: invoke MOSFLM */
 		struct termios t;
 
@@ -549,60 +545,33 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	mosflm->finished_ok = 0;
 
 
-//double t1,t2,t3,t4,t5,t6,t7;
-
-//t1 = get_time();
-
 	do {
-
-//t2 = get_time();
 
 		fd_set fds;
 		struct timeval tv;
 		int sval;
 
-//t3 = get_time();
-
 		FD_ZERO(&fds);
-		FD_SET(mosflm->pty, &fds); // file descriptor set
+		FD_SET(mosflm->pty, &fds);
 
-//t4 = get_time();
-
-		tv.tv_sec = 30;            // 30 second timeout
+		tv.tv_sec = 30;
 		tv.tv_usec = 0;
 
-//t5 = get_time();
-                //sval = 1;
-		sval = select(mosflm->pty+1, &fds, NULL, NULL, &tv); // is mosflm ready for reading?
+		sval = select(mosflm->pty+1, &fds, NULL, NULL, &tv);
 
-                if (sval != 1){
-                        ERROR("******************* sval: %d ",sval);
-                }
-//t6 = get_time();
-
-		if ( sval == -1 ) {
+                if ( sval == -1 ) {
 			int err = errno;
 			ERROR("select() failed: %s\n", strerror(err));
 			rval = 1;
 		} else if ( sval != 0 ) {
-//ERROR("mosflm_readable: %d %d %d ===",mosflm->pty,mosflm->rbuffer+mosflm->rbufpos, (int) mosflm->rbuflen-mosflm->rbufpos);
-			rval = mosflm_readable(image, mosflm); // read mosflm results
+			rval = mosflm_readable(image, mosflm);
 		} else {
 			ERROR("No response from MOSFLM..\n");
 			rval = 1;
 		}
-                //if (sval != 1){
-                //        ERROR("rval: %d\n",rval);
-                //}
 
-//t7 = get_time();
-//ERROR("mosflm_do DONE %.5f %.5f %.5f %.5f %.5f %.5f\n",t2-t1,t3-t2,t4-t3,t5-t4,t6-t5,t7-t6);
 
 	} while ( !rval );
-        //ERROR("DONE\n");
-
-
-
 
 	close(mosflm->pty);
 	free(mosflm->rbuffer);
