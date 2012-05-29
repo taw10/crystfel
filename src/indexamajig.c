@@ -473,8 +473,13 @@ static void run_work(const struct index_args *iargs,
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) {
 			free(line);
-			ERROR("Read error!\n");
-			return;
+			if ( feof(fh) ) {
+				allDone = 1;
+				continue;
+			} else {
+				ERROR("Read error!\n");
+				return;
+			}
 		}
 
 		chomp(line);
