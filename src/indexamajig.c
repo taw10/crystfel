@@ -221,24 +221,47 @@ static void show_help(const char *s)
 }
 
 
-static char *get_pattern(FILE *fh)
+static char *get_pattern(FILE *fh, char **use_this_one_instead,
+                         int config_basename, const char *prefix)
 {
-	char *rval;
 	char *line;
+	char *filename;
 
-	line = malloc(1024);
-	if ( line == NULL ) {
-		ERROR("Couldn't allocate memory for filename\n");
-		return NULL;
+	/* Get the next filename */
+	if ( *use_this_one_instead != NULL ) {
+
+		line = *use_this_one_instead;
+		*use_this_one_instead = NULL;
+
+	} else {
+
+		char *rval;
+
+		line = malloc(1024*sizeof(char));
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) {
+			free(line);
+			return NULL;
+		}
+
 	}
 
-	rval = fgets(line, 1023, fh);
-	if ( ferror(fh) ) {
-		ERROR("Failed to get next filename from list.\n");
-		rval = NULL;
+	chomp(line);
+
+	if ( config_basename ) {
+		char *tmp;
+		tmp = safe_basename(line);
+		free(line);
+		line = tmp;
 	}
 
-	return rval;
+	filename = malloc(strlen(prefix)+strlen(line)+1);
+
+	snprintf(filename, 1023, "%s%s", prefix, line);
+
+	free(line);
+
+	return filename;
 }
 
 
@@ -257,7 +280,7 @@ static void process_image(const struct index_args *iargs,
 	struct hdfile *hdfile;
 	char *outfile = iargs->outfile;
 	struct image image;
-	char *outfilename;
+	char *outfilename = iargs->outfile;
 	int fd;
 	FILE *fh;
 	struct flock fl = {F_WRLCK, SEEK_SET, 0, 0, 0};
@@ -363,7 +386,6 @@ static void process_image(const struct index_args *iargs,
 	image.bw = beam->bandwidth;
 	image.profile_radius = 0.0001e9;
 
-	/* RUN INDEXING HERE */
 	index_pattern(&image, cell, indm, iargs->cellr,
 	              config_verbose, iargs->ipriv,
 	              iargs->config_insane, iargs->tols);
@@ -398,10 +420,9 @@ static void process_image(const struct index_args *iargs,
 		exit(1);
 	}
 
-	/* LOCKED! Write chunk */
 	fh = fopen(outfilename, "a");
-	if (fh == NULL) {
-		ERROR("Error inside lock\n");
+	if ( fh == NULL ) {
+		ERROR("Couldn't open stream '%s'.\n", outfilename);
 	}
 	write_chunk(fh, &image, hdfile, iargs->stream_flags);
 	fclose(fh);
@@ -430,44 +451,53 @@ static void run_work(const struct index_args *iargs,
                      int filename_pipe, int results_pipe, int cookie)
 {
 	int allDone = 0;
+	FILE *fh;
+
+	fh = fdopen(filename_pipe, "r");
+	if ( fh == NULL ) {
+		ERROR("Failed to fdopen() the filename pipe!\n");
+		close(filename_pipe);
+		close(results_pipe);
+		return;
+	}
 
 	while ( !allDone ) {
 
 		struct pattern_args pargs;
-		int r, w;
+		int  w, c;
 		char buf[1024];
+		char *line;
+		char *rval;
 
-		r = read(filename_pipe, buf, 1024);
-
-		if ( r < 0 ) {
-
-			ERROR("read() failed!\n");
-
-		} else if ( r > 0 ) {
-
-			int c;
-
-			/* Process image */
-			pargs.filename = buf;
-			pargs.indexable = 0;
-
-			STATUS("Got filename: '%s'\n", buf);
-
-			process_image(iargs, &pargs, cookie);
-
-			/* Request another image */
-			c = sprintf(buf, "%i\n", pargs.indexable);
-			w = write(results_pipe, buf, c);
-			if ( w < 0 ) {
-				ERROR("write P0");
-			}
-
-		} else {
-			allDone = 1;
+		line = malloc(1024*sizeof(char));
+		STATUS("Waiting for filename...\n");
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) {
+			free(line);
+			ERROR("Read error!\n");
+			return;
 		}
+
+		chomp(line);
+		pargs.filename = line;
+		pargs.indexable = 0;
+
+		STATUS("Got filename: '%s'\n", line);
+
+		process_image(iargs, &pargs, cookie);
+
+		/* Request another image */
+		c = sprintf(buf, "%i\n", pargs.indexable);
+		w = write(results_pipe, buf, c);
+		if ( w < 0 ) {
+			ERROR("write P0");
+		}
+
+		free(line);
 
 	}
 	/* close my pipes */
+	fclose(fh);
 	close(filename_pipe);
 	close(results_pipe);
 }
@@ -562,6 +592,7 @@ int main(int argc, char *argv[])
 	int n_proc = 1;
 	char *prepare_line;
 	char prepare_filename[1024];
+	char *use_this_one_instead;
 	struct index_args iargs;
 	struct beam_params *beam = NULL;
 	char *element = NULL;
@@ -922,6 +953,7 @@ int main(int argc, char *argv[])
 		ERROR("Failed to get filename to prepare indexing.\n");
 		return 1;
 	}
+	use_this_one_instead = strdup(prepare_line);
 	chomp(prepare_line);
 	if ( config_basename ) {
 		char *tmp;
@@ -930,7 +962,6 @@ int main(int argc, char *argv[])
 		prepare_line = tmp;
 	}
 	snprintf(prepare_filename, 1023, "%s%s", prefix, prepare_line);
-	rewind(fh);
 
 	/* Prepare the indexer */
 	if ( indm != NULL ) {
@@ -1048,10 +1079,13 @@ int main(int argc, char *argv[])
 
 		char *nextImage;
 
-		nextImage = get_pattern(fh);
+		nextImage = get_pattern(fh, &use_this_one_instead,
+		                        config_basename, prefix);
 
 		write(filename_pipes[i], nextImage, strlen(nextImage));
 		write(filename_pipes[i], "\n", 1);
+
+		free(nextImage);
 
 	}
 
@@ -1095,7 +1129,11 @@ int main(int argc, char *argv[])
 				n_processed++;
 
 				/* Send next filename */
-				nextImage = get_pattern(fh);
+				nextImage = get_pattern(fh,
+				                        &use_this_one_instead,
+		                                        config_basename,
+		                                        prefix);
+
 				if ( nextImage == NULL ) {
 					/* no more images */
 					nFinished++;
@@ -1106,6 +1144,7 @@ int main(int argc, char *argv[])
 
 					r = write(filename_pipes[i], nextImage,
 					          strlen(nextImage));
+					r -= write(filename_pipes[i], "\n", 1);
 					if ( r < 0 ) {
 						ERROR("write pipe");
 					}
@@ -1120,7 +1159,7 @@ int main(int argc, char *argv[])
 		if ( tNow >= t_last_stats+STATS_EVERY_N_SECONDS ) {
 
 			STATUS("%i out of %i indexed so far,"
-			       " %i out of %i since the last message.\n\n",
+			       " %i out of %i since the last message.\n",
 			       n_indexable, n_processed,
 			       n_indexable - n_indexable_last_stats,
 			       n_processed - n_processed_last_stats);
@@ -1149,6 +1188,7 @@ int main(int argc, char *argv[])
 	free(hdf5_peak_path);
 	free_copy_hdf5_field_list(copyme);
 	cell_free(cell);
+	free(use_this_one_instead);
 	if ( fh != stdin ) fclose(fh);
 	if ( ofh != stdout ) fclose(ofh);
 
