@@ -492,7 +492,7 @@ static void run_work(const struct index_args *iargs,
 		c = sprintf(buf, "%i\n", pargs.indexable);
 		w = write(results_pipe, buf, c);
 		if ( w < 0 ) {
-			ERROR("write P0");
+			ERROR("write P0\n");
 		}
 
 		free(line);
@@ -500,7 +500,6 @@ static void run_work(const struct index_args *iargs,
 	}
 	/* close my pipes */
 	fclose(fh);
-	close(filename_pipe);
 	close(results_pipe);
 }
 
@@ -611,10 +610,11 @@ int main(int argc, char *argv[])
 	int t_last_stats;
 	pid_t *pids;
 	int *filename_pipes;
-	int *result_pipes;
+	FILE **result_fhs;
 	fd_set fds;
 	int i;
-	int allDone, nFinished;
+	int allDone;
+	int *finished;
 
 	copyme = new_copy_hdf5_field_list();
 	if ( copyme == NULL ) {
@@ -1020,15 +1020,25 @@ int main(int argc, char *argv[])
 
 	FD_ZERO(&fds);
 	filename_pipes = calloc(n_proc, sizeof(int));
-	result_pipes = calloc(n_proc, sizeof(int));
-	if ( (filename_pipes == NULL) || (result_pipes == NULL) ) {
+	result_fhs = calloc(n_proc, sizeof(FILE *));
+	if ( filename_pipes == NULL ) {
 		ERROR("Couldn't allocate memory for pipes.\n");
+		return 1;
+	}
+	if ( result_fhs == NULL ) {
+		ERROR("Couldn't allocate memory for pipe file handles.\n");
 		return 1;
 	}
 
 	pids = calloc(n_proc, sizeof(pid_t));
 	if ( pids == NULL ) {
 		ERROR("Couldn't allocate memory for PIDs.\n");
+		return 1;
+	}
+
+	finished = calloc(n_proc, sizeof(int));
+	if ( finished == NULL ) {
+		ERROR("Couldn't allocate memory for process flags.\n");
 		return 1;
 	}
 
@@ -1070,7 +1080,12 @@ int main(int argc, char *argv[])
 		close(filename_pipe[0]);
 		close(result_pipe[1]);
 		filename_pipes[i] = filename_pipe[1];
-		result_pipes[i] = result_pipe[0];
+
+		result_fhs[i] = fdopen(result_pipe[0], "r");
+		if ( result_fhs[i] == NULL ) {
+			ERROR("fdopen() failed.\n");
+			return 1;
+		}
 
 	}
 
@@ -1082,15 +1097,23 @@ int main(int argc, char *argv[])
 		nextImage = get_pattern(fh, &use_this_one_instead,
 		                        config_basename, prefix);
 
-		write(filename_pipes[i], nextImage, strlen(nextImage));
-		write(filename_pipes[i], "\n", 1);
+		if ( nextImage != NULL ) {
 
-		free(nextImage);
+			write(filename_pipes[i], nextImage, strlen(nextImage));
+			write(filename_pipes[i], "\n", 1);
+
+			free(nextImage);
+
+		} else {
+
+			/* No more files to process.. already? */
+			close(filename_pipes[i]);
+
+		}
 
 	}
 
 	allDone = 0;
-	nFinished = 0;
 	while ( !allDone ) {
 
 		int r, i;
@@ -1105,16 +1128,21 @@ int main(int argc, char *argv[])
 		FD_ZERO(&fds);
 		fdmax = 0;
 		for ( i=0; i<n_proc; i++ ) {
-			FD_SET(result_pipes[i], &fds);
-			if ( result_pipes[i] > fdmax ) {
-				fdmax = result_pipes[i];
-			}
+
+			int fd;
+
+			if ( finished[i] ) continue;
+
+			fd = fileno(result_fhs[i]);
+			FD_SET(fd, &fds);
+			if ( fd > fdmax ) fdmax = fd;
+
 		}
 
 		r = select(fdmax+1, &fds, NULL, NULL, &tv);
 
 		if ( r == -1 ) {
-			ERROR("select() failed!\n");
+			ERROR("select() failed: %s\n", strerror(errno));
 			continue;
 		}
 
@@ -1127,15 +1155,27 @@ int main(int argc, char *argv[])
 
 			char *nextImage;
 			char results[1024];
+			char *rval;
+			int fd;
 
-			if ( !FD_ISSET(result_pipes[i], &fds) ) continue;
+			if ( finished[i] ) continue;
 
-			r = read(result_pipes[i], results, 1024);
-			if ( r < 0 ) {
-				ERROR("read() failed!");
+			fd = fileno(result_fhs[i]);
+			if ( !FD_ISSET(fd, &fds) ) continue;
+
+			rval = fgets(results, 1024, result_fhs[i]);
+			if ( rval == NULL ) {
+				if ( feof(result_fhs[i]) ) {
+					/* Process died */
+					finished[i] = 1;
+				} else {
+					ERROR("fgets() failed: %s\n",
+					      strerror(errno));
+				}
 				continue;
 			}
 
+			chomp(results);
 			n_indexable += atoi(results);
 			n_processed++;
 
@@ -1146,18 +1186,15 @@ int main(int argc, char *argv[])
 	                                        prefix);
 
 			if ( nextImage == NULL ) {
-				/* no more images */
-				nFinished++;
-				if ( nFinished == n_proc ) {
-					allDone = 1;
-				}
+				/* No more images */
+				finished[i] = 1;
 			} else {
 
 				r = write(filename_pipes[i], nextImage,
 				          strlen(nextImage));
 				r -= write(filename_pipes[i], "\n", 1);
 				if ( r < 0 ) {
-					ERROR("write pipe");
+					ERROR("write pipe\n");
 				}
 			}
 
@@ -1179,12 +1216,21 @@ int main(int argc, char *argv[])
 
 		}
 
+		allDone = 1;
+		for ( i=0; i<n_proc; i++ ) {
+			if ( !finished[i] ) allDone = 0;
+		}
+
 	}
 
 	for ( i=0; i<n_proc; i++ ) {
 		close(filename_pipes[i]);
-		close(result_pipes[i]);
+		fclose(result_fhs[i]);
 	}
+	free(filename_pipes);
+	free(result_fhs);
+	free(pids);
+	free(finished);
 
 	cleanup_indexing(ipriv);
 
