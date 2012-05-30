@@ -322,6 +322,7 @@ int main(int argc, char *argv[])
 	check_subgroup("432",    "23",   1, 1,  2, &fail);
 	check_subgroup("6/m",    "-3_H", 1, 1,  2, &fail);
 	check_subgroup("4/m",    "-4",   1, 1,  2, &fail);
+	check_subgroup("622",    "321_H",  1, 1,  2, &fail);
 
 	/* Tetartohedral */
 	check_subgroup("6/mmm",  "-3_H", 1, 1,  4, &fail);

@@ -197,6 +197,7 @@ int main(int argc, char *argv[])
 	image.det->panels[0].clen = 1.0;
 	image.det->panels[0].res = 1.0;
 	image.det->panels[0].adu_per_eV = 1.0/1000.0;  /* -> 1 adu per photon */
+	image.det->panels[0].max_adu = +INFINITY;  /* No cutoff */
 
 	image.width = 128;
 	image.height = 128;
