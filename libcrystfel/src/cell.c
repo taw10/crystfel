@@ -424,7 +424,7 @@ int cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
 
 	switch ( cell->rep ) {
 
-	case CELL_REP_CRYST:
+		case CELL_REP_CRYST:
 		/* Direct response */
 		*a = cell->a;
 		*b = cell->b;
@@ -434,7 +434,7 @@ int cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
 		*gamma = cell->gamma;
 		return 0;
 
-	case CELL_REP_CART:
+		case CELL_REP_CART:
 		/* Convert cartesian -> crystallographic */
 		*a = modulus(cell->ax, cell->ay, cell->az);
 		*b = modulus(cell->bx, cell->by, cell->bz);
@@ -448,7 +448,7 @@ int cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
 		                       cell->bx, cell->by, cell->bz);
 		return 0;
 
-	case CELL_REP_RECIP:
+		case CELL_REP_RECIP:
 		/* Convert reciprocal -> crystallographic.
                  * Start by converting reciprocal -> cartesian */
 		cell_invert(cell->axs, cell->ays, cell->azs,
@@ -480,21 +480,21 @@ int cell_get_cartesian(UnitCell *cell,
 
 	switch ( cell->rep ) {
 
-	case CELL_REP_CRYST:
+		case CELL_REP_CRYST:
 		/* Convert crystallographic -> cartesian. */
 		return cell_crystallographic_to_cartesian(cell,
 		                                          ax, ay, az,
 		                                          bx, by, bz,
 		                                          cx, cy, cz);
 
-	case CELL_REP_CART:
+		case CELL_REP_CART:
 		/* Direct response */
 		*ax = cell->ax;  *ay = cell->ay;  *az = cell->az;
 		*bx = cell->bx;  *by = cell->by;  *bz = cell->bz;
 		*cx = cell->cx;  *cy = cell->cy;  *cz = cell->cz;
 		return 0;
 
-	case CELL_REP_RECIP:
+		case CELL_REP_RECIP:
 		/* Convert reciprocal -> cartesian */
 		return cell_invert(cell->axs, cell->ays, cell->azs,
 		                   cell->bxs, cell->bys, cell->bzs,
@@ -518,7 +518,7 @@ int cell_get_reciprocal(UnitCell *cell,
 
 	switch ( cell->rep ) {
 
-	case CELL_REP_CRYST:
+		case CELL_REP_CRYST:
 		/* Convert crystallographic -> reciprocal */
 		r = cell_crystallographic_to_cartesian(cell,
 		                                       &ax, &ay, &az,
@@ -528,7 +528,7 @@ int cell_get_reciprocal(UnitCell *cell,
 		return cell_invert(ax, ay, az,bx, by, bz, cx, cy, cz,
 		                   asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
 
-	case CELL_REP_CART:
+		case CELL_REP_CART:
 		/* Convert cartesian -> reciprocal */
 		cell_invert(cell->ax, cell->ay, cell->az,
 		            cell->bx, cell->by, cell->bz,
@@ -536,7 +536,7 @@ int cell_get_reciprocal(UnitCell *cell,
 		            asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
 		return 0;
 
-	case CELL_REP_RECIP:
+		case CELL_REP_RECIP:
 		/* Direct response */
 		*asx = cell->axs;  *asy = cell->ays;  *asz = cell->azs;
 		*bsx = cell->bxs;  *bsy = cell->bys;  *bsz = cell->bzs;
@@ -569,12 +569,16 @@ const char *cell_get_spacegroup(UnitCell *cell)
 static const char *cell_rep(UnitCell *cell)
 {
 	switch ( cell->rep ) {
-	case CELL_REP_CRYST:
+
+		case CELL_REP_CRYST:
 		return "crystallographic, direct space";
-	case CELL_REP_CART:
+
+		case CELL_REP_CART:
 		return "cartesian, direct space";
-	case CELL_REP_RECIP:
+
+		case CELL_REP_RECIP:
 		return "cartesian, reciprocal space";
+
 	}
 
 	return "unknown";

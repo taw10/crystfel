@@ -64,34 +64,35 @@ static void render_rgb(double val, double max,
 		s = 6;
 	}
 	switch ( s ) {
-		case 0 : {	/* Black to blue */
-			r = 0;  g = 0;  b = p;
-			break;
-		}
-		case 1 : {	/* Blue to pink */
-			r = p;  g = 0;  b = 1.0;
-			break;
-		}
-		case 2 : {	/* Pink to red */
-			r = 1.0;  g = 0;  b = (1.0-p)*1.0;
-			break;
-		}
-		case 3 : {	/* Red to Orange */
-			r = 1.0;  g = 0.5*p;  b = 0;
-			break;
-		}
-		case 4 : {	/* Orange to Yellow */
-			r = 1.0;  g = 0.5 + 0.5*p;  b = 0;
-			break;
-		}
-		case 5 : {	/* Yellow to White */
-			r = 1.0;  g = 1.0;  b = 1.0*p;
-			break;
-		}
-		case 6 : {	/* Pixel has hit the maximum value */
-			r = 1.0;  g = 1.0;  b = 1.0;
-			break;
-		}
+
+		case 0 :	/* Black to blue */
+		r = 0;  g = 0;  b = p;
+		break;
+
+		case 1 :	/* Blue to pink */
+		r = p;  g = 0;  b = 1.0;
+		break;
+
+		case 2 :	/* Pink to red */
+		r = 1.0;  g = 0;  b = (1.0-p)*1.0;
+		break;
+
+		case 3 :	/* Red to Orange */
+		r = 1.0;  g = 0.5*p;  b = 0;
+		break;
+
+		case 4 :	/* Orange to Yellow */
+		r = 1.0;  g = 0.5 + 0.5*p;  b = 0;
+		break;
+
+		case 5 :	/* Yellow to White */
+		r = 1.0;  g = 1.0;  b = 1.0*p;
+		break;
+
+		case 6 :	/* Pixel has hit the maximum value */
+		r = 1.0;  g = 1.0;  b = 1.0;
+		break;
+
 	}
 
 	*rp = r;
@@ -144,16 +145,20 @@ void render_scale(double val, double max, int scale,
                   double *rp, double *gp, double *bp)
 {
 	switch ( scale ) {
-	case SCALE_COLOUR :
+
+		case SCALE_COLOUR :
 		render_rgb(val, max, rp, gp, bp);
 		break;
-	case SCALE_MONO :
+
+		case SCALE_MONO :
 		render_mono(val, max, rp, gp, bp);
 		break;
-	case SCALE_INVMONO :
+
+		case SCALE_INVMONO :
 		render_invmono(val, max, rp, gp, bp);
 		break;
-	case SCALE_RATIO :
+
+		case SCALE_RATIO :
 		render_ratio(val, max, rp, gp, bp);
 		break;
 	}

@@ -226,37 +226,37 @@ static void dirax_send_next(struct image *image, struct dirax_data *dirax)
 
 	switch ( dirax->step ) {
 
-	case 1 :
+		case 1 :
 		dirax_sendline("\\echo off\n", dirax);
 		break;
 
-	case 2 :
+		case 2 :
 		snprintf(tmp, 31, "read xfel-%i.drx\n", image->id);
 		dirax_sendline(tmp, dirax);
 		break;
 
-	case 3 :
+		case 3 :
 		dirax_sendline("dmax 1000\n", dirax);
 		break;
 
-	case 4 :
+		case 4 :
 		dirax_sendline("indexfit 2\n", dirax);
 		break;
 
-	case 5 :
+		case 5 :
 		dirax_sendline("levelfit 1000\n", dirax);
 		break;
 
-	case 6 :
+		case 6 :
 		dirax_sendline("go\n", dirax);
 		dirax->finished_ok = 1;
 		break;
 
-	case 7 :
+		case 7 :
 		dirax_sendline("acl\n", dirax);
 		break;
 
-	case 8 :
+		case 8 :
 		if ( dirax->best_acl_nh == 0 ) {
 			/* At this point, DirAx is presenting its ACL prompt
 			 * and waiting for a single number.  Use an extra
@@ -270,11 +270,11 @@ static void dirax_send_next(struct image *image, struct dirax_data *dirax)
 		dirax_sendline(tmp, dirax);
 		break;
 
-	case 9 :
+		case 9 :
 		dirax_sendline("cell\n", dirax);
 		break;
 
-	case 10 :
+		case 10 :
 		if ( dirax->n_acls_tried == MAX_DIRAX_CELL_CANDIDATES ) {
 			dirax_sendline("exit\n", dirax);
 		} else {
@@ -285,7 +285,7 @@ static void dirax_send_next(struct image *image, struct dirax_data *dirax)
 		}
 		break;
 
-	default:
+		default:
 		dirax_sendline("exit\n", dirax);
 		return;
 

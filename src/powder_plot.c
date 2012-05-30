@@ -775,51 +775,51 @@ int main(int argc, char *argv[])
 
 		switch (c) {
 
-		case 'h' :
+			case 'h' :
 			show_help(argv[0]);
 			return 0;
 
-		case 'i' :
+			case 'i' :
 			filename = strdup(optarg);
 			break;
 
-		case 'o' :
+			case 'o' :
 			output = strdup(optarg);
 			break;
 
-		case 'g' :
+			case 'g' :
 			geometry = strdup(optarg);
 			break;
 
-		case 'b' :
+			case 'b' :
 			beamf = strdup(optarg);
 			break;
 
-		case 'p' :
+			case 'p' :
 			pdb = strdup(optarg);
 			break;
 
-		case 'y' :
+			case 'y' :
 			sym_str = strdup(optarg);
 			break;
 
-		case 's' :
+			case 's' :
 			hist_info.histsize = atoi(optarg);
 			break;
 
-		case 'e' :
+			case 'e' :
 			element = strdup(optarg);
 			break;
 
-		case 1 :
+			case 1 :
 			hist_info.q_max = atof(optarg);
 			break;
 
-		case 2 :
+			case 2 :
 			hist_info.q_min = atof(optarg);
 			break;
 
-		case 3 :
+			case 3 :
 			if (strcmp(optarg, "linear") == 0 ) {
 				hist_info.spacing = LINEAR;
 			} else if (strcmp(optarg, "wilson") == 0 ) {
@@ -832,14 +832,14 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-		case 'd' :
+			case 'd' :
 			datatype = strdup(optarg);
 			break;
 
-		case 0 :
+			case 0 :
 			break;
 
-		default :
+			default :
 			return 1;
 		}
 
@@ -1096,45 +1096,50 @@ int main(int argc, char *argv[])
 	}
 
 	/* Process reflections based on file type and data type */
-	switch (file_type) {
-	case FILE_H5 :
+	switch ( file_type ) {
+		case FILE_H5 :
 		n_patterns++;
 		n_peaks = process_h5(&image, &hist_info, histdata);
 		free(image.data);
 		break;
 
-	case FILE_HKL :
+		case FILE_HKL :
 		n_patterns++; //inc number of patterns used
 		n_peaks = process_hkl(&image, sym, cell, &hist_info, histdata,
                                       q_scaling, use_redundancy);
 		break;
 
-	case FILE_STREAM :
-		switch (data_type) {
-		case PLOT_REFL :
+		case FILE_STREAM :
+		switch ( data_type ) {
+
+			case PLOT_REFL :
 			n_peaks = process_stream_reflection(fh, &image,
 			             &hist_info, histdata, &n_patterns);
 			break;
-		case PLOT_HKL :
+
+			case PLOT_HKL :
 			n_peaks = process_stream_hkl(fh, &image, &hist_info,
+
 				     histdata, cell, &n_patterns);
 			break;
-		case PLOT_PEAKS :
+			case PLOT_PEAKS :
 			n_peaks = process_stream_peaks(fh, &image, &hist_info,
 			             histdata, &n_patterns, only_indexed);
 			break;
-		case PLOT_H5 :
+
+			case PLOT_H5 :
 			n_peaks =  process_stream_h5(fh, &image, &hist_info,
 			             histdata, config_satcorr, only_indexed,
 			             &n_patterns, element);
 			break;
-		default :
+
+			default :
 			break;
 		}
 		fclose(fh);
 		break;
 
-	default :
+		default :
 		break;
 
 	}

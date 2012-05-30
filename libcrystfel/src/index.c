@@ -83,18 +83,23 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 	for ( n=0; n<nm; n++ ) {
 
 		switch ( indm[n] ) {
-		case INDEXING_NONE :
+
+			case INDEXING_NONE :
 			ERROR("Tried to prepare INDEXING_NONE!\n");
 			break;
-		case INDEXING_DIRAX :
+
+			case INDEXING_DIRAX :
 			iprivs[n] = indexing_private(indm[n]);
 			break;
-		case INDEXING_MOSFLM :
+
+			case INDEXING_MOSFLM :
 			iprivs[n] = indexing_private(indm[n]);
 			break;
-		case INDEXING_REAX :
+
+			case INDEXING_REAX :
 			iprivs[n] = reax_prepare();
 			break;
+
 		}
 
 	}
@@ -113,18 +118,23 @@ void cleanup_indexing(IndexingPrivate **priv)
 	while ( priv[n] != NULL ) {
 
 		switch ( priv[n]->indm ) {
-		case INDEXING_NONE :
+
+			case INDEXING_NONE :
 			free(priv[n]);
 			break;
-		case INDEXING_DIRAX :
+
+			case INDEXING_DIRAX :
 			free(priv[n]);
 			break;
-		case INDEXING_MOSFLM :
+
+			case INDEXING_MOSFLM :
 			free(priv[n]);
 			break;
-		case INDEXING_REAX :
+
+			case INDEXING_REAX :
 			reax_cleanup(priv[n]);
 			break;
+
 		}
 
 		n++;
@@ -173,17 +183,22 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 
 		/* Index as appropriate */
 		switch ( indm[n] ) {
-		case INDEXING_NONE :
+
+			case INDEXING_NONE :
 			return;
-		case INDEXING_DIRAX :
+
+			case INDEXING_DIRAX :
 			run_dirax(image);
 			break;
-		case INDEXING_MOSFLM :
+
+			case INDEXING_MOSFLM :
 			run_mosflm(image, cell);
 			break;
-		case INDEXING_REAX :
+
+			case INDEXING_REAX :
 			reax_index(ipriv[n], image, cell);
 			break;
+
 		}
 		if ( image->ncells == 0 ) {
 			n++;
@@ -205,20 +220,25 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 
 			/* Match or reduce the cell as appropriate */
 			switch ( cellr ) {
-			case CELLR_NONE :
+
+				case CELLR_NONE :
 				new_cell = cell_new_from_cell(cand);
 				break;
-			case CELLR_REDUCE :
+
+				case CELLR_REDUCE :
 				new_cell = match_cell(cand, cell, verbose,
 				                      ltl, 1);
 				break;
-			case CELLR_COMPARE :
+
+				case CELLR_COMPARE :
 				new_cell = match_cell(cand, cell, verbose,
 				                      ltl, 0);
 				break;
-			case CELLR_COMPARE_AB :
+
+				case CELLR_COMPARE_AB :
 				new_cell = match_cell_ab(cand, cell);
 				break;
+
 			}
 
 			/* No cell?  Move on to the next candidate */

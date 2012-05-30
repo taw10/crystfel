@@ -118,23 +118,29 @@ static double max_value(RefList *list, int wght, const SymOpList *sym)
 		n = num_equivs(sym, m);
 
 		switch ( wght ) {
-		case WGHT_I :
+
+			case WGHT_I :
 			val = get_intensity(refl);
 			break;
-		case WGHT_SQRTI :
+
+			case WGHT_SQRTI :
 			val = get_intensity(refl);
 			val = (val>0.0) ? sqrt(val) : 0.0;
 			break;
-		case WGHT_COUNTS :
+
+			case WGHT_COUNTS :
 			val = get_redundancy(refl);
 			val /= (double)n;
 			break;
-		case WGHT_RAWCOUNTS :
+
+			case WGHT_RAWCOUNTS :
 			val = get_redundancy(refl);
 			break;
-		default :
+
+			default :
 			ERROR("Invalid weighting.\n");
 			abort();
+
 		}
 
 		if ( val > max ) max = val;
@@ -192,23 +198,29 @@ static void draw_circles(double xh, double xk, double xl,
 			yi = (h*yh + k*yk + l*yl) / ny;
 
 			switch ( wght) {
-			case WGHT_I :
+
+				case WGHT_I :
 				val = get_intensity(refl);
 				break;
-			case WGHT_SQRTI :
+
+				case WGHT_SQRTI :
 				val = get_intensity(refl);
 				val = (val>0.0) ? sqrt(val) : 0.0;
 				break;
-			case WGHT_COUNTS :
+
+				case WGHT_COUNTS :
 				val = get_redundancy(refl);
 				val /= (double)n;
 				break;
-			case WGHT_RAWCOUNTS :
+
+				case WGHT_RAWCOUNTS :
 				val = get_redundancy(refl);
 				break;
-			default :
+
+				default :
 				ERROR("Invalid weighting.\n");
 				abort();
+
 			}
 
 			/* Absolute location in image based on 2D basis */
@@ -621,43 +633,44 @@ int main(int argc, char *argv[])
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
-		case 'h' :
+
+			case 'h' :
 			show_help(argv[0]);
 			return 0;
 
-		case 'p' :
+			case 'p' :
 			pdb = strdup(optarg);
 			break;
 
-		case 'b' :
+			case 'b' :
 			boost = atof(optarg);
 			break;
 
-		case 'y' :
+			case 'y' :
 			sym_str = strdup(optarg);
 			break;
 
-		case 'w' :
+			case 'w' :
 			weighting = strdup(optarg);
 			break;
 
-		case 'c' :
+			case 'c' :
 			cscale = strdup(optarg);
 			break;
 
-		case 'd' :
+			case 'd' :
 			down = strdup(optarg);
 			break;
 
-		case 'r' :
+			case 'r' :
 			right = strdup(optarg);
 			break;
 
-		case 'o' :
+			case 'o' :
 			outfile = strdup(optarg);
 			break;
 
-		case 2 :
+			case 2 :
 			errno = 0;
 			scale_top = strtod(optarg, &endptr);
 			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') )
@@ -672,11 +685,12 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-		case 0 :
+			case 0 :
 			break;
 
-		default :
+			default :
 			return 1;
+
 		}
 
 	}
