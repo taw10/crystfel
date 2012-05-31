@@ -294,15 +294,16 @@ int main(int argc, char *argv[])
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
-		case 'h' :
+
+			case 'h' :
 			show_help(argv[0]);
 			return 0;
 
-		case 'r' :
+			case 'r' :
 			config_randomquat = 1;
 			break;
 
-		case 'n' :
+			case 'n' :
 			n_images = strtol(optarg, &rval, 10);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid number of images.\n");
@@ -310,43 +311,43 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-		case 'i' :
+			case 'i' :
 			intfile = strdup(optarg);
 			break;
 
-		case 't' :
+			case 't' :
 			grad_str = strdup(optarg);
 			break;
 
-		case 'p' :
+			case 'p' :
 			filename = strdup(optarg);
 			break;
 
-		case 'o' :
+			case 'o' :
 			outfile = strdup(optarg);
 			break;
 
-		case 'w' :
+			case 'w' :
 			powder_fn = strdup(optarg);
 			break;
 
-		case 'g' :
+			case 'g' :
 			geometry = strdup(optarg);
 			break;
 
-		case 'b' :
+			case 'b' :
 			beamfile = strdup(optarg);
 			break;
 
-		case 'y' :
+			case 'y' :
 			sym_str = strdup(optarg);
 			break;
 
-		case 2 :
+			case 2 :
 			gpu_dev = atoi(optarg);
 			break;
 
-		case 3 :
+			case 3 :
 			min_size = strtod(optarg, &rval);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid minimum size.\n");
@@ -355,7 +356,7 @@ int main(int argc, char *argv[])
 			random_size++;
 			break;
 
-		case 4 :
+			case 4 :
 			max_size = strtod(optarg, &rval);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid maximum size.\n");
@@ -364,11 +365,12 @@ int main(int argc, char *argv[])
 			random_size++;
 			break;
 
-		case 0 :
+			case 0 :
 			break;
 
-		default :
+			default :
 			return 1;
+
 		}
 
 	}

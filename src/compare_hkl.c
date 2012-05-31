@@ -331,49 +331,51 @@ int main(int argc, char *argv[])
 	{
 
 		switch (c) {
-		case 'h' :
+
+			case 'h' :
 			show_help(argv[0]);
 			return 0;
 
-		case 'o' :
+			case 'o' :
 			ratiofile = strdup(optarg);
 			break;
 
-		case 'y' :
+			case 'y' :
 			sym_str = strdup(optarg);
 			break;
 
-		case 'p' :
+			case 'p' :
 			pdb = strdup(optarg);
 			break;
 
-		case 'u' :
+			case 'u' :
 			config_unity = 1;
 			break;
 
-		case 0 :
+			case 0 :
 			break;
 
-		case 2 :
+			case 2 :
 			if ( sscanf(optarg, "%e", &rmin_fix) != 1 ) {
 				ERROR("Invalid value for --rmin\n");
 				return 1;
 			}
 			break;
 
-		case 3 :
+			case 3 :
 			if ( sscanf(optarg, "%e", &rmax_fix) != 1 ) {
 				ERROR("Invalid value for --rmax\n");
 				return 1;
 			}
 			break;
 
-		case 4 :
+			case 4 :
 			config_shells = get_r_shell(optarg);
 			break;
 
-		default :
+			default :
 			return 1;
+
 		}
 
 	}

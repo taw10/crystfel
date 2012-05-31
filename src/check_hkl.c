@@ -339,43 +339,44 @@ int main(int argc, char *argv[])
 	while ((c = getopt_long(argc, argv, "hy:p:", longopts, NULL)) != -1) {
 
 		switch (c) {
-		case 'h' :
+
+			case 'h' :
 			show_help(argv[0]);
 			return 0;
 
-		case 'y' :
+			case 'y' :
 			sym_str = strdup(optarg);
 			break;
 
-		case 'p' :
+			case 'p' :
 			pdb = strdup(optarg);
 			break;
 
-		case 0 :
+			case 0 :
 			break;
 
-		case 2 :
+			case 2 :
 			if ( sscanf(optarg, "%e", &rmin_fix) != 1 ) {
 				ERROR("Invalid value for --rmin\n");
 				return 1;
 			}
 			break;
 
-		case 3 :
+			case 3 :
 			if ( sscanf(optarg, "%e", &rmax_fix) != 1 ) {
 				ERROR("Invalid value for --rmax\n");
 				return 1;
 			}
 			break;
 
-		case 4 :
+			case 4 :
 			if ( sscanf(optarg, "%f", &sigma_cutoff) != 1 ) {
 				ERROR("Invalid value for --sigma-cutoff\n");
 				return 1;
 			}
 			break;
 
-		default :
+			default :
 			return 1;
 		}
 

@@ -341,47 +341,48 @@ int main(int argc, char *argv[])
 	                        longopts, NULL)) != -1)
 	{
 		switch (c) {
-		case 'h' :
+
+			case 'h' :
 			show_help(argv[0]);
 			return 0;
 
-		case 'o' :
+			case 'o' :
 			output_file = strdup(optarg);
 			break;
 
-		case 'i' :
+			case 'i' :
 			input_file = strdup(optarg);
 			break;
 
-		case 'b' :
+			case 'b' :
 			beamfile = strdup(optarg);
 			break;
 
-		case 'p' :
+			case 'p' :
 			cellfile = strdup(optarg);
 			break;
 
-		case 'g' :
+			case 'g' :
 			geomfile = strdup(optarg);
 			break;
 
-		case 'y' :
+			case 'y' :
 			sym_str = strdup(optarg);
 			break;
 
-		case 'n' :
+			case 'n' :
 			n = atoi(optarg);
 			break;
 
-		case 'r' :
+			case 'r' :
 			save_file = strdup(optarg);
 			break;
 
-		case 'j' :
+			case 'j' :
 			n_threads = atoi(optarg);
 			break;
 
-		case 'c' :
+			case 'c' :
 			cnoise = strtod(optarg, &rval);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid cell noise value.\n");
@@ -389,15 +390,16 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-		case 2 :
+			case 2 :
 			phist_file = strdup(optarg);
 			break;
 
-		case 0 :
+			case 0 :
 			break;
 
-		default :
+			default :
 			return 1;
+
 		}
 	}
 

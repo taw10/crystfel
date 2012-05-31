@@ -407,22 +407,28 @@ static double calc_r(double scale, void *params)
 	struct r_params *rp = params;
 
 	switch ( rp->fom ) {
-	case R_1_ZERO :
+
+		case R_1_ZERO :
 		return internal_r1_negstozero(rp->list1, rp->list2, scale);
-	case R_1_IGNORE :
+
+		case R_1_IGNORE :
 		return internal_r1_ignorenegs(rp->list1, rp->list2, scale);
-	case R_2 :
+
+		case R_2 :
 		return internal_r2(rp->list1, rp->list2, scale);
 
-	case R_1_I :
+		case R_1_I :
 		return internal_r_i(rp->list1, rp->list2, scale);
 
-	case R_DIFF_ZERO :
+		case R_DIFF_ZERO :
 		return internal_rdiff_negstozero(rp->list1, rp->list2,scale);
-	case R_DIFF_IGNORE :
+
+		case R_DIFF_IGNORE :
 		return internal_rdiff_ignorenegs(rp->list1, rp->list2, scale);
-	case R_DIFF_INTENSITY :
+
+		case R_DIFF_INTENSITY :
 		return internal_rdiff_intensity(rp->list1, rp->list2, scale);
+
 	}
 
 	ERROR("No such FoM!\n");
@@ -457,17 +463,20 @@ static double r_minimised(RefList *list1, RefList *list2, double *scalep, int fo
 
 		/* Initial guess */
 		switch ( fom ) {
-		case R_1_ZERO :
-		case R_1_IGNORE :
-		case R_DIFF_ZERO :
-		case R_DIFF_IGNORE :
+
+			case R_1_ZERO :
+			case R_1_IGNORE :
+			case R_DIFF_ZERO :
+			case R_DIFF_IGNORE :
 			scale = stat_scale_sqrti(list1, list2);
 			break;
-		case R_2 :
-		case R_1_I :
-		case R_DIFF_INTENSITY :
+
+			case R_2 :
+			case R_1_I :
+			case R_DIFF_INTENSITY :
 			scale = stat_scale_intensity(list1, list2);
 			break;
+
 		}
 		//STATUS("Initial scale factor estimate: %5.2e\n", scale);
 

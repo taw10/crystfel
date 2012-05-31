@@ -325,35 +325,36 @@ int main(int argc, char *argv[])
 	{
 
 		switch (c) {
-		case 'h' :
+
+			case 'h' :
 			show_help(argv[0]);
 			return 0;
 
-		case 'i' :
+			case 'i' :
 			infile = strdup(optarg);
 			break;
 
-		case 'g' :
+			case 'g' :
 			geomfile = strdup(optarg);
 			break;
 
-		case 'j' :
+			case 'j' :
 			nthreads = atoi(optarg);
 			break;
 
-		case 'y' :
+			case 'y' :
 			sym_str = strdup(optarg);
 			break;
 
-		case 'o' :
+			case 'o' :
 			outfile = strdup(optarg);
 			break;
 
-		case 'n' :
+			case 'n' :
 			n_iter = atoi(optarg);
 			break;
 
-		case 'b' :
+			case 'b' :
 			beam = get_beam_parameters(optarg);
 			if ( beam == NULL ) {
 				ERROR("Failed to load beam parameters"
@@ -362,15 +363,16 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-		case 'r' :
+			case 'r' :
 			reference_file = strdup(optarg);
 			break;
 
-		case 0 :
+			case 0 :
 			break;
 
-		default :
+			default :
 			return 1;
+
 		}
 
 	}

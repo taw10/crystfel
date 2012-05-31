@@ -719,6 +719,10 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name)
 	hsize_t max_size;
 	hid_t type;
 	hid_t class;
+	herr_t r;
+	int buf_i;
+	double buf_f;
+	char *tmp;
 
 	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
 	if ( dh < 0 ) return NULL;
@@ -761,40 +765,33 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name)
 	}
 
 	switch ( class ) {
-	case H5T_FLOAT : {
 
-		herr_t r;
-		double buf;
-		char *tmp;
+		case H5T_FLOAT :
 
 		r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
-		            H5P_DEFAULT, &buf);
+		            H5P_DEFAULT, &buf_f);
 		if ( r < 0 ) goto fail;
 
 		tmp = malloc(256);
-		snprintf(tmp, 255, "%f", buf);
+		snprintf(tmp, 255, "%f", buf_f);
 
 		return tmp;
 
-	}
-	case H5T_INTEGER : {
+		case H5T_INTEGER :
 
-		herr_t r;
-		int buf;
-		char *tmp;
 
 		r = H5Dread(dh, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
-		            H5P_DEFAULT, &buf);
+		            H5P_DEFAULT, &buf_i);
 		if ( r < 0 ) goto fail;
 
 		tmp = malloc(256);
-		snprintf(tmp, 255, "%d", buf);
+		snprintf(tmp, 255, "%d", buf_i);
 
 		return tmp;
-	}
-	default : {
+
+		default :
 		goto fail;
-	}
+
 	}
 
 fail:

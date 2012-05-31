@@ -391,44 +391,46 @@ int main(int argc, char *argv[])
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
-		case 'h' :
+
+			case 'h' :
 			show_help(argv[0]);
 			return 0;
 
-		case 't' :
+			case 't' :
 			template = strdup(optarg);
 			break;
 
-		case 'o' :
+			case 'o' :
 			output = strdup(optarg);
 			break;
 
-		case 'i' :
+			case 'i' :
 			input_file = strdup(optarg);
 			break;
 
-		case 'y' :
+			case 'y' :
 			mero_str = strdup(optarg);
 			break;
 
-		case 'w' :
+			case 'w' :
 			holo_str = strdup(optarg);
 			break;
 
-		case 'e' :
+			case 'e' :
 			expand_str = strdup(optarg);
 			break;
 
-		case 2 :
+			case 2 :
 			adu_per_photon = strtof(optarg, NULL);
 			have_adu_per_photon = 1;
 			break;
 
-		case 0 :
+			case 0 :
 			break;
 
-		default :
+			default :
 			return 1;
+
 		}
 
 	}

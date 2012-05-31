@@ -241,7 +241,7 @@ static void apply_shift(struct image *image, int k, double shift)
 {
 	switch ( k ) {
 
-	case REF_DIV :
+		case REF_DIV :
 		if ( isnan(shift) ) {
 			ERROR("NaN divergence shift\n");
 		} else {
@@ -250,23 +250,23 @@ static void apply_shift(struct image *image, int k, double shift)
 		}
 		break;
 
-	case REF_R :
+		case REF_R :
 		image->profile_radius += shift;
 		break;
 
-	case REF_ASX :
-	case REF_ASY :
-	case REF_ASZ :
-	case REF_BSX :
-	case REF_BSY :
-	case REF_BSZ :
-	case REF_CSX :
-	case REF_CSY :
-	case REF_CSZ :
+		case REF_ASX :
+		case REF_ASY :
+		case REF_ASZ :
+		case REF_BSX :
+		case REF_BSY :
+		case REF_BSZ :
+		case REF_CSX :
+		case REF_CSY :
+		case REF_CSZ :
 		apply_cell_shift(image->indexed_cell, k, shift);
 		break;
 
-	default :
+		default :
 		ERROR("No shift defined for parameter %i\n", k);
 		abort();
 

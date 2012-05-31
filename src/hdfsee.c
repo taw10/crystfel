@@ -151,15 +151,16 @@ int main(int argc, char *argv[])
 		char *test;
 
 		switch (c) {
-		case 'h' :
+
+			case 'h' :
 			show_help(argv[0]);
 			return 0;
 
-		case 'p' :
+			case 'p' :
 			peaks = strdup(optarg);
 			break;
 
-		case 'i' :
+			case 'i' :
 			boost = atoi(optarg);
 			if ( boost < 1 ) {
 				ERROR("Intensity boost must be a positive"
@@ -168,7 +169,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-		case 'b' :
+			case 'b' :
 			binning = atoi(optarg);
 			if ( binning < 1 ) {
 				ERROR("Binning must be a positive integer.\n");
@@ -176,19 +177,19 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-		case 'c' :
+			case 'c' :
 			cscale = strdup(optarg);
 			break;
 
-		case 'e' :
+			case 'e' :
 			element = strdup(optarg);
 			break;
 
-		case 'g' :
+			case 'g' :
 			geometry = strdup(optarg);
 			break;
 
-		case 2 :
+			case 2 :
 			ring_size = strtod(optarg, &test);
 			if ( test == optarg ) {
 				ERROR("Ring size must be numerical.\n");
@@ -196,7 +197,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-		case 'r' :
+			case 'r' :
 			config_showrings = 1;
 			reslist = strdup(optarg);
 			int nchar = strlen(reslist);
@@ -219,10 +220,10 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-		case 0 :
+			case 0 :
 			break;
 
-		default :
+			default :
 			return 1;
 		}
 
