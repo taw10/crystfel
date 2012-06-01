@@ -48,6 +48,17 @@ struct rvec
 	double   w;
 };
 
+typedef enum
+{
+	L_TRICLINIC,
+	L_MONOCLINIC,
+	L_ORTHORHOMBIC,
+	L_TETRAGONAL,
+	L_RHOMBOHEDRAL,
+	L_HEXAGONAL,
+	L_CUBIC
+} LatticeType;
+
 
 /**
  * UnitCell:
@@ -108,6 +119,15 @@ extern const char *cell_get_pointgroup(UnitCell *cell);
 
 extern const char *cell_get_spacegroup(UnitCell *cell);
 
+extern LatticeType cell_get_lattice_type(UnitCell *cell);
+extern void cell_set_lattice_type(UnitCell *cell, LatticeType lattice_type);
+
+extern char cell_get_centering(UnitCell *cell);
+extern void cell_set_centering(UnitCell *cell, char centering);
+
+extern char cell_get_unique_axis(UnitCell *cell);
+extern void cell_set_unique_axis(UnitCell *cell, char unique_axis);
+
 extern double resolution(UnitCell *cell,
                          signed int h, signed int k, signed int l);
 
@@ -125,5 +145,7 @@ extern UnitCell *match_cell_ab(UnitCell *cell, UnitCell *tempcell);
 extern UnitCell *load_cell_from_pdb(const char *filename);
 
 extern int cell_is_sensible(UnitCell *cell);
+
+extern void validate_cell(UnitCell *cell);
 
 #endif	/* CELL_H */

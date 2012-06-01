@@ -92,8 +92,11 @@ struct _unitcell {
 	double ays;	double bys;	double cys;
 	double azs;	double bzs;	double czs;
 
-	char *pointgroup;
-	char *spacegroup;
+	char        *pointgroup;
+	char        *spacegroup;
+	LatticeType  lattice_type;
+	char         centering;
+	char         unique_axis;
 };
 
 
@@ -126,6 +129,9 @@ UnitCell *cell_new()
 
 	cell->pointgroup = strdup("1");
 	cell->spacegroup = strdup("P 1");
+	cell->lattice_type = L_TRICLINIC;
+	cell->centering = 'P';
+	cell->unique_axis = 'c';
 
 	return cell;
 }
@@ -293,6 +299,24 @@ void cell_set_pointgroup(UnitCell *cell, const char *sym)
 {
 	free(cell->pointgroup);
 	cell->pointgroup = strdup(sym);
+}
+
+
+void cell_set_centering(UnitCell *cell, char centering)
+{
+	cell->centering = centering;
+}
+
+
+void cell_set_lattice_type(UnitCell *cell, LatticeType lattice_type)
+{
+	cell->lattice_type = lattice_type;
+}
+
+
+void cell_set_unique_axis(UnitCell *cell, char unique_axis)
+{
+	cell->unique_axis = unique_axis;
 }
 
 
@@ -561,6 +585,23 @@ const char *cell_get_spacegroup(UnitCell *cell)
 }
 
 
+char cell_get_centering(UnitCell *cell)
+{
+	return cell->centering;
+}
+
+
+LatticeType cell_get_lattice_type(UnitCell *cell)
+{
+	return cell->lattice_type;
+}
+
+
+char cell_get_unique_axis(UnitCell *cell)
+{
+	return cell->unique_axis;
+}
+
 
 
 
@@ -617,6 +658,23 @@ UnitCell *cell_rotate(UnitCell *in, struct quaternion quat)
 }
 
 
+static const char *str_lattice(LatticeType l)
+{
+	switch ( l )
+	{
+		case L_TRICLINIC :    return "triclinic";
+		case L_MONOCLINIC :   return "monoclinic";
+		case L_ORTHORHOMBIC : return "orthorhombic";
+		case L_TETRAGONAL :   return "tetragonal";
+		case L_RHOMBOHEDRAL : return "rhombohedral";
+		case L_HEXAGONAL :    return "hexagonal";
+		case L_CUBIC :        return "cubic";
+	}
+
+	return "unknown lattice";
+}
+
+
 void cell_print(UnitCell *cell)
 {
 	double asx, asy, asz;
@@ -624,6 +682,9 @@ void cell_print(UnitCell *cell)
 	double csx, csy, csz;
 	double a, b, c, alpha, beta, gamma;
 	double ax, ay, az, bx, by, bz, cx, cy, cz;
+
+	STATUS("%s %c\n", str_lattice(cell_get_lattice_type(cell)),
+	                  cell_get_centering(cell));
 
 	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
 
@@ -1019,21 +1080,122 @@ double resolution(UnitCell *cell, signed int h, signed int k, signed int l)
 }
 
 
-static void cell_set_pointgroup_from_pdb(UnitCell *cell, const char *sym)
+static void determine_lattice(UnitCell *cell,
+                              const char *as, const char *bs, const char *cs,
+                              const char *als, const char *bes, const char *gas)
 {
-	char *new = NULL;
+	int n_right;
 
-	if ( strcmp(sym, "P 1") == 0 ) new = "1";
-	if ( strcmp(sym, "P 63") == 0 ) new = "6";
-	if ( strcmp(sym, "P 21 21 21") == 0 ) new = "222";
-	if ( strcmp(sym, "P 2 2 2") == 0 ) new = "222";
-	if ( strcmp(sym, "P 43 21 2") == 0 ) new = "422";
+	/* Rhombohedral or cubic? */
+	if ( (strcmp(as, bs) == 0) && (strcmp(as, cs) == 0) ) {
 
-	if ( new != NULL ) {
-		cell_set_pointgroup(cell, new);
-	} else {
-		ERROR("Can't determine point group for '%s'\n", sym);
+		if ( (strcmp(als, "  90.00") == 0)
+		  && (strcmp(bes, "  90.00") == 0)
+		  && (strcmp(gas, "  90.00") == 0) )
+		{
+			/* Cubic.  Unique axis irrelevant. */
+			cell_set_lattice_type(cell, L_CUBIC);
+			return;
+		}
+
+		if ( (strcmp(als, bes) == 0) && (strcmp(als, gas) == 0) ) {
+			/* Rhombohedral.  Unique axis irrelevant. */
+			cell_set_lattice_type(cell, L_RHOMBOHEDRAL);
+			return;
+		}
+
 	}
+
+	if ( (strcmp(als, "  90.00") == 0)
+	  && (strcmp(bes, "  90.00") == 0)
+	  && (strcmp(gas, "  90.00") == 0) )
+	{
+		if ( strcmp(bs, cs) == 0 ) {
+			/* Tetragonal, unique axis a */
+			cell_set_lattice_type(cell, L_TETRAGONAL);
+			cell_set_unique_axis(cell, 'a');
+			return;
+		}
+
+		if ( strcmp(as, cs) == 0 ) {
+			/* Tetragonal, unique axis b */
+			cell_set_lattice_type(cell, L_TETRAGONAL);
+			cell_set_unique_axis(cell, 'b');
+			return;
+		}
+
+		if ( strcmp(as, bs) == 0 ) {
+			/* Tetragonal, unique axis c */
+			cell_set_lattice_type(cell, L_TETRAGONAL);
+			cell_set_unique_axis(cell, 'c');
+			return;
+		}
+
+		/* Orthorhombic.  Unique axis irrelevant, but point group
+		 * can have different orientations. */
+		cell_set_lattice_type(cell, L_ORTHORHOMBIC);
+		return;
+	}
+
+	n_right = 0;
+	if ( strcmp(als, "  90.00") == 0 ) n_right++;
+	if ( strcmp(bes, "  90.00") == 0 ) n_right++;
+	if ( strcmp(gas, "  90.00") == 0 ) n_right++;
+
+	/* Hexgonal or monoclinic? */
+	if ( n_right == 2 ) {
+
+		if ( (strcmp(als, " 120.00") == 0)
+		  && (strcmp(bs, cs) == 0) )
+		{
+			/* Hexagonal, unique axis a */
+			cell_set_lattice_type(cell, L_HEXAGONAL);
+			cell_set_unique_axis(cell, 'a');
+			return;
+		}
+
+		if ( (strcmp(bes, " 120.00") == 0)
+		  && (strcmp(as, cs) == 0) )
+		{
+			/* Hexagonal, unique axis b */
+			cell_set_lattice_type(cell, L_HEXAGONAL);
+			cell_set_unique_axis(cell, 'b');
+			return;
+		}
+
+		if ( (strcmp(gas, " 120.00") == 0)
+		  && (strcmp(as, bs) == 0) )
+		{
+			/* Hexagonal, unique axis c */
+			cell_set_lattice_type(cell, L_HEXAGONAL);
+			cell_set_unique_axis(cell, 'c');
+			return;
+		}
+
+		if ( strcmp(als, "  90.00") != 0 ) {
+			/* Monoclinic, unique axis a */
+			cell_set_lattice_type(cell, L_MONOCLINIC);
+			cell_set_unique_axis(cell, 'a');
+			return;
+		}
+
+		if ( strcmp(bes, "  90.00") != 0 ) {
+			/* Monoclinic, unique axis b */
+			cell_set_lattice_type(cell, L_MONOCLINIC);
+			cell_set_unique_axis(cell, 'b');
+			return;
+		}
+
+		if ( strcmp(gas, "  90.00") != 0 ) {
+			/* Monoclinic, unique axis c */
+			cell_set_lattice_type(cell, L_MONOCLINIC);
+			cell_set_unique_axis(cell, 'c');
+			return;
+		}
+	}
+
+	/* Triclinic, unique axis irrelevant. */
+	cell_set_lattice_type(cell, L_TRICLINIC);
 }
 
 
@@ -1060,7 +1222,6 @@ UnitCell *load_cell_from_pdb(const char *filename)
 			float a, b, c, al, be, ga;
 			char as[10], bs[10], cs[10];
 			char als[8], bes[8], gas[8];
-			char *sym;
 			int r;
 
 			memcpy(as, line+6, 9);    as[9] = '\0';
@@ -1088,16 +1249,14 @@ UnitCell *load_cell_from_pdb(const char *filename)
 	                                                deg2rad(be),
 	                                                deg2rad(ga));
 
+			determine_lattice(cell, as, bs, cs, als, bes, gas);
+
 			if ( strlen(line) > 65 ) {
-				sym = strndup(line+55, 10);
-				notrail(sym);
-				cell_set_pointgroup_from_pdb(cell, sym);
-				cell_set_spacegroup(cell, sym);
-				free(sym);
+				cell_set_centering(cell, line[55]);
 			} else {
-				cell_set_pointgroup_from_pdb(cell, "P 1");
+				cell_set_pointgroup(cell, "1");
 				cell_set_spacegroup(cell, "P 1");
-				ERROR("CRYST1 line without space group.\n");
+				ERROR("CRYST1 line without centering.\n");
 			}
 
 			break;  /* Done */
@@ -1106,6 +1265,8 @@ UnitCell *load_cell_from_pdb(const char *filename)
 	} while ( rval != NULL );
 
 	fclose(fh);
+
+	validate_cell(cell);
 
 	return cell;
 }
@@ -1195,4 +1356,81 @@ int cell_is_sensible(UnitCell *cell)
 	if ( isnan(be) ) return 0;
 	if ( isnan(ga) ) return 0;
 	return 1;
+}
+
+
+static int bravais_lattice(UnitCell *cell)
+{
+	LatticeType lattice = cell_get_lattice_type(cell);
+	char centering = cell_get_centering(cell);
+	char ua = cell_get_unique_axis(cell);
+
+	switch ( centering )
+	{
+		case 'P' :
+		return 1;
+
+		case 'A' :
+		case 'B' :
+		case 'C' :
+		if ( (lattice != L_MONOCLINIC)
+		  && (lattice != L_ORTHORHOMBIC) )
+		{
+			return 0;
+		}
+		if ( (ua=='a') && (centering=='A') ) return 1;
+		if ( (ua=='b') && (centering=='B') ) return 1;
+		if ( (ua=='c') && (centering=='C') ) return 1;
+		return 0;
+
+		case 'I' :
+		if ( (lattice == L_ORTHORHOMBIC)
+		  || (lattice == L_TETRAGONAL)
+		  || (lattice == L_CUBIC) )
+		{
+			return 1;
+		}
+		return 0;
+
+		case 'F' :
+		if ( (lattice == L_ORTHORHOMBIC) || (lattice == L_CUBIC) ) {
+			return 1;
+		}
+		return 0;
+
+		case 'H' :
+		if ( lattice == L_HEXAGONAL ) return 1;
+		return 0;
+
+		default :
+		return 0;
+	}
+}
+
+
+/**
+ * validate_cell:
+ * @cell: A %UnitCell to validate
+ *
+ * Perform some checks for crystallographic validity @cell, such as that the
+ * lattice is a conventional Bravais lattice.
+ * Warnings are printied if any of the checks are failed.
+ *
+ */
+void validate_cell(UnitCell *cell)
+{
+	int err = 0;
+
+	if ( !cell_is_sensible(cell) ) {
+		ERROR("Warning: Unit cell parameters are not sensible.\n");
+		err = 1;
+	}
+
+	if ( !bravais_lattice(cell) ) {
+		ERROR("Warning: Unit cell is not a conventional Bravais"
+		      " lattice.\n");
+		err = 1;
+	}
+
+	if ( err ) cell_print(cell);
 }
