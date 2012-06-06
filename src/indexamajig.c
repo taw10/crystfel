@@ -411,11 +411,11 @@ static void process_image(const struct index_args *iargs,
 	fl.l_pid = getpid();
 
 	fd = open(outfile, O_WRONLY);
-	if ( fd == -1) {
+	if ( fd == -1 ) {
 		ERROR("Error on opening\n");
 		exit(1);
 	}
-	if (fcntl(fd, F_SETLKW, &fl) == -1) {
+	if ( fcntl(fd, F_SETLKW, &fl) == -1 ) {
 		ERROR("Error on setting lock wait\n");
 		exit(1);
 	}
