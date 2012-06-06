@@ -272,14 +272,54 @@ static void mosflm_sendline(const char *line, struct mosflm_data *mosflm)
 }
 
 
+static const char *spacegroup_for_lattice(UnitCell *cell)
+{
+	LatticeType latt;
+	char centering;
+
+	latt = cell_get_lattice_type(cell);
+	centering = cell_get_centering(cell);
+
+	switch ( latt )
+	{
+		case L_TRICLINIC :
+		g = "1";
+		break;
+
+		case L_MONOCLINIC :
+		g = "2";
+		break;
+
+		case L_ORTHORHOMBIC :
+		g = "222";
+		break;
+
+		case L_TETRAGONAL :
+		g = "4";
+		break;
+
+		case L_RHOMBOHEDRAL :
+		g = "3";
+		break;
+
+		case L_HEXAGONAL :
+		g = "6";
+		break;
+
+		case L_CUBIC :
+		g = "23";
+		break;
+
+
+	return "P1";
+}
+
+
 static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 {
 	char tmp[256];
-	char symm[32];
-	const char *sg;
 	double wavelength;
 	double a, b, c, alpha, beta, gamma;
-	int i, j;
 
 	switch ( mosflm->step ) {
 
@@ -305,15 +345,8 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 
 		case 3 :
 		if ( mosflm->target_cell != NULL ) {
-			sg = cell_get_spacegroup(mosflm->target_cell);
-			/* Remove white space from space group */
-			j = 0;
-			for ( i=0; i<strlen(sg); i++ ) {
-				if (sg[i] != ' ') {
-					symm[j++] = sg[i];
-				}
-			}
-			symm[j] = '\0';
+			const char *symm;
+			symm = spacegroup_for_lattice(mosflm->target_cell);
 			snprintf(tmp, 255, "SYMM %s\n", symm);
 			mosflm_sendline(tmp, mosflm);
 		} else {
