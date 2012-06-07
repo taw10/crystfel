@@ -151,7 +151,8 @@ static int cull_peaks(struct image *image)
 static int integrate_peak(struct image *image, int cfs, int css,
                           double *pfs, double *pss,
                           double *intensity, double *sigma,
-                          double ir_inn, double ir_mid, double ir_out)
+                          double ir_inn, double ir_mid, double ir_out,
+                          int use_max_adu)
 {
 	signed int fs, ss;
 	double lim_sq, out_lim_sq, mid_lim_sq;
@@ -212,7 +213,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		val = image->data[idx];
 
 		/* Veto peak if it contains saturation in bg region */
-		if ( val > p->max_adu ) return 1;
+		if ( use_max_adu && (val > p->max_adu) ) return 1;
 
 		bg_tot += val;
 		bg_tot_sq += pow(val, 2.0);
@@ -263,7 +264,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		val = image->data[idx] - bg_mean;
 
 		/* Veto peak if it contains saturation */
-		if ( image->data[idx] > p->max_adu ) return 1;
+		if ( use_max_adu && (image->data[idx] > p->max_adu) ) return 1;
 
 		pk_counts++;
 		pk_total += val;
@@ -398,7 +399,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		/* Centroid peak and get better coordinates. */
 		r = integrate_peak(image, mask_fs, mask_ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
-		                   ir_inn, ir_mid, ir_out);
+		                   ir_inn, ir_mid, ir_out, 0);
 
 		if ( r ) {
 			/* Bad region - don't detect peak */
@@ -656,7 +657,8 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 		}
 
 		r = integrate_peak(image, pfs, pss, &fs, &ss,
-		                   &intensity, &sigma, ir_inn, ir_mid, ir_out);
+		                   &intensity, &sigma, ir_inn, ir_mid, ir_out,
+		                   1);
 
 		/* Record intensity and set redundancy to 1 on success */
 		if ( r == 0 ) {
