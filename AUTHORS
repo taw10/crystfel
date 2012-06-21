@@ -1,6 +1,9 @@
 * Thomas White <taw@physics.org>
   Lead author, architecture, "vision" and so on.
 
+* Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+  Peak integration improvements
+
 * Richard Kirian <rkirian@asu.edu>
   MOSFLM auto-indexing, bug fixing.
 

@@ -9,6 +9,7 @@
  *
  * Authors:
  *   2010-2012 Thomas White <taw@physics.org>
+ *   2012      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *   2011      Andrew Martin <andrew.martin@desy.de>
  *   2011      Richard Kirian
  *
