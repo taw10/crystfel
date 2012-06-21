@@ -474,6 +474,7 @@ int skip_some_files(FILE *fh, int n)
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
+		chomp(line);
 		if ( strcmp(line, CHUNK_END_MARKER) == 0 ) n_patterns++;
 
 	} while ( rval != NULL );
