@@ -264,6 +264,7 @@ static void process_image(void *pp, int cookie)
 	image.data = NULL;
 	image.flags = NULL;
 	image.indexed_cell = NULL;
+	image.reflections = NULL;
 	image.id = cookie;
 	image.filename = filename;
 	image.det = copy_geom(pargs->static_args.det);

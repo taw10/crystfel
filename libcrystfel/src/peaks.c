@@ -146,14 +146,18 @@ static int cull_peaks(struct image *image)
 	return nelim;
 }
 
+
 static unsigned char *make_BgMask(struct image *image, struct panel *p,
                                   double ir_out, int cfs, int css, double ir_in)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 	unsigned char *mask;
+	int w, h;
 
-	mask = calloc(4*ir_out*ir_out, sizeof(unsigned char));
+	w = p->max_fs - p->min_fs + 1;
+	h = p->max_ss - p->min_ss + 1;
+	mask = calloc(w*h, sizeof(unsigned char));
 	if ( mask == NULL ) return NULL;
 
 	/* Loop over all reflections */
@@ -163,6 +167,7 @@ static unsigned char *make_BgMask(struct image *image, struct panel *p,
 	{
 		struct panel *p2;
 		double pk2_fs, pk2_ss;
+		signed int fs, ss;
 
 		get_detector_pos(refl, &pk2_fs, &pk2_ss);
 
@@ -170,30 +175,24 @@ static unsigned char *make_BgMask(struct image *image, struct panel *p,
 		p2 = find_panel(image->det, pk2_fs, pk2_ss);
 		if ( p2 != p ) continue;
 
-		/* If other peak area overlaps larger bg area, set mask */
-		if ( (fabs(pk2_fs-cfs)<ir_out+ir_in)
-		  && (fabs(pk2_ss-css)<ir_out+ir_in) ) {
+		for ( fs=-ir_in; fs<=ir_in; fs++ ) {
+		for ( ss=-ir_in; ss<=ir_in; ss++ ) {
 
-			signed int fs, ss;
+			double d_fs, d_ss, distSq;
 
-			for ( fs=-ir_out; fs<=ir_out; fs++ ) {
-			for ( ss=-ir_out; ss<=ir_out; ss++ ) {
+			d_fs = cfs + fs;
+			d_ss = css + ss;
+			distSq = d_fs*d_fs + d_ss*d_ss;
 
-				double d_fs, d_ss, distSq;
+			if ( distSq < ir_in*ir_in ) {
 
-				d_fs = cfs + fs - pk2_fs;
-				d_ss = css + ss - pk2_ss;
-				distSq = d_fs*d_fs + d_ss*d_ss;
+				int idx;
+				idx = fs+ir_out+2*ir_out*(ss+ir_out);
+				mask[idx] = 1;
 
-				if ( distSq < ir_in*ir_in ) {
-
-					int idx;
-					idx = fs+ir_out+2*ir_out*(ss+ir_out);
-					mask[idx] = 1;
-				}
-			}
 			}
 
+		}
 		}
 
 	}
@@ -223,7 +222,6 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	double var;
 	double aduph;
 	unsigned char *bgPkMask;
-
 
 	p = find_panel(image->det, cfs, css);
 	if ( p == NULL ) return 1;

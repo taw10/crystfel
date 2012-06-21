@@ -900,6 +900,7 @@ struct _reflistiterator {
  **/
 Reflection *first_refl(RefList *list, RefListIterator **piter)
 {
+	Reflection *refl;
 	RefListIterator *iter;
 
 	iter = malloc(sizeof(struct _reflistiterator));
@@ -908,7 +909,9 @@ Reflection *first_refl(RefList *list, RefListIterator **piter)
 	iter->stack_ptr = 0;
 	*piter = iter;
 
-	Reflection *refl = list->head;
+	if ( list == NULL ) return NULL;
+
+	refl = list->head;
 
 	do {
 
