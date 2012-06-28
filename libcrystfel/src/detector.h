@@ -62,7 +62,6 @@ struct panel
 	double   res;      /* Resolution in pixels per metre */
 	char     badrow;   /* 'x' or 'y' */
 	int      no_index; /* Don't index peaks in this panel if non-zero */
-	double   peak_sep; /* Characteristic peak separation */
 	char    *rigid_group;  /* Rigid group, or -1 for none */
 	double   adu_per_eV;   /* Number of ADU per eV */
 	double   max_adu;  /* Treat pixel as unreliable if higher than this */

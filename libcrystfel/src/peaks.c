@@ -390,7 +390,6 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	int nrej_snr = 0;
 	int nacc = 0;
 	int ncull;
-	const int pws = p->peak_sep/2;
 
 	data = image->data;
 	stride = image->width;
@@ -433,16 +432,14 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 			max = data[mask_fs+stride*mask_ss];
 			did_something = 0;
 
-			for ( s_ss=biggest(mask_ss-pws/2,
-			                   p->min_ss);
-			      s_ss<=smallest(mask_ss+pws/2,
-			                     p->max_ss);
-			      s_ss++ ) {
-			for ( s_fs=biggest(mask_fs-pws/2,
-			                   p->min_fs);
-			      s_fs<=smallest(mask_fs+pws/2,
-			                     p->max_fs);
-			      s_fs++ ) {
+			for ( s_ss=biggest(mask_ss-ir_inn, p->min_ss);
+			      s_ss<=smallest(mask_ss+ir_inn, p->max_ss);
+			      s_ss++ )
+			{
+			for ( s_fs=biggest(mask_fs-ir_inn, p->min_fs);
+			      s_fs<=smallest(mask_fs+ir_inn, p->max_fs);
+			      s_fs++ )
+			{
 
 				if ( data[s_fs+stride*s_ss] > max ) {
 					max = data[s_fs+stride*s_ss];
@@ -455,8 +452,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 			}
 
 			/* Abort if drifted too far from the foot point */
-			if ( distance(mask_fs, mask_ss, fs, ss) >
-			     p->peak_sep/2.0 )
+			if ( distance(mask_fs, mask_ss, fs, ss) > ir_inn )
 			{
 				break;
 			}
@@ -464,7 +460,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		} while ( did_something );
 
 		/* Too far from foot point? */
-		if ( distance(mask_fs, mask_ss, fs, ss) > p->peak_sep/2.0 ) {
+		if ( distance(mask_fs, mask_ss, fs, ss) > ir_inn ) {
 			nrej_dis++;
 			continue;
 		}
@@ -500,7 +496,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 
 		/* Check for a nearby feature */
 		image_feature_closest(image->features, f_fs, f_ss, &d, &idx);
-		if ( d < p->peak_sep/2.0 ) {
+		if ( d < 2.0*ir_inn ) {
 			nrej_pro++;
 			continue;
 		}
