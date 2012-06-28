@@ -619,8 +619,7 @@ int main(int argc, char *argv[])
 			number++;
 
 			/* Write the output file */
-			hdf5_write(filename, image.data,
-			           image.width, image.height, H5T_NATIVE_FLOAT);
+			hdf5_write_image(filename, &image);
 
 		}
 
