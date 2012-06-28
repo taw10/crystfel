@@ -420,7 +420,6 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 		image->data[idx] = I_lattice * I_molecule;
 		image->twotheta[idx] = twotheta;
 
-
 	}
 	progress_bar(fs, image->width-1, "Calculating diffraction");
 	}
