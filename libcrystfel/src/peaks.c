@@ -99,7 +99,6 @@ static int cull_peaks_in_panel(struct image *image, struct panel *p)
 		if ( ncol <= 3 ) continue;
 
 		/* Yes?  Delete them all... */
-		nelim = 0;
 		for ( j=0; j<n; j++ ) {
 			struct imagefeature *g;
 			g = image_get_feature(image->features, j);
