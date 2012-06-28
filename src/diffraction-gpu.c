@@ -167,57 +167,13 @@ static int set_arg_mem(struct gpu_context *gctx, int idx, cl_mem val)
 }
 
 
-void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
-                         int na, int nb, int nc, UnitCell *ucell)
+static void do_panels(struct gpu_context *gctx, struct image *image,
+                      int *n_inf, int *n_neg, int *n_nan, double k, double frac,
+                      double xo, double yo)
 {
-	cl_int err;
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
 	int i;
-	cl_float16 cell;
-	cl_int4 ncells;
-	int n_inf = 0;
-	int n_neg = 0;
-	int n_nan = 0;
 
-	if ( gctx == NULL ) {
-		ERROR("GPU setup failed.\n");
-		return;
-	}
-
-	cell_get_cartesian(ucell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	cell.s[0] = ax;  cell.s[1] = ay;  cell.s[2] = az;
-	cell.s[3] = bx;  cell.s[4] = by;  cell.s[5] = bz;
-	cell.s[6] = cx;  cell.s[7] = cy;  cell.s[8] = cz;
-
-	ncells.s[0] = na;
-	ncells.s[1] = nb;
-	ncells.s[2] = nc;
-	ncells.s[3] = 0;  /* unused */
-
-	/* Ensure all required LUTs are available */
-	check_sinc_lut(gctx, na);
-	check_sinc_lut(gctx, nb);
-	check_sinc_lut(gctx, nc);
-
-	if ( set_arg_float(gctx, 2, 1.0/image->lambda) ) return;
-	if ( set_arg_mem(gctx, 9, gctx->intensities) ) return;
-	if ( set_arg_mem(gctx, 10, gctx->sinc_luts[na-1]) ) return;
-	if ( set_arg_mem(gctx, 11, gctx->sinc_luts[nb-1]) ) return;
-	if ( set_arg_mem(gctx, 12, gctx->sinc_luts[nc-1]) ) return;
-	if ( set_arg_mem(gctx, 13, gctx->flags) ) return;
-
-	/* Unit cell */
-	err = clSetKernelArg(gctx->kern, 8, sizeof(cl_float16), &cell);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't set unit cell: %s\n", clError(err));
-		return;
-	}
-
-	/* Allocate memory for the result */
-	image->data = calloc(image->width * image->height, sizeof(float));
-	image->twotheta = calloc(image->width * image->height, sizeof(double));
+	if ( set_arg_float(gctx, 1, k) ) return;
 
 	/* Iterate over panels */
 	for ( i=0; i<image->det->n_panels; i++ ) {
@@ -225,14 +181,12 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		size_t dims[2];
 		size_t ldims[2] = {1, 1};
 		struct panel *p;
-		cl_mem tt;
-		size_t tt_size;
 		cl_mem diff;
 		size_t diff_size;
 		float *diff_ptr;
-		float *tt_ptr;
 		int pan_width, pan_height;
 		int fs, ss;
+		cl_int err;
 
 		p = &image->det->panels[i];
 
@@ -247,25 +201,19 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 			ERROR("Couldn't allocate diffraction memory\n");
 			return;
 		}
-		tt_size = pan_width * pan_height * sizeof(cl_float);
-		tt = clCreateBuffer(gctx->ctx, CL_MEM_WRITE_ONLY, tt_size,
-			            NULL, &err);
-		if ( err != CL_SUCCESS ) {
-			ERROR("Couldn't allocate twotheta memory\n");
-			return;
-		}
 
 		if ( set_arg_mem(gctx, 0, diff) ) return;
-		if ( set_arg_mem(gctx, 1, tt) ) return;
-		if ( set_arg_int(gctx, 3, pan_width) ) return;
-		if ( set_arg_float(gctx, 4, p->cnx) ) return;
-		if ( set_arg_float(gctx, 5, p->cny) ) return;
-		if ( set_arg_float(gctx, 6, p->res) ) return;
-		if ( set_arg_float(gctx, 7, p->clen) ) return;
-		if ( set_arg_float(gctx, 14, p->fsx) ) return;
-		if ( set_arg_float(gctx, 15, p->fsy) ) return;
-		if ( set_arg_float(gctx, 16, p->ssx) ) return;
-		if ( set_arg_float(gctx, 17, p->ssy) ) return;
+		if ( set_arg_int(gctx, 2, pan_width) ) return;
+		if ( set_arg_float(gctx, 3, p->cnx) ) return;
+		if ( set_arg_float(gctx, 4, p->cny) ) return;
+		if ( set_arg_float(gctx, 5, p->res) ) return;
+		if ( set_arg_float(gctx, 6, p->clen) ) return;
+		if ( set_arg_float(gctx, 13, p->fsx) ) return;
+		if ( set_arg_float(gctx, 14, p->fsy) ) return;
+		if ( set_arg_float(gctx, 15, p->ssx) ) return;
+		if ( set_arg_float(gctx, 16, p->ssy) ) return;
+		if ( set_arg_float(gctx, 17, xo) ) return;
+		if ( set_arg_float(gctx, 18, yo) ) return;
 
 		dims[0] = pan_width;
 		dims[1] = pan_height;
@@ -288,43 +236,124 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 			      clError(err));
 			return;
 		}
-		tt_ptr = clEnqueueMapBuffer(gctx->cq, tt, CL_TRUE, CL_MAP_READ,
-		                            0, tt_size, 0, NULL, NULL, &err);
-		if ( err != CL_SUCCESS ) {
-			ERROR("Couldn't map tt buffer\n");
-			return;
-		}
 
 		for ( fs=0; fs<pan_width; fs++ ) {
 		for ( ss=0; ss<pan_height; ss++ ) {
 
-			float val, tt;
+			float val;
 			int tfs, tss;
 
 			val = diff_ptr[fs + pan_width*ss];
-			if ( isinf(val) ) n_inf++;
-			if ( val < 0.0 ) n_neg++;
-			if ( isnan(val) ) n_nan++;
-			tt = tt_ptr[fs + pan_width*ss];
+			if ( isinf(val) ) (*n_inf)++;
+			if ( val < 0.0 ) (*n_neg)++;
+			if ( isnan(val) ) (*n_nan)++;
 
 			tfs = p->min_fs + fs;
 			tss = p->min_ss + ss;
-			image->data[tfs + image->width*tss] = val;
-			image->twotheta[tfs + image->width*tss] = tt;
+			image->data[tfs + image->width*tss] += frac*val;
 
 		}
 		}
 
 		clEnqueueUnmapMemObject(gctx->cq, diff, diff_ptr,
 		                        0, NULL, NULL);
-		clEnqueueUnmapMemObject(gctx->cq, tt, tt_ptr,
-		                        0, NULL, NULL);
 
 		clReleaseMemObject(diff);
-		clReleaseMemObject(tt);
 
 	}
+}
 
+
+void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
+                         int na, int nb, int nc, UnitCell *ucell)
+{
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	cl_float16 cell;
+	cl_int4 ncells;
+	cl_int err;
+	int n_inf = 0;
+	int n_neg = 0;
+	int n_nan = 0;
+	int fs, ss;
+	const int nkstep = 10;
+	const int nxs = 4;
+	const int nys = 4;
+	int kstep;
+	double klow, khigh, kinc, w;
+	double frac;
+	int xs, ys;
+	int n, ntot;
+
+	if ( gctx == NULL ) {
+		ERROR("GPU setup failed.\n");
+		return;
+	}
+
+	cell_get_cartesian(ucell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	cell.s[0] = ax;  cell.s[1] = ay;  cell.s[2] = az;
+	cell.s[3] = bx;  cell.s[4] = by;  cell.s[5] = bz;
+	cell.s[6] = cx;  cell.s[7] = cy;  cell.s[8] = cz;
+
+	ncells.s[0] = na;
+	ncells.s[1] = nb;
+	ncells.s[2] = nc;
+	ncells.s[3] = 0;  /* unused */
+
+	/* Ensure all required LUTs are available */
+	check_sinc_lut(gctx, na);
+	check_sinc_lut(gctx, nb);
+	check_sinc_lut(gctx, nc);
+
+	if ( set_arg_mem(gctx, 8, gctx->intensities) ) return;
+	if ( set_arg_mem(gctx, 9, gctx->sinc_luts[na-1]) ) return;
+	if ( set_arg_mem(gctx, 10, gctx->sinc_luts[nb-1]) ) return;
+	if ( set_arg_mem(gctx, 11, gctx->sinc_luts[nc-1]) ) return;
+	if ( set_arg_mem(gctx, 12, gctx->flags) ) return;
+
+	/* Unit cell */
+	err = clSetKernelArg(gctx->kern, 7, sizeof(cl_float16), &cell);
+	if ( err != CL_SUCCESS ) {
+		ERROR("Couldn't set unit cell: %s\n", clError(err));
+		return;
+	}
+
+	/* Allocate memory for the result */
+	image->data = calloc(image->width * image->height, sizeof(float));
+
+	w = image->lambda * image->bw;
+	klow  = 1.0 / (image->lambda + (w/2.0));  /* Smallest k */
+	khigh = 1.0 / (image->lambda - (w/2.0));  /* Largest k */
+	kinc = (khigh-klow) / (nkstep+1);
+
+	ntot = nkstep * nxs * nys;
+	frac = 1.0 / ntot;
+
+	n = 0;
+	for ( xs=0; xs<nxs; xs++ ) {
+	for ( ys=0; ys<nys; ys++ ) {
+
+		double xo, yo;
+
+		xo = (1.0/nxs) * xs;
+		yo = (1.0/nys) * ys;
+
+		for ( kstep=0; kstep<nkstep; kstep++ ) {
+
+			double k;
+
+			k = klow + kstep*kinc;
+
+			do_panels(gctx, image, &n_inf, &n_neg, &n_nan, k, frac,
+			          xo, yo);
+
+			n++;
+			progress_bar(n, ntot, "Simulating");
+
+		}
+	}
+	}
 
 	if ( n_neg + n_inf + n_nan ) {
 		ERROR("WARNING: The GPU calculation produced %i negative"
@@ -332,6 +361,25 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		      n_neg, n_inf, n_nan);
 	}
 
+	/* Calculate "2theta" values for detector geometry */
+	image->twotheta = calloc(image->width * image->height, sizeof(double));
+	for ( fs=0; fs<image->width; fs++ ) {
+	for ( ss=0; ss<image->height; ss++ ) {
+
+		struct rvec q;
+		double twotheta, k;
+		int idx;
+
+		/* Calculate k this time round */
+		k = 1.0/image->lambda;
+
+		q = get_q(image, fs, ss, &twotheta, k);
+
+		idx = fs + image->width*ss;
+		image->twotheta[idx] = twotheta;
+
+	}
+	}
 }
 
 

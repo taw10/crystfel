@@ -33,7 +33,7 @@ const sampler_t sampler_c = CLK_NORMALIZED_COORDS_TRUE
 
 
 float4 get_q(float fs, float ss, float res, float clen, float k,
-             float *ttp, float corner_x, float corner_y,
+             float corner_x, float corner_y,
              float fsx, float fsy, float ssx, float ssy)
 {
 	float rx, ry, r;
@@ -51,7 +51,6 @@ float4 get_q(float fs, float ss, float res, float clen, float k,
 	r = sqrt(pow(rx, 2.0f) + pow(ry, 2.0f));
 
 	tt = atan2(r, clen);
-	*ttp = tt;
 
 	az = atan2(ry, rx);
 
@@ -211,7 +210,7 @@ float molecule_factor(global float *intensities, global float *flags,
 }
 
 
-kernel void diffraction(global float *diff, global float *ttp, float k,
+kernel void diffraction(global float *diff, float k,
                         int w, float corner_x, float corner_y,
                         float res, float clen, float16 cell,
                         global float *intensities,
@@ -219,7 +218,8 @@ kernel void diffraction(global float *diff, global float *ttp, float k,
                         read_only image2d_t func_b,
                         read_only image2d_t func_c,
                         global float *flags,
-                        float fsx, float fsy, float ssx, float ssy)
+                        float fsx, float fsy, float ssx, float ssy,
+                        float xo, float yo)
 {
 	float tt;
 	float fs, ss;
@@ -230,11 +230,11 @@ kernel void diffraction(global float *diff, global float *ttp, float k,
 	int idx;
 
 	/* Calculate fractional coordinates in fs/ss */
-	fs = convert_float(get_global_id(0));
-	ss = convert_float(get_global_id(1));
+	fs = convert_float(get_global_id(0)) + xo;
+	ss = convert_float(get_global_id(1)) + yo;
 
 	/* Get the scattering vector */
-	q = get_q(fs, ss, res, clen, k, &tt,
+	q = get_q(fs, ss, res, clen, k,
 	          corner_x, corner_y, fsx, fsy, ssx, ssy);
 
 	/* Calculate the diffraction */
@@ -245,5 +245,4 @@ kernel void diffraction(global float *diff, global float *ttp, float k,
 	/* Write the value to memory */
 	idx = convert_int_rtz(fs) + w*convert_int_rtz(ss);
 	diff[idx] = I_molecule * I_lattice;
-	ttp[idx] = tt;
 }
