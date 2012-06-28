@@ -521,6 +521,12 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 //	       "%i in bad regions, %i with SNR < %g, %i badrow culled.\n",
 //	       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_bad,
 //	       nrej_snr, min_snr, ncull);
+
+	if ( ncull != 0 ) {
+		STATUS("WARNING: %i peaks were badrow culled.  This feature"
+		       " should not usually be used.\nConsider setting"
+		       " badrow=- in the geometry file.\n", ncull);
+	}
 }
 
 
