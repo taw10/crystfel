@@ -42,6 +42,11 @@ Fix the lower resolution limit for the resolutions shells, as 1/d in m^-1.  Refl
 Fix the upper resolution limit for the resolutions shells, as 1/d in m^-1  Reflections outside the specified resolution range will still be included in the calculation of overall figures of merit.
 
 .PD 0
+.IP \fB--sigma-cutoff=\fR\fIn\fR
+.PD
+Discard reflections with I/sigma(I) < \fIn\fR.  Default: -infinity (no cutoff).
+
+.PD 0
 .IP \fB--shells=\fR\fIFoM\fR
 .PD
 Calculate \fIFoM\fR in resolution shells.  Possible figures of merit for \fIFoM\fR are:

@@ -85,6 +85,7 @@ static void show_help(const char *s)
 "                              Choose from: 'Rsplit', 'R1f' and 'R1i'.\n"
 "      --rmin=<res>           Fix lower resolution limit for --shells (m^-1).\n"
 "      --rmax=<res>           Fix upper resolution limit for --shells (m^-1).\n"
+"      --sigma-cutoff=<n>     Discard reflections with I/sigma(I) < n.\n"
 "\n");
 }
 
@@ -298,7 +299,7 @@ int main(int argc, char *argv[])
 	SymOpList *sym;
 	double scale, scale_r2, scale_rdig, R1, R2, R1i, Rdiff, pearson;
 	double scale_rintint, scale_r1i, scale_r1, scale_r1fi;
-	int ncom;
+	int ncom, nrej;
 	RefList *list1;
 	RefList *list2;
 	RefList *list1_raw;
@@ -312,16 +313,18 @@ int main(int argc, char *argv[])
 	RefListIterator *iter;
 	int config_unity = 0;
 	double scale_for_shells;
+	float sigma_cutoff = -INFINITY;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"ratio" ,             1, NULL,               'o'},
 		{"symmetry",           1, NULL,               'y'},
-		{"shells",             1, NULL,               4},
 		{"pdb",                1, NULL,               'p'},
-		{"rmin",               1, NULL,               2},
-		{"rmax",               1, NULL,               3},
+		{"rmin",               1, NULL,                2},
+		{"rmax",               1, NULL,                3},
+		{"shells",             1, NULL,                4},
+		{"sigma-cutoff",       1, NULL,                5},
 		{0, 0, NULL, 0}
 	};
 
@@ -372,6 +375,14 @@ int main(int argc, char *argv[])
 			case 4 :
 			config_shells = get_r_shell(optarg);
 			break;
+
+			case 5 :
+			if ( sscanf(optarg, "%f", &sigma_cutoff) != 1 ) {
+				ERROR("Invalid value for --sigma-cutoff\n");
+				return 1;
+			}
+			break;
+
 
 			default :
 			return 1;
@@ -431,12 +442,14 @@ int main(int argc, char *argv[])
 	/* Find common reflections and calculate ratio */
 	ratio = reflist_new();
 	ncom = 0;
+	nrej = 0;
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
 	      refl1 = next_refl(refl1, iter) )
 	{
 		signed int h, k, l;
 		double val1, val2;
+		double esd1, esd2;
 		Reflection *refl2;
 		Reflection *tr;
 
@@ -445,10 +458,20 @@ int main(int argc, char *argv[])
 		refl2 = find_refl(list2, h, k, l);
 		if ( refl2 == NULL ) continue;
 
-		ncom++;
-
 		val1 = get_intensity(refl1);
 		val2 = get_intensity(refl2);
+
+		esd1 = get_esd_intensity(refl1);
+		esd2 = get_esd_intensity(refl2);
+
+		if ( (val1 < sigma_cutoff * esd1)
+		  || (val2 < sigma_cutoff * esd2) )
+		{
+			nrej++;
+			continue;
+		}
+
+		ncom++;
 
 		/* Add divided version to 'output' list */
 		tr = add_refl(ratio, h, k, l);
@@ -463,8 +486,13 @@ int main(int argc, char *argv[])
 
 	gsl_set_error_handler_off();
 
-	STATUS("%i,%i reflections: %i in common\n",
-	       num_reflections(list1), num_reflections(list2), ncom);
+	STATUS("%i,%i reflections: %i in common where both versions have "
+	       "I/sigma(I) >= %f.\n",
+	       num_reflections(list1), num_reflections(list2), ncom,
+	       sigma_cutoff);
+
+	STATUS("Discarded %i reflections because either or both versions "
+	       " had I/sigma(I) < %f\n", nrej, sigma_cutoff);
 
 	R1 = stat_r1_ignore(list1, list2, &scale_r1fi, config_unity);
 	STATUS("R1(F) = %5.4f %% (scale=%5.2e)"
