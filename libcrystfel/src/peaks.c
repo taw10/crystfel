@@ -9,6 +9,7 @@
  *
  * Authors:
  *   2010-2012 Thomas White <taw@physics.org>
+ *   2012      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *   2011      Andrew Martin <andrew.martin@desy.de>
  *   2011      Richard Kirian
  *
@@ -98,7 +99,6 @@ static int cull_peaks_in_panel(struct image *image, struct panel *p)
 		if ( ncol <= 3 ) continue;
 
 		/* Yes?  Delete them all... */
-		nelim = 0;
 		for ( j=0; j<n; j++ ) {
 			struct imagefeature *g;
 			g = image_get_feature(image->features, j);
@@ -146,13 +146,76 @@ static int cull_peaks(struct image *image)
 }
 
 
+/* cfs, css relative to panel origin */
+static int *make_BgMask(struct image *image, struct panel *p,
+                        double ir_out, int cfs, int css, double ir_in)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	int *mask;
+	int w, h;
+
+	w = p->max_fs - p->min_fs + 1;
+	h = p->max_ss - p->min_ss + 1;
+	mask = calloc(w*h, sizeof(int));
+	if ( mask == NULL ) return NULL;
+
+	/* Loop over all reflections */
+	for ( refl = first_refl(image->reflections, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		struct panel *p2;
+		double pk2_fs, pk2_ss;
+		signed int dfs, dss;
+		double pk2_cfs, pk2_css;
+
+		get_detector_pos(refl, &pk2_fs, &pk2_ss);
+
+		/* Determine if reflection is in the same panel */
+		p2 = find_panel(image->det, pk2_fs, pk2_ss);
+		if ( p2 != p ) continue;
+
+		pk2_cfs = pk2_fs - p->min_fs;
+		pk2_css = pk2_ss - p->min_ss;
+
+		for ( dfs=-ir_in; dfs<=ir_in; dfs++ ) {
+		for ( dss=-ir_in; dss<=ir_in; dss++ ) {
+
+			signed int fs, ss;
+
+			/* In peak region for this peak? */
+			if ( dfs*dfs + dss*dss > ir_in*ir_in ) continue;
+
+			fs = pk2_cfs + dfs;
+			ss = pk2_css + dss;
+
+			/* On panel? */
+			if ( fs >= w ) continue;
+			if ( ss >= h ) continue;
+			if ( fs < 0 ) continue;
+			if ( ss < 0 ) continue;
+
+			mask[fs + ss*w] = 1;
+
+		}
+		}
+
+	}
+
+	return mask;
+}
+
+
 /* Returns non-zero if peak has been vetoed.
  * i.e. don't use result if return value is not zero. */
-int integrate_peak(struct image *image, int cfs, int css,
-                   double *pfs, double *pss, double *intensity, double *sigma,
-                   double ir_inn, double ir_mid, double ir_out)
+static int integrate_peak(struct image *image, int cfs, int css,
+                          double *pfs, double *pss,
+                          double *intensity, double *sigma,
+                          double ir_inn, double ir_mid, double ir_out,
+                          int use_max_adu)
 {
-	signed int fs, ss;
+	signed int dfs, dss;
 	double lim_sq, out_lim_sq, mid_lim_sq;
 	double pk_total;
 	int pk_counts;
@@ -164,10 +227,20 @@ int integrate_peak(struct image *image, int cfs, int css,
 	double bg_tot_sq = 0.0;
 	double var;
 	double aduph;
+	int *bgPkMask;
+	int p_cfs, p_css, p_w, p_h;
 
 	p = find_panel(image->det, cfs, css);
 	if ( p == NULL ) return 1;
 	if ( p->no_index ) return 1;
+
+	/* Determine regions where there is expected to be a peak */
+	p_cfs = cfs - p->min_fs;
+	p_css = css - p->min_ss;  /* Panel-relative coordinates */
+	p_w = p->max_fs - p->min_fs + 1;
+	p_h = p->max_ss - p->min_ss + 1;
+	bgPkMask = make_BgMask(image, p, ir_out, p_cfs, p_css, ir_inn);
+	if ( bgPkMask == NULL ) return 1;
 
 	aduph = p->adu_per_eV * ph_lambda_to_eV(image->lambda);
 
@@ -176,23 +249,27 @@ int integrate_peak(struct image *image, int cfs, int css,
 	out_lim_sq = pow(ir_out, 2.0);
 
 	/* Estimate the background */
-	for ( fs=-ir_out; fs<=+ir_out; fs++ ) {
-	for ( ss=-ir_out; ss<=+ir_out; ss++ ) {
+	for ( dfs=-ir_out; dfs<=+ir_out; dfs++ ) {
+	for ( dss=-ir_out; dss<=+ir_out; dss++ ) {
 
 		double val;
 		uint16_t flags;
-		struct panel *p2;
 		int idx;
 
 		/* Restrict to annulus */
-		if ( fs*fs + ss*ss > out_lim_sq ) continue;
-		if ( fs*fs + ss*ss < mid_lim_sq ) continue;
+		if ( dfs*dfs + dss*dss > out_lim_sq ) continue;
+		if ( dfs*dfs + dss*dss < mid_lim_sq ) continue;
 
 		/* Strayed off one panel? */
-		p2 = find_panel(image->det, fs+cfs, ss+css);
-		if ( p2 != p ) return 1;
+		if ( p_cfs+dfs >= p_w ) continue;
+		if ( p_css+dss >= p_h ) continue;
+		if ( p_cfs+dfs < 0 ) continue;
+		if ( p_css+dss < 0 ) continue;
 
-		idx = fs+cfs+image->width*(ss+css);
+		/* Check if there is a peak in the background region */
+		if ( bgPkMask[(p_cfs+dfs) + p_w*(p_css+dss)] ) continue;
+
+		idx = dfs+cfs+image->width*(dss+css);
 
 		/* Veto this peak if we tried to integrate in a bad region */
 		if ( image->flags != NULL ) {
@@ -211,7 +288,7 @@ int integrate_peak(struct image *image, int cfs, int css,
 		val = image->data[idx];
 
 		/* Veto peak if it contains saturation in bg region */
-		if ( val > p->max_adu ) return 1;
+		if ( use_max_adu && (val > p->max_adu) ) return 1;
 
 		bg_tot += val;
 		bg_tot_sq += pow(val, 2.0);
@@ -228,22 +305,23 @@ int integrate_peak(struct image *image, int cfs, int css,
 	pk_total = 0.0;
 	pk_counts = 0;
 	fsct = 0.0;  ssct = 0.0;
-	for ( fs=-ir_inn; fs<=+ir_inn; fs++ ) {
-	for ( ss=-ir_inn; ss<=+ir_inn; ss++ ) {
+	for ( dfs=-ir_inn; dfs<=+ir_inn; dfs++ ) {
+	for ( dss=-ir_inn; dss<=+ir_inn; dss++ ) {
 
 		double val;
 		uint16_t flags;
-		struct panel *p2;
 		int idx;
 
 		/* Inner mask radius */
-		if ( fs*fs + ss*ss > lim_sq ) continue;
+		if ( dfs*dfs + dss*dss > lim_sq ) continue;
 
 		/* Strayed off one panel? */
-		p2 = find_panel(image->det, fs+cfs, ss+css);
-		if ( p2 != p ) return 1;
+		if ( p_cfs+dfs >= p_w ) continue;
+		if ( p_css+dss >= p_h ) continue;
+		if ( p_cfs+dfs < 0 ) continue;
+		if ( p_css+dss < 0 ) continue;
 
-		idx = fs+cfs+image->width*(ss+css);
+		idx = dfs+cfs+image->width*(dss+css);
 
 		/* Veto this peak if we tried to integrate in a bad region */
 		if ( image->flags != NULL ) {
@@ -262,13 +340,13 @@ int integrate_peak(struct image *image, int cfs, int css,
 		val = image->data[idx] - bg_mean;
 
 		/* Veto peak if it contains saturation */
-		if ( image->data[idx] > p->max_adu ) return 1;
+		if ( use_max_adu && (image->data[idx] > p->max_adu) ) return 1;
 
 		pk_counts++;
 		pk_total += val;
 
-		fsct += val*(cfs+fs);
-		ssct += val*(css+ss);
+		fsct += val*(cfs+dfs);
+		ssct += val*(css+dss);
 
 	}
 	}
@@ -284,6 +362,8 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 	if ( intensity != NULL ) *intensity = pk_total;
 	if ( sigma != NULL ) *sigma = sqrt(var);
+
+	free(bgPkMask);
 
 	return 0;
 }
@@ -309,7 +389,6 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	int nrej_snr = 0;
 	int nacc = 0;
 	int ncull;
-	const int pws = p->peak_sep/2;
 
 	data = image->data;
 	stride = image->width;
@@ -352,16 +431,14 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 			max = data[mask_fs+stride*mask_ss];
 			did_something = 0;
 
-			for ( s_ss=biggest(mask_ss-pws/2,
-			                   p->min_ss);
-			      s_ss<=smallest(mask_ss+pws/2,
-			                     p->max_ss);
-			      s_ss++ ) {
-			for ( s_fs=biggest(mask_fs-pws/2,
-			                   p->min_fs);
-			      s_fs<=smallest(mask_fs+pws/2,
-			                     p->max_fs);
-			      s_fs++ ) {
+			for ( s_ss=biggest(mask_ss-ir_inn, p->min_ss);
+			      s_ss<=smallest(mask_ss+ir_inn, p->max_ss);
+			      s_ss++ )
+			{
+			for ( s_fs=biggest(mask_fs-ir_inn, p->min_fs);
+			      s_fs<=smallest(mask_fs+ir_inn, p->max_fs);
+			      s_fs++ )
+			{
 
 				if ( data[s_fs+stride*s_ss] > max ) {
 					max = data[s_fs+stride*s_ss];
@@ -374,8 +451,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 			}
 
 			/* Abort if drifted too far from the foot point */
-			if ( distance(mask_fs, mask_ss, fs, ss) >
-			     p->peak_sep/2.0 )
+			if ( distance(mask_fs, mask_ss, fs, ss) > ir_inn )
 			{
 				break;
 			}
@@ -383,7 +459,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		} while ( did_something );
 
 		/* Too far from foot point? */
-		if ( distance(mask_fs, mask_ss, fs, ss) > p->peak_sep/2.0 ) {
+		if ( distance(mask_fs, mask_ss, fs, ss) > ir_inn ) {
 			nrej_dis++;
 			continue;
 		}
@@ -397,7 +473,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		/* Centroid peak and get better coordinates. */
 		r = integrate_peak(image, mask_fs, mask_ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
-		                   ir_inn, ir_mid, ir_out);
+		                   ir_inn, ir_mid, ir_out, 0);
 
 		if ( r ) {
 			/* Bad region - don't detect peak */
@@ -419,7 +495,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 
 		/* Check for a nearby feature */
 		image_feature_closest(image->features, f_fs, f_ss, &d, &idx);
-		if ( d < p->peak_sep/2.0 ) {
+		if ( d < 2.0*ir_inn ) {
 			nrej_pro++;
 			continue;
 		}
@@ -445,6 +521,12 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 //	       "%i in bad regions, %i with SNR < %g, %i badrow culled.\n",
 //	       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_bad,
 //	       nrej_snr, min_snr, ncull);
+
+	if ( ncull != 0 ) {
+		STATUS("WARNING: %i peaks were badrow culled.  This feature"
+		       " should not usually be used.\nConsider setting"
+		       " badrow=- in the geometry file.\n", ncull);
+	}
 }
 
 
@@ -655,7 +737,11 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 		}
 
 		r = integrate_peak(image, pfs, pss, &fs, &ss,
-		                   &intensity, &sigma, ir_inn, ir_mid, ir_out);
+		                   &intensity, &sigma, ir_inn, ir_mid, ir_out,
+		                   1);
+
+		/* I/sigma(I) cutoff */
+		if ( intensity/sigma < min_snr ) r = 1;
 
 		/* Record intensity and set redundancy to 1 on success */
 		if ( r == 0 ) {

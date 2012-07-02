@@ -497,6 +497,8 @@ int main(int argc, char *argv[])
 	image.width = image.det->max_fs + 1;
 	image.height = image.det->max_ss + 1;
 	image.lambda = ph_en_to_lambda(eV_to_J(image.beam->photon_energy));
+	image.bw = image.beam->bandwidth;
+	image.div = image.beam->divergence;
 
 	/* Load unit cell */
 	input_cell = load_cell_from_pdb(filename);
@@ -617,8 +619,7 @@ int main(int argc, char *argv[])
 			number++;
 
 			/* Write the output file */
-			hdf5_write(filename, image.data,
-			           image.width, image.height, H5T_NATIVE_FLOAT);
+			hdf5_write_image(filename, &image);
 
 		}
 

@@ -608,8 +608,6 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 		panel->res = atof(val);
 	} else if ( strcmp(key, "max_adu") == 0 ) {
 		panel->max_adu = atof(val);
-	} else if ( strcmp(key, "peak_sep") == 0 ) {
-		panel->peak_sep = atof(val);
 	} else if ( strcmp(key, "badrow_direction") == 0 ) {
 		panel->badrow = val[0]; /* First character only */
 		if ( (panel->badrow != 'x') && (panel->badrow != 'y')
@@ -687,8 +685,6 @@ static void parse_toplevel(struct detector *det, const char *key,
 			det->mask_good = v;
 		}
 
-	} else if ( strcmp(key, "peak_sep") == 0 ) {
-		det->defaults.peak_sep = atof(val);
 	} else if ( strcmp(key, "coffset") == 0 ) {
 		det->defaults.coffset = atof(val);
 	} else if ( parse_field_for_panel(&det->defaults, key, val, det) ) {
@@ -738,7 +734,6 @@ struct detector *get_detector_geometry(const char *filename)
 	det->defaults.res = -1.0;
 	det->defaults.badrow = '-';
 	det->defaults.no_index = 0;
-	det->defaults.peak_sep = 50.0;
 	det->defaults.fsx = 1.0;
 	det->defaults.fsy = 0.0;
 	det->defaults.ssx = 0.0;
@@ -887,7 +882,6 @@ struct detector *get_detector_geometry(const char *filename)
 		}
 		/* It's OK if the badrow direction is '0' */
 		/* It's not a problem if "no_index" is still zero */
-		/* The default peak_sep is OK (maybe) */
 		/* The default transformation matrix is at least valid */
 
 		if ( det->panels[i].max_fs > max_fs ) {
@@ -1250,7 +1244,6 @@ int write_detector_geometry(const char *filename, struct detector *det)
 		fprintf(fh, "%s/max_ss = %d\n", p->name, p->max_ss);
 		fprintf(fh, "%s/badrow_direction = %C\n", p->name, p->badrow);
 		fprintf(fh, "%s/res = %g\n", p->name, p->res);
-		fprintf(fh, "%s/peak_sep = %g\n", p->name, p->peak_sep);
 		fprintf(fh, "%s/clen = %s\n", p->name, p->clen_from);
 		fprintf(fh, "%s/fs = %+fx %+fy\n", p->name, p->fsx, p->fsy);
 		fprintf(fh, "%s/ss = %+fx %+fy\n", p->name, p->ssx, p->ssy);

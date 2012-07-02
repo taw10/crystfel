@@ -291,9 +291,10 @@ static void process_image(const struct index_args *iargs,
 	image.indexed_cell = NULL;
 	image.det = copy_geom(iargs->det);
 	image.copyme = iargs->copyme;
-	image.beam = beam;
+	image.reflections = NULL;
 	image.id = cookie;
 	image.filename = pargs->filename;
+	image.beam = beam;
 
 	hdfile = hdfile_open(image.filename);
 	if ( hdfile == NULL ) return;
