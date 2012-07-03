@@ -282,13 +282,13 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 
 
 	fprintf(fh, "1/d centre   # refs Possible  Compl       "
-		    "Meas   Red   SNR    Std dev       Mean\n");
+		    "Meas   Red   SNR    Std dev       Mean     d(A)\n");
 	for ( i=0; i<NBINS; i++ ) {
 
 		double cen;
 		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
 		fprintf(fh, "%10.3f %8i %8i %6.2f %10i %5.1f"
-		            " %5.2f %10.2f %10.2f\n",
+		            " %5.2f %10.2f %10.2f %8.2f\n",
 		        cen*1.0e-9,
 		        measured[i],
 		        possible[i],
@@ -297,7 +297,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		        (double)measurements[i]/measured[i],
 		        snr[i]/(double)measured[i],
 		        sqrt(var[i]/measured[i]),
-		        mean[i]);
+		        mean[i], (1.0/cen)*1e10);
 
 	}
 
