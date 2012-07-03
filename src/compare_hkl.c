@@ -107,7 +107,7 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 	Reflection *refl1;
 	RefListIterator *iter;
 	FILE *fh;
-	double den;
+	double den[NBINS];
 	int ctot, nout;
 
 	if ( cell == NULL ) {
@@ -117,6 +117,7 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 
 	for ( i=0; i<NBINS; i++ ) {
 		num[i] = 0.0;
+		den[i] = 0.0;
 		cts[i] = 0;
 		measured[i] = 0;
 		measurements[i] = 0;
@@ -162,7 +163,7 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 	STATUS("Shell %i: %f to %f\n", NBINS-1,
 	       rmins[NBINS-1]/1e9, rmaxs[NBINS-1]/1e9);
 
-	den = 0.0;  ctot = 0;  nout = 0;
+	ctot = 0;  nout = 0;
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
 	      refl1 = next_refl(refl1, iter) )
@@ -202,18 +203,18 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 		switch ( config_shells ) {
 
 			case R_SHELL_RSPLIT :
-			num[bin] += fabs(i1 - scale*i2);
-			den += i1 + scale*i2;
+			num[bin] += fabs(i1 - i2);
+			den[bin] += i1 + i2;
 			break;
 
 			case R_SHELL_R1I :
 			num[bin] += fabs(i1 - scale*i2);
-			den += i1;
+			den[bin] += i1;
 			break;
 
 			case R_SHELL_R1F :
 			num[bin] += fabs(f1 - scale*f2);
-			den += f1;
+			den[bin] += f1;
 			break;
 
 			default : break;
@@ -263,12 +264,12 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 		switch ( config_shells ) {
 
 			case R_SHELL_RSPLIT :
-			r = (2.0*(num[i]/den)*((double)ctot/cts[i]))/sqrt(2.0);
+			r = 2.0*(num[i]/den[i]) / sqrt(2.0);
 			break;
 
 			case R_SHELL_R1I :
 			case R_SHELL_R1F :
-			r = (num[i]/den) * ((double)ctot/cts[i]);
+			r = num[i]/den[i];
 			break;
 
 			default :
