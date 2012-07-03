@@ -424,12 +424,12 @@ static void process_image(const struct index_args *iargs,
 		exit(1);
 	}
 
-	fh = fopen(outfilename, "a");
+	fh = fdopen(fd, "a");
 	if ( fh == NULL ) {
 		ERROR("Couldn't open stream '%s'.\n", outfilename);
 	}
 	write_chunk(fh, &image, hdfile, iargs->stream_flags);
-	fclose(fh);
+	fflush(fh);
 
 	/* Unlock stream for other processes */
 	fl.l_type = F_UNLCK; /* set to unlock same region */
@@ -437,7 +437,8 @@ static void process_image(const struct index_args *iargs,
 		ERROR("fcntl");
 		exit(1);
 	}
-	close(fd);
+
+	fclose(fh);  /* close(fd) happens as well because fd was not dup'd */
 
 	/* Only free cell if found */
 	cell_free(image.indexed_cell);
