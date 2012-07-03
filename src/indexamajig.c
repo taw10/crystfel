@@ -1147,10 +1147,7 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
-		if ( r == 0 ) {
-			STATUS("Timeout\n");
-			continue;
-		}
+		if ( r == 0 ) continue; /* No progress this time.  Try again */
 
 		for ( i=0; i<n_proc; i++ ) {
 
