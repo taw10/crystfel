@@ -283,7 +283,7 @@ static void process_image(const struct index_args *iargs,
 	char *outfilename = iargs->outfile;
 	int fd;
 	FILE *fh;
-	struct flock fl = {F_WRLCK, SEEK_SET, 0, 0, 0};
+	struct flock fl;
 
 	image.features = NULL;
 	image.data = NULL;
@@ -409,7 +409,10 @@ static void process_image(const struct index_args *iargs,
 	}
 
 	/* Write Lock */
-	fl.l_pid = getpid();
+	fl.l_type = F_WRLCK;
+	fl.l_whence = SEEK_SET;
+	fl.l_start = 0;
+	fl.l_len = 0;  /* Means "lock the whole file" */
 
 	fd = open(outfile, O_WRONLY);
 	if ( fd == -1 ) {
