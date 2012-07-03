@@ -416,17 +416,18 @@ static void process_image(const struct index_args *iargs,
 
 	fd = open(outfile, O_WRONLY);
 	if ( fd == -1 ) {
-		ERROR("Error on opening\n");
+		ERROR("Couldn't open output stream ('%s').\n", outfile);
 		exit(1);
 	}
 	if ( fcntl(fd, F_SETLKW, &fl) == -1 ) {
-		ERROR("Error on setting lock wait\n");
+		ERROR("Couldn't get lock on output stream.\n");
 		exit(1);
 	}
 
 	fh = fdopen(fd, "a");
 	if ( fh == NULL ) {
-		ERROR("Couldn't open stream '%s'.\n", outfilename);
+		ERROR("Couldn't fdopen() the output stream.\n");
+		exit(1);
 	}
 	write_chunk(fh, &image, hdfile, iargs->stream_flags);
 	fflush(fh);
