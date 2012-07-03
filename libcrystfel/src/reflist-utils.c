@@ -292,9 +292,7 @@ RefList *read_reflections_from_file(FILE *fh)
 			set_redundancy(refl, cts);
 
 			ph = strtod(phs, &v);
-			if ( v != NULL ) set_phase(refl, deg2rad(ph));
-
-			/* The 1/d value is actually ignored. */
+			if ( v != phs ) set_phase(refl, deg2rad(ph));
 
 		}
 
