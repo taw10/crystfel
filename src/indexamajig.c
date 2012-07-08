@@ -395,12 +395,12 @@ static void process_image(const struct index_args *iargs,
 				image.indexed_cell);
 		if (image.reflections != NULL) {
 			integrate_reflections(&image,
-							iargs->config_closer,
-							iargs->config_bgsub,
-							iargs->min_int_snr,
-							iargs->ir_inn,
-							iargs->ir_mid,
-							iargs->ir_out);
+			                      iargs->config_closer,
+			                      iargs->config_bgsub,
+			                      iargs->min_int_snr,
+			                      iargs->ir_inn,
+			                      iargs->ir_mid,
+			                      iargs->ir_out);
 		}
 	} else {
 		image.reflections = NULL;
