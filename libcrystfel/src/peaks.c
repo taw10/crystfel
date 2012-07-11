@@ -160,6 +160,8 @@ static int *make_BgMask(struct image *image, struct panel *p,
 	mask = calloc(w*h, sizeof(int));
 	if ( mask == NULL ) return NULL;
 
+	if ( image->reflections == NULL ) return mask;
+
 	/* Loop over all reflections */
 	for ( refl = first_refl(image->reflections, &iter);
 	      refl != NULL;
@@ -278,17 +280,26 @@ static int integrate_peak(struct image *image, int cfs, int css,
 
 			/* It must have all the "good" bits to be valid */
 			if ( !((flags & image->det->mask_good)
-			                   == image->det->mask_good) ) return 1;
+			                   == image->det->mask_good) ) {
+				free(bgPkMask);
+				return 1;
+			}
 
 			/* If it has any of the "bad" bits, reject */
-			if ( flags & image->det->mask_bad ) return 1;
+			if ( flags & image->det->mask_bad ) {
+				free(bgPkMask);
+				return 1;
+			}
 
 		}
 
 		val = image->data[idx];
 
 		/* Veto peak if it contains saturation in bg region */
-		if ( use_max_adu && (val > p->max_adu) ) return 1;
+		if ( use_max_adu && (val > p->max_adu) ) {
+			free(bgPkMask);
+			return 1;
+		}
 
 		bg_tot += val;
 		bg_tot_sq += pow(val, 2.0);
@@ -330,17 +341,26 @@ static int integrate_peak(struct image *image, int cfs, int css,
 
 			/* It must have all the "good" bits to be valid */
 			if ( !((flags & image->det->mask_good)
-			                   == image->det->mask_good) ) return 1;
+			                   == image->det->mask_good) ) {
+				free(bgPkMask);
+				return 1;
+			}
 
 			/* If it has any of the "bad" bits, reject */
-			if ( flags & image->det->mask_bad ) return 1;
+			if ( flags & image->det->mask_bad ) {
+				free(bgPkMask);
+				return 1;
+			}
 
 		}
 
 		val = image->data[idx] - bg_mean;
 
 		/* Veto peak if it contains saturation */
-		if ( use_max_adu && (image->data[idx] > p->max_adu) ) return 1;
+		if ( use_max_adu && (image->data[idx] > p->max_adu) ) {
+			free(bgPkMask);
+			return 1;
+		}
 
 		pk_counts++;
 		pk_total += val;

@@ -99,14 +99,12 @@ struct index_args
 	int cellr;
 	float tols[4];
 	struct beam_params *beam;
-	const char *element;
-	const char *hdf5_peak_path;
+	char *element;
+	char *hdf5_peak_path;
 	double ir_inn;
 	double ir_mid;
 	double ir_out;
-
-	/* Output stream */
-	const struct copy_hdf5_field *copyme;
+	struct copy_hdf5_field *copyme;
 };
 
 
@@ -366,11 +364,8 @@ static void process_image(const struct index_args *iargs,
 
 		case PEAK_ZAEF:
 		search_peaks(&image, iargs->threshold,
-						iargs->min_gradient,
-						iargs->min_snr,
-						iargs->ir_inn,
-						iargs->ir_mid,
-						iargs->ir_out);
+		             iargs->min_gradient, iargs->min_snr,
+		             iargs->ir_inn, iargs->ir_mid, iargs->ir_out);
 		break;
 
 	}
@@ -483,9 +478,20 @@ static void run_work(const struct index_args *iargs,
 		free(line);
 
 	}
+
 	/* close my pipes */
 	fclose(fh);
 	close(results_pipe);
+
+	cleanup_indexing(iargs->ipriv);
+	free(iargs->indm);
+	free(iargs->ipriv);
+	free_detector_geometry(iargs->det);
+	free(iargs->beam);
+	free(iargs->element);
+	free(iargs->hdf5_peak_path);
+	free_copy_hdf5_field_list(iargs->copyme);
+	cell_free(iargs->cell);
 }
 
 
@@ -616,10 +622,13 @@ static void run_reader(int *stream_pipe_read, int n_proc, FILE *ofh)
 					if ( feof(fhs[i]) ) {
 						/* Process died */
 						finished[i] = 1;
+						ERROR("EOF during chunk\n");
 					} else {
 						ERROR("fgets() failed: %s\n",
 						      strerror(errno));
 					}
+					fprintf(ofh, "Chunk is unfinished!\n");
+					chunk_finished = 1;
 					continue;
 				}
 
@@ -646,6 +655,9 @@ static void run_reader(int *stream_pipe_read, int n_proc, FILE *ofh)
 	for ( i=0; i<n_proc; i++ ) {
 		fclose(fhs[i]);
 	}
+	free(fhs);
+
+	if ( ofh != stdout ) fclose(ofh);
 }
 
 
@@ -892,16 +904,14 @@ int main(int argc, char *argv[])
 	free(filename);
 
 	if ( outfile == NULL ) {
-		outfile = strdup("-");
-	}
-	if ( strcmp(outfile, "-") == 0 ) {
 		ofh = stdout;
 	} else {
 		ofh = fopen(outfile, "w");
-	}
-	if ( ofh == NULL ) {
-		ERROR("Failed to open output file '%s'\n", outfile);
-		return 1;
+		if ( ofh == NULL ) {
+			ERROR("Failed to open output file '%s'\n", outfile);
+			return 1;
+		}
+		free(outfile);
 	}
 
 	if ( hdf5_peak_path == NULL ) {
@@ -1064,6 +1074,7 @@ int main(int argc, char *argv[])
 		prepare_line = tmp;
 	}
 	snprintf(prepare_filename, 1023, "%s%s", prefix, prepare_line);
+	free(prepare_line);
 
 	/* Prepare the indexer */
 	if ( indm != NULL ) {
@@ -1144,12 +1155,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	finished = calloc(n_proc, sizeof(int));
-	if ( finished == NULL ) {
-		ERROR("Couldn't allocate memory for process flags.\n");
-		return 1;
-	}
-
 	for ( i=0; i<n_proc; i++ ) {
 
 		int stream_pipe[2];
@@ -1170,7 +1175,44 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( pr == 0 ) run_reader(stream_pipe_read, n_proc, ofh);
+	if ( pr == 0 ) {
+
+		/* Free resources not needed by reader
+		 * (but which will be needed by worker or master) */
+		for ( i=0; i<n_proc; i++ ) {
+			close(stream_pipe_write[i]);
+		}
+		free(prefix);
+		free(use_this_one_instead);
+		free(filename_pipes);
+		free(result_fhs);
+		free(stream_pipe_write);
+		cleanup_indexing(ipriv);
+		free(indm);
+		free(ipriv);
+		free_detector_geometry(det);
+		free(beam);
+		free(element);
+		free(hdf5_peak_path);
+		free_copy_hdf5_field_list(copyme);
+		cell_free(cell);
+		free(pids);
+		fclose(fh);
+
+		run_reader(stream_pipe_read, n_proc, ofh);
+
+		free(stream_pipe_read);
+
+		exit(0);
+
+	}
+
+	/* Free resources needed by reader only */
+	if ( ofh != stdout ) fclose(ofh);
+	for ( i=0; i<n_proc; i++ ) {
+		close(stream_pipe_read[i]);
+	}
+	free(stream_pipe_read);
 
 	/* Fork the right number of times */
 	for ( i=0; i<n_proc; i++ ) {
@@ -1197,19 +1239,34 @@ int main(int argc, char *argv[])
 
 		if ( p == 0 ) {
 
-			FILE *fh;
+			FILE *sfh;
+			int j;
+
+			/* Free resources which will not be needed by worker */
+			for ( j=0; j<n_proc; j++ ) {
+				if ( i != j ) close(stream_pipe_write[j]);
+			}
+			free(prefix);
+			free(use_this_one_instead);
+			free(filename_pipes);
+			free(result_fhs);
+			fclose(fh);
+			free(pids);
 
 			/* Child process gets the 'read' end of the filename
 			 * pipe, and the 'write' end of the result pipe. */
 			close(filename_pipe[1]);
 			close(result_pipe[0]);
 
-			fh = fdopen(stream_pipe_write[i], "w");
+			sfh = fdopen(stream_pipe_write[i], "w");
 			run_work(&iargs, filename_pipe[0], result_pipe[1],
-			         fh, i);
-			fclose(fh);
+			         sfh, i);
+			fclose(sfh);
+
+			free(stream_pipe_write);
 
 			exit(0);
+
 		}
 
 		/* Parent process gets the 'write' end of the filename pipe
@@ -1226,6 +1283,21 @@ int main(int argc, char *argv[])
 		}
 
 	}
+
+	/* Free resources which will not be used by the main thread */
+	cleanup_indexing(ipriv);
+	free(indm);
+	free(ipriv);
+	free_detector_geometry(det);
+	free(beam);
+	free(element);
+	free(hdf5_peak_path);
+	free_copy_hdf5_field_list(copyme);
+	cell_free(cell);
+	for ( i=0; i<n_proc; i++ ) {
+		close(stream_pipe_write[i]);
+	}
+	free(stream_pipe_write);
 
 	/* Send first image to all children */
 	for ( i=0; i<n_proc; i++ ) {
@@ -1249,6 +1321,12 @@ int main(int argc, char *argv[])
 
 		}
 
+	}
+
+	finished = calloc(n_proc, sizeof(int));
+	if ( finished == NULL ) {
+		ERROR("Couldn't allocate memory for process flags.\n");
+		return 1;
 	}
 
 	allDone = 0;
@@ -1361,6 +1439,8 @@ int main(int argc, char *argv[])
 
 	}
 
+	fclose(fh);
+
 	for ( i=0; i<n_proc; i++ ) {
 		int status;
 		waitpid(pids[i], &status, 0);
@@ -1371,27 +1451,11 @@ int main(int argc, char *argv[])
 		fclose(result_fhs[i]);
 	}
 
+	free(prefix);
 	free(filename_pipes);
 	free(result_fhs);
-	free(stream_pipe_read);
-	free(stream_pipe_write);
 	free(pids);
 	free(finished);
-
-	cleanup_indexing(ipriv);
-
-	free(indm);
-	free(ipriv);
-	free(prefix);
-	free_detector_geometry(det);
-	free(beam);
-	free(element);
-	free(hdf5_peak_path);
-	free_copy_hdf5_field_list(copyme);
-	cell_free(cell);
-	free(use_this_one_instead);
-	if ( fh != stdin ) fclose(fh);
-	if ( ofh != stdout ) fclose(ofh);
 
 	STATUS("There were %i images, of which %i could be indexed.\n",
 	       n_processed, n_indexable);

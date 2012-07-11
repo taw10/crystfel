@@ -348,6 +348,7 @@ static double iterate_refine_vector(double *x, double *y, double *z,
 
 	gsl_matrix_free(C);
 	gsl_vector_free(A);
+	gsl_vector_free(t);
 
 	return dtmax;
 }
@@ -1019,6 +1020,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	fftw_complex *fft_out;
 	double pmax;
 	struct reax_search *s;
+	int i;
 
 	assert(pp->indm == INDEXING_REAX);
 	p = (struct reax_private *)pp;
@@ -1045,6 +1047,11 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 
 	assemble_cells_from_candidates(image, s, cell);
 
+	for ( i=0; i<s->n_search; i++ ) {
+		free(s->search[i].cand);
+	}
+	free(s->search);
+	free(s);
 	fftw_free(fft_in);
 	fftw_free(fft_out);
 }
