@@ -1405,10 +1405,8 @@ int main(int argc, char *argv[])
 			n_processed++;
 
 			/* Send next filename */
-			nextImage = get_pattern(fh,
-			                        &use_this_one_instead,
-	                                        config_basename,
-	                                        prefix);
+			nextImage = get_pattern(fh, &use_this_one_instead,
+	                                        config_basename, prefix);
 
 			if ( nextImage == NULL ) {
 				/* No more images */
