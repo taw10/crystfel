@@ -308,7 +308,10 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	}
 	}
 
-	if ( bg_counts == 0 ) return 1;
+	if ( bg_counts == 0 ) {
+		free(bgPkMask);
+		return 1;
+	}
 	bg_mean = bg_tot / bg_counts;
 	bg_var = (bg_tot_sq/bg_counts) - pow(bg_mean, 2.0);
 
@@ -378,7 +381,10 @@ static int integrate_peak(struct image *image, int cfs, int css,
 
 	var = pk_counts * bg_var;
 	var += aduph * pk_total;
-	if ( var < 0.0 ) return 1;
+	if ( var < 0.0 ) {
+		free(bgPkMask);
+		return 1;
+	}
 
 	if ( intensity != NULL ) *intensity = pk_total;
 	if ( sigma != NULL ) *sigma = sqrt(var);

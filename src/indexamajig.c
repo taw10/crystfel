@@ -543,13 +543,51 @@ static int parse_cell_reduction(const char *scellr, int *err,
 }
 
 
+static void pump_chunk(FILE *fh, int *finished, FILE *ofh)
+{
+	int chunk_started = 0;
+	int chunk_finished = 0;
+
+	do {
+
+		char line[1024];
+		char *rval;
+
+		rval = fgets(line, 1024, fh);
+		if ( rval == NULL ) {
+
+			if ( feof(fh) ) {
+				/* Process died */
+				*finished = 1;
+				if ( chunk_started ) {
+					ERROR("EOF during chunk!\n");
+					fprintf(ofh, "Chunk is unfinished!\n");
+				}
+			} else {
+				ERROR("fgets() failed: %s\n", strerror(errno));
+			}
+			chunk_finished = 1;
+			continue;
+
+		}
+
+		if ( strcmp(line, "END\n") == 0 ) {
+			chunk_finished = 1;
+		} else {
+			chunk_started = 1;
+			fprintf(ofh, "%s", line);
+		}
+
+	} while ( !chunk_finished );
+}
+
+
 static void run_reader(int *stream_pipe_read, int n_proc, FILE *ofh)
 {
 	int done = 0;
 	int *finished;
 	FILE **fhs;
 	int i;
-	int chunk_finished;
 
 	finished = calloc(n_proc, sizeof(int));
 	if ( finished == NULL ) {
@@ -611,35 +649,7 @@ static void run_reader(int *stream_pipe_read, int n_proc, FILE *ofh)
 
 			if ( !FD_ISSET(stream_pipe_read[i], &fds) ) continue;
 
-			chunk_finished = 0;
-			do {
-
-				char line[1024];
-				char *rval;
-
-				rval = fgets(line, 1024, fhs[i]);
-				if ( rval == NULL ) {
-					if ( feof(fhs[i]) ) {
-						/* Process died */
-						finished[i] = 1;
-						ERROR("EOF during chunk\n");
-					} else {
-						ERROR("fgets() failed: %s\n",
-						      strerror(errno));
-					}
-					fprintf(ofh, "Chunk is unfinished!\n");
-					chunk_finished = 1;
-					continue;
-				}
-
-
-				if ( strcmp(line, "END\n") == 0 ) {
-					chunk_finished = 1;
-				} else {
-					fprintf(ofh, "%s", line);
-				}
-
-			} while ( !chunk_finished );
+			pump_chunk(fhs[i], &finished[i], ofh);
 
 		}
 
@@ -722,7 +732,6 @@ int main(int argc, char *argv[])
 	int *stream_pipe_read;
 	int *stream_pipe_write;
 	FILE **result_fhs;
-	fd_set fds;
 	int i;
 	int allDone;
 	int *finished;
@@ -1127,31 +1136,14 @@ int main(int argc, char *argv[])
 	n_processed_last_stats = 0;
 	t_last_stats = get_monotonic_seconds();
 
-	FD_ZERO(&fds);
-	filename_pipes = calloc(n_proc, sizeof(int));
-	result_fhs = calloc(n_proc, sizeof(FILE *));
 	stream_pipe_read = calloc(n_proc, sizeof(int));
 	stream_pipe_write = calloc(n_proc, sizeof(int));
-	if ( filename_pipes == NULL ) {
-		ERROR("Couldn't allocate memory for pipes.\n");
-		return 1;
-	}
-	if ( result_fhs == NULL ) {
-		ERROR("Couldn't allocate memory for pipe file handles.\n");
-		return 1;
-	}
 	if ( stream_pipe_read == NULL ) {
 		ERROR("Couldn't allocate memory for pipes.\n");
 		return 1;
 	}
 	if ( stream_pipe_write == NULL ) {
 		ERROR("Couldn't allocate memory for pipes.\n");
-		return 1;
-	}
-
-	pids = calloc(n_proc, sizeof(pid_t));
-	if ( pids == NULL ) {
-		ERROR("Couldn't allocate memory for PIDs.\n");
 		return 1;
 	}
 
@@ -1184,8 +1176,6 @@ int main(int argc, char *argv[])
 		}
 		free(prefix);
 		free(use_this_one_instead);
-		free(filename_pipes);
-		free(result_fhs);
 		free(stream_pipe_write);
 		cleanup_indexing(ipriv);
 		free(indm);
@@ -1196,7 +1186,6 @@ int main(int argc, char *argv[])
 		free(hdf5_peak_path);
 		free_copy_hdf5_field_list(copyme);
 		cell_free(cell);
-		free(pids);
 		fclose(fh);
 
 		run_reader(stream_pipe_read, n_proc, ofh);
@@ -1213,6 +1202,22 @@ int main(int argc, char *argv[])
 		close(stream_pipe_read[i]);
 	}
 	free(stream_pipe_read);
+
+	filename_pipes = calloc(n_proc, sizeof(int));
+	result_fhs = calloc(n_proc, sizeof(FILE *));
+	pids = calloc(n_proc, sizeof(pid_t));
+	if ( filename_pipes == NULL ) {
+		ERROR("Couldn't allocate memory for pipes.\n");
+		return 1;
+	}
+	if ( result_fhs == NULL ) {
+		ERROR("Couldn't allocate memory for pipe file handles.\n");
+		return 1;
+	}
+	if ( pids == NULL ) {
+		ERROR("Couldn't allocate memory for PIDs.\n");
+		return 1;
+	}
 
 	/* Fork the right number of times */
 	for ( i=0; i<n_proc; i++ ) {
@@ -1264,6 +1269,8 @@ int main(int argc, char *argv[])
 			fclose(sfh);
 
 			free(stream_pipe_write);
+			close(filename_pipe[0]);
+			close(result_pipe[1]);
 
 			exit(0);
 
@@ -1316,8 +1323,13 @@ int main(int argc, char *argv[])
 
 		} else {
 
+			int r;
+
 			/* No more files to process.. already? */
-			close(filename_pipes[i]);
+			r = write(filename_pipes[i], "\n", 1);
+			if ( r < 0 ) {
+				ERROR("Write pipe\n");
+			}
 
 		}
 
@@ -1412,6 +1424,7 @@ int main(int argc, char *argv[])
 				if ( r < 0 ) {
 					ERROR("write pipe\n");
 				}
+				free(nextImage);
 			}
 
 		}
