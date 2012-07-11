@@ -1257,6 +1257,10 @@ int main(int argc, char *argv[])
 			free(result_fhs);
 			fclose(fh);
 			free(pids);
+			for ( j=0; j<i-1; j++ ) {
+				fclose(result_fhs[j]);
+				close(filename_pipes[j]);
+			}
 
 			/* Child process gets the 'read' end of the filename
 			 * pipe, and the 'write' end of the result pipe. */
