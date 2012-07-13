@@ -428,8 +428,6 @@ static void run_work(const struct index_args *iargs,
 	fh = fdopen(filename_pipe, "r");
 	if ( fh == NULL ) {
 		ERROR("Failed to fdopen() the filename pipe!\n");
-		close(filename_pipe);
-		close(results_pipe);
 		return;
 	}
 
@@ -450,7 +448,7 @@ static void run_work(const struct index_args *iargs,
 				continue;
 			} else {
 				ERROR("Read error!\n");
-				return;
+				break;
 			}
 		}
 
@@ -482,7 +480,6 @@ static void run_work(const struct index_args *iargs,
 
 	/* close my pipes */
 	fclose(fh);
-	close(results_pipe);
 
 	cleanup_indexing(iargs->ipriv);
 	free(iargs->indm);
@@ -1034,6 +1031,7 @@ int main(int argc, char *argv[])
 			ERROR("Invalid parameters for '--int-radius'\n");
 			return 1;
 		}
+		free(intrad);
 	} else {
 		STATUS("WARNING: You did not specify --int-radius.\n");
 		STATUS("WARNING: I will use the default values, which are"
@@ -1272,16 +1270,16 @@ int main(int argc, char *argv[])
 			for ( j=0; j<n_proc; j++ ) {
 				if ( i != j ) close(stream_pipe_write[j]);
 			}
+			for ( j=0; j<i-1; j++ ) {
+				fclose(result_fhs[j]);
+				close(filename_pipes[j]);
+			}
 			free(prefix);
 			free(use_this_one_instead);
 			free(filename_pipes);
 			free(result_fhs);
 			fclose(fh);
 			free(pids);
-			for ( j=0; j<i-1; j++ ) {
-				fclose(result_fhs[j]);
-				close(filename_pipes[j]);
-			}
 
 			/* Child process gets the 'read' end of the filename
 			 * pipe, and the 'write' end of the result pipe. */
