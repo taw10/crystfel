@@ -47,6 +47,7 @@
 #include <pthread.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #ifdef HAVE_CLOCK_GETTIME
 #include <time.h>
@@ -671,6 +672,14 @@ static void run_reader(int *stream_pipe_read, int n_proc, FILE *ofh)
 }
 
 
+static void signal_handler(int sig, siginfo_t *si, void *uc_v)
+{
+	struct ucontext_t *uc = uc_v;
+
+	STATUS("Signal!\n");
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -736,6 +745,8 @@ int main(int argc, char *argv[])
 	int allDone;
 	int *finished;
 	pid_t pr;
+	struct sigaction sa;
+	int r;
 
 	copyme = new_copy_hdf5_field_list();
 	if ( copyme == NULL ) {
@@ -1194,6 +1205,16 @@ int main(int argc, char *argv[])
 
 		exit(0);
 
+	}
+
+	/* Set up signal handler to take action if any children die */
+	sa.sa_flags = SA_SIGINFO | SA_NOCLDSTOP;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_sigaction = signal_handler;
+	r = sigaction(SIGCHLD, &sa, NULL);
+	if ( r == -1 ) {
+		ERROR("Failed to set signal handler!\n");
+		return 1;
 	}
 
 	/* Free resources needed by reader only */
