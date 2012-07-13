@@ -191,6 +191,7 @@ struct queue_args
 	pthread_mutex_t full_lock;
 
 	int n_done;
+	int n_started;
 	int n_to_do;
 
 	SymOpList *sym;
@@ -227,10 +228,15 @@ static void *create_job(void *vqargs)
 	struct worker_args *wargs;
 	struct queue_args *qargs = vqargs;
 
+	/* All done already? */
+	if ( qargs->n_started == qargs->n_to_do ) return NULL;
+
 	wargs = malloc(sizeof(struct worker_args));
 
 	wargs->qargs = qargs;
 	wargs->image = *qargs->template_image;
+
+	qargs->n_started++;
 
 	return wargs;
 }
@@ -514,6 +520,7 @@ int main(int argc, char *argv[])
 	pthread_mutex_init(&qargs.full_lock, NULL);
 	qargs.n_to_do = n;
 	qargs.n_done = 0;
+	qargs.n_started = 0;
 	qargs.sym = sym;
 	qargs.random_intensities = random_intensities;
 	qargs.cell = cell;
