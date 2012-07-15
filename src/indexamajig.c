@@ -637,7 +637,7 @@ int main(int argc, char *argv[])
 	iargs.ir_out = ir_out;
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	               use_this_one_instead, ofh);
+	                    use_this_one_instead, ofh);
 
 	free(prefix);
 
