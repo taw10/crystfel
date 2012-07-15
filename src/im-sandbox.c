@@ -370,8 +370,6 @@ static void run_work(const struct index_args *iargs,
 
 	}
 
-	STATUS("Got command to exit.  Shutting down!\n");
-
 	cleanup_indexing(iargs->ipriv);
 	free(iargs->indm);
 	free(iargs->ipriv);
@@ -625,49 +623,41 @@ static void signal_handler(int sig, siginfo_t *si, void *uc_v)
 {
 	int i, found;
 
-	STATUS("Signal!\n");
-
 	if ( si->si_signo != SIGCHLD ) {
 		ERROR("Unhandled signal %i?\n", si->si_signo);
 		return;
 	}
 
 	found = 0;
-	STATUS("Getting lock...\n"); fflush(stderr);
 	pthread_mutex_lock(&sb->lock);
-	STATUS("Got it.\n"); fflush(stderr);
 	for ( i=0; i<sb->n_proc; i++ ) {
 		if ( (sb->running[i]) && (sb->pids[i] == si->si_pid) ) {
 			found = 1;
 			break;
 		}
 	}
+	pthread_mutex_unlock(&sb->lock);
 
 	if ( !found ) {
 		ERROR("SIGCHLD from unknown child %i?\n", si->si_pid);
-		pthread_mutex_unlock(&sb->lock);
 		return;
 	}
 
 	if ( (si->si_code == CLD_TRAPPED) || (si->si_code == CLD_STOPPED)
-	  || (si->si_code == CLD_CONTINUED) )
-	{
-		pthread_mutex_unlock(&sb->lock);
-		return;
-	}
+	  || (si->si_code == CLD_CONTINUED) ) return;
 
 	if ( si->si_code == CLD_EXITED )
 	{
+		pthread_mutex_lock(&sb->lock);
 		sb->running[i] = 0;
-		STATUS("Worker process %i exited normally.\n", i);
 		pthread_mutex_unlock(&sb->lock);
+		STATUS("Worker process %i exited normally.\n", i);
 		return;
 	}
 
 	if ( (si->si_code != CLD_DUMPED) && (si->si_code != CLD_KILLED) ) {
 		ERROR("Unhandled si_code %i (worker process %i).\n",
 		      si->si_code, i);
-		pthread_mutex_unlock(&sb->lock);
 		return;
 	}
 
@@ -675,7 +665,6 @@ static void signal_handler(int sig, siginfo_t *si, void *uc_v)
 	ERROR("  -> Signal %i, last filename %s.\n",
 	      si->si_signo, sb->last_filename[i]);
 
-	pthread_mutex_unlock(&sb->lock);
 	start_worker_process(sb, i);
 }
 
@@ -795,7 +784,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		double tNow;
 		int fdmax;
 
-		tv.tv_sec = 5;
+		tv.tv_sec = 1;
 		tv.tv_usec = 0;
 
 		FD_ZERO(&fds);
@@ -806,7 +795,6 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			int fd;
 
 			if ( !sb->running[i] ) {
-				pthread_mutex_unlock(&sb->lock);
 				continue;
 			}
 
@@ -815,8 +803,8 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			if ( fd > fdmax ) fdmax = fd;
 
 		}
-
 		pthread_mutex_unlock(&sb->lock);
+
 		r = select(fdmax+1, &fds, NULL, NULL, &tv);
 		if ( r == -1 ) {
 			if ( errno != EINTR ) {
@@ -913,8 +901,6 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		pthread_mutex_unlock(&sb->lock);
 
 	}
-
-	STATUS("Done.  Waiting..\n");
 
 	fclose(fh);
 
