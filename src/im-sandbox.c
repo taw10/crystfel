@@ -76,6 +76,7 @@
 struct sandbox
 {
 	pthread_mutex_t lock;
+	sigset_t old_sigmask;
 
 	int n_indexable;
 	int n_processed;
@@ -101,6 +102,36 @@ struct sandbox
 
 /* Horrible global variable for signal handler */
 struct sandbox *sb;
+
+
+static void lock_sandbox(struct sandbox *sb)
+{
+	int r;
+	sigset_t set;
+
+	sigemptyset(&set);
+	sigaddset(&set, SIGCHLD);
+
+	r = pthread_sigmask(SIG_BLOCK, &set, &sb->old_sigmask);
+	if ( r != 0 ) {
+		ERROR("Failed to block signals.\n");
+	}
+
+	pthread_mutex_lock(&sb->lock);
+}
+
+
+static void unlock_sandbox(struct sandbox *sb)
+{
+	int r;
+
+	pthread_mutex_unlock(&sb->lock);
+
+	r = pthread_sigmask(SIG_SETMASK, &sb->old_sigmask, NULL);
+	if ( r != 0 ) {
+		ERROR("Failed to block signals.\n");
+	}
+}
 
 
 static char *get_pattern(FILE *fh, char **use_this_one_instead,
@@ -464,7 +495,7 @@ static void *run_reader(void *sbv)
 
 		FD_ZERO(&fds);
 		fdmax = 0;
-		pthread_mutex_lock(&sb->lock);
+		lock_sandbox(sb);
 		for ( i=0; i<sb->n_proc; i++ ) {
 
 			int fd;
@@ -478,7 +509,7 @@ static void *run_reader(void *sbv)
 
 		}
 
-		pthread_mutex_unlock(&sb->lock);
+		unlock_sandbox(sb);
 
 		r = select(fdmax+1, &fds, NULL, NULL, &tv);
 
@@ -491,7 +522,7 @@ static void *run_reader(void *sbv)
 
 		if ( r == 0 ) continue; /* Nothing this time.  Try again */
 
-		pthread_mutex_lock(&sb->lock);
+		lock_sandbox(sb);
 		for ( i=0; i<sb->n_proc; i++ ) {
 
 			if ( !sb->running[i] ) continue;
@@ -508,7 +539,7 @@ static void *run_reader(void *sbv)
 		for ( i=0; i<sb->n_proc; i++ ) {
 			if ( sb->running[i] ) done = 0;
 		}
-		pthread_mutex_unlock(&sb->lock);
+		unlock_sandbox(sb);
 
 	}
 
@@ -532,11 +563,11 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		return;
 	}
 
-	pthread_mutex_lock(&sb->lock);
+	lock_sandbox(sb);
 	p = fork();
 	if ( p == -1 ) {
 		ERROR("fork() failed!\n");
-		pthread_mutex_unlock(&sb->lock);
+		unlock_sandbox(sb);
 		return;
 	}
 
@@ -548,7 +579,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		int r;
 
 		/* FIXME: Is lock inherited? */
-		pthread_mutex_unlock(&sb->lock);
+		unlock_sandbox(sb);
 
 		/* First, disconnect the signal handler */
 		sa.sa_flags = 0;
@@ -604,18 +635,18 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	sb->fhs[slot] = fdopen(sb->stream_pipe_read[slot], "r");
 	if ( sb->fhs[slot] == NULL ) {
 		ERROR("Couldn't fdopen() stream!\n");
-		pthread_mutex_unlock(&sb->lock);
+		unlock_sandbox(sb);
 		return;
 	}
 
 	sb->result_fhs[slot] = fdopen(result_pipe[0], "r");
 	if ( sb->result_fhs[slot] == NULL ) {
 		ERROR("fdopen() failed.\n");
-		pthread_mutex_unlock(&sb->lock);
+		unlock_sandbox(sb);
 		return;
 	}
 
-	pthread_mutex_unlock(&sb->lock);
+	unlock_sandbox(sb);
 }
 
 
@@ -629,14 +660,14 @@ static void signal_handler(int sig, siginfo_t *si, void *uc_v)
 	}
 
 	found = 0;
-	pthread_mutex_lock(&sb->lock);
+	lock_sandbox(sb);
 	for ( i=0; i<sb->n_proc; i++ ) {
 		if ( (sb->running[i]) && (sb->pids[i] == si->si_pid) ) {
 			found = 1;
 			break;
 		}
 	}
-	pthread_mutex_unlock(&sb->lock);
+	unlock_sandbox(sb);
 
 	if ( !found ) {
 		ERROR("SIGCHLD from unknown child %i?\n", si->si_pid);
@@ -648,9 +679,9 @@ static void signal_handler(int sig, siginfo_t *si, void *uc_v)
 
 	if ( si->si_code == CLD_EXITED )
 	{
-		pthread_mutex_lock(&sb->lock);
+		lock_sandbox(sb);
 		sb->running[i] = 0;
-		pthread_mutex_unlock(&sb->lock);
+		unlock_sandbox(sb);
 		STATUS("Worker process %i exited normally.\n", i);
 		return;
 	}
@@ -721,7 +752,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	}
 
-	pthread_mutex_lock(&sb->lock);
+	lock_sandbox(sb);
 	sb->filename_pipes = calloc(n_proc, sizeof(int));
 	sb->result_fhs = calloc(n_proc, sizeof(FILE *));
 	sb->pids = calloc(n_proc, sizeof(pid_t));
@@ -753,7 +784,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		ERROR("Couldn't allocate memory for file handles!\n");
 		return;
 	}
-	pthread_mutex_unlock(&sb->lock);
+	unlock_sandbox(sb);
 
 	if ( pthread_create(&reader_thread, NULL, run_reader, (void *)sb) ) {
 		ERROR("Failed to create reader thread.\n");
@@ -789,7 +820,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 		FD_ZERO(&fds);
 		fdmax = 0;
-		pthread_mutex_lock(&sb->lock);
+		lock_sandbox(sb);
 		for ( i=0; i<n_proc; i++ ) {
 
 			int fd;
@@ -803,7 +834,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			if ( fd > fdmax ) fdmax = fd;
 
 		}
-		pthread_mutex_unlock(&sb->lock);
+		unlock_sandbox(sb);
 
 		r = select(fdmax+1, &fds, NULL, NULL, &tv);
 		if ( r == -1 ) {
@@ -815,7 +846,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 		if ( r == 0 ) continue; /* No progress this time.  Try again */
 
-		pthread_mutex_lock(&sb->lock);
+		lock_sandbox(sb);
 		for ( i=0; i<n_proc; i++ ) {
 
 			char *nextImage;
@@ -898,7 +929,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			if ( sb->running[i] ) allDone = 0;
 		}
 
-		pthread_mutex_unlock(&sb->lock);
+		unlock_sandbox(sb);
 
 	}
 
