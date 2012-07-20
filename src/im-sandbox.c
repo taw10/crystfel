@@ -345,15 +345,12 @@ static void run_work(const struct index_args *iargs,
 		line = malloc(1024*sizeof(char));
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) {
+
+			ERROR("Read error!\n");
 			free(line);
-			if ( feof(fh) ) {
-				allDone = 1;
-				STATUS("Exiting!\n");
-				continue;
-			} else {
-				ERROR("Read error!\n");
-				break;
-			}
+			allDone = 1;
+			continue;
+
 		}
 
 		chomp(line);
