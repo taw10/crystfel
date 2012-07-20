@@ -895,8 +895,10 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			}
 
 		}
+		unlock_sandbox(sb);
 
 		/* Update progress */
+		lock_sandbox(sb);
 		tNow = get_monotonic_seconds();
 		if ( tNow >= sb->t_last_stats+STATS_EVERY_N_SECONDS ) {
 
@@ -911,8 +913,10 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			sb->t_last_stats = tNow;
 
 		}
+		unlock_sandbox(sb);
 
 		allDone = 1;
+		lock_sandbox(sb);
 		for ( i=0; i<n_proc; i++ ) {
 			if ( sb->running[i] ) allDone = 0;
 		}
