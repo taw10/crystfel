@@ -76,7 +76,6 @@
 struct sandbox
 {
 	pthread_mutex_t lock;
-	sigset_t old_sigmask;
 
 	int n_indexable;
 	int n_processed;
@@ -101,36 +100,18 @@ struct sandbox
 
 
 /* Horrible global variable for signal handler */
-struct sandbox *sb;
+int signal_pipe[2];
 
 
 static void lock_sandbox(struct sandbox *sb)
 {
-	int r;
-	sigset_t set;
-
-	sigemptyset(&set);
-	sigaddset(&set, SIGCHLD);
-
-	r = pthread_sigmask(SIG_BLOCK, &set, &sb->old_sigmask);
-	if ( r != 0 ) {
-		ERROR("Failed to block signals.\n");
-	}
-
 	pthread_mutex_lock(&sb->lock);
 }
 
 
 static void unlock_sandbox(struct sandbox *sb)
 {
-	int r;
-
 	pthread_mutex_unlock(&sb->lock);
-
-	r = pthread_sigmask(SIG_SETMASK, &sb->old_sigmask, NULL);
-	if ( r != 0 ) {
-		ERROR("Failed to block signals.\n");
-	}
 }
 
 
@@ -563,11 +544,9 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		return;
 	}
 
-	lock_sandbox(sb);
 	p = fork();
 	if ( p == -1 ) {
 		ERROR("fork() failed!\n");
-		unlock_sandbox(sb);
 		return;
 	}
 
@@ -577,9 +556,6 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		int j;
 		struct sigaction sa;
 		int r;
-
-		/* FIXME: Is lock inherited? */
-		unlock_sandbox(sb);
 
 		/* First, disconnect the signal handler */
 		sa.sa_flags = 0;
@@ -635,68 +611,62 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	sb->fhs[slot] = fdopen(sb->stream_pipe_read[slot], "r");
 	if ( sb->fhs[slot] == NULL ) {
 		ERROR("Couldn't fdopen() stream!\n");
-		unlock_sandbox(sb);
 		return;
 	}
 
 	sb->result_fhs[slot] = fdopen(result_pipe[0], "r");
 	if ( sb->result_fhs[slot] == NULL ) {
 		ERROR("fdopen() failed.\n");
-		unlock_sandbox(sb);
 		return;
 	}
-
-	unlock_sandbox(sb);
 }
 
 
 static void signal_handler(int sig, siginfo_t *si, void *uc_v)
 {
-	int i, found;
+	write(signal_pipe[1], "\n", 1);
+}
 
-	if ( si->si_signo != SIGCHLD ) {
-		ERROR("Unhandled signal %i?\n", si->si_signo);
-		return;
-	}
 
-	found = 0;
+static void handle_zombie(struct sandbox *sb)
+{
+	int i;
+
 	lock_sandbox(sb);
 	for ( i=0; i<sb->n_proc; i++ ) {
-		if ( (sb->running[i]) && (sb->pids[i] == si->si_pid) ) {
-			found = 1;
-			break;
+
+		int status, p;
+
+		if ( !sb->running[i] ) continue;
+
+		p = waitpid(sb->pids[i], &status, WNOHANG);
+
+		if ( p == -1 ) {
+			ERROR("waitpid() failed.\n");
+			continue;
 		}
+
+		if ( p == sb->pids[i] ) {
+
+			sb->running[i] = 0;
+
+			if ( WIFEXITED(status) ) {
+				STATUS("Worker %i exited normally.\n", i);
+				continue;
+			}
+
+			if ( WIFSIGNALED(status) ) {
+				STATUS("Worker %i was killed by signal %i\n",
+				       i, WTERMSIG(status));
+				STATUS("Last filename was: %s\n",
+				       sb->last_filename[i]);
+				start_worker_process(sb, i);
+			}
+
+		}
+
 	}
 	unlock_sandbox(sb);
-
-	if ( !found ) {
-		ERROR("SIGCHLD from unknown child %i?\n", si->si_pid);
-		return;
-	}
-
-	if ( (si->si_code == CLD_TRAPPED) || (si->si_code == CLD_STOPPED)
-	  || (si->si_code == CLD_CONTINUED) ) return;
-
-	if ( si->si_code == CLD_EXITED )
-	{
-		lock_sandbox(sb);
-		sb->running[i] = 0;
-		unlock_sandbox(sb);
-		STATUS("Worker process %i exited normally.\n", i);
-		return;
-	}
-
-	if ( (si->si_code != CLD_DUMPED) && (si->si_code != CLD_KILLED) ) {
-		ERROR("Unhandled si_code %i (worker process %i).\n",
-		      si->si_code, i);
-		return;
-	}
-
-	ERROR("Worker process %i exited abnormally!\n", i);
-	ERROR("  -> Signal %i, last filename %s.\n",
-	      si->si_signo, sb->last_filename[i]);
-
-	start_worker_process(sb, i);
 }
 
 
@@ -709,6 +679,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	struct sigaction sa;
 	int r;
 	pthread_t reader_thread;
+	struct sandbox *sb;
 
 	sb = calloc(1, sizeof(struct sandbox));
 	if ( sb == NULL ) {
@@ -791,6 +762,11 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		return;
 	}
 
+	if ( pipe(signal_pipe) == -1 ) {
+		ERROR("Failed to create signal pipe.\n");
+		return;
+	}
+
 	/* Set up signal handler to take action if any children die */
 	sa.sa_flags = SA_SIGINFO | SA_NOCLDSTOP;
 	sigemptyset(&sa.sa_mask);
@@ -802,9 +778,11 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	}
 
 	/* Fork the right number of times */
+	lock_sandbox(sb);
 	for ( i=0; i<n_proc; i++ ) {
 		start_worker_process(sb, i);
 	}
+	unlock_sandbox(sb);
 
 	allDone = 0;
 	while ( !allDone ) {
@@ -836,6 +814,9 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		}
 		unlock_sandbox(sb);
 
+		FD_SET(signal_pipe[0], &fds);
+		if ( signal_pipe[0] > fdmax ) fdmax = signal_pipe[0];
+
 		r = select(fdmax+1, &fds, NULL, NULL, &tv);
 		if ( r == -1 ) {
 			if ( errno != EINTR ) {
@@ -845,6 +826,14 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		}
 
 		if ( r == 0 ) continue; /* No progress this time.  Try again */
+
+		if ( FD_ISSET(signal_pipe[0], &fds) ) {
+
+			char d;
+			read(signal_pipe[0], &d, 1);
+			handle_zombie(sb);
+
+		}
 
 		lock_sandbox(sb);
 		for ( i=0; i<n_proc; i++ ) {
@@ -890,6 +879,9 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			nextImage = get_pattern(fh, &use_this_one_instead,
 	                                        config_basename, prefix);
 
+			free(sb->last_filename[i]);
+			sb->last_filename[i] = nextImage;
+
 			if ( nextImage == NULL ) {
 				/* No more images */
 				r = write(sb->filename_pipes[i], "\n", 1);
@@ -903,7 +895,6 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 				if ( r < 0 ) {
 					ERROR("write pipe\n");
 				}
-				free(nextImage);
 			}
 
 		}
