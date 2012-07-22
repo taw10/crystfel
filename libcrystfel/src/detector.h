@@ -149,6 +149,8 @@ extern double smallest_q(struct image *image);
 
 extern struct panel *find_panel_by_name(struct detector *det, const char *name);
 
+extern int write_detector_geometry(const char *filename, struct detector *det);
+
 #ifdef __cplusplus
 }
 #endif
