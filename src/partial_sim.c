@@ -490,7 +490,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ( output_file == NULL ) {
-		ERROR("You must pgive a filename for the output.\n");
+		ERROR("You must give a filename for the output.\n");
 		return 1;
 	}
 	ofh = fopen(output_file, "w");
