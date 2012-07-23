@@ -309,6 +309,10 @@ static void merge_all(FILE *fh, RefList *model, RefList *reference,
 		progress_bar(n_patterns, n_total_patterns-config_startafter,
 		             "Merging");
 
+		if ( config_stopafter ) {
+			if ( n_patterns == config_stopafter ) break;
+		}
+
 	} while ( rval == 0 );
 
 	for ( refl = first_refl(model, &iter);
