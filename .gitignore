@@ -46,6 +46,7 @@ build-aux/missing
 build-aux/config.guess
 build-aux/depcomp
 build-aux/ltmain.sh
+/nbproject/private/
 lib/.libs/
 lib/dummy.lo
 lib/libgnu.la

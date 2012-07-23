@@ -118,7 +118,7 @@ extern UnitCell *rotate_cell(UnitCell *in, double omega, double phi,
 extern void cell_print(UnitCell *cell);
 
 extern UnitCell *match_cell(UnitCell *cell, UnitCell *tempcell, int verbose,
-                            float *ltl, int reduce);
+                            const float *ltl, int reduce);
 
 extern UnitCell *match_cell_ab(UnitCell *cell, UnitCell *tempcell);
 

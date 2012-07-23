@@ -379,7 +379,6 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 
 	rval = read(mosflm->pty, mosflm->rbuffer+mosflm->rbufpos,
 	            mosflm->rbuflen-mosflm->rbufpos);
-
 	if ( (rval == -1) || (rval == 0) ) return 1;
 
 	mosflm->rbufpos += rval;
@@ -436,7 +435,6 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 				break;
 
 			case MOSFLM_INPUT_PROMPT :
-
 				mosflm_send_next(image, mosflm);
 				endbit_length = i+7;
 				break;
@@ -513,6 +511,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	remove(mosflm->newmatfile);
 
 	mosflm->pid = forkpty(&mosflm->pty, NULL, NULL, NULL);
+
 	if ( mosflm->pid == -1 ) {
 		ERROR("Failed to fork for MOSFLM\n");
 		free(mosflm);
@@ -545,6 +544,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	mosflm->step = 1;	/* This starts the "initialisation" procedure */
 	mosflm->finished_ok = 0;
 
+
 	do {
 
 		fd_set fds;
@@ -559,7 +559,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 
 		sval = select(mosflm->pty+1, &fds, NULL, NULL, &tv);
 
-		if ( sval == -1 ) {
+                if ( sval == -1 ) {
 			int err = errno;
 			ERROR("select() failed: %s\n", strerror(err));
 			rval = 1;
@@ -569,6 +569,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 			ERROR("No response from MOSFLM..\n");
 			rval = 1;
 		}
+
 
 	} while ( !rval );
 

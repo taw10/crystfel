@@ -12,6 +12,7 @@
  *   2010-2012 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
+ *   2012      Chunhong Yoon
  *
  * This file is part of CrystFEL.
  *
@@ -43,7 +44,6 @@
 #include <getopt.h>
 #include <hdf5.h>
 #include <gsl/gsl_errno.h>
-#include <pthread.h>
 
 #ifdef HAVE_CLOCK_GETTIME
 #include <time.h>
@@ -63,81 +63,7 @@
 #include "stream.h"
 #include "reflist-utils.h"
 
-
-/* Write statistics at APPROXIMATELY this interval */
-#define STATS_EVERY_N_SECONDS (5)
-
-
-enum {
-	PEAK_ZAEF,
-	PEAK_HDF5,
-};
-
-
-/* Information about the indexing process which is common to all patterns */
-struct static_index_args
-{
-	UnitCell *cell;
-	int config_cmfilter;
-	int config_noisefilter;
-	int config_verbose;
-	int stream_flags;         /* What goes into the output? */
-	int config_satcorr;
-	int config_closer;
-	int config_insane;
-	int config_bgsub;
-	float threshold;
-	float min_gradient;
-	float min_snr;
-	double min_int_snr;
-	struct detector *det;
-	IndexingMethod *indm;
-	IndexingPrivate **ipriv;
-	int peaks;                /* Peak detection method */
-	int cellr;
-	float tols[4];
-	struct beam_params *beam;
-	const char *element;
-	const char *hdf5_peak_path;
-	double ir_inn;
-	double ir_mid;
-	double ir_out;
-
-	/* Output stream */
-	pthread_mutex_t *output_mutex;  /* Protects the output stream */
-	FILE *ofh;
-	const struct copy_hdf5_field *copyme;
-};
-
-
-/* Information about the indexing process for one pattern */
-struct index_args
-{
-	/* "Input" */
-	char *filename;
-	struct static_index_args static_args;
-
-	/* "Output" */
-	int indexable;
-};
-
-
-/* Information needed to choose the next task and dispatch it */
-struct queue_args
-{
-	FILE *fh;
-	char *prefix;
-	int config_basename;
-	struct static_index_args static_args;
-
-	char *use_this_one_instead;
-
-	int n_indexable;
-	int n_processed;
-	int n_indexable_last_stats;
-	int n_processed_last_stats;
-	int t_last_stats;
-};
+#include "im-sandbox.h"
 
 
 static void show_help(const char *s)
@@ -234,291 +160,7 @@ static void show_help(const char *s)
 "                           least 10%% of the located peaks.\n"
 "     --no-bg-sub          Don't subtract local background estimates from\n"
 "                           integrated intensities.\n"
-"\n"
-"\nYou can tune the CPU affinities for enhanced performance on NUMA machines:\n"
-"\n"
-"     --cpus=<n>           Specify number of CPUs.  This is NOT the same as\n"
-"                           giving the number of analyses to run in parallel.\n"
-"     --cpugroup=<n>       Batch threads in groups of this size.\n"
-"     --cpuoffset=<n>      Start using CPUs at this group number.\n"
 );
-}
-
-
-static void process_image(void *pp, int cookie)
-{
-	struct index_args *pargs = pp;
-	struct hdfile *hdfile;
-	struct image image;
-	float *data_for_measurement;
-	size_t data_size;
-	char *filename = pargs->filename;
-	UnitCell *cell = pargs->static_args.cell;
-	int config_cmfilter = pargs->static_args.config_cmfilter;
-	int config_noisefilter = pargs->static_args.config_noisefilter;
-	int config_verbose = pargs->static_args.config_verbose;
-	IndexingMethod *indm = pargs->static_args.indm;
-	struct beam_params *beam = pargs->static_args.beam;
-
-	image.features = NULL;
-	image.data = NULL;
-	image.flags = NULL;
-	image.indexed_cell = NULL;
-	image.reflections = NULL;
-	image.id = cookie;
-	image.filename = filename;
-	image.det = copy_geom(pargs->static_args.det);
-	image.copyme = pargs->static_args.copyme;
-	image.beam = beam;
-
-	pargs->indexable = 0;
-
-	hdfile = hdfile_open(filename);
-	if ( hdfile == NULL ) return;
-
-	if ( pargs->static_args.element != NULL ) {
-
-		int r;
-		r = hdfile_set_image(hdfile, pargs->static_args.element);
-		if ( r ) {
-			ERROR("Couldn't select path '%s'\n",
-			      pargs->static_args.element);
-			hdfile_close(hdfile);
-			return;
-		}
-
-	} else {
-
-		int r;
-		r = hdfile_set_first_image(hdfile, "/");
-		if ( r ) {
-			ERROR("Couldn't select first path\n");
-			hdfile_close(hdfile);
-			return;
-		}
-
-	}
-
-	hdf5_read(hdfile, &image, pargs->static_args.config_satcorr);
-
-	if ( (image.width != image.det->max_fs+1)
-	  || (image.height != image.det->max_ss+1) )
-	{
-		ERROR("Image size doesn't match geometry size"
-		      " - rejecting image.\n");
-		ERROR("Image size: %i,%i.  Geometry size: %i,%i\n",
-		      image.width, image.height,
-		      image.det->max_fs+1, image.det->max_ss+1);
-		hdfile_close(hdfile);
-		free_detector_geometry(image.det);
-		return;
-	}
-
-	if ( image.lambda < 0.0 ) {
-		if ( beam != NULL ) {
-			ERROR("Using nominal photon energy of %.2f eV\n",
-                              beam->photon_energy);
-			image.lambda = ph_en_to_lambda(
-			                          eV_to_J(beam->photon_energy));
-		} else {
-			ERROR("No wavelength in file, so you need to give "
-			      "a beam parameters file with -b.\n");
-			hdfile_close(hdfile);
-			free_detector_geometry(image.det);
-			return;
-		}
-	}
-	fill_in_values(image.det, hdfile);
-
-	if ( config_cmfilter ) {
-		filter_cm(&image);
-	}
-
-	/* Take snapshot of image after CM subtraction but before
-	 * the aggressive noise filter. */
-	data_size = image.width*image.height*sizeof(float);
-	data_for_measurement = malloc(data_size);
-
-	if ( config_noisefilter ) {
-		filter_noise(&image, data_for_measurement);
-	} else {
-		memcpy(data_for_measurement, image.data, data_size);
-	}
-
-	switch ( pargs->static_args.peaks )
-	{
-		case PEAK_HDF5 :
-		/* Get peaks from HDF5 */
-		if ( get_peaks(&image, hdfile,
-		               pargs->static_args.hdf5_peak_path) )
-		{
-			ERROR("Failed to get peaks from HDF5 file.\n");
-		}
-		break;
-
-		case PEAK_ZAEF :
-		search_peaks(&image, pargs->static_args.threshold,
-		             pargs->static_args.min_gradient,
-		             pargs->static_args.min_snr,
-		             pargs->static_args.ir_inn,
-		             pargs->static_args.ir_mid,
-		             pargs->static_args.ir_out);
-		break;
-	}
-
-	/* Get rid of noise-filtered version at this point
-	 * - it was strictly for the purposes of peak detection. */
-	free(image.data);
-	image.data = data_for_measurement;
-
-	/* Calculate orientation matrix (by magic) */
-	image.div = beam->divergence;
-	image.bw = beam->bandwidth;
-	image.profile_radius = 0.0001e9;
-	index_pattern(&image, cell, indm, pargs->static_args.cellr,
-		      config_verbose, pargs->static_args.ipriv,
-		      pargs->static_args.config_insane,
-		      pargs->static_args.tols);
-
-	if ( image.indexed_cell != NULL ) {
-
-		pargs->indexable = 1;
-
-		image.reflections = find_intersections(&image,
-		                                       image.indexed_cell);
-
-		if ( image.reflections != NULL ) {
-
-			integrate_reflections(&image,
-					      pargs->static_args.config_closer,
-					      pargs->static_args.config_bgsub,
-					      pargs->static_args.min_int_snr,
-					      pargs->static_args.ir_inn,
-					      pargs->static_args.ir_mid,
-					      pargs->static_args.ir_out);
-
-		}
-
-	} else {
-
-		image.reflections = NULL;
-
-	}
-
-	pthread_mutex_lock(pargs->static_args.output_mutex);
-	write_chunk(pargs->static_args.ofh, &image, hdfile,
-	            pargs->static_args.stream_flags);
-	pthread_mutex_unlock(pargs->static_args.output_mutex);
-
-	/* Only free cell if found */
-	cell_free(image.indexed_cell);
-
-	reflist_free(image.reflections);
-	free(image.data);
-	if ( image.flags != NULL ) free(image.flags);
-	image_feature_list_free(image.features);
-	hdfile_close(hdfile);
-	free_detector_geometry(image.det);
-}
-
-
-static void *get_image(void *qp)
-{
-	char *line;
-	struct index_args *pargs;
-	char *rval;
-	struct queue_args *qargs = qp;
-
-	/* Initialise new task arguments */
-	pargs = malloc(sizeof(struct index_args));
-	memcpy(&pargs->static_args, &qargs->static_args,
-	       sizeof(struct static_index_args));
-
-	/* Get the next filename */
-	if ( qargs->use_this_one_instead != NULL ) {
-
-		line = qargs->use_this_one_instead;
-		qargs->use_this_one_instead = NULL;
-
-	} else {
-
-		line = malloc(1024*sizeof(char));
-		rval = fgets(line, 1023, qargs->fh);
-		if ( rval == NULL ) {
-			free(pargs);
-			free(line);
-			return NULL;
-		}
-		chomp(line);
-
-	}
-
-	if ( qargs->config_basename ) {
-		char *tmp;
-		tmp = safe_basename(line);
-		free(line);
-		line = tmp;
-	}
-
-	pargs->filename = malloc(strlen(qargs->prefix)+strlen(line)+1);
-
-	snprintf(pargs->filename, 1023, "%s%s", qargs->prefix, line);
-
-	free(line);
-
-	return pargs;
-}
-
-
-#ifdef HAVE_CLOCK_GETTIME
-
-static time_t get_monotonic_seconds()
-{
-	struct timespec tp;
-	clock_gettime(CLOCK_MONOTONIC, &tp);
-	return tp.tv_sec;
-}
-
-#else
-
-/* Fallback version of the above.  The time according to gettimeofday() is not
- * monotonic, so measuring intervals based on it will screw up if there's a
- * timezone change (e.g. daylight savings) while the program is running. */
-static time_t get_monotonic_seconds()
-{
-	struct timeval tp;
-	gettimeofday(&tp, NULL);
-	return tp.tv_sec;
-}
-
-#endif
-
-static void finalise_image(void *qp, void *pp)
-{
-	struct queue_args *qargs = qp;
-	struct index_args *pargs = pp;
-	time_t monotonic_seconds;
-
-	qargs->n_indexable += pargs->indexable;
-	qargs->n_processed++;
-
-	monotonic_seconds = get_monotonic_seconds();
-	if ( monotonic_seconds >= qargs->t_last_stats+STATS_EVERY_N_SECONDS ) {
-
-		STATUS("%i out of %i indexed so far,"
-		       " %i out of %i since the last message.\n",
-		       qargs->n_indexable, qargs->n_processed,
-		       qargs->n_indexable - qargs->n_indexable_last_stats,
-		       qargs->n_processed - qargs->n_processed_last_stats);
-
-		qargs->n_processed_last_stats = qargs->n_processed;
-		qargs->n_indexable_last_stats = qargs->n_indexable;
-		qargs->t_last_stats = monotonic_seconds;
-
-	}
-
-	free(pargs->filename);
-	free(pargs);
 }
 
 
@@ -554,7 +196,6 @@ int main(int argc, char *argv[])
 	FILE *fh;
 	FILE *ofh;
 	char *rval = NULL;
-	int n_images;
 	int config_noindex = 0;
 	int config_cmfilter = 0;
 	int config_noisefilter = 0;
@@ -585,19 +226,15 @@ int main(int argc, char *argv[])
 	float tols[4] = {5.0, 5.0, 5.0, 1.5}; /* a,b,c,angles (%,%,%,deg) */
 	int cellr;
 	int peaks;
-	int nthreads = 1;
-	pthread_mutex_t output_mutex = PTHREAD_MUTEX_INITIALIZER;
+	int n_proc = 1;
 	char *prepare_line;
 	char prepare_filename[1024];
-	struct queue_args qargs;
+	char *use_this_one_instead;
+	struct index_args iargs;
 	struct beam_params *beam = NULL;
 	char *element = NULL;
 	double nominal_photon_energy;
 	int stream_flags = STREAM_INTEGRATED;
-	int cpu_num = 0;
-	int cpu_groupsize = 1;
-	int cpu_offset = 0;
-	char *endptr;
 	char *hdf5_peak_path = NULL;
 	struct copy_hdf5_field *copyme;
 	char *intrad = NULL;
@@ -684,7 +321,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 'j' :
-			nthreads = atoi(optarg);
+			n_proc = atoi(optarg);
 			break;
 
 			case 'g' :
@@ -726,39 +363,10 @@ int main(int argc, char *argv[])
 			break;
 
 			case 6 :
-			cpu_num = strtol(optarg, &endptr, 10);
-			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') ) ) {
-				ERROR("Invalid number of CPUs ('%s')\n",
-				      optarg);
-				return 1;
-			}
-			break;
-
 			case 7 :
-			cpu_groupsize = strtol(optarg, &endptr, 10);
-			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') ) ) {
-				ERROR("Invalid CPU group size ('%s')\n",
-				      optarg);
-				return 1;
-			}
-			if ( cpu_groupsize < 1 ) {
-				ERROR("CPU group size cannot be"
-				      " less than 1.\n");
-				return 1;
-			}
-			break;
-
 			case 8 :
-			cpu_offset = strtol(optarg, &endptr, 10);
-			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') ) ) {
-				ERROR("Invalid CPU offset ('%s')\n",
-				      optarg);
-				return 1;
-			}
-			if ( cpu_offset < 0 ) {
-				ERROR("CPU offset must be positive.\n");
-				return 1;
-			}
+			ERROR("The options --cpus, --cpugroup and --cpuoffset"
+			      " are no longer used by indexamajig.\n");
 			break;
 
 			case 9 :
@@ -795,12 +403,6 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( (cpu_num > 0) && (cpu_num % cpu_groupsize != 0) ) {
-		ERROR("Number of CPUs must be divisible by"
-		      " the CPU group size.\n");
-		return 1;
-	}
-
 	if ( filename == NULL ) {
 		filename = strdup("-");
 	}
@@ -816,18 +418,15 @@ int main(int argc, char *argv[])
 	free(filename);
 
 	if ( outfile == NULL ) {
-		outfile = strdup("-");
-	}
-	if ( strcmp(outfile, "-") == 0 ) {
 		ofh = stdout;
 	} else {
 		ofh = fopen(outfile, "w");
+		if ( ofh == NULL ) {
+			ERROR("Failed to open output file '%s'\n", outfile);
+			return 1;
+		}
+		free(outfile);
 	}
-	if ( ofh == NULL ) {
-		ERROR("Failed to open output file '%s'\n", outfile);
-		return 1;
-	}
-	free(outfile);
 
 	if ( hdf5_peak_path == NULL ) {
 		hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
@@ -860,8 +459,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if ( nthreads == 0 ) {
-		ERROR("Invalid number of threads.\n");
+	if ( n_proc == 0 ) {
+		ERROR("Invalid number of processes.\n");
 		return 1;
 	}
 
@@ -929,6 +528,7 @@ int main(int argc, char *argv[])
 			ERROR("Invalid parameters for '--int-radius'\n");
 			return 1;
 		}
+		free(intrad);
 	} else {
 		STATUS("WARNING: You did not specify --int-radius.\n");
 		STATUS("WARNING: I will use the default values, which are"
@@ -967,22 +567,20 @@ int main(int argc, char *argv[])
 	} else {
 		STATUS("No beam parameters file was given, so I'm taking the"
 		       " nominal photon energy to be 2 keV.\n");
+		ERROR("I'm also going to assume 1 ADU per photon, which is");
+		ERROR(" almost certainly wrong.  Peak sigmas will be"
+		      " incorrect.\n");
 		nominal_photon_energy = 2000.0;
 	}
 
-	if ( beam == NULL ) {
-		ERROR("Warning: no beam parameters file.\n");
-		ERROR("I'm going to assume 1 ADU per photon, which is almost");
-		ERROR(" certainly wrong.  Peak sigmas will be incorrect.\n");
-	}
-
 	/* Get first filename and use it to set up the indexing */
-	prepare_line = malloc(1024*sizeof(char));
+	prepare_line = malloc(1024);
 	rval = fgets(prepare_line, 1023, fh);
 	if ( rval == NULL ) {
 		ERROR("Failed to get filename to prepare indexing.\n");
 		return 1;
 	}
+	use_this_one_instead = strdup(prepare_line);
 	chomp(prepare_line);
 	if ( config_basename ) {
 		char *tmp;
@@ -991,7 +589,7 @@ int main(int argc, char *argv[])
 		prepare_line = tmp;
 	}
 	snprintf(prepare_filename, 1023, "%s%s", prefix, prepare_line);
-	qargs.use_this_one_instead = prepare_line;
+	free(prepare_line);
 
 	/* Prepare the indexer */
 	if ( indm != NULL ) {
@@ -1007,67 +605,41 @@ int main(int argc, char *argv[])
 
 	gsl_set_error_handler_off();
 
-	qargs.static_args.cell = cell;
-	qargs.static_args.config_cmfilter = config_cmfilter;
-	qargs.static_args.config_noisefilter = config_noisefilter;
-	qargs.static_args.config_verbose = config_verbose;
-	qargs.static_args.config_satcorr = config_satcorr;
-	qargs.static_args.config_closer = config_closer;
-	qargs.static_args.config_insane = config_insane;
-	qargs.static_args.config_bgsub = config_bgsub;
-	qargs.static_args.cellr = cellr;
-	qargs.static_args.tols[0] = tols[0];
-	qargs.static_args.tols[1] = tols[1];
-	qargs.static_args.tols[2] = tols[2];
-	qargs.static_args.tols[3] = tols[3];
-	qargs.static_args.threshold = threshold;
-	qargs.static_args.min_gradient = min_gradient;
-	qargs.static_args.min_snr = min_snr;
-	qargs.static_args.min_int_snr = min_int_snr;
-	qargs.static_args.det = det;
-	qargs.static_args.indm = indm;
-	qargs.static_args.ipriv = ipriv;
-	qargs.static_args.peaks = peaks;
-	qargs.static_args.output_mutex = &output_mutex;
-	qargs.static_args.ofh = ofh;
-	qargs.static_args.beam = beam;
-	qargs.static_args.element = element;
-	qargs.static_args.stream_flags = stream_flags;
-	qargs.static_args.hdf5_peak_path = hdf5_peak_path;
-	qargs.static_args.copyme = copyme;
-	qargs.static_args.ir_inn = ir_inn;
-	qargs.static_args.ir_mid = ir_mid;
-	qargs.static_args.ir_out = ir_out;
+	/* Static worker args */
+	iargs.cell = cell;
+	iargs.config_cmfilter = config_cmfilter;
+	iargs.config_noisefilter = config_noisefilter;
+	iargs.config_verbose = config_verbose;
+	iargs.config_satcorr = config_satcorr;
+	iargs.config_closer = config_closer;
+	iargs.config_insane = config_insane;
+	iargs.config_bgsub = config_bgsub;
+	iargs.cellr = cellr;
+	iargs.tols[0] = tols[0];
+	iargs.tols[1] = tols[1];
+	iargs.tols[2] = tols[2];
+	iargs.tols[3] = tols[3];
+	iargs.threshold = threshold;
+	iargs.min_gradient = min_gradient;
+	iargs.min_snr = min_snr;
+	iargs.min_int_snr = min_int_snr;
+	iargs.det = det;
+	iargs.indm = indm;
+	iargs.ipriv = ipriv;
+	iargs.peaks = peaks;
+	iargs.beam = beam;
+	iargs.element = element;
+	iargs.stream_flags = stream_flags;
+	iargs.hdf5_peak_path = hdf5_peak_path;
+	iargs.copyme = copyme;
+	iargs.ir_inn = ir_inn;
+	iargs.ir_mid = ir_mid;
+	iargs.ir_out = ir_out;
 
-	qargs.fh = fh;
-	qargs.prefix = prefix;
-	qargs.config_basename = config_basename;
-	qargs.n_indexable = 0;
-	qargs.n_processed = 0;
-	qargs.n_indexable_last_stats = 0;
-	qargs.n_processed_last_stats = 0;
-	qargs.t_last_stats = get_monotonic_seconds();
+	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
+	                    use_this_one_instead, ofh);
 
-	n_images = run_threads(nthreads, process_image, get_image,
-	                       finalise_image, &qargs, 0,
-	                       cpu_num, cpu_groupsize, cpu_offset);
-
-	cleanup_indexing(ipriv);
-
-	free(indm);
-	free(ipriv);
 	free(prefix);
-	free_detector_geometry(det);
-	free(beam);
-	free(element);
-	free(hdf5_peak_path);
-	free_copy_hdf5_field_list(copyme);
-	cell_free(cell);
-	if ( fh != stdin ) fclose(fh);
-	if ( ofh != stdout ) fclose(ofh);
-
-	STATUS("There were %i images, of which %i could be indexed.\n",
-	        n_images, qargs.n_indexable);
 
 	return 0;
 }

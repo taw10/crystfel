@@ -167,7 +167,7 @@ void map_all_peaks(struct image *image)
 
 void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
                    int cellr, int verbose, IndexingPrivate **ipriv,
-                   int config_insane, float *ltl)
+                   int config_insane, const float *ltl)
 {
 	int i;
 	int n = 0;
