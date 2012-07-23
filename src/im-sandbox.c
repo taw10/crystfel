@@ -648,7 +648,6 @@ static void handle_zombie(struct sandbox *sb)
 			sb->running[i] = 0;
 
 			if ( WIFEXITED(status) ) {
-				STATUS("Worker %i exited normally.\n", i);
 				continue;
 			}
 
