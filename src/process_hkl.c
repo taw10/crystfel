@@ -73,6 +73,7 @@ static void show_help(const char *s)
 "                             model.\n"
 "      --reference=<file>    Compare against intensities from <file> when\n"
 "                             scaling. \n"
+"      --no-polarisation     Disable polarisation correction.\n"
 );
 }
 
@@ -170,7 +171,8 @@ static double scale_intensities(RefList *reference, RefList *new,
 static int merge_pattern(RefList *model, struct image *new, RefList *reference,
                          const SymOpList *sym,
                          double *hist_vals, signed int hist_h,
-                         signed int hist_k, signed int hist_l, int *hist_n)
+                         signed int hist_k, signed int hist_l, int *hist_n,
+                         int config_nopolar)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -214,19 +216,23 @@ static int merge_pattern(RefList *model, struct image *new, RefList *reference,
 
 		intensity = scale * get_intensity(refl);
 
-		/* Polarisation correction assuming 100% polarisation along the
-		 * x direction */
-		xl = h*asx + k*bsx + l*csx;
-		yl = h*asy + k*bsy + l*csy;
-		zl = h*asz + k*bsz + l*csz;
+		if ( !config_nopolar ) {
 
-		ool = 1.0 / new->lambda;
-		tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+ool);
-		phi = atan2(yl, xl);
-		pa = pow(sin(phi)*sin(tt), 2.0);
-		pb = pow(cos(tt), 2.0);
-		pol = 1.0 - 2.0*(1.0-pa) + (1.0+pb);
-		intensity /= pol;
+			/* Polarisation correction assuming 100% polarisation
+			 * along the x direction */
+			xl = h*asx + k*bsx + l*csx;
+			yl = h*asy + k*bsy + l*csy;
+			zl = h*asz + k*bsz + l*csz;
+
+			ool = 1.0 / new->lambda;
+			tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+ool);
+			phi = atan2(yl, xl);
+			pa = pow(sin(phi)*sin(tt), 2.0);
+			pb = pow(cos(tt), 2.0);
+			pol = 1.0 - 2.0*(1.0-pa) + (1.0+pb);
+			intensity /= pol;
+
+		}
 
 		cur_intensity = get_intensity(model_version);
 		set_intensity(model_version, cur_intensity + intensity);
@@ -258,7 +264,7 @@ static void merge_all(FILE *fh, RefList *model, RefList *reference,
                       int n_total_patterns,
                       double *hist_vals, signed int hist_h,
                       signed int hist_k, signed int hist_l,
-                      int *hist_i)
+                      int *hist_i, int config_nopolar)
 {
 	int rval;
 	int n_patterns = 0;
@@ -289,7 +295,7 @@ static void merge_all(FILE *fh, RefList *model, RefList *reference,
 
 			r = merge_pattern(model, &image, reference, sym,
 			                  hist_vals, hist_h, hist_k, hist_l,
-			                  hist_i);
+			                  hist_i, config_nopolar);
 
 			if ( r == 0 ) n_used++;
 
@@ -355,6 +361,7 @@ int main(int argc, char *argv[])
 	int hist_i;
 	int space_for_hist = 0;
 	char *histo_params = NULL;
+	int config_nopolar = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -367,6 +374,8 @@ int main(int argc, char *argv[])
 		{"start-after",        1, NULL,               'f'},
 		{"sum",                0, &config_sum,         1},
 		{"scale",              0, &config_scale,       1},
+		{"no-polarisation",    0, &config_nopolar,     1},
+		{"no-polarization",    0, &config_nopolar,     1},
 		{"symmetry",           1, NULL,               'y'},
 		{"histogram",          1, NULL,               'g'},
 		{"hist-parameters",    1, NULL,               'z'},
@@ -503,7 +512,7 @@ int main(int argc, char *argv[])
 	hist_i = 0;
 	merge_all(fh, model, NULL, config_startafter, config_stopafter,
 	          sym, n_total_patterns, hist_vals, hist_h, hist_k, hist_l,
-	          &hist_i);
+	          &hist_i, config_nopolar);
 	if ( ferror(fh) ) {
 		ERROR("Stream read error.\n");
 		return 1;
@@ -526,7 +535,8 @@ int main(int argc, char *argv[])
 		merge_all(fh, model, reference,
 			  config_startafter, config_stopafter, sym,
 			  n_total_patterns,
-			  hist_vals, hist_h, hist_k, hist_l, &hist_i);
+			  hist_vals, hist_h, hist_k, hist_l, &hist_i,
+			  config_nopolar);
 
 		if ( ferror(fh) ) {
 			ERROR("Stream read error.\n");
