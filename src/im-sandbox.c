@@ -415,6 +415,7 @@ static time_t get_monotonic_seconds()
 
 #endif
 
+
 static int pump_chunk(FILE *fh, FILE *ofh)
 {
 	int chunk_started = 0;
