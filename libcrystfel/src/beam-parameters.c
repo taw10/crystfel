@@ -75,7 +75,7 @@ struct beam_params *get_beam_parameters(const char *filename)
 			continue;
 		}
 
-		if ( bits[1][0] != '=' ) {
+		if ( bits[0][0] == ';' ) {
 			for ( i=0; i<n1; i++ ) free(bits[i]);
 			free(bits);
 			continue;
