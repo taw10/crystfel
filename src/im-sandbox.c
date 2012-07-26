@@ -276,7 +276,7 @@ static void process_image(const struct index_args *iargs,
 	/* Calculate orientation matrix (by magic) */
 	image.div = beam->divergence;
 	image.bw = beam->bandwidth;
-	image.profile_radius = 0.0001e9;
+	image.profile_radius = beam->profile_radius;
 
 	index_pattern(&image, cell, indm, iargs->cellr,
 	              config_verbose, iargs->ipriv,

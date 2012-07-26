@@ -481,7 +481,7 @@ int main(int argc, char *argv[])
 		cur->width = det->max_fs;
 		cur->height = det->max_ss;
 		cur->osf = 1.0;
-		cur->profile_radius = 0.003e9;
+		cur->profile_radius = beam->profile_radius;
 		cur->pr_dud = 0;
 
 		/* Muppet proofing */

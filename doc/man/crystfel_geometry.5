@@ -207,6 +207,13 @@ beam/bandwidth = 0.001
 .br
 beam/divergence = 0.001
 
+; Reciprocal space 3D profile radius in m^-1.  A sphere of this radius surrounds
+; each reciprocal space, and if any part of the sphere is inside the excited
+; volume of reciprocal space, the reflection will be predicted.  You can change
+; the prediction of spots by altering this value - larger numbers give more
+; spots;
+profile_radius = 0.001e9
+
 .SH AUTHOR
 This page was written by Thomas White.
 

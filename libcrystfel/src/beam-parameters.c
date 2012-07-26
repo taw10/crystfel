@@ -55,6 +55,7 @@ struct beam_params *get_beam_parameters(const char *filename)
 	b->photon_energy = -1.0;
 	b->bandwidth = -1.0;
 	b->divergence = -1.0;
+	b->profile_radius = -1.0;
 
 	do {
 
@@ -90,6 +91,8 @@ struct beam_params *get_beam_parameters(const char *filename)
 			b->bandwidth = atof(bits[2]);
 		} else if ( strcmp(bits[0], "beam/divergence") == 0 ) {
 			b->divergence = atof(bits[2]);
+		} else if ( strcmp(bits[0], "profile_radius") == 0 ) {
+			b->profile_radius = atof(bits[2]);
 		} else {
 			ERROR("Unrecognised field '%s'\n", bits[0]);
 		}
@@ -122,6 +125,12 @@ struct beam_params *get_beam_parameters(const char *filename)
 	if ( b->divergence < 0.0 ) {
 		ERROR("Invalid or unspecified value for 'beam/divergence'.\n");
 		reject = 1;
+	}
+	if ( b->profile_radius < 0.0 ) {
+		ERROR("WARNING: Invalid or unspecified value for"
+		      "'profile_radius' in the beam parameters file.\n");
+		ERROR("Using the default value of 0.001 nm^-1.\n");
+		b->profile_radius = 0.001e9;
 	}
 
 	if ( reject ) {

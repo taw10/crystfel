@@ -44,6 +44,8 @@ struct beam_params
 	                        *        a rectangular distribution with this as
 	                        *        its (full) width. */
 	double divergence;     /* divergence (radians) */
+
+	double profile_radius; /* Reciprocal space size of a reflection */
 };
 
 
