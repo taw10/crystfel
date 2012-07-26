@@ -439,7 +439,7 @@ static void squash_vectors(struct reax_search *s, double tol)
 }
 
 
-static void show_vectors(struct reax_search *s, const char *pre)
+static UNUSED void show_vectors(struct reax_search *s, const char *pre)
 {
 	int i;
 
@@ -709,12 +709,13 @@ static void refine_rigid_group(struct image *image, UnitCell *cell,
 }
 
 
-static void refine_all_rigid_groups(struct image *image, UnitCell *cell,
-                                    double pmax,
-                                    double *fft_in, fftw_complex *fft_out,
-                                    fftw_plan plan, int smin, int smax,
-                                    struct detector *det,
-                                    struct reax_private *p)
+static UNUSED void refine_all_rigid_groups(struct image *image, UnitCell *cell,
+                                           double pmax,
+                                           double *fft_in,
+                                           fftw_complex *fft_out,
+                                           fftw_plan plan, int smin, int smax,
+                                           struct detector *det,
+                                           struct reax_private *p)
 {
 	int i;
 
