@@ -716,7 +716,7 @@ static void watermark(struct _srcontext *sr)
 
 static void new_page(struct _srcontext *sr)
 {
-	cairo_surface_show_page(sr->surf);
+	cairo_show_page(sr->cr);
 	watermark(sr);
 }
 
