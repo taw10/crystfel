@@ -73,6 +73,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	int possible[NBINS];
 	unsigned int measurements[NBINS];
 	unsigned int measured[NBINS];
+	unsigned int snr_measured[NBINS];
 	double total_vol, vol_per_shell;
 	double rmins[NBINS];
 	double rmaxs[NBINS];
@@ -107,6 +108,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		cts[i] = 0;
 		possible[i] = 0;
 		measured[i] = 0;
+		snr_measured[i] = 0;
 		measurements[i] = 0;
 		snr[i] = 0;
 		var[i] = 0;
@@ -213,13 +215,11 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		}
 		if ( bin == -1 ) continue;
 
-		if ( !isfinite(val/esd) ) {
-			nsilly++;
-			continue;
-		}
-
 		measured[bin]++;
 		mean[bin] += get_intensity(refl);
+
+		if ( !isfinite(val/esd) ) nsilly++;
+
 	}
 
 	for ( i=0; i<NBINS; i++ ) {
@@ -255,16 +255,20 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 			continue;
 		}
 
-		if ( !isfinite(val/esd) ) continue;
-
 		/* measured[bin] was done earlier */
 		measurements[bin] += get_redundancy(refl);
-		snr[bin] += val / esd;
-		snr_total += val / esd;
+
+		if ( isfinite(val/esd) ) {
+			snr[bin] += val / esd;
+			snr_total += val / esd;
+			snr_measured[bin]++;
+		}
+
 		nrefl++;
 		nmeastot += get_redundancy(refl);
 
 		var[bin] += pow(val-mean[bin], 2.0);
+
 	}
 	STATUS("overall <snr> = %f\n", snr_total/(double)nrefl);
 	STATUS("%i measurements in total.\n", nmeastot);
@@ -295,7 +299,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		        100.0*(double)measured[i]/possible[i],
 		        measurements[i],
 		        (double)measurements[i]/measured[i],
-		        snr[i]/(double)measured[i],
+		        snr[i]/(double)snr_measured[i],
 		        sqrt(var[i]/measured[i]),
 		        mean[i], (1.0/cen)*1e10);
 
