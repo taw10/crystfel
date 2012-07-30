@@ -657,6 +657,7 @@ static void handle_zombie(struct sandbox *sb)
 				       i, WTERMSIG(status));
 				STATUS("Last filename was: %s\n",
 				       sb->last_filename[i]);
+				sb->n_processed++;
 				start_worker_process(sb, i);
 			}
 
