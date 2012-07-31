@@ -357,9 +357,9 @@ int main(int argc, char *argv[])
 	char *holo_str = NULL;
 	char *mero_str = NULL;
 	char *expand_str = NULL;
-	SymOpList *holo;
-	SymOpList *mero;
-	SymOpList *expand;
+	SymOpList *holo = NULL;
+	SymOpList *mero = NULL;
+	SymOpList *expand = NULL;
 	char *input_file = NULL;
 	char *template = NULL;
 	char *output = NULL;
@@ -469,6 +469,13 @@ int main(int argc, char *argv[])
 		expand = NULL;
 	}
 
+	if ( (expand != NULL) || (holo != NULL) || config_trimc
+	  || config_multi ) {
+		if ( mero == NULL ) {
+			ERROR("You must specify the point group with -y.\n");
+		}
+	}
+
 	input = read_reflections(input_file);
 	if ( input == NULL ) {
 		ERROR("Problem reading input file %s\n", input_file);
@@ -478,7 +485,9 @@ int main(int argc, char *argv[])
 
 	STATUS("%i reflections in input.\n", num_reflections(input));
 
-	if ( !config_trimc && check_list_symmetry(input, mero) ) {
+	if ( (mero != NULL) && !config_trimc
+	  && check_list_symmetry(input, mero) )
+	{
 		ERROR("The input reflection list does not appear to"
 		      " have symmetry %s\n", symmetry_name(mero));
 		return 1;
