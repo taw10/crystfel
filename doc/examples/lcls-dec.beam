@@ -14,3 +14,6 @@ beam/bandwidth = 0.001
 
 ; Beam divergence in radians
 beam/divergence = 0.001
+
+; Reciprocal space profile radius in m^-1
+profile_radius = 0.001e9

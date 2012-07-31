@@ -9,5 +9,4 @@
 0/clen = 0.08  ; 8 cm camera length
 0/res = 9090  ; 110 micron pixel size
 0/badrow_direction = x
-0/peak_sep = 4
 0/adu_per_eV = 1.0
