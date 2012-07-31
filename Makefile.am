@@ -123,7 +123,8 @@ EXTRA_DIST += doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
               doc/examples/lcls-dec.beam doc/examples/lcls-june.beam \
               doc/examples/lcls-xpp-estimate.beam \
               doc/examples/cspad-feb2011.geom \
-              doc/examples/lcls-cxi-9keV.beam
+              doc/examples/lcls-cxi-9keV.beam \
+              doc/reference/xml/coding-standards.xml
 
 scriptdir = $(docdir)/scripts
 script_DATA = scripts/check-near-bragg  scripts/random-image \
