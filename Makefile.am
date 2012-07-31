@@ -132,7 +132,7 @@ script_DATA = scripts/check-near-bragg  scripts/random-image \
               scripts/alternate-stream scripts/README scripts/cell-please \
               scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
               scripts/compare-hkl.gp scripts/check-peak-detection \
-              scripts/indexed-filenames scripts/gen-sfs
+              scripts/indexed-filenames scripts/gen-sfs scripts/cif2hkl
 
 EXTRA_DIST += scripts/check-near-bragg  scripts/random-image \
               scripts/wibbletron scripts/create-mtz scripts/mtz2hkl \
@@ -140,7 +140,7 @@ EXTRA_DIST += scripts/check-near-bragg  scripts/random-image \
               scripts/alternate-stream scripts/README scripts/cell-please \
               scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
               scripts/compare-hkl.gp scripts/check-peak-detection \
-              scripts/indexed-filenames scripts/gen-sfs
+              scripts/indexed-filenames scripts/gen-sfs scripts/cif2hkl
 
 
 DISTCHECK_CONFIGURE_FLAGS=--enable-gtk-doc

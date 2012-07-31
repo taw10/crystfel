@@ -1,7 +1,8 @@
 #!/bin/sh
 
 mtz2various hklin $1 hklout $2 <<EOF
-LABIN H=H K=K L=L FP=FP
-FSQUARED
-OUTPUT USER '(3I4,F9.1)'
+LABIN H=H K=K L=L I=IMEAN SIGI=SIGIMEAN
+OUTPUT USER '(3I4,2F15.1)'
 EOF
+
+echo "Now use hkl2hkl (without modification) to convert $2 to a CrystFEL file"

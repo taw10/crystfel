@@ -9,7 +9,7 @@ printf("  h   k   l          I    phase   sigma(I)  counts"
 
 while ( $line = <STDIN> ) {
 
-        if ( $line =~ /([\d\-]+)\s+([\d\-]+)\s+([\d\-]+)\s+([\d\.\-]+)\s+([\d\.\-]+)/ ) {
+        if ( $line =~ /([\d\-]+)\s+([\d\-]+)\s+([\d\-]+)\so\s+[\d\.\-]+\s+[\d\.\-]+\s+([\d\.\-]+)\s+([\d\.\-]+)\s+$/ ) {
 
                 my $h = $1;
                 my $k = $2;
