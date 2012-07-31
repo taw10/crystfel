@@ -352,5 +352,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	return val;
+	STATUS("Returning 0 by default: gradients only needed for experimental"
+	       " features of CrystFEL.\n");
+	return 0;
 }
