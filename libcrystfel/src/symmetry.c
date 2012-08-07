@@ -68,7 +68,6 @@ struct _symoplist
 	int n_ops;
 	int max_ops;
 	char *name;
-	int *divisors;
 	int num_equivs;
 };
 
@@ -84,7 +83,6 @@ struct _symopmask
 static void alloc_ops(SymOpList *ops)
 {
 	ops->ops = realloc(ops->ops, ops->max_ops*sizeof(struct sym_op));
-	ops->divisors = realloc(ops->divisors, ops->max_ops*sizeof(int));
 }
 
 
@@ -127,7 +125,6 @@ static SymOpList *new_symoplist()
 	new->max_ops = 16;
 	new->n_ops = 0;
 	new->ops = NULL;
-	new->divisors = NULL;
 	new->name = NULL;
 	new->num_equivs = 1;
 	alloc_ops(new);
