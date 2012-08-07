@@ -36,6 +36,7 @@
 
 #include "utils.h"
 #include "cell.h"
+#include "cell-utils.h"
 #include "image.h"
 #include "peaks.h"
 #include "beam-parameters.h"

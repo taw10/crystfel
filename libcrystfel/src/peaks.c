@@ -51,6 +51,7 @@
 #include "filters.h"
 #include "reflist-utils.h"
 #include "beam-parameters.h"
+#include "cell-utils.h"
 
 
 /* Degree of polarisation of X-ray beam */

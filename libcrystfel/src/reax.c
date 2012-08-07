@@ -47,6 +47,7 @@
 #include "utils.h"
 #include "peaks.h"
 #include "cell.h"
+#include "cell-utils.h"
 #include "index.h"
 #include "index-priv.h"
 

@@ -48,6 +48,7 @@
 #include "render_hkl.h"
 #include "reflist.h"
 #include "reflist-utils.h"
+#include "cell-utils.h"
 
 
 #define KEY_FILENAME "key.pdf"

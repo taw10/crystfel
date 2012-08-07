@@ -36,6 +36,7 @@
 #include <beam-parameters.h>
 #include <utils.h>
 #include <symmetry.h>
+#include <cell-utils.h>
 
 
 #ifdef HAVE_CLOCK_GETTIME

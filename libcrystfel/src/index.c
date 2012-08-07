@@ -49,6 +49,7 @@
 #include "index-priv.h"
 #include "reax.h"
 #include "geometry.h"
+#include "cell-utils.h"
 
 
 /* Base class constructor for unspecialised indexing private data */

@@ -1,7 +1,7 @@
 /*
  * cell.h
  *
- * Unit Cell Calculations
+ * A class representing a unit cell
  *
  * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
@@ -128,24 +128,6 @@ extern void cell_set_centering(UnitCell *cell, char centering);
 extern char cell_get_unique_axis(UnitCell *cell);
 extern void cell_set_unique_axis(UnitCell *cell, char unique_axis);
 
-extern double resolution(UnitCell *cell,
-                         signed int h, signed int k, signed int l);
-
-extern UnitCell *cell_rotate(UnitCell *in, struct quaternion quat);
-extern UnitCell *rotate_cell(UnitCell *in, double omega, double phi,
-                             double rot);
-
-extern void cell_print(UnitCell *cell);
-
-extern UnitCell *match_cell(UnitCell *cell, UnitCell *tempcell, int verbose,
-                            const float *ltl, int reduce);
-
-extern UnitCell *match_cell_ab(UnitCell *cell, UnitCell *tempcell);
-
-extern UnitCell *load_cell_from_pdb(const char *filename);
-
-extern int cell_is_sensible(UnitCell *cell);
-
-extern void validate_cell(UnitCell *cell);
+extern const char *cell_rep(UnitCell *cell);
 
 #endif	/* CELL_H */

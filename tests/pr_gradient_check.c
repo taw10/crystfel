@@ -32,6 +32,7 @@
 
 #include <image.h>
 #include <cell.h>
+#include <cell-utils.h>
 #include <geometry.h>
 #include <reflist.h>
 #include "../src/post-refinement.h"

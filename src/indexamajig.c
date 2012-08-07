@@ -62,6 +62,7 @@
 #include "geometry.h"
 #include "stream.h"
 #include "reflist-utils.h"
+#include "cell-utils.h"
 
 #include "im-sandbox.h"
 

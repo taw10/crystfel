@@ -42,6 +42,7 @@
 #include "diffraction.h"
 #include "diffraction-gpu.h"
 #include "cell.h"
+#include "cell-utils.h"
 #include "utils.h"
 #include "hdf5-file.h"
 #include "detector.h"

@@ -45,6 +45,7 @@
 #include "symmetry.h"
 #include "geometry.h"
 #include "cell.h"
+#include "cell-utils.h"
 
 
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
