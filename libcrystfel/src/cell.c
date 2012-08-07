@@ -89,7 +89,6 @@ struct _unitcell {
 	double azs;	double bzs;	double czs;
 
 	char        *pointgroup;
-	char        *spacegroup;
 	LatticeType  lattice_type;
 	char         centering;
 	char         unique_axis;
@@ -124,7 +123,6 @@ UnitCell *cell_new()
 	cell->rep = CELL_REP_CRYST;
 
 	cell->pointgroup = strdup("1");
-	cell->spacegroup = strdup("P 1");
 	cell->lattice_type = L_TRICLINIC;
 	cell->centering = 'P';
 	cell->unique_axis = 'c';
@@ -144,7 +142,6 @@ void cell_free(UnitCell *cell)
 {
 	if ( cell == NULL ) return;
 	free(cell->pointgroup);
-	free(cell->spacegroup);
 	free(cell);
 }
 
@@ -263,7 +260,6 @@ UnitCell *cell_new_from_cell(UnitCell *orig)
 	cell_get_cartesian(orig, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	cell_set_cartesian(new, ax, ay, az, bx, by, bz, cx, cy, cz);
 	cell_set_pointgroup(new, orig->pointgroup);
-	cell_set_spacegroup(new, orig->spacegroup);
 
 	return new;
 }
@@ -281,13 +277,6 @@ void cell_set_reciprocal(UnitCell *cell,
 	cell->cxs = csx;  cell->cys = csy;  cell->czs = csz;
 
 	cell->rep = CELL_REP_RECIP;
-}
-
-
-void cell_set_spacegroup(UnitCell *cell, const char *sym)
-{
-	free(cell->spacegroup);
-	cell->spacegroup = strdup(sym);
 }
 
 
@@ -572,12 +561,6 @@ int cell_get_reciprocal(UnitCell *cell,
 const char *cell_get_pointgroup(UnitCell *cell)
 {
 	return cell->pointgroup;
-}
-
-
-const char *cell_get_spacegroup(UnitCell *cell)
-{
-	return cell->spacegroup;
 }
 
 

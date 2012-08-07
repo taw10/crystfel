@@ -93,7 +93,6 @@ extern void cell_set_parameters(UnitCell *cell, double a, double b, double c,
 extern void cell_set_cartesian_a(UnitCell *cell, double ax, double ay, double az);
 extern void cell_set_cartesian_b(UnitCell *cell, double bx, double by, double bz);
 extern void cell_set_cartesian_c(UnitCell *cell, double cx, double cy, double cz);
-extern void cell_set_spacegroup(UnitCell *cell, const char *sym);
 extern void cell_set_pointgroup(UnitCell *cell, const char *sym);
 
 
@@ -116,8 +115,6 @@ extern void cell_set_reciprocal(UnitCell *cell,
                                 double csx, double csy, double csz);
 
 extern const char *cell_get_pointgroup(UnitCell *cell);
-
-extern const char *cell_get_spacegroup(UnitCell *cell);
 
 extern LatticeType cell_get_lattice_type(UnitCell *cell);
 extern void cell_set_lattice_type(UnitCell *cell, LatticeType lattice_type);
