@@ -46,7 +46,7 @@
 #include <image.h>
 
 static float *get_binned_panel(struct image *image, int binning,
-                               int min_fs, int max_fs, int min_ss, int max_ss)
+                               struct panel *p)
 {
 	float *data;
 	int x, y;
@@ -58,8 +58,8 @@ static float *get_binned_panel(struct image *image, int binning,
 	in = image->data;
 
 	/* Some pixels might get discarded */
-	w = (max_fs - min_fs + 1) / binning;
-	h = (max_ss - min_ss + 1) / binning;
+	w = (p->max_fs - p->min_fs + 1) / binning;
+	h = (p->max_ss - p->min_ss + 1) / binning;
 
 	data = malloc(w*h*sizeof(float));
 
@@ -68,19 +68,45 @@ static float *get_binned_panel(struct image *image, int binning,
 
 		double total;
 		size_t xb, yb;
+		int bad = 0;
 
 		total = 0;
 		for ( xb=0; xb<binning; xb++ ) {
 		for ( yb=0; yb<binning; yb++ ) {
 
 			double v;
-			v = in[binning*x+xb+min_fs + (binning*y+yb+min_ss)*fw];
+			int fs, ss;
+
+			fs = binning*x+xb+p->min_fs;
+			ss = binning*y+yb+p->min_ss;
+			v = in[fs+ss*fw];
 			total += v;
+
+			if ( v > p->max_adu ) bad = 1;
+
+			if ( in_bad_region(image->det, fs, ss) ) bad = 1;
+
+			if ( image->flags != NULL ) {
+
+				uint16_t flags = image->flags[fs+ss*fw];
+
+				if ( !((flags & image->det->mask_good)
+					           == image->det->mask_good) ) {
+					bad = 1;
+				}
+
+				if ( flags & image->det->mask_bad ) {
+					bad = 1;
+				}
+
+			}
 
 		}
 		}
 
 		data[x+w*y] = total / ((double)binning * (double)binning);
+
+		if ( bad ) data[x+w*y] = -INFINITY;
 
 	}
 	}
@@ -99,7 +125,7 @@ static void render_free_data(guchar *data, gpointer p)
 
 static GdkPixbuf *render_panel(struct image *image,
                                int binning, int scale, double boost,
-                               int min_fs, int max_fs, int min_ss, int max_ss)
+                               struct panel *p)
 {
 	int w, h;
 	guchar *data;
@@ -111,8 +137,8 @@ static GdkPixbuf *render_panel(struct image *image,
 
 	/* Calculate panel width and height
 	 * (add one because min and max are inclusive) */
-	pw = max_fs - min_fs + 1;
-	ph = max_ss - min_ss + 1;
+	pw = p->max_fs - p->min_fs + 1;
+	ph = p->max_ss - p->min_ss + 1;
 	w = pw / binning;
 	h = ph / binning;
 
@@ -121,7 +147,7 @@ static GdkPixbuf *render_panel(struct image *image,
 	for ( i=0; i<image->width*image->height; i++ ) {
 		if ( image->data[i] > max ) max = image->data[i];
 	}
-	hdr = get_binned_panel(image, binning, min_fs, max_fs, min_ss, max_ss);
+	hdr = get_binned_panel(image, binning, p);
 	if ( hdr == NULL ) return NULL;
 
 	/* Rendered (colourful) version */
@@ -142,14 +168,25 @@ static GdkPixbuf *render_panel(struct image *image,
 		double r, g, b;
 
 		val = hdr[x+w*y];
-		render_scale(val, max, scale, &r, &g, &b);
 
-		/* Stuff inside square brackets makes this pixel go to
-		 * the expected location in the pixbuf (which measures
-		 * from the top-left corner */
-		data[3*( x+w*y )+0] = 255*r;
-		data[3*( x+w*y )+1] = 255*g;
-		data[3*( x+w*y )+2] = 255*b;
+		if ( val > -INFINITY ) {
+
+			render_scale(val, max, scale, &r, &g, &b);
+
+			/* Stuff inside square brackets makes this pixel go to
+			 * the expected location in the pixbuf (which measures
+			 * from the top-left corner */
+			data[3*( x+w*y )+0] = 255*r;
+			data[3*( x+w*y )+1] = 255*g;
+			data[3*( x+w*y )+2] = 255*b;
+
+		} else {
+
+			data[3*( x+w*y )+0] = 74;
+			data[3*( x+w*y )+1] = 55;
+			data[3*( x+w*y )+2] = 0;
+
+		}
 
 	}
 	}
@@ -182,10 +219,7 @@ GdkPixbuf **render_panels(struct image *image,
 	for ( i=0; i<np; i++ ) {
 
 		pixbufs[i] = render_panel(image, binning, scale, boost,
-		                          image->det->panels[i].min_fs,
-		                          image->det->panels[i].max_fs,
-		                          image->det->panels[i].min_ss,
-		                          image->det->panels[i].max_ss);
+		                          &image->det->panels[i]);
 
 	}
 
