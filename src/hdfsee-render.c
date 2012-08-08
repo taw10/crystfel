@@ -46,7 +46,7 @@
 #include <image.h>
 
 static float *get_binned_panel(struct image *image, int binning,
-                               struct panel *p)
+                               struct panel *p, double *max)
 {
 	float *data;
 	int x, y;
@@ -76,15 +76,16 @@ static float *get_binned_panel(struct image *image, int binning,
 
 			double v;
 			int fs, ss;
+			int tbad = 0;
 
 			fs = binning*x+xb+p->min_fs;
 			ss = binning*y+yb+p->min_ss;
 			v = in[fs+ss*fw];
 			total += v;
 
-			if ( v > p->max_adu ) bad = 1;
+			if ( v > p->max_adu ) tbad = 1;
 
-			if ( in_bad_region(image->det, fs, ss) ) bad = 1;
+			if ( in_bad_region(image->det, fs, ss) ) tbad = 1;
 
 			if ( image->flags != NULL ) {
 
@@ -92,14 +93,19 @@ static float *get_binned_panel(struct image *image, int binning,
 
 				if ( !((flags & image->det->mask_good)
 					           == image->det->mask_good) ) {
-					bad = 1;
+					tbad = 1;
 				}
 
 				if ( flags & image->det->mask_bad ) {
-					bad = 1;
+					tbad = 1;
 				}
 
 			}
+
+			if ( !tbad ) {
+				if ( v > *max ) *max = v;
+			}
+			if ( tbad ) bad = 1;
 
 		}
 		}
@@ -133,7 +139,6 @@ static GdkPixbuf *render_panel(struct image *image,
 	int x, y;
 	double max;
 	int pw, ph;
-	int i;
 
 	/* Calculate panel width and height
 	 * (add one because min and max are inclusive) */
@@ -144,10 +149,7 @@ static GdkPixbuf *render_panel(struct image *image,
 
 	/* High dynamic range version */
 	max = 0.0;
-	for ( i=0; i<image->width*image->height; i++ ) {
-		if ( image->data[i] > max ) max = image->data[i];
-	}
-	hdr = get_binned_panel(image, binning, p);
+	hdr = get_binned_panel(image, binning, p, &max);
 	if ( hdr == NULL ) return NULL;
 
 	/* Rendered (colourful) version */
@@ -182,8 +184,8 @@ static GdkPixbuf *render_panel(struct image *image,
 
 		} else {
 
-			data[3*( x+w*y )+0] = 74;
-			data[3*( x+w*y )+1] = 55;
+			data[3*( x+w*y )+0] = 30;
+			data[3*( x+w*y )+1] = 20;
 			data[3*( x+w*y )+2] = 0;
 
 		}
