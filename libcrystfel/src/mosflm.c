@@ -276,6 +276,8 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 {
 	LatticeType latt;
 	char centering;
+	char *g = NULL;
+	char *result;
 
 	latt = cell_get_lattice_type(cell);
 	centering = cell_get_centering(cell);
@@ -291,7 +293,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_ORTHORHOMBIC :
-		g = "222";
+		g = "2 2 2";
 		break;
 
 		case L_TETRAGONAL :
@@ -307,11 +309,17 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_CUBIC :
-		g = "23";
+		g = "2 3";
 		break;
+	}
+	assert(g != NULL);
 
+	result = malloc(32);
+	if ( result == NULL ) return NULL;
 
-	return "P1";
+	snprintf(result, 31, "%c %s", centering, g);
+
+	return result;
 }
 
 

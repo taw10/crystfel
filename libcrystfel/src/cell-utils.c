@@ -378,7 +378,6 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
 }
 
 
-
 UnitCell *match_cell_ab(UnitCell *cell, UnitCell *template)
 {
 	double ax, ay, az;
@@ -692,6 +691,10 @@ UnitCell *load_cell_from_pdb(const char *filename)
 	fclose(fh);
 
 	/* FIXME: Turn "H" centered cells into "R" cells */
+	if ( cell_get_centering(cell) == 'H' ) {
+		STATUS("Turning your H-centered (PDB convention) cell into"
+		       " an R-centered one.\n");
+	}
 
 	validate_cell(cell);
 
