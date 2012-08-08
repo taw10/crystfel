@@ -750,7 +750,6 @@ struct detector *get_detector_geometry(const char *filename)
 		char line[1024];
 		struct badregion *badregion = NULL;
 		struct panel *panel = NULL;
-		char *key;
 		char wholeval[1024];
 
 		rval = fgets(line, 1023, fh);
@@ -801,8 +800,6 @@ struct detector *get_detector_geometry(const char *filename)
 				panel = new_panel(det, path[0]);
 			}
 		}
-
-		key = path[1];
 
 		if ( panel != NULL ) {
 			if ( parse_field_for_panel(panel, path[1],

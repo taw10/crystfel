@@ -77,13 +77,13 @@ static gint displaywindow_closed(GtkWidget *window, DisplayWindow *dw)
 	if ( dw->pixbufs != NULL ) {
 		int i;
 		for ( i=0; i<dw->n_pixbufs; i++ ) {
-			gdk_pixbuf_unref(dw->pixbufs[i]);
+			g_object_unref(dw->pixbufs[i]);
 		}
 		free(dw->pixbufs);
 	}
 
 	if ( dw->col_scale != NULL ) {
-		gdk_pixbuf_unref(dw->col_scale);
+		g_object_unref(dw->col_scale);
 	}
 
 	if ( dw->image != NULL ) {
@@ -189,11 +189,7 @@ static void show_ring(cairo_t *cr, DisplayWindow *dw,
 static void show_simple_ring(cairo_t *cr, DisplayWindow *dw,
                              double d, cairo_matrix_t *basic_m)
 {
-	struct detector *det;
-
 	if ( !dw->use_geom ) return;
-
-	det = dw->image->det;
 
 	cairo_identity_matrix(cr);
 	cairo_translate(cr, -dw->min_x/dw->binning,
@@ -431,7 +427,7 @@ static void set_window_size(DisplayWindow *dw)
 static void update_colscale(DisplayWindow *dw)
 {
 	if ( dw->col_scale != NULL ) {
-		gdk_pixbuf_unref(dw->col_scale);
+		g_object_unref(dw->col_scale);
 	}
 	dw->col_scale = render_get_colour_scale(20, dw->height, dw->scale);
 }
@@ -446,7 +442,7 @@ static void displaywindow_update(DisplayWindow *dw)
 	if ( dw->pixbufs != NULL ) {
 		int i;
 		for ( i=0; i<dw->n_pixbufs; i++ ) {
-			gdk_pixbuf_unref(dw->pixbufs[i]);
+			g_object_unref(dw->pixbufs[i]);
 		}
 		free(dw->pixbufs);
 	}

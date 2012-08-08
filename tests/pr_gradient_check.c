@@ -225,10 +225,6 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 
 			double r1, r2, p;
 			int cl, ch;
-			double tt, dstar;
-
-			dstar = 2.0 * resolution(image->indexed_cell, h, k, l),
-			tt = 2.0*asin(image->lambda/(2.0/dstar));
 
 			grad1 = (vals[1][i] - vals[0][i]) / incr_val;
 			grad2 = (vals[2][i] - vals[1][i]) / incr_val;

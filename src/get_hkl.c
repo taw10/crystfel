@@ -270,10 +270,8 @@ static RefList *expand_reflections(RefList *in, const SymOpList *target,
 
 		signed int h, k, l;
 		int n, j;
-		double intensity;
 
 		get_indices(refl, &h, &k, &l);
-		intensity = get_intensity(refl);
 
 		special_position(initial, m, h, k, l);
 		n = num_equivs(initial, m);
@@ -298,7 +296,7 @@ static RefList *expand_reflections(RefList *in, const SymOpList *target,
 
 			/* FIXME: Make phase negative if the reflection is
 			 * separated from the original via an inversion */
-			get_phase(refl, &have_phase);
+			ph = get_phase(refl, &have_phase);
 			if ( have_phase ) set_phase(new, -ph);
 
 		}

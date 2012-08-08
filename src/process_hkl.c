@@ -356,7 +356,6 @@ int main(int argc, char *argv[])
 	unsigned int n_total_patterns;
 	char *sym_str = NULL;
 	SymOpList *sym;
-	char *pdb = NULL;
 	char *histo = NULL;
 	signed int hist_h, hist_k, hist_l;
 	signed int hist_nbins=50;
@@ -387,7 +386,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:e:o:p:y:g:f:b:z:",
+	while ((c = getopt_long(argc, argv, "hi:e:o:y:g:f:b:z:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -409,10 +408,6 @@ int main(int argc, char *argv[])
 
 		case 'f' :
 			config_startafter = atoi(optarg);
-			break;
-
-		case 'p' :
-			pdb = strdup(optarg);
 			break;
 
 		case 'y' :

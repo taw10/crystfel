@@ -467,7 +467,6 @@ static void find_candidates(struct reax_private *p,
                             const char *rg, struct detector *det)
 {
 	int i;
-	double th, ph;
 
 	for ( i=0; i<s->n_search; i++ ) {
 		s->search[i].cand = calloc(MAX_CANDIDATES,
@@ -475,7 +474,6 @@ static void find_candidates(struct reax_private *p,
 		s->search[i].n_cand = 0;
 	}
 
-	th = 0.0;  ph = 0.0;
 	for ( i=0; i<p->n_dir; i++ ) {
 		check_dir(&p->directions[i], flist,
 		                    p->nel, pmax, fft_in, fft_out, p->plan,
@@ -492,7 +490,10 @@ static void find_candidates(struct reax_private *p,
 		int j;
 
 		sv = &s->search[i];
-		refine_vector(flist, &sv->cand[j].v);
+
+		for ( j=0; j<sv->n_cand; j++ ) {
+			refine_vector(flist, &sv->cand[j].v);
+		}
 
 	}
 
@@ -593,7 +594,6 @@ static void refine_rigid_group(struct image *image, UnitCell *cell,
 	double bx, by, bz, mb;
 	double cx, cy, cz, mc;
 	double pha, phb, phc;
-	struct panel *p;
 	int i, j;
 	fftw_complex *r_fft_in;
 	fftw_complex *r_fft_out;
@@ -617,13 +617,6 @@ static void refine_rigid_group(struct image *image, UnitCell *cell,
 	phc = get_model_phase(cx/mc, cy/mc, cz/mc, image->features,
 	                      pr->nel, pmax, fft_in, fft_out, plan,
 	                      smin, smax, rg, det);
-
-	for ( i=0; i<det->n_panels; i++ ) {
-		if ( det->panels[i].rigid_group == rg ) {
-			p = &det->panels[i];
-			break;
-		}
-	}
 
 	r_fft_in = fftw_malloc(pr->cw*pr->ch*sizeof(fftw_complex));
 	r_fft_out = fftw_malloc(pr->cw*pr->ch*sizeof(fftw_complex));

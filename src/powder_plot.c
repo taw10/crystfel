@@ -725,7 +725,7 @@ int main(int argc, char *argv[])
 	unsigned int n_patterns = 0;
 	unsigned int n_peaks    = 0;
 
-	int c, rval, file_type, data_type;
+	int c, file_type, data_type;
 	int config_satcorr = 1;
 	int need_geometry  = 0;
 	int need_beam      = 0;
@@ -953,7 +953,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 		/* Use wavelength from first chunk */
-		rval = read_chunk(fh, &image);
+		read_chunk(fh, &image);
 		rewind(fh);
 	} else if (file_type == FILE_H5) {
 		hdfile = hdfile_open(filename);

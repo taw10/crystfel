@@ -840,7 +840,6 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			char results[1024];
 			char *rval;
 			int fd;
-			int n;
 			char *eptr;
 
 			if ( !sb->running[i] ) {
@@ -863,7 +862,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 			chomp(results);
 
-			n = strtol(results, &eptr, 10);
+			strtol(results, &eptr, 10);
 			if ( eptr == results ) {
 				if ( strlen(results) > 0 ) {
 					ERROR("Invalid result '%s'\n", results);

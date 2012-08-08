@@ -1275,8 +1275,7 @@ SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target)
 	SymOpList *src_reordered;
 	SymOpMask *used;
 	char *name;
-	int index;
-
+	
 	n_src = num_ops(source);
 	n_tgt = num_ops(target);
 
@@ -1290,8 +1289,7 @@ SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target)
 		ERROR("Subgroup index would be fractional.\n");
 		return NULL;
 	}
-	index = n_src / n_tgt;
-
+	
 	src_reordered = new_symoplist();
 	used = new_symopmask(source);
 

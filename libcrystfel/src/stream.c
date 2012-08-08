@@ -335,7 +335,6 @@ int read_chunk(FILE *fh, struct image *image)
 	int have_bs = 0;
 	int have_cs = 0;
 	int have_filename = 0;
-	int have_cell = 0;
 	int have_ev = 0;
 
 	if ( find_start_of_chunk(fh) ) return 1;
@@ -410,7 +409,6 @@ int read_chunk(FILE *fh, struct image *image)
 			image->indexed_cell = cell_new_from_reciprocal_axes(as,
 			                                                    bs,
 			                                                    cs);
-			have_cell = 1;
 			have_as = 0;  have_bs = 0;  have_cs = 0;
 		}
 

@@ -68,8 +68,6 @@ static void show_help(const char *s)
 static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
                         double rmin_fix, double rmax_fix)
 {
-	double num[NBINS];
-	int cts[NBINS];
 	int possible[NBINS];
 	unsigned int measurements[NBINS];
 	unsigned int measured[NBINS];
@@ -104,8 +102,6 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	}
 
 	for ( i=0; i<NBINS; i++ ) {
-		num[i] = 0.0;
-		cts[i] = 0;
 		possible[i] = 0;
 		measured[i] = 0;
 		snr_measured[i] = 0;

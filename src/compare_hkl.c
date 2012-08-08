@@ -96,12 +96,9 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 {
 	double num[NBINS];
 	int cts[NBINS];
-	unsigned int measurements[NBINS];
-	unsigned int measured[NBINS];
 	double total_vol, vol_per_shell;
 	double rmins[NBINS];
 	double rmaxs[NBINS];
-	double snr[NBINS];
 	double rmin, rmax;
 	int i;
 	Reflection *refl1;
@@ -119,9 +116,6 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 		num[i] = 0.0;
 		den[i] = 0.0;
 		cts[i] = 0;
-		measured[i] = 0;
-		measurements[i] = 0;
-		snr[i] = 0;
 	}
 
 	/* Find resolution limits */

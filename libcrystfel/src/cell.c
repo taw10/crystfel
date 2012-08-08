@@ -895,7 +895,7 @@ UnitCell *match_cell_ab(UnitCell *cell, UnitCell *template)
 	int used[3];
 	struct rvec real_a, real_b, real_c;
 	struct rvec params[3];
-	double alen, blen, clen;
+	double alen, blen;
 	float ltl = 5.0;     /* percent */
 	int have_real_a;
 	int have_real_b;
@@ -911,7 +911,6 @@ UnitCell *match_cell_ab(UnitCell *cell, UnitCell *template)
 	}
 	alen = modulus(ax, ay, az);
 	blen = modulus(bx, by, bz);
-	clen = modulus(cx, cy, cz);
 
 	/* Get the lengths from the cell and turn them into anonymous vectors */
 	if ( cell_get_cartesian(cell, &ax, &ay, &az,
