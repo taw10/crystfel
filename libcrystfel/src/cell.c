@@ -783,18 +783,28 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
 					continue;
 				}
 
-				cand[i][ncand[i]].vec.u = tx;
-				cand[i][ncand[i]].vec.v = ty;
-				cand[i][ncand[i]].vec.w = tz;
-				cand[i][ncand[i]].na = n1;
-				cand[i][ncand[i]].nb = n2;
-				cand[i][ncand[i]].nc = n3;
-				cand[i][ncand[i]].fom = fabs(lengths[i] - tlen);
 				if ( ncand[i] == MAX_CAND ) {
-					ERROR("Too many candidates\n");
+					ERROR("Too many cell candidates - ");
+					ERROR("consider tightening the unit ");
+					ERROR("cell tolerances.\n");
 				} else {
+
+					double fom;
+
+					fom = fabs(lengths[i] - tlen);
+
+					cand[i][ncand[i]].vec.u = tx;
+					cand[i][ncand[i]].vec.v = ty;
+					cand[i][ncand[i]].vec.w = tz;
+					cand[i][ncand[i]].na = n1;
+					cand[i][ncand[i]].nb = n2;
+					cand[i][ncand[i]].nc = n3;
+					cand[i][ncand[i]].fom = fom;
+
 					ncand[i]++;
+
 				}
+
 			}
 
 		}
