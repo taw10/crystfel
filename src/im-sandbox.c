@@ -175,7 +175,7 @@ static void process_image(const struct index_args *iargs,
 	int config_verbose = iargs->config_verbose;
 	IndexingMethod *indm = iargs->indm;
 	struct beam_params *beam = iargs->beam;
-	int r, check;
+	int check;
 	struct hdfile *hdfile;
 	struct image image;
 
@@ -193,11 +193,26 @@ static void process_image(const struct index_args *iargs,
 	hdfile = hdfile_open(image.filename);
 	if ( hdfile == NULL ) return;
 
-	r = hdfile_set_first_image(hdfile, "/");
-	if ( r ) {
-		ERROR("Couldn't select first path\n");
-		hdfile_close(hdfile);
-		return;
+	if ( iargs->element != NULL ) {
+
+		int r;
+		r = hdfile_set_image(hdfile, iargs->element);
+		if ( r ) {
+			ERROR("Couldn't select path '%s'\n", iargs->element);
+			hdfile_close(hdfile);
+			return;
+		}
+
+	} else {
+
+		int r;
+		r = hdfile_set_first_image(hdfile, "/");
+		if ( r ) {
+			ERROR("Couldn't select first path\n");
+			hdfile_close(hdfile);
+			return;
+		}
+
 	}
 
 	check = hdf5_read(hdfile, &image, 1);
