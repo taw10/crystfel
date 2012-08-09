@@ -127,7 +127,7 @@ struct beam_params *get_beam_parameters(const char *filename)
 		reject = 1;
 	}
 	if ( b->profile_radius < 0.0 ) {
-		ERROR("WARNING: Invalid or unspecified value for"
+		ERROR("WARNING: Invalid or unspecified value for "
 		      "'profile_radius' in the beam parameters file.\n");
 		ERROR("Using the default value of 0.001 nm^-1.\n");
 		b->profile_radius = 0.001e9;
