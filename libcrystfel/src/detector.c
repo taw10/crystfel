@@ -1059,6 +1059,7 @@ struct detector *simple_geometry(const struct image *image)
 	geom->panels[0].cnx = -image->width / 2.0;
 	geom->panels[0].cny = -image->height / 2.0;
 	geom->panels[0].rigid_group = NULL;
+	geom->panels[0].max_adu = INFINITY;
 
 	geom->panels[0].fsx = 1;
 	geom->panels[0].fsy = 0;
