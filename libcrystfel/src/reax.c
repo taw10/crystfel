@@ -745,7 +745,7 @@ static double max_feature_resolution(ImageFeatureList *flist)
 }
 
 
-static int right_handed(struct rvec a, struct rvec b, struct rvec c)
+static int right_handed_vec(struct rvec a, struct rvec b, struct rvec c)
 {
 	struct rvec aCb;
 	double aCb_dot_c;
@@ -958,7 +958,7 @@ static void assemble_cells_from_candidates(struct image *image,
 		bi.u = vj.x;  bi.v = vj.y;  bi.w = vj.z;
 		ci.u = vk.x;  ci.v = vk.y;  ci.w = vk.z;
 
-		if ( !right_handed(ai, bi, ci) ) continue;
+		if ( !right_handed_vec(ai, bi, ci) ) continue;
 
 		/* We have three vectors with the right angles */
 		cnew = cell_new_from_direct_axes(ai, bi, ci);

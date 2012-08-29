@@ -39,6 +39,7 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h>
+#include <assert.h>
 
 #include "cell.h"
 #include "cell-utils.h"
@@ -99,6 +100,56 @@ static const char *str_lattice(LatticeType l)
 }
 
 
+int right_handed(UnitCell *cell)
+{
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	struct rvec aCb;
+	double aCb_dot_c;
+	int rh_reciprocal;
+	int rh_direct;
+
+	if ( cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                               &bsx, &bsy, &bsz,
+	                               &csx, &csy, &csz) ) {
+		ERROR("Couldn't get reciprocal cell.\n");
+		return 0;
+	}
+
+	/* "a" cross "b" */
+	aCb.u = asy*bsz - asz*bsy;
+	aCb.v = - (asx*bsz - asz*bsx);
+	aCb.w = asx*bsy - asy*bsx;
+
+	/* "a cross b" dot "c" */
+	aCb_dot_c = aCb.u*csx + aCb.v*csy + aCb.w*csz;
+
+	rh_reciprocal = aCb_dot_c > 0.0;
+
+	if ( cell_get_cartesian(cell, &asx, &asy, &asz,
+	                              &bsx, &bsy, &bsz,
+	                              &csx, &csy, &csz) ) {
+		ERROR("Couldn't get direct cell.\n");
+		return 0;
+	}
+
+	/* "a" cross "b" */
+	aCb.u = asy*bsz - asz*bsy;
+	aCb.v = - (asx*bsz - asz*bsx);
+	aCb.w = asx*bsy - asy*bsx;
+
+	/* "a cross b" dot "c" */
+	aCb_dot_c = aCb.u*csx + aCb.v*csy + aCb.w*csz;
+
+	rh_direct = aCb_dot_c > 0.0;
+
+	assert(rh_reciprocal == rh_direct);
+
+	return rh_direct;
+}
+
+
 void cell_print(UnitCell *cell)
 {
 	double asx, asy, asz;
@@ -106,9 +157,31 @@ void cell_print(UnitCell *cell)
 	double csx, csy, csz;
 	double a, b, c, alpha, beta, gamma;
 	double ax, ay, az, bx, by, bz, cx, cy, cz;
+	LatticeType lt;
 
-	STATUS("%s %c\n", str_lattice(cell_get_lattice_type(cell)),
-	                  cell_get_centering(cell));
+	lt = cell_get_lattice_type(cell);
+
+	STATUS("%s %c", str_lattice(lt), cell_get_centering(cell));
+
+	switch ( lt )
+	{
+		case L_MONOCLINIC :
+		case L_TETRAGONAL :
+		case L_HEXAGONAL :
+		STATUS(", unique axis %c", cell_get_unique_axis(cell));
+		break;
+
+		default :
+		break;
+	}
+
+	if ( right_handed(cell) ) {
+		STATUS(", right handed");
+	} else {
+		STATUS(", left handed");
+	}
+
+	STATUS(", point group '%s'.\n", cell_get_pointgroup(cell));
 
 	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
 
@@ -134,14 +207,200 @@ void cell_print(UnitCell *cell)
 	STATUS("cstar = %10.3e %10.3e %10.3e m^-1 (modulus = %10.3e m^-1)\n",
 	                             csx, csy, csz, modulus(csx, csy, csz));
 
-	STATUS("Point group: %s\n", cell_get_pointgroup(cell));
 	STATUS("Cell representation is %s.\n", cell_rep(cell));
+}
+
+
+int bravais_lattice(UnitCell *cell)
+{
+	LatticeType lattice = cell_get_lattice_type(cell);
+	char centering = cell_get_centering(cell);
+	char ua = cell_get_unique_axis(cell);
+
+	switch ( centering )
+	{
+		case 'P' :
+		return 1;
+
+		case 'A' :
+		case 'B' :
+		case 'C' :
+		if ( lattice == L_MONOCLINIC ) {
+			if ( (ua=='a') && (centering=='A') ) return 1;
+			if ( (ua=='b') && (centering=='B') ) return 1;
+			if ( (ua=='c') && (centering=='C') ) return 1;
+		} else if ( lattice == L_ORTHORHOMBIC) {
+			return 1;
+		}
+		return 0;
+
+		case 'I' :
+		if ( (lattice == L_ORTHORHOMBIC)
+		  || (lattice == L_TETRAGONAL)
+		  || (lattice == L_CUBIC) )
+		{
+			return 1;
+		}
+		return 0;
+
+		case 'F' :
+		if ( (lattice == L_ORTHORHOMBIC) || (lattice == L_CUBIC) ) {
+			return 1;
+		}
+		return 0;
+
+		case 'H' :
+		if ( lattice == L_HEXAGONAL ) return 1;
+		return 0;
+
+		default :
+		return 0;
+	}
+}
+
+
+/* Turn any cell into a primitive one, e.g. for comparison purposes */
+UnitCell *uncenter_cell(UnitCell *in)
+{
+	UnitCell *cell;
+
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	double nax, nay, naz;
+	double nbx, nby, nbz;
+	double ncx, ncy, ncz;
+	const double OT = 1.0/3.0;
+	const double TT = 2.0/3.0;
+	const double H = 0.5;
+	LatticeType lt;
+	char ua, cen;
+
+	if ( !bravais_lattice(in) ) {
+		ERROR("Cannot uncenter: not a Bravais lattice.\n");
+		return NULL;
+	}
+
+	cell_get_cartesian(in, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	lt = cell_get_lattice_type(in);
+	ua = cell_get_unique_axis(in);
+	cen = cell_get_centering(in);
+
+	if ( ua == 'a' ) {
+		double tx, ty, tz;
+		tx = ax;  ty = ay;  tz = az;
+		ax = cx;  ay = cy;  az = cz;
+		cx = tx;  cy = ty;  cz = tz;
+		if ( cen == 'A' ) cen = 'C';
+	}
+
+	if ( ua == 'b' ) {
+		double tx, ty, tz;
+		tx = bx;  ty = by;  tz = bz;
+		ax = cx;  ay = cy;  az = cz;
+		cx = tx;  cy = ty;  cz = tz;
+		if ( cen == 'B' ) cen = 'C';
+	}
+
+	cell = cell_new();
+
+	switch ( cen ) {
+
+		case 'P' :
+		case 'R' :
+		nax = ax;  nay = ay;  naz = az;
+		nbx = bx;  nby = by;  nbz = bz;
+		ncx = cx;  ncy = cy;  ncz = cz;  /* Identity */
+		cell_set_lattice_type(cell, lt);
+		cell_set_centering(cell, cen);  /* P->P, R->R */
+		break;
+
+		case 'I' :
+		nax = - H*ax + H*bx + H*cx;
+		nay = - H*ay + H*by + H*cy;
+		naz = - H*az + H*bz + H*cz;
+		nbx =   H*ax - H*bx + H*cx;
+		nby =   H*ay - H*by + H*cy;
+		nbz =   H*az - H*bz + H*cz;
+		ncx =   H*ax + H*bx - H*cx;
+		ncy =   H*ay + H*by - H*cy;
+		ncz =   H*az + H*bz - H*cz;
+		if ( lt == L_CUBIC ) {
+			cell_set_lattice_type(cell, L_RHOMBOHEDRAL);
+			cell_set_centering(cell, 'R');
+		} else {
+			/* Tetragonal or orthorhombic */
+			cell_set_lattice_type(cell, L_TRICLINIC);
+			cell_set_centering(cell, 'P');
+		}
+		break;
+
+		case 'F' :
+		nax =   0*ax + H*bx + H*cx;
+		nay =   0*ay + H*by + H*cy;
+		naz =   0*az + H*bz + H*cz;
+		nbx =   H*ax + 0*bx + H*cx;
+		nby =   H*ay + 0*by + H*cy;
+		nbz =   H*az + 0*bz + H*cz;
+		ncx =   H*ax + H*bx + 0*cx;
+		ncy =   H*ay + H*by + 0*cy;
+		ncz =   H*az + H*bz + 0*cz;
+		if ( lt == L_CUBIC ) {
+			cell_set_lattice_type(cell, L_RHOMBOHEDRAL);
+			cell_set_centering(cell, 'R');
+
+		} else {
+			assert(lt == L_ORTHORHOMBIC);
+			cell_set_lattice_type(cell, L_TRICLINIC);
+			cell_set_centering(cell, 'P');
+		}
+		break;
+
+		case 'C' :
+		nax = H*ax + H*bx + 0*cx;
+		nay = H*ay + H*by + 0*cy;
+		naz = H*az + H*bz + 0*cz;
+		nbx = -H*ax + H*bx + 0*cx;
+		nby = -H*ay + H*by + 0*cy;
+		nbz = -H*az + H*bz + 0*cz;
+		ncx = 0*ax + 0*bx + 1*cx;
+		ncy = 0*ay + 0*by + 1*cy;
+		ncz = 0*az + 0*bz + 1*cz;
+		cell_set_lattice_type(cell, L_MONOCLINIC);
+		cell_set_centering(cell, 'P');
+		cell_set_unique_axis(cell, 'c');
+		break;
+
+		case 'H' :
+		nax = TT*ax + OT*bx + OT*cx;
+		nay = TT*ay + OT*by + OT*cy;
+		naz = TT*az + OT*bz + OT*cz;
+		nbx = - OT*ax + OT*bx + OT*cx;
+		nby = - OT*ay + OT*by + OT*cy;
+		nbz = - OT*az + OT*bz + OT*cz;
+		ncx = - OT*ax - TT*bx + OT*cx;
+		ncy = - OT*ay - TT*by + OT*cy;
+		ncz = - OT*az - TT*bz + OT*cz;
+		assert(lt == L_HEXAGONAL);
+		cell_set_lattice_type(cell, L_RHOMBOHEDRAL);
+		cell_set_centering(cell, 'R');
+		break;
+
+		default :
+		ERROR("Invalid centering '%c'\n", cell_get_centering(in));
+		return NULL;
+
+	}
+
+	cell_set_cartesian(cell, nax, nay, naz, nbx, nby, nbz, ncx, ncy, ncz);
+
+	return cell;
 }
 
 
 #define MAX_CAND (1024)
 
-static int right_handed(struct rvec a, struct rvec b, struct rvec c)
+static int right_handed_vec(struct rvec a, struct rvec b, struct rvec c)
 {
 	struct rvec aCb;
 	double aCb_dot_c;
@@ -178,7 +437,7 @@ static int same_vector(struct cvec a, struct cvec b)
 
 
 /* Attempt to make 'cell' fit into 'template' somehow */
-UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
+UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
                      const float *tols, int reduce)
 {
 	signed int n1l, n2l, n3l;
@@ -194,6 +453,11 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
 	int ncand[3] = {0,0,0};
 	signed int ilow, ihigh;
 	float angtol = deg2rad(tols[3]);
+	UnitCell *cell;
+	UnitCell *template;
+
+	cell = uncenter_cell(cell_in);
+	template = uncenter_cell(template_in);
 
 	if ( cell_get_reciprocal(template, &asx, &asy, &asz,
 	                         &bsx, &bsy, &bsz,
@@ -350,8 +614,8 @@ UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
 			if ( fabs(ang - angles[0]) > angtol ) continue;
 
 			/* Unit cell must be right-handed */
-			if ( !right_handed(cand[0][i].vec, cand[1][j].vec,
-			                   cand[2][k].vec) ) continue;
+			if ( !right_handed_vec(cand[0][i].vec, cand[1][j].vec,
+			                       cand[2][k].vec) ) continue;
 
 			fom3 = fom2 + fabs(ang - angles[0]);
 			fom3 += LWEIGHT * (cand[0][i].fom + cand[1][j].fom
@@ -464,7 +728,7 @@ UnitCell *match_cell_ab(UnitCell *cell, UnitCell *template)
 	}
 
 	/* Flip c if not right-handed */
-	if ( !right_handed(real_a, real_b, real_c) ) {
+	if ( !right_handed_vec(real_a, real_b, real_c) ) {
 		real_c.u = -real_c.u;
 		real_c.v = -real_c.v;
 		real_c.w = -real_c.w;
@@ -690,12 +954,6 @@ UnitCell *load_cell_from_pdb(const char *filename)
 
 	fclose(fh);
 
-	/* FIXME: Turn "H" centered cells into "R" cells */
-	if ( cell_get_centering(cell) == 'H' ) {
-		STATUS("Turning your H-centered (PDB convention) cell into"
-		       " an R-centered one.\n");
-	}
-
 	validate_cell(cell);
 
 	return cell;
@@ -789,55 +1047,6 @@ int cell_is_sensible(UnitCell *cell)
 }
 
 
-static int bravais_lattice(UnitCell *cell)
-{
-	LatticeType lattice = cell_get_lattice_type(cell);
-	char centering = cell_get_centering(cell);
-	char ua = cell_get_unique_axis(cell);
-
-	switch ( centering )
-	{
-		case 'P' :
-		return 1;
-
-		case 'A' :
-		case 'B' :
-		case 'C' :
-		if ( (lattice != L_MONOCLINIC)
-		  && (lattice != L_ORTHORHOMBIC) )
-		{
-			return 0;
-		}
-		if ( (ua=='a') && (centering=='A') ) return 1;
-		if ( (ua=='b') && (centering=='B') ) return 1;
-		if ( (ua=='c') && (centering=='C') ) return 1;
-		return 0;
-
-		case 'I' :
-		if ( (lattice == L_ORTHORHOMBIC)
-		  || (lattice == L_TETRAGONAL)
-		  || (lattice == L_CUBIC) )
-		{
-			return 1;
-		}
-		return 0;
-
-		case 'F' :
-		if ( (lattice == L_ORTHORHOMBIC) || (lattice == L_CUBIC) ) {
-			return 1;
-		}
-		return 0;
-
-		case 'H' :
-		if ( lattice == L_HEXAGONAL ) return 1;
-		return 0;
-
-		default :
-		return 0;
-	}
-}
-
-
 /**
  * validate_cell:
  * @cell: A %UnitCell to validate
@@ -859,6 +1068,11 @@ void validate_cell(UnitCell *cell)
 	if ( !bravais_lattice(cell) ) {
 		ERROR("Warning: Unit cell is not a conventional Bravais"
 		      " lattice.\n");
+		err = 1;
+	}
+
+	if ( !right_handed(cell) ) {
+		ERROR("Warning: Unit cell is not right handed.\n");
 		err = 1;
 	}
 
