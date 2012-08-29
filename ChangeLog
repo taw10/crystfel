@@ -1,1 +1,47 @@
-There is no ChangeLog.  Check the version control repository...
+CrystFEL version 0.4.1, 29th August 2012
+----------------------------------------
+
+- Some compiler warnings with newer versions of GCC were fixed.
+- Bad pixels are now shown in brown by hdfsee.
+- Bad pixels are now ignored when calculating the range of the image for the
+  colour scale in hdfsee.
+- A crash when there were too many unit cell candidates was fixed.
+- Small typos were fixed in a warning message and pattern_sim(1).
+- "indexamajig --image" was fixed.
+
+
+CrystFEL version 0.4.0, 31st July 2012
+--------------------------------------
+
+- Performance increase when using indexamajig on multi-core hardware (Chun Hong
+  Yoon).
+- "max_adu" field was added to geometry file format.
+- Added masking of inner ("peak") regions of all peaks during the background
+  calculation (Kenneth Beyerlein).
+- Bandwidth and subsampling was restored to the GPU version of pattern_sim.
+- Spot prediction and associated partiality calculations were improved.
+- "profile_radius" field was added to beam file format.
+- "compare_hkl --shells" now uses separate denominators in each resolution bin
+  for the R-factor calculation.
+- Removed fields "peak_sep" and "integr_radius" in geometry files.
+- Bug fix for process_hkl --histogram (Lorenzo Galli).
+- A bug was fixed in find_panel().
+- Improvements were made to the build system.
+- "indexamajig --min-integration-snr" was fixed.
+- Fixed "process_hkl --start-after" and "--stop-after".
+- "compare_hkl --sigma-cutoff" added.
+- Shell resolutions in Angstroms added to the shells files of check_hkl and
+  compare_hkl.
+- Fixed small compilation problem with Cairo < 1.6.
+- The tolerances for the cell reduction procedure, "ltl" in match_cell(), is now
+  "const float *ltl" instead of just "float *ltl".
+- The "peak_sep" field of "struct panel" was removed, and "max_adu" added.
+- "struct beam_parameters" now contains a new field: "profile_radius".
+- "write_detector_geometry()" was added to detector.h.
+- "hdf5_write_image()" was added to hdf5-file.h.
+
+
+CrystFEL version 0.3.0, 14th March 2012
+---------------------------------------
+
+- Initial release of CrystFEL.
