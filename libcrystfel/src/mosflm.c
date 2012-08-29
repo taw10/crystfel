@@ -340,7 +340,6 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 {
 	char tmp[256];
 	double wavelength;
-	double a, b, c, alpha, beta, gamma;
 
 	switch ( mosflm->step ) {
 
@@ -352,20 +351,6 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 
 		case 2 :
 		if ( mosflm->target_cell != NULL ) {
-			cell_get_parameters(mosflm->target_cell, &a, &b, &c,
-				            &alpha, &beta, &gamma);
-			snprintf(tmp, 255,
-			         "CELL %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f\n",
-		                 a*1e10, b*1e10, c*1e10,
-		                 rad2deg(alpha), rad2deg(beta), rad2deg(gamma));
-			mosflm_sendline(tmp, mosflm);
-		} else {
-			mosflm_sendline("# Do nothing\n", mosflm);
-		}
-		break;
-
-		case 3 :
-		if ( mosflm->target_cell != NULL ) {
 			const char *symm;
 			symm = spacegroup_for_lattice(mosflm->target_cell);
 			snprintf(tmp, 255, "SYMM %s\n", symm);
@@ -375,31 +360,31 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		}
 		break;
 
-		case 4 :
+		case 3 :
 		mosflm_sendline("DISTANCE 67.8\n", mosflm);
 		break;
 
-		case 5 :
+		case 4 :
 		mosflm_sendline("BEAM 0.0 0.0\n", mosflm);
 		break;
 
-		case 6 :
+		case 5 :
 		wavelength = image->lambda*1e10;
 		snprintf(tmp, 255, "WAVELENGTH %10.5f\n", wavelength);
 		mosflm_sendline(tmp, mosflm);
 		break;
 
-		case 7 :
+		case 6 :
 		snprintf(tmp, 255, "NEWMAT %s\n", mosflm->newmatfile);
 		mosflm_sendline(tmp, mosflm);
 		break;
 
-		case 8 :
+		case 7 :
 		snprintf(tmp, 255, "IMAGE %s phi 0 0\n", mosflm->imagefile);
 		mosflm_sendline(tmp, mosflm);
 		break;
 
-		case 9 :
+		case 8 :
 		snprintf(tmp, 255, "AUTOINDEX DPS FILE %s"
 		                   " IMAGE 1 MAXCELL 1000 REFINE\n",
 		         mosflm->sptfile);
@@ -411,7 +396,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		mosflm_sendline(tmp, mosflm);
 		break;
 
-		case 10 :
+		case 9 :
 		mosflm_sendline("GO\n", mosflm);
 		mosflm->finished_ok = 1;
 		break;
