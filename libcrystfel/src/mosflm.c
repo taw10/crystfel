@@ -272,15 +272,19 @@ static void mosflm_sendline(const char *line, struct mosflm_data *mosflm)
 }
 
 
+/* Turn what we know about the unit cell into something which we can give to
+ * MOSFLM to make it give us only indexing results compatible with the cell. */
 static const char *spacegroup_for_lattice(UnitCell *cell)
 {
 	LatticeType latt;
 	char centering;
+	char ua;
 	char *g = NULL;
 	char *result;
 
 	latt = cell_get_lattice_type(cell);
 	centering = cell_get_centering(cell);
+	ua = cell_get_unique_axis(cell);
 
 	switch ( latt )
 	{
@@ -289,7 +293,10 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_MONOCLINIC :
-		g = "2";
+		/* "2 1 1", "1 2 1" or "1 1 2" depending on unique axis */
+		if ( ua == 'a' ) g = "2 1 1";
+		if ( ua == 'b' ) g = "1 2 1";
+		if ( ua == 'c' ) g = "1 1 2";
 		break;
 
 		case L_ORTHORHOMBIC :
@@ -297,7 +304,10 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_TETRAGONAL :
-		g = "4";
+		/* "4 1 1", "1 4 1" or "1 1 4" depending on unique axis */
+		if ( ua == 'a' ) g = "4 1 1";
+		if ( ua == 'b' ) g = "1 4 1";
+		if ( ua == 'c' ) g = "1 1 4";
 		break;
 
 		case L_RHOMBOHEDRAL :
@@ -305,7 +315,10 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_HEXAGONAL :
-		g = "6";
+		/* "6 1 1", "1 6 1" or "1 1 6" depending on unique axis */
+		if ( ua == 'a' ) g = "6 1 1";
+		if ( ua == 'b' ) g = "1 6 1";
+		if ( ua == 'c' ) g = "6";
 		break;
 
 		case L_CUBIC :
@@ -317,7 +330,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 	result = malloc(32);
 	if ( result == NULL ) return NULL;
 
-	snprintf(result, 31, "%c %s", centering, g);
+	snprintf(result, 31, "%c%s", centering, g);
 
 	return result;
 }
