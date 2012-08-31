@@ -599,3 +599,57 @@ const char *cell_rep(UnitCell *cell)
 
 	return "unknown";
 }
+
+
+static UnitCellTransformation *inverse_transformation(UnitCellTransformation *t)
+{
+	/* FIXME: Implementation */
+	return NULL;
+}
+
+
+/**
+ * cell_transform:
+ * @cell: A %UnitCell.
+ * @t: A %UnitCellTransformation.
+ *
+ * Applies @t to @cell.
+ *
+ * Returns: Transformed copy of @cell.
+ *
+ */
+UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t)
+{
+	UnitCell *out;
+
+	if ( t == NULL ) return NULL;
+
+	out = cell_new();
+	if ( out == NULL ) return NULL;
+
+	/* FIXME: Implementation */
+
+	return out;
+}
+
+
+/**
+ * cell_transform:
+ * @cell: A %UnitCell.
+ * @t: A %UnitCellTransformation.
+ *
+ * Applies the inverse of @t to @cell.
+ *
+ * Returns: Transformed copy of @cell.
+ *
+ */
+UnitCell *cell_transform_inverse(UnitCell *cell, UnitCellTransformation *t)
+{
+	return cell_transform(cell, inverse_transformation(t));
+}
+
+
+void cell_transformation_print(UnitCellTransformation *t)
+{
+
+}

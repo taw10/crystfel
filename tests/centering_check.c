@@ -35,46 +35,63 @@
 #include <cell-utils.h>
 
 
-static int check_cell(UnitCell *cell)
+static int check_cell(UnitCell *cell, const char *text)
 {
 	int err = 0;
 
 	if ( !cell_is_sensible(cell) ) {
-		ERROR("Warning: Unit cell parameters are not sensible.\n");
+		ERROR(" %s unit cell parameters are not sensible.\n", text);
 		err = 1;
 	}
 
 	if ( !bravais_lattice(cell) ) {
-		ERROR("Warning: Unit cell is not a conventional Bravais"
-		      " lattice.\n");
+		ERROR(" %s unit cell is not a conventional Bravais"
+		      " lattice.\n", text);
 		err = 1;
 	}
 
 	if ( !right_handed(cell) ) {
-		ERROR("Warning: Unit cell is not right handed.\n");
+		ERROR(" %s unit cell is not right handed.\n", text);
 		err = 1;
 	}
+
+	if ( err ) cell_print(cell);
 
 	return err;
 }
 
 
-static int check_centering()
+static int check_centering(double a, double b, double c,
+                           double al, double be, double ga,
+                           LatticeType latt, char cen, char ua)
 {
 	UnitCell *cell;
 	UnitCell *n;
+	UnitCellTransformation *t;
 	int fail = 0;
 
-	cell = cell_new();
+	STATUS("Checking %s %c (ua %c) %5.2e %5.2e %5.2e %5.2f %5.2f %5.2f\n",
+	       str_lattice(latt), cen, ua, a, b, c, al, be, ga);
 
-	cell_set_parameters(cell, 10e-10, 20e-10, 30e-10,
-	                    deg2rad(90.0), deg2rad(90.0), deg2rad(100.0));
-	cell_set_centering(cell, 'C');
-	cell_set_lattice_type(cell, L_MONOCLINIC);
-	cell_set_unique_axis(cell, 'c');
-	if ( check_cell(cell) ) fail = 1;
-	n = uncenter_cell(cell);
-	if ( check_cell(n) ) fail = 1;
+	cell = cell_new_from_parameters(a, b, c,
+	                                deg2rad(al), deg2rad(be), deg2rad(ga));
+	cell_set_lattice_type(cell, latt);
+	cell_set_centering(cell, cen);
+	cell_set_unique_axis(cell, ua);
+
+	if ( check_cell(cell, "Input") ) fail = 1;
+	//cell_print(cell);
+	n = uncenter_cell(cell, &t);
+	if ( n != NULL ) {
+		if ( check_cell(n, "Output") ) fail = 1;
+	} else {
+		fail = 1;
+	}
+
+	STATUS("Transformation was:\n");
+	cell_transformation_print(t);
+
+	if ( fail ) ERROR("\n");
 
 	return fail;
 }
@@ -86,28 +103,100 @@ int main(int argc, char *argv[])
 	int fail = 0;
 
 	/* Triclinic P */
-	check_centering(10e-10, 20e-10, 30e-10, 100.0, 120.0, 140.0,
-	                L_TRICLINIC, 'P', '*',
-	                );
-	/* Monoclinic P */
-	/* Monoclinic A */
-	/* Monoclinic B */
-	/* Monoclinic C */
-	/* Orthorhombic P */
-	/* Orthorhombic A */
-	/* Orthorhombic B */
-	/* Orthorhombic C */
-	/* Orthorhombic I */
-	/* Orthorhombic F */
-	/* Tetragonal P */
-	/* Tetragonal I */
-	/* Rhombohedral R */
-	/* Hexagonal P */
-	/* Hexagonal H (PDB-speak for rhombohedral) */
-	/* Cubic P */
-	/* Cubic I */
-	/* Cubic F */
+	fail += check_centering(50e-10, 55e-10, 70e-10, 67.0, 70.0, 77.0,
+	                        L_TRICLINIC, 'P', '*');
 
+	/* Monoclinic P */
+	fail += check_centering(10e-10, 20e-10, 30e-10, 100.0, 90.0, 90.0,
+	                        L_MONOCLINIC, 'P', 'a');
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 100.0, 90.0,
+	                        L_MONOCLINIC, 'P', 'b');
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 100.0,
+	                        L_MONOCLINIC, 'P', 'c');
+
+	/* Monoclinic A */
+	fail += check_centering(10e-10, 20e-10, 30e-10, 100.0, 90.0, 90.0,
+	                        L_MONOCLINIC, 'A', 'a');
+
+	/* Monoclinic B */
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 100.0, 90.0,
+	                        L_MONOCLINIC, 'B', 'b');
+
+	/* Monoclinic C */
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 100.0,
+	                        L_MONOCLINIC, 'C', 'c');
+
+	/* Orthorhombic P */
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_ORTHORHOMBIC, 'P', '*');
+
+	/* Orthorhombic A */
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_ORTHORHOMBIC, 'A', '*');
+
+	/* Orthorhombic B */
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_ORTHORHOMBIC, 'B', '*');
+
+	/* Orthorhombic C */
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_ORTHORHOMBIC, 'C', '*');
+
+	/* Orthorhombic I */
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_ORTHORHOMBIC, 'I', '*');
+
+	/* Orthorhombic F */
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_ORTHORHOMBIC, 'F', '*');
+
+	/* Tetragonal P */
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_TETRAGONAL, 'P', 'a');
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_TETRAGONAL, 'P', 'b');
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_TETRAGONAL, 'P', 'c');
+
+	/* Tetragonal I */
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_TETRAGONAL, 'I', 'a');
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_TETRAGONAL, 'I', 'b');
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_TETRAGONAL, 'I', 'c');
+
+	/* Rhombohedral R */
+	fail += check_centering(10e-10, 10e-10, 10e-10, 60.0, 60.0, 60.0,
+	                        L_RHOMBOHEDRAL, 'R', '*');
+
+	/* Hexagonal P */
+	fail += check_centering(10e-10, 20e-10, 30e-10, 120.0, 90.0, 90.0,
+	                        L_HEXAGONAL, 'P', 'a');
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 120.0, 90.0,
+	                        L_HEXAGONAL, 'P', 'b');
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 120.0,
+	                        L_HEXAGONAL, 'P', 'c');
+
+	/* Hexagonal H (PDB-speak for rhombohedral) */
+	fail += check_centering(40e-10, 20e-10, 20e-10, 120.0, 90.0, 90.0,
+	                        L_HEXAGONAL, 'H', 'a');
+	fail += check_centering(20e-10, 40e-10, 20e-10, 90.0, 120.0, 90.0,
+	                        L_HEXAGONAL, 'H', 'b');
+	fail += check_centering(20e-10, 20e-10, 40e-10, 90.0, 90.0, 120.0,
+	                        L_HEXAGONAL, 'H', 'c');
+
+	/* Cubic P */
+	fail += check_centering(30e-10, 30e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_CUBIC, 'P', '*');
+
+	/* Cubic I */
+	fail += check_centering(30e-10, 30e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_CUBIC, 'I', '*');
+
+	/* Cubic F */
+	fail += check_centering(30e-10, 30e-10, 30e-10, 90.0, 90.0, 90.0,
+	                        L_CUBIC, 'F', '*');
 
 	return fail;
 }

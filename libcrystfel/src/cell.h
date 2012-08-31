@@ -68,6 +68,15 @@ typedef enum
  **/
 typedef struct _unitcell UnitCell;
 
+
+/**
+ * UnitCellTransformation:
+ *
+ * This opaque data structure represents a tranformation of a unit cell, such
+ * as a rotation or a centering operation.
+ **/
+typedef struct _unitcelltransformation UnitCellTransformation;
+
 extern UnitCell *cell_new(void);
 extern UnitCell *cell_new_from_cell(UnitCell *orig);
 extern void cell_free(UnitCell *cell);
@@ -126,5 +135,11 @@ extern char cell_get_unique_axis(UnitCell *cell);
 extern void cell_set_unique_axis(UnitCell *cell, char unique_axis);
 
 extern const char *cell_rep(UnitCell *cell);
+
+extern UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t);
+extern UnitCell *cell_transform_inverse(UnitCell *cell,
+                                        UnitCellTransformation *t);
+
+extern void cell_transformation_print(UnitCellTransformation *t);
 
 #endif	/* CELL_H */

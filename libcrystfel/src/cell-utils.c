@@ -83,7 +83,7 @@ UnitCell *cell_rotate(UnitCell *in, struct quaternion quat)
 }
 
 
-static const char *str_lattice(LatticeType l)
+const char *str_lattice(LatticeType l)
 {
 	switch ( l )
 	{
@@ -253,17 +253,19 @@ int bravais_lattice(UnitCell *cell)
 		if ( lattice == L_HEXAGONAL ) return 1;
 		return 0;
 
+		case 'R' :
+		if ( lattice == L_RHOMBOHEDRAL ) return 1;
+		return 0;
+
 		default :
 		return 0;
 	}
 }
 
 
-/* Turn any cell into a primitive one, e.g. for comparison purposes */
-UnitCell *uncenter_cell(UnitCell *in)
+static UnitCellTransformation *uncentering_transformation(UnitCell *in)
 {
-	UnitCell *cell;
-
+	UnitCellTransformation *t;
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
@@ -276,33 +278,28 @@ UnitCell *uncenter_cell(UnitCell *in)
 	LatticeType lt;
 	char ua, cen;
 
-	if ( !bravais_lattice(in) ) {
-		ERROR("Cannot uncenter: not a Bravais lattice.\n");
-		return NULL;
-	}
-
 	cell_get_cartesian(in, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	lt = cell_get_lattice_type(in);
 	ua = cell_get_unique_axis(in);
 	cen = cell_get_centering(in);
 
-	if ( ua == 'a' ) {
+	if ( (ua == 'a') || (cen == 'A') ) {
 		double tx, ty, tz;
 		tx = ax;  ty = ay;  tz = az;
 		ax = cx;  ay = cy;  az = cz;
-		cx = tx;  cy = ty;  cz = tz;
+		cx = -tx;  cy = -ty;  cz = -tz;
 		if ( cen == 'A' ) cen = 'C';
+		ua = 'c';
 	}
 
-	if ( ua == 'b' ) {
+	if ( (ua == 'b') || (cen == 'B') ) {
 		double tx, ty, tz;
 		tx = bx;  ty = by;  tz = bz;
-		ax = cx;  ay = cy;  az = cz;
-		cx = tx;  cy = ty;  cz = tz;
+		bx = cx;  by = cy;  bz = cz;
+		cx = -tx;  cy = -ty;  cz = -tz;
 		if ( cen == 'B' ) cen = 'C';
+		ua = 'c';
 	}
-
-	cell = cell_new();
 
 	switch ( cen ) {
 
@@ -392,9 +389,39 @@ UnitCell *uncenter_cell(UnitCell *in)
 
 	}
 
-	cell_set_cartesian(cell, nax, nay, naz, nbx, nby, nbz, ncx, ncy, ncz);
 
-	return cell;
+}
+
+
+/**
+ * uncenter_cell:
+ * @in: A %UnitCell
+ * @t: Location at which to store the transformation which was used.
+ *
+ * Turns any cell into a primitive one, e.g. for comparison purposes.  The
+ * transformation which was used is stored at @t, which can be NULL if the
+ * transformation is not required.
+ *
+ * Returns: a primitive version of @in in a conventional (unique axis c)
+ * setting.
+ *
+ */
+UnitCell *uncenter_cell(UnitCell *in, UnitCellTransformation **t)
+{
+	UnitCell *cell;
+	UnitCellTransformation *tt;
+
+	if ( !bravais_lattice(in) ) {
+		ERROR("Cannot uncenter: not a Bravais lattice.\n");
+		return NULL;
+	}
+
+	tt = uncentering_transformation(in);
+	if ( tt == NULL ) return NULL;
+
+	if ( t != NULL ) *t = tt;
+
+	return cell_transform(in, tt);
 }
 
 
@@ -455,9 +482,15 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 	float angtol = deg2rad(tols[3]);
 	UnitCell *cell;
 	UnitCell *template;
+	UnitCellTransformation *to_given_cell;
+	UnitCell *new_cell_trans;
 
-	cell = uncenter_cell(cell_in);
-	template = uncenter_cell(template_in);
+	/* "Un-center" the template unit cell to make the comparison easier */
+	template = uncenter_cell(template_in, &to_given_cell);
+
+	/* The candidate cell is also uncentered, because it might be centered
+	 * if it came from (e.g.) MOSFLM */
+	cell = uncenter_cell(cell_in, NULL);
 
 	if ( cell_get_reciprocal(template, &asx, &asy, &asz,
 	                         &bsx, &bsy, &bsz,
@@ -638,7 +671,11 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 	free(cand[1]);
 	free(cand[2]);
 
-	return new_cell;
+	/* Reverse the de-centering transformation */
+	new_cell_trans = cell_transform_inverse(new_cell, to_given_cell);
+	cell_free(new_cell);
+
+	return new_cell_trans;
 }
 
 

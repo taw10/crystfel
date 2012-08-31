@@ -55,10 +55,12 @@ extern int cell_is_sensible(UnitCell *cell);
 
 extern void validate_cell(UnitCell *cell);
 
-extern UnitCell *uncenter_cell(UnitCell *in);
+extern UnitCell *uncenter_cell(UnitCell *in, UnitCellTransformation **tr);
 
 extern int bravais_lattice(UnitCell *cell);
 
 extern int right_handed(UnitCell *cell);
+
+extern const char *str_lattice(LatticeType l);
 
 #endif	/* CELL_UTILS_H */
