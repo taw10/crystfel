@@ -256,6 +256,7 @@ int num_equivs(const SymOpList *ops, const SymOpMask *m)
 static signed int *v(signed int h, signed int k, signed int i, signed int l)
 {
 	signed int *vec = malloc(3*sizeof(signed int));
+	if ( vec == NULL ) return NULL;
 	/* Convert back to 3-index form now */
 	vec[0] = h-i;  vec[1] = k-i;  vec[2] = l;
 	return vec;

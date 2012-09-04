@@ -263,65 +263,61 @@ int bravais_lattice(UnitCell *cell)
 }
 
 
+static UnitCellTransformation *tfn_identity()
+{
+}
+
+
+static void *tfn_combine(UnitCellTransformation *t,
+                         double *na, double *nb, double *nc)
+{
+}
+
+
+static double *v(double a, double b, double c)
+{
+	double *vec = malloc(3*sizeof(double));
+	if ( vec == NULL ) return NULL;
+	vec[0] = a;  vec[1] = b;  vec[2] = c;
+	return vec;
+}
+
+
 static UnitCellTransformation *uncentering_transformation(UnitCell *in)
 {
 	UnitCellTransformation *t;
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
-	double nax, nay, naz;
-	double nbx, nby, nbz;
-	double ncx, ncy, ncz;
 	const double OT = 1.0/3.0;
 	const double TT = 2.0/3.0;
 	const double H = 0.5;
 	LatticeType lt;
 	char ua, cen;
 
-	cell_get_cartesian(in, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	lt = cell_get_lattice_type(in);
 	ua = cell_get_unique_axis(in);
 	cen = cell_get_centering(in);
 
+	t = tfn_identity();
+	if ( t == NULL ) return NULL;
+
 	if ( (ua == 'a') || (cen == 'A') ) {
-		double tx, ty, tz;
-		tx = ax;  ty = ay;  tz = az;
-		ax = cx;  ay = cy;  az = cz;
-		cx = -tx;  cy = -ty;  cz = -tz;
+		tfn_combine(t, v(0,0,1), v(0,1,0), v(-1,0,0));
 		if ( cen == 'A' ) cen = 'C';
-		ua = 'c';
 	}
 
 	if ( (ua == 'b') || (cen == 'B') ) {
-		double tx, ty, tz;
-		tx = bx;  ty = by;  tz = bz;
-		bx = cx;  by = cy;  bz = cz;
-		cx = -tx;  cy = -ty;  cz = -tz;
+		tfn_combine(t, v(1,0,0), v(0,0,1), v(0,-1,0));
 		if ( cen == 'B' ) cen = 'C';
-		ua = 'c';
 	}
 
 	switch ( cen ) {
 
 		case 'P' :
 		case 'R' :
-		nax = ax;  nay = ay;  naz = az;
-		nbx = bx;  nby = by;  nbz = bz;
-		ncx = cx;  ncy = cy;  ncz = cz;  /* Identity */
-		cell_set_lattice_type(cell, lt);
-		cell_set_centering(cell, cen);  /* P->P, R->R */
 		break;
 
 		case 'I' :
-		nax = - H*ax + H*bx + H*cx;
-		nay = - H*ay + H*by + H*cy;
-		naz = - H*az + H*bz + H*cz;
-		nbx =   H*ax - H*bx + H*cx;
-		nby =   H*ay - H*by + H*cy;
-		nbz =   H*az - H*bz + H*cz;
-		ncx =   H*ax + H*bx - H*cx;
-		ncy =   H*ay + H*by - H*cy;
-		ncz =   H*az + H*bz - H*cz;
+		tfn_combine(t, v(-H,H,H), v(H,-H,H), v(H,H,-H));
+		/* FIXME: How to handle the change of lattice type? */
 		if ( lt == L_CUBIC ) {
 			cell_set_lattice_type(cell, L_RHOMBOHEDRAL);
 			cell_set_centering(cell, 'R');
@@ -333,15 +329,7 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in)
 		break;
 
 		case 'F' :
-		nax =   0*ax + H*bx + H*cx;
-		nay =   0*ay + H*by + H*cy;
-		naz =   0*az + H*bz + H*cz;
-		nbx =   H*ax + 0*bx + H*cx;
-		nby =   H*ay + 0*by + H*cy;
-		nbz =   H*az + 0*bz + H*cz;
-		ncx =   H*ax + H*bx + 0*cx;
-		ncy =   H*ay + H*by + 0*cy;
-		ncz =   H*az + H*bz + 0*cz;
+		tfn_combine(t, v(0,H,H), v(H,0,H), v(H,H,0));
 		if ( lt == L_CUBIC ) {
 			cell_set_lattice_type(cell, L_RHOMBOHEDRAL);
 			cell_set_centering(cell, 'R');
@@ -354,30 +342,13 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in)
 		break;
 
 		case 'C' :
-		nax = H*ax + H*bx + 0*cx;
-		nay = H*ay + H*by + 0*cy;
-		naz = H*az + H*bz + 0*cz;
-		nbx = -H*ax + H*bx + 0*cx;
-		nby = -H*ay + H*by + 0*cy;
-		nbz = -H*az + H*bz + 0*cz;
-		ncx = 0*ax + 0*bx + 1*cx;
-		ncy = 0*ay + 0*by + 1*cy;
-		ncz = 0*az + 0*bz + 1*cz;
+		tfn_combine(t, v(H,H,0), v(-H,H,0), v(0,0,1));
 		cell_set_lattice_type(cell, L_MONOCLINIC);
 		cell_set_centering(cell, 'P');
-		cell_set_unique_axis(cell, 'c');
 		break;
 
 		case 'H' :
-		nax = TT*ax + OT*bx + OT*cx;
-		nay = TT*ay + OT*by + OT*cy;
-		naz = TT*az + OT*bz + OT*cz;
-		nbx = - OT*ax + OT*bx + OT*cx;
-		nby = - OT*ay + OT*by + OT*cy;
-		nbz = - OT*az + OT*bz + OT*cz;
-		ncx = - OT*ax - TT*bx + OT*cx;
-		ncy = - OT*ay - TT*by + OT*cy;
-		ncz = - OT*az - TT*bz + OT*cz;
+		tfn_combine(t, v(TT,OT,OT), v(-OT,OT,OT), v(-OT,-TT,OT));
 		assert(lt == L_HEXAGONAL);
 		cell_set_lattice_type(cell, L_RHOMBOHEDRAL);
 		cell_set_centering(cell, 'R');
@@ -389,7 +360,17 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in)
 
 	}
 
+	if ( ua == 'a' ) {
+		tfn_combine(t, v(0,0,-1), v(0,1,0), v(1,0,0));
+		if ( cen == 'C' ) cen = 'A';
+	}
 
+	if ( ua == 'b' ) {
+		tfn_combine(t, v(1,0,0), v(0,0,-1), v(0,1,0));
+		if ( cen == 'C' ) cen = 'B';
+	}
+
+	return t;
 }
 
 
@@ -408,7 +389,6 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in)
  */
 UnitCell *uncenter_cell(UnitCell *in, UnitCellTransformation **t)
 {
-	UnitCell *cell;
 	UnitCellTransformation *tt;
 
 	if ( !bravais_lattice(in) ) {
