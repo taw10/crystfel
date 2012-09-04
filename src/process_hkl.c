@@ -390,43 +390,46 @@ int main(int argc, char *argv[])
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
-		case 'h' :
+
+			case 'h' :
 			show_help(argv[0]);
 			return 0;
 
-		case 'i' :
+			case 'i' :
 			filename = strdup(optarg);
 			break;
 
-		case 'o' :
+			case 'o' :
 			output = strdup(optarg);
 			break;
 
-		case 's' :
+			case 's' :
 			config_stopafter = atoi(optarg);
 			break;
 
-		case 'f' :
+			case 'f' :
 			config_startafter = atoi(optarg);
 			break;
 
-		case 'y' :
+			case 'y' :
 			sym_str = strdup(optarg);
 			break;
 
-		case 'g' :
+			case 'g' :
 			histo = strdup(optarg);
 			break;
 
-		case 'z' :
+			case 'z' :
 			histo_params = strdup(optarg);
 			break;
 
-		case 0 :
+			case 0 :
 			break;
 
-		default :
-			return 1;
+			default :
+			ERROR("Unhandled option '%c'\n", c);
+			break;
+
 		}
 
 	}

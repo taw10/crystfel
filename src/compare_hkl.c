@@ -378,9 +378,9 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-
 			default :
-			return 1;
+			ERROR("Unhandled option '%c'\n", c);
+			break;
 
 		}
 
