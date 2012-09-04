@@ -1219,7 +1219,12 @@ static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
 
 static gint displaywindow_set_colscale(GtkWidget *widget, DisplayWindow *dw)
 {
-	dw->show_col_scale = 1 - dw->show_col_scale;
+	GtkWidget *w;
+
+	w =  gtk_ui_manager_get_widget(dw->ui,
+				      "/ui/displaywindow/view/colscale");
+	dw->show_col_scale = gtk_check_menu_item_get_active(
+	                                                GTK_CHECK_MENU_ITEM(w));
 	set_window_size(dw);
 	redraw_window(dw);
 	return 0;
@@ -1228,7 +1233,11 @@ static gint displaywindow_set_colscale(GtkWidget *widget, DisplayWindow *dw)
 
 static gint displaywindow_set_peaks(GtkWidget *widget, DisplayWindow *dw)
 {
-	dw->show_peaks = 1 - dw->show_peaks;
+	GtkWidget *w;
+
+	w =  gtk_ui_manager_get_widget(dw->ui,
+				      "/ui/displaywindow/view/showpeaks");
+	dw->show_peaks = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(w));
 	redraw_window(dw);
 	return 0;
 }
