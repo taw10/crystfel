@@ -75,7 +75,7 @@ close(FILE);
 printf("End of reflections\n");
 WIBBLE
 
-get_hkl -i ${PDB}-temp2.hkl -o ${PDB}.hkl -p ${PDB} -y ${PG} --trim-centrics
+get_hkl -i ${PDB}-temp2.hkl -o ${PDB}.hkl -y ${PG} --trim-centrics
 
 rm -f ${PDB}-temp1.hkl
 rm -f ${PDB}-temp2.hkl
