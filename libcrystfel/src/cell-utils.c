@@ -263,26 +263,6 @@ int bravais_lattice(UnitCell *cell)
 }
 
 
-static UnitCellTransformation *tfn_identity()
-{
-}
-
-
-static void *tfn_combine(UnitCellTransformation *t,
-                         double *na, double *nb, double *nc)
-{
-}
-
-
-static double *v(double a, double b, double c)
-{
-	double *vec = malloc(3*sizeof(double));
-	if ( vec == NULL ) return NULL;
-	vec[0] = a;  vec[1] = b;  vec[2] = c;
-	return vec;
-}
-
-
 static UnitCellTransformation *uncentering_transformation(UnitCell *in)
 {
 	UnitCellTransformation *t;

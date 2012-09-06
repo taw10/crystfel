@@ -634,7 +634,7 @@ UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t)
 
 
 /**
- * cell_transform:
+ * cell_transform_inverse:
  * @cell: A %UnitCell.
  * @t: A %UnitCellTransformation.
  *
@@ -646,6 +646,44 @@ UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t)
 UnitCell *cell_transform_inverse(UnitCell *cell, UnitCellTransformation *t)
 {
 	return cell_transform(cell, inverse_transformation(t));
+}
+
+
+/**
+ * tfn_identity:
+ *
+ * Returns: A %UnitCellTransformation corresponding to an identity operation.
+ *
+ */
+static UnitCellTransformation *tfn_identity()
+{
+}
+
+
+/**
+ * tfn_combine:
+ * @t: A %UnitCellTransformation
+ * @na: Pointer to three doubles representing naa, nab, nac
+ * @nb: Pointer to three doubles representing nba, nbb, nbc
+ * @nc: Pointer to three doubles representing nca, ncb, ncc
+ *
+ * Updates @t such that it represents its previous transformation followed by
+ * a new transformation, corresponding to letting a = naa*a + nab*b + nac*c.
+ * Likewise, a = nba*a + nbb*b + nbc*c and c = nca*a + ncb*b + ncc*c.
+ *
+ */
+static void tfn_combine(UnitCellTransformation *t,
+                        double *na, double *nb, double *nc)
+{
+}
+
+
+static double *v(double a, double b, double c)
+{
+	double *vec = malloc(3*sizeof(double));
+	if ( vec == NULL ) return NULL;
+	vec[0] = a;  vec[1] = b;  vec[2] = c;
+	return vec;
 }
 
 
