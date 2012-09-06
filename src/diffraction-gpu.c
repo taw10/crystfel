@@ -471,6 +471,10 @@ struct gpu_context *setup_gpu(int no_sfac,
 			strncat(cflags, "-DPG6M ", 511-strlen(cflags));
 		} else if ( strcmp(sym, "mmm") == 0 ) {
 			strncat(cflags, "-DPGMMM ", 511-strlen(cflags));
+		} else if ( strcmp(sym, "23") == 0 ) {
+			strncat(cflags, "-DPG23 ", 511-strlen(cflags));
+		} else if ( strcmp(sym, "m-3") == 0 ) {
+			strncat(cflags, "-DPGM3 ", 511-strlen(cflags));
 		} else {
 			ERROR("Sorry!  Point group '%s' is not currently"
 			      " supported on the GPU."
