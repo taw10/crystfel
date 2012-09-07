@@ -263,7 +263,9 @@ int bravais_lattice(UnitCell *cell)
 }
 
 
-static UnitCellTransformation *uncentering_transformation(UnitCell *in)
+static UnitCellTransformation *uncentering_transformation(UnitCell *in,
+                                                          char *new_centering,
+                                                          LatticeType *new_latt)
 {
 	UnitCellTransformation *t;
 	const double OT = 1.0/3.0;
@@ -280,12 +282,16 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in)
 	if ( t == NULL ) return NULL;
 
 	if ( (ua == 'a') || (cen == 'A') ) {
-		tfn_combine(t, v(0,0,1), v(0,1,0), v(-1,0,0));
+		tfn_combine(t, tfn_vector(0,0,1),
+		               tfn_vector(0,1,0),
+		               tfn_vector(-1,0,0));
 		if ( cen == 'A' ) cen = 'C';
 	}
 
 	if ( (ua == 'b') || (cen == 'B') ) {
-		tfn_combine(t, v(1,0,0), v(0,0,1), v(0,-1,0));
+		tfn_combine(t, tfn_vector(1,0,0),
+		               tfn_vector(0,0,1),
+		               tfn_vector(0,-1,0));
 		if ( cen == 'B' ) cen = 'C';
 	}
 
@@ -296,42 +302,50 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in)
 		break;
 
 		case 'I' :
-		tfn_combine(t, v(-H,H,H), v(H,-H,H), v(H,H,-H));
+		tfn_combine(t,  tfn_vector(-H,H,H),
+		                tfn_vector(H,-H,H),
+		                tfn_vector(H,H,-H));
 		/* FIXME: How to handle the change of lattice type? */
 		if ( lt == L_CUBIC ) {
-			cell_set_lattice_type(cell, L_RHOMBOHEDRAL);
-			cell_set_centering(cell, 'R');
+			*new_latt = L_RHOMBOHEDRAL;
+			*new_centering = 'R';
 		} else {
 			/* Tetragonal or orthorhombic */
-			cell_set_lattice_type(cell, L_TRICLINIC);
-			cell_set_centering(cell, 'P');
+			*new_latt = L_TRICLINIC;
+			*new_centering = 'P';
 		}
 		break;
 
 		case 'F' :
-		tfn_combine(t, v(0,H,H), v(H,0,H), v(H,H,0));
+		tfn_combine(t,  tfn_vector(0,H,H),
+		                tfn_vector(H,0,H),
+		                tfn_vector(H,H,0));
 		if ( lt == L_CUBIC ) {
-			cell_set_lattice_type(cell, L_RHOMBOHEDRAL);
-			cell_set_centering(cell, 'R');
+			*new_latt = L_RHOMBOHEDRAL;
+			*new_centering = 'R';
 
 		} else {
 			assert(lt == L_ORTHORHOMBIC);
-			cell_set_lattice_type(cell, L_TRICLINIC);
-			cell_set_centering(cell, 'P');
+			*new_latt = L_TRICLINIC;
+			*new_centering = 'P';
 		}
 		break;
 
 		case 'C' :
-		tfn_combine(t, v(H,H,0), v(-H,H,0), v(0,0,1));
-		cell_set_lattice_type(cell, L_MONOCLINIC);
-		cell_set_centering(cell, 'P');
+		tfn_combine(t, tfn_vector(H,H,0),
+		               tfn_vector(-H,H,0),
+		               tfn_vector(0,0,1));
+		*new_latt = L_MONOCLINIC;
+		*new_centering = 'P';
 		break;
 
 		case 'H' :
-		tfn_combine(t, v(TT,OT,OT), v(-OT,OT,OT), v(-OT,-TT,OT));
+		tfn_combine(t, tfn_vector(TT,OT,OT),
+		               tfn_vector(-OT,OT,OT),
+		               tfn_vector(-OT,-TT,OT));
 		assert(lt == L_HEXAGONAL);
-		cell_set_lattice_type(cell, L_RHOMBOHEDRAL);
-		cell_set_centering(cell, 'R');
+		*new_latt = L_RHOMBOHEDRAL;
+		*new_centering = 'R';
 		break;
 
 		default :
@@ -341,12 +355,16 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in)
 	}
 
 	if ( ua == 'a' ) {
-		tfn_combine(t, v(0,0,-1), v(0,1,0), v(1,0,0));
+		tfn_combine(t,  tfn_vector(0,0,-1),
+		                tfn_vector(0,1,0),
+		                tfn_vector(1,0,0));
 		if ( cen == 'C' ) cen = 'A';
 	}
 
 	if ( ua == 'b' ) {
-		tfn_combine(t, v(1,0,0), v(0,0,-1), v(0,1,0));
+		tfn_combine(t,  tfn_vector(1,0,0),
+		                tfn_vector(0,0,-1),
+		                tfn_vector(0,1,0));
 		if ( cen == 'C' ) cen = 'B';
 	}
 
@@ -370,18 +388,27 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in)
 UnitCell *uncenter_cell(UnitCell *in, UnitCellTransformation **t)
 {
 	UnitCellTransformation *tt;
+	char new_centering;
+	LatticeType new_latt;
+	UnitCell *out;
 
 	if ( !bravais_lattice(in) ) {
 		ERROR("Cannot uncenter: not a Bravais lattice.\n");
 		return NULL;
 	}
 
-	tt = uncentering_transformation(in);
+	tt = uncentering_transformation(in, &new_centering, &new_latt);
 	if ( tt == NULL ) return NULL;
 
 	if ( t != NULL ) *t = tt;
 
-	return cell_transform(in, tt);
+	out = cell_transform(in, tt);
+	if ( out == NULL ) return NULL;
+
+	cell_set_lattice_type(out, new_latt);
+	cell_set_centering(out, new_centering);
+
+	return out;
 }
 
 
@@ -634,12 +661,15 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 	/* Reverse the de-centering transformation */
 	new_cell_trans = cell_transform_inverse(new_cell, to_given_cell);
 	cell_free(new_cell);
+	cell_set_lattice_type(new_cell, cell_get_lattice_type(template_in));
+	cell_set_centering(new_cell, cell_get_centering(template_in));
+	cell_set_unique_axis(new_cell, cell_get_unique_axis(template_in));
 
 	return new_cell_trans;
 }
 
 
-UnitCell *match_cell_ab(UnitCell *cell, UnitCell *template)
+UnitCell *match_cell_ab(UnitCell *cell_in, UnitCell *template_in)
 {
 	double ax, ay, az;
 	double bx, by, bz;
@@ -654,6 +684,18 @@ UnitCell *match_cell_ab(UnitCell *cell, UnitCell *template)
 	int have_real_a;
 	int have_real_b;
 	int have_real_c;
+	UnitCell *cell;
+	UnitCell *template;
+	UnitCellTransformation *to_given_cell;
+	UnitCell *new_cell;
+	UnitCell *new_cell_trans;
+
+	/* "Un-center" the template unit cell to make the comparison easier */
+	template = uncenter_cell(template_in, &to_given_cell);
+
+	/* The candidate cell is also uncentered, because it might be centered
+	 * if it came from (e.g.) MOSFLM */
+	cell = uncenter_cell(cell_in, NULL);
 
 	/* Get the lengths to match */
 	if ( cell_get_cartesian(template, &ax, &ay, &az,
@@ -731,7 +773,16 @@ UnitCell *match_cell_ab(UnitCell *cell, UnitCell *template)
 		real_c.w = -real_c.w;
 	}
 
-	return cell_new_from_direct_axes(real_a, real_b, real_c);
+	new_cell = cell_new_from_direct_axes(real_a, real_b, real_c);
+
+	 /* Reverse the de-centering transformation */
+	new_cell_trans = cell_transform_inverse(new_cell, to_given_cell);
+	cell_free(new_cell);
+	cell_set_lattice_type(new_cell, cell_get_lattice_type(template_in));
+	cell_set_centering(new_cell, cell_get_centering(template_in));
+	cell_set_unique_axis(new_cell, cell_get_unique_axis(template_in));
+
+	return new_cell_trans;
 }
 
 

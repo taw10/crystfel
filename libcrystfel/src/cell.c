@@ -601,6 +601,12 @@ const char *cell_rep(UnitCell *cell)
 }
 
 
+struct _unitcelltransformation
+{
+
+};
+
+
 static UnitCellTransformation *inverse_transformation(UnitCellTransformation *t)
 {
 	/* FIXME: Implementation */
@@ -655,7 +661,7 @@ UnitCell *cell_transform_inverse(UnitCell *cell, UnitCellTransformation *t)
  * Returns: A %UnitCellTransformation corresponding to an identity operation.
  *
  */
-static UnitCellTransformation *tfn_identity()
+UnitCellTransformation *tfn_identity()
 {
 }
 
@@ -672,13 +678,12 @@ static UnitCellTransformation *tfn_identity()
  * Likewise, a = nba*a + nbb*b + nbc*c and c = nca*a + ncb*b + ncc*c.
  *
  */
-static void tfn_combine(UnitCellTransformation *t,
-                        double *na, double *nb, double *nc)
+void tfn_combine(UnitCellTransformation *t, double *na, double *nb, double *nc)
 {
 }
 
 
-static double *v(double a, double b, double c)
+double *tfn_vector(double a, double b, double c)
 {
 	double *vec = malloc(3*sizeof(double));
 	if ( vec == NULL ) return NULL;
@@ -687,7 +692,7 @@ static double *v(double a, double b, double c)
 }
 
 
-void cell_transformation_print(UnitCellTransformation *t)
+void tfn_print(UnitCellTransformation *t)
 {
 
 }

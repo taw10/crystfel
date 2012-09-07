@@ -89,7 +89,7 @@ static int check_centering(double a, double b, double c,
 	}
 
 	STATUS("Transformation was:\n");
-	cell_transformation_print(t);
+	tfn_print(t);
 
 	if ( fail ) ERROR("\n");
 
