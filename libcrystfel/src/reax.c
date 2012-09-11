@@ -41,7 +41,6 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_eigen.h>
-#include <gsl/gsl_blas.h>
 
 #include "image.h"
 #include "utils.h"
