@@ -603,14 +603,46 @@ const char *cell_rep(UnitCell *cell)
 
 struct _unitcelltransformation
 {
-
+	gsl_matrix *m;
 };
 
 
-static UnitCellTransformation *inverse_transformation(UnitCellTransformation *t)
+UnitCellTransformation *tfn_inverse(UnitCellTransformation *t)
 {
-	/* FIXME: Implementation */
-	return NULL;
+	int s;
+	gsl_matrix *inv;
+	gsl_permutation *perm;
+	UnitCellTransformation *out;
+
+	out = tfn_identity();
+	if ( out == NULL ) return NULL;
+
+	perm = gsl_permutation_alloc(t->m->size1);
+	if ( perm == NULL ) {
+		ERROR("Couldn't allocate permutation\n");
+		return NULL;
+	}
+	inv = gsl_matrix_alloc(t->m->size1, t->m->size2);
+	if ( inv == NULL ) {
+		ERROR("Couldn't allocate inverse\n");
+		gsl_permutation_free(perm);
+		return NULL;
+	}
+	if ( gsl_linalg_LU_decomp(t->m, perm, &s) ) {
+		ERROR("Couldn't decompose matrix\n");
+		gsl_permutation_free(perm);
+		return NULL;
+	}
+	if ( gsl_linalg_LU_invert(t->m, perm, inv)  ) {
+		ERROR("Couldn't invert matrix\n");
+		gsl_permutation_free(perm);
+		return NULL;
+	}
+	gsl_permutation_free(perm);
+
+	gsl_matrix_free(out->m);
+	out->m = inv;
+	return out;
 }
 
 
@@ -627,13 +659,52 @@ static UnitCellTransformation *inverse_transformation(UnitCellTransformation *t)
 UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t)
 {
 	UnitCell *out;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	gsl_matrix *m;
+	gsl_matrix *a;
 
 	if ( t == NULL ) return NULL;
 
 	out = cell_new();
 	if ( out == NULL ) return NULL;
 
-	/* FIXME: Implementation */
+	cell_get_cartesian(cell, &ax, &ay, &az,
+	                         &bx, &by, &bz,
+	                         &cx, &cy, &cz);
+
+	m = gsl_matrix_alloc(3,3);
+	a = gsl_matrix_alloc(3,3);
+	if ( (m == NULL) || (a == NULL) ) {
+		cell_free(out);
+		return NULL;
+	}
+
+	gsl_matrix_set(m, 0, 0, ax);
+	gsl_matrix_set(m, 0, 1, ay);
+	gsl_matrix_set(m, 0, 2, az);
+	gsl_matrix_set(m, 1, 0, bx);
+	gsl_matrix_set(m, 1, 1, by);
+	gsl_matrix_set(m, 1, 2, bz);
+	gsl_matrix_set(m, 2, 0, cx);
+	gsl_matrix_set(m, 2, 1, cy);
+	gsl_matrix_set(m, 2, 2, cz);
+
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, t->m, m, 1.0, a);
+
+	cell_set_cartesian(out, gsl_matrix_get(a, 0, 0),
+	                        gsl_matrix_get(a, 0, 1),
+	                        gsl_matrix_get(a, 0, 2),
+	                        gsl_matrix_get(a, 1, 0),
+	                        gsl_matrix_get(a, 1, 1),
+	                        gsl_matrix_get(a, 1, 2),
+	                        gsl_matrix_get(a, 2, 0),
+	                        gsl_matrix_get(a, 2, 1),
+	                        gsl_matrix_get(a, 2, 2));
+
+	gsl_matrix_free(a);
+	gsl_matrix_free(m);
 
 	return out;
 }
@@ -651,7 +722,7 @@ UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t)
  */
 UnitCell *cell_transform_inverse(UnitCell *cell, UnitCellTransformation *t)
 {
-	return cell_transform(cell, inverse_transformation(t));
+	return cell_transform(cell, tfn_inverse(t));
 }
 
 
@@ -663,6 +734,20 @@ UnitCell *cell_transform_inverse(UnitCell *cell, UnitCellTransformation *t)
  */
 UnitCellTransformation *tfn_identity()
 {
+	UnitCellTransformation *tfn;
+
+	tfn = calloc(1, sizeof(UnitCellTransformation));
+	if ( tfn == NULL ) return NULL;
+
+	tfn->m = gsl_matrix_alloc(3, 3);
+	if ( tfn->m == NULL ) {
+		free(tfn);
+		return NULL;
+	}
+
+	gsl_matrix_set_identity(tfn->m);
+
+	return tfn;
 }
 
 
@@ -680,6 +765,33 @@ UnitCellTransformation *tfn_identity()
  */
 void tfn_combine(UnitCellTransformation *t, double *na, double *nb, double *nc)
 {
+	gsl_matrix *a;
+	gsl_matrix *n;
+
+	n = gsl_matrix_alloc(3, 3);
+	a = gsl_matrix_alloc(3, 3);
+	if ( (n == NULL) || (a == NULL) ) {
+		return;
+	}
+	gsl_matrix_set(n, 0, 0, na[0]);
+	gsl_matrix_set(n, 0, 1, na[1]);
+	gsl_matrix_set(n, 0, 2, na[2]);
+	gsl_matrix_set(n, 1, 0, nb[0]);
+	gsl_matrix_set(n, 1, 1, nb[1]);
+	gsl_matrix_set(n, 1, 2, nb[2]);
+	gsl_matrix_set(n, 2, 0, nc[0]);
+	gsl_matrix_set(n, 2, 1, nc[1]);
+	gsl_matrix_set(n, 2, 2, nc[2]);
+
+	free(na);
+	free(nb);
+	free(nc);
+
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, n, t->m, 1.0, a);
+
+	gsl_matrix_free(t->m);
+	t->m = a;
+	gsl_matrix_free(n);
 }
 
 
@@ -694,5 +806,39 @@ double *tfn_vector(double a, double b, double c)
 
 void tfn_print(UnitCellTransformation *t)
 {
+	gsl_permutation *perm;
+	gsl_matrix *lu;
+	int s;
 
+	STATUS("New a = %+.2fa %+.2fb %+.2fc\n", gsl_matrix_get(t->m, 0, 0),
+	                                         gsl_matrix_get(t->m, 0, 1),
+	                                         gsl_matrix_get(t->m, 0, 2));
+	STATUS("New b = %+.2fa %+.2fb %+.2fc\n", gsl_matrix_get(t->m, 1, 0),
+	                                         gsl_matrix_get(t->m, 1, 1),
+	                                         gsl_matrix_get(t->m, 1, 2));
+	STATUS("New c = %+.2fa %+.2fb %+.2fc\n", gsl_matrix_get(t->m, 2, 0),
+	                                         gsl_matrix_get(t->m, 2, 1),
+	                                         gsl_matrix_get(t->m, 2, 2));
+	lu = gsl_matrix_alloc(3, 3);
+	if ( lu == NULL ) {
+		ERROR("Couldn't allocate LU decomposition.\n");
+		return;
+	}
+
+	gsl_matrix_memcpy(lu, t->m);
+
+	perm = gsl_permutation_alloc(t->m->size1);
+	if ( perm == NULL ) {
+		ERROR("Couldn't allocate permutation.\n");
+		gsl_matrix_free(lu);
+		return;
+	}
+	if ( gsl_linalg_LU_decomp(lu, perm, &s) ) {
+		ERROR("LU decomposition failed.\n");
+		gsl_permutation_free(perm);
+		gsl_matrix_free(lu);
+		return;
+	}
+
+	STATUS("Transformation determinant = %.2f\n", gsl_linalg_LU_det(lu, s));
 }

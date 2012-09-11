@@ -144,6 +144,7 @@ extern UnitCellTransformation *tfn_identity(void);
 extern void tfn_combine(UnitCellTransformation *t,
                         double *na, double *nb, double *nc);
 extern void tfn_print(UnitCellTransformation *t);
+extern UnitCellTransformation *tfn_inverse(UnitCellTransformation *t);
 extern double *tfn_vector(double a, double b, double c);
 
 #endif	/* CELL_H */
