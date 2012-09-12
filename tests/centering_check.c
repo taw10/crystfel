@@ -70,7 +70,8 @@ static int check_centering(double a, double b, double c,
 	UnitCellTransformation *t;
 	int fail = 0;
 
-	STATUS("Checking %s %c (ua %c) %5.2e %5.2e %5.2e %5.2f %5.2f %5.2f\n",
+	STATUS("   --------------->  "
+	       "Checking %s %c (ua %c) %5.2e %5.2e %5.2e %5.2f %5.2f %5.2f\n",
 	       str_lattice(latt), cen, ua, a, b, c, al, be, ga);
 
 	cell = cell_new_from_parameters(a, b, c,

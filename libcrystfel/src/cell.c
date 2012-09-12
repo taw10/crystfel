@@ -607,33 +607,55 @@ struct _unitcelltransformation
 };
 
 
+/**
+ * tfn_inverse:
+ * @t: A %UnitCellTransformation.
+ *
+ * Calculates the inverse of @t.  That is, if you apply cell_transform() to a
+ * %UnitCell using @t, and then apply cell_transform() to the result using
+ * tfn_inverse(@t) instead of @t, you will recover the same lattice vectors
+ * (but note that the lattice type, centering and unique axis information will
+ * be lost).
+ *
+ * Returns: The inverse of @t.
+ *
+ */
 UnitCellTransformation *tfn_inverse(UnitCellTransformation *t)
 {
 	int s;
+	gsl_matrix *m;
 	gsl_matrix *inv;
 	gsl_permutation *perm;
 	UnitCellTransformation *out;
 
-	out = tfn_identity();
-	if ( out == NULL ) return NULL;
+	m = gsl_matrix_alloc(3, 3);
+	if ( m == NULL ) return NULL;
 
-	perm = gsl_permutation_alloc(t->m->size1);
+	out = tfn_identity();
+	if ( out == NULL ) {
+		gsl_matrix_free(m);
+		return NULL;
+	}
+
+	gsl_matrix_memcpy(m, t->m);
+
+	perm = gsl_permutation_alloc(m->size1);
 	if ( perm == NULL ) {
 		ERROR("Couldn't allocate permutation\n");
 		return NULL;
 	}
-	inv = gsl_matrix_alloc(t->m->size1, t->m->size2);
+	inv = gsl_matrix_alloc(m->size1, m->size2);
 	if ( inv == NULL ) {
 		ERROR("Couldn't allocate inverse\n");
 		gsl_permutation_free(perm);
 		return NULL;
 	}
-	if ( gsl_linalg_LU_decomp(t->m, perm, &s) ) {
+	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
 		ERROR("Couldn't decompose matrix\n");
 		gsl_permutation_free(perm);
 		return NULL;
 	}
-	if ( gsl_linalg_LU_invert(t->m, perm, inv)  ) {
+	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
 		ERROR("Couldn't invert matrix\n");
 		gsl_permutation_free(perm);
 		return NULL;
@@ -641,6 +663,7 @@ UnitCellTransformation *tfn_inverse(UnitCellTransformation *t)
 	gsl_permutation_free(perm);
 
 	gsl_matrix_free(out->m);
+	gsl_matrix_free(m);
 	out->m = inv;
 	return out;
 }
@@ -651,7 +674,8 @@ UnitCellTransformation *tfn_inverse(UnitCellTransformation *t)
  * @cell: A %UnitCell.
  * @t: A %UnitCellTransformation.
  *
- * Applies @t to @cell.
+ * Applies @t to @cell.  Note that the lattice type, centering and unique axis
+ * information will not be preserved.
  *
  * Returns: Transformed copy of @cell.
  *
@@ -675,7 +699,7 @@ UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t)
 	                         &cx, &cy, &cz);
 
 	m = gsl_matrix_alloc(3,3);
-	a = gsl_matrix_alloc(3,3);
+	a = gsl_matrix_calloc(3,3);
 	if ( (m == NULL) || (a == NULL) ) {
 		cell_free(out);
 		return NULL;
@@ -722,7 +746,13 @@ UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t)
  */
 UnitCell *cell_transform_inverse(UnitCell *cell, UnitCellTransformation *t)
 {
-	return cell_transform(cell, tfn_inverse(t));
+	UnitCellTransformation *inv;
+	UnitCell *out;
+
+	inv = tfn_inverse(t);
+	out = cell_transform(cell, inv);
+	tfn_free(inv);
+	return out;
 }
 
 
@@ -769,7 +799,7 @@ void tfn_combine(UnitCellTransformation *t, double *na, double *nb, double *nc)
 	gsl_matrix *n;
 
 	n = gsl_matrix_alloc(3, 3);
-	a = gsl_matrix_alloc(3, 3);
+	a = gsl_matrix_calloc(3, 3);
 	if ( (n == NULL) || (a == NULL) ) {
 		return;
 	}
@@ -795,6 +825,18 @@ void tfn_combine(UnitCellTransformation *t, double *na, double *nb, double *nc)
 }
 
 
+/**
+ * tfn_vector:
+ * @a: Amount of "a" to include in new vector
+ * @b: Amount of "b" to include in new vector
+ * @c: Amount of "c" to include in new vector
+ *
+ * This is a convenience function to use when sending vectors to tfn_combine():
+ *	tfn_combine(tfn, tfn_vector(1,0,0),
+ *	                 tfn_vector(0,2,0),
+ *	                 tfn_vector(0,0,1));
+ *
+ */
 double *tfn_vector(double a, double b, double c)
 {
 	double *vec = malloc(3*sizeof(double));
@@ -804,6 +846,13 @@ double *tfn_vector(double a, double b, double c)
 }
 
 
+/**
+ * tfn_print:
+ * @t: A %UnitCellTransformation
+ *
+ * Prints information about @t to stderr.
+ *
+ */
 void tfn_print(UnitCellTransformation *t)
 {
 	gsl_permutation *perm;
@@ -841,4 +890,18 @@ void tfn_print(UnitCellTransformation *t)
 	}
 
 	STATUS("Transformation determinant = %.2f\n", gsl_linalg_LU_det(lu, s));
+}
+
+
+/**
+ * tfn_free:
+ * @t: A %UnitCellTransformation
+ *
+ * Frees all resources associated with @t.
+ *
+ */
+void tfn_free(UnitCellTransformation *t)
+{
+	gsl_matrix_free(t->m);
+	free(t);
 }

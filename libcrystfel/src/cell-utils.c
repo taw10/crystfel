@@ -47,6 +47,19 @@
 #include "image.h"
 
 
+/**
+ * SECTION:cell-utils
+ * @short_description: Unit cell utilities
+ * @title: Unit cell utilities
+ * @section_id:
+ * @see_also:
+ * @include: "cell-utils.h"
+ * @Image:
+ *
+ * There are some utility functions associated with the core %UnitCell.
+ **/
+
+
 /* Weighting factor of lengths relative to angles */
 #define LWEIGHT (10.0e-9)
 
