@@ -6,4 +6,5 @@ integration_check
 pr_gradient_check
 symmetry_check
 centering_check
+transformation_check
 .dirstamp
