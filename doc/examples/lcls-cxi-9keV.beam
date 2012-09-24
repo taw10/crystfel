@@ -1,4 +1,4 @@
- Number of photons per pulse
+; Number of photons per pulse
 beam/fluence = 1.0e12
 
 ; Radius of X-ray beam
