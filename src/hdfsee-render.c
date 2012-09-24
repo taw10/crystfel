@@ -46,7 +46,7 @@
 #include <image.h>
 
 static float *get_binned_panel(struct image *image, int binning,
-                               struct panel *p, double *max)
+                               struct panel *p, double *max, int *pw, int *ph)
 {
 	float *data;
 	int x, y;
@@ -60,6 +60,8 @@ static float *get_binned_panel(struct image *image, int binning,
 	/* Some pixels might get discarded */
 	w = (p->max_fs - p->min_fs + 1) / binning;
 	h = (p->max_ss - p->min_ss + 1) / binning;
+	*pw = w;
+	*ph = h;
 
 	data = malloc(w*h*sizeof(float));
 
@@ -129,38 +131,15 @@ static void render_free_data(guchar *data, gpointer p)
 }
 
 
-static GdkPixbuf *render_panel(struct image *image,
-                               int binning, int scale, double boost,
-                               struct panel *p)
+static GdkPixbuf *render_panel(float *hdr, int scale, double max, int w, int h)
 {
-	int w, h;
 	guchar *data;
-	float *hdr;
 	int x, y;
-	double max;
-	int pw, ph;
-
-	/* Calculate panel width and height
-	 * (add one because min and max are inclusive) */
-	pw = p->max_fs - p->min_fs + 1;
-	ph = p->max_ss - p->min_ss + 1;
-	w = pw / binning;
-	h = ph / binning;
-
-	/* High dynamic range version */
-	max = 0.0;
-	hdr = get_binned_panel(image, binning, p, &max);
-	if ( hdr == NULL ) return NULL;
 
 	/* Rendered (colourful) version */
 	data = malloc(3*w*h);
-	if ( data == NULL ) {
-		free(hdr);
-		return NULL;
-	}
+	if ( data == NULL ) return NULL;
 
-	max /= boost;
-	if ( max <= 6 ) { max = 10; }
 	/* These x,y coordinates are measured relative to the bottom-left
 	 * corner */
 	for ( y=0; y<h; y++ ) {
@@ -193,9 +172,6 @@ static GdkPixbuf *render_panel(struct image *image,
 	}
 	}
 
-	/* Finished with this */
-	free(hdr);
-
 	/* Create the pixbuf from the 8-bit display data */
 	return gdk_pixbuf_new_from_data(data, GDK_COLORSPACE_RGB, FALSE, 8,
 					w, h, w*3, render_free_data, NULL);
@@ -211,6 +187,30 @@ GdkPixbuf **render_panels(struct image *image,
 	int i;
 	int np = image->det->n_panels;
 	GdkPixbuf **pixbufs;
+	float **hdrs;
+	double max;
+	int *ws, *hs;
+
+	hdrs = calloc(np, sizeof(float *));
+	ws = calloc(np, sizeof(int));
+	hs = calloc(np, sizeof(int));
+	if ( (hdrs == NULL) || (ws == NULL) || (hs == NULL) ) {
+		*n_pixbufs = 0;
+		return NULL;
+	}
+
+	/* Find overall max value for whole image */
+	max = 0.0;
+	for ( i=0; i<np; i++ ) {
+		double this_max = 0.0;
+		hdrs[i] = get_binned_panel(image, binning,
+		                           &image->det->panels[i], &this_max,
+		                           &ws[i], &hs[i]);
+		if ( this_max > max ) max = this_max;
+	}
+
+	max /= boost;
+	if ( max <= 6 ) { max = 10; }
 
 	pixbufs = calloc(np, sizeof(GdkPixbuf*));
 	if ( pixbufs == NULL ) {
@@ -220,11 +220,15 @@ GdkPixbuf **render_panels(struct image *image,
 
 	for ( i=0; i<np; i++ ) {
 
-		pixbufs[i] = render_panel(image, binning, scale, boost,
-		                          &image->det->panels[i]);
+		pixbufs[i] = render_panel(hdrs[i], scale, max, ws[i], hs[i]);
+
+		free(hdrs[i]);
 
 	}
 
+	free(hdrs);
+	free(ws);
+	free(hs);
 	*n_pixbufs = np;
 
 	return pixbufs;
