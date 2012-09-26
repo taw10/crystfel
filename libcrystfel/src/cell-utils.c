@@ -315,10 +315,9 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in,
 		break;
 
 		case 'I' :
-		tfn_combine(t,  tfn_vector(-H,H,H),
-		                tfn_vector(H,-H,H),
-		                tfn_vector(H,H,-H));
-		/* FIXME: How to handle the change of lattice type? */
+		tfn_combine(t, tfn_vector(-H,H,H),
+		               tfn_vector(H,-H,H),
+		               tfn_vector(H,H,-H));
 		if ( lt == L_CUBIC ) {
 			*new_latt = L_RHOMBOHEDRAL;
 			*new_centering = 'R';
@@ -330,9 +329,9 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in,
 		break;
 
 		case 'F' :
-		tfn_combine(t,  tfn_vector(0,H,H),
-		                tfn_vector(H,0,H),
-		                tfn_vector(H,H,0));
+		tfn_combine(t, tfn_vector(0,H,H),
+		               tfn_vector(H,0,H),
+		               tfn_vector(H,H,0));
 		if ( lt == L_CUBIC ) {
 			*new_latt = L_RHOMBOHEDRAL;
 			*new_centering = 'R';
