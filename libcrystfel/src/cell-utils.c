@@ -171,21 +171,19 @@ void cell_print(UnitCell *cell)
 	double a, b, c, alpha, beta, gamma;
 	double ax, ay, az, bx, by, bz, cx, cy, cz;
 	LatticeType lt;
+	char cen;
 
 	lt = cell_get_lattice_type(cell);
+	cen = cell_get_centering(cell);
 
-	STATUS("%s %c", str_lattice(lt), cell_get_centering(cell));
+	STATUS("%s %c", str_lattice(lt), cen);
 
-	switch ( lt )
+	if ( (lt==L_MONOCLINIC) || (lt==L_TETRAGONAL) || ( lt==L_HEXAGONAL)
+	  || ( (lt==L_ORTHORHOMBIC) && (cen=='A') )
+	  || ( (lt==L_ORTHORHOMBIC) && (cen=='B') )
+	  || ( (lt==L_ORTHORHOMBIC) && (cen=='C') ) )
 	{
-		case L_MONOCLINIC :
-		case L_TETRAGONAL :
-		case L_HEXAGONAL :
 		STATUS(", unique axis %c", cell_get_unique_axis(cell));
-		break;
-
-		default :
-		break;
 	}
 
 	if ( right_handed(cell) ) {
@@ -263,6 +261,11 @@ int bravais_lattice(UnitCell *cell)
 		return 0;
 
 		case 'H' :
+		/* "Hexagonal H" is not a Bravais lattice, but rather something
+		 * invented by the PDB to make life difficult for programmers.
+		 * Accepting it as Bravais seems to be the least painful way to
+		 * handle it correctly. Yuk. */
+		if ( ua != 'c' ) return 0;
 		if ( lattice == L_HEXAGONAL ) return 1;
 		return 0;
 
@@ -294,24 +297,28 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in,
 	t = tfn_identity();
 	if ( t == NULL ) return NULL;
 
-	if ( (ua == 'a') || (cen == 'A') ) {
+	if ( ua == 'a' ) {
 		tfn_combine(t, tfn_vector(0,0,1),
 		               tfn_vector(0,1,0),
 		               tfn_vector(-1,0,0));
-		if ( cen == 'A' ) cen = 'C';
 	}
 
-	if ( (ua == 'b') || (cen == 'B') ) {
+	if ( ua == 'b' ) {
 		tfn_combine(t, tfn_vector(1,0,0),
 		               tfn_vector(0,0,1),
 		               tfn_vector(0,-1,0));
-		if ( cen == 'B' ) cen = 'C';
 	}
 
 	switch ( cen ) {
 
 		case 'P' :
+		*new_latt = lt;
+		*new_centering = 'P';
+		break;
+
 		case 'R' :
+		*new_latt = L_RHOMBOHEDRAL;
+		*new_centering = 'R';
 		break;
 
 		case 'I' :
@@ -335,7 +342,6 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in,
 		if ( lt == L_CUBIC ) {
 			*new_latt = L_RHOMBOHEDRAL;
 			*new_centering = 'R';
-
 		} else {
 			assert(lt == L_ORTHORHOMBIC);
 			*new_latt = L_TRICLINIC;
@@ -343,6 +349,8 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in,
 		}
 		break;
 
+		case 'A' :
+		case 'B' :
 		case 'C' :
 		tfn_combine(t, tfn_vector(H,H,0),
 		               tfn_vector(-H,H,0),
@@ -352,6 +360,7 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in,
 		break;
 
 		case 'H' :
+		/* Obverse setting */
 		tfn_combine(t, tfn_vector(TT,OT,OT),
 		               tfn_vector(-OT,OT,OT),
 		               tfn_vector(-OT,-TT,OT));
@@ -366,18 +375,20 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in,
 
 	}
 
-	if ( ua == 'a' ) {
-		tfn_combine(t,  tfn_vector(0,0,-1),
-		                tfn_vector(0,1,0),
-		                tfn_vector(1,0,0));
-		if ( cen == 'C' ) cen = 'A';
-	}
+	/* Reverse the axis permutation, but only if this was not an H->R
+	 * transformation */
+	if ( !((cen=='H') && (*new_latt == L_RHOMBOHEDRAL)) ) {
+		if ( ua == 'a' ) {
+			tfn_combine(t, tfn_vector(0,0,-1),
+				       tfn_vector(0,1,0),
+				       tfn_vector(1,0,0));
+		}
 
-	if ( ua == 'b' ) {
-		tfn_combine(t,  tfn_vector(1,0,0),
-		                tfn_vector(0,0,-1),
-		                tfn_vector(0,1,0));
-		if ( cen == 'C' ) cen = 'B';
+		if ( ua == 'b' ) {
+			tfn_combine(t, tfn_vector(1,0,0),
+				       tfn_vector(0,0,-1),
+				       tfn_vector(0,1,0));
+		}
 	}
 
 	return t;
@@ -406,6 +417,7 @@ UnitCell *uncenter_cell(UnitCell *in, UnitCellTransformation **t)
 
 	if ( !bravais_lattice(in) ) {
 		ERROR("Cannot uncenter: not a Bravais lattice.\n");
+		cell_print(in);
 		return NULL;
 	}
 
@@ -481,11 +493,11 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 	float angtol = deg2rad(tols[3]);
 	UnitCell *cell;
 	UnitCell *template;
-	UnitCellTransformation *to_given_cell;
+	UnitCellTransformation *uncentering;
 	UnitCell *new_cell_trans;
 
 	/* "Un-center" the template unit cell to make the comparison easier */
-	template = uncenter_cell(template_in, &to_given_cell);
+	template = uncenter_cell(template_in, &uncentering);
 
 	/* The candidate cell is also uncentered, because it might be centered
 	 * if it came from (e.g.) MOSFLM */
@@ -671,7 +683,7 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 	free(cand[2]);
 
 	/* Reverse the de-centering transformation */
-	new_cell_trans = cell_transform_inverse(new_cell, to_given_cell);
+	new_cell_trans = cell_transform_inverse(new_cell, uncentering);
 	cell_free(new_cell);
 	cell_set_lattice_type(new_cell, cell_get_lattice_type(template_in));
 	cell_set_centering(new_cell, cell_get_centering(template_in));
@@ -1115,10 +1127,13 @@ int cell_is_sensible(UnitCell *cell)
  * lattice is a conventional Bravais lattice.
  * Warnings are printied if any of the checks are failed.
  *
+ * Returns: true if cell is invalid.
+ *
  */
-void validate_cell(UnitCell *cell)
+int validate_cell(UnitCell *cell)
 {
 	int err = 0;
+	char cen, ua;
 
 	if ( !cell_is_sensible(cell) ) {
 		ERROR("Warning: Unit cell parameters are not sensible.\n");
@@ -1136,5 +1151,58 @@ void validate_cell(UnitCell *cell)
 		err = 1;
 	}
 
-	if ( err ) cell_print(cell);
+	cen = cell_get_centering(cell);
+	ua = cell_get_unique_axis(cell);
+	if ( (cen == 'A') && (ua != 'a') ) {
+		ERROR("Warning: centering doesn't match unique axis.\n");
+		err = 1;
+	}
+	if ( (cen == 'B') && (ua != 'b') ) {
+		ERROR("Warning: centering doesn't match unique axis.\n");
+		err = 1;
+	}
+	if ( (cen == 'C') && (ua != 'c') ) {
+		ERROR("Warning: centering doesn't match unique axis.\n");
+		err = 1;
+	}
+
+	return err;
+}
+
+
+/**
+ * forbidden_reflection:
+ * @cell: A %UnitCell
+ * @h: h index to check
+ * @k: k index to check
+ * @l: l index to check
+ *
+ * Returns: true if this reflection is forbidden.
+ *
+ */
+int forbidden_reflection(UnitCell *cell,
+                         signed int h, signed int k, signed int l)
+{
+	char cen;
+
+	cen = cell_get_centering(cell);
+
+	/* Reflection conditions here must match the transformation matrices
+	 * in uncentering_transformation().  tests/centering_check verifies
+	 * this (amongst other things). */
+
+	if ( cen == 'P' ) return 0;
+	if ( cen == 'R' ) return 0;
+
+	if ( cen == 'A' ) return (k+l) % 2;
+	if ( cen == 'B' ) return (h+l) % 2;
+	if ( cen == 'C' ) return (h+k) % 2;
+
+	if ( cen == 'I' ) return (h+k+l) % 2;
+	if ( cen == 'F' ) return ((h+k) % 2) || ((h+l) % 2) || ((k+l) % 2);
+
+	/* Obverse setting */
+	if ( cen == 'H' ) return (-h+k+l) % 3;
+
+	return 0;
 }

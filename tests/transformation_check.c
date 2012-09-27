@@ -73,6 +73,39 @@ static int check_transformation(UnitCell *cell, UnitCellTransformation *tfn)
 }
 
 
+static int check_identity(UnitCell *cell, UnitCellTransformation *tfn)
+{
+	UnitCell *cnew;
+	double a[9], b[9];
+	int i;
+	int fail = 0;
+
+	cnew = cell_transform(cell, tfn);
+
+	cell_get_cartesian(cell, &a[0], &a[1], &a[2],
+	                         &a[3], &a[4], &a[5],
+	                         &a[6], &a[7], &a[8]);
+	cell_get_cartesian(cnew, &b[0], &b[1], &b[2],
+	                         &b[3], &b[4], &b[5],
+	                         &b[6], &b[7], &b[8]);
+	for ( i=0; i<9; i++ ) {
+		if ( !within_tolerance(a[i], b[i], 0.1) ) {
+			fail = 1;
+			STATUS("%e %e\n", a[i], b[i]);
+		}
+	}
+
+	if ( fail ) {
+		ERROR("Original cell not recovered after transformation:\n");
+		cell_print(cell);
+		tfn_print(tfn);
+		cell_print(cnew);
+	}
+
+	return fail;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int fail = 0;
@@ -123,6 +156,18 @@ int main(int argc, char *argv[])
 	                 tfn_vector(0,1,0),
 	                 tfn_vector(0,1,1));
 	fail += check_transformation(cell, tfn);
+	tfn_free(tfn);
+
+	/* Identity in two parts */
+	tfn = tfn_identity();
+	if ( tfn == NULL ) return 1;
+	tfn_combine(tfn, tfn_vector(0,0,1),
+	                 tfn_vector(0,1,0),
+	                 tfn_vector(-1,0,0));
+	tfn_combine(tfn,  tfn_vector(0,0,-1),
+	                  tfn_vector(0,1,0),
+	                  tfn_vector(1,0,0));
+	fail += check_identity(cell, tfn);
 	tfn_free(tfn);
 
 	cell_free(cell);

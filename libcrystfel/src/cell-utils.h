@@ -53,7 +53,7 @@ extern UnitCell *load_cell_from_pdb(const char *filename);
 
 extern int cell_is_sensible(UnitCell *cell);
 
-extern void validate_cell(UnitCell *cell);
+extern int validate_cell(UnitCell *cell);
 
 extern UnitCell *uncenter_cell(UnitCell *in, UnitCellTransformation **tr);
 
@@ -62,5 +62,8 @@ extern int bravais_lattice(UnitCell *cell);
 extern int right_handed(UnitCell *cell);
 
 extern const char *str_lattice(LatticeType l);
+
+extern int forbidden_reflection(UnitCell *cell,
+                                signed int h, signed int k, signed int l);
 
 #endif	/* CELL_UTILS_H */

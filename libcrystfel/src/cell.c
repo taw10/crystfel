@@ -260,6 +260,9 @@ UnitCell *cell_new_from_cell(UnitCell *orig)
 	cell_get_cartesian(orig, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	cell_set_cartesian(new, ax, ay, az, bx, by, bz, cx, cy, cz);
 	cell_set_pointgroup(new, orig->pointgroup);
+	cell_set_lattice_type(new, orig->lattice_type);
+	cell_set_centering(new, orig->centering);
+	cell_set_unique_axis(new, orig->unique_axis);
 
 	return new;
 }
@@ -691,12 +694,12 @@ UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t)
 
 	if ( t == NULL ) return NULL;
 
-	out = cell_new();
+	out = cell_new_from_cell(cell);
 	if ( out == NULL ) return NULL;
 
-	cell_get_cartesian(cell, &ax, &ay, &az,
-	                         &bx, &by, &bz,
-	                         &cx, &cy, &cz);
+	cell_get_cartesian(out, &ax, &ay, &az,
+	                        &bx, &by, &bz,
+	                        &cx, &cy, &cz);
 
 	m = gsl_matrix_alloc(3,3);
 	a = gsl_matrix_calloc(3,3);

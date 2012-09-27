@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <fenv.h>
 
 #include <cell.h>
 #include <cell-utils.h>
@@ -39,23 +40,12 @@ static int check_cell(UnitCell *cell, const char *text)
 {
 	int err = 0;
 
-	if ( !cell_is_sensible(cell) ) {
-		ERROR(" %s unit cell parameters are not sensible.\n", text);
-		err = 1;
-	}
+	err = validate_cell(cell);
 
-	if ( !bravais_lattice(cell) ) {
-		ERROR(" %s unit cell is not a conventional Bravais"
-		      " lattice.\n", text);
-		err = 1;
+	if ( err ) {
+		ERROR("%s cell:\n", text);
+		cell_print(cell);
 	}
-
-	if ( !right_handed(cell) ) {
-		ERROR(" %s unit cell is not right handed.\n", text);
-		err = 1;
-	}
-
-	if ( err ) cell_print(cell);
 
 	return err;
 }
@@ -65,38 +55,145 @@ static int check_centering(double a, double b, double c,
                            double al, double be, double ga,
                            LatticeType latt, char cen, char ua)
 {
-	UnitCell *cell;
+	UnitCell *cell, *cref;
 	UnitCell *n;
 	UnitCellTransformation *t;
 	int fail = 0;
+	int i;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
 
 	STATUS("   --------------->  "
 	       "Checking %s %c (ua %c) %5.2e %5.2e %5.2e %5.2f %5.2f %5.2f\n",
 	       str_lattice(latt), cen, ua, a, b, c, al, be, ga);
 
-	cell = cell_new_from_parameters(a, b, c,
+	cref = cell_new_from_parameters(a, b, c,
 	                                deg2rad(al), deg2rad(be), deg2rad(ga));
-	cell_set_lattice_type(cell, latt);
-	cell_set_centering(cell, cen);
-	cell_set_unique_axis(cell, ua);
+	cell_set_lattice_type(cref, latt);
+	cell_set_centering(cref, cen);
+	cell_set_unique_axis(cref, ua);
 
-	if ( check_cell(cell, "Input") ) fail = 1;
-	//cell_print(cell);
+	cell = cell_rotate(cref, random_quaternion());
+	if ( cell == NULL ) return 1;
+	cell_free(cref);
+
+	check_cell(cell, "Input");
 	n = uncenter_cell(cell, &t);
 	if ( n != NULL ) {
+		STATUS("Transformation was:\n");
+		tfn_print(t);
 		if ( check_cell(n, "Output") ) fail = 1;
+		if ( !fail ) cell_print(n);
 	} else {
 		fail = 1;
 	}
 
-	STATUS("Transformation was:\n");
-	tfn_print(t);
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+	cell_get_cartesian(n, &ax, &ay, &az,
+	                      &bx, &by, &bz,
+	                      &cx, &cy, &cz);
 
-	if ( fail ) ERROR("\n");
+	fesetround(1);  /* Round towards nearest */
+	for ( i=0; i<100; i++ ) {
+
+		signed int h, k, l;
+		double x, y, z;
+		double nh, nk, nl;
+		double dh, dk, dl;
+		int f = 0;
+
+		do {
+
+			h = flat_noise(0, 30);
+			k = flat_noise(0, 30);
+			l = flat_noise(0, 30);
+
+		} while ( forbidden_reflection(cell, h, k, l) );
+
+		x = h*asx + k*bsx + l*csx;
+		y = h*asy + k*bsy + l*csy;
+		z = h*asz + k*bsz + l*csz;
+
+		nh = x*ax + y*ay + z*az;
+		nk = x*bx + y*by + z*bz;
+		nl = x*cx + y*cy + z*cz;
+
+		dh = nh - lrint(nh);
+		dk = nk - lrint(nk);
+		dl = nl - lrint(nl);
+		if ( fabs(dh) > 0.1 ) f++;
+		if ( fabs(dk) > 0.1 ) f++;
+		if ( fabs(dl) > 0.1 ) f++;
+
+		if ( f ) {
+			STATUS("Centered %3i %3i %3i -> "
+			       "Primitive %7.2f %7.2f %7.2f\n",
+			       h, k, l, nh, nk, nl);
+			fail = 1;
+		}
+
+	}
+
+	cell_get_reciprocal(n, &asx, &asy, &asz,
+	                       &bsx, &bsy, &bsz,
+	                       &csx, &csy, &csz);
+	cell_get_cartesian(cell, &ax, &ay, &az,
+	                         &bx, &by, &bz,
+	                         &cx, &cy, &cz);
+
+	for ( i=0; i<100; i++ ) {
+
+		signed int h, k, l;
+		double x, y, z;
+		double nh, nk, nl;
+		double dh, dk, dl;
+		int f = 0;
+		long int ih, ik, il;
+
+		h = flat_noise(0, 30);
+		k = flat_noise(0, 30);
+		l = flat_noise(0, 30);
+
+		x = h*asx + k*bsx + l*csx;
+		y = h*asy + k*bsy + l*csy;
+		z = h*asz + k*bsz + l*csz;
+
+		nh = x*ax + y*ay + z*az;
+		nk = x*bx + y*by + z*bz;
+		nl = x*cx + y*cy + z*cz;
+
+		dh = nh - lrint(nh);  dk = nk - lrint(nk);  dl = nl - lrint(nl);
+
+		if ( fabs(dh) > 0.1 ) f++;
+		if ( fabs(dk) > 0.1 ) f++;
+		if ( fabs(dl) > 0.1 ) f++;
+
+		ih = lrint(nh);  ik = lrint(nk);  il = lrint(nl);
+		if ( forbidden_reflection(cell, ih, ik, il) ) {
+			STATUS("Primitive %3i %3i %3i -> "
+			       "Centered %3li %3li %3li, "
+			       "which is forbidden\n",
+			       h, k, l, ih, ik, il);
+			fail = 1;
+		}
+
+		if ( f ) {
+			STATUS("Primitive %3i %3i %3i -> "
+			       "Centered %7.2f %7.2f %7.2f\n",
+			       h, k, l, nh, nk, nl);
+			fail = 1;
+		}
+
+	}
 
 	return fail;
 }
-
 
 
 int main(int argc, char *argv[])
@@ -133,15 +230,15 @@ int main(int argc, char *argv[])
 
 	/* Orthorhombic A */
 	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
-	                        L_ORTHORHOMBIC, 'A', '*');
+	                        L_ORTHORHOMBIC, 'A', 'a');
 
 	/* Orthorhombic B */
 	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
-	                        L_ORTHORHOMBIC, 'B', '*');
+	                        L_ORTHORHOMBIC, 'B', 'b');
 
 	/* Orthorhombic C */
 	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
-	                        L_ORTHORHOMBIC, 'C', '*');
+	                        L_ORTHORHOMBIC, 'C', 'c');
 
 	/* Orthorhombic I */
 	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
@@ -180,10 +277,6 @@ int main(int argc, char *argv[])
 	                        L_HEXAGONAL, 'P', 'c');
 
 	/* Hexagonal H (PDB-speak for rhombohedral) */
-	fail += check_centering(40e-10, 20e-10, 20e-10, 120.0, 90.0, 90.0,
-	                        L_HEXAGONAL, 'H', 'a');
-	fail += check_centering(20e-10, 40e-10, 20e-10, 90.0, 120.0, 90.0,
-	                        L_HEXAGONAL, 'H', 'b');
 	fail += check_centering(20e-10, 20e-10, 40e-10, 90.0, 90.0, 120.0,
 	                        L_HEXAGONAL, 'H', 'c');
 
