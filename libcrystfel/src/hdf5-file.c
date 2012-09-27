@@ -767,26 +767,19 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name)
 	switch ( class ) {
 
 		case H5T_FLOAT :
-
 		r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
 		            H5P_DEFAULT, &buf_f);
 		if ( r < 0 ) goto fail;
-
 		tmp = malloc(256);
 		snprintf(tmp, 255, "%f", buf_f);
-
 		return tmp;
 
 		case H5T_INTEGER :
-
-
 		r = H5Dread(dh, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 		            H5P_DEFAULT, &buf_i);
 		if ( r < 0 ) goto fail;
-
 		tmp = malloc(256);
 		snprintf(tmp, 255, "%d", buf_i);
-
 		return tmp;
 
 		default :
