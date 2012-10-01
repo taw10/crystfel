@@ -989,9 +989,6 @@ UnitCell *load_cell_from_pdb(const char *filename)
 			memcpy(bes, line+40, 7);  bes[7] = '\0';
 			memcpy(gas, line+47, 7);  gas[7] = '\0';
 
-			STATUS("'%s' '%s' '%s'\n", as, bs, cs);
-			STATUS("'%s' '%s' '%s'\n", als, bes, gas);
-
 			r = sscanf(as, "%f", &a);
 			r += sscanf(bs, "%f", &b);
 			r += sscanf(cs, "%f", &c);
