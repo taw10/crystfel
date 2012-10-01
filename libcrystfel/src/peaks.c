@@ -330,10 +330,12 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		if ( dfs*dfs + dss*dss > lim_sq ) continue;
 
 		/* Strayed off one panel? */
-		if ( p_cfs+dfs >= p_w ) continue;
-		if ( p_css+dss >= p_h ) continue;
-		if ( p_cfs+dfs < 0 ) continue;
-		if ( p_css+dss < 0 ) continue;
+		if ( (p_cfs+dfs >= p_w) || (p_css+dss >= p_h)
+		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) )
+		{
+			free(bgPkMask);
+			return 1;
+		};
 
 		idx = dfs+cfs+image->width*(dss+css);
 
