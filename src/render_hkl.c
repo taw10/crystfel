@@ -158,7 +158,7 @@ static void draw_circles(double xh, double xk, double xl,
                          cairo_t *dctx, int wght, double boost, int colscale,
                          UnitCell *cell, double radius, double theta,
                          double as, double bs, double cx, double cy,
-                         double scale, double max_val)
+                         double scale, double max_val, signed int zone)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -193,7 +193,7 @@ static void draw_circles(double xh, double xk, double xl,
 			get_equiv(sym, m, i, ha, ka, la, &h, &k, &l);
 
 			/* Is the reflection in the zone? */
-			if ( h*zh + k*zk + l*zl != 0 ) continue;
+			if ( h*zh + k*zk + l*zl != zone ) continue;
 
 			xi = (h*xh + k*xk + l*xl) / nx;
 			yi = (h*yh + k*yk + l*yl) / ny;
@@ -300,7 +300,7 @@ static void render_za(UnitCell *cell, RefList *list,
                       int colscale,
                       signed int xh, signed int xk, signed int xl,
                       signed int yh, signed int yk, signed int yl,
-                      const char *outfile, double scale_top)
+                      const char *outfile, double scale_top, signed int zone)
 {
 	cairo_surface_t *surface;
 	cairo_t *dctx;
@@ -416,7 +416,7 @@ static void render_za(UnitCell *cell, RefList *list,
 	draw_circles(xh, xk, xl, yh, yk, yl, zh, zk, zl,
 	             list, sym, dctx, wght, boost, colscale, cell,
 	             max_r, theta, as, bs, cx, cy, scale,
-	             max_val);
+	             max_val, zone);
 
 	/* Centre marker */
 	cairo_arc(dctx, (double)cx,
@@ -610,6 +610,7 @@ int main(int argc, char *argv[])
 	char *outfile = NULL;
 	double scale_top = -1.0;
 	char *endptr;
+	long int zone = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -626,6 +627,7 @@ int main(int argc, char *argv[])
 		{"counts",             0, &config_sqrt,        1},
 		{"colour-key",         0, &config_colkey,      1},
 		{"scale-top",          1, NULL,                2},
+		{"zone",               1, NULL,                3},
 		{0, 0, NULL, 0}
 	};
 
@@ -682,6 +684,17 @@ int main(int argc, char *argv[])
 			}
 			if ( scale_top < 0.0 ) {
 				ERROR("Scale top must be positive.\n");
+				return 1;
+			}
+			break;
+
+			case 3 :
+			errno = 0;
+			zone = strtol(optarg, &endptr, 10);
+			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') )
+			   || (errno != 0) )
+			{
+				ERROR("Invalid zone number ('%s')\n", optarg);
 				return 1;
 			}
 			break;
@@ -805,7 +818,7 @@ int main(int argc, char *argv[])
 	}
 
 	render_za(cell, list, boost, sym, wght, colscale,
-	          rh, rk, rl, dh, dk, dl, outfile, scale_top);
+	          rh, rk, rl, dh, dk, dl, outfile, scale_top, zone);
 
 	free(pdb);
 	free_symoplist(sym);
