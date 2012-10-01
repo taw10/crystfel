@@ -676,7 +676,7 @@ int main(int argc, char *argv[])
 			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') )
 			   || (errno != 0) )
 			{
-				ERROR("Invalid scale top('%s')\n", optarg);
+				ERROR("Invalid scale top ('%s')\n", optarg);
 				return 1;
 			}
 			if ( scale_top < 0.0 ) {
