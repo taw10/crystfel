@@ -148,7 +148,7 @@ static int cull_peaks(struct image *image)
 
 /* cfs, css relative to panel origin */
 static int *make_BgMask(struct image *image, struct panel *p,
-                        double ir_out, int cfs, int css, double ir_in)
+                        double ir_out, double ir_inn)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -181,13 +181,13 @@ static int *make_BgMask(struct image *image, struct panel *p,
 		pk2_cfs = pk2_fs - p->min_fs;
 		pk2_css = pk2_ss - p->min_ss;
 
-		for ( dfs=-ir_in; dfs<=ir_in; dfs++ ) {
-		for ( dss=-ir_in; dss<=ir_in; dss++ ) {
+		for ( dfs=-ir_inn; dfs<=ir_inn; dfs++ ) {
+		for ( dss=-ir_inn; dss<=ir_inn; dss++ ) {
 
 			signed int fs, ss;
 
 			/* In peak region for this peak? */
-			if ( dfs*dfs + dss*dss > ir_in*ir_in ) continue;
+			if ( dfs*dfs + dss*dss > ir_inn*ir_inn ) continue;
 
 			fs = pk2_cfs + dfs;
 			ss = pk2_css + dss;
@@ -241,7 +241,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	p_css = css - p->min_ss;  /* Panel-relative coordinates */
 	p_w = p->max_fs - p->min_fs + 1;
 	p_h = p->max_ss - p->min_ss + 1;
-	bgPkMask = make_BgMask(image, p, ir_out, p_cfs, p_css, ir_inn);
+	bgPkMask = make_BgMask(image, p, ir_out, ir_inn);
 	if ( bgPkMask == NULL ) return 1;
 
 	aduph = p->adu_per_eV * ph_lambda_to_eV(image->lambda);
