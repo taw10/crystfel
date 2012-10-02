@@ -293,10 +293,10 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_MONOCLINIC :
-		/* "2 1 1", "1 2 1" or "1 1 2" depending on unique axis */
-		if ( ua == 'a' ) g = "2 1 1";
-		if ( ua == 'b' ) g = "1 2 1";
-		if ( ua == 'c' ) g = "1 1 2";
+		/* "211", "121" or "112" depending on unique axis */
+		if ( ua == 'a' ) g = "211";
+		if ( ua == 'b' ) g = "121";
+		if ( ua == 'c' ) g = "112";
 		break;
 
 		case L_ORTHORHOMBIC :
@@ -305,9 +305,9 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 
 		case L_TETRAGONAL :
 		/* "4 1 1", "1 4 1" or "1 1 4" depending on unique axis */
-		if ( ua == 'a' ) g = "4 1 1";
-		if ( ua == 'b' ) g = "1 4 1";
-		if ( ua == 'c' ) g = "1 1 4";
+		if ( ua == 'a' ) g = "411";
+		if ( ua == 'b' ) g = "141";
+		if ( ua == 'c' ) g = "114";
 		break;
 
 		case L_RHOMBOHEDRAL :
@@ -316,13 +316,13 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 
 		case L_HEXAGONAL :
 		/* "6 1 1", "1 6 1" or "1 1 6" depending on unique axis */
-		if ( ua == 'a' ) g = "6 1 1";
-		if ( ua == 'b' ) g = "1 6 1";
-		if ( ua == 'c' ) g = "6";
+		if ( ua == 'a' ) g = "611";
+		if ( ua == 'b' ) g = "161";
+		if ( ua == 'c' ) g = "611";
 		break;
 
 		case L_CUBIC :
-		g = "2 3";
+		g = "23";
 		break;
 	}
 	assert(g != NULL);
