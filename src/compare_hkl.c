@@ -44,6 +44,7 @@
 #include "statistics.h"
 #include "symmetry.h"
 #include "reflist-utils.h"
+#include "cell-utils.h"
 
 
 /* Number of bins for plot of resolution shells */

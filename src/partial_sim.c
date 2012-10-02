@@ -40,14 +40,15 @@
 #include <assert.h>
 #include <pthread.h>
 
-#include <utils.h>
-#include <reflist-utils.h>
-#include <symmetry.h>
-#include <beam-parameters.h>
-#include <detector.h>
-#include <geometry.h>
-#include <stream.h>
-#include <thread-pool.h>
+#include "image.h"
+#include "utils.h"
+#include "reflist-utils.h"
+#include "symmetry.h"
+#include "beam-parameters.h"
+#include "geometry.h"
+#include "stream.h"
+#include "thread-pool.h"
+#include "cell-utils.h"
 
 /* Number of bins for partiality graph */
 #define NBINS 50

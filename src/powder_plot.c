@@ -51,6 +51,7 @@
 #include "beam-parameters.h"
 #include "reflist-utils.h"
 #include "symmetry.h"
+#include "cell-utils.h"
 
 
 struct bin_stats {

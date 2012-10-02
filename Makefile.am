@@ -7,12 +7,13 @@ bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
                src/partialator src/check_hkl src/partial_sim
 
 noinst_PROGRAMS = tests/list_check tests/integration_check \
-                  tests/pr_gradient_check tests/symmetry_check
+                  tests/pr_gradient_check tests/symmetry_check \
+                  tests/centering_check tests/transformation_check
 
 TESTS = tests/list_check tests/first_merge_check tests/second_merge_check \
         tests/third_merge_check tests/fourth_merge_check \
         tests/integration_check tests/pr_gradient_check \
-        tests/symmetry_check
+        tests/symmetry_check tests/centering_check tests/transformation_check
 
 EXTRA_DIST += tests/first_merge_check tests/second_merge_check \
               tests/third_merge_check tests/fourth_merge_check
@@ -80,9 +81,15 @@ tests_integration_check_SOURCES = tests/integration_check.c
 
 tests_symmetry_check_SOURCES = tests/symmetry_check.c
 
-
 tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c \
                                   src/post-refinement.c
+
+tests_centering_check_SOURCES = tests/centering_check.c libcrystfel/src/cell.c \
+                                libcrystfel/src/cell-utils.c
+
+tests_transformation_check_SOURCES = tests/transformation_check.c \
+                                     libcrystfel/src/cell.c \
+                                     libcrystfel/src/cell-utils.c
 
 INCLUDES = -I$(top_srcdir)/libcrystfel/src -I$(top_srcdir)/data
 

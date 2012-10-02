@@ -35,6 +35,7 @@
 
 #include "reflist.h"
 #include "cell.h"
+#include "cell-utils.h"
 #include "utils.h"
 #include "reflist-utils.h"
 #include "symmetry.h"

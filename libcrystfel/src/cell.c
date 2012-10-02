@@ -1,7 +1,7 @@
 /*
  * cell.c
  *
- * Unit Cell Calculations
+ * A class representing a unit cell
  *
  * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
@@ -60,10 +60,6 @@
  */
 
 
-
-/* Weighting factor of lengths relative to angles */
-#define LWEIGHT (10.0e-9)
-
 typedef enum {
 	CELL_REP_CRYST,
 	CELL_REP_CART,
@@ -92,8 +88,10 @@ struct _unitcell {
 	double ays;	double bys;	double cys;
 	double azs;	double bzs;	double czs;
 
-	char *pointgroup;
-	char *spacegroup;
+	char        *pointgroup;
+	LatticeType  lattice_type;
+	char         centering;
+	char         unique_axis;
 };
 
 
@@ -125,7 +123,9 @@ UnitCell *cell_new()
 	cell->rep = CELL_REP_CRYST;
 
 	cell->pointgroup = strdup("1");
-	cell->spacegroup = strdup("P 1");
+	cell->lattice_type = L_TRICLINIC;
+	cell->centering = 'P';
+	cell->unique_axis = 'c';
 
 	return cell;
 }
@@ -142,7 +142,6 @@ void cell_free(UnitCell *cell)
 {
 	if ( cell == NULL ) return;
 	free(cell->pointgroup);
-	free(cell->spacegroup);
 	free(cell);
 }
 
@@ -261,7 +260,9 @@ UnitCell *cell_new_from_cell(UnitCell *orig)
 	cell_get_cartesian(orig, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	cell_set_cartesian(new, ax, ay, az, bx, by, bz, cx, cy, cz);
 	cell_set_pointgroup(new, orig->pointgroup);
-	cell_set_spacegroup(new, orig->spacegroup);
+	cell_set_lattice_type(new, orig->lattice_type);
+	cell_set_centering(new, orig->centering);
+	cell_set_unique_axis(new, orig->unique_axis);
 
 	return new;
 }
@@ -282,17 +283,28 @@ void cell_set_reciprocal(UnitCell *cell,
 }
 
 
-void cell_set_spacegroup(UnitCell *cell, const char *sym)
-{
-	free(cell->spacegroup);
-	cell->spacegroup = strdup(sym);
-}
-
-
 void cell_set_pointgroup(UnitCell *cell, const char *sym)
 {
 	free(cell->pointgroup);
 	cell->pointgroup = strdup(sym);
+}
+
+
+void cell_set_centering(UnitCell *cell, char centering)
+{
+	cell->centering = centering;
+}
+
+
+void cell_set_lattice_type(UnitCell *cell, LatticeType lattice_type)
+{
+	cell->lattice_type = lattice_type;
+}
+
+
+void cell_set_unique_axis(UnitCell *cell, char unique_axis)
+{
+	cell->unique_axis = unique_axis;
 }
 
 
@@ -555,18 +567,25 @@ const char *cell_get_pointgroup(UnitCell *cell)
 }
 
 
-const char *cell_get_spacegroup(UnitCell *cell)
+char cell_get_centering(UnitCell *cell)
 {
-	return cell->spacegroup;
+	return cell->centering;
 }
 
 
+LatticeType cell_get_lattice_type(UnitCell *cell)
+{
+	return cell->lattice_type;
+}
 
 
+char cell_get_unique_axis(UnitCell *cell)
+{
+	return cell->unique_axis;
+}
 
-/********************************* Utilities **********************************/
 
-static const char *cell_rep(UnitCell *cell)
+const char *cell_rep(UnitCell *cell)
 {
 	switch ( cell->rep ) {
 
@@ -585,614 +604,307 @@ static const char *cell_rep(UnitCell *cell)
 }
 
 
-/**
- * cell_rotate:
- * @in: A %UnitCell to rotate
- * @quat: A %quaternion
- *
- * Rotate a %UnitCell using a %quaternion.
- *
- * Returns: a newly allocated rotated copy of @in.
- *
- */
-UnitCell *cell_rotate(UnitCell *in, struct quaternion quat)
+struct _unitcelltransformation
 {
-	struct rvec a, b, c;
-	struct rvec an, bn, cn;
-	UnitCell *out = cell_new_from_cell(in);
-
-	cell_get_cartesian(in, &a.u, &a.v, &a.w,
-	                       &b.u, &b.v, &b.w,
-	                       &c.u, &c.v, &c.w);
-
-	an = quat_rot(a, quat);
-	bn = quat_rot(b, quat);
-	cn = quat_rot(c, quat);
-
-	cell_set_cartesian(out, an.u, an.v, an.w,
-	                        bn.u, bn.v, bn.w,
-	                        cn.u, cn.v, cn.w);
-
-	return out;
-}
-
-
-void cell_print(UnitCell *cell)
-{
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	double a, b, c, alpha, beta, gamma;
-	double ax, ay, az, bx, by, bz, cx, cy, cz;
-
-	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
-
-	STATUS("  a     b     c         alpha   beta  gamma\n");
-	STATUS("%5.2f %5.2f %5.2f nm    %6.2f %6.2f %6.2f deg\n",
-	       a*1e9, b*1e9, c*1e9,
-	       rad2deg(alpha), rad2deg(beta), rad2deg(gamma));
-
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-
-	STATUS("a = %10.3e %10.3e %10.3e m\n", ax, ay, az);
-	STATUS("b = %10.3e %10.3e %10.3e m\n", bx, by, bz);
-	STATUS("c = %10.3e %10.3e %10.3e m\n", cx, cy, cz);
-
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-
-	STATUS("astar = %10.3e %10.3e %10.3e m^-1 (modulus = %10.3e m^-1)\n",
-	                             asx, asy, asz, modulus(asx, asy, asz));
-	STATUS("bstar = %10.3e %10.3e %10.3e m^-1 (modulus = %10.3e m^-1)\n",
-	                             bsx, bsy, bsz, modulus(bsx, bsy, bsz));
-	STATUS("cstar = %10.3e %10.3e %10.3e m^-1 (modulus = %10.3e m^-1)\n",
-	                             csx, csy, csz, modulus(csx, csy, csz));
-
-	STATUS("Point group: %s\n", cell_get_pointgroup(cell));
-	STATUS("Cell representation is %s.\n", cell_rep(cell));
-}
-
-
-#define MAX_CAND (1024)
-
-static int right_handed(struct rvec a, struct rvec b, struct rvec c)
-{
-	struct rvec aCb;
-	double aCb_dot_c;
-
-	/* "a" cross "b" */
-	aCb.u = a.v*b.w - a.w*b.v;
-	aCb.v = - (a.u*b.w - a.w*b.u);
-	aCb.w = a.u*b.v - a.v*b.u;
-
-	/* "a cross b" dot "c" */
-	aCb_dot_c = aCb.u*c.u + aCb.v*c.v + aCb.w*c.w;
-
-	if ( aCb_dot_c > 0.0 ) return 1;
-	return 0;
-}
-
-
-struct cvec {
-	struct rvec vec;
-	float na;
-	float nb;
-	float nc;
-	float fom;
+	gsl_matrix *m;
 };
 
 
-static int same_vector(struct cvec a, struct cvec b)
+/**
+ * tfn_inverse:
+ * @t: A %UnitCellTransformation.
+ *
+ * Calculates the inverse of @t.  That is, if you apply cell_transform() to a
+ * %UnitCell using @t, and then apply cell_transform() to the result using
+ * tfn_inverse(@t) instead of @t, you will recover the same lattice vectors
+ * (but note that the lattice type, centering and unique axis information will
+ * be lost).
+ *
+ * Returns: The inverse of @t.
+ *
+ */
+UnitCellTransformation *tfn_inverse(UnitCellTransformation *t)
 {
-	if ( a.na != b.na ) return 0;
-	if ( a.nb != b.nb ) return 0;
-	if ( a.nc != b.nc ) return 0;
-	return 1;
-}
+	int s;
+	gsl_matrix *m;
+	gsl_matrix *inv;
+	gsl_permutation *perm;
+	UnitCellTransformation *out;
 
+	m = gsl_matrix_alloc(3, 3);
+	if ( m == NULL ) return NULL;
 
-/* Attempt to make 'cell' fit into 'template' somehow */
-UnitCell *match_cell(UnitCell *cell, UnitCell *template, int verbose,
-                     const float *tols, int reduce)
-{
-	signed int n1l, n2l, n3l;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	int i, j;
-	double lengths[3];
-	double angles[3];
-	struct cvec *cand[3];
-	UnitCell *new_cell = NULL;
-	float best_fom = +999999999.9; /* Large number.. */
-	int ncand[3] = {0,0,0};
-	signed int ilow, ihigh;
-	float angtol = deg2rad(tols[3]);
-
-	if ( cell_get_reciprocal(template, &asx, &asy, &asz,
-	                         &bsx, &bsy, &bsz,
-	                         &csx, &csy, &csz) ) {
-		ERROR("Couldn't get reciprocal cell for template.\n");
+	out = tfn_identity();
+	if ( out == NULL ) {
+		gsl_matrix_free(m);
 		return NULL;
 	}
 
-	lengths[0] = modulus(asx, asy, asz);
-	lengths[1] = modulus(bsx, bsy, bsz);
-	lengths[2] = modulus(csx, csy, csz);
+	gsl_matrix_memcpy(m, t->m);
 
-	angles[0] = angle_between(bsx, bsy, bsz, csx, csy, csz);
-	angles[1] = angle_between(asx, asy, asz, csx, csy, csz);
-	angles[2] = angle_between(asx, asy, asz, bsx, bsy, bsz);
-
-	cand[0] = malloc(MAX_CAND*sizeof(struct cvec));
-	cand[1] = malloc(MAX_CAND*sizeof(struct cvec));
-	cand[2] = malloc(MAX_CAND*sizeof(struct cvec));
-
-	if ( cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                         &bsx, &bsy, &bsz,
-	                         &csx, &csy, &csz) ) {
-		ERROR("Couldn't get reciprocal cell.\n");
+	perm = gsl_permutation_alloc(m->size1);
+	if ( perm == NULL ) {
+		ERROR("Couldn't allocate permutation\n");
 		return NULL;
 	}
-
-	if ( reduce ) {
-		ilow = -2;  ihigh = 4;
-	} else {
-		ilow = 0;  ihigh = 1;
+	inv = gsl_matrix_alloc(m->size1, m->size2);
+	if ( inv == NULL ) {
+		ERROR("Couldn't allocate inverse\n");
+		gsl_permutation_free(perm);
+		return NULL;
 	}
-
-	/* Negative values mean 1/n, positive means n, zero means zero */
-	for ( n1l=ilow; n1l<=ihigh; n1l++ ) {
-	for ( n2l=ilow; n2l<=ihigh; n2l++ ) {
-	for ( n3l=ilow; n3l<=ihigh; n3l++ ) {
-
-		float n1, n2, n3;
-		signed int b1, b2, b3;
-
-		n1 = (n1l>=0) ? (n1l) : (1.0/n1l);
-		n2 = (n2l>=0) ? (n2l) : (1.0/n2l);
-		n3 = (n3l>=0) ? (n3l) : (1.0/n3l);
-
-		if ( !reduce ) {
-			if ( n1l + n2l + n3l > 1 ) continue;
-		}
-
-		/* 'bit' values can be +1 or -1 */
-		for ( b1=-1; b1<=1; b1+=2 ) {
-		for ( b2=-1; b2<=1; b2+=2 ) {
-		for ( b3=-1; b3<=1; b3+=2 ) {
-
-			double tx, ty, tz;
-			double tlen;
-			int i;
-
-			n1 *= b1;  n2 *= b2;  n3 *= b3;
-
-			tx = n1*asx + n2*bsx + n3*csx;
-			ty = n1*asy + n2*bsy + n3*csy;
-			tz = n1*asz + n2*bsz + n3*csz;
-			tlen = modulus(tx, ty, tz);
-
-			/* Test modulus for agreement with moduli of template */
-			for ( i=0; i<3; i++ ) {
-
-				if ( !within_tolerance(lengths[i], tlen,
-				                       tols[i]) )
-				{
-					continue;
-				}
-
-				if ( ncand[i] == MAX_CAND ) {
-					ERROR("Too many cell candidates - ");
-					ERROR("consider tightening the unit ");
-					ERROR("cell tolerances.\n");
-				} else {
-
-					double fom;
-
-					fom = fabs(lengths[i] - tlen);
-
-					cand[i][ncand[i]].vec.u = tx;
-					cand[i][ncand[i]].vec.v = ty;
-					cand[i][ncand[i]].vec.w = tz;
-					cand[i][ncand[i]].na = n1;
-					cand[i][ncand[i]].nb = n2;
-					cand[i][ncand[i]].nc = n3;
-					cand[i][ncand[i]].fom = fom;
-
-					ncand[i]++;
-
-				}
-
-			}
-
-		}
-		}
-		}
-
+	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
+		ERROR("Couldn't decompose matrix\n");
+		gsl_permutation_free(perm);
+		return NULL;
 	}
+	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
+		ERROR("Couldn't invert matrix\n");
+		gsl_permutation_free(perm);
+		return NULL;
 	}
-	}
+	gsl_permutation_free(perm);
 
-	if ( verbose ) {
-		STATUS("Candidates: %i %i %i\n", ncand[0], ncand[1], ncand[2]);
-	}
-
-	for ( i=0; i<ncand[0]; i++ ) {
-	for ( j=0; j<ncand[1]; j++ ) {
-
-		double ang;
-		int k;
-		float fom1;
-
-		if ( same_vector(cand[0][i], cand[1][j]) ) continue;
-
-		/* Measure the angle between the ith candidate for axis 0
-		 * and the jth candidate for axis 1 */
-		ang = angle_between(cand[0][i].vec.u, cand[0][i].vec.v,
-		                    cand[0][i].vec.w, cand[1][j].vec.u,
-		                    cand[1][j].vec.v, cand[1][j].vec.w);
-
-		/* Angle between axes 0 and 1 should be angle 2 */
-		if ( fabs(ang - angles[2]) > angtol ) continue;
-
-		fom1 = fabs(ang - angles[2]);
-
-		for ( k=0; k<ncand[2]; k++ ) {
-
-			float fom2, fom3;
-
-			if ( same_vector(cand[1][j], cand[2][k]) ) continue;
-
-			/* Measure the angle between the current candidate for
-			 * axis 0 and the kth candidate for axis 2 */
-			ang = angle_between(cand[0][i].vec.u, cand[0][i].vec.v,
-			                    cand[0][i].vec.w, cand[2][k].vec.u,
-			                    cand[2][k].vec.v, cand[2][k].vec.w);
-
-			/* ... it should be angle 1 ... */
-			if ( fabs(ang - angles[1]) > angtol ) continue;
-
-			fom2 = fom1 + fabs(ang - angles[1]);
-
-			/* Finally, the angle between the current candidate for
-			 * axis 1 and the kth candidate for axis 2 */
-			ang = angle_between(cand[1][j].vec.u, cand[1][j].vec.v,
-			                    cand[1][j].vec.w, cand[2][k].vec.u,
-			                    cand[2][k].vec.v, cand[2][k].vec.w);
-
-			/* ... it should be angle 0 ... */
-			if ( fabs(ang - angles[0]) > angtol ) continue;
-
-			/* Unit cell must be right-handed */
-			if ( !right_handed(cand[0][i].vec, cand[1][j].vec,
-			                   cand[2][k].vec) ) continue;
-
-			fom3 = fom2 + fabs(ang - angles[0]);
-			fom3 += LWEIGHT * (cand[0][i].fom + cand[1][j].fom
-			                   + cand[2][k].fom);
-
-			if ( fom3 < best_fom ) {
-				if ( new_cell != NULL ) free(new_cell);
-				new_cell = cell_new_from_reciprocal_axes(
-				                 cand[0][i].vec, cand[1][j].vec,
-			                         cand[2][k].vec);
-				best_fom = fom3;
-			}
-
-		}
-
-	}
-	}
-
-	free(cand[0]);
-	free(cand[1]);
-	free(cand[2]);
-
-	return new_cell;
+	gsl_matrix_free(out->m);
+	gsl_matrix_free(m);
+	out->m = inv;
+	return out;
 }
 
 
-
-UnitCell *match_cell_ab(UnitCell *cell, UnitCell *template)
+/**
+ * cell_transform:
+ * @cell: A %UnitCell.
+ * @t: A %UnitCellTransformation.
+ *
+ * Applies @t to @cell.  Note that the lattice type, centering and unique axis
+ * information will not be preserved.
+ *
+ * Returns: Transformed copy of @cell.
+ *
+ */
+UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t)
 {
+	UnitCell *out;
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
-	int i;
-	double lengths[3];
-	int used[3];
-	struct rvec real_a, real_b, real_c;
-	struct rvec params[3];
-	double alen, blen;
-	float ltl = 5.0;     /* percent */
-	int have_real_a;
-	int have_real_b;
-	int have_real_c;
+	gsl_matrix *m;
+	gsl_matrix *a;
 
-	/* Get the lengths to match */
-	if ( cell_get_cartesian(template, &ax, &ay, &az,
-	                                  &bx, &by, &bz,
-	                                  &cx, &cy, &cz) )
-	{
-		ERROR("Couldn't get cell for template.\n");
-		return NULL;
-	}
-	alen = modulus(ax, ay, az);
-	blen = modulus(bx, by, bz);
+	if ( t == NULL ) return NULL;
 
-	/* Get the lengths from the cell and turn them into anonymous vectors */
-	if ( cell_get_cartesian(cell, &ax, &ay, &az,
-	                              &bx, &by, &bz,
-	                              &cx, &cy, &cz) )
-	{
-		ERROR("Couldn't get cell.\n");
-		return NULL;
-	}
-	lengths[0] = modulus(ax, ay, az);
-	lengths[1] = modulus(bx, by, bz);
-	lengths[2] = modulus(cx, cy, cz);
-	used[0] = 0;  used[1] = 0;  used[2] = 0;
-	params[0].u = ax;  params[0].v = ay;  params[0].w = az;
-	params[1].u = bx;  params[1].v = by;  params[1].w = bz;
-	params[2].u = cx;  params[2].v = cy;  params[2].w = cz;
+	out = cell_new_from_cell(cell);
+	if ( out == NULL ) return NULL;
 
-	real_a.u = 0.0;  real_a.v = 0.0;  real_a.w = 0.0;
-	real_b.u = 0.0;  real_b.v = 0.0;  real_b.w = 0.0;
-	real_c.u = 0.0;  real_c.v = 0.0;  real_c.w = 0.0;
+	cell_get_cartesian(out, &ax, &ay, &az,
+	                        &bx, &by, &bz,
+	                        &cx, &cy, &cz);
 
-	/* Check each vector against a and b */
-	have_real_a = 0;
-	have_real_b = 0;
-	for ( i=0; i<3; i++ ) {
-		if ( within_tolerance(lengths[i], alen, ltl)
-		     && !used[i] && !have_real_a )
-		{
-			used[i] = 1;
-			memcpy(&real_a, &params[i], sizeof(struct rvec));
-			have_real_a = 1;
-		}
-		if ( within_tolerance(lengths[i], blen, ltl)
-		     && !used[i] && !have_real_b )
-		{
-			used[i] = 1;
-			memcpy(&real_b, &params[i], sizeof(struct rvec));
-			have_real_b = 1;
-		}
-	}
-
-	/* Have we matched both a and b? */
-	if ( !(have_real_a && have_real_b) ) return NULL;
-
-	/* "c" is "the other one" */
-	have_real_c = 0;
-	for ( i=0; i<3; i++ ) {
-		if ( !used[i] ) {
-			memcpy(&real_c, &params[i], sizeof(struct rvec));
-			have_real_c = 1;
-		}
-	}
-
-	if ( !have_real_c ) {
-		ERROR("Huh?  Couldn't find the third vector.\n");
-		ERROR("Matches: %i %i %i\n", used[0], used[1], used[2]);
+	m = gsl_matrix_alloc(3,3);
+	a = gsl_matrix_calloc(3,3);
+	if ( (m == NULL) || (a == NULL) ) {
+		cell_free(out);
 		return NULL;
 	}
 
-	/* Flip c if not right-handed */
-	if ( !right_handed(real_a, real_b, real_c) ) {
-		real_c.u = -real_c.u;
-		real_c.v = -real_c.v;
-		real_c.w = -real_c.w;
-	}
+	gsl_matrix_set(m, 0, 0, ax);
+	gsl_matrix_set(m, 0, 1, ay);
+	gsl_matrix_set(m, 0, 2, az);
+	gsl_matrix_set(m, 1, 0, bx);
+	gsl_matrix_set(m, 1, 1, by);
+	gsl_matrix_set(m, 1, 2, bz);
+	gsl_matrix_set(m, 2, 0, cx);
+	gsl_matrix_set(m, 2, 1, cy);
+	gsl_matrix_set(m, 2, 2, cz);
 
-	return cell_new_from_direct_axes(real_a, real_b, real_c);
-}
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, t->m, m, 1.0, a);
 
+	cell_set_cartesian(out, gsl_matrix_get(a, 0, 0),
+	                        gsl_matrix_get(a, 0, 1),
+	                        gsl_matrix_get(a, 0, 2),
+	                        gsl_matrix_get(a, 1, 0),
+	                        gsl_matrix_get(a, 1, 1),
+	                        gsl_matrix_get(a, 1, 2),
+	                        gsl_matrix_get(a, 2, 0),
+	                        gsl_matrix_get(a, 2, 1),
+	                        gsl_matrix_get(a, 2, 2));
 
-/* Return sin(theta)/lambda = 1/2d.  Multiply by two if you want 1/d */
-double resolution(UnitCell *cell, signed int h, signed int k, signed int l)
-{
-	double a, b, c, alpha, beta, gamma;
-
-	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
-
-	const double Vsq = a*a*b*b*c*c*(1 - cos(alpha)*cos(alpha)
-	                                  - cos(beta)*cos(beta)
-	                                  - cos(gamma)*cos(gamma)
-				          + 2*cos(alpha)*cos(beta)*cos(gamma) );
-
-	const double S11 = b*b*c*c*sin(alpha)*sin(alpha);
-	const double S22 = a*a*c*c*sin(beta)*sin(beta);
-	const double S33 = a*a*b*b*sin(gamma)*sin(gamma);
-	const double S12 = a*b*c*c*(cos(alpha)*cos(beta) - cos(gamma));
-	const double S23 = a*a*b*c*(cos(beta)*cos(gamma) - cos(alpha));
-	const double S13 = a*b*b*c*(cos(gamma)*cos(alpha) - cos(beta));
-
-	const double brackets = S11*h*h + S22*k*k + S33*l*l
-	                         + 2*S12*h*k + 2*S23*k*l + 2*S13*h*l;
-	const double oneoverdsq = brackets / Vsq;
-	const double oneoverd = sqrt(oneoverdsq);
-
-	return oneoverd / 2;
-}
-
-
-static void cell_set_pointgroup_from_pdb(UnitCell *cell, const char *sym)
-{
-	char *new = NULL;
-
-	if ( strcmp(sym, "P 1") == 0 ) new = "1";
-	if ( strcmp(sym, "P 63") == 0 ) new = "6";
-	if ( strcmp(sym, "P 21 21 21") == 0 ) new = "222";
-	if ( strcmp(sym, "P 2 2 2") == 0 ) new = "222";
-	if ( strcmp(sym, "P 43 21 2") == 0 ) new = "422";
-
-	if ( new != NULL ) {
-		cell_set_pointgroup(cell, new);
-	} else {
-		ERROR("Can't determine point group for '%s'\n", sym);
-	}
-}
-
-
-UnitCell *load_cell_from_pdb(const char *filename)
-{
-	FILE *fh;
-	char *rval;
-	UnitCell *cell = NULL;
-
-	fh = fopen(filename, "r");
-	if ( fh == NULL ) {
-		ERROR("Couldn't open '%s'\n", filename);
-		return NULL;
-	}
-
-	do {
-
-		char line[1024];
-
-		rval = fgets(line, 1023, fh);
-
-		if ( strncmp(line, "CRYST1", 6) == 0 ) {
-
-			float a, b, c, al, be, ga;
-			char as[10], bs[10], cs[10];
-			char als[8], bes[8], gas[8];
-			char *sym;
-			int r;
-
-			memcpy(as, line+6, 9);    as[9] = '\0';
-			memcpy(bs, line+15, 9);   bs[9] = '\0';
-			memcpy(cs, line+24, 9);   cs[9] = '\0';
-			memcpy(als, line+33, 7);  als[7] = '\0';
-			memcpy(bes, line+40, 7);  bes[7] = '\0';
-			memcpy(gas, line+47, 7);  gas[7] = '\0';
-
-			r = sscanf(as, "%f", &a);
-			r += sscanf(bs, "%f", &b);
-			r += sscanf(cs, "%f", &c);
-			r += sscanf(als, "%f", &al);
-			r += sscanf(bes, "%f", &be);
-			r += sscanf(gas, "%f", &ga);
-
-			if ( r != 6 ) {
-				STATUS("Couldn't understand CRYST1 line.\n");
-				continue;
-			}
-
-			cell = cell_new_from_parameters(a*1e-10,
-			                                b*1e-10, c*1e-10,
-	                                                deg2rad(al),
-	                                                deg2rad(be),
-	                                                deg2rad(ga));
-
-			if ( strlen(line) > 65 ) {
-				sym = strndup(line+55, 10);
-				notrail(sym);
-				cell_set_pointgroup_from_pdb(cell, sym);
-				cell_set_spacegroup(cell, sym);
-				free(sym);
-			} else {
-				cell_set_pointgroup_from_pdb(cell, "P 1");
-				cell_set_spacegroup(cell, "P 1");
-				ERROR("CRYST1 line without space group.\n");
-			}
-
-			break;  /* Done */
-		}
-
-	} while ( rval != NULL );
-
-	fclose(fh);
-
-	return cell;
-}
-
-
-/* Force the linker to bring in CBLAS to make GSL happy */
-void cell_fudge_gslcblas()
-{
-        STATUS("%p\n", cblas_sgemm);
-}
-
-
-UnitCell *rotate_cell(UnitCell *in, double omega, double phi, double rot)
-{
-	UnitCell *out;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	double xnew, ynew, znew;
-
-	cell_get_reciprocal(in, &asx, &asy, &asz, &bsx, &bsy,
-	                        &bsz, &csx, &csy, &csz);
-
-	/* Rotate by "omega" about +z (parallel to c* and c unless triclinic) */
-	xnew = asx*cos(omega) + asy*sin(omega);
-	ynew = -asx*sin(omega) + asy*cos(omega);
-	znew = asz;
-	asx = xnew;  asy = ynew;  asz = znew;
-	xnew = bsx*cos(omega) + bsy*sin(omega);
-	ynew = -bsx*sin(omega) + bsy*cos(omega);
-	znew = bsz;
-	bsx = xnew;  bsy = ynew;  bsz = znew;
-	xnew = csx*cos(omega) + csy*sin(omega);
-	ynew = -csx*sin(omega) + csy*cos(omega);
-	znew = csz;
-	csx = xnew;  csy = ynew;  csz = znew;
-
-	/* Rotate by "phi" about +x (not parallel to anything specific) */
-	xnew = asx;
-	ynew = asy*cos(phi) + asz*sin(phi);
-	znew = -asy*sin(phi) + asz*cos(phi);
-	asx = xnew;  asy = ynew;  asz = znew;
-	xnew = bsx;
-	ynew = bsy*cos(phi) + bsz*sin(phi);
-	znew = -bsy*sin(phi) + bsz*cos(phi);
-	bsx = xnew;  bsy = ynew;  bsz = znew;
-	xnew = csx;
-	ynew = csy*cos(phi) + csz*sin(phi);
-	znew = -csy*sin(phi) + csz*cos(phi);
-	csx = xnew;  csy = ynew;  csz = znew;
-
-	/* Rotate by "rot" about the new +z (in-plane rotation) */
-	xnew = asx*cos(rot) + asy*sin(rot);
-	ynew = -asx*sin(rot) + asy*cos(rot);
-	znew = asz;
-	asx = xnew;  asy = ynew;  asz = znew;
-	xnew = bsx*cos(rot) + bsy*sin(rot);
-	ynew = -bsx*sin(rot) + bsy*cos(rot);
-	znew = bsz;
-	bsx = xnew;  bsy = ynew;  bsz = znew;
-	xnew = csx*cos(rot) + csy*sin(rot);
-	ynew = -csx*sin(rot) + csy*cos(rot);
-	znew = csz;
-	csx = xnew;  csy = ynew;  csz = znew;
-
-	out = cell_new_from_cell(in);
-	cell_set_reciprocal(out, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+	gsl_matrix_free(a);
+	gsl_matrix_free(m);
 
 	return out;
 }
 
 
-int cell_is_sensible(UnitCell *cell)
+/**
+ * cell_transform_inverse:
+ * @cell: A %UnitCell.
+ * @t: A %UnitCellTransformation.
+ *
+ * Applies the inverse of @t to @cell.
+ *
+ * Returns: Transformed copy of @cell.
+ *
+ */
+UnitCell *cell_transform_inverse(UnitCell *cell, UnitCellTransformation *t)
 {
-	double a, b, c, al, be, ga;
+	UnitCellTransformation *inv;
+	UnitCell *out;
 
-	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
-	if (   al + be + ga >= 2.0*M_PI ) return 0;
-	if (   al + be - ga >= 2.0*M_PI ) return 0;
-	if (   al - be + ga >= 2.0*M_PI ) return 0;
-	if ( - al + be + ga >= 2.0*M_PI ) return 0;
-	if (   al + be + ga <= 0.0 ) return 0;
-	if (   al + be - ga <= 0.0 ) return 0;
-	if (   al - be + ga <= 0.0 ) return 0;
-	if ( - al + be + ga <= 0.0 ) return 0;
-	if ( isnan(al) ) return 0;
-	if ( isnan(be) ) return 0;
-	if ( isnan(ga) ) return 0;
-	return 1;
+	inv = tfn_inverse(t);
+	out = cell_transform(cell, inv);
+	tfn_free(inv);
+	return out;
+}
+
+
+/**
+ * tfn_identity:
+ *
+ * Returns: A %UnitCellTransformation corresponding to an identity operation.
+ *
+ */
+UnitCellTransformation *tfn_identity()
+{
+	UnitCellTransformation *tfn;
+
+	tfn = calloc(1, sizeof(UnitCellTransformation));
+	if ( tfn == NULL ) return NULL;
+
+	tfn->m = gsl_matrix_alloc(3, 3);
+	if ( tfn->m == NULL ) {
+		free(tfn);
+		return NULL;
+	}
+
+	gsl_matrix_set_identity(tfn->m);
+
+	return tfn;
+}
+
+
+/**
+ * tfn_combine:
+ * @t: A %UnitCellTransformation
+ * @na: Pointer to three doubles representing naa, nab, nac
+ * @nb: Pointer to three doubles representing nba, nbb, nbc
+ * @nc: Pointer to three doubles representing nca, ncb, ncc
+ *
+ * Updates @t such that it represents its previous transformation followed by
+ * a new transformation, corresponding to letting a = naa*a + nab*b + nac*c.
+ * Likewise, a = nba*a + nbb*b + nbc*c and c = nca*a + ncb*b + ncc*c.
+ *
+ */
+void tfn_combine(UnitCellTransformation *t, double *na, double *nb, double *nc)
+{
+	gsl_matrix *a;
+	gsl_matrix *n;
+
+	n = gsl_matrix_alloc(3, 3);
+	a = gsl_matrix_calloc(3, 3);
+	if ( (n == NULL) || (a == NULL) ) {
+		return;
+	}
+	gsl_matrix_set(n, 0, 0, na[0]);
+	gsl_matrix_set(n, 0, 1, na[1]);
+	gsl_matrix_set(n, 0, 2, na[2]);
+	gsl_matrix_set(n, 1, 0, nb[0]);
+	gsl_matrix_set(n, 1, 1, nb[1]);
+	gsl_matrix_set(n, 1, 2, nb[2]);
+	gsl_matrix_set(n, 2, 0, nc[0]);
+	gsl_matrix_set(n, 2, 1, nc[1]);
+	gsl_matrix_set(n, 2, 2, nc[2]);
+
+	free(na);
+	free(nb);
+	free(nc);
+
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, n, t->m, 1.0, a);
+
+	gsl_matrix_free(t->m);
+	t->m = a;
+	gsl_matrix_free(n);
+}
+
+
+/**
+ * tfn_vector:
+ * @a: Amount of "a" to include in new vector
+ * @b: Amount of "b" to include in new vector
+ * @c: Amount of "c" to include in new vector
+ *
+ * This is a convenience function to use when sending vectors to tfn_combine():
+ *	tfn_combine(tfn, tfn_vector(1,0,0),
+ *	                 tfn_vector(0,2,0),
+ *	                 tfn_vector(0,0,1));
+ *
+ */
+double *tfn_vector(double a, double b, double c)
+{
+	double *vec = malloc(3*sizeof(double));
+	if ( vec == NULL ) return NULL;
+	vec[0] = a;  vec[1] = b;  vec[2] = c;
+	return vec;
+}
+
+
+/**
+ * tfn_print:
+ * @t: A %UnitCellTransformation
+ *
+ * Prints information about @t to stderr.
+ *
+ */
+void tfn_print(UnitCellTransformation *t)
+{
+	gsl_permutation *perm;
+	gsl_matrix *lu;
+	int s;
+
+	STATUS("New a = %+.2fa %+.2fb %+.2fc\n", gsl_matrix_get(t->m, 0, 0),
+	                                         gsl_matrix_get(t->m, 0, 1),
+	                                         gsl_matrix_get(t->m, 0, 2));
+	STATUS("New b = %+.2fa %+.2fb %+.2fc\n", gsl_matrix_get(t->m, 1, 0),
+	                                         gsl_matrix_get(t->m, 1, 1),
+	                                         gsl_matrix_get(t->m, 1, 2));
+	STATUS("New c = %+.2fa %+.2fb %+.2fc\n", gsl_matrix_get(t->m, 2, 0),
+	                                         gsl_matrix_get(t->m, 2, 1),
+	                                         gsl_matrix_get(t->m, 2, 2));
+	lu = gsl_matrix_alloc(3, 3);
+	if ( lu == NULL ) {
+		ERROR("Couldn't allocate LU decomposition.\n");
+		return;
+	}
+
+	gsl_matrix_memcpy(lu, t->m);
+
+	perm = gsl_permutation_alloc(t->m->size1);
+	if ( perm == NULL ) {
+		ERROR("Couldn't allocate permutation.\n");
+		gsl_matrix_free(lu);
+		return;
+	}
+	if ( gsl_linalg_LU_decomp(lu, perm, &s) ) {
+		ERROR("LU decomposition failed.\n");
+		gsl_permutation_free(perm);
+		gsl_matrix_free(lu);
+		return;
+	}
+
+	STATUS("Transformation determinant = %.2f\n", gsl_linalg_LU_det(lu, s));
+}
+
+
+/**
+ * tfn_free:
+ * @t: A %UnitCellTransformation
+ *
+ * Frees all resources associated with @t.
+ *
+ */
+void tfn_free(UnitCellTransformation *t)
+{
+	gsl_matrix_free(t->m);
+	free(t);
 }

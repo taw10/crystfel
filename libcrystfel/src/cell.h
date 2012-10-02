@@ -1,7 +1,7 @@
 /*
  * cell.h
  *
- * Unit Cell Calculations
+ * A class representing a unit cell
  *
  * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
@@ -48,6 +48,17 @@ struct rvec
 	double   w;
 };
 
+typedef enum
+{
+	L_TRICLINIC,
+	L_MONOCLINIC,
+	L_ORTHORHOMBIC,
+	L_TETRAGONAL,
+	L_RHOMBOHEDRAL,
+	L_HEXAGONAL,
+	L_CUBIC
+} LatticeType;
+
 
 /**
  * UnitCell:
@@ -56,6 +67,15 @@ struct rvec
  * to read and write its contents.
  **/
 typedef struct _unitcell UnitCell;
+
+
+/**
+ * UnitCellTransformation:
+ *
+ * This opaque data structure represents a tranformation of a unit cell, such
+ * as a rotation or a centering operation.
+ **/
+typedef struct _unitcelltransformation UnitCellTransformation;
 
 extern UnitCell *cell_new(void);
 extern UnitCell *cell_new_from_cell(UnitCell *orig);
@@ -82,7 +102,6 @@ extern void cell_set_parameters(UnitCell *cell, double a, double b, double c,
 extern void cell_set_cartesian_a(UnitCell *cell, double ax, double ay, double az);
 extern void cell_set_cartesian_b(UnitCell *cell, double bx, double by, double bz);
 extern void cell_set_cartesian_c(UnitCell *cell, double cx, double cy, double cz);
-extern void cell_set_spacegroup(UnitCell *cell, const char *sym);
 extern void cell_set_pointgroup(UnitCell *cell, const char *sym);
 
 
@@ -106,24 +125,27 @@ extern void cell_set_reciprocal(UnitCell *cell,
 
 extern const char *cell_get_pointgroup(UnitCell *cell);
 
-extern const char *cell_get_spacegroup(UnitCell *cell);
+extern LatticeType cell_get_lattice_type(UnitCell *cell);
+extern void cell_set_lattice_type(UnitCell *cell, LatticeType lattice_type);
 
-extern double resolution(UnitCell *cell,
-                         signed int h, signed int k, signed int l);
+extern char cell_get_centering(UnitCell *cell);
+extern void cell_set_centering(UnitCell *cell, char centering);
 
-extern UnitCell *cell_rotate(UnitCell *in, struct quaternion quat);
-extern UnitCell *rotate_cell(UnitCell *in, double omega, double phi,
-                             double rot);
+extern char cell_get_unique_axis(UnitCell *cell);
+extern void cell_set_unique_axis(UnitCell *cell, char unique_axis);
 
-extern void cell_print(UnitCell *cell);
+extern const char *cell_rep(UnitCell *cell);
 
-extern UnitCell *match_cell(UnitCell *cell, UnitCell *tempcell, int verbose,
-                            const float *ltl, int reduce);
+extern UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t);
+extern UnitCell *cell_transform_inverse(UnitCell *cell,
+                                        UnitCellTransformation *t);
 
-extern UnitCell *match_cell_ab(UnitCell *cell, UnitCell *tempcell);
-
-extern UnitCell *load_cell_from_pdb(const char *filename);
-
-extern int cell_is_sensible(UnitCell *cell);
+extern UnitCellTransformation *tfn_identity(void);
+extern void tfn_combine(UnitCellTransformation *t,
+                        double *na, double *nb, double *nc);
+extern void tfn_print(UnitCellTransformation *t);
+extern UnitCellTransformation *tfn_inverse(UnitCellTransformation *t);
+extern double *tfn_vector(double a, double b, double c);
+extern void tfn_free(UnitCellTransformation *t);
 
 #endif	/* CELL_H */

@@ -272,14 +272,74 @@ static void mosflm_sendline(const char *line, struct mosflm_data *mosflm)
 }
 
 
+/* Turn what we know about the unit cell into something which we can give to
+ * MOSFLM to make it give us only indexing results compatible with the cell. */
+static const char *spacegroup_for_lattice(UnitCell *cell)
+{
+	LatticeType latt;
+	char centering;
+	char ua;
+	char *g = NULL;
+	char *result;
+
+	latt = cell_get_lattice_type(cell);
+	centering = cell_get_centering(cell);
+	ua = cell_get_unique_axis(cell);
+
+	switch ( latt )
+	{
+		case L_TRICLINIC :
+		g = "1";
+		break;
+
+		case L_MONOCLINIC :
+		/* "2 1 1", "1 2 1" or "1 1 2" depending on unique axis */
+		if ( ua == 'a' ) g = "2 1 1";
+		if ( ua == 'b' ) g = "1 2 1";
+		if ( ua == 'c' ) g = "1 1 2";
+		break;
+
+		case L_ORTHORHOMBIC :
+		g = "2 2 2";
+		break;
+
+		case L_TETRAGONAL :
+		/* "4 1 1", "1 4 1" or "1 1 4" depending on unique axis */
+		if ( ua == 'a' ) g = "4 1 1";
+		if ( ua == 'b' ) g = "1 4 1";
+		if ( ua == 'c' ) g = "1 1 4";
+		break;
+
+		case L_RHOMBOHEDRAL :
+		g = "3";
+		break;
+
+		case L_HEXAGONAL :
+		/* "6 1 1", "1 6 1" or "1 1 6" depending on unique axis */
+		if ( ua == 'a' ) g = "6 1 1";
+		if ( ua == 'b' ) g = "1 6 1";
+		if ( ua == 'c' ) g = "6";
+		break;
+
+		case L_CUBIC :
+		g = "2 3";
+		break;
+	}
+	assert(g != NULL);
+
+	result = malloc(32);
+	if ( result == NULL ) return NULL;
+
+	snprintf(result, 31, "%c%s", centering, g);
+
+	return result;
+}
+
+
 static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 {
 	char tmp[256];
-	char symm[32];
-	const char *sg;
 	double wavelength;
-	double a, b, c, alpha, beta, gamma;
-	int i, j;
 
 	switch ( mosflm->step ) {
 
@@ -291,29 +351,8 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 
 		case 2 :
 		if ( mosflm->target_cell != NULL ) {
-			cell_get_parameters(mosflm->target_cell, &a, &b, &c,
-				            &alpha, &beta, &gamma);
-			snprintf(tmp, 255,
-			         "CELL %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f\n",
-		                 a*1e10, b*1e10, c*1e10,
-		                 rad2deg(alpha), rad2deg(beta), rad2deg(gamma));
-			mosflm_sendline(tmp, mosflm);
-		} else {
-			mosflm_sendline("# Do nothing\n", mosflm);
-		}
-		break;
-
-		case 3 :
-		if ( mosflm->target_cell != NULL ) {
-			sg = cell_get_spacegroup(mosflm->target_cell);
-			/* Remove white space from space group */
-			j = 0;
-			for ( i=0; i<strlen(sg); i++ ) {
-				if (sg[i] != ' ') {
-					symm[j++] = sg[i];
-				}
-			}
-			symm[j] = '\0';
+			const char *symm;
+			symm = spacegroup_for_lattice(mosflm->target_cell);
 			snprintf(tmp, 255, "SYMM %s\n", symm);
 			mosflm_sendline(tmp, mosflm);
 		} else {
@@ -321,31 +360,31 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		}
 		break;
 
-		case 4 :
+		case 3 :
 		mosflm_sendline("DISTANCE 67.8\n", mosflm);
 		break;
 
-		case 5 :
+		case 4 :
 		mosflm_sendline("BEAM 0.0 0.0\n", mosflm);
 		break;
 
-		case 6 :
+		case 5 :
 		wavelength = image->lambda*1e10;
 		snprintf(tmp, 255, "WAVELENGTH %10.5f\n", wavelength);
 		mosflm_sendline(tmp, mosflm);
 		break;
 
-		case 7 :
+		case 6 :
 		snprintf(tmp, 255, "NEWMAT %s\n", mosflm->newmatfile);
 		mosflm_sendline(tmp, mosflm);
 		break;
 
-		case 8 :
+		case 7 :
 		snprintf(tmp, 255, "IMAGE %s phi 0 0\n", mosflm->imagefile);
 		mosflm_sendline(tmp, mosflm);
 		break;
 
-		case 9 :
+		case 8 :
 		snprintf(tmp, 255, "AUTOINDEX DPS FILE %s"
 		                   " IMAGE 1 MAXCELL 1000 REFINE\n",
 		         mosflm->sptfile);
@@ -357,7 +396,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		mosflm_sendline(tmp, mosflm);
 		break;
 
-		case 10 :
+		case 9 :
 		mosflm_sendline("GO\n", mosflm);
 		mosflm->finished_ok = 1;
 		break;

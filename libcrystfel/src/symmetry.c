@@ -68,7 +68,6 @@ struct _symoplist
 	int n_ops;
 	int max_ops;
 	char *name;
-	int *divisors;
 	int num_equivs;
 };
 
@@ -84,7 +83,6 @@ struct _symopmask
 static void alloc_ops(SymOpList *ops)
 {
 	ops->ops = realloc(ops->ops, ops->max_ops*sizeof(struct sym_op));
-	ops->divisors = realloc(ops->divisors, ops->max_ops*sizeof(int));
 }
 
 
@@ -127,7 +125,6 @@ static SymOpList *new_symoplist()
 	new->max_ops = 16;
 	new->n_ops = 0;
 	new->ops = NULL;
-	new->divisors = NULL;
 	new->name = NULL;
 	new->num_equivs = 1;
 	alloc_ops(new);
@@ -259,6 +256,7 @@ int num_equivs(const SymOpList *ops, const SymOpMask *m)
 static signed int *v(signed int h, signed int k, signed int i, signed int l)
 {
 	signed int *vec = malloc(3*sizeof(signed int));
+	if ( vec == NULL ) return NULL;
 	/* Convert back to 3-index form now */
 	vec[0] = h-i;  vec[1] = k-i;  vec[2] = l;
 	return vec;

@@ -37,7 +37,6 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_eigen.h>
-#include <gsl/gsl_blas.h>
 
 #include "image.h"
 #include "post-refinement.h"
@@ -45,6 +44,7 @@
 #include "symmetry.h"
 #include "geometry.h"
 #include "cell.h"
+#include "cell-utils.h"
 
 
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
