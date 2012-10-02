@@ -215,7 +215,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
                           double *pfs, double *pss,
                           double *intensity, double *sigma,
                           double ir_inn, double ir_mid, double ir_out,
-                          int use_max_adu)
+                          int use_max_adu, int *bgPkMask)
 {
 	signed int dfs, dss;
 	double lim_sq, out_lim_sq, mid_lim_sq;
@@ -229,7 +229,6 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	double bg_tot_sq = 0.0;
 	double var;
 	double aduph;
-	int *bgPkMask;
 	int p_cfs, p_css, p_w, p_h;
 
 	p = find_panel(image->det, cfs, css);
@@ -241,8 +240,6 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	p_css = css - p->min_ss;  /* Panel-relative coordinates */
 	p_w = p->max_fs - p->min_fs + 1;
 	p_h = p->max_ss - p->min_ss + 1;
-	bgPkMask = make_BgMask(image, p, ir_out, ir_inn);
-	if ( bgPkMask == NULL ) return 1;
 
 	aduph = p->adu_per_eV * ph_lambda_to_eV(image->lambda);
 
@@ -264,14 +261,11 @@ static int integrate_peak(struct image *image, int cfs, int css,
 
 		/* Strayed off one panel? */
 		if ( (p_cfs+dfs >= p_w) || (p_css+dss >= p_h)
-		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) )
-		{
-			free(bgPkMask);
-			return 1;
-		};
+		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) ) return 1;
 
 		/* Check if there is a peak in the background region */
-		if ( bgPkMask[(p_cfs+dfs) + p_w*(p_css+dss)] ) continue;
+		if ( (bgPkMask != NULL)
+		  && bgPkMask[(p_cfs+dfs) + p_w*(p_css+dss)] ) continue;
 
 		idx = dfs+cfs+image->width*(dss+css);
 
@@ -282,26 +276,17 @@ static int integrate_peak(struct image *image, int cfs, int css,
 
 			/* It must have all the "good" bits to be valid */
 			if ( !((flags & image->det->mask_good)
-			                   == image->det->mask_good) ) {
-				free(bgPkMask);
-				return 1;
-			}
+			                   == image->det->mask_good) ) return 1;
 
 			/* If it has any of the "bad" bits, reject */
-			if ( flags & image->det->mask_bad ) {
-				free(bgPkMask);
-				return 1;
-			}
+			if ( flags & image->det->mask_bad ) return 1;
 
 		}
 
 		val = image->data[idx];
 
 		/* Veto peak if it contains saturation in bg region */
-		if ( use_max_adu && (val > p->max_adu) ) {
-			free(bgPkMask);
-			return 1;
-		}
+		if ( use_max_adu && (val > p->max_adu) ) return 1;
 
 		bg_tot += val;
 		bg_tot_sq += pow(val, 2.0);
@@ -310,10 +295,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	}
 	}
 
-	if ( bg_counts == 0 ) {
-		free(bgPkMask);
-		return 1;
-	}
+	if ( bg_counts == 0 ) return 1;
 	bg_mean = bg_tot / bg_counts;
 	bg_var = (bg_tot_sq/bg_counts) - pow(bg_mean, 2.0);
 
@@ -333,11 +315,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 
 		/* Strayed off one panel? */
 		if ( (p_cfs+dfs >= p_w) || (p_css+dss >= p_h)
-		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) )
-		{
-			free(bgPkMask);
-			return 1;
-		};
+		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) ) return 1;
 
 		idx = dfs+cfs+image->width*(dss+css);
 
@@ -348,26 +326,17 @@ static int integrate_peak(struct image *image, int cfs, int css,
 
 			/* It must have all the "good" bits to be valid */
 			if ( !((flags & image->det->mask_good)
-			                   == image->det->mask_good) ) {
-				free(bgPkMask);
-				return 1;
-			}
+			                   == image->det->mask_good) ) return 1;
 
 			/* If it has any of the "bad" bits, reject */
-			if ( flags & image->det->mask_bad ) {
-				free(bgPkMask);
-				return 1;
-			}
+			if ( flags & image->det->mask_bad ) return 1;
 
 		}
 
 		val = image->data[idx] - bg_mean;
 
 		/* Veto peak if it contains saturation */
-		if ( use_max_adu && (image->data[idx] > p->max_adu) ) {
-			free(bgPkMask);
-			return 1;
-		}
+		if ( use_max_adu && (image->data[idx] > p->max_adu) ) return 1;
 
 		pk_counts++;
 		pk_total += val;
@@ -385,15 +354,10 @@ static int integrate_peak(struct image *image, int cfs, int css,
 
 	var = pk_counts * bg_var;
 	var += aduph * pk_total;
-	if ( var < 0.0 ) {
-		free(bgPkMask);
-		return 1;
-	}
+	if ( var < 0.0 ) return 1;
 
 	if ( intensity != NULL ) *intensity = pk_total;
 	if ( sigma != NULL ) *sigma = sqrt(var);
-
-	free(bgPkMask);
 
 	return 0;
 }
@@ -506,7 +470,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		/* Centroid peak and get better coordinates. */
 		r = integrate_peak(image, mask_fs, mask_ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
-		                   ir_inn, ir_mid, ir_out, 0);
+		                   ir_inn, ir_mid, ir_out, 0, NULL);
 
 		if ( r ) {
 			/* Bad region - don't detect peak */
@@ -718,11 +682,29 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 	int n, i;
 	double av = 0.0;
 	int first = 1;
+	int **bgMasks;
 
 	il = sort_reflections(image->reflections, image->indexed_cell, &n);
 	if ( il == NULL ) {
 		ERROR("Couldn't sort reflections\n");
 		return;
+	}
+
+	/* Make background masks for all panels */
+	bgMasks = calloc(image->det->n_panels, sizeof(int *));
+	if ( bgMasks == NULL ) {
+		ERROR("Couldn't create list of background masks.\n");
+		return;
+	}
+	for ( i=0; i<image->det->n_panels; i++ ) {
+		int *mask;
+		mask = make_BgMask(image, &image->det->panels[i],
+		                   ir_out, ir_inn);
+		if ( mask == NULL ) {
+			ERROR("Couldn't create background mask.\n");
+			return;
+		}
+		bgMasks[i] = mask;
 	}
 
 	for ( i=0; i<n; i++ ) {
@@ -735,6 +717,8 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 		int r;
 		Reflection *refl;
 		signed int h, k, l;
+		struct panel *p;
+		int pnum, j, found;
 
 		refl = il[i].refl;
 
@@ -769,9 +753,24 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 
 		}
 
+		p = find_panel(image->det, pfs, pss);
+		if ( p == NULL ) continue;  /* Next peak */
+		found = 0;
+		for ( j=0; j<image->det->n_panels; j++ ) {
+			if ( &image->det->panels[j] == p ) {
+				pnum = j;
+				found = 1;
+				break;
+			}
+		}
+		if ( !found ) {
+			ERROR("Couldn't find panel %p in list.\n", p);
+			return;
+		}
+
 		r = integrate_peak(image, pfs, pss, &fs, &ss,
 		                   &intensity, &sigma, ir_inn, ir_mid, ir_out,
-		                   1);
+		                   1, bgMasks[j]);
 
 		/* I/sigma(I) cutoff */
 		if ( intensity/sigma < min_snr ) r = 1;
@@ -798,6 +797,11 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 			//if ( av < 1.0 ) break;
 		}
 	}
+
+	for ( i=0; i<image->det->n_panels; i++ ) {
+		free(bgMasks[i]);
+	}
+	free(bgMasks);
 
 	image->diffracting_resolution = 0.0;
 
