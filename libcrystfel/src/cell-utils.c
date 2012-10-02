@@ -687,10 +687,11 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 
 		new_cell_trans = cell_transform_inverse(new_cell, uncentering);
 		cell_free(new_cell);
-		cell_set_lattice_type(new_cell,
+		cell_set_lattice_type(new_cell_trans,
 		                      cell_get_lattice_type(template_in));
-		cell_set_centering(new_cell, cell_get_centering(template_in));
-		cell_set_unique_axis(new_cell,
+		cell_set_centering(new_cell_trans,
+		                   cell_get_centering(template_in));
+		cell_set_unique_axis(new_cell_trans,
 		                     cell_get_unique_axis(template_in));
 
 		return new_cell_trans;
