@@ -304,7 +304,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_TETRAGONAL :
-		/* "4 1 1", "1 4 1" or "1 1 4" depending on unique axis */
+		/* "411", "141" or "114" depending on unique axis */
 		if ( ua == 'a' ) g = "411";
 		if ( ua == 'b' ) g = "141";
 		if ( ua == 'c' ) g = "114";
@@ -315,7 +315,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_HEXAGONAL :
-		/* "6 1 1", "1 6 1" or "1 1 6" depending on unique axis */
+		/* "611", "161" or "116" depending on unique axis */
 		if ( ua == 'a' ) g = "611";
 		if ( ua == 'b' ) g = "161";
 		if ( ua == 'c' ) g = "611";
