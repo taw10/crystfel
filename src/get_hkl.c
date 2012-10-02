@@ -237,6 +237,7 @@ static RefList *twin_reflections(RefList *in,
 			Reflection *new = add_refl(out, h, k, l);
 			set_intensity(new, total);
 			set_esd_intensity(new, sqrt(sigma));
+			set_redundancy(new, 1);
 
 		}
 
