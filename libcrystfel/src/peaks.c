@@ -771,7 +771,7 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 
 		r = integrate_peak(image, pfs, pss, &fs, &ss,
 		                   &intensity, &sigma, ir_inn, ir_mid, ir_out,
-		                   1, bgMasks[j]);
+		                   1, bgMasks[pnum]);
 
 		/* I/sigma(I) cutoff */
 		if ( intensity/sigma < min_snr ) r = 1;
