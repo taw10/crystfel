@@ -315,10 +315,16 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_HEXAGONAL :
-		/* "611", "161" or "116" depending on unique axis */
-		if ( ua == 'a' ) g = "611";
-		if ( ua == 'b' ) g = "161";
-		if ( ua == 'c' ) g = "611";
+		if ( centering != 'H' ) {
+			/* "611", "161" or "116" depending on unique axis */
+			if ( ua == 'a' ) g = "611";
+			if ( ua == 'b' ) g = "161";
+			if ( ua == 'c' ) g = "611";
+		} else {
+			/* Note that there is no way to communicate any
+			 * unique axis information in this case. */
+			g = "32";
+		}
 		break;
 
 		case L_CUBIC :
