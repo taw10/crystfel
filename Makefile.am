@@ -84,12 +84,9 @@ tests_symmetry_check_SOURCES = tests/symmetry_check.c
 tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c \
                                   src/post-refinement.c
 
-tests_centering_check_SOURCES = tests/centering_check.c libcrystfel/src/cell.c \
-                                libcrystfel/src/cell-utils.c
+tests_centering_check_SOURCES = tests/centering_check.c
 
-tests_transformation_check_SOURCES = tests/transformation_check.c \
-                                     libcrystfel/src/cell.c \
-                                     libcrystfel/src/cell-utils.c
+tests_transformation_check_SOURCES = tests/transformation_check.c
 
 INCLUDES = -I$(top_srcdir)/libcrystfel/src -I$(top_srcdir)/data
 
