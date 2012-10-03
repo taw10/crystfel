@@ -300,7 +300,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_ORTHORHOMBIC :
-		g = "2 2 2";
+		g = "222";
 		break;
 
 		case L_TETRAGONAL :
