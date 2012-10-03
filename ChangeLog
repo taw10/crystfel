@@ -1,3 +1,18 @@
+CrystFEL version 0.4.2, 2nd October 2012
+----------------------------------------
+
+- A data quality regression, introduced between versions 0.3.0 and 0.4.0, was
+  fixed.
+- A speed regression, introduced at the same time as the data quality
+  regression, was also fixed (approximately a factor of 2 speed increase with
+  indexamajig).
+- Centered unit cells are now handled correctly during unit cell reduction.
+- The same colour scale is now used for every panel by hdfsee.
+- "get_hkl -w" was fixed.
+- A spurious "-p" option was removed from scripts/gen-sfs-ano.
+- Option handling across all programs was fixed to prevent confusion.
+
+
 CrystFEL version 0.4.1, 29th August 2012
 ----------------------------------------
 
