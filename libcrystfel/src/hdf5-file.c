@@ -672,7 +672,22 @@ void free_copy_hdf5_field_list(struct copy_hdf5_field *n)
 void add_copy_hdf5_field(struct copy_hdf5_field *copyme,
                          const char *name)
 {
-	assert(copyme->n_fields < copyme->max_fields);  /* FIXME */
+	/* Need more space? */
+	if ( copyme->n_fields == copyme->max_fields ) {
+
+		char **nfields;
+		int nmax = copyme->max_fields + 32;
+
+		nfields = realloc(copyme->fields, nmax*sizeof(char *));
+		if ( nfields == NULL ) {
+			ERROR("Failed to allocate space for new HDF5 field.\n");
+			return;
+		}
+
+		copyme->max_fields = nmax;
+		copyme->fields = nfields;
+
+	}
 
 	copyme->fields[copyme->n_fields] = strdup(name);
 	if ( copyme->fields[copyme->n_fields] == NULL ) {
