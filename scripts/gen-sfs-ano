@@ -9,7 +9,7 @@ RESOLUTION=$5
 function show_help()
 {
 	echo -n "Syntax: $0 <PDB file> <space group> <point group>"
-	echo "<wavelength in Angstroms> [<resolution>]"
+	echo " <wavelength in Angstroms> [<resolution>]"
 	echo
 	echo "The space group and point group must be consistent, it's just"
 	echo "that I don't know how to convert the space group to a point"
