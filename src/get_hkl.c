@@ -167,8 +167,7 @@ static RefList *twin_reflections(RefList *in,
 	RefList *out;
 	SymOpMask *m;
 
-	/* FIXME: Check properly by coset decomposition */
-	if ( num_equivs(holo, NULL) < num_equivs(mero, NULL) ) {
+	if ( !is_subgroup(holo, mero) ) {
 		ERROR("%s is not a subgroup of %s!\n", symmetry_name(mero),
 		                                       symmetry_name(holo));
 		return NULL;
@@ -255,8 +254,7 @@ static RefList *expand_reflections(RefList *in, const SymOpList *target,
 	RefList *out;
 	SymOpMask *m;
 
-	/* FIXME: Check properly */
-	if ( num_equivs(target, NULL) > num_equivs(initial, NULL) ) {
+	if ( !is_subgroup(target, initial) ) {
 		ERROR("%s is not a subgroup of %s!\n", symmetry_name(initial),
 		                                       symmetry_name(target));
 		return NULL;
