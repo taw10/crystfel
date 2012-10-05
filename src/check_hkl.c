@@ -283,7 +283,6 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		       " of I/sigma(I).\n", nsilly);
 	}
 
-
 	fprintf(fh, "1/d centre   # refs Possible  Compl       "
 		    "Meas   Red   SNR    Std dev       Mean     d(A)\n");
 	for ( i=0; i<NBINS; i++ ) {
