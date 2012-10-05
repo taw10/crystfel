@@ -446,27 +446,27 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 	switch ( fom ) {
 
 		case FOM_R1I :
-		fprintf(fh, "1/d centre  R1(I) / %%       nref      d (A)\n");
+		fprintf(fh, "1/d centre    R1(I)/%%       nref      d / A\n");
 		break;
 
 		case FOM_R1F :
-		fprintf(fh, "1/d centre   R1(F) /%%       nref      d (A)\n");
+		fprintf(fh, "1/d centre    R1(F)/%%       nref      d / A\n");
 		break;
 
 		case FOM_R2 :
-		fprintf(fh, "1/d centre     R2 / %%       nref      d (A)\n");
+		fprintf(fh, "1/d centre       R2/%%       nref      d / A\n");
 		break;
 
 		case FOM_RSPLIT :
-		fprintf(fh, "1/d centre Rsplit / %%       nref      d (A)\n");
+		fprintf(fh, "1/d centre   Rsplit/%%       nref      d / A\n");
 		break;
 
 		case FOM_CC :
-		fprintf(fh, "1/d centre         CC       nref      d (A)\n");
+		fprintf(fh, "1/d centre         CC       nref      d / A\n");
 		break;
 
 		case FOM_CCSTAR :
-		fprintf(fh, "1/d centre        CC*       nref      d (A)\n");
+		fprintf(fh, "1/d centre        CC*       nref      d / A\n");
 		break;
 
 	}
