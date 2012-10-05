@@ -16,7 +16,7 @@ compare_hkl \- compare reflection data
 \fBcompare_hkl --help\fR
 
 .SH DESCRIPTION
-compare_hkl compares two sets of reflection data and calculates figures of merit such as R-factors.  Several figures of merit will be displayed on the command line.  Figures of merit can also be calculated in resolution shells.  Reflections will be considered equivalent according to your choice of point group.  The ratios of the reflections can be written to a new file, perhaps to look for systematic effects.
+compare_hkl compares two sets of reflection data and calculates figures of merit such as R-factors.  Reflections will be considered equivalent according to your choice of point group.
 
 .SH OPTIONS
 .PD 0
@@ -32,14 +32,56 @@ Specify the symmetry of the reflections.  The symmetry must be the same for both
 Specify the name of the PDB file containing at least a CRYST1 line describing the unit cell.
 
 .PD 0
-.IP \fB--rmin=\fR\fI1/d\fR
+.IP \fB--fom=\fR\fIFoM\fR
 .PD
-Fix the lower resolution limit for the resolutions shells, as 1/d in m^-1.  Reflections outside the specified resolution range will still be included in the calculation of overall figures of merit.
+Calculate figure of merit \fIFoM\fR.  Possible figures of merit are:
+.RS
+.IP \fBRsplit\fR
+.PD
+2^(-0.5) * sum(I1-kI2) / [ 0.5*sum(I1+kI2) ]
+.IP \fBR1f\fR
+.PD
+sum(sqrt(I1)-sqrt(kI2)) / sum(sqrt(I1))
+.IP \fBR1i\fR
+.PD
+sum(I1-kI2) / sum(I1)
+.IP \fBR2\fR
+.PD
+sqrt(sum[(I1-kI2)^2] / sum(I1^2))
+.IP \fBCC\fR
+.PD
+The Pearson correlation coefficient.
+.IP \fBCC*\fR
+.PD
+The value "CC*", see Karplus and Diederichs, Science 336 (2012) p1030.
+.PP
+I1 and I2 are the intensities of the same reflection in both reflection lists.  The scale factor, k, is given by sum(i1*i2) / sum(i2^2), unless you use \fB-u\fR.
+.RE
 
 .PD 0
-.IP \fB--rmax=\fR\fI1/d\fR
+.IP \fB-u\fR
 .PD
-Fix the upper resolution limit for the resolutions shells, as 1/d in m^-1  Reflections outside the specified resolution range will still be included in the calculation of overall figures of merit.
+Fix scale factors to unity.
+
+.PD 0
+.IP \fB--nshells=\fR\fIn\fR
+.PD
+Use \fIn\fR resolution shells.  Default: 10.
+
+.PD 0
+.IP \fB--shell-file=\fIfilename\fR
+.PD
+Write the figure of merit in resolution shells to \fIfilename\fR.  Default: "shells.dat".
+
+.PD 0
+.IP \fB--ignore-negs\fR
+.PD
+Ignore reflections with negative intensities.
+
+.PD 0
+.IP \fB--zero-negs\fR
+.PD
+Set to zero the intensities of reflections with negative intensities.
 
 .PD 0
 .IP \fB--sigma-cutoff=\fR\fIn\fR
@@ -47,34 +89,14 @@ Fix the upper resolution limit for the resolutions shells, as 1/d in m^-1  Refle
 Discard reflections with I/sigma(I) < \fIn\fR.  Default: -infinity (no cutoff).
 
 .PD 0
-.IP \fB--shells=\fR\fIFoM\fR
+.IP \fB--rmin=\fR\fI1/d\fR
 .PD
-Calculate \fIFoM\fR in resolution shells.  Possible figures of merit for \fIFoM\fR are:
-.RS
-.IP \fBRsplit\fR
-.PD
-2^(-0.5) * sum(I1-kI2) / [ 0.5*sum(I1+kI2) ]
-.IP \fBR1f\fR
-.PD
-sum(F1-kF2) / sum(f1)
-.IP \fBR1i\fR
-.PD
-sum(I1-kI2) / sum(I1)
-.PP
-I1 and I2 are the intensities of the same reflection in both reflection lists.  F1 and F2 are the square roots of the intensities.  Negative intensity values are discarded if R1f is used.  The scale factor, k, is chosen to minimise the R-factor in all cases.
-.RE
+Discard reflections with lower than this value of 1/d in m^-1.
 
 .PD 0
-.IP \fB-p\fR \fIunitcell.pdb\fR
-.IP \fB--pdb=\fR\fIunitcell.pdb\fR
+.IP \fB--rmax=\fR\fI1/d\fR
 .PD
-Specify the name of the PDB file containing at least a CRYST1 line describing the unit cell.  This is required if \fB--shells\fR is used.
-
-.PD 0
-.IP \fB-o\fR \fIfilename\fR
-.IP \fB--ratio=\fR\fIfilename\fR
-.PD
-Write the ratios of the reflection intensities to \fIfilename\fR.  The ratio file will also be a CrystFEL reflection list (suitable for use with, for example, \fBrender_hkl\fR), but the intensities column in the file will actually contain the ratios of intensities.
+Discard reflections with higher than this value of 1/d in m^-1.
 
 .SH AUTHOR
 This page was written by Thomas White.

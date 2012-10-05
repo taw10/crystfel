@@ -86,6 +86,7 @@ static void show_help(const char *s)
 "                              CCF, CCI, CCFstar, CCIstar.\n"
 "      --nshells=<n>          Use <n> resolution shells.\n"
 "  -u                         Force scale factor to 1.\n"
+"      --shell-file=<file>    Write resolution shells to <file>.\n"
 "\n"
 "You can control which reflections are included in the calculation:\n"
 "\n"
@@ -316,7 +317,7 @@ static double fom_shell(struct fom_context *fctx, int i)
 
 static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
                    double rmin, double rmax, enum fom fom,
-                   int config_unity, int nshells)
+                   int config_unity, int nshells, const char *filename)
 {
 	int *cts;
 	double *rmins;
@@ -436,9 +437,9 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 
 	}
 
-	fh = fopen("shells.dat", "w");
+	fh = fopen(filename, "w");
 	if ( fh == NULL ) {
-		ERROR("Couldn't open 'shells.dat'\n");
+		ERROR("Couldn't open '%s'\n", filename);
 		return;
 	}
 
@@ -530,6 +531,7 @@ int main(int argc, char *argv[])
 	int config_zeronegs = 0;
 	int config_unity = 0;
 	int nshells = 10;
+	char *shell_file = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -541,6 +543,7 @@ int main(int argc, char *argv[])
 		{"fom",                1, NULL,                4},
 		{"sigma-cutoff",       1, NULL,                5},
 		{"nshells",            1, NULL,                6},
+		{"shell-file",         1, NULL,                7},
 		{"ignore-negs",        0, &config_ignorenegs,  1},
 		{"zero-negs",          0, &config_zeronegs,    1},
 		{0, 0, NULL, 0}
@@ -604,6 +607,10 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+			case 7 :
+			shell_file = strdup(optarg);
+			break;
+
 			default :
 			ERROR("Unhandled option '%c'\n", c);
 			break;
@@ -651,6 +658,8 @@ int main(int argc, char *argv[])
 		ERROR("You must provide a PDB file with the unit cell.\n");
 		exit(1);
 	}
+
+	if ( shell_file == NULL ) shell_file = strdup("shells.dat");
 
 	cell = load_cell_from_pdb(pdb);
 	free(pdb);
@@ -812,8 +821,9 @@ int main(int argc, char *argv[])
 	reflist_free(list2);
 
 	do_fom(list1_acc, list2_acc, cell, rmin, rmax, fom, config_unity,
-	       nshells);
+	       nshells, shell_file);
 
+	free(shell_file);
 	reflist_free(list1_acc);
 	reflist_free(list2_acc);
 
