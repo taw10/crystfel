@@ -259,6 +259,8 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 			snr[bin] += val / esd;
 			snr_total += val / esd;
 			snr_measured[bin]++;
+		} else {
+			nsilly++;
 		}
 
 		nrefl++;
