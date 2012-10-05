@@ -246,8 +246,8 @@ static RefList *twin_reflections(RefList *in,
 }
 
 
-static RefList *expand_reflections(RefList *in, const SymOpList *target,
-                                                const SymOpList *initial)
+static RefList *expand_reflections(RefList *in, const SymOpList *initial,
+                                                const SymOpList *target)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -525,7 +525,7 @@ int main(int argc, char *argv[])
 		RefList *new;
 		STATUS("Expanding from %s into %s\n", symmetry_name(mero),
 		                                      symmetry_name(expand));
-		new = expand_reflections(input, expand, mero);
+		new = expand_reflections(input, mero, expand);
 
 		/* Replace old with new */
 		reflist_free(input);

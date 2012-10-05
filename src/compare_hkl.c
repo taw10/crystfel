@@ -39,6 +39,7 @@
 #include <getopt.h>
 #include <assert.h>
 #include <gsl/gsl_errno.h>
+#include <gsl/gsl_statistics.h>
 
 #include "utils.h"
 #include "statistics.h"
@@ -47,27 +48,27 @@
 #include "cell-utils.h"
 
 
-/* Number of bins for plot of resolution shells */
-#define NBINS (10)
-
-
-enum r_shell
+enum fom
 {
-	R_SHELL_NONE,
-	R_SHELL_R1I,
-	R_SHELL_R1F,
-	R_SHELL_RSPLIT,
+	FOM_R1I,
+	FOM_R1F,
+	FOM_R2,
+	FOM_RSPLIT,
+	FOM_CC,
+	FOM_CCSTAR
 };
 
 
-static enum r_shell get_r_shell(const char *s)
+static enum fom get_fom(const char *s)
 {
-	if ( strcasecmp(s, "r1i") == 0 ) return R_SHELL_R1I;
-	if ( strcasecmp(s, "r1f") == 0 ) return R_SHELL_R1F;
-	if ( strcasecmp(s, "rsplit") == 0 ) return R_SHELL_RSPLIT;
+	if ( strcasecmp(s, "r1i") == 0 ) return FOM_R1I;
+	if ( strcasecmp(s, "r1f") == 0 ) return FOM_R1F;
+	if ( strcasecmp(s, "r2") == 0 ) return FOM_R2;
+	if ( strcasecmp(s, "rsplit") == 0 ) return FOM_RSPLIT;
+	if ( strcasecmp(s, "cc") == 0 ) return FOM_CC;
+	if ( strcasecmp(s, "ccstar") == 0 ) return FOM_CCSTAR;
 
-	ERROR("Unknown R-factor '%s' - try '--shells=rsplit', or --help for"
-	      " more possibilities.\n", s);
+	ERROR("Unknown figure of merit '%s'.\n", s);
 	exit(1);
 }
 
@@ -78,64 +79,282 @@ static void show_help(const char *s)
 	printf(
 "Compare intensity lists.\n"
 "\n"
-"  -h, --help                 Display this help message.\n"
-"  -o, --ratio=<filename>     Specify output filename for ratios.\n"
 "  -y, --symmetry=<sym>       The symmetry of both the input files.\n"
 "  -p, --pdb=<filename>       PDB file to use.\n"
-"      --shells=<FoM>         Plot this figure of merit in resolution shells.\n"
-"                              Choose from: 'Rsplit', 'R1f' and 'R1i'.\n"
-"      --rmin=<res>           Fix lower resolution limit for --shells (m^-1).\n"
-"      --rmax=<res>           Fix upper resolution limit for --shells (m^-1).\n"
+"      --fom=<FoM>            Calculate this figure of merit  Choose from:.\n"
+"                              R1I, R1F, R2, Rsplit,\n"
+"                              CCF, CCI, CCFstar, CCIstar.\n"
+"      --nshells=<n>          Use <n> resolution shells.\n"
+"  -u                         Force scale factor to 1.\n"
+"\n"
+"You can control which reflections are included in the calculation:\n"
+"\n"
+"      --ignore-negs          Ignore reflections with negative intensities.\n"
+"      --zero-negs            Set negative intensities to zero.\n"
 "      --sigma-cutoff=<n>     Discard reflections with I/sigma(I) < n.\n"
-"\n");
+"      --rmin=<res>           Set a lower resolution limit (m^-1).\n"
+"      --rmax=<res>           Set an upper resolution limit (m^-1).\n"
+"\n"
+"  -h, --help                 Display this help message.\n"
+);
 }
 
 
-static void plot_shells(RefList *list1, RefList *list2, double scale,
-                        UnitCell *cell, double rmin_fix, double rmax_fix,
-                        enum r_shell config_shells)
+struct fom_context
 {
-	double num[NBINS];
-	int cts[NBINS];
+	enum fom fom;
+	int nshells;
+
+	/* For R-factors */
+	double *num;
+	double *den;
+
+	/* For CCs */
+	double **vec1;
+	double **vec2;
+	int *n;
+	int nmax;
+};
+
+
+static struct fom_context *init_fom(enum fom fom, int nmax, int nshells)
+{
+	struct fom_context *fctx;
+	int i;
+
+	fctx = malloc(sizeof(struct fom_context));
+	if ( fctx == NULL ) return NULL;
+
+	fctx->fom = fom;
+	fctx->nshells = nshells;
+
+	switch ( fctx->fom ) {
+
+		case FOM_R1I :
+		case FOM_R1F :
+		case FOM_R2 :
+		case FOM_RSPLIT :
+		fctx->num = malloc(nshells*sizeof(double));
+		fctx->den = malloc(nshells*sizeof(double));
+		if ( (fctx->num == NULL) || (fctx->den == NULL) ) return NULL;
+		for ( i=0; i<nshells; i++ ) {
+			fctx->num[i] = 0.0;
+			fctx->den[i] = 0.0;
+		}
+		break;
+
+		case FOM_CC :
+		case FOM_CCSTAR :
+		fctx->vec1 = malloc(nshells*sizeof(double *));
+		fctx->vec2 = malloc(nshells*sizeof(double *));
+		if ( (fctx->vec1 == NULL) || (fctx->vec2 == NULL) ) return NULL;
+		for ( i=0; i<nshells; i++ ) {
+			fctx->vec1[i] = malloc(nmax*sizeof(double));
+			if ( fctx->vec1[i] == NULL ) return NULL;
+			fctx->vec2[i] = malloc(nmax*sizeof(double));
+			if ( fctx->vec2[i] == NULL ) return NULL;
+			fctx->n = malloc(nshells*sizeof(int));
+			if ( fctx->n == NULL ) return NULL;
+		}
+		for ( i=0; i<nshells; i++ ) {
+			fctx->n[i] = 0;
+		}
+
+		fctx->nmax = nmax;
+		break;
+
+	}
+
+	return fctx;
+}
+
+
+static void add_to_fom(struct fom_context *fctx, double i1, double i2,
+                       int bin)
+{
+	double f1, f2;
+
+	/* Negative intensities have already been weeded out. */
+	f1 = sqrt(i1);
+	f2 = sqrt(i2);
+
+	switch ( fctx->fom ) {
+
+		case FOM_R1I :
+		fctx->num[bin] += fabs(i1 - i2);
+		fctx->den[bin] += i1;
+		break;
+
+		case FOM_R1F :
+		fctx->num[bin] += fabs(f1 - f2);
+		fctx->den[bin] += f1;
+		break;
+
+		case FOM_R2 :
+		fctx->num[bin] += pow(i1 - i2, 2.0);
+		fctx->den[bin] += pow(i1, 2.0);
+		break;
+
+		case FOM_RSPLIT :
+		fctx->num[bin] += fabs(i1 - i2);
+		fctx->den[bin] += i1 + i2;
+		break;
+
+		case FOM_CC :
+		case FOM_CCSTAR :
+		assert(fctx->n[bin] < fctx->nmax);
+		fctx->vec1[bin][fctx->n[bin]] = i1;
+		fctx->vec2[bin][fctx->n[bin]] = i2;
+		fctx->n[bin]++;
+		break;
+
+	}
+}
+
+
+static double fom_overall(struct fom_context *fctx)
+{
+	double overall_num = INFINITY;
+	double overall_den = 0.0;
+	int i;
+	double *overall_vec1;
+	double *overall_vec2;
+	int overall_n;
+	double cc = INFINITY;
+
+	switch ( fctx->fom ) {
+
+		case FOM_R1I :
+		case FOM_R1F :
+		case FOM_R2 :
+		case FOM_RSPLIT :
+		overall_num = 0.0;
+		overall_den = 0.0;
+		for ( i=0; i<fctx->nshells; i++ ) {
+			overall_num += fctx->num[i];
+			overall_den += fctx->den[i];
+		}
+		break;
+
+		case FOM_CC :
+		case FOM_CCSTAR :
+		overall_vec1 = malloc(fctx->nmax*sizeof(double));
+		overall_vec2 = malloc(fctx->nmax*sizeof(double));
+		overall_n = 0;
+		for ( i=0; i<fctx->nshells; i++ ) {
+			int j;
+			for ( j=0; j<fctx->n[i]; j++ ) {
+				overall_vec1[overall_n] = fctx->vec1[i][j];
+				overall_vec2[overall_n] = fctx->vec2[i][j];
+				overall_n++;
+			}
+		}
+		cc = gsl_stats_correlation(overall_vec1, 1, overall_vec2, 1,
+		                           overall_n);
+		free(overall_vec1);
+		free(overall_vec2);
+		break;
+
+	}
+
+	switch ( fctx->fom ) {
+
+		case FOM_R1I :
+		case FOM_R1F :
+		return overall_num/overall_den;
+
+		case FOM_R2 :
+		return sqrt(overall_num/overall_den);
+
+		case FOM_RSPLIT :
+		return 2.0*(overall_num/overall_den) / sqrt(2.0);
+
+		case FOM_CC :
+		return cc;
+
+		case FOM_CCSTAR :
+		return sqrt((2.0*cc)/(1.0+cc));
+
+	}
+
+	ERROR("This point is never reached.\n");
+	abort();
+}
+
+
+static double fom_shell(struct fom_context *fctx, int i)
+{
+	double cc;
+
+	switch ( fctx->fom ) {
+
+		case FOM_R1I :
+		case FOM_R1F :
+		return fctx->num[i]/fctx->den[i];
+
+		case FOM_R2 :
+		return sqrt(fctx->num[i]/fctx->den[i]);
+
+		case FOM_RSPLIT :
+		return 2.0*(fctx->num[i]/fctx->den[i]) / sqrt(2.0);
+
+		case FOM_CC :
+		return gsl_stats_correlation(fctx->vec1[i], 1, fctx->vec2[i], 1,
+		                             fctx->n[i]);
+
+		case FOM_CCSTAR :
+		cc = gsl_stats_correlation(fctx->vec1[i], 1, fctx->vec2[i], 1,
+		                           fctx->n[i]);
+		return sqrt((2.0*cc)/(1.0+cc));
+
+	}
+
+	ERROR("This point is never reached.\n");
+	abort();
+}
+
+
+static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
+                   double rmin, double rmax, enum fom fom,
+                   int config_unity, int nshells)
+{
+	int *cts;
+	double *rmins;
+	double *rmaxs;
 	double total_vol, vol_per_shell;
-	double rmins[NBINS];
-	double rmaxs[NBINS];
-	double rmin, rmax;
 	int i;
 	Reflection *refl1;
 	RefListIterator *iter;
 	FILE *fh;
-	double den[NBINS];
-	int ctot, nout;
+	double scale;
+	struct fom_context *fctx;
 
-	if ( cell == NULL ) {
-		ERROR("Need the unit cell to plot resolution shells.\n");
+	cts = malloc(nshells*sizeof(int));
+	rmins = malloc(nshells*sizeof(double));
+	rmaxs = malloc(nshells*sizeof(double));
+	fctx = init_fom(fom, num_reflections(list1), nshells);
+
+	if ( (fctx==NULL) || (cts==NULL) || (rmins==NULL) || (rmaxs==NULL) )
+	{
+		ERROR("Couldn't allocate memory for resolution shells.\n");
 		return;
 	}
 
-	for ( i=0; i<NBINS; i++ ) {
-		num[i] = 0.0;
-		den[i] = 0.0;
+	for ( i=0; i<nshells; i++ ) {
 		cts[i] = 0;
 	}
 
-	/* Find resolution limits */
-	resolution_limits(list1, cell, &rmin, &rmax);
-	STATUS("1/d goes from %f to %f nm^-1\n", rmin/1e9, rmax/1e9);
-
-	/* Widen the range just a little bit */
-	rmin -= 0.001e9;
-	rmax += 0.001e9;
-
-	/* Fixed resolution shells if needed */
-	if ( rmin_fix > 0.0 ) rmin = rmin_fix;
-	if ( rmax_fix > 0.0 ) rmax = rmax_fix;
+	if ( config_unity ) {
+		scale = 1.0;
+	} else {
+		scale = stat_scale_intensity(list1, list2);
+	}
 
 	/* Calculate the resolution bins */
 	total_vol = pow(rmax, 3.0) - pow(rmin, 3.0);
-	vol_per_shell = total_vol / NBINS;
+	vol_per_shell = total_vol / nshells;
 	rmins[0] = rmin;
-	for ( i=1; i<NBINS; i++ ) {
+	for ( i=1; i<nshells; i++ ) {
 
 		double r;
 
@@ -150,15 +369,9 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 		//rmins[i] = rmins[i-1] + (rmax-rmin)/NBINS;
 		//rmaxs[i-1] = rmins[i-1] + (rmax-rmin)/NBINS;
 
-		STATUS("Shell %i: %f to %f\n", i-1,
-		       rmins[i-1]/1e9, rmaxs[i-1]/1e9);
-
 	}
-	rmaxs[NBINS-1] = rmax;
-	STATUS("Shell %i: %f to %f\n", NBINS-1,
-	       rmins[NBINS-1]/1e9, rmaxs[NBINS-1]/1e9);
+	rmaxs[nshells-1] = rmax;
 
-	ctot = 0;  nout = 0;
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
 	      refl1 = next_refl(refl1, iter) )
@@ -166,7 +379,7 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 		signed int h, k, l;
 		double d;
 		int bin;
-		double i1, i2, f1, f2;
+		double i1, i2;
 		int j;
 		Reflection *refl2;
 
@@ -174,55 +387,53 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 		d = 2.0 * resolution(cell, h, k, l);
 
 		bin = -1;
-		for ( j=0; j<NBINS; j++ ) {
+		for ( j=0; j<nshells; j++ ) {
 			if ( (d>rmins[j]) && (d<=rmaxs[j]) ) {
 				bin = j;
 				break;
 			}
 		}
 
-		/* Outside resolution range? */
-		if ( bin == -1 ) {
-			nout++;
-			continue;
-		}
+		/* Allow for slight rounding errors */
+		if ( (bin == -1) && (d <= rmins[0]) ) bin = 0;
+		assert(bin != -1);
 
 		refl2 = find_refl(list2, h, k, l);
 		if ( refl2 == NULL ) continue;
 
 		i1 = get_intensity(refl1);
-		i2 = get_intensity(refl2);
-		f1 = i1 > 0.0 ? sqrt(i1) : 0.0;
-		f2 = i2 > 0.0 ? sqrt(i2) : 0.0;
+		i2 = scale * get_intensity(refl2);
 
-		switch ( config_shells ) {
-
-			case R_SHELL_RSPLIT :
-			num[bin] += fabs(i1 - i2);
-			den[bin] += i1 + i2;
-			break;
-
-			case R_SHELL_R1I :
-			num[bin] += fabs(i1 - scale*i2);
-			den[bin] += i1;
-			break;
-
-			case R_SHELL_R1F :
-			num[bin] += fabs(f1 - scale*f2);
-			den[bin] += f1;
-			break;
-
-			default : break;
-
-		}
-
-		ctot++;
+		add_to_fom(fctx, i1, i2, bin);
 		cts[bin]++;
 	}
 
-	if ( nout ) {
-		STATUS("Warning; %i reflections outside resolution range.\n",
-		       nout);
+	switch ( fom ) {
+
+		case FOM_R1I :
+		STATUS("Overall R1(I) = %.2f %%\n", 100.0*fom_overall(fctx));
+		break;
+
+		case FOM_R1F :
+		STATUS("Overall R1(F) = %.2f %%\n", 100.0*fom_overall(fctx));
+		break;
+
+		case FOM_R2 :
+		STATUS("Overall R(2) = %.2f %%\n", 100.0*fom_overall(fctx));
+		break;
+
+		case FOM_RSPLIT :
+		STATUS("Overall Rsplit = %.2f %%\n", 100.0*fom_overall(fctx));
+		break;
+
+		case FOM_CC :
+		STATUS("Overall CC = %.7f\n", fom_overall(fctx));
+		break;
+
+		case FOM_CCSTAR :
+		STATUS("Overall CC* = %.7f\n", fom_overall(fctx));
+		break;
+
 	}
 
 	fh = fopen("shells.dat", "w");
@@ -231,56 +442,64 @@ static void plot_shells(RefList *list1, RefList *list2, double scale,
 		return;
 	}
 
-	switch ( config_shells ) {
+	switch ( fom ) {
 
-		case R_SHELL_RSPLIT :
-		fprintf(fh, "1/d centre   Rsplit / %%     nref       d (A)\n");
+		case FOM_R1I :
+		fprintf(fh, "1/d centre  R1(I) / %%       nref      d (A)\n");
 		break;
 
-		case R_SHELL_R1I :
-		fprintf(fh, "1/d centre   R1(I) / %%      nref       d (A)\n");
+		case FOM_R1F :
+		fprintf(fh, "1/d centre   R1(F) /%%       nref      d (A)\n");
 		break;
 
-		case R_SHELL_R1F :
-		fprintf(fh, "1/d centre   R1(F) ign -/%%  nref       d (A)\n");
+		case FOM_R2 :
+		fprintf(fh, "1/d centre     R2 / %%       nref      d (A)\n");
 		break;
 
-		default :
-		fprintf(fh, "1/d centre   0.0             nref       d (A)\n");
+		case FOM_RSPLIT :
+		fprintf(fh, "1/d centre Rsplit / %%       nref      d (A)\n");
+		break;
+
+		case FOM_CC :
+		fprintf(fh, "1/d centre         CC       nref      d (A)\n");
+		break;
+
+		case FOM_CCSTAR :
+		fprintf(fh, "1/d centre        CC*       nref      d (A)\n");
 		break;
 
 	}
 
-	for ( i=0; i<NBINS; i++ ) {
+	for ( i=0; i<nshells; i++ ) {
 
 		double r, cen;
 		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
 
-		switch ( config_shells ) {
+		r = fom_shell(fctx, i);
 
-			case R_SHELL_RSPLIT :
-			r = 2.0*(num[i]/den[i]) / sqrt(2.0);
-			break;
+		switch ( fom ) {
 
-			case R_SHELL_R1I :
-			case R_SHELL_R1F :
-			r = num[i]/den[i];
-			break;
-
-			default :
-			r = 0.0;
-			break;
-
-		}
-
+		case FOM_R1I :
+		case FOM_R1F :
+		case FOM_R2 :
+		case FOM_RSPLIT :
 		fprintf(fh, "%10.3f %10.2f %10i %10.2f\n",
 		        cen*1.0e-9, r*100.0, cts[i], (1.0/cen)*1e10);
+
+		break;
+
+		case FOM_CC :
+		case FOM_CCSTAR :
+		fprintf(fh, "%10.3f %10.7f %10i %10.2f\n",
+		        cen*1.0e-9, r, cts[i], (1.0/cen)*1e10);
+
+		break;
+
+	}
 
 	}
 
 	fclose(fh);
-
-	STATUS("Resolution shell information written to shells.dat.\n");
 }
 
 
@@ -288,44 +507,47 @@ int main(int argc, char *argv[])
 {
 	int c;
 	UnitCell *cell;
-	char *ratiofile = NULL;
 	char *afile = NULL;
 	char *bfile = NULL;
 	char *sym_str = NULL;
 	SymOpList *sym;
-	double scale, scale_r2, scale_rdig, R1, R2, R1i, Rdiff, pearson;
-	double scale_rintint, scale_r1i, scale_r1, scale_r1fi;
-	int ncom, nrej;
+	int ncom, nrej, nneg, nres;
+	RefList *list1_acc;
+	RefList *list2_acc;
 	RefList *list1;
 	RefList *list2;
 	RefList *list1_raw;
 	RefList *list2_raw;
-	RefList *ratio;
-	enum r_shell config_shells = R_SHELL_NONE;
+	enum fom fom = FOM_R1I;
 	char *pdb = NULL;
 	float rmin_fix = -1.0;
 	float rmax_fix = -1.0;
+	double rmin, rmax;
 	Reflection *refl1;
 	RefListIterator *iter;
-	int config_unity = 0;
-	double scale_for_shells;
 	float sigma_cutoff = -INFINITY;
+	int config_ignorenegs = 0;
+	int config_zeronegs = 0;
+	int config_unity = 0;
+	int nshells = 10;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
-		{"ratio" ,             1, NULL,               'o'},
 		{"symmetry",           1, NULL,               'y'},
 		{"pdb",                1, NULL,               'p'},
 		{"rmin",               1, NULL,                2},
 		{"rmax",               1, NULL,                3},
-		{"shells",             1, NULL,                4},
+		{"fom",                1, NULL,                4},
 		{"sigma-cutoff",       1, NULL,                5},
+		{"nshells",            1, NULL,                6},
+		{"ignore-negs",        0, &config_ignorenegs,  1},
+		{"zero-negs",          0, &config_zeronegs,    1},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ho:y:p:u",
+	while ((c = getopt_long(argc, argv, "hy:p:u",
 	                        longopts, NULL)) != -1)
 	{
 
@@ -334,10 +556,6 @@ int main(int argc, char *argv[])
 			case 'h' :
 			show_help(argv[0]);
 			return 0;
-
-			case 'o' :
-			ratiofile = strdup(optarg);
-			break;
 
 			case 'y' :
 			sym_str = strdup(optarg);
@@ -369,12 +587,19 @@ int main(int argc, char *argv[])
 			break;
 
 			case 4 :
-			config_shells = get_r_shell(optarg);
+			fom = get_fom(optarg);
 			break;
 
 			case 5 :
 			if ( sscanf(optarg, "%f", &sigma_cutoff) != 1 ) {
 				ERROR("Invalid value for --sigma-cutoff\n");
+				return 1;
+			}
+			break;
+
+			case 6 :
+			if ( sscanf(optarg, "%i", &nshells) != 1 ) {
+				ERROR("Invalid value for --nshells\n");
 				return 1;
 			}
 			break;
@@ -392,6 +617,27 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if ( !config_ignorenegs && !config_zeronegs ) {
+		switch ( fom )
+		{
+			case FOM_R1F :
+			ERROR("Your chosen figure of merit involves converting"
+			      " intensities to structure factors, but you have"
+			      " not specified how to handle negative"
+			      " intensities.\n");
+			ERROR("Please try again with --ignore-negs or"
+			      " --zero-negs.\n");
+			exit(1);
+
+			case FOM_R2 :
+			case FOM_R1I :
+			case FOM_RSPLIT :
+			case FOM_CC :
+			case FOM_CCSTAR :
+			break;
+		}
+	}
+
 	if ( sym_str == NULL ) {
 		sym_str = strdup("1");
 	}
@@ -402,7 +648,8 @@ int main(int argc, char *argv[])
 	bfile = strdup(argv[optind]);
 
 	if ( pdb == NULL ) {
-		pdb = strdup("molecule.pdb");
+		ERROR("You must provide a PDB file with the unit cell.\n");
+		exit(1);
 	}
 
 	cell = load_cell_from_pdb(pdb);
@@ -432,13 +679,28 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	resolution_limits(list1_raw, cell, &rmin, &rmax);
+	STATUS("%s: %i reflections, resolution range %.2f to %.2f Angstroms"
+	       " (%.5f to %.5f nm^-1).\n", afile,
+	       num_reflections(list1_raw),
+	       1e10/rmin, 1e10/rmax, rmin/1e9, rmax/1e9);
+
+	resolution_limits(list2_raw, cell, &rmin, &rmax);
+	STATUS("%s: %i reflections, resolution range %.2f to %.2f Angstroms"
+	       " (%.5f to %.5f nm^-1).\n", bfile,
+	       num_reflections(list2_raw),
+	       1e10/rmin, 1e10/rmax, rmin/1e9, rmax/1e9);
+
 	list1 = asymmetric_indices(list1_raw, sym);
 	list2 = asymmetric_indices(list2_raw, sym);
 
-	/* Find common reflections and calculate ratio */
-	ratio = reflist_new();
+	/* Select reflections to be used */
 	ncom = 0;
 	nrej = 0;
+	nneg = 0;
+	nres = 0;
+	list1_acc = reflist_new();
+	list2_acc = reflist_new();
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
 	      refl1 = next_refl(refl1, iter) )
@@ -447,7 +709,8 @@ int main(int argc, char *argv[])
 		double val1, val2;
 		double esd1, esd2;
 		Reflection *refl2;
-		Reflection *tr;
+		Reflection *refl1_acc;
+		Reflection *refl2_acc;
 
 		get_indices(refl1, &h, &k, &l);
 
@@ -467,83 +730,92 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
+		if ( config_ignorenegs && ((val1 < 0.0) || (val2 < 0.0)) ) {
+			nneg++;
+			continue;
+		}
+
+		if ( config_zeronegs ) {
+			int d = 0;
+			if ( val1 < 0.0 ) {
+				val1 = 0.0;
+				d = 1;
+			}
+			if ( val2 < 0.0 ) {
+				val2 = 0.0;
+				d = 1;
+			}
+			if ( d ) nneg++;
+		}
+
+		if ( rmin_fix > 0.0 ) {
+			double res = 2.0*resolution(cell, h, k, l);
+			if ( res < rmin_fix ) {
+				nres++;
+				continue;
+			}
+		}
+
+		if ( rmax_fix > 0.0 ) {
+			double res = 2.0*resolution(cell, h, k, l);
+			if ( res > rmin_fix ) {
+				nres++;
+				continue;
+			}
+		}
+
+		refl1_acc = add_refl(list1_acc, h, k, l);
+		copy_data(refl1_acc, refl1);
+		set_intensity(refl1_acc, val1);
+
+		refl2_acc = add_refl(list2_acc, h, k, l);
+		copy_data(refl2_acc, refl2);
+		set_intensity(refl2_acc, val2);
+
 		ncom++;
 
-		/* Add divided version to 'output' list */
-		tr = add_refl(ratio, h, k, l);
-		set_intensity(tr, val1/val2);
-		set_redundancy(tr, 1);
 	}
-
-	if ( ratiofile != NULL ) {
-		write_reflist(ratiofile, ratio);
-	}
-	reflist_free(ratio);
 
 	gsl_set_error_handler_off();
 
-	STATUS("%i,%i reflections: %i in common where both versions have "
-	       "I/sigma(I) >= %f.\n",
-	       num_reflections(list1), num_reflections(list2), ncom,
-	       sigma_cutoff);
-
-	STATUS("Discarded %i reflections because either or both versions "
-	       " had I/sigma(I) < %f\n", nrej, sigma_cutoff);
-
-	R1 = stat_r1_ignore(list1, list2, &scale_r1fi, config_unity);
-	STATUS("R1(F) = %5.4f %% (scale=%5.2e)"
-	       " (ignoring negative intensities)\n",
-	       R1*100.0, scale_r1fi);
-
-	R1 = stat_r1_zero(list1, list2, &scale_r1, config_unity);
-	STATUS("R1(F) = %5.4f %% (scale=%5.2e)"
-	       " (zeroing negative intensities)\n",
-	       R1*100.0, scale_r1);
-
-	R2 = stat_r2(list1, list2, &scale_r2, config_unity);
-	STATUS("R2(I) = %5.4f %% (scale=%5.2e)\n", R2*100.0, scale_r2);
-
-	R1i = stat_r1_i(list1, list2, &scale_r1i, config_unity);
-	STATUS("R1(I) = %5.4f %% (scale=%5.2e)\n", R1i*100.0, scale_r1i);
-
-	Rdiff = stat_rdiff_ignore(list1, list2, &scale_rdig,
-	                          config_unity);
-	STATUS("Rint(F) = %5.4f %% (scale=%5.2e)"
-	       " (ignoring negative intensities)\n",
-	       Rdiff*100.0, scale_rdig);
-
-	Rdiff = stat_rdiff_zero(list1, list2, &scale, config_unity);
-	STATUS("Rint(F) = %5.4f %% (scale=%5.2e)"
-	       " (zeroing negative intensities)\n",
-	       Rdiff*100.0, scale);
-
-	Rdiff = stat_rdiff_intensity(list1, list2, &scale_rintint,
-	                             config_unity);
-	STATUS("Rint(I) = %5.4f %% (scale=%5.2e)\n",
-	       Rdiff*100.0, scale_rintint);
-
-	pearson = stat_pearson_i(list1, list2);
-	STATUS("Pearson r(I) = %5.4f\n", pearson);
-
-	pearson = stat_pearson_f_ignore(list1, list2);
-	STATUS("Pearson r(F) = %5.4f (ignoring negative intensities)\n",
-	       pearson);
-
-	pearson = stat_pearson_f_zero(list1, list2);
-	STATUS("Pearson r(F) = %5.4f (zeroing negative intensities)\n",
-	       pearson);
-
-	switch ( config_shells ) {
-		case R_SHELL_R1I : scale_for_shells = scale_r1i;  break;
-		case R_SHELL_R1F : scale_for_shells = scale_r1;  break;
-		case R_SHELL_RSPLIT : scale_for_shells = scale_rintint;  break;
-		default : scale_for_shells = 0.0;
+	if ( nrej > 0 ) {
+		STATUS("Discarded %i reflection pairs because either or both"
+		       " versions had I/sigma(I) < %f.\n", nrej, sigma_cutoff);
 	}
 
-	if ( config_shells != R_SHELL_NONE ) {
-		plot_shells(list1, list2, scale_for_shells,
-		            cell, rmin_fix, rmax_fix, config_shells);
+	if ( config_ignorenegs && (nneg > 0) ) {
+		STATUS("Discarded %i reflection pairs because either or both"
+		       " versions had negative intensities.", nneg);
 	}
+
+	if ( config_zeronegs && (nneg > 0) ) {
+		STATUS("For %i reflection pairs, either or both versions had"
+		       " negative intensities which were set to zero.", nneg);
+	}
+
+	if ( nres > 0 ) {
+		STATUS("%i reflection pairs rejected because either or both "
+		       " versions were outside the resolution range.\n", nres);
+	}
+
+	STATUS("%i reflection pairs accepted.\n", ncom);
+
+	resolution_limits(list1_acc, cell, &rmin, &rmax);
+	resolution_limits(list2_acc, cell, &rmin, &rmax);
+	STATUS("Accepted resolution range: %f to %f nm^-1"
+	       " (%.2f to %.2f Angstroms).\n",
+	       rmin/1e9, rmax/1e9, 1e10/rmin, 1e10/rmax);
+
+	reflist_free(list1_raw);
+	reflist_free(list2_raw);
+	reflist_free(list1);
+	reflist_free(list2);
+
+	do_fom(list1_acc, list2_acc, cell, rmin, rmax, fom, config_unity,
+	       nshells);
+
+	reflist_free(list1_acc);
+	reflist_free(list2_acc);
 
 	return 0;
 }
