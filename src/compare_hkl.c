@@ -767,7 +767,7 @@ int main(int argc, char *argv[])
 
 		if ( rmax_fix > 0.0 ) {
 			double res = 2.0*resolution(cell, h, k, l);
-			if ( res > rmin_fix ) {
+			if ( res > rmax_fix ) {
 				nres++;
 				continue;
 			}
