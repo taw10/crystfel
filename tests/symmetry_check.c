@@ -403,12 +403,9 @@ int main(int argc, char *argv[])
 	check_pg_props( "4/m_uaa", 8, 1, &fail);
 	check_pg_props( "4/m_uab", 8, 1, &fail);
 	check_pg_props( "4/m_uac", 8, 1, &fail);
-
-	/* Check "new style" parsing */
-	STATUS("\nNew style:\n");
-	check_pg_props( "2 1 1", 2, 0, &fail);
-	check_pg_props( "1 2 1", 2, 0, &fail);
-	check_pg_props( "1 1 2", 2, 0, &fail);
+	check_pg_props( "23_uaa", 12, 0, &fail);
+	check_pg_props( "23_uab", 12, 0, &fail);
+	check_pg_props( "23_uac", 12, 0, &fail);
 
 	return fail;
 }

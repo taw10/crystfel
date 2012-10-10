@@ -892,7 +892,7 @@ static SymOpList *make_m3barm()
 }
 
 
-static SymOpList *getpg_old(const char *sym)
+static SymOpList *getpg_uac(const char *sym)
 {
 	/* Triclinic */
 	if ( strcmp(sym, "-1") == 0 ) return make_1bar();
@@ -971,7 +971,7 @@ static int char_count(const char *a, char b)
 }
 
 
-static SymOpList *getpg_old_ua(const char *sym, size_t s)
+static SymOpList *getpg_arbitrary_ua(const char *sym, size_t s)
 {
 	char ua;
 	char *pg_type;
@@ -990,7 +990,7 @@ static SymOpList *getpg_old_ua(const char *sym, size_t s)
 		return NULL;
 	}
 
-	pg = getpg_old(pg_type);
+	pg = getpg_uac(pg_type);
 	if ( pg == NULL ) {
 		ERROR("Unrecognised point group type '%s'\n",
 		      pg_type);
@@ -1043,46 +1043,33 @@ static SymOpList *getpg_old_ua(const char *sym, size_t s)
  **/
 SymOpList *get_pointgroup(const char *sym)
 {
-	int n_space, n_underscore;
+	int n_underscore;
 
-	n_space = char_count(sym, ' ');
 	n_underscore = char_count(sym, '_');
 
-	if ( n_space == 0 ) {
+	/* No spaces nor underscores -> old system */
+	if ( n_underscore == 0 ) return getpg_uac(sym);
 
-		/* No spaces nor underscores -> old system */
-		if ( n_underscore == 0 ) return getpg_old(sym);
+	/* No spaces and 1 underscore -> old system + lattice or UA */
+	if ( n_underscore == 1 ) {
 
-		/* No spaces and 1 underscore -> old system + lattice or UA */
-		if ( n_underscore == 1 ) {
+		const char *s;
 
-			const char *s;
+		s = strchr(sym, '_');
+		assert(s != NULL);
+		s++;
 
-			s = strchr(sym, '_');
-			assert(s != NULL);
-			s++;
-
-			/* Old system with H/R lattice? */
-			if ( (s[0] == 'H') || (s[0] == 'R') ) {
-				return getpg_old(sym);
-			}
-
-			/* Old system with unique axis */
-			return getpg_old_ua(sym, s-sym);
-
+		/* Old system with H/R lattice? */
+		if ( (s[0] == 'H') || (s[0] == 'R') ) {
+			return getpg_uac(sym);
 		}
 
+		/* Old system with unique axis */
+		return getpg_arbitrary_ua(sym, s-sym);
+
 	}
 
-	if ( n_space > 4 ) {
-		ERROR("Unrecognised point group '%s'\n", sym);
-		return NULL;
-	}
-
-	/* 1-4 spaces -> new system, possibly with UA and/or lattice */
-
-	/* FIXME: Implementation */
-
+	ERROR("Unrecognised point group '%s'\n", sym);
 	return NULL;
 }
 
