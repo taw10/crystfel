@@ -235,6 +235,28 @@ static IntegerMatrix *delete_row_and_column(IntegerMatrix *m,
 }
 
 
+static signed int cofactor(IntegerMatrix *m,
+                           unsigned int i, unsigned int j)
+{
+	IntegerMatrix *n;
+	signed int t, C;
+
+	n = delete_row_and_column(m, i, j);
+	if ( n == NULL ) {
+		fprintf(stderr, "Failed to allocate matrix.\n");
+		return 0;
+	}
+
+	/* -1 if odd, +1 if even */
+	t = (i+j) & 0x1 ? -1 : +1;
+
+	C = t * intmat_det(n);
+	intmat_free(n);
+
+	return C;
+}
+
+
 /**
  * intmat_det:
  * @m: An %IntegerMatrix
@@ -258,23 +280,7 @@ signed int intmat_det(IntegerMatrix *m)
 	i = 0;  /* Fixed */
 	for ( j=0; j<m->cols; j++ ) {
 
-		signed int C;
-		IntegerMatrix *n;
-		signed int t;
-
-		n = delete_row_and_column(m, i, j);
-		if ( n == NULL ) {
-			fprintf(stderr, "Failed to allocate matrix.\n");
-			return 0;
-		}
-
-		/* -1 if odd, +1 if even */
-		t = (i+j) & 0x1 ? -1 : +1;
-
-		C = t * intmat_det(n);
-		intmat_free(n);
-
-		det += intmat_get(m, i, j) * C;
+		det += intmat_get(m, i, j) * cofactor(m, i, j);
 
 	}
 
@@ -293,23 +299,7 @@ static IntegerMatrix *intmat_cofactors(IntegerMatrix *m)
 	for ( i=0; i<n->rows; i++ ) {
 	for ( j=0; j<n->cols; j++ ) {
 
-		signed int C;
-		IntegerMatrix *M;
-		signed int t;
-
-		M = delete_row_and_column(m, i, j);
-		if ( M == NULL ) {
-			fprintf(stderr, "Failed to allocate matrix.\n");
-			return 0;
-		}
-
-		/* -1 if odd, +1 if even */
-		t = (i+j) & 0x1 ? -1 : +1;
-
-		C = t * intmat_det(M);
-		intmat_free(M);
-
-		intmat_set(n, i, j, C);
+		intmat_set(n, i, j, cofactor(m, i, j));
 
 	}
 	}
