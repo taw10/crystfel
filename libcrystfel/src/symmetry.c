@@ -38,6 +38,7 @@
 
 #include "symmetry.h"
 #include "utils.h"
+#include "integer_matrix.h"
 
 
 /**
@@ -57,7 +58,7 @@ struct sym_op
 {
 	signed int *h;
 	signed int *k;
-	signed int *l;  /* Contributions to h, k and l from h, k, i and l */
+	signed int *l;  /* Contributions to h, k and l from h, k and l */
 	int order;
 };
 
@@ -359,6 +360,100 @@ static SymOpList *expand_ops(SymOpList *s)
 }
 
 
+/* Transform all the operations in a SymOpList by a given matrix.
+ * The matrix must have a determinant of +/- 1 (otherwise its inverse would
+ * not also be an integer matrix). */
+static void transform_ops(SymOpList *s, signed int *na,
+                                        signed int *nb,
+                                        signed int *nc)
+{
+	int n, i;
+	IntegerMatrix *t, *inv;
+	signed int det;
+
+	t = intmat_new(3, 3);
+	if ( t == NULL ) {
+		ERROR("Failed to allocate matrix.\n");
+		return;
+	}
+
+	intmat_set(t, 0, 0, na[0]);
+	intmat_set(t, 1, 0, na[1]);
+	intmat_set(t, 2, 0, na[2]);
+	intmat_set(t, 0, 1, nb[0]);
+	intmat_set(t, 1, 1, nb[1]);
+	intmat_set(t, 2, 1, nb[2]);
+	intmat_set(t, 0, 2, nc[0]);
+	intmat_set(t, 1, 2, nc[1]);
+	intmat_set(t, 2, 2, nc[2]);
+
+	det = intmat_det(t);
+	if ( det == -1 ) {
+		ERROR("Warning: mirrored SymOpList.\n");
+	} else if ( det != 1 ) {
+		ERROR("Invalid transformation for SymOpList.\n");
+		return;
+	}
+
+	inv = intmat_inverse(t);
+	if ( inv == NULL ) {
+		ERROR("Failed to invert matrix.\n");
+		return;
+	}
+
+	n = num_ops(s);
+	for ( i=0; i<n; i++ ) {
+
+		IntegerMatrix *m, *r, *f;
+
+		m = intmat_new(3, 3);
+		if ( m == NULL ) {
+			ERROR("Failed to allocate matrix.\n");
+			return;
+		}
+
+		intmat_set(m, 0, 0, s->ops[i].h[0]);
+		intmat_set(m, 1, 0, s->ops[i].h[1]);
+		intmat_set(m, 2, 0, s->ops[i].h[2]);
+		intmat_set(m, 0, 1, s->ops[i].k[0]);
+		intmat_set(m, 1, 1, s->ops[i].k[1]);
+		intmat_set(m, 2, 1, s->ops[i].k[2]);
+		intmat_set(m, 0, 2, s->ops[i].l[0]);
+		intmat_set(m, 1, 2, s->ops[i].l[1]);
+		intmat_set(m, 2, 2, s->ops[i].l[2]);
+
+		r = intmat_intmat_mult(m, t);
+		if ( r == NULL ) {
+			ERROR("Matrix multiplication failed.\n");
+			return;
+		}
+		intmat_free(m);
+
+		f = intmat_intmat_mult(inv, r);
+		if ( f == NULL ) {
+			ERROR("Matrix multiplication failed.\n");
+			return;
+		}
+		intmat_free(r);
+
+		s->ops[i].h[0] = intmat_get(f, 0, 0);
+		s->ops[i].h[1] = intmat_get(f, 1, 0);
+		s->ops[i].h[2] = intmat_get(f, 2, 0);
+		s->ops[i].k[0] = intmat_get(f, 0, 1);
+		s->ops[i].k[1] = intmat_get(f, 1, 1);
+		s->ops[i].k[2] = intmat_get(f, 2, 1);
+		s->ops[i].l[0] = intmat_get(f, 0, 2);
+		s->ops[i].l[1] = intmat_get(f, 1, 2);
+		s->ops[i].l[2] = intmat_get(f, 2, 2);
+		intmat_free(f);
+
+	}
+
+	intmat_free(t);
+	intmat_free(inv);
+}
+
+
 /********************************* Triclinic **********************************/
 
 static SymOpList *make_1bar()
@@ -386,15 +481,6 @@ static SymOpList *make_2m()
 	add_symop(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* 2 // l */
 	add_symop(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2);  /* m -| l */
 	new->name = strdup("2/m");
-	return expand_ops(new);
-}
-
-
-static SymOpList *make_2_uab()
-{
-	SymOpList *new = new_symoplist();
-	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* 2 // k */
-	new->name = strdup("2_uab");
 	return expand_ops(new);
 }
 
@@ -527,17 +613,6 @@ static SymOpList *make_4mmm()
 	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,1), 2); /* m -| k */
 	add_symop(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1), 2); /* m -| l */
 	new->name = strdup("4/mmm");
-	return expand_ops(new);
-}
-
-
-static SymOpList *make_4mmm_uaa()
-{
-	SymOpList *new = new_symoplist();
-	add_symop(new, v(1,0,0,0), v(0,0,0,1), v(0,-1,0,0), 4); /* 4 // h */
-	add_symop(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1), 2); /* m -| k */
-	add_symop(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,1), 2); /* m -| h */
-	new->name = strdup("4/mmm_uaa");
 	return expand_ops(new);
 }
 
@@ -817,21 +892,7 @@ static SymOpList *make_m3barm()
 }
 
 
-/**
- * get_pointgroup:
- * @sym: A string representation of a point group
- *
- * This function parses @sym and returns the corresponding %SymOpList.
- * In the string representation of the point group, use a preceding minus sign
- * for any character which would have a "bar".  Trigonal groups must be suffixed
- * with either "_H" or "_R" for a hexagonal or rhombohedral lattice
- * respectively.
- *
- * Examples: -1 1 2/m 2 m mmm 222 mm2 4/m 4 -4 4/mmm 422 -42m -4m2 4mm
- * 3_R -3_R 32_R 3m_R -3m_R 3_H -3_H 321_H 312_H 3m1_H 31m_H -3m1_H -31m_H
- * 6/m 6 -6 6/mmm 622 -62m -6m2 6mm 23 m-3 432 -43m m-3m.
- **/
-SymOpList *get_pointgroup(const char *sym)
+static SymOpList *getpg_old(const char *sym)
 {
 	/* Triclinic */
 	if ( strcmp(sym, "-1") == 0 ) return make_1bar();
@@ -840,7 +901,6 @@ SymOpList *get_pointgroup(const char *sym)
 	/* Monoclinic */
 	if ( strcmp(sym, "2/m") == 0 ) return make_2m();
 	if ( strcmp(sym, "2") == 0 ) return make_2();
-	if ( strcmp(sym, "2_uab") == 0 ) return make_2_uab();
 	if ( strcmp(sym, "m") == 0 ) return make_m();
 
 	/* Orthorhombic */
@@ -853,7 +913,6 @@ SymOpList *get_pointgroup(const char *sym)
 	if ( strcmp(sym, "4") == 0 ) return make_4();
 	if ( strcmp(sym, "-4") == 0 ) return make_4bar();
 	if ( strcmp(sym, "4/mmm") == 0 ) return make_4mmm();
-	if ( strcmp(sym, "4/mmm_uaa") == 0 ) return make_4mmm_uaa();
 	if ( strcmp(sym, "422") == 0 ) return make_422();
 	if ( strcmp(sym, "-42m") == 0 ) return make_4bar2m();
 	if ( strcmp(sym, "-4m2") == 0 ) return make_4barm2();
@@ -894,6 +953,136 @@ SymOpList *get_pointgroup(const char *sym)
 	if ( strcmp(sym, "m-3m") == 0 ) return make_m3barm();
 
 	ERROR("Unknown point group '%s'\n", sym);
+	return NULL;
+}
+
+
+static int char_count(const char *a, char b)
+{
+	size_t i;
+	int n;
+
+	i = 0;  n = 0;
+	do {
+		if ( a[i] == b ) n++;
+		if ( a[i] == '\0' ) return n;
+		i++;
+	} while ( 1 );
+}
+
+
+static SymOpList *getpg_old_ua(const char *sym, size_t s)
+{
+	char ua;
+	char *pg_type;
+	SymOpList *pg;
+
+	if ( strncmp(sym+s, "ua", 2) == 0 ) {
+		ua = sym[s+2];
+	} else {
+		ERROR("Unrecognised point group '%s'\n", sym);
+		return NULL;
+	}
+
+	pg_type = strndup(sym, s-1);
+	if ( pg_type == NULL ) {
+		ERROR("Couldn't allocate string.\n");
+		return NULL;
+	}
+
+	pg = getpg_old(pg_type);
+	if ( pg == NULL ) {
+		ERROR("Unrecognised point group type '%s'\n",
+		      pg_type);
+		return NULL;
+	}
+	free(pg_type);
+
+	switch ( ua ) {
+
+		case 'a' :
+		transform_ops(pg, v(0,0,0,1),
+		                  v(0,1,0,0),
+		                  v(-1,0,0,0));
+		break;
+
+		case 'b' :
+		transform_ops(pg, v(1,0,0,0),
+		                  v(0,0,0,1),
+		                  v(0,-1,0,0));
+		break;
+
+		case 'c' :
+		/* No transformation needed */
+		break;
+
+		default :
+		ERROR("Bad unique axis '%c'\n", ua);
+		free_symoplist(pg);
+		return NULL;
+
+	}
+
+	return pg;
+}
+
+
+/**
+ * get_pointgroup:
+ * @sym: A string representation of a point group
+ *
+ * This function parses @sym and returns the corresponding %SymOpList.
+ * In the string representation of the point group, use a preceding minus sign
+ * for any character which would have a "bar".  Trigonal groups must be suffixed
+ * with either "_H" or "_R" for a hexagonal or rhombohedral lattice
+ * respectively.
+ *
+ * Examples: -1 1 2/m 2 m mmm 222 mm2 4/m 4 -4 4/mmm 422 -42m -4m2 4mm
+ * 3_R -3_R 32_R 3m_R -3m_R 3_H -3_H 321_H 312_H 3m1_H 31m_H -3m1_H -31m_H
+ * 6/m 6 -6 6/mmm 622 -62m -6m2 6mm 23 m-3 432 -43m m-3m.
+ **/
+SymOpList *get_pointgroup(const char *sym)
+{
+	int n_space, n_underscore;
+
+	n_space = char_count(sym, ' ');
+	n_underscore = char_count(sym, '_');
+
+	if ( n_space == 0 ) {
+
+		/* No spaces nor underscores -> old system */
+		if ( n_underscore == 0 ) return getpg_old(sym);
+
+		/* No spaces and 1 underscore -> old system + lattice or UA */
+		if ( n_underscore == 1 ) {
+
+			const char *s;
+
+			s = strchr(sym, '_');
+			assert(s != NULL);
+			s++;
+
+			/* Old system with H/R lattice? */
+			if ( (s[0] == 'H') || (s[0] == 'R') ) {
+				return getpg_old(sym);
+			}
+
+			/* Old system with unique axis */
+			return getpg_old_ua(sym, s-sym);
+
+		}
+
+	}
+
+	if ( n_space > 4 ) {
+		ERROR("Unrecognised point group '%s'\n", sym);
+		return NULL;
+	}
+
+	/* 1-4 spaces -> new system, possibly with UA and/or lattice */
+
+	/* FIXME: Implementation */
+
 	return NULL;
 }
 

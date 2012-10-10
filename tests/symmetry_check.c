@@ -152,6 +152,7 @@ static void check_pg_props(const char *pg, int answer, int centro, int *fail)
 
 	if ( sym == NULL ) {
 		*fail = 1;
+		STATUS("%15s : NULL!\n", pg);
 		return;
 	}
 
@@ -273,7 +274,6 @@ int main(int argc, char *argv[])
 	check_pg_props(  "-42m",  8,  0, &fail);
 	check_pg_props(  "-4m2",  8,  0, &fail);
 	check_pg_props( "4/mmm", 16,  1, &fail);
-	check_pg_props( "4/mmm_uaa", 16,  1, &fail);
 	STATUS("\n");
 
 	check_pg_props(  "3_R",   3,  0, &fail);
@@ -391,6 +391,24 @@ int main(int argc, char *argv[])
 	check_subgroup("3_R",  "1", 1, 1,  3, &fail);
 	check_subgroup("-3_R",  "-1", 1, 1,  3, &fail);
 	check_subgroup("6",  "2", 1, 1,  3, &fail);
+
+	/* Check some weird settings */
+	STATUS("\nWeird settings:\n");
+	check_pg_props( "2_uaa", 2, 0, &fail);
+	check_pg_props( "2_uab", 2, 0, &fail);
+	check_pg_props( "2_uac", 2, 0, &fail);
+	check_pg_props( "4_uaa", 4, 0, &fail);
+	check_pg_props( "4_uab", 4, 0, &fail);
+	check_pg_props( "4_uac", 4, 0, &fail);
+	check_pg_props( "4/m_uaa", 8, 1, &fail);
+	check_pg_props( "4/m_uab", 8, 1, &fail);
+	check_pg_props( "4/m_uac", 8, 1, &fail);
+
+	/* Check "new style" parsing */
+	STATUS("\nNew style:\n");
+	check_pg_props( "2 1 1", 2, 0, &fail);
+	check_pg_props( "1 2 1", 2, 0, &fail);
+	check_pg_props( "1 1 2", 2, 0, &fail);
 
 	return fail;
 }
