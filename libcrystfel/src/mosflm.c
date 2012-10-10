@@ -293,10 +293,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_MONOCLINIC :
-		/* "211", "121" or "112" depending on unique axis */
-		if ( ua == 'a' ) g = "211";
-		if ( ua == 'b' ) g = "121";
-		if ( ua == 'c' ) g = "112";
+		g = "2";
 		break;
 
 		case L_ORTHORHOMBIC :
@@ -304,10 +301,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_TETRAGONAL :
-		/* "411", "141" or "114" depending on unique axis */
-		if ( ua == 'a' ) g = "411";
-		if ( ua == 'b' ) g = "141";
-		if ( ua == 'c' ) g = "114";
+		g = "4";
 		break;
 
 		case L_RHOMBOHEDRAL :
@@ -316,13 +310,8 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 
 		case L_HEXAGONAL :
 		if ( centering != 'H' ) {
-			/* "611", "161" or "116" depending on unique axis */
-			if ( ua == 'a' ) g = "611";
-			if ( ua == 'b' ) g = "161";
-			if ( ua == 'c' ) g = "611";
+			g = "6";
 		} else {
-			/* Note that there is no way to communicate any
-			 * unique axis information in this case. */
 			g = "32";
 		}
 		break;
