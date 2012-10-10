@@ -48,21 +48,24 @@ extern void intmat_free(IntegerMatrix *m);
 /* Get/set */
 extern void intmat_set(IntegerMatrix *m, unsigned int i, unsigned int j,
                        signed int v);
-extern signed int intmat_get(IntegerMatrix *m, unsigned int i, unsigned int j);
+extern signed int intmat_get(const IntegerMatrix *m,
+                             unsigned int i, unsigned int j);
 
 /* Matrix-(int)vector multiplication */
-extern signed int *intmat_intvec_mult(IntegerMatrix *m, signed int *vec);
+extern signed int *intmat_intvec_mult(const IntegerMatrix *m,
+                                      const signed int *vec);
 
 /* Matrix-matrix multiplication */
-extern IntegerMatrix *intmat_intmat_mult(IntegerMatrix *a, IntegerMatrix *b);
+extern IntegerMatrix *intmat_intmat_mult(const IntegerMatrix *a,
+                                         const IntegerMatrix *b);
 
 /* Inverse */
-extern IntegerMatrix *intmat_inverse(IntegerMatrix *m);
+extern IntegerMatrix *intmat_inverse(const IntegerMatrix *m);
 
 /* Determinant */
-extern signed int intmat_det(IntegerMatrix *m);
+extern signed int intmat_det(const IntegerMatrix *m);
 
 /* Diagnostics */
-extern void intmat_print(IntegerMatrix *m);
+extern void intmat_print(const IntegerMatrix *m);
 
 #endif	/* INTEGER_MATRIX_H */

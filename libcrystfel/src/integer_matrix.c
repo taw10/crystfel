@@ -127,7 +127,7 @@ void intmat_set(IntegerMatrix *m, unsigned int i, unsigned int j, signed int v)
  *
  * Returns: the @i,@j element of @m.
  **/
-signed int intmat_get(IntegerMatrix *m, unsigned int i, unsigned int j)
+signed int intmat_get(const IntegerMatrix *m, unsigned int i, unsigned int j)
 {
 	assert(i < m->rows);
 	assert(j < m->cols);
@@ -147,7 +147,7 @@ signed int intmat_get(IntegerMatrix *m, unsigned int i, unsigned int j)
  * Returns: a newly allocated array of signed integers containing the answer,
  * or NULL on error.
  **/
-signed int *intmat_intvec_mult(IntegerMatrix *m, signed int *vec)
+signed int *intmat_intvec_mult(const IntegerMatrix *m, const signed int *vec)
 {
 	signed int *ans;
 	unsigned int i;
@@ -180,7 +180,8 @@ signed int *intmat_intvec_mult(IntegerMatrix *m, signed int *vec)
  * Returns: a newly allocated %IntegerMatrix containing the answer, or NULL on
  * error.
  **/
-IntegerMatrix *intmat_intmat_mult(IntegerMatrix *a, IntegerMatrix *b)
+IntegerMatrix *intmat_intmat_mult(const IntegerMatrix *a,
+                                  const IntegerMatrix *b)
 {
 	unsigned int i, j;
 	IntegerMatrix *ans;
@@ -208,7 +209,7 @@ IntegerMatrix *intmat_intmat_mult(IntegerMatrix *a, IntegerMatrix *b)
 }
 
 
-static IntegerMatrix *delete_row_and_column(IntegerMatrix *m,
+static IntegerMatrix *delete_row_and_column(const IntegerMatrix *m,
                                             unsigned int di, unsigned int dj)
 {
 	IntegerMatrix *n;
@@ -235,7 +236,7 @@ static IntegerMatrix *delete_row_and_column(IntegerMatrix *m,
 }
 
 
-static signed int cofactor(IntegerMatrix *m,
+static signed int cofactor(const IntegerMatrix *m,
                            unsigned int i, unsigned int j)
 {
 	IntegerMatrix *n;
@@ -265,7 +266,7 @@ static signed int cofactor(IntegerMatrix *m,
  *
  * Returns: the determinant of @m.
  **/
-signed int intmat_det(IntegerMatrix *m)
+signed int intmat_det(const IntegerMatrix *m)
 {
 	unsigned int i, j;
 	signed int det = 0;
@@ -288,7 +289,7 @@ signed int intmat_det(IntegerMatrix *m)
 }
 
 
-static IntegerMatrix *intmat_cofactors(IntegerMatrix *m)
+static IntegerMatrix *intmat_cofactors(const IntegerMatrix *m)
 {
 	IntegerMatrix *n;
 	signed int i, j;
@@ -316,7 +317,7 @@ static IntegerMatrix *intmat_cofactors(IntegerMatrix *m)
  *
  * Returns: the inverse of @m, or NULL on error.
  **/
-IntegerMatrix *intmat_inverse(IntegerMatrix *m)
+IntegerMatrix *intmat_inverse(const IntegerMatrix *m)
 {
 	IntegerMatrix *adjugateT;
 	IntegerMatrix *inverse;
@@ -361,7 +362,7 @@ IntegerMatrix *intmat_inverse(IntegerMatrix *m)
  * Prints @m to stderr.
  *
  */
-void intmat_print(IntegerMatrix *m)
+void intmat_print(const IntegerMatrix *m)
 {
 	unsigned int i, j;
 
