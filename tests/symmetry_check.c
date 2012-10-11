@@ -406,6 +406,9 @@ int main(int argc, char *argv[])
 	check_pg_props( "23_uaa", 12, 0, &fail);
 	check_pg_props( "23_uab", 12, 0, &fail);
 	check_pg_props( "23_uac", 12, 0, &fail);
+	check_pg_props( "6_uaa", 6, 0, &fail);
+	check_pg_props( "6_uab", 6, 0, &fail);
+	check_pg_props( "6_uac", 6, 0, &fail);
 
 	return fail;
 }
