@@ -549,18 +549,13 @@ int main(int argc, char *argv[])
 	}
 	free(geometry);
 
-	if ( reduction_needs_cell || indexer_needs_cell ) {
-		cell = load_cell_from_pdb(pdb);
-		if ( cell == NULL ) {
-			ERROR("Couldn't read unit cell (from %s)\n", pdb);
-			return 1;
-		}
-	} else {
-		STATUS("No cell needed for these choices of indexing"
-		       " and reduction.\n");
-		cell = NULL;
+	cell = load_cell_from_pdb(pdb);
+	if ( cell == NULL ) {
+		ERROR("Couldn't read unit cell (from %s)\n", pdb);
+		return 1;
 	}
 	free(pdb);
+	cell_print(cell);
 
 	write_stream_header(ofh, argc, argv);
 
