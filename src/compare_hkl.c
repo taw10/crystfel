@@ -794,12 +794,12 @@ int main(int argc, char *argv[])
 
 	if ( config_ignorenegs && (nneg > 0) ) {
 		STATUS("Discarded %i reflection pairs because either or both"
-		       " versions had negative intensities.", nneg);
+		       " versions had negative intensities.\n", nneg);
 	}
 
 	if ( config_zeronegs && (nneg > 0) ) {
 		STATUS("For %i reflection pairs, either or both versions had"
-		       " negative intensities which were set to zero.", nneg);
+		       " negative intensities which were set to zero.\n", nneg);
 	}
 
 	if ( nres > 0 ) {
