@@ -1701,3 +1701,22 @@ const char *symmetry_name(const SymOpList *ops)
 {
 	return ops->name;
 }
+
+
+/**
+ * add_op_intmat:
+ * @s: A %SymOpList
+ * @m: An %IntegerMatrix
+ *
+ * Adds @m to the @s.  Operations are NOT cross-multiplied, i.e. the result
+ * might not be a point group.
+ */
+
+void add_op_intmat(SymOpList *s, const IntegerMatrix *m)
+{
+	add_symop(s,
+	    v(intmat_get(m, 0, 0), intmat_get(m, 0, 1), 0, intmat_get(m, 0, 2)),
+	    v(intmat_get(m, 1, 0), intmat_get(m, 1, 1), 0, intmat_get(m, 1, 2)),
+	    v(intmat_get(m, 2, 0), intmat_get(m, 2, 1), 0, intmat_get(m, 2, 2)),
+	          1);
+}

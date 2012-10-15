@@ -33,6 +33,9 @@
 #include <config.h>
 #endif
 
+
+#include "integer_matrix.h"
+
 /**
  * SymOpList
  *
@@ -75,5 +78,7 @@ extern int is_subgroup(const SymOpList *source, const SymOpList *target);
 extern int is_centrosymmetric(const SymOpList *s);
 extern const char *symmetry_name(const SymOpList *ops);
 extern void describe_symmetry(const SymOpList *s);
+
+extern void add_op_intmat(SymOpList *s, const IntegerMatrix *m);
 
 #endif	/* SYMMETRY_H */
