@@ -521,6 +521,7 @@ int main(int argc, char *argv[])
 			ERROR("Invalid parameters for '--tolerance'\n");
 			return 1;
 		}
+		free(toler);
 	}
 
 	if ( intrad != NULL ) {
