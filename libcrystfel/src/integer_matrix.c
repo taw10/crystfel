@@ -375,3 +375,34 @@ void intmat_print(const IntegerMatrix *m)
 		fprintf(stderr, "]\n");
 	}
 }
+
+
+/**
+ * intmat_is_identity
+ * @m: An %IntegerMatrix
+ *
+ * Returns true if @m is an identity matrix.
+ *
+ */
+int intmat_is_identity(const IntegerMatrix *m)
+{
+	int i, j;
+
+	for ( i=0; i<m->rows; i++ ) {
+	for ( j=0; j<m->cols; j++ ) {
+
+		signed int v;
+
+		v = intmat_get(m, i, j);
+
+		if ( i == j ) {
+			if ( v != 1 ) return 0;
+		} else {
+			if ( v != 0 ) return 0;
+		}
+
+	}
+	}
+
+	return 1;
+}

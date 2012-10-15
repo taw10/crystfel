@@ -65,6 +65,9 @@ extern IntegerMatrix *intmat_inverse(const IntegerMatrix *m);
 /* Determinant */
 extern signed int intmat_det(const IntegerMatrix *m);
 
+/* Is identity? */
+extern int intmat_is_identity(const IntegerMatrix *m);
+
 /* Diagnostics */
 extern void intmat_print(const IntegerMatrix *m);
 
