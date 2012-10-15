@@ -38,6 +38,7 @@
 #endif
 
 #include "utils.h"
+#include "integer_matrix.h"
 
 /* A 3D vector in reciprocal space.
  * Note: Heavily abused to serve as a real space vector as well */
@@ -141,6 +142,7 @@ extern UnitCell *cell_transform_inverse(UnitCell *cell,
                                         UnitCellTransformation *t);
 
 extern UnitCellTransformation *tfn_identity(void);
+extern UnitCellTransformation *tfn_from_intmat(IntegerMatrix *m);
 extern void tfn_combine(UnitCellTransformation *t,
                         double *na, double *nb, double *nc);
 extern void tfn_print(UnitCellTransformation *t);

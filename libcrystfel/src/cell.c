@@ -784,6 +784,32 @@ UnitCellTransformation *tfn_identity()
 }
 
 
+
+/**
+ * tfn_from_intmat:
+ * @m: An %IntegerMatrix
+ *
+ * Returns: A %UnitCellTransformation corresponding to @m.
+ *
+ */
+UnitCellTransformation *tfn_from_intmat(IntegerMatrix *m)
+{
+	UnitCellTransformation *tfn;
+	int i, j;
+
+	tfn = tfn_identity();
+	if ( tfn == NULL ) return NULL;
+
+	for ( i=0; i<3; i++ ) {
+	for ( j=0; j<3; j++ ) {
+		gsl_matrix_set(tfn->m, i, j, intmat_get(m, i, j));
+	}
+	}
+
+	return tfn;
+}
+
+
 /**
  * tfn_combine:
  * @t: A %UnitCellTransformation
