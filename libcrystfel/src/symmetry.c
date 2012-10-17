@@ -1689,7 +1689,7 @@ void describe_symmetry(const SymOpList *s)
 
 	for ( i=0; i<n; i++ ) {
 		char *name = name_equiv(&s->ops[i]);
-		STATUS(" %6s", name);
+		STATUS("   %6s", name);
 		free(name);
 		if ( (i!=0) && (i%8==0) ) STATUS("\n%15s  ", "");
 	}
