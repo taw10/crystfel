@@ -1622,9 +1622,11 @@ static char *get_matrix_name(signed int *v)
 			continue;
 		}
 
-		if ( printed ) add_chars(text, "+", max_len);
-
-		if ( v[i]<0 ) add_chars(text, "-", max_len);
+		if ( v[i]<0 ) {
+			add_chars(text, "-", max_len);
+		} else {
+			if ( printed ) add_chars(text, "+", max_len);
+		}
 
 		if ( abs(v[i])>1 ) {
 			char num[3];
