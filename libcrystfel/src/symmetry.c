@@ -1682,10 +1682,11 @@ static char *name_equiv(const struct sym_op *op)
 void describe_symmetry(const SymOpList *s)
 {
 	int i, n;
+	size_t max_len = 0;
 
 	n = num_equivs(s, NULL);
 
-	STATUS("%15s :", symmetry_name(s));
+	STATUS("%15s : ", symmetry_name(s));
 
 	for ( i=0; i<n; i++ ) {
 		size_t len;
@@ -1698,17 +1699,17 @@ void describe_symmetry(const SymOpList *s)
 	for ( i=0; i<n; i++ ) {
 
 		char *name;
-		size_t n, j;
+		size_t m, j;
 
 		name = name_equiv(&s->ops[i]);
-		n = max_len - strlen(j) + 1;
+		m = (max_len - strlen(name)) + 3;
 
-		for ( j=0; j<n; j++ ) {
+		STATUS("%s", name);
+		for ( j=0; j<m; j++ ) {
 			STATUS(" ");
 		}
-		STATUS("%s", name);
 		free(name);
-		if ( (i!=0) && (i%8==0) ) STATUS("\n%15s  ", "");
+		if ( (i!=0) && (i%8==0) ) STATUS("\n%15s   ", "");
 	}
 	STATUS("\n");
 }
