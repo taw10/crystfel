@@ -1615,13 +1615,6 @@ static char *get_matrix_name(signed int *v)
 
 		if ( v[i] == 0 ) continue;
 
-		if ( (i==0) && (v[0]==v[1]) ) {
-			if ( v[i]>0 ) add_chars(text, "-", max_len);
-			add_chars(text, "i", max_len);
-			v[1] -= v[0];
-			continue;
-		}
-
 		if ( v[i]<0 ) {
 			add_chars(text, "-", max_len);
 		} else {
@@ -1695,6 +1688,7 @@ void describe_symmetry(const SymOpList *s)
 		if ( len > max_len ) max_len = len;
 		free(name);
 	}
+	if ( max_len < 8 ) max_len = 8;
 
 	for ( i=0; i<n; i++ ) {
 
@@ -1702,7 +1696,7 @@ void describe_symmetry(const SymOpList *s)
 		size_t m, j;
 
 		name = name_equiv(&s->ops[i]);
-		m = (max_len - strlen(name)) + 3;
+		m = max_len - strlen(name) + 3;
 
 		STATUS("%s", name);
 		for ( j=0; j<m; j++ ) {
@@ -1710,6 +1704,7 @@ void describe_symmetry(const SymOpList *s)
 		}
 		free(name);
 		if ( (i!=0) && (i%8==0) ) STATUS("\n%15s   ", "");
+
 	}
 	STATUS("\n");
 }
