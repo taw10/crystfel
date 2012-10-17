@@ -1688,8 +1688,25 @@ void describe_symmetry(const SymOpList *s)
 	STATUS("%15s :", symmetry_name(s));
 
 	for ( i=0; i<n; i++ ) {
+		size_t len;
 		char *name = name_equiv(&s->ops[i]);
-		STATUS(" %6s", name);
+		len = strlen(name);
+		if ( len > max_len ) max_len = len;
+		free(name);
+	}
+
+	for ( i=0; i<n; i++ ) {
+
+		char *name;
+		size_t n, j;
+
+		name = name_equiv(&s->ops[i]);
+		n = max_len - strlen(j) + 1;
+
+		for ( j=0; j<n; j++ ) {
+			STATUS(" ");
+		}
+		STATUS("%s", name);
 		free(name);
 		if ( (i!=0) && (i%8==0) ) STATUS("\n%15s  ", "");
 	}
