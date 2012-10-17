@@ -1658,7 +1658,11 @@ static char *name_equiv(const struct sym_op *op)
 	l = get_matrix_name(op->l);
 	name = malloc(32);
 
-	snprintf(name, 31, "%s%s%s", h, k, l);
+	if ( strlen(h)+strlen(k)+strlen(l) == 3 ) {
+		snprintf(name, 31, "%s%s%s", h, k, l);
+	} else {
+		snprintf(name, 31, "%s,%s,%s", h, k, l);
+	}
 	free(h);
 	free(k);
 	free(l);
