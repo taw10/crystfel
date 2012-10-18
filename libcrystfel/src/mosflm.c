@@ -159,9 +159,9 @@ static int read_newmat(const char *filename, struct image *image)
 
 	/* No idea why the cell comes out in this strange coordinate system */
 	cell_set_reciprocal(image->candidate_cells[0],
-	                    asy*c, -asz*c, asx*c,
-	                    bsy*c, -bsz*c, bsx*c,
-	                    csy*c, -csz*c, csx*c);
+	                    -asy*c, -asz*c, asx*c,
+	                    -bsy*c, -bsz*c, bsx*c,
+	                    -csy*c, -csz*c, csx*c);
 
         image->ncells = 1;
 
@@ -184,7 +184,7 @@ static void write_spt(struct image *image, const char *filename)
 	}
 
 	fprintf(fh, "%10d %10d %10.8f %10.6f %10.6f\n", 1, 1, 0.0, 1.0, 0.0);
-	fprintf(fh, "%10d %10d\n", 1, 1);
+	fprintf(fh, "%10d %10d\n", 0, 1);
 	fprintf(fh, "%10.5f %10.5f\n", 0.0, 0.0);
 
 	n = image_feature_count(image->features);
@@ -205,7 +205,7 @@ static void write_spt(struct image *image, const char *filename)
 		rx = (xs + p->cnx) / p->res;
 		ry = (ys + p->cny) / p->res;
 
-		x = rx*fclen/p->clen;
+		x = -rx*fclen/p->clen;
 		y = ry*fclen/p->clen;  /* Peak positions in m */
 
 		fprintf(fh, "%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
