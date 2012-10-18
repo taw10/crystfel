@@ -1,0 +1,45 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+open(FH, $ARGV[0]);
+my $search = $ARGV[1];
+
+my $line;
+my $is_indexed;
+my $filename;
+my @buf = ();
+my $dump = 0;
+
+while ( $line = <FH> ) {
+
+	chomp($line);
+
+	if ( $line =~ /^-----\ Begin chunk\ -----$/ ) {
+		$dump = 0;
+		@buf = ();
+	}
+
+	if ( $dump == 1 ) {
+		printf("%s\n", $line);
+	} elsif ( $dump == 0 ) {
+		push(@buf, $line);
+	}
+
+	if ( $line =~ /^Image\ filename: (.*)$/ ) {
+		$filename = $1;
+		if ( $filename eq $search ) {
+			while ( my $l = shift(@buf) ) {
+				printf("%s\n", $l);
+			}
+			$dump = 1;
+		} else {
+			$dump = -1;
+		}
+	}
+
+	if ( $line =~ /^-----\ End chunk\ -----$/ ) {
+
+	}
+
+}
