@@ -159,9 +159,9 @@ static int read_newmat(const char *filename, struct image *image)
 
 	/* No idea why the cell comes out in this strange coordinate system */
 	cell_set_reciprocal(image->candidate_cells[0],
-                            asy*c, -asz*c, asx*c,
-                            bsy*c, -bsz*c, bsx*c,
-                            csy*c, -csz*c, csx*c);
+	                    asy*c, -asz*c, asx*c,
+	                    bsy*c, -bsz*c, bsx*c,
+	                    csy*c, -csz*c, csx*c);
 
         image->ncells = 1;
 
