@@ -157,7 +157,10 @@ static int read_newmat(const char *filename, struct image *image)
 
 	image->candidate_cells[0] = cell_new();
 
-	/* No idea why the cell comes out in this strange coordinate system */
+	/* The relationship between the coordinates in the spot file and the
+	 * resulting matrix is diabolically complicated.  This transformation
+	 * seems to work, but is not derived by working through all the
+	 * transformations. */
 	cell_set_reciprocal(image->candidate_cells[0],
 	                    -asy*c, -asz*c, asx*c,
 	                    -bsy*c, -bsz*c, bsx*c,
