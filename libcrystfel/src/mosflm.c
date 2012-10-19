@@ -183,8 +183,14 @@ static void write_spt(struct image *image, const char *filename)
 		return;
 	}
 
+	/* Number of pixels in x, number of pixels in y, pixel size (mm),
+	 * YSCALE, OMEGA */
 	fprintf(fh, "%10d %10d %10.8f %10.6f %10.6f\n", 1, 1, 0.0, 1.0, 0.0);
+
+	/* INVERTX, ISWUNG */
 	fprintf(fh, "%10d %10d\n", 0, 1);
+
+	/* XBEAM, YBEAM */
 	fprintf(fh, "%10.5f %10.5f\n", 0.0, 0.0);
 
 	n = image_feature_count(image->features);
