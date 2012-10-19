@@ -255,6 +255,8 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 		Reflection *refl;
 		double xl, yl, zl;
 
+		if ( forbidden_reflection(cell, h, k, l) ) continue;
+
 		/* Get the coordinates of the reciprocal lattice point */
 		xl = h*asx + k*bsx + l*csx;
 		yl = h*asy + k*bsy + l*csy;
