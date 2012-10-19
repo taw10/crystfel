@@ -88,13 +88,38 @@ IntegerMatrix *intmat_new(unsigned int rows, unsigned int cols)
 
 
 /**
+ * intmat_copy:
+ * @m: An %IntegerMatrix
+ *
+ * Returns: a newly allocated copy of @m, or NULL on error/
+ **/
+IntegerMatrix *intmat_copy(IntegerMatrix *m)
+{
+	IntegerMatrix *p;
+	int i, j;
+
+	p = intmat_new(m->rows, m->cols);
+	if ( p == NULL ) return NULL;
+
+	for ( i=0; i<m->rows; i++ ) {
+	for ( j=0; j<m->rows; j++ ) {
+		intmat_set(p, i, j, intmat_get(m, i, j));
+	}
+	}
+
+	return p;
+}
+
+
+/**
  * intmat_free:
  * @m: An %IntegerMatrix
  *
- * Frees @m.
+ * Frees @m, unless @m is NULL in which case nothing is done.
  **/
 void intmat_free(IntegerMatrix *m)
 {
+	if ( m == NULL ) return;
 	free(m->v);
 	free(m);
 }
@@ -388,6 +413,8 @@ int intmat_is_identity(const IntegerMatrix *m)
 {
 	int i, j;
 
+	if ( m->rows != m->cols ) return 0;
+
 	for ( i=0; i<m->rows; i++ ) {
 	for ( j=0; j<m->cols; j++ ) {
 
@@ -400,6 +427,70 @@ int intmat_is_identity(const IntegerMatrix *m)
 		} else {
 			if ( v != 0 ) return 0;
 		}
+
+	}
+	}
+
+	return 1;
+}
+
+
+/**
+ * intmat_is_inversion
+ * @m: An %IntegerMatrix
+ *
+ * Returns true if @m = -I, where I is an identity matrix.
+ *
+ */
+int intmat_is_inversion(const IntegerMatrix *m)
+{
+	int i, j;
+
+	if ( m->rows != m->cols ) return 0;
+
+	for ( i=0; i<m->rows; i++ ) {
+	for ( j=0; j<m->cols; j++ ) {
+
+		signed int v;
+
+		v = intmat_get(m, i, j);
+
+		if ( i == j ) {
+			if ( v != -1 ) return 0;
+		} else {
+			if ( v != 0 ) return 0;
+		}
+
+	}
+	}
+
+	return 1;
+}
+
+
+/**
+ * intmat_equals
+ * @a: An %IntegerMatrix
+ * @b: An %IntegerMatrix
+ *
+ * Returns true if @a = @b.
+ *
+ */
+int intmat_equals(const IntegerMatrix *a, const IntegerMatrix *b)
+{
+	int i, j;
+
+	if ( a->rows != b->rows ) return 0;
+	if ( a->cols != b->cols ) return 0;
+
+	for ( i=0; i<a->rows; i++ ) {
+	for ( j=0; j<b->cols; j++ ) {
+
+		signed int v;
+
+		v = intmat_get(a, i, j);
+
+		if ( v != intmat_get(b, i, j) ) return 0;
 
 	}
 	}

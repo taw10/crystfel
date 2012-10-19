@@ -43,6 +43,7 @@ typedef struct _integermatrix IntegerMatrix;
 
 /* Alloc/dealloc */
 extern IntegerMatrix *intmat_new(unsigned int rows, unsigned int cols);
+extern IntegerMatrix *intmat_copy(IntegerMatrix *m);
 extern void intmat_free(IntegerMatrix *m);
 
 /* Get/set */
@@ -67,6 +68,12 @@ extern signed int intmat_det(const IntegerMatrix *m);
 
 /* Is identity? */
 extern int intmat_is_identity(const IntegerMatrix *m);
+
+/* Is inversion? */
+extern int intmat_is_inversion(const IntegerMatrix *m);
+
+/* Comparison */
+extern int intmat_equals(const IntegerMatrix *a, const IntegerMatrix *b);
 
 /* Diagnostics */
 extern void intmat_print(const IntegerMatrix *m);
