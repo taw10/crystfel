@@ -48,6 +48,11 @@
   </chapter>
 
   <chapter>
+    <title>Integer Matrices</title>
+        <xi:include href="xml/integer_matrix.xml"><xi:fallback /></xi:include>
+  </chapter>
+
+  <chapter>
     <title>Simulation</title>
         <xi:include href="xml/simulation.xml"><xi:fallback /></xi:include>
   </chapter>

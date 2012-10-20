@@ -47,7 +47,7 @@
  * @include: "integer_matrix.h"
  * @Image:
  *
- * Routines to handle integer matrix
+ * An integer matrix library
  */
 
 
