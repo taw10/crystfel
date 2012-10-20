@@ -227,7 +227,6 @@ void hdfile_close(struct hdfile *f)
 }
 
 
-
 /* Deprecated */
 int hdf5_write(const char *filename, const void *data,
                int width, int height, int type)

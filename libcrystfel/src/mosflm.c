@@ -587,7 +587,6 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	mosflm->step = 1;	/* This starts the "initialisation" procedure */
 	mosflm->finished_ok = 0;
 
-
 	do {
 
 		fd_set fds;
