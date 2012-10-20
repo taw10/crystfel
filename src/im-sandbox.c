@@ -237,9 +237,9 @@ static void process_image(const struct index_args *iargs,
 	if ( image.lambda < 0.0 ) {
 		if ( beam != NULL ) {
 			ERROR("Using nominal photon energy of %.2f eV\n",
-			beam->photon_energy);
+			      beam->photon_energy);
 			image.lambda = ph_en_to_lambda(
-			eV_to_J(beam->photon_energy));
+			                          eV_to_J(beam->photon_energy));
 		} else {
 			ERROR("No wavelength in file, so you need to give "
 				"a beam parameters file with -b.\n");
@@ -252,13 +252,13 @@ static void process_image(const struct index_args *iargs,
 	if ( image.lambda > 1000 ) {
 		if ( beam != NULL ) {
 			ERROR("Nonsensical wavelength in HDF5."
-				"Using nominal photon energy from beam file: %.2f eV\n",
-			beam->photon_energy);
+			      "Using nominal photon energy of %.2f eV\n",
+			      beam->photon_energy);
 			image.lambda = ph_en_to_lambda(
-			eV_to_J(beam->photon_energy));
+			                          eV_to_J(beam->photon_energy));
 		} else {
-			ERROR("No wavelength in file, so you need to give "
-				"a beam parameters file with -b.\n");
+			ERROR("Nonsensical wavelength in file, so you need to "
+			      "give a beam parameters file with -b.\n");
 			hdfile_close(hdfile);
 			free_detector_geometry(image.det);
 			return;
@@ -266,8 +266,6 @@ static void process_image(const struct index_args *iargs,
 	}
 
 	fill_in_values(image.det, hdfile);
-
-
 
 	if ( config_cmfilter ) {
 		filter_cm(&image);
