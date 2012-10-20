@@ -449,10 +449,6 @@ int main(int argc, char *argv[])
 	}
 	free(speaks);
 
-	if ( pdb == NULL ) {
-		pdb = strdup("molecule.pdb");
-	}
-
 	if ( prefix == NULL ) {
 		prefix = strdup("");
 	} else {
@@ -550,13 +546,18 @@ int main(int argc, char *argv[])
 	}
 	free(geometry);
 
-	cell = load_cell_from_pdb(pdb);
-	if ( cell == NULL ) {
-		ERROR("Couldn't read unit cell (from %s)\n", pdb);
-		return 1;
+	if ( pdb != NULL ) {
+		cell = load_cell_from_pdb(pdb);
+		if ( cell == NULL ) {
+			ERROR("Couldn't read unit cell (from %s)\n", pdb);
+			return 1;
+		}
+		free(pdb);
+		cell_print(cell);
+	} else {
+		STATUS("No unit cell given.\n");
+		cell = NULL;
 	}
-	free(pdb);
-	cell_print(cell);
 
 	write_stream_header(ofh, argc, argv);
 
