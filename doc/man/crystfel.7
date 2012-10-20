@@ -84,7 +84,7 @@ the list of examples on the CrystFEL website.
 .SH SYMMETRY IN CRYSTFEL
 Without only a very few exceptions, CrystFEL is not interested in space groups.  Instead, it deals with point groups which embody the information about how data should be merged from different crystals.  Every space group belongs to exactly one point group, and you can look up the right one in the International Tables or using the symmetry tables accompanying the CrystFEL source (or to be found on the CrystFEL website in the Theory section).
 
-A limitation of symmetry in the current version of CrystFEL is that it can only accept point groups in standard settings.  That means that the highest-order rotation axis must always be parallel to c*, monoclinic unit cells should have \fIc\fR as the unique axis and so on.  This is a limitation of the way your input, for example using the \fB-y\fR argument of \fBprocess_hkl\fR, is turned into CrystFEL's internal representation of symmetry, and so future versions should very soon be able to handle any setting.
+You can append \fB_ua\fR\fIX\fR to any of the point group symbols listed below, where \fIX\fR is \fBa\fR, \fBb\fR or \fBc\fR.  This will specify the 'unique' axis for lattices which have one.
 
 The options are:
 

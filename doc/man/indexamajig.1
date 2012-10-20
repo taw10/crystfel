@@ -318,65 +318,6 @@ Normally, indexamajig will check that the projected reciprocal space positions o
 .PD
 Don't subtract local background estimates from integrated intensities.  This is almost never useful, but might help to detect problems from troublesome background noise.
 
-.PD 0
-.IP \fB--cpus=\fR\fIn\fR
-.IP \fB--cpugroup=\fR\fIn\fR
-.IP \fB--cpuoffset=\fR\fIn\fR
-.PD
-See the section below about \fBTUNING CPU AFFINITIES FOR NUMA HARDWARE\fR.  Note in particular that \fB--cpus\fR is not the same as \fB-j\fR.
-
-
-
-.SH TUNING CPU AFFINITIES FOR NUMA HARDWARE
-
-If you are running indexamajig on a NUMA (non-uniform memory architecture)
-machine, a performance gain can sometimes be made by preventing the kernel from
-allowing a process or thread to run on a CPU which is distant from the one on
-which it started.  Distance, in this context, might mean that the CPU is able to
-access all the memory visible to the original CPU, but perhaps only relatively
-slowly via a cable link.  In many cases a group of CPUs will have direct access
-to a certain region of memory, and so the process may be scheduled on any CPU in
-that group without any penalty.  However, scheduling the process to any CPU
-outside the group may be slow.  When running under Linux, indexamajig is able to
-avoid such sub-optimal process scheduling by setting CPU affinities for its
-threads.  The CPU affinities are also inherited by subprocesses (e.g. MOSFLM or
-DirAx).
-
-To do this usefully, you need to give indexamajig some information about your
-hardware's architecture.  Specify the size of the CPU groups using
-"--cpugroup=<n>".  You also need to specify the overall number of CPUs, so that
-the program knows when to 'wrap around'.  Using "--cpuoffset=<n>", where "n" is
-a group number (not a CPU number), allows you to manually skip a few CPUs, which
-may be useful if you do not want to use all the available CPUs but want to avoid
-running all your jobs on the same ones.
-
-Note that specifying the above options is NOT the same thing as giving the
-number of analyses to run in parallel (the 'number of threads'), which is done
-with "-j <n>".  The CPU tuning options provide information to indexamajig about
-how to set the CPU affinities for its threads, but it does not specify how many
-threads to use.
-
-Example: 72-core Altix UV 100 machine at the author's institution
-
-This machine consists of six blades, each containing two 6-core CPUs and some
-local memory.  Any CPU on any blade can access the memory on any other blade,
-but the access will be slow compared to accessing memory on the same blade.
-When running two instances of indexamajig, a sensible choice of parameters might
-be:
-
-.PP
-Instance 1: --cpus=72 --cpugroup=12 --cpuoffset=0 -j 36
-.PP
-Instance 2: --cpus=72 --cpugroup=12 --cpuoffset=36 -j 36
-
-This would dedicate half of the CPUs to one instance, and the other half to the
-other.
-
-
-.SH A NOTE ABOUT UNIT CELL SETTINGS
-
-At the moment, CrystFEL's core symmetry module only knows about one setting for each unit cell.  You must use the same setting for now, but this will be improved in future versions.  The cell settings are the standard ones from the International Tables (2006).  That means, for example, that for orthorhombic cells in point group mm2 the twofold axis should be along "c", i.e. no mirror perpendicular to "c".  For tetragonal cells and hexagonal lattices, the unique axis should be "c" as usual.  For monoclinic cells, the unique axis must be "c".
-
 
 .SH BUGS
 Don't run more than one indexamajig jobs simultaneously in the same working
