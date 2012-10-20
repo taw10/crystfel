@@ -287,13 +287,11 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 {
 	LatticeType latt;
 	char centering;
-	char ua;
 	char *g = NULL;
 	char *result;
 
 	latt = cell_get_lattice_type(cell);
 	centering = cell_get_centering(cell);
-	ua = cell_get_unique_axis(cell);
 
 	switch ( latt )
 	{
