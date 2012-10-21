@@ -264,6 +264,11 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		if ( (p_cfs+dfs >= p_w) || (p_css+dss >= p_h)
 		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) ) return 1;
 
+		/* Wandered into a bad region? */
+		if ( in_bad_region(image->det, p_cfs+dfs, p_css+dss) ) {
+			return 1;
+		}
+
 		/* Check if there is a peak in the background region */
 		if ( (bgPkMask != NULL)
 		  && bgPkMask[(p_cfs+dfs) + p_w*(p_css+dss)] ) continue;
@@ -317,6 +322,11 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		/* Strayed off one panel? */
 		if ( (p_cfs+dfs >= p_w) || (p_css+dss >= p_h)
 		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) ) return 1;
+
+		/* Wandered into a bad region? */
+		if ( in_bad_region(image->det, p_cfs+dfs, p_css+dss) ) {
+			return 1;
+		}
 
 		idx = dfs+cfs+image->width*(dss+css);
 
