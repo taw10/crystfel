@@ -71,8 +71,6 @@
  *
  * Rotate a %UnitCell using a %quaternion.
  *
- * Deprecated: 0.4.3.  Use tfn_random_rotation() and cell_transform() instead.
- *
  * Returns: a newly allocated rotated copy of @in.
  *
  */
@@ -1055,9 +1053,6 @@ void cell_fudge_gslcblas()
  * @rot: Euler angle about new +z
  *
  * Rotate a %UnitCell using Euler angles
- *
- * Deprecated: Deprecated since 0.4.3.  Use tfn_random_rotation() and
- * cell_transform() instead.
  *
  * Returns: a newly allocated rotated copy of @in.
  *
