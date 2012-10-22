@@ -216,7 +216,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
                           double *pfs, double *pss,
                           double *intensity, double *sigma,
                           double ir_inn, double ir_mid, double ir_out,
-                          int use_max_adu, int *bgPkMask)
+                          int use_max_adu, int *bgPkMask, int *saturated)
 {
 	signed int dfs, dss;
 	double lim_sq, out_lim_sq, mid_lim_sq;
@@ -292,7 +292,10 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		val = image->data[idx];
 
 		/* Veto peak if it contains saturation in bg region */
-		if ( use_max_adu && (val > p->max_adu) ) return 1;
+		if ( use_max_adu && (val > p->max_adu) ) {
+			if ( saturated != NULL ) *saturated = 1;
+			return 1;
+		}
 
 		bg_tot += val;
 		bg_tot_sq += pow(val, 2.0);
@@ -347,7 +350,10 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		val = image->data[idx] - bg_mean;
 
 		/* Veto peak if it contains saturation */
-		if ( use_max_adu && (image->data[idx] > p->max_adu) ) return 1;
+		if ( use_max_adu && (val > p->max_adu) ) {
+			if ( saturated != NULL ) *saturated = 1;
+			return 1;
+		}
 
 		pk_counts++;
 		pk_total += val;
@@ -481,7 +487,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		/* Centroid peak and get better coordinates. */
 		r = integrate_peak(image, mask_fs, mask_ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
-		                   ir_inn, ir_mid, ir_out, 0, NULL);
+		                   ir_inn, ir_mid, ir_out, 0, NULL, NULL);
 
 		if ( r ) {
 			/* Bad region - don't detect peak */
@@ -730,6 +736,7 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 		signed int h, k, l;
 		struct panel *p;
 		int pnum, j, found;
+		int saturated;
 
 		refl = il[i].refl;
 
@@ -781,7 +788,9 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 
 		r = integrate_peak(image, pfs, pss, &fs, &ss,
 		                   &intensity, &sigma, ir_inn, ir_mid, ir_out,
-		                   1, bgMasks[pnum]);
+		                   1, bgMasks[pnum], &saturated);
+
+		if ( saturated ) image->n_saturated++;
 
 		/* I/sigma(I) cutoff */
 		if ( intensity/sigma < min_snr ) r = 1;

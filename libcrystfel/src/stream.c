@@ -261,6 +261,9 @@ void write_chunk(FILE *ofh, struct image *i, struct hdfile *hdfile, int f)
 		             i->diffracting_resolution/1e9,
 		             1e9 / i->diffracting_resolution);
 
+		fprintf(ofh, "num_saturated_reflections"
+		             " = %lli\n", i->n_saturated);
+
 	}
 
 	if ( i->det != NULL ) {
@@ -343,6 +346,7 @@ int read_chunk(FILE *fh, struct image *image)
 	image->features = NULL;
 	image->reflections = NULL;
 	image->indexed_cell = NULL;
+	image->n_saturated = 0;
 
 	do {
 
@@ -415,6 +419,10 @@ int read_chunk(FILE *fh, struct image *image)
 		if ( strncmp(line, "photon_energy_eV = ", 19) == 0 ) {
 			image->lambda = ph_en_to_lambda(eV_to_J(atof(line+19)));
 			have_ev = 1;
+		}
+
+		if ( strncmp(line, "num_saturated_reflections = ", 28) == 0 ) {
+			image->n_saturated = atoi(line+28);
 		}
 
 		if ( strcmp(line, PEAK_LIST_START_MARKER) == 0 ) {

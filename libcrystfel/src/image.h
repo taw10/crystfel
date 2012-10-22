@@ -104,6 +104,7 @@ typedef struct _imagefeaturelist ImageFeatureList;
  *    int                     height;
  *
  *    RefList                 *reflections;
+ *    long long unsigned int  n_saturated;
  *
  *    ImageFeatureList        *features;
  * };
@@ -169,6 +170,7 @@ struct image {
 
 	/* Integrated (or about-to-be-integrated) reflections */
 	RefList                 *reflections;
+	long long int           n_saturated;  /* Number of overloads */
 
 	/* Detected peaks */
 	ImageFeatureList        *features;

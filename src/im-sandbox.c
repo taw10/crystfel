@@ -186,6 +186,7 @@ static void process_image(const struct index_args *iargs,
 	image.det = copy_geom(iargs->det);
 	image.copyme = iargs->copyme;
 	image.reflections = NULL;
+	image.n_saturated = 0;
 	image.id = cookie;
 	image.filename = pargs->filename;
 	image.beam = beam;
