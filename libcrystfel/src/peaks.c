@@ -831,3 +831,81 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 
 	free(il);
 }
+
+
+void validate_peaks(struct image *image, double min_snr,
+                    int ir_inn, int ir_mid, int ir_out)
+{
+	int i, n;
+	ImageFeatureList *flist;
+	int n_wtf, n_int, n_dft, n_snr, n_prx;
+
+	flist = image_feature_list_new();
+	if ( flist == NULL ) return;
+
+	n = image_feature_count(image->features);
+
+	/* Loop over peaks, putting each one through the integrator */
+	n_wtf = 0;  n_int = 0;  n_dft = 0;  n_snr = 0;  n_prx = 0;
+	for ( i=0; i<n; i++ ) {
+
+		struct imagefeature *f;
+		int r;
+		double d;
+		int idx;
+		double f_fs, f_ss;
+		double intensity, sigma;
+		struct panel *p;
+
+		f = image_get_feature(image->features, i);
+		if ( f == NULL ) {
+			n_wtf++;
+			continue;
+		}
+
+		p = find_panel(image->det, f->fs, f->ss);
+		if ( p == NULL ) {
+			n_wtf++;
+			continue;
+		}
+
+		r = integrate_peak(image, f->fs, f->ss,
+		                   &f_fs, &f_ss, &intensity, &sigma,
+		                   ir_inn, ir_mid, ir_out, 0, NULL, NULL);
+		if ( r ) {
+			n_int++;
+			continue;
+		}
+
+		/* It is possible for the centroid to fall outside the image */
+		if ( (f_fs < p->min_fs) || (f_fs > p->max_fs)
+		  || (f_ss < p->min_ss) || (f_ss > p->max_ss) )
+		{
+			n_dft++;
+			continue;
+		}
+
+		if ( fabs(intensity)/sigma < min_snr ) {
+			n_snr++;
+			continue;
+		}
+
+		/* Check for a nearby feature */
+		image_feature_closest(flist, f_fs, f_ss, &d, &idx);
+		if ( d < 2.0*ir_inn ) {
+			n_prx++;
+			continue;
+		}
+
+		/* Add using "better" coordinates */
+		image_add_feature(flist, f_fs, f_ss, image, intensity, NULL);
+
+	}
+
+	//STATUS("HDF5: %i peaks, validated: %i.  WTF: %i, integration: %i,"
+	//       " drifted: %i, SNR: %i, proximity: %i\n",
+	//       n, image_feature_count(flist),
+	//       n_wtf, n_int, n_dft, n_snr, n_prx);
+	image_feature_list_free(image->features);
+	image->features = flist;
+}

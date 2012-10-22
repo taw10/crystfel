@@ -53,4 +53,7 @@ extern int peak_sanity_check(struct image *image);
 extern void estimate_resolution(RefList *list, UnitCell *cell,
                                 double *min, double *max);
 
+extern void validate_peaks(struct image *image, double min_snr,
+                           int ir_inn, int ir_mid, int ir_out);
+
 #endif	/* PEAKS_H */
