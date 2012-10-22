@@ -265,7 +265,9 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) ) return 1;
 
 		/* Wandered into a bad region? */
-		if ( in_bad_region(image->det, p_cfs+dfs, p_css+dss) ) {
+		if ( in_bad_region(image->det, p->min_fs+p_cfs+dfs,
+		                               p->min_ss+p_css+dss) )
+		{
 			return 1;
 		}
 
@@ -327,7 +329,9 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) ) return 1;
 
 		/* Wandered into a bad region? */
-		if ( in_bad_region(image->det, p_cfs+dfs, p_css+dss) ) {
+		if ( in_bad_region(image->det, p->min_fs+p_cfs+dfs,
+		                               p->min_ss+p_css+dss) )
+		{
 			return 1;
 		}
 
