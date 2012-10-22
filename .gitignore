@@ -32,7 +32,6 @@ src/compare_hkl
 src/render_hkl
 src/partialator
 src/check_hkl
-src/sum_stack
 src/partial_sim
 src/.dirstamp
 *~
