@@ -79,6 +79,6 @@ extern int is_centrosymmetric(const SymOpList *s);
 extern const char *symmetry_name(const SymOpList *ops);
 extern void describe_symmetry(const SymOpList *s);
 
-extern void add_op_intmat(SymOpList *s, const IntegerMatrix *m);
+extern void add_symop(SymOpList *s, IntegerMatrix *m);
 
 #endif	/* SYMMETRY_H */
