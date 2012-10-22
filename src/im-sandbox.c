@@ -228,8 +228,8 @@ static void process_image(const struct index_args *iargs,
 		ERROR("Image size doesn't match geometry size"
 			" - rejecting image.\n");
 		ERROR("Image size: %i,%i.  Geometry size: %i,%i\n",
-		image.width, image.height,
-		image.det->max_fs + 1, image.det->max_ss + 1);
+		      image.width, image.height,
+		      image.det->max_fs + 1, image.det->max_ss + 1);
 		hdfile_close(hdfile);
 		free_detector_geometry(image.det);
 		return;
