@@ -65,12 +65,14 @@ static float *get_binned_panel(struct image *image, int binning,
 
 	data = malloc(w*h*sizeof(float));
 
+	*max = 0.0;
 	for ( x=0; x<w; x++ ) {
 	for ( y=0; y<h; y++ ) {
 
 		double total;
 		size_t xb, yb;
 		int bad = 0;
+		double val;
 
 		total = 0;
 		for ( xb=0; xb<binning; xb++ ) {
@@ -84,8 +86,6 @@ static float *get_binned_panel(struct image *image, int binning,
 			ss = binning*y+yb+p->min_ss;
 			v = in[fs+ss*fw];
 			total += v;
-
-			if ( v > p->max_adu ) tbad = 1;
 
 			if ( in_bad_region(image->det, fs, ss) ) tbad = 1;
 
@@ -104,17 +104,19 @@ static float *get_binned_panel(struct image *image, int binning,
 
 			}
 
-			if ( !tbad ) {
-				if ( v > *max ) *max = v;
-			}
 			if ( tbad ) bad = 1;
 
 		}
 		}
 
-		data[x+w*y] = total / ((double)binning * (double)binning);
+		val = total / ((double)binning * (double)binning);
 
-		if ( bad ) data[x+w*y] = -INFINITY;
+		if ( bad ) {
+			data[x+w*y] = -INFINITY;
+		} else {
+			data[x+w*y] = val;
+			if ( val > *max ) *max = val;
+		}
 
 	}
 	}
