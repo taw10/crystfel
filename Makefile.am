@@ -1,10 +1,10 @@
+docdir = ${datadir}/doc/${PACKAGE}
 EXTRA_DIST = configure m4/gnulib-cache.m4
 SUBDIRS = lib doc/reference libcrystfel
 ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
-               src/compare_hkl src/powder_plot \
-               src/partialator src/check_hkl src/partial_sim
+               src/compare_hkl  src/partialator src/check_hkl src/partial_sim
 
 noinst_PROGRAMS = tests/list_check tests/integration_check \
                   tests/pr_gradient_check tests/symmetry_check \
@@ -60,8 +60,6 @@ src_compare_hkl_SOURCES = src/compare_hkl.c
 
 src_check_hkl_SOURCES = src/check_hkl.c
 
-src_powder_plot_SOURCES = src/powder_plot.c
-
 if HAVE_CAIRO
 src_render_hkl_SOURCES = src/render_hkl.c
 endif
@@ -108,8 +106,7 @@ EXTRA_DIST += $(crystfel_DATA)
 man_MANS = doc/man/crystfel.7 doc/man/check_hkl.1 doc/man/compare_hkl.1 \
            doc/man/crystfel_geometry.5 doc/man/get_hkl.1 doc/man/hdfsee.1 \
            doc/man/indexamajig.1 doc/man/partialator.1 doc/man/partial_sim.1 \
-           doc/man/pattern_sim.1 doc/man/powder_plot.1 doc/man/process_hkl.1 \
-           doc/man/render_hkl.1
+           doc/man/pattern_sim.1 doc/man/process_hkl.1 doc/man/render_hkl.1
 
 
 EXTRA_DIST += $(man_MANS)
