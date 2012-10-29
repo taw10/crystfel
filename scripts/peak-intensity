@@ -1,0 +1,35 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+open(FH, $ARGV[0]);
+
+my $line;
+my $total_i;
+my $n = 0;
+my $n_patt = 0;
+
+while ( $line = <FH> ) {
+
+	if ( $line =~ /^-----\ Begin chunk\ -----$/ ) {
+		$n_patt++;
+	}
+
+	if ( $line =~ /^\s*([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)$/ ) {
+
+		my $fs = $1;
+		my $ss = $2;
+		my $one_over_d = $3;
+		my $i = $4;
+
+		$total_i += $i;
+		$n++;
+
+	}
+
+}
+
+printf("%i patterns, %i peaks, %.2f total ADU\n", $n_patt, $n, $total_i);
+printf("Mean %i peaks per hit\n", $n / $n_patt);
+printf("Mean %.2f ADU per peak\n", $total_i / $n);
+printf("Mean %.2f ADU per hit\n", $total_i / $n_patt);
