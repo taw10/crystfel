@@ -232,6 +232,13 @@ AC_CHECK_LIB([pthread], [sched_setaffinity], [
 ])
 
 
+AC_CHECK_LIB([hdf5], [H5Fcreate], [],
+[
+   AC_MSG_ERROR([HDF5 not found!])
+])
+
+
+
 AC_CHECK_LIB([rt], [clock_gettime],
 [
    AC_DEFINE([HAVE_CLOCK_GETTIME], [1],
