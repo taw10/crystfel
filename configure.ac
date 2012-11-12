@@ -232,11 +232,13 @@ AC_CHECK_LIB([pthread], [sched_setaffinity], [
 ])
 
 
+LIBS_SAVE=$LIBS
+LIBS=$HDF5_LIBS
 AC_CHECK_LIB([hdf5], [H5Fcreate], [],
 [
    AC_MSG_ERROR([HDF5 not found!])
 ])
-
+LIBS=$LIBS_SAVE
 
 
 AC_CHECK_LIB([rt], [clock_gettime],
