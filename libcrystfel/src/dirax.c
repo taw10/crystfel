@@ -473,7 +473,7 @@ void run_dirax(struct image *image)
 
 	dirax->pid = forkpty(&dirax->pty, NULL, NULL, NULL);
 	if ( dirax->pid == -1 ) {
-		ERROR("Failed to fork for DirAx\n");
+		ERROR("Failed to fork for DirAx: %s\n", strerror(errno));
 		return;
 	}
 	if ( dirax->pid == 0 ) {

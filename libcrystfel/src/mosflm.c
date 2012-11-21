@@ -554,7 +554,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	mosflm->pid = forkpty(&mosflm->pty, NULL, NULL, NULL);
 
 	if ( mosflm->pid == -1 ) {
-		ERROR("Failed to fork for MOSFLM\n");
+		ERROR("Failed to fork for MOSFLM: %s\n", strerror(errno));
 		free(mosflm);
 		return;
 	}
