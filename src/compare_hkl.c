@@ -820,6 +820,17 @@ int main(int argc, char *argv[])
 	reflist_free(list1);
 	reflist_free(list2);
 
+	if ( rmin_fix >= 0.0 ) {
+		rmin = rmin_fix;
+	}
+	if ( rmax_fix >= 0.0 ) {
+		rmax = rmax_fix;
+	}
+	if ( (rmin_fix>=0.0) || (rmax_fix>=0.0) ) {
+		STATUS("Fixed resolution range: %f to %f nm^-1"
+		       " (%.2f to %.2f Angstroms).\n",
+		       rmin/1e9, rmax/1e9, 1e10/rmin, 1e10/rmax);
+	}
 	do_fom(list1_acc, list2_acc, cell, rmin, rmax, fom, config_unity,
 	       nshells, shell_file);
 
