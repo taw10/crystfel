@@ -704,6 +704,8 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 	int first = 1;
 	int **bgMasks;
 
+	if ( num_reflections(image->reflections) == 0 ) return;
+
 	il = sort_reflections(image->reflections, image->indexed_cell, &n);
 	if ( il == NULL ) {
 		ERROR("Couldn't sort reflections\n");
