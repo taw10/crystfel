@@ -39,7 +39,8 @@
 
 extern void search_peaks(struct image *image, float threshold,
                          float min_gradient, float min_snr,
-                         double ir_inn, double ir_mid, double ir_out);
+                         double ir_inn, double ir_mid, double ir_out,
+                         int use_saturated);
 
 extern void integrate_reflections(struct image *image,
                                   int use_closer, int bgsub, double min_snr,
@@ -55,6 +56,7 @@ extern void estimate_resolution(RefList *list, UnitCell *cell,
                                 double *min, double *max);
 
 extern void validate_peaks(struct image *image, double min_snr,
-                           int ir_inn, int ir_mid, int ir_out);
+                           int ir_inn, int ir_mid, int ir_out,
+                           int use_saturated);
 
 #endif	/* PEAKS_H */

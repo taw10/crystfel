@@ -385,7 +385,8 @@ static int integrate_peak(struct image *image, int cfs, int css,
 static void search_peaks_in_panel(struct image *image, float threshold,
                                   float min_gradient, float min_snr,
                                   struct panel *p,
-                                  double ir_inn, double ir_mid, double ir_out)
+                                  double ir_inn, double ir_mid, double ir_out,
+                                  int use_saturated)
 {
 	int fs, ss, stride;
 	float *data;
@@ -400,6 +401,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	int nrej_fra = 0;
 	int nrej_bad = 0;
 	int nrej_snr = 0;
+	int nrej_sat = 0;
 	int nacc = 0;
 	int ncull;
 
@@ -417,6 +419,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		double max;
 		unsigned int did_something;
 		int r;
+		int saturated;
 
 		/* Overall threshold */
 		if ( data[fs+stride*ss] < threshold ) continue;
@@ -489,7 +492,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		/* Centroid peak and get better coordinates. */
 		r = integrate_peak(image, mask_fs, mask_ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
-		                   ir_inn, ir_mid, ir_out, 0, NULL, NULL);
+		                   ir_inn, ir_mid, ir_out, 0, NULL, &saturated);
 
 		if ( r ) {
 			/* Bad region - don't detect peak */
@@ -516,6 +519,11 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 			continue;
 		}
 
+		if ( saturated && !use_saturated ) {
+			nrej_sat++;
+			continue;
+		}
+
 		/* Add using "better" coordinates */
 		image_add_feature(image->features, f_fs, f_ss, image, intensity,
 		                  NULL);
@@ -533,10 +541,11 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		ncull = 0;
 	}
 
-//	STATUS("%i accepted, %i box, %i proximity, %i outside panel, "
-//	       "%i in bad regions, %i with SNR < %g, %i badrow culled.\n",
-//	       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_bad,
-//	       nrej_snr, min_snr, ncull);
+	//STATUS("%i accepted, %i box, %i proximity, %i outside panel, "
+	//       "%i in bad regions, %i with SNR < %g, %i badrow culled, "
+	//        "%i saturated.\n",
+	//       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_bad,
+	//       nrej_snr, min_snr, ncull, nrej_sat);
 
 	if ( ncull != 0 ) {
 		STATUS("WARNING: %i peaks were badrow culled.  This feature"
@@ -547,7 +556,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 
 
 void search_peaks(struct image *image, float threshold, float min_gradient,
-                  float min_snr, double ir_inn, double ir_mid, double ir_out)
+                  float min_snr, double ir_inn, double ir_mid, double ir_out,
+                  int use_saturated)
 {
 	int i;
 
@@ -562,7 +572,8 @@ void search_peaks(struct image *image, float threshold, float min_gradient,
 
 		if ( p->no_index ) continue;
 		search_peaks_in_panel(image, threshold, min_gradient,
-		                      min_snr, p, ir_inn, ir_mid, ir_out);
+		                      min_snr, p, ir_inn, ir_mid, ir_out,
+		                      use_saturated);
 
 	}
 }
@@ -838,11 +849,11 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 
 
 void validate_peaks(struct image *image, double min_snr,
-                    int ir_inn, int ir_mid, int ir_out)
+                    int ir_inn, int ir_mid, int ir_out, int use_saturated)
 {
 	int i, n;
 	ImageFeatureList *flist;
-	int n_wtf, n_int, n_dft, n_snr, n_prx;
+	int n_wtf, n_int, n_dft, n_snr, n_prx, n_sat;
 
 	flist = image_feature_list_new();
 	if ( flist == NULL ) return;
@@ -850,7 +861,7 @@ void validate_peaks(struct image *image, double min_snr,
 	n = image_feature_count(image->features);
 
 	/* Loop over peaks, putting each one through the integrator */
-	n_wtf = 0;  n_int = 0;  n_dft = 0;  n_snr = 0;  n_prx = 0;
+	n_wtf = 0;  n_int = 0;  n_dft = 0;  n_snr = 0;  n_prx = 0;  n_sat = 0;
 	for ( i=0; i<n; i++ ) {
 
 		struct imagefeature *f;
@@ -860,6 +871,7 @@ void validate_peaks(struct image *image, double min_snr,
 		double f_fs, f_ss;
 		double intensity, sigma;
 		struct panel *p;
+		int saturated;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) {
@@ -875,7 +887,7 @@ void validate_peaks(struct image *image, double min_snr,
 
 		r = integrate_peak(image, f->fs, f->ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
-		                   ir_inn, ir_mid, ir_out, 0, NULL, NULL);
+		                   ir_inn, ir_mid, ir_out, 0, NULL, &saturated);
 		if ( r ) {
 			n_int++;
 			continue;
@@ -901,15 +913,20 @@ void validate_peaks(struct image *image, double min_snr,
 			continue;
 		}
 
+		if ( saturated && !use_saturated ) {
+			n_sat++;
+			continue;
+		}
+
 		/* Add using "better" coordinates */
 		image_add_feature(flist, f_fs, f_ss, image, intensity, NULL);
 
 	}
 
 	//STATUS("HDF5: %i peaks, validated: %i.  WTF: %i, integration: %i,"
-	//       " drifted: %i, SNR: %i, proximity: %i\n",
+	//       " drifted: %i, SNR: %i, proximity: %i, saturated: %i\n",
 	//       n, image_feature_count(flist),
-	//       n_wtf, n_int, n_dft, n_snr, n_prx);
+	//       n_wtf, n_int, n_dft, n_snr, n_prx, n_sat);
 	image_feature_list_free(image->features);
 	image->features = flist;
 }
