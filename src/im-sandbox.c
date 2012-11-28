@@ -328,7 +328,8 @@ static void process_image(const struct index_args *iargs,
 			                      iargs->min_int_snr,
 			                      iargs->ir_inn,
 			                      iargs->ir_mid,
-			                      iargs->ir_out);
+			                      iargs->ir_out,
+			                      iargs->integrate_saturated);
 		}
 	} else {
 		image.reflections = NULL;

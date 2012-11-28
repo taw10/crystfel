@@ -66,6 +66,7 @@ struct index_args
 	double ir_mid;
 	double ir_out;
 	struct copy_hdf5_field *copyme;
+	int integrate_saturated;
 };
 
 

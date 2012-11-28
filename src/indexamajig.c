@@ -161,6 +161,8 @@ static void show_help(const char *s)
 "                           least 10%% of the located peaks.\n"
 "     --no-bg-sub          Don't subtract local background estimates from\n"
 "                           integrated intensities.\n"
+"     --integrate-saturated  During the final integration stage, don't reject\n"
+"                            peaks which contain pixels above max_adu.\n"
 );
 }
 
@@ -242,6 +244,7 @@ int main(int argc, char *argv[])
 	float ir_inn = 4.0;
 	float ir_mid = 5.0;
 	float ir_out = 7.0;
+	int integrate_saturated = 0;
 
 	copyme = new_copy_hdf5_field_list();
 	if ( copyme == NULL ) {
@@ -288,6 +291,7 @@ int main(int argc, char *argv[])
 		{"min-integration-snr",1, NULL,               12},
 		{"tolerance",          1, NULL,               13},
 		{"int-radius",         1, NULL,               14},
+		{"integrate-saturated",0, &integrate_saturated,1},
 		{0, 0, NULL, 0}
 	};
 
@@ -634,6 +638,7 @@ int main(int argc, char *argv[])
 	iargs.ir_inn = ir_inn;
 	iargs.ir_mid = ir_mid;
 	iargs.ir_out = ir_out;
+	iargs.integrate_saturated = integrate_saturated;
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
 	                    use_this_one_instead, ofh);

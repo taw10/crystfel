@@ -43,7 +43,8 @@ extern void search_peaks(struct image *image, float threshold,
 
 extern void integrate_reflections(struct image *image,
                                   int use_closer, int bgsub, double min_snr,
-                                  double ir_inn, double ir_mid, double ir_out);
+                                  double ir_inn, double ir_mid, double ir_out,
+                                  int integrate_saturated);
 
 extern double peak_lattice_agreement(struct image *image, UnitCell *cell,
                                      double *pst);

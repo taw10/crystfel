@@ -293,10 +293,9 @@ static int integrate_peak(struct image *image, int cfs, int css,
 
 		val = image->data[idx];
 
-		/* Veto peak if it contains saturation in bg region */
+		/* Check if peak contains saturation in bg region */
 		if ( use_max_adu && (val > p->max_adu) ) {
 			if ( saturated != NULL ) *saturated = 1;
-			return 1;
 		}
 
 		bg_tot += val;
@@ -353,10 +352,9 @@ static int integrate_peak(struct image *image, int cfs, int css,
 
 		val = image->data[idx] - bg_mean;
 
-		/* Veto peak if it contains saturation */
+		/* Check if peak contains saturation */
 		if ( use_max_adu && (val > p->max_adu) ) {
 			if ( saturated != NULL ) *saturated = 1;
-			return 1;
 		}
 
 		pk_counts++;
@@ -697,7 +695,8 @@ static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
 /* Integrate the list of predicted reflections in "image" */
 void integrate_reflections(struct image *image, int use_closer, int bgsub,
                            double min_snr,
-                           double ir_inn, double ir_mid, double ir_out)
+                           double ir_inn, double ir_mid, double ir_out,
+                           int integrate_saturated)
 {
 	struct integr_ind *il;
 	int n, i;
@@ -794,7 +793,10 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 		                   &intensity, &sigma, ir_inn, ir_mid, ir_out,
 		                   1, bgMasks[pnum], &saturated);
 
-		if ( saturated ) image->n_saturated++;
+		if ( saturated ) {
+			image->n_saturated++;
+			if ( !integrate_saturated ) r = 1;
+		}
 
 		/* I/sigma(I) cutoff */
 		if ( intensity/sigma < min_snr ) r = 1;
