@@ -68,6 +68,7 @@ struct index_args
 	struct copy_hdf5_field *copyme;
 	int integrate_saturated;
 	int use_saturated;
+	int no_revalidate;
 };
 
 

@@ -291,9 +291,11 @@ static void process_image(const struct index_args *iargs,
 			iargs->hdf5_peak_path)) {
 			ERROR("Failed to get peaks from HDF5 file.\n");
 		}
-		validate_peaks(&image, iargs->min_int_snr,
-		               iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
-		               iargs->use_saturated);
+		if ( !iargs->no_revalidate ) {
+			validate_peaks(&image, iargs->min_int_snr,
+				       iargs->ir_inn, iargs->ir_mid,
+				       iargs->ir_out, iargs->use_saturated);
+		}
 		break;
 
 		case PEAK_ZAEF:

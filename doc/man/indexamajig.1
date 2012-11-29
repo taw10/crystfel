@@ -319,6 +319,21 @@ Normally, indexamajig will check that the projected reciprocal space positions o
 Don't subtract local background estimates from integrated intensities.  This is almost never useful, but might help to detect problems from troublesome background noise.
 
 
+.PD 0
+.IP \fB--use-saturated\fR
+.PD
+Normally, peaks which contain one or more pixels above max_adu (defined in the detector geometry file) will not be used for indexing.  Using this option skips this check, possibly improving the indexing rate if there is a large proportion of saturated peaks.
+
+.PD 0
+.IP \fB--integrate-saturated\fR
+.PD
+Normally, reflections which contain one or more pixels above max_adu (defined in the detector geometry file) will not be integrated and written to the stream.  Using this option skips this check, and allows saturated reflections to be passed to the later merging stages.  This is not usually a good idea, but might be your only choice if there are many saturated reflections.
+
+.PD 0
+.IP \fB--no-revalidate\fR
+.PD
+When using \fB--peaks=hdf5\fR, the peaks will be put through the same checks as if you were using \fB--peaks=zaef\fR.  These checks reject peaks which are too close to panel edges, are saturated (unless you use \fB--use-saturated\fR), fall short of the minimum SNR value given by \fB--min-snr\fR, have other nearby peaks (closer than twice the inner integration radius, see \fB--int-radius\fR), or have any part in a bad region.  Using this option skips this validation step, and uses the peaks directly.
+
 .SH BUGS
 Don't run more than one indexamajig jobs simultaneously in the same working
 directory - they'll overwrite each other's DirAx or MOSFLM files, causing subtle
