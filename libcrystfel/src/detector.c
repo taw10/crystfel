@@ -693,6 +693,64 @@ static void parse_toplevel(struct detector *det, const char *key,
 }
 
 
+/* Test if fs,ss in panel "p" is further {out,in} than {*p_max_d,*p_min_d}, and
+ * if so update det->furthest_{out,in}_{panel,fs,ss}. */
+static void check_point(struct panel *p, double fs, double ss,
+                        double *p_min_d, double *p_max_d, struct detector *det)
+{
+	double xs, ys, rx, ry, d;
+
+	xs = fs*p->fsx + ss*p->ssx;
+	ys = fs*p->fsy + ss*p->ssy;
+
+	rx = (xs + p->cnx) / p->res;
+	ry = (ys + p->cny) / p->res;
+
+	d = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
+
+	if ( d > *p_max_d ) {
+
+		det->furthest_out_panel = p;
+		det->furthest_out_fs = fs;
+		det->furthest_out_ss = ss;
+		*p_max_d = d;
+
+	} else if ( d < *p_min_d ) {
+
+		det->furthest_in_panel = p;
+		det->furthest_in_fs = fs;
+		det->furthest_in_ss = ss;
+		*p_min_d = d;
+
+	}
+}
+
+
+static void find_min_max_d(struct detector *det)
+{
+	double max_d, min_d;
+	int i;
+
+	min_d = +INFINITY;
+	max_d = 0.0;
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		struct panel *p;
+		double w, h;
+
+		p = &det->panels[i];
+		w = p->max_fs - p->min_fs + 1;
+		h = p->max_ss - p->min_ss + 1;
+
+		check_point(p, 0, 0, &min_d, &max_d, det);
+		check_point(p, w, 0, &min_d, &max_d, det);
+		check_point(p, 0, h, &min_d, &max_d, det);
+		check_point(p, w, h, &min_d, &max_d, det);
+
+	}
+}
+
+
 struct detector *get_detector_geometry(const char *filename)
 {
 	FILE *fh;
@@ -949,6 +1007,8 @@ out:
 
 	}
 
+	find_min_max_d(det);
+
 	if ( reject ) return NULL;
 
 	fclose(fh);
@@ -1071,6 +1131,8 @@ struct detector *simple_geometry(const struct image *image)
 	geom->panels[0].yfs = 0;
 	geom->panels[0].yss = 1;
 
+	find_min_max_d(geom);
+
 	return geom;
 }
 
@@ -1129,52 +1191,29 @@ static void check_extents(struct panel p, double *min_x, double *min_y,
 
 double largest_q(struct image *image)
 {
-	int fs, ss;
-	double ttm = 0.0;
-	double qmax = 0.0;
+	struct rvec q;
+	double tt;
 
-	for ( fs=0; fs<image->width; fs++ ) {
-	for ( ss=0; ss<image->height; ss++ ) {
+	q = get_q_for_panel(image->det->furthest_out_panel,
+	                    image->det->furthest_out_fs,
+	                    image->det->furthest_out_ss,
+	                    &tt, 1.0/image->lambda);
 
-		struct rvec q;
-		double tt;
-
-		q = get_q(image, fs, ss, &tt, 1.0/image->lambda);
-
-		if ( tt > ttm ) {
-			qmax = modulus(q.u, q.v, q.w);
-			ttm = tt;
-		}
-
-	}
-	}
-
-	return qmax;
+	return modulus(q.u, q.v, q.w);
 }
 
 
 double smallest_q(struct image *image)
 {
-	int fs, ss;
-	double ttm  = +INFINITY;
-	double qmin = +INFINITY;
-	for ( fs=0; fs<image->width; fs++ ) {
-	for ( ss=0; ss<image->height; ss++ ) {
+	struct rvec q;
+	double tt;
 
-		struct rvec q;
-		double tt;
+	q = get_q_for_panel(image->det->furthest_in_panel,
+	                    image->det->furthest_in_fs,
+	                    image->det->furthest_in_ss,
+	                    &tt, 1.0/image->lambda);
 
-		q = get_q(image, fs, ss, &tt, 1.0/image->lambda);
-
-		if ( tt < ttm ) {
-			qmin = modulus(q.u, q.v, q.w);
-			ttm = tt;
-		}
-
-	}
-	}
-
-	return qmin;
+	return modulus(q.u, q.v, q.w);
 }
 
 
