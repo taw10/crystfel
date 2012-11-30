@@ -236,6 +236,8 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	if ( p == NULL ) return 1;
 	if ( p->no_index ) return 1;
 
+	*saturated = 0;
+
 	/* Determine regions where there is expected to be a peak */
 	p_cfs = cfs - p->min_fs;
 	p_css = css - p->min_ss;  /* Panel-relative coordinates */
