@@ -167,6 +167,8 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 
 		d = 2.0 * resolution(cell, h, k, l);
 
+		if ( forbidden_reflection(cell, h, k, l) ) continue;
+
 		bin = -1;
 		for ( i=0; i<NBINS; i++ ) {
 			if ( (d>rmins[i]) && (d<=rmaxs[i]) ) {
