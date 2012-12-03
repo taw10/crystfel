@@ -622,7 +622,6 @@ void run_mosflm(struct image *image, UnitCell *cell)
 			rval = 1;
 		}
 
-
 	} while ( !rval );
 
 	close(mosflm->pty);
