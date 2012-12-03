@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: CrystFEL
+Description: Useful routines for crystallography using a free-electron laser
+Version: @VERSION@
+Cflags: -I${includedir}
+Libs: -L${libdir} -lcrystfel

@@ -305,4 +305,5 @@ HTML_DIR=${docdir}/reference
 
 
 AC_CONFIG_FILES(Makefile lib/Makefile doc/reference/Makefile libcrystfel/Makefile)
+AC_CONFIG_FILES(libcrystfel/crystfel.pc)
 AC_OUTPUT

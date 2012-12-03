@@ -48,3 +48,4 @@ build-aux/ltmain.sh
 lib/.libs/
 lib/dummy.lo
 lib/libgnu.la
+libcrystfel/crystfel.pc
