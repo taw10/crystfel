@@ -26,7 +26,6 @@ libcrystfel_la_include_HEADERS = src/beam-parameters.h src/hdf5-file.h \
                                  src/index-priv.h src/reax.h src/cell-utils.h \
                                  src/integer_matrix.h
 
-INCLUDES = "-I$(top_srcdir)/data"
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib -Wall
 AM_CPPFLAGS += -I$(top_srcdir)/lib @LIBCRYSTFEL_CFLAGS@
 
