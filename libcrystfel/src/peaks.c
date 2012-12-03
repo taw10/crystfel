@@ -813,8 +813,14 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 			if ( !integrate_saturated ) r = 1;
 		}
 
-		/* I/sigma(I) cutoff */
-		if ( intensity/sigma < min_snr ) r = 1;
+		/* I/sigma(I) cutoff
+		 * Rejects reflections below --min-integration-snr, or if the
+		 * SNR is clearly silly.  Silly indicates that the intensity
+		 * was zero. */
+		snr = fabs(intensity)/sigma;
+		if ( isnan(snr) || (snr < min_snr) ) {
+			r = 1;
+		}
 
 		/* Record intensity and set redundancy to 1 on success */
 		if ( r == 0 ) {
@@ -825,7 +831,6 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 			set_redundancy(refl, 0);
 		}
 
-		snr = intensity / sigma;
 		if ( snr > 1.0 ) {
 			if ( first ) {
 				av = snr;
