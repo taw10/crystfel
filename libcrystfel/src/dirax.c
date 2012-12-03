@@ -521,9 +521,21 @@ void run_dirax(struct image *image)
 		sval = select(dirax->pty+1, &fds, NULL, NULL, &tv);
 
 		if ( sval == -1 ) {
-			int err = errno;
-			ERROR("select() failed: %s\n", strerror(err));
-			rval = 1;
+
+			const int err = errno;
+
+			switch ( err ) {
+
+				case EINTR:
+				STATUS("Restarting select()\n");
+				break;
+
+				default:
+				ERROR("select() failed: %s\n", strerror(err));
+				rval = 1;
+
+			}
+
 		} else if ( sval != 0 ) {
 			rval = dirax_readable(image, dirax);
 		} else {
