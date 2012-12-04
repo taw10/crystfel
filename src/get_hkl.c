@@ -537,6 +537,12 @@ int main(int argc, char *argv[])
 
 		RefList *new;
 
+		/* Can't do this if point group is invalid */
+		if ( mero == NULL ) {
+			ERROR("Need point group to trim centrics.\n");
+			return 1;
+		}
+
 		STATUS("Trimming duplicate reflections in %s\n",
 		       symmetry_name(mero));
 		new = trim_centrics(input, mero);
