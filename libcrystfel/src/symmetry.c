@@ -1689,4 +1689,3 @@ const char *symmetry_name(const SymOpList *ops)
 {
 	return ops->name;
 }
-
