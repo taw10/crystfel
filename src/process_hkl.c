@@ -74,6 +74,8 @@ static void show_help(const char *s)
 "      --reference=<file>    Compare against intensities from <file> when\n"
 "                             scaling. \n"
 "      --no-polarisation     Disable polarisation correction.\n"
+"      --min-measurements=<n> Require at least <n> measurements before a\n"
+"                             reflection appears in the output.  Default: 2\n"
 );
 }
 
@@ -264,7 +266,7 @@ static void merge_all(FILE *fh, RefList *model, RefList *reference,
                       int n_total_patterns,
                       double *hist_vals, signed int hist_h,
                       signed int hist_k, signed int hist_l,
-                      int *hist_i, int config_nopolar)
+                      int *hist_i, int config_nopolar, int min_measurements)
 {
 	int rval;
 	int n_patterns = 0;
@@ -323,7 +325,7 @@ static void merge_all(FILE *fh, RefList *model, RefList *reference,
 		int red;
 
 		red = get_redundancy(refl);
-		if ( red == 1 ) {
+		if ( red < min_measurements ) {
 			set_redundancy(refl, 0);
 			continue;
 		}
@@ -365,6 +367,8 @@ int main(int argc, char *argv[])
 	int space_for_hist = 0;
 	char *histo_params = NULL;
 	int config_nopolar = 0;
+	char *rval;
+	int min_measurements = 2;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -382,6 +386,7 @@ int main(int argc, char *argv[])
 		{"symmetry",           1, NULL,               'y'},
 		{"histogram",          1, NULL,               'g'},
 		{"hist-parameters",    1, NULL,               'z'},
+		{"min-measurements",   1, NULL,                2},
 		{0, 0, NULL, 0}
 	};
 
@@ -421,6 +426,15 @@ int main(int argc, char *argv[])
 
 			case 'z' :
 			histo_params = strdup(optarg);
+			break;
+
+			case 2 :
+			errno = 0;
+			min_measurements = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --min-measurements.\n");
+				return 1;
+			}
 			break;
 
 			case 0 :
@@ -514,7 +528,7 @@ int main(int argc, char *argv[])
 	hist_i = 0;
 	merge_all(fh, model, NULL, config_startafter, config_stopafter,
 	          sym, n_total_patterns, hist_vals, hist_h, hist_k, hist_l,
-	          &hist_i, config_nopolar);
+	          &hist_i, config_nopolar, min_measurements);
 	if ( ferror(fh) ) {
 		ERROR("Stream read error.\n");
 		return 1;
@@ -538,7 +552,7 @@ int main(int argc, char *argv[])
 			  config_startafter, config_stopafter, sym,
 			  n_total_patterns,
 			  hist_vals, hist_h, hist_k, hist_l, &hist_i,
-			  config_nopolar);
+			  config_nopolar, min_measurements);
 
 		if ( ferror(fh) ) {
 			ERROR("Stream read error.\n");
