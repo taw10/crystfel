@@ -124,6 +124,7 @@ static void run_scale_job(void *vwargs, int cookie)
 			Ih = get_intensity(r);
 		}
 
+		/* FIXME: This isn't correct */
 		Ihl = get_intensity(refl) / get_partiality(refl);
 		esd = get_esd_intensity(refl) / get_partiality(refl);
 
