@@ -8,6 +8,7 @@
  *
  * Authors:
  *   2010,2012 Thomas White <taw@physics.org>
+ *   2012      Chunhong Yoon
  *
  * This file is part of CrystFEL.
  *
@@ -33,6 +34,7 @@
 #include <config.h>
 #endif
 
+#include "hdf5-file.h"
 
 struct beam_params
 {
@@ -46,10 +48,13 @@ struct beam_params
 	double divergence;     /* divergence (radians) */
 
 	double profile_radius; /* Reciprocal space size of a reflection */
+	
+	char *photon_energy_from; /* hdf5 group name */
 };
 
 
 extern struct beam_params *get_beam_parameters(const char *filename);
 
+extern void fill_in_beamParam(struct beam_params *beam, struct hdfile *f);
 
 #endif	/* BEAM_PARAMETERS_H */

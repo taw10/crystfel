@@ -8,6 +8,7 @@
  *
  * Authors:
  *   2010,2012 Thomas White <taw@physics.org>
+ *   2012      Chunhong Yoon
  *
  * This file is part of CrystFEL.
  *
@@ -35,6 +36,7 @@
 
 #include "beam-parameters.h"
 #include "utils.h"
+#include "hdf5-file.h"
 
 
 struct beam_params *get_beam_parameters(const char *filename)
@@ -86,7 +88,12 @@ struct beam_params *get_beam_parameters(const char *filename)
 		} else if ( strcmp(bits[0], "beam/radius") == 0 ) {
 			b->beam_radius = atof(bits[2]);
 		} else if ( strcmp(bits[0], "beam/photon_energy") == 0 ) {
-			b->photon_energy = atof(bits[2]);
+			if ( strncmp(bits[2], "/", 1) == 0 ) {
+				b->photon_energy = 0; // 0 means special case
+				b->photon_energy_from = strdup(bits[2]);	
+			} else {
+				b->photon_energy = atof(bits[2]);
+			}
 		} else if ( strcmp(bits[0], "beam/bandwidth") == 0 ) {
 			b->bandwidth = atof(bits[2]);
 		} else if ( strcmp(bits[0], "beam/divergence") == 0 ) {
@@ -113,7 +120,7 @@ struct beam_params *get_beam_parameters(const char *filename)
 		ERROR("Invalid or unspecified value for 'beam/radius'.\n");
 		reject = 1;
 	}
-	if ( b->photon_energy < 0.0 ) {
+	if ( b->photon_energy < 0.0 ) { // 0 is ok
 		ERROR("Invalid or unspecified value for"
 		      " 'beam/photon_energy'.\n");
 		reject = 1;
@@ -140,4 +147,13 @@ struct beam_params *get_beam_parameters(const char *filename)
 	}
 
 	return b;
+}
+
+void fill_in_beamParam(struct beam_params *beam, struct hdfile *f)
+{
+	if ( beam->photon_energy_from != NULL ) {
+		beam->photon_energy = get_value(f, beam->photon_energy_from );
+		free(beam->photon_energy_from);
+		beam->photon_energy_from = NULL;
+	}
 }

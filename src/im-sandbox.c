@@ -235,6 +235,11 @@ static void process_image(const struct index_args *iargs,
 		return;
 	}
 
+	if (beam->photon_energy == 0) { // read from existing hdf5
+		fill_in_beamParam(beam, hdfile);
+	}
+	image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
+	
 	if ( image.lambda < 0.0 ) {
 		if ( beam != NULL ) {
 			ERROR("Using nominal photon energy of %.2f eV\n",

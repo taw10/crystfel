@@ -498,7 +498,12 @@ int main(int argc, char *argv[])
 	/* Define image parameters */
 	image.width = image.det->max_fs + 1;
 	image.height = image.det->max_ss + 1;
-	image.lambda = ph_en_to_lambda(eV_to_J(image.beam->photon_energy));
+	if (image.beam->photon_energy == 0) {
+		ERROR("Invalid photon_energy format in beam file\n")
+		return 1;
+	} else {
+		image.lambda = ph_en_to_lambda(eV_to_J(image.beam->photon_energy));
+	}
 	image.bw = image.beam->bandwidth;
 	image.div = image.beam->divergence;
 
