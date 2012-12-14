@@ -149,11 +149,17 @@ struct beam_params *get_beam_parameters(const char *filename)
 	return b;
 }
 
-void fill_in_beamParam(struct beam_params *beam, struct hdfile *f)
+
+void free_beam_parameters(struct beam_params *beam)
+{
+	free(beam->photon_energy_from);
+	free(beam);
+}
+
+
+void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f)
 {
 	if ( beam->photon_energy_from != NULL ) {
-		beam->photon_energy = get_value(f, beam->photon_energy_from );
-		free(beam->photon_energy_from);
-		beam->photon_energy_from = NULL;
+		beam->photon_energy = get_value(f, beam->photon_energy_from);
 	}
 }

@@ -174,7 +174,6 @@ static void process_image(const struct index_args *iargs,
 	int config_noisefilter = iargs->config_noisefilter;
 	int config_verbose = iargs->config_verbose;
 	IndexingMethod *indm = iargs->indm;
-	struct beam_params *beam = iargs->beam;
 	int check;
 	struct hdfile *hdfile;
 	struct image image;
@@ -183,13 +182,13 @@ static void process_image(const struct index_args *iargs,
 	image.data = NULL;
 	image.flags = NULL;
 	image.indexed_cell = NULL;
-	image.det = copy_geom(iargs->det);
 	image.copyme = iargs->copyme;
 	image.reflections = NULL;
 	image.n_saturated = 0;
 	image.id = cookie;
 	image.filename = pargs->filename;
-	image.beam = beam;
+	image.beam = iargs->beam;
+	image.det = iargs->det;
 
 	hdfile = hdfile_open(image.filename);
 	if ( hdfile == NULL ) return;
@@ -231,47 +230,22 @@ static void process_image(const struct index_args *iargs,
 		      image.width, image.height,
 		      image.det->max_fs + 1, image.det->max_ss + 1);
 		hdfile_close(hdfile);
-		free_detector_geometry(image.det);
 		return;
 	}
 
-	if (beam->photon_energy == 0) { // read from existing hdf5
-		fill_in_beamParam(beam, hdfile);
-	}
-	image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
-
-	if ( image.lambda < 0.0 ) {
-		if ( beam != NULL ) {
-			ERROR("Using nominal photon energy of %.2f eV\n",
-			      beam->photon_energy);
-			image.lambda = ph_en_to_lambda(
-			                          eV_to_J(beam->photon_energy));
-		} else {
-			ERROR("No wavelength in file, so you need to give "
-				"a beam parameters file with -b.\n");
-			hdfile_close(hdfile);
-			free_detector_geometry(image.det);
-			return;
-		}
-	}
-
-	if ( image.lambda > 1000 ) {
-		if ( beam != NULL ) {
-			ERROR("Nonsensical wavelength in HDF5."
-			      "Using nominal photon energy of %.2f eV\n",
-			      beam->photon_energy);
-			image.lambda = ph_en_to_lambda(
-			                          eV_to_J(beam->photon_energy));
-		} else {
-			ERROR("Nonsensical wavelength in file, so you need to "
-			      "give a beam parameters file with -b.\n");
-			hdfile_close(hdfile);
-			free_detector_geometry(image.det);
-			return;
-		}
-	}
-
 	fill_in_values(image.det, hdfile);
+	fill_in_beam_parameters(image.beam, hdfile);
+
+	image.lambda = ph_en_to_lambda(eV_to_J(image.beam->photon_energy));
+
+	if ( (image.beam->photon_energy < 0.0) || (image.lambda > 1000) ) {
+		/* Error message covers a silly value in the beam file or in
+		 * the HDF5 file. */
+		ERROR("Nonsensical wavelength (%e m or %e eV) value for %s.\n",
+		      image.lambda, image.beam->photon_energy, image.filename);
+		hdfile_close(hdfile);
+		return;
+	}
 
 	if ( config_cmfilter ) {
 		filter_cm(&image);
@@ -318,9 +292,9 @@ static void process_image(const struct index_args *iargs,
 	image.data = data_for_measurement;
 
 	/* Calculate orientation matrix (by magic) */
-	image.div = beam->divergence;
-	image.bw = beam->bandwidth;
-	image.profile_radius = beam->profile_radius;
+	image.div = image.beam->divergence;
+	image.bw = image.beam->bandwidth;
+	image.profile_radius = image.beam->profile_radius;
 
 	index_pattern(&image, cell, indm, iargs->cellr,
 	              config_verbose, iargs->ipriv,
@@ -356,7 +330,6 @@ static void process_image(const struct index_args *iargs,
 	if ( image.flags != NULL ) free(image.flags);
 	image_feature_list_free(image.features);
 	hdfile_close(hdfile);
-	free_detector_geometry(image.det);
 }
 
 
@@ -428,7 +401,7 @@ static void run_work(const struct index_args *iargs,
 	free(iargs->indm);
 	free(iargs->ipriv);
 	free_detector_geometry(iargs->det);
-	free(iargs->beam);
+	free_beam_parameters(iargs->beam);
 	free(iargs->element);
 	free(iargs->hdf5_peak_path);
 	free_copy_hdf5_field_list(iargs->copyme);

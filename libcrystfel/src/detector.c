@@ -462,8 +462,6 @@ void fill_in_values(struct detector *det, struct hdfile *f)
 
 		if ( p->clen_from != NULL ) {
 			p->clen = get_value(f, p->clen_from) * 1.0e-3;
-			free(p->clen_from);
-			p->clen_from = NULL;
 		}
 
 		p->clen += p->coffset;

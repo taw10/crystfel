@@ -41,6 +41,7 @@ struct beam_params
 	double fluence;        /* photons per pulse */
 	double beam_radius;    /* metres */
 	double photon_energy;  /* eV per photon */
+	char *photon_energy_from; /* HDF5 dataset name */
 	double bandwidth;      /* FWHM(wavelength) over wavelength.
 	                        *  Note: current simulation code just uses
 	                        *        a rectangular distribution with this as
@@ -48,13 +49,12 @@ struct beam_params
 	double divergence;     /* divergence (radians) */
 
 	double profile_radius; /* Reciprocal space size of a reflection */
-
-	char *photon_energy_from; /* hdf5 group name */
 };
 
 
 extern struct beam_params *get_beam_parameters(const char *filename);
+extern void free_beam_parameters(struct beam_params *beam);
 
-extern void fill_in_beamParam(struct beam_params *beam, struct hdfile *f);
+extern void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f);
 
 #endif	/* BEAM_PARAMETERS_H */
