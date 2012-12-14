@@ -90,7 +90,7 @@ struct beam_params *get_beam_parameters(const char *filename)
 		} else if ( strcmp(bits[0], "beam/photon_energy") == 0 ) {
 			if ( strncmp(bits[2], "/", 1) == 0 ) {
 				b->photon_energy = 0; // 0 means special case
-				b->photon_energy_from = strdup(bits[2]);	
+				b->photon_energy_from = strdup(bits[2]);
 			} else {
 				b->photon_energy = atof(bits[2]);
 			}

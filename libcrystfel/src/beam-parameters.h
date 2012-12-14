@@ -48,7 +48,7 @@ struct beam_params
 	double divergence;     /* divergence (radians) */
 
 	double profile_radius; /* Reciprocal space size of a reflection */
-	
+
 	char *photon_energy_from; /* hdf5 group name */
 };
 
