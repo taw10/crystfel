@@ -315,28 +315,182 @@ static double fom_shell(struct fom_context *fctx, int i)
 }
 
 
-static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
-                   double rmin, double rmax, enum fom fom,
-                   int config_unity, int nshells, const char *filename)
+struct shells
 {
-	int *cts;
+	int config_intshells;
+	int nshells;
 	double *rmins;
 	double *rmaxs;
+};
+
+
+static struct shells *set_intensity_shells(double min_I, double max_I,
+                                           int nshells)
+{
+	struct shells *s;
+	int i;
+
+	if ( min_I >= max_I ) {
+		ERROR("Invalid intensity range.\n");
+		return NULL;
+	}
+
+	/* Adjust minimum and maximum intensities to get the most densely
+	 * populated part of the reflections */
+	max_I = min_I + (max_I-min_I)/5000.0;
+
+	s = malloc(sizeof(struct shells));
+	if ( s == NULL ) return NULL;
+
+	s->rmins = malloc(nshells*sizeof(double));
+	s->rmaxs = malloc(nshells*sizeof(double));
+
+	if ( (s->rmins==NULL) || (s->rmaxs==NULL) ) {
+		ERROR("Couldn't allocate memory for shells.\n");
+		free(s);
+		return NULL;
+	}
+
+	s->config_intshells = 1;
+	s->nshells = nshells;
+
+	for ( i=0; i<nshells; i++ ) {
+
+		s->rmins[i] = min_I + i*(max_I - min_I)/nshells;;
+		s->rmaxs[i] = min_I + (i+1)*(max_I - min_I)/nshells;;
+
+	}
+
+	return s;
+}
+
+
+static struct shells *set_resolution_shells(double rmin, double rmax,
+                                            int nshells)
+{
+	struct shells *s;
 	double total_vol, vol_per_shell;
+	int i;
+
+	s = malloc(sizeof(struct shells));
+	if ( s == NULL ) return NULL;
+
+	s->rmins = malloc(nshells*sizeof(double));
+	s->rmaxs = malloc(nshells*sizeof(double));
+
+	if ( (s->rmins==NULL) || (s->rmaxs==NULL) ) {
+		ERROR("Couldn't allocate memory for resolution shells.\n");
+		free(s);
+		return NULL;
+	}
+
+	s->config_intshells = 0;
+	s->nshells = nshells;
+
+	total_vol = pow(rmax, 3.0) - pow(rmin, 3.0);
+	vol_per_shell = total_vol / nshells;
+	s->rmins[0] = rmin;
+	for ( i=1; i<nshells; i++ ) {
+
+		double r;
+
+		r = vol_per_shell + pow(s->rmins[i-1], 3.0);
+		r = pow(r, 1.0/3.0);
+
+		/* Shells of constant volume */
+		s->rmaxs[i-1] = r;
+		s->rmins[i] = r;
+
+		/* Shells of constant thickness */
+		//rmins[i] = rmins[i-1] + (rmax-rmin)/NBINS;
+		//rmaxs[i-1] = rmins[i-1] + (rmax-rmin)/NBINS;
+
+	}
+	s->rmaxs[nshells-1] = rmax;
+
+	return s;
+}
+
+
+static double shell_label(struct shells *s, int i)
+{
+	if ( s->config_intshells ) {
+		return (i+0.5) / s->nshells;
+	} else {
+		return s->rmins[i] + (s->rmaxs[i] - s->rmins[i])/2.0;
+	}
+}
+
+
+static int get_bin(struct shells *s, Reflection *refl, UnitCell *cell)
+{
+	if ( s->config_intshells ) {
+
+		double intensity;
+		int bin, j;
+
+		intensity = get_intensity(refl);
+
+		bin = -1;
+		for ( j=0; j<s->nshells; j++ ) {
+			if ( (intensity>s->rmins[j])
+			  && (intensity<=s->rmaxs[j]) )
+			{
+				bin = j;
+				break;
+			}
+		}
+
+		return bin;
+
+
+	} else {
+
+		double d;
+		int bin, j;
+		signed int h, k, l;
+
+		get_indices(refl, &h, &k, &l);
+		d = 2.0 * resolution(cell, h, k, l);
+
+		bin = -1;
+		for ( j=0; j<s->nshells; j++ ) {
+			if ( (d>s->rmins[j]) && (d<=s->rmaxs[j]) ) {
+				bin = j;
+				break;
+			}
+		}
+
+		/* Allow for slight rounding errors */
+		if ( (bin == -1) && (d <= s->rmins[0]) ) bin = 0;
+		assert(bin != -1);
+
+		return bin;
+
+	}
+}
+
+
+static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
+                   double rmin, double rmax, enum fom fom,
+                   int config_unity, int nshells, const char *filename,
+                   int config_intshells, double min_I, double max_I)
+{
+	int *cts;
 	int i;
 	Reflection *refl1;
 	RefListIterator *iter;
 	FILE *fh;
 	double scale;
 	struct fom_context *fctx;
+	struct shells *shells;
+	const char *t1, *t2;
+	int n_out;
 
 	cts = malloc(nshells*sizeof(int));
-	rmins = malloc(nshells*sizeof(double));
-	rmaxs = malloc(nshells*sizeof(double));
 	fctx = init_fom(fom, num_reflections(list1), nshells);
 
-	if ( (fctx==NULL) || (cts==NULL) || (rmins==NULL) || (rmaxs==NULL) )
-	{
+	if ( (fctx==NULL) || (cts==NULL) ) {
 		ERROR("Couldn't allocate memory for resolution shells.\n");
 		return;
 	}
@@ -351,62 +505,47 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		scale = stat_scale_intensity(list1, list2);
 	}
 
-	/* Calculate the resolution bins */
-	total_vol = pow(rmax, 3.0) - pow(rmin, 3.0);
-	vol_per_shell = total_vol / nshells;
-	rmins[0] = rmin;
-	for ( i=1; i<nshells; i++ ) {
-
-		double r;
-
-		r = vol_per_shell + pow(rmins[i-1], 3.0);
-		r = pow(r, 1.0/3.0);
-
-		/* Shells of constant volume */
-		rmaxs[i-1] = r;
-		rmins[i] = r;
-
-		/* Shells of constant thickness */
-		//rmins[i] = rmins[i-1] + (rmax-rmin)/NBINS;
-		//rmaxs[i-1] = rmins[i-1] + (rmax-rmin)/NBINS;
-
+	/* Calculate the bins */
+	if ( config_intshells ) {
+		shells = set_intensity_shells(min_I, max_I, nshells);
+	} else {
+		shells = set_resolution_shells(rmin, rmax, nshells);
 	}
-	rmaxs[nshells-1] = rmax;
 
+	if ( shells == NULL ) {
+		ERROR("Failed to set up shells.\n");
+		return;
+	}
+
+	n_out = 0;
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
 	      refl1 = next_refl(refl1, iter) )
 	{
 		signed int h, k, l;
-		double d;
 		int bin;
 		double i1, i2;
-		int j;
 		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
-		d = 2.0 * resolution(cell, h, k, l);
-
-		bin = -1;
-		for ( j=0; j<nshells; j++ ) {
-			if ( (d>rmins[j]) && (d<=rmaxs[j]) ) {
-				bin = j;
-				break;
-			}
-		}
-
-		/* Allow for slight rounding errors */
-		if ( (bin == -1) && (d <= rmins[0]) ) bin = 0;
-		assert(bin != -1);
 
 		refl2 = find_refl(list2, h, k, l);
 		if ( refl2 == NULL ) continue;
+
+		bin = get_bin(shells, refl1, cell);
+		if ( bin == -1 ) {
+			n_out++;
+			continue;
+		}
 
 		i1 = get_intensity(refl1);
 		i2 = scale * get_intensity(refl2);
 
 		add_to_fom(fctx, i1, i2, bin);
 		cts[bin]++;
+	}
+	if ( n_out)  {
+		ERROR("Warning: %i reflection pairs outside range.\n", n_out);
 	}
 
 	switch ( fom ) {
@@ -443,30 +582,38 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		return;
 	}
 
+	if ( config_intshells ) {
+		t1 = "Relative I  ";
+		t2 = "";
+	} else {
+		t1 = "  1/d centre";
+		t2 = "      d / A";
+	}
+
 	switch ( fom ) {
 
 		case FOM_R1I :
-		fprintf(fh, "1/d centre    R1(I)/%%       nref      d / A\n");
+		fprintf(fh, "%s  R1(I)/%%       nref%s\n", t1, t2);
 		break;
 
 		case FOM_R1F :
-		fprintf(fh, "1/d centre    R1(F)/%%       nref      d / A\n");
+		fprintf(fh, "%s  R1(F)/%%       nref%s\n", t1, t2);
 		break;
 
 		case FOM_R2 :
-		fprintf(fh, "1/d centre       R2/%%       nref      d / A\n");
+		fprintf(fh, "%s     R2/%%       nref%s\n", t1, t2);
 		break;
 
 		case FOM_RSPLIT :
-		fprintf(fh, "1/d centre   Rsplit/%%       nref      d / A\n");
+		fprintf(fh, "%s Rsplit/%%       nref%s\n", t1, t2);
 		break;
 
 		case FOM_CC :
-		fprintf(fh, "1/d centre         CC       nref      d / A\n");
+		fprintf(fh, "%s       CC       nref%s\n", t1, t2);
 		break;
 
 		case FOM_CCSTAR :
-		fprintf(fh, "1/d centre        CC*       nref      d / A\n");
+		fprintf(fh, "%s      CC*       nref%s\n", t1, t2);
 		break;
 
 	}
@@ -474,8 +621,8 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 	for ( i=0; i<nshells; i++ ) {
 
 		double r, cen;
-		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
 
+		cen = shell_label(shells, i);
 		r = fom_shell(fctx, i);
 
 		switch ( fom ) {
@@ -484,16 +631,24 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		case FOM_R1F :
 		case FOM_R2 :
 		case FOM_RSPLIT :
-		fprintf(fh, "%10.3f %10.2f %10i %10.2f\n",
-		        cen*1.0e-9, r*100.0, cts[i], (1.0/cen)*1e10);
-
+		if ( config_intshells ) {
+			fprintf(fh, "%10.3f %10.2f %10i\n",
+				cen, r*100.0, cts[i]);
+		} else {
+			fprintf(fh, "%10.3f %10.2f %10i %10.2f\n",
+				cen*1.0e-9, r*100.0, cts[i], (1.0/cen)*1e10);
+		}
 		break;
 
 		case FOM_CC :
 		case FOM_CCSTAR :
-		fprintf(fh, "%10.3f %10.7f %10i %10.2f\n",
-		        cen*1.0e-9, r, cts[i], (1.0/cen)*1e10);
-
+		if ( config_intshells ) {
+			fprintf(fh, "%10.3f %10.7f %10i\n",
+				cen, r, cts[i]);
+		} else {
+			fprintf(fh, "%10.3f %10.7f %10i %10.2f\n",
+				cen*1.0e-9, r, cts[i], (1.0/cen)*1e10);
+		}
 		break;
 
 	}
@@ -530,8 +685,11 @@ int main(int argc, char *argv[])
 	int config_ignorenegs = 0;
 	int config_zeronegs = 0;
 	int config_unity = 0;
+	int config_intshells = 0;
 	int nshells = 10;
 	char *shell_file = NULL;
+	double min_I = +INFINITY;
+	double max_I = -INFINITY;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -546,6 +704,7 @@ int main(int argc, char *argv[])
 		{"shell-file",         1, NULL,                7},
 		{"ignore-negs",        0, &config_ignorenegs,  1},
 		{"zero-negs",          0, &config_zeronegs,    1},
+		{"intensity-shells",   0, &config_intshells,   1},
 		{0, 0, NULL, 0}
 	};
 
@@ -781,6 +940,9 @@ int main(int argc, char *argv[])
 		copy_data(refl2_acc, refl2);
 		set_intensity(refl2_acc, val2);
 
+		if ( val1 > max_I ) max_I = val1;
+		if ( val1 < min_I ) min_I = val1;
+
 		ncom++;
 
 	}
@@ -832,7 +994,7 @@ int main(int argc, char *argv[])
 		       rmin/1e9, rmax/1e9, 1e10/rmin, 1e10/rmax);
 	}
 	do_fom(list1_acc, list2_acc, cell, rmin, rmax, fom, config_unity,
-	       nshells, shell_file);
+	       nshells, shell_file, config_intshells, min_I, max_I);
 
 	free(shell_file);
 	reflist_free(list1_acc);
