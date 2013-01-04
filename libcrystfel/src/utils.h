@@ -100,6 +100,11 @@ extern void show_matrix_eqn(gsl_matrix *M, gsl_vector *v, int r);
 extern size_t notrail(char *s);
 extern void chomp(char *s);
 
+/**
+ * AssplodeFlag:
+ * @ASSPLODE_NONE: Nothing
+ * @ASSPLODE_DUPS: Don't merge deliminators
+ **/
 typedef enum {
 	ASSPLODE_NONE	= 0,
 	ASSPLODE_DUPS	= 1<<0
@@ -141,7 +146,8 @@ static inline double modulus_squared(double x, double y, double z) {
 static inline double distance3d(double x1, double y1, double z1,
                                 double x2, double y2, double z2)
 {
-	return modulus(x1-x2, y1-y2, z1-z2);
+	double d = modulus(x1-x2, y1-y2, z1-z2);
+	return d;
 }
 
 /* Answer in radians */

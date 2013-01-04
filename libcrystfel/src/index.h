@@ -43,7 +43,15 @@
 #include "detector.h"
 
 
-/* Indexing methods */
+/**
+ * IndexingMethod:
+ * @INDEXING_NONE: No indexing to be performed
+ * @INDEXING_DIRAX: Invoke DirAx
+ * @INDEXING_MOSFLM: Invoke MOSFLM
+ * @INDEXING_REAX: DPS algorithm using known cell parameters
+ *
+ * An enumeration of all the available indexing methods.
+ **/
 typedef enum {
 	INDEXING_NONE,
 	INDEXING_DIRAX,
@@ -61,6 +69,12 @@ enum {
 };
 
 
+/**
+ * IndexingPrivate:
+ *
+ * This is an opaque data structure containing information needed by the
+ * indexing method.
+ **/
 typedef struct _indexingprivate IndexingPrivate;
 
 extern IndexingPrivate *indexing_private(IndexingMethod indm);

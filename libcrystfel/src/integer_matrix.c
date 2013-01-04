@@ -62,6 +62,8 @@ struct _integermatrix
 
 /**
  * intmat_new:
+ * @rows: Number of rows that the new matrix is to have
+ * @cols: Number of columns that the new matrix is to have
  *
  * Allocates a new %IntegerMatrix with all elements set to zero.
  *
@@ -406,7 +408,7 @@ void intmat_print(const IntegerMatrix *m)
  * intmat_is_identity
  * @m: An %IntegerMatrix
  *
- * Returns true if @m is an identity matrix.
+ * Returns: true if @m is an identity matrix.
  *
  */
 int intmat_is_identity(const IntegerMatrix *m)
@@ -439,7 +441,7 @@ int intmat_is_identity(const IntegerMatrix *m)
  * intmat_is_inversion
  * @m: An %IntegerMatrix
  *
- * Returns true if @m = -I, where I is an identity matrix.
+ * Returns: true if @m = -I, where I is an identity matrix.
  *
  */
 int intmat_is_inversion(const IntegerMatrix *m)
@@ -473,7 +475,7 @@ int intmat_is_inversion(const IntegerMatrix *m)
  * @a: An %IntegerMatrix
  * @b: An %IntegerMatrix
  *
- * Returns true if @a = @b.
+ * Returns: true if @a = @b.
  *
  */
 int intmat_equals(const IntegerMatrix *a, const IntegerMatrix *b)

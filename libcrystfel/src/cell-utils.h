@@ -55,7 +55,7 @@ extern int cell_is_sensible(UnitCell *cell);
 
 extern int validate_cell(UnitCell *cell);
 
-extern UnitCell *uncenter_cell(UnitCell *in, UnitCellTransformation **tr);
+extern UnitCell *uncenter_cell(UnitCell *in, UnitCellTransformation **t);
 
 extern int bravais_lattice(UnitCell *cell);
 

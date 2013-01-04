@@ -437,6 +437,9 @@ double max_intensity(RefList *list)
 /**
  * res_cutoff:
  * @list: A %RefList
+ * @cell: A %UnitCell with which to calculate 1/d values for @list
+ * @min: Minimum acceptable value of 1/d
+ * @max: Maximum acceptable value of 1/d
  *
  * Applies a resolution cutoff to @list, returning the new version and freeing
  * the old version.

@@ -125,7 +125,6 @@ uncenter_cell
 bravais_lattice
 right_handed
 str_lattice
-uncenter_cell
 forbidden_reflection
 load_cell_from_pdb
 </SECTION>
@@ -152,7 +151,6 @@ safe_basename
 progress_bar
 rad2deg
 is_odd
-modulus
 poisson_noise
 notrail
 smallest
@@ -209,17 +207,6 @@ stat_scale_intensity
 </SECTION>
 
 <SECTION>
-<FILE>simulation</FILE>
-clError
-cleanup_gpu
-GradientMethod
-get_cl_dev
-get_diffraction
-get_diffraction_gpu
-setup_gpu
-</SECTION>
-
-<SECTION>
 <FILE>indexing</FILE>
 IndexingMethod
 IndexingPrivate
@@ -230,7 +217,6 @@ prepare_indexing
 index_pattern
 run_dirax
 run_mosflm
-indexingprivate
 map_all_peaks
 </SECTION>
 
