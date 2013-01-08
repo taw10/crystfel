@@ -48,6 +48,7 @@
 #include "index.h"
 #include "index-priv.h"
 #include "reax.h"
+#include "grainspotter.h"
 #include "geometry.h"
 #include "cell-utils.h"
 
@@ -97,6 +98,10 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 			iprivs[n] = indexing_private(indm[n]);
 			break;
 
+			case INDEXING_GRAINSPOTTER :
+			iprivs[n] = indexing_private(indm[n]);
+			break;
+
 			case INDEXING_REAX :
 			iprivs[n] = reax_prepare();
 			break;
@@ -129,6 +134,10 @@ void cleanup_indexing(IndexingPrivate **priv)
 			break;
 
 			case INDEXING_MOSFLM :
+			free(priv[n]);
+			break;
+
+			case INDEXING_GRAINSPOTTER :
 			free(priv[n]);
 			break;
 
@@ -194,6 +203,10 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 
 			case INDEXING_MOSFLM :
 			run_mosflm(image, cell);
+			break;
+
+			case INDEXING_GRAINSPOTTER :
+			run_grainspotter(image, cell);
 			break;
 
 			case INDEXING_REAX :
@@ -294,6 +307,8 @@ IndexingMethod *build_indexer_list(const char *str, int *need_cell)
 			list[i] = INDEXING_DIRAX;
 		} else if ( strcmp(methods[i], "mosflm") == 0) {
 			list[i] = INDEXING_MOSFLM;
+		} else if ( strcmp(methods[i], "grainspotter") == 0) {
+			list[i] = INDEXING_GRAINSPOTTER;
 		} else if ( strcmp(methods[i], "reax") == 0) {
 			list[i] = INDEXING_REAX;
 			*need_cell = 1;
