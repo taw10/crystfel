@@ -71,7 +71,7 @@ struct grainspotter_data {
 };
 
 
-static int read_matrix(struct image *image)
+static int read_matrix(struct image *image, char *filename)
 {
 	FILE *fh;
 	int d1;
@@ -79,11 +79,8 @@ static int read_matrix(struct image *image)
 	float ubi11, ubi12, ubi13;
 	float ubi21, ubi22, ubi23;
 	float ubi31, ubi32, ubi33;
-	char filename[1024];
 	char line[1024];
 	int r;
-
-	snprintf(filename, 1023, "xfel-%i.gff", image->id);
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
@@ -252,6 +249,7 @@ void run_grainspotter(struct image *image, UnitCell *cell)
 	int rval;
 	struct grainspotter_data *grainspotter;
 	char *ini_filename;
+	char gff_filename[1024];
 
 	write_gve(image, cell);
 	ini_filename = write_ini(image);
@@ -266,6 +264,9 @@ void run_grainspotter(struct image *image, UnitCell *cell)
 		ERROR("Couldn't allocate memory for GrainSpotter data.\n");
 		return;
 	}
+
+	snprintf(gff_filename, 1023, "xfel-%i.gff", image->id);
+	remove(gff_filename);
 
 	grainspotter->pid = forkpty(&grainspotter->pty, NULL, NULL, NULL);
 	if ( grainspotter->pid == -1 ) {
@@ -345,7 +346,7 @@ void run_grainspotter(struct image *image, UnitCell *cell)
 		ERROR("GrainSpotter doesn't seem to be working properly.\n");
 	}
 
-	if ( read_matrix(image) != 0 ) {
+	if ( read_matrix(image, gff_filename) != 0 ) {
 		ERROR("Failed to read matrix\n");
 	}
 
