@@ -1,3 +1,36 @@
+CrystFEL version 0.4.3, 10th January 2013
+-----------------------------------------
+
+- compare_hkl was reworked to simplify the available figures of merit, add CC*,
+  and to be consistent between the overall and resolution shell values.  A new
+  option, --intensity-shells, was also added.
+- Unit cells can now be handled in any setting.
+- Indexamajig will now examine the unit cell given on the command line, even if
+  the final cell will not be checked (i.e. if --cell-reduction=none).  The
+  lattice type will then be given to MOSFLM, which can help a lot in finding the
+  right solution.
+- Indexamajig now records the number of saturated reflections in the stream.
+- Indexamajig now processes the peaks obtained using "--peaks=hdf5" to check for
+  bad detector regions, peaks too close to panel edges, etc.
+- New options "--integrate-saturated", "--use-saturated" and "--integrate-found"
+  were added to indexamajig.
+- A bug was fixed which caused systematically absent (due to centering)
+  reflections to be predicted and integrated.
+- The colour scaling in hdfsee was improved.
+- powder_plot was moved to the extra programs repository.
+- The configure script now checks for HDF5.
+- Forbidden (due to centering) reflections are now taken into account by
+  check_hkl when calculating the completeness.
+- The speed of pattern processing was increased significantly (in many cases) by
+  avoiding an unnecessary iteration.
+- A crystfel.pc file was added, allowing use of "pkg-config --cflags crystfel"
+  and so on.
+- The new option "--min-measurements" was added to process_hkl.
+- The wavelength can now be specified in the beam file as an HDF5 path or as an
+  explicit number, just like the camera length.  There is no longer any
+  "fallback" to a nominal value (Chun Hong Yoon).
+
+
 CrystFEL version 0.4.2, 2nd October 2012
 ----------------------------------------
 
