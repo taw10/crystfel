@@ -33,6 +33,7 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include <fenv.h>
 
 #include "utils.h"
 #include "cell.h"
@@ -273,6 +274,65 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 	}
 
 	return reflections;
+}
+
+
+RefList *select_intersections(struct image *image, UnitCell *cell)
+{
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	const double min_dist = 0.25;
+	RefList *list;
+	int i;
+
+	/* Round towards nearest */
+	fesetround(1);
+
+	/* Cell basis vectors for this image */
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+
+	list = reflist_new();
+	if ( list == NULL ) return NULL;
+
+	/* Loop over peaks, checking proximity to nearest reflection */
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
+
+		struct imagefeature *f;
+		struct rvec q;
+		double h, k, l, hd, kd, ld;
+		double dsq;
+
+		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
+
+		/* Reciprocal space position of found peak */
+		q = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
+
+		/* Decimal and fractional Miller indices of nearest
+		 * reciprocal lattice point */
+		hd = q.u * ax + q.v * ay + q.w * az;
+		kd = q.u * bx + q.v * by + q.w * bz;
+		ld = q.u * cx + q.v * cy + q.w * cz;
+		h = lrint(hd);
+		k = lrint(kd);
+		l = lrint(ld);
+
+		/* Check distance */
+		dsq = pow(h-hd, 2.0) + pow(k-kd, 2.0) + pow(l-ld, 2.0);
+
+		if ( sqrt(dsq) < min_dist ) {
+
+			Reflection *refl;
+
+			refl = add_refl(list, h, k, l);
+			set_detector_pos(refl, sqrt(dsq), f->fs, f->ss);
+
+		}
+
+	}
+
+	return list;
 }
 
 

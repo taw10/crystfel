@@ -301,9 +301,17 @@ static void process_image(const struct index_args *iargs,
 	              iargs->config_insane, iargs->tols);
 
 	if ( image.indexed_cell != NULL ) {
+
 		pargs->indexable = 1;
-		image.reflections = find_intersections(&image,
-				image.indexed_cell);
+
+		if ( iargs->integrate_found ) {
+			image.reflections = select_intersections(&image,
+			                                    image.indexed_cell);
+		} else {
+			image.reflections = find_intersections(&image,
+			                                    image.indexed_cell);
+		}
+
 		if (image.reflections != NULL) {
 			integrate_reflections(&image,
 			                      iargs->config_closer,
@@ -314,6 +322,7 @@ static void process_image(const struct index_args *iargs,
 			                      iargs->ir_out,
 			                      iargs->integrate_saturated);
 		}
+
 	} else {
 		image.reflections = NULL;
 	}

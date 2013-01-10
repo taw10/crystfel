@@ -69,6 +69,7 @@ struct index_args
 	int integrate_saturated;
 	int use_saturated;
 	int no_revalidate;
+	int integrate_found;
 };
 
 

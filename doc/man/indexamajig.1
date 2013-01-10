@@ -334,6 +334,11 @@ Normally, reflections which contain one or more pixels above max_adu (defined in
 .PD
 When using \fB--peaks=hdf5\fR, the peaks will be put through the same checks as if you were using \fB--peaks=zaef\fR.  These checks reject peaks which are too close to panel edges, are saturated (unless you use \fB--use-saturated\fR), fall short of the minimum SNR value given by \fB--min-snr\fR, have other nearby peaks (closer than twice the inner integration radius, see \fB--int-radius\fR), or have any part in a bad region.  Using this option skips this validation step, and uses the peaks directly.
 
+.PD 0
+.IP \fB--integrate-found\fR
+.PD
+Without this option, peaks will be predicted in each pattern based on the crystal orientation from autoindexing and the parameters in the beam description file.  With this option, indices will be assigned to the peaks found by the peak search, and the positions of those peaks used for the final integration stage.
+
 .SH BUGS
 Don't run more than one indexamajig jobs simultaneously in the same working
 directory - they'll overwrite each other's DirAx or MOSFLM files, causing subtle

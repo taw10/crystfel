@@ -43,9 +43,10 @@
 extern "C" {
 #endif
 
-RefList *find_intersections(struct image *image, UnitCell *cell);
+extern RefList *find_intersections(struct image *image, UnitCell *cell);
+extern RefList *select_intersections(struct image *image, UnitCell *cell);
 
-void update_partialities(struct image *image);
+extern void update_partialities(struct image *image);
 
 #ifdef __cplusplus
 }

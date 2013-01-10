@@ -167,6 +167,9 @@ static void show_help(const char *s)
 "                           peaks which contain pixels above max_adu.\n"
 "     --no-revalidate      Don't re-integrate and check HDF5 peaks for\n"
 "                           validity.\n"
+"     --integrate-found    Skip the spot prediction step, and just integrate\n"
+"                           the intensities of the spots found by the initial\n"
+"                           peak search.\n"
 );
 }
 
@@ -251,6 +254,7 @@ int main(int argc, char *argv[])
 	int integrate_saturated = 0;
 	int use_saturated = 0;
 	int no_revalidate = 0;
+	int integrate_found = 0;
 
 	copyme = new_copy_hdf5_field_list();
 	if ( copyme == NULL ) {
@@ -300,6 +304,7 @@ int main(int argc, char *argv[])
 		{"integrate-saturated",0, &integrate_saturated,1},
 		{"use-saturated",0, &use_saturated,            1},
 		{"no-revalidate",      0, &no_revalidate,      1},
+		{"integrate-found",    0, &integrate_found,    1},
 		{0, 0, NULL, 0}
 	};
 
@@ -649,6 +654,7 @@ int main(int argc, char *argv[])
 	iargs.use_saturated = use_saturated;
 	iargs.integrate_saturated = integrate_saturated;
 	iargs.no_revalidate = no_revalidate;
+	iargs.integrate_found = integrate_found;
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
 	                    use_this_one_instead, ofh);
