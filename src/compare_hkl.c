@@ -95,6 +95,7 @@ static void show_help(const char *s)
 "      --sigma-cutoff=<n>     Discard reflections with I/sigma(I) < n.\n"
 "      --rmin=<res>           Set a lower resolution limit (m^-1).\n"
 "      --rmax=<res>           Set an upper resolution limit (m^-1).\n"
+"      --intensity-shells     Use shells of intensity instead of resolution.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
 );
