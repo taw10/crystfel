@@ -301,8 +301,9 @@ int main(int argc, char *argv[])
 		{"min-integration-snr",1, NULL,               12},
 		{"tolerance",          1, NULL,               13},
 		{"int-radius",         1, NULL,               14},
+
 		{"integrate-saturated",0, &integrate_saturated,1},
-		{"use-saturated",0, &use_saturated,            1},
+		{"use-saturated",      0, &use_saturated,      1},
 		{"no-revalidate",      0, &no_revalidate,      1},
 		{"integrate-found",    0, &integrate_found,    1},
 		{0, 0, NULL, 0}
