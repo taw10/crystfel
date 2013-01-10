@@ -61,10 +61,6 @@ In addition, there is also:
 
 	- get_hkl, for doing various simple operations on reflection lists.
 
-	- powder_plot, for turning image or reflection data into a histogram of
-	               reciprocal space vector moduli and intensities (i.e. a
-	               1D powder diffraction  trace).
-
 	- compare_hkl, for working out the differences (e.g. a q-dependent
 	               scaling factor) between two lists of reflections.
 
