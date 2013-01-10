@@ -437,6 +437,9 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+			case '?' :
+			break;
+
 			case 0 :
 			break;
 

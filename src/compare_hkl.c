@@ -771,6 +771,9 @@ int main(int argc, char *argv[])
 			shell_file = strdup(optarg);
 			break;
 
+			case '?' :
+			break;
+
 			default :
 			ERROR("Unhandled option '%c'\n", c);
 			break;

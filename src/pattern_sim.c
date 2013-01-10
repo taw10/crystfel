@@ -369,6 +369,9 @@ int main(int argc, char *argv[])
 			case 0 :
 			break;
 
+			case '?' :
+			break;
+
 			default :
 			ERROR("Unhandled option '%c'\n", c);
 			break;
