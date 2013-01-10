@@ -1069,11 +1069,12 @@ static void do_op(const IntegerMatrix *op,
  * This function applies the @idx-th symmetry operation from @ops to the
  * reflection @h, @k, @l, and stores the result at @he, @ke and @le.
  *
- * If you don't mind that the same equivalent might appear twice, simply call
- * this function the number of times returned by num_ops(), using the actual
- * point group.  If repeating the same equivalent twice (for example, if the
- * given reflection is a special high-symmetry one), call special_position()
- * first to get a "specialised" SymOpList and use that instead.
+ * Call this function multiple times with idx=0 .. num_equivs(ops, m) to get all
+ * of the equivalent reflections in turn.
+ *
+ * If you don't mind that the same equivalent might appear twice, simply let
+ * @m = NULL.  Otherwise, call new_symopmask() and then special_position() to
+ * set up a %SymOpMask appropriately.
  **/
 void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
                signed int h, signed int k, signed int l,
@@ -1133,8 +1134,8 @@ void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
  * @k: index of a reflection
  * @l: index of a reflection
  *
- * This function determines which operations in @ops map the reflection @h, @k,
- * @l onto itself, and uses @m to flag the operations in @ops which cause this.
+ * This function sets up @m to contain information about which operations in
+ * @ops map the reflection @h, @k, @l onto itself.
  *
  **/
 void special_position(const SymOpList *ops, SymOpMask *m,
@@ -1467,7 +1468,7 @@ static SymOpList *flack_reorder(const SymOpList *source)
  * operators, which are the symmetry operations which can be added to @target
  * to generate @source.  Only rotations are allowable - no mirrors nor
  * inversions.
- * To count the number of possibilities, use num_ops() on the result.
+ * To count the number of possibilities, use num_equivs() on the result.
  *
  * The algorithm used is "Algorithm A" from Flack (1987), Acta Cryst A43 p564.
  *
