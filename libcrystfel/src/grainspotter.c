@@ -214,9 +214,9 @@ static char *write_ini(struct image *image)
 	}
 
 	get_q_for_panel(image->det->furthest_out_panel,
-	                    image->det->furthest_out_fs,
-	                    image->det->furthest_out_ss,
-	                    &tt, 1.0/image->lambda);
+	                image->det->furthest_out_fs,
+	                image->det->furthest_out_ss,
+	                &tt, 1.0/image->lambda);
 
 	fprintf(fh, "spacegroup 96\n");
 	fprintf(fh, "!dsrange 0 1.3\n");
