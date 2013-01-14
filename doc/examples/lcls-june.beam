@@ -5,7 +5,7 @@ beam/fluence = 8.0e12
 beam/radius = 1.5e-6
 
 ; Photon energy in eV
-beam/photon_energy = 2000.0
+beam/photon_energy = /LCLS/photon_energy_eV
 
 ; Bandwidth: FWHM(wavelength) over wavelength.
 ; Note: current simulation code just uses a rectangular
