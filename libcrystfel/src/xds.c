@@ -1,13 +1,14 @@
 /*
  * xds.c
  *
- * Invoke xds crystal autoindexing
+ * Invoke xds for crystal autoindexing
  *
  * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2010-2013 Thomas White <taw@physics.org>
+ *        2013 Cornelius Gati <cornelius.gati@cfel.de>
  *
  * This file is part of CrystFEL.
  *
@@ -70,90 +71,6 @@ struct xds_data {
 
 };
 
-
-static int read_matrix(struct image *image, char *filename)
-{
-	FILE *fh;
-	int d1;
-	float d2;
-	float ubi11, ubi12, ubi13;
-	float ubi21, ubi22, ubi23;
-	float ubi31, ubi32, ubi33;
-	char line[1024];
-	int r;
-
-	fh = fopen(filename, "r");
-	if ( fh == NULL ) {
-		ERROR("Can't open '%s'\n", filename);
-		return 1;
-	}
-
-	/* Read and discard first line */
-	if ( fgets(line, 1024, fh) == NULL ) {
-		ERROR("Failed to read GFF file.\n");
-		return 1;
-	}
-
-	/* One line per grain */
-	if ( fgets(line, 1024, fh) == NULL ) {
-		ERROR("Failed to read GFF file.\n");
-		return 1;
-	}
-
-	STATUS("'%s'\n", line);
-
-	r = sscanf(line,
-         "%i %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f",
-         &d1, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2,
-         &ubi11, &ubi12, &ubi13, &ubi21, &ubi22, &ubi23, &ubi31, &ubi32, &ubi33);
-
-	if ( r != 24 ) {
-		ERROR("Only %i parameters in GFF file\n", r);
-		return 1;
-	}
-
-	fclose(fh);
-
-	image->candidate_cells[0] = cell_new();
-
-//	cell_set_cartesian(image->candidate_cells[0],
-//	                   ubi11/1e10, ubi12/1e10, ubi13/1e10,
-//	                   ubi21/1e10, ubi22/1e10, ubi23/1e10,
-//	                   ubi31/1e10, ubi32/1e10, ubi33/1e10);
-
-	cell_set_cartesian(image->candidate_cells[0],
-	                   ubi12/1e10, ubi13/1e10, ubi11/1e10,
-	                   ubi22/1e10, ubi23/1e10, ubi21/1e10,
-	                   ubi32/1e10, ubi33/1e10, ubi31/1e10);
-
-
-        image->ncells = 1;
-        cell_print(image->candidate_cells[0]);
-
-        return 0;
-}
-
-
-static int xds_readable(struct image *image,
-                                 struct xds_data *xds)
-{
-	int rval;
-
-	rval = read(xds->pty,
-	            xds->rbuffer, xds->rbuflen);
-
-	if ( rval == -1 ) {
-		ERROR("Read failed: %s\n", strerror(errno));
-		return 1;
-	}
-
-	xds->rbuffer[rval] = '\0';
-
-	printf("xds: '%s'\n", xds->rbuffer);
-
-	return 0;
-}
-
 static void write_spot(struct image *image, const char *filename)
 {
 	FILE *fh;
@@ -167,19 +84,10 @@ static void write_spot(struct image *image, const char *filename)
 		return;
 	}
 
-	/* Number of pixels in x, number of pixels in y, pixel size (mm),
-	 * YSCALE, OMEGA */
-	fprintf(fh, "%10d %10d %10.8f %10.6f %10.6f\n", 1, 1, 0.0, 1.0, 0.0);
-
-	/* INVERTX, ISWUNG */
-	fprintf(fh, "%10d %10d\n", 0, 1);
-
-	/* XBEAM, YBEAM */
-	fprintf(fh, "%10.5f %10.5f\n", 0.0, 0.0);
-
 	n = image_feature_count(image->features);
-	for ( i=0; i<n; i++ ) {
-
+	for ( i=0; i<n; i++ ) 
+        
+        {
 		struct imagefeature *f;
 		struct panel *p;
 		double xs, ys, rx, ry, x, y;
@@ -195,34 +103,81 @@ static void write_spot(struct image *image, const char *filename)
 		rx = (xs + p->cnx) / p->res;
 		ry = (ys + p->cny) / p->res;
 
-		x = -rx*fclen/p->clen;
+		x = rx*fclen/p->clen;
 		y = ry*fclen/p->clen;  /* Peak positions in m */
 
-		fprintf(fh, "%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
-		        x*1e3, y*1e3, 0.0, 0.0, 1000.0, 10.0);
+		fprintf(fh, "%10.2f %10.2f %10.2f %10.0f",
+		        x*1e3, y*1e3, 0.0, 0.0);
 
 	}
-
-	fprintf(fh,"%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
-	           -999.0,-999.0,-999.0,-999.0,-999.0,-999.0);
 	fclose(fh);
 }
 
 
-//void run_xds(struct image *image, UnitCell *cell)
+static char *write_INP(struct image *image)
 {
-	unsigned int opts;
-	int status;
-	int rval;
+	FILE *fh;
+	char *filename;
+	//double tt;
+
+	filename = malloc(1024);
+	if ( filename == NULL ) return NULL;
+
+	snprintf(filename, 1023, filename, image->id);
+
+	fh = fopen(filename, "w");
+	if ( !fh ) {
+		ERROR("Couldn't open temporary file '%s'\n", filename);
+		free(filename);
+		return NULL;
+	}
+
+	//get_q_for_panel(image->det->furthest_out_panel,
+	//                    image->det->furthest_out_fs,
+	//                    image->det->furthest_out_ss,
+	//                    &tt, 1.0/image->lambda);
+
+	fprintf(fh, "JOB= IDXREF\n");
+	fprintf(fh, "ORGX= 1540.64\n");
+	fprintf(fh, "ORGY= 1543.78\n");
+	fprintf(fh, "DETECTOR_DISTANCE= 50.000\n");
+	fprintf(fh, "OSCILLATION_RANGE= 0.100\n");
+	fprintf(fh, "X-RAY_WAVELENGTH= 1.77000\n");
+	fprintf(fh, "NAME_TEMPLATE_OF_DATA_FRAMES=/home/dikay/insu/data_exp1/ins_ssad_1_???.img \n");
+	fprintf(fh, "DATA_RANGE=1 1\n");
+	fprintf(fh, "SPOT_RANGE=1 1\n");
+	fprintf(fh, "SPACE_GROUP_NUMBER=0\n");
+	fprintf(fh, "UNIT_CELL_CONSTANTS= 70 80 90 90 90 90\n");
+	fprintf(fh, "NX= 3072\n");
+	fprintf(fh, "NY= 3072\n");
+	fprintf(fh, "QX= .073242\n");
+	fprintf(fh, "QY= .073242\n");
+	fprintf(fh, "DIRECTION_OF_DETECTOR_X-AXIS=1 0 0\n");
+	fprintf(fh, "DIRECTION_OF_DETECTOR_Y-AXIS=0 1 0\n");
+	fprintf(fh, "INCIDENT_BEAM_DIRECTION=0 0 1\n");
+	fprintf(fh, "ROTATION_AXIS=1 0 0\n");
+	fprintf(fh, "DETECTOR= CCDCHESS\n");
+	fprintf(fh, "MINIMUM_VALID_PIXEL_VALUE= 1\n");
+	fprintf(fh, "OVERLOAD= 65500\n");
+
+	fclose(fh);
+
+	return filename;
+
+void run_xds(struct image *image, UnitCell *cell)
+{
+	//unsigned int opts;
+	//int status;
+	//int rval;
 	struct xds_data *xds;
-	char *ini_filename;
-	char gff_filename[1024];
+	char *INP_filename;
+	//char gff_filename[1024];
 
-	write_gve(image, cell);
-	ini_filename = write_ini(image);
+	write_INP(image);
+	INP_filename = write_INP(image);
 
-	if ( ini_filename == NULL ) {
-		ERROR("Failed to write ini file for xds.\n");
+	if ( INP_filename == NULL ) {
+		ERROR("Failed to write XDS.INP file for XDS.\n");
 		return;
 	}
 
@@ -230,92 +185,6 @@ static void write_spot(struct image *image, const char *filename)
 	if ( xds == NULL ) {
 		ERROR("Couldn't allocate memory for xds data.\n");
 		return;
-	}
-
-	snprintf(gff_filename, 1023, "xfel-%i.gff", image->id);
-	remove(gff_filename);
-
-	xds->pid = forkpty(&xds->pty, NULL, NULL, NULL);
-	if ( xds->pid == -1 ) {
-		ERROR("Failed to fork for xds: %s\n", strerror(errno));
-		return;
-	}
-	if ( xds->pid == 0 ) {
-
-		/* Child process: invoke xds */
-		struct termios t;
-
-		/* Turn echo off */
-		tcgetattr(STDIN_FILENO, &t);
-		t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
-		tcsetattr(STDIN_FILENO, TCSANOW, &t);
-
-		STATUS("Running xds.0.90 '%s'\n", ini_filename);
-		execlp("xds.0.90", "", ini_filename, (char *)NULL);
-		ERROR("Failed to invoke xds.\n");
-		_exit(0);
-
-	}
-	free(ini_filename);
-
-	xds->rbuffer = malloc(256);
-	xds->rbuflen = 256;
-	xds->rbufpos = 0;
-
-	/* Set non-blocking */
-	opts = fcntl(xds->pty, F_GETFL);
-	fcntl(xds->pty, F_SETFL, opts | O_NONBLOCK);
-
-	do {
-
-		fd_set fds;
-		struct timeval tv;
-		int sval;
-
-		FD_ZERO(&fds);
-		FD_SET(xds->pty, &fds);
-
-		tv.tv_sec = 20000;
-		tv.tv_usec = 0;
-
-		sval = select(xds->pty+1, &fds, NULL, NULL, &tv);
-
-		if ( sval == -1 ) {
-
-			const int err = errno;
-
-			switch ( err ) {
-
-				case EINTR:
-				STATUS("Restarting select()\n");
-				break;
-
-				default:
-				ERROR("select() failed: %s\n", strerror(err));
-				rval = 1;
-
-			}
-
-		} else if ( sval != 0 ) {
-			rval = xds_readable(image, xds);
-		} else {
-			ERROR("No response from xds..\n");
-			rval = 1;
-		}
-
-	} while ( !rval );
-
-	close(xds->pty);
-	free(xds->rbuffer);
-	waitpid(xds->pid, &status, 0);
-
-	if ( status != 0 ) {
-		ERROR("xds doesn't seem to be working properly.\n");
-	}
-
-	if ( read_matrix(image, gff_filename) != 0 ) {
-		ERROR("Failed to read matrix\n");
-	}
-
-	free(xds);
-}
+	}}
+	//free(xds);
+//}

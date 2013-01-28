@@ -1,5 +1,5 @@
 /*
- * grainspotter.h
+ * xds.h
  *
  * Invoke xds for crystal autoindexing
  *

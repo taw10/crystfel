@@ -48,7 +48,7 @@ typedef enum {
 	INDEXING_NONE,
 	INDEXING_DIRAX,
 	INDEXING_MOSFLM,
-        INDEXING_xds,
+        INDEXING_XDS,
 	INDEXING_REAX,
 } IndexingMethod;
 

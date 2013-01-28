@@ -309,7 +309,7 @@ IndexingMethod *build_indexer_list(const char *str, int *need_cell)
 		} else if ( strcmp(methods[i], "mosflm") == 0) {
 			list[i] = INDEXING_MOSFLM;
                 } else if ( strcmp(methods[i], "xds") == 0) {
-			list[i] = INDEXING_xds;
+			list[i] = INDEXING_XDS;
 		} else if ( strcmp(methods[i], "reax") == 0) {
 			list[i] = INDEXING_REAX;
 			*need_cell = 1;
