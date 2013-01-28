@@ -41,6 +41,7 @@
 #include "cell.h"
 #include "detector.h"
 #include "reflist.h"
+#include "crystal.h"
 
 
 #define MAX_CELL_CANDIDATES (32)
@@ -79,10 +80,9 @@ typedef struct _imagefeaturelist ImageFeatureList;
  *    uint16_t                *flags;
  *    double                  *twotheta;
  *
- *    UnitCell                *indexed_cell;
- *    UnitCell                *candidate_cells[MAX_CELL_CANDIDATES];
- *    int                     ncells;
-
+ *    Crystal                 **crystals;
+ *    int                     n_crystals;
+ *
  *    struct detector         *det;
  *    struct beam_params      *beam;
  *    char                    *filename;
@@ -90,21 +90,12 @@ typedef struct _imagefeaturelist ImageFeatureList;
  *
  *    int                     id;
  *
- *    double                  m;
- *
  *    double                  lambda;
  *    double                  div;
  *    double                  bw;
- *    double                  osf;
- *    double                  profile_radius;
- *    int                     pr_dud;
- *    double                  diffracting_resolution;
  *
  *    int                     width;
  *    int                     height;
- *
- *    RefList                 *reflections;
- *    long long unsigned int  n_saturated;
  *
  *    ImageFeatureList        *features;
  * };
@@ -141,9 +132,8 @@ struct image {
 	uint16_t                *flags;
 	double                  *twotheta;
 
-	UnitCell                *indexed_cell;
-	UnitCell                *candidate_cells[MAX_CELL_CANDIDATES];
-	int                     ncells;
+	struct crystal          **crystals;
+	int                     n_crystals;
 
 	struct detector         *det;
 	struct beam_params      *beam;  /* The nominal beam parameters */
@@ -153,24 +143,13 @@ struct image {
 	int                     id;   /* ID number of the thread
 	                               * handling this image */
 
-	/* Information about the crystal */
-	double                  m;  /* Mosaicity in radians */
-
 	/* Per-shot radiation values */
 	double                  lambda;        /* Wavelength in m */
 	double                  div;           /* Divergence in radians */
 	double                  bw;            /* Bandwidth as a fraction */
-	double                  osf;           /* Overall scaling factor */
-	double                  profile_radius; /* Radius of reflection */
-	int                     pr_dud;        /* Post refinement failed */
-	double                  diffracting_resolution;  /* Max 1/d in m^-1 */
 
 	int                     width;
 	int                     height;
-
-	/* Integrated (or about-to-be-integrated) reflections */
-	RefList                 *reflections;
-	long long int           n_saturated;  /* Number of overloads */
 
 	/* Detected peaks */
 	ImageFeatureList        *features;

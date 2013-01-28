@@ -287,6 +287,13 @@ largest_q
 </SECTION>
 
 <SECTION>
+<FILE>crystal</FILE>
+Crystal
+crystal_new
+crystal_free
+</SECTION>
+
+<SECTION>
 <FILE>hdf5-file</FILE>
 hdf5_read
 hdf5_write

@@ -38,6 +38,11 @@
   </chapter>
 
   <chapter>
+    <title>Crystals</title>
+        <xi:include href="xml/crystal.xml"/>
+  </chapter>
+
+  <chapter>
     <title>Statistics and R-factors</title>
         <xi:include href="xml/statistics.xml"><xi:fallback /></xi:include>
   </chapter>
