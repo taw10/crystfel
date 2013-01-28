@@ -117,7 +117,7 @@ typedef struct {
 
 /* Open an image display window showing the given filename, or NULL */
 extern DisplayWindow *displaywindow_open(const char *filename,
-                                         const char *peaks, int boost,
+                                         const char *peaks, double boost,
                                          int binning, int cmfilter,
                                          int noisefilter, int colscale,
                                          const char *element,

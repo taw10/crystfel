@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 	size_t i;
 	int nfiles;
 	char *peaks = NULL;
-	int boost = 1;
+	double boost = 1.0;
 	int binning = 2;
 	int config_cmfilter = 0;
 	int config_noisefilter = 0;
@@ -161,10 +161,10 @@ int main(int argc, char *argv[])
 			break;
 
 			case 'i' :
-			boost = atoi(optarg);
-			if ( boost < 1 ) {
+			boost = atof(optarg);
+			if ( boost <= 0 ) {
 				ERROR("Intensity boost must be a positive"
-				      " integer.\n");
+				      " number.\n");
 				return 1;
 			}
 			break;
