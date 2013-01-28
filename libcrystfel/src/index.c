@@ -11,6 +11,7 @@
  *   2010-2012 Thomas White <taw@physics.org>
  *   2010-2011 Richard Kirian <rkirian@asu.edu>
  *   2012      Lorenzo Galli
+ *   2013      Cornelius Gati <cornelius.gati@cfel.de>
  *
  * This file is part of CrystFEL.
  *
@@ -44,6 +45,7 @@
 #include "peaks.h"
 #include "dirax.h"
 #include "mosflm.h"
+#include "xds.h"
 #include "detector.h"
 #include "index.h"
 #include "index-priv.h"
@@ -97,6 +99,10 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 			iprivs[n] = indexing_private(indm[n]);
 			break;
 
+			case INDEXING_XDS :
+                        iprivs[n] = indexing_private(indm[n]);
+			break;
+
 			case INDEXING_REAX :
 			iprivs[n] = reax_prepare();
 			break;
@@ -129,6 +135,10 @@ void cleanup_indexing(IndexingPrivate **priv)
 			break;
 
 			case INDEXING_MOSFLM :
+			free(priv[n]);
+			break;
+
+                        case INDEXING_XDS :
 			free(priv[n]);
 			break;
 
@@ -194,6 +204,10 @@ void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
 
 			case INDEXING_MOSFLM :
 			run_mosflm(image, cell);
+			break;
+
+                        case INDEXING_XDS :
+			run_XDS(image, cell);
 			break;
 
 			case INDEXING_REAX :
@@ -294,6 +308,8 @@ IndexingMethod *build_indexer_list(const char *str, int *need_cell)
 			list[i] = INDEXING_DIRAX;
 		} else if ( strcmp(methods[i], "mosflm") == 0) {
 			list[i] = INDEXING_MOSFLM;
+                } else if ( strcmp(methods[i], "xds") == 0) {
+			list[i] = INDEXING_xds;
 		} else if ( strcmp(methods[i], "reax") == 0) {
 			list[i] = INDEXING_REAX;
 			*need_cell = 1;

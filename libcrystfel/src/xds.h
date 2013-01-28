@@ -1,13 +1,14 @@
 /*
  * grainspotter.h
  *
- * Invoke GrainSpotter for multi-crystal autoindexing
+ * Invoke xds for crystal autoindexing
  *
  * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2010-2013 Thomas White <taw@physics.org>
+ *        2013 Cornelius Gati <cornelius.gati@cfel.de>
  *
  * This file is part of CrystFEL.
  *
@@ -26,8 +27,8 @@
  *
  */
 
-#ifndef GRAINSPOTTER_H
-#define GRAINSPOTTER_H
+#ifndef xds_H
+#define xds_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -36,7 +37,7 @@
 #include "cell.h"
 
 
-extern void run_grainspotter(struct image *image, UnitCell *cell);
+extern void run_xds(struct image *image, UnitCell *cell);
 
 
-#endif	/* GRAINSPOTTER_H */
+#endif	/* XDS_H */
