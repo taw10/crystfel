@@ -3,11 +3,11 @@
  *
  * Geometry of diffraction
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -44,6 +44,7 @@
 #include "reflist.h"
 #include "reflist-utils.h"
 #include "symmetry.h"
+#include "geometry.h"
 
 
 static signed int locate_peak(double x, double y, double z, double k,
@@ -284,7 +285,7 @@ RefList *find_intersections(struct image *image, Crystal *cryst)
 }
 
 
-RefList *select_intersections(struct image *image, UnitCell *cell)
+RefList *select_intersections(struct image *image, Crystal *cryst)
 {
 	double ax, ay, az;
 	double bx, by, bz;
@@ -297,7 +298,8 @@ RefList *select_intersections(struct image *image, UnitCell *cell)
 	fesetround(1);
 
 	/* Cell basis vectors for this image */
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	cell_get_cartesian(crystal_get_cell(cryst), &ax, &ay, &az,
+	                   &bx, &by, &bz, &cx, &cy, &cz);
 
 	list = reflist_new();
 	if ( list == NULL ) return NULL;

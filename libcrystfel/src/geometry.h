@@ -3,12 +3,12 @@
  *
  * Geometry of diffraction
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *   2012      Richard Kirian
  *
  * This file is part of CrystFEL.
@@ -43,10 +43,10 @@
 extern "C" {
 #endif
 
-extern RefList *find_intersections(struct image *image, UnitCell *cell);
-extern RefList *select_intersections(struct image *image, UnitCell *cell);
+extern RefList *find_intersections(struct image *image, Crystal *cryst);
+extern RefList *select_intersections(struct image *image, Crystal *cryst);
 
-extern void update_partialities(struct image *image);
+extern void update_partialities(struct image *image, Crystal *cryst);
 
 #ifdef __cplusplus
 }
