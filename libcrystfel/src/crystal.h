@@ -33,6 +33,11 @@
 #include <config.h>
 #endif
 
+
+#include "cell.h"
+#include "reflist.h"
+
+
 /**
  * Crystal:
  *
@@ -44,5 +49,9 @@ typedef struct _crystal Crystal;
 
 extern Crystal *crystal_new(void);
 extern void crystal_free(Crystal *cryst);
+
+extern UnitCell *crystal_get_cell(Crystal *cryst);
+extern double crystal_get_profile_radius(Crystal *cryst);
+extern RefList *crystal_get_reflections(Crystal *cryst);
 
 #endif	/* CRYSTAL_H */

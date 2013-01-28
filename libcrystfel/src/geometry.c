@@ -118,7 +118,7 @@ static double partiality(double rlow, double rhigh, double r)
 }
 
 
-static Reflection *check_reflection(struct image *image,
+static Reflection *check_reflection(struct image *image, Crystal *cryst,
                                     signed int h, signed int k, signed int l,
                                     double xl, double yl, double zl)
 {
@@ -132,6 +132,9 @@ static Reflection *check_reflection(struct image *image,
 	double klow, khigh;    /* Wavenumber */
 	Reflection *refl;
 	double cet, cez;
+	double pr;
+
+	pr = crystal_get_profile_radius(cryst);
 
 	/* "low" gives the largest Ewald sphere (wavelength short => k large)
 	 * "high" gives the smallest Ewald sphere (wavelength long => k small)
@@ -153,8 +156,8 @@ static Reflection *check_reflection(struct image *image,
 	rlow = klow - distance(cet, cez, tl, zl);  /* Loss of precision */
 
 	if ( (signbit(rlow) == signbit(rhigh))
-	     && (fabs(rlow) > image->profile_radius)
-	     && (fabs(rhigh) > image->profile_radius) ) return NULL;
+	     && (fabs(rlow) > pr)
+	     && (fabs(rhigh) > pr) ) return NULL;
 
 	/* If the "lower" Ewald sphere is a long way away, use the
 	 * position at which the Ewald sphere would just touch the
@@ -165,26 +168,26 @@ static Reflection *check_reflection(struct image *image,
 	 * et al. (1979).
 	 */
 	clamp_low = 0;  clamp_high = 0;
-	if ( rlow < -image->profile_radius ) {
-		rlow = -image->profile_radius;
+	if ( rlow < -pr ) {
+		rlow = -pr;
 		clamp_low = -1;
 	}
-	if ( rlow > +image->profile_radius ) {
-		rlow = +image->profile_radius;
+	if ( rlow > +pr ) {
+		rlow = +pr;
 		clamp_low = +1;
 	}
-	if ( rhigh < -image->profile_radius ) {
-		rhigh = -image->profile_radius;
+	if ( rhigh < -pr ) {
+		rhigh = -pr;
 		clamp_high = -1;
 	}
-	if ( rhigh > +image->profile_radius ) {
-		rhigh = +image->profile_radius;
+	if ( rhigh > +pr ) {
+		rhigh = +pr;
 		clamp_high = +1;
 	}
 	assert(clamp_low >= clamp_high);
 
 	/* Calculate partiality */
-	part = partiality(rlow, rhigh, image->profile_radius);
+	part = partiality(rlow, rhigh, pr);
 
 	/* Locate peak on detector. */
 	p = locate_peak(xl, yl, zl, 1.0/image->lambda, image->det, &xda, &yda);
@@ -206,7 +209,7 @@ static Reflection *check_reflection(struct image *image,
 }
 
 
-RefList *find_intersections(struct image *image, UnitCell *cell)
+RefList *find_intersections(struct image *image, Crystal *cryst)
 {
 	double ax, ay, az;
 	double bx, by, bz;
@@ -218,6 +221,10 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 	int hmax, kmax, lmax;
 	double mres;
 	signed int h, k, l;
+	UnitCell *cell;
+
+	cell = crystal_get_cell(cryst);
+	if ( cell == NULL ) return NULL;
 
 	reflections = reflist_new();
 
@@ -263,7 +270,7 @@ RefList *find_intersections(struct image *image, UnitCell *cell)
 		yl = h*asy + k*bsy + l*csy;
 		zl = h*asz + k*bsz + l*csz;
 
-		refl = check_reflection(image, h, k, l, xl, yl, zl);
+		refl = check_reflection(image, cryst, h, k, l, xl, yl, zl);
 
 		if ( refl != NULL ) {
 			add_refl_to_list(refl, reflections);
@@ -337,7 +344,7 @@ RefList *select_intersections(struct image *image, UnitCell *cell)
 
 
 /* Calculate partialities and apply them to the image's reflections */
-void update_partialities(struct image *image)
+void update_partialities(struct image *image, Crystal *cryst)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -346,13 +353,13 @@ void update_partialities(struct image *image)
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 
-	cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
+	cell_get_reciprocal(crystal_get_cell(cryst), &asx, &asy, &asz,
 	                    &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
 	/* Scratch list to give check_reflection() something to add to */
 	predicted = reflist_new();
 
-	for ( refl = first_refl(image->reflections, &iter);
+	for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -369,7 +376,7 @@ void update_partialities(struct image *image)
 		yl = h*asy + k*bsy + l*csy;
 		zl = h*asz + k*bsz + l*csz;
 
-		vals = check_reflection(image, h, k, l, xl, yl, zl);
+		vals = check_reflection(image, cryst, h, k, l, xl, yl, zl);
 
 		if ( vals == NULL ) {
 			set_redundancy(refl, 0);
