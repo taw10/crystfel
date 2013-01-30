@@ -50,10 +50,8 @@
 struct _crystal
 {
 	/* Information about the crystal */
-	UnitCell                *indexed_cell;
-	UnitCell                *candidate_cells[MAX_CELL_CANDIDATES];
-	int                     ncells;
-	double                  m;  /* Mosaicity in radians */
+	UnitCell                *cell;
+	double                  m;     /* Mosaicity in radians */
 	double                  osf;
 	double                  profile_radius;
 	int                     pr_dud;
@@ -82,6 +80,11 @@ Crystal *crystal_new()
 
 	cryst = malloc(sizeof(Crystal));
 	if ( cryst == NULL ) return NULL;
+
+	cryst->cell = NULL;
+	cryst->reflections = NULL;
+	cryst->diffracting_resolution = 0.0;
+	cryst->n_saturated = 0;
 
 	return cryst;
 }

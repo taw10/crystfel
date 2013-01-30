@@ -132,7 +132,7 @@ struct image {
 	uint16_t                *flags;
 	double                  *twotheta;
 
-	struct crystal          **crystals;
+	Crystal                 **crystals;
 	int                     n_crystals;
 
 	struct detector         *det;

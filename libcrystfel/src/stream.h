@@ -3,11 +3,11 @@
  *
  * Stream tools
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *   2011      Andrew Aquila
  *
  * This file is part of CrystFEL.
@@ -38,30 +38,20 @@
 struct image;
 struct hdfile;
 
-/* Possible options dictating what goes into the output stream */
-enum
-{
-	STREAM_NONE                 = 0,
-	STREAM_INTEGRATED           = 1<<0,
-	STREAM_PEAKS                = 1<<2,
-	STREAM_PEAKS_IF_INDEXED     = 1<<3,
-	STREAM_PEAKS_IF_NOT_INDEXED = 1<<4,
-};
+typedef struct _stream Stream;
 
+extern Stream *open_stream_for_read(const char *filename);
+extern Stream *open_stream_for_write(const char *filename);
+extern void close_stream(Stream *st);
 
+extern void write_chunk(Stream *st, struct image *image, struct hdfile *hdfile,
+                        int include_peaks, int include_reflections);
+
+extern int read_chunk(Stream *st, struct image *image);
+
+/* Nasty functions that should be avoided */
 extern int count_patterns(FILE *fh);
-
-extern void write_stream_header(FILE *ofh, int argc, char *argv[]);
-
-extern void write_chunk(FILE *ofh, struct image *image, struct hdfile *hdfile,
-                        int flags);
-
-extern int parse_stream_flags(const char *a);
-
-extern int read_chunk(FILE *fh, struct image *image);
-
 extern int skip_some_files(FILE *fh, int n);
-
 extern int is_stream(const char *filename);
 
 #endif	/* STREAM_H */
