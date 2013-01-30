@@ -47,9 +47,6 @@ extern void integrate_reflections(struct image *image,
                                   double ir_inn, double ir_mid, double ir_out,
                                   int integrate_saturated);
 
-extern double peak_lattice_agreement(struct image *image, UnitCell *cell,
-                                     double *pst);
-
 extern int peak_sanity_check(struct image *image);
 
 extern void estimate_resolution(RefList *list, UnitCell *cell,
