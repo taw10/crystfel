@@ -3,13 +3,13 @@
  *
  * Perform indexing (somehow)
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *   2010      Richard Kirian
  *   2012      Lorenzo Galli
  *
@@ -53,20 +53,25 @@
  * An enumeration of all the available indexing methods.
  **/
 typedef enum {
-	INDEXING_NONE,
-	INDEXING_DIRAX,
-	INDEXING_MOSFLM,
-	INDEXING_REAX,
+
+	INDEXING_NONE   = 0,
+
+	/* The core indexing methods themselves */
+	INDEXING_DIRAX  = 1,
+	INDEXING_MOSFLM = 2,
+	INDEXING_REAX   = 3,
+
+	/* Bits at the top of the IndexingMethod are flags which modify the
+	 * behaviour of the indexer, at the moment just by adding checks. */
+	INDEXING_CHECK_CELL_COMBINATIONS = 256,
+	INDEXING_CHECK_CELL_AXES         = 512,
+	INDEXING_CHECK_PEAKS             = 1024,
+
 } IndexingMethod;
 
-
-/* Cell reduction methods */
-enum {
-	CELLR_NONE,
-	CELLR_REDUCE,
-	CELLR_COMPARE,
-	CELLR_COMPARE_AB,
-};
+/* This defines the bits in "IndexingMethod" which are used to represent the
+ * core of the indexing method */
+#define INDEXING_METHOD_MASK (0xff)
 
 
 /**
@@ -75,24 +80,22 @@ enum {
  * This is an opaque data structure containing information needed by the
  * indexing method.
  **/
-typedef struct _indexingprivate IndexingPrivate;
+typedef void *IndexingPrivate;
 
-extern IndexingPrivate *indexing_private(IndexingMethod indm);
+extern IndexingMethod *build_indexer_list(const char *str, int *need_cell);
 
 extern IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
-                                         const char *filename,
-                                         struct detector *det,
-                                         double nominal_photon_energy);
+                                          const char *filename,
+                                          struct detector *det,
+                                          double nominal_photon_energy,
+                                          float *ltl);
 
-extern void map_all_peaks(struct image *image);
-
-extern void index_pattern(struct image *image, UnitCell *cell,
-                          IndexingMethod *indm, int cellr, int verbose,
-                          IndexingPrivate **priv, int config_insane,
-                          const float *ltl);
+extern void index_pattern(struct image *image,
+                          IndexingMethod *indms, IndexingPrivate **iprivs);
 
 extern void cleanup_indexing(IndexingPrivate **priv);
 
-extern IndexingMethod *build_indexer_list(const char *str, int *need_cell);
+/* For indexing methods to call */
+extern IndexingPrivate *indexing_private(IndexingMethod indm);
 
 #endif	/* INDEX_H */
