@@ -132,7 +132,7 @@ static void mosflm_parseline(const char *line, struct image *image,
 
 static int read_newmat(const char *filename, struct image *image)
 {
-	FILE * fh;
+	FILE *fh;
 	float asx, asy, asz;
 	float bsx, bsy, bsz;
 	float csx, csy, csz;
@@ -166,7 +166,7 @@ static int read_newmat(const char *filename, struct image *image)
 	                    -bsy*c, -bsz*c, bsx*c,
 	                    -csy*c, -csz*c, csx*c);
 
-        image->ncells = 1;
+	image->ncells = 1;
 
         return 0;
 }
