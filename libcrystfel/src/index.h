@@ -87,15 +87,11 @@ extern IndexingMethod *build_indexer_list(const char *str, int *need_cell);
 extern IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
                                           const char *filename,
                                           struct detector *det,
-                                          double nominal_photon_energy,
-                                          float *ltl);
+                                          struct beam_params *beam, float *ltl);
 
 extern void index_pattern(struct image *image,
                           IndexingMethod *indms, IndexingPrivate **iprivs);
 
-extern void cleanup_indexing(IndexingPrivate **priv);
-
-/* For indexing methods to call */
-extern IndexingPrivate *indexing_private(IndexingMethod indm);
+extern void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs);
 
 #endif	/* INDEX_H */

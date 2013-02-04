@@ -80,6 +80,7 @@
 #include "mosflm.h"
 #include "utils.h"
 #include "peaks.h"
+#include "cell-utils.h"
 
 
 #define MOSFLM_VERBOSE 0
@@ -90,6 +91,14 @@ typedef enum {
 	MOSFLM_INPUT_LINE,
 	MOSFLM_INPUT_PROMPT
 } MOSFLMInputType;
+
+
+
+struct mosflm_private {
+	IndexingMethod          indm;
+	float                   *ltl;
+	UnitCell                *template;
+};
 
 
 struct mosflm_data {
@@ -107,9 +116,52 @@ struct mosflm_data {
 	char                    sptfile[128];
 	int                     step;
 	int                     finished_ok;
-	UnitCell                *target_cell;
+	int                     done;
+	int                     success;
+
+	struct mosflm_private  *mp;
 
 };
+
+static int check_cell(struct mosflm_private *mp, struct image *image,
+                      UnitCell *cell)
+{
+	UnitCell *out;
+	Crystal *cr;
+
+	if ( mp->indm & INDEXING_CHECK_CELL_COMBINATIONS ) {
+
+		out = match_cell(cell, mp->template, 0, mp->ltl, 1);
+		if ( out == NULL ) return 0;
+
+	} else if ( mp->indm & INDEXING_CHECK_CELL_AXES ) {
+
+		out = match_cell(cell, mp->template, 0, mp->ltl, 0);
+		if ( out == NULL ) return 0;
+
+	} else {
+		out = cell_new_from_cell(cell);
+	}
+
+	cr = crystal_new();
+	if ( cr == NULL ) {
+		ERROR("Failed to allocate crystal.\n");
+		return 0;
+	}
+
+	crystal_set_cell(cr, cell);
+
+	if ( mp->indm & INDEXING_CHECK_PEAKS ) {
+		if ( !peak_sanity_check(image, &cr, 1) ) {
+			crystal_free(cr);  /* Frees the cell as well */
+			return 0;
+		}
+	}
+
+	image_add_crystal(image, cr);
+
+	return 1;
+}
 
 
 static void mosflm_parseline(const char *line, struct image *image,
@@ -130,7 +182,8 @@ static void mosflm_parseline(const char *line, struct image *image,
 }
 
 
-static int read_newmat(const char *filename, struct image *image)
+static int read_newmat(struct mosflm_data *mosflm, const char *filename,
+                       struct image *image)
 {
 	FILE * fh;
 	float asx, asy, asz;
@@ -138,6 +191,7 @@ static int read_newmat(const char *filename, struct image *image)
 	float csx, csy, csz;
 	int n;
 	double c;
+	UnitCell *cell;
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
@@ -155,18 +209,21 @@ static int read_newmat(const char *filename, struct image *image)
 	/* MOSFLM "A" matrix is multiplied by lambda, so fix this */
 	c = 1.0/image->lambda;
 
-	image->candidate_cells[0] = cell_new();
+	cell = cell_new();
 
 	/* The relationship between the coordinates in the spot file and the
 	 * resulting matrix is diabolically complicated.  This transformation
 	 * seems to work, but is not derived by working through all the
 	 * transformations. */
-	cell_set_reciprocal(image->candidate_cells[0],
+	cell_set_reciprocal(cell,
 	                    -asy*c, -asz*c, asx*c,
 	                    -bsy*c, -bsz*c, bsx*c,
 	                    -csy*c, -csz*c, csx*c);
 
-        image->ncells = 1;
+	if ( check_cell(mosflm->mp, image, cell) ) {
+		mosflm->success = 1;
+		mosflm->done = 1;
+	}
 
         return 0;
 }
@@ -352,9 +409,9 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		break;
 
 		case 2 :
-		if ( mosflm->target_cell != NULL ) {
+		if ( mosflm->mp->template != NULL ) {
 			const char *symm;
-			symm = spacegroup_for_lattice(mosflm->target_cell);
+			symm = spacegroup_for_lattice(mosflm->mp->template);
 			snprintf(tmp, 255, "SYMM %s\n", symm);
 			mosflm_sendline(tmp, mosflm);
 		} else {
@@ -527,7 +584,7 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 }
 
 
-void run_mosflm(struct image *image, UnitCell *cell)
+int run_mosflm(struct image *image, IndexingPrivate *ipriv)
 {
 	struct mosflm_data *mosflm;
 	unsigned int opts;
@@ -537,10 +594,8 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	mosflm = malloc(sizeof(struct mosflm_data));
 	if ( mosflm == NULL ) {
 		ERROR("Couldn't allocate memory for MOSFLM data.\n");
-		return;
+		return 0;
 	}
-
-	mosflm->target_cell = cell;
 
 	snprintf(mosflm->imagefile, 127, "xfel-%i_001.img", image->id);
 	write_img(image, mosflm->imagefile); /* Dummy image */
@@ -556,7 +611,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	if ( mosflm->pid == -1 ) {
 		ERROR("Failed to fork for MOSFLM: %s\n", strerror(errno));
 		free(mosflm);
-		return;
+		return 0;
 	}
 	if ( mosflm->pid == 0 ) {
 
@@ -584,6 +639,9 @@ void run_mosflm(struct image *image, UnitCell *cell)
 
 	mosflm->step = 1;	/* This starts the "initialisation" procedure */
 	mosflm->finished_ok = 0;
+	mosflm->mp = (struct mosflm_private *)ipriv;
+	mosflm->done = 0;
+	mosflm->success = 0;
 
 	do {
 
@@ -632,8 +690,27 @@ void run_mosflm(struct image *image, UnitCell *cell)
 		ERROR("MOSFLM doesn't seem to be working properly.\n");
 	} else {
 		/* Read the mosflm NEWMAT file and get cell if found */
-		read_newmat(mosflm->newmatfile, image);
+		read_newmat(mosflm, mosflm->newmatfile, image);
 	}
 
+	rval = mosflm->success;
 	free(mosflm);
+	return rval;
+}
+
+
+IndexingPrivate *mosflm_prepare(IndexingMethod indm, UnitCell *cell,
+                               const char *filename, struct detector *det,
+                               struct beam_params *beam, float *ltl)
+{
+	struct mosflm_private *mp;
+
+	mp = malloc(sizeof(struct mosflm_private));
+	if ( mp == NULL ) return NULL;
+
+	mp->ltl = ltl;
+	mp->template = cell;
+	mp->indm = indm;
+
+	return (IndexingPrivate *)mp;
 }

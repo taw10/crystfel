@@ -243,7 +243,6 @@ int main(int argc, char *argv[])
 	struct index_args iargs;
 	struct beam_params *beam = NULL;
 	char *element = NULL;
-	double nominal_photon_energy;
 	int stream_flags = STREAM_INTEGRATED;
 	char *hdf5_peak_path = NULL;
 	struct copy_hdf5_field *copyme;
@@ -556,7 +555,14 @@ int main(int argc, char *argv[])
 	}
 
 	if ( geometry == NULL ) {
-		ERROR("You need to specify a geometry file with --geometry\n");
+		ERROR("You need to provide a geometry file (please read the"
+		      " manual for more details).\n");
+		return 1;
+	}
+
+	if ( beam == NULL ) {
+		ERROR("You need to provide a beam parameters file (please read"
+		      " the manual for more details).\n");
 		return 1;
 	}
 
@@ -582,17 +588,6 @@ int main(int argc, char *argv[])
 
 	write_stream_header(ofh, argc, argv);
 
-	if ( beam != NULL ) {
-		nominal_photon_energy = beam->photon_energy;
-	} else {
-		STATUS("No beam parameters file was given, so I'm taking the"
-		       " nominal photon energy to be 2 keV.\n");
-		ERROR("I'm also going to assume 1 ADU per photon, which is");
-		ERROR(" almost certainly wrong.  Peak sigmas will be"
-		      " incorrect.\n");
-		nominal_photon_energy = 2000.0;
-	}
-
 	/* Get first filename and use it to set up the indexing */
 	prepare_line = malloc(1024);
 	rval = fgets(prepare_line, 1023, fh);
@@ -613,8 +608,8 @@ int main(int argc, char *argv[])
 
 	/* Prepare the indexer */
 	if ( indm != NULL ) {
-		ipriv = prepare_indexing(indm, cell, prepare_filename, det,
-		                         nominal_photon_energy);
+		ipriv = prepare_indexing(indm, cell, prepare_filename,
+		                         det, beam);
 		if ( ipriv == NULL ) {
 			ERROR("Failed to prepare indexing.\n");
 			return 1;

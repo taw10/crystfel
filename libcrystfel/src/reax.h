@@ -34,16 +34,24 @@
 #endif
 
 #include "cell.h"
+#include "beam-parameters.h"
+#include "detector.h"
 
 #ifdef HAVE_FFTW
 
-extern IndexingPrivate *reax_prepare(void);
+extern IndexingPrivate *reax_prepare(UnitCell *cell, const char *filename,
+                                     struct detector *det,
+                                     struct beam_params *beam);
+
 extern void reax_cleanup(IndexingPrivate *pp);
-extern void reax_index(IndexingPrivate *p, struct image *image, UnitCell *cell);
+
+extern int reax_index(struct image *image, IndexingPrivate *p);
 
 #else /* HAVE_FFTW */
 
-static IndexingPrivate *reax_prepare()
+static IndexingPrivate *reax_prepare(UnitCell *cell, const char *filename,
+                                     struct detector *det,
+                                     struct beam_params *beam)
 {
 	return NULL;
 }
@@ -52,7 +60,7 @@ static void reax_cleanup(IndexingPrivate *pp)
 {
 }
 
-static void reax_index(IndexingPrivate *p, struct image *image, UnitCell *cell)
+static void reax_index(struct image *image, IndexingPrivate *p)
 {
 }
 

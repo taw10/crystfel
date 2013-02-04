@@ -47,7 +47,8 @@ extern void integrate_reflections(struct image *image,
                                   double ir_inn, double ir_mid, double ir_out,
                                   int integrate_saturated);
 
-extern int peak_sanity_check(struct image *image);
+extern int peak_sanity_check(struct image *image, Crystal **crystals,
+                             int n_cryst);
 
 extern void estimate_resolution(RefList *list, UnitCell *cell,
                                 double *min, double *max);

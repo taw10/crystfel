@@ -35,10 +35,10 @@
 #include <config.h>
 #endif
 
-#include "utils.h"
+#include "index.h"
 
 
-extern void run_mosflm(struct image *image, UnitCell *cell);
+extern int run_mosflm(struct image *image, IndexingPrivate *ipriv);
 
 
 #endif	/* MOSFLM_H */

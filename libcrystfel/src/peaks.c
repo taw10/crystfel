@@ -594,7 +594,7 @@ void search_peaks(struct image *image, float threshold, float min_gradient,
 }
 
 
-int peak_sanity_check(struct image *image)
+int peak_sanity_check(struct image *image, Crystal **crystals, int n_cryst)
 {
 	int n_feat = 0;
 	int n_sane = 0;
@@ -616,13 +616,13 @@ int peak_sanity_check(struct image *image)
 		/* Reciprocal space position of found peak */
 		q = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
 
-		for ( j=0; j<image->n_crystals; j++ ) {
+		for ( j=0; j<n_cryst; j++ ) {
 
 			double ax, ay, az;
 			double bx, by, bz;
 			double cx, cy, cz;
 
-			cell_get_cartesian(crystal_get_cell(image->crystals[j]),
+			cell_get_cartesian(crystal_get_cell(crystals[j]),
 			                   &ax, &ay, &az,
 			                   &bx, &by, &bz,
 			                   &cx, &cy, &cz);

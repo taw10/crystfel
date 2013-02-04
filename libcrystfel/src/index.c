@@ -61,7 +61,7 @@ static const char *maybes(int n)
 
 IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
                                    const char *filename, struct detector *det,
-                                   double nominal_photon_energy, float *ltl)
+                                   struct beam_params *beam, float *ltl)
 {
 	int n;
 	int nm = 0;
@@ -76,7 +76,8 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 		switch ( indm[n] & INDEXING_METHOD_MASK ) {
 
 			case INDEXING_DIRAX :
-			iprivs[n] = NULL;
+			iprivs[n] = dirax_prepare(indm[nm], cell, filename, det,
+			                          beam, ltl);
 			break;
 
 			case INDEXING_MOSFLM :
@@ -84,7 +85,7 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 			break;
 
 			case INDEXING_REAX :
-			iprivs[n] = reax_prepare(cell, filename, det);
+			iprivs[n] = reax_prepare(cell, filename, det, beam);
 			break;
 
 			default :
@@ -101,35 +102,30 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 }
 
 
-void cleanup_indexing(IndexingPrivate **priv)
+void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
 {
 	int n = 0;
 
-	if ( priv == NULL ) return;  /* Nothing to do */
+	if ( indms == NULL ) return;  /* Nothing to do */
+	if ( privs == NULL ) return;  /* Nothing to do */
 
-	while ( priv[n] != NULL ) {
+	while ( indms[n] != INDEXING_NONE ) {
 
-		switch ( priv[n]->indm & INDEXING_METHOD_MASK ) {
+		switch ( indms[n] & INDEXING_METHOD_MASK ) {
 
 			case INDEXING_NONE :
-			free(priv[n]);
-			break;
-
 			case INDEXING_DIRAX :
-			free(priv[n]);
-			break;
-
 			case INDEXING_MOSFLM :
-			free(priv[n]);
+			/* No cleanup */
 			break;
 
 			case INDEXING_REAX :
-			reax_cleanup(priv[n]);
+			reax_cleanup(privs[n]);
 			break;
 
 			default :
 			ERROR("Don't know how to clean up indexing method %i\n",
-			      priv[n]->indm);
+			      indms[n]);
 			break;
 
 		}
@@ -162,19 +158,43 @@ void map_all_peaks(struct image *image)
 }
 
 
-static void try_indexer(struct image *image, IndexingMethod indm,
+/* Return non-zero for "success" */
+static int try_indexer(struct image *image, IndexingMethod indm,
                         IndexingPrivate *ipriv)
 {
+	switch ( indm & INDEXING_METHOD_MASK ) {
+
+		case INDEXING_NONE :
+		break;
+
+		case INDEXING_DIRAX :
+		return run_dirax(image, ipriv);
+		break;
+
+		case INDEXING_MOSFLM :
+		return run_mosflm(image, ipriv);
+		break;
+
+		case INDEXING_REAX :
+		return reax_index(image, ipriv);
+		break;
+
+		default :
+		ERROR("Unrecognised indexing method: %i\n", indm);
+		break;
+
+	}
+
+	return 0;
 }
 
 
 void index_pattern(struct image *image,
                    IndexingMethod *indms, IndexingPrivate **iprivs)
 {
-	int i;
 	int n = 0;
 
-	if ( indm == NULL ) return;
+	if ( indms == NULL ) return;
 
 	map_all_peaks(image);
 	image->crystals = NULL;
@@ -182,7 +202,7 @@ void index_pattern(struct image *image,
 
 	while ( indms[n] != INDEXING_NONE ) {
 
-		if ( try_indexer(image, indms[n], iprivs[i]) ) break;
+		if ( try_indexer(image, indms[n], iprivs[n]) ) break;
 		n++;
 
 	}
@@ -216,7 +236,8 @@ static IndexingMethod set_bad(IndexingMethod a)
 /* Set the indexer flags for "axes mode" ("--cell-reduction=compare") */
 static IndexingMethod set_axes(IndexingMethod a)
 {
-	return (a & ~INDEXING_CHECK_COMBINATIONS) | INDEXING_CHECK_CELL_AXES;
+	return (a & ~INDEXING_CHECK_CELL_COMBINATIONS)
+	          | INDEXING_CHECK_CELL_AXES;
 }
 
 
@@ -234,7 +255,7 @@ IndexingMethod *build_indexer_list(const char *str, int *need_cell)
 	n = assplode(str, ",-", &methods, ASSPLODE_NONE);
 	list = malloc((n+1)*sizeof(IndexingMethod));
 
-	*nmeth = -1;  /* So that the first method is #0 */
+	nmeth = -1;  /* So that the first method is #0 */
 	for ( i=0; i<n; i++ ) {
 
 		if ( strcmp(methods[i], "dirax") == 0) {
