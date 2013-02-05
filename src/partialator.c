@@ -87,16 +87,16 @@ static void show_help(const char *s)
 struct refine_args
 {
 	RefList *full;
-	struct image *image;
+	Crystal *crystal;
 };
 
 
 struct queue_args
 {
-	int n;
+	int n_started;
 	int n_done;
-	int n_total_patterns;
-	struct image *images;
+	Crystal **crystals;
+	int n_crystals;
 	struct refine_args task_defaults;
 };
 
@@ -104,10 +104,9 @@ struct queue_args
 static void refine_image(void *task, int id)
 {
 	struct refine_args *pargs = task;
-	struct image *image = pargs->image;
-	image->id = id;
+	Crystal *cr = pargs->crystal;
 
-	pr_refine(image, pargs->full);
+	pr_refine(cr, pargs->full);
 }
 
 
@@ -119,9 +118,9 @@ static void *get_image(void *vqargs)
 	task = malloc(sizeof(struct refine_args));
 	memcpy(task, &qargs->task_defaults, sizeof(struct refine_args));
 
-	task->image = &qargs->images[qargs->n];
+	task->crystal = qargs->crystals[qargs->n_started];
 
-	qargs->n++;
+	qargs->n_started++;
 
 	return task;
 }
@@ -133,12 +132,12 @@ static void done_image(void *vqargs, void *task)
 
 	qargs->n_done++;
 
-	progress_bar(qargs->n_done, qargs->n_total_patterns, "Refining");
+	progress_bar(qargs->n_done, qargs->n_crystals, "Refining");
 	free(task);
 }
 
 
-static void refine_all(struct image *images, int n_total_patterns,
+static void refine_all(Crystal **crystals, int n_crystals,
                        struct detector *det,
                        RefList *full, int nthreads)
 {
@@ -146,19 +145,19 @@ static void refine_all(struct image *images, int n_total_patterns,
 	struct queue_args qargs;
 
 	task_defaults.full = full;
-	task_defaults.image = NULL;
+	task_defaults.crystal = NULL;
 
 	qargs.task_defaults = task_defaults;
-	qargs.n = 0;
+	qargs.n_started = 0;
 	qargs.n_done = 0;
-	qargs.n_total_patterns = n_total_patterns;
-	qargs.images = images;
+	qargs.n_crystals = n_crystals;
+	qargs.crystals = crystals;
 
 	/* Don't have threads which are doing nothing */
-	if ( n_total_patterns < nthreads ) nthreads = n_total_patterns;
+	if ( n_crystals < nthreads ) nthreads = n_crystals;
 
 	run_threads(nthreads, refine_image, get_image, done_image,
-	            &qargs, n_total_patterns, 0, 0, 0);
+	            &qargs, n_crystals, 0, 0, 0);
 }
 
 
@@ -201,13 +200,14 @@ static int select_scalable_reflections(RefList *list, RefList *reference)
 }
 
 
-static void select_reflections_for_refinement(struct image *images, int n,
+static void select_reflections_for_refinement(Crystal **crystals, int n,
                                               RefList *full, int have_reference)
 {
 	int i;
 
 	for ( i=0; i<n; i++ ) {
 
+		RefList *reflist;
 		Reflection *refl;
 		RefListIterator *iter;
 		int n_acc = 0;
@@ -216,9 +216,10 @@ static void select_reflections_for_refinement(struct image *images, int n,
 		int n_fewmatch = 0;
 		int n_ref = 0;
 
-		if ( images[i].pr_dud ) continue;
+		if ( crystal_get_user_flag(crystals[i]) ) continue;
 
-		for ( refl = first_refl(images[i].reflections, &iter);
+		reflist = crystal_get_reflections(crystals[i]);
+		for ( refl = first_refl(reflist, &iter);
 		      refl != NULL;
 		      refl = next_refl(refl, iter) )
 		{
@@ -272,6 +273,20 @@ static void select_reflections_for_refinement(struct image *images, int n,
 }
 
 
+static void display_progress(int n_images, int n_crystals)
+{
+	if ( !isatty(STDERR_FILENO) ) return;
+	if ( tcgetpgrp(STDERR_FILENO) != getpgrp() ) return;
+
+	pthread_mutex_lock(&stderr_lock);
+	fprintf(stderr, "\r%i images loaded, %i crystals.",
+	        n_images, n_crystals);
+	pthread_mutex_unlock(&stderr_lock);
+
+	fflush(stdout);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -280,16 +295,15 @@ int main(int argc, char *argv[])
 	char *geomfile = NULL;
 	char *sym_str = NULL;
 	SymOpList *sym;
-	FILE *fh;
 	int nthreads = 1;
 	struct detector *det;
 	int i;
-	int n_total_patterns;
 	struct image *images;
 	int n_iter = 10;
 	struct beam_params *beam = NULL;
 	RefList *full;
-	int n_usable_patterns = 0;
+	int n_images = 0;
+	int n_crystals = 0;
 	int nobs;
 	char *reference_file = NULL;
 	RefList *reference = NULL;
@@ -298,6 +312,8 @@ int main(int argc, char *argv[])
 	char cmdline[1024];
 	SRContext *sr;
 	int noscale = 0;
+	Stream *st;
+	Crystal **crystals;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -386,19 +402,15 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* Sanitise input filename and open */
 	if ( infile == NULL ) {
 		infile = strdup("-");
 	}
-	if ( strcmp(infile, "-") == 0 ) {
-		fh = stdin;
-	} else {
-		fh = fopen(infile, "r");
-	}
-	if ( fh == NULL ) {
-		ERROR("Failed to open input file '%s'\n", infile);
+	st = open_stream_for_read(infile);
+	if ( st == NULL ) {
+		ERROR("Failed to open input stream '%s'\n", infile);
 		return 1;
 	}
+	free(infile);
 
 	/* Sanitise output filename */
 	if ( outfile == NULL ) {
@@ -438,86 +450,95 @@ int main(int argc, char *argv[])
 
 	}
 
-	n_total_patterns = count_patterns(fh);
-	if ( n_total_patterns == 0 ) {
-		ERROR("No patterns to process.\n");
-		return 1;
-	}
-	STATUS("There are %i patterns to process\n", n_total_patterns);
-
 	gsl_set_error_handler_off();
 
-	images = malloc(n_total_patterns * sizeof(struct image));
-	if ( images == NULL ) {
-		ERROR("Couldn't allocate memory for images.\n");
-		return 1;
-	}
-
 	/* Fill in what we know about the images so far */
-	rewind(fh);
 	nobs = 0;
-	for ( i=0; i<n_total_patterns; i++ ) {
+	n_images = 0;
+	n_crystals = 0;
+	images = NULL;
+	crystals = NULL;
+	do {
 
 		RefList *as;
+		int i;
+		struct image *images_new;
 		struct image *cur;
 
-		cur = &images[n_usable_patterns];
+		images_new = realloc(images, (n_images+1)*sizeof(struct image));
+		if ( images_new == NULL ) {
+			ERROR("Failed to allocate memory for image list.\n");
+			return 1;
+		}
+		images = images_new;
+		cur = &images[n_images];
 
 		cur->det = det;
-
-		if ( read_chunk(fh, cur) != 0 ) {
-			/* Should not happen, because we counted the patterns
-			 * earlier. */
-			ERROR("Failed to read chunk from the input stream.\n");
-			return 1;
+		if ( read_chunk(st, cur) != 0 ) {
+			break;
 		}
 
 		/* Won't be needing this, if it exists */
 		image_feature_list_free(cur->features);
 		cur->features = NULL;
-
-		/* "n_usable_patterns" will not be incremented in this case */
-		if ( cur->indexed_cell == NULL ) continue;
-
-		/* Fill in initial estimates of stuff */
 		cur->div = beam->divergence;
 		cur->bw = beam->bandwidth;
 		cur->width = det->max_fs;
 		cur->height = det->max_ss;
-		cur->osf = 1.0;
-		cur->profile_radius = beam->profile_radius;
-		cur->pr_dud = 0;
-
-		/* Muppet proofing */
 		cur->data = NULL;
 		cur->flags = NULL;
 		cur->beam = NULL;
 
-		/* This is the raw list of reflections */
-		as = asymmetric_indices(cur->reflections, sym);
-		reflist_free(cur->reflections);
-		cur->reflections = as;
+		n_images++;
 
-		update_partialities(cur);
+		for ( i=0; i<cur->n_crystals; i++ ) {
 
-		nobs += select_scalable_reflections(cur->reflections,
-		                                    reference);
+			Crystal *cr;
+			Crystal **crystals_new;
 
-		progress_bar(i, n_total_patterns-1, "Loading pattern data");
-		n_usable_patterns++;
+			crystals_new = realloc(crystals,
+			                      (n_crystals+1)*sizeof(Crystal *));
+			if ( crystals_new == NULL ) {
+				ERROR("Failed to allocate memory for crystal "
+				      "list.\n");
+				return 1;
+			}
+			crystals = crystals_new;
+			crystals[n_crystals] = crystal_new();
+			cr = crystals[n_crystals];
 
-	}
-	fclose(fh);
+			/* Fill in initial estimates of stuff */
+			crystal_set_osf(cr, 1.0);
+			crystal_set_profile_radius(cr, beam->profile_radius);
+			crystal_set_user_flag(cr, 0);
+
+			/* This is the raw list of reflections */
+			as = asymmetric_indices(crystal_get_reflections(cr),
+			                        sym);
+			crystal_set_reflections(cr, as);
+			update_partialities(cur, cr);
+
+			nobs += select_scalable_reflections(as, reference);
+
+			n_crystals++;
+
+		}
+
+		display_progress(n_images, n_crystals);
+
+	} while ( 1 );
+
+	close_stream(st);
 
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
 	if ( noscale ) STATUS("Scale factors fixed at 1.\n");
-	full = scale_intensities(images, n_usable_patterns, reference,
+	full = scale_intensities(crystals, n_crystals, reference,
 	                         nthreads, noscale);
 
-	sr = sr_titlepage(images, n_usable_patterns, "scaling-report.pdf",
+	sr = sr_titlepage(crystals, n_crystals, "scaling-report.pdf",
 	                  infile, cmdline);
-	sr_iteration(sr, 0, images, n_usable_patterns, full);
+	sr_iteration(sr, 0, crystals, n_crystals, full);
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -534,34 +555,34 @@ int main(int argc, char *argv[])
 		}
 
 		/* Refine the geometry of all patterns to get the best fit */
-		select_reflections_for_refinement(images, n_usable_patterns,
+		select_reflections_for_refinement(crystals, n_crystals,
 		                                  comp, have_reference);
-		refine_all(images, n_usable_patterns, det, comp, nthreads);
+		refine_all(crystals, n_crystals, det, comp, nthreads);
 
 		nobs = 0;
-		for ( j=0; j<n_usable_patterns; j++ ) {
+		for ( j=0; j<n_crystals; j++ ) {
 
-			struct image *cur = &images[j];
+			Crystal *cr = crystals[j];
+			RefList *rf = crystal_get_reflections(cr);
 
-			nobs += select_scalable_reflections(cur->reflections,
-			                                    reference);
+			nobs += select_scalable_reflections(rf, reference);
 
 		}
 
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
-		full = scale_intensities(images, n_usable_patterns,
+		full = scale_intensities(crystals, n_crystals,
 		                         reference, nthreads, noscale);
 
-		sr_iteration(sr, i+1, images, n_usable_patterns, full);
+		sr_iteration(sr, i+1, crystals, n_crystals, full);
 
 	}
 
 	sr_finish(sr);
 
 	n_dud = 0;
-	for ( i=0; i<n_usable_patterns; i++ ) {
-		if ( images[i].pr_dud ) n_dud++;
+	for ( i=0; i<n_crystals; i++ ) {
+		if ( crystal_get_user_flag(crystals[i]) ) n_dud++;
 	}
 	STATUS("%i images could not be refined on the last cycle.\n", n_dud);
 
@@ -569,19 +590,19 @@ int main(int argc, char *argv[])
 	write_reflist(outfile, full);
 
 	/* Clean up */
-	for ( i=0; i<n_usable_patterns; i++ ) {
-		reflist_free(images[i].reflections);
+	for ( i=0; i<n_crystals; i++ ) {
+		crystal_free(crystals[i]);
 	}
 	reflist_free(full);
 	free(sym);
 	free(outfile);
 	free_detector_geometry(det);
 	free(beam);
+	free(crystals);
 	if ( reference != NULL ) {
 		reflist_free(reference);
 	}
-	for ( i=0; i<n_usable_patterns; i++ ) {
-		cell_free(images[i].indexed_cell);
+	for ( i=0; i<n_images; i++ ) {
 		free(images[i].filename);
 	}
 	free(images);

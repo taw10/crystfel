@@ -55,6 +55,8 @@ extern double crystal_get_profile_radius(Crystal *cryst);
 extern RefList *crystal_get_reflections(Crystal *cryst);
 extern double crystal_get_resolution_limit(Crystal *cryst);
 extern long long int crystal_get_num_saturated_reflections(Crystal *cryst);
+extern int crystal_get_user_flag(Crystal *cryst);
+extern double crystal_get_osf(Crystal *cryst);
 
 extern void crystal_set_cell(Crystal *cryst, UnitCell *cell);
 extern void crystal_set_profile_radius(Crystal *cryst, double r);
@@ -62,6 +64,7 @@ extern void crystal_set_reflections(Crystal *cryst, RefList *reflist);
 extern void crystal_set_resolution_limit(Crystal *cryst, double res);
 extern void crystal_set_num_saturated_reflections(Crystal *cryst,
                                                   long long int n);
-
+extern void crystal_set_user_flag(Crystal *cryst, int flag);
+extern void crystal_set_osf(Crystal *cryst, double osf);
 
 #endif	/* CRYSTAL_H */

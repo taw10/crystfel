@@ -40,25 +40,25 @@ typedef struct _srcontext SRContext;  /* Opaque */
 
 #ifdef HAVE_CAIRO
 
-extern SRContext *sr_titlepage(struct image *images, int n,
+extern SRContext *sr_titlepage(Crystal **crystals, int n,
                                const char *filename,
                                const char *stream_filename,
                                const char *cmdline);
 
-extern void sr_iteration(SRContext *sr, int iteration, struct image *images,
-                         int n, RefList *full);
+extern void sr_iteration(SRContext *sr, int iteration,
+                         Crystal **crystals, int n, RefList *full);
 
 extern void sr_finish(SRContext *sr);
 
 #else
 
-SRContext *sr_titlepage(struct image *images, int n, const char *filename,
+SRContext *sr_titlepage(Crystal **crystals, int n, const char *filename,
                         const char *stream_filename, const char *cmdline)
 {
 	return NULL;
 }
 
-void sr_iteration(SRContext *sr, int iteration, struct image *images, int n,
+void sr_iteration(SRContext *sr, int iteration, Crystal **crystals, int n,
                   RefList *full)
 {
 }

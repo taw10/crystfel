@@ -52,13 +52,6 @@
 #include "cell-utils.h"
 
 
-static const char *maybes(int n)
-{
-	if ( n == 1 ) return "";
-	return "s";
-}
-
-
 IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
                                    const char *filename, struct detector *det,
                                    struct beam_params *beam, float *ltl)
@@ -117,6 +110,7 @@ void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
 			case INDEXING_DIRAX :
 			case INDEXING_MOSFLM :
 			/* No cleanup */
+			/* FIXME: Not true */
 			break;
 
 			case INDEXING_REAX :
@@ -246,7 +240,6 @@ IndexingMethod *build_indexer_list(const char *str)
 	int n, i;
 	char **methods;
 	IndexingMethod *list;
-	int tmp;
 	int nmeth = 0;
 
 	n = assplode(str, ",-", &methods, ASSPLODE_NONE);

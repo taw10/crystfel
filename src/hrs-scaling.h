@@ -35,9 +35,10 @@
 #endif
 
 
-#include "image.h"
+#include "crystal.h"
+#include "reflist.h"
 
-extern RefList *scale_intensities(struct image *images, int n,
+extern RefList *scale_intensities(Crystal **crystals, int n,
                                   RefList *reference, int n_threads,
                                   int noscale);
 
