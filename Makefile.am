@@ -4,7 +4,7 @@ SUBDIRS = lib doc/reference libcrystfel
 ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
-               src/compare_hkl  src/partialator src/check_hkl src/partial_sim
+               src/compare_hkl src/partialator src/check_hkl src/partial_sim
 
 noinst_PROGRAMS = tests/list_check tests/integration_check \
                   tests/pr_gradient_check tests/symmetry_check \
