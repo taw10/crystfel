@@ -68,7 +68,6 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 	IndexingPrivate **iprivs;
 
 	while ( indm[nm] != INDEXING_NONE ) nm++;
-	STATUS("Preparing %i indexing method%s.\n", nm, maybes(nm));
 	iprivs = malloc((nm+1) * sizeof(IndexingPrivate *));
 
 	for ( n=0; n<nm; n++ ) {
@@ -76,12 +75,13 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 		switch ( indm[n] & INDEXING_METHOD_MASK ) {
 
 			case INDEXING_DIRAX :
-			iprivs[n] = dirax_prepare(indm[nm], cell, filename, det,
+			iprivs[n] = dirax_prepare(indm[n], cell, filename, det,
 			                          beam, ltl);
 			break;
 
 			case INDEXING_MOSFLM :
-			iprivs[n] = NULL;
+			iprivs[n] = mosflm_prepare(indm[n], cell, filename, det,
+			                          beam, ltl);
 			break;
 
 			case INDEXING_REAX :

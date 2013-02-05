@@ -305,6 +305,8 @@ static void process_image(const struct index_args *iargs,
 	/* Index the pattern */
 	index_pattern(&image, indm, iargs->ipriv);
 
+	pargs->n_crystals = image.n_crystals;
+
 	/* Default beam parameters */
 	image.div = image.beam->divergence;
 	image.bw = image.beam->bandwidth;
@@ -328,22 +330,20 @@ static void process_image(const struct index_args *iargs,
 
 		crystal_set_reflections(image.crystals[i], reflections);
 
-		if ( reflections != NULL ) {
-
-			integrate_reflections(&image,
-			                      iargs->config_closer,
-			                      iargs->config_bgsub,
-			                      iargs->min_int_snr,
-			                      iargs->ir_inn,
-			                      iargs->ir_mid,
-			                      iargs->ir_out,
-			                      iargs->integrate_saturated);
-		}
-
 	}
 
-	write_chunk(st, &image, hdfile, iargs->include_peaks,
-	            iargs->include_reflections);
+	/* Integrate all the crystals at once - need all the crystals so that
+	 * overlaps can be detected. */
+	integrate_reflections(&image, iargs->config_closer,
+	                              iargs->config_bgsub,
+	                              iargs->min_int_snr,
+	                              iargs->ir_inn,
+	                              iargs->ir_mid,
+	                              iargs->ir_out,
+	                              iargs->integrate_saturated);
+
+	write_chunk(st, &image, hdfile,
+	            iargs->include_peaks, iargs->include_reflections);
 
 	for ( i=0; i<image.n_crystals; i++ ) {
 		crystal_free(image.crystals[i]);
@@ -485,15 +485,17 @@ static int pump_chunk(FILE *fh, FILE *ofh)
 
 		}
 
-		if ( strcmp(line, "END\n") == 0 ) {
+		fprintf(ofh, "%s", line);
+
+		if ( strcmp(line, CHUNK_END_MARKER"\n") == 0 ) {
 			chunk_finished = 1;
-		} else {
+		}
+		if ( strcmp(line, CHUNK_START_MARKER"\n") == 0 ) {
 			chunk_started = 1;
-			fprintf(ofh, "%s", line);
 		}
 
-	} while ( !chunk_finished );
 
+	} while ( !chunk_finished );
 	return 0;
 }
 
@@ -711,7 +713,7 @@ static void handle_zombie(struct sandbox *sb)
 
 void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                     int config_basename, FILE *fh, char *use_this_one_instead,
-                    Stream *st)
+                    FILE *ofh)
 {
 	int i;
 	int allDone;
@@ -738,6 +740,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	pthread_mutex_init(&sb->lock, NULL);
 
+	sb->ofh = ofh;
 	sb->stream_pipe_read = calloc(n_proc, sizeof(int));
 	sb->stream_pipe_write = calloc(n_proc, sizeof(int));
 	if ( sb->stream_pipe_read == NULL ) {
@@ -950,15 +953,12 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		tNow = get_monotonic_seconds();
 		if ( tNow >= sb->t_last_stats+STATS_EVERY_N_SECONDS ) {
 
-			STATUS("Total so far: %i images processed, "
+			STATUS("%i images processed so far, "
 			       "%i had crystals, %i crystals overall.  "
-			       "Since the last message: %i images processed,"
-			       "%i had crystals, %i crystals overall.\n",
+			       "%i images processed since the last message\n",
 			       sb->n_processed, sb->n_hadcrystals,
 			       sb->n_crystals,
-			       sb->n_processed - sb->n_processed_last_stats,
-			       sb->n_hadcrystals - sb->n_hadcrystals_last_stats,
-			       sb->n_crystals - sb->n_crystals_last_stats);
+			       sb->n_processed - sb->n_processed_last_stats);
 
 			sb->n_processed_last_stats = sb->n_processed;
 			sb->n_hadcrystals_last_stats = sb->n_hadcrystals;

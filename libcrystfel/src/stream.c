@@ -52,16 +52,6 @@
 #define LATEST_MAJOR_VERSION (2)
 #define LATEST_MINOR_VERSION (1)
 
-#define CHUNK_START_MARKER "----- Begin chunk -----"
-#define CHUNK_END_MARKER "----- End chunk -----"
-#define PEAK_LIST_START_MARKER "Peaks from peak search"
-#define PEAK_LIST_END_MARKER "End of peak list"
-#define CRYSTAL_START_MARKER "--- Begin crystal"
-#define CRYSTAL_END_MARKER "--- End crystal"
-#define REFLECTION_START_MARKER "Reflections measured after indexing"
-/* REFLECTION_END_MARKER is over in reflist-utils.h because it is also
- * used to terminate a standalone list of reflections */
-
 
 struct _stream
 {
@@ -184,8 +174,6 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 
 	if ( include_reflections ) {
 
-		fprintf(st->fh, "\n");
-
 		if ( reflist != NULL ) {
 
 			fprintf(st->fh, REFLECTION_START_MARKER"\n");
@@ -199,7 +187,7 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 		}
 	}
 
-	fprintf(st->fh, CRYSTAL_START_MARKER"\n\n");
+	fprintf(st->fh, CRYSTAL_END_MARKER"\n");
 }
 
 
@@ -226,19 +214,17 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 	copy_hdf5_fields(hdfile, i->copyme, st->fh);
 
 	if ( include_peaks ) {
-		fprintf(st->fh, "\n");
 		write_peaks(i, st->fh);
 	}
 
 	fprintf(st->fh, "photon_energy_eV = %f\n",
 	        J_to_eV(ph_lambda_to_en(i->lambda)));
 
-	fprintf(st->fh, "\n");
 	for ( j=0; j<i->n_crystals; j++ ) {
 		write_crystal(st, i->crystals[j], include_reflections);
 	}
 
-	fprintf(st->fh, CHUNK_END_MARKER"\n\n");
+	fprintf(st->fh, CHUNK_END_MARKER"\n");
 
 	fflush(st->fh);
 }

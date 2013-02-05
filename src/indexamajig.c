@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 	char *filename = NULL;
 	char *outfile = NULL;
 	FILE *fh;
-	Stream *st;
+	FILE *ofh;
 	char *rval = NULL;
 	int config_noindex = 0;
 	int config_cmfilter = 0;
@@ -264,6 +264,7 @@ int main(int argc, char *argv[])
 		{"peaks",              1, NULL,                2},
 		{"cell-reduction",     1, NULL,                3},
 		{"min-gradient",       1, NULL,                4},
+		{"record",             1, NULL,                5},
 		{"cpus",               1, NULL,                6},
 		{"cpugroup",           1, NULL,                7},
 		{"cpuoffset",          1, NULL,                8},
@@ -352,6 +353,7 @@ int main(int argc, char *argv[])
 
 			case 5 :
 			ERROR("The option '--record' is no longer used.\n");
+			/* FIXME: Translate to new style */
 			break;
 
 			case 6 :
@@ -526,8 +528,8 @@ int main(int argc, char *argv[])
 		cell = NULL;
 	}
 
-	st = open_stream_for_write(outfile);
-	if ( st == NULL ) {
+	ofh = fopen(outfile, "w");
+	if ( ofh == NULL ) {
 		ERROR("Failed to open stream '%s'\n", outfile);
 		return 1;
 	}
@@ -600,7 +602,7 @@ int main(int argc, char *argv[])
 	iargs.include_reflections = 1;  /* FIXME! */
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	                    use_this_one_instead, st);
+	                    use_this_one_instead, ofh);
 
 	free(prefix);
 

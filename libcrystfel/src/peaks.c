@@ -148,7 +148,7 @@ static int cull_peaks(struct image *image)
 
 
 static void add_crystal_to_mask(struct image *image, struct panel *p,
-                                double ir_out, double ir_inn, int w, int h,
+                                double ir_inn, int w, int h,
                                 int *mask, Crystal *cr)
 {
 	Reflection *refl;
@@ -200,8 +200,7 @@ static void add_crystal_to_mask(struct image *image, struct panel *p,
 
 
 /* cfs, css relative to panel origin */
-static int *make_BgMask(struct image *image, struct panel *p,
-                        double ir_out, double ir_inn)
+static int *make_BgMask(struct image *image, struct panel *p, double ir_inn)
 {
 	int *mask;
 	int w, h;
@@ -215,7 +214,7 @@ static int *make_BgMask(struct image *image, struct panel *p,
 	if ( image->crystals == NULL ) return mask;
 
 	for ( i=0; i<image->n_crystals; i++ ) {
-		add_crystal_to_mask(image, p, ir_inn, ir_out,
+		add_crystal_to_mask(image, p, ir_inn,
 		                    w, h, mask, image->crystals[i]);
 	}
 
@@ -860,8 +859,7 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 	}
 	for ( i=0; i<image->det->n_panels; i++ ) {
 		int *mask;
-		mask = make_BgMask(image, &image->det->panels[i],
-		                   ir_out, ir_inn);
+		mask = make_BgMask(image, &image->det->panels[i], ir_inn);
 		if ( mask == NULL ) {
 			ERROR("Couldn't create background mask.\n");
 			return;

@@ -38,6 +38,16 @@
 struct image;
 struct hdfile;
 
+#define CHUNK_START_MARKER "----- Begin chunk -----"
+#define CHUNK_END_MARKER "----- End chunk -----"
+#define PEAK_LIST_START_MARKER "Peaks from peak search"
+#define PEAK_LIST_END_MARKER "End of peak list"
+#define CRYSTAL_START_MARKER "--- Begin crystal"
+#define CRYSTAL_END_MARKER "--- End crystal"
+#define REFLECTION_START_MARKER "Reflections measured after indexing"
+/* REFLECTION_END_MARKER is over in reflist-utils.h because it is also
+ * used to terminate a standalone list of reflections */
+
 typedef struct _stream Stream;
 
 extern Stream *open_stream_for_read(const char *filename);
