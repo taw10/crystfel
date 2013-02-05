@@ -241,16 +241,13 @@ static IndexingMethod set_axes(IndexingMethod a)
 }
 
 
-IndexingMethod *build_indexer_list(const char *str, int *need_cell)
+IndexingMethod *build_indexer_list(const char *str)
 {
 	int n, i;
 	char **methods;
 	IndexingMethod *list;
 	int tmp;
 	int nmeth = 0;
-
-	if ( need_cell == NULL ) need_cell = &tmp;
-	*need_cell = 0;
 
 	n = assplode(str, ",-", &methods, ASSPLODE_NONE);
 	list = malloc((n+1)*sizeof(IndexingMethod));

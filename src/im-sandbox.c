@@ -73,14 +73,27 @@
 #define STATS_EVERY_N_SECONDS (5)
 
 
+/* Information about the indexing process for one pattern */
+struct pattern_args
+{
+	/* "Input" */
+	char *filename;
+
+	/* "Output" */
+	int n_crystals;
+};
+
+
 struct sandbox
 {
 	pthread_mutex_t lock;
 
-	int n_indexable;
 	int n_processed;
-	int n_indexable_last_stats;
+	int n_hadcrystals;
+	int n_crystals;
 	int n_processed_last_stats;
+	int n_hadcrystals_last_stats;
+	int n_crystals_last_stats;
 	int t_last_stats;
 
 	struct index_args *iargs;
@@ -164,31 +177,29 @@ static char *get_pattern(FILE *fh, char **use_this_one_instead,
 
 
 static void process_image(const struct index_args *iargs,
-                          struct pattern_args *pargs, FILE *ofh,
+                          struct pattern_args *pargs, Stream *st,
                           int cookie)
 {
 	float *data_for_measurement;
 	size_t data_size;
-	UnitCell *cell = iargs->cell;
 	int config_cmfilter = iargs->config_cmfilter;
 	int config_noisefilter = iargs->config_noisefilter;
-	int config_verbose = iargs->config_verbose;
 	IndexingMethod *indm = iargs->indm;
 	int check;
 	struct hdfile *hdfile;
 	struct image image;
+	int i;
 
 	image.features = NULL;
 	image.data = NULL;
 	image.flags = NULL;
-	image.indexed_cell = NULL;
 	image.copyme = iargs->copyme;
-	image.reflections = NULL;
-	image.n_saturated = 0;
 	image.id = cookie;
 	image.filename = pargs->filename;
 	image.beam = iargs->beam;
 	image.det = iargs->det;
+	image.crystals = NULL;
+	image.n_crystals = 0;
 
 	hdfile = hdfile_open(image.filename);
 	if ( hdfile == NULL ) return;
@@ -291,28 +302,34 @@ static void process_image(const struct index_args *iargs,
 	free(image.data);
 	image.data = data_for_measurement;
 
-	/* Calculate orientation matrix (by magic) */
+	/* Index the pattern */
+	index_pattern(&image, indm, iargs->ipriv);
+
+	/* Default beam parameters */
 	image.div = image.beam->divergence;
 	image.bw = image.beam->bandwidth;
-	image.profile_radius = image.beam->profile_radius;
 
-	index_pattern(&image, cell, indm, iargs->cellr,
-	              config_verbose, iargs->ipriv,
-	              iargs->config_insane, iargs->tols);
+	/* Integrate each crystal's diffraction spots */
+	for ( i=0; i<image.n_crystals; i++ ) {
 
-	if ( image.indexed_cell != NULL ) {
+		RefList *reflections;
 
-		pargs->indexable = 1;
+		/* Set default crystal parameter(s) */
+		crystal_set_profile_radius(image.crystals[i],
+		                           image.beam->profile_radius);
 
 		if ( iargs->integrate_found ) {
-			image.reflections = select_intersections(&image,
-			                                    image.indexed_cell);
+			reflections = select_intersections(&image,
+			                                   image.crystals[i]);
 		} else {
-			image.reflections = find_intersections(&image,
-			                                    image.indexed_cell);
+			reflections = find_intersections(&image,
+			                                 image.crystals[i]);
 		}
 
-		if (image.reflections != NULL) {
+		crystal_set_reflections(image.crystals[i], reflections);
+
+		if ( reflections != NULL ) {
+
 			integrate_reflections(&image,
 			                      iargs->config_closer,
 			                      iargs->config_bgsub,
@@ -323,18 +340,15 @@ static void process_image(const struct index_args *iargs,
 			                      iargs->integrate_saturated);
 		}
 
-	} else {
-		image.reflections = NULL;
 	}
 
-	write_chunk(ofh, &image, hdfile, iargs->stream_flags);
-	fprintf(ofh, "END\n");
-	fflush(ofh);
+	write_chunk(st, &image, hdfile, iargs->include_peaks,
+	            iargs->include_reflections);
 
-	/* Only free cell if found */
-	cell_free(image.indexed_cell);
+	for ( i=0; i<image.n_crystals; i++ ) {
+		crystal_free(image.crystals[i]);
+	}
 
-	reflist_free(image.reflections);
 	free(image.data);
 	if ( image.flags != NULL ) free(image.flags);
 	image_feature_list_free(image.features);
@@ -343,7 +357,7 @@ static void process_image(const struct index_args *iargs,
 
 
 static void run_work(const struct index_args *iargs,
-                     int filename_pipe, int results_pipe, FILE *ofh,
+                     int filename_pipe, int results_pipe, Stream *st,
                      int cookie)
 {
 	int allDone = 0;
@@ -389,12 +403,12 @@ static void run_work(const struct index_args *iargs,
 		} else {
 
 			pargs.filename = line;
-			pargs.indexable = 0;
+			pargs.n_crystals = 0;
 
-			process_image(iargs, &pargs, ofh, cookie);
+			process_image(iargs, &pargs, st, cookie);
 
 			/* Request another image */
-			c = sprintf(buf, "%i\n", pargs.indexable);
+			c = sprintf(buf, "%i\n", pargs.n_crystals);
 			w = write(results_pipe, buf, c);
 			if ( w < 0 ) {
 				ERROR("write P0\n");
@@ -406,7 +420,7 @@ static void run_work(const struct index_args *iargs,
 
 	}
 
-	cleanup_indexing(iargs->ipriv);
+	cleanup_indexing(iargs->indm, iargs->ipriv);
 	free(iargs->indm);
 	free(iargs->ipriv);
 	free_detector_geometry(iargs->det);
@@ -577,7 +591,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 
 	if ( p == 0 ) {
 
-		FILE *sfh;
+		Stream *st;
 		int j;
 		struct sigaction sa;
 		int r;
@@ -614,10 +628,10 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		close(filename_pipe[1]);
 		close(result_pipe[0]);
 
-		sfh = fdopen(sb->stream_pipe_write[slot], "w");
+		st = open_stream_fd_for_write(sb->stream_pipe_write[slot]);
 		run_work(sb->iargs, filename_pipe[0], result_pipe[1],
-		         sfh, slot);
-		fclose(sfh);
+		         st, slot);
+		close_stream(st);
 
 		//close(filename_pipe[0]);
 		close(result_pipe[1]);
@@ -697,7 +711,7 @@ static void handle_zombie(struct sandbox *sb)
 
 void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                     int config_basename, FILE *fh, char *use_this_one_instead,
-                    FILE *ofh)
+                    Stream *st)
 {
 	int i;
 	int allDone;
@@ -712,13 +726,14 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		return;
 	}
 
-	sb->n_indexable = 0;
 	sb->n_processed = 0;
-	sb->n_indexable_last_stats = 0;
+	sb->n_hadcrystals = 0;
+	sb->n_crystals = 0;
 	sb->n_processed_last_stats = 0;
+	sb->n_hadcrystals_last_stats = 0;
+	sb->n_crystals_last_stats = 0;
 	sb->t_last_stats = get_monotonic_seconds();
 	sb->n_proc = n_proc;
-	sb->ofh = ofh;
 	sb->iargs = iargs;
 
 	pthread_mutex_init(&sb->lock, NULL);
@@ -895,8 +910,14 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 					ERROR("Invalid result '%s'\n", results);
 				}
 			} else {
-				sb->n_indexable += atoi(results);
+
+				int nc = atoi(results);
+				sb->n_crystals += nc;
+				if ( nc > 0 ) {
+					sb->n_hadcrystals++;
+				}
 				sb->n_processed++;
+
 			}
 
 			/* Send next filename */
@@ -929,14 +950,19 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		tNow = get_monotonic_seconds();
 		if ( tNow >= sb->t_last_stats+STATS_EVERY_N_SECONDS ) {
 
-			STATUS("%i out of %i indexed so far,"
-			       " %i out of %i since the last message.\n",
-			       sb->n_indexable, sb->n_processed,
-			       sb->n_indexable - sb->n_indexable_last_stats,
-			       sb->n_processed - sb->n_processed_last_stats);
+			STATUS("Total so far: %i images processed, "
+			       "%i had crystals, %i crystals overall.  "
+			       "Since the last message: %i images processed,"
+			       "%i had crystals, %i crystals overall.\n",
+			       sb->n_processed, sb->n_hadcrystals,
+			       sb->n_crystals,
+			       sb->n_processed - sb->n_processed_last_stats,
+			       sb->n_hadcrystals - sb->n_hadcrystals_last_stats,
+			       sb->n_crystals - sb->n_crystals_last_stats);
 
-			sb->n_indexable_last_stats = sb->n_indexable;
 			sb->n_processed_last_stats = sb->n_processed;
+			sb->n_hadcrystals_last_stats = sb->n_hadcrystals;
+			sb->n_crystals_last_stats = sb->n_crystals;
 			sb->t_last_stats = tNow;
 
 		}
@@ -975,9 +1001,8 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	free(sb->pids);
 	free(sb->running);
 
-	if ( ofh != stdout ) fclose(ofh);
-
-	STATUS("There were %i images, of which %i could be indexed.\n",
-	       sb->n_processed, sb->n_indexable);
+	STATUS("Final:"
+	       " %i images processed, %i had crystals, %i crystals overall.\n",
+	       sb->n_processed, sb->n_hadcrystals, sb->n_crystals);
 
 }

@@ -3,13 +3,13 @@
  *
  * Sandbox for indexing
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -31,6 +31,8 @@
  *
  */
 
+#include "stream.h"
+
 enum {
 	PEAK_ZAEF,
 	PEAK_HDF5,
@@ -44,10 +46,8 @@ struct index_args
 	int config_cmfilter;
 	int config_noisefilter;
 	int config_verbose;
-	int stream_flags;         /* What goes into the output? */
 	int config_satcorr;
 	int config_closer;
-	int config_insane;
 	int config_bgsub;
 	float threshold;
 	float min_gradient;
@@ -57,7 +57,6 @@ struct index_args
 	IndexingMethod *indm;
 	IndexingPrivate **ipriv;
 	int peaks;                /* Peak detection method */
-	int cellr;
 	float tols[4];
 	struct beam_params *beam;
 	char *element;
@@ -70,21 +69,11 @@ struct index_args
 	int use_saturated;
 	int no_revalidate;
 	int integrate_found;
+	int include_peaks;
+	int include_reflections;
 };
 
-
-
-
-/* Information about the indexing process for one pattern */
-struct pattern_args
-{
-	/* "Input" */
-	char *filename;
-
-	/* "Output" */
-	int indexable;
-};
 
 extern void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                            int config_basename, FILE *fh,
-                           char *use_this_one_instead, FILE *ofh);
+                           char *use_this_one_instead, Stream *st);

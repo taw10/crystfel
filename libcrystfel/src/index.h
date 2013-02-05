@@ -82,7 +82,7 @@ typedef enum {
  **/
 typedef void *IndexingPrivate;
 
-extern IndexingMethod *build_indexer_list(const char *str, int *need_cell);
+extern IndexingMethod *build_indexer_list(const char *str);
 
 extern IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
                                           const char *filename,

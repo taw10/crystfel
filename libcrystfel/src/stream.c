@@ -38,6 +38,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "cell.h"
 #include "utils.h"
@@ -236,6 +239,8 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 	}
 
 	fprintf(st->fh, CHUNK_END_MARKER"\n\n");
+
+	fflush(st->fh);
 }
 
 
@@ -497,14 +502,14 @@ Stream *open_stream_for_read(const char *filename)
 }
 
 
-Stream *open_stream_for_write(const char *filename)
+Stream *open_stream_fd_for_write(int fd)
 {
 	Stream *st;
 
 	st = malloc(sizeof(struct _stream));
 	if ( st == NULL ) return NULL;
 
-	st->fh = fopen(filename, "w");
+	st->fh = fdopen(fd, "w");
 	if ( st->fh == NULL ) {
 		free(st);
 		return NULL;
@@ -517,6 +522,21 @@ Stream *open_stream_for_write(const char *filename)
 	        st->major_version, st->minor_version);
 
 	return st;
+}
+
+
+
+Stream *open_stream_for_write(const char *filename)
+{
+	int fd;
+
+	fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);
+	if ( fd == -1 ) {
+		ERROR("Failed to open stream.\n");
+		return NULL;
+	}
+
+	return open_stream_fd_for_write(fd);
 }
 
 

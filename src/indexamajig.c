@@ -174,37 +174,13 @@ static void show_help(const char *s)
 }
 
 
-static int parse_cell_reduction(const char *scellr, int *err,
-                                int *reduction_needs_cell)
-{
-	*err = 0;
-	if ( strcmp(scellr, "none") == 0 ) {
-		*reduction_needs_cell = 0;
-		return CELLR_NONE;
-	} else if ( strcmp(scellr, "reduce") == 0) {
-		*reduction_needs_cell = 1;
-		return CELLR_REDUCE;
-	} else if ( strcmp(scellr, "compare") == 0) {
-		*reduction_needs_cell = 1;
-		return CELLR_COMPARE;
-	} else if ( strcmp(scellr, "compare_ab") == 0) {
-		*reduction_needs_cell = 1;
-		return CELLR_COMPARE_AB;
-	} else {
-		*err = 1;
-		*reduction_needs_cell = 0;
-		return CELLR_NONE;
-	}
-}
-
-
 int main(int argc, char *argv[])
 {
 	int c;
 	char *filename = NULL;
 	char *outfile = NULL;
 	FILE *fh;
-	FILE *ofh;
+	Stream *st;
 	char *rval = NULL;
 	int config_noindex = 0;
 	int config_cmfilter = 0;
@@ -213,7 +189,6 @@ int main(int argc, char *argv[])
 	int config_satcorr = 1;
 	int config_checkprefix = 1;
 	int config_closer = 0;
-	int config_insane = 0;
 	int config_bgsub = 1;
 	int config_basename = 0;
 	float threshold = 800.0;
@@ -224,17 +199,13 @@ int main(int argc, char *argv[])
 	char *geometry = NULL;
 	IndexingMethod *indm;
 	IndexingPrivate **ipriv;
-	int indexer_needs_cell;
-	int reduction_needs_cell;
 	char *indm_str = NULL;
 	UnitCell *cell;
 	char *pdb = NULL;
 	char *prefix = NULL;
 	char *speaks = NULL;
-	char *scellr = NULL;
 	char *toler = NULL;
 	float tols[4] = {5.0, 5.0, 5.0, 1.5}; /* a,b,c,angles (%,%,%,deg) */
-	int cellr;
 	int peaks;
 	int n_proc = 1;
 	char *prepare_line;
@@ -243,7 +214,6 @@ int main(int argc, char *argv[])
 	struct index_args iargs;
 	struct beam_params *beam = NULL;
 	char *element = NULL;
-	int stream_flags = STREAM_INTEGRATED;
 	char *hdf5_peak_path = NULL;
 	struct copy_hdf5_field *copyme;
 	char *intrad = NULL;
@@ -254,6 +224,10 @@ int main(int argc, char *argv[])
 	int use_saturated = 0;
 	int no_revalidate = 0;
 	int integrate_found = 0;
+
+	/* For ease of upgrading from old method */
+	char *scellr = NULL;
+	int config_insane = 0;
 
 	copyme = new_copy_hdf5_field_list();
 	if ( copyme == NULL ) {
@@ -290,7 +264,6 @@ int main(int argc, char *argv[])
 		{"peaks",              1, NULL,                2},
 		{"cell-reduction",     1, NULL,                3},
 		{"min-gradient",       1, NULL,                4},
-		{"record",             1, NULL,                5},
 		{"cpus",               1, NULL,                6},
 		{"cpugroup",           1, NULL,                7},
 		{"cpuoffset",          1, NULL,                8},
@@ -300,6 +273,8 @@ int main(int argc, char *argv[])
 		{"min-integration-snr",1, NULL,               12},
 		{"tolerance",          1, NULL,               13},
 		{"int-radius",         1, NULL,               14},
+
+		/* FIXME: Add '--no-peaks' and '--no-reflections' */
 
 		{"integrate-saturated",0, &integrate_saturated,1},
 		{"use-saturated",      0, &use_saturated,      1},
@@ -376,8 +351,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 5 :
-			stream_flags = parse_stream_flags(optarg);
-			if ( stream_flags < 0 ) return 1;
+			ERROR("The option '--record' is no longer used.\n");
 			break;
 
 			case 6 :
@@ -425,6 +399,12 @@ int main(int argc, char *argv[])
 
 	}
 
+	if ( scellr != NULL ) {
+		ERROR("Old-style indexing method specification.\n");
+		/* FIXME: Translate to new style */
+		return 1;
+	}
+
 	if ( filename == NULL ) {
 		filename = strdup("-");
 	}
@@ -438,17 +418,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	free(filename);
-
-	if ( outfile == NULL ) {
-		ofh = stdout;
-	} else {
-		ofh = fopen(outfile, "w");
-		if ( ofh == NULL ) {
-			ERROR("Failed to open output file '%s'\n", outfile);
-			return 1;
-		}
-		free(outfile);
-	}
 
 	if ( hdf5_peak_path == NULL ) {
 		hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
@@ -482,52 +451,23 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( (indm_str == NULL) ||
-	     ((indm_str != NULL) && (strcmp(indm_str, "none") == 0)) ) {
-		STATUS("Not indexing anything.\n");
-		indexer_needs_cell = 0;
-		reduction_needs_cell = 0;
+	if ( indm_str == NULL ) {
+
+		STATUS("You didn't specify an indexing method, so I  won't try "
+		       " to index anything.\n"
+		       "If that isn't what you wanted, re-run with"
+		       " --indexing=<methods>.\n");
 		indm = NULL;
-		cellr = CELLR_NONE;
+
 	} else {
-		if ( indm_str == NULL ) {
-			STATUS("You didn't specify an indexing method, so I "
-			       " won't try to index anything.\n"
-			       "If that isn't what you wanted, re-run with"
-			       " --indexing=<method>.\n");
-			indm = NULL;
-			indexer_needs_cell = 0;
-		} else {
-			indm = build_indexer_list(indm_str,
-			                          &indexer_needs_cell);
-			if ( indm == NULL ) {
-				ERROR("Invalid indexer list '%s'\n", indm_str);
-				return 1;
-			}
-			free(indm_str);
-		}
 
-		reduction_needs_cell = 0;
-		if ( scellr == NULL ) {
-			STATUS("You didn't specify a cell reduction method, so"
-			       " I'm going to use 'reduce'.\n");
-			cellr = CELLR_REDUCE;
-			reduction_needs_cell = 1;
-		} else {
-			int err;
-			cellr = parse_cell_reduction(scellr, &err,
-			                             &reduction_needs_cell);
-			if ( err ) {
-				ERROR("Unrecognised cell reduction '%s'\n",
-			              scellr);
-				return 1;
-			}
-			free(scellr);
+		indm = build_indexer_list(indm_str);
+		if ( indm == NULL ) {
+			ERROR("Invalid indexer list '%s'\n", indm_str);
+			return 1;
 		}
+		free(indm_str);
 	}
-
-	/* No indexing -> no reduction */
-	if ( indm == NULL ) reduction_needs_cell = 0;
 
 	if ( toler != NULL ) {
 		int ttt;
@@ -586,7 +526,12 @@ int main(int argc, char *argv[])
 		cell = NULL;
 	}
 
-	write_stream_header(ofh, argc, argv);
+	st = open_stream_for_write(outfile);
+	if ( st == NULL ) {
+		ERROR("Failed to open stream '%s'\n", outfile);
+		return 1;
+	}
+	free(outfile);
 
 	/* Get first filename and use it to set up the indexing */
 	prepare_line = malloc(1024);
@@ -609,7 +554,7 @@ int main(int argc, char *argv[])
 	/* Prepare the indexer */
 	if ( indm != NULL ) {
 		ipriv = prepare_indexing(indm, cell, prepare_filename,
-		                         det, beam);
+		                         det, beam, tols);
 		if ( ipriv == NULL ) {
 			ERROR("Failed to prepare indexing.\n");
 			return 1;
@@ -627,9 +572,7 @@ int main(int argc, char *argv[])
 	iargs.config_verbose = config_verbose;
 	iargs.config_satcorr = config_satcorr;
 	iargs.config_closer = config_closer;
-	iargs.config_insane = config_insane;
 	iargs.config_bgsub = config_bgsub;
-	iargs.cellr = cellr;
 	iargs.tols[0] = tols[0];
 	iargs.tols[1] = tols[1];
 	iargs.tols[2] = tols[2];
@@ -644,7 +587,6 @@ int main(int argc, char *argv[])
 	iargs.peaks = peaks;
 	iargs.beam = beam;
 	iargs.element = element;
-	iargs.stream_flags = stream_flags;
 	iargs.hdf5_peak_path = hdf5_peak_path;
 	iargs.copyme = copyme;
 	iargs.ir_inn = ir_inn;
@@ -654,9 +596,11 @@ int main(int argc, char *argv[])
 	iargs.integrate_saturated = integrate_saturated;
 	iargs.no_revalidate = no_revalidate;
 	iargs.integrate_found = integrate_found;
+	iargs.include_peaks = 1;
+	iargs.include_reflections = 1;  /* FIXME! */
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	                    use_this_one_instead, ofh);
+	                    use_this_one_instead, st);
 
 	free(prefix);
 
