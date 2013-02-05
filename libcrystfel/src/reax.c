@@ -103,7 +103,7 @@ struct reax_search
 
 struct reax_private
 {
-	IndexingPrivate base;
+	IndexingMethod indm;
 	struct dvec *directions;
 	int n_dir;
 	double angular_inc;
@@ -915,9 +915,39 @@ static void add_cell_candidate(struct cell_candidate_list *cl, UnitCell *cnew,
 }
 
 
+static int check_cell(struct reax_private *dp, struct image *image,
+                      UnitCell *cell)
+{
+	UnitCell *out;
+	Crystal *cr;
+
+	out = cell_new_from_cell(cell);
+
+	cr = crystal_new();
+	if ( cr == NULL ) {
+		ERROR("Failed to allocate crystal.\n");
+		return 0;
+	}
+
+	crystal_set_cell(cr, out);
+
+	if ( dp->indm & INDEXING_CHECK_PEAKS ) {
+		if ( !peak_sanity_check(image, &cr, 1) ) {
+			crystal_free(cr);  /* Frees the cell as well */
+			return 0;
+		}
+	}
+
+	image_add_crystal(image, cr);
+
+	return 1;
+}
+
+
 static void assemble_cells_from_candidates(struct image *image,
                                            struct reax_search *s,
-                                           UnitCell *cell)
+                                           UnitCell *cell,
+                                           struct reax_private *p)
 {
 	int i, j, k;
 	signed int ti, tj, tk;
@@ -967,7 +997,9 @@ static void assemble_cells_from_candidates(struct image *image,
 			continue;
 		}
 
-		peak_lattice_agreement(image, cnew, &fom);
+		/* FIXME! */
+		//peak_lattice_agreement(image, cnew, &fom);
+		fom = 1.0;
 		add_cell_candidate(&cl, cnew, fom);
 
 	}
@@ -985,22 +1017,20 @@ static void assemble_cells_from_candidates(struct image *image,
 		cell_get_parameters(cl.cand[i].cell, &a, &b, &c, &al, &be, &ga);
 		cell_get_parameters(cl.cand[i].cell, &aA, &bA, &cA,
 		                                     &alA, &beA, &gaA);
-		if ( (a - aA) > aA/10.0 ) w = 1;
-		if ( (b - bA) > bA/10.0 ) w = 1;
-		if ( (c - cA) > cA/10.0 ) w = 1;
-		if ( (al - alA) > deg2rad(5.0) ) w = 1;
-		if ( (be - beA) > deg2rad(5.0) ) w = 1;
-		if ( (ga - gaA) > deg2rad(5.0) ) w = 1;
+		if ( fabs(a - aA) > aA/10.0 ) w = 1;
+		if ( fabs(b - bA) > bA/10.0 ) w = 1;
+		if ( fabs(c - cA) > cA/10.0 ) w = 1;
+		if ( fabs(al - alA) > deg2rad(5.0) ) w = 1;
+		if ( fabs(be - beA) > deg2rad(5.0) ) w = 1;
+		if ( fabs(ga - gaA) > deg2rad(5.0) ) w = 1;
 		if ( w ) {
 			STATUS("This cell is a long way from that sought:\n");
 			cell_print(cl.cand[i].cell);
 		}
 	}
 
-	image->ncells = cl.n_cand;
-	assert(image->ncells <= MAX_CELL_CANDIDATES);
 	for ( i=0; i<cl.n_cand; i++ ) {
-		image->candidate_cells[i] = cl.cand[i].cell;
+		if ( check_cell(p,  image, cl.cand[i].cell) ) break;
 	}
 
 	free(cl.cand);
@@ -1016,7 +1046,6 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	struct reax_search *s;
 	int i;
 
-	assert(pp->indm == INDEXING_REAX);
 	p = (struct reax_private *)pp;
 
 	fft_in = fftw_malloc(p->nel*sizeof(double));
@@ -1039,7 +1068,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 //	                        fft_in, fft_out, p->plan, smin, smax,
 //	                        image->det, p);
 
-	assemble_cells_from_candidates(image, s, cell);
+	assemble_cells_from_candidates(image, s, cell, p);
 
 	for ( i=0; i<s->n_search; i++ ) {
 		free(s->search[i].cand);
@@ -1051,7 +1080,9 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 }
 
 
-IndexingPrivate *reax_prepare()
+IndexingPrivate *reax_prepare(IndexingMethod indm, UnitCell *cell,
+                              const char *filename, struct detector *det,
+                              struct beam_params *beam, float *ltl)
 {
 	struct reax_private *p;
 	int samp;
@@ -1059,8 +1090,6 @@ IndexingPrivate *reax_prepare()
 
 	p = calloc(1, sizeof(*p));
 	if ( p == NULL ) return NULL;
-
-	p->base.indm = INDEXING_REAX;
 
 	p->angular_inc = deg2rad(1.0);
 
@@ -1122,6 +1151,8 @@ IndexingPrivate *reax_prepare()
 	p->r_plan = fftw_plan_dft_2d(p->cw, p->ch, p->r_fft_in, p->r_fft_out,
 	                             1, FFTW_MEASURE);
 
+	p->indm = indm;
+
 	return (IndexingPrivate *)p;
 }
 
@@ -1130,7 +1161,6 @@ void reax_cleanup(IndexingPrivate *pp)
 {
 	struct reax_private *p;
 
-	assert(pp->indm == INDEXING_REAX);
 	p = (struct reax_private *)pp;
 
 	free(p->directions);

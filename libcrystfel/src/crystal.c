@@ -55,7 +55,7 @@ struct _crystal
 	double                  osf;
 	double                  profile_radius;
 	int                     pr_dud;
-	double                  diffracting_resolution;
+	double                  resolution_limit;
 
 	/* Integrated (or about-to-be-integrated) reflections */
 	RefList                 *reflections;
@@ -63,7 +63,7 @@ struct _crystal
 };
 
 
-/************************** Setters and Constructors **************************/
+/************************** Constructor / Destructor **************************/
 
 
 /**
@@ -83,7 +83,7 @@ Crystal *crystal_new()
 
 	cryst->cell = NULL;
 	cryst->reflections = NULL;
-	cryst->diffracting_resolution = 0.0;
+	cryst->resolution_limit = 0.0;
 	cryst->n_saturated = 0;
 
 	return cryst;
@@ -97,11 +97,78 @@ Crystal *crystal_new()
  * Frees a %Crystal, and all internal resources concerning that crystal.
  *
  */
-void crystal_free(UnitCell *cryst)
+void crystal_free(Crystal *cryst)
 {
 	if ( cryst == NULL ) return;
-	free(crysta);
+	if ( cryst->cell != NULL ) cell_free(cryst->cell);
+	if ( cryst->reflections != NULL ) reflist_free(cryst->reflections);
+	free(cryst);
 }
 
 
 /********************************** Getters ***********************************/
+
+
+UnitCell *crystal_get_cell(Crystal *cryst)
+{
+	return cryst->cell;
+}
+
+
+double crystal_get_profile_radius(Crystal *cryst)
+{
+	return cryst->profile_radius;
+}
+
+
+RefList *crystal_get_reflections(Crystal *cryst)
+{
+	return cryst->reflections;
+}
+
+
+double crystal_get_resolution_limit(Crystal *cryst)
+{
+	return cryst->resolution_limit;
+}
+
+
+long long int crystal_get_num_saturated_reflections(Crystal *cryst)
+{
+	return cryst->n_saturated;
+}
+
+
+/********************************** Setters ***********************************/
+
+
+void crystal_set_cell(Crystal *cryst, UnitCell *cell)
+{
+	if ( cryst->cell != NULL ) cell_free(cryst->cell);
+	cryst->cell = cell_new_from_cell(cell);
+}
+
+
+void crystal_set_profile_radius(Crystal *cryst, double r)
+{
+	cryst->profile_radius = r;
+}
+
+
+void crystal_set_reflections(Crystal *cryst, RefList *reflist)
+{
+	if ( cryst->reflections != NULL ) reflist_free(reflist);
+	cryst->reflections = reflist;
+}
+
+
+void crystal_set_resolution_limit(Crystal *cryst, double res)
+{
+	cryst->resolution_limit = res;
+}
+
+
+void crystal_set_num_saturated_reflections(Crystal *cryst, long long int n)
+{
+	cryst->n_saturated = n;
+}

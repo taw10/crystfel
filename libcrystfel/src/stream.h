@@ -49,9 +49,8 @@ extern void write_chunk(Stream *st, struct image *image, struct hdfile *hdfile,
 
 extern int read_chunk(Stream *st, struct image *image);
 
-/* Nasty functions that should be avoided */
-extern int count_patterns(FILE *fh);
-extern int skip_some_files(FILE *fh, int n);
+extern int rewind_stream(Stream *st);
+
 extern int is_stream(const char *filename);
 
 #endif	/* STREAM_H */

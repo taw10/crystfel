@@ -149,7 +149,7 @@ static int check_cell(struct mosflm_private *mp, struct image *image,
 		return 0;
 	}
 
-	crystal_set_cell(cr, cell);
+	crystal_set_cell(cr, out);
 
 	if ( mp->indm & INDEXING_CHECK_PEAKS ) {
 		if ( !peak_sanity_check(image, &cr, 1) ) {

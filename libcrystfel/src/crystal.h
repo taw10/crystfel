@@ -60,7 +60,8 @@ extern void crystal_set_cell(Crystal *cryst, UnitCell *cell);
 extern void crystal_set_profile_radius(Crystal *cryst, double r);
 extern void crystal_set_reflections(Crystal *cryst, RefList *reflist);
 extern void crystal_set_resolution_limit(Crystal *cryst, double res);
-extern void crystal_set_num_saturated_reflections(Crystal *cryst, int n);
+extern void crystal_set_num_saturated_reflections(Crystal *cryst,
+                                                  long long int n);
 
 
 #endif	/* CRYSTAL_H */

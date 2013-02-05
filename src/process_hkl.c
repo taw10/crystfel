@@ -3,12 +3,12 @@
  *
  * Assemble and process FEL Bragg intensities
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2013 Thomas White <taw@physics.org>
  *   2011      Andrew Martin <andrew.martin@desy.de>
  *   2012      Lorenzo Galli <lorenzo.galli@desy.de>
  *
@@ -48,6 +48,8 @@
 #include "stream.h"
 #include "reflist.h"
 #include "image.h"
+#include "crystal.h"
+#include "thread-pool.h"
 
 
 static void show_help(const char *s)
@@ -170,11 +172,11 @@ static double scale_intensities(RefList *reference, RefList *new,
 }
 
 
-static int merge_pattern(RefList *model, struct image *new, RefList *reference,
-                         const SymOpList *sym,
-                         double *hist_vals, signed int hist_h,
-                         signed int hist_k, signed int hist_l, int *hist_n,
-                         int config_nopolar)
+static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
+                        RefList *reference, const SymOpList *sym,
+                        double *hist_vals, signed int hist_h,
+                        signed int hist_k, signed int hist_l, int *hist_n,
+                        int config_nopolar)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -184,17 +186,18 @@ static int merge_pattern(RefList *model, struct image *new, RefList *reference,
 	double csx, csy, csz;
 
 	if ( reference != NULL ) {
-		scale = scale_intensities(reference, new->reflections, sym);
+		scale = scale_intensities(reference,
+		                          crystal_get_reflections(cr), sym);
 	} else {
 		scale = 1.0;
 	}
 	if ( isnan(scale) ) return 1;
 
-	cell_get_reciprocal(new->indexed_cell, &asx, &asy, &asz,
-	                                       &bsx, &bsy, &bsz,
-	                                       &csx, &csy, &csz);
+	cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
+	                                          &bsx, &bsy, &bsz,
+	                                          &csx, &csy, &csz);
 
-	for ( refl = first_refl(new->reflections, &iter);
+	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -226,7 +229,7 @@ static int merge_pattern(RefList *model, struct image *new, RefList *reference,
 			yl = h*asy + k*bsy + l*csy;
 			zl = h*asz + k*bsz + l*csz;
 
-			ool = 1.0 / new->lambda;
+			ool = 1.0 / image->lambda;
 			tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+ool);
 			phi = atan2(yl, xl);
 			pa = pow(sin(phi)*sin(tt), 2.0);
@@ -260,62 +263,71 @@ static int merge_pattern(RefList *model, struct image *new, RefList *reference,
 }
 
 
-static void merge_all(FILE *fh, RefList *model, RefList *reference,
-                      int config_startafter, int config_stopafter,
-                      const SymOpList *sym,
-                      int n_total_patterns,
-                      double *hist_vals, signed int hist_h,
-                      signed int hist_k, signed int hist_l,
-                      int *hist_i, int config_nopolar, int min_measurements)
+static void display_progress(int n_images, int n_crystals, int n_crystals_used)
+{
+	if ( !isatty(STDERR_FILENO) ) return;
+	if ( tcgetpgrp(STDERR_FILENO) != getpgrp() ) return;
+
+	pthread_mutex_lock(&stderr_lock);
+	fprintf(stderr, "\r%i images processed, %i crystals, %i crystals used",
+	        n_images, n_crystals, n_crystals_used);
+	pthread_mutex_unlock(&stderr_lock);
+
+	fflush(stdout);
+}
+
+
+
+static int merge_all(Stream *st, RefList *model, RefList *reference,
+                     const SymOpList *sym,
+                     double *hist_vals, signed int hist_h,
+                     signed int hist_k, signed int hist_l,
+                     int *hist_i, int config_nopolar, int min_measurements)
 {
 	int rval;
-	int n_patterns = 0;
-	int n_used = 0;
+	int n_images = 0;
+	int n_crystals = 0;
+	int n_crystals_used = 0;
 	Reflection *refl;
 	RefListIterator *iter;
-
-	if ( skip_some_files(fh, config_startafter) ) {
-		ERROR("Failed to skip first %i files.\n", config_startafter);
-		return;
-	}
 
 	do {
 
 		struct image image;
+		int i;
 
 		image.det = NULL;
 
 		/* Get data from next chunk */
-		rval = read_chunk(fh, &image);
+		rval = read_chunk(st, &image);
 		if ( rval ) break;
 
-		n_patterns++;
+		n_images++;
 
-		if ( (image.reflections != NULL) && (image.indexed_cell) ) {
+		for ( i=0; i<image.n_crystals; i++ ) {
 
 			int r;
+			Crystal *cr = image.crystals[i];
 
-			r = merge_pattern(model, &image, reference, sym,
+			n_crystals++;
+			r = merge_crystal(model, &image, cr, reference, sym,
 			                  hist_vals, hist_h, hist_k, hist_l,
 			                  hist_i, config_nopolar);
 
-			if ( r == 0 ) n_used++;
+			if ( r == 0 ) n_crystals_used++;
+
+			crystal_free(cr);
 
 		}
 
 		free(image.filename);
-		reflist_free(image.reflections);
 		image_feature_list_free(image.features);
-		cell_free(image.indexed_cell);
 
-		progress_bar(n_patterns, n_total_patterns-config_startafter,
-		             "Merging");
-
-		if ( config_stopafter ) {
-			if ( n_patterns == config_stopafter ) break;
-		}
+		display_progress(n_images, n_crystals, n_crystals_used);
 
 	} while ( rval == 0 );
+
+	if ( rval ) return 1;
 
 	for ( refl = first_refl(model, &iter);
 	      refl != NULL;
@@ -339,7 +351,7 @@ static void merge_all(FILE *fh, RefList *model, RefList *reference,
 
 	}
 
-	STATUS("%i of the patterns could be used.\n", n_used);
+	return 0;
 }
 
 
@@ -348,14 +360,11 @@ int main(int argc, char *argv[])
 	int c;
 	char *filename = NULL;
 	char *output = NULL;
-	FILE *fh;
+	Stream *st;
 	RefList *model;
 	int config_maxonly = 0;
-	int config_startafter = 0;
-	int config_stopafter = 0;
 	int config_sum = 0;
 	int config_scale = 0;
-	unsigned int n_total_patterns;
 	char *sym_str = NULL;
 	SymOpList *sym;
 	char *histo = NULL;
@@ -369,6 +378,7 @@ int main(int argc, char *argv[])
 	int config_nopolar = 0;
 	char *rval;
 	int min_measurements = 2;
+	int r;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -409,11 +419,11 @@ int main(int argc, char *argv[])
 			break;
 
 			case 's' :
-			config_stopafter = atoi(optarg);
+			ERROR("The option '--stop-after' no longer works.\n");
 			break;
 
 			case 'f' :
-			config_startafter = atoi(optarg);
+			ERROR("The option '--start-after' no longer works.\n");
 			break;
 
 			case 'y' :
@@ -465,25 +475,11 @@ int main(int argc, char *argv[])
 	free(sym_str);
 
 	/* Open the data stream */
-	if ( strcmp(filename, "-") == 0 ) {
-		fh = stdin;
-	} else {
-		fh = fopen(filename, "r");
-	}
-	free(filename);
-	if ( fh == NULL ) {
-		ERROR("Failed to open input file\n");
+	st = open_stream_for_read(filename);
+	if ( st == NULL ) {
+		ERROR("Failed to open stream.\n");
 		return 1;
 	}
-
-	/* Count the number of patterns in the file */
-	n_total_patterns = count_patterns(fh);
-	if ( n_total_patterns == 0 ) {
-		ERROR("No patterns to process.\n");
-		return 1;
-	}
-	STATUS("There are %i patterns to process\n", n_total_patterns);
-	rewind(fh);
 
 	model = reflist_new();
 
@@ -497,7 +493,8 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		space_for_hist = n_total_patterns * num_equivs(sym, NULL);
+		/* FIXME: This array must grow as necessary. */
+		space_for_hist = 0 * num_equivs(sym, NULL);
 		hist_vals = malloc(space_for_hist * sizeof(double));
 		free(histo);
 		STATUS("Histogramming %i %i %i -> ", hist_h, hist_k, hist_l);
@@ -529,40 +526,46 @@ int main(int argc, char *argv[])
 	}
 
 	hist_i = 0;
-	merge_all(fh, model, NULL, config_startafter, config_stopafter,
-	          sym, n_total_patterns, hist_vals, hist_h, hist_k, hist_l,
-	          &hist_i, config_nopolar, min_measurements);
-	if ( ferror(fh) ) {
-		ERROR("Stream read error.\n");
+	r = merge_all(st, model, NULL, sym, hist_vals, hist_h, hist_k, hist_l,
+	              &hist_i, config_nopolar, min_measurements);
+	fprintf(stderr, "\n");
+	if ( r ) {
+		ERROR("Error while reading stream.\n");
 		return 1;
 	}
-	rewind(fh);
 
 	if ( config_scale ) {
 
 		RefList *reference;
 
-		STATUS("Extra pass for scaling...\n");
+		if ( rewind_stream(st) ) {
 
-		reference = copy_reflist(model);
+			ERROR("Couldn't rewind stream - scaling cannot be "
+			      "performed.\n");
 
-		reflist_free(model);
-		model = reflist_new();
+		} else {
 
-		rewind(fh);
+			int r;
 
-		merge_all(fh, model, reference,
-			  config_startafter, config_stopafter, sym,
-			  n_total_patterns,
-			  hist_vals, hist_h, hist_k, hist_l, &hist_i,
-			  config_nopolar, min_measurements);
+			STATUS("Extra pass for scaling...\n");
 
-		if ( ferror(fh) ) {
-			ERROR("Stream read error.\n");
-			return 1;
+			reference = copy_reflist(model);
+
+			reflist_free(model);
+			model = reflist_new();
+
+			r = merge_all(st, model, reference, sym,
+				     hist_vals, hist_h, hist_k, hist_l, &hist_i,
+				     config_nopolar, min_measurements);
+			fprintf(stderr, "\n");
+			if ( r ) {
+				ERROR("Error while reading stream.\n");
+				return 1;
+			}
+
+			reflist_free(reference);
+
 		}
-
-		reflist_free(reference);
 
 	}
 
@@ -579,7 +582,7 @@ int main(int argc, char *argv[])
 
 	write_reflist(output, model);
 
-	fclose(fh);
+	close_stream(st);
 
 	free(sym);
 	reflist_free(model);

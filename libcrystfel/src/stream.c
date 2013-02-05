@@ -69,30 +69,6 @@ struct _stream
 };
 
 
-int count_patterns(FILE *fh)
-{
-	char *rval;
-
-	int n_total_patterns = 0;
-	do {
-		char line[1024];
-
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
-		chomp(line);
-		if ( strcmp(line, CHUNK_END_MARKER) == 0 ) n_total_patterns++;
-
-	} while ( rval != NULL );
-
-	if ( ferror(fh) ) {
-		ERROR("Read error while counting patterns.\n");
-		return 0;
-	}
-
-	return n_total_patterns;
-}
-
-
 static int read_peaks(FILE *fh, struct image *image)
 {
 	char *rval = NULL;
@@ -482,28 +458,6 @@ void write_stream_header(FILE *ofh, int argc, char *argv[])
 }
 
 
-int skip_some_files(FILE *fh, int n)
-{
-	char *rval = NULL;
-	int n_patterns = 0;
-
-	do {
-
-		char line[1024];
-
-		if ( n_patterns == n ) return 0;
-
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
-		chomp(line);
-		if ( strcmp(line, CHUNK_END_MARKER) == 0 ) n_patterns++;
-
-	} while ( rval != NULL );
-
-	return 1;
-}
-
-
 Stream *open_stream_for_read(const char *filename)
 {
 	Stream *st;
@@ -590,4 +544,22 @@ int is_stream(const char *filename)
 	if ( strncmp(line, "CrystFEL stream format 2.1", 26) == 0 ) return 1;
 
 	return 0;
+}
+
+
+/**
+ * rewind_stream:
+ * @st: A %Stream
+ *
+ * Attempts to set the file pointer for @st to the start of the stream, so that
+ * later calls to read_chunk() will repeat the sequence of chunks from the
+ * start.
+ *
+ * Programs must not assume that this operation always succeeds!
+ *
+ * Returns: non-zero if the stream could not be rewound.
+ */
+int rewind_stream(Stream *st)
+{
+	return fseek(st->fh, 0, SEEK_SET);
 }

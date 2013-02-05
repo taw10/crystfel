@@ -128,16 +128,19 @@ static int check_cell(struct dirax_private *dp, struct image *image,
 		return 0;
 	}
 
-	crystal_set_cell(cr, cell);
+	crystal_set_cell(cr, out);
 
 	if ( dp->indm & INDEXING_CHECK_PEAKS ) {
 		if ( !peak_sanity_check(image, &cr, 1) ) {
 			crystal_free(cr);  /* Frees the cell as well */
+			cell_free(out);
 			return 0;
 		}
 	}
 
 	image_add_crystal(image, cr);
+
+	cell_free(out); /* Crystal makes its own copy */
 
 	return 1;
 }
