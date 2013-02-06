@@ -54,11 +54,12 @@
 #define NBINS 50
 
 
-static void mess_up_cell(UnitCell *cell, double cnoise)
+static void mess_up_cell(Crystal *cr, double cnoise)
 {
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
+	UnitCell *cell = crystal_get_cell(cr);
 
 	//STATUS("Real:\n");
 	//cell_print(cell);
@@ -82,17 +83,18 @@ static void mess_up_cell(UnitCell *cell, double cnoise)
 
 /* For each reflection in "partial", fill in what the intensity would be
  * according to "full" */
-static void calculate_partials(RefList *partial, double osf,
+static void calculate_partials(Crystal *cr,
                                RefList *full, const SymOpList *sym,
                                int random_intensities,
                                pthread_mutex_t *full_lock,
                                unsigned long int *n_ref, double *p_hist,
-                               double *p_max, double max_q, UnitCell *cell)
+                               double *p_max, double max_q)
 {
 	Reflection *refl;
 	RefListIterator *iter;
+	double res;
 
-	for ( refl = first_refl(partial, &iter);
+	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -137,16 +139,17 @@ static void calculate_partials(RefList *partial, double osf,
 			}
 		}
 
-		Ip = osf * p * If;
+		Ip = crystal_get_osf(cr) * p * If;
 
-		bin = NBINS*2.0*resolution(cell, h, k, l) / max_q;
+		res = resolution(crystal_get_cell(cr), h, k, l);
+		bin = NBINS*2.0*res/max_q;
 		if ( (bin < NBINS) && (bin>=0) ) {
 			p_hist[bin] += p;
 			n_ref[bin]++;
 			if ( p > p_max[bin] ) p_max[bin] = p;
 		} else {
 			STATUS("Reflection out of histogram range: %e %i %f\n",
-			       resolution(cell, h, k, l), bin,  p);
+			       res, bin,  p);
 		}
 
 		Ip = gaussian_noise(Ip, 100.0);
@@ -206,13 +209,14 @@ struct queue_args
 	unsigned long int n_ref[NBINS];
 	double p_max[NBINS];
 
-	FILE *stream;
+	Stream *stream;
 };
 
 
 struct worker_args
 {
 	struct queue_args *qargs;
+	Crystal *crystal;
 	struct image image;
 
 	/* Histogram for this image */
@@ -243,21 +247,34 @@ static void *create_job(void *vqargs)
 
 static void run_job(void *vwargs, int cookie)
 {
-	double osf;
 	struct quaternion orientation;
 	struct worker_args *wargs = vwargs;
 	struct queue_args *qargs = wargs->qargs;
 	int i;
+	Crystal *cr;
+	UnitCell *cell;
+	RefList *reflections;
 
-	osf = gaussian_noise(1.0, 0.3);
+	cr = crystal_new();
+	if ( cr == NULL ) {
+		ERROR("Failed to create crystal.\n");
+		return;
+	}
+	wargs->crystal = cr;
+	crystal_set_image(cr, &wargs->image);
+
+	crystal_set_osf(cr, gaussian_noise(1.0, 0.3));
+	crystal_set_profile_radius(cr, wargs->image.beam->profile_radius);
 
 	/* Set up a random orientation */
 	orientation = random_quaternion();
-	wargs->image.indexed_cell = cell_rotate(qargs->cell, orientation);
+	cell = cell_rotate(qargs->cell, orientation);
+	crystal_set_cell(cr, cell);
+	cell_free(cell);
 
 	snprintf(wargs->image.filename, 255, "dummy.h5");
-	wargs->image.reflections = find_intersections(&wargs->image,
-	                                       wargs->image.indexed_cell);
+	reflections = find_intersections(&wargs->image, cr);
+	crystal_set_reflections(cr, reflections);
 
 	for ( i=0; i<NBINS; i++ ) {
 		wargs->n_ref[i] = 0;
@@ -265,14 +282,14 @@ static void run_job(void *vwargs, int cookie)
 		wargs->p_max[i] = 0.0;
 	}
 
-	calculate_partials(wargs->image.reflections, osf, qargs->full,
+	calculate_partials(cr, qargs->full,
 	                   qargs->sym, qargs->random_intensities,
 	                   &qargs->full_lock,
 	                   wargs->n_ref, wargs->p_hist, wargs->p_max,
-	                   qargs->max_q, wargs->image.indexed_cell);
+	                   qargs->max_q);
 
 	/* Give a slightly incorrect cell in the stream */
-	mess_up_cell(wargs->image.indexed_cell, qargs->cnoise);
+	mess_up_cell(cr, qargs->cnoise);
 }
 
 
@@ -282,7 +299,7 @@ static void finalise_job(void *vqargs, void *vwargs)
 	struct queue_args *qargs = vqargs;
 	int i;
 
-	write_chunk(qargs->stream, &wargs->image, NULL, STREAM_INTEGRATED);
+	write_chunk(qargs->stream, &wargs->image, NULL, 0, 1);
 
 	for ( i=0; i<NBINS; i++ ) {
 		qargs->n_ref[i] += wargs->n_ref[i];
@@ -295,8 +312,7 @@ static void finalise_job(void *vqargs, void *vwargs)
 	qargs->n_done++;
 	progress_bar(qargs->n_done, qargs->n_to_do, "Simulating");
 
-	reflist_free(wargs->image.reflections);
-	cell_free(wargs->image.indexed_cell);
+	crystal_free(wargs->crystal);
 	free(wargs);
 }
 
@@ -315,7 +331,7 @@ int main(int argc, char *argv[])
 	char *sym_str = NULL;
 	SymOpList *sym;
 	UnitCell *cell = NULL;
-	FILE *ofh;
+	Stream *stream;
 	int n = 2;
 	int random_intensities = 0;
 	char *save_file = NULL;
@@ -496,13 +512,12 @@ int main(int argc, char *argv[])
 		ERROR("You must give a filename for the output.\n");
 		return 1;
 	}
-	ofh = fopen(output_file, "w");
-	if ( ofh == NULL ) {
+	stream = open_stream_for_write(output_file);
+	if ( stream == NULL ) {
 		ERROR("Couldn't open output file '%s'\n", output_file);
 		return 1;
 	}
 	free(output_file);
-	write_stream_header(ofh, argc, argv);
 
 	image.det = det;
 	image.width = det->max_fs;
@@ -511,7 +526,6 @@ int main(int argc, char *argv[])
 	image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
 	image.div = beam->divergence;
 	image.bw = beam->bandwidth;
-	image.profile_radius = beam->profile_radius;
 	image.filename = malloc(256);
 	image.copyme = NULL;
 
@@ -528,7 +542,7 @@ int main(int argc, char *argv[])
 	qargs.random_intensities = random_intensities;
 	qargs.cell = cell;
 	qargs.template_image = &image;
-	qargs.stream = ofh;
+	qargs.stream = stream;
 	qargs.cnoise = cnoise;
 	qargs.max_q = largest_q(&image);
 
@@ -574,7 +588,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	fclose(ofh);
+	close_stream(stream);
 	cell_free(cell);
 	free_detector_geometry(det);
 	free(beam);
