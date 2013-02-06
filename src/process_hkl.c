@@ -327,8 +327,6 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 
 	} while ( rval == 0 );
 
-	if ( rval ) return 1;
-
 	for ( refl = first_refl(model, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )

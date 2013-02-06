@@ -287,6 +287,8 @@ static void run_job(void *vwargs, int cookie)
 
 	/* Give a slightly incorrect cell in the stream */
 	mess_up_cell(cr, qargs->cnoise);
+
+	image_add_crystal(&wargs->image, cr);
 }
 
 
@@ -523,8 +525,11 @@ int main(int argc, char *argv[])
 	image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
 	image.div = beam->divergence;
 	image.bw = beam->bandwidth;
+	image.beam = beam;
 	image.filename = malloc(256);
 	image.copyme = NULL;
+	image.crystals = NULL;
+	image.n_crystals = 0;
 
 	if ( random_intensities ) {
 		full = reflist_new();

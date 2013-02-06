@@ -431,6 +431,10 @@ int read_chunk(Stream *st, struct image *image)
 
 	} while ( 1 );
 
+	if ( !feof(st->fh) ) {
+		ERROR("Error reading stream.\n");
+	}
+
 	return 1;  /* Either error or EOF, don't care because we will complain
 	            * on the terminal if it was an error. */
 }
