@@ -506,6 +506,7 @@ int main(int argc, char *argv[])
 			crystals = crystals_new;
 			crystals[n_crystals] = crystal_new();
 			cr = crystals[n_crystals];
+			crystal_set_image(cr, cur);
 
 			/* Fill in initial estimates of stuff */
 			crystal_set_osf(cr, 1.0);
@@ -516,7 +517,7 @@ int main(int argc, char *argv[])
 			as = asymmetric_indices(crystal_get_reflections(cr),
 			                        sym);
 			crystal_set_reflections(cr, as);
-			update_partialities(cur, cr);
+			update_partialities(cr);
 
 			nobs += select_scalable_reflections(as, reference);
 

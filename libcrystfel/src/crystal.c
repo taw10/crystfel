@@ -49,6 +49,9 @@
 
 struct _crystal
 {
+	/* The image containing the crystal */
+	struct image            *image;
+
 	/* Information about the crystal */
 	UnitCell                *cell;
 	double                  m;     /* Mosaicity in radians */
@@ -60,6 +63,9 @@ struct _crystal
 	/* Integrated (or about-to-be-integrated) reflections */
 	RefList                 *reflections;
 	long long int           n_saturated;  /* Number of overloads */
+
+	/* User flag, e.g. for "this is a bad crystal". */
+	int                     user_flag;
 };
 
 
@@ -139,6 +145,24 @@ long long int crystal_get_num_saturated_reflections(Crystal *cryst)
 }
 
 
+struct image *crystal_get_image(Crystal *cryst)
+{
+	return cryst->image;
+}
+
+
+double crystal_get_osf(Crystal *cryst)
+{
+	return cryst->osf;
+}
+
+
+int crystal_get_user_flag(Crystal *cryst)
+{
+	return cryst->user_flag;
+}
+
+
 /********************************** Setters ***********************************/
 
 
@@ -171,4 +195,22 @@ void crystal_set_resolution_limit(Crystal *cryst, double res)
 void crystal_set_num_saturated_reflections(Crystal *cryst, long long int n)
 {
 	cryst->n_saturated = n;
+}
+
+
+void crystal_set_image(Crystal *cryst, struct image *image)
+{
+	cryst->image = image;
+}
+
+
+void crystal_set_osf(Crystal *cryst, double osf)
+{
+	cryst->osf = osf;
+}
+
+
+void crystal_set_user_flag(Crystal *cryst, int user_flag)
+{
+	cryst->user_flag = user_flag;
 }

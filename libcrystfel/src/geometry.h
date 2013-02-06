@@ -46,7 +46,7 @@ extern "C" {
 extern RefList *find_intersections(struct image *image, Crystal *cryst);
 extern RefList *select_intersections(struct image *image, Crystal *cryst);
 
-extern void update_partialities(struct image *image, Crystal *cryst);
+extern void update_partialities(Crystal *cryst);
 
 #ifdef __cplusplus
 }

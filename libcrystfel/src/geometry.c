@@ -346,7 +346,7 @@ RefList *select_intersections(struct image *image, Crystal *cryst)
 
 
 /* Calculate partialities and apply them to the image's reflections */
-void update_partialities(struct image *image, Crystal *cryst)
+void update_partialities(Crystal *cryst)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -354,6 +354,7 @@ void update_partialities(struct image *image, Crystal *cryst)
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
+	struct image *image = crystal_get_image(cryst);
 
 	cell_get_reciprocal(crystal_get_cell(cryst), &asx, &asy, &asz,
 	                    &bsx, &bsy, &bsz, &csx, &csy, &csz);

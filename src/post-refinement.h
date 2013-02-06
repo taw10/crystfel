@@ -62,7 +62,7 @@ enum {
 extern void pr_refine(Crystal *cr, const RefList *full);
 
 /* Exported so it can be poked by tests/pr_gradient_check */
-extern double gradient(struct image *image, int k, Reflection *refl, double r);
+extern double gradient(Crystal *cr, int k, Reflection *refl, double r);
 
 
 #endif	/* POST_REFINEMENT_H */

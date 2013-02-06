@@ -57,7 +57,7 @@
 struct scale_queue_args
 {
 	RefList *reference;
-	struct image *images;
+	Crystal **crystals;
 	int n_started;
 	double max_shift;
 };
@@ -65,7 +65,7 @@ struct scale_queue_args
 
 struct scale_worker_args
 {
-	struct image *image;
+	Crystal *crystal;
 	double shift;
 	RefList *reference;
 };
@@ -79,7 +79,7 @@ static void *create_scale_job(void *vqargs)
 	wargs = malloc(sizeof(struct scale_worker_args));
 	wargs->reference = qargs->reference;
 
-	wargs->image = &qargs->images[qargs->n_started++];
+	wargs->crystal = qargs->crystals[qargs->n_started++];
 
 	return wargs;
 }
@@ -88,20 +88,21 @@ static void *create_scale_job(void *vqargs)
 static void run_scale_job(void *vwargs, int cookie)
 {
 	struct scale_worker_args *wargs = vwargs;
-	struct image *image = wargs->image;
+	Crystal *cr = wargs->crystal;
 	RefList *reference = wargs->reference;
 	Reflection *refl;
 	RefListIterator *iter;
 	double num = 0.0;
 	double den = 0.0;
 	double corr;
+	const double osf = crystal_get_osf(cr);
 
-	if ( image->pr_dud ) {
+	if ( crystal_get_user_flag(cr) ) {
 		wargs->shift = 0.0;
 		return;
 	}
 
-	for ( refl = first_refl(image->reflections, &iter);
+	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -128,8 +129,8 @@ static void run_scale_job(void *vwargs, int cookie)
 		Ihl = get_intensity(refl) / get_partiality(refl);
 		esd = get_esd_intensity(refl) / get_partiality(refl);
 
-		num += Ih * (Ihl/image->osf) / pow(esd/image->osf, 2.0);
-		den += pow(Ih, 2.0)/pow(esd/image->osf, 2.0);
+		num += Ih * (Ihl/osf) / pow(esd/osf, 2.0);
+		den += pow(Ih, 2.0)/pow(esd/osf, 2.0);
 
 	}
 
@@ -138,7 +139,7 @@ static void run_scale_job(void *vwargs, int cookie)
 
 	corr = num / den;
 	if ( !isnan(corr) && !isinf(corr) ) {
-		image->osf *= corr;
+		crystal_set_osf(cr, osf*corr);
 	}
 	wargs->shift = fabs(corr-1.0);
 
@@ -155,7 +156,7 @@ static void finalise_scale_job(void *vqargs, void *vwargs)
 }
 
 
-static double iterate_scale(struct image *images, int n, RefList *reference,
+static double iterate_scale(Crystal **crystals, int n, RefList *reference,
                             int n_threads)
 {
 	struct scale_queue_args qargs;
@@ -164,7 +165,7 @@ static double iterate_scale(struct image *images, int n, RefList *reference,
 
 	qargs.reference = reference;
 	qargs.n_started = 0;
-	qargs.images = images;
+	qargs.crystals = crystals;
 	qargs.max_shift = 0.0;
 
 	run_threads(n_threads, run_scale_job, create_scale_job,
@@ -178,14 +179,14 @@ struct merge_queue_args
 {
 	RefList *full;
 	pthread_mutex_t full_lock;
-	struct image *images;
+	Crystal **crystals;
 	int n_started;
 };
 
 
 struct merge_worker_args
 {
-	struct image *image;
+	Crystal *crystal;
 	RefList *full;
 	pthread_mutex_t *full_lock;
 };
@@ -200,7 +201,7 @@ static void *create_merge_job(void *vqargs)
 	wargs->full = qargs->full;
 	wargs->full_lock = &qargs->full_lock;
 
-	wargs->image = &qargs->images[qargs->n_started++];
+	wargs->crystal = qargs->crystals[qargs->n_started++];
 
 	return wargs;
 }
@@ -209,17 +210,17 @@ static void *create_merge_job(void *vqargs)
 static void run_merge_job(void *vwargs, int cookie)
 {
 	struct merge_worker_args *wargs = vwargs;
-	struct image *image = wargs->image;
+	Crystal *cr = wargs->crystal;
 	RefList *full = wargs->full;
 	Reflection *refl;
 	RefListIterator *iter;
 	double G;
 
-	if ( image->pr_dud ) return;
+	if ( crystal_get_user_flag(cr)) return;
 
-	G = image->osf;
+	G = crystal_get_osf(cr);
 
-	for ( refl = first_refl(image->reflections, &iter);
+	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -272,7 +273,7 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 }
 
 
-static RefList *lsq_intensities(struct image *images, int n, int n_threads)
+static RefList *lsq_intensities(Crystal **crystals, int n, int n_threads)
 {
 	RefList *full;
 	struct merge_queue_args qargs;
@@ -283,7 +284,7 @@ static RefList *lsq_intensities(struct image *images, int n, int n_threads)
 
 	qargs.full = full;
 	qargs.n_started = 0;
-	qargs.images = images;
+	qargs.crystals = crystals;
 	pthread_mutex_init(&qargs.full_lock, NULL);
 
 	run_threads(n_threads, run_merge_job, create_merge_job,
@@ -308,14 +309,14 @@ static RefList *lsq_intensities(struct image *images, int n, int n_threads)
 struct esd_queue_args
 {
 	RefList *full;
-	struct image *images;
+	Crystal **crystals;
 	int n_started;
 };
 
 
 struct esd_worker_args
 {
-	struct image *image;
+	Crystal *crystal;
 	RefList *full;
 };
 
@@ -328,7 +329,7 @@ static void *create_esd_job(void *vqargs)
 	wargs = malloc(sizeof(struct esd_worker_args));
 	wargs->full = qargs->full;
 
-	wargs->image = &qargs->images[qargs->n_started++];
+	wargs->crystal = qargs->crystals[qargs->n_started++];
 
 	return wargs;
 }
@@ -337,17 +338,17 @@ static void *create_esd_job(void *vqargs)
 static void run_esd_job(void *vwargs, int cookie)
 {
 	struct esd_worker_args *wargs = vwargs;
-	struct image *image = wargs->image;
+	Crystal *cr = wargs->crystal;
 	RefList *full = wargs->full;
 	Reflection *refl;
 	RefListIterator *iter;
 	double G;
 
-	if ( image->pr_dud ) return;
+	if ( crystal_get_user_flag(cr) ) return;
 
-	G = image->osf;
+	G = crystal_get_osf(cr);
 
-	for ( refl = first_refl(image->reflections, &iter);
+	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -383,7 +384,7 @@ static void finalise_esd_job(void *vqargs, void *vwargs)
 }
 
 
-static void calculate_esds(struct image *images, int n, RefList *full,
+static void calculate_esds(Crystal **crystals, int n, RefList *full,
                            int n_threads, int min_red)
 {
 	struct esd_queue_args qargs;
@@ -392,7 +393,7 @@ static void calculate_esds(struct image *images, int n, RefList *full,
 
 	qargs.full = full;
 	qargs.n_started = 0;
-	qargs.images = images;
+	qargs.crystals = crystals;
 
 	for ( refl = first_refl(full, &iter);
 	      refl != NULL;
@@ -423,7 +424,7 @@ static void calculate_esds(struct image *images, int n, RefList *full,
 
 
 /* Scale the stack of images */
-RefList *scale_intensities(struct image *images, int n, RefList *gref,
+RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
                            int n_threads, int noscale)
 {
 	int i;
@@ -431,17 +432,17 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref,
 	RefList *full = NULL;
 	const int min_redundancy = 3;
 
-	for ( i=0; i<n; i++ ) images[i].osf = 1.0;
+	for ( i=0; i<n; i++ ) crystal_set_osf(crystals[i], 1.0);
 
 	if ( noscale ) {
-		full = lsq_intensities(images, n, n_threads);
-		calculate_esds(images, n, full, n_threads, min_redundancy);
+		full = lsq_intensities(crystals, n, n_threads);
+		calculate_esds(crystals, n, full, n_threads, min_redundancy);
 		return full;
 	}
 
 	/* No reference -> create an initial list to refine against */
 	if ( gref == NULL ) {
-		full = lsq_intensities(images, n, n_threads);
+		full = lsq_intensities(crystals, n, n_threads);
 	}
 
 	/* Iterate */
@@ -457,14 +458,14 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref,
 			reference = full;
 		}
 
-		max_corr = iterate_scale(images, n, reference, n_threads);
+		max_corr = iterate_scale(crystals, n, reference, n_threads);
 		//STATUS("Scaling iteration %2i: max correction = %5.2f\n",
 		//       i+1, max_corr);
 
 		/* No reference -> generate list for next iteration */
 		if ( gref == NULL ) {
 			reflist_free(full);
-			full = lsq_intensities(images, n, n_threads);
+			full = lsq_intensities(crystals, n, n_threads);
 		}
 
 		//show_scale_factors(images, n);
@@ -474,10 +475,10 @@ RefList *scale_intensities(struct image *images, int n, RefList *gref,
 	} while ( (max_corr > 0.01) && (i < MAX_CYCLES) );
 
 	if ( gref != NULL ) {
-		full = lsq_intensities(images, n, n_threads);
+		full = lsq_intensities(crystals, n, n_threads);
 	} /* else we already did it */
 
-	calculate_esds(images, n, full, n_threads, min_redundancy);
+	calculate_esds(crystals, n, full, n_threads, min_redundancy);
 
 	return full;
 }
