@@ -269,7 +269,7 @@ static void display_progress(int n_images, int n_crystals, int n_crystals_used)
 	if ( tcgetpgrp(STDERR_FILENO) != getpgrp() ) return;
 
 	pthread_mutex_lock(&stderr_lock);
-	fprintf(stderr, "\r%i images processed, %i crystals, %i crystals used",
+	fprintf(stderr, "\r%i images processed, %i crystals, %i crystals used.",
 	        n_images, n_crystals, n_crystals_used);
 	pthread_mutex_unlock(&stderr_lock);
 

@@ -504,7 +504,7 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			crystals = crystals_new;
-			crystals[n_crystals] = crystal_new();
+			crystals[n_crystals] = cur->crystals[i];
 			cr = crystals[n_crystals];
 			crystal_set_image(cr, cur);
 
@@ -532,7 +532,7 @@ int main(int argc, char *argv[])
 	close_stream(st);
 
 	/* Make initial estimates */
-	STATUS("Performing initial scaling.\n");
+	STATUS("\nPerforming initial scaling.\n");
 	if ( noscale ) STATUS("Scale factors fixed at 1.\n");
 	full = scale_intensities(crystals, n_crystals, reference,
 	                         nthreads, noscale);
