@@ -140,8 +140,6 @@ static int check_cell(struct dirax_private *dp, struct image *image,
 
 	image_add_crystal(image, cr);
 
-	cell_free(out); /* Crystal makes its own copy */
-
 	return 1;
 }
 

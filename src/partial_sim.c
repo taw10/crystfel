@@ -252,7 +252,6 @@ static void run_job(void *vwargs, int cookie)
 	struct queue_args *qargs = wargs->qargs;
 	int i;
 	Crystal *cr;
-	UnitCell *cell;
 	RefList *reflections;
 
 	cr = crystal_new();
@@ -268,9 +267,7 @@ static void run_job(void *vwargs, int cookie)
 
 	/* Set up a random orientation */
 	orientation = random_quaternion();
-	cell = cell_rotate(qargs->cell, orientation);
-	crystal_set_cell(cr, cell);
-	cell_free(cell);
+	crystal_set_cell(cr, cell_rotate(qargs->cell, orientation));
 
 	snprintf(wargs->image.filename, 255, "dummy.h5");
 	reflections = find_intersections(&wargs->image, cr);

@@ -106,8 +106,6 @@ Crystal *crystal_new()
 void crystal_free(Crystal *cryst)
 {
 	if ( cryst == NULL ) return;
-	if ( cryst->cell != NULL ) cell_free(cryst->cell);
-	if ( cryst->reflections != NULL ) reflist_free(cryst->reflections);
 	free(cryst);
 }
 
@@ -163,13 +161,18 @@ int crystal_get_user_flag(Crystal *cryst)
 }
 
 
+double crystal_get_mosaicity(Crystal *cryst)
+{
+	return cryst->m;
+}
+
+
 /********************************** Setters ***********************************/
 
 
 void crystal_set_cell(Crystal *cryst, UnitCell *cell)
 {
-	if ( cryst->cell != NULL ) cell_free(cryst->cell);
-	cryst->cell = cell_new_from_cell(cell);
+	cryst->cell = cell;
 }
 
 
@@ -181,7 +184,6 @@ void crystal_set_profile_radius(Crystal *cryst, double r)
 
 void crystal_set_reflections(Crystal *cryst, RefList *reflist)
 {
-	if ( cryst->reflections != NULL ) reflist_free(reflist);
 	cryst->reflections = reflist;
 }
 
@@ -213,4 +215,10 @@ void crystal_set_osf(Crystal *cryst, double osf)
 void crystal_set_user_flag(Crystal *cryst, int user_flag)
 {
 	cryst->user_flag = user_flag;
+}
+
+
+void crystal_set_mosaicity(Crystal *cryst, double m)
+{
+	cryst->m = m;
 }

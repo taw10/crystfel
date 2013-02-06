@@ -88,7 +88,7 @@ static double partiality_rgradient(double r, double profile_radius)
 
 
 /* Return the gradient of parameter 'k' given the current status of 'image'. */
-double gradient(Crystal *cr, int k, Reflection *refl, double r)
+double gradient(Crystal *cr, int k, Reflection *refl)
 {
 	double ds, azix, aziy;
 	double ttlow, tthigh, tt;
@@ -104,6 +104,7 @@ double gradient(Crystal *cr, int k, Reflection *refl, double r)
 	double klow, khigh;
 	double gr;
 	struct image *image = crystal_get_image(cr);
+	double r = crystal_get_profile_radius(cr);
 
 	get_symmetric_indices(refl, &hs, &ks, &ls);
 
@@ -419,8 +420,7 @@ static double pr_iterate(Crystal *cr, const RefList *full)
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<NUM_PARAMS; k++ ) {
 			double gr;
-			gr = gradient(cr, k, refl,
-			              crystal_get_profile_radius(cr));
+			gr = gradient(cr, k, refl);
 			gradients[k] = gr;
 		}
 

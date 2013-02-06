@@ -58,6 +58,7 @@ extern long long int crystal_get_num_saturated_reflections(Crystal *cryst);
 extern int crystal_get_user_flag(Crystal *cryst);
 extern double crystal_get_osf(Crystal *cryst);
 extern struct image *crystal_get_image(Crystal *cryst);
+extern double crystal_get_mosaicity(Crystal *cryst);
 
 extern void crystal_set_cell(Crystal *cryst, UnitCell *cell);
 extern void crystal_set_profile_radius(Crystal *cryst, double r);
@@ -68,5 +69,6 @@ extern void crystal_set_num_saturated_reflections(Crystal *cryst,
 extern void crystal_set_user_flag(Crystal *cryst, int flag);
 extern void crystal_set_osf(Crystal *cryst, double osf);
 extern void crystal_set_image(Crystal *cryst, struct image *image);
+extern void crystal_set_mosaicity(Crystal *cryst, double m);
 
 #endif	/* CRYSTAL_H */
