@@ -955,11 +955,10 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		tNow = get_monotonic_seconds();
 		if ( tNow >= sb->t_last_stats+STATS_EVERY_N_SECONDS ) {
 
-			STATUS("%i images processed so far, "
-			       "%i had at least one indexable crystal."
-			       "%i crystals found so far."
-			       "%i images processed since the last message\n",
-			       sb->n_processed, sb->n_hadcrystals,
+			STATUS("%4i indexable out of %4i processed, "
+			       "%4i crystals so far. "
+			       "%4i images processed since the last message.\n",
+			       sb->n_hadcrystals, sb->n_processed,
 			       sb->n_crystals,
 			       sb->n_processed - sb->n_processed_last_stats);
 

@@ -91,7 +91,7 @@ struct dirax_data {
 	int                     read_cell;
 	int                     best_acl;
 	int                     best_acl_nh;
-	int                     acls_tried[MAX_CELL_CANDIDATES];
+	int                     acls_tried[MAX_DIRAX_CELL_CANDIDATES];
 	int                     n_acls_tried;
 	UnitCell                *cur_cell;
 	int                     done;

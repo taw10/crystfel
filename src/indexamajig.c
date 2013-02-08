@@ -98,7 +98,7 @@ static void show_help(const char *s)
 "                           Default: /processing/hitfinder/peakinfo\n"
 "\n\n"
 "For more control over the process, you might need:\n\n"
-"    --tolerance=<tol>   Set the tolerances for cell reduction.\n"
+"    --tolerance=<tol>   Set the tolerances for cell comparison.\n"
 "                          Default: 5,5,5,1.5.\n"
 "    --filter-cm         Perform common-mode noise subtraction on images\n"
 "                         before proceeding.  Intensities will be extracted\n"
@@ -515,6 +515,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 		free(pdb);
+		STATUS("This is what I understood your unit cell to be:\n");
 		cell_print(cell);
 	} else {
 		STATUS("No unit cell given.\n");

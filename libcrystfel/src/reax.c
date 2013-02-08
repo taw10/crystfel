@@ -65,6 +65,9 @@
 #define MAX_CANDIDATES (1024)
 
 
+/* Choose the best solution from this many candidate cells */
+#define MAX_REAX_CELL_CANDIDATES (32)
+
 struct dvec
 {
 	double x;
@@ -907,7 +910,7 @@ static void add_cell_candidate(struct cell_candidate_list *cl, UnitCell *cnew,
 
 	}
 
-	if ( cl->n_cand >= MAX_CELL_CANDIDATES ) {
+	if ( cl->n_cand >= MAX_REAX_CELL_CANDIDATES ) {
 		/* "cshift" just fell off the end of the list */
 	} else {
 		cl->cand[cl->n_cand++] = cshift;
@@ -953,7 +956,8 @@ static void assemble_cells_from_candidates(struct image *image,
 	signed int ti, tj, tk;
 	struct cell_candidate_list cl;
 
-	cl.cand = calloc(MAX_CELL_CANDIDATES, sizeof(struct cell_candidate));
+	cl.cand = calloc(MAX_REAX_CELL_CANDIDATES,
+	                 sizeof(struct cell_candidate));
 	if ( cl.cand == NULL ) {
 		ERROR("Failed to allocate cell candidate list.\n");
 		return;

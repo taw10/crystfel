@@ -643,6 +643,7 @@ int run_mosflm(struct image *image, IndexingPrivate *ipriv)
 	mosflm->done = 0;
 	mosflm->success = 0;
 
+	rval = 0;
 	do {
 
 		fd_set fds;

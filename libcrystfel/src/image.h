@@ -44,9 +44,6 @@
 #include "crystal.h"
 
 
-#define MAX_CELL_CANDIDATES (32)
-
-
 /* Structure describing a feature in an image */
 struct imagefeature {
 
@@ -112,14 +109,9 @@ typedef struct _imagefeaturelist ImageFeatureList;
  * by-product of the scattering vector calculation and can be used later for
  * calculating intensities from differential scattering cross sections.
  *
- * <structfield>candidate_cells</structfield> is an array of unit cells directly
- * returned by the low-level indexing system. <structfield>ncells</structfield>
- * is the number of candidate unit cells which were found.  The maximum number
- * of cells which may be returned is <function>MAX_CELL_CANDIDATES</function>.
- * <structfield>indexed_cell</structfield> contains the "correct" unit cell
- * after cell reduction or matching has been performed.  The job of the cell
- * reduction is to convert the list of candidate cells into a single indexed
- * cell, or <function>NULL</function> on failure.
+ * <structfield>crystals</structfield> is an array of %Crystal directly
+ * returned by the low-level indexing system. <structfield>n_crystals</structfield>
+ * is the number of crystals which were found in the image.
  *
  * <structfield>copyme</structfield> represents a list of HDF5 fields to copy
  * to the output stream.
