@@ -3,13 +3,13 @@
  *
  * Index patterns, output hkl+intensity etc.
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -81,11 +81,7 @@ static void show_help(const char *s)
 "                           Default: indexamajig.stream\n"
 "\n"
 "     --indexing=<methods> Use 'methods' for indexing.  Provide one or more\n"
-"                           methods separated by commas.  Choose from:\n"
-"                            none     : no indexing (default)\n"
-"                            dirax    : invoke DirAx\n"
-"                            mosflm   : invoke MOSFLM (DPS)\n"
-"                            reax     : DPS algorithm with known unit cell\n"
+"                           methods separated by commas.  See below.\n"
 " -g. --geometry=<file>    Get detector geometry from file.\n"
 " -b, --beam=<file>        Get beam parameters from file (provides nominal\n"
 "                           wavelength value if no per-shot value is found in\n"
@@ -101,27 +97,7 @@ static void show_help(const char *s)
 "     --hdf5-peaks=<p>     Find peaks table in HDF5 file here.\n"
 "                           Default: /processing/hitfinder/peakinfo\n"
 "\n\n"
-"You can control what information is included in the output stream using\n"
-"' --record=<flag1>,<flag2>,<flag3>' and so on.  Possible flags are:\n\n"
-" integrated        Include a list of reflection intensities, produced by\n"
-"                    integrating around predicted peak locations.\n"
-"\n"
-" peaks             Include peak locations and intensities from the peak\n"
-"                    search.\n"
-"\n"
-" peaksifindexed    As 'peaks', but only if the pattern could be indexed.\n"
-"\n"
-" peaksifnotindexed As 'peaks', but only if the pattern could NOT be indexed.\n"
-"\n\n"
-"The default is '--record=integrated'.\n"
-"\n\n"
 "For more control over the process, you might need:\n\n"
-"  --cell-reduction=<m>  Use <m> as the cell reduction method. Choose from:\n"
-"                         none    : no matching, just use the raw cell.\n"
-"                         reduce  : full cell reduction.\n"
-"                         compare : match by at most changing the order of\n"
-"                                   the indices.\n"
-"                         compare_ab : compare 'a' and 'b' lengths only.\n"
 "    --tolerance=<tol>   Set the tolerances for cell reduction.\n"
 "                          Default: 5,5,5,1.5.\n"
 "    --filter-cm         Perform common-mode noise subtraction on images\n"
@@ -157,8 +133,6 @@ static void show_help(const char *s)
 "     --no-check-prefix    Don't attempt to correct the --prefix.\n"
 "     --closer-peak        Don't integrate from the location of a nearby peak\n"
 "                           instead of the predicted spot.  Don't use.\n"
-"     --insane             Don't check that the reduced cell accounts for at\n"
-"                           least 10%% of the located peaks.\n"
 "     --no-bg-sub          Don't subtract local background estimates from\n"
 "                           integrated intensities.\n"
 "     --use-saturated      During the initial peak search, don't reject\n"
@@ -170,6 +144,25 @@ static void show_help(const char *s)
 "     --integrate-found    Skip the spot prediction step, and just integrate\n"
 "                           the intensities of the spots found by the initial\n"
 "                           peak search.\n"
+"\n"
+"Indexing methods:\n\n"
+"  dirax     Invoke DirAx, check linear combinations of the resulting cell\n"
+"             axes for agreement with your cell, and then check that the cell\n"
+"             accounts for at least half of the peaks from the peak search.\n"
+"  mosflm    As 'dirax', but invoke MOSFLM instead.\n"
+"  reax      Run the DPS algorithm, looking for the axes of your cell.\n"
+"\n"
+"You can add the following to the above indexing methods:\n"
+"  -raw      Do not check the resulting unit cell\n"
+"             (Only for 'dirax' and 'mosflm').\n"
+"  -axes     Check permutations of the axes for correspondence with your cell,\n"
+"             but do not check linear combinations.\n"
+"             (Only for 'dirax' and 'mosflm').\n"
+"  -bad      Do not check that the cell accounts for any of the peaks.\n"
+"\n"
+"The default indexing method is 'none', which means no indexing will be done.\n"
+"\n"
+"Examples: 'dirax,mosflm,reax', 'dirax-raw,mosflm-raw', 'dirax-raw-bad'\n"
 );
 }
 

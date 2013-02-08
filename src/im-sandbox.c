@@ -954,7 +954,8 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		if ( tNow >= sb->t_last_stats+STATS_EVERY_N_SECONDS ) {
 
 			STATUS("%i images processed so far, "
-			       "%i had crystals, %i crystals overall.  "
+			       "%i had at least one indexable crystal."
+			       "%i crystals found so far."
 			       "%i images processed since the last message\n",
 			       sb->n_processed, sb->n_hadcrystals,
 			       sb->n_crystals,
