@@ -595,7 +595,7 @@ int main(int argc, char *argv[])
 	iargs.include_reflections = 1;  /* FIXME! */
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	                    use_this_one_instead, ofh);
+	               use_this_one_instead, ofh, argc, argv);
 
 	free(prefix);
 

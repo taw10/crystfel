@@ -557,6 +557,24 @@ int is_stream(const char *filename)
 }
 
 
+void write_line(Stream *st, const char *line)
+{
+	fprintf(st->fh, "%s\n", line);
+}
+
+
+void write_command(Stream *st, int argc, char *argv[])
+{
+	int i;
+
+	for ( i=0; i<argc; i++ ) {
+		if ( i > 0 ) fprintf(st->fh, " ");
+		fprintf(st->fh, "%s", argv[i]);
+	}
+	fprintf(st->fh, "\n");
+}
+
+
 /**
  * rewind_stream:
  * @st: A %Stream

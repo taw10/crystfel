@@ -569,7 +569,8 @@ static void *run_reader(void *sbv)
 }
 
 
-static void start_worker_process(struct sandbox *sb, int slot)
+static void start_worker_process(struct sandbox *sb, int slot,
+                                 int argc, char *argv[])
 {
 	pid_t p;
 	int filename_pipe[2];
@@ -631,6 +632,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		close(result_pipe[0]);
 
 		st = open_stream_fd_for_write(sb->stream_pipe_write[slot]);
+		write_command(st, argc, argv);
 		run_work(sb->iargs, filename_pipe[0], result_pipe[1],
 		         st, slot);
 		close_stream(st);
@@ -701,7 +703,7 @@ static void handle_zombie(struct sandbox *sb)
 				STATUS("Last filename was: %s\n",
 				       sb->last_filename[i]);
 				sb->n_processed++;
-				start_worker_process(sb, i);
+				start_worker_process(sb, i, 0, NULL);
 			}
 
 		}
@@ -713,7 +715,7 @@ static void handle_zombie(struct sandbox *sb)
 
 void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                     int config_basename, FILE *fh, char *use_this_one_instead,
-                    FILE *ofh)
+                    FILE *ofh, int argc, char *argv[])
 {
 	int i;
 	int allDone;
@@ -823,7 +825,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	/* Fork the right number of times */
 	lock_sandbox(sb);
 	for ( i=0; i<n_proc; i++ ) {
-		start_worker_process(sb, i);
+		start_worker_process(sb, i, argc, argv);
 	}
 	unlock_sandbox(sb);
 

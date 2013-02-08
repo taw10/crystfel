@@ -53,16 +53,16 @@ typedef struct _stream Stream;
 extern Stream *open_stream_for_read(const char *filename);
 extern Stream *open_stream_for_write(const char *filename);
 extern Stream *open_stream_fd_for_write(int fd);
-
 extern void close_stream(Stream *st);
 
+extern int read_chunk(Stream *st, struct image *image);
 extern void write_chunk(Stream *st, struct image *image, struct hdfile *hdfile,
                         int include_peaks, int include_reflections);
 
-extern int read_chunk(Stream *st, struct image *image);
+extern void write_line(Stream *st, const char *line);
+extern void write_command(Stream *st, int argc, char *argv[]);
 
 extern int rewind_stream(Stream *st);
-
 extern int is_stream(const char *filename);
 
 #endif	/* STREAM_H */
