@@ -145,6 +145,8 @@ static void show_help(const char *s)
 "     --integrate-found    Skip the spot prediction step, and just integrate\n"
 "                           the intensities of the spots found by the initial\n"
 "                           peak search.\n"
+"     --no-peaks-in-stream Do not record peak search results in the stream.\n"
+"     --no-refls-in-stream Do not record integrated reflections in the stream.\n"
 );
 }
 
@@ -199,6 +201,8 @@ int main(int argc, char *argv[])
 	int use_saturated = 0;
 	int no_revalidate = 0;
 	int integrate_found = 0;
+	int config_nopeaks = 0;
+	int config_norefls = 0;
 
 	/* For ease of upgrading from old method */
 	char *scellr = NULL;
@@ -249,6 +253,8 @@ int main(int argc, char *argv[])
 		{"min-integration-snr",1, NULL,               12},
 		{"tolerance",          1, NULL,               13},
 		{"int-radius",         1, NULL,               14},
+		{"no-peaks-in-stream", 1, &config_nopeaks,     1},
+		{"no-refls-in-stream", 1, &config_norefls,     1},
 
 		/* FIXME: Add '--no-peaks' and '--no-reflections' */
 
@@ -574,8 +580,8 @@ int main(int argc, char *argv[])
 	iargs.integrate_saturated = integrate_saturated;
 	iargs.no_revalidate = no_revalidate;
 	iargs.integrate_found = integrate_found;
-	iargs.include_peaks = 1;
-	iargs.include_reflections = 1;  /* FIXME! */
+	iargs.include_peaks = !config_nopeaks;
+	iargs.include_reflections = !config_norefls;
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
 	               use_this_one_instead, ofh, argc, argv);
