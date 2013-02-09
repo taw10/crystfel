@@ -206,7 +206,8 @@ void index_pattern(struct image *image,
 /* Set the default indexer flags.  May need tweaking depending on the method */
 static IndexingMethod defaults(IndexingMethod a)
 {
-	return a | INDEXING_CHECK_CELL_COMBINATIONS | INDEXING_CHECK_PEAKS;
+	return a | INDEXING_CHECK_CELL_COMBINATIONS | INDEXING_CHECK_PEAKS
+	         | INDEXING_USE_LATTICE_TYPE;
 }
 
 
@@ -232,6 +233,13 @@ static IndexingMethod set_axes(IndexingMethod a)
 {
 	return (a & ~INDEXING_CHECK_CELL_COMBINATIONS)
 	          | INDEXING_CHECK_CELL_AXES;
+}
+
+
+/* Set the indexer flags for "use no lattice type information" */
+static IndexingMethod set_nolattice(IndexingMethod a)
+{
+	return a & ~INDEXING_USE_LATTICE_TYPE;
 }
 
 
@@ -270,6 +278,9 @@ IndexingMethod *build_indexer_list(const char *str)
 
 		} else if ( strcmp(methods[i], "axes") == 0) {
 			list[nmeth] = set_axes(list[nmeth]);
+
+		} else if ( strcmp(methods[i], "nolatt") == 0) {
+			list[nmeth] = set_nolattice(list[nmeth]);
 
 		} else {
 			ERROR("Bad list of indexing methods: '%s'\n", str);

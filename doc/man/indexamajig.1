@@ -83,7 +83,12 @@ Do not check the resulting unit cell.  This option is useful when you need to de
 Check permutations of the axes for correspondence with your cell, but do not check linear combinations.  This is useful to avoid a potential problem when one of the unit cell axis lengths is close to a multiple of one of the others.  Use with \fBdirax\fR and \fBmosflm\fR.
 
 .IP \fB-bad\fR
+.PD
 Do not check that the cell accounts for any of the peaks as described in \fBdirax\fR above.  Might be useful to debug initial indexing problems, or if there are many multi-crystal patterns and the indexing method has no concept of multiple crystals per pattern (which, at the moment, means all of them).  Can be used with any indexing method.
+
+.IP \fB-nolatt\fR
+.PD
+Do not use the lattice type information from the PDB file to help guide the indexing.  Use with \fBmosflm\fR, which is the only indexing method which can take advantage of this information.
 
 .PP
 The default indexing method is 'none', which means no indexing will be done.  This is useful if you just want to check that the peak detection is working properly.

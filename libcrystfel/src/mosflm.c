@@ -3,13 +3,13 @@
  *
  * Invoke the DPS auto-indexing algorithm through MOSFLM
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
  *   2010      Richard Kirian <rkirian@asu.edu>
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -147,6 +147,12 @@ static int check_cell(struct mosflm_private *mp, struct image *image,
 	if ( cr == NULL ) {
 		ERROR("Failed to allocate crystal.\n");
 		return 0;
+	}
+
+	if ( mp->indm & INDEXING_USE_LATTICE_TYPE ) {
+		LatticeType latt;
+		latt = cell_get_lattice_type(mp->template);
+		cell_set_lattice_type(out, latt);
 	}
 
 	crystal_set_cell(cr, out);
@@ -409,7 +415,9 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		break;
 
 		case 2 :
-		if ( mosflm->mp->template != NULL ) {
+		if ( (mosflm->mp->indm & INDEXING_USE_LATTICE_TYPE)
+		  && (mosflm->mp->template != NULL) )
+		{
 			const char *symm;
 			symm = spacegroup_for_lattice(mosflm->mp->template);
 			snprintf(tmp, 255, "SYMM %s\n", symm);
@@ -517,8 +525,7 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 
 			switch ( type ) {
 
-			case MOSFLM_INPUT_LINE :
-
+				case MOSFLM_INPUT_LINE :
 				block_buffer = malloc(i+1);
 				memcpy(block_buffer, mosflm->rbuffer, i);
 				block_buffer[i] = '\0';
@@ -532,12 +539,12 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 				endbit_length = i+2;
 				break;
 
-			case MOSFLM_INPUT_PROMPT :
+				case MOSFLM_INPUT_PROMPT :
 				mosflm_send_next(image, mosflm);
 				endbit_length = i+7;
 				break;
 
-			default :
+				default :
 
 				/* Obviously, this never happens :) */
 				ERROR("Unrecognised MOSFLM input mode! "
