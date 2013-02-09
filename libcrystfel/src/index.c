@@ -258,6 +258,10 @@ IndexingMethod *build_indexer_list(const char *str)
 			/* ReAx doesn't need any cell check */
 			list[++nmeth] = set_raw(defaults(INDEXING_REAX));
 
+		} else if ( strcmp(methods[i], "none") == 0) {
+			list[++nmeth] = INDEXING_NONE;
+			return list;
+
 		} else if ( strcmp(methods[i], "raw") == 0) {
 			list[nmeth] = set_raw(list[nmeth]);
 
