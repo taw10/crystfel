@@ -413,7 +413,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	int nrej_dis = 0;
 	int nrej_pro = 0;
 	int nrej_fra = 0;
-	int nrej_bad = 0;
+	int nrej_fail = 0;
 	int nrej_snr = 0;
 	int nrej_sat = 0;
 	int nacc = 0;
@@ -437,9 +437,6 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 
 		/* Overall threshold */
 		if ( data[fs+stride*ss] < threshold ) continue;
-
-		/* Immediate rejection of pixels above max_adu */
-		if ( data[fs+stride*ss] > p->max_adu ) continue;
 
 		/* Get gradients */
 		dx1 = data[fs+stride*ss] - data[(fs+1)+stride*ss];
@@ -506,12 +503,11 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		/* Centroid peak and get better coordinates. */
 		r = integrate_peak(image, mask_fs, mask_ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
-		                   ir_inn, ir_mid, ir_out, 0, NULL, &saturated);
+		                   ir_inn, ir_mid, ir_out, 1, NULL, &saturated);
 
-		if ( r ) {
-			/* Bad region - don't detect peak */
-			nrej_bad++;
-			continue;
+		if ( saturated ) {
+			image->num_saturated_peaks++;
+			if ( !use_saturated ) continue;
 		}
 
 		/* It is possible for the centroid to fall outside the image */
@@ -533,8 +529,9 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 			continue;
 		}
 
-		if ( saturated && !use_saturated ) {
-			nrej_sat++;
+		if ( r ) {
+			/* Bad region - don't detect peak */
+			nrej_fail++;
 			continue;
 		}
 
@@ -555,10 +552,12 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		ncull = 0;
 	}
 
+	image->num_peaks += nacc;
+
 	//STATUS("%i accepted, %i box, %i proximity, %i outside panel, "
-	//       "%i in bad regions, %i with SNR < %g, %i badrow culled, "
+	//       "%i failed integration, %i with SNR < %g, %i badrow culled, "
 	//        "%i saturated.\n",
-	//       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_bad,
+	//       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_fail,
 	//       nrej_snr, min_snr, ncull, nrej_sat);
 
 	if ( ncull != 0 ) {
@@ -579,6 +578,8 @@ void search_peaks(struct image *image, float threshold, float min_gradient,
 		image_feature_list_free(image->features);
 	}
 	image->features = image_feature_list_new();
+	image->num_peaks = 0;
+	image->num_saturated_peaks = 0;
 
 	for ( i=0; i<image->det->n_panels; i++ ) {
 

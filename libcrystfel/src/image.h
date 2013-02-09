@@ -94,6 +94,8 @@ typedef struct _imagefeaturelist ImageFeatureList;
  *    int                     width;
  *    int                     height;
  *
+ *    long long int           num_peaks;
+ *    long long int           num_saturated_peaks;
  *    ImageFeatureList        *features;
  * };
  * </programlisting>
@@ -144,6 +146,8 @@ struct image {
 	int                     height;
 
 	/* Detected peaks */
+	long long int           num_peaks;
+	long long int           num_saturated_peaks;
 	ImageFeatureList        *features;
 
 };

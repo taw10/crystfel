@@ -213,6 +213,8 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 
 	copy_hdf5_fields(hdfile, i->copyme, st->fh);
 
+	fprintf(st->fh, "num_peaks = %lli\n", i->num_peaks);
+	fprintf(st->fh, "num_saturated_peaks = %lli\n", i->num_saturated_peaks);
 	if ( include_peaks ) {
 		write_peaks(i, st->fh);
 	}
