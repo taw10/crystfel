@@ -415,7 +415,6 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	int nrej_fra = 0;
 	int nrej_fail = 0;
 	int nrej_snr = 0;
-	int nrej_sat = 0;
 	int nacc = 0;
 	int ncull;
 
@@ -920,10 +919,15 @@ void validate_peaks(struct image *image, double min_snr,
 
 		r = integrate_peak(image, f->fs, f->ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
-		                   ir_inn, ir_mid, ir_out, 0, NULL, &saturated);
+		                   ir_inn, ir_mid, ir_out, 1, NULL, &saturated);
 		if ( r ) {
 			n_int++;
 			continue;
+		}
+
+		if ( saturated ) {
+			n_sat++;
+			if ( !use_saturated ) continue;
 		}
 
 		/* It is possible for the centroid to fall outside the image */
@@ -946,11 +950,6 @@ void validate_peaks(struct image *image, double min_snr,
 			continue;
 		}
 
-		if ( saturated && !use_saturated ) {
-			n_sat++;
-			continue;
-		}
-
 		/* Add using "better" coordinates */
 		image_add_feature(flist, f_fs, f_ss, image, intensity, NULL);
 
@@ -962,4 +961,6 @@ void validate_peaks(struct image *image, double min_snr,
 	//       n_wtf, n_int, n_dft, n_snr, n_prx, n_sat);
 	image_feature_list_free(image->features);
 	image->features = flist;
+	image->num_saturated_peaks = n_sat;
+	image->num_peaks = image_feature_count(flist);
 }
