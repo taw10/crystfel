@@ -427,8 +427,8 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 	char tmp[256];
 	double wavelength;
 
-	switch ( mosflm->step ) {
-
+	switch ( mosflm->step )
+	{
 		case 1 :
 		mosflm_sendline("DETECTOR ROTATION HORIZONTAL"
 		                " ANTICLOCKWISE ORIGIN LL FAST HORIZONTAL"
@@ -489,10 +489,9 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		mosflm->finished_ok = 1;
 		break;
 
-	default:
+		default:
 		mosflm_sendline("exit\n", mosflm);
 		return;
-
 	}
 
 	mosflm->step++;
