@@ -121,6 +121,8 @@ static void show_help(const char *s)
 "-e, --image=<element>   Use this image from the HDF5 file.\n"
 "                          Example: /data/data0.\n"
 "                          Default: The first one found.\n"
+"    --res-cutoff        Estimate the resolution limit of each pattern, and\n"
+"                         don't integrate reflections further out.\n"
 "\n"
 "\nFor time-resolved stuff, you might want to use:\n\n"
 "     --copy-hdf5-field <f>  Copy the value of field <f> into the stream. You\n"
@@ -203,6 +205,7 @@ int main(int argc, char *argv[])
 	int integrate_found = 0;
 	int config_nopeaks = 0;
 	int config_norefls = 0;
+	int config_rescutoff = 0;
 
 	/* For ease of upgrading from old method */
 	char *scellr = NULL;
@@ -255,6 +258,7 @@ int main(int argc, char *argv[])
 		{"int-radius",         1, NULL,               14},
 		{"no-peaks-in-stream", 1, &config_nopeaks,     1},
 		{"no-refls-in-stream", 1, &config_norefls,     1},
+		{"res-cutoff",         1, &config_rescutoff,   1},
 
 		/* FIXME: Add '--no-peaks' and '--no-reflections' */
 
@@ -582,6 +586,7 @@ int main(int argc, char *argv[])
 	iargs.integrate_found = integrate_found;
 	iargs.include_peaks = !config_nopeaks;
 	iargs.include_reflections = !config_norefls;
+	iargs.res_cutoff = config_rescutoff;
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
 	               use_this_one_instead, ofh, argc, argv);

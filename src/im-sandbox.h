@@ -71,6 +71,7 @@ struct index_args
 	int integrate_found;
 	int include_peaks;
 	int include_reflections;
+	int res_cutoff;
 };
 
 

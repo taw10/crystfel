@@ -424,13 +424,17 @@ UnitCell *uncenter_cell(UnitCell *in, UnitCellTransformation **t)
 	tt = uncentering_transformation(in, &new_centering, &new_latt);
 	if ( tt == NULL ) return NULL;
 
-	if ( t != NULL ) *t = tt;
-
 	out = cell_transform(in, tt);
 	if ( out == NULL ) return NULL;
 
 	cell_set_lattice_type(out, new_latt);
 	cell_set_centering(out, new_centering);
+
+	if ( t != NULL ) {
+		*t = tt;
+	} else {
+		tfn_free(tt);
+	}
 
 	return out;
 }
