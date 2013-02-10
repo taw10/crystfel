@@ -219,28 +219,40 @@ int main(int argc, char *argv[])
 
 	/* Long options */
 	const struct option longopts[] = {
+
+		/* Options with long and short versions */
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
 		{"indexing",           1, NULL,               'z'},
 		{"geometry",           1, NULL,               'g'},
 		{"beam",               1, NULL,               'b'},
+		{"pdb",                1, NULL,               'p'},
+		{"prefix",             1, NULL,               'x'},
+		{"threshold",          1, NULL,               't'},
+		{"image",              1, NULL,               'e'},
+
+		/* Long-only options with no arguments */
 		{"filter-cm",          0, &iargs.config_cmfilter,    1},
 		{"filter-noise",       0, &iargs.config_noisefilter, 1},
 		{"verbose",            0, &iargs.config_verbose,     1},
-		{"pdb",                1, NULL,               'p'},
-		{"prefix",             1, NULL,               'x'},
 		{"no-sat-corr",        0, &iargs.config_satcorr,     0},
 		{"sat-corr",           0, &iargs.config_satcorr, 1},
-		{"threshold",          1, NULL,               't'},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
 		{"no-closer-peak",     0, &iargs.config_closer,      0},
 		{"closer-peak",        0, &iargs.config_closer,      1},
-		{"image",              1, NULL,               'e'},
 		{"basename",           0, &config_basename,    1},
 		{"bg-sub",             0, &iargs.config_bgsub,       1},
 		{"no-bg-sub",          0, &iargs.config_bgsub,       0},
+		{"no-peaks-in-stream", 0, &iargs.stream_peaks, 0},
+		{"no-refls-in-stream", 0, &iargs.stream_refls, 0},
+		{"res-cutoff",         0, &iargs.res_cutoff,   1},
+		{"integrate-saturated",0, &iargs.integrate_saturated,1},
+		{"use-saturated",      0, &iargs.use_saturated,      1},
+		{"no-revalidate",      0, &iargs.no_revalidate,      1},
+		{"integrate-found",    0, &iargs.integrate_found,    1},
 
+		/* Long-only options with arguments */
 		{"peaks",              1, NULL,                2},
 		{"cell-reduction",     1, NULL,                3},
 		{"min-gradient",       1, NULL,                4},
@@ -254,16 +266,7 @@ int main(int argc, char *argv[])
 		{"min-integration-snr",1, NULL,               12},
 		{"tolerance",          1, NULL,               13},
 		{"int-radius",         1, NULL,               14},
-		{"no-peaks-in-stream", 1, &iargs.stream_peaks, 0},
-		{"no-refls-in-stream", 1, &iargs.stream_refls, 0},
-		{"res-cutoff",         1, &iargs.res_cutoff,   1},
 
-		/* FIXME: Add '--no-peaks' and '--no-reflections' */
-
-		{"integrate-saturated",0, &iargs.integrate_saturated,1},
-		{"use-saturated",      0, &iargs.use_saturated,      1},
-		{"no-revalidate",      0, &iargs.no_revalidate,      1},
-		{"integrate-found",    0, &iargs.integrate_found,    1},
 		{0, 0, NULL, 0}
 	};
 
