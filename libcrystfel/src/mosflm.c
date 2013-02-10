@@ -733,6 +733,16 @@ IndexingPrivate *mosflm_prepare(IndexingMethod indm, UnitCell *cell,
                                struct beam_params *beam, float *ltl)
 {
 	struct mosflm_private *mp;
+	int need_cell = 0;
+
+	if ( indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
+	if ( indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
+	if ( indm & INDEXING_USE_LATTICE_TYPE ) need_cell = 1;
+
+	if ( need_cell && (cell == NULL) ) {
+		ERROR("MOSFLM needs a unit cell for this set of flags.\n");
+		return NULL;
+	}
 
 	mp = malloc(sizeof(struct mosflm_private));
 	if ( mp == NULL ) return NULL;

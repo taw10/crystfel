@@ -3,11 +3,11 @@
  *
  * A new auto-indexer
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2012 Thomas White <taw@physics.org>
+ *   2011-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -1091,6 +1091,11 @@ IndexingPrivate *reax_prepare(IndexingMethod indm, UnitCell *cell,
 	struct reax_private *p;
 	int samp;
 	double th;
+
+	if ( cell == NULL ) {
+		ERROR("ReAx needs a unit cell.\n");
+		return NULL;
+	}
 
 	p = calloc(1, sizeof(*p));
 	if ( p == NULL ) return NULL;

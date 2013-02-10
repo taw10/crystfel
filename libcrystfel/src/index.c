@@ -88,6 +88,8 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 
 		}
 
+		if ( iprivs[n] == NULL ) return NULL;
+
 	}
 	iprivs[n] = NULL;
 

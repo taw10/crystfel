@@ -3,11 +3,11 @@
  *
  * Invoke the DirAx auto-indexing program
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -631,6 +631,15 @@ IndexingPrivate *dirax_prepare(IndexingMethod indm, UnitCell *cell,
                                struct beam_params *beam, float *ltl)
 {
 	struct dirax_private *dp;
+	int need_cell = 0;
+
+	if ( indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
+	if ( indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
+
+	if ( need_cell && (cell == NULL) ) {
+		ERROR("DirAx needs a unit cell for this set of flags.\n");
+		return NULL;
+	}
 
 	dp = malloc(sizeof(struct dirax_private));
 	if ( dp == NULL ) return NULL;
