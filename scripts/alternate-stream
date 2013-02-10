@@ -9,6 +9,10 @@ open(OFH_TWO, "> ".$ARGV[2]);
 my $line;
 my $alt = 0;
 
+my $header = <FH>;
+printf(OFH_ONE $header);
+printf(OFH_TWO $header);
+
 while ( $line = <FH> ) {
 
 	if ( $line =~ /^-----\ Begin chunk\ -----$/ ) {
