@@ -340,7 +340,8 @@ static void process_image(const struct index_args *iargs,
 	                              iargs->ir_inn,
 	                              iargs->ir_mid,
 	                              iargs->ir_out,
-	                              iargs->integrate_saturated);
+	                              iargs->integrate_saturated,
+	                              iargs->res_cutoff);
 
 	write_chunk(st, &image, hdfile,
 	            iargs->include_peaks, iargs->include_reflections);

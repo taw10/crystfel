@@ -714,7 +714,8 @@ static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
 static void integrate_crystal(Crystal *cr, struct image *image, int use_closer,
                               int bgsub, double min_snr,
                               double ir_inn, double ir_mid, double ir_out,
-                              int integrate_saturated, int **bgMasks)
+                              int integrate_saturated, int **bgMasks,
+                              int res_cutoff)
 {
 	RefList *reflections;
 	struct integr_ind *il;
@@ -831,7 +832,7 @@ static void integrate_crystal(Crystal *cr, struct image *image, int use_closer,
 			}
 			//STATUS("%5.2f A, %5.2f, av %5.2f\n",
 			//       1e10/il[i].res, snr, av);
-			//if ( av < 1.0 ) break;
+			if ( res_cutoff && (av < 1.0) ) break;
 		}
 	}
 
@@ -846,7 +847,7 @@ static void integrate_crystal(Crystal *cr, struct image *image, int use_closer,
 void integrate_reflections(struct image *image, int use_closer, int bgsub,
                            double min_snr,
                            double ir_inn, double ir_mid, double ir_out,
-                           int integrate_saturated)
+                           int integrate_saturated, int res_cutoff)
 {
 	int i;
 	int **bgMasks;
@@ -870,7 +871,7 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 	for ( i=0; i<image->n_crystals; i++ ) {
 		integrate_crystal(image->crystals[i], image, use_closer,
 		                  bgsub, min_snr, ir_inn, ir_mid, ir_out,
-		                  integrate_saturated, bgMasks);
+		                  integrate_saturated, bgMasks, res_cutoff);
 	}
 
 	for ( i=0; i<image->det->n_panels; i++ ) {

@@ -45,7 +45,7 @@ extern void search_peaks(struct image *image, float threshold,
 extern void integrate_reflections(struct image *image,
                                   int use_closer, int bgsub, double min_snr,
                                   double ir_inn, double ir_mid, double ir_out,
-                                  int integrate_saturated);
+                                  int integrate_saturated, int res_cutoff);
 
 extern int peak_sanity_check(struct image *image, Crystal **crystals,
                              int n_cryst);
