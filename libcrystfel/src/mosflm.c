@@ -403,7 +403,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		if ( centering != 'H' ) {
 			g = "6";
 		} else {
-			g = "32";
+			g = "3";
 		}
 		break;
 
