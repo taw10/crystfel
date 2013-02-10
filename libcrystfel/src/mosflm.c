@@ -150,9 +150,30 @@ static int check_cell(struct mosflm_private *mp, struct image *image,
 	}
 
 	if ( mp->indm & INDEXING_USE_LATTICE_TYPE ) {
+
 		LatticeType latt;
+		char cen;
+
 		latt = cell_get_lattice_type(mp->template);
+		cen = cell_get_centering(mp->template);
+
+		/* If we ask MOSFLM for 'rhombohedral R', it gives us
+		 * 'hexagonal H' back.  Grumble.  Time to fix that up... */
+		if ( latt == L_RHOMBOHEDRAL ) {
+
+			UnitCell *fixup;
+			assert(cen == 'R');
+			cell_set_lattice_type(out, L_HEXAGONAL);
+			cell_set_centering(out, 'H');
+			fixup = uncenter_cell(out, NULL);
+			cell_free(out);
+			out = fixup;
+
+		}
+
 		cell_set_lattice_type(out, latt);
+		cell_set_centering(out, cen);
+
 	}
 
 	crystal_set_cell(cr, out);
