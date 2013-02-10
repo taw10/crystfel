@@ -151,28 +151,29 @@ static int check_cell(struct mosflm_private *mp, struct image *image,
 
 	if ( mp->indm & INDEXING_USE_LATTICE_TYPE ) {
 
-		LatticeType latt;
-		char cen;
+		LatticeType latt_m, latt_r;
+		char cen_m, cen_r;
 
-		latt = cell_get_lattice_type(mp->template);
-		cen = cell_get_centering(mp->template);
+		/* What we asked for */
+		latt_r = cell_get_lattice_type(mp->template);
+		cen_r = cell_get_centering(mp->template);
+
+		/* What we got back */
+		latt_m = cell_get_lattice_type(out);
+		cen_m = cell_get_centering(out);
 
 		/* If we ask MOSFLM for 'rhombohedral R', it gives us
 		 * 'hexagonal H' back.  Grumble.  Time to fix that up... */
-		if ( latt == L_RHOMBOHEDRAL ) {
+		if ( (latt_r == L_RHOMBOHEDRAL) && (latt_m == L_HEXAGONAL) ) {
 
 			UnitCell *fixup;
-			assert(cen == 'R');
-			cell_set_lattice_type(out, L_HEXAGONAL);
-			cell_set_centering(out, 'H');
+			assert(cen_r == 'R');
+			assert(cen_m == 'H');
 			fixup = uncenter_cell(out, NULL);
 			cell_free(out);
 			out = fixup;
 
 		}
-
-		cell_set_lattice_type(out, latt);
-		cell_set_centering(out, cen);
 
 	}
 
@@ -209,16 +210,54 @@ static void mosflm_parseline(const char *line, struct image *image,
 }
 
 
+/* This is the opposite of spacegroup_for_lattice() below. */
+static LatticeType spacegroup_to_lattice(const char *sg)
+{
+	LatticeType latt;
+
+	if ( sg[1] == '1' ) {
+		latt = L_TRICLINIC;
+	} else if ( strncmp(sg+1, "23", 2) == 0 ) {
+		latt = L_CUBIC;
+	} else if ( strncmp(sg+1, "222", 3) == 0 ) {
+		latt = L_ORTHORHOMBIC;
+	} else if ( sg[1] == '2' ) {
+		latt = L_MONOCLINIC;
+	} else if ( sg[1] == '4' ) {
+		latt = L_TETRAGONAL;
+	} else if ( sg[1] == '6' ) {
+		latt = L_HEXAGONAL;
+	} else if ( sg[1] == '3' ) {
+		if ( sg[0] == 'H' ) {
+			latt = L_HEXAGONAL;
+		} else {
+			latt = L_RHOMBOHEDRAL;
+		}
+	} else {
+		ERROR("Couldn't understand '%s'\n", sg);
+		latt = L_TRICLINIC;
+	}
+
+	return latt;
+}
+
+
+
 static int read_newmat(struct mosflm_data *mosflm, const char *filename,
                        struct image *image)
 {
-	FILE * fh;
+	FILE *fh;
 	float asx, asy, asz;
 	float bsx, bsy, bsz;
 	float csx, csy, csz;
 	int n;
 	double c;
 	UnitCell *cell;
+	char symm[32];
+	char *rval;
+	int i;
+	char cen;
+	LatticeType latt;
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
@@ -231,7 +270,31 @@ static int read_newmat(struct mosflm_data *mosflm, const char *filename,
 		STATUS("Fewer than 9 parameters found in NEWMAT file.\n");
 		return 1;
 	}
+
+	/* Skip the next six lines */
+	for ( i=0; i<6; i++ ) {
+		char tmp[1024];
+		rval = fgets(tmp, 1024, fh);
+		if ( rval == NULL ) {
+			ERROR("Failed to read newmat file.\n");
+			return 1;
+		}
+	}
+
+	rval = fgets(symm, 32, fh);
+	if ( rval == NULL ) {
+		ERROR("Failed to read newmat file.\n");
+		return 1;
+	}
+
 	fclose(fh);
+
+	if ( strncmp(symm, "SYMM ", 5) != 0 ) {
+		ERROR("Bad 'SYMM' line from MOSFLM.\n");
+		return 1;
+	}
+	cen = symm[5];
+	latt = spacegroup_to_lattice(symm+5);
 
 	/* MOSFLM "A" matrix is multiplied by lambda, so fix this */
 	c = 1.0/image->lambda;
@@ -246,6 +309,8 @@ static int read_newmat(struct mosflm_data *mosflm, const char *filename,
 	                    -asy*c, -asz*c, asx*c,
 	                    -bsy*c, -bsz*c, bsx*c,
 	                    -csy*c, -csz*c, csx*c);
+	cell_set_centering(cell, cen);
+	cell_set_lattice_type(cell, latt);
 
 	if ( check_cell(mosflm->mp, image, cell) ) {
 		mosflm->success = 1;
