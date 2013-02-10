@@ -344,7 +344,7 @@ static void process_image(const struct index_args *iargs,
 	                              iargs->res_cutoff);
 
 	write_chunk(st, &image, hdfile,
-	            iargs->include_peaks, iargs->include_reflections);
+	            iargs->stream_peaks, iargs->stream_refls);
 
 	for ( i=0; i<image.n_crystals; i++ ) {
 		crystal_free(image.crystals[i]);

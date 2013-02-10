@@ -161,87 +161,85 @@ int main(int argc, char *argv[])
 	FILE *fh;
 	FILE *ofh;
 	char *rval = NULL;
-	int config_noindex = 0;
-	int config_cmfilter = 0;
-	int config_noisefilter = 0;
-	int config_verbose = 0;
-	int config_satcorr = 1;
 	int config_checkprefix = 1;
-	int config_closer = 0;
-	int config_bgsub = 1;
 	int config_basename = 0;
-	float threshold = 800.0;
-	float min_gradient = 100000.0;
-	float min_snr = 5.0;
-	double min_int_snr = -INFINITY;
-	struct detector *det;
-	char *geometry = NULL;
 	IndexingMethod *indm;
 	IndexingPrivate **ipriv;
 	char *indm_str = NULL;
-	UnitCell *cell;
 	char *pdb = NULL;
 	char *prefix = NULL;
 	char *speaks = NULL;
 	char *toler = NULL;
-	float tols[4] = {5.0, 5.0, 5.0, 1.5}; /* a,b,c,angles (%,%,%,deg) */
-	int peaks;
 	int n_proc = 1;
 	char *prepare_line;
 	char prepare_filename[1024];
 	char *use_this_one_instead;
 	struct index_args iargs;
-	struct beam_params *beam = NULL;
-	char *element = NULL;
-	char *hdf5_peak_path = NULL;
-	struct copy_hdf5_field *copyme;
 	char *intrad = NULL;
-	float ir_inn = 4.0;
-	float ir_mid = 5.0;
-	float ir_out = 7.0;
-	int integrate_saturated = 0;
-	int use_saturated = 0;
-	int no_revalidate = 0;
-	int integrate_found = 0;
-	int config_nopeaks = 0;
-	int config_norefls = 0;
-	int config_rescutoff = 0;
 
-	/* For ease of upgrading from old method */
-	char *scellr = NULL;
-	int config_insane = 0;
-
-	copyme = new_copy_hdf5_field_list();
-	if ( copyme == NULL ) {
+	/* Defaults */
+	iargs.cell = NULL;
+	iargs.config_cmfilter = 0;
+	iargs.config_noisefilter = 0;
+	iargs.config_verbose = 0;
+	iargs.config_satcorr = 1;
+	iargs.config_closer = 0;
+	iargs.config_bgsub = 1;
+	iargs.tols[0] = 5.0;
+	iargs.tols[1] = 5.0;
+	iargs.tols[2] = 5.0;
+	iargs.tols[3] = 1.5;
+	iargs.threshold = 800.0;
+	iargs.min_gradient = 100000.0;
+	iargs.min_snr = 5.0;
+	iargs.min_int_snr = -INFINITY;
+	iargs.det = NULL;
+	iargs.peaks = PEAK_ZAEF;
+	iargs.beam = NULL;
+	iargs.element = NULL;
+	iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
+	iargs.copyme = NULL;
+	iargs.ir_inn = 4.0;
+	iargs.ir_mid = 5.0;
+	iargs.ir_out = 7.0;
+	iargs.use_saturated = 0;
+	iargs.integrate_saturated = 1;
+	iargs.no_revalidate = 0;
+	iargs.integrate_found = 0;
+	iargs.stream_peaks = 1;
+	iargs.stream_refls = 1;
+	iargs.res_cutoff = 0;
+	iargs.copyme = new_copy_hdf5_field_list();
+	if ( iargs.copyme == NULL ) {
 		ERROR("Couldn't allocate HDF5 field list.\n");
 		return 1;
 	}
+	iargs.indm = NULL;  /* No default */
+	iargs.ipriv = NULL;  /* No default */
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
-		{"no-index",           0, &config_noindex,     1},
 		{"indexing",           1, NULL,               'z'},
 		{"geometry",           1, NULL,               'g'},
 		{"beam",               1, NULL,               'b'},
-		{"filter-cm",          0, &config_cmfilter,    1},
-		{"filter-noise",       0, &config_noisefilter, 1},
-		{"verbose",            0, &config_verbose,     1},
+		{"filter-cm",          0, &iargs.config_cmfilter,    1},
+		{"filter-noise",       0, &iargs.config_noisefilter, 1},
+		{"verbose",            0, &iargs.config_verbose,     1},
 		{"pdb",                1, NULL,               'p'},
 		{"prefix",             1, NULL,               'x'},
-		{"no-sat-corr",        0, &config_satcorr,     0},
-		{"sat-corr",           0, &config_satcorr,     1}, /* Compat */
+		{"no-sat-corr",        0, &iargs.config_satcorr,     0},
+		{"sat-corr",           0, &iargs.config_satcorr, 1},
 		{"threshold",          1, NULL,               't'},
 		{"no-check-prefix",    0, &config_checkprefix, 0},
-		{"no-closer-peak",     0, &config_closer,      0},
-		{"closer-peak",        0, &config_closer,      1},
-		{"insane",             0, &config_insane,      1},
+		{"no-closer-peak",     0, &iargs.config_closer,      0},
+		{"closer-peak",        0, &iargs.config_closer,      1},
 		{"image",              1, NULL,               'e'},
 		{"basename",           0, &config_basename,    1},
-		{"bg-sub",             0, &config_bgsub,       1}, /* Compat */
-		{"no-bg-sub",          0, &config_bgsub,       0},
+		{"bg-sub",             0, &iargs.config_bgsub,       1},
+		{"no-bg-sub",          0, &iargs.config_bgsub,       0},
 
 		{"peaks",              1, NULL,                2},
 		{"cell-reduction",     1, NULL,                3},
@@ -256,16 +254,16 @@ int main(int argc, char *argv[])
 		{"min-integration-snr",1, NULL,               12},
 		{"tolerance",          1, NULL,               13},
 		{"int-radius",         1, NULL,               14},
-		{"no-peaks-in-stream", 1, &config_nopeaks,     1},
-		{"no-refls-in-stream", 1, &config_norefls,     1},
-		{"res-cutoff",         1, &config_rescutoff,   1},
+		{"no-peaks-in-stream", 1, &iargs.stream_peaks, 0},
+		{"no-refls-in-stream", 1, &iargs.stream_refls, 0},
+		{"res-cutoff",         1, &iargs.res_cutoff,   1},
 
 		/* FIXME: Add '--no-peaks' and '--no-reflections' */
 
-		{"integrate-saturated",0, &integrate_saturated,1},
-		{"use-saturated",      0, &use_saturated,      1},
-		{"no-revalidate",      0, &no_revalidate,      1},
-		{"integrate-found",    0, &integrate_found,    1},
+		{"integrate-saturated",0, &iargs.integrate_saturated,1},
+		{"use-saturated",      0, &iargs.use_saturated,      1},
+		{"no-revalidate",      0, &iargs.no_revalidate,      1},
+		{"integrate-found",    0, &iargs.integrate_found,    1},
 		{0, 0, NULL, 0}
 	};
 
@@ -304,16 +302,21 @@ int main(int argc, char *argv[])
 			break;
 
 			case 'g' :
-			geometry = strdup(optarg);
+			iargs.det = get_detector_geometry(optarg);
+			if ( iargs.det == NULL ) {
+				ERROR("Failed to read detector geometry from "
+				      "'%s'\n", optarg);
+				return 1;
+			}
 			break;
 
 			case 't' :
-			threshold = strtof(optarg, NULL);
+			iargs.threshold = strtof(optarg, NULL);
 			break;
 
 			case 'b' :
-			beam = get_beam_parameters(optarg);
-			if ( beam == NULL ) {
+			iargs.beam = get_beam_parameters(optarg);
+			if ( iargs.beam == NULL ) {
 				ERROR("Failed to load beam parameters"
 				      " from '%s'\n", optarg);
 				return 1;
@@ -321,7 +324,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 'e' :
-			element = strdup(optarg);
+			iargs.element = strdup(optarg);
 			break;
 
 			case 2 :
@@ -329,17 +332,24 @@ int main(int argc, char *argv[])
 			break;
 
 			case 3 :
-			scellr = strdup(optarg);
-			break;
+			ERROR("The option '--cell-reduction' is no longer "
+			      "used.\n"
+			      "The complete indexing behaviour is now "
+			      "controlled using '--indexing'.\n"
+			      "See 'man indexamajig' for details of the "
+			      "available methods.\n");
+			return 1;
 
 			case 4 :
-			min_gradient = strtof(optarg, NULL);
+			iargs.min_gradient = strtof(optarg, NULL);
 			break;
 
 			case 5 :
-			ERROR("The option '--record' is no longer used.\n");
-			/* FIXME: Translate to new style */
-			break;
+			ERROR("The option '--record' is no longer used.\n"
+			      "Use '--no-peaks-in-stream' and"
+			      "'--no-refls-in-stream' if you need to control"
+			      "the contents of the stream.\n");
+			return 1;
 
 			case 6 :
 			case 7 :
@@ -349,19 +359,20 @@ int main(int argc, char *argv[])
 			break;
 
 			case 9 :
-			hdf5_peak_path = strdup(optarg);
+			free(iargs.hdf5_peak_path);
+			iargs.hdf5_peak_path = strdup(optarg);
 			break;
 
 			case 10 :
-			add_copy_hdf5_field(copyme, optarg);
+			add_copy_hdf5_field(iargs.copyme, optarg);
 			break;
 
 			case 11 :
-			min_snr = strtof(optarg, NULL);
+			iargs.min_snr = strtof(optarg, NULL);
 			break;
 
 			case 12 :
-			min_int_snr = strtof(optarg, NULL);
+			iargs.min_int_snr = strtof(optarg, NULL);
 			break;
 
 			case 13 :
@@ -386,12 +397,6 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( scellr != NULL ) {
-		ERROR("Old-style indexing method specification.\n");
-		/* FIXME: Translate to new style */
-		return 1;
-	}
-
 	if ( filename == NULL ) {
 		filename = strdup("-");
 	}
@@ -406,19 +411,15 @@ int main(int argc, char *argv[])
 	}
 	free(filename);
 
-	if ( hdf5_peak_path == NULL ) {
-		hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
-	}
-
 	if ( speaks == NULL ) {
 		speaks = strdup("zaef");
 		STATUS("You didn't specify a peak detection method.\n");
 		STATUS("I'm using 'zaef' for you.\n");
 	}
 	if ( strcmp(speaks, "zaef") == 0 ) {
-		peaks = PEAK_ZAEF;
+		iargs.peaks = PEAK_ZAEF;
 	} else if ( strcmp(speaks, "hdf5") == 0 ) {
-		peaks = PEAK_HDF5;
+		iargs.peaks = PEAK_HDF5;
 	} else {
 		ERROR("Unrecognised peak detection method '%s'\n", speaks);
 		return 1;
@@ -459,7 +460,8 @@ int main(int argc, char *argv[])
 	if ( toler != NULL ) {
 		int ttt;
 		ttt = sscanf(toler, "%f,%f,%f,%f",
-		             &tols[0], &tols[1], &tols[2], &tols[3] );
+		             &iargs.tols[0], &iargs.tols[1],
+		             &iargs.tols[2], &iargs.tols[3]);
 		if ( ttt != 4 ) {
 			ERROR("Invalid parameters for '--tolerance'\n");
 			return 1;
@@ -469,7 +471,8 @@ int main(int argc, char *argv[])
 
 	if ( intrad != NULL ) {
 		int r;
-		r = sscanf(intrad, "%f,%f,%f", &ir_inn, &ir_mid, &ir_out);
+		r = sscanf(intrad, "%f,%f,%f",
+		           &iargs.ir_inn, &iargs.ir_mid, &iargs.ir_out);
 		if ( r != 3 ) {
 			ERROR("Invalid parameters for '--int-radius'\n");
 			return 1;
@@ -481,37 +484,30 @@ int main(int argc, char *argv[])
 		       " probably not appropriate for your patterns.\n");
 	}
 
-	if ( geometry == NULL ) {
+	if ( iargs.det == NULL ) {
 		ERROR("You need to provide a geometry file (please read the"
 		      " manual for more details).\n");
 		return 1;
 	}
 
-	if ( beam == NULL ) {
+	if ( iargs.beam == NULL ) {
 		ERROR("You need to provide a beam parameters file (please read"
 		      " the manual for more details).\n");
 		return 1;
 	}
 
-	det = get_detector_geometry(geometry);
-	if ( det == NULL ) {
-		ERROR("Failed to read detector geometry from '%s'\n", geometry);
-		return 1;
-	}
-	free(geometry);
-
 	if ( pdb != NULL ) {
-		cell = load_cell_from_pdb(pdb);
-		if ( cell == NULL ) {
+		iargs.cell = load_cell_from_pdb(pdb);
+		if ( iargs.cell == NULL ) {
 			ERROR("Couldn't read unit cell (from %s)\n", pdb);
 			return 1;
 		}
 		free(pdb);
 		STATUS("This is what I understood your unit cell to be:\n");
-		cell_print(cell);
+		cell_print(iargs.cell);
 	} else {
 		STATUS("No unit cell given.\n");
-		cell = NULL;
+		iargs.cell = NULL;
 	}
 
 	ofh = fopen(outfile, "w");
@@ -541,8 +537,8 @@ int main(int argc, char *argv[])
 
 	/* Prepare the indexer */
 	if ( indm != NULL ) {
-		ipriv = prepare_indexing(indm, cell, prepare_filename,
-		                         det, beam, tols);
+		ipriv = prepare_indexing(indm, iargs.cell, prepare_filename,
+		                         iargs.det, iargs.beam, iargs.tols);
 		if ( ipriv == NULL ) {
 			ERROR("Failed to prepare indexing.\n");
 			return 1;
@@ -553,40 +549,8 @@ int main(int argc, char *argv[])
 
 	gsl_set_error_handler_off();
 
-	/* Static worker args */
-	iargs.cell = cell;
-	iargs.config_cmfilter = config_cmfilter;
-	iargs.config_noisefilter = config_noisefilter;
-	iargs.config_verbose = config_verbose;
-	iargs.config_satcorr = config_satcorr;
-	iargs.config_closer = config_closer;
-	iargs.config_bgsub = config_bgsub;
-	iargs.tols[0] = tols[0];
-	iargs.tols[1] = tols[1];
-	iargs.tols[2] = tols[2];
-	iargs.tols[3] = tols[3];
-	iargs.threshold = threshold;
-	iargs.min_gradient = min_gradient;
-	iargs.min_snr = min_snr;
-	iargs.min_int_snr = min_int_snr;
-	iargs.det = det;
 	iargs.indm = indm;
 	iargs.ipriv = ipriv;
-	iargs.peaks = peaks;
-	iargs.beam = beam;
-	iargs.element = element;
-	iargs.hdf5_peak_path = hdf5_peak_path;
-	iargs.copyme = copyme;
-	iargs.ir_inn = ir_inn;
-	iargs.ir_mid = ir_mid;
-	iargs.ir_out = ir_out;
-	iargs.use_saturated = use_saturated;
-	iargs.integrate_saturated = integrate_saturated;
-	iargs.no_revalidate = no_revalidate;
-	iargs.integrate_found = integrate_found;
-	iargs.include_peaks = !config_nopeaks;
-	iargs.include_reflections = !config_norefls;
-	iargs.res_cutoff = config_rescutoff;
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
 	               use_this_one_instead, ofh, argc, argv);

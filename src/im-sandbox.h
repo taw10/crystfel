@@ -61,16 +61,16 @@ struct index_args
 	struct beam_params *beam;
 	char *element;
 	char *hdf5_peak_path;
-	double ir_inn;
-	double ir_mid;
-	double ir_out;
+	float ir_inn;
+	float ir_mid;
+	float ir_out;
 	struct copy_hdf5_field *copyme;
 	int integrate_saturated;
 	int use_saturated;
 	int no_revalidate;
 	int integrate_found;
-	int include_peaks;
-	int include_reflections;
+	int stream_peaks;
+	int stream_refls;
 	int res_cutoff;
 };
 
