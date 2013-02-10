@@ -109,10 +109,14 @@ void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
 		switch ( indms[n] & INDEXING_METHOD_MASK ) {
 
 			case INDEXING_NONE :
+			break;
+
 			case INDEXING_DIRAX :
+			dirax_cleanup(privs[n]);
+			break;
+
 			case INDEXING_MOSFLM :
-			/* No cleanup */
-			/* FIXME: Not true */
+			mosflm_cleanup(privs[n]);
 			break;
 
 			case INDEXING_REAX :

@@ -3,13 +3,13 @@
  *
  * Invoke the DPS auto-indexing algorithm through MOSFLM
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
  *   2010 Richard Kirian <rkirian@asu.edu>
- *   2012 Thomas White <taw@physics.org>
+ *   2012-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -44,5 +44,7 @@ extern IndexingPrivate *mosflm_prepare(IndexingMethod indm, UnitCell *cell,
                                        const char *filename,
                                        struct detector *det,
                                        struct beam_params *beam, float *ltl);
+
+extern void mosflm_cleanup(IndexingPrivate *pp);
 
 #endif	/* MOSFLM_H */

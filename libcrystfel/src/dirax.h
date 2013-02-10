@@ -42,4 +42,6 @@ extern IndexingPrivate *dirax_prepare(IndexingMethod indm,
                                       struct detector *det,
                                       struct beam_params *beam, float *ltl);
 
+extern void dirax_cleanup(IndexingPrivate *pp);
+
 #endif	/* DIRAX_H */

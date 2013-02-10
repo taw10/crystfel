@@ -753,3 +753,11 @@ IndexingPrivate *mosflm_prepare(IndexingMethod indm, UnitCell *cell,
 
 	return (IndexingPrivate *)mp;
 }
+
+
+void mosflm_cleanup(IndexingPrivate *pp)
+{
+	struct mosflm_private *p;
+	p = (struct mosflm_private *)pp;
+	free(p);
+}

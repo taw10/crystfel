@@ -650,3 +650,11 @@ IndexingPrivate *dirax_prepare(IndexingMethod indm, UnitCell *cell,
 
 	return (IndexingPrivate *)dp;
 }
+
+
+void dirax_cleanup(IndexingPrivate *pp)
+{
+	struct dirax_private *p;
+	p = (struct dirax_private *)pp;
+	free(p);
+}
