@@ -179,12 +179,12 @@ int main(int argc, char *argv[])
 
 	/* Defaults */
 	iargs.cell = NULL;
-	iargs.config_cmfilter = 0;
-	iargs.config_noisefilter = 0;
-	iargs.config_verbose = 0;
-	iargs.config_satcorr = 1;
-	iargs.config_closer = 0;
-	iargs.config_bgsub = 1;
+	iargs.cmfilter = 0;
+	iargs.noisefilter = 0;
+	iargs.verbose = 0;
+	iargs.satcorr = 1;
+	iargs.closer = 0;
+	iargs.bgsub = 1;
 	iargs.tols[0] = 5.0;
 	iargs.tols[1] = 5.0;
 	iargs.tols[2] = 5.0;
@@ -233,20 +233,20 @@ int main(int argc, char *argv[])
 		{"image",              1, NULL,               'e'},
 
 		/* Long-only options with no arguments */
-		{"filter-cm",          0, &iargs.config_cmfilter,    1},
-		{"filter-noise",       0, &iargs.config_noisefilter, 1},
-		{"verbose",            0, &iargs.config_verbose,     1},
-		{"no-sat-corr",        0, &iargs.config_satcorr,     0},
-		{"sat-corr",           0, &iargs.config_satcorr, 1},
-		{"no-check-prefix",    0, &config_checkprefix, 0},
-		{"no-closer-peak",     0, &iargs.config_closer,      0},
-		{"closer-peak",        0, &iargs.config_closer,      1},
-		{"basename",           0, &config_basename,    1},
-		{"bg-sub",             0, &iargs.config_bgsub,       1},
-		{"no-bg-sub",          0, &iargs.config_bgsub,       0},
-		{"no-peaks-in-stream", 0, &iargs.stream_peaks, 0},
-		{"no-refls-in-stream", 0, &iargs.stream_refls, 0},
-		{"res-cutoff",         0, &iargs.res_cutoff,   1},
+		{"filter-cm",          0, &iargs.cmfilter,           1},
+		{"filter-noise",       0, &iargs.noisefilter,        1},
+		{"verbose",            0, &iargs.verbose,            1},
+		{"no-sat-corr",        0, &iargs.satcorr,            0},
+		{"sat-corr",           0, &iargs.satcorr,            1},
+		{"no-check-prefix",    0, &config_checkprefix,       0},
+		{"no-closer-peak",     0, &iargs.closer,             0},
+		{"closer-peak",        0, &iargs.closer,             1},
+		{"basename",           0, &config_basename,          1},
+		{"bg-sub",             0, &iargs.bgsub,              1},
+		{"no-bg-sub",          0, &iargs.bgsub,              0},
+		{"no-peaks-in-stream", 0, &iargs.stream_peaks,       0},
+		{"no-refls-in-stream", 0, &iargs.stream_refls,       0},
+		{"res-cutoff",         0, &iargs.res_cutoff,         1},
 		{"integrate-saturated",0, &iargs.integrate_saturated,1},
 		{"use-saturated",      0, &iargs.use_saturated,      1},
 		{"no-revalidate",      0, &iargs.no_revalidate,      1},

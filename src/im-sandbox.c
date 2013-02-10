@@ -182,9 +182,6 @@ static void process_image(const struct index_args *iargs,
 {
 	float *data_for_measurement;
 	size_t data_size;
-	int config_cmfilter = iargs->config_cmfilter;
-	int config_noisefilter = iargs->config_noisefilter;
-	IndexingMethod *indm = iargs->indm;
 	int check;
 	struct hdfile *hdfile;
 	struct image image;
@@ -258,16 +255,14 @@ static void process_image(const struct index_args *iargs,
 		return;
 	}
 
-	if ( config_cmfilter ) {
-		filter_cm(&image);
-	}
+	if ( iargs->cmfilter ) filter_cm(&image);
 
 	/* Take snapshot of image after CM subtraction but before
 	 * the aggressive noise filter. */
 	data_size = image.width * image.height * sizeof(float);
 	data_for_measurement = malloc(data_size);
 
-	if ( config_noisefilter ) {
+	if ( iargs->noisefilter ) {
 		filter_noise(&image, data_for_measurement);
 	} else {
 		memcpy(data_for_measurement, image.data, data_size);
@@ -303,7 +298,7 @@ static void process_image(const struct index_args *iargs,
 	image.data = data_for_measurement;
 
 	/* Index the pattern */
-	index_pattern(&image, indm, iargs->ipriv);
+	index_pattern(&image, iargs->indm, iargs->ipriv);
 
 	pargs->n_crystals = image.n_crystals;
 
@@ -334,8 +329,8 @@ static void process_image(const struct index_args *iargs,
 
 	/* Integrate all the crystals at once - need all the crystals so that
 	 * overlaps can be detected. */
-	integrate_reflections(&image, iargs->config_closer,
-	                              iargs->config_bgsub,
+	integrate_reflections(&image, iargs->closer,
+	                              iargs->bgsub,
 	                              iargs->min_int_snr,
 	                              iargs->ir_inn,
 	                              iargs->ir_mid,

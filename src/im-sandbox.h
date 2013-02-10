@@ -43,12 +43,12 @@ enum {
 struct index_args
 {
 	UnitCell *cell;
-	int config_cmfilter;
-	int config_noisefilter;
-	int config_verbose;
-	int config_satcorr;
-	int config_closer;
-	int config_bgsub;
+	int cmfilter;
+	int noisefilter;
+	int verbose;
+	int satcorr;
+	int closer;
+	int bgsub;
 	float threshold;
 	float min_gradient;
 	float min_snr;
