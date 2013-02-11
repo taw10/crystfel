@@ -167,8 +167,14 @@ static int check_cell(struct mosflm_private *mp, struct image *image,
 		if ( (latt_r == L_RHOMBOHEDRAL) && (latt_m == L_HEXAGONAL) ) {
 
 			UnitCell *fixup;
+
 			assert(cen_r == 'R');
 			assert(cen_m == 'H');
+
+			/* Mercifully, MOSFLM seems to use the obverse setting
+			 * for this transformation, which is the same as
+			 * uncenter_cell().  Otherwise, this would have to be
+			 * done by a separate routine. */
 			fixup = uncenter_cell(out, NULL);
 			cell_free(out);
 			out = fixup;
