@@ -104,6 +104,7 @@ struct sandbox
 	FILE **fhs;
 
 	int *running;
+	int *waiting;
 	FILE **result_fhs;
 	int *filename_pipes;
 	int *stream_pipe_read;
@@ -416,6 +417,8 @@ static void run_work(const struct index_args *iargs,
 
 	}
 
+	write_line(st, "DONE");
+
 	cleanup_indexing(iargs->indm, iargs->ipriv);
 	free(iargs->indm);
 	free(iargs->ipriv);
@@ -486,6 +489,10 @@ static int pump_chunk(FILE *fh, FILE *ofh)
 			continue;
 		}
 
+		if ( strcmp(line, "DONE\n") == 0 ) {
+			return 1;
+		}
+
 		fprintf(ofh, "%s", line);
 
 		if ( strcmp(line, CHUNK_END_MARKER"\n") == 0 ) {
@@ -554,6 +561,7 @@ static void *run_reader(void *sbv)
 
 			if ( pump_chunk(sb->fhs[i], sb->ofh) ) {
 				sb->running[i] = 0;
+				sb->waiting[i] = 0;
 			}
 
 		}
@@ -683,6 +691,7 @@ static void handle_zombie(struct sandbox *sb)
 		int status, p;
 
 		if ( !sb->running[i] ) continue;
+		if ( sb->waiting[i] ) continue;
 
 		p = waitpid(sb->pids[i], &status, WNOHANG);
 
@@ -694,6 +703,7 @@ static void handle_zombie(struct sandbox *sb)
 		if ( p == sb->pids[i] ) {
 
 			sb->running[i] = 0;
+			sb->waiting[i] = 1;
 
 			if ( WIFEXITED(status) ) {
 				continue;
@@ -775,6 +785,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->result_fhs = calloc(n_proc, sizeof(FILE *));
 	sb->pids = calloc(n_proc, sizeof(pid_t));
 	sb->running = calloc(n_proc, sizeof(int));
+	sb->waiting = calloc(n_proc, sizeof(int));
 	sb->fhs = calloc(sb->n_proc, sizeof(FILE *));
 	if ( sb->filename_pipes == NULL ) {
 		ERROR("Couldn't allocate memory for pipes.\n");
@@ -789,6 +800,10 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		return;
 	}
 	if ( sb->running == NULL ) {
+		ERROR("Couldn't allocate memory for process flags.\n");
+		return;
+	}
+	if ( sb->waiting == NULL ) {
 		ERROR("Couldn't allocate memory for process flags.\n");
 		return;
 	}
@@ -1003,6 +1018,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	free(sb->result_fhs);
 	free(sb->pids);
 	free(sb->running);
+	free(sb->waiting);
 
 	STATUS("Final:"
 	       " %i images processed, %i had crystals, %i crystals overall.\n",
