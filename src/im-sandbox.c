@@ -3,13 +3,13 @@
  *
  * Sandbox for indexing
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -481,6 +481,11 @@ static int pump_chunk(FILE *fh, FILE *ofh)
 
 		}
 
+		if ( strcmp(line, "FLUSH\n") == 0 ) {
+			chunk_finished = 1;
+			continue;
+		}
+
 		fprintf(ofh, "%s", line);
 
 		if ( strcmp(line, CHUNK_END_MARKER"\n") == 0 ) {
@@ -629,6 +634,7 @@ static void start_worker_process(struct sandbox *sb, int slot,
 
 		st = open_stream_fd_for_write(sb->stream_pipe_write[slot]);
 		write_command(st, argc, argv);
+		write_line(st, "FLUSH");
 		run_work(sb->iargs, filename_pipe[0], result_pipe[1],
 		         st, slot);
 		close_stream(st);
@@ -860,10 +866,9 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 		r = select(fdmax+1, &fds, NULL, NULL, &tv);
 		if ( r == -1 ) {
-			if ( errno != EINTR ) {
-				ERROR("select() failed: %s\n", strerror(errno));
-			}
-			continue;
+			if ( errno == EINTR ) continue;
+			ERROR("select() failed: %s\n", strerror(errno));
+			break;
 		}
 
 		if ( r == 0 ) continue; /* No progress this time.  Try again */
