@@ -798,28 +798,33 @@ int run_mosflm(struct image *image, IndexingPrivate *ipriv)
 }
 
 
-IndexingPrivate *mosflm_prepare(IndexingMethod indm, UnitCell *cell,
+IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
                                const char *filename, struct detector *det,
                                struct beam_params *beam, float *ltl)
 {
 	struct mosflm_private *mp;
 	int need_cell = 0;
 
-	if ( indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
-	if ( indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
-	if ( indm & INDEXING_USE_LATTICE_TYPE ) need_cell = 1;
+	if ( *indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
+	if ( *indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
+	if ( *indm & INDEXING_USE_LATTICE_TYPE ) need_cell = 1;
 
 	if ( need_cell && (cell == NULL) ) {
 		ERROR("MOSFLM needs a unit cell for this set of flags.\n");
 		return NULL;
 	}
 
+	/* Flags that MOSFLM knows about */
+	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_CELL_COMBINATIONS
+	       | INDEXING_CHECK_CELL_AXES | INDEXING_CHECK_PEAKS
+	       | INDEXING_USE_LATTICE_TYPE;
+
 	mp = malloc(sizeof(struct mosflm_private));
 	if ( mp == NULL ) return NULL;
 
 	mp->ltl = ltl;
 	mp->template = cell;
-	mp->indm = indm;
+	mp->indm = *indm;
 
 	return (IndexingPrivate *)mp;
 }

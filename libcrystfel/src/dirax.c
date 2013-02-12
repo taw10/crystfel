@@ -626,27 +626,31 @@ int run_dirax(struct image *image, IndexingPrivate *ipriv)
 }
 
 
-IndexingPrivate *dirax_prepare(IndexingMethod indm, UnitCell *cell,
+IndexingPrivate *dirax_prepare(IndexingMethod *indm, UnitCell *cell,
                                const char *filename, struct detector *det,
                                struct beam_params *beam, float *ltl)
 {
 	struct dirax_private *dp;
 	int need_cell = 0;
 
-	if ( indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
-	if ( indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
+	if ( *indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
+	if ( *indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
 
 	if ( need_cell && (cell == NULL) ) {
 		ERROR("DirAx needs a unit cell for this set of flags.\n");
 		return NULL;
 	}
 
+	/* Flags that DirAx knows about */
+	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_CELL_COMBINATIONS
+	       | INDEXING_CHECK_CELL_AXES | INDEXING_CHECK_PEAKS;
+
 	dp = malloc(sizeof(struct dirax_private));
 	if ( dp == NULL ) return NULL;
 
 	dp->ltl = ltl;
 	dp->template = cell;
-	dp->indm = indm;
+	dp->indm = *indm;
 
 	return (IndexingPrivate *)dp;
 }

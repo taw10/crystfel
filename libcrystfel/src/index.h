@@ -38,10 +38,21 @@
 #endif
 
 
+#include "beam-parameters.h"
 #include "cell.h"
 #include "image.h"
 #include "detector.h"
 
+
+#define INDEXING_DEFAULTS_DIRAX (INDEXING_DIRAX | INDEXING_CHECK_PEAKS         \
+                                     | INDEXING_CHECK_CELL_COMBINATIONS)
+
+#define INDEXING_DEFAULTS_MOSFLM (INDEXING_MOSFLM | INDEXING_CHECK_PEAKS       \
+                                     | INDEXING_CHECK_CELL_COMBINATIONS        \
+                                     | INDEXING_USE_LATTICE_TYPE)
+
+#define INDEXING_DEFAULTS_REAX (INDEXING_REAX | INDEXING_USE_LATTICE_TYPE      \
+                                     | INDEXING_CHECK_PEAKS)
 
 /**
  * IndexingMethod:
@@ -84,6 +95,7 @@ typedef enum {
 typedef void *IndexingPrivate;
 
 extern IndexingMethod *build_indexer_list(const char *str);
+extern char *indexer_str(IndexingMethod indm);
 
 extern IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
                                           const char *filename,

@@ -37,7 +37,7 @@
 
 extern int run_dirax(struct image *image, IndexingPrivate *ipriv);
 
-extern IndexingPrivate *dirax_prepare(IndexingMethod indm,
+extern IndexingPrivate *dirax_prepare(IndexingMethod *indm,
                                       UnitCell *cell, const char *filename,
                                       struct detector *det,
                                       struct beam_params *beam, float *ltl);

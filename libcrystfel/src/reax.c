@@ -1084,7 +1084,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 }
 
 
-IndexingPrivate *reax_prepare(IndexingMethod indm, UnitCell *cell,
+IndexingPrivate *reax_prepare(IndexingMethod *indm, UnitCell *cell,
                               const char *filename, struct detector *det,
                               struct beam_params *beam, float *ltl)
 {
@@ -1099,6 +1099,12 @@ IndexingPrivate *reax_prepare(IndexingMethod indm, UnitCell *cell,
 
 	p = calloc(1, sizeof(*p));
 	if ( p == NULL ) return NULL;
+
+	/* Flags that ReAx knows about */
+	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_PEAKS;
+
+	/* Flags that ReAx requires */
+	*indm |= INDEXING_USE_LATTICE_TYPE;
 
 	p->angular_inc = deg2rad(1.0);
 
@@ -1160,7 +1166,7 @@ IndexingPrivate *reax_prepare(IndexingMethod indm, UnitCell *cell,
 	p->r_plan = fftw_plan_dft_2d(p->cw, p->ch, p->r_fft_in, p->r_fft_out,
 	                             1, FFTW_MEASURE);
 
-	p->indm = indm;
+	p->indm = *indm;
 
 	return (IndexingPrivate *)p;
 }

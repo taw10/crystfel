@@ -40,7 +40,7 @@
 
 extern int run_mosflm(struct image *image, IndexingPrivate *ipriv);
 
-extern IndexingPrivate *mosflm_prepare(IndexingMethod indm, UnitCell *cell,
+extern IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
                                        const char *filename,
                                        struct detector *det,
                                        struct beam_params *beam, float *ltl);

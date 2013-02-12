@@ -42,6 +42,7 @@
 #include "detector.h"
 #include "reflist.h"
 #include "crystal.h"
+#include "index.h"
 
 
 /* Structure describing a feature in an image */
@@ -79,6 +80,7 @@ typedef struct _imagefeaturelist ImageFeatureList;
  *
  *    Crystal                 **crystals;
  *    int                     n_crystals;
+ *    IndexingMethod          indexed_by;
  *
  *    struct detector         *det;
  *    struct beam_params      *beam;
@@ -128,6 +130,7 @@ struct image {
 
 	Crystal                 **crystals;
 	int                     n_crystals;
+	IndexingMethod          indexed_by;
 
 	struct detector         *det;
 	struct beam_params      *beam;  /* The nominal beam parameters */
