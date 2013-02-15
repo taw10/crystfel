@@ -129,6 +129,37 @@ static int check_cell(struct mosflm_private *mp, struct image *image,
 	UnitCell *out;
 	Crystal *cr;
 
+	/* If we sent lattice information, make sure that we got back what we
+	 * asked for, not (e.g.) some "H" version of a rhombohedral R cell */
+	if ( mp->indm & INDEXING_USE_LATTICE_TYPE ) {
+
+		LatticeType latt_m, latt_r;
+		char cen_m, cen_r;
+
+		/* What we asked for */
+		latt_r = cell_get_lattice_type(mp->template);
+		cen_r = cell_get_centering(mp->template);
+
+		/* What we got back */
+		latt_m = cell_get_lattice_type(cell);
+		cen_m = cell_get_centering(cell);
+
+		if ( latt_r != latt_m ) {
+			ERROR("Lattice type produced by MOSFLM (%i) does not "
+			      "match what was requested (%i).  "
+			      "Please report this.\n", latt_m, latt_r);
+			return 0;
+		}
+
+		if ( cen_r != cen_m ) {
+			ERROR("Centering produced by MOSFLM (%c) does not "
+			      "match what was requested (%c).  "
+			      "Please report this.\n", cen_m, cen_r);
+			return 0;
+		}
+
+	}
+
 	if ( mp->indm & INDEXING_CHECK_CELL_COMBINATIONS ) {
 
 		out = match_cell(cell, mp->template, 0, mp->ltl, 1);
@@ -149,42 +180,12 @@ static int check_cell(struct mosflm_private *mp, struct image *image,
 		return 0;
 	}
 
-	if ( mp->indm & INDEXING_USE_LATTICE_TYPE ) {
-
-		LatticeType latt_m, latt_r;
-		char cen_m, cen_r;
-
-		/* What we asked for */
-		latt_r = cell_get_lattice_type(mp->template);
-		cen_r = cell_get_centering(mp->template);
-
-		/* What we got back */
-		latt_m = cell_get_lattice_type(out);
-		cen_m = cell_get_centering(out);
-
-		if ( latt_r != latt_m ) {
-			ERROR("Lattice type produced by MOSFLM (%i) does not "
-			      "match what was requested (%i).  "
-			      "Please report this.\n", latt_m, latt_r);
-			crystal_free(cr);
-			return 0;
-		}
-
-		if ( cen_r != cen_m ) {
-			ERROR("Centering produced by MOSFLM (%c) does not "
-			      "match what was requested (%c).  "
-			      "Please report this.\n", cen_m, cen_r);
-			crystal_free(cr);
-			return 0;
-		}
-
-	}
-
 	crystal_set_cell(cr, out);
 
 	if ( mp->indm & INDEXING_CHECK_PEAKS ) {
 		if ( !peak_sanity_check(image, &cr, 1) ) {
-			crystal_free(cr);  /* Frees the cell as well */
+			cell_free(out);
+			crystal_free(cr);
 			return 0;
 		}
 	}
@@ -319,6 +320,8 @@ static int read_newmat(struct mosflm_data *mosflm, const char *filename,
 		mosflm->success = 1;
 		mosflm->done = 1;
 	}
+
+	cell_free(cell);
 
         return 0;
 }
