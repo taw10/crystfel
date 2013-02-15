@@ -61,37 +61,48 @@ You can choose between a variety of indexing methods.  You can choose more than 
 
 .IP \fBdirax\fR
 .PD
- Invoke DirAx, check linear combinations of the resulting cell axes for agreement with your cell, and then check that the cell accounts for at least half of the peaks from the peak search.
+Invoke DirAx, check linear combinations of the resulting cell axes for agreement with your cell, and then check that the cell accounts for at least half of the peaks from the peak search.
 
 .IP \fBmosflm\fR
 .PD
-As \fBdirax\fR, but invoke MOSFLM instead.  If you provide a PDB file (with \fB-p\fR), the lattice type and centering information will be passed to MOSFLM, which will then return solutions which match.  Note that the lattice parameter information will \fBnot\fR be given to MOSFLM.
+As \fBdirax\fR, but invoke MOSFLM instead.  If you provide a PDB file (with \fB-p\fR), the lattice type and centering information will be passed to MOSFLM, which will then return solutions which match.  Note that the lattice parameter information will \fBnot\fR be given to MOSFLM, because it has no way to make use of it.
 
 .IP \fBreax\fR
 .PD
 Run the DPS algorithm, looking for the axes of your cell.
 
 .PP
-You can add the following to the above indexing methods:
+You can add one or more of the following to the above indexing methods:
 
 .IP \fB-raw\fR
 .PD
-Do not check the resulting unit cell.  This option is useful when you need to determine the unit cell ab initio.  Use with 'dirax' and 'mosflm' - the other indexing methods need the unit cell as input in any case, and cannot determine the unit cell ab initio.
+Do not check the resulting unit cell.  This option is useful when you need to determine the unit cell ab initio.  Use with 'dirax' and 'mosflm' - the other indexing methods need the unit cell as input in any case, and cannot determine the unit cell ab initio.  See \fB-comb\fR and \fB-axes\fR.
 
 .IP \fB-axes\fR
 .PD
-Check permutations of the axes for correspondence with your cell, but do not check linear combinations.  This is useful to avoid a potential problem when one of the unit cell axis lengths is close to a multiple of one of the others.  Use with \fBdirax\fR and \fBmosflm\fR.
+Check permutations of the axes for correspondence with your cell, but do not check linear combinations.  This is useful to avoid a potential problem when one of the unit cell axis lengths is close to a multiple of one of the others.  Can be used with \fBdirax\fR and \fBmosflm\fR.  See \fB-raw\fR and \fB-comb\fR.
+
+.IP \fB-comb\fR
+.PD
+Check linear combinations of the unit cell basis vectors to see if a cell can be produced which looks like your unit cell.  This is the default behaviour for \fBdirax\fR and \fBmosflm\fR.  See \fB-raw\fR and \fB-axes\fR.
 
 .IP \fB-bad\fR
 .PD
-Do not check that the cell accounts for any of the peaks as described in \fBdirax\fR above.  Might be useful to debug initial indexing problems, or if there are many multi-crystal patterns and the indexing method has no concept of multiple crystals per pattern (which, at the moment, means all of them).  Can be used with any indexing method.
+Do not check that the cell accounts for any of the peaks as described in \fBdirax\fR above.  Might be useful to debug initial indexing problems, or if there are many multi-crystal patterns and the indexing method has no concept of multiple crystals per pattern (which, at the moment, means all of them).  Can be used with any indexing method, but is generally a bad idea.
 
 .IP \fB-nolatt\fR
 .PD
-Do not use the lattice type information from the PDB file to help guide the indexing.  Use with \fBmosflm\fR, which is the only indexing method which can take advantage of this information.
+Do not use the lattice type information from the PDB file to help guide the indexing.  Use with \fBmosflm\fR, which is the only indexing method which can optionally take advantage of this information.  This is the default behaviour for \fBdirax\fR.  This option makes no sense for \fBreax\fR, which is intrinsically based on using known lattice information.
+
+.IP \fB-latt\fR
+.PD
+This is the opposite of \fB-nolatt\fR, and is the default behaviour for \fBmosflm\fR and \fBreax\fR.
 
 .PP
 The default indexing method is 'none', which means no indexing will be done.  This is useful if you just want to check that the peak detection is working properly.
+
+.PP
+Your indexing methods will be checked for validity, incompatible flags removed, and warnings given about duplicates.  For example, \fBmosflm\fR and \fBmosflm-comb-latt\fR represent the same indexing method, because \fB-comb\fR and \fB-latt\fR are the default behaviour for \fBmosflm\fR.  The 'long version' of each of your indexing methods will be listed in the output, and the stream will contain a record of which indexing method successfully indexed each pattern.
 
 Examples of indexing methods: 'dirax,mosflm,reax', 'dirax-raw,mosflm-raw', 'dirax-raw-bad'.
 
