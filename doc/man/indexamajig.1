@@ -104,6 +104,9 @@ The default indexing method is 'none', which means no indexing will be done.  Th
 .PP
 Your indexing methods will be checked for validity, incompatible flags removed, and warnings given about duplicates.  For example, \fBmosflm\fR and \fBmosflm-comb-latt\fR represent the same indexing method, because \fB-comb\fR and \fB-latt\fR are the default behaviour for \fBmosflm\fR.  The 'long version' of each of your indexing methods will be listed in the output, and the stream will contain a record of which indexing method successfully indexed each pattern.
 
+.PP
+It's risky to use \fBmosflm-nolatt\fR in conjunction with either \fB-comb\fR or \fB-axes\fR when you have a rhombohedral cell.  This would be an odd thing to do anyway: why withhold the lattice information from MOSFLM if you know what it is, and want to use it to check the result?  It's risky because MOSFLM will by default return the "H centered" lattice for your rhombohedral cell, and it's not completely certain that MOSFLM consistently uses one or other of the two possible conventions for the relationship between the "H" and "R" cells.  It is, however, very likely that it does.
+
 Examples of indexing methods: 'dirax,mosflm,reax', 'dirax-raw,mosflm-raw', 'dirax-raw-bad'.
 
 
