@@ -162,23 +162,20 @@ static int check_cell(struct mosflm_private *mp, struct image *image,
 		latt_m = cell_get_lattice_type(out);
 		cen_m = cell_get_centering(out);
 
-		/* If we ask MOSFLM for 'rhombohedral R', it gives us
-		 * 'hexagonal H' back.  Grumble.  Time to fix that up... */
-		if ( (latt_r == L_RHOMBOHEDRAL) && (latt_m == L_HEXAGONAL) ) {
+		if ( latt_r != latt_m ) {
+			ERROR("Lattice type produced by MOSFLM (%i) does not "
+			      "match what was requested (%i).  "
+			      "Please report this.\n", latt_m, latt_r);
+			crystal_free(cr);
+			return 0;
+		}
 
-			UnitCell *fixup;
-
-			assert(cen_r == 'R');
-			assert(cen_m == 'H');
-
-			/* Mercifully, MOSFLM seems to use the obverse setting
-			 * for this transformation, which is the same as
-			 * uncenter_cell().  Otherwise, this would have to be
-			 * done by a separate routine. */
-			fixup = uncenter_cell(out, NULL);
-			cell_free(out);
-			out = fixup;
-
+		if ( cen_r != cen_m ) {
+			ERROR("Centering produced by MOSFLM (%c) does not "
+			      "match what was requested (%c).  "
+			      "Please report this.\n", cen_m, cen_r);
+			crystal_free(cr);
+			return 0;
 		}
 
 	}
@@ -511,9 +508,16 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		  && (mosflm->mp->template != NULL) )
 		{
 			const char *symm;
+
+			if ( cell_get_lattice_type(mosflm->mp->template)
+			     == L_RHOMBOHEDRAL ) {
+				mosflm_sendline("CRYSTAL R\n", mosflm);
+			}
+
 			symm = spacegroup_for_lattice(mosflm->mp->template);
 			snprintf(tmp, 255, "SYMM %s\n", symm);
 			mosflm_sendline(tmp, mosflm);
+
 		} else {
 			mosflm_sendline("SYMM P1\n", mosflm);
 		}
