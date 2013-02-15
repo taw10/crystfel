@@ -557,7 +557,9 @@ static void *run_reader(void *sbv)
 
 			if ( !sb->running[i] ) continue;
 
-			if ( !FD_ISSET(sb->stream_pipe_read[i], &fds) ) continue;
+			if ( !FD_ISSET(sb->stream_pipe_read[i], &fds) ) {
+				continue;
+			}
 
 			if ( pump_chunk(sb->fhs[i], sb->ofh) ) {
 				sb->running[i] = 0;

@@ -73,18 +73,18 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 		switch ( indm[n] & INDEXING_METHOD_MASK ) {
 
 			case INDEXING_DIRAX :
-			iprivs[n] = dirax_prepare(&indm[n], cell, filename, det,
-			                          beam, ltl);
+			iprivs[n] = dirax_prepare(&indm[n], cell, filename,
+			                          det, beam, ltl);
 			break;
 
 			case INDEXING_MOSFLM :
-			iprivs[n] = mosflm_prepare(&indm[n], cell, filename, det,
-			                          beam, ltl);
+			iprivs[n] = mosflm_prepare(&indm[n], cell, filename,
+			                           det, beam, ltl);
 			break;
 
 			case INDEXING_REAX :
-			iprivs[n] = reax_prepare(&indm[n], cell, filename, det,
-			                         beam, ltl);
+			iprivs[n] = reax_prepare(&indm[n], cell, filename,
+			                         det, beam, ltl);
 			break;
 
 			default :
