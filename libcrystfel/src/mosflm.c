@@ -522,7 +522,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 			mosflm_sendline(tmp, mosflm);
 
 		} else {
-			mosflm_sendline("SYMM P1\n", mosflm);
+			mosflm_sendline("\n", mosflm);
 		}
 		break;
 
