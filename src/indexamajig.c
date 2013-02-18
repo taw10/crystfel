@@ -128,8 +128,7 @@ static void show_help(const char *s)
 "     --copy-hdf5-field <f>  Copy the value of field <f> into the stream. You\n"
 "                             can use this option as many times as you need.\n"
 "\n"
-"\nOptions for greater performance or verbosity:\n\n"
-"     --verbose            Be verbose about indexing.\n"
+"\nOptions for greater performance:\n\n"
 " -j <n>                   Run <n> analyses in parallel.  Default 1.\n"
 "\n"
 "\nOptions you probably won't need:\n\n"
@@ -181,7 +180,6 @@ int main(int argc, char *argv[])
 	iargs.cell = NULL;
 	iargs.cmfilter = 0;
 	iargs.noisefilter = 0;
-	iargs.verbose = 0;
 	iargs.satcorr = 1;
 	iargs.closer = 0;
 	iargs.bgsub = 1;
@@ -235,7 +233,6 @@ int main(int argc, char *argv[])
 		/* Long-only options with no arguments */
 		{"filter-cm",          0, &iargs.cmfilter,           1},
 		{"filter-noise",       0, &iargs.noisefilter,        1},
-		{"verbose",            0, &iargs.verbose,            1},
 		{"no-sat-corr",        0, &iargs.satcorr,            0},
 		{"sat-corr",           0, &iargs.satcorr,            1},
 		{"no-check-prefix",    0, &config_checkprefix,       0},
