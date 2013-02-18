@@ -111,7 +111,7 @@ static void show_help(const char *s)
 "    --no-sat-corr       Don't correct values of saturated peaks using a\n"
 "                         table included in the HDF5 file.\n"
 "    --threshold=<n>     Only accept peaks above <n> ADU.  Default: 800.\n"
-"    --min-gradient=<n>  Minimum gradient for Zaefferer peak search.\n"
+"    --min-gradient=<n>  Minimum squared gradient for Zaefferer peak search.\n"
 "                         Default: 100,000.\n"
 "    --min-snr=<n>       Minimum signal-to-noise ratio for peaks.\n"
 "                         Default: 5.\n"
