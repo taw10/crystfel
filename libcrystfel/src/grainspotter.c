@@ -54,12 +54,24 @@
 #include "peaks.h"
 #include "cell.h"
 #include "cell-utils.h"
+#include "grainspotter.h"
 
 
 #define GRAINSPOTTER_VERBOSE 0
 
 
+/* Global private data, prepared once */
+struct grainspotter_private
+{
+	IndexingMethod indm;
+	UnitCell *cell;
+};
+
+
+/* Data needed during the run of Grainspotter */
 struct grainspotter_data {
+
+	struct grainspotter_private *gp;
 
 	/* Low-level stuff */
 	int                     pty;
@@ -71,7 +83,8 @@ struct grainspotter_data {
 };
 
 
-static int read_matrix(struct image *image, char *filename)
+static int read_matrix(struct grainspotter_private *gp, struct image *image,
+                       char *filename)
 {
 	FILE *fh;
 	int d1;
@@ -94,68 +107,157 @@ static int read_matrix(struct image *image, char *filename)
 		return 1;
 	}
 
-	/* One line per grain */
-	if ( fgets(line, 1024, fh) == NULL ) {
-		ERROR("Failed to read GFF file.\n");
-		return 1;
-	}
+	do {
 
-	STATUS("'%s'\n", line);
+		Crystal *cr;
+		UnitCell *cell;
 
-	r = sscanf(line,
-         "%i %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f",
-         &d1, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2,
-         &ubi11, &ubi12, &ubi13, &ubi21, &ubi22, &ubi23, &ubi31, &ubi32, &ubi33);
+		/* One line per grain */
+		if ( fgets(line, 1024, fh) == NULL ) {
+			ERROR("Failed to read GFF file.\n");
+			return 1;
+		}
 
-	if ( r != 24 ) {
-		ERROR("Only %i parameters in GFF file\n", r);
-		return 1;
-	}
+		STATUS("'%s'\n", line);
+
+		r = sscanf(line, "%i %f %f %f %f %f %f %f %f %f %f %f %f"
+			         "%f %f %f %f %f %f %f %f %f %f %f",
+			         &d1, &d2, &d2, &d2, &d2, &d2, &d2, &d2, &d2,
+			         &d2, &d2, &d2, &d2, &d2, &d2,
+			         &ubi11, &ubi12, &ubi13,
+			         &ubi21, &ubi22, &ubi23,
+			         &ubi31, &ubi32, &ubi33);
+
+		if ( r != 24 ) {
+			ERROR("Only %i parameters in GFF file\n", r);
+			return 1;
+		}
+
+		cell = cell_new();
+
+		cell_set_cartesian(cell, ubi12/1e10, ubi13/1e10, ubi11/1e10,
+			                 ubi22/1e10, ubi23/1e10, ubi21/1e10,
+			                 ubi32/1e10, ubi33/1e10, ubi31/1e10);
+
+		cr = crystal_new();
+		if ( cr == NULL ) {
+			ERROR("Failed to allocate crystal.\n");
+			return 0;
+		}
+
+		crystal_set_cell(cr, cell);
+		image_add_crystal(image, cr);
+
+	} while ( !feof(fh) );
 
 	fclose(fh);
 
-	image->candidate_cells[0] = cell_new();
-
-//	cell_set_cartesian(image->candidate_cells[0],
-//	                   ubi11/1e10, ubi12/1e10, ubi13/1e10,
-//	                   ubi21/1e10, ubi22/1e10, ubi23/1e10,
-//	                   ubi31/1e10, ubi32/1e10, ubi33/1e10);
-
-	cell_set_cartesian(image->candidate_cells[0],
-	                   ubi12/1e10, ubi13/1e10, ubi11/1e10,
-	                   ubi22/1e10, ubi23/1e10, ubi21/1e10,
-	                   ubi32/1e10, ubi33/1e10, ubi31/1e10);
-
-
-        image->ncells = 1;
-        cell_print(image->candidate_cells[0]);
+	if ( gp->indm & INDEXING_CHECK_PEAKS ) {
+		if ( !peak_sanity_check(image, image->crystals,
+		                        image->n_crystals) )
+		{
+			free_all_crystals(image);
+			return 0;
+		}
+	}
 
         return 0;
 }
 
 
+static void gs_parseline(char *line, struct image *image,
+                         struct grainspotter_data *gs)
+{
+	#if GRAINSPOTTER_VERBOSE
+	STATUS("%s\n", line);
+	#endif
+}
+
+
 static int grainspotter_readable(struct image *image,
-                                 struct grainspotter_data *grainspotter)
+                                 struct grainspotter_data *gs)
 {
 	int rval;
+	int no_string = 0;
 
-	rval = read(grainspotter->pty,
-	            grainspotter->rbuffer, grainspotter->rbuflen);
+	rval = read(gs->pty, gs->rbuffer+gs->rbufpos, gs->rbuflen-gs->rbufpos);
 
-	if ( rval == -1 ) {
-		ERROR("Read failed: %s\n", strerror(errno));
-		return 1;
+	if ( (rval == -1) || (rval == 0) ) return 1;
+
+	gs->rbufpos += rval;
+	assert(gs->rbufpos <= gs->rbuflen);
+
+	while ( (!no_string) && (gs->rbufpos > 0) ) {
+
+		int i;
+		int block_ready = 0;
+
+		/* See if there's a full line in the buffer yet */
+		for ( i=0; i<gs->rbufpos-1; i++ ) {
+			/* Means the last value looked at is rbufpos-2 */
+
+			if ( (gs->rbuffer[i] == '\r')
+			  && (gs->rbuffer[i+1] == '\n') ) {
+				block_ready = 1;
+				break;
+			}
+
+		}
+
+		if ( block_ready ) {
+
+			unsigned int new_rbuflen;
+			unsigned int endbit_length;
+			char *block_buffer = NULL;
+
+			block_buffer = malloc(i+1);
+			memcpy(block_buffer, gs->rbuffer, i);
+			block_buffer[i] = '\0';
+
+			if ( block_buffer[0] == '\r' ) {
+				memmove(block_buffer, block_buffer+1, i);
+			}
+
+			gs_parseline(block_buffer, image, gs);
+			free(block_buffer);
+			endbit_length = i+2;
+
+			/* Now the block's been parsed, it should be
+			 * forgotten about */
+			memmove(gs->rbuffer,
+			        gs->rbuffer + endbit_length,
+			        gs->rbuflen - endbit_length);
+
+			/* Subtract the number of bytes removed */
+			gs->rbufpos = gs->rbufpos  - endbit_length;
+			new_rbuflen = gs->rbuflen - endbit_length;
+			if ( new_rbuflen == 0 ) new_rbuflen = 256;
+			gs->rbuffer = realloc(gs->rbuffer, new_rbuflen);
+			gs->rbuflen = new_rbuflen;
+
+		} else {
+
+			if ( gs->rbufpos==gs->rbuflen ) {
+
+				/* More buffer space is needed */
+				gs->rbuffer = realloc(gs->rbuffer,
+				                      gs->rbuflen + 256);
+				gs->rbuflen = gs->rbuflen + 256;
+				/* The new space gets used at the next
+				 * read, shortly... */
+
+			}
+			no_string = 1;
+
+		}
+
 	}
-
-	grainspotter->rbuffer[rval] = '\0';
-
-	printf("GrainSpotter: '%s'\n", grainspotter->rbuffer);
 
 	return 0;
 }
 
 
-static void write_gve(struct image *image, UnitCell *cell)
+static void write_gve(struct image *image, struct grainspotter_private *gp)
 {
 	FILE *fh;
 	int i;
@@ -170,7 +272,7 @@ static void write_gve(struct image *image, UnitCell *cell)
 		return;
 	}
 
-	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+	cell_get_parameters(gp->cell, &a, &b, &c, &al, &be, &ga);
 	fprintf(fh, "%.6f %.6f %.6f %.6f %.6f %.6f P\n", a*1e10, b*1e10, c*1e10,
 	                     rad2deg(al), rad2deg(be), rad2deg(ga));
 	fprintf(fh, "# wavelength = %.6f\n", image->lambda*1e10);
@@ -242,28 +344,31 @@ static char *write_ini(struct image *image)
 }
 
 
-void run_grainspotter(struct image *image, UnitCell *cell)
+int grainspotter_index(struct image *image, IndexingPrivate *ipriv)
 {
 	unsigned int opts;
 	int status;
 	int rval;
 	struct grainspotter_data *grainspotter;
+	struct grainspotter_private *gp = (struct grainspotter_private *)ipriv;
 	char *ini_filename;
 	char gff_filename[1024];
 
-	write_gve(image, cell);
+	write_gve(image, gp);
 	ini_filename = write_ini(image);
 
 	if ( ini_filename == NULL ) {
 		ERROR("Failed to write ini file for GrainSpotter.\n");
-		return;
+		return 0;
 	}
 
 	grainspotter = malloc(sizeof(struct grainspotter_data));
 	if ( grainspotter == NULL ) {
 		ERROR("Couldn't allocate memory for GrainSpotter data.\n");
-		return;
+		return 0;
 	}
+
+	grainspotter->gp = gp;
 
 	snprintf(gff_filename, 1023, "xfel-%i.gff", image->id);
 	remove(gff_filename);
@@ -271,7 +376,7 @@ void run_grainspotter(struct image *image, UnitCell *cell)
 	grainspotter->pid = forkpty(&grainspotter->pty, NULL, NULL, NULL);
 	if ( grainspotter->pid == -1 ) {
 		ERROR("Failed to fork for GrainSpotter: %s\n", strerror(errno));
-		return;
+		return 0;
 	}
 	if ( grainspotter->pid == 0 ) {
 
@@ -283,8 +388,8 @@ void run_grainspotter(struct image *image, UnitCell *cell)
 		t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
 		tcsetattr(STDIN_FILENO, TCSANOW, &t);
 
-		STATUS("Running GrainSpotter.0.90 '%s'\n", ini_filename);
-		execlp("GrainSpotter.0.90", "", ini_filename, (char *)NULL);
+		STATUS("Running GrainSpotter.0.93 '%s'\n", ini_filename);
+		execlp("GrainSpotter.0.93", "", ini_filename, (char *)NULL);
 		ERROR("Failed to invoke GrainSpotter.\n");
 		_exit(0);
 
@@ -344,11 +449,54 @@ void run_grainspotter(struct image *image, UnitCell *cell)
 
 	if ( status != 0 ) {
 		ERROR("GrainSpotter doesn't seem to be working properly.\n");
+		free(grainspotter);
+		return 0;
 	}
 
-	if ( read_matrix(image, gff_filename) != 0 ) {
-		ERROR("Failed to read matrix\n");
+	if ( read_matrix(gp, image, gff_filename) != 0 ) {
+		free(grainspotter);
+		return 0;
 	}
 
+	/* Success! */
 	free(grainspotter);
+	return 1;
+}
+
+
+
+IndexingPrivate *grainspotter_prepare(IndexingMethod *indm, UnitCell *cell,
+                                      const char *filename,
+                                      struct detector *det,
+                                      struct beam_params *beam, float *ltl)
+{
+	struct grainspotter_private *gp;
+
+	if ( cell == NULL ) {
+		ERROR("GrainSpotter needs a unit cell.\n");
+		return NULL;
+	}
+
+	gp = calloc(1, sizeof(*gp));
+	if ( gp == NULL ) return NULL;
+
+	/* Flags that GrainSpotter knows about */
+	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_PEAKS;
+
+	/* Flags that GrainSpotter requires */
+	*indm |= INDEXING_USE_LATTICE_TYPE;
+
+	gp->cell = cell;
+	gp->indm = *indm;
+
+	return (IndexingPrivate *)gp;
+}
+
+
+void grainspotter_cleanup(IndexingPrivate *pp)
+{
+	struct grainspotter_private *p;
+
+	p = (struct grainspotter_private *)pp;
+	free(p);
 }

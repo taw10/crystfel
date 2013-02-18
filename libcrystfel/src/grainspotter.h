@@ -35,8 +35,16 @@
 
 #include "cell.h"
 
+extern IndexingPrivate *grainspotter_prepare(IndexingMethod *indm,
+                                             UnitCell *cell,
+                                             const char *filename,
+                                             struct detector *det,
+                                             struct beam_params *beam,
+                                             float *ltl);
 
-extern void run_grainspotter(struct image *image, UnitCell *cell);
+extern void grainspotter_cleanup(IndexingPrivate *pp);
+
+extern int grainspotter_index(struct image *image, IndexingPrivate *p);
 
 
 #endif	/* GRAINSPOTTER_H */

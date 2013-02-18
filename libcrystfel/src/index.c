@@ -51,6 +51,7 @@
 #include "grainspotter.h"
 #include "geometry.h"
 #include "cell-utils.h"
+#include "grainspotter.h"
 
 
 IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
@@ -68,6 +69,7 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 
 		int i;
 		IndexingMethod in;
+		char *str;
 
 		in = indm[n];
 
@@ -82,14 +84,15 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 			iprivs[n] = mosflm_prepare(&indm[n], cell, filename,
 			                           det, beam, ltl);
 			break;
-
-			case INDEXING_GRAINSPOTTER :
-			iprivs[n] = indexing_private(indm[n]);
-			break;
-
 			case INDEXING_REAX :
 			iprivs[n] = reax_prepare(&indm[n], cell, filename,
 			                         det, beam, ltl);
+			break;
+
+			case INDEXING_GRAINSPOTTER :
+			iprivs[n] = grainspotter_prepare(&indm[n], cell,
+			                                 filename, det, beam,
+			                                 ltl);
 			break;
 
 			default :
@@ -101,8 +104,9 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 
 		if ( iprivs[n] == NULL ) return NULL;
 
-		STATUS("Prepared indexing method %i: %s\n",
-		       n, indexer_str(indm[n]));
+		str = indexer_str(indm[n]);
+		STATUS("Prepared indexing method %i: %s\n", n, str);
+		free(str);
 
 		if ( in != indm[n] ) {
 			ERROR("Note: flags were altered to take into account "
@@ -149,12 +153,12 @@ void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
 			mosflm_cleanup(privs[n]);
 			break;
 
-			case INDEXING_GRAINSPOTTER :
-			free(priv[n]);
-			break;
-
 			case INDEXING_REAX :
 			reax_cleanup(privs[n]);
+			break;
+
+			case INDEXING_GRAINSPOTTER :
+			grainspotter_cleanup(privs[n]);
 			break;
 
 			default :
@@ -211,6 +215,10 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		case INDEXING_REAX :
 		return reax_index(image, ipriv);
+		break;
+
+		case INDEXING_GRAINSPOTTER :
+		return grainspotter_index(image, ipriv);
 		break;
 
 		default :
@@ -321,8 +329,13 @@ char *indexer_str(IndexingMethod indm)
 		strcpy(str, "reax");
 		break;
 
+		case INDEXING_GRAINSPOTTER :
+		strcpy(str, "grainspotter");
+		break;
+
 		default :
-		ERROR("Unrecognised indexing method %i\n", indm);
+		ERROR("Unrecognised indexing method %i\n",
+		      indm & INDEXING_METHOD_MASK);
 		strcpy(str, "(unknown)");
 		break;
 

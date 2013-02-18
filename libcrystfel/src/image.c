@@ -177,3 +177,13 @@ void image_add_crystal(struct image *image, Crystal *cryst)
 	image->crystals = crs;
 	image->n_crystals = n+1;
 }
+
+
+void free_all_crystals(struct image *image)
+{
+	int i;
+
+	for ( i=0; i<image->n_crystals; i++ ) {
+		crystal_free(image->crystals[i]);
+	}
+}
