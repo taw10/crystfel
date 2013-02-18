@@ -62,14 +62,24 @@ You can choose between a variety of indexing methods.  You can choose more than 
 .IP \fBdirax\fR
 .PD
 Invoke DirAx, check linear combinations of the resulting cell axes for agreement with your cell, and then check that the cell accounts for at least half of the peaks from the peak search.
+.sp
+To use this option, 'dirax' must be in your shell's search path.  If you see the DirAx version and copyright information when you run \fBdirax\fR on the command line, things are set up correctly.
 
 .IP \fBmosflm\fR
 .PD
 As \fBdirax\fR, but invoke MOSFLM instead.  If you provide a PDB file (with \fB-p\fR), the lattice type and centering information will be passed to MOSFLM, which will then return solutions which match.  Note that the lattice parameter information will \fBnot\fR be given to MOSFLM, because it has no way to make use of it.
+.sp
+To use this option, 'ipmosflm' must be in your shell's search path.  If you see the MOSFLM version and copyright information when you run \fBipmosflm\fR on the command line, things are set up correctly.
 
 .IP \fBreax\fR
 .PD
 Run the DPS algorithm, looking for the axes of your cell.
+
+.IP \fBgrainspotter\fR
+.PD
+Invoke GrainSpotter, which will use your cell parameters to find multiple crystals in each pattern.
+.sp
+To use this option, 'GrainSpotter.0.93' must be in your shell's search path.  If you see the GrainSpotter version information when you run \fBGrainSpotter.0.93\fR on the command line, things are set up correctly.
 
 .PP
 You can add one or more of the following to the above indexing methods:
