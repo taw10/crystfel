@@ -264,10 +264,10 @@ static int read_newmat(const char *filename, struct image *image)
 	cell_set_reciprocal(image->candidate_cells[0], 
 	                    axstar*10e9, aystar*10e9, azstar*10e9,
 	                    bxstar*10e9, bystar*10e9, bzstar*10e9,
-	                    -cxstar*10e9, -cystar*10e9, -czstar*10e9);
+	                   -cxstar*10e9, -cystar*10e9, -czstar*10e9);
 	image->ncells = 1;
 
-	//cell_print(image->candidate_cells[0]);
+	cell_print(image->candidate_cells[0]);
 
 	return 0;
 }
@@ -277,9 +277,9 @@ static void write_spot(struct image *image, const char *filename)
 {
 	FILE *fh;
 	int i;
-	//double fclen = 170.0e-3;  /* fake camera length in m */
+	double fclen = 99.0e-3;  /* fake camera length in m */
 	int n;
-
+	
 	fh = fopen("SPOT.XDS", "w");
 	if ( !fh ) {
 		ERROR("Couldn't open temporary file '%s'\n", "SPOT.XDS");
@@ -307,8 +307,8 @@ static void write_spot(struct image *image, const char *filename)
 		
 		//printf("xs=%f ys=%f  ---->  rx=%f ry=%f\n", xs, ys, rx, ry); 
 		
-		//x = rx*fclen/p->clen;
-		//y = ry*fclen/p->clen;  /* Peak positions in m */
+		x = rx*fclen/p->clen;
+		y = ry*fclen/p->clen;  /* Peak positions in m */
 
 		//printf("x=%f y=%f\n", x, y);
 
@@ -316,7 +316,7 @@ static void write_spot(struct image *image, const char *filename)
 		y = (ry / 70e-6) + 1500;
 
 		if (f->intensity <= 0) continue;
-
+		
 		fprintf(fh, "%10.2f %10.2f %10.2f %10.0f.\n",
 		        x, y, 0.5, f->intensity);
 
@@ -345,18 +345,18 @@ static char *write_inp(struct image *image)
 	fprintf(fh, "JOB= IDXREF\n");
 	fprintf(fh, "ORGX= 1500\n");
 	fprintf(fh, "ORGY= 1500\n");
-	fprintf(fh, "DETECTOR_DISTANCE= 65.00\n"); 	//IMPORTANT
+	fprintf(fh, "DETECTOR_DISTANCE= 99.00\n"); 	//IMPORTANT
 	fprintf(fh, "OSCILLATION_RANGE= 0.300\n");
-	fprintf(fh, "X-RAY_WAVELENGTH= 6.2\n");        // IMPORTANT
+	fprintf(fh, "X-RAY_WAVELENGTH= 1.32\n");        // IMPORTANT
 	fprintf(fh, "NAME_TEMPLATE_OF_DATA_FRAMES=/home/dikay/insu/data_exp1/ins_ssad_1_???.img \n");
 	fprintf(fh, "DATA_RANGE=1 1\n");
 	fprintf(fh, "SPOT_RANGE=1 1\n");
-	//fprintf(fh, "SPACE_GROUP_NUMBER=94\n"); //CatB 94 
-	//fprintf(fh, "UNIT_CELL_CONSTANTS= 125.4 125.4 54.56 90 90 90\n"); //CatB 125.4 125.4 54.56 90 90 90
+	fprintf(fh, "SPACE_GROUP_NUMBER= 94\n"); //CatB 94 
+	fprintf(fh, "UNIT_CELL_CONSTANTS= 126.2 126.2 54.2 90 90 90\n"); //CatB 125.4 125.4 54.56 90 90 90
 	//fprintf(fh, "SPACE_GROUP_NUMBER=194\n"); //PS1 194
 	//fprintf(fh, "UNIT_CELL_CONSTANTS=281 281 165.2 90 90 120\n"); //PS1 281 281 165.2 90 90 120
-	fprintf(fh, "SPACE_GROUP_NUMBER= 0\n"); //LYS 96
-	fprintf(fh, "UNIT_CELL_CONSTANTS= 0 0 0 0 0 0\n"); //LYS 77.32 77.32 38.16 90 90 90
+	//fprintf(fh, "SPACE_GROUP_NUMBER= 0\n"); //LYS 96
+	//fprintf(fh, "UNIT_CELL_CONSTANTS= 0 0 0 0 0 0\n"); //LYS 77.32 77.32 38.16 90 90 90
 	fprintf(fh, "NX= 3000\n");
 	fprintf(fh, "NY= 3000\n");
 	fprintf(fh, "QX= 0.07\n");
@@ -369,7 +369,7 @@ static char *write_inp(struct image *image)
 	fprintf(fh, "DETECTOR= CSPAD\n");
 	fprintf(fh, "MINIMUM_VALID_PIXEL_VALUE= 1\n");
 	fprintf(fh, "OVERLOAD= 200000000\n");
-	fprintf(fh, "INDEX_ERROR= 0.2\n");
+	fprintf(fh, "INDEX_ERROR= 0.4\n");
 	//fprintf(fh, "INDEX_QUALITY= 0.5\n");
 	//fprintf(fh, "REFINE(IDXREF)= ALL\n");
 	//fprintf(fh, "MINIMUM_NUMBER_OF_PIXELS_IN_A_SPOT= 1\n");	
@@ -386,6 +386,7 @@ void run_xds(struct image *image, UnitCell *cell)
 	unsigned int 	opts;	
 	int 		status;
 	int 		rval;
+	int		n;
 	struct 		xds_data *xds;
 	char 		*inp_filename;
 	
@@ -404,8 +405,12 @@ void run_xds(struct image *image, UnitCell *cell)
 		ERROR("Failed to write XDS.INP file for XDS.\n");
 		return;
 	}
-
+	
+	n= image_feature_count(image->features);
+	if (n < 25) return;
+	
 	snprintf(xds->spotfile, 127, "SPOT.XDS");
+
 	write_spot(image, xds->spotfile);
 
 	xds->pid = forkpty(&xds->pty, NULL, NULL, NULL);
