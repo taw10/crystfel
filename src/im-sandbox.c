@@ -47,6 +47,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <sys/stat.h>
 
 #ifdef HAVE_CLOCK_GETTIME
 #include <time.h>
@@ -187,13 +188,17 @@ static void process_image(const struct index_args *iargs,
 	struct hdfile *hdfile;
 	struct image image;
 	int i;
+	char filename[1024];
+
+	/* Prefix to jump out of temporary folder */
+	snprintf(filename, 1023, "../../%s", pargs->filename);
 
 	image.features = NULL;
 	image.data = NULL;
 	image.flags = NULL;
 	image.copyme = iargs->copyme;
 	image.id = cookie;
-	image.filename = pargs->filename;
+	image.filename = filename;
 	image.beam = iargs->beam;
 	image.det = iargs->det;
 	image.crystals = NULL;
@@ -580,6 +585,35 @@ static void *run_reader(void *sbv)
 }
 
 
+static int create_temporary_folder(signed int n)
+{
+	int r;
+	char tmp[64];
+
+	if ( n < 0 ) {
+		snprintf(tmp, 63, "indexamajig.%i", getpid());
+	} else {
+		snprintf(tmp, 63, "worker.%i", n);
+	}
+
+	r = mkdir(tmp, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	if ( r ) {
+		ERROR("Failed to create temporary folder: %s\n",
+		      strerror(errno));
+		return 1;
+	}
+
+	r = chdir(tmp);
+	if ( r ) {
+		ERROR("Failed to chdir to temporary folder: %s\n",
+		      strerror(errno));
+		return 1;
+	}
+
+	return 0;
+}
+
+
 static void start_worker_process(struct sandbox *sb, int slot,
                                  int argc, char *argv[])
 {
@@ -619,6 +653,8 @@ static void start_worker_process(struct sandbox *sb, int slot,
 			ERROR("Failed to set signal handler!\n");
 			return;
 		}
+
+		create_temporary_folder(slot);
 
 		/* Free resources which will not be needed by worker */
 		for ( j=0; j<sb->n_proc; j++ ) {
@@ -840,6 +876,8 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		ERROR("Failed to set signal handler!\n");
 		return;
 	}
+
+	if ( create_temporary_folder(-1) ) return;
 
 	/* Fork the right number of times */
 	lock_sandbox(sb);

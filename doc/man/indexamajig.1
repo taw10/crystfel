@@ -303,10 +303,6 @@ When using \fB--peaks=hdf5\fR, the peaks will be put through the same checks as 
 Without this option, peaks will be predicted in each pattern based on the crystal orientation from autoindexing and the parameters in the beam description file.  With this option, indices will be assigned to the peaks found by the peak search, and the positions of those peaks used for the final integration stage.
 
 .SH BUGS
-Don't run more than one indexamajig jobs simultaneously in the same working
-directory - they'll overwrite each other's DirAx or MOSFLM files, causing subtle
-problems which can't easily be detected.
-.PP
 ReAx indexing is experimental.  It works very nicely for some people, and crashes for others.  In a future version, it will be improved and fully supported.
 
 .SH AUTHOR
