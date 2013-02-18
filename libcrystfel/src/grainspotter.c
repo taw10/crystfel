@@ -337,6 +337,7 @@ static char *write_ini(struct image *image)
 	fprintf(fh, "random 10000\n");
 	fprintf(fh, "!positionfit\n");
 	fprintf(fh, "genhkl\n");
+	fprintf(fh, "xfelmode\n");
 
 	fclose(fh);
 
