@@ -65,12 +65,14 @@
  **/
 typedef enum {
 
+
 	INDEXING_NONE   = 0,
 
 	/* The core indexing methods themselves */
 	INDEXING_DIRAX  = 1,
 	INDEXING_MOSFLM = 2,
 	INDEXING_REAX   = 3,
+	INDEXING_GRAINSPOTTER = 4,
 
 	/* Bits at the top of the IndexingMethod are flags which modify the
 	 * behaviour of the indexer, at the moment just by adding checks. */

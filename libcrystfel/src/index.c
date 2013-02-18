@@ -48,6 +48,7 @@
 #include "index.h"
 #include "index-priv.h"
 #include "reax.h"
+#include "grainspotter.h"
 #include "geometry.h"
 #include "cell-utils.h"
 
@@ -80,6 +81,10 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 			case INDEXING_MOSFLM :
 			iprivs[n] = mosflm_prepare(&indm[n], cell, filename,
 			                           det, beam, ltl);
+			break;
+
+			case INDEXING_GRAINSPOTTER :
+			iprivs[n] = indexing_private(indm[n]);
 			break;
 
 			case INDEXING_REAX :
@@ -142,6 +147,10 @@ void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
 
 			case INDEXING_MOSFLM :
 			mosflm_cleanup(privs[n]);
+			break;
+
+			case INDEXING_GRAINSPOTTER :
+			free(priv[n]);
 			break;
 
 			case INDEXING_REAX :
@@ -359,6 +368,9 @@ IndexingMethod *build_indexer_list(const char *str)
 
 		} else if ( strcmp(methods[i], "mosflm") == 0) {
 			list[++nmeth] = INDEXING_DEFAULTS_MOSFLM;
+
+		} else if ( strcmp(methods[i], "grainspotter") == 0) {
+			list[++nmeth] = INDEXING_DEFAULTS_GRAINSPOTTER;
 
 		} else if ( strcmp(methods[i], "reax") == 0) {
 			list[++nmeth] = INDEXING_DEFAULTS_REAX;
