@@ -5,6 +5,7 @@
  *
  * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
+ * Copyright © 2013 Cornelius Gati
  *
  * Authors:
  *   2010-2013 Thomas White <taw@physics.org>
@@ -27,17 +28,23 @@
  *
  */
 
-#ifndef xds_H
-#define xds_H
+#ifndef XDS_H
+#define XDS_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include "cell.h"
+#include "index.h"
 
 
-extern void run_xds(struct image *image, UnitCell *cell);
+extern int run_xds(struct image *image, IndexingPrivate *ipriv);
 
+extern IndexingPrivate *xds_prepare(IndexingMethod *indm, UnitCell *cell,
+                                    const char *filename, struct detector *det,
+                                    struct beam_params *beam, float *ltl);
+
+extern void xds_cleanup(IndexingPrivate *pp);
 
 #endif	/* XDS_H */

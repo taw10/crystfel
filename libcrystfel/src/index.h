@@ -58,6 +58,9 @@
                                      | INDEXING_USE_LATTICE_TYPE               \
                                      | INDEXING_CHECK_PEAKS)
 
+#define INDEXING_DEFAULTS_XDS (INDEXING_XDS | INDEXING_USE_LATTICE_TYPE        \
+                                     | INDEXING_CHECK_PEAKS)
+
 /**
  * IndexingMethod:
  * @INDEXING_NONE: No indexing to be performed

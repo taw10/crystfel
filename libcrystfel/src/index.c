@@ -88,7 +88,8 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 			break;
 
 			case INDEXING_XDS :
-                        iprivs[n] = indexing_private(indm[n]);
+                        iprivs[n] = xds_prepare(&indm[n], cell, filename,
+			                        det, beam, ltl);
 			break;
 
 			case INDEXING_REAX :
@@ -161,7 +162,7 @@ void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
 			break;
 
                         case INDEXING_XDS :
-			free(priv[n]);
+			xds_cleanup(privs[n]);
 			break;
 
 			case INDEXING_REAX :
@@ -225,7 +226,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		break;
 
 		case INDEXING_XDS :
-		run_XDS(image, cell);
+		return run_xds(image, ipriv);
 		break;
 
 		case INDEXING_REAX :
@@ -348,6 +349,10 @@ char *indexer_str(IndexingMethod indm)
 		strcpy(str, "grainspotter");
 		break;
 
+		case INDEXING_XDS :
+		strcpy(str, "xds");
+		break;
+
 		default :
 		ERROR("Unrecognised indexing method %i\n",
 		      indm & INDEXING_METHOD_MASK);
@@ -401,7 +406,7 @@ IndexingMethod *build_indexer_list(const char *str)
 			list[++nmeth] = INDEXING_DEFAULTS_GRAINSPOTTER;
 
                 } else if ( strcmp(methods[i], "xds") == 0) {
-			list[i] = INDEXING_XDS;
+			list[++nmeth] = INDEXING_DEFAULTS_XDS;
 
 		} else if ( strcmp(methods[i], "reax") == 0) {
 			list[++nmeth] = INDEXING_DEFAULTS_REAX;
