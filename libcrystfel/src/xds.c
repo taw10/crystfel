@@ -377,10 +377,12 @@ static void write_spot(struct image *image, const char *filename)
 }
 
 
-static char *write_inp(struct image *image)
+static char *write_inp(struct image *image, struct xds_private *xp)
 {
 	FILE *fh;
 	char *filename;
+	LatticeType latt;
+	double a, b, c, al, be, ga;
 
 	filename = malloc(1024);
 	if ( filename == NULL ) return NULL;
@@ -399,16 +401,16 @@ static char *write_inp(struct image *image)
 	fprintf(fh, "ORGY= 1500\n");
 	fprintf(fh, "DETECTOR_DISTANCE= 99.00\n"); 	//IMPORTANT
 	fprintf(fh, "OSCILLATION_RANGE= 0.300\n");
-	fprintf(fh, "X-RAY_WAVELENGTH= 1.32\n");        // IMPORTANT
-	fprintf(fh, "NAME_TEMPLATE_OF_DATA_FRAMES=/home/dikay/insu/data_exp1/ins_ssad_1_???.img \n");
+	fprintf(fh, "X-RAY_WAVELENGTH= %.6f\n", image->lambda*1e10);
+	fprintf(fh, "NAME_TEMPLATE_OF_DATA_FRAMES=/home/ins_ssad_1_???.img \n");
 	fprintf(fh, "DATA_RANGE=1 1\n");
 	fprintf(fh, "SPOT_RANGE=1 1\n");
-	fprintf(fh, "SPACE_GROUP_NUMBER= 94\n"); //CatB 94
-	fprintf(fh, "UNIT_CELL_CONSTANTS= 126.2 126.2 54.2 90 90 90\n"); //CatB 125.4 125.4 54.56 90 90 90
-	//fprintf(fh, "SPACE_GROUP_NUMBER=194\n"); //PS1 194
-	//fprintf(fh, "UNIT_CELL_CONSTANTS=281 281 165.2 90 90 120\n"); //PS1 281 281 165.2 90 90 120
-	//fprintf(fh, "SPACE_GROUP_NUMBER= 0\n"); //LYS 96
-	//fprintf(fh, "UNIT_CELL_CONSTANTS= 0 0 0 0 0 0\n"); //LYS 77.32 77.32 38.16 90 90 90
+	fprintf(fh, "SPACE_GROUP_NUMBER= %i\n", latt); 
+	cell_get_parameters(xp->cell, &a, &b, &c, &al, &be, &ga);
+	fprintf(fh, "UNIT_CELL_CONSTANTS= %.6f %.6f %.6f %.6f %.6f %.6f P\n", 
+                a*1e10, b*1e10, c*1e10,rad2deg(al), rad2deg(be), rad2deg(ga));
+	//fprintf(fh, "SPACE_GROUP_NUMBER= 0\n"); 
+	//fprintf(fh, "UNIT_CELL_CONSTANTS= 0 0 0 0 0 0\n"); 
 	fprintf(fh, "NX= 3000\n");
 	fprintf(fh, "NY= 3000\n");
 	fprintf(fh, "QX= 0.07\n");
@@ -432,6 +434,81 @@ static char *write_inp(struct image *image)
 	return filename;
 }
 
+/* Turn what we know about the unit cell into something which we can give to
+ * XDS to make it give us only indexing results compatible with the cell. */
+static const char *spacegroup_for_lattice(UnitCell *cell)
+{
+	LatticeType latt;
+	char centering;
+	char *g = NULL;
+	char *result;
+
+	latt = cell_get_lattice_type(cell);
+	centering = cell_get_centering(cell);
+
+	switch ( latt )
+	{
+		case L_TRICLINIC :
+		g = "1";
+		break;
+
+		case L_MONOCLINIC :
+		if ( centering != 'P' ) {
+			g = "3";
+		} else {
+			g = "5";
+		}
+		break;
+
+		case L_ORTHORHOMBIC :
+		if ( centering != 'P' ) {
+			g = "16";}
+		else if ( centering != 'C' ) {
+			g = "20";}
+		else if ( centering != 'F' ) {
+			g = "22";
+		} else {
+			g = "23";
+		}
+		break;
+
+		case L_TETRAGONAL :
+		if ( centering != 'P' ) {
+			g = "75";
+		} else {
+			g = "79";
+		break;
+
+		case L_RHOMBOHEDRAL :
+		if ( centering != 'P' ) {
+			g = "143";
+		} else {
+			g = "146";
+		break;
+
+		case L_HEXAGONAL :
+		g = "168";
+		break;
+
+		case L_CUBIC :
+		if ( centering != 'P' ) {
+			g = "195"; }
+		else if ( centering != 'F' ) {
+			g = "196";
+		} else {
+			g = "197";
+		}
+		break;
+	}
+	assert(g != NULL);
+
+	result = malloc(32);
+	if ( result == NULL ) return NULL;
+
+	//snprintf(result, 31, "%c%s", centering, g);
+
+	return result;
+}
 
 int run_xds(struct image *image, IndexingPrivate *priv)
 {
@@ -451,9 +528,8 @@ int run_xds(struct image *image, IndexingPrivate *priv)
 
 	xds->target_cell = xp->cell;
 
-	write_inp(image);
-	inp_filename = write_inp(image);
-
+	write_inp(image, xp);
+	
 	if ( inp_filename == NULL ) {
 		ERROR("Failed to write XDS.INP file for XDS.\n");
 		return 0;
