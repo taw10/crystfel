@@ -193,6 +193,8 @@ static void process_image(const struct index_args *iargs,
 	/* Prefix to jump out of temporary folder */
 	if ( pargs->filename[0] != '/' ) {
 		snprintf(filename, 1023, "../../%s", pargs->filename);
+	} else {
+		snprintf(filename, 1023, "%s", pargs->filename);
 	}
 
 	image.features = NULL;
