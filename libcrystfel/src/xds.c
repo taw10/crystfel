@@ -58,7 +58,7 @@
 #include "cell-utils.h"
 
 
-#define xds_VERBOSE 0
+#define XDS_VERBOSE 0
 
 
 /* Global private data, prepared once */
@@ -90,7 +90,7 @@ struct xds_data {
 static void xds_parseline(const char *line, struct image *image,
                              struct xds_data *xds)
 {
-
+#if XDS_VERBOSE
 	char *copy;
 	int i;
 
@@ -101,6 +101,7 @@ static void xds_parseline(const char *line, struct image *image,
 	}
 	STATUS("XDS: %s\n", copy);
 	free(copy);
+#endif
 }
 
 
