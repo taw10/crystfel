@@ -400,7 +400,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_MONOCLINIC :
-		if ( centering != 'P' )	{
+		if ( centering == 'P' )	{
 			g = "3";
 		} else {
 			g = "5";
@@ -408,11 +408,11 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_ORTHORHOMBIC :
-		if ( centering != 'P' ) {
+		if ( centering == 'P' ) {
 			g = "16";
-		} else if ( centering != 'C' ) {
+		} else if ( centering == 'C' ) {
 			g = "20";
-		} else if ( centering != 'F' ) {
+		} else if ( centering == 'F' ) {
 			g = "22";
 		} else {
 			g = "23";
@@ -420,7 +420,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_TETRAGONAL :
-		if ( centering != 'P' ) {
+		if ( centering == 'P' ) {
 			g = "75";
 		} else {
 			g = "79";
@@ -428,7 +428,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_RHOMBOHEDRAL :
-		if ( centering != 'P' ) {
+		if ( centering == 'P' ) {
 			g = "143";
 		} else {
 			g = "146";
@@ -440,9 +440,9 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_CUBIC :
-		if ( centering != 'P' ) {
+		if ( centering == 'P' ) {
 			g = "195";
-		} else if ( centering != 'F' ) {
+		} else if ( centering == 'F' ) {
 			g = "196";
 		} else {
 			g = "197";
