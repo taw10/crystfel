@@ -316,6 +316,19 @@ static IndexingMethod set_lattice(IndexingMethod a)
 }
 
 
+/* Set the indexer flags for "use no unit cell parameters" */
+static IndexingMethod set_nocellparams(IndexingMethod a)
+{
+	return a & ~INDEXING_USE_CELL_PARAMETERS;
+}
+
+
+/* Set the indexer flags for "use unit cell parameters" */
+static IndexingMethod set_cellparams(IndexingMethod a)
+{
+	return a | INDEXING_USE_CELL_PARAMETERS;
+}
+
 char *indexer_str(IndexingMethod indm)
 {
 	char *str;
@@ -379,6 +392,12 @@ char *indexer_str(IndexingMethod indm)
 		strcat(str, "-nolatt");
 	}
 
+	if ( indm & INDEXING_USE_CELL_PARAMETERS ) {
+		strcat(str, "-cell");
+	} else {
+		strcat(str, "-nocell");
+	}
+
 	return str;
 }
 
@@ -432,6 +451,12 @@ IndexingMethod *build_indexer_list(const char *str)
 
 		} else if ( strcmp(methods[i], "nolatt") == 0) {
 			list[nmeth] = set_nolattice(list[nmeth]);
+
+		} else if ( strcmp(methods[i], "cell") == 0) {
+			list[nmeth] = set_cellparams(list[nmeth]);
+
+		} else if ( strcmp(methods[i], "nocell") == 0) {
+			list[nmeth] = set_nocellparams(list[nmeth]);
 
 		} else {
 			ERROR("Bad list of indexing methods: '%s'\n", str);

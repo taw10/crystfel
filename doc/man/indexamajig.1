@@ -81,6 +81,10 @@ Invoke GrainSpotter, which will use your cell parameters to find multiple crysta
 .sp
 To use this option, 'GrainSpotter.0.93' must be in your shell's search path.  If you see the GrainSpotter version information when you run \fBGrainSpotter.0.93\fR on the command line, things are set up correctly.
 
+.IP \fBxds\fR
+.PD
+Invoke XDS, and use its REFIDX procedure to attempt to index the pattern.
+
 .PP
 You can add one or more of the following to the above indexing methods:
 
@@ -106,7 +110,15 @@ Do not use the lattice type information from the PDB file to help guide the inde
 
 .IP \fB-latt\fR
 .PD
-This is the opposite of \fB-nolatt\fR, and is the default behaviour for \fBmosflm\fR and \fBreax\fR.
+This is the opposite of \fB-nolatt\fR, and is the default behaviour for \fBmosflm\fR, \fBxds\fR and \fBgrainspotter\fR.  It is the only behaviour for \fBreax\fR.
+
+.IP \fB-cell\fR
+.PD
+Provide your unit cell parameters to the indexing algorithm.  This is the default for \fBxds\fR and \fBgrainspotter\fR, and the only behaviour for \fBreax\fR.  This option makes no sense for \fBdirax\fR and \fBmosflm\fR, neither of which can make use of this information.
+
+.IP \fB-nocell\fR
+.PD
+Do not provide your unit cell parameters to the indexing algorithm.  This is the only behaviour for \fBmosflm\fR and \fBdirax\fR, both of which cannot make use of the information.  Can be used with \fBgrainspotter\fR and \fBxds\fR, and makes no sense for \fBreax\fR, which is intrinsically based on using known cell parameters.
 
 .PP
 The default indexing method is 'none', which means no indexing will be done.  This is useful if you just want to check that the peak detection is working properly.

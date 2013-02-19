@@ -482,10 +482,8 @@ IndexingPrivate *grainspotter_prepare(IndexingMethod *indm, UnitCell *cell,
 	if ( gp == NULL ) return NULL;
 
 	/* Flags that GrainSpotter knows about */
-	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_PEAKS;
-
-	/* Flags that GrainSpotter requires */
-	*indm |= INDEXING_USE_LATTICE_TYPE;
+	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_PEAKS
+	       | INDEXING_USE_LATTICE_TYPE | INDEXING_USE_CELL_PARAMETERS;
 
 	gp->cell = cell;
 	gp->indm = *indm;

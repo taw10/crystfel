@@ -52,13 +52,16 @@
                                      | INDEXING_USE_LATTICE_TYPE)
 
 #define INDEXING_DEFAULTS_REAX (INDEXING_REAX | INDEXING_USE_LATTICE_TYPE      \
+                                     | INDEXING_USE_CELL_PARAMETERS            \
                                      | INDEXING_CHECK_PEAKS)
 
 #define INDEXING_DEFAULTS_GRAINSPOTTER (INDEXING_GRAINSPOTTER                  \
                                      | INDEXING_USE_LATTICE_TYPE               \
+                                     | INDEXING_USE_CELL_PARAMETERS            \
                                      | INDEXING_CHECK_PEAKS)
 
 #define INDEXING_DEFAULTS_XDS (INDEXING_XDS | INDEXING_USE_LATTICE_TYPE        \
+                                     | INDEXING_USE_CELL_PARAMETERS            \
                                      | INDEXING_CHECK_PEAKS)
 
 /**
@@ -87,6 +90,7 @@ typedef enum {
 	INDEXING_CHECK_CELL_AXES         = 512,
 	INDEXING_CHECK_PEAKS             = 1024,
 	INDEXING_USE_LATTICE_TYPE        = 2048,
+	INDEXING_USE_CELL_PARAMETERS     = 4096,
 
 } IndexingMethod;
 

@@ -637,8 +637,10 @@ IndexingPrivate *dirax_prepare(IndexingMethod *indm, UnitCell *cell,
 	if ( *indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
 
 	if ( need_cell && (cell == NULL) ) {
-		ERROR("DirAx needs a unit cell for this set of flags.\n");
-		return NULL;
+		ERROR("Altering your DirAx flags because no PDB file was"
+		      " provided.\n");
+		*indm &= ~INDEXING_CHECK_CELL_COMBINATIONS;
+		*indm &= ~INDEXING_CHECK_CELL_AXES;
 	}
 
 	/* Flags that DirAx knows about */

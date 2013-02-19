@@ -817,8 +817,11 @@ IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
 	if ( *indm & INDEXING_USE_LATTICE_TYPE ) need_cell = 1;
 
 	if ( need_cell && (cell == NULL) ) {
-		ERROR("MOSFLM needs a unit cell for this set of flags.\n");
-		return NULL;
+		ERROR("Altering your MOSFLM flags because no PDB file was"
+		      " provided.\n");
+		*indm &= ~INDEXING_CHECK_CELL_COMBINATIONS;
+		*indm &= ~INDEXING_CHECK_CELL_AXES;
+		*indm &= ~INDEXING_USE_LATTICE_TYPE;
 	}
 
 	/* Flags that MOSFLM knows about */

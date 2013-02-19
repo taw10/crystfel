@@ -577,7 +577,7 @@ IndexingPrivate *xds_prepare(IndexingMethod *indm, UnitCell *cell,
 	/* Flags that XDS knows about */
 	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_CELL_COMBINATIONS
 	          | INDEXING_CHECK_CELL_AXES | INDEXING_USE_LATTICE_TYPE
-	          | INDEXING_CHECK_PEAKS;
+	          | INDEXING_CHECK_PEAKS | INDEXING_USE_CELL_PARAMETERS;
 
 	xp->ltl = ltl;
 	xp->cell = cell;
