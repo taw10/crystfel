@@ -477,7 +477,6 @@ static int write_inp(struct image *image, struct xds_private *xp)
 	fprintf(fh, "SPOT_RANGE=1 1\n");
 	fprintf(fh, "SPACE_GROUP_NUMBER= %s\n",
 	        spacegroup_for_lattice(xp->cell));
-	printf("%s\n", spacegroup_for_lattice(xp->cell));
 	cell_get_parameters(xp->cell, &a, &b, &c, &al, &be, &ga);
 	fprintf(fh, "UNIT_CELL_CONSTANTS= %.2f %.2f %.2f %.2f %.2f %.2f\n",
                 a*1e10, b*1e10, c*1e10,rad2deg(al), rad2deg(be), rad2deg(ga));
