@@ -202,13 +202,13 @@ static void process_image(const struct index_args *iargs,
 	image.flags = NULL;
 	image.copyme = iargs->copyme;
 	image.id = cookie;
-	image.filename = filename;
+	image.filename = pargs->filename;  /* Relative to top level */
 	image.beam = iargs->beam;
 	image.det = iargs->det;
 	image.crystals = NULL;
 	image.n_crystals = 0;
 
-	hdfile = hdfile_open(image.filename);
+	hdfile = hdfile_open(filename);  /* Relative to temporary folder */
 	if ( hdfile == NULL ) return;
 
 	if ( iargs->element != NULL ) {
