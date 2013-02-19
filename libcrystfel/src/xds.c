@@ -525,7 +525,7 @@ int run_xds(struct image *image, IndexingPrivate *priv)
 	xds->target_cell = xp->cell;
 
 	write_inp(image, xp);
-	
+
 	if ( write_inp == NULL ) {
 		ERROR("Failed to write XDS.INP file for XDS.\n");
 		return 0;
