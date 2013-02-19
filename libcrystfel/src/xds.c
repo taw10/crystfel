@@ -441,7 +441,6 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 	LatticeType latt;
 	char centering;
 	char *g = NULL;
-	char *result;
 
 	latt = cell_get_lattice_type(cell);
 	centering = cell_get_centering(cell);
@@ -453,9 +452,11 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_MONOCLINIC :
-		if ( centering != 'P' ) {
+		if ( centering != 'P' ) 
+		{
 			g = "3";
-		} else {
+		} else 
+		{
 			g = "5";
 		}
 		break;
@@ -475,8 +476,11 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		case L_TETRAGONAL :
 		if ( centering != 'P' ) {
 			g = "75";
-		} else {
+		} 
+		else 
+		{
 			g = "79";
+		}
 		break;
 
 		case L_RHOMBOHEDRAL :
@@ -484,6 +488,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 			g = "143";
 		} else {
 			g = "146";
+		}		
 		break;
 
 		case L_HEXAGONAL :
@@ -492,22 +497,18 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 
 		case L_CUBIC :
 		if ( centering != 'P' ) {
-			g = "195"; }
+			g = "195";
+		}
 		else if ( centering != 'F' ) {
 			g = "196";
 		} else {
 			g = "197";
 		}
 		break;
-	}
+		}
 	assert(g != NULL);
 
-	result = malloc(32);
-	if ( result == NULL ) return NULL;
-
-	//snprintf(result, 31, "%c%s", centering, g);
-
-	return result;
+	return g;
 }
 
 int run_xds(struct image *image, IndexingPrivate *priv)
