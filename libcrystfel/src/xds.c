@@ -400,8 +400,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_MONOCLINIC :
-		if ( centering != 'P' )
-		{
+		if ( centering != 'P' )	{
 			g = "3";
 		} else {
 			g = "5";
@@ -452,7 +451,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 	}
 	assert(g != NULL);
 
-	return 0;
+	return g;
 }
 
 
