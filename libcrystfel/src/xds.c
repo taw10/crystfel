@@ -452,7 +452,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 	}
 	assert(g != NULL);
 
-	return g;
+	return 0;
 }
 
 
@@ -464,7 +464,7 @@ static int write_inp(struct image *image, struct xds_private *xp)
 	fh = fopen("XDS.INP", "w");
 	if ( !fh ) {
 		ERROR("Couldn't open XDS.INP\n");
-		return 1;
+		return 0;
 	}
 
 	fprintf(fh, "JOB= IDXREF\n");
@@ -478,8 +478,9 @@ static int write_inp(struct image *image, struct xds_private *xp)
 	fprintf(fh, "SPOT_RANGE=1 1\n");
 	fprintf(fh, "SPACE_GROUP_NUMBER= %s\n",
 	        spacegroup_for_lattice(xp->cell));
+	printf("%s\n", spacegroup_for_lattice(xp->cell));
 	cell_get_parameters(xp->cell, &a, &b, &c, &al, &be, &ga);
-	fprintf(fh, "UNIT_CELL_CONSTANTS= %.6f %.6f %.6f %.6f %.6f %.6f P\n",
+	fprintf(fh, "UNIT_CELL_CONSTANTS= %.2f %.2f %.2f %.2f %.2f %.2f\n",
                 a*1e10, b*1e10, c*1e10,rad2deg(al), rad2deg(be), rad2deg(ga));
 	//fprintf(fh, "SPACE_GROUP_NUMBER= 0\n");
 	//fprintf(fh, "UNIT_CELL_CONSTANTS= 0 0 0 0 0 0\n");
@@ -524,7 +525,9 @@ int run_xds(struct image *image, IndexingPrivate *priv)
 
 	xds->target_cell = xp->cell;
 
-	if ( write_inp(image, xp) ) {
+	write_inp(image, xp);
+	
+	if ( write_inp == NULL ) {
 		ERROR("Failed to write XDS.INP file for XDS.\n");
 		return 0;
 	}
