@@ -381,7 +381,7 @@ static char *write_inp(struct image *image, struct xds_private *xp)
 {
 	FILE *fh;
 	char *filename;
-	char *spacegroup_for_lattice;
+	const char *spacegroup_for_lattice;
 	double a, b, c, al, be, ga;
 
 	filename = malloc(1024);
@@ -405,6 +405,7 @@ static char *write_inp(struct image *image, struct xds_private *xp)
 	fprintf(fh, "NAME_TEMPLATE_OF_DATA_FRAMES=/home/ins_ssad_1_???.img \n");
 	fprintf(fh, "DATA_RANGE=1 1\n");
 	fprintf(fh, "SPOT_RANGE=1 1\n");
+	//symm = spacegroup_for_lattice(xds->xp->template);
 	fprintf(fh, "SPACE_GROUP_NUMBER= %s\n", spacegroup_for_lattice); 
 	cell_get_parameters(xp->cell, &a, &b, &c, &al, &be, &ga);
 	fprintf(fh, "UNIT_CELL_CONSTANTS= %.6f %.6f %.6f %.6f %.6f %.6f P\n", 
