@@ -459,7 +459,6 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 static int write_inp(struct image *image, struct xds_private *xp)
 {
 	FILE *fh;
-	double a, b, c, al, be, ga;
 
 	fh = fopen("XDS.INP", "w");
 	if ( !fh ) {
@@ -476,13 +475,29 @@ static int write_inp(struct image *image, struct xds_private *xp)
 	fprintf(fh, "NAME_TEMPLATE_OF_DATA_FRAMES=/home/ins_ssad_1_???.img \n");
 	fprintf(fh, "DATA_RANGE=1 1\n");
 	fprintf(fh, "SPOT_RANGE=1 1\n");
-	fprintf(fh, "SPACE_GROUP_NUMBER= %s\n",
-	        spacegroup_for_lattice(xp->cell));
-	cell_get_parameters(xp->cell, &a, &b, &c, &al, &be, &ga);
-	fprintf(fh, "UNIT_CELL_CONSTANTS= %.2f %.2f %.2f %.2f %.2f %.2f\n",
-                a*1e10, b*1e10, c*1e10,rad2deg(al), rad2deg(be), rad2deg(ga));
-	//fprintf(fh, "SPACE_GROUP_NUMBER= 0\n");
-	//fprintf(fh, "UNIT_CELL_CONSTANTS= 0 0 0 0 0 0\n");
+
+	if ( xp->indm & INDEXING_USE_LATTICE_TYPE ) {
+		fprintf(fh, "SPACE_GROUP_NUMBER= %s\n",
+			    spacegroup_for_lattice(xp->cell));
+	} else {
+		fprintf(fh, "SPACE_GROUP_NUMBER= 0\n");
+	}
+
+	if ( xp->indm & INDEXING_USE_CELL_PARAMETERS ) {
+
+		double a, b, c, al, be, ga;
+
+		cell_get_parameters(xp->cell, &a, &b, &c, &al, &be, &ga);
+
+		fprintf(fh, "UNIT_CELL_CONSTANTS= "
+		            "%.2f %.2f %.2f %.2f %.2f %.2f\n",
+		            a*1e10, b*1e10, c*1e10,
+		            rad2deg(al), rad2deg(be), rad2deg(ga));
+
+        } else {
+		fprintf(fh, "UNIT_CELL_CONSTANTS= 0 0 0 0 0 0\n");
+	}
+
 	fprintf(fh, "NX= 3000\n");
 	fprintf(fh, "NY= 3000\n");
 	fprintf(fh, "QX= 0.07\n");
