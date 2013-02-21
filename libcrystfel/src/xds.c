@@ -463,7 +463,7 @@ static int write_inp(struct image *image, struct xds_private *xp)
 	fh = fopen("XDS.INP", "w");
 	if ( !fh ) {
 		ERROR("Couldn't open XDS.INP\n");
-		return 0;
+		return 1;
 	}
 
 	fprintf(fh, "JOB= IDXREF\n");
@@ -539,14 +539,12 @@ int run_xds(struct image *image, IndexingPrivate *priv)
 
 	xds->target_cell = xp->cell;
 
-	write_inp(image, xp);
-
-	if ( write_inp == NULL ) {
+	if ( write_inp(image, xp) ) {
 		ERROR("Failed to write XDS.INP file for XDS.\n");
 		return 0;
 	}
 
-	n= image_feature_count(image->features);
+	n = image_feature_count(image->features);
 	if (n < 25) return 0;
 
 	snprintf(xds->spotfile, 127, "SPOT.XDS");
