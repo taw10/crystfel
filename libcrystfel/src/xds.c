@@ -470,7 +470,7 @@ static int write_inp(struct image *image, struct xds_private *xp)
 	fprintf(fh, "ORGX= 1500\n");
 	fprintf(fh, "ORGY= 1500\n");
 	fprintf(fh, "DETECTOR_DISTANCE= 99.00\n"); 	//IMPORTANT
-	fprintf(fh, "OSCILLATION_RANGE= 0.300\n");
+	fprintf(fh, "OSCILLATION_RANGE= 0.001\n");
 	fprintf(fh, "X-RAY_WAVELENGTH= %.6f\n", image->lambda*1e10);
 	fprintf(fh, "NAME_TEMPLATE_OF_DATA_FRAMES=/home/ins_ssad_1_???.img \n");
 	fprintf(fh, "DATA_RANGE=1 1\n");
@@ -510,9 +510,9 @@ static int write_inp(struct image *image, struct xds_private *xp)
 	fprintf(fh, "DETECTOR= CSPAD\n");
 	fprintf(fh, "MINIMUM_VALID_PIXEL_VALUE= 1\n");
 	fprintf(fh, "OVERLOAD= 200000000\n");
-	fprintf(fh, "INDEX_ERROR= 0.4\n");
+	fprintf(fh, "INDEX_ERROR= 0.05\n");
 	//fprintf(fh, "INDEX_QUALITY= 0.5\n");
-	//fprintf(fh, "REFINE(IDXREF)= ALL\n");
+	fprintf(fh, "REFINE(IDXREF)= CELL ORIENTATION\n");
 	//fprintf(fh, "MINIMUM_NUMBER_OF_PIXELS_IN_A_SPOT= 1\n");
 	//fprintf(fh, "MAXIMUM_ERROR_OF_SPOT_POSITION= 20.0\n");
 
