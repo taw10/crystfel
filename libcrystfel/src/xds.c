@@ -651,8 +651,28 @@ IndexingPrivate *xds_prepare(IndexingMethod *indm, UnitCell *cell,
 {
 	struct xds_private *xp;
 
-	if ( cell == NULL ) {
-		ERROR("XDS needs a unit cell.\n");
+	/* Either cell,latt and cell provided, or nocell-nolatt and no cell
+	 * - complain about anything else.  Could figure this out automatically,
+	 * but we'd have to decide whether the user just forgot the cell, or
+	 * forgot "-nolatt", or whatever. */
+	if ( ((*indm & INDEXING_USE_LATTICE_TYPE)
+	  || (*indm & INDEXING_USE_CELL_PARAMETERS)) && (cell == NULL) ) {
+		ERROR("No cell provided.  If you wanted to use XDS without "
+		      "prior cell information, use xds-nolatt-nocell.\n");
+		return NULL;
+	}
+
+	if ( (*indm & INDEXING_USE_LATTICE_TYPE)
+	  && !(*indm & INDEXING_USE_CELL_PARAMETERS) ) {
+		ERROR("Invalid XDS options (-latt-nocell): "
+		      "try xds-nolatt-nocell.\n");
+		return NULL;
+	}
+
+	if ( (*indm & INDEXING_USE_CELL_PARAMETERS)
+	  && !(*indm & INDEXING_USE_LATTICE_TYPE) ) {
+		ERROR("Invalid XDS options (-cell-nolatt): "
+		      "try xds-nolatt-nocell.\n");
 		return NULL;
 	}
 
