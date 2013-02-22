@@ -563,6 +563,7 @@ int is_stream(const char *filename)
 void write_line(Stream *st, const char *line)
 {
 	fprintf(st->fh, "%s\n", line);
+	fflush(st->fh);
 }
 
 
