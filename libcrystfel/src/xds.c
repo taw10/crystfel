@@ -472,7 +472,7 @@ static int write_inp(struct image *image, struct xds_private *xp)
 	fprintf(fh, "DETECTOR_DISTANCE= 99.00\n"); 	//IMPORTANT
 	fprintf(fh, "OSCILLATION_RANGE= 0.001\n");
 	fprintf(fh, "X-RAY_WAVELENGTH= %.6f\n", image->lambda*1e10);
-	fprintf(fh, "NAME_TEMPLATE_OF_DATA_FRAMES=/home/ins_ssad_1_???.img \n");
+	fprintf(fh, "NAME_TEMPLATE_OF_DATA_FRAMES=???.img \n");
 	fprintf(fh, "DATA_RANGE=1 1\n");
 	fprintf(fh, "SPOT_RANGE=1 1\n");
 

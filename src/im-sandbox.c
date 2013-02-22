@@ -885,7 +885,6 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		for ( i=0; i<n_proc; i++ ) {
 			if ( sb->running[i] ) allDone = 0;
 		}
-
 		unlock_sandbox(sb);
 
 	}
