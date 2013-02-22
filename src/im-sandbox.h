@@ -38,5 +38,5 @@
 
 extern void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                            int config_basename, FILE *fh,
-                           char *use_this_one_instead, FILE *stream,
+                           char *use_this_one_instead, int streamfd,
                            int argc, char *argv[]);

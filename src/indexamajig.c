@@ -44,6 +44,9 @@
 #include <getopt.h>
 #include <hdf5.h>
 #include <gsl/gsl_errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #ifdef HAVE_CLOCK_GETTIME
 #include <time.h>
@@ -158,7 +161,7 @@ int main(int argc, char *argv[])
 	char *filename = NULL;
 	char *outfile = NULL;
 	FILE *fh;
-	FILE *ofh;
+	int ofd;
 	char *rval = NULL;
 	int config_checkprefix = 1;
 	int config_basename = 0;
@@ -510,8 +513,8 @@ int main(int argc, char *argv[])
 		iargs.cell = NULL;
 	}
 
-	ofh = fopen(outfile, "w");
-	if ( ofh == NULL ) {
+	ofd = open(outfile, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);
+	if ( ofd == -1 ) {
 		ERROR("Failed to open stream '%s'\n", outfile);
 		return 1;
 	}
@@ -553,7 +556,7 @@ int main(int argc, char *argv[])
 	iargs.ipriv = ipriv;
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	               use_this_one_instead, ofh, argc, argv);
+	               use_this_one_instead, ofd, argc, argv);
 
 	free(prefix);
 

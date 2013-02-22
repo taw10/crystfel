@@ -74,8 +74,8 @@ struct sb_reader
 	FILE **fhs;
 	int *fds;
 
-	/* Final output file handle */
-	FILE *ofh;
+	/* Final output fd */
+	int ofd;
 };
 
 
@@ -277,8 +277,17 @@ static time_t get_monotonic_seconds()
 
 #endif
 
+size_t vol = 0;
 
-static int pump_chunk(FILE *fh, FILE *ofh)
+
+static ssize_t lwrite(int fd, const char *a)
+{
+	size_t l = strlen(a);
+	return write(fd, a, l);
+}
+
+
+static int pump_chunk(FILE *fh, int ofd)
 {
 	int chunk_started = 0;
 
@@ -294,24 +303,22 @@ static int pump_chunk(FILE *fh, FILE *ofh)
 				/* Whoops, connection lost */
 				if ( chunk_started ) {
 					ERROR("EOF during chunk!\n");
-					fprintf(ofh, "Chunk is unfinished!\n");
-					fprintf(ofh, CHUNK_END_MARKER"\n");
+					lwrite(ofd, "Unfinished chunk!\n");
+					lwrite(ofd, CHUNK_END_MARKER"\n");
 				} /* else normal end of output */
 				return 1;
-			} else {
-				ERROR("fgets() failed: %s\n", strerror(errno));
 			}
-			break;
+
+			ERROR("fgets() failed: %s\n", strerror(errno));
+			return 1;
 
 		}
 
 		if ( strcmp(line, "FLUSH\n") == 0 ) break;
-
-		fprintf(ofh, "%s", line);
+		lwrite(ofd, line);
 
 		if ( strcmp(line, CHUNK_END_MARKER"\n") == 0 ) break;
 		if ( strcmp(line, CHUNK_START_MARKER"\n") == 0 ) break;
-
 
 	} while ( 1 );
 	return 0;
@@ -427,7 +434,7 @@ static void *run_reader(void *rdv)
 
 			/* If the chunk cannot be read, assume the connection
 			 * is broken and that the process will die soon. */
-			if ( pump_chunk(rd->fhs[i], rd->ofh) ) {
+			if ( pump_chunk(rd->fhs[i], rd->ofd) ) {
 				/* remove_pipe() assumes that the caller is
 				 * holding rd->lock ! */
 				remove_pipe(rd, i);
@@ -632,7 +639,7 @@ static void handle_zombie(struct sandbox *sb)
 
 void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                     int config_basename, FILE *fh, char *use_this_one_instead,
-                    FILE *ofh, int argc, char *argv[])
+                    int ofd, int argc, char *argv[])
 {
 	int i;
 	int allDone;
@@ -669,7 +676,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	sb->reader->fds = NULL;
 	sb->reader->fhs = NULL;
-	sb->reader->ofh = ofh;
+	sb->reader->ofd = ofd;
 
 	sb->stream_pipe_write = calloc(n_proc, sizeof(int));
 	if ( sb->stream_pipe_write == NULL ) {
