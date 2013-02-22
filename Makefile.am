@@ -48,7 +48,7 @@ endif
 
 src_process_hkl_SOURCES = src/process_hkl.c
 
-src_indexamajig_SOURCES = src/indexamajig.c src/im-sandbox.c
+src_indexamajig_SOURCES = src/indexamajig.c src/im-sandbox.c src/process_image.c
 
 if BUILD_HDFSEE
 src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/hdfsee-render.c

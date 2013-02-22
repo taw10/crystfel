@@ -38,12 +38,6 @@
 #endif
 
 
-#include "beam-parameters.h"
-#include "cell.h"
-#include "image.h"
-#include "detector.h"
-
-
 #define INDEXING_DEFAULTS_DIRAX (INDEXING_DIRAX | INDEXING_CHECK_PEAKS         \
                                      | INDEXING_CHECK_CELL_COMBINATIONS)
 
@@ -109,6 +103,11 @@ typedef void *IndexingPrivate;
 
 extern IndexingMethod *build_indexer_list(const char *str);
 extern char *indexer_str(IndexingMethod indm);
+
+#include "beam-parameters.h"
+#include "detector.h"
+#include "cell.h"
+#include "image.h"
 
 extern IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
                                           const char *filename,

@@ -31,48 +31,10 @@
  *
  */
 
+#include "index.h"
 #include "stream.h"
-
-enum {
-	PEAK_ZAEF,
-	PEAK_HDF5,
-};
-
-
-/* Information about the indexing process which is common to all patterns */
-struct index_args
-{
-	UnitCell *cell;
-	int cmfilter;
-	int noisefilter;
-	int satcorr;
-	int closer;
-	int bgsub;
-	float threshold;
-	float min_gradient;
-	float min_snr;
-	double min_int_snr;
-	struct detector *det;
-	IndexingMethod *indm;
-	IndexingPrivate **ipriv;
-	int peaks;                /* Peak detection method */
-	float tols[4];
-	struct beam_params *beam;
-	char *element;
-	char *hdf5_peak_path;
-	float ir_inn;
-	float ir_mid;
-	float ir_out;
-	struct copy_hdf5_field *copyme;
-	int integrate_saturated;
-	int use_saturated;
-	int no_revalidate;
-	int integrate_found;
-	int stream_peaks;
-	int stream_refls;
-	int res_cutoff;
-};
-
+#include "cell.h"
+#include "process_image.h"
 
 extern void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                            int config_basename, FILE *fh,
