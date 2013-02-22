@@ -571,6 +571,8 @@ void write_command(Stream *st, int argc, char *argv[])
 {
 	int i;
 
+	if ( argc == 0 ) return;
+
 	for ( i=0; i<argc; i++ ) {
 		if ( i > 0 ) fprintf(st->fh, " ");
 		fprintf(st->fh, "%s", argv[i]);
