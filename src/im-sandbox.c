@@ -647,6 +647,7 @@ static int create_temporary_folder(signed int n)
 {
 	int r;
 	char tmp[64];
+	struct stat s;
 
 	if ( n < 0 ) {
 		snprintf(tmp, 63, "indexamajig.%i", getpid());
@@ -654,11 +655,19 @@ static int create_temporary_folder(signed int n)
 		snprintf(tmp, 63, "worker.%i", n);
 	}
 
-	r = mkdir(tmp, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	if ( r ) {
-		ERROR("Failed to create temporary folder: %s\n",
-		      strerror(errno));
-		return 1;
+	if ( stat(tmp, &s) == -1 ) {
+		if ( errno != ENOENT ) {
+			ERROR("Failed to stat temporary folder.\n");
+			return 1;
+		}
+
+		r = mkdir(tmp, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		if ( r ) {
+			ERROR("Failed to create temporary folder: %s\n",
+			      strerror(errno));
+			return 1;
+		}
+
 	}
 
 	r = chdir(tmp);
