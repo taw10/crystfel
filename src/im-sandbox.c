@@ -785,8 +785,6 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			break;
 		}
 
-		if ( r == 0 ) continue; /* No progress this time.  Try again */
-
 		if ( FD_ISSET(signal_pipe[0], &fds) ) {
 
 			char d;
