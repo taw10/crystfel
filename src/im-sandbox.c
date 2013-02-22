@@ -127,6 +127,7 @@ static char *get_pattern(FILE *fh, char **use_this_one_instead,
 {
 	char *line;
 	char *filename;
+	size_t len;
 
 	do {
 
@@ -160,7 +161,13 @@ static char *get_pattern(FILE *fh, char **use_this_one_instead,
 		line = tmp;
 	}
 
-	filename = malloc(strlen(prefix)+strlen(line)+1);
+	len = strlen(prefix)+strlen(line)+1;
+
+	/* Round the length of the buffer, too keep Valgrind quiet when it gets
+	 * given to write() a bit later on */
+	len += 4 - (len % 4);
+
+	filename = malloc(len);
 
 	snprintf(filename, 1023, "%s%s", prefix, line);
 
