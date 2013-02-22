@@ -543,7 +543,9 @@ static void start_worker_process(struct sandbox *sb, int slot,
 		}
 		for ( j=0; j<sb->n_proc; j++ ) {
 			if ( (j != slot) && (sb->running[j]) ) {
-				fclose(sb->result_fhs[j]);
+				if ( sb->result_fhs[j] != NULL ) {
+					fclose(sb->result_fhs[j]);
+				}
 				close(sb->filename_pipes[j]);
 			}
 		}
