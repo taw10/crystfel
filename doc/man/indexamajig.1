@@ -303,7 +303,6 @@ default.
 .PD
 Don't subtract local background estimates from integrated intensities.  This is almost never useful, but might help to detect problems from troublesome background noise.
 
-
 .PD 0
 .IP \fB--use-saturated\fR
 .PD
@@ -323,6 +322,16 @@ When using \fB--peaks=hdf5\fR, the peaks will be put through the same checks as 
 .IP \fB--integrate-found\fR
 .PD
 Without this option, peaks will be predicted in each pattern based on the crystal orientation from autoindexing and the parameters in the beam description file.  With this option, indices will be assigned to the peaks found by the peak search, and the positions of those peaks used for the final integration stage.
+
+.PD 0
+.IP \fB--no-peaks-in-stream\fR
+.PD
+Do not record peak search results in the stream.  You won't be able to check that the peak detection was any good, but the stream will be around 30% smaller.
+
+.PD 0
+.IP \fB--no-refls-in-stream\fR
+.PD
+Do not record integrated reflections in the stream.  The resulting output won't be usable for merging, but will be a lot smaller.  This option might be useful if you're only interested in things like unit cell parameters and orientations.
 
 .SH BUGS
 ReAx indexing is experimental.  It works very nicely for some people, and crashes for others.  In a future version, it will be improved and fully supported.
