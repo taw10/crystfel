@@ -464,6 +464,7 @@ static int get_bin(struct shells *s, Reflection *refl, UnitCell *cell)
 
 		/* Allow for slight rounding errors */
 		if ( (bin == -1) && (d <= s->rmins[0]) ) bin = 0;
+		if ( (bin == -1) && (d >= s->rmaxs[s->nshells-1]) ) bin = 0;
 		assert(bin != -1);
 
 		return bin;
