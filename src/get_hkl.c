@@ -254,9 +254,9 @@ static RefList *expand_reflections(RefList *in, const SymOpList *initial,
 	RefList *out;
 	SymOpMask *m;
 
-	if ( !is_subgroup(target, initial) ) {
-		ERROR("%s is not a subgroup of %s!\n", symmetry_name(initial),
-		                                       symmetry_name(target));
+	if ( !is_subgroup(initial, target) ) {
+		ERROR("%s is not a subgroup of %s!\n", symmetry_name(target),
+		                                       symmetry_name(initial));
 		return NULL;
 	}
 
