@@ -530,6 +530,7 @@ int main(int argc, char *argv[])
 	image.copyme = NULL;
 	image.crystals = NULL;
 	image.n_crystals = 0;
+	image.indexed_by = INDEXING_NONE;
 
 	if ( random_intensities ) {
 		full = reflist_new();
