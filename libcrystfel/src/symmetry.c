@@ -325,7 +325,7 @@ static void transform_ops(SymOpList *s, IntegerMatrix *t)
 
 	det = intmat_det(t);
 	if ( det == -1 ) {
-		ERROR("Warning: mirrored SymOpList.\n");
+		ERROR("WARNING: mirrored SymOpList.\n");
 	} else if ( det != 1 ) {
 		ERROR("Invalid transformation for SymOpList.\n");
 		return;
