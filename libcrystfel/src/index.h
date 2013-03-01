@@ -64,6 +64,18 @@
  * @INDEXING_DIRAX: Invoke DirAx
  * @INDEXING_MOSFLM: Invoke MOSFLM
  * @INDEXING_REAX: DPS algorithm using known cell parameters
+ * @INDEXING_GRAINSPOTTER: Invoke GrainSpotter
+ * @INDEXING_XDS: Invokve XDS
+ * @INDEXING_CHECK_CELL_COMBINATIONS: Check linear combinations of unit cell
+ *   axes for agreement with given cell.
+ * @INDEXING_CHECK_CELL_AXES: Check unit cell axes for agreement with given
+ *   cell, and permute them if necessary.
+ * @INDEXING_CHECK_PEAKS: Check that the peaks can be explained by the indexing
+ *   result.
+ * @INDEXING_USE_LATTICE_TYPE: Use lattice type and centering information to
+ *   guide the indexing process.
+ * @INDEXING_USE_CELL_PARAMETERS: Use the unit cell parameters to guide the
+ *   indexingprocess.
  *
  * An enumeration of all the available indexing methods.
  **/

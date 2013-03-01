@@ -24,7 +24,7 @@ libcrystfel_la_include_HEADERS = src/beam-parameters.h src/hdf5-file.h \
                                  src/geometry.h src/peaks.h src/stream.h \
                                  src/render.h src/index.h src/image.h \
                                  src/filters.h src/dirax.h src/mosflm.h \
-                                 src/index-priv.h src/reax.h src/cell-utils.h \
+                                 src/reax.h src/cell-utils.h \
                                  src/integer_matrix.h src/crystal.h \
                                  src/grainspotter.h src/xds.h
 

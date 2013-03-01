@@ -48,7 +48,6 @@
 #include "cell.h"
 #include "cell-utils.h"
 #include "index.h"
-#include "index-priv.h"
 
 
 /* Minimum number of standard deviations above the mean a peak must be in the

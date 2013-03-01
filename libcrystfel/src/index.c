@@ -48,7 +48,6 @@
 #include "xds.h"
 #include "detector.h"
 #include "index.h"
-#include "index-priv.h"
 #include "reax.h"
 #include "grainspotter.h"
 #include "geometry.h"
