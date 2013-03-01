@@ -1,6 +1,6 @@
 docdir = ${datadir}/doc/${PACKAGE}
 EXTRA_DIST = configure m4/gnulib-cache.m4
-SUBDIRS = lib doc/reference libcrystfel
+SUBDIRS = lib doc/reference/libcrystfel libcrystfel
 ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
