@@ -1104,6 +1104,7 @@ IndexingPrivate *reax_prepare(IndexingMethod *indm, UnitCell *cell,
 
 	/* Flags that ReAx requires */
 	*indm |= INDEXING_USE_LATTICE_TYPE;
+	*indm |= INDEXING_USE_CELL_PARAMETERS;
 
 	p->angular_inc = deg2rad(1.0);
 
