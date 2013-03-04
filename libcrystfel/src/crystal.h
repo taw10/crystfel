@@ -48,6 +48,7 @@ typedef struct _crystal Crystal;
 
 
 extern Crystal *crystal_new(void);
+extern Crystal *crystal_copy(Crystal *cryst);
 extern void crystal_free(Crystal *cryst);
 
 extern UnitCell *crystal_get_cell(Crystal *cryst);

@@ -326,9 +326,6 @@ free_beam_parameters
 
 <SECTION>
 <FILE>crystal</FILE>
-Crystal
-crystal_new
-crystal_free
 </SECTION>
 
 <SECTION>
@@ -357,7 +354,9 @@ get_peaks
 <FILE>crystal</FILE>
 Crystal
 crystal_new
+crystal_copy
 crystal_free
+<SUBSECTION>
 crystal_get_cell
 crystal_get_image
 crystal_get_mosaicity

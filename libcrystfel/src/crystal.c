@@ -97,6 +97,30 @@ Crystal *crystal_new()
 
 
 /**
+ * crystal_copy:
+ * @cryst: A %Crystal to copy.
+ *
+ * Creates a new %Crystal which is a copy of @cryst.  The copy is a "shallow
+ * copy", which means that copies are NOT made of the data structures which
+ * @cryst contains references to, for example its %RefList.
+ *
+ * Returns: a (shallow) copy of @cryst, or NULL on failure.
+ *
+ */
+Crystal *crystal_copy(Crystal *cryst)
+{
+	Crystal *c;
+
+	c = crystal_new();
+	if ( c == NULL ) return NULL;
+
+	memcpy(c, cryst, sizeof(Crystal));
+
+	return c;
+}
+
+
+/**
  * crystal_free:
  * @cryst: A %Crystal to free.
  *
