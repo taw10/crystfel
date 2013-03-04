@@ -733,6 +733,13 @@ static void find_most_sampled_reflections(RefList *list, int n, signed int *h,
 	Reflection *refl;
 	RefListIterator *iter;
 	int *samples;
+	int j;
+
+	for ( j=0; j<n; j++ ) {
+		h[j] = 0;
+		k[j] = 0;
+		l[j] = 0;
+	}
 
 	samples = calloc(n, sizeof(int));
 

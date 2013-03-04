@@ -410,7 +410,7 @@ int main(int argc, char *argv[])
 		ERROR("Failed to open input stream '%s'\n", infile);
 		return 1;
 	}
-	free(infile);
+	/* Don't free "infile", because it's needed for the scaling report */
 
 	/* Sanitise output filename */
 	if ( outfile == NULL ) {
@@ -453,7 +453,6 @@ int main(int argc, char *argv[])
 	gsl_set_error_handler_off();
 
 	/* Fill in what we know about the images so far */
-	nobs = 0;
 	n_images = 0;
 	n_crystals = 0;
 	images = NULL;
@@ -495,6 +494,7 @@ int main(int argc, char *argv[])
 
 			Crystal *cr;
 			Crystal **crystals_new;
+			RefList *cr_refl;
 
 			crystals_new = realloc(crystals,
 			                      (n_crystals+1)*sizeof(Crystal *));
@@ -506,20 +506,20 @@ int main(int argc, char *argv[])
 			crystals = crystals_new;
 			crystals[n_crystals] = cur->crystals[i];
 			cr = crystals[n_crystals];
-			crystal_set_image(cr, cur);
+
+			/* Image pointer will change due to later reallocs */
+			crystal_set_image(cr, NULL);
 
 			/* Fill in initial estimates of stuff */
 			crystal_set_osf(cr, 1.0);
 			crystal_set_profile_radius(cr, beam->profile_radius);
-			crystal_set_user_flag(cr, 0);
+			crystal_set_user_flag(cr, n_images);
 
 			/* This is the raw list of reflections */
-			as = asymmetric_indices(crystal_get_reflections(cr),
-			                        sym);
+			cr_refl = crystal_get_reflections(cr);
+			as = asymmetric_indices(cr_refl, sym);
 			crystal_set_reflections(cr, as);
-			update_partialities(cr);
-
-			nobs += select_scalable_reflections(as, reference);
+			reflist_free(cr_refl);
 
 			n_crystals++;
 
@@ -530,6 +530,26 @@ int main(int argc, char *argv[])
 	} while ( 1 );
 
 	close_stream(st);
+
+	/* Fill in image pointers */
+	nobs = 0;
+	for ( i=0; i<n_images; i++ ) {
+		int j;
+		for ( j=0; j<images[i].n_crystals; j++ ) {
+
+			Crystal *cryst;
+			RefList *as;
+
+			cryst = images[i].crystals[j];
+			crystal_set_image(cryst, &images[i]);
+
+			/* Now it's safe to do the following */
+			update_partialities(cryst);
+			as = crystal_get_reflections(cryst);
+			nobs += select_scalable_reflections(as, reference);
+
+		}
+	}
 
 	/* Make initial estimates */
 	STATUS("\nPerforming initial scaling.\n");
