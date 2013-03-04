@@ -605,7 +605,7 @@ int main(int argc, char *argv[])
 	for ( i=0; i<n_crystals; i++ ) {
 		if ( crystal_get_user_flag(crystals[i]) ) n_dud++;
 	}
-	STATUS("%i images could not be refined on the last cycle.\n", n_dud);
+	STATUS("%i crystals could not be refined on the last cycle.\n", n_dud);
 
 	/* Output results */
 	write_reflist(outfile, full);
