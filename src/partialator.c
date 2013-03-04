@@ -612,6 +612,7 @@ int main(int argc, char *argv[])
 
 	/* Clean up */
 	for ( i=0; i<n_crystals; i++ ) {
+		reflist_free(crystal_get_reflections(crystals[i]));
 		crystal_free(crystals[i]);
 	}
 	reflist_free(full);
