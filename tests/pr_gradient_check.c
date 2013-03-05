@@ -149,7 +149,7 @@ static Crystal *new_shifted_crystal(Crystal *cr, int refine, double incr_val)
 		case REF_CSY :
 		case REF_CSZ :
 		cell = new_shifted_cell(crystal_get_cell(cr), refine,
-		                        -incr_val);
+		                        incr_val);
 		crystal_set_cell(cr_new, cell);
 		break;
 
@@ -175,12 +175,10 @@ static void calc_either_side(Crystal *cr, double incr_val,
 
 	if ( (refine != REF_DIV) ) {
 
-		/* Crystal properties */
-
 		Crystal *cr_new;
 
+		/* Crystal properties */
 		cr_new = new_shifted_crystal(cr, refine, -incr_val);
-
 		compare = find_intersections(image, cr_new);
 		scan_partialities(crystal_get_reflections(cr), compare, valid,
 		                  vals, 0);
@@ -189,7 +187,6 @@ static void calc_either_side(Crystal *cr, double incr_val,
 		reflist_free(compare);
 
 		cr_new = new_shifted_crystal(cr, refine, +incr_val);
-
 		compare = find_intersections(image, cr_new);
 		scan_partialities(crystal_get_reflections(cr), compare, valid,
 		                  vals, 2);
@@ -199,10 +196,9 @@ static void calc_either_side(Crystal *cr, double incr_val,
 
 	} else {
 
-		/* "Image" properties */
-
 		struct image im_moved;
 
+		/* "Image" properties */
 		im_moved = *image;
 		shift_parameter(&im_moved, refine, -incr_val);
 		compare = find_intersections(&im_moved, cr);
