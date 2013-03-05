@@ -128,7 +128,7 @@ static Crystal *new_shifted_crystal(Crystal *cr, int refine, double incr_val)
 	double r;
 	UnitCell *cell;
 
-	cr_new = crystal_new();
+	cr_new = crystal_copy(cr);
 	if ( cr_new == NULL ) {
 		ERROR("Failed to allocate crystal.\n");
 		return NULL;
@@ -192,7 +192,7 @@ static void calc_either_side(Crystal *cr, double incr_val,
 
 		compare = find_intersections(image, cr_new);
 		scan_partialities(crystal_get_reflections(cr), compare, valid,
-		                  vals, 0);
+		                  vals, 2);
 		cell_free(crystal_get_cell(cr_new));
 		crystal_free(cr_new);
 		reflist_free(compare);
