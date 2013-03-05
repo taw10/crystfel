@@ -3,7 +3,7 @@
  *
  * Check gradients for post refinement
  *
- * Copyright © 2012 Thomas White <taw@physics.org>
+ * Copyright © 2012-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
