@@ -3,12 +3,36 @@
 use strict;
 use File::Basename;
 
-open(FH, $ARGV[0]);
+my $only;
+my $file;
+
+# Horrible option processing
+if ( $ARGV[0] eq "--indexed" ) {
+	$only = "indexed";
+	$file = $ARGV[1];
+} elsif ( $ARGV[0] eq "--not-indexed" ) {
+	$only = "notindexed";
+	$file = $ARGV[1];
+} else {
+	$only = "";
+	$file = $ARGV[0];
+}
+my $args = join(" ", splice(@ARGV, 2, scalar(@ARGV)-1));
+if ( !($args eq "") ) {
+	printf("Extra arguments for hdfsee: %s\n", $args);
+} else {
+	# Default arguments - feel free to override!
+	$args = "--binning=2 --int-boost=10";
+	printf("Using default arguments for hdfsee: %s\n", $args);
+}
+
+open(FH, $file);
 open(TMP, "> list.tmp");
 
 my $in_image = 0;
 my $line;
 my $filename;
+my $indexed;
 while ( $line = <FH> ) {
 
 	chomp $line;
@@ -29,16 +53,49 @@ while ( $line = <FH> ) {
 		$handled = 1;
 	}
 
+	if ( $line =~ /^indexed_by\ =\ (.*)$/ ) {
+		if ( $1 eq "none" ) {
+			$indexed = 0;
+		} else {
+			$indexed = 1;
+		}
+	}
+
 	if ( $line =~ /^End\ of\ peak\ list$/ ) {
 
 		close(TMP);
+
+		my $show;
+
+		if ( $only eq "indexed" ) {
+			if ( $indexed ) {
+				$show = 1;
+			} else {
+				$show = 0;
+			}
+		} elsif ( $only eq "notindexed" ) {
+			if ( $indexed ) {
+				$show = 0;
+			} else {
+				$show = 1;
+			}
+		} else {
+			$show = 1;
+		}
+
+		if ( !$show ) {
+			printf(STDERR "Not showing %s\n", $filename);
+			unlink("list.tmp");
+			open(TMP, "> list.tmp");
+			next;
+		}
 
 		# Example of how to do "basename" and "prefix":
 		# $filename = "images-old/".basename($filename);
 
 		printf(STDERR "Viewing %s\n", $filename);
 		system("hdfsee ".$filename.
-		       " --peak-overlay=list.tmp --binning=2 --int-boost=10");
+		       " --peak-overlay=list.tmp ".$args);
 		if ( $? != 0 ) { exit; }
 		unlink("list.tmp");
 		open(TMP, "> list.tmp");
