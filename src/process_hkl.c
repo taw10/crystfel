@@ -64,8 +64,8 @@ static void show_help(const char *s)
 "                             Default: processed.hkl).\n"
 "  -y, --symmetry=<sym>      Merge according to point group <sym>.\n"
 "\n"
-"      --start-after=<n>     Skip n patterns at the start of the stream.\n"
-"      --stop-after=<n>      Stop after processing n patterns.\n"
+"      --start-after=<n>     Skip <n> crystals at the start of the stream.\n"
+"      --stop-after=<n>      Stop after merging <n> crystals.\n"
 "  -g, --histogram=<h,k,l>   Calculate the histogram of measurements for this\n"
 "                             reflection.\n"
 "  -z, --hist-parameters     Set the range for the histogram and the number of\n"
@@ -282,7 +282,8 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
                      const SymOpList *sym,
                      double *hist_vals, signed int hist_h,
                      signed int hist_k, signed int hist_l,
-                     int *hist_i, int config_nopolar, int min_measurements)
+                     int *hist_i, int config_nopolar, int min_measurements,
+                     int start_after, int stop_after)
 {
 	int rval;
 	int n_images = 0;
@@ -290,6 +291,7 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 	int n_crystals_used = 0;
 	Reflection *refl;
 	RefListIterator *iter;
+	int n_crystals_seen = 0;
 
 	do {
 
@@ -309,6 +311,9 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 			int r;
 			Crystal *cr = image.crystals[i];
 
+			n_crystals_seen++;
+			if ( n_crystals_seen <= start_after ) continue;
+
 			n_crystals++;
 			r = merge_crystal(model, &image, cr, reference, sym,
 			                  hist_vals, hist_h, hist_k, hist_l,
@@ -318,12 +323,16 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 
 			crystal_free(cr);
 
+			if ( n_crystals_used == stop_after ) break;
+
 		}
 
 		free(image.filename);
 		image_feature_list_free(image.features);
 
-		display_progress(n_images, n_crystals, n_crystals_used);
+		display_progress(n_images, n_crystals_seen, n_crystals_used);
+
+		if ( (stop_after>0) && (n_crystals_used == stop_after) ) break;
 
 	} while ( rval == 0 );
 
@@ -377,6 +386,8 @@ int main(int argc, char *argv[])
 	char *rval;
 	int min_measurements = 2;
 	int r;
+	int start_after = 0;
+	int stop_after = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -385,8 +396,8 @@ int main(int argc, char *argv[])
 		{"output",             1, NULL,               'o'},
 		{"max-only",           0, &config_maxonly,     1},
 		{"output-every",       1, NULL,               'e'},
-		{"stop-after",         1, NULL,               's'},
-		{"start-after",        1, NULL,               'f'},
+		{"start-after",         1, NULL,              's'},
+		{"stop-after",        1, NULL,                'f'},
 		{"sum",                0, &config_sum,         1},
 		{"scale",              0, &config_scale,       1},
 		{"no-polarisation",    0, &config_nopolar,     1},
@@ -399,7 +410,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:e:o:y:g:f:b:z:",
+	while ((c = getopt_long(argc, argv, "hi:e:o:y:g:s:f:z:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -417,11 +428,21 @@ int main(int argc, char *argv[])
 			break;
 
 			case 's' :
-			ERROR("The option '--stop-after' no longer works.\n");
+			errno = 0;
+			start_after = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --start-after.\n");
+				return 1;
+			}
 			break;
 
 			case 'f' :
-			ERROR("The option '--start-after' no longer works.\n");
+			errno = 0;
+			stop_after = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --stop-after.\n");
+				return 1;
+			}
 			break;
 
 			case 'y' :
@@ -525,7 +546,8 @@ int main(int argc, char *argv[])
 
 	hist_i = 0;
 	r = merge_all(st, model, NULL, sym, hist_vals, hist_h, hist_k, hist_l,
-	              &hist_i, config_nopolar, min_measurements);
+	              &hist_i, config_nopolar, min_measurements,
+	              start_after, stop_after);
 	fprintf(stderr, "\n");
 	if ( r ) {
 		ERROR("Error while reading stream.\n");
@@ -554,7 +576,8 @@ int main(int argc, char *argv[])
 
 			r = merge_all(st, model, reference, sym,
 				     hist_vals, hist_h, hist_k, hist_l, &hist_i,
-				     config_nopolar, min_measurements);
+				     config_nopolar, min_measurements,
+				     start_after, stop_after);
 			fprintf(stderr, "\n");
 			if ( r ) {
 				ERROR("Error while reading stream.\n");

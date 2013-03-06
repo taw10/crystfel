@@ -58,18 +58,12 @@ Set the minimum and maximum values, and the number of bins, to \fImin\fR, \fImax
 .PD 0
 .IP \fB--start-after=\fR\fIn\fR
 .PD
-Ignore the first \fIn\fR patterns in the stream.
+Ignore the first \fIn\fR crystals in the input.  The default is \fB--start-after=0\fR, i.e. start at the beginning.
 
 .PD 0
 .IP \fB--stop-after=\fR\fIn\fR
 .PD
-Stop after processing \fIn\fR patterns.
-
-.PD 0
-.IP \fB--start-after=\fR\fIn\fR
-.PD
-Ignore the first \fIn\fR patterns in the stream, not including those skipped
-with \fB--start-after\fR, if any.
+Stop processing after \fIn\fR crystals have been successfully merged.  The default is \fB--stop-after=0\fR, which means to process all the patterns from the start point to the end of the input (see \fB--start-after\fR).
 
 .PD 0
 .IP \fB--reference=\fR\fIfilename\fR
