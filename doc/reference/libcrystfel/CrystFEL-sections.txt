@@ -380,6 +380,7 @@ crystal_set_user_flag
 
 <SECTION>
 <FILE>geometry</FILE>
+PartialityModel
 find_intersections
 select_intersections
 update_partialities
