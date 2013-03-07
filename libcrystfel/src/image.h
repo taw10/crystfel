@@ -3,11 +3,11 @@
  *
  * Handle images and image features
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -41,9 +41,8 @@
 #include "cell.h"
 #include "detector.h"
 #include "reflist.h"
-
-
-#define MAX_CELL_CANDIDATES (32)
+#include "crystal.h"
+#include "index.h"
 
 
 /* Structure describing a feature in an image */
@@ -79,10 +78,10 @@ typedef struct _imagefeaturelist ImageFeatureList;
  *    uint16_t                *flags;
  *    double                  *twotheta;
  *
- *    UnitCell                *indexed_cell;
- *    UnitCell                *candidate_cells[MAX_CELL_CANDIDATES];
- *    int                     ncells;
-
+ *    Crystal                 **crystals;
+ *    int                     n_crystals;
+ *    IndexingMethod          indexed_by;
+ *
  *    struct detector         *det;
  *    struct beam_params      *beam;
  *    char                    *filename;
@@ -90,22 +89,15 @@ typedef struct _imagefeaturelist ImageFeatureList;
  *
  *    int                     id;
  *
- *    double                  m;
- *
  *    double                  lambda;
  *    double                  div;
  *    double                  bw;
- *    double                  osf;
- *    double                  profile_radius;
- *    int                     pr_dud;
- *    double                  diffracting_resolution;
  *
  *    int                     width;
  *    int                     height;
  *
- *    RefList                 *reflections;
- *    long long unsigned int  n_saturated;
- *
+ *    long long int           num_peaks;
+ *    long long int           num_saturated_peaks;
  *    ImageFeatureList        *features;
  * };
  * </programlisting>
@@ -121,14 +113,9 @@ typedef struct _imagefeaturelist ImageFeatureList;
  * by-product of the scattering vector calculation and can be used later for
  * calculating intensities from differential scattering cross sections.
  *
- * <structfield>candidate_cells</structfield> is an array of unit cells directly
- * returned by the low-level indexing system. <structfield>ncells</structfield>
- * is the number of candidate unit cells which were found.  The maximum number
- * of cells which may be returned is <function>MAX_CELL_CANDIDATES</function>.
- * <structfield>indexed_cell</structfield> contains the "correct" unit cell
- * after cell reduction or matching has been performed.  The job of the cell
- * reduction is to convert the list of candidate cells into a single indexed
- * cell, or <function>NULL</function> on failure.
+ * <structfield>crystals</structfield> is an array of %Crystal directly
+ * returned by the low-level indexing system. <structfield>n_crystals</structfield>
+ * is the number of crystals which were found in the image.
  *
  * <structfield>copyme</structfield> represents a list of HDF5 fields to copy
  * to the output stream.
@@ -141,9 +128,9 @@ struct image {
 	uint16_t                *flags;
 	double                  *twotheta;
 
-	UnitCell                *indexed_cell;
-	UnitCell                *candidate_cells[MAX_CELL_CANDIDATES];
-	int                     ncells;
+	Crystal                 **crystals;
+	int                     n_crystals;
+	IndexingMethod          indexed_by;
 
 	struct detector         *det;
 	struct beam_params      *beam;  /* The nominal beam parameters */
@@ -153,26 +140,17 @@ struct image {
 	int                     id;   /* ID number of the thread
 	                               * handling this image */
 
-	/* Information about the crystal */
-	double                  m;  /* Mosaicity in radians */
-
 	/* Per-shot radiation values */
 	double                  lambda;        /* Wavelength in m */
 	double                  div;           /* Divergence in radians */
 	double                  bw;            /* Bandwidth as a fraction */
-	double                  osf;           /* Overall scaling factor */
-	double                  profile_radius; /* Radius of reflection */
-	int                     pr_dud;        /* Post refinement failed */
-	double                  diffracting_resolution;  /* Max 1/d in m^-1 */
 
 	int                     width;
 	int                     height;
 
-	/* Integrated (or about-to-be-integrated) reflections */
-	RefList                 *reflections;
-	long long int           n_saturated;  /* Number of overloads */
-
 	/* Detected peaks */
+	long long int           num_peaks;
+	long long int           num_saturated_peaks;
 	ImageFeatureList        *features;
 
 };
@@ -195,5 +173,8 @@ extern struct imagefeature *image_feature_closest(ImageFeatureList *flist,
 
 extern int image_feature_count(ImageFeatureList *flist);
 extern struct imagefeature *image_get_feature(ImageFeatureList *flist, int idx);
+
+extern void image_add_crystal(struct image *image, Crystal *cryst);
+extern void free_all_crystals(struct image *image);
 
 #endif	/* IMAGE_H */

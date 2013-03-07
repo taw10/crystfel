@@ -3,11 +3,11 @@
  *
  * Beam parameters
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2013-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010,2012 Thomas White <taw@physics.org>
+ *   2010,2012-2013 Thomas White <taw@physics.org>
  *   2012      Chunhong Yoon
  *
  * This file is part of CrystFEL.
@@ -33,6 +33,8 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+struct beam_params;
 
 #include "hdf5-file.h"
 

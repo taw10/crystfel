@@ -3,11 +3,11 @@
  *
  * Post refinement
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -88,7 +88,7 @@ static double partiality_rgradient(double r, double profile_radius)
 
 
 /* Return the gradient of parameter 'k' given the current status of 'image'. */
-double gradient(struct image *image, int k, Reflection *refl, double r)
+double gradient(Crystal *cr, int k, Reflection *refl)
 {
 	double ds, azix, aziy;
 	double ttlow, tthigh, tt;
@@ -103,17 +103,19 @@ double gradient(struct image *image, int k, Reflection *refl, double r)
 	int clamp_low, clamp_high;
 	double klow, khigh;
 	double gr;
+	struct image *image = crystal_get_image(cr);
+	double r = crystal_get_profile_radius(cr);
 
 	get_symmetric_indices(refl, &hs, &ks, &ls);
 
-	cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
-	                                         &bsx, &bsy, &bsz,
-	                                         &csx, &csy, &csz);
+	cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
+	                                          &bsx, &bsy, &bsz,
+	                                          &csx, &csy, &csz);
 	xl = hs*asx + ks*bsx + ls*csx;
 	yl = hs*asy + ks*bsy + ls*csy;
 	zl = hs*asz + ks*bsz + ls*csz;
 
-	ds = 2.0 * resolution(image->indexed_cell, hs, ks, ls);
+	ds = 2.0 * resolution(crystal_get_cell(cr), hs, ks, ls);
 	get_partial(refl, &r1, &r2, &p, &clamp_low, &clamp_high);
 
 	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
@@ -237,8 +239,11 @@ static void apply_cell_shift(UnitCell *cell, int k, double shift)
 
 
 /* Apply the given shift to the 'k'th parameter of 'image'. */
-static void apply_shift(struct image *image, int k, double shift)
+static void apply_shift(Crystal *cr, int k, double shift)
 {
+	double t;
+	struct image *image = crystal_get_image(cr);
+
 	switch ( k ) {
 
 		case REF_DIV :
@@ -251,7 +256,9 @@ static void apply_shift(struct image *image, int k, double shift)
 		break;
 
 		case REF_R :
-		image->profile_radius += shift;
+		t = crystal_get_profile_radius(cr);
+		t += shift;
+		crystal_set_profile_radius(cr, t);
 		break;
 
 		case REF_ASX :
@@ -263,7 +270,7 @@ static void apply_shift(struct image *image, int k, double shift)
 		case REF_CSX :
 		case REF_CSY :
 		case REF_CSZ :
-		apply_cell_shift(image->indexed_cell, k, shift);
+		apply_cell_shift(crystal_get_cell(cr), k, shift);
 		break;
 
 		default :
@@ -357,7 +364,7 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
 
 
 /* Perform one cycle of post refinement on 'image' against 'full' */
-static double pr_iterate(struct image *image, const RefList *full)
+static double pr_iterate(Crystal *cr, const RefList *full)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
@@ -369,7 +376,7 @@ static double pr_iterate(struct image *image, const RefList *full)
 	double max_shift;
 	int nref = 0;
 
-	reflections = image->reflections;
+	reflections = crystal_get_reflections(cr);
 
 	M = gsl_matrix_calloc(NUM_PARAMS, NUM_PARAMS);
 	v = gsl_vector_calloc(NUM_PARAMS);
@@ -387,6 +394,7 @@ static double pr_iterate(struct image *image, const RefList *full)
 		double p;
 		Reflection *match;
 		double gradients[NUM_PARAMS];
+		const double osf = crystal_get_osf(cr);
 
 		if ( !get_refinable(refl) ) continue;
 
@@ -398,7 +406,7 @@ static double pr_iterate(struct image *image, const RefList *full)
 			      " is it marked as refinable?\n", ha, ka, la);
 			continue;
 		}
-		I_full = image->osf * get_intensity(match);
+		I_full = osf * get_intensity(match);
 
 		/* Actual measurement of this reflection from this pattern? */
 		I_partial = get_intensity(refl);
@@ -412,7 +420,7 @@ static double pr_iterate(struct image *image, const RefList *full)
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<NUM_PARAMS; k++ ) {
 			double gr;
-			gr = gradient(image, k, refl, image->profile_radius);
+			gr = gradient(cr, k, refl);
 			gradients[k] = gr;
 		}
 
@@ -429,7 +437,7 @@ static double pr_iterate(struct image *image, const RefList *full)
 				if ( g > k ) continue;
 
 				M_c = gradients[g] * gradients[k];
-				M_c *= w * pow(image->osf * I_full, 2.0);
+				M_c *= w * pow(osf * I_full, 2.0);
 
 				M_curr = gsl_matrix_get(M, k, g);
 				gsl_matrix_set(M, k, g, M_curr + M_c);
@@ -450,7 +458,7 @@ static double pr_iterate(struct image *image, const RefList *full)
 
 	//STATUS("%i reflections went into the equations.\n", nref);
 	if ( nref == 0 ) {
-		image->pr_dud = 1;
+		crystal_set_user_flag(cr, 1);
 		gsl_matrix_free(M);
 		gsl_vector_free(v);
 		return 0.0;
@@ -462,7 +470,7 @@ static double pr_iterate(struct image *image, const RefList *full)
 
 		for ( param=0; param<NUM_PARAMS; param++ ) {
 			double shift = gsl_vector_get(shifts, param);
-			apply_shift(image, param, shift);
+			apply_shift(cr, param, shift);
 			//STATUS("Shift %i: %e\n", param, shift);
 			if ( fabs(shift) > max_shift ) max_shift = fabs(shift);
 		}
@@ -480,7 +488,7 @@ static double pr_iterate(struct image *image, const RefList *full)
 }
 
 
-static double guide_dev(struct image *image, const RefList *full)
+static double guide_dev(Crystal *cr, const RefList *full)
 {
 	double dev = 0.0;
 
@@ -488,7 +496,7 @@ static double guide_dev(struct image *image, const RefList *full)
 	Reflection *refl;
 	RefListIterator *iter;
 
-	for ( refl = first_refl(image->reflections, &iter);
+	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 
@@ -508,7 +516,7 @@ static double guide_dev(struct image *image, const RefList *full)
 		 * scale_intensities() might not yet have been called, so the
 		 * full version may not have been calculated yet. */
 
-		G = image->osf;
+		G = crystal_get_osf(cr);
 		p = get_partiality(refl);
 		I_partial = get_intensity(refl);
 		I_full = get_intensity(full_version);
@@ -524,21 +532,21 @@ static double guide_dev(struct image *image, const RefList *full)
 }
 
 
-void pr_refine(struct image *image, const RefList *full)
+void pr_refine(Crystal *cr, const RefList *full)
 {
 	double max_shift, dev;
 	int i;
 	const int verbose = 0;
 
 	if ( verbose ) {
-		dev = guide_dev(image, full);
+		dev = guide_dev(cr, full);
 		STATUS("\n");  /* Deal with progress bar */
 		STATUS("Before iteration:                       dev = %10.5e\n",
 		       dev);
 	}
 
 	i = 0;
-	image->pr_dud = 0;
+	crystal_set_user_flag(cr, 0);
 	do {
 
 		double asx, asy, asz;
@@ -546,15 +554,15 @@ void pr_refine(struct image *image, const RefList *full)
 		double csx, csy, csz;
 		double dev;
 
-		cell_get_reciprocal(image->indexed_cell, &asx, &asy, &asz,
+		cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
-		max_shift = pr_iterate(image, full);
+		max_shift = pr_iterate(cr, full);
 
-		update_partialities(image);
+		update_partialities(cr);
 
 		if ( verbose ) {
-			dev = guide_dev(image, full);
+			dev = guide_dev(cr, full);
 			STATUS("PR Iteration %2i: max shift = %10.2f"
 			       " dev = %10.5e\n", i+1, max_shift, dev);
 		}

@@ -8,6 +8,9 @@ my $line;
 my $total_i;
 my $n = 0;
 my $n_patt = 0;
+my $num_peaks_tot = 0;
+my $num_sat_peaks_tot = 0;
+my $num_pats_with_sat = 0;
 
 while ( $line = <FH> ) {
 
@@ -27,9 +30,21 @@ while ( $line = <FH> ) {
 
 	}
 
+	if ( $line =~ /^num_saturated_peaks\s=\s(\d+)$/ ) {
+		$num_sat_peaks_tot += $1;
+		if ( $1 > 0 ) {
+			$num_pats_with_sat++;
+		}
+	}
+
 }
 
 printf("%i patterns, %i peaks, %.2f total ADU\n", $n_patt, $n, $total_i);
 printf("Mean %i peaks per hit\n", $n / $n_patt);
 printf("Mean %.2f ADU per peak\n", $total_i / $n);
 printf("Mean %.2f ADU per hit\n", $total_i / $n_patt);
+printf("%i out of %i patterns contained any saturation\n", $num_pats_with_sat, $n_patt);
+if ( $num_pats_with_sat > 0 ) {
+	printf(" of those, there was an average of %.2f saturated peaks per pattern\n",
+	       $num_sat_peaks_tot/$num_pats_with_sat);
+}

@@ -3,11 +3,11 @@
  *
  * Invoke the DirAx auto-indexing program
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -53,6 +53,7 @@
 #include "dirax.h"
 #include "utils.h"
 #include "peaks.h"
+#include "cell-utils.h"
 
 
 #define DIRAX_VERBOSE 0
@@ -66,6 +67,13 @@ typedef enum {
 	DIRAX_INPUT_PROMPT,
 	DIRAX_INPUT_ACL
 } DirAxInputType;
+
+
+struct dirax_private {
+	IndexingMethod          indm;
+	float                   *ltl;
+	UnitCell                *template;
+};
 
 
 struct dirax_data {
@@ -83,10 +91,57 @@ struct dirax_data {
 	int                     read_cell;
 	int                     best_acl;
 	int                     best_acl_nh;
-	int                     acls_tried[MAX_CELL_CANDIDATES];
+	int                     acls_tried[MAX_DIRAX_CELL_CANDIDATES];
 	int                     n_acls_tried;
+	UnitCell                *cur_cell;
+	int                     done;
+	int                     success;
+
+	struct dirax_private    *dp;
 
 };
+
+
+static int check_cell(struct dirax_private *dp, struct image *image,
+                      UnitCell *cell)
+{
+	UnitCell *out;
+	Crystal *cr;
+
+	if ( dp->indm & INDEXING_CHECK_CELL_COMBINATIONS ) {
+
+		out = match_cell(cell, dp->template, 0, dp->ltl, 1);
+		if ( out == NULL ) return 0;
+
+	} else if ( dp->indm & INDEXING_CHECK_CELL_AXES ) {
+
+		out = match_cell(cell, dp->template, 0, dp->ltl, 0);
+		if ( out == NULL ) return 0;
+
+	} else {
+		out = cell_new_from_cell(cell);
+	}
+
+	cr = crystal_new();
+	if ( cr == NULL ) {
+		ERROR("Failed to allocate crystal.\n");
+		return 0;
+	}
+
+	crystal_set_cell(cr, out);
+
+	if ( dp->indm & INDEXING_CHECK_PEAKS ) {
+		if ( !peak_sanity_check(image, &cr, 1) ) {
+			crystal_free(cr);  /* Frees the cell as well */
+			cell_free(out);
+			return 0;
+		}
+	}
+
+	image_add_crystal(image, cr);
+
+	return 1;
+}
 
 
 static void dirax_parseline(const char *line, struct image *image,
@@ -119,7 +174,7 @@ static void dirax_parseline(const char *line, struct image *image,
 		if ( line[i] == 'R' ) rf = 1;
 		if ( (line[i] == 'D') && rf ) {
 			dirax->read_cell = 1;
-			image->candidate_cells[image->ncells] = cell_new();
+			dirax->cur_cell = cell_new();
 			return;
 		}
 		i++;
@@ -127,6 +182,7 @@ static void dirax_parseline(const char *line, struct image *image,
 
 	/* Parse unit cell vectors as appropriate */
 	if ( dirax->read_cell == 1 ) {
+
 		/* First row of unit cell values */
 		float ax, ay, az;
 		int r;
@@ -136,14 +192,16 @@ static void dirax_parseline(const char *line, struct image *image,
 			ERROR("Couldn't understand cell line:\n");
 			ERROR("'%s'\n", line);
 			dirax->read_cell = 0;
-			cell_free(image->candidate_cells[image->ncells]);
+			cell_free(dirax->cur_cell);
 			return;
 		}
-		cell_set_cartesian_a(image->candidate_cells[image->ncells],
+		cell_set_cartesian_a(dirax->cur_cell,
 		                     ax*1e-10, ay*1e-10, az*1e-10);
 		dirax->read_cell++;
 		return;
+
 	} else if ( dirax->read_cell == 2 ) {
+
 		/* Second row of unit cell values */
 		float bx, by, bz;
 		int r;
@@ -153,14 +211,16 @@ static void dirax_parseline(const char *line, struct image *image,
 			ERROR("Couldn't understand cell line:\n");
 			ERROR("'%s'\n", line);
 			dirax->read_cell = 0;
-			cell_free(image->candidate_cells[image->ncells]);
+			cell_free(dirax->cur_cell);
 			return;
 		}
-		cell_set_cartesian_b(image->candidate_cells[image->ncells],
+		cell_set_cartesian_b(dirax->cur_cell,
 		                     bx*1e-10, by*1e-10, bz*1e-10);
 		dirax->read_cell++;
 		return;
+
 	} else if ( dirax->read_cell == 3 ) {
+
 		/* Third row of unit cell values */
 		float cx, cy, cz;
 		int r;
@@ -170,13 +230,21 @@ static void dirax_parseline(const char *line, struct image *image,
 			ERROR("Couldn't understand cell line:\n");
 			ERROR("'%s'\n", line);
 			dirax->read_cell = 0;
-			cell_free(image->candidate_cells[image->ncells]);
+			cell_free(dirax->cur_cell);
 			return;
 		}
-		cell_set_cartesian_c(image->candidate_cells[image->ncells++],
+		cell_set_cartesian_c(dirax->cur_cell,
 		                     cx*1e-10, cy*1e-10, cz*1e-10);
 		dirax->read_cell = 0;
+
+		/* Finished reading a cell.  Time to check it... */
+		if ( check_cell(dirax->dp, image, dirax->cur_cell) ) {
+			dirax->done = 1;
+			dirax->success = 1;
+		}
+
 		return;
+
 	}
 
 	dirax->read_cell = 0;
@@ -351,8 +419,7 @@ static int dirax_readable(struct image *image, struct dirax_data *dirax)
 
 			switch ( type ) {
 
-			case DIRAX_INPUT_LINE :
-
+				case DIRAX_INPUT_LINE :
 				block_buffer = malloc(i+1);
 				memcpy(block_buffer, dirax->rbuffer, i);
 				block_buffer[i] = '\0';
@@ -366,20 +433,17 @@ static int dirax_readable(struct image *image, struct dirax_data *dirax)
 				endbit_length = i+2;
 				break;
 
-			case DIRAX_INPUT_PROMPT :
-
+				case DIRAX_INPUT_PROMPT :
 				dirax_send_next(image, dirax);
 				endbit_length = i+7;
 				break;
 
-			case DIRAX_INPUT_ACL :
-
+				case DIRAX_INPUT_ACL :
 				dirax_send_next(image,dirax );
 				endbit_length = i+10;
 				break;
 
-			default :
-
+				default :
 				/* Obviously, this never happens :) */
 				ERROR("Unrecognised DirAx input mode! "
 				      "I don't know how to understand DirAx\n");
@@ -456,7 +520,7 @@ static void write_drx(struct image *image)
 }
 
 
-void run_dirax(struct image *image)
+int run_dirax(struct image *image, IndexingPrivate *ipriv)
 {
 	unsigned int opts;
 	int status;
@@ -468,13 +532,13 @@ void run_dirax(struct image *image)
 	dirax = malloc(sizeof(struct dirax_data));
 	if ( dirax == NULL ) {
 		ERROR("Couldn't allocate memory for DirAx data.\n");
-		return;
+		return 0;
 	}
 
 	dirax->pid = forkpty(&dirax->pty, NULL, NULL, NULL);
 	if ( dirax->pid == -1 ) {
 		ERROR("Failed to fork for DirAx: %s\n", strerror(errno));
-		return;
+		return 0;
 	}
 	if ( dirax->pid == 0 ) {
 
@@ -505,6 +569,9 @@ void run_dirax(struct image *image)
 	dirax->read_cell = 0;
 	dirax->n_acls_tried = 0;
 	dirax->best_acl_nh = 0;
+	dirax->done = 0;
+	dirax->success = 0;
+	dirax->dp = (struct dirax_private *)ipriv;
 
 	do {
 
@@ -543,7 +610,7 @@ void run_dirax(struct image *image)
 			rval = 1;
 		}
 
-	} while ( !rval );
+	} while ( !rval && !dirax->success );
 
 	close(dirax->pty);
 	free(dirax->rbuffer);
@@ -553,5 +620,47 @@ void run_dirax(struct image *image)
 		ERROR("DirAx doesn't seem to be working properly.\n");
 	}
 
+	rval = dirax->success;
 	free(dirax);
+	return rval;
+}
+
+
+IndexingPrivate *dirax_prepare(IndexingMethod *indm, UnitCell *cell,
+                               const char *filename, struct detector *det,
+                               struct beam_params *beam, float *ltl)
+{
+	struct dirax_private *dp;
+	int need_cell = 0;
+
+	if ( *indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
+	if ( *indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
+
+	if ( need_cell && (cell == NULL) ) {
+		ERROR("Altering your DirAx flags because no PDB file was"
+		      " provided.\n");
+		*indm &= ~INDEXING_CHECK_CELL_COMBINATIONS;
+		*indm &= ~INDEXING_CHECK_CELL_AXES;
+	}
+
+	/* Flags that DirAx knows about */
+	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_CELL_COMBINATIONS
+	       | INDEXING_CHECK_CELL_AXES | INDEXING_CHECK_PEAKS;
+
+	dp = malloc(sizeof(struct dirax_private));
+	if ( dp == NULL ) return NULL;
+
+	dp->ltl = ltl;
+	dp->template = cell;
+	dp->indm = *indm;
+
+	return (IndexingPrivate *)dp;
+}
+
+
+void dirax_cleanup(IndexingPrivate *pp)
+{
+	struct dirax_private *p;
+	p = (struct dirax_private *)pp;
+	free(p);
 }

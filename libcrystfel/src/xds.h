@@ -1,13 +1,15 @@
 /*
- * dirax.h
+ * xds.h
  *
- * Invoke the DirAx auto-indexing program
+ * Invoke xds for crystal autoindexing
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
- *                       a research centre of the Helmholtz Association.
+ * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
+ *                  a research centre of the Helmholtz Association.
+ * Copyright © 2013 Cornelius Gati
  *
  * Authors:
- *   2010,2012-2013 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
+ *        2013 Cornelius Gati <cornelius.gati@cfel.de>
  *
  * This file is part of CrystFEL.
  *
@@ -26,22 +28,23 @@
  *
  */
 
-#ifndef DIRAX_H
-#define DIRAX_H
+#ifndef XDS_H
+#define XDS_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include "cell.h"
 #include "index.h"
 
-extern int run_dirax(struct image *image, IndexingPrivate *ipriv);
 
-extern IndexingPrivate *dirax_prepare(IndexingMethod *indm,
-                                      UnitCell *cell, const char *filename,
-                                      struct detector *det,
-                                      struct beam_params *beam, float *ltl);
+extern int run_xds(struct image *image, IndexingPrivate *ipriv);
 
-extern void dirax_cleanup(IndexingPrivate *pp);
+extern IndexingPrivate *xds_prepare(IndexingMethod *indm, UnitCell *cell,
+                                    const char *filename, struct detector *det,
+                                    struct beam_params *beam, float *ltl);
 
-#endif	/* DIRAX_H */
+extern void xds_cleanup(IndexingPrivate *pp);
+
+#endif	/* XDS_H */

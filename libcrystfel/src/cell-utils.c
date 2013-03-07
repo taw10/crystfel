@@ -424,13 +424,17 @@ UnitCell *uncenter_cell(UnitCell *in, UnitCellTransformation **t)
 	tt = uncentering_transformation(in, &new_centering, &new_latt);
 	if ( tt == NULL ) return NULL;
 
-	if ( t != NULL ) *t = tt;
-
 	out = cell_transform(in, tt);
 	if ( out == NULL ) return NULL;
 
 	cell_set_lattice_type(out, new_latt);
 	cell_set_centering(out, new_centering);
+
+	if ( t != NULL ) {
+		*t = tt;
+	} else {
+		tfn_free(tt);
+	}
 
 	return out;
 }
@@ -1154,33 +1158,33 @@ int validate_cell(UnitCell *cell)
 	char cen, ua;
 
 	if ( !cell_is_sensible(cell) ) {
-		ERROR("Warning: Unit cell parameters are not sensible.\n");
+		ERROR("WARNING: Unit cell parameters are not sensible.\n");
 		err = 1;
 	}
 
 	if ( !bravais_lattice(cell) ) {
-		ERROR("Warning: Unit cell is not a conventional Bravais"
+		ERROR("WARNING: Unit cell is not a conventional Bravais"
 		      " lattice.\n");
 		err = 1;
 	}
 
 	if ( !right_handed(cell) ) {
-		ERROR("Warning: Unit cell is not right handed.\n");
+		ERROR("WARNING: Unit cell is not right handed.\n");
 		err = 1;
 	}
 
 	cen = cell_get_centering(cell);
 	ua = cell_get_unique_axis(cell);
 	if ( (cen == 'A') && (ua != 'a') ) {
-		ERROR("Warning: centering doesn't match unique axis.\n");
+		ERROR("WARNING: centering doesn't match unique axis.\n");
 		err = 1;
 	}
 	if ( (cen == 'B') && (ua != 'b') ) {
-		ERROR("Warning: centering doesn't match unique axis.\n");
+		ERROR("WARNING: centering doesn't match unique axis.\n");
 		err = 1;
 	}
 	if ( (cen == 'C') && (ua != 'c') ) {
-		ERROR("Warning: centering doesn't match unique axis.\n");
+		ERROR("WARNING: centering doesn't match unique axis.\n");
 		err = 1;
 	}
 

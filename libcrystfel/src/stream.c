@@ -3,12 +3,12 @@
  *
  * Stream tools
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2011      Andrew Aquila
  *
@@ -37,6 +37,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "cell.h"
 #include "utils.h"
@@ -45,107 +49,17 @@
 #include "reflist.h"
 #include "reflist-utils.h"
 
+#define LATEST_MAJOR_VERSION (2)
+#define LATEST_MINOR_VERSION (1)
 
-#define CHUNK_START_MARKER "----- Begin chunk -----"
-#define CHUNK_END_MARKER "----- End chunk -----"
-#define PEAK_LIST_START_MARKER "Peaks from peak search"
-#define PEAK_LIST_END_MARKER "End of peak list"
-#define REFLECTION_START_MARKER "Reflections measured after indexing"
-/* REFLECTION_END_MARKER is over in reflist-utils.h because it is also
- * used to terminate a standalone list of reflections */
 
-static void exclusive(const char *a, const char *b)
+struct _stream
 {
-	ERROR("The stream options '%s' and '%s' are mutually exclusive.\n",
-	      a, b);
-}
+	FILE *fh;
 
-
-int parse_stream_flags(const char *a)
-{
-	int n, i;
-	int ret = STREAM_NONE;
-	char **flags;
-
-	n = assplode(a, ",", &flags, ASSPLODE_NONE);
-
-	for ( i=0; i<n; i++ ) {
-
-		if ( strcmp(flags[i], "integrated") == 0) {
-
-			ret |= STREAM_INTEGRATED;
-
-		} else if ( strcmp(flags[i], "peaks") == 0) {
-			if ( ret & STREAM_PEAKS_IF_INDEXED ) {
-				exclusive("peaks", "peaksifindexed");
-				return -1;
-			}
-			if ( ret & STREAM_PEAKS_IF_NOT_INDEXED ) {
-				exclusive("peaks", "peaksifnotindexed");
-				return -1;
-			}
-			ret |= STREAM_PEAKS;
-
-		} else if ( strcmp(flags[i], "peaksifindexed") == 0) {
-			if ( ret & STREAM_PEAKS ) {
-				exclusive("peaks", "peaksifindexed");
-				return -1;
-			}
-			if ( ret & STREAM_PEAKS_IF_NOT_INDEXED ) {
-				exclusive("peaksifnotindexed",
-				          "peaksifindexed");
-				return -1;
-			}
-			ret |= STREAM_PEAKS_IF_INDEXED;
-
-		} else if ( strcmp(flags[i], "peaksifnotindexed") == 0) {
-			if ( ret & STREAM_PEAKS ) {
-				exclusive("peaks", "peaksifnotindexed");
-				return -1;
-			}
-			if ( ret & STREAM_PEAKS_IF_INDEXED ) {
-				exclusive("peaksifnotindexed",
-				          "peaksifindexed");
-				return -1;
-			}
-			ret |= STREAM_PEAKS_IF_NOT_INDEXED;
-
-		} else {
-			ERROR("Unrecognised stream flag '%s'\n", flags[i]);
-			return -1;
-		}
-
-		free(flags[i]);
-
-	}
-	free(flags);
-
-	return ret;
-}
-
-
-int count_patterns(FILE *fh)
-{
-	char *rval;
-
-	int n_total_patterns = 0;
-	do {
-		char line[1024];
-
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
-		chomp(line);
-		if ( strcmp(line, CHUNK_END_MARKER) == 0 ) n_total_patterns++;
-
-	} while ( rval != NULL );
-
-	if ( ferror(fh) ) {
-		ERROR("Read error while counting patterns.\n");
-		return 0;
-	}
-
-	return n_total_patterns;
-}
+	int major_version;
+	int minor_version;
+};
 
 
 static int read_peaks(FILE *fh, struct image *image)
@@ -215,96 +129,107 @@ static void write_peaks(struct image *image, FILE *ofh)
 }
 
 
-void write_chunk(FILE *ofh, struct image *i, struct hdfile *hdfile, int f)
+static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 {
+	UnitCell *cell;
+	RefList *reflist;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	double a, b, c, al, be, ga;
 
-	fprintf(ofh, CHUNK_START_MARKER"\n");
+	fprintf(st->fh, CRYSTAL_START_MARKER"\n");
 
-	fprintf(ofh, "Image filename: %s\n", i->filename);
+	cell = crystal_get_cell(cr);
+	assert(cell != NULL);
 
-	if ( i->indexed_cell != NULL ) {
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+	fprintf(st->fh, "Cell parameters %7.5f %7.5f %7.5f nm,"
+		        " %7.5f %7.5f %7.5f deg\n",
+		        a*1.0e9, b*1.0e9, c*1.0e9,
+		        rad2deg(al), rad2deg(be), rad2deg(ga));
 
-		cell_get_parameters(i->indexed_cell, &a, &b, &c,
-		                                         &al, &be, &ga);
-		fprintf(ofh, "Cell parameters %7.5f %7.5f %7.5f nm,"
-			     " %7.5f %7.5f %7.5f deg\n",
-			     a*1.0e9, b*1.0e9, c*1.0e9,
-			     rad2deg(al), rad2deg(be), rad2deg(ga));
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+		                  &bsx, &bsy, &bsz,
+		                  &csx, &csy, &csz);
+	fprintf(st->fh, "astar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+		asx/1e9, asy/1e9, asz/1e9);
+	fprintf(st->fh, "bstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+		bsx/1e9, bsy/1e9, bsz/1e9);
+	fprintf(st->fh, "cstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+	        csx/1e9, csy/1e9, csz/1e9);
 
-		cell_get_reciprocal(i->indexed_cell, &asx, &asy, &asz,
-			                  &bsx, &bsy, &bsz,
-			                  &csx, &csy, &csz);
-		fprintf(ofh, "astar = %+9.7f %+9.7f %+9.7f nm^-1\n",
-			asx/1e9, asy/1e9, asz/1e9);
-		fprintf(ofh, "bstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
-			bsx/1e9, bsy/1e9, bsz/1e9);
-		fprintf(ofh, "cstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
-		        csx/1e9, csy/1e9, csz/1e9);
+	reflist = crystal_get_reflections(cr);
+	if ( reflist != NULL ) {
 
-	} else {
+		fprintf(st->fh, "diffraction_resolution_limit"
+		                " = %.2f nm^-1 or %.2f A\n",
+		                crystal_get_resolution_limit(cr)/1e9,
+		                1e9 / crystal_get_resolution_limit(cr));
 
-		fprintf(ofh, "No unit cell from indexing.\n");
-
-	}
-
-	fprintf(ofh, "photon_energy_eV = %f\n",
-	        J_to_eV(ph_lambda_to_en(i->lambda)));
-
-	if ( i->reflections != NULL ) {
-
-		fprintf(ofh, "diffraction_resolution_limit"
-		             " = %.2f nm^-1 or %.2f A\n",
-		             i->diffracting_resolution/1e9,
-		             1e9 / i->diffracting_resolution);
-
-		fprintf(ofh, "num_saturated_reflections"
-		             " = %lli\n", i->n_saturated);
+		fprintf(st->fh, "num_saturated_reflections = %lli\n",
+		                crystal_get_num_saturated_reflections(cr));
 
 	}
+
+	if ( include_reflections ) {
+
+		if ( reflist != NULL ) {
+
+			fprintf(st->fh, REFLECTION_START_MARKER"\n");
+			write_reflections_to_file(st->fh, reflist);
+			fprintf(st->fh, REFLECTION_END_MARKER"\n");
+
+		} else {
+
+			fprintf(st->fh, "No integrated reflections.\n");
+
+		}
+	}
+
+	fprintf(st->fh, CRYSTAL_END_MARKER"\n");
+}
+
+
+void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
+                 int include_peaks, int include_reflections)
+{
+	int j;
+
+	fprintf(st->fh, CHUNK_START_MARKER"\n");
+
+	fprintf(st->fh, "Image filename: %s\n", i->filename);
+	fprintf(st->fh, "indexed_by = %s\n", indexer_str(i->indexed_by));
 
 	if ( i->det != NULL ) {
 
 		int j;
 
 		for ( j=0; j<i->det->n_panels; j++ ) {
-			fprintf(ofh, "camera_length_%s = %f\n",
+			fprintf(st->fh, "camera_length_%s = %f\n",
 			        i->det->panels[j].name, i->det->panels[j].clen);
 		}
 
 	}
 
-	copy_hdf5_fields(hdfile, i->copyme, ofh);
+	copy_hdf5_fields(hdfile, i->copyme, st->fh);
 
-	if ( (f & STREAM_PEAKS)
-	  || ((f & STREAM_PEAKS_IF_INDEXED) && (i->indexed_cell != NULL))
-	  || ((f & STREAM_PEAKS_IF_NOT_INDEXED) && (i->indexed_cell == NULL)) )
-	{
-		fprintf(ofh, "\n");
-		write_peaks(i, ofh);
+	fprintf(st->fh, "num_peaks = %lli\n", i->num_peaks);
+	fprintf(st->fh, "num_saturated_peaks = %lli\n", i->num_saturated_peaks);
+	if ( include_peaks ) {
+		write_peaks(i, st->fh);
 	}
 
-	if ( f & STREAM_INTEGRATED ) {
+	fprintf(st->fh, "photon_energy_eV = %f\n",
+	        J_to_eV(ph_lambda_to_en(i->lambda)));
 
-		fprintf(ofh, "\n");
-
-		if ( i->reflections != NULL ) {
-
-			fprintf(ofh, REFLECTION_START_MARKER"\n");
-			write_reflections_to_file(ofh, i->reflections);
-			fprintf(ofh, REFLECTION_END_MARKER"\n");
-
-		} else {
-
-			fprintf(ofh, "No integrated reflections.\n");
-
-		}
+	for ( j=0; j<i->n_crystals; j++ ) {
+		write_crystal(st, i->crystals[j], include_reflections);
 	}
 
-	fprintf(ofh, CHUNK_END_MARKER"\n\n");
+	fprintf(st->fh, CHUNK_END_MARKER"\n");
+
+	fflush(st->fh);
 }
 
 
@@ -328,8 +253,7 @@ static int find_start_of_chunk(FILE *fh)
 }
 
 
-/* Read the next chunk from a stream and fill in 'image' */
-int read_chunk(FILE *fh, struct image *image)
+void read_crystal(Stream *st, struct image *image)
 {
 	char line[1024];
 	char *rval = NULL;
@@ -337,22 +261,116 @@ int read_chunk(FILE *fh, struct image *image)
 	int have_as = 0;
 	int have_bs = 0;
 	int have_cs = 0;
-	int have_filename = 0;
-	int have_ev = 0;
+	Crystal *cr;
+	int n;
+	Crystal **crystals_new;
 
-	if ( find_start_of_chunk(fh) ) return 1;
-
-	image->lambda = -1.0;
-	image->features = NULL;
-	image->reflections = NULL;
-	image->indexed_cell = NULL;
-	image->n_saturated = 0;
+	cr = crystal_new();
+	if ( cr == NULL ) {
+		ERROR("Failed to allocate crystal!\n");
+		return;
+	}
 
 	do {
 
 		float u, v, w;
 
-		rval = fgets(line, 1023, fh);
+		rval = fgets(line, 1023, st->fh);
+
+		/* Trouble? */
+		if ( rval == NULL ) break;
+
+		chomp(line);
+		if ( sscanf(line, "astar = %f %f %f", &u, &v, &w) == 3 ) {
+			as.u = u*1e9;  as.v = v*1e9;  as.w = w*1e9;
+			have_as = 1;
+		}
+
+		if ( sscanf(line, "bstar = %f %f %f", &u, &v, &w) == 3 ) {
+			bs.u = u*1e9;  bs.v = v*1e9;  bs.w = w*1e9;
+			have_bs = 1;
+		}
+
+		if ( sscanf(line, "cstar = %f %f %f", &u, &v, &w) == 3 ) {
+			cs.u = u*1e9;  cs.v = v*1e9;  cs.w = w*1e9;
+			have_cs = 1;
+		}
+
+		if ( have_as && have_bs && have_cs ) {
+
+			UnitCell *cell;
+
+			cell = crystal_get_cell(cr);
+
+			if ( cell != NULL ) {
+				ERROR("Duplicate cell found in stream!\n");
+				ERROR("I'll use the most recent one.\n");
+				cell_free(cell);
+			}
+
+			cell = cell_new_from_reciprocal_axes(as, bs, cs);
+			crystal_set_cell(cr, cell);
+
+			have_as = 0;  have_bs = 0;  have_cs = 0;
+
+		}
+
+		if ( strncmp(line, "num_saturated_reflections = ", 28) == 0 ) {
+			int n = atoi(line+28);
+			crystal_set_num_saturated_reflections(cr, n);
+		}
+
+		if ( strcmp(line, REFLECTION_START_MARKER) == 0 ) {
+
+			RefList *reflections;
+
+			reflections = read_reflections_from_file(st->fh);
+
+			if ( reflections == NULL ) {
+				ERROR("Failed while reading reflections\n");
+				break;
+			}
+
+			crystal_set_reflections(cr, reflections);
+
+		}
+
+		if ( strcmp(line, CRYSTAL_END_MARKER) == 0 ) break;
+
+	} while ( 1 );
+
+	/* Add crystal to the list for this image */
+	n = image->n_crystals+1;
+	crystals_new = realloc(image->crystals, n*sizeof(Crystal *));
+
+	if ( crystals_new == NULL ) {
+		ERROR("Failed to expand crystal list!\n");
+	} else {
+		image->crystals = crystals_new;
+		image->crystals[image->n_crystals++] = cr;
+	}
+
+}
+
+
+/* Read the next chunk from a stream and fill in 'image' */
+int read_chunk(Stream *st, struct image *image)
+{
+	char line[1024];
+	char *rval = NULL;
+	int have_filename = 0;
+	int have_ev = 0;
+
+	if ( find_start_of_chunk(st->fh) ) return 1;
+
+	image->lambda = -1.0;
+	image->features = NULL;
+	image->crystals = NULL;
+	image->n_crystals = 0;
+
+	do {
+
+		rval = fgets(line, 1023, st->fh);
 
 		/* Trouble? */
 		if ( rval == NULL ) break;
@@ -362,6 +380,11 @@ int read_chunk(FILE *fh, struct image *image)
 		if ( strncmp(line, "Image filename: ", 16) == 0 ) {
 			image->filename = strdup(line+16);
 			have_filename = 1;
+		}
+
+		if ( strncmp(line, "photon_energy_eV = ", 19) == 0 ) {
+			image->lambda = ph_en_to_lambda(eV_to_J(atof(line+19)));
+			have_ev = 1;
 		}
 
 		if ( strncmp(line, "camera_length_", 14) == 0 ) {
@@ -390,56 +413,19 @@ int read_chunk(FILE *fh, struct image *image)
 			}
 		}
 
-		if ( sscanf(line, "astar = %f %f %f", &u, &v, &w) == 3 ) {
-			as.u = u*1e9;  as.v = v*1e9;  as.w = w*1e9;
-			have_as = 1;
-		}
-
-		if ( sscanf(line, "bstar = %f %f %f", &u, &v, &w) == 3 ) {
-			bs.u = u*1e9;  bs.v = v*1e9;  bs.w = w*1e9;
-			have_bs = 1;
-		}
-
-		if ( sscanf(line, "cstar = %f %f %f", &u, &v, &w) == 3 ) {
-			cs.u = u*1e9;  cs.v = v*1e9;  cs.w = w*1e9;
-			have_cs = 1;
-		}
-
-		if ( have_as && have_bs && have_cs ) {
-			if ( image->indexed_cell != NULL ) {
-				ERROR("Duplicate cell found in stream!\n");
-				cell_free(image->indexed_cell);
-			}
-			image->indexed_cell = cell_new_from_reciprocal_axes(as,
-			                                                    bs,
-			                                                    cs);
-			have_as = 0;  have_bs = 0;  have_cs = 0;
-		}
-
-		if ( strncmp(line, "photon_energy_eV = ", 19) == 0 ) {
-			image->lambda = ph_en_to_lambda(eV_to_J(atof(line+19)));
-			have_ev = 1;
-		}
-
-		if ( strncmp(line, "num_saturated_reflections = ", 28) == 0 ) {
-			image->n_saturated = atoi(line+28);
-		}
-
 		if ( strcmp(line, PEAK_LIST_START_MARKER) == 0 ) {
-			if ( read_peaks(fh, image) ) {
+			if ( read_peaks(st->fh, image) ) {
 				ERROR("Failed while reading peaks\n");
 				return 1;
 			}
 		}
 
-		if ( strcmp(line, REFLECTION_START_MARKER) == 0 ) {
-			image->reflections = read_reflections_from_file(fh);
-			if ( image->reflections == NULL ) {
-				ERROR("Failed while reading reflections\n");
-				return 1;
-			}
+		if ( strcmp(line, CRYSTAL_START_MARKER) == 0 ) {
+			read_crystal(st, image);
 		}
 
+		/* A chunk must have at least a filename and a wavelength,
+		 * otherwise it's incomplete */
 		if ( strcmp(line, CHUNK_END_MARKER) == 0 ) {
 			if ( have_filename && have_ev ) return 0;
 			ERROR("Incomplete chunk found in input file.\n");
@@ -447,6 +433,10 @@ int read_chunk(FILE *fh, struct image *image)
 		}
 
 	} while ( 1 );
+
+	if ( !feof(st->fh) ) {
+		ERROR("Error reading stream.\n");
+	}
 
 	return 1;  /* Either error or EOF, don't care because we will complain
 	            * on the terminal if it was an error. */
@@ -457,7 +447,6 @@ void write_stream_header(FILE *ofh, int argc, char *argv[])
 {
 	int i;
 
-	fprintf(ofh, "CrystFEL stream format 2.0\n");
 	fprintf(ofh, "Command line:");
 	for ( i=0; i<argc; i++ ) {
 		fprintf(ofh, " %s", argv[i]);
@@ -467,25 +456,87 @@ void write_stream_header(FILE *ofh, int argc, char *argv[])
 }
 
 
-int skip_some_files(FILE *fh, int n)
+Stream *open_stream_for_read(const char *filename)
 {
-	char *rval = NULL;
-	int n_patterns = 0;
+	Stream *st;
 
-	do {
+	st = malloc(sizeof(struct _stream));
+	if ( st == NULL ) return NULL;
 
-		char line[1024];
+	st->fh = fopen(filename, "r");
+	if ( st->fh == NULL ) {
+		free(st);
+		return NULL;
+	}
 
-		if ( n_patterns == n ) return 0;
+	char line[1024];
+	char *rval;
 
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
-		chomp(line);
-		if ( strcmp(line, CHUNK_END_MARKER) == 0 ) n_patterns++;
+	rval = fgets(line, 1023, st->fh);
+	if ( rval == NULL ) {
+		ERROR("Failed to read stream version.\n");
+		close_stream(st);
+		return NULL;
+	}
 
-	} while ( rval != NULL );
+	if ( strncmp(line, "CrystFEL stream format 2.0", 26) == 0 ) {
+		st->major_version = 2;
+		st->minor_version = 0;
+	} else if ( strncmp(line, "CrystFEL stream format 2.1", 26) == 0 ) {
+		st->major_version = 2;
+		st->minor_version = 1;
+	} else {
+		ERROR("Invalid stream, or stream format is too new.\n");
+		close_stream(st);
+		return NULL;
+	}
 
-	return 1;
+	return st;
+}
+
+
+Stream *open_stream_fd_for_write(int fd)
+{
+	Stream *st;
+
+	st = malloc(sizeof(struct _stream));
+	if ( st == NULL ) return NULL;
+
+	st->fh = fdopen(fd, "w");
+	if ( st->fh == NULL ) {
+		free(st);
+		return NULL;
+	}
+
+	st->major_version = LATEST_MAJOR_VERSION;
+	st->minor_version = LATEST_MINOR_VERSION;
+
+	fprintf(st->fh, "CrystFEL stream format %i.%i\n",
+	        st->major_version, st->minor_version);
+
+	return st;
+}
+
+
+
+Stream *open_stream_for_write(const char *filename)
+{
+	int fd;
+
+	fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);
+	if ( fd == -1 ) {
+		ERROR("Failed to open stream.\n");
+		return NULL;
+	}
+
+	return open_stream_fd_for_write(fd);
+}
+
+
+void close_stream(Stream *st)
+{
+	fclose(st->fh);
+	free(st);
 }
 
 
@@ -493,20 +544,56 @@ int is_stream(const char *filename)
 {
 	FILE *fh;
 	char line[1024];
-	char *rval = NULL;
+	char *rval;
+
 	fh = fopen(filename, "r");
-	if ( fh == NULL ) {
-		return -1;
-	}
+	if ( fh == NULL ) return 0;
+
 	rval = fgets(line, 1023, fh);
 	fclose(fh);
-	if ( rval == NULL ) {
-		return -1;
+	if ( rval == NULL ) return 0;
+
+	if ( strncmp(line, "CrystFEL stream format 2.0", 26) == 0 ) return 1;
+	if ( strncmp(line, "CrystFEL stream format 2.1", 26) == 0 ) return 1;
+
+	return 0;
+}
+
+
+void write_line(Stream *st, const char *line)
+{
+	fprintf(st->fh, "%s\n", line);
+	fflush(st->fh);
+}
+
+
+void write_command(Stream *st, int argc, char *argv[])
+{
+	int i;
+
+	if ( argc == 0 ) return;
+
+	for ( i=0; i<argc; i++ ) {
+		if ( i > 0 ) fprintf(st->fh, " ");
+		fprintf(st->fh, "%s", argv[i]);
 	}
-	if ( strncmp(line, "CrystFEL stream format 2.0", 26) == 0 ) {
-		return 1;
-	}
-	else {
-		return 0;
-	}
+	fprintf(st->fh, "\n");
+}
+
+
+/**
+ * rewind_stream:
+ * @st: A %Stream
+ *
+ * Attempts to set the file pointer for @st to the start of the stream, so that
+ * later calls to read_chunk() will repeat the sequence of chunks from the
+ * start.
+ *
+ * Programs must not assume that this operation always succeeds!
+ *
+ * Returns: non-zero if the stream could not be rewound.
+ */
+int rewind_stream(Stream *st)
+{
+	return fseek(st->fh, 0, SEEK_SET);
 }

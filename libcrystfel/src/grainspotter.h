@@ -1,13 +1,13 @@
 /*
- * index-priv.h
+ * grainspotter.h
  *
- * Indexing private data
+ * Invoke GrainSpotter for multi-crystal autoindexing
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010,2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -26,20 +26,25 @@
  *
  */
 
-#ifndef INDEXPRIV_H
-#define INDEXPRIV_H
+#ifndef GRAINSPOTTER_H
+#define GRAINSPOTTER_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include "cell.h"
 
-#include "index.h"
+extern IndexingPrivate *grainspotter_prepare(IndexingMethod *indm,
+                                             UnitCell *cell,
+                                             const char *filename,
+                                             struct detector *det,
+                                             struct beam_params *beam,
+                                             float *ltl);
 
-struct _indexingprivate
-{
-	IndexingMethod indm;
-};
+extern void grainspotter_cleanup(IndexingPrivate *pp);
+
+extern int grainspotter_index(struct image *image, IndexingPrivate *p);
 
 
-#endif	/* INDEXPRIV_H */
+#endif	/* GRAINSPOTTER_H */

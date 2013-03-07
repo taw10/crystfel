@@ -35,7 +35,7 @@ src/check_hkl
 src/partial_sim
 src/.dirstamp
 *~
-doc/reference/*
+doc/reference/libcrystfel/*
 gtk-doc.make
 build-aux/compile
 build-aux/config.sub

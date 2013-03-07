@@ -1,7 +1,8 @@
 .\"
 .\" indexamajig man page
 .\"
-.\" Copyright © 2012 Thomas White <taw@physics.org>
+.\" Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                        a research centre of the Helmholtz Association.
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
 .\"
@@ -12,25 +13,23 @@ indexamajig \- bulk indexing and data reduction program
 .SH SYNOPSIS
 .PP
 .BR indexamajig
-\fB-i\fR \fIfilename\fR \fB-o\fR \fIoutput.stream\fR \fB-g\fR \fIdetector.geom\fR \fB-b\fR \fIbeamline.beam\fR \fB--peaks=\fR\fImethod\fR \fB--indexing=\fR\fImethod\fR \fB--cell-reduction=\fR\fImethod\fR
+\fB-i\fR \fIfilename\fR \fB-o\fR \fIoutput.stream\fR \fB-g\fR \fIdetector.geom\fR \fB-b\fR \fIbeamline.beam\fR \fB--peaks=\fR\fImethod\fR \fB--indexing=\fR\fImethod\fR
 [\fBoptions\fR] \fB...\fR
 .PP
 \fBindexamajig --help\fR
 
 .SH DESCRIPTION
 
-indexamajig takes as input a list of diffraction image files, currently in HDF5 format.  For each image, it attempts to find peaks and then index the pattern.  If successful, it will measure the intensities of the peaks at Bragg locations and produce a list of integrated peaks and intensities (and so on) in an output text file known as a "stream".
+\fBindexamajig\fR takes a list of diffraction snapshots from crystals in random orientations and attempts to find peaks, index and integrate each one.  The input is a list of diffraction image files in HDF5 format and some auxiliary files and parameters.  The output is a long text file ('stream') containing the results from each image in turn.
 
-For minimal basic use, you need to provide the list of diffraction patterns, the method which will be used to index, a file describing the geometry of the detector, a PDB file which contains the unit cell which will be used for the indexing, and that you'd like the program to output a list of intensities for each successfully indexed pattern.  Here is what the minimal use might look like on the command line:
+For minimal basic use, you need to provide the list of diffraction patterns, the method which will be used to index, a file describing the geometry of the detector, and a PDB file which contains the unit cell which will be used for the indexing.  Here is what the minimal use might look like on the command line:
 
 .IP \fBindexamajig\fR
 .PD
--i mypatterns.lst -j 10 -g mygeometry.geom --indexing=mosflm,dirax --peaks=hdf5 --cell-reduction=reduce -b myxfel.beam -o test.stream -p mycell.pdb --record=integrated
+-i mypatterns.lst -j 10 -g mygeometry.geom --indexing=mosflm,dirax --peaks=hdf5 -b myxfel.beam -o test.stream -p mycell.pdb
 
 .PP
-More typical use includes all the above, but might also include a noise or
-common mode filter (--filter-noise or --filter-cm respectively) if detector
-noise causes problems for the peak detection.  The HDF5 files might be in some
+More typical use includes all the above, but might also include extra parameters to modify the behaviour.  The HDF5 files might be in some
 folder a long way from the current directory, so you might want to specify a
 full pathname to be added in front of each filename.  You'll probably want to
 run more than one indexing job at a time (-j <n>).
@@ -43,97 +42,98 @@ array, where the first two columns contain fast scan and slow scan coordinates
 at the given location.  The value will be spread in a small cross centred on
 that location.
 
-See \fBman crystfel_geometry\fR for information about how to create a geometry description file.
-
-You can control what information is included in the output stream using
-\fB--record\fR=\fIflags\fR.  Possible flags are:
-
-.IP \fBintegrated\fR
-.PD
-Include a list of reflection intensities, produced by integrating around predicted peak locations.
-
-.IP \fBpeaks\fR
-.PD
-Include peak locations and intensities from the peak search.
-
-.IP \fBpeaksifindexed\fR
-.PD
-As 'peaks', but the peak information will be written only if the pattern could be indexed.
-
-.IP \fBpeaksifnotindexed\fR
-.PD
-As 'peaks', but the peak information will be written only if the pattern could \fInot\fR be indexed.
-
-.PP
-The default is \fB--record=integrated\fR.
-
-.PP
-If you just want the integrated intensities of indexed peaks, use \fB--record=integrated\fR.  If you just want to check that the peak detection is working, used \fB--record=peaks\fR.  If you want the integrated peaks for the indexable patterns, but also want to check the peak detection for the patterns
-which could not be indexed, you might use \fB--record=integrated,peaksifnotindexed\fR and then use \fBcheck-peak-detection\fR from the scripts folder to visualise the results of the peak detection.
+See \fBman crystfel_geometry\fR for information about how to create a geometry description file and a beam parameters file.
 
 .SH PEAK DETECTION
 
 You can control the peak detection on the command line.  Firstly, you can choose the peak detection method using \fB--peaks=\fR\fImethod\fR.  Currently, two values for "method" are available.  \fB--peaks=hdf5\fR will take the peak locations from the HDF5 file.  It expects a two dimensional array at where size in the first dimension is the number of peaks and the size in the second dimension is three.  The first two columns contain the fast scan and slow scan coordinates, the third contains the intensity.  However, the intensity will be ignored since the pattern will always be re-integrated using the unit cell provided by the indexer on the basis of the peaks.  You can tell indexamajig where to find this table inside each HDF5 file using \fB--hdf5-peaks=\fR\fIpath\fR.
 
-If you use \fB--peaks=zaef\fR, indexamajig will use a simple gradient search after Zaefferer (2000).  You can control the overall threshold and minimum gradient for finding a peak using \fB--threshold\fR and \fB--min-gradient\fR.  Both of these have arbitrary units matching the pixel values in the data.
+If you use \fB--peaks=zaef\fR, indexamajig will use a simple gradient search after Zaefferer (2000).  You can control the overall threshold and minimum squared gradient for finding a peak using \fB--threshold\fR and \fB--min-gradient\fR.  The threshold has arbitrary units matching the pixel values in the data, and the minimum gradient has the equivalent squared units.
 
-A minimum peak separation can also be provided in the geometry description file
-(see \fBman crystfel_geometry\fR for details).  This number serves two purposes.  Firstly, it is the maximum distance allowed between the peak summit and the foot point (where the gradient exceeds the minimum gradient).  Secondly, it is the minimum distance allowed between one peak and another, before the later peak will be rejected.
+Peaks will be rejected if the 'foot point' is further away from the 'summit' of the peak by more than the inner integration radius (see below).  They will also be rejected if the peak is closer than twice the inner integration radius from another peak.
 
 You can suppress peak detection altogether for a panel in the geometry file by specifying the "no_index" value for the panel as non-zero.
 
 
 .SH INDEXING METHODS
 
-You can choose between a variety of indexing methods.  You can choose more than one method, in which case each method will be tried in turn until the later cell reduction step says that the cell is a "hit".  Choose from:
-
-.IP \fBnone\fR
-.PD
-No indexing, peak detection only.
+You can choose between a variety of indexing methods.  You can choose more than one method, in which case each method will be tried in turn until one of them reports that the pattern has been successfully indexed.  Choose from:
 
 .IP \fBdirax\fR
 .PD
-DirAx will be executed.  DirAx must be installed and in your PATH for this to work.  Test by running \fBdirax\fR on the command line immediately before running \fBindexamajig\fR - you should see a welcome message.  If not, refer to the installation instructions for DirAx.
+Invoke DirAx, check linear combinations of the resulting cell axes for agreement with your cell, and then check that the cell accounts for at least half of the peaks from the peak search.
+.sp
+To use this option, 'dirax' must be in your shell's search path.  If you see the DirAx version and copyright information when you run \fBdirax\fR on the command line, things are set up correctly.
 
 .IP \fBmosflm\fR
 .PD
-MOSFLM will be executed.  MOSFLM must be installed and in your PATH for this to work.  Test by running \fBipmosflm\fR on the command line immediately before running \fBindexamajig\fR - you should see a welcome message.  If not, refer to the installation instructions for CCP4.
+As \fBdirax\fR, but invoke MOSFLM instead.  If you provide a PDB file (with \fB-p\fR), the lattice type and centering information will be passed to MOSFLM, which will then return solutions which match.  Note that the lattice parameter information will \fBnot\fR be given to MOSFLM, because it has no way to make use of it.
+.sp
+To use this option, 'ipmosflm' must be in your shell's search path.  If you see the MOSFLM version and copyright information when you run \fBipmosflm\fR on the command line, things are set up correctly.
 
 .IP \fBreax\fR
 .PD
-An \fIexperimental\fR DPS-style algorithm will be used, which searches for a lattice with cell parameters close to those contained in the CRYST1 line of the PDB file given with \fB-p\fR or \fB--pdb\fR.  If you use this option, you should also use \fB--cell-reduction=none\fR.
+Run the DPS algorithm, looking for the axes of your cell.
 
-.PP
-The default is \fB--indexing=none\fR.
-
-
-.SH CELL REDUCTION
-Neither MOSFLM nor DirAx are currently able to simply search for the orientation of a known unit cell.  Instead, they determine the unit cell parameters ab initio.  To check if the parameters match the known unit cell, which you provide with \fB-p\fR \fIunitcell.pdb\fR or \fB--pdb=\fR\fIunitcell.pdb\fR.  There is a choice of ways in which this comparison can be performed, which you can choose between using \fB--cell-reduction=\fR\fImethod\fR.  The choices for \fImethod\fR are:
-
-.IP \fBnone\fR
+.IP \fBgrainspotter\fR
 .PD
-The raw cell from the autoindexer will be used.  The cell probably won't match the target cell, but it'll still get used.  Use this option to test whether the patterns are basically "indexable" or not, or if you don't know the cell parameters.  In the latter case, you'll need to plot a histogram of the resulting parameters from the output stream to see which are the most popular.
+Invoke GrainSpotter, which will use your cell parameters to find multiple crystals in each pattern.
+.sp
+To use this option, 'GrainSpotter.0.93' must be in your shell's search path.  If you see the GrainSpotter version information when you run \fBGrainSpotter.0.93\fR on the command line, things are set up correctly.
 
-.IP \fBreduce\fR
+.IP \fBxds\fR
 .PD
-Linear combinations of the raw cell will be checked against the target cell.  If at least one candidate is found for each axis of the target cell, the angles will be checked to correspondence.  If a match is found, this cell will be used for further processing.  This option should generate the most matches.
+Invoke XDS, and use its REFIDX procedure to attempt to index the pattern.
 
-.IP \fBcompare\fR
+.PP
+You can add one or more of the following to the above indexing methods:
+
+.IP \fB-raw\fR
 .PD
-The cell will be checked for correspondence after only a simple permutation of the axes.  This is useful when the target cell is subject to reticular twinning, such as if one cell axis length is close to twice another.  With \fB--cell-reduction=reduce\fR there would be a possibility that the axes might be confused in this situation.  This happens for lysozyme (1VDS), so watch out.
+Do not check the resulting unit cell.  This option is useful when you need to determine the unit cell ab initio.  Use with 'dirax' and 'mosflm' - the other indexing methods need the unit cell as input in any case, and cannot determine the unit cell ab initio.  See \fB-comb\fR and \fB-axes\fR.
+
+.IP \fB-axes\fR
+.PD
+Check permutations of the axes for correspondence with your cell, but do not check linear combinations.  This is useful to avoid a potential problem when one of the unit cell axis lengths is close to a multiple of one of the others.  Can be used with \fBdirax\fR and \fBmosflm\fR.  See \fB-raw\fR and \fB-comb\fR.
+
+.IP \fB-comb\fR
+.PD
+Check linear combinations of the unit cell basis vectors to see if a cell can be produced which looks like your unit cell.  This is the default behaviour for \fBdirax\fR and \fBmosflm\fR.  See \fB-raw\fR and \fB-axes\fR.
+
+.IP \fB-bad\fR
+.PD
+Do not check that the cell accounts for any of the peaks as described in \fBdirax\fR above.  Might be useful to debug initial indexing problems, or if there are many multi-crystal patterns and the indexing method has no concept of multiple crystals per pattern (which, at the moment, means all of them).  Can be used with any indexing method, but is generally a bad idea.
+
+.IP \fB-nolatt\fR
+.PD
+Do not use the lattice type information from the PDB file to help guide the indexing.  Use with \fBmosflm\fR, which is the only indexing method which can optionally take advantage of this information.  This is the default behaviour for \fBdirax\fR.  This option makes no sense for \fBreax\fR, which is intrinsically based on using known lattice information.
+
+.IP \fB-latt\fR
+.PD
+This is the opposite of \fB-nolatt\fR, and is the default behaviour for \fBmosflm\fR, \fBxds\fR and \fBgrainspotter\fR.  It is the only behaviour for \fBreax\fR.
+
+.IP \fB-cell\fR
+.PD
+Provide your unit cell parameters to the indexing algorithm.  This is the default for \fBxds\fR and \fBgrainspotter\fR, and the only behaviour for \fBreax\fR.  This option makes no sense for \fBdirax\fR and \fBmosflm\fR, neither of which can make use of this information.
+
+.IP \fB-nocell\fR
+.PD
+Do not provide your unit cell parameters to the indexing algorithm.  This is the only behaviour for \fBmosflm\fR and \fBdirax\fR, both of which cannot make use of the information.  Can be used with \fBgrainspotter\fR and \fBxds\fR, and makes no sense for \fBreax\fR, which is intrinsically based on using known cell parameters.
 
 .PP
-The tolerance for matching with \fBreduce\fR and \fBcompare\fR can be set using \fB--tolerance=\fR\fIa,b,c,angl\fR \- see below for more details.  Cells from these reduction routines are further constrained to be right-handed, but no such constraint will be applied if you use \fB--cell-reduction=none\fR.  Always using a right-handed cell means that the Bijvoet pairs can be told apart.
+The default indexing method is 'none', which means no indexing will be done.  This is useful if you just want to check that the peak detection is working properly.
 
 .PP
-If the unit cell is centered (i.e. if the space group begins with I, F, H, A, B, C), you should be careful when using "compare" for the cell reduction, since (for example) DirAx will always find a primitive unit cell, and this cell must be converted to the non-primitive conventional cell from the PDB.
+Your indexing methods will be checked for validity, incompatible flags removed, and warnings given about duplicates.  For example, \fBmosflm\fR and \fBmosflm-comb-latt\fR represent the same indexing method, because \fB-comb\fR and \fB-latt\fR are the default behaviour for \fBmosflm\fR.  The 'long version' of each of your indexing methods will be listed in the output, and the stream will contain a record of which indexing method successfully indexed each pattern.
 
 .PP
-The default is \fB--cell-reduction=none\fR.
+It's risky to use \fBmosflm-nolatt\fR in conjunction with either \fB-comb\fR or \fB-axes\fR when you have a rhombohedral cell.  This would be an odd thing to do anyway: why withhold the lattice information from MOSFLM if you know what it is, and want to use it to check the result?  It's risky because MOSFLM will by default return the "H centered" lattice for your rhombohedral cell, and it's not completely certain that MOSFLM consistently uses one or other of the two possible conventions for the relationship between the "H" and "R" cells.  It is, however, very likely that it does.
+
+Examples of indexing methods: 'dirax,mosflm,reax', 'dirax-raw,mosflm-raw', 'dirax-raw-bad'.
+
 
 .SH PEAK INTEGRATION
-If the pattern could be successfully indexed and the cell reduction gave a
-positive match, peaks will be predicted in the pattern and their intensities
+If the pattern could be successfully indexed, peaks will be predicted in the pattern and their intensities
 measured.  The peak integration relies on knowing an accurate radius to
 integrate the peak within, and that the annulus used to estimate the background
 level is not so big that that it covers neighbouring peaks.  However,
@@ -177,11 +177,6 @@ Find peaks in the images using \fImethod\fR.  See the second titled \fBPEAK DETE
 .IP \fB--indexing=\fR\fImethod\fR
 .PD
 Index the patterns using \fImethod\fR.  See the section titled \fBINDEXING METHODS\fR (above) for more information.
-
-.PD 0
-.IP \fB--cell-reduction=\fR\fImethod\fR
-.PD
-Use \fImethod\fR for unit cell reduction.  See the section titled \fBCELL REDUCTION\fR (above) for more information.
 
 .PD 0
 .IP "\fB-g\fR \fIfilename\fR"
@@ -235,7 +230,7 @@ When using \fB--peaks=hdf5\fR, read the peak locations from a table in the HDF5 
 .PD 0
 .IP \fB--tolerance=\fR\fItol\fR
 .PD
-Set the tolerances for unit cell comparison.  \fItol\fR takes the form \fIa\fR,\fIb\fR,\fIc\fR,\fIang\fR.  \fIa\fR, \fIb\fR and \fIc\fR are the tolerances, in percent, for the respective direct space axes when using \fBcompare\fR or \fBcompare_ab\fR for cell reduction (see above).  \fIang\fR is the tolerance in degrees for the angles.  They represent the respective \fIreciprocal\fR space parameters when using \fB--cell-reduction=reduce\fR.
+Set the tolerances for unit cell comparison.  \fItol\fR takes the form \fIa\fR,\fIb\fR,\fIc\fR,\fIang\fR.  \fIa\fR, \fIb\fR and \fIc\fR are the tolerances, in percent, for the respective direct space axes when using \fB-axes\fR in the indexing method (see below).  \fIang\fR is the tolerance in degrees for the angles.  When \fBnot\fR using \fB-axes\fR, they represent the respective \fIreciprocal\fR space parameters.  Sorry for the horrifying inconsistency.
 .PD
 The default is \fB--tolerance=5,5,5,1.5\fR.
 
@@ -280,11 +275,6 @@ Set the minimum I/sigma(I) for a peak to be integrated successfully.  The defaul
 Copy the information from \fIpath\fR in the HDF5 file into the output stream.  The information must be a single scalar value.  This option is sometimes useful to allow data to be separated after indexing according to some condition such the presence of an optical pump pulse.  You can give this option as many times as you need to copy multiple bits of information.
 
 .PD 0
-.IP \fB--verbose\fR
-.PD
-Be more verbose about indexing.
-
-.PD 0
 .IP "\fB-j\fR \fIn\fR"
 .PD
 Run \fIn\fR analyses in parallel.  Default: 1.
@@ -309,15 +299,9 @@ with old scripts because this option selects the behaviour which is now the
 default.
 
 .PD 0
-.IP \fB--insane\fR
-.PD
-Normally, indexamajig will check that the projected reciprocal space positions of peaks found by the peak detection are close to reciprocal lattice points.  This option disables this check, and normally is \fInot\fR a good idea.
-
-.PD 0
 .IP \fB--no-bg-sub\fR
 .PD
 Don't subtract local background estimates from integrated intensities.  This is almost never useful, but might help to detect problems from troublesome background noise.
-
 
 .PD 0
 .IP \fB--use-saturated\fR
@@ -339,11 +323,17 @@ When using \fB--peaks=hdf5\fR, the peaks will be put through the same checks as 
 .PD
 Without this option, peaks will be predicted in each pattern based on the crystal orientation from autoindexing and the parameters in the beam description file.  With this option, indices will be assigned to the peaks found by the peak search, and the positions of those peaks used for the final integration stage.
 
+.PD 0
+.IP \fB--no-peaks-in-stream\fR
+.PD
+Do not record peak search results in the stream.  You won't be able to check that the peak detection was any good, but the stream will be around 30% smaller.
+
+.PD 0
+.IP \fB--no-refls-in-stream\fR
+.PD
+Do not record integrated reflections in the stream.  The resulting output won't be usable for merging, but will be a lot smaller.  This option might be useful if you're only interested in things like unit cell parameters and orientations.
+
 .SH BUGS
-Don't run more than one indexamajig jobs simultaneously in the same working
-directory - they'll overwrite each other's DirAx or MOSFLM files, causing subtle
-problems which can't easily be detected.
-.PP
 ReAx indexing is experimental.  It works very nicely for some people, and crashes for others.  In a future version, it will be improved and fully supported.
 
 .SH AUTHOR
@@ -353,7 +343,7 @@ This page was written by Thomas White.
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
 .SH COPYRIGHT AND DISCLAIMER
-Copyright © 2012 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .P
 indexamajig, and this manual, are part of CrystFEL.
 .P

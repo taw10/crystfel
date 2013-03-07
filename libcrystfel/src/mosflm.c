@@ -3,13 +3,13 @@
  *
  * Invoke the DPS auto-indexing algorithm through MOSFLM
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
  *   2010      Richard Kirian <rkirian@asu.edu>
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -80,6 +80,7 @@
 #include "mosflm.h"
 #include "utils.h"
 #include "peaks.h"
+#include "cell-utils.h"
 
 
 #define MOSFLM_VERBOSE 0
@@ -90,6 +91,14 @@ typedef enum {
 	MOSFLM_INPUT_LINE,
 	MOSFLM_INPUT_PROMPT
 } MOSFLMInputType;
+
+
+
+struct mosflm_private {
+	IndexingMethod          indm;
+	float                   *ltl;
+	UnitCell                *template;
+};
 
 
 struct mosflm_data {
@@ -107,9 +116,84 @@ struct mosflm_data {
 	char                    sptfile[128];
 	int                     step;
 	int                     finished_ok;
-	UnitCell                *target_cell;
+	int                     done;
+	int                     success;
+
+	struct mosflm_private  *mp;
 
 };
+
+static int check_cell(struct mosflm_private *mp, struct image *image,
+                      UnitCell *cell)
+{
+	UnitCell *out;
+	Crystal *cr;
+
+	/* If we sent lattice information, make sure that we got back what we
+	 * asked for, not (e.g.) some "H" version of a rhombohedral R cell */
+	if ( mp->indm & INDEXING_USE_LATTICE_TYPE ) {
+
+		LatticeType latt_m, latt_r;
+		char cen_m, cen_r;
+
+		/* What we asked for */
+		latt_r = cell_get_lattice_type(mp->template);
+		cen_r = cell_get_centering(mp->template);
+
+		/* What we got back */
+		latt_m = cell_get_lattice_type(cell);
+		cen_m = cell_get_centering(cell);
+
+		if ( latt_r != latt_m ) {
+			ERROR("Lattice type produced by MOSFLM (%i) does not "
+			      "match what was requested (%i).  "
+			      "Please report this.\n", latt_m, latt_r);
+			return 0;
+		}
+
+		if ( cen_r != cen_m ) {
+			ERROR("Centering produced by MOSFLM (%c) does not "
+			      "match what was requested (%c).  "
+			      "Please report this.\n", cen_m, cen_r);
+			return 0;
+		}
+
+	}
+
+	if ( mp->indm & INDEXING_CHECK_CELL_COMBINATIONS ) {
+
+		out = match_cell(cell, mp->template, 0, mp->ltl, 1);
+		if ( out == NULL ) return 0;
+
+	} else if ( mp->indm & INDEXING_CHECK_CELL_AXES ) {
+
+		out = match_cell(cell, mp->template, 0, mp->ltl, 0);
+		if ( out == NULL ) return 0;
+
+	} else {
+		out = cell_new_from_cell(cell);
+	}
+
+	cr = crystal_new();
+	if ( cr == NULL ) {
+		ERROR("Failed to allocate crystal.\n");
+		return 0;
+	}
+
+	crystal_set_cell(cr, out);
+
+	if ( mp->indm & INDEXING_CHECK_PEAKS ) {
+		if ( !peak_sanity_check(image, &cr, 1) ) {
+			cell_free(out);
+			crystal_free(cr);
+			return 0;
+		}
+	}
+
+	image_add_crystal(image, cr);
+
+	return 1;
+}
 
 
 static void mosflm_parseline(const char *line, struct image *image,
@@ -130,7 +214,41 @@ static void mosflm_parseline(const char *line, struct image *image,
 }
 
 
-static int read_newmat(const char *filename, struct image *image)
+/* This is the opposite of spacegroup_for_lattice() below. */
+static LatticeType spacegroup_to_lattice(const char *sg)
+{
+	LatticeType latt;
+
+	if ( sg[1] == '1' ) {
+		latt = L_TRICLINIC;
+	} else if ( strncmp(sg+1, "23", 2) == 0 ) {
+		latt = L_CUBIC;
+	} else if ( strncmp(sg+1, "222", 3) == 0 ) {
+		latt = L_ORTHORHOMBIC;
+	} else if ( sg[1] == '2' ) {
+		latt = L_MONOCLINIC;
+	} else if ( sg[1] == '4' ) {
+		latt = L_TETRAGONAL;
+	} else if ( sg[1] == '6' ) {
+		latt = L_HEXAGONAL;
+	} else if ( sg[1] == '3' ) {
+		if ( sg[0] == 'H' ) {
+			latt = L_HEXAGONAL;
+		} else {
+			latt = L_RHOMBOHEDRAL;
+		}
+	} else {
+		ERROR("Couldn't understand '%s'\n", sg);
+		latt = L_TRICLINIC;
+	}
+
+	return latt;
+}
+
+
+
+static int read_newmat(struct mosflm_data *mosflm, const char *filename,
+                       struct image *image)
 {
 	FILE *fh;
 	float asx, asy, asz;
@@ -138,6 +256,12 @@ static int read_newmat(const char *filename, struct image *image)
 	float csx, csy, csz;
 	int n;
 	double c;
+	UnitCell *cell;
+	char symm[32];
+	char *rval;
+	int i;
+	char cen;
+	LatticeType latt;
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
@@ -150,23 +274,54 @@ static int read_newmat(const char *filename, struct image *image)
 		STATUS("Fewer than 9 parameters found in NEWMAT file.\n");
 		return 1;
 	}
+
+	/* Skip the next six lines */
+	for ( i=0; i<6; i++ ) {
+		char tmp[1024];
+		rval = fgets(tmp, 1024, fh);
+		if ( rval == NULL ) {
+			ERROR("Failed to read newmat file.\n");
+			return 1;
+		}
+	}
+
+	rval = fgets(symm, 32, fh);
+	if ( rval == NULL ) {
+		ERROR("Failed to read newmat file.\n");
+		return 1;
+	}
+
 	fclose(fh);
+
+	if ( strncmp(symm, "SYMM ", 5) != 0 ) {
+		ERROR("Bad 'SYMM' line from MOSFLM.\n");
+		return 1;
+	}
+	cen = symm[5];
+	latt = spacegroup_to_lattice(symm+5);
 
 	/* MOSFLM "A" matrix is multiplied by lambda, so fix this */
 	c = 1.0/image->lambda;
 
-	image->candidate_cells[0] = cell_new();
+	cell = cell_new();
 
 	/* The relationship between the coordinates in the spot file and the
 	 * resulting matrix is diabolically complicated.  This transformation
 	 * seems to work, but is not derived by working through all the
 	 * transformations. */
-	cell_set_reciprocal(image->candidate_cells[0],
+	cell_set_reciprocal(cell,
 	                    -asy*c, -asz*c, asx*c,
 	                    -bsy*c, -bsz*c, bsx*c,
 	                    -csy*c, -csz*c, csx*c);
+	cell_set_centering(cell, cen);
+	cell_set_lattice_type(cell, latt);
 
-	image->ncells = 1;
+	if ( check_cell(mosflm->mp, image, cell) ) {
+		mosflm->success = 1;
+		mosflm->done = 1;
+	}
+
+	cell_free(cell);
 
         return 0;
 }
@@ -319,7 +474,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		if ( centering != 'H' ) {
 			g = "6";
 		} else {
-			g = "32";
+			g = "3";
 		}
 		break;
 
@@ -343,8 +498,8 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 	char tmp[256];
 	double wavelength;
 
-	switch ( mosflm->step ) {
-
+	switch ( mosflm->step )
+	{
 		case 1 :
 		mosflm_sendline("DETECTOR ROTATION HORIZONTAL"
 		                " ANTICLOCKWISE ORIGIN LL FAST HORIZONTAL"
@@ -352,13 +507,22 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		break;
 
 		case 2 :
-		if ( mosflm->target_cell != NULL ) {
+		if ( (mosflm->mp->indm & INDEXING_USE_LATTICE_TYPE)
+		  && (mosflm->mp->template != NULL) )
+		{
 			const char *symm;
-			symm = spacegroup_for_lattice(mosflm->target_cell);
+
+			if ( cell_get_lattice_type(mosflm->mp->template)
+			     == L_RHOMBOHEDRAL ) {
+				mosflm_sendline("CRYSTAL R\n", mosflm);
+			}
+
+			symm = spacegroup_for_lattice(mosflm->mp->template);
 			snprintf(tmp, 255, "SYMM %s\n", symm);
 			mosflm_sendline(tmp, mosflm);
+
 		} else {
-			mosflm_sendline("SYMM P1\n", mosflm);
+			mosflm_sendline("\n", mosflm);
 		}
 		break;
 
@@ -403,10 +567,9 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		mosflm->finished_ok = 1;
 		break;
 
-	default:
+		default:
 		mosflm_sendline("exit\n", mosflm);
 		return;
-
 	}
 
 	mosflm->step++;
@@ -460,8 +623,7 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 
 			switch ( type ) {
 
-			case MOSFLM_INPUT_LINE :
-
+				case MOSFLM_INPUT_LINE :
 				block_buffer = malloc(i+1);
 				memcpy(block_buffer, mosflm->rbuffer, i);
 				block_buffer[i] = '\0';
@@ -475,12 +637,12 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 				endbit_length = i+2;
 				break;
 
-			case MOSFLM_INPUT_PROMPT :
+				case MOSFLM_INPUT_PROMPT :
 				mosflm_send_next(image, mosflm);
 				endbit_length = i+7;
 				break;
 
-			default :
+				default :
 
 				/* Obviously, this never happens :) */
 				ERROR("Unrecognised MOSFLM input mode! "
@@ -527,7 +689,7 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 }
 
 
-void run_mosflm(struct image *image, UnitCell *cell)
+int run_mosflm(struct image *image, IndexingPrivate *ipriv)
 {
 	struct mosflm_data *mosflm;
 	unsigned int opts;
@@ -537,10 +699,8 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	mosflm = malloc(sizeof(struct mosflm_data));
 	if ( mosflm == NULL ) {
 		ERROR("Couldn't allocate memory for MOSFLM data.\n");
-		return;
+		return 0;
 	}
-
-	mosflm->target_cell = cell;
 
 	snprintf(mosflm->imagefile, 127, "xfel-%i_001.img", image->id);
 	write_img(image, mosflm->imagefile); /* Dummy image */
@@ -556,7 +716,7 @@ void run_mosflm(struct image *image, UnitCell *cell)
 	if ( mosflm->pid == -1 ) {
 		ERROR("Failed to fork for MOSFLM: %s\n", strerror(errno));
 		free(mosflm);
-		return;
+		return 0;
 	}
 	if ( mosflm->pid == 0 ) {
 
@@ -584,7 +744,11 @@ void run_mosflm(struct image *image, UnitCell *cell)
 
 	mosflm->step = 1;	/* This starts the "initialisation" procedure */
 	mosflm->finished_ok = 0;
+	mosflm->mp = (struct mosflm_private *)ipriv;
+	mosflm->done = 0;
+	mosflm->success = 0;
 
+	rval = 0;
 	do {
 
 		fd_set fds;
@@ -632,8 +796,65 @@ void run_mosflm(struct image *image, UnitCell *cell)
 		ERROR("MOSFLM doesn't seem to be working properly.\n");
 	} else {
 		/* Read the mosflm NEWMAT file and get cell if found */
-		read_newmat(mosflm->newmatfile, image);
+		read_newmat(mosflm, mosflm->newmatfile, image);
 	}
 
+	rval = mosflm->success;
 	free(mosflm);
+	return rval;
+}
+
+
+IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
+                               const char *filename, struct detector *det,
+                               struct beam_params *beam, float *ltl)
+{
+	struct mosflm_private *mp;
+	int need_cell = 0;
+
+	if ( *indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
+	if ( *indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
+	if ( *indm & INDEXING_USE_LATTICE_TYPE ) need_cell = 1;
+
+	if ( need_cell && (cell == NULL) ) {
+		ERROR("Altering your MOSFLM flags because no PDB file was"
+		      " provided.\n");
+		*indm &= ~INDEXING_CHECK_CELL_COMBINATIONS;
+		*indm &= ~INDEXING_CHECK_CELL_AXES;
+		*indm &= ~INDEXING_USE_LATTICE_TYPE;
+	}
+
+	/* Flags that MOSFLM knows about */
+	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_CELL_COMBINATIONS
+	       | INDEXING_CHECK_CELL_AXES | INDEXING_CHECK_PEAKS
+	       | INDEXING_USE_LATTICE_TYPE;
+
+	if ( *indm & INDEXING_USE_LATTICE_TYPE ) {
+		if ( !((*indm & INDEXING_CHECK_CELL_COMBINATIONS)
+		    || (*indm & INDEXING_CHECK_CELL_AXES)) ) {
+			ERROR("WARNING: The unit cell from %s might have had "
+			      "its axes permuted from the unit cell you gave.\n"
+			      "If this is a problem, consider using "
+			      "mosflm-axes-latt or mosflm-comb-latt instead of "
+			      "mosflm-raw-latt.\n", indexer_str(*indm));
+		}
+
+	}
+
+	mp = malloc(sizeof(struct mosflm_private));
+	if ( mp == NULL ) return NULL;
+
+	mp->ltl = ltl;
+	mp->template = cell;
+	mp->indm = *indm;
+
+	return (IndexingPrivate *)mp;
+}
+
+
+void mosflm_cleanup(IndexingPrivate *pp)
+{
+	struct mosflm_private *p;
+	p = (struct mosflm_private *)pp;
+	free(p);
 }

@@ -205,7 +205,8 @@ int main(int argc, char *argv[])
 	image.height = 128;
 	memset(image.data, 0, 128*128*sizeof(float));
 
-	image.reflections=reflist_new();
+	image.n_crystals = 0;
+	image.crystals = NULL;
 
 	/* First check: no intensity -> no peak, or very low intensity */
 	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma,

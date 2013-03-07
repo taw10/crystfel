@@ -1819,7 +1819,6 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 
 		dw->hdfile = hdfile_open(filename);
 		if ( dw->hdfile == NULL ) {
-			ERROR("Couldn't open file '%s'\n", filename);
 			free(dw);
 			return NULL;
 		} else {

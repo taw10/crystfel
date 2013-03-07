@@ -3,12 +3,12 @@
  *
  * Peak search and other image analysis
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *   2012      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *   2011      Andrew Martin <andrew.martin@desy.de>
  *   2011      Richard Kirian
@@ -147,24 +147,15 @@ static int cull_peaks(struct image *image)
 }
 
 
-/* cfs, css relative to panel origin */
-static int *make_BgMask(struct image *image, struct panel *p,
-                        double ir_out, double ir_inn)
+static void add_crystal_to_mask(struct image *image, struct panel *p,
+                                double ir_inn, int w, int h,
+                                int *mask, Crystal *cr)
 {
 	Reflection *refl;
 	RefListIterator *iter;
-	int *mask;
-	int w, h;
-
-	w = p->max_fs - p->min_fs + 1;
-	h = p->max_ss - p->min_ss + 1;
-	mask = calloc(w*h, sizeof(int));
-	if ( mask == NULL ) return NULL;
-
-	if ( image->reflections == NULL ) return mask;
 
 	/* Loop over all reflections */
-	for ( refl = first_refl(image->reflections, &iter);
+	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -204,6 +195,27 @@ static int *make_BgMask(struct image *image, struct panel *p,
 		}
 		}
 
+	}
+}
+
+
+/* cfs, css relative to panel origin */
+static int *make_BgMask(struct image *image, struct panel *p, double ir_inn)
+{
+	int *mask;
+	int w, h;
+	int i;
+
+	w = p->max_fs - p->min_fs + 1;
+	h = p->max_ss - p->min_ss + 1;
+	mask = calloc(w*h, sizeof(int));
+	if ( mask == NULL ) return NULL;
+
+	if ( image->crystals == NULL ) return mask;
+
+	for ( i=0; i<image->n_crystals; i++ ) {
+		add_crystal_to_mask(image, p, ir_inn,
+		                    w, h, mask, image->crystals[i]);
 	}
 
 	return mask;
@@ -401,9 +413,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	int nrej_dis = 0;
 	int nrej_pro = 0;
 	int nrej_fra = 0;
-	int nrej_bad = 0;
+	int nrej_fail = 0;
 	int nrej_snr = 0;
-	int nrej_sat = 0;
 	int nacc = 0;
 	int ncull;
 
@@ -425,9 +436,6 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 
 		/* Overall threshold */
 		if ( data[fs+stride*ss] < threshold ) continue;
-
-		/* Immediate rejection of pixels above max_adu */
-		if ( data[fs+stride*ss] > p->max_adu ) continue;
 
 		/* Get gradients */
 		dx1 = data[fs+stride*ss] - data[(fs+1)+stride*ss];
@@ -494,12 +502,11 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		/* Centroid peak and get better coordinates. */
 		r = integrate_peak(image, mask_fs, mask_ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
-		                   ir_inn, ir_mid, ir_out, 0, NULL, &saturated);
+		                   ir_inn, ir_mid, ir_out, 1, NULL, &saturated);
 
-		if ( r ) {
-			/* Bad region - don't detect peak */
-			nrej_bad++;
-			continue;
+		if ( saturated ) {
+			image->num_saturated_peaks++;
+			if ( !use_saturated ) continue;
 		}
 
 		/* It is possible for the centroid to fall outside the image */
@@ -521,8 +528,9 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 			continue;
 		}
 
-		if ( saturated && !use_saturated ) {
-			nrej_sat++;
+		if ( r ) {
+			/* Bad region - don't detect peak */
+			nrej_fail++;
 			continue;
 		}
 
@@ -543,10 +551,12 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		ncull = 0;
 	}
 
+	image->num_peaks += nacc;
+
 	//STATUS("%i accepted, %i box, %i proximity, %i outside panel, "
-	//       "%i in bad regions, %i with SNR < %g, %i badrow culled, "
+	//       "%i failed integration, %i with SNR < %g, %i badrow culled, "
 	//        "%i saturated.\n",
-	//       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_bad,
+	//       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_fail,
 	//       nrej_snr, min_snr, ncull, nrej_sat);
 
 	if ( ncull != 0 ) {
@@ -567,6 +577,8 @@ void search_peaks(struct image *image, float threshold, float min_gradient,
 		image_feature_list_free(image->features);
 	}
 	image->features = image_feature_list_new();
+	image->num_peaks = 0;
+	image->num_saturated_peaks = 0;
 
 	for ( i=0; i<image->det->n_panels; i++ ) {
 
@@ -581,29 +593,19 @@ void search_peaks(struct image *image, float threshold, float min_gradient,
 }
 
 
-double peak_lattice_agreement(struct image *image, UnitCell *cell, double *pst)
+int peak_sanity_check(struct image *image, Crystal **crystals, int n_cryst)
 {
-	int i;
 	int n_feat = 0;
 	int n_sane = 0;
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
-	double min_dist = 0.25;
-	double stot = 0.0;
+	int i;
+	const double min_dist = 0.25;
 
-	/* Round towards nearest */
-	fesetround(1);
-
-	/* Cell basis vectors for this image */
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-
-	/* Loop over peaks, checking proximity to nearest reflection */
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
 		struct rvec q;
 		double h,k,l,hd,kd,ld;
+		int j;
 
 		/* Assume all image "features" are genuine peaks */
 		f = image_get_feature(image->features, i);
@@ -613,38 +615,42 @@ double peak_lattice_agreement(struct image *image, UnitCell *cell, double *pst)
 		/* Reciprocal space position of found peak */
 		q = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
 
-		/* Decimal and fractional Miller indices of nearest
-		 * reciprocal lattice point */
-		hd = q.u * ax + q.v * ay + q.w * az;
-		kd = q.u * bx + q.v * by + q.w * bz;
-		ld = q.u * cx + q.v * cy + q.w * cz;
-		h = lrint(hd);
-		k = lrint(kd);
-		l = lrint(ld);
+		for ( j=0; j<n_cryst; j++ ) {
 
-		/* Check distance */
-		if ( (fabs(h - hd) < min_dist) && (fabs(k - kd) < min_dist)
-		  && (fabs(l - ld) < min_dist) )
-		{
-			double sval;
-			n_sane++;
-			sval = pow(h-hd, 2.0) + pow(k-kd, 2.0) + pow(l-ld, 2.0);
-			stot += 1.0 - sval;
-			continue;
+			double ax, ay, az;
+			double bx, by, bz;
+			double cx, cy, cz;
+
+			cell_get_cartesian(crystal_get_cell(crystals[j]),
+			                   &ax, &ay, &az,
+			                   &bx, &by, &bz,
+			                   &cx, &cy, &cz);
+
+			/* Decimal and fractional Miller indices of nearest
+			 * reciprocal lattice point */
+			hd = q.u * ax + q.v * ay + q.w * az;
+			kd = q.u * bx + q.v * by + q.w * bz;
+			ld = q.u * cx + q.v * cy + q.w * cz;
+			h = lrint(hd);
+			k = lrint(kd);
+			l = lrint(ld);
+
+			/* Check distance */
+			if ( (fabs(h - hd) < min_dist)
+			  && (fabs(k - kd) < min_dist)
+			  && (fabs(l - ld) < min_dist) )
+			{
+				n_sane++;
+				continue;
+			}
+
 		}
+
 
 	}
 
-	*pst = stot;
-	return (double)n_sane / (float)n_feat;
-}
-
-
-int peak_sanity_check(struct image *image)
-{
-	double stot;
 	/* 0 means failed test, 1 means passed test */
-	return peak_lattice_agreement(image, image->indexed_cell, &stot) >= 0.5;
+	return ((double)n_sane / n_feat) >= 0.5;
 }
 
 
@@ -705,41 +711,27 @@ static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
 }
 
 
-/* Integrate the list of predicted reflections in "image" */
-void integrate_reflections(struct image *image, int use_closer, int bgsub,
-                           double min_snr,
-                           double ir_inn, double ir_mid, double ir_out,
-                           int integrate_saturated)
+static void integrate_crystal(Crystal *cr, struct image *image, int use_closer,
+                              int bgsub, double min_snr,
+                              double ir_inn, double ir_mid, double ir_out,
+                              int integrate_saturated, int **bgMasks,
+                              int res_cutoff)
 {
+	RefList *reflections;
 	struct integr_ind *il;
 	int n, i;
 	double av = 0.0;
 	int first = 1;
-	int **bgMasks;
+	int n_saturated = 0;
 
-	if ( num_reflections(image->reflections) == 0 ) return;
+	reflections = crystal_get_reflections(cr);
 
-	il = sort_reflections(image->reflections, image->indexed_cell, &n);
+	if ( num_reflections(reflections) == 0 ) return;
+
+	il = sort_reflections(reflections, crystal_get_cell(cr), &n);
 	if ( il == NULL ) {
 		ERROR("Couldn't sort reflections\n");
 		return;
-	}
-
-	/* Make background masks for all panels */
-	bgMasks = calloc(image->det->n_panels, sizeof(int *));
-	if ( bgMasks == NULL ) {
-		ERROR("Couldn't create list of background masks.\n");
-		return;
-	}
-	for ( i=0; i<image->det->n_panels; i++ ) {
-		int *mask;
-		mask = make_BgMask(image, &image->det->panels[i],
-		                   ir_out, ir_inn);
-		if ( mask == NULL ) {
-			ERROR("Couldn't create background mask.\n");
-			return;
-		}
-		bgMasks[i] = mask;
 	}
 
 	for ( i=0; i<n; i++ ) {
@@ -809,7 +801,7 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 		                   1, bgMasks[pnum], &saturated);
 
 		if ( saturated ) {
-			image->n_saturated++;
+			n_saturated++;
 			if ( !integrate_saturated ) r = 1;
 		}
 
@@ -840,18 +832,52 @@ void integrate_reflections(struct image *image, int use_closer, int bgsub,
 			}
 			//STATUS("%5.2f A, %5.2f, av %5.2f\n",
 			//       1e10/il[i].res, snr, av);
-			//if ( av < 1.0 ) break;
+			if ( res_cutoff && (av < 1.0) ) break;
 		}
+	}
+
+	crystal_set_num_saturated_reflections(cr, n_saturated);
+	crystal_set_resolution_limit(cr, 0.0);
+
+	free(il);
+}
+
+
+/* Integrate the list of predicted reflections in "image" */
+void integrate_reflections(struct image *image, int use_closer, int bgsub,
+                           double min_snr,
+                           double ir_inn, double ir_mid, double ir_out,
+                           int integrate_saturated, int res_cutoff)
+{
+	int i;
+	int **bgMasks;
+
+	/* Make background masks for all panels */
+	bgMasks = calloc(image->det->n_panels, sizeof(int *));
+	if ( bgMasks == NULL ) {
+		ERROR("Couldn't create list of background masks.\n");
+		return;
+	}
+	for ( i=0; i<image->det->n_panels; i++ ) {
+		int *mask;
+		mask = make_BgMask(image, &image->det->panels[i], ir_inn);
+		if ( mask == NULL ) {
+			ERROR("Couldn't create background mask.\n");
+			return;
+		}
+		bgMasks[i] = mask;
+	}
+
+	for ( i=0; i<image->n_crystals; i++ ) {
+		integrate_crystal(image->crystals[i], image, use_closer,
+		                  bgsub, min_snr, ir_inn, ir_mid, ir_out,
+		                  integrate_saturated, bgMasks, res_cutoff);
 	}
 
 	for ( i=0; i<image->det->n_panels; i++ ) {
 		free(bgMasks[i]);
 	}
 	free(bgMasks);
-
-	image->diffracting_resolution = 0.0;
-
-	free(il);
 }
 
 
@@ -894,10 +920,15 @@ void validate_peaks(struct image *image, double min_snr,
 
 		r = integrate_peak(image, f->fs, f->ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
-		                   ir_inn, ir_mid, ir_out, 0, NULL, &saturated);
+		                   ir_inn, ir_mid, ir_out, 1, NULL, &saturated);
 		if ( r ) {
 			n_int++;
 			continue;
+		}
+
+		if ( saturated ) {
+			n_sat++;
+			if ( !use_saturated ) continue;
 		}
 
 		/* It is possible for the centroid to fall outside the image */
@@ -920,11 +951,6 @@ void validate_peaks(struct image *image, double min_snr,
 			continue;
 		}
 
-		if ( saturated && !use_saturated ) {
-			n_sat++;
-			continue;
-		}
-
 		/* Add using "better" coordinates */
 		image_add_feature(flist, f_fs, f_ss, image, intensity, NULL);
 
@@ -936,4 +962,6 @@ void validate_peaks(struct image *image, double min_snr,
 	//       n_wtf, n_int, n_dft, n_snr, n_prx, n_sat);
 	image_feature_list_free(image->features);
 	image->features = flist;
+	image->num_saturated_peaks = n_sat;
+	image->num_peaks = image_feature_count(flist);
 }

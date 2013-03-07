@@ -3,11 +3,11 @@
  *
  * Write a nice PDF of scaling parameters
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -183,7 +183,7 @@ static void plot_point(cairo_t *cr, double g_width, double g_height,
 }
 
 
-static void partiality_graph(cairo_t *cr, const struct image *images, int n,
+static void partiality_graph(cairo_t *cr, Crystal **crystals, int n,
                              RefList *full)
 {
 	const double g_width = 200.0;
@@ -219,7 +219,7 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 
 	num_nondud = 0;
 	for ( i=0; i<n; i++ ) {
-		if ( images[i].pr_dud ) continue;
+		if ( crystal_get_user_flag(crystals[i]) ) continue;
 		num_nondud++;
 	}
 
@@ -229,10 +229,13 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 
 		Reflection *refl;
 		RefListIterator *iter;
+		Crystal *cryst;
 
-		if ( images[i].pr_dud ) continue;
+		cryst = crystals[i];
 
-		for ( refl = first_refl(images[i].reflections, &iter);
+		if ( crystal_get_user_flag(cryst) ) continue;
+
+		for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
 		      refl != NULL;
 		      refl = next_refl(refl, iter) )
 		{
@@ -249,7 +252,7 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 			if ( get_redundancy(f) < 2 ) continue;
 
 			Ipart = get_intensity(refl);
-			Ifull = images[i].osf * get_intensity(f);
+			Ifull = crystal_get_osf(cryst) * get_intensity(f);
 
 			//if ( Ifull < 10 ) continue;  /* FIXME: Ugh */
 
@@ -267,7 +270,7 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 					double esd_pobs, esd_Ip, esd_If;
 					esd_Ip = get_esd_intensity(refl);
 					esd_If = get_esd_intensity(f);
-					esd_If *= images[i].osf;
+					esd_If *= crystal_get_osf(cryst);
 					esd_pobs  = pow(esd_Ip/Ipart, 2.0);
 					esd_pobs += pow(esd_If/Ifull, 2.0);
 					esd_pobs = sqrt(esd_pobs);
@@ -313,8 +316,8 @@ static void partiality_graph(cairo_t *cr, const struct image *images, int n,
 }
 
 
-static void partiality_histogram(cairo_t *cr, const struct image *images,
-                                 int n, RefList *full, int calc, int backwards)
+static void partiality_histogram(cairo_t *cr, Crystal **crystals, int n,
+                                 RefList *full, int calc, int backwards)
 {
 	int f_max;
 	int i, b;
@@ -344,10 +347,11 @@ static void partiality_histogram(cairo_t *cr, const struct image *images,
 
 		Reflection *refl;
 		RefListIterator *iter;
+		Crystal *cryst = crystals[i];
 
-		if ( images[i].pr_dud ) continue;
+		if ( crystal_get_user_flag(cryst) ) continue;
 
-		for ( refl = first_refl(images[i].reflections, &iter);
+		for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
 		      refl != NULL;
 		      refl = next_refl(refl, iter) )
 		{
@@ -364,7 +368,7 @@ static void partiality_histogram(cairo_t *cr, const struct image *images,
 			Ipart = get_intensity(refl);
 			Ifull = get_intensity(f);
 
-			pobs = Ipart/(images[i].osf*Ifull);
+			pobs = Ipart/(crystal_get_osf(cryst)*Ifull);
 			pcalc = get_partiality(refl);
 
 			if ( calc ) {
@@ -426,8 +430,8 @@ static void partiality_histogram(cairo_t *cr, const struct image *images,
 }
 
 
-static void scale_factor_histogram(cairo_t *cr, const struct image *images,
-                                   int n, const char *title)
+static void scale_factor_histogram(cairo_t *cr, Crystal **crystals, int n,
+                                   const char *title)
 {
 	int f_max;
 	int i, b;
@@ -451,8 +455,8 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 
 	osf_max = 0.0;
 	for ( i=0; i<n; i++ ) {
-		double osf = images[i].osf;
-		if ( images[i].pr_dud ) continue;
+		double osf = crystal_get_osf(crystals[i]);
+		if ( crystal_get_user_flag(crystals[i]) ) continue;
 		if ( osf > osf_max ) osf_max = osf;
 	}
 	osf_max = ceil(osf_max+osf_max/10000.0);
@@ -473,9 +477,9 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 
 		for ( i=0; i<n; i++ ) {
 
-			double osf = images[i].osf;
+			double osf = crystal_get_osf(crystals[i]);
 
-			if ( images[i].pr_dud ) continue;
+			if ( crystal_get_user_flag(crystals[i]) ) continue;
 
 			for ( b=0; b<nbins; b++ ) {
 				if ( (osf >= osf_low[b])
@@ -544,8 +548,8 @@ static void scale_factor_histogram(cairo_t *cr, const struct image *images,
 }
 
 
-static void intensity_histogram(cairo_t *cr, const struct image *images,
-                                int n, RefList *full,
+static void intensity_histogram(cairo_t *cr, Crystal **crystals, int n,
+                                RefList *full,
                                 signed int h, signed int k, signed int l)
 {
 	int f_max;
@@ -582,12 +586,13 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 	for ( i=0; i<n; i++ ) {
 
 		double osf;
+		Crystal *cryst = crystals[i];
 
-		if ( images[i].pr_dud ) continue;
+		if ( crystal_get_user_flag(cryst) ) continue;
 
-		osf = images[i].osf;
+		osf = crystal_get_osf(cryst);
 
-		for ( f = find_refl(images[i].reflections, h, k, l);
+		for ( f = find_refl(crystal_get_reflections(cryst), h, k, l);
 		      f != NULL;
 		      f = next_found_refl(f) )
 		{
@@ -616,12 +621,13 @@ static void intensity_histogram(cairo_t *cr, const struct image *images,
 	for ( i=0; i<n; i++ ) {
 
 		double osf;
+		Crystal *cryst = crystals[i];
 
-		if ( images[i].pr_dud ) continue;
+		if ( crystal_get_user_flag(cryst) ) continue;
 
-		osf = images[i].osf;
+		osf = crystal_get_osf(cryst);
 
-		for ( f = find_refl(images[i].reflections, h, k, l);
+		for ( f = find_refl(crystal_get_reflections(cryst), h, k, l);
 		      f != NULL;
 		      f = next_found_refl(f) )
 		{
@@ -727,6 +733,13 @@ static void find_most_sampled_reflections(RefList *list, int n, signed int *h,
 	Reflection *refl;
 	RefListIterator *iter;
 	int *samples;
+	int j;
+
+	for ( j=0; j<n; j++ ) {
+		h[j] = 0;
+		k[j] = 0;
+		l[j] = 0;
+	}
 
 	samples = calloc(n, sizeof(int));
 
@@ -771,7 +784,7 @@ static void find_most_sampled_reflections(RefList *list, int n, signed int *h,
 
 
 
-SRContext *sr_titlepage(struct image *images, int n,
+SRContext *sr_titlepage(Crystal **crystals, int n,
                         const char *filename, const char *stream_filename,
                         const char *cmdline)
 {
@@ -805,7 +818,7 @@ SRContext *sr_titlepage(struct image *images, int n,
 }
 
 
-void sr_iteration(SRContext *sr, int iteration, struct image *images, int n,
+void sr_iteration(SRContext *sr, int iteration, Crystal **crystals, int n,
                   RefList *full)
 {
 	int i;
@@ -822,7 +835,7 @@ void sr_iteration(SRContext *sr, int iteration, struct image *images, int n,
 
 	cairo_save(sr->cr);
 	cairo_translate(sr->cr, 480.0, 350.0);
-	scale_factor_histogram(sr->cr, images, n,
+	scale_factor_histogram(sr->cr, crystals, n,
 	                       "Distribution of overall scale factors");
 	cairo_restore(sr->cr);
 
@@ -830,7 +843,7 @@ void sr_iteration(SRContext *sr, int iteration, struct image *images, int n,
 	cairo_save(sr->cr);
 
 	cairo_translate(sr->cr, 70.0, 330.0);
-	partiality_graph(sr->cr, images, n, full);
+	partiality_graph(sr->cr, crystals, n, full);
 
 	cairo_save(sr->cr);
 	cairo_move_to(sr->cr, 0.0, 0.0);
@@ -841,7 +854,7 @@ void sr_iteration(SRContext *sr, int iteration, struct image *images, int n,
 	cairo_stroke(sr->cr);
 	cairo_set_dash(sr->cr, NULL, 0, 0.0);
 	cairo_translate(sr->cr, 0.0, -150.0);
-	partiality_histogram(sr->cr, images, n, full, 1, 0);
+	partiality_histogram(sr->cr, crystals, n, full, 1, 0);
 	cairo_restore(sr->cr);
 
 	cairo_save(sr->cr);
@@ -854,7 +867,7 @@ void sr_iteration(SRContext *sr, int iteration, struct image *images, int n,
 	cairo_set_dash(sr->cr, NULL, 0, 0.0);
 	cairo_translate(sr->cr, 230.0, 200.0);
 	cairo_rotate(sr->cr, -M_PI_2);
-	partiality_histogram(sr->cr, images, n, full, 0, 1);
+	partiality_histogram(sr->cr, crystals, n, full, 0, 1);
 	cairo_restore(sr->cr);
 
 	cairo_restore(sr->cr);
@@ -873,7 +886,7 @@ void sr_iteration(SRContext *sr, int iteration, struct image *images, int n,
 
 		cairo_save(sr->cr);
 		cairo_translate(sr->cr, 400.0+140.0*x, 60.0+80.0*y);
-		intensity_histogram(sr->cr, images, n, full,
+		intensity_histogram(sr->cr, crystals, n, full,
 		                    sr->ms_h[i], sr->ms_k[i], sr->ms_l[i]);
 		cairo_restore(sr->cr);
 

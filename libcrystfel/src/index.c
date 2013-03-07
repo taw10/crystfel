@@ -3,14 +3,15 @@
  *
  * Perform indexing (somehow)
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *   2010-2011 Richard Kirian <rkirian@asu.edu>
  *   2012      Lorenzo Galli
+ *   2013      Cornelius Gati <cornelius.gati@cfel.de>
  *
  * This file is part of CrystFEL.
  *
@@ -44,64 +45,91 @@
 #include "peaks.h"
 #include "dirax.h"
 #include "mosflm.h"
+#include "xds.h"
 #include "detector.h"
 #include "index.h"
-#include "index-priv.h"
 #include "reax.h"
+#include "grainspotter.h"
 #include "geometry.h"
 #include "cell-utils.h"
-
-
-/* Base class constructor for unspecialised indexing private data */
-IndexingPrivate *indexing_private(IndexingMethod indm)
-{
-	struct _indexingprivate *priv;
-	priv = calloc(1, sizeof(struct _indexingprivate));
-	priv->indm = indm;
-	return priv;
-}
-
-
-static const char *maybes(int n)
-{
-	if ( n == 1 ) return "";
-	return "s";
-}
+#include "grainspotter.h"
 
 
 IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
                                    const char *filename, struct detector *det,
-                                   double nominal_photon_energy)
+                                   struct beam_params *beam, float *ltl)
 {
 	int n;
 	int nm = 0;
 	IndexingPrivate **iprivs;
 
 	while ( indm[nm] != INDEXING_NONE ) nm++;
-	STATUS("Preparing %i indexing method%s.\n", nm, maybes(nm));
 	iprivs = malloc((nm+1) * sizeof(IndexingPrivate *));
 
 	for ( n=0; n<nm; n++ ) {
 
-		switch ( indm[n] ) {
+		int i;
+		IndexingMethod in;
+		char *str;
 
-			case INDEXING_NONE :
-			ERROR("Tried to prepare INDEXING_NONE!\n");
-			break;
+		in = indm[n];
+
+		switch ( indm[n] & INDEXING_METHOD_MASK ) {
 
 			case INDEXING_DIRAX :
-			iprivs[n] = indexing_private(indm[n]);
+			iprivs[n] = dirax_prepare(&indm[n], cell, filename,
+			                          det, beam, ltl);
 			break;
 
 			case INDEXING_MOSFLM :
-			iprivs[n] = indexing_private(indm[n]);
+			iprivs[n] = mosflm_prepare(&indm[n], cell, filename,
+			                           det, beam, ltl);
+			break;
+
+			case INDEXING_XDS :
+                        iprivs[n] = xds_prepare(&indm[n], cell, filename,
+			                        det, beam, ltl);
 			break;
 
 			case INDEXING_REAX :
-			iprivs[n] = reax_prepare();
+			iprivs[n] = reax_prepare(&indm[n], cell, filename,
+			                         det, beam, ltl);
+			break;
+
+			case INDEXING_GRAINSPOTTER :
+			iprivs[n] = grainspotter_prepare(&indm[n], cell,
+			                                 filename, det, beam,
+			                                 ltl);
+			break;
+
+			default :
+			ERROR("Don't know how to prepare indexing method %i\n",
+			      indm[n]);
 			break;
 
 		}
+
+		if ( iprivs[n] == NULL ) return NULL;
+
+		str = indexer_str(indm[n]);
+		STATUS("Prepared indexing method %i: %s\n", n, str);
+		free(str);
+
+		if ( in != indm[n] ) {
+			ERROR("Note: flags were altered to take into account "
+			      "the limitations of the indexing method.\n");
+		}
+
+		for ( i=0; i<n; i++ ) {
+			if ( indm[i] == indm[n] ) {
+				ERROR("Duplicate indexing method.\n");
+				ERROR("Have you specified some flags which "
+				      "aren't accepted by one of your "
+				      "chosen indexing methods?\n");
+				return NULL;
+			}
+		}
+
 
 	}
 	iprivs[n] = NULL;
@@ -110,30 +138,43 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 }
 
 
-void cleanup_indexing(IndexingPrivate **priv)
+void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
 {
 	int n = 0;
 
-	if ( priv == NULL ) return;  /* Nothing to do */
+	if ( indms == NULL ) return;  /* Nothing to do */
+	if ( privs == NULL ) return;  /* Nothing to do */
 
-	while ( priv[n] != NULL ) {
+	while ( indms[n] != INDEXING_NONE ) {
 
-		switch ( priv[n]->indm ) {
+		switch ( indms[n] & INDEXING_METHOD_MASK ) {
 
 			case INDEXING_NONE :
-			free(priv[n]);
 			break;
 
 			case INDEXING_DIRAX :
-			free(priv[n]);
+			dirax_cleanup(privs[n]);
 			break;
 
 			case INDEXING_MOSFLM :
-			free(priv[n]);
+			mosflm_cleanup(privs[n]);
+			break;
+
+                        case INDEXING_XDS :
+			xds_cleanup(privs[n]);
 			break;
 
 			case INDEXING_REAX :
-			reax_cleanup(priv[n]);
+			reax_cleanup(privs[n]);
+			break;
+
+			case INDEXING_GRAINSPOTTER :
+			grainspotter_cleanup(privs[n]);
+			break;
+
+			default :
+			ERROR("Don't know how to clean up indexing method %i\n",
+			      indms[n]);
 			break;
 
 		}
@@ -166,140 +207,258 @@ void map_all_peaks(struct image *image)
 }
 
 
-void index_pattern(struct image *image, UnitCell *cell, IndexingMethod *indm,
-                   int cellr, int verbose, IndexingPrivate **ipriv,
-                   int config_insane, const float *ltl)
+/* Return non-zero for "success" */
+static int try_indexer(struct image *image, IndexingMethod indm,
+                       IndexingPrivate *ipriv)
 {
-	int i;
+	switch ( indm & INDEXING_METHOD_MASK ) {
+
+		case INDEXING_NONE :
+		break;
+
+		case INDEXING_DIRAX :
+		return run_dirax(image, ipriv);
+		break;
+
+		case INDEXING_MOSFLM :
+		return run_mosflm(image, ipriv);
+		break;
+
+		case INDEXING_XDS :
+		return run_xds(image, ipriv);
+		break;
+
+		case INDEXING_REAX :
+		return reax_index(image, ipriv);
+		break;
+
+		case INDEXING_GRAINSPOTTER :
+		return grainspotter_index(image, ipriv);
+		break;
+
+		default :
+		ERROR("Unrecognised indexing method: %i\n", indm);
+		break;
+
+	}
+
+	return 0;
+}
+
+
+void index_pattern(struct image *image,
+                   IndexingMethod *indms, IndexingPrivate **iprivs)
+{
 	int n = 0;
 
-	if ( indm == NULL ) return;
+	if ( indms == NULL ) return;
 
 	map_all_peaks(image);
-	image->indexed_cell = NULL;
+	image->crystals = NULL;
+	image->n_crystals = 0;
 
-	while ( indm[n] != INDEXING_NONE ) {
+	while ( indms[n] != INDEXING_NONE ) {
 
-		image->ncells = 0;
-
-		/* Index as appropriate */
-		switch ( indm[n] ) {
-
-			case INDEXING_NONE :
-			return;
-
-			case INDEXING_DIRAX :
-			run_dirax(image);
-			break;
-
-			case INDEXING_MOSFLM :
-			run_mosflm(image, cell);
-			break;
-
-			case INDEXING_REAX :
-			reax_index(ipriv[n], image, cell);
-			break;
-
-		}
-		if ( image->ncells == 0 ) {
-			n++;
-			continue;
-		}
-
-		for ( i=0; i<image->ncells; i++ ) {
-
-			UnitCell *new_cell = NULL;
-			UnitCell *cand = image->candidate_cells[i];
-
-			if ( verbose ) {
-				STATUS("--------------------\n");
-				STATUS("Candidate cell %i (before matching):\n",
-				       i);
-				cell_print(image->candidate_cells[i]);
-				STATUS("--------------------\n");
-			}
-
-			/* Match or reduce the cell as appropriate */
-			switch ( cellr ) {
-
-				case CELLR_NONE :
-				new_cell = cell_new_from_cell(cand);
-				break;
-
-				case CELLR_REDUCE :
-				new_cell = match_cell(cand, cell, verbose,
-				                      ltl, 1);
-				break;
-
-				case CELLR_COMPARE :
-				new_cell = match_cell(cand, cell, verbose,
-				                      ltl, 0);
-				break;
-
-				case CELLR_COMPARE_AB :
-				new_cell = match_cell_ab(cand, cell);
-				break;
-
-			}
-
-			/* No cell?  Move on to the next candidate */
-			if ( new_cell == NULL ) continue;
-
-			/* Sanity check */
-			image->indexed_cell = new_cell;
-			if ( !config_insane && !peak_sanity_check(image) ) {
-				cell_free(new_cell);
-				image->indexed_cell = NULL;
-				continue;
-			}
-
-			goto done;  /* Success */
-
-		}
-
-		for ( i=0; i<image->ncells; i++ ) {
-			cell_free(image->candidate_cells[i]);
-			image->candidate_cells[i] = NULL;
-		}
-
-		/* Move on to the next indexing method */
+		if ( try_indexer(image, indms[n], iprivs[n]) ) break;
 		n++;
 
 	}
 
-done:
-	for ( i=0; i<image->ncells; i++ ) {
-		/* May free(NULL) if all algorithms were tried and no success */
-		cell_free(image->candidate_cells[i]);
-	}
+	image->indexed_by = indms[n];
 }
 
 
-IndexingMethod *build_indexer_list(const char *str, int *need_cell)
+/* Set the indexer flags for "raw mode" ("--cell-reduction=none") */
+static IndexingMethod set_raw(IndexingMethod a)
+{
+	/* Disable all unit cell checks */
+	a &= ~(INDEXING_CHECK_CELL_COMBINATIONS | INDEXING_CHECK_CELL_AXES);
+	return a;
+}
+
+
+/* Set the indexer flags for "bad mode" ("--insane) */
+static IndexingMethod set_bad(IndexingMethod a)
+{
+	/* Disable the peak check */
+	return a & ~INDEXING_CHECK_PEAKS;
+}
+
+
+/* Set the indexer flags for "axes mode" ("--cell-reduction=compare") */
+static IndexingMethod set_axes(IndexingMethod a)
+{
+	return (a & ~INDEXING_CHECK_CELL_COMBINATIONS)
+	          | INDEXING_CHECK_CELL_AXES;
+}
+
+
+/* Set the indexer flags for "combination mode" ("--cell-reduction=reduce") */
+static IndexingMethod set_comb(IndexingMethod a)
+{
+	return (a & ~INDEXING_CHECK_CELL_AXES)
+	          | INDEXING_CHECK_CELL_COMBINATIONS;
+}
+
+
+/* Set the indexer flags for "use no lattice type information" */
+static IndexingMethod set_nolattice(IndexingMethod a)
+{
+	return a & ~INDEXING_USE_LATTICE_TYPE;
+}
+
+
+/* Set the indexer flags for "use lattice type information" */
+static IndexingMethod set_lattice(IndexingMethod a)
+{
+	return a | INDEXING_USE_LATTICE_TYPE;
+}
+
+
+/* Set the indexer flags for "use no unit cell parameters" */
+static IndexingMethod set_nocellparams(IndexingMethod a)
+{
+	return a & ~INDEXING_USE_CELL_PARAMETERS;
+}
+
+
+/* Set the indexer flags for "use unit cell parameters" */
+static IndexingMethod set_cellparams(IndexingMethod a)
+{
+	return a | INDEXING_USE_CELL_PARAMETERS;
+}
+
+char *indexer_str(IndexingMethod indm)
+{
+	char *str;
+
+	str = malloc(32);
+	if ( str == NULL ) {
+		ERROR("Failed to allocate string.\n");
+		return NULL;
+	}
+	str[0] = '\0';
+
+	switch ( indm & INDEXING_METHOD_MASK ) {
+
+		case INDEXING_NONE :
+		strcpy(str, "none");
+		return str;
+
+		case INDEXING_DIRAX :
+		strcpy(str, "dirax");
+		break;
+
+		case INDEXING_MOSFLM :
+		strcpy(str, "mosflm");
+		break;
+
+		case INDEXING_REAX :
+		strcpy(str, "reax");
+		break;
+
+		case INDEXING_GRAINSPOTTER :
+		strcpy(str, "grainspotter");
+		break;
+
+		case INDEXING_XDS :
+		strcpy(str, "xds");
+		break;
+
+		default :
+		ERROR("Unrecognised indexing method %i\n",
+		      indm & INDEXING_METHOD_MASK);
+		strcpy(str, "(unknown)");
+		break;
+
+	}
+
+	if ( indm & INDEXING_CHECK_CELL_COMBINATIONS ) {
+		strcat(str, "-comb");
+	} else if ( indm & INDEXING_CHECK_CELL_AXES ) {
+		strcat(str, "-axes");
+	} else {
+		strcat(str, "-raw");
+	}
+
+	if ( !(indm & INDEXING_CHECK_PEAKS) ) {
+		strcat(str, "-bad");
+	}
+
+	if ( indm & INDEXING_USE_LATTICE_TYPE ) {
+		strcat(str, "-latt");
+	} else {
+		strcat(str, "-nolatt");
+	}
+
+	if ( indm & INDEXING_USE_CELL_PARAMETERS ) {
+		strcat(str, "-cell");
+	} else {
+		strcat(str, "-nocell");
+	}
+
+	return str;
+}
+
+
+IndexingMethod *build_indexer_list(const char *str)
 {
 	int n, i;
 	char **methods;
 	IndexingMethod *list;
-	int tmp;
+	int nmeth = 0;
 
-	if ( need_cell == NULL ) need_cell = &tmp;
-	*need_cell = 0;
-
-	n = assplode(str, ",", &methods, ASSPLODE_NONE);
+	n = assplode(str, ",-", &methods, ASSPLODE_NONE);
 	list = malloc((n+1)*sizeof(IndexingMethod));
 
+	nmeth = -1;  /* So that the first method is #0 */
 	for ( i=0; i<n; i++ ) {
 
 		if ( strcmp(methods[i], "dirax") == 0) {
-			list[i] = INDEXING_DIRAX;
+			list[++nmeth] = INDEXING_DEFAULTS_DIRAX;
+
 		} else if ( strcmp(methods[i], "mosflm") == 0) {
-			list[i] = INDEXING_MOSFLM;
+			list[++nmeth] = INDEXING_DEFAULTS_MOSFLM;
+
+		} else if ( strcmp(methods[i], "grainspotter") == 0) {
+			list[++nmeth] = INDEXING_DEFAULTS_GRAINSPOTTER;
+
+                } else if ( strcmp(methods[i], "xds") == 0) {
+			list[++nmeth] = INDEXING_DEFAULTS_XDS;
+
 		} else if ( strcmp(methods[i], "reax") == 0) {
-			list[i] = INDEXING_REAX;
-			*need_cell = 1;
+			list[++nmeth] = INDEXING_DEFAULTS_REAX;
+
+		} else if ( strcmp(methods[i], "none") == 0) {
+			list[++nmeth] = INDEXING_NONE;
+			return list;
+
+		} else if ( strcmp(methods[i], "raw") == 0) {
+			list[nmeth] = set_raw(list[nmeth]);
+
+		} else if ( strcmp(methods[i], "bad") == 0) {
+			list[nmeth] = set_bad(list[nmeth]);
+
+		} else if ( strcmp(methods[i], "comb") == 0) {
+			list[nmeth] = set_comb(list[nmeth]);  /* Default */
+
+		} else if ( strcmp(methods[i], "axes") == 0) {
+			list[nmeth] = set_axes(list[nmeth]);
+
+		} else if ( strcmp(methods[i], "latt") == 0) {
+			list[nmeth] = set_lattice(list[nmeth]);
+
+		} else if ( strcmp(methods[i], "nolatt") == 0) {
+			list[nmeth] = set_nolattice(list[nmeth]);
+
+		} else if ( strcmp(methods[i], "cell") == 0) {
+			list[nmeth] = set_cellparams(list[nmeth]);
+
+		} else if ( strcmp(methods[i], "nocell") == 0) {
+			list[nmeth] = set_nocellparams(list[nmeth]);
+
 		} else {
-			ERROR("Unrecognised indexing method '%s'\n",
-			      methods[i]);
+			ERROR("Bad list of indexing methods: '%s'\n", str);
 			return NULL;
 		}
 
@@ -307,7 +466,7 @@ IndexingMethod *build_indexer_list(const char *str, int *need_cell)
 
 	}
 	free(methods);
-	list[i] = INDEXING_NONE;
+	list[++nmeth] = INDEXING_NONE;
 
 	return list;
 }

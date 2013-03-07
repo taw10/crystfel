@@ -3,13 +3,13 @@
  *
  * Perform indexing (somehow)
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *   2010      Richard Kirian
  *   2012      Lorenzo Galli
  *
@@ -38,10 +38,25 @@
 #endif
 
 
-#include "cell.h"
-#include "image.h"
-#include "detector.h"
+#define INDEXING_DEFAULTS_DIRAX (INDEXING_DIRAX | INDEXING_CHECK_PEAKS         \
+                                     | INDEXING_CHECK_CELL_COMBINATIONS)
 
+#define INDEXING_DEFAULTS_MOSFLM (INDEXING_MOSFLM | INDEXING_CHECK_PEAKS       \
+                                     | INDEXING_CHECK_CELL_COMBINATIONS        \
+                                     | INDEXING_USE_LATTICE_TYPE)
+
+#define INDEXING_DEFAULTS_REAX (INDEXING_REAX | INDEXING_USE_LATTICE_TYPE      \
+                                     | INDEXING_USE_CELL_PARAMETERS            \
+                                     | INDEXING_CHECK_PEAKS)
+
+#define INDEXING_DEFAULTS_GRAINSPOTTER (INDEXING_GRAINSPOTTER                  \
+                                     | INDEXING_USE_LATTICE_TYPE               \
+                                     | INDEXING_USE_CELL_PARAMETERS            \
+                                     | INDEXING_CHECK_PEAKS)
+
+#define INDEXING_DEFAULTS_XDS (INDEXING_XDS | INDEXING_USE_LATTICE_TYPE        \
+                                     | INDEXING_USE_CELL_PARAMETERS            \
+                                     | INDEXING_CHECK_PEAKS)
 
 /**
  * IndexingMethod:
@@ -49,24 +64,45 @@
  * @INDEXING_DIRAX: Invoke DirAx
  * @INDEXING_MOSFLM: Invoke MOSFLM
  * @INDEXING_REAX: DPS algorithm using known cell parameters
+ * @INDEXING_GRAINSPOTTER: Invoke GrainSpotter
+ * @INDEXING_XDS: Invokve XDS
+ * @INDEXING_CHECK_CELL_COMBINATIONS: Check linear combinations of unit cell
+ *   axes for agreement with given cell.
+ * @INDEXING_CHECK_CELL_AXES: Check unit cell axes for agreement with given
+ *   cell, and permute them if necessary.
+ * @INDEXING_CHECK_PEAKS: Check that the peaks can be explained by the indexing
+ *   result.
+ * @INDEXING_USE_LATTICE_TYPE: Use lattice type and centering information to
+ *   guide the indexing process.
+ * @INDEXING_USE_CELL_PARAMETERS: Use the unit cell parameters to guide the
+ *   indexingprocess.
  *
  * An enumeration of all the available indexing methods.
  **/
 typedef enum {
-	INDEXING_NONE,
-	INDEXING_DIRAX,
-	INDEXING_MOSFLM,
-	INDEXING_REAX,
+
+	INDEXING_NONE   = 0,
+
+	/* The core indexing methods themselves */
+	INDEXING_DIRAX  = 1,
+	INDEXING_MOSFLM = 2,
+	INDEXING_REAX   = 3,
+	INDEXING_GRAINSPOTTER = 4,
+        INDEXING_XDS = 5,
+
+	/* Bits at the top of the IndexingMethod are flags which modify the
+	 * behaviour of the indexer. */
+	INDEXING_CHECK_CELL_COMBINATIONS = 256,
+	INDEXING_CHECK_CELL_AXES         = 512,
+	INDEXING_CHECK_PEAKS             = 1024,
+	INDEXING_USE_LATTICE_TYPE        = 2048,
+	INDEXING_USE_CELL_PARAMETERS     = 4096,
+
 } IndexingMethod;
 
-
-/* Cell reduction methods */
-enum {
-	CELLR_NONE,
-	CELLR_REDUCE,
-	CELLR_COMPARE,
-	CELLR_COMPARE_AB,
-};
+/* This defines the bits in "IndexingMethod" which are used to represent the
+ * core of the indexing method */
+#define INDEXING_METHOD_MASK (0xff)
 
 
 /**
@@ -75,24 +111,24 @@ enum {
  * This is an opaque data structure containing information needed by the
  * indexing method.
  **/
-typedef struct _indexingprivate IndexingPrivate;
+typedef void *IndexingPrivate;
 
-extern IndexingPrivate *indexing_private(IndexingMethod indm);
+extern IndexingMethod *build_indexer_list(const char *str);
+extern char *indexer_str(IndexingMethod indm);
+
+#include "beam-parameters.h"
+#include "detector.h"
+#include "cell.h"
+#include "image.h"
 
 extern IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
-                                         const char *filename,
-                                         struct detector *det,
-                                         double nominal_photon_energy);
+                                          const char *filename,
+                                          struct detector *det,
+                                          struct beam_params *beam, float *ltl);
 
-extern void map_all_peaks(struct image *image);
+extern void index_pattern(struct image *image,
+                          IndexingMethod *indms, IndexingPrivate **iprivs);
 
-extern void index_pattern(struct image *image, UnitCell *cell,
-                          IndexingMethod *indm, int cellr, int verbose,
-                          IndexingPrivate **priv, int config_insane,
-                          const float *ltl);
-
-extern void cleanup_indexing(IndexingPrivate **priv);
-
-extern IndexingMethod *build_indexer_list(const char *str, int *need_cell);
+extern void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs);
 
 #endif	/* INDEX_H */

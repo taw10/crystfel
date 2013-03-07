@@ -266,11 +266,7 @@ int main(int argc, char *argv[])
 		                                         ring_radii,
 		                                         n_rings,
 		                                         ring_size);
-		if ( main_window_list[i] == NULL ) {
-			ERROR("Couldn't open display window\n");
-		} else {
-			main_n_windows++;
-		}
+		if ( main_window_list[i] != NULL ) main_n_windows++;
 	}
 
 	if ( main_n_windows == 0 ) return 0;

@@ -38,6 +38,31 @@
   </chapter>
 
   <chapter>
+    <title>Crystals</title>
+        <xi:include href="xml/crystal.xml"/>
+  </chapter>
+
+  <chapter>
+    <title>Geometry of diffraction</title>
+        <xi:include href="xml/geometry.xml"/>
+  </chapter>
+
+  <chapter>
+    <title>Beam parameters</title>
+        <xi:include href="xml/beam-params.xml"/>
+  </chapter>
+
+  <chapter>
+    <title>Peaks</title>
+        <xi:include href="xml/peaks.xml"/>
+  </chapter>
+
+  <chapter>
+    <title>Image filters</title>
+        <xi:include href="xml/filter.xml"/>
+  </chapter>
+
+  <chapter>
     <title>Statistics and R-factors</title>
         <xi:include href="xml/statistics.xml"><xi:fallback /></xi:include>
   </chapter>

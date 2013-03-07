@@ -3,7 +3,7 @@
  *
  * Check gradients for post refinement
  *
- * Copyright © 2012 Thomas White <taw@physics.org>
+ * Copyright © 2012-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -122,41 +122,94 @@ static void shift_parameter(struct image *image, int k, double shift)
 }
 
 
-static void calc_either_side(struct image *image, double incr_val,
+static Crystal *new_shifted_crystal(Crystal *cr, int refine, double incr_val)
+{
+	Crystal *cr_new;
+	double r;
+	UnitCell *cell;
+
+	cr_new = crystal_copy(cr);
+	if ( cr_new == NULL ) {
+		ERROR("Failed to allocate crystal.\n");
+		return NULL;
+	}
+
+	crystal_set_image(cr_new, crystal_get_image(cr));
+	r = crystal_get_profile_radius(cr_new);
+
+	switch ( refine ) {
+
+		case REF_ASX :
+		case REF_ASY :
+		case REF_ASZ :
+		case REF_BSX :
+		case REF_BSY :
+		case REF_BSZ :
+		case REF_CSX :
+		case REF_CSY :
+		case REF_CSZ :
+		cell = new_shifted_cell(crystal_get_cell(cr), refine,
+		                        incr_val);
+		crystal_set_cell(cr_new, cell);
+		break;
+
+		case REF_R :
+		cell = cell_new_from_cell(crystal_get_cell(cr));
+		crystal_set_profile_radius(cr_new, r + incr_val);
+		break;
+
+		default :
+		ERROR("Can't shift %i\n", refine);
+		break;
+
+	}
+
+	return cr_new;
+}
+
+static void calc_either_side(Crystal *cr, double incr_val,
                              int *valid, long double *vals[3], int refine)
 {
 	RefList *compare;
-	UnitCell *cell;
+	struct image *image = crystal_get_image(cr);
 
-	if ( (refine != REF_DIV) && (refine != REF_R) ) {
+	if ( (refine != REF_DIV) ) {
 
-		cell = new_shifted_cell(image->indexed_cell, refine, -incr_val);
-		compare = find_intersections(image, cell);
-		scan_partialities(image->reflections, compare, valid, vals, 0);
-		cell_free(cell);
+		Crystal *cr_new;
+
+		/* Crystal properties */
+		cr_new = new_shifted_crystal(cr, refine, -incr_val);
+		compare = find_intersections(image, cr_new);
+		scan_partialities(crystal_get_reflections(cr), compare, valid,
+		                  vals, 0);
+		cell_free(crystal_get_cell(cr_new));
+		crystal_free(cr_new);
 		reflist_free(compare);
 
-		cell = new_shifted_cell(image->indexed_cell, refine, +incr_val);
-		compare = find_intersections(image, cell);
-		scan_partialities(image->reflections, compare, valid, vals, 2);
-		cell_free(cell);
+		cr_new = new_shifted_crystal(cr, refine, +incr_val);
+		compare = find_intersections(image, cr_new);
+		scan_partialities(crystal_get_reflections(cr), compare, valid,
+		                  vals, 2);
+		cell_free(crystal_get_cell(cr_new));
+		crystal_free(cr_new);
 		reflist_free(compare);
 
 	} else {
 
 		struct image im_moved;
 
+		/* "Image" properties */
 		im_moved = *image;
 		shift_parameter(&im_moved, refine, -incr_val);
-		compare = find_intersections(&im_moved, im_moved.indexed_cell);
-		scan_partialities(im_moved.reflections, compare,
+		compare = find_intersections(&im_moved, cr);
+		scan_partialities(crystal_get_reflections(cr), compare,
 		                  valid, vals, 0);
 		reflist_free(compare);
 
 		im_moved = *image;
 		shift_parameter(&im_moved, refine, +incr_val);
-		compare = find_intersections(&im_moved, im_moved.indexed_cell);
-		scan_partialities(im_moved.reflections, compare,
+		compare = find_intersections(&im_moved, cr);
+		scan_partialities(crystal_get_reflections(cr), compare,
 		                  valid, vals, 2);
 		reflist_free(compare);
 
@@ -165,7 +218,7 @@ static void calc_either_side(struct image *image, double incr_val,
 
 
 
-static int test_gradients(struct image *image, double incr_val, int refine,
+static int test_gradients(Crystal *cr, double incr_val, int refine,
                           const char *str)
 {
 	Reflection *refl;
@@ -175,11 +228,13 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 	int *valid;
 	int nref;
 	int n_acc, n_valid;
+	RefList *reflections;
 	//FILE *fh;
 
-	image->reflections = find_intersections(image, image->indexed_cell);
+	reflections = find_intersections(crystal_get_image(cr), cr);
+	crystal_set_reflections(cr, reflections);
 
-	nref = num_reflections(image->reflections);
+	nref = num_reflections(reflections);
 	if ( nref < 10 ) {
 		ERROR("Too few reflections found.  Failing test by default.\n");
 		return -1;
@@ -200,16 +255,15 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 	}
 	for ( i=0; i<nref; i++ ) valid[i] = 1;
 
-	scan_partialities(image->reflections, image->reflections,
-	                  valid, vals, 1);
+	scan_partialities(reflections, reflections, valid, vals, 1);
 
-	calc_either_side(image, incr_val, valid, vals, refine);
+	calc_either_side(cr, incr_val, valid, vals, refine);
 
 	//fh = fopen("wrongness.dat", "a");
 
 	n_valid = nref;  n_acc = 0;
 	i = 0;
-	for ( refl = first_refl(image->reflections, &iter);
+	for ( refl = first_refl(reflections, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -231,8 +285,7 @@ static int test_gradients(struct image *image, double incr_val, int refine,
 			grad2 = (vals[2][i] - vals[1][i]) / incr_val;
 			grad = (grad1 + grad2) / 2.0;
 
-			cgrad = gradient(image, refine, refl,
-			                 image->profile_radius);
+			cgrad = gradient(cr, refine, refl);
 
 			get_partial(refl, &r1, &r2, &p, &cl, &ch);
 
@@ -289,6 +342,7 @@ int main(int argc, char *argv[])
 	double bx, by, bz;
 	double cx, cy, cz;
 	UnitCell *cell;
+	Crystal *cr;
 	struct quaternion orientation;
 	int i;
 	int val;
@@ -303,9 +357,16 @@ int main(int argc, char *argv[])
 	image.lambda = ph_en_to_lambda(eV_to_J(8000.0));
 	image.div = 1e-3;
 	image.bw = 0.01;
-	image.m = 0.0;
-	image.profile_radius = 0.005e9;
 	image.filename = malloc(256);
+
+	cr = crystal_new();
+	if ( cr == NULL ) {
+		ERROR("Failed to allocate crystal.\n");
+		return 1;
+	}
+	crystal_set_mosaicity(cr, 0.0);
+	crystal_set_profile_radius(cr, 0.005e9);
+	crystal_set_image(cr, &image);
 
 	cell = cell_new_from_parameters(10.0e-9, 10.0e-9, 10.0e-9,
 	                                deg2rad(90.0),
@@ -316,36 +377,39 @@ int main(int argc, char *argv[])
 
 	for ( i=0; i<1; i++ ) {
 
-		orientation = random_quaternion();
-		image.indexed_cell = cell_rotate(cell, orientation);
+		UnitCell *rot;
 
-		cell_get_reciprocal(image.indexed_cell,
+		orientation = random_quaternion();
+		rot = cell_rotate(cell, orientation);
+		crystal_set_cell(cr, rot);
+
+		cell_get_reciprocal(rot,
 			            &ax, &ay, &az, &bx, &by,
 			            &bz, &cx, &cy, &cz);
 
 		incr_val = incr_frac * image.div;
-		val += test_gradients(&image, incr_val, REF_DIV, "div");
+		val += test_gradients(cr, incr_val, REF_DIV, "div");
 
 		incr_val = incr_frac * ax;
-		val += test_gradients(&image, incr_val, REF_ASX, "ax*");
+		val += test_gradients(cr, incr_val, REF_ASX, "ax*");
 		incr_val = incr_frac * ay;
-		val += test_gradients(&image, incr_val, REF_ASY, "ay*");
+		val += test_gradients(cr, incr_val, REF_ASY, "ay*");
 		incr_val = incr_frac * az;
-		val += test_gradients(&image, incr_val, REF_ASZ, "az*");
+		val += test_gradients(cr, incr_val, REF_ASZ, "az*");
 
 		incr_val = incr_frac * bx;
-		val += test_gradients(&image, incr_val, REF_BSX, "bx*");
+		val += test_gradients(cr, incr_val, REF_BSX, "bx*");
 		incr_val = incr_frac * by;
-		val += test_gradients(&image, incr_val, REF_BSY, "by*");
+		val += test_gradients(cr, incr_val, REF_BSY, "by*");
 		incr_val = incr_frac * bz;
-		val += test_gradients(&image, incr_val, REF_BSZ, "bz*");
+		val += test_gradients(cr, incr_val, REF_BSZ, "bz*");
 
 		incr_val = incr_frac * cx;
-		val += test_gradients(&image, incr_val, REF_CSX, "cx*");
+		val += test_gradients(cr, incr_val, REF_CSX, "cx*");
 		incr_val = incr_frac * cy;
-		val += test_gradients(&image, incr_val, REF_CSY, "cy*");
+		val += test_gradients(cr, incr_val, REF_CSY, "cy*");
 		incr_val = incr_frac * cz;
-		val += test_gradients(&image, incr_val, REF_CSZ, "cz*");
+		val += test_gradients(cr, incr_val, REF_CSZ, "cz*");
 
 	}
 
