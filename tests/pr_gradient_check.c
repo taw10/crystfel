@@ -219,7 +219,7 @@ static void calc_either_side(Crystal *cr, double incr_val,
 
 
 static int test_gradients(Crystal *cr, double incr_val, int refine,
-                          const char *str)
+                          const char *str, PartialityModel pmodel)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -285,7 +285,7 @@ static int test_gradients(Crystal *cr, double incr_val, int refine,
 			grad2 = (vals[2][i] - vals[1][i]) / incr_val;
 			grad = (grad1 + grad2) / 2.0;
 
-			cgrad = gradient(cr, refine, refl);
+			cgrad = gradient(cr, refine, refl, pmodel);
 
 			get_partial(refl, &r1, &r2, &p, &cl, &ch);
 
@@ -346,6 +346,7 @@ int main(int argc, char *argv[])
 	struct quaternion orientation;
 	int i;
 	int val;
+	const PartialityModel pmodel = PMODEL_SPHERE;
 
 	image.width = 1024;
 	image.height = 1024;
@@ -388,28 +389,28 @@ int main(int argc, char *argv[])
 			            &bz, &cx, &cy, &cz);
 
 		incr_val = incr_frac * image.div;
-		val += test_gradients(cr, incr_val, REF_DIV, "div");
+		val += test_gradients(cr, incr_val, REF_DIV, "div", pmodel);
 
 		incr_val = incr_frac * ax;
-		val += test_gradients(cr, incr_val, REF_ASX, "ax*");
+		val += test_gradients(cr, incr_val, REF_ASX, "ax*", pmodel);
 		incr_val = incr_frac * ay;
-		val += test_gradients(cr, incr_val, REF_ASY, "ay*");
+		val += test_gradients(cr, incr_val, REF_ASY, "ay*", pmodel);
 		incr_val = incr_frac * az;
-		val += test_gradients(cr, incr_val, REF_ASZ, "az*");
+		val += test_gradients(cr, incr_val, REF_ASZ, "az*", pmodel);
 
 		incr_val = incr_frac * bx;
-		val += test_gradients(cr, incr_val, REF_BSX, "bx*");
+		val += test_gradients(cr, incr_val, REF_BSX, "bx*", pmodel);
 		incr_val = incr_frac * by;
-		val += test_gradients(cr, incr_val, REF_BSY, "by*");
+		val += test_gradients(cr, incr_val, REF_BSY, "by*", pmodel);
 		incr_val = incr_frac * bz;
-		val += test_gradients(cr, incr_val, REF_BSZ, "bz*");
+		val += test_gradients(cr, incr_val, REF_BSZ, "bz*", pmodel);
 
 		incr_val = incr_frac * cx;
-		val += test_gradients(cr, incr_val, REF_CSX, "cx*");
+		val += test_gradients(cr, incr_val, REF_CSX, "cx*", pmodel);
 		incr_val = incr_frac * cy;
-		val += test_gradients(cr, incr_val, REF_CSY, "cy*");
+		val += test_gradients(cr, incr_val, REF_CSY, "cy*", pmodel);
 		incr_val = incr_frac * cz;
-		val += test_gradients(cr, incr_val, REF_CSZ, "cz*");
+		val += test_gradients(cr, incr_val, REF_CSZ, "cz*", pmodel);
 
 	}
 

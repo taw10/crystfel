@@ -88,7 +88,7 @@ static double partiality_rgradient(double r, double profile_radius)
 
 
 /* Return the gradient of parameter 'k' given the current status of 'image'. */
-double gradient(Crystal *cr, int k, Reflection *refl)
+double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 {
 	double ds, azix, aziy;
 	double ttlow, tthigh, tt;
@@ -364,7 +364,8 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
 
 
 /* Perform one cycle of post refinement on 'image' against 'full' */
-static double pr_iterate(Crystal *cr, const RefList *full)
+static double pr_iterate(Crystal *cr, const RefList *full,
+                         PartialityModel pmodel)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
@@ -420,7 +421,7 @@ static double pr_iterate(Crystal *cr, const RefList *full)
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<NUM_PARAMS; k++ ) {
 			double gr;
-			gr = gradient(cr, k, refl);
+			gr = gradient(cr, k, refl, pmodel);
 			gradients[k] = gr;
 		}
 
@@ -532,7 +533,7 @@ static double guide_dev(Crystal *cr, const RefList *full)
 }
 
 
-void pr_refine(Crystal *cr, const RefList *full)
+void pr_refine(Crystal *cr, const RefList *full, PartialityModel pmodel)
 {
 	double max_shift, dev;
 	int i;
@@ -557,9 +558,9 @@ void pr_refine(Crystal *cr, const RefList *full)
 		cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
-		max_shift = pr_iterate(cr, full);
+		max_shift = pr_iterate(cr, full, pmodel);
 
-		update_partialities(cr);
+		update_partialities(cr, pmodel);
 
 		if ( verbose ) {
 			dev = guide_dev(cr, full);

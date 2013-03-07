@@ -43,10 +43,26 @@
 extern "C" {
 #endif
 
+/**
+ * PartialityModel:
+ * @PMODEL_SPHERE : Intersection of sphere with excited volume of reciprocal
+ *   space.
+ * @PMODEL_UNITY : Set all all partialities and Lorentz factors to 1.
+ *
+ * A %PartialityModelModel describes a geometrical model which can be used to
+ * calculate spot partialities and Lorentz correction factors.
+ **/
+typedef enum {
+
+	PMODEL_SPHERE,
+	PMODEL_UNITY,
+
+} PartialityModel;
+
 extern RefList *find_intersections(struct image *image, Crystal *cryst);
 extern RefList *select_intersections(struct image *image, Crystal *cryst);
 
-extern void update_partialities(Crystal *cryst);
+extern void update_partialities(Crystal *cryst, PartialityModel pmodel);
 
 #ifdef __cplusplus
 }

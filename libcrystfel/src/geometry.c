@@ -346,7 +346,7 @@ RefList *select_intersections(struct image *image, Crystal *cryst)
 
 
 /* Calculate partialities and apply them to the image's reflections */
-void update_partialities(Crystal *cryst)
+void update_partialities(Crystal *cryst, PartialityModel pmodel)
 {
 	Reflection *refl;
 	RefListIterator *iter;

@@ -88,6 +88,7 @@ struct refine_args
 {
 	RefList *full;
 	Crystal *crystal;
+	PartialityModel pmodel;
 };
 
 
@@ -106,7 +107,7 @@ static void refine_image(void *task, int id)
 	struct refine_args *pargs = task;
 	Crystal *cr = pargs->crystal;
 
-	pr_refine(cr, pargs->full);
+	pr_refine(cr, pargs->full, pargs->pmodel);
 }
 
 
@@ -314,6 +315,8 @@ int main(int argc, char *argv[])
 	int noscale = 0;
 	Stream *st;
 	Crystal **crystals;
+	char *pmodel_str = NULL;
+	PartialityModel pmodel = PMODEL_SPHERE;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -326,6 +329,7 @@ int main(int argc, char *argv[])
 		{"iterations",         1, NULL,               'n'},
 		{"no-scale",           0, &noscale,            1},
 		{"reference",          1, NULL,               'r'},
+		{"partiality",         1, NULL,               'm'},
 		{0, 0, NULL, 0}
 	};
 
@@ -336,7 +340,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:o:g:b:y:n:r:j:",
+	while ((c = getopt_long(argc, argv, "hi:o:g:b:y:n:r:j:m:",
 	                        longopts, NULL)) != -1)
 	{
 
@@ -368,6 +372,10 @@ int main(int argc, char *argv[])
 
 			case 'n' :
 			n_iter = atoi(optarg);
+			break;
+
+			case 'm' :
+			pmodel_str = strdup(optarg);
 			break;
 
 			case 'b' :
@@ -432,6 +440,17 @@ int main(int argc, char *argv[])
 	if ( beam == NULL ) {
 		ERROR("You must provide a beam parameters file.\n");
 		return 1;
+	}
+
+	if ( pmodel_str != NULL ) {
+		if ( strcmp(pmodel_str, "sphere") == 0 ) {
+			pmodel = PMODEL_SPHERE;
+		} else if ( strcmp(pmodel_str, "unity") == 0 ) {
+			pmodel = PMODEL_UNITY;
+		} else {
+			ERROR("Unknown partiality model '%s'.\n", pmodel_str);
+			return 1;
+		}
 	}
 
 	if ( reference_file != NULL ) {
@@ -544,7 +563,7 @@ int main(int argc, char *argv[])
 			crystal_set_image(cryst, &images[i]);
 
 			/* Now it's safe to do the following */
-			update_partialities(cryst);
+			update_partialities(cryst, pmodel);
 			as = crystal_get_reflections(cryst);
 			nobs += select_scalable_reflections(as, reference);
 
