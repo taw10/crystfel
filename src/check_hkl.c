@@ -3,11 +3,11 @@
  *
  * Characterise reflection lists
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -46,10 +46,6 @@
 #include "cell-utils.h"
 
 
-/* Number of bins for plot of resolution shells */
-#define NBINS (10)
-
-
 static void show_help(const char *s)
 {
 	printf("Syntax: %s [options] <file.hkl>\n\n", s);
@@ -62,23 +58,24 @@ static void show_help(const char *s)
 "      --rmin=<res>           Fix lower resolution limit for resolution shells. (m^-1).\n"
 "      --rmax=<res>           Fix upper resolution limit for resolution shells. (m^-1).\n"
 "      --sigma-cutoff=<n>     Discard reflections with I/sigma(I) < n.\n"
+"      --nshells=<n>          Use <n> resolution shells.\n"
 "\n");
 }
 
 
 static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
-                        double rmin_fix, double rmax_fix)
+                        double rmin_fix, double rmax_fix, int nshells)
 {
-	int possible[NBINS];
-	unsigned int measurements[NBINS];
-	unsigned int measured[NBINS];
-	unsigned int snr_measured[NBINS];
+	int *possible;
+	unsigned int *measurements;
+	unsigned int *measured;
+	unsigned int *snr_measured;
 	double total_vol, vol_per_shell;
-	double rmins[NBINS];
-	double rmaxs[NBINS];
-	double snr[NBINS];
-	double mean[NBINS];
-	double var[NBINS];
+	double *rmins;
+	double *rmaxs;
+	double *snr;
+	double *mean;
+	double *var;
 	double rmin, rmax;
 	signed int h, k, l;
 	int i;
@@ -96,13 +93,47 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 
+	possible = malloc(nshells*sizeof(int));
+	measurements = malloc(nshells*sizeof(unsigned int));
+	measured = malloc(nshells*sizeof(unsigned int));
+	snr_measured = malloc(nshells*sizeof(unsigned int));
+	if ( (possible == NULL) || (measurements == NULL)
+	  || (measured == NULL) || (snr_measured == NULL) ) {
+		ERROR("Couldn't allocate memory.\n");
+		free(possible);
+		free(measurements);
+		free(measured);
+		free(snr_measured);
+		return;
+	}
+
+	rmins = malloc(nshells*sizeof(double));
+	rmaxs = malloc(nshells*sizeof(double));
+	snr = malloc(nshells*sizeof(double));
+	mean = malloc(nshells*sizeof(double));
+	var = malloc(nshells*sizeof(double));
+	if ( (rmins == NULL) || (rmaxs == NULL) || (snr == NULL)
+	  || (mean == NULL) || (var == NULL) ) {
+		ERROR("Couldn't allocate memory.\n");
+		free(possible);
+		free(measurements);
+		free(measured);
+		free(snr_measured);
+		free(rmins);
+		free(rmaxs);
+		free(snr);
+		free(mean);
+		free(var);
+		return;
+	}
+
 	fh = fopen("shells.dat", "w");
 	if ( fh == NULL ) {
 		ERROR("Couldn't open 'shells.dat'\n");
 		return;
 	}
 
-	for ( i=0; i<NBINS; i++ ) {
+	for ( i=0; i<nshells; i++ ) {
 		possible[i] = 0;
 		measured[i] = 0;
 		snr_measured[i] = 0;
@@ -124,9 +155,9 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	if ( rmax_fix > 0.0 ) rmax = rmax_fix;
 
 	total_vol = pow(rmax, 3.0) - pow(rmin, 3.0);
-	vol_per_shell = total_vol / NBINS;
+	vol_per_shell = total_vol / nshells;
 	rmins[0] = rmin;
-	for ( i=1; i<NBINS; i++ ) {
+	for ( i=1; i<nshells; i++ ) {
 
 		double r;
 
@@ -138,16 +169,16 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		rmins[i] = r;
 
 		/* Shells of constant thickness */
-		//rmins[i] = rmins[i-1] + (rmax-rmin)/NBINS;
-		//rmaxs[i-1] = rmins[i-1] + (rmax-rmin)/NBINS;
+		//rmins[i] = rmins[i-1] + (rmax-rmin)/nshells;
+		//rmaxs[i-1] = rmins[i-1] + (rmax-rmin)/nshells;
 
 		STATUS("Shell %i: %f to %f\n", i-1,
 		       rmins[i-1]/1e9, rmaxs[i-1]/1e9);
 
 	}
-	rmaxs[NBINS-1] = rmax;
-	STATUS("Shell %i: %f to %f\n", NBINS-1,
-	       rmins[NBINS-1]/1e9, rmaxs[NBINS-1]/1e9);
+	rmaxs[nshells-1] = rmax;
+	STATUS("Shell %i: %f to %f\n", nshells-1,
+	       rmins[nshells-1]/1e9, rmaxs[nshells-1]/1e9);
 
 	/* Count the number of reflections possible in each shell */
 	counted = reflist_new();
@@ -168,9 +199,12 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		d = 2.0 * resolution(cell, h, k, l);
 
 		if ( forbidden_reflection(cell, h, k, l) ) continue;
+		if ( h % 2 ) continue;
+		if ( k % 2 ) continue;
+		if ( l % 2 ) continue;
 
 		bin = -1;
-		for ( i=0; i<NBINS; i++ ) {
+		for ( i=0; i<nshells; i++ ) {
 			if ( (d>rmins[i]) && (d<=rmaxs[i]) ) {
 				bin = i;
 				break;
@@ -200,13 +234,17 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		int j;
 
 		get_indices(refl, &h, &k, &l);
+		if ( forbidden_reflection(cell, h, k, l) ) continue;
+		if ( h % 2 ) continue;
+		if ( k % 2 ) continue;
+		if ( l % 2 ) continue;
 
 		d = resolution(cell, h, k, l) * 2.0;
 		val = get_intensity(refl);
 		esd = get_esd_intensity(refl);
 
 		bin = -1;
-		for ( j=0; j<NBINS; j++ ) {
+		for ( j=0; j<nshells; j++ ) {
 			if ( (d>rmins[j]) && (d<=rmaxs[j]) ) {
 				bin = j;
 				break;
@@ -221,7 +259,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 
 	}
 
-	for ( i=0; i<NBINS; i++ ) {
+	for ( i=0; i<nshells; i++ ) {
 		mean[i] /= (double)measured[i];
 	}
 
@@ -237,13 +275,17 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		double val, esd;
 
 		get_indices(refl, &h, &k, &l);
+		if ( forbidden_reflection(cell, h, k, l) ) continue;
+		if ( h % 2 ) continue;
+		if ( k % 2 ) continue;
+		if ( l % 2 ) continue;
 
 		d = resolution(cell, h, k, l) * 2.0;
 		val = get_intensity(refl);
 		esd = get_esd_intensity(refl);
 
 		bin = -1;
-		for ( j=0; j<NBINS; j++ ) {
+		for ( j=0; j<nshells; j++ ) {
 			if ( (d>rmins[j]) && (d<=rmaxs[j]) ) {
 				bin = j;
 				break;
@@ -287,7 +329,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 
 	fprintf(fh, "1/d centre   # refs Possible  Compl       "
 		    "Meas   Red   SNR    Std dev       Mean     d(A)\n");
-	for ( i=0; i<NBINS; i++ ) {
+	for ( i=0; i<nshells; i++ ) {
 
 		double cen;
 		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
@@ -308,6 +350,16 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	fclose(fh);
 
 	STATUS("Resolution shell information written to shells.dat.\n");
+
+	free(possible);
+	free(measurements);
+	free(measured);
+	free(snr_measured);
+	free(rmins);
+	free(rmaxs);
+	free(snr);
+	free(mean);
+	free(var);
 }
 
 
@@ -327,6 +379,7 @@ int main(int argc, char *argv[])
 	float rmin_fix = -1.0;
 	float rmax_fix = -1.0;
 	float sigma_cutoff = -INFINITY;
+	int nshells = 10;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -336,6 +389,7 @@ int main(int argc, char *argv[])
 		{"rmin",               1, NULL,                2},
 		{"rmax",               1, NULL,                3},
 		{"sigma-cutoff",       1, NULL,                4},
+		{"nshells",            1, NULL,                5},
 		{0, 0, NULL, 0}
 	};
 
@@ -376,6 +430,13 @@ int main(int argc, char *argv[])
 			case 4 :
 			if ( sscanf(optarg, "%f", &sigma_cutoff) != 1 ) {
 				ERROR("Invalid value for --sigma-cutoff\n");
+				return 1;
+			}
+			break;
+
+			case 5 :
+			if ( sscanf(optarg, "%i", &nshells) != 1 ) {
+				ERROR("Invalid value for --nshells\n");
 				return 1;
 			}
 			break;
@@ -454,7 +515,7 @@ int main(int argc, char *argv[])
 	STATUS("Discarded %i reflections (out of %i) with I/sigma(I) < %f\n",
 	       rej, num_reflections(raw_list), sigma_cutoff);
 
-	plot_shells(list, cell, sym, rmin_fix, rmax_fix);
+	plot_shells(list, cell, sym, rmin_fix, rmax_fix, nshells);
 
 	return 0;
 }
