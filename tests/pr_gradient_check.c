@@ -295,6 +295,7 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 
 		if ( !valid[i] ) {
 			n_invalid++;
+			i++;
 		} else {
 
 			double r1, r2, p;
@@ -303,6 +304,7 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 			grad1 = (vals[1][i] - vals[0][i]) / incr_val;
 			grad2 = (vals[2][i] - vals[1][i]) / incr_val;
 			grad = (grad1 + grad2) / 2.0;
+			i++;
 
 			cgrad = gradient(cr, refine, refl, pmodel);
 
@@ -349,8 +351,6 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 			}
 
 		}
-
-		i++;
 
 	}
 
