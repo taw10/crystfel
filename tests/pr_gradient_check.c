@@ -29,6 +29,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <gsl/gsl_statistics.h>
 
 #include <image.h>
 #include <cell.h>
@@ -230,9 +231,14 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 	int nref;
 	int n_good, n_invalid, n_small, n_nan, n_bad;
 	RefList *reflections;
-	//FILE *fh;
+	FILE *fh;
 	int ntot = 0;
 	double total = 0.0;
+	char tmp[32];
+	double *vec1;
+	double *vec2;
+	int n_line;
+	double cc;
 
 	reflections = find_intersections(crystal_get_image(cr), cr);
 	crystal_set_reflections(cr, reflections);
@@ -240,7 +246,7 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 	nref = num_reflections(reflections);
 	if ( nref < 10 ) {
 		ERROR("Too few reflections found.  Failing test by default.\n");
-		return -1;
+		return 0.0;
 	}
 
 	vals[0] = malloc(nref*sizeof(long double));
@@ -248,13 +254,13 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 	vals[2] = malloc(nref*sizeof(long double));
 	if ( (vals[0] == NULL) || (vals[1] == NULL) || (vals[2] == NULL) ) {
 		ERROR("Couldn't allocate memory.\n");
-		return -1;
+		return 0.0;
 	}
 
 	valid = malloc(nref*sizeof(int));
 	if ( valid == NULL ) {
 		ERROR("Couldn't allocate memory.\n");
-		return -1;
+		return 0.0;
 	}
 	for ( i=0; i<nref; i++ ) valid[i] = 1;
 
@@ -262,10 +268,18 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 
 	calc_either_side(cr, incr_val, valid, vals, refine);
 
-	//fh = fopen("wrongness.dat", "a");
+	snprintf(tmp, 32, "gradient-test-%s.dat", str);
+	fh = fopen(tmp, "w");
+
+	vec1 = malloc(nref*sizeof(double));
+	vec2 = malloc(nref*sizeof(double));
+	if ( (vec1 == NULL) || (vec2 == NULL) ) {
+		ERROR("Couldn't allocate memory.\n");
+		return 0.0;
+	}
 
 	n_invalid = 0;  n_good = 0;
-	n_nan = 0;  n_small = 0;  n_bad = 0;
+	n_nan = 0;  n_small = 0;  n_bad = 0;  n_line = 0;
 	i = 0;
 	for ( refl = first_refl(reflections, &iter);
 	      refl != NULL;
@@ -293,27 +307,32 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 
 			get_partial(refl, &r1, &r2, &p, &cl, &ch);
 
-			if ( fabs(cgrad) < 5e-8 ) {
-				n_small++;
+			if ( isnan(cgrad) ) {
+				n_nan++;
 				continue;
 			}
 
-			if ( isnan(cgrad) ) {
-				n_nan++;
+			fprintf(fh, "%e %Le\n", cgrad, grad);
+			vec1[n_line] = cgrad;
+			vec2[n_line] = grad;
+			n_line++;
+
+			if ( fabs(cgrad) < 5e-8 ) {
+				n_small++;
 				continue;
 			}
 
 			total += fabs(cgrad - grad);
 			ntot++;
 
-			if ( !within_tolerance(grad, cgrad, 5.0) )
+			if ( !within_tolerance(grad, cgrad, 10.0) )
 			{
 
-				STATUS("!- %s %3i %3i %3i"
-				       " %10.2Le %10.2e ratio = %5.2Lf"
-				       " %10.2e %10.2e\n",
-				       str, h, k, l, grad, cgrad, cgrad/grad,
-				       r1, r2);
+				//STATUS("!- %s %3i %3i %3i"
+				//       " %10.2Le %10.2e ratio = %5.2Lf"
+				//       " %10.2e %10.2e\n",
+				//       str, h, k, l, grad, cgrad, cgrad/grad,
+				//       r1, r2);
 				n_bad++;
 
 			} else {
@@ -328,12 +347,6 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 
 			}
 
-			//fprintf(fh, "%e %f\n",
-			        //resolution(image->indexed_cell, h, k, l),
-			        //rad2deg(tt),
-			//        cgrad,
-			//        fabs((grad-cgrad)/grad));
-
 		}
 
 		i++;
@@ -342,10 +355,11 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 
 	STATUS("%3s: %3i within 5%%, %3i outside, %3i nan, %3i invalid, "
 	       "%3i small. ", str, n_good, n_bad, n_nan, n_invalid, n_small);
-	//fclose(fh);
+	fclose(fh);
 
-	STATUS("Fractional error = %f %%\n", 100.0*total/ntot);
-	return total / ntot;
+	cc = gsl_stats_correlation(vec1, 1, vec2, 1, n_line);
+	STATUS("CC = %+f\n", cc);
+	return cc;
 }
 
 
@@ -362,7 +376,7 @@ int main(int argc, char *argv[])
 	struct quaternion orientation;
 	int i;
 	const PartialityModel pmodel = PMODEL_SPHERE;
-	double tot = 0.0;
+	int fail = 0;
 
 	image.width = 1024;
 	image.height = 1024;
@@ -393,6 +407,7 @@ int main(int argc, char *argv[])
 	for ( i=0; i<1; i++ ) {
 
 		UnitCell *rot;
+		double val;
 
 		orientation = random_quaternion();
 		rot = cell_rotate(cell, orientation);
@@ -403,34 +418,44 @@ int main(int argc, char *argv[])
 			            &bz, &cx, &cy, &cz);
 
 		incr_val = incr_frac * image.div;
-		tot += test_gradients(cr, incr_val, REF_DIV, "div", pmodel);
+		val =  test_gradients(cr, incr_val, REF_DIV, "div", pmodel);
+		if ( val > 0.1 ) fail = 1;
 
 		incr_val = incr_frac * crystal_get_profile_radius(cr);
-		tot += test_gradients(cr, incr_val, REF_R, "R", pmodel);
+		val = test_gradients(cr, incr_val, REF_R, "R", pmodel);
+		if ( val > 0.1 ) fail = 1;
 
 		incr_val = incr_frac * ax;
-		tot += test_gradients(cr, incr_val, REF_ASX, "ax*", pmodel);
+		val = test_gradients(cr, incr_val, REF_ASX, "ax*", pmodel);
+		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * ay;
-		tot += test_gradients(cr, incr_val, REF_ASY, "ay*", pmodel);
+		val = test_gradients(cr, incr_val, REF_ASY, "ay*", pmodel);
+		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * az;
-		tot += test_gradients(cr, incr_val, REF_ASZ, "az*", pmodel);
+		val = test_gradients(cr, incr_val, REF_ASZ, "az*", pmodel);
+		if ( val > 0.1 ) fail = 1;
 
 		incr_val = incr_frac * bx;
-		tot += test_gradients(cr, incr_val, REF_BSX, "bx*", pmodel);
+		val = test_gradients(cr, incr_val, REF_BSX, "bx*", pmodel);
+		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * by;
-		tot += test_gradients(cr, incr_val, REF_BSY, "by*", pmodel);
+		val = test_gradients(cr, incr_val, REF_BSY, "by*", pmodel);
+		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * bz;
-		tot += test_gradients(cr, incr_val, REF_BSZ, "bz*", pmodel);
+		val = test_gradients(cr, incr_val, REF_BSZ, "bz*", pmodel);
+		if ( val > 0.1 ) fail = 1;
 
 		incr_val = incr_frac * cx;
-		tot += test_gradients(cr, incr_val, REF_CSX, "cx*", pmodel);
+		val = test_gradients(cr, incr_val, REF_CSX, "cx*", pmodel);
+		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * cy;
-		tot += test_gradients(cr, incr_val, REF_CSY, "cy*", pmodel);
+		val = test_gradients(cr, incr_val, REF_CSY, "cy*", pmodel);
+		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * cz;
-		tot += test_gradients(cr, incr_val, REF_CSZ, "cz*", pmodel);
+		val = test_gradients(cr, incr_val, REF_CSZ, "cz*", pmodel);
+		if ( val > 0.1 ) fail = 1;
 
 	}
 
-	STATUS("Mean fractional error = %f %%\n", 100.0*tot/10.0);
-	return 0;
+	return fail;
 }
