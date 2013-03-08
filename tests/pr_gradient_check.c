@@ -222,7 +222,7 @@ static void calc_either_side(Crystal *cr, double incr_val,
 
 static double test_gradients(Crystal *cr, double incr_val, int refine,
                              const char *str, const char *file,
-                             PartialityModel pmodel)
+                             PartialityModel pmodel, int quiet)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -328,15 +328,17 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 			total += fabs(cgrad - grad);
 			ntot++;
 
-			if ( !within_tolerance(grad, cgrad, 10.0)
-			  || !within_tolerance(cgrad, grad, 10.0) )
+			if ( !within_tolerance(grad, cgrad, 5.0)
+			  || !within_tolerance(cgrad, grad, 5.0) )
 			{
 
-				STATUS("!- %s %3i %3i %3i"
-				       " %10.2Le %10.2e ratio = %5.2Lf"
-				       " %10.2e %10.2e\n",
-				       str, h, k, l, grad, cgrad, cgrad/grad,
-				       r1, r2);
+				if ( !quiet ) {
+					STATUS("!- %s %3i %3i %3i"
+					       " %10.2Le %10.2e ratio = %5.2Lf"
+					       " %10.2e %10.2e\n",
+					       str, h, k, l, grad, cgrad,
+					       cgrad/grad, r1, r2);
+				}
 				n_bad++;
 
 			} else {
@@ -379,6 +381,19 @@ int main(int argc, char *argv[])
 	int i;
 	const PartialityModel pmodel = PMODEL_SPHERE;
 	int fail = 0;
+	int quiet = 0;
+
+	if ( argc == 2 ) {
+		if ( strcmp(argv[1], "--quiet") == 0 ) {
+			quiet = 1;
+		} else {
+			ERROR("Syntax: %s [--quiet]\n", argv[0]);
+			return 1;
+		}
+	} else if ( argc != 1 ) {
+		ERROR("Syntax: %s [--quiet]\n", argv[0]);
+		return 1;
+	}
 
 	image.width = 1024;
 	image.height = 1024;
@@ -421,44 +436,51 @@ int main(int argc, char *argv[])
 
 		incr_val = incr_frac * image.div;
 		val =  test_gradients(cr, incr_val, REF_DIV, "div", "div",
-		                      pmodel);
+		                      pmodel, quiet);
 		if ( val > 0.1 ) fail = 1;
 
 		incr_val = incr_frac * crystal_get_profile_radius(cr);
-		val = test_gradients(cr, incr_val, REF_R, "R", "R", pmodel);
+		val = test_gradients(cr, incr_val, REF_R, "R", "R", pmodel,
+		                     quiet);
 		if ( val > 0.1 ) fail = 1;
-
-		//incr_val = incr_frac * image.profile_radius;
-		//val += test_gradients(&image, incr_val, REF_R, "rad");
 
 		incr_val = incr_frac * ax;
-		val = test_gradients(cr, incr_val, REF_ASX, "ax*", "x", pmodel);
+		val = test_gradients(cr, incr_val, REF_ASX, "ax*", "x", pmodel,
+		                     quiet);
 		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * bx;
-		val = test_gradients(cr, incr_val, REF_BSX, "bx*", "x", pmodel);
+		val = test_gradients(cr, incr_val, REF_BSX, "bx*", "x", pmodel,
+		                     quiet);
 		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * cx;
-		val = test_gradients(cr, incr_val, REF_CSX, "cx*", "x", pmodel);
+		val = test_gradients(cr, incr_val, REF_CSX, "cx*", "x", pmodel,
+		                     quiet);
 		if ( val > 0.1 ) fail = 1;
 
 		incr_val = incr_frac * ay;
-		val = test_gradients(cr, incr_val, REF_ASY, "ay*", "y", pmodel);
+		val = test_gradients(cr, incr_val, REF_ASY, "ay*", "y", pmodel,
+		                     quiet);
 		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * by;
-		val = test_gradients(cr, incr_val, REF_BSY, "by*", "y", pmodel);
+		val = test_gradients(cr, incr_val, REF_BSY, "by*", "y", pmodel,
+		                     quiet);
 		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * cy;
-		val = test_gradients(cr, incr_val, REF_CSY, "cy*", "y", pmodel);
+		val = test_gradients(cr, incr_val, REF_CSY, "cy*", "y", pmodel,
+		                     quiet);
 		if ( val > 0.1 ) fail = 1;
 
 		incr_val = incr_frac * az;
-		val = test_gradients(cr, incr_val, REF_ASZ, "az*", "z", pmodel);
+		val = test_gradients(cr, incr_val, REF_ASZ, "az*", "z", pmodel,
+		                     quiet);
 		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * bz;
-		val = test_gradients(cr, incr_val, REF_BSZ, "bz*", "z", pmodel);
+		val = test_gradients(cr, incr_val, REF_BSZ, "bz*", "z", pmodel,
+		                     quiet);
 		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * cz;
-		val = test_gradients(cr, incr_val, REF_CSZ, "cz*", "z", pmodel);
+		val = test_gradients(cr, incr_val, REF_CSZ, "cz*", "z", pmodel,
+		                     quiet);
 		if ( val > 0.1 ) fail = 1;
 
 	}
