@@ -320,7 +320,7 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 			vec2[n_line] = grad;
 			n_line++;
 
-			if ( fabs(cgrad) < 5e-8 ) {
+			if ( (fabs(cgrad) < 5e-8) && (fabs(grad) < 5e-8) ) {
 				n_small++;
 				continue;
 			}
@@ -328,14 +328,15 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 			total += fabs(cgrad - grad);
 			ntot++;
 
-			if ( !within_tolerance(grad, cgrad, 10.0) )
+			if ( !within_tolerance(grad, cgrad, 10.0)
+			  || !within_tolerance(cgrad, grad, 10.0) )
 			{
 
-				//STATUS("!- %s %3i %3i %3i"
-				//       " %10.2Le %10.2e ratio = %5.2Lf"
-				//       " %10.2e %10.2e\n",
-				//       str, h, k, l, grad, cgrad, cgrad/grad,
-				//       r1, r2);
+				STATUS("!- %s %3i %3i %3i"
+				       " %10.2Le %10.2e ratio = %5.2Lf"
+				       " %10.2e %10.2e\n",
+				       str, h, k, l, grad, cgrad, cgrad/grad,
+				       r1, r2);
 				n_bad++;
 
 			} else {
