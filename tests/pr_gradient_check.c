@@ -425,6 +425,9 @@ int main(int argc, char *argv[])
 		val = test_gradients(cr, incr_val, REF_R, "R", pmodel);
 		if ( val > 0.1 ) fail = 1;
 
+		//incr_val = incr_frac * image.profile_radius;
+		//val += test_gradients(&image, incr_val, REF_R, "rad");
+
 		incr_val = incr_frac * ax;
 		val = test_gradients(cr, incr_val, REF_ASX, "ax*", pmodel);
 		if ( val > 0.1 ) fail = 1;
