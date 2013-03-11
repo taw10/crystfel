@@ -50,7 +50,7 @@ void filter_noise(struct image *image)
 	for ( y=0; y<image->height; y++ ) {
 
 		int dx, dy;
-		int val = image->data[x+image->width*y];
+		float val = image->data[x+image->width*y];
 
 		/* FIXME: This isn't really the right thing to do
 		 * at the edges. */
