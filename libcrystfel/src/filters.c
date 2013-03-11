@@ -96,7 +96,7 @@ void filter_cm(struct image *image)
 }
 
 
-void filter_noise(struct image *image, float *old)
+void filter_noise(struct image *image)
 {
 	int x, y;
 
@@ -105,8 +105,6 @@ void filter_noise(struct image *image, float *old)
 
 		int dx, dy;
 		int val = image->data[x+image->width*y];
-
-		if ( old != NULL ) old[x+image->width*y] = val;
 
 		/* FIXME: This isn't really the right thing to do
 		 * at the edges. */
@@ -139,4 +137,114 @@ void filter_noise(struct image *image, float *old)
 void filters_fudge_gslcblas()
 {
         STATUS("%p\n", cblas_sgemm);
+}
+
+
+#define SWAP(a,b) { float t=(a);(a)=(b);(b)=t; }
+static float kth_smallest(float *a, int n, int k)
+{
+	long i, j, l, m;
+	float x;
+
+	l = 0;
+	m = n-1;
+
+	while ( l < m ) {
+		x=a[k];
+		i=l;
+		j=m;
+		do {
+			while (a[i]<x) i++;
+			while (x<a[j]) j--;
+			if ( i<=j ) {
+				SWAP(a[i],a[j]);
+				i++;
+				j--;
+			}
+		} while (i<=j);
+		if ( j<k ) l = i;
+		if ( k<i ) m = j;
+	}
+	return a[k];
+}
+#undef SWAP
+
+
+void filter_median(struct image *image, int size)
+{
+	int counter;
+	int nn;
+	float *buffer;
+	float *localBg;
+	int pn;
+	int i;
+
+	if ( size <= 0 ) return;
+
+	nn = 2*size+1;
+	nn = nn*nn;
+
+	buffer = calloc(nn, sizeof(float));
+	localBg = calloc(image->width*image->height, sizeof(float));
+	if ( (buffer == NULL) || (localBg == NULL) ) {
+		ERROR("Failed to allocate LB buffers.\n");
+		return;
+	}
+
+	/* Determine local background
+	 * (median over window width either side of current pixel) */
+	for ( pn=0; pn<image->det->n_panels; pn++ ) {
+
+		int fs, ss;
+		struct panel *p;
+		int p_w, p_h;
+
+		p = &image->det->panels[pn];
+		p_w = (p->max_fs-p->min_fs)+1;
+		p_h = (p->max_ss-p->min_ss)+1;
+
+		for ( fs=0; fs<p_w; fs++ ) {
+		for ( ss=0; ss<p_h; ss++ ) {
+
+			int ifs, iss;
+			int e;
+
+			counter = 0;
+			e = fs+p->min_fs;
+			e += (ss+p->min_ss)*image->width;
+
+			// Loop over median window
+			for ( ifs=-size; ifs<=size; ifs++ ) {
+			for ( iss=-size; iss<=size; iss++ ) {
+
+				int idx;
+
+				if ( (fs+ifs) < 0 ) continue;
+				if ( (fs+ifs) >= p_w ) continue;
+				if ( (ss+iss) < 0 ) continue;
+				if ( (ss+iss) >= p_h ) continue;
+
+				idx = fs+ifs+p->min_fs;
+				idx += (ss+iss+p->min_ss)*image->width;
+
+				buffer[counter++] = image->data[idx];
+
+			}
+			}
+
+			// Find median value
+			localBg[e] = kth_smallest(buffer, counter, counter/2);
+
+		}
+		}
+	}
+
+
+	/* Do the background subtraction */
+	for ( i=0; i<image->width*image->height; i++ ) {
+		image->data[i] -= localBg[i];
+	}
+
+	free(localBg);
+	free(buffer);
 }

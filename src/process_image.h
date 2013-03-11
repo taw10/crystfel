@@ -46,6 +46,7 @@ struct index_args
 	UnitCell *cell;
 	int cmfilter;
 	int noisefilter;
+	int median_filter;
 	int satcorr;
 	int closer;
 	int bgsub;

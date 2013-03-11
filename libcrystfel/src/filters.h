@@ -3,11 +3,11 @@
  *
  * Image filtering
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010,2012 Thomas White <taw@physics.org>
+ *   2010,2012-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -35,7 +35,8 @@
 
 
 extern void filter_cm(struct image *image);
-extern void filter_noise(struct image *image, float *old);
+extern void filter_noise(struct image *image);
+extern void filter_median(struct image *image, int size);
 
 
 #endif	/* FILTERS_H */

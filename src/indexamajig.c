@@ -111,6 +111,10 @@ static void show_help(const char *s)
 "                         pixels in each 3x3 region to zero if any of them\n"
 "                         have negative values.  Intensity measurement will\n"
 "                         be performed on the image as it was before this.\n"
+"    --median-filter=<n> Apply a median filter to the image data.  Intensity\n"
+"                         measurement will be performed on the image as it\n"
+"                         was before this.  The side length of the median\n"
+"                         filter box will be <n>.  Default: 0 (no filter).\n"
 "    --no-sat-corr       Don't correct values of saturated peaks using a\n"
 "                         table included in the HDF5 file.\n"
 "    --threshold=<n>     Only accept peaks above <n> ADU.  Default: 800.\n"
@@ -183,6 +187,7 @@ int main(int argc, char *argv[])
 	iargs.cell = NULL;
 	iargs.cmfilter = 0;
 	iargs.noisefilter = 0;
+	iargs.median_filter = 0;
 	iargs.satcorr = 1;
 	iargs.closer = 0;
 	iargs.bgsub = 1;
@@ -266,6 +271,7 @@ int main(int argc, char *argv[])
 		{"min-integration-snr",1, NULL,               12},
 		{"tolerance",          1, NULL,               13},
 		{"int-radius",         1, NULL,               14},
+		{"median-filter",      1, NULL,               15},
 
 		{0, 0, NULL, 0}
 	};
@@ -384,6 +390,10 @@ int main(int argc, char *argv[])
 
 			case 14 :
 			intrad = strdup(optarg);
+			break;
+
+			case 15 :
+			iargs.median_filter = atoi(optarg);
 			break;
 
 			case 0 :

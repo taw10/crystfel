@@ -136,23 +136,25 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	if ( iargs->cmfilter ) filter_cm(&image);
 
-	/* Take snapshot of image after CM subtraction but before
-	 * the aggressive noise filter. */
+	/* Take snapshot of image after CM subtraction but before applying
+	 * horrible noise filters to it */
 	data_size = image.width * image.height * sizeof(float);
 	data_for_measurement = malloc(data_size);
+	memcpy(data_for_measurement, image.data, data_size);
+
+	if ( iargs->median_filter > 0 ) {
+		filter_median(&image, iargs->median_filter);
+	}
 
 	if ( iargs->noisefilter ) {
-		filter_noise(&image, data_for_measurement);
-	} else {
-		memcpy(data_for_measurement, image.data, data_size);
+		filter_noise(&image);
 	}
 
 	switch ( iargs->peaks ) {
 
 		case PEAK_HDF5:
-		// Get peaks from HDF5
-		if (get_peaks(&image, hdfile,
-			iargs->hdf5_peak_path)) {
+		/* Get peaks from HDF5 */
+		if ( get_peaks(&image, hdfile, iargs->hdf5_peak_path) ) {
 			ERROR("Failed to get peaks from HDF5 file.\n");
 		}
 		if ( !iargs->no_revalidate ) {
