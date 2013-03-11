@@ -47,6 +47,7 @@
 #include "hdfsee.h"
 #include "utils.h"
 #include "detector.h"
+#include "filters.h"
 
 
 static void displaywindow_error(DisplayWindow *dw, const char *message)
@@ -1526,6 +1527,20 @@ static int geometry_fits(struct image *image, struct detector *geom)
 }
 
 
+static void do_filters(DisplayWindow *dw)
+{
+	if ( dw->cmfilter ) filter_cm(dw->image);
+
+	if ( dw->median_filter > 0 ) {
+		filter_median(dw->image, dw->median_filter);
+	}
+
+	if ( dw->noisefilter ) {
+		filter_noise(dw->image);
+	}
+}
+
+
 struct newhdf {
 	DisplayWindow *dw;
 	GtkWidget *widget;
@@ -1580,6 +1595,8 @@ static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 	} else {
 		nh->dw->image->det = nh->dw->simple_geom;
 	}
+
+	do_filters(nh->dw);
 
 	displaywindow_update(nh->dw);
 	return 0;
@@ -1782,7 +1799,8 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
                                   int noisefilter, int colscale,
                                   const char *element, const char *geometry,
                                   int show_rings, double *ring_radii,
-                                  int n_rings, double ring_size)
+                                  int n_rings, double ring_size,
+                                  int median_filter)
 {
 	DisplayWindow *dw;
 	char *title;
@@ -1813,6 +1831,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->ring_radius = ring_size;
 	dw->ring_radii = ring_radii;
 	dw->n_rings = n_rings;
+	dw->median_filter = median_filter;
 
 	/* Open the file, if any */
 	if ( filename != NULL ) {
@@ -1849,6 +1868,9 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->loaded_geom = NULL;
 	dw->simple_geom = simple_geometry(dw->image);
 	dw->image->det = dw->simple_geom;
+
+	/* Filters need geometry */
+	do_filters(dw);
 
 	/* Peak list provided at startup? */
 	if ( peaks != NULL ) {

@@ -124,6 +124,7 @@ int main(int argc, char *argv[])
 	char *reslist = NULL;
 	double ring_radii[128];
 	int n_rings = -1;
+	int median_filter = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -139,6 +140,7 @@ int main(int argc, char *argv[])
 		{"show-rings",         0, &config_showrings,   1},
 		{"ring-size",          1, NULL,                2},
 		{"simple-rings",       1, NULL,               'r'},
+		{"median-filter",      1, NULL,                3},
 		{0, 0, NULL, 0}
 	};
 
@@ -195,6 +197,10 @@ int main(int argc, char *argv[])
 				ERROR("Ring size must be numerical.\n");
 				return 1;
 			}
+			break;
+
+			case 3 :
+			median_filter = atoi(optarg);
 			break;
 
 			case 'r' :
@@ -265,7 +271,8 @@ int main(int argc, char *argv[])
 		                                         config_showrings,
 		                                         ring_radii,
 		                                         n_rings,
-		                                         ring_size);
+		                                         ring_size,
+		                                         median_filter);
 		if ( main_window_list[i] != NULL ) main_n_windows++;
 	}
 

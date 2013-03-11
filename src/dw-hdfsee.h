@@ -102,6 +102,7 @@ typedef struct {
 	double		boostint;
 	int		cmfilter;	/* Use CM subtraction */
 	int		noisefilter;	/* Use aggressive noise filter */
+	int             median_filter;
 	int             use_geom;
 	int             show_rings;
 	int		show_peaks;
@@ -122,7 +123,8 @@ extern DisplayWindow *displaywindow_open(const char *filename,
                                          int noisefilter, int colscale,
                                          const char *element,
                                          const char *geometry, int show_rings,
-                                         double *ring_radii, int n_rings, double ring_size);
+                                         double *ring_radii, int n_rings,
+                                         double ring_size, int median_filter);
 
 
 #endif	/* DISPLAYWINDOW_H */
