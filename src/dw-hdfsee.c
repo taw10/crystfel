@@ -1529,8 +1529,6 @@ static int geometry_fits(struct image *image, struct detector *geom)
 
 static void do_filters(DisplayWindow *dw)
 {
-	if ( dw->cmfilter ) filter_cm(dw->image);
-
 	if ( dw->median_filter > 0 ) {
 		filter_median(dw->image, dw->median_filter);
 	}
@@ -1795,7 +1793,7 @@ static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
 
 
 DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
-                                  double boost, int binning, int cmfilter,
+                                  double boost, int binning,
                                   int noisefilter, int colscale,
                                   const char *element, const char *geometry,
                                   int show_rings, double *ring_radii,
@@ -1824,7 +1822,6 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->scale = colscale;
 	dw->binning = binning;
 	dw->boostint = boost;
-	dw->cmfilter = cmfilter;
 	dw->noisefilter = noisefilter;
 	dw->not_ready_yet = 1;
 	dw->surf = NULL;

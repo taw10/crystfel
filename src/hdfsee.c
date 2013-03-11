@@ -58,11 +58,10 @@ static void show_help(const char *s)
 "      --ring-size=<n>              Set the size for those circles.\n"
 "  -i, --int-boost=<n>              Multiply intensity by <n>.\n"
 "  -b, --binning=<n>                Set display binning to <n>.\n"
-"      --filter-cm                  Perform common-mode noise subtraction.\n"
-"      --filter-noise               Apply an aggressive noise filter which\n"
-"                                    sets all pixels in each 3x3 region to\n"
-"                                    zero if any of them have negative\n"
-"                                    values.\n"
+"      --filter-noise               Apply an aggressive noise filter to the\n"
+"                                    image data.\n"
+"      --median-filter=<n>          Apply a median filter to the image data.\n"
+
 "      --show-rings                 Overlay rings that indicate resolution.\n"
 "      --simple-rings=XX,YY,...     Overlay rings at specified radii XX, YY, ...\n"
 "                                    in pixel units.\n"
@@ -113,7 +112,6 @@ int main(int argc, char *argv[])
 	char *peaks = NULL;
 	double boost = 1.0;
 	int binning = 2;
-	int config_cmfilter = 0;
 	int config_noisefilter = 0;
 	int config_showrings = 0;
 	int colscale = SCALE_COLOUR;
@@ -132,7 +130,6 @@ int main(int argc, char *argv[])
 		{"peak-overlay",       1, NULL,               'p'},
 		{"int-boost",          1, NULL,               'i'},
 		{"binning",            1, NULL,               'b'},
-		{"filter-cm",          0, &config_cmfilter,    1},
 		{"filter-noise",       0, &config_noisefilter, 1},
 		{"colscale",           1, NULL,               'c'},
 		{"image",              1, NULL,               'e'},
@@ -264,7 +261,6 @@ int main(int argc, char *argv[])
 	for ( i=0; i<nfiles; i++ ) {
 		main_window_list[i] = displaywindow_open(argv[optind+i], peaks,
 		                                         boost, binning,
-		                                         config_cmfilter,
 		                                         config_noisefilter,
 		                                         colscale, element,
 		                                         geometry,

@@ -104,9 +104,6 @@ static void show_help(const char *s)
 "For more control over the process, you might need:\n\n"
 "    --tolerance=<tol>   Set the tolerances for cell comparison.\n"
 "                          Default: 5,5,5,1.5.\n"
-"    --filter-cm         Perform common-mode noise subtraction on images\n"
-"                         before proceeding.  Intensities will be extracted\n"
-"                         from the image as it is after this processing.\n"
 "    --filter-noise      Apply an aggressive noise filter which sets all\n"
 "                         pixels in each 3x3 region to zero if any of them\n"
 "                         have negative values.  Intensity measurement will\n"
@@ -114,7 +111,7 @@ static void show_help(const char *s)
 "    --median-filter=<n> Apply a median filter to the image data.  Intensity\n"
 "                         measurement will be performed on the image as it\n"
 "                         was before this.  The side length of the median\n"
-"                         filter box will be <n>.  Default: 0 (no filter).\n"
+"                         filter box will be 2<n>+1.  Default: 0 (no filter).\n"
 "    --no-sat-corr       Don't correct values of saturated peaks using a\n"
 "                         table included in the HDF5 file.\n"
 "    --threshold=<n>     Only accept peaks above <n> ADU.  Default: 800.\n"
@@ -185,7 +182,6 @@ int main(int argc, char *argv[])
 
 	/* Defaults */
 	iargs.cell = NULL;
-	iargs.cmfilter = 0;
 	iargs.noisefilter = 0;
 	iargs.median_filter = 0;
 	iargs.satcorr = 1;
@@ -239,7 +235,6 @@ int main(int argc, char *argv[])
 		{"image",              1, NULL,               'e'},
 
 		/* Long-only options with no arguments */
-		{"filter-cm",          0, &iargs.cmfilter,           1},
 		{"filter-noise",       0, &iargs.noisefilter,        1},
 		{"no-sat-corr",        0, &iargs.satcorr,            0},
 		{"sat-corr",           0, &iargs.satcorr,            1},

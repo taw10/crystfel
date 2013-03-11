@@ -134,8 +134,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		return;
 	}
 
-	if ( iargs->cmfilter ) filter_cm(&image);
-
 	/* Take snapshot of image after CM subtraction but before applying
 	 * horrible noise filters to it */
 	data_size = image.width * image.height * sizeof(float);

@@ -100,7 +100,6 @@ typedef struct {
 
 	int		binning;
 	double		boostint;
-	int		cmfilter;	/* Use CM subtraction */
 	int		noisefilter;	/* Use aggressive noise filter */
 	int             median_filter;
 	int             use_geom;
@@ -119,7 +118,7 @@ typedef struct {
 /* Open an image display window showing the given filename, or NULL */
 extern DisplayWindow *displaywindow_open(const char *filename,
                                          const char *peaks, double boost,
-                                         int binning, int cmfilter,
+                                         int binning,
                                          int noisefilter, int colscale,
                                          const char *element,
                                          const char *geometry, int show_rings,
