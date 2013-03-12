@@ -91,8 +91,7 @@ static double partiality_rgradient(double r, double profile_radius)
 double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 {
 	double ds, azi;
-	double nom, den;
-	double g;
+	double glow, ghigh;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
@@ -142,12 +141,15 @@ double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 	azi = atan2(yl, xl);
 
 	/* Calculate the gradient of partiality wrt excitation error. */
-	g = 0.0;
 	if ( clamp_low == 0 ) {
-		g -= partiality_gradient(rlow, r);
+		glow = partiality_gradient(rlow, r);
+	} else {
+		glow = 0.0;
 	}
 	if ( clamp_high == 0 ) {
-		g += partiality_gradient(rhigh, r);
+		ghigh = partiality_gradient(rhigh, r);
+	} else {
+		ghigh = 0.0;
 	}
 
 	/* For many gradients, just multiply the above number by the gradient
@@ -155,57 +157,41 @@ double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 	switch ( k ) {
 
 		case REF_DIV :
-		gr = 0.0;
-		if ( clamp_low == 0 ) {
-			nom = sqrt(2.0) * ds * sin(image->div/2.0);
-			den = sqrt(1.0 - cos(image->div/2.0));
-			gr -= (nom/den) * g;
-		}
-		if ( clamp_high == 0 ) {
-			nom = sqrt(2.0) * ds * sin(image->div/2.0);
-			den = sqrt(1.0 - cos(image->div/2.0));
-			gr += (nom/den) * g;
-		}
-		if ( isnan(gr) ) gr = 0.0;  /* FIXME: This isn't true (?) */
-		return gr / 4.0;  /* FIXME: Shameless fudge factor */
+		/* Small angle approximation */
+		return (ds*glow + ds*ghigh) / 2.0;
 
 		case REF_R :
-		g = 0.0;
-		if ( clamp_low == 0 ) {
-			g += partiality_rgradient(rlow, r);
-		}
-		if ( clamp_high == 0 ) {
-			g += partiality_rgradient(rhigh, r);
-		}
-		return g;
+		gr  = partiality_rgradient(rlow, r);
+		gr += partiality_rgradient(rhigh, r);
+		return gr;
 
 		/* Cell parameters and orientation */
 		case REF_ASX :
-		return hs * sin(phi) * cos(azi) * g;
+		return hs * sin(phi) * cos(azi) * (ghigh-glow);
 
 		case REF_BSX :
-		return ks * sin(phi) * cos(azi) * g;
+		return ks * sin(phi) * cos(azi) * (ghigh-glow);
 
 		case REF_CSX :
-		return ls * sin(phi) * cos(azi) * g;
+		return ls * sin(phi) * cos(azi) * (ghigh-glow);
 
 		case REF_ASY :
-		return hs * sin(phi) * sin(azi) * g;
+		return hs * sin(phi) * sin(azi) * (ghigh-glow);
 
 		case REF_BSY :
-		return ks * sin(phi) * sin(azi) * g;
+		return ks * sin(phi) * sin(azi) * (ghigh-glow);
 
 		case REF_CSY :
-		return ls * sin(phi) * sin(azi) * g;
+		return ls * sin(phi) * sin(azi) * (ghigh-glow);
 
 		case REF_ASZ :
-		return hs * cos(phi) * g;
+		return hs * cos(phi) * (ghigh-glow);
 
 		case REF_BSZ :
-		return ks * cos(phi) * g;
+		return ks * cos(phi) * (ghigh-glow);
 
 		case REF_CSZ :
-		return ls * cos(phi) * g;
+		return ls * cos(phi) * (ghigh-glow);
 
 	}
 
