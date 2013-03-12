@@ -81,7 +81,7 @@ static double partiality_rgradient(double r, double profile_radius)
 	dpdq = 6.0*(q-pow(q, 2.0));
 
 	/* dq/drad */
-	dqdrad = 0.5 * (1.0 - r * pow(profile_radius, -2.0));
+	dqdrad = -0.5 * r * pow(profile_radius, -2.0);
 
 	return dpdq * dqdrad;
 }
@@ -162,7 +162,7 @@ double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 
 		case REF_R :
 		gr  = partiality_rgradient(rlow, r);
-		gr += partiality_rgradient(rhigh, r);
+		gr -= partiality_rgradient(rhigh, r);
 		return gr;
 
 		/* Cell parameters and orientation */
