@@ -21,10 +21,11 @@ next_found_refl
 get_excitation_error
 get_detector_pos
 get_partiality
+get_lorentz
+get_partial
 get_indices
 get_symmetric_indices
 get_intensity
-get_partial
 get_scalable
 get_refinable
 get_redundancy
@@ -34,6 +35,8 @@ get_temp1
 get_temp2
 <SUBSECTION>
 set_detector_pos
+set_partiality
+set_lorentz
 set_partial
 set_intensity
 set_scalable

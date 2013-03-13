@@ -134,6 +134,10 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	Reflection *refl;
 	double cet, cez;
 	double pr;
+	double L;
+
+	/* Don't predict 000 */
+	if ( abs(h)+abs(k)+abs(l) == 0 ) return NULL;
 
 	pr = crystal_get_profile_radius(cryst);
 
@@ -160,6 +164,19 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	     && (fabs(rlow) > pr)
 	     && (fabs(rhigh) > pr) ) return NULL;
 
+	if ( rlow < rhigh ) {
+		ERROR("Reflection with rlow < rhigh!\n");
+		ERROR("%3i %3i %3i  rlow = %e, rhigh = %e\n",
+		      h, k, l, rlow, rhigh);
+		ERROR("div = %e\n", image->div);
+		return NULL;
+	}
+
+	/* Lorentz factor is determined direction from the r values, before
+	 * clamping.  The multiplication by the profile radius is to make the
+	 * correction factor vaguely near 1. */
+	L = pr / (rlow - rhigh);
+
 	/* If the "lower" Ewald sphere is a long way away, use the
 	 * position at which the Ewald sphere would just touch the
 	 * reflection.
@@ -185,7 +202,6 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 		rhigh = +pr;
 		clamp_high = +1;
 	}
-	assert(clamp_low >= clamp_high);
 
 	/* Calculate partiality */
 	part = partiality(rlow, rhigh, pr);
@@ -198,6 +214,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	refl = reflection_new(h, k, l);
 	set_detector_pos(refl, 0.0, xda, yda);
 	set_partial(refl, rlow, rhigh, part, clamp_low, clamp_high);
+	set_lorentz(refl, L);
 	set_symmetric_indices(refl, h, k, l);
 	set_redundancy(refl, 1);
 

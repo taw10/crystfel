@@ -100,12 +100,13 @@ static void calculate_partials(Crystal *cr,
 	{
 		signed int h, k, l;
 		Reflection *rfull;
-		double p, Ip, If;
+		double L, p, Ip, If;
 		int bin;
 
 		get_indices(refl, &h, &k, &l);
 		get_asymm(sym, h, k, l, &h, &k, &l);
 		p = get_partiality(refl);
+		L = get_lorentz(refl);
 
 		pthread_mutex_lock(full_lock);
 		rfull = find_refl(full, h, k, l);
@@ -139,7 +140,7 @@ static void calculate_partials(Crystal *cr,
 			}
 		}
 
-		Ip = crystal_get_osf(cr) * p * If;
+		Ip = crystal_get_osf(cr) * L * p * If;
 
 		res = resolution(crystal_get_cell(cr), h, k, l);
 		bin = NBINS*2.0*res/max_q;
