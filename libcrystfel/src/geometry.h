@@ -49,7 +49,7 @@ extern "C" {
  *   space.
  * @PMODEL_UNITY : Set all all partialities and Lorentz factors to 1.
  *
- * A %PartialityModelModel describes a geometrical model which can be used to
+ * A %PartialityModel describes a geometrical model which can be used to
  * calculate spot partialities and Lorentz correction factors.
  **/
 typedef enum {
