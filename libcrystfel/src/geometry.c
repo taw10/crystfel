@@ -384,7 +384,7 @@ void update_partialities(Crystal *cryst, PartialityModel pmodel)
 	      refl = next_refl(refl, iter) )
 	{
 		Reflection *vals;
-		double r1, r2, p, x, y;
+		double r1, r2, L, p, x, y;
 		double xl, yl, zl;
 		signed int h, k, l;
 		int clamp1, clamp2;
@@ -407,6 +407,8 @@ void update_partialities(Crystal *cryst, PartialityModel pmodel)
 		/* Transfer partiality stuff */
 		get_partial(vals, &r1, &r2, &p, &clamp1, &clamp2);
 		set_partial(refl, r1, r2, p, clamp1, clamp2);
+		L = get_lorentz(vals);
+		set_lorentz(refl, L);
 
 		/* Transfer detector location */
 		get_detector_pos(vals, &x, &y);

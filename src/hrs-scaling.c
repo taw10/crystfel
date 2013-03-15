@@ -3,11 +3,11 @@
  *
  * Intensity scaling using generalised HRS target function
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -109,6 +109,7 @@ static void run_scale_job(void *vwargs, int cookie)
 		signed int h, k, l;
 		double Ih, Ihl, esd;
 		Reflection *r;
+		double L, p;
 
 		if ( !get_scalable(refl) ) continue;
 
@@ -125,9 +126,11 @@ static void run_scale_job(void *vwargs, int cookie)
 			Ih = get_intensity(r);
 		}
 
-		/* FIXME: This isn't correct */
-		Ihl = get_intensity(refl) / get_partiality(refl);
-		esd = get_esd_intensity(refl) / get_partiality(refl);
+		/* If you change this, be sure to change run_merge_job() too */
+		p = get_partiality(refl);
+		L = get_lorentz(refl);
+		Ihl = get_intensity(refl) / (L*p);
+		esd = get_esd_intensity(refl) / (L*p);
 
 		num += Ih * (Ihl/osf) / pow(esd/osf, 2.0);
 		den += pow(Ih, 2.0)/pow(esd/osf, 2.0);
@@ -228,7 +231,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		signed int h, k, l;
 		double num, den;
 		int red;
-		double Ihl, esd, pcalc;
+		double Ihl, esd, L, p;
 
 		if ( !get_scalable(refl) ) continue;
 
@@ -251,9 +254,11 @@ static void run_merge_job(void *vwargs, int cookie)
 			red = get_redundancy(f);
 		}
 
-		pcalc = get_partiality(refl);
-		Ihl = get_intensity(refl) / pcalc;
-		esd = get_esd_intensity(refl) / pcalc;
+		/* If you change this, be sure to change run_scale_job() too */
+		p = get_partiality(refl);
+		L = get_lorentz(refl);
+		Ihl = get_intensity(refl) / (L*p);
+		esd = get_esd_intensity(refl) / (L*p);
 
 		num += (Ihl/G) / pow(esd/G, 2.0);
 		den += 1.0 / pow(esd/G, 2.0);
