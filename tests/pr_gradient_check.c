@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <gsl/gsl_statistics.h>
+#include <getopt.h>
 
 #include <image.h>
 #include <cell.h>
@@ -222,7 +223,7 @@ static void calc_either_side(Crystal *cr, double incr_val,
 
 static double test_gradients(Crystal *cr, double incr_val, int refine,
                              const char *str, const char *file,
-                             PartialityModel pmodel, int quiet)
+                             PartialityModel pmodel, int quiet, int plot)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -269,8 +270,10 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 
 	calc_either_side(cr, incr_val, valid, vals, refine);
 
-	snprintf(tmp, 32, "gradient-test-%s.dat", file);
-	fh = fopen(tmp, "w");
+	if ( plot ) {
+		snprintf(tmp, 32, "gradient-test-%s.dat", file);
+		fh = fopen(tmp, "w");
+	}
 
 	vec1 = malloc(nref*sizeof(double));
 	vec2 = malloc(nref*sizeof(double));
@@ -315,7 +318,10 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 				continue;
 			}
 
-			fprintf(fh, "%e %Le\n", cgrad, grad);
+			if ( plot ) {
+				fprintf(fh, "%e %Le\n", cgrad, grad);
+			}
+
 			vec1[n_line] = cgrad;
 			vec2[n_line] = grad;
 			n_line++;
@@ -359,7 +365,10 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 
 	STATUS("%3s: %3i within 5%%, %3i outside, %3i nan, %3i invalid, "
 	       "%3i small. ", str, n_good, n_bad, n_nan, n_invalid, n_small);
-	fclose(fh);
+
+	if ( plot ) {
+		fclose(fh);
+	}
 
 	cc = gsl_stats_correlation(vec1, 1, vec2, 1, n_line);
 	STATUS("CC = %+f\n", cc);
@@ -382,17 +391,30 @@ int main(int argc, char *argv[])
 	const PartialityModel pmodel = PMODEL_SPHERE;
 	int fail = 0;
 	int quiet = 0;
+	int plot = 0;
+	int c;
 
-	if ( argc == 2 ) {
-		if ( strcmp(argv[1], "--quiet") == 0 ) {
-			quiet = 1;
-		} else {
-			ERROR("Syntax: %s [--quiet]\n", argv[0]);
-			return 1;
+	const struct option longopts[] = {
+		{"quiet",       0, &quiet,        1},
+		{"plot",        0, &plot,         1},
+		{0, 0, NULL, 0}
+	};
+
+	while ((c = getopt_long(argc, argv, "", longopts, NULL)) != -1) {
+		switch (c) {
+
+			case 0 :
+			break;
+
+			case '?' :
+			break;
+
+			default :
+			ERROR("Unhandled option '%c'\n", c);
+			break;
+
 		}
-	} else if ( argc != 1 ) {
-		ERROR("Syntax: %s [--quiet]\n", argv[0]);
-		return 1;
+
 	}
 
 	image.width = 1024;
@@ -436,51 +458,51 @@ int main(int argc, char *argv[])
 
 		incr_val = incr_frac * image.div;
 		val =  test_gradients(cr, incr_val, REF_DIV, "div", "div",
-		                      pmodel, quiet);
+		                      pmodel, quiet, plot);
 		if ( val > 0.1 ) fail = 1;
 
 		incr_val = incr_frac * crystal_get_profile_radius(cr);
 		val = test_gradients(cr, incr_val, REF_R, "R", "R", pmodel,
-		                     quiet);
+		                     quiet, plot);
 		if ( val > 0.1 ) fail = 1;
 
 		incr_val = incr_frac * ax;
 		val = test_gradients(cr, incr_val, REF_ASX, "ax*", "x", pmodel,
-		                     quiet);
+		                     quiet, plot);
 		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * bx;
 		val = test_gradients(cr, incr_val, REF_BSX, "bx*", "x", pmodel,
-		                     quiet);
+		                     quiet, plot);
 		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * cx;
 		val = test_gradients(cr, incr_val, REF_CSX, "cx*", "x", pmodel,
-		                     quiet);
+		                     quiet, plot);
 		if ( val > 0.1 ) fail = 1;
 
 		incr_val = incr_frac * ay;
 		val = test_gradients(cr, incr_val, REF_ASY, "ay*", "y", pmodel,
-		                     quiet);
+		                     quiet, plot);
 		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * by;
 		val = test_gradients(cr, incr_val, REF_BSY, "by*", "y", pmodel,
-		                     quiet);
+		                     quiet, plot);
 		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * cy;
 		val = test_gradients(cr, incr_val, REF_CSY, "cy*", "y", pmodel,
-		                     quiet);
+		                     quiet, plot);
 		if ( val > 0.1 ) fail = 1;
 
 		incr_val = incr_frac * az;
 		val = test_gradients(cr, incr_val, REF_ASZ, "az*", "z", pmodel,
-		                     quiet);
+		                     quiet, plot);
 		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * bz;
 		val = test_gradients(cr, incr_val, REF_BSZ, "bz*", "z", pmodel,
-		                     quiet);
+		                     quiet, plot);
 		if ( val > 0.1 ) fail = 1;
 		incr_val = incr_frac * cz;
 		val = test_gradients(cr, incr_val, REF_CSZ, "cz*", "z", pmodel,
-		                     quiet);
+		                     quiet, plot);
 		if ( val > 0.1 ) fail = 1;
 
 	}
