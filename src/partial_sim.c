@@ -3,11 +3,11 @@
  *
  * Generate partials for testing scaling
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2012 Thomas White <taw@physics.org>
+ *   2011-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -184,6 +184,7 @@ static void show_help(const char *s)
 " -c, --cnoise=<val>       Add random noise, with a flat distribution, to the\n"
 "                          reciprocal lattice vector components given in the\n"
 "                          stream, with maximum error +/- <val> percent.\n"
+"     --osf-stddev=<val>   Set the standard deviation of the scaling factors.\n"
 "\n"
 );
 }
@@ -202,6 +203,7 @@ struct queue_args
 	int random_intensities;
 	UnitCell *cell;
 	double cnoise;
+	double osf_stddev;
 
 	struct image *template_image;
 	double max_q;
@@ -255,6 +257,7 @@ static void run_job(void *vwargs, int cookie)
 	int i;
 	Crystal *cr;
 	RefList *reflections;
+	double osf;
 
 	cr = crystal_new();
 	if ( cr == NULL ) {
@@ -264,7 +267,10 @@ static void run_job(void *vwargs, int cookie)
 	wargs->crystal = cr;
 	crystal_set_image(cr, &wargs->image);
 
-	crystal_set_osf(cr, gaussian_noise(1.0, 0.3));
+	do {
+		osf = gaussian_noise(1.0, qargs->osf_stddev);
+	} while ( osf <= 0.0 );
+	crystal_set_osf(cr, osf);
 	crystal_set_profile_radius(cr, wargs->image.beam->profile_radius);
 
 	/* Set up a random orientation */
@@ -344,6 +350,7 @@ int main(int argc, char *argv[])
 	int i;
 	FILE *fh;
 	char *phist_file = NULL;
+	double osf_stddev = 2.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -355,8 +362,11 @@ int main(int argc, char *argv[])
 		{"geometry",           1, NULL,               'g'},
 		{"symmetry",           1, NULL,               'y'},
 		{"save-random",        1, NULL,               'r'},
-		{"pgraph",             1, NULL,                2},
 		{"cnoise",             1, NULL,               'c'},
+
+		{"pgraph",             1, NULL,                2},
+		{"osf-stddev",         1, NULL,                3},
+
 		{0, 0, NULL, 0}
 	};
 
@@ -416,6 +426,19 @@ int main(int argc, char *argv[])
 
 			case 2 :
 			phist_file = strdup(optarg);
+			break;
+
+			case 3 :
+			osf_stddev = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid OSF standard deviation.\n");
+				return 1;
+			}
+			if ( osf_stddev <= 0.0 ) {
+				ERROR("Invalid OSF standard deviation.");
+				ERROR(" (must be positive).\n");
+				return 1;
+			}
 			break;
 
 			case 0 :
@@ -549,6 +572,7 @@ int main(int argc, char *argv[])
 	qargs.template_image = &image;
 	qargs.stream = stream;
 	qargs.cnoise = cnoise;
+	qargs.osf_stddev = osf_stddev;
 	qargs.max_q = largest_q(&image);
 
 	for ( i=0; i<NBINS; i++ ) {

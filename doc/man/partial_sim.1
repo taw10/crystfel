@@ -77,6 +77,12 @@ Add random values with a flat distribution to the components of the reciprocal l
 .PD
 Save a table of values to \fIfilename\fR containing, in resolution shells, the following columns: resolution shell centre in nm^-1, number of reflections in shell, mean partiality, maximum partiality.
 
+.PD 0
+.B
+.IP "\fB--osf-stddev=\fR\fIval\fR
+.PD
+Set the standard deviation of the distribution of overall scaling factors to \fIval\fR.  The distribution will be cut at zero, i.e. negative or zero scaling factors are not allowed.  The distribution will be centered on 1.  The default is \fB--osf-stddev=2.0\fR.
+
 .SH AUTHOR
 This page was written by Thomas White.
 
