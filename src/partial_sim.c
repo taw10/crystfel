@@ -445,7 +445,7 @@ int main(int argc, char *argv[])
 				ERROR("Invalid OSF standard deviation.\n");
 				return 1;
 			}
-			if ( osf_stddev <= 0.0 ) {
+			if ( osf_stddev < 0.0 ) {
 				ERROR("Invalid OSF standard deviation.");
 				ERROR(" (must be positive).\n");
 				return 1;
@@ -458,7 +458,7 @@ int main(int argc, char *argv[])
 				ERROR("Invalid full standard deviation.\n");
 				return 1;
 			}
-			if ( full_stddev <= 0.0 ) {
+			if ( full_stddev < 0.0 ) {
 				ERROR("Invalid full standard deviation.");
 				ERROR(" (must be positive).\n");
 				return 1;
@@ -471,7 +471,7 @@ int main(int argc, char *argv[])
 				ERROR("Invalid noise standard deviation.\n");
 				return 1;
 			}
-			if ( noise_stddev <= 0.0 ) {
+			if ( noise_stddev < 0.0 ) {
 				ERROR("Invalid noise standard deviation.");
 				ERROR(" (must be positive).\n");
 				return 1;
