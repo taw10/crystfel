@@ -79,6 +79,7 @@ static void show_help(const char *s)
 "  -r, --reference=<file>     Refine images against reflections in <file>,\n"
 "                              instead of taking the mean of the intensity\n"
 "                              estimates.\n"
+"  -m, --model=<model>        Specify partiality model.\n"
 "\n"
 "  -j <n>                     Run <n> analyses in parallel.\n");
 }
@@ -140,13 +141,18 @@ static void done_image(void *vqargs, void *task)
 
 static void refine_all(Crystal **crystals, int n_crystals,
                        struct detector *det,
-                       RefList *full, int nthreads)
+                       RefList *full, int nthreads, PartialityModel pmodel)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
 
+	/* If the partiality model is "p=1", this refinement is really, really
+	 * easy... */
+	if ( pmodel == PMODEL_UNITY ) return;
+
 	task_defaults.full = full;
 	task_defaults.crystal = NULL;
+	task_defaults.pmodel = pmodel;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;
@@ -329,7 +335,8 @@ int main(int argc, char *argv[])
 		{"iterations",         1, NULL,               'n'},
 		{"no-scale",           0, &noscale,            1},
 		{"reference",          1, NULL,               'r'},
-		{"partiality",         1, NULL,               'm'},
+		{"model",              1, NULL,               'm'},
+
 		{0, 0, NULL, 0}
 	};
 
@@ -574,7 +581,7 @@ int main(int argc, char *argv[])
 	STATUS("\nPerforming initial scaling.\n");
 	if ( noscale ) STATUS("Scale factors fixed at 1.\n");
 	full = scale_intensities(crystals, n_crystals, reference,
-	                         nthreads, noscale);
+	                         nthreads, noscale, pmodel);
 
 	sr = sr_titlepage(crystals, n_crystals, "scaling-report.pdf",
 	                  infile, cmdline);
@@ -597,7 +604,7 @@ int main(int argc, char *argv[])
 		/* Refine the geometry of all patterns to get the best fit */
 		select_reflections_for_refinement(crystals, n_crystals,
 		                                  comp, have_reference);
-		refine_all(crystals, n_crystals, det, comp, nthreads);
+		refine_all(crystals, n_crystals, det, comp, nthreads, pmodel);
 
 		nobs = 0;
 		for ( j=0; j<n_crystals; j++ ) {
@@ -612,7 +619,7 @@ int main(int argc, char *argv[])
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
 		full = scale_intensities(crystals, n_crystals,
-		                         reference, nthreads, noscale);
+		                         reference, nthreads, noscale, pmodel);
 
 		sr_iteration(sr, i+1, crystals, n_crystals, full);
 

@@ -362,6 +362,21 @@ RefList *select_intersections(struct image *image, Crystal *cryst)
 }
 
 
+static void set_unity_partialities(Crystal *cryst)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+
+	for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		set_partiality(refl, 1.0);
+		set_lorentz(refl, 1.0);
+	}
+}
+
+
 /* Calculate partialities and apply them to the image's reflections */
 void update_partialities(Crystal *cryst, PartialityModel pmodel)
 {
@@ -372,6 +387,14 @@ void update_partialities(Crystal *cryst, PartialityModel pmodel)
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	struct image *image = crystal_get_image(cryst);
+
+	if ( pmodel == PMODEL_UNITY ) {
+		/* It isn't strictly necessary to set the partialities to 1,
+		 * because the scaling stuff will just a correction factor of
+		 * 1 anyway.  This is just to help things make sense. */
+		set_unity_partialities(cryst);
+		return;
+	}
 
 	cell_get_reciprocal(crystal_get_cell(cryst), &asx, &asy, &asz,
 	                    &bsx, &bsy, &bsz, &csx, &csy, &csz);
