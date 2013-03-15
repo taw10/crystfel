@@ -88,7 +88,8 @@ static void calculate_partials(Crystal *cr,
                                int random_intensities,
                                pthread_mutex_t *full_lock,
                                unsigned long int *n_ref, double *p_hist,
-                               double *p_max, double max_q)
+                               double *p_max, double max_q, double full_stddev,
+                               double noise_stddev)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -121,7 +122,7 @@ static void calculate_partials(Crystal *cr,
 				 * thing under lock. */
 				pthread_mutex_lock(full_lock);
 				rfull = add_refl(full, h, k, l);
-				If = fabs(gaussian_noise(0.0, 1000.0));
+				If = fabs(gaussian_noise(0.0, full_stddev));
 				set_intensity(rfull, If);
 				set_redundancy(rfull, 1);
 				pthread_mutex_unlock(full_lock);
@@ -153,10 +154,10 @@ static void calculate_partials(Crystal *cr,
 			       res, bin,  p);
 		}
 
-		Ip = gaussian_noise(Ip, 100.0);
+		Ip = gaussian_noise(Ip, noise_stddev);
 
 		set_intensity(refl, Ip);
-		set_esd_intensity(refl, 100.0);
+		set_esd_intensity(refl, noise_stddev);
 	}
 }
 
@@ -185,6 +186,9 @@ static void show_help(const char *s)
 "                          reciprocal lattice vector components given in the\n"
 "                          stream, with maximum error +/- <val> percent.\n"
 "     --osf-stddev=<val>   Set the standard deviation of the scaling factors.\n"
+"     --full-stddev=<val>  Set the standard deviation of the randomly\n"
+"                           generated full intensities, if not using -i.\n"
+"     --noise-stddev=<val>  Set the standard deviation of the noise.\n"
 "\n"
 );
 }
@@ -204,6 +208,8 @@ struct queue_args
 	UnitCell *cell;
 	double cnoise;
 	double osf_stddev;
+	double full_stddev;
+	double noise_stddev;
 
 	struct image *template_image;
 	double max_q;
@@ -291,7 +297,8 @@ static void run_job(void *vwargs, int cookie)
 	                   qargs->sym, qargs->random_intensities,
 	                   &qargs->full_lock,
 	                   wargs->n_ref, wargs->p_hist, wargs->p_max,
-	                   qargs->max_q);
+	                   qargs->max_q, qargs->full_stddev,
+	                   qargs->noise_stddev);
 
 	/* Give a slightly incorrect cell in the stream */
 	mess_up_cell(cr, qargs->cnoise);
@@ -351,6 +358,8 @@ int main(int argc, char *argv[])
 	FILE *fh;
 	char *phist_file = NULL;
 	double osf_stddev = 2.0;
+	double full_stddev = 1000.0;
+	double noise_stddev = 20.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -366,6 +375,8 @@ int main(int argc, char *argv[])
 
 		{"pgraph",             1, NULL,                2},
 		{"osf-stddev",         1, NULL,                3},
+		{"full-stddev",        1, NULL,                4},
+		{"noise-stddev",       1, NULL,                5},
 
 		{0, 0, NULL, 0}
 	};
@@ -436,6 +447,32 @@ int main(int argc, char *argv[])
 			}
 			if ( osf_stddev <= 0.0 ) {
 				ERROR("Invalid OSF standard deviation.");
+				ERROR(" (must be positive).\n");
+				return 1;
+			}
+			break;
+
+			case 4 :
+			full_stddev = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid full standard deviation.\n");
+				return 1;
+			}
+			if ( full_stddev <= 0.0 ) {
+				ERROR("Invalid full standard deviation.");
+				ERROR(" (must be positive).\n");
+				return 1;
+			}
+			break;
+
+			case 5 :
+			noise_stddev = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid noise standard deviation.\n");
+				return 1;
+			}
+			if ( noise_stddev <= 0.0 ) {
+				ERROR("Invalid noise standard deviation.");
 				ERROR(" (must be positive).\n");
 				return 1;
 			}
@@ -573,6 +610,8 @@ int main(int argc, char *argv[])
 	qargs.stream = stream;
 	qargs.cnoise = cnoise;
 	qargs.osf_stddev = osf_stddev;
+	qargs.full_stddev = full_stddev;
+	qargs.noise_stddev = noise_stddev;
 	qargs.max_q = largest_q(&image);
 
 	for ( i=0; i<NBINS; i++ ) {
