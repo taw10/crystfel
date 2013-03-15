@@ -459,51 +459,51 @@ int main(int argc, char *argv[])
 		incr_val = incr_frac * image.div;
 		val =  test_gradients(cr, incr_val, REF_DIV, "div", "div",
 		                      pmodel, quiet, plot);
-		if ( val > 0.1 ) fail = 1;
+		if ( val < 0.99 ) fail = 1;
 
 		incr_val = incr_frac * crystal_get_profile_radius(cr);
 		val = test_gradients(cr, incr_val, REF_R, "R", "R", pmodel,
 		                     quiet, plot);
-		if ( val > 0.1 ) fail = 1;
+		if ( val < 0.99 ) fail = 1;
 
 		incr_val = incr_frac * ax;
 		val = test_gradients(cr, incr_val, REF_ASX, "ax*", "x", pmodel,
 		                     quiet, plot);
-		if ( val > 0.1 ) fail = 1;
+		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * bx;
 		val = test_gradients(cr, incr_val, REF_BSX, "bx*", "x", pmodel,
 		                     quiet, plot);
-		if ( val > 0.1 ) fail = 1;
+		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * cx;
 		val = test_gradients(cr, incr_val, REF_CSX, "cx*", "x", pmodel,
 		                     quiet, plot);
-		if ( val > 0.1 ) fail = 1;
+		if ( val < 0.99 ) fail = 1;
 
 		incr_val = incr_frac * ay;
 		val = test_gradients(cr, incr_val, REF_ASY, "ay*", "y", pmodel,
 		                     quiet, plot);
-		if ( val > 0.1 ) fail = 1;
+		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * by;
 		val = test_gradients(cr, incr_val, REF_BSY, "by*", "y", pmodel,
 		                     quiet, plot);
-		if ( val > 0.1 ) fail = 1;
+		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * cy;
 		val = test_gradients(cr, incr_val, REF_CSY, "cy*", "y", pmodel,
 		                     quiet, plot);
-		if ( val > 0.1 ) fail = 1;
+		if ( val < 0.99 ) fail = 1;
 
 		incr_val = incr_frac * az;
 		val = test_gradients(cr, incr_val, REF_ASZ, "az*", "z", pmodel,
 		                     quiet, plot);
-		if ( val > 0.1 ) fail = 1;
+		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * bz;
 		val = test_gradients(cr, incr_val, REF_BSZ, "bz*", "z", pmodel,
 		                     quiet, plot);
-		if ( val > 0.1 ) fail = 1;
+		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * cz;
 		val = test_gradients(cr, incr_val, REF_CSZ, "cz*", "z", pmodel,
 		                     quiet, plot);
-		if ( val > 0.1 ) fail = 1;
+		if ( val < 0.99 ) fail = 1;
 
 	}
 
