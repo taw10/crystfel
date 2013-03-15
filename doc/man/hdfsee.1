@@ -73,14 +73,14 @@ Show rings on the image with the radii specified.  \fIradii\fR can be a comma-de
 Use \fIscale\fR as the colour scale.  Possible scales are: \fBmono\fR, \fBinvmono\fR and \fBcolour\fR.
 
 .PD 0
-.IP \fB--filter-cm\fR
+.IP \fB--median-filter=\fR\fIn\fR
 .PD
-Attempt to subtract common-mode noise from the image.
+Apply a median filter with box "radius" \fIn\fR to the image.  Each pixel will be set to the median of the values from a \fI(n+1)\fRx\fI(n+1)\fR square centered on the pixel.  This might help with peak detection if the background is high and/or noisy.  The \fIunfiltered\fR image will be used for the final integration of the peaks.  If you also use \fB--noise-filter\fR, the median filter will be applied first.
 
 .PD 0
 .IP \fB--filter-noise\fR
 .PD
-Apply a noise filter to the image with checks 3x3 squares of pixels and sets all of them to zero if any of the nine pixels have a negative value.
+Apply a noise filter to the image with checks 3x3 squares of pixels and sets all of them to zero if any of the nine pixels have a negative value.  This filter may help with peak detection under certain circumstances.  The \fIunfiltered\fR image will be used for the final integration of the peaks, because the filter is destroys a lot of information from the pattern.  If you also use \fB--median-filter\fR, the median filter will be applied first.
 
 .SH AUTHOR
 This page was written by Thomas White.
