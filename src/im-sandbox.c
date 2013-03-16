@@ -318,7 +318,6 @@ static int pump_chunk(FILE *fh, int ofd)
 		lwrite(ofd, line);
 
 		if ( strcmp(line, CHUNK_END_MARKER"\n") == 0 ) break;
-		if ( strcmp(line, CHUNK_START_MARKER"\n") == 0 ) break;
 
 	} while ( 1 );
 	return 0;
