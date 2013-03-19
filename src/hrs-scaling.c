@@ -281,7 +281,7 @@ static void run_merge_job(void *vwargs, int cookie)
 
 			case PMODEL_SPHERE :
 			corr = get_partiality(refl) * get_lorentz(refl);
-			break;;
+			break;
 
 		}
 
