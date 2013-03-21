@@ -365,7 +365,7 @@ void record_image(struct image *image, int do_poisson)
 		ys = (x-p->min_fs)*p->fsy + (y-p->min_ss)*p->ssy;
 		rx = (xs + p->cnx) / p->res;
 		ry = (ys + p->cny) / p->res;
-		dsq = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
+		dsq = pow(rx, 2.0) + pow(ry, 2.0);
 
 		/* Projected area of pixel divided by distance squared */
 		sa = proj_area / (dsq + Lsq);

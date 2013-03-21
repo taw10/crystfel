@@ -3,12 +3,12 @@
  *
  * Quick yet non-crappy HDF viewer
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2013 Thomas White <taw@physics.org>
  *   2012      Richard Kirian
  *
  * This file is part of CrystFEL.
@@ -957,13 +957,13 @@ static gint displaywindow_about(GtkWidget *widget, DisplayWindow *dw)
 	gtk_about_dialog_set_name(GTK_ABOUT_DIALOG(window), "hdfsee");
 	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window), PACKAGE_VERSION);
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window),
-		"(c) 2006-2011 Thomas White <taw@physics.org> and others");
+		"(c) 2012-2013 Thomas White <taw@physics.org> and others");
 	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(window),
 		"Quick viewer for HDF files");
 	gtk_about_dialog_set_license(GTK_ABOUT_DIALOG(window),
-		"(c) 2006-2011 Thomas White <taw@physics.org>\n");
+		"(c) 2012-2013 Thomas White <taw@physics.org>\n");
 	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(window),
-		"http://www.bitwiz.org.uk/");
+		"http://www.desy.de/~twhite/crystfel");
 	gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(window), authors);
 
 	g_signal_connect(window, "response", G_CALLBACK(gtk_widget_destroy),
