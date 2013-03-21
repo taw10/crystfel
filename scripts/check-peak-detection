@@ -5,19 +5,23 @@ use File::Basename;
 
 my $only;
 my $file;
+my $start;
 
 # Horrible option processing
 if ( $ARGV[0] eq "--indexed" ) {
 	$only = "indexed";
 	$file = $ARGV[1];
+	$start = 2;
 } elsif ( $ARGV[0] eq "--not-indexed" ) {
 	$only = "notindexed";
 	$file = $ARGV[1];
+	$start = 2;
 } else {
 	$only = "";
 	$file = $ARGV[0];
+	$start = 1;
 }
-my $args = join(" ", splice(@ARGV, 2, scalar(@ARGV)-1));
+my $args = join(" ", splice(@ARGV, $start, scalar(@ARGV)-1));
 if ( !($args eq "") ) {
 	printf("Extra arguments for hdfsee: %s\n", $args);
 } else {
