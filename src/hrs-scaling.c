@@ -97,8 +97,8 @@ static void run_scale_job(void *vwargs, int cookie)
 	RefListIterator *iter;
 	double num = 0.0;
 	double den = 0.0;
-	double corr;
-	const double osf = crystal_get_osf(cr);
+	double g;
+	const double G = crystal_get_osf(cr);
 
 	if ( crystal_get_user_flag(cr) ) {
 		wargs->shift = 0.0;
@@ -145,20 +145,19 @@ static void run_scale_job(void *vwargs, int cookie)
 		Ihl = get_intensity(refl) / corr;
 		esd = get_esd_intensity(refl) / corr;
 
-		num += Ih * (Ihl/osf) / pow(esd/osf, 2.0);
-		den += pow(Ih, 2.0)/pow(esd/osf, 2.0);
+		num += Ih * (Ihl/G) / pow(esd/G, 2.0);
+		den += pow(Ih, 2.0)/pow(esd/G, 2.0);
 
 	}
 
 	//num += image->osf / pow(SCALING_RESTRAINT, 2.0);
 	//den += pow(image->osf, 2.0)/pow(SCALING_RESTRAINT, 2.0);
 
-	corr = num / den;
-	if ( !isnan(corr) && !isinf(corr) ) {
-		crystal_set_osf(cr, osf*corr);
+	g = num / den;
+	if ( !isnan(g) && !isinf(g) ) {
+		crystal_set_osf(cr, g*G);
 	}
-	wargs->shift = fabs(corr-1.0);
-
+	wargs->shift = fabs(g-1.0);
 }
 
 
