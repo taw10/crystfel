@@ -554,6 +554,7 @@ int main(int argc, char *argv[])
 		display_progress(n_images, n_crystals);
 
 	} while ( 1 );
+	fprintf(stderr, "\n");
 
 	close_stream(st);
 
@@ -576,9 +577,10 @@ int main(int argc, char *argv[])
 
 		}
 	}
+	STATUS("%i scalable observations.\n", nobs);
 
 	/* Make initial estimates */
-	STATUS("\nPerforming initial scaling.\n");
+	STATUS("Performing initial scaling.\n");
 	if ( noscale ) STATUS("Scale factors fixed at 1.\n");
 	full = scale_intensities(crystals, n_crystals, reference,
 	                         nthreads, noscale, pmodel);
