@@ -141,7 +141,13 @@ static void run_scale_job(void *vwargs, int cookie)
 			corr = get_partiality(refl) * get_lorentz(refl);
 			break;
 
+			default :
+			ERROR("Unrecognised partiality model!\n");
+			abort();
+			break;
+
 		}
+
 		Ihl = get_intensity(refl) / corr;
 		esd = get_esd_intensity(refl) / corr;
 
@@ -282,6 +288,11 @@ static void run_merge_job(void *vwargs, int cookie)
 			corr = get_partiality(refl) * get_lorentz(refl);
 			break;
 
+			default :
+			ERROR("Unrecognised partiality model!\n");
+			abort();
+			break;
+
 		}
 
 		Ihl = get_intensity(refl) / corr;
@@ -416,8 +427,12 @@ static void run_esd_job(void *vwargs, int cookie)
 			corr = get_partiality(refl) * get_lorentz(refl);
 			break;;
 
-		}
+			default :
+			ERROR("Unrecognised partiality model!\n");
+			abort();
+			break;
 
+		}
 
 		Ih = get_intensity(f);
 		Ihl = get_intensity(refl) / (corr * G);
