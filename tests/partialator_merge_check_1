@@ -1,0 +1,76 @@
+#!/bin/sh
+
+cat > partialator_merge_check_1.stream << EOF
+CrystFEL stream format 2.1
+Command line: indexamajig -i dummy.lst -o dummy.stream --kraken=prawn
+----- Begin chunk -----
+Image filename: dummy.h5
+photon_energy_eV = 2000.0
+--- Begin crystal
+Cell parameters 27.74398 27.84377 16.90346 nm, 88.53688 91.11774 118.75944 deg
+astar = -0.0283891 +0.0149254 -0.0257273 nm^-1
+bstar = -0.0068281 +0.0403989 -0.0005196 nm^-1
+cstar = +0.0406926 +0.0052233 -0.0426520 nm^-1
+Reflections measured after indexing
+  h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
+  1   0   0     100.00        -       1.00       1  938.0  629.0
+End of reflections
+--- End crystal
+--- Begin crystal
+Cell parameters 27.74398 27.84377 16.90346 nm, 88.53688 91.11774 118.75944 deg
+astar = -0.0283891 +0.0149254 -0.0257273 nm^-1
+bstar = -0.0068281 +0.0403989 -0.0005196 nm^-1
+cstar = +0.0406926 +0.0052233 -0.0426520 nm^-1
+Reflections measured after indexing
+  h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
+  1   0   0     200.00        -       1.00       1  938.0  629.0
+End of reflections
+--- End crystal
+----- End chunk -----
+EOF
+
+cat > partialator_merge_check_1_ans.hkl << EOF
+  h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
+  1   0   0     150.00        -       1.00       1  938.0  629.0
+End of reflections
+EOF
+
+cat > partialator_merge_check_1.beam << EOF
+beam/fluence = 2.0e15
+beam/radius = 1.5e-6
+beam/photon_energy = 6000.0
+beam/bandwidth = 0.0005
+beam/divergence = 0.001
+profile_radius = 0.005e9
+EOF
+
+cat > partialator_merge_check_1.geom << EOF
+0/min_fs = 0
+0/max_fs = 1023
+0/min_ss = 0
+0/max_ss = 1023
+0/corner_x = -512.00
+0/corner_y = -512.00
+0/fs = x
+0/ss = y
+0/clen = 70.0e-3
+0/res = 13333.3  ; 75 micron pixel size
+0/badrow_direction = y
+0/adu_per_eV = 1.0
+EOF
+
+
+src/partialator -i partialator_merge_check_1.stream \
+                -o partialator_merge_check_1.hkl  \
+                -g partialator_merge_check_1.geom \
+                -b partialator_merge_check_1.beam \
+                --model=unity --iterations=0 --no-scale
+
+diff partialator_merge_check_1.hkl partialator_merge_check_1_ans.hkl
+if [ $? -ne 0 ]; then
+	exit 1
+fi
+rm -f partialator_merge_check_1.stream partialator_merge_check_1.hkl \
+      partialator_merge_check_1_ans.hkl partialator_merge_check_1.beam \
+      partialator_merge_check_1.geom
+exit 0
