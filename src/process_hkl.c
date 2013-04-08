@@ -321,6 +321,8 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 
 			if ( r == 0 ) n_crystals_used++;
 
+			reflist_free(crystal_get_reflections(cr));
+			cell_free(crystal_get_cell(cr));
 			crystal_free(cr);
 
 			if ( n_crystals_used == stop_after ) break;
@@ -329,6 +331,7 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 
 		free(image.filename);
 		image_feature_list_free(image.features);
+		free(image.crystals);
 
 		display_progress(n_images, n_crystals_seen, n_crystals_used);
 
@@ -605,9 +608,10 @@ int main(int argc, char *argv[])
 
 	close_stream(st);
 
-	free(sym);
+	free_symoplist(sym);
 	reflist_free(model);
 	free(output);
+	free(filename);
 
 	return 0;
 }
