@@ -89,9 +89,9 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	RefListIterator *iter;
 	RefList *counted;
 	int hmax, kmax, lmax;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
 
 	possible = malloc(nshells*sizeof(int));
 	measurements = malloc(nshells*sizeof(unsigned int));
@@ -182,15 +182,15 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 
 	/* Count the number of reflections possible in each shell */
 	counted = reflist_new();
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	hmax = rmax / modulus(asx, asy, asz);
-	kmax = rmax / modulus(bsx, bsy, bsz);
-	lmax = rmax / modulus(csx, csy, csz);
-	for ( h=-hmax; h<hmax; h++ ) {
-	for ( k=-kmax; k<kmax; k++ ) {
-	for ( l=-lmax; l<lmax; l++ ) {
+	cell_get_cartesian(cell, &ax, &ay, &az,
+	                         &bx, &by, &bz,
+	                         &cx, &cy, &cz);
+	hmax = rmax * modulus(ax, ay, az);
+	kmax = rmax * modulus(bx, by, bz);
+	lmax = rmax * modulus(cx, cy, cz);
+	for ( h=-hmax; h<=hmax; h++ ) {
+	for ( k=-kmax; k<=kmax; k++ ) {
+	for ( l=-lmax; l<=lmax; l++ ) {
 
 		double d;
 		signed int hs, ks, ls;
