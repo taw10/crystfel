@@ -77,6 +77,7 @@ extern int is_subgroup(const SymOpList *source, const SymOpList *target);
 
 extern int is_centrosymmetric(const SymOpList *s);
 extern const char *symmetry_name(const SymOpList *ops);
+extern void set_symmetry_name(SymOpList *ops, const char *name);
 extern void describe_symmetry(const SymOpList *s);
 
 extern void add_symop(SymOpList *ops, IntegerMatrix *m);

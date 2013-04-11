@@ -1690,3 +1690,18 @@ const char *symmetry_name(const SymOpList *ops)
 {
 	return ops->name;
 }
+
+
+/**
+ * set_symmetry_name:
+ * @ops: A %SymOpList
+ * @name: New name for the %SymOpList
+ *
+ * Sets the text description of @ops to @name.  See symmetry_name().
+ * @name will be copied, so you can safely free it after calling this function,
+ * if that's otherwise appropriate.
+ */
+void set_symmetry_name(SymOpList *ops, const char *name)
+{
+	ops->name = strdup(name);
+}
