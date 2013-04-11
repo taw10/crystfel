@@ -477,6 +477,7 @@ int main(int argc, char *argv[])
 		ERROR("Couldn't read file '%s'\n", file);
 		return 1;
 	}
+	free(file);
 
 	/* Check that the intensities have the correct symmetry */
 	if ( check_list_symmetry(raw_list, sym) ) {
@@ -514,8 +515,13 @@ int main(int argc, char *argv[])
 	}
 	STATUS("Discarded %i reflections (out of %i) with I/sigma(I) < %f\n",
 	       rej, num_reflections(raw_list), sigma_cutoff);
+	reflist_free(raw_list);
 
 	plot_shells(list, cell, sym, rmin_fix, rmax_fix, nshells);
+
+	free_symoplist(sym);
+	reflist_free(list);
+	cell_free(cell);
 
 	return 0;
 }
