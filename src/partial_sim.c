@@ -179,6 +179,7 @@ static void show_help(const char *s)
 " -y, --symmetry=<sym>     Symmetry of the input reflection list.\n"
 " -n <n>                   Simulate <n> patterns.  Default: 2.\n"
 " -r, --save-random=<file> Save randomly generated intensities to file.\n"
+"     --pgraph=<file>      Save a histogram of partiality values to file.\n"
 " -c, --cnoise=<val>       Add random noise, with a flat distribution, to the\n"
 "                          reciprocal lattice vector components given in the\n"
 "                          stream, with maximum error +/- <val> percent.\n"

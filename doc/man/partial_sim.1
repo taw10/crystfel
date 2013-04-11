@@ -71,6 +71,12 @@ When combined with with \fB-i\fR, specifies the symmetry of the input reflection
 .PD
 Add random values with a flat distribution to the components of the reciprocal lattice vectors written to the stream, simulating indexing errors.  The maximum value that will be added is +/- \fIval\fR percent.
 
+.PD 0
+.B
+.IP "\fB--pgraph=\fR\fIfilename\fR
+.PD
+Save a table of values to \fIfilename\fR containing, in resolution shells, the following columns: resolution shell centre in nm^-1, number of reflections in shell, mean partiality, maximum partiality.
+
 .SH AUTHOR
 This page was written by Thomas White.
 
