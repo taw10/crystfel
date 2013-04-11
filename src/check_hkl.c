@@ -199,9 +199,6 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		d = 2.0 * resolution(cell, h, k, l);
 
 		if ( forbidden_reflection(cell, h, k, l) ) continue;
-		if ( h % 2 ) continue;
-		if ( k % 2 ) continue;
-		if ( l % 2 ) continue;
 
 		bin = -1;
 		for ( i=0; i<nshells; i++ ) {
@@ -235,9 +232,6 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 
 		get_indices(refl, &h, &k, &l);
 		if ( forbidden_reflection(cell, h, k, l) ) continue;
-		if ( h % 2 ) continue;
-		if ( k % 2 ) continue;
-		if ( l % 2 ) continue;
 
 		d = resolution(cell, h, k, l) * 2.0;
 		val = get_intensity(refl);
@@ -276,9 +270,6 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 
 		get_indices(refl, &h, &k, &l);
 		if ( forbidden_reflection(cell, h, k, l) ) continue;
-		if ( h % 2 ) continue;
-		if ( k % 2 ) continue;
-		if ( l % 2 ) continue;
 
 		d = resolution(cell, h, k, l) * 2.0;
 		val = get_intensity(refl);
