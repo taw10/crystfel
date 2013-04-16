@@ -228,7 +228,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
                           double *pfs, double *pss,
                           double *intensity, double *sigma,
                           double ir_inn, double ir_mid, double ir_out,
-                          int use_max_adu, int *bgPkMask, int *saturated)
+                          int *bgPkMask, int *saturated)
 {
 	signed int dfs, dss;
 	double lim_sq, out_lim_sq, mid_lim_sq;
@@ -308,9 +308,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		val = image->data[idx];
 
 		/* Check if peak contains saturation in bg region */
-		if ( use_max_adu && (val > p->max_adu) ) {
-			if ( saturated != NULL ) *saturated = 1;
-		}
+		if ( (saturated != NULL) && (val > p->max_adu) ) *saturated = 1;
 
 		bg_tot += val;
 		bg_tot_sq += pow(val, 2.0);
@@ -367,9 +365,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		val = image->data[idx] - bg_mean;
 
 		/* Check if peak contains saturation */
-		if ( use_max_adu && (val > p->max_adu) ) {
-			if ( saturated != NULL ) *saturated = 1;
-		}
+		if ( (saturated != NULL) && (val > p->max_adu) ) *saturated = 1;
 
 		pk_counts++;
 		pk_total += val;
@@ -502,7 +498,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		/* Centroid peak and get better coordinates. */
 		r = integrate_peak(image, mask_fs, mask_ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
-		                   ir_inn, ir_mid, ir_out, 1, NULL, &saturated);
+		                   ir_inn, ir_mid, ir_out, NULL, &saturated);
 
 		if ( saturated ) {
 			image->num_saturated_peaks++;
@@ -798,7 +794,7 @@ static void integrate_crystal(Crystal *cr, struct image *image, int use_closer,
 
 		r = integrate_peak(image, pfs, pss, &fs, &ss,
 		                   &intensity, &sigma, ir_inn, ir_mid, ir_out,
-		                   1, bgMasks[pnum], &saturated);
+		                   bgMasks[pnum], &saturated);
 
 		if ( saturated ) {
 			n_saturated++;
@@ -920,7 +916,7 @@ void validate_peaks(struct image *image, double min_snr,
 
 		r = integrate_peak(image, f->fs, f->ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
-		                   ir_inn, ir_mid, ir_out, 1, NULL, &saturated);
+		                   ir_inn, ir_mid, ir_out, NULL, &saturated);
 		if ( r ) {
 			n_int++;
 			continue;
