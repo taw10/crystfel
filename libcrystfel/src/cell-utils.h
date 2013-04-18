@@ -62,6 +62,7 @@ extern int bravais_lattice(UnitCell *cell);
 extern int right_handed(UnitCell *cell);
 
 extern const char *str_lattice(LatticeType l);
+extern LatticeType lattice_from_str(const char *s);
 
 extern int forbidden_reflection(UnitCell *cell,
                                 signed int h, signed int k, signed int l);

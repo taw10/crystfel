@@ -43,6 +43,7 @@
 #include <fcntl.h>
 
 #include "cell.h"
+#include "cell-utils.h"
 #include "utils.h"
 #include "image.h"
 #include "stream.h"
@@ -159,6 +160,11 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 	fprintf(st->fh, "cstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
 	        csx/1e9, csy/1e9, csz/1e9);
 
+	fprintf(st->fh, "lattice_type = %s\n",
+	        str_lattice(cell_get_lattice_type(cell)));
+	fprintf(st->fh, "centering = %c\n", cell_get_centering(cell));
+	fprintf(st->fh, "unique_axis = %c\n", cell_get_unique_axis(cell));
+
 	reflist = crystal_get_reflections(cr);
 	if ( reflist != NULL ) {
 
@@ -261,6 +267,12 @@ void read_crystal(Stream *st, struct image *image)
 	int have_as = 0;
 	int have_bs = 0;
 	int have_cs = 0;
+	int have_latt = 0;
+	int have_cen = 0;
+	int have_ua = 0;
+	char centering = 'P';
+	char unique_axis = '*';
+	LatticeType lattice_type = L_TRICLINIC;
 	Crystal *cr;
 	int n;
 	Crystal **crystals_new;
@@ -274,6 +286,7 @@ void read_crystal(Stream *st, struct image *image)
 	do {
 
 		float u, v, w;
+		char c;
 
 		rval = fgets(line, 1023, st->fh);
 
@@ -296,23 +309,31 @@ void read_crystal(Stream *st, struct image *image)
 			have_cs = 1;
 		}
 
-		if ( have_as && have_bs && have_cs ) {
-
-			UnitCell *cell;
-
-			cell = crystal_get_cell(cr);
-
-			if ( cell != NULL ) {
-				ERROR("Duplicate cell found in stream!\n");
-				ERROR("I'll use the most recent one.\n");
-				cell_free(cell);
+		if ( sscanf(line, "centering = %c", &c) == 1 ) {
+			if ( !have_cen ) {
+				centering = c;
+				have_cen = 1;
+			} else {
+				ERROR("Duplicate centering ignored.\n");
 			}
+		}
 
-			cell = cell_new_from_reciprocal_axes(as, bs, cs);
-			crystal_set_cell(cr, cell);
+		if ( sscanf(line, "unique_axis = %c", &c) == 1 ) {
+			if ( !have_ua ) {
+				unique_axis = c;
+				have_ua = 1;
+			} else {
+				ERROR("Duplicate unique axis ignored.\n");
+			}
+		}
 
-			have_as = 0;  have_bs = 0;  have_cs = 0;
-
+		if ( strncmp(line, "lattice_type = ", 15) == 0 ) {
+			if ( !have_latt ) {
+				lattice_type = lattice_from_str(line+15);
+				have_latt = 1;
+			} else {
+				ERROR("Duplicate lattice type ignored.\n");
+			}
 		}
 
 		if ( strncmp(line, "num_saturated_reflections = ", 28) == 0 ) {
@@ -338,6 +359,33 @@ void read_crystal(Stream *st, struct image *image)
 		if ( strcmp(line, CRYSTAL_END_MARKER) == 0 ) break;
 
 	} while ( 1 );
+
+	if ( have_as && have_bs && have_cs ) {
+
+		UnitCell *cell;
+
+		cell = crystal_get_cell(cr);
+
+		if ( cell != NULL ) {
+			ERROR("Duplicate cell found in stream!\n");
+			ERROR("I'll use the most recent one.\n");
+			cell_free(cell);
+		}
+
+		cell = cell_new_from_reciprocal_axes(as, bs, cs);
+
+		if ( have_cen && have_ua && have_latt ) {
+			cell_set_centering(cell, centering);
+			cell_set_unique_axis(cell, unique_axis);
+			cell_set_lattice_type(cell, lattice_type);
+		} /* else keep default triclinic P */
+
+		crystal_set_cell(cr, cell);
+
+		have_as = 0;  have_bs = 0;  have_cs = 0;
+		have_latt = 0;  have_ua = 0;  have_cen = 0;
+
+	}
 
 	/* Add crystal to the list for this image */
 	n = image->n_crystals+1;

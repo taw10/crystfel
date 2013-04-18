@@ -113,6 +113,21 @@ const char *str_lattice(LatticeType l)
 }
 
 
+LatticeType lattice_from_str(const char *s)
+{
+	if ( strcmp(s, "triclinic") == 0 ) return L_TRICLINIC;
+	if ( strcmp(s, "monoclinic") == 0 ) return L_MONOCLINIC;
+	if ( strcmp(s, "orthorhombic") == 0 ) return L_ORTHORHOMBIC;
+	if ( strcmp(s, "tetragonal") == 0 ) return L_TETRAGONAL;
+	if ( strcmp(s, "rhombohedral") == 0 ) return L_RHOMBOHEDRAL;
+	if ( strcmp(s, "hexagonal") == 0 ) return L_HEXAGONAL;
+	if ( strcmp(s, "cubic") == 0 ) return L_CUBIC;
+
+	ERROR("Unrecognised lattice type '%s'\n", s);
+	return L_TRICLINIC;
+}
+
+
 int right_handed(UnitCell *cell)
 {
 	double asx, asy, asz;
