@@ -686,6 +686,8 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 	free(cand[1]);
 	free(cand[2]);
 
+	cell_free(cell);
+
 	/* Reverse the de-centering transformation */
 	if ( new_cell != NULL ) {
 
