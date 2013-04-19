@@ -1,3 +1,25 @@
+CrystFEL version 0.5.0, 19th April 2013
+---------------------------------------
+- The internal architecture has been changed to accommodate multiple crystals
+  per diffraction pattern.
+- The stream format has changed as a result of the above.
+- The indexing logic has reworked to make it easier to control what information
+  is used for indexing and to allow the user to try more indexing options in
+  turn.
+- Saturated peaks and integrated reflections are now counted and the number
+  included in the stream.
+- GrainSpotter indexing has been added.
+- XDS indexing has been added.
+- The "--nshells" argument was added to check_hkl.
+- The "--median-filter" argument was added to indexamajig and hdfsee.
+- The "--filter-cm" argument was removed from indexamajig and hdfsee.
+- check-near-bragg and check-peak-detection can now be given extra command-line
+  options which will be passed through to hdfsee.
+- An error in the solid angle calculation was fixed, affecting simulation with
+  pattern_sim (Chun Hong Yoon).
+- Lattice type, centering and unique axis information is now included in the
+  stream.
+
 CrystFEL version 0.4.3, 10th January 2013
 -----------------------------------------
 
