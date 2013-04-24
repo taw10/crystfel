@@ -1,0 +1,15 @@
+CrystFEL stream format
+----------------------
+
+num_peaks: The number of peaks accepted for indexing.  If you used
+  "--use-saturated", this includes the saturated peaks which are also counted by
+  num_saturated_peaks.  If you didn't, then it doesn't.
+
+num_saturated_peaks: The number of saturated peaks, regardless of whether or not
+  they were used for indexing (see --use-saturated).
+
+num_saturated_reflections: The number of saturated reflections, regardless of
+  whether or not they were included in the reflection list
+  (see --integrate-saturated).  Reflections which could not be integrated for
+  some other reason, e.g. because they were close to a panel edge or hit a bad
+  region, are NOT included in this count.

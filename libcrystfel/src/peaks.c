@@ -799,7 +799,7 @@ static void integrate_crystal(Crystal *cr, struct image *image, int use_closer,
 		                   &intensity, &sigma, ir_inn, ir_mid, ir_out,
 		                   bgMasks[pnum], &saturated);
 
-		if ( saturated ) {
+		if ( !r && saturated ) {
 			n_saturated++;
 			if ( !integrate_saturated ) r = 1;
 		}
