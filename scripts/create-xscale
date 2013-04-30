@@ -2,6 +2,10 @@
 
 use strict;
 
+# When you've edited the relevant parameters, delete this comment and the following two lines
+printf("You need to edit this script first, to set the space group and cell parameters.\n");
+exit(1);
+
 open(FH, $ARGV[0]);
 
 printf("!FORMAT=XDS_ASCII   MERGE=TRUE   FRIEDEL'S_LAW=TRUE\n");

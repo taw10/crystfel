@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# When you've edited the relevant parameters, delete this comment and the following two lines
+echo "You need to edit this script first, to set the space group and cell parameters."
+exit 1
+
 OUTFILE=`echo $1 | sed -e 's/\.hkl$/.mtz/'`
 TMPHKL=`echo $1 | sed -e 's/\.hkl$/.temp.hkl/'`
 
