@@ -498,7 +498,7 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 	int i;
 	double max_corr;
 	RefList *full = NULL;
-	const int min_redundancy = 3;
+	const int min_redundancy = 2;
 
 	for ( i=0; i<n; i++ ) crystal_set_osf(crystals[i], 1.0);
 
