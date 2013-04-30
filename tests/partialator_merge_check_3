@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cat > partialator_merge_check_1.stream << EOF
+cat > partialator_merge_check_3.stream << EOF
 CrystFEL stream format 2.1
 Command line: indexamajig -i dummy.lst -o dummy.stream --kraken=prawn
 ----- Begin chunk -----
@@ -13,7 +13,8 @@ bstar = -0.0068281 +0.0403989 -0.0005196 nm^-1
 cstar = +0.0406926 +0.0052233 -0.0426520 nm^-1
 Reflections measured after indexing
   h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
-  1   0   0     100.00        -       1.00       1  938.0  629.0
+  0   1   0     110.00        -       1.00       1  938.0  629.0
+  2   0   0     190.00        -       1.00       1  938.0  629.0
 End of reflections
 --- End crystal
 --- Begin crystal
@@ -23,21 +24,23 @@ bstar = -0.0068281 +0.0403989 -0.0005196 nm^-1
 cstar = +0.0406926 +0.0052233 -0.0426520 nm^-1
 Reflections measured after indexing
   h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
-  1   0   0     200.00        -       1.00       1  938.0  629.0
+  1   0   0      50.00        -       1.00       1  938.0  629.0
+  0   2   0     100.00        -       1.00       1  938.0  629.0
+  0   1   1       1.00        -       1.00       1  938.0  629.0
 End of reflections
 --- End crystal
 ----- End chunk -----
 EOF
 
-# We merge two patterns, without scaling or partiality, the result should just
-# be an average.
-cat > partialator_merge_check_1_ans.hkl << EOF
+# W
+cat > partialator_merge_check_3_ans.hkl << EOF
   h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
-  1   0   0     150.00        -      35.36       2    0.0    0.0
+  1   0   0      81.17        -       3.62       2    0.0    0.0
+  2   0   0     144.36        -       2.04       2    0.0    0.0
 End of reflections
 EOF
 
-cat > partialator_merge_check_1.beam << EOF
+cat > partialator_merge_check_3.beam << EOF
 beam/fluence = 2.0e15
 beam/radius = 1.5e-6
 beam/photon_energy = 6000.0
@@ -46,7 +49,7 @@ beam/divergence = 0.001
 profile_radius = 0.005e9
 EOF
 
-cat > partialator_merge_check_1.geom << EOF
+cat > partialator_merge_check_3.geom << EOF
 0/min_fs = 0
 0/max_fs = 1023
 0/min_ss = 0
@@ -62,17 +65,17 @@ cat > partialator_merge_check_1.geom << EOF
 EOF
 
 
-src/partialator -i partialator_merge_check_1.stream \
-                -o partialator_merge_check_1.hkl  \
-                -g partialator_merge_check_1.geom \
-                -b partialator_merge_check_1.beam \
-                --model=unity --iterations=0 --no-scale
+src/partialator -i partialator_merge_check_3.stream \
+                -o partialator_merge_check_3.hkl  \
+                -g partialator_merge_check_3.geom \
+                -b partialator_merge_check_3.beam \
+                --model=unity --iterations=0 -y 4
 
-diff partialator_merge_check_1.hkl partialator_merge_check_1_ans.hkl
+diff partialator_merge_check_3.hkl partialator_merge_check_3_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1
 fi
-rm -f partialator_merge_check_1.stream partialator_merge_check_1.hkl \
-      partialator_merge_check_1_ans.hkl partialator_merge_check_1.beam \
-      partialator_merge_check_1.geom
+rm -f partialator_merge_check_3.stream partialator_merge_check_3.hkl \
+      partialator_merge_check_3_ans.hkl partialator_merge_check_3.beam \
+      partialator_merge_check_3.geom
 exit 0

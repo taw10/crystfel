@@ -11,14 +11,19 @@ noinst_PROGRAMS = tests/list_check tests/integration_check \
                   tests/centering_check tests/transformation_check \
                   tests/cell_check
 
-TESTS = tests/list_check tests/first_merge_check tests/second_merge_check \
-        tests/third_merge_check tests/fourth_merge_check \
+MERGE_CHECKS = tests/first_merge_check tests/second_merge_check \
+               tests/third_merge_check tests/fourth_merge_check
+
+PARTIAL_CHECKS = tests/partialator_merge_check_1 \
+                 tests/partialator_merge_check_2 \
+                 tests/partialator_merge_check_3
+
+TESTS = tests/list_check $(MERGE_CHECKS) $(PARTIAL_CHECKS) \
         tests/integration_check tests/pr_gradient_check \
         tests/symmetry_check tests/centering_check tests/transformation_check \
         tests/cell_check
 
-EXTRA_DIST += tests/first_merge_check tests/second_merge_check \
-              tests/third_merge_check tests/fourth_merge_check
+EXTRA_DIST += $(MERGE_CHECKS) $(PARTIAL_CHECKS)
 
 if BUILD_HDFSEE
 bin_PROGRAMS += src/hdfsee
