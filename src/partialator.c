@@ -80,6 +80,8 @@ static void show_help(const char *s)
 "                              instead of taking the mean of the intensity\n"
 "                              estimates.\n"
 "  -m, --model=<model>        Specify partiality model.\n"
+"      --min-measurements=<n> Require at least <n> measurements before a\n"
+"                             reflection appears in the output.  Default: 2\n"
 "\n"
 "  -j <n>                     Run <n> analyses in parallel.\n");
 }
@@ -323,6 +325,8 @@ int main(int argc, char *argv[])
 	Crystal **crystals;
 	char *pmodel_str = NULL;
 	PartialityModel pmodel = PMODEL_SPHERE;
+	int min_measurements = 2;
+	char *rval;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -336,6 +340,7 @@ int main(int argc, char *argv[])
 		{"no-scale",           0, &noscale,            1},
 		{"reference",          1, NULL,               'r'},
 		{"model",              1, NULL,               'm'},
+		{"min-measurements",   1, NULL,                2},
 
 		{0, 0, NULL, 0}
 	};
@@ -396,6 +401,15 @@ int main(int argc, char *argv[])
 
 			case 'r' :
 			reference_file = strdup(optarg);
+			break;
+
+			case 2 :
+			errno = 0;
+			min_measurements = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --min-measurements.\n");
+				return 1;
+			}
 			break;
 
 			case 0 :
@@ -583,7 +597,7 @@ int main(int argc, char *argv[])
 	STATUS("Performing initial scaling.\n");
 	if ( noscale ) STATUS("Scale factors fixed at 1.\n");
 	full = scale_intensities(crystals, n_crystals, reference,
-	                         nthreads, noscale, pmodel);
+	                         nthreads, noscale, pmodel, min_measurements);
 
 	sr = sr_titlepage(crystals, n_crystals, "scaling-report.pdf",
 	                  infile, cmdline);
@@ -621,7 +635,8 @@ int main(int argc, char *argv[])
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
 		full = scale_intensities(crystals, n_crystals,
-		                         reference, nthreads, noscale, pmodel);
+		                         reference, nthreads, noscale, pmodel,
+		                         min_measurements);
 
 		sr_iteration(sr, i+1, crystals, n_crystals, full);
 

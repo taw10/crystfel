@@ -493,12 +493,12 @@ static void calculate_esds(Crystal **crystals, int n, RefList *full,
 
 /* Scale the stack of images */
 RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
-                           int n_threads, int noscale, PartialityModel pmodel)
+                           int n_threads, int noscale, PartialityModel pmodel,
+                           int min_redundancy)
 {
 	int i;
 	double max_corr;
 	RefList *full = NULL;
-	const int min_redundancy = 2;
 
 	for ( i=0; i<n; i++ ) crystal_set_osf(crystals[i], 1.0);
 
