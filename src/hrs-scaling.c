@@ -538,8 +538,6 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 			full = lsq_intensities(crystals, n, n_threads, pmodel);
 		}
 
-		//show_scale_factors(images, n);
-
 		i++;
 
 	} while ( (max_corr > 0.01) && (i < MAX_CYCLES) );
