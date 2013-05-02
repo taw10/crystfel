@@ -55,7 +55,8 @@ enum fom
 	FOM_R2,
 	FOM_RSPLIT,
 	FOM_CC,
-	FOM_CCSTAR
+	FOM_CCSTAR,
+	FOM_CCANO
 };
 
 
@@ -67,6 +68,7 @@ static enum fom get_fom(const char *s)
 	if ( strcasecmp(s, "rsplit") == 0 ) return FOM_RSPLIT;
 	if ( strcasecmp(s, "cc") == 0 ) return FOM_CC;
 	if ( strcasecmp(s, "ccstar") == 0 ) return FOM_CCSTAR;
+	if ( strcasecmp(s, "ccano") == 0 ) return FOM_CCANO;
 
 	ERROR("Unknown figure of merit '%s'.\n", s);
 	exit(1);
@@ -82,8 +84,7 @@ static void show_help(const char *s)
 "  -y, --symmetry=<sym>       The symmetry of both the input files.\n"
 "  -p, --pdb=<filename>       PDB file to use.\n"
 "      --fom=<FoM>            Calculate this figure of merit  Choose from:.\n"
-"                              R1I, R1F, R2, Rsplit,\n"
-"                              CCF, CCI, CCFstar, CCIstar.\n"
+"                              R1I, R1F, R2, Rsplit, CC, CCstar, CCano.\n"
 "      --nshells=<n>          Use <n> resolution shells.\n"
 "  -u                         Force scale factor to 1.\n"
 "      --shell-file=<file>    Write resolution shells to <file>.\n"
@@ -147,6 +148,7 @@ static struct fom_context *init_fom(enum fom fom, int nmax, int nshells)
 
 		case FOM_CC :
 		case FOM_CCSTAR :
+		case FOM_CCANO :
 		fctx->vec1 = malloc(nshells*sizeof(double *));
 		fctx->vec2 = malloc(nshells*sizeof(double *));
 		if ( (fctx->vec1 == NULL) || (fctx->vec2 == NULL) ) return NULL;
@@ -172,7 +174,7 @@ static struct fom_context *init_fom(enum fom fom, int nmax, int nshells)
 
 
 static void add_to_fom(struct fom_context *fctx, double i1, double i2,
-                       int bin)
+                       double i1bij, double i2bij, int bin)
 {
 	double f1, f2;
 
@@ -210,6 +212,14 @@ static void add_to_fom(struct fom_context *fctx, double i1, double i2,
 		fctx->n[bin]++;
 		break;
 
+		case FOM_CCANO :
+		assert(fctx->n[bin] < fctx->nmax);
+		fctx->vec1[bin][fctx->n[bin]] = i1 - i1bij;
+		fctx->vec2[bin][fctx->n[bin]] = i2 - i2bij;
+		fctx->n[bin]++;
+		break;
+
+
 	}
 }
 
@@ -240,6 +250,7 @@ static double fom_overall(struct fom_context *fctx)
 
 		case FOM_CC :
 		case FOM_CCSTAR :
+		case FOM_CCANO :
 		overall_vec1 = malloc(fctx->nmax*sizeof(double));
 		overall_vec2 = malloc(fctx->nmax*sizeof(double));
 		overall_n = 0;
@@ -272,6 +283,7 @@ static double fom_overall(struct fom_context *fctx)
 		return 2.0*(overall_num/overall_den) / sqrt(2.0);
 
 		case FOM_CC :
+		case FOM_CCANO :
 		return cc;
 
 		case FOM_CCSTAR :
@@ -301,6 +313,7 @@ static double fom_shell(struct fom_context *fctx, int i)
 		return 2.0*(fctx->num[i]/fctx->den[i]) / sqrt(2.0);
 
 		case FOM_CC :
+		case FOM_CCANO :
 		return gsl_stats_correlation(fctx->vec1[i], 1, fctx->vec2[i], 1,
 		                             fctx->n[i]);
 
@@ -476,7 +489,8 @@ static int get_bin(struct shells *s, Reflection *refl, UnitCell *cell)
 static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
                    double rmin, double rmax, enum fom fom,
                    int config_unity, int nshells, const char *filename,
-                   int config_intshells, double min_I, double max_I)
+                   int config_intshells, double min_I, double max_I,
+                   SymOpList *sym)
 {
 	int *cts;
 	int i;
@@ -527,6 +541,7 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		signed int h, k, l;
 		int bin;
 		double i1, i2;
+		double i1bij, i2bij;
 		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
@@ -543,7 +558,39 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		i1 = get_intensity(refl1);
 		i2 = scale * get_intensity(refl2);
 
-		add_to_fom(fctx, i1, i2, bin);
+		if ( fom == FOM_CCANO ) {
+
+			Reflection *refl1_bij = NULL;
+			Reflection *refl2_bij = NULL;
+			signed int hb, kb, lb;
+
+			if ( find_equiv_in_list(list1, -h, -k, -l, sym,
+			                        &hb, &kb, &lb) )
+			{
+				refl1_bij = find_refl(list1, hb, kb, lb);
+			}
+
+			if ( find_equiv_in_list(list2, -h, -k, -l, sym,
+			                        &hb, &kb, &lb) )
+			{
+				refl2_bij = find_refl(list2, hb, kb, lb);
+			}
+
+			assert(refl1_bij != NULL);
+			assert(refl2_bij != NULL);
+
+			i1bij = get_intensity(refl1_bij);
+			i2bij = scale * get_intensity(refl2_bij);
+
+		} else {
+
+			/* Make it obvious if these get used by mistake */
+			i1bij = +INFINITY;
+			i2bij = +INFINITY;
+
+		}
+
+		add_to_fom(fctx, i1, i2, i1bij, i2bij, bin);
 		cts[bin]++;
 	}
 	if ( n_out)  {
@@ -574,6 +621,10 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 
 		case FOM_CCSTAR :
 		STATUS("Overall CC* = %.7f\n", fom_overall(fctx));
+		break;
+
+		case FOM_CCANO :
+		STATUS("Overall CCano = %.7f\n", fom_overall(fctx));
 		break;
 
 	}
@@ -618,6 +669,10 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		fprintf(fh, "%s      CC*       nref%s\n", t1, t2);
 		break;
 
+		case FOM_CCANO :
+		fprintf(fh, "%s    CCano       nref%s\n", t1, t2);
+		break;
+
 	}
 
 	for ( i=0; i<nshells; i++ ) {
@@ -644,6 +699,7 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 
 		case FOM_CC :
 		case FOM_CCSTAR :
+		case FOM_CCANO :
 		if ( config_intshells ) {
 			fprintf(fh, "%10.3f %10.7f %10i\n",
 				cen, r, cts[i]);
@@ -669,7 +725,7 @@ int main(int argc, char *argv[])
 	char *bfile = NULL;
 	char *sym_str = NULL;
 	SymOpList *sym;
-	int ncom, nrej, nneg, nres;
+	int ncom, nrej, nneg, nres, nbij;
 	RefList *list1_acc;
 	RefList *list2_acc;
 	RefList *list1;
@@ -805,6 +861,7 @@ int main(int argc, char *argv[])
 			case FOM_RSPLIT :
 			case FOM_CC :
 			case FOM_CCSTAR :
+			case FOM_CCANO :
 			break;
 		}
 	}
@@ -814,6 +871,24 @@ int main(int argc, char *argv[])
 	}
 	sym = get_pointgroup(sym_str);
 	free(sym_str);
+
+	if ( (fom == FOM_CCANO) && is_centrosymmetric(sym) ) {
+
+		/* Refuse to calculate CCano with a centrosymmetric point group.
+		 * It'll "work", in the sense of producing a number, but the
+		 * number won't have anything to do with anomalous signal. */
+
+		ERROR("You are trying to calculate CCano with a centrosymmetric"
+		      " point group.\n");
+		ERROR("This is a silly thing to do, and I'm refusing to help"
+		      " you do it.\n");
+		ERROR("Please review your earlier processing steps and try"
+		      " again using a non-centrosymmetric point group for"
+		      " '-y'.\n");
+
+		return 1;
+
+	}
 
 	afile = strdup(argv[optind++]);
 	bfile = strdup(argv[optind]);
@@ -872,6 +947,7 @@ int main(int argc, char *argv[])
 	nrej = 0;
 	nneg = 0;
 	nres = 0;
+	nbij = 0;
 	list1_acc = reflist_new();
 	list2_acc = reflist_new();
 	for ( refl1 = first_refl(list1, &iter);
@@ -937,6 +1013,31 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		if ( fom == FOM_CCANO ) {
+
+			Reflection *refl1_bij = NULL;
+			Reflection *refl2_bij = NULL;
+			signed int hb, kb, lb;
+
+			if ( find_equiv_in_list(list1, -h, -k, -l, sym,
+			                        &hb, &kb, &lb) )
+			{
+				refl1_bij = find_refl(list1, hb, kb, lb);
+			}
+
+			if ( find_equiv_in_list(list2, -h, -k, -l, sym,
+			                        &hb, &kb, &lb) )
+			{
+				refl2_bij = find_refl(list2, hb, kb, lb);
+			}
+
+			if ( (refl1_bij == NULL) || (refl2_bij == NULL) ) {
+				nbij++;
+				continue;
+			}
+
+		}
+
 		refl1_acc = add_refl(list1_acc, h, k, l);
 		copy_data(refl1_acc, refl1);
 		set_intensity(refl1_acc, val1);
@@ -970,8 +1071,13 @@ int main(int argc, char *argv[])
 	}
 
 	if ( nres > 0 ) {
-		STATUS("%i reflection pairs rejected because either or both "
+		STATUS("%i reflection pairs rejected because either or both"
 		       " versions were outside the resolution range.\n", nres);
+	}
+
+	if ( nbij > 0 ) {
+		STATUS("%i reflection pairs rejected because either or both"
+		       " versions did not have Bijvoet partners.\n", nres);
 	}
 
 	STATUS("%i reflection pairs accepted.\n", ncom);
@@ -999,7 +1105,7 @@ int main(int argc, char *argv[])
 		       rmin/1e9, rmax/1e9, 1e10/rmin, 1e10/rmax);
 	}
 	do_fom(list1_acc, list2_acc, cell, rmin, rmax, fom, config_unity,
-	       nshells, shell_file, config_intshells, min_I, max_I);
+	       nshells, shell_file, config_intshells, min_I, max_I, sym);
 
 	free(shell_file);
 	reflist_free(list1_acc);
