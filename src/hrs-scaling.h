@@ -3,11 +3,11 @@
  *
  * Intensity scaling using generalised HRS target function
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -37,10 +37,12 @@
 
 #include "crystal.h"
 #include "reflist.h"
+#include "geometry.h"
 
 extern RefList *scale_intensities(Crystal **crystals, int n,
                                   RefList *reference, int n_threads,
-                                  int noscale);
+                                  int noscale, PartialityModel pmodel,
+                                  int min_redundancy);
 
 
 #endif	/* HRS_SCALING_H */

@@ -3,11 +3,11 @@
  *
  * Intensity scaling using generalised HRS target function
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -60,6 +60,7 @@ struct scale_queue_args
 	Crystal **crystals;
 	int n_started;
 	double max_shift;
+	PartialityModel pmodel;
 };
 
 
@@ -68,6 +69,7 @@ struct scale_worker_args
 	Crystal *crystal;
 	double shift;
 	RefList *reference;
+	PartialityModel pmodel;
 };
 
 
@@ -78,6 +80,7 @@ static void *create_scale_job(void *vqargs)
 
 	wargs = malloc(sizeof(struct scale_worker_args));
 	wargs->reference = qargs->reference;
+	wargs->pmodel = qargs->pmodel;
 
 	wargs->crystal = qargs->crystals[qargs->n_started++];
 
@@ -94,8 +97,8 @@ static void run_scale_job(void *vwargs, int cookie)
 	RefListIterator *iter;
 	double num = 0.0;
 	double den = 0.0;
-	double corr;
-	const double osf = crystal_get_osf(cr);
+	double g;
+	const double G = crystal_get_osf(cr);
 
 	if ( crystal_get_user_flag(cr) ) {
 		wargs->shift = 0.0;
@@ -109,6 +112,7 @@ static void run_scale_job(void *vwargs, int cookie)
 		signed int h, k, l;
 		double Ih, Ihl, esd;
 		Reflection *r;
+		double corr;
 
 		if ( !get_scalable(refl) ) continue;
 
@@ -125,24 +129,41 @@ static void run_scale_job(void *vwargs, int cookie)
 			Ih = get_intensity(r);
 		}
 
-		/* FIXME: This isn't correct */
-		Ihl = get_intensity(refl) / get_partiality(refl);
-		esd = get_esd_intensity(refl) / get_partiality(refl);
+		/* If you change this, be sure to also change
+		 * run_merge_job() and run_esd_job(). */
+		switch ( wargs->pmodel ) {
 
-		num += Ih * (Ihl/osf) / pow(esd/osf, 2.0);
-		den += pow(Ih, 2.0)/pow(esd/osf, 2.0);
+			case PMODEL_UNITY :
+			corr = 1.0;
+			break;
+
+			case PMODEL_SPHERE :
+			corr = get_partiality(refl) * get_lorentz(refl);
+			break;
+
+			default :
+			ERROR("Unrecognised partiality model!\n");
+			abort();
+			break;
+
+		}
+
+		Ihl = get_intensity(refl) / corr;
+		esd = get_esd_intensity(refl) / corr;
+
+		num += Ih * (Ihl/G) / pow(esd/G, 2.0);
+		den += pow(Ih, 2.0)/pow(esd/G, 2.0);
 
 	}
 
 	//num += image->osf / pow(SCALING_RESTRAINT, 2.0);
 	//den += pow(image->osf, 2.0)/pow(SCALING_RESTRAINT, 2.0);
 
-	corr = num / den;
-	if ( !isnan(corr) && !isinf(corr) ) {
-		crystal_set_osf(cr, osf*corr);
+	g = num / den;
+	if ( !isnan(g) && !isinf(g) ) {
+		crystal_set_osf(cr, g*G);
 	}
-	wargs->shift = fabs(corr-1.0);
-
+	wargs->shift = fabs(g-1.0);
 }
 
 
@@ -157,7 +178,7 @@ static void finalise_scale_job(void *vqargs, void *vwargs)
 
 
 static double iterate_scale(Crystal **crystals, int n, RefList *reference,
-                            int n_threads)
+                            int n_threads, PartialityModel pmodel)
 {
 	struct scale_queue_args qargs;
 
@@ -167,6 +188,7 @@ static double iterate_scale(Crystal **crystals, int n, RefList *reference,
 	qargs.n_started = 0;
 	qargs.crystals = crystals;
 	qargs.max_shift = 0.0;
+	qargs.pmodel = pmodel;
 
 	run_threads(n_threads, run_scale_job, create_scale_job,
 	            finalise_scale_job, &qargs, n, 0, 0, 0);
@@ -181,6 +203,7 @@ struct merge_queue_args
 	pthread_mutex_t full_lock;
 	Crystal **crystals;
 	int n_started;
+	PartialityModel pmodel;
 };
 
 
@@ -189,6 +212,7 @@ struct merge_worker_args
 	Crystal *crystal;
 	RefList *full;
 	pthread_mutex_t *full_lock;
+	PartialityModel pmodel;
 };
 
 
@@ -200,6 +224,7 @@ static void *create_merge_job(void *vqargs)
 	wargs = malloc(sizeof(struct merge_worker_args));
 	wargs->full = qargs->full;
 	wargs->full_lock = &qargs->full_lock;
+	wargs->pmodel = qargs->pmodel;
 
 	wargs->crystal = qargs->crystals[qargs->n_started++];
 
@@ -228,7 +253,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		signed int h, k, l;
 		double num, den;
 		int red;
-		double Ihl, esd, pcalc;
+		double Ihl, esd, corr;
 
 		if ( !get_scalable(refl) ) continue;
 
@@ -251,9 +276,27 @@ static void run_merge_job(void *vwargs, int cookie)
 			red = get_redundancy(f);
 		}
 
-		pcalc = get_partiality(refl);
-		Ihl = get_intensity(refl) / pcalc;
-		esd = get_esd_intensity(refl) / pcalc;
+		/* If you change this, be sure to also change
+		 * run_scale_job() and run_esd_job(). */
+		switch ( wargs->pmodel ) {
+
+			case PMODEL_UNITY :
+			corr = 1.0;
+			break;
+
+			case PMODEL_SPHERE :
+			corr = get_partiality(refl) * get_lorentz(refl);
+			break;
+
+			default :
+			ERROR("Unrecognised partiality model!\n");
+			abort();
+			break;
+
+		}
+
+		Ihl = get_intensity(refl) / corr;
+		esd = get_esd_intensity(refl) / corr;
 
 		num += (Ihl/G) / pow(esd/G, 2.0);
 		den += 1.0 / pow(esd/G, 2.0);
@@ -273,7 +316,8 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 }
 
 
-static RefList *lsq_intensities(Crystal **crystals, int n, int n_threads)
+static RefList *lsq_intensities(Crystal **crystals, int n, int n_threads,
+                                PartialityModel pmodel)
 {
 	RefList *full;
 	struct merge_queue_args qargs;
@@ -285,6 +329,7 @@ static RefList *lsq_intensities(Crystal **crystals, int n, int n_threads)
 	qargs.full = full;
 	qargs.n_started = 0;
 	qargs.crystals = crystals;
+	qargs.pmodel = pmodel;
 	pthread_mutex_init(&qargs.full_lock, NULL);
 
 	run_threads(n_threads, run_merge_job, create_merge_job,
@@ -311,6 +356,7 @@ struct esd_queue_args
 	RefList *full;
 	Crystal **crystals;
 	int n_started;
+	PartialityModel pmodel;
 };
 
 
@@ -318,6 +364,7 @@ struct esd_worker_args
 {
 	Crystal *crystal;
 	RefList *full;
+	PartialityModel pmodel;
 };
 
 
@@ -328,6 +375,7 @@ static void *create_esd_job(void *vqargs)
 
 	wargs = malloc(sizeof(struct esd_worker_args));
 	wargs->full = qargs->full;
+	wargs->pmodel = qargs->pmodel;
 
 	wargs->crystal = qargs->crystals[qargs->n_started++];
 
@@ -355,7 +403,7 @@ static void run_esd_job(void *vwargs, int cookie)
 		Reflection *f;
 		signed int h, k, l;
 		double num;
-		double Ihl, Ih;
+		double Ihl, Ih, corr;
 
 		if ( !get_scalable(refl) ) continue;
 
@@ -367,8 +415,27 @@ static void run_esd_job(void *vwargs, int cookie)
 
 		num = get_temp1(f);
 
+		/* If you change this, be sure to also change
+		 * run_scale_job() and run_merge_job(). */
+		switch ( wargs->pmodel ) {
+
+			case PMODEL_UNITY :
+			corr = 1.0;
+			break;
+
+			case PMODEL_SPHERE :
+			corr = get_partiality(refl) * get_lorentz(refl);
+			break;;
+
+			default :
+			ERROR("Unrecognised partiality model!\n");
+			abort();
+			break;
+
+		}
+
 		Ih = get_intensity(f);
-		Ihl = get_intensity(refl) / (get_partiality(refl) * G);
+		Ihl = get_intensity(refl) / (corr * G);
 
 		num += pow(Ihl - Ih, 2.0);
 
@@ -385,7 +452,7 @@ static void finalise_esd_job(void *vqargs, void *vwargs)
 
 
 static void calculate_esds(Crystal **crystals, int n, RefList *full,
-                           int n_threads, int min_red)
+                           int n_threads, int min_red, PartialityModel pmodel)
 {
 	struct esd_queue_args qargs;
 	Reflection *refl;
@@ -394,6 +461,7 @@ static void calculate_esds(Crystal **crystals, int n, RefList *full,
 	qargs.full = full;
 	qargs.n_started = 0;
 	qargs.crystals = crystals;
+	qargs.pmodel = pmodel;
 
 	for ( refl = first_refl(full, &iter);
 	      refl != NULL;
@@ -425,24 +493,25 @@ static void calculate_esds(Crystal **crystals, int n, RefList *full,
 
 /* Scale the stack of images */
 RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
-                           int n_threads, int noscale)
+                           int n_threads, int noscale, PartialityModel pmodel,
+                           int min_redundancy)
 {
 	int i;
 	double max_corr;
 	RefList *full = NULL;
-	const int min_redundancy = 3;
 
 	for ( i=0; i<n; i++ ) crystal_set_osf(crystals[i], 1.0);
 
 	if ( noscale ) {
-		full = lsq_intensities(crystals, n, n_threads);
-		calculate_esds(crystals, n, full, n_threads, min_redundancy);
+		full = lsq_intensities(crystals, n, n_threads, pmodel);
+		calculate_esds(crystals, n, full, n_threads, min_redundancy,
+		               pmodel);
 		return full;
 	}
 
 	/* No reference -> create an initial list to refine against */
 	if ( gref == NULL ) {
-		full = lsq_intensities(crystals, n, n_threads);
+		full = lsq_intensities(crystals, n, n_threads, pmodel);
 	}
 
 	/* Iterate */
@@ -458,27 +527,26 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 			reference = full;
 		}
 
-		max_corr = iterate_scale(crystals, n, reference, n_threads);
+		max_corr = iterate_scale(crystals, n, reference, n_threads,
+		                         pmodel);
 		//STATUS("Scaling iteration %2i: max correction = %5.2f\n",
 		//       i+1, max_corr);
 
 		/* No reference -> generate list for next iteration */
 		if ( gref == NULL ) {
 			reflist_free(full);
-			full = lsq_intensities(crystals, n, n_threads);
+			full = lsq_intensities(crystals, n, n_threads, pmodel);
 		}
-
-		//show_scale_factors(images, n);
 
 		i++;
 
 	} while ( (max_corr > 0.01) && (i < MAX_CYCLES) );
 
 	if ( gref != NULL ) {
-		full = lsq_intensities(crystals, n, n_threads);
+		full = lsq_intensities(crystals, n, n_threads, pmodel);
 	} /* else we already did it */
 
-	calculate_esds(crystals, n, full, n_threads, min_redundancy);
+	calculate_esds(crystals, n, full, n_threads, min_redundancy, pmodel);
 
 	return full;
 }

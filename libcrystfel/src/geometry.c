@@ -134,6 +134,10 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	Reflection *refl;
 	double cet, cez;
 	double pr;
+	double L;
+
+	/* Don't predict 000 */
+	if ( abs(h)+abs(k)+abs(l) == 0 ) return NULL;
 
 	pr = crystal_get_profile_radius(cryst);
 
@@ -160,6 +164,19 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	     && (fabs(rlow) > pr)
 	     && (fabs(rhigh) > pr) ) return NULL;
 
+	if ( rlow < rhigh ) {
+		ERROR("Reflection with rlow < rhigh!\n");
+		ERROR("%3i %3i %3i  rlow = %e, rhigh = %e\n",
+		      h, k, l, rlow, rhigh);
+		ERROR("div = %e\n", image->div);
+		return NULL;
+	}
+
+	/* Lorentz factor is determined direction from the r values, before
+	 * clamping.  The multiplication by the profile radius is to make the
+	 * correction factor vaguely near 1. */
+	L = pr / (rlow - rhigh);
+
 	/* If the "lower" Ewald sphere is a long way away, use the
 	 * position at which the Ewald sphere would just touch the
 	 * reflection.
@@ -185,7 +202,6 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 		rhigh = +pr;
 		clamp_high = +1;
 	}
-	assert(clamp_low >= clamp_high);
 
 	/* Calculate partiality */
 	part = partiality(rlow, rhigh, pr);
@@ -198,6 +214,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	refl = reflection_new(h, k, l);
 	set_detector_pos(refl, 0.0, xda, yda);
 	set_partial(refl, rlow, rhigh, part, clamp_low, clamp_high);
+	set_lorentz(refl, L);
 	set_symmetric_indices(refl, h, k, l);
 	set_redundancy(refl, 1);
 
@@ -345,8 +362,23 @@ RefList *select_intersections(struct image *image, Crystal *cryst)
 }
 
 
+static void set_unity_partialities(Crystal *cryst)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+
+	for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		set_partiality(refl, 1.0);
+		set_lorentz(refl, 1.0);
+	}
+}
+
+
 /* Calculate partialities and apply them to the image's reflections */
-void update_partialities(Crystal *cryst)
+void update_partialities(Crystal *cryst, PartialityModel pmodel)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -355,6 +387,14 @@ void update_partialities(Crystal *cryst)
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	struct image *image = crystal_get_image(cryst);
+
+	if ( pmodel == PMODEL_UNITY ) {
+		/* It isn't strictly necessary to set the partialities to 1,
+		 * because the scaling stuff will just a correction factor of
+		 * 1 anyway.  This is just to help things make sense. */
+		set_unity_partialities(cryst);
+		return;
+	}
 
 	cell_get_reciprocal(crystal_get_cell(cryst), &asx, &asy, &asz,
 	                    &bsx, &bsy, &bsz, &csx, &csy, &csz);
@@ -367,7 +407,7 @@ void update_partialities(Crystal *cryst)
 	      refl = next_refl(refl, iter) )
 	{
 		Reflection *vals;
-		double r1, r2, p, x, y;
+		double r1, r2, L, p, x, y;
 		double xl, yl, zl;
 		signed int h, k, l;
 		int clamp1, clamp2;
@@ -390,6 +430,8 @@ void update_partialities(Crystal *cryst)
 		/* Transfer partiality stuff */
 		get_partial(vals, &r1, &r2, &p, &clamp1, &clamp2);
 		set_partial(refl, r1, r2, p, clamp1, clamp2);
+		L = get_lorentz(vals);
+		set_lorentz(refl, L);
 
 		/* Transfer detector location */
 		get_detector_pos(vals, &x, &y);

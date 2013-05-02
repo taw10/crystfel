@@ -1,7 +1,7 @@
 .\"
 .\" partial_sim man page
 .\"
-.\" Copyright © 2012 Thomas White <taw@physics.org>
+.\" Copyright © 2012-2013 Thomas White <taw@physics.org>
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
 .\"
@@ -77,6 +77,24 @@ Add random values with a flat distribution to the components of the reciprocal l
 .PD
 Save a table of values to \fIfilename\fR containing, in resolution shells, the following columns: resolution shell centre in nm^-1, number of reflections in shell, mean partiality, maximum partiality.
 
+.PD 0
+.B
+.IP "\fB--osf-stddev=\fR\fIval\fR
+.PD
+Set the standard deviation of the distribution of overall scaling factors to \fIval\fR.  The distribution will be cut at zero, i.e. negative or zero scaling factors are not allowed.  The distribution will be Gaussian centered on 1.  The default is \fB--osf-stddev=2.0\fR.
+
+.PD 0
+.B
+.IP "\fB--full-stddev=\fR\fIval\fR
+.PD
+Set the standard deviation of the distribution of randomly generated full intensities to \fIval\fR.  The distribution will be Gaussian, centered on zero, and the absolute value will be taken (i.e. there will be no negative values).  The default is \fB--full-stddev=1000.0\fR.  This option has no effect if you also use \fB-i\fR or \fR--input\fB.
+
+.PD 0
+.B
+.IP "\fB--noise-stddev=\fR\fIval\fR
+.PD
+Set the standard deviation of the noise added to the partial intensities to \fIval\fR.  The noise will be Gaussian, and the same for all reflections.  The default is \fB--noise-stddev=20.0\fR.
+
 .SH AUTHOR
 This page was written by Thomas White.
 
@@ -84,7 +102,7 @@ This page was written by Thomas White.
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
 .SH COPYRIGHT AND DISCLAIMER
-Copyright © 2012 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .P
 partial_sim, and this manaul, are part of CrystFEL.
 .P

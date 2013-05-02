@@ -3,11 +3,11 @@
  *
  * Generate partials for testing scaling
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2012 Thomas White <taw@physics.org>
+ *   2011-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -88,7 +88,8 @@ static void calculate_partials(Crystal *cr,
                                int random_intensities,
                                pthread_mutex_t *full_lock,
                                unsigned long int *n_ref, double *p_hist,
-                               double *p_max, double max_q)
+                               double *p_max, double max_q, double full_stddev,
+                               double noise_stddev)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -100,12 +101,13 @@ static void calculate_partials(Crystal *cr,
 	{
 		signed int h, k, l;
 		Reflection *rfull;
-		double p, Ip, If;
+		double L, p, Ip, If;
 		int bin;
 
 		get_indices(refl, &h, &k, &l);
 		get_asymm(sym, h, k, l, &h, &k, &l);
 		p = get_partiality(refl);
+		L = get_lorentz(refl);
 
 		pthread_mutex_lock(full_lock);
 		rfull = find_refl(full, h, k, l);
@@ -120,7 +122,7 @@ static void calculate_partials(Crystal *cr,
 				 * thing under lock. */
 				pthread_mutex_lock(full_lock);
 				rfull = add_refl(full, h, k, l);
-				If = fabs(gaussian_noise(0.0, 1000.0));
+				If = fabs(gaussian_noise(0.0, full_stddev));
 				set_intensity(rfull, If);
 				set_redundancy(rfull, 1);
 				pthread_mutex_unlock(full_lock);
@@ -139,7 +141,7 @@ static void calculate_partials(Crystal *cr,
 			}
 		}
 
-		Ip = crystal_get_osf(cr) * p * If;
+		Ip = crystal_get_osf(cr) * L * p * If;
 
 		res = resolution(crystal_get_cell(cr), h, k, l);
 		bin = NBINS*2.0*res/max_q;
@@ -152,10 +154,10 @@ static void calculate_partials(Crystal *cr,
 			       res, bin,  p);
 		}
 
-		Ip = gaussian_noise(Ip, 100.0);
+		Ip = gaussian_noise(Ip, noise_stddev);
 
 		set_intensity(refl, Ip);
-		set_esd_intensity(refl, 100.0);
+		set_esd_intensity(refl, noise_stddev);
 	}
 }
 
@@ -183,6 +185,10 @@ static void show_help(const char *s)
 " -c, --cnoise=<val>       Add random noise, with a flat distribution, to the\n"
 "                          reciprocal lattice vector components given in the\n"
 "                          stream, with maximum error +/- <val> percent.\n"
+"     --osf-stddev=<val>   Set the standard deviation of the scaling factors.\n"
+"     --full-stddev=<val>  Set the standard deviation of the randomly\n"
+"                           generated full intensities, if not using -i.\n"
+"     --noise-stddev=<val>  Set the standard deviation of the noise.\n"
 "\n"
 );
 }
@@ -201,6 +207,9 @@ struct queue_args
 	int random_intensities;
 	UnitCell *cell;
 	double cnoise;
+	double osf_stddev;
+	double full_stddev;
+	double noise_stddev;
 
 	struct image *template_image;
 	double max_q;
@@ -254,6 +263,7 @@ static void run_job(void *vwargs, int cookie)
 	int i;
 	Crystal *cr;
 	RefList *reflections;
+	double osf;
 
 	cr = crystal_new();
 	if ( cr == NULL ) {
@@ -263,7 +273,10 @@ static void run_job(void *vwargs, int cookie)
 	wargs->crystal = cr;
 	crystal_set_image(cr, &wargs->image);
 
-	crystal_set_osf(cr, gaussian_noise(1.0, 0.3));
+	do {
+		osf = gaussian_noise(1.0, qargs->osf_stddev);
+	} while ( osf <= 0.0 );
+	crystal_set_osf(cr, osf);
 	crystal_set_profile_radius(cr, wargs->image.beam->profile_radius);
 
 	/* Set up a random orientation */
@@ -284,7 +297,8 @@ static void run_job(void *vwargs, int cookie)
 	                   qargs->sym, qargs->random_intensities,
 	                   &qargs->full_lock,
 	                   wargs->n_ref, wargs->p_hist, wargs->p_max,
-	                   qargs->max_q);
+	                   qargs->max_q, qargs->full_stddev,
+	                   qargs->noise_stddev);
 
 	/* Give a slightly incorrect cell in the stream */
 	mess_up_cell(cr, qargs->cnoise);
@@ -343,6 +357,9 @@ int main(int argc, char *argv[])
 	int i;
 	FILE *fh;
 	char *phist_file = NULL;
+	double osf_stddev = 2.0;
+	double full_stddev = 1000.0;
+	double noise_stddev = 20.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -354,8 +371,13 @@ int main(int argc, char *argv[])
 		{"geometry",           1, NULL,               'g'},
 		{"symmetry",           1, NULL,               'y'},
 		{"save-random",        1, NULL,               'r'},
-		{"pgraph",             1, NULL,                2},
 		{"cnoise",             1, NULL,               'c'},
+
+		{"pgraph",             1, NULL,                2},
+		{"osf-stddev",         1, NULL,                3},
+		{"full-stddev",        1, NULL,                4},
+		{"noise-stddev",       1, NULL,                5},
+
 		{0, 0, NULL, 0}
 	};
 
@@ -415,6 +437,45 @@ int main(int argc, char *argv[])
 
 			case 2 :
 			phist_file = strdup(optarg);
+			break;
+
+			case 3 :
+			osf_stddev = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid OSF standard deviation.\n");
+				return 1;
+			}
+			if ( osf_stddev < 0.0 ) {
+				ERROR("Invalid OSF standard deviation.");
+				ERROR(" (must be positive).\n");
+				return 1;
+			}
+			break;
+
+			case 4 :
+			full_stddev = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid full standard deviation.\n");
+				return 1;
+			}
+			if ( full_stddev < 0.0 ) {
+				ERROR("Invalid full standard deviation.");
+				ERROR(" (must be positive).\n");
+				return 1;
+			}
+			break;
+
+			case 5 :
+			noise_stddev = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid noise standard deviation.\n");
+				return 1;
+			}
+			if ( noise_stddev < 0.0 ) {
+				ERROR("Invalid noise standard deviation.");
+				ERROR(" (must be positive).\n");
+				return 1;
+			}
 			break;
 
 			case 0 :
@@ -548,6 +609,9 @@ int main(int argc, char *argv[])
 	qargs.template_image = &image;
 	qargs.stream = stream;
 	qargs.cnoise = cnoise;
+	qargs.osf_stddev = osf_stddev;
+	qargs.full_stddev = full_stddev;
+	qargs.noise_stddev = noise_stddev;
 	qargs.max_q = largest_q(&image);
 
 	for ( i=0; i<NBINS; i++ ) {

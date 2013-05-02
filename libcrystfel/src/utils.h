@@ -139,6 +139,11 @@ static inline double modulus(double x, double y, double z)
 	return sqrt(x*x + y*y + z*z);
 }
 
+static inline double modulus2d(double x, double y)
+{
+	return sqrt(x*x + y*y);
+}
+
 static inline double modulus_squared(double x, double y, double z) {
 	return x*x + y*y + z*z;
 }
@@ -157,6 +162,21 @@ static inline double angle_between(double x1, double y1, double z1,
 	double mod1 = modulus(x1, y1, z1);
 	double mod2 = modulus(x2, y2, z2);
 	double cosine = (x1*x2 + y1*y2 + z1*z2) / (mod1*mod2);
+
+	/* Fix domain if outside due to rounding */
+	if ( cosine > 1.0 ) cosine = 1.0;
+	if ( cosine < -1.0 ) cosine = -1.0;
+
+	return acos(cosine);
+}
+
+/* Answer in radians */
+static inline double angle_between_2d(double x1, double y1,
+                                      double x2, double y2)
+{
+	double mod1 = modulus2d(x1, y1);
+	double mod2 = modulus2d(x2, y2);
+	double cosine = (x1*x2 + y1*y2) / (mod1*mod2);
 
 	/* Fix domain if outside due to rounding */
 	if ( cosine > 1.0 ) cosine = 1.0;

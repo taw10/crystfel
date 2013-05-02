@@ -3,11 +3,11 @@
  *
  * Fast reflection/peak list
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2012 Thomas White <taw@physics.org>
+ *   2011-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -70,6 +70,7 @@ struct _refldata {
 	double r1;  /* First excitation error */
 	double r2;  /* Second excitation error */
 	double p;   /* Partiality */
+	double L;   /* Lorentz factor */
 	int clamp1; /* Clamp status for r1 */
 	int clamp2; /* Clamp status for r2 */
 
@@ -388,11 +389,24 @@ void get_symmetric_indices(const Reflection *refl,
  * get_partiality:
  * @refl: A %Reflection
  *
- * Returns: The partiality of the reflection.
+ * Returns: The partiality of the reflection.  See get_lorentz().
  **/
 double get_partiality(const Reflection *refl)
 {
 	return refl->data.p;
+}
+
+
+/**
+ * get_lorentz:
+ * @refl: A %Reflection
+ *
+ * Returns: The Lorentz factor for the reflection.  To "scale up" a partial
+ * reflection, divide by this multiplied by the partiality.
+ **/
+double get_lorentz(const Reflection *refl)
+{
+	return refl->data.L;
 }
 
 
@@ -602,10 +616,35 @@ void set_partial(Reflection *refl, double r1, double r2, double p,
 /**
  * set_intensity:
  * @refl: A %Reflection
+ * @p: The partiality for the reflection.
+ *
+ * Set the partiality for the reflection.  See set_lorentz().
+ **/
+void set_partiality(Reflection *refl, double p)
+{
+	refl->data.p = p;
+}
+
+/**
+ * set_lorentz:
+ * @refl: A %Reflection
+ * @L: The Lorentz factor for the reflection.
+ *
+ * Set the Lorentz factor for the reflection.  To "scale up" a partial
+ * reflection, divide by this multiplied by the partiality.
+ **/
+void set_lorentz(Reflection *refl, double L)
+{
+	refl->data.L = L;
+}
+
+
+/**
+ * set_intensity:
+ * @refl: A %Reflection
  * @intensity: The intensity for the reflection.
  *
- * Set the intensity for the reflection.  Note that retrieval is done with
- * get_intensity().
+ * Set the intensity for the reflection.
  **/
 void set_intensity(Reflection *refl, double intensity)
 {

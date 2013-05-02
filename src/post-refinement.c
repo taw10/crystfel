@@ -81,27 +81,27 @@ static double partiality_rgradient(double r, double profile_radius)
 	dpdq = 6.0*(q-pow(q, 2.0));
 
 	/* dq/drad */
-	dqdrad = 0.5 * (1.0 - r * pow(profile_radius, -2.0));
+	dqdrad = -0.5 * r * pow(profile_radius, -2.0);
 
 	return dpdq * dqdrad;
 }
 
 
 /* Return the gradient of parameter 'k' given the current status of 'image'. */
-double gradient(Crystal *cr, int k, Reflection *refl)
+double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 {
-	double ds, azix, aziy;
-	double ttlow, tthigh, tt;
-	double nom, den;
-	double g;
+	double ds, azi;
+	double glow, ghigh;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	double xl, yl, zl;
 	signed int hs, ks, ls;
-	double r1, r2, p;
+	double rlow, rhigh, p;
 	int clamp_low, clamp_high;
-	double klow, khigh;
+	double philow, phihigh, phi;
+	double khigh, klow;
+	double tl, cet, cez;
 	double gr;
 	struct image *image = crystal_get_image(cr);
 	double r = crystal_get_profile_radius(cr);
@@ -116,33 +116,40 @@ double gradient(Crystal *cr, int k, Reflection *refl)
 	zl = hs*asz + ks*bsz + ls*csz;
 
 	ds = 2.0 * resolution(crystal_get_cell(cr), hs, ks, ls);
-	get_partial(refl, &r1, &r2, &p, &clamp_low, &clamp_high);
+	get_partial(refl, &rlow, &rhigh, &p, &clamp_low, &clamp_high);
 
+	/* "low" gives the largest Ewald sphere (wavelength short => k large)
+	 * "high" gives the smallest Ewald sphere (wavelength long => k small)
+	 */
 	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
 	khigh = 1.0/(image->lambda + image->lambda*image->bw/2.0);
-	ttlow = angle_between(0.0, 0.0, 1.0, xl, yl, zl+klow);
-	tthigh = angle_between(0.0, 0.0, 1.0, xl, yl, zl+khigh);
-	if ( (clamp_low == 0) && (clamp_high == 0) ) {
-		tt = (ttlow+tthigh)/2.0;
-	} else if ( clamp_high == 0 ) {
-		tt = tthigh + image->div;
-	} else if ( clamp_low == 0 ) {
-		tt = ttlow - image->div;
-	} else {
-		tt = 0.0;
-		/* Gradient should come out as zero in this case */
-	}
 
-	azix = angle_between(1.0, 0.0, 0.0, xl, yl, 0.0);
-	aziy = angle_between(0.0, 1.0, 0.0, xl, yl, 0.0);
+	tl = sqrt(xl*xl + yl*yl);
+	ds = modulus(xl, yl, zl);
+
+	cet = -sin(image->div/2.0) * klow;
+	cez = -cos(image->div/2.0) * klow;
+	philow = M_PI_2 - angle_between_2d(tl-cet, zl-cez, 1.0, 0.0);
+
+	cet = -sin(image->div/2.0) * khigh;
+	cez = -cos(image->div/2.0) * khigh;
+	phihigh = M_PI_2 - angle_between_2d(tl-cet, zl-cez, 1.0, 0.0);
+
+	/* Approximation: philow and phihigh are very similar */
+	phi = (philow + phihigh) / 2.0;
+
+	azi = atan2(yl, xl);
 
 	/* Calculate the gradient of partiality wrt excitation error. */
-	g = 0.0;
 	if ( clamp_low == 0 ) {
-		g -= partiality_gradient(r1, r);
+		glow = partiality_gradient(rlow, r);
+	} else {
+		glow = 0.0;
 	}
 	if ( clamp_high == 0 ) {
-		g += partiality_gradient(r2, r);
+		ghigh = partiality_gradient(rhigh, r);
+	} else {
+		ghigh = 0.0;
 	}
 
 	/* For many gradients, just multiply the above number by the gradient
@@ -150,57 +157,41 @@ double gradient(Crystal *cr, int k, Reflection *refl)
 	switch ( k ) {
 
 		case REF_DIV :
-		gr = 0.0;
-		if ( clamp_low == 0 ) {
-			nom = sqrt(2.0) * ds * sin(image->div/2.0);
-			den = sqrt(1.0 - cos(image->div/2.0));
-			gr -= (nom/den) * g;
-		}
-		if ( clamp_high == 0 ) {
-			nom = sqrt(2.0) * ds * sin(image->div/2.0);
-			den = sqrt(1.0 - cos(image->div/2.0));
-			gr += (nom/den) * g;
-		}
-		if ( isnan(gr) ) gr = 0.0;  /* FIXME: This isn't true (?) */
-		return gr / 4.0;  /* FIXME: Shameless fudge factor */
+		/* Small angle approximation */
+		return (ds*glow + ds*ghigh) / 2.0;
 
 		case REF_R :
-		g = 0.0;
-		if ( clamp_low == 0 ) {
-			g += partiality_rgradient(r1, r);
-		}
-		if ( clamp_high == 0 ) {
-			g += partiality_rgradient(r2, r);
-		}
-		return g;
+		gr  = partiality_rgradient(rlow, r);
+		gr -= partiality_rgradient(rhigh, r);
+		return gr;
 
 		/* Cell parameters and orientation */
 		case REF_ASX :
-		return hs * sin(tt) * cos(azix) * g;
+		return hs * sin(phi) * cos(azi) * (ghigh-glow);
 
 		case REF_BSX :
-		return ks * sin(tt) * cos(azix) * g;
+		return ks * sin(phi) * cos(azi) * (ghigh-glow);
 
 		case REF_CSX :
-		return ls * sin(tt) * cos(azix) * g;
+		return ls * sin(phi) * cos(azi) * (ghigh-glow);
 
 		case REF_ASY :
-		return hs * sin(tt) * cos(aziy) * g;
+		return hs * sin(phi) * sin(azi) * (ghigh-glow);
 
 		case REF_BSY :
-		return ks * sin(tt) * cos(aziy) * g;
+		return ks * sin(phi) * sin(azi) * (ghigh-glow);
 
 		case REF_CSY :
-		return ls * sin(tt) * cos(aziy) * g;
+		return ls * sin(phi) * sin(azi) * (ghigh-glow);
 
 		case REF_ASZ :
-		return hs * cos(tt) * g;
+		return hs * cos(phi) * (ghigh-glow);
 
 		case REF_BSZ :
-		return ks * cos(tt) * g;
+		return ks * cos(phi) * (ghigh-glow);
 
 		case REF_CSZ :
-		return ls * cos(tt) * g;
+		return ls * cos(phi) * (ghigh-glow);
 
 	}
 
@@ -364,7 +355,8 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
 
 
 /* Perform one cycle of post refinement on 'image' against 'full' */
-static double pr_iterate(Crystal *cr, const RefList *full)
+static double pr_iterate(Crystal *cr, const RefList *full,
+                         PartialityModel pmodel)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
@@ -420,7 +412,7 @@ static double pr_iterate(Crystal *cr, const RefList *full)
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<NUM_PARAMS; k++ ) {
 			double gr;
-			gr = gradient(cr, k, refl);
+			gr = gradient(cr, k, refl, pmodel);
 			gradients[k] = gr;
 		}
 
@@ -532,7 +524,7 @@ static double guide_dev(Crystal *cr, const RefList *full)
 }
 
 
-void pr_refine(Crystal *cr, const RefList *full)
+void pr_refine(Crystal *cr, const RefList *full, PartialityModel pmodel)
 {
 	double max_shift, dev;
 	int i;
@@ -557,9 +549,9 @@ void pr_refine(Crystal *cr, const RefList *full)
 		cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
-		max_shift = pr_iterate(cr, full);
+		max_shift = pr_iterate(cr, full, pmodel);
 
-		update_partialities(cr);
+		update_partialities(cr, pmodel);
 
 		if ( verbose ) {
 			dev = guide_dev(cr, full);

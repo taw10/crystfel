@@ -29,6 +29,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <gsl/gsl_statistics.h>
+#include <getopt.h>
 
 #include <image.h>
 #include <cell.h>
@@ -155,6 +157,7 @@ static Crystal *new_shifted_crystal(Crystal *cr, int refine, double incr_val)
 
 		case REF_R :
 		cell = cell_new_from_cell(crystal_get_cell(cr));
+		crystal_set_cell(cr_new, cell);
 		crystal_set_profile_radius(cr_new, r + incr_val);
 		break;
 
@@ -218,8 +221,9 @@ static void calc_either_side(Crystal *cr, double incr_val,
 
 
 
-static int test_gradients(Crystal *cr, double incr_val, int refine,
-                          const char *str)
+static double test_gradients(Crystal *cr, double incr_val, int refine,
+                             const char *str, const char *file,
+                             PartialityModel pmodel, int quiet, int plot)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -227,9 +231,16 @@ static int test_gradients(Crystal *cr, double incr_val, int refine,
 	int i;
 	int *valid;
 	int nref;
-	int n_acc, n_valid;
+	int n_good, n_invalid, n_small, n_nan, n_bad;
 	RefList *reflections;
-	//FILE *fh;
+	FILE *fh;
+	int ntot = 0;
+	double total = 0.0;
+	char tmp[32];
+	double *vec1;
+	double *vec2;
+	int n_line;
+	double cc;
 
 	reflections = find_intersections(crystal_get_image(cr), cr);
 	crystal_set_reflections(cr, reflections);
@@ -237,7 +248,7 @@ static int test_gradients(Crystal *cr, double incr_val, int refine,
 	nref = num_reflections(reflections);
 	if ( nref < 10 ) {
 		ERROR("Too few reflections found.  Failing test by default.\n");
-		return -1;
+		return 0.0;
 	}
 
 	vals[0] = malloc(nref*sizeof(long double));
@@ -245,13 +256,13 @@ static int test_gradients(Crystal *cr, double incr_val, int refine,
 	vals[2] = malloc(nref*sizeof(long double));
 	if ( (vals[0] == NULL) || (vals[1] == NULL) || (vals[2] == NULL) ) {
 		ERROR("Couldn't allocate memory.\n");
-		return -1;
+		return 0.0;
 	}
 
 	valid = malloc(nref*sizeof(int));
 	if ( valid == NULL ) {
 		ERROR("Couldn't allocate memory.\n");
-		return -1;
+		return 0.0;
 	}
 	for ( i=0; i<nref; i++ ) valid[i] = 1;
 
@@ -259,9 +270,20 @@ static int test_gradients(Crystal *cr, double incr_val, int refine,
 
 	calc_either_side(cr, incr_val, valid, vals, refine);
 
-	//fh = fopen("wrongness.dat", "a");
+	if ( plot ) {
+		snprintf(tmp, 32, "gradient-test-%s.dat", file);
+		fh = fopen(tmp, "w");
+	}
 
-	n_valid = nref;  n_acc = 0;
+	vec1 = malloc(nref*sizeof(double));
+	vec2 = malloc(nref*sizeof(double));
+	if ( (vec1 == NULL) || (vec2 == NULL) ) {
+		ERROR("Couldn't allocate memory.\n");
+		return 0.0;
+	}
+
+	n_invalid = 0;  n_good = 0;
+	n_nan = 0;  n_small = 0;  n_bad = 0;  n_line = 0;
 	i = 0;
 	for ( refl = first_refl(reflections, &iter);
 	      refl != NULL;
@@ -275,7 +297,8 @@ static int test_gradients(Crystal *cr, double incr_val, int refine,
 		get_indices(refl, &h, &k, &l);
 
 		if ( !valid[i] ) {
-			n_valid--;
+			n_invalid++;
+			i++;
 		} else {
 
 			double r1, r2, p;
@@ -284,20 +307,45 @@ static int test_gradients(Crystal *cr, double incr_val, int refine,
 			grad1 = (vals[1][i] - vals[0][i]) / incr_val;
 			grad2 = (vals[2][i] - vals[1][i]) / incr_val;
 			grad = (grad1 + grad2) / 2.0;
+			i++;
 
-			cgrad = gradient(cr, refine, refl);
+			cgrad = gradient(cr, refine, refl, pmodel);
 
 			get_partial(refl, &r1, &r2, &p, &cl, &ch);
 
-			if ( (fabs(cgrad) > 5e-8) &&
-			     !within_tolerance(grad, cgrad, 10.0) )
+			if ( isnan(cgrad) ) {
+				n_nan++;
+				continue;
+			}
+
+			if ( plot ) {
+				fprintf(fh, "%e %Le\n", cgrad, grad);
+			}
+
+			vec1[n_line] = cgrad;
+			vec2[n_line] = grad;
+			n_line++;
+
+			if ( (fabs(cgrad) < 5e-8) && (fabs(grad) < 5e-8) ) {
+				n_small++;
+				continue;
+			}
+
+			total += fabs(cgrad - grad);
+			ntot++;
+
+			if ( !within_tolerance(grad, cgrad, 5.0)
+			  || !within_tolerance(cgrad, grad, 5.0) )
 			{
 
-				STATUS("!- %s %3i %3i %3i"
-				       " %10.2Le %10.2e ratio = %5.2Lf"
-				       " %10.2e %10.2e\n",
-				       str, h, k, l, grad, cgrad, cgrad/grad,
-				       r1, r2);
+				if ( !quiet ) {
+					STATUS("!- %s %3i %3i %3i"
+					       " %10.2Le %10.2e ratio = %5.2Lf"
+					       " %10.2e %10.2e\n",
+					       str, h, k, l, grad, cgrad,
+					       cgrad/grad, r1, r2);
+				}
+				n_bad++;
 
 			} else {
 
@@ -307,29 +355,24 @@ static int test_gradients(Crystal *cr, double incr_val, int refine,
 				//       str, h, k, l, grad, cgrad, cgrad/grad,
 				//       r1, r2);
 
-				n_acc++;
+				n_good++;
 
 			}
 
-			//fprintf(fh, "%e %f\n",
-			        //resolution(image->indexed_cell, h, k, l),
-			        //rad2deg(tt),
-			//        cgrad,
-			//        fabs((grad-cgrad)/grad));
-
 		}
-
-		i++;
 
 	}
 
-	STATUS("%s: %i out of %i valid gradients were accurate.\n",
-	       str, n_acc, n_valid);
-	//fclose(fh);
+	STATUS("%3s: %3i within 5%%, %3i outside, %3i nan, %3i invalid, "
+	       "%3i small. ", str, n_good, n_bad, n_nan, n_invalid, n_small);
 
-	if ( n_acc != n_valid ) return 1;
+	if ( plot ) {
+		fclose(fh);
+	}
 
-	return 0;
+	cc = gsl_stats_correlation(vec1, 1, vec2, 1, n_line);
+	STATUS("CC = %+f\n", cc);
+	return cc;
 }
 
 
@@ -345,7 +388,34 @@ int main(int argc, char *argv[])
 	Crystal *cr;
 	struct quaternion orientation;
 	int i;
-	int val;
+	const PartialityModel pmodel = PMODEL_SPHERE;
+	int fail = 0;
+	int quiet = 0;
+	int plot = 0;
+	int c;
+
+	const struct option longopts[] = {
+		{"quiet",       0, &quiet,        1},
+		{"plot",        0, &plot,         1},
+		{0, 0, NULL, 0}
+	};
+
+	while ((c = getopt_long(argc, argv, "", longopts, NULL)) != -1) {
+		switch (c) {
+
+			case 0 :
+			break;
+
+			case '?' :
+			break;
+
+			default :
+			ERROR("Unhandled option '%c'\n", c);
+			break;
+
+		}
+
+	}
 
 	image.width = 1024;
 	image.height = 1024;
@@ -373,11 +443,10 @@ int main(int argc, char *argv[])
 	                                deg2rad(90.0),
 	                                deg2rad(90.0));
 
-	val = 0;
-
 	for ( i=0; i<1; i++ ) {
 
 		UnitCell *rot;
+		double val;
 
 		orientation = random_quaternion();
 		rot = cell_rotate(cell, orientation);
@@ -388,32 +457,55 @@ int main(int argc, char *argv[])
 			            &bz, &cx, &cy, &cz);
 
 		incr_val = incr_frac * image.div;
-		val += test_gradients(cr, incr_val, REF_DIV, "div");
+		val =  test_gradients(cr, incr_val, REF_DIV, "div", "div",
+		                      pmodel, quiet, plot);
+		if ( val < 0.99 ) fail = 1;
+
+		incr_val = incr_frac * crystal_get_profile_radius(cr);
+		val = test_gradients(cr, incr_val, REF_R, "R", "R", pmodel,
+		                     quiet, plot);
+		if ( val < 0.99 ) fail = 1;
 
 		incr_val = incr_frac * ax;
-		val += test_gradients(cr, incr_val, REF_ASX, "ax*");
-		incr_val = incr_frac * ay;
-		val += test_gradients(cr, incr_val, REF_ASY, "ay*");
-		incr_val = incr_frac * az;
-		val += test_gradients(cr, incr_val, REF_ASZ, "az*");
-
+		val = test_gradients(cr, incr_val, REF_ASX, "ax*", "x", pmodel,
+		                     quiet, plot);
+		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * bx;
-		val += test_gradients(cr, incr_val, REF_BSX, "bx*");
-		incr_val = incr_frac * by;
-		val += test_gradients(cr, incr_val, REF_BSY, "by*");
-		incr_val = incr_frac * bz;
-		val += test_gradients(cr, incr_val, REF_BSZ, "bz*");
-
+		val = test_gradients(cr, incr_val, REF_BSX, "bx*", "x", pmodel,
+		                     quiet, plot);
+		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * cx;
-		val += test_gradients(cr, incr_val, REF_CSX, "cx*");
+		val = test_gradients(cr, incr_val, REF_CSX, "cx*", "x", pmodel,
+		                     quiet, plot);
+		if ( val < 0.99 ) fail = 1;
+
+		incr_val = incr_frac * ay;
+		val = test_gradients(cr, incr_val, REF_ASY, "ay*", "y", pmodel,
+		                     quiet, plot);
+		if ( val < 0.99 ) fail = 1;
+		incr_val = incr_frac * by;
+		val = test_gradients(cr, incr_val, REF_BSY, "by*", "y", pmodel,
+		                     quiet, plot);
+		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * cy;
-		val += test_gradients(cr, incr_val, REF_CSY, "cy*");
+		val = test_gradients(cr, incr_val, REF_CSY, "cy*", "y", pmodel,
+		                     quiet, plot);
+		if ( val < 0.99 ) fail = 1;
+
+		incr_val = incr_frac * az;
+		val = test_gradients(cr, incr_val, REF_ASZ, "az*", "z", pmodel,
+		                     quiet, plot);
+		if ( val < 0.99 ) fail = 1;
+		incr_val = incr_frac * bz;
+		val = test_gradients(cr, incr_val, REF_BSZ, "bz*", "z", pmodel,
+		                     quiet, plot);
+		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * cz;
-		val += test_gradients(cr, incr_val, REF_CSZ, "cz*");
+		val = test_gradients(cr, incr_val, REF_CSZ, "cz*", "z", pmodel,
+		                     quiet, plot);
+		if ( val < 0.99 ) fail = 1;
 
 	}
 
-	STATUS("Returning 0 by default: gradients only needed for experimental"
-	       " features of CrystFEL.\n");
-	return 0;
+	return fail;
 }

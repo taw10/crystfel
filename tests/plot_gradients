@@ -1,0 +1,28 @@
+#!/bin/sh
+
+gnuplot -persist << EOF
+
+set key bottom right
+
+set xlabel "Calculated gradient"
+set ylabel "Observed gradient"
+
+  plot "gradient-test-x.dat" using 1:2 w p lc 1 pt 1 title "x"
+replot "gradient-test-y.dat" using 1:2 w p lc 2 pt 1 title "y"
+replot "gradient-test-z.dat" using 1:2 w p lc 3 pt 1 title "z"
+
+EOF
+
+gnuplot -persist << EOF
+set key bottom right
+set xlabel "Calculated gradient"
+set ylabel "Observed gradient"
+plot "gradient-test-R.dat" using 1:2 w p lc 1 pt 1 title "profile radius"
+EOF
+
+gnuplot -persist << EOF
+set key bottom right
+set xlabel "Calculated gradient"
+set ylabel "Observed gradient"
+plot "gradient-test-div.dat" using 1:2 w p lc 1 pt 1 title "divergence"
+EOF

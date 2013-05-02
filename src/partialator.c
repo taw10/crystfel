@@ -79,6 +79,9 @@ static void show_help(const char *s)
 "  -r, --reference=<file>     Refine images against reflections in <file>,\n"
 "                              instead of taking the mean of the intensity\n"
 "                              estimates.\n"
+"  -m, --model=<model>        Specify partiality model.\n"
+"      --min-measurements=<n> Require at least <n> measurements before a\n"
+"                             reflection appears in the output.  Default: 2\n"
 "\n"
 "  -j <n>                     Run <n> analyses in parallel.\n");
 }
@@ -88,6 +91,7 @@ struct refine_args
 {
 	RefList *full;
 	Crystal *crystal;
+	PartialityModel pmodel;
 };
 
 
@@ -106,7 +110,7 @@ static void refine_image(void *task, int id)
 	struct refine_args *pargs = task;
 	Crystal *cr = pargs->crystal;
 
-	pr_refine(cr, pargs->full);
+	pr_refine(cr, pargs->full, pargs->pmodel);
 }
 
 
@@ -139,13 +143,18 @@ static void done_image(void *vqargs, void *task)
 
 static void refine_all(Crystal **crystals, int n_crystals,
                        struct detector *det,
-                       RefList *full, int nthreads)
+                       RefList *full, int nthreads, PartialityModel pmodel)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
 
+	/* If the partiality model is "p=1", this refinement is really, really
+	 * easy... */
+	if ( pmodel == PMODEL_UNITY ) return;
+
 	task_defaults.full = full;
 	task_defaults.crystal = NULL;
+	task_defaults.pmodel = pmodel;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;
@@ -314,6 +323,10 @@ int main(int argc, char *argv[])
 	int noscale = 0;
 	Stream *st;
 	Crystal **crystals;
+	char *pmodel_str = NULL;
+	PartialityModel pmodel = PMODEL_SPHERE;
+	int min_measurements = 2;
+	char *rval;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -326,6 +339,9 @@ int main(int argc, char *argv[])
 		{"iterations",         1, NULL,               'n'},
 		{"no-scale",           0, &noscale,            1},
 		{"reference",          1, NULL,               'r'},
+		{"model",              1, NULL,               'm'},
+		{"min-measurements",   1, NULL,                2},
+
 		{0, 0, NULL, 0}
 	};
 
@@ -336,7 +352,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:o:g:b:y:n:r:j:",
+	while ((c = getopt_long(argc, argv, "hi:o:g:b:y:n:r:j:m:",
 	                        longopts, NULL)) != -1)
 	{
 
@@ -370,6 +386,10 @@ int main(int argc, char *argv[])
 			n_iter = atoi(optarg);
 			break;
 
+			case 'm' :
+			pmodel_str = strdup(optarg);
+			break;
+
 			case 'b' :
 			beam = get_beam_parameters(optarg);
 			if ( beam == NULL ) {
@@ -381,6 +401,15 @@ int main(int argc, char *argv[])
 
 			case 'r' :
 			reference_file = strdup(optarg);
+			break;
+
+			case 2 :
+			errno = 0;
+			min_measurements = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --min-measurements.\n");
+				return 1;
+			}
 			break;
 
 			case 0 :
@@ -432,6 +461,17 @@ int main(int argc, char *argv[])
 	if ( beam == NULL ) {
 		ERROR("You must provide a beam parameters file.\n");
 		return 1;
+	}
+
+	if ( pmodel_str != NULL ) {
+		if ( strcmp(pmodel_str, "sphere") == 0 ) {
+			pmodel = PMODEL_SPHERE;
+		} else if ( strcmp(pmodel_str, "unity") == 0 ) {
+			pmodel = PMODEL_UNITY;
+		} else {
+			ERROR("Unknown partiality model '%s'.\n", pmodel_str);
+			return 1;
+		}
 	}
 
 	if ( reference_file != NULL ) {
@@ -528,6 +568,7 @@ int main(int argc, char *argv[])
 		display_progress(n_images, n_crystals);
 
 	} while ( 1 );
+	fprintf(stderr, "\n");
 
 	close_stream(st);
 
@@ -544,18 +585,19 @@ int main(int argc, char *argv[])
 			crystal_set_image(cryst, &images[i]);
 
 			/* Now it's safe to do the following */
-			update_partialities(cryst);
+			update_partialities(cryst, pmodel);
 			as = crystal_get_reflections(cryst);
 			nobs += select_scalable_reflections(as, reference);
 
 		}
 	}
+	STATUS("%i scalable observations.\n", nobs);
 
 	/* Make initial estimates */
-	STATUS("\nPerforming initial scaling.\n");
+	STATUS("Performing initial scaling.\n");
 	if ( noscale ) STATUS("Scale factors fixed at 1.\n");
 	full = scale_intensities(crystals, n_crystals, reference,
-	                         nthreads, noscale);
+	                         nthreads, noscale, pmodel, min_measurements);
 
 	sr = sr_titlepage(crystals, n_crystals, "scaling-report.pdf",
 	                  infile, cmdline);
@@ -578,7 +620,7 @@ int main(int argc, char *argv[])
 		/* Refine the geometry of all patterns to get the best fit */
 		select_reflections_for_refinement(crystals, n_crystals,
 		                                  comp, have_reference);
-		refine_all(crystals, n_crystals, det, comp, nthreads);
+		refine_all(crystals, n_crystals, det, comp, nthreads, pmodel);
 
 		nobs = 0;
 		for ( j=0; j<n_crystals; j++ ) {
@@ -593,7 +635,8 @@ int main(int argc, char *argv[])
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
 		full = scale_intensities(crystals, n_crystals,
-		                         reference, nthreads, noscale);
+		                         reference, nthreads, noscale, pmodel,
+		                         min_measurements);
 
 		sr_iteration(sr, i+1, crystals, n_crystals, full);
 
