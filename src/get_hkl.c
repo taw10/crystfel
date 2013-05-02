@@ -313,6 +313,8 @@ static RefList *trim_centrics(RefList *in, const SymOpList *sym)
 	Reflection *refl;
 	RefListIterator *iter;
 	RefList *out;
+	long long int nref = 0;
+	long long int ntrim = 0;
 
 	out = reflist_new();
 
@@ -328,10 +330,11 @@ static RefList *trim_centrics(RefList *in, const SymOpList *sym)
 
 		/* Put it into the asymmetric unit */
 		get_asymm(sym, h, k, l, &ha, &ka, &la);
+		nref++;
 
 		new = find_refl(out, ha, ka, la);
 		if ( new != NULL ) {
-			STATUS("Trimmed %i %i %i\n", h, k, l);
+			ntrim++;
 			continue;
 		}
 
@@ -339,6 +342,8 @@ static RefList *trim_centrics(RefList *in, const SymOpList *sym)
 		new = add_refl(out, ha, ka, la);
 		copy_data(new, refl);
 	}
+
+	STATUS("Trimmed %lli out of %lli reflections.\n", ntrim, nref);
 
 	return out;
 }
