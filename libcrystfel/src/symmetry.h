@@ -80,6 +80,9 @@ extern const char *symmetry_name(const SymOpList *ops);
 extern void set_symmetry_name(SymOpList *ops, const char *name);
 extern void describe_symmetry(const SymOpList *s);
 
+extern int is_centric(signed int h, signed int k, signed int l,
+                      const SymOpList *ops);
+
 extern void add_symop(SymOpList *ops, IntegerMatrix *m);
 
 #endif	/* SYMMETRY_H */

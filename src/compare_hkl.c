@@ -725,7 +725,7 @@ int main(int argc, char *argv[])
 	char *bfile = NULL;
 	char *sym_str = NULL;
 	SymOpList *sym;
-	int ncom, nrej, nneg, nres, nbij;
+	int ncom, nrej, nneg, nres, nbij, ncen;
 	RefList *list1_acc;
 	RefList *list2_acc;
 	RefList *list1;
@@ -948,6 +948,7 @@ int main(int argc, char *argv[])
 	nneg = 0;
 	nres = 0;
 	nbij = 0;
+	ncen = 0;
 	list1_acc = reflist_new();
 	list2_acc = reflist_new();
 	for ( refl1 = first_refl(list1, &iter);
@@ -1018,6 +1019,14 @@ int main(int argc, char *argv[])
 			Reflection *refl1_bij = NULL;
 			Reflection *refl2_bij = NULL;
 			signed int hb, kb, lb;
+			int centric;
+
+			centric = is_centric(h, k, l, sym);
+
+			if ( centric ) {
+				ncen++;
+				continue;
+			}
 
 			if ( find_equiv_in_list(list1, -h, -k, -l, sym,
 			                        &hb, &kb, &lb) )
@@ -1078,6 +1087,11 @@ int main(int argc, char *argv[])
 	if ( nbij > 0 ) {
 		STATUS("%i reflection pairs rejected because either or both"
 		       " versions did not have Bijvoet partners.\n", nres);
+	}
+
+	if ( ncen > 0 ) {
+		STATUS("%i reflection pairs rejected because they were"
+		       " centric.\n", ncen);
 	}
 
 	STATUS("%i reflection pairs accepted.\n", ncom);

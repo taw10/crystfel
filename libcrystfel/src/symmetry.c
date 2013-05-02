@@ -1192,6 +1192,34 @@ static int any_negative(signed int h, signed int k, signed int l)
 
 
 /**
+ * is_centric:
+ * @h: h index
+ * @k: k index
+ * @l: l index
+ * @ops: A %SymOpList
+ *
+ * A reflection is centric if it is related by symmetry to its Friedel partner.
+ *
+ * Returns: true if @h @k @l is centric in @ops.
+ *
+ **/
+int is_centric(signed int h, signed int k, signed int l, const SymOpList *ops)
+{
+	signed int ha, ka, la;
+	signed int hb, kb, lb;
+
+	get_asymm(ops, h, k, l, &ha, &ka, &la);
+	get_asymm(ops, -h, -k, -l, &hb, &kb, &lb);
+
+	if ( ha != hb ) return 0;
+	if ( ka != kb ) return 0;
+	if ( la != lb ) return 0;
+
+	return 1;
+}
+
+
+/**
  * get_asymm:
  * @ops: A %SymOpList, usually corresponding to a point group
  * @h: index of a reflection
