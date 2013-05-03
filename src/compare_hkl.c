@@ -83,7 +83,7 @@ static void show_help(const char *s)
 "\n"
 "  -y, --symmetry=<sym>       The symmetry of both the input files.\n"
 "  -p, --pdb=<filename>       PDB file to use.\n"
-"      --fom=<FoM>            Calculate this figure of merit  Choose from:.\n"
+"      --fom=<FoM>            Calculate this figure of merit  Choose from:\n"
 "                              R1I, R1F, R2, Rsplit, CC, CCstar, CCano.\n"
 "      --nshells=<n>          Use <n> resolution shells.\n"
 "  -u                         Force scale factor to 1.\n"
@@ -1019,11 +1019,8 @@ int main(int argc, char *argv[])
 			Reflection *refl1_bij = NULL;
 			Reflection *refl2_bij = NULL;
 			signed int hb, kb, lb;
-			int centric;
 
-			centric = is_centric(h, k, l, sym);
-
-			if ( centric ) {
+			if ( is_centric(h, k, l, sym) ) {
 				ncen++;
 				continue;
 			}
