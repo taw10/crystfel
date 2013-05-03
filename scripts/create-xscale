@@ -25,7 +25,7 @@ while ( $line = <FH> ) {
 
 	chomp($line);
 
-	if ( $line =~ /^\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9\.\-]+)\s+([\-]+)\s+([0-9\.\-]+)/ ) {
+	if ( $line =~ /^\s+([0-9\-]+)\s+([0-9\-]+)\s+([0-9\-]+)\s+([0-9\.\-]+)\s+([\-]+)\s+([0-9\.\-]+)/ ) {
 
 		my $h = $1;
 		my $k = $2;
@@ -34,6 +34,11 @@ while ( $line = <FH> ) {
 		my $sig = $6;
 
 		printf("%6i %6i %5i %9.2f %9.2f\n", $h, $k, $l, $int, $sig);
+
+	} else {
+
+		printf(STDERR "Unrecognised: '%s'\n", $line);
+
 	}
 
 }
