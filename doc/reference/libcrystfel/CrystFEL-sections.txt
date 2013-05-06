@@ -273,6 +273,7 @@ describe_symmetry
 symmetry_name
 set_symmetry_name
 is_centrosymmetric
+is_centric
 </SECTION>
 
 <SECTION>
