@@ -173,6 +173,8 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 		                crystal_get_resolution_limit(cr)/1e9,
 		                1e9 / crystal_get_resolution_limit(cr));
 
+		fprintf(st->fh, "num_reflections = %i\n",
+		                num_reflections(reflist));
 		fprintf(st->fh, "num_saturated_reflections = %lli\n",
 		                crystal_get_num_saturated_reflections(cr));
 
