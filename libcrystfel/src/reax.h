@@ -61,7 +61,7 @@ static void reax_cleanup(IndexingPrivate *pp)
 {
 }
 
-static void reax_index(struct image *image, IndexingPrivate *p)
+static int reax_index(struct image *image, IndexingPrivate *p)
 {
 }
 
