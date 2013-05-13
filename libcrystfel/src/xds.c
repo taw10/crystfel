@@ -50,11 +50,12 @@
 #include <util.h>
 #endif
 
-
+#include "cell.h"
 #include "image.h"
 #include "utils.h"
 #include "peaks.h"
-#include "cell.h"
+#include "detector.h"
+#include "beam-parameters.h"
 #include "cell-utils.h"
 
 
@@ -335,7 +336,6 @@ static void write_spot(struct image *image, const char *filename)
 {
 	FILE *fh;
 	int i;
-	double fclen = 99.0e-3;  /* fake camera length in m */
 	int n;
 
 	fh = fopen("SPOT.XDS", "w");
@@ -365,8 +365,8 @@ static void write_spot(struct image *image, const char *filename)
 
 		//printf("xs=%f ys=%f  ---->  rx=%f ry=%f\n", xs, ys, rx, ry);
 
-		x = rx*fclen/p->clen;
-		y = ry*fclen/p->clen;  /* Peak positions in m */
+		x = rx;
+		y = ry; /* Peak positions in m */
 
 		//printf("x=%f y=%f\n", x, y);
 
@@ -469,8 +469,8 @@ static int write_inp(struct image *image, struct xds_private *xp)
 	fprintf(fh, "JOB= IDXREF\n");
 	fprintf(fh, "ORGX= 1500\n");
 	fprintf(fh, "ORGY= 1500\n");
-	fprintf(fh, "DETECTOR_DISTANCE= 99.00\n"); 	//IMPORTANT
-	fprintf(fh, "OSCILLATION_RANGE= 0.001\n");
+	fprintf(fh, "DETECTOR_DISTANCE= %f\n", image->det->panels[0].clen*1000);
+	fprintf(fh, "OSCILLATION_RANGE= 0.300\n");
 	fprintf(fh, "X-RAY_WAVELENGTH= %.6f\n", image->lambda*1e10);
 	fprintf(fh, "NAME_TEMPLATE_OF_DATA_FRAMES=???.img \n");
 	fprintf(fh, "DATA_RANGE=1 1\n");
