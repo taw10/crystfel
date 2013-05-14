@@ -4,6 +4,7 @@ Changes in this development version
 - partialator was extensively worked on.
 - The "Lorentz factor" was added to partial_sim (and partialator).
 - CCano was added as a figure of merit to compare_hkl.
+- XDS indexing was improved.
 
 - A compilation failure (when FFTW3 was unavailable) was fixed.
 - docs/stream-format.txt was added.
