@@ -439,7 +439,7 @@ static int dirax_readable(struct image *image, struct dirax_data *dirax)
 				break;
 
 				case DIRAX_INPUT_ACL :
-				dirax_send_next(image,dirax );
+				dirax_send_next(image,dirax);
 				endbit_length = i+10;
 				break;
 
