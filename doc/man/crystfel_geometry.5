@@ -51,104 +51,102 @@ Naively speaking, this means that CrystFEL looks at the images from the "into th
 beam" perspective, but please avoid thinking of things in this way.  It's much
 better to consider the precise way in which the coordinates are mapped.
 
-The syntax for a simple geometry might include several entires of the following
-form:
+The geometry file should contain lines of the following form:
 
-; Lines which should be ignored start with a semicolon.
+.IP
+\fIpanel\fR\fB/\fIproperty\fB = \fIvalue\fR
 
-; The name before the slash indicates which panel is referred to.  You can use
-.br
-; any name as long as it doesn't start with "bad" (see below).
-.br
-; The range of pixels in the HDF5 file which correspond to a panel are given:
-.br
-panel0/min_fs = 0
-.br
-panel0/min_ss = 0
-.br
-panel0/max_fs = 193
-.br
-panel0/max_ss = 184
+.PP
+\fIpanel\fR can be any name of your choosing.  You can make up names for your panels however you please, as long as the first three letters are not "\fBbad\fR" (in lower case), because this is used to identify bad regions.
 
-; The number of detector intensity units (ADU) which will arise from one eV:
-.br
-panel0/adu_per_eV = 0.01
+.PP
+You can also specify values without a panel name, for example:
 
-; The readout direction (x, y or 0).  If more than three peaks are found in
-.br
-; the same readout region, they are all discarded.  This helps to avoid
-.br
-; problems due to streaks appearing along the readout direction.
-.br
-; If the badrow direction is '-', then the culling described above will not
-.br
-; be performed for this panel.
-.br
-panel0/badrow_direction = -
+.IP
+peak_sep = 6.0
 
-; The resolution (in pixels per metre) for this panel
-.br
-panel0/res = 9090.91
+.PP
+In this case, the value will be used for all \fBsubsequent\fR panels appearing in the file which do not have their own specific values for the property, or until you specify another default value further down the file.  Panel-specific values always have priority over default values, and changing the default value has no effect for panels which had already be mentioned at the point in the file where the default value was specified.
 
-; The characteristic peak separation in pixels.  The peak detection will assume
-.br
-; that genuine peaks are separated by at least this amount.
-.br
-panel0/peak_sep = 6.0
+.PP
+Lines which should be ignored start with a semicolon.
 
-; The camera length (in metres) for this panel
-.br
-; You can also specify the HDF path to a scalar floating point value containing
-.br
-; the camera length in millimetres.
-.br
-panel0/clen = /LCLS/detectorPosition
+.PP
+The properties which can be set are:
 
-; The camera length offset (in metres) for this panel.
-.br
-; This number will be added to the camera length (\fBclen\fR).  This can be
-.br
-; useful if the camera length is taken from the HDF5 file and you need to make
-.br
-; an adjustment, such as that from a calibration experiment.
-.br
-panel0/coffset = 0.0
+.PD 0
+.IP \fBmin_fs\fR
+.IP \fBmin_ss\fR
+.IP \fBmax_fs\fR
+.IP \fBmax_ss\fR
+.PD
+The range of pixels in the HDF5 file which correspond to the panel, in fast scan/slow scan coordinates, specified \fBinclusively\fR.
 
-; For this panel, the fast and slow scan directions correspond to the given
-.br
-; directions in the lab coordinate system described above, measured in pixels.
-.br
-panel0/fs = +y
-.br
-panel0/ss = -x
+.PD 0
+.IP \fBadu_per_eV\fR
+.PD
+The number of detector intensity units (ADU) which will arise from one electron-Volt of photon energy.  This is used to estimate Poisson errors.
 
-; The corner of this panel, defined as the first point in the panel to appear in
-.br
-; the HDF5 file, is now given a position in the lab coordinate system.
-.br
-; Units are pixels.
-.br
-; Note that "first point in the panel" is a conceptual simplification.  We refer
-.br
-; to that corner, and to the very corner of the pixel - NOT, for example, to the
-.br
-; centre of the first pixel to appear.
-.br
-panel0/corner_x = 429.39
-.br
-panel0/corner_y = -17.30
+.PD 0
+.IP \fBbadrow_direction\fR
+.PD
+This is the readout direction of a CCD panel, and can be \fBf\fR, \fBs\fR or \fB-\fR.
+If more than three peaks are found in the same readout region with similar coordinates perpendicular to the readout direction, they will all be discarded.  This helps to avoid problems due to streaks appearing along the readout direction, which has happened in the past with pnCCD detectors.
+If the badrow direction is '-', then the culling will not be performed for this panel.
 
-; You can suppress indexing for this panel if required, by setting "no_index" to
-.br
-; "true" or "1".
-.br
-panel0/no_index = 0
+.PD 0
+.IP \fBres\fR
+The resolution (in pixels per metre) for this panel.  This is one over the pixel size in metres.
 
-; You can also specify bad regions.  Peaks with centroid locations within such
+.PD 0
+.IP \fBclen\fR
+.PD
+The camera length (in metres) for this panel. You can also specify the HDF path to a scalar floating point value containing the camera length in millimetres.  For example: "panel0/clen = /LCLS/detectorPosition".  See \fBcoffset\fR as well.
+
+.PD 0
+.IP \fBcoffset\fR
+.PD
+; The camera length offset (in metres) for this panel.  This number will be added to the camera length (\fBclen\fR).  This can be useful if the camera length is taken from the HDF5 file and you need to make an adjustment, such as that from a calibration experiment.
+
+.PD 0
+.IP \fBfs\fR
+.IP \fBss\fR
+.PD
+For this panel, the fast and slow scan directions correspond to the given directions in the lab coordinate system described above, measured in pixels.  Example: "panel0/fs = 0.5x+0.5y".
+
+.PD 0
+.IP \fBcorner_x\fR
+.IP \fBcorner_y\fR
+.PD
+The corner of this panel, defined as the first point in the panel to appear in the HDF5 file, is now given a position in the lab coordinate system. The units are pixel widths of the current panel.  Note that "first point in the panel" is a conceptual simplification.  We refer to that corner, and to the very corner of the pixel - not, for example, to the centre of the first pixel to appear.
+
+.PD 0
+.IP \fBmax_adu\fR
+The maximum value, in ADU, before the pixel will be considered as bad.  That is, the saturation value for the panel.
+
+.PD 0
+.IP \fBno_index\fR
+Set this to 1 or "true" to ignore this panel completely.
+
+.PD 0
+.IP \fBmask\fR
+.IP \fBmask_good\fR
+.IP \fBmask_bad\fR
+.PD
+If you have a bad pixel mask, you can include it in the HDF5 file as an unsigned 16-bit integer array of the same size as the data.  You need to give its path within each HDF5 file, and two bitmasks.  The pixel is considered good if all of the bits which are set in \fBmask_good\fR are set, \fIand\fR if none of the bits which are set in \fBmask_bad\fR are set. Example:
 .br
-; a region will not be integrated nor indexed.  Bad regions are specified in
+mask = /processing/hitfinder/masks
 .br
-; pixel units, but in the lab coordinate system (see above).
+mask_good = 0x27
+.br
+mask_bad = 0x00
+
+
+.SH BAD REGIONS
+
+You can also specify bad regions.  Peaks with centroid locations within such a region will not be integrated nor used for indexing.  Bad regions are specified in pixel units, but in the lab coordinate system (see above).  Bad regions are distinguished from normal panels by the fact that they begin with the three letters "bad".
+
+Example:
 .br
 badregionA/min_x = -20.0
 .br
@@ -158,71 +156,50 @@ badregionA/min_y = -100.0
 .br
 badregionA/max_y = +100.0
 
-; If you have a bad pixel mask, you can include it in the HDF5 file as an
-.br
-; unsigned 16-bit integer array of the same size as the data.  You need to
-.br
-; give its path within each HDF5 file, and two bitmasks.  The pixel is
-.br
-; considered good if all of the bits which are set in \fBmask_good\fR are set,
-.br
-; \fIand\fR if none of the bits which are set in \fBmask_bad\fR are set.
-.br
-mask = /processing/hitfinder/masks
-.br
-mask_good = 0x27
-.br
-mask_bad = 0x00
-
-; Any of the per-panel values can be given without a panel prefix, for example:
-.br
-peak_sep = 6.0
-.br
-; in which case the value will be used for all \fBsubsequent\fR panels appearing
-.br
-; in the file.
-.br
-; The maximum value, in ADU, before the pixel will be considered as bad.
-.br
-max_adu = 3500
-
 .PP
 See the "examples" folder for some examples (look at the ones ending in .geom).
 
 .SH CRYSTFEL BEAM DESCRIPTION FILES
-CrystFEL beam description files, usually given with fB--beam=\fR\fIfilename\fR,
-describe the beam parameters.  The fields are as follows:
+CrystFEL beam description files, usually given with \fB--beam=\fR\fIfilename\fR,
+describe the beam parameters.  The syntax of each line in the beam file is simply this:
 
-; Number of photons per pulse
-.br
-beam/fluence = 2.0e11
+.IP
+\fIparameter\fB = \fIvalue\fR
 
-; Radius of X-ray beam
-.br
-beam/radius = 1.5e-6
+.PP
+The possible parameters are:
 
-; Photon energy in eV
-.br
-beam/photon_energy = 2000.0
+.PD 0
+.IP \fBbeam/fluence\fR
+.PD
+The number of photons per pulse.
 
-; Bandwidth: FWHM(wavelength) over wavelength.
-.br
-; Note: current simulation code just uses a rectangular
-.br
-;       distribution with this as its (full) width.
-.br
-beam/bandwidth = 0.001
+.PD 0
+.IP \fBbeam/radius\fR
+.PD
+The radius of X-ray beam, in metres.
 
-; Beam divergence (full convergence angle, \fBnot\fR the half-angle) in radians
-.br
-beam/divergence = 0.001
+.PD 0
+.IP \fBbeam/photon_energy\fR
+.PD
+The photon energy in electron-Volts, or an HDF5 path to a stored wavelength value, also in eV.
 
-; Reciprocal space 3D profile radius in m^-1.  A sphere of this radius surrounds
-; each reciprocal space, and if any part of the sphere is inside the excited
-; volume of reciprocal space, the reflection will be predicted.  You can change
-; the prediction of spots by altering this value - larger numbers give more
-; spots;
-profile_radius = 0.001e9
+.PD 0
+.IP \fBbeam/bandwidth\fR
+.PD
+Bandwidth: FWHM(wavelength) over wavelength.  Note: current simulation code just uses a rectangular distribution with this as its (full) width.
+
+.PD 0
+.IP \fBbeam/divergence\fR
+Beam divergence (full convergence angle, \fBnot\fR the half-angle) in radians.
+
+.PD 0
+.IP \fBprofile_radius\fR
+.PD
+Reciprocal space 3D profile radius in m^-1.  A sphere of this radius surrounds each reciprocal space, and if any part of the sphere is inside the excited volume of reciprocal space, the reflection will be predicted.  You can change the prediction of spots by altering this value - larger numbers give more spots;
+
+.PP
+The parameters \fBbeam/fluence\fR and \fBbeam/radius\fR are only relevant when simulations, e.g. with pattern_sim.  \fBbeam/bandwidth\fR, \fBbeam/divergence\fR and \fBprofile_radius\fR affect which spots are predicted for the final stages of integration.
 
 .SH AUTHOR
 This page was written by Thomas White.

@@ -237,7 +237,7 @@ The default is \fB--tolerance=5,5,5,1.5\fR.
 .PD 0
 .IP \fB--median-filter=\fR\fIn\fR
 .PD
-Apply a median filter with box "radius" \fIn\fR to the image.  Each pixel will be set to the median of the values from a \fI(n+1)\fRx\fI(n+1)\fR square centered on the pixel.  This might help with peak detection if the background is high and/or noisy.  The \fIunfiltered\fR image will be used for the final integration of the peaks.  If you also use \fB--noise-filter\fR, the median filter will be applied first.
+Apply a median filter with box "radius" \fIn\fR to the image.  The median of the values from a \fI(n+1)\fRx\fI(n+1)\fR square centered on the pixel will be subtracted from each pixel.  This might help with peak detection if the background is high and/or noisy.  The \fIunfiltered\fR image will be used for the final integration of the peaks.  If you also use \fB--noise-filter\fR, the median filter will be applied first.
 
 
 .PD 0
@@ -318,11 +318,6 @@ Normally, reflections which contain one or more pixels above max_adu (defined in
 .IP \fB--no-revalidate\fR
 .PD
 When using \fB--peaks=hdf5\fR, the peaks will be put through the same checks as if you were using \fB--peaks=zaef\fR.  These checks reject peaks which are too close to panel edges, are saturated (unless you use \fB--use-saturated\fR), fall short of the minimum SNR value given by \fB--min-snr\fR, have other nearby peaks (closer than twice the inner integration radius, see \fB--int-radius\fR), or have any part in a bad region.  Using this option skips this validation step, and uses the peaks directly.
-
-.PD 0
-.IP \fB--integrate-found\fR
-.PD
-Without this option, peaks will be predicted in each pattern based on the crystal orientation from autoindexing and the parameters in the beam description file.  With this option, indices will be assigned to the peaks found by the peak search, and the positions of those peaks used for the final integration stage.
 
 .PD 0
 .IP \fB--no-peaks-in-stream\fR
