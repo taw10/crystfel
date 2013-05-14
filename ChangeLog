@@ -1,5 +1,19 @@
+Changes in this development version
+-----------------------------------
+
+- partialator was extensively worked on.
+- The "Lorentz factor" was added to partial_sim (and partialator).
+- CCano was added as a figure of merit to compare_hkl.
+
+- A compilation failure (when FFTW3 was unavailable) was fixed.
+- docs/stream-format.txt was added.
+- scripts/create-xscale was fixed.
+- Warnings were added to scripts which MUST be modified before use.
+
+
 CrystFEL version 0.5.0, 19th April 2013
 ---------------------------------------
+
 - The internal architecture has been changed to accommodate multiple crystals
   per diffraction pattern.
 - The stream format has changed as a result of the above.
@@ -19,6 +33,7 @@ CrystFEL version 0.5.0, 19th April 2013
   pattern_sim (Chun Hong Yoon).
 - Lattice type, centering and unique axis information is now included in the
   stream.
+
 
 CrystFEL version 0.4.3, 10th January 2013
 -----------------------------------------
