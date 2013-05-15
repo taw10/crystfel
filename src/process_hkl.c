@@ -172,6 +172,48 @@ static double scale_intensities(RefList *reference, RefList *new,
 }
 
 
+void polarisation_correction(RefList *list, UnitCell *cell, struct image *image)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double pol, pa, pb, phi, tt, ool;
+		double intensity;
+		double xl, yl, zl;
+		signed int h, k, l;
+
+		get_indices(refl, &h, &k, &l);
+
+		/* Polarisation correction assuming 100% polarisation
+		 * along the x direction */
+		xl = h*asx + k*bsx + l*csx;
+		yl = h*asy + k*bsy + l*csy;
+		zl = h*asz + k*bsz + l*csz;
+
+		ool = 1.0 / image->lambda;
+		tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+ool);
+		phi = atan2(yl, xl);
+		pa = pow(sin(phi)*sin(tt), 2.0);
+		pb = pow(cos(tt), 2.0);
+		pol = 1.0 - 2.0*(1.0-pa) + (1.0+pb);
+
+		intensity = get_intensity(refl);
+		set_intensity(refl, intensity / pol);
+	}
+}
+
+
 static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
                         RefList *reference, const SymOpList *sym,
                         double *hist_vals, signed int hist_h,
@@ -181,9 +223,12 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 	Reflection *refl;
 	RefListIterator *iter;
 	double scale;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
+
+	/* First, correct for polarisation */
+	if ( !config_nopolar ) {
+		polarisation_correction(crystal_get_reflections(cr),
+		                        crystal_get_cell(cr), image);
+	}
 
 	if ( reference != NULL ) {
 		scale = scale_intensities(reference,
@@ -193,17 +238,11 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 	}
 	if ( isnan(scale) ) return 1;
 
-	cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
-	                                          &bsx, &bsy, &bsz,
-	                                          &csx, &csy, &csz);
-
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
 		double refl_intensity, refl_sigma;
-		double xl, yl, zl;
-		double pol, pa, pb, phi, tt, ool;
 		signed int h, k, l;
 		int model_redundancy;
 		Reflection *model_version;
@@ -223,25 +262,6 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 		refl_intensity = scale * get_intensity(refl);
 		refl_sigma = scale * get_esd_intensity(refl);
 		w = pow(refl_sigma, -2.0);
-
-		/* FIXME: Should go before determining the scaling factor */
-		if ( !config_nopolar ) {
-
-			/* Polarisation correction assuming 100% polarisation
-			 * along the x direction */
-			xl = h*asx + k*bsx + l*csx;
-			yl = h*asy + k*bsy + l*csy;
-			zl = h*asz + k*bsz + l*csz;
-
-			ool = 1.0 / image->lambda;
-			tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+ool);
-			phi = atan2(yl, xl);
-			pa = pow(sin(phi)*sin(tt), 2.0);
-			pb = pow(cos(tt), 2.0);
-			pol = 1.0 - 2.0*(1.0-pa) + (1.0+pb);
-			refl_intensity /= pol;
-
-		}
 
 		mean = get_intensity(model_version);
 		sumweight = get_temp1(model_version);
