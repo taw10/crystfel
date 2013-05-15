@@ -63,6 +63,8 @@ extern RefList *find_intersections(struct image *image, Crystal *cryst);
 extern RefList *select_intersections(struct image *image, Crystal *cryst);
 
 extern void update_partialities(Crystal *cryst, PartialityModel pmodel);
+extern void polarisation_correction(RefList *list, UnitCell *cell,
+                                    struct image *image);
 
 #ifdef __cplusplus
 }

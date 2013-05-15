@@ -50,6 +50,7 @@
 #include "image.h"
 #include "crystal.h"
 #include "thread-pool.h"
+#include "geometry.h"
 
 
 static void show_help(const char *s)
@@ -169,48 +170,6 @@ static double scale_intensities(RefList *reference, RefList *new,
 	s = top / bot;
 
 	return s;
-}
-
-
-void polarisation_correction(RefList *list, UnitCell *cell, struct image *image)
-{
-	Reflection *refl;
-	RefListIterator *iter;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		double pol, pa, pb, phi, tt, ool;
-		double intensity;
-		double xl, yl, zl;
-		signed int h, k, l;
-
-		get_indices(refl, &h, &k, &l);
-
-		/* Polarisation correction assuming 100% polarisation
-		 * along the x direction */
-		xl = h*asx + k*bsx + l*csx;
-		yl = h*asy + k*bsy + l*csy;
-		zl = h*asz + k*bsz + l*csz;
-
-		ool = 1.0 / image->lambda;
-		tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+ool);
-		phi = atan2(yl, xl);
-		pa = pow(sin(phi)*sin(tt), 2.0);
-		pb = pow(cos(tt), 2.0);
-		pol = 1.0 - 2.0*(1.0-pa) + (1.0+pb);
-
-		intensity = get_intensity(refl);
-		set_intensity(refl, intensity / pol);
-	}
 }
 
 
