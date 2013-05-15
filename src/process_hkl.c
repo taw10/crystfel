@@ -201,13 +201,14 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		double intensity;
+		double refl_intensity, refl_sigma;
 		double xl, yl, zl;
 		double pol, pa, pb, phi, tt, ool;
 		signed int h, k, l;
-		int cur_redundancy;
-		double cur_intensity, cur_sumsq;
+		int model_redundancy;
 		Reflection *model_version;
+		double w;
+		double temp, delta, R, mean, M2, sumweight;
 
 		get_indices(refl, &h, &k, &l);
 
@@ -219,8 +220,11 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 			model_version = add_refl(model, h, k, l);
 		}
 
-		intensity = scale * get_intensity(refl);
+		refl_intensity = scale * get_intensity(refl);
+		refl_sigma = scale * get_esd_intensity(refl);
+		w = pow(refl_sigma, -2.0);
 
+		/* FIXME: Should go before determining the scaling factor */
 		if ( !config_nopolar ) {
 
 			/* Polarisation correction assuming 100% polarisation
@@ -235,23 +239,28 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 			pa = pow(sin(phi)*sin(tt), 2.0);
 			pb = pow(cos(tt), 2.0);
 			pol = 1.0 - 2.0*(1.0-pa) + (1.0+pb);
-			intensity /= pol;
+			refl_intensity /= pol;
 
 		}
 
-		cur_intensity = get_intensity(model_version);
-		set_intensity(model_version, cur_intensity + intensity);
+		mean = get_intensity(model_version);
+		sumweight = get_temp1(model_version);
+		M2 = get_temp2(model_version);
 
-		cur_redundancy = get_redundancy(model_version);
-		set_redundancy(model_version, cur_redundancy+1);
+		temp = w + sumweight;
+		delta = refl_intensity - mean;
+		R = delta * w / temp;
+		set_intensity(model_version, mean + R);
+		set_temp2(model_version, M2 + sumweight * delta * R);
+		set_temp1(model_version, temp);
 
-		cur_sumsq = get_temp1(model_version);
-		set_temp1(model_version, cur_sumsq + pow(intensity, 2.0));
+		model_redundancy = get_redundancy(model_version);
+		set_redundancy(model_version, ++model_redundancy);
 
 		if ( hist_vals != NULL ) {
 
 			if ( (h==hist_h) && (k==hist_k) && (l==hist_l) ) {
-				hist_vals[*hist_n] = intensity;
+				hist_vals[*hist_n] = refl_intensity;
 				*hist_n += 1;
 			}
 
@@ -343,7 +352,7 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		double intensity, sumsq, esd;
+		double var;
 		int red;
 
 		red = get_redundancy(refl);
@@ -352,13 +361,9 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 			continue;
 		}
 
-		intensity = get_intensity(refl) / red;
-		set_intensity(refl, intensity);
-
-		sumsq = get_temp1(refl) / red;
-		esd = sqrt(sumsq - pow(intensity, 2.0)) / sqrt(red);
-		set_esd_intensity(refl, esd);
-
+		var = get_temp2(refl) / get_temp1(refl);
+		var *= (double)red/(red-1);
+		set_esd_intensity(refl, sqrt(var)/sqrt(red));
 	}
 
 	return 0;
@@ -572,9 +577,7 @@ int main(int argc, char *argv[])
 
 			STATUS("Extra pass for scaling...\n");
 
-			reference = copy_reflist(model);
-
-			reflist_free(model);
+			reference = model;
 			model = reflist_new();
 
 			r = merge_all(st, model, reference, sym,
