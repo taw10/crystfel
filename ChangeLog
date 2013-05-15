@@ -5,11 +5,14 @@ Changes in this development version
 - The "Lorentz factor" was added to partial_sim (and partialator).
 - CCano was added as a figure of merit to compare_hkl.
 - XDS indexing was improved.
+- The calculation of sigma(I) in process_hkl was made more numerically stable.
+- The polarisation correction in process_hkl was fixed.
 
 - A compilation failure (when FFTW3 was unavailable) was fixed.
 - docs/stream-format.txt was added.
 - scripts/create-xscale was fixed.
 - Warnings were added to scripts which MUST be modified before use.
+- polarisation_correction() was added to the API.
 
 
 CrystFEL version 0.5.0, 19th April 2013

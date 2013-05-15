@@ -220,7 +220,7 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 
 		refl_intensity = scale * get_intensity(refl);
 		refl_sigma = scale * get_esd_intensity(refl);
-		w = pow(refl_sigma, -2.0);
+		w = 1.0;//pow(refl_sigma, -2.0);
 
 		mean = get_intensity(model_version);
 		sumweight = get_temp1(model_version);
