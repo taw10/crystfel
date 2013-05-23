@@ -215,6 +215,23 @@ struct intcontext
 };
 
 
+struct peak_box
+{
+	int fid_fs;   /* Coordinates of corner */
+	int fid_ss;
+
+	int pn;           /* Panel number */
+	struct panel *p;  /* The panel itself */
+
+	/* Fitted background parameters */
+	double a;
+	double b;
+	double c;
+
+	int verbose;
+};
+
+
 static void addm(gsl_matrix *m, int i, int j, double val)
 {
 	double v = gsl_matrix_get(m, i, j);
@@ -229,28 +246,68 @@ static void addv(gsl_vector *v, int i, double val)
 }
 
 
-static float boxi(struct intcontext *ic, int pn,
-                  int fid_fs, int fid_ss, int p, int q)
+static float boxi(struct intcontext *ic, struct peak_box *bx, int p, int q)
 {
 	int fs, ss;
-	int pw;
 
-	fs = fid_fs + p;
-	ss = fid_ss + q;
+	fs = bx->fid_fs + p;
+	ss = bx->fid_ss + q;
 
-	pw = ic->image->det->panels[pn].w;
+	assert(fs >= 0);
+	assert(fs < bx->p->w);
+	assert(ss >= 0);
+	assert(ss < bx->p->h);
 
-	return ic->image->dp[pn][fs + pw*ss];
+	assert(p >= 0);
+	assert(p < ic->w);
+	assert(q >= 0);
+	assert(q < ic->w);
+
+	return ic->image->dp[bx->pn][fs + bx->p->w*ss];
 }
 
 
-static void fit_bg(struct intcontext *ic, int pn,
-                   int fid_fs, int fid_ss,
-                   double *pa, double *pb, double *pc)
+static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
+{
+	int q;
+
+	printf("Pixel values                                              ");
+	printf("Box flags              ");
+	printf("Fitted background\n");
+
+	for ( q=ic->w-1; q>=0; q-- ) {
+
+		int p;
+
+		for ( p=0; p<ic->w; p++ ) {
+			printf("%5.0f ", boxi(ic, bx, p, q));
+		}
+
+		printf("    ");
+
+		for ( p=0; p<ic->w; p++ ) {
+			printf("%i ", ic->bm[p+q*ic->w]);
+		}
+
+		printf("    ");
+
+		for ( p=0; p<ic->w; p++ ) {
+			printf("%5.0f ", bx->a*p + bx->b*q + bx->c);
+		}
+
+		printf("\n");
+	}
+	printf("-----------> p\n");
+
+}
+
+
+static void fit_bg(struct intcontext *ic, struct peak_box *bx)
 {
 	int p, q;
 	gsl_vector *v;
 	gsl_vector *ans;
+	gsl_matrix *M;
 
 	v = gsl_vector_calloc(3);
 
@@ -261,7 +318,7 @@ static void fit_bg(struct intcontext *ic, int pn,
 
 		if ( ic->bm[p + ic->w*q] == BM_BG ) {
 
-			bi = boxi(ic, pn, fid_fs, fid_ss, p, q);
+			bi = boxi(ic, bx, p, q);
 
 			addv(v, 0, bi*p);
 			addv(v, 1, bi*q);
@@ -272,14 +329,25 @@ static void fit_bg(struct intcontext *ic, int pn,
 	}
 	}
 
-	ans = solve_svd(v, ic->bgm);
-	gsl_vector_free(v);
+	if ( bx->verbose ) {
+		show_matrix_eqn(ic->bgm, v, 3);
+	}
 
-	*pa = gsl_vector_get(ans, 0);
-	*pb = gsl_vector_get(ans, 1);
-	*pc = gsl_vector_get(ans, 2);
+	M = gsl_matrix_alloc(3, 3);
+	gsl_matrix_memcpy(M, ic->bgm);
+	ans = solve_svd(v, M);
+	gsl_vector_free(v);
+	gsl_matrix_free(M);
+
+	bx->a = gsl_vector_get(ans, 0);
+	bx->b = gsl_vector_get(ans, 1);
+	bx->c = gsl_vector_get(ans, 2);
 
 	gsl_vector_free(ans);
+
+	if ( bx->verbose ) {
+		show_peak_box(ic, bx);
+	}
 }
 
 
@@ -352,9 +420,7 @@ static int init_intcontext(struct intcontext *ic)
 }
 
 
-static double tentative_intensity(struct intcontext *ic, int pn,
-                                  int fid_fs, int fid_ss,
-                                  double a, double b, double c)
+static double tentative_intensity(struct intcontext *ic, struct peak_box *bx)
 {
 	int p, q;
 	double intensity = 0.0;
@@ -363,22 +429,20 @@ static double tentative_intensity(struct intcontext *ic, int pn,
 	for ( q=0; q<ic->w; q++ ) {
 
 		if ( ic->bm[p + ic->w*q] != BM_PK ) continue;
-		intensity += boxi(ic, pn, fid_fs, fid_ss, p, q);
+		intensity += boxi(ic, bx, p, q);
 
 	}
 	}
 
-	intensity -= a * ic->pks_p;
-	intensity -= b * ic->pks_q;
-	intensity -= c * ic->m;
+	intensity -= bx->a * ic->pks_p;
+	intensity -= bx->b * ic->pks_q;
+	intensity -= bx->c * ic->m;
 
 	return intensity;
 }
 
 
-static void observed_position(struct intcontext *ic, int pn,
-                              int fid_fs, int fid_ss,
-                              double a, double b, double c,
+static void observed_position(struct intcontext *ic, struct peak_box *bx,
                               double *pos_p, double *pos_q)
 {
 	int p, q;
@@ -391,7 +455,7 @@ static void observed_position(struct intcontext *ic, int pn,
 
 		int bi;
 		if ( ic->bm[p + ic->w*q] != BM_PK ) continue;
-		bi = boxi(ic, pn, fid_fs, fid_ss, p, q);
+		bi = boxi(ic, bx, p, q);
 
 		num_p += bi*p;
 		num_q += bi*q;
@@ -400,31 +464,12 @@ static void observed_position(struct intcontext *ic, int pn,
 	}
 	}
 
-	num_p += -a*ic->pks_p2 - b*ic->pks_pq - c*ic->pks_p;
-	num_q += -a*ic->pks_q2 - b*ic->pks_pq - c*ic->pks_q;
-	den += -a*ic->pks_p - b*ic->pks_q - c;
+	num_p += -bx->a*ic->pks_p2 - bx->b*ic->pks_pq - bx->c*ic->pks_p;
+	num_q += -bx->a*ic->pks_q2 - bx->b*ic->pks_pq - bx->c*ic->pks_q;
+	den += -bx->a*ic->pks_p - bx->b*ic->pks_q - bx->c;
 
 	*pos_p = num_p / den;
 	*pos_q = num_q / den;
-}
-
-
-static void show_peak_box(struct intcontext *ic, int pn, int fid_fs, int fid_ss)
-{
-	int p, q;
-
-	for ( q=ic->w-1; q>0; q-- ) {
-		for ( p=0; p<ic->w; p++ ) {
-			float bi;
-			bi = boxi(ic, pn, fid_fs, fid_ss, p, q);
-
-			printf("%5.0f ", bi);
-
-		}
-		printf("\n");
-	}
-	printf("-----------> p\n");
-
 }
 
 
@@ -446,44 +491,48 @@ static void measure_all_intensities(RefList *list, struct image *image)
 	      refl = next_refl(refl, iter) )
 	{
 		double pfs, pss;
-		int fid_fs, fid_ss;
-		double a, b, c;
 		double intensity;
-		int pn;
 		int pw, ph;
 		double pos_p, pos_q;
 		signed int h, k, l;
+		struct peak_box bx;
 
-		get_detector_pos(refl, &pfs, &pss);
-		fid_fs = lrint(pfs);
-		fid_ss = lrint(pss);
-		pn = find_panel_number(image->det, fid_fs, fid_ss);
-
-		fid_fs -= image->det->panels[pn].min_fs;
-		fid_ss -= image->det->panels[pn].min_ss;
-
-		fid_fs -= ic.halfw;
-		fid_ss -= ic.halfw;
-
-		pw = ic.image->det->panels[pn].w;
-		ph = ic.image->det->panels[pn].h;
-		if ( (fid_fs + ic.w >= pw) || (fid_ss + ic.w >= ph ) ) {
-			continue;
-		}
-
-		fit_bg(&ic, pn, fid_fs, fid_ss, &a, &b, &c);
+		bx.verbose = 0;
 
 		get_indices(refl, &h, &k, &l);
 		if ( (h==-24) && (k==6) && (l==-12) ) {
-			show_peak_box(&ic, pn, fid_fs, fid_ss);
+			bx.verbose = 1;
 		}
 
-		observed_position(&ic, pn, fid_fs, fid_ss, a, b, c,
-		                  &pos_p, &pos_q);
-		//STATUS("%f %f\n", pos_p, pos_q);
+		get_detector_pos(refl, &pfs, &pss);
+		bx.fid_fs = lrint(pfs);
+		bx.fid_ss = lrint(pss);
+		bx.pn = find_panel_number(image->det, bx.fid_fs, bx.fid_ss);
+		bx.p = &image->det->panels[bx.pn];
 
-		intensity = tentative_intensity(&ic, pn, fid_fs, fid_ss,
-		                                a, b, c);
+		bx.fid_fs -= bx.p->min_fs;
+		bx.fid_ss -= bx.p->min_ss;
+
+		bx.fid_fs -= ic.halfw;
+		bx.fid_ss -= ic.halfw;
+
+		pw = bx.p->w;
+		ph = bx.p->h;
+		if ( (bx.fid_fs + ic.w >= pw) || (bx.fid_ss + ic.w >= ph ) ) {
+			continue;
+		}
+		if ( (bx.fid_fs < 0) || (bx.fid_ss < 0 ) ) {
+			continue;
+		}
+
+		fit_bg(&ic, &bx);
+
+		observed_position(&ic, &bx, &pos_p, &pos_q);
+		if ( bx.verbose ) {
+			STATUS("%f %f\n", pos_p, pos_q);
+		}
+
+		intensity = tentative_intensity(&ic, &bx);
 		set_intensity(refl, intensity);
 	}
 }
