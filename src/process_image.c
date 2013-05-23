@@ -109,32 +109,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		return;
 	}
 
-	if ( (image.width != image.det->max_fs + 1 )
-	  || (image.height != image.det->max_ss + 1))
-	{
-		ERROR("Image size doesn't match geometry size"
-			" - rejecting image.\n");
-		ERROR("Image size: %i,%i.  Geometry size: %i,%i\n",
-		      image.width, image.height,
-		      image.det->max_fs + 1, image.det->max_ss + 1);
-		hdfile_close(hdfile);
-		return;
-	}
-
-	fill_in_values(image.det, hdfile);
-	fill_in_beam_parameters(image.beam, hdfile);
-
-	image.lambda = ph_en_to_lambda(eV_to_J(image.beam->photon_energy));
-
-	if ( (image.beam->photon_energy < 0.0) || (image.lambda > 1000) ) {
-		/* Error message covers a silly value in the beam file or in
-		 * the HDF5 file. */
-		ERROR("Nonsensical wavelength (%e m or %e eV) value for %s.\n",
-		      image.lambda, image.beam->photon_energy, image.filename);
-		hdfile_close(hdfile);
-		return;
-	}
-
 	/* Take snapshot of image after CM subtraction but before applying
 	 * horrible noise filters to it */
 	data_size = image.width * image.height * sizeof(float);

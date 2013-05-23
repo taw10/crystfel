@@ -75,6 +75,9 @@ struct panel
 	double yfs;
 	double xss;
 	double yss;
+
+	int w;  /* Width, calculated as max_fs-min_fs+1 */
+	int h;  /* Height, calculated as max_ss-min_ss+1 */
 };
 
 

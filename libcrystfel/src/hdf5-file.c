@@ -501,6 +501,73 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 }
 
 
+static int unpack_panels(struct image *image, struct detector *det)
+{
+	int pi;
+
+	image->dp = malloc(det->n_panels * sizeof(float *));
+	image->bad = malloc(det->n_panels * sizeof(int *));
+	if ( (image->dp == NULL) || (image->bad == NULL) ) {
+		ERROR("Failed to allocate panels.\n");
+		return 1;
+	}
+
+	for ( pi=0; pi<det->n_panels; pi++ ) {
+
+		struct panel *p;
+		int fs, ss;
+
+		p = &det->panels[pi];
+		image->dp[pi] = malloc(p->w*p->h*sizeof(float));
+		image->bad[pi] = calloc(p->w*p->h, sizeof(int));
+		if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL) ) {
+			ERROR("Failed to allocate panel\n");
+			return 1;
+		}
+
+		for ( fs=0; fs<p->w; fs++ ) {
+		for ( ss=0; ss<p->h; ss++ ) {
+
+			int idx;
+			int cfs, css;
+			int bad = 0;
+
+			cfs = fs+p->min_fs;
+			css = ss+p->min_ss;
+			idx = cfs + css*image->width;
+
+			image->dp[pi][fs+p->w*ss] = image->data[idx];
+
+			if ( in_bad_region(det, cfs, css) ) {
+				bad = 1;
+			}
+
+			if ( image->flags != NULL ) {
+
+				int flags;
+
+				flags = image->flags[idx];
+
+				/* Bad if it's missing any of the "good" bits */
+				if ( !((flags & image->det->mask_good)
+			                   == image->det->mask_good) ) bad = 1;
+
+				/* Bad if it has any of the "bad" bits. */
+				if ( flags & image->det->mask_bad ) bad = 1;
+
+			}
+
+			image->bad[pi][fs+p->w*ss] = bad;
+
+		}
+		}
+
+	}
+
+	return 0;
+}
+
+
 int hdf5_read(struct hdfile *f, struct image *image, int satcorr)
 {
 	herr_t r;
@@ -550,6 +617,32 @@ int hdf5_read(struct hdfile *f, struct image *image, int satcorr)
 	image->lambda = get_wavelength(f);
 
 	if ( satcorr ) debodge_saturation(f, image);
+
+	if ( (image->width != image->det->max_fs + 1 )
+	  || (image->height != image->det->max_ss + 1))
+	{
+		ERROR("Image size doesn't match geometry size"
+			" - rejecting image.\n");
+		ERROR("Image size: %i,%i.  Geometry size: %i,%i\n",
+		      image->width, image->height,
+		      image->det->max_fs + 1, image->det->max_ss + 1);
+		return 1;
+	}
+
+	fill_in_values(image->det, f);
+	fill_in_beam_parameters(image->beam, f);
+	image->lambda = ph_en_to_lambda(eV_to_J(image->beam->photon_energy));
+
+	if ( (image->beam->photon_energy < 0.0) || (image->lambda > 1000) ) {
+		/* Error message covers a silly value in the beam file or in
+		 * the HDF5 file. */
+		ERROR("Nonsensical wavelength (%e m or %e eV) value for %s.\n",
+		      image->lambda, image->beam->photon_energy,
+		      image->filename);
+		return 1;
+	}
+
+	unpack_panels(image, image->det);
 
 	return 0;
 }

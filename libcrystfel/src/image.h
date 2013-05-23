@@ -124,9 +124,13 @@ struct image;
 
 struct image {
 
+	/* The following three fields will be going away in the future */
 	float                   *data;
 	uint16_t                *flags;
 	double                  *twotheta;
+
+	float                   **dp;    /* Data in panel */
+	int                     **bad;   /* Bad pixels by panel */
 
 	Crystal                 **crystals;
 	int                     n_crystals;

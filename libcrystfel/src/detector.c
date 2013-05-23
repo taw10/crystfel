@@ -1003,7 +1003,11 @@ out:
 		p->xss = -p->fsy / d;
 		p->yss = p->fsx / d;
 
+		p->w = p->max_fs - p->min_fs + 1;
+		p->h = p->max_ss - p->min_ss + 1;
+
 	}
+
 
 	find_min_max_d(det);
 
@@ -1128,6 +1132,9 @@ struct detector *simple_geometry(const struct image *image)
 	geom->panels[0].xss = 0;
 	geom->panels[0].yfs = 0;
 	geom->panels[0].yss = 1;
+
+	geom->panels[0].w = image->width;
+	geom->panels[0].h = image->height;
 
 	find_min_max_d(geom);
 
