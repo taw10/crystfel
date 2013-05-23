@@ -34,6 +34,9 @@
 #endif
 
 
+#include "integration.h"
+
+
 enum {
 	PEAK_ZAEF,
 	PEAK_HDF5,
@@ -49,7 +52,6 @@ struct index_args
 	int median_filter;
 	int satcorr;
 	int closer;
-	int bgsub;
 	float threshold;
 	float min_gradient;
 	float min_snr;
@@ -69,10 +71,9 @@ struct index_args
 	int integrate_saturated;
 	int use_saturated;
 	int no_revalidate;
-	int integrate_found;
 	int stream_peaks;
 	int stream_refls;
-	int res_cutoff;
+	IntegrationMethod int_meth;
 };
 
 

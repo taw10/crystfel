@@ -66,6 +66,7 @@
 #include "stream.h"
 #include "reflist-utils.h"
 #include "cell-utils.h"
+#include "integration.h"
 
 #include "im-sandbox.h"
 
@@ -100,6 +101,7 @@ static void show_help(const char *s)
 "                           hdf5  : Get from a table in HDF5 file.\n"
 "     --hdf5-peaks=<p>     Find peaks table in HDF5 file here.\n"
 "                           Default: /processing/hitfinder/peakinfo\n"
+"     --integration=<meth> Perform final pattern integration using <meth>.\n"
 "\n\n"
 "For more control over the process, you might need:\n\n"
 "    --tolerance=<tol>   Set the tolerances for cell comparison.\n"
@@ -139,17 +141,12 @@ static void show_help(const char *s)
 "     --no-check-prefix    Don't attempt to correct the --prefix.\n"
 "     --closer-peak        Don't integrate from the location of a nearby peak\n"
 "                           instead of the predicted spot.  Don't use.\n"
-"     --no-bg-sub          Don't subtract local background estimates from\n"
-"                           integrated intensities.\n"
 "     --use-saturated      During the initial peak search, don't reject\n"
 "                           peaks which contain pixels above max_adu.\n"
 "     --integrate-saturated During the final integration stage, don't reject\n"
 "                           peaks which contain pixels above max_adu.\n"
 "     --no-revalidate      Don't re-integrate and check HDF5 peaks for\n"
 "                           validity.\n"
-"     --integrate-found    Skip the spot prediction step, and just integrate\n"
-"                           the intensities of the spots found by the initial\n"
-"                           peak search.\n"
 "     --no-peaks-in-stream Do not record peak search results in the stream.\n"
 "     --no-refls-in-stream Do not record integrated reflections in the stream.\n"
 );
@@ -179,6 +176,7 @@ int main(int argc, char *argv[])
 	char *use_this_one_instead;
 	struct index_args iargs;
 	char *intrad = NULL;
+	char *int_str = NULL;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -186,7 +184,6 @@ int main(int argc, char *argv[])
 	iargs.median_filter = 0;
 	iargs.satcorr = 1;
 	iargs.closer = 0;
-	iargs.bgsub = 1;
 	iargs.tols[0] = 5.0;
 	iargs.tols[1] = 5.0;
 	iargs.tols[2] = 5.0;
@@ -207,10 +204,8 @@ int main(int argc, char *argv[])
 	iargs.use_saturated = 0;
 	iargs.integrate_saturated = 0;
 	iargs.no_revalidate = 0;
-	iargs.integrate_found = 0;
 	iargs.stream_peaks = 1;
 	iargs.stream_refls = 1;
-	iargs.res_cutoff = 0;
 	iargs.copyme = new_copy_hdf5_field_list();
 	if ( iargs.copyme == NULL ) {
 		ERROR("Couldn't allocate HDF5 field list.\n");
@@ -218,6 +213,7 @@ int main(int argc, char *argv[])
 	}
 	iargs.indm = NULL;  /* No default */
 	iargs.ipriv = NULL;  /* No default */
+	iargs.int_meth = integration_method("rings", NULL);
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -242,15 +238,11 @@ int main(int argc, char *argv[])
 		{"no-closer-peak",     0, &iargs.closer,             0},
 		{"closer-peak",        0, &iargs.closer,             1},
 		{"basename",           0, &config_basename,          1},
-		{"bg-sub",             0, &iargs.bgsub,              1},
-		{"no-bg-sub",          0, &iargs.bgsub,              0},
 		{"no-peaks-in-stream", 0, &iargs.stream_peaks,       0},
 		{"no-refls-in-stream", 0, &iargs.stream_refls,       0},
-		{"res-cutoff",         0, &iargs.res_cutoff,         1},
 		{"integrate-saturated",0, &iargs.integrate_saturated,1},
 		{"use-saturated",      0, &iargs.use_saturated,      1},
 		{"no-revalidate",      0, &iargs.no_revalidate,      1},
-		{"integrate-found",    0, &iargs.integrate_found,    1},
 
 		/* Long-only options with arguments */
 		{"peaks",              1, NULL,                2},
@@ -267,6 +259,7 @@ int main(int argc, char *argv[])
 		{"tolerance",          1, NULL,               13},
 		{"int-radius",         1, NULL,               14},
 		{"median-filter",      1, NULL,               15},
+		{"integration",        1, NULL,               16},
 
 		{0, 0, NULL, 0}
 	};
@@ -391,6 +384,10 @@ int main(int argc, char *argv[])
 			iargs.median_filter = atoi(optarg);
 			break;
 
+			case 16 :
+			int_str = strdup(optarg);
+			break;
+
 			case 0 :
 			break;
 
@@ -463,6 +460,18 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 		free(indm_str);
+	}
+
+	if ( int_str != NULL ) {
+
+		int err;
+
+		iargs.int_meth = integration_method(int_str, &err);
+		if ( err ) {
+			ERROR("Invalid integration method '%s'\n", int_str);
+			return 1;
+		}
+		free(int_str);
 	}
 
 	if ( toler != NULL ) {

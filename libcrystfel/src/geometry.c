@@ -135,11 +135,13 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	double cet, cez;
 	double pr;
 	double L;
+	double del;
 
 	/* Don't predict 000 */
 	if ( abs(h)+abs(k)+abs(l) == 0 ) return NULL;
 
 	pr = crystal_get_profile_radius(cryst);
+	del = image->div + crystal_get_mosaicity(cryst);
 
 	/* "low" gives the largest Ewald sphere (wavelength short => k large)
 	 * "high" gives the smallest Ewald sphere (wavelength long => k small)
@@ -152,12 +154,12 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 
 	tl = sqrt(xl*xl + yl*yl);
 
-	cet = -sin(image->div/2.0) * khigh;
-	cez = -cos(image->div/2.0) * khigh;
+	cet = -sin(del/2.0) * khigh;
+	cez = -cos(del/2.0) * khigh;
 	rhigh = khigh - distance(cet, cez, tl, zl);  /* Loss of precision */
 
-	cet =  sin(image->div/2.0) * klow;
-	cez = -cos(image->div/2.0) * klow;
+	cet =  sin(del/2.0) * klow;
+	cez = -cos(del/2.0) * klow;
 	rlow = klow - distance(cet, cez, tl, zl);  /* Loss of precision */
 
 	if ( (signbit(rlow) == signbit(rhigh))
@@ -168,7 +170,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 		ERROR("Reflection with rlow < rhigh!\n");
 		ERROR("%3i %3i %3i  rlow = %e, rhigh = %e\n",
 		      h, k, l, rlow, rhigh);
-		ERROR("div = %e\n", image->div);
+		ERROR("div + m = %e\n", del);
 		return NULL;
 	}
 

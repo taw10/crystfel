@@ -52,6 +52,7 @@
 #include "reflist-utils.h"
 #include "beam-parameters.h"
 #include "cell-utils.h"
+#include "geometry.h"
 
 
 /* Degree of polarisation of X-ray beam */
@@ -200,7 +201,7 @@ static void add_crystal_to_mask(struct image *image, struct panel *p,
 
 
 /* cfs, css relative to panel origin */
-static int *make_BgMask(struct image *image, struct panel *p, double ir_inn)
+int *make_BgMask(struct image *image, struct panel *p, double ir_inn)
 {
 	int *mask;
 	int w, h;
@@ -224,11 +225,11 @@ static int *make_BgMask(struct image *image, struct panel *p, double ir_inn)
 
 /* Returns non-zero if peak has been vetoed.
  * i.e. don't use result if return value is not zero. */
-static int integrate_peak(struct image *image, int cfs, int css,
-                          double *pfs, double *pss,
-                          double *intensity, double *sigma,
-                          double ir_inn, double ir_mid, double ir_out,
-                          int *bgPkMask, int *saturated)
+int integrate_peak(struct image *image, int cfs, int css,
+                   double *pfs, double *pss,
+                   double *intensity, double *sigma,
+                   double ir_inn, double ir_mid, double ir_out,
+                   int *bgPkMask, int *saturated)
 {
 	signed int dfs, dss;
 	double lim_sq, out_lim_sq, mid_lim_sq;
@@ -650,233 +651,6 @@ int peak_sanity_check(struct image *image, Crystal **crystals, int n_cryst)
 
 	/* 0 means failed test, 1 means passed test */
 	return ((double)n_sane / n_feat) >= 0.5;
-}
-
-
-struct integr_ind
-{
-	double res;
-	Reflection *refl;
-};
-
-
-static int compare_resolution(const void *av, const void *bv)
-{
-	const struct integr_ind *a = av;
-	const struct integr_ind *b = bv;
-
-	return a->res > b->res;
-}
-
-
-static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
-                                           int *np)
-{
-	struct integr_ind *il;
-	Reflection *refl;
-	RefListIterator *iter;
-	int i, n;
-
-	n = num_reflections(list);
-	*np = 0;  /* For now */
-
-	if ( n == 0 ) return NULL;
-
-	il = calloc(n, sizeof(struct integr_ind));
-	if ( il == NULL ) return NULL;
-
-	i = 0;
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		signed int h, k, l;
-		double res;
-
-		get_indices(refl, &h, &k, &l);
-		res = resolution(cell, h, k, l);
-
-		il[i].res = res;
-		il[i].refl = refl;
-
-		i++;
-		assert(i <= n);
-	}
-
-	qsort(il, n, sizeof(struct integr_ind), compare_resolution);
-
-	*np = n;
-	return il;
-}
-
-
-static void integrate_crystal(Crystal *cr, struct image *image, int use_closer,
-                              int bgsub, double min_snr,
-                              double ir_inn, double ir_mid, double ir_out,
-                              int integrate_saturated, int **bgMasks,
-                              int res_cutoff)
-{
-	RefList *reflections;
-	struct integr_ind *il;
-	int n, i;
-	double av = 0.0;
-	int first = 1;
-	int n_saturated = 0;
-
-	reflections = crystal_get_reflections(cr);
-
-	if ( num_reflections(reflections) == 0 ) return;
-
-	il = sort_reflections(reflections, crystal_get_cell(cr), &n);
-	if ( il == NULL ) {
-		ERROR("Couldn't sort reflections\n");
-		return;
-	}
-
-	for ( i=0; i<n; i++ ) {
-
-		double fs, ss, intensity;
-		double d;
-		int idx;
-		double sigma, snr;
-		double pfs, pss;
-		int r;
-		Reflection *refl;
-		signed int h, k, l;
-		struct panel *p;
-		int pnum, j, found;
-		int saturated;
-
-		refl = il[i].refl;
-
-		get_detector_pos(refl, &pfs, &pss);
-		get_indices(refl, &h, &k, &l);
-
-		/* Is there a really close feature which was detected? */
-		if ( use_closer ) {
-
-			struct imagefeature *f;
-
-			if ( image->features != NULL ) {
-				f = image_feature_closest(image->features,
-					                  pfs, pss, &d, &idx);
-			} else {
-				f = NULL;
-			}
-
-			/* FIXME: Horrible hardcoded value */
-			if ( (f != NULL) && (d < 10.0) ) {
-
-				double exe;
-
-				exe = get_excitation_error(refl);
-
-				pfs = f->fs;
-				pss = f->ss;
-
-				set_detector_pos(refl, exe, pfs, pss);
-
-			}
-
-		}
-
-		p = find_panel(image->det, pfs, pss);
-		if ( p == NULL ) continue;  /* Next peak */
-		found = 0;
-		for ( j=0; j<image->det->n_panels; j++ ) {
-			if ( &image->det->panels[j] == p ) {
-				pnum = j;
-				found = 1;
-				break;
-			}
-		}
-		if ( !found ) {
-			ERROR("Couldn't find panel %p in list.\n", p);
-			return;
-		}
-
-		r = integrate_peak(image, pfs, pss, &fs, &ss,
-		                   &intensity, &sigma, ir_inn, ir_mid, ir_out,
-		                   bgMasks[pnum], &saturated);
-
-		if ( !r && saturated ) {
-			n_saturated++;
-			if ( !integrate_saturated ) r = 1;
-		}
-
-		/* I/sigma(I) cutoff
-		 * Rejects reflections below --min-integration-snr, or if the
-		 * SNR is clearly silly.  Silly indicates that the intensity
-		 * was zero. */
-		snr = fabs(intensity)/sigma;
-		if ( isnan(snr) || (snr < min_snr) ) {
-			r = 1;
-		}
-
-		/* Record intensity and set redundancy to 1 on success */
-		if ( r == 0 ) {
-			set_intensity(refl, intensity);
-			set_esd_intensity(refl, sigma);
-			set_redundancy(refl, 1);
-		} else {
-			set_redundancy(refl, 0);
-		}
-
-		if ( snr > 1.0 ) {
-			if ( first ) {
-				av = snr;
-				first = 0;
-			} else {
-				av = av + 0.1*(snr - av);
-			}
-			//STATUS("%5.2f A, %5.2f, av %5.2f\n",
-			//       1e10/il[i].res, snr, av);
-			if ( res_cutoff && (av < 1.0) ) break;
-		}
-	}
-
-	crystal_set_num_saturated_reflections(cr, n_saturated);
-	crystal_set_resolution_limit(cr, 0.0);
-
-	free(il);
-}
-
-
-/* Integrate the list of predicted reflections in "image" */
-void integrate_reflections(struct image *image, int use_closer, int bgsub,
-                           double min_snr,
-                           double ir_inn, double ir_mid, double ir_out,
-                           int integrate_saturated, int res_cutoff)
-{
-	int i;
-	int **bgMasks;
-
-	/* Make background masks for all panels */
-	bgMasks = calloc(image->det->n_panels, sizeof(int *));
-	if ( bgMasks == NULL ) {
-		ERROR("Couldn't create list of background masks.\n");
-		return;
-	}
-	for ( i=0; i<image->det->n_panels; i++ ) {
-		int *mask;
-		mask = make_BgMask(image, &image->det->panels[i], ir_inn);
-		if ( mask == NULL ) {
-			ERROR("Couldn't create background mask.\n");
-			return;
-		}
-		bgMasks[i] = mask;
-	}
-
-	for ( i=0; i<image->n_crystals; i++ ) {
-		integrate_crystal(image->crystals[i], image, use_closer,
-		                  bgsub, min_snr, ir_inn, ir_mid, ir_out,
-		                  integrate_saturated, bgMasks, res_cutoff);
-	}
-
-	for ( i=0; i<image->det->n_panels; i++ ) {
-		free(bgMasks[i]);
-	}
-	free(bgMasks);
 }
 
 

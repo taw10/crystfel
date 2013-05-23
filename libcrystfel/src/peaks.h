@@ -37,15 +37,12 @@
 
 #include "reflist.h"
 
+extern int *make_BgMask(struct image *image, struct panel *p, double ir_inn);
+
 extern void search_peaks(struct image *image, float threshold,
                          float min_gradient, float min_snr,
                          double ir_inn, double ir_mid, double ir_out,
                          int use_saturated);
-
-extern void integrate_reflections(struct image *image,
-                                  int use_closer, int bgsub, double min_snr,
-                                  double ir_inn, double ir_mid, double ir_out,
-                                  int integrate_saturated, int res_cutoff);
 
 extern int peak_sanity_check(struct image *image, Crystal **crystals,
                              int n_cryst);
@@ -53,5 +50,11 @@ extern int peak_sanity_check(struct image *image, Crystal **crystals,
 extern void validate_peaks(struct image *image, double min_snr,
                            int ir_inn, int ir_mid, int ir_out,
                            int use_saturated);
+
+extern int integrate_peak(struct image *image, int cfs, int css,
+                          double *pfs, double *pss,
+                          double *intensity, double *sigma,
+                          double ir_inn, double ir_mid, double ir_out,
+                          int *bgPkMask, int *saturated);
 
 #endif	/* PEAKS_H */

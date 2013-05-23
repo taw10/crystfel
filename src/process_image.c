@@ -46,6 +46,7 @@
 #include "stream.h"
 #include "reflist-utils.h"
 #include "process_image.h"
+#include "integration.h"
 
 
 void process_image(const struct index_args *iargs, struct pattern_args *pargs,
@@ -188,34 +189,21 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	/* Integrate each crystal's diffraction spots */
 	for ( i=0; i<image.n_crystals; i++ ) {
 
-		RefList *reflections;
-
 		/* Set default crystal parameter(s) */
 		crystal_set_profile_radius(image.crystals[i],
 		                           image.beam->profile_radius);
-
-		if ( iargs->integrate_found ) {
-			reflections = select_intersections(&image,
-			                                   image.crystals[i]);
-		} else {
-			reflections = find_intersections(&image,
-			                                 image.crystals[i]);
-		}
-
-		crystal_set_reflections(image.crystals[i], reflections);
+		crystal_set_mosaicity(image.crystals[i], 2e-3);  /* radians */
+		crystal_set_image(image.crystals[i], &image);
 
 	}
 
 	/* Integrate all the crystals at once - need all the crystals so that
 	 * overlaps can be detected. */
-	integrate_reflections(&image, iargs->closer,
-	                              iargs->bgsub,
-	                              iargs->min_int_snr,
-	                              iargs->ir_inn,
-	                              iargs->ir_mid,
-	                              iargs->ir_out,
-	                              iargs->integrate_saturated,
-	                              iargs->res_cutoff);
+	integrate_all(&image, iargs->int_meth,
+	                      iargs->closer,
+	                      iargs->min_int_snr,
+	                      iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
+	                      iargs->integrate_saturated);
 
 	write_chunk(st, &image, hdfile,
 	            iargs->stream_peaks, iargs->stream_refls);
