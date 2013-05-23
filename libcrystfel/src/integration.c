@@ -189,12 +189,29 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
 }
 
 
+enum boxmask_val
+{
+	BM_IG,
+	BM_BG,
+	BM_PK
+};
+
+
 struct intcontext
 {
 	int halfw;
 	int w;
+	enum boxmask_val *bm;  /* Box mask */
 	struct image *image;
-	gsl_matrix *bgm;
+	gsl_matrix *bgm;  /* Background estimation matrix */
+
+	/* Peak region sums */
+	double pks_p2;
+	double pks_q2;
+	double pks_pq;
+	double pks_p;
+	double pks_q;
+	int m;
 };
 
 
@@ -212,20 +229,22 @@ static void addv(gsl_vector *v, int i, double val)
 }
 
 
-static double boxi(struct intcontext *ic,
-                   int fid_fs, int fid_ss, int p, int q)
+static float boxi(struct intcontext *ic, int pn,
+                  int fid_fs, int fid_ss, int p, int q)
 {
 	int fs, ss;
+	int pw;
 
 	fs = fid_fs + p;
 	ss = fid_ss + q;
 
-	/* FIXME: Wrong panel? */
-	return ic->image->data[fs + ic->image->width*ss];
+	pw = ic->image->det->panels[pn].w;
+
+	return ic->image->dp[pn][fs + pw*ss];
 }
 
 
-static void fit_bg(struct intcontext *ic,
+static void fit_bg(struct intcontext *ic, int pn,
                    int fid_fs, int fid_ss,
                    double *pa, double *pb, double *pc)
 {
@@ -237,12 +256,19 @@ static void fit_bg(struct intcontext *ic,
 
 	for ( p=0; p<ic->w; p++ ) {
 	for ( q=0; q<ic->w; q++ ) {
-		double bi;
-		bi = boxi(ic, fid_fs, fid_ss, p, q);
 
-		addv(v, 0, bi*p);
-		addv(v, 1, bi*q);
-		addv(v, 2, bi);
+		double bi;
+
+		if ( ic->bm[p + ic->w*q] == BM_BG ) {
+
+			bi = boxi(ic, pn, fid_fs, fid_ss, p, q);
+
+			addv(v, 0, bi*p);
+			addv(v, 1, bi*q);
+			addv(v, 2, bi);
+
+		}
+
 	}
 	}
 
@@ -257,31 +283,148 @@ static void fit_bg(struct intcontext *ic,
 }
 
 
-static void init_intcontext(struct intcontext *ic)
+static int init_intcontext(struct intcontext *ic)
 {
 	int p, q;
 
 	ic->w = 2*ic->halfw + 1;
 
+	ic->bm = malloc(ic->w * ic->w * sizeof(enum boxmask_val));
+	if ( ic->bm == NULL ) {
+		ERROR("Failed to allocate box mask.\n");
+		return 1;
+	}
+
 	ic->bgm = gsl_matrix_calloc(3, 3);
 	if ( ic->bgm == NULL ) {
 		ERROR("Failed to initialise matrix.\n");
-		return;
+		return 1;
 	}
+
+	ic->pks_p2 = 0.0;
+	ic->pks_q2 = 0.0;
+	ic->pks_pq = 0.0;
+	ic->pks_p = 0.0;
+	ic->pks_q = 0.0;
+	ic->m = 0;
 
 	for ( p=0; p<ic->w; p++ ) {
 	for ( q=0; q<ic->w; q++ ) {
-		addm(ic->bgm, 0, 0, p*p);
-		addm(ic->bgm, 0, 1, p*q);
-		addm(ic->bgm, 0, 2, p);
-		addm(ic->bgm, 1, 0, p*q);
-		addm(ic->bgm, 1, 1, q*q);
-		addm(ic->bgm, 1, 2, q);
-		addm(ic->bgm, 2, 0, p);
-		addm(ic->bgm, 2, 1, q);
-		addm(ic->bgm, 2, 2, 1);
+
+		if ( (p==0) || (q==0) || (p==ic->w-1) || (q==ic->w-1) ) {
+			ic->bm[p + ic->w*q] = BM_BG;
+		} else {
+			ic->bm[p + ic->w*q] = BM_PK;
+		}
+
+		switch ( ic->bm[p + ic->w*q] ) {
+
+			case BM_IG :
+			break;
+
+			case BM_BG :
+			addm(ic->bgm, 0, 0, p*p);
+			addm(ic->bgm, 0, 1, p*q);
+			addm(ic->bgm, 0, 2, p);
+			addm(ic->bgm, 1, 0, p*q);
+			addm(ic->bgm, 1, 1, q*q);
+			addm(ic->bgm, 1, 2, q);
+			addm(ic->bgm, 2, 0, p);
+			addm(ic->bgm, 2, 1, q);
+			addm(ic->bgm, 2, 2, 1);
+			break;
+
+			case BM_PK :
+			ic->pks_p2 += p*p;
+			ic->pks_q2 += q*q;
+			ic->pks_pq += p*q;
+			ic->pks_p += p;
+			ic->pks_q += q;
+			ic->m++;
+			break;
+
+		}
+
 	}
 	}
+
+	return 0;
+}
+
+
+static double tentative_intensity(struct intcontext *ic, int pn,
+                                  int fid_fs, int fid_ss,
+                                  double a, double b, double c)
+{
+	int p, q;
+	double intensity = 0.0;
+
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+
+		if ( ic->bm[p + ic->w*q] != BM_PK ) continue;
+		intensity += boxi(ic, pn, fid_fs, fid_ss, p, q);
+
+	}
+	}
+
+	intensity -= a * ic->pks_p;
+	intensity -= b * ic->pks_q;
+	intensity -= c * ic->m;
+
+	return intensity;
+}
+
+
+static void observed_position(struct intcontext *ic, int pn,
+                              int fid_fs, int fid_ss,
+                              double a, double b, double c,
+                              double *pos_p, double *pos_q)
+{
+	int p, q;
+	double num_p = 0.0;
+	double num_q = 0.0;
+	double den = 0.0;
+
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+
+		int bi;
+		if ( ic->bm[p + ic->w*q] != BM_PK ) continue;
+		bi = boxi(ic, pn, fid_fs, fid_ss, p, q);
+
+		num_p += bi*p;
+		num_q += bi*q;
+		den += bi;
+
+	}
+	}
+
+	num_p += -a*ic->pks_p2 - b*ic->pks_pq - c*ic->pks_p;
+	num_q += -a*ic->pks_q2 - b*ic->pks_pq - c*ic->pks_q;
+	den += -a*ic->pks_p - b*ic->pks_q - c;
+
+	*pos_p = num_p / den;
+	*pos_q = num_q / den;
+}
+
+
+static void show_peak_box(struct intcontext *ic, int pn, int fid_fs, int fid_ss)
+{
+	int p, q;
+
+	for ( q=ic->w-1; q>0; q-- ) {
+		for ( p=0; p<ic->w; p++ ) {
+			float bi;
+			bi = boxi(ic, pn, fid_fs, fid_ss, p, q);
+
+			printf("%5.0f ", bi);
+
+		}
+		printf("\n");
+	}
+	printf("-----------> p\n");
+
 }
 
 
@@ -293,22 +436,55 @@ static void measure_all_intensities(RefList *list, struct image *image)
 
 	ic.halfw = 4;
 	ic.image = image;
-	init_intcontext(&ic);
+	if ( init_intcontext(&ic) ) {
+		ERROR("Failed to initialise integration.\n");
+		return;
+	}
 
 	for ( refl = first_refl(list, &iter);
-		      refl != NULL;
-		      refl = next_refl(refl, iter) )
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
 	{
 		double pfs, pss;
 		int fid_fs, fid_ss;
 		double a, b, c;
+		double intensity;
+		int pn;
+		int pw, ph;
+		double pos_p, pos_q;
+		signed int h, k, l;
 
 		get_detector_pos(refl, &pfs, &pss);
 		fid_fs = lrint(pfs);
 		fid_ss = lrint(pss);
-		fit_bg(&ic, fid_fs, fid_ss, &a, &b, &c);
+		pn = find_panel_number(image->det, fid_fs, fid_ss);
 
-		//set_intensity(refl, intensity);
+		fid_fs -= image->det->panels[pn].min_fs;
+		fid_ss -= image->det->panels[pn].min_ss;
+
+		fid_fs -= ic.halfw;
+		fid_ss -= ic.halfw;
+
+		pw = ic.image->det->panels[pn].w;
+		ph = ic.image->det->panels[pn].h;
+		if ( (fid_fs + ic.w >= pw) || (fid_ss + ic.w >= ph ) ) {
+			continue;
+		}
+
+		fit_bg(&ic, pn, fid_fs, fid_ss, &a, &b, &c);
+
+		get_indices(refl, &h, &k, &l);
+		if ( (h==-24) && (k==6) && (l==-12) ) {
+			show_peak_box(&ic, pn, fid_fs, fid_ss);
+		}
+
+		observed_position(&ic, pn, fid_fs, fid_ss, a, b, c,
+		                  &pos_p, &pos_q);
+		//STATUS("%f %f\n", pos_p, pos_q);
+
+		intensity = tentative_intensity(&ic, pn, fid_fs, fid_ss,
+		                                a, b, c);
+		set_intensity(refl, intensity);
 	}
 }
 
