@@ -984,7 +984,7 @@ out:
 	det->max_fs = max_fs;
 	det->max_ss = max_ss;
 
-	/* Calculate matrix inverse */
+	/* Calculate matrix inverses and other stuff */
 	for ( i=0; i<det->n_panels; i++ ) {
 
 		struct panel *p;
@@ -1006,8 +1006,11 @@ out:
 		p->w = p->max_fs - p->min_fs + 1;
 		p->h = p->max_ss - p->min_ss + 1;
 
-	}
+		if ( p->rigid_group == NULL ) {
+			p->rigid_group = find_or_add_rg(det, p->name);
+		}
 
+	}
 
 	find_min_max_d(det);
 
