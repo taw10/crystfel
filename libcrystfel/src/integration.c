@@ -255,7 +255,6 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 
 		printf("\n");
 	}
-	printf("-----------> p\n");
 	printf("Reference profile number %i\n", bx->rp);
 
 }
@@ -266,19 +265,17 @@ static void show_reference_profile(struct intcontext *ic, int i)
 	int q;
 
 	printf("Reference profile number %i:\n", i);
-	printf("Pixel values\n");
 
 	for ( q=ic->w-1; q>=0; q-- ) {
 
 		int p;
 
 		for ( p=0; p<ic->w; p++ ) {
-			printf("%5.0f ", ic->reference_profiles[i][p+ic->w*q]);
+			printf("%3.0f ", ic->reference_profiles[i][p+ic->w*q]);
 		}
 
 		printf("\n");
 	}
-	printf("-----------> p\n");
 
 }
 
@@ -596,7 +593,7 @@ static void calculate_reference_profiles(struct intcontext *ic)
 		}
 		}
 
-		max /= 10000.0;
+		max /= 100.0;
 
 		for ( p=0; p<ic->w; p++ ) {
 		for ( q=0; q<ic->w; q++ ) {
@@ -609,6 +606,9 @@ static void calculate_reference_profiles(struct intcontext *ic)
 	}
 
 	show_reference_profile(ic, 2);
+	//for ( i=0; i<ic->n_reference_profiles; i++ ) {
+	//	show_reference_profile(ic, i);
+	//}
 }
 
 
