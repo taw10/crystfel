@@ -225,8 +225,10 @@ struct intcontext
 
 struct peak_box
 {
-	int fid_fs;   /* Coordinates of corner */
-	int fid_ss;
+	int cfs;   /* Coordinates of corner */
+	int css;
+
+	enum boxmask_val *bm;  /* Box mask */
 
 	int pn;           /* Panel number */
 	struct panel *p;  /* The panel itself */
@@ -240,6 +242,8 @@ struct peak_box
 	double intensity;
 
 	int rp;   /* Reference profile number */
+
+	Reflection *refl;
 
 	int verbose;
 };
@@ -263,8 +267,8 @@ static float boxi(struct intcontext *ic, struct peak_box *bx, int p, int q)
 {
 	int fs, ss;
 
-	fs = bx->fid_fs + p;
-	ss = bx->fid_ss + q;
+	fs = bx->cfs + p;
+	ss = bx->css + q;
 
 	assert(fs >= 0);
 	assert(fs < bx->p->w);
@@ -299,7 +303,7 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 		printf("    ");
 
 		for ( p=0; p<ic->w; p++ ) {
-			printf("%i ", ic->bm[p+q*ic->w]);
+			printf("%i ", bx->bm[p+q*ic->w]);
 		}
 
 		printf("    ");
@@ -352,7 +356,7 @@ static void fit_bg(struct intcontext *ic, struct peak_box *bx)
 
 		double bi;
 
-		if ( ic->bm[p + ic->w*q] == BM_BG ) {
+		if ( bx->bm[p + ic->w*q] == BM_BG ) {
 
 			bi = boxi(ic, bx, p, q);
 
@@ -528,6 +532,29 @@ static struct peak_box *add_box(struct intcontext *ic)
 }
 
 
+static void delete_box(struct intcontext *ic, struct peak_box *bx)
+{
+	int i;
+	int found = 0;
+
+	for ( i=0; i<ic->n_boxes; i++ ) {
+		if ( &ic->boxes[i] == bx ) {
+			found = 1;
+			break;
+		}
+	}
+
+	if ( !found ) {
+		ERROR("Couldn't find box %p in context %p\n", bx, ic);
+		return;
+	}
+
+	memmove(&ic->boxes[i], &ic->boxes[i+1],
+	        (ic->n_boxes-i-1)*sizeof(struct peak_box));
+	ic->n_boxes--;
+}
+
+
 static double tentative_intensity(struct intcontext *ic, struct peak_box *bx)
 {
 	int p, q;
@@ -536,7 +563,7 @@ static double tentative_intensity(struct intcontext *ic, struct peak_box *bx)
 	for ( p=0; p<ic->w; p++ ) {
 	for ( q=0; q<ic->w; q++ ) {
 
-		if ( ic->bm[p + ic->w*q] != BM_PK ) continue;
+		if ( bx->bm[p + ic->w*q] != BM_PK ) continue;
 		intensity += boxi(ic, bx, p, q);
 
 	}
@@ -562,7 +589,7 @@ static void observed_position(struct intcontext *ic, struct peak_box *bx,
 	for ( q=0; q<ic->w; q++ ) {
 
 		int bi;
-		if ( ic->bm[p + ic->w*q] != BM_PK ) continue;
+		if ( bx->bm[p + ic->w*q] != BM_PK ) continue;
 		bi = boxi(ic, bx, p, q);
 
 		num_p += bi*p;
@@ -591,7 +618,7 @@ static void add_to_reference_profile(struct intcontext *ic, struct peak_box *bx)
 		double val;
 		float bi;
 
-		if ( ic->bm[p + ic->w*q] == BM_IG ) continue;
+		if ( bx->bm[p + ic->w*q] == BM_IG ) continue;
 		bi = boxi(ic, bx, p, q);
 
 		val = bi*bx->intensity;
@@ -644,11 +671,88 @@ static void calculate_reference_profiles(struct intcontext *ic)
 }
 
 
+static int check_box(struct intcontext *ic, struct peak_box *bx)
+{
+	int p, q;
+	int n_pk = 0;
+	int n_bg = 0;
+
+	bx->bm = malloc(ic->w*ic->w*sizeof(int));
+	if ( bx->bm == NULL ) return 1;
+
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+
+		int fs, ss;
+
+		fs = bx->cfs + p;
+		ss = bx->css + q;
+
+		assert(fs >= 0);
+		assert(fs < bx->p->w);
+		assert(ss >= 0);
+		assert(ss < bx->p->h);
+
+		assert(p >= 0);
+		assert(p < ic->w);
+		assert(q >= 0);
+		assert(q < ic->w);
+
+		bx->bm[p+ic->w*q] = ic->bm[p+ic->w*q];
+
+		if ( ic->image->bad[bx->pn][fs + bx->p->w*ss] ) {
+			bx->bm[p+ic->w*q] = BM_IG;
+		}
+
+		if ( bx->bm[p+ic->w*q] == BM_PK ) n_pk++;
+		if ( bx->bm[p+ic->w*q] == BM_BG ) n_bg++;
+
+	}
+	}
+
+	if ( n_pk < 4 ) return 1;
+	if ( n_bg < 4 ) return 1;
+
+	return 0;
+}
+
+
+static double fit_intensity(struct intcontext *ic, struct peak_box *bx)
+{
+	int p, q;
+	double sum = 0.0;
+	double sp = 0.0;
+	double den = 0.0;
+
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+
+		double bi, P;
+
+		if ( bx->bm[p + ic->w*q] != BM_PK ) continue;
+
+		bi = boxi(ic, bx, p, q);
+		P = ic->reference_profiles[bx->rp][p+ic->w*q];
+
+		sum += bi*P;
+		sum += - bx->a*p*P - bx->b*q*P - bx->c*P;
+		sp += P;
+		den += pow(P, 2.0);
+
+	}
+	}
+
+	return sum*sp / den;
+}
+
+
+
 static void measure_all_intensities(RefList *list, struct image *image)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 	struct intcontext ic;
+	int i;
 
 	ic.halfw = 4;
 	ic.image = image;
@@ -662,37 +766,46 @@ static void measure_all_intensities(RefList *list, struct image *image)
 	      refl = next_refl(refl, iter) )
 	{
 		double pfs, pss;
-		int pw, ph;
 		double pos_p, pos_q;
 		signed int h, k, l;
 		struct peak_box *bx;
+		int pn;
+		struct panel *p;
+		int fid_fs, fid_ss;  /* Center coordinates, rounded,
+		                      * in overall data block */
+		int cfs, css;  /* Corner coordinates */
+
+		set_redundancy(refl, 0);
+
+		get_detector_pos(refl, &pfs, &pss);
+		fid_fs = lrint(pfs);
+		fid_ss = lrint(pss);
+		pn = find_panel_number(image->det, fid_fs, fid_ss);
+		p = &image->det->panels[pn];
+
+		cfs = (fid_fs-p->min_fs) - ic.halfw;
+		css = (fid_ss-p->min_ss) - ic.halfw;
+
+		if ( (cfs + ic.w >= p->w) || (css + ic.w >= p->h ) ) {
+			continue;
+		}
+		if ( (cfs < 0) || (css < 0 ) ) continue;
 
 		bx = add_box(&ic);
+		bx->refl = refl;
+		bx->cfs = cfs;
+		bx->css = css;
+		bx->p = p;
+		bx->pn = pn;
+
+		if ( check_box(&ic, bx) ) {
+			delete_box(&ic, bx);
+			continue;
+		}
 
 		get_indices(refl, &h, &k, &l);
 		if ( (h==-24) && (k==6) && (l==-12) ) {
 			bx->verbose = 1;
-		}
-
-		get_detector_pos(refl, &pfs, &pss);
-		bx->fid_fs = lrint(pfs);
-		bx->fid_ss = lrint(pss);
-		bx->pn = find_panel_number(image->det, bx->fid_fs, bx->fid_ss);
-		bx->p = &image->det->panels[bx->pn];
-
-		bx->fid_fs -= bx->p->min_fs;
-		bx->fid_ss -= bx->p->min_ss;
-
-		bx->fid_fs -= ic.halfw;
-		bx->fid_ss -= ic.halfw;
-
-		pw = bx->p->w;
-		ph = bx->p->h;
-		if ( (bx->fid_fs + ic.w >= pw) || (bx->fid_ss + ic.w >= ph ) ) {
-			continue;
-		}
-		if ( (bx->fid_fs < 0) || (bx->fid_ss < 0 ) ) {
-			continue;
 		}
 
 		fit_bg(&ic, bx);
@@ -701,7 +814,7 @@ static void measure_all_intensities(RefList *list, struct image *image)
 		pos_p -= ic.halfw;
 		pos_q -= ic.halfw;
 		if ( bx->verbose ) {
-			STATUS("%f %f\n", pos_p, pos_q);
+			STATUS("Position error %f %f\n", pos_p, pos_q);
 		}
 
 		bx->intensity = tentative_intensity(&ic, bx);
@@ -714,7 +827,28 @@ static void measure_all_intensities(RefList *list, struct image *image)
 
 	calculate_reference_profiles(&ic);
 
+	for ( i=0; i<ic.n_boxes; i++ ) {
 
+		struct peak_box *bx;
+
+		bx = &ic.boxes[i];
+		if ( bx->verbose ) {
+			STATUS("%f -> ", bx->intensity);
+		}
+		bx->intensity = fit_intensity(&ic, bx);
+		if ( isnan(bx->intensity) ) {
+			signed int h, k, l;
+			get_indices(bx->refl, &h, &k, &l);
+			STATUS("%i %i %i\n", h, k, l);
+			STATUS("panel %s\n", image->det->panels[bx->pn].name);
+			show_peak_box(&ic, bx);
+		}
+		set_intensity(bx->refl, bx->intensity);
+		set_redundancy(bx->refl, 1);
+		if ( bx->verbose ) {
+			STATUS("%f\n", bx->intensity);
+		}
+	}
 }
 
 

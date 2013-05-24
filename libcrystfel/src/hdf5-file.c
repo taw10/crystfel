@@ -538,6 +538,8 @@ static int unpack_panels(struct image *image, struct detector *det)
 
 			image->dp[pi][fs+p->w*ss] = image->data[idx];
 
+			if ( p->no_index ) bad = 1;
+
 			if ( in_bad_region(det, cfs, css) ) {
 				bad = 1;
 			}
