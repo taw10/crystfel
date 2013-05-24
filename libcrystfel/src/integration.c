@@ -212,6 +212,10 @@ struct intcontext
 	double pks_p;
 	double pks_q;
 	int m;
+
+	int n_reference_profiles;
+	double **reference_profiles;
+	double **reference_den;
 };
 
 
@@ -227,6 +231,11 @@ struct peak_box
 	double a;
 	double b;
 	double c;
+
+	/* Measured intensity (tentative, profile fitted or otherwise) */
+	double intensity;
+
+	int rp;   /* Reference profile number */
 
 	int verbose;
 };
@@ -298,6 +307,29 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 		printf("\n");
 	}
 	printf("-----------> p\n");
+	printf("Reference profile number %i\n", bx->rp);
+
+}
+
+
+static void show_reference_profile(struct intcontext *ic, int i)
+{
+	int q;
+
+	printf("Reference profile number %i:\n", i);
+	printf("Pixel values\n");
+
+	for ( q=ic->w-1; q>=0; q-- ) {
+
+		int p;
+
+		for ( p=0; p<ic->w; p++ ) {
+			printf("%5.0f ", ic->reference_profiles[i][p+ic->w*q]);
+		}
+
+		printf("\n");
+	}
+	printf("-----------> p\n");
 
 }
 
@@ -351,9 +383,27 @@ static void fit_bg(struct intcontext *ic, struct peak_box *bx)
 }
 
 
+static void zero_profiles(struct intcontext *ic)
+{
+	int i;
+
+	for ( i=0; i<ic->n_reference_profiles; i++ ) {
+
+		int p, q;
+
+		for ( p=0; p<ic->w; p++ ) {
+		for ( q=0; q<ic->w; q++ ) {
+			ic->reference_profiles[i][p+ic->w*q] = 0.0;
+		}
+		}
+	}
+}
+
+
 static int init_intcontext(struct intcontext *ic)
 {
 	int p, q;
+	int i;
 
 	ic->w = 2*ic->halfw + 1;
 
@@ -416,6 +466,21 @@ static int init_intcontext(struct intcontext *ic)
 	}
 	}
 
+	/* How many reference profiles? */
+	ic->n_reference_profiles = ic->image->det->n_panels;
+	ic->reference_profiles = calloc(ic->n_reference_profiles,
+	                                sizeof(double *));
+	if ( ic->reference_profiles == NULL ) return 1;
+	ic->reference_den = calloc(ic->n_reference_profiles, sizeof(double *));
+	if ( ic->reference_den == NULL ) return 1;
+	for ( i=0; i<ic->n_reference_profiles; i++ ) {
+		ic->reference_profiles[i] = malloc(ic->w*ic->w*sizeof(double));
+		if ( ic->reference_profiles[i] == NULL ) return 1;
+		ic->reference_den[i] = malloc(ic->w*ic->w*sizeof(double));
+		if ( ic->reference_den[i] == NULL ) return 1;
+	}
+	zero_profiles(ic);
+
 	return 0;
 }
 
@@ -473,6 +538,69 @@ static void observed_position(struct intcontext *ic, struct peak_box *bx,
 }
 
 
+static void add_to_reference_profile(struct intcontext *ic, struct peak_box *bx)
+{
+	int p, q;
+
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+
+		double val;
+		float bi;
+
+		if ( ic->bm[p + ic->w*q] == BM_IG ) continue;
+		bi = boxi(ic, bx, p, q);
+
+		val = bi*bx->intensity;
+		val -= p*bx->intensity*bx->a + q*bx->intensity*bx->b
+		       + bx->intensity*bx->c;
+
+		ic->reference_profiles[bx->rp][p+ic->w*q] += val;
+		ic->reference_den[bx->rp][p+ic->w*q] += pow(bx->intensity, 2.0);
+	}
+	}
+}
+
+
+static void calculate_reference_profiles(struct intcontext *ic)
+{
+	int i;
+
+	for ( i=0; i<ic->n_reference_profiles; i++ ) {
+
+		int p, q;
+		double max = 0.0;
+
+		for ( p=0; p<ic->w; p++ ) {
+		for ( q=0; q<ic->w; q++ ) {
+
+			double den;
+
+			den = ic->reference_den[i][p+ic->w*q];
+			ic->reference_profiles[i][p+ic->w*q] /= den;
+			if ( ic->reference_profiles[i][p+ic->w*q] > max ) {
+				max = ic->reference_profiles[i][p+ic->w*q];
+			}
+
+		}
+		}
+
+		max /= 10000.0;
+
+		for ( p=0; p<ic->w; p++ ) {
+		for ( q=0; q<ic->w; q++ ) {
+
+			ic->reference_profiles[i][p+ic->w*q] /= max;
+
+		}
+		}
+
+	}
+
+	show_reference_profile(ic, 2);
+}
+
+
 static void measure_all_intensities(RefList *list, struct image *image)
 {
 	Reflection *refl;
@@ -491,7 +619,6 @@ static void measure_all_intensities(RefList *list, struct image *image)
 	      refl = next_refl(refl, iter) )
 	{
 		double pfs, pss;
-		double intensity;
 		int pw, ph;
 		double pos_p, pos_q;
 		signed int h, k, l;
@@ -528,13 +655,21 @@ static void measure_all_intensities(RefList *list, struct image *image)
 		fit_bg(&ic, &bx);
 
 		observed_position(&ic, &bx, &pos_p, &pos_q);
+		pos_p -= ic.halfw;
+		pos_q -= ic.halfw;
 		if ( bx.verbose ) {
 			STATUS("%f %f\n", pos_p, pos_q);
 		}
 
-		intensity = tentative_intensity(&ic, &bx);
-		set_intensity(refl, intensity);
+		bx.intensity = tentative_intensity(&ic, &bx);
+		set_intensity(refl, bx.intensity);
+
+		/* Which reference profile? */
+		bx.rp = bx.pn;
+		add_to_reference_profile(&ic, &bx);
 	}
+
+	calculate_reference_profiles(&ic);
 }
 
 
