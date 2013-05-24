@@ -48,65 +48,6 @@
 #include "integration.h"
 
 
-struct integr_ind
-{
-	double res;
-	Reflection *refl;
-};
-
-
-static int compare_resolution(const void *av, const void *bv)
-{
-	const struct integr_ind *a = av;
-	const struct integr_ind *b = bv;
-
-	return a->res > b->res;
-}
-
-
-static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
-                                           int *np)
-{
-	struct integr_ind *il;
-	Reflection *refl;
-	RefListIterator *iter;
-	int i, n;
-
-	n = num_reflections(list);
-	*np = 0;  /* For now */
-
-	if ( n == 0 ) return NULL;
-
-	il = calloc(n, sizeof(struct integr_ind));
-	if ( il == NULL ) return NULL;
-
-	i = 0;
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		signed int h, k, l;
-		double res;
-
-		if ( get_redundancy(refl) == 0 ) continue;
-
-		get_indices(refl, &h, &k, &l);
-		res = resolution(cell, h, k, l);
-
-		il[i].res = res;
-		il[i].refl = refl;
-
-		i++;
-		assert(i <= n);
-	}
-
-	qsort(il, n, sizeof(struct integr_ind), compare_resolution);
-
-	*np = n;
-	return il;
-}
-
-
 static void check_eigen(gsl_vector *e_val)
 {
 	int i;
@@ -905,6 +846,64 @@ static void estimate_mosaicity(Crystal *cr, struct image *image)
 		}
 
 	}
+}
+
+
+struct integr_ind
+{
+	double res;
+	Reflection *refl;
+};
+
+
+static int compare_resolution(const void *av, const void *bv)
+{
+	const struct integr_ind *a = av;
+	const struct integr_ind *b = bv;
+
+	return a->res > b->res;
+}
+
+
+static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
+                                           int *np)
+{
+	struct integr_ind *il;
+	Reflection *refl;
+	RefListIterator *iter;
+	int i, n;
+
+	*np = 0;  /* For now */
+
+	n = num_reflections(list);
+	if ( n == 0 ) return NULL;
+
+	il = calloc(n, sizeof(struct integr_ind));
+	if ( il == NULL ) return NULL;
+
+	i = 0;
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		double res;
+
+		if ( get_redundancy(refl) == 0 ) continue;
+
+		get_indices(refl, &h, &k, &l);
+		res = resolution(cell, h, k, l);
+
+		il[i].res = res;
+		il[i].refl = refl;
+
+		i++;
+	}
+
+	qsort(il, i, sizeof(struct integr_ind), compare_resolution);
+
+	*np = i;
+	return il;
 }
 
 
