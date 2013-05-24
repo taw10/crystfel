@@ -205,6 +205,10 @@ struct intcontext
 	struct image *image;
 	gsl_matrix *bgm;  /* Background estimation matrix */
 
+	struct peak_box *boxes;
+	int n_boxes;
+	int max_boxes;
+
 	/* Peak region sums */
 	double pks_p2;
 	double pks_q2;
@@ -400,6 +404,20 @@ static void zero_profiles(struct intcontext *ic)
 }
 
 
+
+static int alloc_boxes(struct intcontext *ic, int new_max_boxes)
+{
+	struct peak_box *boxes_new;
+
+	boxes_new = realloc(ic->boxes, sizeof(struct peak_box)*new_max_boxes);
+	if ( boxes_new == NULL ) return 1;
+
+	ic->boxes = boxes_new;
+	ic->max_boxes = new_max_boxes;
+	return 0;
+}
+
+
 static int init_intcontext(struct intcontext *ic)
 {
 	int p, q;
@@ -481,7 +499,32 @@ static int init_intcontext(struct intcontext *ic)
 	}
 	zero_profiles(ic);
 
+	ic->boxes = NULL;
+	ic->n_boxes = 0;
+	ic->max_boxes = 0;
+	if ( alloc_boxes(ic, 32) ) {
+		return 1;
+	}
+
 	return 0;
+}
+
+
+static struct peak_box *add_box(struct intcontext *ic)
+{
+	int idx;
+
+	if ( ic->n_boxes == ic->max_boxes ) {
+		if ( alloc_boxes(ic, ic->max_boxes+32) ) {
+			return NULL;
+		}
+	}
+
+	idx = ic->n_boxes++;
+
+	ic->boxes[idx].verbose = 0;
+
+	return &ic->boxes[idx];
 }
 
 
@@ -622,54 +665,56 @@ static void measure_all_intensities(RefList *list, struct image *image)
 		int pw, ph;
 		double pos_p, pos_q;
 		signed int h, k, l;
-		struct peak_box bx;
+		struct peak_box *bx;
 
-		bx.verbose = 0;
+		bx = add_box(&ic);
 
 		get_indices(refl, &h, &k, &l);
 		if ( (h==-24) && (k==6) && (l==-12) ) {
-			bx.verbose = 1;
+			bx->verbose = 1;
 		}
 
 		get_detector_pos(refl, &pfs, &pss);
-		bx.fid_fs = lrint(pfs);
-		bx.fid_ss = lrint(pss);
-		bx.pn = find_panel_number(image->det, bx.fid_fs, bx.fid_ss);
-		bx.p = &image->det->panels[bx.pn];
+		bx->fid_fs = lrint(pfs);
+		bx->fid_ss = lrint(pss);
+		bx->pn = find_panel_number(image->det, bx->fid_fs, bx->fid_ss);
+		bx->p = &image->det->panels[bx->pn];
 
-		bx.fid_fs -= bx.p->min_fs;
-		bx.fid_ss -= bx.p->min_ss;
+		bx->fid_fs -= bx->p->min_fs;
+		bx->fid_ss -= bx->p->min_ss;
 
-		bx.fid_fs -= ic.halfw;
-		bx.fid_ss -= ic.halfw;
+		bx->fid_fs -= ic.halfw;
+		bx->fid_ss -= ic.halfw;
 
-		pw = bx.p->w;
-		ph = bx.p->h;
-		if ( (bx.fid_fs + ic.w >= pw) || (bx.fid_ss + ic.w >= ph ) ) {
+		pw = bx->p->w;
+		ph = bx->p->h;
+		if ( (bx->fid_fs + ic.w >= pw) || (bx->fid_ss + ic.w >= ph ) ) {
 			continue;
 		}
-		if ( (bx.fid_fs < 0) || (bx.fid_ss < 0 ) ) {
+		if ( (bx->fid_fs < 0) || (bx->fid_ss < 0 ) ) {
 			continue;
 		}
 
-		fit_bg(&ic, &bx);
+		fit_bg(&ic, bx);
 
-		observed_position(&ic, &bx, &pos_p, &pos_q);
+		observed_position(&ic, bx, &pos_p, &pos_q);
 		pos_p -= ic.halfw;
 		pos_q -= ic.halfw;
-		if ( bx.verbose ) {
+		if ( bx->verbose ) {
 			STATUS("%f %f\n", pos_p, pos_q);
 		}
 
-		bx.intensity = tentative_intensity(&ic, &bx);
-		set_intensity(refl, bx.intensity);
+		bx->intensity = tentative_intensity(&ic, bx);
+		set_intensity(refl, bx->intensity);
 
 		/* Which reference profile? */
-		bx.rp = bx.pn;
-		add_to_reference_profile(&ic, &bx);
+		bx->rp = bx->pn;
+		add_to_reference_profile(&ic, bx);
 	}
 
 	calculate_reference_profiles(&ic);
+
+
 }
 
 
