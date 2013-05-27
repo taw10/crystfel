@@ -46,7 +46,7 @@ extern IndexingPrivate *reax_prepare(IndexingMethod *indm, UnitCell *cell,
 
 extern void reax_cleanup(IndexingPrivate *pp);
 
-extern int reax_index(struct image *image, IndexingPrivate *p);
+extern int reax_index(IndexingPrivate *pp, struct image *image);
 
 #else /* HAVE_FFTW */
 
@@ -61,7 +61,7 @@ static void reax_cleanup(IndexingPrivate *pp)
 {
 }
 
-static int reax_index(struct image *image, IndexingPrivate *p)
+static int reax_index(IndexingPrivate *pp, struct image *image);
 {
 }
 

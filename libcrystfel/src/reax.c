@@ -48,6 +48,7 @@
 #include "cell.h"
 #include "cell-utils.h"
 #include "index.h"
+#include "reax.h"
 
 
 /* Minimum number of standard deviations above the mean a peak must be in the
@@ -109,6 +110,7 @@ struct reax_private
 	struct dvec *directions;
 	int n_dir;
 	double angular_inc;
+	UnitCell *cell;
 
 	double *fft_in;
 	fftw_complex *fft_out;
@@ -1040,7 +1042,7 @@ static void assemble_cells_from_candidates(struct image *image,
 }
 
 
-void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
+int reax_index(IndexingPrivate *pp, struct image *image)
 {
 	struct reax_private *p;
 	double *fft_in;
@@ -1060,10 +1062,10 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	if ( pmax < 1e4 ) {
 		fftw_free(fft_in);
 		fftw_free(fft_out);
-		return;
+		return 0;
 	}
 
-	s = search_all_axes(cell, pmax);
+	s = search_all_axes(p->cell, pmax);
 	find_candidates(p, image->features, pmax, fft_in, fft_out, s,
 	                NULL, image->det);
 
@@ -1071,7 +1073,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 //	                        fft_in, fft_out, p->plan, smin, smax,
 //	                        image->det, p);
 
-	assemble_cells_from_candidates(image, s, cell, p);
+	assemble_cells_from_candidates(image, s, p->cell, p);
 
 	for ( i=0; i<s->n_search; i++ ) {
 		free(s->search[i].cand);
@@ -1080,6 +1082,7 @@ void reax_index(IndexingPrivate *pp, struct image *image, UnitCell *cell)
 	free(s);
 	fftw_free(fft_in);
 	fftw_free(fft_out);
+	return 1;
 }
 
 
@@ -1098,6 +1101,8 @@ IndexingPrivate *reax_prepare(IndexingMethod *indm, UnitCell *cell,
 
 	p = calloc(1, sizeof(*p));
 	if ( p == NULL ) return NULL;
+
+	p->cell = cell;
 
 	/* Flags that ReAx knows about */
 	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_PEAKS;

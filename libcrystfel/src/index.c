@@ -214,6 +214,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 	switch ( indm & INDEXING_METHOD_MASK ) {
 
 		case INDEXING_NONE :
+		return 0;
 		break;
 
 		case INDEXING_DIRAX :
@@ -229,7 +230,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		break;
 
 		case INDEXING_REAX :
-		return reax_index(image, ipriv);
+		return reax_index(ipriv, image);
 		break;
 
 		case INDEXING_GRAINSPOTTER :
