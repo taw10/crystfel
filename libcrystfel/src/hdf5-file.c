@@ -620,31 +620,42 @@ int hdf5_read(struct hdfile *f, struct image *image, int satcorr)
 
 	if ( satcorr ) debodge_saturation(f, image);
 
-	if ( (image->width != image->det->max_fs + 1 )
-	  || (image->height != image->det->max_ss + 1))
-	{
-		ERROR("Image size doesn't match geometry size"
-			" - rejecting image.\n");
-		ERROR("Image size: %i,%i.  Geometry size: %i,%i\n",
-		      image->width, image->height,
-		      image->det->max_fs + 1, image->det->max_ss + 1);
-		return 1;
+	if ( image->det != NULL ) {
+
+		if ( (image->width != image->det->max_fs + 1 )
+		  || (image->height != image->det->max_ss + 1))
+		{
+			ERROR("Image size doesn't match geometry size"
+				" - rejecting image.\n");
+			ERROR("Image size: %i,%i.  Geometry size: %i,%i\n",
+			      image->width, image->height,
+			      image->det->max_fs + 1, image->det->max_ss + 1);
+			return 1;
+		}
+
+		fill_in_values(image->det, f);
+
+		unpack_panels(image, image->det);
+
 	}
 
-	fill_in_values(image->det, f);
-	fill_in_beam_parameters(image->beam, f);
-	image->lambda = ph_en_to_lambda(eV_to_J(image->beam->photon_energy));
+	if ( image->beam != NULL ) {
 
-	if ( (image->beam->photon_energy < 0.0) || (image->lambda > 1000) ) {
-		/* Error message covers a silly value in the beam file or in
-		 * the HDF5 file. */
-		ERROR("Nonsensical wavelength (%e m or %e eV) value for %s.\n",
-		      image->lambda, image->beam->photon_energy,
-		      image->filename);
-		return 1;
+		fill_in_beam_parameters(image->beam, f);
+		image->lambda = ph_en_to_lambda(eV_to_J(image->beam->photon_energy));
+
+		if ( (image->beam->photon_energy < 0.0)
+		  || (image->lambda > 1000) ) {
+			/* Error message covers a silly value in the beam file
+			 * or in the HDF5 file. */
+			ERROR("Nonsensical wavelength (%e m or %e eV) value "
+			      "for %s.\n",
+			      image->lambda, image->beam->photon_energy,
+			      image->filename);
+			return 1;
+		}
+
 	}
-
-	unpack_panels(image, image->det);
 
 	return 0;
 }
