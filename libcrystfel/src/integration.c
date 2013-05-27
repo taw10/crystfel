@@ -150,6 +150,9 @@ struct intcontext
 	int n_boxes;
 	int max_boxes;
 
+	UnitCell *cell;
+	double k;
+
 	/* Peak region sums */
 	double pks_p2;
 	double pks_q2;
@@ -161,6 +164,7 @@ struct intcontext
 	int n_reference_profiles;
 	double **reference_profiles;
 	double **reference_den;
+	int *n_profiles_in_reference;
 };
 
 
@@ -181,6 +185,8 @@ struct peak_box
 
 	/* Measured intensity (tentative, profile fitted or otherwise) */
 	double intensity;
+	double sigma;
+	double J;  /* Profile scaling factor */
 
 	int rp;   /* Reference profile number */
 
@@ -256,6 +262,8 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 		printf("\n");
 	}
 	printf("Reference profile number %i\n", bx->rp);
+	printf("Background parameters: a=%.2f, b=%.2f, c=%.2f\n",
+	       bx->a, bx->b, bx->c);
 
 }
 
@@ -264,7 +272,8 @@ static void show_reference_profile(struct intcontext *ic, int i)
 {
 	int q;
 
-	printf("Reference profile number %i:\n", i);
+	printf("Reference profile number %i (%i contributions):\n", i,
+	       ic->n_profiles_in_reference[i]);
 
 	for ( q=ic->w-1; q>=0; q-- ) {
 
@@ -342,6 +351,8 @@ static void zero_profiles(struct intcontext *ic)
 			ic->reference_profiles[i][p+ic->w*q] = 0.0;
 		}
 		}
+
+		ic->n_profiles_in_reference[i] = 0;
 	}
 }
 
@@ -433,6 +444,9 @@ static int init_intcontext(struct intcontext *ic)
 	if ( ic->reference_profiles == NULL ) return 1;
 	ic->reference_den = calloc(ic->n_reference_profiles, sizeof(double *));
 	if ( ic->reference_den == NULL ) return 1;
+	ic->n_profiles_in_reference = calloc(ic->n_reference_profiles,
+	                                     sizeof(int));
+	if ( ic->n_profiles_in_reference == NULL ) return 1;
 	for ( i=0; i<ic->n_reference_profiles; i++ ) {
 		ic->reference_profiles[i] = malloc(ic->w*ic->w*sizeof(double));
 		if ( ic->reference_profiles[i] == NULL ) return 1;
@@ -567,6 +581,8 @@ static void add_to_reference_profile(struct intcontext *ic, struct peak_box *bx)
 		ic->reference_den[bx->rp][p+ic->w*q] += pow(bx->intensity, 2.0);
 	}
 	}
+
+	ic->n_profiles_in_reference[bx->rp]++;
 }
 
 
@@ -605,7 +621,6 @@ static void calculate_reference_profiles(struct intcontext *ic)
 
 	}
 
-	show_reference_profile(ic, 2);
 	//for ( i=0; i<ic->n_reference_profiles; i++ ) {
 	//	show_reference_profile(ic, i);
 	//}
@@ -617,14 +632,27 @@ static int check_box(struct intcontext *ic, struct peak_box *bx)
 	int p, q;
 	int n_pk = 0;
 	int n_bg = 0;
+	double adx, ady, adz;
+	double bdx, bdy, bdz;
+	double cdx, cdy, cdz;
+	signed int hr, kr, lr;
 
 	bx->bm = malloc(ic->w*ic->w*sizeof(int));
 	if ( bx->bm == NULL ) return 1;
+
+	cell_get_cartesian(ic->cell,
+	                   &adx, &ady, &adz,
+	                   &bdx, &bdy, &bdz,
+	                   &cdx, &cdy, &cdz);
+	get_indices(bx->refl, &hr, &kr, &lr);
 
 	for ( p=0; p<ic->w; p++ ) {
 	for ( q=0; q<ic->w; q++ ) {
 
 		int fs, ss;
+		double hd, kd, ld;
+		signed int h, k, l;
+		struct rvec dv;
 
 		fs = bx->cfs + p;
 		ss = bx->css + q;
@@ -645,6 +673,19 @@ static int check_box(struct intcontext *ic, struct peak_box *bx)
 			bx->bm[p+ic->w*q] = BM_IG;
 		}
 
+		/* Ignore if this pixel is closer to the next reciprocal lattice
+		 * point */
+		dv = get_q_for_panel(bx->p, fs, ss, NULL, ic->k);
+		hd = dv.u * adx + dv.v * ady + dv.w * adz;
+		kd = dv.u * bdx + dv.v * bdy + dv.w * bdz;
+		ld = dv.u * cdx + dv.v * cdy + dv.w * cdz;
+		h = lrint(hd);
+		k = lrint(kd);
+		l = lrint(ld);
+		if ( (h != hr) || (k != kr) || (l != lr) ) {
+			bx->bm[p+ic->w*q] = BM_IG;
+		}
+
 		if ( bx->bm[p+ic->w*q] == BM_PK ) n_pk++;
 		if ( bx->bm[p+ic->w*q] == BM_BG ) n_bg++;
 
@@ -658,11 +699,10 @@ static int check_box(struct intcontext *ic, struct peak_box *bx)
 }
 
 
-static double fit_intensity(struct intcontext *ic, struct peak_box *bx)
+static double fit_J(struct intcontext *ic, struct peak_box *bx)
 {
 	int p, q;
 	double sum = 0.0;
-	double sp = 0.0;
 	double den = 0.0;
 
 	for ( p=0; p<ic->w; p++ ) {
@@ -677,18 +717,155 @@ static double fit_intensity(struct intcontext *ic, struct peak_box *bx)
 
 		sum += bi*P;
 		sum += - bx->a*p*P - bx->b*q*P - bx->c*P;
-		sp += P;
 		den += pow(P, 2.0);
 
 	}
 	}
 
-	return sum*sp / den;
+	return sum / den;
+}
+
+
+static double fit_intensity(struct intcontext *ic, struct peak_box *bx)
+{
+	int p, q;
+	double J = fit_J(ic, bx);
+	double sum = 0.0;
+
+	bx->J = J;
+
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+
+		double P;
+
+		if ( bx->bm[p + ic->w*q] != BM_PK ) continue;
+
+		P = ic->reference_profiles[bx->rp][p+ic->w*q];
+		sum += P;
+
+	}
+	}
+
+	if ( bx->verbose ) {
+		STATUS("J = %f\n", J);
+	}
+
+	return J * sum;
 }
 
 
 
-static void measure_all_intensities(RefList *list, struct image *image)
+static double calc_sigma(struct intcontext *ic, struct peak_box *bx)
+{
+	int p, q;
+	double sum = 0.0;
+	double mb = 0.0;
+	int nb = 0;
+	double sigb2 = 0.0;
+
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+
+		double bi;
+
+		bi = boxi(ic, bx, p, q);
+
+		if ( bx->bm[p + ic->w*q] == BM_PK ) {
+
+			double p1, p2;
+
+			p1 = bx->J * ic->reference_profiles[bx->rp][p+ic->w*q];
+
+			p2 = bi - bx->a*p - bx->b*q - bx->c;
+			sum += pow(p1-p2, 2.0);
+
+		} else if ( bx->bm[p + ic->w*q] == BM_BG ) {
+
+			mb += bi;
+			nb++;
+
+		}
+
+	}
+	}
+
+	mb /= nb;
+
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+
+		double bi;
+
+		if ( bx->bm[p + ic->w*q] != BM_BG ) continue;
+		bi = boxi(ic, bx, p, q);
+		sigb2 += pow(bi - mb, 2.0);
+
+	}
+	}
+
+	return sqrt(sum + sigb2);
+}
+
+
+static double average_background(struct intcontext *ic, struct peak_box *bx)
+{
+	int p, q;
+	double sum = 0.0;
+	int n = 0;
+
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+
+		if ( bx->bm[p + ic->w*q] != BM_PK ) continue;
+
+		sum += bx->a*p + bx->b*q + bx->c;
+		n++;
+
+	}
+	}
+
+	return sum/n;
+}
+
+
+static int bg_ok(struct peak_box *bx)
+{
+	if ( (fabs(bx->a) > 10.0) || (fabs(bx->b) > 10.0) ) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+
+static int suitable_reference(struct intcontext *ic, struct peak_box *bx)
+{
+	int p, q;
+	double max = 0.0;
+	int height_ok;
+
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+
+		double bi;
+
+		if ( bx->bm[p + ic->w*q] != BM_PK ) continue;
+
+		bi = boxi(ic, bx, p, q);
+		if ( bi > max ) max = bi;
+
+	}
+	}
+
+	height_ok = max > 10.0 * average_background(ic, bx);
+
+	return bg_ok(bx) && height_ok;
+}
+
+
+static void measure_all_intensities(RefList *list, struct image *image,
+                                    UnitCell *cell)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -697,6 +874,8 @@ static void measure_all_intensities(RefList *list, struct image *image)
 
 	ic.halfw = 4;
 	ic.image = image;
+	ic.k = 1.0/image->lambda;
+	ic.cell = cell;
 	if ( init_intcontext(&ic) ) {
 		ERROR("Failed to initialise integration.\n");
 		return;
@@ -739,6 +918,9 @@ static void measure_all_intensities(RefList *list, struct image *image)
 		bx->p = p;
 		bx->pn = pn;
 
+		/* Which reference profile? */
+		bx->rp = 0;//bx->pn;
+
 		if ( check_box(&ic, bx) ) {
 			delete_box(&ic, bx);
 			continue;
@@ -761,9 +943,9 @@ static void measure_all_intensities(RefList *list, struct image *image)
 		bx->intensity = tentative_intensity(&ic, bx);
 		set_intensity(refl, bx->intensity);
 
-		/* Which reference profile? */
-		bx->rp = bx->pn;
-		add_to_reference_profile(&ic, bx);
+		if ( suitable_reference(&ic, bx) ) {
+			add_to_reference_profile(&ic, bx);
+		}
 	}
 
 	calculate_reference_profiles(&ic);
@@ -774,20 +956,36 @@ static void measure_all_intensities(RefList *list, struct image *image)
 
 		bx = &ic.boxes[i];
 		if ( bx->verbose ) {
+			show_reference_profile(&ic, bx->rp);
 			STATUS("%f -> ", bx->intensity);
 		}
 		bx->intensity = fit_intensity(&ic, bx);
+		bx->sigma = calc_sigma(&ic, bx);
+
+#if 0
 		if ( isnan(bx->intensity) ) {
 			signed int h, k, l;
 			get_indices(bx->refl, &h, &k, &l);
-			STATUS("%i %i %i\n", h, k, l);
+			STATUS("NaN intensity for %i %i %i !\n", h, k, l);
 			STATUS("panel %s\n", image->det->panels[bx->pn].name);
 			show_peak_box(&ic, bx);
+			show_reference_profile(&ic, bx->rp);
 		}
-		set_intensity(bx->refl, bx->intensity);
-		set_redundancy(bx->refl, 1);
-		if ( bx->verbose ) {
-			STATUS("%f\n", bx->intensity);
+		if ( bx->intensity < 0.0 ) {
+			signed int h, k, l;
+			get_indices(bx->refl, &h, &k, &l);
+			STATUS("Negative intensity (%f) for %i %i %i !\n",
+			       bx->intensity, h, k, l);
+			STATUS("panel %s\n", image->det->panels[bx->pn].name);
+			show_peak_box(&ic, bx);
+			show_reference_profile(&ic, bx->rp);
+		}
+#endif
+
+		if ( bg_ok(bx) ) {
+			set_intensity(bx->refl, bx->intensity);
+			set_esd_intensity(bx->refl, bx->sigma);
+			set_redundancy(bx->refl, 1);
 		}
 	}
 }
@@ -806,7 +1004,7 @@ static void estimate_mosaicity(Crystal *cr, struct image *image)
 	crystal_set_mosaicity(cr, mmax);
 	list = find_intersections(image, cr);
 	crystal_set_reflections(cr, list);
-	measure_all_intensities(list, image);
+	measure_all_intensities(list, image, crystal_get_cell(cr));
 
 	for ( i=1; i<=msteps; i++ ) {
 
@@ -940,9 +1138,7 @@ static void estimate_resolution(RefList *reflections, Crystal *cr,
 		snr = fabs(intensity)/sigma;
 
 		/* Record intensity and set redundancy to 1 on success */
-		if ( !cutoff ) {
-			set_redundancy(refl, 1);
-		} else {
+		if ( cutoff ) {
 			set_redundancy(refl, 0);
 		}
 
@@ -972,28 +1168,32 @@ static void integrate_refine(Crystal *cr, struct image *image, int use_closer,
                              int integrate_saturated, int **bgMasks)
 {
 	RefList *reflections;
+	UnitCell *cell;
+
+	cell = crystal_get_cell(cr);
 
 	/* Create initial list of reflections with nominal parameters */
 	reflections = find_intersections(image, cr);
-	measure_all_intensities(reflections, image);
+	measure_all_intensities(reflections, image, cell);
 
 	/* Find resolution limit of pattern using this list */
-	estimate_resolution(reflections, cr, image);
+	//estimate_resolution(reflections, cr, image);
 
-	reflist_free(reflections);
+	//reflist_free(reflections);
 
 	STATUS("Initial resolution estimate = %.2f nm^-1 or %.2f A\n",
 	       crystal_get_resolution_limit(cr)/1e9,
 	       1e9 / crystal_get_resolution_limit(cr));
 
 	/* Estimate the mosaicity of the crystal using this resolution limit */
-	estimate_mosaicity(cr, image);
+	//estimate_mosaicity(cr, image);
 
 	/* Create new list of reflections with refined mosaicity */
-	reflections = find_intersections(image, cr);
-	measure_all_intensities(reflections, image);
+	//reflections = find_intersections(image, cr);
+	//measure_all_intensities(reflections, image);
+	crystal_set_reflections(cr, reflections);
 
-	estimate_resolution(reflections, cr, image);
+	//estimate_resolution(reflections, cr, image);
 }
 
 
