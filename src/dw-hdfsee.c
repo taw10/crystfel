@@ -1341,6 +1341,9 @@ static void numbers_update(DisplayWindow *dw)
 	int imin;
 	double dmin;
 	struct imagefeature *f;
+	int ffs = 0;
+	int fss = 0;
+	int found = 0;
 
 	for ( px=0; px<17; px++ ) {
 	for ( py=0; py<17; py++ ) {
@@ -1381,6 +1384,12 @@ static void numbers_update(DisplayWindow *dw)
 				}
 			}
 
+			if ( (px==8) && (py==8) ) {
+				ffs = fs;
+				fss = ss;
+				found = 1;
+			}
+
 		} else {
 			strcpy(s, "-");
 		}
@@ -1392,17 +1401,21 @@ static void numbers_update(DisplayWindow *dw)
 
 	if ( dw->image->features == NULL ) return;
 
-	f = image_feature_closest(dw->image->features,
-	                          dw->binning * dw->numbers_window->cx,
-	                          dw->binning * dw->numbers_window->cy,
-	                          &dmin, &imin);
-	if ( dmin < dw->ring_radius*dw->binning ) {
-		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat),
-                                   f->name);
-        } else {
-		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat),
-                                   "-");
-        }
+	if ( found ) {
+
+		f = image_feature_closest(dw->image->features, ffs, fss,
+		                          &dmin, &imin);
+		if ( dmin < dw->ring_radius*dw->binning ) {
+			gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat),
+		                           f->name);
+		} else {
+			gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat),
+			                   "");
+		}
+
+	} else {
+		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat), "");
+	}
 }
 
 
