@@ -49,6 +49,9 @@
 #include "integration.h"
 
 
+#define VERBOSITY ((h==0) && (k==13) && (l==13))
+
+
 static void check_eigen(gsl_vector *e_val)
 {
 	int i;
@@ -237,6 +240,44 @@ static float boxi(struct intcontext *ic, struct peak_box *bx, int p, int q)
 }
 
 
+static void colour_on(enum boxmask_val b)
+{
+	switch ( b ) {
+
+		case BM_BG :
+		attron(COLOR_PAIR(1));
+		break;
+
+		case BM_PK :
+		attron(COLOR_PAIR(2));
+		break;
+
+		default:
+		break;
+
+	}
+}
+
+
+static void colour_off(enum boxmask_val b)
+{
+	switch ( b ) {
+
+		case BM_BG :
+		attroff(COLOR_PAIR(1));
+		break;
+
+		case BM_PK :
+		attroff(COLOR_PAIR(2));
+		break;
+
+		default:
+		break;
+
+	}
+}
+
+
 static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 {
 	int q;
@@ -246,61 +287,39 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 	init_pair(1, COLOR_WHITE, COLOR_BLUE) ;  /* Background */
 	init_pair(2, COLOR_WHITE, COLOR_RED);    /* Peak */
 
-	printw("Pixel values                                              ");
-	printw("Box flags              ");
-	printw("Fitted background\n");
-
+	printw("Pixel values:\n");
 	for ( q=ic->w-1; q>=0; q-- ) {
 
 		int p;
 
 		for ( p=0; p<ic->w; p++ ) {
-			switch ( bx->bm[p+q*ic->w] ) {
 
-				case BM_BG :
-				attron(COLOR_PAIR(1));
-				break;
-
-				case BM_PK :
-				attron(COLOR_PAIR(2));
-				break;
-
-				default:
-				break;
-
-			}
+			colour_on(bx->bm[p+q*ic->w]);
 			printw("%5.0f ", boxi(ic, bx, p, q));
-			switch ( bx->bm[p+q*ic->w] ) {
+			colour_off(bx->bm[p+q*ic->w]);
 
-				case BM_BG :
-				attroff(COLOR_PAIR(1));
-				break;
-
-				case BM_PK :
-				attroff(COLOR_PAIR(2));
-				break;
-
-				default:
-				break;
-
-			}
-		}
-
-		printf("    ");
-
-		for ( p=0; p<ic->w; p++ ) {
-			printw("%i ", bx->bm[p+q*ic->w]);
-		}
-
-		printf("    ");
-
-		for ( p=0; p<ic->w; p++ ) {
-			printw("%5.0f ", bx->a*p + bx->b*q + bx->c);
 		}
 
 		printw("\n");
 	}
-	printw("Reference profile number %i\n", bx->rp);
+
+	printw("\nFitted background:\n");
+	for ( q=ic->w-1; q>=0; q-- ) {
+
+		int p;
+
+		for ( p=0; p<ic->w; p++ ) {
+
+			colour_on(bx->bm[p+q*ic->w]);
+			printw("%5.0f ", bx->a*p + bx->b*q + bx->c);
+			colour_off(bx->bm[p+q*ic->w]);
+
+		}
+
+		printw("\n");
+	}
+
+	printw("Reference profile number %i, ", bx->rp);
 	printw("Background parameters: a=%.2f, b=%.2f, c=%.2f\n",
 	       bx->a, bx->b, bx->c);
 	getch();
@@ -313,7 +332,12 @@ static void show_reference_profile(struct intcontext *ic, int i)
 {
 	int q;
 
-	printf("Reference profile number %i (%i contributions):\n", i,
+	initscr();
+	start_color();
+	init_pair(1, COLOR_WHITE, COLOR_BLUE) ;  /* Background */
+	init_pair(2, COLOR_WHITE, COLOR_RED);    /* Peak */
+
+	printw("Reference profile number %i (%i contributions):\n", i,
 	       ic->n_profiles_in_reference[i]);
 
 	for ( q=ic->w-1; q>=0; q-- ) {
@@ -321,12 +345,19 @@ static void show_reference_profile(struct intcontext *ic, int i)
 		int p;
 
 		for ( p=0; p<ic->w; p++ ) {
-			printf("%3.0f ", ic->reference_profiles[i][p+ic->w*q]);
+
+			colour_on(ic->bm[p+q*ic->w]);
+			printw("%3.0f ", ic->reference_profiles[i][p+ic->w*q]);
+			colour_off(ic->bm[p+q*ic->w]);
+
 		}
 
-		printf("\n");
+		printw("\n");
 	}
 
+	getch();
+	refresh();
+	endwin();
 }
 
 
@@ -1024,7 +1055,7 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 		}
 
 		get_indices(refl, &h, &k, &l);
-		if ( (h==-24) && (k==6) && (l==-12) ) {
+		if ( VERBOSITY ) {
 			bx->verbose = 1;
 		}
 
@@ -1448,7 +1479,7 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 		}
 
 		get_indices(refl, &h, &k, &l);
-		if ( (h==0) && (k==13) && (l==13) ) {
+		if ( VERBOSITY ) {
 			bx->verbose = 1;
 		}
 
