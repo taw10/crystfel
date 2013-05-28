@@ -33,8 +33,8 @@
 #include <config.h>
 #endif
 
-#define INTEGRATION_DEFAULTS_RINGS (INTEGRATION_RINGS | INTEGRATION_SATURATED)
-#define INTEGRATION_DEFAULTS_PROF2D (INTEGRATION_PROF2D | INTEGRATION_SATURATED)
+#define INTEGRATION_DEFAULTS_RINGS (INTEGRATION_RINGS)
+#define INTEGRATION_DEFAULTS_PROF2D (INTEGRATION_PROF2D)
 
 /**
  * IntegrationMethod:
@@ -56,8 +56,7 @@ typedef enum {
 
 	/* Bits at the top of the IntegrationMethod are flags which modify the
 	 * behaviour of the integration. */
-	INTEGRATION_SATURATED = 256,
-	INTEGRATION_CLOSER = 512,
+	INTEGRATION_SATURATED = 256
 
 } IntegrationMethod;
 

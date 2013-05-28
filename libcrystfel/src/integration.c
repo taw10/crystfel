@@ -673,7 +673,7 @@ static void calculate_reference_profiles(struct intcontext *ic)
 }
 
 
-static int check_box(struct intcontext *ic, struct peak_box *bx)
+static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 {
 	int p, q;
 	int n_pk = 0;
@@ -717,6 +717,11 @@ static int check_box(struct intcontext *ic, struct peak_box *bx)
 
 		if ( ic->image->bad[bx->pn][fs + bx->p->w*ss] ) {
 			bx->bm[p+ic->w*q] = BM_IG;
+		}
+
+		if ( (bx->bm[p+ic->w*q] != BM_IG)
+		  && (boxi(ic, bx, p, q) > bx->p->max_adu) ) {
+			*sat = 1;
 		}
 
 		/* Ignore if this pixel is closer to the next reciprocal lattice
@@ -910,13 +915,14 @@ static int suitable_reference(struct intcontext *ic, struct peak_box *bx)
 }
 
 
-static void measure_all_intensities(RefList *list, struct image *image,
-                                    UnitCell *cell)
+static void measure_all_intensities(IntegrationMethod meth, RefList *list,
+                                    struct image *image, UnitCell *cell)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 	struct intcontext ic;
 	int i;
+	int n_saturated = 0;
 
 	ic.halfw = 4;
 	ic.image = image;
@@ -940,6 +946,7 @@ static void measure_all_intensities(RefList *list, struct image *image,
 		int fid_fs, fid_ss;  /* Center coordinates, rounded,
 		                      * in overall data block */
 		int cfs, css;  /* Corner coordinates */
+		int saturated;
 
 		set_redundancy(refl, 0);
 
@@ -967,9 +974,17 @@ static void measure_all_intensities(RefList *list, struct image *image,
 		/* Which reference profile? */
 		bx->rp = 0;//bx->pn;
 
-		if ( check_box(&ic, bx) ) {
+		if ( check_box(&ic, bx, &saturated) ) {
 			delete_box(&ic, bx);
 			continue;
+		}
+
+		if ( saturated ) {
+			n_saturated++;
+			if ( !(meth & INTEGRATION_SATURATED) ) {
+				delete_box(&ic, bx);
+				continue;
+			}
 		}
 
 		get_indices(refl, &h, &k, &l);
@@ -1034,10 +1049,13 @@ static void measure_all_intensities(RefList *list, struct image *image,
 			set_redundancy(bx->refl, 1);
 		}
 	}
+
+	image->num_saturated_peaks = n_saturated;
 }
 
 
-static void estimate_mosaicity(Crystal *cr, struct image *image)
+static void estimate_mosaicity(IntegrationMethod meth, Crystal *cr,
+                               struct image *image)
 {
 	int msteps = 50;
 	int i;
@@ -1050,7 +1068,7 @@ static void estimate_mosaicity(Crystal *cr, struct image *image)
 	crystal_set_mosaicity(cr, mmax);
 	list = find_intersections(image, cr);
 	crystal_set_reflections(cr, list);
-	measure_all_intensities(list, image, crystal_get_cell(cr));
+	measure_all_intensities(meth, list, image, crystal_get_cell(cr));
 
 	for ( i=1; i<=msteps; i++ ) {
 
@@ -1208,10 +1226,9 @@ static void estimate_resolution(RefList *reflections, Crystal *cr,
 }
 
 
-static void integrate_prof2d(Crystal *cr, struct image *image, int use_closer,
-                             double min_snr,
-                             double ir_inn, double ir_mid, double ir_out,
-                             int integrate_saturated)
+static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
+                             struct image *image,  double min_snr,
+                             double ir_inn, double ir_mid, double ir_out)
 {
 	RefList *reflections;
 	UnitCell *cell;
@@ -1220,7 +1237,7 @@ static void integrate_prof2d(Crystal *cr, struct image *image, int use_closer,
 
 	/* Create initial list of reflections with nominal parameters */
 	reflections = find_intersections(image, cr);
-	measure_all_intensities(reflections, image, cell);
+	measure_all_intensities(meth, reflections, image, cell);
 
 	/* Find resolution limit of pattern using this list */
 	//estimate_resolution(reflections, cr, image);
@@ -1244,7 +1261,7 @@ static void integrate_prof2d(Crystal *cr, struct image *image, int use_closer,
 
 
 static void integrate_box(struct intcontext *ic, struct peak_box *bx,
-                          double *intensity, double *sigma, int *saturated)
+                          double *intensity, double *sigma)
 {
 	double pk_total;
 	int pk_counts;
@@ -1257,8 +1274,6 @@ static void integrate_box(struct intcontext *ic, struct peak_box *bx,
 	double aduph;
 	int p, q;
 
-	if ( saturated != NULL ) *saturated = 0;
-
 	aduph = bx->p->adu_per_eV * ph_lambda_to_eV(ic->image->lambda);
 
 	/* Measure the background */
@@ -1270,10 +1285,6 @@ static void integrate_box(struct intcontext *ic, struct peak_box *bx,
 
 		double bi = boxi(ic, bx, p, q);
 		if ( bx->bm[p + ic->w*q] != BM_BG ) continue;
-
-		if ( (saturated != NULL) && (bi > bx->p->max_adu) ) {
-			*saturated = 1;
-		}
 
 		bg_tot += bi;
 		bg_tot_sq += pow(bi, 2.0);
@@ -1296,10 +1307,6 @@ static void integrate_box(struct intcontext *ic, struct peak_box *bx,
 		double bi = boxi(ic, bx, p, q);
 		if ( bx->bm[p + ic->w*q] != BM_PK ) continue;
 
-		if ( (saturated != NULL) && (bi > bx->p->max_adu) ) {
-			*saturated = 1;
-		}
-
 		pk_counts++;
 		pk_total += (bi - bg_mean);
 		fsct += (bi-bg_mean)*p;
@@ -1319,9 +1326,9 @@ static void integrate_box(struct intcontext *ic, struct peak_box *bx,
 }
 
 
-static void integrate_rings(Crystal *cr, struct image *image, double min_snr,
-                            double ir_inn, double ir_mid, double ir_out,
-                            int integrate_saturated)
+static void integrate_rings(IntegrationMethod meth, Crystal *cr,
+                            struct image *image, double min_snr,
+                            double ir_inn, double ir_mid, double ir_out)
 {
 	RefList *list;
 	Reflection *refl;
@@ -1367,7 +1374,6 @@ static void integrate_rings(Crystal *cr, struct image *image, double min_snr,
 		double sigma, snr;
 		int saturated;
 		double one_over_d;
-		int r;
 
 		set_redundancy(refl, 0);
 
@@ -1392,43 +1398,39 @@ static void integrate_rings(Crystal *cr, struct image *image, double min_snr,
 		bx->p = p;
 		bx->pn = pn;
 
-		if ( check_box(&ic, bx) ) {
+		if ( check_box(&ic, bx, &saturated) ) {
 			delete_box(&ic, bx);
 			continue;
 		}
 
+		if ( saturated ) {
+			n_saturated++;
+			if ( !(meth & INTEGRATION_SATURATED) ) {
+				delete_box(&ic, bx);
+				continue;
+			}
+		}
+
 		get_indices(refl, &h, &k, &l);
-//		if ( (h==-1) && (k==14) && (l==13) ) {
-//			bx->verbose = 1;
-//		}
+		if ( (h==0) && (k==13) && (l==13) ) {
+			bx->verbose = 1;
+		}
 
 		if ( bx->verbose ) show_peak_box(&ic, bx);
 
-		integrate_box(&ic, bx, &intensity, &sigma, &saturated);
-
-		r = 0;
-		if ( saturated ) {
-			n_saturated++;
-			if ( !integrate_saturated ) r = 1;
-		}
+		integrate_box(&ic, bx, &intensity, &sigma);
 
 		/* I/sigma(I) cutoff
 		 * Rejects reflections below --min-integration-snr, or if the
 		 * SNR is clearly silly.  Silly indicates that the intensity
 		 * was zero. */
 		snr = fabs(intensity)/sigma;
-		if ( !r && (isnan(snr) || (snr < min_snr)) ) {
-			r = 1;
-		}
+		if ( (isnan(snr) || (snr < min_snr)) ) continue;
 
 		/* Record intensity and set redundancy to 1 on success */
-		if ( !r ) {
-			set_intensity(refl, intensity);
-			set_esd_intensity(refl, sigma);
-			set_redundancy(refl, 1);
-		} else {
-			set_redundancy(refl, 0);
-		}
+		set_intensity(refl, intensity);
+		set_esd_intensity(refl, sigma);
+		set_redundancy(refl, 1);
 
 		one_over_d = resolution(cell, h, k, l);
 		if ( one_over_d > limit ) limit = one_over_d;
@@ -1456,15 +1458,13 @@ void integrate_all(struct image *image, IntegrationMethod meth,
 			return;
 
 			case INTEGRATION_RINGS :
-			integrate_rings(image->crystals[i], image, min_snr,
-			                ir_inn, ir_mid, ir_out,
-				        integrate_saturated);
+			integrate_rings(meth, image->crystals[i], image,
+			                min_snr, ir_inn, ir_mid, ir_out);
 			return;
 
 			case INTEGRATION_PROF2D :
-			integrate_prof2d(image->crystals[i], image, use_closer,
-			                 min_snr, ir_inn, ir_mid, ir_out,
-				         integrate_saturated);
+			integrate_prof2d(meth, image->crystals[i], image,
+			                 min_snr, ir_inn, ir_mid, ir_out);
 			return;
 
 			default :
@@ -1496,6 +1496,9 @@ IntegrationMethod integration_method(const char *str, int *err)
 
 		} else if ( strcmp(methods[i], "none") == 0) {
 			return INTEGRATION_NONE;
+
+		} else if ( strcmp(methods[i], "sat") == 0) {
+			meth |= INTEGRATION_SATURATED;
 
 		} else {
 			ERROR("Bad integration method: '%s'\n", str);
