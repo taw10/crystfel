@@ -165,6 +165,11 @@ struct intcontext
 	double **reference_profiles;
 	double **reference_den;
 	int *n_profiles_in_reference;
+
+	/* For summation integration only */
+	int ir_inn;
+	int ir_mid;
+	int ir_out;
 };
 
 
@@ -463,6 +468,47 @@ static int init_intcontext(struct intcontext *ic)
 	}
 
 	return 0;
+}
+
+
+static void setup_ring_masks(struct intcontext *ic,
+                             double ir_inn, double ir_mid, double ir_out)
+{
+	double lim_sq, out_lim_sq, mid_lim_sq;
+	int p, q;
+
+	lim_sq = pow(ir_inn, 2.0);
+	mid_lim_sq = pow(ir_mid, 2.0);
+	out_lim_sq = pow(ir_out, 2.0);
+
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+
+		int rsq;
+
+		rsq = (p-ic->halfw)*(p-ic->halfw) + (q-ic->halfw)*(q-ic->halfw);
+
+		if ( rsq > out_lim_sq ) {
+			/* Outside outer radius */
+			ic->bm[p + ic->w*q] = BM_IG;
+		} else {
+
+			if ( rsq >= mid_lim_sq ) {
+				/* Inside outer radius, outside middle radius */
+				ic->bm[p + ic->w*q] = BM_BG;
+			} else if ( rsq <= lim_sq ) {
+				/* Inside inner radius */
+				ic->bm[p + ic->w*q] = BM_PK;
+			} else {
+				/* Outside inner radius, inside middle radius */
+				ic->bm[p + ic->w*q] = BM_IG;
+			}
+
+		}
+
+	}
+	}
+
 }
 
 
@@ -1165,7 +1211,7 @@ static void estimate_resolution(RefList *reflections, Crystal *cr,
 static void integrate_refine(Crystal *cr, struct image *image, int use_closer,
                              double min_snr,
                              double ir_inn, double ir_mid, double ir_out,
-                             int integrate_saturated, int **bgMasks)
+                             int integrate_saturated)
 {
 	RefList *reflections;
 	UnitCell *cell;
@@ -1197,15 +1243,91 @@ static void integrate_refine(Crystal *cr, struct image *image, int use_closer,
 }
 
 
-static void integrate_rings(Crystal *cr, struct image *image, int use_closer,
-                            double min_snr,
+static void integrate_box(struct intcontext *ic, struct peak_box *bx,
+                          double *intensity, double *sigma, int *saturated)
+{
+	double pk_total;
+	int pk_counts;
+	double fsct, ssct;
+	double bg_tot;
+	double bg_tot_sq;
+	int bg_counts;
+	double bg_mean, bg_var;
+	double var;
+	double aduph;
+	int p, q;
+
+	if ( saturated != NULL ) *saturated = 0;
+
+	aduph = bx->p->adu_per_eV * ph_lambda_to_eV(ic->image->lambda);
+
+	/* Measure the background */
+	bg_tot = 0.0;
+	bg_tot_sq = 0.0;
+	bg_counts = 0;
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+
+		double bi = boxi(ic, bx, p, q);
+		if ( bx->bm[p + ic->w*q] != BM_BG ) continue;
+
+		if ( (saturated != NULL) && (bi > bx->p->max_adu) ) {
+			*saturated = 1;
+		}
+
+		bg_tot += bi;
+		bg_tot_sq += pow(bi, 2.0);
+		bg_counts++;
+
+	}
+	}
+
+	bg_mean = bg_tot / bg_counts;
+	bg_var = (bg_tot_sq/bg_counts) - pow(bg_mean, 2.0);
+
+	/* Measure the peak */
+	pk_total = 0.0;
+	pk_counts = 0;
+	fsct = 0.0;  ssct = 0.0;
+
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+
+		double bi = boxi(ic, bx, p, q);
+		if ( bx->bm[p + ic->w*q] != BM_PK ) continue;
+
+		if ( (saturated != NULL) && (bi > bx->p->max_adu) ) {
+			*saturated = 1;
+		}
+
+		pk_counts++;
+		pk_total += (bi - bg_mean);
+		fsct += (bi-bg_mean)*p;
+		ssct += (bi-bg_mean)*q;
+
+	}
+	}
+
+//	*pfs = ((double)fsct / pk_total) + 0.5;
+//	*pss = ((double)ssct / pk_total) + 0.5;
+
+	var = pk_counts * bg_var;
+	var += aduph * pk_total;
+
+	if ( intensity != NULL ) *intensity = pk_total;
+	if ( sigma != NULL ) *sigma = sqrt(var);
+}
+
+
+static void integrate_rings(Crystal *cr, struct image *image, double min_snr,
                             double ir_inn, double ir_mid, double ir_out,
-                            int integrate_saturated, int **bgMasks)
+                            int integrate_saturated)
 {
 	RefList *list;
 	Reflection *refl;
 	RefListIterator *iter;
 	UnitCell *cell;
+	struct intcontext ic;
 	int n_saturated = 0;
 	double limit = 0.0;
 
@@ -1216,73 +1338,76 @@ static void integrate_rings(Crystal *cr, struct image *image, int use_closer,
 
 	cell = crystal_get_cell(cr);
 
+	ic.halfw = ir_out;
+	ic.image = image;
+	ic.k = 1.0/image->lambda;
+	ic.cell = cell;
+	ic.ir_inn = ir_inn;
+	ic.ir_mid = ir_mid;
+	ic.ir_out = ir_out;
+	if ( init_intcontext(&ic) ) {
+		ERROR("Failed to initialise integration.\n");
+		return;
+	}
+	setup_ring_masks(&ic, ir_inn, ir_mid, ir_out);
+
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		double fs, ss, intensity;
-		double d;
-		int idx;
-		double sigma, snr;
 		double pfs, pss;
-		int r;
 		signed int h, k, l;
+		struct peak_box *bx;
+		int pn;
 		struct panel *p;
-		int pnum, j, found;
+		int fid_fs, fid_ss;  /* Center coordinates, rounded,
+		                      * in overall data block */
+		int cfs, css;  /* Corner coordinates */
+		double intensity;
+		double sigma, snr;
 		int saturated;
 		double one_over_d;
+		int r;
+
+		set_redundancy(refl, 0);
 
 		get_detector_pos(refl, &pfs, &pss);
+		fid_fs = lrint(pfs);
+		fid_ss = lrint(pss);
+		pn = find_panel_number(image->det, fid_fs, fid_ss);
+		p = &image->det->panels[pn];
+
+		cfs = (fid_fs-p->min_fs) - ic.halfw;
+		css = (fid_ss-p->min_ss) - ic.halfw;
+
+		if ( (cfs + ic.w >= p->w) || (css + ic.w >= p->h ) ) {
+			continue;
+		}
+		if ( (cfs < 0) || (css < 0 ) ) continue;
+
+		bx = add_box(&ic);
+		bx->refl = refl;
+		bx->cfs = cfs;
+		bx->css = css;
+		bx->p = p;
+		bx->pn = pn;
+
+		if ( check_box(&ic, bx) ) {
+			delete_box(&ic, bx);
+			continue;
+		}
+
 		get_indices(refl, &h, &k, &l);
+//		if ( (h==-1) && (k==14) && (l==13) ) {
+//			bx->verbose = 1;
+//		}
 
-		/* Is there a really close feature which was detected? */
-		if ( use_closer ) {
+		if ( bx->verbose ) show_peak_box(&ic, bx);
 
-			struct imagefeature *f;
+		integrate_box(&ic, bx, &intensity, &sigma, &saturated);
 
-			if ( image->features != NULL ) {
-				f = image_feature_closest(image->features,
-					                  pfs, pss, &d, &idx);
-			} else {
-				f = NULL;
-			}
-
-			/* FIXME: Horrible hardcoded value */
-			if ( (f != NULL) && (d < 10.0) ) {
-
-				double exe;
-
-				exe = get_excitation_error(refl);
-
-				pfs = f->fs;
-				pss = f->ss;
-
-				set_detector_pos(refl, exe, pfs, pss);
-
-			}
-
-		}
-
-		p = find_panel(image->det, pfs, pss);
-		if ( p == NULL ) continue;  /* Next peak */
-		found = 0;
-		for ( j=0; j<image->det->n_panels; j++ ) {
-			if ( &image->det->panels[j] == p ) {
-				pnum = j;
-				found = 1;
-				break;
-			}
-		}
-		if ( !found ) {
-			ERROR("Couldn't find panel %p in list.\n", p);
-			return;
-		}
-
-		r = integrate_peak(image, pfs, pss, &fs, &ss,
-		                   &intensity, &sigma, ir_inn, ir_mid, ir_out,
-		                   bgMasks[pnum], &saturated);
-
-		if ( !r && saturated ) {
+		r = 0;
+		if ( saturated ) {
 			n_saturated++;
 			if ( !integrate_saturated ) r = 1;
 		}
@@ -1322,23 +1447,6 @@ void integrate_all(struct image *image, IntegrationMethod meth,
                    int integrate_saturated)
 {
 	int i;
-	int **bgMasks;
-
-	/* Make background masks for all panels */
-	bgMasks = calloc(image->det->n_panels, sizeof(int *));
-	if ( bgMasks == NULL ) {
-		ERROR("Couldn't create list of background masks.\n");
-		return;
-	}
-	for ( i=0; i<image->det->n_panels; i++ ) {
-		int *mask;
-		mask = make_BgMask(image, &image->det->panels[i], ir_inn);
-		if ( mask == NULL ) {
-			ERROR("Couldn't create background mask.\n");
-			return;
-		}
-		bgMasks[i] = mask;
-	}
 
 	for ( i=0; i<image->n_crystals; i++ ) {
 
@@ -1348,15 +1456,15 @@ void integrate_all(struct image *image, IntegrationMethod meth,
 			return;
 
 			case INTEGRATION_RINGS :
-			integrate_rings(image->crystals[i], image, use_closer,
-			                min_snr, ir_inn, ir_mid, ir_out,
-				        integrate_saturated, bgMasks);
+			integrate_rings(image->crystals[i], image, min_snr,
+			                ir_inn, ir_mid, ir_out,
+				        integrate_saturated);
 			return;
 
 			case INTEGRATION_REFINE :
 			integrate_refine(image->crystals[i], image, use_closer,
 			                 min_snr, ir_inn, ir_mid, ir_out,
-				         integrate_saturated, bgMasks);
+				         integrate_saturated);
 			return;
 
 			default :
@@ -1366,11 +1474,6 @@ void integrate_all(struct image *image, IntegrationMethod meth,
 		}
 
 	}
-
-	for ( i=0; i<image->det->n_panels; i++ ) {
-		free(bgMasks[i]);
-	}
-	free(bgMasks);
 }
 
 
