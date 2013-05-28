@@ -34,7 +34,7 @@
 #endif
 
 #define INTEGRATION_DEFAULTS_RINGS (INTEGRATION_RINGS | INTEGRATION_SATURATED)
-#define INTEGRATION_DEFAULTS_REFINE (INTEGRATION_REFINE | INTEGRATION_SATURATED)
+#define INTEGRATION_DEFAULTS_PROF2D (INTEGRATION_PROF2D | INTEGRATION_SATURATED)
 
 /**
  * IntegrationMethod:
@@ -52,7 +52,7 @@ typedef enum {
 
 	/* The core integration methods themselves */
 	INTEGRATION_RINGS  = 1,
-	INTEGRATION_REFINE = 2,
+	INTEGRATION_PROF2D = 2,
 
 	/* Bits at the top of the IntegrationMethod are flags which modify the
 	 * behaviour of the integration. */

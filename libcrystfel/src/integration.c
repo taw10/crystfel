@@ -1208,7 +1208,7 @@ static void estimate_resolution(RefList *reflections, Crystal *cr,
 }
 
 
-static void integrate_refine(Crystal *cr, struct image *image, int use_closer,
+static void integrate_prof2d(Crystal *cr, struct image *image, int use_closer,
                              double min_snr,
                              double ir_inn, double ir_mid, double ir_out,
                              int integrate_saturated)
@@ -1461,8 +1461,8 @@ void integrate_all(struct image *image, IntegrationMethod meth,
 				        integrate_saturated);
 			return;
 
-			case INTEGRATION_REFINE :
-			integrate_refine(image->crystals[i], image, use_closer,
+			case INTEGRATION_PROF2D :
+			integrate_prof2d(image->crystals[i], image, use_closer,
 			                 min_snr, ir_inn, ir_mid, ir_out,
 				         integrate_saturated);
 			return;
@@ -1491,8 +1491,8 @@ IntegrationMethod integration_method(const char *str, int *err)
 		if ( strcmp(methods[i], "rings") == 0) {
 			meth = INTEGRATION_DEFAULTS_RINGS;
 
-		} else if ( strcmp(methods[i], "refine") == 0) {
-			meth = INTEGRATION_DEFAULTS_REFINE;
+		} else if ( strcmp(methods[i], "prof2d") == 0) {
+			meth = INTEGRATION_DEFAULTS_PROF2D;
 
 		} else if ( strcmp(methods[i], "none") == 0) {
 			return INTEGRATION_NONE;
