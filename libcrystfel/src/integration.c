@@ -1062,6 +1062,7 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 		                      * in overall data block */
 		int cfs, css;  /* Corner coordinates */
 		int saturated;
+		int r;
 
 		set_redundancy(refl, 0);
 
@@ -1089,7 +1090,12 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 		/* Which reference profile? */
 		bx->rp = 0;//bx->pn;
 
-		if ( center_and_check_box(&ic, bx, &saturated) ) {
+		if ( meth & INTEGRATION_CENTER ) {
+			r = center_and_check_box(&ic, bx, &saturated);
+		} else {
+			r = check_box(&ic, bx, &saturated);
+		}
+		if ( r ) {
 			delete_box(&ic, bx);
 			continue;
 		}
@@ -1489,6 +1495,7 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 		double sigma, snr;
 		int saturated;
 		double one_over_d;
+		int r;
 
 		set_redundancy(refl, 0);
 
@@ -1513,7 +1520,12 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 		bx->p = p;
 		bx->pn = pn;
 
-		if ( center_and_check_box(&ic, bx, &saturated) ) {
+		if ( meth & INTEGRATION_CENTER ) {
+			r = center_and_check_box(&ic, bx, &saturated);
+		} else {
+			r = check_box(&ic, bx, &saturated);
+		}
+		if ( r ) {
 			delete_box(&ic, bx);
 			continue;
 		}
@@ -1614,6 +1626,15 @@ IntegrationMethod integration_method(const char *str, int *err)
 
 		} else if ( strcmp(methods[i], "sat") == 0) {
 			meth |= INTEGRATION_SATURATED;
+
+		} else if ( strcmp(methods[i], "nosat") == 0) {
+			meth &= ~INTEGRATION_SATURATED;
+
+		} else if ( strcmp(methods[i], "cen") == 0) {
+			meth |= INTEGRATION_CENTER;
+
+		} else if ( strcmp(methods[i], "nocen") == 0) {
+			meth &= ~INTEGRATION_CENTER;
 
 		} else {
 			ERROR("Bad integration method: '%s'\n", str);
