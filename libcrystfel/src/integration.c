@@ -136,9 +136,10 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
 
 enum boxmask_val
 {
-	BM_IG,
-	BM_BG,
-	BM_PK
+	BM_IG,  /* "Soft" ignore */
+	BM_BH,  /* "Hard" ignore (black hole) */
+	BM_BG,  /* Background */
+	BM_PK   /* Peak */
 };
 
 
@@ -252,6 +253,10 @@ static void colour_on(enum boxmask_val b)
 		attron(COLOR_PAIR(2));
 		break;
 
+		case BM_BH :
+		attron(COLOR_PAIR(3));
+		break;
+
 		default:
 		break;
 
@@ -271,6 +276,10 @@ static void colour_off(enum boxmask_val b)
 		attroff(COLOR_PAIR(2));
 		break;
 
+		case BM_BH :
+		attron(COLOR_PAIR(3));
+		break;
+
 		default:
 		break;
 
@@ -286,6 +295,7 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 	start_color();
 	init_pair(1, COLOR_WHITE, COLOR_BLUE) ;  /* Background */
 	init_pair(2, COLOR_WHITE, COLOR_RED);    /* Peak */
+	init_pair(3, COLOR_BLACK, COLOR_CYAN);   /* Blackhole */
 
 	printw("Pixel values:\n");
 	for ( q=ic->w-1; q>=0; q-- ) {
@@ -481,6 +491,7 @@ static int init_intcontext(struct intcontext *ic)
 		switch ( ic->bm[p + ic->w*q] ) {
 
 			case BM_IG :
+			case BM_BH :
 			break;
 
 			case BM_BG :
@@ -684,6 +695,7 @@ static void add_to_reference_profile(struct intcontext *ic, struct peak_box *bx)
 		float bi;
 
 		if ( bx->bm[p + ic->w*q] == BM_IG ) continue;
+		if ( bx->bm[p + ic->w*q] == BM_BH ) continue;
 		bi = boxi(ic, bx, p, q);
 
 		val = bi*bx->intensity;
@@ -780,10 +792,11 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 		bx->bm[p+ic->w*q] = ic->bm[p+ic->w*q];
 
 		if ( ic->image->bad[bx->pn][fs + bx->p->w*ss] ) {
-			bx->bm[p+ic->w*q] = BM_IG;
+			bx->bm[p+ic->w*q] = BM_BH;
 		}
 
 		if ( (bx->bm[p+ic->w*q] != BM_IG)
+		  && (bx->bm[p+ic->w*q] != BM_BH)
 		  && (boxi(ic, bx, p, q) > bx->p->max_adu) ) {
 			*sat = 1;
 		}
@@ -798,7 +811,7 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 		k = lrint(kd);
 		l = lrint(ld);
 		if ( (h != hr) || (k != kr) || (l != lr) ) {
-			bx->bm[p+ic->w*q] = BM_IG;
+			bx->bm[p+ic->w*q] = BM_BH;
 		}
 
 		if ( bx->bm[p+ic->w*q] == BM_PK ) n_pk++;
@@ -863,7 +876,7 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 
 			double bi = boxi(ic, bx, p, q);
 
-			if ( bx->bm[p + ic->w*q] != BM_PK ) continue;
+			if ( bx->bm[p + ic->w*q] == BM_BH ) continue;
 
 			sum_fs += bi * (p-ic->halfw);
 			sum_ss += bi * (q-ic->halfw);
@@ -1404,9 +1417,11 @@ static void integrate_box(struct intcontext *ic, struct peak_box *bx,
 	for ( p=0; p<ic->w; p++ ) {
 	for ( q=0; q<ic->w; q++ ) {
 
-		double bi = boxi(ic, bx, p, q);
+		double bi;
+
 		if ( bx->bm[p + ic->w*q] != BM_BG ) continue;
 
+		bi = boxi(ic, bx, p, q);
 		bg_tot += bi;
 		bg_tot_sq += pow(bi, 2.0);
 		bg_counts++;
@@ -1425,9 +1440,11 @@ static void integrate_box(struct intcontext *ic, struct peak_box *bx,
 	for ( p=0; p<ic->w; p++ ) {
 	for ( q=0; q<ic->w; q++ ) {
 
-		double bi = boxi(ic, bx, p, q);
+		double bi;
+
 		if ( bx->bm[p + ic->w*q] != BM_PK ) continue;
 
+		bi = boxi(ic, bx, p, q);
 		pk_counts++;
 		pk_total += (bi - bg_mean);
 		fsct += (bi-bg_mean)*p;
