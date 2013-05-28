@@ -770,15 +770,12 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 		fs = bx->cfs + p;
 		ss = bx->css + q;
 
-		assert(fs >= 0);
-		assert(fs < bx->p->w);
-		assert(ss >= 0);
-		assert(ss < bx->p->h);
+		if ( (fs < 0) || (fs >= bx->p->w)
+		  || (ss < 0) || (ss >= bx->p->h) ) return 1;
 
-		assert(p >= 0);
-		assert(p < ic->w);
-		assert(q >= 0);
-		assert(q < ic->w);
+		if ( (p < 0) || (p >= ic->w) || (q < 0) || (q >= ic->w) ) {
+			return 1;
+		}
 
 		bx->bm[p+ic->w*q] = ic->bm[p+ic->w*q];
 
@@ -841,6 +838,57 @@ static double fit_J(struct intcontext *ic, struct peak_box *bx)
 	}
 
 	return sum / den;
+}
+
+
+static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
+                                int *sat)
+{
+	int i;
+
+	if ( check_box(ic, bx, sat) ) return 1;
+
+	for ( i=0; i<10; i++ ) {
+
+		int p, q;
+		double sum_fs = 0.0;
+		double sum_ss = 0.0;
+		double den = 0.0;
+		int t_offs_fs = 0;
+		int t_offs_ss = 0;
+		double offs_fs, offs_ss;
+
+		for ( p=0; p<ic->w; p++ ) {
+		for ( q=0; q<ic->w; q++ ) {
+
+			double bi = boxi(ic, bx, p, q);
+
+			if ( bx->bm[p + ic->w*q] != BM_PK ) continue;
+
+			sum_fs += bi * (p-ic->halfw);
+			sum_ss += bi * (q-ic->halfw);
+			den += bi;
+
+		}
+		}
+
+		offs_fs = sum_fs / den;
+		offs_ss = sum_ss / den;
+
+		bx->cfs += rint(offs_fs);
+		bx->css += rint(offs_ss);
+
+		t_offs_fs += rint(offs_fs);
+		t_offs_ss += rint(offs_fs);
+
+		if ( check_box(ic, bx, sat) ) return 1;
+
+		if ( t_offs_fs*t_offs_fs + t_offs_ss*t_offs_ss > ic->w*ic->w ) {
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 
@@ -1041,7 +1089,7 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 		/* Which reference profile? */
 		bx->rp = 0;//bx->pn;
 
-		if ( check_box(&ic, bx, &saturated) ) {
+		if ( center_and_check_box(&ic, bx, &saturated) ) {
 			delete_box(&ic, bx);
 			continue;
 		}
@@ -1465,7 +1513,7 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 		bx->p = p;
 		bx->pn = pn;
 
-		if ( check_box(&ic, bx, &saturated) ) {
+		if ( center_and_check_box(&ic, bx, &saturated) ) {
 			delete_box(&ic, bx);
 			continue;
 		}
