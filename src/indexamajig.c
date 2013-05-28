@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
 	iargs.ir_inn = 4.0;
 	iargs.ir_mid = 5.0;
 	iargs.ir_out = 7.0;
-	iargs.use_saturated = 0;
+	iargs.use_saturated = 1;
 	iargs.integrate_saturated = 0;
 	iargs.no_revalidate = 0;
 	iargs.stream_peaks = 1;
