@@ -37,6 +37,7 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_eigen.h>
+#include <ncurses.h>
 
 #include "reflist.h"
 #include "cell.h"
@@ -240,36 +241,71 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 {
 	int q;
 
-	printf("Pixel values                                              ");
-	printf("Box flags              ");
-	printf("Fitted background\n");
+	initscr();
+	start_color();
+	init_pair(1, COLOR_WHITE, COLOR_BLUE) ;  /* Background */
+	init_pair(2, COLOR_WHITE, COLOR_RED);    /* Peak */
+
+	printw("Pixel values                                              ");
+	printw("Box flags              ");
+	printw("Fitted background\n");
 
 	for ( q=ic->w-1; q>=0; q-- ) {
 
 		int p;
 
 		for ( p=0; p<ic->w; p++ ) {
-			printf("%5.0f ", boxi(ic, bx, p, q));
+			switch ( bx->bm[p+q*ic->w] ) {
+
+				case BM_BG :
+				attron(COLOR_PAIR(1));
+				break;
+
+				case BM_PK :
+				attron(COLOR_PAIR(2));
+				break;
+
+				default:
+				break;
+
+			}
+			printw("%5.0f ", boxi(ic, bx, p, q));
+			switch ( bx->bm[p+q*ic->w] ) {
+
+				case BM_BG :
+				attroff(COLOR_PAIR(1));
+				break;
+
+				case BM_PK :
+				attroff(COLOR_PAIR(2));
+				break;
+
+				default:
+				break;
+
+			}
 		}
 
 		printf("    ");
 
 		for ( p=0; p<ic->w; p++ ) {
-			printf("%i ", bx->bm[p+q*ic->w]);
+			printw("%i ", bx->bm[p+q*ic->w]);
 		}
 
 		printf("    ");
 
 		for ( p=0; p<ic->w; p++ ) {
-			printf("%5.0f ", bx->a*p + bx->b*q + bx->c);
+			printw("%5.0f ", bx->a*p + bx->b*q + bx->c);
 		}
 
-		printf("\n");
+		printw("\n");
 	}
-	printf("Reference profile number %i\n", bx->rp);
-	printf("Background parameters: a=%.2f, b=%.2f, c=%.2f\n",
+	printw("Reference profile number %i\n", bx->rp);
+	printw("Background parameters: a=%.2f, b=%.2f, c=%.2f\n",
 	       bx->a, bx->b, bx->c);
-
+	getch();
+	refresh();
+	endwin();
 }
 
 
