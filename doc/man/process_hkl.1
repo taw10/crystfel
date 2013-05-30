@@ -102,6 +102,10 @@ Disable the polarisation correction.
 .PD
 Include a reflection in the output only if it appears at least least \fIn\fR times.  The default is \fB--min-measurements=2\fR.
 
+.PD 0
+.IP \fB--min-snr=\fR\fIn\fR
+.PD
+Use a particular individual reflection intensity measurement only if it exceeds its estimated standard error by at least \fIn\fR.  The default -infinity, i.e. no cutoff.
 
 .SH CHOICE OF POINT GROUP FOR MERGING
 

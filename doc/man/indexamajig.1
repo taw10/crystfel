@@ -133,27 +133,34 @@ Examples of indexing methods: 'dirax,mosflm,reax', 'dirax-raw,mosflm-raw', 'dira
 
 
 .SH PEAK INTEGRATION
-If the pattern could be successfully indexed, peaks will be predicted in the pattern and their intensities
-measured.  The peak integration relies on knowing an accurate radius to
-integrate the peak within, and that the annulus used to estimate the background
-level is not so big that that it covers neighbouring peaks.  However,
-indexamajig cannot (yet) determine these values for you.  You need to specify
-them using the \fB--int-radius\fR option (see below).
+If the pattern could be successfully indexed, peaks will be predicted in the pattern and their intensities measured.  You have a choice of integration methods, and you specify the method using \fB--integration\fR.  Choose from:
+
+.IP \fBrings\fR
+.PD
+Use three concentric rings to determine the peak, buffer and background estimation regions.  The radius of the smallest circle sets the peak region.  The radius of the middle and outer circles describe an annulus from which the background will be estimated.  You can set the radii of the rings using \fB--int-radius\fR (see below).  By default, the peak will first be centered iteratively on the actual peak location.
+
+.IP \fBprof2d\fR
+.PD
+Integrate the peaks using 2D profile fitting with a planar background, close to the method described by Rossmann (1979) J. Appl. Cryst. 12 p225.
+
 .PP
-To determine appropriate values, index some patterns with the default values and
-view the results using \fBcheck-near-bragg\fR (in the scripts folder).  Set the
-binning in \fBhdfsee\fR to 1, and adjust the ring radius until none of the rings
-overlap for any of the patterns.  This ring radius is the outer radius to use.
-Then reduce the radius until the circles match the sizes of the peaks as
-closely as possible.  This value is the inner radius.  The middle radius should
-be between the two, ideally between two and three pixels smaller than the outer
-radius.
+You can add one or more of the following to the above integration methods:
+
+.IP \fB-nocen\fR
+.PD
+Skip the peak centering step.  The opposite is \fB-cen\fR, which is the default.
+
+.IP \fB-sat\fR
+.PD
+Normally, reflections which contain one or more pixels above max_adu (defined in the detector geometry file) will not be integrated and written to the stream.  Using this option skips this check, and allows saturated reflections to be passed to the later merging stages.  This is not usually a good idea, but might be your only choice if there are many saturated reflections.  The opposite is \fB-nosat\fR, which is the default.
+
+.SH OPTIMISING THE INTEGRATION RADII
+To determine appropriate values for the integration radii, index some patterns with the default values and view the results using \fBcheck-near-bragg\fR (in the scripts folder).  Set the binning in \fBhdfsee\fR to 1, and adjust the ring radius until none of the rings overlap for any of the patterns.  This ring radius is the outer radius to use. Then reduce the radius until the circles match the sizes of the peaks as closely as possible.  This value is the inner radius.  The middle radius should be between the two, ideally between two and three pixels smaller than the outer radius.
 .PP
 If it's difficult to do this without setting the middle radius to the
 same value as the inner radius, then the peaks are too close together to be
 accurately integrated.  Perhaps you got greedy with the resolution and put the
-detector too close to the interaction region?  Improved integration algorithms,
-designed to handle such difficult cases, are under development.
+detector too close to the interaction region?
 
 .SH OPTIONS
 .PD 0
@@ -266,11 +273,6 @@ Set the gradient threshold for peak detection using \fB--peaks=zaef\fR to \fIgra
 Set the minimum I/sigma(I) for peak detection when using \fB--peaks=zaef\fR.  The default is \fB--min-snr=5\fR.
 
 .PD 0
-.IP \fB--min-integration-snr=\fR\fIsnr\fR
-.PD
-Set the minimum I/sigma(I) for a peak to be integrated successfully.  The default is \fB--min-snr=-infinity\fR, i.e. no peaks are excluded.
-
-.PD 0
 .IP \fB--copy-hdf5-field=\fR\fIpath\fR
 .PD
 Copy the information from \fIpath\fR in the HDF5 file into the output stream.  The information must be a single scalar value.  This option is sometimes useful to allow data to be separated after indexing according to some condition such the presence of an optical pump pulse.  You can give this option as many times as you need to copy multiple bits of information.
@@ -303,11 +305,6 @@ default.
 .IP \fB--use-saturated\fR
 .PD
 Normally, peaks which contain one or more pixels above max_adu (defined in the detector geometry file) will not be used for indexing.  Using this option skips this check, possibly improving the indexing rate if there is a large proportion of saturated peaks.
-
-.PD 0
-.IP \fB--integrate-saturated\fR
-.PD
-Normally, reflections which contain one or more pixels above max_adu (defined in the detector geometry file) will not be integrated and written to the stream.  Using this option skips this check, and allows saturated reflections to be passed to the later merging stages.  This is not usually a good idea, but might be your only choice if there are many saturated reflections.
 
 .PD 0
 .IP \fB--no-revalidate\fR
