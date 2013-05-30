@@ -125,8 +125,6 @@ static void show_help(const char *s)
 "-e, --image=<element>   Use this image from the HDF5 file.\n"
 "                          Example: /data/data0.\n"
 "                          Default: The first one found.\n"
-"    --res-cutoff        Estimate the resolution limit of each pattern, and\n"
-"                         don't integrate reflections further out.\n"
 "\n"
 "\nFor time-resolved stuff, you might want to use:\n\n"
 "     --copy-hdf5-field <f>  Copy the value of field <f> into the stream. You\n"
