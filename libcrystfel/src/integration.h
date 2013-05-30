@@ -68,7 +68,6 @@ typedef enum {
 extern IntegrationMethod integration_method(const char *t, int *err);
 
 extern void integrate_all(struct image *image, IntegrationMethod meth,
-	                  int use_closer, double min_snr,
 	                  double ir_inn, double ir_mid, double ir_out,
 	                  int integrate_saturated);
 

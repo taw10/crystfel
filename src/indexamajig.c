@@ -121,8 +121,6 @@ static void show_help(const char *s)
 "                         Default: 100,000.\n"
 "    --min-snr=<n>       Minimum signal-to-noise ratio for peaks.\n"
 "                         Default: 5.\n"
-"    --min-integration-snr=<n> Minimum signal-to-noise ratio for peaks\n"
-"                         during integration. Default: -infinity.\n"
 "    --int-radius=<r>    Set the integration radii.  Default: 4,5,7.\n"
 "-e, --image=<element>   Use this image from the HDF5 file.\n"
 "                          Example: /data/data0.\n"
@@ -191,7 +189,6 @@ int main(int argc, char *argv[])
 	iargs.threshold = 800.0;
 	iargs.min_gradient = 100000.0;
 	iargs.min_snr = 5.0;
-	iargs.min_int_snr = -INFINITY;
 	iargs.det = NULL;
 	iargs.peaks = PEAK_ZAEF;
 	iargs.beam = NULL;
@@ -255,7 +252,6 @@ int main(int argc, char *argv[])
 		{"hdf5-peaks",         1, NULL,                9},
 		{"copy-hdf5-field",    1, NULL,               10},
 		{"min-snr",            1, NULL,               11},
-		{"min-integration-snr",1, NULL,               12},
 		{"tolerance",          1, NULL,               13},
 		{"int-radius",         1, NULL,               14},
 		{"median-filter",      1, NULL,               15},
@@ -366,10 +362,6 @@ int main(int argc, char *argv[])
 
 			case 11 :
 			iargs.min_snr = strtof(optarg, NULL);
-			break;
-
-			case 12 :
-			iargs.min_int_snr = strtof(optarg, NULL);
 			break;
 
 			case 13 :

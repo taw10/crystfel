@@ -1394,7 +1394,7 @@ static void estimate_resolution(RefList *reflections, Crystal *cr,
 
 
 static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
-                             struct image *image,  double min_snr,
+                             struct image *image,
                              double ir_inn, double ir_mid, double ir_out)
 {
 	RefList *reflections;
@@ -1498,7 +1498,7 @@ static void integrate_box(struct intcontext *ic, struct peak_box *bx,
 
 
 static void integrate_rings(IntegrationMethod meth, Crystal *cr,
-                            struct image *image, double min_snr,
+                            struct image *image,
                             double ir_inn, double ir_mid, double ir_out)
 {
 	RefList *list;
@@ -1542,7 +1542,7 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 		                      * in overall data block */
 		int cfs, css;  /* Corner coordinates */
 		double intensity;
-		double sigma, snr;
+		double sigma;
 		int saturated;
 		double one_over_d;
 		int r;
@@ -1597,14 +1597,7 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 
 		integrate_box(&ic, bx, &intensity, &sigma);
 
-		/* I/sigma(I) cutoff
-		 * Rejects reflections below --min-integration-snr, or if the
-		 * SNR is clearly silly.  Silly indicates that the intensity
-		 * was zero. */
-		snr = fabs(intensity)/sigma;
-		if ( (isnan(snr) || (snr < min_snr)) ) continue;
-
-		/* Record intensity and set redundancy to 1 on success */
+		/* Record intensity and set redundancy to 1 */
 		set_intensity(refl, intensity);
 		set_esd_intensity(refl, sigma);
 		set_redundancy(refl, 1);
@@ -1623,7 +1616,6 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 
 
 void integrate_all(struct image *image, IntegrationMethod meth,
-                   int use_closer, double min_snr,
                    double ir_inn, double ir_mid, double ir_out,
                    int integrate_saturated)
 {
@@ -1638,12 +1630,12 @@ void integrate_all(struct image *image, IntegrationMethod meth,
 
 			case INTEGRATION_RINGS :
 			integrate_rings(meth, image->crystals[i], image,
-			                min_snr, ir_inn, ir_mid, ir_out);
+			                ir_inn, ir_mid, ir_out);
 			return;
 
 			case INTEGRATION_PROF2D :
 			integrate_prof2d(meth, image->crystals[i], image,
-			                 min_snr, ir_inn, ir_mid, ir_out);
+			                ir_inn, ir_mid, ir_out);
 			return;
 
 			default :
