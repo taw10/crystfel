@@ -183,7 +183,14 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	            iargs->stream_peaks, iargs->stream_refls);
 
 	for ( i=0; i<image.n_crystals; i++ ) {
+		cell_free(crystal_get_cell(image.crystals[i]));
+		reflist_free(crystal_get_reflections(image.crystals[i]));
 		crystal_free(image.crystals[i]);
+	}
+
+	for ( i=0; i<image.det->n_panels; i++ ) {
+		free(image.dp[i]);
+		free(image.bad[i]);
 	}
 
 	free(image.data);

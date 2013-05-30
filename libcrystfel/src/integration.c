@@ -49,7 +49,8 @@
 #include "integration.h"
 
 
-#define VERBOSITY ((h==0) && (k==13) && (l==13))
+#define VERBOSITY (0)
+// ((h==-6) && (k==0) && (l==-8))
 
 
 static void check_eigen(gsl_vector *e_val)
@@ -549,6 +550,23 @@ static int init_intcontext(struct intcontext *ic)
 }
 
 
+static void free_intcontext(struct intcontext *ic)
+{
+	int i;
+
+	free(ic->boxes);
+	for ( i=0; i<ic->n_reference_profiles; i++ ) {
+		free(ic->reference_profiles[i]);
+		free(ic->reference_den[i]);
+	}
+	free(ic->reference_profiles);
+	free(ic->reference_den);
+	free(ic->n_profiles_in_reference);
+	free(ic->bm);
+	gsl_matrix_free(ic->bgm);
+}
+
+
 static void setup_ring_masks(struct intcontext *ic,
                              double ir_inn, double ir_mid, double ir_out)
 {
@@ -602,6 +620,19 @@ static struct peak_box *add_box(struct intcontext *ic)
 
 	idx = ic->n_boxes++;
 
+	ic->boxes[idx].cfs = 0;
+	ic->boxes[idx].css = 0;
+	ic->boxes[idx].bm = NULL;
+	ic->boxes[idx].pn = -1;
+	ic->boxes[idx].p = NULL;
+	ic->boxes[idx].a = 0.0;
+	ic->boxes[idx].b = 0.0;
+	ic->boxes[idx].c = 0.0;
+	ic->boxes[idx].intensity = 0.0;
+	ic->boxes[idx].sigma = 0.0;
+	ic->boxes[idx].J = 0.0;
+	ic->boxes[idx].rp = -1;
+	ic->boxes[idx].refl = NULL;
 	ic->boxes[idx].verbose = 0;
 
 	return &ic->boxes[idx];
@@ -1184,6 +1215,8 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 		}
 	}
 
+	free_intcontext(&ic);
+
 	image->num_saturated_peaks = n_saturated;
 }
 
@@ -1580,6 +1613,8 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 		if ( one_over_d > limit ) limit = one_over_d;
 
 	}
+
+	free_intcontext(&ic);
 
 	crystal_set_num_saturated_reflections(cr, n_saturated);
 	crystal_set_resolution_limit(cr, limit);
