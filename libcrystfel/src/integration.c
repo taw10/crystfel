@@ -1618,8 +1618,7 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 
 
 void integrate_all(struct image *image, IntegrationMethod meth,
-                   double ir_inn, double ir_mid, double ir_out,
-                   int integrate_saturated)
+                   double ir_inn, double ir_mid, double ir_out)
 {
 	int i;
 
