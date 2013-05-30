@@ -793,6 +793,8 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 	double cdx, cdy, cdz;
 	signed int hr, kr, lr;
 
+	if ( sat != NULL ) *sat = 0;
+
 	bx->bm = malloc(ic->w*ic->w*sizeof(int));
 	if ( bx->bm == NULL ) return 1;
 
@@ -829,7 +831,7 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 		if ( (bx->bm[p+ic->w*q] != BM_IG)
 		  && (bx->bm[p+ic->w*q] != BM_BH)
 		  && (boxi(ic, bx, p, q) > bx->p->max_adu) ) {
-			*sat = 1;
+			if ( sat != NULL ) *sat = 1;
 		}
 
 		/* Ignore if this pixel is closer to the next reciprocal lattice
