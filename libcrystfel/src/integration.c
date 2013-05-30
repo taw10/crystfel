@@ -1635,7 +1635,7 @@ void integrate_all(struct image *image, IntegrationMethod meth,
 
 			case INTEGRATION_PROF2D :
 			integrate_prof2d(meth, image->crystals[i], image,
-			                ir_inn, ir_mid, ir_out);
+			                 ir_inn, ir_mid, ir_out);
 			return;
 
 			default :
