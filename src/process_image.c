@@ -174,8 +174,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	/* Integrate all the crystals at once - need all the crystals so that
 	 * overlaps can be detected. */
 	integrate_all(&image, iargs->int_meth,
-	                      iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
-	                      iargs->integrate_saturated);
+	                      iargs->ir_inn, iargs->ir_mid, iargs->ir_out);
 
 	write_chunk(st, &image, hdfile,
 	            iargs->stream_peaks, iargs->stream_refls);
