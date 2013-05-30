@@ -131,7 +131,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 			ERROR("Failed to get peaks from HDF5 file.\n");
 		}
 		if ( !iargs->no_revalidate ) {
-			validate_peaks(&image, iargs->min_int_snr,
+			validate_peaks(&image, iargs->min_snr,
 				       iargs->ir_inn, iargs->ir_mid,
 				       iargs->ir_out, iargs->use_saturated);
 		}
