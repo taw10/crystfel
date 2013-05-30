@@ -199,6 +199,10 @@ struct peak_box
 	double sigma;
 	double J;  /* Profile scaling factor */
 
+	/* Offsets to final observed position */
+	double offs_fs;
+	double offs_ss;
+
 	int rp;   /* Reference profile number */
 
 	Reflection *refl;
@@ -699,8 +703,8 @@ static void observed_position(struct intcontext *ic, struct peak_box *bx,
 		if ( bx->bm[p + ic->w*q] != BM_PK ) continue;
 		bi = boxi(ic, bx, p, q);
 
-		num_p += bi*p;
-		num_q += bi*q;
+		num_p += bi*(p - ic->halfw);
+		num_q += bi*(q - ic->halfw);
 		den += bi;
 
 	}
@@ -1099,7 +1103,6 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 	      refl = next_refl(refl, iter) )
 	{
 		double pfs, pss;
-		double pos_p, pos_q;
 		signed int h, k, l;
 		struct peak_box *bx;
 		int pn;
@@ -1161,12 +1164,7 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 
 		fit_bg(&ic, bx);
 
-		observed_position(&ic, bx, &pos_p, &pos_q);
-		pos_p -= ic.halfw;
-		pos_q -= ic.halfw;
-		if ( bx->verbose ) {
-			STATUS("Position error %f %f\n", pos_p, pos_q);
-		}
+		observed_position(&ic, bx, &bx->offs_fs, &bx->offs_ss);
 
 		bx->intensity = tentative_intensity(&ic, bx);
 		set_intensity(refl, bx->intensity);
@@ -1211,9 +1209,19 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 #endif
 
 		if ( bg_ok(bx) ) {
+
+			double pfs, pss;
+
 			set_intensity(bx->refl, bx->intensity);
 			set_esd_intensity(bx->refl, bx->sigma);
 			set_redundancy(bx->refl, 1);
+
+			/* Update position */
+			get_detector_pos(refl, &pfs, &pss);
+			pfs += bx->offs_fs;
+			pss += bx->offs_ss;
+			set_detector_pos(refl, 0.0, pfs, pss);
+
 		}
 	}
 
@@ -1482,14 +1490,14 @@ static void integrate_box(struct intcontext *ic, struct peak_box *bx,
 		bi = boxi(ic, bx, p, q);
 		pk_counts++;
 		pk_total += (bi - bg_mean);
-		fsct += (bi-bg_mean)*p;
-		ssct += (bi-bg_mean)*q;
+		fsct += (bi-bg_mean)*(p - ic->halfw);
+		ssct += (bi-bg_mean)*(q - ic->halfw);
 
 	}
 	}
 
-//	*pfs = ((double)fsct / pk_total) + 0.5;
-//	*pss = ((double)ssct / pk_total) + 0.5;
+	bx->offs_fs = (double)fsct / pk_total;
+	bx->offs_ss = (double)ssct / pk_total;
 
 	var = pk_counts * bg_var;
 	var += aduph * pk_total;
@@ -1606,6 +1614,11 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 
 		one_over_d = resolution(cell, h, k, l);
 		if ( one_over_d > limit ) limit = one_over_d;
+
+		/* Update position */
+		pfs += bx->offs_fs;
+		pss += bx->offs_ss;
+		set_detector_pos(refl, 0.0, pfs, pss);
 
 	}
 
