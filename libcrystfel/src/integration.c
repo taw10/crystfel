@@ -896,6 +896,9 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 {
 	int i;
 
+	bx->offs_fs = 0.0;
+	bx->offs_ss = 0.0;
+
 	if ( check_box(ic, bx, sat) ) return 1;
 
 	for ( i=0; i<10; i++ ) {
@@ -907,6 +910,7 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 		int t_offs_fs = 0;
 		int t_offs_ss = 0;
 		double offs_fs, offs_ss;
+		int ifs, iss;
 
 		for ( p=0; p<ic->w; p++ ) {
 		for ( q=0; q<ic->w; q++ ) {
@@ -925,8 +929,12 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 		offs_fs = sum_fs / den;
 		offs_ss = sum_ss / den;
 
-		bx->cfs += rint(offs_fs);
-		bx->css += rint(offs_ss);
+		ifs = rint(offs_fs);
+		iss = rint(offs_ss);
+		bx->offs_fs += ifs;
+		bx->offs_ss += iss;
+		bx->cfs += ifs;
+		bx->css += iss;
 
 		t_offs_fs += rint(offs_fs);
 		t_offs_ss += rint(offs_fs);
@@ -1496,8 +1504,9 @@ static void integrate_box(struct intcontext *ic, struct peak_box *bx,
 	}
 	}
 
-	bx->offs_fs = (double)fsct / pk_total;
-	bx->offs_ss = (double)ssct / pk_total;
+	/* This offset is in addition to the offset from center_and_check_box */
+	bx->offs_fs += (double)fsct / pk_total;
+	bx->offs_ss += (double)ssct / pk_total;
 
 	var = pk_counts * bg_var;
 	var += aduph * pk_total;
