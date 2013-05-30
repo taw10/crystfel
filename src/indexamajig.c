@@ -139,9 +139,7 @@ static void show_help(const char *s)
 "     --no-check-prefix    Don't attempt to correct the --prefix.\n"
 "     --closer-peak        Don't integrate from the location of a nearby peak\n"
 "                           instead of the predicted spot.  Don't use.\n"
-"     --use-saturated      During the initial peak search, don't reject\n"
-"                           peaks which contain pixels above max_adu.\n"
-"     --integrate-saturated During the final integration stage, don't reject\n"
+"     --no-use-saturated   During the initial peak search, reject\n"
 "                           peaks which contain pixels above max_adu.\n"
 "     --no-revalidate      Don't re-integrate and check HDF5 peaks for\n"
 "                           validity.\n"
@@ -239,6 +237,7 @@ int main(int argc, char *argv[])
 		{"no-refls-in-stream", 0, &iargs.stream_refls,       0},
 		{"integrate-saturated",0, &iargs.integrate_saturated,1},
 		{"use-saturated",      0, &iargs.use_saturated,      1},
+		{"no-use-saturated",   0, &iargs.use_saturated,      0},
 		{"no-revalidate",      0, &iargs.no_revalidate,      1},
 
 		/* Long-only options with arguments */
