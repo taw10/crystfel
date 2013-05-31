@@ -1225,10 +1225,10 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 			set_redundancy(bx->refl, 1);
 
 			/* Update position */
-			get_detector_pos(refl, &pfs, &pss);
+			get_detector_pos(bx->refl, &pfs, &pss);
 			pfs += bx->offs_fs;
 			pss += bx->offs_ss;
-			set_detector_pos(refl, 0.0, pfs, pss);
+			set_detector_pos(bx->refl, 0.0, pfs, pss);
 
 		}
 	}
