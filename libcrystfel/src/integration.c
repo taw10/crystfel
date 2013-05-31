@@ -282,7 +282,7 @@ static void colour_off(enum boxmask_val b)
 		break;
 
 		case BM_BH :
-		attron(COLOR_PAIR(3));
+		attroff(COLOR_PAIR(3));
 		break;
 
 		default:
