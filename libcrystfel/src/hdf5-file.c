@@ -695,6 +695,7 @@ double get_value(struct hdfile *f, const char *name)
 
 	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
 	if ( dh < 0 ) {
+		ERROR("No such field '%s'\n", name);
 		return 0.0;
 	}
 
