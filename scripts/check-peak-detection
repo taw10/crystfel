@@ -40,21 +40,17 @@ my $indexed;
 while ( $line = <FH> ) {
 
 	chomp $line;
-	my $handled = 0;
 
 	if ( $in_image ) {
 		printf(TMP "%s\n", $line);
-		$handled = 1;
 	}
 
 	if ( $line =~ /^Peaks\ from\ peak\ search$/ ) {
 		$in_image = 1;
-		$handled = 1;
 	}
 
 	if ( $line =~ /^Image\ filename:\ (.+)$/ ) {
 		$filename = $1;
-		$handled = 1;
 	}
 
 	if ( $line =~ /^indexed_by\ =\ (.*)$/ ) {
@@ -91,6 +87,7 @@ while ( $line = <FH> ) {
 			printf(STDERR "Not showing %s\n", $filename);
 			unlink("list.tmp");
 			open(TMP, "> list.tmp");
+			$in_image = 0;
 			next;
 		}
 
@@ -103,7 +100,6 @@ while ( $line = <FH> ) {
 		if ( $? != 0 ) { exit; }
 		unlink("list.tmp");
 		open(TMP, "> list.tmp");
-		$handled = 1;
 		$in_image = 0;
 
 	}
