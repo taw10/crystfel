@@ -364,7 +364,7 @@ static void show_reference_profile(struct intcontext *ic, int i)
 		for ( p=0; p<ic->w; p++ ) {
 
 			colour_on(ic->bm[p+q*ic->w]);
-			printw("%3.0f ", ic->reference_profiles[i][p+ic->w*q]);
+			printw("%4.0f ", ic->reference_profiles[i][p+ic->w*q]);
 			colour_off(ic->bm[p+q*ic->w]);
 
 		}
