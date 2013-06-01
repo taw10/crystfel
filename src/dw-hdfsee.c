@@ -1403,15 +1403,21 @@ static void numbers_update(DisplayWindow *dw)
 
 	if ( found ) {
 
+		char text[64];
+
 		f = image_feature_closest(dw->image->features, ffs, fss,
 		                          &dmin, &imin);
 		if ( dmin < dw->ring_radius*dw->binning ) {
-			gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat),
-		                           f->name);
+			strncpy(text, f->name, 32);
 		} else {
-			gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat),
-			                   "");
+			strcpy(text, "");
 		}
+
+		strcat(text, " (panel ");
+		strncat(text, find_panel(dw->image->det, ffs, fss)->name, 20);
+		strcat(text, ")");
+
+		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat), text);
 
 	} else {
 		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat), "");
