@@ -447,7 +447,6 @@ static void zero_profiles(struct intcontext *ic)
 }
 
 
-
 static int alloc_boxes(struct intcontext *ic, int new_max_boxes)
 {
 	struct peak_box *boxes_new;
