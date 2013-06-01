@@ -561,7 +561,11 @@ static void free_intcontext(struct intcontext *ic)
 {
 	int i;
 
+	for ( i=0; i<ic->n_boxes; i++ ) {
+		free(ic->boxes[i].bm);
+	}
 	free(ic->boxes);
+
 	for ( i=0; i<ic->n_reference_profiles; i++ ) {
 		free(ic->reference_profiles[i]);
 		free(ic->reference_den[i]);
@@ -662,6 +666,8 @@ static void delete_box(struct intcontext *ic, struct peak_box *bx)
 		ERROR("Couldn't find box %p in context %p\n", bx, ic);
 		return;
 	}
+
+	free(bx->bm);
 
 	memmove(&ic->boxes[i], &ic->boxes[i+1],
 	        (ic->n_boxes-i-1)*sizeof(struct peak_box));
@@ -941,6 +947,7 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 		t_offs_fs += rint(offs_fs);
 		t_offs_ss += rint(offs_fs);
 
+		free(bx->bm);
 		if ( check_box(ic, bx, sat) ) return 1;
 
 		if ( t_offs_fs*t_offs_fs + t_offs_ss*t_offs_ss > ic->w*ic->w ) {

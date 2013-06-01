@@ -189,6 +189,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		free(image.dp[i]);
 		free(image.bad[i]);
 	}
+	free(image.dp);
+	free(image.bad);
 
 	free(image.data);
 	if ( image.flags != NULL ) free(image.flags);
