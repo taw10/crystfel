@@ -1127,8 +1127,15 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 		set_redundancy(refl, 0);
 
 		get_detector_pos(refl, &pfs, &pss);
-		fid_fs = lrint(pfs);
-		fid_ss = lrint(pss);
+
+		/* Explicit truncation of digits after the decimal point.
+		 * This is actually the correct thing to do here, not
+		 * e.g. lrint().  pfs/pss is the position of the spot, measured
+		 * in numbers of pixels, from the panel corner (not the center
+		 * of the first pixel).  So any coordinate from 2.0 to 2.9999
+		 * belongs to pixel index 2. */
+		fid_fs = pfs;
+		fid_ss = pss;
 		pn = find_panel_number(image->det, fid_fs, fid_ss);
 		p = &image->det->panels[pn];
 
@@ -1569,8 +1576,15 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 		set_redundancy(refl, 0);
 
 		get_detector_pos(refl, &pfs, &pss);
-		fid_fs = lrint(pfs);
-		fid_ss = lrint(pss);
+
+		/* Explicit truncation of digits after the decimal point.
+		 * This is actually the correct thing to do here, not
+		 * e.g. lrint().  pfs/pss is the position of the spot, measured
+		 * in numbers of pixels, from the panel corner (not the center
+		 * of the first pixel).  So any coordinate from 2.0 to 2.9999
+		 * belongs to pixel index 2. */
+		fid_fs = pfs;
+		fid_ss = pss;
 		pn = find_panel_number(image->det, fid_fs, fid_ss);
 		p = &image->det->panels[pn];
 
