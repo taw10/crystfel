@@ -436,6 +436,7 @@ static void zero_profiles(struct intcontext *ic)
 		for ( p=0; p<ic->w; p++ ) {
 		for ( q=0; q<ic->w; q++ ) {
 			ic->reference_profiles[i][p+ic->w*q] = 0.0;
+			ic->reference_den[i][p+ic->w*q] = 0.0;
 		}
 		}
 
