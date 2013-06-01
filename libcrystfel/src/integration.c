@@ -1179,8 +1179,6 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 
 		fit_bg(&ic, bx);
 
-		observed_position(&ic, bx, &bx->offs_fs, &bx->offs_ss);
-
 		bx->intensity = tentative_intensity(&ic, bx);
 		set_intensity(refl, bx->intensity);
 
@@ -1510,10 +1508,6 @@ static void integrate_box(struct intcontext *ic, struct peak_box *bx,
 
 	}
 	}
-
-	/* This offset is in addition to the offset from center_and_check_box */
-	bx->offs_fs += (double)fsct / pk_total;
-	bx->offs_ss += (double)ssct / pk_total;
 
 	var = pk_counts * bg_var;
 	var += aduph * pk_total;
