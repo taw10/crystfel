@@ -732,7 +732,6 @@ static void add_to_reference_profile(struct intcontext *ic, struct peak_box *bx)
 		double val;
 		float bi;
 
-		if ( bx->bm[p + ic->w*q] == BM_IG ) continue;
 		if ( bx->bm[p + ic->w*q] == BM_BH ) continue;
 		bi = boxi(ic, bx, p, q);
 
