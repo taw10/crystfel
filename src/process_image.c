@@ -166,7 +166,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		/* Set default crystal parameter(s) */
 		crystal_set_profile_radius(image.crystals[i],
 		                           image.beam->profile_radius);
-		crystal_set_mosaicity(image.crystals[i], 2e-3);  /* radians */
+		crystal_set_mosaicity(image.crystals[i], 0.0);  /* radians */
 		crystal_set_image(image.crystals[i], &image);
 
 	}
