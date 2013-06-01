@@ -1151,6 +1151,8 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 			r = center_and_check_box(&ic, bx, &saturated);
 		} else {
 			r = check_box(&ic, bx, &saturated);
+			bx->offs_fs = 0.0;
+			bx->offs_ss = 0.0;
 		}
 		if ( r ) {
 			delete_box(&ic, bx);
@@ -1593,6 +1595,8 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 			r = center_and_check_box(&ic, bx, &saturated);
 		} else {
 			r = check_box(&ic, bx, &saturated);
+			bx->offs_fs = 0.0;
+			bx->offs_ss = 0.0;
 		}
 		if ( r ) {
 			delete_box(&ic, bx);
