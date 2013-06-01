@@ -1135,11 +1135,6 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 		cfs = (fid_fs-p->min_fs) - ic.halfw;
 		css = (fid_ss-p->min_ss) - ic.halfw;
 
-		if ( (cfs + ic.w >= p->w) || (css + ic.w >= p->h ) ) {
-			continue;
-		}
-		if ( (cfs < 0) || (css < 0 ) ) continue;
-
 		bx = add_box(&ic);
 		bx->refl = refl;
 		bx->cfs = cfs;
@@ -1581,11 +1576,6 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 
 		cfs = (fid_fs-p->min_fs) - ic.halfw;
 		css = (fid_ss-p->min_ss) - ic.halfw;
-
-		if ( (cfs + ic.w >= p->w) || (css + ic.w >= p->h ) ) {
-			continue;
-		}
-		if ( (cfs < 0) || (css < 0 ) ) continue;
 
 		bx = add_box(&ic);
 		bx->refl = refl;
