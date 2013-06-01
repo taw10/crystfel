@@ -297,6 +297,7 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 	int q;
 
 	initscr();
+	clear();
 	start_color();
 	init_pair(1, COLOR_WHITE, COLOR_BLUE) ;  /* Background */
 	init_pair(2, COLOR_WHITE, COLOR_RED);    /* Peak */
@@ -348,6 +349,7 @@ static void show_reference_profile(struct intcontext *ic, int i)
 	int q;
 
 	initscr();
+	clear();
 	start_color();
 	init_pair(1, COLOR_WHITE, COLOR_BLUE) ;  /* Background */
 	init_pair(2, COLOR_WHITE, COLOR_RED);    /* Peak */
