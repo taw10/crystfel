@@ -1092,7 +1092,8 @@ static int suitable_reference(struct intcontext *ic, struct peak_box *bx)
 
 
 static void measure_all_intensities(IntegrationMethod meth, RefList *list,
-                                    struct image *image, UnitCell *cell)
+                                    struct image *image, UnitCell *cell,
+                                    double ir_inn, double ir_mid, double ir_out)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -1100,7 +1101,7 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 	int i;
 	int n_saturated = 0;
 
-	ic.halfw = 4;
+	ic.halfw = ir_out;
 	ic.image = image;
 	ic.k = 1.0/image->lambda;
 	ic.cell = cell;
@@ -1108,6 +1109,8 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 		ERROR("Failed to initialise integration.\n");
 		return;
 	}
+
+	setup_ring_masks(&ic, ir_inn, ir_mid, ir_out);
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -1245,7 +1248,8 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 
 
 static void estimate_mosaicity(IntegrationMethod meth, Crystal *cr,
-                               struct image *image)
+                               struct image *image,
+                               double ir_inn, double ir_mid, double ir_out)
 {
 	int msteps = 50;
 	int i;
@@ -1258,7 +1262,8 @@ static void estimate_mosaicity(IntegrationMethod meth, Crystal *cr,
 	crystal_set_mosaicity(cr, mmax);
 	list = find_intersections(image, cr);
 	crystal_set_reflections(cr, list);
-	measure_all_intensities(meth, list, image, crystal_get_cell(cr));
+	measure_all_intensities(meth, list, image, crystal_get_cell(cr),
+	                        ir_inn, ir_mid, ir_out);
 
 	for ( i=1; i<=msteps; i++ ) {
 
@@ -1427,7 +1432,8 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 
 	/* Create initial list of reflections with nominal parameters */
 	reflections = find_intersections(image, cr);
-	measure_all_intensities(meth, reflections, image, cell);
+	measure_all_intensities(meth, reflections, image, cell,
+	                        ir_inn, ir_mid, ir_out);
 
 	/* Find resolution limit of pattern using this list */
 	//estimate_resolution(reflections, cr, image);
@@ -1443,7 +1449,7 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 
 	/* Create new list of reflections with refined mosaicity */
 	//reflections = find_intersections(image, cr);
-	//measure_all_intensities(reflections, image);
+	//measure_all_intensities(reflections, image, ir_inn, ir_mid, ir_out);
 	crystal_set_reflections(cr, reflections);
 
 	//estimate_resolution(reflections, cr, image);
