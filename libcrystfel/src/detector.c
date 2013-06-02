@@ -1168,6 +1168,19 @@ struct detector *simple_geometry(const struct image *image)
 }
 
 
+void twod_mapping(double fs, double ss, double *px, double *py,
+                  struct panel *p)
+{
+	double xs, ys;
+
+	xs = fs*p->fsx + ss*p->ssx;
+	ys = fs*p->fsy + ss*p->ssy;
+
+	*px = xs + p->cnx;
+	*py = ys + p->cny;
+}
+
+
 int reverse_2d_mapping(double x, double y, double *pfs, double *pss,
                        struct detector *det)
 {

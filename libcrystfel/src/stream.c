@@ -222,6 +222,26 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 			        i->det->panels[j].name, i->det->panels[j].clen);
 		}
 
+		for ( j=0; j<i->det->n_rigid_groups; j++ ) {
+
+			struct rigid_group *rg = i->det->rigid_groups[j];
+
+			fprintf(st->fh, "rg_delta_%s_fsx = %f\n",
+			        rg->name, rg->d_fsx);
+			fprintf(st->fh, "rg_delta_%s_ssx = %f\n",
+			        rg->name, rg->d_ssx);
+			fprintf(st->fh, "rg_delta_%s_cnx = %f\n",
+			        rg->name, rg->d_cnx);
+
+			fprintf(st->fh, "rg_delta_%s_fsy = %f\n",
+			        rg->name, rg->d_fsx);
+			fprintf(st->fh, "rg_delta_%s_ssy = %f\n",
+			        rg->name, rg->d_ssx);
+			fprintf(st->fh, "rg_delta_%s_cny = %f\n",
+			        rg->name, rg->d_cnx);
+
+		}
+
 	}
 
 	copy_hdf5_fields(hdfile, i->copyme, st->fh);

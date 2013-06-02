@@ -93,16 +93,21 @@ static void check_eigen(gsl_vector *e_val)
 }
 
 
-static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
+static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *Mp)
 {
 	gsl_matrix *s_vec;
 	gsl_vector *s_val;
 	int err, n;
 	gsl_vector *shifts;
+	gsl_matrix *M;
 
 	n = v->size;
-	if ( v->size != M->size1 ) return NULL;
-	if ( v->size != M->size2 ) return NULL;
+	if ( v->size != Mp->size1 ) return NULL;
+	if ( v->size != Mp->size2 ) return NULL;
+
+	M = gsl_matrix_alloc(n, n);
+	if ( M == NULL ) return NULL;
+	gsl_matrix_memcpy(M, Mp);
 
 	s_val = gsl_vector_calloc(n);
 	s_vec = gsl_matrix_calloc(n, n);
@@ -130,6 +135,7 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
 
 	gsl_matrix_free(s_vec);
 	gsl_vector_free(s_val);
+	gsl_matrix_free(M);
 
 	return shifts;
 }
@@ -382,7 +388,6 @@ static void fit_bg(struct intcontext *ic, struct peak_box *bx)
 	int p, q;
 	gsl_vector *v;
 	gsl_vector *ans;
-	gsl_matrix *M;
 
 	v = gsl_vector_calloc(3);
 
@@ -408,11 +413,8 @@ static void fit_bg(struct intcontext *ic, struct peak_box *bx)
 		show_matrix_eqn(ic->bgm, v, 3);
 	}
 
-	M = gsl_matrix_alloc(3, 3);
-	gsl_matrix_memcpy(M, ic->bgm);
-	ans = solve_svd(v, M);
+	ans = solve_svd(v, ic->bgm);
 	gsl_vector_free(v);
-	gsl_matrix_free(M);
 
 	bx->a = gsl_vector_get(ans, 0);
 	bx->b = gsl_vector_get(ans, 1);
@@ -1095,8 +1097,128 @@ static int suitable_reference(struct intcontext *ic, struct peak_box *bx)
 }
 
 
+static void add_to_rg_matrix(struct intcontext *ic, struct panel *p,
+                             gsl_matrix *M, gsl_vector *vx, gsl_vector *vy,
+                             int *pn)
+{
+	int i;
+
+	for ( i=0; i<ic->n_boxes; i++ ) {
+
+		double x, y, w;
+		double fs, ss;
+		double offs_x, offs_y;
+
+		if ( ic->boxes[i].p != p ) continue;
+
+		fs = ic->boxes[i].cfs + ic->halfw;
+		ss = ic->boxes[i].css + ic->halfw;
+
+		twod_mapping(fs, ss, &x, &y, ic->boxes[i].p);
+
+		w = ic->boxes[i].intensity;
+
+		addm(M, 0, 0, w*fs*fs);
+		addm(M, 0, 1, w*fs*ss);
+		addm(M, 0, 2, w*fs);
+		addm(M, 1, 0, w*fs*ss);
+		addm(M, 1, 1, w*ss*ss);
+		addm(M, 1, 2, w*ss);
+		addm(M, 2, 0, w*fs);
+		addm(M, 2, 1, w*ss);
+		addm(M, 2, 2, w);
+
+		/* Offsets in lab coordinate system */
+		offs_x = p->fsx * ic->boxes[i].offs_fs
+		       + p->ssx * ic->boxes[i].offs_ss;
+
+		offs_y = p->fsy * ic->boxes[i].offs_fs
+		       + p->ssy * ic->boxes[i].offs_ss;
+
+		addv(vx, 0, w*offs_x*fs);
+		addv(vx, 1, w*offs_x*ss);
+		addv(vx, 2, w*offs_x);
+
+		addv(vy, 0, w*offs_y*fs);
+		addv(vy, 1, w*offs_y*ss);
+		addv(vy, 2, w*offs_y);
+
+		(*pn)++;
+	}
+}
+
+
 static void refine_rigid_groups(struct intcontext *ic)
 {
+	int i;
+
+	for ( i=0; i<ic->image->det->n_rigid_groups; i++ ) {
+
+		struct rigid_group *rg;
+		gsl_matrix *M;
+		gsl_vector *vx;
+		gsl_vector *vy;
+		gsl_vector *dq1;
+		gsl_vector *dq2;
+		int j;
+		int n;
+
+		M = gsl_matrix_calloc(3, 3);
+		if ( M == NULL ) {
+			ERROR("Failed to allocate matrix\n");
+			return;
+		}
+
+		vx = gsl_vector_calloc(3);
+		if ( vx == NULL ) {
+			ERROR("Failed to allocate vector\n");
+			return;
+		}
+
+		vy = gsl_vector_calloc(3);
+		if ( vy == NULL ) {
+			ERROR("Failed to allocate vector\n");
+			return;
+		}
+
+		rg = ic->image->det->rigid_groups[i];
+
+		n = 0;
+		for ( j=0; j<rg->n_panels; j++ ) {
+			add_to_rg_matrix(ic, rg->panels[j], M, vx, vy, &n);
+		}
+
+		if ( n > 10 ) {
+
+			dq1 = solve_svd(vx, M);
+			dq2 = solve_svd(vy, M);
+
+			rg->d_fsx = gsl_vector_get(dq1, 0);
+			rg->d_ssx = gsl_vector_get(dq1, 1);
+			rg->d_cnx = gsl_vector_get(dq1, 2);
+			rg->d_fsy = gsl_vector_get(dq2, 0);
+			rg->d_ssy = gsl_vector_get(dq2, 1);
+			rg->d_cny = gsl_vector_get(dq2, 2);
+
+			gsl_vector_free(dq1);
+			gsl_vector_free(dq2);
+
+		} else {
+
+			rg->d_fsx = 0.0;
+			rg->d_ssx = 0.0;
+			rg->d_cnx = 0.0;
+			rg->d_fsy = 0.0;
+			rg->d_ssy = 0.0;
+			rg->d_cny = 0.0;
+
+		}
+
+		gsl_vector_free(vx);
+		gsl_vector_free(vy);
+		gsl_matrix_free(M);
+
+	}
 }
 
 
@@ -1639,6 +1761,7 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 		integrate_box(&ic, bx, &intensity, &sigma);
 
 		/* Record intensity and set redundancy to 1 */
+		bx->intensity = intensity;
 		set_intensity(refl, intensity);
 		set_esd_intensity(refl, sigma);
 		set_redundancy(refl, 1);

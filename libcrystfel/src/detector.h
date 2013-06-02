@@ -52,6 +52,14 @@ struct rigid_group
 	char *name;
 	struct panel **panels;
 	int n_panels;
+
+	/* Updates to panel position calculated during integration */
+	double d_fsx;
+	double d_ssx;
+	double d_cnx;
+	double d_fsy;
+	double d_ssy;
+	double d_cny;
 };
 
 
@@ -163,6 +171,9 @@ extern void get_pixel_extents(struct detector *det,
 extern void fill_in_values(struct detector *det, struct hdfile *f);
 
 extern struct detector *copy_geom(const struct detector *in);
+
+extern void twod_mapping(double fs, double ss, double *px, double *py,
+                         struct panel *p);
 
 extern int reverse_2d_mapping(double x, double y, double *pfs, double *pss,
                               struct detector *det);
