@@ -226,6 +226,8 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 
 			struct rigid_group *rg = i->det->rigid_groups[j];
 
+			if ( !rg->have_deltas ) continue;
+
 			fprintf(st->fh, "rg_delta_%s_fsx = %f\n",
 			        rg->name, rg->d_fsx);
 			fprintf(st->fh, "rg_delta_%s_ssx = %f\n",
@@ -234,11 +236,11 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 			        rg->name, rg->d_cnx);
 
 			fprintf(st->fh, "rg_delta_%s_fsy = %f\n",
-			        rg->name, rg->d_fsx);
+			        rg->name, rg->d_fsy);
 			fprintf(st->fh, "rg_delta_%s_ssy = %f\n",
-			        rg->name, rg->d_ssx);
+			        rg->name, rg->d_ssy);
 			fprintf(st->fh, "rg_delta_%s_cny = %f\n",
-			        rg->name, rg->d_cnx);
+			        rg->name, rg->d_cny);
 
 		}
 

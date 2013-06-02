@@ -60,6 +60,7 @@ struct rigid_group
 	double d_fsy;
 	double d_ssy;
 	double d_cny;
+	int have_deltas;
 };
 
 

@@ -1199,6 +1199,7 @@ static void refine_rigid_groups(struct intcontext *ic)
 			rg->d_fsy = gsl_vector_get(dq2, 0);
 			rg->d_ssy = gsl_vector_get(dq2, 1);
 			rg->d_cny = gsl_vector_get(dq2, 2);
+			rg->have_deltas = 1;
 
 			gsl_vector_free(dq1);
 			gsl_vector_free(dq2);
@@ -1211,6 +1212,7 @@ static void refine_rigid_groups(struct intcontext *ic)
 			rg->d_fsy = 0.0;
 			rg->d_ssy = 0.0;
 			rg->d_cny = 0.0;
+			rg->have_deltas = 0;
 
 		}
 

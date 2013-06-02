@@ -567,6 +567,7 @@ static struct rigid_group *find_or_add_rg(struct detector *det,
 	rg->name = strdup(name);
 	rg->panels = NULL;
 	rg->n_panels = 0;
+	rg->have_deltas = 0;
 
 	return rg;
 }
