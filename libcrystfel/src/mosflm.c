@@ -438,7 +438,7 @@ static void mosflm_sendline(const char *line, struct mosflm_data *mosflm)
 
 /* Turn what we know about the unit cell into something which we can give to
  * MOSFLM to make it give us only indexing results compatible with the cell. */
-static const char *spacegroup_for_lattice(UnitCell *cell)
+static char *spacegroup_for_lattice(UnitCell *cell)
 {
 	LatticeType latt;
 	char centering;
@@ -510,7 +510,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		if ( (mosflm->mp->indm & INDEXING_USE_LATTICE_TYPE)
 		  && (mosflm->mp->template != NULL) )
 		{
-			const char *symm;
+			char *symm;
 
 			if ( cell_get_lattice_type(mosflm->mp->template)
 			     == L_RHOMBOHEDRAL ) {
