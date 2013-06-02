@@ -46,6 +46,15 @@ struct hdfile;
 extern "C" {
 #endif
 
+
+struct rigid_group
+{
+	char *name;
+	struct panel **panels;
+	int n_panels;
+};
+
+
 struct panel
 {
 	char     name[1024];  /* Name for this panel */
@@ -62,7 +71,7 @@ struct panel
 	double   res;      /* Resolution in pixels per metre */
 	char     badrow;   /* 'x' or 'y' */
 	int      no_index; /* Don't index peaks in this panel if non-zero */
-	char    *rigid_group;  /* Rigid group name */
+	struct rigid_group *rigid_group;  /* Rigid group */
 	double   adu_per_eV;   /* Number of ADU per eV */
 	double   max_adu;  /* Treat pixel as unreliable if higher than this */
 
@@ -106,8 +115,8 @@ struct detector
 	unsigned int       mask_bad;
 	unsigned int       mask_good;
 
-	char             **rigid_groups;
-	int                num_rigid_groups;
+	struct rigid_group **rigid_groups;
+	int                n_rigid_groups;
 
 	/* Location of the pixel furthest away from the beam position, which
 	 * will have the largest value of 2theta regardless of camera length

@@ -1095,6 +1095,11 @@ static int suitable_reference(struct intcontext *ic, struct peak_box *bx)
 }
 
 
+static void refine_rigid_groups(struct intcontext *ic)
+{
+}
+
+
 static void measure_all_intensities(IntegrationMethod meth, RefList *list,
                                     struct image *image, UnitCell *cell,
                                     double ir_inn, double ir_mid, double ir_out)
@@ -1244,6 +1249,8 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 
 		}
 	}
+
+	refine_rigid_groups(&ic);
 
 	free_intcontext(&ic);
 
@@ -1645,6 +1652,8 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 		set_detector_pos(refl, 0.0, pfs, pss);
 
 	}
+
+	refine_rigid_groups(&ic);
 
 	free_intcontext(&ic);
 

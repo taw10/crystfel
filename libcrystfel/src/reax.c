@@ -128,7 +128,7 @@ struct reax_private
 static void fill_and_transform(struct dvec *dir, ImageFeatureList *flist,
                         int nel, double pmax, double *fft_in,
                         fftw_complex *fft_out, fftw_plan plan,
-                        const char *rg, struct detector *det)
+                        const struct rigid_group *rg, struct detector *det)
 {
 	int n, i;
 
@@ -191,7 +191,7 @@ static double check_dir(struct dvec *dir, ImageFeatureList *flist,
                         int nel, double pmax, double *fft_in,
                         fftw_complex *fft_out, fftw_plan plan,
                         struct reax_search *s,
-                        const char *rg, struct detector *det)
+                        const struct rigid_group *rg, struct detector *det)
 {
 	int i;
 	double tot;
@@ -553,7 +553,7 @@ static struct reax_search *search_all_axes(UnitCell *cell, double pmax)
 static double get_model_phase(double x, double y, double z, ImageFeatureList *f,
                               int nel, double pmax, double *fft_in,
                               fftw_complex *fft_out, fftw_plan plan,
-                              int smin, int smax, const char *rg,
+                              int smin, int smax, const struct rigid_group *rg,
                               struct detector *det)
 {
 	struct dvec dir;
@@ -589,7 +589,7 @@ static double get_model_phase(double x, double y, double z, ImageFeatureList *f,
 
 
 static void refine_rigid_group(struct image *image, UnitCell *cell,
-                               const char *rg, double pmax,
+                               const struct rigid_group *rg, double pmax,
                                double *fft_in, fftw_complex *fft_out,
                                fftw_plan plan, int smin, int smax,
                                struct detector *det, struct reax_private *pr)
@@ -716,8 +716,8 @@ static UNUSED void refine_all_rigid_groups(struct image *image, UnitCell *cell,
 {
 	int i;
 
-	for ( i=0; i<image->det->num_rigid_groups; i++ ) {
-		refine_rigid_group(image, cell, image->det->rigid_groups[i],
+	for ( i=0; i<image->det->n_rigid_groups; i++ ) {
+		refine_rigid_group(image, cell, &image->det->rigid_groups[i],
 		                   pmax, fft_in, fft_out, plan, smin, smax,
 		                   det, p);
 	}

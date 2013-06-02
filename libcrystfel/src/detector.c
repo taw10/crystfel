@@ -480,11 +480,12 @@ static struct panel *new_panel(struct detector *det, const char *name)
 	new = &det->panels[det->n_panels-1];
 	memcpy(new, &det->defaults, sizeof(struct panel));
 
+	strcpy(new->name, name);
+
 	/* Create a new copy of the camera length location if needed */
 	if ( new->clen_from != NULL ) {
 		new->clen_from = strdup(new->clen_from);
 	}
-	strcpy(new->name, name);
 
 	return new;
 }
@@ -537,32 +538,68 @@ static struct badregion *find_bad_region_by_name(struct detector *det,
 }
 
 
-static char *find_or_add_rg(struct detector *det, const char *name)
+static struct rigid_group *find_or_add_rg(struct detector *det,
+                                          const char *name)
 {
 	int i;
-	char **new;
-	char *tmp;
+	struct rigid_group **new;
+	struct rigid_group *rg;
 
-	for ( i=0; i<det->num_rigid_groups; i++ ) {
+	for ( i=0; i<det->n_rigid_groups; i++ ) {
 
-		if ( strcmp(det->rigid_groups[i], name) == 0 ) {
+		if ( strcmp(det->rigid_groups[i]->name, name) == 0 ) {
 			return det->rigid_groups[i];
 		}
 
 	}
 
 	new = realloc(det->rigid_groups,
-	              (1+det->num_rigid_groups)*sizeof(char *));
+	              (1+det->n_rigid_groups)*sizeof(struct rigid_group *));
 	if ( new == NULL ) return NULL;
 
 	det->rigid_groups = new;
 
-	tmp = strdup(name);
-	det->rigid_groups[det->num_rigid_groups] = tmp;
+	rg = malloc(sizeof(struct rigid_group));
+	if ( rg == NULL ) return NULL;
 
-	det->num_rigid_groups++;
+	det->rigid_groups[det->n_rigid_groups++] = rg;
 
-	return tmp;
+	rg->name = strdup(name);
+	rg->panels = NULL;
+	rg->n_panels = 0;
+
+	return rg;
+}
+
+
+static void add_to_rigid_group(struct rigid_group *rg, struct panel *p)
+{
+	struct panel **pn;
+
+	pn = realloc(rg->panels, (1+rg->n_panels)*sizeof(struct panel *));
+	if ( pn == NULL ) {
+		ERROR("Couldn't add panel to rigid group.\n");
+		return;
+	}
+
+	assert(p->rigid_group == rg);
+	rg->panels = pn;
+	rg->panels[rg->n_panels++] = p;
+}
+
+
+static void fix_up_rigid_groups(struct detector *det)
+{
+	int i;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		struct panel *p = &det->panels[i];
+		if ( p->rigid_group != NULL ) {
+			add_to_rigid_group(p->rigid_group, p);
+		}
+
+	}
 }
 
 
@@ -775,7 +812,7 @@ struct detector *get_detector_geometry(const char *filename)
 	det->mask_good = 0;
 	det->mask_bad = 0;
 	det->mask = NULL;
-	det->num_rigid_groups = 0;
+	det->n_rigid_groups = 0;
 	det->rigid_groups = NULL;
 
 	/* The default defaults... */
@@ -1012,6 +1049,10 @@ out:
 
 	}
 
+	/* Fix up rigid group panel pointers now that the panels and RGs have
+	 * stopped being realloc()ed */
+	fix_up_rigid_groups(det);
+
 	find_min_max_d(det);
 
 	if ( reject ) return NULL;
@@ -1026,9 +1067,6 @@ void free_detector_geometry(struct detector *det)
 {
 	int i;
 
-	for ( i=0; i<det->num_rigid_groups; i++ ) {
-		free(det->rigid_groups[i]);
-	}
 	free(det->rigid_groups);
 
 	for ( i=0; i<det->n_panels; i++ ) {
@@ -1062,18 +1100,6 @@ struct detector *copy_geom(const struct detector *in)
 	out->bad = malloc(out->n_bad * sizeof(struct badregion));
 	memcpy(out->bad, in->bad, out->n_bad * sizeof(struct badregion));
 
-	if ( in->rigid_groups != NULL ) {
-
-		out->rigid_groups = malloc(out->num_rigid_groups*sizeof(char *));
-		memcpy(out->rigid_groups, in->rigid_groups,
-		       out->num_rigid_groups*sizeof(char *));
-
-		for ( i=0; i<in->num_rigid_groups; i++ ) {
-			out->rigid_groups[i] = strdup(in->rigid_groups[i]);
-		}
-
-	}
-
 	for ( i=0; i<out->n_panels; i++ ) {
 
 		struct panel *p;
@@ -1088,21 +1114,18 @@ struct detector *copy_geom(const struct detector *in)
 
 	}
 
-	for ( i=0; i<in->num_rigid_groups; i++ ) {
+	for ( i=0; i<in->n_panels; i++ ) {
 
-		int j;
-		char *rg = in->rigid_groups[i];
-		char *rgn = out->rigid_groups[i];
+		struct rigid_group *rg;
 
-		for ( j=0; j<in->n_panels; j++ ) {
+		rg = in->panels[i].rigid_group;
+		if ( rg == NULL ) continue;
 
-			if ( in->panels[j].rigid_group == rg ) {
-				out->panels[j].rigid_group = rgn;
-			}
-
-		}
+		out->panels[i].rigid_group = find_or_add_rg(out, rg->name);
 
 	}
+
+	fix_up_rigid_groups(out);
 
 	return out;
 }
@@ -1303,7 +1326,7 @@ int write_detector_geometry(const char *filename, struct detector *det)
 
 		if ( p->rigid_group != NULL ) {
 			fprintf(fh, "%s/rigid_group = %s\n",
-			        p->name, p->rigid_group);
+			        p->name, p->rigid_group->name);
 		}
 
 	}
