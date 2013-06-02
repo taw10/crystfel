@@ -562,7 +562,7 @@ int main(int argc, char *argv[])
 	               use_this_one_instead, ofd, argc, argv);
 
 	free(prefix);
-	free(iargs.det);
+	free_detector_geometry(iargs.det);
 
 	return 0;
 }
