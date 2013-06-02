@@ -907,7 +907,7 @@ static void load_features_from_file(struct image *image, const char *filename)
 		r = sscanf(line, "%f %f", &fs, &ss);
 		if ( r != 2 ) continue;
 
-		image_add_feature(image->features, fs, ss, image, 1.0, NULL);
+		image_add_feature(image->features, fs, ss, image, 1.0, "peak");
 
 	} while ( rval != NULL );
 }
