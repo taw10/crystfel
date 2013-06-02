@@ -172,7 +172,6 @@ struct intcontext
 	double **reference_den;
 	int *n_profiles_in_reference;
 
-	/* For summation integration only */
 	int ir_inn;
 	int ir_mid;
 	int ir_out;
