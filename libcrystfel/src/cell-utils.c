@@ -526,6 +526,9 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 	                         &bsx, &bsy, &bsz,
 	                         &csx, &csy, &csz) ) {
 		ERROR("Couldn't get reciprocal cell for template.\n");
+		cell_free(template);
+		cell_free(cell);
+		tfn_free(uncentering);
 		return NULL;
 	}
 
@@ -545,6 +548,9 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 	                         &bsx, &bsy, &bsz,
 	                         &csx, &csy, &csz) ) {
 		ERROR("Couldn't get reciprocal cell.\n");
+		cell_free(template);
+		cell_free(cell);
+		tfn_free(uncentering);
 		return NULL;
 	}
 
@@ -715,9 +721,14 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 		cell_set_unique_axis(new_cell_trans,
 		                     cell_get_unique_axis(template_in));
 
+		cell_free(template);
+		tfn_free(uncentering);
+
 		return new_cell_trans;
 
 	} else {
+		cell_free(template);
+		tfn_free(uncentering);
 		return NULL;
 	}
 }

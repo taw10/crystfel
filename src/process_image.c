@@ -184,6 +184,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		reflist_free(crystal_get_reflections(image.crystals[i]));
 		crystal_free(image.crystals[i]);
 	}
+	free(image.crystals);
 
 	for ( i=0; i<image.det->n_panels; i++ ) {
 		free(image.dp[i]);

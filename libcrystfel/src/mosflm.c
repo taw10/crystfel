@@ -519,6 +519,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 
 			symm = spacegroup_for_lattice(mosflm->mp->template);
 			snprintf(tmp, 255, "SYMM %s\n", symm);
+			free(symm);
 			mosflm_sendline(tmp, mosflm);
 
 		} else {

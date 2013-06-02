@@ -203,11 +203,15 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
                  int include_peaks, int include_reflections)
 {
 	int j;
+	char *indexer;
 
 	fprintf(st->fh, CHUNK_START_MARKER"\n");
 
 	fprintf(st->fh, "Image filename: %s\n", i->filename);
-	fprintf(st->fh, "indexed_by = %s\n", indexer_str(i->indexed_by));
+
+	indexer = indexer_str(i->indexed_by);
+	fprintf(st->fh, "indexed_by = %s\n", indexer);
+	free(indexer);
 
 	if ( i->det != NULL ) {
 
