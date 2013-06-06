@@ -39,8 +39,8 @@
 /**
  * IntegrationMethod:
  * @INTEGRATION_NONE: No integration at all
- * @INTEGRATION_RINGS: Predict reflections and integrate them all
- * @INTEGRATION_REFINE: As @INTEGRATION_RINGS, but
+ * @INTEGRATION_RINGS: Summation of pixel values inside ring, minus background
+ * @INTEGRATION_PROF2D: Two dimensional profile fitting
  *
  * @INTEGRATION_SATURATED: Integrate saturated reflections
  *
