@@ -413,6 +413,7 @@ static void fit_bg(struct intcontext *ic, struct peak_box *bx)
 		show_matrix_eqn(ic->bgm, v, 3);
 	}
 
+	/* SVD is massive overkill here */
 	ans = solve_svd(v, ic->bgm);
 	gsl_vector_free(v);
 
