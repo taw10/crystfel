@@ -1083,7 +1083,7 @@ int main(int argc, char *argv[])
 
 	if ( nbij > 0 ) {
 		STATUS("%i reflection pairs rejected because either or both"
-		       " versions did not have Bijvoet partners.\n", nres);
+		       " versions did not have Bijvoet partners.\n", nbij);
 	}
 
 	if ( ncen > 0 ) {
