@@ -343,8 +343,8 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 	printw("Reference profile number %i, ", bx->rp);
 	printw("Background parameters: a=%.2f, b=%.2f, c=%.2f\n",
 	       bx->a, bx->b, bx->c);
-	getch();
 	refresh();
+	getch();
 	endwin();
 }
 
@@ -377,8 +377,8 @@ static void show_reference_profile(struct intcontext *ic, int i)
 		printw("\n");
 	}
 
-	getch();
 	refresh();
+	getch();
 	endwin();
 }
 
