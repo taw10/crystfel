@@ -423,10 +423,6 @@ static void fit_bg(struct intcontext *ic, struct peak_box *bx)
 	bx->c = gsl_vector_get(ans, 2);
 
 	gsl_vector_free(ans);
-
-	if ( bx->verbose ) {
-		show_peak_box(ic, bx);
-	}
 }
 
 
@@ -1694,11 +1690,11 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 			bx->verbose = 1;
 		}
 
-		if ( bx->verbose ) show_peak_box(&ic, bx);
-
 		fit_bg(&ic, bx);
 		intensity = tentative_intensity(&ic, bx);
 		sigma = 0.0;  /* FIXME! */
+
+		if ( bx->verbose ) show_peak_box(&ic, bx);
 
 		/* Record intensity and set redundancy to 1 */
 		bx->intensity = intensity;
