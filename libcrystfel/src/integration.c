@@ -156,7 +156,6 @@ struct intcontext
 	int w;
 	enum boxmask_val *bm;  /* Box mask */
 	struct image *image;
-	gsl_matrix *bgm;  /* Background estimation matrix */
 
 	struct peak_box *boxes;
 	int n_boxes;
@@ -164,14 +163,6 @@ struct intcontext
 
 	UnitCell *cell;
 	double k;
-
-	/* Peak region sums */
-	double pks_p2;
-	double pks_q2;
-	double pks_pq;
-	double pks_p;
-	double pks_q;
-	int m;
 
 	int n_reference_profiles;
 	double **reference_profiles;
@@ -198,6 +189,16 @@ struct peak_box
 	double a;
 	double b;
 	double c;
+
+	/* Peak region sums */
+	double pks_p2;
+	double pks_q2;
+	double pks_pq;
+	double pks_p;
+	double pks_q;
+	int m;
+
+	gsl_matrix *bgm;  /* Background estimation matrix */
 
 	/* Measured intensity (tentative, profile fitted or otherwise) */
 	double intensity;
@@ -410,11 +411,11 @@ static void fit_bg(struct intcontext *ic, struct peak_box *bx)
 	}
 
 	if ( bx->verbose ) {
-		show_matrix_eqn(ic->bgm, v, 3);
+		show_matrix_eqn(bx->bgm, v, 3);
 	}
 
 	/* SVD is massive overkill here */
-	ans = solve_svd(v, ic->bgm);
+	ans = solve_svd(v, bx->bgm);
 	gsl_vector_free(v);
 
 	bx->a = gsl_vector_get(ans, 0);
@@ -464,7 +465,6 @@ static int alloc_boxes(struct intcontext *ic, int new_max_boxes)
 
 static int init_intcontext(struct intcontext *ic)
 {
-	int p, q;
 	int i;
 
 	ic->w = 2*ic->halfw + 1;
@@ -473,60 +473,6 @@ static int init_intcontext(struct intcontext *ic)
 	if ( ic->bm == NULL ) {
 		ERROR("Failed to allocate box mask.\n");
 		return 1;
-	}
-
-	ic->bgm = gsl_matrix_calloc(3, 3);
-	if ( ic->bgm == NULL ) {
-		ERROR("Failed to initialise matrix.\n");
-		return 1;
-	}
-
-	ic->pks_p2 = 0.0;
-	ic->pks_q2 = 0.0;
-	ic->pks_pq = 0.0;
-	ic->pks_p = 0.0;
-	ic->pks_q = 0.0;
-	ic->m = 0;
-
-	for ( p=0; p<ic->w; p++ ) {
-	for ( q=0; q<ic->w; q++ ) {
-
-		if ( (p==0) || (q==0) || (p==ic->w-1) || (q==ic->w-1) ) {
-			ic->bm[p + ic->w*q] = BM_BG;
-		} else {
-			ic->bm[p + ic->w*q] = BM_PK;
-		}
-
-		switch ( ic->bm[p + ic->w*q] ) {
-
-			case BM_IG :
-			case BM_BH :
-			break;
-
-			case BM_BG :
-			addm(ic->bgm, 0, 0, p*p);
-			addm(ic->bgm, 0, 1, p*q);
-			addm(ic->bgm, 0, 2, p);
-			addm(ic->bgm, 1, 0, p*q);
-			addm(ic->bgm, 1, 1, q*q);
-			addm(ic->bgm, 1, 2, q);
-			addm(ic->bgm, 2, 0, p);
-			addm(ic->bgm, 2, 1, q);
-			addm(ic->bgm, 2, 2, 1);
-			break;
-
-			case BM_PK :
-			ic->pks_p2 += p*p;
-			ic->pks_q2 += q*q;
-			ic->pks_pq += p*q;
-			ic->pks_p += p;
-			ic->pks_q += q;
-			ic->m++;
-			break;
-
-		}
-
-	}
 	}
 
 	/* How many reference profiles? */
@@ -564,6 +510,7 @@ static void free_intcontext(struct intcontext *ic)
 
 	for ( i=0; i<ic->n_boxes; i++ ) {
 		free(ic->boxes[i].bm);
+		gsl_matrix_free(ic->boxes[i].bgm);
 	}
 	free(ic->boxes);
 
@@ -575,7 +522,6 @@ static void free_intcontext(struct intcontext *ic)
 	free(ic->reference_den);
 	free(ic->n_profiles_in_reference);
 	free(ic->bm);
-	gsl_matrix_free(ic->bgm);
 }
 
 
@@ -647,6 +593,12 @@ static struct peak_box *add_box(struct intcontext *ic)
 	ic->boxes[idx].refl = NULL;
 	ic->boxes[idx].verbose = 0;
 
+	ic->boxes[idx].bgm = gsl_matrix_calloc(3, 3);
+	if ( ic->boxes[idx].bgm == NULL ) {
+		ERROR("Failed to initialise matrix.\n");
+		return NULL;
+	}
+
 	return &ic->boxes[idx];
 }
 
@@ -690,9 +642,9 @@ static double tentative_intensity(struct intcontext *ic, struct peak_box *bx)
 	}
 	}
 
-	intensity -= bx->a * ic->pks_p;
-	intensity -= bx->b * ic->pks_q;
-	intensity -= bx->c * ic->m;
+	intensity -= bx->a * bx->pks_p;
+	intensity -= bx->b * bx->pks_q;
+	intensity -= bx->c * bx->m;
 
 	return intensity;
 }
@@ -720,9 +672,9 @@ static void observed_position(struct intcontext *ic, struct peak_box *bx,
 	}
 	}
 
-	num_p += -bx->a*ic->pks_p2 - bx->b*ic->pks_pq - bx->c*ic->pks_p;
-	num_q += -bx->a*ic->pks_q2 - bx->b*ic->pks_pq - bx->c*ic->pks_q;
-	den += -bx->a*ic->pks_p - bx->b*ic->pks_q - bx->c;
+	num_p += -bx->a*bx->pks_p2 - bx->b*bx->pks_pq - bx->c*bx->pks_p;
+	num_q += -bx->a*bx->pks_q2 - bx->b*bx->pks_pq - bx->c*bx->pks_q;
+	den += -bx->a*bx->pks_p - bx->b*bx->pks_q - bx->c;
 
 	*pos_p = num_p / den;
 	*pos_q = num_q / den;
@@ -793,6 +745,54 @@ static void calculate_reference_profiles(struct intcontext *ic)
 	//for ( i=0; i<ic->n_reference_profiles; i++ ) {
 	//	show_reference_profile(ic, i);
 	//}
+}
+
+
+static void setup_peak_integrals(struct intcontext *ic, struct peak_box *bx)
+{
+	int p, q;
+
+	bx->pks_p2 = 0.0;
+	bx->pks_q2 = 0.0;
+	bx->pks_pq = 0.0;
+	bx->pks_p = 0.0;
+	bx->pks_q = 0.0;
+	bx->m = 0;
+
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+
+		switch ( bx->bm[p + ic->w*q] ) {
+
+			case BM_IG :
+			case BM_BH :
+			break;
+
+			case BM_BG :
+			addm(bx->bgm, 0, 0, p*p);
+			addm(bx->bgm, 0, 1, p*q);
+			addm(bx->bgm, 0, 2, p);
+			addm(bx->bgm, 1, 0, p*q);
+			addm(bx->bgm, 1, 1, q*q);
+			addm(bx->bgm, 1, 2, q);
+			addm(bx->bgm, 2, 0, p);
+			addm(bx->bgm, 2, 1, q);
+			addm(bx->bgm, 2, 2, 1);
+			break;
+
+			case BM_PK :
+			bx->pks_p2 += p*p;
+			bx->pks_q2 += q*q;
+			bx->pks_pq += p*q;
+			bx->pks_p += p;
+			bx->pks_q += q;
+			bx->m++;
+			break;
+
+		}
+
+	}
+	}
 }
 
 
@@ -868,6 +868,8 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 
 	if ( n_pk < 4 ) return 1;
 	if ( n_bg < 4 ) return 1;
+
+	setup_peak_integrals(ic, bx);
 
 	return 0;
 }
