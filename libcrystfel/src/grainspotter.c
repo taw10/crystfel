@@ -290,7 +290,7 @@ static void write_gve(struct image *image, struct grainspotter_private *gp)
 		fprintf(fh, "%.6f %.6f %.6f 0 0 %.6f %.6f %.6f 0\n",
 		        f->rz/1e10, f->rx/1e10, f->ry/1e10,
 		        modulus(f->rx, f->ry, f->rz)/1e10, /* dstar */
-		        atan2(f->ry, f->rx), 0.0);   /* eta, omega */
+		        rad2deg(atan2(f->ry, f->rx)), 0.0);   /* eta, omega */
 
 	}
 	fclose(fh);
