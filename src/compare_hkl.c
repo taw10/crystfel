@@ -8,6 +8,7 @@
  *
  * Authors:
  *   2010-2012 Thomas White <taw@physics.org>
+ *   2013      Lorenzo Galli <lorenzo.galli@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -56,7 +57,8 @@ enum fom
 	FOM_RSPLIT,
 	FOM_CC,
 	FOM_CCSTAR,
-	FOM_CCANO
+	FOM_CCANO,
+	FOM_CRDANO
 };
 
 
@@ -69,6 +71,7 @@ static enum fom get_fom(const char *s)
 	if ( strcasecmp(s, "cc") == 0 ) return FOM_CC;
 	if ( strcasecmp(s, "ccstar") == 0 ) return FOM_CCSTAR;
 	if ( strcasecmp(s, "ccano") == 0 ) return FOM_CCANO;
+	if ( strcasecmp(s, "crdano") == 0 ) return FOM_CRDANO;
 
 	ERROR("Unknown figure of merit '%s'.\n", s);
 	exit(1);
@@ -84,7 +87,8 @@ static void show_help(const char *s)
 "  -y, --symmetry=<sym>       The symmetry of both the input files.\n"
 "  -p, --pdb=<filename>       PDB file to use.\n"
 "      --fom=<FoM>            Calculate this figure of merit  Choose from:\n"
-"                              R1I, R1F, R2, Rsplit, CC, CCstar, CCano.\n"
+"                              R1I, R1F, R2, Rsplit, CC, CCstar,\n"
+"			       CCano, CRDano.\n"
 "      --nshells=<n>          Use <n> resolution shells.\n"
 "  -u                         Force scale factor to 1.\n"
 "      --shell-file=<file>    Write resolution shells to <file>.\n"
@@ -149,6 +153,7 @@ static struct fom_context *init_fom(enum fom fom, int nmax, int nshells)
 		case FOM_CC :
 		case FOM_CCSTAR :
 		case FOM_CCANO :
+		case FOM_CRDANO :
 		fctx->vec1 = malloc(nshells*sizeof(double *));
 		fctx->vec2 = malloc(nshells*sizeof(double *));
 		if ( (fctx->vec1 == NULL) || (fctx->vec2 == NULL) ) return NULL;
@@ -213,6 +218,7 @@ static void add_to_fom(struct fom_context *fctx, double i1, double i2,
 		break;
 
 		case FOM_CCANO :
+		case FOM_CRDANO :
 		assert(fctx->n[bin] < fctx->nmax);
 		fctx->vec1[bin][fctx->n[bin]] = i1 - i1bij;
 		fctx->vec2[bin][fctx->n[bin]] = i2 - i2bij;
@@ -232,6 +238,10 @@ static double fom_overall(struct fom_context *fctx)
 	double *overall_vec1;
 	double *overall_vec2;
 	int overall_n;
+	double *overall_along_diagonal;
+	double *overall_perpend_diagonal;
+	double variance_signal;
+	double variance_error;
 	double cc = INFINITY;
 
 	switch ( fctx->fom ) {
@@ -268,6 +278,32 @@ static double fom_overall(struct fom_context *fctx)
 		free(overall_vec2);
 		break;
 
+		case FOM_CRDANO :
+		overall_along_diagonal = malloc(fctx->nmax*sizeof(double));
+		overall_perpend_diagonal = malloc(fctx->nmax*sizeof(double));
+		overall_n = 0;
+		for ( i=0; i<fctx->nshells; i++ ) {
+			int j;
+			for ( j=0; j<fctx->n[i]; j++ ) {
+				overall_along_diagonal[overall_n] =
+					 ( fctx->vec1[i][j] + fctx->vec2[i][j] )
+					 / sqrt(2.0);
+				overall_perpend_diagonal[overall_n] =
+					 ( fctx->vec1[i][j] - fctx->vec2[i][j] )
+					 / sqrt(2.0);
+				overall_n++;
+			}
+		}
+		variance_signal = gsl_stats_variance(overall_along_diagonal, 1,
+							 overall_n);
+		variance_error = gsl_stats_variance(overall_perpend_diagonal, 1,
+							 overall_n);
+		cc = sqrt(variance_signal / variance_error );
+
+		free(overall_along_diagonal);
+		free(overall_perpend_diagonal);
+		break;
+
 	}
 
 	switch ( fctx->fom ) {
@@ -284,6 +320,7 @@ static double fom_overall(struct fom_context *fctx)
 
 		case FOM_CC :
 		case FOM_CCANO :
+		case FOM_CRDANO :
 		return cc;
 
 		case FOM_CCSTAR :
@@ -299,6 +336,11 @@ static double fom_overall(struct fom_context *fctx)
 static double fom_shell(struct fom_context *fctx, int i)
 {
 	double cc;
+	int j;
+	double variance_signal;
+	double variance_error;
+	double along_diagonal[fctx->n[i]];
+	double perpend_diagonal[fctx->n[i]];
 
 	switch ( fctx->fom ) {
 
@@ -321,6 +363,20 @@ static double fom_shell(struct fom_context *fctx, int i)
 		cc = gsl_stats_correlation(fctx->vec1[i], 1, fctx->vec2[i], 1,
 		                           fctx->n[i]);
 		return sqrt((2.0*cc)/(1.0+cc));
+
+
+		case FOM_CRDANO :
+		for ( j=0; j<fctx->n[i]; j++ ) {
+			along_diagonal[j] =( fctx->vec1[i][j] +
+						 fctx->vec2[i][j] ) / sqrt(2.0);
+			perpend_diagonal[j] =( fctx->vec1[i][j] -
+						 fctx->vec2[i][j] ) / sqrt(2.0);
+			}
+		variance_signal = gsl_stats_variance(along_diagonal, 1,
+							 fctx->n[i]);
+		variance_error = gsl_stats_variance(perpend_diagonal, 1,
+							 fctx->n[i]);
+		return sqrt(variance_signal / variance_error);
 
 	}
 
@@ -558,7 +614,7 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		i1 = get_intensity(refl1);
 		i2 = scale * get_intensity(refl2);
 
-		if ( fom == FOM_CCANO ) {
+		if ( fom == FOM_CCANO || fom == FOM_CRDANO ) {
 
 			Reflection *refl1_bij = NULL;
 			Reflection *refl2_bij = NULL;
@@ -627,6 +683,10 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		STATUS("Overall CCano = %.7f\n", fom_overall(fctx));
 		break;
 
+		case FOM_CRDANO :
+		STATUS("Overall CRDano = %.7f\n", fom_overall(fctx));
+		break;
+
 	}
 
 	fh = fopen(filename, "w");
@@ -673,6 +733,10 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		fprintf(fh, "%s    CCano       nref%s\n", t1, t2);
 		break;
 
+		case FOM_CRDANO :
+		fprintf(fh, "%s    CRDano       nref%s\n", t1, t2);
+		break;
+
 	}
 
 	for ( i=0; i<nshells; i++ ) {
@@ -700,6 +764,7 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		case FOM_CC :
 		case FOM_CCSTAR :
 		case FOM_CCANO :
+		case FOM_CRDANO :
 		if ( config_intshells ) {
 			fprintf(fh, "%10.3f %10.7f %10i\n",
 				cen, r, cts[i]);
@@ -862,6 +927,7 @@ int main(int argc, char *argv[])
 			case FOM_CC :
 			case FOM_CCSTAR :
 			case FOM_CCANO :
+			case FOM_CRDANO :
 			break;
 		}
 	}
@@ -872,14 +938,16 @@ int main(int argc, char *argv[])
 	sym = get_pointgroup(sym_str);
 	free(sym_str);
 
-	if ( (fom == FOM_CCANO) && is_centrosymmetric(sym) ) {
+	if ( (fom == FOM_CCANO || fom == FOM_CRDANO ) &&
+						 is_centrosymmetric(sym) ) {
 
-		/* Refuse to calculate CCano with a centrosymmetric point group.
+		/* Refuse to calculate CCano or CRDano with a
+		 * centrosymmetric point group.
 		 * It'll "work", in the sense of producing a number, but the
 		 * number won't have anything to do with anomalous signal. */
 
-		ERROR("You are trying to calculate CCano with a centrosymmetric"
-		      " point group.\n");
+		ERROR("You are trying to calculate CCano or CRDano with a"
+		      "centrosymmetric point group.\n");
 		ERROR("This is a silly thing to do, and I'm refusing to help"
 		      " you do it.\n");
 		ERROR("Please review your earlier processing steps and try"
@@ -1014,7 +1082,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if ( fom == FOM_CCANO ) {
+		if ( fom == FOM_CCANO || fom == FOM_CRDANO ) {
 
 			Reflection *refl1_bij = NULL;
 			Reflection *refl2_bij = NULL;
@@ -1083,7 +1151,7 @@ int main(int argc, char *argv[])
 
 	if ( nbij > 0 ) {
 		STATUS("%i reflection pairs rejected because either or both"
-		       " versions did not have Bijvoet partners.\n", nbij);
+		       " versions did not have Bijvoet partners.\n", nres);
 	}
 
 	if ( ncen > 0 ) {
