@@ -1594,73 +1594,6 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 }
 
 
-static void integrate_box(struct intcontext *ic, struct peak_box *bx,
-                          double *intensity, double *sigma)
-{
-	double pk_total;
-	int pk_counts;
-	double fsct, ssct;
-	double bg_tot;
-	double bg_tot_sq;
-	int bg_counts;
-	double bg_mean, bg_var;
-	double var;
-	double aduph;
-	int p, q;
-
-	aduph = bx->p->adu_per_eV * ph_lambda_to_eV(ic->image->lambda);
-
-	/* Measure the background */
-	bg_tot = 0.0;
-	bg_tot_sq = 0.0;
-	bg_counts = 0;
-	for ( p=0; p<ic->w; p++ ) {
-	for ( q=0; q<ic->w; q++ ) {
-
-		double bi;
-
-		if ( bx->bm[p + ic->w*q] != BM_BG ) continue;
-
-		bi = boxi(ic, bx, p, q);
-		bg_tot += bi;
-		bg_tot_sq += pow(bi, 2.0);
-		bg_counts++;
-
-	}
-	}
-
-	bg_mean = bg_tot / bg_counts;
-	bg_var = (bg_tot_sq/bg_counts) - pow(bg_mean, 2.0);
-
-	/* Measure the peak */
-	pk_total = 0.0;
-	pk_counts = 0;
-	fsct = 0.0;  ssct = 0.0;
-
-	for ( p=0; p<ic->w; p++ ) {
-	for ( q=0; q<ic->w; q++ ) {
-
-		double bi;
-
-		if ( bx->bm[p + ic->w*q] != BM_PK ) continue;
-
-		bi = boxi(ic, bx, p, q);
-		pk_counts++;
-		pk_total += (bi - bg_mean);
-		fsct += (bi-bg_mean)*(p - ic->halfw);
-		ssct += (bi-bg_mean)*(q - ic->halfw);
-
-	}
-	}
-
-	var = pk_counts * bg_var;
-	var += aduph * pk_total;
-
-	if ( intensity != NULL ) *intensity = pk_total;
-	if ( sigma != NULL ) *sigma = sqrt(var);
-}
-
-
 static void integrate_rings(IntegrationMethod meth, Crystal *cr,
                             struct image *image,
                             double ir_inn, double ir_mid, double ir_out)
@@ -1763,7 +1696,9 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 
 		if ( bx->verbose ) show_peak_box(&ic, bx);
 
-		integrate_box(&ic, bx, &intensity, &sigma);
+		fit_bg(&ic, bx);
+		intensity = tentative_intensity(&ic, bx);
+		sigma = 0.0;  /* FIXME! */
 
 		/* Record intensity and set redundancy to 1 */
 		bx->intensity = intensity;
