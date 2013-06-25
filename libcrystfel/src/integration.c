@@ -1040,7 +1040,41 @@ static double calc_sigma(struct intcontext *ic, struct peak_box *bx)
 }
 
 
-static double average_background(struct intcontext *ic, struct peak_box *bx)
+static void mean_var_background(struct intcontext *ic, struct peak_box *bx,
+                                double *pmean, double *pvar)
+{
+	int p, q;
+	double sum = 0.0;
+	double var = 0.0;
+	int n = 0;
+	double mean;
+
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+		if ( bx->bm[p + ic->w*q] != BM_BG ) continue;
+		sum += bx->a*p + bx->b*q + bx->c;
+		n++;
+	}
+	}
+	mean = sum/n;
+
+	n = 0;
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+		if ( bx->bm[p + ic->w*q] != BM_BG ) continue;
+		var += pow(bx->a*p + bx->b*q + bx->c - mean, 2.0);
+		n++;
+	}
+	}
+
+	var = var/n;
+
+	*pmean = mean;
+	*pvar = var;
+}
+
+
+static double bg_under_peak(struct intcontext *ic, struct peak_box *bx)
 {
 	int p, q;
 	double sum = 0.0;
@@ -1090,7 +1124,7 @@ static int suitable_reference(struct intcontext *ic, struct peak_box *bx)
 	}
 	}
 
-	height_ok = max > 10.0 * average_background(ic, bx);
+	height_ok = max > 10.0 * bg_under_peak(ic, bx);
 
 	return bg_ok(bx) && height_ok;
 }
@@ -1639,6 +1673,7 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 		int saturated;
 		double one_over_d;
 		int r;
+		double bgmean, sig2_bg, sig2_poisson, aduph;
 
 		set_redundancy(refl, 0);
 
@@ -1692,7 +1727,10 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 
 		fit_bg(&ic, bx);
 		intensity = tentative_intensity(&ic, bx);
-		sigma = 0.0;  /* FIXME! */
+		mean_var_background(&ic, bx, &bgmean, &sig2_bg);
+		aduph = bx->p->adu_per_eV * ph_lambda_to_eV(ic.image->lambda);
+		sig2_poisson = aduph * intensity;
+		sigma = sqrt(sig2_poisson + bx->m*sig2_bg);
 
 		if ( bx->verbose ) show_peak_box(&ic, bx);
 
