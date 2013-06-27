@@ -412,6 +412,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	int nrej_fra = 0;
 	int nrej_fail = 0;
 	int nrej_snr = 0;
+	int nrej_sat = 0;
 	int nacc = 0;
 	int ncull;
 
@@ -506,7 +507,10 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 
 		if ( saturated ) {
 			image->num_saturated_peaks++;
-			if ( !use_saturated ) continue;
+			if ( !use_saturated ) {
+				nrej_sat++;
+				continue;
+			}
 		}
 
 		/* It is possible for the centroid to fall outside the image */
