@@ -436,7 +436,9 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		if ( data[fs+stride*ss] < threshold ) continue;
 
 		/* Immediate rejection of pixels above max_adu */
-		if ( data[fs+stride*ss] > p->max_adu ) continue;
+		if ( !use_saturated && (data[fs+stride*ss] > p->max_adu) ) {
+			continue;
+		}
 
 		/* Get gradients */
 		dx1 = data[fs+stride*ss] - data[(fs+1)+stride*ss];
