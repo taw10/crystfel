@@ -553,6 +553,7 @@ int main(int argc, char *argv[])
 			/* Fill in initial estimates of stuff */
 			crystal_set_osf(cr, 1.0);
 			crystal_set_profile_radius(cr, beam->profile_radius);
+			crystal_set_mosaicity(cr, 0.0);
 			crystal_set_user_flag(cr, 0);
 
 			/* This is the raw list of reflections */
