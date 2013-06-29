@@ -277,6 +277,7 @@ static void run_job(void *vwargs, int cookie)
 		osf = gaussian_noise(1.0, qargs->osf_stddev);
 	} while ( osf <= 0.0 );
 	crystal_set_osf(cr, osf);
+	crystal_set_mosaicity(cr, 0.0);
 	crystal_set_profile_radius(cr, wargs->image.beam->profile_radius);
 
 	/* Set up a random orientation */
@@ -593,6 +594,8 @@ int main(int argc, char *argv[])
 	image.crystals = NULL;
 	image.n_crystals = 0;
 	image.indexed_by = INDEXING_NONE;
+	image.num_peaks = 0;
+	image.num_saturated_peaks = 0;
 
 	if ( random_intensities ) {
 		full = reflist_new();
