@@ -20,9 +20,9 @@ while ( $line = <FH> ) {
 	}
 
 	if ( $alt == 0 ) {
-		printf(OFH_ONE $line);
+		print(OFH_ONE $line);
 	} elsif ( $alt == 1 ) {
-		printf(OFH_TWO $line);
+		print(OFH_TWO $line);
 	} else {
 		printf("Unhandled: '%s'\n", chomp($line));
 	}
