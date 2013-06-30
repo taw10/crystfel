@@ -294,10 +294,10 @@ static double fom_overall(struct fom_context *fctx)
 				overall_n++;
 			}
 		}
-		variance_signal = gsl_stats_variance(overall_along_diagonal, 1,
-							 overall_n);
-		variance_error = gsl_stats_variance(overall_perpend_diagonal, 1,
-							 overall_n);
+		variance_signal = gsl_stats_variance_m(overall_along_diagonal,
+		                                       1, overall_n, 0.0);
+		variance_error = gsl_stats_variance_m(overall_perpend_diagonal,
+		                                      1, overall_n, 0.0);
 		cc = sqrt(variance_signal / variance_error );
 
 		free(overall_along_diagonal);
@@ -372,10 +372,10 @@ static double fom_shell(struct fom_context *fctx, int i)
 			perpend_diagonal[j] =( fctx->vec1[i][j] -
 						 fctx->vec2[i][j] ) / sqrt(2.0);
 			}
-		variance_signal = gsl_stats_variance(along_diagonal, 1,
-							 fctx->n[i]);
-		variance_error = gsl_stats_variance(perpend_diagonal, 1,
-							 fctx->n[i]);
+		variance_signal = gsl_stats_variance_m(along_diagonal, 1,
+		                                       fctx->n[i], 0.0);
+		variance_error = gsl_stats_variance_m(perpend_diagonal, 1,
+		                                      fctx->n[i], 0.0);
 		return sqrt(variance_signal / variance_error);
 
 	}
