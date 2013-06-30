@@ -339,8 +339,8 @@ static double fom_shell(struct fom_context *fctx, int i)
 	int j;
 	double variance_signal;
 	double variance_error;
-	double along_diagonal[fctx->n[i]];
-	double perpend_diagonal[fctx->n[i]];
+	double *along_diagonal;
+	double *perpend_diagonal;
 
 	switch ( fctx->fom ) {
 
@@ -366,16 +366,20 @@ static double fom_shell(struct fom_context *fctx, int i)
 
 
 		case FOM_CRDANO :
+		along_diagonal = malloc(fctx->n[i] * sizeof(double));
+		perpend_diagonal = malloc(fctx->n[i] * sizeof(double));
 		for ( j=0; j<fctx->n[i]; j++ ) {
-			along_diagonal[j] =( fctx->vec1[i][j] +
+			along_diagonal[j] = ( fctx->vec1[i][j] +
 						 fctx->vec2[i][j] ) / sqrt(2.0);
-			perpend_diagonal[j] =( fctx->vec1[i][j] -
+			perpend_diagonal[j] = ( fctx->vec1[i][j] -
 						 fctx->vec2[i][j] ) / sqrt(2.0);
-			}
+		}
 		variance_signal = gsl_stats_variance_m(along_diagonal, 1,
 		                                       fctx->n[i], 0.0);
 		variance_error = gsl_stats_variance_m(perpend_diagonal, 1,
 		                                      fctx->n[i], 0.0);
+		free(along_diagonal);
+		free(perpend_diagonal);
 		return sqrt(variance_signal / variance_error);
 
 	}
