@@ -646,8 +646,8 @@ static double tentative_intensity(struct intcontext *ic, struct peak_box *bx)
 }
 
 
-static void observed_position(struct intcontext *ic, struct peak_box *bx,
-                              double *pos_p, double *pos_q)
+static void UNUSED observed_position(struct intcontext *ic, struct peak_box *bx,
+                                     double *pos_p, double *pos_q)
 {
 	int p, q;
 	double num_p = 0.0;
@@ -1415,9 +1415,9 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 }
 
 
-static void estimate_mosaicity(IntegrationMethod meth, Crystal *cr,
-                               struct image *image,
-                               double ir_inn, double ir_mid, double ir_out)
+static void UNUSED estimate_mosaicity(IntegrationMethod meth, Crystal *cr,
+                                      struct image *image,
+                                      double ir_inn, double ir_mid, double ir_out)
 {
 	int msteps = 50;
 	int i;
@@ -1532,8 +1532,8 @@ static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
 }
 
 
-static void estimate_resolution(RefList *reflections, Crystal *cr,
-                                struct image *image)
+static void UNUSED estimate_resolution(RefList *reflections, Crystal *cr,
+                                       struct image *image)
 {
 	struct integr_ind *il;
 	int n, i;
