@@ -717,7 +717,7 @@ static UNUSED void refine_all_rigid_groups(struct image *image, UnitCell *cell,
 	int i;
 
 	for ( i=0; i<image->det->n_rigid_groups; i++ ) {
-		refine_rigid_group(image, cell, &image->det->rigid_groups[i],
+		refine_rigid_group(image, cell, image->det->rigid_groups[i],
 		                   pmax, fft_in, fft_out, plan, smin, smax,
 		                   det, p);
 	}
