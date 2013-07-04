@@ -345,7 +345,6 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 		}
 
 		var = get_temp2(refl) / get_temp1(refl);
-		var *= (double)red/(red-1);
 		set_esd_intensity(refl, sqrt(var)/sqrt(red));
 	}
 
