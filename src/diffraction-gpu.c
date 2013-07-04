@@ -271,7 +271,6 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	double bx, by, bz;
 	double cx, cy, cz;
 	cl_float16 cell;
-	cl_int4 ncells;
 	cl_int err;
 	int n_inf = 0;
 	int n_neg = 0;
@@ -295,11 +294,6 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	cell.s[0] = ax;  cell.s[1] = ay;  cell.s[2] = az;
 	cell.s[3] = bx;  cell.s[4] = by;  cell.s[5] = bz;
 	cell.s[6] = cx;  cell.s[7] = cy;  cell.s[8] = cz;
-
-	ncells.s[0] = na;
-	ncells.s[1] = nb;
-	ncells.s[2] = nc;
-	ncells.s[3] = 0;  /* unused */
 
 	/* Ensure all required LUTs are available */
 	check_sinc_lut(gctx, na);
@@ -366,14 +360,13 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	for ( fs=0; fs<image->width; fs++ ) {
 	for ( ss=0; ss<image->height; ss++ ) {
 
-		struct rvec q;
 		double twotheta, k;
 		int idx;
 
 		/* Calculate k this time round */
 		k = 1.0/image->lambda;
 
-		q = get_q(image, fs, ss, &twotheta, k);
+		get_q(image, fs, ss, &twotheta, k);
 
 		idx = fs + image->width*ss;
 		image->twotheta[idx] = twotheta;

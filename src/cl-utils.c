@@ -209,6 +209,7 @@ static void show_build_log(cl_program prog, cl_device_id dev)
 	r = clGetProgramBuildInfo(prog, dev, CL_PROGRAM_BUILD_LOG, 4096, log,
 	                          &s);
 
+	STATUS("Status: %i\n", r);
 	STATUS("%s\n", log);
 }
 
