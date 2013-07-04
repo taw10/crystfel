@@ -41,8 +41,8 @@
  * @INTEGRATION_NONE: No integration at all
  * @INTEGRATION_RINGS: Summation of pixel values inside ring, minus background
  * @INTEGRATION_PROF2D: Two dimensional profile fitting
- *
  * @INTEGRATION_SATURATED: Integrate saturated reflections
+ * @INTEGRATION_CENTER: Center the peak in the box prior to integration
  *
  * An enumeration of all the available integration methods.
  **/

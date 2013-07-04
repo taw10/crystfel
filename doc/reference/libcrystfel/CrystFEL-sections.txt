@@ -75,6 +75,7 @@ max_intensity
 UnitCell
 LatticeType
 UnitCellTransformation
+rvec
 <SUBSECTION>
 cell_new
 cell_new_from_cell
@@ -132,6 +133,7 @@ right_handed
 str_lattice
 forbidden_reflection
 load_cell_from_pdb
+lattice_from_str
 </SECTION>
 
 <SECTION>
@@ -316,6 +318,7 @@ get_q
 get_q_for_panel
 get_tt
 smallest_q
+twod_mapping
 reverse_2d_mapping
 largest_q
 in_bad_region
@@ -388,13 +391,15 @@ PartialityModel
 find_intersections
 select_intersections
 update_partialities
+polarisation_correction
 </SECTION>
 
 <SECTION>
 <FILE>peaks</FILE>
 peak_sanity_check
 search_peaks
-integrate_reflections
+integrate_peak
+make_BgMask
 validate_peaks
 </SECTION>
 
@@ -407,6 +412,17 @@ render_scale
 <FILE>filter</FILE>
 filter_cm
 filter_noise
+filter_median
+</SECTION>
+
+<SECTION>
+<FILE>integration</FILE>
+INTEGRATION_DEFAULTS_PROF2D
+INTEGRATION_DEFAULTS_RINGS
+INTEGRATION_METHOD_MASK
+IntegrationMethod
+integrate_all
+integration_method
 </SECTION>
 
 <SECTION>
