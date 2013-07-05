@@ -137,22 +137,22 @@ If the pattern could be successfully indexed, peaks will be predicted in the pat
 
 .IP \fBrings\fR
 .PD
-Use three concentric rings to determine the peak, buffer and background estimation regions.  The radius of the smallest circle sets the peak region.  The radius of the middle and outer circles describe an annulus from which the background will be estimated.  You can set the radii of the rings using \fB--int-radius\fR (see below).  By default, the peak will first be centered iteratively on the actual peak location.
+Use three concentric rings to determine the peak, buffer and background estimation regions.  The radius of the smallest circle sets the peak region.  The radius of the middle and outer circles describe an annulus from which the background will be estimated.  You can set the radii of the rings using \fB--int-radius\fR (see below).  The default behaviour with \fBrings\fR is \fBnot\fR to center the peak boxes first.  Use \fBrings-cen\fR if you want to use centering.
 
 .IP \fBprof2d\fR
 .PD
-Integrate the peaks using 2D profile fitting with a planar background, close to the method described by Rossmann (1979) J. Appl. Cryst. 12 p225.
+Integrate the peaks using 2D profile fitting with a planar background, close to the method described by Rossmann (1979) J. Appl. Cryst. 12 p225.  The default behaviour with \fBprof2d\fR is to center the peak first - use \fBprof2d-nocen\fR to skip this step.
 
 .PP
 You can add one or more of the following to the above integration methods:
 
-.IP \fB-nocen\fR
+.IP \fB-cen\fR
 .PD
-Skip the peak centering step.  The opposite is \fB-cen\fR, which is the default.
+Center the peak boxes iteratively on the actual peak locations.  The opposite is \fB-nocen\fR, which is the default.
 
 .IP \fB-sat\fR
 .PD
-Normally, reflections which contain one or more pixels above max_adu (defined in the detector geometry file) will not be integrated and written to the stream.  Using this option skips this check, and allows saturated reflections to be passed to the later merging stages.  This is not usually a good idea, but might be your only choice if there are many saturated reflections.  The opposite is \fB-nosat\fR, which is the default.
+Normally, reflections which contain one or more pixels above max_adu (defined in the detector geometry file) will not be integrated and written to the stream.  Using this option skips this check, and allows saturated reflections to be passed to the later merging stages.  This is not usually a good idea, but might be your only choice if there are many saturated reflections.  The opposite is \fB-nosat\fR, which is the default for all integration methods.
 
 .SH OPTIMISING THE INTEGRATION RADII
 To determine appropriate values for the integration radii, index some patterns with the default values and view the results using \fBcheck-near-bragg\fR (in the scripts folder).  Set the binning in \fBhdfsee\fR to 1, and adjust the ring radius until none of the rings overlap for any of the patterns.  This ring radius is the outer radius to use. Then reduce the radius until the circles match the sizes of the peaks as closely as possible.  This value is the inner radius.  The middle radius should be between the two, ideally between two and three pixels smaller than the outer radius.
