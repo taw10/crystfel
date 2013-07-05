@@ -427,6 +427,7 @@ int grainspotter_index(struct image *image, IndexingPrivate *ipriv)
 
 				case EINTR:
 				STATUS("Restarting select()\n");
+				rval = 0;
 				break;
 
 				default:
