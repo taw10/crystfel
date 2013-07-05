@@ -8,13 +8,15 @@
   MOSFLM auto-indexing, bug fixing.
 
 * Andrew Aquila <andrew.aquila@cfel.de>
-  powder_plot
+  powder_plot (later moved to extra programs repository)
+  stream_grep
 
 * Andrew Martin <andrew.martin@desy.de>
   Fixes to peak integration and Monte Carlo merging
 
 * Lorenzo Galli <lorenzo.galli@desy.de>
   Improvements to process_hkl
+  Anomalous correlation ratio ("CRDano" in compare_hkl)
 
 * Chun Hong Yoon <chun.hong.yoon@desy.de>
   Speed improvements to indexamajig
