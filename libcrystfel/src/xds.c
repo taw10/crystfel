@@ -607,6 +607,7 @@ int run_xds(struct image *image, IndexingPrivate *priv)
 
 				case EINTR:
 				STATUS("Restarting select()\n");
+				rval = 0;
 				break;
 
 				default:
