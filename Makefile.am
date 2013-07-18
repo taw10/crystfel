@@ -137,21 +137,17 @@ EXTRA_DIST += doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
               doc/reference/libcrystfel/xml/coding-standards.xml
 
 scriptdir = $(docdir)/scripts
-script_DATA = scripts/check-near-bragg  scripts/random-image \
-              scripts/wibbletron scripts/create-mtz scripts/mtz2hkl \
-              scripts/sequence-image scripts/zone-axes \
-              scripts/alternate-stream scripts/README scripts/cell-please \
+script_DATA = scripts/alternate-stream scripts/cell-please \
               scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
-              scripts/compare-hkl.gp scripts/check-peak-detection \
-              scripts/indexed-filenames scripts/gen-sfs scripts/cif2hkl
+              scripts/check-near-bragg scripts/check-peak-detection \
+              scripts/cif2hkl scripts/compare-hkl.gp scripts/create-mtz \
+              scripts/create-xscale scripts/eV-to-A scripts/find-filename \
+              scripts/gen-sfs scripts/gen-sfs-ano scripts/hkl2hkl \
+              scripts/indexed-filenames scripts/mtz2hkl scripts/peak-intensity \
+              scripts/random-image scripts/README scripts/sequence-image \
+              scripts/stream_grep scripts/zone-axes
 
-EXTRA_DIST += scripts/check-near-bragg  scripts/random-image \
-              scripts/wibbletron scripts/create-mtz scripts/mtz2hkl \
-              scripts/sequence-image scripts/zone-axes \
-              scripts/alternate-stream scripts/README scripts/cell-please \
-              scripts/check-hkl-completeness.gp scripts/check-hkl-quality.gp \
-              scripts/compare-hkl.gp scripts/check-peak-detection \
-              scripts/indexed-filenames scripts/gen-sfs scripts/cif2hkl
+EXTRA_DIST += $(script_DATA)
 
 
 DISTCHECK_CONFIGURE_FLAGS=--enable-gtk-doc
