@@ -1,0 +1,78 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+# Syntax: split-indexed input.stream \
+#                       output-cell.stream output-latt.stream output-raw.stream
+
+my $filename_cell = $ARGV[1];
+my $filename_latt = $ARGV[2];
+my $filename_raw = $ARGV[3];
+
+open(FH, $ARGV[0]);
+open(FH_CELL, ">".$filename_cell);
+open(FH_LATT, ">".$filename_latt);
+open(FH_RAW, ">".$filename_raw);
+
+my $line;
+my @chunk;
+my $indexed_by;
+my $not_indexed = 0;
+my $indexed_cell = 0;
+my $indexed_latt = 0;
+my $indexed_raw = 0;
+
+while ( $line = <FH> ) {
+
+	if ( $line =~ /^-----\ Begin chunk\ -----$/ ) {
+		$indexed_by = "";
+		while ( scalar(@chunk) ) {
+			my $l = shift(@chunk);
+			printf(FH_CELL "%s", $l);
+			printf(FH_LATT "%s", $l);
+			printf(FH_RAW "%s", $l);
+		}
+		@chunk = ();
+	}
+
+	push(@chunk, $line);
+
+	if ( $line =~ /^indexed_by\ =\ (.*)$/ ) {
+		$indexed_by = $1;
+	}
+
+	if ( $line =~ /^-----\ End chunk\ -----$/ ) {
+		if ( $indexed_by =~ /raw-nolatt/ ) {
+			$indexed_raw++;
+			while ( scalar(@chunk) ) {
+				printf(FH_RAW "%s", shift(@chunk));
+			}
+		} elsif ( $indexed_by =~ /^none$/ ) {
+			$not_indexed++;
+			@chunk = ();
+		} elsif ( $indexed_by =~ /raw-latt/ ) {
+			$indexed_latt++;
+			while ( scalar(@chunk) ) {
+				printf(FH_LATT "%s", shift(@chunk));
+			}
+		} else {
+			$indexed_cell++;
+			while ( scalar(@chunk) ) {
+				printf(FH_CELL "%s", shift(@chunk));
+			}
+		}
+	}
+
+}
+
+printf("%i patterns indexed using cell - written to %s.\n",
+       $indexed_cell, $filename_cell);
+printf("%i patterns indexed using lattice type only - written to %s.\n",
+       $indexed_latt, $filename_latt);
+printf("%i patterns indexed without prior cell or lattice information "
+       ."- written to %s.\n", $indexed_raw, $filename_raw);
+printf("%i unindexed patterns ignored.\n", $not_indexed);
+printf("%i total patterns\n",
+       $indexed_cell + $indexed_latt + $indexed_raw + $not_indexed);
+
+exit 0
