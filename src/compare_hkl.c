@@ -951,7 +951,7 @@ int main(int argc, char *argv[])
 		 * number won't have anything to do with anomalous signal. */
 
 		ERROR("You are trying to calculate CCano or CRDano with a"
-		      "centrosymmetric point group.\n");
+		      " centrosymmetric point group.\n");
 		ERROR("This is a silly thing to do, and I'm refusing to help"
 		      " you do it.\n");
 		ERROR("Please review your earlier processing steps and try"
