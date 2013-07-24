@@ -384,7 +384,6 @@ void update_partialities(Crystal *cryst, PartialityModel pmodel)
 {
 	Reflection *refl;
 	RefListIterator *iter;
-	RefList *predicted;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
@@ -400,9 +399,6 @@ void update_partialities(Crystal *cryst, PartialityModel pmodel)
 
 	cell_get_reciprocal(crystal_get_cell(cryst), &asx, &asy, &asz,
 	                    &bsx, &bsy, &bsz, &csx, &csy, &csz);
-
-	/* Scratch list to give check_reflection() something to add to */
-	predicted = reflist_new();
 
 	for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
 	      refl != NULL;
@@ -441,8 +437,6 @@ void update_partialities(Crystal *cryst, PartialityModel pmodel)
 
 		reflection_free(vals);
 	}
-
-	reflist_free(predicted);
 }
 
 
