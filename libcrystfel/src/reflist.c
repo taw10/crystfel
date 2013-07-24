@@ -992,12 +992,20 @@ Reflection *first_refl(RefList *list, RefListIterator **piter)
  **/
 Reflection *next_refl(Reflection *refl, RefListIterator *iter)
 {
-	int returned = 1;
+	/* Are there more reflections with the same indices? */
+	if ( refl->next != NULL ) {
+		return refl->next;
+	} else {
 
+		/* No, so rewind back to the head of the list */
+		while ( refl->prev != NULL ) {
+			refl = refl->prev;
+		}
+
+	}
+
+	refl = refl->child[1];
 	do {
-
-		if ( returned ) refl = refl->child[1];
-		returned = 0;
 
 		if ( refl != NULL ) {
 
@@ -1041,13 +1049,21 @@ static int recursive_depth(Reflection *refl)
 static int recursive_count(Reflection *refl)
 {
 	int count_left, count_right;
+	Reflection *probe;
+	int n_this = 1;
 
 	if ( refl == NULL ) return 0;
+
+	probe = refl;
+	while ( probe->next != NULL ) {
+		probe = probe->next;
+		n_this++;
+	}
 
 	count_left = recursive_count(refl->child[0]);
 	count_right = recursive_count(refl->child[1]);
 
-	return 1 + count_left + count_right;
+	return n_this + count_left + count_right;
 }
 
 

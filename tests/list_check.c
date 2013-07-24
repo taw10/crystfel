@@ -3,7 +3,11 @@
  *
  * Unit test for the reflection list module
  *
- * Copyright © 2012 Thomas White <taw@physics.org>
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2011-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -99,8 +103,8 @@ static int test_lists(int num_items)
 
 	}
 
-	printf("num_reflections is %i, tree depth is %i\n",
-	       num_reflections(list), tree_depth(list));
+	printf("Created %i items, num_reflections is %i, tree depth is %i\n",
+	       num_items, num_reflections(list), tree_depth(list));
 
 	/* Iterate over the list and check we find everything */
 	int count = 0;
@@ -118,6 +122,7 @@ static int test_lists(int num_items)
 			  && (check[i].l == l)
 			  && (check[i].found == 0) ) {
 				check[i].found = 1;
+				break;
 			}
 		}
 
