@@ -251,13 +251,13 @@ static void partiality_graph(cairo_t *cr, Crystal **crystals, int n,
 			if ( f == NULL ) continue;
 			if ( get_redundancy(f) < 2 ) continue;
 
-			Ipart = get_intensity(refl);
-			Ifull = crystal_get_osf(cryst) * get_intensity(f);
+			Ipart = crystal_get_osf(cryst) * get_intensity(refl);
+			Ifull = get_intensity(f);
 
 			//if ( Ifull < 10 ) continue;  /* FIXME: Ugh */
 
 			pobs = Ipart/Ifull;
-			pcalc = get_partiality(refl);
+			pcalc = get_lorentz(refl) * get_partiality(refl);
 
 			//STATUS("%4i %4i %4i : %9.6f %9.6f %e %e %e\n",
 			//       h, k, l, pobs, pcalc,

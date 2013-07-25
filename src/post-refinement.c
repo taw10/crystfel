@@ -87,8 +87,9 @@ static double partiality_rgradient(double r, double profile_radius)
 }
 
 
-/* Return the gradient of parameter 'k' given the current status of 'image'. */
-double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
+/* Return the gradient of partiality wrt parameter 'k' given the current status
+ * of 'image'. */
+double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 {
 	double ds, azi;
 	double glow, ghigh;
@@ -197,6 +198,46 @@ double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 
 	ERROR("No gradient defined for parameter %i\n", k);
 	abort();
+}
+
+
+/* Return the gradient of Lorentz factor wrt parameter 'k' given the current
+ * status of 'image'. */
+double l_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
+{
+	double ds;
+	signed int hs, ks, ls;
+
+	switch ( k ) {
+
+		/* Cell parameters do not affect Lorentz factor */
+		case REF_ASX :
+		case REF_BSX :
+		case REF_CSX :
+		case REF_ASY :
+		case REF_BSY :
+		case REF_CSY :
+		case REF_ASZ :
+		case REF_BSZ :
+		case REF_CSZ :
+		return 0.0;
+
+		/* Nor does change of radius */
+		case REF_R :
+		return 0.0;
+
+		default:
+		break;
+
+	}
+
+	assert(k == REF_DIV);
+
+	get_symmetric_indices(refl, &hs, &ks, &ls);
+
+	ds = 2.0 * resolution(crystal_get_cell(cr), hs, ks, ls);
+
+	return 0.0;  /* FIXME! */
 }
 
 
@@ -383,7 +424,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		double w;
 		double I_partial;
 		int k;
-		double p;
+		double p, l;
 		Reflection *match;
 		double gradients[NUM_PARAMS];
 		const double osf = crystal_get_osf(cr);
@@ -398,21 +439,23 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 			      " is it marked as refinable?\n", ha, ka, la);
 			continue;
 		}
-		I_full = osf * get_intensity(match);
+		I_full = get_intensity(match);
 
 		/* Actual measurement of this reflection from this pattern? */
-		I_partial = get_intensity(refl);
+		I_partial = osf * get_intensity(refl);
 		p = get_partiality(refl);
+		l = get_lorentz(refl);
 
 		/* Calculate the weight for this reflection */
 		w =  pow(get_esd_intensity(refl), 2.0);
-		w += p * I_full * pow(get_esd_intensity(match), 2.0);
+		w += l * p * I_full * pow(get_esd_intensity(match), 2.0);
 		w = pow(w, -1.0);
 
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<NUM_PARAMS; k++ ) {
 			double gr;
-			gr = gradient(cr, k, refl, pmodel);
+			gr  = p_gradient(cr, k, refl, pmodel) * l;
+			gr += l_gradient(cr, k, refl, pmodel) * p;
 			gradients[k] = gr;
 		}
 
@@ -429,7 +472,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 				if ( g > k ) continue;
 
 				M_c = gradients[g] * gradients[k];
-				M_c *= w * pow(osf * I_full, 2.0);
+				M_c *= w * pow(I_full, 2.0);
 
 				M_curr = gsl_matrix_get(M, k, g);
 				gsl_matrix_set(M, k, g, M_curr + M_c);
@@ -437,7 +480,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 
 			}
 
-			delta_I = I_partial - (p * I_full);
+			delta_I = I_partial - (l * p * I_full);
 			v_c = w * delta_I * I_full * gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);

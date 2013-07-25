@@ -63,8 +63,8 @@ enum {
 extern void pr_refine(Crystal *cr, const RefList *full, PartialityModel pmodel);
 
 /* Exported so it can be poked by tests/pr_gradient_check */
-extern double gradient(Crystal *cr, int k, Reflection *refl,
-                       PartialityModel pmodel);
+extern double p_gradient(Crystal *cr, int k, Reflection *refl,
+                         PartialityModel pmodel);
 
 
 #endif	/* POST_REFINEMENT_H */
