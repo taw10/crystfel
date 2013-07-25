@@ -48,10 +48,7 @@
 
 
 /* Maximum number of iterations of scaling per macrocycle. */
-#define MAX_CYCLES (50)
-
-/* ESD of restraint driving scale factors to unity */
-#define SCALING_RESTRAINT (1.0)
+#define MAX_CYCLES (10)
 
 
 struct scale_queue_args
@@ -110,9 +107,8 @@ static void run_scale_job(void *vwargs, int cookie)
 	      refl = next_refl(refl, iter) )
 	{
 		signed int h, k, l;
-		double Ih, Ihl, esd;
+		double Ih, Ihl, esd, corr;
 		Reflection *r;
-		double corr;
 
 		if ( !get_scalable(refl) ) continue;
 
@@ -151,19 +147,18 @@ static void run_scale_job(void *vwargs, int cookie)
 		Ihl = get_intensity(refl) / corr;
 		esd = get_esd_intensity(refl) / corr;
 
-		num += Ih * (Ihl/G) / pow(esd/G, 2.0);
-		den += pow(Ih, 2.0)/pow(esd/G, 2.0);
+		num += Ih * Ihl;
+		den += Ihl * Ihl;
 
 	}
-
-	//num += image->osf / pow(SCALING_RESTRAINT, 2.0);
-	//den += pow(image->osf, 2.0)/pow(SCALING_RESTRAINT, 2.0);
 
 	g = num / den;
 	if ( !isnan(g) && !isinf(g) ) {
-		crystal_set_osf(cr, g*G);
+		crystal_set_osf(cr, g);
+		wargs->shift = fabs((g/G)-1.0);
+	} else {
+		wargs->shift = 0.0;
 	}
-	wargs->shift = fabs(g-1.0);
 }
 
 
@@ -298,8 +293,8 @@ static void run_merge_job(void *vwargs, int cookie)
 		Ihl = get_intensity(refl) / corr;
 		esd = get_esd_intensity(refl) / corr;
 
-		num += (Ihl/G) / pow(esd/G, 2.0);
-		den += 1.0 / pow(esd/G, 2.0);
+		num += Ihl * G;
+		den += 1.0;
 		red++;
 
 		set_temp1(f, num);
@@ -518,6 +513,7 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 	i = 0;
 	do {
 
+		int j;
 		RefList *reference;
 
 		/* Refine against reference or current "full" estimates */
@@ -529,8 +525,12 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 
 		max_corr = iterate_scale(crystals, n, reference, n_threads,
 		                         pmodel);
-		//STATUS("Scaling iteration %2i: max correction = %5.2f\n",
-		//       i+1, max_corr);
+		STATUS("Scaling iteration %2i: max correction = %5.2f\n",
+		       i+1, max_corr);
+		for ( j=0; j<10; j++ ) {
+			printf(" %5.2f", crystal_get_osf(crystals[j]));
+		}
+		printf("\n");
 
 		/* No reference -> generate list for next iteration */
 		if ( gref == NULL ) {
@@ -541,6 +541,10 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 		i++;
 
 	} while ( (max_corr > 0.01) && (i < MAX_CYCLES) );
+
+	if ( i == MAX_CYCLES ) {
+		ERROR("Warning: Scaling did not converge.\n");
+	}
 
 	if ( gref != NULL ) {
 		full = lsq_intensities(crystals, n, n_threads, pmodel);

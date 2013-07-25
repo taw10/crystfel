@@ -190,7 +190,7 @@ static int select_scalable_reflections(RefList *list, RefList *reference)
 		if ( get_partiality(refl) < 0.1 ) sc = 0;
 		v = fabs(get_intensity(refl));
 		esd = get_esd_intensity(refl);
-		if ( v < 0.5*esd ) sc = 0;
+		//if ( v < 0.5*esd ) sc = 0;
 
 		/* If we are scaling against a reference set, we additionally
 		 * require that this reflection is in the reference list. */
@@ -497,6 +497,7 @@ int main(int argc, char *argv[])
 	n_crystals = 0;
 	images = NULL;
 	crystals = NULL;
+
 	do {
 
 		RefList *as;
