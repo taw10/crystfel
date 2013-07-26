@@ -366,8 +366,8 @@ static void partiality_histogram(cairo_t *cr, Crystal **crystals, int n,
 			Ipart = get_intensity(refl);
 			Ifull = get_intensity(f);
 
-			/* FIXME: Wrong */
-			pobs = Ipart/(crystal_get_osf(cryst)*Ifull);
+			pobs = (Ipart * crystal_get_osf(cryst))
+			           / (Ifull * get_lorentz(refl));
 			pcalc = get_partiality(refl);
 
 			if ( calc ) {
