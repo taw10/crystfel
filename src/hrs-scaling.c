@@ -486,6 +486,32 @@ static void calculate_esds(Crystal **crystals, int n, RefList *full,
 }
 
 
+static double max_outlier_change(Crystal **crystals, int n, double *old_osfs)
+{
+	double rdtot = 0.0;
+	double rdmax = 0.0;
+	double rdmean;
+	int j;
+
+	for ( j=0; j<n; j++ ) {
+		double r;
+		r = crystal_get_osf(crystals[j]) / old_osfs[j];
+		rdtot += r;
+	}
+	rdmean = rdtot / n;
+	for ( j=0; j<n; j++ ) {
+		double r;
+		r = crystal_get_osf(crystals[j]) / old_osfs[j];
+		old_osfs[j] = crystal_get_osf(crystals[j]);
+		if ( fabs(r-rdmean) > rdmax ) {
+			rdmax = fabs(r-rdmean);
+		}
+	}
+
+	return rdmax;
+}
+
+
 /* Scale the stack of images */
 RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
                            int n_threads, int noscale, PartialityModel pmodel,
@@ -494,6 +520,11 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 	int i;
 	double max_corr;
 	RefList *full = NULL;
+	double *old_osfs;
+	double rdval;
+
+	old_osfs = malloc(n*sizeof(double));
+	if ( old_osfs == NULL ) return NULL;
 
 	for ( i=0; i<n; i++ ) crystal_set_osf(crystals[i], 1.0);
 
@@ -501,6 +532,7 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 		full = lsq_intensities(crystals, n, n_threads, pmodel);
 		calculate_esds(crystals, n, full, n_threads, min_redundancy,
 		               pmodel);
+		free(old_osfs);
 		return full;
 	}
 
@@ -509,11 +541,14 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 		full = lsq_intensities(crystals, n, n_threads, pmodel);
 	}
 
+	for ( i=0; i<n; i++ ) {
+		old_osfs[i] = crystal_get_osf(crystals[i]);
+	}
+
 	/* Iterate */
 	i = 0;
 	do {
 
-		int j;
 		RefList *reference;
 
 		/* Refine against reference or current "full" estimates */
@@ -525,12 +560,12 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 
 		max_corr = iterate_scale(crystals, n, reference, n_threads,
 		                         pmodel);
-		STATUS("Scaling iteration %2i: max correction = %5.2f\n",
-		       i+1, max_corr);
-		for ( j=0; j<10; j++ ) {
-			printf(" %5.2f", crystal_get_osf(crystals[j]));
-		}
-		printf("\n");
+
+		rdval = max_outlier_change(crystals, n, old_osfs);
+
+		STATUS("Scaling iteration %2i: max correction = %5.2f "
+		       "dev of worst outlier = %5.2f\n",
+		       i+1, max_corr, rdval);
 
 		/* No reference -> generate list for next iteration */
 		if ( gref == NULL ) {
@@ -540,7 +575,7 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 
 		i++;
 
-	} while ( (max_corr > 0.01) && (i < MAX_CYCLES) );
+	} while ( (rdval > 0.01) && (i < MAX_CYCLES) );
 
 	if ( i == MAX_CYCLES ) {
 		ERROR("Warning: Scaling did not converge.\n");
@@ -552,5 +587,6 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 
 	calculate_esds(crystals, n, full, n_threads, min_redundancy, pmodel);
 
+	free(old_osfs);
 	return full;
 }
