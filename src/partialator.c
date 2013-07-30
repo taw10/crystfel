@@ -578,12 +578,16 @@ int main(int argc, char *argv[])
 
 			Crystal *cryst;
 			RefList *as;
+			int n_gained = 0;
+			int n_lost = 0;
 
 			cryst = images[i].crystals[j];
 			crystal_set_image(cryst, &images[i]);
 
 			/* Now it's safe to do the following */
-			update_partialities(cryst, pmodel);
+			update_partialities_2(cryst, pmodel,
+			                      &n_gained, &n_lost);
+			assert(n_gained == 0);  /* That'd just be silly */
 			as = crystal_get_reflections(cryst);
 			nobs += select_scalable_reflections(as, reference);
 
