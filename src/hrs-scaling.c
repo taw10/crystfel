@@ -575,7 +575,7 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 
 		i++;
 
-	} while ( (rdval > 0.01) && (i < MAX_CYCLES) );
+	} while ( (rdval > 0.05) && (i < MAX_CYCLES) );
 
 	if ( i == MAX_CYCLES ) {
 		ERROR("Warning: Scaling did not converge.\n");
