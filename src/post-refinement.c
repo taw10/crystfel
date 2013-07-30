@@ -567,10 +567,47 @@ static double guide_dev(Crystal *cr, const RefList *full)
 }
 
 
+static Crystal *backup_crystal(Crystal *cr)
+{
+	Crystal *b;
+
+	b = crystal_new();
+	crystal_set_cell(b, cell_new_from_cell(crystal_get_cell(cr)));
+
+	return b;
+}
+
+
+static void revert_crystal(Crystal *cr, Crystal *backup)
+{
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+
+	cell_get_reciprocal(crystal_get_cell(backup),
+	                    &asx, &asy, &asz,
+	                    &bsx, &bsy, &bsz,
+	                    &csx, &csy, &csz);
+
+	cell_set_reciprocal(crystal_get_cell(cr),
+	                    asx, asy, asz,
+	                    bsx, bsy, bsz,
+	                    csx, csy, csz);
+}
+
+
+static void free_backup_crystal(Crystal *cr)
+{
+	cell_free(crystal_get_cell(cr));
+	crystal_free(cr);
+}
+
+
 void pr_refine(Crystal *cr, const RefList *full, PartialityModel pmodel)
 {
 	double max_shift, dev;
 	int i;
+	Crystal *backup;
 	const int verbose = 0;
 
 	if ( verbose ) {
@@ -580,6 +617,8 @@ void pr_refine(Crystal *cr, const RefList *full, PartialityModel pmodel)
 		       dev);
 	}
 
+	backup = backup_crystal(cr);
+
 	i = 0;
 	crystal_set_user_flag(cr, 0);
 	do {
@@ -588,21 +627,33 @@ void pr_refine(Crystal *cr, const RefList *full, PartialityModel pmodel)
 		double bsx, bsy, bsz;
 		double csx, csy, csz;
 		double dev;
+		int n_total;
+		int n_gained = 0;
+		int n_lost = 0;
 
+		n_total = num_reflections(crystal_get_reflections(cr));
 		cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
 		max_shift = pr_iterate(cr, full, pmodel);
 
-		update_partialities(cr, pmodel);
+		update_partialities_2(cr, pmodel, &n_gained, &n_lost);
 
 		if ( verbose ) {
 			dev = guide_dev(cr, full);
 			STATUS("PR Iteration %2i: max shift = %10.2f"
-			       " dev = %10.5e\n", i+1, max_shift, dev);
+			       " dev = %10.5e, %i gained, %i lost, %i total\n",
+			       i+1, max_shift, dev, n_gained, n_lost, n_total);
+		}
+
+		if ( 10*n_lost > n_total ) {
+			revert_crystal(cr, backup);
+			crystal_set_user_flag(cr, 1);
 		}
 
 		i++;
 
 	} while ( (max_shift > 50.0) && (i < MAX_CYCLES) );
+
+	free_backup_crystal(backup);
 }

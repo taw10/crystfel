@@ -43,7 +43,8 @@
 #include "geometry.h"
 
 
-/* Refineable parameters */
+/* Refineable parameters.
+ * Don't forget to add new things to backup_crystal() et al.! */
 enum {
 	REF_ASX,
 	REF_ASY,

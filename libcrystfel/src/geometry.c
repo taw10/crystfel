@@ -380,7 +380,8 @@ static void set_unity_partialities(Crystal *cryst)
 
 
 /* Calculate partialities and apply them to the image's reflections */
-void update_partialities(Crystal *cryst, PartialityModel pmodel)
+void update_partialities_2(Crystal *cryst, PartialityModel pmodel,
+                           int *n_gained, int *n_lost)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -420,23 +421,42 @@ void update_partialities(Crystal *cryst, PartialityModel pmodel)
 		vals = check_reflection(image, cryst, h, k, l, xl, yl, zl);
 
 		if ( vals == NULL ) {
-			set_redundancy(refl, 0);
-			continue;
+
+			if ( get_redundancy(refl) != 0 ) {
+				(*n_lost)++;
+				set_redundancy(refl, 0);
+			}
+
+		} else {
+
+			if ( get_redundancy(refl) == 0 ) {
+				(*n_gained)++;
+				set_redundancy(refl, 1);
+			}
+
+			/* Transfer partiality stuff */
+			get_partial(vals, &r1, &r2, &p, &clamp1, &clamp2);
+			set_partial(refl, r1, r2, p, clamp1, clamp2);
+			L = get_lorentz(vals);
+			set_lorentz(refl, L);
+
+			/* Transfer detector location */
+			get_detector_pos(vals, &x, &y);
+			set_detector_pos(refl, 0.0, x, y);
+
+			reflection_free(vals);
+
 		}
-		set_redundancy(refl, 1);
 
-		/* Transfer partiality stuff */
-		get_partial(vals, &r1, &r2, &p, &clamp1, &clamp2);
-		set_partial(refl, r1, r2, p, clamp1, clamp2);
-		L = get_lorentz(vals);
-		set_lorentz(refl, L);
-
-		/* Transfer detector location */
-		get_detector_pos(vals, &x, &y);
-		set_detector_pos(refl, 0.0, x, y);
-
-		reflection_free(vals);
 	}
+}
+
+
+void update_partialities(Crystal *cryst, PartialityModel pmodel)
+{
+	int n_gained = 0;
+	int n_lost = 0;
+	update_partialities_2(cryst, pmodel, &n_gained, &n_lost);
 }
 
 
