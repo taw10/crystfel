@@ -624,13 +624,8 @@ int main(int argc, char *argv[])
 
 		STATUS("Post refinement cycle %i of %i\n", i+1, n_iter);
 
-		if ( reference == NULL ) {
-			comp = full;
-		} else {
-			comp = reference;
-		}
-
 		/* Refine the geometry of all patterns to get the best fit */
+		comp = (reference == NULL) ? full : reference;
 		select_reflections_for_refinement(crystals, n_crystals,
 		                                  comp, have_reference);
 		refine_all(crystals, n_crystals, det, comp, nthreads, pmodel);
