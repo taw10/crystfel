@@ -313,7 +313,6 @@ int main(int argc, char *argv[])
 	int nobs;
 	char *reference_file = NULL;
 	RefList *reference = NULL;
-	int n_dud;
 	int have_reference = 0;
 	char cmdline[1024];
 	SRContext *sr;
@@ -605,6 +604,7 @@ int main(int argc, char *argv[])
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
 
+		int n_dud = 0;
 		int j;
 		RefList *comp;
 
@@ -623,13 +623,13 @@ int main(int argc, char *argv[])
 
 		nobs = 0;
 		for ( j=0; j<n_crystals; j++ ) {
-
 			Crystal *cr = crystals[j];
 			RefList *rf = crystal_get_reflections(cr);
-
+			if ( crystal_get_user_flag(cr) ) n_dud++;
 			nobs += select_scalable_reflections(rf, reference);
-
 		}
+
+		STATUS("%i crystals could not be refined this cycle.\n", n_dud);
 
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
@@ -642,12 +642,6 @@ int main(int argc, char *argv[])
 	}
 
 	sr_finish(sr);
-
-	n_dud = 0;
-	for ( i=0; i<n_crystals; i++ ) {
-		if ( crystal_get_user_flag(crystals[i]) ) n_dud++;
-	}
-	STATUS("%i crystals could not be refined on the last cycle.\n", n_dud);
 
 	/* Output results */
 	write_reflist(outfile, full);
