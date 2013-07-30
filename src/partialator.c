@@ -175,37 +175,49 @@ static int select_scalable_reflections(RefList *list, RefList *reference)
 {
 	Reflection *refl;
 	RefListIterator *iter;
-	int nobs = 0;
+	int n_acc = 0;
+	int n_red = 0;
+	int n_par = 0;
+	int n_ref = 0;
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 
 		int sc = 1;
-		double v, esd;
 
 		/* This means the reflection was not found on the last check */
-		if ( get_redundancy(refl) == 0 ) sc = 0;
+		if ( get_redundancy(refl) == 0 ) {
+			sc = 0;
+			n_red++;
+		}
 
-		if ( get_partiality(refl) < 0.1 ) sc = 0;
-		v = fabs(get_intensity(refl));
-		esd = get_esd_intensity(refl);
-		//if ( v < 0.5*esd ) sc = 0;
+		/* Don't try to scale up reflections which are hardly there */
+		if ( get_partiality(refl) < 0.1 ) {
+			sc = 0;
+			n_par++;
+		}
 
 		/* If we are scaling against a reference set, we additionally
 		 * require that this reflection is in the reference list. */
 		if ( reference != NULL ) {
 			signed int h, k, l;
 			get_indices(refl, &h, &k, &l);
-			if ( find_refl(reference, h, k, l) == NULL ) sc = 0;
+			if ( find_refl(reference, h, k, l) == NULL ) {
+				sc = 0;
+				n_ref++;
+			}
 		}
 
 		set_scalable(refl, sc);
 
-		if ( sc ) nobs++;
+		if ( sc ) n_acc++;
 	}
 
-	return nobs;
+	//STATUS("List %p: %i accepted, %i red zero, %i small part, %i no ref\n",
+	//       list, n_acc, n_red, n_par, n_ref);
+
+	return n_acc;
 }
 
 
@@ -223,8 +235,6 @@ static void select_reflections_for_refinement(Crystal **crystals, int n,
 		int n_noscale = 0;
 		int n_fewmatch = 0;
 		int n_ref = 0;
-
-		if ( crystal_get_user_flag(crystals[i]) ) continue;
 
 		reflist = crystal_get_reflections(crystals[i]);
 		for ( refl = first_refl(reflist, &iter);

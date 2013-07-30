@@ -620,7 +620,6 @@ void pr_refine(Crystal *cr, const RefList *full, PartialityModel pmodel)
 	backup = backup_crystal(cr);
 
 	i = 0;
-	crystal_set_user_flag(cr, 0);
 	do {
 
 		double asx, asy, asz;
@@ -646,7 +645,7 @@ void pr_refine(Crystal *cr, const RefList *full, PartialityModel pmodel)
 			       i+1, max_shift, dev, n_gained, n_lost, n_total);
 		}
 
-		if ( 10*n_lost > n_total ) {
+		if ( 3*n_lost > n_total ) {
 			revert_crystal(cr, backup);
 			crystal_set_user_flag(cr, 1);
 		}

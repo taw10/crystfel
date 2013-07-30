@@ -97,11 +97,6 @@ static void run_scale_job(void *vwargs, int cookie)
 	double g;
 	const double G = crystal_get_osf(cr);
 
-	if ( crystal_get_user_flag(cr) ) {
-		wargs->shift = 0.0;
-		return;
-	}
-
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
@@ -121,7 +116,6 @@ static void run_scale_job(void *vwargs, int cookie)
 			      "marked as scalable?\n", h, k, l);
 			Ih = 0.0;
 		} else {
-			if ( get_redundancy(r) < 2 ) continue;
 			Ih = get_intensity(r);
 		}
 
@@ -235,8 +229,6 @@ static void run_merge_job(void *vwargs, int cookie)
 	Reflection *refl;
 	RefListIterator *iter;
 	double G;
-
-	if ( crystal_get_user_flag(cr)) return;
 
 	G = crystal_get_osf(cr);
 
@@ -386,8 +378,6 @@ static void run_esd_job(void *vwargs, int cookie)
 	Reflection *refl;
 	RefListIterator *iter;
 	double G;
-
-	if ( crystal_get_user_flag(cr) ) return;
 
 	G = crystal_get_osf(cr);
 
