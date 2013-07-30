@@ -220,7 +220,6 @@ static void select_reflections_for_refinement(Crystal **crystals, int n,
 		Reflection *refl;
 		RefListIterator *iter;
 		int n_acc = 0;
-		int n_nomatch = 0;
 		int n_noscale = 0;
 		int n_fewmatch = 0;
 		int n_ref = 0;
@@ -263,8 +262,10 @@ static void select_reflections_for_refinement(Crystal **crystals, int n,
 					}
 
 				} else {
-					n_nomatch++;
-					set_refinable(refl, 0);
+					ERROR("%3i %3i %3i is scalable, but is"
+					      " not in the reference list.\n",
+					      h, k, l);
+					abort();
 				}
 
 			}
@@ -273,10 +274,6 @@ static void select_reflections_for_refinement(Crystal **crystals, int n,
 		//STATUS("Image %4i: %i guide reflections accepted "
 		//       "(%i not scalable, %i few matches, %i total)\n",
 		//       i, n_acc, n_noscale, n_fewmatch, n_ref);
-
-		/* This would be a silly situation, since there must be a match
-		 * if THIS pattern has a scalable part of the reflection! */
-		assert(n_nomatch == 0);
 
 	}
 }
