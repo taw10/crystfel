@@ -37,6 +37,7 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_eigen.h>
+#include <gsl/gsl_blas.h>
 
 #include "image.h"
 #include "post-refinement.h"
@@ -359,37 +360,73 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
 	gsl_vector *s_val;
 	int err, n;
 	gsl_vector *shifts;
+	gsl_vector *SB;
+	gsl_vector *SinvX;
+	gsl_matrix *S;  /* rescaling matrix due to Bricogne */
+	gsl_matrix *AS;
+	gsl_matrix *SAS;
+	int i;
 
 	n = v->size;
 	if ( v->size != M->size1 ) return NULL;
 	if ( v->size != M->size2 ) return NULL;
 
+	/* Calculate the rescaling matrix S */
+	S = gsl_matrix_calloc(n, n);
+	for ( i=0; i<n; i++ ) {
+		double sii = pow(gsl_matrix_get(M, i, i), -0.5);
+		gsl_matrix_set(S, i, i, sii);
+	}
+
+	/* Calculate the matrix SAS, which we will be (not) inverting */
+	AS = gsl_matrix_calloc(n, n);
+	SAS = gsl_matrix_calloc(n, n);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, M, S, 0.0, AS);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, S, AS, 0.0, SAS);
+	gsl_matrix_free(AS);
+
+	/* Do the SVD */
 	s_val = gsl_vector_calloc(n);
 	s_vec = gsl_matrix_calloc(n, n);
-
-	err = gsl_linalg_SV_decomp_jacobi(M, s_vec, s_val);
+	err = gsl_linalg_SV_decomp_jacobi(SAS, s_vec, s_val);
 	if ( err ) {
 		ERROR("SVD failed: %s\n", gsl_strerror(err));
 		gsl_matrix_free(s_vec);
 		gsl_vector_free(s_val);
+		gsl_matrix_free(SAS);
+		gsl_matrix_free(S);
 		return NULL;
 	}
-	/* "M" is now "U" */
+	/* "SAS" is now "U" */
 
+	/* Filter the eigenvalues */
 	check_eigen(s_val);
 
-	shifts = gsl_vector_calloc(n);
-	err = gsl_linalg_SV_solve(M, s_vec, s_val, v, shifts);
+	/* Calculate the vector SB, which is the RHS of the equation */
+	SB = gsl_vector_calloc(n);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, S, v, 0.0, SB);
+
+	/* Solve the equation SAS.SinvX = SB */
+	SinvX = gsl_vector_calloc(n);
+	err = gsl_linalg_SV_solve(SAS, s_vec, s_val, SB, SinvX);
+	gsl_vector_free(SB);
+	gsl_matrix_free(SAS);
+	gsl_matrix_free(s_vec);
+	gsl_vector_free(s_val);
+
 	if ( err ) {
 		ERROR("Matrix solution failed: %s\n", gsl_strerror(err));
-		gsl_matrix_free(s_vec);
-		gsl_vector_free(s_val);
-		gsl_vector_free(shifts);
+		gsl_matrix_free(S);
+		gsl_vector_free(SinvX);
 		return NULL;
 	}
 
-	gsl_matrix_free(s_vec);
-	gsl_vector_free(s_val);
+	/* Calculate S.SinvX to get X, the shifts */
+	shifts = gsl_vector_calloc(n);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, S, SinvX, 0.0, shifts);
+
+	gsl_matrix_free(S);
+	gsl_vector_free(SinvX);
 
 	return shifts;
 }
