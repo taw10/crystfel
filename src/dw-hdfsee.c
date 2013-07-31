@@ -190,8 +190,6 @@ static void show_ring(cairo_t *cr, DisplayWindow *dw,
 static void show_simple_ring(cairo_t *cr, DisplayWindow *dw,
                              double d, cairo_matrix_t *basic_m)
 {
-	if ( !dw->use_geom ) return;
-
 	cairo_identity_matrix(cr);
 	cairo_translate(cr, -dw->min_x/dw->binning,
 	                     dw->max_y/dw->binning);
