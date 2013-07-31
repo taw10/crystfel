@@ -718,7 +718,7 @@ UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t)
 	gsl_matrix_set(m, 2, 1, cy);
 	gsl_matrix_set(m, 2, 2, cz);
 
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, t->m, m, 1.0, a);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, t->m, m, 0.0, a);
 
 	cell_set_cartesian(out, gsl_matrix_get(a, 0, 0),
 	                        gsl_matrix_get(a, 0, 1),
@@ -846,7 +846,7 @@ void tfn_combine(UnitCellTransformation *t, double *na, double *nb, double *nc)
 	free(nb);
 	free(nc);
 
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, n, t->m, 1.0, a);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, n, t->m, 0.0, a);
 
 	gsl_matrix_free(t->m);
 	t->m = a;
