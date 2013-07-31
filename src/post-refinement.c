@@ -395,6 +395,7 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
 		gsl_vector_free(s_val);
 		gsl_matrix_free(SAS);
 		gsl_matrix_free(S);
+		crystal_set_user_flag(cr, 1);
 		return NULL;
 	}
 	/* "SAS" is now "U" */
@@ -418,6 +419,7 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
 		ERROR("Matrix solution failed: %s\n", gsl_strerror(err));
 		gsl_matrix_free(S);
 		gsl_vector_free(SinvX);
+		crystal_set_user_flag(cr, 1);
 		return NULL;
 	}
 
