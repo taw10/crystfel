@@ -38,6 +38,15 @@
 
 typedef struct _srcontext SRContext;  /* Opaque */
 
+/* Information is logged in this structure */
+struct srdata
+{
+	int n_no_refine;  /* Number that couldn't be refined */
+	Crystal **crystals;
+	int n;
+	RefList *full;
+};
+
 #ifdef HAVE_CAIRO
 
 extern SRContext *sr_titlepage(Crystal **crystals, int n,
@@ -45,8 +54,7 @@ extern SRContext *sr_titlepage(Crystal **crystals, int n,
                                const char *stream_filename,
                                const char *cmdline);
 
-extern void sr_iteration(SRContext *sr, int iteration,
-                         Crystal **crystals, int n, RefList *full);
+extern void sr_iteration(SRContext *sr, int iteration, struct srdata *d);
 
 extern void sr_finish(SRContext *sr);
 
@@ -58,8 +66,7 @@ SRContext *sr_titlepage(Crystal **crystals, int n, const char *filename,
 	return NULL;
 }
 
-void sr_iteration(SRContext *sr, int iteration, Crystal **crystals, int n,
-                  RefList *full)
+void sr_iteration(SRContext *sr, int iteration, struct srdata *d)
 {
 }
 

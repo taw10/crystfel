@@ -817,8 +817,7 @@ SRContext *sr_titlepage(Crystal **crystals, int n,
 }
 
 
-void sr_iteration(SRContext *sr, int iteration, Crystal **crystals, int n,
-                  RefList *full)
+void sr_iteration(SRContext *sr, int iteration, struct srdata *d)
 {
 	int i;
 	char page_title[1024];
@@ -834,7 +833,7 @@ void sr_iteration(SRContext *sr, int iteration, Crystal **crystals, int n,
 
 	cairo_save(sr->cr);
 	cairo_translate(sr->cr, 480.0, 350.0);
-	scale_factor_histogram(sr->cr, crystals, n,
+	scale_factor_histogram(sr->cr, d->crystals, d->n,
 	                       "Distribution of overall scale factors");
 	cairo_restore(sr->cr);
 
@@ -842,7 +841,7 @@ void sr_iteration(SRContext *sr, int iteration, Crystal **crystals, int n,
 	cairo_save(sr->cr);
 
 	cairo_translate(sr->cr, 70.0, 330.0);
-	partiality_graph(sr->cr, crystals, n, full);
+	partiality_graph(sr->cr, d->crystals, d->n, d->full);
 
 	cairo_save(sr->cr);
 	cairo_move_to(sr->cr, 0.0, 0.0);
@@ -853,7 +852,7 @@ void sr_iteration(SRContext *sr, int iteration, Crystal **crystals, int n,
 	cairo_stroke(sr->cr);
 	cairo_set_dash(sr->cr, NULL, 0, 0.0);
 	cairo_translate(sr->cr, 0.0, -150.0);
-	partiality_histogram(sr->cr, crystals, n, full, 1, 0);
+	partiality_histogram(sr->cr, d->crystals, d->n, d->full, 1, 0);
 	cairo_restore(sr->cr);
 
 	cairo_save(sr->cr);
@@ -866,13 +865,13 @@ void sr_iteration(SRContext *sr, int iteration, Crystal **crystals, int n,
 	cairo_set_dash(sr->cr, NULL, 0, 0.0);
 	cairo_translate(sr->cr, 230.0, 200.0);
 	cairo_rotate(sr->cr, -M_PI_2);
-	partiality_histogram(sr->cr, crystals, n, full, 0, 1);
+	partiality_histogram(sr->cr, d->crystals, d->n, d->full, 0, 1);
 	cairo_restore(sr->cr);
 
 	cairo_restore(sr->cr);
 
 	if ( iteration == 0 ) {
-		find_most_sampled_reflections(full, 9,
+		find_most_sampled_reflections(d->full, 9,
 		                              sr->ms_h, sr->ms_k, sr->ms_l);
 	}
 
@@ -885,7 +884,7 @@ void sr_iteration(SRContext *sr, int iteration, Crystal **crystals, int n,
 
 		cairo_save(sr->cr);
 		cairo_translate(sr->cr, 400.0+140.0*x, 60.0+80.0*y);
-		intensity_histogram(sr->cr, crystals, n, full,
+		intensity_histogram(sr->cr, d->crystals, d->n, d->full,
 		                    sr->ms_h[i], sr->ms_k[i], sr->ms_l[i]);
 		cairo_restore(sr->cr);
 

@@ -333,6 +333,7 @@ int main(int argc, char *argv[])
 	PartialityModel pmodel = PMODEL_SPHERE;
 	int min_measurements = 2;
 	char *rval;
+	struct srdata srdata;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -611,9 +612,13 @@ int main(int argc, char *argv[])
 	full = scale_intensities(crystals, n_crystals, reference,
 	                         nthreads, noscale, pmodel, min_measurements);
 
+	srdata.crystals = crystals;
+	srdata.n = n_crystals;
+	srdata.full = full;
+
 	sr = sr_titlepage(crystals, n_crystals, "scaling-report.pdf",
 	                  infile, cmdline);
-	sr_iteration(sr, 0, crystals, n_crystals, full);
+	sr_iteration(sr, 0, &srdata);
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -646,7 +651,9 @@ int main(int argc, char *argv[])
 		                         reference, nthreads, noscale, pmodel,
 		                         min_measurements);
 
-		sr_iteration(sr, i+1, crystals, n_crystals, full);
+		srdata.full = full;
+
+		sr_iteration(sr, i+1, &srdata);
 
 	}
 
