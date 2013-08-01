@@ -321,6 +321,7 @@ static void check_eigen(gsl_vector *e_val)
 	const int n = e_val->size;
 	const double max_condition = 1e6;
 	const int verbose = 0;
+	int n_filt = 0;
 
 	if ( verbose ) STATUS("Eigenvalues:\n");
 	vmin = +INFINITY;
@@ -336,6 +337,7 @@ static void check_eigen(gsl_vector *e_val)
 		double val = gsl_vector_get(e_val, i);
 		if ( val < vmax/max_condition ) {
 			gsl_vector_set(e_val, i, 0.0);
+			n_filt++;
 		}
 	}
 
@@ -350,6 +352,7 @@ static void check_eigen(gsl_vector *e_val)
 	if ( verbose ) {
 		STATUS("Condition number: %e / %e = %5.2f\n",
 		       vmax, vmin, vmax/vmin);
+		STATUS("%i out of %i eigenvalues filtered.\n", n_filt, n);
 	}
 }
 
