@@ -41,10 +41,11 @@ typedef struct _srcontext SRContext;  /* Opaque */
 /* Information is logged in this structure */
 struct srdata
 {
-	int n_no_refine;  /* Number that couldn't be refined */
 	Crystal **crystals;
 	int n;
 	RefList *full;
+
+	int n_filtered;
 };
 
 #ifdef HAVE_CAIRO

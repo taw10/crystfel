@@ -92,6 +92,7 @@ struct refine_args
 	RefList *full;
 	Crystal *crystal;
 	PartialityModel pmodel;
+	struct prdata prdata;
 };
 
 
@@ -101,6 +102,7 @@ struct queue_args
 	int n_done;
 	Crystal **crystals;
 	int n_crystals;
+	struct srdata *srdata;
 	struct refine_args task_defaults;
 };
 
@@ -110,7 +112,7 @@ static void refine_image(void *task, int id)
 	struct refine_args *pargs = task;
 	Crystal *cr = pargs->crystal;
 
-	pr_refine(cr, pargs->full, pargs->pmodel);
+	pargs->prdata = pr_refine(cr, pargs->full, pargs->pmodel);
 }
 
 
@@ -133,8 +135,10 @@ static void *get_image(void *vqargs)
 static void done_image(void *vqargs, void *task)
 {
 	struct queue_args *qargs = vqargs;
+	struct refine_args *pargs = task;
 
 	qargs->n_done++;
+	qargs->srdata->n_filtered += pargs->prdata.n_filtered;
 
 	progress_bar(qargs->n_done, qargs->n_crystals, "Refining");
 	free(task);
@@ -143,7 +147,8 @@ static void done_image(void *vqargs, void *task)
 
 static void refine_all(Crystal **crystals, int n_crystals,
                        struct detector *det,
-                       RefList *full, int nthreads, PartialityModel pmodel)
+                       RefList *full, int nthreads, PartialityModel pmodel,
+                       struct srdata *srdata)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
@@ -161,6 +166,7 @@ static void refine_all(Crystal **crystals, int n_crystals,
 	qargs.n_done = 0;
 	qargs.n_crystals = n_crystals;
 	qargs.crystals = crystals;
+	qargs.srdata = srdata;
 
 	/* Don't have threads which are doing nothing */
 	if ( n_crystals < nthreads ) nthreads = n_crystals;
@@ -629,11 +635,14 @@ int main(int argc, char *argv[])
 
 		STATUS("Post refinement cycle %i of %i\n", i+1, n_iter);
 
+		srdata.n_filtered = 0;
+
 		/* Refine the geometry of all patterns to get the best fit */
 		comp = (reference == NULL) ? full : reference;
 		select_reflections_for_refinement(crystals, n_crystals,
 		                                  comp, have_reference);
-		refine_all(crystals, n_crystals, det, comp, nthreads, pmodel);
+		refine_all(crystals, n_crystals, det, comp, nthreads, pmodel,
+		           &srdata);
 
 		nobs = 0;
 		for ( j=0; j<n_crystals; j++ ) {

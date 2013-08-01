@@ -41,6 +41,7 @@
 #include "utils.h"
 #include "crystal.h"
 #include "geometry.h"
+#include "scaling-report.h"
 
 
 /* Refineable parameters.
@@ -55,13 +56,20 @@ enum {
 	REF_CSX,
 	REF_CSY,
 	REF_CSZ,
-	REF_DIV,
 	NUM_PARAMS,
+	REF_DIV,
 	REF_R,
 };
 
 
-extern void pr_refine(Crystal *cr, const RefList *full, PartialityModel pmodel);
+struct prdata
+{
+	int n_filtered;
+};
+
+
+extern struct prdata pr_refine(Crystal *cr, const RefList *full,
+                               PartialityModel pmodel);
 
 /* Exported so it can be poked by tests/pr_gradient_check */
 extern double p_gradient(Crystal *cr, int k, Reflection *refl,

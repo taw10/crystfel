@@ -314,7 +314,7 @@ static void apply_shift(Crystal *cr, int k, double shift)
 }
 
 
-static void check_eigen(gsl_vector *e_val)
+static int check_eigen(gsl_vector *e_val)
 {
 	int i;
 	double vmax, vmin;
@@ -352,12 +352,16 @@ static void check_eigen(gsl_vector *e_val)
 	if ( verbose ) {
 		STATUS("Condition number: %e / %e = %5.2f\n",
 		       vmax, vmin, vmax/vmin);
+
+
 		STATUS("%i out of %i eigenvalues filtered.\n", n_filt, n);
 	}
+
+	return n_filt;
 }
 
 
-static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
+static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt)
 {
 	gsl_matrix *s_vec;
 	gsl_vector *s_val;
@@ -403,7 +407,7 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
 	/* "SAS" is now "U" */
 
 	/* Filter the eigenvalues */
-	check_eigen(s_val);
+	*n_filt = check_eigen(s_val);
 
 	/* Calculate the vector SB, which is the RHS of the equation */
 	SB = gsl_vector_calloc(n);
@@ -437,7 +441,7 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M)
 
 /* Perform one cycle of post refinement on 'image' against 'full' */
 static double pr_iterate(Crystal *cr, const RefList *full,
-                         PartialityModel pmodel)
+                         PartialityModel pmodel, struct prdata *prdata)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
@@ -540,7 +544,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	}
 
 	max_shift = 0.0;
-	shifts = solve_svd(v, M);
+	shifts = solve_svd(v, M, &prdata->n_filtered);
 	if ( shifts != NULL ) {
 
 		for ( param=0; param<NUM_PARAMS; param++ ) {
@@ -642,12 +646,14 @@ static void free_backup_crystal(Crystal *cr)
 }
 
 
-void pr_refine(Crystal *cr, const RefList *full, PartialityModel pmodel)
+struct prdata pr_refine(Crystal *cr, const RefList *full,
+                        PartialityModel pmodel)
 {
 	double max_shift, dev;
 	int i;
 	Crystal *backup;
 	const int verbose = 0;
+	struct prdata prdata;
 
 	if ( verbose ) {
 		dev = guide_dev(cr, full);
@@ -673,7 +679,8 @@ void pr_refine(Crystal *cr, const RefList *full, PartialityModel pmodel)
 		cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
-		max_shift = pr_iterate(cr, full, pmodel);
+		prdata.n_filtered = 0;
+		max_shift = pr_iterate(cr, full, pmodel, &prdata);
 
 		update_partialities_2(cr, pmodel, &n_gained, &n_lost);
 
@@ -694,4 +701,6 @@ void pr_refine(Crystal *cr, const RefList *full, PartialityModel pmodel)
 	} while ( (max_shift > 50.0) && (i < MAX_CYCLES) );
 
 	free_backup_crystal(backup);
+
+	return prdata;
 }
