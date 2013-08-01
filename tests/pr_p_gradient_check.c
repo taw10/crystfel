@@ -1,9 +1,13 @@
 /*
- * pr_gradient_check.c
+ * pr_p_gradient_check.c
  *
- * Check gradients for post refinement
+ * Check partiality gradients for post refinement
  *
- * Copyright © 2012-2013 Thomas White <taw@physics.org>
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2012-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *

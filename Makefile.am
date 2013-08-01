@@ -7,9 +7,9 @@ bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
                src/compare_hkl src/partialator src/check_hkl src/partial_sim
 
 noinst_PROGRAMS = tests/list_check tests/integration_check \
-                  tests/pr_gradient_check tests/symmetry_check \
+                  tests/pr_p_gradient_check tests/symmetry_check \
                   tests/centering_check tests/transformation_check \
-                  tests/cell_check
+                  tests/cell_check tests/pr_l_gradient_check
 
 MERGE_CHECKS = tests/first_merge_check tests/second_merge_check \
                tests/third_merge_check tests/fourth_merge_check
@@ -86,7 +86,10 @@ tests_integration_check_SOURCES = tests/integration_check.c
 
 tests_symmetry_check_SOURCES = tests/symmetry_check.c
 
-tests_pr_gradient_check_SOURCES = tests/pr_gradient_check.c \
+tests_pr_p_gradient_check_SOURCES = tests/pr_p_gradient_check.c \
+                                  src/post-refinement.c
+
+tests_pr_l_gradient_check_SOURCES = tests/pr_l_gradient_check.c \
                                   src/post-refinement.c
 
 tests_centering_check_SOURCES = tests/centering_check.c

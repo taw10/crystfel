@@ -68,4 +68,7 @@ extern double p_gradient(Crystal *cr, int k, Reflection *refl,
                          PartialityModel pmodel);
 
 
+extern double l_gradient(Crystal *cr, int k, Reflection *refl,
+                         PartialityModel pmodel);
+
 #endif	/* POST_REFINEMENT_H */
