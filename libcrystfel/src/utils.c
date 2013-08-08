@@ -77,6 +77,26 @@ void show_matrix_eqn(gsl_matrix *M, gsl_vector *v, int r)
 }
 
 
+/**
+ * show_matrix:
+ * @M: A matrix
+ *
+ * Displays a matrix.
+ **/
+void show_matrix(gsl_matrix *M)
+{
+	int i, j;
+
+	for ( i=0; i<M->size1; i++ ) {
+		STATUS("[ ");
+		for ( j=0; j<M->size2; j++ ) {
+			STATUS("%+9.3e ", gsl_matrix_get(M, i, j));
+		}
+		STATUS("]\n");
+	}
+}
+
+
 size_t notrail(char *s)
 {
 	size_t i;
