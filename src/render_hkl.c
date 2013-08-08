@@ -41,6 +41,9 @@
 #include <cairo.h>
 #include <cairo-pdf.h>
 #endif
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_linalg.h>
+#include <gsl/gsl_blas.h>
 
 #include "utils.h"
 #include "symmetry.h"
@@ -165,12 +168,97 @@ static void draw_circles(double xh, double xk, double xl,
 	Reflection *refl;
 	RefListIterator *iter;
 	SymOpMask *m;
-	double nx, ny;
+	gsl_matrix *basis;
+	gsl_vector *ind;
+	gsl_permutation *p;
+	int signum;
+	double adx, ady, adz;
+	double bdx, bdy, bdz;
+	double cdx, cdy, cdz;
+	gsl_vector *za;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	gsl_matrix *A;
+	double za_len;
 
 	m = new_symopmask(sym);
 
-	nx = xh*xh + xk*xk + xl*xl;
-	ny = yh*yh + yk*yk + yl*yl;
+	/* Get the zone axis direction in cartesian coordinates */
+	za = gsl_vector_alloc(3);
+	if ( za == NULL ) {
+		ERROR("Couldn't allocate za\n");
+		return;
+	}
+	if ( cell_get_cartesian(cell, &adx, &ady, &adz,
+	                              &bdx, &bdy, &bdz,
+	                              &cdx, &cdy, &cdz) ) {
+		ERROR("Couldn't get cartesian parameters\n");
+		return;
+	}
+	gsl_vector_set(za, 0, adx*zh + bdx*zk + cdx*zl);
+	gsl_vector_set(za, 1, ady*zh + bdy*zk + cdy*zl);
+	gsl_vector_set(za, 2, adz*zh + bdz*zk + cdz*zl);
+
+	/* Normalise it (to unit length), then set its length to the
+	 * interplanar spacing in reciprocal space, which is 1/the length of
+	 * the direct space ZA vector */
+	za_len = gsl_blas_dnrm2(za);
+	gsl_blas_dscal(1.0/za_len, za);
+	gsl_blas_dscal(1.0/za_len, za);
+
+	/* Express it in terms of the basis vectors of the reciprocal lattice */
+	if ( cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                               &bsx, &bsy, &bsz,
+	                               &csx, &csy, &csz) ) {
+		ERROR("Couldn't get reciprocal parameters\n");
+		return;
+	}
+
+	A = gsl_matrix_alloc(3, 3);
+	if ( A == NULL ) {
+		ERROR("Couldn't allocate A\n");
+		return;
+	}
+	gsl_matrix_set(A, 0, 0, asx);
+	gsl_matrix_set(A, 1, 0, asy);
+	gsl_matrix_set(A, 2, 0, asz);
+	gsl_matrix_set(A, 0, 1, bsx);
+	gsl_matrix_set(A, 1, 1, bsy);
+	gsl_matrix_set(A, 2, 1, bsz);
+	gsl_matrix_set(A, 0, 2, csx);
+	gsl_matrix_set(A, 1, 2, csy);
+	gsl_matrix_set(A, 2, 2, csz);
+
+	p = gsl_permutation_alloc(3);
+
+	gsl_linalg_LU_decomp(A, p, &signum);
+	gsl_linalg_LU_svx(A, p, za);
+	STATUS("Zone axis along %5.2e %5.2e %5.2e in the reciprocal lattice\n",
+	       gsl_vector_get(za, 0),
+	       gsl_vector_get(za, 1),
+	       gsl_vector_get(za, 2));
+
+	gsl_matrix_free(A);
+
+	basis = gsl_matrix_alloc(3, 3);
+	if ( basis == NULL ) return;
+
+	gsl_matrix_set(basis, 0, 0, xh);
+	gsl_matrix_set(basis, 1, 0, xk);
+	gsl_matrix_set(basis, 2, 0, xl);
+	gsl_matrix_set(basis, 0, 1, yh);
+	gsl_matrix_set(basis, 1, 1, yk);
+	gsl_matrix_set(basis, 2, 1, yl);
+	gsl_matrix_set(basis, 0, 2, gsl_vector_get(za, 0));
+	gsl_matrix_set(basis, 1, 2, gsl_vector_get(za, 1));
+	gsl_matrix_set(basis, 2, 2, gsl_vector_get(za, 2));
+	gsl_linalg_LU_decomp(basis, p, &signum);
+
+	gsl_vector_free(za);
+
+	ind = gsl_vector_alloc(3);
+	if ( ind == NULL ) return;
 
 	/* Iterate over all reflections */
 	for ( refl = first_refl(list, &iter);
@@ -195,10 +283,14 @@ static void draw_circles(double xh, double xk, double xl,
 			get_equiv(sym, m, i, ha, ka, la, &h, &k, &l);
 
 			/* Is the reflection in the zone? */
-			if ( h*zh + k*zk + l*zl != zone ) continue;
+			if ( h*zh + k*zk + l*zl != zone) continue;
 
-			xi = (h*xh + k*xk + l*xl) / nx;
-			yi = (h*yh + k*yk + l*yl) / ny;
+			gsl_vector_set(ind, 0, h);
+			gsl_vector_set(ind, 1, k);
+			gsl_vector_set(ind, 2, l);
+			gsl_linalg_LU_svx(basis, p, ind);
+			xi = gsl_vector_get(ind, 0);
+			yi = gsl_vector_get(ind, 1);
 
 			switch ( wght) {
 
@@ -242,6 +334,10 @@ static void draw_circles(double xh, double xk, double xl,
 		}
 
 	}
+
+	gsl_matrix_free(basis);
+	gsl_vector_free(ind);
+	gsl_permutation_free(p);
 
 	free_symopmask(m);
 }
@@ -326,10 +422,10 @@ static void render_za(UnitCell *cell, RefList *list,
 	double rmin, rmax;
 
 	/* Vector product to determine the zone axis. */
-	zh = xk*yl - xl*yk;
-	zk = - xh*yl + xl*yh;
-	zl = xh*yk - xk*yh;
-	STATUS("Zone axis is %i %i %i\n", zh, zk, zl);
+	zh = yk*xl - yl*xk;
+	zk = - yh*xl + yl*xh;
+	zl = yh*xk - yk*xh;
+	STATUS("Zone axis is [%i %i %i]\n", zh, zk, zl);
 
 	/* Size of output and centre definition */
 	wh = 1024;
@@ -428,7 +524,7 @@ static void render_za(UnitCell *cell, RefList *list,
 
 	/* Draw indexing lines */
 	cairo_set_line_cap(dctx, CAIRO_LINE_CAP_ROUND);
-	cairo_set_line_width(dctx, 4.0);
+	cairo_set_line_width(dctx, 2.0);
 	cairo_move_to(dctx, (double)cx, (double)cy);
 	u = rmax*sin(theta);
 	v = rmax*cos(theta);
@@ -447,6 +543,7 @@ static void render_za(UnitCell *cell, RefList *list,
 	snprintf(tmp, 255, "%i%i%i", abs(yh), abs(yk), abs(yl));
 	cairo_text_extents(dctx, tmp, &size);
 
+	cairo_set_line_width(dctx, 2.0);
 	cairo_move_to(dctx, (double)cx, (double)cy);
 	cairo_line_to(dctx, cx, cy+rmax*scale);
 	cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
