@@ -353,7 +353,9 @@ IntegerMatrix *intmat_inverse(const IntegerMatrix *m)
 
 	det = intmat_det(m);
 	if ( (det != +1) && (det != -1) ) {
-		fprintf(stderr, "Inverse matrix not an integer matrix.\n");
+		fprintf(stderr,
+		        "Inverse matrix not an integer matrix (det = %i).\n",
+		        det);
 		return NULL;
 	}
 
