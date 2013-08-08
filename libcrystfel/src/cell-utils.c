@@ -252,16 +252,19 @@ int bravais_lattice(UnitCell *cell)
 		case 'B' :
 		case 'C' :
 		if ( lattice == L_MONOCLINIC ) {
-			if ( (ua=='a') && (centering=='A') ) return 1;
-			if ( (ua=='b') && (centering=='B') ) return 1;
-			if ( (ua=='c') && (centering=='C') ) return 1;
+			if ( (ua=='a') && (centering!='A') ) return 1;
+			if ( (ua=='b') && (centering!='B') ) return 1;
+			if ( (ua=='c') && (centering!='C') ) return 1;
 		} else if ( lattice == L_ORTHORHOMBIC) {
 			return 1;
 		}
 		return 0;
 
 		case 'I' :
-		if ( (lattice == L_ORTHORHOMBIC)
+		/* We accept monoclinic I as "Bravais", even though it's
+		 * unconventional */
+		if ( (lattice == L_MONOCLINIC)
+		  || (lattice == L_ORTHORHOMBIC)
 		  || (lattice == L_TETRAGONAL)
 		  || (lattice == L_CUBIC) )
 		{
@@ -313,15 +316,31 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in,
 	if ( t == NULL ) return NULL;
 
 	if ( ua == 'a' ) {
-		tfn_combine(t, tfn_vector(0,0,1),
-		               tfn_vector(0,1,0),
-		               tfn_vector(-1,0,0));
+		tfn_combine(t, tfn_vector(0,1,0),
+		               tfn_vector(0,0,1),
+		               tfn_vector(1,0,0));
+		if ( lt == L_MONOCLINIC ) {
+			assert(cen != 'A');
+			switch ( cen ) {
+				case 'B' : cen = 'A'; break;
+				case 'C' : cen = 'B'; break;
+				case 'I' : cen = 'I'; break;
+			}
+		}
 	}
 
 	if ( ua == 'b' ) {
-		tfn_combine(t, tfn_vector(1,0,0),
-		               tfn_vector(0,0,1),
-		               tfn_vector(0,-1,0));
+		tfn_combine(t, tfn_vector(0,0,1),
+		               tfn_vector(1,0,0),
+		               tfn_vector(0,1,0));
+		if ( lt == L_MONOCLINIC ) {
+			assert(cen != 'B');
+			switch ( cen ) {
+				case 'C' : cen = 'A'; break;
+				case 'A' : cen = 'B'; break;
+				case 'I' : cen = 'I'; break;
+			}
+		}
 	}
 
 	switch ( cen ) {
@@ -365,12 +384,38 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in,
 		break;
 
 		case 'A' :
+		tfn_combine(t, tfn_vector( 1, 0, 0),
+		               tfn_vector( 0, H, H),
+		               tfn_vector( 0,-H, H));
+		if ( lt == L_ORTHORHOMBIC ) {
+			*new_latt = L_MONOCLINIC;
+		} else {
+			*new_latt = L_TRICLINIC;
+		}
+		*new_centering = 'P';
+		break;
+
 		case 'B' :
+		tfn_combine(t, tfn_vector( H, 0, H),
+		               tfn_vector( 0, 1, 0),
+		               tfn_vector(-H, 0, H));
+		if ( lt == L_ORTHORHOMBIC ) {
+			*new_latt = L_MONOCLINIC;
+		} else {
+			*new_latt = L_TRICLINIC;
+		}
+		*new_centering = 'P';
+		break;
+
 		case 'C' :
-		tfn_combine(t, tfn_vector(H,H,0),
-		               tfn_vector(-H,H,0),
-		               tfn_vector(0,0,1));
-		*new_latt = L_MONOCLINIC;
+		tfn_combine(t, tfn_vector( H, H, 0),
+		               tfn_vector(-H, H, 0),
+		               tfn_vector( 0, 0, 1));
+		if ( lt == L_ORTHORHOMBIC ) {
+			*new_latt = L_MONOCLINIC;
+		} else {
+			*new_latt = L_TRICLINIC;
+		}
 		*new_centering = 'P';
 		break;
 
@@ -394,15 +439,15 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in,
 	 * transformation */
 	if ( !((cen=='H') && (*new_latt == L_RHOMBOHEDRAL)) ) {
 		if ( ua == 'a' ) {
-			tfn_combine(t, tfn_vector(0,0,-1),
-				       tfn_vector(0,1,0),
-				       tfn_vector(1,0,0));
+			tfn_combine(t, tfn_vector(0,0,1),
+				       tfn_vector(1,0,0),
+				       tfn_vector(0,1,0));
 		}
 
 		if ( ua == 'b' ) {
-			tfn_combine(t, tfn_vector(1,0,0),
-				       tfn_vector(0,0,-1),
-				       tfn_vector(0,1,0));
+			tfn_combine(t, tfn_vector(0,1,0),
+				       tfn_vector(0,0,1),
+				       tfn_vector(1,0,0));
 		}
 	}
 
@@ -933,6 +978,7 @@ static void determine_lattice(UnitCell *cell,
 		/* Orthorhombic.  Unique axis irrelevant, but point group
 		 * can have different orientations. */
 		cell_set_lattice_type(cell, L_ORTHORHOMBIC);
+		cell_set_unique_axis(cell, '*');
 		return;
 	}
 
@@ -1201,19 +1247,18 @@ int validate_cell(UnitCell *cell)
 		err = 1;
 	}
 
-	cen = cell_get_centering(cell);
-	ua = cell_get_unique_axis(cell);
-	if ( (cen == 'A') && (ua != 'a') ) {
-		ERROR("WARNING: centering doesn't match unique axis.\n");
-		err = 1;
-	}
-	if ( (cen == 'B') && (ua != 'b') ) {
-		ERROR("WARNING: centering doesn't match unique axis.\n");
-		err = 1;
-	}
-	if ( (cen == 'C') && (ua != 'c') ) {
-		ERROR("WARNING: centering doesn't match unique axis.\n");
-		err = 1;
+	/* For monoclinic A, B or C centering, the unique axis must be something
+	 * other than the centering. */
+	if ( cell_get_lattice_type(cell) == L_MONOCLINIC ) {
+		cen = cell_get_centering(cell);
+		ua = cell_get_unique_axis(cell);
+		if ( ((cen == 'A') && (ua == 'a'))
+		  || ((cen == 'B') && (ua == 'b'))
+		  || ((cen == 'C') && (ua == 'c')) ) {
+			ERROR("WARNING: A, B or C centering matches unique"
+			      " axis.\n");
+			err = 1;
+		}
 	}
 
 	return err;

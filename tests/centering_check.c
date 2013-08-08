@@ -212,17 +212,29 @@ int main(int argc, char *argv[])
 	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 100.0,
 	                        L_MONOCLINIC, 'P', 'c');
 
-	/* Monoclinic A */
+	/* Monoclinic "C"-centered, unique axis a, three cell choices */
 	fail += check_centering(10e-10, 20e-10, 30e-10, 100.0, 90.0, 90.0,
-	                        L_MONOCLINIC, 'A', 'a');
+	                        L_MONOCLINIC, 'B', 'a');
+	fail += check_centering(10e-10, 20e-10, 30e-10, 100.0, 90.0, 90.0,
+	                        L_MONOCLINIC, 'C', 'a');
+	fail += check_centering(10e-10, 20e-10, 30e-10, 100.0, 90.0, 90.0,
+	                        L_MONOCLINIC, 'I', 'a');
 
-	/* Monoclinic B */
+	/* Monoclinic "C"-centered, unique axis b, three cell choices */
 	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 100.0, 90.0,
-	                        L_MONOCLINIC, 'B', 'b');
+	                        L_MONOCLINIC, 'C', 'b');
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 100.0, 90.0,
+	                        L_MONOCLINIC, 'A', 'b');
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 100.0, 90.0,
+	                        L_MONOCLINIC, 'I', 'b');
 
-	/* Monoclinic C */
+	/* Monoclinic "C"-centered, unique axis c, three cell choices */
 	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 100.0,
-	                        L_MONOCLINIC, 'C', 'c');
+	                        L_MONOCLINIC, 'A', 'c');
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 100.0,
+	                        L_MONOCLINIC, 'B', 'c');
+	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 100.0,
+	                        L_MONOCLINIC, 'I', 'c');
 
 	/* Orthorhombic P */
 	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
@@ -230,15 +242,15 @@ int main(int argc, char *argv[])
 
 	/* Orthorhombic A */
 	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
-	                        L_ORTHORHOMBIC, 'A', 'a');
+	                        L_ORTHORHOMBIC, 'A', '*');
 
 	/* Orthorhombic B */
 	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
-	                        L_ORTHORHOMBIC, 'B', 'b');
+	                        L_ORTHORHOMBIC, 'B', '*');
 
 	/* Orthorhombic C */
 	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
-	                        L_ORTHORHOMBIC, 'C', 'c');
+	                        L_ORTHORHOMBIC, 'C', '*');
 
 	/* Orthorhombic I */
 	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
@@ -249,19 +261,19 @@ int main(int argc, char *argv[])
 	                        L_ORTHORHOMBIC, 'F', '*');
 
 	/* Tetragonal P */
-	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	fail += check_centering(10e-10, 30e-10, 30e-10, 90.0, 90.0, 90.0,
 	                        L_TETRAGONAL, 'P', 'a');
-	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	fail += check_centering(30e-10, 10e-10, 30e-10, 90.0, 90.0, 90.0,
 	                        L_TETRAGONAL, 'P', 'b');
-	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	fail += check_centering(30e-10, 30e-10, 10e-10, 90.0, 90.0, 90.0,
 	                        L_TETRAGONAL, 'P', 'c');
 
 	/* Tetragonal I */
-	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	fail += check_centering(10e-10, 30e-10, 30e-10, 90.0, 90.0, 90.0,
 	                        L_TETRAGONAL, 'I', 'a');
-	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	fail += check_centering(30e-10, 10e-10, 30e-10, 90.0, 90.0, 90.0,
 	                        L_TETRAGONAL, 'I', 'b');
-	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 90.0,
+	fail += check_centering(30e-10, 30e-10, 10e-10, 90.0, 90.0, 90.0,
 	                        L_TETRAGONAL, 'I', 'c');
 
 	/* Rhombohedral R */
@@ -269,11 +281,11 @@ int main(int argc, char *argv[])
 	                        L_RHOMBOHEDRAL, 'R', '*');
 
 	/* Hexagonal P */
-	fail += check_centering(10e-10, 20e-10, 30e-10, 120.0, 90.0, 90.0,
+	fail += check_centering(30e-10, 10e-10, 10e-10, 120.0, 90.0, 90.0,
 	                        L_HEXAGONAL, 'P', 'a');
-	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 120.0, 90.0,
+	fail += check_centering(10e-10, 30e-10, 10e-10, 90.0, 120.0, 90.0,
 	                        L_HEXAGONAL, 'P', 'b');
-	fail += check_centering(10e-10, 20e-10, 30e-10, 90.0, 90.0, 120.0,
+	fail += check_centering(10e-10, 10e-10, 30e-10, 90.0, 90.0, 120.0,
 	                        L_HEXAGONAL, 'P', 'c');
 
 	/* Hexagonal H (PDB-speak for rhombohedral) */

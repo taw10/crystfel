@@ -125,7 +125,7 @@ UnitCell *cell_new()
 	cell->pointgroup = strdup("1");
 	cell->lattice_type = L_TRICLINIC;
 	cell->centering = 'P';
-	cell->unique_axis = 'c';
+	cell->unique_axis = '?';
 
 	return cell;
 }
