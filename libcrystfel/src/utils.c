@@ -57,22 +57,29 @@
  * show_matrix_eqn:
  * @M: A matrix
  * @v: A vector
- * @r: The number of elements in @v and the side length of @M.
  *
  * Displays a matrix equation of the form @M.a = @v.
- *
- * @M must be square.
  **/
-void show_matrix_eqn(gsl_matrix *M, gsl_vector *v, int r)
+void show_matrix_eqn(gsl_matrix *M, gsl_vector *v)
 {
 	int i, j;
 
-	for ( i=0; i<r; i++ ) {
+	if ( M->size1 != v->size ) {
+		ERROR("Matrix and vector sizes don't agree.\n");
+		return;
+	}
+
+	for ( i=0; i<M->size1; i++ ) {
 		STATUS("[ ");
-		for ( j=0; j<r; j++ ) {
+		for ( j=0; j<M->size2; j++ ) {
 			STATUS("%+9.3e ", gsl_matrix_get(M, i, j));
 		}
-		STATUS("][ a%2i ] = [ %+9.3e ]\n", i, gsl_vector_get(v, i));
+		if ( i < M->size2 ) {
+			STATUS("][ a%2i ] = [ %+9.3e ]\n", i,
+			       gsl_vector_get(v, i));
+		} else {
+			STATUS("]        = [ +%9.3e ]\n", gsl_vector_get(v, i));
+		}
 	}
 }
 

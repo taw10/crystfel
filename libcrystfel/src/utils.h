@@ -96,7 +96,7 @@ extern struct rvec quat_rot(struct rvec q, struct quaternion z);
 
 /* --------------------------- Useful functions ----------------------------- */
 
-extern void show_matrix_eqn(gsl_matrix *M, gsl_vector *v, int r);
+extern void show_matrix_eqn(gsl_matrix *M, gsl_vector *v);
 extern void show_matrix(gsl_matrix *M);
 extern size_t notrail(char *s);
 extern void chomp(char *s);

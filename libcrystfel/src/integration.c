@@ -411,7 +411,7 @@ static void fit_bg(struct intcontext *ic, struct peak_box *bx)
 	}
 
 	if ( bx->verbose ) {
-		show_matrix_eqn(bx->bgm, v, 3);
+		show_matrix_eqn(bx->bgm, v);
 	}
 
 	/* SVD is massive overkill here */

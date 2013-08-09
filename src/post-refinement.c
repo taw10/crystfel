@@ -361,7 +361,8 @@ static int check_eigen(gsl_vector *e_val)
 }
 
 
-static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt)
+static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt,
+                             int verbose)
 {
 	gsl_matrix *s_vec;
 	gsl_vector *s_val;
@@ -452,6 +453,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	RefList *reflections;
 	double max_shift;
 	int nref = 0;
+	const int verbose = 1;
 
 	reflections = crystal_get_reflections(cr);
 
@@ -533,7 +535,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 
 		nref++;
 	}
-	//show_matrix_eqn(M, v, NUM_PARAMS);
+	if ( verbose ) show_matrix_eqn(M, v);
 
 	//STATUS("%i reflections went into the equations.\n", nref);
 	if ( nref == 0 ) {
@@ -544,7 +546,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	}
 
 	max_shift = 0.0;
-	shifts = solve_svd(v, M, &prdata->n_filtered);
+	shifts = solve_svd(v, M, &prdata->n_filtered, verbose);
 	if ( shifts != NULL ) {
 
 		for ( param=0; param<NUM_PARAMS; param++ ) {
