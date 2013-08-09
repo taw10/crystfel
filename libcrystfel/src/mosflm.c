@@ -151,12 +151,13 @@ static int check_cell(struct mosflm_private *mp, struct image *image,
 			return 0;
 		}
 
-		if ( cen_r != cen_m ) {
+		if ( (latt_m != L_MONOCLINIC) && (cen_r != cen_m) ) {
 			ERROR("Centering produced by MOSFLM (%c) does not "
 			      "match what was requested (%c).  "
 			      "Please report this.\n", cen_m, cen_r);
 			return 0;
 		}
+		/* If it's monoclinic, see the warning in mosflm_prepare() */
 
 	}
 
@@ -214,28 +215,40 @@ static void mosflm_parseline(const char *line, struct image *image,
 }
 
 
-/* This is the opposite of spacegroup_for_lattice() below. */
-static LatticeType spacegroup_to_lattice(const char *sg)
+/* This is the opposite of spacegroup_for_lattice() below.
+ * Note that this is not general, just a set of rules for interpreting MOSFLM's
+ * output. */
+static LatticeType spacegroup_to_lattice(const char *sg, char *ua, char *cen)
 {
 	LatticeType latt;
 
+	*cen = sg[0];
+
 	if ( sg[1] == '1' ) {
 		latt = L_TRICLINIC;
+		*ua = '*';
 	} else if ( strncmp(sg+1, "23", 2) == 0 ) {
 		latt = L_CUBIC;
+		*ua = '*';
 	} else if ( strncmp(sg+1, "222", 3) == 0 ) {
 		latt = L_ORTHORHOMBIC;
+		*ua = '*';
 	} else if ( sg[1] == '2' ) {
 		latt = L_MONOCLINIC;
+		*ua = 'b';
 	} else if ( sg[1] == '4' ) {
 		latt = L_TETRAGONAL;
+		*ua = 'c';
 	} else if ( sg[1] == '6' ) {
 		latt = L_HEXAGONAL;
+		*ua = 'c';
 	} else if ( sg[1] == '3' ) {
 		if ( sg[0] == 'H' ) {
 			latt = L_HEXAGONAL;
+			*ua = 'c';
 		} else {
 			latt = L_RHOMBOHEDRAL;
+			*ua = '*';
 		}
 	} else {
 		ERROR("Couldn't understand '%s'\n", sg);
@@ -244,7 +257,6 @@ static LatticeType spacegroup_to_lattice(const char *sg)
 
 	return latt;
 }
-
 
 
 static int read_newmat(struct mosflm_data *mosflm, const char *filename,
@@ -262,6 +274,7 @@ static int read_newmat(struct mosflm_data *mosflm, const char *filename,
 	int i;
 	char cen;
 	LatticeType latt;
+	char ua = '?';
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
@@ -293,12 +306,13 @@ static int read_newmat(struct mosflm_data *mosflm, const char *filename,
 
 	fclose(fh);
 
+	chomp(symm);
 	if ( strncmp(symm, "SYMM ", 5) != 0 ) {
 		ERROR("Bad 'SYMM' line from MOSFLM.\n");
 		return 1;
 	}
-	cen = symm[5];
-	latt = spacegroup_to_lattice(symm+5);
+	//STATUS("MOSFLM says '%s'\n", symm);
+	latt = spacegroup_to_lattice(symm+5, &ua, &cen);
 
 	/* MOSFLM "A" matrix is multiplied by lambda, so fix this */
 	c = 1.0/image->lambda;
@@ -315,6 +329,9 @@ static int read_newmat(struct mosflm_data *mosflm, const char *filename,
 	                    -csy*c, -csz*c, csx*c);
 	cell_set_centering(cell, cen);
 	cell_set_lattice_type(cell, latt);
+	cell_set_unique_axis(cell, ua);
+	//STATUS("My cell:\n");
+	//cell_print(cell);
 
 	if ( check_cell(mosflm->mp, image, cell) ) {
 		mosflm->success = 1;
@@ -444,9 +461,11 @@ static char *spacegroup_for_lattice(UnitCell *cell)
 	char centering;
 	char *g = NULL;
 	char *result;
+	char ua;
 
 	latt = cell_get_lattice_type(cell);
 	centering = cell_get_centering(cell);
+	ua = cell_get_unique_axis(cell);
 
 	switch ( latt )
 	{
@@ -455,7 +474,11 @@ static char *spacegroup_for_lattice(UnitCell *cell)
 		break;
 
 		case L_MONOCLINIC :
-		g = "2";
+		switch ( ua ) {
+			case 'a' : g = "211"; break;
+			case 'b' : g = "121"; break;
+			case 'c' : g = "112"; break;
+		}
 		break;
 
 		case L_ORTHORHOMBIC :
@@ -519,6 +542,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 
 			symm = spacegroup_for_lattice(mosflm->mp->template);
 			snprintf(tmp, 255, "SYMM %s\n", symm);
+			//STATUS("Asking MOSFLM for '%s'\n", symm);
 			free(symm);
 			mosflm_sendline(tmp, mosflm);
 
