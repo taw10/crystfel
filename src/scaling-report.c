@@ -889,6 +889,9 @@ void sr_iteration(SRContext *sr, int iteration, struct srdata *d)
 		cairo_restore(sr->cr);
 
 	}
+
+	STATUS("%i filtered total, %5.2f filtered per crystal\n",
+	       d->n_filtered, (double)d->n_filtered / d->n);
 }
 
 

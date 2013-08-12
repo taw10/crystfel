@@ -309,6 +309,16 @@ static void display_progress(int n_images, int n_crystals)
 }
 
 
+static const char *str_flags(Crystal *cr)
+{
+	if ( crystal_get_user_flag(cr) ) {
+		return "N";
+	}
+
+	return "-";
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -670,6 +680,21 @@ int main(int argc, char *argv[])
 
 	/* Output results */
 	write_reflist(outfile, full);
+
+	/* Dump parameters */
+	FILE *fh;
+	fh = fopen("partialator.params", "w");
+	if ( fh == NULL ) {
+		ERROR("Couldn't open partialator.params!\n");
+	} else {
+		for ( i=0; i<n_crystals; i++ ) {
+			fprintf(fh, "%4i %5.2f %8.5e %s\n", i,
+			        crystal_get_osf(crystals[i]),
+			        crystal_get_image(crystals[i])->div,
+			        str_flags(crystals[i]));
+		}
+		fclose(fh);
+	}
 
 	/* Clean up */
 	for ( i=0; i<n_crystals; i++ ) {

@@ -314,13 +314,12 @@ static void apply_shift(Crystal *cr, int k, double shift)
 }
 
 
-static int check_eigen(gsl_vector *e_val)
+static int check_eigen(gsl_matrix *M, gsl_vector *e_val, int verbose)
 {
 	int i;
 	double vmax, vmin;
 	const int n = e_val->size;
 	const double max_condition = 1e6;
-	const int verbose = 0;
 	int n_filt = 0;
 
 	if ( verbose ) STATUS("Eigenvalues:\n");
@@ -374,6 +373,7 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt,
 	gsl_matrix *AS;
 	gsl_matrix *SAS;
 	int i;
+	gsl_matrix *SAS_copy;
 
 	n = v->size;
 	if ( v->size != M->size1 ) return NULL;
@@ -393,6 +393,18 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt,
 	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, S, AS, 0.0, SAS);
 	gsl_matrix_free(AS);
 
+	/* Calculate the vector SB, which is the RHS of the equation */
+	SB = gsl_vector_calloc(n);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, S, v, 0.0, SB);
+
+	if ( verbose ) {
+		STATUS("The equation after rescaling:\n");
+		show_matrix_eqn(SAS, SB);
+	}
+
+	SAS_copy = gsl_matrix_alloc(SAS->size1, SAS->size2);
+	gsl_matrix_memcpy(SAS_copy, SAS);
+
 	/* Do the SVD */
 	s_val = gsl_vector_calloc(n);
 	s_vec = gsl_matrix_calloc(n, n);
@@ -408,11 +420,9 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt,
 	/* "SAS" is now "U" */
 
 	/* Filter the eigenvalues */
-	*n_filt = check_eigen(s_val);
+	*n_filt = check_eigen(SAS_copy, s_val, verbose);
 
-	/* Calculate the vector SB, which is the RHS of the equation */
-	SB = gsl_vector_calloc(n);
-	gsl_blas_dgemv(CblasNoTrans, 1.0, S, v, 0.0, SB);
+	gsl_matrix_free(SAS_copy);
 
 	/* Solve the equation SAS.SinvX = SB */
 	SinvX = gsl_vector_calloc(n);
