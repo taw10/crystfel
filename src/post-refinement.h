@@ -56,8 +56,8 @@ enum {
 	REF_CSX,
 	REF_CSY,
 	REF_CSZ,
-	REF_DIV,
 	NUM_PARAMS,
+	REF_DIV,
 	REF_R,
 };
 

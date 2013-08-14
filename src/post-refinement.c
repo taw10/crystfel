@@ -351,8 +351,6 @@ static int check_eigen(gsl_matrix *M, gsl_vector *e_val, int verbose)
 	if ( verbose ) {
 		STATUS("Condition number: %e / %e = %5.2f\n",
 		       vmax, vmin, vmax/vmin);
-
-
 		STATUS("%i out of %i eigenvalues filtered.\n", n_filt, n);
 	}
 
@@ -463,7 +461,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	RefList *reflections;
 	double max_shift;
 	int nref = 0;
-	const int verbose = 1;
+	const int verbose = 0;
 
 	reflections = crystal_get_reflections(cr);
 
@@ -483,7 +481,6 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		double p, l;
 		Reflection *match;
 		double gradients[NUM_PARAMS];
-		const double osf = crystal_get_osf(cr);
 
 		if ( !get_refinable(refl) ) continue;
 
@@ -498,7 +495,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		I_full = get_intensity(match);
 
 		/* Actual measurement of this reflection from this pattern? */
-		I_partial = osf * get_intensity(refl);
+		I_partial = get_intensity(refl) * crystal_get_osf(cr);
 		p = get_partiality(refl);
 		l = get_lorentz(refl);
 
@@ -545,7 +542,10 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 
 		nref++;
 	}
-	if ( verbose ) show_matrix_eqn(M, v);
+	if ( verbose ) {
+		STATUS("The original equation:\n");
+		show_matrix_eqn(M, v);
+	}
 
 	//STATUS("%i reflections went into the equations.\n", nref);
 	if ( nref == 0 ) {
