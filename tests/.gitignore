@@ -5,6 +5,7 @@ gpu_sim_check
 integration_check
 pr_l_gradient_check
 pr_p_gradient_check
+pr_pl_gradient_check
 symmetry_check
 centering_check
 transformation_check
