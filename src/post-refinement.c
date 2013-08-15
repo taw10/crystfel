@@ -661,11 +661,12 @@ static void free_backup_crystal(Crystal *cr)
 struct prdata pr_refine(Crystal *cr, const RefList *full,
                         PartialityModel pmodel)
 {
-	double max_shift, dev;
+	double dev;
 	int i;
 	Crystal *backup;
 	const int verbose = 0;
 	struct prdata prdata;
+	double mean_p_change = 0.0;
 
 	if ( verbose ) {
 		dev = guide_dev(cr, full);
@@ -692,15 +693,17 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
 		prdata.n_filtered = 0;
-		max_shift = pr_iterate(cr, full, pmodel, &prdata);
+		pr_iterate(cr, full, pmodel, &prdata);
 
-		update_partialities_2(cr, pmodel, &n_gained, &n_lost);
+		update_partialities_2(cr, pmodel, &n_gained, &n_lost,
+		                      &mean_p_change);
 
 		if ( verbose ) {
 			dev = guide_dev(cr, full);
-			STATUS("PR Iteration %2i: max shift = %10.2f"
+			STATUS("PR Iteration %2i: mean p change = %10.2f"
 			       " dev = %10.5e, %i gained, %i lost, %i total\n",
-			       i+1, max_shift, dev, n_gained, n_lost, n_total);
+			       i+1, mean_p_change, dev,
+			       n_gained, n_lost, n_total);
 		}
 
 		if ( 3*n_lost > n_total ) {
@@ -710,7 +713,7 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 
 		i++;
 
-	} while ( (max_shift > 50.0) && (i < MAX_CYCLES) );
+	} while ( (mean_p_change > 0.01) && (i < MAX_CYCLES) );
 
 	free_backup_crystal(backup);
 

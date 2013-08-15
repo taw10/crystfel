@@ -381,7 +381,7 @@ static void set_unity_partialities(Crystal *cryst)
 
 /* Calculate partialities and apply them to the image's reflections */
 void update_partialities_2(Crystal *cryst, PartialityModel pmodel,
-                           int *n_gained, int *n_lost)
+                           int *n_gained, int *n_lost, double *mean_p_change)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -389,6 +389,8 @@ void update_partialities_2(Crystal *cryst, PartialityModel pmodel,
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	struct image *image = crystal_get_image(cryst);
+	double total_p_change = 0.0;
+	int n = 0;
 
 	if ( pmodel == PMODEL_UNITY ) {
 		/* It isn't strictly necessary to set the partialities to 1,
@@ -410,8 +412,10 @@ void update_partialities_2(Crystal *cryst, PartialityModel pmodel,
 		double xl, yl, zl;
 		signed int h, k, l;
 		int clamp1, clamp2;
+		double old_p;
 
 		get_symmetric_indices(refl, &h, &k, &l);
+		old_p = get_partiality(refl);
 
 		/* Get the coordinates of the reciprocal lattice point */
 		xl = h*asx + k*bsx + l*csx;
@@ -446,17 +450,25 @@ void update_partialities_2(Crystal *cryst, PartialityModel pmodel,
 
 			reflection_free(vals);
 
+			total_p_change += fabs(p - old_p);
+			n++;
+
 		}
 
 	}
+
+	*mean_p_change = total_p_change / n;
 }
 
 
+/* Wrapper to maintain API compatibility */
 void update_partialities(Crystal *cryst, PartialityModel pmodel)
 {
 	int n_gained = 0;
 	int n_lost = 0;
-	update_partialities_2(cryst, pmodel, &n_gained, &n_lost);
+	double mean_p_change = 0.0;
+	update_partialities_2(cryst, pmodel, &n_gained, &n_lost,
+	                      &mean_p_change);
 }
 
 

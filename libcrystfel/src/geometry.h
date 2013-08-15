@@ -64,7 +64,8 @@ extern RefList *select_intersections(struct image *image, Crystal *cryst);
 
 extern void update_partialities(Crystal *cryst, PartialityModel pmodel);
 extern void update_partialities_2(Crystal *cryst, PartialityModel pmodel,
-                                  int *n_gained, int *n_lost);
+                                  int *n_gained, int *n_lost,
+                                  double *mean_p_change);
 extern void polarisation_correction(RefList *list, UnitCell *cell,
                                     struct image *image);
 
