@@ -42,6 +42,8 @@
 #include "reflist-utils.h"
 #include "symmetry.h"
 #include "beam-parameters.h"
+#include "cell.h"
+#include "cell-utils.h"
 
 
 static void show_help(const char *s)
@@ -54,6 +56,8 @@ static void show_help(const char *s)
 "\n"
 "  -i, --input=<file>         Read reflections from <file>.\n"
 "  -y, --symmetry=<sym>       The symmetry of the input reflection list.\n"
+"  -p, --pdb=<file>           PDB file with cell parameters (needed when\n"
+"                              using a resolution cutoff)\n"
 "\n"
 "You can add noise to the reflections with either of:\n"
 "      --poisson              Simulate Poisson samples.\n"
@@ -74,6 +78,7 @@ static void show_help(const char *s)
 "\n"
 "You can restrict which reflections are written out:\n"
 "  -t, --template=<filename>  Only include reflections mentioned in file.\n"
+"      --cutoff-angstroms=<n> Only include reflections with d < n Angstroms.\n"
 "\n"
 "You might sometimes need to do this:\n"
 "      --multiplicity         Multiply intensities by the number of\n"
@@ -370,6 +375,9 @@ int main(int argc, char *argv[])
 	RefList *input;
 	double adu_per_photon = 0.0;
 	int have_adu_per_photon = 0;
+	int have_cutoff_angstroms = 0;
+	double cutoff = 0.0;
+	char *pdb = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -382,14 +390,16 @@ int main(int argc, char *argv[])
 		{"twin",               1, NULL,               'w'},
 		{"expand",             1, NULL,               'e'},
 		{"intensities",        1, NULL,               'i'},
+		{"pdb",                1, NULL,               'p'},
 		{"multiplicity",       0, &config_multi,       1},
 		{"trim-centrics",      0, &config_trimc,       1},
 		{"adu-per-photon",     1, NULL,                2},
+		{"cutoff-angstroms",   1, NULL,                3},
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ht:o:i:w:y:e:b:",
+	while ((c = getopt_long(argc, argv, "ht:o:i:w:y:e:b:p:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -422,9 +432,18 @@ int main(int argc, char *argv[])
 			expand_str = strdup(optarg);
 			break;
 
+			case 'p' :
+			pdb = strdup(optarg);
+			break;
+
 			case 2 :
 			adu_per_photon = strtof(optarg, NULL);
 			have_adu_per_photon = 1;
+			break;
+
+			case 3 :
+			cutoff = strtof(optarg, NULL);
+			have_cutoff_angstroms = 1;
 			break;
 
 			case 0 :
@@ -593,6 +612,49 @@ int main(int argc, char *argv[])
 		RefList *new = template_reflections(input, t);
 		reflist_free(input);
 		input = new;
+
+	}
+
+	if ( have_cutoff_angstroms ) {
+
+		RefList *n;
+		Reflection *refl;
+		RefListIterator *iter;
+		UnitCell *cell;
+
+		if ( pdb == NULL ) {
+			ERROR("You must provide a PDB file when using "
+			      "--cutoff-angstroms.\n");
+			return 1;
+		}
+
+		cell = load_cell_from_pdb(pdb);
+		if ( cell == NULL ) {
+			ERROR("Failed to load cell from '%s'\n", pdb);
+			return 1;
+		}
+		free(pdb);
+
+		n = reflist_new();
+
+		for ( refl = first_refl(input, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) )
+		{
+			signed int h, k, l;
+			double res;
+			get_indices(refl, &h, &k, &l);
+			res = 2.0 * resolution(cell, h, k, l);
+			if ( res < 1e10 / cutoff ) {
+				Reflection *a;
+				a = add_refl(n, h, k, l);
+				copy_data(a, refl);
+			}
+		}
+
+		cell_free(cell);
+		reflist_free(input);
+		input = n;
 
 	}
 
