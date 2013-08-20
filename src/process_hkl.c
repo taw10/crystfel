@@ -175,11 +175,29 @@ static double scale_intensities(RefList *reference, RefList *new,
 }
 
 
+static double *check_hist_size(int n, double *hist_vals)
+{
+	int ns;
+	double *try;
+
+	if ( n % 1000 ) return hist_vals;
+
+	ns = n / 1000;
+	ns = (ns+1)*1000;
+
+	try = realloc(hist_vals, ns*sizeof(double));
+	if ( try == NULL ) {
+		ERROR("Failed to allocate space for histogram.\n");
+	}
+	return try;
+}
+
+
 static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
-                        RefList *reference, const SymOpList *sym,
-                        double *hist_vals, signed int hist_h,
-                        signed int hist_k, signed int hist_l, int *hist_n,
-                        int config_nopolar, double min_snr)
+                         RefList *reference, const SymOpList *sym,
+                         double **hist_vals, signed int hist_h,
+                         signed int hist_k, signed int hist_l, int *hist_n,
+                         int config_nopolar, double min_snr)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -240,11 +258,20 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 		model_redundancy = get_redundancy(model_version);
 		set_redundancy(model_version, ++model_redundancy);
 
-		if ( hist_vals != NULL ) {
+		if ( *hist_vals != NULL ) {
 
 			if ( (h==hist_h) && (k==hist_k) && (l==hist_l) ) {
-				hist_vals[*hist_n] = refl_intensity;
-				*hist_n += 1;
+
+				*hist_vals = check_hist_size(*hist_n,
+							     *hist_vals);
+
+				/* Check again because realloc might have
+				 * failed */
+				if ( *hist_vals != NULL ) {
+					(*hist_vals)[*hist_n] = refl_intensity;
+					*hist_n += 1;
+				}
+
 			}
 
 		}
@@ -272,7 +299,7 @@ static void display_progress(int n_images, int n_crystals, int n_crystals_used)
 
 static int merge_all(Stream *st, RefList *model, RefList *reference,
                      const SymOpList *sym,
-                     double *hist_vals, signed int hist_h,
+                     double **hist_vals, signed int hist_h,
                      signed int hist_k, signed int hist_l,
                      int *hist_i, int config_nopolar, int min_measurements,
                      double min_snr, int start_after, int stop_after)
@@ -512,11 +539,11 @@ int main(int argc, char *argv[])
 			ERROR("Invalid indices for '--histogram'\n");
 			return 1;
 		}
-
-		/* FIXME: This array must grow as necessary. */
-		space_for_hist = 0 * num_equivs(sym, NULL);
-		hist_vals = malloc(space_for_hist * sizeof(double));
 		free(histo);
+
+		/* Allocate enough space that hist_vals isn't NULL.
+		 * check_hist_size will realloc it straight away */
+		hist_vals = malloc(1*sizeof(double));
 		STATUS("Histogramming %i %i %i -> ", hist_h, hist_k, hist_l);
 
 		/* Put into the asymmetric cell for the target group */
@@ -546,7 +573,7 @@ int main(int argc, char *argv[])
 	}
 
 	hist_i = 0;
-	r = merge_all(st, model, NULL, sym, hist_vals, hist_h, hist_k, hist_l,
+	r = merge_all(st, model, NULL, sym, &hist_vals, hist_h, hist_k, hist_l,
 	              &hist_i, config_nopolar, min_measurements, min_snr,
 	              start_after, stop_after);
 	fprintf(stderr, "\n");
@@ -573,8 +600,12 @@ int main(int argc, char *argv[])
 			reference = model;
 			model = reflist_new();
 
+			free(hist_vals);
+			hist_vals = malloc(1*sizeof(double));
+			hist_i = 0;
+
 			r = merge_all(st, model, reference, sym,
-				     hist_vals, hist_h, hist_k, hist_l, &hist_i,
+				     &hist_vals, hist_h, hist_k, hist_l, &hist_i,
 				     config_nopolar, min_measurements, min_snr,
 				     start_after, stop_after);
 			fprintf(stderr, "\n");
