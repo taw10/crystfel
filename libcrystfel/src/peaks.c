@@ -507,12 +507,10 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		                   &f_fs, &f_ss, &intensity, &sigma,
 		                   ir_inn, ir_mid, ir_out, NULL, &saturated);
 
-		if ( saturated ) {
-			image->num_saturated_peaks++;
-			if ( !use_saturated ) {
-				nrej_sat++;
-				continue;
-			}
+		if ( r ) {
+			/* Bad region - don't detect peak */
+			nrej_fail++;
+			continue;
 		}
 
 		/* It is possible for the centroid to fall outside the image */
@@ -534,10 +532,12 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 			continue;
 		}
 
-		if ( r ) {
-			/* Bad region - don't detect peak */
-			nrej_fail++;
-			continue;
+		if ( saturated ) {
+			image->num_saturated_peaks++;
+			if ( !use_saturated ) {
+				nrej_sat++;
+				continue;
+			}
 		}
 
 		/* Add using "better" coordinates */
