@@ -868,7 +868,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			       "%4i crystals so far. "
 			       "%4i images processed since the last message.\n",
 			       sb->n_hadcrystals, sb->n_processed,
-			       (double)sb->n_hadcrystals / sb->n_processed,
+			       100.0 * sb->n_hadcrystals / sb->n_processed,
 			       sb->n_crystals,
 			       sb->n_processed - sb->n_processed_last_stats);
 
