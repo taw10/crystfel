@@ -1492,9 +1492,9 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 			G_CALLBACK(displaywindow_set_usegeom), FALSE },
 		{ "ColScaleAction", NULL, "Colour Scale", NULL, NULL,
 			G_CALLBACK(displaywindow_set_colscale), FALSE },
-		{ "RingsAction", NULL, "Resolution Rings", NULL, NULL,
+		{ "RingsAction", NULL, "Resolution Rings", "F9", NULL,
 			G_CALLBACK(displaywindow_set_rings), dw->show_rings },
-		{ "ShowPeaksAction", NULL, "Features", NULL, NULL,
+		{ "ShowPeaksAction", NULL, "Features", "F8", NULL,
 			G_CALLBACK(displaywindow_set_peaks), dw->show_peaks },
 	};
 	guint n_toggles = G_N_ELEMENTS(toggles);
