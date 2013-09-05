@@ -37,7 +37,10 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_eigen.h>
+
+#ifdef HAVE_CURSES_COLOR
 #include <ncurses.h>
+#endif
 
 #include "reflist.h"
 #include "cell.h"
@@ -252,6 +255,7 @@ static float boxi(struct intcontext *ic, struct peak_box *bx, int p, int q)
 }
 
 
+#ifdef HAVE_CURSES_COLOR
 static void colour_on(enum boxmask_val b)
 {
 	switch ( b ) {
@@ -296,10 +300,12 @@ static void colour_off(enum boxmask_val b)
 
 	}
 }
+#endif
 
 
 static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 {
+#ifdef HAVE_CURSES_COLOR
 	int q;
 
 	initscr();
@@ -347,11 +353,13 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 	refresh();
 	getch();
 	endwin();
+#endif
 }
 
 
 static void show_reference_profile(struct intcontext *ic, int i)
 {
+#ifdef HAVE_CURSES_COLOR
 	int q;
 
 	initscr();
@@ -381,6 +389,7 @@ static void show_reference_profile(struct intcontext *ic, int i)
 	refresh();
 	getch();
 	endwin();
+#endif
 }
 
 
