@@ -395,36 +395,6 @@ int hdf5_write_image(const char *filename, struct image *image)
 }
 
 
-static double get_wavelength(struct hdfile *f)
-{
-	herr_t r;
-	hid_t dh;
-	double lambda;
-	int nm = 1;
-
-	dh = H5Dopen2(f->fh, "/LCLS/photon_wavelength_nm", H5P_DEFAULT);
-	if ( dh < 0 ) {
-		dh = H5Dopen2(f->fh, "/LCLS/photon_wavelength_A", H5P_DEFAULT);
-		if ( dh < 0 ) {
-			ERROR("Couldn't get wavelength from HDF5 file.\n");
-			return -1.0;
-		}
-		nm = 0;
-	}
-
-	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
-	            H5P_DEFAULT, &lambda);
-	H5Dclose(dh);
-
-	if ( r < 0 ) return -1.0;
-	if ( isnan(lambda) ) return -1.0;
-
-	/* Convert nm -> m */
-	if ( nm ) return lambda / 1.0e9;
-	return lambda / 1.0e10;
-}
-
-
 static void debodge_saturation(struct hdfile *f, struct image *image)
 {
 	hid_t dh, sh;
@@ -614,9 +584,6 @@ int hdf5_read(struct hdfile *f, struct image *image, int satcorr)
 		}
 
 	}
-
-	/* Read wavelength from file */
-	image->lambda = get_wavelength(f);
 
 	if ( satcorr ) debodge_saturation(f, image);
 
