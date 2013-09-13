@@ -366,6 +366,10 @@ char *indexer_str(IndexingMethod indm)
 		strcpy(str, "xds");
 		break;
 
+		case INDEXING_SIMULATION :
+		strcpy(str, "simulation");
+		break;
+
 		default :
 		ERROR("Unrecognised indexing method %i\n",
 		      indm & INDEXING_METHOD_MASK);
@@ -373,6 +377,8 @@ char *indexer_str(IndexingMethod indm)
 		break;
 
 	}
+
+	if ( (indm & INDEXING_METHOD_MASK) == INDEXING_SIMULATION ) return str;
 
 	if ( indm & INDEXING_CHECK_CELL_COMBINATIONS ) {
 		strcat(str, "-comb");

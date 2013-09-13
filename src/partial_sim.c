@@ -593,7 +593,7 @@ int main(int argc, char *argv[])
 	image.copyme = NULL;
 	image.crystals = NULL;
 	image.n_crystals = 0;
-	image.indexed_by = INDEXING_NONE;
+	image.indexed_by = INDEXING_SIMULATION;
 	image.num_peaks = 0;
 	image.num_saturated_peaks = 0;
 

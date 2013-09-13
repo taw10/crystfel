@@ -88,7 +88,8 @@ typedef enum {
 	INDEXING_MOSFLM = 2,
 	INDEXING_REAX   = 3,
 	INDEXING_GRAINSPOTTER = 4,
-        INDEXING_XDS = 5,
+	INDEXING_XDS = 5,
+	INDEXING_SIMULATION = 6,
 
 	/* Bits at the top of the IndexingMethod are flags which modify the
 	 * behaviour of the indexer. */
