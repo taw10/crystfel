@@ -189,7 +189,7 @@ static double iterate_scale(Crystal **crystals, int n, RefList *reference,
 struct merge_queue_args
 {
 	RefList *full;
-	pthread_mutex_t full_lock;
+	pthread_rwlock_t full_lock;
 	Crystal **crystals;
 	int n_started;
 	PartialityModel pmodel;
@@ -200,7 +200,7 @@ struct merge_worker_args
 {
 	Crystal *crystal;
 	RefList *full;
-	pthread_mutex_t *full_lock;
+	pthread_rwlock_t *full_lock;
 	PartialityModel pmodel;
 };
 
@@ -245,22 +245,45 @@ static void run_merge_job(void *vwargs, int cookie)
 		if ( !get_scalable(refl) ) continue;
 
 		get_indices(refl, &h, &k, &l);
-		/* FIXME (somehow): Huge contention on this lock */
-		pthread_mutex_lock(wargs->full_lock);
+		pthread_rwlock_rdlock(wargs->full_lock);
 		f = find_refl(full, h, k, l);
 		if ( f == NULL ) {
-			f = add_refl(full, h, k, l);
-			lock_reflection(f);
-			pthread_mutex_unlock(wargs->full_lock);
-			num = 0.0;
-			den = 0.0;
-			red = 0;
+
+			/* Swap read lock for write lock */
+			pthread_rwlock_unlock(wargs->full_lock);
+			pthread_rwlock_wrlock(wargs->full_lock);
+
+			/* In the gap between the unlock and the wrlock, the
+			 * reflection might have been created by another thread.
+			 * So, we must check again */
+			f = find_refl(full, h, k, l);
+			if ( f == NULL ) {
+				f = add_refl(full, h, k, l);
+				lock_reflection(f);
+				pthread_rwlock_unlock(wargs->full_lock);
+				num = 0.0;
+				den = 0.0;
+				red = 0;
+
+			} else {
+
+				/* Someone else created it */
+				lock_reflection(f);
+				pthread_rwlock_unlock(wargs->full_lock);
+				num = get_temp1(f);
+				den = get_temp2(f);
+				red = get_redundancy(f);
+
+			}
+
 		} else {
+
 			lock_reflection(f);
-			pthread_mutex_unlock(wargs->full_lock);
+			pthread_rwlock_unlock(wargs->full_lock);
 			num = get_temp1(f);
 			den = get_temp2(f);
 			red = get_redundancy(f);
+
 		}
 
 		/* If you change this, be sure to also change
@@ -317,12 +340,12 @@ static RefList *lsq_intensities(Crystal **crystals, int n, int n_threads,
 	qargs.n_started = 0;
 	qargs.crystals = crystals;
 	qargs.pmodel = pmodel;
-	pthread_mutex_init(&qargs.full_lock, NULL);
+	pthread_rwlock_init(&qargs.full_lock, NULL);
 
 	run_threads(n_threads, run_merge_job, create_merge_job,
 	            finalise_merge_job, &qargs, n, 0, 0, 0);
 
-	pthread_mutex_destroy(&qargs.full_lock);
+	pthread_rwlock_destroy(&qargs.full_lock);
 
 	for ( refl = first_refl(full, &iter);
 	      refl != NULL;
