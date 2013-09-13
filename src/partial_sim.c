@@ -86,7 +86,7 @@ static void mess_up_cell(Crystal *cr, double cnoise)
 static void calculate_partials(Crystal *cr,
                                RefList *full, const SymOpList *sym,
                                int random_intensities,
-                               pthread_mutex_t *full_lock,
+                               pthread_rwlock_t *full_lock,
                                unsigned long int *n_ref, double *p_hist,
                                double *p_max, double max_q, double full_stddev,
                                double noise_stddev)
@@ -109,9 +109,9 @@ static void calculate_partials(Crystal *cr,
 		p = get_partiality(refl);
 		L = get_lorentz(refl);
 
-		pthread_mutex_lock(full_lock);
+		pthread_rwlock_rdlock(full_lock);
 		rfull = find_refl(full, h, k, l);
-		pthread_mutex_unlock(full_lock);
+		pthread_rwlock_unlock(full_lock);
 
 		if ( rfull == NULL ) {
 			if ( random_intensities ) {
@@ -120,12 +120,12 @@ static void calculate_partials(Crystal *cr,
 				 * program) once created, but creating it must
 				 * be an atomic operation.  So do the whole
 				 * thing under lock. */
-				pthread_mutex_lock(full_lock);
+				pthread_rwlock_wrlock(full_lock);
 				rfull = add_refl(full, h, k, l);
 				If = fabs(gaussian_noise(0.0, full_stddev));
 				set_intensity(rfull, If);
 				set_redundancy(rfull, 1);
-				pthread_mutex_unlock(full_lock);
+				pthread_rwlock_unlock(full_lock);
 
 			} else {
 				set_redundancy(refl, 0);
@@ -197,7 +197,7 @@ static void show_help(const char *s)
 struct queue_args
 {
 	RefList *full;
-	pthread_mutex_t full_lock;
+	pthread_rwlock_t full_lock;
 
 	int n_done;
 	int n_started;
@@ -602,7 +602,7 @@ int main(int argc, char *argv[])
 	}
 
 	qargs.full = full;
-	pthread_mutex_init(&qargs.full_lock, NULL);
+	pthread_rwlock_init(&qargs.full_lock, NULL);
 	qargs.n_to_do = n;
 	qargs.n_done = 0;
 	qargs.n_started = 0;
@@ -659,6 +659,7 @@ int main(int argc, char *argv[])
 
 	}
 
+	pthread_rwlock_destroy(&qargs.full_lock);
 	close_stream(stream);
 	cell_free(cell);
 	free_detector_geometry(det);
