@@ -39,7 +39,7 @@ fi
 python clean-stream.py $filename clean.stream
 filename=clean.stream
 
-LIMIT=3
+LIMIT=10
 
 for ((a=1; a <= LIMIT ; a++))
 do

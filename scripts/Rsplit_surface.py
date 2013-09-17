@@ -82,7 +82,7 @@ cm = ax.pcolormesh(X, Y, Z, cmap = plt.get_cmap('spectral'), vmin=0, vmax=100)
 
 plt.title(r"$R_{split}$ surface for %s data $N_0$ = %d" % (data_name, N0), fontsize=16)
 
-ax.set_xlabel(r"1/d", fontsize=16)
+ax.set_xlabel(r"1/d / nm^-1", fontsize=16)
 ax.set_ylabel(r"Number of patterns", fontsize=16)
 ypoints = [50000,40000,30000,20000,10000,9000,8000,7000,6000,5000,4000,3000,2000,1000,900,800,700,600,500,400,300,200,100]
 temp = []
