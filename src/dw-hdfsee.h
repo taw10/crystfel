@@ -121,7 +121,8 @@ extern DisplayWindow *displaywindow_open(const char *filename,
                                          int binning,
                                          int noisefilter, int colscale,
                                          const char *element,
-                                         const char *geometry, int show_rings,
+                                         const char *geometry, const char *beam,
+                                         int show_rings,
                                          double *ring_radii, int n_rings,
                                          double ring_size, int median_filter);
 

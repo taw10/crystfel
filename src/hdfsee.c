@@ -74,6 +74,7 @@ static void show_help(const char *s)
 "  -e, --image=<element>            Start up displaying this image from the\n"
 "                                    HDF5 file.  Example: /data/data0.\n"
 "  -g, --geometry=<filename>        Use geometry from file for display.\n"
+"  -m, --beam=<filename>            Get beam parameters from <filename>.\n"
 "\n");
 }
 
@@ -118,6 +119,7 @@ int main(int argc, char *argv[])
 	char *cscale = NULL;
 	char *element = NULL;
 	char *geometry = NULL;
+	char *beam = NULL;
 	double ring_size = 5.0;
 	char *reslist = NULL;
 	double ring_radii[128];
@@ -134,6 +136,7 @@ int main(int argc, char *argv[])
 		{"colscale",           1, NULL,               'c'},
 		{"image",              1, NULL,               'e'},
 		{"geometry",           1, NULL,               'g'},
+		{"beam",               1, NULL,               'm'},
 		{"show-rings",         0, &config_showrings,   1},
 		{"ring-size",          1, NULL,                2},
 		{"simple-rings",       1, NULL,               'r'},
@@ -144,7 +147,7 @@ int main(int argc, char *argv[])
 	gtk_init(&argc, &argv);
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hp:b:i:c:e:g:2:r:",
+	while ((c = getopt_long(argc, argv, "hp:b:i:c:e:g:2:r:m:",
 	                        longopts, NULL)) != -1) {
 
 		char *test;
@@ -186,6 +189,10 @@ int main(int argc, char *argv[])
 
 			case 'g' :
 			geometry = strdup(optarg);
+			break;
+
+			case 'm' :
+			beam = strdup(optarg);
 			break;
 
 			case 2 :
@@ -263,7 +270,7 @@ int main(int argc, char *argv[])
 		                                         boost, binning,
 		                                         config_noisefilter,
 		                                         colscale, element,
-		                                         geometry,
+		                                         geometry, beam,
 		                                         config_showrings,
 		                                         ring_radii,
 		                                         n_rings,

@@ -1813,6 +1813,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
                                   double boost, int binning,
                                   int noisefilter, int colscale,
                                   const char *element, const char *geometry,
+                                  const char *beam,
                                   int show_rings, double *ring_radii,
                                   int n_rings, double ring_size,
                                   int median_filter)
@@ -1846,6 +1847,15 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->ring_radii = ring_radii;
 	dw->n_rings = n_rings;
 	dw->median_filter = median_filter;
+	dw->image = calloc(1, sizeof(struct image));
+
+	if ( beam != NULL ) {
+		dw->image->beam = get_beam_parameters(beam);
+	}
+
+	if ( (dw->image->beam != NULL) && (dw->hdfile != NULL) ) {
+		fill_in_beam_parameters(dw->image->beam, dw->hdfile);
+	}
 
 	/* Open the file, if any */
 	if ( filename != NULL ) {
@@ -1864,7 +1874,6 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 			}
 
 			if ( !fail ) {
-				dw->image = calloc(1, sizeof(struct image));
 				dw->image->filename = strdup(filename);
 				hdf5_read(dw->hdfile, dw->image, 0);
 			} else {
