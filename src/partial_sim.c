@@ -116,15 +116,21 @@ static void calculate_partials(Crystal *cr,
 		if ( rfull == NULL ) {
 			if ( random_intensities ) {
 
-				/* The full reflection is immutable (in this
-				 * program) once created, but creating it must
-				 * be an atomic operation.  So do the whole
-				 * thing under lock. */
 				pthread_rwlock_wrlock(full_lock);
-				rfull = add_refl(full, h, k, l);
-				If = fabs(gaussian_noise(0.0, full_stddev));
-				set_intensity(rfull, If);
-				set_redundancy(rfull, 1);
+
+				/* In the gap between the unlock and the wrlock,
+				 * the reflection might have been created by
+				 * another thread.  So, we must check again */
+				rfull = find_refl(full, h, k, l);
+				if ( rfull == NULL ) {
+					rfull = add_refl(full, h, k, l);
+					If = fabs(gaussian_noise(0.0,
+					                         full_stddev));
+					set_intensity(rfull, If);
+					set_redundancy(rfull, 1);
+				} else {
+					If = get_intensity(rfull);
+				}
 				pthread_rwlock_unlock(full_lock);
 
 			} else {
