@@ -204,25 +204,30 @@ AS_IF([test "x$enable_pango" != "xno"],
 ])
 
 
+have_gdk_pixbuf=false
 AC_MSG_CHECKING([whether to use GDK-pixbuf])
 AC_ARG_ENABLE([gdk-pixbuf], AS_HELP_STRING([--disable-gdk-pixbuf],
-                                           [Disable the use of gtk-pixbuf]))
+                                           [Disable the use of gdk-pixbuf]))
 AS_IF([test "x$enable_gdk_pixbuf" != "xno"],
 [
    AC_MSG_RESULT([yes])
-   PKG_CHECK_MODULES([GDK_pixbuf], [gdk-pixbuf], [],
+
+   PKG_CHECK_MODULES([GDK_pixbuf_2], [gdk-pixbuf-2.0],
    [
-      PKG_CHECK_MODULES([GDK_pixbuf_2], [gdk-pixbuf-2.0],
+      have_gdk_pixbuf=true
+   ], [
+      PKG_CHECK_MODULES([GDK_pixbuf], [gdk-pixbuf], [],
       [
-         AC_DEFINE([HAVE_GDK_PIXBUF], [1],
-                   [Define to 1 if gdk-pixbuf is available])
          have_gdk_pixbuf=true
-      ], [
-         have_gdk_pixbuf=false
       ])
    ])
 ], [
    AC_MSG_RESULT([no])
+])
+
+AS_IF([test "$have_gdk_pixbuf" != "false"],
+[
+  AC_DEFINE([HAVE_GDK_PIXBUF], [1], [Define to 1 if gdk-pixbuf is available])
 ])
 
 
