@@ -84,9 +84,34 @@ Refine and scale patterns against the reflections in \fIfilename\fR, instead of
 comparing them against each other.
 
 .PD 0
+.IP "\fB-m\fR \fImodel\fR"
+.IP \fB--model=\fR\fImodel\fR
+.PD
+Specify the partiality model.  See the list below for possible choices.
+
+.PD 0
 .IP "\fB-j\fR \fIn\fR"
 .PD
 Run \fIn\fR analyses in parallel.
+
+.SH PARTIALITY MODELS
+
+The available partiality models are:
+
+.IP \fBsphere\fR
+.PD
+The volume of intersection between a sphere centered on each reciprocal lattice
+point, and the part of reciprocal space excited by the Ewald sphere taking into
+account the finite bandwidth and convergence angle.  A Lorentz factor will also
+be used, proportional to the distance between the limiting Ewald spheres.
+
+For a fully description including diagrams, see T. A. White et al., Acta Cryst.
+D69 (2013) p1231-1240.
+
+.IP \fBunity\fR
+.PD
+Fix all partialities at 1, and use no Lorentz factor at all.
+
 
 
 .SH BUGS
