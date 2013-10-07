@@ -1,8 +1,8 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(crystfel, 0.5.1, taw@physics.org)
+AC_INIT([crystfel],[0.5.1],[taw@physics.org])
 AC_CONFIG_AUX_DIR([build-aux])
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([subdir-objects])
 
 AC_PROG_CC
@@ -11,14 +11,13 @@ AM_PROG_CC_C_O
 AC_PROG_AWK
 AC_PROG_INSTALL
 AC_PROG_LN_S
-AC_PROG_LIBTOOL
+LT_INIT
 AM_SILENT_RULES([yes])
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h stdlib.h unistd.h])
 AC_C_CONST
 AC_FUNC_MALLOC
-AC_TYPE_SIGNAL
 
 gl_INIT
 
