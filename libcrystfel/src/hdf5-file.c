@@ -649,21 +649,72 @@ static int looks_like_image(hid_t h)
 }
 
 
-double get_value(struct hdfile *f, const char *name)
+int hdfile_is_scalar(struct hdfile *f, const char *name, int verbose)
 {
 	hid_t dh;
 	hid_t sh;
-	hsize_t size;
-	hsize_t max_size;
+	hsize_t size[3];
+	hid_t type;
+	int ndims;
+	int i;
+
+	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("No such field '%s'\n", name);
+		return 0;
+	}
+
+	type = H5Dget_type(dh);
+
+	/* Get the dimensionality.  We have to cope with scalars expressed as
+	 * arrays with all dimensions 1, as well as zero-d arrays. */
+	sh = H5Dget_space(dh);
+	ndims = H5Sget_simple_extent_ndims(sh);
+	if ( ndims > 3 ) {
+		if ( verbose ) {
+			ERROR("Too many dimensions (%i).\n", ndims);
+		}
+		H5Tclose(type);
+		H5Dclose(dh);
+		return 0;
+	}
+
+	/* Check that the size in all dimensions is 1 */
+	H5Sget_simple_extent_dims(sh, size, NULL);
+	for ( i=0; i<ndims; i++ ) {
+		if ( size[i] != 1 ) {
+			if ( verbose ) {
+				ERROR("%s not a scalar value (ndims=%i,"
+				      "size[%i]=%i)\n",
+				      name, ndims, i, (int)size[i]);
+			}
+			H5Tclose(type);
+			H5Dclose(dh);
+			return 0;
+		}
+	}
+
+	H5Tclose(type);
+	H5Dclose(dh);
+
+	return 1;
+}
+
+
+static int get_f_value(struct hdfile *f, const char *name, double *val)
+{
+	hid_t dh;
 	hid_t type;
 	hid_t class;
 	herr_t r;
 	double buf;
 
+	if ( !hdfile_is_scalar(f, name, 1) ) return 1;
+
 	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("No such field '%s'\n", name);
-		return 0.0;
+		return 1;
 	}
 
 	type = H5Dget_type(dh);
@@ -673,23 +724,7 @@ double get_value(struct hdfile *f, const char *name)
 		ERROR("Not a floating point value.\n");
 		H5Tclose(type);
 		H5Dclose(dh);
-		return 0.0;
-	}
-
-	sh = H5Dget_space(dh);
-	if ( H5Sget_simple_extent_ndims(sh) != 1 ) {
-		ERROR("Not a scalar value.\n");
-		H5Tclose(type);
-		H5Dclose(dh);
-		return 0.0;
-	}
-
-	H5Sget_simple_extent_dims(sh, &size, &max_size);
-	if ( size != 1 ) {
-		ERROR("Not a scalar value.\n");
-		H5Tclose(type);
-		H5Dclose(dh);
-		return 0.0;
+		return 1;
 	}
 
 	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
@@ -698,10 +733,59 @@ double get_value(struct hdfile *f, const char *name)
 		ERROR("Couldn't read value.\n");
 		H5Tclose(type);
 		H5Dclose(dh);
-		return 0.0;
+		return 1;
 	}
 
-	return buf;
+	*val = buf;
+	return 0;
+}
+
+
+static int get_i_value(struct hdfile *f, const char *name, int *val)
+{
+	hid_t dh;
+	hid_t type;
+	hid_t class;
+	herr_t r;
+	int buf;
+
+	if ( !hdfile_is_scalar(f, name, 1) ) return 1;
+
+	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("No such field '%s'\n", name);
+		return 1;
+	}
+
+	type = H5Dget_type(dh);
+	class = H5Tget_class(type);
+
+	if ( class != H5T_INTEGER ) {
+		ERROR("Not an integer value.\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return 1;
+	}
+
+	r = H5Dread(dh, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
+	            H5P_DEFAULT, &buf);
+	if ( r < 0 )  {
+		ERROR("Couldn't read value.\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return 1;
+	}
+
+	*val = buf;
+	return 0;
+}
+
+
+double get_value(struct hdfile *f, const char *name)
+{
+	double val;
+	get_f_value(f, name, &val);
+	return val;
 }
 
 
@@ -802,12 +886,9 @@ void copy_hdf5_fields(struct hdfile *f, const struct copy_hdf5_field *copyme,
 char *hdfile_get_string_value(struct hdfile *f, const char *name)
 {
 	hid_t dh;
-	hid_t sh;
 	hsize_t size;
-	hsize_t max_size;
 	hid_t type;
 	hid_t class;
-	herr_t r;
 	int buf_i;
 	double buf_f;
 	char *tmp;
@@ -843,29 +924,16 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name)
 
 	}
 
-	sh = H5Dget_space(dh);
-	if ( H5Sget_simple_extent_ndims(sh) != 1 ) goto fail;
-
-	H5Sget_simple_extent_dims(sh, &size, &max_size);
-	if ( size != 1 ) {
-		H5Dclose(dh);
-		goto fail;
-	}
-
 	switch ( class ) {
 
 		case H5T_FLOAT :
-		r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
-		            H5P_DEFAULT, &buf_f);
-		if ( r < 0 ) goto fail;
+		if ( get_f_value(f, name, &buf_f) ) goto fail;
 		tmp = malloc(256);
 		snprintf(tmp, 255, "%f", buf_f);
 		return tmp;
 
 		case H5T_INTEGER :
-		r = H5Dread(dh, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
-		            H5P_DEFAULT, &buf_i);
-		if ( r < 0 ) goto fail;
+		if ( get_i_value(f, name, &buf_i) ) goto fail;
 		tmp = malloc(256);
 		snprintf(tmp, 255, "%d", buf_i);
 		return tmp;

@@ -59,6 +59,7 @@ extern char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
 extern int hdfile_set_first_image(struct hdfile *f, const char *group);
 extern void hdfile_close(struct hdfile *f);
 
+extern int hdfile_is_scalar(struct hdfile *f, const char *name, int verbose);
 extern char *hdfile_get_string_value(struct hdfile *f, const char *name);
 extern int get_peaks(struct image *image, struct hdfile *f, const char *p);
 extern double get_value(struct hdfile *f, const char *name);

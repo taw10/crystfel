@@ -1685,7 +1685,11 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 
 			item = gtk_menu_item_new_with_label(names[i]);
 
-			tmp = hdfile_get_string_value(hdfile, names[i]);
+			if ( hdfile_is_scalar(hdfile, names[i], 0) ) {
+				tmp = hdfile_get_string_value(hdfile, names[i]);
+			} else {
+				tmp = NULL;
+			}
 			if ( tmp != NULL ) {
 
 				GtkWidget *ss;
