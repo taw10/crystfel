@@ -764,6 +764,16 @@ static void setup_peak_integrals(struct intcontext *ic, struct peak_box *bx)
 	bx->pks_q = 0.0;
 	bx->m = 0;
 
+	gsl_matrix_set(bx->bgm, 0, 0, 0.0);
+	gsl_matrix_set(bx->bgm, 0, 1, 0.0);
+	gsl_matrix_set(bx->bgm, 0, 2, 0.0);
+	gsl_matrix_set(bx->bgm, 1, 0, 0.0);
+	gsl_matrix_set(bx->bgm, 1, 1, 0.0);
+	gsl_matrix_set(bx->bgm, 1, 2, 0.0);
+	gsl_matrix_set(bx->bgm, 2, 0, 0.0);
+	gsl_matrix_set(bx->bgm, 2, 1, 0.0);
+	gsl_matrix_set(bx->bgm, 2, 2, 0.0);
+
 	for ( p=0; p<ic->w; p++ ) {
 	for ( q=0; q<ic->w; q++ ) {
 
