@@ -954,33 +954,33 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 	for ( i=0; i<10; i++ ) {
 
 		int p, q;
-		double sum_fs = 0.0;
-		double sum_ss = 0.0;
-		double den = 0.0;
+		double max = -INFINITY;
 		int t_offs_fs = 0;
 		int t_offs_ss = 0;
-		double offs_fs, offs_ss;
-		int ifs, iss;
+		int ifs = 0;
+		int iss = 0;
 
-		for ( p=0; p<ic->w; p++ ) {
 		for ( q=0; q<ic->w; q++ ) {
+		for ( p=0; p<ic->w; p++ ) {
 
-			double bi = boxi(ic, bx, p, q);
+			double bi, bg;
 
 			if ( bx->bm[p + ic->w*q] == BM_BH ) continue;
 
-			sum_fs += bi * (p-ic->halfw);
-			sum_ss += bi * (q-ic->halfw);
-			den += bi;
+			bi = boxi(ic, bx, p, q);
+			bg = bx->a*p + bx->b*q + bx->c;
+
+			if ( bi <= 3.0*bg ) continue;
+
+			if ( bi > max ) {
+				max = bi;
+				ifs = p - ic->halfw;
+				iss = q - ic->halfw;
+			}
 
 		}
 		}
 
-		offs_fs = sum_fs / den;
-		offs_ss = sum_ss / den;
-
-		ifs = rint(offs_fs);
-		iss = rint(offs_ss);
 		bx->offs_fs += ifs;
 		bx->offs_ss += iss;
 		bx->cfs += ifs;
