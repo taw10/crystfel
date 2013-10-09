@@ -1316,15 +1316,22 @@ static void refine_rigid_groups(struct intcontext *ic)
 }
 
 
-static void measure_all_intensities(IntegrationMethod meth, RefList *list,
-                                    struct image *image, UnitCell *cell,
-                                    double ir_inn, double ir_mid, double ir_out)
+static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
+                             struct image *image,
+                             double ir_inn, double ir_mid, double ir_out)
 {
+	RefList *list;
+	UnitCell *cell;
 	Reflection *refl;
 	RefListIterator *iter;
 	struct intcontext ic;
 	int i;
 	int n_saturated = 0;
+
+	cell = crystal_get_cell(cr);
+
+	/* Create initial list of reflections with nominal parameters */
+	list = find_intersections(image, cr);
 
 	ic.halfw = ir_out;
 	ic.image = image;
@@ -1471,215 +1478,8 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 	free_intcontext(&ic);
 
 	image->num_saturated_peaks = n_saturated;
-}
 
-
-static void UNUSED estimate_mosaicity(IntegrationMethod meth, Crystal *cr,
-                                      struct image *image,
-                                      double ir_inn, double ir_mid, double ir_out)
-{
-	int msteps = 50;
-	int i;
-	const double mest = crystal_get_mosaicity(cr);
-	const double mmax = 2.0 * mest;
-	RefList *list;
-
-	STATUS("Initial estimate: m = %f\n", mest);
-
-	crystal_set_mosaicity(cr, mmax);
-	list = find_intersections(image, cr);
 	crystal_set_reflections(cr, list);
-	measure_all_intensities(meth, list, image, crystal_get_cell(cr),
-	                        ir_inn, ir_mid, ir_out);
-
-	for ( i=1; i<=msteps; i++ ) {
-
-		/* "m" varies from just over zero up to 2x the given estimate */
-		Reflection *refl;
-		RefListIterator *iter;
-		const double m = mmax*((double)i/msteps);
-		int n_gained = 0;
-		int n_lost = 0;
-		double i_gained = 0.0;
-		double i_lost = 0.0;
-
-		crystal_set_mosaicity(cr, m);
-		update_partialities(cr, PMODEL_SPHERE);
-
-		for ( refl = first_refl(list, &iter);
-		      refl != NULL;
-		      refl = next_refl(refl, iter) )
-		{
-			if ( get_redundancy(refl) == 0 ) {
-				if ( get_temp1(refl) > 0.0 ) {
-					i_lost += get_intensity(refl);
-					n_lost++;
-				}
-				set_temp1(refl, -1.0);
-			} else if ( get_temp1(refl) < 0.0 ) {
-				i_gained += get_intensity(refl);
-				n_gained++;
-				set_temp1(refl, 1.0);
-			}
-		}
-
-		if ( i > 1 ) {
-			STATUS("%.2e %10.2f %4i %10.2f %4i %10.2f\n", m,
-			       i_gained, n_gained, i_lost, n_lost,
-		               i_gained - i_lost);
-		}
-
-	}
-}
-
-
-struct integr_ind
-{
-	double res;
-	Reflection *refl;
-};
-
-
-static int compare_resolution(const void *av, const void *bv)
-{
-	const struct integr_ind *a = av;
-	const struct integr_ind *b = bv;
-
-	return a->res > b->res;
-}
-
-
-static struct integr_ind *sort_reflections(RefList *list, UnitCell *cell,
-                                           int *np)
-{
-	struct integr_ind *il;
-	Reflection *refl;
-	RefListIterator *iter;
-	int i, n;
-
-	*np = 0;  /* For now */
-
-	n = num_reflections(list);
-	if ( n == 0 ) return NULL;
-
-	il = calloc(n, sizeof(struct integr_ind));
-	if ( il == NULL ) return NULL;
-
-	i = 0;
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		signed int h, k, l;
-		double res;
-
-		if ( get_redundancy(refl) == 0 ) continue;
-
-		get_indices(refl, &h, &k, &l);
-		res = resolution(cell, h, k, l);
-
-		il[i].res = res;
-		il[i].refl = refl;
-
-		i++;
-	}
-
-	qsort(il, i, sizeof(struct integr_ind), compare_resolution);
-
-	*np = i;
-	return il;
-}
-
-
-static void UNUSED estimate_resolution(RefList *reflections, Crystal *cr,
-                                       struct image *image)
-{
-	struct integr_ind *il;
-	int n, i;
-	int score = 1000;  /* FIXME */
-	int cutoff = 0;
-	double limit = 0.0;
-
-	if ( num_reflections(reflections) == 0 ) return;
-
-	il = sort_reflections(reflections, crystal_get_cell(cr), &n);
-	if ( il == NULL ) {
-		ERROR("Couldn't sort reflections\n");
-		return;
-	}
-
-	for ( i=0; i<n; i++ ) {
-
-		double intensity, sigma, snr;
-		Reflection *refl;
-
-		refl = il[i].refl;
-		intensity = get_intensity(refl);
-		sigma = get_esd_intensity(refl);
-
-		/* I/sigma(I) cutoff
-		 * Rejects reflections below --min-integration-snr, or if the
-		 * SNR is clearly silly.  Silly indicates that the intensity
-		 * was zero. */
-		snr = fabs(intensity)/sigma;
-
-		/* Record intensity and set redundancy to 1 on success */
-		if ( cutoff ) {
-			set_redundancy(refl, 0);
-		}
-
-		if ( snr > 3.0 ) {
-			score++;
-		} else {
-			score--;
-		}
-
-		//STATUS("%5.2f A, %5.2f, %i\n", 1e10/il[i].res, snr, score);
-		if ( score == 0 ) {
-			limit = il[i].res;
-			cutoff = 1;
-		}
-
-	}
-
-	crystal_set_resolution_limit(cr, limit);
-
-	free(il);
-}
-
-
-static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
-                             struct image *image,
-                             double ir_inn, double ir_mid, double ir_out)
-{
-	RefList *reflections;
-	UnitCell *cell;
-
-	cell = crystal_get_cell(cr);
-
-	/* Create initial list of reflections with nominal parameters */
-	reflections = find_intersections(image, cr);
-	measure_all_intensities(meth, reflections, image, cell,
-	                        ir_inn, ir_mid, ir_out);
-
-	/* Find resolution limit of pattern using this list */
-	//estimate_resolution(reflections, cr, image);
-
-	//reflist_free(reflections);
-
-	STATUS("Initial resolution estimate = %.2f nm^-1 or %.2f A\n",
-	       crystal_get_resolution_limit(cr)/1e9,
-	       1e9 / crystal_get_resolution_limit(cr));
-
-	/* Estimate the mosaicity of the crystal using this resolution limit */
-	//estimate_mosaicity(cr, image);
-
-	/* Create new list of reflections with refined mosaicity */
-	//reflections = find_intersections(image, cr);
-	//measure_all_intensities(reflections, image, ir_inn, ir_mid, ir_out);
-	crystal_set_reflections(cr, reflections);
-
-	//estimate_resolution(reflections, cr, image);
 }
 
 
