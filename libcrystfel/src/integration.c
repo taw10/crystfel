@@ -824,7 +824,10 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 	if ( sat != NULL ) *sat = 0;
 
 	bx->bm = malloc(ic->w*ic->w*sizeof(int));
-	if ( bx->bm == NULL ) return 1;
+	if ( bx->bm == NULL ) {
+		ERROR("Failed to allocate box mask\n");
+		return 1;
+	}
 
 	cell_get_cartesian(ic->cell,
 	                   &adx, &ady, &adz,
@@ -844,9 +847,15 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 		ss = bx->css + q;
 
 		if ( (fs < 0) || (fs >= bx->p->w)
-		  || (ss < 0) || (ss >= bx->p->h) ) return 1;
+		  || (ss < 0) || (ss >= bx->p->h) ) {
+			if ( bx->verbose ) {
+				ERROR("Box fell off edge of panel\n");
+			}
+			return 1;
+		}
 
 		if ( (p < 0) || (p >= ic->w) || (q < 0) || (q >= ic->w) ) {
+			ERROR("WTF?\n");
 			return 1;
 		}
 
@@ -881,8 +890,20 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 	}
 	}
 
-	if ( n_pk < 4 ) return 1;
-	if ( n_bg < 4 ) return 1;
+	if ( n_pk < 4 ) {
+		if ( bx->verbose ) {
+			ERROR("Not enough peak pixels (%i)\n", n_pk);
+			show_peak_box(ic, bx);
+		}
+		return 1;
+	}
+	if ( n_bg < 4 ) {
+		if ( bx->verbose ) {
+			ERROR("Not enough bg pixels (%i)\n", n_bg);
+			show_peak_box(ic, bx);
+		}
+		return 1;
+	}
 
 	setup_peak_integrals(ic, bx);
 
@@ -926,6 +947,9 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 	bx->offs_ss = 0.0;
 
 	if ( check_box(ic, bx, sat) ) return 1;
+	fit_bg(ic, bx);
+
+	if ( bx->verbose ) show_peak_box(ic, bx);
 
 	for ( i=0; i<10; i++ ) {
 
@@ -961,16 +985,32 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 		bx->offs_ss += iss;
 		bx->cfs += ifs;
 		bx->css += iss;
-
-		t_offs_fs += rint(offs_fs);
-		t_offs_ss += rint(offs_fs);
+		t_offs_fs += ifs;
+		t_offs_ss += iss;
+		if ( bx->verbose ) {
+			STATUS("Centering step %i,%i\n", ifs, iss);
+		}
 
 		free(bx->bm);
-		if ( check_box(ic, bx, sat) ) return 1;
-
-		if ( t_offs_fs*t_offs_fs + t_offs_ss*t_offs_ss > ic->w*ic->w ) {
+		if ( check_box(ic, bx, sat) ) {
+			if ( bx->verbose ) {
+				ERROR("Box invalid after centering step.\n");
+			}
 			return 1;
 		}
+
+		if ( t_offs_fs*t_offs_fs + t_offs_ss*t_offs_ss > ic->w*ic->w ) {
+			if ( bx->verbose ) {
+				ERROR("Box drifted too far during centering.\n");
+			}
+			return 1;
+		}
+
+		fit_bg(ic, bx);
+		if ( bx->verbose ) show_peak_box(ic, bx);
+
+		if ( (ifs==0) && (iss==0) ) break;
+
 	}
 
 	return 0;
@@ -1337,6 +1377,11 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 		bx->p = p;
 		bx->pn = pn;
 
+		get_indices(refl, &h, &k, &l);
+		if ( VERBOSITY ) {
+			bx->verbose = 1;
+		}
+
 		/* Which reference profile? */
 		bx->rp = 0;//bx->pn;
 
@@ -1358,11 +1403,6 @@ static void measure_all_intensities(IntegrationMethod meth, RefList *list,
 				delete_box(&ic, bx);
 				continue;
 			}
-		}
-
-		get_indices(refl, &h, &k, &l);
-		if ( VERBOSITY ) {
-			bx->verbose = 1;
 		}
 
 		fit_bg(&ic, bx);
@@ -1718,11 +1758,15 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 		bx->css = css;
 		bx->p = p;
 		bx->pn = pn;
+		get_indices(refl, &h, &k, &l);
+		bx->verbose = VERBOSITY;
 
 		if ( meth & INTEGRATION_CENTER ) {
 			r = center_and_check_box(&ic, bx, &saturated);
 		} else {
 			r = check_box(&ic, bx, &saturated);
+			fit_bg(&ic, bx);
+			if ( bx->verbose ) show_peak_box(&ic, bx);
 			bx->offs_fs = 0.0;
 			bx->offs_ss = 0.0;
 		}
@@ -1739,19 +1783,11 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 			}
 		}
 
-		get_indices(refl, &h, &k, &l);
-		if ( VERBOSITY ) {
-			bx->verbose = 1;
-		}
-
-		fit_bg(&ic, bx);
 		intensity = tentative_intensity(&ic, bx);
 		mean_var_background(&ic, bx, &bgmean, &sig2_bg);
 		aduph = bx->p->adu_per_eV * ph_lambda_to_eV(ic.image->lambda);
 		sig2_poisson = aduph * intensity;
 		sigma = sqrt(sig2_poisson + bx->m*sig2_bg);
-
-		if ( bx->verbose ) show_peak_box(&ic, bx);
 
 		/* Record intensity and set redundancy to 1 */
 		bx->intensity = intensity;
