@@ -1565,8 +1565,10 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 			r = center_and_check_box(&ic, bx, &saturated);
 		} else {
 			r = check_box(&ic, bx, &saturated);
-			fit_bg(&ic, bx);
-			if ( bx->verbose ) show_peak_box(&ic, bx);
+			if ( !r ) {
+				fit_bg(&ic, bx);
+				if ( bx->verbose ) show_peak_box(&ic, bx);
+			}
 			bx->offs_fs = 0.0;
 			bx->offs_ss = 0.0;
 		}
