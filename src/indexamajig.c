@@ -132,6 +132,7 @@ static void show_help(const char *s)
 "\n"
 "\nOptions for greater performance:\n\n"
 " -j <n>                   Run <n> analyses in parallel.  Default 1.\n"
+" --temp-dir=<path>        Put the temporary folder under <path>.\n"
 "\n"
 "\nOptions you probably won't need:\n\n"
 "     --no-check-prefix    Don't attempt to correct the --prefix.\n"
@@ -171,6 +172,7 @@ int main(int argc, char *argv[])
 	struct index_args iargs;
 	char *intrad = NULL;
 	char *int_str = NULL;
+	char *tempdir = NULL;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -253,6 +255,7 @@ int main(int argc, char *argv[])
 		{"int-radius",         1, NULL,               14},
 		{"median-filter",      1, NULL,               15},
 		{"integration",        1, NULL,               16},
+		{"temp-dir",           1, NULL,               17},
 
 		{0, 0, NULL, 0}
 	};
@@ -377,6 +380,10 @@ int main(int argc, char *argv[])
 			int_str = strdup(optarg);
 			break;
 
+			case 17 :
+			tempdir = strdup(optarg);
+			break;
+
 			case 0 :
 			break;
 
@@ -389,6 +396,10 @@ int main(int argc, char *argv[])
 
 		}
 
+	}
+
+	if ( tempdir == NULL ) {
+		tempdir = strdup(".");
 	}
 
 	if ( filename == NULL ) {
@@ -559,9 +570,10 @@ int main(int argc, char *argv[])
 	iargs.ipriv = ipriv;
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	               use_this_one_instead, ofd, argc, argv);
+	               use_this_one_instead, ofd, argc, argv, tempdir);
 
 	free(prefix);
+	free(tempdir);
 	free_detector_geometry(iargs.det);
 
 	return 0;

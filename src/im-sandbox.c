@@ -102,6 +102,8 @@ struct sandbox
 	int *stream_pipe_write;
 	char **last_filename;
 
+	char *tmpdir;
+
 	struct sb_reader *reader;
 };
 
@@ -179,7 +181,7 @@ static char *get_pattern(FILE *fh, char **use_this_one_instead,
 
 static void run_work(const struct index_args *iargs,
                      int filename_pipe, int results_pipe, Stream *st,
-                     int cookie)
+                     int cookie, const char *tmpdir)
 {
 	int allDone = 0;
 	FILE *fh;
@@ -226,7 +228,7 @@ static void run_work(const struct index_args *iargs,
 			pargs.filename = line;
 			pargs.n_crystals = 0;
 
-			process_image(iargs, &pargs, st, cookie);
+			process_image(iargs, &pargs, st, cookie, tmpdir);
 
 			/* Request another image */
 			c = sprintf(buf, "%i\n", pargs.n_crystals);
@@ -448,44 +450,6 @@ static void *run_reader(void *rdv)
 }
 
 
-static int create_temporary_folder(signed int n)
-{
-	int r;
-	char tmp[64];
-	struct stat s;
-
-	if ( n < 0 ) {
-		snprintf(tmp, 63, "indexamajig.%i", getpid());
-	} else {
-		snprintf(tmp, 63, "worker.%i", n);
-	}
-
-	if ( stat(tmp, &s) == -1 ) {
-		if ( errno != ENOENT ) {
-			ERROR("Failed to stat temporary folder.\n");
-			return 1;
-		}
-
-		r = mkdir(tmp, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-		if ( r ) {
-			ERROR("Failed to create temporary folder: %s\n",
-			      strerror(errno));
-			return 1;
-		}
-
-	}
-
-	r = chdir(tmp);
-	if ( r ) {
-		ERROR("Failed to chdir to temporary folder: %s\n",
-		      strerror(errno));
-		return 1;
-	}
-
-	return 0;
-}
-
-
 static void start_worker_process(struct sandbox *sb, int slot,
                                  int argc, char *argv[])
 {
@@ -521,6 +485,9 @@ static void start_worker_process(struct sandbox *sb, int slot,
 		int j;
 		struct sigaction sa;
 		int r;
+		char *tmp;
+		struct stat s;
+		size_t ll;
 
 		/* First, disconnect the signal handler */
 		sa.sa_flags = 0;
@@ -532,7 +499,28 @@ static void start_worker_process(struct sandbox *sb, int slot,
 			return;
 		}
 
-		create_temporary_folder(slot);
+		ll = 64 + strlen(sb->tmpdir);
+		tmp = malloc(ll);
+		if ( tmp == NULL ) {
+			ERROR("Failed to allocate temporary dir\n");
+			return;
+		}
+
+		snprintf(tmp, 63, "%s/worker.%i", sb->tmpdir, slot);
+
+		if ( stat(tmp, &s) == -1 ) {
+			if ( errno != ENOENT ) {
+				ERROR("Failed to stat temporary folder.\n");
+				return;
+			}
+
+			r = mkdir(tmp, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+			if ( r ) {
+				ERROR("Failed to create temporary folder: %s\n",
+				strerror(errno));
+				return;
+			}
+		}
 
 		/* Free resources which will not be needed by worker */
 		for ( j=0; j<sb->n_proc; j++ ) {
@@ -562,7 +550,7 @@ static void start_worker_process(struct sandbox *sb, int slot,
 		write_command(st, argc, argv);
 		write_line(st, "FLUSH");
 		run_work(sb->iargs, filename_pipe[0], result_pipe[1],
-		         st, slot);
+		         st, slot, tmp);
 		close_stream(st);
 
 		//close(filename_pipe[0]);
@@ -640,7 +628,7 @@ static void handle_zombie(struct sandbox *sb)
 
 void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                     int config_basename, FILE *fh, char *use_this_one_instead,
-                    int ofd, int argc, char *argv[])
+                    int ofd, int argc, char *argv[], const char *tempdir)
 {
 	int i;
 	int allDone;
@@ -648,6 +636,8 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	int r;
 	pthread_t reader_thread;
 	struct sandbox *sb;
+	size_t ll;
+	struct stat s;
 
 	sb = calloc(1, sizeof(struct sandbox));
 	if ( sb == NULL ) {
@@ -729,7 +719,35 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		return;
 	}
 
-	if ( create_temporary_folder(-1) ) return;
+	if ( tempdir == NULL ) {
+		tempdir = strdup("");
+	}
+
+	ll = 64+strlen(tempdir);
+	sb->tmpdir = malloc(ll);
+	if ( sb->tmpdir == NULL ) {
+		ERROR("Failed to allocate temporary directory name\n");
+		return;
+	}
+	snprintf(sb->tmpdir, ll, "%s/indexamajig.%i", tempdir, getpid());
+
+	if ( stat(sb->tmpdir, &s) == -1 ) {
+
+		int r;
+
+		if ( errno != ENOENT ) {
+			ERROR("Failed to stat temporary folder.\n");
+			return;
+		}
+
+		r = mkdir(sb->tmpdir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		if ( r ) {
+			ERROR("Failed to create temporary folder: %s\n",
+			      strerror(errno));
+			return;
+		}
+
+	}
 
 	/* Fork the right number of times */
 	lock_sandbox(sb);
@@ -912,6 +930,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	free(sb->filename_pipes);
 	free(sb->result_fhs);
 	free(sb->pids);
+	free(sb->tmpdir);
 
 	pthread_mutex_destroy(&sb->lock);
 

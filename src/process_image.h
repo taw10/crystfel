@@ -89,7 +89,7 @@ struct pattern_args
 
 extern void process_image(const struct index_args *iargs,
                           struct pattern_args *pargs, Stream *st,
-                          int cookie);
+                          int cookie, const char *tmpdir);
 
 
 #endif	/* PROCESS_IMAGEs_H */

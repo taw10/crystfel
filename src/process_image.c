@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <hdf5.h>
 #include <gsl/gsl_errno.h>
+#include <unistd.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -50,7 +51,7 @@
 
 
 void process_image(const struct index_args *iargs, struct pattern_args *pargs,
-                   Stream *st, int cookie)
+                   Stream *st, int cookie, const char *tmpdir)
 {
 	float *data_for_measurement;
 	size_t data_size;
@@ -58,27 +59,21 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	struct hdfile *hdfile;
 	struct image image;
 	int i;
-	char filename[1024];
-
-	/* Prefix to jump out of temporary folder */
-	if ( pargs->filename[0] != '/' ) {
-		snprintf(filename, 1023, "../../%s", pargs->filename);
-	} else {
-		snprintf(filename, 1023, "%s", pargs->filename);
-	}
+	int r;
+	char *rn;
 
 	image.features = NULL;
 	image.data = NULL;
 	image.flags = NULL;
 	image.copyme = iargs->copyme;
 	image.id = cookie;
-	image.filename = pargs->filename;  /* Relative to top level */
+	image.filename = pargs->filename;
 	image.beam = iargs->beam;
 	image.det = iargs->det;
 	image.crystals = NULL;
 	image.n_crystals = 0;
 
-	hdfile = hdfile_open(filename);  /* Relative to temporary folder */
+	hdfile = hdfile_open(image.filename);
 	if ( hdfile == NULL ) return;
 
 	if ( iargs->element != NULL ) {
@@ -151,8 +146,23 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	free(image.data);
 	image.data = data_for_measurement;
 
+	rn = get_current_dir_name();
+
+	r = chdir(tmpdir);
+	if ( r ) {
+		ERROR("Failed to chdir to temporary folder: %s\n",
+		      strerror(errno));
+		return;
+	}
+
 	/* Index the pattern */
 	index_pattern(&image, iargs->indm, iargs->ipriv);
+
+	r = chdir(rn);
+	if ( r ) {
+		ERROR("Failed to chdir: %s\n", strerror(errno));
+		return;
+	}
 
 	pargs->n_crystals = image.n_crystals;
 
