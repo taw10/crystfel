@@ -639,6 +639,10 @@ int main(int argc, char *argv[])
 
 	if ( phist_file != NULL ) {
 
+		double overall_max = 0.0;
+		double overall_mean = 0.0;
+		long long int overall_total = 0;
+
 		fh = fopen(phist_file, "w");
 
 		if ( fh != NULL ) {
@@ -646,6 +650,13 @@ int main(int argc, char *argv[])
 			for ( i=0; i<NBINS; i++ ) {
 
 				double rcen;
+
+				if ( qargs.p_max[i] > overall_max ) {
+					overall_max = qargs.p_max[i];
+				}
+
+				overall_mean += qargs.p_hist[i];
+				overall_total += qargs.n_ref[i];
 
 				rcen = i/(double)NBINS*qargs.max_q
 					  + qargs.max_q/(2.0*NBINS);
@@ -657,6 +668,13 @@ int main(int argc, char *argv[])
 			}
 
 			fclose(fh);
+
+			overall_mean /= overall_total;
+
+			STATUS("Overall max partiality = %.2f\n", overall_max);
+			STATUS("Overall mean partiality = %.2f\n", overall_mean);
+			STATUS("Total number of reflections = %lli\n",
+			       overall_total);
 
 		} else {
 			ERROR("Failed to open file '%s' for writing.\n",
