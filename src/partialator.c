@@ -241,6 +241,7 @@ static void select_reflections_for_refinement(Crystal **crystals, int n,
 		int n_noscale = 0;
 		int n_fewmatch = 0;
 		int n_ref = 0;
+		int n_weak = 0;
 
 		reflist = crystal_get_reflections(crystals[i]);
 		for ( refl = first_refl(reflist, &iter);
@@ -249,8 +250,19 @@ static void select_reflections_for_refinement(Crystal **crystals, int n,
 		{
 			signed int h, k, l;
 			int sc;
+			double intensity, sigma;
+			Reflection *f;
+
 
 			n_ref++;
+
+			intensity = get_intensity(refl);
+			sigma = get_esd_intensity(refl);
+			if ( intensity < 3.0*sigma ) {
+				set_refinable(refl, 0);
+				n_weak++;
+				continue;
+			}
 
 			/* We require that the reflection itself is scalable
 			 * (i.e. sensible partiality and intensity) and that
@@ -259,37 +271,35 @@ static void select_reflections_for_refinement(Crystal **crystals, int n,
 			get_indices(refl, &h, &k, &l);
 			sc = get_scalable(refl);
 			if ( !sc ) {
-
-				n_noscale++;
 				set_refinable(refl, 0);
+				n_noscale++;
+				continue;
+			}
 
-			} else {
+			f = find_refl(full, h, k, l);
+			if ( f != NULL ) {
 
-				Reflection *f = find_refl(full, h, k, l);
-
-				if ( f != NULL ) {
-
-					int r = get_redundancy(f);
-					if ( (r >= 2) || have_reference ) {
-						set_refinable(refl, 1);
-						n_acc++;
-					} else {
-						n_fewmatch++;
-					}
-
+				int r = get_redundancy(f);
+				if ( (r >= 2) || have_reference ) {
+					set_refinable(refl, 1);
+					n_acc++;
 				} else {
-					ERROR("%3i %3i %3i is scalable, but is"
-					      " not in the reference list.\n",
-					      h, k, l);
-					abort();
+					n_fewmatch++;
 				}
 
+			} else {
+				ERROR("%3i %3i %3i is scalable, but is"
+					" not in the reference list.\n",
+					h, k, l);
+				abort();
 			}
+
 		}
 
 		//STATUS("Image %4i: %i guide reflections accepted "
-		//       "(%i not scalable, %i few matches, %i total)\n",
-		//       i, n_acc, n_noscale, n_fewmatch, n_ref);
+		//       "(%i not scalable, %i few matches, %i too weak, "
+		//       "%i total)\n",
+		//       i, n_acc, n_noscale, n_fewmatch, n_weak, n_ref);
 
 	}
 }
