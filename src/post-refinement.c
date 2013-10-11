@@ -314,7 +314,7 @@ static void apply_shift(Crystal *cr, int k, double shift)
 }
 
 
-static int check_eigen(gsl_matrix *M, gsl_vector *e_val, int verbose)
+static int check_eigen(gsl_vector *e_val, int verbose)
 {
 	int i;
 	double vmax, vmin;
@@ -355,6 +355,55 @@ static int check_eigen(gsl_matrix *M, gsl_vector *e_val, int verbose)
 	}
 
 	return n_filt;
+}
+
+
+static gsl_vector *solve_svd_noscale(gsl_vector *v, gsl_matrix *Mp, int *n_filt,
+                                     int verbose)
+{
+	gsl_matrix *s_vec;
+	gsl_vector *s_val;
+	int err, n;
+	gsl_vector *shifts;
+	gsl_matrix *M;
+
+	n = v->size;
+	if ( v->size != Mp->size1 ) return NULL;
+	if ( v->size != Mp->size2 ) return NULL;
+
+	M = gsl_matrix_alloc(n, n);
+	if ( M == NULL ) return NULL;
+	gsl_matrix_memcpy(M, Mp);
+
+	s_val = gsl_vector_calloc(n);
+	s_vec = gsl_matrix_calloc(n, n);
+
+	err = gsl_linalg_SV_decomp_jacobi(M, s_vec, s_val);
+	if ( err ) {
+		ERROR("SVD failed: %s\n", gsl_strerror(err));
+		gsl_matrix_free(s_vec);
+		gsl_vector_free(s_val);
+		return NULL;
+	}
+	/* "M" is now "U" */
+
+	*n_filt = check_eigen(s_val, verbose);
+
+	shifts = gsl_vector_calloc(n);
+	err = gsl_linalg_SV_solve(M, s_vec, s_val, v, shifts);
+	if ( err ) {
+		ERROR("Matrix solution failed: %s\n", gsl_strerror(err));
+		gsl_matrix_free(s_vec);
+		gsl_vector_free(s_val);
+		gsl_vector_free(shifts);
+		return NULL;
+	}
+
+	gsl_matrix_free(s_vec);
+	gsl_vector_free(s_val);
+	gsl_matrix_free(M);
+
+	return shifts;
 }
 
 
@@ -418,7 +467,7 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt,
 	/* "SAS" is now "U" */
 
 	/* Filter the eigenvalues */
-	*n_filt = check_eigen(SAS_copy, s_val, verbose);
+	*n_filt = check_eigen(s_val, verbose);
 
 	gsl_matrix_free(SAS_copy);
 
@@ -556,7 +605,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	}
 
 	max_shift = 0.0;
-	shifts = solve_svd(v, M, &prdata->n_filtered, verbose);
+	shifts = solve_svd_noscale(v, M, &prdata->n_filtered, verbose);
 	if ( shifts != NULL ) {
 
 		for ( param=0; param<NUM_PARAMS; param++ ) {
