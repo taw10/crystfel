@@ -643,6 +643,7 @@ int main(int argc, char *argv[])
 	srdata.crystals = crystals;
 	srdata.n = n_crystals;
 	srdata.full = full;
+	srdata.n_filtered = 0;
 
 	sr = sr_titlepage(crystals, n_crystals, "scaling-report.pdf",
 	                  infile, cmdline);
