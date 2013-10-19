@@ -1397,9 +1397,7 @@ static void numbers_update(DisplayWindow *dw)
 	}
 	}
 
-	if ( dw->image->features == NULL ) return;
-
-	if ( found ) {
+	if ( found && (dw->image->features != NULL) ) {
 
 		char text[64];
 
@@ -1418,7 +1416,14 @@ static void numbers_update(DisplayWindow *dw)
 		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat), text);
 
 	} else {
-		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat), "");
+
+		char text[64];
+
+		text[0] = '\0';
+		strcat(text, "Panel ");
+		strncat(text, find_panel(dw->image->det, ffs, fss)->name, 20);
+
+		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat), text);
 	}
 }
 
