@@ -54,8 +54,10 @@
                                      | INDEXING_USE_CELL_PARAMETERS            \
                                      | INDEXING_CHECK_PEAKS)
 
+/* Axis check is needed for XDS, because it likes to permute the axes */
 #define INDEXING_DEFAULTS_XDS (INDEXING_XDS | INDEXING_USE_LATTICE_TYPE        \
                                      | INDEXING_USE_CELL_PARAMETERS            \
+                                     | INDEXING_CHECK_CELL_AXES                \
                                      | INDEXING_CHECK_PEAKS)
 
 /**
