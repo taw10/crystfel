@@ -232,6 +232,7 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 		refl_sigma = scale * get_esd_intensity(refl);
 		w = 1.0;//pow(refl_sigma, -2.0);
 
+		if ( (min_snr > -INFINITY) && isnan(refl_sigma) ) continue;
 		if ( refl_intensity < min_snr * refl_sigma ) continue;
 
 		get_indices(refl, &h, &k, &l);
