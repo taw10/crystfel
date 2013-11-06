@@ -375,8 +375,11 @@ int main(int argc, char *argv[])
 	RefList *input;
 	double adu_per_photon = 0.0;
 	int have_adu_per_photon = 0;
-	int have_cutoff_angstroms = 0;
-	double cutoff = 0.0;
+	int have_cutoff_iso = 0;
+	int have_cutoff_aniso = 0;
+	char *cutoff_str = NULL;
+	double cutiso = 0.0;
+	float cutn1, cutn2, cutn3;
 	char *pdb = NULL;
 
 	/* Long options */
@@ -442,8 +445,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 3 :
-			cutoff = strtof(optarg, NULL);
-			have_cutoff_angstroms = 1;
+			cutoff_str = strdup(optarg);
 			break;
 
 			case 0 :
@@ -457,6 +459,36 @@ int main(int argc, char *argv[])
 			break;
 
 		}
+
+	}
+
+	if ( cutoff_str != NULL ) {
+
+		int r;
+
+		r = sscanf(cutoff_str, "%f,%f,%f", &cutn1, &cutn2, &cutn3);
+		if ( r == 3 ) {
+
+			have_cutoff_aniso = 1;
+
+			/* Convert Angstroms -> m */
+			cutn1 /= 1e10;  cutn2 /= 1e10;  cutn3 /= 1e10;
+
+		} else {
+
+			char *rval;
+
+			errno = 0;
+			cutiso = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --cutoff-angstroms.\n");
+				return 1;
+			}
+
+			have_cutoff_iso = 1;
+
+		}
+		free(cutoff_str);
 
 	}
 
@@ -615,7 +647,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( have_cutoff_angstroms ) {
+	if ( have_cutoff_iso ) {
 
 		RefList *n;
 		Reflection *refl;
@@ -645,7 +677,7 @@ int main(int argc, char *argv[])
 			double res;
 			get_indices(refl, &h, &k, &l);
 			res = 2.0 * resolution(cell, h, k, l);
-			if ( res < 1e10 / cutoff ) {
+			if ( res < 1e10 / cutiso ) {
 				Reflection *a;
 				a = add_refl(n, h, k, l);
 				copy_data(a, refl);
@@ -657,6 +689,66 @@ int main(int argc, char *argv[])
 		input = n;
 
 	}
+
+	if ( have_cutoff_aniso ) {
+
+		RefList *n;
+		Reflection *refl;
+		RefListIterator *iter;
+		UnitCell *cell;
+		double asx, asy, asz;
+		double bsx, bsy, bsz;
+		double csx, csy, csz;
+		double as, bs, cs;
+
+		if ( pdb == NULL ) {
+			ERROR("You must provide a PDB file when using "
+			      "--cutoff-angstroms.\n");
+			return 1;
+		}
+
+		cell = load_cell_from_pdb(pdb);
+		if ( cell == NULL ) {
+			ERROR("Failed to load cell from '%s'\n", pdb);
+			return 1;
+		}
+		free(pdb);
+
+		cell_get_reciprocal(cell, &asx, &asy, &asz,
+				          &bsx, &bsy, &bsz,
+		                          &csx, &csy, &csz);
+		as = modulus(asx, asy, asz);
+		bs = modulus(bsx, bsy, bsz);
+		cs = modulus(csx, csy, csz);
+
+		n = reflist_new();
+
+		for ( refl = first_refl(input, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) )
+		{
+			signed int h, k, l;
+			double sum;
+
+			get_indices(refl, &h, &k, &l);
+
+			sum  = pow(h*as*cutn1, 2.0);
+			sum += pow(k*bs*cutn2, 2.0);
+			sum += pow(l*cs*cutn3, 2.0);
+
+			if ( sum < 1.0 ) {
+				Reflection *a;
+				a = add_refl(n, h, k, l);
+				copy_data(a, refl);
+			}
+		}
+
+		cell_free(cell);
+		reflist_free(input);
+		input = n;
+
+	}
+
 
 	write_reflist(output, input);
 

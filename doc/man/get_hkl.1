@@ -67,6 +67,14 @@ Only reflections in the input list which also appear in \fIfilename\fR will be w
 .PD
 The intensities of the reflections will be multiplied by their symmetric multiplicities according to the point group of the input list.
 
+.SH APPLYING A RESOLUTION CUTOFF
+.PD 0
+.IP \fB--cutoff-angstroms=\fR\fIn\fR
+.IP \fB--cutoff-angstroms=\fR\fIn1,n2,n3\fR
+.PD
+In the first form, reflections with d (=lamba/2*sin(theta)) < \fIn\fR will be removed.
+In the second form, anisotropic truncation will be performed with separate resolution limits \fIn1\fR, \fIn2\fR and \fIn3\fR along a*, b* and c* respectively.
+
 .SH AUTHOR
 This page was written by Thomas White.
 
