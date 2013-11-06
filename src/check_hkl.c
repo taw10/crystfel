@@ -59,12 +59,14 @@ static void show_help(const char *s)
 "      --rmax=<res>           Fix upper resolution limit for resolution shells. (m^-1).\n"
 "      --sigma-cutoff=<n>     Discard reflections with I/sigma(I) < n.\n"
 "      --nshells=<n>          Use <n> resolution shells.\n"
+"      --shell-file=<file>    Write resolution shells to <file>.\n"
 "\n");
 }
 
 
 static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
-                        double rmin_fix, double rmax_fix, int nshells)
+                        double rmin_fix, double rmax_fix, int nshells,
+			const char *shell_file)
 {
 	int *possible;
 	unsigned int *measurements;
@@ -127,7 +129,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		return;
 	}
 
-	fh = fopen("shells.dat", "w");
+	fh = fopen(shell_file, "w");
 	if ( fh == NULL ) {
 		ERROR("Couldn't open 'shells.dat'\n");
 		return;
@@ -371,6 +373,7 @@ int main(int argc, char *argv[])
 	float rmax_fix = -1.0;
 	float sigma_cutoff = -INFINITY;
 	int nshells = 10;
+	char *shell_file = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -381,6 +384,7 @@ int main(int argc, char *argv[])
 		{"rmax",               1, NULL,                3},
 		{"sigma-cutoff",       1, NULL,                4},
 		{"nshells",            1, NULL,                5},
+		{"shell-file",         1, NULL,                6},
 		{0, 0, NULL, 0}
 	};
 
@@ -432,6 +436,10 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+			case 6 :
+			shell_file = strdup(optarg);
+			break;
+
 			case '?' :
 			break;
 
@@ -469,6 +477,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	free(file);
+
+	if ( shell_file == NULL ) shell_file = strdup("shells.dat");
 
 	/* Check that the intensities have the correct symmetry */
 	if ( check_list_symmetry(raw_list, sym) ) {
@@ -508,11 +518,12 @@ int main(int argc, char *argv[])
 	       rej, num_reflections(raw_list), sigma_cutoff);
 	reflist_free(raw_list);
 
-	plot_shells(list, cell, sym, rmin_fix, rmax_fix, nshells);
+	plot_shells(list, cell, sym, rmin_fix, rmax_fix, nshells, shell_file);
 
 	free_symoplist(sym);
 	reflist_free(list);
 	cell_free(cell);
+	free(shell_file);
 
 	return 0;
 }
