@@ -105,7 +105,9 @@ Include a reflection in the output only if it appears at least least \fIn\fR tim
 .PD 0
 .IP \fB--min-snr=\fR\fIn\fR
 .PD
-Use a particular individual reflection intensity measurement only if it exceeds its estimated standard error by at least \fIn\fR.  The default -infinity, i.e. no cutoff.
+Use a particular individual reflection intensity measurement only if it exceeds its estimated standard error by at least \fIn\fR.  The default is -infinity, i.e. no cutoff.
+.IP
+\fBWARNING:\fR think very carefully before using this option.  It will bias reflections towards more positive values, even where no signal exists, leading to a data set dominated by the background.  This can invalidate some of the figures of merit for the merit for data quality while severely compromising the actual quality.
 
 .SH CHOICE OF POINT GROUP FOR MERGING
 

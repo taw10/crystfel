@@ -493,6 +493,10 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --min-snr.\n");
 				return 1;
 			}
+			ERROR("WARNING: You have used --min-snr.\n");
+			ERROR("WARNING: Please read the manual carefully to "
+			      "learn about possible detrimental effects of this"
+			      " option.\n");
 			break;
 
 			case '?' :
