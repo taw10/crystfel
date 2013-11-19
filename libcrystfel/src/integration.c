@@ -43,6 +43,7 @@
 #endif
 
 #include "reflist.h"
+#include "reflist-utils.h"
 #include "cell.h"
 #include "crystal.h"
 #include "cell-utils.h"
@@ -155,6 +156,8 @@ enum boxmask_val
 
 struct intcontext
 {
+	IntegrationMethod meth;
+
 	int halfw;
 	int w;
 	enum boxmask_val *bm;  /* Box mask */
@@ -175,6 +178,10 @@ struct intcontext
 	int ir_inn;
 	int ir_mid;
 	int ir_out;
+
+	int n_saturated;
+	int n_implausible;
+	double limit;
 };
 
 
@@ -1099,8 +1106,8 @@ static double calc_sigma(struct intcontext *ic, struct peak_box *bx)
 }
 
 
-static void mean_var_background(struct intcontext *ic, struct peak_box *bx,
-                                double *pmean, double *pvar)
+static void mean_var_area(struct intcontext *ic, struct peak_box *bx,
+                          enum boxmask_val v, double *pmean, double *pvar)
 {
 	int p, q;
 	double sum = 0.0;
@@ -1110,7 +1117,7 @@ static void mean_var_background(struct intcontext *ic, struct peak_box *bx,
 
 	for ( p=0; p<ic->w; p++ ) {
 	for ( q=0; q<ic->w; q++ ) {
-		if ( bx->bm[p + ic->w*q] != BM_BG ) continue;
+		if ( bx->bm[p + ic->w*q] != v ) continue;
 		sum += bx->a*p + bx->b*q + bx->c;
 		n++;
 	}
@@ -1120,7 +1127,7 @@ static void mean_var_background(struct intcontext *ic, struct peak_box *bx,
 	n = 0;
 	for ( p=0; p<ic->w; p++ ) {
 	for ( q=0; q<ic->w; q++ ) {
-		if ( bx->bm[p + ic->w*q] != BM_BG ) continue;
+		if ( bx->bm[p + ic->w*q] != v ) continue;
 		var += pow(bx->a*p + bx->b*q + bx->c - mean, 2.0);
 		n++;
 	}
@@ -1336,6 +1343,9 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 	ic.halfw = ir_out;
 	ic.image = image;
 	ic.k = 1.0/image->lambda;
+	ic.meth = meth;
+	ic.n_saturated = 0;
+	ic.n_implausible = 0;
 	ic.cell = cell;
 	if ( init_intcontext(&ic) ) {
 		ERROR("Failed to initialise integration.\n");
@@ -1483,6 +1493,132 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 }
 
 
+static void integrate_rings_once(Reflection *refl, struct image *image,
+                                 struct intcontext *ic, UnitCell *cell)
+{
+	double pfs, pss;
+	signed int h, k, l;
+	struct peak_box *bx;
+	int pn;
+	struct panel *p;
+	int fid_fs, fid_ss;  /* Center coordinates, rounded,
+				* in overall data block */
+	int cfs, css;  /* Corner coordinates */
+	double intensity;
+	double sigma;
+	int saturated;
+	double one_over_d;
+	int r;
+	double bgmean, sig2_bg, sig2_poisson, aduph;
+	double pkmean, sig2_pk;
+
+	set_redundancy(refl, 0);
+
+	get_detector_pos(refl, &pfs, &pss);
+
+	/* Explicit truncation of digits after the decimal point.
+		* This is actually the correct thing to do here, not
+		* e.g. lrint().  pfs/pss is the position of the spot, measured
+		* in numbers of pixels, from the panel corner (not the center
+		* of the first pixel).  So any coordinate from 2.0 to 2.9999
+		* belongs to pixel index 2. */
+	fid_fs = pfs;
+	fid_ss = pss;
+	pn = find_panel_number(image->det, fid_fs, fid_ss);
+	p = &image->det->panels[pn];
+
+	cfs = (fid_fs-p->min_fs) - ic->halfw;
+	css = (fid_ss-p->min_ss) - ic->halfw;
+
+	bx = add_box(ic);
+	bx->refl = refl;
+	bx->cfs = cfs;
+	bx->css = css;
+	bx->p = p;
+	bx->pn = pn;
+	get_indices(refl, &h, &k, &l);
+	bx->verbose = VERBOSITY;
+
+	if ( ic->meth & INTEGRATION_CENTER ) {
+		r = center_and_check_box(ic, bx, &saturated);
+	} else {
+		r = check_box(ic, bx, &saturated);
+		if ( !r ) {
+			fit_bg(ic, bx);
+			if ( bx->verbose ) show_peak_box(ic, bx);
+		}
+		bx->offs_fs = 0.0;
+		bx->offs_ss = 0.0;
+	}
+	if ( r ) {
+		delete_box(ic, bx);
+		return;
+	}
+
+	if ( saturated ) {
+		ic->n_saturated++;
+		if ( !(ic->meth & INTEGRATION_SATURATED) ) {
+			delete_box(ic, bx);
+			return;
+		}
+	}
+
+	intensity = tentative_intensity(ic, bx);
+	mean_var_area(ic, bx, BM_BG, &bgmean, &sig2_bg);
+
+	mean_var_area(ic, bx, BM_PK, &pkmean, &sig2_pk);
+	if ( bx->verbose ) {
+		STATUS("bg mean, var = %.2f, %.2f\n", bgmean, sig2_bg);
+		STATUS("pk mean, var = %.2f, %.2f\n", pkmean, sig2_pk);
+	}
+
+	aduph = bx->p->adu_per_eV * ph_lambda_to_eV(ic->image->lambda);
+	sig2_poisson = aduph * intensity;
+
+	/* If intensity is within one photon of nothing, set the Poisson
+		* error to be one photon */
+	if ( fabs(intensity / aduph) < 1.0 ) {
+		sig2_poisson = aduph;
+		if ( bx->verbose ) {
+			STATUS("number of photons less than 1\n");
+		}
+	}
+
+	/* If intensity is negative by more than one photon, assume that
+		* the peak is in the background and add a Poisson error of
+		* appropriate size */
+	if ( intensity < -aduph ) {
+		sig2_poisson = -aduph*intensity;
+		if ( bx->verbose ) {
+			STATUS("very negative (%.2f photons)\n",
+				intensity/aduph);
+		}
+	}
+
+	sigma = sqrt(sig2_poisson + bx->m*sig2_bg);
+
+	if ( intensity < -5.0*sigma ) {
+		delete_box(ic, bx);
+		ic->n_implausible++;
+		return;
+	}
+
+	/* Record intensity and set redundancy to 1 */
+	bx->intensity = intensity;
+	set_intensity(refl, intensity);
+	set_esd_intensity(refl, sigma);
+	set_redundancy(refl, 1);
+
+	one_over_d = resolution(cell, h, k, l);
+	if ( one_over_d > ic->limit ) ic->limit = one_over_d;
+
+	/* Update position */
+	pfs += bx->offs_fs;
+	pss += bx->offs_ss;
+	set_detector_pos(refl, 0.0, pfs, pss);
+}
+
+
 static void integrate_rings(IntegrationMethod meth, Crystal *cr,
                             struct image *image,
                             double ir_inn, double ir_mid, double ir_out)
@@ -1492,8 +1628,6 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 	RefListIterator *iter;
 	UnitCell *cell;
 	struct intcontext ic;
-	int n_saturated = 0;
-	double limit = 0.0;
 
 	list = find_intersections(image, cr);
 	if ( list == NULL ) return;
@@ -1505,10 +1639,13 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 	ic.halfw = ir_out;
 	ic.image = image;
 	ic.k = 1.0/image->lambda;
+	ic.n_saturated = 0;
+	ic.n_implausible = 0;
 	ic.cell = cell;
 	ic.ir_inn = ir_inn;
 	ic.ir_mid = ir_mid;
 	ic.ir_out = ir_out;
+	ic.limit = 0.0;
 	if ( init_intcontext(&ic) ) {
 		ERROR("Failed to initialise integration.\n");
 		return;
@@ -1519,101 +1656,131 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		double pfs, pss;
-		signed int h, k, l;
-		struct peak_box *bx;
-		int pn;
-		struct panel *p;
-		int fid_fs, fid_ss;  /* Center coordinates, rounded,
-		                      * in overall data block */
-		int cfs, css;  /* Corner coordinates */
-		double intensity;
-		double sigma;
-		int saturated;
-		double one_over_d;
-		int r;
-		double bgmean, sig2_bg, sig2_poisson, aduph;
-
-		set_redundancy(refl, 0);
-
-		get_detector_pos(refl, &pfs, &pss);
-
-		/* Explicit truncation of digits after the decimal point.
-		 * This is actually the correct thing to do here, not
-		 * e.g. lrint().  pfs/pss is the position of the spot, measured
-		 * in numbers of pixels, from the panel corner (not the center
-		 * of the first pixel).  So any coordinate from 2.0 to 2.9999
-		 * belongs to pixel index 2. */
-		fid_fs = pfs;
-		fid_ss = pss;
-		pn = find_panel_number(image->det, fid_fs, fid_ss);
-		p = &image->det->panels[pn];
-
-		cfs = (fid_fs-p->min_fs) - ic.halfw;
-		css = (fid_ss-p->min_ss) - ic.halfw;
-
-		bx = add_box(&ic);
-		bx->refl = refl;
-		bx->cfs = cfs;
-		bx->css = css;
-		bx->p = p;
-		bx->pn = pn;
-		get_indices(refl, &h, &k, &l);
-		bx->verbose = VERBOSITY;
-
-		if ( meth & INTEGRATION_CENTER ) {
-			r = center_and_check_box(&ic, bx, &saturated);
-		} else {
-			r = check_box(&ic, bx, &saturated);
-			if ( !r ) {
-				fit_bg(&ic, bx);
-				if ( bx->verbose ) show_peak_box(&ic, bx);
-			}
-			bx->offs_fs = 0.0;
-			bx->offs_ss = 0.0;
-		}
-		if ( r ) {
-			delete_box(&ic, bx);
-			continue;
-		}
-
-		if ( saturated ) {
-			n_saturated++;
-			if ( !(meth & INTEGRATION_SATURATED) ) {
-				delete_box(&ic, bx);
-				continue;
-			}
-		}
-
-		intensity = tentative_intensity(&ic, bx);
-		mean_var_background(&ic, bx, &bgmean, &sig2_bg);
-		aduph = bx->p->adu_per_eV * ph_lambda_to_eV(ic.image->lambda);
-		sig2_poisson = aduph * intensity;
-		sigma = sqrt(sig2_poisson + bx->m*sig2_bg);
-
-		/* Record intensity and set redundancy to 1 */
-		bx->intensity = intensity;
-		set_intensity(refl, intensity);
-		set_esd_intensity(refl, sigma);
-		set_redundancy(refl, 1);
-
-		one_over_d = resolution(cell, h, k, l);
-		if ( one_over_d > limit ) limit = one_over_d;
-
-		/* Update position */
-		pfs += bx->offs_fs;
-		pss += bx->offs_ss;
-		set_detector_pos(refl, 0.0, pfs, pss);
-
+		integrate_rings_once(refl, image, &ic, cell);
 	}
 
 	refine_rigid_groups(&ic);
 
 	free_intcontext(&ic);
 
-	crystal_set_num_saturated_reflections(cr, n_saturated);
-	crystal_set_resolution_limit(cr, limit);
+	crystal_set_num_saturated_reflections(cr, ic.n_saturated);
+	crystal_set_resolution_limit(cr, ic.limit);
 	crystal_set_reflections(cr, list);
+
+	if ( ic.n_implausible ) {
+		STATUS("Warning: %i implausibly negative reflections.\n",
+		       ic.n_implausible);
+	}
+}
+
+
+static void resolution_cutoff(RefList *list, UnitCell *cell)
+{
+	double *rmins;
+	double *rmaxs;
+	double rmin, rmax;
+	double total_vol, vol_per_shell;
+	int i;
+	int *sh_nref;
+	double *sh_snr;
+	Reflection **highest_snr;
+	Reflection *refl;
+	RefListIterator *iter;
+
+	const int nshells = 100;
+	const double min_snr = 10.0;
+
+	rmins = malloc(nshells*sizeof(double));
+	rmaxs = malloc(nshells*sizeof(double));
+	sh_nref = malloc(nshells*sizeof(int));
+	sh_snr = malloc(nshells*sizeof(double));
+	highest_snr = malloc(nshells*sizeof(Reflection *));
+
+	if ( (rmins==NULL) || (rmaxs==NULL) || (sh_nref==NULL)
+	  || (sh_snr==NULL) || (highest_snr==NULL) )
+	{
+		ERROR("Couldn't allocate memory for resolution shells.\n");
+		return;
+	}
+
+	resolution_limits(list, cell, &rmin, &rmax);
+
+	total_vol = pow(rmax, 3.0) - pow(rmin, 3.0);
+	vol_per_shell = total_vol / nshells;
+	rmins[0] = rmin;
+	for ( i=1; i<nshells; i++ ) {
+
+		double r;
+
+		r = vol_per_shell + pow(rmins[i-1], 3.0);
+		r = pow(r, 1.0/3.0);
+
+		/* Shells of constant volume */
+		rmaxs[i-1] = r;
+		rmins[i] = r;
+
+	}
+	rmaxs[nshells-1] = rmax;
+
+	for ( i=0; i<nshells; i++ ) {
+		sh_nref[i] = 0;
+		sh_snr[i] = 0.0;
+	}
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		double res, intensity, sigma, snr;
+		int bin, j;
+
+		intensity = get_intensity(refl);
+		sigma = get_esd_intensity(refl);
+		snr = intensity / sigma;
+
+		if ( snr < min_snr ) continue;
+
+		get_indices(refl, &h, &k, &l);
+		res = 2.0*resolution(cell, h, k, l);
+
+		bin = -1;
+		for ( j=0; j<nshells; j++ ) {
+			if ( (res>rmins[j]) && (res<=rmaxs[j]) ) {
+				bin = j;
+				break;
+			}
+		}
+
+		/* Allow for slight rounding errors */
+		if ( (bin == -1) && (res <= rmins[0]) ) bin = 0;
+		if ( (bin == -1) && (res >= rmaxs[nshells-1]) ) bin = 0;
+		assert(bin != -1);
+
+		sh_nref[bin]++;
+		sh_snr[bin] += snr;
+	}
+
+	for ( i=nshells-1; i>=0; i-- ) {
+		if ( sh_nref[i] > 2 ) break;
+	}
+	double cen = (rmins[i]+rmaxs[i])/2.0;
+	STATUS("The highest shell is %i\n", i);
+	printf("%10.3f nm^-1 or %.2f A\n", cen/1e9, 10e9/cen);
+
+	FILE *fh;
+	fh = fopen("cutoff.dat", "w");
+	for ( i=0; i<nshells; i++ ) {
+		double cen = (rmins[i]+rmaxs[i])/2.0;
+		double val = sh_nref[i];
+		fprintf(fh, "%10.3f %.2f %.4f\n", cen/1e9, 10e9/cen, val);
+	}
+	fclose(fh);
+
+	free(rmins);
+	free(rmaxs);
+	free(sh_nref);
+	free(sh_snr);
 }
 
 
@@ -1627,23 +1794,28 @@ void integrate_all(struct image *image, IntegrationMethod meth,
 		switch ( meth & INTEGRATION_METHOD_MASK ) {
 
 			case INTEGRATION_NONE :
-			return;
+			break;
 
 			case INTEGRATION_RINGS :
 			integrate_rings(meth, image->crystals[i], image,
 			                ir_inn, ir_mid, ir_out);
-			return;
+			break;
 
 			case INTEGRATION_PROF2D :
 			integrate_prof2d(meth, image->crystals[i], image,
 			                 ir_inn, ir_mid, ir_out);
-			return;
+			break;
 
 			default :
 			ERROR("Unrecognised integration method %i\n", meth);
-			return;
+			break;
 
 		}
+
+		/* Set resolution limit */
+		resolution_cutoff(crystal_get_reflections(image->crystals[i]),
+		                  crystal_get_cell(image->crystals[i]));
+
 
 	}
 }

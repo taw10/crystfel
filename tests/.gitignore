@@ -10,4 +10,5 @@ symmetry_check
 centering_check
 transformation_check
 cell_check
+ring_check
 .dirstamp

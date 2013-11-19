@@ -1,10 +1,9 @@
 /*
  * integration_check.c
  *
- * Check peak integration
+ * Check reflection integration
  *
- * Copyright © 2012 Thomas White <taw@physics.org>
- * Copyright © 2012 Andrew Martin <andrew.martin@desy.de>
+ * Copyright © 2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -35,125 +34,8 @@
 #include <utils.h>
 #include <beam-parameters.h>
 
-#include "../libcrystfel/src/peaks.c"
+#include "../libcrystfel/src/integration.c"
 
-
-/* The third integration check draws a Poisson background and checks that, on
- * average, it gets subtracted by the background subtraction. */
-static void third_integration_check(struct image *image, int n_trials,
-                                    int *fail)
-{
-	double mean_intensity = 0.0;
-	double mean_bg = 0.0;
-	double mean_max = 0.0;
-	double mean_sigma = 0.0;
-	int i;
-	int fs, ss;
-	int nfail = 0;
-
-	for ( i=0; i<n_trials; i++ ) {
-
-		double intensity, sigma;
-		double fsp, ssp;
-		int r;
-
-		for ( fs=0; fs<image->width; fs++ ) {
-		for ( ss=0; ss<image->height; ss++ ) {
-			image->data[fs+image->width*ss] = poisson_noise(1000.0);
-		}
-		}
-
-		r = integrate_peak(image, 64, 64, &fsp, &ssp,
-		                   &intensity, &sigma, 10.0, 15.0, 17.0,
-		                   NULL, NULL);
-
-		if ( r == 0 ) {
-			mean_intensity += intensity;
-			mean_sigma += sigma;
-		} else {
-			nfail++;
-		}
-
-	}
-	mean_intensity /= n_trials;
-	mean_bg /= n_trials;
-	mean_max /= n_trials;
-	mean_sigma /= n_trials;
-
-	STATUS("  Third check (mean values): intensity = %.2f, sigma = %.2f,"
-	       " integration failed %i/%i times\n",
-	       mean_intensity, mean_sigma, nfail, n_trials);
-
-/* These values are always wrong, because the integration sucks */
-//	if ( fabs(mean_intensity) > 5.0 ) {
-//		ERROR("Mean intensity should be close to zero.\n");
-//		*fail = 1;
-//	}
-//	if ( fabs(mean_intensity) > mean_sigma/10.0 ) {
-//		ERROR("Mean intensity should be much less than mean sigma.\n");
-//		*fail = 1;
-//	}
-}
-
-
-/* The fourth integration check draws a Poisson background and draws a peak on
- * top of it, then checks that the intensity of the peak is correctly recovered
- * accounting for the background. */
-static void fourth_integration_check(struct image *image, int n_trials,
-                                     int *fail)
-{
-	double mean_intensity = 0.0;
-	double mean_sigma = 0.0;
-	int i;
-	int fs, ss;
-	int pcount = 0;
-	int nfail = 0;
-
-	for ( i=0; i<n_trials; i++ ) {
-
-		double intensity, sigma;
-		double fsp, ssp;
-		int r;
-
-		for ( fs=0; fs<image->width; fs++ ) {
-		for ( ss=0; ss<image->height; ss++ ) {
-			int idx = fs+image->width*ss;
-			image->data[idx] = poisson_noise(1000.0);
-			if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
-			image->data[idx] += 1000.0;
-			pcount++;
-		}
-		}
-
-		r = integrate_peak(image, 64, 64, &fsp, &ssp,
-		                   &intensity, &sigma, 10.0, 15.0, 17.0,
-		                   NULL, NULL);
-
-		if ( r == 0 ) {
-			mean_intensity += intensity;
-			mean_sigma += sigma;
-		} else {
-			nfail++;
-		}
-
-	}
-	mean_intensity /= n_trials;
-	mean_sigma /= n_trials;
-	pcount /= n_trials;
-
-	STATUS(" Fourth check (mean values): intensity = %.2f, sigma = %.2f,"
-	       " integration failed %i/%i times\n",
-	       mean_intensity, mean_sigma, nfail, n_trials);
-
-	if ( fabs(mean_intensity - pcount*1000.0) > 4000.0 ) {
-		ERROR("Mean intensity should be close to %f\n", pcount*1000.0);
-		*fail = 1;
-	}
-	if ( fabs(mean_intensity) < mean_sigma ) {
-		ERROR("Mean intensity should be greater than mean sigma.\n");
-		*fail = 1;
-	}
-}
 
 
 int main(int argc, char *argv[])
@@ -164,7 +46,6 @@ int main(int argc, char *argv[])
 	FILE *fh;
 	unsigned int seed;
 	int fail = 0;
-	const int n_trials = 100;
 	int r, npx;
 	double ex;
 
@@ -208,65 +89,7 @@ int main(int argc, char *argv[])
 	image.n_crystals = 0;
 	image.crystals = NULL;
 
-	/* First check: no intensity -> no peak, or very low intensity */
-	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma,
-	                   10.0, 15.0, 17.0, NULL, NULL);
-	STATUS("  First check: integrate_peak() returned %i", r);
-	if ( r == 0 ) {
-
-		STATUS(", intensity = %.2f, sigma = %.2f\n", intensity, sigma);
-
-		if ( fabs(intensity) > 0.01 ) {
-			ERROR("Intensity should be very close to zero.\n");
-			fail = 1;
-		}
-
-	} else {
-		STATUS(" (correct)\n");
-	}
-
-	/* Second check: uniform peak gives correct I and low sigma(I) */
-	npx = 0;
-	for ( fs=0; fs<image.width; fs++ ) {
-	for ( ss=0; ss<image.height; ss++ ) {
-		if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
-		image.data[fs+image.width*ss] = 1000.0;
-		npx++;
-	}
-	}
-
-	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma,
-	                   10.0, 15.0, 17.0, NULL, NULL);
-	if ( r ) {
-		ERROR(" Second check: integrate_peak() returned %i (wrong).\n",
-		      r);
-		fail = 1;
-	} else {
-
-		STATUS(" Second check: intensity = %.2f, sigma = %.2f\n",
-		       intensity, sigma);
-
-		ex = npx*1000.0;
-		if ( within_tolerance(ex, intensity, 1.0) == 0 ) {
-			ERROR("Intensity should be close to %f\n", ex);
-			fail = 1;
-		}
-
-		ex = sqrt(npx*1000.0);
-		if ( within_tolerance(ex, sigma, 1.0) == 0 ) {
-			ERROR("Sigma should be roughly %f.\n", ex);
-			fail = 1;
-		}
-
-	}
-
-	/* Third check: Poisson background should get mostly subtracted */
-	third_integration_check(&image, n_trials, &fail);
-
-	/* Fourth check: peak on Poisson background */
-	fourth_integration_check(&image, n_trials, &fail);
-
-	/* Fifth check: uniform peak on uniform background */
+	/* Uniform peak on uniform background */
 	npx = 0;
 	for ( fs=0; fs<image.width; fs++ ) {
 	for ( ss=0; ss<image.height; ss++ ) {
