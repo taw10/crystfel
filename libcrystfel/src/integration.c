@@ -310,6 +310,42 @@ static void colour_off(enum boxmask_val b)
 #endif
 
 
+static void show_reference_profile(struct intcontext *ic, int i)
+{
+#ifdef HAVE_CURSES_COLOR
+	int q;
+
+	initscr();
+	clear();
+	start_color();
+	init_pair(1, COLOR_WHITE, COLOR_BLUE) ;  /* Background */
+	init_pair(2, COLOR_WHITE, COLOR_RED);    /* Peak */
+
+	printw("Reference profile number %i (%i contributions):\n", i,
+	       ic->n_profiles_in_reference[i]);
+
+	for ( q=ic->w-1; q>=0; q-- ) {
+
+		int p;
+
+		for ( p=0; p<ic->w; p++ ) {
+
+			colour_on(ic->bm[p+q*ic->w]);
+			printw("%4.0f ", ic->reference_profiles[i][p+ic->w*q]);
+			colour_off(ic->bm[p+q*ic->w]);
+
+		}
+
+		printw("\n");
+	}
+
+	refresh();
+	getch();
+	endwin();
+#endif
+}
+
+
 static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 {
 #ifdef HAVE_CURSES_COLOR
@@ -338,7 +374,8 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 		printw("\n");
 	}
 
-	printw("\nFitted background:\n");
+	printw("\nFitted background (parameters a=%.2f, b=%.2f, c=%.2f)\n",
+	       bx->a, bx->b, bx->c);
 	for ( q=ic->w-1; q>=0; q-- ) {
 
 		int p;
@@ -354,43 +391,9 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 		printw("\n");
 	}
 
-	printw("Reference profile number %i, ", bx->rp);
-	printw("Background parameters: a=%.2f, b=%.2f, c=%.2f\n",
-	       bx->a, bx->b, bx->c);
-	refresh();
-	getch();
-	endwin();
-#endif
-}
-
-
-static void show_reference_profile(struct intcontext *ic, int i)
-{
-#ifdef HAVE_CURSES_COLOR
-	int q;
-
-	initscr();
-	clear();
-	start_color();
-	init_pair(1, COLOR_WHITE, COLOR_BLUE) ;  /* Background */
-	init_pair(2, COLOR_WHITE, COLOR_RED);    /* Peak */
-
-	printw("Reference profile number %i (%i contributions):\n", i,
-	       ic->n_profiles_in_reference[i]);
-
-	for ( q=ic->w-1; q>=0; q-- ) {
-
-		int p;
-
-		for ( p=0; p<ic->w; p++ ) {
-
-			colour_on(ic->bm[p+q*ic->w]);
-			printw("%4.0f ", ic->reference_profiles[i][p+ic->w*q]);
-			colour_off(ic->bm[p+q*ic->w]);
-
-		}
-
-		printw("\n");
+	if ( ic->meth & INTEGRATION_PROF2D ) {
+		printw("\nReference profile number %i, ", bx->rp);
+		show_reference_profile(ic, bx->rp);
 	}
 
 	refresh();
@@ -900,16 +903,12 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 	if ( n_pk < 4 ) {
 		if ( bx->verbose ) {
 			ERROR("Not enough peak pixels (%i)\n", n_pk);
-			show_peak_box(ic, bx);
 		}
-		return 1;
 	}
 	if ( n_bg < 4 ) {
 		if ( bx->verbose ) {
 			ERROR("Not enough bg pixels (%i)\n", n_bg);
-			show_peak_box(ic, bx);
 		}
-		return 1;
 	}
 
 	setup_peak_integrals(ic, bx);
