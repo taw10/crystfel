@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 	Reflection *refl;
 	UnitCell *cell;
 	struct intcontext ic;
-	const int ir_inn = 1;
+	const int ir_inn = 2;
 	const int ir_mid = 4;
 	const int ir_out = 6;
 
