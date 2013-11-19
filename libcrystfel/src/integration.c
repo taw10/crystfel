@@ -1117,7 +1117,7 @@ static void mean_var_area(struct intcontext *ic, struct peak_box *bx,
 	for ( p=0; p<ic->w; p++ ) {
 	for ( q=0; q<ic->w; q++ ) {
 		if ( bx->bm[p + ic->w*q] != v ) continue;
-		sum += bx->a*p + bx->b*q + bx->c;
+		sum += boxi(ic, bx, p, q);
 		n++;
 	}
 	}
@@ -1127,11 +1127,10 @@ static void mean_var_area(struct intcontext *ic, struct peak_box *bx,
 	for ( p=0; p<ic->w; p++ ) {
 	for ( q=0; q<ic->w; q++ ) {
 		if ( bx->bm[p + ic->w*q] != v ) continue;
-		var += pow(bx->a*p + bx->b*q + bx->c - mean, 2.0);
+		var += pow(boxi(ic, bx, p, q) - mean, 2.0);
 		n++;
 	}
 	}
-
 	var = var/n;
 
 	*pmean = mean;
