@@ -1564,12 +1564,6 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	intensity = tentative_intensity(ic, bx);
 	mean_var_area(ic, bx, BM_BG, &bgmean, &sig2_bg);
 
-	mean_var_area(ic, bx, BM_PK, &pkmean, &sig2_pk);
-	if ( bx->verbose ) {
-		STATUS("bg mean, var = %.2f, %.2f\n", bgmean, sig2_bg);
-		STATUS("pk mean, var = %.2f, %.2f\n", pkmean, sig2_pk);
-	}
-
 	aduph = bx->p->adu_per_eV * ph_lambda_to_eV(ic->image->lambda);
 	sig2_poisson = aduph * intensity;
 
@@ -1594,6 +1588,13 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	}
 
 	sigma = sqrt(sig2_poisson + bx->m*sig2_bg);
+
+	mean_var_area(ic, bx, BM_PK, &pkmean, &sig2_pk);
+	if ( bx->verbose ) {
+		STATUS("bg mean, var = %.2f, %.2f\n", bgmean, sig2_bg);
+		STATUS("pk mean, var = %.2f, %.2f\n", pkmean, sig2_pk);
+		STATUS("intensity = %.2f +/- %.2f\n", intensity, sigma);
+	}
 
 	if ( intensity < -5.0*sigma ) {
 		delete_box(ic, bx);
