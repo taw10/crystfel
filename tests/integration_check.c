@@ -41,32 +41,39 @@
 int main(int argc, char *argv[])
 {
 	struct image image;
-	double fsp, ssp, intensity, sigma;
 	int fs, ss;
 	FILE *fh;
 	unsigned int seed;
 	int fail = 0;
-	int r, npx;
-	double ex;
+	const int w = 128;
+	const int h = 128;
+	RefList *list;
+	Reflection *refl;
+	UnitCell *cell;
+	struct intcontext ic;
+	const int ir_inn = 1;
+	const int ir_mid = 4;
+	const int ir_out = 6;
 
 	fh = fopen("/dev/urandom", "r");
 	fread(&seed, sizeof(seed), 1, fh);
 	fclose(fh);
 	srand(seed);
 
-	image.data = malloc(128*128*sizeof(float));
 	image.flags = NULL;
 	image.beam = NULL;
-	image.lambda = ph_eV_to_lambda(1000.0);
+	image.lambda = ph_eV_to_lambda(9000.0);
 
 	image.det = calloc(1, sizeof(struct detector));
 	image.det->n_panels = 1;
 	image.det->panels = calloc(1, sizeof(struct panel));
 
 	image.det->panels[0].min_fs = 0;
-	image.det->panels[0].max_fs = 128;
+	image.det->panels[0].max_fs = w;
 	image.det->panels[0].min_ss = 0;
-	image.det->panels[0].max_ss = 128;
+	image.det->panels[0].max_ss = h;
+	image.det->panels[0].w = w;
+	image.det->panels[0].h = h;
 	image.det->panels[0].fsx = 1.0;
 	image.det->panels[0].fsy = 0.0;
 	image.det->panels[0].ssx = 0.0;
@@ -75,61 +82,68 @@ int main(int argc, char *argv[])
 	image.det->panels[0].yfs = 0.0;
 	image.det->panels[0].xss = 0.0;
 	image.det->panels[0].yss = 1.0;
-	image.det->panels[0].cnx = -64.0;
-	image.det->panels[0].cny = -64.0;
-	image.det->panels[0].clen = 1.0;
-	image.det->panels[0].res = 1.0;
-	image.det->panels[0].adu_per_eV = 1.0/1000.0;  /* -> 1 adu per photon */
+	image.det->panels[0].cnx = -w/2;
+	image.det->panels[0].cny = -h/2;
+	image.det->panels[0].clen = 60.0e-3;
+	image.det->panels[0].res = 100000;  /* 10 px per mm */
+	image.det->panels[0].adu_per_eV = 10.0/9000.0; /* 10 adu/ph */
 	image.det->panels[0].max_adu = +INFINITY;  /* No cutoff */
 
-	image.width = 128;
-	image.height = 128;
-	memset(image.data, 0, 128*128*sizeof(float));
+	image.width = w;
+	image.height = h;
+	image.dp = malloc(sizeof(float *));
+	image.dp[0] = malloc(w*h*sizeof(float));
+	memset(image.dp[0], 0, w*h*sizeof(float));
+	image.bad = malloc(sizeof(int *));
+	image.bad[0] = malloc(w*h*sizeof(int));
+	memset(image.bad[0], 0, w*h*sizeof(int));
 
 	image.n_crystals = 0;
 	image.crystals = NULL;
 
-	/* Uniform peak on uniform background */
-	npx = 0;
-	for ( fs=0; fs<image.width; fs++ ) {
-	for ( ss=0; ss<image.height; ss++ ) {
-		image.data[fs+image.width*ss] = 1000.0;
-		if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
-		image.data[fs+image.width*ss] += 1000.0;
-		npx++;
+	for ( fs=0; fs<w; fs++ ) {
+	for ( ss=0; ss<h; ss++ ) {
+		image.dp[0][fs+w*ss] = 10.0*poisson_noise(40);
+		if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 2 ) continue;
+		//image.dp[0][fs+w*ss] += 10.0*poisson_noise(10);
 	}
 	}
 
-	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma,
-	                   10.0, 15.0, 17.0, NULL, NULL);
-	if ( r ) {
-		ERROR("   Fifth check: integrate_peak() returned %i (wrong).\n",
-		      r);
-		fail = 1;
-	} else {
+	list = reflist_new();
+	refl = add_refl(list, 0, 0, 0);
+	set_detector_pos(refl, 0.0, 64, 64);
+	cell = cell_new();
+	cell_set_lattice_type(cell, L_CUBIC);
+	cell_set_centering(cell, 'P');
+	cell_set_parameters(cell, 800.0e-10, 800.0e-10, 800.0e-10,
+	                    deg2rad(90.0), deg2rad(90.0), deg2rad(90.0));
+	cell = cell_rotate(cell, random_quaternion());
+	cell_print(cell);
 
-		STATUS("  Fifth check: intensity = %.2f, sigma = %.2f\n",
-		       intensity, sigma);
-
-		ex = npx*1000.0;
-		if ( within_tolerance(ex, intensity, 1.0) == 0 ) {
-			ERROR("Intensity should be close to %f\n", ex);
-			fail = 1;
-		}
-
-		ex = sqrt(npx*1000.0);
-		if ( within_tolerance(ex, sigma, 1.0) == 0 ) {
-			ERROR("Sigma should be roughly %f.\n", ex);
-			fail = 1;
-		}
-
+	ic.halfw = ir_out;
+	ic.image = &image;
+	ic.k = 1.0/image.lambda;
+	ic.n_saturated = 0;
+	ic.n_implausible = 0;
+	ic.cell = cell;
+	ic.ir_inn = ir_inn;
+	ic.ir_mid = ir_mid;
+	ic.ir_out = ir_out;
+	ic.limit = 0.0;
+	ic.meth = INTEGRATION_RINGS;
+	if ( init_intcontext(&ic) ) {
+		ERROR("Failed to initialise integration.\n");
+		return 1;
 	}
+	setup_ring_masks(&ic, ir_inn, ir_mid, ir_out);
 
+	integrate_rings_once(refl, &image, &ic, cell);
 
 	free(image.beam);
 	free(image.det->panels);
 	free(image.det);
-	free(image.data);
+	free(image.dp[0]);
+	free(image.dp);
 
 	if ( fail ) return 1;
 
