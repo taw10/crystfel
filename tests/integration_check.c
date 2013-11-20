@@ -54,6 +54,8 @@ int main(int argc, char *argv[])
 	const int ir_inn = 2;
 	const int ir_mid = 4;
 	const int ir_out = 6;
+	double int_sum = 0.0;
+	int i;
 
 	fh = fopen("/dev/urandom", "r");
 	fread(&seed, sizeof(seed), 1, fh);
@@ -101,43 +103,52 @@ int main(int argc, char *argv[])
 	image.n_crystals = 0;
 	image.crystals = NULL;
 
-	for ( fs=0; fs<w; fs++ ) {
-	for ( ss=0; ss<h; ss++ ) {
-		image.dp[0][fs+w*ss] = 10.0*poisson_noise(40);
-		if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 2 ) continue;
-		//image.dp[0][fs+w*ss] += 10.0*poisson_noise(10);
-	}
+	for ( i=0; i<1000; i++ ) {
+
+		for ( fs=0; fs<w; fs++ ) {
+		for ( ss=0; ss<h; ss++ ) {
+			image.dp[0][fs+w*ss] = 10.0*poisson_noise(40);
+			if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 2 ) continue;
+			//image.dp[0][fs+w*ss] += 10.0*poisson_noise(10);
+		}
+		}
+
+		list = reflist_new();
+		refl = add_refl(list, 0, 0, 0);
+		set_detector_pos(refl, 0.0, 64, 64);
+		cell = cell_new();
+		cell_set_lattice_type(cell, L_CUBIC);
+		cell_set_centering(cell, 'P');
+		cell_set_parameters(cell, 800.0e-10, 800.0e-10, 800.0e-10,
+		                    deg2rad(90.0), deg2rad(90.0), deg2rad(90.0));
+		cell = cell_rotate(cell, random_quaternion());
+
+		ic.halfw = ir_out;
+		ic.image = &image;
+		ic.k = 1.0/image.lambda;
+		ic.n_saturated = 0;
+		ic.n_implausible = 0;
+		ic.cell = cell;
+		ic.ir_inn = ir_inn;
+		ic.ir_mid = ir_mid;
+		ic.ir_out = ir_out;
+		ic.limit = 0.0;
+		ic.meth = INTEGRATION_RINGS;
+		if ( init_intcontext(&ic) ) {
+			ERROR("Failed to initialise integration.\n");
+			return 1;
+		}
+		setup_ring_masks(&ic, ir_inn, ir_mid, ir_out);
+
+		integrate_rings_once(refl, &image, &ic, cell);
+
+		cell_free(cell);
+
+		int_sum += get_intensity(refl);
+
 	}
 
-	list = reflist_new();
-	refl = add_refl(list, 0, 0, 0);
-	set_detector_pos(refl, 0.0, 64, 64);
-	cell = cell_new();
-	cell_set_lattice_type(cell, L_CUBIC);
-	cell_set_centering(cell, 'P');
-	cell_set_parameters(cell, 800.0e-10, 800.0e-10, 800.0e-10,
-	                    deg2rad(90.0), deg2rad(90.0), deg2rad(90.0));
-	cell = cell_rotate(cell, random_quaternion());
-	cell_print(cell);
-
-	ic.halfw = ir_out;
-	ic.image = &image;
-	ic.k = 1.0/image.lambda;
-	ic.n_saturated = 0;
-	ic.n_implausible = 0;
-	ic.cell = cell;
-	ic.ir_inn = ir_inn;
-	ic.ir_mid = ir_mid;
-	ic.ir_out = ir_out;
-	ic.limit = 0.0;
-	ic.meth = INTEGRATION_RINGS;
-	if ( init_intcontext(&ic) ) {
-		ERROR("Failed to initialise integration.\n");
-		return 1;
-	}
-	setup_ring_masks(&ic, ir_inn, ir_mid, ir_out);
-
-	integrate_rings_once(refl, &image, &ic, cell);
+	STATUS("mean value = %f\n", int_sum/1000.0);
 
 	free(image.beam);
 	free(image.det->panels);
