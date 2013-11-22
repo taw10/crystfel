@@ -1052,7 +1052,6 @@ static double fit_intensity(struct intcontext *ic, struct peak_box *bx)
 }
 
 
-
 static double calc_sigma(struct intcontext *ic, struct peak_box *bx)
 {
 	int p, q;
