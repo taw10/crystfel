@@ -3,11 +3,11 @@
  *
  * Compare reflection lists
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *   2013      Lorenzo Galli <lorenzo.galli@desy.de>
  *
  * This file is part of CrystFEL.
@@ -58,7 +58,9 @@ enum fom
 	FOM_CC,
 	FOM_CCSTAR,
 	FOM_CCANO,
-	FOM_CRDANO
+	FOM_CRDANO,
+	FOM_RANO,
+	FOM_RANORSPLIT
 };
 
 
@@ -72,6 +74,8 @@ static enum fom get_fom(const char *s)
 	if ( strcasecmp(s, "ccstar") == 0 ) return FOM_CCSTAR;
 	if ( strcasecmp(s, "ccano") == 0 ) return FOM_CCANO;
 	if ( strcasecmp(s, "crdano") == 0 ) return FOM_CRDANO;
+	if ( strcasecmp(s, "rano") == 0 ) return FOM_RANO;
+	if ( strcasecmp(s, "rano/rsplit") == 0 ) return FOM_RANORSPLIT;
 
 	ERROR("Unknown figure of merit '%s'.\n", s);
 	exit(1);
@@ -88,7 +92,7 @@ static void show_help(const char *s)
 "  -p, --pdb=<filename>       PDB file to use.\n"
 "      --fom=<FoM>            Calculate this figure of merit  Choose from:\n"
 "                              R1I, R1F, R2, Rsplit, CC, CCstar,\n"
-"			       CCano, CRDano.\n"
+"			       CCano, CRDano, Rano, Rano/Rsplit\n"
 "      --nshells=<n>          Use <n> resolution shells.\n"
 "  -u                         Force scale factor to 1.\n"
 "      --shell-file=<file>    Write resolution shells to <file>.\n"
@@ -116,6 +120,10 @@ struct fom_context
 	double *num;
 	double *den;
 
+	/* For "double" R-factors */
+	double *num2;
+	double *den2;
+
 	/* For CCs */
 	double **vec1;
 	double **vec2;
@@ -137,10 +145,21 @@ static struct fom_context *init_fom(enum fom fom, int nmax, int nshells)
 
 	switch ( fctx->fom ) {
 
+		case FOM_RANORSPLIT :
+		fctx->num2 = malloc(nshells*sizeof(double));
+		fctx->den2 = malloc(nshells*sizeof(double));
+		if ( (fctx->num2 == NULL) || (fctx->den2 == NULL) ) return NULL;
+		for ( i=0; i<nshells; i++ ) {
+			fctx->num2[i] = 0.0;
+			fctx->den2[i] = 0.0;
+		}
+		/* Intentional fall-through (no break) */
+
 		case FOM_R1I :
 		case FOM_R1F :
 		case FOM_R2 :
 		case FOM_RSPLIT :
+		case FOM_RANO :
 		fctx->num = malloc(nshells*sizeof(double));
 		fctx->den = malloc(nshells*sizeof(double));
 		if ( (fctx->num == NULL) || (fctx->den == NULL) ) return NULL;
@@ -182,6 +201,7 @@ static void add_to_fom(struct fom_context *fctx, double i1, double i2,
                        double i1bij, double i2bij, int bin)
 {
 	double f1, f2;
+	double im, imbij;
 
 	/* Negative intensities have already been weeded out. */
 	f1 = sqrt(i1);
@@ -225,6 +245,18 @@ static void add_to_fom(struct fom_context *fctx, double i1, double i2,
 		fctx->n[bin]++;
 		break;
 
+		case FOM_RANORSPLIT :
+		fctx->num2[bin] += fabs(i1 - i2);
+		fctx->den2[bin] += i1 + i2;
+		/* Intentional fall-through (no break) */
+
+		case FOM_RANO :
+		im = (i1 + i2)/2.0;
+		imbij = (i1bij + i2bij)/2.0;
+		fctx->num[bin] += fabs(im - imbij);
+		fctx->den[bin] += im + imbij;
+		break;
+
 
 	}
 }
@@ -234,6 +266,8 @@ static double fom_overall(struct fom_context *fctx)
 {
 	double overall_num = INFINITY;
 	double overall_den = 0.0;
+	double overall_num2 = INFINITY;
+	double overall_den2 = 0.0;
 	int i;
 	double *overall_vec1;
 	double *overall_vec2;
@@ -250,11 +284,27 @@ static double fom_overall(struct fom_context *fctx)
 		case FOM_R1F :
 		case FOM_R2 :
 		case FOM_RSPLIT :
+		case FOM_RANO :
 		overall_num = 0.0;
 		overall_den = 0.0;
 		for ( i=0; i<fctx->nshells; i++ ) {
 			overall_num += fctx->num[i];
 			overall_den += fctx->den[i];
+		}
+		break;
+
+		case FOM_RANORSPLIT :
+		overall_num = 0.0;
+		overall_den = 0.0;
+		for ( i=0; i<fctx->nshells; i++ ) {
+			overall_num += fctx->num[i];
+			overall_den += fctx->den[i];
+		}
+		overall_num2 = 0.0;
+		overall_den2 = 0.0;
+		for ( i=0; i<fctx->nshells; i++ ) {
+			overall_num2 += fctx->num2[i];
+			overall_den2 += fctx->den2[i];
 		}
 		break;
 
@@ -326,6 +376,13 @@ static double fom_overall(struct fom_context *fctx)
 		case FOM_CCSTAR :
 		return sqrt((2.0*cc)/(1.0+cc));
 
+		case FOM_RANO :
+		return 2.0*(overall_num/overall_den);
+
+		case FOM_RANORSPLIT :
+		return (2.0*(overall_num/overall_den)) /
+		       (2.0*(overall_num2/overall_den2) / sqrt(2.0));
+
 	}
 
 	ERROR("This point is never reached.\n");
@@ -364,6 +421,12 @@ static double fom_shell(struct fom_context *fctx, int i)
 		                           fctx->n[i]);
 		return sqrt((2.0*cc)/(1.0+cc));
 
+		case FOM_RANO :
+		return 2.0 * fctx->num[i]/fctx->den[i];
+
+		case FOM_RANORSPLIT :
+		return (2.0*fctx->num[i]/fctx->den[i]) /
+		       (2.0*(fctx->num2[i]/fctx->den2[i]) / sqrt(2.0));
 
 		case FOM_CRDANO :
 		along_diagonal = malloc(fctx->n[i] * sizeof(double));
@@ -618,7 +681,9 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		i1 = get_intensity(refl1);
 		i2 = scale * get_intensity(refl2);
 
-		if ( fom == FOM_CCANO || fom == FOM_CRDANO ) {
+		if ( (fom == FOM_CCANO) || (fom == FOM_CRDANO)
+		  || (fom == FOM_RANO) || (fom == FOM_RANORSPLIT) )
+		{
 
 			Reflection *refl1_bij = NULL;
 			Reflection *refl2_bij = NULL;
@@ -691,6 +756,14 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		STATUS("Overall CRDano = %.7f\n", fom_overall(fctx));
 		break;
 
+		case FOM_RANO :
+		STATUS("Overall Rano =  %.2f %%\n", 100.0*fom_overall(fctx));
+		break;
+
+		case FOM_RANORSPLIT :
+		STATUS("Overall Rano/Rsplit =  %.7f\n", fom_overall(fctx));
+		break;
+
 	}
 
 	fh = fopen(filename, "w");
@@ -741,6 +814,14 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		fprintf(fh, "%s    CRDano       nref%s\n", t1, t2);
 		break;
 
+		case FOM_RANO :
+		fprintf(fh, "%s   Rano/%%       nref%s\n", t1, t2);
+		break;
+
+		case FOM_RANORSPLIT :
+		fprintf(fh, "%s Rano/Rsplit       nref%s\n", t1, t2);
+		break;
+
 	}
 
 	for ( i=0; i<nshells; i++ ) {
@@ -756,6 +837,7 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		case FOM_R1F :
 		case FOM_R2 :
 		case FOM_RSPLIT :
+		case FOM_RANO :
 		if ( config_intshells ) {
 			fprintf(fh, "%10.3f %10.2f %10i\n",
 				cen, r*100.0, cts[i]);
@@ -777,6 +859,17 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 				cen*1.0e-9, r, cts[i], (1.0/cen)*1e10);
 		}
 		break;
+
+		case FOM_RANORSPLIT :
+		if ( config_intshells ) {
+			fprintf(fh, "%10.3f    %10.7f %10i\n",
+				cen, r, cts[i]);
+		} else {
+			fprintf(fh, "%10.3f    %10.7f %10i %10.2f\n",
+				cen*1.0e-9, r, cts[i], (1.0/cen)*1e10);
+		}
+		break;
+
 
 	}
 
@@ -932,6 +1025,8 @@ int main(int argc, char *argv[])
 			case FOM_CCSTAR :
 			case FOM_CCANO :
 			case FOM_CRDANO :
+			case FOM_RANO :
+			case FOM_RANORSPLIT :
 			break;
 		}
 	}
@@ -942,24 +1037,30 @@ int main(int argc, char *argv[])
 	sym = get_pointgroup(sym_str);
 	free(sym_str);
 
-	if ( (fom == FOM_CCANO || fom == FOM_CRDANO ) &&
-						 is_centrosymmetric(sym) ) {
+	if ( is_centrosymmetric(sym) ) {
+		switch ( fom )
+		{
+			case FOM_R1F :
+			case FOM_R2 :
+			case FOM_R1I :
+			case FOM_RSPLIT :
+			case FOM_CC :
+			case FOM_CCSTAR :
+			break;
 
-		/* Refuse to calculate CCano or CRDano with a
-		 * centrosymmetric point group.
-		 * It'll "work", in the sense of producing a number, but the
-		 * number won't have anything to do with anomalous signal. */
-
-		ERROR("You are trying to calculate CCano or CRDano with a"
-		      " centrosymmetric point group.\n");
-		ERROR("This is a silly thing to do, and I'm refusing to help"
-		      " you do it.\n");
-		ERROR("Please review your earlier processing steps and try"
-		      " again using a non-centrosymmetric point group for"
-		      " '-y'.\n");
-
-		return 1;
-
+			case FOM_CCANO :
+			case FOM_CRDANO :
+			case FOM_RANO :
+			case FOM_RANORSPLIT :
+			ERROR("You are trying to measure an anomalous signal in"
+			      " a centrosymmetric point group.\n");
+			ERROR("This is a silly thing to do, and I'm refusing to"
+			      " help you do it.\n");
+			ERROR("Please review your earlier processing steps and"
+			      " try again using a non-centrosymmetric point"
+			      " group for '-y'.\n");
+			return 1;
+		}
 	}
 
 	afile = strdup(argv[optind++]);
@@ -1086,8 +1187,9 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if ( fom == FOM_CCANO || fom == FOM_CRDANO ) {
-
+		if ( (fom == FOM_CCANO) || (fom == FOM_CRDANO)
+		  || (fom == FOM_RANO) || (fom == FOM_RANORSPLIT) )
+		{
 			Reflection *refl1_bij = NULL;
 			Reflection *refl2_bij = NULL;
 			signed int hb, kb, lb;
@@ -1113,7 +1215,6 @@ int main(int argc, char *argv[])
 				nbij++;
 				continue;
 			}
-
 		}
 
 		refl1_acc = add_refl(list1_acc, h, k, l);

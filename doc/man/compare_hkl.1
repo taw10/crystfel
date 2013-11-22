@@ -38,13 +38,13 @@ Calculate figure of merit \fIFoM\fR.  Possible figures of merit are:
 .RS
 .IP \fBRsplit\fR
 .PD
-2^(-0.5) * sum(I1-kI2) / [ 0.5*sum(I1+kI2) ]
+2^(-0.5) * sum(|I1-kI2|) / [ 0.5*sum(I1+kI2) ]
 .IP \fBR1f\fR
 .PD
 sum(sqrt(I1)-sqrt(kI2)) / sum(sqrt(I1))
 .IP \fBR1i\fR
 .PD
-sum(I1-kI2) / sum(I1)
+sum(|I1-kI2|) / sum(I1)
 .IP \fBR2\fR
 .PD
 sqrt(sum[(I1-kI2)^2] / sum(I1^2))
@@ -57,6 +57,16 @@ See Karplus and Diederichs, Science 336 (2012) p1030.
 .IP \fBCCano\fR
 .PD
 The correlation coefficient of the Bijvoet differences of acentric reflections.
+.IP \fBCRDano\fR
+.PD
+RMS anomalous correlation ratio: The anomalous differences from each data set are plotted in a scatter graph, and the variance along both diagonals measured.  See Evans, Acta Crystallographica D62 (2006) p72.
+.IP \fBRano\fR
+.PD
+sum(|I+ - I-|) / 0.5*sum(I+ - I-)
+Note that I+ will be taken to be the mean of the I+ values from both data sets, and likewise for I-.
+.IP \fBRano/Rsplit\fR
+.PD
+The ratio of Rano to Rsplit, as defined above.
 .PP
 I1 and I2 are the intensities of the same reflection in both reflection lists.  The scale factor, k, is given by sum(I1*i2) / sum(I2^2), unless you use \fB-u\fR.
 .RE
