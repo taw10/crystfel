@@ -33,6 +33,7 @@
 #include <image.h>
 #include <utils.h>
 #include <beam-parameters.h>
+#include <histogram.h>
 
 #include "../libcrystfel/src/integration.c"
 
@@ -54,8 +55,9 @@ int main(int argc, char *argv[])
 	const int ir_inn = 2;
 	const int ir_mid = 4;
 	const int ir_out = 6;
-	double int_sum = 0.0;
 	int i;
+	Histogram *hi;
+	double esd_sum = 0.0;
 
 	fh = fopen("/dev/urandom", "r");
 	fread(&seed, sizeof(seed), 1, fh);
@@ -103,7 +105,9 @@ int main(int argc, char *argv[])
 	image.n_crystals = 0;
 	image.crystals = NULL;
 
-	for ( i=0; i<1000; i++ ) {
+	hi = histogram_init();
+
+	for ( i=0; i<10000; i++ ) {
 
 		for ( fs=0; fs<w; fs++ ) {
 		for ( ss=0; ss<h; ss++ ) {
@@ -144,12 +148,15 @@ int main(int argc, char *argv[])
 
 		cell_free(cell);
 
-		int_sum += get_intensity(refl);
+		histogram_add_value(hi, get_intensity(refl));
+		esd_sum += get_esd_intensity(refl);
 
 	}
+	printf("Mean calculated sigma(I) = %.2f\n", esd_sum / 10000);
 
-	STATUS("mean value = %f\n", int_sum/1000.0);
+	histogram_show(hi);
 
+	histogram_free(hi);
 	free(image.beam);
 	free(image.det->panels);
 	free(image.det);
