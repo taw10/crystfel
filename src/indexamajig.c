@@ -548,6 +548,10 @@ int main(int argc, char *argv[])
 			iargs.int_diag = INTDIAG_ALL;
 		}
 
+		if ( strcmp(int_diag, "negative") == 0 ) {
+			iargs.int_diag = INTDIAG_NEGATIVE;
+		}
+
 		r = sscanf(int_diag, "%i,%i,%i", &h, &k, &l);
 		if ( r == 3 ) {
 			iargs.int_diag = INTDIAG_INDICES;

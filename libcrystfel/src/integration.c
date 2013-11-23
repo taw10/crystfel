@@ -223,8 +223,6 @@ struct peak_box
 	int rp;   /* Reference profile number */
 
 	Reflection *refl;
-
-	int verbose;
 };
 
 
@@ -598,7 +596,6 @@ static struct peak_box *add_box(struct intcontext *ic)
 	ic->boxes[idx].J = 0.0;
 	ic->boxes[idx].rp = -1;
 	ic->boxes[idx].refl = NULL;
-	ic->boxes[idx].verbose = 0;
 
 	ic->boxes[idx].bgm = gsl_matrix_calloc(3, 3);
 	if ( ic->boxes[idx].bgm == NULL ) {
@@ -1295,6 +1292,13 @@ static int get_int_diag(struct intcontext *ic, Reflection *refl)
 		return random() < RAND_MAX/100;
 	}
 
+	if ( ic->int_diag == INTDIAG_NEGATIVE ) {
+		double i, sigi;
+		i = get_intensity(refl);
+		sigi = get_esd_intensity(refl);
+		return i < -3.0*sigi;
+	}
+
 	if ( ic->int_diag == INTDIAG_INDICES ) {
 		signed int h, k, l;
 		get_indices(refl, &h, &k, &l);
@@ -1349,7 +1353,6 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 	      refl = next_refl(refl, iter) )
 	{
 		double pfs, pss;
-		signed int h, k, l;
 		struct peak_box *bx;
 		int pn;
 		struct panel *p;
@@ -1383,9 +1386,6 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 		bx->css = css;
 		bx->p = p;
 		bx->pn = pn;
-
-		get_indices(refl, &h, &k, &l);
-		bx->verbose = get_int_diag(&ic, refl);
 
 		/* Which reference profile? */
 		bx->rp = 0;//bx->pn;
@@ -1462,7 +1462,7 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 			pss += bx->offs_ss;
 			set_detector_pos(bx->refl, 0.0, pfs, pss);
 
-			if ( bx->verbose ) show_peak_box(&ic, bx);
+			if ( get_int_diag(&ic, refl) ) show_peak_box(&ic, bx);
 
 		}
 
@@ -1520,8 +1520,6 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	bx->css = css;
 	bx->p = p;
 	bx->pn = pn;
-	get_indices(refl, &h, &k, &l);
-	bx->verbose = get_int_diag(ic, refl);
 
 	if ( ic->meth & INTEGRATION_CENTER ) {
 		r = center_and_check_box(ic, bx, &saturated);
@@ -1579,6 +1577,7 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	set_esd_intensity(refl, sigma);
 	set_redundancy(refl, 1);
 
+	get_indices(refl, &h, &k, &l);
 	one_over_d = resolution(cell, h, k, l);
 	if ( one_over_d > ic->limit ) ic->limit = one_over_d;
 
@@ -1587,7 +1586,7 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	pss += bx->offs_ss;
 	set_detector_pos(refl, 0.0, pfs, pss);
 
-	if ( bx->verbose ) show_peak_box(ic, bx);
+	if ( get_int_diag(ic, refl) ) show_peak_box(ic, bx);
 }
 
 

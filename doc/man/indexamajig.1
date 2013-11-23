@@ -330,7 +330,7 @@ Do not record integrated reflections in the stream.  The resulting output won't 
 .PD 0
 .IP \fB--int-diag=\fIcondition\fR\fR
 .PD
-Show detailed information about reflection integration when \fIcondition\fR is met.  The \fIcondition\fR can be \fBall\fR, \fBnone\fR, a set of Miller indices separated by commas, or \fBrandom\fR.  The default is \fB--int-diag=none\fR, and \fBrandom\fR means to show information about a random 1% of the peaks.
+Show detailed information about reflection integration when \fIcondition\fR is met.  The \fIcondition\fR can be \fBall\fR, \fBnone\fR, a set of Miller indices separated by commas, \fBrandom\fR or \fBnegative\fR.  \fBrandom\fR means to show information about a random 1% of the peaks.  \fBnegative\fR means to show peaks with intensities which are negative my more than 3 sigma.  The default is \fB--int-diag=none\fR.
 
 .SH BUGS
 ReAx indexing is experimental.  It works very nicely for some people, and crashes for others.  In a future version, it will be improved and fully supported.
