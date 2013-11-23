@@ -146,7 +146,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	free(image.data);
 	image.data = data_for_measurement;
 
-	rn = get_current_dir_name();
+	rn = getcwd(NULL, 0);
 
 	r = chdir(tmpdir);
 	if ( r ) {
