@@ -284,7 +284,7 @@ static RefList *expand_reflections(RefList *in, const SymOpList *initial,
 		for ( j=0; j<n; j++ ) {
 
 			signed int he, ke, le;
-			Reflection *new;
+			Reflection *copy;
 			int have_phase;
 			double ph;
 
@@ -294,14 +294,16 @@ static RefList *expand_reflections(RefList *in, const SymOpList *initial,
 			/* Put it into the asymmetric unit for the target */
 			get_asymm(target, he, ke, le, &he, &ke, &le);
 
+			if ( find_refl(out, he, ke, le) != NULL ) continue;
+
 			/* Make sure the intensity is in the right place */
-			new = add_refl(out, he, ke, le);
-			copy_data(new, refl);
+			copy = add_refl(out, he, ke, le);
+			copy_data(copy, refl);
 
 			/* FIXME: Make phase negative if the reflection is
 			 * separated from the original via an inversion */
 			ph = get_phase(refl, &have_phase);
-			if ( have_phase ) set_phase(new, -ph);
+			if ( have_phase ) set_phase(copy, -ph);
 
 		}
 
