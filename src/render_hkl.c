@@ -3,11 +3,11 @@
  *
  * Draw pretty renderings of reflection lists
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -88,6 +88,8 @@ static void show_help(const char *s)
 "                                     multiplicity 'epsilon').\n"
 "                            rawcts : the raw number of measurements for the\n"
 "                                     reflection (no 'epsilon' correction).\n"
+"\n"
+"      --res-ring=<r>      Draw a resolution ring at <r> Angstroms.\n"
 "\n"
 "      --colour-key        Draw (only) the key for the current colour scale.\n"
 "                           The key will be written to 'key.pdf' in the\n"
@@ -393,12 +395,20 @@ static void render_overlined_indices(cairo_t *dctx,
 }
 
 
+struct resrings
+{
+	double res[100];
+	int n_rings;
+};
+
+
 static void render_za(UnitCell *cell, RefList *list,
                       double boost, const SymOpList *sym, int wght,
                       int colscale,
                       signed int xh, signed int xk, signed int xl,
                       signed int yh, signed int yk, signed int yl,
-                      const char *outfile, double scale_top, signed int zone)
+                      const char *outfile, double scale_top, signed int zone,
+                      struct resrings *rings)
 {
 	cairo_surface_t *surface;
 	cairo_t *dctx;
@@ -420,6 +430,7 @@ static void render_za(UnitCell *cell, RefList *list,
 	const double border = 200.0;
 	int png;
 	double rmin, rmax;
+	int i;
 
 	/* Vector product to determine the zone axis. */
 	zh = yk*xl - yl*xk;
@@ -521,6 +532,29 @@ static void render_za(UnitCell *cell, RefList *list,
 			(double)cy, max_r, 0, 2*M_PI);
 	cairo_set_source_rgb(dctx, 1.0, 0.0, 0.0);
 	cairo_fill(dctx);
+
+	/* Resolution rings */
+	for ( i=0; i<rings->n_rings; i++ ) {
+
+		char label[32];
+		double r = 1.0/(rings->res[i]*1e-10);
+
+		snprintf(label, 31, "%.1f A", rings->res[i]);
+
+		cairo_save(dctx);
+		cairo_arc(dctx, (double)cx, (double)cy, scale*r, 0, 2*M_PI);
+		cairo_set_source_rgb(dctx, 1.0, 0.0, 0.0);
+		cairo_stroke(dctx);
+		cairo_translate(dctx, cx, cy);
+		cairo_rotate(dctx, -M_PI/4.0);
+		cairo_translate(dctx, 0.0, scale*r);
+		cairo_set_font_size(dctx, 17.0);
+		cairo_text_extents(dctx, label, &size);
+		cairo_translate(dctx, -size.width/2.0, 5.0+size.height);
+		cairo_show_text(dctx, label);
+		cairo_fill(dctx);
+		cairo_restore(dctx);
+	}
 
 	/* Draw indexing lines */
 	cairo_set_line_cap(dctx, CAIRO_LINE_CAP_ROUND);
@@ -684,6 +718,18 @@ static void render_za(UnitCell *cell, RefList *list,
 #endif /* HAVE_CAIRO */
 
 
+static void add_ring(struct resrings *rings, double res)
+{
+	if ( rings->n_rings == 100 ) {
+		ERROR("Too many resolution rings.\n");
+		return;
+	}
+
+	rings->res[rings->n_rings] = res;
+	rings->n_rings++;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -710,6 +756,10 @@ int main(int argc, char *argv[])
 	double scale_top = -1.0;
 	char *endptr;
 	long int zone = 0;
+	double res;
+	struct resrings rings;
+
+	rings.n_rings = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -727,6 +777,7 @@ int main(int argc, char *argv[])
 		{"colour-key",         0, &config_colkey,      1},
 		{"scale-top",          1, NULL,                2},
 		{"zone",               1, NULL,                3},
+		{"res-ring",           1, NULL,                4},
 		{0, 0, NULL, 0}
 	};
 
@@ -796,6 +847,18 @@ int main(int argc, char *argv[])
 				ERROR("Invalid zone number ('%s')\n", optarg);
 				return 1;
 			}
+			break;
+
+			case 4 :
+			errno = 0;
+			res = strtod(optarg, &endptr);
+			if ( !( (optarg[0] != '\0') && (endptr[0] == '\0') )
+			   || (errno != 0) )
+			{
+				ERROR("Invalid resolution ('%s')\n", optarg);
+				return 1;
+			}
+			add_ring(&rings, res);
 			break;
 
 			case 0 :
@@ -920,7 +983,7 @@ int main(int argc, char *argv[])
 	}
 
 	render_za(cell, list, boost, sym, wght, colscale,
-	          rh, rk, rl, dh, dk, dl, outfile, scale_top, zone);
+	          rh, rk, rl, dh, dk, dl, outfile, scale_top, zone, &rings);
 
 	free(pdb);
 	free_symoplist(sym);
