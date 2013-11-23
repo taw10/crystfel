@@ -144,7 +144,7 @@ static void show_help(const char *s)
 "                           validity.\n"
 "     --no-peaks-in-stream Do not record peak search results in the stream.\n"
 "     --no-refls-in-stream Do not record integrated reflections in the stream.\n"
-"     --int-diag=<r>       Show debugging information about this reflection.\n"
+"     --int-diag=<cond>    Show debugging information about reflections.\n"
 );
 }
 
@@ -571,6 +571,11 @@ int main(int argc, char *argv[])
 		}
 
 		free(int_diag);
+
+		if ( (n_proc > 1) && (iargs.int_diag != INTDIAG_NONE) ) {
+			n_proc = 1;
+			STATUS("Ignored \"-j\" because you used --int-diag.\n");
+		}
 
 	}
 
