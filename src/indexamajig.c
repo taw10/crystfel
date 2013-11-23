@@ -556,7 +556,8 @@ int main(int argc, char *argv[])
 			iargs.int_diag_l = l;
 		}
 
-		if ( iargs.int_diag == INTDIAG_NONE ) {
+		if ( (iargs.int_diag == INTDIAG_NONE)
+		  && (strcmp(int_diag, "none") != 0) ) {
 			ERROR("Invalid value for --int-diag.\n");
 			return 1;
 		}

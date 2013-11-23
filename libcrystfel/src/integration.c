@@ -316,12 +316,6 @@ static void show_reference_profile(struct intcontext *ic, int i)
 #ifdef HAVE_CURSES_COLOR
 	int q;
 
-	initscr();
-	clear();
-	start_color();
-	init_pair(1, COLOR_WHITE, COLOR_BLUE) ;  /* Background */
-	init_pair(2, COLOR_WHITE, COLOR_RED);    /* Peak */
-
 	printw("Reference profile number %i (%i contributions):\n", i,
 	       ic->n_profiles_in_reference[i]);
 
@@ -339,10 +333,6 @@ static void show_reference_profile(struct intcontext *ic, int i)
 
 		printw("\n");
 	}
-
-	refresh();
-	getch();
-	endwin();
 #endif
 }
 
@@ -397,6 +387,11 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 		show_reference_profile(ic, bx->rp);
 	}
 
+	printw("\nIntensity = %.2f +/- %.2f\n", get_intensity(bx->refl),
+	                                        get_esd_intensity(bx->refl));
+
+	printw("\n\n");
+
 	refresh();
 	getch();
 	endwin();
@@ -428,10 +423,6 @@ static void fit_bg(struct intcontext *ic, struct peak_box *bx)
 		}
 
 	}
-	}
-
-	if ( bx->verbose ) {
-		show_matrix_eqn(bx->bgm, v);
 	}
 
 	/* SVD is massive overkill here */
@@ -859,9 +850,6 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 
 		if ( (fs < 0) || (fs >= bx->p->w)
 		  || (ss < 0) || (ss >= bx->p->h) ) {
-			if ( bx->verbose ) {
-				ERROR("Box fell off edge of panel\n");
-			}
 			return 1;
 		}
 
@@ -901,18 +889,10 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 	}
 	}
 
-	if ( n_pk < 4 ) {
-		if ( bx->verbose ) {
-			ERROR("Not enough peak pixels (%i)\n", n_pk);
-		}
-	}
-	if ( n_bg < 4 ) {
-		if ( bx->verbose ) {
-			ERROR("Not enough bg pixels (%i)\n", n_bg);
-		}
-	}
-
 	setup_peak_integrals(ic, bx);
+
+	if ( n_pk < 4 ) return 1;
+	if ( n_bg < 4 ) return 1;
 
 	return 0;
 }
@@ -992,22 +972,13 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 		bx->css += iss;
 		t_offs_fs += ifs;
 		t_offs_ss += iss;
-		if ( bx->verbose ) {
-			STATUS("Centering step %i,%i\n", ifs, iss);
-		}
 
 		free(bx->bm);
 		if ( check_box(ic, bx, sat) ) {
-			if ( bx->verbose ) {
-				ERROR("Box invalid after centering step.\n");
-			}
 			return 1;
 		}
 
 		if ( t_offs_fs*t_offs_fs + t_offs_ss*t_offs_ss > ic->w*ic->w ) {
-			if ( bx->verbose ) {
-				ERROR("Box drifted too far during centering.\n");
-			}
 			return 1;
 		}
 
@@ -1040,10 +1011,6 @@ static double fit_intensity(struct intcontext *ic, struct peak_box *bx)
 		sum += P;
 
 	}
-	}
-
-	if ( bx->verbose ) {
-		STATUS("J = %f\n", J);
 	}
 
 	return J * sum;
@@ -1460,10 +1427,6 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 		struct peak_box *bx;
 
 		bx = &ic.boxes[i];
-		if ( bx->verbose ) {
-			show_reference_profile(&ic, bx->rp);
-			STATUS("%f -> ", bx->intensity);
-		}
 		bx->intensity = fit_intensity(&ic, bx);
 		bx->sigma = calc_sigma(&ic, bx);
 
@@ -1499,7 +1462,10 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 			pss += bx->offs_ss;
 			set_detector_pos(bx->refl, 0.0, pfs, pss);
 
+			if ( bx->verbose ) show_peak_box(&ic, bx);
+
 		}
+
 	}
 
 	refine_rigid_groups(&ic);
@@ -1529,7 +1495,6 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	double one_over_d;
 	int r;
 	double bgmean, sig2_bg, sig2_poisson, aduph;
-	double pkmean, sig2_pk;
 
 	set_redundancy(refl, 0);
 
@@ -1591,9 +1556,6 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 		* error to be one photon */
 	if ( fabs(intensity / aduph) < 1.0 ) {
 		sig2_poisson = aduph;
-		if ( bx->verbose ) {
-			STATUS("number of photons less than 1\n");
-		}
 	}
 
 	/* If intensity is negative by more than one photon, assume that
@@ -1601,20 +1563,9 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 		* appropriate size */
 	if ( intensity < -aduph ) {
 		sig2_poisson = -aduph*intensity;
-		if ( bx->verbose ) {
-			STATUS("very negative (%.2f photons)\n",
-				intensity/aduph);
-		}
 	}
 
 	sigma = sqrt(sig2_poisson + bx->m*sig2_bg);
-
-	mean_var_area(ic, bx, BM_PK, &pkmean, &sig2_pk);
-	if ( bx->verbose ) {
-		STATUS("bg mean, var = %.2f, %.2f\n", bgmean, sig2_bg);
-		STATUS("pk mean, var = %.2f, %.2f\n", pkmean, sig2_pk);
-		STATUS("intensity = %.2f +/- %.2f\n", intensity, sigma);
-	}
 
 	if ( intensity < -5.0*sigma ) {
 		delete_box(ic, bx);
