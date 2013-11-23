@@ -1299,6 +1299,13 @@ static int get_int_diag(struct intcontext *ic, Reflection *refl)
 		return i < -3.0*sigi;
 	}
 
+	if ( ic->int_diag == INTDIAG_IMPLAUSIBLE ) {
+		double i, sigi;
+		i = get_intensity(refl);
+		sigi = get_esd_intensity(refl);
+		return i < -5.0*sigi;
+	}
+
 	if ( ic->int_diag == INTDIAG_INDICES ) {
 		signed int h, k, l;
 		get_indices(refl, &h, &k, &l);
@@ -1565,12 +1572,6 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 
 	sigma = sqrt(sig2_poisson + bx->m*sig2_bg);
 
-	if ( intensity < -5.0*sigma ) {
-		delete_box(ic, bx);
-		ic->n_implausible++;
-		return;
-	}
-
 	/* Record intensity and set redundancy to 1 */
 	bx->intensity = intensity;
 	set_intensity(refl, intensity);
@@ -1587,6 +1588,11 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	set_detector_pos(refl, 0.0, pfs, pss);
 
 	if ( get_int_diag(ic, refl) ) show_peak_box(ic, bx);
+
+	if ( intensity < -5.0*sigma ) {
+		ic->n_implausible++;
+		set_redundancy(refl, 0);
+	}
 }
 
 

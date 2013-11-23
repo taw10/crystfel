@@ -552,6 +552,10 @@ int main(int argc, char *argv[])
 			iargs.int_diag = INTDIAG_NEGATIVE;
 		}
 
+		if ( strcmp(int_diag, "implausible") == 0 ) {
+			iargs.int_diag = INTDIAG_IMPLAUSIBLE;
+		}
+
 		r = sscanf(int_diag, "%i,%i,%i", &h, &k, &l);
 		if ( r == 3 ) {
 			iargs.int_diag = INTDIAG_INDICES;
