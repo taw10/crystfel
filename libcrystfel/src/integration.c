@@ -1793,8 +1793,8 @@ void integrate_all(struct image *image, IntegrationMethod meth,
 		}
 
 		/* Set resolution limit */
-		resolution_cutoff(crystal_get_reflections(image->crystals[i]),
-		                  crystal_get_cell(image->crystals[i]));
+		//resolution_cutoff(crystal_get_reflections(image->crystals[i]),
+		//                  crystal_get_cell(image->crystals[i]));
 
 
 	}
