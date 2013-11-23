@@ -73,6 +73,10 @@ struct index_args
 	int stream_peaks;
 	int stream_refls;
 	IntegrationMethod int_meth;
+	IntDiag int_diag;
+	signed int int_diag_h;
+	signed int int_diag_k;
+	signed int int_diag_l;
 };
 
 

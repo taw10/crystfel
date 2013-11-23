@@ -53,10 +53,6 @@
 #include "integration.h"
 
 
-#define VERBOSITY (0)
-// ((h==-6) && (k==0) && (l==-8))
-
-
 static void check_eigen(gsl_vector *e_val)
 {
 	int i;
@@ -182,6 +178,11 @@ struct intcontext
 	int n_saturated;
 	int n_implausible;
 	double limit;
+
+	IntDiag int_diag;
+	signed int int_diag_h;
+	signed int int_diag_k;
+	signed int int_diag_l;
 };
 
 
@@ -955,8 +956,6 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 	if ( check_box(ic, bx, sat) ) return 1;
 	fit_bg(ic, bx);
 
-	if ( bx->verbose ) show_peak_box(ic, bx);
-
 	for ( i=0; i<10; i++ ) {
 
 		int p, q;
@@ -1013,7 +1012,6 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 		}
 
 		fit_bg(ic, bx);
-		if ( bx->verbose ) show_peak_box(ic, bx);
 
 		if ( (ifs==0) && (iss==0) ) break;
 
@@ -1320,8 +1318,32 @@ static void refine_rigid_groups(struct intcontext *ic)
 }
 
 
+static int get_int_diag(struct intcontext *ic, Reflection *refl)
+{
+	if ( ic->int_diag == INTDIAG_NONE ) return 0;
+
+	if ( ic->int_diag == INTDIAG_ALL ) return 1;
+
+	if ( ic->int_diag == INTDIAG_RANDOM ) {
+		return random() < RAND_MAX/100;
+	}
+
+	if ( ic->int_diag == INTDIAG_INDICES ) {
+		signed int h, k, l;
+		get_indices(refl, &h, &k, &l);
+		if ( ic->int_diag_h != h ) return 0;
+		if ( ic->int_diag_k != k ) return 0;
+		if ( ic->int_diag_l != l ) return 0;
+		return 1;
+	}
+
+	return 0;
+}
+
+
 static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
-                             struct image *image,
+                             struct image *image, IntDiag int_diag,
+                             signed int idh, signed int idk, signed int idl,
                              double ir_inn, double ir_mid, double ir_out)
 {
 	RefList *list;
@@ -1344,6 +1366,10 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 	ic.n_saturated = 0;
 	ic.n_implausible = 0;
 	ic.cell = cell;
+	ic.int_diag = int_diag;
+	ic.int_diag_h = idh;
+	ic.int_diag_k = idk;
+	ic.int_diag_l = idl;
 	if ( init_intcontext(&ic) ) {
 		ERROR("Failed to initialise integration.\n");
 		return;
@@ -1392,9 +1418,7 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 		bx->pn = pn;
 
 		get_indices(refl, &h, &k, &l);
-		if ( VERBOSITY ) {
-			bx->verbose = 1;
-		}
+		bx->verbose = get_int_diag(&ic, refl);
 
 		/* Which reference profile? */
 		bx->rp = 0;//bx->pn;
@@ -1449,7 +1473,6 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 			get_indices(bx->refl, &h, &k, &l);
 			STATUS("NaN intensity for %i %i %i !\n", h, k, l);
 			STATUS("panel %s\n", image->det->panels[bx->pn].name);
-			show_peak_box(&ic, bx);
 			show_reference_profile(&ic, bx->rp);
 		}
 		if ( bx->intensity < 0.0 ) {
@@ -1458,7 +1481,6 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 			STATUS("Negative intensity (%f) for %i %i %i !\n",
 			       bx->intensity, h, k, l);
 			STATUS("panel %s\n", image->det->panels[bx->pn].name);
-			show_peak_box(&ic, bx);
 			show_reference_profile(&ic, bx->rp);
 		}
 #endif
@@ -1499,7 +1521,7 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	int pn;
 	struct panel *p;
 	int fid_fs, fid_ss;  /* Center coordinates, rounded,
-				* in overall data block */
+	                      * in overall data block */
 	int cfs, css;  /* Corner coordinates */
 	double intensity;
 	double sigma;
@@ -1514,11 +1536,11 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	get_detector_pos(refl, &pfs, &pss);
 
 	/* Explicit truncation of digits after the decimal point.
-		* This is actually the correct thing to do here, not
-		* e.g. lrint().  pfs/pss is the position of the spot, measured
-		* in numbers of pixels, from the panel corner (not the center
-		* of the first pixel).  So any coordinate from 2.0 to 2.9999
-		* belongs to pixel index 2. */
+	 * This is actually the correct thing to do here, not
+	 * e.g. lrint().  pfs/pss is the position of the spot, measured
+	 * in numbers of pixels, from the panel corner (not the center
+	 * of the first pixel).  So any coordinate from 2.0 to 2.9999
+	 * belongs to pixel index 2. */
 	fid_fs = pfs;
 	fid_ss = pss;
 	pn = find_panel_number(image->det, fid_fs, fid_ss);
@@ -1534,7 +1556,7 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	bx->p = p;
 	bx->pn = pn;
 	get_indices(refl, &h, &k, &l);
-	bx->verbose = VERBOSITY;
+	bx->verbose = get_int_diag(ic, refl);
 
 	if ( ic->meth & INTEGRATION_CENTER ) {
 		r = center_and_check_box(ic, bx, &saturated);
@@ -1542,7 +1564,6 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 		r = check_box(ic, bx, &saturated);
 		if ( !r ) {
 			fit_bg(ic, bx);
-			if ( bx->verbose ) show_peak_box(ic, bx);
 		}
 		bx->offs_fs = 0.0;
 		bx->offs_ss = 0.0;
@@ -1614,11 +1635,14 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	pfs += bx->offs_fs;
 	pss += bx->offs_ss;
 	set_detector_pos(refl, 0.0, pfs, pss);
+
+	if ( bx->verbose ) show_peak_box(ic, bx);
 }
 
 
 static void integrate_rings(IntegrationMethod meth, Crystal *cr,
-                            struct image *image,
+                            struct image *image, IntDiag int_diag,
+                            signed int idh, signed int idk, signed int idl,
                             double ir_inn, double ir_mid, double ir_out)
 {
 	RefList *list;
@@ -1643,6 +1667,10 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 	ic.ir_inn = ir_inn;
 	ic.ir_mid = ir_mid;
 	ic.ir_out = ir_out;
+	ic.int_diag = int_diag;
+	ic.int_diag_h = idh;
+	ic.int_diag_k = idk;
+	ic.int_diag_l = idl;
 	ic.limit = 0.0;
 	if ( init_intcontext(&ic) ) {
 		ERROR("Failed to initialise integration.\n");
@@ -1783,7 +1811,9 @@ static void resolution_cutoff(RefList *list, UnitCell *cell)
 
 
 void integrate_all(struct image *image, IntegrationMethod meth,
-                   double ir_inn, double ir_mid, double ir_out)
+                   double ir_inn, double ir_mid, double ir_out,
+                   IntDiag int_diag,
+                   signed int idh, signed int idk, signed int idl)
 {
 	int i;
 
@@ -1796,11 +1826,13 @@ void integrate_all(struct image *image, IntegrationMethod meth,
 
 			case INTEGRATION_RINGS :
 			integrate_rings(meth, image->crystals[i], image,
+			                int_diag, idh, idk, idl,
 			                ir_inn, ir_mid, ir_out);
 			break;
 
 			case INTEGRATION_PROF2D :
 			integrate_prof2d(meth, image->crystals[i], image,
+			                 int_diag, idh, idk, idl,
 			                 ir_inn, ir_mid, ir_out);
 			break;
 

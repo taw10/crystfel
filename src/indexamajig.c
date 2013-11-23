@@ -144,6 +144,7 @@ static void show_help(const char *s)
 "                           validity.\n"
 "     --no-peaks-in-stream Do not record peak search results in the stream.\n"
 "     --no-refls-in-stream Do not record integrated reflections in the stream.\n"
+"     --int-diag=<r>       Show debugging information about this reflection.\n"
 );
 }
 
@@ -173,6 +174,7 @@ int main(int argc, char *argv[])
 	char *intrad = NULL;
 	char *int_str = NULL;
 	char *tempdir = NULL;
+	char *int_diag = NULL;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -201,6 +203,7 @@ int main(int argc, char *argv[])
 	iargs.no_revalidate = 0;
 	iargs.stream_peaks = 1;
 	iargs.stream_refls = 1;
+	iargs.int_diag = INTDIAG_NONE;
 	iargs.copyme = new_copy_hdf5_field_list();
 	if ( iargs.copyme == NULL ) {
 		ERROR("Couldn't allocate HDF5 field list.\n");
@@ -256,6 +259,7 @@ int main(int argc, char *argv[])
 		{"median-filter",      1, NULL,               15},
 		{"integration",        1, NULL,               16},
 		{"temp-dir",           1, NULL,               17},
+		{"int-diag",           1, NULL,               18},
 
 		{0, 0, NULL, 0}
 	};
@@ -382,6 +386,10 @@ int main(int argc, char *argv[])
 
 			case 17 :
 			tempdir = strdup(optarg);
+			break;
+
+			case 18 :
+			int_diag = strdup(optarg);
 			break;
 
 			case 0 :
@@ -525,6 +533,36 @@ int main(int argc, char *argv[])
 	} else {
 		STATUS("No unit cell given.\n");
 		iargs.cell = NULL;
+	}
+
+	if ( int_diag != NULL ) {
+
+		int r;
+		signed int h, k, l;
+
+		if ( strcmp(int_diag, "random") == 0 ) {
+			iargs.int_diag = INTDIAG_RANDOM;
+		}
+
+		if ( strcmp(int_diag, "all") == 0 ) {
+			iargs.int_diag = INTDIAG_ALL;
+		}
+
+		r = sscanf(int_diag, "%i,%i,%i", &h, &k, &l);
+		if ( r == 3 ) {
+			iargs.int_diag = INTDIAG_INDICES;
+			iargs.int_diag_h = h;
+			iargs.int_diag_k = k;
+			iargs.int_diag_l = l;
+		}
+
+		if ( iargs.int_diag == INTDIAG_NONE ) {
+			ERROR("Invalid value for --int-diag.\n");
+			return 1;
+		}
+
+		free(int_diag);
+
 	}
 
 	ofd = open(outfile, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);

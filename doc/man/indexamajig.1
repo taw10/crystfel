@@ -327,6 +327,11 @@ Do not record peak search results in the stream.  You won't be able to check tha
 .PD
 Do not record integrated reflections in the stream.  The resulting output won't be usable for merging, but will be a lot smaller.  This option might be useful if you're only interested in things like unit cell parameters and orientations.
 
+.PD 0
+.IP \fB--int-diag=\fIcondition\fR\fR
+.PD
+Show detailed information about reflection integration when \fIcondition\fR is met.  The \fIcondition\fR can be \fBall\fR, \fBnone\fR, a set of Miller indices separated by commas, or \fBrandom\fR.  The default is \fB--int-diag=none\fR, and \fBrandom\fR means to show information about a random 1% of the peaks.
+
 .SH BUGS
 ReAx indexing is experimental.  It works very nicely for some people, and crashes for others.  In a future version, it will be improved and fully supported.
 
