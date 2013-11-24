@@ -1344,41 +1344,11 @@ static void integrate_prof2d_once(struct intcontext *ic, struct peak_box *bx)
 	}
 }
 
-static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
-                             struct image *image, IntDiag int_diag,
-                             signed int idh, signed int idk, signed int idl,
-                             double ir_inn, double ir_mid, double ir_out)
+
+static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 {
-	RefList *list;
-	UnitCell *cell;
 	Reflection *refl;
 	RefListIterator *iter;
-	struct intcontext ic;
-	int i;
-	int n_saturated = 0;
-
-	cell = crystal_get_cell(cr);
-
-	/* Create initial list of reflections with nominal parameters */
-	list = find_intersections(image, cr);
-
-	ic.halfw = ir_out;
-	ic.image = image;
-	ic.k = 1.0/image->lambda;
-	ic.meth = meth;
-	ic.n_saturated = 0;
-	ic.n_implausible = 0;
-	ic.cell = cell;
-	ic.int_diag = int_diag;
-	ic.int_diag_h = idh;
-	ic.int_diag_k = idk;
-	ic.int_diag_l = idl;
-	if ( init_intcontext(&ic) ) {
-		ERROR("Failed to initialise integration.\n");
-		return;
-	}
-
-	setup_ring_masks(&ic, ir_inn, ir_mid, ir_out);
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -1406,13 +1376,13 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 		 * belongs to pixel index 2. */
 		fid_fs = pfs;
 		fid_ss = pss;
-		pn = find_panel_number(image->det, fid_fs, fid_ss);
-		p = &image->det->panels[pn];
+		pn = find_panel_number(ic->image->det, fid_fs, fid_ss);
+		p = &ic->image->det->panels[pn];
 
-		cfs = (fid_fs-p->min_fs) - ic.halfw;
-		css = (fid_ss-p->min_ss) - ic.halfw;
+		cfs = (fid_fs-p->min_fs) - ic->halfw;
+		css = (fid_ss-p->min_ss) - ic->halfw;
 
-		bx = add_box(&ic);
+		bx = add_box(ic);
 		bx->refl = refl;
 		bx->cfs = cfs;
 		bx->css = css;
@@ -1422,36 +1392,72 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 		/* Which reference profile? */
 		bx->rp = 0;//bx->pn;
 
-		if ( meth & INTEGRATION_CENTER ) {
-			r = center_and_check_box(&ic, bx, &saturated);
+		if ( ic->meth & INTEGRATION_CENTER ) {
+			r = center_and_check_box(ic, bx, &saturated);
 		} else {
-			r = check_box(&ic, bx, &saturated);
+			r = check_box(ic, bx, &saturated);
 			bx->offs_fs = 0.0;
 			bx->offs_ss = 0.0;
 		}
 		if ( r ) {
-			delete_box(&ic, bx);
+			delete_box(ic, bx);
 			continue;
 		}
 
 		if ( saturated ) {
-			n_saturated++;
-			if ( !(meth & INTEGRATION_SATURATED) ) {
-				delete_box(&ic, bx);
+			ic->n_saturated++;
+			if ( !(ic->meth & INTEGRATION_SATURATED) ) {
+				delete_box(ic, bx);
 				continue;
 			}
 		}
 
-		fit_bg(&ic, bx);
+		fit_bg(ic, bx);
 
-		bx->intensity = tentative_intensity(&ic, bx);
+		bx->intensity = tentative_intensity(ic, bx);
 		set_intensity(refl, bx->intensity);
 
-		if ( suitable_reference(&ic, bx) ) {
-			add_to_reference_profile(&ic, bx);
+		if ( suitable_reference(ic, bx) ) {
+			add_to_reference_profile(ic, bx);
 		}
 	}
+}
 
+
+static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
+                             struct image *image, IntDiag int_diag,
+                             signed int idh, signed int idk, signed int idl,
+                             double ir_inn, double ir_mid, double ir_out)
+{
+	RefList *list;
+	UnitCell *cell;
+	struct intcontext ic;
+	int i;
+	int n_saturated = 0;
+
+	cell = crystal_get_cell(cr);
+
+	/* Create initial list of reflections with nominal parameters */
+	list = find_intersections(image, cr);
+
+	ic.halfw = ir_out;
+	ic.image = image;
+	ic.k = 1.0/image->lambda;
+	ic.meth = meth;
+	ic.n_saturated = 0;
+	ic.n_implausible = 0;
+	ic.cell = cell;
+	ic.int_diag = int_diag;
+	ic.int_diag_h = idh;
+	ic.int_diag_k = idk;
+	ic.int_diag_l = idl;
+	if ( init_intcontext(&ic) ) {
+		ERROR("Failed to initialise integration.\n");
+		return;
+	}
+
+	setup_ring_masks(&ic, ir_inn, ir_mid, ir_out);
+	setup_profile_boxes(&ic, list);
 	calculate_reference_profiles(&ic);
 
 	for ( i=0; i<ic.n_boxes; i++ ) {
