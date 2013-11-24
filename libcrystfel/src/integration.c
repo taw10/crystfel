@@ -1319,6 +1319,31 @@ static int get_int_diag(struct intcontext *ic, Reflection *refl)
 }
 
 
+
+static void integrate_prof2d_once(struct intcontext *ic, struct peak_box *bx)
+{
+	bx->intensity = fit_intensity(ic, bx);
+	bx->sigma = calc_sigma(ic, bx);
+
+	if ( bg_ok(bx) ) {
+
+		double pfs, pss;
+
+		set_intensity(bx->refl, bx->intensity);
+		set_esd_intensity(bx->refl, bx->sigma);
+		set_redundancy(bx->refl, 1);
+
+		/* Update position */
+		get_detector_pos(bx->refl, &pfs, &pss);
+		pfs += bx->offs_fs;
+		pss += bx->offs_ss;
+		set_detector_pos(bx->refl, 0.0, pfs, pss);
+
+		if ( get_int_diag(ic, bx->refl) ) show_peak_box(ic, bx);
+
+	}
+}
+
 static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
                              struct image *image, IntDiag int_diag,
                              signed int idh, signed int idk, signed int idl,
@@ -1430,49 +1455,9 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 	calculate_reference_profiles(&ic);
 
 	for ( i=0; i<ic.n_boxes; i++ ) {
-
 		struct peak_box *bx;
-
 		bx = &ic.boxes[i];
-		bx->intensity = fit_intensity(&ic, bx);
-		bx->sigma = calc_sigma(&ic, bx);
-
-#if 0
-		if ( isnan(bx->intensity) ) {
-			signed int h, k, l;
-			get_indices(bx->refl, &h, &k, &l);
-			STATUS("NaN intensity for %i %i %i !\n", h, k, l);
-			STATUS("panel %s\n", image->det->panels[bx->pn].name);
-			show_reference_profile(&ic, bx->rp);
-		}
-		if ( bx->intensity < 0.0 ) {
-			signed int h, k, l;
-			get_indices(bx->refl, &h, &k, &l);
-			STATUS("Negative intensity (%f) for %i %i %i !\n",
-			       bx->intensity, h, k, l);
-			STATUS("panel %s\n", image->det->panels[bx->pn].name);
-			show_reference_profile(&ic, bx->rp);
-		}
-#endif
-
-		if ( bg_ok(bx) ) {
-
-			double pfs, pss;
-
-			set_intensity(bx->refl, bx->intensity);
-			set_esd_intensity(bx->refl, bx->sigma);
-			set_redundancy(bx->refl, 1);
-
-			/* Update position */
-			get_detector_pos(bx->refl, &pfs, &pss);
-			pfs += bx->offs_fs;
-			pss += bx->offs_ss;
-			set_detector_pos(bx->refl, 0.0, pfs, pss);
-
-			if ( get_int_diag(&ic, refl) ) show_peak_box(&ic, bx);
-
-		}
-
+		integrate_prof2d_once(&ic, bx);
 	}
 
 	refine_rigid_groups(&ic);
