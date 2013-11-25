@@ -339,6 +339,7 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 {
 #ifdef HAVE_CURSES_COLOR
 	int q;
+	signed int h, k, l;
 
 	initscr();
 	clear();
@@ -346,6 +347,9 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 	init_pair(1, COLOR_WHITE, COLOR_BLUE) ;  /* Background */
 	init_pair(2, COLOR_WHITE, COLOR_RED);    /* Peak */
 	init_pair(3, COLOR_BLACK, COLOR_CYAN);   /* Blackhole */
+
+	get_indices(bx->refl, &h, &k, &l);
+	printw("Indices %i %i %i\n\n", h, k, l);
 
 	printw("Pixel values:\n");
 	for ( q=ic->w-1; q>=0; q-- ) {
@@ -381,7 +385,7 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 	}
 
 	if ( ic->meth & INTEGRATION_PROF2D ) {
-		printw("\nReference profile number %i, ", bx->rp);
+		printw("\n");
 		show_reference_profile(ic, bx->rp);
 	}
 
