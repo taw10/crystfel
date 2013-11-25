@@ -10,7 +10,8 @@ noinst_PROGRAMS = tests/list_check tests/integration_check \
                   tests/pr_p_gradient_check tests/symmetry_check \
                   tests/centering_check tests/transformation_check \
                   tests/cell_check tests/pr_l_gradient_check \
-                  tests/pr_pl_gradient_check tests/ring_check
+                  tests/pr_pl_gradient_check tests/ring_check \
+                  tests/prof2d_check
 
 MERGE_CHECKS = tests/first_merge_check tests/second_merge_check \
                tests/third_merge_check tests/fourth_merge_check
@@ -25,7 +26,7 @@ PARTIAL_CHECKS = tests/partialator_merge_check_1 \
 TESTS = tests/list_check $(MERGE_CHECKS) $(PARTIAL_CHECKS) \
         tests/integration_check \
         tests/symmetry_check tests/centering_check tests/transformation_check \
-        tests/cell_check tests/ring_check
+        tests/cell_check tests/ring_check tests/prof2d_check
 
 EXTRA_DIST += $(MERGE_CHECKS) $(PARTIAL_CHECKS)
 
@@ -87,6 +88,8 @@ endif
 tests_list_check_SOURCES = tests/list_check.c
 
 tests_integration_check_SOURCES = tests/integration_check.c
+
+tests_prof2d_check_SOURCES = tests/prof2d_check.c
 
 tests_symmetry_check_SOURCES = tests/symmetry_check.c
 
