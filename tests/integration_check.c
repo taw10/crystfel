@@ -38,7 +38,6 @@
 #include "../libcrystfel/src/integration.c"
 
 
-
 int main(int argc, char *argv[])
 {
 	struct image image;
