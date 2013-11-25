@@ -136,7 +136,7 @@ static void calc_bins(Histogram *hi)
 
 		/* Tidy up rounding errors */
 		if ( j < 0 ) j = 0;
-		if ( j > hi->n_bins ) j = hi->n_bins - 1;
+		if ( j >= hi->n_bins ) j = hi->n_bins - 1;
 
 		hi->bins[j]++;
 
