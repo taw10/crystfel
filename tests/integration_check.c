@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 
 	hi = histogram_init();
 
-	for ( i=0; i<10000; i++ ) {
+	for ( i=0; i<300; i++ ) {
 
 		for ( fs=0; fs<w; fs++ ) {
 		for ( ss=0; ss<h; ss++ ) {
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
 		esd_sum += get_esd_intensity(refl);
 
 	}
-	printf("Mean calculated sigma(I) = %.2f\n", esd_sum / 10000);
+	printf("Mean calculated sigma(I) = %.2f\n", esd_sum / 300);
 
 	histogram_show(hi);
 
