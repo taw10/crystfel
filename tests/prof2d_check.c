@@ -63,6 +63,8 @@ int main(int argc, char *argv[])
 	Histogram *hi;
 	double esd_sum = 0.0;
 	int n = 0;
+	int n_strong = 0;
+	int n_weak = 0;
 
 	fh = fopen("/dev/urandom", "r");
 	fread(&seed, sizeof(seed), 1, fh);
@@ -117,7 +119,7 @@ int main(int argc, char *argv[])
 	cell = cell_new();
 	cell_set_lattice_type(cell, L_CUBIC);
 	cell_set_centering(cell, 'P');
-	cell_set_parameters(cell, 300.0e-10, 300.0e-10, 300.0e-10,
+	cell_set_parameters(cell, 800.0e-10, 800.0e-10, 800.0e-10,
 	                    deg2rad(90.0), deg2rad(90.0), deg2rad(90.0));
 	cell = cell_rotate(cell, random_quaternion());
 
@@ -144,42 +146,81 @@ int main(int argc, char *argv[])
 	{
 		double pfs, pss;
 		int fs, ss;
-		const int pk_ph = 1000;
+		signed int hj, kj, lj;
 
 		get_detector_pos(refl, &pfs, &pss);
 		fs = pfs;  ss = pss;
 
-		ADD_PX(fs, ss, 10.0*poisson_noise(pk_ph));
-		ADD_PX(fs-1, ss, 10.0*poisson_noise(pk_ph));
-		ADD_PX(fs+1, ss, 10.0*poisson_noise(pk_ph));
-		ADD_PX(fs, ss-1, 10.0*poisson_noise(pk_ph));
-		ADD_PX(fs, ss+1, 10.0*poisson_noise(pk_ph));
-
+		get_indices(refl, &hj, &kj, &lj);
+		if ( lj % 2 ) {
+			const int pk_ph = 1000;
+			ADD_PX(fs, ss, 10.0*poisson_noise(pk_ph));
+			ADD_PX(fs-1, ss, 10.0*poisson_noise(pk_ph));
+			ADD_PX(fs+1, ss, 10.0*poisson_noise(pk_ph));
+			ADD_PX(fs, ss-1, 10.0*poisson_noise(pk_ph));
+			ADD_PX(fs, ss+1, 10.0*poisson_noise(pk_ph));
+			n_strong++;
+		} else {
+			/* Absent peak */
+			n_weak++;
+		}
 	}
+
+	STATUS("%i strong, %i weak\n", n_strong, n_weak);
 
 	reflist_free(list);  /* integrate_prof2d() will predict again */
 	integrate_prof2d(INTEGRATION_PROF2D, cr, &image, INTDIAG_NONE, 0, 0, 0,
 	                 ir_inn, ir_mid, ir_out);
-
-	hi = histogram_init();
-
 	list = crystal_get_reflections(cr);
+
+	printf("Weak reflections:\n");
+	hi = histogram_init();
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
+		signed int h, k, l;
+
+		get_indices(refl, &h, &k, &l);
+
 		if ( get_redundancy(refl) == 0 ) continue;
+		if ( l % 2 ) continue;  /* Ignore strong reflections */
+
 		histogram_add_value(hi, get_intensity(refl));
 		esd_sum += get_esd_intensity(refl);
 		n++;
-	}
 
+	}
 	printf("Mean calculated sigma(I) = %.2f (%i measurements)\n",
 	       esd_sum / n, n);
-
 	histogram_show(hi);
-
 	histogram_free(hi);
+
+	printf("Strong reflections:\n");
+	hi = histogram_init();
+	esd_sum = 0.0;
+	n = 0;
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+
+		get_indices(refl, &h, &k, &l);
+
+		if ( get_redundancy(refl) == 0 ) continue;
+		if ( l % 2 == 0 ) continue;  /* Ignore weak reflections */
+
+		histogram_add_value(hi, get_intensity(refl));
+		esd_sum += get_esd_intensity(refl);
+		n++;
+
+	}
+	printf("Mean calculated sigma(I) = %.2f (%i measurements)\n",
+	       esd_sum / n, n);
+	histogram_show(hi);
+	histogram_free(hi);
+
 	free(image.beam);
 	free(image.det->panels);
 	free(image.det);
