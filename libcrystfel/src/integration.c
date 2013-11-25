@@ -1341,6 +1341,10 @@ static void integrate_prof2d_once(struct intcontext *ic, struct peak_box *bx)
 
 		if ( get_int_diag(ic, bx->refl) ) show_peak_box(ic, bx);
 
+	} else {
+
+		set_redundancy(bx->refl, 0);
+
 	}
 }
 
