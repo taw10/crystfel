@@ -124,8 +124,7 @@ static void unlock_sandbox(struct sandbox *sb)
 }
 
 
-static char *get_pattern(FILE *fh, char **use_this_one_instead,
-                         int config_basename, const char *prefix)
+static char *get_pattern(FILE *fh, int config_basename, const char *prefix)
 {
 	char *line;
 	char *filename;
@@ -134,22 +133,13 @@ static char *get_pattern(FILE *fh, char **use_this_one_instead,
 	do {
 
 		/* Get the next filename */
-		if ( *use_this_one_instead != NULL ) {
+		char *rval;
 
-			line = *use_this_one_instead;
-			*use_this_one_instead = NULL;
-
-		} else {
-
-			char *rval;
-
-			line = malloc(1024*sizeof(char));
-			rval = fgets(line, 1023, fh);
-			if ( rval == NULL ) {
-				free(line);
-				return NULL;
-			}
-
+		line = malloc(1024*sizeof(char));
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) {
+			free(line);
+			return NULL;
 		}
 
 		chomp(line);
@@ -627,7 +617,7 @@ static void handle_zombie(struct sandbox *sb)
 
 
 void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
-                    int config_basename, FILE *fh, char *use_this_one_instead,
+                    int config_basename, FILE *fh,
                     int ofd, int argc, char *argv[], const char *tempdir)
 {
 	int i;
@@ -853,8 +843,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			}
 
 			/* Send next filename */
-			nextImage = get_pattern(fh, &use_this_one_instead,
-	                                        config_basename, prefix);
+			nextImage = get_pattern(fh, config_basename, prefix);
 
 			free(sb->last_filename[i]);
 			sb->last_filename[i] = nextImage;

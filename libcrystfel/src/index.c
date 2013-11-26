@@ -56,7 +56,7 @@
 
 
 IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
-                                   const char *filename, struct detector *det,
+                                   struct detector *det,
                                    struct beam_params *beam, float *ltl)
 {
 	int n;
@@ -77,29 +77,27 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 		switch ( indm[n] & INDEXING_METHOD_MASK ) {
 
 			case INDEXING_DIRAX :
-			iprivs[n] = dirax_prepare(&indm[n], cell, filename,
+			iprivs[n] = dirax_prepare(&indm[n], cell,
 			                          det, beam, ltl);
 			break;
 
 			case INDEXING_MOSFLM :
-			iprivs[n] = mosflm_prepare(&indm[n], cell, filename,
+			iprivs[n] = mosflm_prepare(&indm[n], cell,
 			                           det, beam, ltl);
 			break;
 
 			case INDEXING_XDS :
-                        iprivs[n] = xds_prepare(&indm[n], cell, filename,
-			                        det, beam, ltl);
+                        iprivs[n] = xds_prepare(&indm[n], cell, det, beam, ltl);
 			break;
 
 			case INDEXING_REAX :
-			iprivs[n] = reax_prepare(&indm[n], cell, filename,
+			iprivs[n] = reax_prepare(&indm[n], cell,
 			                         det, beam, ltl);
 			break;
 
 			case INDEXING_GRAINSPOTTER :
 			iprivs[n] = grainspotter_prepare(&indm[n], cell,
-			                                 filename, det, beam,
-			                                 ltl);
+			                                 det, beam, ltl);
 			break;
 
 			default :

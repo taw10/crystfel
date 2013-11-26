@@ -629,7 +629,7 @@ int run_dirax(struct image *image, IndexingPrivate *ipriv)
 
 
 IndexingPrivate *dirax_prepare(IndexingMethod *indm, UnitCell *cell,
-                               const char *filename, struct detector *det,
+                               struct detector *det,
                                struct beam_params *beam, float *ltl)
 {
 	struct dirax_private *dp;

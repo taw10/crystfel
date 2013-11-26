@@ -42,7 +42,7 @@
 extern int run_xds(struct image *image, IndexingPrivate *ipriv);
 
 extern IndexingPrivate *xds_prepare(IndexingMethod *indm, UnitCell *cell,
-                                    const char *filename, struct detector *det,
+                                    struct detector *det,
                                     struct beam_params *beam, float *ltl);
 
 extern void xds_cleanup(IndexingPrivate *pp);

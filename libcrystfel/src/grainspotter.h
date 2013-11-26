@@ -37,7 +37,6 @@
 
 extern IndexingPrivate *grainspotter_prepare(IndexingMethod *indm,
                                              UnitCell *cell,
-                                             const char *filename,
                                              struct detector *det,
                                              struct beam_params *beam,
                                              float *ltl);

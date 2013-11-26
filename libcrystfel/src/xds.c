@@ -618,9 +618,8 @@ int run_xds(struct image *image, IndexingPrivate *priv)
 
 
 IndexingPrivate *xds_prepare(IndexingMethod *indm, UnitCell *cell,
-                             const char *filename,
-                             struct detector *det,
-                             struct beam_params *beam, float *ltl)
+                             struct detector *det, struct beam_params *beam,
+                             float *ltl)
 {
 	struct xds_private *xp;
 

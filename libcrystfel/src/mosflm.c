@@ -831,8 +831,8 @@ int run_mosflm(struct image *image, IndexingPrivate *ipriv)
 
 
 IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
-                               const char *filename, struct detector *det,
-                               struct beam_params *beam, float *ltl)
+                                struct detector *det, struct beam_params *beam,
+                                float *ltl)
 {
 	struct mosflm_private *mp;
 	int need_cell = 0;

@@ -177,7 +177,6 @@ int main(int argc, char *argv[])
 	char *outfile = NULL;
 	FILE *fh;
 	int ofd;
-	char *rval = NULL;
 	int config_checkprefix = 1;
 	int config_basename = 0;
 	int integrate_saturated = 0;
@@ -189,9 +188,6 @@ int main(int argc, char *argv[])
 	char *speaks = NULL;
 	char *toler = NULL;
 	int n_proc = 1;
-	char *prepare_line;
-	char prepare_filename[1024];
-	char *use_this_one_instead;
 	struct index_args iargs;
 	char *intrad = NULL;
 	char *int_str = NULL;
@@ -630,28 +626,10 @@ int main(int argc, char *argv[])
 	}
 	free(outfile);
 
-	/* Get first filename and use it to set up the indexing */
-	prepare_line = malloc(1024);
-	rval = fgets(prepare_line, 1023, fh);
-	if ( rval == NULL ) {
-		ERROR("Failed to get filename to prepare indexing.\n");
-		return 1;
-	}
-	use_this_one_instead = strdup(prepare_line);
-	chomp(prepare_line);
-	if ( config_basename ) {
-		char *tmp;
-		tmp = safe_basename(prepare_line);
-		free(prepare_line);
-		prepare_line = tmp;
-	}
-	snprintf(prepare_filename, 1023, "%s%s", prefix, prepare_line);
-	free(prepare_line);
-
 	/* Prepare the indexer */
 	if ( indm != NULL ) {
-		ipriv = prepare_indexing(indm, iargs.cell, prepare_filename,
-		                         iargs.det, iargs.beam, iargs.tols);
+		ipriv = prepare_indexing(indm, iargs.cell, iargs.det,
+		                         iargs.beam, iargs.tols);
 		if ( ipriv == NULL ) {
 			ERROR("Failed to prepare indexing.\n");
 			return 1;
@@ -666,7 +644,7 @@ int main(int argc, char *argv[])
 	iargs.ipriv = ipriv;
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	               use_this_one_instead, ofd, argc, argv, tempdir);
+	               ofd, argc, argv, tempdir);
 
 	free(prefix);
 	free(tempdir);

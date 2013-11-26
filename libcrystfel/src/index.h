@@ -128,7 +128,6 @@ extern char *indexer_str(IndexingMethod indm);
 #include "image.h"
 
 extern IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
-                                          const char *filename,
                                           struct detector *det,
                                           struct beam_params *beam, float *ltl);
 

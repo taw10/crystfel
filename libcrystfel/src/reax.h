@@ -41,7 +41,7 @@
 #ifdef HAVE_FFTW
 
 extern IndexingPrivate *reax_prepare(IndexingMethod *indm, UnitCell *cell,
-                                     const char *filename, struct detector *det,
+                                     struct detector *det,
                                      struct beam_params *beam, float *ltl);
 
 extern void reax_cleanup(IndexingPrivate *pp);
@@ -51,7 +51,7 @@ extern int reax_index(IndexingPrivate *pp, struct image *image);
 #else /* HAVE_FFTW */
 
 static IndexingPrivate *reax_prepare(IndexingMethod *indm, UnitCell *cell,
-                                     const char *filename, struct detector *det,
+                                     struct detector *det,
                                      struct beam_params *beam, float *ltl)
 {
 	return NULL;
