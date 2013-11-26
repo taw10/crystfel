@@ -1627,6 +1627,7 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 	ic.int_diag_k = idk;
 	ic.int_diag_l = idl;
 	ic.limit = 0.0;
+	ic.meth = meth;
 	if ( init_intcontext(&ic) ) {
 		ERROR("Failed to initialise integration.\n");
 		return;
