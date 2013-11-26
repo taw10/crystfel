@@ -1474,7 +1474,7 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 		integrate_prof2d_once(&ic, bx);
 	}
 
-	refine_rigid_groups(&ic);
+	//refine_rigid_groups(&ic);
 
 	free_intcontext(&ic);
 
@@ -1641,7 +1641,7 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 		integrate_rings_once(refl, image, &ic, cell);
 	}
 
-	refine_rigid_groups(&ic);
+	//refine_rigid_groups(&ic);
 
 	free_intcontext(&ic);
 
