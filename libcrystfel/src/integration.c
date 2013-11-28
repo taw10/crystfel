@@ -1210,7 +1210,7 @@ static void add_to_rg_matrix(struct intcontext *ic, struct panel *p,
 }
 
 
-static void refine_rigid_groups(struct intcontext *ic)
+static void UNUSED refine_rigid_groups(struct intcontext *ic)
 {
 	int i;
 
@@ -1656,7 +1656,7 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 }
 
 
-static void resolution_cutoff(RefList *list, UnitCell *cell)
+static void UNUSED resolution_cutoff(RefList *list, UnitCell *cell)
 {
 	double *rmins;
 	double *rmaxs;
