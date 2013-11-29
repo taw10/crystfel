@@ -481,7 +481,7 @@ int main(int argc, char *argv[])
 			char *rval;
 
 			errno = 0;
-			cutiso = strtod(optarg, &rval);
+			cutiso = strtod(cutoff_str, &rval);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid value for --cutoff-angstroms.\n");
 				return 1;
