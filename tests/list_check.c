@@ -45,7 +45,7 @@ struct refltemp {
 	int found;
 };
 
-#define RANDOM_INDEX (128*random()/RAND_MAX - 256*random()/RAND_MAX)
+#define RANDOM_INDEX (1022*random()/RAND_MAX - 511)
 
 
 static int test_lists(int num_items)

@@ -135,10 +135,10 @@ struct _reflist {
 };
 
 
-#define SERIAL(h, k, l) ((((h)+256)<<18) + (((k)+256)<<9) + ((l)+256))
-#define GET_H(serial) ((((serial) & 0xfffc0000)>>18)-256)
-#define GET_K(serial) ((((serial) & 0x0003fe00)>>9)-256)
-#define GET_L(serial) (((serial) & 0x000001ff)-256)
+#define SERIAL(h, k, l) ((((h)+512)<<20) + (((k)+512)<<10) + ((l)+512))
+#define GET_H(serial) ((((serial) & 0x3ff00000)>>20)-512)
+#define GET_K(serial) ((((serial) & 0x000ffc00)>>10)-512)
+#define GET_L(serial) (((serial) & 0x000003ff)-512)
 
 /**************************** Creation / deletion *****************************/
 
@@ -261,13 +261,13 @@ Reflection *find_refl(const RefList *list,
 
 	if ( list->head == NULL ) return NULL;
 
-	/* Indices greater than or equal to 256 are filtered out when
+	/* Indices greater than or equal to 512 are filtered out when
 	 * reflections are added, so don't even bother looking.
 	 * (also, looking for such reflections causes trouble because the search
 	 * serial number would be invalid) */
-	if ( abs(h) >= 256 ) return NULL;
-	if ( abs(k) >= 256 ) return NULL;
-	if ( abs(l) >= 256 ) return NULL;
+	if ( abs(h) >= 512 ) return NULL;
+	if ( abs(k) >= 512 ) return NULL;
+	if ( abs(l) >= 512 ) return NULL;
 
 	refl = list->head;
 
@@ -883,9 +883,9 @@ Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 {
 	Reflection *new;
 
-	assert(abs(h)<256);
-	assert(abs(k)<256);
-	assert(abs(l)<256);
+	assert(abs(h)<512);
+	assert(abs(k)<512);
+	assert(abs(l)<512);
 
 	new = new_node(SERIAL(h, k, l));
 	if ( new == NULL ) return NULL;

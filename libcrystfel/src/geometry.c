@@ -264,12 +264,13 @@ RefList *find_intersections(struct image *image, Crystal *cryst)
 	kmax = mres * modulus(bx, by, bz);
 	lmax = mres * modulus(cx, cy, cz);
 
-	if ( (hmax >= 256) || (kmax >= 256) || (lmax >= 256) ) {
-		ERROR("Unit cell is stupidly large.\n");
+	if ( (hmax >= 512) || (kmax >= 512) || (lmax >= 512) ) {
+		ERROR("Unit cell is too large - will only integrate reflections"
+		      " up to 511th order.\n");
 		cell_print(cell);
-		if ( hmax >= 256 ) hmax = 255;
-		if ( kmax >= 256 ) kmax = 255;
-		if ( lmax >= 256 ) lmax = 255;
+		if ( hmax >= 512 ) hmax = 511;
+		if ( kmax >= 512 ) kmax = 511;
+		if ( lmax >= 512 ) lmax = 511;
 	}
 
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
