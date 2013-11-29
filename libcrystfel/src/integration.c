@@ -1650,8 +1650,8 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 	crystal_set_reflections(cr, list);
 
 	if ( ic.n_implausible ) {
-		STATUS("Warning: %i implausibly negative reflections.\n",
-		       ic.n_implausible);
+		STATUS("Warning: %i implausibly negative reflection%s.\n",
+		       ic.n_implausible, ic.n_implausible>1?"s":"");
 	}
 }
 
