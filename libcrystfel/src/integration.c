@@ -1310,6 +1310,13 @@ static int get_int_diag(struct intcontext *ic, Reflection *refl)
 		return i < -5.0*sigi;
 	}
 
+	if ( ic->int_diag == INTDIAG_STRONG ) {
+		double i, sigi;
+		i = get_intensity(refl);
+		sigi = get_esd_intensity(refl);
+		return i > 3.0*sigi;
+	}
+
 	if ( ic->int_diag == INTDIAG_INDICES ) {
 		signed int h, k, l;
 		get_indices(refl, &h, &k, &l);
