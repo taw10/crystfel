@@ -115,6 +115,7 @@
   <chapter>
     <title>Miscellaneous</title>
         <xi:include href="xml/quaternion.xml"/>
+        <xi:include href="xml/histogram.xml"/>
         <xi:include href="xml/utils.xml"/>
   </chapter>
 

@@ -167,6 +167,7 @@ ph_eV_to_lambda
 ph_lambda_to_eV
 random_flat
 flat_noise
+show_matrix
 </SECTION>
 
 <SECTION>
@@ -178,6 +179,15 @@ normalise_quaternion
 random_quaternion
 quaternion_valid
 quat_rot
+</SECTION>
+
+<SECTION>
+<FILE>histogram</FILE>
+Histogram
+histogram_init
+histogram_free
+histogram_add_value
+histogram_show
 </SECTION>
 
 <SECTION>
@@ -356,6 +366,7 @@ add_copy_hdf5_field
 new_copy_hdf5_field_list
 free_copy_hdf5_field_list
 get_peaks
+hdfile_is_scalar
 </SECTION>
 
 <SECTION>
@@ -391,6 +402,7 @@ PartialityModel
 find_intersections
 select_intersections
 update_partialities
+update_partialities_2
 polarisation_correction
 </SECTION>
 
@@ -421,6 +433,7 @@ INTEGRATION_DEFAULTS_PROF2D
 INTEGRATION_DEFAULTS_RINGS
 INTEGRATION_METHOD_MASK
 IntegrationMethod
+IntDiag
 integrate_all
 integration_method
 </SECTION>

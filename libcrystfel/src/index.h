@@ -67,7 +67,8 @@
  * @INDEXING_MOSFLM: Invoke MOSFLM
  * @INDEXING_REAX: DPS algorithm using known cell parameters
  * @INDEXING_GRAINSPOTTER: Invoke GrainSpotter
- * @INDEXING_XDS: Invokve XDS
+ * @INDEXING_XDS: Invoke XDS
+ * @INDEXING_SIMULATION: Dummy value
  * @INDEXING_CHECK_CELL_COMBINATIONS: Check linear combinations of unit cell
  *   axes for agreement with given cell.
  * @INDEXING_CHECK_CELL_AXES: Check unit cell axes for agreement with given
@@ -79,7 +80,9 @@
  * @INDEXING_USE_CELL_PARAMETERS: Use the unit cell parameters to guide the
  *   indexingprocess.
  *
- * An enumeration of all the available indexing methods.
+ * An enumeration of all the available indexing methods.  The dummy value
+ * @INDEXING_SIMULATION is used by partial_sim to indicate that no indexing was
+ * performed, and that the indexing results are just from simulation.
  **/
 typedef enum {
 
