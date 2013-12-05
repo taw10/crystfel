@@ -449,7 +449,7 @@ static void scale_factor_histogram(cairo_t *cr, Crystal **crystals, int n,
 
 	show_text_simple(cr, "Frequency", -15.0, g_height/2.0,
 	                      NULL, -M_PI_2, J_CENTER);
-	show_text_simple(cr, "Inverse scale factor", g_width/2.0, g_height+12.0,
+	show_text_simple(cr, "Scale factor", g_width/2.0, g_height+12.0,
 	                      NULL, 0.0, J_CENTER);
 
 	osf_max = 0.0;

@@ -441,7 +441,7 @@ static void run_esd_job(void *vwargs, int cookie)
 		}
 
 		Ih = get_intensity(f);
-		Ihl = get_intensity(refl) / (corr * G);
+		Ihl = G * get_intensity(refl) / corr;
 
 		num += pow(Ihl - Ih, 2.0);
 
