@@ -340,6 +340,7 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 #ifdef HAVE_CURSES_COLOR
 	int q;
 	signed int h, k, l;
+	double fs, ss;
 
 	initscr();
 	clear();
@@ -349,7 +350,9 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 	init_pair(3, COLOR_BLACK, COLOR_CYAN);   /* Blackhole */
 
 	get_indices(bx->refl, &h, &k, &l);
-	printw("Indices %i %i %i\n\n", h, k, l);
+	get_detector_pos(bx->refl, &fs, &ss);
+	printw("Indices %i %i %i\nPosition fs = %.1f, ss = %.1f\n\n",
+	       h, k, l, fs, ss);
 
 	printw("Pixel values:\n");
 	for ( q=ic->w-1; q>=0; q-- ) {
@@ -392,7 +395,7 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 	printw("\nIntensity = %.2f +/- %.2f\n", get_intensity(bx->refl),
 	                                        get_esd_intensity(bx->refl));
 
-	printw("\n\n");
+	printw("\n\nPress any key to continue processing...\n\n");
 
 	refresh();
 	getch();
