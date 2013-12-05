@@ -77,5 +77,5 @@ if [ $? -ne 0 ]; then
 fi
 rm -f partialator_merge_check_3.stream partialator_merge_check_3.hkl \
       partialator_merge_check_3_ans.hkl partialator_merge_check_3.beam \
-      partialator_merge_check_3.geom scaling-report.pdf
+      partialator_merge_check_3.geom scaling-report.pdf partialator.params
 exit 0
