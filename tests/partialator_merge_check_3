@@ -35,8 +35,8 @@ EOF
 # W
 cat > partialator_merge_check_3_ans.hkl << EOF
   h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
-  1   0   0      81.17        -       3.62       2    0.0    0.0
-  2   0   0     144.36        -       2.04       2    0.0    0.0
+  1   0   0      78.40        -       3.15       2    0.0    0.0
+  2   0   0     145.51        -       1.70       2    0.0    0.0
 End of reflections
 EOF
 
