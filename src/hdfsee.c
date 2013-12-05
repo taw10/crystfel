@@ -144,6 +144,13 @@ int main(int argc, char *argv[])
 		{0, 0, NULL, 0}
 	};
 
+	/* This isn't great, but necessary to make the command-line UI and file
+	 * formats consistent with the other programs, which all use the C
+	 * locale.  Better would be to have all the programs call
+	 * setlocale(LC_ALL, "") and use the C locale temporarily when reading
+	 * or writing a stream, reflection file, geometry file etc. */
+	gtk_disable_setlocale();
+
 	gtk_init(&argc, &argv);
 
 	/* Short options */
