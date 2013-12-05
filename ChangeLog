@@ -1,3 +1,29 @@
+CrystFEL version 0.5.2, 4th December 2013
+-----------------------------------------
+
+- Reflection sigmas were improved for negative intensities, and the behaviour
+  of "process_hkl --min-snr" was rationalised.
+- Peak centering ("--integration=rings-cen") was fixed.
+- XDS default behaviour was fixed to prevent an unexpected axis permutation.
+- Incorrect handling of monoclinic C cells was fixed.
+- The counting of saturated peaks was fixed.
+- hdfsee now needs the beam file (use option -m).
+- A more than 2 year old bug was fixed in RefList.
+- indexamajig --int-diag was added.
+- render_hkl --res-ring was added.
+- compare_hkl --fom=Rano and Rano/Rsplit was added.
+- check_hkl --shell-file was added.
+- get_hkl --cutoff-angstroms was added.
+- partialator was extensively worked on.
+- scripts/split-indexed was added.
+- scripts/Rsplit_surface and clean-stream.py were added (Fedor Chervinskii).
+- A locale-related problem with hdfsee was fixed.
+- Histogram, update_partialities_2(), hdfile_is_scalar() and show_matrix() were
+  added to the libcrystfel API.
+- integrate_all() was changed to incorporate IntDiag.
+- show_matrix_eqn() was simplified, removing a parameter.
+
+
 CrystFEL version 0.5.1, 4th July 2013
 -------------------------------------
 
