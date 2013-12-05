@@ -102,7 +102,7 @@ static void run_scale_job(void *vwargs, int cookie)
 	      refl = next_refl(refl, iter) )
 	{
 		signed int h, k, l;
-		double Ih, Ihl, esd, corr;
+		double Ih, Ihl, corr;
 		Reflection *r;
 
 		if ( !get_scalable(refl) ) continue;
@@ -139,8 +139,7 @@ static void run_scale_job(void *vwargs, int cookie)
 		}
 
 		Ihl = get_intensity(refl) / corr;
-		esd = get_esd_intensity(refl) / corr;
-
+		
 		num += Ih * Ihl;
 		den += Ihl * Ihl;
 
@@ -240,7 +239,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		signed int h, k, l;
 		double num, den;
 		int red;
-		double Ihl, esd, corr;
+		double Ihl, corr;
 
 		if ( !get_scalable(refl) ) continue;
 
@@ -306,7 +305,6 @@ static void run_merge_job(void *vwargs, int cookie)
 		}
 
 		Ihl = get_intensity(refl) / corr;
-		esd = get_esd_intensity(refl) / corr;
 
 		num += Ihl * G;
 		den += 1.0;
