@@ -1353,6 +1353,11 @@ static void integrate_prof2d_once(struct intcontext *ic, struct peak_box *bx)
 		pss += bx->offs_ss;
 		set_detector_pos(bx->refl, 0.0, pfs, pss);
 
+		if ( bx->intensity < -5.0*bx->sigma ) {
+			ic->n_implausible++;
+			set_redundancy(bx->refl, 0);
+		}
+
 		if ( get_int_diag(ic, bx->refl) ) show_peak_box(ic, bx);
 
 	} else {
