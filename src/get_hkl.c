@@ -70,6 +70,8 @@ static void show_help(const char *s)
 "  -w, --twin=<sym>           Generate twinned data according to the given\n"
 "                              point group.\n"
 "  -e, --expand=<sym>         Expand reflections to this point group.\n"
+"      --no-need-all-parts    Output a twinned reflection even if not all\n"
+"                              the necessary equivalents were present.\n"
 "\n"
 "Use this option with care, and only if you understand why it might sometimes\n"
 " be necessary:\n"
@@ -164,7 +166,7 @@ static RefList *template_reflections(RefList *list, RefList *template)
 }
 
 
-static RefList *twin_reflections(RefList *in,
+static RefList *twin_reflections(RefList *in, int need_all_parts,
                                  const SymOpList *holo, const SymOpList *mero)
 {
 	Reflection *refl;
@@ -186,6 +188,7 @@ static RefList *twin_reflections(RefList *in,
 	      refl = next_refl(refl, iter) ) {
 
 		double total, sigma;
+		int multi, nbits;
 		signed int h, k, l;
 		int n, j;
 		int skip;
@@ -202,7 +205,9 @@ static RefList *twin_reflections(RefList *in,
 
 		total = 0.0;
 		sigma = 0.0;
+		multi = 0;
 		skip = 0;
+		nbits = 0;
 		special_position(holo, m, h, k, l);
 		n = num_equivs(holo, m);
 
@@ -210,6 +215,8 @@ static RefList *twin_reflections(RefList *in,
 
 			signed int he, ke, le;
 			signed int hu, ku, lu;
+			Reflection *part;
+			int r;
 
 			get_equiv(holo, m, j, h, k, l, &he, &ke, &le);
 
@@ -218,30 +225,36 @@ static RefList *twin_reflections(RefList *in,
 			 * equivalent which belongs to our definition of the
 			 * asymmetric unit cell, so check them all.
 			 */
-			if ( !find_equiv_in_list(in, he, ke, le, mero,
-			                         &hu, &ku, &lu) ) {
-				/* Don't have this reflection, so bail out */
+			r = find_equiv_in_list(in, he, ke, le, mero,
+			                       &hu, &ku, &lu);
+
+			if ( need_all_parts && !r ) {
+
 				ERROR("Twinning %i %i %i requires the %i %i %i "
 				      "reflection (or an equivalent in %s), "
-				      "which I don't have. %i %i %i won't "
-				      "appear in the output\n",
-				      h, k, l, he, ke, le, symmetry_name(mero),
-				      h, k, l);
+				      "which I don't have.\n",
+				      h, k, l, he, ke, le, symmetry_name(mero));
+
 				skip = 1;
 				break;
+
 			}
 
-			total += get_intensity(refl);
-			sigma += pow(get_esd_intensity(refl), 2.0);
+			part = find_refl(in, hu, ku, lu);
+
+			total += get_intensity(part);
+			sigma += pow(get_esd_intensity(part), 2.0);
+			multi += get_redundancy(part);
+			nbits++;
 
 		}
 
 		if ( !skip ) {
 
 			Reflection *new = add_refl(out, h, k, l);
-			set_intensity(new, total);
-			set_esd_intensity(new, sqrt(sigma));
-			set_redundancy(new, 1);
+			set_intensity(new, total/nbits);
+			set_esd_intensity(new, sqrt(sigma)/nbits);
+			set_redundancy(new, multi);
 
 		}
 
@@ -363,6 +376,7 @@ int main(int argc, char *argv[])
 	int config_poisson = 0;
 	int config_multi = 0;
 	int config_trimc = 0;
+	int config_nap = 1;
 	char *holo_str = NULL;
 	char *mero_str = NULL;
 	char *expand_str = NULL;
@@ -398,6 +412,7 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"multiplicity",       0, &config_multi,       1},
 		{"trim-centrics",      0, &config_trimc,       1},
+		{"no-need-all-parts",  0, &config_nap,         0},
 		{"adu-per-photon",     1, NULL,                2},
 		{"cutoff-angstroms",   1, NULL,                3},
 		{0, 0, NULL, 0}
@@ -569,7 +584,7 @@ int main(int argc, char *argv[])
 		RefList *new;
 		STATUS("Twinning from %s into %s\n", symmetry_name(mero),
 		                                     symmetry_name(holo));
-		new = twin_reflections(input, holo, mero);
+		new = twin_reflections(input, config_nap, holo, mero);
 
 		/* Replace old with new */
 		reflist_free(input);

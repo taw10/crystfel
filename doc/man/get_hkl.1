@@ -31,8 +31,9 @@ The reflections will be expanded out, according to the symmetry of the input ref
 .PD 0
 .IP "\fB-w\fR \fIpointgroup\fR"
 .IP \fB--twin=\fR\fIpointgroup\fR
+.IP \fB--no-need-all-parts\fR
 .PD
-Reflections in the list which are equivalent according to \fIpointgroup\fR will have their intensities summed.  The output reflection list will contain the summed intensities in the asymmetric unit for \fIpointgroup\fR.  Reflections for which any of the 'twin mates' are missing will not be written out.
+Reflections in the list which are equivalent according to \fIpointgroup\fR will have their intensities summed.  The output reflection list will contain the summed intensities in the asymmetric unit for \fIpointgroup\fR.  Reflections for which any of the 'twin mates' are missing will not be written out, unless you use \fB--no-need-all-parts\fR.
 
 .SH ADDING NOISE
 .PD 0
