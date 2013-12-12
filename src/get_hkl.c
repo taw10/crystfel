@@ -3,11 +3,11 @@
  *
  * Small program to manipulate reflection lists
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2013 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -173,43 +173,36 @@ static RefList *twin_reflections(RefList *in, int need_all_parts,
 	RefListIterator *iter;
 	RefList *out;
 	SymOpMask *m;
-
-	if ( !is_subgroup(holo, mero) ) {
-		ERROR("%s is not a subgroup of %s!\n", symmetry_name(mero),
-		                                       symmetry_name(holo));
-		return NULL;
-	}
+	int n;
 
 	out = reflist_new();
+
+	/* No need to free and reallocate this for every reflection */
 	m = new_symopmask(holo);
 
 	for ( refl = first_refl(in, &iter);
 	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
+	      refl = next_refl(refl, iter) )
+	{
 		double total, sigma;
-		int multi, nbits;
+		int multi;
 		signed int h, k, l;
-		int n, j;
+		int j;
 		int skip;
 
+		/* Figure out where to put the twinned version, and check it's
+		 * not there already. */
 		get_indices(refl, &h, &k, &l);
-
-		/* There is a many-to-one correspondence between reflections
-		 * in the merohedral and holohedral groups.  Do the calculation
-		 * only once for each reflection in the holohedral group, which
-		 * contains fewer reflections.
-		 */
 		get_asymm(holo, h, k, l, &h, &k, &l);
 		if ( find_refl(out, h, k, l) != NULL ) continue;
+
+		special_position(holo, m, h, k, l);
+		n = num_equivs(holo, m);
 
 		total = 0.0;
 		sigma = 0.0;
 		multi = 0;
 		skip = 0;
-		nbits = 0;
-		special_position(holo, m, h, k, l);
-		n = num_equivs(holo, m);
 
 		for ( j=0; j<n; j++ ) {
 
@@ -219,6 +212,7 @@ static RefList *twin_reflections(RefList *in, int need_all_parts,
 			int r;
 
 			get_equiv(holo, m, j, h, k, l, &he, &ke, &le);
+			get_asymm(mero, he, ke, le, &he, &ke, &le);
 
 			/* Do we have this reflection?
 			 * We might not have the particular (merohedral)
@@ -240,20 +234,33 @@ static RefList *twin_reflections(RefList *in, int need_all_parts,
 
 			}
 
-			part = find_refl(in, hu, ku, lu);
+			if ( r ) {
 
-			total += get_intensity(part);
-			sigma += pow(get_esd_intensity(part), 2.0);
-			multi += get_redundancy(part);
-			nbits++;
+				double i, sigi;
+				int mult;
+
+				part = find_refl(in, hu, ku, lu);
+
+				i = get_intensity(part);
+				sigi = get_esd_intensity(part);
+				mult = get_redundancy(part);
+
+				total += mult*i;
+				sigma += pow(sigi*mult, 2.0);
+				multi += mult;
+
+				set_intensity(part, 0.0);
+				set_esd_intensity(part, 0.0);
+				set_redundancy(part, 0);
+			}
 
 		}
 
 		if ( !skip ) {
 
 			Reflection *new = add_refl(out, h, k, l);
-			set_intensity(new, total/nbits);
-			set_esd_intensity(new, sqrt(sigma)/nbits);
+			set_intensity(new, total/multi);
+			set_esd_intensity(new, sqrt(sigma)/multi);
 			set_redundancy(new, multi);
 
 		}
