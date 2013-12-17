@@ -178,9 +178,6 @@ static double interpolate_linear(const double *ref, const unsigned char *flags,
 	val1 = sym_lookup_intensity(ref, flags, sym, h, k, l);
 	val2 = sym_lookup_intensity(ref, flags, sym, h+1, k, l);
 
-	val1 = val1;
-	val2 = val2;
-
 	return (1.0-f)*val1 + f*val2;
 }
 
@@ -250,9 +247,6 @@ static double complex interpolate_phased_linear(const double *ref,
 	val2 = sym_lookup_intensity(ref, flags, sym, h+1, k, l);
 	ph1 = sym_lookup_phase(phases, flags, sym, h, k, l);
 	ph2 = sym_lookup_phase(phases, flags, sym, h+1, k, l);
-
-	val1 = val1;
-	val2 = val2;
 
 	/* Calculate real and imaginary parts */
 	re1 = val1 * cos(ph1);

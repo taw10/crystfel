@@ -106,7 +106,7 @@ void show_matrix(gsl_matrix *M)
 
 size_t notrail(char *s)
 {
-	size_t i;
+	ssize_t i;
 	size_t munched = 0;
 
 	for ( i=strlen(s)-1; i>=0; i-- ) {
