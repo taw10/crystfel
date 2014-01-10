@@ -48,7 +48,7 @@ struct srdata
 	int n_filtered;
 };
 
-#ifdef HAVE_CAIRO
+#if defined(HAVE_CAIRO) && defined(HAVE_PANGO) && defined(HAVE_PANGOCAIRO)
 
 extern SRContext *sr_titlepage(Crystal **crystals, int n,
                                const char *filename,
@@ -59,7 +59,7 @@ extern void sr_iteration(SRContext *sr, int iteration, struct srdata *d);
 
 extern void sr_finish(SRContext *sr);
 
-#else
+#else /* defined(HAVE_CAIRO) && defined(HAVE_PANGO) && ... */
 
 SRContext *sr_titlepage(Crystal **crystals, int n, const char *filename,
                         const char *stream_filename, const char *cmdline)
@@ -75,7 +75,7 @@ void sr_finish(SRContext *sr)
 {
 }
 
-#endif
+#endif /* defined(HAVE_CAIRO) && defined(HAVE_PANGO) && ... */
 
 
 #endif	/* SCALING_REPORT_H */
