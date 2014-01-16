@@ -588,6 +588,18 @@ static void add_to_rigid_group(struct rigid_group *rg, struct panel *p)
 	rg->panels[rg->n_panels++] = p;
 }
 
+static void rigid_groups_free (struct detector *det)
+{
+	int i;
+	if ( det->rigid_groups == NULL) return;
+	for ( i = 0; i < det->n_rigid_groups; i++ ){
+		free( det->rigid_groups[i]->name );
+		free( det->rigid_groups[i]->panels );
+		free( det->rigid_groups[i] );
+	}
+	free(det->rigid_groups);
+}
+
 
 static void fix_up_rigid_groups(struct detector *det)
 {
@@ -1068,7 +1080,7 @@ void free_detector_geometry(struct detector *det)
 {
 	int i;
 
-	free(det->rigid_groups);
+	rigid_groups_free(det);
 
 	for ( i=0; i<det->n_panels; i++ ) {
 		free(det->panels[i].clen_from);
