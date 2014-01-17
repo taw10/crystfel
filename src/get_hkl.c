@@ -97,6 +97,9 @@ static void poisson_reflections(RefList *list, double adu_per_photon)
 {
 	Reflection *refl;
 	RefListIterator *iter;
+	gsl_rng *rng;
+
+	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -106,10 +109,12 @@ static void poisson_reflections(RefList *list, double adu_per_photon)
 
 		val = get_intensity(refl);
 
-		c = adu_per_photon * poisson_noise(val/adu_per_photon);
+		c = adu_per_photon * poisson_noise(rng, val/adu_per_photon);
 		set_intensity(refl, c);
 
 	}
+
+	gsl_rng_free(rng);
 }
 
 

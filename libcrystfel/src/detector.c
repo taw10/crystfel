@@ -311,7 +311,7 @@ double get_tt(struct image *image, double fs, double ss, int *err)
 }
 
 
-void record_image(struct image *image, int do_poisson)
+void record_image(struct image *image, int do_poisson, gsl_rng *rng)
 {
 	int x, y;
 	double total_energy, energy_density;
@@ -371,7 +371,7 @@ void record_image(struct image *image, int do_poisson)
 		sa = proj_area / (dsq + Lsq);
 
 		if ( do_poisson ) {
-			counts = poisson_noise(intensity * ph_per_e * sa);
+			counts = poisson_noise(rng, intensity * ph_per_e * sa);
 		} else {
 			cf = intensity * ph_per_e * sa;
 			counts = cf;

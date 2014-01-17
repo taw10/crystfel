@@ -3,11 +3,11 @@
  *
  * Utility stuff
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -165,26 +165,26 @@ void progress_bar(int val, int total, const char *text)
 }
 
 
-double random_flat(double max)
+double random_flat(gsl_rng *rng, double max)
 {
-	return max * (double)random()/RAND_MAX;
+	return max * gsl_rng_uniform(rng);
 }
 
 
-double flat_noise(double expected, double width)
+double flat_noise(gsl_rng *rng, double expected, double width)
 {
-	double noise = random_flat(2.0*width);
+	double noise = random_flat(rng, 2.0*width);
 	return expected+noise-width;
 }
 
 
-double gaussian_noise(double expected, double stddev)
+double gaussian_noise(gsl_rng *rng, double expected, double stddev)
 {
 	double x1, x2, noise;
 
 	/* A uniformly distributed random number between 0 and 1 */
-	x1 = ((double)random()/RAND_MAX);
-	x2 = ((double)random()/RAND_MAX);
+	x1 = gsl_rng_uniform(rng);
+	x2 = gsl_rng_uniform(rng);
 
 	noise = sqrt(-2.0*log(x1)) * cos(2.0*M_PI*x2);
 
@@ -192,14 +192,14 @@ double gaussian_noise(double expected, double stddev)
 }
 
 
-static int fake_poisson_noise(double expected)
+static int fake_poisson_noise(gsl_rng *rng, double expected)
 {
-	double rf = gaussian_noise(expected, sqrt(expected));
+	double rf = gaussian_noise(rng, expected, sqrt(expected));
 	return (int)rf;
 }
 
 
-int poisson_noise(double expected)
+int poisson_noise(gsl_rng *rng, double expected)
 {
 	double L;
 	int k = 0;
@@ -207,7 +207,7 @@ int poisson_noise(double expected)
 
 	/* For large values of the mean, we get big problems with arithmetic.
 	 * In such cases, fall back on a Gaussian with the right variance. */
-	if ( expected > 100.0 ) return fake_poisson_noise(expected);
+	if ( expected > 100.0 ) return fake_poisson_noise(rng, expected);
 
 	L = exp(-expected);
 
@@ -216,7 +216,7 @@ int poisson_noise(double expected)
 		double r;
 
 		k++;
-		r = (double)random()/(double)RAND_MAX;
+		r = gsl_rng_uniform(rng);
 		p *= r;
 
 	} while ( p > L );
@@ -282,14 +282,14 @@ struct quaternion normalise_quaternion(struct quaternion q)
  *
  * Returns: a randomly generated, normalised, quaternion.
  **/
-struct quaternion random_quaternion()
+struct quaternion random_quaternion(gsl_rng *rng)
 {
 	struct quaternion q;
 
-	q.w = 2.0*(double)random()/RAND_MAX - 1.0;
-	q.x = 2.0*(double)random()/RAND_MAX - 1.0;
-	q.y = 2.0*(double)random()/RAND_MAX - 1.0;
-	q.z = 2.0*(double)random()/RAND_MAX - 1.0;
+	q.w = 2.0*gsl_rng_uniform(rng) - 1.0;
+	q.x = 2.0*gsl_rng_uniform(rng) - 1.0;
+	q.y = 2.0*gsl_rng_uniform(rng) - 1.0;
+	q.z = 2.0*gsl_rng_uniform(rng) - 1.0;
 	q = normalise_quaternion(q);
 
 	return q;

@@ -35,9 +35,12 @@
 #ifndef DIFFRACTION_H
 #define DIFFRACTION_H
 
+#include <gsl/gsl_rng.h>
+
 #include "image.h"
 #include "cell.h"
 #include "symmetry.h"
+
 
 typedef enum {
 	GRADIENT_MOSAIC,
@@ -52,6 +55,6 @@ extern void get_diffraction(struct image *image, int na, int nb, int nc,
 
 extern struct sample *generate_tophat(struct image *image);
 
-extern struct sample *generate_SASE(struct image *image);
+extern struct sample *generate_SASE(struct image *image, gsl_rng *rng);
 
 #endif	/* DIFFRACTION_H */

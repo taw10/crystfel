@@ -153,7 +153,7 @@ extern double get_tt(struct image *image, double xs, double ys, int *err);
 
 extern int in_bad_region(struct detector *det, double fs, double ss);
 
-extern void record_image(struct image *image, int do_poisson);
+extern void record_image(struct image *image, int do_poisson, gsl_rng *rng);
 
 extern struct panel *find_panel(struct detector *det, double fs, double ss);
 

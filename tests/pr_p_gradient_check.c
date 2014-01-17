@@ -3,11 +3,11 @@
  *
  * Check partiality gradients for post refinement
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2012-2013 Thomas White <taw@physics.org>
+ *   2012-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -397,6 +397,7 @@ int main(int argc, char *argv[])
 	int quiet = 0;
 	int plot = 0;
 	int c;
+	gsl_rng *rng;
 
 	const struct option longopts[] = {
 		{"quiet",       0, &quiet,        1},
@@ -447,12 +448,14 @@ int main(int argc, char *argv[])
 	                                deg2rad(90.0),
 	                                deg2rad(90.0));
 
+	rng = gsl_rng_alloc(gsl_rng_mt19937);
+
 	for ( i=0; i<1; i++ ) {
 
 		UnitCell *rot;
 		double val;
 
-		orientation = random_quaternion();
+		orientation = random_quaternion(rng);
 		rot = cell_rotate(cell, orientation);
 		crystal_set_cell(cr, rot);
 
@@ -510,6 +513,8 @@ int main(int argc, char *argv[])
 		if ( val < 0.99 ) fail = 1;
 
 	}
+
+	gsl_rng_free(rng);
 
 	return fail;
 }

@@ -3,11 +3,13 @@
  *
  * Simulate diffraction patterns from small crystals
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2014 Thomas White <taw@physics.org>
+ *   2013-2014 Chun Hong Yoon <chun.hong.yoon@desy.de>
+ *   2013      Alexandra Tolstikova
  *
  * This file is part of CrystFEL.
  *
@@ -278,6 +280,7 @@ int main(int argc, char *argv[])
 	char *sym_str = NULL;
 	SymOpList *sym;
 	int nsamples = 3;
+	gsl_rng *rng;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -405,15 +408,6 @@ int main(int argc, char *argv[])
 
 		}
 
-	}
-
-	if ( config_random ) {
-		FILE *fh;
-		unsigned int seed;
-		fh = fopen("/dev/urandom", "r");
-		fread(&seed, sizeof(seed), 1, fh);
-		fclose(fh);
-		srand(seed);
 	}
 
 	if ( random_size == 1 ) {
@@ -565,6 +559,16 @@ int main(int argc, char *argv[])
 	image.features = NULL;
 	image.flags = NULL;
 
+	rng = gsl_rng_alloc(gsl_rng_mt19937);
+	if ( config_random ) {
+		FILE *fh;
+		unsigned long int seed;
+		fh = fopen("/dev/urandom", "r");
+		fread(&seed, sizeof(seed), 1, fh);
+		fclose(fh);
+		gsl_rng_set(rng, seed);
+	}
+
 	powder = calloc(image.width*image.height, sizeof(*powder));
 
 	/* Splurge a few useful numbers */
@@ -597,7 +601,7 @@ int main(int argc, char *argv[])
 
 		/* Read quaternion from stdin */
 		if ( config_randomquat ) {
-			orientation = random_quaternion();
+			orientation = random_quaternion(rng);
 		} else {
 			orientation = read_quaternion();
 		}
@@ -620,7 +624,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case SPECTRUM_SASE :
-			image.spectrum = generate_SASE(&image);
+			image.spectrum = generate_SASE(&image, rng);
 			break;
 
 		}
@@ -650,7 +654,7 @@ int main(int argc, char *argv[])
 			goto skip;
 		}
 
-		record_image(&image, !config_nonoise);
+		record_image(&image, !config_nonoise, rng);
 
 		if ( powder_fn != NULL ) {
 
@@ -722,6 +726,8 @@ skip:
 	free(filename);
 	free(sym_str);
 	free_symoplist(sym);
+
+	gsl_rng_free(rng);
 
 	return 0;
 }

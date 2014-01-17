@@ -456,7 +456,7 @@ static struct sample *get_gaussian_spectrum(double eV_cen, double eV_step,
 }
 
 
-static int add_sase_noise(struct sample *spectrum, int nsteps)
+static int add_sase_noise(struct sample *spectrum, int nsteps, gsl_rng *rng)
 {
 	struct sample *noise;
 	int i, j;
@@ -483,7 +483,7 @@ static int add_sase_noise(struct sample *spectrum, int nsteps)
 		noise[i].weight = 0.0;
 
 		/* Gaussian noise with mean = 0, std = 1 */
-		gaussianNoise[i] = gaussian_noise(noise_mean, noise_sigma);
+		gaussianNoise[i] = gaussian_noise(rng, noise_mean, noise_sigma);
 		gaussianNoise[i+nsteps] = gaussianNoise[i];
 		gaussianNoise[i+2*nsteps] = gaussianNoise[i];
 	}
@@ -546,7 +546,7 @@ struct sample *generate_tophat(struct image *image)
 }
 
 
-struct sample *generate_SASE(struct image *image)
+struct sample *generate_SASE(struct image *image, gsl_rng *rng)
 {
 	struct sample *spectrum;
 	int i;
@@ -555,7 +555,7 @@ struct sample *generate_SASE(struct image *image)
 	const double jitter_sigma_eV = 8.0;
 
 	/* Central wavelength jitters with Gaussian distribution */
-	eV_cen = gaussian_noise(ph_lambda_to_eV(image->lambda),
+	eV_cen = gaussian_noise(rng, ph_lambda_to_eV(image->lambda),
 	                        jitter_sigma_eV);
 
 	/* Convert FWHM to standard deviation.  Note that bandwidth is taken to
@@ -571,7 +571,7 @@ struct sample *generate_SASE(struct image *image)
 	spectrum = get_gaussian_spectrum(eV_cen, eV_step, sigma, spec_size);
 
 	/* Add SASE-type noise to Gaussian spectrum */
-	add_sase_noise(spectrum, spec_size);
+	add_sase_noise(spectrum, spec_size, rng);
 
 	/* Normalise intensity (before taking restricted number of samples) */
 	double total_weight = 0.0;

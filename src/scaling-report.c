@@ -196,6 +196,7 @@ static void partiality_graph(cairo_t *cr, Crystal **crystals, int n,
 	double pcalcmin[nbins];
 	double pcalcmax[nbins];
 	int num_nondud;
+	gsl_rng *rng;
 
 	show_text_simple(cr, "Observed partiality", -20.0, g_height/2.0,
 	                      NULL, -M_PI_2, J_CENTER);
@@ -222,6 +223,10 @@ static void partiality_graph(cairo_t *cr, Crystal **crystals, int n,
 		if ( crystal_get_user_flag(crystals[i]) ) continue;
 		num_nondud++;
 	}
+
+	/* The reflections chosen for the graph will be the same every time
+	 * (given the same sequence of input reflections, scalabilities etc) */
+	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
 	cairo_set_source_rgb(cr, 0.0, 0.7, 0.0);
 	prob = 1.0 / num_nondud;
@@ -279,12 +284,14 @@ static void partiality_graph(cairo_t *cr, Crystal **crystals, int n,
 
 			bin = nbins * pcalc;
 
-			if ( random_flat(1.0) < prob ) {
+			if ( random_flat(rng, 1.0) < prob ) {
 				plot_point(cr, g_width, g_height, pcalc, pobs);
 			}
 		}
 
 	}
+
+	gsl_rng_free(rng);
 
 	cairo_new_path(cr);
 	cairo_rectangle(cr, 0.0, 0.0, g_width, g_height);

@@ -3,7 +3,11 @@
  *
  * Check that unit cell transformations work
  *
- * Copyright © 2012 Thomas White <taw@physics.org>
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2012-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -111,6 +115,9 @@ int main(int argc, char *argv[])
 	int fail = 0;
 	UnitCell *cell, *cref;
 	UnitCellTransformation *tfn;
+	gsl_rng *rng;
+
+	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
 	cref = cell_new_from_parameters(50e-10, 55e-10, 70e-10,
 	                                deg2rad(67.0),
@@ -118,7 +125,7 @@ int main(int argc, char *argv[])
 	                                deg2rad(77.0));
 	if ( cref == NULL ) return 1;
 
-	cell = cell_rotate(cref, random_quaternion());
+	cell = cell_rotate(cref, random_quaternion(rng));
 	if ( cell == NULL ) return 1;
 	cell_free(cref);
 
@@ -171,6 +178,7 @@ int main(int argc, char *argv[])
 	tfn_free(tfn);
 
 	cell_free(cell);
+	gsl_rng_free(rng);
 
 	return fail;
 }

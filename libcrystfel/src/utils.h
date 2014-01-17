@@ -3,11 +3,11 @@
  *
  * Utility stuff
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -40,6 +40,7 @@
 #include <pthread.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
+#include <gsl/gsl_rng.h>
 
 
 #include "thread-pool.h"
@@ -89,7 +90,7 @@ struct quaternion {
 
 extern struct quaternion normalise_quaternion(struct quaternion q);
 extern double quaternion_modulus(struct quaternion q);
-extern struct quaternion random_quaternion(void);
+extern struct quaternion random_quaternion(gsl_rng *rng);
 extern int quaternion_valid(struct quaternion q);
 extern struct rvec quat_rot(struct rvec q, struct quaternion z);
 
@@ -114,10 +115,10 @@ extern int assplode(const char *a, const char *delims, char ***pbits,
                     AssplodeFlag flags);
 
 extern void progress_bar(int val, int total, const char *text);
-extern double random_flat(double max);
-extern double flat_noise(double expected, double width);
-extern double gaussian_noise(double expected, double stddev);
-extern int poisson_noise(double expected);
+extern double random_flat(gsl_rng *rng, double max);
+extern double flat_noise(gsl_rng *rng, double expected, double width);
+extern double gaussian_noise(gsl_rng *rng, double expected, double stddev);
+extern int poisson_noise(gsl_rng *rng, double expected);
 
 /* Keep these ones inline, to avoid function call overhead */
 static inline struct quaternion invalid_quaternion(void)

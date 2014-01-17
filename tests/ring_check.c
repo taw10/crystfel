@@ -1,10 +1,14 @@
 /*
- * integration_check.c
+ * ring_check.c
  *
  * Check peak integration
  *
- * Copyright © 2012 Thomas White <taw@physics.org>
- * Copyright © 2012 Andrew Martin <andrew.martin@desy.de>
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2011-2014 Thomas White <taw@physics.org>
+ *   2012      Andrew Martin <andrew.martin@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -41,7 +45,7 @@
 /* The third integration check draws a Poisson background and checks that, on
  * average, it gets subtracted by the background subtraction. */
 static void third_integration_check(struct image *image, int n_trials,
-                                    int *fail)
+                                    int *fail, gsl_rng *rng)
 {
 	double mean_intensity = 0.0;
 	double mean_bg = 0.0;
@@ -59,7 +63,8 @@ static void third_integration_check(struct image *image, int n_trials,
 
 		for ( fs=0; fs<image->width; fs++ ) {
 		for ( ss=0; ss<image->height; ss++ ) {
-			image->data[fs+image->width*ss] = poisson_noise(1000.0);
+			image->data[fs+image->width*ss]
+			                           = poisson_noise(rng, 1000.0);
 		}
 		}
 
@@ -100,7 +105,7 @@ static void third_integration_check(struct image *image, int n_trials,
  * top of it, then checks that the intensity of the peak is correctly recovered
  * accounting for the background. */
 static void fourth_integration_check(struct image *image, int n_trials,
-                                     int *fail)
+                                     int *fail, gsl_rng *rng)
 {
 	double mean_intensity = 0.0;
 	double mean_sigma = 0.0;
@@ -118,7 +123,7 @@ static void fourth_integration_check(struct image *image, int n_trials,
 		for ( fs=0; fs<image->width; fs++ ) {
 		for ( ss=0; ss<image->height; ss++ ) {
 			int idx = fs+image->width*ss;
-			image->data[idx] = poisson_noise(1000.0);
+			image->data[idx] = poisson_noise(rng, 1000.0);
 			if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
 			image->data[idx] += 1000.0;
 			pcount++;
@@ -162,16 +167,19 @@ int main(int argc, char *argv[])
 	double fsp, ssp, intensity, sigma;
 	int fs, ss;
 	FILE *fh;
-	unsigned int seed;
+	unsigned long int seed;
 	int fail = 0;
 	const int n_trials = 100;
 	int r, npx;
 	double ex;
+	gsl_rng *rng;
+
+	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
 	fh = fopen("/dev/urandom", "r");
 	fread(&seed, sizeof(seed), 1, fh);
 	fclose(fh);
-	srand(seed);
+	gsl_rng_set(rng, seed);
 
 	image.data = malloc(128*128*sizeof(float));
 	image.flags = NULL;
@@ -261,10 +269,10 @@ int main(int argc, char *argv[])
 	}
 
 	/* Third check: Poisson background should get mostly subtracted */
-	third_integration_check(&image, n_trials, &fail);
+	third_integration_check(&image, n_trials, &fail, rng);
 
 	/* Fourth check: peak on Poisson background */
-	fourth_integration_check(&image, n_trials, &fail);
+	fourth_integration_check(&image, n_trials, &fail, rng);
 
 	/* Fifth check: uniform peak on uniform background */
 	npx = 0;
@@ -307,6 +315,7 @@ int main(int argc, char *argv[])
 	free(image.det->panels);
 	free(image.det);
 	free(image.data);
+	gsl_rng_free(rng);
 
 	if ( fail ) return 1;
 

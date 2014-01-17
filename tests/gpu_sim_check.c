@@ -3,7 +3,11 @@
  *
  * Check that GPU simulation agrees with CPU version
  *
- * Copyright © 2012 Thomas White <taw@physics.org>
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2012-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -80,6 +84,9 @@ int main(int argc, char *argv[])
 	double start, end;
 	double gpu_time, cpu_time;
 	SymOpList *sym;
+	gsl_rng *rng;
+
+	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
 	gctx = setup_gpu(1, NULL, NULL, NULL, 0);
 	if ( gctx == NULL ) {
@@ -90,7 +97,7 @@ int main(int argc, char *argv[])
 	cell_raw = cell_new_from_parameters(28.1e-9, 28.1e-9, 16.5e-9,
 	                          deg2rad(90.0), deg2rad(90.0), deg2rad(120.0));
 
-	cell = cell_rotate(cell_raw, random_quaternion());
+	cell = cell_rotate(cell_raw, random_quaternion(rng));
 
 	gpu_image.width = 1024;
 	gpu_image.height = 1024;
@@ -216,6 +223,8 @@ int main(int argc, char *argv[])
 		return 1;
 
 	}
+
+	gsl_rng_free(rng);
 
 	return 0;
 }

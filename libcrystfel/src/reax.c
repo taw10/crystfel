@@ -793,6 +793,13 @@ static int check_twinning(UnitCell *c1, UnitCell *c2, int verbose)
 	double bx, by, bz;
 	double cx, cy, cz;
 
+	gsl_rng *rng;
+
+	/* This is a rubbish RNG, but it serves for this purpose: nothing more
+	 * than "I couldn't be bothered to think of n_trials sets of random
+	 * indices". */
+	rng = gsl_rng_alloc(gsl_rng_taus2);
+
 	cell_get_reciprocal(c1, &asx, &asy, &asz,
 	                        &bsx, &bsy, &bsz,
 	                        &csx, &csy, &csz);
@@ -807,9 +814,9 @@ static int check_twinning(UnitCell *c1, UnitCell *c2, int verbose)
 		double dev;
 		signed int h2i, k2i, l2i;
 
-		h = flat_noise(0, 10);
-		k = flat_noise(0, 10);
-		l = flat_noise(0, 10);
+		h = gsl_rng_uniform_int(rng, 10);
+		k = gsl_rng_uniform_int(rng, 10);
+		l = gsl_rng_uniform_int(rng, 10);
 
 		/* Position of this (randomly selected)
 		 * reciprocal lattice point */
@@ -843,6 +850,8 @@ static int check_twinning(UnitCell *c1, UnitCell *c2, int verbose)
 	if ( verbose ) {
 		STATUS("%i duplicates.\n", n_dup);
 	}
+
+	gsl_rng_free(rng);
 
 	if ( n_dup > 10 ) return 1;
 	return 0;

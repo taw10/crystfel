@@ -3,7 +3,11 @@
  *
  * Check that unit cells work correctly
  *
- * Copyright © 2012 Thomas White <taw@physics.org>
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2012-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -49,6 +53,9 @@ int main(int argc, char *argv[])
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
+	gsl_rng *rng;
+
+	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
 	cell = cell_new_from_parameters(27.155e-9, 28.155e-9, 10.987e-9,
 	                                deg2rad(90.0),
@@ -56,7 +63,7 @@ int main(int argc, char *argv[])
 	                                deg2rad(120.0));
 	if ( cell == NULL ) return 1;
 
-	orientation = random_quaternion();
+	orientation = random_quaternion(rng);
 	cell = cell_rotate(cell, orientation);
 
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
@@ -112,6 +119,7 @@ int main(int argc, char *argv[])
 	                         cx, cy, cz);
 	cell_print(cell);
 
+	gsl_rng_free(rng);
 
 	return fail;
 }

@@ -3,7 +3,11 @@
  *
  * Check 2D profile fitting
  *
- * Copyright © 2013 Thomas White <taw@physics.org>
+ * Copyright © 2013-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2013-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -48,7 +52,7 @@ int main(int argc, char *argv[])
 	struct image image;
 	int fs, ss;
 	FILE *fh;
-	unsigned int seed;
+	unsigned long int seed;
 	int fail = 0;
 	const int w = 1024;
 	const int h = 1024;
@@ -65,11 +69,14 @@ int main(int argc, char *argv[])
 	int n = 0;
 	int n_strong = 0;
 	int n_weak = 0;
+	gsl_rng *rng;
+
+	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
 	fh = fopen("/dev/urandom", "r");
 	fread(&seed, sizeof(seed), 1, fh);
 	fclose(fh);
-	srand(seed);
+	gsl_rng_set(rng, seed);
 
 	image.flags = NULL;
 	image.beam = NULL;
@@ -121,7 +128,7 @@ int main(int argc, char *argv[])
 	cell_set_centering(cell, 'P');
 	cell_set_parameters(cell, 800.0e-10, 800.0e-10, 800.0e-10,
 	                    deg2rad(90.0), deg2rad(90.0), deg2rad(90.0));
-	cell = cell_rotate(cell, random_quaternion());
+	cell = cell_rotate(cell, random_quaternion(rng));
 
 	cr = crystal_new();
 	crystal_set_profile_radius(cr, 0.001e9);
@@ -136,7 +143,7 @@ int main(int argc, char *argv[])
 
 	for ( fs=0; fs<w; fs++ ) {
 	for ( ss=0; ss<h; ss++ ) {
-		image.dp[0][fs+w*ss] = 10.0*poisson_noise(40);
+		image.dp[0][fs+w*ss] = 10.0*poisson_noise(rng, 40);
 	}
 	}
 
@@ -154,11 +161,11 @@ int main(int argc, char *argv[])
 		get_indices(refl, &hj, &kj, &lj);
 		if ( lj % 2 ) {
 			const int pk_ph = 1000;
-			ADD_PX(fs, ss, 10.0*poisson_noise(pk_ph));
-			ADD_PX(fs-1, ss, 10.0*poisson_noise(pk_ph));
-			ADD_PX(fs+1, ss, 10.0*poisson_noise(pk_ph));
-			ADD_PX(fs, ss-1, 10.0*poisson_noise(pk_ph));
-			ADD_PX(fs, ss+1, 10.0*poisson_noise(pk_ph));
+			ADD_PX(fs, ss, 10.0*poisson_noise(rng, pk_ph));
+			ADD_PX(fs-1, ss, 10.0*poisson_noise(rng, pk_ph));
+			ADD_PX(fs+1, ss, 10.0*poisson_noise(rng, pk_ph));
+			ADD_PX(fs, ss-1, 10.0*poisson_noise(rng, pk_ph));
+			ADD_PX(fs, ss+1, 10.0*poisson_noise(rng, pk_ph));
 			n_strong++;
 		} else {
 			/* Absent peak */
@@ -226,6 +233,7 @@ int main(int argc, char *argv[])
 	free(image.det);
 	free(image.dp[0]);
 	free(image.dp);
+	gsl_rng_free(rng);
 
 	if ( fail ) return 1;
 

@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 	struct image image;
 	int fs, ss;
 	FILE *fh;
-	unsigned int seed;
+	unsigned long int seed;
 	int fail = 0;
 	const int w = 128;
 	const int h = 128;
@@ -57,11 +57,14 @@ int main(int argc, char *argv[])
 	int i;
 	Histogram *hi;
 	double esd_sum = 0.0;
+	gsl_rng *rng;
+
+	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
 	fh = fopen("/dev/urandom", "r");
 	fread(&seed, sizeof(seed), 1, fh);
 	fclose(fh);
-	srand(seed);
+	gsl_rng_set(rng, seed);
 
 	image.flags = NULL;
 	image.beam = NULL;
@@ -110,7 +113,7 @@ int main(int argc, char *argv[])
 
 		for ( fs=0; fs<w; fs++ ) {
 		for ( ss=0; ss<h; ss++ ) {
-			image.dp[0][fs+w*ss] = 10.0*poisson_noise(40);
+			image.dp[0][fs+w*ss] = 10.0*poisson_noise(rng, 40);
 			if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 2 ) continue;
 			//image.dp[0][fs+w*ss] += 10.0*poisson_noise(10);
 		}
@@ -124,7 +127,7 @@ int main(int argc, char *argv[])
 		cell_set_centering(cell, 'P');
 		cell_set_parameters(cell, 800.0e-10, 800.0e-10, 800.0e-10,
 		                    deg2rad(90.0), deg2rad(90.0), deg2rad(90.0));
-		cell = cell_rotate(cell, random_quaternion());
+		cell = cell_rotate(cell, random_quaternion(rng));
 
 		ic.halfw = ir_out;
 		ic.image = &image;

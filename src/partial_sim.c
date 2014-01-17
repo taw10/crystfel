@@ -3,11 +3,11 @@
  *
  * Generate partials for testing scaling
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2013 Thomas White <taw@physics.org>
+ *   2011-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -39,6 +39,7 @@
 #include <getopt.h>
 #include <assert.h>
 #include <pthread.h>
+#include <gsl/gsl_rng.h>
 
 #include "image.h"
 #include "utils.h"
@@ -54,7 +55,7 @@
 #define NBINS 50
 
 
-static void mess_up_cell(Crystal *cr, double cnoise)
+static void mess_up_cell(Crystal *cr, double cnoise, gsl_rng *rng)
 {
 	double ax, ay, az;
 	double bx, by, bz;
@@ -65,15 +66,15 @@ static void mess_up_cell(Crystal *cr, double cnoise)
 	//cell_print(cell);
 
 	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	ax = flat_noise(ax, cnoise*fabs(ax)/100.0);
-	ay = flat_noise(ay, cnoise*fabs(ay)/100.0);
-	az = flat_noise(az, cnoise*fabs(az)/100.0);
-	bx = flat_noise(bx, cnoise*fabs(bx)/100.0);
-	by = flat_noise(by, cnoise*fabs(by)/100.0);
-	bz = flat_noise(bz, cnoise*fabs(bz)/100.0);
-	cx = flat_noise(cx, cnoise*fabs(cx)/100.0);
-	cy = flat_noise(cy, cnoise*fabs(cy)/100.0);
-	cz = flat_noise(cz, cnoise*fabs(cz)/100.0);
+	ax = flat_noise(rng, ax, cnoise*fabs(ax)/100.0);
+	ay = flat_noise(rng, ay, cnoise*fabs(ay)/100.0);
+	az = flat_noise(rng, az, cnoise*fabs(az)/100.0);
+	bx = flat_noise(rng, bx, cnoise*fabs(bx)/100.0);
+	by = flat_noise(rng, by, cnoise*fabs(by)/100.0);
+	bz = flat_noise(rng, bz, cnoise*fabs(bz)/100.0);
+	cx = flat_noise(rng, cx, cnoise*fabs(cx)/100.0);
+	cy = flat_noise(rng, cy, cnoise*fabs(cy)/100.0);
+	cz = flat_noise(rng, cz, cnoise*fabs(cz)/100.0);
 	cell_set_reciprocal(cell, ax, ay, az, bx, by, bz, cx, cy, cz);
 
 	//STATUS("Changed:\n");
@@ -89,7 +90,7 @@ static void calculate_partials(Crystal *cr,
                                pthread_rwlock_t *full_lock,
                                unsigned long int *n_ref, double *p_hist,
                                double *p_max, double max_q, double full_stddev,
-                               double noise_stddev)
+                               double noise_stddev, gsl_rng *rng)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -124,7 +125,7 @@ static void calculate_partials(Crystal *cr,
 				rfull = find_refl(full, h, k, l);
 				if ( rfull == NULL ) {
 					rfull = add_refl(full, h, k, l);
-					If = fabs(gaussian_noise(0.0,
+					If = fabs(gaussian_noise(rng, 0.0,
 					                         full_stddev));
 					set_intensity(rfull, If);
 					set_redundancy(rfull, 1);
@@ -160,7 +161,7 @@ static void calculate_partials(Crystal *cr,
 			       res, bin,  p);
 		}
 
-		Ip = gaussian_noise(Ip, noise_stddev);
+		Ip = gaussian_noise(rng, Ip, noise_stddev);
 
 		set_intensity(refl, Ip);
 		set_esd_intensity(refl, noise_stddev);
@@ -226,6 +227,7 @@ struct queue_args
 	double p_max[NBINS];
 
 	Stream *stream;
+	gsl_rng **rngs;
 };
 
 
@@ -280,14 +282,15 @@ static void run_job(void *vwargs, int cookie)
 	crystal_set_image(cr, &wargs->image);
 
 	do {
-		osf = gaussian_noise(1.0, qargs->osf_stddev);
+		osf = gaussian_noise(qargs->rngs[cookie], 1.0,
+		                     qargs->osf_stddev);
 	} while ( osf <= 0.0 );
 	crystal_set_osf(cr, osf);
 	crystal_set_mosaicity(cr, 0.0);
 	crystal_set_profile_radius(cr, wargs->image.beam->profile_radius);
 
 	/* Set up a random orientation */
-	orientation = random_quaternion();
+	orientation = random_quaternion(qargs->rngs[cookie]);
 	crystal_set_cell(cr, cell_rotate(qargs->cell, orientation));
 
 	snprintf(wargs->image.filename, 255, "dummy.h5");
@@ -305,10 +308,10 @@ static void run_job(void *vwargs, int cookie)
 	                   &qargs->full_lock,
 	                   wargs->n_ref, wargs->p_hist, wargs->p_max,
 	                   qargs->max_q, qargs->full_stddev,
-	                   qargs->noise_stddev);
+	                   qargs->noise_stddev, qargs->rngs[cookie]);
 
 	/* Give a slightly incorrect cell in the stream */
-	mess_up_cell(cr, qargs->cnoise);
+	mess_up_cell(cr, qargs->cnoise, qargs->rngs[cookie]);
 
 	image_add_crystal(&wargs->image, cr);
 }
@@ -367,6 +370,7 @@ int main(int argc, char *argv[])
 	double osf_stddev = 2.0;
 	double full_stddev = 1000.0;
 	double noise_stddev = 20.0;
+	gsl_rng *rng_for_seeds;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -623,6 +627,18 @@ int main(int argc, char *argv[])
 	qargs.noise_stddev = noise_stddev;
 	qargs.max_q = largest_q(&image);
 
+	qargs.rngs = malloc(n_threads * sizeof(gsl_rng *));
+	if ( qargs.rngs == NULL ) {
+		ERROR("Failed to allocate RNGs\n");
+		return 1;
+	}
+	rng_for_seeds = gsl_rng_alloc(gsl_rng_mt19937);
+	for ( i=0; i<n_threads; i++ ) {
+		qargs.rngs[i] = gsl_rng_alloc(gsl_rng_mt19937);
+		gsl_rng_set(qargs.rngs[i], gsl_rng_get(rng_for_seeds));
+	}
+	gsl_rng_free(rng_for_seeds);
+
 	for ( i=0; i<NBINS; i++ ) {
 		qargs.n_ref[i] = 0;
 		qargs.p_hist[i] = 0.0;
@@ -683,6 +699,9 @@ int main(int argc, char *argv[])
 
 	}
 
+	for ( i=0; i<n_threads; i++ ) {
+		gsl_rng_free(qargs.rngs[i]);
+	}
 	pthread_rwlock_destroy(&qargs.full_lock);
 	close_stream(stream);
 	cell_free(cell);
