@@ -3,11 +3,13 @@
  *
  * Calculate diffraction patterns by Fourier methods
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2014 Thomas White <taw@physics.org>
+ *   2013-2014 Chun Hong Yoon <chun.hong.yoon@desy.de>
+ *   2013      Alexandra Tolstikova
  *
  * This file is part of CrystFEL.
  *
@@ -325,7 +327,7 @@ static double molecule_factor(const double *intensities, const double *phases,
 	ld = q.u * cx + q.v * cy + q.w * cz;
 
 	/* No flags -> flat intensity distribution */
-	if ( flags == NULL ) return 1.0e5;
+	if ( flags == NULL ) return 100.0;
 
 	switch ( m ) {
 
@@ -358,18 +360,250 @@ static double molecule_factor(const double *intensities, const double *phases,
 }
 
 
+
+static void diffraction_at_k(struct image *image, const double *intensities,
+                             const double *phases, const unsigned char *flags,
+                             UnitCell *cell, GradientMethod m,
+                             const SymOpList *sym, double k,
+                             double ax, double ay, double az,
+                             double bx, double by, double bz,
+                             double cx, double cy, double cz,
+                             double *lut_a, double *lut_b, double *lut_c,
+                             double weight)
+{
+	unsigned int fs, ss;
+	const int nxs = 4;
+	const int nys = 4;
+
+	weight /= nxs*nys;
+
+	for ( fs=0; fs<image->width; fs++ ) {
+	for ( ss=0; ss<image->height; ss++ ) {
+
+		int idx;
+		double f_lattice, I_lattice;
+		double I_molecule;
+		struct rvec q;
+		double twotheta;
+		int xs, ys;
+		float xo, yo;
+
+		for ( xs=0; xs<nxs; xs++ ) {
+		for ( ys=0; ys<nys; ys++ ) {
+
+			xo = (1.0/nxs) * xs;
+			yo = (1.0/nys) * ys;
+
+			q = get_q(image, fs+xo, ss+yo, &twotheta, k);
+
+			f_lattice = lattice_factor(q, ax, ay, az,
+					           bx, by, bz,
+					           cx, cy, cz,
+					           lut_a, lut_b, lut_c);
+
+			I_molecule = molecule_factor(intensities,
+					             phases, flags, q,
+					             ax, ay, az,
+					             bx, by, bz,
+					             cx, cy, cz,
+					             m, sym);
+
+			I_lattice = pow(f_lattice, 2.0);
+
+			idx = fs + image->width*ss;
+			image->data[idx] += I_lattice * I_molecule * weight;
+			image->twotheta[idx] = twotheta;
+
+		}
+		}
+	}
+	progress_bar(fs, image->width-1, "Calculating diffraction");
+	}
+}
+
+
+static int compare_samples(const void *a, const void *b)
+{
+	struct sample *sample1 = (struct sample *)a;
+	struct sample *sample2 = (struct sample *)b;
+	if ( sample1->weight < sample2->weight ) {
+		return 1;
+	}
+	return -1;
+}
+
+
+static struct sample *get_gaussian_spectrum(double eV_cen, double eV_step,
+                                            double sigma, int spec_size)
+{
+	struct sample *spectrum;
+	int i;
+	double eV;
+
+	spectrum = malloc(spec_size * sizeof(struct sample));
+	if ( spectrum == NULL ) return NULL;
+
+	eV = eV_cen - (spec_size/2)*eV_step;
+	for ( i=0; i<spec_size; i++ ) {
+
+		spectrum[i].k = 1.0/ph_eV_to_lambda(eV);
+		spectrum[i].weight = exp(-(pow(eV - eV_cen, 2.0)
+		                         / (2.0*sigma*sigma)));
+		eV += eV_step;
+	}
+
+	return spectrum;
+}
+
+
+static int add_sase_noise(struct sample *spectrum, int nsteps)
+{
+	struct sample *noise;
+	int i, j;
+	double *gaussianNoise;
+	int shiftLim = 5;
+	double noise_mean = 0.0;
+	double noise_sigma = 1.0;
+
+	if ( shiftLim > nsteps ) shiftLim = nsteps;
+
+	noise = malloc(nsteps * sizeof(struct sample));
+	if ( noise == NULL ) return 1;
+
+	gaussianNoise = malloc(3 * nsteps * sizeof(double));
+	if ( gaussianNoise == NULL ) {
+		free(noise);
+		return 1;
+	}
+
+	/* Generate Gaussian noise of length of spectrum
+	 * (replicate on both ends for circshift below) */
+	for ( i=0; i<nsteps; i++) {
+
+		noise[i].weight = 0.0;
+
+		/* Gaussian noise with mean = 0, std = 1 */
+		gaussianNoise[i] = gaussian_noise(noise_mean, noise_sigma);
+		gaussianNoise[i+nsteps] = gaussianNoise[i];
+		gaussianNoise[i+2*nsteps] = gaussianNoise[i];
+	}
+
+	/* Sum Gaussian noise by circshifting by +/- shiftLim */
+	for ( i=nsteps; i<2*nsteps; i++ ) {
+		for ( j=-shiftLim; j<=shiftLim; j++ ) {
+			noise[i-nsteps].weight += gaussianNoise[i+j];
+		}
+	}
+
+	/* Normalize the number of circshift sum */
+	for ( i=0; i<nsteps; i++) {
+		noise[i].weight = noise[i].weight/(2*shiftLim+1);
+	}
+
+	/* Noise amplitude should have a 2 x Gaussian distribution */
+	for ( i=0; i<nsteps; i++ ) {
+		noise[i].weight = 2.0 * spectrum[i].weight * noise[i].weight;
+	}
+
+	/* Add noise to spectrum */
+	for ( i=0; i<nsteps; i++ ) {
+
+		spectrum[i].weight += noise[i].weight;
+
+		/* The final spectrum can not be negative */
+		if ( spectrum[i].weight < 0.0 ) spectrum[i].weight = 0.0;
+
+	}
+
+	return 0;
+}
+
+
+struct sample *generate_tophat(struct image *image)
+{
+	struct sample *spectrum;
+	int i;
+	double k, k_step;
+
+	double halfwidth = image->bw * image->lambda / 2.0;  /* m */
+	double mink = 1.0/(image->lambda + halfwidth);
+	double maxk = 1.0/(image->lambda - halfwidth);
+
+	spectrum = malloc(image->nsamples * sizeof(struct sample));
+	if ( spectrum == NULL ) return NULL;
+
+	k = mink;
+	k_step = (maxk-mink)/(image->nsamples-1);
+	for ( i=0; i<image->nsamples; i++ ) {
+		spectrum[i].k = k;
+		spectrum[i].weight = 1.0/(double)image->nsamples;
+		k += k_step;
+	}
+
+	image->spectrum_size = image->nsamples;
+
+	return spectrum;
+}
+
+
+struct sample *generate_SASE(struct image *image)
+{
+	struct sample *spectrum;
+	int i;
+	const int spec_size = 1024;
+	double eV_cen;  /* Central photon energy for this spectrum */
+	const double jitter_sigma_eV = 8.0;
+
+	/* Central wavelength jitters with Gaussian distribution */
+	eV_cen = gaussian_noise(ph_lambda_to_eV(image->lambda),
+	                        jitter_sigma_eV);
+
+	/* Convert FWHM to standard deviation.  Note that bandwidth is taken to
+	 * be "delta E over E" (E = photon energy), not the bandwidth in terms
+	 * of wavelength, but the difference should be very small */
+	double sigma = (image->bw*eV_cen) / (2.0*sqrt(2.0*log(2.0)));
+
+	/* The spectrum will be calculated to a resolution which spreads six
+	 * sigmas of the original (no SASE noise) Gaussian pulse over spec_size
+	 * points */
+	double eV_step = 6.0*sigma/(spec_size-1);
+
+	spectrum = get_gaussian_spectrum(eV_cen, eV_step, sigma, spec_size);
+
+	/* Add SASE-type noise to Gaussian spectrum */
+	add_sase_noise(spectrum, spec_size);
+
+	/* Normalise intensity (before taking restricted number of samples) */
+	double total_weight = 0.0;
+	for ( i=0; i<spec_size; i++ ) {
+		total_weight += spectrum[i].weight;
+	}
+	for ( i=0; i<spec_size; i++ ) {
+		spectrum[i].weight /= total_weight;
+	}
+
+	/* Sort samples in spectrum by weight.  Diffraction calculation will
+	 * take the requested number, starting from the brightest */
+	qsort(spectrum, spec_size, sizeof(struct sample), compare_samples);
+
+	image->spectrum_size = spec_size;
+
+	return spectrum;
+}
+
+
 void get_diffraction(struct image *image, int na, int nb, int nc,
                      const double *intensities, const double *phases,
                      const unsigned char *flags, UnitCell *cell,
                      GradientMethod m, const SymOpList *sym)
 {
-	unsigned int fs, ss;
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
 	double *lut_a;
 	double *lut_b;
 	double *lut_c;
+	int i;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -383,39 +617,18 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	lut_b = get_sinc_lut(nb);
 	lut_c = get_sinc_lut(nc);
 
-	for ( fs=0; fs<image->width; fs++ ) {
-	for ( ss=0; ss<image->height; ss++ ) {
+	for ( i=0; i<image->nsamples; i++ ) {
 
-		int idx;
-		double k;
-		double f_lattice, I_lattice;
-		double I_molecule;
-		struct rvec q;
-		double twotheta;
+		printf("%.1f eV, weight = %.5f\n",
+		       ph_lambda_to_eV(1.0/image->spectrum[i].k),
+		       image->spectrum[i].weight);
 
-		/* Calculate k this time round */
-		k = 1.0/image->lambda;
+		diffraction_at_k(image, intensities, phases,
+		                flags, cell, m, sym, image->spectrum[i].k,
+		                ax, ay, az, bx, by, bz, cx, cy, cz,
+		                lut_a, lut_b, lut_c, image->spectrum[i].weight);
 
-		q = get_q(image, fs, ss, &twotheta, k);
 
-		f_lattice = lattice_factor(q, ax, ay, az,
-		                              bx, by, bz,
-		                              cx, cy, cz,
-		                              lut_a, lut_b, lut_c);
-
-		I_molecule = molecule_factor(intensities,
-		                             phases, flags, q,
-		                             ax,ay,az,bx,by,bz,cx,cy,cz,
-		                             m, sym);
-
-		I_lattice = pow(f_lattice, 2.0);
-
-		idx = fs + image->width*ss;
-		image->data[idx] = I_lattice * I_molecule;
-		image->twotheta[idx] = twotheta;
-
-	}
-	progress_bar(fs, image->width-1, "Calculating diffraction");
 	}
 
 	free(lut_a);

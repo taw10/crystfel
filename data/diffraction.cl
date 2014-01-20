@@ -3,9 +3,27 @@
  *
  * GPU calculation kernel for truncated lattice diffraction
  *
- * (c) 2006-2010 Thomas White <taw@physics.org>
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
- * Part of CrystFEL - crystallography with a FEL
+ * Authors:
+ *   2009-2014 Thomas White <taw@physics.org>
+ *   2013      Alexandra Tolstikova
+ *
+ * This file is part of CrystFEL.
+ *
+ * CrystFEL is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * CrystFEL is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -13,13 +31,12 @@
 /* Maxmimum index to hold values up to (can be increased if necessary)
  * WARNING: Altering this value constitutes an ABI change, and means you must
  * update src/pattern_sim.h then recompile and reinstall everything. */
-#define INDMAX 120
+#define INDMAX 130
 #define IDIM (INDMAX*2 +1)
 
 #ifndef M_PI
 #define M_PI ((float)(3.14159265))
 #endif
-
 
 const sampler_t sampler_a = CLK_NORMALIZED_COORDS_TRUE
                              | CLK_ADDRESS_REPEAT
@@ -122,7 +139,7 @@ float molecule_factor(global float *intensities, global float *flags,
 	signed int i;
 
 	#ifdef FLAT_INTENSITIES
-	return 1.0e5;
+	return 100.0;
 	#else
 
 	hf = cell.s0*q.x + cell.s1*q.y + cell.s2*q.z;  /* h */
@@ -153,6 +170,15 @@ float molecule_factor(global float *intensities, global float *flags,
 	val += lookup_flagged_intensity(intensities, flags, -h, -k, -l);
 	val += lookup_flagged_intensity(intensities, flags, h, k, -l);
 	#endif /* PGMMM */
+
+	#ifdef PG321H
+	val += lookup_flagged_intensity(intensities, flags, h, k, l);
+	val += lookup_flagged_intensity(intensities, flags, i, h, l);
+	val += lookup_flagged_intensity(intensities, flags, k, h, -l);
+	val += lookup_flagged_intensity(intensities, flags, k, i, l);
+	val += lookup_flagged_intensity(intensities, flags, i, k, -l);
+	val += lookup_flagged_intensity(intensities, flags, h, i, -l);
+	#endif /* PG321H */
 
 	#ifdef PG6
 	val += lookup_flagged_intensity(intensities, flags,  h,  k,  l);
@@ -248,33 +274,36 @@ float molecule_factor(global float *intensities, global float *flags,
 	val += lookup_flagged_intensity(intensities, flags, -l,  h,  k);
 	#endif /* PGM3 */
 
+	/* FIXME: Add the remaining point groups */
+
 	return val;
 	#endif /* FLAT_INTENSITIIES */
 }
 
 
-kernel void diffraction(global float *diff, float k,
+kernel void diffraction(global float *diff, float k, float weight,
                         int w, float corner_x, float corner_y,
+                        float fsx, float fsy, float ssx, float ssy,
                         float res, float clen, float16 cell,
-                        global float *intensities,
+                        global float *intensities, global float *flags,
                         read_only image2d_t func_a,
                         read_only image2d_t func_b,
                         read_only image2d_t func_c,
-                        global float *flags,
-                        float fsx, float fsy, float ssx, float ssy,
-                        float xo, float yo)
+                        local float *tmp)
 {
-	float tt;
 	float fs, ss;
 	float f_lattice, I_lattice;
 	float I_molecule;
 	float4 q;
-	float intensity;
-	int idx;
+	const int ls0 = get_local_size(0);
+	const int ls1 = get_local_size(1);
+	const int li0 = get_local_id(0);
+	const int li1 = get_local_id(1);
+	const int ls = ls0 * ls1;
 
 	/* Calculate fractional coordinates in fs/ss */
-	fs = convert_float(get_global_id(0)) + xo;
-	ss = convert_float(get_global_id(1)) + yo;
+	fs = convert_float(get_global_id(0)) / convert_float(ls0);
+	ss = convert_float(get_global_id(1)) / convert_float(ls1);
 
 	/* Get the scattering vector */
 	q = get_q(fs, ss, res, clen, k,
@@ -285,7 +314,25 @@ kernel void diffraction(global float *diff, float k,
 	I_molecule = molecule_factor(intensities, flags, cell, q);
 	I_lattice = pow(f_lattice, 2.0f);
 
-	/* Write the value to memory */
-	idx = convert_int_rtz(fs) + w*convert_int_rtz(ss);
-	diff[idx] = I_molecule * I_lattice;
+	tmp[li0 + ls0*li1] = I_molecule * I_lattice;
+
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	/* First thread in group sums the samples */
+	if ( li0 + li1 == 0 ) {
+
+		int i;
+		float sum = 0.0;
+		float val;
+		int idx;
+
+		idx = convert_int_rtz(fs) + w*convert_int_rtz(ss);
+
+		for ( i=0; i<ls; i++ ) sum += tmp[i];
+
+		val = weight * sum / convert_float(ls);
+		diff[idx] = val;
+
+	}
+
 }

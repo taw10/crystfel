@@ -37,7 +37,7 @@
 /* Maxmimum index to hold values up to (can be increased if necessary)
  * WARNING: Altering this value constitutes an ABI change, and means you must
  * update data/diffraction.cl then recompile and reinstall everything. */
-#define INDMAX 120
+#define INDMAX 130
 
 /* Array size */
 #define IDIM (INDMAX*2 +1)

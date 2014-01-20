@@ -295,6 +295,8 @@ int hdf5_write_image(const char *filename, struct image *image)
 	herr_t r;
 	hsize_t size[2];
 	double lambda, eV;
+	double *arr;
+	int i;
 
 	fh = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	if ( fh < 0 ) {
@@ -362,11 +364,7 @@ int hdf5_write_image(const char *filename, struct image *image)
 	eV = ph_lambda_to_eV(image->lambda);
 	r = H5Dwrite(dh, H5T_NATIVE_DOUBLE, H5S_ALL,
 	             H5S_ALL, H5P_DEFAULT, &eV);
-	if ( r < 0 ) {
-		H5Dclose(dh);
-		H5Fclose(fh);
-		return 1;
-	}
+
 	H5Dclose(dh);
 
 	dh = H5Dcreate2(fh, "/LCLS/photon_wavelength_A", H5T_NATIVE_DOUBLE, sh,
@@ -383,6 +381,59 @@ int hdf5_write_image(const char *filename, struct image *image)
 		H5Fclose(fh);
 		return 1;
 	}
+
+	H5Dclose(dh);
+
+	arr = malloc(image->spectrum_size*sizeof(double));
+	if ( arr == NULL ) {
+		H5Fclose(fh);
+		return 1;
+	}
+	for ( i=0; i<image->spectrum_size; i++ ) {
+		arr[i] = 1.0e10/image->spectrum[i].k;
+	}
+
+	size[0] = image->spectrum_size;
+	sh = H5Screate_simple(1, size, NULL);
+
+	dh = H5Dcreate2(gh, "spectrum_wavelengths_A", H5T_NATIVE_DOUBLE, sh,
+	                H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		H5Fclose(fh);
+		return 1;
+	}
+	r = H5Dwrite(dh, H5T_NATIVE_DOUBLE, H5S_ALL,
+	             H5S_ALL, H5P_DEFAULT, arr);
+	H5Dclose(dh);
+
+	for ( i=0; i<image->spectrum_size; i++ ) {
+		arr[i] = image->spectrum[i].weight;
+	}
+	dh = H5Dcreate2(gh, "spectrum_weights", H5T_NATIVE_DOUBLE, sh,
+	                H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		H5Fclose(fh);
+		return 1;
+	}
+	r = H5Dwrite(dh, H5T_NATIVE_DOUBLE, H5S_ALL,
+	             H5S_ALL, H5P_DEFAULT, arr);
+
+	H5Dclose(dh);
+	free(arr);
+
+	size[0] = 1;
+	sh = H5Screate_simple(1, size, NULL);
+
+	dh = H5Dcreate2(gh, "number_of_samples", H5T_NATIVE_INT, sh,
+	                H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		H5Fclose(fh);
+		return 1;
+	}
+
+	r = H5Dwrite(dh, H5T_NATIVE_INT, H5S_ALL,
+	             H5S_ALL, H5P_DEFAULT, &image->nsamples);
+
 	H5Dclose(dh);
 
 	H5Gclose(gh);

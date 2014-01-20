@@ -142,14 +142,21 @@ int main(int argc, char *argv[])
 	beam = calloc(1, sizeof(struct beam_params));
 	beam->fluence = 1.0e15;  /* Does nothing */
 	beam->beam_radius = 1.0e-6;
-	beam->photon_energy = 9000.0;
-	beam->bandwidth = 0.1 / 100.0;
+	beam->photon_energy = 6000.0;
+	beam->bandwidth = 1.0 / 100.0;
 	beam->divergence = 0.0;
 	cpu_image.beam = beam;
 	gpu_image.beam = beam;
 
 	cpu_image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
 	gpu_image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
+	cpu_image.bw = beam->bandwidth;
+	gpu_image.bw = beam->bandwidth;
+
+	cpu_image.nsamples = 10;
+	gpu_image.nsamples = 10;
+	cpu_image.spectrum = generate_tophat(&cpu_image);
+	gpu_image.spectrum = generate_tophat(&gpu_image);
 
 	start = get_hires_seconds();
 	get_diffraction_gpu(gctx, &gpu_image, 8, 8, 8, cell);

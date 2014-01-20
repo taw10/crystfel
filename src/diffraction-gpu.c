@@ -3,11 +3,13 @@
  *
  * Calculate diffraction patterns by Fourier methods (GPU version)
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2009-2014 Thomas White <taw@physics.org>
+ *   2013      Alexandra Tolstikova
+ *   2013-2014 Chun Hong Yoon <chun.hong.yoon@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -168,18 +170,20 @@ static int set_arg_mem(struct gpu_context *gctx, int idx, cl_mem val)
 
 
 static void do_panels(struct gpu_context *gctx, struct image *image,
-                      int *n_inf, int *n_neg, int *n_nan, double k, double frac,
-                      double xo, double yo)
+                      double k, double weight,
+                      int *n_inf, int *n_neg, int *n_nan)
 {
 	int i;
+	const int sampling = 4;  /* This, squared, number of samples / pixel */
 
 	if ( set_arg_float(gctx, 1, k) ) return;
+	if ( set_arg_float(gctx, 2, weight) ) return;
 
 	/* Iterate over panels */
 	for ( i=0; i<image->det->n_panels; i++ ) {
 
 		size_t dims[2];
-		size_t ldims[2] = {1, 1};
+		size_t ldims[2];
 		struct panel *p;
 		cl_mem diff;
 		size_t diff_size;
@@ -203,20 +207,29 @@ static void do_panels(struct gpu_context *gctx, struct image *image,
 		}
 
 		if ( set_arg_mem(gctx, 0, diff) ) return;
-		if ( set_arg_int(gctx, 2, pan_width) ) return;
-		if ( set_arg_float(gctx, 3, p->cnx) ) return;
-		if ( set_arg_float(gctx, 4, p->cny) ) return;
-		if ( set_arg_float(gctx, 5, p->res) ) return;
-		if ( set_arg_float(gctx, 6, p->clen) ) return;
-		if ( set_arg_float(gctx, 13, p->fsx) ) return;
-		if ( set_arg_float(gctx, 14, p->fsy) ) return;
-		if ( set_arg_float(gctx, 15, p->ssx) ) return;
-		if ( set_arg_float(gctx, 16, p->ssy) ) return;
-		if ( set_arg_float(gctx, 17, xo) ) return;
-		if ( set_arg_float(gctx, 18, yo) ) return;
 
-		dims[0] = pan_width;
-		dims[1] = pan_height;
+		if ( set_arg_int(gctx, 3, pan_width) ) return;
+		if ( set_arg_float(gctx, 4, p->cnx) ) return;
+		if ( set_arg_float(gctx, 5, p->cny) ) return;
+		if ( set_arg_float(gctx, 6, p->fsx) ) return;
+		if ( set_arg_float(gctx, 7, p->fsy) ) return;
+		if ( set_arg_float(gctx, 8, p->ssx) ) return;
+		if ( set_arg_float(gctx, 9, p->ssy) ) return;
+		if ( set_arg_float(gctx, 10, p->res) ) return;
+		if ( set_arg_float(gctx, 11, p->clen) ) return;
+
+		dims[0] = pan_width * sampling;
+		dims[1] = pan_height * sampling;
+
+		ldims[0] = sampling;
+		ldims[1] = sampling;
+
+		err = clSetKernelArg(gctx->kern, 18,
+		                     sampling*sampling*sizeof(cl_float), NULL);
+		if ( err != CL_SUCCESS ) {
+			ERROR("Couldn't set local memory: %s\n", clError(err));
+			return;
+		}
 
 		err = clEnqueueNDRangeKernel(gctx->cq, gctx->kern, 2, NULL,
 		                             dims, ldims, 0, NULL, NULL);
@@ -250,7 +263,7 @@ static void do_panels(struct gpu_context *gctx, struct image *image,
 
 			tfs = p->min_fs + fs;
 			tss = p->min_ss + ss;
-			image->data[tfs + image->width*tss] += frac*val;
+			image->data[tfs + image->width*tss] += val;
 
 		}
 		}
@@ -276,78 +289,54 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	int n_neg = 0;
 	int n_nan = 0;
 	int fs, ss;
-	const int nkstep = 10;
-	const int nxs = 4;
-	const int nys = 4;
-	int kstep;
-	double klow, khigh, kinc, w;
-	double frac;
-	int xs, ys;
-	int n, ntot;
+	int i;
 
 	if ( gctx == NULL ) {
 		ERROR("GPU setup failed.\n");
 		return;
 	}
 
-	cell_get_cartesian(ucell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	cell.s[0] = ax;  cell.s[1] = ay;  cell.s[2] = az;
-	cell.s[3] = bx;  cell.s[4] = by;  cell.s[5] = bz;
-	cell.s[6] = cx;  cell.s[7] = cy;  cell.s[8] = cz;
-
 	/* Ensure all required LUTs are available */
 	check_sinc_lut(gctx, na);
 	check_sinc_lut(gctx, nb);
 	check_sinc_lut(gctx, nc);
 
-	if ( set_arg_mem(gctx, 8, gctx->intensities) ) return;
-	if ( set_arg_mem(gctx, 9, gctx->sinc_luts[na-1]) ) return;
-	if ( set_arg_mem(gctx, 10, gctx->sinc_luts[nb-1]) ) return;
-	if ( set_arg_mem(gctx, 11, gctx->sinc_luts[nc-1]) ) return;
-	if ( set_arg_mem(gctx, 12, gctx->flags) ) return;
-
 	/* Unit cell */
-	err = clSetKernelArg(gctx->kern, 7, sizeof(cl_float16), &cell);
+	cell_get_cartesian(ucell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	cell.s[0] = ax;  cell.s[1] = ay;  cell.s[2] = az;
+	cell.s[3] = bx;  cell.s[4] = by;  cell.s[5] = bz;
+	cell.s[6] = cx;  cell.s[7] = cy;  cell.s[8] = cz;
+
+	err = clSetKernelArg(gctx->kern, 12, sizeof(cl_float16), &cell);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set unit cell: %s\n", clError(err));
 		return;
 	}
 
+	if ( set_arg_mem(gctx, 13, gctx->intensities) ) return;
+	if ( set_arg_mem(gctx, 14, gctx->flags) ) return;
+	if ( set_arg_mem(gctx, 15, gctx->sinc_luts[na-1]) ) return;
+	if ( set_arg_mem(gctx, 16, gctx->sinc_luts[nb-1]) ) return;
+	if ( set_arg_mem(gctx, 17, gctx->sinc_luts[nc-1]) ) return;
+
 	/* Allocate memory for the result */
 	image->data = calloc(image->width * image->height, sizeof(float));
 
-	w = image->lambda * image->bw;
-	klow  = 1.0 / (image->lambda + (w/2.0));  /* Smallest k */
-	khigh = 1.0 / (image->lambda - (w/2.0));  /* Largest k */
-	kinc = (khigh-klow) / (nkstep+1);
+	double tot = 0.0;
+	for ( i=0; i<image->nsamples; i++ ) {
 
-	ntot = nkstep * nxs * nys;
-	frac = 1.0 / ntot;
+		printf("%.1f eV, weight = %.5f\n",
+		       ph_lambda_to_eV(1.0/image->spectrum[i].k),
+		       image->spectrum[i].weight);
 
-	n = 0;
-	for ( xs=0; xs<nxs; xs++ ) {
-	for ( ys=0; ys<nys; ys++ ) {
+		do_panels(gctx, image, image->spectrum[i].k,
+		          image->spectrum[i].weight,
+		          &n_inf, &n_neg, &n_nan);
 
-		double xo, yo;
+		tot += image->spectrum[i].weight;
 
-		xo = (1.0/nxs) * xs;
-		yo = (1.0/nys) * ys;
-
-		for ( kstep=0; kstep<nkstep; kstep++ ) {
-
-			double k;
-
-			k = klow + kstep*kinc;
-
-			do_panels(gctx, image, &n_inf, &n_neg, &n_nan, k, frac,
-			          xo, yo);
-
-			n++;
-			progress_bar(n, ntot, "Simulating");
-
-		}
 	}
-	}
+	printf("total weight = %f\n", tot);
 
 	if ( n_neg + n_inf + n_nan ) {
 		ERROR("WARNING: The GPU calculation produced %i negative"
@@ -360,16 +349,9 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	for ( fs=0; fs<image->width; fs++ ) {
 	for ( ss=0; ss<image->height; ss++ ) {
 
-		double twotheta, k;
-		int idx;
-
-		/* Calculate k this time round */
-		k = 1.0/image->lambda;
-
-		get_q(image, fs, ss, &twotheta, k);
-
-		idx = fs + image->width*ss;
-		image->twotheta[idx] = twotheta;
+		double twotheta;
+		get_q(image, fs, ss, &twotheta, 1.0/image->lambda);
+		image->twotheta[fs + image->width*ss] = twotheta;
 
 	}
 	}
@@ -437,7 +419,7 @@ struct gpu_context *setup_gpu(int no_sfac,
 		}
 	} else {
 		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
-			intensities_ptr[i] = 1e5;
+			intensities_ptr[i] = 100.0;  /* Does nothing */
 		}
 		strncat(cflags, "-DFLAT_INTENSITIES ", 511-strlen(cflags));
 	}
@@ -468,6 +450,8 @@ struct gpu_context *setup_gpu(int no_sfac,
 			strncat(cflags, "-DPG23 ", 511-strlen(cflags));
 		} else if ( strcmp(sym, "m-3") == 0 ) {
 			strncat(cflags, "-DPGM3 ", 511-strlen(cflags));
+		} else if ( strcmp(sym, "321_H") == 0 ) {
+			strncat(cflags, "-DPG321H ", 511-strlen(cflags));
 		} else {
 			ERROR("Sorry!  Point group '%s' is not currently"
 			      " supported on the GPU."

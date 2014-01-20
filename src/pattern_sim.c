@@ -110,6 +110,15 @@ static void show_help(const char *s)
 "     --max-size=<s>        Use <s> as the maximum crystal size in nm.\n"
 "                            --min-size is also required.\n"
 "     --no-noise            Do not calculate Poisson noise.\n"
+" -s, --sample-spectrum=<N> Use N samples from spectrum. Default 3.\n"
+" -x, --spectrum=<type>     Use <type> for the calculation of spectrum.\n"
+"                             Choose from:\n"
+"                             tophat :      Tophat spectrum. Bandwidth is\n"
+"                                           taken from beam parameters.\n"
+"                             SASE      :   SASE spectrum. Random SASE pulse \n"
+"                                           is generated from a model.\n"
+"                                           Bandwidth is taken from beam \n"
+"                                           parameters.\n"
 );
 }
 
@@ -253,7 +262,9 @@ int main(int argc, char *argv[])
 	char *outfile = NULL;
 	char *geometry = NULL;
 	char *beamfile = NULL;
+	char *spectrum_str = NULL;
 	GradientMethod grad;
+	SpectrumType spectrum_type;
 	int ndone = 0;    /* Number of simulations done (images or not) */
 	int number = 1;   /* Number used for filename of image */
 	int n_images = 1; /* Generate one image by default */
@@ -266,6 +277,7 @@ int main(int argc, char *argv[])
 	double max_size = 0.0;
 	char *sym_str = NULL;
 	SymOpList *sym;
+	int nsamples = 3;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -283,6 +295,9 @@ int main(int argc, char *argv[])
 		{"output",             1, NULL,               'o'},
 		{"geometry",           1, NULL,               'g'},
 		{"beam",               1, NULL,               'b'},
+		{"sample-spectrum",    1, NULL,               's'},
+		{"type-spectrum",      1, NULL,               'x'},
+		{"spectrum",           1, NULL,               'x'},
 		{"really-random",      0, &config_random,      1},
 		{"gpu-dev",            1, NULL,                2},
 		{"min-size",           1, NULL,                3},
@@ -291,7 +306,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hrn:i:t:p:o:g:b:y:",
+	while ((c = getopt_long(argc, argv, "hrn:i:t:p:o:g:b:y:s:x:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -342,6 +357,18 @@ int main(int argc, char *argv[])
 
 			case 'y' :
 			sym_str = strdup(optarg);
+			break;
+
+			case 's' :
+			nsamples = strtol(optarg, &rval, 10);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid number of spectrum samples.\n");
+				return 1;
+			}
+			break;
+
+			case 'x' :
+			spectrum_str = strdup(optarg);
 			break;
 
 			case 2 :
@@ -443,6 +470,20 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if ( spectrum_str == NULL ) {
+		STATUS("You didn't specify a spectrum type, so"
+		       " I'm using a 'tophat' spectrum.\n");
+		spectrum_type = SPECTRUM_TOPHAT;
+	} else if ( strcmp(spectrum_str, "tophat") == 0) {
+		spectrum_type = SPECTRUM_TOPHAT;
+	} else if ( strcmp(spectrum_str, "SASE") == 0) {
+		spectrum_type = SPECTRUM_SASE;
+	} else {
+		ERROR("Unrecognised spectrum type '%s'\n", spectrum_str);
+		return 1;
+	}
+	free(spectrum_str);
+
 	if ( intfile == NULL ) {
 
 		/* Gentle reminder */
@@ -504,12 +545,13 @@ int main(int argc, char *argv[])
 		ERROR("Photon energy must be specified, not taken from the"
 		      " HDF5 file.  Please alter %s accordingly.\n", beamfile)
 		return 1;
-	} else {
-		double wl = ph_en_to_lambda(eV_to_J(image.beam->photon_energy));
-		image.lambda = wl;
 	}
+
+	double wl = ph_en_to_lambda(eV_to_J(image.beam->photon_energy));
+	image.lambda = wl;
 	image.bw = image.beam->bandwidth;
 	image.div = image.beam->divergence;
+	image.nsamples = nsamples;
 	free(beamfile);
 
 	/* Load unit cell */
@@ -570,6 +612,18 @@ int main(int argc, char *argv[])
 		}
 
 		cell = cell_rotate(input_cell, orientation);
+
+		switch ( spectrum_type ) {
+
+			case SPECTRUM_TOPHAT :
+			image.spectrum = generate_tophat(&image);
+			break;
+
+			case SPECTRUM_SASE :
+			image.spectrum = generate_SASE(&image);
+			break;
+
+		}
 
 		/* Ensure no residual information */
 		image.data = NULL;
@@ -638,6 +692,7 @@ int main(int argc, char *argv[])
 		/* Clean up */
 		free(image.data);
 		free(image.twotheta);
+
 		cell_free(cell);
 
 skip:

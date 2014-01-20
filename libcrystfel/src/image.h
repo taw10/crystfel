@@ -44,6 +44,10 @@
 #include "crystal.h"
 #include "index.h"
 
+typedef enum {
+	SPECTRUM_TOPHAT,
+	SPECTRUM_SASE
+} SpectrumType;
 
 /* Structure describing a feature in an image */
 struct imagefeature {
@@ -66,6 +70,13 @@ struct imagefeature {
 
 /* An opaque type representing a list of image features */
 typedef struct _imagefeaturelist ImageFeatureList;
+
+/* Structure describing a wavelength sample from a spectrum */
+struct sample
+{
+	double k;
+	double weight;
+};
 
 
 /**
@@ -143,6 +154,10 @@ struct image {
 
 	int                     id;   /* ID number of the thread
 	                               * handling this image */
+
+	struct sample           *spectrum;
+	int                     nsamples; /* Number of wavelengths */
+	int                     spectrum_size;  /* Size of "spectrum" */
 
 	/* Per-shot radiation values */
 	double                  lambda;        /* Wavelength in m */
