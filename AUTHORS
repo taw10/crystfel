@@ -20,6 +20,7 @@
 
 * Chun Hong Yoon <chun.hong.yoon@desy.de>
   Speed improvements to indexamajig
+  pattern_sim overhaul and SASE spectrum simulation
 
 * Kenneth Beyerlein <kenneth.beyerlein@desy.de>
   General bug finding and fixing
@@ -38,3 +39,6 @@
 
 * Fedor Chervinskii <fedor.chervinskii@gmail.com>
   Rsplit_surface and clean-stream.py
+
+* Alexandra Tolstikova
+  SASE spectrum simulation
