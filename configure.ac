@@ -38,41 +38,71 @@ AC_ARG_WITH(gsl,
 
 
 AC_ARG_WITH(opencl, AS_HELP_STRING([--with-opencl], [Use OpenCL]))
+AC_ARG_WITH(opencl_dir, AS_HELP_STRING([--with-opencl-dir],
+            [Specify location of OpenCL headers and libraries]))
 AC_MSG_CHECKING([whether to use OpenCL])
+AS_IF([test "x$with_opencl_dir" != "x"], [with_opencl=yes])
 AS_IF([test "x$with_opencl" == "xyes"],
 [
    AC_MSG_RESULT([yes])
-
-   AC_MSG_CHECKING([cl.h])
-   AS_IF([test -f /System/Library/Frameworks/OpenCL.framework/Headers/cl.h],
+   AS_IF([test "x$with_opencl_dir" != "x"],
    [
-      AC_MSG_RESULT([/System/Library/Frameworks/OpenCL.framework/Headers/cl.h])
-      OPENCL_CFLAGS="-I/System/Library/Frameworks/OpenCL.framework/Headers"
-      OPENCL_LIBS="-framework OpenCL"
-   ], [
-      AS_IF([test -f /usr/local/cuda/cuda/include/CL/cl.h],
+      dnl Path manually given
+      AC_MSG_CHECKING([cl.h])
+      AS_IF([test -f ${with_opencl_dir}/include/CL/cl.h],
       [
-         AC_MSG_RESULT([/usr/local/cuda/cuda/include/CL/cl.h])
-         OPENCL_CFLAGS="-I/usr/local/cuda/cuda/include"
+         AC_MSG_RESULT([${with_opencl_dir}/include/CL/cl.h])
+         OPENCL_CFLAGS="-I${with_opencl_dir}/include"
          OPENCL_LIBS="-lOpenCL"
          cl_cl_h=true
+         have_opencl=true
       ], [
-         AS_IF([test -f /usr/local/cuda/include/CL/cl.h],
+         AS_IF([test -f ${with_opencl_dir}/include/cl.h],
          [
-            AC_MSG_RESULT([/usr/local/cuda/include/CL/cl.h])
-            OPENCL_CFLAGS="-I/usr/local/cuda/include"
+            AC_MSG_RESULT([${with_opencl_dir}/include/cl.h])
+            OPENCL_CFLAGS="-I${with_opencl_dir}/include/cl.h/include"
+            OPENCL_LIBS="-lOpenCL"
+            cl_cl_h=false
+            have_opencl=true
+         ], [
+            AC_MSG_RESULT([not found.])
+            AC_MSG_ERROR([Could not find cl.h])
+         ])
+      ])
+
+   ], [
+
+      dnl Attempt to automatically find the headers
+      AC_MSG_CHECKING([cl.h])
+      AS_IF([test -f /System/Library/Frameworks/OpenCL.framework/Headers/cl.h],
+      [
+         AC_MSG_RESULT([/System/Library/Frameworks/OpenCL.framework/Headers/cl.h])
+         OPENCL_CFLAGS="-I/System/Library/Frameworks/OpenCL.framework/Headers"
+         OPENCL_LIBS="-framework OpenCL"
+      ], [
+         AS_IF([test -f /opt/cuda/cuda/include/CL/cl.h],
+         [
+            AC_MSG_RESULT([/opt/cuda/cuda/include/CL/cl.h])
+            OPENCL_CFLAGS="-I/opt/cuda/cuda/include"
             OPENCL_LIBS="-lOpenCL"
             cl_cl_h=true
          ], [
-            AC_MSG_RESULT([not found, assuming /usr/include/CL/cl.h])
-            OPENCL_CFLAGS=""
-            OPENCL_LIBS="-lOpenCL"
-            cl_cl_h=true
-          ])
-       ])
+            AS_IF([test -f /opt/cuda/include/CL/cl.h],
+            [
+               AC_MSG_RESULT([/opt/cuda/include/CL/cl.h])
+               OPENCL_CFLAGS="-I/opt/cuda/include"
+               OPENCL_LIBS="-lOpenCL"
+               cl_cl_h=true
+            ], [
+               AC_MSG_RESULT([not found, assuming /usr/include/CL/cl.h])
+               OPENCL_CFLAGS=""
+               OPENCL_LIBS="-lOpenCL"
+               cl_cl_h=true
+             ])
+         ])
+      ])
+      have_opencl=true
    ])
-   AC_DEFINE([HAVE_OPENCL], [1], [Define to 1 if OpenCL is available])
-   have_opencl=true
 ], [
    AC_MSG_RESULT([no])
 ])
@@ -80,7 +110,10 @@ AS_IF([test x$cl_cl_h = xtrue],
 [
    AC_DEFINE([HAVE_CL_CL_H], [1], [Define to 1 if CL/cl.h should be used])
 ])
-
+AS_IF([test x$have_opencl = xtrue],
+[
+   AC_DEFINE([HAVE_OPENCL], [1], [Define to 1 if OpenCL is available])
+])
 
 AC_ARG_ENABLE(gtk, AS_HELP_STRING([--disable-gtk], [Disable GTK+/GLib]))
 have_gtk=false
