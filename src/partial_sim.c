@@ -371,6 +371,7 @@ int main(int argc, char *argv[])
 	double full_stddev = 1000.0;
 	double noise_stddev = 20.0;
 	gsl_rng *rng_for_seeds;
+	int config_random = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -388,6 +389,8 @@ int main(int argc, char *argv[])
 		{"osf-stddev",         1, NULL,                3},
 		{"full-stddev",        1, NULL,                4},
 		{"noise-stddev",       1, NULL,                5},
+
+		{"really-random",      0, &config_random,      1},
 
 		{0, 0, NULL, 0}
 	};
@@ -632,12 +635,38 @@ int main(int argc, char *argv[])
 		ERROR("Failed to allocate RNGs\n");
 		return 1;
 	}
-	rng_for_seeds = gsl_rng_alloc(gsl_rng_mt19937);
-	for ( i=0; i<n_threads; i++ ) {
-		qargs.rngs[i] = gsl_rng_alloc(gsl_rng_mt19937);
-		gsl_rng_set(qargs.rngs[i], gsl_rng_get(rng_for_seeds));
+
+	if ( config_random ) {
+
+		FILE *fh;
+
+		fh = fopen("/dev/urandom", "r");
+		if ( fh == NULL ) {
+			ERROR("Failed to open /dev/urandom.  Try again without"
+			      " --really-random.\n");
+			return 1;
+		}
+
+		for ( i=0; i<n_threads; i++ ) {
+
+			unsigned long int seed;
+
+			fread(&seed, sizeof(seed), 1, fh);
+			qargs.rngs[i] = gsl_rng_alloc(gsl_rng_mt19937);
+			gsl_rng_set(qargs.rngs[i], seed);
+
+		}
+
+		fclose(fh);
+
+	} else {
+		rng_for_seeds = gsl_rng_alloc(gsl_rng_mt19937);
+		for ( i=0; i<n_threads; i++ ) {
+			qargs.rngs[i] = gsl_rng_alloc(gsl_rng_mt19937);
+			gsl_rng_set(qargs.rngs[i], gsl_rng_get(rng_for_seeds));
+		}
+		gsl_rng_free(rng_for_seeds);
 	}
-	gsl_rng_free(rng_for_seeds);
 
 	for ( i=0; i<NBINS; i++ ) {
 		qargs.n_ref[i] = 0;
@@ -702,6 +731,7 @@ int main(int argc, char *argv[])
 	for ( i=0; i<n_threads; i++ ) {
 		gsl_rng_free(qargs.rngs[i]);
 	}
+	free(qargs.rngs);
 	pthread_rwlock_destroy(&qargs.full_lock);
 	close_stream(stream);
 	cell_free(cell);
