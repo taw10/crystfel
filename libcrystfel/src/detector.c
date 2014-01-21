@@ -3,12 +3,13 @@
  *
  * Detector properties
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2014 Thomas White <taw@physics.org>
+ *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *   2011      Andrew Aquila
  *   2011      Richard Kirian <rkirian@asu.edu>
  *
@@ -588,14 +589,16 @@ static void add_to_rigid_group(struct rigid_group *rg, struct panel *p)
 	rg->panels[rg->n_panels++] = p;
 }
 
-static void rigid_groups_free (struct detector *det)
+
+static void rigid_groups_free(struct detector *det)
 {
 	int i;
-	if ( det->rigid_groups == NULL) return;
-	for ( i = 0; i < det->n_rigid_groups; i++ ){
-		free( det->rigid_groups[i]->name );
-		free( det->rigid_groups[i]->panels );
-		free( det->rigid_groups[i] );
+
+	if ( det->rigid_groups == NULL ) return;
+	for ( i=0; i<det->n_rigid_groups; i++ ) {
+		free(det->rigid_groups[i]->name);
+		free(det->rigid_groups[i]->panels);
+		free(det->rigid_groups[i]);
 	}
 	free(det->rigid_groups);
 }
@@ -1082,7 +1085,7 @@ void free_detector_geometry(struct detector *det)
 
 	rigid_groups_free(det);
 
-	free( det->defaults.clen_from );
+	free(det->defaults.clen_from);
 
 	for ( i=0; i<det->n_panels; i++ ) {
 		free(det->panels[i].clen_from);

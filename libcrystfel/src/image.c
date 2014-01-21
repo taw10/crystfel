@@ -3,11 +3,12 @@
  *
  * Handle images and image features
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2012 Thomas White <taw@physics.org>
+ *   2011-2014 Thomas White <taw@physics.org>
+ *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -179,12 +180,13 @@ void image_add_crystal(struct image *image, Crystal *cryst)
 }
 
 
+/* Free all crystals, including their RefLists and UnitCells */
 void free_all_crystals(struct image *image)
 {
 	int i;
 	if ( image->crystals == NULL ) return;
 	for ( i=0; i<image->n_crystals; i++ ) {
-		Crystal *cr= image->crystals[i];
+		Crystal *cr = image->crystals[i];
 		reflist_free(crystal_get_reflections(cr));
 		cell_free(crystal_get_cell(cr));
 		crystal_free(image->crystals[i]);
