@@ -1037,6 +1037,8 @@ out:
 	det->max_fs = max_fs;
 	det->max_ss = max_ss;
 
+	free(det->defaults.clen_from);
+
 	/* Calculate matrix inverses and other stuff */
 	for ( i=0; i<det->n_panels; i++ ) {
 
@@ -1084,8 +1086,6 @@ void free_detector_geometry(struct detector *det)
 	int i;
 
 	rigid_groups_free(det);
-
-	free(det->defaults.clen_from);
 
 	for ( i=0; i<det->n_panels; i++ ) {
 		free(det->panels[i].clen_from);
