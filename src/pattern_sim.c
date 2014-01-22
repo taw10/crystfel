@@ -436,9 +436,9 @@ int main(int argc, char *argv[])
 		STATUS("You didn't specify a spectrum type, so"
 		       " I'm using a 'tophat' spectrum.\n");
 		spectrum_type = SPECTRUM_TOPHAT;
-	} else if ( strcmp(spectrum_str, "tophat") == 0) {
+	} else if ( strcasecmp(spectrum_str, "tophat") == 0) {
 		spectrum_type = SPECTRUM_TOPHAT;
-	} else if ( strcmp(spectrum_str, "SASE") == 0) {
+	} else if ( strcasecmp(spectrum_str, "sase") == 0) {
 		spectrum_type = SPECTRUM_SASE;
 	} else {
 		ERROR("Unrecognised spectrum type '%s'\n", spectrum_str);
