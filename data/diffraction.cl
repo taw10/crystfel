@@ -171,6 +171,24 @@ float molecule_factor(global float *intensities, global float *flags,
 	val += lookup_flagged_intensity(intensities, flags, h, k, -l);
 	#endif /* PGMMM */
 
+	#ifdef PG4
+	val += lookup_flagged_intensity(intensities, flags, -k, h, l);
+	val += lookup_flagged_intensity(intensities, flags, h, k, l);
+	val += lookup_flagged_intensity(intensities, flags, -h, -k, l);
+	val += lookup_flagged_intensity(intensities, flags, k, -h, l);
+	#endif /* PG4 */
+
+	#ifdef PG422
+	val += lookup_flagged_intensity(intensities, flags, -k, h, l);
+	val += lookup_flagged_intensity(intensities, flags, -h, k, l);
+	val += lookup_flagged_intensity(intensities, flags, h, k, l);
+	val += lookup_flagged_intensity(intensities, flags, -h, -k, l);
+	val += lookup_flagged_intensity(intensities, flags, -k, -h, -l);
+	val += lookup_flagged_intensity(intensities, flags, k, h, -l);
+	val += lookup_flagged_intensity(intensities, flags, k, -h, -l);
+	val += lookup_flagged_intensity(intensities, flags, h, -k, -l);
+	#endif /* PG422 */
+
 	#ifdef PG321H
 	val += lookup_flagged_intensity(intensities, flags, h, k, l);
 	val += lookup_flagged_intensity(intensities, flags, i, h, l);
