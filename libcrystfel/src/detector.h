@@ -3,12 +3,12 @@
  *
  * Detector properties
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2014 Thomas White <taw@physics.org>
  *   2011-2012 Richard Kirian <rkirian@asu.edu>
  *   2011      Andrew Aquila
  *
@@ -153,7 +153,8 @@ extern double get_tt(struct image *image, double xs, double ys, int *err);
 
 extern int in_bad_region(struct detector *det, double fs, double ss);
 
-extern void record_image(struct image *image, int do_poisson, gsl_rng *rng);
+extern void record_image(struct image *image, int do_poisson, int background,
+                         gsl_rng *rng);
 
 extern struct panel *find_panel(struct detector *det, double fs, double ss);
 

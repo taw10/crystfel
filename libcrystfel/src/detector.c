@@ -312,7 +312,8 @@ double get_tt(struct image *image, double fs, double ss, int *err)
 }
 
 
-void record_image(struct image *image, int do_poisson, gsl_rng *rng)
+void record_image(struct image *image, int do_poisson, int background,
+                  gsl_rng *rng)
 {
 	int x, y;
 	double total_energy, energy_density;
@@ -345,6 +346,7 @@ void record_image(struct image *image, int do_poisson, gsl_rng *rng)
 		double pix_area, Lsq;
 		double xs, ys, rx, ry;
 		double dsq, proj_area;
+		float dval;
 		struct panel *p;
 
 		intensity = (double)image->data[x + image->width*y];
@@ -378,8 +380,13 @@ void record_image(struct image *image, int do_poisson, gsl_rng *rng)
 			counts = cf;
 		}
 
-		image->data[x + image->width*y] = counts * p->adu_per_eV
-		                               * ph_lambda_to_eV(image->lambda);
+		/* Number of photons in pixel */
+		dval = counts + poisson_noise(rng, background);
+
+		/* Convert to ADU */
+		dval *= p->adu_per_eV * ph_lambda_to_eV(image->lambda);
+
+		image->data[x + image->width*y] = dval;
 
 		/* Sanity checks */
 		if ( isinf(image->data[x+image->width*y]) ) n_inf2++;

@@ -89,6 +89,7 @@ static void show_help(const char *s)
 "     --no-noise            Do not calculate Poisson noise.\n"
 " -s, --sample-spectrum=<N> Use N samples from spectrum. Default 3.\n"
 " -x, --spectrum=<type>     Type of spectrum to simulate.\n"
+"     --background=<N>      Add N photons of Poisson background (default 0).\n"
 );
 }
 
@@ -249,6 +250,7 @@ int main(int argc, char *argv[])
 	SymOpList *sym;
 	int nsamples = 3;
 	gsl_rng *rng;
+	int background = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -273,6 +275,7 @@ int main(int argc, char *argv[])
 		{"gpu-dev",            1, NULL,                2},
 		{"min-size",           1, NULL,                3},
 		{"max-size",           1, NULL,                4},
+		{"background",         1, NULL,                5},
 		{0, 0, NULL, 0}
 	};
 
@@ -362,6 +365,14 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			random_size++;
+			break;
+
+			case 5 :
+			background = strtol(optarg, &rval, 10);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid background level.\n");
+				return 1;
+			}
 			break;
 
 			case 0 :
@@ -622,7 +633,7 @@ int main(int argc, char *argv[])
 			goto skip;
 		}
 
-		record_image(&image, !config_nonoise, rng);
+		record_image(&image, !config_nonoise, background, rng);
 
 		if ( powder_fn != NULL ) {
 
