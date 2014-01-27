@@ -451,6 +451,11 @@ int main(int argc, char *argv[])
 		spectrum_type = SPECTRUM_TOPHAT;
 	} else if ( strcasecmp(spectrum_str, "sase") == 0) {
 		spectrum_type = SPECTRUM_SASE;
+	} else if ( strcasecmp(spectrum_str, "twocolour") == 0 ||
+                    strcasecmp(spectrum_str, "twocolor") == 0 ||
+                    strcasecmp(spectrum_str, "twocolours") == 0 ||
+                    strcasecmp(spectrum_str, "twocolors") == 0) {
+		spectrum_type = SPECTRUM_TWOCOLOUR;
 	} else {
 		ERROR("Unrecognised spectrum type '%s'\n", spectrum_str);
 		return 1;
@@ -605,6 +610,10 @@ int main(int argc, char *argv[])
 			case SPECTRUM_SASE :
 			image.spectrum = generate_SASE(&image, rng);
 			break;
+
+                        case SPECTRUM_TWOCOLOUR :
+                        image.spectrum = generate_twocolour(&image);
+                        break;
 
 		}
 
