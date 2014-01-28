@@ -108,6 +108,8 @@ typedef struct {
 	double          ring_radius;
 	double          *ring_radii;
 	int             n_rings;
+	int             calib_mode;
+	int             calib_mode_curr_quad;
 
 	int		show_col_scale;
 	int		scale;
@@ -119,7 +121,7 @@ typedef struct {
 extern DisplayWindow *displaywindow_open(const char *filename,
                                          const char *peaks, double boost,
                                          int binning,
-                                         int noisefilter, int colscale,
+                                         int noisefilter, int calibmode, int colscale,
                                          const char *element,
                                          const char *geometry, const char *beam,
                                          int show_rings,

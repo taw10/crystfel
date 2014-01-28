@@ -61,7 +61,7 @@ static void show_help(const char *s)
 "      --filter-noise               Apply an aggressive noise filter to the\n"
 "                                    image data.\n"
 "      --median-filter=<n>          Apply a median filter to the image data.\n"
-
+"      --calibration-mode           Starts in calibration mode\n"
 "      --show-rings                 Overlay rings that indicate resolution.\n"
 "      --simple-rings=XX,YY,...     Overlay rings at specified radii XX, YY, ...\n"
 "                                    in pixel units.\n"
@@ -115,6 +115,7 @@ int main(int argc, char *argv[])
 	int binning = 2;
 	int config_noisefilter = 0;
 	int config_showrings = 0;
+	int config_calibmode =0;
 	int colscale = SCALE_COLOUR;
 	char *cscale = NULL;
 	char *element = NULL;
@@ -141,6 +142,7 @@ int main(int argc, char *argv[])
 		{"ring-size",          1, NULL,                2},
 		{"simple-rings",       1, NULL,               'r'},
 		{"median-filter",      1, NULL,                3},
+		{"calibration-mode",   0, &config_calibmode,   1},
 		{0, 0, NULL, 0}
 	};
 
@@ -276,6 +278,7 @@ int main(int argc, char *argv[])
 		main_window_list[i] = displaywindow_open(argv[optind+i], peaks,
 		                                         boost, binning,
 		                                         config_noisefilter,
+	                                                 config_calibmode,
 		                                         colscale, element,
 		                                         geometry, beam,
 		                                         config_showrings,

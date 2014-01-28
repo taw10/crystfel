@@ -39,6 +39,7 @@
 #include <string.h>
 #include <cairo.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
+#include <gdk/gdkkeysyms.h>
 
 #include "dw-hdfsee.h"
 #include "hdfsee-render.h"
@@ -1012,6 +1013,26 @@ static int load_geometry_file(DisplayWindow *dw, struct image *image,
 	return 0;
 }
 
+static int save_geometry_file(DisplayWindow *dw)
+{
+	GtkWidget *d;
+	gchar * filename;
+	int w;
+
+	d = gtk_file_chooser_dialog_new("Save Calibration Geometry",
+	                                GTK_WINDOW(dw->window),
+	                                GTK_FILE_CHOOSER_ACTION_SAVE,
+	                                GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                        GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+	                                NULL);
+
+	gtk_dialog_run (GTK_DIALOG (d));
+	filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER (d));
+	w = write_detector_geometry(filename, dw->image->det);
+	gtk_widget_destroy(d);
+	g_free(filename);
+	return w;
+}
 
 static gint displaywindow_loadgeom_response(GtkWidget *d, gint response,
                                             DisplayWindow *dw)
@@ -1096,6 +1117,25 @@ static gint displaywindow_set_usegeom(GtkWidget *d, DisplayWindow *dw)
 	return 0;
 }
 
+static gint displaywindow_set_calibmode(GtkWidget *d, DisplayWindow *dw)
+{
+
+	GtkWidget *w;
+	w =  gtk_ui_manager_get_widget(dw->ui,
+	                                       "/ui/displaywindow/tools/calibmode");
+
+	if (dw->use_geom == 0) {
+		gtk_check_menu_item_set_state(GTK_CHECK_MENU_ITEM(w),0);
+	} else {
+
+		/* Get new value */
+		dw->calib_mode = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(w));
+
+		displaywindow_update(dw);
+	}
+
+	return 0;
+}
 
 static gint displaywindow_set_rings(GtkWidget *d, DisplayWindow *dw)
 {
@@ -1495,6 +1535,8 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 	GtkToggleActionEntry toggles[] = {
 		{ "GeometryAction", NULL, "Use Detector Geometry", NULL, NULL,
 			G_CALLBACK(displaywindow_set_usegeom), FALSE },
+		{ "CalibModeAction", NULL, "Calibration Mode", NULL, NULL,
+			G_CALLBACK(displaywindow_set_calibmode), FALSE },
 		{ "ColScaleAction", NULL, "Colour Scale", NULL, NULL,
 			G_CALLBACK(displaywindow_set_colscale), FALSE },
 		{ "RingsAction", NULL, "Resolution Rings", "F9", NULL,
@@ -1818,9 +1860,80 @@ static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
 }
 
 
+static gint displaywindow_keypress(GtkWidget *widget, GdkEventKey *event,
+								   DisplayWindow *dw)
+{
+	int pi,s;
+
+	if (dw->calib_mode == 0) {
+		return 0;
+	}
+
+	switch (event->keyval) {
+
+		case GDK_Up:
+		for (pi=0;pi<dw->image->det->rigid_groups[dw->calib_mode_curr_quad]->n_panels;++pi) {
+			dw->image->det->rigid_groups[dw->calib_mode_curr_quad]->panels[pi]->cny += 1.0;
+		}
+		redraw_window(dw);
+		break;
+
+		case GDK_Down:
+		for (pi=0;pi<dw->image->det->rigid_groups[dw->calib_mode_curr_quad]->n_panels;++pi) {
+			dw->image->det->rigid_groups[dw->calib_mode_curr_quad]->panels[pi]->cny -= 1.0;
+		}
+		while (gtk_events_pending()) {
+		gtk_main_iteration_do(FALSE);
+		}
+		redraw_window(dw);
+		break;
+
+		case GDK_Left:
+		for (pi=0;pi<dw->image->det->rigid_groups[dw->calib_mode_curr_quad]->n_panels;++pi) {
+			dw->image->det->rigid_groups[dw->calib_mode_curr_quad]->panels[pi]->cnx -= 1.0;
+		}
+		redraw_window(dw);
+		break;
+
+		case GDK_Right:
+		for (pi=0;pi<dw->image->det->rigid_groups[dw->calib_mode_curr_quad]->n_panels;++pi) {
+			dw->image->det->rigid_groups[dw->calib_mode_curr_quad]->panels[pi]->cnx += 1.0;
+		}
+		redraw_window(dw);
+		break;
+
+		case GDK_1:
+		dw->calib_mode_curr_quad = 0;
+		break;
+
+		case GDK_2:
+		dw->calib_mode_curr_quad = 1;
+		break;
+
+		case GDK_3:
+		dw->calib_mode_curr_quad = 2;
+		break;
+
+		case GDK_4:
+		dw->calib_mode_curr_quad = 3;
+		break;
+
+		case GDK_s:
+		s = save_geometry_file(dw);
+		if ( s != 0 ) {
+			if ( s != 2 ) {
+				displaywindow_error(dw, "Unable to save the calibration geometry.");
+			}
+		}
+		break;
+    }
+
+    return 0;
+}
+
 DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
                                   double boost, int binning,
-                                  int noisefilter, int colscale,
+                                  int noisefilter, int calibmode, int colscale,
                                   const char *element, const char *geometry,
                                   const char *beam,
                                   int show_rings, double *ring_radii,
@@ -1831,6 +1944,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	char *title;
 	GtkWidget *vbox;
 	GtkWidget *w;
+	GtkWidget *ww;
 
 	dw = calloc(1, sizeof(DisplayWindow));
 	if ( dw == NULL ) return NULL;
@@ -1857,6 +1971,8 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->n_rings = n_rings;
 	dw->median_filter = median_filter;
 	dw->image = calloc(1, sizeof(struct image));
+	dw->calib_mode = 0;
+	dw->calib_mode_curr_quad = 0;
 
 	if ( beam != NULL ) {
 		dw->image->beam = get_beam_parameters(beam);
@@ -1940,18 +2056,32 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 		load_geometry_file(dw, dw->image, geometry);
 	}
 
+	if (dw->use_geom == 1) {
+		dw->calib_mode = calibmode;
+	}
+
+	if (dw->calib_mode == 1) {
+		ww = gtk_ui_manager_get_widget(dw->ui, "/ui/displaywindow/tools/calibmode");
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(ww), TRUE);
+	}
+
 	displaywindow_update(dw);
 
 	gtk_widget_add_events(GTK_WIDGET(dw->drawingarea),
 	                      GDK_BUTTON_PRESS_MASK
 	                      | GDK_BUTTON_RELEASE_MASK
-	                      | GDK_BUTTON1_MOTION_MASK);
+	                      | GDK_BUTTON1_MOTION_MASK
+	                      | GDK_KEY_PRESS_MASK);
 	g_object_set(G_OBJECT(dw->drawingarea), "can-focus", TRUE, NULL);
+
+	gtk_widget_grab_focus(dw->drawingarea);
 
 	g_signal_connect(GTK_OBJECT(dw->drawingarea), "button-press-event",
 	                 G_CALLBACK(displaywindow_press), dw);
 	g_signal_connect(GTK_OBJECT(dw->drawingarea), "button-release-event",
 	                 G_CALLBACK(displaywindow_release), dw);
+	g_signal_connect(GTK_OBJECT(dw->drawingarea), "key-press-event",
+	                 G_CALLBACK(displaywindow_keypress), dw);
 
 	displaywindow_update_menus(dw, element);
 	dw->not_ready_yet = 0;
