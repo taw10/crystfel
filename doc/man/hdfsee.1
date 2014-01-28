@@ -48,7 +48,13 @@ Get the image data to display from \fIpath\fR inside the HDF5 file.  For example
 .IP "\fB-g\fR \fIfilename\fR"
 .IP \fB--geometry=\fR\fIfilename\fR
 .PD
-Display the image data according to the geometry description in \fIfilename\fR.  Out of plane components of the geometry will be ignored.  This is required, in addition to a wavelength in the HDF5 file (as /LCLS/photon_wavelength_nm or /LCLS/photon_wavelength_A), to display resolution rings.
+Display the image data according to the geometry description in \fIfilename\fR.  Out of plane components of the geometry will be ignored.  This is required, in addition to a beam file, to display resolution rings.
+
+.PD 0
+.IP "\fB-m\fR \fIfilename\fR"
+.IP \fB--beam=\fR\fIfilename\fR
+.PD
+Get beam parameters from \fIfilename\fR.  This is required, in addition to a geometry file, to display resolution rings.  Note that the short version of this option is \fB-m\fR, not \fB-b\fR as for all other CrystFEL programs.
 
 .PD 0
 .IP "\fB-i\fR \fIn\fR"
@@ -59,12 +65,12 @@ Multiply the intensity in the image by \fIn\fR before displaying.  With n=1, the
 .PD 0
 .IP \fB--show-rings\fR
 .PD
-Show resolution rings on the image at 1 Angstrom intervals.
+Show resolution rings on the image at 1 Angstrom intervals.  You must provide both a geometry and a beam file to use this option.
 
 .PD 0
 .IP \fB--simple-rings=\fR\fIradii\fR
 .PD
-Show rings on the image with the radii specified.  \fIradii\fR can be a comma-deliminated list of several values, for example \fI100,200\fR.  The radii have units of pixels on the detector before bininng.
+Show rings on the image with the radii specified.  \fIradii\fR can be a comma-deliminated list of several values, for example \fI100,200\fR.  The radii have units of pixels on the detector before bininng.  You must provide a geometry file to use this option.
 
 .PD 0
 .IP \fB-c\fR \fIscale\fR
