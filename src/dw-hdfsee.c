@@ -1902,7 +1902,23 @@ static gint displaywindow_keypress(GtkWidget *widget, GdkEventKey *event,
 		redraw_window(dw);
 		break;
 
-		case GDK_1:
+		case GDK_plus:
+		if (dw->calib_mode_curr_quad == (dw->image->det->n_rigid_groups-1)) {
+			dw->calib_mode_curr_quad = 0;
+		} else {
+			dw->calib_mode_curr_quad += 1;
+		}
+		break;
+
+		case GDK_minus:
+		if (dw->calib_mode_curr_quad == 0) {
+			dw->calib_mode_curr_quad = (dw->image->det->n_rigid_groups-1);
+		} else {
+			dw->calib_mode_curr_quad -= 1;
+		}
+		break;
+
+	        case GDK_1:
 		dw->calib_mode_curr_quad = 0;
 		break;
 
