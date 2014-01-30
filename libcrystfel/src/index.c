@@ -12,6 +12,7 @@
  *   2010-2011 Richard Kirian <rkirian@asu.edu>
  *   2012      Lorenzo Galli
  *   2013      Cornelius Gati <cornelius.gati@cfel.de>
+ *   2015	   Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -51,6 +52,7 @@
 #include "index.h"
 #include "geometry.h"
 #include "cell-utils.h"
+#include "felix.h"
 
 
 static int debug_index(struct image *image)
@@ -67,7 +69,8 @@ static int debug_index(struct image *image)
 
 
 IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
-                                   struct detector *det, float *ltl)
+                                   struct detector *det, float *ltl,
+                                   const char *options)
 {
 	int n;
 	int nm = 0;
@@ -104,6 +107,10 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 
 			case INDEXING_DEBUG :
 			iprivs[n] = (IndexingPrivate *)strdup("Hello!");
+			break;
+
+			case INDEXING_FELIX :
+			iprivs[n] = felix_prepare(&indm[n], cell, det, ltl, options);
 			break;
 
 			default :
@@ -170,8 +177,12 @@ void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
 			mosflm_cleanup(privs[n]);
 			break;
 
-                        case INDEXING_XDS :
+			case INDEXING_XDS :
 			xds_cleanup(privs[n]);
+			break;
+
+			case INDEXING_FELIX :
+			felix_cleanup(privs[n]);
 			break;
 
 			case INDEXING_DEBUG :
@@ -244,6 +255,11 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		case INDEXING_DEBUG :
 		return debug_index(image);
+		break;
+
+		case INDEXING_FELIX :
+		return felix_index(image, ipriv);
+		break;
 
 		default :
 		ERROR("Unrecognised indexing method: %i\n", indm);
@@ -366,6 +382,10 @@ char *indexer_str(IndexingMethod indm)
 		strcpy(str, "mosflm");
 		break;
 
+		case INDEXING_FELIX :
+		strcpy(str, "felix");
+		break;
+
 		case INDEXING_XDS :
 		strcpy(str, "xds");
 		break;
@@ -438,8 +458,11 @@ IndexingMethod *build_indexer_list(const char *str)
 		} else if ( strcmp(methods[i], "mosflm") == 0) {
 			list[++nmeth] = INDEXING_DEFAULTS_MOSFLM;
 
-        } else if ( strcmp(methods[i], "xds") == 0) {
+		} else if ( strcmp(methods[i], "xds") == 0) {
 			list[++nmeth] = INDEXING_DEFAULTS_XDS;
+
+		} else if ( strcmp(methods[i], "felix") == 0) {
+			list[++nmeth] = INDEXING_DEFAULTS_FELIX;
 
 		} else if ( strcmp(methods[i], "none") == 0) {
 			list[++nmeth] = INDEXING_NONE;

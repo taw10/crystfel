@@ -140,6 +140,11 @@ static void show_help(const char *s)
 "     --no-refls-in-stream Do not record integrated reflections in the stream.\n"
 "     --int-diag=<cond>    Show debugging information about reflections.\n"
 "     --no-refine          Skip the prediction refinement step.\n"
+"\nLow-level options for the felix indexer:\n\n"
+"     --felix-options      Change the default arguments passed to the indexer.\n"
+"                          Given as a list of comma separated list of \n"
+"                            indexer specific, key word arguments.\n"
+"                          Example: \"arg1=10,arg2=500\" \n"
 );
 }
 
@@ -192,6 +197,7 @@ int main(int argc, char *argv[])
 	char *geom_filename = NULL;
 	struct beam_params beam;
 	int have_push_res = 0;
+	int len;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -236,6 +242,7 @@ int main(int argc, char *argv[])
 	iargs.fix_bandwidth = -1.0;
 	iargs.fix_divergence = -1.0;
 	iargs.predict_refine = 1;
+	iargs.felix_options = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -294,6 +301,7 @@ int main(int argc, char *argv[])
 		{"fix-profile-radius", 1, NULL,               22},
 		{"fix-bandwidth",      1, NULL,               23},
 		{"fix-divergence",     1, NULL,               24},
+		{"felix-options",      1, NULL,               25},
 
 		{0, 0, NULL, 0}
 	};
@@ -460,6 +468,20 @@ int main(int argc, char *argv[])
 			if ( sscanf(optarg, "%f", &iargs.fix_divergence) != 1 ) {
 				ERROR("Invalid value for --fix-divergence\n");
 				return 1;
+			}
+			break;
+
+			case 25 :
+			/* Remove leading and trailing quotes */
+			len = strlen(optarg);
+			if ( optarg[len-1] == '\'' || optarg[len-1] == '\"' ){
+				optarg[len-1] = 0;
+			}
+			if ( optarg[0] == '\'' || optarg[0] == '\"' ){
+				iargs.felix_options = strdup( optarg+1 );
+			}
+			else {
+				iargs.felix_options = strdup( optarg );
 			}
 			break;
 
@@ -712,7 +734,7 @@ int main(int argc, char *argv[])
 	/* Prepare the indexer */
 	if ( indm != NULL ) {
 		ipriv = prepare_indexing(indm, iargs.cell, iargs.det,
-		                         iargs.tols);
+		                         iargs.tols, iargs.felix_options);
 		if ( ipriv == NULL ) {
 			ERROR("Failed to prepare indexing.\n");
 			return 1;

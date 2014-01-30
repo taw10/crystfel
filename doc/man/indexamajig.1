@@ -66,6 +66,12 @@ Invoke Mosflm.  To use this option, 'ipmosflm' must be in your shell's search pa
 .PD
 This is a implementation of the \fBdirax\fR algorithm, with some very small changes such as using a 1D Fourier transform for finding the lattice repeats.  This algorithm is implemented natively within CrystFEL meaning that no external software is required.
 
+.IP \fBfelix\fR
+.PD
+Invoke Felix, which will use your cell parameters to find multiple crystals in each pattern.
+.sp
+The Felix indexer has been developed by Soeren Schmidt <ssch@fysik.dtu.dk>. To use this option, 'Felix' must be in your shell's search path. This can be a link to the latest version of Felix. If you see the Felix version information when you run \fBFelix\fR on the command line, things are set up correctly.
+
 .IP \fBxds\fR
 .PD
 Invoke XDS, and use its REFIDX procedure to attempt to index the pattern.
@@ -118,7 +124,6 @@ Your indexing methods will be checked for validity, incompatible flags removed, 
 It's risky to use \fBmosflm-nolatt\fR in conjunction with either \fB-comb\fR or \fB-axes\fR when you have a rhombohedral cell.  This would be an odd thing to do anyway: why withhold the lattice information from MOSFLM if you know what it is, and want to use it to check the result?  It's risky because MOSFLM will by default return the "H centered" lattice for your rhombohedral cell, and it's not completely certain that MOSFLM consistently uses one or other of the two possible conventions for the relationship between the "H" and "R" cells.  It is, however, very likely that it does.
 
 If you don't know what to give for this option, try \fB--indexing=asdf,dirax-axes,mosflm-axes-latt,mosflm-axes-nolatt,xds\fR.
-
 
 .SH PEAK INTEGRATION
 If the pattern could be successfully indexed, peaks will be predicted in the pattern and their intensities measured.  You have a choice of integration methods, and you specify the method using \fB--integration\fR.  Choose from:
@@ -380,6 +385,118 @@ the second placeholder, and so on. A similar strategy is followed to match integ
 For a full explanation of how the internal layout of the data file can be  described in the geometry file, please see \fBman crystfel_geometry\fR.
 
 You can use \fBlist_events\fR to prepare a list of each event in one or more input files.  Note that you only need to do this if you need to perform some sorting or filtering on this list.  If you want to process every event in a file, simply specify the filename in the input file.
+
+.PD 0
+.IP \fB--felix-options\fR
+.PD
+Specify a comma-separated list of keyword arguments to change the default parameters passed to the felix indexer. For asthetics, this list can also be preceeded and followed by quotations - as in: \fB--felix-options="arg1=10,arg2=600"\fR. A list of parameters which can be modified through this option is detailed below.
+
+.PD 0
+.IP "\fBspacegroup=\fIn\fR"
+.PD
+Specify the spacegroup number of the crystal structure. For example: spacegroup=96 is P43212.
+
+.PD 0
+.IP "\fBn_voxels=\fIn\fR"
+.PD
+Specify the number of voxels used in the Rodrigues space search.
+(Default: 100)
+
+.PD 0
+.IP "\fBtest_fraction=\fIfract\fR"
+.PD
+Specify the fraction of space to test.
+(Default: 0.75)
+
+.PD 0
+.IP "\fBsigma_tth=\fIsig\fR"
+.PD
+Specify the sigma of the two-theta angle.
+(Default: 0.15)
+
+.PD 0
+.IP "\fBsigma_eta=\fIsig\fR"
+.PD
+Specify the sigma of the eta angle.
+(Default: 0.2)
+
+.PD 0
+.IP "\fBsigma_omega=\fIsig\fR"
+.PD
+Specify the sigma of the omega angle.
+(Default: 0.2)
+
+.PD 0
+.IP "\fBn_sigmas=\fIn\fR"
+.PD
+Specify the number of sigmas to use.
+(Default: 2)
+
+.PD 0
+.IP "\fBtthrange_min=\fImin\fR"
+.PD
+Specify the lower bound of the 2theta angle to consider when indexing (degrees).
+(Default: 0.0)
+
+.PD 0
+.IP "\fBtthrange_max=\fImax\fR"
+.PD
+Specify the upper bound of the 2theta angle to consider when indexing (degrees).
+(Default: 30.0)
+
+.PD 0
+.IP "\fBetarange_min=\fImin\fR"
+.PD
+Specify the lower bound of the eta angle to consider when indexing (degrees).
+(Default: 0.0)
+
+.PD 0
+.IP "\fBetarange_max=\fImax\fR"
+.PD
+Specify the upper bound of the eta angle to consider when indexing (degrees).
+(Default: 360.0)
+
+.PD 0
+.IP "\fBmin_measurements=\fIn\fR"
+.PD
+Specify a cutoff for how many Rodrigues lines cross in the first search.
+(Default: 15)
+
+.PD 0
+.IP "\fBmin_completeness=\fIfract\fR"
+.PD
+Specify a cutoff for the fraction of projected spots which are found in the pattern.
+(Default: 0.001)
+
+.PD 0
+.IP "\fBmin_uniqueness=\fIn\fR"
+.PD
+Specify a cutoff for the fraction of found spots which can belong to other crystallites.
+(Default: 0.5)
+
+.PD 0
+.IP "\fBforce4frustums\fR"
+.PD
+Tell Felix to use four frustums.
+
+.PD 0
+.IP "\fBorispace_octa\fR"
+.PD
+Tell Felix to use octahedral orispace as opposed to frustum.
+(Only possible with Felix.0.31)
+
+.PD 0
+.IP "\fBreadhkl=\fIfile\fR"
+.PD
+Specify a file from which to read in the ideal gvectors for the crystal.
+
+.PD 0
+.IP "\fBmaxtime=\fIn\fR"
+.PD
+Specify a maximum time which Felix is allowed to attempt to index the pattern (seconds)
+(Default: 30 s)
+
+
 
 .SH AUTHOR
 This page was written by Thomas White.

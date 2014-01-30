@@ -256,7 +256,6 @@ IntegerMatrix *get_symop(const SymOpList *ops, const SymOpMask *m, int idx)
 	return ops->ops[idx];
 }
 
-
 static signed int *v(signed int h, signed int k, signed int i, signed int l)
 {
 	signed int *vec = malloc(3*sizeof(signed int));

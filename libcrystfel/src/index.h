@@ -12,6 +12,7 @@
  *   2010-2015 Thomas White <taw@physics.org>
  *   2010      Richard Kirian
  *   2012      Lorenzo Galli
+ *   2015      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -49,6 +50,10 @@
                                      | INDEXING_USE_LATTICE_TYPE               \
                                      | INDEXING_USE_CELL_PARAMETERS)
 
+#define INDEXING_DEFAULTS_FELIX (INDEXING_FELIX                  \
+                                     | INDEXING_USE_LATTICE_TYPE               \
+                                     | INDEXING_USE_CELL_PARAMETERS)
+
 /* Axis check is needed for XDS, because it likes to permute the axes */
 #define INDEXING_DEFAULTS_XDS (INDEXING_XDS | INDEXING_USE_LATTICE_TYPE        \
                                      | INDEXING_USE_CELL_PARAMETERS            \
@@ -60,6 +65,7 @@
  * @INDEXING_NONE: No indexing to be performed
  * @INDEXING_DIRAX: Invoke DirAx
  * @INDEXING_MOSFLM: Invoke MOSFLM
+ * @INDEXING_FELIX: Invoke Felix
  * @INDEXING_XDS: Invoke XDS
  * @INDEXING_SIMULATION: Dummy value
  * @INDEXING_DEBUG: Results injector for debugging
@@ -86,6 +92,7 @@ typedef enum {
 	/* The core indexing methods themselves */
 	INDEXING_DIRAX  = 1,
 	INDEXING_MOSFLM = 2,
+	INDEXING_FELIX = 4,
 	INDEXING_XDS = 5,
 	INDEXING_SIMULATION = 6,
 	INDEXING_DEBUG = 7,
@@ -125,7 +132,8 @@ extern char *indexer_str(IndexingMethod indm);
 #include "image.h"
 
 extern IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
-                                          struct detector *det, float *ltl);
+                                          struct detector *det, float *ltl,
+                                          const char *options);
 
 extern void index_pattern(struct image *image,
                           IndexingMethod *indms, IndexingPrivate **iprivs);
