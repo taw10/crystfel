@@ -159,6 +159,7 @@ int main(int argc, char *argv[])
 	char *rval = NULL;
 	int config_checkprefix = 1;
 	int config_basename = 0;
+	int integrate_saturated = 0;
 	IndexingMethod *indm;
 	IndexingPrivate **ipriv;
 	char *indm_str = NULL;
@@ -199,7 +200,6 @@ int main(int argc, char *argv[])
 	iargs.ir_mid = 5.0;
 	iargs.ir_out = 7.0;
 	iargs.use_saturated = 1;
-	iargs.integrate_saturated = 0;
 	iargs.no_revalidate = 0;
 	iargs.stream_peaks = 1;
 	iargs.stream_refls = 1;
@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
 		{"basename",           0, &config_basename,          1},
 		{"no-peaks-in-stream", 0, &iargs.stream_peaks,       0},
 		{"no-refls-in-stream", 0, &iargs.stream_refls,       0},
-		{"integrate-saturated",0, &iargs.integrate_saturated,1},
+		{"integrate-saturated",0, &integrate_saturated,      1},
 		{"use-saturated",      0, &iargs.use_saturated,      1},
 		{"no-use-saturated",   0, &iargs.use_saturated,      0},
 		{"no-revalidate",      0, &iargs.no_revalidate,      1},
@@ -480,6 +480,10 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 		free(int_str);
+	}
+	if ( integrate_saturated ) {
+		/* Option provided for backwards compatibility */
+		iargs.int_meth |= INTEGRATION_SATURATED;
 	}
 
 	if ( toler != NULL ) {
