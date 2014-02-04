@@ -434,7 +434,8 @@ static int compare_samples(const void *a, const void *b)
 
 
 static struct sample *get_gaussian_spectrum(double eV_cen, double eV_step,
-                                            double sigma, int spec_size, double eV_start)
+                                            double sigma, int spec_size,
+                                            double eV_start)
 {
 	struct sample *spectrum;
 	int i;
@@ -596,60 +597,70 @@ struct sample *generate_SASE(struct image *image, gsl_rng *rng)
 	return spectrum;
 }
 
+
 struct sample *generate_twocolour(struct image *image)
 {
 	struct sample *spectrum;
 	struct sample *spectrum1;
 	struct sample *spectrum2;
-        int i;
-
-        double halfwidth = image->bw/2; /* eV */
-
+	int i;
+	double eV_cen1;  /* Central photon energy for first colour */
+	double eV_cen2;  /* Central photon energy for second colour */
+	double eV_cen;  /* Central photon energy for this spectrum */
 	const int spec_size = 1024;
-        double eV_cen1;  /* Central photon energy for first colour */
-        double eV_cen2;  /* Central photon energy for second colour */
-	eV_cen1 = ph_lambda_to_eV(image->lambda) - halfwidth;
-	eV_cen2 = ph_lambda_to_eV(image->lambda) + halfwidth;
 
-        /* Hard-code sigma to be 1/5 of bandwidth */
-        double sigma = image->bw/5; /* eV */
+	eV_cen = ph_lambda_to_eV(image->lambda);
 
-        /* The spectrum will be calculated to a resolution which spreads six
-         * sigmas of the original (no SASE noise) Gaussian pulse over spec_size
-         * points */
-        double eV_start = eV_cen1 - 3*sigma;
-        double eV_end = eV_cen2 + 3*sigma;
-        double eV_step = (eV_end - eV_start)/(spec_size-1);
+	double halfwidth = eV_cen*image->bw/2.0; /* eV */
 
-	spectrum1 = get_gaussian_spectrum(eV_cen1, eV_step, sigma, spec_size, eV_start);
-	spectrum2 = get_gaussian_spectrum(eV_cen2, eV_step, sigma, spec_size, eV_start);
+	eV_cen1 = eV_cen - halfwidth;
+	eV_cen2 = eV_cen + halfwidth;
+
+	/* Hard-code sigma to be 1/5 of bandwidth */
+	double sigma = eV_cen*image->bw/5.0; /* eV */
+
+	/* The spectrum will be calculated to a resolution which spreads six
+	* sigmas of the original (no SASE noise) Gaussian pulse over spec_size
+	* points */
+	double eV_start = eV_cen1 - 3*sigma;
+	double eV_end = eV_cen2 + 3*sigma;
+	double eV_step = (eV_end - eV_start)/(spec_size-1);
+
+	spectrum1 = get_gaussian_spectrum(eV_cen1, eV_step, sigma, spec_size,
+	                                  eV_start);
+	spectrum2 = get_gaussian_spectrum(eV_cen2, eV_step, sigma, spec_size,
+	                                  eV_start);
 
 	spectrum = malloc(spec_size * sizeof(struct sample));
-        if ( spectrum == NULL ) return NULL;
+	if ( spectrum == NULL ) return NULL;
 
-        for ( i=0; i<spec_size; i++ ) {
-                spectrum[i].weight = spectrum1[i].weight + spectrum2[i].weight;
-                spectrum[i].k = spectrum1[i].k;
-        }
+	for ( i=0; i<spec_size; i++ ) {
+		spectrum[i].weight = spectrum1[i].weight + spectrum2[i].weight;
+		spectrum[i].k = spectrum1[i].k;
+		if ( spectrum2[i].k != spectrum1[i].k ) {
+			printf("%e %e\n", spectrum1[i].k, spectrum2[i].k);
+		}
+	}
 
-        /* Normalise intensity (before taking restricted number of samples) */
-        double total_weight = 0.0;
-        for ( i=0; i<spec_size; i++ ) {
-                total_weight += spectrum[i].weight;
-        }
+	/* Normalise intensity (before taking restricted number of samples) */
+	double total_weight = 0.0;
+	for ( i=0; i<spec_size; i++ ) {
+		total_weight += spectrum[i].weight;
+	}
 
-        for ( i=0; i<spec_size; i++ ) {
-                spectrum[i].weight /= total_weight;
-        }
+	for ( i=0; i<spec_size; i++ ) {
+		spectrum[i].weight /= total_weight;
+	}
 
-        /* Sort samples in spectrum by weight.  Diffraction calculation will
-         * take the requested number, starting from the brightest */
-        qsort(spectrum, spec_size, sizeof(struct sample), compare_samples);
+	/* Sort samples in spectrum by weight.  Diffraction calculation will
+	* take the requested number, starting from the brightest */
+	qsort(spectrum, spec_size, sizeof(struct sample), compare_samples);
 
-        image->spectrum_size = spec_size;
+	image->spectrum_size = spec_size;
 
-        return spectrum;
+	return spectrum;
 }
+
 
 void get_diffraction(struct image *image, int na, int nb, int nc,
                      const double *intensities, const double *phases,
