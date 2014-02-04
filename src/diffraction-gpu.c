@@ -325,7 +325,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	double tot = 0.0;
 	for ( i=0; i<image->nsamples; i++ ) {
 
-		printf("%.1f eV, weight = %.5f\n",
+		printf("%.3f eV, weight = %.5f\n",
 		       ph_lambda_to_eV(1.0/image->spectrum[i].k),
 		       image->spectrum[i].weight);
 
