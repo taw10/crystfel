@@ -109,8 +109,10 @@ typedef struct {
 	double          *ring_radii;
 	int             n_rings;
 	int             calib_mode;
-	int             calib_mode_curr_rg;
+	struct rigid_group  *calib_mode_curr_rg;
+	struct panel	*calib_mode_curr_p;
 	int             calib_mode_show_focus;
+	int		calib_mode_groups;
 
 	int		show_col_scale;
 	int		scale;
