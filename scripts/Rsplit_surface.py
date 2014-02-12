@@ -59,7 +59,7 @@ for i in steps :
 	filename='rsplit'+str(i)+'.dat'
 
 	file = open(filename, 'r')
-	
+
 	lines = array(file.readlines())
 	N = lines.size
 
@@ -80,24 +80,25 @@ Z = griddata(x,y,z,X,Y)
 
 cm = ax.pcolormesh(X, Y, Z, cmap = plt.get_cmap('spectral'), vmin=0, vmax=100)
 
-plt.title(r"$R_{split}$ surface for %s data $N_0$ = %d" % (data_name, N0), fontsize=16)
+plt.title(r"$R_{split}$ surface for %s" % data_name, fontsize=16)
 
-ax.set_xlabel(r"1/d / nm^-1", fontsize=16)
+ax.set_xlabel(r"Resolution (1/d) / $nm^{-1}$", fontsize=16)
 ax.set_ylabel(r"Number of patterns", fontsize=16)
 ypoints = [50000,40000,30000,20000,10000,9000,8000,7000,6000,5000,4000,3000,2000,1000,900,800,700,600,500,400,300,200,100]
 temp = []
 for ypoint in ypoints : temp.append(N0/ypoint)
 ax.set_yticks(log2(temp)+1)
 labels = []
-for ypoint in ypoints : 
+for ypoint in ypoints :
 	if ypoint in [50000,10000,5000,1000,500] : labels.append(str(ypoint))
 	else : labels.append("")
-	
+
 ax.set_yticklabels(labels)
 
 ax.set_ylim(log2(temp[0])+1,log2(temp[-1])+1)
 
-fig.colorbar(cm, shrink=0.5, aspect=10)
+cb = fig.colorbar(cm, shrink=0.5, aspect=10)
+cb.set_label("Rsplit / \%")
 
 plt.savefig(data_name[:-7] + '.png')
 #plt.savefig(data_name[:-7] + '.ps')
