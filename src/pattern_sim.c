@@ -54,6 +54,7 @@
 #include "reflist.h"
 #include "reflist-utils.h"
 #include "pattern_sim.h"
+#include "stream.h"
 
 
 static void show_help(const char *s)
@@ -90,6 +91,7 @@ static void show_help(const char *s)
 " -s, --sample-spectrum=<N> Use N samples from spectrum. Default 3.\n"
 " -x, --spectrum=<type>     Type of spectrum to simulate.\n"
 "     --background=<N>      Add N photons of Poisson background (default 0).\n"
+"     --template=<file>     Take orientations from stream <file>.\n"
 );
 }
 
@@ -251,6 +253,8 @@ int main(int argc, char *argv[])
 	int nsamples = 3;
 	gsl_rng *rng;
 	int background = 0;
+	char *template_file = NULL;
+	Stream *st = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -276,6 +280,7 @@ int main(int argc, char *argv[])
 		{"min-size",           1, NULL,                3},
 		{"max-size",           1, NULL,                4},
 		{"background",         1, NULL,                5},
+		{"template",           1, NULL,                6},
 		{0, 0, NULL, 0}
 	};
 
@@ -375,6 +380,10 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+			case 6 :
+			template_file = strdup(optarg);
+			break;
+
 			case 0 :
 			break;
 
@@ -404,6 +413,19 @@ int main(int argc, char *argv[])
 		} else {
 			outfile = strdup("sim");
 		}
+	}
+
+	if ( template_file != NULL ) {
+		if ( config_randomquat ) {
+			ERROR("You cannot use -r and --template together.\n");
+			return 1;
+		}
+		st = open_stream_for_read(template_file);
+		if ( st == NULL ) {
+			ERROR("Failed to open stream.\n");
+			return 1;
+		}
+		free(template_file);
 	}
 
 	if ( sym_str == NULL ) sym_str = strdup("1");
@@ -583,23 +605,62 @@ int main(int argc, char *argv[])
 
 		}
 
-		/* Read quaternion from stdin */
-		if ( config_randomquat ) {
-			orientation = random_quaternion(rng);
+		if ( st == NULL ) {
+
+			if ( config_randomquat ) {
+				orientation = random_quaternion(rng);
+			} else {
+				orientation = read_quaternion();
+			}
+
+			STATUS("Orientation is %5.3f %5.3f %5.3f %5.3f\n",
+			       orientation.w, orientation.x,
+			       orientation.y, orientation.z);
+
+			if ( !quaternion_valid(orientation) ) {
+				ERROR("Orientation modulus is not zero!\n");
+				return 1;
+			}
+
+			cell = cell_rotate(input_cell, orientation);
+
 		} else {
-			orientation = read_quaternion();
+
+			struct image image;
+			int i;
+			Crystal *cr;
+
+			image.det = NULL;
+
+			/* Get data from next chunk */
+			if ( read_chunk(st, &image) ) break;
+
+			free(image.filename);
+			image_feature_list_free(image.features);
+
+			if ( image.n_crystals == 0 ) continue;
+
+			cr = image.crystals[0];
+			cell = crystal_get_cell(cr);
+
+			if ( image.n_crystals > 1 ) {
+				ERROR("Using the first crystal only.\n");
+			}
+
+			for ( i=1; i<image.n_crystals; i++ ) {
+
+				Crystal *cr = image.crystals[i];
+				cell = crystal_get_cell(cr);
+
+				reflist_free(crystal_get_reflections(cr));
+				cell_free(crystal_get_cell(cr));
+				crystal_free(cr);
+
+			}
+
+			free(image.crystals);
+
 		}
-
-		STATUS("Orientation is %5.3f %5.3f %5.3f %5.3f\n",
-		       orientation.w, orientation.x,
-		       orientation.y, orientation.z);
-
-		if ( !quaternion_valid(orientation) ) {
-			ERROR("Orientation modulus is not zero!\n");
-			return 1;
-		}
-
-		cell = cell_rotate(input_cell, orientation);
 
 		switch ( spectrum_type ) {
 
