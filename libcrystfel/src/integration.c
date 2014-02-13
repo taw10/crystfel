@@ -1485,7 +1485,8 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 
 	for ( i=0; i<ic.n_reference_profiles; i++ ) {
 		if ( ic.n_profiles_in_reference[i] == 0 ) {
-			ERROR("Reference profile 0 has no contributions.\n");
+			ERROR("Reference profile %i has no contributions.\n",
+			      i);
 			free_intcontext(&ic);
 			return;
 		}
