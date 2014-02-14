@@ -69,6 +69,8 @@ extern void update_partialities_2(Crystal *cryst, PartialityModel pmodel,
 extern void polarisation_correction(RefList *list, UnitCell *cell,
                                     struct image *image);
 
+#define LORENTZ_SCALE (0.01e9)
+
 #ifdef __cplusplus
 }
 #endif

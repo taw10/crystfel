@@ -175,9 +175,9 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	}
 
 	/* Lorentz factor is determined direction from the r values, before
-	 * clamping.  The multiplication by the profile radius is to make the
+	 * clamping.  The multiplication by 0.01e9 to make the
 	 * correction factor vaguely near 1. */
-	L = pr / (rlow - rhigh);
+	L = LORENTZ_SCALE / (rlow - rhigh);
 
 	/* If the "lower" Ewald sphere is a long way away, use the
 	 * position at which the Ewald sphere would just touch the

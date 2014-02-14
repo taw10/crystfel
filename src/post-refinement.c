@@ -238,7 +238,7 @@ double l_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 
 	ds = 2.0 * resolution(crystal_get_cell(cr), hs, ks, ls);
 
-	return -ds*pow(get_lorentz(refl), 2.0) / crystal_get_profile_radius(cr);
+	return -ds*pow(get_lorentz(refl), 2.0) / LORENTZ_SCALE;
 }
 
 
