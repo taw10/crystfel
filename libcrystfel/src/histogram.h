@@ -3,11 +3,11 @@
  *
  * Quick histogram functions
  *
- * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2013-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *  2013 Thomas White <taw@physics.org>
+ *  2013-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -40,6 +40,8 @@ extern Histogram *histogram_init();
 extern void histogram_free(Histogram *hi);
 extern void histogram_add_value(Histogram *hi, double val);
 extern void histogram_show(Histogram *hi);
+
+extern int *histogram_get_data(Histogram *hi, double *min, double *max, int *n);
 
 
 #endif	/* HISTOGRAM_H */

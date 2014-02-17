@@ -167,6 +167,18 @@ static void calc_stddev(Histogram *hi)
 }
 
 
+int *histogram_get_data(Histogram *hi, double *min, double *max, int *n)
+{
+	calc_bins(hi);
+
+	*n = hi->n_bins;
+	*min = hi->min;
+	*max = hi->max;
+
+	return hi->bins;
+}
+
+
 void histogram_show(Histogram *hi)
 {
 	int i;
