@@ -6,5 +6,5 @@ includedir=@includedir@
 Name: CrystFEL
 Description: Useful routines for crystallography using a free-electron laser
 Version: @VERSION@
-Cflags: -I${includedir}
-Libs: -L${libdir} -lcrystfel
+Cflags: -I${includedir} @LIBCRYSTFEL_CFLAGS@
+Libs: -L${libdir} -lcrystfel @LIBCRYSTFEL_LIBS@
