@@ -258,6 +258,12 @@ double histogram_get_max(Histogram *hi)
 }
 
 
+int histogram_get_num_bins(Histogram *hi)
+{
+	return hi->n_bins;
+}
+
+
 void histogram_set_min(Histogram *hi, double min)
 {
 	hi->min = min;
