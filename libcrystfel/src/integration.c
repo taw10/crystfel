@@ -3,11 +3,11 @@
  *
  * Integration of intensities
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -1482,6 +1482,15 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 	setup_ring_masks(&ic, ir_inn, ir_mid, ir_out);
 	setup_profile_boxes(&ic, list);
 	calculate_reference_profiles(&ic);
+
+	for ( i=0; i<ic.n_reference_profiles; i++ ) {
+		if ( ic.n_profiles_in_reference[i] == 0 ) {
+			ERROR("Reference profile %i has no contributions.\n",
+			      i);
+			free_intcontext(&ic);
+			return;
+		}
+	}
 
 	for ( i=0; i<ic.n_boxes; i++ ) {
 		struct peak_box *bx;

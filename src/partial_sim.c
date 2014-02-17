@@ -169,6 +169,46 @@ static void calculate_partials(Crystal *cr,
 }
 
 
+static void draw_and_write_image(struct image *image, RefList *reflections,
+                                 gsl_rng *rng)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	const int background = 3000;
+	int i;
+
+	image->data = calloc(image->width*image->height, sizeof(float));
+
+	for ( refl = first_refl(reflections, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double Ip;
+		double dfs, dss;
+		int fs, ss;
+
+		Ip = get_intensity(refl);
+
+		get_detector_pos(refl, &dfs, &dss);
+		fs = nearbyint(dfs);
+		ss = nearbyint(dss);
+		assert(fs >= 0);
+		assert(ss >= 0);
+		assert(fs < image->width);
+		assert(ss < image->height);
+		image->data[fs + image->width*ss] += Ip;
+
+	}
+
+	for ( i=0; i<image->width*image->height; i++ ) {
+		image->data[i] += poisson_noise(rng, background);
+	}
+
+	hdf5_write_image(image->filename, image);
+	free(image->data);
+}
+
+
 static void show_help(const char *s)
 {
 	printf("Syntax: %s [options]\n\n", s);
@@ -181,6 +221,7 @@ static void show_help(const char *s)
 " -i, --input=<file>       Read reflections from <file>.\n"
 "                           Default: generate random ones instead (see -r).\n"
 " -o, --output=<file>      Write partials in stream format to <file>.\n"
+"     --images=<prefix>    Write images to <prefix>NNN.h5.\n"
 " -g. --geometry=<file>    Get detector geometry from file.\n"
 " -b, --beam=<file>        Get beam parameters from file\n"
 " -p, --pdb=<file>         PDB file from which to get the unit cell.\n"
@@ -221,6 +262,8 @@ struct queue_args
 	struct image *template_image;
 	double max_q;
 
+	char *image_prefix;
+
 	/* The overall histogram */
 	double p_hist[NBINS];
 	unsigned long int n_ref[NBINS];
@@ -241,6 +284,8 @@ struct worker_args
 	double p_hist[NBINS];
 	unsigned long int n_ref[NBINS];
 	double p_max[NBINS];
+
+	int n;
 };
 
 
@@ -258,6 +303,7 @@ static void *create_job(void *vqargs)
 	wargs->image = *qargs->template_image;
 
 	qargs->n_started++;
+	wargs->n = qargs->n_started;
 
 	return wargs;
 }
@@ -293,7 +339,13 @@ static void run_job(void *vwargs, int cookie)
 	orientation = random_quaternion(qargs->rngs[cookie]);
 	crystal_set_cell(cr, cell_rotate(qargs->cell, orientation));
 
-	snprintf(wargs->image.filename, 255, "dummy.h5");
+	if ( qargs->image_prefix != NULL ) {
+		snprintf(wargs->image.filename, 255, "%s%i.h5",
+		         qargs->image_prefix, wargs->n);
+	} else {
+		snprintf(wargs->image.filename, 255, "dummy.h5");
+	}
+
 	reflections = find_intersections(&wargs->image, cr);
 	crystal_set_reflections(cr, reflections);
 
@@ -309,6 +361,11 @@ static void run_job(void *vwargs, int cookie)
 	                   wargs->n_ref, wargs->p_hist, wargs->p_max,
 	                   qargs->max_q, qargs->full_stddev,
 	                   qargs->noise_stddev, qargs->rngs[cookie]);
+
+	if ( qargs->image_prefix != NULL ) {
+		draw_and_write_image(&wargs->image, reflections,
+		                     qargs->rngs[cookie]);
+	}
 
 	/* Give a slightly incorrect cell in the stream */
 	mess_up_cell(cr, qargs->cnoise, qargs->rngs[cookie]);
@@ -372,6 +429,7 @@ int main(int argc, char *argv[])
 	double noise_stddev = 20.0;
 	gsl_rng *rng_for_seeds;
 	int config_random = 0;
+	char *image_prefix = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -389,6 +447,7 @@ int main(int argc, char *argv[])
 		{"osf-stddev",         1, NULL,                3},
 		{"full-stddev",        1, NULL,                4},
 		{"noise-stddev",       1, NULL,                5},
+		{"images",             1, NULL,                6},
 
 		{"really-random",      0, &config_random,      1},
 
@@ -490,6 +549,10 @@ int main(int argc, char *argv[])
 				ERROR(" (must be positive).\n");
 				return 1;
 			}
+			break;
+
+			case 6 :
+			image_prefix = strdup(optarg);
 			break;
 
 			case 0 :
@@ -595,8 +658,8 @@ int main(int argc, char *argv[])
 	free(output_file);
 
 	image.det = det;
-	image.width = det->max_fs;
-	image.height = det->max_ss;
+	image.width = det->max_fs + 1;
+	image.height = det->max_ss + 1;
 
 	image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
 	image.div = beam->divergence;
@@ -609,6 +672,7 @@ int main(int argc, char *argv[])
 	image.indexed_by = INDEXING_SIMULATION;
 	image.num_peaks = 0;
 	image.num_saturated_peaks = 0;
+	image.spectrum_size = 0;
 
 	if ( random_intensities ) {
 		full = reflist_new();
@@ -629,6 +693,7 @@ int main(int argc, char *argv[])
 	qargs.full_stddev = full_stddev;
 	qargs.noise_stddev = noise_stddev;
 	qargs.max_q = largest_q(&image);
+	qargs.image_prefix = image_prefix;
 
 	qargs.rngs = malloc(n_threads * sizeof(gsl_rng *));
 	if ( qargs.rngs == NULL ) {

@@ -46,7 +46,8 @@
 
 typedef enum {
 	SPECTRUM_TOPHAT,
-	SPECTRUM_SASE
+	SPECTRUM_SASE,
+	SPECTRUM_TWOCOLOUR
 } SpectrumType;
 
 /* Structure describing a feature in an image */

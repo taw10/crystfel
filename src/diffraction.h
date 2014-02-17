@@ -57,4 +57,6 @@ extern struct sample *generate_tophat(struct image *image);
 
 extern struct sample *generate_SASE(struct image *image, gsl_rng *rng);
 
+extern struct sample *generate_twocolour(struct image *image);
+
 #endif	/* DIFFRACTION_H */
