@@ -244,3 +244,33 @@ void histogram_show(Histogram *hi)
 
 	free(bins);
 }
+
+
+double histogram_get_min(Histogram *hi)
+{
+	return hi->min;
+}
+
+
+double histogram_get_max(Histogram *hi)
+{
+	return hi->max;
+}
+
+
+void histogram_set_min(Histogram *hi, double min)
+{
+	hi->min = min;
+}
+
+
+void histogram_set_max(Histogram *hi, double max)
+{
+	hi->max = max;
+}
+
+
+void histogram_set_num_bins(Histogram *hi, int n)
+{
+	hi->n_bins = n;
+}
