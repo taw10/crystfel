@@ -41,7 +41,7 @@ extern void histogram_free(Histogram *hi);
 extern void histogram_add_value(Histogram *hi, double val);
 extern void histogram_show(Histogram *hi);
 
-extern int *histogram_get_data(Histogram *hi, double *min, double *max, int *n);
+extern int *histogram_get_data(Histogram *hi, int *n);
 extern double histogram_get_min(Histogram *hi);
 extern double histogram_get_max(Histogram *hi);
 extern int histogram_get_num_bins(Histogram *hi);

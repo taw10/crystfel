@@ -3,11 +3,11 @@
  *
  * Quick histogram functions
  *
- * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2013-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *  2013 Thomas White <taw@physics.org>
+ *  2013-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -167,14 +167,10 @@ static void calc_stddev(Histogram *hi)
 }
 
 
-int *histogram_get_data(Histogram *hi, double *min, double *max, int *n)
+int *histogram_get_data(Histogram *hi, int *n)
 {
 	calc_bins(hi);
-
 	*n = hi->n_bins;
-	*min = hi->min;
-	*max = hi->max;
-
 	return hi->bins;
 }
 
