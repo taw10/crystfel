@@ -622,39 +622,50 @@ static double guide_dev(Crystal *cr, const RefList *full)
 }
 
 
-static Crystal *backup_crystal(Crystal *cr)
+struct param_backup
 {
-	Crystal *b;
+	UnitCell *cell;
+	double profile_radius;
+	double div;
+};
 
-	b = crystal_new();
-	crystal_set_cell(b, cell_new_from_cell(crystal_get_cell(cr)));
+
+static struct param_backup backup_crystal(Crystal *cr)
+{
+	struct param_backup b;
+	struct image *image = crystal_get_image(cr);
+
+	b.cell = cell_new_from_cell(crystal_get_cell(cr));
+	b.profile_radius = crystal_get_profile_radius(cr);
+	b.div = image->div;
 
 	return b;
 }
 
 
-static void revert_crystal(Crystal *cr, Crystal *backup)
+static void revert_crystal(Crystal *cr, struct param_backup b)
 {
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
+	struct image *image = crystal_get_image(cr);
 
-	cell_get_reciprocal(crystal_get_cell(backup),
-	                    &asx, &asy, &asz,
-	                    &bsx, &bsy, &bsz,
-	                    &csx, &csy, &csz);
+	cell_get_reciprocal(b.cell, &asx, &asy, &asz,
+	                            &bsx, &bsy, &bsz,
+	                            &csx, &csy, &csz);
 
-	cell_set_reciprocal(crystal_get_cell(cr),
-	                    asx, asy, asz,
-	                    bsx, bsy, bsz,
-	                    csx, csy, csz);
+	cell_set_reciprocal(crystal_get_cell(cr), asx, asy, asz,
+	                                          bsx, bsy, bsz,
+	                                          csx, csy, csz);
+
+	crystal_set_profile_radius(cr, b.profile_radius);
+	image->div = b.div;
 }
 
 
-static void free_backup_crystal(Crystal *cr)
+static void free_backup_crystal(struct param_backup b)
 {
-	cell_free(crystal_get_cell(cr));
-	crystal_free(cr);
+	cell_free(b.cell);
 }
 
 
@@ -663,7 +674,7 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 {
 	double dev;
 	int i;
-	Crystal *backup;
+	struct param_backup backup;
 	const int verbose = 0;
 	struct prdata prdata;
 	double mean_p_change = 0.0;
