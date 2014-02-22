@@ -74,17 +74,17 @@ while  (line != ''):
 	if (reg1.match(line)):
 		n_patt += 1
 		if indexed :
-			suited = True		
+			suited = True
 		if suited :
-			num_suited += 1 
+			num_suited += 1
 		while (counter2 <= counter1) :
 			outline = infile_2.readline()
-			if suited :	
+			if suited :
 				outfile.write(outline)
 			counter2 += 1
-		suited = False 
+		suited = False
 
-	line = infile_1.readline()	
-	
+	line = infile_1.readline()
+
 print '%d suited of %d patterns have been extracted and saved as %s' % (num_suited, n_patt, sys.argv[2])
 Nfile.write('%d' % num_suited)
