@@ -160,6 +160,7 @@ static void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.full = full;
 	task_defaults.crystal = NULL;
 	task_defaults.pmodel = pmodel;
+	task_defaults.prdata.n_filtered = 0;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;
