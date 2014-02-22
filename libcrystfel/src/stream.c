@@ -458,6 +458,14 @@ int read_chunk(Stream *st, struct image *image)
 			have_filename = 1;
 		}
 
+		if ( strncmp(line, "indexed_by = ", 13) == 0 ) {
+			IndexingMethod *list;
+			list = build_indexer_list(line+13);
+			image->indexed_by = list[0];
+			free(list);
+			have_filename = 1;
+		}
+
 		if ( strncmp(line, "photon_energy_eV = ", 19) == 0 ) {
 			image->lambda = ph_en_to_lambda(eV_to_J(atof(line+19)));
 			have_ev = 1;
