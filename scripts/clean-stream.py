@@ -58,7 +58,10 @@ while  (line != ''):
 	counter1 += 1
 
 	if (reg6.match(line)):
-		indexed = ( False if reg7.search(line) else True)
+	        if reg7.search(line) :
+	          indexed = False
+	        else:
+	          indexed = True
 
 	if (reg0.match(line)):
 		if (start_index == 0) :
