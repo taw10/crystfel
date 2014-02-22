@@ -200,7 +200,7 @@ static int select_scalable_reflections(RefList *list, RefList *reference)
 		}
 
 		/* Don't try to scale up reflections which are hardly there */
-		if ( get_partiality(refl) < 0.1 ) {
+		if ( get_partiality(refl) < 0.05 ) {
 			sc = 0;
 			n_par++;
 		}
