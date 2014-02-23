@@ -438,6 +438,9 @@ IndexingMethod *build_indexer_list(const char *str)
 
 		} else if ( strcmp(methods[i], "none") == 0) {
 			list[++nmeth] = INDEXING_NONE;
+
+		} else if ( strcmp(methods[i], "simulation") == 0) {
+			list[++nmeth] = INDEXING_SIMULATION;
 			return list;
 
 		} else if ( strcmp(methods[i], "raw") == 0) {
