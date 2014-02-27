@@ -41,7 +41,6 @@
 #include "utils.h"
 #include "crystal.h"
 #include "geometry.h"
-#include "scaling-report.h"
 
 
 /* Refineable parameters.
