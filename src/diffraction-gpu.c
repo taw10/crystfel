@@ -73,7 +73,7 @@ struct gpu_context
 };
 
 
-static void check_sinc_lut(struct gpu_context *gctx, int n)
+static void check_sinc_lut(struct gpu_context *gctx, int n, int no_fringes)
 {
 	cl_int err;
 	cl_image_format fmt;
@@ -106,7 +106,11 @@ static void check_sinc_lut(struct gpu_context *gctx, int n)
 		for ( i=1; i<SINC_LUT_ELEMENTS; i++ ) {
 			double x, val;
 			x = (double)i/SINC_LUT_ELEMENTS;
-			val = fabs(sin(M_PI*n*x)/sin(M_PI*x));
+			if ( no_fringes && (x > 1.0/n) && (1.0-x > 1.0/n) ) {
+				val = 0.0;
+			} else {
+				val = fabs(sin(M_PI*n*x)/sin(M_PI*x));
+			}
 			gctx->sinc_lut_ptrs[n-1][i] = val;
 		}
 	}
@@ -278,7 +282,8 @@ static void do_panels(struct gpu_context *gctx, struct image *image,
 
 
 void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
-                         int na, int nb, int nc, UnitCell *ucell)
+                         int na, int nb, int nc, UnitCell *ucell,
+                         int no_fringes)
 {
 	double ax, ay, az;
 	double bx, by, bz;
@@ -297,9 +302,9 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	}
 
 	/* Ensure all required LUTs are available */
-	check_sinc_lut(gctx, na);
-	check_sinc_lut(gctx, nb);
-	check_sinc_lut(gctx, nc);
+	check_sinc_lut(gctx, na, no_fringes);
+	check_sinc_lut(gctx, nb, no_fringes);
+	check_sinc_lut(gctx, nc, no_fringes);
 
 	/* Unit cell */
 	cell_get_cartesian(ucell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);

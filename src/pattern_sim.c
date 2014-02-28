@@ -92,6 +92,7 @@ static void show_help(const char *s)
 " -x, --spectrum=<type>     Type of spectrum to simulate.\n"
 "     --background=<N>      Add N photons of Poisson background (default 0).\n"
 "     --template=<file>     Take orientations from stream <file>.\n"
+"     --no-fringes          Exclude the side maxima of Bragg peaks.\n"
 );
 }
 
@@ -255,6 +256,7 @@ int main(int argc, char *argv[])
 	int background = 0;
 	char *template_file = NULL;
 	Stream *st = NULL;
+	int no_fringes = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -276,6 +278,7 @@ int main(int argc, char *argv[])
 		{"type-spectrum",      1, NULL,               'x'},
 		{"spectrum",           1, NULL,               'x'},
 		{"really-random",      0, &config_random,      1},
+		{"no-fringes",         0, &no_fringes,         1},
 		{"gpu-dev",            1, NULL,                2},
 		{"min-size",           1, NULL,                3},
 		{"max-size",           1, NULL,                4},
@@ -693,10 +696,11 @@ int main(int argc, char *argv[])
 				                 intensities, flags, sym_str,
 				                 gpu_dev);
 			}
-			get_diffraction_gpu(gctx, &image, na, nb, nc, cell);
+			get_diffraction_gpu(gctx, &image, na, nb, nc, cell,
+			                    no_fringes);
 		} else {
 			get_diffraction(&image, na, nb, nc, intensities, phases,
-			                flags, cell, grad, sym);
+			                flags, cell, grad, sym, no_fringes);
 		}
 		if ( image.data == NULL ) {
 			ERROR("Diffraction calculation failed.\n");

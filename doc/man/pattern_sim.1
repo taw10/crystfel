@@ -1,7 +1,8 @@
 .\"
 .\" pattern_sim man page
 .\"
-.\" Copyright © 2012 Thomas White <taw@physics.org>
+.\" Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+.\"                       a research centre of the Helmholtz Association.
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
 .\"
@@ -137,6 +138,11 @@ Use \fItype\fR of spectrum.  \fItype\fR can be one of \fBtophat\fR or \fBsase\fR
 .PD
 Add \fIn\fR photons of Poisson-distributed background uniformly over the detector surface.
 
+.PD 0
+.IP \fB--no-fringes\fR
+.PD
+Suppress the subsidiary maxima of the shape transforms by setting I_latt(q) to zero beyond the first minimum of the function.
+
 
 .SH REFLECTION LISTS
 
@@ -206,7 +212,7 @@ This page was written by Thomas White.
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
 .SH COPYRIGHT AND DISCLAIMER
-Copyright © 2012 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .P
 pattern_sim, and this manual, are part of CrystFEL.
 .P

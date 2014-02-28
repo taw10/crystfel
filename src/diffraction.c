@@ -49,7 +49,7 @@
 #define SINC_LUT_ELEMENTS (4096)
 
 
-static double *get_sinc_lut(int n)
+static double *get_sinc_lut(int n, int no_fringes)
 {
 	int i;
 	double *lut;
@@ -64,7 +64,11 @@ static double *get_sinc_lut(int n)
 		for ( i=1; i<SINC_LUT_ELEMENTS; i++ ) {
 			double x, val;
 			x = (double)i/SINC_LUT_ELEMENTS;
-			val = fabs(sin(M_PI*n*x)/sin(M_PI*x));
+			if ( no_fringes && (x > 1.0/n) && (1.0-x > 1.0/n) ) {
+				val = 0.0;
+			} else {
+				val = fabs(sin(M_PI*n*x)/sin(M_PI*x));
+			}
 			lut[i] = val;
 		}
 	}
@@ -665,7 +669,7 @@ struct sample *generate_twocolour(struct image *image)
 void get_diffraction(struct image *image, int na, int nb, int nc,
                      const double *intensities, const double *phases,
                      const unsigned char *flags, UnitCell *cell,
-                     GradientMethod m, const SymOpList *sym)
+                     GradientMethod m, const SymOpList *sym, int no_fringes)
 {
 	double ax, ay, az;
 	double bx, by, bz;
@@ -683,9 +687,9 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	/* Needed later for Lorentz calculation */
 	image->twotheta = malloc(image->width * image->height * sizeof(double));
 
-	lut_a = get_sinc_lut(na);
-	lut_b = get_sinc_lut(nb);
-	lut_c = get_sinc_lut(nc);
+	lut_a = get_sinc_lut(na, no_fringes);
+	lut_b = get_sinc_lut(nb, no_fringes);
+	lut_c = get_sinc_lut(nc, no_fringes);
 
 	for ( i=0; i<image->nsamples; i++ ) {
 
