@@ -39,10 +39,10 @@
 #include <math.h>
 #include <gdk/gdkkeysyms.h>
 
-#include <crystfel/stream.h>
-#include <crystfel/image.h>
-#include <crystfel/utils.h>
-#include <crystfel/index.h>
+#include "stream.h"
+#include "image.h"
+#include "utils.h"
+#include "index.h"
 
 #include "multihistogram.h"
 
