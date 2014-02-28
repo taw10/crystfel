@@ -34,6 +34,10 @@ if BUILD_HDFSEE
 bin_PROGRAMS += src/hdfsee
 endif
 
+if BUILD_EXPLORER
+bin_PROGRAMS += src/cell_explorer
+endif
+
 if HAVE_CAIRO
 bin_PROGRAMS += src/render_hkl
 endif
@@ -62,6 +66,10 @@ src_indexamajig_SOURCES = src/indexamajig.c src/im-sandbox.c src/process_image.c
 
 if BUILD_HDFSEE
 src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/hdfsee-render.c
+endif
+
+if BUILD_EXPLORER
+src_cell_explorer_SOURCES = src/cell_explorer.c src/multihistogram.c
 endif
 
 src_get_hkl_SOURCES = src/get_hkl.c
@@ -116,7 +124,7 @@ EXTRA_DIST += src/dw-hdfsee.h src/hdfsee.h src/render_hkl.h \
               src/post-refinement.h src/hrs-scaling.h src/scaling-report.h \
               src/cl-utils.h src/hdfsee-render.h src/diffraction.h \
               src/diffraction-gpu.h src/pattern_sim.h src/list_tmp.h \
-              src/im-sandbox.h src/process_image.h
+              src/im-sandbox.h src/process_image.h src/multihistogram.h
 
 crystfeldir = $(datadir)/crystfel
 crystfel_DATA = data/diffraction.cl data/hdfsee.ui

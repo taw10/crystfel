@@ -33,6 +33,7 @@ src/render_hkl
 src/partialator
 src/check_hkl
 src/partial_sim
+src/cell_explorer
 src/.dirstamp
 *~
 doc/reference/libcrystfel/*

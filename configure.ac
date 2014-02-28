@@ -307,6 +307,9 @@ AM_CONDITIONAL([BUILD_HDFSEE], test x$have_gdk_pixbuf = xtrue \
                                 -a "x$have_gtk" = "xtrue" \
                                 -a "x$have_cairo" = "xtrue")
 
+AM_CONDITIONAL([BUILD_EXPLORER], test "x$have_gtk" = "xtrue" \
+                                  -a "x$have_cairo" = "xtrue")
+
 AM_CONDITIONAL([HAVE_CAIRO], test x$have_cairo = xtrue)
 
 AM_CONDITIONAL([HAVE_PANGOCAIRO], test x$have_pangocairo = xtrue)
