@@ -1,0 +1,51 @@
+.\"
+.\" cell_explorer man page
+.\"
+.\" Copyright © 2014 Deutsches Elektronen-Synchrotron DESY,
+.\"                  a research centre of the Helmholtz Association.
+.\"
+.\" Part of CrystFEL - crystallography with a FEL
+.\"
+
+.TH CELL_EXPLORER 1
+.SH NAME
+cell_explorer \- Unit Cell Explorer
+.SH SYNOPSIS
+.PP
+.B cell_explorer \fIindexing-results.stream\fR
+
+.SH DESCRIPTION
+The Unit Cell Explorer allows you to visualise the distribuftions of unit cell parameters resulting from processing a series of diffraction patterns with \fBindexamajig\fR.
+.P
+Start the Cell Explorer simply by executing \fBcell_explorer\fR followed by the filename of the stream which contains your indexing results.
+.P
+The Cell Explorer window shows histograms for, left to right respectively, a, b and c in the top row and alpha, beta and gamma on the bottom row.
+.P
+Click and drag to move the graphs to the left and right.  Scroll up and down to zoom in and out.  Press plus or minus to increase or decrease the number of bins used to calculate the histogram.  Changing the binning is usually necessary when zooming in or out by a large amount.
+.P
+Different colours are used to represent different centering types (P, A, B, C, I, F, H and R) according to the colour key at the top right.  Click one of the squares in the key to change the colour used for that centering type to grey, and again to change it to black.
+.P
+Click and drag with shift held down to select a range of values in one of the histograms.  Unit cells which have that parameter outside the selected range will be shown in grey in all the histograms.
+.P
+The indexing algorithms found in the stream are shown as buttons at the top.  Click one of the buttons to deselect it, and again to select it again.  Unit cells from deselected algorithms will not be shown in the histograms (not even in grey).
+
+.SH AUTHOR
+This page was written by Thomas White.
+
+.SH REPORTING BUGS
+Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+
+.SH COPYRIGHT AND DISCLAIMER
+Copyright © 2014 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+.P
+cell_explorer, and this manual, are part of CrystFEL.
+.P
+CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+.P
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+.P
+You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+.SH SEE ALSO
+.BR crystfel (7),
+.BR indexamajig (1).
