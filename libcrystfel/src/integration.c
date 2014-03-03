@@ -861,11 +861,6 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 			return 1;
 		}
 
-		if ( (p < 0) || (p >= ic->w) || (q < 0) || (q >= ic->w) ) {
-			ERROR("WTF?\n");
-			return 1;
-		}
-
 		bx->bm[p+ic->w*q] = ic->bm[p+ic->w*q];
 
 		if ( ic->image->bad[bx->pn][fs + bx->p->w*ss] ) {
