@@ -878,12 +878,6 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 			if ( sat != NULL ) *sat = 1;
 		}
 
-		if ( (bx->bm[p+ic->w*q] != BM_IG)
-		  && (bx->bm[p+ic->w*q] != BM_BH)
-		  && (boxi(ic, bx, p, q) > bx->peak) ) {
-			bx->peak = boxi(ic, bx, p, q);
-		}
-
 		/* Ignore if this pixel is closer to the next reciprocal lattice
 		 * point */
 		dv = get_q_for_panel(bx->p, fs, ss, NULL, ic->k);
@@ -895,6 +889,12 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 		l = lrint(ld);
 		if ( (h != hr) || (k != kr) || (l != lr) ) {
 			bx->bm[p+ic->w*q] = BM_BH;
+		}
+
+		if ( (bx->bm[p+ic->w*q] != BM_IG)
+		  && (bx->bm[p+ic->w*q] != BM_BH)
+		  && (boxi(ic, bx, p, q) > bx->peak) ) {
+			bx->peak = boxi(ic, bx, p, q);
 		}
 
 		if ( bx->bm[p+ic->w*q] == BM_PK ) n_pk++;
