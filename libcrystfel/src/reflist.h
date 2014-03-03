@@ -3,11 +3,11 @@
  *
  * Fast reflection/peak list
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2013 Thomas White <taw@physics.org>
+ *   2011-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -113,8 +113,8 @@ extern void set_temp1(Reflection *refl, double temp);
 extern void set_temp2(Reflection *refl, double temp);
 extern void set_esd_intensity(Reflection *refl, double esd);
 extern void set_phase(Reflection *refl, double phase);
-extern void set_peak(Reflection *refl, double pk);
-extern void set_mean_bg(Reflection *refl, double bg);
+extern void set_peak(Reflection *refl, double peak);
+extern void set_mean_bg(Reflection *refl, double mean_bg);
 extern void set_symmetric_indices(Reflection *refl,
                                   signed int hs, signed int ks, signed int ls);
 

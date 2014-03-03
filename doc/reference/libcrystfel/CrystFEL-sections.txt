@@ -31,6 +31,8 @@ get_refinable
 get_redundancy
 get_esd_intensity
 get_phase
+get_mean_bg
+get_peak
 get_temp1
 get_temp2
 <SUBSECTION>
@@ -44,6 +46,8 @@ set_refinable
 set_redundancy
 set_esd_intensity
 set_phase
+set_mean_bg
+set_peak
 set_symmetric_indices
 set_temp1
 set_temp2
@@ -58,6 +62,7 @@ unlock_reflection
 <SECTION>
 <FILE>reflist-utils</FILE>
 write_reflist
+write_reflist_2
 write_reflections_to_file
 read_reflections
 read_reflections_from_file
@@ -188,12 +193,20 @@ histogram_init
 histogram_free
 histogram_add_value
 histogram_show
+histogram_get_data
+histogram_get_max
+histogram_get_min
+histogram_get_num_bins
+histogram_set_max
+histogram_set_min
+histogram_set_num_bins
 </SECTION>
 
 <SECTION>
 <FILE>image</FILE>
 image
 ImageFeatureList
+SpectrumType
 image_add_feature
 image_feature_closest
 image_feature_count

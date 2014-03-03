@@ -3,11 +3,11 @@
  *
  * Fast reflection/peak list
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2013 Thomas White <taw@physics.org>
+ *   2011-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
