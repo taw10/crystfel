@@ -156,7 +156,7 @@ static RefList *read_stream_reflections(FILE *fh)
 		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
 
 		r = sscanf(line, "%i %i %i %f %f %f %f %f %f",
-		           &h, &k, &l, &intensity, &sigma, &fs, &ss, &pk, &bg);
+		           &h, &k, &l, &intensity, &sigma, &pk, &bg, &fs, &ss);
 		if ( (r != 9) && (!first) ) {
 			reflist_free(out);
 			return NULL;
@@ -187,8 +187,8 @@ static void write_stream_reflections(FILE *fh, RefList *list)
 	Reflection *refl;
 	RefListIterator *iter;
 
-	fprintf(fh, "   h    k    l          I   sigma(I)   fs/px  ss/px"
-	            "       peak background\n");
+	fprintf(fh, "   h    k    l          I   sigma(I)       peak background"
+	            "  fs/px  ss/px\n");
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -210,8 +210,8 @@ static void write_stream_reflections(FILE *fh, RefList *list)
 		if ( get_redundancy(refl) == 0 ) continue;
 
 		fprintf(fh,
-		       "%4i %4i %4i %10.2f %10.2f  %6.1f %6.1f %10.2f %10.2f\n",
-		       h, k, l, intensity, esd_i, fs, ss, pk, bg);
+		       "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f %6.1f %6.1f\n",
+		       h, k, l, intensity, esd_i, pk, bg, fs, ss);
 
 	}
 
