@@ -885,7 +885,7 @@ static void load_features_from_file(struct image *image, const char *filename)
 		float intensity, sigma, fs, ss;
 		char phs[1024];
 		int r;
-		int cts;
+		float cts;
 		signed int h, k, l;
 
 		rval = fgets(line, 1023, fh);
@@ -893,7 +893,7 @@ static void load_features_from_file(struct image *image, const char *filename)
 		chomp(line);
 
 		/* Try long format (from stream) */
-		r = sscanf(line, "%i %i %i %f %s %f %i %f %f",
+		r = sscanf(line, "%i %i %i %f %s %f %f %f %f",
 		           &h, &k, &l, &intensity, phs, &sigma, &cts, &fs, &ss);
 		if ( r == 9 ) {
 			char name[32];
