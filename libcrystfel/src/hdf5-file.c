@@ -883,6 +883,13 @@ void free_copy_hdf5_field_list(struct copy_hdf5_field *n)
 void add_copy_hdf5_field(struct copy_hdf5_field *copyme,
                          const char *name)
 {
+	int i;
+
+	/* Already on the list?   Don't re-add if so. */
+	for ( i=0; i<copyme->n_fields; i++ ) {
+		if ( strcmp(copyme->fields[i], name) == 0 ) return;
+	}
+
 	/* Need more space? */
 	if ( copyme->n_fields == copyme->max_fields ) {
 

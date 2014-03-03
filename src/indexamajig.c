@@ -149,6 +149,27 @@ static void show_help(const char *s)
 }
 
 
+static void add_geom_beam_stuff_to_copy_hdf5(struct copy_hdf5_field *copyme,
+                                             struct detector *det,
+                                             struct beam_params *beam)
+{
+	int i;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		struct panel *p = &det->panels[i];
+
+		if ( p->clen_from != NULL ) {
+			add_copy_hdf5_field(copyme, p->clen_from);
+		}
+	}
+
+	if ( beam->photon_energy_from != NULL ) {
+		add_copy_hdf5_field(copyme, beam->photon_energy_from);
+	}
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -524,6 +545,8 @@ int main(int argc, char *argv[])
 		      " the manual for more details).\n");
 		return 1;
 	}
+
+	add_geom_beam_stuff_to_copy_hdf5(iargs.copyme, iargs.det, iargs.beam);
 
 	if ( pdb != NULL ) {
 		iargs.cell = load_cell_from_pdb(pdb);

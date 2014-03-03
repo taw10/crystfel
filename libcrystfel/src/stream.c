@@ -213,14 +213,14 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 	fprintf(st->fh, "indexed_by = %s\n", indexer);
 	free(indexer);
 
+	fprintf(st->fh, "photon_energy_eV = %f\n",
+	        J_to_eV(ph_lambda_to_en(i->lambda)));
+
+	copy_hdf5_fields(hdfile, i->copyme, st->fh);
+
 	if ( i->det != NULL ) {
 
 		int j;
-
-		for ( j=0; j<i->det->n_panels; j++ ) {
-			fprintf(st->fh, "camera_length_%s = %f\n",
-			        i->det->panels[j].name, i->det->panels[j].clen);
-		}
 
 		for ( j=0; j<i->det->n_rigid_groups; j++ ) {
 
@@ -246,16 +246,11 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 
 	}
 
-	copy_hdf5_fields(hdfile, i->copyme, st->fh);
-
 	fprintf(st->fh, "num_peaks = %lli\n", i->num_peaks);
 	fprintf(st->fh, "num_saturated_peaks = %lli\n", i->num_saturated_peaks);
 	if ( include_peaks ) {
 		write_peaks(i, st->fh);
 	}
-
-	fprintf(st->fh, "photon_energy_eV = %f\n",
-	        J_to_eV(ph_lambda_to_en(i->lambda)));
 
 	for ( j=0; j<i->n_crystals; j++ ) {
 		write_crystal(st, i->crystals[j], include_reflections);
