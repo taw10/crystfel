@@ -3,11 +3,11 @@
  *
  * Utilities to complement the core reflist.c
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2012 Thomas White <taw@physics.org>
+ *   2011-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -45,6 +45,7 @@
 extern void write_reflections_to_file(FILE *fh, RefList *list);
 
 extern int write_reflist(const char *filename, RefList *list);
+extern int write_reflist_2(const char *filename, RefList *list, SymOpList *sym);
 
 extern RefList *read_reflections_from_file(FILE *fh);
 

@@ -636,7 +636,7 @@ int main(int argc, char *argv[])
 		               hist_nbins);
 	}
 
-	write_reflist(output, model);
+	write_reflist_2(output, model, sym);
 
 	close_stream(st);
 

@@ -3,11 +3,11 @@
  *
  * Utilities to complement the core reflist.c
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2012 Thomas White <taw@physics.org>
+ *   2011-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -169,8 +169,8 @@ void write_reflections_to_file(FILE *fh, RefList *list)
 	Reflection *refl;
 	RefListIterator *iter;
 
-	fprintf(fh, "  h   k   l          I    phase   sigma(I) "
-		     " counts  fs/px  ss/px\n");
+	fprintf(fh, "   h    k    l          I    phase   sigma(I) "
+		     "  nmeas\n");
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -180,12 +180,10 @@ void write_reflections_to_file(FILE *fh, RefList *list)
 		signed int h, k, l;
 		double intensity, esd_i, ph;
 		int red;
-		double fs, ss;
 		char phs[16];
 		int have_phase;
 
 		get_indices(refl, &h, &k, &l);
-		get_detector_pos(refl, &fs, &ss);
 		intensity = get_intensity(refl);
 		esd_i = get_esd_intensity(refl);
 		red = get_redundancy(refl);
@@ -201,10 +199,59 @@ void write_reflections_to_file(FILE *fh, RefList *list)
 		}
 
 		fprintf(fh,
-		       "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f\n",
-		       h, k, l, intensity, phs, esd_i, red,  fs, ss);
+		       "%4i %4i %4i %10.2f %s %10.2f %7i\n",
+		       h, k, l, intensity, phs, esd_i, red);
 
 	}
+}
+
+
+/**
+ * write_reflist_2:
+ * @filename: Filename
+ * @list: The reflection list to write
+ * @sym: A %SymOpList describing the symmetry of the list
+ *
+ * This function writes the contents of @list to @file,
+ *
+ * Reflections which have a redundancy of zero will not be written.
+ *
+ * The resulting list can be read back with read_reflections_from_file() or
+ * read_reflections().
+ *
+ * Returns: zero on success, non-zero on failure.
+ **/
+int write_reflist_2(const char *filename, RefList *list, SymOpList *sym)
+{
+	FILE *fh;
+	const char *ssym;
+
+	if ( filename == NULL ) {
+		fh = stdout;
+	} else {
+		fh = fopen(filename, "w");
+	}
+
+	if ( fh == NULL ) {
+		ERROR("Couldn't open output file '%s'.\n", filename);
+		return 1;
+	}
+
+	fprintf(fh, "CrystFEL reflection list version 2.0\n");
+
+	if ( sym == NULL ) {
+		ssym = "unknown";
+	} else {
+		ssym = symmetry_name(sym);
+	}
+	fprintf(fh, "Symmetry: %s\n", ssym);
+
+	write_reflections_to_file(fh, list);
+	fprintf(fh, REFLECTION_END_MARKER"\n");
+
+	fclose(fh);
+
+	return 0;
 }
 
 
@@ -223,48 +270,59 @@ void write_reflections_to_file(FILE *fh, RefList *list)
  * This is a convenience function which simply opens @filename and then calls
  * write_reflections_to_file.
  *
+ * Deprecated: use write_reflist_2() instead.
+ *
  * Returns: zero on success, non-zero on failure.
  **/
 int write_reflist(const char *filename, RefList *list)
 {
-	FILE *fh;
-
-	if ( filename == NULL ) {
-		fh = stdout;
-	} else {
-		fh = fopen(filename, "w");
-	}
-
-	if ( fh == NULL ) {
-		ERROR("Couldn't open output file '%s'.\n", filename);
-		return 1;
-	}
-
-	write_reflections_to_file(fh, list);
-	fprintf(fh, REFLECTION_END_MARKER"\n");
-
-	fclose(fh);
-
-	return 0;
+	return write_reflist_2(filename, list, NULL);
 }
 
+
+#define HEADER_1_0 "  h   k   l          I    phase   sigma(I)  counts  " \
+	                  "fs/px  ss/px"
+
+#define HEADER_2_0 "CrystFEL reflection list version 2.0"
 
 RefList *read_reflections_from_file(FILE *fh)
 {
 	char *rval = NULL;
-	int first = 1;
 	RefList *out;
+	int major_version;  /* Minor version as well, but not used yet */
+	char line[1024];
+
+	rval = fgets(line, 1023, fh);
+	if ( rval == NULL ) return NULL;
+	chomp(line);
+	if ( strcmp(line, HEADER_1_0) == 0 ) {
+		major_version = 1;
+	} else if ( strcmp(line, HEADER_2_0) == 0 ) {
+		major_version = 2;
+	} else {
+		fprintf(stderr, "Unrecognised header '%s'\n", line);
+		return NULL;
+	}
+
+	if ( major_version >= 2 ) {
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) return NULL;
+		chomp(line);
+		if ( strncmp(line, "Symmetry: ", 10) != 0 ) return NULL;
+
+		/* FIXME: Do something with the symmetry */
+
+		/* Read (and ignore) the header */
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) return NULL;
+
+	}
 
 	out = reflist_new();
 
 	do {
 
-		char line[1024];
-		signed int h, k, l;
-		float intensity, sigma, fs, ss;
-		char phs[1024];
-		int cts;
-		int r;
 		Reflection *refl;
 
 		rval = fgets(line, 1023, fh);
@@ -273,18 +331,51 @@ RefList *read_reflections_from_file(FILE *fh)
 
 		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
 
-		r = sscanf(line, "%i %i %i %f %s %f %i %f %f",
-		           &h, &k, &l, &intensity, phs, &sigma, &cts, &fs, &ss);
-		if ( (r != 9) && (!first) ) {
-			reflist_free(out);
-			return NULL;
-		}
-
-		first = 0;
-		if ( r == 9 ) {
+		if ( major_version >= 2 ) {
 
 			double ph;
 			char *v;
+			signed int h, k, l;
+			float intensity, sigma;
+			char phs[1024];
+			int cts;
+			int r;
+
+			r = sscanf(line, "%i %i %i %f %s %f %i",
+				   &h, &k, &l, &intensity, phs, &sigma, &cts);
+
+			if ( r != 7 ) {
+				reflist_free(out);
+				printf("Bad line '%s'\n", line);
+				return NULL;
+			}
+
+			refl = add_refl(out, h, k, l);
+			set_intensity(refl, intensity);
+			set_esd_intensity(refl, sigma);
+			set_redundancy(refl, cts);
+
+			ph = strtod(phs, &v);
+			if ( v != phs ) set_phase(refl, deg2rad(ph));
+
+		} else {
+
+			double ph;
+			char *v;
+			signed int h, k, l;
+			float intensity, sigma, fs, ss;
+			char phs[1024];
+			int cts;
+			int r;
+
+			r = sscanf(line, "%i %i %i %f %s %f %i %f %f",
+				   &h, &k, &l, &intensity, phs, &sigma,
+				   &cts, &fs, &ss);
+
+			if ( r != 9 ) {
+				reflist_free(out);
+				return NULL;
+			}
 
 			refl = add_refl(out, h, k, l);
 			set_intensity(refl, intensity);
