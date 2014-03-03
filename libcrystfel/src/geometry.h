@@ -38,6 +38,7 @@
 
 #include "reflist.h"
 #include "cell.h"
+#include "crystal.h"
 
 #ifdef __cplusplus
 extern "C" {

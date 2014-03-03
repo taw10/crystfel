@@ -36,6 +36,7 @@
 #include <pthread.h>
 
 #include "reflist.h"
+#include "crystal.h"
 
 extern int *make_BgMask(struct image *image, struct panel *p, double ir_inn);
 

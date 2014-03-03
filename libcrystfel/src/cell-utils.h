@@ -35,6 +35,8 @@
 #include <config.h>
 #endif
 
+#include "cell.h"
+
 extern double resolution(UnitCell *cell,
                          signed int h, signed int k, signed int l);
 
