@@ -2,8 +2,10 @@
 
 use strict;
 
-# When you've edited the relevant parameters, delete this comment and the following two lines
-printf("You need to edit this script first, to set the space group and cell parameters.\n");
+# When you've edited the relevant parameters, delete this comment and the
+# following two lines
+printf("You need to edit this script first, to set the space group and ".
+       "cell parameters.\n");
 exit(1);
 
 open(FH, $ARGV[0]);
@@ -31,7 +33,7 @@ while ( $line = <FH> ) {
 		my $k = $2;
 		my $l = $3;
 		my $int = $4;
-		my $sig = $6;
+		my $sig = $6;  # Yes, it's meant to be $6 not $5 ($5 is phase)
 
 		printf("%6i %6i %5i %9.2f %9.2f\n", $h, $k, $l, $int, $sig);
 

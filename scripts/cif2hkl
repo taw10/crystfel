@@ -4,8 +4,7 @@ use strict;
 
 my $line;
 
-printf("  h   k   l          I    phase   sigma(I)  counts"
-      ."  fs/px  ss/px\n");
+printf("   h    k    l          I    phase   sigma(I)   nmeas\n");
 
 while ( $line = <STDIN> ) {
 
@@ -17,9 +16,8 @@ while ( $line = <STDIN> ) {
                 my $intensity = $4;
                 my $sigi = $5;
 
-                printf("%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f\n",
-                       $h, $k, $l, $intensity, "       -", $sigi,
-                       1, 0.0, 0.0);
+                printf("%4i %4i %4i %10.2f %s %10.2f %7i\n",
+                       $h, $k, $l, $intensity, "       -", $sigi, 1);
 
         }
 

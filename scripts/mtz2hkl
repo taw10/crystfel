@@ -1,8 +1,37 @@
 #!/bin/sh
 
-mtz2various hklin $1 hklout $2 <<EOF
+mtz2various hklin $1 hklout $2.temp <<EOF
 LABIN H=H K=K L=L I=IMEAN SIGI=SIGIMEAN
 OUTPUT USER '(3I4,2F15.1)'
 EOF
 
-echo "Now use hkl2hkl (without modification) to convert $2 to a CrystFEL file"
+perl < $2.temp > $2 << WIBBLE
+use strict;
+
+my \$line;
+open(FILE, "$2.temp");
+
+printf("   h    k    l          I    phase   sigma(I)   nmeas\n");
+
+while ( \$line = <FILE> ) {
+
+        if ( \$line =~ /^\s*([\d\-]+)\s+([\d\-]+)\s+([\d\-]+)\s+([\d\-\.]+)\s+([\d\-\.]+)/ ) {
+
+                my \$h = \$1;
+                my \$k = \$2;
+                my \$l = \$3;
+                my \$intensity = \$4;
+                my \$sigi = \$5;
+
+                printf("%4i %4i %4i %10.2f %s %10.2f %7i\n",
+                       \$h, \$k, \$l, \$intensity, "       -", \$sigi, 1);
+
+        } else {
+		printf(STDERR "Couldn't understand line '%s'\n", \$line);
+        }
+
+}
+close(FILE);
+printf("End of reflections\n");
+WIBBLE
+exit

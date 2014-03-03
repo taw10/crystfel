@@ -4,20 +4,20 @@ use strict;
 
 my $line;
 
-printf("  h   k   l          I    phase   sigma(I)  counts"
-      ."  fs/px  ss/px\n");
+printf("   h    k    l          I    phase   sigma(I)   nmeas\n");
 
 while ( $line = <STDIN> ) {
 
-        if ( $line =~ /([\d\-]+)\s+([\d\-]+)\s+([\d\-]+)\s+([\d\.\-]+)\s+([\d\.\-]+)/ ) {
+        if ( $line =~ /([\d\-]+)\s+([\d\-]+)\s+([\d\-]+)\s+([\d\.\-]+)\s+([\d\.\-]+)\s+([\d\.\-]+)/ ) {
 
                 my $h = $1;
                 my $k = $2;
                 my $l = $3;
                 my $intensity = $4;
-                my $sigi = $5;
+                my $phase = $5;
+                my $sigi = $6;
 
-                printf("%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f\n",
+                printf("%4i %4i %4i %10.2f %s %10.2f %7i\n",
                        $h, $k, $l, $intensity, "       -", $sigi,
                        1, 0.0, 0.0);
 
