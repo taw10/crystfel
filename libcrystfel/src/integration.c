@@ -216,6 +216,9 @@ struct peak_box
 	double sigma;
 	double J;  /* Profile scaling factor */
 
+	/* Highest (non-ignored) value in peak */
+	double peak;
+
 	/* Offsets to final observed position */
 	double offs_fs;
 	double offs_ss;
@@ -841,6 +844,7 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 	                   &cdx, &cdy, &cdz);
 	get_indices(bx->refl, &hr, &kr, &lr);
 
+	bx->peak = -INFINITY;
 	for ( p=0; p<ic->w; p++ ) {
 	for ( q=0; q<ic->w; q++ ) {
 
@@ -872,6 +876,12 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 		  && (bx->bm[p+ic->w*q] != BM_BH)
 		  && (boxi(ic, bx, p, q) > bx->p->max_adu) ) {
 			if ( sat != NULL ) *sat = 1;
+		}
+
+		if ( (bx->bm[p+ic->w*q] != BM_IG)
+		  && (bx->bm[p+ic->w*q] != BM_BH)
+		  && (boxi(ic, bx, p, q) > bx->peak) ) {
+			bx->peak = boxi(ic, bx, p, q);
 		}
 
 		/* Ignore if this pixel is closer to the next reciprocal lattice
@@ -1342,9 +1352,15 @@ static void integrate_prof2d_once(struct intcontext *ic, struct peak_box *bx)
 	if ( bg_ok(bx) ) {
 
 		double pfs, pss;
+		double bgmean;
+		double sig2_bg;  /* unused */
+
+		mean_var_area(ic, bx, BM_BG, &bgmean, &sig2_bg);
 
 		set_intensity(bx->refl, bx->intensity);
 		set_esd_intensity(bx->refl, bx->sigma);
+		set_peak(bx->refl, bx->peak);
+		set_mean_bg(bx->refl, bgmean);
 		set_redundancy(bx->refl, 1);
 
 		/* Update position */
@@ -1600,6 +1616,8 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	set_intensity(refl, intensity);
 	set_esd_intensity(refl, sigma);
 	set_redundancy(refl, 1);
+	set_mean_bg(refl, bgmean);
+	set_peak(refl, bx->peak);
 
 	get_indices(refl, &h, &k, &l);
 	one_over_d = resolution(cell, h, k, l);

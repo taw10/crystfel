@@ -51,7 +51,10 @@
 #include "reflist-utils.h"
 
 #define LATEST_MAJOR_VERSION (2)
-#define LATEST_MINOR_VERSION (1)
+#define LATEST_MINOR_VERSION (2)
+
+#define AT_LEAST_VERSION(st, a, b) ((st->major_version>=(a)) \
+                                    && (st->minor_version>=(b)))
 
 
 struct _stream
@@ -130,6 +133,91 @@ static void write_peaks(struct image *image, FILE *ofh)
 }
 
 
+static RefList *read_stream_reflections(FILE *fh)
+{
+	char *rval = NULL;
+	int first = 1;
+	RefList *out;
+
+	out = reflist_new();
+
+	do {
+
+		char line[1024];
+		signed int h, k, l;
+		float intensity, sigma, fs, ss, pk, bg;
+		int r;
+		Reflection *refl;
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
+		chomp(line);
+
+		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
+
+		r = sscanf(line, "%i %i %i %f %f %f %f %f %f",
+		           &h, &k, &l, &intensity, &sigma, &fs, &ss, &pk, &bg);
+		if ( (r != 9) && (!first) ) {
+			reflist_free(out);
+			return NULL;
+		}
+
+		first = 0;
+		if ( r == 9 ) {
+
+			refl = add_refl(out, h, k, l);
+			set_intensity(refl, intensity);
+			set_detector_pos(refl, 0.0, fs, ss);
+			set_esd_intensity(refl, sigma);
+			set_redundancy(refl, 1);
+			set_peak(refl, pk);
+			set_mean_bg(refl, bg);
+
+		}
+
+	} while ( rval != NULL );
+
+	/* Got read error of some kind before finding PEAK_LIST_END_MARKER */
+	return NULL;
+}
+
+
+static void write_stream_reflections(FILE *fh, RefList *list)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+
+	fprintf(fh, "   h    k    l          I   sigma(I)   fs/px  ss/px"
+	            "       peak background\n");
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+
+		signed int h, k, l;
+		double intensity, esd_i, bg, pk;
+		double fs, ss;
+
+		get_indices(refl, &h, &k, &l);
+		get_detector_pos(refl, &fs, &ss);
+		intensity = get_intensity(refl);
+		esd_i = get_esd_intensity(refl);
+		pk = get_peak(refl);
+		bg = get_mean_bg(refl);
+
+		/* Reflections with redundancy = 0 are not written */
+		if ( get_redundancy(refl) == 0 ) continue;
+
+		fprintf(fh,
+		       "%4i %4i %4i %10.2f %10.2f  %6.1f %6.1f %10.2f %10.2f\n",
+		       h, k, l, intensity, esd_i, fs, ss, pk, bg);
+
+	}
+
+}
+
+
 static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 {
 	UnitCell *cell;
@@ -185,7 +273,11 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 		if ( reflist != NULL ) {
 
 			fprintf(st->fh, REFLECTION_START_MARKER"\n");
-			write_reflections_to_file(st->fh, reflist);
+			if ( AT_LEAST_VERSION(st, 2, 2) ) {
+				write_stream_reflections(st->fh, reflist);
+			} else {
+				write_reflections_to_file(st->fh, reflist);
+			}
 			fprintf(st->fh, REFLECTION_END_MARKER"\n");
 
 		} else {
@@ -366,16 +458,21 @@ void read_crystal(Stream *st, struct image *image)
 
 		if ( strcmp(line, REFLECTION_START_MARKER) == 0 ) {
 
-			RefList *reflections;
+			RefList *reflist;
 
-			reflections = read_reflections_from_file(st->fh);
-
-			if ( reflections == NULL ) {
+			/* The reflection list format in the stream diverges
+			 * after 2.2 */
+			if ( AT_LEAST_VERSION(st, 2, 2) ) {
+				reflist = read_stream_reflections(st->fh);
+			} else {
+				reflist = read_reflections_from_file(st->fh);
+			}
+			if ( reflist == NULL ) {
 				ERROR("Failed while reading reflections\n");
 				break;
 			}
 
-			crystal_set_reflections(cr, reflections);
+			crystal_set_reflections(cr, reflist);
 
 		}
 
@@ -564,6 +661,9 @@ Stream *open_stream_for_read(const char *filename)
 	} else if ( strncmp(line, "CrystFEL stream format 2.1", 26) == 0 ) {
 		st->major_version = 2;
 		st->minor_version = 1;
+	} else if ( strncmp(line, "CrystFEL stream format 2.2", 26) == 0 ) {
+		st->major_version = 2;
+		st->minor_version = 2;
 	} else {
 		ERROR("Invalid stream, or stream format is too new.\n");
 		close_stream(st);
@@ -634,6 +734,7 @@ int is_stream(const char *filename)
 
 	if ( strncmp(line, "CrystFEL stream format 2.0", 26) == 0 ) return 1;
 	if ( strncmp(line, "CrystFEL stream format 2.1", 26) == 0 ) return 1;
+	if ( strncmp(line, "CrystFEL stream format 2.2", 26) == 0 ) return 1;
 
 	return 0;
 }

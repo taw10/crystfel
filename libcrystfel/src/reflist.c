@@ -100,6 +100,10 @@ struct _refldata {
 	/* Redundancy */
 	int redundancy;
 
+	/* Peak height and mean background */
+	double peak;
+	double mean_bg;
+
 	/* User-specified temporary values */
 	double temp1;
 	double temp2;
@@ -522,6 +526,33 @@ double get_phase(const Reflection *refl, int *have_phase)
 
 
 /**
+ * get_peak:
+ * @refl: A %Reflection
+ *
+ * Returns: the peak height (value of the highest pixel, before background
+ * subtraction) for this reflection.
+ *
+ **/
+double get_peak(const Reflection *refl)
+{
+	return refl->data.peak;
+}
+
+
+/**
+ * get_mean_bg:
+ * @refl: A %Reflection
+ *
+ * Returns: the mean background level for this reflection.
+ *
+ **/
+double get_mean_bg(const Reflection *refl)
+{
+	return refl->data.mean_bg;
+}
+
+
+/**
  * get_temp1:
  * @refl: A %Reflection
  *
@@ -717,6 +748,30 @@ void set_phase(Reflection *refl, double phase)
 {
 	refl->data.phase = phase;
 	refl->data.have_phase = 1;
+}
+
+
+/**
+ * set_peak:
+ * @refl: A %Reflection
+ * @peak: New peak height for the reflection
+ *
+ **/
+void set_peak(Reflection *refl, double peak)
+{
+	refl->data.peak = peak;
+}
+
+
+/**
+ * set_mean_bg:
+ * @refl: A %Reflection
+ * @mean_bg: New peak height for the reflection
+ *
+ **/
+void set_mean_bg(Reflection *refl, double mean_bg)
+{
+	refl->data.mean_bg = mean_bg;
 }
 
 
