@@ -3,12 +3,12 @@
  *
  * Assemble and process FEL Bragg intensities
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2013 Thomas White <taw@physics.org>
+ *   2009-2014 Thomas White <taw@physics.org>
  *   2011      Andrew Martin <andrew.martin@desy.de>
  *   2012      Lorenzo Galli <lorenzo.galli@desy.de>
  *
@@ -81,6 +81,7 @@ static void show_help(const char *s)
 "                             reflection appears in the output.  Default: 2\n"
 "      --min-snr=<n>         Require individual intensity measurements to\n"
 "                             have I > n * sigma(I).  Default: -infinity.\n"
+"      --max-adu=<n>         Maximum peak value.  Default: infinity.\n"
 );
 }
 
@@ -197,7 +198,7 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
                          RefList *reference, const SymOpList *sym,
                          double **hist_vals, signed int hist_h,
                          signed int hist_k, signed int hist_l, int *hist_n,
-                         int config_nopolar, double min_snr)
+                         int config_nopolar, double min_snr, double max_adu)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -221,7 +222,7 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		double refl_intensity, refl_sigma;
+		double refl_intensity, refl_sigma, refl_pk;
 		signed int h, k, l;
 		int model_redundancy;
 		Reflection *model_version;
@@ -230,10 +231,13 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 
 		refl_intensity = scale * get_intensity(refl);
 		refl_sigma = scale * get_esd_intensity(refl);
+		refl_pk = get_peak(refl);
 		w = 1.0;//pow(refl_sigma, -2.0);
 
 		if ( (min_snr > -INFINITY) && isnan(refl_sigma) ) continue;
 		if ( refl_intensity < min_snr * refl_sigma ) continue;
+
+		if ( refl_pk > max_adu ) continue;
 
 		get_indices(refl, &h, &k, &l);
 
@@ -303,7 +307,8 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
                      double **hist_vals, signed int hist_h,
                      signed int hist_k, signed int hist_l,
                      int *hist_i, int config_nopolar, int min_measurements,
-                     double min_snr, int start_after, int stop_after)
+                     double min_snr, double max_adu,
+                     int start_after, int stop_after)
 {
 	int rval;
 	int n_images = 0;
@@ -337,7 +342,8 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 			n_crystals++;
 			r = merge_crystal(model, &image, cr, reference, sym,
 			                  hist_vals, hist_h, hist_k, hist_l,
-			                  hist_i, config_nopolar, min_snr);
+			                  hist_i, config_nopolar, min_snr,
+			                  max_adu);
 
 			if ( r == 0 ) n_crystals_used++;
 
@@ -407,6 +413,7 @@ int main(int argc, char *argv[])
 	int start_after = 0;
 	int stop_after = 0;
 	double min_snr = -INFINITY;
+	double max_adu = +INFINITY;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -426,6 +433,7 @@ int main(int argc, char *argv[])
 		{"hist-parameters",    1, NULL,               'z'},
 		{"min-measurements",   1, NULL,                2},
 		{"min-snr",            1, NULL,                3},
+		{"max-adu",            1, NULL,                4},
 		{0, 0, NULL, 0}
 	};
 
@@ -497,6 +505,15 @@ int main(int argc, char *argv[])
 			ERROR("WARNING: Please read the manual carefully to "
 			      "learn about possible detrimental effects of this"
 			      " option.\n");
+			break;
+
+			case 4 :
+			errno = 0;
+			max_adu = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --max-adu.\n");
+				return 1;
+			}
 			break;
 
 			case '?' :
@@ -580,7 +597,7 @@ int main(int argc, char *argv[])
 	hist_i = 0;
 	r = merge_all(st, model, NULL, sym, &hist_vals, hist_h, hist_k, hist_l,
 	              &hist_i, config_nopolar, min_measurements, min_snr,
-	              start_after, stop_after);
+	              max_adu, start_after, stop_after);
 	fprintf(stderr, "\n");
 	if ( r ) {
 		ERROR("Error while reading stream.\n");
@@ -612,7 +629,7 @@ int main(int argc, char *argv[])
 			r = merge_all(st, model, reference, sym,
 				     &hist_vals, hist_h, hist_k, hist_l, &hist_i,
 				     config_nopolar, min_measurements, min_snr,
-				     start_after, stop_after);
+				     max_adu, start_after, stop_after);
 			fprintf(stderr, "\n");
 			if ( r ) {
 				ERROR("Error while reading stream.\n");

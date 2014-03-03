@@ -109,6 +109,12 @@ Use a particular individual reflection intensity measurement only if it exceeds 
 .IP
 \fBWARNING:\fR think very carefully before using this option.  It will bias reflections towards more positive values, even where no signal exists, leading to a data set dominated by the background.  This can invalidate some of the figures of merit for the merit for data quality while severely compromising the actual quality.
 
+.PD 0
+.IP \fB--max-adu=\fR\fIn\fR
+.PD
+Include reflections only if their peak values were less than \fIn\fR.  That means, \fIn\fR is the saturation value of the detector.  The default is infinity, i.e. no cutoff.
+
+
 .SH CHOICE OF POINT GROUP FOR MERGING
 
 One of the main features of serial crystallography is that the orientations of
