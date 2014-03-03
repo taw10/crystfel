@@ -1173,11 +1173,17 @@ static gint displaywindow_set_calibmode(GtkWidget *d, DisplayWindow *dw)
 
 		gtk_check_menu_item_set_state(GTK_CHECK_MENU_ITEM(w),0);
 
+		dw->calib_mode_curr_rg = dw->image->det->rigid_groups[0];
+		dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[0];
+
 	} else {
 
 		/* Get new value */
 		dw->calib_mode = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(w));
-
+		if ( dw->calib_mode_curr_rg == NULL && dw->calib_mode_curr_p == NULL) {
+			dw->calib_mode_curr_rg = dw->image->det->rigid_groups[0];
+			dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[0];
+		}
 		displaywindow_update(dw);
 
 	}
@@ -2228,10 +2234,10 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	if (dw->calib_mode == 1) {
 		ww = gtk_ui_manager_get_widget(dw->ui, "/ui/displaywindow/tools/calibmode");
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(ww), TRUE);
+		dw->calib_mode_curr_rg = dw->image->det->rigid_groups[0];
+		dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[0];
 	}
 
-	dw->calib_mode_curr_rg = dw->image->det->rigid_groups[0];
-	dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[0];
 
 	displaywindow_update(dw);
 
