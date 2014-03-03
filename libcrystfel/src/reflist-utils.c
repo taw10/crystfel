@@ -169,8 +169,7 @@ void write_reflections_to_file(FILE *fh, RefList *list)
 	Reflection *refl;
 	RefListIterator *iter;
 
-	fprintf(fh, "   h    k    l          I    phase   sigma(I) "
-		     "  nmeas\n");
+	fprintf(fh, "   h    k    l          I    phase   sigma(I)   nmeas\n");
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
