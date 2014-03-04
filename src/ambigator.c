@@ -73,12 +73,26 @@ static void show_help(const char *s)
 );
 }
 
+#define SERIAL(h, k, l) ((((h)+512)<<20) + (((k)+512)<<10) + ((l)+512))
+#define GET_H(serial) ((((serial) & 0x3ff00000)>>20)-512)
+#define GET_K(serial) ((((serial) & 0x000ffc00)>>10)-512)
+#define GET_L(serial) (((serial) & 0x000003ff)-512)
 
-static RefList *asymm_and_merge(RefList *in, const SymOpList *sym)
+struct flist
+{
+	int n;
+	unsigned int *s;
+	float *i;
+};
+
+
+static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 	RefList *asym;
+	struct flist *f;
+	int n;
 
 	asym = reflist_new();
 	if ( asym == NULL ) return NULL;
@@ -108,14 +122,40 @@ static RefList *asymm_and_merge(RefList *in, const SymOpList *sym)
 		}
 	}
 
-	return asym;
+	f = malloc(sizeof(struct flist));
+	if ( f == NULL ) {
+		ERROR("Failed to allocate flist\n");
+		return NULL;
+	}
+
+	n = num_reflections(asym);
+	f->s = malloc(n*sizeof(unsigned int));
+	f->i = malloc(n*sizeof(float));
+	if ( (f->s == NULL) || (f->i == NULL) ) {
+		ERROR("Failed to allocate flist\n");
+		return NULL;
+	}
+
+	f->n = 0;
+	for ( refl = first_refl(asym, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+
+		get_indices(refl, &h, &k, &l);
+		f->s[f->n] = SERIAL(h, k, l);
+		f->i[f->n] = get_intensity(refl);
+		f->n++;
+	}
+	reflist_free(asym);
+
+	return f;
 }
 
 
-static float corr(Crystal *a, Crystal *b, int *pn)
+static float corr(struct flist *a, struct flist *b, int *pn)
 {
-	Reflection *aref;
-	RefListIterator *iter;
 	float s_xy = 0.0;
 	float s_x = 0.0;
 	float s_y = 0.0;
@@ -123,31 +163,48 @@ static float corr(Crystal *a, Crystal *b, int *pn)
 	float s_y2 = 0.0;
 	int n = 0;
 	float t1, t2;
+	int ap = 0;
+	int bp = 0;
+	int done = 0;
 
-	for ( aref = first_refl(crystal_get_reflections(a), &iter);
-	      aref != NULL;
-	      aref = next_refl(aref, iter) )
-	{
-		signed int h, k, l;
-		Reflection *bref;
-		float aint, bint;
+	while ( 1 ) {
 
-		get_indices(aref, &h, &k, &l);
+		while ( a->s[ap] > b->s[bp] ) {
+			if ( ++bp == b->n ) {
+				done = 1;
+				break;
+			}
+		}
+		if ( done ) break;
 
-		bref = find_refl(crystal_get_reflections(b), h, k, l);
-		if ( bref == NULL ) continue;
+		while ( a->s[ap] < b->s[bp] ) {
+			if ( ++ap == a->n ) {
+				done = 1;
+				break;
+			}
+		}
+		if ( done ) break;
 
-		aint = get_intensity(aref);
-		bint = get_intensity(bref);
+		if ( a->s[ap] == b->s[bp] ) {
 
-		s_xy += aint*bint;
-		s_x += aint;
-		s_y += bint;
-		s_x2 += aint*aint;
-		s_y2 += bint*bint;
-		n++;
+			float aint, bint;
+
+			aint = a->i[ap];
+			bint = b->i[bp];
+
+			s_xy += aint*bint;
+			s_x += aint;
+			s_y += bint;
+			s_x2 += aint*aint;
+			s_y2 += bint*bint;
+			n++;
+
+			if ( ++ap == a->n ) break;
+			if ( ++bp == b->n ) break;
+
+		}
+
 	}
-
 	*pn = n;
 
 	t1 = s_x2 - s_x*s_x / n;
@@ -159,7 +216,7 @@ static float corr(Crystal *a, Crystal *b, int *pn)
 }
 
 
-static void detwin(Crystal **crystals, int n_crystals, SymOpList *amb,
+static void detwin(struct flist **crystals, int n_crystals, SymOpList *amb,
                    int *assignments)
 {
 	int i;
@@ -222,7 +279,7 @@ int main(int argc, char *argv[])
 	int n_iter = 1;
 	int n_crystals, n_chunks, max_crystals;
 	int n_dif;
-	Crystal **crystals;
+	struct flist **crystals;
 	Stream *st;
 	int i;
 	int *assignments;
@@ -340,6 +397,7 @@ int main(int argc, char *argv[])
 		for ( i=0; i<cur.n_crystals; i++ ) {
 
 			Crystal *cr;
+			RefList *list;
 
 			cr = cur.crystals[i];
 
@@ -347,10 +405,10 @@ int main(int argc, char *argv[])
 
 			if ( n_crystals == max_crystals ) {
 
-				Crystal **crystals_new;
+				struct flist **crystals_new;
 				size_t nsz;
 
-				nsz = (max_crystals+1024)*sizeof(Crystal *);
+				nsz = (max_crystals+1024)*sizeof(struct flist *);
 				crystals_new = realloc(crystals, nsz);
 				if ( crystals_new == NULL ) {
 					fprintf(stderr, "Failed to allocate "
@@ -363,8 +421,11 @@ int main(int argc, char *argv[])
 
 			}
 
-			crystals[n_crystals] = cr;
+			list = crystal_get_reflections(cr);
+			crystals[n_crystals] = asymm_and_merge(list, s_sym);
 			n_crystals++;
+
+			reflist_free(list);
 
 		}
 
@@ -375,17 +436,6 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "\n");
 
 	close_stream(st);
-
-	for ( i=0; i<n_crystals; i++ ) {
-
-		RefList *list, *merged;
-
-		list = crystal_get_reflections(crystals[i]);
-		merged = asymm_and_merge(list, s_sym);
-		reflist_free(list);
-		crystal_set_reflections(crystals[i], merged);
-
-	}
 
 	assignments = malloc(n_crystals*sizeof(int));
 	if ( assignments == NULL ) {
