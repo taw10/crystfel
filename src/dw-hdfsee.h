@@ -114,6 +114,8 @@ typedef struct {
 	int             calib_mode_show_focus;
 	int		calib_mode_groups;
 
+	GtkWidget       *calibmode_statusbar;
+
 	int		show_col_scale;
 	int		scale;
 	GdkPixbuf	*col_scale;

@@ -1166,25 +1166,49 @@ static gint displaywindow_set_usegeom(GtkWidget *d, DisplayWindow *dw)
 static gint displaywindow_set_calibmode(GtkWidget *d, DisplayWindow *dw)
 {
 
-	GtkWidget *w;
+	GtkWidget *w, *vbox;
+	guint calibmode_context;
+
 	w =  gtk_ui_manager_get_widget(dw->ui,
 	                                       "/ui/displaywindow/tools/calibmode");
 	if ( dw->use_geom == 0 ) {
 
 		gtk_check_menu_item_set_state(GTK_CHECK_MENU_ITEM(w),0);
 
-		dw->calib_mode_curr_rg = dw->image->det->rigid_groups[0];
-		dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[0];
-
 	} else {
 
 		/* Get new value */
 		dw->calib_mode = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(w));
-		if ( dw->calib_mode_curr_rg == NULL && dw->calib_mode_curr_p == NULL) {
-			dw->calib_mode_curr_rg = dw->image->det->rigid_groups[0];
-			dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[0];
+
+		/* When entering calibration mode */
+		if ( dw-> calib_mode == 1 ) {
+
+			if ( dw->calib_mode_curr_rg == NULL && dw->calib_mode_curr_p == NULL ) {
+				dw->calib_mode_curr_rg = dw->image->det->rigid_groups[0];
+				dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[0];
+			}
+
+			dw->calibmode_statusbar = gtk_statusbar_new();
+			gtk_widget_show(dw->calibmode_statusbar);
+			vbox = gtk_bin_get_child(GTK_BIN(dw->window));
+			gtk_box_pack_end(GTK_BOX(vbox), dw->calibmode_statusbar, TRUE, TRUE, 0);
+			calibmode_context = gtk_statusbar_get_context_id(GTK_STATUSBAR(dw->calibmode_statusbar),
+			                    "calibmode");
+			gtk_statusbar_push(GTK_STATUSBAR(dw->calibmode_statusbar),
+			                   calibmode_context,
+			                   "Last Clicked Position: x: --, y: --, fs: --, ss: --, (panel --)");
+			displaywindow_update(dw);
+
 		}
-		displaywindow_update(dw);
+
+		/* When leaving calibration mode */
+		if ( dw-> calib_mode == 0 ) {
+
+			  gtk_widget_destroy(dw->calibmode_statusbar);
+			  dw->calibmode_statusbar = NULL;
+			  displaywindow_update(dw);
+
+		}
 
 	}
 
@@ -1889,6 +1913,11 @@ static gint displaywindow_motion(GtkWidget *widget, GdkEventMotion *event,
 static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
                                 DisplayWindow *dw)
 {
+	int x,y;
+	double dfs, dss;
+	int fs, ss;
+	char statusbar_string[80];
+
 	if ( dw->motion_callback != 0 ) {
 		return 0;
 	}
@@ -1905,6 +1934,22 @@ static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
 			dw->numbers_window->cx = event->x;
 			dw->numbers_window->cy = dw->height - 1 - event->y;
 			numbers_update(dw);
+		}
+
+		if ( dw->calibmode_statusbar != NULL ) {
+			guint calibmode_context = gtk_statusbar_get_context_id(GTK_STATUSBAR(dw->calibmode_statusbar), "calibmode");
+			x = dw->binning * (event->x);
+			y = dw->binning * (dw->height - 1 - event->y);
+			x += dw->min_x;
+			y += dw->min_x;
+			reverse_2d_mapping(x, y, &dfs, &dss, dw->image->det);
+			fs = dfs;
+			ss = dss;
+			sprintf(statusbar_string,
+			        "Last Clicked Position: x: %i, y: %i, fs: %u, ss: %u, (panel %s)",
+			        x, y, fs, ss, find_panel(dw->image->det, fs, ss)->name);
+			gtk_statusbar_push(GTK_STATUSBAR(dw->calibmode_statusbar),
+			                   calibmode_context, statusbar_string);
 		}
 
 	}
@@ -2144,6 +2189,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->calib_mode_curr_p = NULL;
 	dw->calib_mode_show_focus = 1;
 	dw->calib_mode_groups = 1;
+	dw->calibmode_statusbar = NULL;
 
 	if ( beam != NULL ) {
 		dw->image->beam = get_beam_parameters(beam);
@@ -2183,7 +2229,6 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 		free(dw);
 		return NULL;
 	}
-
 	dw->loaded_geom = NULL;
 	dw->simple_geom = simple_geometry(dw->image);
 	dw->image->det = dw->simple_geom;
@@ -2234,8 +2279,6 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	if (dw->calib_mode == 1) {
 		ww = gtk_ui_manager_get_widget(dw->ui, "/ui/displaywindow/tools/calibmode");
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(ww), TRUE);
-		dw->calib_mode_curr_rg = dw->image->det->rigid_groups[0];
-		dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[0];
 	}
 
 
