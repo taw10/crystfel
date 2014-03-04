@@ -4,7 +4,8 @@ SUBDIRS = lib doc/reference/libcrystfel libcrystfel
 ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
-               src/compare_hkl src/partialator src/check_hkl src/partial_sim
+               src/compare_hkl src/partialator src/check_hkl src/partial_sim \
+               src/ambigator
 
 noinst_PROGRAMS = tests/list_check tests/integration_check \
                   tests/pr_p_gradient_check tests/symmetry_check \
@@ -84,6 +85,8 @@ endif
 
 src_partialator_SOURCES = src/partialator.c src/post-refinement.c \
                           src/hrs-scaling.c
+
+src_ambigator_SOURCES = src/ambigator.c
 
 if HAVE_CAIRO
 if HAVE_PANGO
