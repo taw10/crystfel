@@ -146,7 +146,6 @@ static float corr(Crystal *a, Crystal *b, int *pn)
 		s_x2 += aint*aint;
 		s_y2 += bint*bint;
 		n++;
-
 	}
 
 	*pn = n;
@@ -156,7 +155,7 @@ static float corr(Crystal *a, Crystal *b, int *pn)
 
 	if ( (t1 < 0.0) || (t2 <= 0.0) ) return 0.0;
 
-	return (s_xy - s_x*s_y)/n/sqrt(t1*t2);
+	return ((s_xy - s_x*s_y)/n)/sqrt(t1*t2);
 }
 
 
@@ -181,8 +180,8 @@ static void detwin(Crystal **crystals, int n_crystals, SymOpList *amb,
 
 			cc = corr(crystals[i], crystals[j], &n);
 
-			if ( i == j ) continue;
 			if ( n < 3 ) continue;
+			if ( i == j ) continue;
 
 			if ( assignments[i] == assignments[j] ) {
 				f += cc;
