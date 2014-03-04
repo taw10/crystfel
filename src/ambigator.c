@@ -221,10 +221,13 @@ int main(int argc, char *argv[])
 	SymOpList *amb;
 	int n_iter = 1;
 	int n_crystals, n_chunks, max_crystals;
+	int n_dif;
 	Crystal **crystals;
 	Stream *st;
 	int i;
 	int *assignments;
+	int *orig_assignments;
+	gsl_rng *rng;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -384,22 +387,38 @@ int main(int argc, char *argv[])
 
 	}
 
-	assignments = calloc(n_crystals, sizeof(int));
+	assignments = malloc(n_crystals*sizeof(int));
 	if ( assignments == NULL ) {
 		ERROR("Couldn't allocate memory for assignments.\n");
 		return 1;
 	}
 
+	orig_assignments = malloc(n_crystals*sizeof(int));
+	if ( orig_assignments == NULL ) {
+		ERROR("Couldn't allocate memory for original assignments.\n");
+		return 1;
+	}
+
+	rng = gsl_rng_alloc(gsl_rng_mt19937);
 	for ( i=0; i<n_crystals/2; i++ ) {
-		assignments[i] = 1;
+		assignments[i] = (random_flat(rng, 1.0) > 0.5);
+		orig_assignments[i] = assignments[i];
 	}
 
 	for ( i=0; i<n_iter; i++ ) {
 		detwin(crystals, n_crystals, amb, assignments);
 	}
 
+	n_dif = 0;
+	for ( i=0; i<n_crystals/2; i++ ) {
+		if ( orig_assignments[i] != assignments[i] ) n_dif++;
+	}
+	STATUS("%i assignments are different from their starting values.\n",
+	       n_dif);
+
 	free(assignments);
 	free(crystals);
+	gsl_rng_free(rng);
 
 	return 0;
 }
