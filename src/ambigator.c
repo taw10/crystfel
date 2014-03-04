@@ -400,7 +400,7 @@ int main(int argc, char *argv[])
 	}
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
-	for ( i=0; i<n_crystals/2; i++ ) {
+	for ( i=0; i<n_crystals; i++ ) {
 		assignments[i] = (random_flat(rng, 1.0) > 0.5);
 		orig_assignments[i] = assignments[i];
 	}
@@ -410,7 +410,7 @@ int main(int argc, char *argv[])
 	}
 
 	n_dif = 0;
-	for ( i=0; i<n_crystals/2; i++ ) {
+	for ( i=0; i<n_crystals; i++ ) {
 		if ( orig_assignments[i] != assignments[i] ) n_dif++;
 	}
 	STATUS("%i assignments are different from their starting values.\n",
