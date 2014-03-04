@@ -60,13 +60,12 @@
 
 static void show_help(const char *s)
 {
-	printf("Syntax: %s [options]\n\n", s);
+	printf("Syntax: %s [options] input.stream\n\n", s);
 	printf(
 "Resolve indexing ambiguities.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
 "\n"
-"  -i, --input=<filename>     Input stream.\n"
 "  -o, --output=<filename>    Output stream.\n"
 "  -y, --symmetry=<sym>       Apparent (\"source\") symmetry.\n"
 "  -e <sym>                   Actual (\"target\") symmetry.\n"
@@ -285,7 +284,7 @@ static void detwin(struct flist **crystals, int n_crystals, SymOpList *amb,
 int main(int argc, char *argv[])
 {
 	int c;
-	char *infile = NULL;
+	const char *infile;
 	char *outfile = NULL;
 	char *s_sym_str = NULL;
 	SymOpList *s_sym;
@@ -308,7 +307,6 @@ int main(int argc, char *argv[])
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
-		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
 		{"symmetry",           1, NULL,               'y'},
 		{"iterations",         1, NULL,               'n'},
@@ -320,7 +318,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:o:y:n:e:",
+	while ((c = getopt_long(argc, argv, "ho:y:n:e:",
 	                        longopts, NULL)) != -1)
 	{
 
@@ -329,10 +327,6 @@ int main(int argc, char *argv[])
 			case 'h' :
 			show_help(argv[0]);
 			return 0;
-
-			case 'i' :
-			infile = strdup(optarg);
-			break;
 
 			case 'o' :
 			outfile = strdup(optarg);
@@ -380,15 +374,17 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( infile == NULL ) {
-		infile = strdup("-");
+	if ( argc != (optind+1) ) {
+		ERROR("Please provide exactly one stream filename.\n");
+		return 1;
 	}
+
+	infile = argv[optind++];
 	st = open_stream_for_read(infile);
 	if ( st == NULL ) {
 		ERROR("Failed to open input stream '%s'\n", infile);
 		return 1;
 	}
-	free(infile);
 
 	/* Sanitise output filename */
 	if ( outfile == NULL ) {
