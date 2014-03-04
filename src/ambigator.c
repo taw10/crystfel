@@ -51,6 +51,7 @@
 #include <beam-parameters.h>
 #include <reflist.h>
 #include <reflist-utils.h>
+#include <cell-utils.h>
 
 #include "post-refinement.h"
 #include "hrs-scaling.h"
@@ -70,6 +71,8 @@ static void show_help(const char *s)
 "  -y, --symmetry=<sym>       Apparent (\"source\") symmetry.\n"
 "  -e <sym>                   Actual (\"target\") symmetry.\n"
 "  -n, --iterations=<n>       Iterate <n> times.\n"
+"      --highres=<n>          High resolution cutoff in A.\n"
+"      --lowres=<n>           Low resolution cutoff in A.\n"
 );
 }
 
@@ -86,7 +89,8 @@ struct flist
 };
 
 
-static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym)
+static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
+                                     UnitCell *cell, double rmin, double rmax)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -104,8 +108,13 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym)
 		signed int h, k, l;
 		signed int ha, ka, la;
 		Reflection *cr;
+		double res;
 
 		get_indices(refl, &h, &k, &l);
+
+		res = 2.0*resolution(cell, h, k, l);
+		if ( res < rmin ) continue;
+		if ( res > rmax ) continue;
 
 		get_asymm(sym, h, k, l, &ha, &ka, &la);
 
@@ -285,6 +294,9 @@ int main(int argc, char *argv[])
 	int *assignments;
 	int *orig_assignments;
 	gsl_rng *rng;
+	float highres, lowres;
+	double rmin = 0.0;  /* m^-1 */
+	double rmax = INFINITY;  /* m^-1 */
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -293,6 +305,9 @@ int main(int argc, char *argv[])
 		{"output",             1, NULL,               'o'},
 		{"symmetry",           1, NULL,               'y'},
 		{"iterations",         1, NULL,               'n'},
+
+		{"highres",            1, NULL,                2},
+		{"lowres",             1, NULL,                3},
 
 		{0, 0, NULL, 0}
 	};
@@ -326,6 +341,22 @@ int main(int argc, char *argv[])
 
 			case 'n' :
 			n_iter = atoi(optarg);
+			break;
+
+			case 2 :
+			if ( sscanf(optarg, "%e", &highres) != 1 ) {
+				ERROR("Invalid value for --highres\n");
+				return 1;
+			}
+			rmax = 1.0 / (highres/1e10);
+			break;
+
+			case 3 :
+			if ( sscanf(optarg, "%e", &lowres) != 1 ) {
+				ERROR("Invalid value for --lowres\n");
+				return 1;
+			}
+			rmin = 1.0 / (lowres/1e10);
 			break;
 
 			case 0 :
@@ -398,10 +429,10 @@ int main(int argc, char *argv[])
 
 			Crystal *cr;
 			RefList *list;
+			UnitCell *cell;
 
 			cr = cur.crystals[i];
-
-			cell_free(crystal_get_cell(cr));
+			cell = crystal_get_cell(cr);
 
 			if ( n_crystals == max_crystals ) {
 
@@ -422,7 +453,10 @@ int main(int argc, char *argv[])
 			}
 
 			list = crystal_get_reflections(cr);
-			crystals[n_crystals] = asymm_and_merge(list, s_sym);
+			crystals[n_crystals] = asymm_and_merge(list, s_sym,
+			                                       cell,
+			                                       rmin, rmax);
+			cell_free(cell);
 			n_crystals++;
 
 			reflist_free(list);
