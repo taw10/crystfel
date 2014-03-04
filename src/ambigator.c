@@ -219,9 +219,9 @@ static float corr(struct flist *a, struct flist *b, int *pn)
 	t1 = s_x2 - s_x*s_x / n;
 	t2 = s_y2 - s_y*s_y / n;
 
-	if ( (t1 < 0.0) || (t2 <= 0.0) ) return 0.0;
+	if ( (t1 <= 0.0) || (t2 <= 0.0) ) return 0.0;
 
-	return ((s_xy - s_x*s_y)/n)/sqrt(t1*t2);
+	return (s_xy - s_x*s_y/n) / sqrt(t1*t2);
 }
 
 
@@ -230,6 +230,8 @@ static void detwin(struct flist **crystals, int n_crystals, SymOpList *amb,
 {
 	int i;
 	int nch = 0;
+	float mf = 0.0;
+	int nmf = 0;
 
 	for ( i=0; i<n_crystals; i++ ) {
 
@@ -244,10 +246,11 @@ static void detwin(struct flist **crystals, int n_crystals, SymOpList *amb,
 			float cc;
 			int n;
 
+			if ( i == j ) continue;
+
 			cc = corr(crystals[i], crystals[j], &n);
 
 			if ( n < 3 ) continue;
-			if ( i == j ) continue;
 
 			if ( assignments[i] == assignments[j] ) {
 				f += cc;
@@ -261,8 +264,12 @@ static void detwin(struct flist **crystals, int n_crystals, SymOpList *amb,
 
 		f /= p;
 		g /= q;
+		if ( (p==0) || (q==0) ) continue;
 
-		if ( f > g ) {
+		mf += f;
+		nmf++;
+
+		if ( f < g ) {
 			assignments[i] = 1 - assignments[i];
 			nch++;
 		}
@@ -271,7 +278,7 @@ static void detwin(struct flist **crystals, int n_crystals, SymOpList *amb,
 
 	}
 
-	STATUS("Changed %i assignments this time.\n", nch);
+	STATUS("Mean f = %f, changed %i assignments this time.\n", mf/nmf, nch);
 }
 
 
