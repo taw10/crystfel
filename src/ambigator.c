@@ -67,8 +67,8 @@ static void show_help(const char *s)
 "  -h, --help                 Display this help message.\n"
 "\n"
 "  -o, --output=<filename>    Output stream.\n"
-"  -y, --symmetry=<sym>       Apparent (\"source\") symmetry.\n"
-"  -e <sym>                   Actual (\"target\") symmetry.\n"
+"  -y, --symmetry=<sym>       Actual (\"target\") symmetry.\n"
+"  -w <sym>                   Apparent (\"source\" or \"twinned\") symmetry.\n"
 "  -n, --iterations=<n>       Iterate <n> times.\n"
 "      --highres=<n>          High resolution cutoff in A.\n"
 "      --lowres=<n>           Low resolution cutoff in A.\n"
@@ -318,7 +318,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ho:y:n:e:",
+	while ((c = getopt_long(argc, argv, "ho:y:n:w:",
 	                        longopts, NULL)) != -1)
 	{
 
@@ -336,7 +336,7 @@ int main(int argc, char *argv[])
 			s_sym_str = strdup(optarg);
 			break;
 
-			case 'e' :
+			case 'w' :
 			e_sym_str = strdup(optarg);
 			break;
 
