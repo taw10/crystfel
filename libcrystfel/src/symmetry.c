@@ -1110,8 +1110,6 @@ void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
 
 	}
 
-
-
 	if ( idx >= n ) {
 
 		ERROR("Index %i out of range for point group '%s'\n", idx,
