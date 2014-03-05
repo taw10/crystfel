@@ -152,9 +152,11 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 		get_indices(refl, &h, &k, &l);
 		f->s[f->n] = SERIAL(h, k, l);
 
-		get_equiv(amb, NULL, 1, h, k, l, &hr, &kr, &lr);
-		get_asymm(sym, hr, kr, lr, &hra, &kra, &lra);
-		f->s_reidx[f->n] = SERIAL(hra, kra, lra);
+		if ( amb != NULL ) {
+			get_equiv(amb, NULL, 1, h, k, l, &hr, &kr, &lr);
+			get_asymm(sym, hr, kr, lr, &hra, &kra, &lra);
+			f->s_reidx[f->n] = SERIAL(hra, kra, lra);
+		}
 
 		f->i[f->n] = get_intensity(refl);
 		f->n++;
@@ -238,7 +240,8 @@ static float corr(struct flist *a, struct flist *b, int *pn, int a_reidx)
 }
 
 
-static void detwin(struct flist **crystals, int n_crystals, int *assignments)
+static void detwin(struct flist **crystals, int n_crystals, int *assignments,
+                   SymOpList *amb)
 {
 	int i;
 	int nch = 0;
@@ -264,7 +267,11 @@ static void detwin(struct flist **crystals, int n_crystals, int *assignments)
 			if ( i == j ) continue;
 
 			cc = corr(crystals[i], crystals[j], &n, 0);
-			cc_reidx = corr(crystals[i], crystals[j], &n_reidx, 1);
+
+			if ( amb != NULL ) {
+				cc_reidx = corr(crystals[i], crystals[j],
+				                &n_reidx, 1);
+			}
 
 			if ( n > 2 ) {
 
@@ -278,7 +285,7 @@ static void detwin(struct flist **crystals, int n_crystals, int *assignments)
 
 			}
 
-			if ( n_reidx > 2 ) {
+			if ( (amb != NULL) && (n_reidx > 2) ) {
 
 				if ( assignments[i] == assignments[j] ) {
 					g += cc_reidx;
@@ -531,7 +538,7 @@ int main(int argc, char *argv[])
 	}
 
 	for ( i=0; i<n_iter; i++ ) {
-		detwin(crystals, n_crystals, assignments);
+		detwin(crystals, n_crystals, assignments, amb);
 	}
 
 	n_dif = 0;
