@@ -1196,7 +1196,7 @@ static gint displaywindow_set_calibmode(GtkWidget *d, DisplayWindow *dw)
 			                    "calibmode");
 			gtk_statusbar_push(GTK_STATUSBAR(dw->calibmode_statusbar),
 			                   calibmode_context,
-			                   "Last Clicked Position: x: --, y: --, fs: --, ss: --, (panel --)");
+			                   "Last clicked position: Not available");
 			displaywindow_update(dw);
 
 		}
@@ -1915,7 +1915,7 @@ static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
 {
 	int x,y;
 	double dfs, dss;
-	int fs, ss;
+	int fs, ss, revmap_return_value;
 	char statusbar_string[80];
 
 	if ( dw->motion_callback != 0 ) {
@@ -1942,12 +1942,15 @@ static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
 			y = dw->binning * (dw->height - 1 - event->y);
 			x += dw->min_x;
 			y += dw->min_x;
-			reverse_2d_mapping(x, y, &dfs, &dss, dw->image->det);
-			fs = dfs;
-			ss = dss;
-			sprintf(statusbar_string,
-			        "Last Clicked Position: x: %i, y: %i, fs: %u, ss: %u, (panel %s)",
-			        x, y, fs, ss, find_panel(dw->image->det, fs, ss)->name);
+			snprintf(statusbar_string, 80, "Last clicked position: x: %i, y: %i (Not in panel)", x, y);
+			revmap_return_value = reverse_2d_mapping(x, y, &dfs, &dss, dw->image->det);
+			if ( revmap_return_value == 0 ) {
+				fs = dfs;
+				ss = dss;
+				snprintf(statusbar_string, 80,
+                                        "Last clicked position: x: %i, y: %i, fs: %u, ss: %u, (panel %s)",
+                                        x, y, fs, ss, find_panel(dw->image->det, fs, ss)->name);
+			}
 			gtk_statusbar_push(GTK_STATUSBAR(dw->calibmode_statusbar),
 			                   calibmode_context, statusbar_string);
 		}
