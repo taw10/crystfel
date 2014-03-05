@@ -150,6 +150,7 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 		f->n++;
 	}
 	reflist_free(asym);
+	assert(f->n == n);
 
 	return f;
 }
