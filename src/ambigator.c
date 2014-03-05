@@ -231,6 +231,7 @@ static void detwin(struct flist **crystals, int n_crystals, SymOpList *amb,
 	int nch = 0;
 	float mf = 0.0;
 	int nmf = 0;
+	int ndud = 0;
 
 	for ( i=0; i<n_crystals; i++ ) {
 
@@ -263,6 +264,11 @@ static void detwin(struct flist **crystals, int n_crystals, SymOpList *amb,
 
 		}
 
+		if ( (p==0) || (q==0) ) {
+			ndud++;
+			continue;
+		}
+
 		f /= p;
 		g /= q;
 		if ( (p==0) || (q==0) ) continue;
@@ -275,6 +281,10 @@ static void detwin(struct flist **crystals, int n_crystals, SymOpList *amb,
 			nch++;
 		}
 
+	}
+
+	if ( ndud > 0 ) {
+		STATUS("Warning: %i crystals had no correlation\n", ndud);
 	}
 
 	STATUS("Mean f = %f, changed %i assignments this time.\n", mf/nmf, nch);
