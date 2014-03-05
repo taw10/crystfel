@@ -76,9 +76,12 @@ static void show_help(const char *s)
 struct flist
 {
 	int n;
+
 	unsigned int *s;
-	unsigned int *s_reidx;
 	float *i;
+
+	unsigned int *s_reidx;
+	float *i_reidx;
 };
 
 
@@ -135,7 +138,9 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 	f->s = malloc(n*sizeof(unsigned int));
 	f->s_reidx = malloc(n*sizeof(unsigned int));
 	f->i = malloc(n*sizeof(float));
-	if ( (f->s == NULL) || (f->i == NULL) || (f->s_reidx == NULL) ) {
+	f->i_reidx = malloc(n*sizeof(float));
+	if ( (f->s == NULL) || (f->i == NULL)
+	   || (f->s_reidx == NULL) || (f->i_reidx == NULL) ) {
 		ERROR("Failed to allocate flist\n");
 		return NULL;
 	}
@@ -146,23 +151,51 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 	      refl = next_refl(refl, iter) )
 	{
 		signed int h, k, l;
-		signed int hr, kr, lr;
-		signed int hra, kra, lra;
 
 		get_indices(refl, &h, &k, &l);
 		f->s[f->n] = SERIAL(h, k, l);
 
-		if ( amb != NULL ) {
-			get_equiv(amb, NULL, 1, h, k, l, &hr, &kr, &lr);
-			get_asymm(sym, hr, kr, lr, &hra, &kra, &lra);
-			f->s_reidx[f->n] = SERIAL(hra, kra, lra);
-		}
-
 		f->i[f->n] = get_intensity(refl);
 		f->n++;
 	}
-	reflist_free(asym);
 	assert(f->n == n);
+
+	if ( amb != NULL ) {
+
+		RefList *reidx = reflist_new();
+		if ( reidx == NULL ) return NULL;
+
+		for ( refl = first_refl(asym, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) )
+		{
+			signed int h, k, l;
+			signed int hr, kr, lr;
+			signed int hra, kra, lra;
+			Reflection *cr;
+
+			get_indices(refl, &h, &k, &l);
+			get_equiv(amb, NULL, 1, h, k, l, &hr, &kr, &lr);
+			get_asymm(sym, hr, kr, lr, &hra, &kra, &lra);
+			cr = add_refl(reidx, hra, kra, lra);
+			copy_data(cr, refl);
+		}
+
+		n = 0;
+		for ( refl = first_refl(reidx, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) )
+		{
+			signed int h, k, l;
+			get_indices(refl, &h, &k, &l);
+			f->s_reidx[n] = SERIAL(h, k, l);
+			f->i_reidx[n++] = get_intensity(refl);
+		}
+
+		reflist_free(reidx);
+	}
+
+	reflist_free(asym);
 
 	return f;
 }
@@ -181,19 +214,19 @@ static float corr(struct flist *a, struct flist *b, int *pn, int a_reidx)
 	int bp = 0;
 	int done = 0;
 	unsigned int *sa;
-	unsigned int *sb;
+	float *ia;
 
 	if ( a_reidx ) {
 		sa = a->s_reidx;
+		ia = a->i_reidx;
 	} else {
 		sa = a->s;
+		ia = a->i;
 	}
-
-	sb = b->s;
 
 	while ( 1 ) {
 
-		while ( sa[ap] > sb[bp] ) {
+		while ( sa[ap] > b->s[bp] ) {
 			if ( ++bp == b->n ) {
 				done = 1;
 				break;
@@ -201,7 +234,7 @@ static float corr(struct flist *a, struct flist *b, int *pn, int a_reidx)
 		}
 		if ( done ) break;
 
-		while ( sa[ap] < sb[bp] ) {
+		while ( sa[ap] < b->s[bp] ) {
 			if ( ++ap == a->n ) {
 				done = 1;
 				break;
@@ -209,11 +242,11 @@ static float corr(struct flist *a, struct flist *b, int *pn, int a_reidx)
 		}
 		if ( done ) break;
 
-		if ( sa[ap] == sb[bp] ) {
+		if ( sa[ap] == b->s[bp] ) {
 
 			float aint, bint;
 
-			aint = a->i[ap];
+			aint = ia[ap];
 			bint = b->i[bp];
 
 			s_xy += aint*bint;
