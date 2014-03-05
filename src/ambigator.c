@@ -363,6 +363,7 @@ int main(int argc, char *argv[])
 	int c;
 	const char *infile;
 	char *outfile = NULL;
+	char *end_ass_fn = NULL;
 	char *s_sym_str = NULL;
 	SymOpList *s_sym;
 	char *w_sym_str = NULL;
@@ -390,6 +391,7 @@ int main(int argc, char *argv[])
 
 		{"highres",            1, NULL,                2},
 		{"lowres",             1, NULL,                3},
+		{"end-assignments",    1, NULL,                4},
 
 		{0, 0, NULL, 0}
 	};
@@ -435,6 +437,10 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			rmin = 1.0 / (lowres/1e10);
+			break;
+
+			case 4 :
+			end_ass_fn = strdup(optarg);
 			break;
 
 			case 0 :
@@ -572,6 +578,18 @@ int main(int argc, char *argv[])
 
 	for ( i=0; i<n_iter; i++ ) {
 		detwin(crystals, n_crystals, assignments, amb);
+	}
+
+	if ( end_ass_fn != NULL ) {
+		FILE *fh = fopen(end_ass_fn, "w");
+		if ( fh == NULL ) {
+			ERROR("Failed to open '%s'\n", end_ass_fn);
+		} else {
+			for ( i=0; i<n_crystals; i++ ) {
+				fprintf(fh, "%i\n", assignments[i]);
+			}
+		}
+		fclose(fh);
 	}
 
 	n_dif = 0;
