@@ -77,12 +77,14 @@ struct flist
 {
 	int n;
 	unsigned int *s;
+	unsigned int *s_reidx;
 	float *i;
 };
 
 
 static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
-                                     UnitCell *cell, double rmin, double rmax)
+                                     UnitCell *cell, double rmin, double rmax,
+                                     SymOpList *amb)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -131,8 +133,9 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 
 	n = num_reflections(asym);
 	f->s = malloc(n*sizeof(unsigned int));
+	f->s_reidx = malloc(n*sizeof(unsigned int));
 	f->i = malloc(n*sizeof(float));
-	if ( (f->s == NULL) || (f->i == NULL) ) {
+	if ( (f->s == NULL) || (f->i == NULL) || (f->s_reidx == NULL) ) {
 		ERROR("Failed to allocate flist\n");
 		return NULL;
 	}
@@ -143,9 +146,16 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 	      refl = next_refl(refl, iter) )
 	{
 		signed int h, k, l;
+		signed int hr, kr, lr;
+		signed int hra, kra, lra;
 
 		get_indices(refl, &h, &k, &l);
 		f->s[f->n] = SERIAL(h, k, l);
+
+		get_equiv(amb, NULL, 1, h, k, l, &hr, &kr, &lr);
+		get_asymm(sym, hr, kr, lr, &hra, &kra, &lra);
+		f->s_reidx[f->n] = SERIAL(hra, kra, lra);
+
 		f->i[f->n] = get_intensity(refl);
 		f->n++;
 	}
@@ -156,7 +166,7 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 }
 
 
-static float corr(struct flist *a, struct flist *b, int *pn)
+static float corr(struct flist *a, struct flist *b, int *pn, int a_reidx)
 {
 	float s_xy = 0.0;
 	float s_x = 0.0;
@@ -168,10 +178,20 @@ static float corr(struct flist *a, struct flist *b, int *pn)
 	int ap = 0;
 	int bp = 0;
 	int done = 0;
+	unsigned int *sa;
+	unsigned int *sb;
+
+	if ( a_reidx ) {
+		sa = a->s_reidx;
+	} else {
+		sa = a->s;
+	}
+
+	sb = b->s;
 
 	while ( 1 ) {
 
-		while ( a->s[ap] > b->s[bp] ) {
+		while ( sa[ap] > sb[bp] ) {
 			if ( ++bp == b->n ) {
 				done = 1;
 				break;
@@ -179,7 +199,7 @@ static float corr(struct flist *a, struct flist *b, int *pn)
 		}
 		if ( done ) break;
 
-		while ( a->s[ap] < b->s[bp] ) {
+		while ( sa[ap] < sb[bp] ) {
 			if ( ++ap == a->n ) {
 				done = 1;
 				break;
@@ -187,7 +207,7 @@ static float corr(struct flist *a, struct flist *b, int *pn)
 		}
 		if ( done ) break;
 
-		if ( a->s[ap] == b->s[bp] ) {
+		if ( sa[ap] == sb[bp] ) {
 
 			float aint, bint;
 
@@ -218,8 +238,7 @@ static float corr(struct flist *a, struct flist *b, int *pn)
 }
 
 
-static void detwin(struct flist **crystals, int n_crystals, SymOpList *amb,
-                   int *assignments)
+static void detwin(struct flist **crystals, int n_crystals, int *assignments)
 {
 	int i;
 	int nch = 0;
@@ -239,21 +258,36 @@ static void detwin(struct flist **crystals, int n_crystals, SymOpList *amb,
 
 		for ( j=0; j<n_crystals; j++ ) {
 
-			float cc;
-			int n;
+			int n, n_reidx;
+			float cc, cc_reidx;
 
 			if ( i == j ) continue;
 
-			cc = corr(crystals[i], crystals[j], &n);
+			cc = corr(crystals[i], crystals[j], &n, 0);
+			cc_reidx = corr(crystals[i], crystals[j], &n_reidx, 1);
 
-			if ( n < 3 ) continue;
+			if ( n > 2 ) {
 
-			if ( assignments[i] == assignments[j] ) {
-				f += cc;
-				p++;
-			} else {
-				g += cc;
-				q++;
+				if ( assignments[i] == assignments[j] ) {
+					f += cc;
+					p++;
+				} else {
+					g += cc;
+					q++;
+				}
+
+			}
+
+			if ( n_reidx > 2 ) {
+
+				if ( assignments[i] == assignments[j] ) {
+					g += cc_reidx;
+					q++;
+				} else {
+					f += cc_reidx;
+					p++;
+				}
+
 			}
 
 		}
@@ -461,7 +495,8 @@ int main(int argc, char *argv[])
 			list = crystal_get_reflections(cr);
 			crystals[n_crystals] = asymm_and_merge(list, s_sym,
 			                                       cell,
-			                                       rmin, rmax);
+			                                       rmin, rmax,
+			                                       amb);
 			cell_free(cell);
 			n_crystals++;
 
@@ -496,7 +531,7 @@ int main(int argc, char *argv[])
 	}
 
 	for ( i=0; i<n_iter; i++ ) {
-		detwin(crystals, n_crystals, amb, assignments);
+		detwin(crystals, n_crystals, assignments);
 	}
 
 	n_dif = 0;
