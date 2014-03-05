@@ -291,8 +291,8 @@ int main(int argc, char *argv[])
 	char *outfile = NULL;
 	char *s_sym_str = NULL;
 	SymOpList *s_sym;
-	char *e_sym_str = NULL;
-	SymOpList *e_sym;
+	char *w_sym_str = NULL;
+	SymOpList *w_sym;
 	SymOpList *amb;
 	int n_iter = 1;
 	int n_crystals, n_chunks, max_crystals;
@@ -340,7 +340,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 'w' :
-			e_sym_str = strdup(optarg);
+			w_sym_str = strdup(optarg);
 			break;
 
 			case 'n' :
@@ -401,14 +401,14 @@ int main(int argc, char *argv[])
 	s_sym = get_pointgroup(s_sym_str);
 	free(s_sym_str);
 
-	if ( e_sym_str == NULL ) {
-		e_sym = NULL;
+	if ( w_sym_str == NULL ) {
+		w_sym = NULL;
 		amb = NULL;
 	} else {
-		e_sym = get_pointgroup(e_sym_str);
-		free(e_sym_str);
-		if ( e_sym == NULL ) return 1;
-		amb = get_ambiguities(s_sym, e_sym);
+		w_sym = get_pointgroup(w_sym_str);
+		free(w_sym_str);
+		if ( w_sym == NULL ) return 1;
+		amb = get_ambiguities(w_sym, s_sym);
 		if ( amb == NULL ) return 1;
 		STATUS("Ambiguity operations:\n");
 		describe_symmetry(amb);
