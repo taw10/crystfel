@@ -265,7 +265,6 @@ static void detwin(struct flist **crystals, int n_crystals, SymOpList *amb,
 
 		f /= p;
 		g /= q;
-		if ( (p==0) || (q==0) ) continue;
 
 		mf += f;
 		nmf++;
