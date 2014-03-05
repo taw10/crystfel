@@ -240,6 +240,8 @@ static void detwin(struct flist **crystals, int n_crystals, SymOpList *amb,
 		int p = 0;
 		int q = 0;
 
+		progress_bar(i, n_crystals-1, "Calculating");
+
 		for ( j=0; j<n_crystals; j++ ) {
 
 			float cc;
@@ -272,8 +274,6 @@ static void detwin(struct flist **crystals, int n_crystals, SymOpList *amb,
 			assignments[i] = 1 - assignments[i];
 			nch++;
 		}
-
-		progress_bar(i, n_crystals-1, "Calculating");
 
 	}
 
