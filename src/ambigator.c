@@ -41,21 +41,14 @@
 #include <getopt.h>
 #include <assert.h>
 
+#include <image.h>
 #include <utils.h>
-#include <hdf5-file.h>
 #include <symmetry.h>
 #include <stream.h>
-#include <geometry.h>
-#include <peaks.h>
-#include <thread-pool.h>
-#include <beam-parameters.h>
 #include <reflist.h>
 #include <reflist-utils.h>
+#include <cell.h>
 #include <cell-utils.h>
-
-#include "post-refinement.h"
-#include "hrs-scaling.h"
-#include "scaling-report.h"
 
 
 static void show_help(const char *s)
