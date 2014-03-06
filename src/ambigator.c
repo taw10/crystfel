@@ -65,6 +65,7 @@ static void show_help(const char *s)
 "  -n, --iterations=<n>       Iterate <n> times.\n"
 "      --highres=<n>          High resolution cutoff in A.\n"
 "      --lowres=<n>           Low resolution cutoff in A.\n"
+"      --end-assignments=<fn> Save end assignments to file <fn>.\n"
 );
 }
 
