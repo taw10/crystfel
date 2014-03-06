@@ -245,6 +245,11 @@ static float corr(struct flist *a, struct flist *b, int *pn, int a_reidx)
 		ia = a->i;
 	}
 
+	if ( (a->n == 0) || (b->n == 0) ) {
+		*pn = 0;
+		return 0.0;
+	}
+
 	while ( 1 ) {
 
 		while ( sa[ap] > b->s[bp] ) {
