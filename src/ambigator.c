@@ -40,6 +40,9 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <assert.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_permutation.h>
+#include <gsl/gsl_randist.h>
 
 #include <image.h>
 #include <utils.h>
@@ -310,10 +313,11 @@ struct cc_list
 
 
 static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
-                                int ncorr, SymOpList *amb)
+                                int ncorr, SymOpList *amb, gsl_rng *rng)
 {
 	struct cc_list *ccs;
 	int i;
+	gsl_permutation *p;
 
 	assert(n_crystals >= ncorr);
 	ncorr++;  /* Extra value at end for sentinel */
@@ -321,9 +325,12 @@ static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
 	ccs = malloc(n_crystals*sizeof(struct cc_list));
 	if ( ccs == NULL ) return NULL;
 
+	p = gsl_permutation_alloc(n_crystals);
+	gsl_permutation_init(p);
+
 	for ( i=0; i<n_crystals; i++ ) {
 
-		int j, k;
+		int k, l;
 
 		ccs[i].ind = malloc(ncorr*sizeof(int));
 		ccs[i].cc = malloc(ncorr*sizeof(float));
@@ -335,10 +342,16 @@ static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
 		}
 
 		k = 0;
-		for ( j=(i+1)%n_crystals; j!=i; j=(j+1)%n_crystals ) {
+		gsl_ran_shuffle(rng, p->data, n_crystals, sizeof(size_t));
+
+		for ( l=0; l<n_crystals; l++ ) {
 
 			int n;
+			int j;
 			float cc;
+
+			j = gsl_permutation_get(p, l);
+			if ( i == j ) continue;
 
 			cc = corr(crystals[i], crystals[j], &n, 0);
 
@@ -356,10 +369,14 @@ static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
 		if ( amb != NULL ) {
 
 			k = 0;
-			for ( j=(i+1)%n_crystals; j!=i; j=(j+1)%n_crystals ) {
+			for ( l=0; l<n_crystals; l++ ) {
 
 				int n;
+				int j;
 				float cc;
+
+				j = gsl_permutation_get(p, l);
+				if ( i == j ) continue;
 
 				cc = corr(crystals[i], crystals[j], &n, 1);
 
@@ -379,6 +396,8 @@ static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
 		progress_bar(i, n_crystals-1, "Calculating CCs");
 
 	}
+
+	gsl_permutation_free(p);
 
 	return ccs;
 }
@@ -713,7 +732,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	ccs = calc_ccs(crystals, n_crystals, ncorr, amb);
+	ccs = calc_ccs(crystals, n_crystals, ncorr, amb, rng);
 	if ( ccs == NULL ) {
 		ERROR("Failed to allocate CCs\n");
 		return 1;
