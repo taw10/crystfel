@@ -68,6 +68,7 @@ static void show_help(const char *s)
 "      --end-assignments=<fn> Save end assignments to file <fn>.\n"
 "      --fg-graph=<fn>        Save f and g correlation values to file <fn>.\n"
 "      --ncorr=<n>            Use <n> correlations per crystal.  Default 1000\n"
+"      --stop-after=<n>       Use at most the first <n> crystals.\n"
 );
 }
 
@@ -482,6 +483,7 @@ int main(int argc, char *argv[])
 	FILE *fgfh = NULL;
 	struct cc_list *ccs;
 	int ncorr = 1000;
+	int stop_after = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -495,6 +497,7 @@ int main(int argc, char *argv[])
 		{"end-assignments",    1, NULL,                4},
 		{"fg-graph",           1, NULL,                5},
 		{"ncorr",              1, NULL,                6},
+		{"stop-after",         1, NULL,                7},
 
 		{0, 0, NULL, 0}
 	};
@@ -553,6 +556,13 @@ int main(int argc, char *argv[])
 			case 6 :
 			if ( sscanf(optarg, "%i", &ncorr) != 1 ) {
 				ERROR("Invalid value for --ncorr\n");
+				return 1;
+			}
+			break;
+
+			case 7 :
+			if ( sscanf(optarg, "%i", &stop_after) != 1 ) {
+				ERROR("Invalid value for --stop-after\n");
 				return 1;
 			}
 			break;
@@ -659,13 +669,16 @@ int main(int argc, char *argv[])
 			                                       amb);
 			cell_free(cell);
 			n_crystals++;
-
 			reflist_free(list);
+
+			if ( stop_after && (n_crystals == stop_after) ) break;
 
 		}
 
 		fprintf(stderr, "Loaded %i crystals from %i chunks\r",
 		        n_crystals, ++n_chunks);
+
+		if ( stop_after && (n_crystals == stop_after) ) break;
 
 	} while ( 1 );
 	fprintf(stderr, "\n");
