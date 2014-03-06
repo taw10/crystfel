@@ -67,6 +67,7 @@ static void show_help(const char *s)
 "      --lowres=<n>           Low resolution cutoff in A.\n"
 "      --end-assignments=<fn> Save end assignments to file <fn>.\n"
 "      --fg-graph=<fn>        Save f and g correlation values to file <fn>.\n"
+"      --ncorr=<n>            Use <n> correlations per crystal.  Default 1000\n"
 );
 }
 
@@ -292,8 +293,93 @@ static float corr(struct flist *a, struct flist *b, int *pn, int a_reidx)
 }
 
 
-static void detwin(struct flist **crystals, int n_crystals, int *assignments,
-                   SymOpList *amb, FILE *fh)
+struct cc_list
+{
+	signed int *ind;
+	float *cc;
+
+	signed int *ind_reidx;
+	float *cc_reidx;
+};
+
+
+static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
+                                int ncorr, SymOpList *amb)
+{
+	struct cc_list *ccs;
+	int i;
+
+	assert(n_crystals >= ncorr);
+	ncorr++;  /* Extra value at end for sentinel */
+
+	ccs = malloc(n_crystals*sizeof(struct cc_list));
+	if ( ccs == NULL ) return NULL;
+
+	for ( i=0; i<n_crystals; i++ ) {
+
+		int j, k;
+
+		ccs[i].ind = malloc(ncorr*sizeof(int));
+		ccs[i].cc = malloc(ncorr*sizeof(float));
+		ccs[i].ind_reidx = calloc(ncorr, sizeof(int));
+		ccs[i].cc_reidx = calloc(ncorr, sizeof(float));
+		if ( (ccs[i].ind==NULL) || (ccs[i].cc==NULL) ||
+		     (ccs[i].ind_reidx==NULL) ||  (ccs[i].cc_reidx==NULL) ) {
+			return NULL;
+		}
+
+		k = 0;
+		for ( j=(i+1)%n_crystals; j!=i; j=(j+1)%n_crystals ) {
+
+			int n;
+			float cc;
+
+			cc = corr(crystals[i], crystals[j], &n, 0);
+
+			if ( n < 4 ) continue;
+
+			ccs[i].ind[k] = j+1;
+			ccs[i].cc[k] = cc;
+			k++;
+
+			if ( k == ncorr-1 ) break;
+
+		}
+		ccs[i].ind[k] = 0;
+
+		if ( amb != NULL ) {
+
+			k = 0;
+			for ( j=(i+1)%n_crystals; j!=i; j=(j+1)%n_crystals ) {
+
+				int n;
+				float cc;
+
+				cc = corr(crystals[i], crystals[j], &n, 1);
+
+				if ( n < 4 ) continue;
+
+				ccs[i].ind_reidx[k] = j+1;
+				ccs[i].cc_reidx[k] = cc;
+				k++;
+
+				if ( k == ncorr-1 ) break;
+
+			}
+			ccs[i].ind_reidx[k] = 0;
+
+		}
+
+		progress_bar(i, n_crystals-1, "Calculating CCs");
+
+	}
+
+	return ccs;
+}
+
+
+static void detwin(struct cc_list *ccs, int n_crystals, int *assignments,
+                   FILE *fh, struct flist **crystals)
 {
 	int i;
 	int nch = 0;
@@ -303,50 +389,40 @@ static void detwin(struct flist **crystals, int n_crystals, int *assignments,
 
 	for ( i=0; i<n_crystals; i++ ) {
 
-		int j;
+		int k;
 		float f = 0.0;
 		float g = 0.0;;
 		int p = 0;
 		int q = 0;
 
-		progress_bar(i, n_crystals-1, "Calculating");
+		//progress_bar(i, n_crystals-1, "Calculating");
 
-		for ( j=0; j<n_crystals; j++ ) {
+		for ( k=0; (ccs[i].ind[k] != 0); k++ ) {
 
-			int n, n_reidx;
-			float cc, cc_reidx;
+			int j = ccs[i].ind[k]-1;
+			float cc = ccs[i].cc[k];
 
-			if ( i == j ) continue;
-
-			cc = corr(crystals[i], crystals[j], &n, 0);
-
-			if ( amb != NULL ) {
-				cc_reidx = corr(crystals[i], crystals[j],
-				                &n_reidx, 1);
+			if ( assignments[i] == assignments[j] ) {
+				f += cc;
+				p++;
+			} else {
+				g += cc;
+				q++;
 			}
 
-			if ( n > 2 ) {
+		}
 
-				if ( assignments[i] == assignments[j] ) {
-					f += cc;
-					p++;
-				} else {
-					g += cc;
-					q++;
-				}
+		for ( k=0; (ccs[i].ind_reidx[k] != 0); k++ ) {
 
-			}
+			int j = ccs[i].ind_reidx[k]-1;
+			float cc = ccs[i].cc_reidx[k];
 
-			if ( (amb != NULL) && (n_reidx > 2) ) {
-
-				if ( assignments[i] == assignments[j] ) {
-					g += cc_reidx;
-					q++;
-				} else {
-					f += cc_reidx;
-					p++;
-				}
-
+			if ( assignments[i] == assignments[j] ) {
+				g += cc;
+				q++;
+			} else {
+				f += cc;
+				p++;
 			}
 
 		}
@@ -404,6 +480,8 @@ int main(int argc, char *argv[])
 	double rmin = 0.0;  /* m^-1 */
 	double rmax = INFINITY;  /* m^-1 */
 	FILE *fgfh = NULL;
+	struct cc_list *ccs;
+	int ncorr = 1000;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -416,6 +494,7 @@ int main(int argc, char *argv[])
 		{"lowres",             1, NULL,                3},
 		{"end-assignments",    1, NULL,                4},
 		{"fg-graph",           1, NULL,                5},
+		{"ncorr",              1, NULL,                6},
 
 		{0, 0, NULL, 0}
 	};
@@ -469,6 +548,13 @@ int main(int argc, char *argv[])
 
 			case 5 :
 			fg_graph_fn = strdup(optarg);
+			break;
+
+			case 6 :
+			if ( sscanf(optarg, "%i", &ncorr) != 1 ) {
+				ERROR("Invalid value for --ncorr\n");
+				return 1;
+			}
 			break;
 
 			case 0 :
@@ -611,8 +697,16 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	ccs = calc_ccs(crystals, n_crystals, ncorr, amb);
+	if ( ccs == NULL ) {
+		ERROR("Failed to allocate CCs\n");
+		return 1;
+	}
+
+	/* FIXME: Free crystals */
+
 	for ( i=0; i<n_iter; i++ ) {
-		detwin(crystals, n_crystals, assignments, amb, fgfh);
+		detwin(ccs, n_crystals, assignments, fgfh, crystals);
 	}
 
 	if ( fgfh != NULL ) {
