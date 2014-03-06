@@ -344,9 +344,9 @@ static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
 			return NULL;
 		}
 
-		k = 0;
 		gsl_ran_shuffle(rng, p->data, n_crystals, sizeof(size_t));
 
+		k = 0;
 		for ( l=0; l<n_crystals; l++ ) {
 
 			int n;
