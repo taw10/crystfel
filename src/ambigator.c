@@ -467,7 +467,7 @@ static void detwin(struct cc_list *ccs, int n_crystals, int *assignments,
 		f /= p;
 		g /= q;
 
-		fprintf(fh, "%5.3f %5.3f\n", f, g);
+		if ( fh != NULL ) fprintf(fh, "%5.3f %5.3f\n", f, g);
 
 		mf += f;
 		nmf++;
