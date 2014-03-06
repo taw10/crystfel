@@ -66,6 +66,7 @@ static void show_help(const char *s)
 "      --highres=<n>          High resolution cutoff in A.\n"
 "      --lowres=<n>           Low resolution cutoff in A.\n"
 "      --end-assignments=<fn> Save end assignments to file <fn>.\n"
+"      --fg-graph=<fn>        Save f and g correlation values to file <fn>.\n"
 );
 }
 
@@ -275,7 +276,7 @@ static float corr(struct flist *a, struct flist *b, int *pn, int a_reidx)
 
 
 static void detwin(struct flist **crystals, int n_crystals, int *assignments,
-                   SymOpList *amb)
+                   SymOpList *amb, FILE *fh)
 {
 	int i;
 	int nch = 0;
@@ -341,6 +342,8 @@ static void detwin(struct flist **crystals, int n_crystals, int *assignments,
 		f /= p;
 		g /= q;
 
+		fprintf(fh, "%5.3f %5.3f\n", f, g);
+
 		mf += f;
 		nmf++;
 
@@ -365,6 +368,7 @@ int main(int argc, char *argv[])
 	const char *infile;
 	char *outfile = NULL;
 	char *end_ass_fn = NULL;
+	char *fg_graph_fn = NULL;
 	char *s_sym_str = NULL;
 	SymOpList *s_sym;
 	char *w_sym_str = NULL;
@@ -382,6 +386,7 @@ int main(int argc, char *argv[])
 	float highres, lowres;
 	double rmin = 0.0;  /* m^-1 */
 	double rmax = INFINITY;  /* m^-1 */
+	FILE *fgfh = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -393,6 +398,7 @@ int main(int argc, char *argv[])
 		{"highres",            1, NULL,                2},
 		{"lowres",             1, NULL,                3},
 		{"end-assignments",    1, NULL,                4},
+		{"fg-graph",           1, NULL,                5},
 
 		{0, 0, NULL, 0}
 	};
@@ -442,6 +448,10 @@ int main(int argc, char *argv[])
 
 			case 4 :
 			end_ass_fn = strdup(optarg);
+			break;
+
+			case 5 :
+			fg_graph_fn = strdup(optarg);
 			break;
 
 			case 0 :
@@ -577,8 +587,19 @@ int main(int argc, char *argv[])
 		orig_assignments[i] = assignments[i];
 	}
 
+	if ( fg_graph_fn != NULL ) {
+		fgfh = fopen(fg_graph_fn, "w");
+		if ( fgfh == NULL ) {
+			ERROR("Failed to open '%s'\n", fg_graph_fn);
+		}
+	}
+
 	for ( i=0; i<n_iter; i++ ) {
-		detwin(crystals, n_crystals, assignments, amb);
+		detwin(crystals, n_crystals, assignments, amb, fgfh);
+	}
+
+	if ( fgfh != NULL ) {
+		fclose(fgfh);
 	}
 
 	if ( end_ass_fn != NULL ) {
