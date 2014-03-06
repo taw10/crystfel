@@ -401,8 +401,6 @@ static void detwin(struct cc_list *ccs, int n_crystals, int *assignments,
 		int p = 0;
 		int q = 0;
 
-		//progress_bar(i, n_crystals-1, "Calculating");
-
 		for ( k=0; (ccs[i].ind[k] != 0); k++ ) {
 
 			int j = ccs[i].ind[k]-1;
