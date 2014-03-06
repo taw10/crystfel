@@ -117,6 +117,22 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 
 		get_asymm(sym, h, k, l, &ha, &ka, &la);
 
+		if ( amb != NULL ) {
+
+			signed int hr, kr, lr;
+			signed int hra, kra, lra;
+
+			get_equiv(amb, NULL, 1, ha, ka, la, &hr, &kr, &lr);
+			get_asymm(sym, hr, kr, lr, &hra, &kra, &lra);
+
+			/* Skip twin-proof reflections */
+			if ( (ha==hra) && (ka==kra) && (la==lra) ) {
+				//STATUS("%i %i %i is twin proof\n", h, k, l);
+				continue;
+			}
+
+		}
+
 		cr = find_refl(asym, ha, ka, la);
 		if ( cr == NULL ) {
 			cr = add_refl(asym, ha, ka, la);
@@ -179,6 +195,7 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 			get_indices(refl, &h, &k, &l);
 			get_equiv(amb, NULL, 1, h, k, l, &hr, &kr, &lr);
 			get_asymm(sym, hr, kr, lr, &hra, &kra, &lra);
+
 			cr = add_refl(reidx, hra, kra, lra);
 			copy_data(cr, refl);
 		}
