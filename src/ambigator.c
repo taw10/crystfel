@@ -313,11 +313,14 @@ struct cc_list
 
 
 static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
-                                int ncorr, SymOpList *amb, gsl_rng *rng)
+                                int ncorr, SymOpList *amb, gsl_rng *rng,
+                                float *pmean_nac)
 {
 	struct cc_list *ccs;
 	int i;
 	gsl_permutation *p;
+	long int mean_nac = 0;
+	int nmean_nac = 0;
 
 	assert(n_crystals >= ncorr);
 	ncorr++;  /* Extra value at end for sentinel */
@@ -365,6 +368,8 @@ static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
 
 		}
 		ccs[i].ind[k] = 0;
+		mean_nac += k;
+		nmean_nac++;
 
 		if ( amb != NULL ) {
 
@@ -390,6 +395,8 @@ static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
 
 			}
 			ccs[i].ind_reidx[k] = 0;
+			mean_nac += k;
+			nmean_nac++;
 
 		}
 
@@ -398,6 +405,8 @@ static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
 	}
 
 	gsl_permutation_free(p);
+
+	*pmean_nac = (float)mean_nac/nmean_nac;
 
 	return ccs;
 }
@@ -506,6 +515,7 @@ int main(int argc, char *argv[])
 	struct cc_list *ccs;
 	int ncorr = 1000;
 	int stop_after = 0;
+	float mean_nac;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -732,11 +742,12 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	ccs = calc_ccs(crystals, n_crystals, ncorr, amb, rng);
+	ccs = calc_ccs(crystals, n_crystals, ncorr, amb, rng, &mean_nac);
 	if ( ccs == NULL ) {
 		ERROR("Failed to allocate CCs\n");
 		return 1;
 	}
+	STATUS("Mean number of correlations per crystal: %.1f\n", mean_nac);
 
 	/* FIXME: Free crystals */
 
