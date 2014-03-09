@@ -73,6 +73,7 @@ static void show_help(const char *s)
 "      --fg-graph=<fn>        Save f and g correlation values to file <fn>.\n"
 "      --ncorr=<n>            Use <n> correlations per crystal.  Default 1000\n"
 "      --stop-after=<n>       Use at most the first <n> crystals.\n"
+"  -j <n>                     Use <n> threads for CC calculation.\n"
 );
 }
 
@@ -474,10 +475,9 @@ static void work(void *wp, int cookie)
 
 static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
                                 int ncorr, SymOpList *amb, gsl_rng *rng,
-                                float *pmean_nac)
+                                float *pmean_nac, int nthreads)
 {
 	struct cc_list *ccs;
-	int nthreads = 8;
 	struct queue_args qargs;
 
 	assert(n_crystals >= ncorr);
@@ -617,6 +617,7 @@ int main(int argc, char *argv[])
 	int ncorr = 1000;
 	int stop_after = 0;
 	float mean_nac;
+	int n_threads = 1;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -636,7 +637,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ho:y:n:w:",
+	while ((c = getopt_long(argc, argv, "ho:y:n:w:j:",
 	                        longopts, NULL)) != -1)
 	{
 
@@ -660,6 +661,13 @@ int main(int argc, char *argv[])
 
 			case 'n' :
 			n_iter = atoi(optarg);
+			break;
+
+			case 'j' :
+			if ( sscanf(optarg, "%i", &n_threads) != 1 ) {
+				ERROR("Invalid value for -j\n");
+				return 1;
+			}
 			break;
 
 			case 2 :
@@ -843,7 +851,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	ccs = calc_ccs(crystals, n_crystals, ncorr, amb, rng, &mean_nac);
+	ccs = calc_ccs(crystals, n_crystals, ncorr, amb, rng, &mean_nac,
+	               n_threads);
 	if ( ccs == NULL ) {
 		ERROR("Failed to allocate CCs\n");
 		return 1;
