@@ -370,7 +370,6 @@ static void *get_task(void *vp)
 }
 
 
-
 static void final(void *qp, void *wp)
 {
 	struct queue_args *qargs = qp;
