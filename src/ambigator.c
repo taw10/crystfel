@@ -52,6 +52,7 @@
 #include <reflist-utils.h>
 #include <cell.h>
 #include <cell-utils.h>
+#include <thread-pool.h>
 
 
 static void show_help(const char *s)
@@ -312,39 +313,132 @@ struct cc_list
 };
 
 
-static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
-                                int ncorr, SymOpList *amb, gsl_rng *rng,
-                                float *pmean_nac)
+struct queue_args
+{
+	int n_started;
+	int n_finished;
+	int n_to_do;
+	int mean_nac;
+	int nmean_nac;
+	gsl_permutation *p;
+
+	struct cc_list *ccs;
+	struct flist **crystals;
+	int n_crystals;
+	int ncorr;
+	SymOpList *amb;
+	gsl_rng *rng;
+};
+
+
+struct cc_job
 {
 	struct cc_list *ccs;
 	int i;
+	int mean_nac;
+	int nmean_nac;
+
+	struct flist **crystals;
+	int n_crystals;
+	int ncorr;
+	SymOpList *amb;
 	gsl_permutation *p;
-	long int mean_nac = 0;
+};
+
+
+static void *get_task(void *vp)
+{
+	struct queue_args *qargs = vp;
+	struct cc_job *job;
+
+	if ( qargs->n_started == qargs->n_to_do ) return NULL;
+
+	job = malloc(sizeof(struct cc_job));
+	if ( job == NULL ) return NULL;
+
+	job->ccs = qargs->ccs;
+	job->i = qargs->n_started++;
+
+	job->crystals = qargs->crystals;
+	job->n_crystals = qargs->n_crystals;
+	job->ncorr = qargs->ncorr;
+	job->amb = qargs->amb;
+
+	gsl_ran_shuffle(qargs->rng, qargs->p->data, qargs->n_crystals,
+	                sizeof(size_t));
+	job->p = gsl_permutation_alloc(qargs->n_crystals);
+	gsl_permutation_memcpy(job->p, qargs->p);
+
+	return job;
+}
+
+
+
+static void final(void *qp, void *wp)
+{
+	struct queue_args *qargs = qp;
+	struct cc_job *job = wp;
+
+	qargs->mean_nac += job->mean_nac;
+	qargs->nmean_nac += job->nmean_nac;
+
+	gsl_permutation_free(job->p);
+	free(job);
+
+	qargs->n_finished++;
+	progress_bar(qargs->n_finished, qargs->n_to_do, "Calculating CCs");
+}
+
+
+static void work(void *wp, int cookie)
+{
+	struct cc_job *job = wp;
+	int i = job->i;
+	int k, l;
+	struct cc_list *ccs = job->ccs;
+	gsl_permutation *p = job->p;
+	struct flist **crystals = job->crystals;
+	int n_crystals = job->n_crystals;
+	int ncorr = job->ncorr;
+	SymOpList *amb = job->amb;
+	int mean_nac = 0;
 	int nmean_nac = 0;
 
-	assert(n_crystals >= ncorr);
-	ncorr++;  /* Extra value at end for sentinel */
+	ccs[i].ind = malloc(ncorr*sizeof(int));
+	ccs[i].cc = malloc(ncorr*sizeof(float));
+	ccs[i].ind_reidx = calloc(ncorr, sizeof(int));
+	ccs[i].cc_reidx = calloc(ncorr, sizeof(float));
+	if ( (ccs[i].ind==NULL) || (ccs[i].cc==NULL) ||
+	     (ccs[i].ind_reidx==NULL) ||  (ccs[i].cc_reidx==NULL) ) {
+		return;
+	}
 
-	ccs = malloc(n_crystals*sizeof(struct cc_list));
-	if ( ccs == NULL ) return NULL;
+	k = 0;
+	for ( l=0; l<n_crystals; l++ ) {
 
-	p = gsl_permutation_alloc(n_crystals);
-	gsl_permutation_init(p);
+		int n;
+		int j;
+		float cc;
 
-	for ( i=0; i<n_crystals; i++ ) {
+		j = gsl_permutation_get(p, l);
+		if ( i == j ) continue;
 
-		int k, l;
+		cc = corr(crystals[i], crystals[j], &n, 0);
 
-		ccs[i].ind = malloc(ncorr*sizeof(int));
-		ccs[i].cc = malloc(ncorr*sizeof(float));
-		ccs[i].ind_reidx = calloc(ncorr, sizeof(int));
-		ccs[i].cc_reidx = calloc(ncorr, sizeof(float));
-		if ( (ccs[i].ind==NULL) || (ccs[i].cc==NULL) ||
-		     (ccs[i].ind_reidx==NULL) ||  (ccs[i].cc_reidx==NULL) ) {
-			return NULL;
-		}
+		if ( n < 4 ) continue;
 
-		gsl_ran_shuffle(rng, p->data, n_crystals, sizeof(size_t));
+		ccs[i].ind[k] = j+1;
+		ccs[i].cc[k] = cc;
+		k++;
+
+		if ( k == ncorr-1 ) break;
+
+	}
+	ccs[i].ind[k] = 0;
+	mean_nac += k;
+	nmean_nac++;
+
+	if ( amb != NULL ) {
 
 		k = 0;
 		for ( l=0; l<n_crystals; l++ ) {
@@ -356,57 +450,64 @@ static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
 			j = gsl_permutation_get(p, l);
 			if ( i == j ) continue;
 
-			cc = corr(crystals[i], crystals[j], &n, 0);
+			cc = corr(crystals[i], crystals[j], &n, 1);
 
 			if ( n < 4 ) continue;
 
-			ccs[i].ind[k] = j+1;
-			ccs[i].cc[k] = cc;
+			ccs[i].ind_reidx[k] = j+1;
+			ccs[i].cc_reidx[k] = cc;
 			k++;
 
 			if ( k == ncorr-1 ) break;
 
 		}
-		ccs[i].ind[k] = 0;
+		ccs[i].ind_reidx[k] = 0;
 		mean_nac += k;
 		nmean_nac++;
 
-		if ( amb != NULL ) {
-
-			k = 0;
-			for ( l=0; l<n_crystals; l++ ) {
-
-				int n;
-				int j;
-				float cc;
-
-				j = gsl_permutation_get(p, l);
-				if ( i == j ) continue;
-
-				cc = corr(crystals[i], crystals[j], &n, 1);
-
-				if ( n < 4 ) continue;
-
-				ccs[i].ind_reidx[k] = j+1;
-				ccs[i].cc_reidx[k] = cc;
-				k++;
-
-				if ( k == ncorr-1 ) break;
-
-			}
-			ccs[i].ind_reidx[k] = 0;
-			mean_nac += k;
-			nmean_nac++;
-
-		}
-
-		progress_bar(i, n_crystals-1, "Calculating CCs");
-
 	}
 
-	gsl_permutation_free(p);
+	job->mean_nac = mean_nac;
+	job->nmean_nac = nmean_nac;
+}
 
-	*pmean_nac = (float)mean_nac/nmean_nac;
+
+static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
+                                int ncorr, SymOpList *amb, gsl_rng *rng,
+                                float *pmean_nac)
+{
+	struct cc_list *ccs;
+	int nthreads = 8;
+	struct queue_args qargs;
+
+	assert(n_crystals >= ncorr);
+	ncorr++;  /* Extra value at end for sentinel */
+
+	ccs = malloc(n_crystals*sizeof(struct cc_list));
+	if ( ccs == NULL ) return NULL;
+
+	qargs.p = gsl_permutation_alloc(n_crystals);
+	gsl_permutation_init(qargs.p);
+
+	qargs.n_started = 0;
+	qargs.n_finished = 0;
+	qargs.n_to_do = n_crystals;
+	qargs.ccs = ccs;
+	qargs.mean_nac = 0;
+	qargs.nmean_nac = 0;
+
+	qargs.rng = rng;
+	qargs.crystals = crystals;
+	qargs.n_crystals = n_crystals;
+	qargs.ncorr = ncorr;
+	qargs.amb = amb;
+
+	run_threads(nthreads, work, get_task, final, &qargs, n_crystals,
+	            0, 0, 0);
+
+	gsl_permutation_free(qargs.p);
+
+	*pmean_nac = (float)qargs.mean_nac/qargs.nmean_nac;
 
 	return ccs;
 }
