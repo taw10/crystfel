@@ -842,6 +842,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	s_sym = get_pointgroup(s_sym_str);
+	if ( s_sym == NULL ) return 1;
 	free(s_sym_str);
 
 	if ( w_sym_str == NULL ) {
@@ -852,9 +853,19 @@ int main(int argc, char *argv[])
 		free(w_sym_str);
 		if ( w_sym == NULL ) return 1;
 		amb = get_ambiguities(w_sym, s_sym);
-		if ( amb == NULL ) return 1;
+		if ( amb == NULL ) {
+			ERROR("Couldn't find ambiguity operator.\n");
+			ERROR("Check that your values for -y and -w are "
+			      "correct.\n");
+			return 1;
+		}
 		STATUS("Ambiguity operations:\n");
 		describe_symmetry(amb);
+		if ( num_equivs(amb, NULL) != 2 ) {
+			ERROR("There must be only one ambiguity operator.\n");
+			ERROR("Try again with a different value for -w.\n");
+			return 1;
+		}
 	}
 
 	crystals = NULL;
