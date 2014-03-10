@@ -619,7 +619,7 @@ int main(int argc, char *argv[])
 	char *w_sym_str = NULL;
 	SymOpList *w_sym;
 	SymOpList *amb;
-	int n_iter = 1;
+	int n_iter = 6;
 	int n_crystals, n_chunks, max_crystals;
 	int n_dif;
 	struct flist **crystals;
