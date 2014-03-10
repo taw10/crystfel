@@ -633,7 +633,8 @@ int main(int argc, char *argv[])
 	double rmax = INFINITY;  /* m^-1 */
 	FILE *fgfh = NULL;
 	struct cc_list *ccs;
-	int ncorr = 1000;
+	int ncorr;
+	int ncorr_set = 0;
 	int stop_after = 0;
 	float mean_nac;
 	int n_threads = 1;
@@ -717,6 +718,8 @@ int main(int argc, char *argv[])
 			if ( sscanf(optarg, "%i", &ncorr) != 1 ) {
 				ERROR("Invalid value for --ncorr\n");
 				return 1;
+			} else {
+				ncorr_set = 1;
 			}
 			break;
 
@@ -868,6 +871,10 @@ int main(int argc, char *argv[])
 		if ( fgfh == NULL ) {
 			ERROR("Failed to open '%s'\n", fg_graph_fn);
 		}
+	}
+
+	if ( !ncorr_set || (ncorr > n_crystals) ) {
+		ncorr = n_crystals;
 	}
 
 	ccs = calc_ccs(crystals, n_crystals, ncorr, amb, rng, &mean_nac,
