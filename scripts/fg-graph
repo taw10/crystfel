@@ -33,10 +33,10 @@ CMAX=0.3
 gnuplot -p << EOF
 set terminal pngcairo size 1600,1000 enhanced monochrome font 'Helvetica,20' linewidth 2
 set output "correlation.png"
-set xlabel "Iteration i"
+set xlabel "Number of crystals"
 set ylabel "Correlation"
 rnd(x) = x - floor(x) < 0.5 ? floor(x) : ceil(x)
-round(x1,x2)=rnd(10**x2*x1)/10.0**x2 # funktion mit zwei Argumenten, x1 wird gerundet x2 anzahl der Stellen nach dem Komma
+round(x1,x2)=rnd(10**x2*x1)/10.0**x2
 set xzeroaxis lc rgb "black" lt 1
 set key top left
 set xrange [0:${NITER}*${NPATT}]
@@ -46,7 +46,7 @@ set xtics nomirror
 set x2tics nomirror
 
 set x2range [0:${NITER}]
-set x2label "Iteration i gemessen in n"
+set x2label "Number of passes over all crystals"
 set arrow from ${NPATT},${CMIN} to ${NPATT},${CMAX} nohead lc rgb "black"
 
 plot\
