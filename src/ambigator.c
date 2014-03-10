@@ -993,7 +993,12 @@ int main(int argc, char *argv[])
 	STATUS("%i assignments are different from their starting values.\n",
 	       n_dif);
 
-	write_reindexed_stream(infile, outfile, assignments, amb);
+	if ( amb != NULL ) {
+		write_reindexed_stream(infile, outfile, assignments, amb);
+	} else {
+		ERROR("Can only write stream with known ambiguity operator.\n");
+		ERROR("Try again with -w\n");
+	}
 
 	free(assignments);
 	gsl_rng_free(rng);
