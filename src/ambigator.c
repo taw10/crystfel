@@ -621,7 +621,7 @@ static void reindex_reflections(FILE *fh, FILE *ofh, int assignment,
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) break;
 
-		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) {
+		if ( strcmp(line, REFLECTION_END_MARKER"\n") == 0 ) {
 			fputs(line, ofh);
 			return;
 		}
@@ -675,10 +675,10 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) break;
 
+		fputs(line, ofh);
+
 		if ( strcmp(line, REFLECTION_START_MARKER"\n") == 0 ) {
 			reindex_reflections(fh, ofh, assignments[i++], amb);
-		} else {
-			fputs(line, ofh);
 		}
 
 	} while ( 1 );
