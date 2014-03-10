@@ -321,7 +321,6 @@ struct queue_args
 	int n_to_do;
 	int mean_nac;
 	int nmean_nac;
-	gsl_permutation *p;
 
 	struct cc_list *ccs;
 	struct flist **crystals;
@@ -524,7 +523,6 @@ static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
 	for ( i=0; i<nthreads; i++ ) {
 		gsl_rng_free(qargs.rngs[i]);
 	}
-	gsl_permutation_free(qargs.p);
 
 	*pmean_nac = (float)qargs.mean_nac/qargs.nmean_nac;
 
