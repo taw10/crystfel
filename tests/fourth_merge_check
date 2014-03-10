@@ -20,7 +20,9 @@ End of reflections
 EOF
 
 cat > fourth_merge_check_ans.hkl << EOF
-  h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
+CrystFEL reflection list version 2.0
+Symmetry: 1
+   h    k    l          I    phase   sigma(I)   nmeas
 End of reflections
 EOF
 
