@@ -4,7 +4,8 @@ SUBDIRS = lib doc/reference/libcrystfel libcrystfel
 ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
-               src/compare_hkl src/partialator src/check_hkl src/partial_sim
+               src/compare_hkl src/partialator src/check_hkl src/partial_sim \
+               src/ambigator
 
 noinst_PROGRAMS = tests/list_check tests/integration_check \
                   tests/pr_p_gradient_check tests/symmetry_check \
@@ -85,6 +86,8 @@ endif
 src_partialator_SOURCES = src/partialator.c src/post-refinement.c \
                           src/hrs-scaling.c
 
+src_ambigator_SOURCES = src/ambigator.c
+
 if HAVE_CAIRO
 if HAVE_PANGO
 if HAVE_PANGOCAIRO
@@ -137,7 +140,7 @@ man_MANS = doc/man/crystfel.7 doc/man/check_hkl.1 doc/man/compare_hkl.1 \
            doc/man/crystfel_geometry.5 doc/man/get_hkl.1 doc/man/hdfsee.1 \
            doc/man/indexamajig.1 doc/man/partialator.1 doc/man/partial_sim.1 \
            doc/man/pattern_sim.1 doc/man/process_hkl.1 doc/man/render_hkl.1 \
-           doc/man/cell_explorer.1
+           doc/man/cell_explorer.1 doc/man/ambigator.1
 
 
 EXTRA_DIST += $(man_MANS)
@@ -173,7 +176,7 @@ script_DATA = scripts/alternate-stream scripts/cell-please \
               scripts/random-image scripts/README scripts/sequence-image \
               scripts/split-indexed scripts/stream_grep scripts/zone-axes \
               scripts/Rsplit_surface scripts/Rsplit_surface.py \
-              scripts/clean-stream.py
+              scripts/clean-stream.py scripts/fg-graph
 
 EXTRA_DIST += $(script_DATA)
 

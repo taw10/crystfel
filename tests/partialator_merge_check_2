@@ -33,8 +33,10 @@ EOF
 # be the mean but with the standard deviation should be zero because the scaling
 # factor can absorb the difference.
 cat > partialator_merge_check_2_ans.hkl << EOF
-  h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
-  1   0   0     150.00        -       0.00       2    0.0    0.0
+CrystFEL reflection list version 2.0
+Symmetry: unknown
+   h    k    l          I    phase   sigma(I)   nmeas
+   1    0    0     150.00        -       0.00       2
 End of reflections
 EOF
 

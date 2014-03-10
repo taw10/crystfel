@@ -1,0 +1,103 @@
+.\"
+.\" ambigator man page
+.\"
+.\" Copyright © 2014 Deutsches Elektronen-Synchrotron DESY,
+.\"                  a research centre of the Helmholtz Association.
+.\"
+.\" Part of CrystFEL - crystallography with a FEL
+.\"
+
+.TH AMBIGATOR 1
+.SH NAME
+ambigator \- Resolve indexing ambiguities
+.SH SYNOPSIS
+.PP
+.B ambigator \fIinput.stream\fR \fB[-o\fR \fIoutput.stream\fR\fB] [options]
+
+.B ambigator --help
+
+.SH DESCRIPTION
+This program resolves indexing ambiguities using a simplified variant of the clustering algorithm described by (FIXME: Reference).
+
+The algorithm works by calculating the individual correlation coefficients between the intensities from one crystal and those from each of the other crystals in turn.  The mean \fIf\fR is then taken over all crystals with the same indexing assignment, and separately the mean \fIg\fR is taken over all crystals with the opposite indexing assignment.  The indexing assignment for a crystal is changed if \fIg\fR > \fIf\fR.  Every crystal is visited once in turn, and the pass over all the crystals repeated several times.
+
+Only one indexing ambiguity can be resolved at once.  In other words, each crystal is considered to be indexable in one of only two ways.  If the true indexing ambiguity has more possibilities than this, the resolution must be performed by running \fBambigator\fR multiple times with a different ambiguity operator each time.
+
+If the ambiguity operator is known (or, equivalently, the actual and apparent symmetries are both known), then the algorithm can be enhanced by including in \fIf\fR the correlation coefficients of all the patterns with the opposite indexing assignment to the current one, but after reindexing the other pattern first.  Likewise, \fg\fR includes the correlation coefficients of the patterns with the same indexing assignment after reindexing.  This enhances the algorithm to an extent roughly equivalent to doubling the number of crystals.
+
+The default behaviour is to compare each crystal to every other crystal.  This leads to a computational complexity proportional to the square of the number of crystals.  If the number of crystals is large, the number of comparisons can be limited without compromising the algorithm much.  In this case, the crystals to correlate against will be selected randomly.
+
+
+.SH OPTIONS
+.PD 0
+.IP "\fB-o\fR \fIfilename\fR"
+.IP \fB--output=\fR\fIfilename\fR
+.PD
+Write a re-indexed version of the input stream to \fIfilename\fR.  This stream can then be merged normally using \fBprocess_hkl\fR or \fBpartialator\fR, but using the actual symmetry instead of the apparent one.
+.IP
+\fBWARNING\fR: There is no default filename.  The default behaviour is not to output any reindexed stream!
+
+.PD 0
+.IP "\fB-y\fR \fIpg\fR"
+.IP \fB--symmetry=\fR\fIpg\fR
+.PD
+Set the actual symmetry of the crystals.  If you're not sure, set this to the highest symmetry which you want to assume, which might be \fB-1\fR to assume Friedel's Law alone or \fB1\fR (the default) for no symmetry at all.  The algorithm will work significantly better if you can use a higher symmetry here.
+
+.PD 0
+.IP "\fB-w\fR \fIpg\fR"
+.PD
+Set the apparent symmetry of the crystals.  The ambiguity operator will be determined by comparing this to the actual symmetry.  If there is more than one operator, only the first will be used.
+.IP
+Using this option improves the algorithm to an extent roughly equivalent to doubling the number of crystals.
+
+.PD 0
+.IP "\fB-n\fR \fIn\fR"
+.IP \fB--iterations=\fR\fIn\fR
+The number of passes through the data to make.  Extra iterations are not expensive once the initial correlation calculation has been performed, so set this value quite high.  Two or three iterations are normally sufficient unless the number of correlations (see \fB--ncorr\fR) is small compared to the number of crystals.  The default is \fB--iterations=6\fR.
+
+.PD 0
+.IP "\fB-j\fR \fIn\fR"
+Number of threads to use for the CC calculation.
+
+.PD 0
+.IP \fB--highres=\fR\fId\fR
+High resolution cutoff in Angstroms.
+
+.PD 0
+.IP \fB--lowres=\fR\fId\fR
+Low resolution cutoff in Angstroms.
+
+.PD 0
+.IP \fB--end-assignments=\fR\fIfilename\fR
+Write the end assignments to \fIfilename\fR.  The file will be a list of 0 or 1, one value per line, in the same order as the crystals appear in the input stream.  1 means that the pattern should be reindexed according to the ambiguity operator.
+
+.PD 0
+.IP \fB--fg-graph=\fR\fIfilename\fR
+Write f and g values to \fIfilename\fR, one line per crystal, repeating all crystals as they are visited by the algorithm.  Plot these using \fBfg-graph\fR from the CrystFEL script folder to evaluate the ambiguity resolution.
+
+.PD 0
+.IP \fB--ncorr=\fR\fIn\fR
+Use \fIn\fR correlations per crystal.  The default is to correlate against every crystal.  If the CC calculation is too slow, try \fB--ncorr=1000\fR.  Note that this option sets the maximum number of correlations, and some crystals might not have enough common reflections to correlate to the number requested.  The mean number of actual correlations per crystal will be output by the program after the CC calculation, and if this number is much smaller than \fIn\fR then this option will not have a significant effect.
+
+
+.SH AUTHOR
+This page was written by Thomas White.
+
+.SH REPORTING BUGS
+Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+
+.SH COPYRIGHT AND DISCLAIMER
+Copyright © 2014 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+
+ambigator, and this manual, are part of CrystFEL.
+
+CrystFEL is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+.SH SEE ALSO
+.BR crystfel (7),
+.BR indexamajig (1).

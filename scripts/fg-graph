@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# Copyright © 2014 Wolfgang Brehm
+# Copyright © 2014 Deutsches Elektronen-Synchrotron DESY,
+#                  a research centre of the Helmholtz Association.
+#
+# Authors:
+#   2013-2014 Wolfgang Brehm <wolfgang.brehm@gmail.com>
+#   2014 Thomas White <taw@physics.org>
+#
+# This file is part of CrystFEL.
+#
+# CrystFEL is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# CrystFEL is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+FILE=fg.dat
+NPATT=4000
+NITER=4
+CMIN=-0.1
+CMAX=0.3
+
+gnuplot -p << EOF
+set terminal pngcairo size 1600,1000 enhanced monochrome font 'Helvetica,20' linewidth 2
+set output "correlation.png"
+set xlabel "Number of crystals"
+set ylabel "Correlation"
+rnd(x) = x - floor(x) < 0.5 ? floor(x) : ceil(x)
+round(x1,x2)=rnd(10**x2*x1)/10.0**x2
+set xzeroaxis lc rgb "black" lt 1
+set key top left
+set xrange [0:${NITER}*${NPATT}]
+set yrange [${CMIN}:${CMAX}]
+set ytics nomirror
+set xtics nomirror
+set x2tics nomirror
+
+set x2range [0:${NITER}]
+set x2label "Number of passes over all crystals"
+set arrow from ${NPATT},${CMIN} to ${NPATT},${CMAX} nohead lc rgb "black"
+
+plot\
+ 1 lc rgb "black" lt 1 notitle,\
+ "${FILE}" u 0:1 ps 0.2 pt 7 lc rgb "orange" notitle,\
+ "${FILE}" u 0:2 ps 0.2 pt 7 lc rgb "#0088FF" notitle,\
+ "${FILE}" u 0:(rand(0)>0.5?\$1:1/0) ps 0.2 pt 7 lc rgb "orange" notitle ,\
+ "${FILE}" u (round(\$0, -3)):(\$1>\$2?\$1:\$2) lw 3 lc rgb "black" smooth unique notitle,\
+ "${FILE}" u (round(\$0, -3)):(\$1<\$2?\$1:\$2) lw 3 lc rgb "black" smooth unique notitle,\
+ "${FILE}" u (round(\$0, -3)):1 lw 3 lc rgb "red" smooth unique notitle,\
+ "${FILE}" u (round(\$0, -3)):2 lw 3 lc rgb "blue" smooth unique notitle
+EOF
