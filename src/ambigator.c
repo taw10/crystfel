@@ -885,7 +885,14 @@ int main(int argc, char *argv[])
 	}
 	STATUS("Mean number of correlations per crystal: %.1f\n", mean_nac);
 
-	/* FIXME: Free crystals */
+	for ( i=0; i<n_crystals; i++ ) {
+		free(crystals[i]->s);
+		free(crystals[i]->i);
+		free(crystals[i]->s_reidx);
+		free(crystals[i]->i_reidx);
+		free(crystals[i]);
+	}
+	free(crystals);
 
 	for ( i=0; i<n_iter; i++ ) {
 		detwin(ccs, n_crystals, assignments, fgfh, crystals);
@@ -915,7 +922,6 @@ int main(int argc, char *argv[])
 	       n_dif);
 
 	free(assignments);
-	free(crystals);
 	gsl_rng_free(rng);
 
 	return 0;
