@@ -635,7 +635,6 @@ int main(int argc, char *argv[])
 	struct cc_list *ccs;
 	int ncorr;
 	int ncorr_set = 0;
-	int stop_after = 0;
 	float mean_nac;
 	int n_threads = 1;
 
@@ -651,7 +650,6 @@ int main(int argc, char *argv[])
 		{"end-assignments",    1, NULL,                4},
 		{"fg-graph",           1, NULL,                5},
 		{"ncorr",              1, NULL,                6},
-		{"stop-after",         1, NULL,                7},
 
 		{0, 0, NULL, 0}
 	};
@@ -720,13 +718,6 @@ int main(int argc, char *argv[])
 				return 1;
 			} else {
 				ncorr_set = 1;
-			}
-			break;
-
-			case 7 :
-			if ( sscanf(optarg, "%i", &stop_after) != 1 ) {
-				ERROR("Invalid value for --stop-after\n");
-				return 1;
 			}
 			break;
 
@@ -834,14 +825,10 @@ int main(int argc, char *argv[])
 			n_crystals++;
 			reflist_free(list);
 
-			if ( stop_after && (n_crystals == stop_after) ) break;
-
 		}
 
 		fprintf(stderr, "Loaded %i crystals from %i chunks\r",
 		        n_crystals, ++n_chunks);
-
-		if ( stop_after && (n_crystals == stop_after) ) break;
 
 	} while ( 1 );
 	fprintf(stderr, "\n");
