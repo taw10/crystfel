@@ -605,6 +605,93 @@ static void detwin(struct cc_list *ccs, int n_crystals, int *assignments,
 }
 
 
+static void reindex_reflections(FILE *fh, FILE *ofh, int assignment,
+                                SymOpList *amb)
+{
+	int first = 1;
+
+	do {
+
+		char *rval;
+		char line[1024];
+		int n;
+		signed int h, k, l;
+		int r;
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) break;
+
+		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) {
+			fputs(line, ofh);
+			return;
+		}
+
+		if ( first ) {
+			fputs(line, ofh);
+			first = 0;
+			continue;
+		}
+
+		r = sscanf(line, "%i %i %i%n", &h, &k, &l, &n);
+
+		/* See scanf() manual page about %n to see why <3 is used */
+		if ( (r < 3) && !first ) return;
+
+		get_equiv(amb, NULL, assignment, h, k, l, &h, &k, &l);
+
+		fprintf(ofh, "%4i %4i %4i%s", h, k, l, line+n);
+
+	} while ( 1 );
+}
+
+
+/* This is nasty, but means the output includes absolutely everything in the
+ * input, even stuff ignored by read_chunk() */
+static void write_reindexed_stream(const char *infile, const char *outfile,
+                                   int *assignments, SymOpList *amb)
+{
+	FILE *fh;
+	FILE *ofh;
+	int i;
+
+	fh = fopen(infile, "r");
+	if ( fh == NULL ) {
+		ERROR("Failed to open '%s'\n", infile);
+		return;
+	}
+
+	ofh = fopen(outfile, "w");
+	if ( ofh == NULL ) {
+		ERROR("Failed to open '%s'\n", outfile);
+		return;
+	}
+
+	i = 0;
+	do {
+
+		char *rval;
+		char line[1024];
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) break;
+
+		if ( strcmp(line, REFLECTION_START_MARKER"\n") == 0 ) {
+			reindex_reflections(fh, ofh, assignments[i++], amb);
+		} else {
+			fputs(line, ofh);
+		}
+
+	} while ( 1 );
+
+	if ( !feof(fh) ) {
+		ERROR("Error reading stream.\n");
+	}
+
+	fclose(fh);
+	fclose(ofh);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -905,6 +992,8 @@ int main(int argc, char *argv[])
 	}
 	STATUS("%i assignments are different from their starting values.\n",
 	       n_dif);
+
+	write_reindexed_stream(infile, outfile, assignments, amb);
 
 	free(assignments);
 	gsl_rng_free(rng);
