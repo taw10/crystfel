@@ -73,6 +73,7 @@ static void show_help(const char *s)
 "      --fg-graph=<fn>        Save f and g correlation values to file <fn>.\n"
 "      --ncorr=<n>            Use <n> correlations per crystal.  Default 1000\n"
 "  -j <n>                     Use <n> threads for CC calculation.\n"
+"      --really-random        Be non-deterministic.\n"
 );
 }
 
@@ -721,6 +722,7 @@ int main(int argc, char *argv[])
 	int ncorr_set = 0;
 	float mean_nac;
 	int n_threads = 1;
+	int config_random = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -734,6 +736,8 @@ int main(int argc, char *argv[])
 		{"end-assignments",    1, NULL,                4},
 		{"fg-graph",           1, NULL,                5},
 		{"ncorr",              1, NULL,                6},
+
+		{"really-random",      0, &config_random,      1},
 
 		{0, 0, NULL, 0}
 	};
@@ -943,6 +947,24 @@ int main(int argc, char *argv[])
 	}
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
+
+	if ( config_random ) {
+
+		FILE *fh;
+		unsigned long int seed;
+
+		fh = fopen("/dev/urandom", "r");
+		if ( fh == NULL ) {
+			ERROR("Failed to open /dev/urandom.  Try again without"
+			      " --really-random.\n");
+			return 1;
+		}
+
+		fread(&seed, sizeof(seed), 1, fh);
+		gsl_rng_set(rng, seed);
+		fclose(fh);
+	}
+
 	for ( i=0; i<n_crystals; i++ ) {
 		assignments[i] = (random_flat(rng, 1.0) > 0.5);
 		orig_assignments[i] = assignments[i];

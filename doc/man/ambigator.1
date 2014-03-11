@@ -79,6 +79,10 @@ Write f and g values to \fIfilename\fR, one line per crystal, repeating all crys
 .IP \fB--ncorr=\fR\fIn\fR
 Use \fIn\fR correlations per crystal.  The default is to correlate against every crystal.  If the CC calculation is too slow, try \fB--ncorr=1000\fR.  Note that this option sets the maximum number of correlations, and some crystals might not have enough common reflections to correlate to the number requested.  The mean number of actual correlations per crystal will be output by the program after the CC calculation, and if this number is much smaller than \fIn\fR then this option will not have a significant effect.
 
+.PD 0
+.IP \fB--really-random\fR
+Be non-deterministic by seeding the random number generator (used to make the initial indexing assignments and select patterns to correlate against) from /dev/urandom.  Otherwise, with single-threaded operation (\fB-j 1\fR) on the same data, the results from this program should be the same if it is re-run.  Using more than one thread already introduces some non-deterministic behaviour.
+
 
 .SH AUTHOR
 This page was written by Thomas White.
