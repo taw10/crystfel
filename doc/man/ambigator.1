@@ -17,13 +17,15 @@ ambigator \- Resolve indexing ambiguities
 .B ambigator --help
 
 .SH DESCRIPTION
-This program resolves indexing ambiguities using a simplified variant of the clustering algorithm described by (FIXME: Reference).
+This program resolves indexing ambiguities using a simplified variant of the clustering algorithm described by Brehm and Diederichs, Acta Crystallographica D70 (2013) p101.
 
-The algorithm works by calculating the individual correlation coefficients between the intensities from one crystal and those from each of the other crystals in turn.  The mean \fIf\fR is then taken over all crystals with the same indexing assignment, and separately the mean \fIg\fR is taken over all crystals with the opposite indexing assignment.  The indexing assignment for a crystal is changed if \fIg\fR > \fIf\fR.  Every crystal is visited once in turn, and the pass over all the crystals repeated several times.
+The algorithm starts by making a random indexing assignment to each crystal.  The indexing assignment is a flag which indicates whether the crystal should be re-indexed according to the ambiguity operator.
 
-Only one indexing ambiguity can be resolved at once.  In other words, each crystal is considered to be indexable in one of only two ways.  If the true indexing ambiguity has more possibilities than this, the resolution must be performed by running \fBambigator\fR multiple times with a different ambiguity operator each time.
+The algorithm proceeds by calculating the individual correlation coefficients between the intensities from one crystal and those from each of the other crystals in turn.  The mean correlation coefficient, \fIf\fR, is taken over all crystals which have the same indexing assignment as the current pattern.  Separately the mean correlation coefficient \fIg\fR is taken over all crystals which have indexing assignments opposite to the current crystal.  The indexing assignment for the current crystal is changed if \fIg\fR > \fIf\fR.  Every crystal is visited once in turn, and the pass over all the crystals repeated several times.
 
-If the ambiguity operator is known (or, equivalently, the actual and apparent symmetries are both known), then the algorithm can be enhanced by including in \fIf\fR the correlation coefficients of all the patterns with the opposite indexing assignment to the current one, but after reindexing the other pattern first.  Likewise, \fg\fR includes the correlation coefficients of the patterns with the same indexing assignment after reindexing.  This enhances the algorithm to an extent roughly equivalent to doubling the number of crystals.
+Only one indexing ambiguity can be resolved at a time.  In other words, each crystal is considered to be indexable in one of only two ways.  If the true indexing ambiguity has more possibilities than this, the resolution must be performed by running \fBambigator\fR multiple times with a different ambiguity operator each time.
+
+If the ambiguity operator is known (or, equivalently, the actual and apparent symmetries are both known), then the algorithm can be enhanced by including in \fIf\fR the correlation coefficients of all the crystals with the opposite indexing assignment to the current one, but after reindexing the other crystal first.  Likewise, \fg\fR includes the correlation coefficients of the crystals with the same indexing assignment after reindexing.  This enhances the algorithm to an extent roughly equivalent to doubling the number of crystals.
 
 The default behaviour is to compare each crystal to every other crystal.  This leads to a computational complexity proportional to the square of the number of crystals.  If the number of crystals is large, the number of comparisons can be limited without compromising the algorithm much.  In this case, the crystals to correlate against will be selected randomly.
 
