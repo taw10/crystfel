@@ -66,23 +66,16 @@ static void show_help(const char *s)
 "  -h, --help                 Display this help message.\n"
 "\n"
 "  -i, --input=<filename>     Specify the name of the input 'stream'.\n"
-"                              (must be a file, not e.g. stdin)\n"
 "  -o, --output=<filename>    Output filename.  Default: partialator.hkl.\n"
 "  -g. --geometry=<file>      Get detector geometry from file.\n"
-"  -b, --beam=<file>          Get beam parameters from file, which provides\n"
-"                              initial values for parameters, and nominal\n"
-"                              wavelengths if no per-shot value is found in \n"
-"                              an HDF5 file.\n"
+"  -b, --beam=<file>          Get beam parameters from file.\n"
 "  -y, --symmetry=<sym>       Merge according to symmetry <sym>.\n"
 "  -n, --iterations=<n>       Run <n> cycles of scaling and post-refinement.\n"
 "      --no-scale             Fix all the scaling factors at unity.\n"
 "  -r, --reference=<file>     Refine images against reflections in <file>,\n"
-"                              instead of taking the mean of the intensity\n"
-"                              estimates.\n"
 "  -m, --model=<model>        Specify partiality model.\n"
-"      --min-measurements=<n> Require at least <n> measurements before a\n"
-"                             reflection appears in the output.  Default: 2\n"
-"\n"
+"      --min-measurements=<n> Minimum number of measurements to require.\n"
+"      --no-polarisation      Disable polarisation correction.\n"
 "  -j <n>                     Run <n> analyses in parallel.\n");
 }
 
@@ -361,9 +354,11 @@ int main(int argc, char *argv[])
 	int min_measurements = 2;
 	char *rval;
 	struct srdata srdata;
+	int polarisation = 1;
 
 	/* Long options */
 	const struct option longopts[] = {
+
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
@@ -371,10 +366,16 @@ int main(int argc, char *argv[])
 		{"beam",               1, NULL,               'b'},
 		{"symmetry",           1, NULL,               'y'},
 		{"iterations",         1, NULL,               'n'},
-		{"no-scale",           0, &noscale,            1},
 		{"reference",          1, NULL,               'r'},
 		{"model",              1, NULL,               'm'},
+
 		{"min-measurements",   1, NULL,                2},
+
+		{"no-scale",           0, &noscale,            1},
+		{"no-polarisation",    0, &polarisation,       0},
+		{"no-polarization",    0, &polarisation,       0},
+		{"polarisation",       0, &polarisation,       1}, /* compat */
+		{"polarization",       0, &polarisation,       1}, /* compat */
 
 		{0, 0, NULL, 0}
 	};
@@ -593,6 +594,13 @@ int main(int argc, char *argv[])
 
 			/* This is the raw list of reflections */
 			cr_refl = crystal_get_reflections(cr);
+
+			if ( polarisation ) {
+				polarisation_correction(cr_refl,
+						        crystal_get_cell(cr),
+						        cur);
+			}
+
 			as = asymmetric_indices(cr_refl, sym);
 			crystal_set_reflections(cr, as);
 			reflist_free(cr_refl);
