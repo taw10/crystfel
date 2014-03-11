@@ -68,6 +68,10 @@ High resolution cutoff in Angstroms.
 Low resolution cutoff in Angstroms.
 
 .PD 0
+.IP \fB--start-assignments=\fR\fIfilename\fR
+Read the starting assignments to \fIfilename\fR.  The file must be a list of 0 or 1, one value per line, in the same order as the crystals appear in the input stream.  1 means that the pattern should be reindexed according to the ambiguity operator.  The length of the file must be at least equal to the number of crystals in the input stream.
+
+.PD 0
 .IP \fB--end-assignments=\fR\fIfilename\fR
 Write the end assignments to \fIfilename\fR.  The file will be a list of 0 or 1, one value per line, in the same order as the crystals appear in the input stream.  1 means that the pattern should be reindexed according to the ambiguity operator.
 

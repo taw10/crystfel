@@ -61,19 +61,20 @@ static void show_help(const char *s)
 	printf(
 "Resolve indexing ambiguities.\n"
 "\n"
-"  -h, --help                 Display this help message.\n"
+"  -h, --help                  Display this help message.\n"
 "\n"
-"  -o, --output=<filename>    Output stream.\n"
-"  -y, --symmetry=<sym>       Actual (\"target\") symmetry.\n"
-"  -w <sym>                   Apparent (\"source\" or \"twinned\") symmetry.\n"
-"  -n, --iterations=<n>       Iterate <n> times.\n"
-"      --highres=<n>          High resolution cutoff in A.\n"
-"      --lowres=<n>           Low resolution cutoff in A.\n"
-"      --end-assignments=<fn> Save end assignments to file <fn>.\n"
-"      --fg-graph=<fn>        Save f and g correlation values to file <fn>.\n"
-"      --ncorr=<n>            Use <n> correlations per crystal.  Default 1000\n"
-"  -j <n>                     Use <n> threads for CC calculation.\n"
-"      --really-random        Be non-deterministic.\n"
+"  -o, --output=<filename>     Output stream.\n"
+"  -y, --symmetry=<sym>        Actual (\"target\") symmetry.\n"
+"  -w <sym>                    Apparent (\"source\" or \"twinned\") symmetry.\n"
+"  -n, --iterations=<n>        Iterate <n> times.\n"
+"      --highres=<n>           High resolution cutoff in A.\n"
+"      --lowres=<n>            Low resolution cutoff in A.\n"
+"      --start-assignments=<f> Read starting assignments from file.\n"
+"      --end-assignments=<f>   Save end assignments to file.\n"
+"      --fg-graph=<f>          Save f and g correlation values to file.\n"
+"      --ncorr=<n>             Use <n> correlations per crystal.  Default 1000\n"
+"  -j <n>                      Use <n> threads for CC calculation.\n"
+"      --really-random         Be non-deterministic.\n"
 );
 }
 
@@ -697,6 +698,7 @@ int main(int argc, char *argv[])
 	int c;
 	const char *infile;
 	char *outfile = NULL;
+	char *start_ass_fn = NULL;
 	char *end_ass_fn = NULL;
 	char *fg_graph_fn = NULL;
 	char *s_sym_str = NULL;
@@ -736,6 +738,7 @@ int main(int argc, char *argv[])
 		{"end-assignments",    1, NULL,                4},
 		{"fg-graph",           1, NULL,                5},
 		{"ncorr",              1, NULL,                6},
+		{"start-assignments",  1, NULL,                7},
 
 		{"really-random",      0, &config_random,      1},
 
@@ -807,6 +810,10 @@ int main(int argc, char *argv[])
 			} else {
 				ncorr_set = 1;
 			}
+			break;
+
+			case 7 :
+			start_ass_fn = strdup(optarg);
 			break;
 
 			case 0 :
@@ -965,8 +972,40 @@ int main(int argc, char *argv[])
 		fclose(fh);
 	}
 
+	if ( start_ass_fn != NULL ) {
+
+		FILE *fh;
+		fh = fopen(start_ass_fn, "r");
+		if ( fh == NULL ) {
+			ERROR("Failed to open '%s'\n", start_ass_fn);
+			return 1;
+		}
+
+		for ( i=0; i<n_crystals; i++ ) {
+			int ass;
+			if ( fscanf(fh, "%i", &ass) != 1 ) {
+				ERROR("Invalid value at line %i of %s\n",
+				      i, start_ass_fn);
+				return 1;
+			}
+			if ( (ass != 0) && (ass != 1) ) {
+				ERROR("Invalid value at line %i of %s\n",
+				      i, start_ass_fn);
+				return 1;
+			}
+			assignments[i] = ass;
+		}
+
+		fclose(fh);
+		free(start_ass_fn);
+
+	} else {
+		for ( i=0; i<n_crystals; i++ ) {
+			assignments[i] = (random_flat(rng, 1.0) > 0.5);
+		}
+	}
+
 	for ( i=0; i<n_crystals; i++ ) {
-		assignments[i] = (random_flat(rng, 1.0) > 0.5);
 		orig_assignments[i] = assignments[i];
 	}
 
