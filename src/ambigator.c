@@ -72,7 +72,6 @@ static void show_help(const char *s)
 "      --end-assignments=<fn> Save end assignments to file <fn>.\n"
 "      --fg-graph=<fn>        Save f and g correlation values to file <fn>.\n"
 "      --ncorr=<n>            Use <n> correlations per crystal.  Default 1000\n"
-"      --stop-after=<n>       Use at most the first <n> crystals.\n"
 "  -j <n>                     Use <n> threads for CC calculation.\n"
 );
 }
