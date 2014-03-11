@@ -537,6 +537,7 @@ static void detwin(struct cc_list *ccs, int n_crystals, int *assignments,
 	int i;
 	int nch = 0;
 	float mf = 0.0;
+	float mg = 0.0;
 	int nmf = 0;
 	int ndud = 0;
 
@@ -589,6 +590,7 @@ static void detwin(struct cc_list *ccs, int n_crystals, int *assignments,
 		if ( fh != NULL ) fprintf(fh, "%5.3f %5.3f\n", f, g);
 
 		mf += f;
+		mg += g;
 		nmf++;
 
 		if ( f < g ) {
@@ -602,7 +604,8 @@ static void detwin(struct cc_list *ccs, int n_crystals, int *assignments,
 		STATUS("Warning: %i crystals had no correlation\n", ndud);
 	}
 
-	STATUS("Mean f = %f, changed %i assignments this time.\n", mf/nmf, nch);
+	STATUS("Mean f,g = %10f,%10f. Changed %i assignments this time.\n",
+	       mf/nmf, mg/nmf, nch);
 }
 
 
