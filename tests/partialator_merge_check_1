@@ -68,7 +68,7 @@ src/partialator -i partialator_merge_check_1.stream \
                 -o partialator_merge_check_1.hkl  \
                 -g partialator_merge_check_1.geom \
                 -b partialator_merge_check_1.beam \
-                --model=unity --iterations=0 --no-scale
+                --model=unity --iterations=0 --no-scale --no-polarisation
 
 diff partialator_merge_check_1.hkl partialator_merge_check_1_ans.hkl
 if [ $? -ne 0 ]; then
