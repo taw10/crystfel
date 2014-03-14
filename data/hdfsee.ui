@@ -12,7 +12,6 @@
 			<separator />
 			<menuitem name="binning" action="BinningAction" />
 			<menuitem name="boostint" action="BoostIntAction" />
-			<menuitem name="usegeom" action="GeometryAction" />
 			<menuitem name="rings" action="RingsAction" />
 			<menuitem name="showpeaks" action="ShowPeaksAction" />
 			<menuitem name="ringradius" action="RingRadiusAction" />
@@ -28,7 +27,6 @@
 			<menuitem name="calibmode" action="CalibModeAction" />
 			<menuitem name="numbers" action="NumbersAction" />
 			<menuitem name="peaks" action="PeaksAction" />
-			<menuitem name="geometry" action="LoadGeomAction" />
 		</menu>
 
 		<menu name="help" action="HelpAction">

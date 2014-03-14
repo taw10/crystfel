@@ -122,13 +122,13 @@ int main(int argc, char *argv[])
 	int colscale = SCALE_COLOUR;
 	char *cscale = NULL;
 	char *element = NULL;
-	char *geometry = NULL;
 	char *beam = NULL;
 	double ring_size = 5.0;
 	char *reslist = NULL;
 	double ring_radii[128];
 	int n_rings = -1;
 	int median_filter = 0;
+	struct detector *det_geom = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -206,7 +206,12 @@ int main(int argc, char *argv[])
 			break;
 
 			case 'g' :
-			geometry = strdup(optarg);
+			det_geom = get_detector_geometry(optarg);
+			if ( det_geom == NULL ) {
+			    ERROR("Failed to read detector geometry from "
+				  "'%s'\n", optarg);
+			    return 1;
+			}
 			break;
 
 			case 'm' :
@@ -268,6 +273,12 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	if ( det_geom == NULL ) {
+		ERROR("You need to provide a geometry file (please read the"
+		      " manual for more details).\n");
+		return 1;
+	}
+
 	if ( cscale == NULL ) cscale = strdup("colour");
 	if ( strcmp(cscale, "mono") == 0 ) {
 		colscale = SCALE_MONO;
@@ -289,7 +300,7 @@ int main(int argc, char *argv[])
 		                                         config_noisefilter,
 	                                                 config_calibmode,
 		                                         colscale, element,
-		                                         geometry, beam,
+							 det_geom, beam,
 		                                         config_showrings,
 		                                         ring_radii,
 		                                         n_rings,

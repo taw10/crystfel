@@ -30,7 +30,6 @@
  *
  */
 
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -38,8 +37,8 @@
 #ifndef DISPLAYWINDOW_H
 #define DISPLAYWINDOW_H
 
+#include "image.h"
 #include <gtk/gtk.h>
-
 
 typedef struct {
 	GtkWidget	*window;
@@ -90,9 +89,6 @@ typedef struct {
 
 	int             not_ready_yet;
 
-	struct detector *loaded_geom;
-	struct detector *simple_geom;
-
 	struct hdfile	*hdfile;
 	struct image	*image;
 
@@ -113,7 +109,6 @@ typedef struct {
 	double		boostint;
 	int		noisefilter;	/* Use aggressive noise filter */
 	int             median_filter;
-	int             use_geom;
 	int             show_rings;
 	int		show_peaks;
 	double          ring_radius;
@@ -138,7 +133,7 @@ extern DisplayWindow *displaywindow_open(const char *filename,
                                          int binning,
                                          int noisefilter, int calibmode, int colscale,
                                          const char *element,
-                                         const char *geometry, const char *beam,
+                                         struct detector *det_geom, const char *beam,
                                          int show_rings,
                                          double *ring_radii, int n_rings,
                                          double ring_size, int median_filter);
