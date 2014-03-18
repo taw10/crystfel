@@ -339,6 +339,11 @@ static void run_job(void *vwargs, int cookie)
 	orientation = random_quaternion(qargs->rngs[cookie]);
 	crystal_set_cell(cr, cell_rotate(qargs->cell, orientation));
 
+	wargs->image.filename = malloc(256);
+	if ( wargs->image.filename == NULL ) {
+		ERROR("Failed to allocate filename.\n");
+		return;
+	}
 	if ( qargs->image_prefix != NULL ) {
 		snprintf(wargs->image.filename, 255, "%s%i.h5",
 		         qargs->image_prefix, wargs->n);
@@ -393,6 +398,7 @@ static void finalise_job(void *vqargs, void *vwargs)
 	qargs->n_done++;
 	progress_bar(qargs->n_done, qargs->n_to_do, "Simulating");
 
+	free(wargs->image.filename);
 	crystal_free(wargs->crystal);
 	free(wargs);
 }
@@ -665,7 +671,7 @@ int main(int argc, char *argv[])
 	image.div = beam->divergence;
 	image.bw = beam->bandwidth;
 	image.beam = beam;
-	image.filename = malloc(256);
+	image.filename = "dummy.h5";
 	image.copyme = NULL;
 	image.crystals = NULL;
 	image.n_crystals = 0;
@@ -804,7 +810,6 @@ int main(int argc, char *argv[])
 	free(beam);
 	free_symoplist(sym);
 	reflist_free(full);
-	free(image.filename);
 
 	return 0;
 }
