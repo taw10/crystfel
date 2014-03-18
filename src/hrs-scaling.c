@@ -139,7 +139,7 @@ static void run_scale_job(void *vwargs, int cookie)
 		}
 
 		Ihl = get_intensity(refl) / corr;
-		
+
 		num += Ih * Ihl;
 		den += Ihl * Ihl;
 
