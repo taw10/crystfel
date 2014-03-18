@@ -398,8 +398,8 @@ static void finalise_job(void *vqargs, void *vwargs)
 	qargs->n_done++;
 	progress_bar(qargs->n_done, qargs->n_to_do, "Simulating");
 
+	free_all_crystals(&wargs->image);
 	free(wargs->image.filename);
-	crystal_free(wargs->crystal);
 	free(wargs);
 }
 
@@ -810,6 +810,7 @@ int main(int argc, char *argv[])
 	free(beam);
 	free_symoplist(sym);
 	reflist_free(full);
+	free(save_file);
 
 	return 0;
 }
