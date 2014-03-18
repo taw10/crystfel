@@ -567,7 +567,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		}
 
 	} else {
-		crystal_set_user_flag(cr, 1);
+		crystal_set_user_flag(cr, 2);
 	}
 
 	gsl_matrix_free(M);
@@ -719,7 +719,7 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 
 		if ( 3*n_lost > n_total ) {
 			revert_crystal(cr, backup);
-			crystal_set_user_flag(cr, 1);
+			crystal_set_user_flag(cr, 3);
 		}
 
 		i++;

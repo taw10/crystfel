@@ -636,6 +636,8 @@ int main(int argc, char *argv[])
 			                      &n_gained, &n_lost,
 			                      &mean_p_change);
 			assert(n_gained == 0);  /* That'd just be silly */
+			STATUS("%i gained, %i lost, mean p change = %f\n",
+			       n_gained, n_lost, mean_p_change);
 			as = crystal_get_reflections(cryst);
 			nobs += select_scalable_reflections(as, reference);
 
@@ -661,6 +663,9 @@ int main(int argc, char *argv[])
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
 
+		int n_noref = 0;
+		int n_solve = 0;
+		int n_lost = 0;
 		int n_dud = 0;
 		int j;
 		RefList *comp;
@@ -678,14 +683,28 @@ int main(int argc, char *argv[])
 
 		nobs = 0;
 		for ( j=0; j<n_crystals; j++ ) {
+			int flag;
 			Crystal *cr = crystals[j];
 			RefList *rf = crystal_get_reflections(cr);
-			if ( crystal_get_user_flag(cr) ) n_dud++;
+			flag = crystal_get_user_flag(cr);
+			if ( flag != 0 ) n_dud++;
+			if ( flag == 1 ) {
+				n_noref++;
+			} else if ( flag == 2 ) {
+				n_solve++;
+			} else if ( flag == 3 ) {
+				n_lost++;
+			}
 			nobs += select_scalable_reflections(rf, reference);
 		}
 
-		STATUS("%i crystals could not be refined this cycle.\n", n_dud);
-
+		if ( n_dud ) {
+			STATUS("%i crystals could not be refined this cycle.\n",
+			       n_dud);
+			STATUS("%i not enough reflections.\n", n_noref);
+			STATUS("%i solve failed.\n", n_solve);
+			STATUS("%i lost too many reflections.\n", n_lost);
+		}
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
 		full = scale_intensities(crystals, n_crystals,
