@@ -76,29 +76,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	hdfile = hdfile_open(image.filename);
 	if ( hdfile == NULL ) return;
 
-	if ( iargs->element != NULL ) {
-
-		int r;
-		r = hdfile_set_image(hdfile, iargs->element);
-		if ( r ) {
-			ERROR("Couldn't select path '%s'\n", iargs->element);
-			hdfile_close(hdfile);
-			return;
-		}
-
-	} else {
-
-		int r;
-		r = hdfile_set_first_image(hdfile, "/");
-		if ( r ) {
-			ERROR("Couldn't select first path\n");
-			hdfile_close(hdfile);
-			return;
-		}
-
-	}
-
-	check = hdf5_read(hdfile, &image, 1);
+	check = hdf5_read(hdfile, &image, iargs->element, 1);
 	if ( check ) {
 		hdfile_close(hdfile);
 		return;

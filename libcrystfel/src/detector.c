@@ -496,6 +496,16 @@ static struct panel *new_panel(struct detector *det, const char *name)
 		new->clen_from = strdup(new->clen_from);
 	}
 
+	/* Create a new copy of the data location if needed */
+	if ( new->data_from != NULL ) {
+		new->data_from = strdup(new->data_from);
+	}
+
+	/* Create a new copy of the bad pixel mask location */
+	if ( new->mask != NULL ) {
+		new->mask = strdup(new->data_from);
+	}
+
 	return new;
 }
 
@@ -666,6 +676,20 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 			panel->clen_from = NULL;
 		}
 
+	} else if ( strcmp(key, "data_from") == 0 ) {
+		if ( strncmp(val,"/",1) != 0 ) {
+			ERROR("Invalid data location '%s'\n", val);
+			reject = -1;
+		}
+		panel->data_from = strdup(val);
+
+	} else if ( strcmp(key, "mask") == 0 ) {
+		if ( strncmp(val,"/",1) != 0 ) {
+			ERROR("Invalid mask location '%s'\n", val);
+			reject = -1;
+		}
+		panel->mask = strdup(val);
+
 	} else if ( strcmp(key, "coffset") == 0) {
 		panel->coffset = atof(val);
 	} else if ( strcmp(key, "res") == 0 ) {
@@ -751,11 +775,7 @@ static int parse_field_bad(struct badregion *panel, const char *key,
 static void parse_toplevel(struct detector *det, const char *key,
                            const char *val)
 {
-	if ( strcmp(key, "mask") == 0 ) {
-
-		det->mask = strdup(val);
-
-	} else if ( strcmp(key, "mask_bad") == 0 ) {
+	if ( strcmp(key, "mask_bad") == 0 ) {
 
 		char *end;
 		double v = strtod(val, &end);
@@ -864,7 +884,6 @@ struct detector *get_detector_geometry(const char *filename)
 	det->bad = NULL;
 	det->mask_good = 0;
 	det->mask_bad = 0;
-	det->mask = NULL;
 	det->n_rigid_groups = 0;
 	det->rigid_groups = NULL;
 
@@ -873,6 +892,10 @@ struct detector *get_detector_geometry(const char *filename)
 	det->defaults.min_ss = -1;
 	det->defaults.max_fs = -1;
 	det->defaults.max_ss = -1;
+	det->defaults.orig_min_fs = -1;
+	det->defaults.orig_min_ss = -1;
+	det->defaults.orig_max_fs = -1;
+	det->defaults.orig_max_ss = -1;
 	det->defaults.cnx = NAN;
 	det->defaults.cny = NAN;
 	det->defaults.clen = -1.0;
@@ -887,6 +910,8 @@ struct detector *get_detector_geometry(const char *filename)
 	det->defaults.rigid_group = NULL;
 	det->defaults.adu_per_eV = NAN;
 	det->defaults.max_adu = +INFINITY;
+	det->defaults.mask = NULL;
+	det->defaults.data_from = NULL;
 	strncpy(det->defaults.name, "", 1023);
 
 	do {
@@ -1075,6 +1100,8 @@ out:
 	det->max_ss = max_ss;
 
 	free(det->defaults.clen_from);
+	free(det->defaults.data_from);
+	free(det->defaults.mask);
 
 	/* Calculate matrix inverses and other stuff */
 	for ( i=0; i<det->n_panels; i++ ) {
@@ -1130,7 +1157,6 @@ void free_detector_geometry(struct detector *det)
 
 	free(det->panels);
 	free(det->bad);
-	free(det->mask);
 	free(det);
 }
 
@@ -1142,12 +1168,6 @@ struct detector *copy_geom(const struct detector *in)
 
 	out = malloc(sizeof(struct detector));
 	memcpy(out, in, sizeof(struct detector));
-
-	if ( in->mask != NULL ) {
-		out->mask = strdup(in->mask);
-	} else {
-		out->mask = NULL;  /* = in->mask */
-	}
 
 	out->panels = malloc(out->n_panels * sizeof(struct panel));
 	memcpy(out->panels, in->panels, out->n_panels * sizeof(struct panel));
@@ -1166,6 +1186,18 @@ struct detector *copy_geom(const struct detector *in)
 
 		if ( p->clen_from != NULL ) {
 			/* Make a copy of the clen_from fields unique to this
+			 * copy of the structure. */
+			p->clen_from = strdup(p->clen_from);
+		}
+
+		if ( p->data_from != NULL ) {
+			/* Make a copy of the data_from fields unique to this
+			 * copy of the structure. */
+			p->clen_from = strdup(p->clen_from);
+		}
+
+		if ( p->clen_from != NULL ) {
+			/* Make a copy of the mask fields unique to this
 			 * copy of the structure. */
 			p->clen_from = strdup(p->clen_from);
 		}
@@ -1206,6 +1238,10 @@ struct detector *simple_geometry(const struct image *image)
 	geom->panels[0].cny = -image->height / 2.0;
 	geom->panels[0].rigid_group = NULL;
 	geom->panels[0].max_adu = INFINITY;
+	geom->panels[0].orig_min_fs = -1;
+	geom->panels[0].orig_max_fs = -1;
+	geom->panels[0].orig_min_ss = -1;
+	geom->panels[0].orig_max_ss = -1;
 
 	geom->panels[0].fsx = 1;
 	geom->panels[0].fsy = 0;
@@ -1398,6 +1434,16 @@ int write_detector_geometry(const char *filename, struct detector *det)
 		if ( p->rigid_group != NULL ) {
 			fprintf(fh, "%s/rigid_group = %s\n",
 			        p->name, p->rigid_group->name);
+		}
+
+		if ( p->data_from != NULL ) {
+			fprintf(fh, "%s/data_from = %s\n",
+			        p->name, p->data_from);
+		}
+
+		if ( p->mask != NULL ) {
+			fprintf(fh, "%s/mask = %s\n",
+			        p->name, p->mask);
 		}
 
 	}

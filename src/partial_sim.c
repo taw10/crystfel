@@ -204,7 +204,7 @@ static void draw_and_write_image(struct image *image, RefList *reflections,
 		image->data[i] += poisson_noise(rng, background);
 	}
 
-	hdf5_write_image(image->filename, image);
+	hdf5_write_image(image->filename, image, NULL);
 	free(image->data);
 }
 

@@ -48,9 +48,9 @@ extern "C" {
 extern int hdf5_write(const char *filename, const void *data,
                       int width, int height, int type);
 
-extern int hdf5_write_image(const char *filename, struct image *image);
+extern int hdf5_write_image(const char *filename, struct image *image, char *element);
 
-extern int hdf5_read(struct hdfile *f, struct image *image, int satcorr);
+extern int hdf5_read(struct hdfile *f, struct image *image, const char *element, int satcorr);
 
 extern struct hdfile *hdfile_open(const char *filename);
 extern int hdfile_set_image(struct hdfile *f, const char *path);

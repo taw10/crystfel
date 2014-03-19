@@ -41,6 +41,46 @@
 #include "utils.h"
 
 
+struct hdf5_write_location {
+
+	char            *location;
+	int              n_panels;
+	int             *panel_idxs;
+
+	int              max_ss;
+	int              max_fs;
+
+};
+
+
+int split_group_and_object(char* path, char** group, char** object)
+{
+	char 		*sep;
+	char 		*store;
+
+	sep = path;
+	store = sep;
+	sep = strpbrk(sep + 1, "/");
+	if ( sep != NULL ) {
+		while ( 1 ) {
+			store = sep;
+			sep = strpbrk(sep + 1, "/");
+			if ( sep == NULL ) {
+				break;
+			}
+		}
+	}
+	if ( store == path ) {
+		*group = NULL;
+		*object = strdup(path);
+	} else {
+		*group = strndup(path, store - path);
+		*object = strdup(store+1);
+	}
+	return 0;
+};
+
+
 struct hdfile {
 
 	const char      *path;  /* Current data path */
@@ -73,7 +113,6 @@ struct hdfile *hdfile_open(const char *filename)
 	}
 
 	f->data_open = 0;
-
 	return f;
 }
 
@@ -229,7 +268,7 @@ void hdfile_close(struct hdfile *f)
 
 /* Deprecated */
 int hdf5_write(const char *filename, const void *data,
-               int width, int height, int type)
+			   int width, int height, int type)
 {
 	hid_t fh, gh, sh, dh;	/* File, group, dataspace and data handles */
 	hid_t ph;  /* Property list */
@@ -288,15 +327,23 @@ int hdf5_write(const char *filename, const void *data,
 }
 
 
-int hdf5_write_image(const char *filename, struct image *image)
+int hdf5_write_image(const char *filename, struct image *image, char *element)
 {
-	hid_t fh, gh, sh, dh;	/* File, group, dataspace and data handles */
-	hid_t ph;  /* Property list */
-	herr_t r;
-	hsize_t size[2];
 	double lambda, eV;
 	double *arr;
-	int i;
+	hsize_t size1d[1];
+	herr_t r;
+	hid_t fh, gh, sh, dh;	/* File, group, dataspace and data handles */
+	int i, pi, li;
+	char * default_location;
+	struct hdf5_write_location *locations;
+	struct hdf5_write_location *new_location;
+	int num_locations;
+
+	if ( image->det == NULL ) {
+		ERROR("Geometry not available\n");
+		return 1;
+	}
 
 	fh = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	if ( fh < 0 ) {
@@ -304,56 +351,258 @@ int hdf5_write_image(const char *filename, struct image *image)
 		return 1;
 	}
 
-	gh = H5Gcreate2(fh, "data", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if ( element != NULL) {
+		default_location = strdup(element);
+	} else {
+		default_location = strdup("/data/data");
+	}
+
+	locations = malloc(sizeof(struct hdf5_write_location));
+	if ( locations == NULL ) {
+		ERROR("Couldn't create write location list for file: %s\n",
+		       filename);
+		return 1;
+	}
+	locations[0].max_ss = 0;
+	locations[0].max_fs = 0;
+	if ( image->det->panels[0].data_from != NULL ) {
+		locations[0].location = image->det->panels[0].data_from;
+	} else {
+		locations[0].location = default_location;
+	}
+	locations[0].panel_idxs = NULL;
+	locations[0].n_panels = 0;
+	num_locations = 1;
+
+	for ( pi=0; pi<image->det->n_panels; pi++ ) {
+
+		struct panel p;
+		int li;
+		int panel_processed;
+		char *p_location;
+
+		p = image->det->panels[pi];
+
+		if ( p.data_from == NULL ) {
+			p_location = default_location;
+		} else {
+			p_location = p.data_from;
+		}
+
+		panel_processed = 0;
+
+		for ( li=0; li<num_locations; li++ ) {
+
+			if ( strcmp(p_location, locations[li].location) == 0 ) {
+
+				int *new_panel_idxs;
+
+				new_panel_idxs = realloc(locations[li].panel_idxs,
+				                        (locations[li].n_panels+1)*sizeof(int));
+				if ( new_panel_idxs == NULL ) {
+					ERROR("Error while managing write location list for file: %s\n",
+					       filename);
+					return 1;
+				}
+				locations[li].panel_idxs = new_panel_idxs;
+				locations[li].panel_idxs[locations[li].n_panels] = pi;
+				locations[li].n_panels += 1;
+				if ( p.orig_max_fs > locations[li].max_fs ) {
+					locations[li].max_fs = p.orig_max_fs;
+				}
+				if ( p.orig_max_ss > locations[li].max_ss ) {
+					locations[li].max_ss = p.orig_max_ss;
+				}
+				panel_processed = 1;
+			}
+		}
+
+		if ( panel_processed == 0) {
+
+			struct hdf5_write_location * new_locations;
+			new_locations = realloc(locations,
+			                       (num_locations+1)*sizeof(struct hdf5_write_location));
+			if ( new_locations == NULL ) {
+				ERROR("Error while managing write location list for file: %s\n",
+				       filename);
+				return 1;
+			}
+			locations = new_locations;
+			new_location = &locations[num_locations];
+			new_location = malloc(sizeof(struct hdf5_write_location));
+			if ( new_location == NULL ) {
+			      ERROR("Error while managing write location list for file: %s\n",
+			             filename);
+			      return 1;
+			}
+			locations[num_locations].max_ss = p.orig_max_ss;
+			locations[num_locations].max_fs = p.orig_max_fs;
+			locations[num_locations].location = p_location;
+			locations[num_locations].panel_idxs = malloc(sizeof(int));
+			if ( locations[num_locations].panel_idxs == NULL ) {
+			      ERROR("Error while managing write location list for file: %s\n",
+			             filename);
+			      return 1;
+			}
+			locations[num_locations].panel_idxs[0] = pi;
+			locations[num_locations].n_panels = 1;
+
+			num_locations += 1;
+		}
+
+	}
+
+	for ( li=0; li<num_locations; li++ ) {
+
+		hid_t ph, gph;
+		hid_t dh_dataspace;
+		hsize_t size[2];
+
+		char *path, *group =  NULL, *object = NULL;
+		int fail;
+
+		path = locations[li].location;
+		fail = split_group_and_object(path, &group, &object);
+		if ( fail ) {
+			ERROR("Error while determining write locations for file: %s\n",
+		               filename);
+			return 1;
+		}
+
+
+		gph = H5Pcreate(H5P_LINK_CREATE);
+		H5Pset_create_intermediate_group(gph, 1);
+
+		if ( group != NULL ) {
+			fail = H5Gget_objinfo (fh, group, 0, NULL);
+			if ( fail ) {
+
+				gh = H5Gcreate2(fh, group, gph, H5P_DEFAULT, H5P_DEFAULT);
+				if ( gh < 0 ) {
+					ERROR("Couldn't create group\n");
+					H5Fclose(fh);
+					return 1;
+				}
+			} else {
+				gh = H5Gopen2(fh, group, H5P_DEFAULT);
+			}
+
+		} else {
+			gh = -1;
+		}
+
+		/* Note the "swap" here, according to section 3.2.5,
+		 * "C versus Fortran Dataspaces", of the HDF5 user's guide. */
+		size[0] = locations[li].max_ss+1;
+		size[1] = locations[li].max_fs+1;
+		sh = H5Screate_simple(2, size, NULL);
+
+		/* Set compression */
+		ph = H5Pcreate(H5P_DATASET_CREATE);
+		H5Pset_chunk(ph, 2, size);
+		H5Pset_deflate(ph, 3);
+
+		if ( group != NULL ) {
+			dh = H5Dcreate2(gh, object, H5T_NATIVE_FLOAT, sh,
+			                H5P_DEFAULT, ph, H5P_DEFAULT);
+		} else {
+			dh = H5Dcreate2(fh, object, H5T_NATIVE_FLOAT, sh,
+			                H5P_DEFAULT, ph, H5P_DEFAULT);
+		}
+
+		if ( dh < 0 ) {
+			ERROR("Couldn't create dataset\n");
+			H5Fclose(fh);
+			return 1;
+		}
+
+		/* Muppet check */
+		H5Sget_simple_extent_dims(sh, size, NULL);
+
+		for ( pi=0; pi<locations[li].n_panels; pi ++ ) {
+
+			hsize_t f_offset[2], f_count[2];
+			hsize_t m_offset[2], m_count[2];
+			hsize_t dimsm[2];
+			hid_t memspace;
+			struct panel p;
+			int check;
+
+			p = image->det->panels[locations[li].panel_idxs[pi]];
+
+			f_offset[0] = p.orig_min_ss;
+			f_offset[1] = p.orig_min_fs;
+			f_count[0] = p.orig_max_ss - p.orig_min_ss +1;
+			f_count[1] = p.orig_max_fs - p.orig_min_fs +1;
+
+			dh_dataspace = H5Dget_space(dh);
+			check = H5Sselect_hyperslab(dh_dataspace, H5S_SELECT_SET,
+							f_offset, NULL, f_count, NULL);
+			if ( check <0 ) {
+				ERROR("Error selecting file dataspace for panel %s\n",
+					  p.name);
+				free(group);
+				free(object);
+				H5Pclose(ph);
+				H5Pclose(gph);
+				H5Dclose(dh);
+				H5Sclose(dh_dataspace);
+				H5Sclose(sh);
+				if ( gh != -1 ) H5Gclose(gh);
+				H5Fclose(fh);
+				return 1;
+			}
+
+			m_offset[0] = p.min_ss;
+			m_offset[1] = p.min_fs;
+			m_count[0] = p.max_ss - p.min_ss +1;
+			m_count[1] = p.max_fs - p.min_fs +1;
+			dimsm[0] = image->height;
+			dimsm[1] = image->width;
+			memspace = H5Screate_simple(2, dimsm, NULL);
+			check = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
+										m_offset, NULL, m_count, NULL);
+
+			r = H5Dwrite(dh, H5T_NATIVE_FLOAT, memspace,
+						 dh_dataspace, H5P_DEFAULT, image->data);
+			if ( r < 0 ) {
+				ERROR("Couldn't write data\n");
+				free(group);
+				free(object);
+				H5Pclose(ph);
+				H5Pclose(gph);
+				H5Dclose(dh);
+				H5Sclose(dh_dataspace);
+				H5Sclose(sh);
+				H5Sclose(memspace);
+				if ( gh != -1 ) H5Gclose(gh);
+				H5Fclose(fh);
+				return 1;
+			}
+
+			H5Sclose(dh_dataspace);
+			H5Sclose(memspace);
+		}
+
+		free(group);
+		free(object);
+		H5Pclose(ph);
+		H5Pclose(gph);
+		H5Sclose(sh);
+		H5Dclose(dh);
+		if ( gh != -1 ) H5Gclose(gh);
+
+	}
+
+	gh = H5Gcreate2(fh, "LCLS", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	if ( gh < 0 ) {
 		ERROR("Couldn't create group\n");
 		H5Fclose(fh);
 		return 1;
 	}
 
-	/* Note the "swap" here, according to section 3.2.5,
-	 * "C versus Fortran Dataspaces", of the HDF5 user's guide. */
-	size[0] = image->height;
-	size[1] = image->width;
-	sh = H5Screate_simple(2, size, NULL);
-
-	/* Set compression */
-	ph = H5Pcreate(H5P_DATASET_CREATE);
-	H5Pset_chunk(ph, 2, size);
-	H5Pset_deflate(ph, 3);
-
-	dh = H5Dcreate2(gh, "data", H5T_NATIVE_FLOAT, sh,
-	                H5P_DEFAULT, ph, H5P_DEFAULT);
-	if ( dh < 0 ) {
-		ERROR("Couldn't create dataset\n");
-		H5Fclose(fh);
-		return 1;
-	}
-
-	/* Muppet check */
-	H5Sget_simple_extent_dims(sh, size, NULL);
-
-	r = H5Dwrite(dh, H5T_NATIVE_FLOAT, H5S_ALL,
-	             H5S_ALL, H5P_DEFAULT, image->data);
-	if ( r < 0 ) {
-		ERROR("Couldn't write data\n");
-		H5Dclose(dh);
-		H5Fclose(fh);
-		return 1;
-	}
-	H5Dclose(dh);
-
-	H5Gclose(gh);
-
-	gh = H5Gcreate2(fh, "LCLS", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	if ( gh < 0 ) {
-		printf("Couldn't create group\n");
-		H5Fclose(fh);
-		return 1;
-	}
-
-	size[0] = 1;
-	sh = H5Screate_simple(1, size, NULL);
+	size1d[0] = 1;
+	sh = H5Screate_simple(1, size1d, NULL);
 
 	dh = H5Dcreate2(gh, "photon_energy_eV", H5T_NATIVE_DOUBLE, sh,
 	                H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
@@ -395,8 +644,8 @@ int hdf5_write_image(const char *filename, struct image *image)
 			arr[i] = 1.0e10/image->spectrum[i].k;
 		}
 
-		size[0] = image->spectrum_size;
-		sh = H5Screate_simple(1, size, NULL);
+		size1d[0] = image->spectrum_size;
+		sh = H5Screate_simple(1, size1d, NULL);
 
 		dh = H5Dcreate2(gh, "spectrum_wavelengths_A", H5T_NATIVE_DOUBLE,
 		                sh, H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
@@ -423,8 +672,8 @@ int hdf5_write_image(const char *filename, struct image *image)
 		H5Dclose(dh);
 		free(arr);
 
-		size[0] = 1;
-		sh = H5Screate_simple(1, size, NULL);
+		size1d[0] = 1;
+		sh = H5Screate_simple(1, size1d, NULL);
 
 		dh = H5Dcreate2(gh, "number_of_samples", H5T_NATIVE_INT, sh,
 			        H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
@@ -440,10 +689,12 @@ int hdf5_write_image(const char *filename, struct image *image)
 	}
 
 	H5Gclose(gh);
-
-	H5Pclose(ph);
-
 	H5Fclose(fh);
+	free(default_location);
+	for ( li=0; li<num_locations; li ++ ) {
+		free(locations[li].panel_idxs);
+	}
+	free(locations);
 
 	return 0;
 }
@@ -582,7 +833,6 @@ static int unpack_panels(struct image *image, struct detector *det)
 				if ( flags & image->det->mask_bad ) bad = 1;
 
 			}
-
 			image->bad[pi][fs+p->w*ss] = bad;
 
 		}
@@ -594,71 +844,188 @@ static int unpack_panels(struct image *image, struct detector *det)
 }
 
 
-int hdf5_read(struct hdfile *f, struct image *image, int satcorr)
+int hdf5_read(struct hdfile *f, struct image *image, const char* element, int satcorr)
 {
 	herr_t r;
 	float *buf;
 	uint16_t *flags;
-	hid_t mask_dh;
+	int sum_p_h;
+	int p_w;
+	int m_min_fs, curr_ss, m_max_fs;
+	int mask_is_present;
+	int no_mask_loaded;
+	int pi;
+	hid_t mask_dh = NULL;
 
-	/* Note the "swap" here, according to section 3.2.5,
-	 * "C versus Fortran Dataspaces", of the HDF5 user's guide. */
-	image->width = f->ny;
-	image->height = f->nx;
-
-	buf = malloc(sizeof(float)*f->nx*f->ny);
-
-	r = H5Dread(f->dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
-	            H5P_DEFAULT, buf);
-	if ( r < 0 ) {
-		ERROR("Couldn't read data\n");
-		free(buf);
+	if ( image->det == NULL ) {
+		ERROR("Geometry not available\n");
 		return 1;
 	}
-	image->data = buf;
 
-	if ( (image->det != NULL) && (image->det->mask != NULL) ) {
+	p_w = image->det->panels[0].w;
+	sum_p_h = 0;
 
-		mask_dh = H5Dopen2(f->fh, image->det->mask, H5P_DEFAULT);
-		if ( mask_dh <= 0 ) {
-			ERROR("Couldn't open flags\n");
-			image->flags = NULL;
-		} else {
-			flags = malloc(sizeof(uint16_t)*f->nx*f->ny);
-			r = H5Dread(mask_dh, H5T_NATIVE_UINT16, H5S_ALL, H5S_ALL,
-				    H5P_DEFAULT, flags);
-			if ( r < 0 ) {
-				ERROR("Couldn't read flags\n");
-				free(flags);
-				image->flags = NULL;
-			} else {
-				image->flags = flags;
-			}
-			H5Dclose(mask_dh);
+	for ( pi=0; pi<image->det->n_panels; pi++ ) {
+
+		if ( image->det->panels[pi].w != p_w ) {
+			ERROR("Panels have different width. Not supported yet\n");
+			return 1;
 		}
 
+		if ( image->det->panels[pi].mask != NULL ) mask_is_present = 1;
+
+		sum_p_h += image->det->panels[pi].h;
+
+	}
+
+	buf = malloc(sizeof(float)*p_w*sum_p_h);
+	if ( mask_is_present ) {
+		flags = calloc(p_w*sum_p_h,sizeof(uint16_t));
+	}
+	image->width = p_w;
+	image->height = sum_p_h;
+
+	m_min_fs = 0;
+	m_max_fs = p_w-1;
+	curr_ss = 0;
+	no_mask_loaded = 1;
+
+	for ( pi=0; pi<image->det->n_panels; pi++ ) {
+
+		int data_width, data_height;
+		hsize_t f_offset[2], f_count[2];
+		hsize_t m_offset[2], m_count[2];
+		hsize_t dimsm[2];
+		herr_t check;
+		hid_t dataspace, memspace, mask_dataspace;
+		int fail;
+
+		struct panel *p;
+		p=&image->det->panels[pi];
+
+		if ( p->orig_min_fs == -1 ) p->orig_min_fs = p->min_fs;
+		if ( p->orig_max_fs == -1 ) p->orig_max_fs = p->max_fs;
+		if ( p->orig_min_ss == -1 ) p->orig_min_ss = p->min_ss;
+		if ( p->orig_max_ss == -1 ) p->orig_max_ss = p->max_ss;
+
+		if ( p->data_from != NULL ) {
+			fail = hdfile_set_image(f, p->data_from);
+		} else if ( element != NULL ) {
+			fail = hdfile_set_image(f, element);
+		} else {
+			fail = hdfile_set_first_image(f,"/");
+		}
+		if ( fail ) {
+			ERROR("Couldn't select path for panel %s\n",
+			      p->name);
+			return 1;
+		}
+
+		data_width = f->ny;
+		data_height = f->nx;
+		if ( (data_width < p->w )
+		  || (data_height < p->h) )
+		{
+			ERROR("Data size doesn't match panel geometry size"
+			      " - rejecting image.\n");
+			ERROR("Panel name: %s.  Data size: %i,%i.  Geometry size: %i,%i\n",
+			      p->name, data_width, data_height,
+			      p->w, p->h);
+			return 1;
+		}
+
+		f_offset[0] = p->orig_min_ss;
+		f_offset[1] = p->orig_min_fs;
+		f_count[0] = p->orig_max_ss - p->orig_min_ss +1;
+		f_count[1] = p->orig_max_fs - p->orig_min_fs +1;
+		dataspace = H5Dget_space(f->dh);
+		check = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
+					    f_offset, NULL, f_count, NULL);
+		if ( check <0 ) {
+			ERROR("Error selecting file dataspace for panel %s\n",
+			      p->name);
+			free(buf);
+			return 1;
+		}
+
+		m_offset[0] = curr_ss;
+		m_offset[1] = 0;
+		m_count[0] = p->orig_max_ss - p->orig_min_ss +1;
+		m_count[1] = m_max_fs - m_min_fs +1;
+		dimsm[0] = sum_p_h;
+		dimsm[1] = p_w;
+		memspace = H5Screate_simple(2,dimsm,NULL);
+		check = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
+		                            m_offset, NULL, m_count, NULL);
+		if ( check < 0 ) {
+			ERROR("Error selecting memory dataspace for panel %s\n",
+			      p->name);
+			free(buf);
+			return 1;
+		}
+		r = H5Dread(f->dh, H5T_NATIVE_FLOAT, memspace, dataspace,
+		            H5P_DEFAULT, buf);
+		if ( r < 0 ) {
+			ERROR("Couldn't read data for panel %s\n",
+			      p->name);
+			free(buf);
+			return 1;
+		}
+		H5Dclose(f->dh);
+		f->data_open = 0;
+		H5Sclose(dataspace);
+		H5Sclose(memspace);
+
+		if ( p->mask != NULL ) {
+
+			mask_dh = H5Dopen2(f->fh, p->mask, H5P_DEFAULT);
+			if ( mask_dh <= 0 ) {
+				ERROR("Couldn't open flags for panel %s\n",
+				      p->name);
+				image->flags = NULL;
+			} else {
+
+				mask_dataspace = H5Dget_space(H5Dget_space(mask_dh));
+				check = H5Sselect_hyperslab(mask_dataspace, H5S_SELECT_SET,
+				                            f_offset, NULL, f_count, NULL);
+				if ( check < 0 ) {
+					ERROR("Error selecting mask dataspace for panel %s\n",
+					      p->name);
+				}
+				r = H5Dread(mask_dh, H5T_NATIVE_UINT16, memspace, mask_dataspace,
+				            H5P_DEFAULT, flags);
+				if ( r < 0 ) {
+					ERROR("Couldn't read flags for panel %s\n",
+					      p->name);
+				} else {
+					no_mask_loaded = 0;
+				}
+				H5Dclose(mask_dataspace);
+				H5Dclose(mask_dh);
+		      }
+
+		}
+
+		p->min_fs = m_min_fs;
+		p->max_fs = m_max_fs;
+		p->min_ss = curr_ss;
+		p->max_ss = curr_ss + p->h-1;
+		curr_ss += p->h;
+	}
+
+	image->data = buf;
+
+	if ( no_mask_loaded ) {
+		free(flags);
+	} else {
+		image->flags = flags;
 	}
 
 	if ( satcorr ) debodge_saturation(f, image);
 
-	if ( image->det != NULL ) {
+	fill_in_values(image->det, f);
 
-		if ( (image->width != image->det->max_fs + 1 )
-		  || (image->height != image->det->max_ss + 1))
-		{
-			ERROR("Image size doesn't match geometry size"
-				" - rejecting image.\n");
-			ERROR("Image size: %i,%i.  Geometry size: %i,%i\n",
-			      image->width, image->height,
-			      image->det->max_fs + 1, image->det->max_ss + 1);
-			return 1;
-		}
-
-		fill_in_values(image->det, f);
-
-		unpack_panels(image, image->det);
-
-	}
+	unpack_panels(image, image->det);
 
 	if ( image->beam != NULL ) {
 

@@ -1862,8 +1862,8 @@ static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 	a = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(nh->widget));
 	if ( !a ) return 0;
 
-	hdfile_set_image(nh->dw->hdfile, nh->name);
-	hdf5_read(nh->dw->hdfile, nh->dw->image, 0);
+	hdf5_read(nh->dw->hdfile, nh->dw->image, nh->name, 0);
+
 //	/* Check that the geometry still fits */
 //	if ( !geometry_fits(nh->dw->image, nh->dw->simple_geom) ) {
 //		int using = 0;
@@ -1991,9 +1991,7 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 				gtk_menu_shell_append(GTK_MENU_SHELL(mss), ss);
 				gtk_menu_item_set_submenu(GTK_MENU_ITEM(item),
 				                          mss);
-
 			}
-
 
 		}
 
@@ -2500,6 +2498,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	DisplayWindow *dw;
 	char *title;
 	GtkWidget *vbox;
+	int check;
 
 	dw = calloc(1, sizeof(DisplayWindow));
 	if ( dw == NULL ) return NULL;
@@ -2541,6 +2540,10 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 
 	dw->image->det = det_geom;
 
+	/* TODO: Move the opening of the file in hd5_read.
+	 * Currently not possible because the file handle
+	 * must be stored in dw */
+
 	/* Open the file, if any */
 	if ( filename != NULL ) {
 
@@ -2549,19 +2552,10 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 			free(dw);
 			return NULL;
 		} else {
-			int fail = -1;
-
-			if ( element == NULL ) {
-				fail = hdfile_set_first_image(dw->hdfile, "/");
-			} else {
-				fail = hdfile_set_image(dw->hdfile, element);
-			}
-
-			if ( !fail ) {
-				dw->image->filename = strdup(filename);
-				hdf5_read(dw->hdfile, dw->image, 0);
-			} else {
-				ERROR("Couldn't select path\n");
+			dw->image->filename = strdup(filename);
+			check =	hdf5_read(dw->hdfile, dw->image, element, 0);
+			if (check) {
+				ERROR("Couldn't load file\n");
 				free(dw);
 				return NULL;
 			}

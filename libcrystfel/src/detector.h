@@ -80,12 +80,14 @@ struct panel
 	double   coffset;
 	double   clen;     /* Camera length in metres */
 	char    *clen_from;
+	char    *mask;
 	double   res;      /* Resolution in pixels per metre */
 	char     badrow;   /* 'x' or 'y' */
 	int      no_index; /* Don't index peaks in this panel if non-zero */
 	struct rigid_group *rigid_group;  /* Rigid group */
 	double   adu_per_eV;   /* Number of ADU per eV */
 	double   max_adu;  /* Treat pixel as unreliable if higher than this */
+	char    *data_from;
 
 	double fsx;
 	double fsy;
@@ -96,6 +98,11 @@ struct panel
 	double yfs;
 	double xss;
 	double yss;
+
+	int orig_min_fs;
+	int orig_max_fs;
+	int orig_min_ss;
+	int orig_max_ss;
 
 	int w;  /* Width, calculated as max_fs-min_fs+1 */
 	int h;  /* Height, calculated as max_ss-min_ss+1 */
@@ -132,7 +139,6 @@ struct detector
 	struct badregion *bad;
 	int               n_bad;
 
-	char              *mask;
 	unsigned int       mask_bad;
 	unsigned int       mask_good;
 
