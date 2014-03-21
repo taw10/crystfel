@@ -117,12 +117,6 @@ At a minimum, you will need the HDF5 library (version 1.8.0 or later) and the
 GNU Scientific Library (GSL).  For a full installation, you will also need
 libTIFF, libPNG, Cairo and GTK.
 
-You must use an installation of the HDF5 library which is thread safe.  That
-means it must have been configured with the "--enable-threadsafe" option.  Most
-binary distributions appear NOT to be like this.  If you don't have a thread
-safe HDF5 library, just be sure not to use the "-j" option for any of the
-CrystFEL programs.
-
 If you're compiling on Mac OS X, where GTK, libPNG and libTIFF seem to be much
 harder to come by, disable lots of things:
 
