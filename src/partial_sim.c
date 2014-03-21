@@ -230,11 +230,9 @@ static void show_help(const char *s)
 " -n <n>                   Simulate <n> patterns.  Default: 2.\n"
 " -r, --save-random=<file> Save randomly generated intensities to file.\n"
 "     --pgraph=<file>      Save a histogram of partiality values to file.\n"
-" -c, --cnoise=<val>       Add random noise, with a flat distribution, to the\n"
-"                          reciprocal lattice vector components given in the\n"
-"                          stream, with maximum error +/- <val> percent.\n"
-"     --osf-stddev=<val>   Set the standard deviation of the scaling factors.\n"
-"     --full-stddev=<val>  Set the standard deviation of the randomly\n"
+" -c, --cnoise=<val>       Amount of reciprocal space cell noise, in percent.\n"
+"     --osf-stddev=<val>   Standard deviation of the scaling factors.\n"
+"     --full-stddev=<val>  Standard deviation of the randomly\n"
 "                           generated full intensities, if not using -i.\n"
 "     --noise-stddev=<val>  Set the standard deviation of the noise.\n"
 "\n"
@@ -470,12 +468,12 @@ int main(int argc, char *argv[])
 			show_help(argv[0]);
 			return 0;
 
-			case 'o' :
-			output_file = strdup(optarg);
-			break;
-
 			case 'i' :
 			input_file = strdup(optarg);
+			break;
+
+			case 'o' :
+			output_file = strdup(optarg);
 			break;
 
 			case 'b' :
@@ -576,6 +574,11 @@ int main(int argc, char *argv[])
 
 	if ( n_threads < 1 ) {
 		ERROR("Invalid number of threads.\n");
+		return 1;
+	}
+
+	if ( (n_threads > 1) && (image_prefix != NULL) ) {
+		ERROR("Option \"--images\" is incompatible with \"-j\".\n");
 		return 1;
 	}
 
