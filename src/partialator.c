@@ -41,8 +41,9 @@
 #include <pthread.h>
 #include <gsl/gsl_errno.h>
 
+#include <image.h>
+#include <detector.h>
 #include <utils.h>
-#include <hdf5-file.h>
 #include <symmetry.h>
 #include <stream.h>
 #include <geometry.h>
