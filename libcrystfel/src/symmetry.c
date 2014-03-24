@@ -3,11 +3,11 @@
  *
  * Symmetry
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -1582,6 +1582,82 @@ SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target)
 	twins->name = name;
 
 	return twins;
+}
+
+
+static IntegerMatrix *parse_symmetry_operation(const char *s)
+{
+	IntegerMatrix *m;
+	char **els;
+	int n, i;
+
+
+	n = assplode(s, ",", &els, ASSPLODE_NONE);
+	if ( n != 3 ) {
+		for ( i=0; i<n; i++ ) free(els[i]);
+		free(els);
+		return NULL;
+	}
+
+	m = intmat_new(3, 3);
+	if ( m == NULL ) return NULL;
+
+	for ( i=0; i<n; i++ ) {
+
+		int c;
+		size_t cl;
+		int sign = +1;
+		int nh = 0;
+		int nk = 0;
+		int nl = 0;
+
+		cl = strlen(els[i]);
+
+		for ( c=0; c<cl; c++ ) {
+			if ( els[i][c] == '-' ) sign = -1;
+			if ( els[i][c] == '+' ) sign = +1;
+			if ( els[i][c] == 'h' ) nh += sign;
+			if ( els[i][c] == 'k' ) nk += sign;
+			if ( els[i][c] == 'l' ) nl += sign;
+		}
+
+		intmat_set(m, i, 0, nh);
+		intmat_set(m, i, 1, nk);
+		intmat_set(m, i, 2, nl);
+
+		free(els[i]);
+
+	}
+	free(els);
+
+	return m;
+}
+
+
+SymOpList *parse_symmetry_operations(const char *s)
+{
+	SymOpList *sol;
+	char **ops;
+	int n, i;
+
+	sol = new_symoplist();
+	if ( sol == NULL ) return NULL;
+
+	n = assplode(s, ";:", &ops, ASSPLODE_NONE);
+	for ( i=0; i<n; i++ ) {
+		IntegerMatrix *m;
+		m = parse_symmetry_operation(ops[i]);
+		if ( m != NULL ) {
+			add_symop(sol, m);
+		} else {
+			ERROR("Invalid symmetry operation '%s'\n", ops[i]);
+			/* Try the next one */
+		}
+		free(ops[i]);
+	}
+	free(ops);
+
+	return sol;
 }
 
 
