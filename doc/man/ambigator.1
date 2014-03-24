@@ -48,9 +48,20 @@ Set the actual symmetry of the crystals.  If you're not sure, set this to the hi
 .PD 0
 .IP "\fB-w\fR \fIpg\fR"
 .PD
-Set the apparent symmetry of the crystals.  The ambiguity operator will be determined by comparing this to the actual symmetry.  If there is more than one operator, only the first will be used.
+Set the apparent symmetry of the crystals.  The ambiguity operator will be determined by comparing this to the actual symmetry.
 .IP
-Using this option improves the algorithm to an extent roughly equivalent to doubling the number of crystals.
+If you prefer (or the scenario demands it), you can specify the ambiguity operator directly using \fB--operator\fR.
+.IP
+Using this option (or \fB--operator\fR) improves the algorithm to an extent roughly equivalent to doubling the number of crystals.
+
+.PD 0
+.IP \fB--operator=\fR\fIop\fR
+.PD
+Specify the indexing ambiguity operator.  Example: \fB--operator=k,h,-l\fR.
+.IP
+If you prefer, you can specify the ambiguity operator by specifying the apparent symmetry using \fB-w\fR.
+.IP
+Using this option (or \fB-w\fR) improves the algorithm to an extent roughly equivalent to doubling the number of crystals.
 
 .PD 0
 .IP "\fB-n\fR \fIn\fR"
