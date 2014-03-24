@@ -66,6 +66,7 @@ static void show_help(const char *s)
 "  -o, --output=<filename>     Output stream.\n"
 "  -y, --symmetry=<sym>        Actual (\"target\") symmetry.\n"
 "  -w <sym>                    Apparent (\"source\" or \"twinned\") symmetry.\n"
+"      --operator=<op>         Ambiguity operator, e.g. \"k,h,-l\"\n"
 "  -n, --iterations=<n>        Iterate <n> times.\n"
 "      --highres=<n>           High resolution cutoff in A.\n"
 "      --lowres=<n>            Low resolution cutoff in A.\n"
@@ -730,6 +731,7 @@ int main(int argc, char *argv[])
 	float mean_nac;
 	int n_threads = 1;
 	int config_random = 0;
+	char *operator = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -744,6 +746,7 @@ int main(int argc, char *argv[])
 		{"fg-graph",           1, NULL,                5},
 		{"ncorr",              1, NULL,                6},
 		{"start-assignments",  1, NULL,                7},
+		{"operator",           1, NULL,                8},
 
 		{"really-random",      0, &config_random,      1},
 
@@ -821,6 +824,10 @@ int main(int argc, char *argv[])
 			start_ass_fn = strdup(optarg);
 			break;
 
+			case 8 :
+			operator = strdup(optarg);
+			break;
+
 			case 0 :
 			break;
 
@@ -860,6 +867,12 @@ int main(int argc, char *argv[])
 	if ( s_sym == NULL ) return 1;
 	free(s_sym_str);
 
+	if ( (w_sym_str != NULL) && (operator != NULL) ) {
+		ERROR("Specify the apparent symmetry (-w) or the operator, "
+		      "not both.\n");
+		return 1;
+	}
+
 	if ( w_sym_str == NULL ) {
 		w_sym = NULL;
 		amb = NULL;
@@ -874,6 +887,16 @@ int main(int argc, char *argv[])
 			      "correct.\n");
 			return 1;
 		}
+
+	}
+
+	if ( operator ) {
+		amb = parse_symmetry_operations(operator);
+		if ( amb == NULL ) return 1;
+		set_symmetry_name(amb, "Ambiguity");
+	}
+
+	if ( amb != NULL ) {
 		STATUS("Ambiguity operations:\n");
 		describe_symmetry(amb);
 		if ( num_equivs(amb, NULL) != 1 ) {
