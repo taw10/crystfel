@@ -176,7 +176,7 @@ script_DATA = scripts/alternate-stream scripts/cell-please \
               scripts/random-image scripts/README scripts/sequence-image \
               scripts/split-indexed scripts/stream_grep scripts/zone-axes \
               scripts/Rsplit_surface scripts/Rsplit_surface.py \
-              scripts/clean-stream.py scripts/fg-graph scripts/truncate_stream
+              scripts/clean-stream.py scripts/fg-graph scripts/truncate-stream
 
 EXTRA_DIST += $(script_DATA)
 
