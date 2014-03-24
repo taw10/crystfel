@@ -1511,6 +1511,7 @@ SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target)
 	SymOpList *tgt_reordered;
 	SymOpMask *used;
 	char *name;
+	int have_identity = 0;
 
 	n_src = num_ops(source);
 	n_tgt = num_ops(target);
@@ -1569,7 +1570,16 @@ SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target)
 			free_symoplist(src_reordered);
 			return NULL;
 		}
-		add_symop(twins, intmat_copy(src_reordered->ops[i]));
+		if ( !intmat_is_identity(src_reordered->ops[i]) ) {
+			add_symop(twins, intmat_copy(src_reordered->ops[i]));
+		} else {
+			have_identity = 1;
+		}
+
+	}
+
+	if ( !have_identity ) {
+		ERROR("WARNING: Identity not found during left coset decomp\n");
 	}
 
 	free_symopmask(used);

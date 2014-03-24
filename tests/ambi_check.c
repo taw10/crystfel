@@ -273,21 +273,21 @@ int main(int argc, char *argv[])
 	                     "6mm", NULL);
 
 	/* Check some easy subgroups */
-	check_subgroup("2/m",    "m",    1, 1,  2, &fail);
-	check_subgroup("mmm",    "mm2",  1, 1,  2, &fail);
-	check_subgroup("-4m2",   "-4",   1, 1,  2, &fail);
-	check_subgroup("-42m",   "-4",   1, 1,  2, &fail);
-	check_subgroup("-3m1_H", "-3_H", 1, 1,  2, &fail);
-	check_subgroup("-31m_H", "-3_H", 1, 1,  2, &fail);
-	check_subgroup("m-3m",   "-43m", 1, 1,  2, &fail);
-	check_subgroup("m-3m",   "m-3",  1, 1,  2, &fail);
-	check_subgroup("432",    "23",   1, 1,  2, &fail);
-	check_subgroup("6/m",    "-3_H", 1, 1,  2, &fail);
-	check_subgroup("4/m",    "-4",   1, 1,  2, &fail);
-	check_subgroup("622",    "321_H",  1, 1,  2, &fail);
+	check_subgroup("2/m",    "m",    1, 1,  1, &fail);
+	check_subgroup("mmm",    "mm2",  1, 1,  1, &fail);
+	check_subgroup("-4m2",   "-4",   1, 1,  1, &fail);
+	check_subgroup("-42m",   "-4",   1, 1,  1, &fail);
+	check_subgroup("-3m1_H", "-3_H", 1, 1,  1, &fail);
+	check_subgroup("-31m_H", "-3_H", 1, 1,  1, &fail);
+	check_subgroup("m-3m",   "-43m", 1, 1,  1, &fail);
+	check_subgroup("m-3m",   "m-3",  1, 1,  1, &fail);
+	check_subgroup("432",    "23",   1, 1,  1, &fail);
+	check_subgroup("6/m",    "-3_H", 1, 1,  1, &fail);
+	check_subgroup("4/m",    "-4",   1, 1,  1, &fail);
+	check_subgroup("622",    "321_H",  1, 1,  1, &fail);
 
 	/* Tetartohedral */
-	check_subgroup("6/mmm",  "-3_H", 1, 1,  4, &fail);
+	check_subgroup("6/mmm",  "-3_H", 1, 1,  3, &fail);
 
 	/* Check some things that are valid subgroups, but no valid ambiguities
 	 * exist because inversions and mirrors are not allowed */
@@ -300,10 +300,10 @@ int main(int argc, char *argv[])
 	check_subgroup("432",    "m-3",  0, 0, -1, &fail);
 
 	/* Check some pseudo-meroheral subgroups */
-	check_subgroup("3_R",  "1", 1, 1,  3, &fail);
-	check_subgroup("-3_R",  "-1", 1, 1,  3, &fail);
-	check_subgroup("6",  "2", 1, 1,  3, &fail);
-	check_subgroup("422",  "222", 1, 1,  2, &fail);
+	check_subgroup("3_R",  "1", 1, 1,  2, &fail);
+	check_subgroup("-3_R",  "-1", 1, 1,  2, &fail);
+	check_subgroup("6",  "2", 1, 1,  2, &fail);
+	check_subgroup("422",  "222", 1, 1,  1, &fail);
 
 	return fail;
 }

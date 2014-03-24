@@ -130,7 +130,7 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 			signed int hr, kr, lr;
 			signed int hra, kra, lra;
 
-			get_equiv(amb, NULL, 1, ha, ka, la, &hr, &kr, &lr);
+			get_equiv(amb, NULL, 0, ha, ka, la, &hr, &kr, &lr);
 			get_asymm(sym, hr, kr, lr, &hra, &kra, &lra);
 
 			/* Skip twin-proof reflections */
@@ -201,7 +201,7 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 			Reflection *cr;
 
 			get_indices(refl, &h, &k, &l);
-			get_equiv(amb, NULL, 1, h, k, l, &hr, &kr, &lr);
+			get_equiv(amb, NULL, 0, h, k, l, &hr, &kr, &lr);
 			get_asymm(sym, hr, kr, lr, &hra, &kra, &lra);
 
 			cr = add_refl(reidx, hra, kra, lra);
@@ -641,7 +641,9 @@ static void reindex_reflections(FILE *fh, FILE *ofh, int assignment,
 		/* See scanf() manual page about %n to see why <3 is used */
 		if ( (r < 3) && !first ) return;
 
-		get_equiv(amb, NULL, assignment, h, k, l, &h, &k, &l);
+		if ( assignment ) {
+			get_equiv(amb, NULL, 0, h, k, l, &h, &k, &l);
+		}
 
 		fprintf(ofh, "%4i %4i %4i%s", h, k, l, line+n);
 
@@ -874,7 +876,7 @@ int main(int argc, char *argv[])
 		}
 		STATUS("Ambiguity operations:\n");
 		describe_symmetry(amb);
-		if ( num_equivs(amb, NULL) != 2 ) {
+		if ( num_equivs(amb, NULL) != 1 ) {
 			ERROR("There must be only one ambiguity operator.\n");
 			ERROR("Try again with a different value for -w.\n");
 			return 1;
