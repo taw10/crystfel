@@ -455,6 +455,7 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 			ss = f->ss;
 
 			p = find_panel(dw->image->det, fs, ss);
+
 			if ( p == NULL ) continue;
 
 			xs = (fs-p->min_fs)*p->fsx + (ss-p->min_ss)*p->ssx;
@@ -1008,32 +1009,46 @@ static void load_features_from_file(struct image *image, const char *filename)
 	do {
 		char line[1024];
 		float intensity, sigma, fs, ss;
+		float add_fs, add_ss;
 		char phs[1024];
+		char pn[32];
 		int r;
 		float cts;
 		signed int h, k, l;
+		struct panel *p = NULL;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
 		chomp(line);
 
 		/* Try long format (from stream) */
-		r = sscanf(line, "%i %i %i %f %s %f %f %f %f",
-		           &h, &k, &l, &intensity, phs, &sigma, &cts, &fs, &ss);
-		if ( r == 9 ) {
+		r = sscanf(line, "%i %i %i %f %s %f %f %f %f %s",
+				   &h, &k, &l, &intensity, phs, &sigma, &cts, &fs, &ss, pn);
+
+		if ( r == 10 ) {
 			char name[32];
 			snprintf(name, 31, "%i %i %i", h, k, l);
-			image_add_feature(image->features, fs, ss, image, 1.0,
+
+			p = find_panel_by_name(image->det, pn);
+
+			add_fs = fs-p->orig_min_fs+p->min_fs;
+			add_ss = ss-p->orig_min_ss+p->min_ss;
+			image_add_feature(image->features, add_fs, add_ss, image, 1.0,
 			                  strdup(name));
 			continue;
 		}
 
-		r = sscanf(line, "%f %f", &fs, &ss);
-		if ( r != 2 ) continue;
+		r = sscanf(line, "%f %f %s", &fs, &ss, pn);
+		if ( r != 3 ) continue;
 
-		image_add_feature(image->features, fs, ss, image, 1.0, "peak");
+		p = find_panel_by_name(image->det, pn);
+
+		add_fs = fs-p->orig_min_fs+p->min_fs;
+		add_ss = ss-p->orig_min_ss+p->min_ss;
+		image_add_feature(image->features, add_fs, add_ss, image, 1.0, "peak");
 
 	} while ( rval != NULL );
+
 }
 
 
@@ -1202,90 +1217,6 @@ static int save_geometry_file(DisplayWindow *dw)
 
 //	return 0;
 //}
-=======
-//static int load_geometry_file(DisplayWindow *dw, struct image *image,
-//                              const char *filename)
-//{
-//	struct detector *geom;
-//	GtkWidget *w;
-//	int using_loaded = 0;
-//	if ( dw->image->det == dw->loaded_geom ) using_loaded = 1;
-//
-//	geom = get_detector_geometry(filename);
-//	if ( geom == NULL ) {
-//		displaywindow_error(dw, "Failed to load geometry file");
-//		return -1;
-//	}
-//	fill_in_values(geom, dw->hdfile);
-//
-//	if ( (1+geom->max_fs != dw->image->width)
-//	  || (1+geom->max_ss != dw->image->height) ) {
-//
-//		displaywindow_error(dw, "Geometry doesn't match image.");
-//		return -1;
-//
-//	}
-//
-//	/* Sort out the mess */
-//	if ( dw->loaded_geom != NULL ) free_detector_geometry(dw->loaded_geom);
-//	dw->loaded_geom = geom;
-//	if ( using_loaded ) {
-//		dw->image->det = dw->loaded_geom;
-//	}
-//
-//	w = gtk_ui_manager_get_widget(dw->ui,
-//				      "/ui/displaywindow/view/usegeom");
-//	gtk_widget_set_sensitive(GTK_WIDGET(w), TRUE);
-//	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), TRUE);
-//	dw->use_geom = 1;
-//
-//	return 0;
-//}
-
-
-//static gint displaywindow_loadgeom_response(GtkWidget *d, gint response,
-//                                            DisplayWindow *dw)
-//{
-//	if ( response == GTK_RESPONSE_ACCEPT ) {
-//
-//		char *filename;
-//
-//		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
-//
-//		if ( load_geometry_file(dw, dw->image, filename) == 0 ) {
-//			displaywindow_update(dw);
-//		}
-//
-//		g_free(filename);
-//
-//	}
-//
-//	gtk_widget_destroy(d);
-//
-//	return 0;
-//}
-
-
-//static gint displaywindow_load_geom(GtkWidget *widget, DisplayWindow *dw)
-//{
-//	GtkWidget *d;
-
-//	d = gtk_file_chooser_dialog_new("Load Geometry File",
-//	                                GTK_WINDOW(dw->window),
-//	                                GTK_FILE_CHOOSER_ACTION_OPEN,
-//	                                GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-//	                                GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
-//	                                NULL);
-
-//	g_signal_connect(G_OBJECT(d), "response",
-//	                 G_CALLBACK(displaywindow_loadgeom_response), dw);
-
-//	gtk_widget_show_all(d);
-
-//	return 0;
-//}
-
-
 static gint displaywindow_peak_overlay(GtkWidget *widget, DisplayWindow *dw)
 {
 	GtkWidget *d;

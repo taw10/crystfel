@@ -209,6 +209,9 @@ extern int write_detector_geometry(const char *filename, struct detector *det);
 extern void mark_resolution_range_as_bad(struct image *image,
                                          double min, double max);
 
+extern int single_source (struct detector *det, char *element);
+
+
 #ifdef __cplusplus
 }
 #endif

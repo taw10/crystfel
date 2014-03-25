@@ -286,6 +286,12 @@ int write_reflist(const char *filename, RefList *list)
 
 RefList *read_reflections_from_file(FILE *fh)
 {
+	return read_reflections_from_file2(fh, NULL);
+}
+
+
+RefList *read_reflections_from_file2(FILE *fh, struct detector *det)
+{
 	char *rval = NULL;
 	RefList *out;
 	int major_version;  /* Minor version as well, but not used yet */
@@ -364,12 +370,15 @@ RefList *read_reflections_from_file(FILE *fh)
 			signed int h, k, l;
 			float intensity, sigma, fs, ss;
 			char phs[1024];
+			char pn[32];
 			int cts;
 			int r;
+			struct panel *p;
+			float read_fs, read_ss;
 
-			r = sscanf(line, "%i %i %i %f %s %f %i %f %f",
+			r = sscanf(line, "%i %i %i %f %s %f %i %f %f %s",
 				   &h, &k, &l, &intensity, phs, &sigma,
-				   &cts, &fs, &ss);
+				   &cts, &fs, &ss, pn);
 
 			if ( r != 9 ) {
 				reflist_free(out);
@@ -378,7 +387,14 @@ RefList *read_reflections_from_file(FILE *fh)
 
 			refl = add_refl(out, h, k, l);
 			set_intensity(refl, intensity);
-			set_detector_pos(refl, 0.0, fs, ss);
+
+			if ( det != NULL) {
+				p = find_panel_by_name(det, pn);
+				read_ss = ss-p->orig_min_ss+p->min_ss;
+				read_fs = fs-p->orig_min_fs+p->min_fs;
+				set_detector_pos(refl, 0.0, read_fs, read_ss);
+			}
+
 			set_esd_intensity(refl, sigma);
 			set_redundancy(refl, cts);
 
@@ -396,6 +412,12 @@ RefList *read_reflections_from_file(FILE *fh)
 
 RefList *read_reflections(const char *filename)
 {
+	return read_reflections2(filename, NULL);
+}
+
+
+RefList *read_reflections2(const char *filename, struct detector *det)
+{
 	FILE *fh;
 	RefList *out;
 
@@ -410,7 +432,7 @@ RefList *read_reflections(const char *filename)
 		return NULL;
 	}
 
-	out = read_reflections_from_file(fh);
+	out = read_reflections_from_file2(fh, det);
 
 	fclose(fh);
 

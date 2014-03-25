@@ -1488,3 +1488,43 @@ void mark_resolution_range_as_bad(struct image *image,
 
 	}
 }
+
+
+extern int single_source (struct detector *det, char *element)
+{
+	int pi;
+	char *first_datafrom = NULL;
+	char *curr_datafrom = NULL;
+
+	if ( det->panels[0].data_from == NULL ) {
+		if ( element != NULL ) {
+			first_datafrom = strdup(element);
+		} else {
+			first_datafrom = strdup("/data/data");
+		}
+	} else {
+		first_datafrom = strdup(det->panels[0].data_from);
+	}
+
+	for ( pi=1;pi<det->n_panels;pi++ ) {
+
+		if ( det->panels[pi].data_from == NULL ) {
+			if ( element != NULL ) {
+				curr_datafrom = strdup(element);
+			} else {
+				curr_datafrom = strdup("/data/data");
+			}
+		} else {
+			curr_datafrom = strdup(det->panels[pi].data_from);
+		}
+
+		if ( strcmp(curr_datafrom, first_datafrom) != 0 ) {
+			return 0;
+		}
+	}
+
+	free(first_datafrom);
+	free(curr_datafrom);
+
+	return 1;
+}

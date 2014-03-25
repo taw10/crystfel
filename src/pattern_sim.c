@@ -469,6 +469,12 @@ int main(int argc, char *argv[])
 		ERROR("You need to specify a geometry file with --geometry\n");
 		return 1;
 	}
+	image.det = get_detector_geometry(geometry);
+	if ( image.det == NULL ) {
+		ERROR("Failed to read detector geometry from '%s'\n", geometry);
+		return 1;
+	}
+	free(geometry);
 
 	if ( beamfile == NULL ) {
 		ERROR("You need to specify a beam parameter file"
@@ -509,7 +515,7 @@ int main(int argc, char *argv[])
 
 		RefList *reflections;
 
-		reflections = read_reflections(intfile);
+		reflections = read_reflections2(intfile, image.det);
 		if ( reflections == NULL ) {
 			ERROR("Problem reading input file %s\n", intfile);
 			return 1;
@@ -535,13 +541,6 @@ int main(int argc, char *argv[])
 		reflist_free(reflections);
 
 	}
-
-	image.det = get_detector_geometry(geometry);
-	if ( image.det == NULL ) {
-		ERROR("Failed to read detector geometry from '%s'\n", geometry);
-		return 1;
-	}
-	free(geometry);
 
 	image.beam = get_beam_parameters(beamfile);
 	if ( image.beam == NULL ) {

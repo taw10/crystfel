@@ -69,6 +69,7 @@ struct imagefeature {
 	struct image                    *parent;
 	double                          fs;
 	double                          ss;
+	char                            *pn;
 	double                          intensity;
 
 	/* Reciprocal space coordinates (m^-1 of course) of this feature */
