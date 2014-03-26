@@ -18,13 +18,13 @@ Each crystal is used for only one exposure, and there is no oscillation, rotatio
 .PP
 The crystals might be very small and the illumination highly coherent, leading to significant Fourier truncation effects on the detector.
 .PP
-Many patterns, numbering tens of thousands or more, are required, so high throughput automated processing is import.
+Many patterns, numbering tens of thousands or more, are required, so high throughput automated processing is important.
 .PP
 The crystal orientations in each pattern are random and uncorrelated, which leads to special considerations during scaling and merging.
 .RE
 
 CrystFEL includes programs for simulating and processing patterns subject to the
-above characteristics.  Four programs form the core of CrystFEL.  They are:
+above characteristics.  Twelve programs form the core of CrystFEL.  They are:
 
 .IP \fBindexamajig\fR
 Batch indexing, integration and data reduction program, which produces a "stream" containing the indexing and integration results for each diffraction pattern.
@@ -38,11 +38,14 @@ A tool merging intensities from many patterns into a single reflection list, via
 .IP \fBpartialator\fR
 Full scaling and post-refinement process for accurate merging of data and outlier rejection.
 
-.PP
-In addition, there is also:
+.IP \fBambigator\fR
+A tool for resolving indexing ambiguities.
 
 .IP \fBget_hkl\fR
 A tool for manipulating reflection lists, such as performing symmetry expansion.
+
+.IP \fBcell_explorer\fR
+A tool for examining the distributions of unit cell parameters.
 
 .IP \fBcompare_hkl\fR and \fBcheck_hkl\fR
 Tools for calculating figures of merit, such as completeness and R-factors.
@@ -85,7 +88,8 @@ You can append \fB_ua\fR\fIX\fR to any of the point group symbols listed below, 
 
 \fBThe default unique axis, where this makes sense, is c\fR.
 
-The options are:
+Here is a list of all the possible crystallographic point groups, written as they will be accepted by CrystFEL.  Refer
+to this list if you experience difficulty with "-y" at any time.
 
 .IP Triclinic
 \fB1\fR, \fB-1\fR.
@@ -111,37 +115,6 @@ The options are:
 .IP Cubic
 \fB23\fR, \fBm-3\fR, \fB432\fR, \fB-43m\fR, \fBm-3m\fR.
 
-
-.SH PROGRAM NAME
-There seems to be a tendency to capitalise all the letters in the names of
-programs in scientific publications.  Sometimes the authors do this, other times
-the journal capitalises them at the proof stage. It's as if they think it
-somehow makes the name look more "computery", or perhaps "trademark-y".
-
-Well, it's not 1970 any more, and programs are no longer input on punched cards.
-That means we can have capitalisation any way we choose.
-
-The name for the overall software suite is "CrystFEL", with this being the only
-acceptable capitalisation.  The individual programs should always be referred to
-with all letters in lower case, exactly the same as the names of the binaries.
-Put the names in quotes or italics if this sounds strange to you.  The only
-exception is if the name of the program comes at the start of a sentence, or in
-a title, or similar position where a word would normally be capitalised.
-
-In most cases, it will be more appropriate to refer to the overall suite than to
-one of its constituent programs.
-
-The following are NOT acceptable forms: "CRYSTFEL", "crystFEL", "Crystfel",
-"INDEXAMAJIG" and "PATTERN_SIM".  If you use any of these (particularly the
-first one and the last two), the Capitalisation Monster will hunt you down and
-eat you.
-
-In addition, CrystFEL is made up of "programs", not "routines" nor "procedures".
-(The "programs" in turn are made up from "routines" and "procedures", but unless
-you are exploring the source code, there's no need for you to know about that).
-
-I hope you can forgive the fussiness.
-
 .SH AUTHOR
 This page was written by Thomas White.
 
@@ -150,7 +123,7 @@ Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>
 
 .SH COPYRIGHT AND DISCLAIMER
 .PD 0
-Copyright © 2012 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .PD
 .PP
 Please read the AUTHORS file in the CrystFEL source code distribution for a full list of contributions and contributors.
