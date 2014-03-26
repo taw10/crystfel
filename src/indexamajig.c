@@ -3,13 +3,13 @@
  *
  * Index patterns, output hkl+intensity etc.
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -121,6 +121,7 @@ static void show_help(const char *s)
 "                         Default: 100,000.\n"
 "    --min-snr=<n>       Minimum signal-to-noise ratio for peaks.\n"
 "                         Default: 5.\n"
+"    --check-hdf5-snr    Check SNR for peaks from --peaks=hdf5.\n"
 "    --int-radius=<r>    Set the integration radii.  Default: 4,5,7.\n"
 "-e, --image=<element>   Use this image from the HDF5 file.\n"
 "                          Example: /data/data0.\n"
@@ -211,6 +212,7 @@ int main(int argc, char *argv[])
 	iargs.threshold = 800.0;
 	iargs.min_gradient = 100000.0;
 	iargs.min_snr = 5.0;
+	iargs.check_hdf5_snr = 0;
 	iargs.det = NULL;
 	iargs.peaks = PEAK_ZAEF;
 	iargs.beam = NULL;
@@ -251,18 +253,22 @@ int main(int argc, char *argv[])
 
 		/* Long-only options with no arguments */
 		{"filter-noise",       0, &iargs.noisefilter,        1},
-		{"no-sat-corr",        0, &iargs.satcorr,            0},
-		{"sat-corr",           0, &iargs.satcorr,            1},
 		{"no-check-prefix",    0, &config_checkprefix,       0},
-		{"no-closer-peak",     0, &iargs.closer,             0},
 		{"closer-peak",        0, &iargs.closer,             1},
 		{"basename",           0, &config_basename,          1},
 		{"no-peaks-in-stream", 0, &iargs.stream_peaks,       0},
 		{"no-refls-in-stream", 0, &iargs.stream_refls,       0},
 		{"integrate-saturated",0, &integrate_saturated,      1},
-		{"use-saturated",      0, &iargs.use_saturated,      1},
 		{"no-use-saturated",   0, &iargs.use_saturated,      0},
 		{"no-revalidate",      0, &iargs.no_revalidate,      1},
+		{"check-hdf5-snr",     0, &iargs.check_hdf5_snr,     1},
+
+		/* Long-only options which don't actually do anything */
+		{"no-sat-corr",        0, &iargs.satcorr,            0},
+		{"sat-corr",           0, &iargs.satcorr,            1},
+		{"no-closer-peak",     0, &iargs.closer,             0},
+		{"no-check-hdf5-snr",  0, &iargs.check_hdf5_snr,     0},
+		{"use-saturated",      0, &iargs.use_saturated,      1},
 
 		/* Long-only options with arguments */
 		{"peaks",              1, NULL,                2},

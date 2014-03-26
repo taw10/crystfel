@@ -315,7 +315,12 @@ Normally, peaks which contain one or more pixels above max_adu (defined in the d
 .PD 0
 .IP \fB--no-revalidate\fR
 .PD
-When using \fB--peaks=hdf5\fR, the peaks will be put through the same checks as if you were using \fB--peaks=zaef\fR.  These checks reject peaks which are too close to panel edges, are saturated (unless you use \fB--use-saturated\fR), fall short of the minimum SNR value given by \fB--min-snr\fR, have other nearby peaks (closer than twice the inner integration radius, see \fB--int-radius\fR), or have any part in a bad region.  Using this option skips this validation step, and uses the peaks directly.
+When using \fB--peaks=hdf5\fR, the peaks will be put through some of the same checks as if you were using \fB--peaks=zaef\fR.  These checks reject peaks which are too close to panel edges, are saturated (unless you use \fB--use-saturated\fR), have other nearby peaks (closer than twice the inner integration radius, see \fB--int-radius\fR), or have any part in a bad region.  Using this option skips this validation step, and uses the peaks directly.
+
+.PD 0
+.IP \fB--check-hdf5-snr\fR
+.PD
+With this option with \fB--peaks=hdf5\fR, the peaks will additionally be checked to see that they satisfy the minimum SNR specified with \fB--min-snr\fR.
 
 .PD 0
 .IP \fB--no-peaks-in-stream\fR

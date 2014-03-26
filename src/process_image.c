@@ -3,11 +3,11 @@
  *
  * The processing pipeline for one image
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -128,7 +128,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		if ( !iargs->no_revalidate ) {
 			validate_peaks(&image, iargs->min_snr,
 				       iargs->ir_inn, iargs->ir_mid,
-				       iargs->ir_out, iargs->use_saturated);
+				       iargs->ir_out, iargs->use_saturated,
+				       iargs->check_hdf5_snr);
 		}
 		break;
 

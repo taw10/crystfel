@@ -50,7 +50,7 @@ extern int peak_sanity_check(struct image *image, Crystal **crystals,
 
 extern void validate_peaks(struct image *image, double min_snr,
                            int ir_inn, int ir_mid, int ir_out,
-                           int use_saturated);
+                           int use_saturated, int check_snr);
 
 extern int integrate_peak(struct image *image, int cfs, int css,
                           double *pfs, double *pss,

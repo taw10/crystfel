@@ -55,6 +55,7 @@ struct index_args
 	float threshold;
 	float min_gradient;
 	float min_snr;
+	int check_hdf5_snr;
 	struct detector *det;
 	IndexingMethod *indm;
 	IndexingPrivate **ipriv;

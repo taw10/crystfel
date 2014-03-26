@@ -661,7 +661,8 @@ int peak_sanity_check(struct image *image, Crystal **crystals, int n_cryst)
 
 
 void validate_peaks(struct image *image, double min_snr,
-                    int ir_inn, int ir_mid, int ir_out, int use_saturated)
+                    int ir_inn, int ir_mid, int ir_out, int use_saturated,
+                    int check_snr)
 {
 	int i, n;
 	ImageFeatureList *flist;
@@ -718,7 +719,7 @@ void validate_peaks(struct image *image, double min_snr,
 			continue;
 		}
 
-		if ( fabs(intensity)/sigma < min_snr ) {
+		if ( check_snr && (fabs(intensity)/sigma < min_snr) ) {
 			n_snr++;
 			continue;
 		}
