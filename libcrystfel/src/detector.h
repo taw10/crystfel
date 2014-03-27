@@ -87,7 +87,7 @@ struct panel
 	struct rigid_group *rigid_group;  /* Rigid group */
 	double   adu_per_eV;   /* Number of ADU per eV */
 	double   max_adu;  /* Treat pixel as unreliable if higher than this */
-	char    *data_from;
+	char    *data;
 
 	double fsx;
 	double fsy;
@@ -209,7 +209,8 @@ extern int write_detector_geometry(const char *filename, struct detector *det);
 extern void mark_resolution_range_as_bad(struct image *image,
                                          double min, double max);
 
-extern int single_source (struct detector *det, char *element);
+
+extern int single_panel_data_source (struct detector *det, const char *element);
 
 
 #ifdef __cplusplus

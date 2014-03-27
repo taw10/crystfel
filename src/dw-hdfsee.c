@@ -1756,16 +1756,6 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 }
 
 
-
-//static int geometry_fits(struct image *image, struct detector *geom)
-//{
-//	if ( (1+geom->max_fs != image->width)
-//	  || (1+geom->max_ss != image->height) ) return 0;
-
-//	return 1;
-//}
-
-
 static void do_filters(DisplayWindow *dw)
 {
 	if ( dw->median_filter > 0 ) {
@@ -1787,53 +1777,19 @@ struct newhdf {
 static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 {
 	gboolean a;
+	int fail;
 
 	if ( nh->dw->not_ready_yet ) return 0;
 
 	a = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(nh->widget));
 	if ( !a ) return 0;
-
-	hdf5_read(nh->dw->hdfile, nh->dw->image, nh->name, 0);
-
-//	/* Check that the geometry still fits */
-//	if ( !geometry_fits(nh->dw->image, nh->dw->simple_geom) ) {
-//		int using = 0;
-//		if ( nh->dw->simple_geom == nh->dw->image->det ) {
-//			using = 1;
-//		}
-//		free_detector_geometry(nh->dw->simple_geom);
-//		nh->dw->simple_geom = simple_geometry(nh->dw->image);
-//		if ( using ) {
-//			nh->dw->image->det = nh->dw->simple_geom;
-//		}
-//	}
-
-//	if ( (nh->dw->loaded_geom != NULL )
-//	  && (!geometry_fits(nh->dw->image, nh->dw->loaded_geom)) ) {
-
-//		GtkWidget *w;
-
-//		free_detector_geometry(nh->dw->loaded_geom);
-//		nh->dw->loaded_geom = NULL;
-
-//		/* Force out of "use geometry" mode */
-//		w = gtk_ui_manager_get_widget(nh->dw->ui,
-//				      "/ui/displaywindow/view/usegeom");
-//		gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-//		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), FALSE);
-//		nh->dw->use_geom = 0;
-//		nh->dw->image->det = nh->dw->simple_geom;
-
-//	}
-
-//	if ( nh->dw->use_geom ) {
-//		nh->dw->image->det = nh->dw->loaded_geom;
-//	} else {
-//		nh->dw->image->det = nh->dw->simple_geom;
-//	}
+	fail = hdf5_read2(nh->dw->hdfile, nh->dw->image, nh->name, 0, 1);
+	if ( fail ) {
+		ERROR("Coun't load image");
+		return 1;
+	}
 
 	do_filters(nh->dw);
-
 	displaywindow_update(nh->dw);
 	return 0;
 }
@@ -2430,6 +2386,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	char *title;
 	GtkWidget *vbox;
 	int check;
+	GtkWidget *w;
 
 	dw = calloc(1, sizeof(DisplayWindow));
 	if ( dw == NULL ) return NULL;
@@ -2535,6 +2492,13 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 
 	gtk_window_set_resizable(GTK_WINDOW(dw->window), TRUE);
 	gtk_widget_show_all(dw->window);
+
+	w = gtk_ui_manager_get_widget(dw->ui,
+					  "/ui/displaywindow/view/images");
+
+	if ( !single_panel_data_source(dw->image->det, element) ) {
+		gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
+	}
 
 	displaywindow_update(dw);
 

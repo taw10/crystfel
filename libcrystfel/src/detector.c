@@ -497,13 +497,13 @@ static struct panel *new_panel(struct detector *det, const char *name)
 	}
 
 	/* Create a new copy of the data location if needed */
-	if ( new->data_from != NULL ) {
-		new->data_from = strdup(new->data_from);
+	if ( new->data != NULL ) {
+		new->data = strdup(new->data);
 	}
 
 	/* Create a new copy of the bad pixel mask location */
 	if ( new->mask != NULL ) {
-		new->mask = strdup(new->data_from);
+		new->mask = strdup(new->mask);
 	}
 
 	return new;
@@ -676,12 +676,12 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 			panel->clen_from = NULL;
 		}
 
-	} else if ( strcmp(key, "data_from") == 0 ) {
+	} else if ( strcmp(key, "data") == 0 ) {
 		if ( strncmp(val,"/",1) != 0 ) {
 			ERROR("Invalid data location '%s'\n", val);
 			reject = -1;
 		}
-		panel->data_from = strdup(val);
+		panel->data = strdup(val);
 
 	} else if ( strcmp(key, "mask") == 0 ) {
 		if ( strncmp(val,"/",1) != 0 ) {
@@ -911,7 +911,7 @@ struct detector *get_detector_geometry(const char *filename)
 	det->defaults.adu_per_eV = NAN;
 	det->defaults.max_adu = +INFINITY;
 	det->defaults.mask = NULL;
-	det->defaults.data_from = NULL;
+	det->defaults.data = NULL;
 	strncpy(det->defaults.name, "", 1023);
 
 	do {
@@ -1100,7 +1100,7 @@ out:
 	det->max_ss = max_ss;
 
 	free(det->defaults.clen_from);
-	free(det->defaults.data_from);
+	free(det->defaults.data);
 	free(det->defaults.mask);
 
 	/* Calculate matrix inverses and other stuff */
@@ -1190,8 +1190,8 @@ struct detector *copy_geom(const struct detector *in)
 			p->clen_from = strdup(p->clen_from);
 		}
 
-		if ( p->data_from != NULL ) {
-			/* Make a copy of the data_from fields unique to this
+		if ( p->data != NULL ) {
+			/* Make a copy of the data fields unique to this
 			 * copy of the structure. */
 			p->clen_from = strdup(p->clen_from);
 		}
@@ -1436,9 +1436,9 @@ int write_detector_geometry(const char *filename, struct detector *det)
 			        p->name, p->rigid_group->name);
 		}
 
-		if ( p->data_from != NULL ) {
-			fprintf(fh, "%s/data_from = %s\n",
-			        p->name, p->data_from);
+		if ( p->data != NULL ) {
+			fprintf(fh, "%s/data = %s\n",
+					p->name, p->data);
 		}
 
 		if ( p->mask != NULL ) {
@@ -1490,32 +1490,32 @@ void mark_resolution_range_as_bad(struct image *image,
 }
 
 
-extern int single_source (struct detector *det, char *element)
+extern int single_panel_data_source (struct detector *det, const char *element)
 {
 	int pi;
 	char *first_datafrom = NULL;
 	char *curr_datafrom = NULL;
 
-	if ( det->panels[0].data_from == NULL ) {
+	if ( det->panels[0].data == NULL ) {
 		if ( element != NULL ) {
 			first_datafrom = strdup(element);
 		} else {
 			first_datafrom = strdup("/data/data");
 		}
 	} else {
-		first_datafrom = strdup(det->panels[0].data_from);
+		first_datafrom = strdup(det->panels[0].data);
 	}
 
 	for ( pi=1;pi<det->n_panels;pi++ ) {
 
-		if ( det->panels[pi].data_from == NULL ) {
+		if ( det->panels[pi].data == NULL ) {
 			if ( element != NULL ) {
 				curr_datafrom = strdup(element);
 			} else {
 				curr_datafrom = strdup("/data/data");
 			}
 		} else {
-			curr_datafrom = strdup(det->panels[pi].data_from);
+			curr_datafrom = strdup(det->panels[pi].data);
 		}
 
 		if ( strcmp(curr_datafrom, first_datafrom) != 0 ) {

@@ -104,7 +104,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		case PEAK_HDF5:
 		/* Get peaks from HDF5 */
 
-		if ( !single_source(iargs->det, iargs->element)) {
+		if ( !single_panel_data_source(iargs->det, iargs->element) ) {
 			ERROR("Peaks from HDF5 file not supported with multiple panel data sources.\n");
 		}
 

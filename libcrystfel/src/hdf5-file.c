@@ -365,8 +365,8 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 	}
 	locations[0].max_ss = 0;
 	locations[0].max_fs = 0;
-	if ( image->det->panels[0].data_from != NULL ) {
-		locations[0].location = image->det->panels[0].data_from;
+	if ( image->det->panels[0].data != NULL ) {
+		locations[0].location = image->det->panels[0].data;
 	} else {
 		locations[0].location = default_location;
 	}
@@ -383,10 +383,10 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 
 		p = image->det->panels[pi];
 
-		if ( p.data_from == NULL ) {
+		if ( p.data == NULL ) {
 			p_location = default_location;
 		} else {
-			p_location = p.data_from;
+			p_location = p.data;
 		}
 
 		panel_processed = 0;
@@ -846,6 +846,12 @@ static int unpack_panels(struct image *image, struct detector *det)
 
 int hdf5_read(struct hdfile *f, struct image *image, const char* element, int satcorr)
 {
+	return hdf5_read2(f, image, element, satcorr, 0);
+}
+
+
+int hdf5_read2(struct hdfile *f, struct image *image, const char* element, int satcorr, int override_data_and_mask)
+{
 	herr_t r;
 	float *buf;
 	uint16_t *flags;
@@ -856,6 +862,7 @@ int hdf5_read(struct hdfile *f, struct image *image, const char* element, int sa
 	int no_mask_loaded;
 	int pi;
 	hid_t mask_dh = NULL;
+
 
 	if ( image->det == NULL ) {
 		ERROR("Geometry not available\n");
@@ -908,12 +915,16 @@ int hdf5_read(struct hdfile *f, struct image *image, const char* element, int sa
 		if ( p->orig_min_ss == -1 ) p->orig_min_ss = p->min_ss;
 		if ( p->orig_max_ss == -1 ) p->orig_max_ss = p->max_ss;
 
-		if ( p->data_from != NULL ) {
-			fail = hdfile_set_image(f, p->data_from);
-		} else if ( element != NULL ) {
+		if ( override_data_and_mask ) {
 			fail = hdfile_set_image(f, element);
 		} else {
-			fail = hdfile_set_first_image(f,"/");
+			if ( p->data != NULL ) {
+				fail = hdfile_set_image(f, p->data);
+			} else if ( element != NULL ) {
+				fail = hdfile_set_image(f, element);
+			} else {
+				fail = hdfile_set_first_image(f,"/");
+			}
 		}
 		if ( fail ) {
 			ERROR("Couldn't select path for panel %s\n",
@@ -974,10 +985,8 @@ int hdf5_read(struct hdfile *f, struct image *image, const char* element, int sa
 		H5Dclose(f->dh);
 		f->data_open = 0;
 		H5Sclose(dataspace);
-		H5Sclose(memspace);
 
 		if ( p->mask != NULL ) {
-
 			mask_dh = H5Dopen2(f->fh, p->mask, H5P_DEFAULT);
 			if ( mask_dh <= 0 ) {
 				ERROR("Couldn't open flags for panel %s\n",
@@ -985,7 +994,7 @@ int hdf5_read(struct hdfile *f, struct image *image, const char* element, int sa
 				image->flags = NULL;
 			} else {
 
-				mask_dataspace = H5Dget_space(H5Dget_space(mask_dh));
+				mask_dataspace = H5Dget_space(mask_dh);
 				check = H5Sselect_hyperslab(mask_dataspace, H5S_SELECT_SET,
 				                            f_offset, NULL, f_count, NULL);
 				if ( check < 0 ) {
@@ -1000,11 +1009,15 @@ int hdf5_read(struct hdfile *f, struct image *image, const char* element, int sa
 				} else {
 					no_mask_loaded = 0;
 				}
-				H5Dclose(mask_dataspace);
+
+				H5Sclose(mask_dataspace);
 				H5Dclose(mask_dh);
-		      }
+
+			}
 
 		}
+
+		H5Sclose(memspace);
 
 		p->min_fs = m_min_fs;
 		p->max_fs = m_max_fs;
