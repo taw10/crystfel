@@ -9,6 +9,7 @@
  * Authors:
  *   2009-2014 Thomas White <taw@physics.org>
  *   2013-2014 Chun Hong Yoon <chun.hong.yoon@desy.de>
+ *   2014      Valerio Mariani
  *   2013      Alexandra Tolstikova
  *
  * This file is part of CrystFEL.

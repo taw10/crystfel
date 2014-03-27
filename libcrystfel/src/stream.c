@@ -12,6 +12,7 @@
  *   2011      Richard Kirian
  *   2011      Andrew Aquila
  *   2014      Takanori Nakane <nakane.t@gmail.com>
+ *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
  *

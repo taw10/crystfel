@@ -9,6 +9,7 @@
  *
  * Authors:
  *   2009-2014 Thomas White <taw@physics.org>
+ *   2014      Valerio Mariani
  *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *   2011      Andrew Aquila
  *   2011      Richard Kirian <rkirian@asu.edu>

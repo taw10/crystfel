@@ -11,6 +11,7 @@
  *   2009-2014 Thomas White <taw@physics.org>
  *   2011-2012 Richard Kirian <rkirian@asu.edu>
  *   2011      Andrew Aquila
+ *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
  *

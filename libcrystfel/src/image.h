@@ -7,7 +7,8 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2014 Thomas White <taw@physics.org>
+ *   2009-2013 Thomas White <taw@physics.org>
+ *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
  *

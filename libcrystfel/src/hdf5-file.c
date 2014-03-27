@@ -8,6 +8,7 @@
  *
  * Authors:
  *   2009-2012 Thomas White <taw@physics.org>
+ *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
  *
