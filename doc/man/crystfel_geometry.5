@@ -75,12 +75,17 @@ Lines which should be ignored start with a semicolon.
 The properties which can be set are:
 
 .PD 0
+.IP \fBdata\fR
+.PD
+The location in the HDF5 file of the data block that contains the panel's data. If this property is not set, the first 2-dimensional data block in the file hierarchy will be used as data source.
+
+.PD 0
 .IP \fBmin_fs\fR
 .IP \fBmin_ss\fR
 .IP \fBmax_fs\fR
 .IP \fBmax_ss\fR
 .PD
-The range of pixels in the HDF5 file which correspond to the panel, in fast scan/slow scan coordinates, specified \fBinclusively\fR.
+The range of pixels in the data block specified by the 'data' property that corresponds to the panel, in fast scan/slow scan coordinates, specified \fBinclusively\fR.
 
 .PD 0
 .IP \fBadu_per_eV\fR
@@ -125,19 +130,18 @@ The corner of this panel, defined as the first point in the panel to appear in t
 The maximum value, in ADU, before the pixel will be considered as bad.  That is, the saturation value for the panel.
 
 .PD 0
+.IP \fBmask\fR
+If you have a bad pixel mask, you can include it in the HDF5 file as data blocks with the same structure and size as the panel data.  You need to specify the location of each panel's mask data block using this property, and two bitmasks (see below).
+
+.PD 0
 .IP \fBno_index\fR
 Set this to 1 or "true" to ignore this panel completely.
 
 .PD 0
-.IP \fBrigid_group\fR
-You can assign any value you like to this.  If multiple panels have the same value for \fBrigid_group\fR, their positions relative to one another will be considered fixed by (for example) hdfsee's "calibration mode".
-
-.PD 0
-.IP \fBmask\fR
 .IP \fBmask_good\fR
 .IP \fBmask_bad\fR
 .PD
-If you have a bad pixel mask, you can include it in the HDF5 file as an unsigned 16-bit integer array of the same size as the data.  You need to give its path within each HDF5 file, and two bitmasks.  The pixel is considered good if all of the bits which are set in \fBmask_good\fR are set, \fIand\fR if none of the bits which are set in \fBmask_bad\fR are set. Example:
+Bitmasks for bad pixel masks. The pixel is considered good if all of the bits which are set in \fBmask_good\fR are set, \fIand\fR if none of the bits which are set in \fBmask_bad\fR are set. Example:
 .br
 mask = /processing/hitfinder/masks
 .br
