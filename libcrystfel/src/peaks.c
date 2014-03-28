@@ -246,8 +246,8 @@ int integrate_peak(struct image *image, int cfs, int css,
 	int p_cfs, p_css, p_w, p_h;
 
 	p = find_panel(image->det, cfs, css);
-	if ( p == NULL ) return 1;
-	if ( p->no_index ) return 1;
+	if ( p == NULL ) return 2;
+	if ( p->no_index ) return 3;
 
 	if ( saturated != NULL ) *saturated = 0;
 
@@ -277,13 +277,13 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 		/* Strayed off one panel? */
 		if ( (p_cfs+dfs >= p_w) || (p_css+dss >= p_h)
-		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) ) return 1;
+		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) ) return 4;
 
 		/* Wandered into a bad region? */
 		if ( in_bad_region(image->det, p->min_fs+p_cfs+dfs,
 		                               p->min_ss+p_css+dss) )
 		{
-			return 1;
+			return 14;
 		}
 
 		/* Check if there is a peak in the background region */
@@ -299,10 +299,10 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 			/* It must have all the "good" bits to be valid */
 			if ( !((flags & image->det->mask_good)
-			                   == image->det->mask_good) ) return 1;
+			                   == image->det->mask_good) ) return 5;
 
 			/* If it has any of the "bad" bits, reject */
-			if ( flags & image->det->mask_bad ) return 1;
+			if ( flags & image->det->mask_bad ) return 6;
 
 		}
 
@@ -318,7 +318,7 @@ int integrate_peak(struct image *image, int cfs, int css,
 	}
 	}
 
-	if ( bg_counts == 0 ) return 1;
+	if ( bg_counts == 0 ) return 7;
 	bg_mean = bg_tot / bg_counts;
 	bg_var = (bg_tot_sq/bg_counts) - pow(bg_mean, 2.0);
 
@@ -338,13 +338,13 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 		/* Strayed off one panel? */
 		if ( (p_cfs+dfs >= p_w) || (p_css+dss >= p_h)
-		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) ) return 1;
+		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) ) return 8;
 
 		/* Wandered into a bad region? */
 		if ( in_bad_region(image->det, p->min_fs+p_cfs+dfs,
 		                               p->min_ss+p_css+dss) )
 		{
-			return 1;
+			return 13;
 		}
 
 		idx = dfs+cfs+image->width*(dss+css);
@@ -356,10 +356,10 @@ int integrate_peak(struct image *image, int cfs, int css,
 
 			/* It must have all the "good" bits to be valid */
 			if ( !((flags & image->det->mask_good)
-			                   == image->det->mask_good) ) return 1;
+			                   == image->det->mask_good) ) return 9;
 
 			/* If it has any of the "bad" bits, reject */
-			if ( flags & image->det->mask_bad ) return 1;
+			if ( flags & image->det->mask_bad ) return 10;
 
 		}
 
@@ -377,14 +377,14 @@ int integrate_peak(struct image *image, int cfs, int css,
 	}
 	}
 
-	if ( pk_counts == 0 ) return 1;
+	if ( pk_counts == 0 ) return 11;
 
 	*pfs = ((double)fsct / pk_total) + 0.5;
 	*pss = ((double)ssct / pk_total) + 0.5;
 
 	var = pk_counts * bg_var;
 	var += aduph * pk_total;
-	if ( var < 0.0 ) return 1;
+	if ( var < 0.0 ) return 12;
 
 	if ( intensity != NULL ) *intensity = pk_total;
 	if ( sigma != NULL ) *sigma = sqrt(var);
