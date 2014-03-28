@@ -937,7 +937,7 @@ static double fit_J(struct intcontext *ic, struct peak_box *bx)
 static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
                                 int *sat)
 {
-	int i;
+	int i, nstrong;
 
 	bx->offs_fs = 0.0;
 	bx->offs_ss = 0.0;
@@ -945,6 +945,7 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 	if ( check_box(ic, bx, sat) ) return 1;
 	fit_bg(ic, bx);
 
+	nstrong = 0;
 	for ( i=0; i<10; i++ ) {
 
 		int p, q;
@@ -965,6 +966,7 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 			bg = bx->a*p + bx->b*q + bx->c;
 
 			if ( bi <= 3.0*bg ) continue;
+			nstrong++;
 
 			if ( bi > max ) {
 				max = bi;
@@ -974,6 +976,11 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 
 		}
 		}
+
+		/* We require at least two bright pixels in the peak region,
+		 * otherwise we might just be centering on a pixel which is
+		 * just at the tail of the distribution */
+		if ( nstrong < 2 ) return 0;
 
 		bx->offs_fs += ifs;
 		bx->offs_ss += iss;
