@@ -707,8 +707,10 @@ void validate_peaks(struct image *image, double min_snr,
 		}
 
 		if ( saturated ) {
-			n_sat++;
-			if ( !use_saturated ) continue;
+			if ( !use_saturated ) {
+				n_sat++;
+				continue;
+			}
 		}
 
 		/* It is possible for the centroid to fall outside the image */
