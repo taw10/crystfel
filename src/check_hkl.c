@@ -3,11 +3,11 @@
  *
  * Characterise reflection lists
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -55,12 +55,86 @@ static void show_help(const char *s)
 "  -h, --help                 Display this help message.\n"
 "  -y, --symmetry=<sym>       The symmetry of the input file.\n"
 "  -p, --pdb=<filename>       PDB file to use.\n"
-"      --rmin=<res>           Fix lower resolution limit for resolution shells. (m^-1).\n"
-"      --rmax=<res>           Fix upper resolution limit for resolution shells. (m^-1).\n"
+"      --rmin=<res>           Lower resolution limit (1/d in m^-1).\n"
+"      --rmax=<res>           Upper resolution limit (1/d in m^-1).\n"
 "      --sigma-cutoff=<n>     Discard reflections with I/sigma(I) < n.\n"
-"      --nshells=<n>          Use <n> resolution shells.\n"
-"      --shell-file=<file>    Write resolution shells to <file>.\n"
+"      --nshells=<n>          Use <n> resolution shells or bins.\n"
+"      --wilson               Calculate a Wilson plot\n"
+"      --shell-file=<file>    Write results table to <file>.\n"
 "\n");
+}
+
+
+static void wilson_plot(RefList *list, UnitCell *cell, const SymOpList *sym,
+                        double rmin_fix, double rmax_fix, int nbins,
+                        const char *filename)
+{
+	double rmin, rmax;
+	double s2min, s2max, s2step;
+	Reflection *refl;
+	RefListIterator *iter;
+	FILE *fh;
+	double *plot_i;
+	int *plot_n;
+	int i;
+
+	resolution_limits(list, cell, &rmin, &rmax);
+	STATUS("1/d goes from %f to %f nm^-1\n", rmin/1e9, rmax/1e9);
+
+	/* Widen the range just a little bit */
+	rmin -= 0.001e9;
+	rmax += 0.001e9;
+
+	/* Fixed resolution shells if needed */
+	if ( rmin_fix > 0.0 ) rmin = rmin_fix;
+	if ( rmax_fix > 0.0 ) rmax = rmax_fix;
+
+	s2min = pow(rmin/2.0, 2.0);
+	s2max = pow(rmax/2.0, 2.0);
+	s2step = (s2max - s2min)/nbins;
+
+	plot_i = malloc(nbins*sizeof(double));
+	if ( plot_i == NULL ) return;
+	for ( i=0; i<nbins; i++ ) plot_i[i] = 0.0;
+
+	plot_n = calloc(nbins, sizeof(int));
+	if ( plot_n == NULL ) return;
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		double d, intensity;
+		int bin;
+
+		get_indices(refl, &h, &k, &l);
+
+		d = resolution(cell, h, k, l);  /* This gives "s" */
+		intensity = get_intensity(refl);
+
+		bin = (pow(d, 2.0) - s2min)/s2step;
+
+		/* FIXME: Divide by epsilon and Sigma */
+		plot_i[bin] += intensity;
+		plot_n[bin]++;
+
+	}
+
+	for ( i=0; i<nbins; i++ ) plot_i[i] = log(plot_i[i] / plot_n[i]);
+
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) return;
+	fprintf(fh, "  n  s^2/A^-2      d/A        <I>\n");
+	for ( i=0; i<nbins; i++ ) {
+		double s2 = s2min + (i+0.5)*s2step;
+		fprintf(fh, "%3i  %8.6f %8.4f %10f\n", i,
+		        s2/1e20, 0.5e10/sqrt(s2), plot_i[i]);
+	}
+	fclose(fh);
+
+	free(plot_i);
+	free(plot_n);
 }
 
 
@@ -373,18 +447,25 @@ int main(int argc, char *argv[])
 	float rmax_fix = -1.0;
 	float sigma_cutoff = -INFINITY;
 	int nshells = 10;
+	int have_nshells = 0;
 	char *shell_file = NULL;
+	int wilson = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
+
 		{"help",               0, NULL,               'h'},
 		{"symmetry",           1, NULL,               'y'},
 		{"pdb",                1, NULL,               'p'},
+
 		{"rmin",               1, NULL,                2},
 		{"rmax",               1, NULL,                3},
 		{"sigma-cutoff",       1, NULL,                4},
 		{"nshells",            1, NULL,                5},
 		{"shell-file",         1, NULL,                6},
+
+		{"wilson",             0, &wilson,             1},
+
 		{0, 0, NULL, 0}
 	};
 
@@ -434,6 +515,7 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --nshells\n");
 				return 1;
 			}
+			have_nshells = 1;
 			break;
 
 			case 6 :
@@ -518,7 +600,14 @@ int main(int argc, char *argv[])
 	       rej, num_reflections(raw_list), sigma_cutoff);
 	reflist_free(raw_list);
 
-	plot_shells(list, cell, sym, rmin_fix, rmax_fix, nshells, shell_file);
+	if ( wilson ) {
+		if ( !have_nshells ) nshells = 50;
+		wilson_plot(list, cell, sym, rmin_fix, rmax_fix, nshells,
+		            shell_file);
+	} else {
+		plot_shells(list, cell, sym, rmin_fix, rmax_fix, nshells,
+		            shell_file);
+	}
 
 	free_symoplist(sym);
 	reflist_free(list);
