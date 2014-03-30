@@ -928,10 +928,10 @@ int main(int argc, char *argv[])
 			if ( n_crystals == max_crystals ) {
 
 				struct flist **crystals_new;
-				size_t nsz;
+				size_t ns;
 
-				nsz = (max_crystals+1024)*sizeof(struct flist *);
-				crystals_new = realloc(crystals, nsz);
+				ns = (max_crystals+1024)*sizeof(struct flist *);
+				crystals_new = realloc(crystals, ns);
 				if ( crystals_new == NULL ) {
 					fprintf(stderr, "Failed to allocate "
 					        "memory for crystals.\n");
