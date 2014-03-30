@@ -60,8 +60,130 @@ static void show_help(const char *s)
 "      --sigma-cutoff=<n>     Discard reflections with I/sigma(I) < n.\n"
 "      --nshells=<n>          Use <n> resolution shells or bins.\n"
 "      --wilson               Calculate a Wilson plot\n"
+"      --ltest                Perform an L-test (for twinning)\n"
 "      --shell-file=<file>    Write results table to <file>.\n"
+"      --ignore-negs          Ignore reflections with negative intensities.\n"
+"      --zero-negs            Set negative intensities to zero.\n"
 "\n");
+}
+
+
+static int add_ltest(RefList *list, double i1, int *bins, int nbins,
+                     double step, const SymOpList *sym, double *lt, double *l2t,
+                     signed int h1, signed int k1, signed int l1,
+                     signed int h2, signed int k2, signed int l2)
+{
+	Reflection *refl;
+	double i2, L;
+	int bin;
+
+	if ( SERIAL(h1, k1, l1) > SERIAL(h2, k2, l2) ) return 0;
+
+	refl = find_refl(list, h2, k2, l2);
+	if ( refl == NULL ) {
+		signed int h, k, l;
+		if ( !find_equiv_in_list(list, h2, k2, l2, sym, &h, &k, &l) ) {
+			return 0;
+		}
+		refl = find_refl(list, h, k, l);
+	}
+
+	i2 = get_intensity(refl);
+	L = (i1-i2) / (i1+i2);
+
+	bin = fabs(L)/step;
+	if ( (bin < 0) || (isnan(L)) ) {
+		bin = 0;
+	} else if ( bin >= nbins ) {
+		bin = nbins-1;
+	}
+	bins[bin]++;
+
+	*lt += fabs(L);
+	*l2t += pow(L, 2.0);
+
+	return 1;
+}
+
+
+static void l_test(RefList *list, UnitCell *cell, const SymOpList *sym,
+                   double rmin_fix, double rmax_fix, int nbins,
+                   const char *filename)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	int *bins;
+	FILE *fh;
+	int npairs, i;
+	double tot;
+	double lt = 0.0;
+	double l2t = 0.0;
+	const double step = 1.0/nbins;
+	int hd, kd, ld;
+	const char cen = cell_get_centering(cell);
+
+	bins = malloc(nbins*sizeof(int));
+	if ( bins == NULL ) return;
+
+	for ( i=0; i<nbins; i++ ) bins[i] = 0;
+
+	if ( cen == 'P' ) { hd = 1;  kd = 1;  ld = 1; }
+	if ( cen == 'R' ) { hd = 1;  kd = 1;  ld = 1; }
+
+	if ( cen == 'A' ) { hd = 1;  kd = 2;  ld = 2; }
+	if ( cen == 'B' ) { hd = 2;  kd = 1;  ld = 2; }
+	if ( cen == 'C' ) { hd = 2;  kd = 2;  ld = 1; }
+
+	if ( cen == 'I' ) { hd = 2;  kd = 2;  ld = 2; }
+	if ( cen == 'F' ) { hd = 2;  kd = 2;  ld = 2; }
+
+	/* Obverse setting */
+	if ( cen == 'H' ) { hd = 3;  kd = 3;  ld = 3; }
+
+	npairs = 0;
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		double i1;
+
+		get_indices(refl, &h, &k, &l);
+		i1 = get_intensity(refl);
+
+		npairs += add_ltest(list, i1, bins, nbins, step, sym, &lt, &l2t,
+		                    h, k, l, h-hd, k, l);
+		npairs += add_ltest(list, i1, bins, nbins, step, sym, &lt, &l2t,
+		                    h, k, l, h+hd, k, l);
+		npairs += add_ltest(list, i1, bins, nbins, step, sym, &lt, &l2t,
+		                    h, k, l, h, k-kd, l);
+		npairs += add_ltest(list, i1, bins, nbins, step, sym, &lt, &l2t,
+		                    h, k, l, h, k+kd, l);
+		npairs += add_ltest(list, i1, bins, nbins, step, sym, &lt, &l2t,
+		                    h, k, l, h, k, l-ld);
+		npairs += add_ltest(list, i1, bins, nbins, step, sym, &lt, &l2t,
+		                    h, k, l, h, k, l+ld);
+	}
+	STATUS("%i pairs\n", npairs);
+	STATUS("<|L|> = %.3f (ideal untwinned %.3f, twinned %.3f)\n",
+	       lt/npairs, 1.0/2.0, 3.0/8.0);
+	STATUS("<L^2> = %.3f (ideal untwinned %.3f, twinned %.3f)\n",
+	       l2t/npairs, 1.0/3.0, 1.0/5.0);
+
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) return;
+	tot = 0.0;
+	fprintf(fh, "  |L|  N(|L|) untwinned twinned\n");
+	fprintf(fh, "%.3f %7.3f %9.3f %7.3f\n", 0.0, tot, 0.0, 0.0);
+	for ( i=0; i<nbins; i++ ) {
+		double l = (i+1)*step;
+		tot += (double)bins[i]/npairs;
+		fprintf(fh, "%.3f %7.3f %9.3f %7.3f\n",
+		        l, tot, l, l*(3-l*l)/2.0);
+	}
+	fclose(fh);
+
+	free(bins);
 }
 
 
@@ -450,6 +572,10 @@ int main(int argc, char *argv[])
 	int have_nshells = 0;
 	char *shell_file = NULL;
 	int wilson = 0;
+	int ltest = 0;
+	int ignorenegs = 0;
+	int zeronegs = 0;
+	int nneg = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -465,6 +591,9 @@ int main(int argc, char *argv[])
 		{"shell-file",         1, NULL,                6},
 
 		{"wilson",             0, &wilson,             1},
+		{"ltest",              0, &ltest,              1},
+		{"ignore-negs",        0, &ignorenegs,         1},
+		{"zero-negs",          0, &zeronegs,           1},
 
 		{0, 0, NULL, 0}
 	};
@@ -590,6 +719,16 @@ int main(int argc, char *argv[])
 			ig = 1;
 		}
 
+		if ( ignorenegs && (val < 0.0) ) {
+			nneg++;
+			ig = 1;
+		}
+
+		if ( zeronegs && (val < 0.0) ) {
+			set_intensity(refl, 0.0);
+			nneg++;
+		}
+
 		if ( ig ) continue;
 
 		new = add_refl(list, h, k, l);
@@ -600,10 +739,28 @@ int main(int argc, char *argv[])
 	       rej, num_reflections(raw_list), sigma_cutoff);
 	reflist_free(raw_list);
 
+	if ( ignorenegs && (nneg > 0) ) {
+		STATUS("Discarded %i reflections because they had negative "
+		       "intensities.\n", nneg);
+	}
+
+	if ( zeronegs && (nneg > 0) ) {
+		STATUS("Set %i negative intensities to zerp\n", nneg);
+	}
+
 	if ( wilson ) {
 		if ( !have_nshells ) nshells = 50;
 		wilson_plot(list, cell, sym, rmin_fix, rmax_fix, nshells,
 		            shell_file);
+	} else if ( ltest ) {
+		if ( !have_nshells ) nshells = 50;
+		if ( !ignorenegs && !zeronegs ) {
+			ERROR("For the L-test you must specify either"
+			       "--ignore-negs or --zero-negs.\n");
+			return 1;
+		}
+		l_test(list, cell, sym, rmin_fix, rmax_fix, nshells,
+		       shell_file);
 	} else {
 		plot_shells(list, cell, sym, rmin_fix, rmax_fix, nshells,
 		            shell_file);

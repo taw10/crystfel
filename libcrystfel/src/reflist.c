@@ -139,11 +139,6 @@ struct _reflist {
 };
 
 
-#define SERIAL(h, k, l) ((((h)+512)<<20) + (((k)+512)<<10) + ((l)+512))
-#define GET_H(serial) ((((serial) & 0x3ff00000)>>20)-512)
-#define GET_K(serial) ((((serial) & 0x000ffc00)>>10)-512)
-#define GET_L(serial) (((serial) & 0x000003ff)-512)
-
 /**************************** Creation / deletion *****************************/
 
 static Reflection *new_node(unsigned int serial)
