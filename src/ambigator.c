@@ -849,11 +849,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* Sanitise output filename */
-	if ( outfile == NULL ) {
-		outfile = strdup("partialator.hkl");
-	}
-
 	if ( s_sym_str == NULL ) {
 		ERROR("You must specify the input symmetry (with -y)\n");
 		return 1;
@@ -1090,9 +1085,9 @@ int main(int argc, char *argv[])
 	STATUS("%i assignments are different from their starting values.\n",
 	       n_dif);
 
-	if ( amb != NULL ) {
+	if ( (outfile != NULL) && (amb != NULL) ) {
 		write_reindexed_stream(infile, outfile, assignments, amb);
-	} else {
+	} else if ( outfile != NULL ) {
 		ERROR("Can only write stream with known ambiguity operator.\n");
 		ERROR("Try again with -w\n");
 	}
