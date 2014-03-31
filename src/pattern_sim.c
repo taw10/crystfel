@@ -221,7 +221,8 @@ int main(int argc, char *argv[])
 	int c;
 	struct image image;
 	struct gpu_context *gctx = NULL;
-	double *powder;
+	struct image *powder;
+	float *powder_data;
 	char *intfile = NULL;
 	double *intensities;
 	char *rval;
@@ -586,7 +587,12 @@ int main(int argc, char *argv[])
 		gsl_rng_set(rng, seed);
 	}
 
-	powder = calloc(image.width*image.height, sizeof(*powder));
+	powder = calloc(1, sizeof(struct image));
+	powder->width = image.width;
+	powder->height = image.height;
+	powder->det = image.det;
+	powder_data = calloc(image.width*image.height, sizeof(float));
+	powder->data = powder_data;
 
 	/* Splurge a few useful numbers */
 	STATUS("Wavelength is %f nm\n", image.lambda/1.0e-9);
@@ -725,14 +731,12 @@ int main(int argc, char *argv[])
 
 			for ( x=0; x<image.width; x++ ) {
 			for ( y=0; y<image.height; y++ ) {
-				powder[x+w*y] += (double)image.data[x+w*y];
+				powder->data[x+w*y] += (double)image.data[x+w*y];
 			}
 			}
 
 			if ( !(ndone % 10) ) {
-				hdf5_write(powder_fn, powder,
-				           image.width, image.height,
-				           H5T_NATIVE_DOUBLE);
+				hdf5_write_image(powder_fn, powder, NULL);
 			}
 		}
 
@@ -749,7 +753,7 @@ int main(int argc, char *argv[])
 
 			number++;
 
-			/* Write the output file */
+            /* Write the output file */
 			hdf5_write_image(filename, &image, NULL);
 
 		}
@@ -768,9 +772,7 @@ skip:
 	} while ( !done );
 
 	if ( powder_fn != NULL ) {
-		hdf5_write(powder_fn, powder,
-		           image.width, image.height,
-		           H5T_NATIVE_DOUBLE);
+		hdf5_write_image(powder_fn, powder, NULL);
 	}
 
 	if ( gctx != NULL ) {
@@ -780,6 +782,7 @@ skip:
 	free(image.det->panels);
 	free(image.det);
 	free(image.beam);
+	free(powder->data);
 	free(powder);
 	cell_free(input_cell);
 	free(intensities);
