@@ -51,9 +51,9 @@ extern int hdf5_write(const char *filename, const void *data,
 
 extern int hdf5_write_image(const char *filename, struct image *image, char *element);
 
-extern int hdf5_read(struct hdfile *f, struct image *image, const char *element, int satcorr);
+extern int hdf5_read(const char *filename, struct image *image, const char *element, int satcorr);
 
-extern int hdf5_read2(struct hdfile *f, struct image *image, const char* element, int satcorr, int override_data_and_mask);
+extern int hdf5_read2(const char *filename, struct image *image, const char* element, int satcorr, int override_data_and_mask);
 
 extern struct hdfile *hdfile_open(const char *filename);
 extern int hdfile_set_image(struct hdfile *f, const char *path);

@@ -71,9 +71,6 @@ static void displaywindow_error(DisplayWindow *dw, const char *message)
 /* Window closed - clean up */
 static gint displaywindow_closed(GtkWidget *window, DisplayWindow *dw)
 {
-	if ( dw->hdfile != NULL ) {
-		hdfile_close(dw->hdfile);
-	}
 
 	if ( dw->surf != NULL ) cairo_surface_destroy(dw->surf);
 
@@ -699,10 +696,6 @@ static gint displaywindow_set_binning(GtkWidget *widget, DisplayWindow *dw)
 		return 0;
 	}
 
-	if ( dw->hdfile == NULL ) {
-		return 0;
-	}
-
 	bd = malloc(sizeof(BinningDialog));
 	if ( bd == NULL ) return 0;
 	dw->binning_dialog = bd;
@@ -827,10 +820,6 @@ static gint displaywindow_set_boostint(GtkWidget *widget, DisplayWindow *dw)
 		return 0;
 	}
 
-	if ( dw->hdfile == NULL ) {
-		return 0;
-	}
-
 	bd = malloc(sizeof(BoostIntDialog));
 	if ( bd == NULL ) return 0;
 	dw->boostint_dialog = bd;
@@ -939,10 +928,6 @@ static gint displaywindow_set_ringradius(GtkWidget *widget, DisplayWindow *dw)
 	char tmp[64];
 
 	if ( dw->ringradius_dialog != NULL ) {
-		return 0;
-	}
-
-	if ( dw->hdfile == NULL ) {
 		return 0;
 	}
 
@@ -1490,10 +1475,6 @@ static gint displaywindow_show_numbers(GtkWidget *widget, DisplayWindow *dw)
 		return 0;
 	}
 
-	if ( dw->hdfile == NULL ) {
-		return 0;
-	}
-
 	nw = malloc(sizeof(struct numberswindow));
 	if ( nw == NULL ) return 0;
 	dw->numbers_window = nw;
@@ -1774,7 +1755,7 @@ struct newhdf {
 	char name[1024];
 };
 
-static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
+static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh, const char *filename)
 {
 	gboolean a;
 	int fail;
@@ -1783,9 +1764,9 @@ static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 
 	a = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(nh->widget));
 	if ( !a ) return 0;
-	fail = hdf5_read2(nh->dw->hdfile, nh->dw->image, nh->name, 0, 1);
+	fail = hdf5_read2(filename, nh->dw->image, nh->name, 0, 1);
 	if ( fail ) {
-		ERROR("Coun't load image");
+		ERROR("Couldn't load image");
 		return 1;
 	}
 
@@ -1805,8 +1786,6 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 	int *is_image;
 	GtkWidget *ms;
 	int n, i;
-
-	if ( hdfile == NULL ) return NULL;
 
 	names = hdfile_read_group(hdfile, &n, group, &is_group, &is_image);
 	if ( n == 0 ) return NULL;
@@ -1896,22 +1875,30 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 }
 
 
-static GtkWidget *displaywindow_createhdfmenus(struct hdfile *hdfile,
+static GtkWidget *displaywindow_createhdfmenus(const char *filename,
                                                DisplayWindow *dw,
                                                const char *selectme)
 {
 	GSList *rg = NULL;
+	GtkWidget *w;
+	struct hdfile *hdfile;
 
-	return displaywindow_addhdfgroup(hdfile, "/", dw, &rg, selectme);
+	hdfile = hdfile_open(filename);
+	if ( hdfile == NULL ) {
+		return NULL;
+	}
+	w = displaywindow_addhdfgroup(hdfile, "/", dw, &rg, selectme);
+	hdfile_close(hdfile);
+	return w;
 }
 
 
-static int displaywindow_update_menus(DisplayWindow *dw, const char *selectme)
+static int displaywindow_update_menus(DisplayWindow *dw, const char * filename, const char *selectme)
 {
 	GtkWidget *ms;
 	GtkWidget *w;
 
-	ms = displaywindow_createhdfmenus(dw->hdfile, dw, selectme);
+	ms = displaywindow_createhdfmenus(filename , dw, selectme);
 
 	if ( ms == NULL ) return 1;
 
@@ -2422,34 +2409,11 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 		dw->image->beam = get_beam_parameters(beam);
 	}
 
-	if ( (dw->image->beam != NULL) && (dw->hdfile != NULL) ) {
-		fill_in_beam_parameters(dw->image->beam, dw->hdfile);
-	}
-
 	dw->image->det = det_geom;
 
-	/* TODO: Move the opening of the file in hd5_read.
-	 * Currently not possible because the file handle
-	 * must be stored in dw */
-
-	/* Open the file, if any */
-	if ( filename != NULL ) {
-
-		dw->hdfile = hdfile_open(filename);
-		if ( dw->hdfile == NULL ) {
-			free(dw);
-			return NULL;
-		} else {
-			dw->image->filename = strdup(filename);
-			check =	hdf5_read(dw->hdfile, dw->image, element, 0);
-			if (check) {
-				ERROR("Couldn't load file\n");
-				free(dw);
-				return NULL;
-			}
-		}
-
-	} else {
+	check =	hdf5_read(filename, dw->image, element, 0);
+	if (check) {
+		ERROR("Couldn't load file\n");
 		free(dw);
 		return NULL;
 	}
@@ -2518,7 +2482,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	g_signal_connect(GTK_OBJECT(dw->drawingarea), "key-press-event",
 	                 G_CALLBACK(displaywindow_keypress), dw);
 
-	displaywindow_update_menus(dw, element);
+	displaywindow_update_menus(dw, filename, element);
 	dw->not_ready_yet = 0;
 
 	return dw;

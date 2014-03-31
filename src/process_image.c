@@ -57,11 +57,11 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	float *data_for_measurement;
 	size_t data_size;
 	int check;
-	struct hdfile *hdfile;
 	struct image image;
 	int i;
 	int r;
 	char *rn;
+	struct hdfile *hdfile;
 
 	image.features = NULL;
 	image.data = NULL;
@@ -74,13 +74,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	image.crystals = NULL;
 	image.n_crystals = 0;
 
-	hdfile = hdfile_open(image.filename);
-	if ( hdfile == NULL ) return;
 
-	check = hdf5_read(hdfile, &image, iargs->element, 1);
-
+	check = hdf5_read(image.filename, &image, iargs->element, 1);
 	if ( check ) {
-		hdfile_close(hdfile);
 		return;
 	}
 
@@ -99,6 +95,12 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 	mark_resolution_range_as_bad(&image, iargs->highres, +INFINITY);
+
+	hdfile = hdfile_open(image.filename);
+	if ( hdfile == NULL ) {
+		ERROR("Couldn't open file %s.\n", image.filename);
+		return;
+	}
 
 	switch ( iargs->peaks ) {
 
@@ -140,6 +142,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	if ( r ) {
 		ERROR("Failed to chdir to temporary folder: %s\n",
 		      strerror(errno));
+		hdfile_close(hdfile);
 		return;
 	}
 
@@ -149,6 +152,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	r = chdir(rn);
 	if ( r ) {
 		ERROR("Failed to chdir: %s\n", strerror(errno));
+		hdfile_close(hdfile);
 		return;
 	}
 

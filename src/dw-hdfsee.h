@@ -89,7 +89,6 @@ typedef struct {
 
 	int             not_ready_yet;
 
-	struct hdfile	*hdfile;
 	struct image	*image;
 
 	/* Dialog boxes */

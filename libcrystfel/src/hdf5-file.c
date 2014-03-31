@@ -845,13 +845,13 @@ static int unpack_panels(struct image *image, struct detector *det)
 }
 
 
-int hdf5_read(struct hdfile *f, struct image *image, const char* element, int satcorr)
+int hdf5_read(const char *filename, struct image *image, const char* element, int satcorr)
 {
-	return hdf5_read2(f, image, element, satcorr, 0);
+	return hdf5_read2(filename, image, element, satcorr, 0);
 }
 
 
-int hdf5_read2(struct hdfile *f, struct image *image, const char* element, int satcorr, int override_data_and_mask)
+int hdf5_read2(const char *filename, struct image *image, const char* element, int satcorr, int override_data_and_mask)
 {
 	herr_t r;
 	float *buf;
@@ -863,7 +863,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, const char* element, int s
 	int no_mask_loaded;
 	int pi;
 	hid_t mask_dh = NULL;
-
+	struct hdfile *f;
 
 	if ( image->det == NULL ) {
 		ERROR("Geometry not available\n");
@@ -898,6 +898,11 @@ int hdf5_read2(struct hdfile *f, struct image *image, const char* element, int s
 	curr_ss = 0;
 	no_mask_loaded = 1;
 
+	f = hdfile_open(filename);
+	if ( f == NULL ) {
+		return 1;
+	}
+
 	for ( pi=0; pi<image->det->n_panels; pi++ ) {
 
 		int data_width, data_height;
@@ -925,6 +930,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, const char* element, int s
 		if ( fail ) {
 			ERROR("Couldn't select path for panel %s\n",
 			      p->name);
+			hdfile_close(f);
 			return 1;
 		}
 
@@ -938,6 +944,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, const char* element, int s
 			ERROR("Panel name: %s.  Data size: %i,%i.  Geometry size: %i,%i\n",
 			      p->name, data_width, data_height,
 			      p->w, p->h);
+			hdfile_close(f);
 			return 1;
 		}
 
@@ -952,6 +959,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, const char* element, int s
 			ERROR("Error selecting file dataspace for panel %s\n",
 			      p->name);
 			free(buf);
+			hdfile_close(f);
 			return 1;
 		}
 
@@ -968,6 +976,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, const char* element, int s
 			ERROR("Error selecting memory dataspace for panel %s\n",
 			      p->name);
 			free(buf);
+			hdfile_close(f);
 			return 1;
 		}
 		r = H5Dread(f->dh, H5T_NATIVE_FLOAT, memspace, dataspace,
@@ -976,6 +985,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, const char* element, int s
 			ERROR("Couldn't read data for panel %s\n",
 			      p->name);
 			free(buf);
+			hdfile_close(f);
 			return 1;
 		}
 		H5Dclose(f->dh);
@@ -1049,11 +1059,13 @@ int hdf5_read2(struct hdfile *f, struct image *image, const char* element, int s
 			      "for %s.\n",
 			      image->lambda, image->beam->photon_energy,
 			      image->filename);
+			hdfile_close(f);
 			return 1;
 		}
 
 	}
 
+	hdfile_close(f);
 	return 0;
 }
 
