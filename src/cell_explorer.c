@@ -78,6 +78,7 @@ typedef struct {
 	double max;
 	int n;
 	const char *units;
+	const char *label;
 
 	int width;
 	double dmin;  /* Display min/max */
@@ -410,6 +411,24 @@ static gboolean draw_sig(GtkWidget *da, GdkEventExpose *event, HistoBox *b)
 	cairo_restore(cr);
 
 	draw_axis(cr, b, width, height);
+
+	cairo_text_extents_t ext;
+	char label[256];
+
+	cairo_select_font_face(cr, "Serif", CAIRO_FONT_SLANT_ITALIC,
+	                       CAIRO_FONT_WEIGHT_BOLD);
+	cairo_set_font_size(cr, height/10.0);
+
+	if ( b->have_fit ) {
+		snprintf(label, 255, "%s = %.2f ± %.2f%s",
+		         b->label, b->fit_b, b->fit_c/sqrt(2), b->units);
+	} else {
+		strncpy(label, b->label, 255);
+	}
+
+	cairo_text_extents(cr, label, &ext);
+	cairo_move_to(cr, 10.0, 10.0+ext.height);
+	cairo_show_text(cr, label);
 
 	cairo_destroy(cr);
 
@@ -1063,7 +1082,7 @@ static gint keypress_sig(GtkWidget *widget, GdkEventKey *event, HistoBox *h)
 }
 
 
-static HistoBox *histobox_new(CellWindow *w, const char *units)
+static HistoBox *histobox_new(CellWindow *w, const char *units, const char *n)
 {
 	HistoBox *h;
 
@@ -1076,6 +1095,7 @@ static HistoBox *histobox_new(CellWindow *w, const char *units)
 	h->min = +INFINITY;
 	h->max = -INFINITY;
 	h->n = 100;  /* Number of bins */
+	h->label = n;
 
 	h->h = multihistogram_new();
 
@@ -1309,12 +1329,12 @@ int main(int argc, char *argv[])
 	w.cols_on[0] = 1;
 	for ( i=1; i<8; i++ ) w.cols_on[i] = 2;
 
-	w.hist_a = histobox_new(&w, " A");
-	w.hist_b = histobox_new(&w, " A");
-	w.hist_c = histobox_new(&w, " A");
-	w.hist_al = histobox_new(&w, "°");
-	w.hist_be = histobox_new(&w, "°");
-	w.hist_ga = histobox_new(&w, "°");
+	w.hist_a = histobox_new(&w, " A", "a");
+	w.hist_b = histobox_new(&w, " A", "b");
+	w.hist_c = histobox_new(&w, " A", "c");
+	w.hist_al = histobox_new(&w, "°", "α");
+	w.hist_be = histobox_new(&w, "°", "β");
+	w.hist_ga = histobox_new(&w, "°", "γ");
 
 	w.n_unique_indms = 0;
 
