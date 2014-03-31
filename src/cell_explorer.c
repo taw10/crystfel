@@ -38,6 +38,7 @@
 #include <gtk/gtk.h>
 #include <math.h>
 #include <gdk/gdkkeysyms.h>
+#include <gsl/gsl_multifit_nlin.h>
 
 #include "stream.h"
 #include "image.h"
@@ -91,6 +92,11 @@ typedef struct {
 	double press_y;
 	double press_min;
 	int sel;
+
+	int have_fit;
+	double fit_a;
+	double fit_b;
+	double fit_c;
 
 	struct _cellwindow *parent;
 
@@ -379,6 +385,26 @@ static gboolean draw_sig(GtkWidget *da, GdkEventExpose *event, HistoBox *b)
 		cairo_rectangle(cr, (b->sel1-b->dmin)/(b->dmax - b->dmin), 0.0,
 		                    (b->sel2-b->sel1)/(b->dmax - b->dmin), 1.0);
 		cairo_fill(cr);
+	}
+
+	/* Draw fitted curve */
+	if ( b->have_fit ) {
+
+		double A, B, C;
+		A = b->fit_a / max;  B = b->fit_b;  C = b->fit_c;
+		cairo_new_path(cr);
+
+		/* In the current coordinate system, 0,0 is the bottom left
+		 * of the graph (coordinates b->dmin, 0), and 1,1 is the top
+		 * right of the graph (coordinate b->dmax, max) */
+		for ( i=0; i<300; i++ ) {
+			double xd = (double)i/300.0;
+			double x = b->dmin + xd*(b->dmax - b->dmin);
+			cairo_line_to(cr, xd, A*exp(-(x-B)*(x-B)/(C*C)));
+		}
+		cairo_set_source_rgba(cr, 1.0, 0.3, 0.0, 1.0);
+		cairo_set_line_width(cr, 0.005);
+		cairo_stroke(cr);
 	}
 
 	cairo_restore(cr);
@@ -679,6 +705,172 @@ static gint quit_sig(GtkWidget *widget, CellWindow *w)
 }
 
 
+struct gaussian_data
+{
+	size_t n;
+	double gstep;
+	double min;
+	int *data;
+};
+
+
+static int gaussian_f(const gsl_vector *p, void *vp,  gsl_vector *f)
+{
+	struct gaussian_data *d = vp;
+	int i;
+
+	double a = gsl_vector_get(p, 0);
+	double b = gsl_vector_get(p, 1);
+	double c = gsl_vector_get(p, 2);
+
+	for ( i=0; i<d->n; i++ ) {
+		double x = i*d->gstep + d->min;
+		double ycalc = a*exp(-pow(x-b, 2)/(c*c));
+		gsl_vector_set(f, i, ycalc - d->data[i]);
+	}
+
+	return GSL_SUCCESS;
+}
+
+
+static int gaussian_df(const gsl_vector *p, void *vp, gsl_matrix *J)
+{
+	struct gaussian_data *d = vp;
+	double a = gsl_vector_get(p, 0);
+	double b = gsl_vector_get(p, 1);
+	double c = gsl_vector_get(p, 2);
+	int i;
+
+	for ( i=0; i<d->n; i++ ) {
+		double x = i*d->gstep + d->min;
+		double ycalc = a*exp(-pow(x-b, 2)/(c*c));
+		gsl_matrix_set(J, i, 0, ycalc/a);
+		gsl_matrix_set(J, i, 1, 2.0*ycalc*pow(c, -2)*(x-b));
+		gsl_matrix_set(J, i, 2, 2.0*ycalc*pow(c, -3)*(x-b)*(x-b));
+	}
+
+	return GSL_SUCCESS;
+}
+
+
+static int gaussian_fdf(const gsl_vector *x, void *data, gsl_vector *f,
+                        gsl_matrix *J)
+{
+	gaussian_f(x, data, f);
+	gaussian_df(x, data, J);
+	return GSL_SUCCESS;
+}
+
+
+static void fit_param(HistoBox *h)
+{
+	gsl_multifit_fdfsolver *s;
+	gsl_vector *v;
+	gsl_multifit_function_fdf f;
+	struct gaussian_data params;
+	double min, max, gstep;
+	int n, n_iter, status, i, nm;
+	int lowest_bin, highest_bin;
+	int *data_p, *data_a, *data_b, *data_c, *data_i, *data_f;
+	int *data_r, *data_h;
+
+	if ( h->sel1 > h->sel2 ) {
+		min = h->sel2;
+		max = h->sel1;
+	} else {
+		min = h->sel1;
+		max = h->sel2;
+	}
+	gstep = (h->max - h->min)/h->n;
+	n = (max-min)/gstep;
+
+	/* How many bins fit entirely within the selected range? */
+	lowest_bin = floor((min - h->min)/gstep)+1;
+	highest_bin = floor((max - h->min)/gstep)-1;
+	params.n = 1 + highest_bin - lowest_bin;
+	if ( highest_bin-lowest_bin < 3 ) {
+		ERROR("Not enough bins.\n");
+		return;
+	}
+	params.min = h->min + (lowest_bin+0.5)*gstep;
+	params.gstep = gstep;
+
+	data_p = multihistogram_get_data(h->h, CAT_P);
+	data_a = multihistogram_get_data(h->h, CAT_A);
+	data_b = multihistogram_get_data(h->h, CAT_B);
+	data_c = multihistogram_get_data(h->h, CAT_C);
+	data_i = multihistogram_get_data(h->h, CAT_I);
+	data_f = multihistogram_get_data(h->h, CAT_F);
+	data_h = multihistogram_get_data(h->h, CAT_H);
+	data_r = multihistogram_get_data(h->h, CAT_R);
+	params.data = malloc(params.n*sizeof(int));
+	if ( params.data == NULL ) return;
+	nm = 0;
+	for ( i=0; i<params.n; i++ ) {
+		int j = i+lowest_bin;
+		if ( (j < 0) || (j >= h->n) ) {
+			params.data[i] = 0;
+			continue;
+		}
+		params.data[i] = data_p[j] + data_a[j] + data_b[j] + data_c[j]
+		               + data_i[j] + data_f[j] + data_h[j] + data_r[j];
+		if ( params.data[i] > nm ) nm = params.data[i];
+	}
+
+	s = gsl_multifit_fdfsolver_alloc(gsl_multifit_fdfsolver_lmsder, n, 3);
+
+	v = gsl_vector_alloc(3);
+	gsl_vector_set(v, 0, nm);
+	gsl_vector_set(v, 1, min+(max-min)/2.0);
+	gsl_vector_set(v, 2, (max-min)/5.0);
+
+	f.f = gaussian_f;
+	f.df = gaussian_df;
+	f.fdf = gaussian_fdf;
+	f.n = n;
+	f.p = 3;
+	f.params = &params;
+	gsl_multifit_fdfsolver_set(s, &f, v);
+
+	n_iter = 0;
+	do {
+		n_iter++;
+		status = gsl_multifit_fdfsolver_iterate(s);
+		if ( status ) break;
+
+		status = gsl_multifit_test_delta(s->dx, s->x, 0.001, 0.001);
+	} while ( (status == GSL_CONTINUE) && (n_iter < 10));
+
+	STATUS("Fitted: %.2f %.2f %.2f after %i iterations\n",
+	       gsl_vector_get(s->x, 0), gsl_vector_get(s->x, 1),
+	       gsl_vector_get(s->x, 2), n_iter);
+	h->have_fit = 1;
+	h->fit_a = gsl_vector_get(s->x, 0);
+	h->fit_b = gsl_vector_get(s->x, 1);
+	h->fit_c = gsl_vector_get(s->x, 2);
+
+	free(params.data);
+	gsl_multifit_fdfsolver_free(s);
+	gsl_vector_free(v);
+}
+
+
+static gint fit_sig(GtkWidget *widget, CellWindow *w)
+{
+	if ( w->hist_a->show_sel ) fit_param(w->hist_a);
+	if ( w->hist_b->show_sel ) fit_param(w->hist_b);
+	if ( w->hist_c->show_sel ) fit_param(w->hist_c);
+	if ( w->hist_al->show_sel ) fit_param(w->hist_al);
+	if ( w->hist_be->show_sel ) fit_param(w->hist_be);
+	if ( w->hist_ga->show_sel ) fit_param(w->hist_ga);
+
+	/* FIXME: If all six worked, show values in cut+paste window */
+
+	redraw_all(w);
+
+	return TRUE;
+}
+
 static gint about_sig(GtkWidget *widget, CellWindow *w)
 {
 	GtkWidget *window;
@@ -720,6 +912,9 @@ static void add_menu_bar(CellWindow *w, GtkWidget *vbox)
 		"<menu name=\"file\" action=\"FileAction\">"
 		"	<menuitem name=\"quit\" action=\"QuitAction\" />"
 		"</menu>"
+		"<menu name=\"tools\" action=\"ToolsAction\" >"
+		"       <menuitem name=\"fit\" action=\"FitCellAction\" />"
+		"</menu>"
 		"<menu name=\"help\" action=\"HelpAction\">"
 		"	<menuitem name=\"about\" action=\"AboutAction\" />"
 		"</menu>"
@@ -730,6 +925,10 @@ static void add_menu_bar(CellWindow *w, GtkWidget *vbox)
 		{ "FileAction", NULL, "_File", NULL, NULL, NULL },
 		{ "QuitAction", GTK_STOCK_QUIT, "_Quit", NULL, NULL,
 			G_CALLBACK(quit_sig) },
+
+		{ "ToolsAction", NULL, "_Tools", NULL, NULL, NULL },
+		{ "FitCellAction", NULL, "_Fit cell", "<Control>F", NULL,
+			G_CALLBACK(fit_sig) },
 
 		{ "HelpAction", NULL, "_Help", NULL, NULL, NULL },
 		{ "AboutAction", GTK_STOCK_ABOUT, "_About", NULL, NULL,
