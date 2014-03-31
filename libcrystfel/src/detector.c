@@ -1060,6 +1060,11 @@ struct detector *get_detector_geometry(const char *filename)
 			max_ss = det->panels[i].max_ss;
 		}
 
+		det->panels[i].orig_max_fs = det->panels[i].max_fs;
+		det->panels[i].orig_min_fs = det->panels[i].min_fs;
+		det->panels[i].orig_max_ss = det->panels[i].max_ss;
+		det->panels[i].orig_min_ss = det->panels[i].min_ss;
+
 	}
 
 	for ( i=0; i<det->n_bad; i++ ) {

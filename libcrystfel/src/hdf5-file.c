@@ -911,11 +911,6 @@ int hdf5_read2(struct hdfile *f, struct image *image, const char* element, int s
 		struct panel *p;
 		p=&image->det->panels[pi];
 
-		if ( p->orig_min_fs == -1 ) p->orig_min_fs = p->min_fs;
-		if ( p->orig_max_fs == -1 ) p->orig_max_fs = p->max_fs;
-		if ( p->orig_min_ss == -1 ) p->orig_min_ss = p->min_ss;
-		if ( p->orig_max_ss == -1 ) p->orig_max_ss = p->max_ss;
-
 		if ( override_data_and_mask ) {
 			fail = hdfile_set_image(f, element);
 		} else {
