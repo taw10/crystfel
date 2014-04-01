@@ -3,12 +3,12 @@
  *
  * Stream tools
  *
- * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2013-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2011      Andrew Aquila
  *
@@ -357,7 +357,7 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 		fprintf(st->fh, "diffraction_resolution_limit"
 		                " = %.2f nm^-1 or %.2f A\n",
 		                crystal_get_resolution_limit(cr)/1e9,
-		                1e9 / crystal_get_resolution_limit(cr));
+		                1e10 / crystal_get_resolution_limit(cr));
 
 		fprintf(st->fh, "num_reflections = %i\n",
 		                num_reflections(reflist));

@@ -138,7 +138,6 @@ int main(int argc, char *argv[])
 		ic.ir_inn = ir_inn;
 		ic.ir_mid = ir_mid;
 		ic.ir_out = ir_out;
-		ic.limit = 0.0;
 		ic.meth = INTEGRATION_RINGS;
 		ic.int_diag = INTDIAG_NONE;
 		if ( init_intcontext(&ic) ) {

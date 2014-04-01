@@ -3,11 +3,11 @@
  *
  * Integration of intensities
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -56,6 +56,7 @@ typedef enum {
  * @INTEGRATION_PROF2D: Two dimensional profile fitting
  * @INTEGRATION_SATURATED: Integrate saturated reflections
  * @INTEGRATION_CENTER: Center the peak in the box prior to integration
+ * @INTEGRATION_RESCUT: Stop integrating at the diffraction limit of the crystal
  *
  * An enumeration of all the available integration methods.
  **/
@@ -71,6 +72,7 @@ typedef enum {
 	 * behaviour of the integration. */
 	INTEGRATION_SATURATED = 256,
 	INTEGRATION_CENTER = 512,
+	INTEGRATION_RESCUT = 1024,
 
 } IntegrationMethod;
 

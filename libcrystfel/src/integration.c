@@ -177,7 +177,6 @@ struct intcontext
 
 	int n_saturated;
 	int n_implausible;
-	double limit;
 
 	IntDiag int_diag;
 	signed int int_diag_h;
@@ -1530,7 +1529,6 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
                                  struct intcontext *ic, UnitCell *cell)
 {
 	double pfs, pss;
-	signed int h, k, l;
 	struct peak_box *bx;
 	int pn;
 	struct panel *p;
@@ -1540,7 +1538,6 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	double intensity;
 	double sigma;
 	int saturated;
-	double one_over_d;
 	int r;
 	double bgmean, sig2_bg, sig2_poisson, aduph;
 
@@ -1621,10 +1618,6 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	set_mean_bg(refl, bgmean);
 	set_peak(refl, bx->peak);
 
-	get_indices(refl, &h, &k, &l);
-	one_over_d = resolution(cell, h, k, l);
-	if ( one_over_d > ic->limit ) ic->limit = one_over_d;
-
 	/* Update position */
 	pfs += bx->offs_fs;
 	pss += bx->offs_ss;
@@ -1636,6 +1629,94 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 		ic->n_implausible++;
 		set_redundancy(refl, 0);
 	}
+}
+
+
+static int compare_double(const void *av, const void *bv)
+{
+	double a = *(double *)av;
+	double b = *(double *)bv;
+	if ( a > b ) return 1;
+	if ( a < b ) return -1;
+	return 0;
+}
+
+
+static double estimate_resolution(UnitCell *cell, ImageFeatureList *flist)
+{
+	int i;
+	const double min_dist = 0.25;
+	double max_res = 0.0;
+	double *acc;
+	int n_acc = 0;
+	int max_acc = 1024;
+	double av;
+	int n;
+
+	acc = malloc(max_acc*sizeof(double));
+	if ( acc == NULL ) {
+		ERROR("Allocation failed during estimate_resolution!\n");
+		return INFINITY;
+	}
+
+	for ( i=0; i<image_feature_count(flist); i++ ) {
+
+		struct imagefeature *f;
+		double h, k, l, hd, kd, ld;
+
+		/* Assume all image "features" are genuine peaks */
+		f = image_get_feature(flist, i);
+		if ( f == NULL ) continue;
+
+		double ax, ay, az;
+		double bx, by, bz;
+		double cx, cy, cz;
+
+		cell_get_cartesian(cell,
+		                   &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+
+		/* Decimal and fractional Miller indices of nearest
+		 * reciprocal lattice point */
+		hd = f->rx * ax + f->ry * ay + f->rz * az;
+		kd = f->rx * bx + f->ry * by + f->rz * bz;
+		ld = f->rx * cx + f->ry * cy + f->rz * cz;
+		h = lrint(hd);
+		k = lrint(kd);
+		l = lrint(ld);
+
+		/* Check distance */
+		if ( (fabs(h - hd) < min_dist)
+		  && (fabs(k - kd) < min_dist)
+		  && (fabs(l - ld) < min_dist) )
+		{
+			double res = 2.0*resolution(cell, h, k, l); /* 1/d */
+			acc[n_acc++] = res;
+			if ( n_acc == max_acc ) {
+				max_acc += 1024;
+				acc = realloc(acc, max_acc*sizeof(double));
+				if ( acc == NULL ) {
+					ERROR("Allocation failed during"
+					      " estimate_resolution!\n");
+					return INFINITY;
+				}
+			}
+		}
+
+	}
+
+	if ( n_acc < 3 ) {
+		STATUS("WARNING: Too few peaks to estimate resolution.\n");
+		return 0.0;
+	}
+
+	/* Slightly horrible outlier removal */
+	qsort(acc, n_acc, sizeof(double), compare_double);
+	n = n_acc/50;
+	if ( n < 2 ) n = 2;
+	max_res = acc[(n_acc-1)-n];
+
+	free(acc);
+	return max_res;
 }
 
 
@@ -1670,7 +1751,6 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 	ic.int_diag_h = idh;
 	ic.int_diag_k = idk;
 	ic.int_diag_l = idl;
-	ic.limit = 0.0;
 	ic.meth = meth;
 	if ( init_intcontext(&ic) ) {
 		ERROR("Failed to initialise integration.\n");
@@ -1690,7 +1770,6 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 	free_intcontext(&ic);
 
 	crystal_set_num_saturated_reflections(cr, ic.n_saturated);
-	crystal_set_resolution_limit(cr, ic.limit);
 	crystal_set_reflections(cr, list);
 
 	if ( ic.n_implausible ) {
@@ -1700,113 +1779,24 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 }
 
 
-static void UNUSED resolution_cutoff(RefList *list, UnitCell *cell)
+static void apply_resolution_cutoff(Crystal *cr, double res)
 {
-	double *rmins;
-	double *rmaxs;
-	double rmin, rmax;
-	double total_vol, vol_per_shell;
-	int i;
-	int *sh_nref;
-	double *sh_snr;
-	Reflection **highest_snr;
 	Reflection *refl;
 	RefListIterator *iter;
+	UnitCell *cell;
 
-	const int nshells = 100;
-	const double min_snr = 10.0;
+	cell = crystal_get_cell(cr);
 
-	rmins = malloc(nshells*sizeof(double));
-	rmaxs = malloc(nshells*sizeof(double));
-	sh_nref = malloc(nshells*sizeof(int));
-	sh_snr = malloc(nshells*sizeof(double));
-	highest_snr = malloc(nshells*sizeof(Reflection *));
-
-	if ( (rmins==NULL) || (rmaxs==NULL) || (sh_nref==NULL)
-	  || (sh_snr==NULL) || (highest_snr==NULL) )
-	{
-		ERROR("Couldn't allocate memory for resolution shells.\n");
-		return;
-	}
-
-	resolution_limits(list, cell, &rmin, &rmax);
-
-	total_vol = pow(rmax, 3.0) - pow(rmin, 3.0);
-	vol_per_shell = total_vol / nshells;
-	rmins[0] = rmin;
-	for ( i=1; i<nshells; i++ ) {
-
-		double r;
-
-		r = vol_per_shell + pow(rmins[i-1], 3.0);
-		r = pow(r, 1.0/3.0);
-
-		/* Shells of constant volume */
-		rmaxs[i-1] = r;
-		rmins[i] = r;
-
-	}
-	rmaxs[nshells-1] = rmax;
-
-	for ( i=0; i<nshells; i++ ) {
-		sh_nref[i] = 0;
-		sh_snr[i] = 0.0;
-	}
-
-	for ( refl = first_refl(list, &iter);
+	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
 		signed int h, k, l;
-		double res, intensity, sigma, snr;
-		int bin, j;
-
-		intensity = get_intensity(refl);
-		sigma = get_esd_intensity(refl);
-		snr = intensity / sigma;
-
-		if ( snr < min_snr ) continue;
-
 		get_indices(refl, &h, &k, &l);
-		res = 2.0*resolution(cell, h, k, l);
-
-		bin = -1;
-		for ( j=0; j<nshells; j++ ) {
-			if ( (res>rmins[j]) && (res<=rmaxs[j]) ) {
-				bin = j;
-				break;
-			}
+		if ( 2.0*resolution(cell, h, k, l) > res ) {
+			set_redundancy(refl, 0);
 		}
-
-		/* Allow for slight rounding errors */
-		if ( (bin == -1) && (res <= rmins[0]) ) bin = 0;
-		if ( (bin == -1) && (res >= rmaxs[nshells-1]) ) bin = 0;
-		assert(bin != -1);
-
-		sh_nref[bin]++;
-		sh_snr[bin] += snr;
 	}
-
-	for ( i=nshells-1; i>=0; i-- ) {
-		if ( sh_nref[i] > 2 ) break;
-	}
-	double cen = (rmins[i]+rmaxs[i])/2.0;
-	STATUS("The highest shell is %i\n", i);
-	printf("%10.3f nm^-1 or %.2f A\n", cen/1e9, 10e9/cen);
-
-	FILE *fh;
-	fh = fopen("cutoff.dat", "w");
-	for ( i=0; i<nshells; i++ ) {
-		double cen = (rmins[i]+rmaxs[i])/2.0;
-		double val = sh_nref[i];
-		fprintf(fh, "%10.3f %.2f %.4f\n", cen/1e9, 10e9/cen, val);
-	}
-	fclose(fh);
-
-	free(rmins);
-	free(rmaxs);
-	free(sh_nref);
-	free(sh_snr);
 }
 
 
@@ -1819,21 +1809,28 @@ void integrate_all(struct image *image, IntegrationMethod meth,
 
 	for ( i=0; i<image->n_crystals; i++ ) {
 
+		double res = INFINITY;
+		Crystal *cr = image->crystals[i];
+
 		switch ( meth & INTEGRATION_METHOD_MASK ) {
 
 			case INTEGRATION_NONE :
 			break;
 
 			case INTEGRATION_RINGS :
-			integrate_rings(meth, image->crystals[i], image,
+			integrate_rings(meth, cr, image,
 			                int_diag, idh, idk, idl,
 			                ir_inn, ir_mid, ir_out);
+			res = estimate_resolution(crystal_get_cell(cr),
+			                          image->features);
 			break;
 
 			case INTEGRATION_PROF2D :
-			integrate_prof2d(meth, image->crystals[i], image,
+			integrate_prof2d(meth, cr, image,
 			                 int_diag, idh, idk, idl,
 			                 ir_inn, ir_mid, ir_out);
+			res = estimate_resolution(crystal_get_cell(cr),
+			                          image->features);
 			break;
 
 			default :
@@ -1842,10 +1839,10 @@ void integrate_all(struct image *image, IntegrationMethod meth,
 
 		}
 
-		/* Set resolution limit */
-		//resolution_cutoff(crystal_get_reflections(image->crystals[i]),
-		//                  crystal_get_cell(image->crystals[i]));
-
+		crystal_set_resolution_limit(cr, res);
+		if ( meth & INTEGRATION_RESCUT ) {
+			apply_resolution_cutoff(cr, res);
+		}
 
 	}
 }
@@ -1879,6 +1876,12 @@ IntegrationMethod integration_method(const char *str, int *err)
 
 		} else if ( strcmp(methods[i], "cen") == 0) {
 			meth |= INTEGRATION_CENTER;
+
+		} else if ( strcmp(methods[i], "rescut") == 0) {
+			meth |= INTEGRATION_RESCUT;
+
+		} else if ( strcmp(methods[i], "norescut") == 0) {
+			meth &= ~INTEGRATION_RESCUT;
 
 		} else if ( strcmp(methods[i], "nocen") == 0) {
 			meth &= ~INTEGRATION_CENTER;
