@@ -54,7 +54,7 @@
 #include "reflist-utils.h"
 
 #define LATEST_MAJOR_VERSION (2)
-#define LATEST_MINOR_VERSION (2)
+#define LATEST_MINOR_VERSION (3)
 
 #define AT_LEAST_VERSION(st, a, b) ((st->major_version>=(a)) \
                                     && (st->minor_version>=(b)))
@@ -68,8 +68,46 @@ struct _stream
 	int minor_version;
 };
 
-
 static int read_peaks(FILE *fh, struct image *image)
+{
+	char *rval = NULL;
+	int first = 1;
+
+	image->features = image_feature_list_new();
+
+	do {
+
+		char line[1024];
+		float x, y, d, intensity;
+		int r;
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
+		chomp(line);
+
+		if ( strcmp(line, PEAK_LIST_END_MARKER) == 0 ) return 0;
+
+		r = sscanf(line, "%f %f %f %f", &x, &y, &d, &intensity);
+		if ( (r != 4) && (!first) ) {
+			ERROR("Failed to parse peak list line.\n");
+			ERROR("The failed line was: '%s'\n", line);
+			return 1;
+		}
+
+		first = 0;
+		if ( r == 4 ) {
+			image_add_feature(image->features, x, y,
+							  image, intensity, NULL);
+		}
+
+	} while ( rval != NULL );
+
+	/* Got read error of some kind before finding PEAK_LIST_END_MARKER */
+	return 1;
+}
+
+
+static int read_peaks_2_3(FILE *fh, struct image *image)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -91,7 +129,7 @@ static int read_peaks(FILE *fh, struct image *image)
 
 		if ( strcmp(line, PEAK_LIST_END_MARKER) == 0 ) return 0;
 
-		r = sscanf(line, "%f %f %s %f %f", &x, &y, pn, &d, &intensity);
+		r = sscanf(line, "%f %f %f %f %s", &x, &y, &d, &intensity, pn);
 		if ( (r != 5) && (!first) ) {
 			ERROR("Failed to parse peak list line.\n");
 			ERROR("The failed line was: '%s'\n", line);
@@ -122,7 +160,35 @@ static void write_peaks(struct image *image, FILE *ofh)
 	int i;
 
 	fprintf(ofh, PEAK_LIST_START_MARKER"\n");
-	fprintf(ofh, "  fs/px   ss/px panel  (1/d)/nm^-1   Intensity\n");
+	fprintf(ofh, "  fs/px   ss/px  (1/d)/nm^-1   Intensity\n");
+
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
+
+		struct imagefeature *f;
+		struct rvec r;
+		double q;
+
+		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
+
+		r = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
+		q = modulus(r.u, r.v, r.w);
+
+		fprintf(ofh, "%7.2f %7.2f   %10.2f  %10.2f\n",
+			   f->fs, f->ss, q/1.0e9, f->intensity);
+
+	}
+
+	fprintf(ofh, PEAK_LIST_END_MARKER"\n");
+}
+
+
+static void write_peaks_2_3(struct image *image, FILE *ofh)
+{
+	int i;
+
+	fprintf(ofh, PEAK_LIST_START_MARKER"\n");
+	fprintf(ofh, "  fs/px   ss/px (1/d)/nm^-1   Intensity Panel\n");
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
@@ -131,7 +197,6 @@ static void write_peaks(struct image *image, FILE *ofh)
 		double q;
 		struct panel *p;
 		double write_fs, write_ss;
-
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
@@ -143,8 +208,8 @@ static void write_peaks(struct image *image, FILE *ofh)
 		write_fs = f->fs-p->min_fs+p->orig_min_fs;
 		write_ss = f->ss-p->min_ss+p->orig_min_ss;
 
-		fprintf(ofh, "%7.2f %7.2f %s %10.2f  %10.2f\n",
-			   write_fs, write_ss, p->name, q/1.0e9, f->intensity);
+		fprintf(ofh, "%7.2f %7.2f %10.2f  %10.2f %s\n",
+			   write_fs, write_ss, q/1.0e9, f->intensity, p->name);
 
 	}
 
@@ -152,7 +217,7 @@ static void write_peaks(struct image *image, FILE *ofh)
 }
 
 
-static RefList *read_stream_reflections_2_1(FILE *fh, struct detector *det)
+static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -212,7 +277,62 @@ static RefList *read_stream_reflections_2_1(FILE *fh, struct detector *det)
 }
 
 
-static RefList *read_stream_reflections(FILE *fh, struct detector *det)
+static RefList *read_stream_reflections_2_1(FILE *fh)
+{
+	char *rval = NULL;
+	int first = 1;
+	RefList *out;
+
+	out = reflist_new();
+
+	do {
+
+		char line[1024];
+		signed int h, k, l;
+		float intensity, sigma, fs, ss;
+		char phs[1024];
+		int cts;
+		int r;
+		Reflection *refl;
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
+		chomp(line);
+
+		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
+
+		r = sscanf(line, "%i %i %i %f %s %f %i %f %f",
+				   &h, &k, &l, &intensity, phs, &sigma, &cts, &fs, &ss);
+		if ( (r != 9) && (!first) ) {
+			reflist_free(out);
+			return NULL;
+		}
+
+		first = 0;
+		if ( r == 9 ) {
+
+			double ph;
+			char *v;
+
+			refl = add_refl(out, h, k, l);
+			set_intensity(refl, intensity);
+			set_detector_pos(refl, 0.0, fs, ss);
+			set_esd_intensity(refl, sigma);
+			set_redundancy(refl, cts);
+
+			ph = strtod(phs, &v);
+			if ( v != phs ) set_phase(refl, deg2rad(ph));
+
+		}
+
+	} while ( rval != NULL );
+
+	/* Got read error of some kind before finding PEAK_LIST_END_MARKER */
+	return NULL;
+}
+
+
+static RefList *read_stream_reflections_2_2(FILE *fh)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -226,10 +346,7 @@ static RefList *read_stream_reflections(FILE *fh, struct detector *det)
 		signed int h, k, l;
 		float intensity, sigma, fs, ss, pk, bg;
 		int r;
-		char pn[32];
 		Reflection *refl;
-		struct panel *p;
-		float write_fs, write_ss;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
@@ -237,22 +354,19 @@ static RefList *read_stream_reflections(FILE *fh, struct detector *det)
 
 		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
 
-		r = sscanf(line, "%i %i %i %f %f %f %f %f %f %s",
-				   &h, &k, &l, &intensity, &sigma, &pk, &bg, &fs, &ss, pn);
-		if ( (r != 10) && (!first) ) {
+		r = sscanf(line, "%i %i %i %f %f %f %f %f %f",
+		           &h, &k, &l, &intensity, &sigma, &pk, &bg, &fs, &ss);
+		if ( (r != 9) && (!first) ) {
 			reflist_free(out);
 			return NULL;
 		}
 
 		first = 0;
-		if ( r == 10 ) {
+		if ( r == 9 ) {
 
-			p = find_panel_by_name(det,pn);
 			refl = add_refl(out, h, k, l);
 			set_intensity(refl, intensity);
-			write_ss = ss-p->orig_min_ss+p->min_ss;
-			write_fs = fs-p->orig_min_fs+p->min_fs;
-			set_detector_pos(refl, 0.0, write_fs, write_ss);
+			set_detector_pos(refl, 0.0, fs, ss);
 			set_esd_intensity(refl, sigma);
 			set_redundancy(refl, 1);
 			set_peak(refl, pk);
@@ -267,13 +381,13 @@ static RefList *read_stream_reflections(FILE *fh, struct detector *det)
 }
 
 
-static void write_stream_reflections(FILE *fh, RefList *list, struct image *image)
+static void write_stream_reflections_2_2(FILE *fh, RefList *list)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 
 	fprintf(fh, "   h    k    l          I   sigma(I)       peak background"
-				"  fs/px  ss/px  panel\n");
+	            "  fs/px  ss/px\n");
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -283,8 +397,6 @@ static void write_stream_reflections(FILE *fh, RefList *list, struct image *imag
 		signed int h, k, l;
 		double intensity, esd_i, bg, pk;
 		double fs, ss;
-		double write_fs, write_ss;
-		struct panel *p = NULL;
 
 		get_indices(refl, &h, &k, &l);
 		get_detector_pos(refl, &fs, &ss);
@@ -296,25 +408,66 @@ static void write_stream_reflections(FILE *fh, RefList *list, struct image *imag
 		/* Reflections with redundancy = 0 are not written */
 		if ( get_redundancy(refl) == 0 ) continue;
 
-		p = find_panel(image->det,fs,ss);
-		write_fs = fs-p->min_fs+p->orig_min_fs;
-		write_ss = ss-p->min_ss+p->orig_min_ss;
-
 		fprintf(fh,
-			   "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f %6.1f %6.1f %s\n",
-			   h, k, l, intensity, esd_i, pk, bg, write_fs, write_ss, p->name);
+			   "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f %6.1f %6.1f\n",
+			   h, k, l, intensity, esd_i, pk, bg, fs, ss);
 
 	}
 }
 
 
-static void write_stream_reflections_2_1(FILE *fh, RefList *list, struct image *image)
+static void write_stream_reflections_2_1(FILE *fh, RefList *list)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 
 	fprintf(fh, "  h   k   l          I    phase   sigma(I) "
-			 " counts  fs/px  ss/px  panel\n");
+			 " counts  fs/px  ss/px\n");
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+
+		signed int h, k, l;
+		double intensity, esd_i, ph;
+		int red;
+		double fs, ss;
+		char phs[16];
+		int have_phase;
+
+		get_indices(refl, &h, &k, &l);
+		get_detector_pos(refl, &fs, &ss);
+		intensity = get_intensity(refl);
+		esd_i = get_esd_intensity(refl);
+		red = get_redundancy(refl);
+		ph = get_phase(refl, &have_phase);
+
+		/* Reflections with redundancy = 0 are not written */
+		if ( red == 0 ) continue;
+
+		if ( have_phase ) {
+			snprintf(phs, 16, "%8.2f", rad2deg(ph));
+		} else {
+			strncpy(phs, "       -", 15);
+		}
+
+		fprintf(fh,
+			   "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f\n",
+			   h, k, l, intensity, phs, esd_i, red,  fs, ss);
+
+	}
+}
+
+
+static void write_stream_reflections_2_3(FILE *fh, RefList *list,
+										 struct image *image)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+
+	fprintf(fh, "  h   k   l          I    phase   sigma(I) "
+		    " counts  fs/px  ss/px  panel\n");
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -351,8 +504,9 @@ static void write_stream_reflections_2_1(FILE *fh, RefList *list, struct image *
 		write_ss = ss-p->min_ss+p->orig_min_ss;
 
 		fprintf(fh,
-		       "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f\n",
-			   h, k, l, intensity, phs, esd_i, red,  write_fs, write_ss);
+		       "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f %s\n",
+			   h, k, l, intensity, phs, esd_i, red,  write_fs, write_ss,
+			   p->name);
 
 	}
 }
@@ -392,22 +546,22 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 
 	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
 	fprintf(st->fh, "Cell parameters %7.5f %7.5f %7.5f nm,"
-	                " %7.5f %7.5f %7.5f deg\n",
-	                a*1.0e9, b*1.0e9, c*1.0e9,
-	                rad2deg(al), rad2deg(be), rad2deg(ga));
+			" %7.5f %7.5f %7.5f deg\n",
+			a*1.0e9, b*1.0e9, c*1.0e9,
+			rad2deg(al), rad2deg(be), rad2deg(ga));
 
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
-		                  &bsx, &bsy, &bsz,
-		                  &csx, &csy, &csz);
+				  &bsx, &bsy, &bsz,
+				  &csx, &csy, &csz);
 	fprintf(st->fh, "astar = %+9.7f %+9.7f %+9.7f nm^-1\n",
 	        asx/1e9, asy/1e9, asz/1e9);
 	fprintf(st->fh, "bstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
 	        bsx/1e9, bsy/1e9, bsz/1e9);
 	fprintf(st->fh, "cstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
-	        csx/1e9, csy/1e9, csz/1e9);
+		csx/1e9, csy/1e9, csz/1e9);
 
 	fprintf(st->fh, "lattice_type = %s\n",
-	        str_lattice(cell_get_lattice_type(cell)));
+		str_lattice(cell_get_lattice_type(cell)));
 	fprintf(st->fh, "centering = %c\n", cell_get_centering(cell));
 	fprintf(st->fh, "unique_axis = %c\n", cell_get_unique_axis(cell));
 
@@ -418,14 +572,14 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 	if ( reflist != NULL ) {
 
 		fprintf(st->fh, "diffraction_resolution_limit"
-		                " = %.2f nm^-1 or %.2f A\n",
-		                crystal_get_resolution_limit(cr)/1e9,
-		                1e10 / crystal_get_resolution_limit(cr));
+				" = %.2f nm^-1 or %.2f A\n",
+				crystal_get_resolution_limit(cr)/1e9,
+				1e9 / crystal_get_resolution_limit(cr));
 
 		fprintf(st->fh, "num_reflections = %i\n",
 		                num_integrated_reflections(reflist));
 		fprintf(st->fh, "num_saturated_reflections = %lli\n",
-		                crystal_get_num_saturated_reflections(cr));
+				crystal_get_num_saturated_reflections(cr));
 
 	}
 
@@ -434,12 +588,15 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 		if ( reflist != NULL ) {
 
 			fprintf(st->fh, REFLECTION_START_MARKER"\n");
-			if ( AT_LEAST_VERSION(st, 2, 2) ) {
-				write_stream_reflections(st->fh, reflist, crystal_get_image(cr));
+			if ( AT_LEAST_VERSION(st, 2, 3) ) {
+				write_stream_reflections_2_3(st->fh, reflist,
+				crystal_get_image(cr));
+			} else if ( AT_LEAST_VERSION(st, 2, 2) ) {
+				write_stream_reflections_2_2(st->fh, reflist);
 			} else {
 				/* This function writes like a normal reflection
 				 * list was written in stream 2.1 */
-				write_stream_reflections_2_1(st->fh, reflist, crystal_get_image(cr));
+				write_stream_reflections_2_1(st->fh, reflist);
 			}
 			fprintf(st->fh, REFLECTION_END_MARKER"\n");
 
@@ -514,7 +671,11 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 	fprintf(st->fh, "num_peaks = %lli\n", i->num_peaks);
 	fprintf(st->fh, "num_saturated_peaks = %lli\n", i->num_saturated_peaks);
 	if ( include_peaks ) {
-		write_peaks(i, st->fh);
+		if ( AT_LEAST_VERSION(st, 2, 3) ) {
+			write_peaks_2_3(i, st->fh);
+		} else {
+			write_peaks(i, st->fh);
+		}
 	}
 
 	for ( j=0; j<i->n_crystals; j++ ) {
@@ -658,10 +819,12 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 
 			/* The reflection list format in the stream diverges
 			 * after 2.2 */
-			if ( AT_LEAST_VERSION(st, 2, 2) ) {
-				reflist = read_stream_reflections(st->fh, image->det);
+			if ( AT_LEAST_VERSION(st, 2, 3) ) {
+				reflist = read_stream_reflections_2_3(st->fh, image->det);
+			} else if ( AT_LEAST_VERSION(st, 2, 2) ) {
+				reflist = read_stream_reflections_2_2(st->fh);
 			} else {
-				reflist = read_stream_reflections_2_1(st->fh, image->det);
+				reflist = read_stream_reflections_2_1(st->fh);
 			}
 			if ( reflist == NULL ) {
 				ERROR("Failed while reading reflections\n");
@@ -806,9 +969,16 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 			}
 		}
 
-		if ( (srf & STREAM_READ_PEAKS)
-		  && (strcmp(line, PEAK_LIST_START_MARKER) == 0) ) {
-			if ( read_peaks(st->fh, image) ) {
+		if ( strcmp(line, PEAK_LIST_START_MARKER) == 0 ) {
+
+			int fail;
+
+			if ( AT_LEAST_VERSION(st, 2, 3) ) {
+				fail = read_peaks_2_3(st->fh, image);
+			} else {
+				fail = read_peaks(st->fh, image);
+			}
+			if ( fail ) {
 				ERROR("Failed while reading peaks\n");
 				return 1;
 			}
