@@ -56,8 +56,10 @@ static void show_help(const char *s)
 "  -h, --help                 Display this help message.\n"
 "  -y, --symmetry=<sym>       The symmetry of the input file.\n"
 "  -p, --pdb=<filename>       PDB file to use.\n"
-"      --rmin=<res>           Lower resolution limit (1/d in m^-1).\n"
-"      --rmax=<res>           Upper resolution limit (1/d in m^-1).\n"
+"      --rmin=<res>           Low resolution cutoff (1/d in m^-1).\n"
+"      --rmax=<res>           High resolution cutoff (1/d in m^-1).\n"
+"      --lowres=<n>           Low resolution cutoff in (d in A).\n"
+"      --highres=<n>          High resolution cutoff in (d in A).\n"
 "      --sigma-cutoff=<n>     Discard reflections with I/sigma(I) < n.\n"
 "      --nshells=<n>          Use <n> resolution shells or bins.\n"
 "      --wilson               Calculate a Wilson plot\n"
@@ -665,6 +667,28 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 }
 
 
+static void check_highres()
+{
+	static int have = 0;
+	if ( have ) {
+		ERROR("You cannot use --rmax and --highres at the same time.\n");
+		exit(1);
+	}
+	have = 1;
+}
+
+
+static void check_lowres()
+{
+	static int have = 0;
+	if ( have ) {
+		ERROR("You cannot use --rmin and --lowres at the same time.\n");
+		exit(1);
+	}
+	have = 1;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -689,6 +713,8 @@ int main(int argc, char *argv[])
 	int ignorenegs = 0;
 	int zeronegs = 0;
 	int nneg = 0;
+	int nres = 0;
+	float highres, lowres;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -702,6 +728,8 @@ int main(int argc, char *argv[])
 		{"sigma-cutoff",       1, NULL,                4},
 		{"nshells",            1, NULL,                5},
 		{"shell-file",         1, NULL,                6},
+		{"highres",            1, NULL,                7},
+		{"lowres",             1, NULL,                8},
 
 		{"wilson",             0, &wilson,             1},
 		{"ltest",              0, &ltest,              1},
@@ -732,6 +760,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 2 :
+			check_lowres();
 			if ( sscanf(optarg, "%e", &rmin_fix) != 1 ) {
 				ERROR("Invalid value for --rmin\n");
 				return 1;
@@ -739,6 +768,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 3 :
+			check_highres();
 			if ( sscanf(optarg, "%e", &rmax_fix) != 1 ) {
 				ERROR("Invalid value for --rmax\n");
 				return 1;
@@ -762,6 +792,24 @@ int main(int argc, char *argv[])
 
 			case 6 :
 			shell_file = strdup(optarg);
+			break;
+
+			case 7 :
+			check_highres();
+			if ( sscanf(optarg, "%e", &highres) != 1 ) {
+				ERROR("Invalid value for --highres\n");
+				return 1;
+			}
+			rmax_fix = 1.0 / (highres/1e10);
+			break;
+
+			case 8 :
+			check_lowres();
+			if ( sscanf(optarg, "%e", &lowres) != 1 ) {
+				ERROR("Invalid value for --lowres\n");
+				return 1;
+			}
+			rmin_fix = 1.0 / (lowres/1e10);
 			break;
 
 			case '?' :
@@ -842,6 +890,22 @@ int main(int argc, char *argv[])
 			nneg++;
 		}
 
+		if ( rmin_fix > 0.0 ) {
+			double res = 2.0*resolution(cell, h, k, l);
+			if ( res < rmin_fix ) {
+				nres++;
+				continue;
+			}
+		}
+
+		if ( rmax_fix > 0.0 ) {
+			double res = 2.0*resolution(cell, h, k, l);
+			if ( res > rmax_fix ) {
+				nres++;
+				continue;
+			}
+		}
+
 		if ( ig ) continue;
 
 		new = add_refl(list, h, k, l);
@@ -858,7 +922,12 @@ int main(int argc, char *argv[])
 	}
 
 	if ( zeronegs && (nneg > 0) ) {
-		STATUS("Set %i negative intensities to zerp\n", nneg);
+		STATUS("Set %i negative intensities to zero\n", nneg);
+	}
+
+	if ( nres > 0 ) {
+		STATUS("%i reflections rejected because they were outside the "
+		       "resolution range.\n", nres);
 	}
 
 	if ( wilson ) {
