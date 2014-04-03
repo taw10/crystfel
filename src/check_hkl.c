@@ -337,12 +337,28 @@ static void wilson_plot(RefList *list, UnitCell *cell, const SymOpList *sym,
 		int bs = (pow(3.125e9/2.0, 2.0) - s2min)/s2step + 1;
 		double lnk, minus2B, cov00, cov01, cov11, sumsq;
 		double B;
-		if ( nbins-bs < 3 ) {
+		if ( nbins - bs < 3 ) {
 			ERROR("Not enough bins to estimate B factor\n");
 			ERROR("Resolution of data, or number of bins, is too "
 			      "low.\n");
 		} else {
-			gsl_fit_linear(&s2[bs], 1, &plot_i[bs], 1, nbins-bs,
+			double *s2fit;
+			double *lnifit;
+			int nbfit = 0;
+			s2fit = malloc(nbins*sizeof(double));
+			lnifit = malloc(nbins*sizeof(double));
+			if ( (s2fit==NULL) || (lnifit==NULL) ) return;
+			for ( i=0; i<nbins-bs; i++ ) {
+				if ( isnan(plot_i[bs+i]) ) continue;
+				s2fit[i] = s2[bs+i];
+				lnifit[i] = plot_i[bs+i];
+				nbfit++;
+			}
+			if ( nbfit < 3 ) {
+				ERROR("Too many bits had invalid values.\n");
+				return;
+			}
+			gsl_fit_linear(s2fit, 1, lnifit, 1, nbfit,
 				       &lnk, &minus2B, &cov00, &cov01, &cov11,
 				       &sumsq);
 			B = -minus2B/2.0;
