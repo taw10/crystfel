@@ -37,6 +37,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <gsl/gsl_fit.h>
 
 #include "utils.h"
 #include "statistics.h"
@@ -187,6 +188,61 @@ static void l_test(RefList *list, UnitCell *cell, const SymOpList *sym,
 }
 
 
+static double get_sfac(char el, double s)
+{
+	double sfac[9];
+	double sf;
+	double s2 = pow(s/1e10, 2.0);  /* s^2 in A^-2 */
+
+	switch ( el ) {
+
+		case 'C' :
+		sfac[0] = 2.31000;   sfac[1] = 20.8439;
+		sfac[2] = 1.02000;   sfac[3] = 10.2075;
+		sfac[4] = 1.58860;   sfac[5] = 0.568700;
+		sfac[6] = 0.865000;  sfac[7] = 51.6512;
+		sfac[8] = 0.215600;
+		break;
+
+		case 'N' :
+		sfac[0] = 12.2126;  sfac[1] = 0.005700;
+		sfac[2] = 3.13220;  sfac[3] = 9.89330;
+		sfac[4] = 2.01250;  sfac[5] = 28.9975;
+		sfac[6] = 1.16630;  sfac[7] = 0.582600;
+		sfac[8] = -11.529;
+		break;
+
+		case 'O' :
+		sfac[0] = 3.04850;  sfac[1] = 13.2771;
+		sfac[2] = 2.28680;  sfac[3] = 5.70110;
+		sfac[4] = 1.54630;  sfac[5] = 0.323900;
+		sfac[6] = 0.867000; sfac[7] = 322.9098;
+		sfac[8] = 0.250800;
+		break;
+
+		case 'H' :
+		sfac[0] = 0.489918;  sfac[1] = 20.6593;
+		sfac[2] = 0.262003;  sfac[3] = 7.74039;
+		sfac[4] = 0.196767;  sfac[5] = 49.5519;
+		sfac[6] = 0.049879;  sfac[7] = 2.20159;
+		sfac[8] = 0.001305;
+		break;
+
+		default :
+		ERROR("Unrecognised atom '%c'\n", el);
+		abort();
+	}
+
+	sf  = sfac[0] * exp(-sfac[1]*s2);
+	sf += sfac[2] * exp(-sfac[3]*s2);
+	sf += sfac[4] * exp(-sfac[5]*s2);
+	sf += sfac[6] * exp(-sfac[7]*s2);
+	sf += sfac[8];
+
+	return sf;
+}
+
+
 static void wilson_plot(RefList *list, UnitCell *cell, const SymOpList *sym,
                         double rmin_fix, double rmax_fix, int nbins,
                         const char *filename)
@@ -196,9 +252,10 @@ static void wilson_plot(RefList *list, UnitCell *cell, const SymOpList *sym,
 	Reflection *refl;
 	RefListIterator *iter;
 	FILE *fh;
-	double *plot_i;
+	double *plot_i, *s2;
 	int *plot_n;
-	int i;
+	int i, ngen;
+	SymOpMask *mask;
 
 	resolution_limits(list, cell, &rmin, &rmax);
 	STATUS("1/d goes from %f to %f nm^-1\n", rmin/1e9, rmax/1e9);
@@ -219,41 +276,81 @@ static void wilson_plot(RefList *list, UnitCell *cell, const SymOpList *sym,
 	if ( plot_i == NULL ) return;
 	for ( i=0; i<nbins; i++ ) plot_i[i] = 0.0;
 
+	s2 = malloc(nbins*sizeof(double));
+	if ( s2 == NULL ) return;
+
 	plot_n = calloc(nbins, sizeof(int));
 	if ( plot_n == NULL ) return;
+
+	ngen = num_equivs(sym, NULL);
+	mask = new_symopmask(sym);
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
 		signed int h, k, l;
-		double d, intensity;
+		double s, intensity, E;
 		int bin;
+		int e;
 
 		get_indices(refl, &h, &k, &l);
 
-		d = resolution(cell, h, k, l);  /* This gives "s" */
+		s = resolution(cell, h, k, l);  /* This gives "s" directly */
 		intensity = get_intensity(refl);
 
-		bin = (pow(d, 2.0) - s2min)/s2step;
+		bin = (pow(s, 2.0) - s2min)/s2step;
 
-		/* FIXME: Divide by epsilon and Sigma */
-		plot_i[bin] += intensity;
+		special_position(sym, mask, h, k, l);
+		e = ngen / num_equivs(sym, mask);
+
+		/* Average atoms per residue from Rupp BMC 1st ed p356 */
+		E  = 5.00*get_sfac('C', s);
+		E += 1.35*get_sfac('N', s);
+		E += 1.50*get_sfac('O', s);
+		E += 8.00*get_sfac('H', s);
+
+		plot_i[bin] += intensity / (e*E);
 		plot_n[bin]++;
 
 	}
 
-	for ( i=0; i<nbins; i++ ) plot_i[i] = log(plot_i[i] / plot_n[i]);
+	free_symopmask(mask);
+
+	for ( i=0; i<nbins; i++ ) {
+		plot_i[i] = log(plot_i[i] / plot_n[i]);
+		s2[i] = s2min + (i+0.5)*s2step;
+	}
 
 	fh = fopen(filename, "w");
 	if ( fh == NULL ) return;
-	fprintf(fh, "  n  s^2/A^-2      d/A        <I>\n");
+	fprintf(fh, "  n  s^2/A^-2      d/A  ln <I>/eE  nrefl\n");
 	for ( i=0; i<nbins; i++ ) {
-		double s2 = s2min + (i+0.5)*s2step;
-		fprintf(fh, "%3i  %8.6f %8.4f %10f\n", i,
-		        s2/1e20, 0.5e10/sqrt(s2), plot_i[i]);
+		fprintf(fh, "%3i  %8.6f %8.4f %10f %6i\n", i,
+		        s2[i]/1e20, 0.5e10/sqrt(s2[i]), plot_i[i], plot_n[i]);
 	}
 	fclose(fh);
+
+	if ( rmax < 3.125e9 ) {
+		ERROR("Resolution too low to estimate B factor\n");
+	} else {
+		int bs = (pow(3.125e9/2.0, 2.0) - s2min)/s2step + 1;
+		double lnk, minus2B, cov00, cov01, cov11, sumsq;
+		double B;
+		if ( nbins-bs < 3 ) {
+			ERROR("Not enough bins to estimate B factor\n");
+			ERROR("Resolution of data, or number of bins, is too "
+			      "low.\n");
+		} else {
+			gsl_fit_linear(&s2[bs], 1, &plot_i[bs], 1, nbins-bs,
+				       &lnk, &minus2B, &cov00, &cov01, &cov11,
+				       &sumsq);
+			B = -minus2B/2.0;
+			STATUS("ln k = %.2f\n", lnk);
+			STATUS("B = %.2f A^2\n", B*1e20);
+		}
+	}
+
 
 	free(plot_i);
 	free(plot_n);

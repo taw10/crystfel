@@ -51,6 +51,27 @@ Fix the upper resolution limit for the resolutions shells, as 1/d in m^-1.
 .PD
 Write the statistics in resolution shells to \fIfilename\fR.
 
+.PD 0
+.IP \fB--ltest\fR
+.PD
+Perform an L-test for twinning.  The shell file will contain the values of |L|, N(|L|) and the theoretical values for untwinned and perfectly twinned data.  See Padilla and Yeates, Acta Cryst. D59 (2003) p1124.
+
+.PD 0
+.IP \fB--wilson\fR
+.PD
+Calculate a Wilson plot.  The shell file will contain the values of s^2 and ln(<I>/eE) (and also the shell number and d in Angstroms for your convenience).  The B factor will be calculated using data above 3.2 A resolution and displayed on the terminal.
+
+.PD 0
+.IP \fB--ignore-negs\fR
+.PD
+Ignore reflections with negative intensities.
+
+.PD 0
+.IP \fB--zero-negs\fR
+.PD
+Set to zero the intensities of reflections with negative intensities.
+
+
 .SH AUTHOR
 This page was written by Thomas White.
 
