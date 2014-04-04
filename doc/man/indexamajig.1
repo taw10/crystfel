@@ -34,23 +34,13 @@ folder a long way from the current directory, so you might want to specify a
 full pathname to be added in front of each filename.  You'll probably want to
 run more than one indexing job at a time (-j <n>).
 
-You can include a table of saturation values for in the HDF5 file, if you have
-a method for estimating the intensities of saturated peaks.  It goes in
-/processing/hitfinder/peakinfo_saturated, and should be an n*3 two dimensional
-array, where the first two columns contain fast scan and slow scan coordinates
-(in that order) and the third contains the value which should belong in a peak
-at the given location.  The value will be spread in a small cross centred on
-that location.
-
 See \fBman crystfel_geometry\fR for information about how to create a geometry description file and a beam parameters file.
 
 .SH PEAK DETECTION
 
 You can control the peak detection on the command line.  Firstly, you can choose the peak detection method using \fB--peaks=\fR\fImethod\fR.  Currently, two values for "method" are available.  \fB--peaks=hdf5\fR will take the peak locations from the HDF5 file.  It expects a two dimensional array at where size in the first dimension is the number of peaks and the size in the second dimension is three.  The first two columns contain the fast scan and slow scan coordinates, the third contains the intensity.  However, the intensity will be ignored since the pattern will always be re-integrated using the unit cell provided by the indexer on the basis of the peaks.  You can tell indexamajig where to find this table inside each HDF5 file using \fB--hdf5-peaks=\fR\fIpath\fR.
 
-If you use \fB--peaks=zaef\fR, indexamajig will use a simple gradient search after Zaefferer (2000).  You can control the overall threshold and minimum squared gradient for finding a peak using \fB--threshold\fR and \fB--min-gradient\fR.  The threshold has arbitrary units matching the pixel values in the data, and the minimum gradient has the equivalent squared units.
-
-Peaks will be rejected if the 'foot point' is further away from the 'summit' of the peak by more than the inner integration radius (see below).  They will also be rejected if the peak is closer than twice the inner integration radius from another peak.
+If you use \fB--peaks=zaef\fR, indexamajig will use a simple gradient search after Zaefferer (2000).  You can control the overall threshold and minimum squared gradient for finding a peak using \fB--threshold\fR and \fB--min-gradient\fR.  The threshold has arbitrary units matching the pixel values in the data, and the minimum gradient has the equivalent squared units.  Peaks will be rejected if the 'foot point' is further away from the 'summit' of the peak by more than the inner integration radius (see below).  They will also be rejected if the peak is closer than twice the inner integration radius from another peak.
 
 You can suppress peak detection altogether for a panel in the geometry file by specifying the "no_index" value for the panel as non-zero.
 
@@ -335,7 +325,7 @@ Do not record integrated reflections in the stream.  The resulting output won't 
 .PD 0
 .IP \fB--int-diag=\fIcondition\fR\fR
 .PD
-Show detailed information about reflection integration when \fIcondition\fR is met.  The \fIcondition\fR can be \fBall\fR, \fBnone\fR, a set of Miller indices separated by commas, \fBrandom\fR, \fBimplausible\fR or \fBnegative\fR.  \fBrandom\fR means to show information about a random 1% of the peaks.  \fBnegative\fR means to show peaks with intensities which are negative my more than 3 sigma.  \fBimplausible\fR means to show peaks with intensities which are negative my more than 5 sigma.  The default is \fB--int-diag=none\fR.
+Show detailed information about reflection integration when \fIcondition\fR is met.  The \fIcondition\fR can be \fBall\fR, \fBnone\fR, a set of Miller indices separated by commas, \fBrandom\fR, \fBimplausible\fR or \fBnegative\fR.  \fBrandom\fR means to show information about a random 1% of the peaks.  \fBnegative\fR means to show peaks with intensities which are negative by more than 3 sigma.  \fBimplausible\fR means to show peaks with intensities which are negative by more than 5 sigma.  The default is \fB--int-diag=none\fR.
 
 .SH BUGS
 ReAx indexing is experimental.  It works very nicely for some people, and crashes for others.  In a future version, it will be improved and fully supported.
@@ -347,7 +337,7 @@ This page was written by Thomas White.
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
 .SH COPYRIGHT AND DISCLAIMER
-Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .P
 indexamajig, and this manual, are part of CrystFEL.
 .P
@@ -360,5 +350,6 @@ You should have received a copy of the GNU General Public License along with Cry
 .SH SEE ALSO
 .BR crystfel (7),
 .BR crystfel_geometry (5),
+.BR cell_explorer (1),
 .BR process_hkl (1),
 .BR partialator (1)

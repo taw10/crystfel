@@ -18,7 +18,7 @@ get_hkl \- manipulate reflection data
 .SH DESCRIPTION
 get_hkl performs various manipulations on reflection lists.  Possible manipulations include: expanding to a point group of lower symmetry, 'twinning' to a point group of higher symmetry, adding noise, restricting the list to contain only reflections included in another 'template' list, and some less common miscellaneous manipulations.
 .PP
-The input filename should be specified with \fB-i\fR \fIfilename\fR or \fB--input=\fR\fIfilename\fR.  The output filename should be specified with \fB-o\fR \fIfilename\fR or \fB--output=\fR\fIfilename\fR.  The symmetry of the input reflection list should be specified with \fB-y\fR \fIpointgroup\fR or \fB--symmetry=\fR\fIpointgroup\fR.  If you give the filename of a PDB file containing a CRYST1 line with unit cell parameters (using \fB-p\fR \fIfilename\fR or \fB--pdb=\fR\fIfilename\fR), the output reflection list will contain 1/d values.  Beyond these parameters, you can choose one of the manipulations described below.  The behaviour if multiple manipulations are requested is deliberately left undefined: it's much clearer to perform multiple manipulations in explicit separate steps.
+The input filename should be specified with \fB-i\fR \fIfilename\fR or \fB--input=\fR\fIfilename\fR.  The output filename should be specified with \fB-o\fR \fIfilename\fR or \fB--output=\fR\fIfilename\fR.  The symmetry of the input reflection list should be specified with \fB-y\fR \fIpointgroup\fR or \fB--symmetry=\fR\fIpointgroup\fR.  Beyond these parameters, you can choose one of the manipulations described below.  The behaviour if multiple manipulations are requested is deliberately left undefined: it's much clearer to perform multiple manipulations in explicit separate steps.
 
 .SH EXPANDING REFLECTIONS INTO A POINT GROUP OF LOWER SYMMETRY
 .PD 0
@@ -74,7 +74,13 @@ The intensities of the reflections will be multiplied by their symmetric multipl
 .IP \fB--cutoff-angstroms=\fR\fIn1,n2,n3\fR
 .PD
 In the first form, reflections with d (=lamba/2*sin(theta)) < \fIn\fR will be removed.
-In the second form, anisotropic truncation will be performed with separate resolution limits \fIn1\fR, \fIn2\fR and \fIn3\fR along a*, b* and c* respectively.
+In the second form, anisotropic truncation will be performed with separate resolution limits \fIn1\fR, \fIn2\fR and \fIn3\fR along a*, b* and c* respectively.  You must also specify \fB-p\fR or \fB--pdb\fR.
+
+.PD 0
+.IP \fB-p\fR \fIunitcell.pdb\fR
+.IP \fB--pdb=\fR\fIunitcell.pdb\fR
+.PD
+Specify the name of the PDB file containing at least a CRYST1 line describing the unit cell.
 
 .SH AUTHOR
 This page was written by Thomas White.
@@ -83,7 +89,7 @@ This page was written by Thomas White.
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
 .SH COPYRIGHT AND DISCLAIMER
-Copyright © 2012 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .P
 get_hkl, and this manual, are part of CrystFEL.
 .P

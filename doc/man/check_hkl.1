@@ -39,12 +39,20 @@ Discard reflections with I/sigma(I) < \fIn\fR.  Default: -infinity (no cutoff).
 .PD 0
 .IP \fB--rmin=\fR\fI1/d\fR
 .PD
-Fix the lower resolution limit for the resolutions shells, as 1/d in m^-1.
+Low resolution cutoff, as 1/d in m^-1.  Use this or \fB--lowres\fR, but not both.
+
+.PD 0
+.IP \fB--lowres=\fR\fId\fR
+Low resolution cutoff in Angstroms.  Use this or \fB--rmin\fR, but not both.
 
 .PD 0
 .IP \fB--rmax=\fR\fI1/d\fR
 .PD
-Fix the upper resolution limit for the resolutions shells, as 1/d in m^-1.
+High resolution cutoff, as 1/d in m^-1.  Use this or \fB--highres\fR, but not both.
+
+.PD 0
+.IP \fB--highres=\fR\fId\fR
+High resolution cutoff in Angstroms.  Use this or \fB--rmax\fR, but not both.
 
 .PD 0
 .IP \fB--shell-file=\fR\fIfilename\fR
@@ -71,6 +79,10 @@ Ignore reflections with negative intensities.
 .PD
 Set to zero the intensities of reflections with negative intensities.
 
+.PD 0
+.IP \fB--nshells=\fIn\fR
+.PD
+Use \fIn\fR resolution shells.  Default: 10.
 
 .SH AUTHOR
 This page was written by Thomas White.

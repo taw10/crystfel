@@ -72,14 +72,14 @@ I1 and I2 are the intensities of the same reflection in both reflection lists.  
 .RE
 
 .PD 0
-.IP \fB-u\fR
-.PD
-Fix scale factors to unity.
-
-.PD 0
 .IP \fB--nshells=\fR\fIn\fR
 .PD
 Use \fIn\fR resolution shells.  Default: 10.
+
+.PD 0
+.IP \fB-u\fR
+.PD
+Fix scale factors to unity.
 
 .PD 0
 .IP \fB--shell-file=\fIfilename\fR
@@ -104,12 +104,20 @@ Discard reflections with I/sigma(I) < \fIn\fR.  Default: -infinity (no cutoff).
 .PD 0
 .IP \fB--rmin=\fR\fI1/d\fR
 .PD
-Discard reflections with lower than this value of 1/d in m^-1.
+Low resolution cutoff, as 1/d in m<sup>-1</sup>.  Use this or \fB--lowres\fR, but not both.
+
+.PD 0
+.IP \fB--lowres=\fR\fId\fR
+Low resolution cutoff in Angstroms.  Use this or \fB--rmin\fR, but not both.
 
 .PD 0
 .IP \fB--rmax=\fR\fI1/d\fR
 .PD
-Discard reflections with higher than this value of 1/d in m^-1.
+High resolution cutoff, as 1/d in m<sup>-1</sup>.  Use this or \fB--highres\fR, but not both.
+
+.PD 0
+.IP \fB--highres=\fR\fId\fR
+High resolution cutoff in Angstroms.  Use this or \fB--rmax\fR, but not both.
 
 .PD 0
 .IP \fB--intensity-shells\fR
@@ -117,12 +125,6 @@ Discard reflections with higher than this value of 1/d in m^-1.
 Use intensity shells instead of resolution shells.  The range of shells will start at the intensity of the least intense reflection, and extend from there by 1/5000th of the intensity of the difference between the strongest and weakest reflection in the first reflection list.  The pairs of reflections will also be assigned their bins according to the intensity of the reflection in the first list.
 .sp
 Because of the hardcoded factor of 1/5000, needed to avoid a very uneven distribution of the number of reflection pairs in each bin, you are advised not to draw strong conclusions from the results of using this option.
-
-.PD 0
-.IP \fB--shell-file=\fR\fIfilename\fR
-.PD
-Write the statistics in resolution shells to \fIfilename\fR.
-
 
 .SH AUTHOR
 This page was written by Thomas White.

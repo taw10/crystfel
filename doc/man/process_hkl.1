@@ -1,7 +1,7 @@
 .\"
 .\" process_hkl man page
 .\"
-.\" Copyright © 2012 Thomas White <taw@physics.org>
+.\" Copyright © 2012-2014\f Thomas White <taw@physics.org>
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
 .\"
@@ -122,7 +122,7 @@ individual crystals are random.  That means that the orientation of each
 crystal must be determined independently, with no information about its
 relationship to the orientation of crystals in other patterns.
 
-Some symmetry classes are merohedral, which means that they have lower symmetry than their lattices. This means that the orientation determined by indexing will have an ambiguity.  In such cases, you will need to merge according to corresponding holohedral point group.  To determine what this is, consult the tables in \fRtwin-calculator.pdf\fB.  For further information, see the theory page of the CrystFEL website.
+Some symmetry classes are merohedral, which means that they have lower symmetry than their lattices. This means that the orientation determined by indexing will have an ambiguity.  In such cases, you will need to merge according to corresponding holohedral point group.  To determine what this is, consult the tables in \fRtwin-calculator.pdf\fB.
 
 .SH AUTHOR
 This page was written by Thomas White.
@@ -131,9 +131,9 @@ This page was written by Thomas White.
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
 .SH COPYRIGHT AND DISCLAIMER
-Copyright © 2012 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .P
-process_hkl, and this manual, are part of CrystFEL.
+qprocess_hkl, and this manual, are part of CrystFEL.
 .P
 CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 .P
@@ -147,4 +147,5 @@ You should have received a copy of the GNU General Public License along with Cry
 .BR compare_hkl (1),
 .BR check_hkl (1),
 .BR render_hkl (1),
+.BR ambigator (1),
 .BR partialator (1)
