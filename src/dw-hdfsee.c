@@ -58,7 +58,7 @@ static void displaywindow_error(DisplayWindow *dw, const char *message)
 	window = gtk_message_dialog_new(GTK_WINDOW(dw->window),
 					GTK_DIALOG_DESTROY_WITH_PARENT,
 					GTK_MESSAGE_WARNING,
-					GTK_BUTTONS_CLOSE, message);
+					GTK_BUTTONS_CLOSE, "%s", message);
 	gtk_window_set_title(GTK_WINDOW(window), "Error");
 
 	g_signal_connect_swapped(window, "response",
