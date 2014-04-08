@@ -1,12 +1,19 @@
 Changes in this development version
 -----------------------------------
 
+- ambigator and cell_explorer were added.
 - get_hkl -w was fixed, and the option --no-need-all-parts added.
 - pattern_sim was overhauled: the ability to simulate a finite bandwidth was
-  restored, and a SASE spectrum can now be simulated.
+  restored, and a SASE or two-colour spectrum can now be simulated.
 - All programs which use a random number generator now use a proper random
   number generator instead of random().
-- partial_sim --really-random was added.
+- partial_sim --really-random and --images were added.
+- pattern_sim --template and --no-fringes were added.
+- check_hkl --ltest and --wilson were added.
+- process_hkl --max-adu and --min-res were added.
+- compare/check_hkl --lowres and- -highres were added.
+- The "rescut" integration flag was added.
+- The stream format was changed to include peak heights and mean backgrounds.
 
 
 CrystFEL version 0.5.2, 4th December 2013
