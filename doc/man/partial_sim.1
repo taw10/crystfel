@@ -44,7 +44,7 @@ for information about CrystFEL geometry description files.
 Take the fully integrated reflection intensities from \fIfile.hkl\fR, instead of generating them randomly.
 
 .B
-.IP \fB-n\fR \fIn\fR
+.IP "\fB-n\fR \fIn\fR"
 Specify the number of different orientations to simulate.  Default: 2.
 
 .PD 0
@@ -59,7 +59,7 @@ If you did not provide your own fully integrated reflection intensities, they wi
 .B
 .IP "\fB-y\fR \fIpointgroup\fR"
 .B
-.IP \fB--symmetry=\fR\fIpointgroup\fR
+.IP "\fB--symmetry=\fR\fIpointgroup\fR"
 .PD
 When combined with with \fB-i\fR, specifies the symmetry of the input reflection list.  Otherwise, specifies the symmetry of the randomly generated intensities.
 
@@ -67,31 +67,31 @@ When combined with with \fB-i\fR, specifies the symmetry of the input reflection
 .B
 .IP "\fB-c\fR \fIval\fR"
 .B
-.IP "\fB--cnoise=\fR\fIval\fR
+.IP "\fB--cnoise=\fR\fIval\fR"
 .PD
 Add random values with a flat distribution to the components of the reciprocal lattice vectors written to the stream, simulating indexing errors.  The maximum value that will be added is +/- \fIval\fR percent.
 
 .PD 0
 .B
-.IP "\fB--pgraph=\fR\fIfilename\fR
+.IP "\fB--pgraph=\fR\fIfilename\fR"
 .PD
 Save a table of values to \fIfilename\fR containing, in resolution shells, the following columns: resolution shell centre in nm^-1, number of reflections in shell, mean partiality, maximum partiality.
 
 .PD 0
 .B
-.IP "\fB--osf-stddev=\fR\fIval\fR
+.IP "\fB--osf-stddev=\fR\fIval\fR"
 .PD
 Set the standard deviation of the distribution of overall scaling factors to \fIval\fR.  The distribution will be cut at zero, i.e. negative or zero scaling factors are not allowed.  The distribution will be Gaussian centered on 1.  The default is \fB--osf-stddev=2.0\fR.
 
 .PD 0
 .B
-.IP "\fB--full-stddev=\fR\fIval\fR
+.IP "\fB--full-stddev=\fR\fIval\fR"
 .PD
 Set the standard deviation of the distribution of randomly generated full intensities to \fIval\fR.  The distribution will be Gaussian, centered on zero, and the absolute value will be taken (i.e. there will be no negative values).  The default is \fB--full-stddev=1000.0\fR.  This option has no effect if you also use \fB-i\fR or \fB--input\fR.
 
 .PD 0
 .B
-.IP "\fB--noise-stddev=\fR\fIval\fR
+.IP "\fB--noise-stddev=\fR\fIval\fR"
 .PD
 Set the standard deviation of the noise added to the partial intensities to \fIval\fR.  The noise will be Gaussian, and the same for all reflections.  The default is \fB--noise-stddev=20.0\fR.
 
@@ -103,7 +103,7 @@ Use \fIn\fR threads for simulation.  Default: 1.
 
 .PD 0
 .B
-.IP "\fB--images=\fR\fIprefix\fR
+.IP "\fB--images=\fR\fIprefix\fR"
 .PD
 For each chunk in the output stream, write an image in HDF5 format to \fIprefix\fR\fB/sim-\fR\fINNN\fR\fB.h5\fR, where \fINNN\fR is the sequence number of the chunk in the output stream.  This option is incompatible with \fB-j\fR.
 

@@ -1,7 +1,7 @@
 .\"
 .\" check_hkl man page
 .\"
-.\" Copyright © 2012 Thomas White <taw@physics.org>
+.\" Copyright © 2012-2014 Thomas White <taw@physics.org>
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
 .\"
@@ -20,38 +20,38 @@ check_hkl calculates figures of merit for reflection data, such as completeness 
 
 .SH OPTIONS
 .PD 0
-.IP \fB-p\fR \fIunitcell.pdb\fR
+.IP "\fB-p\fR \fIunitcell.pdb\fR"
 .IP \fB--pdb=\fR\fIunitcell.pdb\fR
 .PD
 Specify the name of the PDB file containing at least a CRYST1 line describing the unit cell.
 
 .PD 0
-.IP \fB-y\fR \fpointgroup\fR
+.IP "\fB-y\fR \fIpointgroup\fR"
 .IP \fB--symmetry=\fR\fIpointgroup\fR
 .PD
 Specify the symmetry of the reflections.
 
 .PD 0
-.IP \fB--sigma-cutoff=\fR\fIn\fR
+.IP "\fB--sigma-cutoff=\fR\fIn\fR"
 .PD
 Discard reflections with I/sigma(I) < \fIn\fR.  Default: -infinity (no cutoff).
 
 .PD 0
-.IP \fB--rmin=\fR\fI1/d\fR
+.IP "\fB--rmin=\fR\fI1/d\fR"
 .PD
 Low resolution cutoff, as 1/d in m^-1.  Use this or \fB--lowres\fR, but not both.
 
 .PD 0
-.IP \fB--lowres=\fR\fId\fR
+.IP "\fB--lowres=\fR\fId\fR"
 Low resolution cutoff in Angstroms.  Use this or \fB--rmin\fR, but not both.
 
 .PD 0
-.IP \fB--rmax=\fR\fI1/d\fR
+.IP "\fB--rmax=\fR\fI1/d\fR"
 .PD
 High resolution cutoff, as 1/d in m^-1.  Use this or \fB--highres\fR, but not both.
 
 .PD 0
-.IP \fB--highres=\fR\fId\fR
+.IP "\fB--highres=\fR\fId\fR"
 High resolution cutoff in Angstroms.  Use this or \fB--rmax\fR, but not both.
 
 .PD 0
@@ -91,7 +91,7 @@ This page was written by Thomas White.
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
 .SH COPYRIGHT AND DISCLAIMER
-Copyright © 2012 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .P
 check_hkl, and this manual, are part of CrystFEL.
 .P
