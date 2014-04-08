@@ -538,10 +538,6 @@ static struct shells *set_resolution_shells(double rmin, double rmax,
 		s->rmaxs[i-1] = r;
 		s->rmins[i] = r;
 
-		/* Shells of constant thickness */
-		//rmins[i] = rmins[i-1] + (rmax-rmin)/NBINS;
-		//rmaxs[i-1] = rmins[i-1] + (rmax-rmin)/NBINS;
-
 	}
 	s->rmaxs[nshells-1] = rmax;
 

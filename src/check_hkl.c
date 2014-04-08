@@ -480,18 +480,8 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		/* Shells of constant volume */
 		rmaxs[i-1] = r;
 		rmins[i] = r;
-
-		/* Shells of constant thickness */
-		//rmins[i] = rmins[i-1] + (rmax-rmin)/nshells;
-		//rmaxs[i-1] = rmins[i-1] + (rmax-rmin)/nshells;
-
-		STATUS("Shell %i: %f to %f\n", i-1,
-		       rmins[i-1]/1e9, rmaxs[i-1]/1e9);
-
 	}
 	rmaxs[nshells-1] = rmax;
-	STATUS("Shell %i: %f to %f\n", nshells-1,
-	       rmins[nshells-1]/1e9, rmaxs[nshells-1]/1e9);
 
 	/* Count the number of reflections possible in each shell */
 	counted = reflist_new();
