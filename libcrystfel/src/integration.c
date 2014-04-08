@@ -1650,7 +1650,6 @@ static double estimate_resolution(UnitCell *cell, ImageFeatureList *flist)
 	double *acc;
 	int n_acc = 0;
 	int max_acc = 1024;
-	double av;
 	int n;
 
 	acc = malloc(max_acc*sizeof(double));
