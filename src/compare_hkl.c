@@ -3,11 +3,11 @@
  *
  * Compare reflection lists
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *   2013      Lorenzo Galli <lorenzo.galli@desy.de>
  *
  * This file is part of CrystFEL.
@@ -102,8 +102,10 @@ static void show_help(const char *s)
 "      --ignore-negs          Ignore reflections with negative intensities.\n"
 "      --zero-negs            Set negative intensities to zero.\n"
 "      --sigma-cutoff=<n>     Discard reflections with I/sigma(I) < n.\n"
-"      --rmin=<res>           Set a lower resolution limit (m^-1).\n"
-"      --rmax=<res>           Set an upper resolution limit (m^-1).\n"
+"      --rmin=<res>           Low resolution cutoff (1/d in m^-1).\n"
+"      --rmax=<res>           High resolution cutoff (1/d in m^-1).\n"
+"      --lowres=<n>           Low resolution cutoff in (d in A).\n"
+"      --highres=<n>          High resolution cutoff in (d in A).\n"
 "      --intensity-shells     Use shells of intensity instead of resolution.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
@@ -875,6 +877,28 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 }
 
 
+static void check_highres()
+{
+	static int have = 0;
+	if ( have ) {
+		ERROR("You cannot use --rmax and --highres at the same time.\n");
+		exit(1);
+	}
+	have = 1;
+}
+
+
+static void check_lowres()
+{
+	static int have = 0;
+	if ( have ) {
+		ERROR("You cannot use --rmin and --lowres at the same time.\n");
+		exit(1);
+	}
+	have = 1;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -906,6 +930,7 @@ int main(int argc, char *argv[])
 	char *shell_file = NULL;
 	double min_I = +INFINITY;
 	double max_I = -INFINITY;
+	float highres, lowres;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -918,6 +943,8 @@ int main(int argc, char *argv[])
 		{"sigma-cutoff",       1, NULL,                5},
 		{"nshells",            1, NULL,                6},
 		{"shell-file",         1, NULL,                7},
+		{"highres",            1, NULL,                8},
+		{"lowres",             1, NULL,                9},
 		{"ignore-negs",        0, &config_ignorenegs,  1},
 		{"zero-negs",          0, &config_zeronegs,    1},
 		{"intensity-shells",   0, &config_intshells,   1},
@@ -951,6 +978,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 2 :
+			check_lowres();
 			if ( sscanf(optarg, "%e", &rmin_fix) != 1 ) {
 				ERROR("Invalid value for --rmin\n");
 				return 1;
@@ -958,6 +986,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 3 :
+			check_highres();
 			if ( sscanf(optarg, "%e", &rmax_fix) != 1 ) {
 				ERROR("Invalid value for --rmax\n");
 				return 1;
@@ -984,6 +1013,24 @@ int main(int argc, char *argv[])
 
 			case 7 :
 			shell_file = strdup(optarg);
+			break;
+
+			case 8 :
+			check_highres();
+			if ( sscanf(optarg, "%e", &highres) != 1 ) {
+				ERROR("Invalid value for --highres\n");
+				return 1;
+			}
+			rmax_fix = 1.0 / (highres/1e10);
+			break;
+
+			case 9 :
+			check_lowres();
+			if ( sscanf(optarg, "%e", &lowres) != 1 ) {
+				ERROR("Invalid value for --lowres\n");
+				return 1;
+			}
+			rmin_fix = 1.0 / (lowres/1e10);
 			break;
 
 			case '?' :
