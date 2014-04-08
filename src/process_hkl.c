@@ -82,6 +82,7 @@ static void show_help(const char *s)
 "      --min-snr=<n>         Require individual intensity measurements to\n"
 "                             have I > n * sigma(I).  Default: -infinity.\n"
 "      --max-adu=<n>         Maximum peak value.  Default: infinity.\n"
+"      --min-res=<n>         Merge only crystals which diffract above <n> A.\n"
 );
 }
 
@@ -308,7 +309,7 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
                      signed int hist_k, signed int hist_l,
                      int *hist_i, int config_nopolar, int min_measurements,
                      double min_snr, double max_adu,
-                     int start_after, int stop_after)
+                     int start_after, int stop_after, double min_res)
 {
 	int rval;
 	int n_images = 0;
@@ -338,6 +339,10 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 
 			n_crystals_seen++;
 			if ( n_crystals_seen <= start_after ) continue;
+
+			if ( crystal_get_resolution_limit(cr) < min_res ) {
+				continue;
+			}
 
 			n_crystals++;
 			r = merge_crystal(model, &image, cr, reference, sym,
@@ -414,6 +419,7 @@ int main(int argc, char *argv[])
 	int stop_after = 0;
 	double min_snr = -INFINITY;
 	double max_adu = +INFINITY;
+	double min_res = 0.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -434,6 +440,7 @@ int main(int argc, char *argv[])
 		{"min-measurements",   1, NULL,                2},
 		{"min-snr",            1, NULL,                3},
 		{"max-adu",            1, NULL,                4},
+		{"min-res",            1, NULL,                5},
 		{0, 0, NULL, 0}
 	};
 
@@ -514,6 +521,16 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --max-adu.\n");
 				return 1;
 			}
+			break;
+
+			case 5 :
+			errno = 0;
+			min_res = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --min-res.\n");
+				return 1;
+			}
+			min_res = 1e10/min_res;
 			break;
 
 			case '?' :
@@ -597,7 +614,7 @@ int main(int argc, char *argv[])
 	hist_i = 0;
 	r = merge_all(st, model, NULL, sym, &hist_vals, hist_h, hist_k, hist_l,
 	              &hist_i, config_nopolar, min_measurements, min_snr,
-	              max_adu, start_after, stop_after);
+	              max_adu, start_after, stop_after, min_res);
 	fprintf(stderr, "\n");
 	if ( r ) {
 		ERROR("Error while reading stream.\n");
@@ -629,7 +646,7 @@ int main(int argc, char *argv[])
 			r = merge_all(st, model, reference, sym,
 				     &hist_vals, hist_h, hist_k, hist_l, &hist_i,
 				     config_nopolar, min_measurements, min_snr,
-				     max_adu, start_after, stop_after);
+				     max_adu, start_after, stop_after, min_res);
 			fprintf(stderr, "\n");
 			if ( r ) {
 				ERROR("Error while reading stream.\n");

@@ -500,7 +500,7 @@ void read_crystal(Stream *st, struct image *image)
 
 	do {
 
-		float u, v, w;
+		float u, v, w, lim;
 		char c;
 
 		rval = fgets(line, 1023, st->fh);
@@ -554,6 +554,11 @@ void read_crystal(Stream *st, struct image *image)
 		if ( strncmp(line, "num_saturated_reflections = ", 28) == 0 ) {
 			int n = atoi(line+28);
 			crystal_set_num_saturated_reflections(cr, n);
+		}
+
+		if ( sscanf(line, "diffraction_resolution_limit = %f nm^-1",
+		            &lim) == 1 ) {
+			crystal_set_resolution_limit(cr, lim*1e9);
 		}
 
 		if ( strcmp(line, REFLECTION_START_MARKER) == 0 ) {
