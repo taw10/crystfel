@@ -126,6 +126,7 @@ static void show_help(const char *s)
 "-e, --image=<element>   Use this image from the HDF5 file.\n"
 "                          Example: /data/data0.\n"
 "                          Default: The first one found.\n"
+"    --push-res=<n>      Integrate higher than apparent resolution cutoff.\n"
 "\n"
 "\nFor time-resolved stuff, you might want to use:\n\n"
 "     --copy-hdf5-field <f>  Copy the value of field <f> into the stream. You\n"
@@ -235,6 +236,7 @@ int main(int argc, char *argv[])
 	iargs.indm = NULL;  /* No default */
 	iargs.ipriv = NULL;  /* No default */
 	iargs.int_meth = integration_method("rings-nocen", NULL);
+	iargs.push_res = 0.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -287,6 +289,8 @@ int main(int argc, char *argv[])
 		{"integration",        1, NULL,               16},
 		{"temp-dir",           1, NULL,               17},
 		{"int-diag",           1, NULL,               18},
+		{"push-res",           1, NULL,               19},
+		{"res-push",           1, NULL,               19}, /* compat */
 
 		{0, 0, NULL, 0}
 	};
@@ -417,6 +421,14 @@ int main(int argc, char *argv[])
 
 			case 18 :
 			int_diag = strdup(optarg);
+			break;
+
+			case 19 :
+			if ( sscanf(optarg, "%f", &iargs.push_res) != 1 ) {
+				ERROR("Invalid value for --push-res\n");
+				return 1;
+			}
+			iargs.push_res *= 1e9;  /* nm^-1 -> m^-1 */
 			break;
 
 			case 0 :

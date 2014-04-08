@@ -78,6 +78,7 @@ struct index_args
 	signed int int_diag_h;
 	signed int int_diag_k;
 	signed int int_diag_l;
+	float push_res;
 };
 
 

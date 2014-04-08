@@ -184,7 +184,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Integrate all the crystals at once - need all the crystals so that
 	 * overlaps can be detected. */
-	integrate_all(&image, iargs->int_meth,
+	integrate_all(&image, iargs->int_meth, iargs->push_res,
 	                      iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
 	                      iargs->int_diag, iargs->int_diag_h,
 	                      iargs->int_diag_k, iargs->int_diag_l);

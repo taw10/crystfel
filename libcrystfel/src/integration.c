@@ -1799,7 +1799,7 @@ static void apply_resolution_cutoff(Crystal *cr, double res)
 }
 
 
-void integrate_all(struct image *image, IntegrationMethod meth,
+void integrate_all(struct image *image, IntegrationMethod meth, double push_res,
                    double ir_inn, double ir_mid, double ir_out,
                    IntDiag int_diag,
                    signed int idh, signed int idk, signed int idl)
@@ -1840,7 +1840,7 @@ void integrate_all(struct image *image, IntegrationMethod meth,
 
 		crystal_set_resolution_limit(cr, res);
 		if ( meth & INTEGRATION_RESCUT ) {
-			apply_resolution_cutoff(cr, res);
+			apply_resolution_cutoff(cr, res+push_res);
 		}
 
 	}
