@@ -144,6 +144,10 @@ Center the peak boxes iteratively on the actual peak locations.  The opposite is
 .PD
 Normally, reflections which contain one or more pixels above max_adu (defined in the detector geometry file) will not be integrated and written to the stream.  Using this option skips this check, and allows saturated reflections to be passed to the later merging stages.  This is not usually a good idea, but might be your only choice if there are many saturated reflections.  The opposite is \fB-nosat\fR, which is the default for all integration methods.
 
+.IP \fB-rescut\fR
+.PD
+Normally, reflections are integrated all the way to the edge of the detector, even if the crystal diffracts to a lower resolution.  With this option, integration will be performed up to the apparent diffraction limit of the crystal.  You can use \fB--push-res\fR (see below) to integrate to a slightly higher or lower resolution.  The resolution limit is determined by comparing the peaks found by the peak search to the indexing results, so good peak detection is essential when using this option (as it is always).  The opposite is \fB-norescut\fR, which is the default.
+
 .SH OPTIMISING THE INTEGRATION RADII
 To determine appropriate values for the integration radii, index some patterns with the default values and view the results using \fBcheck-near-bragg\fR (in the scripts folder).  Set the binning in \fBhdfsee\fR to 1, and adjust the ring radius until none of the rings overlap for any of the patterns.  This ring radius is the outer radius to use. Then reduce the radius until the circles match the sizes of the peaks as closely as possible.  This value is the inner radius.  The middle radius should be between the two, ideally between two and three pixels smaller than the outer radius.
 .PP
@@ -323,7 +327,7 @@ Do not record peak search results in the stream.  You won't be able to check tha
 Do not record integrated reflections in the stream.  The resulting output won't be usable for merging, but will be a lot smaller.  This option might be useful if you're only interested in things like unit cell parameters and orientations.
 
 .PD 0
-.IP \fB--int-diag=\fIcondition\fR\fR
+.IP \fB--int-diag=\fIcondition\fR
 .PD
 Show detailed information about reflection integration when \fIcondition\fR is met.  The \fIcondition\fR can be \fBall\fR, \fBnone\fR, a set of Miller indices separated by commas, \fBrandom\fR, \fBimplausible\fR or \fBnegative\fR.  \fBrandom\fR means to show information about a random 1% of the peaks.  \fBnegative\fR means to show peaks with intensities which are negative by more than 3 sigma.  \fBimplausible\fR means to show peaks with intensities which are negative by more than 5 sigma.  The default is \fB--int-diag=none\fR.
 
