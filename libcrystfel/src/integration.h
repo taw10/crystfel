@@ -83,10 +83,15 @@ typedef enum {
 extern IntegrationMethod integration_method(const char *t, int *err);
 
 extern void integrate_all(struct image *image, IntegrationMethod meth,
-                          double push_res,
                           double ir_inn, double ir_mid, double ir_out,
                           IntDiag int_diag,
                           signed int idh, signed int idk, signed int idl);
+
+extern void integrate_all_2(struct image *image, IntegrationMethod meth,
+                            double push_res,
+                            double ir_inn, double ir_mid, double ir_out,
+                            IntDiag int_diag,
+                            signed int idh, signed int idk, signed int idl);
 
 
 #endif	/* INTEGRATION_H */

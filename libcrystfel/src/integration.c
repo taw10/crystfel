@@ -1799,10 +1799,11 @@ static void apply_resolution_cutoff(Crystal *cr, double res)
 }
 
 
-void integrate_all(struct image *image, IntegrationMethod meth, double push_res,
-                   double ir_inn, double ir_mid, double ir_out,
-                   IntDiag int_diag,
-                   signed int idh, signed int idk, signed int idl)
+void integrate_all_2(struct image *image, IntegrationMethod meth,
+                     double push_res,
+                     double ir_inn, double ir_mid, double ir_out,
+                     IntDiag int_diag,
+                     signed int idh, signed int idk, signed int idl)
 {
 	int i;
 
@@ -1844,6 +1845,16 @@ void integrate_all(struct image *image, IntegrationMethod meth, double push_res,
 		}
 
 	}
+}
+
+
+void integrate_all(struct image *image, IntegrationMethod meth,
+                   double ir_inn, double ir_mid, double ir_out,
+                   IntDiag int_diag,
+                   signed int idh, signed int idk, signed int idl)
+{
+	integrate_all_2(image, meth, 0.0, ir_inn, ir_mid, ir_out,
+	                int_diag, idh, idk, idl);
 }
 
 
