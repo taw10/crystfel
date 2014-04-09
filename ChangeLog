@@ -1,5 +1,5 @@
-Changes in this development version
------------------------------------
+CrystFEL version 0.5.3, 9th April 2014
+--------------------------------------
 
 - ambigator and cell_explorer were added.
 - get_hkl -w was fixed, and the option --no-need-all-parts added.
