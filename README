@@ -1,7 +1,7 @@
 CrystFEL - Crystallography with a FEL
 -------------------------------------
 
-Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
                       a research centre of the Helmholtz Association.
 
 Authors:
@@ -20,6 +20,8 @@ Authors:
   Fedor Chervinskii <fedor.chervinskii@gmail.com>
   Alexandra Tolstikova
   Wolfgang Brehm <wolfgang.brehm@gmail.com>
+  Valerio Mariani <valerio.mariani@desy.de>
+
 
 Please read the AUTHORS file for a full list of contributions and contributors.
 See the COPYING file for licence conditions.  Summary: GPLv3+.

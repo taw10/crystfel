@@ -57,6 +57,10 @@ num_reflections
 tree_depth
 lock_reflection
 unlock_reflection
+GET_H
+GET_K
+GET_L
+SERIAL
 </SECTION>
 
 <SECTION>
@@ -284,6 +288,7 @@ SymOpMask
 free_symoplist
 num_equivs
 get_pointgroup
+parse_symmetry_operations
 add_symop
 get_equiv
 special_position
@@ -417,6 +422,7 @@ select_intersections
 update_partialities
 update_partialities_2
 polarisation_correction
+LORENTZ_SCALE
 </SECTION>
 
 <SECTION>
@@ -448,6 +454,7 @@ INTEGRATION_METHOD_MASK
 IntegrationMethod
 IntDiag
 integrate_all
+integrate_all_2
 integration_method
 </SECTION>
 

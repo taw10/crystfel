@@ -14,6 +14,10 @@ Changes in this development version
 - compare/check_hkl --lowres and- -highres were added.
 - The "rescut" integration flag was added.
 - The stream format was changed to include peak heights and mean backgrounds.
+- scripts/fg-graph and truncate-stream were added.
+- record_image(), random_quaternion(), random_flat(), flat_noise(),
+  gaussian_noise() and poisson_noise() now take an additional gsl_rng argument.
+- validate_peaks() now takes an additional check_snr argument.
 
 
 CrystFEL version 0.5.2, 4th December 2013
