@@ -51,7 +51,6 @@ struct index_args
 	int noisefilter;
 	int median_filter;
 	int satcorr;
-	int closer;
 	float threshold;
 	float min_gradient;
 	float min_snr;

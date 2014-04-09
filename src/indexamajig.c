@@ -138,8 +138,6 @@ static void show_help(const char *s)
 "\n"
 "\nOptions you probably won't need:\n\n"
 "     --no-check-prefix    Don't attempt to correct the --prefix.\n"
-"     --closer-peak        Don't integrate from the location of a nearby peak\n"
-"                           instead of the predicted spot.  Don't use.\n"
 "     --no-use-saturated   During the initial peak search, reject\n"
 "                           peaks which contain pixels above max_adu.\n"
 "     --no-revalidate      Don't re-integrate and check HDF5 peaks for\n"
@@ -205,7 +203,6 @@ int main(int argc, char *argv[])
 	iargs.noisefilter = 0;
 	iargs.median_filter = 0;
 	iargs.satcorr = 1;
-	iargs.closer = 0;
 	iargs.tols[0] = 5.0;
 	iargs.tols[1] = 5.0;
 	iargs.tols[2] = 5.0;
@@ -256,7 +253,6 @@ int main(int argc, char *argv[])
 		/* Long-only options with no arguments */
 		{"filter-noise",       0, &iargs.noisefilter,        1},
 		{"no-check-prefix",    0, &config_checkprefix,       0},
-		{"closer-peak",        0, &iargs.closer,             1},
 		{"basename",           0, &config_basename,          1},
 		{"no-peaks-in-stream", 0, &iargs.stream_peaks,       0},
 		{"no-refls-in-stream", 0, &iargs.stream_refls,       0},
@@ -268,7 +264,6 @@ int main(int argc, char *argv[])
 		/* Long-only options which don't actually do anything */
 		{"no-sat-corr",        0, &iargs.satcorr,            0},
 		{"sat-corr",           0, &iargs.satcorr,            1},
-		{"no-closer-peak",     0, &iargs.closer,             0},
 		{"no-check-hdf5-snr",  0, &iargs.check_hdf5_snr,     0},
 		{"use-saturated",      0, &iargs.use_saturated,      1},
 
