@@ -156,13 +156,7 @@ crystfeldoc_DATA = doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
                    doc/examples/cspad-feb2011.geom \
                    doc/examples/lcls-cxi-9keV.beam
 
-EXTRA_DIST += doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
-              doc/examples/lcls-june-r0013-r0128.geom \
-              doc/examples/lcls-xpp-estimate.geom doc/examples/simple.geom \
-              doc/examples/lcls-dec.beam doc/examples/lcls-june.beam \
-              doc/examples/lcls-xpp-estimate.beam \
-              doc/examples/cspad-feb2011.geom \
-              doc/examples/lcls-cxi-9keV.beam \
+EXTRA_DIST += $(crystfeldoc_DATA) doc/twin-calculator.odt \
               doc/reference/libcrystfel/xml/coding-standards.xml
 
 scriptdir = $(docdir)/scripts
