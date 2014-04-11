@@ -115,7 +115,7 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 
 		get_indices(refl, &h, &k, &l);
 
-		if ( cell != NULL ) {
+		if ( cell == NULL ) {
 			ERROR("Can't calculate resolution cutoff - no cell\n");
 		} else {
 			res = 2.0*resolution(cell, h, k, l);
