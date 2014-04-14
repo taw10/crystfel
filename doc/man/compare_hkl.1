@@ -1,7 +1,7 @@
 .\"
 .\" compare_hkl man page
 .\"
-.\" Copyright © 2012 Thomas White <taw@physics.org>
+.\" Copyright © 2012-2014 Thomas White <taw@physics.org>
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
 .\"
@@ -20,7 +20,7 @@ compare_hkl compares two sets of reflection data and calculates figures of merit
 
 .SH OPTIONS
 .PD 0
-.IP "\fB-y\fR \fpointgroup\fR"
+.IP "\fB-y\fR \fIpointgroup\fR"
 .IP \fB--symmetry=\fR\fIpointgroup\fR
 .PD
 Specify the symmetry of the reflections.  The symmetry must be the same for both lists of reflections.  Default: 1 (no symmetry).
@@ -62,8 +62,9 @@ The correlation coefficient of the Bijvoet differences of acentric reflections.
 RMS anomalous correlation ratio: The anomalous differences from each data set are plotted in a scatter graph, and the variance along both diagonals measured.  See Evans, Acta Crystallographica D62 (2006) p72.
 .IP \fBRano\fR
 .PD
-sum(|I+ - I-|) / 0.5*sum(I+ - I-)
-Note that I+ will be taken to be the mean of the I+ values from both data sets, and likewise for I-.
+sum(|I+ - I-|) / 0.5*sum(I+ + I-)
+.IP
+Note that this figure of merit compares measurements within one data set, so it isn't really a "comparison" operation in the sense of "compare_hkl".  It is nevertheless included in compare_hkl so that the ratio Rano/Rsplit can be calculated (see below).  I+ will be taken to be the mean of the I+ values from both data sets, and likewise for I-.
 .IP \fBRano/Rsplit\fR
 .PD
 The ratio of Rano to Rsplit, as defined above.
@@ -133,7 +134,7 @@ This page was written by Thomas White.
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
 .SH COPYRIGHT AND DISCLAIMER
-Copyright © 2012 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .P
 compare_hkl, and this manual, are part of CrystFEL.
 .P
