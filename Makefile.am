@@ -49,6 +49,14 @@ AM_CPPFLAGS += -I$(top_srcdir)/lib
 LDADD = $(top_builddir)/lib/libgnu.la @IGNORE_UNUSED_LIBRARIES_CFLAGS@
 LDADD += $(top_builddir)/libcrystfel/libcrystfel.la @MAIN_LIBS@
 
+tests_integration_check_LDADD = $(top_builddir)/lib/libgnu.la
+tests_integration_check_LDADD += $(top_builddir)/libcrystfel/libcrystfel.la
+tests_integration_check_LDADD += @LIBCRYSTFEL_LIBS@
+
+tests_prof2d_check_LDADD = $(top_builddir)/lib/libgnu.la
+tests_prof2d_check_LDADD += $(top_builddir)/libcrystfel/libcrystfel.la
+tests_prof2d_check_LDADD += @LIBCRYSTFEL_LIBS@
+
 src_partial_sim_SOURCES = src/partial_sim.c
 
 src_pattern_sim_SOURCES = src/pattern_sim.c src/diffraction.c
