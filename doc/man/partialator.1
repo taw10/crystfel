@@ -14,8 +14,6 @@ partialator \- scaling and post-refinement of partial reflections
 .B partialator
 \fB-i\fR \fIinput.stream\fR
 \fB-o\fR \fIoutput.hkl\fR
-\fB-g\fR \fIdetector.geom\fR
-\fB-b\fR \fIbeamline.beam\fR
 \fB-y\fR \fIpointgroup\fR
 [\fBoptions\fR] \fB...\fR
 .PP
@@ -52,18 +50,6 @@ Give the name of the output file.  The default is
 .IP \fB--symmetry=\fR\fIpointgroup\fR
 .PD
 Merge according to symmetry \fIpointgroup\fR.
-
-.PD 0
-.IP "\fB-g\fR \fIfilename\fR"
-.IP \fB--geometry=\fR\fIfilename\fR
-.PD
-Read the detector geometry description from \fIfilename\fR.  See \fBman crystfel_geometry\fR for more information.
-
-.PD 0
-.IP "\fB-b\fR \fIfilename\fR"
-.IP \fB--beam=\fR\fIfilename\fR
-.PD
-Read the beam description from \fIfilename\fR.  See \fBman crystfel_geometry\fR for more information.
 
 .PD 0
 .IP "\fB-n\fR \fIn\fR"

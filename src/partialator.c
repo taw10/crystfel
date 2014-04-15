@@ -3,7 +3,7 @@
  *
  * Scaling and post refinement for coherent nanocrystallography
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
@@ -42,14 +42,12 @@
 #include <gsl/gsl_errno.h>
 
 #include <image.h>
-#include <detector.h>
 #include <utils.h>
 #include <symmetry.h>
 #include <stream.h>
 #include <geometry.h>
 #include <peaks.h>
 #include <thread-pool.h>
-#include <beam-parameters.h>
 #include <reflist.h>
 #include <reflist-utils.h>
 
@@ -68,8 +66,6 @@ static void show_help(const char *s)
 "\n"
 "  -i, --input=<filename>     Specify the name of the input 'stream'.\n"
 "  -o, --output=<filename>    Output filename.  Default: partialator.hkl.\n"
-"  -g. --geometry=<file>      Get detector geometry from file.\n"
-"  -b, --beam=<file>          Get beam parameters from file.\n"
 "  -y, --symmetry=<sym>       Merge according to symmetry <sym>.\n"
 "  -n, --iterations=<n>       Run <n> cycles of scaling and post-refinement.\n"
 "      --no-scale             Fix all the scaling factors at unity.\n"
@@ -140,7 +136,6 @@ static void done_image(void *vqargs, void *task)
 
 
 static void refine_all(Crystal **crystals, int n_crystals,
-                       struct detector *det,
                        RefList *full, int nthreads, PartialityModel pmodel,
                        struct srdata *srdata)
 {
@@ -329,15 +324,12 @@ int main(int argc, char *argv[])
 	int c;
 	char *infile = NULL;
 	char *outfile = NULL;
-	char *geomfile = NULL;
 	char *sym_str = NULL;
 	SymOpList *sym;
 	int nthreads = 1;
-	struct detector *det;
 	int i;
 	struct image *images;
 	int n_iter = 10;
-	struct beam_params *beam = NULL;
 	RefList *full;
 	int n_images = 0;
 	int n_crystals = 0;
@@ -363,8 +355,6 @@ int main(int argc, char *argv[])
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
-		{"geometry",           1, NULL,               'g'},
-		{"beam",               1, NULL,               'b'},
 		{"symmetry",           1, NULL,               'y'},
 		{"iterations",         1, NULL,               'n'},
 		{"reference",          1, NULL,               'r'},
@@ -402,10 +392,6 @@ int main(int argc, char *argv[])
 			infile = strdup(optarg);
 			break;
 
-			case 'g' :
-			geomfile = strdup(optarg);
-			break;
-
 			case 'j' :
 			nthreads = atoi(optarg);
 			break;
@@ -424,15 +410,6 @@ int main(int argc, char *argv[])
 
 			case 'm' :
 			pmodel_str = strdup(optarg);
-			break;
-
-			case 'b' :
-			beam = get_beam_parameters(optarg);
-			if ( beam == NULL ) {
-				ERROR("Failed to load beam parameters"
-				      " from '%s'\n", optarg);
-				return 1;
-			}
 			break;
 
 			case 'r' :
@@ -486,19 +463,6 @@ int main(int argc, char *argv[])
 	sym = get_pointgroup(sym_str);
 	free(sym_str);
 
-	/* Get detector geometry */
-	det = get_detector_geometry(geomfile);
-	if ( det == NULL ) {
-		ERROR("Failed to read detector geometry from '%s'\n", geomfile);
-		return 1;
-	}
-	free(geomfile);
-
-	if ( beam == NULL ) {
-		ERROR("You must provide a beam parameters file.\n");
-		return 1;
-	}
-
 	if ( pmodel_str != NULL ) {
 		if ( strcmp(pmodel_str, "sphere") == 0 ) {
 			pmodel = PMODEL_SPHERE;
@@ -549,7 +513,9 @@ int main(int argc, char *argv[])
 		images = images_new;
 		cur = &images[n_images];
 
-		cur->det = det;
+		cur->div = NAN;
+		cur->bw = NAN;
+		cur->det = NULL;
 		if ( read_chunk(st, cur) != 0 ) {
 			break;
 		}
@@ -557,13 +523,16 @@ int main(int argc, char *argv[])
 		/* Won't be needing this, if it exists */
 		image_feature_list_free(cur->features);
 		cur->features = NULL;
-		cur->div = beam->divergence;
-		cur->bw = beam->bandwidth;
-		cur->width = det->max_fs;
-		cur->height = det->max_ss;
+		cur->width = 0;
+		cur->height = 0;
 		cur->data = NULL;
 		cur->flags = NULL;
 		cur->beam = NULL;
+
+		if ( isnan(cur->div) || isnan(cur->bw) ) {
+			ERROR("Chunk doesn't contain beam parameters.\n");
+			return 1;
+		}
 
 		n_images++;
 
@@ -589,8 +558,6 @@ int main(int argc, char *argv[])
 
 			/* Fill in initial estimates of stuff */
 			crystal_set_osf(cr, 1.0);
-			crystal_set_profile_radius(cr, beam->profile_radius);
-			crystal_set_mosaicity(cr, 0.0);
 			crystal_set_user_flag(cr, 0);
 
 			/* This is the raw list of reflections */
@@ -679,7 +646,7 @@ int main(int argc, char *argv[])
 		comp = (reference == NULL) ? full : reference;
 		select_reflections_for_refinement(crystals, n_crystals,
 		                                  comp, have_reference);
-		refine_all(crystals, n_crystals, det, comp, nthreads, pmodel,
+		refine_all(crystals, n_crystals, comp, nthreads, pmodel,
 		           &srdata);
 
 		nobs = 0;
@@ -746,8 +713,6 @@ int main(int argc, char *argv[])
 	reflist_free(full);
 	free(sym);
 	free(outfile);
-	free_detector_geometry(det);
-	free(beam);
 	free(crystals);
 	if ( reference != NULL ) {
 		reflist_free(reference);
