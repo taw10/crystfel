@@ -126,8 +126,6 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	const int output = 0;
 	double tl;
 	double rlow, rhigh;     /* "Excitation error" */
-	signed int p;           /* Panel number */
-	double xda, yda;        /* Position on detector */
 	double part;            /* Partiality */
 	int clamp_low, clamp_high;
 	double klow, khigh;    /* Wavenumber */
@@ -208,21 +206,30 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	/* Calculate partiality */
 	part = partiality(rlow, rhigh, pr);
 
-	/* Locate peak on detector. */
-	p = locate_peak(xl, yl, zl, 1.0/image->lambda, image->det, &xda, &yda);
-	if ( p == -1 ) return NULL;
-
 	/* Add peak to list */
 	refl = reflection_new(h, k, l);
-	set_detector_pos(refl, 0.0, xda, yda);
+
+	/* If we have detector information, check the spot is measured.
+	 * Otherwise, we make do with calculating the partialiaty etc. */
+	if ( image->det != NULL ) {
+		double xda, yda;        /* Position on detector */
+		signed int p;           /* Panel number */
+		p = locate_peak(xl, yl, zl, 1.0/image->lambda, image->det,
+		                &xda, &yda);
+		if ( p == -1 ) {
+			reflection_free(refl);
+			return NULL;
+		}
+		set_detector_pos(refl, 0.0, xda, yda);
+	}
+
 	set_partial(refl, rlow, rhigh, part, clamp_low, clamp_high);
 	set_lorentz(refl, L);
 	set_symmetric_indices(refl, h, k, l);
 	set_redundancy(refl, 1);
 
 	if ( output ) {
-		printf("%3i %3i %3i %6f (at %5.2f,%5.2f) %5.2f\n",
-		       h, k, l, 0.0, xda, yda, part);
+		printf("%3i %3i %3i %6f %5.2f\n", h, k, l, 0.0, part);
 	}
 
 	return refl;
