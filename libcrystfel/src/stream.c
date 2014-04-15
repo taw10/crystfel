@@ -623,6 +623,9 @@ void read_crystal(Stream *st, struct image *image)
 
 	}
 
+	/* Unused at the moment */
+	crystal_set_mosaicity(cr, 0.0);
+
 	/* Add crystal to the list for this image */
 	n = image->n_crystals+1;
 	crystals_new = realloc(image->crystals, n*sizeof(Crystal *));
