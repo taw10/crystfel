@@ -600,12 +600,9 @@ int main(int argc, char *argv[])
 			crystal_set_image(cryst, &images[i]);
 
 			/* Now it's safe to do the following */
-			update_partialities_2(cryst, pmodel,
-			                      &n_gained, &n_lost,
+			update_partialities_2(cryst, pmodel, &n_gained, &n_lost,
 			                      &mean_p_change);
 			assert(n_gained == 0);  /* That'd just be silly */
-			STATUS("%i gained, %i lost, mean p change = %f\n",
-			       n_gained, n_lost, mean_p_change);
 			as = crystal_get_reflections(cryst);
 			nobs += select_scalable_reflections(as, reference);
 
