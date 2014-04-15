@@ -324,6 +324,7 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	double a, b, c, al, be, ga;
+	double rad;
 
 	fprintf(st->fh, CRYSTAL_START_MARKER"\n");
 
@@ -350,6 +351,9 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 	        str_lattice(cell_get_lattice_type(cell)));
 	fprintf(st->fh, "centering = %c\n", cell_get_centering(cell));
 	fprintf(st->fh, "unique_axis = %c\n", cell_get_unique_axis(cell));
+
+	rad = crystal_get_profile_radius(cr);
+	fprintf(st->fh, "profile_radius = %.5f nm^-1\n", rad/1e9);
 
 	reflist = crystal_get_reflections(cr);
 	if ( reflist != NULL ) {
@@ -407,6 +411,9 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 
 	fprintf(st->fh, "photon_energy_eV = %f\n",
 	        J_to_eV(ph_lambda_to_en(i->lambda)));
+
+	fprintf(st->fh, "beam_divergence = %.5f mrad\n", i->div*1e3);
+	fprintf(st->fh, "beam_bandwidth = %.5f %%\n", i->bw*100.0);
 
 	copy_hdf5_fields(hdfile, i->copyme, st->fh);
 
@@ -500,7 +507,7 @@ void read_crystal(Stream *st, struct image *image)
 
 	do {
 
-		float u, v, w, lim;
+		float u, v, w, lim, rad;
 		char c;
 
 		rval = fgets(line, 1023, st->fh);
@@ -559,6 +566,10 @@ void read_crystal(Stream *st, struct image *image)
 		if ( sscanf(line, "diffraction_resolution_limit = %f nm^-1",
 		            &lim) == 1 ) {
 			crystal_set_resolution_limit(cr, lim*1e9);
+		}
+
+		if ( sscanf(line, "profile_radius = %f nm^-1", &rad) == 1 ) {
+			crystal_set_profile_radius(cr, rad*1e9);
 		}
 
 		if ( strcmp(line, REFLECTION_START_MARKER) == 0 ) {
@@ -643,6 +654,8 @@ int read_chunk(Stream *st, struct image *image)
 
 	do {
 
+		float div, bw;
+
 		rval = fgets(line, 1023, st->fh);
 
 		/* Trouble? */
@@ -666,6 +679,14 @@ int read_chunk(Stream *st, struct image *image)
 		if ( strncmp(line, "photon_energy_eV = ", 19) == 0 ) {
 			image->lambda = ph_en_to_lambda(eV_to_J(atof(line+19)));
 			have_ev = 1;
+		}
+
+		if ( sscanf(line, "beam_divergence = %f mrad", &div) == 1 ) {
+			image->div = div/1e3;
+		}
+
+		if ( sscanf(line, "beam_bandwidth = %f %%", &bw) == 1 ) {
+			image->bw = bw/100.0;
 		}
 
 		if ( strncmp(line, "camera_length_", 14) == 0 ) {
