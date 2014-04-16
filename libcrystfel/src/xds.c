@@ -3,12 +3,12 @@
  *
  * Invoke xds for crystal autoindexing
  *
- * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2013-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2013 Cornelius Gati
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *        2013 Cornelius Gati <cornelius.gati@cfel.de>
  *
  * This file is part of CrystFEL.
@@ -81,8 +81,6 @@ struct xds_data {
 	int                     rbuflen;
 
 	/* High-level stuff */
-	char			newmatfile[128];
-	char 			spotfile[128];
 	int			step;
 	int			finished_ok;
 	UnitCell		*target_cell;
@@ -233,8 +231,7 @@ static int check_cell(struct xds_private *xp, struct image *image,
 }
 
 
-static int read_cell(const char *filename, struct image *image,
-                     struct xds_private *xp)
+static int read_cell(struct image *image, struct xds_private *xp)
 {
 	FILE * fh;
 	float axstar, aystar, azstar;
@@ -301,25 +298,6 @@ static int read_cell(const char *filename, struct image *image,
 
 	fclose(fh);
 
-	//printf("asx='%s'\n", asx);
-	//printf("asy='%s'\n", asy);
-	//printf("asz='%s'\n", asz);
-	//printf("cxstar='%f'\n", cxstar);
-	//printf("cystar='%f'\n", cystar);
-	//printf("czstar='%f'\n", czstar);
-	//printf("bsx='%s'\n", bsx);
-	//printf("bsy='%s'\n", bsy);
-	//printf("bsz='%s'\n", bsz);
-	//printf("axstar='%f'\n", axstar);
-	//printf("aystar='%f'\n", aystar);
-	//printf("azstar='%f'\n", azstar);
-	//printf("csx='%s'\n", csx);
-	//printf("csy='%s'\n", csy);
-	//printf("csz='%s'\n", csz);
-	//printf("bxstar='%f'\n", bxstar);
-	//printf("bystar='%f'\n", bystar);
-	//printf("bzstar='%f'\n", bzstar);
-
 	cell = cell_new();
 	cell_set_reciprocal(cell,
 	                    axstar*10e9, aystar*10e9, azstar*10e9,
@@ -332,7 +310,7 @@ static int read_cell(const char *filename, struct image *image,
 }
 
 
-static void write_spot(struct image *image, const char *filename)
+static void write_spot(struct image *image)
 {
 	FILE *fh;
 	int i;
@@ -547,9 +525,10 @@ int run_xds(struct image *image, IndexingPrivate *priv)
 	n = image_feature_count(image->features);
 	if (n < 25) return 0;
 
-	snprintf(xds->spotfile, 127, "SPOT.XDS");
+	write_spot(image);
 
-	write_spot(image, xds->spotfile);
+	/* Delete any old indexing result which may exist */
+	remove("IDXREF.LP");
 
 	xds->pid = forkpty(&xds->pty, NULL, NULL, NULL);
 
@@ -630,14 +609,7 @@ int run_xds(struct image *image, IndexingPrivate *priv)
 	free(xds->rbuffer);
 	waitpid(xds->pid, &status, 0);
 
-				//FIXME//
-	//if ( xds->finished_ok == 1 ) {
-	//	ERROR("XDS doesn't seem to be working properly.\n");
-	//} else {
-		/* Read the XDS NEWMAT file and get cell if found */
-	rval = read_cell(xds->newmatfile, image, xp);
-
-	//}
+	rval = read_cell(image, xp);
 
 	free(xds);
 
