@@ -883,8 +883,6 @@ static gint fit_sig(GtkWidget *widget, CellWindow *w)
 	if ( w->hist_be->show_sel ) fit_param(w->hist_be);
 	if ( w->hist_ga->show_sel ) fit_param(w->hist_ga);
 
-	/* FIXME: If all six worked, show values in cut+paste window */
-
 	redraw_all(w);
 
 	return TRUE;
