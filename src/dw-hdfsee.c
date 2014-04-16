@@ -50,7 +50,6 @@
 #include "filters.h"
 
 
-/* FIXME: this trusts that 'message' doesn't contain any format strings */
 static void displaywindow_error(DisplayWindow *dw, const char *message)
 {
 	GtkWidget *window;
