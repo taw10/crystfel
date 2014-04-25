@@ -10,6 +10,7 @@
  * Authors:
  *   2009-2012 Thomas White <taw@physics.org>
  *   2012      Richard Kirian
+ *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
  *
@@ -108,6 +109,13 @@ typedef struct {
 	double          ring_radius;
 	double          *ring_radii;
 	int             n_rings;
+	int             calib_mode;
+	struct rigid_group  *calib_mode_curr_rg;
+	struct panel	*calib_mode_curr_p;
+	int             calib_mode_show_focus;
+	int		calib_mode_groups;
+
+	GtkWidget       *calibmode_statusbar;
 
 	int		show_col_scale;
 	int		scale;
@@ -119,7 +127,7 @@ typedef struct {
 extern DisplayWindow *displaywindow_open(const char *filename,
                                          const char *peaks, double boost,
                                          int binning,
-                                         int noisefilter, int colscale,
+                                         int noisefilter, int calibmode, int colscale,
                                          const char *element,
                                          const char *geometry, const char *beam,
                                          int show_rings,

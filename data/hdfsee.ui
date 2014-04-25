@@ -25,6 +25,7 @@
 		</menu>
 
 		<menu name="tools" action="ToolsAction">
+			<menuitem name="calibmode" action="CalibModeAction" />
 			<menuitem name="numbers" action="NumbersAction" />
 			<menuitem name="peaks" action="PeaksAction" />
 			<menuitem name="geometry" action="LoadGeomAction" />

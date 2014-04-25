@@ -10,6 +10,7 @@
  * Authors:
  *   2009-2013 Thomas White <taw@physics.org>
  *   2012      Richard Kirian
+ *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
  *
@@ -39,6 +40,7 @@
 #include <string.h>
 #include <cairo.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
+#include <gdk/gdkkeysyms.h>
 
 #include "dw-hdfsee.h"
 #include "hdfsee-render.h"
@@ -139,6 +141,31 @@ static void draw_panel_rectangle(cairo_t *cr, cairo_matrix_t *basic_m,
 }
 
 
+static void draw_calib_focus_rectangle(cairo_t *cr, cairo_matrix_t *basic_m,
+                                       DisplayWindow *dw, int i)
+{
+	struct panel p = dw->image->det->panels[i];
+	int w = gdk_pixbuf_get_width(dw->pixbufs[i]);
+	int h = gdk_pixbuf_get_height(dw->pixbufs[i]);
+	cairo_matrix_t m;
+
+	/* Start with the basic coordinate system */
+	cairo_set_matrix(cr, basic_m);
+
+	/* Move to the right location */
+	cairo_translate(cr, p.cnx/dw->binning, p.cny/dw->binning);
+
+	/* Twiddle directions according to matrix */
+	cairo_matrix_init(&m, p.fsx, p.fsy, p.ssx, p.ssy, 0.0, 0.0);
+	cairo_transform(cr, &m);
+
+	cairo_set_line_width (cr, 3.0);
+	cairo_set_source_rgb (cr, 255, 255, 255);
+	cairo_rectangle(cr, 0.0, 0.0, w, h);
+
+}
+
+
 static void show_ring(cairo_t *cr, DisplayWindow *dw,
                       double d, const char *label, cairo_matrix_t *basic_m,
                       double r, double g, double b)
@@ -200,6 +227,28 @@ static void show_simple_ring(cairo_t *cr, DisplayWindow *dw,
 }
 
 
+static void maybe_draw_focus(DisplayWindow *dw, cairo_t *cr, int i,
+                             cairo_matrix_t *basic_m)
+{
+	if ( dw->calib_mode_groups ) {
+
+		if ( dw->image->det->panels[i].rigid_group
+		     == dw->calib_mode_curr_rg )
+		{
+			draw_calib_focus_rectangle(cr, basic_m, dw, i);
+			cairo_stroke(cr);
+		}
+
+	} else {
+
+		if ( &dw->image->det->panels[i] == dw->calib_mode_curr_p) {
+			draw_calib_focus_rectangle(cr, basic_m, dw, i);
+			cairo_stroke(cr);
+		}
+
+	}
+}
+
 static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 {
 	cairo_t *cr;
@@ -232,6 +281,10 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 			draw_panel_rectangle(cr, &basic_m, dw, i);
 			cairo_fill(cr);
 
+			if ( dw->calib_mode && dw->calib_mode_show_focus ) {
+				maybe_draw_focus(dw, cr, i, &basic_m);
+			}
+
 		}
 
 	}
@@ -243,16 +296,6 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 		cairo_arc(cr, 0.0, 0.0, 5.0/dw->binning, 0.0, 2.0*M_PI);
 		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
 		cairo_fill(cr);
-
-		//cairo_rectangle(cr, -370.0, 800.0, 120.0, 60.0);
-		//cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.3);
-		//cairo_fill(cr);
-
-		//show_simple_ring(cr, dw, 80.0, &basic_m);
-		//show_simple_ring(cr, dw, 186.0, &basic_m);
-		//show_simple_ring(cr, dw, 230.0, &basic_m);
-		//show_simple_ring(cr, dw, 320.0, &basic_m);
-		//show_simple_ring(cr, dw, 380.0, &basic_m);
 
 		/* Draw resolution circles */
 		if ( dw->n_rings == -1 ) {
@@ -350,7 +393,7 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 
 			cairo_set_line_width(cr, 0.75/dw->binning);
 			cairo_stroke(cr);
-
+;
 		}
 
 	}
@@ -404,7 +447,7 @@ static void set_window_size(DisplayWindow *dw)
 		dw->height = (max_y - min_y) / dw->binning;
 
 		/* Add a thin border */
-		dw->width += 2.0;
+		dw->width += 2.0;;
 		dw->height += 2.0;
 	}
 
@@ -935,7 +978,7 @@ static gint displaywindow_peaklist_response(GtkWidget *d, gint response,
 
 	gtk_widget_destroy(d);
 
-	return 0;
+	return 0;;
 }
 
 
@@ -1010,6 +1053,28 @@ static int load_geometry_file(DisplayWindow *dw, struct image *image,
 	dw->use_geom = 1;
 
 	return 0;
+}
+
+
+static int save_geometry_file(DisplayWindow *dw)
+{
+	GtkWidget *d;
+	gchar * filename;
+	int w;
+
+	d = gtk_file_chooser_dialog_new("Save Detector Geometry",
+	                                GTK_WINDOW(dw->window),
+	                                GTK_FILE_CHOOSER_ACTION_SAVE,
+	                                GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                        GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+	                                NULL);
+
+	gtk_dialog_run (GTK_DIALOG (d));
+	filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER (d));
+	w = write_detector_geometry(filename, dw->image->det);
+	gtk_widget_destroy(d);
+	g_free(filename);
+	return w;
 }
 
 
@@ -1096,6 +1161,54 @@ static gint displaywindow_set_usegeom(GtkWidget *d, DisplayWindow *dw)
 	return 0;
 }
 
+static gint displaywindow_set_calibmode(GtkWidget *d, DisplayWindow *dw)
+{
+
+	GtkWidget *w, *vbox;
+
+	w =  gtk_ui_manager_get_widget(dw->ui,
+	                               "/ui/displaywindow/tools/calibmode");
+	if ( !dw->use_geom ) {
+		gtk_check_menu_item_set_state(GTK_CHECK_MENU_ITEM(w), 0);
+		return 0;
+	}
+
+	/* Get new value */
+	dw->calib_mode = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(w));
+
+	/* When entering calibration mode */
+	if ( dw->calib_mode ) {
+
+		guint cc;
+
+		if ( (dw->calib_mode_curr_rg == NULL)
+		  && (dw->calib_mode_curr_p == NULL) )
+		{
+			dw->calib_mode_curr_rg = dw->image->det->rigid_groups[0];
+			dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[0];
+		}
+
+		dw->calibmode_statusbar = gtk_statusbar_new();
+		gtk_widget_show(dw->calibmode_statusbar);
+		vbox = gtk_bin_get_child(GTK_BIN(dw->window));
+		gtk_box_pack_end(GTK_BOX(vbox), dw->calibmode_statusbar,
+		                 TRUE, TRUE, 0);
+		cc = gtk_statusbar_get_context_id(GTK_STATUSBAR(dw->calibmode_statusbar),
+		                    "calibmode");
+		gtk_statusbar_push(GTK_STATUSBAR(dw->calibmode_statusbar), cc,
+		                   "Last clicked position: Not available");
+		displaywindow_update(dw);
+
+	} else {
+
+		  gtk_widget_destroy(dw->calibmode_statusbar);
+		  dw->calibmode_statusbar = NULL;
+		  displaywindow_update(dw);
+
+	}
+
+	return 0;
+}
 
 static gint displaywindow_set_rings(GtkWidget *d, DisplayWindow *dw)
 {
@@ -1495,6 +1608,8 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 	GtkToggleActionEntry toggles[] = {
 		{ "GeometryAction", NULL, "Use Detector Geometry", NULL, NULL,
 			G_CALLBACK(displaywindow_set_usegeom), FALSE },
+		{ "CalibModeAction", NULL, "Calibration Mode", NULL, NULL,
+			G_CALLBACK(displaywindow_set_calibmode), FALSE },
 		{ "ColScaleAction", NULL, "Colour Scale", NULL, NULL,
 			G_CALLBACK(displaywindow_set_colscale), FALSE },
 		{ "RingsAction", NULL, "Resolution Rings", "F9", NULL,
@@ -1790,6 +1905,39 @@ static gint displaywindow_motion(GtkWidget *widget, GdkEventMotion *event,
 }
 
 
+static void calibmode_press(DisplayWindow *dw, GdkEventButton *event)
+{
+	int x,y;
+	double dfs, dss;
+	int fs, ss, revmap_return_value;
+	char statusbar_string[80];
+	guint cc;
+
+	cc = gtk_statusbar_get_context_id(GTK_STATUSBAR(dw->calibmode_statusbar),
+	                                  "calibmode");
+
+	x = dw->binning * (event->x);
+	y = dw->binning * (dw->height - 1 - event->y);
+	x += dw->min_x;
+	y += dw->min_x;
+	snprintf(statusbar_string, 80,
+	         "Last clicked position: x: %i, y: %i (Not in panel)", x, y);
+
+	revmap_return_value = reverse_2d_mapping(x, y, &dfs, &dss,
+	                                         dw->image->det);
+	if ( revmap_return_value == 0 ) {
+		fs = dfs;
+		ss = dss;
+		snprintf(statusbar_string, 80,
+                        "Last clicked position: x: %i, y: %i, fs: %u, ss: %u,"
+                        " (panel %s)",
+                        x, y, fs, ss, find_panel(dw->image->det, fs, ss)->name);
+	}
+	gtk_statusbar_push(GTK_STATUSBAR(dw->calibmode_statusbar),
+	                   cc, statusbar_string);
+}
+
+
 static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
                                 DisplayWindow *dw)
 {
@@ -1811,16 +1959,208 @@ static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
 			numbers_update(dw);
 		}
 
+		if ( dw->calibmode_statusbar != NULL ) {
+			calibmode_press(dw, event);
+		}
+
 	}
 
 	return 0;
+}
 
+
+static int curr_rg_pointer_index(DisplayWindow *dw)
+{
+	int r;
+
+	for ( r=0; r<dw->image->det->n_rigid_groups; ++r) {
+		if ( dw->image->det->rigid_groups[r] == dw->calib_mode_curr_rg ) {
+			return r;
+		}
+	}
+
+	// should never be reached. Here just to make the compiler happy
+	return -1;
+}
+
+
+static int curr_p_pointer_index_in_rg(DisplayWindow *dw)
+{
+	int p;
+
+	for ( p=0; p<dw->calib_mode_curr_rg->n_panels; ++p) {
+		if ( dw->calib_mode_curr_rg->panels[p] == dw->calib_mode_curr_p ) {
+			return p;
+		}
+	}
+
+	// should never be reached. Here just to make the compiler happy
+	return -1;
+}
+
+
+static void select_next_group(DisplayWindow *dw, int num_rg)
+{
+	if ( dw->calib_mode_curr_rg == dw->image->det->rigid_groups[num_rg-1] ) {
+		dw->calib_mode_curr_rg = dw->image->det->rigid_groups[0];
+	} else {
+		dw->calib_mode_curr_rg =
+		  dw->image->det->rigid_groups[curr_rg_pointer_index(dw)+1];
+	}
+}
+
+
+static void select_prev_group(DisplayWindow *dw, int num_rg)
+{
+	if ( dw->calib_mode_curr_rg == dw->image->det->rigid_groups[0] ) {
+		dw->calib_mode_curr_rg = dw->image->det->rigid_groups[num_rg-1];
+	} else {
+		dw->calib_mode_curr_rg =
+		  dw->image->det->rigid_groups[curr_rg_pointer_index(dw)-1];
+	}
+}
+
+
+static void select_next_panel(DisplayWindow *dw, int num_p)
+{
+	if ( dw->calib_mode_curr_p == dw->calib_mode_curr_rg->panels[num_p-1] ) {
+		dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[0];
+	} else {
+		dw->calib_mode_curr_p =
+		  dw->calib_mode_curr_rg->panels[curr_p_pointer_index_in_rg(dw)+1];
+	}
+}
+
+
+static void select_prev_panel(DisplayWindow *dw, int num_p)
+{
+	if ( dw->calib_mode_curr_p == dw->calib_mode_curr_rg->panels[0] ) {
+		dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[num_p-1];
+	} else {
+		dw->calib_mode_curr_p =
+		  dw->calib_mode_curr_rg->panels[curr_p_pointer_index_in_rg(dw)-1];
+	}
+}
+
+
+static gint displaywindow_keypress(GtkWidget *widget, GdkEventKey *event,
+                                   DisplayWindow *dw)
+{
+	int pi, s, num_rg, num_p;
+
+	if ( dw->calib_mode == 0 ) {
+		return 0;
+	}
+
+	num_rg = dw->image->det->n_rigid_groups;
+
+	switch ( event->keyval ) {
+
+		case GDK_Up:
+		case GDK_KP_Up:
+		if ( dw->calib_mode_groups ) {
+			for ( pi=0; pi<dw->calib_mode_curr_rg->n_panels; ++pi ) {
+				dw->calib_mode_curr_rg->panels[pi]->cny += 1.0;
+			}
+		} else {
+			dw->calib_mode_curr_p->cny += 1.0;
+		}
+		redraw_window(dw);
+		break;
+
+		case GDK_Down:
+		case GDK_KP_Down:
+		if ( dw->calib_mode_groups ) {
+			for ( pi=0; pi<dw->calib_mode_curr_rg->n_panels; ++pi ) {
+				dw->calib_mode_curr_rg->panels[pi]->cny -= 1.0;
+			}
+		} else {
+			dw->calib_mode_curr_p->cny -= 1.0;
+		}
+		redraw_window(dw);
+		break;
+
+		case GDK_Left:
+		case GDK_KP_Left:
+		if ( dw->calib_mode_groups ) {
+			for ( pi=0; pi<dw->calib_mode_curr_rg->n_panels; ++pi ) {
+				dw->calib_mode_curr_rg->panels[pi]->cnx -= 1.0;
+			}
+		} else {
+			dw->calib_mode_curr_p->cnx -= 1.0;
+		}
+		redraw_window(dw);
+		break;
+
+		case GDK_Right:
+		case GDK_KP_Right:
+		if ( dw->calib_mode_groups ) {
+			for ( pi=0; pi<dw->calib_mode_curr_rg->n_panels; ++pi ) {
+				dw->calib_mode_curr_rg->panels[pi]->cnx += 1.0;
+			}
+		} else {
+			dw->calib_mode_curr_p->cnx -= 1.0;
+		}
+		redraw_window(dw);
+		break;
+
+		case GDK_plus:
+		case GDK_KP_Add:
+		num_p = dw->calib_mode_curr_rg->n_panels;
+		if ( dw->calib_mode_groups )  {
+			select_next_group(dw, num_rg);
+		} else {
+			select_next_panel(dw, num_p);
+		}
+		redraw_window(dw);
+		break;
+
+		case GDK_minus:
+		case GDK_KP_Subtract:
+		num_p = dw->calib_mode_curr_rg->n_panels;
+		if ( dw->calib_mode_groups ) {
+			select_prev_group(dw, num_rg);
+		} else {
+			select_prev_panel(dw, num_p);
+		}
+		redraw_window(dw);
+		break;
+
+		case GDK_f:
+		dw->calib_mode_show_focus = 1 - dw->calib_mode_show_focus;
+		redraw_window(dw);
+		break;
+
+		case GDK_g:
+		if ( dw->calib_mode_groups ) {
+			dw->calib_mode_groups = 0;
+			dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[0];
+		} else {
+			dw->calib_mode_groups = 1;
+			dw->calib_mode_curr_rg = dw->calib_mode_curr_p->rigid_group;
+		}
+		redraw_window(dw);
+		break;
+
+		case GDK_s:
+		s = save_geometry_file(dw);
+		if ( s != 0 ) {
+			if ( s != 2 ) {
+				displaywindow_error(dw,
+				       "Unable to save the detector geometry.");
+			}
+		}
+		break;
+
+	}
+
+	return 0;
 }
 
 
 DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
                                   double boost, int binning,
-                                  int noisefilter, int colscale,
+                                  int noisefilter, int calibmode, int colscale,
                                   const char *element, const char *geometry,
                                   const char *beam,
                                   int show_rings, double *ring_radii,
@@ -1831,6 +2171,7 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	char *title;
 	GtkWidget *vbox;
 	GtkWidget *w;
+	GtkWidget *ww;
 
 	dw = calloc(1, sizeof(DisplayWindow));
 	if ( dw == NULL ) return NULL;
@@ -1857,6 +2198,12 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 	dw->n_rings = n_rings;
 	dw->median_filter = median_filter;
 	dw->image = calloc(1, sizeof(struct image));
+	dw->calib_mode = 0;
+	dw->calib_mode_curr_rg = NULL;
+	dw->calib_mode_curr_p = NULL;
+	dw->calib_mode_show_focus = 1;
+	dw->calib_mode_groups = 1;
+	dw->calibmode_statusbar = NULL;
 
 	if ( beam != NULL ) {
 		dw->image->beam = get_beam_parameters(beam);
@@ -1896,7 +2243,6 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 		free(dw);
 		return NULL;
 	}
-
 	dw->loaded_geom = NULL;
 	dw->simple_geom = simple_geometry(dw->image);
 	dw->image->det = dw->simple_geom;
@@ -1940,18 +2286,34 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 		load_geometry_file(dw, dw->image, geometry);
 	}
 
+	if (dw->use_geom == 1) {
+		dw->calib_mode = calibmode;
+	}
+
+	if (dw->calib_mode == 1) {
+		ww = gtk_ui_manager_get_widget(dw->ui,
+		                           "/ui/displaywindow/tools/calibmode");
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(ww), TRUE);
+	}
+
+
 	displaywindow_update(dw);
 
 	gtk_widget_add_events(GTK_WIDGET(dw->drawingarea),
 	                      GDK_BUTTON_PRESS_MASK
 	                      | GDK_BUTTON_RELEASE_MASK
-	                      | GDK_BUTTON1_MOTION_MASK);
+	                      | GDK_BUTTON1_MOTION_MASK
+	                      | GDK_KEY_PRESS_MASK);
 	g_object_set(G_OBJECT(dw->drawingarea), "can-focus", TRUE, NULL);
+
+	gtk_widget_grab_focus(dw->drawingarea);
 
 	g_signal_connect(GTK_OBJECT(dw->drawingarea), "button-press-event",
 	                 G_CALLBACK(displaywindow_press), dw);
 	g_signal_connect(GTK_OBJECT(dw->drawingarea), "button-release-event",
 	                 G_CALLBACK(displaywindow_release), dw);
+	g_signal_connect(GTK_OBJECT(dw->drawingarea), "key-press-event",
+	                 G_CALLBACK(displaywindow_keypress), dw);
 
 	displaywindow_update_menus(dw, element);
 	dw->not_ready_yet = 0;
