@@ -2048,7 +2048,7 @@ static gint displaywindow_keypress(GtkWidget *widget, GdkEventKey *event,
 {
 	int pi, s, num_rg, num_p;
 
-	if ( dw->calib_mode == 0 ) {
+	if ( !dw->calib_mode ) {
 		return 0;
 	}
 
@@ -2286,16 +2286,15 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 		load_geometry_file(dw, dw->image, geometry);
 	}
 
-	if (dw->use_geom == 1) {
+	if ( dw->use_geom ) {
 		dw->calib_mode = calibmode;
 	}
 
-	if (dw->calib_mode == 1) {
+	if ( dw->calib_mode ) {
 		ww = gtk_ui_manager_get_widget(dw->ui,
 		                           "/ui/displaywindow/tools/calibmode");
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(ww), TRUE);
 	}
-
 
 	displaywindow_update(dw);
 
