@@ -3,12 +3,12 @@
  *
  * Quick yet non-crappy HDF viewer
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2014 Thomas White <taw@physics.org>
  *   2012      Richard Kirian
  *   2014      Valerio Mariani
  *
@@ -62,7 +62,7 @@ static void show_help(const char *s)
 "      --filter-noise               Apply an aggressive noise filter to the\n"
 "                                    image data.\n"
 "      --median-filter=<n>          Apply a median filter to the image data.\n"
-"      --calibration-mode           Starts in calibration mode\n"
+"      --calibration-mode           Start in calibration mode\n"
 "      --show-rings                 Overlay rings that indicate resolution.\n"
 "      --simple-rings=XX,YY,...     Overlay rings at specified radii XX, YY, ...\n"
 "                                    in pixel units.\n"
