@@ -118,7 +118,10 @@ $ ./configure --disable-gtk
 
 At a minimum, you will need the HDF5 library (version 1.8.0 or later) and the
 GNU Scientific Library (GSL).  For a full installation, you will also need
-libTIFF, libPNG, Cairo and GTK.
+libTIFF, libPNG, Cairo and GTK2.  All of these should be installed from your
+distribution's package manager.  Be sure to install the development files for
+each package, which will have a name like "gtk+-2.0-dev" or "gtk+-2.0-devel",
+depending on which distribution you use.
 
 If you're compiling on Mac OS X, where GTK, libPNG and libTIFF seem to be much
 harder to come by, disable lots of things:
