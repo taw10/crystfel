@@ -659,6 +659,10 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 	FILE *fh;
 	FILE *ofh;
 	int i;
+	struct rvec as, bs, cs;
+	int have_as = 0;
+	int have_bs = 0;
+	int have_cs = 0;
 
 	fh = fopen(infile, "r");
 	if ( fh == NULL ) {
@@ -677,11 +681,96 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 
 		char *rval;
 		char line[1024];
+		int d = 0;
+		float u, v, w;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) break;
 
-		fputs(line, ofh);
+		if ( strncmp(line, "Cell parameters ", 16) == 0 ) {
+			d = 1;
+		}
+
+		if ( sscanf(line, "astar = %f %f %f", &u, &v, &w) == 3 ) {
+			as.u = u*1e9;  as.v = v*1e9;  as.w = w*1e9;
+			have_as = 1;
+			d = 1;
+		}
+
+		if ( sscanf(line, "bstar = %f %f %f", &u, &v, &w) == 3 ) {
+			bs.u = u*1e9;  bs.v = v*1e9;  bs.w = w*1e9;
+			have_bs = 1;
+			d = 1;
+		}
+
+		if ( sscanf(line, "cstar = %f %f %f", &u, &v, &w) == 3 ) {
+			cs.u = u*1e9;  cs.v = v*1e9;  cs.w = w*1e9;
+			have_cs = 1;
+			d = 1;
+		}
+
+		if ( have_as && have_bs && have_cs ) {
+
+			UnitCell *cell;
+			double asx, asy, asz;
+			double bsx, bsy, bsz;
+			double csx, csy, csz;
+			double a, b, c, al, be, ga;
+
+			cell = cell_new_from_reciprocal_axes(as, bs, cs);
+
+			if ( assignments[i] ) {
+
+				signed int h, k, l;
+				struct rvec na, nb, nc;
+
+				get_equiv(amb, NULL, 0, 1, 0, 0, &h, &k, &l);
+				na.u = as.u*h + bs.u*k + cs.u*l;
+				na.v = as.v*h + bs.v*k + cs.v*l;
+				na.w = as.w*h + bs.w*k + cs.w*l;
+
+				get_equiv(amb, NULL, 0, 0, 1, 0, &h, &k, &l);
+				nb.u = as.u*h + bs.u*k + cs.u*l;
+				nb.v = as.v*h + bs.v*k + cs.v*l;
+				nb.w = as.w*h + bs.w*k + cs.w*l;
+
+				get_equiv(amb, NULL, 0, 0, 0, 1, &h, &k, &l);
+				nc.u = as.u*h + bs.u*k + cs.u*l;
+				nc.v = as.v*h + bs.v*k + cs.v*l;
+				nc.w = as.w*h + bs.w*k + cs.w*l;
+
+				cell_set_reciprocal(cell, na.u, na.v, na.w,
+				                          nb.u, nb.v, nb.w,
+				                          nc.u, nc.v, nc.w);
+
+			}
+
+			/* The cell parameters might change, so update them.
+			 * Unique axis, centering and lattice type can't change,
+			 * though. */
+			cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+			fprintf(ofh, "Cell parameters %7.5f %7.5f %7.5f nm,"
+			        " %7.5f %7.5f %7.5f deg\n",
+			        a*1.0e9, b*1.0e9, c*1.0e9,
+			        rad2deg(al), rad2deg(be), rad2deg(ga));
+
+			cell_get_reciprocal(cell, &asx, &asy, &asz,
+			                   &bsx, &bsy, &bsz,
+			                   &csx, &csy, &csz);
+			fprintf(ofh, "astar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+			        asx/1e9, asy/1e9, asz/1e9);
+			fprintf(ofh, "bstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+			        bsx/1e9, bsy/1e9, bsz/1e9);
+			fprintf(ofh, "cstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
+			        csx/1e9, csy/1e9, csz/1e9);
+
+			cell_free(cell);
+			have_as = 0;  have_bs = 0;  have_cs = 0;
+
+		}
+
+		/* Not a bug: REFLECTION_START_MARKER gets passed through */
+		if ( !d ) fputs(line, ofh);
 
 		if ( strcmp(line, REFLECTION_START_MARKER"\n") == 0 ) {
 			reindex_reflections(fh, ofh, assignments[i++], amb);
