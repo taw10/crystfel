@@ -1065,9 +1065,11 @@ static gint keypress_sig(GtkWidget *widget, GdkEventKey *event, HistoBox *h)
 
 	/* I'm too lazy to press shift */
 	if ( (event->keyval == GDK_plus) || (event->keyval == GDK_equal) ) {
-		h->n *= 2;
-		scan_cells(h->parent);
-		gtk_widget_queue_draw(h->da);
+		if ( h->n < 100000 ) {
+			h->n *= 2;
+			scan_cells(h->parent);
+			gtk_widget_queue_draw(h->da);
+		}
 	}
 
 	if ( (event->keyval == GDK_minus) && (h->n > 1) ) {
