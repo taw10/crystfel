@@ -333,17 +333,17 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 
 	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
 	fprintf(st->fh, "Cell parameters %7.5f %7.5f %7.5f nm,"
-		        " %7.5f %7.5f %7.5f deg\n",
-		        a*1.0e9, b*1.0e9, c*1.0e9,
-		        rad2deg(al), rad2deg(be), rad2deg(ga));
+	                " %7.5f %7.5f %7.5f deg\n",
+	                a*1.0e9, b*1.0e9, c*1.0e9,
+	                rad2deg(al), rad2deg(be), rad2deg(ga));
 
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 		                  &bsx, &bsy, &bsz,
 		                  &csx, &csy, &csz);
 	fprintf(st->fh, "astar = %+9.7f %+9.7f %+9.7f nm^-1\n",
-		asx/1e9, asy/1e9, asz/1e9);
+	        asx/1e9, asy/1e9, asz/1e9);
 	fprintf(st->fh, "bstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
-		bsx/1e9, bsy/1e9, bsz/1e9);
+	        bsx/1e9, bsy/1e9, bsz/1e9);
 	fprintf(st->fh, "cstar = %+9.7f %+9.7f %+9.7f nm^-1\n",
 	        csx/1e9, csy/1e9, csz/1e9);
 
