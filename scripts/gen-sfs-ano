@@ -48,6 +48,9 @@ use strict;
 my \$line;
 open(FILE, "${PDB}-temp1.hkl");
 
+printf("CrystFEL reflection list version 2.0\n");
+printf("Symmetry: %s\n", ${PG});
+
 printf("   h    k    l          I    phase   sigma(I)   nmeas\n");
 
 while ( \$line = <FILE> ) {
