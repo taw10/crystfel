@@ -3,11 +3,11 @@
  *
  * Small program to manipulate reflection lists
  *
- * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2013-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2013 Thomas White <taw@physics.org>
+ *   2009-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -72,6 +72,9 @@ static void show_help(const char *s)
 "  -e, --expand=<sym>         Expand reflections to this point group.\n"
 "      --no-need-all-parts    Output a twinned reflection even if not all\n"
 "                              the necessary equivalents were present.\n"
+"\n"
+"You can reindex the reflections according to an operation, e.g. k,h,-l:\n"
+"      --reindex=<op>         Reindex according to <op>.\n"
 "\n"
 "Use this option with care, and only if you understand why it might sometimes\n"
 " be necessary:\n"
@@ -409,6 +412,8 @@ int main(int argc, char *argv[])
 	double cutiso = 0.0;
 	float cutn1, cutn2, cutn3;
 	char *pdb = NULL;
+	char *reindex_str = NULL;
+	SymOpList *reindex = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -427,6 +432,7 @@ int main(int argc, char *argv[])
 		{"no-need-all-parts",  0, &config_nap,         0},
 		{"adu-per-photon",     1, NULL,                2},
 		{"cutoff-angstroms",   1, NULL,                3},
+		{"reindex",            1, NULL,                4},
 		{0, 0, NULL, 0}
 	};
 
@@ -475,6 +481,10 @@ int main(int argc, char *argv[])
 
 			case 3 :
 			cutoff_str = strdup(optarg);
+			break;
+
+			case 4 :
+			reindex_str = strdup(optarg);
 			break;
 
 			case 0 :
@@ -553,6 +563,12 @@ int main(int argc, char *argv[])
 		free(expand_str);
 	} else {
 		expand = NULL;
+	}
+
+	if ( reindex_str != NULL ) {
+		reindex = parse_symmetry_operations(reindex_str);
+		if ( reindex == NULL ) return 1;
+		set_symmetry_name(reindex, "Reindex");
 	}
 
 	if ( (expand != NULL) || (holo != NULL) || config_trimc
@@ -778,6 +794,32 @@ int main(int argc, char *argv[])
 
 	}
 
+	if ( reindex != NULL ) {
+
+		RefList *n;
+		Reflection *refl;
+		RefListIterator *iter;
+
+		n = reflist_new();
+
+		for ( refl = first_refl(input, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) )
+		{
+			signed int h, k, l;
+			Reflection *rn;
+
+			get_indices(refl, &h, &k, &l);
+			get_equiv(reindex, NULL, 0, h, k, l, &h, &k, &l);
+			rn = add_refl(n, h, k, l);
+			copy_data(rn, refl);
+
+		}
+
+		reflist_free(input);
+		input = n;
+
+	}
 
 	write_reflist(output, input);
 
