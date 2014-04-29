@@ -170,11 +170,10 @@ static void calculate_partials(Crystal *cr,
 
 
 static void draw_and_write_image(struct image *image, RefList *reflections,
-                                 gsl_rng *rng)
+                                 gsl_rng *rng, double background)
 {
 	Reflection *refl;
 	RefListIterator *iter;
-	const int background = 3000;
 	int i;
 
 	image->data = calloc(image->width*image->height, sizeof(float));
@@ -234,7 +233,8 @@ static void show_help(const char *s)
 "     --osf-stddev=<val>   Standard deviation of the scaling factors.\n"
 "     --full-stddev=<val>  Standard deviation of the randomly\n"
 "                           generated full intensities, if not using -i.\n"
-"     --noise-stddev=<val>  Set the standard deviation of the noise.\n"
+"     --noise-stddev=<val> Set the standard deviation of the noise.\n"
+"     --background=<val>   Background level in photons.  Default 3000.\n"
 "\n"
 );
 }
@@ -256,6 +256,7 @@ struct queue_args
 	double osf_stddev;
 	double full_stddev;
 	double noise_stddev;
+	double background;
 
 	struct image *template_image;
 	double max_q;
@@ -367,7 +368,7 @@ static void run_job(void *vwargs, int cookie)
 
 	if ( qargs->image_prefix != NULL ) {
 		draw_and_write_image(&wargs->image, reflections,
-		                     qargs->rngs[cookie]);
+		                     qargs->rngs[cookie], qargs->background);
 	}
 
 	/* Give a slightly incorrect cell in the stream */
@@ -431,6 +432,7 @@ int main(int argc, char *argv[])
 	double osf_stddev = 2.0;
 	double full_stddev = 1000.0;
 	double noise_stddev = 20.0;
+	double background = 3000.0;
 	gsl_rng *rng_for_seeds;
 	int config_random = 0;
 	char *image_prefix = NULL;
@@ -452,6 +454,7 @@ int main(int argc, char *argv[])
 		{"full-stddev",        1, NULL,                4},
 		{"noise-stddev",       1, NULL,                5},
 		{"images",             1, NULL,                6},
+		{"background",         1, NULL,                7},
 
 		{"really-random",      0, &config_random,      1},
 
@@ -557,6 +560,19 @@ int main(int argc, char *argv[])
 
 			case 6 :
 			image_prefix = strdup(optarg);
+			break;
+
+			case 7 :
+			background = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid background level.\n");
+				return 1;
+			}
+			if ( background < 0.0 ) {
+				ERROR("Invalid background level.");
+				ERROR(" (must be positive).\n");
+				return 1;
+			}
 			break;
 
 			case 0 :
@@ -701,6 +717,7 @@ int main(int argc, char *argv[])
 	qargs.osf_stddev = osf_stddev;
 	qargs.full_stddev = full_stddev;
 	qargs.noise_stddev = noise_stddev;
+	qargs.background = background;
 	qargs.max_q = largest_q(&image);
 	qargs.image_prefix = image_prefix;
 

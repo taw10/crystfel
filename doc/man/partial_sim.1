@@ -105,7 +105,14 @@ Use \fIn\fR threads for simulation.  Default: 1.
 .B
 .IP "\fB--images=\fR\fIprefix\fR"
 .PD
-For each chunk in the output stream, write an image in HDF5 format to \fIprefix\fR\fB/sim-\fR\fINNN\fR\fB.h5\fR, where \fINNN\fR is the sequence number of the chunk in the output stream.  This option is incompatible with \fB-j\fR.
+For each chunk in the output stream, write a 'sketch' image in HDF5 format to \fIprefix\fR\fB/sim-\fR\fINNN\fR\fB.h5\fR, where \fINNN\fR is the sequence number of the chunk in the output stream.  This option is incompatible with \fB-j\fR.  The intensities in the peaks in the sketches will have th
+
+.PD 0
+.B
+.IP "\fB--background=\fIval\fR"
+.PD
+Add a Poisson-distributed background with \fIval\fR photons to the sketches (see \fB--images\fR).  The default is \fB--background=3000\fR.\fR.
+
 
 .SH AUTHOR
 This page was written by Thomas White.
