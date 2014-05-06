@@ -40,6 +40,7 @@
 #include <gdk/gdkkeysyms.h>
 #include <gsl/gsl_multifit_nlin.h>
 
+#include "version.h"
 #include "stream.h"
 #include "image.h"
 #include "utils.h"
@@ -55,6 +56,8 @@ static void show_help(const char *s)
 "Examine cell parameter histograms.\n"
 "\n"
 " -h, --help              Display this help message.\n"
+"     --version           Print CrystFEL version number and exit.\n"
+
 );
 }
 
@@ -1214,6 +1217,7 @@ int main(int argc, char *argv[])
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
+		{"version",            0, NULL,                1 },
 		{0, 0, NULL, 0}
 	};
 
@@ -1225,6 +1229,11 @@ int main(int argc, char *argv[])
 
 			case 'h' :
 			show_help(argv[0]);
+			return 0;
+
+			case 1 :
+			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
+			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
 
 			default :

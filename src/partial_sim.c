@@ -41,6 +41,7 @@
 #include <pthread.h>
 #include <gsl/gsl_rng.h>
 
+#include "version.h"
 #include "image.h"
 #include "utils.h"
 #include "reflist-utils.h"
@@ -214,7 +215,8 @@ static void show_help(const char *s)
 	printf(
 "Generate a stream containing partials from a reflection list.\n"
 "\n"
-" -h, --help              Display this help message.\n"
+" -h, --help               Display this help message.\n"
+"     --version            Print CrystFEL version number and exit.\n"
 "\n"
 "You need to provide the following basic options:\n"
 " -i, --input=<file>       Read reflections from <file>.\n"
@@ -440,6 +442,7 @@ int main(int argc, char *argv[])
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
+		{"version",            0, NULL,                8 },
 		{"output",             1, NULL,               'o'},
 		{"input",              1, NULL,               'i'},
 		{"beam",               1, NULL,               'b'},
@@ -469,6 +472,11 @@ int main(int argc, char *argv[])
 
 			case 'h' :
 			show_help(argv[0]);
+			return 0;
+
+			case 8 :
+			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
+			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
 
 			case 'i' :

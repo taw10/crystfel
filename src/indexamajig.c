@@ -54,6 +54,7 @@
 #include <sys/time.h>
 #endif
 
+#include "version.h"
 #include "utils.h"
 #include "hdf5-file.h"
 #include "index.h"
@@ -78,6 +79,7 @@ static void show_help(const char *s)
 "Process and index FEL diffraction images.\n"
 "\n"
 " -h, --help               Display this help message.\n"
+"     --version            Print CrystFEL version number and exit.\n"
 "\n"
 " -i, --input=<filename>   Specify file containing list of images to process.\n"
 "                           '-' means stdin, which is the default.\n"
@@ -247,6 +249,7 @@ int main(int argc, char *argv[])
 		{"image",              1, NULL,               'e'},
 
 		/* Long-only options with no arguments */
+		{"version",            0, NULL,                     20},
 		{"filter-noise",       0, &iargs.noisefilter,        1},
 		{"no-check-prefix",    0, &config_checkprefix,       0},
 		{"basename",           0, &config_basename,          1},
@@ -294,6 +297,11 @@ int main(int argc, char *argv[])
 
 			case 'h' :
 			show_help(argv[0]);
+			return 0;
+
+			case 20 :
+			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
+			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
 
 			case 'i' :

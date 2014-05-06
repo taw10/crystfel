@@ -37,6 +37,7 @@
 #include <gtk/gtk.h>
 #include <getopt.h>
 
+#include "version.h"
 #include "dw-hdfsee.h"
 #include "utils.h"
 #include "render.h"
@@ -54,6 +55,7 @@ static void show_help(const char *s)
 "Quick HDF5 image viewer.\n"
 "\n"
 "  -h, --help                       Display this help message.\n"
+"      --version                    Print CrystFEL version number and exit.\n"
 "\n"
 "  -p, --peak-overlay=<filename>    Draw circles in positions listed in file.\n"
 "      --ring-size=<n>              Set the size for those circles.\n"
@@ -131,6 +133,7 @@ int main(int argc, char *argv[])
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
+		{"version",            0, NULL,                4 },
 		{"peak-overlay",       1, NULL,               'p'},
 		{"int-boost",          1, NULL,               'i'},
 		{"binning",            1, NULL,               'b'},
@@ -166,6 +169,11 @@ int main(int argc, char *argv[])
 
 			case 'h' :
 			show_help(argv[0]);
+			return 0;
+
+			case 4 :
+			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
+			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
 
 			case 'p' :

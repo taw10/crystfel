@@ -42,12 +42,12 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_statistics.h>
 
+#include "version.h"
 #include "utils.h"
 #include "statistics.h"
 #include "symmetry.h"
 #include "reflist-utils.h"
 #include "cell-utils.h"
-
 
 enum fom
 {
@@ -109,6 +109,7 @@ static void show_help(const char *s)
 "      --intensity-shells     Use shells of intensity instead of resolution.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
+"      --version              Print CrystFEL version number and exit.\n"
 );
 }
 
@@ -935,6 +936,7 @@ int main(int argc, char *argv[])
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
+		{"version",            0, NULL,               10 },
 		{"symmetry",           1, NULL,               'y'},
 		{"pdb",                1, NULL,               'p'},
 		{"rmin",               1, NULL,                2},
@@ -960,6 +962,11 @@ int main(int argc, char *argv[])
 
 			case 'h' :
 			show_help(argv[0]);
+			return 0;
+
+			case 10 :
+			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
+			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
 
 			case 'y' :

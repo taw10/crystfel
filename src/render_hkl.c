@@ -45,6 +45,7 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_blas.h>
 
+#include "version.h"
 #include "utils.h"
 #include "symmetry.h"
 #include "render.h"
@@ -96,6 +97,7 @@ static void show_help(const char *s)
 "                           current directory.\n"
 "\n"
 "  -h, --help              Display this help message.\n"
+"      --version           Print CrystFEL version and exit.\n"
 );
 }
 
@@ -764,6 +766,7 @@ int main(int argc, char *argv[])
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
+		{"version",            0, NULL,                5 },
 		{"zone-axis",          0, &config_zawhinge,    1},
 		{"output",             1, NULL,               'o'},
 		{"pdb",                1, NULL,               'p'},
@@ -789,6 +792,11 @@ int main(int argc, char *argv[])
 
 			case 'h' :
 			show_help(argv[0]);
+			return 0;
+
+			case 5 :
+			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
+			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
 
 			case 'p' :

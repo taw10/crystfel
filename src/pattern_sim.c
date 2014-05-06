@@ -40,6 +40,7 @@
 #include <unistd.h>
 #include <getopt.h>
 
+#include "version.h"
 #include "image.h"
 #include "diffraction.h"
 #include "diffraction-gpu.h"
@@ -65,6 +66,7 @@ static void show_help(const char *s)
 "pulses of X-rays from a free electron laser.\n"
 "\n"
 " -h, --help                Display this help message.\n"
+"     --version             Print CrystFEL version number and exit.\n"
 "\n"
 " -p, --pdb=<file>          PDB file from which to get the unit cell.\n"
 "                            (The actual Bragg intensities come from the\n"
@@ -261,6 +263,7 @@ int main(int argc, char *argv[])
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
+		{"version",            0, NULL,                7 },
 		{"gpu",                0, &config_gpu,         1},
 		{"random-orientation", 0, NULL,               'r'},
 		{"number",             1, NULL,               'n'},
@@ -295,6 +298,11 @@ int main(int argc, char *argv[])
 
 			case 'h' :
 			show_help(argv[0]);
+			return 0;
+
+			case 7 :
+			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
+			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
 
 			case 'r' :

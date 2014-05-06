@@ -51,6 +51,7 @@
 #include <reflist.h>
 #include <reflist-utils.h>
 
+#include "version.h"
 #include "post-refinement.h"
 #include "hrs-scaling.h"
 #include "scaling-report.h"
@@ -63,6 +64,7 @@ static void show_help(const char *s)
 "Scaling and post refinement for coherent nanocrystallography.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
+"      --version              Print CrystFEL version number and exit.\n"
 "\n"
 "  -i, --input=<filename>     Specify the name of the input 'stream'.\n"
 "  -o, --output=<filename>    Output filename.  Default: partialator.hkl.\n"
@@ -353,6 +355,7 @@ int main(int argc, char *argv[])
 	const struct option longopts[] = {
 
 		{"help",               0, NULL,               'h'},
+		{"version",            0, NULL,                3 },
 		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
 		{"symmetry",           1, NULL,               'y'},
@@ -386,6 +389,11 @@ int main(int argc, char *argv[])
 
 			case 'h' :
 			show_help(argv[0]);
+			return 0;
+
+			case 3 :
+			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
+			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
 
 			case 'i' :

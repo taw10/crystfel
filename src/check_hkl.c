@@ -39,6 +39,7 @@
 #include <getopt.h>
 #include <gsl/gsl_fit.h>
 
+#include "version.h"
 #include "utils.h"
 #include "statistics.h"
 #include "symmetry.h"
@@ -54,6 +55,7 @@ static void show_help(const char *s)
 "Characterise an intensity list.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
+"      --version              Print CrystFEL version number and exit.\n"
 "  -y, --symmetry=<sym>       The symmetry of the input file.\n"
 "  -p, --pdb=<filename>       PDB file to use.\n"
 "      --rmin=<res>           Low resolution cutoff (1/d in m^-1).\n"
@@ -710,6 +712,7 @@ int main(int argc, char *argv[])
 	const struct option longopts[] = {
 
 		{"help",               0, NULL,               'h'},
+		{"version",            0, NULL,                9 },
 		{"symmetry",           1, NULL,               'y'},
 		{"pdb",                1, NULL,               'p'},
 
@@ -736,6 +739,11 @@ int main(int argc, char *argv[])
 
 			case 'h' :
 			show_help(argv[0]);
+			return 0;
+
+			case 9 :
+			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
+			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
 
 			case 'y' :

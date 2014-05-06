@@ -44,6 +44,7 @@
 #include <gsl/gsl_permutation.h>
 #include <gsl/gsl_randist.h>
 
+#include "version.h"
 #include <image.h>
 #include <utils.h>
 #include <symmetry.h>
@@ -63,6 +64,7 @@ static void show_help(const char *s)
 "\n"
 "  -h, --help                  Display this help message.\n"
 "\n"
+"      --version               Print CrystFEL version number and exit.\n"
 "  -o, --output=<filename>     Output stream.\n"
 "  -y, --symmetry=<sym>        Actual (\"target\") symmetry.\n"
 "  -w <sym>                    Apparent (\"source\" or \"twinned\") symmetry.\n"
@@ -824,6 +826,7 @@ int main(int argc, char *argv[])
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
+		{"version",            0, NULL,               10 },
 		{"output",             1, NULL,               'o'},
 		{"symmetry",           1, NULL,               'y'},
 		{"iterations",         1, NULL,               'n'},
@@ -850,6 +853,11 @@ int main(int argc, char *argv[])
 
 			case 'h' :
 			show_help(argv[0]);
+			return 0;
+
+			case 10 :
+			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
+			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
 
 			case 'o' :

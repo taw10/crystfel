@@ -1,5 +1,5 @@
 docdir = ${datadir}/doc/${PACKAGE}
-EXTRA_DIST = configure m4/gnulib-cache.m4
+EXTRA_DIST = configure m4/gnulib-cache.m4 version.sh version.h.in
 SUBDIRS = lib doc/reference/libcrystfel libcrystfel
 ACLOCAL_AMFLAGS = -I m4
 
@@ -184,3 +184,13 @@ EXTRA_DIST += $(script_DATA)
 
 
 DISTCHECK_CONFIGURE_FLAGS=--enable-gtk-doc
+
+mostlyclean-local: mostlyclean-version
+.PHONY: mostlyclean-version
+mostlyclean-version:
+	rm -f $(top_builddir)/version.h
+
+all: update_version_header
+.PHONY: version_header
+update_version_header:
+	$(top_srcdir)/version.sh $(top_srcdir)

@@ -38,6 +38,7 @@
 #include <unistd.h>
 #include <getopt.h>
 
+#include "version.h"
 #include "utils.h"
 #include "reflist-utils.h"
 #include "symmetry.h"
@@ -53,6 +54,7 @@ static void show_help(const char *s)
 "Manipulate reflection lists.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
+"      --version              Print CrystFEL version number and exit.\n"
 "\n"
 "  -i, --input=<file>         Read reflections from <file>.\n"
 "  -y, --symmetry=<sym>       The symmetry of the input reflection list.\n"
@@ -418,6 +420,7 @@ int main(int argc, char *argv[])
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
+		{"version",            0, NULL,                5 },
 		{"template",           1, NULL,               't'},
 		{"poisson",            0, &config_poisson,     1},
 		{"noise",              0, &config_noise,       1},
@@ -444,6 +447,11 @@ int main(int argc, char *argv[])
 
 			case 'h' :
 			show_help(argv[0]);
+			return 0;
+
+			case 5 :
+			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
+			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
 
 			case 't' :

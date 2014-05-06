@@ -41,6 +41,7 @@
 #include <unistd.h>
 #include <getopt.h>
 
+#include "version.h"
 #include "utils.h"
 #include "statistics.h"
 #include "reflist-utils.h"
@@ -61,6 +62,7 @@ static void show_help(const char *s)
 "Assemble and process FEL Bragg intensities.\n"
 "\n"
 "  -h, --help                Display this help message.\n"
+"      --version             Print CrystFEL version number and exit.\n"
 "  -i, --input=<filename>    Specify input filename (\"-\" for stdin).\n"
 "  -o, --output=<filename>   Specify output filename for merged intensities\n"
 "                             Default: processed.hkl).\n"
@@ -452,6 +454,7 @@ int main(int argc, char *argv[])
 		{"min-res",            1, NULL,                5},
 		{"push-res",           1, NULL,                6},
 		{"res-push",           1, NULL,                6}, /* compat */
+		{"version",            0, NULL,                7},
 		{0, 0, NULL, 0}
 	};
 
@@ -553,6 +556,11 @@ int main(int argc, char *argv[])
 			}
 			push_res = push_res*1e9;
 			break;
+
+			case 7 :
+			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
+			printf(CRYSTFEL_BOILERPLATE"\n");
+			return 0;
 
 			case '?' :
 			break;

@@ -18,10 +18,11 @@ endif
 
 libcrystfel_la_includedir=$(includedir)/crystfel/
 
-libcrystfel_la_include_HEADERS = src/beam-parameters.h src/hdf5-file.h \
-                                 src/reflist.h src/symmetry.h src/cell.h \
-                                 src/reflist-utils.h src/thread-pool.h \
-                                 src/statistics.h src/utils.h src/detector.h \
+libcrystfel_la_include_HEADERS = ${top_srcdir}/version.h src/beam-parameters.h \
+                                 src/hdf5-file.h src/reflist.h src/symmetry.h \
+                                 src/cell.h src/reflist-utils.h \
+                                 src/thread-pool.h  src/statistics.h \
+                                 src/utils.h src/detector.h \
                                  src/geometry.h src/peaks.h src/stream.h \
                                  src/render.h src/index.h src/image.h \
                                  src/filters.h src/dirax.h src/mosflm.h \
