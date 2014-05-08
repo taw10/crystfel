@@ -682,6 +682,8 @@ int main(int argc, char *argv[])
 	}
 	free(output_file);
 
+	write_command(stream, argc, argv);
+
 	image.det = det;
 	image.width = det->max_fs + 1;
 	image.height = det->max_ss + 1;
