@@ -387,7 +387,7 @@ static void finalise_job(void *vqargs, void *vwargs)
 	struct queue_args *qargs = vqargs;
 	int i;
 
-	write_chunk(qargs->stream, &wargs->image, NULL, 0, 1);
+	write_chunk(qargs->stream, &wargs->image, NULL, 0, 1, NULL);
 
 	for ( i=0; i<NBINS; i++ ) {
 		qargs->n_ref[i] += wargs->n_ref[i];

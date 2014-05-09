@@ -57,25 +57,31 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	float *data_for_measurement;
 	size_t data_size;
 	int check;
+	struct hdfile *hdfile;
 	struct image image;
 	int i;
 	int r;
 	char *rn;
-	struct hdfile *hdfile;
 
 	image.features = NULL;
 	image.data = NULL;
 	image.flags = NULL;
 	image.copyme = iargs->copyme;
 	image.id = cookie;
-	image.filename = pargs->filename;
+	image.filename = pargs->filename_p_e->filename;
+	image.event = pargs->filename_p_e->ev;
 	image.beam = iargs->beam;
 	image.det = iargs->det;
 	image.crystals = NULL;
 	image.n_crystals = 0;
 
+	hdfile = hdfile_open(image.filename);
+	if ( hdfile == NULL ) {
+		ERROR("Couldn't open file: %s\n", image.filename);
+		return;
+	}
 
-	check = hdf5_read(image.filename, &image, iargs->element, 1);
+	check = hdf5_read2(hdfile, &image, image.event, 0);
 	if ( check ) {
 		return;
 	}
@@ -178,7 +184,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	                iargs->int_diag_k, iargs->int_diag_l, results_pipe);
 
 	write_chunk(st, &image, hdfile,
-	            iargs->stream_peaks, iargs->stream_refls);
+	            iargs->stream_peaks, iargs->stream_refls,
+	            pargs->filename_p_e->ev);
 
 	for ( i=0; i<image.n_crystals; i++ ) {
 		cell_free(crystal_get_cell(image.crystals[i]));

@@ -7,8 +7,8 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2014 Thomas White <taw@physics.org>
  *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+ *   2011-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *

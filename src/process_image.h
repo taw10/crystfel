@@ -8,6 +8,7 @@
  *
  * Authors:
  *   2010-2014 Thomas White <taw@physics.org>
+ *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
  *
@@ -89,7 +90,7 @@ struct index_args
 struct pattern_args
 {
 	/* "Input" */
-	char *filename;
+	struct filename_plus_event *filename_p_e;
 
 	/* "Output" */
 	int n_crystals;

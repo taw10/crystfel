@@ -9,10 +9,10 @@
  *
  * Authors:
  *   2010-2014 Thomas White <taw@physics.org>
+ *   2014      Valerio Mariani
  *   2011      Richard Kirian
  *   2011      Andrew Aquila
  *   2014      Takanori Nakane <nakane.t@gmail.com>
- *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
  *
@@ -612,7 +612,7 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 
 
 void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
-                 int include_peaks, int include_reflections)
+                 int include_peaks, int include_reflections, struct event* ev)
 {
 	int j;
 	char *indexer;
@@ -620,6 +620,9 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 	fprintf(st->fh, CHUNK_START_MARKER"\n");
 
 	fprintf(st->fh, "Image filename: %s\n", i->filename);
+	if ( i->event != NULL ) {
+		fprintf(st->fh, "Event: %s\n", get_event_string(i->event));
+	}
 
 	indexer = indexer_str(i->indexed_by);
 	fprintf(st->fh, "indexed_by = %s\n", indexer);
@@ -631,7 +634,7 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 	fprintf(st->fh, "beam_divergence = %.5f mrad\n", i->div*1e3);
 	fprintf(st->fh, "beam_bandwidth = %.5f %%\n", i->bw*100.0);
 
-	copy_hdf5_fields(hdfile, i->copyme, st->fh);
+	copy_hdf5_fields(hdfile, i->copyme, st->fh, ev);
 
 	if ( i->det != NULL ) {
 

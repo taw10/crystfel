@@ -10,8 +10,8 @@
  * Authors:
  *   2009-2014 Thomas White <taw@physics.org>
  *   2011-2012 Richard Kirian <rkirian@asu.edu>
- *   2011      Andrew Aquila
  *   2014      Valerio Mariani
+ *   2011      Andrew Aquila
  *
  * This file is part of CrystFEL.
  *
@@ -42,6 +42,7 @@ struct detector;
 struct panel;
 struct badregion;
 struct detector;
+struct hdfile;
 
 #include "hdf5-file.h"
 #include "image.h"
@@ -89,6 +90,8 @@ struct panel
 	double   adu_per_eV;   /* Number of ADU per eV */
 	double   max_adu;  /* Treat pixel as unreliable if higher than this */
 	char    *data;
+
+	struct dim_structure *dim_structure;
 
 	double fsx;
 	double fsy;
@@ -158,6 +161,9 @@ struct detector
 	double             furthest_in_fs;
 	double             furthest_in_ss;
 
+	int                path_dim;
+	int                dim_dim;
+
 	struct panel       defaults;
 };
 
@@ -189,7 +195,8 @@ extern void get_pixel_extents(struct detector *det,
                               double *min_x, double *min_y,
                               double *max_x, double *max_y);
 
-extern void fill_in_values(struct detector *det, struct hdfile *f);
+extern void fill_in_values(struct detector *det, struct hdfile *f,
+                           struct event* ev);
 
 extern struct detector *copy_geom(const struct detector *in);
 

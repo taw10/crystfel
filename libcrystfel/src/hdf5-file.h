@@ -9,6 +9,7 @@
  * Authors:
  *   2009-2012 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
+
  *
  * This file is part of CrystFEL.
  *
@@ -34,13 +35,18 @@
 #ifndef HDF5_H
 #define HDF5_H
 
+struct event_list;
+
 #include <stdint.h>
 #include <hdf5.h>
+#include "image.h"
+#include "events.h"
 
 struct hdfile;
 struct copy_hdf5_field;
 
 #include "image.h"
+#include "events.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,14 +55,20 @@ extern "C" {
 extern int hdf5_write(const char *filename, const void *data,
                       int width, int height, int type);
 
-extern int hdf5_write_image(const char *filename, struct image *image, char *element);
+extern int hdf5_write_image(const char *filename, struct image *image,
+                            char *element);
 
-extern int hdf5_read(const char *filename, struct image *image, const char *element, int satcorr);
+extern int hdf5_read(struct hdfile *f, struct image *image,
+                     const char* element, int satcorr);
 
-extern int hdf5_read2(const char *filename, struct image *image, const char* element, int satcorr, int override_data_and_mask);
+extern int hdf5_read2(struct hdfile *f, struct image *image,
+			   struct event *ev, int satcorr);
+
+extern int check_path_existence(hid_t fh, const char *path);
 
 extern struct hdfile *hdfile_open(const char *filename);
-extern int hdfile_set_image(struct hdfile *f, const char *path);
+int hdfile_set_image(struct hdfile *f, const char *path,
+                     struct panel *p);
 extern int16_t *hdfile_get_image_binned(struct hdfile *hdfile,
                                          int binning, int16_t *maxp);
 extern char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
@@ -65,16 +77,24 @@ extern int hdfile_set_first_image(struct hdfile *f, const char *group);
 extern void hdfile_close(struct hdfile *f);
 
 extern int hdfile_is_scalar(struct hdfile *f, const char *name, int verbose);
-extern char *hdfile_get_string_value(struct hdfile *f, const char *name);
+char *hdfile_get_string_value(struct hdfile *f, const char *name,
+                              struct event* ev);
 extern int get_peaks(struct image *image, struct hdfile *f, const char *p);
 extern double get_value(struct hdfile *f, const char *name);
 
+extern double get_ev_based_value(struct hdfile *f, const char *name,
+                                 struct event *ev);
+
 extern struct copy_hdf5_field *new_copy_hdf5_field_list(void);
 extern void free_copy_hdf5_field_list(struct copy_hdf5_field *f);
+
 extern void copy_hdf5_fields(struct hdfile *f,
-                             const struct copy_hdf5_field *copyme, FILE *fh);
+                             const struct copy_hdf5_field *copyme,
+                             FILE *fh, struct event *ev);
 extern void add_copy_hdf5_field(struct copy_hdf5_field *copyme,
                                 const char *name);
+extern struct event_list *fill_event_list(struct hdfile* hdfile,
+                                          struct detector* det);
 
 #ifdef __cplusplus
 }

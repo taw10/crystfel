@@ -462,7 +462,7 @@ struct panel *find_panel(struct detector *det, double fs, double ss)
 }
 
 
-void fill_in_values(struct detector *det, struct hdfile *f)
+void fill_in_values(struct detector *det, struct hdfile *f, struct event* ev)
 {
 	int i;
 
@@ -471,7 +471,13 @@ void fill_in_values(struct detector *det, struct hdfile *f)
 		struct panel *p = &det->panels[i];
 
 		if ( p->clen_from != NULL ) {
-			p->clen = get_value(f, p->clen_from) * 1.0e-3;
+
+
+			if (det->path_dim !=0 || det->dim_dim !=0 ){
+				p->clen = get_ev_based_value(f, p->clen_from, ev) * 1.0e-3;
+			} else {
+				p->clen = get_value(f, p->clen_from) * 1.0e-3;
+			}
 		}
 
 		p->clen += p->coffset;
@@ -720,6 +726,11 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 			ERROR("Invalid slow scan direction '%s'\n", val);
 			reject = 1;
 		}
+	} else if ( strncmp(key, "dim", 3) == 0) {
+		if  ( panel->dim_structure == NULL ) {
+			panel->dim_structure = initialize_dim_structure();
+		}
+		set_dim_structure_entry(panel->dim_structure, key, val);
 	} else {
 		ERROR("Unrecognised field '%s'\n", key);
 	}
@@ -868,7 +879,11 @@ struct detector *get_detector_geometry(const char *filename)
 	char **bits;
 	int i;
 	int reject = 0;
+	int path_dim;
+	int dim_dim;
 	int x, y, max_fs, max_ss;
+	int dim_reject = 0;
+	int dim_dim_reject = 0;
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) return NULL;
@@ -887,6 +902,8 @@ struct detector *get_detector_geometry(const char *filename)
 	det->mask_bad = 0;
 	det->n_rigid_groups = 0;
 	det->rigid_groups = NULL;
+	det->path_dim = 0;
+	det->dim_dim = 0;
 
 	/* The default defaults... */
 	det->defaults.min_fs = -1;
@@ -913,6 +930,7 @@ struct detector *get_detector_geometry(const char *filename)
 	det->defaults.max_adu = +INFINITY;
 	det->defaults.mask = NULL;
 	det->defaults.data = NULL;
+	det->defaults.dim_structure = NULL;
 	strncpy(det->defaults.name, "", 1023);
 
 	do {
@@ -1001,9 +1019,133 @@ struct detector *get_detector_geometry(const char *filename)
 
 	max_fs = 0;
 	max_ss = 0;
+
+	path_dim = -1;
+	dim_reject = 0;
+
 	for ( i=0; i<det->n_panels; i++ ) {
 
-		if ( det->panels[i].min_fs < 0 ) {
+		int panel_dim = 0;
+		char *next_instance;
+
+		next_instance = det->panels[i].data;
+
+		while(next_instance)
+		{
+			next_instance = strstr(next_instance, "%");
+			if ( next_instance != NULL ) {
+				next_instance += 1*sizeof(char);
+				panel_dim += 1;
+			}
+		}
+
+		if ( path_dim == -1 ) {
+			path_dim = panel_dim;
+		} else {
+			if ( panel_dim != path_dim ) {
+				dim_reject = 1;
+			}
+		}
+
+	}
+
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		int panel_mask_dim = 0;
+		char *next_instance;
+
+		if ( det->panels[i].mask != NULL ) {
+
+			next_instance = det->panels[i].mask;
+
+			while(next_instance)
+			{
+				next_instance = strstr(next_instance, "%");
+				if ( next_instance != NULL ) {
+					next_instance += 1*sizeof(char);
+					panel_mask_dim += 1;
+				}
+			}
+
+			if ( panel_mask_dim != path_dim ) {
+				dim_reject = 1;
+			}
+		}
+	}
+
+	if ( dim_reject ==  1) {
+		ERROR("All panels' data and mask entries must have the same number "\
+			"of placeholders\n");
+		reject = 1;
+	}
+
+	det->path_dim = path_dim;
+
+	dim_dim_reject = 0;
+	dim_dim = -1;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		int di;
+		int found_ss = 0;
+		int found_fs = 0;
+		int panel_dim_dim = 0;
+
+		if ( det->panels[i].dim_structure == NULL ) {
+			det->panels[i].dim_structure = default_dim_structure();
+		}
+
+		for ( di=0; di<det->panels[i].dim_structure->num_dims; di++ ) {
+
+			if ( det->panels[i].dim_structure->dims[di] == HYSL_UNDEFINED  ) {
+				dim_dim_reject = 1;
+			}
+			if ( det->panels[i].dim_structure->dims[di] == HYSL_PLACEHOLDER  ) {
+				panel_dim_dim += 1;
+			}
+			if ( det->panels[i].dim_structure->dims[di] == HYSL_SS  ) {
+				found_ss += 1;
+			}
+			if ( det->panels[i].dim_structure->dims[di] == HYSL_FS  ) {
+				found_fs += 1;
+			}
+
+		}
+
+		if ( found_ss != 1 ) {
+			ERROR("Only one slow scan dim coordinate is allowed\n");
+			dim_dim_reject = 1;
+		}
+
+		if ( found_fs != 1 ) {
+			ERROR("Only one fast scan dim coordinate is allowed\n");
+			dim_dim_reject = 1;
+		}
+
+		if ( panel_dim_dim > 1 ) {
+			ERROR("Maximum one placeholder dim coordinate is allowed\n");
+			dim_dim_reject = 1;
+		}
+
+		if ( dim_dim == -1 ) {
+			dim_dim = panel_dim_dim;
+		} else {
+			if ( panel_dim_dim != dim_dim ) {
+				dim_dim_reject = 1;
+			}
+		}
+
+	}
+
+	if ( dim_dim_reject ==  1) {
+		reject = 1;
+	}
+
+	det->dim_dim = dim_dim;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		if ( det->panels[i ].min_fs < 0 ) {
 			ERROR("Please specify the minimum FS coordinate for"
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
@@ -1049,6 +1191,7 @@ struct detector *get_detector_geometry(const char *filename)
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
+
 		/* It's OK if the badrow direction is '0' */
 		/* It's not a problem if "no_index" is still zero */
 		/* The default transformation matrix is at least valid */
@@ -1240,6 +1383,10 @@ struct detector *simple_geometry(const struct image *image)
 	geom->panels[0].max_fs = image->width-1;
 	geom->panels[0].min_ss = 0;
 	geom->panels[0].max_ss = image->height-1;
+	geom->panels[0].orig_min_fs = 0;
+	geom->panels[0].orig_max_fs = image->width-1;
+	geom->panels[0].orig_min_ss = 0;
+	geom->panels[0].orig_max_ss = image->height-1;
 	geom->panels[0].cnx = -image->width / 2.0;
 	geom->panels[0].cny = -image->height / 2.0;
 	geom->panels[0].rigid_group = NULL;
@@ -1261,6 +1408,9 @@ struct detector *simple_geometry(const struct image *image)
 
 	geom->panels[0].w = image->width;
 	geom->panels[0].h = image->height;
+
+	geom->panels[0].mask = NULL;
+	geom->panels[0].data = NULL;
 
 	find_min_max_d(geom);
 

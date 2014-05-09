@@ -8,6 +8,7 @@
  *
  * Authors:
  *   2010,2012-2014 Thomas White <taw@physics.org>
+ *   2014      Valerio Mariani <valerio.mariani@desy.de>
  *   2012      Chunhong Yoon
  *
  * This file is part of CrystFEL.
@@ -35,7 +36,10 @@
 #endif
 
 struct beam_params;
+struct event;
+struct hdfile;
 
+#include "events.h"
 #include "hdf5-file.h"
 
 struct beam_params
@@ -62,7 +66,8 @@ extern "C" {
 extern struct beam_params *get_beam_parameters(const char *filename);
 extern void free_beam_parameters(struct beam_params *beam);
 
-extern void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f);
+extern void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f,
+                             struct event* ev);
 
 #ifdef __cplusplus
 }

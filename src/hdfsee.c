@@ -9,8 +9,8 @@
  *
  * Authors:
  *   2009-2014 Thomas White <taw@physics.org>
- *   2012      Richard Kirian
  *   2014      Valerio Mariani
+ *   2012      Richard Kirian
  *
  * This file is part of CrystFEL.
  *
@@ -76,7 +76,11 @@ static void show_help(const char *s)
 "                                               -yellow-white.\n"
 "  -e, --image=<element>            Start up displaying this image from the\n"
 "                                    HDF5 file.  Example: /data/data0.\n"
+"                                    (Only used when a geometry file is not"
+"                                     provided. See option -g)"
 "  -g, --geometry=<filename>        Use geometry from file for display.\n"
+"                                   (When this option is used, the value of\n"
+"                                    of the -e parameter is ignored)"
 "  -m, --beam=<filename>            Get beam parameters from <filename>.\n"
 "\n");
 }
@@ -211,7 +215,7 @@ int main(int argc, char *argv[])
 			    ERROR("Failed to read detector geometry from "
 				  "'%s'\n", optarg);
 			    return 1;
-			}
+            }
 			break;
 
 			case 'm' :
@@ -273,12 +277,6 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if ( det_geom == NULL ) {
-		ERROR("You need to provide a geometry file (please read the"
-		      " manual for more details).\n");
-		return 1;
-	}
-
 	if ( cscale == NULL ) cscale = strdup("colour");
 	if ( strcmp(cscale, "mono") == 0 ) {
 		colscale = SCALE_MONO;
@@ -298,9 +296,9 @@ int main(int argc, char *argv[])
 		main_window_list[i] = displaywindow_open(argv[optind+i], peaks,
 		                                         boost, binning,
 		                                         config_noisefilter,
-	                                                 config_calibmode,
+		                                         config_calibmode,
 		                                         colscale, element,
-							 det_geom, beam,
+		                                         det_geom, beam,
 		                                         config_showrings,
 		                                         ring_radii,
 		                                         n_rings,

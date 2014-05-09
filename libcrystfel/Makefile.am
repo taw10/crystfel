@@ -10,7 +10,7 @@ libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/render.c src/index.c src/dirax.c src/mosflm.c \
                          src/cell-utils.c src/integer_matrix.c src/crystal.c \
                          src/grainspotter.c src/xds.c src/integration.c \
-                         src/histogram.c
+                         src/histogram.c src/events.c
 
 if HAVE_FFTW
 libcrystfel_la_SOURCES += src/reax.c
@@ -29,7 +29,8 @@ libcrystfel_la_include_HEADERS = ${top_srcdir}/version.h src/beam-parameters.h \
                                  src/reax.h src/cell-utils.h \
                                  src/integer_matrix.h src/crystal.h \
                                  src/grainspotter.h src/xds.h \
-                                 src/integration.h src/histogram.h
+                                 src/integration.h src/histogram.h \
+                                 src/events.h
 
 AM_CPPFLAGS = -DDATADIR=\""$(datadir)"\" -I$(top_builddir)/lib -Wall
 AM_CPPFLAGS += -I$(top_srcdir)/lib @LIBCRYSTFEL_CFLAGS@

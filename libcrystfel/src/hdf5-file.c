@@ -37,6 +37,7 @@
 #include <hdf5.h>
 #include <assert.h>
 
+#include "events.h"
 #include "image.h"
 #include "hdf5-file.h"
 #include "utils.h"
@@ -103,9 +104,6 @@ struct hdfile *hdfile_open(const char *filename)
 	f = malloc(sizeof(struct hdfile));
 	if ( f == NULL ) return NULL;
 
-	/* Please stop spamming my terminal */
-	H5Eset_auto2(H5E_DEFAULT, NULL, NULL);
-
 	f->fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( f->fh < 0 ) {
 		ERROR("Couldn't open file: %s\n", filename);
@@ -118,11 +116,14 @@ struct hdfile *hdfile_open(const char *filename)
 }
 
 
-int hdfile_set_image(struct hdfile *f, const char *path)
+int hdfile_set_image(struct hdfile *f, const char *path,
+                     struct panel *p)
 {
 	hsize_t size[2];
 	hsize_t max_size[2];
 	hid_t sh;
+	int sh_dim;
+	int di;
 
 	f->dh = H5Dopen2(f->fh, path, H5P_DEFAULT);
 	if ( f->dh < 0 ) {
@@ -130,17 +131,47 @@ int hdfile_set_image(struct hdfile *f, const char *path)
 		return -1;
 	}
 	f->data_open = 1;
-
 	sh = H5Dget_space(f->dh);
-	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
-		ERROR("Dataset is not two-dimensional\n");
-		return -1;
+	sh_dim = H5Sget_simple_extent_ndims(sh);
+
+	if ( p == NULL ) {
+
+		if ( sh_dim != 2 ) {
+			ERROR("Dataset is not two-dimensional\n");
+			return -1;
+		}
+
+	} else {
+
+		if ( sh_dim != p->dim_structure->num_dims ) {
+			ERROR("Dataset dimensionality does not match geometry file\n");
+			return -1;
+		}
+
 	}
+
 	H5Sget_simple_extent_dims(sh, size, max_size);
 	H5Sclose(sh);
 
-	f->nx = size[0];
-	f->ny = size[1];
+	if ( p == NULL ) {
+
+		f->nx = size[0];
+		f->ny = size[1];
+
+	} else {
+
+		for (di=0; di<p->dim_structure->num_dims; di++ ) {
+
+			if (p->dim_structure->dims[di] == HYSL_SS ) {
+				f->ny = size[di];
+			}
+			if (p->dim_structure->dims[di] == HYSL_FS ) {
+				f->nx = size[di];
+			}
+
+		}
+
+	}
 
 	return 0;
 }
@@ -234,15 +265,17 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p)
 static void cleanup(hid_t fh)
 {
 	int n_ids, i;
-	hid_t ids[256];
+	hid_t ids[2048];
 
-	n_ids = H5Fget_obj_ids(fh, H5F_OBJ_ALL, 256, ids);
+	n_ids = H5Fget_obj_ids(fh, H5F_OBJ_ALL, 2048, ids);
+
 	for ( i=0; i<n_ids; i++ ) {
 
 		hid_t id;
 		H5I_type_t type;
 
 		id = ids[i];
+
 		type = H5Iget_type(id);
 
 		if ( type == H5I_GROUP ) H5Gclose(id);
@@ -252,17 +285,21 @@ static void cleanup(hid_t fh)
 		if ( type == H5I_ATTR ) H5Aclose(id);
 
 	}
+
 }
 
 
 void hdfile_close(struct hdfile *f)
 {
+
 	if ( f->data_open ) {
 		H5Dclose(f->dh);
 	}
+
 	cleanup(f->fh);
 
 	H5Fclose(f->fh);
+
 	free(f);
 }
 
@@ -401,8 +438,8 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 				new_panel_idxs = realloc(locations[li].panel_idxs,
 				                        (locations[li].n_panels+1)*sizeof(int));
 				if ( new_panel_idxs == NULL ) {
-					ERROR("Error while managing write location list for file: %s\n",
-					       filename);
+					ERROR("Error while managing write location list for"
+					      "file: %s\n", filename);
 					return 1;
 				}
 				locations[li].panel_idxs = new_panel_idxs;
@@ -422,9 +459,11 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 
 			struct hdf5_write_location * new_locations;
 			new_locations = realloc(locations,
-			                       (num_locations+1)*sizeof(struct hdf5_write_location));
+			                       (num_locations+1)*
+			                       sizeof(struct hdf5_write_location));
 			if ( new_locations == NULL ) {
-				ERROR("Error while managing write location list for file: %s\n",
+				ERROR("Error while managing write location list for "
+				       "file: %s\n",
 				       filename);
 				return 1;
 			}
@@ -432,8 +471,8 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 			new_location = &locations[num_locations];
 			new_location = malloc(sizeof(struct hdf5_write_location));
 			if ( new_location == NULL ) {
-			      ERROR("Error while managing write location list for file: %s\n",
-			             filename);
+				ERROR("Error while managing write location list for "
+				      "file: %s\n", filename);
 			      return 1;
 			}
 			locations[num_locations].max_ss = p.orig_max_ss;
@@ -441,8 +480,8 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 			locations[num_locations].location = p_location;
 			locations[num_locations].panel_idxs = malloc(sizeof(int));
 			if ( locations[num_locations].panel_idxs == NULL ) {
-			      ERROR("Error while managing write location list for file: %s\n",
-			             filename);
+				ERROR("Error while managing write location list for "
+				      "file: %s\n", filename);
 			      return 1;
 			}
 			locations[num_locations].panel_idxs[0] = pi;
@@ -845,13 +884,66 @@ static int unpack_panels(struct image *image, struct detector *det)
 }
 
 
-int hdf5_read(const char *filename, struct image *image, const char* element, int satcorr)
+int hdf5_read(struct hdfile *f, struct image *image,
+			  const char* element, int satcorr)
 {
-	return hdf5_read2(filename, image, element, satcorr, 0);
+	herr_t r;
+	float *buf;
+	int fail;
+
+	if ( element == NULL ) {
+		fail = hdfile_set_first_image(f, "/");
+	} else {
+		fail = hdfile_set_image(f, element, NULL);
+	}
+
+	if ( fail ) {
+		ERROR("Couldn't select path\n");
+		return 1;
+	}
+
+	/* Note the "swap" here, according to section 3.2.5,
+	 * "C versus Fortran Dataspaces", of the HDF5 user's guide. */
+	image->width = f->ny;
+	image->height = f->nx;
+
+	buf = malloc(sizeof(float)*f->nx*f->ny);
+
+	r = H5Dread(f->dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+				H5P_DEFAULT, buf);
+	if ( r < 0 ) {
+		ERROR("Couldn't read data\n");
+		free(buf);
+		return 1;
+	}
+	image->data = buf;
+
+	if ( satcorr ) debodge_saturation(f, image);
+
+	if ( image->beam != NULL ) {
+
+		fill_in_beam_parameters(image->beam, f, NULL);
+		image->lambda = ph_en_to_lambda(eV_to_J(image->beam->photon_energy));
+
+		if ( (image->beam->photon_energy < 0.0)
+		  || (image->lambda > 1000) ) {
+			/* Error message covers a silly value in the beam file
+			 * or in the HDF5 file. */
+			ERROR("Nonsensical wavelength (%e m or %e eV) value "
+				  "for %s.\n",
+				  image->lambda, image->beam->photon_energy,
+				  image->filename);
+			return 1;
+		}
+
+	}
+
+	return 0;
 }
 
 
-int hdf5_read2(const char *filename, struct image *image, const char* element, int satcorr, int override_data_and_mask)
+int hdf5_read2(struct hdfile *f, struct image *image,
+               struct event *ev, int satcorr)
 {
 	herr_t r;
 	float *buf;
@@ -862,8 +954,7 @@ int hdf5_read2(const char *filename, struct image *image, const char* element, i
 	int mask_is_present;
 	int no_mask_loaded;
 	int pi;
-	hid_t mask_dh = NULL;
-	struct hdfile *f;
+	hid_t mask_dh = 0;
 
 	if ( image->det == NULL ) {
 		ERROR("Geometry not available\n");
@@ -898,15 +989,12 @@ int hdf5_read2(const char *filename, struct image *image, const char* element, i
 	curr_ss = 0;
 	no_mask_loaded = 1;
 
-	f = hdfile_open(filename);
-	if ( f == NULL ) {
-		return 1;
-	}
-
 	for ( pi=0; pi<image->det->n_panels; pi++ ) {
 
 		int data_width, data_height;
-		hsize_t f_offset[2], f_count[2];
+		hsize_t *f_offset, *f_count;
+		int hsi;
+		struct dim_structure *hsd;
 		hsize_t m_offset[2], m_count[2];
 		hsize_t dimsm[2];
 		herr_t check;
@@ -916,26 +1004,53 @@ int hdf5_read2(const char *filename, struct image *image, const char* element, i
 		struct panel *p;
 		p=&image->det->panels[pi];
 
-		if ( override_data_and_mask ) {
-			fail = hdfile_set_image(f, element);
-		} else {
-			if ( p->data != NULL ) {
-				fail = hdfile_set_image(f, p->data);
-			} else if ( element != NULL ) {
-				fail = hdfile_set_image(f, element);
-			} else {
-				fail = hdfile_set_first_image(f,"/");
+		if ( ev != NULL ) {
+
+			int exists;
+			char *panel_full_path;
+
+			panel_full_path = retrieve_full_path
+			                  (ev, p->data);
+
+			exists = check_path_existence(f->fh, panel_full_path);
+			if ( !exists ) {
+				ERROR("Cannot find data for panel %s\n",
+				      p->name);
+				return 1;
 			}
+
+			fail = hdfile_set_image(f, panel_full_path, p);
+			free(panel_full_path);
+
+		} else {
+
+			if ( p->data == NULL ) {
+
+				fail = hdfile_set_first_image(f, "/");
+
+			} else {
+
+				int exists;
+				exists = check_path_existence(f->fh, p->data);
+				if ( !exists ) {
+					ERROR("Cannot find data for panel %s\n",
+					      p->name);
+					return 1;
+				}
+				fail = hdfile_set_image(f, p->data, p);
+
+			}
+
 		}
 		if ( fail ) {
 			ERROR("Couldn't select path for panel %s\n",
 			      p->name);
-			hdfile_close(f);
 			return 1;
 		}
 
 		data_width = f->ny;
 		data_height = f->nx;
+
 		if ( (data_width < p->w )
 		  || (data_height < p->h) )
 		{
@@ -948,10 +1063,29 @@ int hdf5_read2(const char *filename, struct image *image, const char* element, i
 			return 1;
 		}
 
-		f_offset[0] = p->orig_min_ss;
-		f_offset[1] = p->orig_min_fs;
-		f_count[0] = p->orig_max_ss - p->orig_min_ss +1;
-		f_count[1] = p->orig_max_fs - p->orig_min_fs +1;
+		hsd = image->det->panels[pi].dim_structure;
+
+		f_offset = malloc(hsd->num_dims*sizeof(hsize_t));
+		f_count = malloc(hsd->num_dims*sizeof(hsize_t));
+
+		for ( hsi=0; hsi<hsd->num_dims; hsi++ ) {
+
+			if ( hsd->dims[hsi] == HYSL_FS ) {
+				f_offset[hsi] = p->orig_min_fs;
+				f_count[hsi] = p->orig_max_fs - p->orig_min_fs +1;
+			} else if ( hsd->dims[hsi] == HYSL_SS ) {
+				f_offset[hsi] = p->orig_min_ss;
+				f_count[hsi] = p->orig_max_ss - p->orig_min_ss +1;
+			} else if (hsd->dims[hsi] == HYSL_PLACEHOLDER ) {
+				f_offset[hsi] = ev->dim_entries[0];
+				f_count[hsi] = 1;
+			} else {
+				f_offset[hsi] = hsd->dims[hsi];
+				f_count[hsi] = 1;
+			}
+
+		}
+
 		dataspace = H5Dget_space(f->dh);
 		check = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
 					    f_offset, NULL, f_count, NULL);
@@ -959,7 +1093,6 @@ int hdf5_read2(const char *filename, struct image *image, const char* element, i
 			ERROR("Error selecting file dataspace for panel %s\n",
 			      p->name);
 			free(buf);
-			hdfile_close(f);
 			return 1;
 		}
 
@@ -976,60 +1109,118 @@ int hdf5_read2(const char *filename, struct image *image, const char* element, i
 			ERROR("Error selecting memory dataspace for panel %s\n",
 			      p->name);
 			free(buf);
-			hdfile_close(f);
 			return 1;
 		}
+
 		r = H5Dread(f->dh, H5T_NATIVE_FLOAT, memspace, dataspace,
 		            H5P_DEFAULT, buf);
 		if ( r < 0 ) {
 			ERROR("Couldn't read data for panel %s\n",
 			      p->name);
 			free(buf);
-			hdfile_close(f);
 			return 1;
 		}
 		H5Dclose(f->dh);
 		f->data_open = 0;
 		H5Sclose(dataspace);
+		H5Sclose(memspace);
 
 		if ( p->mask != NULL ) {
-			mask_dh = H5Dopen2(f->fh, p->mask, H5P_DEFAULT);
-			if ( mask_dh <= 0 ) {
-				ERROR("Couldn't open flags for panel %s\n",
-				      p->name);
-				image->flags = NULL;
+
+			if ( ev != NULL ) {
+
+				int exists;
+				char *mask_full_path;
+
+				mask_full_path = retrieve_full_path (ev, p->mask);
+
+				exists = check_path_existence(f->fh, mask_full_path);
+				if ( !exists ) {
+					ERROR("Cannot find flags for panel %s\n",
+					      p->name);
+					return 1;
+				}
+
+				mask_dh = H5Dopen2(f->fh, mask_full_path, H5P_DEFAULT);
+
+				if ( mask_dh <= 0 ) {
+					ERROR("Couldn't open flags for panel %s\n",
+					      p->name);
+					image->flags = NULL;
+				} else {
+
+					mask_dataspace = H5Dget_space(mask_dh);
+					check = H5Sselect_hyperslab(mask_dataspace, H5S_SELECT_SET,
+					                            f_offset, NULL, f_count, NULL);
+					if ( check < 0 ) {
+						ERROR("Error selecting mask dataspace for panel %s\n",
+						      p->name);
+					}
+					r = H5Dread(mask_dh, H5T_NATIVE_UINT16, memspace,
+					        mask_dataspace, H5P_DEFAULT, flags);
+					if ( r < 0 ) {
+						ERROR("Couldn't read flags for panel %s\n",
+						      p->name);
+					} else {
+						no_mask_loaded = 0;
+					}
+
+					H5Sclose(mask_dataspace);
+					H5Dclose(mask_dh);
+
+				}
+
 			} else {
 
-				mask_dataspace = H5Dget_space(mask_dh);
-				check = H5Sselect_hyperslab(mask_dataspace, H5S_SELECT_SET,
-				                            f_offset, NULL, f_count, NULL);
-				if ( check < 0 ) {
-					ERROR("Error selecting mask dataspace for panel %s\n",
+				int exists;
+				exists = check_path_existence(f->fh, p->mask);
+				if ( !exists ) {
+					ERROR("Cannot find flags for panel %s\n",
 					      p->name);
-				}
-				r = H5Dread(mask_dh, H5T_NATIVE_UINT16, memspace, mask_dataspace,
-				            H5P_DEFAULT, flags);
-				if ( r < 0 ) {
-					ERROR("Couldn't read flags for panel %s\n",
-					      p->name);
-				} else {
-					no_mask_loaded = 0;
+					return 1;
 				}
 
-				H5Sclose(mask_dataspace);
-				H5Dclose(mask_dh);
+				mask_dh = H5Dopen2(f->fh, p->mask, H5P_DEFAULT);
+				if ( mask_dh <= 0 ) {
+					ERROR("Couldn't open flags for panel %s\n",
+					      p->name);
+					image->flags = NULL;
+				} else {
+
+					mask_dataspace = H5Dget_space(mask_dh);
+					check = H5Sselect_hyperslab(mask_dataspace, H5S_SELECT_SET,
+					                            f_offset, NULL, f_count, NULL);
+					if ( check < 0 ) {
+						ERROR("Error selecting mask dataspace for panel %s\n",
+						      p->name);
+					}
+					r = H5Dread(mask_dh, H5T_NATIVE_UINT16, memspace,
+					            mask_dataspace, H5P_DEFAULT, flags);
+					if ( r < 0 ) {
+						ERROR("Couldn't read flags for panel %s\n",
+						      p->name);
+					} else {
+						no_mask_loaded = 0;
+					}
+
+					H5Sclose(mask_dataspace);
+					H5Dclose(mask_dh);
+
+				}
 
 			}
 
 		}
-
-		H5Sclose(memspace);
 
 		p->min_fs = m_min_fs;
 		p->max_fs = m_max_fs;
 		p->min_ss = curr_ss;
 		p->max_ss = curr_ss + p->h-1;
 		curr_ss += p->h;
+
+		free(f_offset);
+		free(f_count);
+
 	}
 
 	image->data = buf;
@@ -1042,13 +1233,14 @@ int hdf5_read2(const char *filename, struct image *image, const char* element, i
 
 	if ( satcorr ) debodge_saturation(f, image);
 
-	fill_in_values(image->det, f);
+	fill_in_values(image->det, f, ev);
 
 	unpack_panels(image, image->det);
 
 	if ( image->beam != NULL ) {
 
-		fill_in_beam_parameters(image->beam, f);
+		fill_in_beam_parameters(image->beam, f, ev);
+
 		image->lambda = ph_en_to_lambda(eV_to_J(image->beam->photon_energy));
 
 		if ( (image->beam->photon_energy < 0.0)
@@ -1056,16 +1248,15 @@ int hdf5_read2(const char *filename, struct image *image, const char* element, i
 			/* Error message covers a silly value in the beam file
 			 * or in the HDF5 file. */
 			ERROR("Nonsensical wavelength (%e m or %e eV) value "
-			      "for %s.\n",
+			      "for file: %s, event: %s.\n",
 			      image->lambda, image->beam->photon_energy,
-			      image->filename);
+			      image->filename, get_event_string(image->event));
 			hdfile_close(f);
 			return 1;
 		}
 
 	}
 
-	hdfile_close(f);
 	return 0;
 }
 
@@ -1099,13 +1290,15 @@ int hdfile_is_scalar(struct hdfile *f, const char *name, int verbose)
 	hid_t type;
 	int ndims;
 	int i;
+	int check;
 
-	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
-	if ( dh < 0 ) {
+	check = check_path_existence(f->fh, name);
+	if ( check == 0 ) {
 		ERROR("No such field '%s'\n", name);
 		return 0;
 	}
 
+	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
 	type = H5Dget_type(dh);
 
 	/* Get the dimensionality.  We have to cope with scalars expressed as
@@ -1143,6 +1336,8 @@ int hdfile_is_scalar(struct hdfile *f, const char *name, int verbose)
 }
 
 
+
+
 static int get_f_value(struct hdfile *f, const char *name, double *val)
 {
 	hid_t dh;
@@ -1150,14 +1345,17 @@ static int get_f_value(struct hdfile *f, const char *name, double *val)
 	hid_t class;
 	herr_t r;
 	double buf;
+	int check;
 
 	if ( !hdfile_is_scalar(f, name, 1) ) return 1;
 
-	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
-	if ( dh < 0 ) {
+	check = check_path_existence(f->fh, name);
+	if ( check == 0 ) {
 		ERROR("No such field '%s'\n", name);
 		return 1;
 	}
+
+	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
 
 	type = H5Dget_type(dh);
 	class = H5Tget_class(type);
@@ -1183,6 +1381,152 @@ static int get_f_value(struct hdfile *f, const char *name, double *val)
 }
 
 
+static int get_ev_based_f_value(struct hdfile *f, const char *name,
+                                struct event *ev, double *val)
+{
+	hid_t dh;
+	hid_t type;
+	hid_t class;
+	hid_t sh;
+	hid_t ms;
+	hsize_t *f_offset = NULL;
+	hsize_t *f_count = NULL;
+	hsize_t m_offset[1];
+	hsize_t m_count[1];
+	hsize_t msdims[1];
+	hsize_t size[3];
+	herr_t r;
+	herr_t check;
+	double buf;
+	int check_pe;
+	int dim_flag;
+	int ndims;
+	int i;
+	char* subst_name = NULL;
+
+	if ( ev->path_length != 0 ) {
+		subst_name = partial_event_substitution(ev, name);
+	} else {
+		subst_name = strdup(name);
+	}
+
+	check_pe = check_path_existence(f->fh, subst_name);
+	if ( check_pe == 0 ) {
+		ERROR("No such field '%s'\n", subst_name);
+		return 1;
+	}
+
+	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
+	type = H5Dget_type(dh);
+	class = H5Tget_class(type);
+
+	if ( class != H5T_FLOAT ) {
+		ERROR("Not a floating point value.\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return 1;
+	}
+
+	/* Get the dimensionality.  We have to cope with scalars expressed as
+	 * arrays with all dimensions 1, as well as zero-d arrays. */
+	sh = H5Dget_space(dh);
+	ndims = H5Sget_simple_extent_ndims(sh);
+	if ( ndims > 3 ) {
+		H5Tclose(type);
+		H5Dclose(dh);
+		return 1;
+	}
+	H5Sget_simple_extent_dims(sh, size, NULL);
+
+	m_offset[0] = 0;
+	m_count[0] = 1;
+	msdims[0] = 1;
+	ms = H5Screate_simple(1,msdims,NULL);
+
+	/* Check that the size in all dimensions is 1 */
+	/* or that one of the dimensions has the same */
+	/* size as the hyperplane events              */
+
+	dim_flag = 0;
+
+	for ( i=0; i<ndims; i++ ) {
+		if ( size[i] != 1 ) {
+			if ( i == 0 && size[i] > ev->dim_entries[0] ) {
+				dim_flag = 1;
+			} else {
+				H5Tclose(type);
+				H5Dclose(dh);
+				return 1;
+			}
+		}
+	}
+
+	if ( dim_flag == 0  ) {
+
+		r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
+		            H5P_DEFAULT, &buf);
+
+		if ( r < 0 )  {
+			ERROR("Couldn't read value.\n");
+			H5Tclose(type);
+			H5Dclose(dh);
+			return 1;
+		}
+
+	} else {
+
+		f_offset = malloc(ndims*sizeof(hsize_t));
+		f_count = malloc(ndims*sizeof(hsize_t));
+
+		for ( i=0; i<ndims; i++ ) {
+
+			if ( i == 0 ) {
+				f_offset[i] = ev->dim_entries[0];
+				f_count[i] = 1;
+			} else {
+				f_offset[i] = 0;
+				f_count[i] = 0;
+			}
+
+		}
+
+		check = H5Sselect_hyperslab(sh, H5S_SELECT_SET,
+		                            f_offset, NULL, f_count, NULL);
+		if ( check <0 ) {
+			ERROR("Error selecting dataspace for float value");
+			free(f_offset);
+			free(f_count);
+			return 1;
+		}
+
+		ms = H5Screate_simple(1,msdims,NULL);
+		check = H5Sselect_hyperslab(ms, H5S_SELECT_SET,
+		                            m_offset, NULL, m_count, NULL);
+		if ( check < 0 ) {
+			ERROR("Error selecting memory dataspace for float value");
+			free(f_offset);
+			free(f_count);
+			return 1;
+		}
+
+		r = H5Dread(dh, H5T_NATIVE_DOUBLE, ms, sh,
+		            H5P_DEFAULT, &buf);
+		if ( r < 0 )  {
+			ERROR("Couldn't read value.\n");
+			H5Tclose(type);
+			H5Dclose(dh);
+			return 1;
+		}
+
+	}
+
+	free(subst_name);
+	*val = buf;
+
+	return 0;
+}
+
+
 static int get_i_value(struct hdfile *f, const char *name, int *val)
 {
 	hid_t dh;
@@ -1190,15 +1534,17 @@ static int get_i_value(struct hdfile *f, const char *name, int *val)
 	hid_t class;
 	herr_t r;
 	int buf;
+	int check;
 
 	if ( !hdfile_is_scalar(f, name, 1) ) return 1;
 
-	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
-	if ( dh < 0 ) {
+	check = check_path_existence(f->fh, name);
+	if ( check == 0 ) {
 		ERROR("No such field '%s'\n", name);
 		return 1;
 	}
 
+	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
 	type = H5Dget_type(dh);
 	class = H5Tget_class(type);
 
@@ -1227,6 +1573,14 @@ double get_value(struct hdfile *f, const char *name)
 {
 	double val;
 	get_f_value(f, name, &val);
+	return val;
+}
+
+double get_ev_based_value(struct hdfile *f, const char *name,
+                          struct event *ev)
+{
+	double val = -1;
+	get_ev_based_f_value(f, name, ev, &val);
 	return val;
 }
 
@@ -1306,7 +1660,7 @@ void add_copy_hdf5_field(struct copy_hdf5_field *copyme,
 
 
 void copy_hdf5_fields(struct hdfile *f, const struct copy_hdf5_field *copyme,
-                      FILE *fh)
+                      FILE *fh, struct event *ev)
 {
 	int i;
 
@@ -1318,7 +1672,7 @@ void copy_hdf5_fields(struct hdfile *f, const struct copy_hdf5_field *copyme,
 		char *field;
 
 		field = copyme->fields[i];
-		val = hdfile_get_string_value(f, field);
+		val = hdfile_get_string_value(f, field, ev);
 
 		if ( field[0] == '/' ) {
 			fprintf(fh, "hdf5%s = %s\n", field, val);
@@ -1332,7 +1686,8 @@ void copy_hdf5_fields(struct hdfile *f, const struct copy_hdf5_field *copyme,
 }
 
 
-char *hdfile_get_string_value(struct hdfile *f, const char *name)
+char *hdfile_get_string_value(struct hdfile *f, const char *name,
+                              struct event* ev)
 {
 	hid_t dh;
 	hsize_t size;
@@ -1344,7 +1699,6 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name)
 
 	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
 	if ( dh < 0 ) return NULL;
-
 	type = H5Dget_type(dh);
 	class = H5Tget_class(type);
 
@@ -1376,7 +1730,11 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name)
 	switch ( class ) {
 
 		case H5T_FLOAT :
-		if ( get_f_value(f, name, &buf_f) ) goto fail;
+		if ( ev != NULL ) {
+			if ( get_ev_based_f_value(f, name, ev, &buf_f) ) goto fail;
+		} else {
+			if ( get_f_value(f, name, &buf_f) ) goto fail;
+		}
 		tmp = malloc(256);
 		snprintf(tmp, 255, "%f", buf_f);
 		return tmp;
@@ -1461,6 +1819,8 @@ char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
 
 	}
 
+	H5Gclose(gh);
+
 	return res;
 }
 
@@ -1478,7 +1838,7 @@ int hdfile_set_first_image(struct hdfile *f, const char *group)
 	for ( i=0; i<n; i++ ) {
 
 		if ( is_image[i] ) {
-			hdfile_set_image(f, names[i]);
+			hdfile_set_image(f, names[i], NULL);
 			for ( j=0; j<n; j++ ) free(names[j]);
 			free(is_image);
 			free(is_group);
@@ -1502,4 +1862,334 @@ int hdfile_set_first_image(struct hdfile *f, const char *group)
 	free(names);
 
 	return 1;
+}
+
+
+struct parse_params {
+	struct hdfile *hdfile;
+	int path_dim;
+	const char *path;
+	struct event *curr_event;
+	struct event_list *ev_list;
+	int top_level;
+};
+
+
+int check_path_existence(hid_t fh, const char *path)
+{
+
+	char buffer[256];
+	char buffer_full_path[2048];
+	herr_t herrt;
+	struct H5O_info_t ob_info;
+	char *path_copy = strdup(path);
+	char *start = path_copy;
+	char *sep = NULL;
+
+	strncpy(buffer, "\0",1);
+	strncpy(buffer_full_path, "\0", 1);
+
+	if ( strcmp(path_copy, "/" ) == 0 ) {
+		return 1;
+	}
+
+	do {
+
+		int check;
+
+		sep = strstr(start, "/");
+
+		if ( sep != NULL ) {
+
+			if ( sep == start ) {
+				start = sep+1;
+				strcat(buffer_full_path, "/");
+				continue;
+			}
+
+			strncpy(buffer, start, sep-start);
+			buffer[sep-start]='\0';
+			strcat(buffer_full_path, buffer);
+
+			check = H5Lexists(fh, buffer_full_path, H5P_DEFAULT);
+			if ( check == 0 ) {
+				return 0;
+			} else {
+				herrt = H5Oget_info_by_name(fh, buffer_full_path,
+				                            &ob_info, H5P_DEFAULT);
+				if ( herrt < 0 ) {
+					return -1;
+				}
+				if ( ob_info.type != H5O_TYPE_GROUP ) {
+					return 0;
+				}
+
+				start = sep+1;
+				strcat(buffer_full_path, "/");
+
+			}
+
+		} else {
+
+			strncpy(buffer, start, strlen(start)+1);
+			strcat(buffer_full_path, buffer);
+
+			check = H5Lexists(fh, buffer_full_path, H5P_DEFAULT);
+			if ( check == 0 ) {
+				return 0;
+			}
+
+		}
+	} while (sep);
+
+	free(path_copy);
+	return 1;
+
+}
+
+
+static herr_t parse_file_event_structure(hid_t loc_id, char *name,
+                                   const H5L_info_t *info,
+                                   void *operator_data)
+
+{
+
+	struct parse_params *pp;
+	char *substituted_path;
+	char *ph_loc;
+	char *truncated_path;
+	htri_t check;
+	herr_t herrt_iterate, herrt_info;
+	struct H5O_info_t object_info;
+	pp = (struct parse_params *)operator_data;
+
+	if ( !pp->top_level ) {
+
+		int fail_push;
+
+		fail_push = push_path_entry_to_event(pp->curr_event, name);
+		if ( fail_push ) {
+			return -1;
+		}
+
+		substituted_path = event_path_placeholder_subst(name, pp->path);
+
+	} else {
+		substituted_path = strdup(pp->path);
+	}
+
+	if ( pp->top_level == 1 ) {
+		pp->top_level = 0;
+	}
+
+	truncated_path = strdup(substituted_path);
+	ph_loc = strstr(substituted_path,"%");
+	if ( ph_loc != NULL) {
+		strncpy(&truncated_path[ph_loc-substituted_path],"\0",1);
+	}
+
+	herrt_iterate = 0;
+	herrt_info = 0;
+
+	check = check_path_existence(pp->hdfile->fh, truncated_path);
+	if ( check == 0 ) {
+			pop_path_entry_from_event(pp->curr_event);
+			return 0;
+	} else {
+
+		herrt_info = H5Oget_info_by_name(pp->hdfile->fh, truncated_path,
+                                         &object_info, H5P_DEFAULT);
+		if ( herrt_info < 0 ) {
+			free(truncated_path);
+			free(substituted_path);
+			return -1;
+		}
+
+		if ( pp->curr_event->path_length == pp->path_dim &&
+			object_info.type == H5O_TYPE_DATASET ) {
+
+			int fail_append;
+
+			fail_append = append_event_to_event_list(pp->ev_list,
+			                                         pp->curr_event);
+			if ( fail_append ) {
+				free(truncated_path);
+				free(substituted_path);
+				return -1;
+			}
+
+			pop_path_entry_from_event(pp->curr_event);
+			return 0;
+
+		} else {
+
+			pp->path = substituted_path;
+
+			if ( object_info.type == H5O_TYPE_GROUP ) {
+
+				herrt_iterate = H5Literate_by_name(pp->hdfile->fh,
+				                                   truncated_path,
+				                                   H5_INDEX_NAME,
+				                                   H5_ITER_NATIVE, NULL,
+				                                   parse_file_event_structure,
+				                                   (void *) pp, H5P_DEFAULT);
+			}
+		}
+	}
+
+	pop_path_entry_from_event(pp->curr_event);
+
+	free(truncated_path);
+	free(substituted_path);
+
+	return herrt_iterate;
+
+}
+
+
+struct event_list *fill_event_list(struct hdfile* hdfile, struct detector* det)
+{
+	int pi;
+	int evi;
+	herr_t check;
+	struct event_list *master_el;
+	struct event_list *master_el_with_dims;
+
+	master_el = initialize_event_list();
+
+	if ( det->path_dim != 0 ) {
+
+		for ( pi=0; pi<det->n_panels; pi++ ) {
+
+			struct parse_params pparams;
+			struct event *empty_event;
+			struct event_list *panel_ev_list;
+			int ei;
+
+			empty_event = initialize_event();
+			panel_ev_list = initialize_event_list();
+
+			pparams.path = det->panels[pi].data;
+			pparams.hdfile = hdfile;
+			pparams.path_dim = det->path_dim;
+			pparams.curr_event = empty_event;
+			pparams.top_level = 1;
+			pparams.ev_list = panel_ev_list;
+
+			check = parse_file_event_structure(hdfile->fh, NULL,
+				                           NULL,
+		                                   (void *) &pparams);
+
+			if ( check < 0 ) {
+				free_event(empty_event);
+				free_event_list(panel_ev_list);
+				return NULL;
+			}
+
+			for ( ei=0; ei<panel_ev_list->num_events; ei++ ) {
+
+				int fail_add;
+
+				fail_add = add_non_existing_event_to_event_list(master_el,
+				                                panel_ev_list->events[ei]);
+				if ( fail_add ) {
+
+					free_event(empty_event);
+					free_event_list(panel_ev_list);
+					return NULL;
+			}
+		}
+
+			free_event(empty_event);
+			free_event_list(panel_ev_list);
+		}
+
+	}
+
+	if ( det->dim_dim > 0 ) {
+
+		if ( master_el->num_events == 0 ) {
+
+			struct event *empty_ev;
+			empty_ev = initialize_event();
+			append_event_to_event_list(master_el, empty_ev);
+            free(empty_ev);
+
+		}
+
+		master_el_with_dims = initialize_event_list();
+
+		for (evi=0; evi<master_el->num_events; evi++ ) {
+
+			int global_path_dim = -1;
+			int pai;
+			int mlwd;
+
+			for ( pai=0; pai<det->n_panels; pai++ ) {
+
+				char *full_panel_path;
+				hid_t dh;
+				hid_t sh;
+				int dims;
+				hsize_t *size;
+				hsize_t *max_size;
+				int hsdi;
+				int panel_path_dim = 0;
+
+				full_panel_path = retrieve_full_path(master_el->events[evi],
+				                                     det->panels[pai].data);
+
+				dh = H5Dopen2(hdfile->fh, full_panel_path, H5P_DEFAULT);
+				sh = H5Dget_space(dh);
+				dims = H5Sget_simple_extent_ndims(sh);
+
+				size = malloc(dims*sizeof(hsize_t));
+				max_size = malloc(dims*sizeof(hsize_t));
+
+				dims = H5Sget_simple_extent_dims(sh, size, max_size);
+
+				for ( hsdi=0; hsdi<det->panels[pai].dim_structure->num_dims;
+				      hsdi++ ) {
+					if (det->panels[pai].dim_structure->dims[hsdi] ==
+				    HYSL_PLACEHOLDER ) {
+						panel_path_dim = size[hsdi];
+						break;
+					}
+				}
+
+
+				if ( global_path_dim == -1 ) {
+
+					global_path_dim = panel_path_dim;
+
+				} else if ( panel_path_dim != global_path_dim ) {
+
+					ERROR("Data blocks paths for panels must have the same "
+					      "number of placeholders");
+					free(size);
+					free(max_size);
+					return NULL;
+				}
+
+			}
+
+			for ( mlwd=0; mlwd<global_path_dim; mlwd++ ) {
+
+				struct event *mlwd_ev;
+
+				mlwd_ev = copy_event(master_el->events[evi]);
+				push_dim_entry_to_event(mlwd_ev, mlwd);
+				append_event_to_event_list(master_el_with_dims,
+										mlwd_ev);
+				free(mlwd_ev);
+			}
+
+		}
+
+		free_event_list(master_el);
+		return master_el_with_dims;
+
+	}
+
+	return master_el;
 }

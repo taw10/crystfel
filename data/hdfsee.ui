@@ -29,6 +29,9 @@
 			<menuitem name="peaks" action="PeaksAction" />
 		</menu>
 
+		<menu name="events" action="EventsAction">
+		</menu>
+
 		<menu name="help" action="HelpAction">
 			<menuitem name="about" action="AboutAction" />
 		</menu>

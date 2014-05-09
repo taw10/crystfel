@@ -8,6 +8,7 @@
  *
  * Authors:
  *   2010,2012,2014 Thomas White <taw@physics.org>
+ *   2014           Valerio Mariani
  *   2012           Chunhong Yoon
  *
  * This file is part of CrystFEL.
@@ -160,10 +161,16 @@ void free_beam_parameters(struct beam_params *beam)
 }
 
 
-void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f)
+void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f,
+                             struct event* ev)
 {
 	if ( beam->photon_energy_from != NULL ) {
-		beam->photon_energy = get_value(f, beam->photon_energy_from);
+		if ( ev != NULL ) {
+			beam->photon_energy = get_ev_based_value(f,
+			                      beam->photon_energy_from, ev);
+		} else {
+			beam->photon_energy = get_value(f, beam->photon_energy_from);
+		}
 		beam->photon_energy *= beam->photon_energy_scale;
 	}
 }

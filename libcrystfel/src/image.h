@@ -10,6 +10,7 @@
  *   2009-2013 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
+ *
  * This file is part of CrystFEL.
  *
  * CrystFEL is free software: you can redistribute it and/or modify
@@ -33,6 +34,8 @@
 
 #ifndef IMAGE_H
 #define IMAGE_H
+
+struct detector;
 
 #include <stdint.h>
 #include <complex.h>
@@ -166,6 +169,7 @@ struct image {
 	struct detector         *det;
 	struct beam_params      *beam;  /* The nominal beam parameters */
 	char                    *filename;
+	struct event            *event;
 	const struct copy_hdf5_field *copyme;
 
 	int                     id;   /* ID number of the thread

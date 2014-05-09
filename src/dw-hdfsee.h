@@ -9,9 +9,9 @@
  *
  * Authors:
  *   2009-2012 Thomas White <taw@physics.org>
- *   2012      Richard Kirian
  *   2014      Valerio Mariani
  *   2014      Takanori Nakane <nakane.t@gmail.com>
+ *   2012      Richard Kirian
  *
  * This file is part of CrystFEL.
  *
@@ -37,6 +37,7 @@
 #ifndef DISPLAYWINDOW_H
 #define DISPLAYWINDOW_H
 
+#include "events.h"
 #include "image.h"
 #include <gtk/gtk.h>
 
@@ -89,6 +90,9 @@ typedef struct {
 
 	int             not_ready_yet;
 
+    struct detector* simple_geom;
+
+    struct hdfile	*hdfile;
 	struct image	*image;
 
 	/* Dialog boxes */
@@ -124,16 +128,22 @@ typedef struct {
 	int		scale;
 	GdkPixbuf	*col_scale;
 
+	int                multi_event;
+	struct event_list  *ev_list;
+	int                curr_event;
+
+
+
 } DisplayWindow;
 
 /* Open an image display window showing the given filename, or NULL */
-extern DisplayWindow *displaywindow_open(const char *filename,
+extern DisplayWindow *displaywindow_open(char *filename,
                                          const char *peaks, double boost,
                                          int binning,
-                                         int noisefilter, int calibmode, int colscale,
-                                         const char *element,
-                                         struct detector *det_geom, const char *beam,
-                                         int show_rings,
+                                         int noisefilter, int calibmode,
+                                         int colscale, const char *element,
+                                         struct detector *det_geom,
+                                         const char *beam, int show_rings,
                                          double *ring_radii, int n_rings,
                                          double ring_size, int median_filter);
 
