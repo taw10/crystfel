@@ -102,10 +102,19 @@ struct panel
 struct badregion
 {
 	char name[1024];
+	int is_fsss;
+
 	double min_x;
 	double max_x;
 	double min_y;
 	double max_y;
+
+	/* Specified INCLUSIVELY */
+	int      min_fs;
+	int      max_fs;
+	int      min_ss;
+	int      max_ss;
+
 };
 
 

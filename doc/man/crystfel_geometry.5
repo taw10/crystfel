@@ -148,9 +148,10 @@ mask_bad = 0x00
 
 .SH BAD REGIONS
 
-You can also specify bad regions.  Peaks with centroid locations within such a region will not be integrated nor used for indexing.  Bad regions are specified in pixel units, but in the lab coordinate system (see above).  Bad regions are distinguished from normal panels by the fact that they begin with the three letters "bad".
+You can also specify bad regions.  Peaks with centroid locations within such a region will not be integrated nor used for indexing.  Bad regions are specified in pixel units, either in the lab coordinate system (see above) or in fast scan/slow scan coordinates (mixtures are not allowed).   In the latter case, the range of pixels is specified \fIinclusively\fR.  Bad regions are distinguished from normal panels by the fact that they begin with the three letters "bad".
 
-Example:
+Examples:
+.br
 .br
 badregionA/min_x = -20.0
 .br
@@ -159,6 +160,16 @@ badregionA/max_x = +20.0
 badregionA/min_y = -100.0
 .br
 badregionA/max_y = +100.0
+
+.br
+badregionB/min_fs = 128
+.br
+badregionB/max_fs = 160
+.br
+badregionB/min_ss = 256
+.br
+badregionB/max_ss = 512
+
 
 .PP
 See the "examples" folder for some examples (look at the ones ending in .geom).
