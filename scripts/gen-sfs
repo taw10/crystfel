@@ -74,7 +74,7 @@ while ( \$line = <FILE> ) {
                 my \$phase = \$5;
 
                 printf("%4i %4i %4i %10.2f %s %10.2f %7i\n",
-                       \$h, \$k, \$l, \$intensity, "       -", \$sigi, 1);
+                       \$h, \$k, \$l, \$intensity, "       -", 0.0, 1);
 
         } else {
         	printf(STDERR "Couldn't understand line '%s'\n", \$line);
