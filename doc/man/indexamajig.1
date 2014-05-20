@@ -1,7 +1,7 @@
 .\"
 .\" indexamajig man page
 .\"
-.\" Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+.\" Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
 .\"                       a research centre of the Helmholtz Association.
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
@@ -320,7 +320,7 @@ Show detailed information about reflection integration when \fIcondition\fR is m
 .PD 0
 .IP \fB--push-res=\fIn\fR
 .PD
-When \fBrescut\fR is in the integration method, integrate \fIn\fR nm^-1 higher than the apparent resolution limit of each individual crystal.  If \fBrescut\fR is not used, this option has no effect.  \fIn\fR can be negative to integrate \fIlower\fR than the apparent resolution limit.  The default is \fB--rescut=0\fR.
+When \fBrescut\fR is in the integration method, integrate \fIn\fR nm^-1 higher than the apparent resolution limit of each individual crystal.  If \fBrescut\fR is not used, this option has no effect.  \fIn\fR can be negative to integrate \fIlower\fR than the apparent resolution limit.  The default is \fB--rescut=0\fR.  Note that you can also apply this cutoff at the merging stage using \fBprocess_hkl --push-res\fR.
 
 .SH BUGS
 ReAx indexing is experimental.  It works very nicely for some people, and crashes for others.  In a future version, it will be improved and fully supported.

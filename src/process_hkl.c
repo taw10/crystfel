@@ -51,6 +51,7 @@
 #include "crystal.h"
 #include "thread-pool.h"
 #include "geometry.h"
+#include "cell-utils.h"
 
 
 static void show_help(const char *s)
@@ -83,6 +84,7 @@ static void show_help(const char *s)
 "                             have I > n * sigma(I).  Default: -infinity.\n"
 "      --max-adu=<n>         Maximum peak value.  Default: infinity.\n"
 "      --min-res=<n>         Merge only crystals which diffract above <n> A.\n"
+"      --push-res=<n>        Integrate higher than apparent resolution cutoff.\n"
 );
 }
 
@@ -199,7 +201,8 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
                          RefList *reference, const SymOpList *sym,
                          double **hist_vals, signed int hist_h,
                          signed int hist_k, signed int hist_l, int *hist_n,
-                         int config_nopolar, double min_snr, double max_adu)
+                         int config_nopolar, double min_snr, double max_adu,
+                         double push_res)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -229,6 +232,7 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 		Reflection *model_version;
 		double w;
 		double temp, delta, R, mean, M2, sumweight;
+		double res, max_res;
 
 		refl_intensity = scale * get_intensity(refl);
 		refl_sigma = scale * get_esd_intensity(refl);
@@ -241,6 +245,10 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 		if ( refl_pk > max_adu ) continue;
 
 		get_indices(refl, &h, &k, &l);
+
+		max_res = push_res + crystal_get_resolution_limit(cr);
+		res = 2.0*resolution(crystal_get_cell(cr), h, k, l);
+		if ( res > max_res ) continue;
 
 		/* Put into the asymmetric unit for the target group */
 		get_asymm(sym, h, k, l, &h, &k, &l);
@@ -309,7 +317,8 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
                      signed int hist_k, signed int hist_l,
                      int *hist_i, int config_nopolar, int min_measurements,
                      double min_snr, double max_adu,
-                     int start_after, int stop_after, double min_res)
+                     int start_after, int stop_after, double min_res,
+                     double push_res)
 {
 	int rval;
 	int n_images = 0;
@@ -348,7 +357,7 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 			r = merge_crystal(model, &image, cr, reference, sym,
 			                  hist_vals, hist_h, hist_k, hist_l,
 			                  hist_i, config_nopolar, min_snr,
-			                  max_adu);
+			                  max_adu, push_res);
 
 			if ( r == 0 ) n_crystals_used++;
 
@@ -420,6 +429,7 @@ int main(int argc, char *argv[])
 	double min_snr = -INFINITY;
 	double max_adu = +INFINITY;
 	double min_res = 0.0;
+	double push_res = +INFINITY;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -427,9 +437,8 @@ int main(int argc, char *argv[])
 		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
 		{"max-only",           0, &config_maxonly,     1},
-		{"output-every",       1, NULL,               'e'},
-		{"start-after",         1, NULL,              's'},
-		{"stop-after",        1, NULL,                'f'},
+		{"start-after",        1, NULL,               's'},
+		{"stop-after",         1, NULL,               'f'},
 		{"sum",                0, &config_sum,         1},
 		{"scale",              0, &config_scale,       1},
 		{"no-polarisation",    0, &config_nopolar,     1},
@@ -441,6 +450,8 @@ int main(int argc, char *argv[])
 		{"min-snr",            1, NULL,                3},
 		{"max-adu",            1, NULL,                4},
 		{"min-res",            1, NULL,                5},
+		{"push-res",           1, NULL,                6},
+		{"res-push",           1, NULL,                6}, /* compat */
 		{0, 0, NULL, 0}
 	};
 
@@ -533,6 +544,16 @@ int main(int argc, char *argv[])
 			min_res = 1e10/min_res;
 			break;
 
+			case 6 :
+			errno = 0;
+			push_res = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --push-res.\n");
+				return 1;
+			}
+			push_res = push_res*1e9;
+			break;
+
 			case '?' :
 			break;
 
@@ -614,7 +635,7 @@ int main(int argc, char *argv[])
 	hist_i = 0;
 	r = merge_all(st, model, NULL, sym, &hist_vals, hist_h, hist_k, hist_l,
 	              &hist_i, config_nopolar, min_measurements, min_snr,
-	              max_adu, start_after, stop_after, min_res);
+	              max_adu, start_after, stop_after, min_res, push_res);
 	fprintf(stderr, "\n");
 	if ( r ) {
 		ERROR("Error while reading stream.\n");
@@ -646,7 +667,8 @@ int main(int argc, char *argv[])
 			r = merge_all(st, model, reference, sym,
 				     &hist_vals, hist_h, hist_k, hist_l, &hist_i,
 				     config_nopolar, min_measurements, min_snr,
-				     max_adu, start_after, stop_after, min_res);
+				     max_adu, start_after, stop_after, min_res,
+				     push_res);
 			fprintf(stderr, "\n");
 			if ( r ) {
 				ERROR("Error while reading stream.\n");

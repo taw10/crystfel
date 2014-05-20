@@ -1,7 +1,8 @@
 .\"
 .\" process_hkl man page
 .\"
-.\" Copyright © 2012-2014\f Thomas White <taw@physics.org>
+.\" Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+.\"                       a research centre of the Helmholtz Association.
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
 .\"
@@ -119,6 +120,10 @@ Include reflections only if their peak values were less than \fIn\fR.  That mean
 .PD
 Merge crystals only if they diffract to beyond \fIn\fR Angstroms resolution.  The default is zero, i.e. no cutoff.  The resolution is taken from the diffraction_resolution_limit line in the stream.
 
+.PD 0
+.IP \fB--push-res=\fIn\fR
+.PD
+Integrate \fIn\fR nm^-1 higher than the apparent resolution limit of each individual crystal.  \fIn\fR can be negative to integrate \fIlower\fR than the apparent resolution limit.  The default is \fB--rescut=inf\fR, which means no resolution cutoff at all.
 
 .SH CHOICE OF POINT GROUP FOR MERGING
 
