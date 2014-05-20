@@ -3,11 +3,11 @@
  *
  * Post refinement
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -52,39 +52,55 @@
 #define MAX_CYCLES (10)
 
 
-/* Returns dp/dr at "r" */
-static double partiality_gradient(double r, double profile_radius)
+static double dpdq(double r, double profile_radius, PartialityModel pmodel)
 {
-	double q, dpdq, dqdr;
+	double q;
+	double ng = 3.0;
 
 	/* Calculate degree of penetration */
 	q = (r + profile_radius)/(2.0*profile_radius);
 
 	/* dp/dq */
-	dpdq = 6.0*(q-pow(q, 2.0));
+	switch ( pmodel ) {
+
+		default:
+		case PMODEL_UNITY:
+		return 0.0;
+
+		case PMODEL_SPHERE:
+		return 6.0*(q-pow(q, 2.0));
+
+		case PMODEL_GAUSSIAN:
+		/* The flat sphere model is close enough */
+		return 6.0*(q-pow(q, 2.0));
+
+	}
+}
+
+
+/* Returns dp/dr at "r" */
+static double partiality_gradient(double r, double profile_radius,
+                                  PartialityModel pmodel)
+{
+	double dqdr;
 
 	/* dq/dr */
 	dqdr = 1.0 / (2.0*profile_radius);
 
-	return dpdq * dqdr;
+	return dpdq(r, profile_radius, pmodel) * dqdr;
 }
 
 
 /* Returns dp/drad at "r" */
-static double partiality_rgradient(double r, double profile_radius)
+static double partiality_rgradient(double r, double profile_radius,
+                                   PartialityModel pmodel)
 {
-	double q, dpdq, dqdrad;
-
-	/* Calculate degree of penetration */
-	q = (r + profile_radius)/(2.0*profile_radius);
-
-	/* dp/dq */
-	dpdq = 6.0*(q-pow(q, 2.0));
+	double dqdrad;
 
 	/* dq/drad */
 	dqdrad = -0.5 * r * pow(profile_radius, -2.0);
 
-	return dpdq * dqdrad;
+	return dpdq(r, profile_radius, pmodel) * dqdrad;
 }
 
 
@@ -144,12 +160,12 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 
 	/* Calculate the gradient of partiality wrt excitation error. */
 	if ( clamp_low == 0 ) {
-		glow = partiality_gradient(rlow, r);
+		glow = partiality_gradient(rlow, r, pmodel);
 	} else {
 		glow = 0.0;
 	}
 	if ( clamp_high == 0 ) {
-		ghigh = partiality_gradient(rhigh, r);
+		ghigh = partiality_gradient(rhigh, r, pmodel);
 	} else {
 		ghigh = 0.0;
 	}
@@ -163,8 +179,8 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 		return (ds*glow + ds*ghigh) / 2.0;
 
 		case REF_R :
-		gr  = partiality_rgradient(rlow, r);
-		gr -= partiality_rgradient(rhigh, r);
+		gr  = partiality_rgradient(rlow, r, pmodel);
+		gr -= partiality_rgradient(rhigh, r, pmodel);
 		return gr;
 
 		/* Cell parameters and orientation */

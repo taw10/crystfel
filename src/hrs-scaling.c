@@ -119,24 +119,7 @@ static void run_scale_job(void *vwargs, int cookie)
 			Ih = get_intensity(r);
 		}
 
-		/* If you change this, be sure to also change
-		 * run_merge_job() and run_esd_job(). */
-		switch ( wargs->pmodel ) {
-
-			case PMODEL_UNITY :
-			corr = 1.0;
-			break;
-
-			case PMODEL_SPHERE :
-			corr = get_partiality(refl) * get_lorentz(refl);
-			break;
-
-			default :
-			ERROR("Unrecognised partiality model!\n");
-			abort();
-			break;
-
-		}
+		corr = get_partiality(refl) * get_lorentz(refl);
 
 		Ihl = get_intensity(refl) / corr;
 
@@ -285,24 +268,7 @@ static void run_merge_job(void *vwargs, int cookie)
 
 		}
 
-		/* If you change this, be sure to also change
-		 * run_scale_job() and run_esd_job(). */
-		switch ( wargs->pmodel ) {
-
-			case PMODEL_UNITY :
-			corr = 1.0;
-			break;
-
-			case PMODEL_SPHERE :
-			corr = get_partiality(refl) * get_lorentz(refl);
-			break;
-
-			default :
-			ERROR("Unrecognised partiality model!\n");
-			abort();
-			break;
-
-		}
+		corr = get_partiality(refl) * get_lorentz(refl);
 
 		Ihl = get_intensity(refl) / corr;
 
@@ -421,24 +387,7 @@ static void run_esd_job(void *vwargs, int cookie)
 
 		num = get_temp1(f);
 
-		/* If you change this, be sure to also change
-		 * run_scale_job() and run_merge_job(). */
-		switch ( wargs->pmodel ) {
-
-			case PMODEL_UNITY :
-			corr = 1.0;
-			break;
-
-			case PMODEL_SPHERE :
-			corr = get_partiality(refl) * get_lorentz(refl);
-			break;;
-
-			default :
-			ERROR("Unrecognised partiality model!\n");
-			abort();
-			break;
-
-		}
+		corr = get_partiality(refl) * get_lorentz(refl);
 
 		Ih = get_intensity(f);
 		Ihl = G * get_intensity(refl) / corr;

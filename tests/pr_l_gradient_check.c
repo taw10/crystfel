@@ -279,7 +279,6 @@ int main(int argc, char *argv[])
 	Crystal *cr;
 	struct quaternion orientation;
 	int i;
-	const PartialityModel pmodel = PMODEL_SPHERE;
 	int fail = 0;
 	int quiet = 0;
 	int plot = 0;
@@ -337,10 +336,19 @@ int main(int argc, char *argv[])
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
-	for ( i=0; i<1; i++ ) {
+	for ( i=0; i<2; i++ ) {
 
 		UnitCell *rot;
 		double val;
+		PartialityModel pmodel;
+
+		if ( i == 0 ) {
+			pmodel = PMODEL_SPHERE;
+			STATUS("Testing flat sphere model:\n");
+		} else {
+			pmodel = PMODEL_GAUSSIAN;
+			STATUS("Testing Gaussian model:\n");
+		}
 
 		orientation = random_quaternion(rng);
 		rot = cell_rotate(cell, orientation);

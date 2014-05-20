@@ -468,6 +468,8 @@ int main(int argc, char *argv[])
 			pmodel = PMODEL_SPHERE;
 		} else if ( strcmp(pmodel_str, "unity") == 0 ) {
 			pmodel = PMODEL_UNITY;
+		} else if ( strcmp(pmodel_str, "gaussian") == 0 ) {
+			pmodel = PMODEL_GAUSSIAN;
 		} else {
 			ERROR("Unknown partiality model '%s'.\n", pmodel_str);
 			return 1;

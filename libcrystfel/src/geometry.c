@@ -3,11 +3,11 @@
  *
  * Geometry of diffraction
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <fenv.h>
+#include <gsl/gsl_sf_erf.h>
 
 #include "utils.h"
 #include "cell.h"
@@ -102,24 +103,44 @@ static signed int locate_peak(double x, double y, double z, double k,
 }
 
 
-static double partiality(double rlow, double rhigh, double r)
+static double partiality(PartialityModel pmodel, double rlow, double rhigh,
+                         double r)
 {
 	double qlow, qhigh;
 	double plow, phigh;
+	const double ng = 2.6;
 
 	/* Calculate degrees of penetration */
 	qlow  = (rlow + r)/(2.0*r);
 	qhigh = (rhigh + r)/(2.0*r);
 
 	/* Convert to partiality */
-	plow  = 3.0*pow(qlow,2.0)  - 2.0*pow(qlow,3.0);
-	phigh = 3.0*pow(qhigh,2.0) - 2.0*pow(qhigh,3.0);
+	switch ( pmodel ) {
+
+		default:
+		case PMODEL_UNITY:
+		plow = 1.0;
+		phigh = 0.0;
+		break;
+
+		case PMODEL_SPHERE:
+		plow  = 3.0*pow(qlow,2.0)  - 2.0*pow(qlow,3.0);
+		phigh = 3.0*pow(qhigh,2.0) - 2.0*pow(qhigh,3.0);
+		break;
+
+		case PMODEL_GAUSSIAN:
+		plow = 0.5 * gsl_sf_erf(ng * rlow / (sqrt(2.0)*r));
+		phigh = 0.5 * gsl_sf_erf(ng * rhigh / (sqrt(2.0)*r));
+		break;
+
+	}
 
 	return plow - phigh;
 }
 
 
 static Reflection *check_reflection(struct image *image, Crystal *cryst,
+                                    PartialityModel pmodel,
                                     signed int h, signed int k, signed int l,
                                     double xl, double yl, double zl)
 {
@@ -204,7 +225,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	}
 
 	/* Calculate partiality */
-	part = partiality(rlow, rhigh, pr);
+	part = partiality(pmodel, rlow, rhigh, pr);
 
 	/* Add peak to list */
 	refl = reflection_new(h, k, l);
@@ -298,7 +319,8 @@ RefList *find_intersections(struct image *image, Crystal *cryst)
 		yl = h*asy + k*bsy + l*csy;
 		zl = h*asz + k*bsz + l*csz;
 
-		refl = check_reflection(image, cryst, h, k, l, xl, yl, zl);
+		refl = check_reflection(image, cryst, PMODEL_SPHERE,
+		                        h, k, l, xl, yl, zl);
 
 		if ( refl != NULL ) {
 			add_refl_to_list(refl, reflections);
@@ -401,9 +423,6 @@ void update_partialities_2(Crystal *cryst, PartialityModel pmodel,
 	int n = 0;
 
 	if ( pmodel == PMODEL_UNITY ) {
-		/* It isn't strictly necessary to set the partialities to 1,
-		 * because the scaling stuff will just a correction factor of
-		 * 1 anyway.  This is just to help things make sense. */
 		set_unity_partialities(cryst);
 		return;
 	}
@@ -430,7 +449,8 @@ void update_partialities_2(Crystal *cryst, PartialityModel pmodel,
 		yl = h*asy + k*bsy + l*csy;
 		zl = h*asz + k*bsz + l*csz;
 
-		vals = check_reflection(image, cryst, h, k, l, xl, yl, zl);
+		vals = check_reflection(image, cryst, pmodel,
+		                        h, k, l, xl, yl, zl);
 
 		if ( vals == NULL ) {
 

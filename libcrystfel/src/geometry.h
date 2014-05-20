@@ -3,12 +3,12 @@
  *
  * Geometry of diffraction
  *
- * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2013-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *   2012      Richard Kirian
  *
  * This file is part of CrystFEL.
@@ -49,6 +49,7 @@ extern "C" {
  * @PMODEL_SPHERE : Intersection of sphere with excited volume of reciprocal
  *   space.
  * @PMODEL_UNITY : Set all all partialities and Lorentz factors to 1.
+ * @PMODEL_GAUSSIAN : Gaussian profiles in 3D
  *
  * A %PartialityModel describes a geometrical model which can be used to
  * calculate spot partialities and Lorentz correction factors.
@@ -57,6 +58,7 @@ typedef enum {
 
 	PMODEL_SPHERE,
 	PMODEL_UNITY,
+	PMODEL_GAUSSIAN,
 
 } PartialityModel;
 
