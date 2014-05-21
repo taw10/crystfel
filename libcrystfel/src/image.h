@@ -3,11 +3,11 @@
  *
  * Handle images and image features
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2013 Thomas White <taw@physics.org>
+ *   2009-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -36,6 +36,10 @@
 #include <stdint.h>
 #include <complex.h>
 #include <sys/types.h>
+
+struct imagefeature;
+struct sample;
+struct image;
 
 #include "utils.h"
 #include "cell.h"

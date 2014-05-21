@@ -36,8 +36,11 @@
 #ifndef DETECTOR_H
 #define DETECTOR_H
 
-struct image;
-struct hdfile;
+struct rigid_group;
+struct detector;
+struct panel;
+struct badregion;
+struct detector;
 
 #include "hdf5-file.h"
 #include "image.h"
