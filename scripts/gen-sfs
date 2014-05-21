@@ -3,9 +3,14 @@
 PDB=$1
 SYMM=$2
 RESOLUTION=$3
+PG=$4
 
 if [ "x$PDB" = "x" ]; then
-	echo "Syntax: $0 <PDB file> <space group> [<resolution>]"
+	echo "Syntax: $0 <PDB file> <space group> [<resolution>] [<point group>]"
+	echo
+	echo "The space group and point group must be consistent, it's just"
+	echo "that I don't know how to convert the space group to a point"
+	echo "group."
 	exit
 fi
 
@@ -17,6 +22,11 @@ fi
 if [ "x$RESOLUTION" = "x" ]; then
 	echo "Resolution not given.  Using 3 Angstroms."
 	RESOLUTION=3
+fi
+
+if [ "x$PG" = "x" ]; then
+	echo "Point group not given.  Output will not contain symmetry information."
+	PG=unknown
 fi
 
 echo "Running sfall to calculate structure factors..."
@@ -60,6 +70,9 @@ use strict;
 
 my \$line;
 open(FILE, "${PDB}-temp.hkl");
+
+printf("CrystFEL reflection list version 2.0\n");
+printf("Symmetry: ${PG}\n");
 
 printf("   h    k    l          I    phase   sigma(I)   nmeas\n");
 
