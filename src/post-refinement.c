@@ -424,7 +424,7 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt,
 	s_vec = gsl_matrix_calloc(n, n);
 	err = gsl_linalg_SV_decomp_jacobi(SAS, s_vec, s_val);
 	if ( err ) {
-		ERROR("SVD failed: %s\n", gsl_strerror(err));
+		if ( verbose ) ERROR("SVD failed: %s\n", gsl_strerror(err));
 		gsl_matrix_free(s_vec);
 		gsl_vector_free(s_val);
 		gsl_matrix_free(SAS);
