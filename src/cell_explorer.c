@@ -1273,28 +1273,21 @@ int main(int argc, char *argv[])
 
 		cur.det = NULL;
 
-		if ( read_chunk(st, &cur) != 0 ) {
+		if ( read_chunk_2(st, &cur, STREAM_READ_UNITCELL) != 0 ) {
 			break;
 		}
 
-		image_feature_list_free(cur.features);
-
 		for ( i=0; i<cur.n_crystals; i++ ) {
 
-			RefList *cr_refl;
 			Crystal *cr;
 
 			cr = cur.crystals[i];
-
-			cr_refl = crystal_get_reflections(cr);
-			reflist_free(cr_refl);
 
 			if ( w.n_cells == max_cells ) {
 
 				UnitCell **cells_new;
 				IndexingMethod *indms_new;
 				size_t nsz;
-
 
 				nsz = (max_cells+1024)*sizeof(UnitCell *);
 				cells_new = realloc(w.cells, nsz);
