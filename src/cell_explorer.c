@@ -1319,10 +1319,14 @@ int main(int argc, char *argv[])
 
 		}
 
-		fprintf(stderr, "Loaded %i cells from %i chunks\r", w.n_cells,
-		        ++n_chunks);
+		n_chunks++;
+		if ( n_chunks % 1000 == 0 ) {
+			fprintf(stderr, "Loaded %i cells from %i chunks\r",
+			        w.n_cells, n_chunks);
+		}
 
 	} while ( 1 );
+	fprintf(stderr, "Loaded %i cells from %i chunks\n", w.n_cells, n_chunks);
 
 	fprintf(stderr, "\n");
 
