@@ -421,6 +421,13 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 	if ( i->det != NULL ) {
 
 		int j;
+		double tclen = 0.0;
+
+		for ( j=0; j<i->det->n_panels; j++ ) {
+			tclen += i->det->panels[j].clen;
+		}
+		fprintf(st->fh, "average_camera_length = %f m\n",
+		        tclen / i->det->n_panels);
 
 		for ( j=0; j<i->det->n_rigid_groups; j++ ) {
 
