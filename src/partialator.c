@@ -526,18 +526,10 @@ int main(int argc, char *argv[])
 		cur->div = NAN;
 		cur->bw = NAN;
 		cur->det = NULL;
-		if ( read_chunk(st, cur) != 0 ) {
+		if ( read_chunk_2(st, cur, STREAM_READ_REFLECTIONS
+		                           | STREAM_READ_UNITCELL) != 0 ) {
 			break;
 		}
-
-		/* Won't be needing this, if it exists */
-		image_feature_list_free(cur->features);
-		cur->features = NULL;
-		cur->width = 0;
-		cur->height = 0;
-		cur->data = NULL;
-		cur->flags = NULL;
-		cur->beam = NULL;
 
 		if ( isnan(cur->div) || isnan(cur->bw) ) {
 			ERROR("Chunk doesn't contain beam parameters.\n");
@@ -587,9 +579,12 @@ int main(int argc, char *argv[])
 
 		}
 
-		display_progress(n_images, n_crystals);
+		if ( n_images % 100 == 0 ) {
+			display_progress(n_images, n_crystals);
+		}
 
 	} while ( 1 );
+	display_progress(n_images, n_crystals);
 	fprintf(stderr, "\n");
 
 	close_stream(st);
