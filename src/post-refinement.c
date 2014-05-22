@@ -735,7 +735,10 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 
 		if ( 3*n_lost > n_total ) {
 			revert_crystal(cr, backup);
+			update_partialities_2(cr, pmodel, &n_gained, &n_lost,
+			                      &mean_p_change);
 			crystal_set_user_flag(cr, 3);
+			break;
 		}
 
 		i++;
