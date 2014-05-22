@@ -3,11 +3,11 @@
  *
  * Stream tools
  *
- * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2013-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *   2011      Andrew Aquila
  *
  * This file is part of CrystFEL.
@@ -50,12 +50,37 @@ struct hdfile;
 
 typedef struct _stream Stream;
 
+/**
+ * StreamReadFlags:
+ * @STREAM_READ_UNITCELL: Read the unit cell
+ * @STREAM_READ_REFLECTIONS: Read the integrated reflections
+ * @STREAM_READ_PEAKS: Read the peak search results
+ * @STREAM_READ_CRYSTALS: Read the general information about crystals
+ *
+ * A bitfield of things that can be read from a stream.  Use this (and
+ * read_chunk_2()) to read the stream faster if you don't need the entire
+ * contents of the stream.
+ *
+ * Using either or both of @STREAM_READ_REFLECTIONS and @STREAM_READ_UNITCELL
+ * implies @STREAM_READ_CRYSTALS.
+ **/
+typedef enum {
+
+	STREAM_READ_UNITCELL = 1,
+	STREAM_READ_REFLECTIONS = 2,
+	STREAM_READ_PEAKS = 4,
+	STREAM_READ_CRYSTALS = 8,
+
+} StreamReadFlags;
+
+
 extern Stream *open_stream_for_read(const char *filename);
 extern Stream *open_stream_for_write(const char *filename);
 extern Stream *open_stream_fd_for_write(int fd);
 extern void close_stream(Stream *st);
 
 extern int read_chunk(Stream *st, struct image *image);
+extern int read_chunk_2(Stream *st, struct image *image, StreamReadFlags srf);
 extern void write_chunk(Stream *st, struct image *image, struct hdfile *hdfile,
                         int include_peaks, int include_reflections);
 

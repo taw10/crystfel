@@ -489,7 +489,7 @@ static int find_start_of_chunk(FILE *fh)
 }
 
 
-void read_crystal(Stream *st, struct image *image)
+static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 {
 	char line[1024];
 	char *rval = NULL;
@@ -524,22 +524,30 @@ void read_crystal(Stream *st, struct image *image)
 		if ( rval == NULL ) break;
 
 		chomp(line);
-		if ( sscanf(line, "astar = %f %f %f", &u, &v, &w) == 3 ) {
+		if ( (srf & STREAM_READ_UNITCELL)
+		  && (sscanf(line, "astar = %f %f %f", &u, &v, &w) == 3) )
+		{
 			as.u = u*1e9;  as.v = v*1e9;  as.w = w*1e9;
 			have_as = 1;
 		}
 
-		if ( sscanf(line, "bstar = %f %f %f", &u, &v, &w) == 3 ) {
+		if ( (srf & STREAM_READ_UNITCELL)
+		  && (sscanf(line, "bstar = %f %f %f", &u, &v, &w) == 3) )
+		{
 			bs.u = u*1e9;  bs.v = v*1e9;  bs.w = w*1e9;
 			have_bs = 1;
 		}
 
-		if ( sscanf(line, "cstar = %f %f %f", &u, &v, &w) == 3 ) {
+		if ( (srf & STREAM_READ_UNITCELL)
+		  && (sscanf(line, "cstar = %f %f %f", &u, &v, &w) == 3) )
+		{
 			cs.u = u*1e9;  cs.v = v*1e9;  cs.w = w*1e9;
 			have_cs = 1;
 		}
 
-		if ( sscanf(line, "centering = %c", &c) == 1 ) {
+		if ( (srf & STREAM_READ_UNITCELL)
+		  && (sscanf(line, "centering = %c", &c) == 1) )
+		{
 			if ( !have_cen ) {
 				centering = c;
 				have_cen = 1;
@@ -548,7 +556,9 @@ void read_crystal(Stream *st, struct image *image)
 			}
 		}
 
-		if ( sscanf(line, "unique_axis = %c", &c) == 1 ) {
+		if ( (srf & STREAM_READ_UNITCELL)
+		  && (sscanf(line, "unique_axis = %c", &c) == 1) )
+		{
 			if ( !have_ua ) {
 				unique_axis = c;
 				have_ua = 1;
@@ -557,7 +567,9 @@ void read_crystal(Stream *st, struct image *image)
 			}
 		}
 
-		if ( strncmp(line, "lattice_type = ", 15) == 0 ) {
+		if ( (srf & STREAM_READ_UNITCELL)
+		  && (strncmp(line, "lattice_type = ", 15) == 0) )
+		{
 			if ( !have_latt ) {
 				lattice_type = lattice_from_str(line+15);
 				have_latt = 1;
@@ -580,7 +592,9 @@ void read_crystal(Stream *st, struct image *image)
 			crystal_set_profile_radius(cr, rad*1e9);
 		}
 
-		if ( strcmp(line, REFLECTION_START_MARKER) == 0 ) {
+		if ( (strcmp(line, REFLECTION_START_MARKER) == 0)
+		  && (srf & STREAM_READ_REFLECTIONS) )
+		{
 
 			RefList *reflist;
 
@@ -649,7 +663,7 @@ void read_crystal(Stream *st, struct image *image)
 
 
 /* Read the next chunk from a stream and fill in 'image' */
-int read_chunk(Stream *st, struct image *image)
+int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 {
 	char line[1024];
 	char *rval = NULL;
@@ -662,6 +676,10 @@ int read_chunk(Stream *st, struct image *image)
 	image->features = NULL;
 	image->crystals = NULL;
 	image->n_crystals = 0;
+
+	if ( (srf & STREAM_READ_REFLECTIONS) || (srf & STREAM_READ_UNITCELL) ) {
+		srf |= STREAM_READ_CRYSTALS;
+	}
 
 	do {
 
@@ -726,15 +744,18 @@ int read_chunk(Stream *st, struct image *image)
 			}
 		}
 
-		if ( strcmp(line, PEAK_LIST_START_MARKER) == 0 ) {
+		if ( (srf & STREAM_READ_PEAKS)
+		  && (strcmp(line, PEAK_LIST_START_MARKER) == 0) ) {
 			if ( read_peaks(st->fh, image) ) {
 				ERROR("Failed while reading peaks\n");
 				return 1;
 			}
 		}
 
-		if ( strcmp(line, CRYSTAL_START_MARKER) == 0 ) {
-			read_crystal(st, image);
+		if ( (srf & STREAM_READ_CRYSTALS)
+		  && (strcmp(line, CRYSTAL_START_MARKER) == 0) )
+		{
+			read_crystal(st, image, srf);
 		}
 
 		/* A chunk must have at least a filename and a wavelength,
@@ -753,6 +774,14 @@ int read_chunk(Stream *st, struct image *image)
 
 	return 1;  /* Either error or EOF, don't care because we will complain
 	            * on the terminal if it was an error. */
+}
+
+
+int read_chunk(Stream *st, struct image *image)
+{
+	return read_chunk_2(st, image, STREAM_READ_UNITCELL
+	                               | STREAM_READ_REFLECTIONS
+	                               | STREAM_READ_PEAKS);
 }
 
 
