@@ -77,6 +77,7 @@ typedef enum {
 extern Stream *open_stream_for_read(const char *filename);
 extern Stream *open_stream_for_write(const char *filename);
 extern Stream *open_stream_fd_for_write(int fd);
+extern int get_stream_fd(Stream *st);
 extern void close_stream(Stream *st);
 
 extern int read_chunk(Stream *st, struct image *image);
@@ -84,7 +85,6 @@ extern int read_chunk_2(Stream *st, struct image *image, StreamReadFlags srf);
 extern void write_chunk(Stream *st, struct image *image, struct hdfile *hdfile,
                         int include_peaks, int include_reflections);
 
-extern void write_line(Stream *st, const char *line);
 extern void write_command(Stream *st, int argc, char *argv[]);
 
 extern int rewind_stream(Stream *st);

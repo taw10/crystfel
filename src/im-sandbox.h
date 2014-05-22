@@ -3,13 +3,13 @@
  *
  * Sandbox for indexing
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -37,5 +37,5 @@
 #include "process_image.h"
 
 extern void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
-                           int config_basename, FILE *fh,  int streamfd,
-                           int argc, char *argv[], const char *tempdir);
+                           int config_basename, FILE *fh,  Stream *stream,
+                           const char *tempdir);

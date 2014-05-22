@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 	char *filename = NULL;
 	char *outfile = NULL;
 	FILE *fh;
-	int ofd;
+	Stream *st;
 	int config_checkprefix = 1;
 	int config_basename = 0;
 	int integrate_saturated = 0;
@@ -627,13 +627,14 @@ int main(int argc, char *argv[])
 
 	}
 
-	ofd = open(outfile, O_CREAT | O_TRUNC | O_WRONLY,
-	           S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-	if ( ofd == -1 ) {
+	st = open_stream_for_write(outfile);
+	if ( st == NULL ) {
 		ERROR("Failed to open stream '%s'\n", outfile);
 		return 1;
 	}
 	free(outfile);
+
+	write_command(st, argc, argv);
 
 	/* Prepare the indexer */
 	if ( indm != NULL ) {
@@ -653,7 +654,7 @@ int main(int argc, char *argv[])
 	iargs.ipriv = ipriv;
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	               ofd, argc, argv, tempdir);
+	               st, tempdir);
 
 	free(prefix);
 	free(tempdir);

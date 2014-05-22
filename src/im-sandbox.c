@@ -74,8 +74,8 @@ struct sb_reader
 	FILE **fhs;
 	int *fds;
 
-	/* Final output fd */
-	int ofd;
+	/* Final output */
+	Stream *stream;
 };
 
 
@@ -376,6 +376,7 @@ static void remove_pipe(struct sb_reader *rd, int d)
 static void *run_reader(void *rdv)
 {
 	struct sb_reader *rd = rdv;
+	const int ofd = get_stream_fd(rd->stream);
 
 	while ( 1 ) {
 
@@ -425,7 +426,7 @@ static void *run_reader(void *rdv)
 
 			/* If the chunk cannot be read, assume the connection
 			 * is broken and that the process will die soon. */
-			if ( pump_chunk(rd->fhs[i], rd->ofd) ) {
+			if ( pump_chunk(rd->fhs[i], ofd) ) {
 				/* remove_pipe() assumes that the caller is
 				 * holding rd->lock ! */
 				remove_pipe(rd, i);
@@ -440,8 +441,7 @@ static void *run_reader(void *rdv)
 }
 
 
-static void start_worker_process(struct sandbox *sb, int slot,
-                                 int argc, char *argv[])
+static void start_worker_process(struct sandbox *sb, int slot)
 {
 	pid_t p;
 	int filename_pipe[2];
@@ -537,8 +537,6 @@ static void start_worker_process(struct sandbox *sb, int slot,
 		close(result_pipe[0]);
 
 		st = open_stream_fd_for_write(stream_pipe[1]);
-		write_command(st, argc, argv);
-		write_line(st, "FLUSH");
 		run_work(sb->iargs, filename_pipe[0], result_pipe[1],
 		         st, slot, tmp);
 		close_stream(st);
@@ -606,7 +604,7 @@ static void handle_zombie(struct sandbox *sb)
 				STATUS("Last filename was: %s\n",
 				       sb->last_filename[i]);
 				sb->n_processed++;
-				start_worker_process(sb, i, 0, NULL);
+				start_worker_process(sb, i);
 			}
 
 		}
@@ -618,7 +616,7 @@ static void handle_zombie(struct sandbox *sb)
 
 void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                     int config_basename, FILE *fh,
-                    int ofd, int argc, char *argv[], const char *tempdir)
+                    Stream *stream, const char *tempdir)
 {
 	int i;
 	int allDone;
@@ -657,7 +655,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	sb->reader->fds = NULL;
 	sb->reader->fhs = NULL;
-	sb->reader->ofd = ofd;
+	sb->reader->stream = stream;
 
 	sb->stream_pipe_write = calloc(n_proc, sizeof(int));
 	if ( sb->stream_pipe_write == NULL ) {
@@ -742,7 +740,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	/* Fork the right number of times */
 	lock_sandbox(sb);
 	for ( i=0; i<n_proc; i++ ) {
-		start_worker_process(sb, i, argc, argv);
+		start_worker_process(sb, i);
 	}
 	unlock_sandbox(sb);
 
