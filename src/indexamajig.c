@@ -627,7 +627,8 @@ int main(int argc, char *argv[])
 
 	}
 
-	ofd = open(outfile, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);
+	ofd = open(outfile, O_CREAT | O_TRUNC | O_WRONLY,
+	           S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 	if ( ofd == -1 ) {
 		ERROR("Failed to open stream '%s'\n", outfile);
 		return 1;

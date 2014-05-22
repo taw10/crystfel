@@ -863,12 +863,12 @@ Stream *open_stream_fd_for_write(int fd)
 }
 
 
-
 Stream *open_stream_for_write(const char *filename)
 {
 	int fd;
 
-	fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);
+	fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY,
+	          S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 	if ( fd == -1 ) {
 		ERROR("Failed to open stream.\n");
 		return NULL;
