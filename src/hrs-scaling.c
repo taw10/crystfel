@@ -486,7 +486,10 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 	double *old_osfs;
 	int done;
 
-	for ( i=0; i<n; i++ ) crystal_set_osf(crystals[i], 1.0);
+	for ( i=0; i<n; i++ ) {
+		crystal_set_user_flag(crystals[i], 0);
+		crystal_set_osf(crystals[i], 1.0);
+	}
 
 	if ( noscale ) {
 		full = lsq_intensities(crystals, n, n_threads, pmodel);
