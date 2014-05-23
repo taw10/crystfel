@@ -130,6 +130,7 @@ static void run_scale_job(void *vwargs, int cookie)
 	if ( !isnan(g) && !isinf(g) ) {
 		crystal_set_osf(cr, g);
 	} else {
+		crystal_set_user_flag(cr, 1);
 	}
 }
 
