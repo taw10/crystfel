@@ -208,7 +208,6 @@ int main(int argc, char *argv[])
 	int n_crystals = 0;
 	char *reference_file = NULL;
 	RefList *reference = NULL;
-	int have_reference = 0;
 	char cmdline[1024];
 	SRContext *sr;
 	int noscale = 0;
@@ -366,7 +365,6 @@ int main(int argc, char *argv[])
 		free(reference_file);
 		reference = asymmetric_indices(list, sym);
 		reflist_free(list);
-		have_reference = 1;
 
 	}
 

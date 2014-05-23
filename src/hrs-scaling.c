@@ -464,7 +464,6 @@ struct osfcheck
 };
 
 
-
 static int compare_osf_change(const void *av, const void *bv)
 {
 	struct osfcheck *a = (struct osfcheck *)av;
@@ -507,7 +506,6 @@ static int test_convergence(struct osfcheck *och, int n, Crystal **crystals)
 			total_change += och[i].change;
 			n_change++;
 		}
-
 	}
 	mean_change = total_change / n_change;
 
@@ -523,7 +521,6 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
                            int min_redundancy)
 {
 	int i;
-	double max_corr;
 	RefList *full = NULL;
 	struct osfcheck *och;
 	int done;
@@ -568,8 +565,7 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 			reference = full;
 		}
 
-		max_corr = iterate_scale(crystals, n, reference, n_threads,
-		                         pmodel);
+		iterate_scale(crystals, n, reference, n_threads, pmodel);
 
 		/* Normalise the scale factors */
 		for ( j=0; j<n; j++ ) {
