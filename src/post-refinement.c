@@ -507,11 +507,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		/* Find the full version */
 		get_indices(refl, &ha, &ka, &la);
 		match = find_refl(full, ha, ka, la);
-		if ( match == NULL ) {
-			ERROR("%3i %3i %3i isn't in the reference list, so why "
-			      " is it marked as refinable?\n", ha, ka, la);
-			continue;
-		}
+		if ( match == NULL ) continue;
 		I_full = get_intensity(match);
 
 		/* Actual measurement of this reflection from this pattern? */
