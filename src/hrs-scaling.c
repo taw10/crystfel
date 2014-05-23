@@ -127,18 +127,13 @@ static void run_scale_job(void *vwargs, int cookie)
 	}
 
 	g = num / den;
-	if ( !isnan(g) && !isinf(g) ) {
-		crystal_set_osf(cr, g);
-	} else {
-		crystal_set_user_flag(cr, 1);
-	}
+	crystal_set_osf(cr, g);  /* If it's NaN, it'll get rejected later */
 }
 
 
 static void finalise_scale_job(void *vqargs, void *vwargs)
 {
 	struct scale_worker_args *wargs = vwargs;
-
 	free(wargs);
 }
 
@@ -446,39 +441,20 @@ static void calculate_esds(Crystal **crystals, int n, RefList *full,
 }
 
 
-struct osfcheck
-{
-	int n;       /* Crystal number */
-	double old_osf;
-	double new_osf;
-	double change;
-};
-
-
-static int compare_osf_change(const void *av, const void *bv)
-{
-	struct osfcheck *a = (struct osfcheck *)av;
-	struct osfcheck *b = (struct osfcheck *)bv;
-	if ( a->change < b->change ) return 1;
-	return -1;
-}
-
-
-static void reject_outliers(struct osfcheck *och, int n, Crystal **crystals)
+static void reject_outliers(double *old_osfs, int n, Crystal **crystals)
 {
 	int i;
 
 	for ( i=0; i<n; i++ ) {
-		if ( (och[i].new_osf < 0.0) || (och[i].new_osf > 3.0) ) {
-			crystal_set_user_flag(crystals[och[i].n], 1);
-			crystal_set_osf(crystals[och[i].n],
-			                och[i].old_osf);
+		double osf = crystal_get_osf(crystals[i]);
+		if ( isnan(osf) || (osf < 0.0) || (osf > 3.0) ) {
+			crystal_set_user_flag(crystals[i], 1);
 		}
 	}
 }
 
 
-static int test_convergence(struct osfcheck *och, int n, Crystal **crystals)
+static int test_convergence(double *old_osfs, int n, Crystal **crystals)
 {
 	int i;
 	double total_change = 0.0;
@@ -486,15 +462,9 @@ static int test_convergence(struct osfcheck *och, int n, Crystal **crystals)
 	int n_change = 0;
 
 	for ( i=0; i<n; i++ ) {
-		och[i].change = fabs(och[i].old_osf - och[i].new_osf);
-	}
-
-	/* Sort the crystals according to how much they changed */
-	qsort(och, n, sizeof(struct osfcheck), compare_osf_change);
-
-	for ( i=0; i<n; i++ ) {
-		if ( crystal_get_user_flag(crystals[och[i].n]) == 0 ) {
-			total_change += och[i].change;
+		if ( crystal_get_user_flag(crystals[i]) == 0 ) {
+			double new_osf = crystal_get_osf(crystals[i]);
+			total_change += fabs(new_osf - old_osfs[i]);
 			n_change++;
 		}
 	}
@@ -513,11 +483,8 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 {
 	int i;
 	RefList *full = NULL;
-	struct osfcheck *och;
+	double *old_osfs;
 	int done;
-
-	och = malloc(n*sizeof(struct osfcheck));
-	if ( och == NULL ) return NULL;
 
 	for ( i=0; i<n; i++ ) crystal_set_osf(crystals[i], 1.0);
 
@@ -525,7 +492,6 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 		full = lsq_intensities(crystals, n, n_threads, pmodel);
 		calculate_esds(crystals, n, full, n_threads, min_redundancy,
 		               pmodel);
-		free(och);
 		return full;
 	}
 
@@ -534,18 +500,21 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 		full = lsq_intensities(crystals, n, n_threads, pmodel);
 	}
 
+	old_osfs = malloc(n*sizeof(double));
+	if ( old_osfs == NULL ) return NULL;
+
 	/* Iterate */
 	i = 0;
 	do {
 
 		RefList *reference;
 		double total_sf = 0.0;
+		int n_sf = 0;
 		double norm_sf;
 		int j;
 
 		for ( j=0; j<n; j++ ) {
-			och[j].n = j;
-			och[j].old_osf = crystal_get_osf(crystals[j]);
+			old_osfs[j] = crystal_get_osf(crystals[j]);
 			crystal_set_user_flag(crystals[j], 0);
 		}
 
@@ -560,21 +529,20 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 
 		/* Normalise the scale factors */
 		for ( j=0; j<n; j++ ) {
-			total_sf += crystal_get_osf(crystals[j]);
+			double osf =  crystal_get_osf(crystals[j]);
+			if ( !isnan(osf) ) {
+				total_sf += osf;
+				n_sf++;
+			}
 		}
-		norm_sf = total_sf / n;
+		norm_sf = total_sf / n_sf;
 		for ( j=0; j<n; j++ ) {
 			crystal_set_osf(crystals[j],
 			                crystal_get_osf(crystals[j])/norm_sf);
 		}
 
-		for ( j=0; j<n; j++ ) {
-			och[j].new_osf = crystal_get_osf(crystals[j]);
-		}
-
-		reject_outliers(och, n, crystals);
-
-		done = test_convergence(och, n, crystals);
+		reject_outliers(old_osfs, n, crystals);
+		done = test_convergence(old_osfs, n, crystals);
 
 		FILE *fh = fopen("scale-factors.log", "a");
 		for ( j=0; j<n; j++ ) {
@@ -602,6 +570,6 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 
 	calculate_esds(crystals, n, full, n_threads, min_redundancy, pmodel);
 
-	free(och);
+	free(old_osfs);
 	return full;
 }
