@@ -64,6 +64,7 @@ if [ $? -ne 0 ]; then
 fi
 
 rm -f ${PDB}.mtz
+rm -f ${PDB}-sorted.mtz
 
 perl < ${PDB}-temp.hkl > ${PDB}.hkl << WIBBLE
 use strict;
@@ -97,6 +98,5 @@ while ( \$line = <FILE> ) {
 close(FILE);
 printf("End of reflections\n");
 WIBBLE
-exit
 
 rm -f ${PDB}-temp.hkl

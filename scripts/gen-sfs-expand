@@ -54,7 +54,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Running sftools to expand reflections to P1..."
-sftools << EOF
+sftools >> gen-sfs.html << EOF
 READ ${PDB}-sorted.mtz
 EXPAND
 WRITE ${PDB}-P1.mtz
@@ -73,6 +73,7 @@ fi
 
 rm -f ${PDB}-P1.mtz
 rm -f ${PDB}.mtz
+rm -f ${PDB}-sorted.mtz
 
 perl < ${PDB}-temp.hkl > ${PDB}.hkl << WIBBLE
 use strict;
@@ -106,6 +107,5 @@ while ( \$line = <FILE> ) {
 close(FILE);
 printf("End of reflections\n");
 WIBBLE
-exit
 
 rm -f ${PDB}-temp.hkl
