@@ -288,6 +288,7 @@ static RefList *expand_reflections(RefList *in, const SymOpList *initial,
 	RefListIterator *iter;
 	RefList *out;
 	SymOpMask *m;
+	int phase_warning = 0;
 
 	if ( !is_subgroup(initial, target) ) {
 		ERROR("%s is not a subgroup of %s!\n", symmetry_name(target),
@@ -330,10 +331,17 @@ static RefList *expand_reflections(RefList *in, const SymOpList *initial,
 			copy = add_refl(out, he, ke, le);
 			copy_data(copy, refl);
 
-			/* FIXME: Make phase negative if the reflection is
-			 * separated from the original via an inversion */
 			ph = get_phase(refl, &have_phase);
-			if ( have_phase ) set_phase(copy, -ph);
+			if ( have_phase ) {
+				set_phase(copy, ph);
+				if ( !phase_warning ) {
+					ERROR("WARNING: get_hkl can't expand "
+					      "phase values correctly when the "
+					      "structure contains glides or "
+					      "screw axes.\n");
+					phase_warning = 1;
+				}
+			}
 
 		}
 
