@@ -3,11 +3,11 @@
  *
  * Intensity scaling using generalised HRS target function
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -212,6 +212,10 @@ static void run_merge_job(void *vwargs, int cookie)
 	RefListIterator *iter;
 	double G;
 
+	/* If this crystal's scaling was dodgy, it doesn't contribute to the
+	 * merged intensities */
+	if ( crystal_get_user_flag(cr) != 0 ) return;
+
 	G = crystal_get_osf(cr);
 
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
@@ -366,6 +370,10 @@ static void run_esd_job(void *vwargs, int cookie)
 	RefListIterator *iter;
 	double G;
 
+	/* If this crystal's scaling was dodgy, it doesn't contribute to the
+	 * merged intensities */
+	if ( crystal_get_user_flag(cr) != 0 ) return;
+
 	G = crystal_get_osf(cr);
 
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
@@ -446,29 +454,67 @@ static void calculate_esds(Crystal **crystals, int n, RefList *full,
 }
 
 
-static double max_outlier_change(Crystal **crystals, int n, double *old_osfs)
+struct osfcheck
 {
-	double rdtot = 0.0;
-	double rdmax = 0.0;
-	double rdmean;
-	int j;
+	int n;       /* Crystal number */
+	double old_osf;
+	double new_osf;
+	double change;
+};
 
-	for ( j=0; j<n; j++ ) {
-		double r;
-		r = crystal_get_osf(crystals[j]) / old_osfs[j];
-		rdtot += r;
-	}
-	rdmean = rdtot / n;
-	for ( j=0; j<n; j++ ) {
-		double r;
-		r = crystal_get_osf(crystals[j]) / old_osfs[j];
-		old_osfs[j] = crystal_get_osf(crystals[j]);
-		if ( fabs(r-rdmean) > rdmax ) {
-			rdmax = fabs(r-rdmean);
+
+
+static int compare_osf_change(const void *av, const void *bv)
+{
+	struct osfcheck *a = (struct osfcheck *)av;
+	struct osfcheck *b = (struct osfcheck *)bv;
+	if ( a->change < b->change ) return 1;
+	return -1;
+}
+
+
+static void reject_outliers(struct osfcheck *och, int n, Crystal **crystals)
+{
+	int i;
+
+	for ( i=0; i<n; i++ ) {
+		if ( (och[i].new_osf < 0.0) || (och[i].new_osf > 3.0) ) {
+			crystal_set_user_flag(crystals[och[i].n], 1);
+			crystal_set_osf(crystals[och[i].n],
+			                och[i].old_osf);
+		} else {
+			crystal_set_user_flag(crystals[och[i].n], 0);
 		}
 	}
+}
 
-	return rdmax;
+
+static int test_convergence(struct osfcheck *och, int n, Crystal **crystals)
+{
+	int i;
+	double total_change = 0.0;
+	double mean_change;
+	int n_change = 0;
+
+	for ( i=0; i<n; i++ ) {
+		och[i].change = fabs(och[i].old_osf - och[i].new_osf);
+	}
+
+	/* Sort the crystals according to how much they changed */
+	qsort(och, n, sizeof(struct osfcheck), compare_osf_change);
+
+	for ( i=0; i<n; i++ ) {
+		if ( crystal_get_user_flag(crystals[och[i].n]) == 0 ) {
+			total_change += och[i].change;
+			n_change++;
+		}
+
+	}
+	mean_change = total_change / n_change;
+
+	STATUS("Mean OSF change = %f\n", mean_change);
+
+	return mean_change < 0.01;
 }
 
 
@@ -480,11 +526,11 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 	int i;
 	double max_corr;
 	RefList *full = NULL;
-	double *old_osfs;
-	double rdval;
+	struct osfcheck *och;
+	int done;
 
-	old_osfs = malloc(n*sizeof(double));
-	if ( old_osfs == NULL ) return NULL;
+	och = malloc(n*sizeof(struct osfcheck));
+	if ( och == NULL ) return NULL;
 
 	for ( i=0; i<n; i++ ) crystal_set_osf(crystals[i], 1.0);
 
@@ -492,7 +538,7 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 		full = lsq_intensities(crystals, n, n_threads, pmodel);
 		calculate_esds(crystals, n, full, n_threads, min_redundancy,
 		               pmodel);
-		free(old_osfs);
+		free(och);
 		return full;
 	}
 
@@ -501,15 +547,20 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 		full = lsq_intensities(crystals, n, n_threads, pmodel);
 	}
 
-	for ( i=0; i<n; i++ ) {
-		old_osfs[i] = crystal_get_osf(crystals[i]);
-	}
-
 	/* Iterate */
 	i = 0;
 	do {
 
 		RefList *reference;
+		double total_sf = 0.0;
+		double norm_sf;
+		int j;
+
+		for ( j=0; j<n; j++ ) {
+			och[j].n = j;
+			och[j].old_osf = crystal_get_osf(crystals[j]);
+			crystal_set_user_flag(crystals[j], 0);
+		}
 
 		/* Refine against reference or current "full" estimates */
 		if ( gref != NULL ) {
@@ -521,11 +572,29 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 		max_corr = iterate_scale(crystals, n, reference, n_threads,
 		                         pmodel);
 
-		rdval = max_outlier_change(crystals, n, old_osfs);
+		/* Normalise the scale factors */
+		for ( j=0; j<n; j++ ) {
+			total_sf += crystal_get_osf(crystals[j]);
+		}
+		norm_sf = total_sf / n;
+		for ( j=0; j<n; j++ ) {
+			crystal_set_osf(crystals[j],
+			                crystal_get_osf(crystals[j])/norm_sf);
+		}
 
-		STATUS("Scaling iteration %2i: max correction = %5.2f "
-		       "dev of worst outlier = %5.2f\n",
-		       i+1, max_corr, rdval);
+		for ( j=0; j<n; j++ ) {
+			och[j].new_osf = crystal_get_osf(crystals[j]);
+		}
+
+		reject_outliers(och, n, crystals);
+
+		done = test_convergence(och, n, crystals);
+
+		FILE *fh = fopen("scale-factors.log", "a");
+		for ( j=0; j<n; j++ ) {
+			fprintf(fh, "%5.2f\n", crystal_get_osf(crystals[j]));
+		}
+		fclose(fh);
 
 		/* No reference -> generate list for next iteration */
 		if ( gref == NULL ) {
@@ -535,7 +604,7 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 
 		i++;
 
-	} while ( (rdval > 0.05) && (i < MAX_CYCLES) );
+	} while ( !done && (i < MAX_CYCLES) );
 
 	if ( i == MAX_CYCLES ) {
 		ERROR("Warning: Scaling did not converge.\n");
@@ -547,6 +616,6 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 
 	calculate_esds(crystals, n, full, n_threads, min_redundancy, pmodel);
 
-	free(old_osfs);
+	free(och);
 	return full;
 }

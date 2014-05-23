@@ -581,6 +581,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 			//STATUS("Shift %i: %e\n", param, shift);
 			if ( fabs(shift) > max_shift ) max_shift = fabs(shift);
 		}
+		crystal_set_user_flag(cr, 0);
 
 	} else {
 		crystal_set_user_flag(cr, 2);
