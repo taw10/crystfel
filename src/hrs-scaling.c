@@ -62,7 +62,6 @@ struct scale_queue_args
 	RefList *reference;
 	Crystal **crystals;
 	int n_started;
-	double max_shift;
 	PartialityModel pmodel;
 };
 
@@ -70,7 +69,6 @@ struct scale_queue_args
 struct scale_worker_args
 {
 	Crystal *crystal;
-	double shift;
 	RefList *reference;
 	PartialityModel pmodel;
 };
@@ -101,7 +99,6 @@ static void run_scale_job(void *vwargs, int cookie)
 	double num = 0.0;
 	double den = 0.0;
 	double g;
-	const double G = crystal_get_osf(cr);
 
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
@@ -132,25 +129,21 @@ static void run_scale_job(void *vwargs, int cookie)
 	g = num / den;
 	if ( !isnan(g) && !isinf(g) ) {
 		crystal_set_osf(cr, g);
-		wargs->shift = fabs((g/G)-1.0);
 	} else {
-		wargs->shift = 0.0;
 	}
 }
 
 
 static void finalise_scale_job(void *vqargs, void *vwargs)
 {
-	struct scale_queue_args *qargs = vqargs;
 	struct scale_worker_args *wargs = vwargs;
 
-	if ( wargs->shift > qargs->max_shift ) qargs->max_shift = wargs->shift;
 	free(wargs);
 }
 
 
-static double iterate_scale(Crystal **crystals, int n, RefList *reference,
-                            int n_threads, PartialityModel pmodel)
+static void iterate_scale(Crystal **crystals, int n, RefList *reference,
+                          int n_threads, PartialityModel pmodel)
 {
 	struct scale_queue_args qargs;
 
@@ -159,13 +152,10 @@ static double iterate_scale(Crystal **crystals, int n, RefList *reference,
 	qargs.reference = reference;
 	qargs.n_started = 0;
 	qargs.crystals = crystals;
-	qargs.max_shift = 0.0;
 	qargs.pmodel = pmodel;
 
 	run_threads(n_threads, run_scale_job, create_scale_job,
 	            finalise_scale_job, &qargs, n, 0, 0, 0);
-
-	return qargs.max_shift;
 }
 
 
