@@ -108,7 +108,10 @@ static void run_scale_job(void *vwargs, int cookie)
 		double Ih, Ihl, corr;
 		Reflection *r;
 
-		if ( get_partiality(refl) < MIN_PART_SCALE ) continue;
+		if ( (get_partiality(refl) < MIN_PART_SCALE)
+		  || (get_intensity(refl) < 3.0*get_esd_intensity(refl)) ) {
+			continue;
+		}
 
 		/* Look up by asymmetric indices */
 		get_indices(refl, &h, &k, &l);
