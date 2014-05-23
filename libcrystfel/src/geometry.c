@@ -456,6 +456,7 @@ void update_partialities_2(Crystal *cryst, PartialityModel pmodel,
 
 			if ( get_redundancy(refl) != 0 ) {
 				(*n_lost)++;
+				set_partiality(refl, 0.0);
 				set_redundancy(refl, 0);
 			}
 

@@ -48,6 +48,9 @@
 #include "cell-utils.h"
 
 
+/* Minimum partiality of a reflection for it to be used for refinement */
+#define MIN_PART_REFINE (0.1)
+
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
 #define MAX_CYCLES (10)
 
@@ -498,7 +501,8 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		Reflection *match;
 		double gradients[NUM_PARAMS];
 
-		if ( !get_refinable(refl) ) continue;
+		if ( (get_intensity(refl) < 3.0*get_esd_intensity(refl))
+		  || (get_partiality(refl) < MIN_PART_REFINE) ) continue;
 
 		/* Find the full version */
 		get_indices(refl, &ha, &ka, &la);
@@ -565,7 +569,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 
 	//STATUS("%i reflections went into the equations.\n", nref);
 	if ( nref == 0 ) {
-		crystal_set_user_flag(cr, 1);
+		crystal_set_user_flag(cr, 2);
 		gsl_matrix_free(M);
 		gsl_vector_free(v);
 		return 0.0;
@@ -581,10 +585,9 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 			//STATUS("Shift %i: %e\n", param, shift);
 			if ( fabs(shift) > max_shift ) max_shift = fabs(shift);
 		}
-		crystal_set_user_flag(cr, 0);
 
 	} else {
-		crystal_set_user_flag(cr, 2);
+		crystal_set_user_flag(cr, 4);
 	}
 
 	gsl_matrix_free(M);
@@ -612,7 +615,8 @@ static double guide_dev(Crystal *cr, const RefList *full)
 		Reflection *full_version;
 		double I_full, I_partial;
 
-		if ( !get_refinable(refl) ) continue;
+		if ( (get_intensity(refl) < 3.0*get_esd_intensity(refl))
+		  || (get_partiality(refl) < MIN_PART_REFINE) ) continue;
 
 		get_indices(refl, &h, &k, &l);
 		assert((h!=0) || (k!=0) || (l!=0));
@@ -695,6 +699,11 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 	const int verbose = 0;
 	struct prdata prdata;
 	double mean_p_change = 0.0;
+
+	prdata.n_filtered = 0;
+
+	/* Don't refine crystal if scaling was bad */
+	if ( crystal_get_user_flag(cr) != 0 ) return prdata;
 
 	if ( verbose ) {
 		dev = guide_dev(cr, full);

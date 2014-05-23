@@ -47,6 +47,12 @@
 #include "reflist.h"
 
 
+/* Minimum partiality of a reflection for it to be used for scaling */
+#define MIN_PART_SCALE (0.05)
+
+/* Minimum partiality of a reflection for it to be merged */
+#define MIN_PART_MERGE (0.05)
+
 /* Maximum number of iterations of scaling per macrocycle. */
 #define MAX_CYCLES (10)
 
@@ -105,19 +111,14 @@ static void run_scale_job(void *vwargs, int cookie)
 		double Ih, Ihl, corr;
 		Reflection *r;
 
-		if ( !get_scalable(refl) ) continue;
+		if ( get_partiality(refl) < MIN_PART_SCALE ) continue;
 
 		/* Look up by asymmetric indices */
 		get_indices(refl, &h, &k, &l);
 		r = find_refl(reference, h, k, l);
-		if ( r == NULL ) {
-			ERROR("%3i %3i %3i isn't in the "
-			      "reference list, so why is it "
-			      "marked as scalable?\n", h, k, l);
-			Ih = 0.0;
-		} else {
-			Ih = get_intensity(r);
-		}
+		if ( r == NULL ) continue;
+
+		Ih = get_intensity(r);
 
 		corr = get_partiality(refl) * get_lorentz(refl);
 
@@ -228,7 +229,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		int red;
 		double Ihl, corr;
 
-		if ( !get_scalable(refl) ) continue;
+		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
 
 		get_indices(refl, &h, &k, &l);
 		pthread_rwlock_rdlock(wargs->full_lock);
@@ -385,7 +386,7 @@ static void run_esd_job(void *vwargs, int cookie)
 		double num;
 		double Ihl, Ih, corr;
 
-		if ( !get_scalable(refl) ) continue;
+		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
 
 		get_indices(refl, &h, &k, &l);
 		f = find_refl(full, h, k, l);
@@ -482,8 +483,6 @@ static void reject_outliers(struct osfcheck *och, int n, Crystal **crystals)
 			crystal_set_user_flag(crystals[och[i].n], 1);
 			crystal_set_osf(crystals[och[i].n],
 			                och[i].old_osf);
-		} else {
-			crystal_set_user_flag(crystals[och[i].n], 0);
 		}
 	}
 }

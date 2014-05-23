@@ -168,135 +168,6 @@ static void refine_all(Crystal **crystals, int n_crystals,
 }
 
 
-/* Decide which reflections can be scaled */
-static int select_scalable_reflections(RefList *list, RefList *reference)
-{
-	Reflection *refl;
-	RefListIterator *iter;
-	int n_acc = 0;
-	int n_red = 0;
-	int n_par = 0;
-	int n_ref = 0;
-
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
-		int sc = 1;
-
-		/* This means the reflection was not found on the last check */
-		if ( get_redundancy(refl) == 0 ) {
-			sc = 0;
-			n_red++;
-		}
-
-		/* Don't try to scale up reflections which are hardly there */
-		if ( get_partiality(refl) < 0.05 ) {
-			sc = 0;
-			n_par++;
-		}
-
-		/* If we are scaling against a reference set, we additionally
-		 * require that this reflection is in the reference list. */
-		if ( reference != NULL ) {
-			signed int h, k, l;
-			get_indices(refl, &h, &k, &l);
-			if ( find_refl(reference, h, k, l) == NULL ) {
-				sc = 0;
-				n_ref++;
-			}
-		}
-
-		set_scalable(refl, sc);
-
-		if ( sc ) n_acc++;
-	}
-
-	//STATUS("List %p: %i accepted, %i red zero, %i small part, %i no ref\n",
-	//       list, n_acc, n_red, n_par, n_ref);
-
-	return n_acc;
-}
-
-
-static void select_reflections_for_refinement(Crystal **crystals, int n,
-                                              RefList *full, int have_reference)
-{
-	int i;
-
-	for ( i=0; i<n; i++ ) {
-
-		RefList *reflist;
-		Reflection *refl;
-		RefListIterator *iter;
-		int n_acc = 0;
-		int n_noscale = 0;
-		int n_fewmatch = 0;
-		int n_ref = 0;
-		int n_weak = 0;
-
-		reflist = crystal_get_reflections(crystals[i]);
-		for ( refl = first_refl(reflist, &iter);
-		      refl != NULL;
-		      refl = next_refl(refl, iter) )
-		{
-			signed int h, k, l;
-			int sc;
-			double intensity, sigma;
-			Reflection *f;
-
-
-			n_ref++;
-
-			intensity = get_intensity(refl);
-			sigma = get_esd_intensity(refl);
-			if ( intensity < 3.0*sigma ) {
-				set_refinable(refl, 0);
-				n_weak++;
-				continue;
-			}
-
-			/* We require that the reflection itself is scalable
-			 * (i.e. sensible partiality and intensity) and that
-			 * the "full" estimate of this reflection is made from
-			 * at least two parts. */
-			get_indices(refl, &h, &k, &l);
-			sc = get_scalable(refl);
-			if ( !sc ) {
-				set_refinable(refl, 0);
-				n_noscale++;
-				continue;
-			}
-
-			f = find_refl(full, h, k, l);
-			if ( f != NULL ) {
-
-				int r = get_redundancy(f);
-				if ( (r >= 2) || have_reference ) {
-					set_refinable(refl, 1);
-					n_acc++;
-				} else {
-					n_fewmatch++;
-				}
-
-			} else {
-				ERROR("%3i %3i %3i is scalable, but is"
-					" not in the reference list.\n",
-					h, k, l);
-				abort();
-			}
-
-		}
-
-		//STATUS("Image %4i: %i guide reflections accepted "
-		//       "(%i not scalable, %i few matches, %i too weak, "
-		//       "%i total)\n",
-		//       i, n_acc, n_noscale, n_fewmatch, n_weak, n_ref);
-
-	}
-}
-
-
 static void display_progress(int n_images, int n_crystals)
 {
 	if ( !isatty(STDERR_FILENO) ) return;
@@ -335,7 +206,6 @@ int main(int argc, char *argv[])
 	RefList *full;
 	int n_images = 0;
 	int n_crystals = 0;
-	int nobs;
 	char *reference_file = NULL;
 	RefList *reference = NULL;
 	int have_reference = 0;
@@ -558,10 +428,6 @@ int main(int argc, char *argv[])
 			/* Image pointer will change due to later reallocs */
 			crystal_set_image(cr, NULL);
 
-			/* Fill in initial estimates of stuff */
-			crystal_set_osf(cr, 1.0);
-			crystal_set_user_flag(cr, 0);
-
 			/* This is the raw list of reflections */
 			cr_refl = crystal_get_reflections(cr);
 
@@ -590,13 +456,11 @@ int main(int argc, char *argv[])
 	close_stream(st);
 
 	/* Fill in image pointers */
-	nobs = 0;
 	for ( i=0; i<n_images; i++ ) {
 		int j;
 		for ( j=0; j<images[i].n_crystals; j++ ) {
 
 			Crystal *cryst;
-			RefList *as;
 			int n_gained = 0;
 			int n_lost = 0;
 			double mean_p_change = 0.0;
@@ -608,12 +472,9 @@ int main(int argc, char *argv[])
 			update_partialities_2(cryst, pmodel, &n_gained, &n_lost,
 			                      &mean_p_change);
 			assert(n_gained == 0);  /* That'd just be silly */
-			as = crystal_get_reflections(cryst);
-			nobs += select_scalable_reflections(as, reference);
 
 		}
 	}
-	STATUS("%i scalable observations.\n", nobs);
 
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
@@ -632,7 +493,7 @@ int main(int argc, char *argv[])
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
-
+		int n_noscale = 0;
 		int n_noref = 0;
 		int n_solve = 0;
 		int n_lost = 0;
@@ -646,31 +507,28 @@ int main(int argc, char *argv[])
 
 		/* Refine the geometry of all patterns to get the best fit */
 		comp = (reference == NULL) ? full : reference;
-		select_reflections_for_refinement(crystals, n_crystals,
-		                                  comp, have_reference);
 		refine_all(crystals, n_crystals, comp, nthreads, pmodel,
 		           &srdata);
 
-		nobs = 0;
 		for ( j=0; j<n_crystals; j++ ) {
 			int flag;
-			Crystal *cr = crystals[j];
-			RefList *rf = crystal_get_reflections(cr);
-			flag = crystal_get_user_flag(cr);
+			flag = crystal_get_user_flag(crystals[j]);
 			if ( flag != 0 ) n_dud++;
 			if ( flag == 1 ) {
-				n_noref++;
+				n_noscale++;
 			} else if ( flag == 2 ) {
-				n_solve++;
+				n_noref++;
 			} else if ( flag == 3 ) {
+				n_solve++;
+			} else if ( flag == 4 ) {
 				n_lost++;
 			}
-			nobs += select_scalable_reflections(rf, reference);
 		}
 
 		if ( n_dud ) {
 			STATUS("%i crystals could not be refined this cycle.\n",
 			       n_dud);
+			STATUS("%i scaling failed.\n", n_noscale);
 			STATUS("%i not enough reflections.\n", n_noref);
 			STATUS("%i solve failed.\n", n_solve);
 			STATUS("%i lost too many reflections.\n", n_lost);

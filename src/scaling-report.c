@@ -249,8 +249,6 @@ static void partiality_graph(cairo_t *cr, Crystal **crystals, int n,
 			Reflection *f;
 			int bin;
 
-			if ( !get_scalable(refl) ) continue;
-
 			get_indices(refl, &h, &k, &l);
 			f = find_refl(full, h, k, l);
 			if ( f == NULL ) continue;
@@ -363,8 +361,6 @@ static void partiality_histogram(cairo_t *cr, Crystal **crystals, int n,
 			double Ipart, Ifull, pobs, pcalc;
 			signed int h, k, l;
 			Reflection *f;
-
-			if ( !get_scalable(refl) ) continue;
 
 			get_indices(refl, &h, &k, &l);
 			f = find_refl(full, h, k, l);
@@ -604,8 +600,6 @@ static void intensity_histogram(cairo_t *cr, Crystal **crystals, int n,
 		{
 			double Iobs, pcalc, Ifull_est;
 
-			if ( !get_scalable(f) ) continue;
-
 			pcalc = get_partiality(f);
 			Iobs = get_intensity(f);
 			Ifull_est = Iobs / (pcalc * osf);
@@ -638,8 +632,6 @@ static void intensity_histogram(cairo_t *cr, Crystal **crystals, int n,
 		      f = next_found_refl(f) )
 		{
 			double Iobs, pcalc, Ifull_est;
-
-			if ( !get_scalable(f) ) continue;
 
 			pcalc = get_partiality(f);
 			Iobs = get_intensity(f);
