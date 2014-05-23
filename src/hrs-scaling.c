@@ -544,12 +544,6 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 		reject_outliers(old_osfs, n, crystals);
 		done = test_convergence(old_osfs, n, crystals);
 
-		FILE *fh = fopen("scale-factors.log", "a");
-		for ( j=0; j<n; j++ ) {
-			fprintf(fh, "%5.2f\n", crystal_get_osf(crystals[j]));
-		}
-		fclose(fh);
-
 		/* No reference -> generate list for next iteration */
 		if ( gref == NULL ) {
 			reflist_free(full);
