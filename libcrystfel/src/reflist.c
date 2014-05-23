@@ -446,32 +446,6 @@ void get_partial(const Reflection *refl, double *r1, double *r2, double *p,
 
 
 /**
- * get_scalable:
- * @refl: A %Reflection
- *
- * Returns: non-zero if this reflection can be scaled.
- *
- **/
-int get_scalable(const Reflection *refl)
-{
-	return refl->data.scalable;
-}
-
-
-/**
- * get_refinable:
- * @refl: A %Reflection
- *
- * Returns: non-zero if this reflection can be used for post refinement.
- *
- **/
-int get_refinable(const Reflection *refl)
-{
-	return refl->data.refinable;
-}
-
-
-/**
  * get_redundancy:
  * @refl: A %Reflection
  *
@@ -675,30 +649,6 @@ void set_lorentz(Reflection *refl, double L)
 void set_intensity(Reflection *refl, double intensity)
 {
 	refl->data.intensity = intensity;
-}
-
-
-/**
- * set_scalable:
- * @refl: A %Reflection
- * @scalable: Non-zero if this reflection should be scaled.
- *
- **/
-void set_scalable(Reflection *refl, int scalable)
-{
-	refl->data.scalable = scalable;
-}
-
-
-/**
- * set_refinable:
- * @refl: A %Reflection
- * @refinable: Non-zero if this reflection can be used for post refinement.
- *
- **/
-void set_refinable(Reflection *refl, int refinable)
-{
-	refl->data.refinable = refinable;
 }
 
 

@@ -92,8 +92,6 @@ extern void get_symmetric_indices(const Reflection *refl,
 extern double get_intensity(const Reflection *refl);
 extern void get_partial(const Reflection *refl, double *r1, double *r2,
                         double *p, int *clamp_low, int *clamp_high);
-extern int get_scalable(const Reflection *refl);
-extern int get_refinable(const Reflection *refl);
 extern int get_redundancy(const Reflection *refl);
 extern double get_temp1(const Reflection *refl);
 extern double get_temp2(const Reflection *refl);
@@ -111,8 +109,6 @@ extern void set_partial(Reflection *refl, double r1, double r2, double p,
 extern void set_partiality(Reflection *refl, double p);
 extern void set_lorentz(Reflection *refl, double L);
 extern void set_intensity(Reflection *refl, double intensity);
-extern void set_scalable(Reflection *refl, int scalable);
-extern void set_refinable(Reflection *refl, int refinable);
 extern void set_redundancy(Reflection *refl, int red);
 extern void set_temp1(Reflection *refl, double temp);
 extern void set_temp2(Reflection *refl, double temp);
