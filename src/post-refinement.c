@@ -501,13 +501,15 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		Reflection *match;
 		double gradients[NUM_PARAMS];
 
-		if ( (get_intensity(refl) < 3.0*get_esd_intensity(refl))
-		  || (get_partiality(refl) < MIN_PART_REFINE) ) continue;
-
 		/* Find the full version */
 		get_indices(refl, &ha, &ka, &la);
 		match = find_refl(full, ha, ka, la);
 		if ( match == NULL ) continue;
+
+		if ( (get_intensity(refl) < 3.0*get_esd_intensity(refl))
+		  || (get_partiality(refl) < MIN_PART_REFINE)
+		  || (get_redundancy(match) < 2) ) continue;
+
 		I_full = get_intensity(match);
 
 		/* Actual measurement of this reflection from this pattern? */
