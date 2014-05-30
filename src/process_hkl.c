@@ -409,8 +409,6 @@ int main(int argc, char *argv[])
 	char *output = NULL;
 	Stream *st;
 	RefList *model;
-	int config_maxonly = 0;
-	int config_sum = 0;
 	int config_scale = 0;
 	char *sym_str = NULL;
 	SymOpList *sym;
@@ -438,10 +436,8 @@ int main(int argc, char *argv[])
 		{"help",               0, NULL,               'h'},
 		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
-		{"max-only",           0, &config_maxonly,     1},
 		{"start-after",        1, NULL,               's'},
 		{"stop-after",         1, NULL,               'f'},
-		{"sum",                0, &config_sum,         1},
 		{"scale",              0, &config_scale,       1},
 		{"no-polarisation",    0, &config_nopolar,     1},
 		{"no-polarization",    0, &config_nopolar,     1},
