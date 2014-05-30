@@ -11,6 +11,7 @@
  *   2009-2014 Thomas White <taw@physics.org>
  *   2011      Andrew Martin <andrew.martin@desy.de>
  *   2012      Lorenzo Galli <lorenzo.galli@desy.de>
+ *   2014      Chunhong Yoon <chun.hong.yoon@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -182,18 +183,18 @@ static double scale_intensities(RefList *reference, RefList *new,
 static double *check_hist_size(int n, double *hist_vals)
 {
 	int ns;
-	double *try;
+	double *tryMe;
 
 	if ( n % 1000 ) return hist_vals;
 
 	ns = n / 1000;
 	ns = (ns+1)*1000;
 
-	try = realloc(hist_vals, ns*sizeof(double));
-	if ( try == NULL ) {
+	tryMe = realloc(hist_vals, ns*sizeof(double));
+	if ( tryMe == NULL ) {
 		ERROR("Failed to allocate space for histogram.\n");
 	}
-	return try;
+	return tryMe;
 }
 
 
