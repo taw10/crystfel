@@ -77,8 +77,6 @@ static void show_help(const char *s)
 "\n"
 "      --scale               Scale each pattern for best fit with the current\n"
 "                             model.\n"
-"      --reference=<file>    Compare against intensities from <file> when\n"
-"                             scaling. \n"
 "      --no-polarisation     Disable polarisation correction.\n"
 "      --min-measurements=<n> Require at least <n> measurements before a\n"
 "                             reflection appears in the output.  Default: 2\n"
