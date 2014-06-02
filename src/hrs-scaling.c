@@ -480,7 +480,7 @@ static int test_convergence(double *old_osfs, int n, Crystal **crystals)
 
 
 /* Scale the stack of images */
-RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
+RefList *scale_intensities(Crystal **crystals, int n,
                            int n_threads, int noscale, PartialityModel pmodel,
                            int min_redundancy)
 {
@@ -501,10 +501,8 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 		return full;
 	}
 
-	/* No reference -> create an initial list to refine against */
-	if ( gref == NULL ) {
-		full = lsq_intensities(crystals, n, n_threads, pmodel);
-	}
+	/* Create an initial list to refine against */
+	full = lsq_intensities(crystals, n, n_threads, pmodel);
 
 	old_osfs = malloc(n*sizeof(double));
 	if ( old_osfs == NULL ) return NULL;
@@ -513,7 +511,6 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 	i = 0;
 	do {
 
-		RefList *reference;
 		double total_sf = 0.0;
 		int n_sf = 0;
 		double norm_sf;
@@ -524,14 +521,7 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 			crystal_set_user_flag(crystals[j], 0);
 		}
 
-		/* Refine against reference or current "full" estimates */
-		if ( gref != NULL ) {
-			reference = gref;
-		} else {
-			reference = full;
-		}
-
-		iterate_scale(crystals, n, reference, n_threads, pmodel);
+		iterate_scale(crystals, n, full, n_threads, pmodel);
 
 		/* Normalise the scale factors */
 		for ( j=0; j<n; j++ ) {
@@ -550,11 +540,9 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 		reject_outliers(old_osfs, n, crystals);
 		done = test_convergence(old_osfs, n, crystals);
 
-		/* No reference -> generate list for next iteration */
-		if ( gref == NULL ) {
-			reflist_free(full);
-			full = lsq_intensities(crystals, n, n_threads, pmodel);
-		}
+		/* Generate list for next iteration */
+		reflist_free(full);
+		full = lsq_intensities(crystals, n, n_threads, pmodel);
 
 		i++;
 
@@ -563,10 +551,6 @@ RefList *scale_intensities(Crystal **crystals, int n, RefList *gref,
 	if ( i == MAX_CYCLES ) {
 		ERROR("Warning: Scaling did not converge.\n");
 	}
-
-	if ( gref != NULL ) {
-		full = lsq_intensities(crystals, n, n_threads, pmodel);
-	} /* else we already did it */
 
 	calculate_esds(crystals, n, full, n_threads, min_redundancy, pmodel);
 

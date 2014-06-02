@@ -39,8 +39,7 @@
 #include "reflist.h"
 #include "geometry.h"
 
-extern RefList *scale_intensities(Crystal **crystals, int n,
-                                  RefList *reference, int n_threads,
+extern RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
                                   int noscale, PartialityModel pmodel,
                                   int min_redundancy);
 

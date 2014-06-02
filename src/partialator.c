@@ -71,7 +71,6 @@ static void show_help(const char *s)
 "  -y, --symmetry=<sym>       Merge according to symmetry <sym>.\n"
 "  -n, --iterations=<n>       Run <n> cycles of scaling and post-refinement.\n"
 "      --no-scale             Fix all the scaling factors at unity.\n"
-"  -r, --reference=<file>     Refine images against reflections in <file>,\n"
 "  -m, --model=<model>        Specify partiality model.\n"
 "      --min-measurements=<n> Minimum number of measurements to require.\n"
 "      --no-polarisation      Disable polarisation correction.\n"
@@ -206,8 +205,6 @@ int main(int argc, char *argv[])
 	RefList *full;
 	int n_images = 0;
 	int n_crystals = 0;
-	char *reference_file = NULL;
-	RefList *reference = NULL;
 	char cmdline[1024];
 	SRContext *sr;
 	int noscale = 0;
@@ -250,7 +247,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:o:g:b:y:n:r:j:m:",
+	while ((c = getopt_long(argc, argv, "hi:o:g:b:y:n:j:m:",
 	                        longopts, NULL)) != -1)
 	{
 
@@ -287,10 +284,6 @@ int main(int argc, char *argv[])
 
 			case 'm' :
 			pmodel_str = strdup(optarg);
-			break;
-
-			case 'r' :
-			reference_file = strdup(optarg);
 			break;
 
 			case 2 :
@@ -351,21 +344,6 @@ int main(int argc, char *argv[])
 			ERROR("Unknown partiality model '%s'.\n", pmodel_str);
 			return 1;
 		}
-	}
-
-	if ( reference_file != NULL ) {
-
-		RefList *list;
-
-		list = read_reflections(reference_file);
-		if ( list == NULL ) {
-			ERROR("Failed to read '%s'\n", reference_file);
-			return 1;
-		}
-		free(reference_file);
-		reference = asymmetric_indices(list, sym);
-		reflist_free(list);
-
 	}
 
 	gsl_set_error_handler_off();
@@ -477,7 +455,7 @@ int main(int argc, char *argv[])
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
 	if ( noscale ) STATUS("Scale factors fixed at 1.\n");
-	full = scale_intensities(crystals, n_crystals, reference,
+	full = scale_intensities(crystals, n_crystals,
 	                         nthreads, noscale, pmodel, min_measurements);
 
 	srdata.crystals = crystals;
@@ -497,15 +475,13 @@ int main(int argc, char *argv[])
 		int n_lost = 0;
 		int n_dud = 0;
 		int j;
-		RefList *comp;
 
 		STATUS("Post refinement cycle %i of %i\n", i+1, n_iter);
 
 		srdata.n_filtered = 0;
 
 		/* Refine the geometry of all patterns to get the best fit */
-		comp = (reference == NULL) ? full : reference;
-		refine_all(crystals, n_crystals, comp, nthreads, pmodel,
+		refine_all(crystals, n_crystals, full, nthreads, pmodel,
 		           &srdata);
 
 		for ( j=0; j<n_crystals; j++ ) {
@@ -533,9 +509,8 @@ int main(int argc, char *argv[])
 		}
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
-		full = scale_intensities(crystals, n_crystals,
-		                         reference, nthreads, noscale, pmodel,
-		                         min_measurements);
+		full = scale_intensities(crystals, n_crystals, nthreads,
+		                         noscale, pmodel, min_measurements);
 
 		srdata.full = full;
 
@@ -572,9 +547,6 @@ int main(int argc, char *argv[])
 	free(sym);
 	free(outfile);
 	free(crystals);
-	if ( reference != NULL ) {
-		reflist_free(reference);
-	}
 	for ( i=0; i<n_images; i++ ) {
 		free(images[i].filename);
 	}
