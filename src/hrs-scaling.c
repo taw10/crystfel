@@ -125,7 +125,7 @@ static void run_scale_job(void *vwargs, int cookie)
 		Ihl = get_intensity(refl) / corr;
 
 		num += Ih * Ihl;
-		den += Ihl * Ihl;
+		den += Ih * Ih;
 
 	}
 
@@ -266,7 +266,7 @@ static void run_merge_job(void *vwargs, int cookie)
 
 		Ihl = get_intensity(refl) / corr;
 
-		num += Ihl * G;
+		num += Ihl / G;
 		den += 1.0;
 		red++;
 
@@ -388,7 +388,7 @@ static void run_esd_job(void *vwargs, int cookie)
 		corr = get_partiality(refl) * get_lorentz(refl);
 
 		Ih = get_intensity(f);
-		Ihl = G * get_intensity(refl) / corr;
+		Ihl = get_intensity(refl) / (G*corr);
 
 		num += pow(Ihl - Ih, 2.0);
 

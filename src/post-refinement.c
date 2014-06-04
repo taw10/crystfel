@@ -513,7 +513,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		I_full = get_intensity(match);
 
 		/* Actual measurement of this reflection from this pattern? */
-		I_partial = get_intensity(refl) * crystal_get_osf(cr);
+		I_partial = get_intensity(refl) / crystal_get_osf(cr);
 		p = get_partiality(refl);
 		l = get_lorentz(refl);
 
