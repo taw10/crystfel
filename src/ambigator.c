@@ -78,6 +78,7 @@ static void show_help(const char *s)
 "      --ncorr=<n>             Use <n> correlations per crystal.  Default 1000\n"
 "  -j <n>                      Use <n> threads for CC calculation.\n"
 "      --really-random         Be non-deterministic.\n"
+"      --corr-matrix=<f>       Write the correlation matrix to file.\n"
 );
 }
 
@@ -789,6 +790,110 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 }
 
 
+static void save_corr(const char *filename, struct cc_list *ccs, int n_crystals,
+                      int *assignments)
+{
+	hid_t fh, sh, dh;
+	hid_t ph;  /* Property list */
+	herr_t r;
+	hsize_t size[2];
+	float *matrix;
+	float *rmatrix;
+	int i;
+
+	matrix = malloc(n_crystals*n_crystals*sizeof(float));
+	rmatrix = malloc(n_crystals*n_crystals*sizeof(float));
+	if ( (matrix == NULL) || (rmatrix == NULL) ) return;
+
+	for ( i=0; i<n_crystals; i++ ) {
+
+		int k;
+
+		/* Set all values to zero */
+		for ( k=0; k<n_crystals; k++ ) {
+			matrix[i+n_crystals*k] = 0.0;
+			rmatrix[i+n_crystals*k] = 0.0;
+		}
+
+		/* CCs in current orientation */
+		k = 0;
+		do {
+			int j = ccs[i].ind[k];
+			if ( j == 0 ) break;
+			j -= 1;  /* Because we add one to use 0 as a marker */
+			matrix[i+n_crystals*j] = ccs[i].cc[k];
+			k++;
+		} while ( 1 );
+
+		/* CCs after reindexing */
+		k = 0;
+		do {
+			int j = ccs[i].ind_reidx[k];
+			if ( j == 0 ) break;
+			j -= 1;
+			rmatrix[i+n_crystals*j] = ccs[i].cc_reidx[k];
+			k++;
+		} while ( 1 );
+
+	}
+
+	fh = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	if ( fh < 0 ) {
+		ERROR("Couldn't create file: %s\n", filename);
+		return;
+	}
+
+	size[0] = n_crystals;
+	size[1] = n_crystals;
+	sh = H5Screate_simple(2, size, NULL);
+
+	/* Set compression */
+	ph = H5Pcreate(H5P_DATASET_CREATE);
+	H5Pset_chunk(ph, 2, size);
+	H5Pset_deflate(ph, 3);
+
+	dh = H5Dcreate2(fh, "correlation_matrix", H5T_NATIVE_FLOAT, sh,
+	                H5P_DEFAULT, ph, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Couldn't create dataset\n");
+		H5Fclose(fh);
+		return;
+	}
+	r = H5Dwrite(dh, H5T_NATIVE_FLOAT, H5S_ALL,
+	             H5S_ALL, H5P_DEFAULT, matrix);
+	if ( r < 0 ) {
+		ERROR("Couldn't write data\n");
+		H5Dclose(dh);
+		H5Fclose(fh);
+		return;
+	}
+	H5Dclose(dh);
+
+	dh = H5Dcreate2(fh, "correlation_matrix_reindexed", H5T_NATIVE_FLOAT,
+	                sh, H5P_DEFAULT, ph, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Couldn't create dataset\n");
+		H5Fclose(fh);
+		return;
+	}
+	r = H5Dwrite(dh, H5T_NATIVE_FLOAT, H5S_ALL,
+	             H5S_ALL, H5P_DEFAULT, rmatrix);
+	if ( r < 0 ) {
+		ERROR("Couldn't write data\n");
+		H5Dclose(dh);
+		H5Fclose(fh);
+		return;
+	}
+	H5Dclose(dh);
+
+	H5Fclose(fh);
+	free(matrix);
+	free(rmatrix);
+
+	STATUS("Wrote correlation matrix in HDF5 format to %s\n", filename);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -822,6 +927,7 @@ int main(int argc, char *argv[])
 	int n_threads = 1;
 	int config_random = 0;
 	char *operator = NULL;
+	char *corr_matrix_fn = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -838,6 +944,7 @@ int main(int argc, char *argv[])
 		{"ncorr",              1, NULL,                6},
 		{"start-assignments",  1, NULL,                7},
 		{"operator",           1, NULL,                8},
+		{"corr-matrix",        1, NULL,                9},
 
 		{"really-random",      0, &config_random,      1},
 
@@ -922,6 +1029,10 @@ int main(int argc, char *argv[])
 
 			case 8 :
 			operator = strdup(optarg);
+			break;
+
+			case 9 :
+			corr_matrix_fn = strdup(optarg);
 			break;
 
 			case 0 :
@@ -1161,6 +1272,11 @@ int main(int argc, char *argv[])
 
 	for ( i=0; i<n_iter; i++ ) {
 		detwin(ccs, n_crystals, assignments, fgfh, crystals);
+	}
+
+	if ( corr_matrix_fn != NULL ) {
+		save_corr(corr_matrix_fn, ccs, n_crystals, assignments);
+		free(corr_matrix_fn);
 	}
 
 	if ( fgfh != NULL ) {

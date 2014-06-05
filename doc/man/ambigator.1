@@ -100,6 +100,9 @@ Use \fIn\fR correlations per crystal.  The default is to correlate against every
 .IP \fB--really-random\fR
 Be non-deterministic by seeding the random number generator (used to make the initial indexing assignments and select patterns to correlate against) from /dev/urandom.  Otherwise, with single-threaded operation (\fB-j 1\fR) on the same data, the results from this program should be the same if it is re-run.  Using more than one thread already introduces some non-deterministic behaviour.
 
+.PD 0
+.IP \fB--corr-matrix=\fR\fIfilename\fR
+Write the the correlation matrices in HDF5 format to \fIfilename\fR.  The file will contain two datasets: \fBcorrelation_matrix\fR and \fBcorrelation_matrix_reindexed\fR.  They contain, respectively, the correlation matrix with all crystals in their original orientations and all crystals in the reindexed orientations.  If the ambiguity operator is unknown (i.e. neither \fB--operator\fR nor \fB-w\fR were used), then the latter will be zero everywhere.
 
 .SH AUTHOR
 This page was written by Thomas White.
