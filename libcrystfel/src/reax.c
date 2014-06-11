@@ -3,11 +3,13 @@
  *
  * A new auto-indexer
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
+ * Copyright © 2014 Takanori Nakane
  *
  * Authors:
- *   2011-2013 Thomas White <taw@physics.org>
+ *   2011-2014 Thomas White <taw@physics.org>
+ *   2014 Takanori Nakane <nakane.t@gmail.com>
  *
  * This file is part of CrystFEL.
  *
@@ -957,20 +959,21 @@ static int check_cell(struct reax_private *dp, struct image *image,
 }
 
 
-static void assemble_cells_from_candidates(struct image *image,
+static int assemble_cells_from_candidates(struct image *image,
                                            struct reax_search *s,
                                            UnitCell *cell,
                                            struct reax_private *p)
 {
 	int i, j, k;
 	signed int ti, tj, tk;
+	int rval;
 	struct cell_candidate_list cl;
 
 	cl.cand = calloc(MAX_REAX_CELL_CANDIDATES,
 	                 sizeof(struct cell_candidate));
 	if ( cl.cand == NULL ) {
 		ERROR("Failed to allocate cell candidate list.\n");
-		return;
+		return 0;
 	}
 	cl.n_cand = 0;
 
@@ -1011,8 +1014,6 @@ static void assemble_cells_from_candidates(struct image *image,
 			continue;
 		}
 
-		/* FIXME! */
-		//peak_lattice_agreement(image, cnew, &fom);
 		fom = 1.0;
 		add_cell_candidate(&cl, cnew, fom);
 
@@ -1043,11 +1044,16 @@ static void assemble_cells_from_candidates(struct image *image,
 		}
 	}
 
+	rval = 0;
 	for ( i=0; i<cl.n_cand; i++ ) {
-		if ( check_cell(p,  image, cl.cand[i].cell) ) break;
+		if ( check_cell(p,  image, cl.cand[i].cell) ) {
+			rval = 1;
+			break;
+		}
 	}
 
 	free(cl.cand);
+	return rval;
 }
 
 
@@ -1059,6 +1065,7 @@ int reax_index(IndexingPrivate *pp, struct image *image)
 	double pmax;
 	struct reax_search *s;
 	int i;
+	int rval = 0;
 
 	p = (struct reax_private *)pp;
 
@@ -1082,7 +1089,7 @@ int reax_index(IndexingPrivate *pp, struct image *image)
 //	                        fft_in, fft_out, p->plan, smin, smax,
 //	                        image->det, p);
 
-	assemble_cells_from_candidates(image, s, p->cell, p);
+	rval = assemble_cells_from_candidates(image, s, p->cell, p);
 
 	for ( i=0; i<s->n_search; i++ ) {
 		free(s->search[i].cand);
@@ -1091,7 +1098,7 @@ int reax_index(IndexingPrivate *pp, struct image *image)
 	free(s);
 	fftw_free(fft_in);
 	fftw_free(fft_out);
-	return 1;
+	return rval;
 }
 
 
