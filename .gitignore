@@ -35,6 +35,7 @@ src/check_hkl
 src/partial_sim
 src/cell_explorer
 src/ambigator
+src/whirligig
 src/.dirstamp
 *~
 doc/reference/libcrystfel/*
