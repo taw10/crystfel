@@ -110,6 +110,9 @@ typedef enum {
  * core of the indexing method */
 #define INDEXING_METHOD_MASK (0xff)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * IndexingPrivate:
@@ -135,5 +138,9 @@ extern void index_pattern(struct image *image,
                           IndexingMethod *indms, IndexingPrivate **iprivs);
 
 extern void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* INDEX_H */

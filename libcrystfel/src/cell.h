@@ -99,6 +99,10 @@ typedef struct _unitcell UnitCell;
  **/
 typedef struct _unitcelltransformation UnitCellTransformation;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern UnitCell *cell_new(void);
 extern UnitCell *cell_new_from_cell(UnitCell *orig);
 extern void cell_free(UnitCell *cell);
@@ -170,5 +174,9 @@ extern void tfn_print(UnitCellTransformation *t);
 extern UnitCellTransformation *tfn_inverse(UnitCellTransformation *t);
 extern double *tfn_vector(double a, double b, double c);
 extern void tfn_free(UnitCellTransformation *t);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* CELL_H */

@@ -38,6 +38,9 @@
 #include "cell.h"
 #include "index.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern int run_xds(struct image *image, IndexingPrivate *ipriv);
 
@@ -46,5 +49,9 @@ extern IndexingPrivate *xds_prepare(IndexingMethod *indm, UnitCell *cell,
                                     struct beam_params *beam, float *ltl);
 
 extern void xds_cleanup(IndexingPrivate *pp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* XDS_H */

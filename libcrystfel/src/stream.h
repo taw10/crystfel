@@ -73,6 +73,9 @@ typedef enum {
 
 } StreamReadFlags;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern Stream *open_stream_for_read(const char *filename);
 extern Stream *open_stream_for_write(const char *filename);
@@ -89,5 +92,9 @@ extern void write_command(Stream *st, int argc, char *argv[]);
 
 extern int rewind_stream(Stream *st);
 extern int is_stream(const char *filename);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* STREAM_H */

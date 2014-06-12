@@ -38,6 +38,10 @@
 #include "reflist.h"
 #include "crystal.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int *make_BgMask(struct image *image, struct panel *p, double ir_inn);
 
 extern void search_peaks(struct image *image, float threshold,
@@ -57,5 +61,9 @@ extern int integrate_peak(struct image *image, int cfs, int css,
                           double *intensity, double *sigma,
                           double ir_inn, double ir_mid, double ir_out,
                           int *bgPkMask, int *saturated);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* PEAKS_H */

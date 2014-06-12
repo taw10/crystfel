@@ -88,6 +88,10 @@ struct quaternion {
 	double z;
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern struct quaternion normalise_quaternion(struct quaternion q);
 extern double quaternion_modulus(struct quaternion q);
 extern struct quaternion random_quaternion(gsl_rng *rng);
@@ -257,5 +261,8 @@ extern pthread_mutex_t stderr_lock;
 extern char *check_prefix(char *prefix);
 extern char *safe_basename(const char *in);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* UTILS_H */

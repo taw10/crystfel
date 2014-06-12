@@ -33,6 +33,9 @@
 #ifndef STATISTICS_H
 #define STATISTICS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "reflist.h"
 
@@ -58,5 +61,8 @@ extern double stat_pearson_i(RefList *list1, RefList *list2);
 extern double stat_pearson_f_zero(RefList *list1, RefList *list2);
 extern double stat_pearson_f_ignore(RefList *list1, RefList *list2);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* STATISTICS_H */

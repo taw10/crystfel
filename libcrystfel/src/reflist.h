@@ -69,6 +69,10 @@ typedef struct _reflection Reflection;
  **/
 typedef struct _reflistiterator RefListIterator;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Creation/deletion */
 extern RefList *reflist_new(void);
 extern void reflist_free(RefList *list);
@@ -133,5 +137,9 @@ extern int num_reflections(RefList *list);
 extern int tree_depth(RefList *list);
 extern void lock_reflection(Reflection *refl);
 extern void unlock_reflection(Reflection *refl);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* REFLIST_H */

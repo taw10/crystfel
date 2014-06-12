@@ -38,6 +38,10 @@
 #include "beam-parameters.h"
 #include "detector.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef HAVE_FFTW
 
 extern IndexingPrivate *reax_prepare(IndexingMethod *indm, UnitCell *cell,
@@ -65,7 +69,10 @@ static int reax_index(IndexingPrivate *pp, struct image *image)
 {
 }
 
-
 #endif /* HAVE_FFTW */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* REAX_H */

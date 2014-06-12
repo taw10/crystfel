@@ -37,6 +37,9 @@
 
 #include "index.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern int run_mosflm(struct image *image, IndexingPrivate *ipriv);
 
@@ -45,5 +48,9 @@ extern IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
                                        struct beam_params *beam, float *ltl);
 
 extern void mosflm_cleanup(IndexingPrivate *pp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* MOSFLM_H */

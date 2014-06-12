@@ -46,6 +46,9 @@
  **/
 typedef struct _crystal Crystal;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern Crystal *crystal_new(void);
 extern Crystal *crystal_copy(Crystal *cryst);
@@ -71,5 +74,9 @@ extern void crystal_set_user_flag(Crystal *cryst, int flag);
 extern void crystal_set_osf(Crystal *cryst, double osf);
 extern void crystal_set_image(Crystal *cryst, struct image *image);
 extern void crystal_set_mosaicity(Crystal *cryst, double m);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* CRYSTAL_H */

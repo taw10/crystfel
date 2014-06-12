@@ -37,6 +37,10 @@
 
 #include "cell.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern double resolution(UnitCell *cell,
                          signed int h, signed int k, signed int l);
 
@@ -68,5 +72,9 @@ extern LatticeType lattice_from_str(const char *s);
 
 extern int forbidden_reflection(UnitCell *cell,
                                 signed int h, signed int k, signed int l);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* CELL_UTILS_H */

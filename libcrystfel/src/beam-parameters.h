@@ -53,10 +53,17 @@ struct beam_params
 	double profile_radius; /* Reciprocal space size of a reflection */
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern struct beam_params *get_beam_parameters(const char *filename);
 extern void free_beam_parameters(struct beam_params *beam);
 
 extern void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* BEAM_PARAMETERS_H */

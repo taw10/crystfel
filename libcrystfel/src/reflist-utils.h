@@ -38,6 +38,9 @@
 #include "cell.h"
 #include "symmetry.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define REFLECTION_END_MARKER "End of reflections"
 
@@ -67,5 +70,9 @@ extern RefList *res_cutoff(RefList *list, UnitCell *cell,
                            double min, double max);
 
 extern RefList *copy_reflist(RefList *list);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* REFLIST_UTILS_H */

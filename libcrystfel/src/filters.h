@@ -33,10 +33,16 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern void filter_cm(struct image *image);
 extern void filter_noise(struct image *image);
 extern void filter_median(struct image *image, int size);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* FILTERS_H */

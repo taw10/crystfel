@@ -33,6 +33,9 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct _histogram Histogram;
 
@@ -48,5 +51,9 @@ extern int histogram_get_num_bins(Histogram *hi);
 extern void histogram_set_min(Histogram *hi, double min);
 extern void histogram_set_max(Histogram *hi, double max);
 extern void histogram_set_num_bins(Histogram *hi, int n);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* HISTOGRAM_H */

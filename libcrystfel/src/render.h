@@ -41,9 +41,17 @@ enum {
 	SCALE_RATIO
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Colour scale lookup */
 extern void render_scale(double val, double max, int scale,
                          double *rp, double *gp, double *bp);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* RENDER_H */

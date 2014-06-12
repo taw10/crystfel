@@ -40,6 +40,9 @@
  **/
 typedef struct _integermatrix IntegerMatrix;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Alloc/dealloc */
 extern IntegerMatrix *intmat_new(unsigned int rows, unsigned int cols);
@@ -77,5 +80,9 @@ extern int intmat_equals(const IntegerMatrix *a, const IntegerMatrix *b);
 
 /* Diagnostics */
 extern void intmat_print(const IntegerMatrix *m);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* INTEGER_MATRIX_H */

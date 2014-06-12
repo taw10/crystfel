@@ -55,6 +55,10 @@ typedef struct _symoplist SymOpList;
  **/
 typedef struct _symopmask SymOpMask;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void free_symoplist(SymOpList *ops);
 extern SymOpList *get_pointgroup(const char *sym);
 
@@ -85,5 +89,9 @@ extern int is_centric(signed int h, signed int k, signed int l,
 
 extern void add_symop(SymOpList *ops, IntegerMatrix *m);
 extern SymOpList *parse_symmetry_operations(const char *s);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* SYMMETRY_H */

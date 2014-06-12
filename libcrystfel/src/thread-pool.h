@@ -36,6 +36,10 @@
 
 #include <pthread.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern pthread_mutex_t stderr_lock;
 extern signed int get_status_label(void);
 
@@ -83,5 +87,8 @@ extern int run_threads(int n_threads, TPWorkFunc work,
                        void *queue_args, int max,
                        int cpu_num, int cpu_groupsize, int cpu_offset);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* THREAD_POOL_H */

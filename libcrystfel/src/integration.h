@@ -80,6 +80,10 @@ typedef enum {
  * core of the integration method */
 #define INTEGRATION_METHOD_MASK (0xff)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern IntegrationMethod integration_method(const char *t, int *err);
 
 extern void integrate_all(struct image *image, IntegrationMethod meth,
@@ -93,5 +97,9 @@ extern void integrate_all_2(struct image *image, IntegrationMethod meth,
                             IntDiag int_diag,
                             signed int idh, signed int idk, signed int idl);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* INTEGRATION_H */

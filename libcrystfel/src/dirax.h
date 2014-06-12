@@ -35,6 +35,10 @@
 
 #include "index.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int run_dirax(struct image *image, IndexingPrivate *ipriv);
 
 extern IndexingPrivate *dirax_prepare(IndexingMethod *indm,
@@ -42,5 +46,9 @@ extern IndexingPrivate *dirax_prepare(IndexingMethod *indm,
                                       struct beam_params *beam, float *ltl);
 
 extern void dirax_cleanup(IndexingPrivate *pp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* DIRAX_H */

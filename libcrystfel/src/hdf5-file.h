@@ -41,6 +41,10 @@ struct copy_hdf5_field;
 
 #include "image.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int hdf5_write(const char *filename, const void *data,
                       int width, int height, int type);
 
@@ -69,5 +73,8 @@ extern void copy_hdf5_fields(struct hdfile *f,
 extern void add_copy_hdf5_field(struct copy_hdf5_field *copyme,
                                 const char *name);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* HDF5_H */

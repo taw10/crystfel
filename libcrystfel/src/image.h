@@ -179,6 +179,9 @@ struct image {
 
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Feature lists */
 extern ImageFeatureList *image_feature_list_new(void);
@@ -200,5 +203,9 @@ extern struct imagefeature *image_get_feature(ImageFeatureList *flist, int idx);
 
 extern void image_add_crystal(struct image *image, Crystal *cryst);
 extern void free_all_crystals(struct image *image);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* IMAGE_H */
