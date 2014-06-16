@@ -44,28 +44,114 @@
 #include <stream.h>
 
 #include "version.h"
+#include "cell-utils.h"
+#include "integer_matrix.h"
 
 
-static void process_series(struct image *images, signed int *ser, int len)
+static void process_series(struct image *images, signed int *ser,
+                           IntegerMatrix **mat, int len)
 {
-	STATUS("Found a rotation series of %i views\n", len);
+//	STATUS("Found a rotation series of %i views\n", len);
 }
 
 
-static int gatinator(UnitCell *a, UnitCell *b)
+static int cells_are_similar(UnitCell *cell1, UnitCell *cell2)
 {
+	double asx1, asy1, asz1, bsx1, bsy1, bsz1, csx1, csy1, csz1;
+	double asx2, asy2, asz2, bsx2, bsy2, bsz2, csx2, csy2, csz2;
+	UnitCellTransformation *tfn1, *tfn2;
+	UnitCell *pcell1, *pcell2;
+	const double atl = deg2rad(5.0);
+
+	/* Compare primitive cells, not centered */
+	pcell1 = uncenter_cell(cell1, &tfn1);
+	pcell2 = uncenter_cell(cell2, &tfn2);
+
+	cell_get_reciprocal(pcell1, &asx1, &asy1, &asz1,
+	                            &bsx1, &bsy1, &bsz1,
+	                            &csx1, &csy1, &csz1);
+
+	cell_get_reciprocal(pcell2, &asx2, &asy2, &asz2,
+	                            &bsx2, &bsy2, &bsz2,
+	                            &csx2, &csy2, &csz2);
+
+
+	cell_free(pcell1);
+	cell_free(pcell2);
+
+	if ( angle_between(asx1, asy1, asz1, asx2, asy2, asz2) > atl ) return 0;
+	if ( angle_between(bsx1, bsy1, bsz1, bsx2, bsy2, bsz2) > atl ) return 0;
+	if ( angle_between(csx1, csy1, csz1, csx2, csy2, csz2) > atl ) return 0;
+
+	/* FIXME: Moduli need to be similar as well */
+
+	return 1;
+}
+
+
+static int gatinator(UnitCell *a, UnitCell *b, IntegerMatrix **pmb)
+{
+	IntegerMatrix *m;
+	int i[9];
+
+	m = intmat_new(3, 3);
+
+	for ( i[0]=-1; i[0]<=+1; i[0]++ ) {
+	for ( i[1]=-1; i[1]<=+1; i[1]++ ) {
+	for ( i[2]=-1; i[2]<=+1; i[2]++ ) {
+	for ( i[3]=-1; i[3]<=+1; i[3]++ ) {
+	for ( i[4]=-1; i[4]<=+1; i[4]++ ) {
+	for ( i[5]=-1; i[5]<=+1; i[5]++ ) {
+	for ( i[6]=-1; i[6]<=+1; i[6]++ ) {
+	for ( i[7]=-1; i[7]<=+1; i[7]++ ) {
+	for ( i[8]=-1; i[8]<=+1; i[8]++ ) {
+
+		UnitCellTransformation *tfn;
+		UnitCell *nc;
+		int j, k;
+		int l = 0;
+
+		for ( j=0; j<3; j++ )
+			for ( k=0; k<3; k++ )
+				intmat_set(m, j, k, i[l++]);
+
+		if ( intmat_det(m) != +1 ) continue;
+
+		tfn = tfn_from_intmat(m);
+		nc = cell_transform(b, tfn);
+
+		if ( cells_are_similar(a, nc) ) {
+			*pmb = m;
+			return 1;
+		}
+
+		tfn_free(tfn);
+		cell_free(nc);
+
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+
+	intmat_free(m);
 	return 0;
 }
 
 
-static int try_all(struct image *a, struct image *b, int *c1, int *c2)
+static int try_all(struct image *a, struct image *b, int *c1, int *c2,
+                   IntegerMatrix **m2)
 {
 	int i, j;
 
 	for ( i=0; i<a->n_crystals; i++ ) {
 		for ( j=0; j<b->n_crystals; j++ ) {
 			if ( gatinator(crystal_get_cell(a->crystals[i]),
-			               crystal_get_cell(b->crystals[j])) )
+			               crystal_get_cell(b->crystals[j]), m2) )
 			{
 				*c1 = i;
 				*c2 = j;
@@ -78,16 +164,19 @@ static int try_all(struct image *a, struct image *b, int *c1, int *c2)
 }
 
 
-static void dump(struct image *win, signed int *series, int window_len, int pos)
+static void dump(struct image *win, signed int *ser, IntegerMatrix **mat,
+                 int window_len, int pos)
 {
 	int i;
 
 	for ( i=0; i<pos; i++ ) {
 		free_all_crystals(&win[i]);
+		intmat_free(mat[i]);
 	}
 
 	memmove(win, &win[pos], (window_len-pos)*sizeof(struct image *));
-	memmove(series, &series[pos], (window_len-pos)*sizeof(signed int));
+	memmove(ser, &ser[pos], (window_len-pos)*sizeof(signed int));
+	memmove(mat, &mat[pos], (window_len-pos)*sizeof(IntegerMatrix *));
 }
 
 
@@ -110,7 +199,8 @@ int main(int argc, char *argv[])
 	int polarisation = 1;
 	int pos = 0;
 	struct image *win;
-	signed int *series;
+	signed int *ser;
+	IntegerMatrix **mat;
 	int window_len = 64;
 
 	/* Long options */
@@ -164,8 +254,9 @@ int main(int argc, char *argv[])
 	}
 
 	win = calloc(window_len, sizeof(struct image));
-	series = calloc(window_len, sizeof(int));
-	if ( (win == NULL) || (series == NULL) ) {
+	ser = calloc(window_len, sizeof(int));
+	mat = calloc(window_len, sizeof(IntegerMatrix *));
+	if ( (win == NULL) || (ser == NULL) || (mat == NULL) ) {
 		ERROR("Failed to allocate series buffers\n");
 		return 1;
 	}
@@ -193,30 +284,31 @@ int main(int argc, char *argv[])
 
 		/* Need at least two images to compare */
 		if ( pos == 0 ) {
-			series[0] = -1;
+			ser[0] = -1;
 			pos++;
 			continue;
 		}
 
-		if ( try_all(&win[pos-1], cur, &c1, &c2) ) {
-			series[pos-1] = c1;
-			series[pos] = c2;
-			printf("-");
+		if ( try_all(&win[pos-1], cur, &c1, &c2, &mat[pos]) ) {
+			ser[pos-1] = c1;
+			ser[pos] = c2;
+			printf("*");
 		} else {
-			series[pos] = -1;
-			printf(".");
+			ser[pos] = -1;
+			mat[pos] = NULL;
+			printf("-");
 		}
 		fflush(stdout);
 
-		if ( series[0] == -1 ) {
-			dump(win, series, window_len, 1);
+		if ( ser[0] == -1 ) {
+			dump(win, ser, mat, window_len, 1);
 			pos--;
 		}
 
-		if ( (series[pos] == -1) && (series[pos-1] == -1) ) {
+		if ( (ser[pos] == -1) && (ser[pos-1] == -1) ) {
 			/* Series ready to process */
-			process_series(win, series, pos-2);
-			dump(win, series, window_len, pos);
+			process_series(win, ser, mat, pos-2);
+			dump(win, ser, mat, window_len, pos);
 			pos = 0;
 		}
 
@@ -224,8 +316,9 @@ int main(int argc, char *argv[])
 		if ( pos == window_len ) {
 			window_len *= 2;
 			win = realloc(win, window_len*sizeof(struct image));
-			series = realloc(series, window_len*sizeof(signed int));
-			if ( (win == NULL) || (series == NULL) ) {
+			ser = realloc(ser, window_len*sizeof(signed int));
+			mat = realloc(mat, window_len*sizeof(IntegerMatrix *));
+			if ( (win == NULL) || (ser == NULL) || (mat == NULL) ) {
 				ERROR("Failed to expand series buffers\n");
 				return 1;
 			}
@@ -237,7 +330,8 @@ int main(int argc, char *argv[])
 	close_stream(st);
 
 	free(win);
-	free(series);
+	free(ser);
+	free(mat);
 
 	return 0;
 }
