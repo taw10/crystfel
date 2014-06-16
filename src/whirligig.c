@@ -294,10 +294,14 @@ int main(int argc, char *argv[])
 		if ( try_all(&win[pos-1], cur, &c1, &c2, &mat[pos]) ) {
 			ser[pos-1] = c1;
 			ser[pos] = c2;
-			printf("*");
 		} else {
 			ser[pos] = -1;
 			mat[pos] = NULL;
+		}
+
+		if ( ser[pos-1] != -1 ) {
+			printf("*");
+		} else {
 			printf("-");
 		}
 		fflush(stdout);
