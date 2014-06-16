@@ -657,6 +657,8 @@ int main(int argc, char *argv[])
 	/* Load (full) reflections */
 	if ( input_file != NULL ) {
 
+		RefList *as;
+
 		full = read_reflections(input_file);
 		if ( full == NULL ) {
 			ERROR("Failed to read reflections from '%s'\n",
@@ -669,6 +671,10 @@ int main(int argc, char *argv[])
 			      " have symmetry %s\n", symmetry_name(sym));
 			return 1;
 		}
+
+		as = asymmetric_indices(full, sym);
+		reflist_free(full);
+		full = as;
 
 	} else {
 		random_intensities = 1;
