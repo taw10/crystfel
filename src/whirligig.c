@@ -38,20 +38,57 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <assert.h>
-#include <pthread.h>
-#include <gsl/gsl_errno.h>
 
 #include <image.h>
 #include <utils.h>
-#include <symmetry.h>
 #include <stream.h>
-#include <geometry.h>
-#include <peaks.h>
-#include <thread-pool.h>
-#include <reflist.h>
-#include <reflist-utils.h>
 
 #include "version.h"
+
+
+static void process_series(struct image *images, signed int *ser, int len)
+{
+	STATUS("Found a rotation series of %i views\n", len);
+}
+
+
+static int gatinator(UnitCell *a, UnitCell *b)
+{
+	return 0;
+}
+
+
+static int try_all(struct image *a, struct image *b, int *c1, int *c2)
+{
+	int i, j;
+
+	for ( i=0; i<a->n_crystals; i++ ) {
+		for ( j=0; j<b->n_crystals; j++ ) {
+			if ( gatinator(crystal_get_cell(a->crystals[i]),
+			               crystal_get_cell(b->crystals[j])) )
+			{
+				*c1 = i;
+				*c2 = j;
+				return 1;
+			}
+		}
+	}
+
+	return 0;
+}
+
+
+static void dump(struct image *win, signed int *series, int window_len, int pos)
+{
+	int i;
+
+	for ( i=0; i<pos; i++ ) {
+		free_all_crystals(&win[i]);
+	}
+
+	memmove(win, &win[pos], (window_len-pos)*sizeof(struct image *));
+	memmove(series, &series[pos], (window_len-pos)*sizeof(signed int));
+}
 
 
 static void show_help(const char *s)
@@ -70,9 +107,11 @@ int main(int argc, char *argv[])
 {
 	int c;
 	Stream *st;
-	int n_images = 0;
-	int n_crystals = 0;
 	int polarisation = 1;
+	int pos = 0;
+	struct image *win;
+	signed int *series;
+	int window_len = 64;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -124,49 +163,81 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	win = calloc(window_len, sizeof(struct image));
+	series = calloc(window_len, sizeof(int));
+	if ( (win == NULL) || (series == NULL) ) {
+		ERROR("Failed to allocate series buffers\n");
+		return 1;
+	}
+
+	pos = 0;
 	do {
 
-		int i;
-		struct image cur;
+		struct image *cur;
+		int c1, c2;
 
-		cur.div = NAN;
-		cur.bw = NAN;
-		cur.det = NULL;
-		if ( read_chunk_2(st, &cur, STREAM_READ_REFLECTIONS
+		cur = &win[pos];
+
+		cur->div = NAN;
+		cur->bw = NAN;
+		cur->det = NULL;
+		if ( read_chunk_2(st, cur, STREAM_READ_REFLECTIONS
 		                            | STREAM_READ_UNITCELL) != 0 ) {
 			break;
 		}
 
-		if ( isnan(cur.div) || isnan(cur.bw) ) {
+		if ( isnan(cur->div) || isnan(cur->bw) ) {
 			ERROR("Chunk doesn't contain beam parameters.\n");
 			return 1;
 		}
 
-		n_images++;
+		/* Need at least two images to compare */
+		if ( pos == 0 ) {
+			series[0] = -1;
+			pos++;
+			continue;
+		}
 
-		for ( i=0; i<cur.n_crystals; i++ ) {
+		if ( try_all(&win[pos-1], cur, &c1, &c2) ) {
+			series[pos-1] = c1;
+			series[pos] = c2;
+			printf("-");
+		} else {
+			series[pos] = -1;
+			printf(".");
+		}
+		fflush(stdout);
 
-			Crystal *cr;
-			RefList *cr_refl;
+		if ( series[0] == -1 ) {
+			dump(win, series, window_len, 1);
+			pos--;
+		}
 
-			cr = cur.crystals[i];
+		if ( (series[pos] == -1) && (series[pos-1] == -1) ) {
+			/* Series ready to process */
+			process_series(win, series, pos-2);
+			dump(win, series, window_len, pos);
+			pos = 0;
+		}
 
-			/* This is the raw list of reflections */
-			cr_refl = crystal_get_reflections(cr);
-
-			if ( polarisation ) {
-				polarisation_correction(cr_refl,
-						        crystal_get_cell(cr),
-						        &cur);
+		pos++;
+		if ( pos == window_len ) {
+			window_len *= 2;
+			win = realloc(win, window_len*sizeof(struct image));
+			series = realloc(series, window_len*sizeof(signed int));
+			if ( (win == NULL) || (series == NULL) ) {
+				ERROR("Failed to expand series buffers\n");
+				return 1;
 			}
-
-			n_crystals++;
-
 		}
 
 	} while ( 1 );
+	printf("\n");
 
 	close_stream(st);
+
+	free(win);
+	free(series);
 
 	return 0;
 }
