@@ -311,7 +311,7 @@ int main(int argc, char *argv[])
 			pos--;
 		}
 
-		if ( (ser[pos] == -1) && (ser[pos-1] == -1) ) {
+		if ( (pos > 0) && (ser[pos] == -1) && (ser[pos-1] == -1) ) {
 			/* Series ready to process */
 			process_series(win, ser, mat, pos-2);
 			dump(win, ser, mat, window_len, pos);
