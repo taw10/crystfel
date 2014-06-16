@@ -59,13 +59,12 @@ static int cells_are_similar(UnitCell *cell1, UnitCell *cell2)
 {
 	double asx1, asy1, asz1, bsx1, bsy1, bsz1, csx1, csy1, csz1;
 	double asx2, asy2, asz2, bsx2, bsy2, bsz2, csx2, csy2, csz2;
-	UnitCellTransformation *tfn1, *tfn2;
 	UnitCell *pcell1, *pcell2;
 	const double atl = deg2rad(5.0);
 
 	/* Compare primitive cells, not centered */
-	pcell1 = uncenter_cell(cell1, &tfn1);
-	pcell2 = uncenter_cell(cell2, &tfn2);
+	pcell1 = uncenter_cell(cell1, NULL);
+	pcell2 = uncenter_cell(cell2, NULL);
 
 	cell_get_reciprocal(pcell1, &asx1, &asy1, &asz1,
 	                            &bsx1, &bsy1, &bsz1,
@@ -122,6 +121,8 @@ static int gatinator(UnitCell *a, UnitCell *b, IntegerMatrix **pmb)
 
 		if ( cells_are_similar(a, nc) ) {
 			*pmb = m;
+			tfn_free(tfn);
+			cell_free(nc);
 			return 1;
 		}
 
@@ -172,6 +173,7 @@ static void dump(struct image *win, signed int *ser, IntegerMatrix **mat,
 	for ( i=0; i<pos; i++ ) {
 		free_all_crystals(&win[i]);
 		intmat_free(mat[i]);
+		free(win[i].filename);
 	}
 
 	memmove(win, &win[pos], (window_len-pos)*sizeof(struct image *));
@@ -329,6 +331,7 @@ int main(int argc, char *argv[])
 
 	close_stream(st);
 
+	dump(win, ser, mat, window_len, 1);
 	free(win);
 	free(ser);
 	free(mat);
