@@ -172,6 +172,8 @@ static int gatinator(UnitCell *a, UnitCell *b, IntegerMatrix **pmb)
 }
 
 
+/* Try all combinations of crystals from the two patterns, in the hope of
+ * finding the start of a rotation series */
 static int try_all(struct image *a, struct image *b, int *c1, int *c2,
                    IntegerMatrix **m2)
 {
@@ -192,6 +194,25 @@ static int try_all(struct image *a, struct image *b, int *c1, int *c2,
 	return 0;
 }
 
+
+/* Try to continue the rotation series from crystal c1 in image a, using any
+ * crystal from image b */
+static int try_cont(struct image *a, struct image *b, int c1, int *c2,
+                   IntegerMatrix **m2)
+{
+	int j;
+
+	for ( j=0; j<b->n_crystals; j++ ) {
+		if ( gatinator(crystal_get_cell(a->crystals[c1]),
+		               crystal_get_cell(b->crystals[j]), m2) )
+		{
+			*c2 = j;
+			return 1;
+		}
+	}
+
+	return 0;
+}
 
 static void dump(struct image *win, signed int *ser, IntegerMatrix **mat,
                  int window_len, int pos)
@@ -319,12 +340,23 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
-		if ( try_all(&win[pos-1], cur, &c1, &c2, &mat[pos]) ) {
-			ser[pos-1] = c1;
-			ser[pos] = c2;
+		if ( ser[pos-1] == -1 ) {
+			if ( try_all(&win[pos-1], cur, &c1, &c2, &mat[pos]) ) {
+				ser[pos-1] = c1;
+				ser[pos] = c2;
+			} else {
+				ser[pos] = -1;
+				mat[pos] = NULL;
+			}
 		} else {
-			ser[pos] = -1;
-			mat[pos] = NULL;
+			if ( try_cont(&win[pos-1], cur, ser[pos-1], &c2,
+				     &mat[pos]) )
+			{
+				ser[pos] = c2;
+			} else {
+				ser[pos] = -1;
+				mat[pos] = NULL;
+			}
 		}
 
 		if ( ser[pos-1] != -1 ) {
@@ -341,7 +373,7 @@ int main(int argc, char *argv[])
 
 		if ( (pos > 0) && (ser[pos] == -1) && (ser[pos-1] == -1) ) {
 			/* Series ready to process */
-			process_series(win, ser, mat, pos-2);
+			process_series(win, ser, mat, pos-1);
 			dump(win, ser, mat, window_len, pos);
 			pos = 0;
 		}
@@ -363,7 +395,11 @@ int main(int argc, char *argv[])
 
 	close_stream(st);
 
-	dump(win, ser, mat, window_len, 1);
+	/* Final series to process? */
+	if ( pos > 0 ) {
+		process_series(win, ser, mat, pos);
+		dump(win, ser, mat, window_len, 1);
+	}
 	free(win);
 	free(ser);
 	free(mat);
