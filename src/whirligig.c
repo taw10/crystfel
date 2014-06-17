@@ -48,10 +48,35 @@
 #include "integer_matrix.h"
 
 
+static RefList *transform_reflections(RefList *in, IntegerMatrix *m)
+{
+}
+
+
 static void process_series(struct image *images, signed int *ser,
                            IntegerMatrix **mat, int len)
 {
-//	STATUS("Found a rotation series of %i views\n", len);
+	int i;
+	RefList *list;
+
+	printf("\n");
+	STATUS("Found a rotation series of %i views\n", len);
+
+	for ( i=0; i<len; i++ ) {
+		Crystal *cr = images[i].crystals[ser[i]];
+		RefList *p = transform_reflections(crystal_get_reflections(cr),
+		                                   mat[i]);
+		reflist_free(p);
+	}
+}
+
+
+static double moduli_check(double ax, double ay, double az,
+                           double bx, double by, double bz)
+{
+	double ma = modulus(ax, ay, az);
+	double mb = modulus(bx, by, bz);
+	return fabs(ma-mb)/ma;
 }
 
 
@@ -61,6 +86,7 @@ static int cells_are_similar(UnitCell *cell1, UnitCell *cell2)
 	double asx2, asy2, asz2, bsx2, bsy2, bsz2, csx2, csy2, csz2;
 	UnitCell *pcell1, *pcell2;
 	const double atl = deg2rad(5.0);
+	const double ltl = 0.1;
 
 	/* Compare primitive cells, not centered */
 	pcell1 = uncenter_cell(cell1, NULL);
@@ -82,7 +108,9 @@ static int cells_are_similar(UnitCell *cell1, UnitCell *cell2)
 	if ( angle_between(bsx1, bsy1, bsz1, bsx2, bsy2, bsz2) > atl ) return 0;
 	if ( angle_between(csx1, csy1, csz1, csx2, csy2, csz2) > atl ) return 0;
 
-	/* FIXME: Moduli need to be similar as well */
+	if ( moduli_check(asx1, asy1, asz1, asx2, asy2, asz2) > ltl ) return 0;
+	if ( moduli_check(bsx1, bsy1, bsz1, bsx2, bsy2, bsz2) > atl ) return 0;
+	if ( moduli_check(csx1, csy1, csz1, csx2, csy2, csz2) > atl ) return 0;
 
 	return 1;
 }
