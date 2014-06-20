@@ -127,8 +127,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		}
 		if ( !iargs->no_revalidate ) {
 			validate_peaks(&image, iargs->min_snr,
-				       iargs->ir_inn, iargs->ir_mid,
-				       iargs->ir_out, iargs->use_saturated,
+				       iargs->pk_inn, iargs->pk_mid,
+		                       iargs->pk_out, iargs->use_saturated,
 				       iargs->check_hdf5_snr);
 		}
 		break;
@@ -136,7 +136,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		case PEAK_ZAEF:
 		search_peaks(&image, iargs->threshold,
 		             iargs->min_gradient, iargs->min_snr,
-		             iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
+		             iargs->pk_inn, iargs->pk_mid,iargs->pk_out,
 		             iargs->use_saturated);
 		break;
 

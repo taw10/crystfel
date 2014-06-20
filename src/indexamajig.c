@@ -124,6 +124,7 @@ static void show_help(const char *s)
 "    --min-snr=<n>       Minimum signal-to-noise ratio for peaks.\n"
 "                         Default: 5.\n"
 "    --check-hdf5-snr    Check SNR for peaks from --peaks=hdf5.\n"
+"    --peak-radius=<r>   Integration radii for peak search.\n"
 "    --int-radius=<r>    Set the integration radii.  Default: 4,5,7.\n"
 "-e, --image=<element>   Use this image from the HDF5 file.\n"
 "                          Example: /data/data0.\n"
@@ -192,6 +193,7 @@ int main(int argc, char *argv[])
 	int n_proc = 1;
 	struct index_args iargs;
 	char *intrad = NULL;
+	char *pkrad = NULL;
 	char *int_str = NULL;
 	char *tempdir = NULL;
 	char *int_diag = NULL;
@@ -215,6 +217,9 @@ int main(int argc, char *argv[])
 	iargs.element = NULL;
 	iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
 	iargs.copyme = NULL;
+	iargs.pk_inn = -1.0;
+	iargs.pk_mid = -1.0;
+	iargs.pk_out = -1.0;
 	iargs.ir_inn = 4.0;
 	iargs.ir_mid = 5.0;
 	iargs.ir_out = 7.0;
@@ -249,7 +254,7 @@ int main(int argc, char *argv[])
 		{"image",              1, NULL,               'e'},
 
 		/* Long-only options with no arguments */
-		{"version",            0, NULL,                     20},
+		{"version",            0, NULL,                     99},
 		{"filter-noise",       0, &iargs.noisefilter,        1},
 		{"no-check-prefix",    0, &config_checkprefix,       0},
 		{"basename",           0, &config_basename,          1},
@@ -285,6 +290,7 @@ int main(int argc, char *argv[])
 		{"int-diag",           1, NULL,               18},
 		{"push-res",           1, NULL,               19},
 		{"res-push",           1, NULL,               19}, /* compat */
+		{"peak-radius",        1, NULL,               20},
 
 		{0, 0, NULL, 0}
 	};
@@ -299,7 +305,7 @@ int main(int argc, char *argv[])
 			show_help(argv[0]);
 			return 0;
 
-			case 20 :
+			case 99 :
 			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
 			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
@@ -430,6 +436,10 @@ int main(int argc, char *argv[])
 			iargs.push_res *= 1e9;  /* nm^-1 -> m^-1 */
 			break;
 
+			case 20 :
+			pkrad = strdup(optarg);
+			break;
+
 			case 0 :
 			break;
 
@@ -549,6 +559,23 @@ int main(int argc, char *argv[])
 		STATUS("WARNING: You did not specify --int-radius.\n");
 		STATUS("WARNING: I will use the default values, which are"
 		       " probably not appropriate for your patterns.\n");
+	}
+
+	if ( pkrad != NULL ) {
+		int r;
+		r = sscanf(pkrad, "%f,%f,%f",
+		           &iargs.pk_inn, &iargs.pk_mid, &iargs.pk_out);
+		if ( r != 3 ) {
+			ERROR("Invalid parameters for '--peak-radius'\n");
+			return 1;
+		}
+		free(pkrad);
+	}
+
+	if ( iargs.pk_inn < 0.0 ) {
+		iargs.pk_inn = iargs.ir_inn;
+		iargs.pk_mid = iargs.ir_mid;
+		iargs.pk_out = iargs.ir_out;
 	}
 
 	if ( iargs.det == NULL ) {

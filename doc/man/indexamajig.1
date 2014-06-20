@@ -210,6 +210,12 @@ Read the unit cell for comparison from the CRYST1 line of the PDB file called \f
 Get the image data to display from \fIpath\fR inside the HDF5 file.  For example: \fI/data/rawdata\fR.  If this is not specified, the default behaviour is to use the first two-dimensional dataset with both dimensions greater than 64.
 
 .PD 0
+.IP \fB--peak-radius=\fR\fIinner,middle,outer\fR
+.PD
+Set the inner, middle and outer radii for three-ring integration during the peak search.  See the section about \fBPEAK INTEGRATION\fR, above, for details of how to determine
+these.  The default is to use the same values as for \fB--int-radius\fR.
+
+.PD 0
 .IP \fB--int-radius=\fR\fIinner,middle,outer\fR
 .PD
 Set the inner, middle and outer radii for three-ring integration.  See the
