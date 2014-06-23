@@ -46,10 +46,72 @@
 #include "version.h"
 #include "cell-utils.h"
 #include "integer_matrix.h"
+#include "reflist.h"
+#include "reflist-utils.h"
+
+
+static void do_op(const IntegerMatrix *op,
+                  signed int h, signed int k, signed int l,
+                  signed int *he, signed int *ke, signed int *le)
+{
+	signed int v[3];
+	signed int *ans;
+
+	v[0] = h;  v[1] = k;  v[2] = l;
+
+	ans = intmat_intvec_mult(op, v);
+	assert(ans != NULL);
+
+	*he = ans[0];  *ke = ans[1];  *le = ans[2];
+	free(ans);
+}
 
 
 static RefList *transform_reflections(RefList *in, IntegerMatrix *m)
 {
+	Reflection *refl;
+	RefListIterator *iter;
+	RefList *out;
+
+	if ( m == NULL ) return copy_reflist(in);
+
+	out = reflist_new();
+
+	for ( refl = first_refl(in, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l, he, ke, le;
+		Reflection *n;
+		get_indices(refl, &h, &k, &l);
+		do_op(m, h, k, l, &he, &ke, &le);
+		n = add_refl(out, he, ke, le);
+		copy_data(n, refl);
+	}
+
+	return out;
+}
+
+
+static int find_common_reflections(RefList *list1, RefList *list2)
+{
+	Reflection *refl1;
+	RefListIterator *iter;
+	int ncom = 0;
+
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) )
+	{
+		signed int h, k, l;
+		Reflection *refl2;
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;
+		ncom++;
+	}
+
+	return ncom;
 }
 
 
@@ -57,17 +119,29 @@ static void process_series(struct image *images, signed int *ser,
                            IntegerMatrix **mat, int len)
 {
 	int i;
-	RefList *list;
+	RefList **p;
 
 	printf("\n");
 	STATUS("Found a rotation series of %i views\n", len);
 
+	p = calloc(len, sizeof(RefList *));
+	if ( p == NULL ) return;
+
 	for ( i=0; i<len; i++ ) {
 		Crystal *cr = images[i].crystals[ser[i]];
-		RefList *p = transform_reflections(crystal_get_reflections(cr),
-		                                   mat[i]);
-		reflist_free(p);
+		p[i] = transform_reflections(crystal_get_reflections(cr),
+		                             mat[i]);
 	}
+
+	for ( i=1; i<len; i++ ) {
+		STATUS("%i -> %i: %i common reflections\n",
+		       i-1, i, find_common_reflections(p[i-1], p[i]));
+	}
+
+	for ( i=0; i<len; i++ ) {
+		reflist_free(p[i]);
+	}
+	free(p);
 }
 
 
