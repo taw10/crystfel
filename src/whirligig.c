@@ -109,8 +109,8 @@ static int cells_are_similar(UnitCell *cell1, UnitCell *cell2)
 	if ( angle_between(csx1, csy1, csz1, csx2, csy2, csz2) > atl ) return 0;
 
 	if ( moduli_check(asx1, asy1, asz1, asx2, asy2, asz2) > ltl ) return 0;
-	if ( moduli_check(bsx1, bsy1, bsz1, bsx2, bsy2, bsz2) > atl ) return 0;
-	if ( moduli_check(csx1, csy1, csz1, csx2, csy2, csz2) > atl ) return 0;
+	if ( moduli_check(bsx1, bsy1, bsz1, bsx2, bsy2, bsz2) > ltl ) return 0;
+	if ( moduli_check(csx1, csy1, csz1, csx2, csy2, csz2) > ltl ) return 0;
 
 	return 1;
 }
