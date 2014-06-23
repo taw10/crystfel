@@ -198,18 +198,25 @@ static int try_all(struct image *a, struct image *b, int *c1, int *c2,
 /* Try to continue the rotation series from crystal c1 in image a, using any
  * crystal from image b */
 static int try_cont(struct image *a, struct image *b, int c1, int *c2,
-                   IntegerMatrix **m2)
+                    IntegerMatrix *m1, IntegerMatrix **m2)
 {
 	int j;
+	UnitCell *ref;
+	UnitCellTransformation *tfn;
+
+	tfn = tfn_from_intmat(m1);
+	ref = cell_transform(crystal_get_cell(a->crystals[c1]), tfn);
+	tfn_free(tfn);
 
 	for ( j=0; j<b->n_crystals; j++ ) {
-		if ( gatinator(crystal_get_cell(a->crystals[c1]),
-		               crystal_get_cell(b->crystals[j]), m2) )
-		{
+		if ( gatinator(ref, crystal_get_cell(b->crystals[j]), m2) ) {
 			*c2 = j;
+			cell_free(ref);
 			return 1;
 		}
 	}
+
+	cell_free(ref);
 
 	return 0;
 }
@@ -350,7 +357,7 @@ int main(int argc, char *argv[])
 			}
 		} else {
 			if ( try_cont(&win[pos-1], cur, ser[pos-1], &c2,
-				     &mat[pos]) )
+			              mat[pos-1], &mat[pos]) )
 			{
 				ser[pos] = c2;
 			} else {
