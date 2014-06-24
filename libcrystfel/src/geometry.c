@@ -185,7 +185,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	     && (fabs(rlow) > pr)
 	     && (fabs(rhigh) > pr) ) return NULL;
 
-	if ( rlow < rhigh ) {
+	if ( unlikely(rlow < rhigh) ) {
 		ERROR("Reflection with rlow < rhigh!\n");
 		ERROR("%3i %3i %3i  rlow = %e, rhigh = %e\n",
 		      h, k, l, rlow, rhigh);

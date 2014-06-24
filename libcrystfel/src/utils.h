@@ -228,7 +228,6 @@ static inline int within_tolerance(double a, double b, double percent)
 /* Photon energy (eV) to wavelength (m) */
 #define ph_eV_to_lambda(a) ph_en_to_lambda(eV_to_J(a))
 
-#define UNUSED __attribute__((unused))
 
 
 /* ------------------------------ Message macros ---------------------------- */
@@ -260,6 +259,19 @@ extern pthread_mutex_t stderr_lock;
 
 extern char *check_prefix(char *prefix);
 extern char *safe_basename(const char *in);
+
+
+/* ------------------------------ Useful stuff ------------------------------ */
+
+#if __GNUC__ >= 3
+#define UNUSED __attribute__((unused))
+#define likely(x) __builtin_expect (!!(x), 1)
+#define unlikely(x) __builtin_expect (!!(x), 0)
+#else
+#define UNUSED
+#define likely(x) (x)
+#define unlikely(x) (x)
+#endif
 
 #ifdef __cplusplus
 }
