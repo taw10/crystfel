@@ -205,6 +205,56 @@ static void add_symop_v(SymOpList *ops,
 }
 
 
+/**
+ * get_symop:
+ * @ops: A %SymOpList
+ * @m: A %SymOpMask
+ * @idx: Index of the operation to get
+ *
+ * Returns a pointer to an integer matrix specifying a symmetry operation
+ * contained in the symmetry operator list, and identified by the specified
+ * index.
+ **/
+IntegerMatrix* get_symop(const SymOpList *ops, const SymOpMask *m, int idx)
+{
+	const int n = num_ops(ops);
+
+	if ( m != NULL ) {
+
+		int i, c;
+
+		c = 0;
+		for ( i=0; i<n; i++ ) {
+
+			if ( (c == idx) && m->mask[i] ) {
+				return ops->ops[i];
+			}
+
+			if ( m->mask[i] ) {
+				c++;
+			}
+
+		}
+
+		ERROR("Index %i out of range for point group '%s'\n",
+			      idx, symmetry_name(ops));
+
+		return NULL;
+
+	}
+
+	if ( idx >= n ) {
+
+		ERROR("Index %i out of range for point group '%s'\n", idx,
+		      symmetry_name(ops));
+
+		return NULL;
+
+	}
+
+	return ops->ops[idx];
+}
+
 static signed int *v(signed int h, signed int k, signed int i, signed int l)
 {
 	signed int *vec = malloc(3*sizeof(signed int));

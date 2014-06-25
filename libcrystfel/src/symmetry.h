@@ -61,6 +61,7 @@ extern "C" {
 
 extern void free_symoplist(SymOpList *ops);
 extern SymOpList *get_pointgroup(const char *sym);
+extern IntegerMatrix* get_symop(const SymOpList *ops, const SymOpMask *m, int idx);
 
 extern SymOpMask *new_symopmask(const SymOpList *list);
 extern void free_symopmask(SymOpMask *m);
