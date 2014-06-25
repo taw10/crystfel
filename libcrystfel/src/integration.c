@@ -1464,8 +1464,8 @@ static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 }
 
 
-static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
-                             struct image *image, IntDiag int_diag,
+static void integrate_prof2d(IntegrationMethod meth, PartialityModel pmodel,
+                             Crystal *cr, struct image *image, IntDiag int_diag,
                              signed int idh, signed int idk, signed int idl,
                              double ir_inn, double ir_mid, double ir_out)
 {
@@ -1478,7 +1478,7 @@ static void integrate_prof2d(IntegrationMethod meth, Crystal *cr,
 	cell = crystal_get_cell(cr);
 
 	/* Create initial list of reflections with nominal parameters */
-	list = find_intersections(image, cr);
+	list = find_intersections(image, cr, pmodel);
 
 	ic.halfw = ir_out;
 	ic.image = image;
@@ -1719,8 +1719,8 @@ static double estimate_resolution(UnitCell *cell, ImageFeatureList *flist)
 }
 
 
-static void integrate_rings(IntegrationMethod meth, Crystal *cr,
-                            struct image *image, IntDiag int_diag,
+static void integrate_rings(IntegrationMethod meth, PartialityModel pmodel,
+                            Crystal *cr, struct image *image, IntDiag int_diag,
                             signed int idh, signed int idk, signed int idl,
                             double ir_inn, double ir_mid, double ir_out)
 {
@@ -1730,7 +1730,7 @@ static void integrate_rings(IntegrationMethod meth, Crystal *cr,
 	UnitCell *cell;
 	struct intcontext ic;
 
-	list = find_intersections(image, cr);
+	list = find_intersections(image, cr, pmodel);
 	if ( list == NULL ) return;
 
 	if ( num_reflections(list) == 0 ) return;
@@ -1799,8 +1799,8 @@ static void apply_resolution_cutoff(Crystal *cr, double res)
 }
 
 
-void integrate_all_2(struct image *image, IntegrationMethod meth,
-                     double push_res,
+void integrate_all_3(struct image *image, IntegrationMethod meth,
+                     PartialityModel pmodel, double push_res,
                      double ir_inn, double ir_mid, double ir_out,
                      IntDiag int_diag,
                      signed int idh, signed int idk, signed int idl)
@@ -1818,7 +1818,7 @@ void integrate_all_2(struct image *image, IntegrationMethod meth,
 			break;
 
 			case INTEGRATION_RINGS :
-			integrate_rings(meth, cr, image,
+			integrate_rings(meth, pmodel, cr, image,
 			                int_diag, idh, idk, idl,
 			                ir_inn, ir_mid, ir_out);
 			res = estimate_resolution(crystal_get_cell(cr),
@@ -1826,7 +1826,7 @@ void integrate_all_2(struct image *image, IntegrationMethod meth,
 			break;
 
 			case INTEGRATION_PROF2D :
-			integrate_prof2d(meth, cr, image,
+			integrate_prof2d(meth, pmodel, cr, image,
 			                 int_diag, idh, idk, idl,
 			                 ir_inn, ir_mid, ir_out);
 			res = estimate_resolution(crystal_get_cell(cr),
@@ -1845,6 +1845,17 @@ void integrate_all_2(struct image *image, IntegrationMethod meth,
 		}
 
 	}
+}
+
+
+void integrate_all_2(struct image *image, IntegrationMethod meth,
+                     double push_res,
+                     double ir_inn, double ir_mid, double ir_out,
+                     IntDiag int_diag,
+                     signed int idh, signed int idk, signed int idl)
+{
+	integrate_all_3(image, meth, PMODEL_SPHERE, 0.0, ir_inn, ir_mid, ir_out,
+	                int_diag, idh, idk, idl);
 }
 
 

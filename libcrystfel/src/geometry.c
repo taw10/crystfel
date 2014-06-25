@@ -257,7 +257,8 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 }
 
 
-RefList *find_intersections(struct image *image, Crystal *cryst)
+RefList *find_intersections(struct image *image, Crystal *cryst,
+                            PartialityModel pmodel)
 {
 	double ax, ay, az;
 	double bx, by, bz;
@@ -319,7 +320,7 @@ RefList *find_intersections(struct image *image, Crystal *cryst)
 		yl = h*asy + k*bsy + l*csy;
 		zl = h*asz + k*bsz + l*csz;
 
-		refl = check_reflection(image, cryst, PMODEL_SPHERE,
+		refl = check_reflection(image, cryst, pmodel,
 		                        h, k, l, xl, yl, zl);
 
 		if ( refl != NULL ) {
@@ -334,6 +335,7 @@ RefList *find_intersections(struct image *image, Crystal *cryst)
 }
 
 
+/* Deprecated: select reflections using Kirian-style pixel proximity */
 RefList *select_intersections(struct image *image, Crystal *cryst)
 {
 	double ax, ay, az;

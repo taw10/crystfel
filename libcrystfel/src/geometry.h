@@ -62,7 +62,10 @@ typedef enum {
 
 } PartialityModel;
 
-extern RefList *find_intersections(struct image *image, Crystal *cryst);
+extern RefList *find_intersections(struct image *image, Crystal *cryst,
+                                   PartialityModel pmodel);
+
+/* Deprecated: select reflections using Kirian-style pixel proximity */
 extern RefList *select_intersections(struct image *image, Crystal *cryst);
 
 extern void update_partialities(Crystal *cryst, PartialityModel pmodel);
