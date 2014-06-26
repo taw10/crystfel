@@ -174,6 +174,7 @@ static Crystal *new_shifted_crystal(Crystal *cr, int refine, double incr_val)
 	return cr_new;
 }
 
+
 static void calc_either_side(Crystal *cr, double incr_val,
                              int *valid, long double *vals[3], int refine,
                              PartialityModel pmodel)
@@ -223,7 +224,6 @@ static void calc_either_side(Crystal *cr, double incr_val,
 
 	}
 }
-
 
 
 static double test_gradients(Crystal *cr, double incr_val, int refine,
@@ -465,6 +465,7 @@ int main(int argc, char *argv[])
 			pmodel = PMODEL_GAUSSIAN;
 			STATUS("Testing Gaussian model:\n");
 		}
+		/* No point testing TES model */
 
 		orientation = random_quaternion(rng);
 		rot = cell_rotate(cell, orientation);

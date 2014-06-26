@@ -350,6 +350,7 @@ int main(int argc, char *argv[])
 			pmodel = PMODEL_GAUSSIAN;
 			STATUS("Testing Gaussian model:\n");
 		}
+		/* No point testing TES model, because it has no Lorentz factor */
 
 		orientation = random_quaternion(rng);
 		rot = cell_rotate(cell, orientation);

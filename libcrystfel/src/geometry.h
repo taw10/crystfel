@@ -50,6 +50,7 @@ extern "C" {
  *   space.
  * @PMODEL_UNITY : Set all all partialities and Lorentz factors to 1.
  * @PMODEL_GAUSSIAN : Gaussian profiles in 3D
+ * @PMODEL_THIN : Thin Ewald sphere intersecting sphere
  *
  * A %PartialityModel describes a geometrical model which can be used to
  * calculate spot partialities and Lorentz correction factors.
@@ -59,6 +60,7 @@ typedef enum {
 	PMODEL_SPHERE,
 	PMODEL_UNITY,
 	PMODEL_GAUSSIAN,
+	PMODEL_THIN,
 
 } PartialityModel;
 

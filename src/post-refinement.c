@@ -55,29 +55,14 @@
 #define MAX_CYCLES (10)
 
 
-static double dpdq(double r, double profile_radius, PartialityModel pmodel)
+static double dpdq(double r, double profile_radius)
 {
 	double q;
-	double ng = 3.0;
 
 	/* Calculate degree of penetration */
 	q = (r + profile_radius)/(2.0*profile_radius);
 
-	/* dp/dq */
-	switch ( pmodel ) {
-
-		default:
-		case PMODEL_UNITY:
-		return 0.0;
-
-		case PMODEL_SPHERE:
-		return 6.0*(q-pow(q, 2.0));
-
-		case PMODEL_GAUSSIAN:
-		/* The flat sphere model is close enough */
-		return 6.0*(q-pow(q, 2.0));
-
-	}
+	return 6.0*(q-q*q);
 }
 
 
@@ -85,12 +70,27 @@ static double dpdq(double r, double profile_radius, PartialityModel pmodel)
 static double partiality_gradient(double r, double profile_radius,
                                   PartialityModel pmodel)
 {
-	double dqdr;
+	double dqdr;  /* dq/dr */
 
-	/* dq/dr */
-	dqdr = 1.0 / (2.0*profile_radius);
+	switch ( pmodel ) {
 
-	return dpdq(r, profile_radius, pmodel) * dqdr;
+		default:
+		case PMODEL_UNITY:
+		return 0.0;
+
+		case PMODEL_SPHERE:
+		dqdr = 1.0 / (2.0*profile_radius);
+		return dpdq(r, profile_radius) * dqdr;
+
+		case PMODEL_GAUSSIAN:
+		/* FIXME: Get a proper gradient */
+		dqdr = 1.0 / (2.0*profile_radius);
+		return dpdq(r, profile_radius) * dqdr;
+
+		case PMODEL_THIN:
+		return -(2.0*r)/(profile_radius*profile_radius);
+
+	}
 }
 
 
@@ -98,12 +98,27 @@ static double partiality_gradient(double r, double profile_radius,
 static double partiality_rgradient(double r, double profile_radius,
                                    PartialityModel pmodel)
 {
-	double dqdrad;
+	double dqdrad;  /* dq/drad */
 
-	/* dq/drad */
-	dqdrad = -0.5 * r * pow(profile_radius, -2.0);
+	switch ( pmodel ) {
 
-	return dpdq(r, profile_radius, pmodel) * dqdrad;
+		default:
+		case PMODEL_UNITY:
+		return 0.0;
+
+		case PMODEL_SPHERE:
+		dqdrad = -0.5 * r / (profile_radius * profile_radius);
+		return dpdq(r, profile_radius) * dqdrad;
+
+		case PMODEL_GAUSSIAN:
+		/* FIXME: Get a proper gradient */
+		dqdrad = -0.5 * r / (profile_radius * profile_radius);
+		return dpdq(r, profile_radius) * dqdrad;
+
+		case PMODEL_THIN:
+		return 2.0*r*r*pow(profile_radius, -3.0);
+
+	}
 }
 
 
@@ -173,18 +188,47 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 		ghigh = 0.0;
 	}
 
+	if ( k == REF_R ) {
+		switch ( pmodel ) {
+
+			default:
+			case PMODEL_UNITY:
+			return 0.0;
+
+			case PMODEL_GAUSSIAN:
+			gr  = partiality_rgradient(rlow, r, pmodel);
+			gr -= partiality_rgradient(rhigh, r, pmodel);
+			return gr;
+
+			case PMODEL_SPHERE:
+			gr  = partiality_rgradient(rlow, r, pmodel);
+			gr -= partiality_rgradient(rhigh, r, pmodel);
+			return gr;
+
+			case PMODEL_THIN:
+			return 2.0*rlow*rlow/(r*r*r);
+		}
+	}
+
+	if ( k == REF_DIV ) {
+		switch ( pmodel ) {
+
+			default:
+			case PMODEL_UNITY:
+			return 0.0;
+
+			case PMODEL_GAUSSIAN:
+			case PMODEL_SPHERE:
+			return (ds*glow + ds*ghigh) / 2.0;
+
+			case PMODEL_THIN:
+			return 0.0;
+		}
+	}
+
 	/* For many gradients, just multiply the above number by the gradient
 	 * of excitation error wrt whatever. */
 	switch ( k ) {
-
-		case REF_DIV :
-		/* Small angle approximation */
-		return (ds*glow + ds*ghigh) / 2.0;
-
-		case REF_R :
-		gr  = partiality_rgradient(rlow, r, pmodel);
-		gr -= partiality_rgradient(rhigh, r, pmodel);
-		return gr;
 
 		/* Cell parameters and orientation */
 		case REF_ASX :
@@ -227,37 +271,16 @@ double l_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 {
 	double ds;
 	signed int hs, ks, ls;
+	double L;
 
-	switch ( k ) {
-
-		/* Cell parameters do not affect Lorentz factor */
-		case REF_ASX :
-		case REF_BSX :
-		case REF_CSX :
-		case REF_ASY :
-		case REF_BSY :
-		case REF_CSY :
-		case REF_ASZ :
-		case REF_BSZ :
-		case REF_CSZ :
-		return 0.0;
-
-		/* Nor does change of radius */
-		case REF_R :
-		return 0.0;
-
-		default:
-		break;
-
-	}
-
-	assert(k == REF_DIV);
+	if ( k != REF_DIV ) return 0.0;
 
 	get_symmetric_indices(refl, &hs, &ks, &ls);
 
 	ds = 2.0 * resolution(crystal_get_cell(cr), hs, ks, ls);
 
-	return -ds*pow(get_lorentz(refl), 2.0) / LORENTZ_SCALE;
+	L = get_lorentz(refl);
+	return -ds*L*L / LORENTZ_SCALE;
 }
 
 

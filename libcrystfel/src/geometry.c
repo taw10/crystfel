@@ -103,7 +103,8 @@ static signed int locate_peak(double x, double y, double z, double k,
 }
 
 
-static double partiality(PartialityModel pmodel, double rlow, double rhigh,
+static double partiality(PartialityModel pmodel,
+                         double rlow, double rmid, double rhigh,
                          double r)
 {
 	double qlow, qhigh;
@@ -119,23 +120,22 @@ static double partiality(PartialityModel pmodel, double rlow, double rhigh,
 
 		default:
 		case PMODEL_UNITY:
-		plow = 1.0;
-		phigh = 0.0;
-		break;
+		return 1.0;
 
 		case PMODEL_SPHERE:
-		plow  = 3.0*pow(qlow,2.0)  - 2.0*pow(qlow,3.0);
-		phigh = 3.0*pow(qhigh,2.0) - 2.0*pow(qhigh,3.0);
-		break;
+		plow  = 3.0*qlow*qlow  - 2.0*qlow*qlow*qlow;
+		phigh = 3.0*qhigh*qhigh - 2.0*qhigh*qhigh*qhigh;
+		return plow - phigh;
 
 		case PMODEL_GAUSSIAN:
 		plow = 0.5 * gsl_sf_erf(ng * rlow / (sqrt(2.0)*r));
 		phigh = 0.5 * gsl_sf_erf(ng * rhigh / (sqrt(2.0)*r));
-		break;
+		return plow - phigh;
+
+		case PMODEL_THIN:
+		return 1.0 - (rmid*rmid)/(r*r);
 
 	}
-
-	return plow - phigh;
 }
 
 
@@ -146,12 +146,12 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 {
 	const int output = 0;
 	double tl;
-	double rlow, rhigh;     /* "Excitation error" */
+	double rlow, rmid, rhigh;     /* "Excitation error" */
 	double part;            /* Partiality */
 	int clamp_low, clamp_high;
-	double klow, khigh;    /* Wavenumber */
+	double klow, kmid, khigh;    /* Wavenumber */
 	Reflection *refl;
-	double cet, cez;
+	double cet, cez;  /* Centre of Ewald sphere */
 	double pr;
 	double L;
 	double del;
@@ -166,6 +166,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	 * "high" gives the smallest Ewald sphere (wavelength long => k small)
 	 */
 	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
+	kmid = 1.0/image->lambda;
 	khigh = 1.0/(image->lambda + image->lambda*image->bw/2.0);
 
 	/* If the point is looking "backscattery", reject it straight away */
@@ -177,13 +178,13 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	cez = -cos(del/2.0) * khigh;
 	rhigh = khigh - distance(cet, cez, tl, zl);  /* Loss of precision */
 
+	cet = 0.0;
+	cez = -kmid;
+	rmid = kmid - distance(cet, cez, tl, zl);  /* Loss of precision */
+
 	cet =  sin(del/2.0) * klow;
 	cez = -cos(del/2.0) * klow;
 	rlow = klow - distance(cet, cez, tl, zl);  /* Loss of precision */
-
-	if ( (signbit(rlow) == signbit(rhigh))
-	     && (fabs(rlow) > pr)
-	     && (fabs(rhigh) > pr) ) return NULL;
 
 	if ( unlikely(rlow < rhigh) ) {
 		ERROR("Reflection with rlow < rhigh!\n");
@@ -193,10 +194,41 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 		return NULL;
 	}
 
+	/* Conditions for reflection to be excited at all */
+	switch ( pmodel ) {
+
+		default:
+		case PMODEL_UNITY:  /* PMODEL_UNITY shouldn't end up here */
+		case PMODEL_SPHERE:
+		case PMODEL_GAUSSIAN:
+		if ( (signbit(rlow) == signbit(rhigh))
+		     && (fabs(rlow) > pr)
+		     && (fabs(rhigh) > pr) ) return NULL;
+		break;
+
+		case PMODEL_THIN:
+		if ( fabs(rmid) > pr ) return NULL;
+		break;
+
+	}
+
 	/* Lorentz factor is determined direction from the r values, before
 	 * clamping.  The multiplication by 0.01e9 to make the
 	 * correction factor vaguely near 1. */
-	L = LORENTZ_SCALE / (rlow - rhigh);
+	switch ( pmodel ) {
+
+		default:
+		case PMODEL_SPHERE:
+		case PMODEL_GAUSSIAN:
+		L = LORENTZ_SCALE / (rlow - rhigh);
+		break;
+
+		case PMODEL_UNITY:  /* PMODEL_UNITY shouldn't end up here */
+		case PMODEL_THIN:
+		L = 1.0;
+		break;
+
+	}
 
 	/* If the "lower" Ewald sphere is a long way away, use the
 	 * position at which the Ewald sphere would just touch the
@@ -225,7 +257,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	}
 
 	/* Calculate partiality */
-	part = partiality(pmodel, rlow, rhigh, pr);
+	part = partiality(pmodel, rlow, rmid, rhigh, pr);
 
 	/* Add peak to list */
 	refl = reflection_new(h, k, l);
@@ -244,7 +276,18 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 		set_detector_pos(refl, 0.0, xda, yda);
 	}
 
-	set_partial(refl, rlow, rhigh, part, clamp_low, clamp_high);
+	if ( pmodel != PMODEL_THIN ) {
+		set_partial(refl, rlow, rhigh, part, clamp_low, clamp_high);
+	} else {
+		/* If we are using the TES (Thin Ewald Sphere) model, we abuse
+		 * the fields as follows:
+		 *  rlow       = the r value for the middle (only) Ewald sphere
+		 *  rhigh      = 0.0
+		 *  clamp_low  =  0
+		 *  clamp_high = +1
+		 */
+		set_partial(refl, rmid, 0.0, part, 0, +1);
+	}
 	set_lorentz(refl, L);
 	set_symmetric_indices(refl, h, k, l);
 	set_redundancy(refl, 1);

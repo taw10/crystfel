@@ -348,6 +348,8 @@ int main(int argc, char *argv[])
 			pmodel = PMODEL_UNITY;
 		} else if ( strcmp(pmodel_str, "gaussian") == 0 ) {
 			pmodel = PMODEL_GAUSSIAN;
+		} else if ( strcmp(pmodel_str, "thin") == 0 ) {
+			pmodel = PMODEL_THIN;
 		} else {
 			ERROR("Unknown partiality model '%s'.\n", pmodel_str);
 			return 1;

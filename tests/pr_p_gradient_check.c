@@ -174,6 +174,7 @@ static Crystal *new_shifted_crystal(Crystal *cr, int refine, double incr_val)
 	return cr_new;
 }
 
+
 static void calc_either_side(Crystal *cr, double incr_val,
                              int *valid, long double *vals[3], int refine,
                              PartialityModel pmodel)
@@ -223,7 +224,6 @@ static void calc_either_side(Crystal *cr, double incr_val,
 
 	}
 }
-
 
 
 static double test_gradients(Crystal *cr, double incr_val, int refine,
@@ -450,7 +450,7 @@ int main(int argc, char *argv[])
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
-	for ( i=0; i<2; i++ ) {
+	for ( i=0; i<3; i++ ) {
 
 		UnitCell *rot;
 		double val;
@@ -459,9 +459,12 @@ int main(int argc, char *argv[])
 		if ( i == 0 ) {
 			pmodel = PMODEL_SPHERE;
 			STATUS("Testing flat sphere model:\n");
-		} else {
+		} else if ( i == 1 ) {
 			pmodel = PMODEL_GAUSSIAN;
 			STATUS("Testing Gaussian model:\n");
+		} else {
+			pmodel = PMODEL_THIN;
+			STATUS("Testing thin Ewald sphere model:\n");
 		}
 
 		orientation = random_quaternion(rng);
