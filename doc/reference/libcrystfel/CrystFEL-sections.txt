@@ -26,8 +26,6 @@ get_partial
 get_indices
 get_symmetric_indices
 get_intensity
-get_scalable
-get_refinable
 get_redundancy
 get_esd_intensity
 get_phase
@@ -41,8 +39,6 @@ set_partiality
 set_lorentz
 set_partial
 set_intensity
-set_scalable
-set_refinable
 set_redundancy
 set_esd_intensity
 set_phase
@@ -291,6 +287,7 @@ get_pointgroup
 parse_symmetry_operations
 add_symop
 get_equiv
+get_symop
 special_position
 get_asymm
 get_ambiguities
@@ -455,12 +452,14 @@ IntegrationMethod
 IntDiag
 integrate_all
 integrate_all_2
+integrate_all_3
 integration_method
 </SECTION>
 
 <SECTION>
 <FILE>stream</FILE>
 Stream
+StreamReadFlags
 CHUNK_END_MARKER
 CHUNK_START_MARKER
 CRYSTAL_END_MARKER
@@ -472,11 +471,12 @@ REFLECTION_START_MARKER
 open_stream_fd_for_write
 open_stream_for_read
 open_stream_for_write
+get_stream_fd
 close_stream
 read_chunk
+read_chunk_2
 write_chunk
 rewind_stream
 is_stream
 write_command
-write_line
 </SECTION>

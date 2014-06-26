@@ -8,6 +8,7 @@
  *
  * Authors:
  *   2010-2014 Thomas White <taw@physics.org>
+ *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -215,7 +216,7 @@ static void add_symop_v(SymOpList *ops,
  * contained in the symmetry operator list, and identified by the specified
  * index.
  **/
-IntegerMatrix* get_symop(const SymOpList *ops, const SymOpMask *m, int idx)
+IntegerMatrix *get_symop(const SymOpList *ops, const SymOpMask *m, int idx)
 {
 	const int n = num_ops(ops);
 
@@ -254,6 +255,7 @@ IntegerMatrix* get_symop(const SymOpList *ops, const SymOpMask *m, int idx)
 
 	return ops->ops[idx];
 }
+
 
 static signed int *v(signed int h, signed int k, signed int i, signed int l)
 {
@@ -1130,47 +1132,10 @@ void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
                signed int h, signed int k, signed int l,
                signed int *he, signed int *ke, signed int *le)
 {
-	const int n = num_ops(ops);
-
-	if ( m != NULL ) {
-
-		int i, c;
-
-		c = 0;
-		for ( i=0; i<n; i++ ) {
-
-			if ( (c == idx) && m->mask[i] ) {
-				do_op(ops->ops[i], h, k, l, he, ke, le);
-				return;
-			}
-
-			if ( m->mask[i] ) {
-				c++;
-			}
-
-		}
-
-		ERROR("Index %i out of range for point group '%s' with"
-		      " reflection %i %i %i\n",
-		      idx, symmetry_name(ops), h, k, l);
-
-		*he = 0;  *ke = 0;  *le = 0;
-
-		return;
-
-	}
-
-	if ( idx >= n ) {
-
-		ERROR("Index %i out of range for point group '%s'\n", idx,
-		      symmetry_name(ops));
-
-		*he = 0;  *ke = 0;  *le = 0;
-		return;
-
-	}
-
-	do_op(ops->ops[idx], h, k, l, he, ke, le);
+	IntegerMatrix *op;
+	op = get_symop(ops, m, idx);
+	if ( op == NULL ) return;
+	do_op(op, h, k, l, he, ke, le);
 }
 
 

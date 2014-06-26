@@ -8,6 +8,7 @@
  *
  * Authors:
  *   2010-2014 Thomas White <taw@physics.org>
+ *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -61,7 +62,6 @@ extern "C" {
 
 extern void free_symoplist(SymOpList *ops);
 extern SymOpList *get_pointgroup(const char *sym);
-extern IntegerMatrix* get_symop(const SymOpList *ops, const SymOpMask *m, int idx);
 
 extern SymOpMask *new_symopmask(const SymOpList *list);
 extern void free_symopmask(SymOpMask *m);
@@ -75,6 +75,8 @@ extern int num_equivs(const SymOpList *ops, const SymOpMask *m);
 extern void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
                       signed int h, signed int k, signed int l,
                       signed int *he, signed int *ke, signed int *le);
+extern IntegerMatrix *get_symop(const SymOpList *ops, const SymOpMask *m,
+                                int idx);
 
 extern SymOpList *get_ambiguities(const SymOpList *source,
                                   const SymOpList *target);

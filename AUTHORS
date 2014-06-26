@@ -3,6 +3,7 @@
 
 * Kenneth Beyerlein <kenneth.beyerlein@desy.de>
   Peak integration improvements
+  General bug finding and fixing
 
 * Richard Kirian <rkirian@asu.edu>
   MOSFLM auto-indexing, bug fixing.
@@ -21,9 +22,7 @@
 * Chun Hong Yoon <chun.hong.yoon@desy.de>
   Speed improvements to indexamajig
   pattern_sim overhaul and SASE spectrum simulation
-
-* Kenneth Beyerlein <kenneth.beyerlein@desy.de>
-  General bug finding and fixing
+  C++ compatibility
 
 * Nadia Zatsepin <nadia.zatsepin@asu.edu>
   General bug finding and fixing
@@ -48,3 +47,8 @@
 
 * Valerio Mariani <<alerio.mariani@desy.de>
   Packaging and general bug fixing
+  hdfsee calibration mode
+  --version options
+
+* Parker de Waal <Parker.deWaal@vai.org>
+  A small (but important) bug fix
