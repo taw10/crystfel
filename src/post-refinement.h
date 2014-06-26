@@ -63,6 +63,7 @@ enum {
 
 struct prdata
 {
+	int refined;
 	int n_filtered;
 };
 

@@ -469,7 +469,7 @@ static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt,
 
 /* Perform one cycle of post refinement on 'image' against 'full' */
 static double pr_iterate(Crystal *cr, const RefList *full,
-                         PartialityModel pmodel, struct prdata *prdata)
+                         PartialityModel pmodel, int *n_filtered)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
@@ -481,6 +481,8 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	double max_shift;
 	int nref = 0;
 	const int verbose = 0;
+
+	*n_filtered = 0;
 
 	reflections = crystal_get_reflections(cr);
 
@@ -574,7 +576,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	}
 
 	max_shift = 0.0;
-	shifts = solve_svd(v, M, &prdata->n_filtered, verbose);
+	shifts = solve_svd(v, M, n_filtered, verbose);
 	if ( shifts != NULL ) {
 
 		for ( param=0; param<NUM_PARAMS; param++ ) {
@@ -698,6 +700,7 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 	struct prdata prdata;
 	double mean_p_change = 0.0;
 
+	prdata.refined = 0;
 	prdata.n_filtered = 0;
 
 	/* Don't refine crystal if scaling was bad */
@@ -727,8 +730,7 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 		cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
-		prdata.n_filtered = 0;
-		pr_iterate(cr, full, pmodel, &prdata);
+		pr_iterate(cr, full, pmodel, &prdata.n_filtered);
 
 		update_partialities_2(cr, pmodel, &n_gained, &n_lost,
 		                      &mean_p_change);
@@ -754,6 +756,10 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 	} while ( (mean_p_change > 0.01) && (i < MAX_CYCLES) );
 
 	free_backup_crystal(backup);
+
+	if ( crystal_get_user_flag(cr) == 0 ) {
+		prdata.refined = 1;
+	}
 
 	return prdata;
 }

@@ -3,11 +3,11 @@
  *
  * Write a nice PDF of scaling parameters
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2012 Thomas White <taw@physics.org>
+ *   2011-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -46,6 +46,7 @@ struct srdata
 	RefList *full;
 
 	int n_filtered;
+	int n_refined;
 };
 
 #if defined(HAVE_CAIRO) && defined(HAVE_PANGO) && defined(HAVE_PANGOCAIRO)

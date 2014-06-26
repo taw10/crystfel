@@ -129,7 +129,10 @@ static void done_image(void *vqargs, void *task)
 	struct refine_args *pargs = task;
 
 	qargs->n_done++;
-	qargs->srdata->n_filtered += pargs->prdata.n_filtered;
+	if ( pargs->prdata.refined ) {
+		qargs->srdata->n_refined += pargs->prdata.refined;
+		qargs->srdata->n_filtered += pargs->prdata.n_filtered;
+	}
 
 	progress_bar(qargs->n_done, qargs->n_crystals, "Refining");
 	free(task);
@@ -150,6 +153,7 @@ static void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.full = full;
 	task_defaults.crystal = NULL;
 	task_defaults.pmodel = pmodel;
+	task_defaults.prdata.refined = 0;
 	task_defaults.prdata.n_filtered = 0;
 
 	qargs.task_defaults = task_defaults;
@@ -164,6 +168,10 @@ static void refine_all(Crystal **crystals, int n_crystals,
 
 	run_threads(nthreads, refine_image, get_image, done_image,
 	            &qargs, n_crystals, 0, 0, 0);
+
+	STATUS("%5.2f eigenvalues filtered on final iteration per successfully "
+	       "refined crystal\n",
+	       (double)srdata->n_filtered/srdata->n_refined);
 }
 
 
@@ -462,6 +470,7 @@ int main(int argc, char *argv[])
 	srdata.n = n_crystals;
 	srdata.full = full;
 	srdata.n_filtered = 0;
+	srdata.n_refined = 0;
 
 	sr = sr_titlepage(crystals, n_crystals, "scaling-report.pdf",
 	                  infile, cmdline);
