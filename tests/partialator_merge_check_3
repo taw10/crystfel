@@ -41,8 +41,8 @@ cat > partialator_merge_check_3_ans.hkl << EOF
 CrystFEL reflection list version 2.0
 Symmetry: unknown
    h    k    l          I    phase   sigma(I)   nmeas
-   1    0    0      78.40        -       3.15       2
-   2    0    0     145.51        -       1.70       2
+   1    0    0      78.55        -       3.15       2
+   2    0    0     145.78        -       1.70       2
 End of reflections
 EOF
 
