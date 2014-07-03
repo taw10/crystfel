@@ -11,6 +11,7 @@
  *   2009-2012 Thomas White <taw@physics.org>
  *   2012      Richard Kirian
  *   2014      Valerio Mariani
+ *   2014      Takanori Nakane <nakane.t@gmail.com>
  *
  * This file is part of CrystFEL.
  *
@@ -79,6 +80,7 @@ typedef struct {
 
 	GtkWidget	*window;
 	GtkWidget	*drawingarea;
+	GtkWidget	*scrollarea;
 	GtkUIManager	*ui;
 	GtkActionGroup	*action_group;
 	int             n_pixbufs;
