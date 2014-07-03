@@ -11,6 +11,7 @@
  *   2009-2013 Thomas White <taw@physics.org>
  *   2012      Richard Kirian
  *   2014      Valerio Mariani
+ *   2014      Takanori Nakane
  *
  * This file is part of CrystFEL.
  *
@@ -138,6 +139,78 @@ static void draw_panel_rectangle(cairo_t *cr, cairo_matrix_t *basic_m,
 	gdk_cairo_set_source_pixbuf(cr, dw->pixbufs[i],
 	                            0.0, 0.0);
 	cairo_rectangle(cr, 0.0, 0.0, w, h);
+}
+
+
+int render_adsc_uint16(DisplayWindow *dw, const char *filename)
+{
+	int x, y, fs, ss;
+	double dfs, dss;
+	int min_x = (int)dw->min_x;
+	int max_x = (int)dw->max_x;
+	int min_y = (int)dw->min_y;
+	int max_y = (int)dw->max_y;
+	int width = max_x - min_x;
+	int height = max_y - min_y;
+	struct image *image = dw->image;
+	if (image == NULL) return 1;
+	if (image->det == NULL) return 1;
+	if (image->det->n_panels == 0) return 1;
+
+	unsigned short *buf = malloc(sizeof(unsigned short) * width * height);
+	memset(buf, 0, sizeof(unsigned short) * width * height);
+	if (buf == NULL) return 1;
+  
+	FILE *fh = fopen(filename, "wb");
+	if (fh == NULL ) {
+		free(buf);
+		return 1;
+	}
+	fprintf(fh, "{\n"
+		"HEADER_BYTES=512;\n"
+		"DIM=2;\n"
+		"BYTE_ORDER=little_endian;\n"
+		"TYPE=unsigned_short;\n"
+		"SIZE1=%d;\n"
+		"SIZE2=%d;\n"
+		"PIXEL_SIZE=%f;\n"
+		"WAVELENGTH=%f;\n"
+		"DISTANCE=%f;\n"
+		"PHI=0.0;\n"
+		"OSC_START=0.00;\n"
+		"OSC_END=0.00;\n"
+		"OSC_RANGE=0.00;\n" // or should we fake 0.1 deg oscillation?
+		"AXIS=phi;\n"
+		"BEAM_CENTER_X=%f;\n"
+		"BEAM_CENTER_Y=%f;\n"
+		"}\n",
+		width, height, 1 / image->det->panels[0].res * 10E2,
+		image->lambda * 10E9, image->det->panels[0].clen * 10E2,
+		-min_x / image->det->panels[0].res * 10E2,
+		-min_y / image->det->panels[0].res * 10E2);
+ 
+	fseek(fh, 512, SEEK_SET);
+
+	for (y = min_y; y < max_y; y++ ) {
+		for (x = min_x; x < max_x; x++ ) {
+			int invalid = reverse_2d_mapping(x, y, &dfs, &dss, image->det);
+			if (invalid) continue;
+
+			fs = dfs; ss = dss;    
+			int val = image->data[fs + image->width * ss];
+			unsigned short out;
+			if (val < 0) out = 0;
+			else if (val > 65535) out = 65535;
+			else out = val;
+			buf[(x - min_x) + (y - min_y) * width] = out;
+		}
+	}
+
+	fwrite(buf, sizeof(unsigned short), width * height, fh);
+	free(buf);
+	fclose(fh);
+
+	return 0;
 }
 
 
@@ -1266,6 +1339,8 @@ static gint displaywindow_save_response(GtkWidget *d, gint response,
 			r = render_tiff_fp(dw->image, file);
 		} else if ( type == 2 ) {
 			r = render_tiff_int16(dw->image, file, dw->boostint);
+		} else if (type == 3) {
+		  r = render_adsc_uint16(dw, file);
 		} else {
 			r = -1;
 		}
@@ -1328,6 +1403,9 @@ static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
 	gtk_combo_box_append_text(GTK_COMBO_BOX(cb),
 	       "TIFF - 16 bit signed integer "
 	       "(mono, unbinned, filtered, boosted)");
+	gtk_combo_box_append_text(GTK_COMBO_BOX(cb),
+	       "ADSC - 16 bit unsigned integer "
+	       "(unbinned, filtered, not boosted)");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(cb), 0);
 
 	cd = malloc(sizeof(*cd));
