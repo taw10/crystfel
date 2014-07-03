@@ -11,6 +11,7 @@
  *   2010-2014 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2011      Andrew Aquila
+ *   2014      Takanori Nakane <nakane.t@gmail.com>
  *
  * This file is part of CrystFEL.
  *
@@ -699,7 +700,7 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 	}
 
 	do {
-
+		long long num_peaks;
 		float div, bw;
 
 		rval = fgets(line, 1023, st->fh);
@@ -733,6 +734,10 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 
 		if ( sscanf(line, "beam_bandwidth = %f %%", &bw) == 1 ) {
 			image->bw = bw/100.0;
+		}
+
+		if ( sscanf(line, "num_peaks = %lld %%", &num_peaks) == 1 ) {
+			image->num_peaks = num_peaks;
 		}
 
 		if ( strncmp(line, "camera_length_", 14) == 0 ) {
