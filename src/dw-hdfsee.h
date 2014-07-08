@@ -67,6 +67,14 @@ struct numberswindow {
 };
 
 
+typedef enum {
+	CALIBMODE_NONE,
+	CALIBMODE_PANELS,
+	CALIBMODE_GROUPS,
+	CALIBMODE_ALL
+} CalibMode;
+
+
 typedef struct {
 
 	GtkWidget	*window;
@@ -87,8 +95,8 @@ typedef struct {
 	struct image	*image;
 
 	/* Dialog boxes */
-	BinningDialog	*binning_dialog;
-	BoostIntDialog	*boostint_dialog;
+	BinningDialog  *binning_dialog;
+	BoostIntDialog *boostint_dialog;
 	RingRadiusDialog *ringradius_dialog;
 	struct numberswindow *numbers_window;
 
@@ -109,13 +117,12 @@ typedef struct {
 	double          ring_radius;
 	double          *ring_radii;
 	int             n_rings;
-	int             calib_mode;
-	struct rigid_group  *calib_mode_curr_rg;
-	struct panel	*calib_mode_curr_p;
-	int             calib_mode_show_focus;
-	int		calib_mode_groups;
 
-	GtkWidget       *calibmode_statusbar;
+	CalibMode       calib_mode;
+	struct rigid_group *calib_mode_curr_rg;
+	struct panel    *calib_mode_curr_p;
+	int             calib_mode_show_focus;
+	GtkWidget       *statusbar;
 
 	int		show_col_scale;
 	int		scale;
