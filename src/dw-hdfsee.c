@@ -1997,12 +1997,12 @@ static int curr_rg_pointer_index(DisplayWindow *dw)
 }
 
 
-static int curr_p_pointer_index_in_rg(DisplayWindow *dw)
+static int curr_p_pointer_index(DisplayWindow *dw)
 {
 	int p;
 
-	for ( p=0; p<dw->calib_mode_curr_rg->n_panels; ++p) {
-		if ( dw->calib_mode_curr_rg->panels[p] == dw->calib_mode_curr_p ) {
+	for ( p=0; p<dw->image->det->n_panels; ++p) {
+		if ( &dw->image->det->panels[p] == dw->calib_mode_curr_p ) {
 			return p;
 		}
 	}
@@ -2036,22 +2036,22 @@ static void select_prev_group(DisplayWindow *dw, int num_rg)
 
 static void select_next_panel(DisplayWindow *dw, int num_p)
 {
-	if ( dw->calib_mode_curr_p == dw->calib_mode_curr_rg->panels[num_p-1] ) {
-		dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[0];
+	if ( dw->calib_mode_curr_p == &dw->image->det->panels[num_p-1] ) {
+		dw->calib_mode_curr_p = &dw->image->det->panels[0];
 	} else {
 		dw->calib_mode_curr_p =
-		  dw->calib_mode_curr_rg->panels[curr_p_pointer_index_in_rg(dw)+1];
+		  &dw->image->det->panels[curr_p_pointer_index(dw)+1];
 	}
 }
 
 
 static void select_prev_panel(DisplayWindow *dw, int num_p)
 {
-	if ( dw->calib_mode_curr_p == dw->calib_mode_curr_rg->panels[0] ) {
-		dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[num_p-1];
+	if ( dw->calib_mode_curr_p == &dw->image->det->panels[0] ) {
+		dw->calib_mode_curr_p = &dw->image->det->panels[num_p-1];
 	} else {
 		dw->calib_mode_curr_p =
-		  dw->calib_mode_curr_rg->panels[curr_p_pointer_index_in_rg(dw)-1];
+		  &dw->image->det->panels[curr_p_pointer_index(dw)-1];
 	}
 }
 
@@ -2101,7 +2101,7 @@ static void calibmode_next(DisplayWindow *dw)
 		break;
 
 		case CALIBMODE_PANELS:
-		n = dw->calib_mode_curr_rg->n_panels;
+		n = dw->image->det->n_panels;
 		select_next_panel(dw, n);
 		break;
 
@@ -2127,7 +2127,7 @@ static void calibmode_prev(DisplayWindow *dw)
 		break;
 
 		case CALIBMODE_PANELS:
-		n = dw->calib_mode_curr_rg->n_panels;
+		n = dw->image->det->n_panels;
 		select_prev_panel(dw, n);
 		break;
 
