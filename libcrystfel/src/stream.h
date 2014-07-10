@@ -38,6 +38,8 @@
 struct image;
 struct hdfile;
 
+#define GEOM_START_MARKER "----- Begin geometry file -----"
+#define GEOM_END_MARKER "----- End geometry file -----"
 #define CHUNK_START_MARKER "----- Begin chunk -----"
 #define CHUNK_END_MARKER "----- End chunk -----"
 #define PEAK_LIST_START_MARKER "Peaks from peak search"
@@ -79,6 +81,9 @@ extern "C" {
 
 extern Stream *open_stream_for_read(const char *filename);
 extern Stream *open_stream_for_write(const char *filename);
+extern Stream *open_stream_for_write_2(const char *filename,
+                                const char* geom_filename, int argc,
+                                char *argv[]);
 extern Stream *open_stream_fd_for_write(int fd);
 extern int get_stream_fd(Stream *st);
 extern void close_stream(Stream *st);
@@ -89,7 +94,7 @@ extern void write_chunk(Stream *st, struct image *image, struct hdfile *hdfile,
                         int include_peaks, int include_reflections);
 
 extern void write_command(Stream *st, int argc, char *argv[]);
-
+extern void write_geometry_file(Stream *st, const char *geom_filename);
 extern int rewind_stream(Stream *st);
 extern int is_stream(const char *filename);
 

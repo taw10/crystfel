@@ -689,14 +689,12 @@ int main(int argc, char *argv[])
 		ERROR("You must give a filename for the output.\n");
 		return 1;
 	}
-	stream = open_stream_for_write(output_file);
+	stream = open_stream_for_write_2(output_file, geomfile, argc, argv);
 	if ( stream == NULL ) {
 		ERROR("Couldn't open output file '%s'\n", output_file);
 		return 1;
 	}
 	free(output_file);
-
-	write_command(stream, argc, argv);
 
 	image.det = det;
 	image.width = det->max_fs + 1;

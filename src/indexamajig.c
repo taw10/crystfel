@@ -197,6 +197,7 @@ int main(int argc, char *argv[])
 	char *int_str = NULL;
 	char *tempdir = NULL;
 	char *int_diag = NULL;
+	char *geom_filename = NULL;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -335,6 +336,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 'g' :
+			geom_filename = optarg;
 			iargs.det = get_detector_geometry(optarg);
 			if ( iargs.det == NULL ) {
 				ERROR("Failed to read detector geometry from "
@@ -654,14 +656,12 @@ int main(int argc, char *argv[])
 
 	}
 
-	st = open_stream_for_write(outfile);
+	st = open_stream_for_write_2(outfile, geom_filename, argc, argv);
 	if ( st == NULL ) {
 		ERROR("Failed to open stream '%s'\n", outfile);
 		return 1;
 	}
 	free(outfile);
-
-	write_command(st, argc, argv);
 
 	/* Prepare the indexer */
 	if ( indm != NULL ) {
