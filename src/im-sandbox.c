@@ -310,12 +310,12 @@ static int read_fpe_data(struct buffer_data *bd)
 			/* Now the block's been parsed, it should be
 			 * forgotten about */
 			memmove(bd->rbuffer,
-					bd->rbuffer + line_end + 2,
-					bd->rbuflen - line_end - 2);
+					bd->rbuffer + line_end + 1,
+					bd->rbuflen - line_end - 1);
 
 			/* Subtract the number of bytes removed */
 			bd->rbufpos = bd->rbufpos - line_end - 1;
-			new_rbuflen = bd->rbuflen - line_end - 2 ;
+			new_rbuflen = bd->rbuflen - line_end - 1 ;
 			if ( new_rbuflen == 0 ) new_rbuflen = 256;
 			bd->rbuffer = realloc(bd->rbuffer, new_rbuflen*sizeof(char));
 			bd->rbuflen = new_rbuflen;

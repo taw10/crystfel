@@ -536,7 +536,7 @@ char *event_path_placeholder_subst(const char * entry,
 	char *full_path;
 	int len_head, len_tail;
 
-	full_path = malloc(strlen(data) + strlen(entry));
+	full_path = malloc((strlen(data) + strlen(entry)+1)*sizeof(char));
 	ph_loc = strstr(data, "%");
 	len_head = ph_loc-data;
 	len_tail = strlen(ph_loc);

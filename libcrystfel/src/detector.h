@@ -43,6 +43,7 @@ struct panel;
 struct badregion;
 struct detector;
 struct hdfile;
+struct event;
 
 #include "hdf5-file.h"
 #include "image.h"

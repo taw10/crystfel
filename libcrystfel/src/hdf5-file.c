@@ -36,6 +36,7 @@
 #include <stdint.h>
 #include <hdf5.h>
 #include <assert.h>
+#include <unistd.h>
 
 #include "events.h"
 #include "image.h"
@@ -104,6 +105,12 @@ struct hdfile *hdfile_open(const char *filename)
 	f = malloc(sizeof(struct hdfile));
 	if ( f == NULL ) return NULL;
 
+	if ( access( filename, R_OK ) == -1 ) {
+		ERROR("File does not exists or it cannot be read: %s\n", filename);
+		free(f);
+		return NULL;
+	}
+
 	f->fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( f->fh < 0 ) {
 		ERROR("Couldn't open file: %s\n", filename);
@@ -119,8 +126,8 @@ struct hdfile *hdfile_open(const char *filename)
 int hdfile_set_image(struct hdfile *f, const char *path,
                      struct panel *p)
 {
-	hsize_t size[2];
-	hsize_t max_size[2];
+	hsize_t *size;
+	hsize_t *max_size;
 	hid_t sh;
 	int sh_dim;
 	int di;
@@ -150,6 +157,9 @@ int hdfile_set_image(struct hdfile *f, const char *path,
 
 	}
 
+	size = malloc(sh_dim*sizeof(hsize_t));
+	max_size = malloc(sh_dim*sizeof(hsize_t));
+
 	H5Sget_simple_extent_dims(sh, size, max_size);
 	H5Sclose(sh);
 
@@ -172,6 +182,9 @@ int hdfile_set_image(struct hdfile *f, const char *path,
 		}
 
 	}
+
+	free(size);
+	free(max_size);
 
 	return 0;
 }
@@ -1020,6 +1033,7 @@ int hdf5_read2(struct hdfile *f, struct image *image,
 			}
 
 			fail = hdfile_set_image(f, panel_full_path, p);
+
 			free(panel_full_path);
 
 		} else {
@@ -2031,7 +2045,7 @@ static herr_t parse_file_event_structure(hid_t loc_id, char *name,
 				                                   truncated_path,
 				                                   H5_INDEX_NAME,
 				                                   H5_ITER_NATIVE, NULL,
-				                                   parse_file_event_structure,
+				                                   (H5L_iterate_t)parse_file_event_structure,
 				                                   (void *) pp, H5P_DEFAULT);
 			}
 		}
