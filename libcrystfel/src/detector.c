@@ -1164,6 +1164,9 @@ struct detector *copy_geom(const struct detector *in)
 	out->bad = malloc(out->n_bad * sizeof(struct badregion));
 	memcpy(out->bad, in->bad, out->n_bad * sizeof(struct badregion));
 
+	out->n_rigid_groups = 0;
+	out->rigid_groups = NULL;
+
 	for ( i=0; i<out->n_panels; i++ ) {
 
 		struct panel *p;
