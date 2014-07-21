@@ -549,8 +549,8 @@ static int unpack_panels(struct image *image, struct detector *det)
 			return 1;
 		}
 
-		for ( fs=0; fs<p->w; fs++ ) {
 		for ( ss=0; ss<p->h; ss++ ) {
+		for ( fs=0; fs<p->w; fs++ ) {
 
 			int idx;
 			int cfs, css;
