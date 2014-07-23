@@ -1529,7 +1529,7 @@ static void numbers_update(DisplayWindow *dw)
 		char text[64];
 
 		f = image_feature_closest(dw->image->features, ffs, fss,
-		                          &dmin, &imin);
+		                          &dmin, &imin, dw->image->det);
 		if ( dmin < dw->ring_radius*dw->binning ) {
 			strncpy(text, f->name, 32);
 		} else {

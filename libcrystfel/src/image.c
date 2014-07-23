@@ -106,15 +106,26 @@ void image_feature_list_free(ImageFeatureList *flist)
 
 struct imagefeature *image_feature_closest(ImageFeatureList *flist,
                                            double fs, double ss,
-                                           double *d, int *idx)
+                                           double *d, int *idx,
+                                           struct detector *det)
 {
 	int i;
 	double dmin = +HUGE_VAL;
 	int closest = 0;
+	struct panel *p1;
+
+	p1 = find_panel(det, fs, ss);
 
 	for ( i=0; i<flist->n_features; i++ ) {
 
 		double ds;
+		struct panel *p2;
+
+		p2 = find_panel(det, flist->features[i].fs, flist->features[i].ss);
+
+		if ( p1 != p2 ) {
+			continue;
+		}
 
 		ds = distance(flist->features[i].fs, flist->features[i].ss,
 		              fs, ss);

@@ -526,7 +526,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		}
 
 		/* Check for a nearby feature */
-		image_feature_closest(image->features, f_fs, f_ss, &d, &idx);
+		image_feature_closest(image->features, f_fs, f_ss, &d, &idx,
+		                      image->det);
 		if ( d < 2.0*ir_inn ) {
 			nrej_pro++;
 			continue;
@@ -727,7 +728,7 @@ void validate_peaks(struct image *image, double min_snr,
 		}
 
 		/* Check for a nearby feature */
-		image_feature_closest(flist, f_fs, f_ss, &d, &idx);
+		image_feature_closest(flist, f_fs, f_ss, &d, &idx, image->det);
 		if ( d < 2.0*ir_inn ) {
 			n_prx++;
 			continue;
