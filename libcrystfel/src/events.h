@@ -70,16 +70,16 @@ struct dim_structure
 };
 
 extern struct event *initialize_event();
-extern int push_path_entry_to_event(struct event *ev, const char * entry);
+extern int push_path_entry_to_event(struct event *ev, const char *entry);
 extern int pop_path_entry_from_event(struct event *ev);
 extern int push_dim_entry_to_event(struct event *ev, int entry);
 extern int pop_dim_entry_from_event(struct event *ev);
-extern struct event* copy_event(struct event *ev);
+extern struct event *copy_event(struct event *ev);
 extern void free_event(struct event *ev);
-extern char *get_event_string(struct event * ev);
-extern struct event* get_event_from_event_string(char* ev_string);
-extern char *event_path_placeholder_subst(const char * ev_name,
-                                          const char * data);
+extern char *get_event_string(struct event *ev);
+extern struct event *get_event_from_event_string(char *ev_string);
+extern char *event_path_placeholder_subst(const char *ev_name,
+                                          const char *data);
 extern char *partial_event_substitution(struct event *ev, const char *data);
 extern char *retrieve_full_path(struct event *ev, const char *data);
 
@@ -103,20 +103,6 @@ extern int set_dim_structure_entry(struct dim_structure *hsd,
                                    const char *string_dim,
                                    const char *val_string);
 extern void free_dim_structure_entry(struct dim_structure *hsd);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #endif	/* EVENTS_H */

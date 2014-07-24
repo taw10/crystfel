@@ -149,7 +149,7 @@ int append_event_to_event_list(struct event_list *ev_list, struct event *ev)
 }
 
 
-struct event* copy_event(struct event *ev)
+struct event *copy_event(struct event *ev)
 {
 
 	struct event *new_ev;
@@ -182,11 +182,11 @@ struct event* copy_event(struct event *ev)
 }
 
 
-extern struct event_list *copy_event_list(struct event_list *el)
+struct event_list *copy_event_list(struct event_list *el)
 {
 	int ei;
 	struct event_list *el_copy;
-	struct event ** events_copy;
+	struct event **events_copy;
 
 	el_copy = malloc(1);
 	if ( el_copy == NULL ) {
@@ -349,9 +349,9 @@ char *get_event_string(struct event *ev)
 }
 
 
-struct event* get_event_from_event_string(char* ev_string)
+struct event *get_event_from_event_string(char *ev_string)
 {
-	struct event* ev;
+	struct event *ev;
 	char *ev_sep;
 	char buf_path[1024];
 	char buf_dim[1024];
@@ -434,7 +434,7 @@ struct event* get_event_from_event_string(char* ev_string)
 }
 
 
-int push_path_entry_to_event(struct event *ev, const char * entry)
+int push_path_entry_to_event(struct event *ev, const char *entry)
 {
 		char **new_path_entries;
 
@@ -528,8 +528,8 @@ int pop_dim_entry_from_event(struct event *ev)
 }
 
 
-char *event_path_placeholder_subst(const char * entry,
-                                   const char * data)
+char *event_path_placeholder_subst(const char *entry,
+                                   const char *data)
 {
 
 	char *ph_loc;
@@ -575,7 +575,7 @@ char *retrieve_full_path(struct event *ev, const char *data)
 }
 
 
-extern char *partial_event_substitution(struct event *ev, const char *data)
+char *partial_event_substitution(struct event *ev, const char *data)
 {
 	int ei ;
 	char *return_value;
@@ -656,7 +656,7 @@ static int parse_dim_structure_val(const char *val)
 
 
 int set_dim_structure_entry(struct dim_structure *hsd, const char *string_dim,
-                      const char *val_string)
+                            const char *val_string)
 {
 	int dim_entry;
 
