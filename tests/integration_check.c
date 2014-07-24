@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 		}
 		setup_ring_masks(&ic, ir_inn, ir_mid, ir_out);
 
-		integrate_rings_once(refl, &image, &ic, cell);
+		integrate_rings_once(refl, &image, &ic, cell, 0);
 
 		cell_free(cell);
 

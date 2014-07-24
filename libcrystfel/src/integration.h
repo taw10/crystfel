@@ -105,6 +105,14 @@ extern void integrate_all_3(struct image *image, IntegrationMethod meth,
                             IntDiag int_diag,
                             signed int idh, signed int idk, signed int idl);
 
+extern void integrate_all_4(struct image *image, IntegrationMethod meth,
+                            PartialityModel pmodel, double push_res,
+                            double ir_inn, double ir_mid, double ir_out,
+                            IntDiag int_diag,
+                            signed int idh, signed int idk, signed int idl,
+                            int results_pipe);
+
+
 #ifdef __cplusplus
 }
 #endif

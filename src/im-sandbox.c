@@ -3,13 +3,13 @@
  *
  * Sandbox for indexing
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -90,6 +90,7 @@ struct sandbox
 	int n_hadcrystals_last_stats;
 	int n_crystals_last_stats;
 	int t_last_stats;
+	int suspend_stats;
 
 	struct index_args *iargs;
 
@@ -218,7 +219,8 @@ static void run_work(const struct index_args *iargs,
 			pargs.filename = line;
 			pargs.n_crystals = 0;
 
-			process_image(iargs, &pargs, st, cookie, tmpdir);
+			process_image(iargs, &pargs, st, cookie, tmpdir,
+			              results_pipe);
 
 			/* Request another image */
 			c = sprintf(buf, "%i\n", pargs.n_crystals);
@@ -650,6 +652,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->n_hadcrystals_last_stats = 0;
 	sb->n_crystals_last_stats = 0;
 	sb->t_last_stats = get_monotonic_seconds();
+	sb->suspend_stats = 0;
 	sb->n_proc = n_proc;
 	sb->iargs = iargs;
 
@@ -824,19 +827,32 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 			chomp(results);
 
-			strtol(results, &eptr, 10);
-			if ( eptr == results ) {
-				if ( strlen(results) > 0 ) {
-					ERROR("Invalid result '%s'\n", results);
+			if ( strcmp(results, "SUSPEND") == 0 ) {
+				sb->suspend_stats++;
+			} else if ( strcmp(results, "RELEASE") == 0 ) {
+				if ( sb->suspend_stats > 0 ) {
+					sb->suspend_stats--;
+				} else {
+					ERROR("RELEASE before SUSPEND.\n");
 				}
 			} else {
 
-				int nc = atoi(results);
-				sb->n_crystals += nc;
-				if ( nc > 0 ) {
-					sb->n_hadcrystals++;
+				strtol(results, &eptr, 10);
+				if ( eptr == results ) {
+					if ( strlen(results) > 0 ) {
+						ERROR("Invalid result '%s'\n",
+						      results);
+					}
+				} else {
+
+					int nc = atoi(results);
+					sb->n_crystals += nc;
+					if ( nc > 0 ) {
+						sb->n_hadcrystals++;
+					}
+					sb->n_processed++;
+
 				}
-				sb->n_processed++;
 
 			}
 
@@ -867,7 +883,9 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		/* Update progress */
 		lock_sandbox(sb);
 		tNow = get_monotonic_seconds();
-		if ( tNow >= sb->t_last_stats+STATS_EVERY_N_SECONDS ) {
+		if ( !sb->suspend_stats
+		    && (tNow >= sb->t_last_stats+STATS_EVERY_N_SECONDS) )
+		{
 
 			STATUS("%4i indexable out of %4i processed (%4.1f%%), "
 			       "%4i crystals so far. "

@@ -33,6 +33,7 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include <unistd.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
@@ -337,12 +338,15 @@ static void show_reference_profile(struct intcontext *ic, int i)
 }
 
 
-static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
+static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
+                          int results_pipe)
 {
 #ifdef HAVE_CURSES_COLOR
 	int q;
 	signed int h, k, l;
 	double fs, ss;
+
+	if ( results_pipe != 0 ) write(results_pipe, "SUSPEND\n", 8);
 
 	initscr();
 	clear();
@@ -402,6 +406,8 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx)
 	refresh();
 	getch();
 	endwin();
+
+	if ( results_pipe != 0 ) write(results_pipe, "RELEASE\n", 8);
 #endif
 }
 
@@ -1345,7 +1351,8 @@ static int get_int_diag(struct intcontext *ic, Reflection *refl)
 
 
 
-static void integrate_prof2d_once(struct intcontext *ic, struct peak_box *bx)
+static void integrate_prof2d_once(struct intcontext *ic, struct peak_box *bx,
+                                  int results_pipe)
 {
 	bx->intensity = fit_intensity(ic, bx);
 	bx->sigma = calc_sigma(ic, bx);
@@ -1375,7 +1382,8 @@ static void integrate_prof2d_once(struct intcontext *ic, struct peak_box *bx)
 			set_redundancy(bx->refl, 0);
 		}
 
-		if ( get_int_diag(ic, bx->refl) ) show_peak_box(ic, bx);
+		if ( get_int_diag(ic, bx->refl) ) show_peak_box(ic, bx,
+		                                                results_pipe);
 
 	} else {
 
@@ -1467,7 +1475,8 @@ static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 static void integrate_prof2d(IntegrationMethod meth, PartialityModel pmodel,
                              Crystal *cr, struct image *image, IntDiag int_diag,
                              signed int idh, signed int idk, signed int idl,
-                             double ir_inn, double ir_mid, double ir_out)
+                             double ir_inn, double ir_mid, double ir_out,
+                             int results_pipe)
 {
 	RefList *list;
 	UnitCell *cell;
@@ -1512,7 +1521,7 @@ static void integrate_prof2d(IntegrationMethod meth, PartialityModel pmodel,
 	for ( i=0; i<ic.n_boxes; i++ ) {
 		struct peak_box *bx;
 		bx = &ic.boxes[i];
-		integrate_prof2d_once(&ic, bx);
+		integrate_prof2d_once(&ic, bx, results_pipe);
 	}
 
 	//refine_rigid_groups(&ic);
@@ -1526,7 +1535,8 @@ static void integrate_prof2d(IntegrationMethod meth, PartialityModel pmodel,
 
 
 static void integrate_rings_once(Reflection *refl, struct image *image,
-                                 struct intcontext *ic, UnitCell *cell)
+                                 struct intcontext *ic, UnitCell *cell,
+                                 int results_pipe)
 {
 	double pfs, pss;
 	struct peak_box *bx;
@@ -1623,7 +1633,7 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	pss += bx->offs_ss;
 	set_detector_pos(refl, 0.0, pfs, pss);
 
-	if ( get_int_diag(ic, refl) ) show_peak_box(ic, bx);
+	if ( get_int_diag(ic, refl) ) show_peak_box(ic, bx, results_pipe);
 
 	if ( intensity < -5.0*sigma ) {
 		ic->n_implausible++;
@@ -1722,7 +1732,8 @@ static double estimate_resolution(UnitCell *cell, ImageFeatureList *flist)
 static void integrate_rings(IntegrationMethod meth, PartialityModel pmodel,
                             Crystal *cr, struct image *image, IntDiag int_diag,
                             signed int idh, signed int idk, signed int idl,
-                            double ir_inn, double ir_mid, double ir_out)
+                            double ir_inn, double ir_mid, double ir_out,
+                            int results_pipe)
 {
 	RefList *list;
 	Reflection *refl;
@@ -1761,7 +1772,7 @@ static void integrate_rings(IntegrationMethod meth, PartialityModel pmodel,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		integrate_rings_once(refl, image, &ic, cell);
+		integrate_rings_once(refl, image, &ic, cell, results_pipe);
 	}
 
 	//refine_rigid_groups(&ic);
@@ -1799,11 +1810,12 @@ static void apply_resolution_cutoff(Crystal *cr, double res)
 }
 
 
-void integrate_all_3(struct image *image, IntegrationMethod meth,
+void integrate_all_4(struct image *image, IntegrationMethod meth,
                      PartialityModel pmodel, double push_res,
                      double ir_inn, double ir_mid, double ir_out,
                      IntDiag int_diag,
-                     signed int idh, signed int idk, signed int idl)
+                     signed int idh, signed int idk, signed int idl,
+                     int results_pipe)
 {
 	int i;
 
@@ -1820,7 +1832,8 @@ void integrate_all_3(struct image *image, IntegrationMethod meth,
 			case INTEGRATION_RINGS :
 			integrate_rings(meth, pmodel, cr, image,
 			                int_diag, idh, idk, idl,
-			                ir_inn, ir_mid, ir_out);
+			                ir_inn, ir_mid, ir_out,
+			                results_pipe);
 			res = estimate_resolution(crystal_get_cell(cr),
 			                          image->features);
 			break;
@@ -1828,7 +1841,8 @@ void integrate_all_3(struct image *image, IntegrationMethod meth,
 			case INTEGRATION_PROF2D :
 			integrate_prof2d(meth, pmodel, cr, image,
 			                 int_diag, idh, idk, idl,
-			                 ir_inn, ir_mid, ir_out);
+			                 ir_inn, ir_mid, ir_out,
+			                 results_pipe);
 			res = estimate_resolution(crystal_get_cell(cr),
 			                          image->features);
 			break;
@@ -1845,6 +1859,17 @@ void integrate_all_3(struct image *image, IntegrationMethod meth,
 		}
 
 	}
+}
+
+
+void integrate_all_3(struct image *image, IntegrationMethod meth,
+                     PartialityModel pmodel, double push_res,
+                     double ir_inn, double ir_mid, double ir_out,
+                     IntDiag int_diag,
+                     signed int idh, signed int idk, signed int idl)
+{
+	integrate_all_4(image, meth, pmodel, 0.0, ir_inn, ir_mid, ir_out,
+	                int_diag, idh, idk, idl, 0);
 }
 
 

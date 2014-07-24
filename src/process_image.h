@@ -3,11 +3,11 @@
  *
  * The processing pipeline for one image
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -97,7 +97,7 @@ struct pattern_args
 
 extern void process_image(const struct index_args *iargs,
                           struct pattern_args *pargs, Stream *st,
-                          int cookie, const char *tmpdir);
+                          int cookie, const char *tmpdir, int results_pipe);
 
 
 #endif	/* PROCESS_IMAGEs_H */
