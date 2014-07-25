@@ -138,15 +138,25 @@ static int read_peaks_2_3(FILE *fh, struct image *image)
 
 		first = 0;
 
-		p = find_panel_by_name(image->det, pn);
-
-		add_x = x-p->orig_min_fs+p->min_fs;
-		add_y = x-p->orig_min_ss+p->min_ss;
-
 		if ( r == 5 ) {
+
+
+			p = find_panel_by_name(image->det, pn);
+			if ( p == NULL ) {
+				ERROR("Panel not found: %s\n");
+				return 1;
+			}
+
+			add_x = x-p->orig_min_fs+p->min_fs;
+			add_y = x-p->orig_min_ss+p->min_ss;
+
 			image_add_feature(image->features, add_x, add_y,
 			                  image, intensity, NULL);
+
+			printf("Here4\n");
+
 		}
+
 
 	} while ( rval != NULL );
 
@@ -250,6 +260,7 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 		}
 
 		first = 0;
+
 		if ( r == 10 ) {
 
 			double ph;
@@ -257,12 +268,14 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 			struct panel *p;
 			float write_fs, write_ss;
 
-			p = find_panel_by_name(det,pn);
 			refl = add_refl(out, h, k, l);
 			set_intensity(refl, intensity);
-			write_ss = ss-p->orig_min_ss+p->min_ss;
-			write_fs = fs-p->orig_min_fs+p->min_fs;
-			set_detector_pos(refl, 0.0, write_fs, write_ss);
+			if ( det != NULL ) {
+				p = find_panel_by_name(det,pn);
+				set_detector_pos(refl, 0.0, write_fs, write_ss);
+				write_ss = ss-p->orig_min_ss+p->min_ss;
+				write_fs = fs-p->orig_min_fs+p->min_fs;
+			}
 			set_esd_intensity(refl, sigma);
 			set_redundancy(refl, cts);
 			ph = strtod(phs, &v);
@@ -972,7 +985,8 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 			}
 		}
 
-		if ( strcmp(line, PEAK_LIST_START_MARKER) == 0 ) {
+		if ( (srf & STREAM_READ_PEAKS)
+		    && strcmp(line, PEAK_LIST_START_MARKER) == 0 ) {
 
 			int fail;
 
@@ -988,8 +1002,7 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 		}
 
 		if ( (srf & STREAM_READ_CRYSTALS)
-		  && (strcmp(line, CRYSTAL_START_MARKER) == 0) )
-		{
+		  && (strcmp(line, CRYSTAL_START_MARKER) == 0) ) {
 			read_crystal(st, image, srf);
 		}
 
@@ -1065,6 +1078,9 @@ Stream *open_stream_for_read(const char *filename)
 	} else if ( strncmp(line, "CrystFEL stream format 2.2", 26) == 0 ) {
 		st->major_version = 2;
 		st->minor_version = 2;
+	} else if ( strncmp(line, "CrystFEL stream format 2.3", 26) == 0 ) {
+		st->major_version = 2;
+		st->minor_version = 3;
 	} else {
 		ERROR("Invalid stream, or stream format is too new.\n");
 		close_stream(st);

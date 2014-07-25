@@ -337,7 +337,8 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 		image.det = NULL;
 
 		/* Get data from next chunk */
-		rval = read_chunk(st, &image);
+		rval = read_chunk_2(st, &image, STREAM_READ_REFLECTIONS |
+		                    STREAM_READ_UNITCELL);
 		if ( rval ) break;
 
 		n_images++;
