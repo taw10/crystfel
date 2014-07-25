@@ -1697,7 +1697,7 @@ static void add_chars(char *t, const char *s, int max_len)
 }
 
 
-static char *get_matrix_name(const IntegerMatrix *m, int row)
+char *get_matrix_name(const IntegerMatrix *m, int row)
 {
 	char *text;
 	const int max_len = 9;

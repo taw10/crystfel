@@ -92,6 +92,7 @@ extern int is_centric(signed int h, signed int k, signed int l,
 
 extern void add_symop(SymOpList *ops, IntegerMatrix *m);
 extern SymOpList *parse_symmetry_operations(const char *s);
+extern char *get_matrix_name(const IntegerMatrix *m, int row);
 
 #ifdef __cplusplus
 }
