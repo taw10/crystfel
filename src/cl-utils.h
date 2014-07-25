@@ -3,11 +3,11 @@
  *
  * OpenCL utility functions
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -38,7 +38,7 @@ extern const char *clError(cl_int err);
 extern cl_device_id get_cl_dev(cl_context ctx, int n);
 extern cl_program load_program(const char *filename, cl_context ctx,
                         cl_device_id dev, cl_int *err,
-                        const char *extra_cflags);
+                        const char *extra_cflags, const char *insert_stuff);
 
 
 #endif	/* CLUTILS_H */

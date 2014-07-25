@@ -3,11 +3,11 @@
  *
  * OpenCL utility functions
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2012 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -215,7 +215,8 @@ static void show_build_log(cl_program prog, cl_device_id dev)
 
 
 cl_program load_program(const char *filename, cl_context ctx,
-                        cl_device_id dev, cl_int *err, const char *extra_cflags)
+                        cl_device_id dev, cl_int *err, const char *extra_cflags,
+                        const char *insert_stuff)
 {
 	FILE *fh;
 	cl_program prog;
@@ -223,6 +224,8 @@ cl_program load_program(const char *filename, cl_context ctx,
 	size_t len;
 	cl_int r;
 	char cflags[1024] = "";
+	char *insert_pos;
+	size_t il;
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
@@ -231,9 +234,30 @@ cl_program load_program(const char *filename, cl_context ctx,
 		return 0;
 	}
 	source = malloc(16384);
+	if ( source == NULL ) return 0;
 	len = fread(source, 1, 16383, fh);
 	fclose(fh);
 	source[len] = '\0';
+
+	if ( insert_stuff != NULL ) {
+		insert_pos = strstr(source, "INSERT_HERE");
+
+		if ( insert_pos != NULL ) {
+
+			char *source2;
+			source2 = malloc(strlen(source)+strlen(insert_stuff)+1);
+			if ( source2 == NULL ) return 0;
+
+			il = insert_pos - source;
+			memcpy(source2, source, il);
+			memcpy(source2+il, insert_stuff, strlen(insert_stuff)+1);
+			memcpy(source2+il+strlen(insert_stuff),
+			       source+il+11, strlen(source+il+11)+1);
+			source = source2;
+			free(source);
+
+		}
+	}
 
 	prog = clCreateProgramWithSource(ctx, 1, (const char **)&source,
 	                                 NULL, err);

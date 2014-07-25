@@ -136,7 +136,6 @@ float molecule_factor(global float *intensities, global float *flags,
 	float hf, kf, lf;
 	int h, k, l;
 	float val = 0.0;
-	signed int i;
 
 	#ifdef FLAT_INTENSITIES
 	return 100.0;
@@ -149,150 +148,9 @@ float molecule_factor(global float *intensities, global float *flags,
 	h = round(hf);
 	k = round(kf);
 	l = round(lf);
-	i = -h-k;
 
-	#ifdef PG1
-	val += lookup_flagged_intensity(intensities, flags, h, k, l);
-	#endif /* PG1 */
-
-	#ifdef PG1BAR
-	val += lookup_flagged_intensity(intensities, flags,  h,  k,  l);
-	val += lookup_flagged_intensity(intensities, flags, -h, -k, -l);
-	#endif /* PG1BAR */
-
-	#ifdef PGMMM
-	val += lookup_flagged_intensity(intensities, flags, h, k, l);
-	val += lookup_flagged_intensity(intensities, flags, -h, -k, l);
-	val += lookup_flagged_intensity(intensities, flags, -h, k, -l);
-	val += lookup_flagged_intensity(intensities, flags, h, -k, -l);
-	val += lookup_flagged_intensity(intensities, flags, h, -k, l);
-	val += lookup_flagged_intensity(intensities, flags, -h, k, l);
-	val += lookup_flagged_intensity(intensities, flags, -h, -k, -l);
-	val += lookup_flagged_intensity(intensities, flags, h, k, -l);
-	#endif /* PGMMM */
-
-	#ifdef PG4
-	val += lookup_flagged_intensity(intensities, flags, -k, h, l);
-	val += lookup_flagged_intensity(intensities, flags, h, k, l);
-	val += lookup_flagged_intensity(intensities, flags, -h, -k, l);
-	val += lookup_flagged_intensity(intensities, flags, k, -h, l);
-	#endif /* PG4 */
-
-	#ifdef PG422
-	val += lookup_flagged_intensity(intensities, flags, -k, h, l);
-	val += lookup_flagged_intensity(intensities, flags, -h, k, l);
-	val += lookup_flagged_intensity(intensities, flags, h, k, l);
-	val += lookup_flagged_intensity(intensities, flags, -h, -k, l);
-	val += lookup_flagged_intensity(intensities, flags, -k, -h, -l);
-	val += lookup_flagged_intensity(intensities, flags, k, h, -l);
-	val += lookup_flagged_intensity(intensities, flags, k, -h, -l);
-	val += lookup_flagged_intensity(intensities, flags, h, -k, -l);
-	#endif /* PG422 */
-
-	#ifdef PG321H
-	val += lookup_flagged_intensity(intensities, flags, h, k, l);
-	val += lookup_flagged_intensity(intensities, flags, i, h, l);
-	val += lookup_flagged_intensity(intensities, flags, k, h, -l);
-	val += lookup_flagged_intensity(intensities, flags, k, i, l);
-	val += lookup_flagged_intensity(intensities, flags, i, k, -l);
-	val += lookup_flagged_intensity(intensities, flags, h, i, -l);
-	#endif /* PG321H */
-
-	#ifdef PG6
-	val += lookup_flagged_intensity(intensities, flags,  h,  k,  l);
-	val += lookup_flagged_intensity(intensities, flags,  i,  h,  l);
-	val += lookup_flagged_intensity(intensities, flags,  k,  i,  l);
-	val += lookup_flagged_intensity(intensities, flags, -h, -k,  l);
-	val += lookup_flagged_intensity(intensities, flags, -i, -h,  l);
-	val += lookup_flagged_intensity(intensities, flags, -k, -i,  l);
-	#endif /* PG6 */
-
-	#ifdef PG6M
-	val += lookup_flagged_intensity(intensities, flags,  h,  k,  l);
-	val += lookup_flagged_intensity(intensities, flags,  i,  h,  l);
-	val += lookup_flagged_intensity(intensities, flags,  k,  i,  l);
-	val += lookup_flagged_intensity(intensities, flags, -h, -k,  l);
-	val += lookup_flagged_intensity(intensities, flags, -i, -h,  l);
-	val += lookup_flagged_intensity(intensities, flags, -k, -i,  l);
-	val += lookup_flagged_intensity(intensities, flags, -h, -k, -l);
-	val += lookup_flagged_intensity(intensities, flags, -i, -h, -l);
-	val += lookup_flagged_intensity(intensities, flags, -k, -i, -l);
-	val += lookup_flagged_intensity(intensities, flags,  h,  k, -l);
-	val += lookup_flagged_intensity(intensities, flags,  i,  h, -l);
-	val += lookup_flagged_intensity(intensities, flags,  k,  i, -l);
-	#endif /* PG6M */
-
-	#ifdef PG6MMM
-	val += lookup_flagged_intensity(intensities, flags,  h,  k,  l);
-	val += lookup_flagged_intensity(intensities, flags,  i,  h,  l);
-	val += lookup_flagged_intensity(intensities, flags,  k,  i,  l);
-	val += lookup_flagged_intensity(intensities, flags, -h, -k,  l);
-	val += lookup_flagged_intensity(intensities, flags, -i, -h,  l);
-	val += lookup_flagged_intensity(intensities, flags, -k, -i,  l);
-	val += lookup_flagged_intensity(intensities, flags,  k,  h, -l);
-	val += lookup_flagged_intensity(intensities, flags,  h,  i, -l);
-	val += lookup_flagged_intensity(intensities, flags,  i,  k, -l);
-	val += lookup_flagged_intensity(intensities, flags, -k, -h, -l);
-	val += lookup_flagged_intensity(intensities, flags, -h, -i, -l);
-	val += lookup_flagged_intensity(intensities, flags, -i, -k, -l);
-	val += lookup_flagged_intensity(intensities, flags, -h, -k, -l);
-	val += lookup_flagged_intensity(intensities, flags, -i, -h, -l);
-	val += lookup_flagged_intensity(intensities, flags, -k,  i, -l);
-	val += lookup_flagged_intensity(intensities, flags,  h,  k, -l);
-	val += lookup_flagged_intensity(intensities, flags,  i,  h, -l);
-	val += lookup_flagged_intensity(intensities, flags,  k,  i, -l);
-	val += lookup_flagged_intensity(intensities, flags, -k, -h,  l);
-	val += lookup_flagged_intensity(intensities, flags, -h, -i,  l);
-	val += lookup_flagged_intensity(intensities, flags, -i, -k,  l);
-	val += lookup_flagged_intensity(intensities, flags,  k,  h,  l);
-	val += lookup_flagged_intensity(intensities, flags,  h,  i,  l);
-	val += lookup_flagged_intensity(intensities, flags,  i,  k,  l);
-	#endif /* PG6MMM */
-
-	#ifdef PG23
-	val += lookup_flagged_intensity(intensities, flags,  h,  k,  l);
-	val += lookup_flagged_intensity(intensities, flags, -h, -k,  l);
-	val += lookup_flagged_intensity(intensities, flags, -h,  k, -l);
-	val += lookup_flagged_intensity(intensities, flags,  h, -k, -l);
-	val += lookup_flagged_intensity(intensities, flags,  k,  l,  h);
-	val += lookup_flagged_intensity(intensities, flags,  l,  h,  k);
-	val += lookup_flagged_intensity(intensities, flags, -k, -l,  h);
-	val += lookup_flagged_intensity(intensities, flags, -l, -h,  k);
-	val += lookup_flagged_intensity(intensities, flags, -k,  l, -h);
-	val += lookup_flagged_intensity(intensities, flags, -l,  h, -k);
-	val += lookup_flagged_intensity(intensities, flags,  k, -l, -h);
-	val += lookup_flagged_intensity(intensities, flags,  l, -h, -k);
-	#endif /* PG23 */
-
-	#ifdef PGM3
-	val += lookup_flagged_intensity(intensities, flags,  h,  k,  l);
-	val += lookup_flagged_intensity(intensities, flags, -h, -k,  l);
-	val += lookup_flagged_intensity(intensities, flags, -h,  k, -l);
-	val += lookup_flagged_intensity(intensities, flags,  h, -k, -l);
-	val += lookup_flagged_intensity(intensities, flags,  k,  l,  h);
-	val += lookup_flagged_intensity(intensities, flags,  l,  h,  k);
-	val += lookup_flagged_intensity(intensities, flags, -k, -l,  h);
-	val += lookup_flagged_intensity(intensities, flags, -l, -h,  k);
-	val += lookup_flagged_intensity(intensities, flags, -k,  l, -h);
-	val += lookup_flagged_intensity(intensities, flags, -l,  h, -k);
-	val += lookup_flagged_intensity(intensities, flags,  k, -l, -h);
-	val += lookup_flagged_intensity(intensities, flags,  l, -h, -k);
-
-	val += lookup_flagged_intensity(intensities, flags, -h, -k, -l);
-	val += lookup_flagged_intensity(intensities, flags,  h,  k, -l);
-	val += lookup_flagged_intensity(intensities, flags,  h, -k,  l);
-	val += lookup_flagged_intensity(intensities, flags, -h,  k,  l);
-	val += lookup_flagged_intensity(intensities, flags, -k, -l, -h);
-	val += lookup_flagged_intensity(intensities, flags, -l, -h, -k);
-	val += lookup_flagged_intensity(intensities, flags,  k,  l, -h);
-	val += lookup_flagged_intensity(intensities, flags,  l,  h, -k);
-	val += lookup_flagged_intensity(intensities, flags,  k, -l,  h);
-	val += lookup_flagged_intensity(intensities, flags,  l, -h,  k);
-	val += lookup_flagged_intensity(intensities, flags, -k,  l,  h);
-	val += lookup_flagged_intensity(intensities, flags, -l,  h,  k);
-	#endif /* PGM3 */
-
-	/* FIXME: Add the remaining point groups */
+	/* Symmetry stuff goes here */
+	INSERT_HERE
 
 	return val;
 	#endif /* FLAT_INTENSITIIES */

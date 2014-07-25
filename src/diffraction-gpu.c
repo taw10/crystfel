@@ -381,6 +381,7 @@ struct gpu_context *setup_gpu(int no_sfac,
 	size_t maxwgsize;
 	int i;
 	char cflags[512] = "";
+	char *insert_stuff = NULL;
 
 	STATUS("Setting up GPU...\n");
 
@@ -440,57 +441,41 @@ struct gpu_context *setup_gpu(int no_sfac,
 
 	if ( sym != NULL ) {
 
-		/* Triclinic */
-		if ( strcmp(sym, "1") == 0 ) {
-			strncat(cflags, "-DPG1 ", 511-strlen(cflags));
-		} else if ( strcmp(sym, "-1") == 0 ) {
-			strncat(cflags, "-DPG1BAR ", 511-strlen(cflags));
+		int i, n;
+		SymOpList *pg;
+		size_t islen = 0;
 
-		/* Monoclinic */
-		/* FIXME: 2, 2/m, (m)*/
+		insert_stuff = malloc(16384);
+		if ( insert_stuff == NULL ) return NULL;
+		insert_stuff[0] = '\0';
 
-		/* Orthorhombic */
-		} else if ( strcmp(sym, "mmm") == 0 ) {
-			strncat(cflags, "-DPGMMM ", 511-strlen(cflags));
-		/* FIXME: 222, mmm, (mm2) */
+		pg = get_pointgroup(sym);
+		n = num_equivs(pg, NULL);
+		for ( i=0; i<n; i++ ) {
 
-		/* Tetragonal */
-		} else if ( strcmp(sym, "4") == 0 ) {
-			strncat(cflags, "-DPG4 ", 511-strlen(cflags));
-		} else if ( strcmp(sym, "422") == 0 ) {
-			strncat(cflags, "-DPG422 ", 511-strlen(cflags));
-		/* FIXME: 4/m, 4/mmm, (-42m, -4m2, -4, 4mm) */
+			IntegerMatrix *op = get_symop(pg, NULL, i);
+			char line[1024];
 
-		/* Trigonal (rhombohedral) */
-		/* FIXME: 3, 32, -3m, (3m) */
+			snprintf(line, 1023,
+			         "val += lookup_flagged_intensity(intensities, "
+			         "flags, %s, %s, %s);\n\t",
+			         get_matrix_name(op, 0),
+				 get_matrix_name(op, 1),
+				 get_matrix_name(op, 2));
 
-		/* Trigonal (hexagonal) */
-		} else if ( strcmp(sym, "321_H") == 0 ) {
-			strncat(cflags, "-DPG321H ", 511-strlen(cflags));
-		/* FIXME: 3, -3, 312, -31m -3m1, (3m1, 31m) */
+			islen += strlen(line);
+			if ( islen > 16383 ) {
+				ERROR("Too many symmetry operators.\n");
+				return NULL;
+			}
+			strcat(insert_stuff, line);
 
-		/* Hexagonal */
-		} else if ( strcmp(sym, "6") == 0 ) {
-			strncat(cflags, "-DPG6 ", 511-strlen(cflags));
-		} else if ( strcmp(sym, "6/m") == 0 ) {
-			strncat(cflags, "-DPG6M ", 511-strlen(cflags));
-		} else if ( strcmp(sym, "6/mmm") == 0 ) {
-			strncat(cflags, "-DPG6MMM ", 511-strlen(cflags));
-		/* FIXME: 622, (-6, -6m2, -62m) */
-
-		/* Cubic */
-		} else if ( strcmp(sym, "23") == 0 ) {
-			strncat(cflags, "-DPG23 ", 511-strlen(cflags));
-		} else if ( strcmp(sym, "m-3") == 0 ) {
-			strncat(cflags, "-DPGM3 ", 511-strlen(cflags));
-		/* FIXME: 432, m-3m, (-43m) */
-
-		} else {
-			ERROR("Sorry!  Point group '%s' is not currently"
-			      " supported on the GPU."
-			      " I'm using '1' instead.\n", sym);
-			strncat(cflags, "-DPG1 ", 511-strlen(cflags));
 		}
+
+		free_symoplist(pg);
+
+		printf("Inserting --->%s<---\n", insert_stuff);
+
 	} else {
 		if ( intensities != NULL ) {
 			ERROR("You gave me an intensities file but no point"
@@ -522,7 +507,7 @@ struct gpu_context *setup_gpu(int no_sfac,
 	free(flags_ptr);
 
 	gctx->prog = load_program(DATADIR"/crystfel/diffraction.cl", gctx->ctx,
-	                          dev, &err, cflags);
+	                          dev, &err, cflags, insert_stuff);
 	if ( err != CL_SUCCESS ) {
 		free(gctx);
 		return NULL;
