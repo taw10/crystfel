@@ -317,6 +317,23 @@ static void write_stream_reflections_2_1(FILE *fh, RefList *list)
 }
 
 
+static int num_integrated_reflections(RefList *list)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	int n = 0;
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		if ( get_redundancy(refl) > 0 ) n++;
+	}
+
+	return n;
+}
+
+
 static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 {
 	UnitCell *cell;
@@ -365,7 +382,7 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 		                1e10 / crystal_get_resolution_limit(cr));
 
 		fprintf(st->fh, "num_reflections = %i\n",
-		                num_reflections(reflist));
+		                num_integrated_reflections(reflist));
 		fprintf(st->fh, "num_saturated_reflections = %lli\n",
 		                crystal_get_num_saturated_reflections(cr));
 
