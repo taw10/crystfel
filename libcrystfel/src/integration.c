@@ -1946,3 +1946,38 @@ IntegrationMethod integration_method(const char *str, int *err)
 	return meth;
 
 }
+
+
+/**
+ * flag_overlaps:
+ * @image: An image structure
+ * @ir_inn: The radius of the peak region to use
+ *
+ * Flags, in the bad pixel mask for @image, every pixel for which more than one
+ * reflection is predicted to have its peak region.
+ *
+ */
+void flag_overlaps(struct image *image, double ir_inn)
+{
+	int i;
+
+	for ( i=0; i<image->det->n_panels; i++ ) {
+
+		int *mask;
+		int fs, ss;
+		struct panel *p = &image->det->panels[i];
+
+		mask = make_BgMask(image, p, ir_inn);
+
+		for ( ss=0; ss<p->h; ss++ ) {
+		for ( fs=0; fs<p->w; fs++ ) {
+			if ( mask[fs+p->w*ss] > 1 ) {
+				image->bad[i][fs+p->w*ss] = 1;
+			}
+		}
+		}
+
+		free(mask);
+
+	}
+}

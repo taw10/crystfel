@@ -191,7 +191,7 @@ static void add_crystal_to_mask(struct image *image, struct panel *p,
 			if ( fs < 0 ) continue;
 			if ( ss < 0 ) continue;
 
-			mask[fs + ss*w] = 1;
+			mask[fs + ss*w]++;
 
 		}
 		}
