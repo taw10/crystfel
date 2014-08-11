@@ -166,20 +166,17 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 	pargs->n_crystals = image.n_crystals;
+	for ( i=0; i<image.n_crystals; i++ ) {
+		crystal_set_image(image.crystals[i], &image);
+	}
 
-	/* Default beam parameters */
+	/* Default parameters */
 	image.div = image.beam->divergence;
 	image.bw = image.beam->bandwidth;
-
-	/* Integrate each crystal's diffraction spots */
 	for ( i=0; i<image.n_crystals; i++ ) {
-
-		/* Set default crystal parameter(s) */
 		crystal_set_profile_radius(image.crystals[i],
 		                           image.beam->profile_radius);
 		crystal_set_mosaicity(image.crystals[i], 0.0);  /* radians */
-		crystal_set_image(image.crystals[i], &image);
-
 	}
 
 	/* Integrate all the crystals at once - need all the crystals so that
