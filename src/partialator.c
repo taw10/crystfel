@@ -350,6 +350,8 @@ int main(int argc, char *argv[])
 			pmodel = PMODEL_GAUSSIAN;
 		} else if ( strcmp(pmodel_str, "thin") == 0 ) {
 			pmodel = PMODEL_THIN;
+		} else if ( strcmp(pmodel_str, "scsphere") == 0 ) {
+			pmodel = PMODEL_SCSPHERE;
 		} else {
 			ERROR("Unknown partiality model '%s'.\n", pmodel_str);
 			return 1;

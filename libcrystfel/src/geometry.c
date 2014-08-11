@@ -105,7 +105,7 @@ static signed int locate_peak(double x, double y, double z, double k,
 
 static double partiality(PartialityModel pmodel,
                          double rlow, double rmid, double rhigh,
-                         double r)
+                         double r, double D)
 {
 	double qlow, qhigh;
 	double plow, phigh;
@@ -135,6 +135,11 @@ static double partiality(PartialityModel pmodel,
 		case PMODEL_THIN:
 		return 1.0 - (rmid*rmid)/(r*r);
 
+		case PMODEL_SCSPHERE:
+		plow  = 3.0*qlow*qlow  - 2.0*qlow*qlow*qlow;
+		phigh = 3.0*qhigh*qhigh - 2.0*qhigh*qhigh*qhigh;
+		return 4.0*(plow-phigh)*r / (3.0*D);
+
 	}
 }
 
@@ -153,7 +158,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	Reflection *refl;
 	double cet, cez;  /* Centre of Ewald sphere */
 	double pr;
-	double L;
+	double L, D;
 	double del;
 
 	/* Don't predict 000 */
@@ -197,10 +202,10 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	/* Conditions for reflection to be excited at all */
 	switch ( pmodel ) {
 
-		default:
 		case PMODEL_UNITY:  /* PMODEL_UNITY shouldn't end up here */
 		case PMODEL_SPHERE:
 		case PMODEL_GAUSSIAN:
+		case PMODEL_SCSPHERE:
 		if ( (signbit(rlow) == signbit(rhigh))
 		     && (fabs(rlow) > pr)
 		     && (fabs(rhigh) > pr) ) return NULL;
@@ -212,19 +217,21 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 
 	}
 
+	D = rlow - rhigh;
+
 	/* Lorentz factor is determined direction from the r values, before
 	 * clamping.  The multiplication by 0.01e9 to make the
 	 * correction factor vaguely near 1. */
 	switch ( pmodel ) {
 
-		default:
 		case PMODEL_SPHERE:
 		case PMODEL_GAUSSIAN:
-		L = LORENTZ_SCALE / (rlow - rhigh);
+		L = LORENTZ_SCALE / D;
 		break;
 
 		case PMODEL_UNITY:  /* PMODEL_UNITY shouldn't end up here */
 		case PMODEL_THIN:
+		case PMODEL_SCSPHERE:
 		L = 1.0;
 		break;
 
@@ -257,7 +264,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	}
 
 	/* Calculate partiality */
-	part = partiality(pmodel, rlow, rmid, rhigh, pr);
+	part = partiality(pmodel, rlow, rmid, rhigh, pr, D);
 
 	/* Add peak to list */
 	refl = reflection_new(h, k, l);
