@@ -152,20 +152,23 @@ int render_adsc_uint16(DisplayWindow *dw, const char *filename)
 	int max_y = (int)dw->max_y;
 	int width = max_x - min_x;
 	int height = max_y - min_y;
+	unsigned short *buf;
 	struct image *image = dw->image;
-	if (image == NULL) return 1;
-	if (image->det == NULL) return 1;
-	if (image->det->n_panels == 0) return 1;
+	FILE *fh;
 
-	unsigned short *buf = malloc(sizeof(unsigned short) * width * height);
-	memset(buf, 0, sizeof(unsigned short) * width * height);
-	if (buf == NULL) return 1;
-  
-	FILE *fh = fopen(filename, "wb");
-	if (fh == NULL ) {
+	if ( image == NULL ) return 1;
+	if ( image->det == NULL ) return 1;
+	if ( image->det->n_panels == 0)  return 1;
+
+	buf = calloc(width * height, sizeof(unsigned short));
+	if ( buf == NULL ) return 1;
+
+	fh = fopen(filename, "wb");
+	if ( fh == NULL ) {
 		free(buf);
 		return 1;
 	}
+
 	fprintf(fh, "{\n"
 		"HEADER_BYTES=512;\n"
 		"DIM=2;\n"
@@ -179,31 +182,41 @@ int render_adsc_uint16(DisplayWindow *dw, const char *filename)
 		"PHI=0.0;\n"
 		"OSC_START=0.00;\n"
 		"OSC_END=0.00;\n"
-		"OSC_RANGE=0.00;\n" // or should we fake 0.1 deg oscillation?
+		"OSC_RANGE=0.00;\n"
 		"AXIS=phi;\n"
 		"BEAM_CENTER_X=%f;\n"
 		"BEAM_CENTER_Y=%f;\n"
 		"}\n",
-		width, height, 1 / image->det->panels[0].res * 10E2,
-		image->lambda * 10E9, image->det->panels[0].clen * 10E2,
-		-min_x / image->det->panels[0].res * 10E2,
-		-min_y / image->det->panels[0].res * 10E2);
- 
+		width, height, 1 / image->det->panels[0].res * 10e2,
+		image->lambda * 10e9, image->det->panels[0].clen * 10e2,
+		-min_x / image->det->panels[0].res * 10e2,
+		-min_y / image->det->panels[0].res * 10e2);
+
 	fseek(fh, 512, SEEK_SET);
 
-	for (y = min_y; y < max_y; y++ ) {
-		for (x = min_x; x < max_x; x++ ) {
-			int invalid = reverse_2d_mapping(x, y, &dfs, &dss, image->det);
-			if (invalid) continue;
+	for ( y=min_y; y<max_y; y++ ) {
+	for ( x=min_x; x<max_x; x++ ) {
 
-			fs = dfs; ss = dss;    
-			int val = image->data[fs + image->width * ss];
-			unsigned short out;
-			if (val < 0) out = 0;
-			else if (val > 65535) out = 65535;
-			else out = val;
-			buf[(x - min_x) + (y - min_y) * width] = out;
+		int val, invalid;
+		unsigned short out;
+
+		invalid = reverse_2d_mapping(x, y, &dfs, &dss, image->det);
+		if ( invalid ) continue;
+
+		fs = dfs;
+		ss = dss;
+		val = image->data[fs + image->width * ss];
+		if ( val < 0 ) {
+			out = 0;
+		} else if ( val > 65535 ) {
+			out = 65535;
+		} else {
+			out = val;
 		}
+
+		buf[(x - min_x) + (y - min_y) * width] = out;
+
+	}
 	}
 
 	fwrite(buf, sizeof(unsigned short), width * height, fh);
