@@ -3,11 +3,11 @@
  *
  * Beam parameters
  *
- * Copyright © 2013-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010,2012-2013 Thomas White <taw@physics.org>
+ *   2010,2012-2014 Thomas White <taw@physics.org>
  *   2012      Chunhong Yoon
  *
  * This file is part of CrystFEL.
@@ -44,6 +44,8 @@ struct beam_params
 	double beam_radius;    /* metres */
 	double photon_energy;  /* eV per photon */
 	char *photon_energy_from; /* HDF5 dataset name */
+	double photon_energy_scale;  /* Scale factor for photon energy, if the
+	                              * energy is to be from the HDF5 file */
 	double bandwidth;      /* FWHM(wavelength) over wavelength.
 	                        *  Note: current simulation code just uses
 	                        *        a rectangular distribution with this as

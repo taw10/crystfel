@@ -200,6 +200,11 @@ The radius of X-ray beam, in metres.
 The photon energy in electron-Volts, or an HDF5 path to a stored wavelength value, also in eV.
 
 .PD 0
+.IP \fBbeam/photon_energy_scale\fR
+.PD
+Scaling factor for the photon energy, used if the photon energy itself is taken from the HDF5 file.  This can be useful to correct old data sets which have systematically wrong energies.
+
+.PD 0
 .IP \fBbeam/bandwidth\fR
 .PD
 Bandwidth: FWHM(wavelength) over wavelength.  Note: current simulation code just uses a rectangular distribution with this as its (full) width.

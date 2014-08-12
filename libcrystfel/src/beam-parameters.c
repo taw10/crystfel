@@ -3,12 +3,12 @@
  *
  * Beam parameters
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010,2012 Thomas White <taw@physics.org>
- *   2012      Chunhong Yoon
+ *   2010,2012,2014 Thomas White <taw@physics.org>
+ *   2012           Chunhong Yoon
  *
  * This file is part of CrystFEL.
  *
@@ -55,6 +55,7 @@ struct beam_params *get_beam_parameters(const char *filename)
 	b->fluence = -1.0;
 	b->beam_radius = -1.0;
 	b->photon_energy = -1.0;
+	b->photon_energy_scale = 1.0;
 	b->bandwidth = -1.0;
 	b->divergence = -1.0;
 	b->profile_radius = -1.0;
@@ -94,6 +95,8 @@ struct beam_params *get_beam_parameters(const char *filename)
 			} else {
 				b->photon_energy = atof(bits[2]);
 			}
+		} else if ( strcmp(bits[0], "beam/photon_energy_scale") == 0 ) {
+			b->photon_energy_scale = atof(bits[2]);
 		} else if ( strcmp(bits[0], "beam/bandwidth") == 0 ) {
 			b->bandwidth = atof(bits[2]);
 		} else if ( strcmp(bits[0], "beam/divergence") == 0 ) {
@@ -161,5 +164,6 @@ void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f)
 {
 	if ( beam->photon_energy_from != NULL ) {
 		beam->photon_energy = get_value(f, beam->photon_energy_from);
+		beam->photon_energy *= beam->photon_energy_scale;
 	}
 }
