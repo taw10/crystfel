@@ -646,7 +646,6 @@ int main(int argc, char *argv[])
 		ERROR("Failed to read geometry from '%s'\n", geomfile);
 		return 1;
 	}
-	free(geomfile);
 
 	if ( sym_str == NULL ) sym_str = strdup("1");
 	sym = get_pointgroup(sym_str);
@@ -845,6 +844,7 @@ int main(int argc, char *argv[])
 	free_symoplist(sym);
 	reflist_free(full);
 	free(save_file);
+	free(geomfile);
 
 	return 0;
 }

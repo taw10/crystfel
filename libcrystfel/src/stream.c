@@ -1043,6 +1043,8 @@ void write_geometry_file(Stream *st, const char *geom_filename) {
 	FILE *geom_fh;
 	char *rval;
 
+	if ( geom_filename == NULL ) return;
+
 	geom_fh = fopen(geom_filename, "r");
 	if ( geom_fh == NULL ) {
 		ERROR("Failed to read detector geometry from "
