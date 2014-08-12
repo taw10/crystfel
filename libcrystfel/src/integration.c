@@ -312,9 +312,9 @@ static void colour_off(enum boxmask_val b)
 #endif
 
 
+#ifdef HAVE_CURSES_COLOR
 static void show_reference_profile(struct intcontext *ic, int i)
 {
-#ifdef HAVE_CURSES_COLOR
 	int q;
 
 	printw("Reference profile number %i (%i contributions):\n", i,
@@ -334,8 +334,8 @@ static void show_reference_profile(struct intcontext *ic, int i)
 
 		printw("\n");
 	}
-#endif
 }
+#endif
 
 
 static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
