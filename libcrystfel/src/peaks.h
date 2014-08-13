@@ -3,11 +3,11 @@
  *
  * Peak search and other image analysis
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -55,12 +55,6 @@ extern int peak_sanity_check(struct image *image, Crystal **crystals,
 extern void validate_peaks(struct image *image, double min_snr,
                            int ir_inn, int ir_mid, int ir_out,
                            int use_saturated, int check_snr);
-
-extern int integrate_peak(struct image *image, int cfs, int css,
-                          double *pfs, double *pss,
-                          double *intensity, double *sigma,
-                          double ir_inn, double ir_mid, double ir_out,
-                          int *bgPkMask, int *saturated);
 
 #ifdef __cplusplus
 }

@@ -69,8 +69,7 @@ static void third_integration_check(struct image *image, int n_trials,
 		}
 
 		r = integrate_peak(image, 64, 64, &fsp, &ssp,
-		                   &intensity, &sigma, 10.0, 15.0, 17.0,
-		                   NULL, NULL);
+		                   &intensity, &sigma, 10.0, 15.0, 17.0, NULL);
 
 		if ( r == 0 ) {
 			mean_intensity += intensity;
@@ -131,8 +130,7 @@ static void fourth_integration_check(struct image *image, int n_trials,
 		}
 
 		r = integrate_peak(image, 64, 64, &fsp, &ssp,
-		                   &intensity, &sigma, 10.0, 15.0, 17.0,
-		                   NULL, NULL);
+		                   &intensity, &sigma, 10.0, 15.0, 17.0, NULL);
 
 		if ( r == 0 ) {
 			mean_intensity += intensity;
@@ -218,7 +216,7 @@ int main(int argc, char *argv[])
 
 	/* First check: no intensity -> no peak, or very low intensity */
 	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma,
-	                   10.0, 15.0, 17.0, NULL, NULL);
+	                   10.0, 15.0, 17.0, NULL);
 	STATUS("  First check: integrate_peak() returned %i", r);
 	if ( r == 0 ) {
 
@@ -244,7 +242,7 @@ int main(int argc, char *argv[])
 	}
 
 	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma,
-	                   10.0, 15.0, 17.0, NULL, NULL);
+	                   10.0, 15.0, 17.0, NULL);
 	if ( r ) {
 		ERROR(" Second check: integrate_peak() returned %i (wrong).\n",
 		      r);
@@ -286,7 +284,7 @@ int main(int argc, char *argv[])
 	}
 
 	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma,
-	                   10.0, 15.0, 17.0, NULL, NULL);
+	                   10.0, 15.0, 17.0, NULL);
 	if ( r ) {
 		ERROR("   Fifth check: integrate_peak() returned %i (wrong).\n",
 		      r);

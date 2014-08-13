@@ -3,12 +3,12 @@
  *
  * Peak search and other image analysis
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *   2012      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *   2011      Andrew Martin <andrew.martin@desy.de>
  *   2011      Richard Kirian
@@ -225,11 +225,11 @@ int *make_BgMask(struct image *image, struct panel *p, double ir_inn)
 
 /* Returns non-zero if peak has been vetoed.
  * i.e. don't use result if return value is not zero. */
-int integrate_peak(struct image *image, int cfs, int css,
-                   double *pfs, double *pss,
-                   double *intensity, double *sigma,
-                   double ir_inn, double ir_mid, double ir_out,
-                   int *bgPkMask, int *saturated)
+static int integrate_peak(struct image *image, int cfs, int css,
+                          double *pfs, double *pss,
+                          double *intensity, double *sigma,
+                          double ir_inn, double ir_mid, double ir_out,
+                          int *saturated)
 {
 	signed int dfs, dss;
 	double lim_sq, out_lim_sq, mid_lim_sq;
@@ -285,10 +285,6 @@ int integrate_peak(struct image *image, int cfs, int css,
 		{
 			return 14;
 		}
-
-		/* Check if there is a peak in the background region */
-		if ( (bgPkMask != NULL)
-		  && bgPkMask[(p_cfs+dfs) + p_w*(p_css+dss)] ) continue;
 
 		idx = dfs+cfs+image->width*(dss+css);
 
@@ -505,7 +501,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		/* Centroid peak and get better coordinates. */
 		r = integrate_peak(image, mask_fs, mask_ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
-		                   ir_inn, ir_mid, ir_out, NULL, &saturated);
+		                   ir_inn, ir_mid, ir_out, &saturated);
 
 		if ( r ) {
 			/* Bad region - don't detect peak */
@@ -701,7 +697,7 @@ void validate_peaks(struct image *image, double min_snr,
 
 		r = integrate_peak(image, f->fs, f->ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
-		                   ir_inn, ir_mid, ir_out, NULL, &saturated);
+		                   ir_inn, ir_mid, ir_out, &saturated);
 		if ( r ) {
 			n_int++;
 			continue;
