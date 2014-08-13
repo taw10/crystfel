@@ -1423,8 +1423,6 @@ void mark_resolution_range_as_bad(struct image *image,
 {
 	int i;
 
-	STATUS("Masking %e to %e\n", min, max);
-
 	for ( i=0; i<image->det->n_panels; i++ ) {
 
 		int fs, ss;
