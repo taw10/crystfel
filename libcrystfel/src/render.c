@@ -3,11 +3,11 @@
  *
  * Render a high dynamic range buffer in some sensible way
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2012,2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -57,8 +57,11 @@ static void render_rgb(double val, double max,
 	r = 0.0;  g = 0.0;  b = 0.0;
 
 	if ( (val < 0.0) ) {
-		s = 0;
-		p = 0;
+		p = fabs(val) / (max/6.0);
+		*rp = 0.0;
+		*gp = 0.5*p;
+		*bp = 0.0;
+		return;
 	}
 	if ( (val > max) ) {
 		s = 6;

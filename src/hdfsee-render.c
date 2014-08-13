@@ -3,11 +3,11 @@
  *
  * Rendering bits for hdfsee
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2012 Thomas White <taw@physics.org>
+ *   2011-2012,2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -253,7 +253,7 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
 		double r, g, b;
 		int val;
 
-		val = y;
+		val = y-(h/6);
 
 		render_scale(val, max, scale, &r, &g, &b);
 
@@ -266,6 +266,13 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
 			data[3*( x+w*(h-1-y) )+2] = 255*b;
 		}
 
+	}
+
+	y = h/6;
+	for ( x=1; x<w; x++ ) {
+		data[3*( x+w*(h-1-y) )+0] = 255;
+		data[3*( x+w*(h-1-y) )+1] = 255;
+		data[3*( x+w*(h-1-y) )+2] = 255;
 	}
 
 	return gdk_pixbuf_new_from_data(data, GDK_COLORSPACE_RGB, FALSE, 8,
