@@ -1405,3 +1405,42 @@ int write_detector_geometry(const char *filename, struct detector *det)
 
 	return 0;
 }
+
+
+/**
+ * mark_resolution_range_as_bad()
+ * @image: An image structure
+ * @min: Minimum value of 1/d to be marked as bad
+ * @max: Maximum value of 1/d to be marked as bad
+ *
+ * Flags, in the bad pixel mask for @image, every pixel whose resolution is
+ * between @min and @max.
+ *
+ */
+
+void mark_resolution_range_as_bad(struct image *image,
+                                  double min, double max)
+{
+	int i;
+
+	STATUS("Masking %e to %e\n", min, max);
+
+	for ( i=0; i<image->det->n_panels; i++ ) {
+
+		int fs, ss;
+		struct panel *p = &image->det->panels[i];
+
+		for ( ss=0; ss<p->h; ss++ ) {
+		for ( fs=0; fs<p->w; fs++ ) {
+			struct rvec q;
+			double r;
+			q = get_q_for_panel(p, fs, ss, NULL, 1.0/image->lambda);
+			r = modulus(q.u, q.v, q.w);
+			if ( (r >= min) && (r <= max) ) {
+				image->bad[i][fs+p->w*ss] = 1;
+			}
+		}
+		}
+
+	}
+}

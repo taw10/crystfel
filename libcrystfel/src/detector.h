@@ -200,6 +200,9 @@ extern struct panel *find_panel_by_name(struct detector *det, const char *name);
 
 extern int write_detector_geometry(const char *filename, struct detector *det);
 
+extern void mark_resolution_range_as_bad(struct image *image,
+                                         double min, double max);
+
 #ifdef __cplusplus
 }
 #endif
