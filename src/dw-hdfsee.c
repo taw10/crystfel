@@ -552,13 +552,8 @@ static void set_window_size(DisplayWindow *dw)
 
 	gtk_widget_set_size_request(GTK_WIDGET(dw->drawingarea), width,
 				    dw->height);
-	geom.min_width = 0;
-	geom.min_height = 0;
-	geom.max_width = dw->width + 10; // allow for scroll bar
-	geom.max_height = dw->height + 30;
-	gtk_window_set_geometry_hints(GTK_WINDOW(dw->window),
-				      GTK_WIDGET(dw->scrollarea), &geom,
-				      GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE);
+
+	gtk_window_resize(GTK_WINDOW(dw->window), width+30, dw->height+30);
 }
 
 
@@ -2537,15 +2532,17 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 
 	dw->drawingarea = gtk_drawing_area_new();
 	dw->scrollarea = gtk_scrolled_window_new(NULL, NULL);
-	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(dw->scrollarea), 
-				       GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(dw->scrollarea), dw->drawingarea);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(dw->scrollarea),
+	                               GTK_POLICY_AUTOMATIC,
+	                               GTK_POLICY_AUTOMATIC);
+	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(dw->scrollarea),
+	                                      dw->drawingarea);
 	gtk_box_pack_start(GTK_BOX(vbox), dw->scrollarea, TRUE, TRUE, 0);
 
 	g_signal_connect(GTK_OBJECT(dw->drawingarea), "expose-event",
 			 G_CALLBACK(displaywindow_expose), dw);
 
-	gtk_window_set_resizable(GTK_WINDOW(dw->window), FALSE);
+	gtk_window_set_resizable(GTK_WINDOW(dw->window), TRUE);
 	gtk_widget_show_all(dw->window);
 
 	w = gtk_ui_manager_get_widget(dw->ui, "/ui/displaywindow/view/usegeom");
@@ -2584,11 +2581,6 @@ DisplayWindow *displaywindow_open(const char *filename, const char *peaks,
 
 	displaywindow_update_menus(dw, element);
 	dw->not_ready_yet = 0;
-
-	// Keep the behaviour similar when loading an image from command line
-	// for compatibility with check_*** scripts
-	gtk_window_resize(GTK_WINDOW(dw->window), dw->width + 10,
-	                  dw->height + 30);
 
 	return dw;
 }
