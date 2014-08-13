@@ -52,3 +52,7 @@
 
 * Parker de Waal <Parker.deWaal@vai.org>
   A small (but important) bug fix
+
+* Takanori Nakane <nakane.t@gmail.com>
+  hdfsee ADSC export and scrollbars
+  Some other bits and pieces

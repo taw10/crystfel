@@ -1,3 +1,23 @@
+Changes in this development version
+-----------------------------------
+
+- hdfsee calibration mode, ADSC export and scrollbars were added.
+- Bad regions can now be specified as fs/ss as well as x/y.
+- "--version" options were added to everything.
+- partial_sim --background was added.
+- partialator --reference was removed.
+- ambigator --corr-matrix was added.
+- indexamajig --peak-radius was added.
+- partialator no longer needs beam/geom files.
+- ambigator now updates the lattice basis vectors as well as the indices.
+- pattern_sim can now simulate all point groups on the GPU.
+- Beam/crystal properties and mean camera length were added to the stream.
+- scripts/gen-sfs-expand was added.
+- libcrystfel was made compatible with C++
+- get_symop() was added.
+- read_chunk_2() was added for faster stream reading.
+
+
 CrystFEL version 0.5.3a, 14th April 2014
 ----------------------------------------
 
