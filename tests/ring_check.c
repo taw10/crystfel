@@ -63,7 +63,7 @@ static void third_integration_check(struct image *image, int n_trials,
 
 		for ( fs=0; fs<image->width; fs++ ) {
 		for ( ss=0; ss<image->height; ss++ ) {
-			image->data[fs+image->width*ss]
+			image->dp[0][fs+image->width*ss]
 			                           = poisson_noise(rng, 1000.0);
 		}
 		}
@@ -122,9 +122,9 @@ static void fourth_integration_check(struct image *image, int n_trials,
 		for ( fs=0; fs<image->width; fs++ ) {
 		for ( ss=0; ss<image->height; ss++ ) {
 			int idx = fs+image->width*ss;
-			image->data[idx] = poisson_noise(rng, 1000.0);
+			image->dp[0][idx] = poisson_noise(rng, 1000.0);
 			if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
-			image->data[idx] += 1000.0;
+			image->dp[0][idx] += 1000.0;
 			pcount++;
 		}
 		}
@@ -171,6 +171,8 @@ int main(int argc, char *argv[])
 	int r, npx;
 	double ex;
 	gsl_rng *rng;
+	float *dp;
+	int *bad;
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
@@ -179,7 +181,10 @@ int main(int argc, char *argv[])
 	fclose(fh);
 	gsl_rng_set(rng, seed);
 
-	image.data = malloc(128*128*sizeof(float));
+	dp = calloc(128*128, sizeof(float));
+	image.dp = &dp;
+	bad = calloc(128*128, sizeof(int));
+	image.bad = &bad;
 	image.flags = NULL;
 	image.beam = NULL;
 	image.lambda = ph_eV_to_lambda(1000.0);
@@ -192,6 +197,8 @@ int main(int argc, char *argv[])
 	image.det->panels[0].max_fs = 128;
 	image.det->panels[0].min_ss = 0;
 	image.det->panels[0].max_ss = 128;
+	image.det->panels[0].w = 128;
+	image.det->panels[0].h = 128;
 	image.det->panels[0].fsx = 1.0;
 	image.det->panels[0].fsy = 0.0;
 	image.det->panels[0].ssx = 0.0;
@@ -209,7 +216,6 @@ int main(int argc, char *argv[])
 
 	image.width = 128;
 	image.height = 128;
-	memset(image.data, 0, 128*128*sizeof(float));
 
 	image.n_crystals = 0;
 	image.crystals = NULL;
@@ -236,7 +242,7 @@ int main(int argc, char *argv[])
 	for ( fs=0; fs<image.width; fs++ ) {
 	for ( ss=0; ss<image.height; ss++ ) {
 		if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
-		image.data[fs+image.width*ss] = 1000.0;
+		image.dp[0][fs+image.width*ss] = 1000.0;
 		npx++;
 	}
 	}
@@ -276,9 +282,9 @@ int main(int argc, char *argv[])
 	npx = 0;
 	for ( fs=0; fs<image.width; fs++ ) {
 	for ( ss=0; ss<image.height; ss++ ) {
-		image.data[fs+image.width*ss] = 1000.0;
+		image.dp[0][fs+image.width*ss] = 1000.0;
 		if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
-		image.data[fs+image.width*ss] += 1000.0;
+		image.dp[0][fs+image.width*ss] += 1000.0;
 		npx++;
 	}
 	}
@@ -308,11 +314,11 @@ int main(int argc, char *argv[])
 
 	}
 
-
 	free(image.beam);
 	free(image.det->panels);
 	free(image.det);
-	free(image.data);
+	free(image.dp[0]);
+	free(image.bad[0]);
 	gsl_rng_free(rng);
 
 	if ( fail ) return 1;

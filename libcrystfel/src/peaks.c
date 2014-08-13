@@ -269,8 +269,6 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	for ( dss=-ir_out; dss<=+ir_out; dss++ ) {
 
 		double val;
-		uint16_t flags;
-		int idx;
 
 		/* Restrict to annulus */
 		if ( dfs*dfs + dss*dss > out_lim_sq ) continue;
@@ -285,23 +283,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 			return 14;
 		}
 
-		idx = dfs+cfs+image->width*(dss+css);
-
-		/* Veto this peak if we tried to integrate in a bad region */
-		if ( image->flags != NULL ) {
-
-			flags = image->flags[idx];
-
-			/* It must have all the "good" bits to be valid */
-			if ( !((flags & image->det->mask_good)
-			                   == image->det->mask_good) ) return 5;
-
-			/* If it has any of the "bad" bits, reject */
-			if ( flags & image->det->mask_bad ) return 6;
-
-		}
-
-		val = image->data[idx];
+		val = image->dp[pn][p_cfs+dfs + p->w*(p_css+dss)];
 
 		/* Check if peak contains saturation in bg region */
 		if ( (saturated != NULL) && (val > p->max_adu) ) *saturated = 1;
@@ -325,8 +307,6 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	for ( dss=-ir_inn; dss<=+ir_inn; dss++ ) {
 
 		double val;
-		uint16_t flags;
-		int idx;
 
 		/* Inner mask radius */
 		if ( dfs*dfs + dss*dss > lim_sq ) continue;
@@ -336,32 +316,16 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) ) return 8;
 
 		/* Wandered into a bad region? */
-		if ( in_bad_region(image->det, p->min_fs+p_cfs+dfs,
-		                               p->min_ss+p_css+dss) )
-		{
-			return 13;
+		if ( image->bad[pn][p_cfs+dfs + p->w*(p_css+dss)] ) {
+			return 15;
 		}
 
-		idx = dfs+cfs+image->width*(dss+css);
-
-		/* Veto this peak if we tried to integrate in a bad region */
-		if ( image->flags != NULL ) {
-
-			flags = image->flags[idx];
-
-			/* It must have all the "good" bits to be valid */
-			if ( !((flags & image->det->mask_good)
-			                   == image->det->mask_good) ) return 9;
-
-			/* If it has any of the "bad" bits, reject */
-			if ( flags & image->det->mask_bad ) return 10;
-
-		}
-
-		val = image->data[idx] - bg_mean;
+		val = image->dp[pn][p_cfs+dfs + p->w*(p_css+dss)];
 
 		/* Check if peak contains saturation */
 		if ( (saturated != NULL) && (val > p->max_adu) ) *saturated = 1;
+
+		val -= bg_mean;
 
 		pk_counts++;
 		pk_total += val;
