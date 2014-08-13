@@ -140,6 +140,7 @@ int main(int argc, char *argv[])
 		ic.ir_out = ir_out;
 		ic.meth = INTEGRATION_RINGS;
 		ic.int_diag = INTDIAG_NONE;
+		ic.masks = NULL;
 		if ( init_intcontext(&ic) ) {
 			ERROR("Failed to initialise integration.\n");
 			return 1;

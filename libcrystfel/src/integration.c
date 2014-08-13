@@ -159,6 +159,7 @@ struct intcontext
 	int w;
 	enum boxmask_val *bm;  /* Box mask */
 	struct image *image;
+	int **masks;  /* Peak location mask from make_BgMask() */
 
 	struct peak_box *boxes;
 	int n_boxes;
@@ -872,6 +873,20 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 			bx->bm[p+ic->w*q] = BM_BH;
 		}
 
+		/* If this is a background pixel, it shouldn't contain any
+		 * pixels which are in the peak region of ANY reflection */
+		if ( (ic->masks != NULL) && (bx->bm[p+ic->w*q] == BM_BG)
+		  && (ic->masks[bx->pn][fs + bx->p->w*ss] > 0) ) {
+			bx->bm[p+ic->w*q] = BM_BH;
+		}
+
+		/* If this is a peak pixel, it shouldn't contain any pixels
+		 * which are in the peak region of more than one reflection */
+		if ( (ic->masks != NULL) && (bx->bm[p+ic->w*q] == BM_PK)
+		  && (ic->masks[bx->pn][fs + bx->p->w*ss] > 1) ) {
+			bx->bm[p+ic->w*q] = BM_BH;
+		}
+
 		if ( (bx->bm[p+ic->w*q] != BM_IG)
 		  && (bx->bm[p+ic->w*q] != BM_BH)
 		  && (boxi(ic, bx, p, q) > bx->p->max_adu) ) {
@@ -1476,7 +1491,7 @@ static void integrate_prof2d(IntegrationMethod meth, PartialityModel pmodel,
                              Crystal *cr, struct image *image, IntDiag int_diag,
                              signed int idh, signed int idk, signed int idl,
                              double ir_inn, double ir_mid, double ir_out,
-                             int results_pipe)
+                             int results_pipe, int **masks)
 {
 	RefList *list;
 	UnitCell *cell;
@@ -1500,6 +1515,7 @@ static void integrate_prof2d(IntegrationMethod meth, PartialityModel pmodel,
 	ic.int_diag_h = idh;
 	ic.int_diag_k = idk;
 	ic.int_diag_l = idl;
+	ic.masks = masks;
 	if ( init_intcontext(&ic) ) {
 		ERROR("Failed to initialise integration.\n");
 		return;
@@ -1733,7 +1749,7 @@ static void integrate_rings(IntegrationMethod meth, PartialityModel pmodel,
                             Crystal *cr, struct image *image, IntDiag int_diag,
                             signed int idh, signed int idk, signed int idl,
                             double ir_inn, double ir_mid, double ir_out,
-                            int results_pipe)
+                            int results_pipe, int **masks)
 {
 	RefList *list;
 	Reflection *refl;
@@ -1762,6 +1778,7 @@ static void integrate_rings(IntegrationMethod meth, PartialityModel pmodel,
 	ic.int_diag_k = idk;
 	ic.int_diag_l = idl;
 	ic.meth = meth;
+	ic.masks = masks;
 	if ( init_intcontext(&ic) ) {
 		ERROR("Failed to initialise integration.\n");
 		return;
@@ -1818,6 +1835,11 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
                      int results_pipe)
 {
 	int i;
+	int *masks[image->det->n_panels];
+
+	for ( i=0; i<image->det->n_panels; i++ ) {
+		masks[i] = make_BgMask(image, &image->det->panels[i], ir_inn);
+	}
 
 	for ( i=0; i<image->n_crystals; i++ ) {
 
@@ -1833,7 +1855,7 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 			integrate_rings(meth, pmodel, cr, image,
 			                int_diag, idh, idk, idl,
 			                ir_inn, ir_mid, ir_out,
-			                results_pipe);
+			                results_pipe, masks);
 			res = estimate_resolution(crystal_get_cell(cr),
 			                          image->features);
 			break;
@@ -1842,7 +1864,7 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 			integrate_prof2d(meth, pmodel, cr, image,
 			                 int_diag, idh, idk, idl,
 			                 ir_inn, ir_mid, ir_out,
-			                 results_pipe);
+			                 results_pipe, masks);
 			res = estimate_resolution(crystal_get_cell(cr),
 			                          image->features);
 			break;
@@ -1858,6 +1880,10 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 			apply_resolution_cutoff(cr, res+push_res);
 		}
 
+	}
+
+	for ( i=0; i<image->det->n_panels; i++ ) {
+		free(masks[i]);
 	}
 }
 
@@ -1947,37 +1973,3 @@ IntegrationMethod integration_method(const char *str, int *err)
 
 }
 
-
-/**
- * flag_overlaps:
- * @image: An image structure
- * @ir_inn: The radius of the peak region to use
- *
- * Flags, in the bad pixel mask for @image, every pixel for which more than one
- * reflection is predicted to have its peak region.
- *
- */
-void flag_overlaps(struct image *image, double ir_inn)
-{
-	int i;
-
-	for ( i=0; i<image->det->n_panels; i++ ) {
-
-		int *mask;
-		int fs, ss;
-		struct panel *p = &image->det->panels[i];
-
-		mask = make_BgMask(image, p, ir_inn);
-
-		for ( ss=0; ss<p->h; ss++ ) {
-		for ( fs=0; fs<p->w; fs++ ) {
-			if ( mask[fs+p->w*ss] > 1 ) {
-				image->bad[i][fs+p->w*ss] = 1;
-			}
-		}
-		}
-
-		free(mask);
-
-	}
-}

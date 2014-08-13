@@ -181,8 +181,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		crystal_set_mosaicity(image.crystals[i], 0.0);  /* radians */
 	}
 
-	flag_overlaps(&image, iargs->ir_inn);
-
 	/* Integrate all the crystals at once - need all the crystals so that
 	 * overlaps can be detected. */
 	integrate_all_4(&image, iargs->int_meth, PMODEL_SPHERE, iargs->push_res,

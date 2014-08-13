@@ -112,8 +112,6 @@ extern void integrate_all_4(struct image *image, IntegrationMethod meth,
                             signed int idh, signed int idk, signed int idl,
                             int results_pipe);
 
-extern void flag_overlaps(struct image *image, double ir_inn);
-
 
 #ifdef __cplusplus
 }
