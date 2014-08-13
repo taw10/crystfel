@@ -1581,17 +1581,20 @@ static void numbers_update(DisplayWindow *dw)
 
 			val = dw->image->data[fs+ss*dw->image->width];
 
-			if ( val > 0.0 ) {
-				if ( log(val)/log(10.0) < 5 ) {
-					snprintf(s, 31, "%.0f", val);
-				} else {
-					snprintf(s, 31, "HUGE");
-				}
+			if ( (val > 0.0) && (log(val)/log(10.0) >= 5) ) {
+				snprintf(s, 31, "HUGE");
+			} else if ( (val < 0.0) && (log(-val)/log(10) >= 4) ) {
+				snprintf(s, 31, "-HUGE");
 			} else {
-				if ( log(-val)/log(10) < 4 ) {
-					snprintf(s, 31, "%.0f", val);
-				} else {
-					snprintf(s, 31, "-HUGE");
+				size_t l, i;
+				snprintf(s, 31, "%.4f", val);
+				l = strlen(s);
+				for ( i=l-1; i>0; i-- ) {
+					if ( s[i] == '0' ) s[i] = '\0';
+					if ( s[i] == '.' ) {
+						s[i] = '\0';
+						break;
+					}
 				}
 			}
 
