@@ -435,7 +435,7 @@ void record_image(struct image *image, int do_poisson, int background,
 }
 
 
-struct panel *find_panel(struct detector *det, double fs, double ss)
+signed int find_panel_number(struct detector *det, double fs, double ss)
 {
 	int p;
 
@@ -446,27 +446,18 @@ struct panel *find_panel(struct detector *det, double fs, double ss)
 		if ( (fs >= det->panels[p].min_fs)
 		  && (fs < det->panels[p].max_fs+1)
 		  && (ss >= det->panels[p].min_ss)
-		  && (ss < det->panels[p].max_ss+1) ) {
-			return &det->panels[p];
-		}
-	}
-
-	return NULL;
-}
-
-
-int find_panel_number(struct detector *det, int fs, int ss)
-{
-	int p;
-
-	for ( p=0; p<det->n_panels; p++ ) {
-		if ( (fs >= det->panels[p].min_fs)
-		  && (fs <= det->panels[p].max_fs)
-		  && (ss >= det->panels[p].min_ss)
-		  && (ss <= det->panels[p].max_ss) ) return p;
+		  && (ss < det->panels[p].max_ss+1) ) return p;
 	}
 
 	return -1;
+}
+
+
+struct panel *find_panel(struct detector *det, double fs, double ss)
+{
+	signed int pn = find_panel_number(det, fs, ss);
+	if ( pn == -1 ) return NULL;
+	return &det->panels[pn];
 }
 
 

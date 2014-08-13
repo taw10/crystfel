@@ -170,7 +170,7 @@ extern void record_image(struct image *image, int do_poisson, int background,
 
 extern struct panel *find_panel(struct detector *det, double fs, double ss);
 
-extern int find_panel_number(struct detector *det, int fs, int ss);
+extern signed int find_panel_number(struct detector *det, double fs, double ss);
 
 extern struct detector *get_detector_geometry(const char *filename);
 
