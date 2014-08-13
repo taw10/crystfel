@@ -81,6 +81,7 @@ struct index_args
 	signed int int_diag_k;
 	signed int int_diag_l;
 	float push_res;
+	float highres;
 };
 
 

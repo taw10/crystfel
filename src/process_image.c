@@ -118,6 +118,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		filter_noise(&image);
 	}
 
+	mark_resolution_range_as_bad(&image, iargs->highres, +INFINITY);
+
 	switch ( iargs->peaks ) {
 
 		case PEAK_HDF5:
