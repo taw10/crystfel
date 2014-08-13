@@ -244,10 +244,11 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	double var;
 	double aduph;
 	int p_cfs, p_css, p_w, p_h;
+	signed int pn;
 
-	p = find_panel(image->det, cfs, css);
-	if ( p == NULL ) return 2;
-	if ( p->no_index ) return 3;
+	pn = find_panel_number(image->det, cfs, css);
+	if ( pn == -1 ) return 2;
+	p = &image->det->panels[pn];
 
 	if ( saturated != NULL ) *saturated = 0;
 
@@ -280,9 +281,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) ) return 4;
 
 		/* Wandered into a bad region? */
-		if ( in_bad_region(image->det, p->min_fs+p_cfs+dfs,
-		                               p->min_ss+p_css+dss) )
-		{
+		if ( image->bad[pn][p_cfs+dfs + p->w*(p_css+dss)] ) {
 			return 14;
 		}
 
