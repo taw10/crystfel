@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
 	Stream *st;
 	Crystal **crystals;
 	char *pmodel_str = NULL;
-	PartialityModel pmodel = PMODEL_SPHERE;
+	PartialityModel pmodel = PMODEL_SCSPHERE;
 	int min_measurements = 2;
 	char *rval;
 	struct srdata srdata;
@@ -342,14 +342,10 @@ int main(int argc, char *argv[])
 	free(sym_str);
 
 	if ( pmodel_str != NULL ) {
-		if ( strcmp(pmodel_str, "sphere") == 0 ) {
-			pmodel = PMODEL_SPHERE;
-		} else if ( strcmp(pmodel_str, "unity") == 0 ) {
+		if ( strcmp(pmodel_str, "unity") == 0 ) {
 			pmodel = PMODEL_UNITY;
-		} else if ( strcmp(pmodel_str, "gaussian") == 0 ) {
-			pmodel = PMODEL_GAUSSIAN;
-		} else if ( strcmp(pmodel_str, "thin") == 0 ) {
-			pmodel = PMODEL_THIN;
+		} else if ( strcmp(pmodel_str, "scgaussian") == 0 ) {
+			pmodel = PMODEL_SCGAUSSIAN;
 		} else if ( strcmp(pmodel_str, "scsphere") == 0 ) {
 			pmodel = PMODEL_SCSPHERE;
 		} else {

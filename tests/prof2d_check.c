@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 	image.n_crystals = 1;
 	image.crystals = &cr;
 
-	list = find_intersections(&image, cr, PMODEL_SPHERE);
+	list = find_intersections(&image, cr, PMODEL_SCSPHERE);
 	crystal_set_reflections(cr, list);
 
 	for ( fs=0; fs<w; fs++ ) {

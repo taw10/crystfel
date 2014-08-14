@@ -10,8 +10,7 @@ bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
 noinst_PROGRAMS = tests/list_check tests/integration_check \
                   tests/pr_p_gradient_check tests/symmetry_check \
                   tests/centering_check tests/transformation_check \
-                  tests/cell_check tests/pr_l_gradient_check \
-                  tests/pr_pl_gradient_check tests/ring_check \
+                  tests/cell_check tests/ring_check \
                   tests/prof2d_check tests/ambi_check
 
 MERGE_CHECKS = tests/first_merge_check tests/second_merge_check \
@@ -20,9 +19,7 @@ MERGE_CHECKS = tests/first_merge_check tests/second_merge_check \
 PARTIAL_CHECKS = tests/partialator_merge_check_1 \
                  tests/partialator_merge_check_2 \
                  tests/partialator_merge_check_3 \
-                 tests/pr_p_gradient_check \
-                 tests/pr_l_gradient_check \
-                 tests/pr_pl_gradient_check
+                 tests/pr_p_gradient_check
 
 TESTS = tests/list_check $(MERGE_CHECKS) $(PARTIAL_CHECKS) \
         tests/integration_check \
@@ -115,12 +112,6 @@ tests_symmetry_check_SOURCES = tests/symmetry_check.c
 tests_ambi_check_SOURCES = tests/ambi_check.c
 
 tests_pr_p_gradient_check_SOURCES = tests/pr_p_gradient_check.c \
-                                  src/post-refinement.c
-
-tests_pr_pl_gradient_check_SOURCES = tests/pr_pl_gradient_check.c \
-                                  src/post-refinement.c
-
-tests_pr_l_gradient_check_SOURCES = tests/pr_l_gradient_check.c \
                                   src/post-refinement.c
 
 tests_centering_check_SOURCES = tests/centering_check.c

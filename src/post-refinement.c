@@ -83,23 +83,16 @@ static double partiality_gradient(double r, double profile_radius,
 		case PMODEL_UNITY:
 		return 0.0;
 
-		case PMODEL_SPHERE:
-		dqdr = 1.0 / (2.0*profile_radius);
-		return dpdq(r, profile_radius) * dqdr;
-
-		case PMODEL_GAUSSIAN:
-		/* FIXME: Get a proper gradient */
-		dqdr = 1.0 / (2.0*profile_radius);
-		return dpdq(r, profile_radius) * dqdr;
-
-		case PMODEL_THIN:
-		return -(2.0*r)/(profile_radius*profile_radius);
-
 		case PMODEL_SCSPHERE:
 		dqdr = 1.0 / (2.0*profile_radius);
 		dpsphdr = dpdq(r, profile_radius) * dqdr;
 		A = (dpsphdr/D) - p*pow(rlow-rhigh, -2.0);
 		return 4.0*profile_radius*A/3.0;
+
+		case PMODEL_SCGAUSSIAN:
+		/* FIXME: Get a proper gradient */
+		dqdr = 1.0 / (2.0*profile_radius);
+		return dpdq(r, profile_radius) * dqdr;
 
 	}
 }
@@ -117,17 +110,15 @@ static double partiality_rgradient(double r, double profile_radius,
 		case PMODEL_UNITY:
 		return 0.0;
 
-		case PMODEL_SPHERE:
+		case PMODEL_SCSPHERE:
+		/* FIXME: wrong (?) */
 		dqdrad = -0.5 * r / (profile_radius * profile_radius);
 		return dpdq(r, profile_radius) * dqdrad;
 
-		case PMODEL_GAUSSIAN:
+		case PMODEL_SCGAUSSIAN:
 		/* FIXME: Get a proper gradient */
 		dqdrad = -0.5 * r / (profile_radius * profile_radius);
 		return dpdq(r, profile_radius) * dqdrad;
-
-		case PMODEL_THIN:
-		return 2.0*r*r*pow(profile_radius, -3.0);
 
 	}
 }
@@ -206,18 +197,16 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 			case PMODEL_UNITY:
 			return 0.0;
 
-			case PMODEL_GAUSSIAN:
+			case PMODEL_SCSPHERE:
 			gr  = partiality_rgradient(rlow, r, pmodel);
 			gr -= partiality_rgradient(rhigh, r, pmodel);
 			return gr;
 
-			case PMODEL_SPHERE:
+			case PMODEL_SCGAUSSIAN:
 			gr  = partiality_rgradient(rlow, r, pmodel);
 			gr -= partiality_rgradient(rhigh, r, pmodel);
 			return gr;
 
-			case PMODEL_THIN:
-			return 2.0*rlow*rlow/(r*r*r);
 		}
 	}
 
@@ -226,15 +215,14 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 
 			default:
 			case PMODEL_UNITY:
-			case PMODEL_THIN:
 			return 0.0;
-
-			case PMODEL_GAUSSIAN:
-			case PMODEL_SPHERE:
-			return (ds*glow + ds*ghigh) / 2.0;
 
 			case PMODEL_SCSPHERE:
 			return 0.0; /* FIXME */
+
+			case PMODEL_SCGAUSSIAN:
+			return (ds*glow + ds*ghigh) / 2.0; /* FIXME: Wrong */
+
 		}
 	}
 
@@ -274,28 +262,6 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 
 	ERROR("No gradient defined for parameter %i\n", k);
 	abort();
-}
-
-
-/* Return the gradient of Lorentz factor wrt parameter 'k' given the current
- * status of 'image'. */
-double l_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
-{
-	double ds;
-	signed int hs, ks, ls;
-	double L;
-
-	/* L has a non-zero gradient only for div in sphere or gaussian model */
-	if ( (pmodel != PMODEL_SPHERE)
-	  && (pmodel != PMODEL_GAUSSIAN) ) return 0.0;
-	if ( k != REF_DIV ) return 0.0;
-
-	get_symmetric_indices(refl, &hs, &ks, &ls);
-
-	ds = 2.0 * resolution(crystal_get_cell(cr), hs, ks, ls);
-
-	L = get_lorentz(refl);
-	return -ds*L*L / LORENTZ_SCALE;
 }
 
 
@@ -564,10 +530,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<NUM_PARAMS; k++ ) {
-			double gr;
-			gr  = p_gradient(cr, k, refl, pmodel) * l;
-			gr += l_gradient(cr, k, refl, pmodel) * p;
-			gradients[k] = gr;
+			gradients[k] = p_gradient(cr, k, refl, pmodel) * l;
 		}
 
 		for ( k=0; k<NUM_PARAMS; k++ ) {

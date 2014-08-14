@@ -357,7 +357,7 @@ static void run_job(void *vwargs, int cookie)
 		snprintf(wargs->image.filename, 255, "dummy.h5");
 	}
 
-	reflections = find_intersections(&wargs->image, cr, PMODEL_SPHERE);
+	reflections = find_intersections(&wargs->image, cr, PMODEL_SCSPHERE);
 	crystal_set_reflections(cr, reflections);
 
 	for ( i=0; i<NBINS; i++ ) {

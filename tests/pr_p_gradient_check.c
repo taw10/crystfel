@@ -71,21 +71,6 @@ static void scan_partialities(RefList *reflections, RefList *compare,
 		}
 
 		get_partial(refl2, &r1, &r2, &p, &clamp_low, &clamp_high);
-		if ( clamp_low && clamp_high && (pmodel != PMODEL_SCSPHERE) ) {
-			if ( !within_tolerance(p, 1.0, 0.001) ) {
-
-				signed int h, k, l;
-
-				get_indices(refl, &h, &k, &l);
-
-				ERROR("%3i %3i %3i - double clamped but"
-				      " partiality not close to 1.0 (%5.2f)\n",
-				      h, k, l, p);
-
-			}
-			valid[i] = 0;
-		}
-
 		vals[idx][i] = p;
 		i++;
 	}
@@ -451,26 +436,18 @@ int main(int argc, char *argv[])
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
-	for ( i=0; i<4; i++ ) {
+	for ( i=0; i<2; i++ ) {
 
 		UnitCell *rot;
 		double val;
 		PartialityModel pmodel;
 
 		if ( i == 0 ) {
-			pmodel = PMODEL_SPHERE;
-			STATUS("Testing flat sphere model:\n");
-		} else if ( i == 1 ) {
-			pmodel = PMODEL_GAUSSIAN;
-			/* FIXME: Gradients for Gaussian model are not good */
-			STATUS("NOT testing Gaussian model.\n");
-			continue;
-		} else if ( i == 2 ) {
-			pmodel = PMODEL_THIN;
-			STATUS("Testing Thin Ewald Sphere model:\n");
-		} else if ( i == 3 ) {
 			pmodel = PMODEL_SCSPHERE;
 			STATUS("Testing SCSphere model:\n");
+		} else if ( i == 1 ) {
+			pmodel = PMODEL_SCGAUSSIAN;
+			STATUS("Testing SCGaussian model.\n");
 		} else {
 			ERROR("WTF?\n");
 			return 1;
