@@ -875,16 +875,27 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 
 		/* If this is a background pixel, it shouldn't contain any
 		 * pixels which are in the peak region of ANY reflection */
-		if ( (ic->masks != NULL) && (bx->bm[p+ic->w*q] == BM_BG)
-		  && (ic->masks[bx->pn][fs + bx->p->w*ss] > 0) ) {
-			bx->bm[p+ic->w*q] = BM_BH;
-		}
+		if ( ic->masks != NULL ) {
 
-		/* If this is a peak pixel, it shouldn't contain any pixels
-		 * which are in the peak region of more than one reflection */
-		if ( (ic->masks != NULL) && (bx->bm[p+ic->w*q] == BM_PK)
-		  && (ic->masks[bx->pn][fs + bx->p->w*ss] > 1) ) {
-			bx->bm[p+ic->w*q] = BM_BH;
+			switch ( bx->bm[p+ic->w*q] ) {
+
+				case BM_BG:
+				case BM_IG:
+				if ( ic->masks[bx->pn][fs + bx->p->w*ss] > 0 ) {
+					bx->bm[p+ic->w*q] = BM_BH;
+				}
+				break;
+
+				case BM_PK:
+				if ( ic->masks[bx->pn][fs + bx->p->w*ss] > 1 ) {
+					bx->bm[p+ic->w*q] = BM_BH;
+				}
+				break;
+
+				case BM_BH:
+				break;
+
+			}
 		}
 
 		if ( (bx->bm[p+ic->w*q] != BM_IG)
