@@ -1487,7 +1487,7 @@ static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 }
 
 
-static void integrate_prof2d(IntegrationMethod meth, PartialityModel pmodel,
+static void integrate_prof2d(IntegrationMethod meth,
                              Crystal *cr, struct image *image, IntDiag int_diag,
                              signed int idh, signed int idk, signed int idl,
                              double ir_inn, double ir_mid, double ir_out,
@@ -1499,10 +1499,8 @@ static void integrate_prof2d(IntegrationMethod meth, PartialityModel pmodel,
 	int i;
 	int n_saturated = 0;
 
+	list = crystal_get_reflections(cr);
 	cell = crystal_get_cell(cr);
-
-	/* Create initial list of reflections with nominal parameters */
-	list = find_intersections(image, cr, pmodel);
 
 	ic.halfw = ir_out;
 	ic.image = image;
@@ -1545,8 +1543,6 @@ static void integrate_prof2d(IntegrationMethod meth, PartialityModel pmodel,
 	free_intcontext(&ic);
 
 	image->num_saturated_peaks = n_saturated;
-
-	crystal_set_reflections(cr, list);
 }
 
 
@@ -1745,7 +1741,7 @@ static double estimate_resolution(UnitCell *cell, ImageFeatureList *flist)
 }
 
 
-static void integrate_rings(IntegrationMethod meth, PartialityModel pmodel,
+static void integrate_rings(IntegrationMethod meth,
                             Crystal *cr, struct image *image, IntDiag int_diag,
                             signed int idh, signed int idk, signed int idl,
                             double ir_inn, double ir_mid, double ir_out,
@@ -1757,11 +1753,7 @@ static void integrate_rings(IntegrationMethod meth, PartialityModel pmodel,
 	UnitCell *cell;
 	struct intcontext ic;
 
-	list = find_intersections(image, cr, pmodel);
-	if ( list == NULL ) return;
-
-	if ( num_reflections(list) == 0 ) return;
-
+	list = crystal_get_reflections(cr);
 	cell = crystal_get_cell(cr);
 
 	ic.halfw = ir_out;
@@ -1797,7 +1789,6 @@ static void integrate_rings(IntegrationMethod meth, PartialityModel pmodel,
 	free_intcontext(&ic);
 
 	crystal_set_num_saturated_reflections(cr, ic.n_saturated);
-	crystal_set_reflections(cr, list);
 
 	if ( ic.n_implausible ) {
 		STATUS("Warning: %i implausibly negative reflection%s.\n",
@@ -1837,6 +1828,14 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 	int i;
 	int *masks[image->det->n_panels];
 
+	/* Predict all reflections */
+	for ( i=0; i<image->n_crystals; i++ ) {
+		RefList *list;
+		list = find_intersections(image, image->crystals[i],
+		                          PMODEL_SCSPHERE);
+		crystal_set_reflections(image->crystals[i], list);
+	}
+
 	for ( i=0; i<image->det->n_panels; i++ ) {
 		masks[i] = make_BgMask(image, &image->det->panels[i], ir_inn);
 	}
@@ -1852,7 +1851,7 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 			break;
 
 			case INTEGRATION_RINGS :
-			integrate_rings(meth, pmodel, cr, image,
+			integrate_rings(meth, cr, image,
 			                int_diag, idh, idk, idl,
 			                ir_inn, ir_mid, ir_out,
 			                results_pipe, masks);
@@ -1861,7 +1860,7 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 			break;
 
 			case INTEGRATION_PROF2D :
-			integrate_prof2d(meth, pmodel, cr, image,
+			integrate_prof2d(meth, cr, image,
 			                 int_diag, idh, idk, idl,
 			                 ir_inn, ir_mid, ir_out,
 			                 results_pipe, masks);

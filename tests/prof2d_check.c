@@ -140,6 +140,7 @@ int main(int argc, char *argv[])
 	image.crystals = &cr;
 
 	list = find_intersections(&image, cr, PMODEL_SPHERE);
+	crystal_set_reflections(cr, list);
 
 	for ( fs=0; fs<w; fs++ ) {
 	for ( ss=0; ss<h; ss++ ) {
@@ -175,11 +176,9 @@ int main(int argc, char *argv[])
 
 	STATUS("%i strong, %i weak\n", n_strong, n_weak);
 
-	reflist_free(list);  /* integrate_prof2d() will predict again */
-	integrate_prof2d(INTEGRATION_PROF2D, PMODEL_SPHERE, cr, &image,
+	integrate_prof2d(INTEGRATION_PROF2D, cr, &image,
 	                 INTDIAG_NONE, 0, 0, 0, ir_inn, ir_mid, ir_out, 0,
 	                 NULL);
-	list = crystal_get_reflections(cr);
 
 	printf("Weak reflections:\n");
 	hi = histogram_init();
