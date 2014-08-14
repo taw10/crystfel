@@ -68,9 +68,14 @@ static double dpdq(double r, double profile_radius)
 
 /* Returns dp/dr at "r" */
 static double partiality_gradient(double r, double profile_radius,
-                                  PartialityModel pmodel)
+                                  PartialityModel pmodel,
+                                  double rlow, double rhigh, double p)
 {
-	double dqdr;  /* dq/dr */
+	double dqdr;    /* dq/dr */
+	double dpsphdr; /* dpsph / dr */
+	double A, D;
+
+	D = rlow - rhigh;
 
 	switch ( pmodel ) {
 
@@ -89,6 +94,12 @@ static double partiality_gradient(double r, double profile_radius,
 
 		case PMODEL_THIN:
 		return -(2.0*r)/(profile_radius*profile_radius);
+
+		case PMODEL_SCSPHERE:
+		dqdr = 1.0 / (2.0*profile_radius);
+		dpsphdr = dpdq(r, profile_radius) * dqdr;
+		A = (dpsphdr/D) - p*pow(rlow-rhigh, -2.0);
+		return 4.0*profile_radius*A/3.0;
 
 	}
 }
@@ -178,12 +189,12 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 
 	/* Calculate the gradient of partiality wrt excitation error. */
 	if ( clamp_low == 0 ) {
-		glow = partiality_gradient(rlow, r, pmodel);
+		glow = partiality_gradient(rlow, r, pmodel, rlow, rhigh, p);
 	} else {
 		glow = 0.0;
 	}
 	if ( clamp_high == 0 ) {
-		ghigh = partiality_gradient(rhigh, r, pmodel);
+		ghigh = partiality_gradient(rhigh, r, pmodel, rlow, rhigh, p);
 	} else {
 		ghigh = 0.0;
 	}
@@ -215,14 +226,15 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 
 			default:
 			case PMODEL_UNITY:
+			case PMODEL_THIN:
 			return 0.0;
 
 			case PMODEL_GAUSSIAN:
 			case PMODEL_SPHERE:
 			return (ds*glow + ds*ghigh) / 2.0;
 
-			case PMODEL_THIN:
-			return 0.0;
+			case PMODEL_SCSPHERE:
+			return 0.0; /* FIXME */
 		}
 	}
 
@@ -273,6 +285,9 @@ double l_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 	signed int hs, ks, ls;
 	double L;
 
+	/* L has a non-zero gradient only for div in sphere or gaussian model */
+	if ( (pmodel != PMODEL_SPHERE)
+	  && (pmodel != PMODEL_GAUSSIAN) ) return 0.0;
 	if ( k != REF_DIV ) return 0.0;
 
 	get_symmetric_indices(refl, &hs, &ks, &ls);
