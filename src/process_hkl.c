@@ -274,7 +274,7 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 		                          crystal_get_reflections(cr), sym);
 		cc = cc_intensities(reference, crystal_get_reflections(cr), sym);
 		if (stat != NULL) {
-		  fprintf(stat, "%s,%f,%f\n",image->filename, scale, cc);
+			fprintf(stat, "%s,%f,%f\n",image->filename, scale, cc);
 		}
 		if (cc < min_cc || scale <= 0) return 1;
 	} else {
