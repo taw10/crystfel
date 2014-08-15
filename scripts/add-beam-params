@@ -1,0 +1,130 @@
+#!/usr/bin/env python
+
+#
+# Add beam parameters to stream
+#
+# Copyright (c) 2014 Deutsches Elektronen-Synchrotron DESY,
+#                    a research centre of the Helmholtz Association.
+#
+# Author:
+#    2014 Thomas White <taw@physics.org>
+#
+
+import sys
+import optparse
+from collections import deque
+
+def count_crystals(f, g, start_after, stop_after):
+
+    n_crystals_seen = 0
+    n_crystals_written = 0
+    in_crystal = 0
+    in_header = 1
+    in_chunk_prelim = 0
+    need_end_chunk = 0
+
+    chunk_so_far = deque()
+
+    while True:
+
+        fline = f.readline()
+        if not fline:
+            break
+
+        if fline.find("Begin chunk") != -1:
+            in_header = 0
+            in_chunk_prelim = 1
+            chunk_so_far.clear()
+
+        if in_chunk_prelim:
+            chunk_so_far.append(fline)
+
+        if fline.find("End chunk") != -1:
+            in_chunk = 0
+            if need_end_chunk:
+                g.write(fline)
+                need_end_chunk = 0
+            if (stop_after != 0) and (n_crystals_written == stop_after):
+                break
+
+        if in_crystal or in_header:
+            g.write(fline)
+
+        if fline.find("Begin crystal") != -1:
+            in_chunk_prelim = 0
+            if ( (n_crystals_seen >= start_after)
+             and ((stop_after == 0) or (n_crystals_written < stop_after)) ):
+                in_crystal = 1
+                for line in chunk_so_far:
+                    g.write(line)
+                chunk_so_far.clear()
+
+        if fline.find("End crystal") != -1:
+            n_crystals_seen += 1
+            if in_crystal:
+                n_crystals_written += 1
+                in_crystal = 0
+                need_end_chunk = 1
+
+    print "Wrote %i crystals to %s" % (n_crystals_written, opt.ofn)
+
+def count_chunks(f, g, start_after, stop_after):
+    n_chunks_seen = 0
+    n_chunks_written = 0
+    in_chunk = 0
+    in_header = 1
+    while True:
+
+        fline = f.readline()
+        if not fline:
+            break
+
+        if fline.find("Begin chunk") != -1:
+            in_header = 0
+            if ( n_chunks_seen >= start_after ):
+                in_chunk = 1
+
+        if in_chunk or in_header:
+            g.write(fline)
+
+        if fline.find("End chunk") != -1:
+            n_chunks_seen += 1
+            if in_chunk:
+                n_chunks_written += 1
+                in_chunk = 0
+                if n_chunks_written == stop_after:
+                    break
+
+    print "Wrote %i chunks to %s" % (n_chunks_written, opt.ofn)
+
+op = optparse.OptionParser()
+op.add_option('', '--input', action='store', type='string', dest='ifn',
+              help="Input stream")
+op.add_option('', '--output', action='store', type='string', dest='ofn',
+              help="Output stream")
+op.add_option('', '--start-after', action='store', type='int', dest='start',
+              help="Start after this many crystals", default=0)
+op.add_option('', '--stop-after', action='store', type='int', dest='stop',
+              help="Stop after this many crystals (0=never stop)", default=0)
+op.add_option('', '--chunks', action='store_true', dest='chunks',
+              help="Count chunks instead of crystals")
+opt,arg = op.parse_args(sys.argv)
+
+if not (opt.ifn and opt.ofn):
+    print "You need at least --input and --output"
+    exit(1)
+
+f = open(opt.ifn, 'r')
+g = open(opt.ofn, 'w')
+start_after = opt.start
+stop_after = opt.stop
+
+if opt.chunks:
+    count_chunks(f, g, start_after, stop_after)
+else:
+    count_crystals(f, g, start_after, stop_after)
+
+f.close()
+g.close()
+
+
