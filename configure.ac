@@ -53,7 +53,7 @@ AS_IF([test "x$with_opencl" == "xyes"],
       [
          AC_MSG_RESULT([${with_opencl_dir}/include/CL/cl.h])
          OPENCL_CFLAGS="-I${with_opencl_dir}/include"
-         OPENCL_LIBS="-lOpenCL"
+         OPENCL_LIBS="-lOpenCL -L${with_opencl_dir}/lib64 -L${with_opencl_dir}/lib"
          cl_cl_h=true
          have_opencl=true
       ], [
@@ -61,7 +61,7 @@ AS_IF([test "x$with_opencl" == "xyes"],
          [
             AC_MSG_RESULT([${with_opencl_dir}/include/cl.h])
             OPENCL_CFLAGS="-I${with_opencl_dir}/include/cl.h/include"
-            OPENCL_LIBS="-lOpenCL"
+            OPENCL_LIBS="-lOpenCL -L${with_opencl_dir}/lib64 -L${with_opencl_dir}/lib"
             cl_cl_h=false
             have_opencl=true
          ], [
