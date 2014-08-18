@@ -1285,7 +1285,7 @@ static gint displaywindow_set_calibmode(GtkWidget *d, DisplayWindow *dw)
 		gtk_widget_show(dw->statusbar);
 		vbox = gtk_bin_get_child(GTK_BIN(dw->window));
 		gtk_box_pack_end(GTK_BOX(vbox), dw->statusbar,
-		                 TRUE, TRUE, 0);
+		                 FALSE, FALSE, 0);
 		cc = gtk_statusbar_get_context_id(GTK_STATUSBAR(dw->statusbar),
 		                                  "calibmode");
 		gtk_statusbar_push(GTK_STATUSBAR(dw->statusbar), cc,
