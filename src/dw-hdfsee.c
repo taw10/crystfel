@@ -593,7 +593,7 @@ static void displaywindow_update(DisplayWindow *dw)
 
 
 static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
-				     DisplayWindow *dw)
+                                     DisplayWindow *dw)
 {
 	cairo_t *cr;
 
