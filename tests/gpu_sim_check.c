@@ -34,6 +34,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifdef HAVE_CLOCK_GETTIME
+#include <time.h>
+#else
+#include <sys/time.h>
+#endif
+
 #include "../src/diffraction.h"
 #include "../src/diffraction-gpu.h"
 #include <detector.h>
@@ -61,7 +67,7 @@ static double get_hires_seconds()
 {
 	struct timeval tp;
 	gettimeofday(&tp, NULL);
-	return (double)tp.tv_sec + ((double)tp.tv_nsec/1e9);
+	return (double)tp.tv_sec + ((double)tp.tv_usec/1e6);
 }
 
 #endif

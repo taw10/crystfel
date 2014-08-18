@@ -42,6 +42,12 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 
+#ifdef HAVE_CLOCK_GETTIME
+#include <time.h>
+#else
+#include <sys/time.h>
+#endif
+
 #if HAVE_FORKPTY_LINUX
 #include <pty.h>
 #elif HAVE_FORKPTY_BSD
