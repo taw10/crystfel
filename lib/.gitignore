@@ -13,6 +13,7 @@ libgnu.a
 fcntl.h
 pty.h
 stdlib.h
+stdalign.h
 unistd.h
 sys/ioctl.h
 sys/socket.h
