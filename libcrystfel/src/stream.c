@@ -1060,7 +1060,7 @@ void write_geometry_file(Stream *st, const char *geom_filename) {
 
 	do {
 		rval = fgets(line, 1023, geom_fh);
-		fprintf(st->fh, line);
+		fputs(line, st->fh);
 	} while ( rval != NULL );
 	fprintf(st->fh, GEOM_END_MARKER"\n");
 	fflush(st->fh);

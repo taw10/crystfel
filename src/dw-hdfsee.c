@@ -518,7 +518,6 @@ static void redraw_window(DisplayWindow *dw)
 static void set_window_size(DisplayWindow *dw)
 {
 	gint width;
-	GdkGeometry geom;
 
 	if ( dw->image == NULL ) {
 		dw->width = 320;
