@@ -135,18 +135,6 @@ AS_IF([test "x$enable_gtk" != "xno"],
 ])
 
 
-AC_CHECK_FUNCS(forkpty,
-   AC_DEFINE([HAVE_FORKPTY_BSD], [1],
-             [Define to 1 if a BSD-style forkpty is available]),
-   AC_CHECK_LIB(util,forkpty,
-   [
-      AC_DEFINE([HAVE_FORKPTY_LINUX], [1],
-                [Define to 1 if a Linux-style forkpty is available])
-      LIBS="$LIBS -lutil"
-   ])
-)
-
-
 AC_MSG_CHECKING([whether to use PNG])
 AC_ARG_ENABLE([png],
     AS_HELP_STRING([--disable-png], [Disable the use of libPNG]))

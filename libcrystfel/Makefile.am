@@ -1,5 +1,5 @@
 lib_LTLIBRARIES = libcrystfel.la
-libcrystfel_la_LIBADD = ../lib/libgnu.la @LIBCRYSTFEL_LIBS@
+libcrystfel_la_LIBADD = ../lib/libgnu.la @LIBCRYSTFEL_LIBS@ $(PTY_LIB)
 libcrystfel_la_LDFLAGS = -version-info 4:0:0
 
 libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \

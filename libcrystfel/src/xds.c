@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <pty.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -48,12 +49,6 @@
 #include <time.h>
 #else
 #include <sys/time.h>
-#endif
-
-#if HAVE_FORKPTY_LINUX
-#include <pty.h>
-#elif HAVE_FORKPTY_BSD
-#include <util.h>
 #endif
 
 #include "cell.h"

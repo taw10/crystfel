@@ -39,18 +39,39 @@ AC_DEFUN([gl_EARLY],
   m4_pattern_allow([^gl_LTLIBOBJS$])dnl a variable
   AC_REQUIRE([gl_PROG_AR_RANLIB])
   # Code from module absolute-header:
+  # Code from module errno:
   # Code from module extensions:
   AC_REQUIRE([gl_USE_SYSTEM_EXTENSIONS])
   # Code from module extern-inline:
+  # Code from module fcntl-h:
+  # Code from module fd-hook:
+  # Code from module forkpty:
   # Code from module include_next:
+  # Code from module ioctl:
   # Code from module lib-ignore:
+  # Code from module login_tty:
+  # Code from module msvc-inval:
+  # Code from module msvc-nothrow:
+  # Code from module openpty:
+  # Code from module posix_openpt:
+  # Code from module pty:
+  # Code from module snippet/_Noreturn:
   # Code from module snippet/arg-nonnull:
   # Code from module snippet/c++defs:
   # Code from module snippet/warn-on-use:
+  # Code from module socklen:
+  # Code from module ssize_t:
+  # Code from module stdalign:
   # Code from module stddef:
+  # Code from module stdlib:
   # Code from module string:
   # Code from module strndup:
   # Code from module strnlen:
+  # Code from module sys_ioctl:
+  # Code from module sys_socket:
+  # Code from module sys_types:
+  # Code from module sys_uio:
+  # Code from module unistd:
 ])
 
 # This macro should be invoked from ./configure.ac, in the section
@@ -67,9 +88,49 @@ AC_DEFUN([gl_INIT],
   m4_pushdef([gl_LIBSOURCES_DIR], [])
   gl_COMMON
   gl_source_base='lib'
+  gl_HEADER_ERRNO_H
   AC_REQUIRE([gl_EXTERN_INLINE])
+  gl_FCNTL_H
+  gl_FUNC_FORKPTY
+  if test $HAVE_FORKPTY = 0 || test $REPLACE_FORKPTY = 1; then
+    AC_LIBOBJ([forkpty])
+  fi
+  gl_PTY_MODULE_INDICATOR([forkpty])
+  gl_FUNC_IOCTL
+  if test $HAVE_IOCTL = 0 || test $REPLACE_IOCTL = 1; then
+    AC_LIBOBJ([ioctl])
+  fi
+  gl_SYS_IOCTL_MODULE_INDICATOR([ioctl])
   gl_IGNORE_UNUSED_LIBRARIES
+  gl_FUNC_LOGIN_TTY
+  if test $ac_cv_func_login_tty = no; then
+    AC_LIBOBJ([login_tty])
+  fi
+  gl_PTY_MODULE_INDICATOR([login_tty])
+  gl_MSVC_INVAL
+  if test $HAVE_MSVC_INVALID_PARAMETER_HANDLER = 1; then
+    AC_LIBOBJ([msvc-inval])
+  fi
+  gl_MSVC_NOTHROW
+  if test $HAVE_MSVC_INVALID_PARAMETER_HANDLER = 1; then
+    AC_LIBOBJ([msvc-nothrow])
+  fi
+  gl_FUNC_OPENPTY
+  if test $HAVE_OPENPTY = 0 || test $REPLACE_OPENPTY = 1; then
+    AC_LIBOBJ([openpty])
+  fi
+  gl_PTY_MODULE_INDICATOR([openpty])
+  gl_FUNC_POSIX_OPENPT
+  if test $HAVE_POSIX_OPENPT = 0; then
+    AC_LIBOBJ([posix_openpt])
+  fi
+  gl_STDLIB_MODULE_INDICATOR([posix_openpt])
+  gl_PTY_H
+  gl_TYPE_SOCKLEN_T
+  gt_TYPE_SSIZE_T
+  gl_STDALIGN_H
   gl_STDDEF_H
+  gl_STDLIB_H
   gl_HEADER_STRING_H
   gl_FUNC_STRNDUP
   if test $HAVE_STRNDUP = 0 || test $REPLACE_STRNDUP = 1; then
@@ -82,6 +143,15 @@ AC_DEFUN([gl_INIT],
     gl_PREREQ_STRNLEN
   fi
   gl_STRING_MODULE_INDICATOR([strnlen])
+  gl_SYS_IOCTL_H
+  AC_PROG_MKDIR_P
+  gl_HEADER_SYS_SOCKET
+  AC_PROG_MKDIR_P
+  gl_SYS_TYPES_H
+  AC_PROG_MKDIR_P
+  gl_HEADER_SYS_UIO
+  AC_PROG_MKDIR_P
+  gl_UNISTD_H
   # End of code from modules
   m4_ifval(gl_LIBSOURCES_LIST, [
     m4_syscmd([test ! -d ]m4_defn([gl_LIBSOURCES_DIR])[ ||
@@ -218,26 +288,70 @@ AC_DEFUN([gltests_LIBSOURCES], [
 # This macro records the list of files which have been installed by
 # gnulib-tool and may be removed by future gnulib-tool invocations.
 AC_DEFUN([gl_FILE_LIST], [
+  build-aux/snippet/_Noreturn.h
   build-aux/snippet/arg-nonnull.h
   build-aux/snippet/c++defs.h
   build-aux/snippet/warn-on-use.h
-  lib/dummy.c
+  lib/errno.in.h
+  lib/fcntl.in.h
+  lib/fd-hook.c
+  lib/fd-hook.h
+  lib/forkpty.c
+  lib/ioctl.c
+  lib/login_tty.c
+  lib/msvc-inval.c
+  lib/msvc-inval.h
+  lib/msvc-nothrow.c
+  lib/msvc-nothrow.h
+  lib/openpty.c
+  lib/posix_openpt.c
+  lib/pty.in.h
+  lib/stdalign.in.h
   lib/stddef.in.h
+  lib/stdlib.in.h
   lib/string.in.h
   lib/strndup.c
   lib/strnlen.c
+  lib/sys_ioctl.in.h
+  lib/sys_socket.c
+  lib/sys_socket.in.h
+  lib/sys_types.in.h
+  lib/sys_uio.in.h
+  lib/unistd.c
+  lib/unistd.in.h
+  lib/w32sock.h
   m4/00gnulib.m4
   m4/absolute-header.m4
+  m4/errno_h.m4
   m4/extensions.m4
   m4/extern-inline.m4
+  m4/fcntl-o.m4
+  m4/fcntl_h.m4
   m4/gnulib-common.m4
   m4/include_next.m4
+  m4/ioctl.m4
   m4/lib-ignore.m4
+  m4/msvc-inval.m4
+  m4/msvc-nothrow.m4
+  m4/off_t.m4
   m4/onceonly.m4
+  m4/posix_openpt.m4
+  m4/pty.m4
+  m4/pty_h.m4
+  m4/socklen.m4
+  m4/sockpfaf.m4
+  m4/ssize_t.m4
+  m4/stdalign.m4
   m4/stddef_h.m4
+  m4/stdlib_h.m4
   m4/string_h.m4
   m4/strndup.m4
   m4/strnlen.m4
+  m4/sys_ioctl_h.m4
+  m4/sys_socket_h.m4
+  m4/sys_types_h.m4
+  m4/sys_uio_h.m4
+  m4/unistd_h.m4
   m4/warn-on-use.m4
   m4/wchar_t.m4
 ])
