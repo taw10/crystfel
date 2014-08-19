@@ -7,9 +7,6 @@ libgnu.a
 .deps
 *.o
 *.lo
-/msvc-inval.h
-/msvc-nothrow.h
-/w32sock.h
 fcntl.h
 pty.h
 stdlib.h
@@ -19,4 +16,3 @@ sys/ioctl.h
 sys/socket.h
 sys/types.h
 sys/uio.h
-
