@@ -940,8 +940,9 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	pthread_mutex_destroy(&sb->lock);
 
 	STATUS("Final:"
-	       " %i images processed, %i had crystals, %i crystals overall.\n",
-	       sb->n_processed, sb->n_hadcrystals, sb->n_crystals);
+	       " %i images processed, %i had crystals (%.1f%%), %i crystals overall.\n",
+	       sb->n_processed, sb->n_hadcrystals,
+	       100.0 * sb->n_hadcrystals / sb->n_processed, sb->n_crystals);
 
 	free(sb);
 }
