@@ -238,7 +238,7 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 	int nref;
 	int n_good, n_invalid, n_small, n_nan, n_bad;
 	RefList *reflections;
-	FILE *fh;
+	FILE *fh = NULL;
 	int ntot = 0;
 	double total = 0.0;
 	char tmp[32];
