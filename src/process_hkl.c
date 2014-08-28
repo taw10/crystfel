@@ -526,7 +526,7 @@ int main(int argc, char *argv[])
 		{"push-res",           1, NULL,                6},
 		{"res-push",           1, NULL,                6}, /* compat */
 		{"version",            0, NULL,                7},
-		{"min_cc",             1, NULL,                8},
+		{"min-cc",             1, NULL,                8},
 		{"stat",               1, NULL,                9},
 		{0, 0, NULL, 0}
 	};
