@@ -10,6 +10,7 @@
  * Authors:
  *   2010      Richard Kirian <rkirian@asu.edu>
  *   2010-2014 Thomas White <taw@physics.org>
+ *   2014      Takanori Nakane <nakane.t@gmail.com>
  *
  * This file is part of CrystFEL.
  *
@@ -518,8 +519,9 @@ static char *spacegroup_for_lattice(UnitCell *cell)
 
 static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 {
-	char tmp[256];
+	char tmp[256], *symm;
 	double wavelength;
+	double a = 0, b = 0, c = 0, alpha = 0, beta = 0, gamma = 0;
 
 	switch ( mosflm->step )
 	{
@@ -533,7 +535,6 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		if ( (mosflm->mp->indm & INDEXING_USE_LATTICE_TYPE)
 		  && (mosflm->mp->template != NULL) )
 		{
-			char *symm;
 
 			if ( cell_get_lattice_type(mosflm->mp->template)
 			     == L_RHOMBOHEDRAL ) {
@@ -576,14 +577,22 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		break;
 
 		case 8 :
-		snprintf(tmp, 255, "AUTOINDEX DPS FILE %s"
-		                   " IMAGE 1 MAXCELL 1000 REFINE\n",
-		         mosflm->sptfile);
+                symm = NULL;
+		if (mosflm->mp->indm & INDEXING_USE_CELL_PARAMETERS) {
+			cell_get_parameters(mosflm->mp->template, &a, &b, &c, &alpha, &beta, &gamma);
+			symm = spacegroup_for_lattice(mosflm->mp->template);
+                } else {
+			symm = strdup("P");
+			a = 0; // This disables prior-cell algorithm in MOSFLM
+		}
+		// Old MOSFLM simply ignores CELL and CENTERING subkeywords.
+		// So this doesn't do any harm. TODO: but still better to show WARNING if MOSFLM is old.
+		snprintf(tmp, 255, "AUTOINDEX DPS FILE %s IMAGE 1 MAXCELL 1000 REFINE "
+			"CELL %.1f %.1f %.1f %.1f %.1f %.1f CENTERING %c\n",
+			mosflm->sptfile, 1E10 * a, 1E10 * b, 1E10 * c, 
+			alpha / M_PI * 180, beta / M_PI *180, gamma / M_PI * 180, symm[0]);
+		free(symm);
 
-		/* "This option is only available if you e-mail Andrew Leslie
-		 * and ask for it." - MOSFLM
-		 * snprintf(tmp, 255, "AUTOINDEX NODISPLAY IMAGE 1 FILE %s\n",
-		 *         mosflm->sptfile); */
 		mosflm_sendline(tmp, mosflm);
 		break;
 
@@ -857,7 +866,7 @@ IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
 	/* Flags that MOSFLM knows about */
 	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_CELL_COMBINATIONS
 	       | INDEXING_CHECK_CELL_AXES | INDEXING_CHECK_PEAKS
-	       | INDEXING_USE_LATTICE_TYPE;
+	       | INDEXING_USE_LATTICE_TYPE| INDEXING_USE_CELL_PARAMETERS;;
 
 	if ( (*indm & INDEXING_USE_LATTICE_TYPE)
 	   && !((*indm & INDEXING_CHECK_CELL_COMBINATIONS)
