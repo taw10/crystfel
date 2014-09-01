@@ -269,6 +269,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	for ( dss=-ir_out; dss<=+ir_out; dss++ ) {
 
 		double val;
+		int idx;
 
 		/* Restrict to annulus */
 		if ( dfs*dfs + dss*dss > out_lim_sq ) continue;
@@ -283,7 +284,8 @@ static int integrate_peak(struct image *image, int cfs, int css,
 			return 14;
 		}
 
-		val = image->dp[pn][p_cfs+dfs + p->w*(p_css+dss)];
+		idx = dfs+cfs+image->width*(dss+css);
+		val = image->data[idx];
 
 		/* Check if peak contains saturation in bg region */
 		if ( (saturated != NULL) && (val > p->max_adu) ) *saturated = 1;
@@ -307,6 +309,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	for ( dss=-ir_inn; dss<=+ir_inn; dss++ ) {
 
 		double val;
+		int idx;
 
 		/* Inner mask radius */
 		if ( dfs*dfs + dss*dss > lim_sq ) continue;
@@ -320,7 +323,8 @@ static int integrate_peak(struct image *image, int cfs, int css,
 			return 15;
 		}
 
-		val = image->dp[pn][p_cfs+dfs + p->w*(p_css+dss)];
+		idx = dfs+cfs+image->width*(dss+css);
+		val = image->data[idx];
 
 		/* Check if peak contains saturation */
 		if ( (saturated != NULL) && (val > p->max_adu) ) *saturated = 1;
