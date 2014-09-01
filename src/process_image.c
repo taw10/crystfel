@@ -34,6 +34,8 @@
 #include <stdlib.h>
 #include <hdf5.h>
 #include <gsl/gsl_errno.h>
+#include <gsl/gsl_statistics_double.h>
+#include <gsl/gsl_sort.h>
 #include <unistd.h>
 
 #include "utils.h"
@@ -48,6 +50,63 @@
 #include "reflist-utils.h"
 #include "process_image.h"
 #include "integration.h"
+
+
+static int cmpd2(const void *av, const void *bv)
+{
+	double *ap, *bp;
+	double a, b;
+
+	ap = (double *)av;
+	bp = (double *)bv;
+
+	a = ap[1];
+	b = bp[1];
+
+	if ( a > b ) return -1;
+	return 1;
+}
+
+
+static void refine_radius(Crystal *cr)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	FILE *fh;
+	double vals[num_reflections(crystal_get_reflections(cr))*2];
+	int n = 0;
+	int i;
+
+	fh = fopen("graph.dat", "w");
+
+	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double i = get_intensity(refl);
+		double rlow, rhigh, p;
+		int cl, ch;
+
+		get_partial(refl, &rlow, &rhigh, &p, &cl, &ch);
+		fprintf(fh, "%e %10f %e %e %f %i %i\n", (rhigh+rlow)/2.0, i,
+		                           rlow, rhigh, p, cl, ch);
+
+		vals[(2*n)+0] = i;
+		vals[(2*n)+1] = (rhigh+rlow)/2.0;
+		n++;
+
+	}
+
+	qsort(vals, n, sizeof(double)*2, cmpd2);
+
+	for ( i=0; i<n-1; i++ ) {
+		double mean = gsl_stats_mean(vals, 2, i);
+		double var = gsl_stats_variance_m(vals, 2, i, mean);
+		printf("%.2f  %i\n", mean/var, i);
+	}
+
+	fclose(fh);
+}
 
 
 void process_image(const struct index_args *iargs, struct pattern_args *pargs,
@@ -169,7 +228,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Default parameters */
 	image.div = 0.0;
-	image.bw = 0.001;
+	image.bw = 0.00000001;
 	STATUS("Warning: div, bw and pr are hardcoded in this version.\n");
 	for ( i=0; i<image.n_crystals; i++ ) {
 		crystal_set_profile_radius(image.crystals[i], 0.01e9);
@@ -182,6 +241,18 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
 	                iargs->int_diag, iargs->int_diag_h,
 	                iargs->int_diag_k, iargs->int_diag_l, results_pipe);
+
+	for ( i=0; i<image.n_crystals; i++ ) {
+		refine_radius(image.crystals[i]);
+		reflist_free(crystal_get_reflections(image.crystals[i]));
+	}
+
+	integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE,
+		                iargs->push_res,
+			        iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
+			        iargs->int_diag, iargs->int_diag_h,
+			        iargs->int_diag_k, iargs->int_diag_l,
+			        results_pipe);
 
 	write_chunk(st, &image, hdfile,
 	            iargs->stream_peaks, iargs->stream_refls,

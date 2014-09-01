@@ -151,6 +151,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	double pr;
 	double D;
 	double del;
+	double rlowuc, rhighuc;  /* Values before clamping */
 
 	/* Don't predict 000 */
 	if ( abs(h)+abs(k)+abs(l) == 0 ) return NULL;
@@ -196,6 +197,8 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	     && (fabs(rhigh) > pr) ) return NULL;
 
 	D = rlow - rhigh;
+
+	rlowuc = rlow;  rhighuc = rhigh;
 
 	/* If the "lower" Ewald sphere is a long way away, use the
 	 * position at which the Ewald sphere would just touch the
@@ -243,7 +246,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 		set_detector_pos(refl, 0.0, xda, yda);
 	}
 
-	set_partial(refl, rlow, rhigh, part, clamp_low, clamp_high);
+	set_partial(refl, rlowuc, rhighuc, part, clamp_low, clamp_high);
 	set_lorentz(refl, 1.0);
 	set_symmetric_indices(refl, h, k, l);
 	set_redundancy(refl, 1);
