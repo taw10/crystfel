@@ -211,9 +211,9 @@ void cell_print(UnitCell *cell)
 
 	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
 
-	STATUS("  a     b     c         alpha   beta  gamma\n");
-	STATUS("%5.2f %5.2f %5.2f nm    %6.2f %6.2f %6.2f deg\n",
-	       a*1e9, b*1e9, c*1e9,
+	STATUS("a      b      c            alpha   beta  gamma\n");
+	STATUS("%6.2f %6.2f %6.2f A    %6.2f %6.2f %6.2f deg\n",
+	       a*1e10, b*1e10, c*1e10,
 	       rad2deg(alpha), rad2deg(beta), rad2deg(gamma));
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
