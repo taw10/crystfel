@@ -1842,8 +1842,7 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 	/* Predict all reflections */
 	for ( i=0; i<image->n_crystals; i++ ) {
 		RefList *list;
-		list = find_intersections(image, image->crystals[i],
-		                          PMODEL_SCSPHERE);
+		list = find_intersections(image, image->crystals[i], pmodel);
 		crystal_set_reflections(image->crystals[i], list);
 	}
 
