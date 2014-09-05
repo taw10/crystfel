@@ -912,7 +912,7 @@ Stream *open_stream_fd_for_write(int fd)
  * Returns: a %Stream, or NULL on failure.
  */
 Stream *open_stream_for_write_2(const char *filename,
-                                const char* geom_filename, int argc,
+                                const char *geom_filename, int argc,
                                 char *argv[])
 
 {
