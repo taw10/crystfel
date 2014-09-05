@@ -36,6 +36,23 @@
 
 #include "geometry.h"
 
+/**
+ * IntDiag:
+ * @INTDIAG_NONE: Never show diagnostics
+ * @INTDIAG_RANDOM: Show diagnostics for a randomly selected 1% of reflections
+ * @INTDIAG_ALL: Show diagnostics for all reflections
+ * @INTDIAG_INDICES: Show diagnostics when the Miller indices of the reflection
+ *   are the ones specified
+ * @INTDIAG_NEGATIVE: Show diagnostics when the measured intensity is less than
+ *   minus three times its estimated error.
+ * @INTDIAG_IMPLAUSIBLE: Show diagnostics when the measured intensity is les
+ *   than minus five times its estimated error.
+ * @INTDIAG_STRONG: Show diagnostics when the measured intensity is more than
+ *   three times its estimated error.
+ *
+ * An %IntDiag describes the condition under which the integration subsystem
+ * should display diagnostic information to the user.
+ **/
 typedef enum {
 
 	INTDIAG_NONE,

@@ -80,7 +80,6 @@ max_intensity
 UnitCell
 LatticeType
 UnitCellTransformation
-rvec
 <SUBSECTION>
 cell_new
 cell_new_from_cell
@@ -173,6 +172,9 @@ ph_lambda_to_eV
 random_flat
 flat_noise
 show_matrix
+likely
+unlikely
+UNUSED
 </SECTION>
 
 <SECTION>
@@ -299,6 +301,7 @@ free_symopmask
 describe_symmetry
 symmetry_name
 set_symmetry_name
+get_matrix_name
 is_centrosymmetric
 is_centric
 </SECTION>
@@ -347,6 +350,7 @@ twod_mapping
 reverse_2d_mapping
 largest_q
 in_bad_region
+mark_resolution_range_as_bad
 </SECTION>
 
 <SECTION>
@@ -426,7 +430,6 @@ LORENTZ_SCALE
 <FILE>peaks</FILE>
 peak_sanity_check
 search_peaks
-integrate_peak
 make_BgMask
 validate_peaks
 </SECTION>
@@ -453,6 +456,7 @@ IntDiag
 integrate_all
 integrate_all_2
 integrate_all_3
+integrate_all_4
 integration_method
 </SECTION>
 
@@ -468,9 +472,12 @@ PEAK_LIST_END_MARKER
 PEAK_LIST_START_MARKER
 REFLECTION_END_MARKER
 REFLECTION_START_MARKER
+GEOM_END_MARKER
+GEOM_START_MARKER
 open_stream_fd_for_write
 open_stream_for_read
 open_stream_for_write
+open_stream_for_write_2
 get_stream_fd
 close_stream
 read_chunk
@@ -479,4 +486,5 @@ write_chunk
 rewind_stream
 is_stream
 write_command
+write_geometry_file
 </SECTION>

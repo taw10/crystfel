@@ -899,6 +899,9 @@ Stream *open_stream_fd_for_write(int fd)
 /**
  * open_stream_for_write_2
  * @filename: Filename of new stream
+ * @geom_filename: The geometry filename to copy
+ * @argc: The number of arguments to the program
+ * @argv: The arguments to the program
  *
  * Creates a new stream with name @filename, and adds the stream format
  * and version header, plus a verbatim copy of the geometry file

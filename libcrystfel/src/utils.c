@@ -283,6 +283,7 @@ struct quaternion normalise_quaternion(struct quaternion q)
 
 /**
  * random_quaternion:
+ * @rng: A GSL random number generator to use
  *
  * Returns: a randomly generated, normalised, quaternion.
  **/
@@ -328,7 +329,7 @@ int quaternion_valid(struct quaternion q)
 
 /**
  * quat_rot
- * @q: A vector (in the form of an %rvec)
+ * @q: A vector (in the form of a "struct rvec")
  * @z: A %quaternion
  *
  * Rotates a vector according to a quaternion.

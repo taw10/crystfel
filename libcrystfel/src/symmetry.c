@@ -212,9 +212,9 @@ static void add_symop_v(SymOpList *ops,
  * @m: A %SymOpMask
  * @idx: Index of the operation to get
  *
- * Returns a pointer to an integer matrix specifying a symmetry operation
- * contained in the symmetry operator list, and identified by the specified
- * index.
+ * This function returns a pointer to an integer matrix specifying a symmetry
+ * operation contained in the symmetry operator list, and identified by the
+ * specified index.
  **/
 IntegerMatrix *get_symop(const SymOpList *ops, const SymOpMask *m, int idx)
 {

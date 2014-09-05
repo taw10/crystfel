@@ -1408,7 +1408,7 @@ int write_detector_geometry(const char *filename, struct detector *det)
 
 
 /**
- * mark_resolution_range_as_bad()
+ * mark_resolution_range_as_bad:
  * @image: An image structure
  * @min: Minimum value of 1/d to be marked as bad
  * @max: Maximum value of 1/d to be marked as bad
