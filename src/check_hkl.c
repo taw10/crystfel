@@ -444,7 +444,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 
 	fh = fopen(shell_file, "w");
 	if ( fh == NULL ) {
-		ERROR("Couldn't open 'shells.dat'\n");
+		ERROR("Couldn't open '%s'\n", shell_file);
 		return;
 	}
 
@@ -645,7 +645,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 
 	fclose(fh);
 
-	STATUS("Resolution shell information written to shells.dat.\n");
+	STATUS("Resolution shell information written to %s.\n", shell_file);
 
 	free(possible);
 	free(measurements);
