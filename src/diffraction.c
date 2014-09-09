@@ -146,25 +146,23 @@ static double sym_lookup_phase(const double *phases,
                                signed int h, signed int k, signed int l)
 {
 	int i;
-	double ret = 0.0;
 
 	for ( i=0; i<num_equivs(sym, NULL); i++ ) {
 
 		signed int he;
 		signed int ke;
 		signed int le;
-		double f, val;
+		double f;
 
 		get_equiv(sym, NULL, i, h, k, l, &he, &ke, &le);
 
 		f = (double)lookup_arr_flag(flags, he, ke, le);
-		val = lookup_arr_phase(phases, he, ke, le);
 
-		ret += f*val;
+		if ( f ) return lookup_arr_phase(phases, he, ke, le);
 
 	}
 
-	return ret;
+	return 0.0;
 }
 
 
