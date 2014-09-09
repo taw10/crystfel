@@ -100,22 +100,27 @@ static void show_help(const char *s)
 }
 
 
-static double *intensities_from_list(RefList *list)
+static double *intensities_from_list(RefList *list, SymOpList *sym)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 	double *out = new_arr_intensity();
+	SymOpMask *m = new_symopmask(sym);
+	int neq = num_equivs(sym, NULL);
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 
 		signed int h, k, l;
+		int eps;
 		double intensity = get_intensity(refl);
 
 		get_indices(refl, &h, &k, &l);
+		special_position(sym, m, h, k, l);
+		eps = neq / num_equivs(sym, m);
 
-		set_arr_intensity(out, h, k, l, intensity);
+		set_arr_intensity(out, h, k, l, intensity / eps);
 
 	}
 
@@ -529,7 +534,7 @@ int main(int argc, char *argv[])
 		} else {
 			phases = NULL;
 		}
-		intensities = intensities_from_list(reflections);
+		intensities = intensities_from_list(reflections, sym);
 		phases = phases_from_list(reflections);
 		flags = flags_from_list(reflections);
 
