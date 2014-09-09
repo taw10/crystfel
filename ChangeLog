@@ -1,3 +1,10 @@
+CrystFEL version 0.5.4a, 9th September 2014
+-------------------------------------------
+
+- A bug in pattern_sim's handling of symmetry was fixed.
+- The documentation for indexamajig --tolerance was updated.
+
+
 CrystFEL version 0.5.4, 5th September 2014
 ------------------------------------------
 
