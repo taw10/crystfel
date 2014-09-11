@@ -3,6 +3,8 @@ Changes in this development version
 
 - The geometry specification was extended to allow multiple events per HDF5 file
   as well as different panels in different HDF5 locations.
+- A bug in pattern_sim's handling of symmetry was fixed.
+- The documentation for indexamajig --tolerance was updated.
 
 
 CrystFEL version 0.5.4, 5th September 2014
