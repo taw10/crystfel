@@ -712,6 +712,7 @@ int main(int argc, char *argv[])
 	image.num_peaks = 0;
 	image.num_saturated_peaks = 0;
 	image.spectrum_size = 0;
+	image.event = NULL;
 
 	if ( random_intensities ) {
 		full = reflist_new();
