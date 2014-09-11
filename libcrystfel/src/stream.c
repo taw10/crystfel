@@ -140,10 +140,9 @@ static int read_peaks_2_3(FILE *fh, struct image *image)
 
 		if ( r == 5 ) {
 
-
 			p = find_panel_by_name(image->det, pn);
 			if ( p == NULL ) {
-				ERROR("Panel not found: %s\n");
+				ERROR("Panel not found: %s\n", pn);
 				return 1;
 			}
 
@@ -153,10 +152,7 @@ static int read_peaks_2_3(FILE *fh, struct image *image)
 			image_add_feature(image->features, add_x, add_y,
 			                  image, intensity, NULL);
 
-			printf("Here4\n");
-
 		}
-
 
 	} while ( rval != NULL );
 
@@ -253,7 +249,8 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
 
 		r = sscanf(line, "%i %i %i %f %s %f %i %f %f %s",
-				   &h, &k, &l, &intensity, phs, &sigma, &cts, &fs, &ss, pn);
+				   &h, &k, &l, &intensity, phs, &sigma, &cts,
+				   &fs, &ss, pn);
 		if ( (r != 10) && (!first) ) {
 			reflist_free(out);
 			return NULL;
