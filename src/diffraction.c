@@ -152,11 +152,11 @@ static double sym_lookup_phase(const double *phases,
 		signed int he;
 		signed int ke;
 		signed int le;
-		double f;
+		int f;
 
 		get_equiv(sym, NULL, i, h, k, l, &he, &ke, &le);
 
-		f = (double)lookup_arr_flag(flags, he, ke, le);
+		f = lookup_arr_flag(flags, he, ke, le);
 
 		if ( f ) return lookup_arr_phase(phases, he, ke, le);
 
