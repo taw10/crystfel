@@ -664,9 +664,11 @@ int main(int argc, char *argv[])
 			reference = model;
 			model = reflist_new();
 
-			free(hist_vals);
-			hist_vals = malloc(1*sizeof(double));
-			hist_i = 0;
+			if ( hist_vals != NULL ) {
+				free(hist_vals);
+				hist_vals = malloc(1*sizeof(double));
+				hist_i = 0;
+			}
 
 			r = merge_all(st, model, reference, sym,
 				     &hist_vals, hist_h, hist_k, hist_l, &hist_i,
