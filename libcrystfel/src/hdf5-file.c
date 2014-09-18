@@ -512,11 +512,9 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 		hsize_t size[2];
 
 		char *path, *group =  NULL, *object = NULL;
-		int fail;
 
 		path = locations[li].location;
-		fail = split_group_and_object(path, &group, &object);
-		if ( fail ) {
+		if ( split_group_and_object(path, &group, &object) ) {
 			ERROR("Error while determining write locations "
 			      "for file: %s\n", filename);
 			return 1;
@@ -537,6 +535,7 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 					H5Fclose(fh);
 					return 1;
 				}
+
 			} else {
 				gh = H5Gopen2(fh, group, H5P_DEFAULT);
 			}
