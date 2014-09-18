@@ -507,7 +507,7 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 
 	for ( li=0; li<num_locations; li++ ) {
 
-		hid_t ph, gph;
+		hid_t ph;
 		hid_t dh_dataspace;
 		hsize_t size[2];
 
@@ -520,16 +520,19 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 			return 1;
 		}
 
-
-		gph = H5Pcreate(H5P_LINK_CREATE);
-		H5Pset_create_intermediate_group(gph, 1);
-
 		if ( group != NULL ) {
-			fail = H5Gget_objinfo (fh, group, 0, NULL);
-			if ( fail ) {
+
+			htri_t exists;
+			hid_t gph = H5Pcreate(H5P_LINK_CREATE);
+			H5Pset_create_intermediate_group(gph, 1);
+
+			exists = H5Lexists(fh, group, H5P_DEFAULT);
+
+			if ( !exists ) {
 
 				gh = H5Gcreate2(fh, group, gph, H5P_DEFAULT,
 				                H5P_DEFAULT);
+				H5Pclose(gph);
 				if ( gh < 0 ) {
 					ERROR("Couldn't create group\n");
 					H5Fclose(fh);
@@ -599,7 +602,6 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 				free(group);
 				free(object);
 				H5Pclose(ph);
-				H5Pclose(gph);
 				H5Dclose(dh);
 				H5Sclose(dh_dataspace);
 				H5Sclose(sh);
@@ -626,7 +628,6 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 				free(group);
 				free(object);
 				H5Pclose(ph);
-				H5Pclose(gph);
 				H5Dclose(dh);
 				H5Sclose(dh_dataspace);
 				H5Sclose(sh);
@@ -643,7 +644,6 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 		free(group);
 		free(object);
 		H5Pclose(ph);
-		H5Pclose(gph);
 		H5Sclose(sh);
 		H5Dclose(dh);
 		if ( gh != -1 ) H5Gclose(gh);
