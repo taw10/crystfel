@@ -69,10 +69,9 @@ Stop processing after \fIn\fR crystals have been successfully merged.  The defau
 .PD 0
 .IP \fB--scale\fR
 .PD
-Attempt to scale each pattern for best fit with the current model.
+Perform a second pass through the input, scaling each crystal's intensities to best fit the initial model.
 
-Scaling using process_hkl doesn't work very well: use \fBpartialator\fR if you
-need more advanced merging techniques.
+Use \fBpartialator\fR if you need more advanced merging techniques.
 
 .PD 0
 .IP \fB--no-polarisation\fR
@@ -105,6 +104,16 @@ Merge crystals only if they diffract to beyond \fIn\fR Angstroms resolution.  Th
 .IP \fB--push-res=\fIn\fR
 .PD
 Integrate \fIn\fR nm^-1 higher than the apparent resolution limit of each individual crystal.  \fIn\fR can be negative to integrate \fIlower\fR than the apparent resolution limit.  The default is \fB--rescut=inf\fR, which means no resolution cutoff at all.
+
+.PD 0
+.IP \fB--min-cc=\fIn\fR
+.PD
+Perform a second pass through the input, merging crystals only if their correlation with the initial model is at least \fIn\fR.
+
+.PD 0
+.IP \fB--stat=\fIfilename\fR
+.PD
+Perform a second pass through the input and, for each crystal merged, write a line to \fIfilename\fR containing the filename, scale factor and correlation coefficient with the initial model.  The scale factors will all be 1 unless \fB--scale\fR is also used.
 
 .SH CHOICE OF POINT GROUP FOR MERGING
 

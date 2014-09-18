@@ -2,7 +2,7 @@
 #
 #      by Takanori Nakane (nakane.t@gmail.com)
 
-scale_cc <- read.table("scale.csv", sep=",", col.names=c("ImageName", "ScaleFactor", "CC"))
+scale_cc <- read.table("stats.dat", sep=" ", col.names=c("ImageName", "ScaleFactor", "CC"))
 
 # scatter plot
 # FIXME: sometimes white lines appear on the plot.

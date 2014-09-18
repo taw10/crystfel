@@ -179,7 +179,8 @@ script_DATA = scripts/alternate-stream scripts/cell-please \
               scripts/split-indexed scripts/stream_grep scripts/zone-axes \
               scripts/Rsplit_surface scripts/Rsplit_surface.py \
               scripts/clean-stream.py scripts/fg-graph scripts/truncate-stream \
-              scripts/gen-sfs-expand scripts/add-beam-params scripts/find-pairs
+              scripts/gen-sfs-expand scripts/add-beam-params \
+              scripts/find-pairs scripts/plot-cc-and-scale.R
 
 EXTRA_DIST += $(script_DATA)
 
