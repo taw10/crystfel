@@ -3,11 +3,11 @@
  *
  * Invoke the DirAx auto-indexing program
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -93,9 +93,18 @@ struct dirax_data {
 	int                     best_acl_nh;
 	int                     acls_tried[MAX_DIRAX_CELL_CANDIDATES];
 	int                     n_acls_tried;
-	UnitCell                *cur_cell;
 	int                     done;
 	int                     success;
+
+	float                   ax;
+	float                   ay;
+	float                   az;
+	float                   bx;
+	float                   by;
+	float                   bz;
+	float                   cx;
+	float                   cy;
+	float                   cz;
 
 	struct dirax_private    *dp;
 
@@ -174,7 +183,6 @@ static void dirax_parseline(const char *line, struct image *image,
 		if ( line[i] == 'R' ) rf = 1;
 		if ( (line[i] == 'D') && rf ) {
 			dirax->read_cell = 1;
-			dirax->cur_cell = cell_new();
 			return;
 		}
 		i++;
@@ -184,66 +192,68 @@ static void dirax_parseline(const char *line, struct image *image,
 	if ( dirax->read_cell == 1 ) {
 
 		/* First row of unit cell values */
-		float ax, ay, az;
 		int r;
 		r = sscanf(line, "%f %f %f %f %f %f",
-		           &d, &d, &d, &ax, &ay, &az);
+		           &d, &d, &d, &dirax->ax, &dirax->ay, &dirax->az);
 		if ( r != 6 ) {
 			ERROR("Couldn't understand cell line:\n");
 			ERROR("'%s'\n", line);
 			dirax->read_cell = 0;
-			cell_free(dirax->cur_cell);
 			return;
 		}
-		cell_set_cartesian_a(dirax->cur_cell,
-		                     ax*1e-10, ay*1e-10, az*1e-10);
+		dirax->ax *= 1e-10;
+		dirax->ay *= 1e-10;
+		dirax->az *= 1e-10;
 		dirax->read_cell++;
 		return;
 
 	} else if ( dirax->read_cell == 2 ) {
 
 		/* Second row of unit cell values */
-		float bx, by, bz;
 		int r;
 		r = sscanf(line, "%f %f %f %f %f %f",
-		           &d, &d, &d, &bx, &by, &bz);
+		           &d, &d, &d, &dirax->bx, &dirax->by, &dirax->bz);
 		if ( r != 6 ) {
 			ERROR("Couldn't understand cell line:\n");
 			ERROR("'%s'\n", line);
 			dirax->read_cell = 0;
-			cell_free(dirax->cur_cell);
 			return;
 		}
-		cell_set_cartesian_b(dirax->cur_cell,
-		                     bx*1e-10, by*1e-10, bz*1e-10);
+		dirax->bx *= 1e-10;
+		dirax->by *= 1e-10;
+		dirax->bz *= 1e-10;
 		dirax->read_cell++;
 		return;
 
 	} else if ( dirax->read_cell == 3 ) {
 
 		/* Third row of unit cell values */
-		float cx, cy, cz;
 		int r;
+		UnitCell *cell;
+
 		r = sscanf(line, "%f %f %f %f %f %f",
-		           &d, &d, &d, &cx, &cy, &cz);
+		           &d, &d, &d, &dirax->cx, &dirax->cy, &dirax->cz);
 		if ( r != 6 ) {
 			ERROR("Couldn't understand cell line:\n");
 			ERROR("'%s'\n", line);
 			dirax->read_cell = 0;
-			cell_free(dirax->cur_cell);
 			return;
 		}
-		cell_set_cartesian_c(dirax->cur_cell,
-		                     cx*1e-10, cy*1e-10, cz*1e-10);
+		dirax->cx *= 1e-10;
+		dirax->cy *= 1e-10;
+		dirax->cz *= 1e-10;
 		dirax->read_cell = 0;
 
+		cell = cell_new();
+		cell_set_cartesian(cell, dirax->ax, dirax->ay, dirax->az,
+		                         dirax->bx, dirax->by, dirax->bz,
+		                         dirax->cx, dirax->cy, dirax->cz);
+
 		/* Finished reading a cell.  Time to check it... */
-		if ( check_cell(dirax->dp, image, dirax->cur_cell) ) {
+		if ( check_cell(dirax->dp, image, cell) ) {
 			dirax->done = 1;
 			dirax->success = 1;
 		}
-		cell_free(dirax->cur_cell);
-		dirax->cur_cell = NULL;
 
 		return;
 

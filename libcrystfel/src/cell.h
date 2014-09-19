@@ -127,11 +127,6 @@ extern void cell_set_cartesian(UnitCell *cell,
 extern void cell_set_parameters(UnitCell *cell, double a, double b, double c,
 				double alpha, double beta, double gamma);
 
-extern void cell_set_cartesian_a(UnitCell *cell, double ax, double ay, double az);
-extern void cell_set_cartesian_b(UnitCell *cell, double bx, double by, double bz);
-extern void cell_set_cartesian_c(UnitCell *cell, double cx, double cy, double cz);
-
-
 extern int cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
                                double *alpha, double *beta, double *gamma);
 

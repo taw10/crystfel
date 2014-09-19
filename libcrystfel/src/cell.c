@@ -71,9 +71,6 @@ struct _unitcell {
 	CellRepresentation rep;
 
 	int have_parameters;
-	int have_a;
-	int have_b;
-	int have_c;
 
 	/* Crystallographic representation */
 	double a;	/* m */
@@ -130,9 +127,6 @@ UnitCell *cell_new()
 	cell->centering = 'P';
 	cell->unique_axis = '?';
 	cell->have_parameters = 0;
-	cell->have_a = 0;
-	cell->have_b = 0;
-	cell->have_c = 0;
 
 	return cell;
 }
@@ -196,42 +190,6 @@ void cell_set_cartesian(UnitCell *cell,
 
 	cell->rep = CELL_REP_CART;
 	cell->have_parameters = 1;
-}
-
-
-void cell_set_cartesian_a(UnitCell *cell, double ax, double ay, double az)
-{
-	if ( cell == NULL ) return;
-	cell->ax = ax;  cell->ay = ay;  cell->az = az;
-	cell->rep = CELL_REP_CART;
-	cell->have_a = 1;
-	if ( cell->have_a && cell->have_b && cell->have_c ) {
-		cell->have_parameters = 1;
-	}
-}
-
-
-void cell_set_cartesian_b(UnitCell *cell, double bx, double by, double bz)
-{
-	if ( cell == NULL ) return;
-	cell->bx = bx;  cell->by = by;  cell->bz = bz;
-	cell->rep = CELL_REP_CART;
-	cell->have_b = 1;
-	if ( cell->have_a && cell->have_b && cell->have_c ) {
-		cell->have_parameters = 1;
-	}
-}
-
-
-void cell_set_cartesian_c(UnitCell *cell, double cx, double cy, double cz)
-{
-	if ( cell == NULL ) return;
-	cell->cx = cx;  cell->cy = cy;  cell->cz = cz;
-	cell->rep = CELL_REP_CART;
-	cell->have_c = 1;
-	if ( cell->have_a && cell->have_b && cell->have_c ) {
-		cell->have_parameters = 1;
-	}
 }
 
 
