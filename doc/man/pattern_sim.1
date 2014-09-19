@@ -25,17 +25,18 @@ pattern_sim simulates diffraction patterns from small crystals probed with femto
 
 pattern_sim -g mydetector.geom -b my.beam -p my.pdb -r -i myintensities.hkl
 
-The unit cell geometry will be taken from the CRYST1 line in the PDB file you provide, and the intensities of the reflections will be interpolated from the reflection list file you provide.  The reflection list format is the same as that output by process_hkl and handled by get_hkl.  You also need beam and geometry description files (-b and -g respectively).  See `man crystfel_geometry' for details of how to create a geometry file.  Examples of both files can be found in the installation directory, which is normally /usr/local/share/doc/crystfel.
+The unit cell geometry will be taken from the unit cell file you provide, and the intensities of the reflections will be interpolated from the reflection list file you provide.  The reflection list format is the same as that output by process_hkl and handled by get_hkl.  You also need beam and geometry description files (-b and -g respectively).  See `man crystfel_geometry' for details of how to create a geometry file.  Examples of both files can be found in the installation directory, which is normally /usr/local/share/doc/crystfel.
 
 The result will be written to an HDF5 file in the current directory with the name `sim.h5'.
 
 .SH OPTIONS
 
 .PD 0
+.IP "\fB-p\fR \fIunitcell.cell\fR"
 .IP "\fB-p\fR \fIunitcell.pdb\fR"
 .IP \fB--pdb=\fR\fIunitcell.pdb\fR
 .PD
-Specify the name of the PDB file containing at least a CRYST1 line describing the unit cell.
+Specify the name of the file containing unit cell information, in PDB or CrystFEL format.
 
 .PD 0
 .IP \fB--gpu\fR

@@ -89,7 +89,7 @@ static void show_help(const char *s)
 "Compare intensity lists.\n"
 "\n"
 "  -y, --symmetry=<sym>       The symmetry of both the input files.\n"
-"  -p, --pdb=<filename>       PDB file to use.\n"
+"  -p, --pdb=<filename>       Unit cell file to use.\n"
 "      --fom=<FoM>            Calculate this figure of merit  Choose from:\n"
 "                              R1I, R1F, R2, Rsplit, CC, CCstar,\n"
 "			       CCano, CRDano, Rano, Rano/Rsplit\n"
@@ -916,7 +916,7 @@ int main(int argc, char *argv[])
 	RefList *list1_raw;
 	RefList *list2_raw;
 	enum fom fom = FOM_R1I;
-	char *pdb = NULL;
+	char *cellfile = NULL;
 	float rmin_fix = -1.0;
 	float rmax_fix = -1.0;
 	double rmin, rmax;
@@ -974,7 +974,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 'p' :
-			pdb = strdup(optarg);
+			cellfile = strdup(optarg);
 			break;
 
 			case 'u' :
@@ -1116,15 +1116,15 @@ int main(int argc, char *argv[])
 	afile = strdup(argv[optind++]);
 	bfile = strdup(argv[optind]);
 
-	if ( pdb == NULL ) {
-		ERROR("You must provide a PDB file with the unit cell.\n");
+	if ( cellfile == NULL ) {
+		ERROR("You must provide a unit cell.\n");
 		exit(1);
 	}
 
 	if ( shell_file == NULL ) shell_file = strdup("shells.dat");
 
-	cell = load_cell_from_pdb(pdb);
-	free(pdb);
+	cell = load_cell_from_file(cellfile);
+	free(cellfile);
 
 	list1_raw = read_reflections(afile);
 	if ( list1_raw == NULL ) {

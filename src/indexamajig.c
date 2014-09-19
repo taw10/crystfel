@@ -93,8 +93,8 @@ static void show_help(const char *s)
 " -b, --beam=<file>        Get beam parameters from file (provides nominal\n"
 "                           wavelength value if no per-shot value is found in\n"
 "                           the HDF5 files.\n"
-" -p, --pdb=<file>         PDB file from which to get the unit cell to match.\n"
-"                           Default: 'molecule.pdb'.\n"
+" -p, --pdb=<file>         File (PDB or CrystFEL unit cell format) from which\n"
+"                           to get the unit cell.  Default: 'molecule.pdb'.\n"
 "     --basename           Remove the directory parts of the filenames.\n"
 " -x, --prefix=<p>         Prefix filenames from input file with <p>.\n"
 "     --peaks=<method>     Use 'method' for finding peaks.  Choose from:\n"
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
 	IndexingMethod *indm;
 	IndexingPrivate **ipriv;
 	char *indm_str = NULL;
-	char *pdb = NULL;
+	char *cellfile = NULL;
 	char *prefix = NULL;
 	char *speaks = NULL;
 	char *toler = NULL;
@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 'p' :
-			pdb = strdup(optarg);
+			cellfile = strdup(optarg);
 			break;
 
 			case 'x' :
@@ -606,13 +606,13 @@ int main(int argc, char *argv[])
 
 	add_geom_beam_stuff_to_copy_hdf5(iargs.copyme, iargs.det, iargs.beam);
 
-	if ( pdb != NULL ) {
-		iargs.cell = load_cell_from_pdb(pdb);
+	if ( cellfile != NULL ) {
+		iargs.cell = load_cell_from_file(cellfile);
 		if ( iargs.cell == NULL ) {
-			ERROR("Couldn't read unit cell (from %s)\n", pdb);
+			ERROR("Couldn't read unit cell (from %s)\n", cellfile);
 			return 1;
 		}
-		free(pdb);
+		free(cellfile);
 		STATUS("This is what I understood your unit cell to be:\n");
 		cell_print(iargs.cell);
 	} else {

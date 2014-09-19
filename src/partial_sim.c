@@ -624,7 +624,7 @@ int main(int argc, char *argv[])
 		ERROR("You need to give a PDB file with the unit cell.\n");
 		return 1;
 	}
-	cell = load_cell_from_pdb(cellfile);
+	cell = load_cell_from_file(cellfile);
 	if ( cell == NULL ) {
 		ERROR("Failed to get cell from '%s'\n", cellfile);
 		return 1;

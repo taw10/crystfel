@@ -3,11 +3,11 @@
  *
  * Draw pretty renderings of reflection lists
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -71,7 +71,7 @@ static void show_help(const char *s)
 "      --zone=<z>          Show the <z>th Laue zone.\n"
 "  -o, --output=<filename> Output filename.  Default: za.pdf\n"
 "      --boost=<val>       Squash colour scale by <val>.\n"
-"  -p, --pdb=<file>        PDB file from which to get the unit cell.\n"
+"  -p, --pdb=<file>        File from which to get the unit cell.\n"
 "  -y, --symmetry=<sym>    Expand reflections according to point group <sym>.\n"
 "\n"
 "  -c, --colscale=<scale>  Use the given colour scale.  Choose from:\n"
@@ -741,7 +741,7 @@ int main(int argc, char *argv[])
 	int config_sqrt = 0;
 	int config_colkey = 0;
 	int config_zawhinge = 0;
-	char *pdb = NULL;
+	char *cellfile = NULL;
 	int r = 0;
 	double boost = 1.0;
 	char *sym_str = NULL;
@@ -800,7 +800,7 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 'p' :
-			pdb = strdup(optarg);
+			cellfile = strdup(optarg);
 			break;
 
 			case 'b' :
@@ -888,8 +888,8 @@ int main(int argc, char *argv[])
 		      " any longer (I ignored it for you).\n");
 	}
 
-	if ( (pdb == NULL) && !config_colkey ) {
-		ERROR("You must specify the PDB containing the unit cell.\n");
+	if ( (cellfile == NULL) && !config_colkey ) {
+		ERROR("You must specify the unit cell.\n");
 		return 1;
 	}
 
@@ -974,9 +974,9 @@ int main(int argc, char *argv[])
 
 	infile = argv[optind];
 
-	cell = load_cell_from_pdb(pdb);
+	cell = load_cell_from_file(cellfile);
 	if ( cell == NULL ) {
-		ERROR("Couldn't load unit cell from %s\n", pdb);
+		ERROR("Couldn't load unit cell from %s\n", cellfile);
 		return 1;
 	}
 	list = read_reflections(infile);
@@ -993,7 +993,7 @@ int main(int argc, char *argv[])
 	render_za(cell, list, boost, sym, wght, colscale,
 	          rh, rk, rl, dh, dk, dl, outfile, scale_top, zone, &rings);
 
-	free(pdb);
+	free(cellfile);
 	free_symoplist(sym);
 	reflist_free(list);
 	if ( outfile != NULL ) free(outfile);

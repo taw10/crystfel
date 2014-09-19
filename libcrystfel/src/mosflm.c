@@ -841,9 +841,9 @@ IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
 	if ( *indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
 	if ( *indm & INDEXING_USE_LATTICE_TYPE ) need_cell = 1;
 
-	if ( need_cell && (cell == NULL) ) {
-		ERROR("Altering your MOSFLM flags because no PDB file was"
-		      " provided.\n");
+	if ( need_cell && !cell_has_parameters(cell) ) {
+		ERROR("Altering your MOSFLM flags because cell parameters were"
+		      " not provided.\n");
 		*indm &= ~INDEXING_CHECK_CELL_COMBINATIONS;
 		*indm &= ~INDEXING_CHECK_CELL_AXES;
 		*indm &= ~INDEXING_USE_LATTICE_TYPE;

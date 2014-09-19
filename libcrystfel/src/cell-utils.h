@@ -3,13 +3,13 @@
  *
  * Unit Cell utility functions
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
- *   2012      Lorenzo Galli
+ *   2009-2013,2014 Thomas White <taw@physics.org>
+ *   2012           Lorenzo Galli
  *
  * This file is part of CrystFEL.
  *
@@ -56,6 +56,7 @@ extern UnitCell *match_cell(UnitCell *cell, UnitCell *tempcell, int verbose,
 extern UnitCell *match_cell_ab(UnitCell *cell, UnitCell *tempcell);
 
 extern UnitCell *load_cell_from_pdb(const char *filename);
+extern UnitCell *load_cell_from_file(const char *filename);
 
 extern int cell_is_sensible(UnitCell *cell);
 

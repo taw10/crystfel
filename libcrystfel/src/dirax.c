@@ -638,9 +638,9 @@ IndexingPrivate *dirax_prepare(IndexingMethod *indm, UnitCell *cell,
 	if ( *indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
 	if ( *indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
 
-	if ( need_cell && (cell == NULL) ) {
-		ERROR("Altering your DirAx flags because no PDB file was"
-		      " provided.\n");
+	if ( need_cell && !cell_has_parameters(cell) ) {
+		ERROR("Altering your DirAx flags because cell parameters were"
+		      " not provided.\n");
 		*indm &= ~INDEXING_CHECK_CELL_COMBINATIONS;
 		*indm &= ~INDEXING_CHECK_CELL_AXES;
 	}

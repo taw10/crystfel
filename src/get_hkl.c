@@ -421,7 +421,7 @@ int main(int argc, char *argv[])
 	char *cutoff_str = NULL;
 	double cutiso = 0.0;
 	float cutn1, cutn2, cutn3;
-	char *pdb = NULL;
+	char *cellfile = NULL;
 	char *reindex_str = NULL;
 	SymOpList *reindex = NULL;
 
@@ -487,7 +487,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 'p' :
-			pdb = strdup(optarg);
+			cellfile = strdup(optarg);
 			break;
 
 			case 2 :
@@ -715,18 +715,18 @@ int main(int argc, char *argv[])
 		RefListIterator *iter;
 		UnitCell *cell;
 
-		if ( pdb == NULL ) {
-			ERROR("You must provide a PDB file when using "
+		if ( cellfile == NULL ) {
+			ERROR("You must provide a unit cell when using "
 			      "--cutoff-angstroms.\n");
 			return 1;
 		}
 
-		cell = load_cell_from_pdb(pdb);
+		cell = load_cell_from_file(cellfile);
 		if ( cell == NULL ) {
-			ERROR("Failed to load cell from '%s'\n", pdb);
+			ERROR("Failed to load cell from '%s'\n", cellfile);
 			return 1;
 		}
-		free(pdb);
+		free(cellfile);
 
 		n = reflist_new();
 
@@ -762,18 +762,18 @@ int main(int argc, char *argv[])
 		double csx, csy, csz;
 		double as, bs, cs;
 
-		if ( pdb == NULL ) {
-			ERROR("You must provide a PDB file when using "
+		if ( cellfile == NULL ) {
+			ERROR("You must provide a unit cell when using "
 			      "--cutoff-angstroms.\n");
 			return 1;
 		}
 
-		cell = load_cell_from_pdb(pdb);
+		cell = load_cell_from_file(cellfile);
 		if ( cell == NULL ) {
-			ERROR("Failed to load cell from '%s'\n", pdb);
+			ERROR("Failed to load cell from '%s'\n", cellfile);
 			return 1;
 		}
-		free(pdb);
+		free(cellfile);
 
 		cell_get_reciprocal(cell, &asx, &asy, &asz,
 				          &bsx, &bsy, &bsz,

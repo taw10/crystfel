@@ -3,13 +3,13 @@
  *
  * Unit Cell utility functions
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
- *   2012      Lorenzo Galli
+ *   2009-2012,2014 Thomas White <taw@physics.org>
+ *   2012           Lorenzo Galli
  *
  * This file is part of CrystFEL.
  *
@@ -128,6 +128,27 @@ LatticeType lattice_from_str(const char *s)
 }
 
 
+static int check_centering(char cen)
+{
+	switch ( cen ) {
+
+		case 'P' :
+		case 'A' :
+		case 'B' :
+		case 'C' :
+		case 'I' :
+		case 'F' :
+		case 'R' :
+		case 'H' :
+		return 0;
+
+		default:
+		return 1;
+
+	}
+}
+
+
 int right_handed(UnitCell *cell)
 {
 	double asx, asy, asz;
@@ -201,39 +222,46 @@ void cell_print(UnitCell *cell)
 		STATUS(", unique axis %c", cell_get_unique_axis(cell));
 	}
 
-	if ( right_handed(cell) ) {
-		STATUS(", right handed");
-	} else {
-		STATUS(", left handed");
+	if ( cell_has_parameters(cell) ) {
+		if ( right_handed(cell) ) {
+			STATUS(", right handed");
+		} else {
+			STATUS(", left handed");
+		}
 	}
 
 	STATUS(", point group '%s'.\n", cell_get_pointgroup(cell));
 
-	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
+	if ( cell_has_parameters(cell) ) {
+		cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
 
-	STATUS("a      b      c            alpha   beta  gamma\n");
-	STATUS("%6.2f %6.2f %6.2f A    %6.2f %6.2f %6.2f deg\n",
-	       a*1e10, b*1e10, c*1e10,
-	       rad2deg(alpha), rad2deg(beta), rad2deg(gamma));
+		STATUS("a      b      c            alpha   beta  gamma\n");
+		STATUS("%6.2f %6.2f %6.2f A    %6.2f %6.2f %6.2f deg\n",
+		       a*1e10, b*1e10, c*1e10,
+		       rad2deg(alpha), rad2deg(beta), rad2deg(gamma));
 
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+		cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
-	STATUS("a = %10.3e %10.3e %10.3e m\n", ax, ay, az);
-	STATUS("b = %10.3e %10.3e %10.3e m\n", bx, by, bz);
-	STATUS("c = %10.3e %10.3e %10.3e m\n", cx, cy, cz);
+		STATUS("a = %10.3e %10.3e %10.3e m\n", ax, ay, az);
+		STATUS("b = %10.3e %10.3e %10.3e m\n", bx, by, bz);
+		STATUS("c = %10.3e %10.3e %10.3e m\n", cx, cy, cz);
 
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
+		cell_get_reciprocal(cell, &asx, &asy, &asz,
+			                  &bsx, &bsy, &bsz,
+			                  &csx, &csy, &csz);
 
-	STATUS("astar = %10.3e %10.3e %10.3e m^-1 (modulus = %10.3e m^-1)\n",
-	                             asx, asy, asz, modulus(asx, asy, asz));
-	STATUS("bstar = %10.3e %10.3e %10.3e m^-1 (modulus = %10.3e m^-1)\n",
-	                             bsx, bsy, bsz, modulus(bsx, bsy, bsz));
-	STATUS("cstar = %10.3e %10.3e %10.3e m^-1 (modulus = %10.3e m^-1)\n",
-	                             csx, csy, csz, modulus(csx, csy, csz));
+		STATUS("a* = %10.3e %10.3e %10.3e m^-1 (modulus %10.3e m^-1)\n",
+		       asx, asy, asz, modulus(asx, asy, asz));
+		STATUS("b* = %10.3e %10.3e %10.3e m^-1 (modulus %10.3e m^-1)\n",
+		       bsx, bsy, bsz, modulus(bsx, bsy, bsz));
+		STATUS("c* = %10.3e %10.3e %10.3e m^-1 (modulus %10.3e m^-1)\n",
+		       csx, csy, csz, modulus(csx, csy, csz));
 
-	STATUS("Cell representation is %s.\n", cell_rep(cell));
+		STATUS("Cell representation is %s.\n", cell_rep(cell));
+
+	} else {
+		STATUS("Unit cell parameters are not specified.\n");
+	}
 }
 
 
@@ -1044,6 +1072,14 @@ static void determine_lattice(UnitCell *cell,
 }
 
 
+/**
+ * load_cell_from_pdb:
+ *
+ * Loads a unit cell from a PDB file.
+ *
+ * Returns: a newly allocated %UnitCell.
+ *
+ */
 UnitCell *load_cell_from_pdb(const char *filename)
 {
 	FILE *fh;
@@ -1111,6 +1147,178 @@ UnitCell *load_cell_from_pdb(const char *filename)
 	fclose(fh);
 
 	validate_cell(cell);
+
+	return cell;
+}
+
+
+static int get_length_m(char **bits, int nbits, double *pl)
+{
+	char *rval;
+
+	if ( nbits < 4 ) {
+		ERROR("No units specified for '%s'\n", bits[0]);
+		return 1;
+	}
+
+	*pl = strtod(bits[2], &rval);
+	if ( *rval != '\0' ) {
+		ERROR("Invalid value '%s'.\n", bits[2]);
+		return 1;
+	}
+
+	if ( strcmp(bits[3], "nm") == 0 ) {
+		*pl *= 1e-9;
+	} else if ( strcmp(bits[3], "A") == 0 ) {
+		*pl *= 1e-10;
+	} else {
+		ERROR("Unrecognised length units '%s'\n", bits[3]);
+		return 1;
+	}
+
+	return 0;
+}
+
+
+static int get_angle_rad(char **bits, int nbits, double *pl)
+{
+	char *rval;
+
+	if ( nbits < 4 ) {
+		ERROR("No units specified for '%s'\n", bits[0]);
+		return 1;
+	}
+
+	*pl = strtod(bits[2], &rval);
+	if ( *rval != '\0' ) {
+		ERROR("Invalid value '%s'.\n", bits[2]);
+		return 1;
+	}
+
+	if ( strcmp(bits[3], "rad") == 0 ) {
+		/* Do nothing, already in rad */
+	} else if ( strcmp(bits[3], "deg") == 0 ) {
+		*pl = deg2rad(*pl);
+	} else {
+		ERROR("Unrecognised angle units '%s'\n", bits[3]);
+		return 1;
+	}
+
+	return 0;
+}
+
+
+/**
+ * load_cell_from_file:
+ *
+ * Loads a unit cell from a file of any type (PDB or CrystFEL format)
+ *
+ * Returns: a newly allocated %UnitCell.
+ *
+ */
+UnitCell *load_cell_from_file(const char *filename)
+{
+	FILE *fh;
+	char *rval;
+	char line[1024];
+	UnitCell *cell;
+	int have_a = 0, have_b = 0, have_c = 0;
+	int have_al = 0,  have_be = 0,  have_ga = 0;
+	double a, b, c, al, be, ga;
+
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) {
+		ERROR("Couldn't open '%s'\n", filename);
+		return NULL;
+	}
+
+	rval = fgets(line, 1023, fh);
+	chomp(line);
+
+	if ( strcmp(line, "CrystFEL unit cell file version 1.0") != 0 ) {
+		fclose(fh);
+		return load_cell_from_pdb(filename);
+	}
+
+	cell = cell_new();
+
+	do {
+
+		char line[1024];
+		int n1;
+		int i;
+		char **bits;
+
+		rval = fgets(line, 1023, fh);
+		chomp(line);
+
+		n1 = assplode(line, " \t", &bits, ASSPLODE_NONE);
+		if ( n1 < 3 ) {
+			for ( i=0; i<n1; i++ ) free(bits[i]);
+			free(bits);
+			continue;
+		}
+
+		if ( bits[0][0] == ';' ) {
+			for ( i=0; i<n1; i++ ) free(bits[i]);
+			free(bits);
+			continue;
+		}
+
+		if ( strcmp(bits[0], "lattice_type") == 0 ) {
+			LatticeType lt = lattice_from_str(bits[2]);
+			cell_set_lattice_type(cell, lt);
+
+		} else if ( strcmp(bits[0], "centering") == 0 ) {
+			char cen = bits[2][0];
+			if ( !check_centering(cen) ) {
+				cell_set_centering(cell, cen);
+			} else {
+				ERROR("Unrecognised centering '%c'\n", cen);
+			}
+
+		} else if ( strcmp(bits[0], "a") == 0 ) {
+			if ( !get_length_m(bits, n1, &a) ) {
+				have_a = 1;
+			}
+
+		} else if ( strcmp(bits[0], "b") == 0 ) {
+			if ( !get_length_m(bits, n1, &b) ) {
+				have_b = 1;
+			}
+
+		} else if ( strcmp(bits[0], "c") == 0 ) {
+			if ( !get_length_m(bits, n1, &c) ) {
+				have_c = 1;
+			}
+
+		} else if ( strcmp(bits[0], "al") == 0 ) {
+			if ( !get_angle_rad(bits, n1, &al) ) {
+				have_al = 1;
+			}
+
+		} else if ( strcmp(bits[0], "be") == 0 ) {
+			if ( !get_angle_rad(bits, n1, &be) ) {
+				have_be = 1;
+			}
+
+		} else if ( strcmp(bits[0], "ga") == 0 ) {
+			if ( !get_angle_rad(bits, n1, &ga) ) {
+				have_ga = 1;
+			}
+
+		} else {
+			ERROR("Unrecognised field '%s'\n", bits[0]);
+		}
+
+		for ( i=0; i<n1; i++ ) free(bits[i]);
+		free(bits);
+
+	} while ( rval != NULL );
+
+	if ( have_a && have_b && have_c && have_al && have_be && have_ga ) {
+		cell_set_parameters(cell, a, b, c, al, be, ga);
+	}
 
 	return cell;
 }

@@ -162,7 +162,8 @@ crystfeldoc_DATA = doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
                    doc/examples/lcls-xpp-estimate.beam \
                    doc/examples/simple.geom \
                    doc/examples/cspad-feb2011.geom \
-                   doc/examples/lcls-cxi-9keV.beam
+                   doc/examples/lcls-cxi-9keV.beam \
+                   doc/examples/cell-example.cell
 
 EXTRA_DIST += $(crystfeldoc_DATA) doc/twin-calculator.odt \
               doc/reference/libcrystfel/xml/coding-standards.xml

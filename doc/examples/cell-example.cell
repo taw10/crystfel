@@ -1,0 +1,12 @@
+CrystFEL unit cell file version 1.0
+
+lattice_type = cubic
+centering = I
+
+a = 66.2 A
+b = 66.2 A
+c = 66.2 A
+
+al = 90.0 deg
+be = 90.0 deg
+ga = 90.0 deg

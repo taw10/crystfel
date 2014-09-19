@@ -22,7 +22,7 @@ indexamajig \- bulk indexing and data reduction program
 
 \fBindexamajig\fR takes a list of diffraction snapshots from crystals in random orientations and attempts to find peaks, index and integrate each one.  The input is a list of diffraction image files in HDF5 format and some auxiliary files and parameters.  The output is a long text file ('stream') containing the results from each image in turn.
 
-For minimal basic use, you need to provide the list of diffraction patterns, the method which will be used to index, a file describing the geometry of the detector, and a PDB file which contains the unit cell which will be used for the indexing.  Here is what the minimal use might look like on the command line:
+For minimal basic use, you need to provide the list of diffraction patterns, the method which will be used to index, a file describing the geometry of the detector, and a file which contains the unit cell which will be used for the indexing.  Here is what the minimal use might look like on the command line:
 
 .IP \fBindexamajig\fR
 .PD
@@ -57,7 +57,7 @@ To use this option, 'dirax' must be in your shell's search path.  If you see the
 
 .IP \fBmosflm\fR
 .PD
-As \fBdirax\fR, but invoke MOSFLM instead.  If you provide a PDB file (with \fB-p\fR), the lattice type and centering information will be passed to MOSFLM, which will then return solutions which match.  Note that the lattice parameter information will \fBnot\fR be given to MOSFLM, because it has no way to make use of it.
+As \fBdirax\fR, but invoke MOSFLM instead.  If you provide a unit cell (with \fB-p\fR), the lattice type and centering information will be passed to MOSFLM, which will then return solutions which match.  Note that the lattice parameter information will \fBnot\fR be given to MOSFLM, because it has no way to make use of it.
 .sp
 To use this option, 'ipmosflm' must be in your shell's search path.  If you see the MOSFLM version and copyright information when you run \fBipmosflm\fR on the command line, things are set up correctly.
 
@@ -96,7 +96,7 @@ Do not check that the cell accounts for any of the peaks as described in \fBdira
 
 .IP \fB-nolatt\fR
 .PD
-Do not use the lattice type information from the PDB file to help guide the indexing.  Use with \fBmosflm\fR, which is the only indexing method which can optionally take advantage of this information.  This is the default behaviour for \fBdirax\fR.  This option makes no sense for \fBreax\fR, which is intrinsically based on using known lattice information.
+Do not use the lattice type information to help guide the indexing.  Use with \fBmosflm\fR, which is the only indexing method which can optionally take advantage of this information.  This is the default behaviour for \fBdirax\fR.  This option makes no sense for \fBreax\fR, which is intrinsically based on using known lattice information.
 
 .IP \fB-latt\fR
 .PD
@@ -198,10 +198,11 @@ Read the detector geometry description from \fIfilename\fR.  See \fBman crystfel
 Read the beam description from \fIfilename\fR.  See \fBman crystfel_geometry\fR for more information.
 
 .PD 0
-.IP "\fB-p\fR \fIfilename\fR"
-.IP \fB--pdb=\fR\fIfilename\fR
+.IP "\fB-p\fR \fIunitcell.cell\fR"
+.IP "\fB-p\fR \fIunitcell.pdb\fR"
+.IP \fB--pdb=\fR\fIunitcell.pdb\fR
 .PD
-Read the unit cell for comparison from the CRYST1 line of the PDB file called \fIfilename\fR.
+Specify the name of the file containing unit cell information, in PDB or CrystFEL format.
 
 .PD 0
 .IP "\fB-e\fR \fIpath\fR"

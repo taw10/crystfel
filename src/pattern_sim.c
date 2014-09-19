@@ -69,7 +69,7 @@ static void show_help(const char *s)
 " -h, --help                Display this help message.\n"
 "     --version             Print CrystFEL version number and exit.\n"
 "\n"
-" -p, --pdb=<file>          PDB file from which to get the unit cell.\n"
+" -p, --pdb=<file>          File from which to get the unit cell.\n"
 "                            (The actual Bragg intensities come from the\n"
 "                            intensities file)\n"
 "     --gpu                 Use the GPU to speed up the calculation.\n"
@@ -572,7 +572,7 @@ int main(int argc, char *argv[])
 	free(beamfile);
 
 	/* Load unit cell */
-	input_cell = load_cell_from_pdb(filename);
+	input_cell = load_cell_from_file(filename);
 	if ( input_cell == NULL ) {
 		exit(1);
 	}
