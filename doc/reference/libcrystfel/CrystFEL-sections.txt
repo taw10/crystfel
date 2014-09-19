@@ -90,7 +90,6 @@ cell_free
 <SUBSECTION>
 cell_get_cartesian
 cell_get_parameters
-cell_get_pointgroup
 cell_get_reciprocal
 cell_get_centering
 cell_get_lattice_type
@@ -101,7 +100,6 @@ cell_set_cartesian_a
 cell_set_cartesian_b
 cell_set_cartesian_c
 cell_set_parameters
-cell_set_pointgroup
 cell_set_reciprocal
 cell_set_centering
 cell_set_lattice_type

@@ -224,13 +224,13 @@ void cell_print(UnitCell *cell)
 
 	if ( cell_has_parameters(cell) ) {
 		if ( right_handed(cell) ) {
-			STATUS(", right handed");
+			STATUS(", right handed.\n");
 		} else {
-			STATUS(", left handed");
+			STATUS(", left handed.\n");
 		}
+	} else {
+		STATUS(".\n");
 	}
-
-	STATUS(", point group '%s'.\n", cell_get_pointgroup(cell));
 
 	if ( cell_has_parameters(cell) ) {
 		cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
@@ -1135,7 +1135,6 @@ UnitCell *load_cell_from_pdb(const char *filename)
 			if ( strlen(line) > 65 ) {
 				cell_set_centering(cell, line[55]);
 			} else {
-				cell_set_pointgroup(cell, "1");
 				ERROR("CRYST1 line without centering.\n");
 			}
 
