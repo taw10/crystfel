@@ -96,9 +96,6 @@ cell_get_lattice_type
 cell_get_unique_axis
 <SUBSECTION>
 cell_set_cartesian
-cell_set_cartesian_a
-cell_set_cartesian_b
-cell_set_cartesian_c
 cell_set_parameters
 cell_set_reciprocal
 cell_set_centering
