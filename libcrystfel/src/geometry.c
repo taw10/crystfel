@@ -41,7 +41,6 @@
 #include "cell-utils.h"
 #include "image.h"
 #include "peaks.h"
-#include "beam-parameters.h"
 #include "reflist.h"
 #include "reflist-utils.h"
 #include "symmetry.h"

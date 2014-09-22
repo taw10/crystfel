@@ -13,7 +13,7 @@ pattern_sim \- Simulation of nanocrystal diffraction patterns
 .SH SYNOPSIS
 .PP
 .B pattern_sim
-\fB-g\fR \fIdetector.geom\fR \fB-b\fR \fImy.beam\fR \fB-p\fR \fImy.pdb\fR
+\fB-g\fR \fIdetector.geom\fR \fB-p\fR \fImy.pdb\fR
 [\fBoptions\fR] \fB...\fR
 .PP
 .B pattern_sim
@@ -23,9 +23,9 @@ pattern_sim \- Simulation of nanocrystal diffraction patterns
 
 pattern_sim simulates diffraction patterns from small crystals probed with femtosecond pulses of X-rays from a free electron laser.  Typical use might be of the form:
 
-pattern_sim -g mydetector.geom -b my.beam -p my.pdb -r -i myintensities.hkl
+pattern_sim -g mydetector.geom -p my.pdb -r -i myintensities.hkl
 
-The unit cell geometry will be taken from the unit cell file you provide, and the intensities of the reflections will be interpolated from the reflection list file you provide.  The reflection list format is the same as that output by process_hkl and handled by get_hkl.  You also need beam and geometry description files (-b and -g respectively).  See `man crystfel_geometry' for details of how to create a geometry file.  Examples of both files can be found in the installation directory, which is normally /usr/local/share/doc/crystfel.
+The unit cell geometry will be taken from the unit cell file you provide, and the intensities of the reflections will be interpolated from the reflection list file you provide.  The reflection list format is the same as that output by process_hkl and handled by get_hkl.  You also need a geometry description file (-g).  See `man crystfel_geometry' for details of how to create a geometry file.  Examples of both files can be found in the installation directory, which is normally /usr/local/share/doc/crystfel.
 
 The result will be written to an HDF5 file in the current directory with the name `sim.h5'.
 
@@ -53,12 +53,6 @@ Use GPU device number \fIn\fR.  If you omit this option, the list of GPU devices
 .IP \fB--geometry=\fR\fIfilename\fR
 .PD
 Read the detector geometry description from \fIfilename\fR.  See \fBman crystfel_geometry\fR for more information.
-
-.PD 0
-.IP "\fB-b\fR \fIfilename\fR"
-.IP \fB--beam=\fR\fIfilename\fR
-.PD
-Read the beam description from \fIfilename\fR.  See \fBman crystfel_geometry\fR for more information.
 
 .PD 0
 .IP "\fB-n\fR \fn\fR"
@@ -144,6 +138,31 @@ Add \fIn\fR photons of Poisson-distributed background uniformly over the detecto
 .PD
 Suppress the subsidiary maxima of the shape transforms by setting I_latt(q) to zero beyond the first minimum of the function.
 
+.PD 0
+.B
+.IP "\fB--beam-divergence=\fIval\fR"
+.PD
+Set the convergence angle (the full angle, not "half-angle"/"semi-angle") for the incident beam.  The default is \fB--beam-divergence=0.001\fR, i.e. 1 mrad.\fR.
+
+.PD 0
+.B
+.IP "\fB--beam-bandwidth=\fIval\fR"
+.PD
+Set the bandwidth, expressed as a decimal fraction applying to to wavelengths (not the photon energies), for the incident beam.  The default is \fB--beam-bandwidth=0.01\fR, i.e. 1%.\fR.
+.PD
+Note: When using the two-colour or SASE spectrum, the spectrum calculation actually takes this value to be the bandwidth applying to the photon energies instead of the wavelengths.  For small bandwidths, the difference should be very small.  Sorry for the horrifying inconsistency.
+
+.PD 0
+.B
+.IP "\fB--profile-radius=\fIval\fR"
+.PD
+Set the radius of the scattering density surrounding each reciprocal lattice point, in m^-1.  The default is \fB--profile-radius=0.001e9\fR m^-1.
+
+.PD 0
+.B
+.IP "\fB--photon-energy=\fIval\fR"
+.PD
+Set the central photon energy, in eV, for the incident beam.  The default is \fB--photon-energy=9000\fR, i.e. 9 keV X-rays.\fR.
 
 .SH REFLECTION LISTS
 

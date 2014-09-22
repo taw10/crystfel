@@ -125,14 +125,12 @@ typedef void *IndexingPrivate;
 extern IndexingMethod *build_indexer_list(const char *str);
 extern char *indexer_str(IndexingMethod indm);
 
-#include "beam-parameters.h"
 #include "detector.h"
 #include "cell.h"
 #include "image.h"
 
 extern IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
-                                          struct detector *det,
-                                          struct beam_params *beam, float *ltl);
+                                          struct detector *det, float *ltl);
 
 extern void index_pattern(struct image *image,
                           IndexingMethod *indms, IndexingPrivate **iprivs);

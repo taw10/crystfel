@@ -42,6 +42,7 @@ struct detector;
 struct panel;
 struct badregion;
 struct detector;
+struct beam_params;
 struct hdfile;
 struct event;
 
@@ -186,7 +187,8 @@ extern struct panel *find_panel(struct detector *det, double fs, double ss);
 
 extern signed int find_panel_number(struct detector *det, double fs, double ss);
 
-extern struct detector *get_detector_geometry(const char *filename);
+extern struct detector *get_detector_geometry(const char *filename,
+                                              struct beam_params *beam);
 
 extern void free_detector_geometry(struct detector *det);
 

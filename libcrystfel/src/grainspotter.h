@@ -42,7 +42,6 @@ extern "C" {
 extern IndexingPrivate *grainspotter_prepare(IndexingMethod *indm,
                                              UnitCell *cell,
                                              struct detector *det,
-                                             struct beam_params *beam,
                                              float *ltl);
 
 extern void grainspotter_cleanup(IndexingPrivate *pp);

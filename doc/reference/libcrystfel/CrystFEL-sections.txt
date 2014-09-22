@@ -379,14 +379,6 @@ free_dim_structure_entry
 </SECTION>
 
 <SECTION>
-<FILE>beam-params</FILE>
-beam_params
-get_beam_parameters
-fill_in_beam_parameters
-free_beam_parameters
-</SECTION>
-
-<SECTION>
 <FILE>crystal</FILE>
 </SECTION>
 

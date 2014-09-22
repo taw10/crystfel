@@ -42,7 +42,6 @@
 #include "utils.h"
 #include "reflist-utils.h"
 #include "symmetry.h"
-#include "beam-parameters.h"
 #include "cell.h"
 #include "cell-utils.h"
 
@@ -411,8 +410,6 @@ int main(int argc, char *argv[])
 	char *input_file = NULL;
 	char *template = NULL;
 	char *output = NULL;
-	char *beamfile = NULL;
-	struct beam_params *beam = NULL;
 	RefList *input;
 	double adu_per_photon = 0.0;
 	int have_adu_per_photon = 0;
@@ -448,7 +445,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ht:o:i:w:y:e:b:p:",
+	while ((c = getopt_long(argc, argv, "ht:o:i:w:y:e:p:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -551,15 +548,6 @@ int main(int argc, char *argv[])
 		ERROR("You cannot 'twin' and 'expand' at the same time.\n");
 		ERROR("Decide which one you want to do first.\n");
 		return 1;
-	}
-
-	if ( beamfile != NULL ) {
-		beam = get_beam_parameters(beamfile);
-		if ( beam == NULL ) {
-			ERROR("Failed to load beam parameters from '%s'\n",
-			      beamfile);
-			return 1;
-		}
 	}
 
 	if ( holo_str != NULL ) {

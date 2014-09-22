@@ -1103,8 +1103,7 @@ int reax_index(IndexingPrivate *pp, struct image *image)
 
 
 IndexingPrivate *reax_prepare(IndexingMethod *indm, UnitCell *cell,
-                              struct detector *det, struct beam_params *beam,
-                              float *ltl)
+                              struct detector *det, float *ltl)
 {
 	struct reax_private *p;
 	int samp;

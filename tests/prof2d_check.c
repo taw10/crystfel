@@ -36,7 +36,6 @@
 
 #include <image.h>
 #include <utils.h>
-#include <beam-parameters.h>
 #include <histogram.h>
 
 #include "../libcrystfel/src/integration.c"

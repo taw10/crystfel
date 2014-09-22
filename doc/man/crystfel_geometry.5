@@ -8,9 +8,7 @@
 
 .TH CRYSTFEL\_GEOMETRY 5
 .SH NAME
-CRYSTFEL DETECTOR GEOMETRY AND BEAM DESCRIPTION FILES
-
-See below for information about CrystFEL's beam description files.
+CRYSTFEL DETECTOR GEOMETRY DESCRIPTION FILES
 
 .SH CRYSTFEL DETECTOR GEOMETRY FILES
 The detector geometry is taken from a text file rather than hardcoded into the
@@ -177,53 +175,6 @@ badregionB/max_ss = 512
 
 .PP
 See the "examples" folder for some examples (look at the ones ending in .geom).
-
-.SH CRYSTFEL BEAM DESCRIPTION FILES
-CrystFEL beam description files, usually given with \fB--beam=\fR\fIfilename\fR,
-describe the beam parameters.  The syntax of each line in the beam file is simply this:
-
-.IP
-\fIparameter\fB = \fIvalue\fR
-
-.PP
-The possible parameters are:
-
-.PD 0
-.IP \fBbeam/fluence\fR
-.PD
-The number of photons per pulse.
-
-.PD 0
-.IP \fBbeam/radius\fR
-.PD
-The radius of X-ray beam, in metres.
-
-.PD 0
-.IP \fBbeam/photon_energy\fR
-.PD
-The photon energy in electron-Volts, or an HDF5 path to a stored wavelength value, also in eV.
-
-.PD 0
-.IP \fBbeam/photon_energy_scale\fR
-.PD
-Scaling factor for the photon energy, used if the photon energy itself is taken from the HDF5 file.  This can be useful to correct old data sets which have systematically wrong energies.
-
-.PD 0
-.IP \fBbeam/bandwidth\fR
-.PD
-Bandwidth: FWHM(wavelength) over wavelength.  Note: current simulation code just uses a rectangular distribution with this as its (full) width.
-
-.PD 0
-.IP \fBbeam/divergence\fR
-Beam divergence (full convergence angle, \fBnot\fR the half-angle) in radians.
-
-.PD 0
-.IP \fBprofile_radius\fR
-.PD
-Reciprocal space 3D profile radius in m^-1.  A sphere of this radius surrounds each reciprocal space, and if any part of the sphere is inside the excited volume of reciprocal space, the reflection will be predicted.  You can change the prediction of spots by altering this value - larger numbers give more spots;
-
-.PP
-The parameters \fBbeam/fluence\fR and \fBbeam/radius\fR are only relevant when simulations, e.g. with pattern_sim.  \fBbeam/bandwidth\fR, \fBbeam/divergence\fR and \fBprofile_radius\fR affect which spots are predicted for the final stages of integration.
 
 .SH AUTHOR
 This page was written by Thomas White and Valerio Mariani.

@@ -41,7 +41,6 @@
 #include "utils.h"
 #include "cell.h"
 #include "diffraction.h"
-#include "beam-parameters.h"
 #include "symmetry.h"
 #include "pattern_sim.h"
 
@@ -566,9 +565,10 @@ struct sample *generate_SASE(struct image *image, gsl_rng *rng)
 	eV_cen = gaussian_noise(rng, ph_lambda_to_eV(image->lambda),
 	                        jitter_sigma_eV);
 
-	/* Convert FWHM to standard deviation.  Note that bandwidth is taken to
-	 * be "delta E over E" (E = photon energy), not the bandwidth in terms
-	 * of wavelength, but the difference should be very small */
+	/* Convert FWHM to standard deviation.  Note that bandwidth is taken
+	 * here to be "delta E over E" (E = photon energy), not the bandwidth in
+	 * terms of wavelength (as it is everywhere else), but the difference
+	 * should be very small */
 	double sigma = (image->bw*eV_cen) / (2.0*sqrt(2.0*log(2.0)));
 
 	/* The spectrum will be calculated to a resolution which spreads six
@@ -613,6 +613,10 @@ struct sample *generate_twocolour(struct image *image)
 
 	eV_cen = ph_lambda_to_eV(image->lambda);
 
+	/* Convert FWHM to standard deviation.  Note that bandwidth is taken
+	 * here to be "delta E over E" (E = photon energy), not the bandwidth in
+	 * terms of wavelength (as it is everywhere else), but the difference
+	 * should be very small */
 	double halfwidth = eV_cen*image->bw/2.0; /* eV */
 
 	eV_cen1 = eV_cen - halfwidth;

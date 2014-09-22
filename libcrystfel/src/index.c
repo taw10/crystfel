@@ -3,12 +3,12 @@
  *
  * Perform indexing (somehow)
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2014 Thomas White <taw@physics.org>
  *   2010-2011 Richard Kirian <rkirian@asu.edu>
  *   2012      Lorenzo Galli
  *   2013      Cornelius Gati <cornelius.gati@cfel.de>
@@ -56,8 +56,7 @@
 
 
 IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
-                                   struct detector *det,
-                                   struct beam_params *beam, float *ltl)
+                                   struct detector *det, float *ltl)
 {
 	int n;
 	int nm = 0;
@@ -77,27 +76,24 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 		switch ( indm[n] & INDEXING_METHOD_MASK ) {
 
 			case INDEXING_DIRAX :
-			iprivs[n] = dirax_prepare(&indm[n], cell,
-			                          det, beam, ltl);
+			iprivs[n] = dirax_prepare(&indm[n], cell, det, ltl);
 			break;
 
 			case INDEXING_MOSFLM :
-			iprivs[n] = mosflm_prepare(&indm[n], cell,
-			                           det, beam, ltl);
+			iprivs[n] = mosflm_prepare(&indm[n], cell, det, ltl);
 			break;
 
 			case INDEXING_XDS :
-                        iprivs[n] = xds_prepare(&indm[n], cell, det, beam, ltl);
+                        iprivs[n] = xds_prepare(&indm[n], cell, det, ltl);
 			break;
 
 			case INDEXING_REAX :
-			iprivs[n] = reax_prepare(&indm[n], cell,
-			                         det, beam, ltl);
+			iprivs[n] = reax_prepare(&indm[n], cell, det, ltl);
 			break;
 
 			case INDEXING_GRAINSPOTTER :
 			iprivs[n] = grainspotter_prepare(&indm[n], cell,
-			                                 det, beam, ltl);
+			                                 det, ltl);
 			break;
 
 			default :

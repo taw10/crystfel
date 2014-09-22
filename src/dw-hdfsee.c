@@ -2383,7 +2383,7 @@ DisplayWindow *displaywindow_open(char *filename, const char *peaks,
                                   int noisefilter, int calibmode, int colscale,
                                   const char *element,
                                   struct detector *det_geom,
-                                  const char *beam,
+                                  struct beam_params *beam,
                                   int show_rings, double *ring_radii,
                                   int n_rings, double ring_size,
                                   int median_filter)
@@ -2428,10 +2428,6 @@ DisplayWindow *displaywindow_open(char *filename, const char *peaks,
 	dw->multi_event = 0;
 	dw->curr_event = 0;
 	dw->ev_list = NULL;
-
-	if ( beam != NULL ) {
-		dw->image->beam = get_beam_parameters(beam);
-	}
 
 	dw->image->det = det_geom;
 

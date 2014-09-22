@@ -43,7 +43,6 @@
 #include "image.h"
 #include "utils.h"
 #include "detector.h"
-#include "beam-parameters.h"
 #include "hdf5-file.h"
 
 
@@ -784,8 +783,8 @@ static int parse_field_bad(struct badregion *panel, const char *key,
 }
 
 
-static void parse_toplevel(struct detector *det, const char *key,
-                           const char *val)
+static void parse_toplevel(struct detector *det, struct beam_params *beam,
+                           const char *key, const char *val)
 {
 	if ( strcmp(key, "mask_bad") == 0 ) {
 
@@ -807,6 +806,20 @@ static void parse_toplevel(struct detector *det, const char *key,
 
 	} else if ( strcmp(key, "coffset") == 0 ) {
 		det->defaults.coffset = atof(val);
+
+	} else if ( strcmp(key, "photon_energy") == 0 ) {
+		if ( beam == NULL ) {
+			ERROR("Geometry file contains a reference to "
+			      "photon_energy, which is inappropriate in this "
+			      "situation.\n");
+		} else if ( strncmp(val, "/", 1) == 0 ) {
+			beam->photon_energy = 0.0;
+			beam->photon_energy_from = strdup(val);
+		} else {
+			beam->photon_energy = atof(val);
+			beam->photon_energy_from = NULL;
+		}
+
 	} else if ( parse_field_for_panel(&det->defaults, key, val, det) ) {
 		ERROR("Unrecognised top level field '%s'\n", key);
 	}
@@ -871,7 +884,8 @@ static void find_min_max_d(struct detector *det)
 }
 
 
-struct detector *get_detector_geometry(const char *filename)
+struct detector *get_detector_geometry(const char *filename,
+                                       struct beam_params *beam)
 {
 	FILE *fh;
 	struct detector *det;
@@ -971,7 +985,7 @@ struct detector *get_detector_geometry(const char *filename)
 		n2 = assplode(bits[0], "/\\.", &path, ASSPLODE_NONE);
 		if ( n2 < 2 ) {
 			/* This was a top-level option, not handled above. */
-			parse_toplevel(det, bits[0], bits[2]);
+			parse_toplevel(det, beam, bits[0], bits[2]);
 			for ( i=0; i<n1; i++ ) free(bits[i]);
 			free(bits);
 			for ( i=0; i<n2; i++ ) free(path[i]);

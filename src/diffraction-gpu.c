@@ -49,7 +49,6 @@
 #include "cell.h"
 #include "diffraction.h"
 #include "cl-utils.h"
-#include "beam-parameters.h"
 #include "pattern_sim.h"
 
 

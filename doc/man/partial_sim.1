@@ -25,7 +25,7 @@ partial_sim \- calculate partial reflections
 partial_sim calculates the intensities of idealised partial reflections from crystals in random orientations, which is useful for testing the convergence of Monte Carlo integration or scaling/post-refinement techniques.
 
 .P
-You need to provide a CrystFEL geometry file (with \fB--geometry=\fR\fImy.geom\fR or \fB-g\fR \fImy.geom\fR), a beam description file (with \fB--beam=\fR\fImy.beam\fR or \fB-b\fR \fImy.beam\fR), a file containing the unit cell to use for the simulation (with \fB--pdb=\fR\fImy.pdb\fR or \fB-p\fR \fImy.pdb\fR), and an output filename with \fB--output=\fR\fImy.stream\fR or \fB-o\fR \fImy.stream\fR.
+You need to provide a CrystFEL geometry file (with \fB--geometry=\fR\fImy.geom\fR or \fB-g\fR \fImy.geom\fR), a file containing the unit cell to use for the simulation (with \fB--pdb=\fR\fImy.pdb\fR or \fB-p\fR \fImy.pdb\fR), and an output filename with \fB--output=\fR\fImy.stream\fR or \fB-o\fR \fImy.stream\fR.
 
 For each randomly generated orientation, partial_sim calculates which reflections would appear on the detector with the specified beam parameters.  It calculates the partiality for each reflection and multiplies it by the fully integrated intensity to produce a partial intensity.  The fully integrated intensities can be taken from a file you provide (see below), otherwise they will be randomly generated (by taking the absolute value of a Gaussian random number, mean zero and standard deviation 1000).  All the partial intensities for the orientation are multiplied by an overall scaling factor, which is randomly generated with a Gaussian distribution with mean 1 and standard deviation 0.3.  The partial intensities are written to the output stream, and the process repeated for as many different orientations as you ask for (see below, default: 2).
 
@@ -120,6 +120,29 @@ For each chunk in the output stream, write a 'sketch' image in HDF5 format to \f
 .PD
 Add a Poisson-distributed background with \fIval\fR photons to the sketches (see \fB--images\fR).  The default is \fB--background=3000\fR.\fR.
 
+.PD 0
+.B
+.IP "\fB--beam-divergence=\fIval\fR"
+.PD
+Set the convergence angle (the full angle, not "half-angle"/"semi-angle") for the incident beam.  The default is \fB--beam-divergence=0.001\fR, i.e. 1 mrad.\fR.
+
+.PD 0
+.B
+.IP "\fB--beam-bandwidth=\fIval\fR"
+.PD
+Set the bandwidth, expressed as a decimal fraction applying to to wavelengths (not the photon energies), for the incident beam.  The default is \fB--beam-bandwidth=0.01\fR, i.e. 1%.\fR.
+
+.PD 0
+.B
+.IP "\fB--profile-radius=\fIval\fR"
+.PD
+Set the radius of the scattering density surrounding each reciprocal lattice point, in m^-1.  The default is \fB--profile-radius=0.001e9\fR m^-1.
+
+.PD 0
+.B
+.IP "\fB--photon-energy=\fIval\fR"
+.PD
+Set the central photon energy, in eV, for the incident beam.  The default is \fB--photon-energy=9000\fR, i.e. 9 keV X-rays.\fR.
 
 .SH AUTHOR
 This page was written by Thomas White.

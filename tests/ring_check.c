@@ -37,7 +37,6 @@
 
 #include <image.h>
 #include <utils.h>
-#include <beam-parameters.h>
 
 #include "../libcrystfel/src/peaks.c"
 

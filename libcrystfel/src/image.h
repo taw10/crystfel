@@ -98,6 +98,21 @@ struct sample
 };
 
 
+struct beam_params
+{
+	double fluence;        /* photons per pulse */
+	double beam_radius;    /* metres */
+	double photon_energy;  /* eV per photon */
+	char  *photon_energy_from; /* HDF5 dataset name */
+	double photon_energy_scale;  /* Scale factor for photon energy, if the
+	                              * energy is to be from the HDF5 file */
+	double bandwidth;      /* FWHM(wavelength) over wavelength. */
+	double divergence;     /* divergence (radians) */
+
+	double profile_radius; /* Reciprocal space size of a reflection */
+};
+
+
 /**
  * image:
  *

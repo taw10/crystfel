@@ -143,7 +143,8 @@ extern DisplayWindow *displaywindow_open(char *filename,
                                          int noisefilter, int calibmode,
                                          int colscale, const char *element,
                                          struct detector *det_geom,
-                                         const char *beam, int show_rings,
+                                         struct beam_params *beam,
+                                         int show_rings,
                                          double *ring_radii, int n_rings,
                                          double ring_size, int median_filter);
 

@@ -51,7 +51,6 @@
 #include "hdf5-file.h"
 #include "detector.h"
 #include "peaks.h"
-#include "beam-parameters.h"
 #include "symmetry.h"
 #include "reflist.h"
 #include "reflist-utils.h"
@@ -76,7 +75,6 @@ static void show_help(const char *s)
 "     --gpu-dev=<n>         Use GPU device <n>.  Omit this option to see the\n"
 "                            available devices.\n"
 " -g, --geometry=<file>     Get detector geometry from file.\n"
-" -b, --beam=<file>         Get beam parameters from file.\n"
 " -n, --number=<N>          Generate N images.  Default 1.\n"
 "     --no-images           Do not output any HDF5 files.\n"
 " -o, --output=<filename>   Output HDF5 filename.  Default: sim.h5.\n"
@@ -96,6 +94,11 @@ static void show_help(const char *s)
 "     --background=<N>      Add N photons of Poisson background (default 0).\n"
 "     --template=<file>     Take orientations from stream <file>.\n"
 "     --no-fringes          Exclude the side maxima of Bragg peaks.\n"
+"     --beam-divergence    Beam divergence in radians. Default 1 mrad.\n"
+"     --beam-bandwidth     Beam bandwidth as a fraction. Default 1%%.\n"
+"     --profile-radius     Reciprocal space reflection profile radius in m^-1.\n"
+"                           Default 0.001e9 m^-1\n"
+"     --photon-energy      Photon energy in eV.  Default 9000.\n"
 );
 }
 
@@ -266,11 +269,23 @@ int main(int argc, char *argv[])
 	char *template_file = NULL;
 	Stream *st = NULL;
 	int no_fringes = 0;
+	struct beam_params beam;
+
+	/* Default beam parameters */
+	beam.bandwidth = 0.01;
+	beam.profile_radius = 0.001e9;
+	beam.photon_energy = 9000.0;
+
+	/* Beam parameters which it doesn't make sense to use here */
+	beam.fluence = -1.0;
+	beam.beam_radius = -1.0;
+	beam.photon_energy_scale = 1.0;
+	beam.divergence = -1.0;  /* (not implemented .. yet?) */
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
-		{"version",            0, NULL,                7 },
+		{"version",            0, NULL,               'v'},
 		{"gpu",                0, &config_gpu,         1},
 		{"random-orientation", 0, NULL,               'r'},
 		{"number",             1, NULL,               'n'},
@@ -283,22 +298,26 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"output",             1, NULL,               'o'},
 		{"geometry",           1, NULL,               'g'},
-		{"beam",               1, NULL,               'b'},
 		{"sample-spectrum",    1, NULL,               's'},
 		{"type-spectrum",      1, NULL,               'x'},
 		{"spectrum",           1, NULL,               'x'},
 		{"really-random",      0, &config_random,      1},
 		{"no-fringes",         0, &no_fringes,         1},
+
 		{"gpu-dev",            1, NULL,                2},
 		{"min-size",           1, NULL,                3},
 		{"max-size",           1, NULL,                4},
 		{"background",         1, NULL,                5},
 		{"template",           1, NULL,                6},
+		{"beam-bandwidth",     1, NULL,                7},
+		{"profile-radius",     1, NULL,                8},
+		{"photon-energy",      1, NULL,                9},
+
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hrn:i:t:p:o:g:b:y:s:x:",
+	while ((c = getopt_long(argc, argv, "hrn:i:t:p:o:g:y:s:x:v",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -307,7 +326,7 @@ int main(int argc, char *argv[])
 			show_help(argv[0]);
 			return 0;
 
-			case 7 :
+			case 'v' :
 			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
 			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
@@ -402,6 +421,43 @@ int main(int argc, char *argv[])
 			template_file = strdup(optarg);
 			break;
 
+			case 7 :
+			beam.bandwidth = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid beam bandwidth.\n");
+				return 1;
+			}
+			if ( beam.bandwidth < 0.0 ) {
+				ERROR("Beam bandwidth must be positive.\n");
+				return 1;
+			}
+			break;
+
+			case 8 :
+			beam.profile_radius = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid profile radius.\n");
+				return 1;
+			}
+			if ( beam.divergence < 0.0 ) {
+				ERROR("Profile radius must be positive.\n");
+				return 1;
+			}
+			break;
+
+			case 9 :
+			beam.photon_energy = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid photon energy.\n");
+				return 1;
+			}
+			if ( beam.photon_energy < 0.0 ) {
+				ERROR("Photon energy must be positive.\n");
+				return 1;
+			}
+			break;
+
+
 			case 0 :
 			break;
 
@@ -476,18 +532,12 @@ int main(int argc, char *argv[])
 		ERROR("You need to specify a geometry file with --geometry\n");
 		return 1;
 	}
-	image.det = get_detector_geometry(geometry);
+	image.det = get_detector_geometry(geometry, NULL);
 	if ( image.det == NULL ) {
 		ERROR("Failed to read detector geometry from '%s'\n", geometry);
 		return 1;
 	}
 	free(geometry);
-
-	if ( beamfile == NULL ) {
-		ERROR("You need to specify a beam parameter file"
-		      " with --beam\n");
-		return 1;
-	}
 
 	if ( spectrum_str == NULL ) {
 		STATUS("You didn't specify a spectrum type, so"
@@ -549,12 +599,6 @@ int main(int argc, char *argv[])
 
 	}
 
-	image.beam = get_beam_parameters(beamfile);
-	if ( image.beam == NULL ) {
-		ERROR("Failed to read beam parameters from '%s'\n", beamfile);
-		return 1;
-	}
-
 	/* Define image parameters */
 	image.width = image.det->max_fs + 1;
 	image.height = image.det->max_ss + 1;
@@ -564,10 +608,10 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	double wl = ph_en_to_lambda(eV_to_J(image.beam->photon_energy));
+	double wl = ph_en_to_lambda(eV_to_J(beam.photon_energy));
 	image.lambda = wl;
-	image.bw = image.beam->bandwidth;
-	image.div = image.beam->divergence;
+	image.bw = beam.bandwidth;
+	image.div = beam.divergence;
 	image.nsamples = nsamples;
 	free(beamfile);
 
@@ -786,7 +830,6 @@ skip:
 
 	free(image.det->panels);
 	free(image.det);
-	free(image.beam);
 	free(powder->data);
 	free(powder);
 	cell_free(input_cell);

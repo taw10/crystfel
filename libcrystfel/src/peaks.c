@@ -50,7 +50,6 @@
 #include "detector.h"
 #include "filters.h"
 #include "reflist-utils.h"
-#include "beam-parameters.h"
 #include "cell-utils.h"
 #include "geometry.h"
 

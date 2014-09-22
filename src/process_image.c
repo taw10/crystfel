@@ -43,7 +43,6 @@
 #include "detector.h"
 #include "filters.h"
 #include "thread-pool.h"
-#include "beam-parameters.h"
 #include "geometry.h"
 #include "stream.h"
 #include "reflist-utils.h"

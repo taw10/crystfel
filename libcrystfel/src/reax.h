@@ -35,7 +35,6 @@
 
 #include "index.h"
 #include "cell.h"
-#include "beam-parameters.h"
 #include "detector.h"
 
 #ifdef __cplusplus
@@ -45,8 +44,7 @@ extern "C" {
 #ifdef HAVE_FFTW
 
 extern IndexingPrivate *reax_prepare(IndexingMethod *indm, UnitCell *cell,
-                                     struct detector *det,
-                                     struct beam_params *beam, float *ltl);
+                                     struct detector *det, float *ltl);
 
 extern void reax_cleanup(IndexingPrivate *pp);
 
@@ -55,8 +53,7 @@ extern int reax_index(IndexingPrivate *pp, struct image *image);
 #else /* HAVE_FFTW */
 
 static IndexingPrivate *reax_prepare(IndexingMethod *indm, UnitCell *cell,
-                                     struct detector *det,
-                                     struct beam_params *beam, float *ltl)
+                                     struct detector *det, float *ltl)
 {
 	return NULL;
 }

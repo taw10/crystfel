@@ -62,7 +62,6 @@
 #include "detector.h"
 #include "filters.h"
 #include "thread-pool.h"
-#include "beam-parameters.h"
 #include "geometry.h"
 #include "stream.h"
 #include "reflist-utils.h"
@@ -90,9 +89,6 @@ static void show_help(const char *s)
 "                           methods separated by commas.\n"
 "                           See 'man indexamajig' for details.\n"
 " -g. --geometry=<file>    Get detector geometry from file.\n"
-" -b, --beam=<file>        Get beam parameters from file (provides nominal\n"
-"                           wavelength value if no per-shot value is found in\n"
-"                           the HDF5 files.\n"
 " -p, --pdb=<file>         File (PDB or CrystFEL unit cell format) from which\n"
 "                           to get the unit cell.  Default: 'molecule.pdb'.\n"
 "     --basename           Remove the directory parts of the filenames.\n"
@@ -199,6 +195,7 @@ int main(int argc, char *argv[])
 	char *tempdir = NULL;
 	char *int_diag = NULL;
 	char *geom_filename = NULL;
+	struct beam_params beam;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -215,7 +212,7 @@ int main(int argc, char *argv[])
 	iargs.check_hdf5_snr = 0;
 	iargs.det = NULL;
 	iargs.peaks = PEAK_ZAEF;
-	iargs.beam = NULL;
+	iargs.beam = &beam;
 	iargs.element = NULL;
 	iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
 	iargs.copyme = NULL;
@@ -250,7 +247,6 @@ int main(int argc, char *argv[])
 		{"output",             1, NULL,               'o'},
 		{"indexing",           1, NULL,               'z'},
 		{"geometry",           1, NULL,               'g'},
-		{"beam",               1, NULL,               'b'},
 		{"pdb",                1, NULL,               'p'},
 		{"prefix",             1, NULL,               'x'},
 		{"threshold",          1, NULL,               't'},
@@ -300,7 +296,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:o:z:p:x:j:g:t:b:e:",
+	while ((c = getopt_long(argc, argv, "hi:o:z:p:x:j:g:t:e:v",
 	                        longopts, NULL)) != -1)
 	{
 		switch (c) {
@@ -309,7 +305,7 @@ int main(int argc, char *argv[])
 			show_help(argv[0]);
 			return 0;
 
-			case 99 :
+			case 'v' :
 			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
 			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
@@ -340,25 +336,10 @@ int main(int argc, char *argv[])
 
 			case 'g' :
 			geom_filename = optarg;
-			iargs.det = get_detector_geometry(optarg);
-			if ( iargs.det == NULL ) {
-				ERROR("Failed to read detector geometry from "
-				      "'%s'\n", optarg);
-				return 1;
-			}
 			break;
 
 			case 't' :
 			iargs.threshold = strtof(optarg, NULL);
-			break;
-
-			case 'b' :
-			iargs.beam = get_beam_parameters(optarg);
-			if ( iargs.beam == NULL ) {
-				ERROR("Failed to load beam parameters"
-				      " from '%s'\n", optarg);
-				return 1;
-			}
 			break;
 
 			case 'e' :
@@ -514,6 +495,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	iargs.det = get_detector_geometry(geom_filename, iargs.beam);
+	if ( iargs.det == NULL ) {
+		ERROR("Failed to read detector geometry from  '%s'\n", optarg);
+		return 1;
+	}
+
 	if ( indm_str == NULL ) {
 
 		STATUS("You didn't specify an indexing method, so I  won't try "
@@ -598,12 +585,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( iargs.beam == NULL ) {
-		ERROR("You need to provide a beam parameters file (please read"
-		      " the manual for more details).\n");
-		return 1;
-	}
-
 	add_geom_beam_stuff_to_copy_hdf5(iargs.copyme, iargs.det, iargs.beam);
 
 	if ( cellfile != NULL ) {
@@ -678,7 +659,7 @@ int main(int argc, char *argv[])
 	/* Prepare the indexer */
 	if ( indm != NULL ) {
 		ipriv = prepare_indexing(indm, iargs.cell, iargs.det,
-		                         iargs.beam, iargs.tols);
+		                         iargs.tols);
 		if ( ipriv == NULL ) {
 			ERROR("Failed to prepare indexing.\n");
 			return 1;

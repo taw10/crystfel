@@ -3,11 +3,11 @@
  *
  * Invoke the DirAx auto-indexing program
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010,2012-2013 Thomas White <taw@physics.org>
+ *   2010,2012-2014 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -43,7 +43,7 @@ extern int run_dirax(struct image *image, IndexingPrivate *ipriv);
 
 extern IndexingPrivate *dirax_prepare(IndexingMethod *indm,
                                       UnitCell *cell, struct detector *det,
-                                      struct beam_params *beam, float *ltl);
+                                      float *ltl);
 
 extern void dirax_cleanup(IndexingPrivate *pp);
 

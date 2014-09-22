@@ -43,7 +43,6 @@
 #include "../src/diffraction.h"
 #include "../src/diffraction-gpu.h"
 #include <detector.h>
-#include <beam-parameters.h>
 #include <utils.h>
 #include <symmetry.h>
 #include <cell-utils.h>

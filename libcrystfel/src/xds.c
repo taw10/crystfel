@@ -56,7 +56,6 @@
 #include "utils.h"
 #include "peaks.h"
 #include "detector.h"
-#include "beam-parameters.h"
 #include "cell-utils.h"
 
 
@@ -619,8 +618,7 @@ int run_xds(struct image *image, IndexingPrivate *priv)
 
 
 IndexingPrivate *xds_prepare(IndexingMethod *indm, UnitCell *cell,
-                             struct detector *det, struct beam_params *beam,
-                             float *ltl)
+                             struct detector *det, float *ltl)
 {
 	struct xds_private *xp;
 

@@ -900,6 +900,21 @@ static int unpack_panels(struct image *image, struct detector *det)
 }
 
 
+void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f,
+                             struct event* ev)
+{
+	if ( beam->photon_energy_from == NULL ) return;
+
+	if ( ev != NULL ) {
+		beam->photon_energy = get_ev_based_value(f,
+		beam->photon_energy_from, ev);
+	} else {
+		beam->photon_energy = get_value(f, beam->photon_energy_from);
+	}
+	beam->photon_energy *= beam->photon_energy_scale;
+}
+
+
 int hdf5_read(struct hdfile *f, struct image *image,
 			  const char *element, int satcorr)
 {

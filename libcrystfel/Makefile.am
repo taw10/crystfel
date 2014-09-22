@@ -4,7 +4,7 @@ libcrystfel_la_LDFLAGS = -version-info 5:0:0
 
 libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/thread-pool.c src/image.c src/hdf5-file.c \
-                         src/beam-parameters.c src/geometry.c src/statistics.c \
+                         src/geometry.c src/statistics.c \
                          src/symmetry.c src/stream.c src/peaks.c \
                          src/reflist-utils.c src/filters.c \
                          src/render.c src/index.c src/dirax.c src/mosflm.c \
@@ -18,7 +18,7 @@ endif
 
 libcrystfel_la_includedir=$(includedir)/crystfel/
 
-libcrystfel_la_include_HEADERS = ${top_srcdir}/version.h src/beam-parameters.h \
+libcrystfel_la_include_HEADERS = ${top_srcdir}/version.h \
                                  src/hdf5-file.h src/reflist.h src/symmetry.h \
                                  src/cell.h src/reflist-utils.h \
                                  src/thread-pool.h  src/statistics.h \
