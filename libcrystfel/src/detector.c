@@ -1044,8 +1044,7 @@ struct detector *get_detector_geometry(const char *filename,
 
 		next_instance = det->panels[i].data;
 
-		while(next_instance)
-		{
+		while ( next_instance ) {
 			next_instance = strstr(next_instance, "%");
 			if ( next_instance != NULL ) {
 				next_instance += 1*sizeof(char);
@@ -1660,7 +1659,7 @@ void mark_resolution_range_as_bad(struct image *image,
 }
 
 
-extern int single_panel_data_source (struct detector *det, const char *element)
+extern int single_panel_data_source(struct detector *det, const char *element)
 {
 	int pi;
 	char *first_datafrom = NULL;

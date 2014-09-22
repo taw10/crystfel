@@ -802,7 +802,7 @@ int main(int argc, char *argv[])
 
 			number++;
 
-            /* Write the output file */
+			/* Write the output file */
 			hdf5_write_image(filename, &image, NULL);
 
 		}
