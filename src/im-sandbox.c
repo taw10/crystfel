@@ -178,8 +178,8 @@ static struct filename_plus_event *get_pattern(FILE *fh, int config_basename,
 
 		len = strlen(prefix)+strlen(filename_buf)+1;
 
-		/* Round the length of the buffer, too keep Valgrind quiet when it gets
-		 * given to write() a bit later on */
+		/* Round the length of the buffer, to keep Valgrind quiet when
+		 * it gets given to write() a bit later on */
 		len += 4 - (len % 4);
 
 		if ( filename == NULL ) {
@@ -199,11 +199,11 @@ static struct filename_plus_event *get_pattern(FILE *fh, int config_basename,
 
 			ev_list = initialize_event_list();
 
-			if ( scan_check == 1) {
+			if ( scan_check == 1 ) {
 
 				hdfile = hdfile_open(filename);
 				if ( hdfile == NULL ) {
-					ERROR("Failed to open file %s\n", filename);
+					ERROR("Failed to open %s\n", filename);
 					free(line);
 					return NULL;
 				}
@@ -232,6 +232,7 @@ static struct filename_plus_event *get_pattern(FILE *fh, int config_basename,
 				event_index = 0;
 
 			}
+
 		} else {
 
 			event_index = 0;
@@ -310,8 +311,8 @@ static int read_fpe_data(struct buffer_data *bd)
 			/* Now the block's been parsed, it should be
 			 * forgotten about */
 			memmove(bd->rbuffer,
-					bd->rbuffer + line_end + 1,
-					bd->rbuflen - line_end - 1);
+			        bd->rbuffer + line_end + 1,
+			        bd->rbuflen - line_end - 1);
 
 			/* Subtract the number of bytes removed */
 			bd->rbufpos = bd->rbufpos - line_end - 1;
@@ -384,8 +385,7 @@ static void run_work(const struct index_args *iargs,
 		error = 0;
 		pargs.filename_p_e = initialize_filename_plus_event();
 
-		rval =0;
-
+		rval = 0;
 		do {
 
 			fd_set fds;
