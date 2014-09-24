@@ -100,8 +100,6 @@ struct sample
 
 struct beam_params
 {
-	double fluence;        /* photons per pulse */
-	double beam_radius;    /* metres */
 	double photon_energy;  /* eV per photon */
 	char  *photon_energy_from; /* HDF5 dataset name */
 	double photon_energy_scale;  /* Scale factor for photon energy, if the

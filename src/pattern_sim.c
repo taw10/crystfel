@@ -270,6 +270,8 @@ int main(int argc, char *argv[])
 	Stream *st = NULL;
 	int no_fringes = 0;
 	struct beam_params beam;
+	double nphotons = 1e12;
+	double beam_radius = 1e-6;  /* metres */
 
 	/* Default beam parameters */
 	beam.bandwidth = 0.01;
@@ -277,8 +279,6 @@ int main(int argc, char *argv[])
 	beam.photon_energy = 9000.0;
 
 	/* Beam parameters which it doesn't make sense to use here */
-	beam.fluence = -1.0;
-	beam.beam_radius = -1.0;
 	beam.photon_energy_scale = 1.0;
 	beam.divergence = -1.0;  /* (not implemented .. yet?) */
 
@@ -312,6 +312,8 @@ int main(int argc, char *argv[])
 		{"beam-bandwidth",     1, NULL,                7},
 		{"profile-radius",     1, NULL,                8},
 		{"photon-energy",      1, NULL,                9},
+		{"nphotons",           1, NULL,               10},
+		{"beam-radius",        1, NULL,               11},
 
 		{0, 0, NULL, 0}
 	};
@@ -453,6 +455,30 @@ int main(int argc, char *argv[])
 			}
 			if ( beam.photon_energy < 0.0 ) {
 				ERROR("Photon energy must be positive.\n");
+				return 1;
+			}
+			break;
+
+			case 10 :
+			nphotons = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid number of photons.\n");
+				return 1;
+			}
+			if ( nphotons < 0.0 ) {
+				ERROR("Number of photons must be positive.\n");
+				return 1;
+			}
+			break;
+
+			case 11 :
+			beam_radius = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid beam radius.\n");
+				return 1;
+			}
+			if ( beam_radius < 0.0 ) {
+				ERROR("Beam radius must be positive.\n");
 				return 1;
 			}
 			break;
@@ -770,7 +796,8 @@ int main(int argc, char *argv[])
 			goto skip;
 		}
 
-		record_image(&image, !config_nonoise, background, rng);
+		record_image(&image, !config_nonoise, background, rng,
+		             beam_radius, nphotons);
 
 		if ( powder_fn != NULL ) {
 

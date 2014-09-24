@@ -449,8 +449,6 @@ int main(int argc, char *argv[])
 	beam.photon_energy = 9000.0;
 
 	/* Beam parameters which it doesn't make sense to use here */
-	beam.fluence = -1.0;
-	beam.beam_radius = -1.0;
 	beam.photon_energy_scale = 1.0;
 
 	/* Long options */

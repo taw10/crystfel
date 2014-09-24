@@ -152,8 +152,6 @@ int main(int argc, char *argv[])
 	gpu_image.det = det;
 
 	beam = calloc(1, sizeof(struct beam_params));
-	beam->fluence = 1.0e15;  /* Does nothing */
-	beam->beam_radius = 1.0e-6;
 	beam->photon_energy = 6000.0;
 	beam->bandwidth = 1.0 / 100.0;
 	beam->divergence = 0.0;

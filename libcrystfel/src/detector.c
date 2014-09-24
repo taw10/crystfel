@@ -323,7 +323,7 @@ double get_tt(struct image *image, double fs, double ss, int *err)
 
 
 void record_image(struct image *image, int do_poisson, int background,
-                  gsl_rng *rng)
+                  gsl_rng *rng, double beam_radius, double nphotons)
 {
 	int x, y;
 	double total_energy, energy_density;
@@ -338,14 +338,14 @@ void record_image(struct image *image, int do_poisson, int background,
 	int n_nan2 = 0;
 
 	/* How many photons are scattered per electron? */
-	area = M_PI*pow(image->beam->beam_radius, 2.0);
-	total_energy = image->beam->fluence * ph_lambda_to_en(image->lambda);
+	area = M_PI*pow(beam_radius, 2.0);
+	total_energy = nphotons * ph_lambda_to_en(image->lambda);
 	energy_density = total_energy / area;
-	ph_per_e = (image->beam->fluence /area) * pow(THOMSON_LENGTH, 2.0);
+	ph_per_e = (nphotons /area) * pow(THOMSON_LENGTH, 2.0);
 	STATUS("Fluence = %8.2e photons, "
 	       "Energy density = %5.3f kJ/cm^2, "
 	       "Total energy = %5.3f microJ\n",
-	       image->beam->fluence, energy_density/1e7, total_energy*1e6);
+	       nphotons, energy_density/1e7, total_energy*1e6);
 
 	for ( x=0; x<image->width; x++ ) {
 	for ( y=0; y<image->height; y++ ) {
