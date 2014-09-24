@@ -48,11 +48,6 @@
   </chapter>
 
   <chapter>
-    <title>Beam parameters</title>
-        <xi:include href="xml/beam-params.xml"/>
-  </chapter>
-
-  <chapter>
     <title>Peaks</title>
         <xi:include href="xml/peaks.xml"/>
   </chapter>
