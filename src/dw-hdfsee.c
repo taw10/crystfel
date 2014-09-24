@@ -2460,7 +2460,8 @@ DisplayWindow *displaywindow_open(char *filename, const char *peaks,
 			return NULL;
 		}
 		if ( dw->ev_list->num_events == 0 ) {
-			ERROR("Multi-event geometry file but no events found in data file");
+			ERROR("Multi-event geometry file but no events found "
+			      "in data file\n");
 			free_event_list(dw->ev_list);
 			free(dw);
 			return NULL;
@@ -2474,7 +2475,8 @@ DisplayWindow *displaywindow_open(char *filename, const char *peaks,
 
 		if ( dw->multi_event ) {
 			check = hdf5_read2(dw->hdfile, dw->image,
-			                   dw->ev_list->events[dw->curr_event], 0);
+			                   dw->ev_list->events[dw->curr_event],
+			                   0);
 		} else {
 			check = hdf5_read2(dw->hdfile, dw->image, NULL, 0);
 		}
