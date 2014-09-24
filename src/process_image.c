@@ -168,11 +168,11 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 	/* Default parameters */
-	image.div = image.beam->divergence;
-	image.bw = image.beam->bandwidth;
+	image.div = 0.0;
+	image.bw = 0.001;
+	STATUS("Warning: div, bw and pr are hardcoded in this version.\n");
 	for ( i=0; i<image.n_crystals; i++ ) {
-		crystal_set_profile_radius(image.crystals[i],
-		                           image.beam->profile_radius);
+		crystal_set_profile_radius(image.crystals[i], 0.01e9);
 		crystal_set_mosaicity(image.crystals[i], 0.0);  /* radians */
 	}
 
