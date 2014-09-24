@@ -253,7 +253,9 @@ char *get_event_string(struct event *ev)
 	char *new_ret_string;
 	int ret_string_len;
 
-	if ( ev->path_length != 0) {
+	if ( ev == NULL ) return "null event";
+
+	if ( ev->path_length != 0 ) {
 
 		int pi;
 

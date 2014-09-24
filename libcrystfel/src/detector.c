@@ -820,6 +820,15 @@ static void parse_toplevel(struct detector *det, struct beam_params *beam,
 			beam->photon_energy_from = NULL;
 		}
 
+	} else if ( strcmp(key, "photon_energy_scale") == 0 ) {
+		if ( beam == NULL ) {
+			ERROR("Geometry file contains a reference to "
+			      "photon_energy_scale, which is inappropriate in "
+			      "this situation.\n");
+		} else {
+			beam->photon_energy_scale = atof(val);
+		}
+
 	} else if ( parse_field_for_panel(&det->defaults, key, val, det) ) {
 		ERROR("Unrecognised top level field '%s'\n", key);
 	}
@@ -907,6 +916,9 @@ struct detector *get_detector_geometry(const char *filename,
 		fclose(fh);
 		return NULL;
 	}
+
+	beam->photon_energy = -1.0;
+	beam->photon_energy_scale = 1.0;
 
 	det->n_panels = 0;
 	det->panels = NULL;
@@ -1245,6 +1257,12 @@ struct detector *get_detector_geometry(const char *filename,
 			      " bad region %s\n", det->bad[i].name);
 			reject = 1;
 		}
+	}
+
+	if ( beam->photon_energy < -0.5 ) {
+		STATUS("Photon energy must be specified (note: this is now "
+		       "done in the 'geometry' file.\n");
+		reject = 1;
 	}
 
 	for ( x=0; x<=max_fs; x++ ) {

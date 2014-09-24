@@ -901,22 +901,33 @@ static int unpack_panels(struct image *image, struct detector *det)
 
 
 void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f,
-                             struct event* ev)
+                             struct event *ev, struct image *image)
 {
-	if ( beam->photon_energy_from == NULL ) return;
+	double eV;
 
-	if ( ev != NULL ) {
-		beam->photon_energy = get_ev_based_value(f,
-		beam->photon_energy_from, ev);
+	if ( beam->photon_energy_from == NULL ) {
+
+		/* Explicit value given */
+		eV = beam->photon_energy;
+
+	} else if ( ev != NULL ) {
+
+		/* Value from HDF5 file, event-based structure */
+		eV = get_ev_based_value(f, beam->photon_energy_from, ev);
+
 	} else {
-		beam->photon_energy = get_value(f, beam->photon_energy_from);
+
+		/* Value from HDF5 file, single-event structure */
+		eV = get_value(f, beam->photon_energy_from);
+
 	}
-	beam->photon_energy *= beam->photon_energy_scale;
+
+	image->lambda = ph_en_to_lambda(eV_to_J(eV)) * beam->photon_energy_scale;
 }
 
 
-int hdf5_read(struct hdfile *f, struct image *image,
-			  const char *element, int satcorr)
+int hdf5_read(struct hdfile *f, struct image *image, const char *element,
+              int satcorr)
 {
 	herr_t r;
 	float *buf;
@@ -953,17 +964,13 @@ int hdf5_read(struct hdfile *f, struct image *image,
 
 	if ( image->beam != NULL ) {
 
-		fill_in_beam_parameters(image->beam, f, NULL);
-		image->lambda = ph_en_to_lambda(eV_to_J(image->beam->photon_energy));
+		fill_in_beam_parameters(image->beam, f, NULL, image);
 
-		if ( (image->beam->photon_energy < 0.0)
-		  || (image->lambda > 1000) ) {
+		if ( image->lambda > 1000 ) {
 			/* Error message covers a silly value in the beam file
 			 * or in the HDF5 file. */
-			ERROR("Nonsensical wavelength (%e m or %e eV) value "
-				  "for %s.\n",
-				  image->lambda, image->beam->photon_energy,
-				  image->filename);
+			ERROR("Nonsensical wavelength (%e m) for %s.\n",
+			      image->lambda, image->filename);
 			return 1;
 		}
 
@@ -973,8 +980,8 @@ int hdf5_read(struct hdfile *f, struct image *image,
 }
 
 
-int hdf5_read2(struct hdfile *f, struct image *image,
-               struct event *ev, int satcorr)
+int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
+               int satcorr)
 {
 	herr_t r;
 	float *buf;
@@ -1272,18 +1279,20 @@ int hdf5_read2(struct hdfile *f, struct image *image,
 
 	if ( image->beam != NULL ) {
 
-		fill_in_beam_parameters(image->beam, f, ev);
+		fill_in_beam_parameters(image->beam, f, ev, image);
 
-		image->lambda = ph_en_to_lambda(eV_to_J(image->beam->photon_energy));
+		STATUS("Event: %s\n", get_event_string(image->event));
+		STATUS("Wavelength: %e m\n", image->lambda);
+		STATUS("Filename: %s\n", image->filename);
 
-		if ( (image->beam->photon_energy < 0.0)
-		  || (image->lambda > 1000) ) {
+		if ( (image->lambda > 1.0) || (image->lambda < 1e-20) )
+		{
 			/* Error message covers a silly value in the beam file
 			 * or in the HDF5 file. */
-			ERROR("Nonsensical wavelength (%e m or %e eV) value "
+			ERROR("Nonsensical wavelength (%e m) value "
 			      "for file: %s, event: %s.\n",
-			      image->lambda, image->beam->photon_energy,
-			      image->filename, get_event_string(image->event));
+			      image->lambda, image->filename,
+			      get_event_string(image->event));
 			hdfile_close(f);
 			return 1;
 		}

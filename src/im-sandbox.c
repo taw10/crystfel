@@ -131,9 +131,9 @@ static void unlock_sandbox(struct sandbox *sb)
 }
 
 
-static struct filename_plus_event  *get_pattern
-              (FILE *fh, int config_basename, struct detector *det,
-               const char *prefix)
+static struct filename_plus_event *get_pattern(FILE *fh, int config_basename,
+                                               struct detector *det,
+                                               const char *prefix)
 {
 	char *line = NULL;
 	size_t len;
