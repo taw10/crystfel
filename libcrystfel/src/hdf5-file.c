@@ -402,14 +402,14 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 		return 1;
 	}
 
-	if ( element != NULL) {
+	if ( element != NULL ) {
 		default_location = strdup(element);
 	} else {
 		default_location = strdup("/data/data");
 	}
 
 	locations = malloc(sizeof(struct hdf5_write_location));
-	if ( locations  == NULL ) {
+	if ( locations == NULL ) {
 		ERROR("Couldn't create write location list for file: %s\n",
 		       filename);
 		return 1;
@@ -468,7 +468,7 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 			}
 		}
 
-		if ( panel_processed == 0) {
+		if ( !panel_processed ) {
 
 			struct hdf5_write_location *new_locations;
 			new_locations = realloc(locations,
@@ -596,7 +596,7 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 			                            H5S_SELECT_SET,
 			                            f_offset, NULL,
 			                            f_count, NULL);
-			if ( check <0 ) {
+			if ( check < 0 ) {
 				ERROR("Error selecting file dataspace "
 				      "for panel %s\n", p.name);
 				free(group);
