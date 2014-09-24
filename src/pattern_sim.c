@@ -310,7 +310,6 @@ int main(int argc, char *argv[])
 		{"background",         1, NULL,                5},
 		{"template",           1, NULL,                6},
 		{"beam-bandwidth",     1, NULL,                7},
-		{"profile-radius",     1, NULL,                8},
 		{"photon-energy",      1, NULL,                9},
 		{"nphotons",           1, NULL,               10},
 		{"beam-radius",        1, NULL,               11},
@@ -431,18 +430,6 @@ int main(int argc, char *argv[])
 			}
 			if ( beam.bandwidth < 0.0 ) {
 				ERROR("Beam bandwidth must be positive.\n");
-				return 1;
-			}
-			break;
-
-			case 8 :
-			beam.profile_radius = strtod(optarg, &rval);
-			if ( *rval != '\0' ) {
-				ERROR("Invalid profile radius.\n");
-				return 1;
-			}
-			if ( beam.divergence < 0.0 ) {
-				ERROR("Profile radius must be positive.\n");
 				return 1;
 			}
 			break;
