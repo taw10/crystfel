@@ -290,7 +290,8 @@ static int read_fpe_data(struct buffer_data *bd)
 		for ( i=0; i<bd->rbufpos; i++ ) {
 
 			/* Is there a line in the buffer? */
-			if ( strncmp(&bd->rbuffer[i] ,"\n" ,1 ) == 0 ) {
+			if ( bd->rbuffer[i] == '\n' ) {
+				bd->rbuffer[i] = '\0';
 				line_end = i;
 				line_ready = 1;
 				break;
@@ -347,15 +348,13 @@ static void run_work(const struct index_args *iargs,
 	int allDone = 0;
 	int w;
 	unsigned int opts;
-	struct buffer_data *bd;
+	struct buffer_data bd;
 
-	bd = malloc(sizeof(struct buffer_data));
-	bd->rbuffer = malloc(256*sizeof(char));
-	bd->rbuflen = 256;
-	bd->rbufpos = 0;
-	bd->line = NULL;
-	bd->fd = 0;
-
+	bd.rbuffer = malloc(256*sizeof(char));
+	bd.rbuflen = 256;
+	bd.rbufpos = 0;
+	bd.line = NULL;
+	bd.fd = 0;
 
 	fh = fdopen(filename_pipe, "r");
 	if ( fh == NULL ) {
@@ -368,11 +367,11 @@ static void run_work(const struct index_args *iargs,
 		ERROR("Failed to send request for first filename.\n");
 	}
 
-	bd->fd = fileno(fh);
+	bd.fd = fileno(fh);
 
 	/* Set non-blocking */
-	opts = fcntl(bd->fd, F_GETFL);
-	fcntl(bd->fd, F_SETFL, opts | O_NONBLOCK);
+	opts = fcntl(bd.fd, F_GETFL);
+	fcntl(bd.fd, F_SETFL, opts | O_NONBLOCK);
 
 	while ( !allDone ) {
 
@@ -393,12 +392,12 @@ static void run_work(const struct index_args *iargs,
 			int sval;
 
 			FD_ZERO(&fds);
-			FD_SET(bd->fd, &fds);
+			FD_SET(bd.fd, &fds);
 
 			tv.tv_sec = 30;
 			tv.tv_usec = 0;
 
-			sval = select(bd->fd+1, &fds, NULL, NULL, &tv);
+			sval = select(bd.fd+1, &fds, NULL, NULL, &tv);
 
 			if ( sval == -1 ) {
 
@@ -417,7 +416,7 @@ static void run_work(const struct index_args *iargs,
 				}
 
 			} else if ( sval != 0 ) {
-				rval = read_fpe_data(bd);
+				rval = read_fpe_data(&bd);
 			} else {
 				ERROR("No data sent from main process..\n");
 				rval = 1;
@@ -431,9 +430,9 @@ static void run_work(const struct index_args *iargs,
 			continue;
 		}
 
-		chomp(bd->line);
+		chomp(bd.line);
 
-		if ( strlen(bd->line) == 0 ) {
+		if ( strlen(bd.line) == 0 ) {
 
 			allDone = 1;
 
@@ -443,7 +442,7 @@ static void run_work(const struct index_args *iargs,
 			char event_str[1024];
 			struct event* ev;
 
-			sscanf(bd->line, "%s %s", filename, event_str);
+			sscanf(bd.line, "%s %s", filename, event_str);
 			pargs.filename_p_e->filename = strdup(filename);
 
 			if ( strcmp(event_str, "/") != 0 ) {
@@ -478,9 +477,8 @@ static void run_work(const struct index_args *iargs,
 
 	}
 
-	free(bd->line);
-	free(bd->rbuffer);
-	free(bd);
+	free(bd.line);
+	free(bd.rbuffer);
 
 	cleanup_indexing(iargs->indm, iargs->ipriv);
 	free(iargs->indm);
