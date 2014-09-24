@@ -269,18 +269,10 @@ int main(int argc, char *argv[])
 	char *template_file = NULL;
 	Stream *st = NULL;
 	int no_fringes = 0;
-	struct beam_params beam;
 	double nphotons = 1e12;
 	double beam_radius = 1e-6;  /* metres */
-
-	/* Default beam parameters */
-	beam.bandwidth = 0.01;
-	beam.profile_radius = 0.001e9;
-	beam.photon_energy = 9000.0;
-
-	/* Beam parameters which it doesn't make sense to use here */
-	beam.photon_energy_scale = 1.0;
-	beam.divergence = -1.0;  /* (not implemented .. yet?) */
+	double bandwidth = 0.01;
+	double photon_energy = 9000.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -423,24 +415,24 @@ int main(int argc, char *argv[])
 			break;
 
 			case 7 :
-			beam.bandwidth = strtod(optarg, &rval);
+			bandwidth = strtod(optarg, &rval);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid beam bandwidth.\n");
 				return 1;
 			}
-			if ( beam.bandwidth < 0.0 ) {
+			if ( bandwidth < 0.0 ) {
 				ERROR("Beam bandwidth must be positive.\n");
 				return 1;
 			}
 			break;
 
 			case 9 :
-			beam.photon_energy = strtod(optarg, &rval);
+			photon_energy = strtod(optarg, &rval);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid photon energy.\n");
 				return 1;
 			}
-			if ( beam.photon_energy < 0.0 ) {
+			if ( photon_energy < 0.0 ) {
 				ERROR("Photon energy must be positive.\n");
 				return 1;
 			}
@@ -615,16 +607,10 @@ int main(int argc, char *argv[])
 	/* Define image parameters */
 	image.width = image.det->max_fs + 1;
 	image.height = image.det->max_ss + 1;
-	if ( image.beam->photon_energy_from != NULL ) {
-		ERROR("Photon energy must be specified, not taken from the"
-		      " HDF5 file.  Please alter %s accordingly.\n", beamfile)
-		return 1;
-	}
 
-	double wl = ph_en_to_lambda(eV_to_J(beam.photon_energy));
+	double wl = ph_en_to_lambda(eV_to_J(photon_energy));
 	image.lambda = wl;
-	image.bw = beam.bandwidth;
-	image.div = beam.divergence;
+	image.bw = bandwidth;
 	image.nsamples = nsamples;
 	free(beamfile);
 

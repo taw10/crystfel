@@ -80,7 +80,6 @@ int main(int argc, char *argv[])
 	UnitCell *cell;
 	UnitCell *cell_raw;
 	struct detector *det;
-	struct beam_params *beam;
 	int i;
 	double gpu_min, gpu_max, gpu_tot;
 	double cpu_min, cpu_max, cpu_tot;
@@ -150,18 +149,13 @@ int main(int argc, char *argv[])
 
 	cpu_image.det = det;
 	gpu_image.det = det;
+	cpu_image.beam = NULL;
+	gpu_image.beam = NULL;
 
-	beam = calloc(1, sizeof(struct beam_params));
-	beam->photon_energy = 6000.0;
-	beam->bandwidth = 1.0 / 100.0;
-	beam->divergence = 0.0;
-	cpu_image.beam = beam;
-	gpu_image.beam = beam;
-
-	cpu_image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
-	gpu_image.lambda = ph_en_to_lambda(eV_to_J(beam->photon_energy));
-	cpu_image.bw = beam->bandwidth;
-	gpu_image.bw = beam->bandwidth;
+	cpu_image.lambda = ph_en_to_lambda(eV_to_J(6000));
+	gpu_image.lambda = ph_en_to_lambda(eV_to_J(6000));
+	cpu_image.bw = 1.0 / 100.0;
+	gpu_image.bw = 1.0 / 100.0;
 
 	cpu_image.nsamples = 10;
 	gpu_image.nsamples = 10;
@@ -210,7 +204,6 @@ int main(int argc, char *argv[])
 
 	cell_free(cell);
 	free_detector_geometry(det);
-	free(beam);
 
 	if ( perc > 1.0 ) {
 

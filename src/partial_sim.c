@@ -263,6 +263,7 @@ struct queue_args
 	double full_stddev;
 	double noise_stddev;
 	double background;
+	double profile_radius;
 
 	struct image *template_image;
 	double max_q;
@@ -338,7 +339,7 @@ static void run_job(void *vwargs, int cookie)
 	} while ( osf <= 0.0 );
 	crystal_set_osf(cr, osf);
 	crystal_set_mosaicity(cr, 0.0);
-	crystal_set_profile_radius(cr, wargs->image.beam->profile_radius);
+	crystal_set_profile_radius(cr, qargs->profile_radius);
 
 	/* Set up a random orientation */
 	orientation = random_quaternion(qargs->rngs[cookie]);
@@ -429,27 +430,24 @@ int main(int argc, char *argv[])
 	struct queue_args qargs;
 	struct image image;
 	int n_threads = 1;
-	double cnoise = 0.0;
 	char *rval;
 	int i;
 	FILE *fh;
 	char *phist_file = NULL;
-	double osf_stddev = 2.0;
-	double full_stddev = 1000.0;
-	double noise_stddev = 20.0;
-	double background = 3000.0;
 	gsl_rng *rng_for_seeds;
 	int config_random = 0;
 	char *image_prefix = NULL;
 
-	/* Default beam parameters */
-	beam.divergence = 0.001;
-	beam.bandwidth = 0.01;
-	beam.profile_radius = 0.001e9;
-	beam.photon_energy = 9000.0;
-
-	/* Beam parameters which it doesn't make sense to use here */
-	beam.photon_energy_scale = 1.0;
+	/* Default simulation parameters */
+	double divergence = 0.001;
+	double bandwidth = 0.01;
+	double profile_radius = 0.001e9;
+	double photon_energy = 9000.0;
+	double osf_stddev = 2.0;
+	double full_stddev = 1000.0;
+	double noise_stddev = 20.0;
+	double background = 3000.0;
+	double cnoise = 0.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -594,48 +592,48 @@ int main(int argc, char *argv[])
 			break;
 
 			case 8 :
-			beam.divergence = strtod(optarg, &rval);
+			divergence = strtod(optarg, &rval);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid beam divergence.\n");
 				return 1;
 			}
-			if ( beam.divergence < 0.0 ) {
+			if ( divergence < 0.0 ) {
 				ERROR("Beam divergence must be positive.\n");
 				return 1;
 			}
 			break;
 
 			case 9 :
-			beam.bandwidth = strtod(optarg, &rval);
+			bandwidth = strtod(optarg, &rval);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid beam bandwidth.\n");
 				return 1;
 			}
-			if ( beam.bandwidth < 0.0 ) {
+			if ( bandwidth < 0.0 ) {
 				ERROR("Beam bandwidth must be positive.\n");
 				return 1;
 			}
 			break;
 
 			case 10 :
-			beam.profile_radius = strtod(optarg, &rval);
+			profile_radius = strtod(optarg, &rval);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid profile radius.\n");
 				return 1;
 			}
-			if ( beam.divergence < 0.0 ) {
+			if ( divergence < 0.0 ) {
 				ERROR("Profile radius must be positive.\n");
 				return 1;
 			}
 			break;
 
 			case 11 :
-			beam.photon_energy = strtod(optarg, &rval);
+			photon_energy = strtod(optarg, &rval);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid photon energy.\n");
 				return 1;
 			}
-			if ( beam.photon_energy < 0.0 ) {
+			if ( photon_energy < 0.0 ) {
 				ERROR("Photon energy must be positive.\n");
 				return 1;
 			}
@@ -745,10 +743,9 @@ int main(int argc, char *argv[])
 	image.width = det->max_fs + 1;
 	image.height = det->max_ss + 1;
 
-	image.lambda = ph_en_to_lambda(eV_to_J(beam.photon_energy));
-	image.div = beam.divergence;
-	image.bw = beam.bandwidth;
-	image.beam = &beam;
+	image.lambda = ph_en_to_lambda(eV_to_J(photon_energy));
+	image.div = divergence;
+	image.bw = bandwidth;
 	image.filename = "dummy.h5";
 	image.copyme = NULL;
 	image.crystals = NULL;
@@ -780,6 +777,7 @@ int main(int argc, char *argv[])
 	qargs.background = background;
 	qargs.max_q = largest_q(&image);
 	qargs.image_prefix = image_prefix;
+	qargs.profile_radius = profile_radius;
 
 	qargs.rngs = malloc(n_threads * sizeof(gsl_rng *));
 	if ( qargs.rngs == NULL ) {
