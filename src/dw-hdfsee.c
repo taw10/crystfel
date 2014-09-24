@@ -1021,7 +1021,7 @@ static void load_features_from_file(struct image *image, const char *filename)
 		char phs[1024];
 		char pn[32];
 		int r;
-		float cts;
+		float cts, d;
 		signed int h, k, l;
 		struct panel *p = NULL;
 
@@ -1031,7 +1031,8 @@ static void load_features_from_file(struct image *image, const char *filename)
 
 		/* Try long format (from stream) */
 		r = sscanf(line, "%i %i %i %f %s %f %f %f %f %s",
-				   &h, &k, &l, &intensity, phs, &sigma, &cts, &fs, &ss, pn);
+		                   &h, &k, &l, &intensity, phs, &sigma, &cts,
+		                   &fs, &ss, pn);
 
 		if ( r == 10 ) {
 			char name[32];
@@ -1041,19 +1042,25 @@ static void load_features_from_file(struct image *image, const char *filename)
 
 			add_fs = fs-p->orig_min_fs+p->min_fs;
 			add_ss = ss-p->orig_min_ss+p->min_ss;
-			image_add_feature(image->features, add_fs, add_ss, image, 1.0,
-			                  strdup(name));
+			image_add_feature(image->features, add_fs, add_ss,
+			                  image, 1.0, strdup(name));
 			continue;
 		}
 
-		r = sscanf(line, "%f %f %s", &fs, &ss, pn);
-		if ( r != 3 ) continue;
+		r = sscanf(line, "%f %f %f %f %s", &fs, &ss, &d,
+		           &intensity, pn);
+		if ( r != 5 ) continue;
 
 		p = find_panel_by_name(image->det, pn);
+		if ( p == NULL ) {
+			ERROR("Unable to find panel %s\n", pn);
+		} else {
 
-		add_fs = fs-p->orig_min_fs+p->min_fs;
-		add_ss = ss-p->orig_min_ss+p->min_ss;
-		image_add_feature(image->features, add_fs, add_ss, image, 1.0, "peak");
+			add_fs = fs - p->orig_min_fs + p->min_fs;
+			add_ss = ss - p->orig_min_ss + p->min_ss;
+			image_add_feature(image->features, add_fs, add_ss,
+			                  image, 1.0, "peak");
+		}
 
 	} while ( rval != NULL );
 
