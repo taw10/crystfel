@@ -2437,6 +2437,7 @@ DisplayWindow *displaywindow_open(char *filename, const char *peaks,
 	dw->ev_list = NULL;
 
 	dw->image->det = det_geom;
+	dw->image->beam = beam;
 
 	dw->hdfile = hdfile_open(filename);
 	if ( dw->hdfile == NULL ) {
