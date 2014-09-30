@@ -437,7 +437,6 @@ select_intersections
 update_partialities
 update_partialities_2
 polarisation_correction
-LORENTZ_SCALE
 </SECTION>
 
 <SECTION>

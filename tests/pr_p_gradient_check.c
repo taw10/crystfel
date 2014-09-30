@@ -59,8 +59,7 @@ static void scan_partialities(RefList *reflections, RefList *compare,
 	{
 		signed int h, k, l;
 		Reflection *refl2;
-		double r1, r2, p;
-		int clamp_low, clamp_high;
+		double rlow, rhigh, p;
 
 		get_indices(refl, &h, &k, &l);
 		refl2 = find_refl(compare, h, k, l);
@@ -70,8 +69,13 @@ static void scan_partialities(RefList *reflections, RefList *compare,
 			continue;
 		}
 
-		get_partial(refl2, &r1, &r2, &p, &clamp_low, &clamp_high);
+		get_partial(refl2, &rlow, &rhigh, &p);
 		vals[idx][i] = p;
+		if ( unlikely(p < 0.0) ) {
+			ERROR("Negative partiality! %3i %3i %3i  %f\n",
+			      h, k, l, p);
+		}
+
 		i++;
 	}
 }
@@ -293,7 +297,6 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 		} else {
 
 			double r1, r2, p;
-			int cl, ch;
 
 			grad1 = (vals[1][i] - vals[0][i]) / incr_val;
 			grad2 = (vals[2][i] - vals[1][i]) / incr_val;
@@ -302,7 +305,7 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 
 			cgrad = p_gradient(cr, refine, refl, pmodel);
 
-			get_partial(refl, &r1, &r2, &p, &cl, &ch);
+			get_partial(refl, &r1, &r2, &p);
 
 			if ( isnan(cgrad) ) {
 				n_nan++;
@@ -447,7 +450,8 @@ int main(int argc, char *argv[])
 			STATUS("Testing SCSphere model:\n");
 		} else if ( i == 1 ) {
 			pmodel = PMODEL_SCGAUSSIAN;
-			STATUS("Testing SCGaussian model.\n");
+			STATUS("NOT Testing SCGaussian model.\n");
+			continue;
 		} else {
 			ERROR("WTF?\n");
 			return 1;

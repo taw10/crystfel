@@ -55,24 +55,43 @@
 #define MAX_CYCLES (10)
 
 
-static double dpdq(double r, double profile_radius)
+/* Returns dp(gauss)/dr at "r" */
+static double gaussian_fraction_gradient(double r, double pr)
 {
-	double q;
+	double q, dpdq, dqdr;
 
-	/* Calculate degree of penetration */
-	q = (r + profile_radius)/(2.0*profile_radius);
+	/* If the Ewald sphere isn't within the profile, the gradient is zero */
+	if ( r < -pr ) return 0.0;
+	if ( r > +pr ) return 0.0;
 
-	return 6.0*(q-q*q);
+	q = (r + pr)/(2.0*pr);
+	dpdq = 6.0*(q - q*q);  /* FIXME: Put a real gradient on this line */
+	dqdr = 1.0 / (2.0*pr);
+	return dpdq * dqdr;
+}
+
+
+/* Returns dp(sph)/dr at "r" */
+static double sphere_fraction_gradient(double r, double pr)
+{
+	double q, dpdq, dqdr;
+
+	/* If the Ewald sphere isn't within the profile, the gradient is zero */
+	if ( r < -pr ) return 0.0;
+	if ( r > +pr ) return 0.0;
+
+	q = (r + pr)/(2.0*pr);
+	dpdq = 6.0*(q - q*q);
+	dqdr = 1.0 / (2.0*pr);
+	return dpdq * dqdr;
 }
 
 
 /* Returns dp/dr at "r" */
-static double partiality_gradient(double r, double profile_radius,
+static double partiality_gradient(double r, double pr,
                                   PartialityModel pmodel,
-                                  double rlow, double rhigh, double p)
+                                  double rlow, double rhigh)
 {
-	double dqdr;    /* dq/dr */
-	double dpsphdr; /* dpsph / dr */
 	double A, D;
 
 	D = rlow - rhigh;
@@ -84,25 +103,25 @@ static double partiality_gradient(double r, double profile_radius,
 		return 0.0;
 
 		case PMODEL_SCSPHERE:
-		dqdr = 1.0 / (2.0*profile_radius);
-		dpsphdr = dpdq(r, profile_radius) * dqdr;
-		A = (dpsphdr/D) - p*pow(rlow-rhigh, -2.0);
-		return 4.0*profile_radius*A/3.0;
+		A = sphere_fraction_gradient(r, pr)/D;
+		return 4.0*pr*A/3.0;
 
 		case PMODEL_SCGAUSSIAN:
-		/* FIXME: Get a proper gradient */
-		dqdr = 1.0 / (2.0*profile_radius);
-		return dpdq(r, profile_radius) * dqdr;
+		A = gaussian_fraction_gradient(r, pr)/D;
+		return 4.0*pr*A/3.0;
 
 	}
 }
 
 
-/* Returns dp/drad at "r" */
-static double partiality_rgradient(double r, double profile_radius,
-                                   PartialityModel pmodel)
+/* Returns dp/d(pr) at "r" */
+static double partiality_rgradient(double r, double pr,
+                                   PartialityModel pmodel,
+                                   double rlow, double rhigh)
 {
-	double dqdrad;  /* dq/drad */
+	double A, D;
+
+	D = rlow - rhigh;
 
 	switch ( pmodel ) {
 
@@ -111,14 +130,12 @@ static double partiality_rgradient(double r, double profile_radius,
 		return 0.0;
 
 		case PMODEL_SCSPHERE:
-		/* FIXME: wrong (?) */
-		dqdrad = -0.5 * r / (profile_radius * profile_radius);
-		return dpdq(r, profile_radius) * dqdrad;
+		A = 0.0;//r*sphere_fraction_rgradient(r, pr)
+		  //  + sphere_fraction(rlow, rhigh, pr);
+		return 4.0*A / (3.0*D);
 
 		case PMODEL_SCGAUSSIAN:
-		/* FIXME: Get a proper gradient */
-		dqdrad = -0.5 * r / (profile_radius * profile_radius);
-		return dpdq(r, profile_radius) * dqdrad;
+		return 0.0;
 
 	}
 }
@@ -128,7 +145,7 @@ static double partiality_rgradient(double r, double profile_radius,
  * of 'image'. */
 double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 {
-	double ds, azi;
+	double azi;
 	double glow, ghigh;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
@@ -136,7 +153,6 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 	double xl, yl, zl;
 	signed int hs, ks, ls;
 	double rlow, rhigh, p;
-	int clamp_low, clamp_high;
 	double philow, phihigh, phi;
 	double khigh, klow;
 	double tl, cet, cez;
@@ -144,51 +160,11 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 	struct image *image = crystal_get_image(cr);
 	double r = crystal_get_profile_radius(cr);
 
-	get_symmetric_indices(refl, &hs, &ks, &ls);
-
-	cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
-	                                          &bsx, &bsy, &bsz,
-	                                          &csx, &csy, &csz);
-	xl = hs*asx + ks*bsx + ls*csx;
-	yl = hs*asy + ks*bsy + ls*csy;
-	zl = hs*asz + ks*bsz + ls*csz;
-
-	ds = 2.0 * resolution(crystal_get_cell(cr), hs, ks, ls);
-	get_partial(refl, &rlow, &rhigh, &p, &clamp_low, &clamp_high);
-
-	/* "low" gives the largest Ewald sphere (wavelength short => k large)
-	 * "high" gives the smallest Ewald sphere (wavelength long => k small)
-	 */
-	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
-	khigh = 1.0/(image->lambda + image->lambda*image->bw/2.0);
-
-	tl = sqrt(xl*xl + yl*yl);
-	ds = modulus(xl, yl, zl);
-
-	cet = -sin(image->div/2.0) * klow;
-	cez = -cos(image->div/2.0) * klow;
-	philow = M_PI_2 - angle_between_2d(tl-cet, zl-cez, 1.0, 0.0);
-
-	cet = -sin(image->div/2.0) * khigh;
-	cez = -cos(image->div/2.0) * khigh;
-	phihigh = M_PI_2 - angle_between_2d(tl-cet, zl-cez, 1.0, 0.0);
-
-	/* Approximation: philow and phihigh are very similar */
-	phi = (philow + phihigh) / 2.0;
-
-	azi = atan2(yl, xl);
+	get_partial(refl, &rlow, &rhigh, &p);
 
 	/* Calculate the gradient of partiality wrt excitation error. */
-	if ( clamp_low == 0 ) {
-		glow = partiality_gradient(rlow, r, pmodel, rlow, rhigh, p);
-	} else {
-		glow = 0.0;
-	}
-	if ( clamp_high == 0 ) {
-		ghigh = partiality_gradient(rhigh, r, pmodel, rlow, rhigh, p);
-	} else {
-		ghigh = 0.0;
-	}
+	glow = partiality_gradient(rlow, r, pmodel, rlow, rhigh);
+	ghigh = partiality_gradient(rhigh, r, pmodel, rlow, rhigh);
 
 	if ( k == REF_R ) {
 		switch ( pmodel ) {
@@ -198,19 +174,22 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 			return 0.0;
 
 			case PMODEL_SCSPHERE:
-			gr  = partiality_rgradient(rlow, r, pmodel);
-			gr -= partiality_rgradient(rhigh, r, pmodel);
+			gr  =0.0;// partiality_rgradient(rlow, r, pmodel);
+			//gr -= partiality_rgradient(rhigh, r, pmodel);
 			return gr;
 
 			case PMODEL_SCGAUSSIAN:
-			gr  = partiality_rgradient(rlow, r, pmodel);
-			gr -= partiality_rgradient(rhigh, r, pmodel);
+			gr  =0.0;// partiality_rgradient(rlow, r, pmodel);
+			//gr -= partiality_rgradient(rhigh, r, pmodel);
 			return gr;
 
 		}
 	}
 
 	if ( k == REF_DIV ) {
+
+		double ds = 2.0 * resolution(crystal_get_cell(cr), hs, ks, ls);
+
 		switch ( pmodel ) {
 
 			default:
@@ -226,37 +205,67 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 		}
 	}
 
+	get_symmetric_indices(refl, &hs, &ks, &ls);
+
+	cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
+	                                          &bsx, &bsy, &bsz,
+	                                          &csx, &csy, &csz);
+	xl = hs*asx + ks*bsx + ls*csx;
+	yl = hs*asy + ks*bsy + ls*csy;
+	zl = hs*asz + ks*bsz + ls*csz;
+
+	/* "low" gives the largest Ewald sphere (wavelength short => k large)
+	 * "high" gives the smallest Ewald sphere (wavelength long => k small)
+	 */
+	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
+	khigh = 1.0/(image->lambda + image->lambda*image->bw/2.0);
+
+	tl = sqrt(xl*xl + yl*yl);
+
+	cet = -sin(image->div/2.0) * klow;
+	cez = -cos(image->div/2.0) * klow;
+	philow = angle_between_2d(tl-cet, zl-cez, 0.0, 1.0);
+
+	cet = -sin(image->div/2.0) * khigh;
+	cez = -cos(image->div/2.0) * khigh;
+	phihigh = angle_between_2d(tl-cet, zl-cez, 0.0, 1.0);
+
+	/* Approximation: philow and phihigh are very similar */
+	phi = (philow + phihigh) / 2.0;
+
+	azi = atan2(yl, xl);
+
 	/* For many gradients, just multiply the above number by the gradient
 	 * of excitation error wrt whatever. */
 	switch ( k ) {
 
 		/* Cell parameters and orientation */
 		case REF_ASX :
-		return hs * sin(phi) * cos(azi) * (ghigh-glow);
+		return - hs * sin(phi) * cos(azi) * (glow-ghigh);
 
 		case REF_BSX :
-		return ks * sin(phi) * cos(azi) * (ghigh-glow);
+		return - ks * sin(phi) * cos(azi) * (glow-ghigh);
 
 		case REF_CSX :
-		return ls * sin(phi) * cos(azi) * (ghigh-glow);
+		return - ls * sin(phi) * cos(azi) * (glow-ghigh);
 
 		case REF_ASY :
-		return hs * sin(phi) * sin(azi) * (ghigh-glow);
+		return - hs * sin(phi) * sin(azi) * (glow-ghigh);
 
 		case REF_BSY :
-		return ks * sin(phi) * sin(azi) * (ghigh-glow);
+		return - ks * sin(phi) * sin(azi) * (glow-ghigh);
 
 		case REF_CSY :
-		return ls * sin(phi) * sin(azi) * (ghigh-glow);
+		return - ls * sin(phi) * sin(azi) * (glow-ghigh);
 
 		case REF_ASZ :
-		return hs * cos(phi) * (ghigh-glow);
+		return - hs * cos(phi) * (glow-ghigh);
 
 		case REF_BSZ :
-		return ks * cos(phi) * (ghigh-glow);
+		return - ks * cos(phi) * (glow-ghigh);
 
 		case REF_CSZ :
-		return ls * cos(phi) * (ghigh-glow);
+		return - ls * cos(phi) * (glow-ghigh);
 
 	}
 

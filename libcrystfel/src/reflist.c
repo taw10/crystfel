@@ -67,12 +67,10 @@ struct _refldata {
 	signed int ls;
 
 	/* Partiality and related geometrical stuff */
-	double r1;  /* First excitation error */
-	double r2;  /* Second excitation error */
+	double rlow;  /* Low excitation error */
+	double rhigh;  /* High excitation error */
 	double p;   /* Partiality */
 	double L;   /* Lorentz factor */
-	int clamp1; /* Clamp status for r1 */
-	int clamp2; /* Clamp status for r2 */
 
 	/* Location in image */
 	double fs;
@@ -424,24 +422,20 @@ double get_intensity(const Reflection *refl)
 /**
  * get_partial:
  * @refl: A %Reflection
- * @r1: Location at which to store the first excitation error
- * @r2: Location at which to store the second excitation error
+ * @rlow: Location at which to store the "low" excitation error
+ * @rhigh: Location at which to store the "high" excitation error
  * @p: Location at which to store the partiality
- * @clamp_low: Location at which to store the first clamp status
- * @clamp_high: Location at which to store the second clamp status
  *
  * This function is used during post refinement (in conjunction with
  * set_partial()) to get access to the details of the partiality calculation.
  *
  **/
-void get_partial(const Reflection *refl, double *r1, double *r2, double *p,
-                 int *clamp_low, int *clamp_high)
+void get_partial(const Reflection *refl, double *rlow, double *rhigh,
+                 double *p)
 {
-	*r1 = refl->data.r1;
-	*r2 = refl->data.r2;
+	*rlow = refl->data.rlow;
+	*rhigh = refl->data.rhigh;
 	*p = get_partiality(refl);
-	*clamp_low = refl->data.clamp1;
-	*clamp_high = refl->data.clamp2;
 }
 
 
@@ -592,24 +586,19 @@ void set_detector_pos(Reflection *refl, double exerr, double fs, double ss)
 /**
  * set_partial:
  * @refl: A %Reflection
- * @r1: The first excitation error
- * @r2: The second excitation error
+ * @rlow: The "low" excitation error
+ * @rhigh: The "high" excitation error
  * @p: The partiality
- * @clamp_low: The first clamp status
- * @clamp_high: The second clamp status
  *
  * This function is used during post refinement (in conjunction with
  * get_partial()) to get access to the details of the partiality calculation.
  *
  **/
-void set_partial(Reflection *refl, double r1, double r2, double p,
-                 double clamp_low, double clamp_high)
+void set_partial(Reflection *refl, double rlow, double rhigh, double p)
 {
-	refl->data.r1 = r1;
-	refl->data.r2 = r2;
+	refl->data.rlow = rlow;
+	refl->data.rhigh = rhigh;
 	refl->data.p = p;
-	refl->data.clamp1 = clamp_low;
-	refl->data.clamp2 = clamp_high;
 }
 
 

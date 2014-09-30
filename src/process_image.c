@@ -85,11 +85,10 @@ static void refine_radius(Crystal *cr)
 	{
 		double i = get_intensity(refl);
 		double rlow, rhigh, p;
-		int cl, ch;
 
-		get_partial(refl, &rlow, &rhigh, &p, &cl, &ch);
-		fprintf(fh, "%e %10f %e %e %f %i %i\n", (rhigh+rlow)/2.0, i,
-		                           rlow, rhigh, p, cl, ch);
+		get_partial(refl, &rlow, &rhigh, &p);
+		fprintf(fh, "%e %10f %e %e %f\n", (rhigh+rlow)/2.0, i,
+		                           rlow, rhigh, p);
 
 		vals[(2*n)+0] = i;
 		vals[(2*n)+1] = (rhigh+rlow)/2.0;
