@@ -114,30 +114,13 @@ static double partiality_gradient(double r, double pr,
 }
 
 
-/* Returns dp/d(pr) at "r" */
-static double partiality_rgradient(double r, double pr,
-                                   PartialityModel pmodel,
-                                   double rlow, double rhigh)
+static double sphere_fraction_rgradient(double r, double R)
 {
-	double A, D;
+	/* If the Ewald sphere isn't within the profile, the gradient is zero */
+	if ( r < -R ) return 0.0;
+	if ( r > +R ) return 0.0;
 
-	D = rlow - rhigh;
-
-	switch ( pmodel ) {
-
-		default:
-		case PMODEL_UNITY:
-		return 0.0;
-
-		case PMODEL_SCSPHERE:
-		A = 0.0;//r*sphere_fraction_rgradient(r, pr)
-		  //  + sphere_fraction(rlow, rhigh, pr);
-		return 4.0*A / (3.0*D);
-
-		case PMODEL_SCGAUSSIAN:
-		return 0.0;
-
-	}
+	return -(3.0*r/(4.0*R*R)) * (1.0 - r*r/(R*R));
 }
 
 
@@ -151,61 +134,38 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	double xl, yl, zl;
+	double ds;
 	signed int hs, ks, ls;
 	double rlow, rhigh, p;
 	double philow, phihigh, phi;
 	double khigh, klow;
 	double tl, cet, cez;
-	double gr;
 	struct image *image = crystal_get_image(cr);
-	double r = crystal_get_profile_radius(cr);
+	double R = crystal_get_profile_radius(cr);
+	double D, psph;
 
 	get_partial(refl, &rlow, &rhigh, &p);
 
-	/* Calculate the gradient of partiality wrt excitation error. */
-	glow = partiality_gradient(rlow, r, pmodel, rlow, rhigh);
-	ghigh = partiality_gradient(rhigh, r, pmodel, rlow, rhigh);
-
 	if ( k == REF_R ) {
-		switch ( pmodel ) {
 
-			default:
-			case PMODEL_UNITY:
-			return 0.0;
+		double Rglow, Rghigh;
 
-			case PMODEL_SCSPHERE:
-			gr  =0.0;// partiality_rgradient(rlow, r, pmodel);
-			//gr -= partiality_rgradient(rhigh, r, pmodel);
-			return gr;
+		D = rlow - rhigh;
+		psph = sphere_fraction(rlow, rhigh, R);
 
-			case PMODEL_SCGAUSSIAN:
-			gr  =0.0;// partiality_rgradient(rlow, r, pmodel);
-			//gr -= partiality_rgradient(rhigh, r, pmodel);
-			return gr;
+		Rglow = sphere_fraction_rgradient(rlow, R);
+		Rghigh = sphere_fraction_rgradient(rhigh, R);
 
-		}
+		return 4.0*psph/(3.0*D) + (4.0*R/(3.0*D))*(Rglow - Rghigh);
+
 	}
 
-	if ( k == REF_DIV ) {
-
-		double ds = 2.0 * resolution(crystal_get_cell(cr), hs, ks, ls);
-
-		switch ( pmodel ) {
-
-			default:
-			case PMODEL_UNITY:
-			return 0.0;
-
-			case PMODEL_SCSPHERE:
-			return 0.0; /* FIXME */
-
-			case PMODEL_SCGAUSSIAN:
-			return (ds*glow + ds*ghigh) / 2.0; /* FIXME: Wrong */
-
-		}
-	}
+	/* Calculate the gradient of partiality wrt excitation error. */
+	glow = partiality_gradient(rlow, R, pmodel, rlow, rhigh);
+	ghigh = partiality_gradient(rhigh, R, pmodel, rlow, rhigh);
 
 	get_symmetric_indices(refl, &hs, &ks, &ls);
+	ds = 2.0 * resolution(crystal_get_cell(cr), hs, ks, ls);
 
 	cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
 	                                          &bsx, &bsy, &bsz,
@@ -266,6 +226,11 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 
 		case REF_CSZ :
 		return - ls * cos(phi) * (glow-ghigh);
+
+		case REF_DIV :
+		D = rlow - rhigh;
+		psph = sphere_fraction(rlow, rhigh, R);
+		return (ds/2.0)*(glow+ghigh) - 4.0*R*psph*ds/(3.0*D*D);
 
 	}
 
