@@ -63,7 +63,7 @@ static int cmpd2(const void *av, const void *bv)
 	a = ap[1];
 	b = bp[1];
 
-	if ( a > b ) return -1;
+	if ( fabs(a) < fabs(b) ) return -1;
 	return 1;
 }
 
@@ -72,12 +72,10 @@ static void refine_radius(Crystal *cr)
 {
 	Reflection *refl;
 	RefListIterator *iter;
-	FILE *fh;
 	double vals[num_reflections(crystal_get_reflections(cr))*2];
 	int n = 0;
 	int i;
-
-	fh = fopen("graph.dat", "w");
+	double ti = 0.0;  /* Total intensity */
 
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
@@ -87,24 +85,29 @@ static void refine_radius(Crystal *cr)
 		double rlow, rhigh, p;
 
 		get_partial(refl, &rlow, &rhigh, &p);
-		fprintf(fh, "%e %10f %e %e %f\n", (rhigh+rlow)/2.0, i,
-		                           rlow, rhigh, p);
 
 		vals[(2*n)+0] = i;
-		vals[(2*n)+1] = (rhigh+rlow)/2.0;
+		vals[(2*n)+1] = fabs((rhigh+rlow)/2.0);
 		n++;
 
 	}
 
+	/* Sort in ascending order of absolute "deviation from Bragg" */
 	qsort(vals, n, sizeof(double)*2, cmpd2);
 
+	/* Add up all the intensity and calculate cumulative intensity as a
+	 * function of absolute "deviation from Bragg" */
 	for ( i=0; i<n-1; i++ ) {
-		double mean = gsl_stats_mean(vals, 2, i);
-		double var = gsl_stats_variance_m(vals, 2, i, mean);
-		printf("%.2f  %i\n", mean/var, i);
+		ti += vals[2*i];
+		vals[2*i] = ti;
 	}
 
-	fclose(fh);
+	/* Find the cutoff where we get 67% of the intensity */
+	for ( i=0; i<n-1; i++ ) {
+		if ( vals[2*i] > 0.67*ti ) break;
+	}
+
+	crystal_set_profile_radius(cr, fabs(vals[2*i+1]));
 }
 
 
@@ -228,7 +231,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	/* Default parameters */
 	image.div = 0.0;
 	image.bw = 0.00000001;
-	STATUS("Warning: div, bw and pr are hardcoded in this version.\n");
 	for ( i=0; i<image.n_crystals; i++ ) {
 		crystal_set_profile_radius(image.crystals[i], 0.01e9);
 		crystal_set_mosaicity(image.crystals[i], 0.0);  /* radians */
