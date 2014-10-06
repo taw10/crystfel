@@ -56,18 +56,15 @@
 
 
 /* Returns dp(gauss)/dr at "r" */
-static double gaussian_fraction_gradient(double r, double pr)
+static double gaussian_fraction_gradient(double r, double R)
 {
-	double q, dpdq, dqdr;
+	const double ng = 2.6;
 
 	/* If the Ewald sphere isn't within the profile, the gradient is zero */
-	if ( r < -pr ) return 0.0;
-	if ( r > +pr ) return 0.0;
+	if ( r < -R ) return 0.0;
+	if ( r > +R ) return 0.0;
 
-	q = (r + pr)/(2.0*pr);
-	dpdq = 6.0*(q - q*q);  /* FIXME: Put a real gradient on this line */
-	dqdr = 1.0 / (2.0*pr);
-	return dpdq * dqdr;
+	return ng/(R*sqrt(2.0*M_PI)) * exp(-pow(r*ng/R, 2.0)/2.0);
 }
 
 
@@ -124,6 +121,56 @@ static double sphere_fraction_rgradient(double r, double R)
 }
 
 
+static double gaussian_fraction_rgradient(double r, double R)
+{
+	/* If the Ewald sphere isn't within the profile, the gradient is zero */
+	if ( r < -R ) return 0.0;
+	if ( r > +R ) return 0.0;
+
+	return -(3.0*r/(4.0*R*R)) * (1.0 - r*r/(R*R));
+}
+
+
+static double volume_fraction_rgradient(double r, double pr,
+                                       PartialityModel pmodel)
+{
+	switch ( pmodel )
+	{
+		case PMODEL_UNITY :
+		return 1.0;
+
+		case PMODEL_SCSPHERE :
+		return sphere_fraction_rgradient(r, pr);
+
+		case PMODEL_SCGAUSSIAN :
+		return gaussian_fraction_rgradient(r, pr);
+	}
+
+	ERROR("No pmodel in volume_fraction_rgradient!\n");
+	return 1.0;
+}
+
+
+static double volume_fraction(double rlow, double rhigh, double pr,
+                              PartialityModel pmodel)
+{
+	switch ( pmodel )
+	{
+		case PMODEL_UNITY :
+		return 1.0;
+
+		case PMODEL_SCSPHERE :
+		return sphere_fraction(rlow, rhigh, pr);
+
+		case PMODEL_SCGAUSSIAN :
+		return gaussian_fraction(rlow, rhigh, pr);
+	}
+
+	ERROR("No pmodel in volume_fraction!\n");
+	return 1.0;
+}
+
+
 /* Return the gradient of partiality wrt parameter 'k' given the current status
  * of 'image'. */
 double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
@@ -151,10 +198,10 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 		double Rglow, Rghigh;
 
 		D = rlow - rhigh;
-		psph = sphere_fraction(rlow, rhigh, R);
+		psph = volume_fraction(rlow, rhigh, R, pmodel);
 
-		Rglow = sphere_fraction_rgradient(rlow, R);
-		Rghigh = sphere_fraction_rgradient(rhigh, R);
+		Rglow = volume_fraction_rgradient(rlow, R, pmodel);
+		Rghigh = volume_fraction_rgradient(rhigh, R, pmodel);
 
 		return 4.0*psph/(3.0*D) + (4.0*R/(3.0*D))*(Rglow - Rghigh);
 
@@ -229,7 +276,7 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 
 		case REF_DIV :
 		D = rlow - rhigh;
-		psph = sphere_fraction(rlow, rhigh, R);
+		psph = volume_fraction(rlow, rhigh, R, pmodel);
 		return (ds/2.0)*(glow+ghigh) - 4.0*R*psph*ds/(3.0*D*D);
 
 	}

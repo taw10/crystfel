@@ -131,7 +131,7 @@ double sphere_fraction(double rlow, double rhigh, double pr)
 }
 
 
-double gaussian_fraction(double rlow, double rhigh, double pr)
+double gaussian_fraction(double rlow, double rhigh, double R)
 {
 	double plow, phigh;
 	const double ng = 2.6;
@@ -144,13 +144,13 @@ double gaussian_fraction(double rlow, double rhigh, double pr)
 	 * zero) correspond to the six situations in Table 3 of Rossmann
 	 * et al. (1979).
 	 */
-	if ( rlow < -pr ) rlow = -pr;
-	if ( rlow > +pr ) rlow = +pr;
-	if ( rhigh < -pr ) rhigh = -pr;
-	if ( rhigh > +pr ) rhigh = +pr;
+	if ( rlow < -R ) rlow = -R;
+	if ( rlow > +R ) rlow = +R;
+	if ( rhigh < -R ) rhigh = -R;
+	if ( rhigh > +R ) rhigh = +R;
 
-	plow = 0.5 * gsl_sf_erf(ng * rlow / (sqrt(2.0)*pr));
-	phigh = 0.5 * gsl_sf_erf(ng * rhigh / (sqrt(2.0)*pr));
+	plow =  0.5 * (1.0 + gsl_sf_erf(pow(ng*rlow /R, 2.0)/sqrt(2.0)));
+	phigh = 0.5 * (1.0 + gsl_sf_erf(pow(ng*rhigh/R, 2.0)/sqrt(2.0)));
 
 	return plow - phigh;
 }
