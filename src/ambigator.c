@@ -1307,7 +1307,7 @@ int main(int argc, char *argv[])
 		write_reindexed_stream(infile, outfile, assignments, amb);
 	} else if ( outfile != NULL ) {
 		ERROR("Can only write stream with known ambiguity operator.\n");
-		ERROR("Try again with -w\n");
+		ERROR("Try again with -w or --operator.\n");
 	}
 
 	free(assignments);
