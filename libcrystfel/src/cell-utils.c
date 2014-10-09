@@ -1132,7 +1132,7 @@ UnitCell *load_cell_from_pdb(const char *filename)
 
 			determine_lattice(cell, as, bs, cs, als, bes, gas);
 
-			if ( strlen(line) > 65 ) {
+			if ( strlen(line) > 55 ) {
 				cell_set_centering(cell, line[55]);
 			} else {
 				ERROR("CRYST1 line without centering.\n");
