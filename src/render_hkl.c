@@ -91,6 +91,7 @@ static void show_help(const char *s)
 "                                     reflection (no 'epsilon' correction).\n"
 "\n"
 "      --res-ring=<r>      Draw a resolution ring at <r> Angstroms.\n"
+"      --highres=<r>       Render spots only up to <r> Angstroms.\n"
 "\n"
 "      --colour-key        Draw (only) the key for the current colour scale.\n"
 "                           The key will be written to 'key.pdf' in the\n"
@@ -760,6 +761,7 @@ int main(int argc, char *argv[])
 	long int zone = 0;
 	double res;
 	struct resrings rings;
+	float highres = -1.0;
 
 	rings.n_rings = 0;
 
@@ -781,6 +783,7 @@ int main(int argc, char *argv[])
 		{"scale-top",          1, NULL,                2},
 		{"zone",               1, NULL,                3},
 		{"res-ring",           1, NULL,                4},
+		{"highres",            1, NULL,                6},
 		{0, 0, NULL, 0}
 	};
 
@@ -867,6 +870,13 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			add_ring(&rings, res);
+			break;
+
+			case 6 :
+			if ( sscanf(optarg, "%e", &highres) != 1 ) {
+				ERROR("Invalid value for --highres\n");
+				return 1;
+			}
 			break;
 
 			case 0 :
@@ -988,6 +998,10 @@ int main(int argc, char *argv[])
 		ERROR("The input reflection list does not appear to"
 		      " have symmetry %s\n", symmetry_name(sym));
 		return 1;
+	}
+
+	if ( highres > 0.0 ) {
+		list = res_cutoff(list, cell, 0.0, 1.0/(highres*1e-10));
 	}
 
 	render_za(cell, list, boost, sym, wght, colscale,
