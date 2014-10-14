@@ -450,8 +450,7 @@ int main(int argc, char *argv[])
 			STATUS("Testing SCSphere model:\n");
 		} else if ( i == 1 ) {
 			pmodel = PMODEL_SCGAUSSIAN;
-			STATUS("NOT Testing SCGaussian model.\n");
-			continue;
+			STATUS("Testing SCGaussian model.\n");
 		} else {
 			ERROR("WTF?\n");
 			return 1;

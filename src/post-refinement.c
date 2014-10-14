@@ -59,12 +59,13 @@
 static double gaussian_fraction_gradient(double r, double R)
 {
 	const double ng = 2.6;
+	const double sig = R/ng;
 
 	/* If the Ewald sphere isn't within the profile, the gradient is zero */
 	if ( r < -R ) return 0.0;
 	if ( r > +R ) return 0.0;
 
-	return ng/(R*sqrt(2.0*M_PI)) * exp(-pow(r*ng/R, 2.0)/2.0);
+	return exp(-pow(r/sig, 2.0)/2.0) / (sig*sqrt(2.0*M_PI));
 }
 
 
@@ -123,11 +124,14 @@ static double sphere_fraction_rgradient(double r, double R)
 
 static double gaussian_fraction_rgradient(double r, double R)
 {
+	const double ng = 2.6;
+	const double sig = R/ng;
+
 	/* If the Ewald sphere isn't within the profile, the gradient is zero */
 	if ( r < -R ) return 0.0;
 	if ( r > +R ) return 0.0;
 
-	return -(3.0*r/(4.0*R*R)) * (1.0 - r*r/(R*R));
+	return -(ng*r/(sqrt(2.0*M_PI)*R*R))*exp(-r*r/(2.0*sig*sig));
 }
 
 

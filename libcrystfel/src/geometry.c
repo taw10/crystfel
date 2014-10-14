@@ -135,6 +135,7 @@ double gaussian_fraction(double rlow, double rhigh, double R)
 {
 	double plow, phigh;
 	const double ng = 2.6;
+	const double sig = R/ng;
 
 	/* If the "lower" Ewald sphere is a long way away, use the
 	 * position at which the Ewald sphere would just touch the
@@ -149,8 +150,8 @@ double gaussian_fraction(double rlow, double rhigh, double R)
 	if ( rhigh < -R ) rhigh = -R;
 	if ( rhigh > +R ) rhigh = +R;
 
-	plow =  0.5 * (1.0 + gsl_sf_erf(pow(ng*rlow /R, 2.0)/sqrt(2.0)));
-	phigh = 0.5 * (1.0 + gsl_sf_erf(pow(ng*rhigh/R, 2.0)/sqrt(2.0)));
+	plow =  0.5*(1.0 + gsl_sf_erf(rlow/(sig*sqrt(2.0))));
+	phigh =  0.5*(1.0 + gsl_sf_erf(rhigh/(sig*sqrt(2.0))));
 
 	return plow - phigh;
 }
