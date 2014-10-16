@@ -108,6 +108,7 @@ struct sandbox
 	int *filename_pipes;
 	int *stream_pipe_write;
 	struct filename_plus_event **last_filename;
+	int serial;
 
 	char *tmpdir;
 
@@ -444,8 +445,9 @@ static void run_work(const struct index_args *iargs,
 			char filename[1024];
 			char event_str[1024];
 			struct event* ev;
+			int ser;
 
-			sscanf(bd.line, "%s %s", filename, event_str);
+			sscanf(bd.line, "%s %s %i", filename, event_str, &ser);
 			pargs.filename_p_e->filename = strdup(filename);
 
 			if ( strcmp(event_str, "/") != 0 ) {
@@ -465,7 +467,7 @@ static void run_work(const struct index_args *iargs,
 
 			pargs.n_crystals = 0;
 			process_image(iargs, &pargs, st, cookie, tmpdir,
-			              results_pipe);
+			              results_pipe, ser);
 
 			/* Request another image */
 			c = sprintf(buf, "%i\n", pargs.n_crystals);
@@ -903,6 +905,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->suspend_stats = 0;
 	sb->n_proc = n_proc;
 	sb->iargs = iargs;
+	sb->serial = 1;
 
 	sb->reader->fds = NULL;
 	sb->reader->fhs = NULL;
@@ -1124,6 +1127,8 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 			} else {
 
+				char tmp[256];
+
 				r = write(sb->filename_pipes[i],
 				          nextImage->filename,
 				          strlen(nextImage->filename));
@@ -1153,6 +1158,13 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 						ERROR("write pipe\n");
 					}
 
+				}
+
+				snprintf(tmp, 255, " %i", sb->serial++);
+				r = write(sb->filename_pipes[i],
+				          tmp, strlen(tmp));
+				if ( r < 0 ) {
+					ERROR("write pipe\n");
 				}
 
 				r = write(sb->filename_pipes[i], "\n", 1);

@@ -183,6 +183,8 @@ struct image {
 
 	int                     id;   /* ID number of the thread
 	                               * handling this image */
+	int                     serial;  /* Monotonically ascending serial
+	                                  * number for this image */
 
 	struct sample           *spectrum;
 	int                     nsamples; /* Number of wavelengths */

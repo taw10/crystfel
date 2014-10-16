@@ -634,6 +634,8 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 		fprintf(st->fh, "Event: %s\n", get_event_string(i->event));
 	}
 
+	fprintf(st->fh, "Image serial number: %i\n", i->serial);
+
 	indexer = indexer_str(i->indexed_by);
 	fprintf(st->fh, "indexed_by = %s\n", indexer);
 	free(indexer);
