@@ -319,7 +319,8 @@ static int read_fpe_data(struct buffer_data *bd)
 			bd->rbufpos = bd->rbufpos - line_end - 1;
 			new_rbuflen = bd->rbuflen - line_end - 1 ;
 			if ( new_rbuflen == 0 ) new_rbuflen = 256;
-			bd->rbuffer = realloc(bd->rbuffer, new_rbuflen*sizeof(char));
+			bd->rbuffer = realloc(bd->rbuffer,
+			                      new_rbuflen*sizeof(char));
 			bd->rbuflen = new_rbuflen;
 
 			return 1;
@@ -327,7 +328,8 @@ static int read_fpe_data(struct buffer_data *bd)
 		} else {
 
 			if ( bd->rbufpos == bd->rbuflen ) {
-				bd->rbuffer = realloc(bd->rbuffer, bd->rbuflen + 256);
+				bd->rbuffer = realloc(bd->rbuffer,
+				                      bd->rbuflen + 256);
 				bd->rbuflen = bd->rbuflen + 256;
 			}
 			no_line = 1;
@@ -410,7 +412,8 @@ static void run_work(const struct index_args *iargs,
 					break;
 
 					default:
-					ERROR("select() failed: %s\n", strerror(err));
+					ERROR("select() failed: %s\n",
+					      strerror(err));
 					rval = 1;
 
 				}
@@ -1102,7 +1105,8 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			}
 
 			/* Send next filename */
-			nextImage = get_pattern(fh, config_basename, iargs->det, prefix);
+			nextImage = get_pattern(fh, config_basename,
+			                        iargs->det, prefix);
 
 			if ( sb->last_filename[i] != NULL ) {
 				free_filename_plus_event(sb->last_filename[i]);
@@ -1120,7 +1124,8 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 			} else {
 
-				r = write(sb->filename_pipes[i], nextImage->filename,
+				r = write(sb->filename_pipes[i],
+				          nextImage->filename,
 				          strlen(nextImage->filename));
 
 				if ( r < 0 ) {
@@ -1221,7 +1226,8 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	pthread_mutex_destroy(&sb->lock);
 
 	STATUS("Final:"
-	       " %i images processed, %i had crystals (%.1f%%), %i crystals overall.\n",
+	       " %i images processed, %i had crystals (%.1f%%),"
+	       " %i crystals overall.\n",
 	       sb->n_processed, sb->n_hadcrystals,
 	       100.0 * sb->n_hadcrystals / sb->n_processed, sb->n_crystals);
 
