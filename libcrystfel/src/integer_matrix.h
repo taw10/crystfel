@@ -47,6 +47,7 @@ extern "C" {
 /* Alloc/dealloc */
 extern IntegerMatrix *intmat_new(unsigned int rows, unsigned int cols);
 extern IntegerMatrix *intmat_copy(IntegerMatrix *m);
+extern IntegerMatrix *intmat_identity(int size);
 extern void intmat_free(IntegerMatrix *m);
 
 /* Get/set */

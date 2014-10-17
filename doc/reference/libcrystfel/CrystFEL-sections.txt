@@ -307,6 +307,7 @@ IntegerMatrix
 <SUBSECTION>
 intmat_new
 intmat_copy
+intmat_identity
 intmat_free
 <SUBSECTION>
 intmat_get

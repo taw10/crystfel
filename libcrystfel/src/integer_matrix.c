@@ -501,3 +501,34 @@ int intmat_equals(const IntegerMatrix *a, const IntegerMatrix *b)
 
 	return 1;
 }
+
+
+/**
+ * intmat_identity
+ * @size: The size of the (square) matrix
+ *
+ * Returns: an identity %IntegerMatrix with side length @size, or NULL on error.
+ *
+ */
+IntegerMatrix *intmat_identity(int size)
+{
+	IntegerMatrix *m;
+	int i, j;
+
+	m = intmat_new(size, size);
+	if ( m == NULL ) return NULL;
+
+	for ( i=0; i<size; i++ ) {
+	for ( j=0; j<size; j++ ) {
+
+		if ( i == j ) {
+			intmat_set(m, i, j, 1);
+		} else {
+			intmat_set(m, i, j, 0);
+		}
+
+	}
+	}
+
+	return m;
+}
