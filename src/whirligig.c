@@ -246,45 +246,50 @@ static int gatinator(UnitCell *a, UnitCell *b, IntegerMatrix **pmb)
 }
 
 
-/* Try all combinations of crystals from the two patterns, in the hope of
- * finding the start of a rotation series */
-static int try_all(struct image *a, struct image *b, int *c1, int *c2,
-                   IntegerMatrix **m2)
+static int try_all(struct image *win, signed int *ser, IntegerMatrix **m,
+                   int ws, signed int p1, signed int p2)
 {
 	int i, j;
 
-	for ( i=0; i<a->n_crystals; i++ ) {
-		for ( j=0; j<b->n_crystals; j++ ) {
-			if ( gatinator(crystal_get_cell(a->crystals[i]),
-			               crystal_get_cell(b->crystals[j]), m2) )
-			{
-				*c1 = i;
-				*c2 = j;
-				return 1;
-			}
+	for ( i=0; i<win[p1].n_crystals; i++ ) {
+	for ( j=0; j<win[p2].n_crystals; j++ ) {
+
+		if ( gatinator(crystal_get_cell(win[p1].crystals[i]),
+		               crystal_get_cell(win[p2].crystals[j]), &m[p2]) )
+		{
+			ser[p1] = i;
+			ser[p2] = j;
+			m[p1] = intmat_identity(3);
+			return 1;
 		}
+
+	}
 	}
 
 	return 0;
 }
 
 
-/* Try to continue the rotation series from crystal c1 in image a, using any
- * crystal from image b */
-static int try_cont(struct image *a, struct image *b, int c1, int *c2,
-                    IntegerMatrix *m1, IntegerMatrix **m2)
+/* Try to fit p1 in with p2 */
+static int try_join(struct image *win, signed int *ser, IntegerMatrix **m,
+                    int ws, signed int p1, signed int p2)
 {
 	int j;
 	UnitCell *ref;
 	UnitCellTransformation *tfn;
 
-	tfn = tfn_from_intmat(m1);
-	ref = cell_transform(crystal_get_cell(a->crystals[c1]), tfn);
+	if ( ser[p2] == -1 ) {
+		return try_all(win, ser, m, ws, p1, p2);
+	}
+
+	tfn = tfn_from_intmat(m[p2]);
+	ref = cell_transform(crystal_get_cell(win[p2].crystals[ser[p2]]), tfn);
 	tfn_free(tfn);
 
-	for ( j=0; j<b->n_crystals; j++ ) {
-		if ( gatinator(ref, crystal_get_cell(b->crystals[j]), m2) ) {
-			*c2 = j;
+	for ( j=0; j<win[p1].n_crystals; j++ ) {
+		if ( gatinator(ref, crystal_get_cell(win[p1].crystals[j]),
+		               &m[p1]) ) {
+			ser[p1] = j;
 			cell_free(ref);
 			return 1;
 		}
@@ -294,6 +299,22 @@ static int try_cont(struct image *a, struct image *b, int c1, int *c2,
 
 	return 0;
 }
+
+
+static void try_connect(struct image *win, signed int *ser, IntegerMatrix **m,
+                        int ws, signed int pos)
+{
+	/* Try to connect to the left */
+	if ( (pos > 0) && (win[pos-1].serial != 0) ) {
+		try_join(win, ser, m, ws, pos, pos-1);
+	}
+
+	/* Try to connect to the right */
+	if ( (pos < ws-1) && (win[pos+1].serial != 0) ) {
+		try_join(win, ser, m, ws, pos, pos+1);
+	}
+}
+
 
 static void dump(struct image *win, signed int *ser, IntegerMatrix **mat,
                  int window_len, int pos)
@@ -309,6 +330,78 @@ static void dump(struct image *win, signed int *ser, IntegerMatrix **mat,
 	memmove(win, &win[pos], (window_len-pos)*sizeof(struct image *));
 	memmove(ser, &ser[pos], (window_len-pos)*sizeof(signed int));
 	memmove(mat, &mat[pos], (window_len-pos)*sizeof(IntegerMatrix *));
+}
+
+
+static int series_fills_window(signed int *ser, int ws)
+{
+	int i;
+
+	for ( i=0; i<ws; i++ ) {
+		if ( ser[i] == -1 ) return 0;
+	}
+
+	return 1;
+}
+
+
+static int add_to_window(struct image *cur, struct image **pwin,
+                         signed int **pser, IntegerMatrix ***pmat,
+                         int *pws)
+{
+	int sf, pos;
+	struct image *win = *pwin;
+	signed int *ser = *pser;
+	IntegerMatrix **mat = *pmat;
+	int ws = *pws;
+
+	if ( cur->serial > win[ws-1].serial ) {
+
+		int i;
+
+		if ( series_fills_window(ser, ws) ) {
+
+			ws++;
+			win = realloc(win, ws*sizeof(struct image));
+			ser = realloc(ser, ws*sizeof(signed int));
+			mat = realloc(mat, ws*sizeof(IntegerMatrix *));
+			if ( (win == NULL) || (ser == NULL) || (mat == NULL) ) {
+				ERROR("Failed to expand series buffers\n");
+				exit(1);
+			}
+			*pws = ws;
+			*pwin = win;
+			*pser = ser;
+			*pmat = mat;
+
+			pos = ws-1;
+
+		} else {
+
+			sf = cur->serial - win[ws-1].serial;
+
+			memmove(win, win+sf, (ws-sf)*sizeof(struct image));
+			memmove(ser, ser+sf, (ws-sf)*sizeof(signed int));
+			memmove(mat, mat+sf, (ws-sf)*sizeof(IntegerMatrix *));
+
+			for ( i=0; i<sf; i++ ) {
+				win[ws-sf+i].serial = 0;
+				ser[ws-sf+i] = -1;
+			}
+
+			pos = ws - 1;
+
+		}
+
+	} else {
+
+		pos = ws-(win[ws-1].serial - cur->serial)-1;
+
+	}
+
+	win[pos] = *cur;
+
+	return pos;
 }
 
 
@@ -329,11 +422,11 @@ int main(int argc, char *argv[])
 	int c;
 	Stream *st;
 	int polarisation = 1;
-	int pos = 0;
 	struct image *win;
 	signed int *ser;
 	IntegerMatrix **mat;
-	int window_len = 64;
+	int default_window_size = 16;
+	int ws, i;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -385,102 +478,57 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	win = calloc(window_len, sizeof(struct image));
-	ser = calloc(window_len, sizeof(int));
-	mat = calloc(window_len, sizeof(IntegerMatrix *));
+	/* Allocate initial window */
+	ws = default_window_size;
+	win = calloc(ws, sizeof(struct image));
+	ser = calloc(ws, sizeof(signed int));
+	mat = calloc(ws, sizeof(IntegerMatrix *));
 	if ( (win == NULL) || (ser == NULL) || (mat == NULL) ) {
 		ERROR("Failed to allocate series buffers\n");
 		return 1;
 	}
 
-	pos = 0;
+	for ( i=0; i<ws; i++ ) {
+		win[i].serial = 0;
+		ser[i] = -1;
+	}
+
 	do {
 
-		struct image *cur;
-		int c1, c2;
+		struct image cur;
+		int pos;
 
-		cur = &win[pos];
-
-		cur->div = NAN;
-		cur->bw = NAN;
-		cur->det = NULL;
-		if ( read_chunk_2(st, cur, STREAM_READ_REFLECTIONS
+		cur.div = NAN;
+		cur.bw = NAN;
+		cur.det = NULL;
+		if ( read_chunk_2(st, &cur, STREAM_READ_REFLECTIONS
 		                            | STREAM_READ_UNITCELL) != 0 ) {
 			break;
 		}
 
-		if ( isnan(cur->div) || isnan(cur->bw) ) {
+		if ( isnan(cur.div) || isnan(cur.bw) ) {
 			ERROR("Chunk doesn't contain beam parameters.\n");
 			return 1;
 		}
 
-		/* Need at least two images to compare */
-		if ( pos == 0 ) {
-			ser[0] = -1;
-			pos++;
-			continue;
+		if ( cur.serial < 1 ) {
+			ERROR("Serial numbers must be greater than zero.\n");
+			return 1;
 		}
 
-		if ( ser[pos-1] == -1 ) {
-			if ( try_all(&win[pos-1], cur, &c1, &c2, &mat[pos]) ) {
-				ser[pos-1] = c1;
-				ser[pos] = c2;
-			} else {
-				ser[pos] = -1;
-				mat[pos] = NULL;
-			}
-		} else {
-			if ( try_cont(&win[pos-1], cur, ser[pos-1], &c2,
-			              mat[pos-1], &mat[pos]) )
-			{
-				ser[pos] = c2;
-			} else {
-				ser[pos] = -1;
-				mat[pos] = NULL;
-			}
-		}
-
-		if ( ser[pos-1] != -1 ) {
-			printf("*");
-		} else {
-			printf("-");
-		}
-		fflush(stdout);
-
-		if ( ser[0] == -1 ) {
-			dump(win, ser, mat, window_len, 1);
-			pos--;
-		}
-
-		if ( (pos > 0) && (ser[pos] == -1) && (ser[pos-1] == -1) ) {
-			/* Series ready to process */
-			process_series(win, ser, mat, pos-1);
-			dump(win, ser, mat, window_len, pos);
-			pos = 0;
-		}
-
-		pos++;
-		if ( pos == window_len ) {
-			window_len *= 2;
-			win = realloc(win, window_len*sizeof(struct image));
-			ser = realloc(ser, window_len*sizeof(signed int));
-			mat = realloc(mat, window_len*sizeof(IntegerMatrix *));
-			if ( (win == NULL) || (ser == NULL) || (mat == NULL) ) {
-				ERROR("Failed to expand series buffers\n");
-				return 1;
-			}
-		}
+		pos = add_to_window(&cur, &win, &ser, &mat, &ws);
+		try_connect(win, ser, mat, ws, pos);
 
 	} while ( 1 );
 	printf("\n");
 
 	close_stream(st);
 
-	/* Final series to process? */
-	if ( pos > 0 ) {
-		process_series(win, ser, mat, pos);
-		dump(win, ser, mat, window_len, 1);
+	for ( i=0; i<ws; i++ ) {
+		STATUS("%3i: serial %i, series %i, matrix %p\n",
+		       i, win[i].serial, ser[i], mat[i]);
 	}
+
 	free(win);
 	free(ser);
 	free(mat);
