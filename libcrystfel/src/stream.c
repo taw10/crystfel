@@ -919,6 +919,7 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 
 	do {
 		long long num_peaks;
+		int ser;
 		float div, bw;
 
 		rval = fgets(line, 1023, st->fh);
@@ -956,6 +957,10 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 
 		if ( sscanf(line, "num_peaks = %lld %%", &num_peaks) == 1 ) {
 			image->num_peaks = num_peaks;
+		}
+
+		if ( sscanf(line, "Image serial number: %i", &ser) == 1 ) {
+			image->serial = ser;
 		}
 
 		if ( strncmp(line, "camera_length_", 14) == 0 ) {
