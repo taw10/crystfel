@@ -514,9 +514,9 @@ static void write_stream_reflections_2_3(FILE *fh, RefList *list,
 		write_ss = ss-p->min_ss+p->orig_min_ss;
 
 		fprintf(fh,
-		       "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f %s\n",
-			   h, k, l, intensity, phs, esd_i, red,  write_fs, write_ss,
-			   p->name);
+                          "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f %s\n",
+                           h, k, l, intensity, phs, esd_i, red,
+                           write_fs, write_ss, p->name);
 
 	}
 }
