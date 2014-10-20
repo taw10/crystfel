@@ -338,7 +338,16 @@ static void try_connect(struct image *win, signed int *ser, IntegerMatrix **m,
 {
 	/* Try to connect to the left */
 	if ( (pos > 0) && (win[pos-1].serial != 0) ) {
-		try_join(win, ser, m, ws, pos, pos-1);
+
+		if ( try_join(win, ser, m, ws, pos, pos-1) ) {
+			/* If this one connects to the left, any frames to the
+			 * right might be affected */
+			int i;
+			for ( i=pos+1; i<ws; i++ ) {
+				try_join(win, ser, m, ws, i, i-1);
+			}
+		}
+
 	}
 
 	/* Try to connect to the right */
