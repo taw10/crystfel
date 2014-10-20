@@ -129,6 +129,7 @@ static void process_series(struct image *images, signed int *ser,
 
 	for ( i=0; i<len; i++ ) {
 		Crystal *cr = images[i].crystals[ser[i]];
+		STATUS("%i %s / %i\n", i, images[i].filename, ser[i]);
 		p[i] = transform_reflections(crystal_get_reflections(cr),
 		                             mat[i]);
 	}
