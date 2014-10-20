@@ -152,22 +152,34 @@ static void check_for_series(struct image *win, signed int *ser,
 	int i;
 	int ser_len = 0;
 	int ser_start = 0;
+	int in_series = 0;
 
 	for ( i=0; i<ws; i++ ) {
-		if ( (win[i].serial != 0) && (ser[i] == -1) ) {
+
+		if ( in_series && ((win[i].serial == 0) || (ser[i] == -1)) ) {
+
 			if ( ser_len > 2 ) {
 				process_series(win+ser_start, ser+ser_start,
 				               m+ser_start, ser_len);
 			}
+
+			in_series = 0;
+
 		}
+
 		if ( (win[i].serial != 0) && (ser[i] != -1) ) {
-			ser_len++;
-		} else {
-			ser_start = i;
-			ser_len = 0;
+			if ( in_series ) {
+				ser_len++;
+			} else {
+				ser_start = i;
+				ser_len = 1;
+				in_series = 1;
+			}
 		}
-		//STATUS("%3i: serial %i, series %i, matrix %p, len %i\n",
-		//       i, win[i].serial, ser[i], m[i], ser_len);
+
+		//STATUS("%3i: serial %i, series %i, matrix %p, start %i, len %i\n",
+		//       i, win[i].serial, ser[i], m[i], ser_start, ser_len);
+
 	}
 
 	if ( is_last_frame && (ser_len > 2) ) {
@@ -369,9 +381,9 @@ static int series_fills_window(signed int *ser, int ws)
 }
 
 
-static int add_to_window(struct image *cur, struct image **pwin,
-                         signed int **pser, IntegerMatrix ***pmat,
-                         int *pws)
+static signed int add_to_window(struct image *cur, struct image **pwin,
+                                signed int **pser, IntegerMatrix ***pmat,
+                                int *pws)
 {
 	int pos;
 	struct image *win = *pwin;
@@ -429,6 +441,7 @@ static int add_to_window(struct image *cur, struct image **pwin,
 
 	}
 
+	if ( pos < 0 ) return -1;
 	win[pos] = *cur;
 
 	return pos;
@@ -561,8 +574,10 @@ int main(int argc, char *argv[])
 		}
 
 		pos = add_to_window(&cur, &win, &ser, &mat, &ws);
-		try_connect(win, ser, mat, ws, pos);
-		check_for_series(win, ser, mat, ws, 0);
+		if ( pos >= 0 ) {
+			try_connect(win, ser, mat, ws, pos);
+			check_for_series(win, ser, mat, ws, 0);
+		}
 
 		display_progress(n_images++);
 
