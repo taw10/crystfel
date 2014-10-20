@@ -140,6 +140,7 @@ static void process_series(struct image *images, signed int *ser,
 
 	for ( i=0; i<len; i++ ) {
 		reflist_free(p[i]);
+		ser[i] = -1;
 	}
 	free(p);
 }
