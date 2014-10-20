@@ -146,6 +146,37 @@ static void process_series(struct image *images, signed int *ser,
 }
 
 
+static void check_for_series(struct image *win, signed int *ser,
+                             IntegerMatrix **m, int ws, int is_last_frame)
+{
+	int i;
+	int ser_len = 0;
+	int ser_start = 0;
+
+	for ( i=0; i<ws; i++ ) {
+		if ( (win[i].serial != 0) && (ser[i] == -1) ) {
+			if ( ser_len > 2 ) {
+				process_series(win+ser_start, ser+ser_start,
+				               m+ser_start, ser_len);
+			}
+		}
+		if ( (win[i].serial != 0) && (ser[i] != -1) ) {
+			ser_len++;
+		} else {
+			ser_start = i;
+			ser_len = 0;
+		}
+		//STATUS("%3i: serial %i, series %i, matrix %p, len %i\n",
+		//       i, win[i].serial, ser[i], m[i], ser_len);
+	}
+
+	if ( is_last_frame && (ser_len > 2) ) {
+		process_series(win+ser_start, ser+ser_start,
+		               m+ser_start, ser_len);
+	}
+}
+
+
 static double moduli_check(double ax, double ay, double az,
                            double bx, double by, double bz)
 {
@@ -317,23 +348,6 @@ static void try_connect(struct image *win, signed int *ser, IntegerMatrix **m,
 }
 
 
-static void dump(struct image *win, signed int *ser, IntegerMatrix **mat,
-                 int window_len, int pos)
-{
-	int i;
-
-	for ( i=0; i<pos; i++ ) {
-		free_all_crystals(&win[i]);
-		intmat_free(mat[i]);
-		free(win[i].filename);
-	}
-
-	memmove(win, &win[pos], (window_len-pos)*sizeof(struct image *));
-	memmove(ser, &ser[pos], (window_len-pos)*sizeof(signed int));
-	memmove(mat, &mat[pos], (window_len-pos)*sizeof(IntegerMatrix *));
-}
-
-
 static int series_fills_window(signed int *ser, int ws)
 {
 	int i;
@@ -418,6 +432,19 @@ static void show_help(const char *s)
 }
 
 
+static void display_progress(int n_images)
+{
+	if ( !isatty(STDERR_FILENO) ) return;
+	if ( tcgetpgrp(STDERR_FILENO) != getpgrp() ) return;
+
+	pthread_mutex_lock(&stderr_lock);
+	fprintf(stderr, "\r%i images processed.", n_images);
+	pthread_mutex_unlock(&stderr_lock);
+
+	fflush(stdout);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -428,6 +455,7 @@ int main(int argc, char *argv[])
 	IntegerMatrix **mat;
 	int default_window_size = 16;
 	int ws, i;
+	int n_images = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -519,16 +547,17 @@ int main(int argc, char *argv[])
 
 		pos = add_to_window(&cur, &win, &ser, &mat, &ws);
 		try_connect(win, ser, mat, ws, pos);
+		check_for_series(win, ser, mat, ws, 0);
+
+		display_progress(n_images++);
 
 	} while ( 1 );
+	display_progress(n_images);
 	printf("\n");
 
 	close_stream(st);
 
-	for ( i=0; i<ws; i++ ) {
-		STATUS("%3i: serial %i, series %i, matrix %p\n",
-		       i, win[i].serial, ser[i], mat[i]);
-	}
+	check_for_series(win, ser, mat, ws, 1);
 
 	free(win);
 	free(ser);
