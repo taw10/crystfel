@@ -373,7 +373,7 @@ static int add_to_window(struct image *cur, struct image **pwin,
                          signed int **pser, IntegerMatrix ***pmat,
                          int *pws)
 {
-	int sf, pos;
+	int pos;
 	struct image *win = *pwin;
 	signed int *ser = *pser;
 	IntegerMatrix **mat = *pmat;
@@ -381,11 +381,13 @@ static int add_to_window(struct image *cur, struct image **pwin,
 
 	if ( cur->serial > win[ws-1].serial ) {
 
-		int i;
+		int i, sf;
+
+		sf = cur->serial - win[ws-1].serial;
 
 		if ( series_fills_window(ser, ws) ) {
 
-			ws++;
+			ws += sf;
 			win = realloc(win, ws*sizeof(struct image));
 			ser = realloc(ser, ws*sizeof(signed int));
 			mat = realloc(mat, ws*sizeof(IntegerMatrix *));
@@ -398,11 +400,8 @@ static int add_to_window(struct image *cur, struct image **pwin,
 			*pser = ser;
 			*pmat = mat;
 
-			pos = ws-1;
 
 		} else {
-
-			sf = cur->serial - win[ws-1].serial;
 
 			memmove(win, win+sf, (ws-sf)*sizeof(struct image));
 			memmove(ser, ser+sf, (ws-sf)*sizeof(signed int));
@@ -411,11 +410,18 @@ static int add_to_window(struct image *cur, struct image **pwin,
 			for ( i=0; i<sf; i++ ) {
 				win[ws-sf+i].serial = 0;
 				ser[ws-sf+i] = -1;
+				mat[ws-sf+i] = NULL;
 			}
 
-			pos = ws - 1;
-
 		}
+
+		for ( i=0; i<sf; i++ ) {
+			win[ws-sf+i].serial = 0;
+			ser[ws-sf+i] = -1;
+			mat[ws-sf+i] = NULL;
+		}
+
+		pos = ws-1;
 
 	} else {
 
