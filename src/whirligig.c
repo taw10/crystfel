@@ -161,28 +161,27 @@ static void process_series(struct image *images, signed int *ser,
 }
 
 
-static void check_for_series(struct image *win, signed int *ser,
-                             IntegerMatrix **m, int ws, int is_last_frame)
+static void find_ser(struct window *win, int sn, int is_last_frame)
 {
 	int i;
 	int ser_len = 0;
 	int ser_start = 0;
 	int in_series = 0;
 
-	for ( i=0; i<ws; i++ ) {
+	for ( i=0; i<win->join_ptr; i++ ) {
 
-		if ( in_series && ((win[i].serial == 0) || (ser[i] == -1)) ) {
+		if ( in_series && win->ser[sn][i] == -1 ) {
 
-			if ( ser_len > 2 ) {
-				process_series(win+ser_start, ser+ser_start,
-				               m+ser_start, ser_len);
-			}
+			process_series(win->img+ser_start,
+			               win->ser[sn]+ser_start,
+			               win->mat[sn]+ser_start,
+			               ser_len);
 
 			in_series = 0;
 
 		}
 
-		if ( (win[i].serial != 0) && (ser[i] != -1) ) {
+		if ( win->ser[sn][i] != -1 ) {
 			if ( in_series ) {
 				ser_len++;
 			} else {
@@ -192,14 +191,23 @@ static void check_for_series(struct image *win, signed int *ser,
 			}
 		}
 
-		//STATUS("%3i: serial %i, series %i, matrix %p, start %i, len %i\n",
-		//       i, win[i].serial, ser[i], m[i], ser_start, ser_len);
-
 	}
 
-	if ( is_last_frame && (ser_len > 2) ) {
-		process_series(win+ser_start, ser+ser_start,
-		               m+ser_start, ser_len);
+	if ( is_last_frame && (ser_len > 1) ) {
+		process_series(win->img+ser_start,
+		               win->ser[sn]+ser_start,
+		               win->mat[sn]+ser_start,
+		               ser_len);
+	}
+}
+
+
+static void find_and_process_series(struct window *win, int is_last_frame)
+{
+	int i;
+
+	for ( i=0; i<MAX_SER; i++ ) {
+		find_ser(win, i, is_last_frame);
 	}
 }
 
@@ -713,6 +721,8 @@ int main(int argc, char *argv[])
 
 		}
 
+		find_and_process_series(&win, 0);
+
 		display_progress(n_images++);
 
 	} while ( 1 );
@@ -720,6 +730,8 @@ int main(int argc, char *argv[])
 	printf("\n");
 
 	close_stream(st);
+
+	find_and_process_series(&win, 1);
 
 	return 0;
 }
