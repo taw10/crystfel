@@ -377,6 +377,11 @@ static int find_available_series(struct window *win)
 			if ( win->ser[i][win->join_ptr-1] != -1 ) continue;
 		}
 
+		if ( win->join_ptr > 1 ) {
+			if ( win->ser[i][win->join_ptr-2] != -1 ) continue;
+		}
+
+
 		return i;
 
 	}
