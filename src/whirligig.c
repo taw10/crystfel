@@ -49,6 +49,20 @@
 #include "reflist.h"
 #include "reflist-utils.h"
 
+/* Maximum number of series which can overlap at once */
+#define MAX_SER 8
+
+struct window
+{
+	struct image   *img;
+	int             ws;
+	int             add_ptr;   /* First empty slot (for adding frames) */
+	int             join_ptr;  /* First unjoined slot */
+
+	int            *ser[MAX_SER];
+	IntegerMatrix **mat[MAX_SER];
+};
+
 
 static void do_op(const IntegerMatrix *op,
                   signed int h, signed int k, signed int l,
@@ -291,50 +305,94 @@ static int gatinator(UnitCell *a, UnitCell *b, IntegerMatrix **pmb)
 }
 
 
-static int try_all(struct image *win, signed int *ser, IntegerMatrix **m,
-                   int ws, signed int p1, signed int p2)
+static int crystal_used(struct window *win, int pos, int cn)
 {
-	int i, j;
+	int i;
 
-	for ( i=0; i<win[p1].n_crystals; i++ ) {
-	for ( j=0; j<win[p2].n_crystals; j++ ) {
-
-		if ( gatinator(crystal_get_cell(win[p1].crystals[i]),
-		               crystal_get_cell(win[p2].crystals[j]), &m[p2]) )
-		{
-			ser[p1] = i;
-			ser[p2] = j;
-			m[p1] = intmat_identity(3);
-			return 1;
-		}
-
-	}
+	for ( i=0; i<MAX_SER; i++ ) {
+		if ( win->ser[i][pos] == cn ) return 1;
 	}
 
 	return 0;
 }
 
 
-/* Try to fit p1 in with p2 */
-static int try_join(struct image *win, signed int *ser, IntegerMatrix **m,
-                    int ws, signed int p1, signed int p2)
+static IntegerMatrix *try_all(struct window *win, int n1, int n2,
+                              int *c1, int *c2)
 {
-	int j;
-	UnitCell *ref;
-	UnitCellTransformation *tfn;
+	int i, j;
+	IntegerMatrix *m;
+	struct image *i1 = &win->img[n1];
+	struct image *i2 = &win->img[n2];
 
-	if ( ser[p2] == -1 ) {
-		return try_all(win, ser, m, ws, p1, p2);
+	for ( i=0; i<i1->n_crystals; i++ ) {
+	for ( j=0; j<i2->n_crystals; j++ ) {
+
+		if ( gatinator(crystal_get_cell(i1->crystals[i]),
+		               crystal_get_cell(i2->crystals[j]), &m) )
+		{
+			if ( !crystal_used(win, n1, i)
+			  && !crystal_used(win, n2, j) )
+			{
+				*c1 = i;
+				*c2 = j;
+				return m;
+			}
+		}
+
+	}
 	}
 
-	tfn = tfn_from_intmat(m[p2]);
-	ref = cell_transform(crystal_get_cell(win[p2].crystals[ser[p2]]), tfn);
+	return NULL;
+}
+
+
+/* Return a series number which can be used at the current join_ptr */
+static int find_available_series(struct window *win)
+{
+	int i;
+
+	for ( i=0; i<MAX_SER; i++ ) {
+
+		/* Series must not be in use at the moment */
+		if ( win->ser[i][win->join_ptr] != -1 ) continue;
+
+		/* Series must not have been in use recently */
+		if ( win->join_ptr > 0 ) {
+			if ( win->ser[i][win->join_ptr-1] != -1 ) continue;
+		}
+
+		return i;
+
+	}
+
+	ERROR("Too many overlapping series!\n");
+	abort();
+}
+
+
+/* Try to fit p1 in with p2 */
+static int try_join(struct window *win, int sn)
+{
+	int j;
+	Crystal *cr;
+	UnitCell *ref;
+	UnitCellTransformation *tfn;
+	const int sp = win->join_ptr - 1;
+
+	/* Get the appropriately transformed cell from the last crystal in this
+	 * series */
+	tfn = tfn_from_intmat(win->mat[sn][sp]);
+	cr = win->img[sp].crystals[win->ser[sn][sp]];
+	ref = cell_transform(crystal_get_cell(cr), tfn);
 	tfn_free(tfn);
 
-	for ( j=0; j<win[p1].n_crystals; j++ ) {
-		if ( gatinator(ref, crystal_get_cell(win[p1].crystals[j]),
-		               &m[p1]) ) {
-			ser[p1] = j;
+	for ( j=0; j<win->img[win->join_ptr].n_crystals; j++ ) {
+		Crystal *cr2;
+		cr2 = win->img[win->join_ptr].crystals[j];
+		if ( gatinator(ref, crystal_get_cell(cr2),
+		               &win->mat[sn][win->join_ptr]) ) {
+			win->ser[sn][win->join_ptr] = j;
 			cell_free(ref);
 			return 1;
 		}
@@ -346,106 +404,153 @@ static int try_join(struct image *win, signed int *ser, IntegerMatrix **m,
 }
 
 
-static void try_connect(struct image *win, signed int *ser, IntegerMatrix **m,
-                        int ws, signed int pos)
+static void connect_series(struct window *win)
 {
-	/* Try to connect to the left */
-	if ( (pos > 0) && (win[pos-1].serial != 0) ) {
+	do {
 
-		if ( try_join(win, ser, m, ws, pos, pos-1) ) {
-			/* If this one connects to the left, any frames to the
-			 * right might be affected */
-			int i;
-			for ( i=pos+1; i<ws; i++ ) {
-				try_join(win, ser, m, ws, i, i-1);
+		int i;
+		int joined = 0;
+
+		if ( win->join_ptr == 0 ) {
+			win->join_ptr++;
+			continue;
+		}
+
+		/* Stop if we found a missing frame */
+		if ( win->img[win->join_ptr].serial == 0 ) break;
+
+		/* Try to join this frame to each of the active series */
+		if ( win->join_ptr > 1 ) {
+			for ( i=0; i<MAX_SER; i++ ) {
+				if ( win->ser[i][win->join_ptr-1] != -1 ) {
+					if ( try_join(win, i) ) joined = 1;
+				}
 			}
 		}
 
-	}
+		/* Failing that, try to nucleate a new series here */
+		if ( !joined && (win->join_ptr > 0)
+		  && (win->img[win->join_ptr-1].serial != 0) ) {
+			IntegerMatrix *m;
+			int c1, c2;
+			m = try_all(win, win->join_ptr-1, win->join_ptr,
+			            &c1, &c2);
+			if ( m != NULL ) {
+				int sn = find_available_series(win);
+				win->ser[sn][win->join_ptr-1] = c1;
+				win->mat[sn][win->join_ptr-1] = intmat_identity(3);
+				win->ser[sn][win->join_ptr] = c2;
+				win->mat[sn][win->join_ptr] = m;
+			}
+		}
 
-	/* Try to connect to the right */
-	if ( (pos < ws-1) && (win[pos+1].serial != 0) ) {
-		try_join(win, ser, m, ws, pos, pos+1);
-	}
+		win->join_ptr++;
+
+	} while ( win->join_ptr < win->ws );
 }
 
 
-static int series_fills_window(signed int *ser, int ws)
+static int series_fills_window(struct window *win)
 {
 	int i;
+	int cont[MAX_SER];
 
-	for ( i=0; i<ws; i++ ) {
-		if ( ser[i] == -1 ) return 0;
+	for ( i=0; i<MAX_SER; i++ ) cont[i] = 1;
+
+	for ( i=0; i<win->ws; i++ ) {
+		int j;
+		for ( j=0; j<MAX_SER; j++ ) {
+			if ( (win->img[i].serial != 0)
+			  && (win->ser[j][i] == -1) ) {
+				cont[j] = 0;
+			}
+		}
 	}
 
-	return 1;
+	for ( i=0; i<MAX_SER; i++ ) {
+		if ( cont[i] ) return 1;
+	}
+
+	return 0;
 }
 
 
-static signed int add_to_window(struct image *cur, struct image **pwin,
-                                signed int **pser, IntegerMatrix ***pmat,
-                                int *pws)
+static void add_to_window(struct image *cur, struct window *win)
 {
 	int pos;
-	struct image *win = *pwin;
-	signed int *ser = *pser;
-	IntegerMatrix **mat = *pmat;
-	int ws = *pws;
 
-	if ( cur->serial > win[ws-1].serial ) {
+	pos = cur->serial - win->img[win->add_ptr-1].serial;
+	pos += win->add_ptr - 1;
 
-		int i, sf;
+	if ( pos < 0 ) return;  /* Frame arrived too late */
 
-		sf = cur->serial - win[ws-1].serial;
+	if ( pos >= win->ws ) {
 
-		if ( series_fills_window(ser, ws) ) {
+		int sf, i;
 
-			ws += sf;
-			win = realloc(win, ws*sizeof(struct image));
-			ser = realloc(ser, ws*sizeof(signed int));
-			mat = realloc(mat, ws*sizeof(IntegerMatrix *));
-			if ( (win == NULL) || (ser == NULL) || (mat == NULL) ) {
+		sf = (pos - win->ws) + 1;
+
+		if ( series_fills_window(win) ) {
+
+			win->ws += sf;
+			win->img = realloc(win->img,
+			                   win->ws*sizeof(struct image));
+			if ( win->img == NULL ) {
 				ERROR("Failed to expand series buffers\n");
 				exit(1);
 			}
-			*pws = ws;
-			*pwin = win;
-			*pser = ser;
-			*pmat = mat;
-
+			for ( i=0; i<MAX_SER; i++ ) {
+				win->ser[i] = realloc(win->ser[i],
+				               win->ws*sizeof(signed int));
+				win->mat[i] = realloc(win->mat[i],
+				               win->ws*sizeof(IntegerMatrix *));
+				if ( (win->ser[i] == NULL)
+				  || (win->mat[i] == NULL) )
+				{
+					ERROR("Failed to expand buffers\n");
+					exit(1);
+				}
+			}
 
 		} else {
 
-			memmove(win, win+sf, (ws-sf)*sizeof(struct image));
-			memmove(ser, ser+sf, (ws-sf)*sizeof(signed int));
-			memmove(mat, mat+sf, (ws-sf)*sizeof(IntegerMatrix *));
-
 			for ( i=0; i<sf; i++ ) {
-				win[ws-sf+i].serial = 0;
-				ser[ws-sf+i] = -1;
-				mat[ws-sf+i] = NULL;
+				if ( win->img[i].serial != 0 ) {
+					free_all_crystals(&win->img[i]);
+				}
 			}
 
+			memmove(win->img, win->img+sf,
+			        (win->ws-sf)*sizeof(struct image));
+
+			for ( i=0; i<MAX_SER; i++ ) {
+				memmove(win->ser[i], win->ser[i]+sf,
+					(win->ws-sf)*sizeof(signed int));
+				memmove(win->mat[i], win->mat[i]+sf,
+					(win->ws-sf)*sizeof(IntegerMatrix *));
+			}
+
+			pos -= sf;
+			if ( sf > win->join_ptr ) {
+				win->join_ptr = 0;
+			} else {
+				win->join_ptr -= sf;
+			}
 		}
 
 		for ( i=0; i<sf; i++ ) {
-			win[ws-sf+i].serial = 0;
-			ser[ws-sf+i] = -1;
-			mat[ws-sf+i] = NULL;
+			int j;
+			win->img[win->ws-sf+i].serial = 0;
+			for ( j=0; j<MAX_SER; j++ ) {
+				win->ser[j][win->ws-sf+i] = -1;
+				win->mat[j][win->ws-sf+i] = NULL;
+			}
 		}
-
-		pos = ws-1;
-
-	} else {
-
-		pos = ws-(win[ws-1].serial - cur->serial)-1;
 
 	}
 
-	if ( pos < 0 ) return -1;
-	win[pos] = *cur;
-
-	return pos;
+	win->img[pos] = *cur;
+	if ( pos >= win->add_ptr ) win->add_ptr = pos+1;
 }
 
 
@@ -479,12 +584,11 @@ int main(int argc, char *argv[])
 	int c;
 	Stream *st;
 	int polarisation = 1;
-	struct image *win;
-	signed int *ser;
-	IntegerMatrix **mat;
+	struct window win;
 	int default_window_size = 16;
-	int ws, i;
+	int i;
 	int n_images = 0;
+	int verbose = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -537,24 +641,37 @@ int main(int argc, char *argv[])
 	}
 
 	/* Allocate initial window */
-	ws = default_window_size;
-	win = calloc(ws, sizeof(struct image));
-	ser = calloc(ws, sizeof(signed int));
-	mat = calloc(ws, sizeof(IntegerMatrix *));
-	if ( (win == NULL) || (ser == NULL) || (mat == NULL) ) {
+	win.ws = default_window_size;
+	win.img = calloc(win.ws, sizeof(struct image));
+	if ( (win.img == NULL) ) {
 		ERROR("Failed to allocate series buffers\n");
 		return 1;
 	}
+	for ( i=0; i<win.ws; i++ ) {
+		win.img[i].serial = 0;
+	}
+	for ( i=0; i<MAX_SER; i++ ) {
 
-	for ( i=0; i<ws; i++ ) {
-		win[i].serial = 0;
-		ser[i] = -1;
+		int j;
+
+		win.ser[i] = calloc(win.ws, sizeof(signed int));
+		win.mat[i] = calloc(win.ws, sizeof(IntegerMatrix *));
+		if ( (win.ser[i] == NULL) || (win.mat[i] == NULL) ) {
+			ERROR("Failed to allocate series buffers\n");
+			return 1;
+		}
+		for ( j=0; j<win.ws; j++ ) {
+			win.ser[i][j] = -1;
+			win.mat[i][j] = NULL;
+		}
+
 	}
 
+	win.add_ptr = 0;
+	win.join_ptr = 0;
 	do {
 
 		struct image cur;
-		int pos;
 
 		cur.div = NAN;
 		cur.bw = NAN;
@@ -563,6 +680,8 @@ int main(int argc, char *argv[])
 		                            | STREAM_READ_UNITCELL) != 0 ) {
 			break;
 		}
+
+		if ( verbose ) printf("\n\nIncoming serial %i\n", cur.serial);
 
 		if ( isnan(cur.div) || isnan(cur.bw) ) {
 			ERROR("Chunk doesn't contain beam parameters.\n");
@@ -574,10 +693,24 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		pos = add_to_window(&cur, &win, &ser, &mat, &ws);
-		if ( pos >= 0 ) {
-			try_connect(win, ser, mat, ws, pos);
-			check_for_series(win, ser, mat, ws, 0);
+		add_to_window(&cur, &win);
+		connect_series(&win);
+
+		if ( verbose ) {
+			for ( i=0; i<win.ws; i++ ) {
+				int j;
+				printf("%3i %4i %c %c", i, win.img[i].serial,
+				       (i==win.add_ptr)?'*':' ',
+				       (i==win.join_ptr)?'<':' ');
+				for ( j=0; j<MAX_SER; j++ ) {
+					printf(" %3i", win.ser[j][i]);
+				}
+				printf(" %s\n", win.img[i].filename);
+			}
+			printf("(%3i) %c %c\n", i,
+				       (win.ws==win.add_ptr)?'*':' ',
+				       (win.ws==win.join_ptr)?'<':' ');
+
 		}
 
 		display_progress(n_images++);
@@ -587,12 +720,6 @@ int main(int argc, char *argv[])
 	printf("\n");
 
 	close_stream(st);
-
-	check_for_series(win, ser, mat, ws, 1);
-
-	free(win);
-	free(ser);
-	free(mat);
 
 	return 0;
 }
