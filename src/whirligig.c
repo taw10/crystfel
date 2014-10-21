@@ -331,8 +331,14 @@ static IntegerMatrix *try_all(struct window *win, int n1, int n2,
 {
 	int i, j;
 	IntegerMatrix *m;
-	struct image *i1 = &win->img[n1];
-	struct image *i2 = &win->img[n2];
+	struct image *i1;
+	struct image *i2;
+
+	assert(n1 >= 0);
+	assert(n2 >= 0);
+
+	i1 = &win->img[n1];
+	i2 = &win->img[n2];
 
 	for ( i=0; i<i1->n_crystals; i++ ) {
 	for ( j=0; j<i2->n_crystals; j++ ) {
