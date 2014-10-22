@@ -596,10 +596,9 @@ char *partial_event_substitution(struct event *ev, const char *data)
 struct dim_structure *initialize_dim_structure()
 {
 	struct dim_structure *hs;
+
 	hs = malloc(sizeof(struct dim_structure));
-	if ( hs == NULL ) {
-		return NULL;
-	}
+	if ( hs == NULL ) return NULL;
 
 	hs->dims = NULL;
 	hs->num_dims = 0;
@@ -654,10 +653,7 @@ int set_dim_structure_entry(struct dim_structure *hsd, const char *string_dim,
 		int di;
 
 		int *new_dims = malloc(dim_entry*sizeof(int));
-		if ( new_dims == NULL ) {
-			return 0;
-		}
-
+		if ( new_dims == NULL ) return 0;
 
 		for ( di=0; di<dim_entry; di++ ) {
 			new_dims[di] = HYSL_UNDEFINED;
@@ -668,9 +664,7 @@ int set_dim_structure_entry(struct dim_structure *hsd, const char *string_dim,
 		}
 
 		new_dims[dim_entry-1] = parse_dim_structure_val(val_string);
-		if ( hsd->dims == NULL ) {
-			free (hsd->dims);
-		}
+		free(hsd->dims);
 		hsd->dims = new_dims;
 		hsd->num_dims = dim_entry;
 
