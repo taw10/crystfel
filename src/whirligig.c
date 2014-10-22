@@ -130,20 +130,35 @@ static int find_common_reflections(RefList *list1, RefList *list2)
 
 
 static void process_series(struct image *images, signed int *ser,
-                           IntegerMatrix **mat, int len)
+                           IntegerMatrix **mat, int len, const char *outdir,
+                           int snum)
 {
 	int i;
 	RefList **p;
+	char filename[256];
+	FILE *fh;
 
 	printf("\n");
 	STATUS("Found a rotation series of %i views\n", len);
 
+	snprintf(filename, 256, "%s/series-%i.log", outdir, snum);
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) {
+		ERROR("Failed to open log file '%s'\n", filename);
+		goto out;
+	}
+
 	p = calloc(len, sizeof(RefList *));
 	if ( p == NULL ) return;
 
+	fprintf(fh, "%i frames in series\n\n", len);
+	fprintf(fh, "   # Serial Filename   EventID   Crystal\n");
 	for ( i=0; i<len; i++ ) {
 		Crystal *cr = images[i].crystals[ser[i]];
-		STATUS("%i %s / %i\n", i, images[i].filename, ser[i]);
+		fprintf(fh, "%4i %5i %s %s %i\n", i, images[i].serial,
+		                             images[i].filename,
+		                             get_event_string(images[i].event),
+		                             ser[i]);
 		p[i] = transform_reflections(crystal_get_reflections(cr),
 		                             mat[i]);
 	}
@@ -155,14 +170,20 @@ static void process_series(struct image *images, signed int *ser,
 
 	for ( i=0; i<len; i++ ) {
 		reflist_free(p[i]);
+	}
+	free(p);
+	fclose(fh);
+
+out:
+	for ( i=0; i<len; i++ ) {
 		ser[i] = -1;
 		intmat_free(mat[i]);
 	}
-	free(p);
 }
 
 
-static void find_ser(struct window *win, int sn, int is_last_frame)
+static void find_ser(struct window *win, int sn, int is_last_frame,
+                     int *n_series, const char *outdir)
 {
 	int i;
 	int ser_len = 0;
@@ -178,9 +199,10 @@ static void find_ser(struct window *win, int sn, int is_last_frame)
 			process_series(win->img+ser_start,
 			               win->ser[sn]+ser_start,
 			               win->mat[sn]+ser_start,
-			               ser_len);
+			               ser_len, outdir, *n_series);
 
 			in_series = 0;
+			(*n_series)++;
 
 		}
 
@@ -200,17 +222,19 @@ static void find_ser(struct window *win, int sn, int is_last_frame)
 		process_series(win->img+ser_start,
 		               win->ser[sn]+ser_start,
 		               win->mat[sn]+ser_start,
-		               ser_len);
+		               ser_len, outdir, *n_series);
+		(*n_series)++;
 	}
 }
 
 
-static void find_and_process_series(struct window *win, int is_last_frame)
+static void find_and_process_series(struct window *win, int is_last_frame,
+                                    int *n_series, const char *outdir)
 {
 	int i;
 
 	for ( i=0; i<MAX_SER; i++ ) {
-		find_ser(win, i, is_last_frame);
+		find_ser(win, i, is_last_frame, n_series, outdir);
 	}
 }
 
@@ -607,18 +631,27 @@ int main(int argc, char *argv[])
 {
 	int c;
 	Stream *st;
-	int polarisation = 1;
 	struct window win;
-	int default_window_size = 16;
 	int i;
+	char *rval;
 	int n_images = 0;
+	int n_series = 0;
+
+	/* Defaults */
+	int polarisation = 1;
+	int default_window_size = 16;
+	char *outdir = ".";
 	int verbose = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
 
 		{"help",               0, NULL,               'h'},
+		{"verbose",            0, NULL,               'v'},
+
 		{"version",            0, NULL,                3 },
+		{"window-size",        1, NULL,                4 },
+		{"output-dir",         1, NULL,                5 },
 
 		{"no-polarisation",    0, &polarisation,       0},
 		{"no-polarization",    0, &polarisation,       0},
@@ -638,6 +671,28 @@ int main(int argc, char *argv[])
 			case 'h' :
 			show_help(argv[0]);
 			return 0;
+
+			case 'v' :
+			verbose = 1;
+			break;
+
+			case 3 :
+			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
+			printf(CRYSTFEL_BOILERPLATE"\n");
+			return 0;
+
+			case 4 :
+			errno = 0;
+			default_window_size = strtol(optarg, &rval, 10);
+			if ( (*rval != '\0') || (default_window_size < 2) ) {
+				ERROR("Invalid value for --window-size.\n");
+				return 1;
+			}
+			break;
+
+			case 5 :
+			outdir = strdup(optarg);
+			break;
 
 			case 0 :
 			break;
@@ -737,7 +792,7 @@ int main(int argc, char *argv[])
 
 		}
 
-		find_and_process_series(&win, 0);
+		find_and_process_series(&win, 0, &n_series, outdir);
 
 		display_progress(n_images++);
 
@@ -747,7 +802,9 @@ int main(int argc, char *argv[])
 
 	close_stream(st);
 
-	find_and_process_series(&win, 1);
+	find_and_process_series(&win, 1, &n_series, outdir);
+
+	STATUS("%i rotation series found.\n", n_series);
 
 	return 0;
 }
