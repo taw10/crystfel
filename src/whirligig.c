@@ -494,7 +494,6 @@ static void connect_series(struct window *win)
 	while ( win->join_ptr < win->ws ) {
 
 		int i;
-		int joined = 0;
 
 		if ( win->join_ptr == 0 ) {
 			win->join_ptr++;
@@ -508,14 +507,15 @@ static void connect_series(struct window *win)
 		if ( win->join_ptr > 1 ) {
 			for ( i=0; i<MAX_SER; i++ ) {
 				if ( win->ser[i][win->join_ptr-1] != -1 ) {
-					if ( try_join(win, i) ) joined = 1;
+					try_join(win, i);
 				}
 			}
 		}
 
-		/* Failing that, try to nucleate a new series here */
-		if ( !joined && (win->join_ptr > 0)
-		  && (win->img[win->join_ptr-1].serial != 0) ) {
+		/* Try to nucleate a new series here */
+		if ( (win->join_ptr > 0)
+		  && (win->img[win->join_ptr-1].serial != 0) )
+		{
 			IntegerMatrix *m;
 			int c1, c2;
 			m = try_all(win, win->join_ptr-1, win->join_ptr,
