@@ -64,6 +64,15 @@ struct window
 };
 
 
+struct series_stats
+{
+	int n_series;            /* Number of series */
+	int in_series;           /* Number of frames with at least one series */
+	int max_series_length;   /* Length of longest series */
+	int total_series_steps;  /* For calculating mean series length */
+};
+
+
 static void do_op(const IntegerMatrix *op,
                   signed int h, signed int k, signed int l,
                   signed int *he, signed int *ke, signed int *le)
@@ -131,15 +140,20 @@ static int find_common_reflections(RefList *list1, RefList *list2)
 
 static void process_series(struct image *images, signed int *ser,
                            IntegerMatrix **mat, int len, const char *outdir,
-                           int snum)
+                           struct series_stats *ss)
 {
 	int i;
 	RefList **p;
 	char filename[256];
 	FILE *fh;
+	int snum = ss->n_series;
 
 	printf("\n");
 	STATUS("Found a rotation series of %i views\n", len);
+
+	ss->n_series++;
+	if ( len > ss->max_series_length ) ss->max_series_length = len;
+	ss->total_series_steps += len;
 
 	snprintf(filename, 256, "%s/series-%i.log", outdir, snum);
 	fh = fopen(filename, "w");
@@ -182,8 +196,30 @@ out:
 }
 
 
+static void count_series_frames(int **ser, int ser_start, int ser_len,
+                                struct series_stats *ss)
+{
+	int i;
+
+	for ( i=0; i<ser_len; i++ ) {
+
+		int j;
+		int clean = 1;
+
+		for ( j=0; j<MAX_SER; j++ ) {
+			if ( ser[j][ser_start+i] != -1 ) clean = 0;
+		}
+
+		if ( clean ) {
+			ss->in_series++;
+		}
+
+	}
+}
+
+
 static void find_ser(struct window *win, int sn, int is_last_frame,
-                     int *n_series, const char *outdir)
+                     struct series_stats *ss, const char *outdir)
 {
 	int i;
 	int ser_len = 0;
@@ -199,10 +235,11 @@ static void find_ser(struct window *win, int sn, int is_last_frame,
 			process_series(win->img+ser_start,
 			               win->ser[sn]+ser_start,
 			               win->mat[sn]+ser_start,
-			               ser_len, outdir, *n_series);
+			               ser_len, outdir, ss);
+
+			count_series_frames(win->ser, ser_start, ser_len, ss);
 
 			in_series = 0;
-			(*n_series)++;
 
 		}
 
@@ -222,19 +259,19 @@ static void find_ser(struct window *win, int sn, int is_last_frame,
 		process_series(win->img+ser_start,
 		               win->ser[sn]+ser_start,
 		               win->mat[sn]+ser_start,
-		               ser_len, outdir, *n_series);
-		(*n_series)++;
+		               ser_len, outdir, ss);
+		count_series_frames(win->ser, ser_start, ser_len, ss);
 	}
 }
 
 
 static void find_and_process_series(struct window *win, int is_last_frame,
-                                    int *n_series, const char *outdir)
+                                    struct series_stats *ss, const char *outdir)
 {
 	int i;
 
 	for ( i=0; i<MAX_SER; i++ ) {
-		find_ser(win, i, is_last_frame, n_series, outdir);
+		find_ser(win, i, is_last_frame, ss, outdir);
 	}
 }
 
@@ -634,8 +671,8 @@ int main(int argc, char *argv[])
 	struct window win;
 	int i;
 	char *rval;
+	struct series_stats ss;
 	int n_images = 0;
-	int n_series = 0;
 
 	/* Defaults */
 	int polarisation = 1;
@@ -746,6 +783,11 @@ int main(int argc, char *argv[])
 
 	}
 
+	ss.n_series = 0;
+	ss.in_series = 0;
+	ss.max_series_length = 0;
+	ss.total_series_steps = 0;
+
 	win.add_ptr = 0;
 	win.join_ptr = 0;
 	do {
@@ -792,7 +834,7 @@ int main(int argc, char *argv[])
 
 		}
 
-		find_and_process_series(&win, 0, &n_series, outdir);
+		find_and_process_series(&win, 0, &ss, outdir);
 
 		display_progress(n_images++);
 
@@ -802,9 +844,17 @@ int main(int argc, char *argv[])
 
 	close_stream(st);
 
-	find_and_process_series(&win, 1, &n_series, outdir);
+	find_and_process_series(&win, 1, &ss, outdir);
 
-	STATUS("%i rotation series found.\n", n_series);
+	STATUS("--------------------------------------\n");
+	STATUS("  Number of frames processed: %i\n", n_images);
+	STATUS("   Number of rotation series: %i\n", ss.n_series);
+	STATUS("       Average series length: %.2f\n",
+	       (double)ss.total_series_steps/ss.n_series);
+	STATUS("    Length of longest series: %i\n", ss.max_series_length);
+	STATUS("  Number of frames in series: %i\n", ss.in_series);
+	STATUS("Fraction of frames in series: %.2f %%\n",
+	       (double)ss.in_series*100.0 / n_images);
 
 	return 0;
 }
