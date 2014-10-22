@@ -913,6 +913,7 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 	image->features = NULL;
 	image->crystals = NULL;
 	image->n_crystals = 0;
+	image->event = NULL;
 
 	if ( (srf & STREAM_READ_REFLECTIONS) || (srf & STREAM_READ_UNITCELL) ) {
 		srf |= STREAM_READ_CRYSTALS;
@@ -933,6 +934,10 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 		if ( strncmp(line, "Image filename: ", 16) == 0 ) {
 			image->filename = strdup(line+16);
 			have_filename = 1;
+		}
+
+		if ( strncmp(line, "Event: ", 7) == 0 ) {
+			image->event = get_event_from_event_string(line+7);
 		}
 
 		if ( strncmp(line, "indexed_by = ", 13) == 0 ) {
