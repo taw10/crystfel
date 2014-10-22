@@ -312,7 +312,8 @@ static RefList *read_stream_reflections_2_1(FILE *fh)
 		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
 
 		r = sscanf(line, "%i %i %i %f %s %f %i %f %f",
-				   &h, &k, &l, &intensity, phs, &sigma, &cts, &fs, &ss);
+		                  &h, &k, &l, &intensity, phs, &sigma, &cts,
+		                   &fs, &ss);
 		if ( (r != 9) && (!first) ) {
 			reflist_free(out);
 			return NULL;
@@ -396,8 +397,8 @@ static void write_stream_reflections_2_2(FILE *fh, RefList *list)
 	Reflection *refl;
 	RefListIterator *iter;
 
-	fprintf(fh, "   h    k    l          I   sigma(I)       peak background"
-	            "  fs/px  ss/px\n");
+	fprintf(fh, "   h    k    l          I   sigma(I)       "
+	            "peak background  fs/px  ss/px\n");
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -418,9 +419,9 @@ static void write_stream_reflections_2_2(FILE *fh, RefList *list)
 		/* Reflections with redundancy = 0 are not written */
 		if ( get_redundancy(refl) == 0 ) continue;
 
-		fprintf(fh,
-			   "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f %6.1f %6.1f\n",
-			   h, k, l, intensity, esd_i, pk, bg, fs, ss);
+		fprintf(fh, "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f"
+			    " %6.1f %6.1f\n",
+			    h, k, l, intensity, esd_i, pk, bg, fs, ss);
 
 	}
 }
@@ -462,16 +463,15 @@ static void write_stream_reflections_2_1(FILE *fh, RefList *list)
 			strncpy(phs, "       -", 15);
 		}
 
-		fprintf(fh,
-			   "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f\n",
-			   h, k, l, intensity, phs, esd_i, red,  fs, ss);
+		fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f\n",
+			    h, k, l, intensity, phs, esd_i, red,  fs, ss);
 
 	}
 }
 
 
 static void write_stream_reflections_2_3(FILE *fh, RefList *list,
-										 struct image *image)
+                                         struct image *image)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -835,7 +835,8 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 			/* The reflection list format in the stream diverges
 			 * after 2.2 */
 			if ( AT_LEAST_VERSION(st, 2, 3) ) {
-				reflist = read_stream_reflections_2_3(st->fh, image->det);
+				reflist = read_stream_reflections_2_3(st->fh,
+				                                    image->det);
 			} else if ( AT_LEAST_VERSION(st, 2, 2) ) {
 				reflist = read_stream_reflections_2_2(st->fh);
 			} else {

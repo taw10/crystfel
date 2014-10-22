@@ -253,7 +253,7 @@ char *get_event_string(struct event *ev)
 	char *new_ret_string;
 	int ret_string_len;
 
-	if ( ev == NULL ) return "null event";
+	if ( ev == NULL ) return "(none)";
 
 	if ( ev->path_length != 0 ) {
 
@@ -265,8 +265,8 @@ char *get_event_string(struct event *ev)
 		for ( pi=1; pi<ev->path_length; pi++ ) {
 
 			new_ret_string = realloc(ret_string,
-			                 (ret_string_len+1+strlen(ev->path_entries[pi]))
-			                 *sizeof(char));
+			         (ret_string_len+1+strlen(ev->path_entries[pi]))
+			          * sizeof(char));
 			if ( new_ret_string == NULL ) {
 				return NULL;
 			}
@@ -360,21 +360,17 @@ struct event *get_event_from_event_string(char *ev_string)
 	char *sep;
 	char *start;
 
-	ev = initialize_event();
-	if ( ev == NULL ) {
-		return NULL;
-	}
-
 	ev_sep = strstr(ev_string, "//");
-	if ( ev_sep == NULL ) {
-		return NULL;
-	}
+	if ( ev_sep == NULL ) return NULL;
 
 	strncpy(buf_path, ev_string, ev_sep-ev_string);
 	buf_path[ev_sep-ev_string] = '\0';
 
 	strncpy(buf_dim, ev_sep+2, strlen(ev_sep)-2);
 	buf_dim[strlen(ev_sep)-2] = '\0';
+
+	ev = initialize_event();
+	if ( ev == NULL ) return NULL;
 
 	if ( strlen(buf_path) !=0 ) {
 
@@ -398,10 +394,10 @@ struct event *get_event_from_event_string(char *ev_string)
 				push_path_entry_to_event(ev, buf);
 
 			}
+
 		} while (sep);
 
 	}
-
 
 	if ( strlen(buf_dim) !=0 ) {
 
@@ -438,19 +434,17 @@ struct event *get_event_from_event_string(char *ev_string)
 
 int push_path_entry_to_event(struct event *ev, const char *entry)
 {
-		char **new_path_entries;
+	char **new_path_entries;
 
-		new_path_entries = realloc(ev->path_entries,
-                                 (1+ev->path_length)*sizeof(char *));
-		if ( new_path_entries == NULL ) {
-			return 1;
-		}
+	new_path_entries = realloc(ev->path_entries,
+	                           (1+ev->path_length)*sizeof(char *));
+	if ( new_path_entries == NULL ) return 1;
 
-		ev->path_entries = new_path_entries;
-		ev->path_entries[ev->path_length] = strdup(entry);
-		ev->path_length += 1;
+	ev->path_entries = new_path_entries;
+	ev->path_entries[ev->path_length] = strdup(entry);
+	ev->path_length += 1;
 
-		return 0;
+	return 0;
 }
 
 
@@ -459,10 +453,8 @@ int push_dim_entry_to_event(struct event *ev, int entry)
 	int *new_dim_entries;
 
 	new_dim_entries = realloc(ev->dim_entries,
-                                 (1+ev->dim_length)*sizeof(int));
-	if ( new_dim_entries == NULL ) {
-		return 1;
-	}
+	                          (1+ev->dim_length)*sizeof(int));
+	if ( new_dim_entries == NULL ) return 1;
 
 	ev->dim_entries = new_dim_entries;
 	ev->dim_entries[ev->dim_length] = entry;
@@ -476,9 +468,7 @@ int pop_path_entry_from_event(struct event *ev)
 {
 	char **new_path_entries;
 
-	if ( ev->path_length == 0 ) {
-			return 1;
-	}
+	if ( ev->path_length == 0 ) return 1;
 
 	free(ev->path_entries[ev->path_length-1]);
 
@@ -491,9 +481,7 @@ int pop_path_entry_from_event(struct event *ev)
 	new_path_entries = realloc(ev->path_entries,
 	                           (ev->path_length-1)*sizeof(char *));
 
-	if ( new_path_entries == NULL) {
-		return 1;
-	}
+	if ( new_path_entries == NULL ) return 1;
 
 	ev->path_entries = new_path_entries;
 	ev->path_length = ev->path_length-1;
