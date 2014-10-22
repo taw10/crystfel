@@ -169,6 +169,8 @@ static void find_ser(struct window *win, int sn, int is_last_frame)
 	int ser_start = 0;
 	int in_series = 0;
 
+	assert(win->join_ptr <= win->ws);
+
 	for ( i=0; i<win->join_ptr; i++ ) {
 
 		if ( in_series && win->ser[sn][i] == -1 ) {
@@ -336,6 +338,8 @@ static IntegerMatrix *try_all(struct window *win, int n1, int n2,
 
 	assert(n1 >= 0);
 	assert(n2 >= 0);
+	assert(n1 < win->ws);
+	assert(n2 < win->ws);
 
 	i1 = &win->img[n1];
 	i2 = &win->img[n2];
@@ -426,7 +430,7 @@ static int try_join(struct window *win, int sn)
 
 static void connect_series(struct window *win)
 {
-	do {
+	while ( win->join_ptr < win->ws ) {
 
 		int i;
 		int joined = 0;
@@ -466,7 +470,7 @@ static void connect_series(struct window *win)
 
 		win->join_ptr++;
 
-	} while ( win->join_ptr < win->ws );
+	};
 }
 
 
