@@ -679,6 +679,8 @@ int main(int argc, char *argv[])
 	free(prefix);
 	free(tempdir);
 	free_detector_geometry(iargs.det);
+	close_stream(st);
+	cleanup_indexing(indm, ipriv);
 
 	return 0;
 }

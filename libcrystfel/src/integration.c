@@ -641,6 +641,7 @@ static void delete_box(struct intcontext *ic, struct peak_box *bx)
 	}
 
 	free(bx->bm);
+	gsl_matrix_free(bx->bgm);
 
 	memmove(&ic->boxes[i], &ic->boxes[i+1],
 	        (ic->n_boxes-i-1)*sizeof(struct peak_box));

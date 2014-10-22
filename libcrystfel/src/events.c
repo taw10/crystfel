@@ -238,12 +238,13 @@ void free_event_list(struct event_list *el)
 
 void free_filename_plus_event(struct filename_plus_event *fpe)
 {
-
 	free(fpe->filename);
 
 	if ( fpe->ev != NULL ) {
 		free_event(fpe->ev);
 	}
+
+	free(fpe);
 }
 
 
@@ -622,12 +623,8 @@ struct dim_structure *default_dim_structure()
 
 void free_dim_structure(struct dim_structure *hsd)
 {
-	int di;
-
-	for ( di=0; di<hsd->num_dims; di++ ) {
-		free (hsd->dims);
-		free (hsd);
-	}
+	free(hsd->dims);
+	free(hsd);
 }
 
 

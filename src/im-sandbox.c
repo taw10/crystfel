@@ -476,9 +476,9 @@ static void run_work(const struct index_args *iargs,
 				ERROR("write P0\n");
 			}
 
-			free_filename_plus_event(pargs.filename_p_e);
-
 		}
+
+		free_filename_plus_event(pargs.filename_p_e);
 
 	}
 
@@ -780,7 +780,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		free(sb->filename_pipes);
 		free(sb->result_fhs);
 		free(sb->pids);
-		/* Also prefix, use_this_one_instead and fh */
+		/* Also prefix, tempdir, */
 
 		/* Child process gets the 'read' end of the filename
 		 * pipe, and the 'write' end of the result pipe. */
@@ -794,6 +794,8 @@ static void start_worker_process(struct sandbox *sb, int slot)
 
 		//close(filename_pipe[0]);
 		close(result_pipe[1]);
+
+		free(sb);
 
 		exit(0);
 

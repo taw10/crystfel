@@ -255,6 +255,8 @@ static void dirax_parseline(const char *line, struct image *image,
 			dirax->success = 1;
 		}
 
+		cell_free(cell);
+
 		return;
 
 	}

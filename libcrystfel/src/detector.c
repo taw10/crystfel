@@ -1333,6 +1333,7 @@ void free_detector_geometry(struct detector *det)
 
 	for ( i=0; i<det->n_panels; i++ ) {
 		free(det->panels[i].clen_from);
+		free_dim_structure(det->panels[i].dim_structure);
 	}
 
 	free(det->panels);
