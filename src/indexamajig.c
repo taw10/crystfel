@@ -497,7 +497,8 @@ int main(int argc, char *argv[])
 
 	iargs.det = get_detector_geometry(geom_filename, iargs.beam);
 	if ( iargs.det == NULL ) {
-		ERROR("Failed to read detector geometry from  '%s'\n", optarg);
+		ERROR("Failed to read detector geometry from  '%s'\n",
+		      geom_filename);
 		return 1;
 	}
 
