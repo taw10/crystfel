@@ -599,6 +599,17 @@ static void add_to_window(struct image *cur, struct window *win)
 
 		} else {
 
+			pos -= sf;
+			if ( sf > win->join_ptr ) {
+				win->join_ptr = 0;
+			} else {
+				win->join_ptr -= sf;
+			}
+
+			if ( sf > win->ws ) {
+				sf = win->ws;
+			}
+
 			for ( i=0; i<sf; i++ ) {
 				if ( win->img[i].serial != 0 ) {
 					free_all_crystals(&win->img[i]);
@@ -613,13 +624,6 @@ static void add_to_window(struct image *cur, struct window *win)
 					(win->ws-sf)*sizeof(signed int));
 				memmove(win->mat[i], win->mat[i]+sf,
 					(win->ws-sf)*sizeof(IntegerMatrix *));
-			}
-
-			pos -= sf;
-			if ( sf > win->join_ptr ) {
-				win->join_ptr = 0;
-			} else {
-				win->join_ptr -= sf;
 			}
 		}
 
