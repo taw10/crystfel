@@ -812,7 +812,7 @@ int main(int argc, char *argv[])
 	ss.late_frames = 0;
 	ss.missed_frames = 0;
 
-	win.add_ptr = 0;
+	win.add_ptr = 1;  /* Horrendous bodge, but it works */
 	win.join_ptr = 0;
 	do {
 
