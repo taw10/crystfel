@@ -918,6 +918,7 @@ struct detector *get_detector_geometry(const char *filename,
 	}
 
 	beam->photon_energy = -1.0;
+	beam->photon_energy_from = NULL;
 	beam->photon_energy_scale = 1.0;
 
 	det->n_panels = 0;
