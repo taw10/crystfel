@@ -2484,7 +2484,7 @@ DisplayWindow *displaywindow_open(char *filename, const char *peaks,
 	} else {
 		check =	hdf5_read(dw->hdfile, dw->image, element, 0);
 	}
-	if (check) {
+	if ( check ) {
 		ERROR("Couldn't load file\n");
 		free(dw);
 		hdfile_close(dw->hdfile);

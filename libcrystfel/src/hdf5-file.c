@@ -106,7 +106,8 @@ struct hdfile *hdfile_open(const char *filename)
 	if ( f == NULL ) return NULL;
 
 	if ( access( filename, R_OK ) == -1 ) {
-		ERROR("File does not exists or it cannot be read: %s\n", filename);
+		ERROR("File does not exists or it cannot be read: %s\n",
+		      filename);
 		free(f);
 		return NULL;
 	}
@@ -922,7 +923,7 @@ void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f,
 
 	}
 
-	image->lambda = ph_en_to_lambda(eV_to_J(eV)) * beam->photon_energy_scale;
+	image->lambda = ph_en_to_lambda(eV_to_J(eV))*beam->photon_energy_scale;
 }
 
 
