@@ -70,6 +70,9 @@ struct series_stats
 	int in_series;           /* Number of frames with at least one series */
 	int max_series_length;   /* Length of longest series */
 	int total_series_steps;  /* For calculating mean series length */
+	int late_frames;         /* Number of frames which arrived too late */
+	int missed_frames;       /* Number of frames which scrolled out of the
+	                          * window before they could be analysed */
 };
 
 
@@ -560,14 +563,19 @@ static int series_fills_window(struct window *win)
 }
 
 
-static void add_to_window(struct image *cur, struct window *win)
+static void add_to_window(struct image *cur, struct window *win,
+                          struct series_stats *ss)
 {
 	int pos;
 
 	pos = cur->serial - win->img[win->add_ptr-1].serial;
 	pos += win->add_ptr - 1;
 
-	if ( pos < 0 ) return;  /* Frame arrived too late */
+	if ( pos < 0 ) {
+		/* Frame arrived too late */
+		ss->late_frames++;
+		return;
+	}
 
 	if ( pos >= win->ws ) {
 
@@ -601,7 +609,17 @@ static void add_to_window(struct image *cur, struct window *win)
 
 			pos -= sf;
 			if ( sf > win->join_ptr ) {
+
+				int i;
+
+				for ( i=0; i<sf-win->join_ptr; i++ ) {
+					if ( win->img[i].serial != 0 ) {
+						ss->missed_frames++;
+					}
+				}
+
 				win->join_ptr = 0;
+
 			} else {
 				win->join_ptr -= sf;
 			}
@@ -791,6 +809,8 @@ int main(int argc, char *argv[])
 	ss.in_series = 0;
 	ss.max_series_length = 0;
 	ss.total_series_steps = 0;
+	ss.late_frames = 0;
+	ss.missed_frames = 0;
 
 	win.add_ptr = 0;
 	win.join_ptr = 0;
@@ -818,7 +838,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		add_to_window(&cur, &win);
+		add_to_window(&cur, &win, &ss);
 		connect_series(&win);
 
 		if ( verbose ) {
@@ -850,14 +870,25 @@ int main(int argc, char *argv[])
 
 	find_and_process_series(&win, 1, &ss, outdir);
 
-	STATUS("--------------------------------------\n");
-	STATUS("  Number of frames processed: %i\n", n_images);
-	STATUS("   Number of rotation series: %i\n", ss.n_series);
-	STATUS("       Average series length: %.2f\n",
+	STATUS("-----------------------------------------------------\n");
+	STATUS("            Number of frames processed: %i\n", n_images);
+	STATUS("              Frames arriving too late: %i", ss.late_frames);
+	if ( ss.late_frames > 0 ) {
+		STATUS(" (consider increasing the window size)");
+	}
+	STATUS("\n");
+	STATUS(" Frames leaving window before analysis: %i", ss.missed_frames);
+	if ( ss.missed_frames > 0 ) {
+		STATUS(" (consider increasing the window size)");
+	}
+	STATUS("\n");
+	STATUS("             Number of rotation series: %i\n", ss.n_series);
+	STATUS("                 Average series length: %-6.2f frames\n",
 	       (double)ss.total_series_steps/ss.n_series);
-	STATUS("    Length of longest series: %i\n", ss.max_series_length);
-	STATUS("  Number of frames in series: %i\n", ss.in_series);
-	STATUS("Fraction of frames in series: %.2f %%\n",
+	STATUS("              Length of longest series: %-6i frames\n",
+	       ss.max_series_length);
+	STATUS("            Number of frames in series: %i\n", ss.in_series);
+	STATUS("          Fraction of frames in series: %-6.2f %%\n",
 	       (double)ss.in_series*100.0 / n_images);
 
 	return 0;
