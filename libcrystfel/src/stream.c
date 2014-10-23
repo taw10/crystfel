@@ -269,9 +269,9 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 			set_intensity(refl, intensity);
 			if ( det != NULL ) {
 				p = find_panel_by_name(det,pn);
+				write_fs = fs - p->orig_min_fs + p->min_fs;
+				write_ss = ss - p->orig_min_ss + p->min_ss;
 				set_detector_pos(refl, 0.0, write_fs, write_ss);
-				write_ss = ss-p->orig_min_ss+p->min_ss;
-				write_fs = fs-p->orig_min_fs+p->min_fs;
 			}
 			set_esd_intensity(refl, sigma);
 			set_redundancy(refl, cts);
