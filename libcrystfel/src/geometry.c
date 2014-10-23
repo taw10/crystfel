@@ -223,7 +223,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 		ERROR("Reflection with rlow < rhigh!\n");
 		ERROR("%3i %3i %3i  rlow = %e, rhigh = %e\n",
 		      h, k, l, rlow, rhigh);
-		ERROR("div + m = %e\n", del);
+		ERROR("div + m = %e, R = %e, bw = %e\n", del, pr, image->bw);
 		return NULL;
 	}
 

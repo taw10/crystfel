@@ -1332,7 +1332,7 @@ int hdfile_is_scalar(struct hdfile *f, const char *name, int verbose)
 
 	check = check_path_existence(f->fh, name);
 	if ( check == 0 ) {
-		ERROR("No such field '%s'\n", name);
+		ERROR("No such scalar field '%s'\n", name);
 		return 0;
 	}
 
@@ -1389,7 +1389,7 @@ static int get_f_value(struct hdfile *f, const char *name, double *val)
 
 	check = check_path_existence(f->fh, name);
 	if ( check == 0 ) {
-		ERROR("No such field '%s'\n", name);
+		ERROR("No such float field '%s'\n", name);
 		return 1;
 	}
 
@@ -1450,7 +1450,7 @@ static int get_ev_based_f_value(struct hdfile *f, const char *name,
 
 	check_pe = check_path_existence(f->fh, subst_name);
 	if ( check_pe == 0 ) {
-		ERROR("No such field '%s'\n", subst_name);
+		ERROR("No such event-based float field '%s'\n", subst_name);
 		return 1;
 	}
 
@@ -1578,7 +1578,7 @@ static int get_i_value(struct hdfile *f, const char *name, int *val)
 
 	check = check_path_existence(f->fh, name);
 	if ( check == 0 ) {
-		ERROR("No such field '%s'\n", name);
+		ERROR("No such integer field '%s'\n", name);
 		return 1;
 	}
 
