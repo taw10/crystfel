@@ -970,9 +970,9 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 		if ( image->lambda > 1000 ) {
 			/* Error message covers a silly value in the beam file
 			 * or in the HDF5 file. */
-			ERROR("Nonsensical wavelength (%e m) for %s.\n",
+			ERROR("WARNING: Missing or nonsensical wavelength "
+			      "(%e m) for %s.\n",
 			      image->lambda, image->filename);
-			return 1;
 		}
 
 	}
@@ -1610,7 +1610,7 @@ static int get_i_value(struct hdfile *f, const char *name, int *val)
 
 double get_value(struct hdfile *f, const char *name)
 {
-	double val;
+	double val = 0.0;
 	get_f_value(f, name, &val);
 	return val;
 }

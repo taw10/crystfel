@@ -2438,6 +2438,8 @@ DisplayWindow *displaywindow_open(char *filename, const char *peaks,
 
 	dw->image->det = det_geom;
 	dw->image->beam = beam;
+	dw->image->lambda = 0.0;
+	dw->image->filename = filename;
 
 	dw->hdfile = hdfile_open(filename);
 	if ( dw->hdfile == NULL ) {
