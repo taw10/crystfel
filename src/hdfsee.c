@@ -152,6 +152,10 @@ int main(int argc, char *argv[])
 		{0, 0, NULL, 0}
 	};
 
+	/* Default beam parameters */
+	beam.photon_energy = 0.0;
+	beam.photon_energy_from = NULL;
+
 	/* This isn't great, but necessary to make the command-line UI and file
 	 * formats consistent with the other programs, which all use the C
 	 * locale.  Better would be to have all the programs call
