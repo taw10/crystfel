@@ -243,6 +243,7 @@ int main(int argc, char *argv[])
 
 		/* Options with long and short versions */
 		{"help",               0, NULL,               'h'},
+		{"version",            0, NULL,               'v'},
 		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
 		{"indexing",           1, NULL,               'z'},
@@ -253,7 +254,6 @@ int main(int argc, char *argv[])
 		{"image",              1, NULL,               'e'},
 
 		/* Long-only options with no arguments */
-		{"version",            0, NULL,                     99},
 		{"filter-noise",       0, &iargs.noisefilter,        1},
 		{"no-check-prefix",    0, &config_checkprefix,       0},
 		{"basename",           0, &config_basename,          1},
