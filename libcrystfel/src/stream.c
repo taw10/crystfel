@@ -395,41 +395,6 @@ static RefList *read_stream_reflections_2_2(FILE *fh)
 }
 
 
-static void write_stream_reflections_2_2(FILE *fh, RefList *list)
-{
-	Reflection *refl;
-	RefListIterator *iter;
-
-	fprintf(fh, "   h    k    l          I   sigma(I)       "
-	            "peak background  fs/px  ss/px\n");
-
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-
-		signed int h, k, l;
-		double intensity, esd_i, bg, pk;
-		double fs, ss;
-
-		get_indices(refl, &h, &k, &l);
-		get_detector_pos(refl, &fs, &ss);
-		intensity = get_intensity(refl);
-		esd_i = get_esd_intensity(refl);
-		pk = get_peak(refl);
-		bg = get_mean_bg(refl);
-
-		/* Reflections with redundancy = 0 are not written */
-		if ( get_redundancy(refl) == 0 ) continue;
-
-		fprintf(fh, "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f"
-			    " %6.1f %6.1f\n",
-			    h, k, l, intensity, esd_i, pk, bg, fs, ss);
-
-	}
-}
-
-
 static void write_stream_reflections_2_1(FILE *fh, RefList *list)
 {
 	Reflection *refl;
@@ -468,6 +433,41 @@ static void write_stream_reflections_2_1(FILE *fh, RefList *list)
 
 		fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f\n",
 			    h, k, l, intensity, phs, esd_i, red,  fs, ss);
+
+	}
+}
+
+
+static void write_stream_reflections_2_2(FILE *fh, RefList *list)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+
+	fprintf(fh, "   h    k    l          I   sigma(I)       "
+	            "peak background  fs/px  ss/px\n");
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+
+		signed int h, k, l;
+		double intensity, esd_i, bg, pk;
+		double fs, ss;
+
+		get_indices(refl, &h, &k, &l);
+		get_detector_pos(refl, &fs, &ss);
+		intensity = get_intensity(refl);
+		esd_i = get_esd_intensity(refl);
+		pk = get_peak(refl);
+		bg = get_mean_bg(refl);
+
+		/* Reflections with redundancy = 0 are not written */
+		if ( get_redundancy(refl) == 0 ) continue;
+
+		fprintf(fh, "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f"
+			    " %6.1f %6.1f\n",
+			    h, k, l, intensity, esd_i, pk, bg, fs, ss);
 
 	}
 }
