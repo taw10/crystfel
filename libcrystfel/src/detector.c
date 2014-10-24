@@ -461,6 +461,26 @@ struct panel *find_panel(struct detector *det, double fs, double ss)
 }
 
 
+/* Like find_panel(), but uses the original panel bounds, i.e. referring to
+ * what's in the HDF5 file */
+struct panel *find_orig_panel(struct detector *det, double fs, double ss)
+{
+	int p;
+
+	for ( p=0; p<det->n_panels; p++ ) {
+		if ( (fs >= det->panels[p].orig_min_fs)
+		  && (fs < det->panels[p].orig_max_fs+1)
+		  && (ss >= det->panels[p].orig_min_ss)
+		  && (ss < det->panels[p].orig_max_ss+1) )
+		{
+			return &det->panels[p];
+		}
+	}
+
+	return NULL;
+}
+
+
 void fill_in_values(struct detector *det, struct hdfile *f, struct event* ev)
 {
 	int i;

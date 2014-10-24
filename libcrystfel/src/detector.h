@@ -189,8 +189,9 @@ extern void record_image(struct image *image, int do_poisson, int background,
                          gsl_rng *rng, double beam_radius, double nphotons);
 
 extern struct panel *find_panel(struct detector *det, double fs, double ss);
-
 extern signed int find_panel_number(struct detector *det, double fs, double ss);
+extern struct panel *find_orig_panel(struct detector *det,
+                                     double fs, double ss);
 
 extern struct detector *get_detector_geometry(const char *filename,
                                               struct beam_params *beam);
