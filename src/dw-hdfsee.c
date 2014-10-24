@@ -1028,20 +1028,21 @@ static void load_features_from_file(struct image *image, const char *filename)
 		if ( rval == NULL ) continue;
 		chomp(line);
 
-		/* Try long reflection format (from stream) */
 		r = sscanf(line, "%i %i %i %f %s %f %f %f %f %s",
 		                   &h, &k, &l, &intensity, phs, &sigma, &cts,
 		                   &fs, &ss, pn);
 
 		if ( r == 10 ) {
 
+			/* Stream reflection list format 2.3 */
 			char name[32];
 			snprintf(name, 31, "%i %i %i", h, k, l);
 			p = find_panel_by_name(image->det, pn);
 
 			if ( p == NULL ) {
 
-				ERROR("Unable to find panel %s\n", pn);
+				ERROR("Unable to find panel %s "
+				      "(no geometry file given?)\n", pn);
 
 			} else {
 
@@ -1056,7 +1057,33 @@ static void load_features_from_file(struct image *image, const char *filename)
 			                  image, 1.0, strdup(name));
 			continue;
 
+		} else if ( r == 9 ) {
+
+			/* Stream reflection list format 2.2 or 2.1 */
+			char name[32];
+
+			snprintf(name, 31, "%i %i %i", h, k, l);
+
+			p = find_orig_panel(image->det, fs, ss);
+
+			if ( p == NULL ) {
+				ERROR("Unable to find panel for %s "
+				      "(no geometry file given?)\n", name);
+			} else {
+
+				/* Convert coordinates to match rearranged
+				 * panels in memory */
+				fs = fs - p->orig_min_fs + p->min_fs;
+				ss = ss - p->orig_min_ss + p->min_ss;
+
+			}
+
+			image_add_feature(image->features, fs, ss,
+			                  image, 1.0, strdup(name));
+			continue;
+
 		}
+
 
 		/* Try long peak format from stream */
 		r = sscanf(line, "%f %f %f %f %s", &fs, &ss, &d,
@@ -1065,7 +1092,8 @@ static void load_features_from_file(struct image *image, const char *filename)
 
 		p = find_panel_by_name(image->det, pn);
 		if ( p == NULL ) {
-			ERROR("Unable to find panel %s\n", pn);
+			ERROR("Unable to find panel %s "
+			      "(no geometry file given?)\n", pn);
 		} else {
 
 			/* Convert coordinates to match rearranged panels in
