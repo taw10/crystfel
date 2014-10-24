@@ -479,8 +479,8 @@ static void write_stream_reflections_2_3(FILE *fh, RefList *list,
 	Reflection *refl;
 	RefListIterator *iter;
 
-	fprintf(fh, "  h   k   l          I    phase   sigma(I) "
-		    " counts  fs/px  ss/px  panel\n");
+	fprintf(fh, "   h    k    l          I   sigma(I)       "
+	            "peak background  fs/px  ss/px panel\n");
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -488,37 +488,29 @@ static void write_stream_reflections_2_3(FILE *fh, RefList *list,
 	{
 
 		signed int h, k, l;
-		double intensity, esd_i, ph;
-		int red;
+		double intensity, esd_i, pk, bg;
 		double fs, ss;
 		double write_fs, write_ss;
-		char phs[16];
-		int have_phase;
 		struct panel *p = NULL;
 
 		get_indices(refl, &h, &k, &l);
 		get_detector_pos(refl, &fs, &ss);
 		intensity = get_intensity(refl);
 		esd_i = get_esd_intensity(refl);
-		red = get_redundancy(refl);
-		ph = get_phase(refl, &have_phase);
+		pk = get_peak(refl);
+		bg = get_mean_bg(refl);
 
 		/* Reflections with redundancy = 0 are not written */
-		if ( red == 0 ) continue;
-
-		if ( have_phase ) {
-			snprintf(phs, 16, "%8.2f", rad2deg(ph));
-		} else {
-			strncpy(phs, "       -", 15);
-		}
+		if ( get_redundancy(refl) == 0 ) continue;
 
 		p = find_panel(image->det,fs,ss);
 		write_fs = fs-p->min_fs+p->orig_min_fs;
 		write_ss = ss-p->min_ss+p->orig_min_ss;
 
 		fprintf(fh,
-                          "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f %s\n",
-                           h, k, l, intensity, phs, esd_i, red,
+                          "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f "
+                          "%6.1f %6.1f %s\n",
+                           h, k, l, intensity, esd_i, pk, bg,
                            write_fs, write_ss, p->name);
 
 	}
