@@ -210,12 +210,15 @@ static void write_peaks_2_3(struct image *image, FILE *ofh)
 		r = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
 		q = modulus(r.u, r.v, r.w);
 
-		p = find_panel(image->det,f->fs,f->ss);
-		write_fs = f->fs-p->min_fs+p->orig_min_fs;
-		write_ss = f->ss-p->min_ss+p->orig_min_ss;
+		p = find_panel(image->det, f->fs, f->ss);
+
+		/* Convert coordinates to match arrangement of panels in HDF5
+		 * file */
+		write_fs = f->fs - p->min_fs + p->orig_min_fs;
+		write_ss = f->ss - p->min_ss + p->orig_min_ss;
 
 		fprintf(ofh, "%7.2f %7.2f %10.2f  %10.2f   %s\n",
-			   write_fs, write_ss, q/1.0e9, f->intensity, p->name);
+		        write_fs, write_ss, q/1.0e9, f->intensity, p->name);
 
 	}
 

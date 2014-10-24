@@ -75,10 +75,12 @@ struct panel
 {
 	char     name[1024];  /* Name for this panel */
 
+	/* Position of panel in the data block in memory (see below) */
 	int      min_fs;  /* Smallest FS value considered to be in the panel */
 	int      max_fs;  /* Largest FS value considered to be in this panel */
 	int      min_ss;  /* ... and so on */
 	int      max_ss;
+
 	double   cnx;       /* Location of corner (min_fs,min_ss) in pixels */
 	double   cny;
 	double   coffset;
@@ -105,6 +107,9 @@ struct panel
 	double xss;
 	double yss;
 
+	/* Position of the panel in the data block in the file.  The panels may
+	 * get moved around when the file is loaded (see hdf5_read2()),
+	 * especially if the panels come from different HDF5 elements. */
 	int orig_min_fs;
 	int orig_max_fs;
 	int orig_min_ss;

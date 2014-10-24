@@ -191,6 +191,26 @@ int hdfile_set_image(struct hdfile *f, const char *path,
 }
 
 
+/* Like find_panel(), but uses the original panel bounds, i.e. referring to
+ * what's in the HDF5 file */
+struct panel *find_orig_panel(struct detector *det, double fs, double ss)
+{
+	int p;
+
+	for ( p=0; p<det->n_panels; p++ ) {
+		if ( (fs >= det->panels[p].orig_min_fs)
+		  && (fs < det->panels[p].orig_max_fs+1)
+		  && (ss >= det->panels[p].orig_min_ss)
+		  && (ss < det->panels[p].orig_max_ss+1) )
+		{
+			return &det->panels[p];
+		}
+	}
+
+	return NULL;
+}
+
+
 int get_peaks(struct image *image, struct hdfile *f, const char *p)
 {
 	hid_t dh, sh;
@@ -260,9 +280,13 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p)
 		ss = buf[tw*i+1];
 		val = buf[tw*i+2];
 
-		p = find_panel(image->det, fs, ss);
+		p = find_orig_panel(image->det, fs, ss);
 		if ( p == NULL ) continue;
 		if ( p->no_index ) continue;
+
+		/* Convert coordinates to match rearranged panels in memory */
+		fs = fs - p->orig_min_fs + p->min_fs;
+		ss = ss - p->orig_min_ss + p->min_ss;
 
 		image_add_feature(image->features, fs, ss, image, val, NULL);
 
