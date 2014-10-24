@@ -186,9 +186,10 @@ double gaussian_noise(gsl_rng *rng, double expected, double stddev)
 {
 	double x1, x2, noise;
 
-	/* A uniformly distributed random number between 0 and 1 */
-	x1 = gsl_rng_uniform(rng);
-	x2 = gsl_rng_uniform(rng);
+	/* Generate two uniformly distributed random numbers between 0 and 1,
+	 * including 1 but not 0. */
+	x1 = 1.0 - gsl_rng_uniform(rng);
+	x2 = 1.0 - gsl_rng_uniform(rng);
 
 	noise = sqrt(-2.0*log(x1)) * cos(2.0*M_PI*x2);
 
