@@ -1039,14 +1039,23 @@ static void load_features_from_file(struct image *image, const char *filename)
 			snprintf(name, 31, "%i %i %i", h, k, l);
 			p = find_panel_by_name(image->det, pn);
 
-			/* Convert coordinates to match rearranged panels in
-			 * memory */
-			fs = fs-p->orig_min_fs+p->min_fs;
-			ss = ss-p->orig_min_ss+p->min_ss;
+			if ( p == NULL ) {
+
+				ERROR("Unable to find panel %s\n", pn);
+
+			} else {
+
+				/* Convert coordinates to match rearranged
+				 * panels in memory */
+				fs = fs-p->orig_min_fs+p->min_fs;
+				ss = ss-p->orig_min_ss+p->min_ss;
+
+			}
 
 			image_add_feature(image->features, fs, ss,
 			                  image, 1.0, strdup(name));
 			continue;
+
 		}
 
 		/* Try long peak format from stream */
@@ -1064,9 +1073,10 @@ static void load_features_from_file(struct image *image, const char *filename)
 			fs = fs - p->orig_min_fs + p->min_fs;
 			ss = ss - p->orig_min_ss + p->min_ss;
 
-			image_add_feature(image->features, fs, ss,
-			                  image, 1.0, "peak");
 		}
+
+		image_add_feature(image->features, fs, ss, image, 1.0, "peak");
+
 
 	} while ( rval != NULL );
 
