@@ -196,6 +196,7 @@ int main(int argc, char *argv[])
 	char *int_diag = NULL;
 	char *geom_filename = NULL;
 	struct beam_params beam;
+	int have_push_res = 0;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -420,6 +421,7 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			iargs.push_res *= 1e9;  /* nm^-1 -> m^-1 */
+			have_push_res = 1;
 			break;
 
 			case 20 :
@@ -534,6 +536,11 @@ int main(int argc, char *argv[])
 	if ( integrate_saturated ) {
 		/* Option provided for backwards compatibility */
 		iargs.int_meth |= INTEGRATION_SATURATED;
+	}
+
+	if ( have_push_res && !(iargs.int_meth & INTEGRATION_RESCUT) ) {
+		ERROR("WARNING: You used --push-res, but not -rescut, "
+		      "therefore --push-res will have no effect.\n");
 	}
 
 	if ( toler != NULL ) {
