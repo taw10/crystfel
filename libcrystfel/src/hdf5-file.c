@@ -986,19 +986,82 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 }
 
 
+static void load_mask(struct hdfile *f, struct event *ev, char *mask,
+                      const char *pname, struct image *image,
+                      size_t p_w, size_t sum_p_h,
+                      hsize_t *f_offset, hsize_t *f_count,
+                      hsize_t *m_offset, hsize_t *m_count)
+{
+	hid_t mask_dataspace, mask_dh;
+	int exists;
+	int check, r;
+	hid_t memspace;
+	hsize_t dimsm[2];
+
+	if ( ev != NULL ) {
+		mask = retrieve_full_path(ev, mask);
+	}
+
+	exists = check_path_existence(f->fh, mask);
+	if ( !exists ) {
+		ERROR("Cannot find flags for panel %s\n", pname);
+		goto err;
+	}
+
+	mask_dh = H5Dopen2(f->fh, mask, H5P_DEFAULT);
+	if ( mask_dh <= 0 ) {
+		ERROR("Couldn't open flags for panel %s\n", pname);
+		goto err;
+	}
+
+	mask_dataspace = H5Dget_space(mask_dh);
+	check = H5Sselect_hyperslab(mask_dataspace, H5S_SELECT_SET,
+	                            f_offset, NULL, f_count, NULL);
+	if ( check < 0 ) {
+		ERROR("Error selecting mask dataspace for panel %s\n", pname);
+		goto err;
+	}
+
+	dimsm[0] = sum_p_h;
+	dimsm[1] = p_w;
+	memspace = H5Screate_simple(2, dimsm, NULL);
+	check = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
+	                            m_offset, NULL, m_count, NULL);
+	if ( check < 0 ) {
+		ERROR("Error selecting memory dataspace for panel %s\n", pname);
+		goto err;
+	}
+
+	r = H5Dread(mask_dh, H5T_NATIVE_UINT16, memspace,
+	            mask_dataspace, H5P_DEFAULT, image->flags);
+	if ( r < 0 ) {
+		ERROR("Couldn't read flags for panel %s\n", pname);
+		goto err;
+	}
+
+	H5Sclose(mask_dataspace);
+	H5Dclose(mask_dh);
+	if ( ev != NULL ) free(mask);
+
+	return;
+
+err:
+	if ( ev != NULL ) free(mask);
+	free(image->flags);
+	image->flags = NULL;
+	return;
+}
+
+
 int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
                int satcorr)
 {
 	herr_t r;
 	float *buf;
-	uint16_t *flags;
 	int sum_p_h;
 	int p_w;
 	int m_min_fs, curr_ss, m_max_fs;
-	int mask_is_present;
-	int no_mask_loaded;
 	int pi;
-	hid_t mask_dh = 0;
 
 	if ( image->det == NULL ) {
 		ERROR("Geometry not available\n");
@@ -1015,23 +1078,27 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			return 1;
 		}
 
-		if ( image->det->panels[pi].mask != NULL ) mask_is_present = 1;
-
 		sum_p_h += image->det->panels[pi].h;
 
 	}
 
 	buf = malloc(sizeof(float)*p_w*sum_p_h);
-	if ( mask_is_present ) {
-		flags = calloc(p_w*sum_p_h,sizeof(uint16_t));
+	if ( buf == NULL ) {
+		ERROR("Failed to allocate memory for image\n");
+		return 1;
 	}
 	image->width = p_w;
 	image->height = sum_p_h;
 
+	image->flags = calloc(p_w*sum_p_h,sizeof(uint16_t));
+	if ( image->flags == NULL ) {
+		ERROR("Failed to allocate memory for flags\n");
+		return 1;
+	}
+
 	m_min_fs = 0;
 	m_max_fs = p_w-1;
 	curr_ss = 0;
-	no_mask_loaded = 1;
 
 	for ( pi=0; pi<image->det->n_panels; pi++ ) {
 
@@ -1042,7 +1109,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		hsize_t m_offset[2], m_count[2];
 		hsize_t dimsm[2];
 		herr_t check;
-		hid_t dataspace, memspace, mask_dataspace;
+		hid_t dataspace, memspace;
 		int fail;
 		struct panel *p;
 
@@ -1170,92 +1237,8 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		H5Sclose(memspace);
 
 		if ( p->mask != NULL ) {
-
-			if ( ev != NULL ) {
-
-				int exists;
-				char *mask_full_path;
-
-				mask_full_path = retrieve_full_path(ev, p->mask);
-
-				exists = check_path_existence(f->fh,
-				                              mask_full_path);
-				if ( !exists ) {
-					ERROR("Cannot find flags for panel %s\n",
-					      p->name);
-					return 1;
-				}
-
-				mask_dh = H5Dopen2(f->fh, mask_full_path,
-				                   H5P_DEFAULT);
-
-				if ( mask_dh <= 0 ) {
-					ERROR("Couldn't open flags for panel %s\n",
-					      p->name);
-					image->flags = NULL;
-				} else {
-
-					mask_dataspace = H5Dget_space(mask_dh);
-					check = H5Sselect_hyperslab(mask_dataspace, H5S_SELECT_SET,
-					                            f_offset, NULL, f_count, NULL);
-					if ( check < 0 ) {
-						ERROR("Error selecting mask dataspace for panel %s\n",
-						      p->name);
-					}
-					r = H5Dread(mask_dh, H5T_NATIVE_UINT16, memspace,
-					        mask_dataspace, H5P_DEFAULT, flags);
-					if ( r < 0 ) {
-						ERROR("Couldn't read flags for panel %s\n",
-						      p->name);
-					} else {
-						no_mask_loaded = 0;
-					}
-
-					H5Sclose(mask_dataspace);
-					H5Dclose(mask_dh);
-
-				}
-
-			} else {
-
-				int exists;
-				exists = check_path_existence(f->fh, p->mask);
-				if ( !exists ) {
-					ERROR("Cannot find flags for panel %s\n",
-					      p->name);
-					return 1;
-				}
-
-				mask_dh = H5Dopen2(f->fh, p->mask, H5P_DEFAULT);
-				if ( mask_dh <= 0 ) {
-					ERROR("Couldn't open flags for panel %s\n",
-					      p->name);
-					image->flags = NULL;
-				} else {
-
-					mask_dataspace = H5Dget_space(mask_dh);
-					check = H5Sselect_hyperslab(mask_dataspace, H5S_SELECT_SET,
-					                            f_offset, NULL, f_count, NULL);
-					if ( check < 0 ) {
-						ERROR("Error selecting mask dataspace for panel %s\n",
-						      p->name);
-					}
-					r = H5Dread(mask_dh, H5T_NATIVE_UINT16, memspace,
-					            mask_dataspace, H5P_DEFAULT, flags);
-					if ( r < 0 ) {
-						ERROR("Couldn't read flags for panel %s\n",
-						      p->name);
-					} else {
-						no_mask_loaded = 0;
-					}
-
-					H5Sclose(mask_dataspace);
-					H5Dclose(mask_dh);
-
-				}
-
-			}
-
+			load_mask(f, ev, p->mask, p->name, image, p_w, sum_p_h,
+			          f_offset, f_count, m_offset, m_count);
 		}
 
 		p->min_fs = m_min_fs;
@@ -1270,12 +1253,6 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 	}
 
 	image->data = buf;
-
-	if ( no_mask_loaded ) {
-		free(flags);
-	} else {
-		image->flags = flags;
-	}
 
 	if ( satcorr ) debodge_saturation(f, image);
 
