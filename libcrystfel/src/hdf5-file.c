@@ -88,8 +88,8 @@ struct hdfile {
 
 	const char      *path;  /* Current data path */
 
-	size_t          nx;  /* Image width */
-	size_t          ny;  /* Image height */
+	size_t          nfs;  /* Image width */
+	size_t          nss;  /* Image height */
 
 	hid_t           fh;  /* HDF file handle */
 	hid_t           dh;  /* Dataset handle */
@@ -167,18 +167,18 @@ int hdfile_set_image(struct hdfile *f, const char *path,
 
 	if ( p == NULL ) {
 
-		f->nx = size[0];
-		f->ny = size[1];
+		f->nss = size[0];
+		f->nfs = size[1];
 
 	} else {
 
 		for ( di=0; di<p->dim_structure->num_dims; di++ ) {
 
 			if ( p->dim_structure->dims[di] == HYSL_SS ) {
-				f->ny = size[di];
+				f->nss = size[di];
 			}
 			if ( p->dim_structure->dims[di] == HYSL_FS ) {
-				f->nx = size[di];
+				f->nfs = size[di];
 			}
 
 		}
@@ -950,12 +950,10 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 		return 1;
 	}
 
-	/* Note the "swap" here, according to section 3.2.5,
-	 * "C versus Fortran Dataspaces", of the HDF5 user's guide. */
-	image->width = f->ny;
-	image->height = f->nx;
+	image->width = f->nfs;
+	image->height = f->nss;
 
-	buf = malloc(sizeof(float)*f->nx*f->ny);
+	buf = malloc(sizeof(float)*f->nfs*f->nss);
 
 	r = H5Dread(f->dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 				H5P_DEFAULT, buf);
@@ -1159,8 +1157,8 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			return 1;
 		}
 
-		data_width = f->ny;
-		data_height = f->nx;
+		data_width = f->nfs;
+		data_height = f->nss;
 
 		if ( (data_width < p->w )
 		  || (data_height < p->h) )
