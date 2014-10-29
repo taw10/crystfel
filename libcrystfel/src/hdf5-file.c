@@ -152,7 +152,8 @@ int hdfile_set_image(struct hdfile *f, const char *path,
 	} else {
 
 		if ( sh_dim != p->dim_structure->num_dims ) {
-			ERROR("Dataset dimensionality does not match geometry file\n");
+			ERROR("Dataset dimensionality does not match "
+			      "geometry file\n");
 			return -1;
 		}
 
@@ -171,12 +172,12 @@ int hdfile_set_image(struct hdfile *f, const char *path,
 
 	} else {
 
-		for (di=0; di<p->dim_structure->num_dims; di++ ) {
+		for ( di=0; di<p->dim_structure->num_dims; di++ ) {
 
-			if (p->dim_structure->dims[di] == HYSL_SS ) {
+			if ( p->dim_structure->dims[di] == HYSL_SS ) {
 				f->ny = size[di];
 			}
-			if (p->dim_structure->dims[di] == HYSL_FS ) {
+			if ( p->dim_structure->dims[di] == HYSL_FS ) {
 				f->nx = size[di];
 			}
 
@@ -1043,9 +1044,9 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		herr_t check;
 		hid_t dataspace, memspace, mask_dataspace;
 		int fail;
-
 		struct panel *p;
-		p=&image->det->panels[pi];
+
+		p = &image->det->panels[pi];
 
 		if ( ev != NULL ) {
 
@@ -1132,7 +1133,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		dataspace = H5Dget_space(f->dh);
 		check = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
 		                            f_offset, NULL, f_count, NULL);
-		if ( check <0 ) {
+		if ( check < 0 ) {
 			ERROR("Error selecting file dataspace for panel %s\n",
 			      p->name);
 			free(buf);
@@ -1145,7 +1146,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		m_count[1] = m_max_fs - m_min_fs +1;
 		dimsm[0] = sum_p_h;
 		dimsm[1] = p_w;
-		memspace = H5Screate_simple(2,dimsm,NULL);
+		memspace = H5Screate_simple(2, dimsm, NULL);
 		check = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
 		                            m_offset, NULL, m_count, NULL);
 		if ( check < 0 ) {
