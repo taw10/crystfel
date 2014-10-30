@@ -412,16 +412,13 @@ struct event *get_event_from_event_string(const char *ev_string)
 	if ( ev == NULL ) return NULL;
 
 	if ( strlen(buf_path) !=0 ) {
-
+		start = buf_path;
 		do {
-
-			start = buf_path;
-
 			char buf[2014];
 
 			sep = strstr(start, "/");
-			if ( sep != NULL ) {
 
+			if ( sep != NULL ) {
 				strncpy(buf, start, sep-start);
 				buf[sep-start]='\0';
 				push_path_entry_to_event(ev, buf);
@@ -462,6 +459,7 @@ struct event *get_event_from_event_string(const char *ev_string)
 				push_dim_entry_to_event(ev, buf_int);
 
 			}
+
 		} while (sep);
 
 	}
