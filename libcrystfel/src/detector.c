@@ -937,9 +937,11 @@ struct detector *get_detector_geometry(const char *filename,
 		return NULL;
 	}
 
-	beam->photon_energy = -1.0;
-	beam->photon_energy_from = NULL;
-	beam->photon_energy_scale = 1.0;
+	if ( beam != NULL ) {
+		beam->photon_energy = -1.0;
+		beam->photon_energy_from = NULL;
+		beam->photon_energy_scale = 1.0;
+	}
 
 	det->n_panels = 0;
 	det->panels = NULL;
@@ -1280,7 +1282,7 @@ struct detector *get_detector_geometry(const char *filename,
 		}
 	}
 
-	if ( beam->photon_energy < -0.5 ) {
+	if ( (beam != NULL) && (beam->photon_energy < -0.5) ) {
 		STATUS("Photon energy must be specified (note: this is now "
 		       "done in the 'geometry' file.\n");
 		reject = 1;
