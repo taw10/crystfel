@@ -1284,7 +1284,7 @@ struct detector *get_detector_geometry(const char *filename,
 
 	if ( (beam != NULL) && (beam->photon_energy < -0.5) ) {
 		STATUS("Photon energy must be specified (note: this is now "
-		       "done in the 'geometry' file.\n");
+		       "done in the 'geometry' file)\n");
 		reject = 1;
 	}
 
