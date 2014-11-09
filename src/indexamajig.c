@@ -253,6 +253,7 @@ int main(int argc, char *argv[])
 		{"prefix",             1, NULL,               'x'},
 		{"threshold",          1, NULL,               't'},
 		{"image",              1, NULL,               'e'},
+		{"beam",               1, NULL,               'b'},
 
 		/* Long-only options with no arguments */
 		{"filter-noise",       0, &iargs.noisefilter,        1},
@@ -297,7 +298,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:o:z:p:x:j:g:t:e:v",
+	while ((c = getopt_long(argc, argv, "hi:o:z:p:x:j:g:t:e:vb:",
 	                        longopts, NULL)) != -1)
 	{
 		switch (c) {
@@ -310,6 +311,12 @@ int main(int argc, char *argv[])
 			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
 			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
+
+			case 'b' :
+			ERROR("WARNING: This version of CrystFEL no longer "
+			      "uses beam files.  Please remove the beam file "
+			      "from your indexamajig command line.\n");
+			return 1;
 
 			case 'i' :
 			filename = strdup(optarg);

@@ -453,6 +453,7 @@ int main(int argc, char *argv[])
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"version",            0, NULL,               'v'},
+		{"beam",               1, NULL,               'b'},
 		{"output",             1, NULL,               'o'},
 		{"input",              1, NULL,               'i'},
 		{"pdb",                1, NULL,               'p'},
@@ -478,7 +479,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:o:p:g:y:n:r:j:c:v",
+	while ((c = getopt_long(argc, argv, "hi:o:p:g:y:n:r:j:c:vb:",
 	                        longopts, NULL)) != -1)
 	{
 		switch (c) {
@@ -491,6 +492,12 @@ int main(int argc, char *argv[])
 			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
 			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
+
+			case 'b' :
+			ERROR("WARNING: This version of CrystFEL no longer "
+			      "uses beam files.  Please remove the beam file "
+			      "from your partial_sim command line.\n");
+			return 1;
 
 			case 'i' :
 			input_file = strdup(optarg);

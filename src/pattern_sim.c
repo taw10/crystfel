@@ -279,6 +279,7 @@ int main(int argc, char *argv[])
 		{"help",               0, NULL,               'h'},
 		{"version",            0, NULL,               'v'},
 		{"gpu",                0, &config_gpu,         1},
+		{"beam",               1, NULL,               'b'},
 		{"random-orientation", 0, NULL,               'r'},
 		{"number",             1, NULL,               'n'},
 		{"no-images",          0, &config_noimages,    1},
@@ -310,7 +311,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hrn:i:t:p:o:g:y:s:x:v",
+	while ((c = getopt_long(argc, argv, "hrn:i:t:p:o:g:y:s:x:vb:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -323,6 +324,12 @@ int main(int argc, char *argv[])
 			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
 			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
+
+			case 'b' :
+			ERROR("WARNING: This version of CrystFEL no longer "
+			      "uses beam files.  Please remove the beam file "
+			      "from your pattern_sim command line.\n");
+			return 1;
 
 			case 'r' :
 			config_randomquat = 1;
@@ -358,10 +365,6 @@ int main(int argc, char *argv[])
 
 			case 'g' :
 			geometry = strdup(optarg);
-			break;
-
-			case 'b' :
-			beamfile = strdup(optarg);
 			break;
 
 			case 'y' :
