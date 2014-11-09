@@ -585,6 +585,8 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 		                num_integrated_reflections(reflist));
 		fprintf(st->fh, "num_saturated_reflections = %lli\n",
 				crystal_get_num_saturated_reflections(cr));
+		fprintf(st->fh, "num_implausible_reflections = %lli\n",
+				crystal_get_num_implausible_reflections(cr));
 
 	}
 

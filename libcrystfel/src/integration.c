@@ -1801,6 +1801,7 @@ static void integrate_rings(IntegrationMethod meth,
 	free_intcontext(&ic);
 
 	crystal_set_num_saturated_reflections(cr, ic.n_saturated);
+	crystal_set_num_implausible_reflections(cr, ic.n_implausible);
 
 	if ( ic.n_implausible ) {
 		STATUS("Warning: %i implausibly negative reflection%s in %s.\n",

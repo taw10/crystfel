@@ -63,6 +63,8 @@ struct _crystal
 	/* Integrated (or about-to-be-integrated) reflections */
 	RefList                 *reflections;
 	long long int           n_saturated;  /* Number of overloads */
+	long long int           n_implausible;  /* Number of implausibly
+	                                         * negative reflectionss */
 
 	/* User flag, e.g. for "this is a bad crystal". */
 	int                     user_flag;
@@ -91,6 +93,7 @@ Crystal *crystal_new()
 	cryst->reflections = NULL;
 	cryst->resolution_limit = 0.0;
 	cryst->n_saturated = 0;
+	cryst->n_implausible = 0;
 
 	return cryst;
 }
@@ -167,6 +170,12 @@ long long int crystal_get_num_saturated_reflections(Crystal *cryst)
 }
 
 
+long long int crystal_get_num_implausible_reflections(Crystal *cryst)
+{
+	return cryst->n_implausible;
+}
+
+
 struct image *crystal_get_image(Crystal *cryst)
 {
 	return cryst->image;
@@ -221,6 +230,12 @@ void crystal_set_resolution_limit(Crystal *cryst, double res)
 void crystal_set_num_saturated_reflections(Crystal *cryst, long long int n)
 {
 	cryst->n_saturated = n;
+}
+
+
+void crystal_set_num_implausible_reflections(Crystal *cryst, long long int n)
+{
+	cryst->n_implausible = n;
 }
 
 
