@@ -247,7 +247,6 @@ int main(int argc, char *argv[])
 	char *grad_str = NULL;
 	char *outfile = NULL;
 	char *geometry = NULL;
-	char *beamfile = NULL;
 	char *spectrum_str = NULL;
 	GradientMethod grad;
 	SpectrumType spectrum_type;
@@ -615,7 +614,6 @@ int main(int argc, char *argv[])
 	image.lambda = wl;
 	image.bw = bandwidth;
 	image.nsamples = nsamples;
-	free(beamfile);
 
 	/* Load unit cell */
 	input_cell = load_cell_from_file(filename);
