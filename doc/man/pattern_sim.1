@@ -140,12 +140,6 @@ Suppress the subsidiary maxima of the shape transforms by setting I_latt(q) to z
 
 .PD 0
 .B
-.IP "\fB--beam-divergence=\fIval\fR"
-.PD
-Set the convergence angle (the full angle, not "half-angle"/"semi-angle") for the incident beam.  The default is \fB--beam-divergence=0.001\fR, i.e. 1 mrad.\fR.
-
-.PD 0
-.B
 .IP "\fB--beam-bandwidth=\fIval\fR"
 .PD
 Set the bandwidth, expressed as a decimal fraction applying to to wavelengths (not the photon energies), for the incident beam.  The default is \fB--beam-bandwidth=0.01\fR, i.e. 1%.\fR.
@@ -154,15 +148,15 @@ Note: When using the two-colour or SASE spectrum, the spectrum calculation actua
 
 .PD 0
 .B
-.IP "\fB--profile-radius=\fIval\fR"
+.IP "\fB--photon-energy=\fIval\fR"
 .PD
-Set the radius of the scattering density surrounding each reciprocal lattice point, in m^-1.  The default is \fB--profile-radius=0.001e9\fR m^-1.
+Set the central photon energy, in eV, for the incident beam.  The default is \fB--photon-energy=9000\fR, i.e. 9 keV X-rays.
 
 .PD 0
 .B
-.IP "\fB--photon-energy=\fIval\fR"
+.IP "\fB--nphotons=\fIval\fR"
 .PD
-Set the central photon energy, in eV, for the incident beam.  The default is \fB--photon-energy=9000\fR, i.e. 9 keV X-rays.\fR.
+Set the number of photons per X-ray pulse.  The default is \fB--nphotons=1e12\fR.  A physically reasonable value is such that the pulse energy (number of photons multiplied by photon energy) is about 1 mJ.
 
 .SH REFLECTION LISTS
 

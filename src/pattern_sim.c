@@ -94,11 +94,9 @@ static void show_help(const char *s)
 "     --background=<N>      Add N photons of Poisson background (default 0).\n"
 "     --template=<file>     Take orientations from stream <file>.\n"
 "     --no-fringes          Exclude the side maxima of Bragg peaks.\n"
-"     --beam-divergence    Beam divergence in radians. Default 1 mrad.\n"
 "     --beam-bandwidth     Beam bandwidth as a fraction. Default 1%%.\n"
-"     --profile-radius     Reciprocal space reflection profile radius in m^-1.\n"
-"                           Default 0.001e9 m^-1\n"
 "     --photon-energy      Photon energy in eV.  Default 9000.\n"
+"     --nphotons           Number of photons per X-ray pulse.  Default 1e12.\n"
 );
 }
 
