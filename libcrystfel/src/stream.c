@@ -266,7 +266,8 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 			double ph;
 			char *v;
 			struct panel *p;
-			float write_fs, write_ss;
+			float write_fs = 0;
+			float write_ss = 0;
 
 			refl = add_refl(out, h, k, l);
 			set_intensity(refl, intensity);

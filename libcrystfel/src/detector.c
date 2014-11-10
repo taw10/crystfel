@@ -1604,60 +1604,61 @@ void get_pixel_extents(struct detector *det,
 }
 
 
-int write_detector_geometry(const char *filename, struct detector *det)
+int write_detector_geometry(const char* geometry_filename,
+                            const char *output_filename, struct detector *det)
 {
-	struct panel *p;
-	int pi;
+        FILE *ifh;
 	FILE *fh;
 
-	if ( filename == NULL ) return 2;
+	if ( geometry_filename == NULL ) return 2;
+	if ( output_filename == NULL ) return 2;
 	if ( det->n_panels < 1 ) return 3;
 
-	fh = fopen(filename, "w");
+	ifh = fopen(geometry_filename, "r");
+	if ( ifh == NULL ) return 1;
+
+	fh = fopen(output_filename, "w");
 	if ( fh == NULL ) return 1;
 
-	for ( pi=0; pi<det->n_panels; pi++) {
+	do {
 
-		p = &(det->panels[pi]);
+		char *rval;
+		char line[1024];
+		int n_bits;
+		char **bits;
+		int i;
+		struct panel *p;
 
-		if ( p == NULL ) return 4;
+		rval = fgets(line, 1023, ifh);
+		if ( rval == NULL ) break;
 
-		if ( pi > 0 ) fprintf(fh, "\n");
+		n_bits = assplode(line, "/", &bits, ASSPLODE_NONE);
 
-		fprintf(fh, "%s/min_fs = %d\n", p->name, p->min_fs);
-		fprintf(fh, "%s/min_ss = %d\n", p->name, p->min_ss);
-		fprintf(fh, "%s/max_fs = %d\n", p->name, p->max_fs);
-		fprintf(fh, "%s/max_ss = %d\n", p->name, p->max_ss);
-		fprintf(fh, "%s/badrow_direction = %C\n", p->name, p->badrow);
-		fprintf(fh, "%s/res = %g\n", p->name, p->res);
-		fprintf(fh, "%s/clen = %s\n", p->name, p->clen_from);
-		fprintf(fh, "%s/fs = %+fx %+fy\n", p->name, p->fsx, p->fsy);
-		fprintf(fh, "%s/ss = %+fx %+fy\n", p->name, p->ssx, p->ssy);
-		fprintf(fh, "%s/corner_x = %g\n", p->name, p->cnx);
-		fprintf(fh, "%s/corner_y = %g\n", p->name, p->cny);
-		fprintf(fh, "%s/adu_per_eV = %g\n", p->name, p->adu_per_eV);
-		fprintf(fh, "%s/max_adu = %g\n", p->name, p->max_adu);
+		if ( n_bits < 2 || n_bits > 2 ) {
+			for ( i=0; i<n_bits; i++ ) free(bits[i]);
+			fputs(line, fh);
+		} else {
+			p = find_panel_by_name(det, bits[0]);
 
-		if ( p->no_index ) {
-			fprintf(fh, "%s/no_index = 1\n", p->name);
-		} /* else don't clutter up the file */
+			if ( strncmp(bits[1], "fs = ", 5) == 0) {
+				fprintf(fh, "%s/fs = %+fx %+fy\n", p->name, p->fsx, p->fsy);
+			} else if ( strncmp(bits[1], "ss = ", 5) == 0) {
+				fprintf(fh, "%s/ss = %+fx %+fy\n", p->name, p->ssx, p->ssy);
+			} else if ( strncmp(bits[1], "corner_x = ", 11) == 0) {
+				fprintf(fh, "%s/corner_x = %g\n", p->name, p->cnx);
+			} else if ( strncmp(bits[1], "corner_y = ", 11) == 0) {
+				fprintf(fh, "%s/corner_y = %g\n", p->name, p->cny);
+			} else {
+				fputs(line, fh);
+			}
 
-		if ( p->rigid_group != NULL ) {
-			fprintf(fh, "%s/rigid_group = %s\n",
-			        p->name, p->rigid_group->name);
+			for ( i=0; i<n_bits; i++ ) free(bits[i]);
+
 		}
 
-		if ( p->data != NULL ) {
-			fprintf(fh, "%s/data = %s\n",
-					p->name, p->data);
-		}
+	} while ( 1 );
 
-		if ( p->mask != NULL ) {
-			fprintf(fh, "%s/mask = %s\n",
-			        p->name, p->mask);
-		}
-
-	}
+	fclose(ifh);
 	fclose(fh);
 
 	return 0;

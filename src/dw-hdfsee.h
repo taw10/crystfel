@@ -90,10 +90,12 @@ typedef struct {
 
 	int             not_ready_yet;
 
-    struct detector* simple_geom;
+	struct detector* simple_geom;
 
-    struct hdfile	*hdfile;
+	struct hdfile	*hdfile;
 	struct image	*image;
+
+	char            *geom_filename;
 
 	/* Dialog boxes */
 	BinningDialog  *binning_dialog;
@@ -137,7 +139,7 @@ typedef struct {
 } DisplayWindow;
 
 /* Open an image display window showing the given filename, or NULL */
-extern DisplayWindow *displaywindow_open(char *filename,
+extern DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
                                          const char *peaks, double boost,
                                          int binning,
                                          int noisefilter, int calibmode,
