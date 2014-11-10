@@ -1176,7 +1176,7 @@ static gint displaywindow_about(GtkWidget *widget, DisplayWindow *dw)
 static int save_geometry_file(DisplayWindow *dw)
 {
 	GtkWidget *d;
-	gchar * output_filename;
+	gchar *output_filename;
 	int w;
 
 	d = gtk_file_chooser_dialog_new("Save Detector Geometry",
@@ -1186,10 +1186,10 @@ static int save_geometry_file(DisplayWindow *dw)
                                         GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
 	                                NULL);
 
-	gtk_dialog_run (GTK_DIALOG (d));
+	gtk_dialog_run(GTK_DIALOG(d));
 	output_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER (d));
 	w = write_detector_geometry(dw->geom_filename, output_filename,
-                                    dw->image->det);
+	                            dw->image->det);
 	gtk_widget_destroy(d);
 	g_free(output_filename);
 	return w;
@@ -2538,7 +2538,6 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	}
 	if ( check ) {
 		ERROR("Couldn't load file\n");
-		free(dw->geom_filename);
 		hdfile_close(dw->hdfile);
 		free(dw->geom_filename);
 		return NULL;
@@ -2626,7 +2625,8 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 		displaywindow_update_menus(dw, element);
 	} else {
 		if ( dw->multi_event != 0 ) {
-			displaywindow_update_event_menu(dw, dw->ev_list, dw->curr_event);
+			displaywindow_update_event_menu(dw, dw->ev_list,
+			                                dw->curr_event);
 		}
 	}
 

@@ -266,12 +266,11 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 			double ph;
 			char *v;
 			struct panel *p;
-			float write_fs = 0;
-			float write_ss = 0;
 
 			refl = add_refl(out, h, k, l);
 			set_intensity(refl, intensity);
 			if ( det != NULL ) {
+				double write_fs, write_ss;
 				p = find_panel_by_name(det,pn);
 				write_fs = fs - p->orig_min_fs + p->min_fs;
 				write_ss = ss - p->orig_min_ss + p->min_ss;

@@ -1604,10 +1604,10 @@ void get_pixel_extents(struct detector *det,
 }
 
 
-int write_detector_geometry(const char* geometry_filename,
+int write_detector_geometry(const char *geometry_filename,
                             const char *output_filename, struct detector *det)
 {
-        FILE *ifh;
+	FILE *ifh;
 	FILE *fh;
 
 	if ( geometry_filename == NULL ) return 2;
@@ -1641,13 +1641,21 @@ int write_detector_geometry(const char* geometry_filename,
 			p = find_panel_by_name(det, bits[0]);
 
 			if ( strncmp(bits[1], "fs = ", 5) == 0) {
-				fprintf(fh, "%s/fs = %+fx %+fy\n", p->name, p->fsx, p->fsy);
+				fprintf(fh, "%s/fs = %+fx %+fy\n",
+				        p->name, p->fsx, p->fsy);
+
 			} else if ( strncmp(bits[1], "ss = ", 5) == 0) {
-				fprintf(fh, "%s/ss = %+fx %+fy\n", p->name, p->ssx, p->ssy);
+				fprintf(fh, "%s/ss = %+fx %+fy\n",
+				        p->name, p->ssx, p->ssy);
+
 			} else if ( strncmp(bits[1], "corner_x = ", 11) == 0) {
-				fprintf(fh, "%s/corner_x = %g\n", p->name, p->cnx);
+				fprintf(fh, "%s/corner_x = %g\n",
+				        p->name, p->cnx);
+
 			} else if ( strncmp(bits[1], "corner_y = ", 11) == 0) {
-				fprintf(fh, "%s/corner_y = %g\n", p->name, p->cny);
+				fprintf(fh, "%s/corner_y = %g\n",
+				        p->name, p->cny);
+
 			} else {
 				fputs(line, fh);
 			}
