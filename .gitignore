@@ -46,6 +46,7 @@ build-aux/missing
 build-aux/config.guess
 build-aux/depcomp
 build-aux/ltmain.sh
+build-aux/test-driver
 /nbproject/private/
 lib/.libs/
 lib/dummy.lo
