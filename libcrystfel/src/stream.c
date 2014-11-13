@@ -147,7 +147,7 @@ static int read_peaks_2_3(FILE *fh, struct image *image)
 			}
 
 			add_x = x-p->orig_min_fs+p->min_fs;
-			add_y = x-p->orig_min_ss+p->min_ss;
+			add_y = y-p->orig_min_ss+p->min_ss;
 
 			image_add_feature(image->features, add_x, add_y,
 			                  image, intensity, NULL);
@@ -238,10 +238,8 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 
 		char line[1024];
 		signed int h, k, l;
-		float intensity, sigma, fs, ss;
-		char phs[1024];
+		float intensity, sigma, fs, ss, pk, bg;
 		char pn[32];
-		int cts;
 		int r;
 		Reflection *refl;
 
@@ -251,9 +249,9 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 
 		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
 
-		r = sscanf(line, "%i %i %i %f %s %f %i %f %f %s",
-				   &h, &k, &l, &intensity, phs, &sigma, &cts,
-				   &fs, &ss, pn);
+		r = sscanf(line, "%i %i %i %f %f %f %f %f %f %s",
+		           &h, &k, &l, &intensity, &sigma, &pk, &bg, &fs, &ss, pn);
+
 		if ( (r != 10) && (!first) ) {
 			reflist_free(out);
 			return NULL;
@@ -277,10 +275,8 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 				set_detector_pos(refl, 0.0, write_fs, write_ss);
 			}
 			set_esd_intensity(refl, sigma);
-			set_redundancy(refl, cts);
-			ph = strtod(phs, &v);
-			if ( v != phs ) set_phase(refl, deg2rad(ph));
-
+			set_peak(refl, pk);
+			set_mean_bg(refl, bg);
 		}
 
 	} while ( rval != NULL );
