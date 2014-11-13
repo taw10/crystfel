@@ -92,6 +92,7 @@ static void show_help(const char *s)
 "\n"
 "      --res-ring=<r>      Draw a resolution ring at <r> Angstroms.\n"
 "      --highres=<r>       Render spots only up to <r> Angstroms.\n"
+"      --no-axes           Do not draw reciprocal space axes.\n"
 "\n"
 "      --colour-key        Draw (only) the key for the current colour scale.\n"
 "                           The key will be written to 'key.pdf' in the\n"
@@ -411,7 +412,7 @@ static void render_za(UnitCell *cell, RefList *list,
                       signed int xh, signed int xk, signed int xl,
                       signed int yh, signed int yk, signed int yl,
                       const char *outfile, double scale_top, signed int zone,
-                      struct resrings *rings)
+                      struct resrings *rings, int noaxes)
 {
 	cairo_surface_t *surface;
 	cairo_t *dctx;
@@ -530,12 +531,6 @@ static void render_za(UnitCell *cell, RefList *list,
 	             max_r, theta, as, bs, cx, cy, scale,
 	             max_val, zone);
 
-	/* Centre marker */
-	cairo_arc(dctx, (double)cx,
-			(double)cy, max_r, 0, 2*M_PI);
-	cairo_set_source_rgb(dctx, 1.0, 0.0, 0.0);
-	cairo_fill(dctx);
-
 	/* Resolution rings */
 	for ( i=0; i<rings->n_rings; i++ ) {
 
@@ -559,37 +554,48 @@ static void render_za(UnitCell *cell, RefList *list,
 		cairo_restore(dctx);
 	}
 
-	/* Draw indexing lines */
-	cairo_set_line_cap(dctx, CAIRO_LINE_CAP_ROUND);
-	cairo_set_line_width(dctx, 2.0);
-	cairo_move_to(dctx, (double)cx, (double)cy);
-	u = rmax*sin(theta);
-	v = rmax*cos(theta);
-	cairo_line_to(dctx, cx+u*scale, cy+v*scale);
-	cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
-	cairo_stroke(dctx);
+	if ( !noaxes ) {
 
-	cairo_set_font_size(dctx, 40.0);
-	snprintf(tmp, 255, "%i%i%i", abs(xh), abs(xk), abs(xl));
-	cairo_text_extents(dctx, tmp, &size);
+		/* Centre marker */
+		cairo_arc(dctx, (double)cx,
+				(double)cy, max_r, 0, 2*M_PI);
+		cairo_set_source_rgb(dctx, 1.0, 0.0, 0.0);
+		cairo_fill(dctx);
 
-	cairo_move_to(dctx, cx+u*scale + 20.0, cy+v*scale + size.height/2.0);
-	render_overlined_indices(dctx, xh, xk, xl);
-	cairo_fill(dctx);
+		/* Draw indexing lines */
+		cairo_set_line_cap(dctx, CAIRO_LINE_CAP_ROUND);
+		cairo_set_line_width(dctx, 2.0);
+		cairo_move_to(dctx, (double)cx, (double)cy);
+		u = rmax*sin(theta);
+		v = rmax*cos(theta);
+		cairo_line_to(dctx, cx+u*scale, cy+v*scale);
+		cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
+		cairo_stroke(dctx);
 
-	snprintf(tmp, 255, "%i%i%i", abs(yh), abs(yk), abs(yl));
-	cairo_text_extents(dctx, tmp, &size);
+		cairo_set_font_size(dctx, 40.0);
+		snprintf(tmp, 255, "%i%i%i", abs(xh), abs(xk), abs(xl));
+		cairo_text_extents(dctx, tmp, &size);
 
-	cairo_set_line_width(dctx, 2.0);
-	cairo_move_to(dctx, (double)cx, (double)cy);
-	cairo_line_to(dctx, cx, cy+rmax*scale);
-	cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
-	cairo_stroke(dctx);
+		cairo_move_to(dctx, cx+u*scale + 20.0,
+		                    cy+v*scale + size.height/2.0);
+		render_overlined_indices(dctx, xh, xk, xl);
+		cairo_fill(dctx);
 
-	cairo_move_to(dctx, cx - size.width/2.0,
-	                    cy+rmax*scale + size.height + 20.0);
-	render_overlined_indices(dctx, yh, yk, yl);
-	cairo_fill(dctx);
+		snprintf(tmp, 255, "%i%i%i", abs(yh), abs(yk), abs(yl));
+		cairo_text_extents(dctx, tmp, &size);
+
+		cairo_set_line_width(dctx, 2.0);
+		cairo_move_to(dctx, (double)cx, (double)cy);
+		cairo_line_to(dctx, cx, cy+rmax*scale);
+		cairo_set_source_rgb(dctx, 0.0, 1.0, 0.0);
+		cairo_stroke(dctx);
+
+		cairo_move_to(dctx, cx - size.width/2.0,
+			            cy+rmax*scale + size.height + 20.0);
+		render_overlined_indices(dctx, yh, yk, yl);
+		cairo_fill(dctx);
+
+	}
 
 	if ( png ) {
 		int r = cairo_surface_write_to_png(surface, outfile);
@@ -762,6 +768,7 @@ int main(int argc, char *argv[])
 	double res;
 	struct resrings rings;
 	float highres = -1.0;
+	int config_noaxes = 0;
 
 	rings.n_rings = 0;
 
@@ -780,6 +787,7 @@ int main(int argc, char *argv[])
 		{"right",              1, NULL,               'r'},
 		{"counts",             0, &config_sqrt,        1},
 		{"colour-key",         0, &config_colkey,      1},
+		{"no-axes",            0, &config_noaxes,      1},
 		{"scale-top",          1, NULL,                2},
 		{"zone",               1, NULL,                3},
 		{"res-ring",           1, NULL,                4},
@@ -1005,7 +1013,8 @@ int main(int argc, char *argv[])
 	}
 
 	render_za(cell, list, boost, sym, wght, colscale,
-	          rh, rk, rl, dh, dk, dl, outfile, scale_top, zone, &rings);
+	          rh, rk, rl, dh, dk, dl, outfile, scale_top, zone, &rings,
+	          config_noaxes);
 
 	free(cellfile);
 	free_symoplist(sym);
