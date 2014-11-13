@@ -261,8 +261,6 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 
 		if ( r == 10 ) {
 
-			double ph;
-			char *v;
 			struct panel *p;
 
 			refl = add_refl(out, h, k, l);
