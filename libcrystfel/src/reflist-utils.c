@@ -285,13 +285,16 @@ int write_reflist(const char *filename, RefList *list)
 
 #define HEADER_2_0 "CrystFEL reflection list version 2.0"
 
+
+/**
+ * read_reflections_from_file:
+ * @fh: File handle to read from
+ *
+ * This function reads a reflection list from @fh.
+ *
+ * Returns: a %RefList read from the file, or NULL on error
+ **/
 RefList *read_reflections_from_file(FILE *fh)
-{
-	return read_reflections_from_file2(fh, NULL);
-}
-
-
-RefList *read_reflections_from_file2(FILE *fh, struct detector *det)
 {
 	char *rval = NULL;
 	RefList *out;
@@ -366,20 +369,19 @@ RefList *read_reflections_from_file2(FILE *fh, struct detector *det)
 
 		} else {
 
+			/* Deprecated reflection format */
+
 			double ph;
 			char *v;
 			signed int h, k, l;
 			float intensity, sigma, fs, ss;
 			char phs[1024];
-			char pn[32];
 			int cts;
 			int r;
-			struct panel *p;
-			float read_fs, read_ss;
 
-			r = sscanf(line, "%i %i %i %f %s %f %i %f %f %s",
+			r = sscanf(line, "%i %i %i %f %s %f %i %f %f",
 				   &h, &k, &l, &intensity, phs, &sigma,
-				   &cts, &fs, &ss, pn);
+				   &cts, &fs, &ss);
 
 			if ( r != 9 ) {
 				reflist_free(out);
@@ -388,13 +390,7 @@ RefList *read_reflections_from_file2(FILE *fh, struct detector *det)
 
 			refl = add_refl(out, h, k, l);
 			set_intensity(refl, intensity);
-
-			if ( det != NULL) {
-				p = find_panel_by_name(det, pn);
-				read_ss = ss-p->orig_min_ss+p->min_ss;
-				read_fs = fs-p->orig_min_fs+p->min_fs;
-				set_detector_pos(refl, 0.0, read_fs, read_ss);
-			}
+			set_detector_pos(refl, 0.0, fs, ss);
 
 			set_esd_intensity(refl, sigma);
 			set_redundancy(refl, cts);
@@ -413,12 +409,6 @@ RefList *read_reflections_from_file2(FILE *fh, struct detector *det)
 
 RefList *read_reflections(const char *filename)
 {
-	return read_reflections2(filename, NULL);
-}
-
-
-RefList *read_reflections2(const char *filename, struct detector *det)
-{
 	FILE *fh;
 	RefList *out;
 
@@ -433,7 +423,7 @@ RefList *read_reflections2(const char *filename, struct detector *det)
 		return NULL;
 	}
 
-	out = read_reflections_from_file2(fh, det);
+	out = read_reflections_from_file(fh);
 
 	fclose(fh);
 
