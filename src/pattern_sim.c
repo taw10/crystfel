@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
 	SymOpList *sym;
 	int nsamples = 3;
 	gsl_rng *rng;
-	int background = 0;
+	double background = 0.0;
 	char *template_file = NULL;
 	Stream *st = NULL;
 	int no_fringes = 0;
@@ -403,7 +403,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 5 :
-			background = strtol(optarg, &rval, 10);
+			background = strtod(optarg, &rval);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid background level.\n");
 				return 1;

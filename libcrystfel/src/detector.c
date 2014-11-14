@@ -322,7 +322,7 @@ double get_tt(struct image *image, double fs, double ss, int *err)
 }
 
 
-void record_image(struct image *image, int do_poisson, int background,
+void record_image(struct image *image, int do_poisson, double background,
                   gsl_rng *rng, double beam_radius, double nphotons)
 {
 	int x, y;
