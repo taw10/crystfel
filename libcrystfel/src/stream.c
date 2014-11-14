@@ -732,6 +732,10 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 	int n;
 	Crystal **crystals_new;
 
+	as.u = 0.0;  as.v = 0.0;  as.w = 0.0;
+	bs.u = 0.0;  bs.v = 0.0;  bs.w = 0.0;
+	cs.u = 0.0;  cs.v = 0.0;  cs.w = 0.0;
+
 	cr = crystal_new();
 	if ( cr == NULL ) {
 		ERROR("Failed to allocate crystal!\n");
