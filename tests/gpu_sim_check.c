@@ -163,7 +163,9 @@ int main(int argc, char *argv[])
 	gpu_image.spectrum = generate_tophat(&gpu_image);
 
 	start = get_hires_seconds();
-	get_diffraction_gpu(gctx, &gpu_image, 8, 8, 8, cell, 1);
+	if ( get_diffraction_gpu(gctx, &gpu_image, 8, 8, 8, cell, 1) ) {
+		return 1;
+	}
 	end = get_hires_seconds();
 	gpu_time = end - start;
 

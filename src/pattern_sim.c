@@ -792,19 +792,25 @@ int main(int argc, char *argv[])
 	               na, nb, nc, na*a/1.0e-9, nb*b/1.0e-9, nc*c/1.0e-9);
 
 		if ( config_gpu ) {
+
+			int err;
+
 			if ( gctx == NULL ) {
 				gctx = setup_gpu(config_nosfac,
 				                 intensities, flags, sym_str,
 				                 gpu_dev);
 			}
-			get_diffraction_gpu(gctx, &image, na, nb, nc, cell,
-			                    no_fringes);
+			err = get_diffraction_gpu(gctx, &image, na, nb, nc,
+			                          cell, no_fringes);
+			if ( err ) image.data = NULL;
+
 		} else {
 			get_diffraction(&image, na, nb, nc, intensities, phases,
 			                flags, cell, grad, sym, no_fringes);
 		}
 		if ( image.data == NULL ) {
 			ERROR("Diffraction calculation failed.\n");
+			done = 1;
 			goto skip;
 		}
 

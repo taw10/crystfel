@@ -172,15 +172,15 @@ static int set_arg_mem(struct gpu_context *gctx, int idx, cl_mem val)
 }
 
 
-static void do_panels(struct gpu_context *gctx, struct image *image,
+static int do_panels(struct gpu_context *gctx, struct image *image,
                       double k, double weight,
                       int *n_inf, int *n_neg, int *n_nan)
 {
 	int i;
 	const int sampling = 4;  /* This, squared, number of samples / pixel */
 
-	if ( set_arg_float(gctx, 1, k) ) return;
-	if ( set_arg_float(gctx, 2, weight) ) return;
+	if ( set_arg_float(gctx, 1, k) ) return 1;
+	if ( set_arg_float(gctx, 2, weight) ) return 1;
 
 	/* Iterate over panels */
 	for ( i=0; i<image->det->n_panels; i++ ) {
@@ -206,20 +206,20 @@ static void do_panels(struct gpu_context *gctx, struct image *image,
 	                              diff_size, NULL, &err);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't allocate diffraction memory\n");
-			return;
+			return 1;
 		}
 
-		if ( set_arg_mem(gctx, 0, diff) ) return;
+		if ( set_arg_mem(gctx, 0, diff) ) return 1;
 
-		if ( set_arg_int(gctx, 3, pan_width) ) return;
-		if ( set_arg_float(gctx, 4, p->cnx) ) return;
-		if ( set_arg_float(gctx, 5, p->cny) ) return;
-		if ( set_arg_float(gctx, 6, p->fsx) ) return;
-		if ( set_arg_float(gctx, 7, p->fsy) ) return;
-		if ( set_arg_float(gctx, 8, p->ssx) ) return;
-		if ( set_arg_float(gctx, 9, p->ssy) ) return;
-		if ( set_arg_float(gctx, 10, p->res) ) return;
-		if ( set_arg_float(gctx, 11, p->clen) ) return;
+		if ( set_arg_int(gctx, 3, pan_width) ) return 1;
+		if ( set_arg_float(gctx, 4, p->cnx) ) return 1;
+		if ( set_arg_float(gctx, 5, p->cny) ) return 1;
+		if ( set_arg_float(gctx, 6, p->fsx) ) return 1;
+		if ( set_arg_float(gctx, 7, p->fsy) ) return 1;
+		if ( set_arg_float(gctx, 8, p->ssx) ) return 1;
+		if ( set_arg_float(gctx, 9, p->ssy) ) return 1;
+		if ( set_arg_float(gctx, 10, p->res) ) return 1;
+		if ( set_arg_float(gctx, 11, p->clen) ) return 1;
 
 		dims[0] = pan_width * sampling;
 		dims[1] = pan_height * sampling;
@@ -231,7 +231,7 @@ static void do_panels(struct gpu_context *gctx, struct image *image,
 		                     sampling*sampling*sizeof(cl_float), NULL);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set local memory: %s\n", clError(err));
-			return;
+			return 1;
 		}
 
 		err = clEnqueueNDRangeKernel(gctx->cq, gctx->kern, 2, NULL,
@@ -239,7 +239,7 @@ static void do_panels(struct gpu_context *gctx, struct image *image,
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't enqueue diffraction kernel: %s\n",
 			      clError(err));
-			return;
+			return 1;
 		}
 
 		clFinish(gctx->cq);
@@ -250,7 +250,7 @@ static void do_panels(struct gpu_context *gctx, struct image *image,
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't map diffraction buffer: %s\n",
 			      clError(err));
-			return;
+			return 1;
 		}
 
 		for ( fs=0; fs<pan_width; fs++ ) {
@@ -277,12 +277,14 @@ static void do_panels(struct gpu_context *gctx, struct image *image,
 		clReleaseMemObject(diff);
 
 	}
+
+	return 0;
 }
 
 
-void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
-                         int na, int nb, int nc, UnitCell *ucell,
-                         int no_fringes)
+int get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
+                        int na, int nb, int nc, UnitCell *ucell,
+                        int no_fringes)
 {
 	double ax, ay, az;
 	double bx, by, bz;
@@ -297,7 +299,7 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 	if ( gctx == NULL ) {
 		ERROR("GPU setup failed.\n");
-		return;
+		return 1;
 	}
 
 	/* Ensure all required LUTs are available */
@@ -314,17 +316,21 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	err = clSetKernelArg(gctx->kern, 12, sizeof(cl_float16), &cell);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set unit cell: %s\n", clError(err));
-		return;
+		return 1;
 	}
 
-	if ( set_arg_mem(gctx, 13, gctx->intensities) ) return;
-	if ( set_arg_mem(gctx, 14, gctx->flags) ) return;
-	if ( set_arg_mem(gctx, 15, gctx->sinc_luts[na-1]) ) return;
-	if ( set_arg_mem(gctx, 16, gctx->sinc_luts[nb-1]) ) return;
-	if ( set_arg_mem(gctx, 17, gctx->sinc_luts[nc-1]) ) return;
+	if ( set_arg_mem(gctx, 13, gctx->intensities) ) return 1;
+	if ( set_arg_mem(gctx, 14, gctx->flags) ) return 1;
+	if ( set_arg_mem(gctx, 15, gctx->sinc_luts[na-1]) ) return 1;
+	if ( set_arg_mem(gctx, 16, gctx->sinc_luts[nb-1]) ) return 1;
+	if ( set_arg_mem(gctx, 17, gctx->sinc_luts[nc-1]) ) return 1;
 
 	/* Allocate memory for the result */
 	image->data = calloc(image->width * image->height, sizeof(float));
+	if ( image->data == NULL ) {
+		ERROR("Couldn't allocate memory for result.\n");
+		return 1;
+	}
 
 	double tot = 0.0;
 	for ( i=0; i<image->nsamples; i++ ) {
@@ -333,9 +339,11 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		       ph_lambda_to_eV(1.0/image->spectrum[i].k),
 		       image->spectrum[i].weight);
 
-		do_panels(gctx, image, image->spectrum[i].k,
-		          image->spectrum[i].weight,
-		          &n_inf, &n_neg, &n_nan);
+		err = do_panels(gctx, image, image->spectrum[i].k,
+		                image->spectrum[i].weight,
+		                &n_inf, &n_neg, &n_nan);
+
+		if ( err ) return 1;
 
 		tot += image->spectrum[i].weight;
 
@@ -359,6 +367,8 @@ void get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 	}
 	}
+
+	return 0;
 }
 
 
