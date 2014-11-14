@@ -622,6 +622,7 @@ struct dim_structure *default_dim_structure()
 
 void free_dim_structure(struct dim_structure *hsd)
 {
+	if ( hsd == NULL ) return;
 	free(hsd->dims);
 	free(hsd);
 }
