@@ -828,11 +828,7 @@ static void parse_toplevel(struct detector *det, struct beam_params *beam,
 		det->defaults.coffset = atof(val);
 
 	} else if ( strcmp(key, "photon_energy") == 0 ) {
-		if ( beam == NULL ) {
-			ERROR("Geometry file contains a reference to "
-			      "photon_energy, which is inappropriate in this "
-			      "situation.\n");
-		} else if ( strncmp(val, "/", 1) == 0 ) {
+		if ( strncmp(val, "/", 1) == 0 ) {
 			beam->photon_energy = 0.0;
 			beam->photon_energy_from = strdup(val);
 		} else {
@@ -841,11 +837,7 @@ static void parse_toplevel(struct detector *det, struct beam_params *beam,
 		}
 
 	} else if ( strcmp(key, "photon_energy_scale") == 0 ) {
-		if ( beam == NULL ) {
-			ERROR("Geometry file contains a reference to "
-			      "photon_energy_scale, which is inappropriate in "
-			      "this situation.\n");
-		} else {
+		if ( beam != NULL ) {
 			beam->photon_energy_scale = atof(val);
 		}
 
@@ -1280,12 +1272,6 @@ struct detector *get_detector_geometry(const char *filename,
 			      " bad region %s\n", det->bad[i].name);
 			reject = 1;
 		}
-	}
-
-	if ( (beam != NULL) && (beam->photon_energy < -0.5) ) {
-		STATUS("Photon energy must be specified (note: this is now "
-		       "done in the 'geometry' file)\n");
-		reject = 1;
 	}
 
 	for ( x=0; x<=max_fs; x++ ) {

@@ -270,6 +270,7 @@ int main(int argc, char *argv[])
 	double beam_radius = 1e-6;  /* metres */
 	double bandwidth = 0.01;
 	double photon_energy = 9000.0;
+	struct beam_params beam;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -537,12 +538,18 @@ int main(int argc, char *argv[])
 		ERROR("You need to specify a geometry file with --geometry\n");
 		return 1;
 	}
-	image.det = get_detector_geometry(geometry, NULL);
+	image.det = get_detector_geometry(geometry, &beam);
 	if ( image.det == NULL ) {
 		ERROR("Failed to read detector geometry from '%s'\n", geometry);
 		return 1;
 	}
 	free(geometry);
+	if ( (beam.photon_energy > 0.0) && (beam.photon_energy_from == NULL) ) {
+		ERROR("WARNING: An explicit photon energy was found in the "
+		      "geometry file.  It will be ignored!\n");
+		ERROR("The value given on the command line "
+		      "(with --photon-energy) will be used instead.\n");
+	}
 
 	if ( spectrum_str == NULL ) {
 		STATUS("You didn't specify a spectrum type, so"

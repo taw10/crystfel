@@ -697,6 +697,12 @@ int main(int argc, char *argv[])
 		ERROR("Failed to read geometry from '%s'\n", geomfile);
 		return 1;
 	}
+	if ( (beam.photon_energy > 0.0) && (beam.photon_energy_from == NULL) ) {
+		ERROR("WARNING: An explicit photon energy was found in the "
+		      "geometry file.  It will be ignored!\n");
+		ERROR("The value given on the command line "
+		      "(with --photon-energy) will be used instead.\n");
+	}
 
 	if ( sym_str == NULL ) sym_str = strdup("1");
 	sym = get_pointgroup(sym_str);
