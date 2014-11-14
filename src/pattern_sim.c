@@ -651,7 +651,38 @@ int main(int argc, char *argv[])
 	powder->data = powder_data;
 
 	/* Splurge a few useful numbers */
-	STATUS("Wavelength is %f nm\n", image.lambda/1.0e-9);
+	STATUS("Simulation parameters:\n");
+	STATUS("                  Photon energy: %.2f eV (wavelength %.5f A)\n",
+	       photon_energy, image.lambda*1e10);
+	STATUS("                Beam divergence: not simulated\n");
+	STATUS("                     Background: %.2f detector units\n",
+	       background);
+
+	switch ( spectrum_type ) {
+
+		case SPECTRUM_TOPHAT:
+		STATUS("                 X-ray spectrum: top hat, "
+		       "width %.5f %%\n", image.bw*100.0);
+		break;
+
+		case SPECTRUM_SASE:
+		STATUS("                 X-ray spectrum: SASE, "
+		       "bandwidth %.5f %%\n", image.bw*100.0);
+		break;
+
+		case SPECTRUM_TWOCOLOUR:
+		STATUS("                 X-ray spectrum: two colour, "
+		       "separation %.5f %%\n", image.bw*100.0);
+		break;
+	}
+	if ( random_size ) {
+		STATUS("                   Crystal size: random, between "
+		       "%.2f and %.2f nm along each of a, b and c\n",
+		       min_size*1e9, max_size*1e9);
+	} else {
+		STATUS("                   Crystal size: 8 unit cells along "
+		       "each of a, b and c\n");
+	}
 
 	do {
 

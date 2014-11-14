@@ -721,7 +721,6 @@ int main(int argc, char *argv[])
 			      input_file);
 			return 1;
 		}
-		free(input_file);
 		if ( check_list_symmetry(full, sym) ) {
 			ERROR("The input reflection list does not appear to"
 			      " have symmetry %s\n", symmetry_name(sym));
@@ -768,6 +767,31 @@ int main(int argc, char *argv[])
 	image.num_saturated_peaks = 0;
 	image.spectrum_size = 0;
 	image.event = NULL;
+
+	STATUS("Simulation parameters:\n");
+	STATUS("                  Photon energy: %.2f eV (wavelength %.5f A)\n",
+	       photon_energy, image.lambda*1e10);
+	STATUS("                Beam divergence: %.5f mrad\n", image.div*1e3);
+	STATUS("                 Beam bandwidth: %.5f %%\n", image.bw*100.0);
+	STATUS("Reciprocal space profile radius: %e m^-1\n", profile_radius);
+	if ( image_prefix != NULL ) {
+		STATUS("                     Background: %.2f detector units\n",
+		       background);
+	} else {
+		STATUS("                     Background: none (no image "
+		       "output\n");
+	}
+	STATUS("               Partiality model: scsphere (hardcoded)\n");
+	STATUS("       Noise standard deviation: %.2f detector units\n",
+	       noise_stddev);
+	if ( random_intensities ) {
+		STATUS("               Full intensities: randomly generated: "
+		       "abs(Gaussian(sigma=%.2f))\n", full_stddev);
+	} else {
+		STATUS("               Full intensities: from %s\n",
+		       input_file);
+	}
+	STATUS("   Max error in cell components: %.2f %%\n", cnoise);
 
 	if ( random_intensities ) {
 		full = reflist_new();
@@ -902,6 +926,7 @@ int main(int argc, char *argv[])
 	reflist_free(full);
 	free(save_file);
 	free(geomfile);
+	free(input_file);
 
 	return 0;
 }
