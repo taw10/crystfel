@@ -2481,8 +2481,11 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	dw->multi_event = 0;
 	dw->curr_event = 0;
 	dw->ev_list = NULL;
-	dw->geom_filename = strdup(geom_filename);
-
+	if ( dw->geom_filename != NULL ) {
+		dw->geom_filename = strdup(geom_filename);
+	} else {
+		dw->geom_filename = NULL;
+	}
 	dw->image->det = det_geom;
 	dw->image->beam = beam;
 	dw->image->lambda = 0.0;
