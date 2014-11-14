@@ -210,12 +210,12 @@ static struct quaternion read_quaternion()
 }
 
 
-static int random_ncells(double len, double min_nm, double max_nm)
+static int random_ncells(double len, double min_m, double max_m)
 {
 	int min_cells, max_cells, wid;
 
-	min_cells = min_nm*1e-9 / len;
-	max_cells = max_nm*1e-9 / len;
+	min_cells = min_m / len;
+	max_cells = max_m / len;
 	wid = max_cells - min_cells;
 
 	return wid*random()/RAND_MAX + min_cells;
@@ -391,6 +391,7 @@ int main(int argc, char *argv[])
 				ERROR("Invalid minimum size.\n");
 				return 1;
 			}
+			min_size /= 1e9;
 			random_size++;
 			break;
 
@@ -400,6 +401,7 @@ int main(int argc, char *argv[])
 				ERROR("Invalid maximum size.\n");
 				return 1;
 			}
+			max_size /= 1e9;
 			random_size++;
 			break;
 
