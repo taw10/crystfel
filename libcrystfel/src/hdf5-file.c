@@ -46,7 +46,7 @@
 
 struct hdf5_write_location {
 
-	char            *location;
+	const char      *location;
 	int              n_panels;
 	int             *panel_idxs;
 
@@ -56,10 +56,10 @@ struct hdf5_write_location {
 };
 
 
-int split_group_and_object(char *path, char **group, char **object)
+int split_group_and_object(const char *path, char **group, char **object)
 {
-	char 		*sep;
-	char 		*store;
+	const char *sep;
+	const char *store;
 
 	sep = path;
 	store = sep;
@@ -325,7 +325,7 @@ void hdfile_close(struct hdfile *f)
 
 /* Deprecated */
 int hdf5_write(const char *filename, const void *data,
-			   int width, int height, int type)
+               int width, int height, int type)
 {
 	hid_t fh, gh, sh, dh;	/* File, group, dataspace and data handles */
 	hid_t ph;  /* Property list */
@@ -384,17 +384,375 @@ int hdf5_write(const char *filename, const void *data,
 }
 
 
+static void add_panel_to_location(struct hdf5_write_location *loc,
+                                  struct panel *p, int pi)
+{
+	int *new_panel_idxs;
+
+	new_panel_idxs = realloc(loc->panel_idxs,
+	                         (loc->n_panels+1)*sizeof(int));
+	if ( new_panel_idxs == NULL ) {
+		ERROR("Error while managing write location list.\n");
+		return;
+	}
+	loc->panel_idxs = new_panel_idxs;
+	loc->panel_idxs[loc->n_panels] = pi;
+	loc->n_panels += 1;
+	if ( p->orig_max_fs > loc->max_fs ) {
+		loc->max_fs = p->orig_max_fs;
+	}
+	if ( p->orig_max_ss > loc->max_ss ) {
+		loc->max_ss = p->orig_max_ss;
+	}
+}
+
+
+static void add_panel_location(struct panel *p, const char *p_location, int pi,
+                               struct hdf5_write_location **plocations,
+                               int *pnum_locations)
+{
+	int li;
+	int num_locations = *pnum_locations;
+	struct hdf5_write_location *locations = *plocations;
+	int done = 0;
+
+	/* Does this HDF5 path already exist in the location list?
+	 * If so, add the new panel to it (with a unique index, we hope) */
+	for ( li=0; li<num_locations; li++ ) {
+		if ( strcmp(p_location, locations[li].location) == 0 ) {
+			add_panel_to_location(&locations[li], p, pi);
+			done = 1;
+		}
+	}
+
+	/* If not, add a new location to ths list */
+	if ( !done ) {
+
+		struct hdf5_write_location *new_locations;
+		size_t nsz;
+
+		nsz = (num_locations+1)*sizeof(struct hdf5_write_location);
+		new_locations = realloc(locations, nsz);
+		if ( new_locations == NULL ) {
+			ERROR("Failed to grow location list.\n");
+			return;
+		}
+		locations = new_locations;
+
+		locations[num_locations].max_ss = p->orig_max_ss;
+		locations[num_locations].max_fs = p->orig_max_fs;
+		locations[num_locations].location = p_location;
+		locations[num_locations].panel_idxs = malloc(sizeof(int));
+		if ( locations[num_locations].panel_idxs == NULL ) {
+			ERROR("Failed to allocate single idx (!)\n");
+			return;
+		}
+		locations[num_locations].panel_idxs[0] = pi;
+		locations[num_locations].n_panels = 1;
+
+		num_locations += 1;
+
+	}
+
+	*plocations = locations;
+	*pnum_locations = num_locations;
+}
+
+
+static struct hdf5_write_location *make_location_list(struct detector *det,
+                                                      const char *def_location,
+                                                      int *pnum_locations)
+{
+	int pi;
+	struct hdf5_write_location *locations = NULL;
+	int num_locations = 0;
+
+	for ( pi=0; pi<det->n_panels; pi++ ) {
+
+		struct panel p;
+		const char *p_location;
+
+		p = det->panels[pi];
+
+		if ( p.data == NULL ) {
+			p_location = def_location;
+		} else {
+			p_location = p.data;
+		}
+
+		add_panel_location(&p, p_location, pi,
+		                   &locations, &num_locations);
+
+	}
+
+	*pnum_locations = num_locations;
+	return locations;
+}
+
+
+static void write_location(hid_t fh, struct image *image,
+                           struct hdf5_write_location *loc)
+{
+	hid_t gh, sh, dh, ph;
+	hid_t dh_dataspace;
+	hsize_t size[2];
+	const char *path;
+	int pi;
+	char *group =  NULL;
+	char *object = NULL;
+
+	path = loc->location;
+	if ( split_group_and_object(path, &group, &object) ) {
+		ERROR("Error while determining write locations.\n");
+		return;
+	}
+
+	if ( group != NULL ) {
+
+		htri_t exists;
+		hid_t gph = H5Pcreate(H5P_LINK_CREATE);
+		H5Pset_create_intermediate_group(gph, 1);
+
+		exists = H5Lexists(fh, group, H5P_DEFAULT);
+
+		if ( !exists ) {
+
+			gh = H5Gcreate2(fh, group, gph, H5P_DEFAULT,
+			                H5P_DEFAULT);
+			H5Pclose(gph);
+			if ( gh < 0 ) {
+				ERROR("Couldn't create group\n");
+				H5Fclose(fh);
+				return;
+			}
+
+		} else {
+			gh = H5Gopen2(fh, group, H5P_DEFAULT);
+		}
+
+	} else {
+		gh = -1;
+	}
+
+	/* Note the "swap" here, according to section 3.2.5,
+	 * "C versus Fortran Dataspaces", of the HDF5 user's guide. */
+	size[0] = loc->max_ss+1;
+	size[1] = loc->max_fs+1;
+	sh = H5Screate_simple(2, size, NULL);
+
+	/* Set compression */
+	ph = H5Pcreate(H5P_DATASET_CREATE);
+	H5Pset_chunk(ph, 2, size);
+	H5Pset_deflate(ph, 3);
+
+	if ( group != NULL ) {
+		dh = H5Dcreate2(gh, object, H5T_NATIVE_FLOAT, sh,
+		                H5P_DEFAULT, ph, H5P_DEFAULT);
+	} else {
+		dh = H5Dcreate2(fh, object, H5T_NATIVE_FLOAT, sh,
+		                H5P_DEFAULT, ph, H5P_DEFAULT);
+	}
+
+	if ( dh < 0 ) {
+		ERROR("Couldn't create dataset\n");
+		H5Fclose(fh);
+		return;
+	}
+
+	H5Sget_simple_extent_dims(sh, size, NULL);
+
+	for ( pi=0; pi<loc->n_panels; pi++ ) {
+
+		hsize_t f_offset[2], f_count[2];
+		hsize_t m_offset[2], m_count[2];
+		hsize_t dimsm[2];
+		hid_t memspace;
+		struct panel p;
+		int r;
+
+		p = image->det->panels[loc->panel_idxs[pi]];
+
+		f_offset[0] = p.orig_min_ss;
+		f_offset[1] = p.orig_min_fs;
+		f_count[0] = p.orig_max_ss - p.orig_min_ss +1;
+		f_count[1] = p.orig_max_fs - p.orig_min_fs +1;
+
+		dh_dataspace = H5Dget_space(dh);
+		r = H5Sselect_hyperslab(dh_dataspace, H5S_SELECT_SET,
+		                        f_offset, NULL, f_count, NULL);
+		if ( r < 0 ) {
+			ERROR("Error selecting file dataspace "
+			      "for panel %s\n", p.name);
+			free(group);
+			free(object);
+			H5Pclose(ph);
+			H5Dclose(dh);
+			H5Sclose(dh_dataspace);
+			H5Sclose(sh);
+			if ( gh != -1 ) H5Gclose(gh);
+			H5Fclose(fh);
+			return;
+		}
+
+		m_offset[0] = p.min_ss;
+		m_offset[1] = p.min_fs;
+		m_count[0] = p.max_ss - p.min_ss +1;
+		m_count[1] = p.max_fs - p.min_fs +1;
+		dimsm[0] = image->height;
+		dimsm[1] = image->width;
+		memspace = H5Screate_simple(2, dimsm, NULL);
+		r = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
+		                        m_offset, NULL, m_count, NULL);
+
+		r = H5Dwrite(dh, H5T_NATIVE_FLOAT, memspace,
+		             dh_dataspace, H5P_DEFAULT, image->data);
+		if ( r < 0 ) {
+			ERROR("Couldn't write data\n");
+			free(group);
+			free(object);
+			H5Pclose(ph);
+			H5Dclose(dh);
+			H5Sclose(dh_dataspace);
+			H5Sclose(sh);
+			H5Sclose(memspace);
+			if ( gh != -1 ) H5Gclose(gh);
+			H5Fclose(fh);
+			return;
+		}
+
+		H5Sclose(dh_dataspace);
+		H5Sclose(memspace);
+	}
+
+	free(group);
+	free(object);
+	H5Pclose(ph);
+	H5Sclose(sh);
+	H5Dclose(dh);
+	if ( gh != -1 ) H5Gclose(gh);
+}
+
+
+static void write_photon_energy(hid_t fh, double eV)
+{
+	hid_t gh, sh, dh;
+	hsize_t size1d[1];
+	int r;
+
+	gh = H5Gcreate2(fh, "LCLS", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if ( gh < 0 ) {
+		ERROR("Couldn't create group for photon energy.\n");
+		return;
+	}
+
+	size1d[0] = 1;
+	sh = H5Screate_simple(1, size1d, NULL);
+
+	dh = H5Dcreate2(gh, "photon_energy_eV", H5T_NATIVE_DOUBLE, sh,
+	                H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Couldn't create dataset for photon energy.\n");
+		return;
+	}
+	r = H5Dwrite(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &eV);
+	if ( r < 0 ) {
+		ERROR("Couldn't write photon energy.\n");
+		/* carry on */
+	}
+
+	H5Dclose(dh);
+}
+
+
+static void write_spectrum(hid_t fh, struct sample *spectrum, int spectrum_size,
+                           int nsamples)
+{
+	herr_t r;
+	double *arr;
+	int i;
+	hsize_t size1d[1];
+	hid_t sh, dh, gh;
+
+	gh = H5Gopen(fh, "LCLS", H5P_DEFAULT);
+	if ( gh < 0 ) {
+		ERROR("Couldn't open group for photon energy.\n");
+		return;
+	}
+
+	arr = malloc(spectrum_size*sizeof(double));
+	if ( arr == NULL ) {
+		ERROR("Failed to allocate memory for spectrum.\n");
+		return;
+	}
+	for ( i=0; i<spectrum_size; i++ ) {
+		arr[i] = 1.0e10/spectrum[i].k;
+	}
+
+	size1d[0] = spectrum_size;
+	sh = H5Screate_simple(1, size1d, NULL);
+
+	dh = H5Dcreate2(gh, "spectrum_wavelengths_A", H5T_NATIVE_DOUBLE,
+	                sh, H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Failed to create dataset for spectrum wavelengths.\n");
+		return;
+	}
+	r = H5Dwrite(dh, H5T_NATIVE_DOUBLE, H5S_ALL,
+		     H5S_ALL, H5P_DEFAULT, arr);
+	if ( r < 0 ) {
+		ERROR("Failed to write spectrum wavelengths.\n");
+		return;
+	}
+	H5Dclose(dh);
+
+	for ( i=0; i<spectrum_size; i++ ) {
+		arr[i] = spectrum[i].weight;
+	}
+
+	dh = H5Dcreate2(gh, "spectrum_weights", H5T_NATIVE_DOUBLE, sh,
+		        H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Failed to create dataset for spectrum weights.\n");
+		return;
+	}
+	r = H5Dwrite(dh, H5T_NATIVE_DOUBLE, H5S_ALL,
+		     H5S_ALL, H5P_DEFAULT, arr);
+	if ( r < 0 ) {
+		ERROR("Failed to write spectrum weights.\n");
+		return;
+	}
+
+	H5Dclose(dh);
+	free(arr);
+
+	size1d[0] = 1;
+	sh = H5Screate_simple(1, size1d, NULL);
+
+	dh = H5Dcreate2(gh, "number_of_samples", H5T_NATIVE_INT, sh,
+		        H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Failed to create dataset for number of spectrum "
+		      "samples.\n");
+		return;
+	}
+
+	r = H5Dwrite(dh, H5T_NATIVE_INT, H5S_ALL,
+		     H5S_ALL, H5P_DEFAULT, &nsamples);
+	if ( r < 0 ) {
+		ERROR("Failed to write number of spectrum samples.\n");
+		return;
+	}
+
+	H5Dclose(dh);
+}
+
+
 int hdf5_write_image(const char *filename, struct image *image, char *element)
 {
-	double lambda, eV;
-	double *arr;
-	hsize_t size1d[1];
-	herr_t r;
-	hid_t fh, gh, sh, dh;	/* File, group, dataspace and data handles */
-	int i, pi, li;
+	hid_t fh;
+	int li;
 	char *default_location;
 	struct hdf5_write_location *locations;
-	struct hdf5_write_location *new_location;
 	int num_locations;
 
 	if ( image->det == NULL ) {
@@ -414,343 +772,19 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 		default_location = strdup("/data/data");
 	}
 
-	locations = malloc(sizeof(struct hdf5_write_location));
-	if ( locations == NULL ) {
-		ERROR("Couldn't create write location list for file: %s\n",
-		       filename);
-		return 1;
-	}
-	locations[0].max_ss = 0;
-	locations[0].max_fs = 0;
-	if ( image->det->panels[0].data != NULL ) {
-		locations[0].location = image->det->panels[0].data;
-	} else {
-		locations[0].location = default_location;
-	}
-	locations[0].panel_idxs = NULL;
-	locations[0].n_panels = 0;
-	num_locations = 1;
-
-	for ( pi=0; pi<image->det->n_panels; pi++ ) {
-
-		struct panel p;
-		int li;
-		int panel_processed;
-		char *p_location;
-
-		p = image->det->panels[pi];
-
-		if ( p.data == NULL ) {
-			p_location = default_location;
-		} else {
-			p_location = p.data;
-		}
-
-		panel_processed = 0;
-
-		for ( li=0; li<num_locations; li++ ) {
-
-			if ( strcmp(p_location, locations[li].location) == 0 ) {
-
-				int *new_panel_idxs;
-
-				new_panel_idxs = realloc(locations[li].panel_idxs,
-				                        (locations[li].n_panels+1)*sizeof(int));
-				if ( new_panel_idxs == NULL ) {
-					ERROR("Error while managing write location list for"
-					      "file: %s\n", filename);
-					return 1;
-				}
-				locations[li].panel_idxs = new_panel_idxs;
-				locations[li].panel_idxs[locations[li].n_panels] = pi;
-				locations[li].n_panels += 1;
-				if ( p.orig_max_fs > locations[li].max_fs ) {
-					locations[li].max_fs = p.orig_max_fs;
-				}
-				if ( p.orig_max_ss > locations[li].max_ss ) {
-					locations[li].max_ss = p.orig_max_ss;
-				}
-				panel_processed = 1;
-			}
-		}
-
-		if ( !panel_processed ) {
-
-			struct hdf5_write_location *new_locations;
-			new_locations = realloc(locations,
-			                       (num_locations+1)*
-			                       sizeof(struct hdf5_write_location));
-			if ( new_locations == NULL ) {
-				ERROR("Error while managing write location list for "
-				       "file: %s\n",
-				       filename);
-				return 1;
-			}
-			locations = new_locations;
-			new_location = &locations[num_locations];
-			new_location = malloc(sizeof(struct hdf5_write_location));
-			if ( new_location == NULL ) {
-				ERROR("Error while managing write location list for "
-				      "file: %s\n", filename);
-			      return 1;
-			}
-			locations[num_locations].max_ss = p.orig_max_ss;
-			locations[num_locations].max_fs = p.orig_max_fs;
-			locations[num_locations].location = p_location;
-			locations[num_locations].panel_idxs = malloc(sizeof(int));
-			if ( locations[num_locations].panel_idxs == NULL ) {
-				ERROR("Error while managing write location list for "
-				      "file: %s\n", filename);
-			      return 1;
-			}
-			locations[num_locations].panel_idxs[0] = pi;
-			locations[num_locations].n_panels = 1;
-
-			num_locations += 1;
-		}
-
-	}
+	locations = make_location_list(image->det, default_location,
+	                               &num_locations);
 
 	for ( li=0; li<num_locations; li++ ) {
-
-		hid_t ph;
-		hid_t dh_dataspace;
-		hsize_t size[2];
-
-		char *path, *group =  NULL, *object = NULL;
-
-		path = locations[li].location;
-		if ( split_group_and_object(path, &group, &object) ) {
-			ERROR("Error while determining write locations "
-			      "for file: %s\n", filename);
-			return 1;
-		}
-
-		if ( group != NULL ) {
-
-			htri_t exists;
-			hid_t gph = H5Pcreate(H5P_LINK_CREATE);
-			H5Pset_create_intermediate_group(gph, 1);
-
-			exists = H5Lexists(fh, group, H5P_DEFAULT);
-
-			if ( !exists ) {
-
-				gh = H5Gcreate2(fh, group, gph, H5P_DEFAULT,
-				                H5P_DEFAULT);
-				H5Pclose(gph);
-				if ( gh < 0 ) {
-					ERROR("Couldn't create group\n");
-					H5Fclose(fh);
-					return 1;
-				}
-
-			} else {
-				gh = H5Gopen2(fh, group, H5P_DEFAULT);
-			}
-
-		} else {
-			gh = -1;
-		}
-
-		/* Note the "swap" here, according to section 3.2.5,
-		 * "C versus Fortran Dataspaces", of the HDF5 user's guide. */
-		size[0] = locations[li].max_ss+1;
-		size[1] = locations[li].max_fs+1;
-		sh = H5Screate_simple(2, size, NULL);
-
-		/* Set compression */
-		ph = H5Pcreate(H5P_DATASET_CREATE);
-		H5Pset_chunk(ph, 2, size);
-		H5Pset_deflate(ph, 3);
-
-		if ( group != NULL ) {
-			dh = H5Dcreate2(gh, object, H5T_NATIVE_FLOAT, sh,
-			                H5P_DEFAULT, ph, H5P_DEFAULT);
-		} else {
-			dh = H5Dcreate2(fh, object, H5T_NATIVE_FLOAT, sh,
-			                H5P_DEFAULT, ph, H5P_DEFAULT);
-		}
-
-		if ( dh < 0 ) {
-			ERROR("Couldn't create dataset\n");
-			H5Fclose(fh);
-			return 1;
-		}
-
-		/* Muppet check */
-		H5Sget_simple_extent_dims(sh, size, NULL);
-
-		for ( pi=0; pi<locations[li].n_panels; pi ++ ) {
-
-			hsize_t f_offset[2], f_count[2];
-			hsize_t m_offset[2], m_count[2];
-			hsize_t dimsm[2];
-			hid_t memspace;
-			struct panel p;
-			int check;
-
-			p = image->det->panels[locations[li].panel_idxs[pi]];
-
-			f_offset[0] = p.orig_min_ss;
-			f_offset[1] = p.orig_min_fs;
-			f_count[0] = p.orig_max_ss - p.orig_min_ss +1;
-			f_count[1] = p.orig_max_fs - p.orig_min_fs +1;
-
-			dh_dataspace = H5Dget_space(dh);
-			check = H5Sselect_hyperslab(dh_dataspace,
-			                            H5S_SELECT_SET,
-			                            f_offset, NULL,
-			                            f_count, NULL);
-			if ( check < 0 ) {
-				ERROR("Error selecting file dataspace "
-				      "for panel %s\n", p.name);
-				free(group);
-				free(object);
-				H5Pclose(ph);
-				H5Dclose(dh);
-				H5Sclose(dh_dataspace);
-				H5Sclose(sh);
-				if ( gh != -1 ) H5Gclose(gh);
-				H5Fclose(fh);
-				return 1;
-			}
-
-			m_offset[0] = p.min_ss;
-			m_offset[1] = p.min_fs;
-			m_count[0] = p.max_ss - p.min_ss +1;
-			m_count[1] = p.max_fs - p.min_fs +1;
-			dimsm[0] = image->height;
-			dimsm[1] = image->width;
-			memspace = H5Screate_simple(2, dimsm, NULL);
-			check = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
-			                            m_offset, NULL,
-			                            m_count, NULL);
-
-			r = H5Dwrite(dh, H5T_NATIVE_FLOAT, memspace,
-			             dh_dataspace, H5P_DEFAULT, image->data);
-			if ( r < 0 ) {
-				ERROR("Couldn't write data\n");
-				free(group);
-				free(object);
-				H5Pclose(ph);
-				H5Dclose(dh);
-				H5Sclose(dh_dataspace);
-				H5Sclose(sh);
-				H5Sclose(memspace);
-				if ( gh != -1 ) H5Gclose(gh);
-				H5Fclose(fh);
-				return 1;
-			}
-
-			H5Sclose(dh_dataspace);
-			H5Sclose(memspace);
-		}
-
-		free(group);
-		free(object);
-		H5Pclose(ph);
-		H5Sclose(sh);
-		H5Dclose(dh);
-		if ( gh != -1 ) H5Gclose(gh);
-
+		write_location(fh, image, &locations[li]);
 	}
 
-	gh = H5Gcreate2(fh, "LCLS", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	if ( gh < 0 ) {
-		ERROR("Couldn't create group\n");
-		H5Fclose(fh);
-		return 1;
-	}
-
-	size1d[0] = 1;
-	sh = H5Screate_simple(1, size1d, NULL);
-
-	dh = H5Dcreate2(gh, "photon_energy_eV", H5T_NATIVE_DOUBLE, sh,
-	                H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
-	if ( dh < 0 ) {
-		H5Fclose(fh);
-		return 1;
-	}
-	eV = ph_lambda_to_eV(image->lambda);
-	r = H5Dwrite(dh, H5T_NATIVE_DOUBLE, H5S_ALL,
-	             H5S_ALL, H5P_DEFAULT, &eV);
-
-	H5Dclose(dh);
-
-	dh = H5Dcreate2(fh, "/LCLS/photon_wavelength_A", H5T_NATIVE_DOUBLE, sh,
-	                H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
-	if ( dh < 0 ) {
-		H5Fclose(fh);
-		return 1;
-	}
-	lambda = image->lambda * 1e10;
-	r = H5Dwrite(dh, H5T_NATIVE_DOUBLE, H5S_ALL,
-	             H5S_ALL, H5P_DEFAULT, &lambda);
-	if ( r < 0 ) {
-		H5Dclose(dh);
-		H5Fclose(fh);
-		return 1;
-	}
-
-	H5Dclose(dh);
-
+	write_photon_energy(fh, ph_lambda_to_eV(image->lambda));
 	if ( image->spectrum_size > 0 ) {
-
-		arr = malloc(image->spectrum_size*sizeof(double));
-		if ( arr == NULL ) {
-			H5Fclose(fh);
-			return 1;
-		}
-		for ( i=0; i<image->spectrum_size; i++ ) {
-			arr[i] = 1.0e10/image->spectrum[i].k;
-		}
-
-		size1d[0] = image->spectrum_size;
-		sh = H5Screate_simple(1, size1d, NULL);
-
-		dh = H5Dcreate2(gh, "spectrum_wavelengths_A", H5T_NATIVE_DOUBLE,
-		                sh, H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
-		if ( dh < 0 ) {
-			H5Fclose(fh);
-			return 1;
-		}
-		r = H5Dwrite(dh, H5T_NATIVE_DOUBLE, H5S_ALL,
-			     H5S_ALL, H5P_DEFAULT, arr);
-		H5Dclose(dh);
-
-		for ( i=0; i<image->spectrum_size; i++ ) {
-			arr[i] = image->spectrum[i].weight;
-		}
-		dh = H5Dcreate2(gh, "spectrum_weights", H5T_NATIVE_DOUBLE, sh,
-			        H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
-		if ( dh < 0 ) {
-			H5Fclose(fh);
-			return 1;
-		}
-		r = H5Dwrite(dh, H5T_NATIVE_DOUBLE, H5S_ALL,
-			     H5S_ALL, H5P_DEFAULT, arr);
-
-		H5Dclose(dh);
-		free(arr);
-
-		size1d[0] = 1;
-		sh = H5Screate_simple(1, size1d, NULL);
-
-		dh = H5Dcreate2(gh, "number_of_samples", H5T_NATIVE_INT, sh,
-			        H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
-		if ( dh < 0 ) {
-			H5Fclose(fh);
-			return 1;
-		}
-
-		r = H5Dwrite(dh, H5T_NATIVE_INT, H5S_ALL,
-			     H5S_ALL, H5P_DEFAULT, &image->nsamples);
-
-		H5Dclose(dh);
+		write_spectrum(fh, image->spectrum, image->spectrum_size,
+		               image->nsamples);
 	}
 
-	H5Gclose(gh);
 	H5Fclose(fh);
 	free(default_location);
 	for ( li=0; li<num_locations; li ++ ) {
