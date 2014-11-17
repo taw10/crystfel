@@ -1264,14 +1264,10 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 
 		if ( (image->lambda > 1.0) || (image->lambda < 1e-20) ) {
 
-			/* Error message covers a silly value in the beam file
-			 * or in the HDF5 file. */
-			ERROR("Nonsensical wavelength (%e m) value "
+			ERROR("WARNING: Nonsensical wavelength (%e m) value "
 			      "for file: %s, event: %s.\n",
 			      image->lambda, image->filename,
 			      get_event_string(image->event));
-			hdfile_close(f);
-			return 1;
 		}
 
 	}

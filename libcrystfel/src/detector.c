@@ -930,7 +930,7 @@ struct detector *get_detector_geometry(const char *filename,
 	}
 
 	if ( beam != NULL ) {
-		beam->photon_energy = -1.0;
+		beam->photon_energy = 0.0;
 		beam->photon_energy_from = NULL;
 		beam->photon_energy_scale = 1.0;
 	}
