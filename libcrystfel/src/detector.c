@@ -396,6 +396,9 @@ void record_image(struct image *image, int do_poisson, double background,
 		/* Convert to ADU */
 		dval *= p->adu_per_eV * ph_lambda_to_eV(image->lambda);
 
+		/* Saturation */
+		if ( dval > p->max_adu ) dval = p->max_adu;
+
 		image->data[x + image->width*y] = dval;
 
 		/* Sanity checks */
