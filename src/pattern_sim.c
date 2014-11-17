@@ -655,8 +655,7 @@ int main(int argc, char *argv[])
 	STATUS("                  Photon energy: %.2f eV (wavelength %.5f A)\n",
 	       photon_energy, image.lambda*1e10);
 	STATUS("                Beam divergence: not simulated\n");
-	STATUS("                     Background: %.2f detector units\n",
-	       background);
+	STATUS("                     Background: %.2f photons\n", background);
 
 	switch ( spectrum_type ) {
 
