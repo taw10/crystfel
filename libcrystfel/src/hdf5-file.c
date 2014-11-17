@@ -1168,7 +1168,6 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			ERROR("Panel name: %s.  Data size: %i,%i. "
 			      "Geometry size: %i,%i\n",
 			      p->name, data_width, data_height, p->w, p->h);
-			hdfile_close(f);
 			return 1;
 		}
 
