@@ -218,8 +218,8 @@ int main(int argc, char *argv[])
 			det_geom = get_detector_geometry(geom_filename, &cbeam);
 
 			if ( det_geom == NULL ) {
-				ERROR("Failed to read detector geometry from '%s'\n",
-				       optarg);
+				ERROR("Failed to read detector geometry "
+				      "from '%s'\n", optarg);
 				return 1;
 			}
 			beam = &cbeam;
@@ -296,7 +296,8 @@ int main(int argc, char *argv[])
 	free(cscale);
 
 	for ( i=0; i<nfiles; i++ ) {
-		main_window_list[i] = displaywindow_open(argv[optind+i], geom_filename,
+		main_window_list[i] = displaywindow_open(argv[optind+i],
+		                                         geom_filename,
 		                                         peaks, boost, binning,
 		                                         config_noisefilter,
 		                                         config_calibmode,

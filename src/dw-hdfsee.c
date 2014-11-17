@@ -2554,7 +2554,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	}
 
 	/* Filters need geometry */
-		do_filters(dw);
+	do_filters(dw);
 
 	/* Peak list provided at startup? */
 	if ( peaks != NULL ) {
