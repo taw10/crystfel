@@ -592,7 +592,6 @@ int main(int argc, char *argv[])
 			ERROR("Problem reading input file %s\n", intfile);
 			return 1;
 		}
-		free(intfile);
 
 		if ( grad == GRADIENT_PHASED ) {
 			phases = phases_from_list(reflections);
@@ -683,7 +682,11 @@ int main(int argc, char *argv[])
 		STATUS("                   Crystal size: 8 unit cells along "
 		       "each of a, b and c\n");
 	}
-
+	if ( intfile == NULL ) {
+		STATUS("               Full intensities: all equal");
+	} else {
+		STATUS("               Full intensities: from %s\n", intfile);
+	}
 	do {
 
 		int na, nb, nc;
@@ -874,6 +877,7 @@ skip:
 	}
 
 	free(image.det->panels);
+	free(intfile);
 	free(image.det);
 	free(powder->data);
 	free(powder);
