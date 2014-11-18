@@ -633,23 +633,20 @@ static void write_location(hid_t fh, struct image *image,
 }
 
 
-static void write_photon_energy(hid_t fh, double eV)
+static void write_photon_energy(hid_t fh, double eV, const char *ph_en_loc)
 {
-	hid_t gh, sh, dh;
+	hid_t ph, sh, dh;
 	hsize_t size1d[1];
 	int r;
 
-	gh = H5Gcreate2(fh, "LCLS", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	if ( gh < 0 ) {
-		ERROR("Couldn't create group for photon energy.\n");
-		return;
-	}
+	ph = H5Pcreate(H5P_LINK_CREATE);
+	H5Pset_create_intermediate_group(ph, 1);
 
 	size1d[0] = 1;
 	sh = H5Screate_simple(1, size1d, NULL);
 
-	dh = H5Dcreate2(gh, "photon_energy_eV", H5T_NATIVE_DOUBLE, sh,
-	                H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
+	dh = H5Dcreate2(fh, ph_en_loc, H5T_NATIVE_DOUBLE, sh,
+	                ph, H5S_ALL, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Couldn't create dataset for photon energy.\n");
 		return;
@@ -660,6 +657,7 @@ static void write_photon_energy(hid_t fh, double eV)
 		/* carry on */
 	}
 
+	H5Pclose(ph);
 	H5Dclose(dh);
 }
 
@@ -671,13 +669,10 @@ static void write_spectrum(hid_t fh, struct sample *spectrum, int spectrum_size,
 	double *arr;
 	int i;
 	hsize_t size1d[1];
-	hid_t sh, dh, gh;
+	hid_t sh, dh, ph;
 
-	gh = H5Gopen(fh, "LCLS", H5P_DEFAULT);
-	if ( gh < 0 ) {
-		ERROR("Couldn't open group for photon energy.\n");
-		return;
-	}
+	ph = H5Pcreate(H5P_LINK_CREATE);
+	H5Pset_create_intermediate_group(ph, 1);
 
 	arr = malloc(spectrum_size*sizeof(double));
 	if ( arr == NULL ) {
@@ -691,8 +686,8 @@ static void write_spectrum(hid_t fh, struct sample *spectrum, int spectrum_size,
 	size1d[0] = spectrum_size;
 	sh = H5Screate_simple(1, size1d, NULL);
 
-	dh = H5Dcreate2(gh, "spectrum_wavelengths_A", H5T_NATIVE_DOUBLE,
-	                sh, H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
+	dh = H5Dcreate2(fh, "/spectrum/wavelengths_A", H5T_NATIVE_DOUBLE,
+	                sh, ph, H5S_ALL, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Failed to create dataset for spectrum wavelengths.\n");
 		return;
@@ -709,7 +704,7 @@ static void write_spectrum(hid_t fh, struct sample *spectrum, int spectrum_size,
 		arr[i] = spectrum[i].weight;
 	}
 
-	dh = H5Dcreate2(gh, "spectrum_weights", H5T_NATIVE_DOUBLE, sh,
+	dh = H5Dcreate2(fh, "/spectrum/weights", H5T_NATIVE_DOUBLE, sh,
 		        H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Failed to create dataset for spectrum weights.\n");
@@ -728,8 +723,8 @@ static void write_spectrum(hid_t fh, struct sample *spectrum, int spectrum_size,
 	size1d[0] = 1;
 	sh = H5Screate_simple(1, size1d, NULL);
 
-	dh = H5Dcreate2(gh, "number_of_samples", H5T_NATIVE_INT, sh,
-		        H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
+	dh = H5Dcreate2(fh, "/spectrum/number_of_samples", H5T_NATIVE_INT, sh,
+		        ph, H5S_ALL, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Failed to create dataset for number of spectrum "
 		      "samples.\n");
@@ -744,6 +739,7 @@ static void write_spectrum(hid_t fh, struct sample *spectrum, int spectrum_size,
 	}
 
 	H5Dclose(dh);
+	H5Pclose(ph);
 }
 
 
@@ -754,6 +750,7 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 	char *default_location;
 	struct hdf5_write_location *locations;
 	int num_locations;
+	const char *ph_en_loc;
 
 	if ( image->det == NULL ) {
 		ERROR("Geometry not available\n");
@@ -779,7 +776,12 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 		write_location(fh, image, &locations[li]);
 	}
 
-	write_photon_energy(fh, ph_lambda_to_eV(image->lambda));
+	if ( image->beam->photon_energy_from == NULL ) {
+		ph_en_loc = "photon_energy_eV";
+	} else {
+		ph_en_loc = image->beam->photon_energy_from;
+	}
+	write_photon_energy(fh, ph_lambda_to_eV(image->lambda), ph_en_loc);
 	if ( image->spectrum_size > 0 ) {
 		write_spectrum(fh, image->spectrum, image->spectrum_size,
 		               image->nsamples);

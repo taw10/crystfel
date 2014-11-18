@@ -540,7 +540,8 @@ int main(int argc, char *argv[])
 		ERROR("You need to specify a geometry file with --geometry\n");
 		return 1;
 	}
-	image.det = get_detector_geometry(geometry, &beam);
+	image.beam = &beam;
+	image.det = get_detector_geometry(geometry, image.beam);
 	if ( image.det == NULL ) {
 		ERROR("Failed to read detector geometry from '%s'\n", geometry);
 		return 1;
