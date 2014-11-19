@@ -1084,7 +1084,6 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 	float *buf;
 	int sum_p_h;
 	int p_w;
-	int m_min_fs, curr_ss, m_max_fs;
 	int pi;
 
 	if ( image->det == NULL ) {
@@ -1120,9 +1119,6 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		return 1;
 	}
 
-	m_min_fs = 0;
-	m_max_fs = p_w-1;
-	curr_ss = 0;
 
 	for ( pi=0; pi<image->det->n_panels; pi++ ) {
 
@@ -1230,10 +1226,10 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			return 1;
 		}
 
-		m_offset[0] = curr_ss;
-		m_offset[1] = 0;
-		m_count[0] = p->orig_max_ss - p->orig_min_ss +1;
-		m_count[1] = m_max_fs - m_min_fs +1;
+		m_offset[0] = p->min_ss;
+		m_offset[1] = p->min_fs;
+		m_count[0] = p->max_ss - p->min_ss +1;
+		m_count[1] = p->max_fs - p->min_fs +1;
 		dimsm[0] = sum_p_h;
 		dimsm[1] = p_w;
 		memspace = H5Screate_simple(2, dimsm, NULL);
@@ -1263,12 +1259,6 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			load_mask(f, ev, p->mask, p->name, image, p_w, sum_p_h,
 			          f_offset, f_count, m_offset, m_count);
 		}
-
-		p->min_fs = m_min_fs;
-		p->max_fs = m_max_fs;
-		p->min_ss = curr_ss;
-		p->max_ss = curr_ss + p->h-1;
-		curr_ss += p->h;
 
 		free(f_offset);
 		free(f_count);

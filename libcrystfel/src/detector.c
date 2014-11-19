@@ -919,6 +919,7 @@ struct detector *get_detector_geometry(const char *filename,
 	int reject = 0;
 	int path_dim;
 	int dim_dim;
+	int curr_ss;
 	int x, y, max_fs, max_ss;
 	int dim_reject = 0;
 	int dim_dim_reject = 0;
@@ -1186,7 +1187,15 @@ struct detector *get_detector_geometry(const char *filename,
 
 	det->dim_dim = dim_dim;
 
+	curr_ss = 0;
+
 	for ( i=0; i<det->n_panels; i++ ) {
+
+		if ( det->panels[i].max_fs-det->panels[i].min_fs+1 !=
+			det->panels[0].max_fs-det->panels[0].min_fs+1 ) {
+			ERROR("All panels should have the same fs extent\n");
+			reject = 1;
+		}
 
 		if ( det->panels[i ].min_fs < 0 ) {
 			ERROR("Please specify the minimum FS coordinate for"
@@ -1239,17 +1248,26 @@ struct detector *get_detector_geometry(const char *filename,
 		/* It's not a problem if "no_index" is still zero */
 		/* The default transformation matrix is at least valid */
 
+		det->panels[i].orig_max_fs = det->panels[i].max_fs;
+		det->panels[i].orig_min_fs = det->panels[i].min_fs;
+		det->panels[i].orig_max_ss = det->panels[i].max_ss;
+		det->panels[i].orig_min_ss = det->panels[i].min_ss;
+
+		det->panels[i].w = det->panels[i].max_fs-det->panels[i].min_fs+1;
+		det->panels[i].h = det->panels[i].max_ss-det->panels[i].min_ss+1;
+
+		det->panels[i].min_fs = 0;
+		det->panels[i].max_fs = det->panels[i].w-1;
+		det->panels[i].min_ss = curr_ss;
+		det->panels[i].max_ss = curr_ss+det->panels[i].h-1;
+		curr_ss += det->panels[i].h;
+
 		if ( det->panels[i].max_fs > max_fs ) {
 			max_fs = det->panels[i].max_fs;
 		}
 		if ( det->panels[i].max_ss > max_ss ) {
 			max_ss = det->panels[i].max_ss;
 		}
-
-		det->panels[i].orig_max_fs = det->panels[i].max_fs;
-		det->panels[i].orig_min_fs = det->panels[i].min_fs;
-		det->panels[i].orig_max_ss = det->panels[i].max_ss;
-		det->panels[i].orig_min_ss = det->panels[i].min_ss;
 
 	}
 
