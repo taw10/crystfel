@@ -97,7 +97,7 @@ static int read_peaks(FILE *fh, struct image *image)
 		first = 0;
 		if ( r == 4 ) {
 			image_add_feature(image->features, x, y,
-							  image, intensity, NULL);
+			                  image, intensity, NULL);
 		}
 
 	} while ( rval != NULL );
@@ -250,7 +250,8 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
 
 		r = sscanf(line, "%i %i %i %f %f %f %f %f %f %s",
-		           &h, &k, &l, &intensity, &sigma, &pk, &bg, &fs, &ss, pn);
+		           &h, &k, &l, &intensity, &sigma, &pk, &bg,
+			   &fs, &ss, pn);
 
 		if ( (r != 10) && (!first) ) {
 			reflist_free(out);
@@ -384,7 +385,7 @@ static RefList *read_stream_reflections_2_2(FILE *fh)
 
 	} while ( rval != NULL );
 
-	/* Got read error of some kind before finding PEAK_LIST_END_MARKER */
+	/* Got read error of some kind before finding REFLECTION_END_MARKER */
 	return NULL;
 }
 
