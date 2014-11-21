@@ -836,15 +836,20 @@ IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
 	struct mosflm_private *mp;
 	int need_cell = 0;
 
+	/* Check if cell parameters are needed/provided */
 	if ( *indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
 	if ( *indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
-	if ( *indm & INDEXING_USE_LATTICE_TYPE ) need_cell = 1;
-
 	if ( need_cell && !cell_has_parameters(cell) ) {
 		ERROR("Altering your MOSFLM flags because cell parameters were"
 		      " not provided.\n");
 		*indm &= ~INDEXING_CHECK_CELL_COMBINATIONS;
 		*indm &= ~INDEXING_CHECK_CELL_AXES;
+	}
+
+	/* Check if lattice type information is needed/provided */
+	if ( (*indm & INDEXING_USE_LATTICE_TYPE) && (cell == NULL) ) {
+		ERROR("Altering your MOSFLM flags because lattice type "
+		      "information was not provided.\n");
 		*indm &= ~INDEXING_USE_LATTICE_TYPE;
 	}
 
