@@ -351,11 +351,6 @@ int hdf5_write(const char *filename, const void *data,
 	size[1] = width;
 	sh = H5Screate_simple(2, size, NULL);
 
-	/* Set compression */
-	ph = H5Pcreate(H5P_DATASET_CREATE);
-	H5Pset_chunk(ph, 2, size);
-	H5Pset_deflate(ph, 3);
-
 	dh = H5Dcreate2(gh, "data", type, sh,
 	                H5P_DEFAULT, ph, H5P_DEFAULT);
 	if ( dh < 0 ) {
@@ -539,11 +534,6 @@ static void write_location(hid_t fh, struct image *image,
 	size[0] = loc->max_ss+1;
 	size[1] = loc->max_fs+1;
 	sh = H5Screate_simple(2, size, NULL);
-
-	/* Set compression */
-	ph = H5Pcreate(H5P_DATASET_CREATE);
-	H5Pset_chunk(ph, 2, size);
-	H5Pset_deflate(ph, 3);
 
 	if ( group != NULL ) {
 		dh = H5Dcreate2(gh, object, H5T_NATIVE_FLOAT, sh,
