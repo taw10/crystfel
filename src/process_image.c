@@ -122,6 +122,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	struct image image;
 	int i;
 	int r;
+	int ret;
 	char *rn;
 
 	image.features = NULL;
@@ -252,9 +253,13 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 			        iargs->int_diag_k, iargs->int_diag_l,
 			        results_pipe);
 
-	write_chunk(st, &image, hdfile,
-	            iargs->stream_peaks, iargs->stream_refls,
-	            pargs->filename_p_e->ev);
+	ret = write_chunk(st, &image, hdfile,
+	                  iargs->stream_peaks, iargs->stream_refls,
+	                  pargs->filename_p_e->ev);
+	if ( ret != 0 ) {
+		ERROR("Error writing stream file.\n");
+	}
+
 
 	for ( i=0; i<image.n_crystals; i++ ) {
 		cell_free(crystal_get_cell(image.crystals[i]));

@@ -80,6 +80,8 @@ static int read_peaks(FILE *fh, struct image *image)
 		char line[1024];
 		float x, y, d, intensity;
 		int r;
+		struct panel *p = NULL;
+		int add_x, add_y;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
@@ -96,8 +98,26 @@ static int read_peaks(FILE *fh, struct image *image)
 
 		first = 0;
 		if ( r == 4 ) {
-			image_add_feature(image->features, x, y,
-			                  image, intensity, NULL);
+
+			if ( image->det != NULL ) {
+
+				p = find_orig_panel(image->det, x, y);
+				if ( p == NULL ) {
+					ERROR("Panel not found\n");
+					return 1;
+				}
+
+				add_x = x-p->orig_min_fs+p->min_fs;
+				add_y = y-p->orig_min_ss+p->min_ss;
+
+				image_add_feature(image->features, add_x, add_y,
+				                  image, intensity, NULL);
+
+			} else {
+
+				image_add_feature(image->features, x, y,
+				image, intensity, NULL);
+			}
 		}
 
 	} while ( rval != NULL );
@@ -161,7 +181,7 @@ static int read_peaks_2_3(FILE *fh, struct image *image)
 }
 
 
-static void write_peaks(struct image *image, FILE *ofh)
+static int write_peaks(struct image *image, FILE *ofh)
 {
 	int i;
 
@@ -180,16 +200,40 @@ static void write_peaks(struct image *image, FILE *ofh)
 		r = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
 		q = modulus(r.u, r.v, r.w);
 
-		fprintf(ofh, "%7.2f %7.2f   %10.2f  %10.2f\n",
-			   f->fs, f->ss, q/1.0e9, f->intensity);
+		if ( image->det != NULL ) {
+
+			struct panel *p;
+			double write_fs, write_ss;
+
+			p = find_orig_panel(image->det, f->fs, f->ss);
+			if ( p == NULL ) {
+				ERROR("Panel not found\n");
+				return 1;
+			}
+
+			/* Convert coordinates to match arrangement of panels in HDF5
+			 * file */
+			write_fs = f->fs - p->min_fs + p->orig_min_fs;
+			write_ss = f->ss - p->min_ss + p->orig_min_ss;
+
+			fprintf(ofh, "%7.2f %7.2f   %10.2f  %10.2f\n",
+			        write_fs, write_ss, q/1.0e9, f->intensity);
+
+		} else {
+
+			fprintf(ofh, "%7.2f %7.2f   %10.2f  %10.2f\n",
+			        f->fs, f->ss, q/1.0e9, f->intensity);
+
+		}
 
 	}
 
 	fprintf(ofh, PEAK_LIST_END_MARKER"\n");
+	return 0;
 }
 
 
-static void write_peaks_2_3(struct image *image, FILE *ofh)
+static int write_peaks_2_3(struct image *image, FILE *ofh)
 {
 	int i;
 
@@ -211,6 +255,10 @@ static void write_peaks_2_3(struct image *image, FILE *ofh)
 		q = modulus(r.u, r.v, r.w);
 
 		p = find_panel(image->det, f->fs, f->ss);
+		if ( p == NULL ) {
+			ERROR("Panel not found\n");
+			return 1;
+		}
 
 		/* Convert coordinates to match arrangement of panels in HDF5
 		 * file */
@@ -223,6 +271,7 @@ static void write_peaks_2_3(struct image *image, FILE *ofh)
 	}
 
 	fprintf(ofh, PEAK_LIST_END_MARKER"\n");
+	return 0;
 }
 
 
@@ -285,7 +334,7 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 }
 
 
-static RefList *read_stream_reflections_2_1(FILE *fh)
+static RefList *read_stream_reflections_2_1(FILE *fh, struct detector *det)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -325,7 +374,22 @@ static RefList *read_stream_reflections_2_1(FILE *fh)
 
 			refl = add_refl(out, h, k, l);
 			set_intensity(refl, intensity);
-			set_detector_pos(refl, 0.0, fs, ss);
+
+			if ( det != NULL ) {
+
+				double write_fs, write_ss;
+				struct panel *p;
+
+				p = find_orig_panel(det, fs, ss);
+				write_fs = fs - p->orig_min_fs + p->min_fs;
+				write_ss = ss - p->orig_min_ss + p->min_ss;
+				set_detector_pos(refl, 0.0, write_fs, write_ss);
+
+			} else {
+
+				set_detector_pos(refl, 0.0, fs, ss);
+
+			}
 			set_esd_intensity(refl, sigma);
 			set_redundancy(refl, cts);
 
@@ -341,7 +405,7 @@ static RefList *read_stream_reflections_2_1(FILE *fh)
 }
 
 
-static RefList *read_stream_reflections_2_2(FILE *fh)
+static RefList *read_stream_reflections_2_2(FILE *fh, struct detector *det)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -375,7 +439,23 @@ static RefList *read_stream_reflections_2_2(FILE *fh)
 
 			refl = add_refl(out, h, k, l);
 			set_intensity(refl, intensity);
-			set_detector_pos(refl, 0.0, fs, ss);
+
+			if ( det != NULL ) {
+
+				double write_fs, write_ss;
+				struct panel *p;
+
+				p = find_orig_panel(det, fs, ss);
+				write_fs = fs - p->orig_min_fs + p->min_fs;
+				write_ss = ss - p->orig_min_ss + p->min_ss;
+				set_detector_pos(refl, 0.0, write_fs, write_ss);
+
+			} else {
+
+				set_detector_pos(refl, 0.0, fs, ss);
+
+			}
+
 			set_esd_intensity(refl, sigma);
 			set_redundancy(refl, 1);
 			set_peak(refl, pk);
@@ -390,7 +470,8 @@ static RefList *read_stream_reflections_2_2(FILE *fh)
 }
 
 
-static void write_stream_reflections_2_1(FILE *fh, RefList *list)
+static int write_stream_reflections_2_1(FILE *fh, RefList *list,
+                                        struct image *image)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -426,14 +507,38 @@ static void write_stream_reflections_2_1(FILE *fh, RefList *list)
 			strncpy(phs, "       -", 15);
 		}
 
-		fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f\n",
-			    h, k, l, intensity, phs, esd_i, red,  fs, ss);
+		if ( image->det != NULL ) {
 
+			struct panel *p;
+			double write_fs, write_ss;
+
+			p = find_orig_panel(image->det, fs, ss);
+			if ( p == NULL ) {
+				ERROR("Panel not found\n");
+				return 1;
+			}
+
+			/* Convert coordinates to match arrangement of panels in HDF5
+			 * file */
+			write_fs = fs - p->min_fs + p->orig_min_fs;
+			write_ss = ss - p->min_ss + p->orig_min_ss;
+
+			fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f\n",
+			        h, k, l, intensity, phs, esd_i, red,  write_fs, write_ss);
+
+		} else {
+
+			fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f\n",
+			        h, k, l, intensity, phs, esd_i, red,  fs, ss);
+
+		}
 	}
+	return 0;
 }
 
 
-static void write_stream_reflections_2_2(FILE *fh, RefList *list)
+static int write_stream_reflections_2_2(FILE *fh, RefList *list,
+                                        struct image *image)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -460,16 +565,39 @@ static void write_stream_reflections_2_2(FILE *fh, RefList *list)
 		/* Reflections with redundancy = 0 are not written */
 		if ( get_redundancy(refl) == 0 ) continue;
 
-		fprintf(fh, "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f"
-			    " %6.1f %6.1f\n",
-			    h, k, l, intensity, esd_i, pk, bg, fs, ss);
+		if ( image->det != NULL ) {
 
+			struct panel *p;
+			double write_fs, write_ss;
+
+			p = find_orig_panel(image->det, fs, ss);
+			if ( p == NULL ) {
+				ERROR("Panel not found\n");
+				return 1;
+			}
+
+			/* Convert coordinates to match arrangement of panels in HDF5
+			 * file */
+			write_fs = fs - p->min_fs + p->orig_min_fs;
+			write_ss = ss - p->min_ss + p->orig_min_ss;
+
+			fprintf(fh, "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f"
+			            " %6.1f %6.1f\n",
+			        h, k, l, intensity, esd_i, pk, bg, write_fs, write_ss);
+
+		} else {
+
+			fprintf(fh, "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f"
+			            " %6.1f %6.1f\n",
+			        h, k, l, intensity, esd_i, pk, bg, fs, ss);
+		}
 	}
+	return 0;
 }
 
 
-static void write_stream_reflections_2_3(FILE *fh, RefList *list,
-                                         struct image *image)
+static int write_stream_reflections_2_3(FILE *fh, RefList *list,
+                                        struct image *image)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -499,6 +627,11 @@ static void write_stream_reflections_2_3(FILE *fh, RefList *list,
 		if ( get_redundancy(refl) == 0 ) continue;
 
 		p = find_panel(image->det,fs,ss);
+		if ( p == NULL ) {
+			ERROR("Panel not found\n");
+			return 1;
+		}
+
 		write_fs = fs-p->min_fs+p->orig_min_fs;
 		write_ss = ss-p->min_ss+p->orig_min_ss;
 
@@ -509,6 +642,7 @@ static void write_stream_reflections_2_3(FILE *fh, RefList *list,
                            write_fs, write_ss, p->name);
 
 	}
+	return 0;
 }
 
 
@@ -529,7 +663,7 @@ static int num_integrated_reflections(RefList *list)
 }
 
 
-static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
+static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 {
 	UnitCell *cell;
 	RefList *reflist;
@@ -538,6 +672,7 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 	double csx, csy, csz;
 	double a, b, c, al, be, ga;
 	double rad;
+	int ret = 0;
 
 	fprintf(st->fh, CRYSTAL_START_MARKER"\n");
 
@@ -589,16 +724,20 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 
 		if ( reflist != NULL ) {
 
+			struct image *image;
+
+			image = crystal_get_image(cr);
+
 			fprintf(st->fh, REFLECTION_START_MARKER"\n");
 			if ( AT_LEAST_VERSION(st, 2, 3) ) {
-				write_stream_reflections_2_3(st->fh, reflist,
-				crystal_get_image(cr));
+				ret = write_stream_reflections_2_3(st->fh, reflist,
+				                                   image);
 			} else if ( AT_LEAST_VERSION(st, 2, 2) ) {
-				write_stream_reflections_2_2(st->fh, reflist);
+				ret = write_stream_reflections_2_2(st->fh, reflist, image);
 			} else {
 				/* This function writes like a normal reflection
 				 * list was written in stream 2.1 */
-				write_stream_reflections_2_1(st->fh, reflist);
+				ret = write_stream_reflections_2_1(st->fh, reflist, image);
 			}
 			fprintf(st->fh, REFLECTION_END_MARKER"\n");
 
@@ -610,14 +749,17 @@ static void write_crystal(Stream *st, Crystal *cr, int include_reflections)
 	}
 
 	fprintf(st->fh, CRYSTAL_END_MARKER"\n");
+
+	return ret;
 }
 
 
-void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
-                 int include_peaks, int include_reflections, struct event* ev)
+int write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
+                int include_peaks, int include_reflections, struct event* ev)
 {
 	int j;
 	char *indexer;
+	int ret = 0;
 
 	fprintf(st->fh, CHUNK_START_MARKER"\n");
 
@@ -679,19 +821,21 @@ void write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 	fprintf(st->fh, "num_saturated_peaks = %lli\n", i->num_saturated_peaks);
 	if ( include_peaks ) {
 		if ( AT_LEAST_VERSION(st, 2, 3) ) {
-			write_peaks_2_3(i, st->fh);
+			ret = write_peaks_2_3(i, st->fh);
 		} else {
-			write_peaks(i, st->fh);
+			ret = write_peaks(i, st->fh);
 		}
 	}
 
 	for ( j=0; j<i->n_crystals; j++ ) {
-		write_crystal(st, i->crystals[j], include_reflections);
+		ret = write_crystal(st, i->crystals[j], include_reflections);
 	}
 
 	fprintf(st->fh, CHUNK_END_MARKER"\n");
 
 	fflush(st->fh);
+
+	return ret;
 }
 
 
@@ -832,11 +976,11 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 			 * after 2.2 */
 			if ( AT_LEAST_VERSION(st, 2, 3) ) {
 				reflist = read_stream_reflections_2_3(st->fh,
-				                                    image->det);
+                                                      image->det);
 			} else if ( AT_LEAST_VERSION(st, 2, 2) ) {
-				reflist = read_stream_reflections_2_2(st->fh);
+				reflist = read_stream_reflections_2_2(st->fh, image->det);
 			} else {
-				reflist = read_stream_reflections_2_1(st->fh);
+				reflist = read_stream_reflections_2_1(st->fh, image->det);
 			}
 			if ( reflist == NULL ) {
 				ERROR("Failed while reading reflections\n");

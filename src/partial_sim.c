@@ -390,8 +390,12 @@ static void finalise_job(void *vqargs, void *vwargs)
 	struct worker_args *wargs = vwargs;
 	struct queue_args *qargs = vqargs;
 	int i;
+	int ret;
 
-	write_chunk(qargs->stream, &wargs->image, NULL, 0, 1, NULL);
+	ret = write_chunk(qargs->stream, &wargs->image, NULL, 0, 1, NULL);
+	if ( ret != 0) {
+		ERROR("Warning: error writing stream file.\n");
+	}
 
 	for ( i=0; i<NBINS; i++ ) {
 		qargs->n_ref[i] += wargs->n_ref[i];

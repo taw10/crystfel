@@ -91,10 +91,12 @@ extern int get_stream_fd(Stream *st);
 extern void close_stream(Stream *st);
 
 extern int read_chunk(Stream *st, struct image *image);
-extern int read_chunk_2(Stream *st, struct image *image, StreamReadFlags srf);
-extern void write_chunk(Stream *st, struct image *image, struct hdfile *hdfile,
-                        int include_peaks, int include_reflections,
-                        struct event *ev);
+extern int read_chunk_2(Stream *st, struct image *image,
+                           StreamReadFlags srf);
+
+extern int write_chunk(Stream *st, struct image *image, struct hdfile *hdfile,
+                       int include_peaks, int include_reflections,
+                       struct event *ev);
 
 extern void write_command(Stream *st, int argc, char *argv[]);
 extern void write_geometry_file(Stream *st, const char *geom_filename);
