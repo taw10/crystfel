@@ -518,18 +518,22 @@ static int write_stream_reflections_2_1(FILE *fh, RefList *list,
 				return 1;
 			}
 
-			/* Convert coordinates to match arrangement of panels in HDF5
-			 * file */
+			/* Convert coordinates to match arrangement of panels
+			 * in HDF5 file */
 			write_fs = fs - p->min_fs + p->orig_min_fs;
 			write_ss = ss - p->min_ss + p->orig_min_ss;
 
-			fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f\n",
-			        h, k, l, intensity, phs, esd_i, red,  write_fs, write_ss);
+			fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %7i "
+			            "%6.1f %6.1f\n",
+			             h, k, l, intensity, phs, esd_i, red,
+				     write_fs, write_ss);
 
 		} else {
 
-			fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %7i %6.1f %6.1f\n",
-			        h, k, l, intensity, phs, esd_i, red,  fs, ss);
+			fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %7i "
+			            "%6.1f %6.1f\n",
+			            h, k, l, intensity, phs, esd_i, red,
+				    fs, ss);
 
 		}
 	}
