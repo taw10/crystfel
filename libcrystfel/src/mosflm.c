@@ -858,15 +858,16 @@ IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
 	       | INDEXING_CHECK_CELL_AXES | INDEXING_CHECK_PEAKS
 	       | INDEXING_USE_LATTICE_TYPE;
 
-	if ( *indm & INDEXING_USE_LATTICE_TYPE ) {
-		if ( !((*indm & INDEXING_CHECK_CELL_COMBINATIONS)
-		    || (*indm & INDEXING_CHECK_CELL_AXES)) ) {
-			ERROR("WARNING: The unit cell from %s might have had "
-			      "its axes permuted from the unit cell you gave.\n"
-			      "If this is a problem, consider using "
-			      "mosflm-axes-latt or mosflm-comb-latt instead of "
-			      "mosflm-raw-latt.\n", indexer_str(*indm));
-		}
+	if ( (*indm & INDEXING_USE_LATTICE_TYPE)
+	   && !((*indm & INDEXING_CHECK_CELL_COMBINATIONS)
+	       || (*indm & INDEXING_CHECK_CELL_AXES))
+	   && cell_has_parameters(cell) )
+	{
+		ERROR("WARNING: The unit cell from %s might have had "
+		      "its axes permuted from the unit cell you gave.\n"
+		      "If this is a problem, consider using "
+		      "mosflm-axes-latt or mosflm-comb-latt instead of "
+		      "mosflm-raw-latt.\n", indexer_str(*indm));
 
 	}
 
