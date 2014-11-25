@@ -327,8 +327,7 @@ void hdfile_close(struct hdfile *f)
 int hdf5_write(const char *filename, const void *data,
                int width, int height, int type)
 {
-	hid_t fh, gh, sh, dh;	/* File, group, dataspace and data handles */
-	hid_t ph;  /* Property list */
+	hid_t fh, gh, sh, dh;  /* File, group, dataspace and data handles */
 	herr_t r;
 	hsize_t size[2];
 
@@ -352,7 +351,7 @@ int hdf5_write(const char *filename, const void *data,
 	sh = H5Screate_simple(2, size, NULL);
 
 	dh = H5Dcreate2(gh, "data", type, sh,
-	                H5P_DEFAULT, ph, H5P_DEFAULT);
+	                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Couldn't create dataset\n");
 		H5Fclose(fh);
@@ -372,7 +371,6 @@ int hdf5_write(const char *filename, const void *data,
 	}
 	H5Dclose(dh);
 	H5Gclose(gh);
-	H5Pclose(ph);
 	H5Fclose(fh);
 
 	return 0;
@@ -491,43 +489,9 @@ static void write_location(hid_t fh, struct image *image,
 	hid_t gh, sh, dh, ph;
 	hid_t dh_dataspace;
 	hsize_t size[2];
-	const char *path;
 	int pi;
 	char *group =  NULL;
 	char *object = NULL;
-
-	path = loc->location;
-	if ( split_group_and_object(path, &group, &object) ) {
-		ERROR("Error while determining write locations.\n");
-		return;
-	}
-
-	if ( group != NULL ) {
-
-		htri_t exists;
-		hid_t gph = H5Pcreate(H5P_LINK_CREATE);
-		H5Pset_create_intermediate_group(gph, 1);
-
-		exists = H5Lexists(fh, group, H5P_DEFAULT);
-
-		if ( !exists ) {
-
-			gh = H5Gcreate2(fh, group, gph, H5P_DEFAULT,
-			                H5P_DEFAULT);
-			H5Pclose(gph);
-			if ( gh < 0 ) {
-				ERROR("Couldn't create group\n");
-				H5Fclose(fh);
-				return;
-			}
-
-		} else {
-			gh = H5Gopen2(fh, group, H5P_DEFAULT);
-		}
-
-	} else {
-		gh = -1;
-	}
 
 	/* Note the "swap" here, according to section 3.2.5,
 	 * "C versus Fortran Dataspaces", of the HDF5 user's guide. */
@@ -535,12 +499,15 @@ static void write_location(hid_t fh, struct image *image,
 	size[1] = loc->max_fs+1;
 	sh = H5Screate_simple(2, size, NULL);
 
+	ph = H5Pcreate(H5P_LINK_CREATE);
+	H5Pset_create_intermediate_group(ph, 1);
+
 	if ( group != NULL ) {
 		dh = H5Dcreate2(gh, object, H5T_NATIVE_FLOAT, sh,
-		                H5P_DEFAULT, ph, H5P_DEFAULT);
+		                ph, H5P_DEFAULT, H5P_DEFAULT);
 	} else {
 		dh = H5Dcreate2(fh, object, H5T_NATIVE_FLOAT, sh,
-		                H5P_DEFAULT, ph, H5P_DEFAULT);
+		                ph, H5P_DEFAULT, H5P_DEFAULT);
 	}
 
 	if ( dh < 0 ) {
@@ -579,7 +546,6 @@ static void write_location(hid_t fh, struct image *image,
 			H5Dclose(dh);
 			H5Sclose(dh_dataspace);
 			H5Sclose(sh);
-			if ( gh != -1 ) H5Gclose(gh);
 			H5Fclose(fh);
 			return;
 		}
@@ -605,7 +571,6 @@ static void write_location(hid_t fh, struct image *image,
 			H5Sclose(dh_dataspace);
 			H5Sclose(sh);
 			H5Sclose(memspace);
-			if ( gh != -1 ) H5Gclose(gh);
 			H5Fclose(fh);
 			return;
 		}
@@ -619,7 +584,6 @@ static void write_location(hid_t fh, struct image *image,
 	H5Pclose(ph);
 	H5Sclose(sh);
 	H5Dclose(dh);
-	if ( gh != -1 ) H5Gclose(gh);
 }
 
 
