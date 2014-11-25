@@ -248,6 +248,11 @@ void index_pattern(struct image *image,
 
 	if ( indms == NULL ) return;
 
+	if ( image_feature_count(image->features) > 10000 ) {
+		STATUS("WARNING: The number of peaks is very large for '%s'.\n",
+		       image->filename);
+	}
+
 	map_all_peaks(image);
 	image->crystals = NULL;
 	image->n_crystals = 0;
