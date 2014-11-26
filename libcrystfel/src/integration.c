@@ -1814,27 +1814,6 @@ static void integrate_rings(IntegrationMethod meth,
 }
 
 
-static void apply_resolution_cutoff(Crystal *cr, double res)
-{
-	Reflection *refl;
-	RefListIterator *iter;
-	UnitCell *cell;
-
-	cell = crystal_get_cell(cr);
-
-	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		signed int h, k, l;
-		get_indices(refl, &h, &k, &l);
-		if ( 2.0*resolution(cell, h, k, l) > res ) {
-			set_redundancy(refl, 0);
-		}
-	}
-}
-
-
 void integrate_all_4(struct image *image, IntegrationMethod meth,
                      PartialityModel pmodel, double push_res,
                      double ir_inn, double ir_mid, double ir_out,
@@ -1845,11 +1824,22 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 	int i;
 	int *masks[image->det->n_panels];
 
+	if ( !(meth & INTEGRATION_RESCUT) ) push_res = +INFINITY;
+
 	/* Predict all reflections */
 	for ( i=0; i<image->n_crystals; i++ ) {
+
 		RefList *list;
-		list = find_intersections(image, image->crystals[i], pmodel);
+		double res;
+
+		res = estimate_resolution(crystal_get_cell(image->crystals[i]),
+		                          image->features);
+		crystal_set_resolution_limit(image->crystals[i], res);
+
+		list = find_intersections_to_res(image, image->crystals[i],
+		                                 pmodel, res+push_res);
 		crystal_set_reflections(image->crystals[i], list);
+
 	}
 
 	for ( i=0; i<image->det->n_panels; i++ ) {
@@ -1858,7 +1848,6 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 
 	for ( i=0; i<image->n_crystals; i++ ) {
 
-		double res = INFINITY;
 		Crystal *cr = image->crystals[i];
 
 		switch ( meth & INTEGRATION_METHOD_MASK ) {
@@ -1871,8 +1860,6 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 			                int_diag, idh, idk, idl,
 			                ir_inn, ir_mid, ir_out,
 			                results_pipe, masks);
-			res = estimate_resolution(crystal_get_cell(cr),
-			                          image->features);
 			break;
 
 			case INTEGRATION_PROF2D :
@@ -1880,19 +1867,12 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 			                 int_diag, idh, idk, idl,
 			                 ir_inn, ir_mid, ir_out,
 			                 results_pipe, masks);
-			res = estimate_resolution(crystal_get_cell(cr),
-			                          image->features);
 			break;
 
 			default :
 			ERROR("Unrecognised integration method %i\n", meth);
 			break;
 
-		}
-
-		crystal_set_resolution_limit(cr, res);
-		if ( meth & INTEGRATION_RESCUT ) {
-			apply_resolution_cutoff(cr, res+push_res);
 		}
 
 	}
