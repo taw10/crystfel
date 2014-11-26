@@ -861,7 +861,10 @@ IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
 	if ( (*indm & INDEXING_USE_LATTICE_TYPE)
 	   && !((*indm & INDEXING_CHECK_CELL_COMBINATIONS)
 	       || (*indm & INDEXING_CHECK_CELL_AXES))
-	   && cell_has_parameters(cell) )
+	   && (cell_has_parameters(cell)
+	       || (cell_get_unique_axis(cell) == 'a')
+	       || (cell_get_unique_axis(cell) == 'b')
+	       || (cell_get_unique_axis(cell) == 'c')) )
 	{
 		ERROR("WARNING: The unit cell from %s might have had "
 		      "its axes permuted from the unit cell you gave.\n"

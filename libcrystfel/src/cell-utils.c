@@ -149,6 +149,22 @@ static int check_centering(char cen)
 }
 
 
+static int check_unique_axis(char ua)
+{
+	switch ( ua ) {
+
+		case 'a' :
+		case 'b' :
+		case 'c' :
+		return 0;
+
+		default:
+		return 1;
+
+	}
+}
+
+
 int right_handed(UnitCell *cell)
 {
 	double asx, asy, asz;
@@ -1276,6 +1292,14 @@ UnitCell *load_cell_from_file(const char *filename)
 				ERROR("Unrecognised centering '%c'\n", cen);
 			}
 
+		} else if ( strcmp(bits[0], "unique_axis") == 0 ) {
+			char ua = bits[2][0];
+			if ( !check_unique_axis(ua) ) {
+				cell_set_unique_axis(cell, ua);
+			} else {
+				ERROR("Unrecognised unique axis '%c'\n", ua);
+			}
+
 		} else if ( strcmp(bits[0], "a") == 0 ) {
 			if ( !get_length_m(bits, n1, &a) ) {
 				have_a = 1;
@@ -1318,6 +1342,41 @@ UnitCell *load_cell_from_file(const char *filename)
 	if ( have_a && have_b && have_c && have_al && have_be && have_ga ) {
 		cell_set_parameters(cell, a, b, c, al, be, ga);
 	}
+
+	switch ( cell_get_lattice_type(cell) ) {
+
+		case L_TRICLINIC :
+		case L_ORTHORHOMBIC :
+		case L_CUBIC :
+		case L_RHOMBOHEDRAL :
+		if ( (cell_get_unique_axis(cell) != '?')
+		  && (cell_get_unique_axis(cell) != '*') ) {
+			ERROR("WARNING: Unique axis '%c' doesn't make sense "
+			      "for lattice type %s.\n",
+			      cell_get_unique_axis(cell),
+			      str_lattice(cell_get_lattice_type(cell)));
+		}
+		break;
+
+		case L_MONOCLINIC :
+		case L_TETRAGONAL :
+		case L_HEXAGONAL :
+		if ( (cell_get_unique_axis(cell) == '?')
+		  || (cell_get_unique_axis(cell) == '*') ) {
+			ERROR("You must specify the unique axis for lattice "
+			      "type %s.\n",
+			      str_lattice(cell_get_lattice_type(cell)));
+			return NULL;
+		}
+		break;
+
+		default :
+		ERROR("Unrecognised lattice type %i\n",
+		      cell_get_lattice_type(cell));
+		break;
+	}
+
+	validate_cell(cell);
 
 	return cell;
 }
@@ -1438,7 +1497,7 @@ int validate_cell(UnitCell *cell)
 	int err = 0;
 	char cen, ua;
 
-	if ( !cell_is_sensible(cell) ) {
+	if ( cell_has_parameters(cell) && !cell_is_sensible(cell) ) {
 		ERROR("WARNING: Unit cell parameters are not sensible.\n");
 		err = 1;
 	}
@@ -1449,7 +1508,7 @@ int validate_cell(UnitCell *cell)
 		err = 1;
 	}
 
-	if ( !right_handed(cell) ) {
+	if ( cell_has_parameters(cell) && !right_handed(cell) ) {
 		ERROR("WARNING: Unit cell is not right handed.\n");
 		err = 1;
 	}
