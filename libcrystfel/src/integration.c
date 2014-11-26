@@ -358,8 +358,11 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
 
 	get_indices(bx->refl, &h, &k, &l);
 	get_detector_pos(bx->refl, &fs, &ss);
-	printw("Indices %i %i %i\nPosition fs = %.1f, ss = %.1f\n\n",
-	       h, k, l, fs, ss);
+	/* Convert coordinates to match arrangement of panels in HDF5 file */
+	fs = fs - bx->p->min_fs + bx->p->orig_min_fs;
+	ss = ss - bx->p->min_ss + bx->p->orig_min_ss;
+	printw("Indices %i %i %i\nPanel %s\nPosition fs = %.1f, ss = %.1f\n\n",
+	       h, k, l, bx->p->name, fs, ss);
 
 	printw("Pixel values:\n");
 	for ( q=ic->w-1; q>=0; q-- ) {
