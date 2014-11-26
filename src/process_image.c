@@ -260,7 +260,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		ERROR("Error writing stream file.\n");
 	}
 
-
 	for ( i=0; i<image.n_crystals; i++ ) {
 		cell_free(crystal_get_cell(image.crystals[i]));
 		reflist_free(crystal_get_reflections(image.crystals[i]));
