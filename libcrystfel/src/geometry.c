@@ -268,6 +268,13 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 RefList *find_intersections(struct image *image, Crystal *cryst,
                             PartialityModel pmodel)
 {
+	return find_intersections_to_res(image, cryst, pmodel, INFINITY);
+}
+
+
+RefList *find_intersections_to_res(struct image *image, Crystal *cryst,
+                                   PartialityModel pmodel, double max_res)
+{
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
@@ -296,6 +303,7 @@ RefList *find_intersections(struct image *image, Crystal *cryst,
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
 	mres = largest_q(image);
+	if ( mres > max_res ) mres = max_res;
 
 	hmax = mres * modulus(ax, ay, az);
 	kmax = mres * modulus(bx, by, bz);
@@ -322,6 +330,7 @@ RefList *find_intersections(struct image *image, Crystal *cryst,
 		double xl, yl, zl;
 
 		if ( forbidden_reflection(cell, h, k, l) ) continue;
+		if ( 2.0*resolution(cell, h, k, l) > max_res ) continue;
 
 		/* Get the coordinates of the reciprocal lattice point */
 		xl = h*asx + k*bsx + l*csx;
