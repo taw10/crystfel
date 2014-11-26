@@ -486,12 +486,10 @@ static struct hdf5_write_location *make_location_list(struct detector *det,
 static void write_location(hid_t fh, struct image *image,
                            struct hdf5_write_location *loc)
 {
-	hid_t gh, sh, dh, ph;
+	hid_t sh, dh, ph;
 	hid_t dh_dataspace;
 	hsize_t size[2];
 	int pi;
-	char *group =  NULL;
-	char *object = NULL;
 
 	/* Note the "swap" here, according to section 3.2.5,
 	 * "C versus Fortran Dataspaces", of the HDF5 user's guide. */
@@ -502,14 +500,8 @@ static void write_location(hid_t fh, struct image *image,
 	ph = H5Pcreate(H5P_LINK_CREATE);
 	H5Pset_create_intermediate_group(ph, 1);
 
-	if ( group != NULL ) {
-		dh = H5Dcreate2(gh, object, H5T_NATIVE_FLOAT, sh,
-		                ph, H5P_DEFAULT, H5P_DEFAULT);
-	} else {
-		dh = H5Dcreate2(fh, object, H5T_NATIVE_FLOAT, sh,
-		                ph, H5P_DEFAULT, H5P_DEFAULT);
-	}
-
+	dh = H5Dcreate2(fh, loc->location, H5T_NATIVE_FLOAT, sh,
+	                ph, H5P_DEFAULT, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Couldn't create dataset\n");
 		H5Fclose(fh);
@@ -540,8 +532,6 @@ static void write_location(hid_t fh, struct image *image,
 		if ( r < 0 ) {
 			ERROR("Error selecting file dataspace "
 			      "for panel %s\n", p.name);
-			free(group);
-			free(object);
 			H5Pclose(ph);
 			H5Dclose(dh);
 			H5Sclose(dh_dataspace);
@@ -564,8 +554,6 @@ static void write_location(hid_t fh, struct image *image,
 		             dh_dataspace, H5P_DEFAULT, image->data);
 		if ( r < 0 ) {
 			ERROR("Couldn't write data\n");
-			free(group);
-			free(object);
 			H5Pclose(ph);
 			H5Dclose(dh);
 			H5Sclose(dh_dataspace);
@@ -578,9 +566,6 @@ static void write_location(hid_t fh, struct image *image,
 		H5Sclose(dh_dataspace);
 		H5Sclose(memspace);
 	}
-
-	free(group);
-	free(object);
 	H5Pclose(ph);
 	H5Sclose(sh);
 	H5Dclose(dh);
