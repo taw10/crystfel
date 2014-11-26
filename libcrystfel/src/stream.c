@@ -713,7 +713,7 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 		fprintf(st->fh, "diffraction_resolution_limit"
 				" = %.2f nm^-1 or %.2f A\n",
 				crystal_get_resolution_limit(cr)/1e9,
-				1e9 / crystal_get_resolution_limit(cr));
+				1e10 / crystal_get_resolution_limit(cr));
 
 		fprintf(st->fh, "num_reflections = %i\n",
 		                num_integrated_reflections(reflist));
