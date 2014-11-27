@@ -1633,9 +1633,10 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	sig2_poisson = aduph * intensity;
 
 	/* If intensity is within one photon of nothing, set the Poisson
-	 * error to be one photon */
+	 * error to be one photon.  Pretend I = 1 photon = 1*aduph,
+	 * then sig2_posson = aduph*intensity = aduph^2. */
 	if ( fabs(intensity / aduph) < 1.0 ) {
-		sig2_poisson = aduph;
+		sig2_poisson = aduph * aduph;
 	}
 
 	/* If intensity is negative by more than one photon, assume that
