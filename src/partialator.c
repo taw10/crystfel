@@ -74,6 +74,7 @@ static void show_help(const char *s)
 "  -m, --model=<model>        Specify partiality model.\n"
 "      --min-measurements=<n> Minimum number of measurements to require.\n"
 "      --no-polarisation      Disable polarisation correction.\n"
+"      --max-adu=<n>          Saturation value of detector.\n"
 "  -j <n>                     Run <n> analyses in parallel.\n");
 }
 
@@ -199,6 +200,31 @@ static const char *str_flags(Crystal *cr)
 }
 
 
+static RefList *apply_max_adu(RefList *list, double max_adu)
+{
+	RefList *nlist;
+	Reflection *refl;
+	RefListIterator *iter;
+
+	nlist = reflist_new();
+	if ( nlist == NULL ) return NULL;
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		if ( get_peak(refl) < max_adu ) {
+			signed int h, k, l;
+			get_indices(refl, &h, &k, &l);
+			Reflection *nrefl = add_refl(nlist, h, k, l);
+			copy_data(nrefl, refl);
+		}
+	}
+	reflist_free(list);
+	return nlist;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -224,12 +250,13 @@ int main(int argc, char *argv[])
 	char *rval;
 	struct srdata srdata;
 	int polarisation = 1;
+	double max_adu = +INFINITY;
 
 	/* Long options */
 	const struct option longopts[] = {
 
 		{"help",               0, NULL,               'h'},
-		{"version",            0, NULL,                3 },
+		{"version",            0, NULL,               'v'},
 		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
 		{"symmetry",           1, NULL,               'y'},
@@ -238,6 +265,7 @@ int main(int argc, char *argv[])
 		{"model",              1, NULL,               'm'},
 
 		{"min-measurements",   1, NULL,                2},
+		{"max-adu",            1, NULL,                3},
 
 		{"no-scale",           0, &noscale,            1},
 		{"no-polarisation",    0, &polarisation,       0},
@@ -265,7 +293,7 @@ int main(int argc, char *argv[])
 			show_help(argv[0]);
 			return 0;
 
-			case 3 :
+			case 'v' :
 			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
 			printf(CRYSTFEL_BOILERPLATE"\n");
 			return 0;
@@ -299,6 +327,15 @@ int main(int argc, char *argv[])
 			min_measurements = strtod(optarg, &rval);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid value for --min-measurements.\n");
+				return 1;
+			}
+			break;
+
+			case 3 :
+			errno = 0;
+			max_adu = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --max-adu.\n");
 				return 1;
 			}
 			break;
@@ -414,6 +451,8 @@ int main(int argc, char *argv[])
 
 			/* This is the raw list of reflections */
 			cr_refl = crystal_get_reflections(cr);
+
+			cr_refl = apply_max_adu(cr_refl, max_adu);
 
 			if ( polarisation ) {
 				polarisation_correction(cr_refl,
