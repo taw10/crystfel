@@ -106,7 +106,7 @@ struct hdfile *hdfile_open(const char *filename)
 	if ( f == NULL ) return NULL;
 
 	if ( access( filename, R_OK ) == -1 ) {
-		ERROR("File does not exists or it cannot be read: %s\n",
+		ERROR("File does not exist or cannot be read: %s\n",
 		      filename);
 		free(f);
 		return NULL;
