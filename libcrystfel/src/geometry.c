@@ -219,14 +219,6 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	cez = -cos(del/2.0) * klow;
 	rlow = klow - distance(cet, cez, tl, zl);  /* Loss of precision */
 
-	if ( unlikely(rlow < rhigh) ) {
-		ERROR("Reflection with rlow < rhigh!\n");
-		ERROR("%3i %3i %3i  rlow = %e, rhigh = %e\n",
-		      h, k, l, rlow, rhigh);
-		ERROR("div + m = %e, R = %e, bw = %e\n", del, pr, image->bw);
-		return NULL;
-	}
-
 	/* Condition for reflection to be excited at all */
 	if ( (signbit(rlow) == signbit(rhigh))
 	     && (fabs(rlow) > pr)
@@ -250,6 +242,15 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 			return NULL;
 		}
 		set_detector_pos(refl, 0.0, xda, yda);
+	}
+
+	if ( unlikely(rlow < rhigh) ) {
+		ERROR("Reflection with rlow < rhigh!\n");
+		ERROR("%3i %3i %3i  rlow = %e, rhigh = %e\n",
+		      h, k, l, rlow, rhigh);
+		ERROR("div + m = %e, R = %e, bw = %e\n", del, pr, image->bw);
+		reflection_free(refl);
+		return NULL;
 	}
 
 	set_partial(refl, rlow, rhigh, part);
