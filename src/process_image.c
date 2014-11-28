@@ -260,6 +260,15 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		ERROR("Error writing stream file.\n");
 	}
 
+	int n = 0;
+	for ( i=0; i<image.n_crystals; i++ ) {
+		n += crystal_get_num_implausible_reflections(image.crystals[i]);
+	}
+	if ( n > 0 ) {
+		STATUS("Warning: %i implausibly negative reflection%s in %s.\n",
+		       n, n>1?"s":"", image.filename);
+	}
+
 	for ( i=0; i<image.n_crystals; i++ ) {
 		cell_free(crystal_get_cell(image.crystals[i]));
 		reflist_free(crystal_get_reflections(image.crystals[i]));
