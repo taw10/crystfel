@@ -209,9 +209,6 @@ extern void fill_in_values(struct detector *det, struct hdfile *f,
 
 extern struct detector *copy_geom(const struct detector *in);
 
-extern void twod_mapping(double fs, double ss, double *px, double *py,
-                         struct panel *p);
-
 extern int reverse_2d_mapping(double x, double y, double *pfs, double *pss,
                               struct detector *det);
 
