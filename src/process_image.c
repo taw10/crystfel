@@ -238,8 +238,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	 * overlaps can be detected. */
 	integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE, iargs->push_res,
 	                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
-	                iargs->int_diag, iargs->int_diag_h,
-	                iargs->int_diag_k, iargs->int_diag_l, results_pipe);
+	                INTDIAG_NONE, 0, 0, 0, results_pipe);
 
 	for ( i=0; i<image.n_crystals; i++ ) {
 		refine_radius(image.crystals[i]);
