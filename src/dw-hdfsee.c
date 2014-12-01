@@ -1190,6 +1190,9 @@ static int save_geometry_file(DisplayWindow *dw)
 	output_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER (d));
 	w = write_detector_geometry(dw->geom_filename, output_filename,
 	                            dw->image->det);
+	if ( w != 0 ) {
+		ERROR("Error saving geometry!\n");
+	}
 	gtk_widget_destroy(d);
 	g_free(output_filename);
 	return w;
@@ -2481,7 +2484,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	dw->multi_event = 0;
 	dw->curr_event = 0;
 	dw->ev_list = NULL;
-	if ( dw->geom_filename != NULL ) {
+	if ( geom_filename != NULL ) {
 		dw->geom_filename = strdup(geom_filename);
 	} else {
 		dw->geom_filename = NULL;
