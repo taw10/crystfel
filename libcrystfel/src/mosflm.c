@@ -200,18 +200,18 @@ static int check_cell(struct mosflm_private *mp, struct image *image,
 static void mosflm_parseline(const char *line, struct image *image,
                              struct mosflm_data *dirax)
 {
-	#if MOSFLM_VERBOSE
-	char *copy;
-	int i;
+	if ( MOSFLM_VERBOSE || (strncmp(line, "Invocation:", 11) == 0) ) {
+		char *copy;
+		int i;
 
-	copy = strdup(line);
-	for ( i=0; i<strlen(copy); i++ ) {
-		if ( copy[i] == '\r' ) copy[i]='r';
-		if ( copy[i] == '\n' ) copy[i]='\0';
+		copy = strdup(line);
+		for ( i=0; i<strlen(copy); i++ ) {
+			if ( copy[i] == '\r' ) copy[i]='r';
+			if ( copy[i] == '\n' ) copy[i]='\0';
+		}
+		STATUS("MOSFLM: %s\n", copy);
+		free(copy);
 	}
-	STATUS("MOSFLM: %s\n", copy);
-	free(copy);
-	#endif
 }
 
 
@@ -754,7 +754,8 @@ int run_mosflm(struct image *image, IndexingPrivate *ipriv)
 		tcsetattr(STDIN_FILENO, TCSANOW, &t);
 
 		execlp("ipmosflm", "", (char *)NULL);
-		ERROR("Failed to invoke MOSFLM.\n");
+		ERROR("Invocation: Failed to invoke MOSFLM: %s\n",
+		      strerror(errno));
 		_exit(0);
 
 	}
