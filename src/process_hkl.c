@@ -427,12 +427,15 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 
 			n_crystals_seen++;
 			if ( (n_crystals_seen > start_after)
-			    && (crystal_get_resolution_limit(cr) >= min_res) ) {
+			  && (crystal_get_resolution_limit(cr) >= min_res) )
+			{
 				n_crystals++;
-				r = merge_crystal(model, &image, cr, reference, sym,
-				                  hist_vals, hist_h, hist_k, hist_l,
-				                  hist_i, config_nopolar, min_snr,
-				                  max_adu, push_res, min_cc, do_scale, stat);
+				r = merge_crystal(model, &image, cr, reference,
+				                  sym, hist_vals,
+						  hist_h, hist_k, hist_l,
+				                  hist_i, config_nopolar,
+						  min_snr, max_adu, push_res,
+						  min_cc, do_scale, stat);
 				if ( r == 0 ) n_crystals_used++;
 			}
 
