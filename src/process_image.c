@@ -81,12 +81,16 @@ static void refine_radius(Crystal *cr)
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		double i = get_intensity(refl);
 		double rlow, rhigh, p;
+		int val = 0;
+
+		if ( get_intensity(refl) > 9.0*get_esd_intensity(refl) ) {
+			val = 1;
+		}
 
 		get_partial(refl, &rlow, &rhigh, &p);
 
-		vals[(2*n)+0] = i;
+		vals[(2*n)+0] = val;
 		vals[(2*n)+1] = fabs((rhigh+rlow)/2.0);
 		n++;
 
@@ -95,16 +99,21 @@ static void refine_radius(Crystal *cr)
 	/* Sort in ascending order of absolute "deviation from Bragg" */
 	qsort(vals, n, sizeof(double)*2, cmpd2);
 
-	/* Add up all the intensity and calculate cumulative intensity as a
-	 * function of absolute "deviation from Bragg" */
+	/* Calculate cumulative number of very strong reflections as a function
+	 * of absolute deviation from Bragg */
 	for ( i=0; i<n-1; i++ ) {
 		ti += vals[2*i];
 		vals[2*i] = ti;
 	}
 
-	/* Find the cutoff where we get 67% of the intensity */
+	if ( ti < 10 ) {
+		ERROR("WARNING: Not enough strong reflections to estimate "
+		      "crystal parameters.\n");
+	}
+
+	/* Find the cutoff where we get 90% of the strong spots */
 	for ( i=0; i<n-1; i++ ) {
-		if ( vals[2*i] > 0.67*ti ) break;
+		if ( vals[2*i] > 0.90*ti ) break;
 	}
 
 	crystal_set_profile_radius(cr, fabs(vals[2*i+1]));
