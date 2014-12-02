@@ -1904,11 +1904,17 @@ static gint displaywindow_newevent(GtkMenuItem *item, struct newev *ne)
 {
 	gboolean a;
 	int fail;
+	int i;
 
 	if ( ne->dw->not_ready_yet ) return 0;
 
 	a = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(ne->widget));
 	if ( !a ) return 0;
+
+	float *old_data = ne->dw->image->data;
+	uint16_t *old_flags = ne->dw->image->flags;
+	float **old_dp = ne->dw->image->dp;
+	int **old_bad = ne->dw->image->bad;
 
 	fail = hdf5_read2(ne->dw->hdfile, ne->dw->image,
                       ne->dw->ev_list->events[ne->new_ev], 0);
@@ -1921,6 +1927,14 @@ static gint displaywindow_newevent(GtkMenuItem *item, struct newev *ne)
 
 	do_filters(ne->dw);
 	displaywindow_update(ne->dw);
+	for (i = 0; i < ne->dw->image->det->n_panels; i++) {
+		free(old_dp[i]);
+		free(old_bad[i]);
+	}
+	free(old_data);
+	free(old_flags);
+	free(old_dp);
+	free(old_bad);
 	return 0;
 }
 

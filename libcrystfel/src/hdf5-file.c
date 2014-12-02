@@ -1188,6 +1188,8 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			ERROR("Error selecting memory dataspace for panel %s\n",
 			      p->name);
 			free(buf);
+			free(f_offset);
+			free(f_count);
 			return 1;
 		}
 
@@ -1197,6 +1199,8 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			ERROR("Couldn't read data for panel %s\n",
 			      p->name);
 			free(buf);
+			free(f_offset);
+			free(f_count);
 			return 1;
 		}
 		H5Dclose(f->dh);
