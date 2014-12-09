@@ -718,7 +718,7 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		cts[bin]++;
 	}
 	if ( n_out)  {
-		ERROR("Warning: %i reflection pairs outside range.\n", n_out);
+		ERROR("WARNING: %i reflection pairs outside range.\n", n_out);
 	}
 
 	switch ( fom ) {

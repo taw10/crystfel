@@ -176,7 +176,7 @@ static void add_candidate(struct reax_search_v *s, struct reax_candidate *c)
 
 	if ( s->n_cand == MAX_CANDIDATES ) {
 		if ( !s->max_warned ) {
-			ERROR("Warning: Too many candidates.\n");
+			ERROR("WARNING: Too many candidates.\n");
 			s->max_warned = 1;
 		}
 		return;

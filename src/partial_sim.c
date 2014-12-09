@@ -394,7 +394,7 @@ static void finalise_job(void *vqargs, void *vwargs)
 
 	ret = write_chunk(qargs->stream, &wargs->image, NULL, 0, 1, NULL);
 	if ( ret != 0) {
-		ERROR("Warning: error writing stream file.\n");
+		ERROR("WARNING: error writing stream file.\n");
 	}
 
 	for ( i=0; i<NBINS; i++ ) {

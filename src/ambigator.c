@@ -604,7 +604,7 @@ static void detwin(struct cc_list *ccs, int n_crystals, int *assignments,
 	}
 
 	if ( ndud > 0 ) {
-		STATUS("Warning: %i crystals had no correlation\n", ndud);
+		STATUS("WARNING: %i crystals had no correlation\n", ndud);
 	}
 
 	STATUS("Mean f,g = %10f,%10f. Changed %i assignments this time.\n",

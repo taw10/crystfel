@@ -549,7 +549,7 @@ RefList *scale_intensities(Crystal **crystals, int n,
 	} while ( !done && (i < MAX_CYCLES) );
 
 	if ( i == MAX_CYCLES ) {
-		ERROR("Warning: Scaling did not converge.\n");
+		ERROR("WARNING: Scaling did not converge.\n");
 	}
 
 	calculate_esds(crystals, n, full, n_threads, min_redundancy, pmodel);

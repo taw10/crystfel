@@ -273,7 +273,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		n += crystal_get_num_implausible_reflections(image.crystals[i]);
 	}
 	if ( n > 0 ) {
-		STATUS("Warning: %i implausibly negative reflection%s in %s.\n",
+		STATUS("WARNING: %i implausibly negative reflection%s in %s.\n",
 		       n, n>1?"s":"", image.filename);
 	}
 

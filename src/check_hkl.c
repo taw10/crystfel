@@ -614,12 +614,12 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	STATUS("%i reflections in total.\n", nrefl);
 
 	if ( nout ) {
-		STATUS("Warning; %i reflections outside resolution range.\n",
+		STATUS("WARNING; %i reflections outside resolution range.\n",
 		       nout);
 	}
 
 	if ( nsilly ) {
-		STATUS("Warning; %i reflections had infinite or invalid values"
+		STATUS("WARNING; %i reflections had infinite or invalid values"
 		       " of I/sigma(I).\n", nsilly);
 	}
 
