@@ -967,8 +967,8 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 			crystal_set_resolution_limit(cr, lim*1e9);
 		}
 
-		if ( sscanf(line, "profile_radius = %e m^-1", &rad) == 1 ) {
-			crystal_set_profile_radius(cr, rad);
+		if ( sscanf(line, "profile_radius = %e nm^-1", &rad) == 1 ) {
+			crystal_set_profile_radius(cr, rad*1e9);
 		}
 
 		if ( (strcmp(line, REFLECTION_START_MARKER) == 0)
