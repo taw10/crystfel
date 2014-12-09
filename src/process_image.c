@@ -107,8 +107,8 @@ static void refine_radius(Crystal *cr)
 	}
 
 	if ( ti < 10 ) {
-		ERROR("WARNING: Not enough strong reflections to estimate "
-		      "crystal parameters.\n");
+		ERROR("WARNING: Not enough strong reflections (%.0f) to estimate "
+		      "crystal parameters (trying anyway).\n", ti);
 	}
 
 	/* Find the cutoff where we get 90% of the strong spots */
