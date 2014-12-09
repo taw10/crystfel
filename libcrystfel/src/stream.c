@@ -325,6 +325,7 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 			set_esd_intensity(refl, sigma);
 			set_peak(refl, pk);
 			set_mean_bg(refl, bg);
+			set_redundancy(refl, 1);
 		}
 
 	} while ( rval != NULL );
