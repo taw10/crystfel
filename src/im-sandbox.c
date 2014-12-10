@@ -1107,12 +1107,14 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 			if ( strcmp(results, "SUSPEND") == 0 ) {
 				sb->suspend_stats++;
+				continue;  /* Do not send next filename */
 			} else if ( strcmp(results, "RELEASE") == 0 ) {
 				if ( sb->suspend_stats > 0 ) {
 					sb->suspend_stats--;
 				} else {
 					ERROR("RELEASE before SUSPEND.\n");
 				}
+				continue;  /* Do not send next filename */
 			} else {
 
 				strtol(results, &eptr, 10);
