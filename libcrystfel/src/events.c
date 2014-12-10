@@ -295,7 +295,7 @@ char *get_event_string(struct event *ev)
 	} else {
 
 		ret_string = strdup("/");
-		ret_string_len = strlen(ret_string);
+		ret_string_len = 1;
 
 	}
 
