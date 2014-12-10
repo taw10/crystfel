@@ -298,15 +298,14 @@ static int read_fpe_data(struct buffer_data *bd)
 
 		int i;
 		int line_ready = 0;
-		int line_end = 0;
+		int line_length = 0;
 
 		/* See if there's a full line in the buffer yet */
 		for ( i=0; i<bd->rbufpos; i++ ) {
 
 			/* Is there a line in the buffer? */
 			if ( bd->rbuffer[i] == '\n' ) {
-				bd->rbuffer[i] = '\n';
-				line_end = i;
+				line_length = i+1;
 				line_ready = 1;
 				break;
 			}
@@ -321,17 +320,19 @@ static int read_fpe_data(struct buffer_data *bd)
 				free(bd->line);
 			}
 
-			bd->line = strdup(bd->rbuffer);
+			bd->line = malloc(line_length+1);
+			strncpy(bd->line, bd->rbuffer, line_length);
+			bd->line[line_length] = '\0';
 
 			/* Now the block's been parsed, it should be
 			 * forgotten about */
 			memmove(bd->rbuffer,
-			        bd->rbuffer + line_end + 1,
-			        bd->rbuflen - line_end - 1);
+			        bd->rbuffer + line_length,
+			        bd->rbuflen - line_length);
 
 			/* Subtract the number of bytes removed */
-			bd->rbufpos = bd->rbufpos - line_end - 1;
-			new_rbuflen = bd->rbuflen - line_end - 1 ;
+			bd->rbufpos = bd->rbufpos - line_length;
+			new_rbuflen = bd->rbuflen - line_length;
 			if ( new_rbuflen == 0 ) new_rbuflen = 256;
 			bd->rbuffer = realloc(bd->rbuffer,
 			                      new_rbuflen*sizeof(char));
@@ -478,7 +479,8 @@ static void run_work(const struct index_args *iargs,
 
 				ev = get_event_from_event_string(event_str);
 				if ( ev == NULL ) {
-					ERROR("Error in event recovery\n");
+					ERROR("Bad event string '%s'\n",
+					      event_str);
 					continue;
 				}
 
