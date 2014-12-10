@@ -423,8 +423,10 @@ static void run_work(const struct index_args *iargs,
 				rval = read_fpe_data(&bd);
 			} else {
 				ERROR("No data sent from main process..\n");
-				rval = 1;
-				error = 1;
+				/* Not actually an error condition.  The main
+				 * process might just be taking a while to read
+				 * the index data for a large multi-event file.
+				 */
 			}
 
 		} while ( !rval );
