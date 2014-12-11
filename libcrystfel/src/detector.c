@@ -530,6 +530,22 @@ static struct panel *new_panel(struct detector *det, const char *name)
 		new->data = strdup(new->data);
 	}
 
+	/* Create a new copy of the dim_structure if needed */
+	if ( new->dim_structure != NULL ) {
+
+		struct dim_structure *dim_copy;
+		int di;
+
+		dim_copy = initialize_dim_structure();
+		dim_copy->num_dims = new->dim_structure->num_dims;
+		dim_copy->dims = malloc(dim_copy->num_dims*sizeof(int));
+		for ( di=0; di<dim_copy->num_dims; di++ ) {
+			dim_copy->dims[di] = new->dim_structure->dims[di];
+		}
+
+		new->dim_structure = dim_copy;
+	}
+
 	/* Create a new copy of the bad pixel mask location */
 	if ( new->mask != NULL ) {
 		new->mask = strdup(new->mask);
@@ -1405,6 +1421,24 @@ struct detector *copy_geom(const struct detector *in)
 			/* Make a copy of the data fields unique to this
 			 * copy of the structure. */
 			p->clen_from = strdup(p->clen_from);
+		}
+
+		if ( p->dim_structure != NULL ) {
+			/* Make a copy of the dim_structure fields unique to this
+			 * copy of the structure. */
+
+			struct dim_structure *dim_new;
+			int di;
+
+			dim_new = initialize_dim_structure();
+			dim_new->num_dims = p->dim_structure->num_dims;
+			dim_new->dims = malloc(dim_new->num_dims*sizeof(int));
+			for ( di=0; di<dim_new->num_dims; di++ ) {
+				dim_new->dims[di] = p->dim_structure->dims[di];
+			}
+
+			p->dim_structure = dim_new;
+
 		}
 
 		if ( p->clen_from != NULL ) {
