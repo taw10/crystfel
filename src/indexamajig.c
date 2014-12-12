@@ -99,6 +99,9 @@ static void show_help(const char *s)
 "                           hdf5  : Get from a table in HDF5 file.\n"
 "     --hdf5-peaks=<p>     Find peaks table in HDF5 file here.\n"
 "                           Default: /processing/hitfinder/peakinfo\n"
+"     --cxidb-hdf5-peaks   Peaks in the HDF5 file are in CXIDB format.\n"
+"                           Only used in conjunction with the --hdf5-peaks,\n"
+"                           ignored otherwise."
 "     --integration=<meth> Perform final pattern integration using <meth>.\n"
 "\n\n"
 "For more control over the process, you might need:\n\n"
@@ -216,6 +219,7 @@ int main(int argc, char *argv[])
 	iargs.beam = &beam;
 	iargs.element = NULL;
 	iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
+    iargs.cxidb_hdf5_peaks = 0;
 	iargs.copyme = NULL;
 	iargs.pk_inn = -1.0;
 	iargs.pk_mid = -1.0;
@@ -265,6 +269,7 @@ int main(int argc, char *argv[])
 		{"no-use-saturated",   0, &iargs.use_saturated,      0},
 		{"no-revalidate",      0, &iargs.no_revalidate,      1},
 		{"check-hdf5-snr",     0, &iargs.check_hdf5_snr,     1},
+		{"cxidb-hdf5-peaks",   0, &iargs.cxidb_hdf5_peaks,   1},
 
 		/* Long-only options which don't actually do anything */
 		{"no-sat-corr",        0, &iargs.satcorr,            0},

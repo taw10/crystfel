@@ -33,8 +33,6 @@
 #ifndef EVENTS_H
 #define EVENTS_H
 
-#include "detector.h"
-
 struct event
 {
 	char **path_entries;

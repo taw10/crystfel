@@ -79,7 +79,8 @@ extern void hdfile_close(struct hdfile *f);
 extern int hdfile_is_scalar(struct hdfile *f, const char *name, int verbose);
 char *hdfile_get_string_value(struct hdfile *f, const char *name,
                               struct event* ev);
-extern int get_peaks(struct image *image, struct hdfile *f, const char *p);
+extern int get_peaks(struct image *image, struct hdfile *f, const char *p,
+                     int cxidb_format, struct filename_plus_event *fpe);
 extern double get_value(struct hdfile *f, const char *name);
 
 extern double get_ev_based_value(struct hdfile *f, const char *name,

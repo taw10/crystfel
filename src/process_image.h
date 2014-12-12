@@ -64,6 +64,7 @@ struct index_args
 	struct beam_params *beam;
 	char *element;
 	char *hdf5_peak_path;
+	int cxidb_hdf5_peaks;
 	float pk_inn;
 	float pk_mid;
 	float pk_out;
