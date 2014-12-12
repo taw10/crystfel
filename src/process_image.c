@@ -180,7 +180,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		/* Get peaks from HDF5 */
 
 		if ( get_peaks(&image, hdfile, iargs->hdf5_peak_path,
-		               iargs->cxidb_hdf5_peaks, pargs->filename_p_e) ) {
+		               iargs->cxi_hdf5_peaks, pargs->filename_p_e) ) {
 			ERROR("Failed to get peaks from HDF5 file.\n");
 		}
 		if ( !iargs->no_revalidate ) {

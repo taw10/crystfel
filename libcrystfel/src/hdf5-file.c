@@ -380,10 +380,9 @@ static int read_hdf5_data_into_buffer(struct hdfile *f, char *path, int line,
 
 
 int get_peaks(struct image *image, struct hdfile *f, const char *p,
-              int cxidb_format, struct filename_plus_event *fpe)
+              int cxi_format, struct filename_plus_event *fpe)
 {
-
-	if ( cxidb_format ) {
+	if ( cxi_format ) {
 
 		char *path_n;
 		char *path_x;
@@ -404,10 +403,12 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p,
 		path_y=malloc((strlen(p)+strlen("/peakYPosRaw")+1)*sizeof(char));
 		path_i=malloc((strlen(p)+strlen("/peakIntensity")+1)*sizeof(char));
 
-		if ( fpe != NULL && fpe->ev != NULL && fpe->ev->dim_entries != NULL ) {
+		if ( (fpe != NULL) && (fpe->ev != NULL)
+		  && (fpe->ev->dim_entries != NULL) )
+		{
 			line = fpe->ev->dim_entries[0];
 		} else {
-			ERROR("CXIDB peak list format selected,"
+			ERROR("CXI format peak list format selected,"
 			      "but file has no event structure");
 			free(path_n);
 			free(path_x);
