@@ -2546,6 +2546,11 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 			if ( event != NULL ) {
 				ev = get_event_from_event_string(event);
 				dw->curr_event = find_event(ev, dw->ev_list);
+				if ( dw->curr_event == dw->ev_list->num_events)
+				{
+					ERROR("Invalid event\n");
+					return NULL;
+				}
 			} else {
 				dw->curr_event = 0;
 				ev = dw->ev_list->events[dw->curr_event];

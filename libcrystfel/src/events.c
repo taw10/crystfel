@@ -239,6 +239,8 @@ int find_event(struct event *ev, struct event_list *el)
 {
 	int i;
 
+	if ( ev == NULL ) return el->num_events;
+
 	for ( i=0; i<el->num_events; i++ ) {
 		if ( events_equal(ev, el->events[i]) ) return i;
 	}
