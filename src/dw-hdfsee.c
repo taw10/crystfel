@@ -2544,8 +2544,8 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 		if ( dw->multi_event ) {
 			struct event *ev;
 			if ( event != NULL ) {
-				dw->curr_event = 0;  /* Probably wrong */
 				ev = get_event_from_event_string(event);
+				dw->curr_event = find_event(ev, dw->ev_list);
 			} else {
 				dw->curr_event = 0;
 				ev = dw->ev_list->events[dw->curr_event];
@@ -2645,7 +2645,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	if ( dw->image->det == dw->simple_geom ) {
 		displaywindow_update_menus(dw, element);
 	} else {
-		if ( dw->multi_event != 0 ) {
+		if ( dw->multi_event ) {
 			displaywindow_update_event_menu(dw, dw->ev_list,
 			                                dw->curr_event);
 		}

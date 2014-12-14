@@ -206,6 +206,46 @@ struct event_list *copy_event_list(struct event_list *el)
 }
 
 
+static int events_equal(struct event *ev1, struct event *ev2)
+{
+	int i;
+
+	if ( ev1->path_length != ev2->path_length ) return 0;
+	if ( ev1->dim_length != ev2->dim_length ) return 0;
+
+	for ( i=0; i<ev1->path_length; i++ ) {
+		if ( strcmp(ev1->path_entries[i], ev2->path_entries[i]) != 0 ) {
+			return 0;
+		}
+	}
+
+	for ( i=0; i<ev1->dim_length; i++ ) {
+		if ( ev1->dim_entries[i] != ev2->dim_entries[i] ) return 0;
+	}
+
+	return 1;
+}
+
+
+/**
+ * find_event:
+ * @ev: An event structure
+ * @el: An event list
+ *
+ * Returns: the indexing into @el of the event matching @ev, of el->num_events
+ * if no such event is found.
+ **/
+int find_event(struct event *ev, struct event_list *el)
+{
+	int i;
+
+	for ( i=0; i<el->num_events; i++ ) {
+		if ( events_equal(ev, el->events[i]) ) return i;
+	}
+
+	return i;
+}
+
 
 void free_event(struct event *ev)
 {

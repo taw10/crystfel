@@ -92,6 +92,7 @@ extern int append_event_to_event_list(struct event_list *ev_list,
 int add_non_existing_event_to_event_list(struct event_list *ev_list,
                                          struct event *ev);
 extern struct event_list *copy_event_list(struct event_list *el);
+extern int find_event(struct event *ev, struct event_list *el);
 extern void free_event_list(struct event_list *el);
 
 
