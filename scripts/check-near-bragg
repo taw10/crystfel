@@ -57,6 +57,7 @@ while ( $line = <FH> ) {
 		}
 		printf(STDERR "Viewing %s%s\n", $filename, $evr);
 		system("hdfsee ".$filename.$ev.
+		       " --peak-overlay=list.tmp ".$args);
 		if ( $? != 0 ) { exit; }
 		unlink("list.tmp");
 		open(TMP, "> list.tmp");
