@@ -284,8 +284,7 @@ static int read_peak_count(struct hdfile *f, char *path, int line,
 
 
 
-static int read_hdf5_data_into_buffer(struct hdfile *f, char *path, int line,
-                                      float *buff)
+static float *read_hdf5_data(struct hdfile *f, char *path, int line)
 {
 
 	hid_t dh, sh, mh;
@@ -293,20 +292,20 @@ static int read_hdf5_data_into_buffer(struct hdfile *f, char *path, int line,
 	hsize_t max_size[2];
 	hsize_t offset[2], count[2];
 	hsize_t m_offset[2], m_count[2], dimmh[2];
-
+	float *buf;
 	int tw, r;
 
 	dh = H5Dopen2(f->fh, path, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Data block (%s) not found.\n", path);
-		return 1;
+		return NULL;
 	}
 
 	sh = H5Dget_space(dh);
 	if ( sh < 0 ) {
 		H5Dclose(dh);
 		ERROR("Couldn't get dataspace for data.\n");
-		return 1;
+		return NULL;
 	}
 
 	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
@@ -314,7 +313,7 @@ static int read_hdf5_data_into_buffer(struct hdfile *f, char *path, int line,
 		      path, H5Sget_simple_extent_ndims(sh));
 		H5Sclose(sh);
 		H5Dclose(dh);
-		return 1;
+		return NULL;
 	}
 
 	H5Sget_simple_extent_dims(sh, size, max_size);
@@ -325,30 +324,29 @@ static int read_hdf5_data_into_buffer(struct hdfile *f, char *path, int line,
 		H5Dclose(dh);
 		ERROR("Data block %s does not contain data for required event.\n",
 		      path);
-		return 1;
+		return NULL;
 	}
 
 	offset[0] = line;
 	offset[1] = 0;
 	count[0] = 1;
-	count[1] = 4096;
+	count[1] = size[1];
 
-	r = H5Sselect_hyperslab(sh, H5S_SELECT_SET,
-	                        offset, NULL, count, NULL);
+	r = H5Sselect_hyperslab(sh, H5S_SELECT_SET, offset, NULL, count, NULL);
 	if ( r < 0 ) {
 	    ERROR("Error selecting file dataspace "
 	          "for data block %s\n", path);
 	    H5Dclose(dh);
 	    H5Sclose(sh);
-	    return 1;
+	    return NULL;
 	}
 
 	m_offset[0] = 0;
 	m_offset[1] = 0;
 	m_count[0] = 1;
-	m_count[1] = 4096;
+	m_count[1] = size[1];
 	dimmh[0] = 1;
-	dimmh[1] = 4096;
+	dimmh[1] = size[1];
 
 	mh = H5Screate_simple(2, dimmh, NULL);
 	r = H5Sselect_hyperslab(mh, H5S_SELECT_SET,
@@ -359,23 +357,24 @@ static int read_hdf5_data_into_buffer(struct hdfile *f, char *path, int line,
 		H5Dclose(dh);
 		H5Sclose(sh);
 		H5Sclose(mh);
-		return 1;
+		return NULL;
 	}
 
-	r = H5Dread(dh, H5T_NATIVE_FLOAT, mh,
-		    sh, H5P_DEFAULT, buff);
+	buf = malloc(size[1]*sizeof(float));
+	if ( buf == NULL ) return NULL;
+	r = H5Dread(dh, H5T_NATIVE_FLOAT, mh, sh, H5P_DEFAULT, buf);
 	if ( r < 0 ) {
 		ERROR("Couldn't read data for block %s, line %i\n", path, line);
 		H5Dclose(dh);
 		H5Sclose(sh);
 		H5Sclose(mh);
-		return 1;
+		return NULL;
 	}
 
 	H5Dclose(dh);
 	H5Sclose(sh);
 	H5Sclose(mh);
-	return 0;
+	return buf;
 }
 
 
@@ -384,24 +383,19 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p,
 {
 	if ( cxi_format ) {
 
-		char *path_n;
-		char *path_x;
-		char *path_y;
-		char *path_i;
+		char path_n[1024];
+		char path_x[1024];
+		char path_y[1024];
+		char path_i[1024];
 		int r;
 		int pk;
 
 		int line = 0;
 		int num_peaks;
 
-		float buf_x[4096];
-		float buf_y[4096];
-		float buf_i[4096];
-
-		path_n=malloc((strlen(p)+strlen("/nPeaks")+1)*sizeof(char));
-		path_x=malloc((strlen(p)+strlen("/peakXPosRaw")+1)*sizeof(char));
-		path_y=malloc((strlen(p)+strlen("/peakYPosRaw")+1)*sizeof(char));
-		path_i=malloc((strlen(p)+strlen("/peakIntensity")+1)*sizeof(char));
+		float *buf_x;
+		float *buf_y;
+		float *buf_i;
 
 		if ( (fpe != NULL) && (fpe->ev != NULL)
 		  && (fpe->ev->dim_entries != NULL) )
@@ -410,63 +404,25 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p,
 		} else {
 			ERROR("CXI format peak list format selected,"
 			      "but file has no event structure");
-			free(path_n);
-			free(path_x);
-			free(path_y);
-			free(path_i);
 			return 1;
 		}
 
-
-		strncpy(path_n, p, strlen(p));
-		strncpy(&path_n[strlen(p)], "/nPeaks\0",
-		        strlen("/nPeaks\0"));
+		snprintf(path_n, 1024, "%s/nPeaks", p);
+		snprintf(path_x, 1024, "%s/peakXPosRaw", p);
+		snprintf(path_y, 1024, "%s/peakYPosRaw", p);
+		snprintf(path_i, 1024, "%s/peakTotalIntensity", p);
 
 		r = read_peak_count(f, path_n, line, &num_peaks);
-		if ( r != 0) {
-			free(path_n);
-			free(path_x);
-			free(path_y);
-			free(path_i);
-			return 1;
-		}
+		if ( r != 0 ) return 1;
 
-		strncpy(path_x, p, strlen(p));
-		strncpy(&path_x[strlen(p)], "/peakXPosRaw\0",
-		        strlen("/peakXPosRaw\0"));
-		r = read_hdf5_data_into_buffer(f, path_x, line, buf_x);
-		if ( r != 0) {
-			free(path_n);
-			free(path_x);
-			free(path_y);
-			free(path_i);
-			return 1;
-		}
+		buf_x = read_hdf5_data(f, path_x, line);
+		if ( r != 0 ) return 1;
 
-		strncpy(path_y, p, strlen(p));
-		strncpy(&path_y[strlen(p)], "/peakYPosRaw\0",
-		       strlen("/peakYPosRaw\0"));
-		r = read_hdf5_data_into_buffer(f, path_y, line, buf_y);
-		if ( r != 0) {
-			free(path_n);
-			free(path_x);
-			free(path_y);
-			free(path_i);
-			return 1;
-		}
+		buf_y = read_hdf5_data(f, path_y, line);
+		if ( r != 0 ) return 1;
 
-		strncpy(path_i, p, strlen(p));
-		strncpy(&path_i[strlen(p)], "/peakIntensity\0",
-		        strlen("/peakIntensity\0"));
-		r = read_hdf5_data_into_buffer(f, path_i, line, buf_i);
-		if ( r != 0) {
-			free(path_n);
-			free(path_x);
-			free(path_y);
-			free(path_i);
-			return 1;
-		}
-
+		buf_i = read_hdf5_data(f, path_i, line);
+		if ( r != 0 ) return 1;
 
 		if ( image->features != NULL ) {
 			image_feature_list_free(image->features);
@@ -495,11 +451,6 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p,
 			                  val, NULL);
 
 		}
-
-		free(path_n);
-		free(path_x);
-		free(path_y);
-		free(path_i);
 
 	} else {
 
