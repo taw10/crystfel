@@ -18,6 +18,7 @@ open(TMP, "> list.tmp");
 my $in_image = 0;
 my $line;
 my $filename;
+my $event = "";
 while ( $line = <FH> ) {
 
 	chomp $line;
@@ -45,14 +46,23 @@ while ( $line = <FH> ) {
 		# Example of how to do "basename" and "prefix":
 		# $filename = "images-old/".basename($filename);
 
-		printf(STDERR "Viewing %s\n", $filename);
-		system("hdfsee ".$filename.
-		       " --peak-overlay=list.tmp ".$args);
+		my $ev;
+		my $evr;
+		if ( $event eq "" ) {
+			$ev = "";
+			$evr = "";
+		} else {
+			$ev = " --event=".$event;
+			$evr = ", event ".$event;
+		}
+		printf(STDERR "Viewing %s%s\n", $filename, $evr);
+		system("hdfsee ".$filename.$ev.
 		if ( $? != 0 ) { exit; }
 		unlink("list.tmp");
 		open(TMP, "> list.tmp");
 		$handled = 1;
 		$in_image = 0;
+		$event = "";
 
 	}
 
