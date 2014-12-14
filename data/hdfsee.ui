@@ -30,6 +30,7 @@
 		</menu>
 
 		<menu name="events" action="EventsAction">
+			<menuitem name="about" action="AboutAction" />
 		</menu>
 
 		<menu name="help" action="HelpAction">
