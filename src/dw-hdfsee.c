@@ -784,7 +784,7 @@ static gint displaywindow_set_boostint_response(GtkWidget *widget,
 		int scanval;
 
 		sboostint = gtk_entry_get_text(
-		 			GTK_ENTRY(dw->boostint_dialog->entry));
+                                         GTK_ENTRY(dw->boostint_dialog->entry));
 		scanval = sscanf(sboostint, "%f", &boostint);
 		if ( (scanval != 1) || (boostint <= 0) ) {
 			displaywindow_error(dw, "Please enter a positive "
@@ -1804,7 +1804,7 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 
 			nh = malloc(sizeof(struct newhdf));
 			if ( nh != NULL ) {
-		        	strncpy(nh->name, names[i], 1023);
+				strncpy(nh->name, names[i], 1023);
 				nh->dw = dw;
 				nh->widget = item;
 				g_signal_connect(G_OBJECT(item), "toggled",
@@ -1813,7 +1813,7 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 
 			if ( (selectme != NULL)
 			  && (strcmp(names[i], selectme) == 0) ) {
-			  	gtk_check_menu_item_set_active(
+				gtk_check_menu_item_set_active(
 				               GTK_CHECK_MENU_ITEM(item), TRUE);
 			} else {
 				gtk_check_menu_item_set_active(
@@ -1917,7 +1917,7 @@ static gint displaywindow_newevent(GtkMenuItem *item, struct newev *ne)
 	int **old_bad = ne->dw->image->bad;
 
 	fail = hdf5_read2(ne->dw->hdfile, ne->dw->image,
-                      ne->dw->ev_list->events[ne->new_ev], 0);
+                          ne->dw->ev_list->events[ne->new_ev], 0);
 	if ( fail ) {
 		ERROR("Couldn't load image");
 		return 1;
@@ -1977,11 +1977,11 @@ static int displaywindow_update_event_menu(DisplayWindow *dw,
 		}
 
 		if ( ei == dw->curr_event ) {
-			gtk_check_menu_item_set_active(
-			             GTK_CHECK_MENU_ITEM(www), TRUE);
+			gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(www),
+			                               TRUE);
 		} else {
-			gtk_check_menu_item_set_active(
-			             GTK_CHECK_MENU_ITEM(www), FALSE);
+			gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(www),
+			                               FALSE);
 		}
 
 		gtk_menu_shell_append(GTK_MENU_SHELL(ww), www);
@@ -2616,8 +2616,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 		gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
 	}
 
-	ww = gtk_ui_manager_get_widget(dw->ui,
-	                  "/ui/displaywindow/events");
+	ww = gtk_ui_manager_get_widget(dw->ui, "/ui/displaywindow/events");
 
 	if ( dw->image->det == dw->simple_geom || dw->multi_event == 0) {
 		gtk_widget_set_sensitive(GTK_WIDGET(ww), FALSE);
