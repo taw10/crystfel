@@ -388,7 +388,7 @@ char *get_event_string(struct event *ev)
 }
 
 
-struct event *get_event_from_event_string(char *ev_string)
+struct event *get_event_from_event_string(const char *ev_string)
 {
 	struct event *ev;
 	char *ev_sep;
