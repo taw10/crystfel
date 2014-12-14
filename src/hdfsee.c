@@ -78,6 +78,7 @@ static void show_help(const char *s)
 "                                    HDF5 file.  Example: /data/data0.\n"
 "                                    (Only used when a geometry file is not"
 "                                     provided. See option -g)"
+"      --event=<event code>         Event to show from multi-event file.\n"
 "  -g, --geometry=<filename>        Use geometry from file for display.\n"
 "                                   (When this option is used, the value of\n"
 "                                    of the -e parameter is ignored)"
@@ -126,6 +127,7 @@ int main(int argc, char *argv[])
 	int colscale = SCALE_COLOUR;
 	char *cscale = NULL;
 	char *element = NULL;
+	char *event = NULL;
 	double ring_size = 5.0;
 	char *reslist = NULL;
 	double ring_radii[128];
@@ -151,6 +153,7 @@ int main(int argc, char *argv[])
 		{"simple-rings",       1, NULL,               'r'},
 		{"median-filter",      1, NULL,                3},
 		{"calibration-mode",   0, &config_calibmode,   1},
+		{"event",              1, NULL,                5},
 		{0, 0, NULL, 0}
 	};
 
@@ -260,6 +263,10 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+			case 5 :
+			event = strdup(optarg);
+			break;
+
 			case 0 :
 			break;
 
@@ -278,6 +285,12 @@ int main(int argc, char *argv[])
 	if ( nfiles < 1 ) {
 		ERROR("You need to give me a file to open!\n");
 		return -1;
+	}
+
+	if ( (element != NULL) && (event != NULL) ) {
+		ERROR("The options --event and --element are "
+		      "mutually exclusive\n");
+		return 1;
 	}
 
 	if ( cscale == NULL ) cscale = strdup("colour");
@@ -302,7 +315,7 @@ int main(int argc, char *argv[])
 		                                         config_noisefilter,
 		                                         config_calibmode,
 		                                         colscale, element,
-		                                         det_geom, beam,
+		                                         event, det_geom, beam,
 		                                         config_showrings,
 		                                         ring_radii,
 		                                         n_rings,

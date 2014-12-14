@@ -2451,7 +2451,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
                                   const char *peaks,
                                   double boost, int binning,
                                   int noisefilter, int calibmode, int colscale,
-                                  const char *element,
+                                  const char *element, const char *event,
                                   struct detector *det_geom,
                                   struct beam_params *beam,
                                   int show_rings, double *ring_radii,
@@ -2496,7 +2496,6 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	dw->calib_mode_show_focus = 1;
 	dw->statusbar = NULL;
 	dw->multi_event = 0;
-	dw->curr_event = 0;
 	dw->ev_list = NULL;
 	if ( geom_filename != NULL ) {
 		dw->geom_filename = strdup(geom_filename);
@@ -2546,9 +2545,15 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	if ( dw->image->det != NULL ) {
 
 		if ( dw->multi_event ) {
-			check = hdf5_read2(dw->hdfile, dw->image,
-			                   dw->ev_list->events[dw->curr_event],
-			                   0);
+			struct event *ev;
+			if ( event != NULL ) {
+				dw->curr_event = 0;  /* Probably wrong */
+				ev = get_event_from_event_string(event);
+			} else {
+				dw->curr_event = 0;
+				ev = dw->ev_list->events[dw->curr_event];
+			}
+			check = hdf5_read2(dw->hdfile, dw->image, ev, 0);
 		} else {
 			check = hdf5_read2(dw->hdfile, dw->image, NULL, 0);
 		}
