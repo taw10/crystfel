@@ -39,6 +39,10 @@ while ( $line = <FH> ) {
 		$handled = 1;
 	}
 
+	if ( $line =~ /^Event:\ (.+)$/ ) {
+		$event = $1;
+	}
+
 	if ( $line =~ /^End\ of\ reflections$/ ) {
 
 		close(TMP);
