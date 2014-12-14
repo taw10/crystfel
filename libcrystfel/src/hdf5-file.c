@@ -486,11 +486,13 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p,
 			if ( p == NULL ) continue;
 			if ( p->no_index ) continue;
 
-			/* Convert coordinates to match rearranged panels in memory */
+			/* Convert coordinates to match rearranged
+			 * panels in memory */
 			fs = fs - p->orig_min_fs + p->min_fs;
 			ss = ss - p->orig_min_ss + p->min_ss;
 
-			image_add_feature(image->features, fs, ss, image, val, NULL);
+			image_add_feature(image->features, fs, ss, image,
+			                  val, NULL);
 
 		}
 
@@ -547,7 +549,8 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p,
 			ERROR("Couldn't reserve memory for the peak list.\n");
 			return 1;
 		}
-		r = H5Dread(dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
+		r = H5Dread(dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+		            H5P_DEFAULT, buf);
 		if ( r < 0 ) {
 			ERROR("Couldn't read peak list.\n");
 			free(buf);

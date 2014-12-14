@@ -83,7 +83,6 @@ struct filename_plus_event *initialize_filename_plus_event()
 
 int event_cmp(struct event *ev1, struct event *ev2)
 {
-
 	int pi;
 	int di;
 
@@ -112,7 +111,6 @@ int event_cmp(struct event *ev1, struct event *ev2)
 int add_non_existing_event_to_event_list(struct event_list *ev_list,
                                          struct event *ev)
 {
-
 	int evi;
 	int found = 0;
 
@@ -133,7 +131,6 @@ int add_non_existing_event_to_event_list(struct event_list *ev_list,
 
 int append_event_to_event_list(struct event_list *ev_list, struct event *ev)
 {
-
 	struct event **new_el;
 
 	new_el = realloc(ev_list->events,
@@ -151,7 +148,6 @@ int append_event_to_event_list(struct event_list *ev_list, struct event *ev)
 
 struct event *copy_event(struct event *ev)
 {
-
 	struct event *new_ev;
 	int pi, di;
 
@@ -543,7 +539,6 @@ char *event_path_placeholder_subst(const char *entry,
 
 char *retrieve_full_path(struct event *ev, const char *data)
 {
-
 	int ei ;
 	char *return_value;
 
