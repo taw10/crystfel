@@ -1985,11 +1985,11 @@ static int displaywindow_update_event_menu(DisplayWindow *dw,
 		gtk_menu_shell_append(GTK_MENU_SHELL(ww), www);
 
 		grp = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(www));
+		gtk_widget_show_all(www);
 
 	}
 
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(w), ww);
-	gtk_widget_show_all(w);
 
 	return 0;
 }
