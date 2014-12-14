@@ -1949,12 +1949,10 @@ static int displaywindow_update_event_menu(DisplayWindow *dw,
 	GtkWidget *ww;
 	GSList *grp = NULL;
 
-	w = gtk_ui_manager_get_widget(dw->ui,
-	                              "/ui/displaywindow/events");
-
+	w = gtk_ui_manager_get_widget(dw->ui, "/ui/displaywindow/events");
 	ww = gtk_menu_new();
 
-	for ( ei=0; ei< ev_list->num_events; ei++ ) {
+	for ( ei=0; ei<ev_list->num_events; ei++ ) {
 
 		GtkWidget *www;
 		struct newev *ne;
@@ -1994,7 +1992,6 @@ static int displaywindow_update_event_menu(DisplayWindow *dw,
 	gtk_widget_show_all(w);
 
 	return 0;
-
 }
 
 
