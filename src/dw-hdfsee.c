@@ -1088,23 +1088,41 @@ static void load_features_from_file(struct image *image, const char *filename)
 		/* Try long peak format from stream */
 		r = sscanf(line, "%f %f %f %f %s", &fs, &ss, &d,
 		           &intensity, pn);
-		if ( r != 5 ) continue;
+		if ( r == 5 ) {
 
-		p = find_panel_by_name(image->det, pn);
-		if ( p == NULL ) {
-			ERROR("Unable to find panel %s "
-			      "(no geometry file given?)\n", pn);
-		} else {
+			p = find_panel_by_name(image->det, pn);
+			if ( p == NULL ) {
+				ERROR("Unable to find panel %s "
+				      "(no geometry file given?)\n", pn);
+			} else {
 
-			/* Convert coordinates to match rearranged panels in
-			 * memory */
-			fs = fs - p->orig_min_fs + p->min_fs;
-			ss = ss - p->orig_min_ss + p->min_ss;
+				/* Convert coordinates to match rearranged panels in
+				 * memory */
+				fs = fs - p->orig_min_fs + p->min_fs;
+				ss = ss - p->orig_min_ss + p->min_ss;
+
+			}
+
+			image_add_feature(image->features, fs, ss, image, 1.0,
+			                  "peak");
+		} else if ( r == 4 ) {
+
+			p = find_orig_panel(image->det, fs, ss);
+
+			if ( p == NULL ) {
+				ERROR("Unable to find panel "
+				      "(no geometry file given?)\n");
+			} else {
+
+				/* Convert coordinates to match rearranged
+				 * panels in memory */
+				fs = fs - p->orig_min_fs + p->min_fs;
+				ss = ss - p->orig_min_ss + p->min_ss;
+			}
+			image_add_feature(image->features, fs, ss, image, 1.0,
+			                  "peak");
 
 		}
-
-		image_add_feature(image->features, fs, ss, image, 1.0, "peak");
-
 
 	} while ( rval != NULL );
 
