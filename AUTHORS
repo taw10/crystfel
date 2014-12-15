@@ -58,6 +58,7 @@
 * Takanori Nakane <nakane.t@gmail.com>
   hdfsee ADSC export and scrollbars
   Some other bits and pieces
+  Hit rate calculator (doc/hitrate.{html,png})
 
 * Keitaro Yamashita <k.yamashita@spring8.or.jp>
   process_hkl bug fix
