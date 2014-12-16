@@ -776,7 +776,7 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		t2 = "";
 	} else {
 		t1 = "  1/d centre";
-		t2 = "      d / A";
+		t2 = "      d / A   Min 1/nm    Max 1/nm";
 	}
 
 	switch ( fom ) {
@@ -841,8 +841,11 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 			fprintf(fh, "%10.3f %10.2f %10i\n",
 				cen, r*100.0, cts[i]);
 		} else {
-			fprintf(fh, "%10.3f %10.2f %10i %10.2f\n",
-				cen*1.0e-9, r*100.0, cts[i], (1.0/cen)*1e10);
+			fprintf(fh, "%10.3f %10.2f %10i %10.2f "
+			            "%10.3f  %10.3f\n",
+				cen*1.0e-9, r*100.0, cts[i], (1.0/cen)*1e10,
+				shells->rmins[i]*1.0e-9,
+				shells->rmaxs[i]*1.0e-9);
 		}
 		break;
 
@@ -854,8 +857,11 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 			fprintf(fh, "%10.3f %10.7f %10i\n",
 				cen, r, cts[i]);
 		} else {
-			fprintf(fh, "%10.3f %10.7f %10i %10.2f\n",
-				cen*1.0e-9, r, cts[i], (1.0/cen)*1e10);
+			fprintf(fh, "%10.3f %10.7f %10i %10.2f "
+			            "%10.3f  %10.3f\n",
+				cen*1.0e-9, r, cts[i], (1.0/cen)*1e10,
+				shells->rmins[i]*1.0e-9,
+				shells->rmaxs[i]*1.0e-9);
 		}
 		break;
 
@@ -864,8 +870,10 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 			fprintf(fh, "%10.3f    %10.7f %10i\n",
 				cen, r, cts[i]);
 		} else {
-			fprintf(fh, "%10.3f    %10.7f %10i %10.2f\n",
-				cen*1.0e-9, r, cts[i], (1.0/cen)*1e10);
+			fprintf(fh, "%10.3f    %10.7f %10i %10.2f "
+			            "%10.3f  %10.3f\n",
+				cen*1.0e-9, r, cts[i], (1.0/cen)*1e10,
+				shells->rmins[i]*1.0e-9, shells->rmaxs[i]*1.0e-9);
 		}
 		break;
 

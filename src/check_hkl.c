@@ -623,14 +623,15 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		       " of I/sigma(I).\n", nsilly);
 	}
 
-	fprintf(fh, "1/d centre   # refs Possible  Compl       "
-		    "Meas   Red   SNR    Std dev       Mean     d(A)\n");
+	fprintf(fh, "Center 1/nm  # refs Possible  Compl       "
+		    "Meas   Red   SNR    Std dev       Mean     d(A)    "
+		    "Min 1/nm   Max 1/nm\n");
 	for ( i=0; i<nshells; i++ ) {
 
 		double cen;
 		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
 		fprintf(fh, "%10.3f %8i %8i %6.2f %10i %5.1f"
-		            " %5.2f %10.2f %10.2f %8.2f\n",
+		            " %5.2f %10.2f %10.2f %8.2f  %10.3f %10.3f\n",
 		        cen*1.0e-9,
 		        measured[i],
 		        possible[i],
@@ -639,7 +640,8 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		        (double)measurements[i]/measured[i],
 		        snr[i]/(double)snr_measured[i],
 		        sqrt(var[i]/measured[i]),
-		        mean[i], (1.0/cen)*1e10);
+		        mean[i], (1.0/cen)*1e10,
+			rmins[i]*1.0e-9, rmaxs[i]*1.0e-9);
 
 	}
 
