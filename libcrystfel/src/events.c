@@ -356,7 +356,7 @@ char *get_event_string(struct event *ev)
 
 			strncpy(&ret_string[ret_string_len],"/", 1);
 			strncpy(&ret_string[ret_string_len+1], num_buf,
-			strlen(num_buf));
+			        strlen(num_buf));
 			ret_string_len += 1+strlen(num_buf);
 
 		}
