@@ -3,11 +3,11 @@
  *
  * Simulate diffraction patterns from small crystals
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2014 Thomas White <taw@physics.org>
+ *   2009-2015 Thomas White <taw@physics.org>
  *   2013-2014 Chun Hong Yoon <chun.hong.yoon@desy.de>
  *   2014      Valerio Mariani
  *   2013      Alexandra Tolstikova
@@ -573,6 +573,12 @@ int main(int argc, char *argv[])
 	}
 	free(spectrum_str);
 
+	/* Load unit cell */
+	input_cell = load_cell_from_file(filename);
+	if ( input_cell == NULL ) {
+		exit(1);
+	}
+
 	if ( intfile == NULL ) {
 
 		/* Gentle reminder */
@@ -606,6 +612,13 @@ int main(int argc, char *argv[])
 		if ( check_list_symmetry(reflections, sym) ) {
 			ERROR("The input reflection list does not appear to"
 			      " have symmetry %s\n", symmetry_name(sym));
+			if ( cell_get_lattice_type(input_cell) == L_MONOCLINIC )
+			{
+				ERROR("You may need to specify the unique axis "
+				      "in your point group.  The default is "
+				      "unique axis c.\n");
+				ERROR("See 'man crystfel' for more details.\n");
+			}
 			return 1;
 		}
 
@@ -621,12 +634,6 @@ int main(int argc, char *argv[])
 	image.lambda = wl;
 	image.bw = bandwidth;
 	image.nsamples = nsamples;
-
-	/* Load unit cell */
-	input_cell = load_cell_from_file(filename);
-	if ( input_cell == NULL ) {
-		exit(1);
-	}
 
 	/* Initialise stuff */
 	image.filename = NULL;

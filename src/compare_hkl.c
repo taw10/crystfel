@@ -3,11 +3,11 @@
  *
  * Compare reflection lists
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2015 Thomas White <taw@physics.org>
  *   2013      Lorenzo Galli <lorenzo.galli@desy.de>
  *
  * This file is part of CrystFEL.
@@ -1124,14 +1124,17 @@ int main(int argc, char *argv[])
 	afile = strdup(argv[optind++]);
 	bfile = strdup(argv[optind]);
 
+	if ( shell_file == NULL ) shell_file = strdup("shells.dat");
+
+	cell = load_cell_from_file(cellfile);
 	if ( cellfile == NULL ) {
 		ERROR("You must provide a unit cell.\n");
 		exit(1);
 	}
-
-	if ( shell_file == NULL ) shell_file = strdup("shells.dat");
-
-	cell = load_cell_from_file(cellfile);
+	if ( cell == NULL ) {
+		ERROR("Failed to load cell.\n");
+		return 1;
+	}
 	free(cellfile);
 
 	list1_raw = read_reflections(afile);
@@ -1150,11 +1153,21 @@ int main(int argc, char *argv[])
 	if ( check_list_symmetry(list1_raw, sym) ) {
 		ERROR("The first input reflection list does not appear to"
 		      " have symmetry %s\n", symmetry_name(sym));
+		if ( cell_get_lattice_type(cell) == L_MONOCLINIC ) {
+			ERROR("You may need to specify the unique axis in your "
+			      "point group.  The default is unique axis c.\n");
+			ERROR("See 'man crystfel' for more details.\n");
+		}
 		return 1;
 	}
 	if ( check_list_symmetry(list2_raw, sym) ) {
 		ERROR("The second input reflection list does not appear to"
 		      " have symmetry %s\n", symmetry_name(sym));
+		if ( cell_get_lattice_type(cell) == L_MONOCLINIC ) {
+			ERROR("You may need to specify the unique axis in your "
+			      "point group.  The default is unique axis c.\n");
+			ERROR("See 'man crystfel' for more details.\n");
+		}
 		return 1;
 	}
 

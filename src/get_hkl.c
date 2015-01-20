@@ -3,11 +3,11 @@
  *
  * Small program to manipulate reflection lists
  *
- * Copyright © 2013-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2014 Thomas White <taw@physics.org>
+ *   2009-2015 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -596,6 +596,10 @@ int main(int argc, char *argv[])
 	{
 		ERROR("The input reflection list does not appear to"
 		      " have symmetry %s\n", symmetry_name(mero));
+		ERROR("If your unit cell is monoclinic, you may need to specify"
+		      " the unique axis for your point group.  The default is"
+		      " unique axis c.\n");
+		ERROR("See 'man crystfel' for more details.\n");
 		return 1;
 	}
 

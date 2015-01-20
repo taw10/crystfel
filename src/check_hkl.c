@@ -3,11 +3,11 @@
  *
  * Characterise reflection lists
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2015 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -840,6 +840,10 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	cell = load_cell_from_file(cellfile);
+	if ( cell == NULL ) {
+		ERROR("Failed to load cell.\n");
+		return 1;
+	}
 	free(cellfile);
 
 	raw_list = read_reflections(file);
@@ -855,6 +859,11 @@ int main(int argc, char *argv[])
 	if ( check_list_symmetry(raw_list, sym) ) {
 		ERROR("The input reflection list does not appear to"
 		      " have symmetry %s\n", symmetry_name(sym));
+		if ( cell_get_lattice_type(cell) == L_MONOCLINIC ) {
+			ERROR("You may need to specify the unique axis in your "
+			      "point group.  The default is unique axis c.\n");
+			ERROR("See 'man crystfel' for more details.\n");
+		}
 		return 1;
 	}
 
