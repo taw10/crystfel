@@ -1208,7 +1208,8 @@ static int save_geometry_file(DisplayWindow *dw)
 	gtk_dialog_run(GTK_DIALOG(d));
 	output_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER (d));
 	w = write_detector_geometry(dw->geom_filename, output_filename,
-	                            dw->image->det);
+	                            dw->image->det, "Manually optimized with "
+				    "hdfsee", 0);
 	if ( w != 0 ) {
 		ERROR("Error saving geometry!\n");
 	}
@@ -1261,7 +1262,7 @@ static gint displaywindow_set_calibmode(GtkWidget *d, DisplayWindow *dw)
 		if ( (dw->calib_mode_curr_rg == NULL)
 		  && (dw->calib_mode_curr_p == NULL) )
 		{
-			dw->calib_mode_curr_rg = dw->image->det->rigid_groups[0];
+			dw->calib_mode_curr_rg = dw->rg_coll->rigid_groups[0];
 			dw->calib_mode_curr_p = dw->calib_mode_curr_rg->panels[0];
 		}
 
@@ -2118,8 +2119,8 @@ static int curr_rg_pointer_index(DisplayWindow *dw)
 {
 	int r;
 
-	for ( r=0; r<dw->image->det->n_rigid_groups; ++r) {
-		if ( dw->image->det->rigid_groups[r] == dw->calib_mode_curr_rg ) {
+	for ( r=0; r<dw->rg_coll->n_rigid_groups; ++r) {
+		if ( dw->rg_coll->rigid_groups[r] == dw->calib_mode_curr_rg ) {
 			return r;
 		}
 	}
@@ -2146,22 +2147,22 @@ static int curr_p_pointer_index(DisplayWindow *dw)
 
 static void select_next_group(DisplayWindow *dw, int num_rg)
 {
-	if ( dw->calib_mode_curr_rg == dw->image->det->rigid_groups[num_rg-1] ) {
-		dw->calib_mode_curr_rg = dw->image->det->rigid_groups[0];
+	if ( dw->calib_mode_curr_rg == dw->rg_coll->rigid_groups[num_rg-1] ) {
+		dw->calib_mode_curr_rg = dw->rg_coll->rigid_groups[0];
 	} else {
 		dw->calib_mode_curr_rg =
-		  dw->image->det->rigid_groups[curr_rg_pointer_index(dw)+1];
+		  dw->rg_coll->rigid_groups[curr_rg_pointer_index(dw)+1];
 	}
 }
 
 
 static void select_prev_group(DisplayWindow *dw, int num_rg)
 {
-	if ( dw->calib_mode_curr_rg == dw->image->det->rigid_groups[0] ) {
-		dw->calib_mode_curr_rg = dw->image->det->rigid_groups[num_rg-1];
+	if ( dw->calib_mode_curr_rg == dw->rg_coll->rigid_groups[0] ) {
+		dw->calib_mode_curr_rg = dw->rg_coll->rigid_groups[num_rg-1];
 	} else {
 		dw->calib_mode_curr_rg =
-		  dw->image->det->rigid_groups[curr_rg_pointer_index(dw)-1];
+		    dw->rg_coll->rigid_groups[curr_rg_pointer_index(dw)-1];
 	}
 }
 
@@ -2471,6 +2472,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
                                   const char *element, const char *event,
                                   struct detector *det_geom,
                                   struct beam_params *beam,
+                                  const char* rgcoll_name,
                                   int show_rings, double *ring_radii,
                                   int n_rings, double ring_size,
                                   int median_filter)
@@ -2643,7 +2645,20 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 		gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
 	}
 
-	ww = gtk_ui_manager_get_widget(dw->ui, "/ui/displaywindow/events");
+	if ( rgcoll_name != NULL ) {
+
+		dw->rg_coll = find_rigid_group_collection_by_name(dw->image->det,
+		                                                  rgcoll_name);
+
+		if ( dw->rg_coll == NULL ) {
+			ERROR("Cannot find rigid group collection: %s\n",
+			      rgcoll_name);
+			return NULL;
+		}
+	}
+
+	ww = gtk_ui_manager_get_widget(dw->ui,
+	                  "/ui/displaywindow/events");
 
 	if ( dw->image->det == dw->simple_geom || dw->multi_event == 0) {
 		gtk_widget_set_sensitive(GTK_WIDGET(ww), FALSE);

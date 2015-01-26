@@ -82,6 +82,8 @@ static void show_help(const char *s)
 "  -g, --geometry=<filename>        Use geometry from file for display.\n"
 "                                   (When this option is used, the value of\n"
 "                                    of the -e parameter is ignored)"
+"  -m, --beam=<filename>            Get beam parameters from <filename>.\n"
+"  -o, --rigid-groups=<coll>        Use rigid group collection <coll>.\n"
 "\n");
 }
 
@@ -128,6 +130,7 @@ int main(int argc, char *argv[])
 	char *cscale = NULL;
 	char *element = NULL;
 	char *event = NULL;
+	char *rgcoll_name = NULL;
 	double ring_size = 5.0;
 	char *reslist = NULL;
 	double ring_radii[128];
@@ -154,6 +157,7 @@ int main(int argc, char *argv[])
 		{"median-filter",      1, NULL,                3},
 		{"calibration-mode",   0, &config_calibmode,   1},
 		{"event",              1, NULL,                5},
+		{"rigid-groups",       1, NULL,               'o'},
 		{0, 0, NULL, 0}
 	};
 
@@ -171,7 +175,7 @@ int main(int argc, char *argv[])
 	gtk_init(&argc, &argv);
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hp:b:i:c:e:g:2:r:m:",
+	while ((c = getopt_long(argc, argv, "hp:b:i:c:e:g:2:r:m:o:",
 	                        longopts, NULL)) != -1) {
 
 		char *test;
@@ -225,6 +229,10 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			beam = &cbeam;
+			break;
+
+			case 'o' :
+			rgcoll_name = strdup(optarg);
 			break;
 
 			case 2 :
@@ -292,6 +300,10 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if (rgcoll_name == NULL) {
+		rgcoll_name = strdup("default");
+	}
+
 	if ( cscale == NULL ) cscale = strdup("colour");
 	if ( strcmp(cscale, "mono") == 0 ) {
 		colscale = SCALE_MONO;
@@ -315,6 +327,7 @@ int main(int argc, char *argv[])
 		                                         config_calibmode,
 		                                         colscale, element,
 		                                         event, det_geom, beam,
+		                                         rgcoll_name,
 		                                         config_showrings,
 		                                         ring_radii,
 		                                         n_rings,

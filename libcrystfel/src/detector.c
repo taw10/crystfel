@@ -59,6 +59,19 @@
  */
 
 
+
+struct rg_definition {
+	char *name;
+	char *pns;
+};
+
+
+struct rgc_definition {
+	char *name;
+	char *rgs;
+};
+
+
 static int atob(const char *a)
 {
 	if ( strcasecmp(a, "true") == 0 ) return 1;
@@ -200,6 +213,57 @@ static int dir_conv(const char *a, double *sx, double *sy)
 	//STATUS("'%s' -> %5.2fx + %5.2fy\n", a, *sx, *sy);
 
 	return 0;
+}
+
+
+static int count_trailing_spaces(const char *string) {
+
+	int i;
+
+	for ( i=0; i<strlen(string); i++ ) {
+		if ( !isspace(string[i]) ) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+
+static void build_output_line (const char *line, char *new_line,
+                               const char *string_to_write)
+{
+	int nsp, i, w, ww;
+	int trailsp;
+	int n_bits;
+	char **bits;
+
+	n_bits = assplode(line, "=", &bits, ASSPLODE_NONE);
+	trailsp = count_trailing_spaces(bits[1]);
+
+	strcat(new_line, bits[0]);
+	strcat(new_line, "=");
+
+	for ( nsp=0; nsp < trailsp; nsp++ ) {
+		strcat(new_line, " ");
+	}
+	strcat(new_line, string_to_write);
+
+	for ( w=0; w<strlen(line); w++ ) {
+		if ( strncmp(&line[w],";",1) == 0 ) {
+			for ( ww=w-1; ww>=0; ww-- ) {
+				if ( !isspace(line[ww])) {
+					strcat(new_line, &line[ww]);
+					break;
+				}
+			}
+			break;
+		}
+	}
+	if ( w == strlen(line) ) strcat(new_line, "\n");
+
+	for ( i=0; i<n_bits; i++) free(bits[i]);
+	free(bits);
 }
 
 
@@ -509,6 +573,52 @@ void fill_in_values(struct detector *det, struct hdfile *f, struct event* ev)
 }
 
 
+int panel_is_in_rigid_group(const struct rigid_group *rg, struct panel *p)
+{
+	int i;
+
+	for ( i=0; i<rg->n_panels; i++ ) {
+		if ( rg->panels[i] == p ) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+
+int rigid_group_is_in_collection(struct rg_collection *c,
+                                 struct rigid_group *rg)
+{
+	int i;
+
+	for ( i=0; i<c->n_rigid_groups; i++ ) {
+		if ( c->rigid_groups[i] == rg  ) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+
+struct rg_collection *find_rigid_group_collection_by_name(struct detector *det,
+                                                          const char *name)
+{
+	int i;
+
+	for ( i=0; i<det->n_rg_collections; i++ ) {
+		if ( strcmp(det->rigid_group_collections[i]->name,
+		            name) == 0 ) {
+			return det->rigid_group_collections[i];
+		}
+	}
+
+	return NULL;
+
+}
+
+
 static struct panel *new_panel(struct detector *det, const char *name)
 {
 	struct panel *new;
@@ -643,6 +753,41 @@ static struct rigid_group *find_or_add_rg(struct detector *det,
 }
 
 
+static struct rg_collection *find_or_add_rg_coll(struct detector *det,
+                                                 const char *name)
+{
+	int i;
+	struct rg_collection **new;
+	struct rg_collection *rgc;
+
+	for ( i=0; i<det->n_rg_collections; i++ ) {
+
+		if ( strcmp(det->rigid_group_collections[i]->name, name) == 0 ) {
+			return det->rigid_group_collections[i];
+		}
+
+	}
+
+	new = realloc(det->rigid_group_collections,
+	              (1+det->n_rg_collections)*
+	              sizeof(struct rg_collection *));
+	if ( new == NULL ) return NULL;
+
+	det->rigid_group_collections = new;
+
+	rgc = malloc(sizeof(struct rg_collection));
+	if ( rgc == NULL ) return NULL;
+
+	det->rigid_group_collections[det->n_rg_collections++] = rgc;
+
+	rgc->name = strdup(name);
+	rgc->rigid_groups = NULL;
+	rgc->n_rigid_groups = 0;
+
+	return rgc;
+}
+
+
 static void add_to_rigid_group(struct rigid_group *rg, struct panel *p)
 {
 	struct panel **pn;
@@ -653,11 +798,26 @@ static void add_to_rigid_group(struct rigid_group *rg, struct panel *p)
 		return;
 	}
 
-	assert(p->rigid_group == rg);
 	rg->panels = pn;
 	rg->panels[rg->n_panels++] = p;
 }
 
+
+static void add_to_rigid_group_coll(struct rg_collection *rgc,
+                                    struct rigid_group *rg)
+{
+	struct rigid_group **r;
+
+	r = realloc(rgc->rigid_groups, (1+rgc->n_rigid_groups)*
+	            sizeof(struct rigid_group *));
+	if ( r == NULL ) {
+		ERROR("Couldn't add rigid group to collection.\n");
+		return;
+	}
+
+	rgc->rigid_groups = r;
+	rgc->rigid_groups[rgc->n_rigid_groups++] = rg;
+}
 
 static void rigid_groups_free(struct detector *det)
 {
@@ -672,19 +832,33 @@ static void rigid_groups_free(struct detector *det)
 	free(det->rigid_groups);
 }
 
-
-static void fix_up_rigid_groups(struct detector *det)
+static void rigid_groups_collection_free(struct detector *det)
 {
 	int i;
 
-	for ( i=0; i<det->n_panels; i++ ) {
-
-		struct panel *p = &det->panels[i];
-		if ( p->rigid_group != NULL ) {
-			add_to_rigid_group(p->rigid_group, p);
-		}
-
+	if ( det->rigid_group_collections == NULL ) return;
+	for ( i=0; i<det->n_rg_collections; i++ ) {
+		free(det->rigid_group_collections[i]->name);
+		free(det->rigid_group_collections[i]->rigid_groups);
+		free(det->rigid_group_collections[i]);
 	}
+	free(det->rigid_group_collections);
+}
+
+
+static struct rigid_group *find_rigid_group_by_name(struct detector *det,
+                                                    char *name)
+{
+	int i;
+
+	for ( i=0; i<det->n_rigid_groups; i++ ) {
+		if ( strcmp(det->rigid_groups[i]->name, name) == 0 ) {
+			return det->rigid_groups[i];
+		}
+	}
+
+	return NULL;
+
 }
 
 
@@ -708,7 +882,7 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 	} else if ( strcmp(key, "adu_per_eV") == 0 ) {
 		panel->adu_per_eV = atof(val);
 	} else if ( strcmp(key, "rigid_group") == 0 ) {
-		panel->rigid_group = find_or_add_rg(det, val);
+		add_to_rigid_group(find_or_add_rg(det, val), panel);
 	} else if ( strcmp(key, "clen") == 0 ) {
 
 		char *end;
@@ -824,8 +998,12 @@ static int parse_field_bad(struct badregion *panel, const char *key,
 
 
 static void parse_toplevel(struct detector *det, struct beam_params *beam,
-                           const char *key, const char *val)
+		           const char *key, const char *val,
+			   struct rg_definition ***rg_defl,
+                           struct rgc_definition ***rgc_defl, int *n_rg_defs,
+                           int *n_rgc_defs)
 {
+
 	if ( strcmp(key, "mask_bad") == 0 ) {
 
 		char *end;
@@ -860,6 +1038,33 @@ static void parse_toplevel(struct detector *det, struct beam_params *beam,
 		if ( beam != NULL ) {
 			beam->photon_energy_scale = atof(val);
 		}
+	} else if (strncmp(key, "rigid_group", 11) == 0 &&
+		       strncmp(key, "rigid_group_collection", 22) != 0 ) {
+
+		struct rg_definition **new;
+
+		new = realloc(*rg_defl,
+		             ((*n_rg_defs)+1)*sizeof(struct rg_definition*));
+		*rg_defl = new;
+
+		(*rg_defl)[*n_rg_defs] = malloc(sizeof(struct rg_definition));
+		(*rg_defl)[*n_rg_defs]->name = strdup(key+12);
+		(*rg_defl)[*n_rg_defs]->pns = strdup(val);
+		*n_rg_defs = *n_rg_defs+1;
+
+	} else if ( strncmp(key, "rigid_group_collection", 22) == 0 ) {
+
+		struct rgc_definition **new;
+
+		new = realloc(*rgc_defl, ((*n_rgc_defs)+1)*
+		      sizeof(struct rgc_definition*));
+		*rgc_defl = new;
+
+		(*rgc_defl)[*n_rgc_defs] =
+		                   malloc(sizeof(struct rgc_definition));
+		(*rgc_defl)[*n_rgc_defs]->name = strdup(key+23);
+		(*rgc_defl)[*n_rgc_defs]->rgs = strdup(val);
+		*n_rgc_defs = *n_rgc_defs+1;
 
 	} else if ( parse_field_for_panel(&det->defaults, key, val, det) ) {
 		ERROR("Unrecognised top level field '%s'\n", key);
@@ -933,6 +1138,7 @@ struct detector *get_detector_geometry(const char *filename,
 	char *rval;
 	char **bits;
 	int i;
+	int rgi, rgci;
 	int reject = 0;
 	int path_dim;
 	int dim_dim;
@@ -940,6 +1146,10 @@ struct detector *get_detector_geometry(const char *filename,
 	int x, y, max_fs, max_ss;
 	int dim_reject = 0;
 	int dim_dim_reject = 0;
+	struct rg_definition **rg_defl = NULL;
+	struct rgc_definition **rgc_defl = NULL;
+	int n_rg_definitions = 0;
+	int n_rgc_definitions = 0;
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) return NULL;
@@ -966,6 +1176,8 @@ struct detector *get_detector_geometry(const char *filename,
 	det->rigid_groups = NULL;
 	det->path_dim = 0;
 	det->dim_dim = 0;
+	det->n_rg_collections = 0;
+	det->rigid_group_collections = NULL;
 
 	/* The default defaults... */
 	det->defaults.min_fs = -1;
@@ -987,7 +1199,6 @@ struct detector *get_detector_geometry(const char *filename,
 	det->defaults.fsy = 0.0;
 	det->defaults.ssx = 0.0;
 	det->defaults.ssy = 1.0;
-	det->defaults.rigid_group = NULL;
 	det->defaults.adu_per_eV = NAN;
 	det->defaults.max_adu = +INFINITY;
 	det->defaults.mask = NULL;
@@ -1034,7 +1245,9 @@ struct detector *get_detector_geometry(const char *filename,
 		if ( n2 < 2 ) {
 
 			/* This was a top-level option, not handled above. */
-			parse_toplevel(det, beam, bits[0], bits[2]);
+			parse_toplevel(det, beam, bits[0], bits[2], &rg_defl,
+			               &rgc_defl, &n_rg_definitions,
+				       &n_rgc_definitions);
 			for ( i=0; i<n1; i++ ) free(bits[i]);
 			free(bits);
 			for ( i=0; i<n2; i++ ) free(path[i]);
@@ -1338,6 +1551,90 @@ out:
 	free(det->defaults.data);
 	free(det->defaults.mask);
 
+	for ( rgi=0; rgi<n_rg_definitions; rgi++) {
+
+		int pi, n1;
+		struct rigid_group *rigidgroup = NULL;
+
+		rigidgroup = find_or_add_rg(det, rg_defl[rgi]->name);
+
+		n1 = assplode(rg_defl[rgi]->pns, ",", &bits, ASSPLODE_NONE);
+
+		for ( pi=0; pi<n1; pi++ ) {
+
+			struct panel *p;
+
+			p = find_panel_by_name(det, bits[pi]);
+			if ( p == NULL ) {
+				ERROR("Cannot add panel to rigid group\n");
+				ERROR("Panel not found: %s\n", bits[pi]);
+			}
+			add_to_rigid_group(rigidgroup, p);
+			free(bits[pi]);
+		}
+		free(bits);
+		free(rg_defl[rgi]->name);
+		free(rg_defl[rgi]->pns);
+		free(rg_defl[rgi]);
+	}
+	free(rg_defl);
+
+	for ( rgci=0; rgci<n_rgc_definitions; rgci++) {
+
+		int rgi, n2;
+		struct rg_collection *rgcollection = NULL;
+
+		rgcollection = find_or_add_rg_coll(det, rgc_defl[rgci]->name);
+
+		n2 = assplode(rgc_defl[rgci]->rgs, ",", &bits, ASSPLODE_NONE);
+
+		for ( rgi=0; rgi<n2; rgi++ ) {
+
+			struct rigid_group *r;
+
+			r = find_rigid_group_by_name(det, bits[rgi]);
+			if ( r == NULL ) {
+				ERROR("Cannot add rigid group to collection\n");
+				ERROR("Rigid groups not found: %s\n", bits[rgi]);
+			}
+			add_to_rigid_group_coll(rgcollection, r);
+			free(bits[rgi]);
+		}
+		free(rgc_defl[rgci]->name);
+		free(rgc_defl[rgci]->rgs);
+		free(rgc_defl[rgci]);
+	}
+	free(rgc_defl);
+
+	if ( n_rg_definitions == 0) {
+
+		int pi;
+
+		for ( pi=0; pi<det->n_panels; pi++ ) {
+
+			struct rigid_group *rigidgroup = NULL;
+
+			rigidgroup = find_or_add_rg(det, det->panels[pi].name);
+			add_to_rigid_group(rigidgroup, &det->panels[pi]);
+
+		}
+	}
+
+	if ( n_rgc_definitions == 0) {
+
+		int rgi;
+		struct rg_collection *rgcollection = NULL;
+
+		rgcollection = find_or_add_rg_coll(det, "default");
+
+		for ( rgi=0; rgi<det->n_rigid_groups; rgi++ ) {
+
+			add_to_rigid_group_coll(rgcollection,
+			                        det->rigid_groups[rgi]);
+
+		}
+	}
+
 	/* Calculate matrix inverses and other stuff */
 	for ( i=0; i<det->n_panels; i++ ) {
 
@@ -1348,7 +1645,6 @@ out:
 
 		if ( p->fsx*p->ssy == p->ssx*p->fsy ) {
 			ERROR("Panel %i transformation singular.\n", i);
-			reject = 1;
 		}
 
 		d = (double)p->fsx*p->ssy - p->ssx*p->fsy;
@@ -1360,15 +1656,9 @@ out:
 		p->w = p->max_fs - p->min_fs + 1;
 		p->h = p->max_ss - p->min_ss + 1;
 
-		if ( p->rigid_group == NULL ) {
-			p->rigid_group = find_or_add_rg(det, p->name);
-		}
-
 	}
 
-	/* Fix up rigid group panel pointers now that the panels and RGs have
-	 * stopped being realloc()ed */
-	fix_up_rigid_groups(det);
+
 
 	find_min_max_d(det);
 
@@ -1385,6 +1675,7 @@ void free_detector_geometry(struct detector *det)
 	int i;
 
 	rigid_groups_free(det);
+	rigid_groups_collection_free(det);
 
 	for ( i=0; i<det->n_panels; i++ ) {
 		free(det->panels[i].clen_from);
@@ -1460,16 +1751,34 @@ struct detector *copy_geom(const struct detector *in)
 
 	for ( i=0; i<in->n_panels; i++ ) {
 
-		struct rigid_group *rg;
+		int rgi;
 
-		rg = in->panels[i].rigid_group;
-		if ( rg == NULL ) continue;
-
-		out->panels[i].rigid_group = find_or_add_rg(out, rg->name);
+		for ( rgi=0; rgi<in->n_rigid_groups; rgi++ ) {
+			if ( panel_is_in_rigid_group(in->rigid_groups[rgi],
+			     &in->panels[i])) {
+				add_to_rigid_group(find_or_add_rg(out,
+				                   in->rigid_groups[rgi]->name),
+				                   &out->panels[i]);
+			}
+		}
 
 	}
 
-	fix_up_rigid_groups(out);
+	for ( i=0; i<in->n_rigid_groups; i++ ) {
+
+		int rgci;
+
+		for ( rgci=0; rgci<in->n_rg_collections; rgci++ ) {
+			if ( rigid_group_is_in_collection(
+			                      in->rigid_group_collections[rgci],
+			                      in->rigid_groups[i]) )
+			{
+				add_to_rigid_group_coll(find_or_add_rg_coll(out,
+				       in->rigid_group_collections[rgci]->name),
+				       out->rigid_groups[i]);
+			}
+		}
+	}
 
 	return out;
 }
@@ -1494,7 +1803,6 @@ struct detector *simple_geometry(const struct image *image)
 	geom->panels[0].orig_max_ss = image->height-1;
 	geom->panels[0].cnx = -image->width / 2.0;
 	geom->panels[0].cny = -image->height / 2.0;
-	geom->panels[0].rigid_group = NULL;
 	geom->panels[0].max_adu = INFINITY;
 	geom->panels[0].orig_min_fs = -1;
 	geom->panels[0].orig_max_fs = -1;
@@ -1642,7 +1950,9 @@ void get_pixel_extents(struct detector *det,
 
 
 int write_detector_geometry(const char *geometry_filename,
-                            const char *output_filename, struct detector *det)
+                            const char *output_filename, struct detector *det,
+                            const char *additional_comment,
+                            int write_panel_coffset)
 {
 	FILE *ifh;
 	FILE *fh;
@@ -1655,53 +1965,142 @@ int write_detector_geometry(const char *geometry_filename,
 	if ( ifh == NULL ) return 1;
 
 	fh = fopen(output_filename, "w");
-	if ( fh == NULL ) return 1;
+	if ( fh == NULL ) {
+		fclose(fh);
+		return 1;
+	}
+
+	if ( additional_comment != NULL ) {
+
+		char additional_comment_tmp[1024];
+
+		strcpy(additional_comment_tmp, "; ");
+		strncat(additional_comment_tmp, additional_comment, 1021);
+		strcat(additional_comment_tmp, "\n");
+		if ( strlen(additional_comment) > 1021 ) {
+			strncpy(&additional_comment_tmp[1023], "\0", 1);
+		}
+		fputs(additional_comment_tmp, fh);
+	}
+	if  ( write_panel_coffset ) {
+
+		char new_line[1024];
+		strcpy(new_line,"; Optimized panel offsets can be found at the "
+		                "end of the file\n");
+		fputs(new_line, fh);
+
+	}
 
 	do {
 
 		char *rval;
 		char line[1024];
+		char new_line[1024];
+		char string_to_write[512];
+
 		int n_bits;
 		char **bits;
+
 		int i;
 		struct panel *p;
+
+		strcpy(new_line,"\0");
+		strcpy(string_to_write,"\0");
 
 		rval = fgets(line, 1023, ifh);
 		if ( rval == NULL ) break;
 
-		n_bits = assplode(line, "/", &bits, ASSPLODE_NONE);
+		n_bits = assplode(line, "/=", &bits, ASSPLODE_NONE);
 
-		if ( n_bits < 2 || n_bits > 2 ) {
-			for ( i=0; i<n_bits; i++ ) free(bits[i]);
-			fputs(line, fh);
-		} else {
-			p = find_panel_by_name(det, bits[0]);
-
-			if ( strncmp(bits[1], "fs = ", 5) == 0) {
-				fprintf(fh, "%s/fs = %+fx %+fy\n",
-				        p->name, p->fsx, p->fsy);
-
-			} else if ( strncmp(bits[1], "ss = ", 5) == 0) {
-				fprintf(fh, "%s/ss = %+fx %+fy\n",
-				        p->name, p->ssx, p->ssy);
-
-			} else if ( strncmp(bits[1], "corner_x = ", 11) == 0) {
-				fprintf(fh, "%s/corner_x = %g\n",
-				        p->name, p->cnx);
-
-			} else if ( strncmp(bits[1], "corner_y = ", 11) == 0) {
-				fprintf(fh, "%s/corner_y = %g\n",
-				        p->name, p->cny);
-
+		if ( n_bits != 3 ) {
+			if ( strstr(bits[0], "coffset" ) != NULL &&
+			     write_panel_coffset ) {
+				continue;
 			} else {
 				fputs(line, fh);
 			}
+		} else {
 
-			for ( i=0; i<n_bits; i++ ) free(bits[i]);
+			p = find_panel_by_name(det, bits[0]);
 
+			if ( p != NULL ) {
+
+				if(strstr(bits[1], "fs") != NULL &&
+				   strstr(bits[1], "min_fs") == NULL &&
+				   strstr(bits[1], "max_fs") == NULL) {
+
+					sprintf(string_to_write, "%+fx %+fy",
+					        p->fsx, p->fsy);
+					build_output_line(line, new_line,
+					                  string_to_write);
+					fputs(new_line, fh);
+					continue;
+
+				} else if ( strstr(bits[1], "ss") != NULL &&
+					    strstr(bits[1], "min_ss") == NULL &&
+				            strstr(bits[1], "max_ss") == NULL) {
+
+					sprintf(string_to_write, "%+fx %+fy",
+					        p->ssx, p->ssy);
+					build_output_line(line, new_line,
+					                  string_to_write);
+					fputs(new_line, fh);
+					continue;
+
+				} else if ( strstr(bits[1], "corner_x") != NULL) {
+
+					sprintf(string_to_write, "%g",
+					        p->cnx);
+					build_output_line(line, new_line,
+					                  string_to_write);
+					fputs(new_line, fh);
+					continue;
+
+				} else if ( strstr(bits[1], "corner_y") != NULL) {
+
+					sprintf(string_to_write, "%g",
+					        p->cny);
+					build_output_line(line, new_line,
+					                  string_to_write);
+					fputs(new_line, fh);
+					continue;
+
+				} else if ( strstr(bits[1], "coffset") != NULL) {
+
+					if ( write_panel_coffset ) {
+						continue;
+					} else {
+						fputs(line, fh);
+						continue;
+					}
+
+				} else {
+					fputs(line, fh);
+				}
+			} else {
+				fputs(line, fh);
+			}
 		}
 
+		for ( i=0; i<n_bits; i++ ) free(bits[i]);
+
 	} while ( 1 );
+
+	if ( write_panel_coffset ) {
+
+		int pi;
+		char new_line[1024];
+
+		strcpy(new_line, "\n");
+		fputs(new_line, fh);
+
+		for ( pi=0; pi<det->n_panels; pi++ ) {
+			sprintf(new_line, "%s/coffset = %f\n",
+			        det->panels[pi].name, det->panels[pi].coffset);
+			fputs(new_line, fh);
+		}
+	}
+
 
 	fclose(ifh);
 	fclose(fh);

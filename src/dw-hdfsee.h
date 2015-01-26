@@ -121,8 +121,9 @@ typedef struct {
 	int             n_rings;
 
 	CalibMode       calib_mode;
-	struct rigid_group *calib_mode_curr_rg;
-	struct panel    *calib_mode_curr_p;
+	struct rg_collection      *rg_coll;
+	struct rigid_group  *calib_mode_curr_rg;
+	struct panel	*calib_mode_curr_p;
 	int             calib_mode_show_focus;
 	GtkWidget       *statusbar;
 
@@ -147,7 +148,7 @@ extern DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
                                          const char *event,
                                          struct detector *det_geom,
                                          struct beam_params *beam,
-                                         int show_rings,
+                                         const char *rgcoll_name, int show_rings,
                                          double *ring_radii, int n_rings,
                                          double ring_size, int median_filter);
 

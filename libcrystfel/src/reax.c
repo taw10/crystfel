@@ -155,7 +155,7 @@ static void fill_and_transform(struct dvec *dir, ImageFeatureList *flist,
 			p = find_panel(det, f->fs, f->ss);
 			assert(p != NULL);
 
-			if ( p->rigid_group != rg ) continue;
+			if ( !panel_is_in_rigid_group(rg, p) ) continue;
 
 		}
 
