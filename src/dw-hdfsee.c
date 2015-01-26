@@ -1207,9 +1207,9 @@ static int save_geometry_file(DisplayWindow *dw)
 
 	gtk_dialog_run(GTK_DIALOG(d));
 	output_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER (d));
-	w = write_detector_geometry(dw->geom_filename, output_filename,
-	                            dw->image->det, "Manually optimized with "
-				    "hdfsee", 0);
+	w = write_detector_geometry_2(dw->geom_filename, output_filename,
+	                              dw->image->det, "Manually optimized with "
+	                              "hdfsee", 0);
 	if ( w != 0 ) {
 		ERROR("Error saving geometry!\n");
 	}

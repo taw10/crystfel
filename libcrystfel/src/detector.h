@@ -235,11 +235,15 @@ extern double smallest_q(struct image *image);
 
 extern struct panel *find_panel_by_name(struct detector *det, const char *name);
 
+extern int write_detector_geometry_2(const char *geometry_filename,
+                                     const char *output_filename,
+                                     struct detector *det,
+                                     const char *additional_comment,
+                                     int write_panel_coffset);
+
 extern int write_detector_geometry(const char *geometry_filename,
                                    const char *output_filename,
-                                   struct detector *det,
-                                   const char *additional_comment,
-                                   int write_panel_coffset);
+                                   struct detector *det);
 
 extern void mark_resolution_range_as_bad(struct image *image,
                                          double min, double max);

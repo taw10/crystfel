@@ -1948,10 +1948,10 @@ void get_pixel_extents(struct detector *det,
 }
 
 
-int write_detector_geometry(const char *geometry_filename,
-                            const char *output_filename, struct detector *det,
-                            const char *additional_comment,
-                            int write_panel_coffset)
+int write_detector_geometry_2(const char *geometry_filename,
+                              const char *output_filename, struct detector *det,
+                              const char *additional_comment,
+                              int write_panel_coffset)
 {
 	FILE *ifh;
 	FILE *fh;
@@ -2105,6 +2105,14 @@ int write_detector_geometry(const char *geometry_filename,
 	fclose(fh);
 
 	return 0;
+}
+
+
+int write_detector_geometry(const char *geometry_filename,
+                            const char *output_filename, struct detector *det)
+{
+	return write_detector_geometry_2(geometry_filename, output_filename,
+	                                 det, NULL, 0);
 }
 
 
