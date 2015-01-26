@@ -55,7 +55,7 @@ extern "C" {
 extern int hdf5_write(const char *filename, const void *data,
                       int width, int height, int type);
 
-extern int hdf5_write_image(const char *filename, struct image *image,
+extern int hdf5_write_image(const char *filename, const struct image *image,
                             char *element);
 
 extern int hdf5_read(struct hdfile *f, struct image *image,

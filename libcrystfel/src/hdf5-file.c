@@ -747,7 +747,7 @@ static struct hdf5_write_location *make_location_list(struct detector *det,
 }
 
 
-static void write_location(hid_t fh, struct image *image,
+static void write_location(hid_t fh, const struct image *image,
                            struct hdf5_write_location *loc)
 {
 	hid_t sh, dh, ph;
@@ -947,7 +947,8 @@ static void write_spectrum(hid_t fh, struct sample *spectrum, int spectrum_size,
 }
 
 
-int hdf5_write_image(const char *filename, struct image *image, char *element)
+int hdf5_write_image(const char *filename, const struct image *image,
+                     char *element)
 {
 	hid_t fh;
 	int li;
