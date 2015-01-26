@@ -180,6 +180,7 @@ struct image {
 	char                    *filename;
 	struct event            *event;
 	const struct copy_hdf5_field *copyme;
+	struct stuff_from_stream *stuff_from_stream;
 
 	int                     id;   /* ID number of the thread
 	                               * handling this image */

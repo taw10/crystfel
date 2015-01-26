@@ -1066,6 +1066,7 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 	image->crystals = NULL;
 	image->n_crystals = 0;
 	image->event = NULL;
+	image->stuff_from_stream = NULL;
 
 	if ( (srf & STREAM_READ_REFLECTIONS) || (srf & STREAM_READ_UNITCELL) ) {
 		srf |= STREAM_READ_CRYSTALS;
@@ -1146,6 +1147,37 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 
 			}
 		}
+
+		if (strncmp(line, "hdf5", 3) == 0 ) {
+
+			char **new_fields;
+
+			if ( image->stuff_from_stream == NULL ) {
+				image->stuff_from_stream =
+				       malloc(sizeof(struct stuff_from_stream));
+				if ( image->stuff_from_stream == NULL) {
+					ERROR("Failed reading hdf5 entries from "
+					      "stream\n");
+					return 1;
+				}
+				image->stuff_from_stream->fields = NULL;
+				image->stuff_from_stream->n_fields = 0;
+			}
+
+			new_fields = realloc(image->stuff_from_stream->fields,
+			                     (1+image->stuff_from_stream->n_fields)*
+			                     sizeof(char *));
+			if ( new_fields == NULL ) {
+				ERROR("Failed reading hdf5 entries from stream\n");
+				return 1;
+			}
+			image->stuff_from_stream->fields = new_fields;
+			image->stuff_from_stream->fields[image->stuff_from_stream->n_fields]
+			                                                     = strdup(line);
+			image->stuff_from_stream->n_fields++;
+
+		}
+
 
 		if ( (srf & STREAM_READ_PEAKS)
 		    && strcmp(line, PEAK_LIST_START_MARKER) == 0 ) {
@@ -1479,4 +1511,29 @@ void write_geometry_file(Stream *st, const char *geom_filename) {
 int rewind_stream(Stream *st)
 {
 	return fseek(st->fh, 0, SEEK_SET);
+}
+
+
+
+double extract_f_from_stuff(const char *field_name,
+                            struct stuff_from_stream* stuff)
+{
+	int i;
+
+	char field_name_plus_equal[256];
+	sprintf(field_name_plus_equal, "hdf5%s = ", field_name);
+
+
+
+	for ( i=0; i<stuff->n_fields; i++ ) {
+
+		if ( strncmp(stuff->fields[i], field_name_plus_equal,
+		     strlen(field_name_plus_equal)) == 0 ) {
+			return atoi(stuff->fields[i]+
+			       strlen(field_name_plus_equal));
+		}
+	}
+
+	ERROR("Failed to recovery camera length from stream file\n");
+	return -1;
 }
