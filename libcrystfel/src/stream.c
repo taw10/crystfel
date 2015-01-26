@@ -80,7 +80,7 @@ static int read_peaks(FILE *fh, struct image *image)
 		float x, y, d, intensity;
 		int r;
 		struct panel *p = NULL;
-		int add_x, add_y;
+		float add_x, add_y;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
@@ -140,7 +140,7 @@ static int read_peaks_2_3(FILE *fh, struct image *image)
 		float x, y, d, intensity;
 		int r;
 		struct panel *p = NULL;
-		int add_x, add_y;
+		float add_x, add_y;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
