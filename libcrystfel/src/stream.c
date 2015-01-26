@@ -1148,7 +1148,7 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 			}
 		}
 
-		if (strncmp(line, "hdf5", 3) == 0 ) {
+		if ( strncmp(line, "hdf5", 3) == 0 ) {
 
 			char **new_fields;
 
@@ -1177,7 +1177,6 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 			image->stuff_from_stream->n_fields++;
 
 		}
-
 
 		if ( (srf & STREAM_READ_PEAKS)
 		    && strcmp(line, PEAK_LIST_START_MARKER) == 0 ) {

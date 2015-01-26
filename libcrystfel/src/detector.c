@@ -230,8 +230,8 @@ static int count_trailing_spaces(const char *string) {
 }
 
 
-static void build_output_line (const char *line, char *new_line,
-                               const char *string_to_write)
+static void build_output_line(const char *line, char *new_line,
+                              const char *string_to_write)
 {
 	int nsp, i, w, ww;
 	int trailsp;
@@ -615,7 +615,6 @@ struct rg_collection *find_rigid_group_collection_by_name(struct detector *det,
 	}
 
 	return NULL;
-
 }
 
 
@@ -761,16 +760,14 @@ static struct rg_collection *find_or_add_rg_coll(struct detector *det,
 	struct rg_collection *rgc;
 
 	for ( i=0; i<det->n_rg_collections; i++ ) {
-
-		if ( strcmp(det->rigid_group_collections[i]->name, name) == 0 ) {
+		if ( strcmp(det->rigid_group_collections[i]->name, name) == 0 )
+		{
 			return det->rigid_group_collections[i];
 		}
-
 	}
 
 	new = realloc(det->rigid_group_collections,
-	              (1+det->n_rg_collections)*
-	              sizeof(struct rg_collection *));
+	              (1+det->n_rg_collections)*sizeof(struct rg_collection *));
 	if ( new == NULL ) return NULL;
 
 	det->rigid_group_collections = new;
@@ -819,7 +816,9 @@ static void add_to_rigid_group_coll(struct rg_collection *rgc,
 	rgc->rigid_groups[rgc->n_rigid_groups++] = rg;
 }
 
-static void rigid_groups_free(struct detector *det)
+
+/* Free all rigid groups in detector */
+static void free_all_rigid_groups(struct detector *det)
 {
 	int i;
 
@@ -832,7 +831,9 @@ static void rigid_groups_free(struct detector *det)
 	free(det->rigid_groups);
 }
 
-static void rigid_groups_collection_free(struct detector *det)
+
+/* Free all rigid groups in detector */
+static void free_all_rigid_group_collections(struct detector *det)
 {
 	int i;
 
@@ -858,7 +859,6 @@ static struct rigid_group *find_rigid_group_by_name(struct detector *det,
 	}
 
 	return NULL;
-
 }
 
 
@@ -998,8 +998,8 @@ static int parse_field_bad(struct badregion *panel, const char *key,
 
 
 static void parse_toplevel(struct detector *det, struct beam_params *beam,
-		           const char *key, const char *val,
-			   struct rg_definition ***rg_defl,
+                           const char *key, const char *val,
+                           struct rg_definition ***rg_defl,
                            struct rgc_definition ***rgc_defl, int *n_rg_defs,
                            int *n_rgc_defs)
 {
@@ -1038,8 +1038,9 @@ static void parse_toplevel(struct detector *det, struct beam_params *beam,
 		if ( beam != NULL ) {
 			beam->photon_energy_scale = atof(val);
 		}
-	} else if (strncmp(key, "rigid_group", 11) == 0 &&
-		       strncmp(key, "rigid_group_collection", 22) != 0 ) {
+
+	} else if (strncmp(key, "rigid_group", 11) == 0
+	        && strncmp(key, "rigid_group_collection", 22) != 0 ) {
 
 		struct rg_definition **new;
 
@@ -1579,7 +1580,7 @@ out:
 	}
 	free(rg_defl);
 
-	for ( rgci=0; rgci<n_rgc_definitions; rgci++) {
+	for ( rgci=0; rgci<n_rgc_definitions; rgci++ ) {
 
 		int rgi, n2;
 		struct rg_collection *rgcollection = NULL;
@@ -1606,7 +1607,7 @@ out:
 	}
 	free(rgc_defl);
 
-	if ( n_rg_definitions == 0) {
+	if ( n_rg_definitions == 0 ) {
 
 		int pi;
 
@@ -1620,7 +1621,7 @@ out:
 		}
 	}
 
-	if ( n_rgc_definitions == 0) {
+	if ( n_rgc_definitions == 0 ) {
 
 		int rgi;
 		struct rg_collection *rgcollection = NULL;
@@ -1658,8 +1659,6 @@ out:
 
 	}
 
-
-
 	find_min_max_d(det);
 
 	if ( reject ) return NULL;
@@ -1674,8 +1673,8 @@ void free_detector_geometry(struct detector *det)
 {
 	int i;
 
-	rigid_groups_free(det);
-	rigid_groups_collection_free(det);
+	free_all_rigid_groups(det);
+	free_all_rigid_group_collections(det);
 
 	for ( i=0; i<det->n_panels; i++ ) {
 		free(det->panels[i].clen_from);

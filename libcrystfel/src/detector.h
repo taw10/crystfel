@@ -81,7 +81,6 @@ struct rg_collection
 
 struct panel
 {
-
         char     name[1024];  /* Name for this panel */
 
         /* Position of panel in the data block in memory (see below) */
@@ -238,7 +237,7 @@ extern struct panel *find_panel_by_name(struct detector *det, const char *name);
 
 extern int write_detector_geometry(const char *geometry_filename,
                                    const char *output_filename,
-				   struct detector *det,
+                                   struct detector *det,
                                    const char *additional_comment,
                                    int write_panel_coffset);
 
