@@ -496,7 +496,8 @@ void fill_in_values(struct detector *det, struct hdfile *f, struct event* ev)
 
 
 			if (det->path_dim !=0 || det->dim_dim !=0 ){
-				p->clen = get_ev_based_value(f, p->clen_from, ev) * 1.0e-3;
+				p->clen = get_ev_based_value(f, p->clen_from,
+				                             ev) * 1.0e-3;
 			} else {
 				p->clen = get_value(f, p->clen_from) * 1.0e-3;
 			}
@@ -1031,6 +1032,7 @@ struct detector *get_detector_geometry(const char *filename,
 
 		n2 = assplode(bits[0], "/\\.", &path, ASSPLODE_NONE);
 		if ( n2 < 2 ) {
+
 			/* This was a top-level option, not handled above. */
 			parse_toplevel(det, beam, bits[0], bits[2]);
 			for ( i=0; i<n1; i++ ) free(bits[i]);
@@ -1134,8 +1136,8 @@ struct detector *get_detector_geometry(const char *filename,
 	}
 
 	if ( dim_reject ==  1) {
-		ERROR("All panels' data and mask entries must have the same number "\
-			"of placeholders\n");
+		ERROR("All panels' data and mask entries must have the same "
+		      "number of placeholders\n");
 		reject = 1;
 	}
 
@@ -1157,16 +1159,20 @@ struct detector *get_detector_geometry(const char *filename,
 
 		for ( di=0; di<det->panels[i].dim_structure->num_dims; di++ ) {
 
-			if ( det->panels[i].dim_structure->dims[di] == HYSL_UNDEFINED  ) {
+			if ( det->panels[i].dim_structure->dims[di] ==
+			                                   HYSL_UNDEFINED  ) {
 				dim_dim_reject = 1;
 			}
-			if ( det->panels[i].dim_structure->dims[di] == HYSL_PLACEHOLDER  ) {
+			if ( det->panels[i].dim_structure->dims[di] ==
+			                                   HYSL_PLACEHOLDER  ) {
 				panel_dim_dim += 1;
 			}
-			if ( det->panels[i].dim_structure->dims[di] == HYSL_SS  ) {
+			if ( det->panels[i].dim_structure->dims[di] ==
+			                                   HYSL_SS  ) {
 				found_ss += 1;
 			}
-			if ( det->panels[i].dim_structure->dims[di] == HYSL_FS  ) {
+			if ( det->panels[i].dim_structure->dims[di] ==
+			                                   HYSL_FS  ) {
 				found_fs += 1;
 			}
 
@@ -1183,7 +1189,8 @@ struct detector *get_detector_geometry(const char *filename,
 		}
 
 		if ( panel_dim_dim > 1 ) {
-			ERROR("Maximum one placeholder dim coordinate is allowed\n");
+			ERROR("Maximum one placeholder dim coordinate is "
+			      "allowed\n");
 			dim_dim_reject = 1;
 		}
 
@@ -1269,8 +1276,10 @@ struct detector *get_detector_geometry(const char *filename,
 		det->panels[i].orig_max_ss = det->panels[i].max_ss;
 		det->panels[i].orig_min_ss = det->panels[i].min_ss;
 
-		det->panels[i].w = det->panels[i].max_fs-det->panels[i].min_fs+1;
-		det->panels[i].h = det->panels[i].max_ss-det->panels[i].min_ss+1;
+		det->panels[i].w =
+		                 det->panels[i].max_fs-det->panels[i].min_fs+1;
+		det->panels[i].h =
+		                 det->panels[i].max_ss-det->panels[i].min_ss+1;
 
 		det->panels[i].min_fs = 0;
 		det->panels[i].max_fs = det->panels[i].w-1;

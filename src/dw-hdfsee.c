@@ -329,7 +329,8 @@ static void maybe_draw_focus(DisplayWindow *dw, cairo_t *cr, int i,
 		break;
 
 		case CALIBMODE_GROUPS:
-		if ( dw->image->det->panels[i].rigid_group == dw->calib_mode_curr_rg )
+		if ( dw->image->det->panels[i].rigid_group ==
+		     dw->calib_mode_curr_rg )
 		{
 			draw_calib_focus_rectangle(cr, basic_m, dw, i);
 			cairo_stroke(cr);
@@ -1096,8 +1097,8 @@ static void load_features_from_file(struct image *image, const char *filename)
 				      "(no geometry file given?)\n", pn);
 			} else {
 
-				/* Convert coordinates to match rearranged panels in
-				 * memory */
+				/* Convert coordinates to match rearranged panels
+				 * in memory */
 				fs = fs - p->orig_min_fs + p->min_fs;
 				ss = ss - p->orig_min_ss + p->min_ss;
 
@@ -1847,7 +1848,8 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 			item = gtk_menu_item_new_with_label(names[i]);
 
 			if ( hdfile_is_scalar(hdfile, names[i], 0) ) {
-				tmp = hdfile_get_string_value(hdfile, names[i], NULL);
+				tmp = hdfile_get_string_value(hdfile, names[i],
+				      NULL);
 			} else {
 				tmp = NULL;
 			}

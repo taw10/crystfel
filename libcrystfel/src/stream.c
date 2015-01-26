@@ -59,7 +59,6 @@
 #define AT_LEAST_VERSION(st, a, b) ((st->major_version>=(a)) \
                                     && (st->minor_version>=(b)))
 
-
 struct _stream
 {
 	FILE *fh;
@@ -211,8 +210,8 @@ static int write_peaks(struct image *image, FILE *ofh)
 				return 1;
 			}
 
-			/* Convert coordinates to match arrangement of panels in HDF5
-			 * file */
+			/* Convert coordinates to match arrangement of panels in
+			 * HDF5 file */
 			write_fs = f->fs - p->min_fs + p->orig_min_fs;
 			write_ss = f->ss - p->min_ss + p->orig_min_ss;
 
@@ -588,7 +587,8 @@ static int write_stream_reflections_2_2(FILE *fh, RefList *list,
 
 			fprintf(fh, "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f"
 			            " %6.1f %6.1f\n",
-			        h, k, l, intensity, esd_i, pk, bg, write_fs, write_ss);
+			        h, k, l, intensity, esd_i, pk, bg, write_fs,
+			        write_ss);
 
 		} else {
 
@@ -735,14 +735,19 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 
 			fprintf(st->fh, REFLECTION_START_MARKER"\n");
 			if ( AT_LEAST_VERSION(st, 2, 3) ) {
-				ret = write_stream_reflections_2_3(st->fh, reflist,
+				ret = write_stream_reflections_2_3(st->fh,
+				                                   reflist,
 				                                   image);
 			} else if ( AT_LEAST_VERSION(st, 2, 2) ) {
-				ret = write_stream_reflections_2_2(st->fh, reflist, image);
+				ret = write_stream_reflections_2_2(st->fh,
+			                                           reflist,
+			                                           image);
 			} else {
 				/* This function writes like a normal reflection
 				 * list was written in stream 2.1 */
-				ret = write_stream_reflections_2_1(st->fh, reflist, image);
+				ret = write_stream_reflections_2_1(st->fh,
+				                                   reflist,
+				                                   image);
 			}
 			fprintf(st->fh, REFLECTION_END_MARKER"\n");
 
@@ -983,9 +988,11 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 				reflist = read_stream_reflections_2_3(st->fh,
                                                       image->det);
 			} else if ( AT_LEAST_VERSION(st, 2, 2) ) {
-				reflist = read_stream_reflections_2_2(st->fh, image->det);
+				reflist = read_stream_reflections_2_2(st->fh,
+				          image->det);
 			} else {
-				reflist = read_stream_reflections_2_1(st->fh, image->det);
+				reflist = read_stream_reflections_2_1(st->fh,
+				          image->det);
 			}
 			if ( reflist == NULL ) {
 				ERROR("Failed while reading reflections\n");

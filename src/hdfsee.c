@@ -219,7 +219,6 @@ int main(int argc, char *argv[])
 			case 'g' :
 			geom_filename = strdup(optarg);
 			det_geom = get_detector_geometry(geom_filename, &cbeam);
-
 			if ( det_geom == NULL ) {
 				ERROR("Failed to read detector geometry "
 				      "from '%s'\n", optarg);

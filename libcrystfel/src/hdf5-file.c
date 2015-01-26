@@ -530,7 +530,8 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p,
 			fs = fs - p->orig_min_fs + p->min_fs;
 			ss = ss - p->orig_min_ss + p->min_ss;
 
-			image_add_feature(image->features, fs, ss, image, val, NULL);
+			image_add_feature(image->features, fs, ss, image, val,
+			                  NULL);
 
 		}
 
@@ -807,12 +808,13 @@ static void write_location(hid_t fh, struct image *image,
 		m_offset[1] = p.min_fs;
 		m_count[0] = p.max_ss - p.min_ss +1;
 		m_count[1] = p.max_fs - p.min_fs +1;
+
 		dimsm[0] = image->height;
 		dimsm[1] = image->width;
 		memspace = H5Screate_simple(2, dimsm, NULL);
+
 		r = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
 		                        m_offset, NULL, m_count, NULL);
-
 		r = H5Dwrite(dh, H5T_NATIVE_FLOAT, memspace,
 		             dh_dataspace, H5P_DEFAULT, image->data);
 		if ( r < 0 ) {
@@ -978,15 +980,18 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 		write_location(fh, image, &locations[li]);
 	}
 
-	if ( image->beam->photon_energy_from == NULL ) {
+	if ( image->beam == NULL || image->beam->photon_energy_from == NULL ) {
 		ph_en_loc = "photon_energy_eV";
 	} else {
 		ph_en_loc = image->beam->photon_energy_from;
 	}
+
 	write_photon_energy(fh, ph_lambda_to_eV(image->lambda), ph_en_loc);
-	if ( image->spectrum_size > 0 ) {
+
+	if ( image->spectrum != NULL && image->spectrum_size > 0 ) {
+
 		write_spectrum(fh, image->spectrum, image->spectrum_size,
-		               image->nsamples);
+		              image->nsamples);
 	}
 
 	H5Fclose(fh);
@@ -994,8 +999,8 @@ int hdf5_write_image(const char *filename, struct image *image, char *element)
 	for ( li=0; li<num_locations; li ++ ) {
 		free(locations[li].panel_idxs);
 	}
-	free(locations);
 
+	free(locations);
 	return 0;
 }
 
@@ -2334,7 +2339,8 @@ struct event_list *fill_event_list(struct hdfile *hdfile, struct detector *det)
 
 				int fail_add;
 
-				fail_add = add_non_existing_event_to_event_list(master_el,
+				fail_add = add_non_existing_event_to_event_list(
+				                     master_el,
 				                     panel_ev_list->events[ei]);
 				if ( fail_add ) {
 
@@ -2380,19 +2386,23 @@ struct event_list *fill_event_list(struct hdfile *hdfile, struct detector *det)
 				int hsdi;
 				int panel_path_dim = 0;
 
-				full_panel_path = retrieve_full_path(master_el->events[evi],
-				                                     det->panels[pai].data);
+				full_panel_path = retrieve_full_path(
+				                  master_el->events[evi],
+				                  det->panels[pai].data);
 
-				dh = H5Dopen2(hdfile->fh, full_panel_path, H5P_DEFAULT);
+				dh = H5Dopen2(hdfile->fh, full_panel_path,
+				              H5P_DEFAULT);
 				sh = H5Dget_space(dh);
 				dims = H5Sget_simple_extent_ndims(sh);
 
 				size = malloc(dims*sizeof(hsize_t));
 				max_size = malloc(dims*sizeof(hsize_t));
 
-				dims = H5Sget_simple_extent_dims(sh, size, max_size);
+				dims = H5Sget_simple_extent_dims(sh, size,
+				                                 max_size);
 
-				for ( hsdi=0; hsdi<det->panels[pai].dim_structure->num_dims;
+				for ( hsdi=0;
+				      hsdi<det->panels[pai].dim_structure->num_dims;
 				      hsdi++ ) {
 					if (det->panels[pai].dim_structure->dims[hsdi] ==
 				    HYSL_PLACEHOLDER ) {
@@ -2408,8 +2418,8 @@ struct event_list *fill_event_list(struct hdfile *hdfile, struct detector *det)
 
 				} else if ( panel_path_dim != global_path_dim ) {
 
-					ERROR("Data blocks paths for panels must have the same "
-					      "number of placeholders");
+					ERROR("Data blocks paths for panels must "
+					      "have the same number of placeholders");
 					free(size);
 					free(max_size);
 					return NULL;
@@ -2424,7 +2434,7 @@ struct event_list *fill_event_list(struct hdfile *hdfile, struct detector *det)
 				mlwd_ev = copy_event(master_el->events[evi]);
 				push_dim_entry_to_event(mlwd_ev, mlwd);
 				append_event_to_event_list(master_el_with_dims,
-										mlwd_ev);
+				                           mlwd_ev);
 				free(mlwd_ev);
 			}
 

@@ -121,7 +121,8 @@ struct imagefeature *image_feature_closest(ImageFeatureList *flist,
 		double ds;
 		struct panel *p2;
 
-		p2 = find_panel(det, flist->features[i].fs, flist->features[i].ss);
+		p2 = find_panel(det, flist->features[i].fs,
+		                flist->features[i].ss);
 
 		if ( p1 != p2 ) {
 			continue;
