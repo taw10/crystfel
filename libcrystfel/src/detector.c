@@ -1882,6 +1882,71 @@ static void check_extents(struct panel p, double *min_x, double *min_y,
 }
 
 
+static void process_panel_fields(const struct panel *p, char *line,
+                                     FILE *fh, char **bits,
+				     int write_panel_coffset)
+{
+	char new_line[1024];
+	char string_to_write[512];
+
+	strcpy(new_line,"\0");
+	strcpy(string_to_write,"\0");
+
+	if(strstr(bits[1], "fs") != NULL &&
+	   strstr(bits[1], "min_fs") == NULL &&
+	   strstr(bits[1], "max_fs") == NULL) {
+
+		sprintf(string_to_write, "%+fx %+fy",
+			p->fsx, p->fsy);
+		build_output_line(line, new_line,
+		                  string_to_write);
+		fputs(new_line, fh);
+		return;
+
+	} else if ( strstr(bits[1], "ss") != NULL &&
+		    strstr(bits[1], "min_ss") == NULL &&
+		    strstr(bits[1], "max_ss") == NULL) {
+
+		sprintf(string_to_write, "%+fx %+fy",
+			p->ssx, p->ssy);
+		build_output_line(line, new_line,
+		                  string_to_write);
+		fputs(new_line, fh);
+		return;
+
+	} else if ( strstr(bits[1], "corner_x") != NULL) {
+
+		sprintf(string_to_write, "%g",
+			p->cnx);
+		build_output_line(line, new_line,
+		                  string_to_write);
+		fputs(new_line, fh);
+		return;
+
+	} else if ( strstr(bits[1], "corner_y") != NULL) {
+
+		sprintf(string_to_write, "%g",
+			p->cny);
+		build_output_line(line, new_line,
+		                  string_to_write);
+		fputs(new_line, fh);
+		return;
+
+	} else if ( strstr(bits[1], "coffset") != NULL) {
+
+		if ( write_panel_coffset ) {
+			return;
+		} else {
+			fputs(line, fh);
+			return;
+		}
+
+	} else {
+		fputs(line, fh);
+	}
+}
+
+
 double largest_q(struct image *image)
 {
 	struct rvec q;
@@ -1994,17 +2059,12 @@ int write_detector_geometry_2(const char *geometry_filename,
 
 		char *rval;
 		char line[1024];
-		char new_line[1024];
-		char string_to_write[512];
 
 		int n_bits;
 		char **bits;
 
 		int i;
 		struct panel *p;
-
-		strcpy(new_line,"\0");
-		strcpy(string_to_write,"\0");
 
 		rval = fgets(line, 1023, ifh);
 		if ( rval == NULL ) break;
@@ -2023,59 +2083,9 @@ int write_detector_geometry_2(const char *geometry_filename,
 			p = find_panel_by_name(det, bits[0]);
 
 			if ( p != NULL ) {
+				process_panel_fields(p, line, fh, bits,
+						     write_panel_coffset);
 
-				if(strstr(bits[1], "fs") != NULL &&
-				   strstr(bits[1], "min_fs") == NULL &&
-				   strstr(bits[1], "max_fs") == NULL) {
-
-					sprintf(string_to_write, "%+fx %+fy",
-					        p->fsx, p->fsy);
-					build_output_line(line, new_line,
-					                  string_to_write);
-					fputs(new_line, fh);
-					continue;
-
-				} else if ( strstr(bits[1], "ss") != NULL &&
-					    strstr(bits[1], "min_ss") == NULL &&
-				            strstr(bits[1], "max_ss") == NULL) {
-
-					sprintf(string_to_write, "%+fx %+fy",
-					        p->ssx, p->ssy);
-					build_output_line(line, new_line,
-					                  string_to_write);
-					fputs(new_line, fh);
-					continue;
-
-				} else if ( strstr(bits[1], "corner_x") != NULL) {
-
-					sprintf(string_to_write, "%g",
-					        p->cnx);
-					build_output_line(line, new_line,
-					                  string_to_write);
-					fputs(new_line, fh);
-					continue;
-
-				} else if ( strstr(bits[1], "corner_y") != NULL) {
-
-					sprintf(string_to_write, "%g",
-					        p->cny);
-					build_output_line(line, new_line,
-					                  string_to_write);
-					fputs(new_line, fh);
-					continue;
-
-				} else if ( strstr(bits[1], "coffset") != NULL) {
-
-					if ( write_panel_coffset ) {
-						continue;
-					} else {
-						fputs(line, fh);
-						continue;
-					}
-
-				} else {
-					fputs(line, fh);
-				}
 			} else {
 				fputs(line, fh);
 			}

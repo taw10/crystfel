@@ -1051,6 +1051,39 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 }
 
 
+static int read_and_store_hdf5_field(struct image *image, const char *line)
+{
+
+	char **new_fields;
+
+	if ( image->stuff_from_stream == NULL ) {
+		image->stuff_from_stream =
+		       malloc(sizeof(struct stuff_from_stream));
+		if ( image->stuff_from_stream == NULL) {
+			ERROR("Failed reading hdf5 entries from "
+			      "stream\n");
+			return 1;
+		}
+		image->stuff_from_stream->fields = NULL;
+		image->stuff_from_stream->n_fields = 0;
+	}
+
+	new_fields = realloc(image->stuff_from_stream->fields,
+			     (1+image->stuff_from_stream->n_fields)*
+			     sizeof(char *));
+	if ( new_fields == NULL ) {
+		ERROR("Failed reading hdf5 entries from stream\n");
+		return 1;
+	}
+	image->stuff_from_stream->fields = new_fields;
+	image->stuff_from_stream->fields[image->stuff_from_stream->n_fields]
+							     = strdup(line);
+	image->stuff_from_stream->n_fields++;
+
+	return 0;
+}
+
+
 /* Read the next chunk from a stream and fill in 'image' */
 int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 {
@@ -1150,32 +1183,13 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 
 		if ( strncmp(line, "hdf5", 3) == 0 ) {
 
-			char **new_fields;
+			int fail;
 
-			if ( image->stuff_from_stream == NULL ) {
-				image->stuff_from_stream =
-				       malloc(sizeof(struct stuff_from_stream));
-				if ( image->stuff_from_stream == NULL) {
-					ERROR("Failed reading hdf5 entries from "
-					      "stream\n");
-					return 1;
-				}
-				image->stuff_from_stream->fields = NULL;
-				image->stuff_from_stream->n_fields = 0;
-			}
-
-			new_fields = realloc(image->stuff_from_stream->fields,
-			                     (1+image->stuff_from_stream->n_fields)*
-			                     sizeof(char *));
-			if ( new_fields == NULL ) {
-				ERROR("Failed reading hdf5 entries from stream\n");
+			fail = read_and_store_hdf5_field(image, line);
+			if ( fail ) {
+				ERROR("Failed to read hd5 fields from stream.\n");
 				return 1;
 			}
-			image->stuff_from_stream->fields = new_fields;
-			image->stuff_from_stream->fields[image->stuff_from_stream->n_fields]
-			                                                     = strdup(line);
-			image->stuff_from_stream->n_fields++;
-
 		}
 
 		if ( (srf & STREAM_READ_PEAKS)
