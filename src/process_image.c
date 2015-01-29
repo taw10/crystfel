@@ -68,55 +68,103 @@ static int cmpd2(const void *av, const void *bv)
 }
 
 
-static void refine_radius(Crystal *cr)
+static double *excitation_errors(UnitCell *cell, ImageFeatureList *flist,
+                                 RefList *reflist, int *pnacc)
 {
-	Reflection *refl;
-	RefListIterator *iter;
-	double vals[num_reflections(crystal_get_reflections(cr))*2];
-	int n = 0;
 	int i;
-	double ti = 0.0;  /* Total intensity */
+	const double min_dist = 0.25;
+	double *acc;
+	int n_acc = 0;
+	int n_notintegrated = 0;
+	int max_acc = 1024;
 
-	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		double rlow, rhigh, p;
-		int val = 0;
+	acc = malloc(max_acc*sizeof(double));
+	if ( acc == NULL ) {
+		ERROR("Allocation failed when refining radius!\n");
+		return NULL;
+	}
 
-		if ( get_intensity(refl) > 9.0*get_esd_intensity(refl) ) {
-			val = 1;
+	for ( i=0; i<image_feature_count(flist); i++ ) {
+
+		struct imagefeature *f;
+		double h, k, l, hd, kd, ld;
+
+		/* Assume all image "features" are genuine peaks */
+		f = image_get_feature(flist, i);
+		if ( f == NULL ) continue;
+
+		double ax, ay, az;
+		double bx, by, bz;
+		double cx, cy, cz;
+
+		cell_get_cartesian(cell,
+		                   &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+
+		/* Decimal and fractional Miller indices of nearest
+		 * reciprocal lattice point */
+		hd = f->rx * ax + f->ry * ay + f->rz * az;
+		kd = f->rx * bx + f->ry * by + f->rz * bz;
+		ld = f->rx * cx + f->ry * cy + f->rz * cz;
+		h = lrint(hd);
+		k = lrint(kd);
+		l = lrint(ld);
+
+		/* Check distance */
+		if ( (fabs(h - hd) < min_dist)
+		  && (fabs(k - kd) < min_dist)
+		  && (fabs(l - ld) < min_dist) )
+		{
+			double rlow, rhigh, p;
+			Reflection *refl;
+
+			/* Dig out the reflection */
+			refl = find_refl(reflist, h, k, l);
+			if ( refl == NULL ) {
+				n_notintegrated++;
+				continue;
+			}
+
+			get_partial(refl, &rlow, &rhigh, &p);
+			acc[n_acc++] = fabs(rlow+rhigh)/2.0;
+			if ( n_acc == max_acc ) {
+				max_acc += 1024;
+				acc = realloc(acc, max_acc*sizeof(double));
+				if ( acc == NULL ) {
+					ERROR("Allocation failed during"
+					      " estimate_resolution!\n");
+					return NULL;
+				}
+			}
 		}
 
-		get_partial(refl, &rlow, &rhigh, &p);
-
-		vals[(2*n)+0] = val;
-		vals[(2*n)+1] = fabs((rhigh+rlow)/2.0);
-		n++;
-
 	}
 
-	/* Sort in ascending order of absolute "deviation from Bragg" */
-	qsort(vals, n, sizeof(double)*2, cmpd2);
-
-	/* Calculate cumulative number of very strong reflections as a function
-	 * of absolute deviation from Bragg */
-	for ( i=0; i<n-1; i++ ) {
-		ti += vals[2*i];
-		vals[2*i] = ti;
+	if ( n_acc < 3 ) {
+		STATUS("WARNING: Too few peaks to estimate profile radius.\n");
+		return NULL;
 	}
 
-	if ( ti < 10 ) {
-		ERROR("WARNING: Not enough strong reflections (%.0f) to estimate "
-		      "crystal parameters (trying anyway).\n", ti);
-	}
+	*pnacc = n_acc;
+	return acc;
+}
 
-	/* Find the cutoff where we get 90% of the strong spots */
-	for ( i=0; i<n-1; i++ ) {
-		if ( vals[2*i] > 0.90*ti ) break;
-	}
 
-	crystal_set_profile_radius(cr, fabs(vals[2*i+1]));
+static void refine_radius(Crystal *cr, ImageFeatureList *flist)
+{
+	int n = 0;
+	int n_acc;
+	double *acc;
+
+	acc = excitation_errors(crystal_get_cell(cr), flist,
+	                        crystal_get_reflections(cr), &n_acc);
+	if ( acc == NULL ) return;
+
+	qsort(acc, n_acc, sizeof(double), cmpd2);
+	n = n_acc/50;
+	if ( n < 2 ) n = 2;
+	crystal_set_profile_radius(cr, acc[(n_acc-1)-n]);
+
+	free(acc);
 }
 
 
@@ -246,7 +294,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	                INTDIAG_NONE, 0, 0, 0, results_pipe);
 
 	for ( i=0; i<image.n_crystals; i++ ) {
-		refine_radius(image.crystals[i]);
+		refine_radius(image.crystals[i], image.features);
 		reflist_free(crystal_get_reflections(image.crystals[i]));
 	}
 
