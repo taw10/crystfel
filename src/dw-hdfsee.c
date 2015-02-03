@@ -2647,11 +2647,9 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 
 	if ( rgcoll_name != NULL ) {
 
-		dw->rg_coll = find_rigid_group_collection_by_name(dw->image->det,
-		                                                  rgcoll_name);
-
+		dw->rg_coll = dw->image->det->rigid_group_collections[0];
 		if ( dw->rg_coll == NULL ) {
-			ERROR("Cannot find rigid group collection: %s\n",
+			ERROR("Cannot find suitable rigid group collection.\n",
 			      rgcoll_name);
 			return NULL;
 		}
