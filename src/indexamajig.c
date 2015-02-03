@@ -125,9 +125,6 @@ static void show_help(const char *s)
 "    --check-hdf5-snr    Check SNR for peaks from --peaks=hdf5.\n"
 "    --peak-radius=<r>   Integration radii for peak search.\n"
 "    --int-radius=<r>    Set the integration radii.  Default: 4,5,7.\n"
-"-e, --image=<element>   Use this image from the HDF5 file.\n"
-"                          Example: /data/data0.\n"
-"                          Default: The first one found.\n"
 "    --push-res=<n>      Integrate higher than apparent resolution cutoff.\n"
 "    --highres=<n>       Absolute resolution cutoff in Angstroms.\n"
 "\n"
@@ -217,7 +214,6 @@ int main(int argc, char *argv[])
 	iargs.det = NULL;
 	iargs.peaks = PEAK_ZAEF;
 	iargs.beam = &beam;
-	iargs.element = NULL;
 	iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
 	iargs.cxi_hdf5_peaks = 0;
 	iargs.copyme = NULL;
@@ -256,7 +252,6 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"prefix",             1, NULL,               'x'},
 		{"threshold",          1, NULL,               't'},
-		{"image",              1, NULL,               'e'},
 		{"beam",               1, NULL,               'b'},
 
 		/* Long-only options with no arguments */
@@ -303,7 +298,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:o:z:p:x:j:g:t:e:vb:",
+	while ((c = getopt_long(argc, argv, "hi:o:z:p:x:j:g:t:vb:",
 	                        longopts, NULL)) != -1)
 	{
 		switch (c) {
@@ -353,10 +348,6 @@ int main(int argc, char *argv[])
 
 			case 't' :
 			iargs.threshold = strtof(optarg, NULL);
-			break;
-
-			case 'e' :
-			iargs.element = strdup(optarg);
 			break;
 
 			case 2 :

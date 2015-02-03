@@ -516,7 +516,6 @@ static void run_work(const struct index_args *iargs,
 	free(iargs->indm);
 	free(iargs->ipriv);
 	free_detector_geometry(iargs->det);
-	free(iargs->element);
 	free(iargs->hdf5_peak_path);
 	free_copy_hdf5_field_list(iargs->copyme);
 	cell_free(iargs->cell);

@@ -62,7 +62,6 @@ struct index_args
 	int peaks;                /* Peak detection method */
 	float tols[4];
 	struct beam_params *beam;
-	char *element;
 	char *hdf5_peak_path;
 	int cxi_hdf5_peaks;
 	float pk_inn;
