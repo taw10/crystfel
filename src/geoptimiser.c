@@ -284,7 +284,8 @@ static struct pattern_list *read_patterns_from_steam_file(const char *infile,
 				struct pattern **patterns_new;
 
 				patterns_new = realloc(pattern_list->patterns,
-				               (max_patterns+1024)*sizeof(struct pattern *));
+				               (max_patterns+1024)*
+					       sizeof(struct pattern *));
 				if ( patterns_new == NULL ) {
 					ERROR("Failed to allocate "
 					      "memory for loaded patterns.\n");
@@ -299,7 +300,8 @@ static struct pattern_list *read_patterns_from_steam_file(const char *infile,
 
 			patn = malloc(sizeof(struct pattern));
 			if ( patn == NULL ) {
-				ERROR("Failed to allocate memory for loaded patterns.\n");
+				ERROR("Failed to allocate memory for loaded "
+				      "patterns.\n");
 				free(pattern_list->patterns);
 				free(pattern_list);
 				return NULL;
@@ -314,7 +316,7 @@ static struct pattern_list *read_patterns_from_steam_file(const char *infile,
 			avg_clen = compute_average_clen(det, &clen_from, &offset);
 			if ( avg_clen == -1 ) {
 				avg_clen = extract_f_from_stuff(clen_from,
-				                                cur.stuff_from_stream)*1e-3;
+				           cur.stuff_from_stream)*1e-3;
 				avg_clen += offset;
 			}
 
@@ -334,9 +336,11 @@ static struct pattern_list *read_patterns_from_steam_file(const char *infile,
 				cell = crystal_get_cell(cur.crystals[0]);
 
 				new_unit_cells = realloc(patn->unit_cells,
-				                 (patn->n_unit_cells+1)*sizeof(UnitCell *));
+				                 (patn->n_unit_cells+1)*
+						 sizeof(UnitCell *));
 				if ( new_unit_cells == NULL ) {
-					ERROR("Failed to allocate memory for loaded patterns.\n");
+					ERROR("Failed to allocate memory for "
+					      "loaded patterns.\n");
 					free(pattern_list->patterns);
 					free(pattern_list);
 					free(patn);
@@ -347,7 +351,8 @@ static struct pattern_list *read_patterns_from_steam_file(const char *infile,
 				patn->n_unit_cells++;
 				patn->unit_cells = new_unit_cells;
 
-				crystal_reflist = crystal_get_reflections(cur.crystals[i]);
+				crystal_reflist = crystal_get_reflections(
+						      cur.crystals[i]);
 
 				for ( refl = first_refl(crystal_reflist, &iter);
 				      refl != NULL;
@@ -368,7 +373,8 @@ static struct pattern_list *read_patterns_from_steam_file(const char *infile,
 			pattern_list->n_patterns++;
 
 			if ( pattern_list->n_patterns%1000 == 0 ) {
-				STATUS("Loaded %i indexed patterns from %i total patterns\n",
+				STATUS("Loaded %i indexed patterns from %i "
+				       "total patterns\n",
 				       pattern_list->n_patterns, ++n_chunks);
 			}
 
@@ -424,12 +430,13 @@ static void compute_avg_cell_parameters(struct pattern_list *pattern_list,
 
 		for ( cri=0; cri<ptn->n_unit_cells; cri++ ) {
 
-			cell_get_parameters(ptn->unit_cells[cri], &cpar[0],  // a
-			                                          &cpar[1],  // b
-			                                          &cpar[2],  // c
-			                                          &cpar[3],  // alpha
-			                                          &cpar[4],  // beta
-			                                          &cpar[5]); // gamma
+			cell_get_parameters(ptn->unit_cells[cri],
+			                    &cpar[0],  // a
+			                    &cpar[1],  // b
+			                    &cpar[2],  // c
+			                    &cpar[3],  // alpha
+			                    &cpar[4],  // beta
+			                    &cpar[5]); // gamma
 
 			cpar[0] *= 1e9;
 			cpar[1] *= 1e9;
@@ -518,7 +525,8 @@ static double compute_clen_to_use(struct pattern_list *pattern_list,
 		int found = 0;
 
 		for ( i=0; i<num_clens; i++ ) {
-			if ( fabs(pattern_list->patterns[cp]->clen-clens[i])<0.0001 ) {
+			if ( fabs(pattern_list->patterns[cp]->clen-clens[i])
+			     <0.0001 ) {
 				clens_population[i]++;
 				lambdas[i] += pattern_list->patterns[cp]->lambda;
 				found = 1;
@@ -535,14 +543,14 @@ static double compute_clen_to_use(struct pattern_list *pattern_list,
 			double *lambdas_new;
 
 			clens_population_new = realloc(clens_population,
-			                              (max_clens+1024)*sizeof(int));
+			                       (max_clens+1024)*sizeof(int));
 			clens_new = realloc(clens_population,
-				                   (max_clens+1024)*sizeof(double));
+			            (max_clens+1024)*sizeof(double));
 			lambdas_new = realloc(clens_population,
-			                           (max_clens+1024)*sizeof(double));
+			             (max_clens+1024)*sizeof(double));
 
-			if ( clens_new == NULL ||  clens_population_new == NULL ||
-			     lambdas_new == NULL) {
+			if ( clens_new == NULL ||  clens_population_new == NULL
+			     || lambdas_new == NULL) {
 				ERROR("Failed to allocate memory for "
 				      "camera length list\n");
                 free(clens);
@@ -570,7 +578,8 @@ static double compute_clen_to_use(struct pattern_list *pattern_list,
 	}
 
 	if ( num_clens == 1 ) {
-		STATUS("All patterns have the same camera length: %f\n", clens[0]);
+		STATUS("All patterns have the same camera length: %f\n",
+		       clens[0]);
 	} else {
 		STATUS("%i different camera lengths were found for the input "
 		       "patterns:\n", num_clens);
@@ -584,15 +593,17 @@ static double compute_clen_to_use(struct pattern_list *pattern_list,
 
 			irecistep = 1/cqu.u;
 
-			min_braggp_dist = fmin(fmin(irecistep/avcp[0],irecistep/avcp[1]),
+			min_braggp_dist = fmin(fmin(irecistep/avcp[0],
+			                       irecistep/avcp[1]),
 			                       irecistep/avcp[2]);
 			STATUS("Camera length %0.4f was found %i times.\n"
-			       "Minimum inter-bragg peak distance (based on average cell "
-			       "parameters): %0.1f pixels\n",clens[i], clens_population[i],
+			       "Minimum inter-bragg peak distance (based on "
+			       "average cell parameters): %0.1f pixels\n",
+			       clens[i], clens_population[i],
 			       min_braggp_dist);
 			if ( min_braggp_dist<1.2*max_peak_distance ) {
-				STATUS("WARNING: The distance between Bragg peaks is too "
-				       "small: "
+				STATUS("WARNING: The distance between Bragg "
+				       "peaks is too small: "
 				       "%0.1f < 1.2*%0.1f\n", min_braggp_dist,
 				       max_peak_distance);
 			}
@@ -639,7 +650,8 @@ static double comp_median(double *arr, unsigned int n)
 			return arr[median] ;
 		}
 
-		/* Find median of low, middle and high items; swap into position low */
+		// Find median of low, middle and high items; swap into position
+		// low
 		middle = (low + high) / 2;
 		if ( arr[middle]>arr[high] ) {
 			A = arr[middle];
@@ -657,12 +669,14 @@ static double comp_median(double *arr, unsigned int n)
 			arr[low] = A;
 		}
 
-		/* Swap low item (now in position middle) into position (low+1) */
+		// Swap low item (now in position middle) into position
+		// (low+1)
 		A = arr[middle];
 		arr[middle] = arr[low+1];
 		arr[low+1] = A;
 
-		/* Nibble from each end towards middle, swapping items when stuck */
+		// Nibble from each end towards middle, swapping items when
+		// stuck
 		ll = low + 1;
 		hh = high;
 		while (1) {
@@ -738,36 +752,150 @@ static void free_all_curr_pix_displ(struct single_pix_displ *all_pix_displ,
 }
 
 
+static int fill_pixel_statistics(int *num_pix_displ,
+                                 struct single_pix_displ** curr_pix_displ,
+				 struct single_pix_displ* all_pix_displ,
+				 struct connected_data *conn_data,
+				 int ifs, int iss, int di, int aw, int dfv,
+				 double *displ_x,
+                                 double *displ_y, double *displ_abs)
+{
+	double *cPxAfs;
+	double *cPxAss;
+	int cnu = 0;
+
+	cPxAfs = calloc(num_pix_displ[ifs+aw*iss], sizeof(double));
+	if ( cPxAfs == NULL ) {
+		ERROR("Failed to allocate memory for pixel statistics.\n");
+		return 1;
+	}
+	cPxAss = calloc(num_pix_displ[ifs+aw*iss], sizeof(double));
+	if ( cPxAss == NULL ) {
+		ERROR("Failed to allocate memory for pixel statistics.\n");
+		free(cPxAfs);
+		return 1;
+	}
+
+	curr_pix_displ[ifs+aw*iss] = &all_pix_displ[ifs+aw*iss];
+
+	while (1) {
+		if (curr_pix_displ[ifs+aw*iss]->dfs == dfv) break;
+		cPxAfs[cnu] = curr_pix_displ[ifs+aw*iss]->dfs;
+		cPxAss[cnu] = curr_pix_displ[ifs+aw*iss]->dss;
+		cnu++;
+		if ( curr_pix_displ[ifs+aw*iss]->ne == NULL ) break;
+		curr_pix_displ[ifs+aw*iss] = curr_pix_displ[ifs+aw*iss]->ne;
+	}
+
+	if ( cnu < 1 ) return 0;
+
+	displ_x[ifs+aw*iss] = comp_median(cPxAfs, cnu);
+	displ_y[ifs+aw*iss] = comp_median(cPxAss, cnu);
+	displ_abs[ifs+aw*iss] = modulus2d(displ_x[ifs+aw*iss],
+	                                  displ_y[ifs+aw*iss]);
+	conn_data[di].n_peaks_in_conn++;
+
+	free(cPxAfs);
+	free(cPxAss);
+
+	return 0;
+}
+
+
+
+static int compute_panel_statistics(struct rg_collection *connected,
+                                    int *num_pix_displ,
+				    struct single_pix_displ** curr_pix_displ,
+				    struct single_pix_displ* all_pix_displ,
+				    struct connected_data *conn_data,
+				    int di, int ip, int np,
+				    double dfv,
+				    int aw, double *displ_x,
+                                    double *displ_y, double *displ_abs)
+{
+	struct panel *p;
+	int ifs, iss;
+
+	p = connected->rigid_groups[di]->panels[ip];
+
+	for ( ifs=p->min_fs; ifs<p->max_fs+1; ifs++ ) {
+		for ( iss=p->min_ss; iss<p->max_ss+1; iss++ ) {
+			if ( num_pix_displ[ifs+aw*iss]>=np ) {
+
+				int ret;
+
+				ret = fill_pixel_statistics(num_pix_displ,
+				                            curr_pix_displ,
+				                            all_pix_displ,
+				                            conn_data,
+				                            ifs, iss, di, aw,
+				                            dfv, displ_x,
+				                            displ_y, displ_abs);
+
+				if ( ret == -2 ) {
+					break;
+				} else if ( ret != 0 ) {
+					return ret;
+				}
+
+			} else {
+				displ_x[ifs+aw*iss] = dfv;
+				displ_y[ifs+aw*iss] = dfv;
+				displ_abs[ifs+aw*iss] = dfv;
+			}
+
+		}
+	}
+	return 0;
+}
+
+
+
+static int allocate_next_element(struct single_pix_displ** curr_pix_displ,
+                                 int ipx)
+{
+	curr_pix_displ[ipx]->ne = malloc(sizeof(struct single_pix_displ));
+	if ( curr_pix_displ[ipx]->ne == NULL ) {
+		ERROR("Failed to allocate memory for pixel statistics.\n");
+		return 1;
+	}
+
+	curr_pix_displ[ipx] = curr_pix_displ[ipx]->ne;
+
+	return 0;
+}
+
+
 static int compute_pixel_statistics(struct pattern_list *pattern_list,
-                                     struct detector *det,
-                                     struct rg_collection *connected,
-                                     struct rg_collection *quadrants,
-                                     int num_pix_in_slab,
-                                     int max_peak_distance, int array_width,
-                                     double default_fill_value,
-                                     double min_num_peaks_per_pixel,
-                                     double min_num_peaks_per_panel,
-                                     int only_best_distance,
-                                     double clen_to_use,
-                                     double *slab_to_x, double *slab_to_y,
-                                     struct connected_data *conn_data,
-                                     double *displ_x,
-                                     double *displ_y, double *displ_abs,
-                                     struct single_pix_displ* all_pix_displ,
-                                     struct single_pix_displ** curr_pix_displ,
-                                     int *num_pix_displ)
+                                    struct detector *det,
+                                    struct rg_collection *connected,
+                                    struct rg_collection *quadrants,
+                                    int num_pix_in_slab,
+                                    int max_peak_distance, int aw,
+                                    double dfv,
+                                    double min_num_peaks_per_pixel,
+                                    double min_num_peaks_per_panel,
+                                    int only_best_distance,
+                                    double clen_to_use,
+                                    double *slab_to_x, double *slab_to_y,
+                                    struct connected_data *conn_data,
+                                    double *displ_x,
+                                    double *displ_y, double *displ_abs,
+                                    struct single_pix_displ* all_pix_displ,
+                                    struct single_pix_displ** curr_pix_displ,
+                                    int *num_pix_displ)
 {
 	int ipx, cp, ich, di, ip, np;
 
 	for (di=0; di<connected->n_rigid_groups; di++) {
 
 		conn_data[di].num_quad = find_quad_for_connected(
-		                                       connected->rigid_groups[di],
-		                                       quadrants);
+		                                    connected->rigid_groups[di],
+		                                    quadrants);
 		conn_data[di].cang = 0.0;
 		conn_data[di].cstr = 1.0;
-		conn_data[di].sh_x = default_fill_value;
-		conn_data[di].sh_y = default_fill_value;
+		conn_data[di].sh_x = dfv;
+		conn_data[di].sh_y = dfv;
 		conn_data[di].num_peaks_per_pixel = 1;
 		conn_data[di].name = connected->rigid_groups[di]->name;
 		conn_data[di].n_peaks_in_conn = 0;
@@ -775,8 +903,8 @@ static int compute_pixel_statistics(struct pattern_list *pattern_list,
 
 
 	for ( ipx=0; ipx<num_pix_in_slab; ipx++ ) {
-		all_pix_displ[ipx].dfs = default_fill_value;
-		all_pix_displ[ipx].dss = default_fill_value;
+		all_pix_displ[ipx].dfs = dfv;
+		all_pix_displ[ipx].dss = dfv;
 		all_pix_displ[ipx].ne = NULL;
 		curr_pix_displ[ipx] = &all_pix_displ[ipx];
 		num_pix_displ[ipx] = 0;
@@ -787,7 +915,8 @@ static int compute_pixel_statistics(struct pattern_list *pattern_list,
 		ImageFeatureList *flist = pattern_list->patterns[cp]->im_list;
 
 		if ( only_best_distance ) {
-			if ( fabs(pattern_list->patterns[cp]->clen-clen_to_use)>0.0001 ) {
+			if ( fabs(pattern_list->patterns[cp]->clen-clen_to_use) >
+			    0.0001 ) {
 				continue;
 			}
 		}
@@ -807,25 +936,25 @@ static int compute_pixel_statistics(struct pattern_list *pattern_list,
 			struct imagefeature *imfe = image_get_feature(flist, ich);
 			compute_x_y(det, imfe->fs, imfe->ss, &fx, &fy);
 
-			refl = find_closest_reflection(rlist, fx, fy, det, &min_dist);
+			refl = find_closest_reflection(rlist, fx, fy, det,
+			                               &min_dist);
 
 			if ( refl == NULL ) continue;
 
-			if ( min_dist<max_peak_distance ) {
+			if ( min_dist < max_peak_distance ) {
 
-				int ipx = ((int)rint(imfe->fs) + array_width*
+				int ipx = ((int)rint(imfe->fs) + aw*
 				           (int)rint(imfe->ss));
 
 				if ( num_pix_displ[ipx]>0 ) {
-					curr_pix_displ[ipx]->ne = malloc(sizeof(
-					                                 struct single_pix_displ));
-					if ( curr_pix_displ[ipx]->ne == NULL ) {
-						ERROR("Failed to allocate memory for pixel "
-						      "statistics.\n");
-						return 1;
-					}
 
-					curr_pix_displ[ipx] = curr_pix_displ[ipx]->ne;
+					int ret;
+
+					ret = allocate_next_element(curr_pix_displ,
+					                            ipx);
+
+					if ( ret != 0) return ret;
+
 				}
 
 				get_detector_pos(refl, &rfs, &rss);
@@ -845,78 +974,29 @@ static int compute_pixel_statistics(struct pattern_list *pattern_list,
 				continue;
 			}
 
-			for (ip=0; ip<connected->rigid_groups[di]->n_panels; ip++) {
+			for (ip=0; ip<connected->rigid_groups[di]->n_panels;
+			     ip++) {
 
-				struct panel *p;
-				int ifs, iss;
+				int ret;
 
-				p = connected->rigid_groups[di]->panels[ip];
+				ret = compute_panel_statistics(connected,
+				                               num_pix_displ,
+				                               curr_pix_displ,
+				                               all_pix_displ,
+				                               conn_data, di, ip,
+				                               np,
+				                               dfv,
+				                               aw,
+				                               displ_x,
+				                               displ_y,
+							       displ_abs);
 
-				for ( ifs=p->min_fs; ifs<p->max_fs+1; ifs++ ) {
-					for ( iss=p->min_ss; iss<p->max_ss+1; iss++ ) {
-						if ( num_pix_displ[ifs+array_width*iss]>=np ) {
-
-							double *cPxAfs;
-							double *cPxAss;
-							int cnu = 0;
-
-							cPxAfs = calloc(num_pix_displ[ifs+array_width*iss],
-							                sizeof(double));
-							if ( cPxAfs == NULL ) {
-								ERROR("Failed to allocate memory for "
-								      "pixel statistics.\n");
-								return 1;
-							}
-							cPxAss = calloc(num_pix_displ[ifs+array_width*iss],
-								            sizeof(double));
-							if ( cPxAss == NULL ) {
-								ERROR("Failed to allocate memory for "
-								      "pixel statistics.\n");
-								free(cPxAfs);
-								return 1;
-							}
-
-							curr_pix_displ[ifs+array_width*iss] =
-							               &all_pix_displ[ifs+array_width*iss];
-
-							while (1) {
-								if (curr_pix_displ[ifs+array_width*iss]->dfs
-								    == default_fill_value) break;
-								cPxAfs[cnu] =
-								      curr_pix_displ[ifs+array_width*iss]->dfs;
-								cPxAss[cnu] =
-								      curr_pix_displ[ifs+array_width*iss]->dss;
-								cnu++;
-								if ( curr_pix_displ[ifs+array_width*iss]->ne ==
-								     NULL ) break;
-								curr_pix_displ[ifs+array_width*iss] =
-								        curr_pix_displ[ifs+array_width*iss]->ne;
-
-							}
-
-							if ( cnu<1 ) continue;
-
-							displ_x[ifs+array_width*iss] =
-							       comp_median(cPxAfs, cnu);
-							displ_y[ifs+array_width*iss] =
-							       comp_median(cPxAss, cnu);
-							displ_abs[ifs+array_width*iss] = modulus2d(
-							displ_x[ifs+array_width*iss],
-							displ_y[ifs+array_width*iss]);
-							conn_data[di].n_peaks_in_conn++;
-
-							free(cPxAfs);
-							free(cPxAss);
-
-						} else {
-							displ_x[ifs+array_width*iss] = default_fill_value;
-							displ_y[ifs+array_width*iss] = default_fill_value;
-							displ_abs[ifs+array_width*iss] = default_fill_value;
-						}
-					}
-				}
+				if ( ret !=0 ) return ret;
 			}
-			if ( conn_data[di].n_peaks_in_conn>=min_num_peaks_per_panel ) {
+
+
+			if ( conn_data[di].n_peaks_in_conn >=
+			     min_num_peaks_per_panel ) {
 				conn_data[di].num_peaks_per_pixel = np;
 			}
 		}
@@ -927,7 +1007,7 @@ static int compute_pixel_statistics(struct pattern_list *pattern_list,
 
 
 static double compute_error(struct rg_collection *connected,
-                            int array_width,
+                            int aw,
                             struct connected_data *conn_data,
                             int *num_pix_displ,
                             double *displ_abs)
@@ -949,13 +1029,13 @@ static double compute_error(struct rg_collection *connected,
 
 			for (ifs=p->min_fs; ifs<p->max_fs+1; ifs++) {
 				for (iss=p->min_ss; iss<p->max_ss+1; iss++) {
-					if ( num_pix_displ[ifs+array_width*iss]>=
+					if ( num_pix_displ[ifs+aw*iss]>=
 					     conn_data[di].num_peaks_per_pixel ) {
 
 						double cer;
 
-						cer = displ_abs[ifs+array_width*iss]*
-						      displ_abs[ifs+array_width*iss];
+						cer = displ_abs[ifs+aw*iss]*
+						      displ_abs[ifs+aw*iss];
 						connected_error += cer;
 						num_connected_error++;
 						total_error += cer;
@@ -987,7 +1067,7 @@ static double compute_error(struct rg_collection *connected,
 }
 
 
-static void fill_coordinate_matrices(struct detector *det, int array_width,
+static void fill_coordinate_matrices(struct detector *det, int aw,
                                      double *slab_to_x, double *slab_to_y)
 {
 	int pi;
@@ -1006,8 +1086,8 @@ static void fill_coordinate_matrices(struct detector *det, int array_width,
 
 				compute_x_y(det, ifs, iss, &xs, &ys);
 
-				slab_to_x[iss*array_width+ifs] = xs;
-				slab_to_y[iss*array_width+ifs] = ys;
+				slab_to_x[iss*aw+ifs] = xs;
+				slab_to_y[iss*aw+ifs] = ys;
 
 			}
 		}
@@ -1070,14 +1150,19 @@ static int correct_empty_panels(struct rg_collection *quadrants,
 
 		if ( conn_data[di].n_peaks_in_conn<min_num_peaks_per_panel ) {
 			if (aver_num_ang[conn_data[di].num_quad]>0) {
-				conn_data[di].cang = aver_ang[conn_data[di].num_quad];
-				conn_data[di].cstr = aver_str[conn_data[di].num_quad];
-				STATUS("Connected group %s has not enough peaks (%i). Using"
-				       " average angle: %0.4f\n", conn_data[di].name,
-				       conn_data[di].n_peaks_in_conn, conn_data[di].cang);
+				conn_data[di].cang =
+				               aver_ang[conn_data[di].num_quad];
+				conn_data[di].cstr =
+				               aver_str[conn_data[di].num_quad];
+				STATUS("Connected group %s has not enough peaks "
+				       "(%i). Using average angle: %0.4f\n",
+				       conn_data[di].name,
+				       conn_data[di].n_peaks_in_conn,
+				       conn_data[di].cang);
 			} else {
-				STATUS("Connected group %s has not enough peaks (%i). Left "
-				       "unchanged\n", conn_data[di].name,
+				STATUS("Connected group %s has not enough peaks "
+				       "(%i). Left unchanged\n",
+				       conn_data[di].name,
 				       conn_data[di].n_peaks_in_conn);
 			}
 		}
@@ -1109,15 +1194,19 @@ static void correct_angle_and_stretch(struct rg_collection *connected,
 			p = connected->rigid_groups[di]->panels[ip];
 
 			newx =
-			    p->fsx*cos(conn_data[di].cang)-p->fsy*sin(conn_data[di].cang);
+			    p->fsx*cos(conn_data[di].cang)-
+			    p->fsy*sin(conn_data[di].cang);
 			newy =
-			    p->fsx*sin(conn_data[di].cang)+p->fsy*cos(conn_data[di].cang);
+			    p->fsx*sin(conn_data[di].cang)+
+			    p->fsy*cos(conn_data[di].cang);
 			p->fsx = newx;
 			p->fsy = newy;
 			newx =
-			    p->ssx*cos(conn_data[di].cang)-p->ssy*sin(conn_data[di].cang);
+			    p->ssx*cos(conn_data[di].cang)-
+			    p->ssy*sin(conn_data[di].cang);
 			newy =
-			    p->ssx*sin(conn_data[di].cang)+p->ssy*cos(conn_data[di].cang);
+			    p->ssx*sin(conn_data[di].cang)+
+			    p->ssy*cos(conn_data[di].cang);
 			p->ssx = newx;
 			p->ssy = newy;
 		}
@@ -1142,7 +1231,8 @@ static void correct_angle_and_stretch(struct rg_collection *connected,
 
 		STATUS("Using individual distances for rigid panels\n");
 		for ( di=0; di<connected->n_rigid_groups; di++ ) {
-			for ( ip=0; ip<connected->rigid_groups[di]->n_panels; ip++ ) {
+			for ( ip=0; ip<connected->rigid_groups[di]->n_panels;
+			      ip++ ) {
 
 				struct panel *p;
 
@@ -1181,12 +1271,50 @@ static void shift_panels(struct rg_collection *connected,
 				p0 = connected->rigid_groups[di]->panels[0];
 
 				connected_panel_dist = modulus2d(
-				                       p->cnx-p0->cnx/conn_data[di].cstr,
-				                       p->cny-p0->cny/conn_data[di].cstr
-				);
+				              p->cnx-p0->cnx/conn_data[di].cstr,
+				              p->cny-p0->cny/conn_data[di].cstr
+				              );
 
 				p->cnx = p0->cnx + connected_panel_dist*p0->fsx;
 				p->cny = p0->cny + connected_panel_dist*p0->fsy;
+			}
+		}
+	}
+}
+
+
+static void recompute_panel(struct connected_data *conn_data, int di, int ip,
+                           struct rg_collection *connected,
+                           double *slab_to_x,
+                           double *slab_to_y,
+			   double *recomputed_slab_to_x,
+                           double *recomputed_slab_to_y,
+                           double *displ_x, double *displ_y,
+			   double stretch_coeff, int aw, int *num_pix_displ)
+{
+
+	double c_stretch;
+	struct panel *p;
+	int ifs, iss;
+
+	c_stretch = conn_data[di].cstr;
+
+	if ( fabs(c_stretch)<FLT_EPSILON ) c_stretch =
+	                                          stretch_coeff;
+
+	p = connected->rigid_groups[di]->panels[ip];
+
+	for ( ifs=p->min_fs; ifs<p->max_fs+1; ifs++ ) {
+		for ( iss=p->min_ss; iss<p->max_ss+1; iss++ ) {
+			recomputed_slab_to_x[ifs+aw*iss] /= c_stretch;
+			recomputed_slab_to_y[ifs+aw*iss] /= c_stretch;
+			if ( num_pix_displ[ifs+aw*iss] >=
+			     conn_data[di].num_peaks_per_pixel) {
+
+			displ_x[ifs+aw*iss] -= (slab_to_x[ifs+aw*iss]-
+				              recomputed_slab_to_x[ifs+aw*iss]);
+			displ_y[ifs+aw*iss] -= (slab_to_y[ifs+aw*iss]-
+				              recomputed_slab_to_y[ifs+aw*iss]);
 			}
 		}
 	}
@@ -1198,7 +1326,7 @@ static void recompute_differences(struct rg_collection *connected,
                              double *recomputed_slab_to_x,
                              double *recomputed_slab_to_y,
                              struct connected_data *conn_data,
-                             int stretch_coeff, int array_width,
+                             double stretch_coeff, int aw,
                              double *displ_x, double *displ_y,
                              int *num_pix_displ)
 {
@@ -1208,43 +1336,74 @@ static void recompute_differences(struct rg_collection *connected,
 	for ( di=0; di<connected->n_rigid_groups; di++ ) {
 		for (ip=0; ip<connected->rigid_groups[di]->n_panels; ip++) {
 
-			double c_stretch;
-			struct panel *p;
-			int ifs, iss;
 
-			c_stretch = conn_data[di].cstr;
+			recompute_panel(conn_data, di, ip, connected,
+			                slab_to_x, slab_to_y,
+			                recomputed_slab_to_x,
+			                recomputed_slab_to_y,
+			                displ_x, displ_y,
+			                stretch_coeff, aw, num_pix_displ);
+		}
+	}
+}
 
-			if ( fabs(c_stretch)<FLT_EPSILON ) c_stretch = stretch_coeff;
 
-			p = connected->rigid_groups[di]->panels[ip];
+static void fill_av_in_panel(struct rg_collection *connected, int di, int ip,
+                             struct connected_data *conn_data,
+                             int *num_pix_displ, int aw,
+                             double *av_in_panel_fs,
+                             double *av_in_panel_ss,
+	                     double *displ_x, double *displ_y)
+{
+	struct panel *p;
+	int ifs, iss;
 
-			for ( ifs=p->min_fs; ifs<p->max_fs+1; ifs++ ) {
-				for ( iss=p->min_ss; iss<p->max_ss+1; iss++ ) {
-					recomputed_slab_to_x[ifs+array_width*iss] /= c_stretch;
-					recomputed_slab_to_y[ifs+array_width*iss] /= c_stretch;
-					if ( num_pix_displ[ifs+array_width*iss] >=
-					     conn_data[di].num_peaks_per_pixel) {
+	p = connected->rigid_groups[di]->panels[ip];
 
-					displ_x[ifs+array_width*iss] -=
-					       (slab_to_x[ifs+array_width*iss]-
-					        recomputed_slab_to_x[ifs+array_width*iss]);
-					displ_y[ifs+array_width*iss] -=
-						(slab_to_y[ifs+array_width*iss]-
-					        recomputed_slab_to_y[ifs+array_width*iss]);
-					}
-				}
+	for ( ifs=p->min_fs; ifs<p->max_fs+1; ifs++ ) {
+		for ( iss=p->min_ss; iss<p->max_ss+1; iss++ ) {
+
+			if (num_pix_displ[ifs+aw*iss]>=
+			    conn_data[di].num_peaks_per_pixel) {
+				av_in_panel_fs[conn_data[di].n_peaks_in_conn] =
+					      displ_x[ifs+aw*iss];
+				av_in_panel_ss[conn_data[di].n_peaks_in_conn] =
+					      displ_y[ifs+aw*iss];
+				conn_data[di].n_peaks_in_conn++;
 			}
 		}
 	}
 }
 
 
+static void fill_con_data_sh(struct connected_data *conn_data,
+                             double *av_in_panel_fs,
+                             double *av_in_panel_ss, int di,
+                             double max_peak_distance)
+{
+	conn_data[di].sh_x = comp_median(av_in_panel_fs,
+	                                 conn_data[di].n_peaks_in_conn);
+	conn_data[di].sh_y = comp_median(av_in_panel_ss,
+	                                 conn_data[di].n_peaks_in_conn);
+	STATUS("Panel %s, num pixels: %i, shifts X,Y: %0.8f, %0.8f\n",
+	       conn_data[di].name, conn_data[di].n_peaks_in_conn,
+	       conn_data[di].sh_x, conn_data[di].sh_y);
+	if ( modulus2d(conn_data[di].sh_x, conn_data[di].sh_y) >
+			               0.8*max_peak_distance ) {
+		STATUS("  WARNING: absolute shift is: %0.1f > 0.8*%0.1f. "
+		       "  Increase the value of the max_peak_distance parameter!\n",
+		       modulus2d(conn_data[di].sh_x, conn_data[di].sh_y),
+		       max_peak_distance);
+	}
+}
+
+
 static int compute_shifts(struct rg_collection *connected,
                           struct connected_data *conn_data,
-                          int *num_pix_displ, int array_width,
+                          int *num_pix_displ, int aw,
                           int min_num_peaks_per_panel,
-                          double default_fill_value, double max_peak_distance,
-                          double *displ_x, double *displ_y )
+                          double dfv, double max_peak_distance,
+                          double *displ_x, double *displ_y)
 {
 	STATUS("Median for panels\n");
 
@@ -1281,45 +1440,21 @@ static int compute_shifts(struct rg_collection *connected,
 
 		for (ip=0; ip<connected->rigid_groups[di]->n_panels; ip++) {
 
-			struct panel *p;
-			int ifs, iss;
+			fill_av_in_panel(connected, di, ip, conn_data,
+			                 num_pix_displ, aw, av_in_panel_fs,
+			                 av_in_panel_ss, displ_x, displ_y);
 
-			p = connected->rigid_groups[di]->panels[ip];
-
-			for ( ifs=p->min_fs; ifs<p->max_fs+1; ifs++ ) {
-				for ( iss=p->min_ss; iss<p->max_ss+1; iss++ ) {
-
-					if (num_pix_displ[ifs+array_width*iss]>=
-					    conn_data[di].num_peaks_per_pixel) {
-						av_in_panel_fs[conn_data[di].n_peaks_in_conn] =
-						              displ_x[ifs+array_width*iss];
-						av_in_panel_ss[conn_data[di].n_peaks_in_conn] =
-						              displ_y[ifs+array_width*iss];
-						conn_data[di].n_peaks_in_conn++;
-					}
-				}
-			}
 		}
 
 		if ( conn_data[di].n_peaks_in_conn>=min_num_peaks_per_panel ) {
 
-			conn_data[di].sh_x =
-			     comp_median(av_in_panel_fs, conn_data[di].n_peaks_in_conn);
-			conn_data[di].sh_y =
-			     comp_median(av_in_panel_ss, conn_data[di].n_peaks_in_conn);
-			STATUS("Panel %s, num pixels: %i, shifts X,Y: %0.8f, %0.8f\n",
-			       conn_data[di].name, conn_data[di].n_peaks_in_conn,
-			       conn_data[di].sh_x, conn_data[di].sh_y);
-			if ( modulus2d(conn_data[di].sh_x, conn_data[di].sh_y)>
-			     0.8*max_peak_distance ) {
-				STATUS("  WARNING: absolute shift is: %0.1f > 0.8*%0.1f. "
-				     "Increase the value of the max_peak_distance parameter!\n",
-				     modulus2d(conn_data[di].sh_x, conn_data[di].sh_y),
-				     max_peak_distance);
-			}
+			fill_con_data_sh(conn_data, av_in_panel_fs,
+			                 av_in_panel_ss, di,
+			                 max_peak_distance);
+
 		} else {
-			conn_data[di].sh_x = default_fill_value;
-			conn_data[di].sh_y = default_fill_value;
+			conn_data[di].sh_x = dfv;
+			conn_data[di].sh_y = dfv;
 		}
 		free(av_in_panel_fs);
 		free(av_in_panel_ss);
@@ -1389,13 +1524,16 @@ static int compute_shifts_for_empty_panels(struct rg_collection *quadrants,
 			if ( num_aver[conn_data[di].num_quad]>0 ) {
 				conn_data[di].sh_x = aver_x[conn_data[di].num_quad];
 				conn_data[di].sh_y = aver_y[conn_data[di].num_quad];
-				STATUS("Panel %s has not enough (%i) peaks. Using average "
-				       "shifts X,Y: %0.2f,%0.2f\n", conn_data[di].name,
+				STATUS("Panel %s has not enough (%i) peaks. "
+				       "Using average shifts X,Y: %0.2f,%0.2f\n",
+				       conn_data[di].name,
 				       conn_data[di].n_peaks_in_conn,
 				       conn_data[di].sh_x, conn_data[di].sh_y);
 			} else {
-				STATUS("Panel %s has not enough (%i) peaks. Left unchanged\n",
-				       conn_data[di].name, conn_data[di].n_peaks_in_conn);
+				STATUS("Panel %s has not enough (%i) peaks. "
+				       "Left unchanged.\n",
+				       conn_data[di].name,
+				       conn_data[di].n_peaks_in_conn);
 			}
 		}
 	}
@@ -1410,7 +1548,7 @@ static int compute_shifts_for_empty_panels(struct rg_collection *quadrants,
 
 static void correct_shifts(struct rg_collection *connected,
                            struct connected_data *conn_data,
-                           double default_fill_value, double clen_to_use)
+                           double dfv, double clen_to_use)
 {
 
 	int di;
@@ -1423,8 +1561,8 @@ static void correct_shifts(struct rg_collection *connected,
 
 			p = connected->rigid_groups[di]->panels[ip];
 
-			if ( conn_data[di].sh_x>default_fill_value+1.0 &&
-			     conn_data[di].sh_y > default_fill_value+1.0 ) {
+			if ( conn_data[di].sh_x>dfv+1.0 &&
+			     conn_data[di].sh_y > dfv+1.0 ) {
 
 				p->cnx -= conn_data[di].sh_x;
 				p->cny -= conn_data[di].sh_y;
@@ -1438,15 +1576,176 @@ static void correct_shifts(struct rg_collection *connected,
 }
 
 
-static int compute_angles_and_stretch
-              (struct rg_collection *connected,
+static void a_s_counting_loop(int *num_pix_displ, int ifs, int iss,
+                              int di, struct connected_data *conn_data,
+                              int aw, double *slab_to_x,
+                              double *slab_to_y, struct panel *p0,
+                              struct panel *p1, double *displ_x,
+                              double *displ_y, double minrad,
+                              int *num_ang)
+{
+
+	double coX, coY, cdX, cdY;
+
+	if ( num_pix_displ[ifs+aw*iss]>=
+	     conn_data[di].num_peaks_per_pixel ) {
+
+		int ifs1, iss1;
+		int max_fs1_tmp = p0->max_fs;
+		int max_ss1_tmp = p0->max_ss;
+
+		coX = slab_to_x[ifs+aw*iss];
+		coY = slab_to_y[ifs+aw*iss];
+		cdX = coX - displ_x[ifs+aw*iss];
+		cdY = coY - displ_y[ifs+aw*iss];
+
+		for (ifs1=ifs+1; ifs1<max_fs1_tmp+1; ifs1++) {
+
+			if ( ifs1 == max_fs1_tmp ) {
+				max_fs1_tmp = p1->max_fs;
+			}
+
+			for (iss1=iss+1; iss1<max_ss1_tmp+1; iss1++) {
+
+				if ( iss1 == max_ss1_tmp ) {
+					max_ss1_tmp = p1->max_ss;
+				}
+
+				if ( num_pix_displ[ifs1+aw*iss1]>=
+				     conn_data[di].num_peaks_per_pixel ) {
+
+					double dist;
+					double coX1, coY1, cdX1, cdY1;
+					double len1, len2;
+
+					dist = modulus2d(ifs-ifs1,iss-iss1);
+					if ( dist < minrad ) continue;
+					coX1 = slab_to_x[ifs1+aw*iss1];
+					coY1 = slab_to_y[ifs1+aw*iss1];
+					cdX1 =
+					  coX1 - displ_x[ifs1+aw*iss1];
+					cdY1 =
+					  coY1 - displ_y[ifs1+aw*iss1];
+
+					len1 = modulus2d(coX1-coX, coY1-coY);
+					len2 = modulus2d(cdX1-cdX, cdY1-cdY);
+					if ( len1<FLT_EPSILON ||
+					     len2<FLT_EPSILON ) {
+						continue;
+					}
+
+					*num_ang = *num_ang+1;
+				}
+			}
+		}
+	}
+}
+
+
+static int a_s_processing_loop(int *num_pix_displ, int ifs, int iss,
+                              int di, struct connected_data *conn_data,
+                              int aw, double *slab_to_x,
+                              double *slab_to_y, struct panel *p0,
+                              struct panel *p1, double *displ_x,
+                              double *displ_y, double minrad,
+                              int max_num_ang, int *num_ang,
+			      double *angles, double *stretches)
+{
+	double coX, coY, cdX, cdY;
+
+	if ( num_pix_displ[ifs+aw*iss]>=
+	     conn_data[di].num_peaks_per_pixel ) {
+
+		int ifs1, iss1;
+		int max_fs1_tmp = p0->max_fs;
+		int max_ss1_tmp = p0->max_ss;
+
+		if ( *num_ang>=max_num_ang ) return -2;
+
+		coX = slab_to_x[ifs+aw*iss];
+		coY = slab_to_y[ifs+aw*iss];
+		cdX = coX - displ_x[ifs+aw*iss];
+		cdY = coY - displ_y[ifs+aw*iss];
+
+		for (ifs1=ifs+1; ifs1<max_fs1_tmp+1; ifs1++) {
+
+			if ( ifs1 == max_fs1_tmp ) {
+				max_fs1_tmp = p1->max_fs;
+			}
+
+			for (iss1=iss+1; iss1<max_ss1_tmp+1; iss1++) {
+
+				if ( iss1 == max_ss1_tmp ) {
+					max_ss1_tmp = p1->max_ss;
+				}
+
+				if ( num_pix_displ[ifs1+aw*iss1]>=
+				     conn_data[di].num_peaks_per_pixel ) {
+
+					double dist;
+					double coX1, coY1, cdX1, cdY1;
+					double len1, len2;
+					double scalM;
+					double multlen;
+
+					if ( *num_ang>=max_num_ang ) return -2;
+					dist = modulus2d(ifs-ifs1,iss-iss1);
+					if (dist<minrad) return 0;
+					coX1 = slab_to_x[ifs1+aw*iss1];
+					coY1 = slab_to_y[ifs1+aw*iss1];
+					cdX1 =
+					  coX1 - displ_x[ifs1+aw*iss1];
+					cdY1 =
+					  coY1 - displ_y[ifs1+aw*iss1];
+
+					len1 = modulus2d(coX1-coX, coY1-coY);
+					len2 = modulus2d(cdX1-cdX, cdY1-cdY);
+					scalM = (coX1-coX)*(cdX1-cdX)+
+						(coY1-coY)*(cdY1-cdY)-
+					       FLT_EPSILON;
+					if ( len1<FLT_EPSILON ||
+					     len2<FLT_EPSILON ) {
+						return 0;
+					}
+
+					multlen = len1*len2;
+					if ( fabs(scalM)>=multlen ) {
+						angles[*num_ang] = 0.0;
+					} else {
+
+						angles[*num_ang] = 1.0;
+
+						angles[*num_ang] =
+						    acos(scalM/multlen);
+
+						if ((coY1-coY)*(cdX1-cdX)-
+						   (coX1-coX)*(cdY1-cdY) < 0) {
+							angles[*num_ang] *= -1.;
+						}
+
+					}
+
+					stretches[*num_ang] = len1/len2;
+
+					*num_ang = *num_ang+1;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+
+
+
+static int compute_angles_and_stretch(struct rg_collection *connected,
                struct connected_data *conn_data,
                int *num_pix_displ,
                double *slab_to_x,
                double *slab_to_y,
                double *displ_x,
                double *displ_y,
-               int array_width,
+               int aw,
                int min_num_peaks_per_panel,
                double dist_coeff_ang_str,
                int num_peaks_per_pixel,
@@ -1461,18 +1760,21 @@ static int compute_angles_and_stretch
 
 	csaa = malloc(sizeof(struct connected_stretch_and_angles));
 	if ( csaa == NULL ) {
-		ERROR("Failed to allocate memory to compute angles and stretch.\n");
+		ERROR("Failed to allocate memory to compute angles and "
+		      "stretch.\n");
 		return 1;
 	}
 	csaa->stretch_coeff = malloc(connected->n_rigid_groups*sizeof(double));
 	if ( csaa->stretch_coeff == NULL ) {
-		ERROR("Failed to allocate memory to compute angles and stretch.\n");
+		ERROR("Failed to allocate memory to compute angles and "
+		      "stretch.\n");
 		free(csaa);
 		return 1;
 	}
 	csaa->num_angles = malloc(connected->n_rigid_groups*sizeof(unsigned int));
 	if ( csaa->num_angles == NULL ) {
-		ERROR("Failed to allocate memory to compute angles and stretch.\n");
+		ERROR("Failed to allocate memory to compute angles and "
+		      "stretch.\n");
 		free(csaa->stretch_coeff);
 		free(csaa);
 		return 1;
@@ -1481,7 +1783,9 @@ static int compute_angles_and_stretch
 	csaa->num_coeff=0;
 
 	for ( di=0; di<connected->n_rigid_groups; di++ ) {
-		if ( conn_data[di].n_peaks_in_conn<min_num_peaks_per_panel ) continue;
+		if ( conn_data[di].n_peaks_in_conn<min_num_peaks_per_panel ) {
+			continue;
+		}
 
 		unsigned int max_num_ang = 0;
 
@@ -1509,9 +1813,11 @@ static int compute_angles_and_stretch
 
 			struct panel *p0 = connected->rigid_groups[di]->panels[ip0];
 
-			for ( ip1=0; ip1<connected->rigid_groups[di]->n_panels; ip1++ ) {
+			for ( ip1=0; ip1<connected->rigid_groups[di]->n_panels;
+			      ip1++ ) {
 
-				struct panel *p1 = connected->rigid_groups [di]->panels[ip1];
+				struct panel *p1 =
+				      connected->rigid_groups [di]->panels[ip1];
 
 				int ifs, iss;
 				int min_fs_tmp = p0->min_fs;
@@ -1526,67 +1832,21 @@ static int compute_angles_and_stretch
 						max_fs_tmp = p1->max_fs;
 					}
 
-					for (iss=min_ss_tmp; iss<max_ss_tmp+1; iss++) {
+					for (iss=min_ss_tmp; iss<max_ss_tmp+1;
+					     iss++) {
 
 						if ( iss == max_ss_tmp ) {
 							min_ss_tmp = p1->min_ss;
 							max_ss_tmp = p1->max_ss;
 						}
 
-						double coX, coY, cdX, cdY;
+						a_s_counting_loop(num_pix_displ,
+						       ifs, iss, di, conn_data,
+						       aw, slab_to_x, slab_to_y,
+						       p0, p1, displ_x,
+						       displ_y, minrad,
+						       &num_ang);
 
-						if ( num_pix_displ[ifs+array_width*iss]>=
-						     conn_data[di].num_peaks_per_pixel ) {
-
-							int ifs1, iss1;
-							int max_fs1_tmp = p0->max_fs;
-							int max_ss1_tmp = p0->max_ss;
-
-							coX = slab_to_x[ifs+array_width*iss];
-							coY = slab_to_y[ifs+array_width*iss];
-							cdX = coX - displ_x[ifs+array_width*iss];
-							cdY = coY - displ_y[ifs+array_width*iss];
-
-							for (ifs1=ifs+1; ifs1<max_fs1_tmp+1; ifs1++) {
-
-								if ( ifs1 == max_fs1_tmp ) {
-									max_fs1_tmp = p1->max_fs;
-								}
-
-								for (iss1=iss+1; iss1<max_ss1_tmp+1; iss1++) {
-
-									if ( iss1 == max_ss1_tmp ) {
-										max_ss1_tmp = p1->max_ss;
-									}
-
-									if ( num_pix_displ[ifs1+array_width*iss1]>=
-									     conn_data[di].num_peaks_per_pixel ) {
-
-										double dist;
-										double coX1, coY1, cdX1, cdY1;
-										double len1, len2;
-
-										dist = modulus2d(ifs-ifs1,iss-iss1);
-										if ( dist < minrad ) continue;
-										coX1 = slab_to_x[ifs1+array_width*iss1];
-										coY1 = slab_to_y[ifs1+array_width*iss1];
-										cdX1 =
-										  coX1 - displ_x[ifs1+array_width*iss1];
-										cdY1 =
-										  coY1 - displ_y[ifs1+array_width*iss1];
-
-										len1 = modulus2d(coX1-coX, coY1-coY);
-										len2 = modulus2d(cdX1-cdX, cdY1-cdY);
-										if ( len1<FLT_EPSILON ||
-										     len2<FLT_EPSILON ) {
-											continue;
-										}
-
-										num_ang++;
-									}
-								}
-							}
-						}
 					}
 				}
 			}
@@ -1598,7 +1858,8 @@ static int compute_angles_and_stretch
 
 		angles = malloc(max_num_ang*sizeof(double));
 		if ( angles == NULL ) {
-			ERROR("Error in allocating memory for angle optimization\n");
+			ERROR("Error in allocating memory for angle "
+			      "optimization\n");
 			free(csaa->stretch_coeff);
 			free(csaa->num_angles);
 			free(csaa);
@@ -1606,7 +1867,8 @@ static int compute_angles_and_stretch
 		}
 		stretches = malloc(max_num_ang*sizeof(double));
 		if ( stretches == NULL ) {
-			ERROR("Error in allocating memory for stretch optimization\n");
+			ERROR("Error in allocating memory for stretch "
+			      "optimization\n");
 			free(angles);
 			free(csaa->stretch_coeff);
 			free(csaa->num_angles);
@@ -1620,9 +1882,11 @@ static int compute_angles_and_stretch
 
 			struct panel *p0 = connected->rigid_groups[di]->panels[ip0];
 
-			for ( ip1=0; ip1<connected->rigid_groups[di]->n_panels; ip1++ ) {
+			for ( ip1=0; ip1<connected->rigid_groups[di]->n_panels;
+			      ip1++ ) {
 
-				struct panel *p1 = connected->rigid_groups [di]->panels[ip1];
+				struct panel *p1 =
+				      connected->rigid_groups [di]->panels[ip1];
 
 				int ifs, iss;
 				int min_fs_tmp = p0->min_fs;
@@ -1637,94 +1901,29 @@ static int compute_angles_and_stretch
 						max_fs_tmp = p1->max_fs;
 					}
 
-					for (iss=min_ss_tmp; iss<max_ss_tmp+1; iss++) {
+					for (iss=min_ss_tmp; iss<max_ss_tmp+1;
+					     iss++) {
+
+						int ret;
 
 						if ( iss == max_ss_tmp ) {
 							min_ss_tmp = p1->min_ss;
 							max_ss_tmp = p1->max_ss;
 						}
 
-						double coX, coY, cdX, cdY;
+						ret = a_s_processing_loop(
+						           num_pix_displ,
+						           ifs, iss, di,
+						           conn_data,
+						           aw, slab_to_x,
+						           slab_to_y,
+						           p0, p1, displ_x,
+						           displ_y, minrad,
+						           max_num_ang,
+						           &num_ang, angles,
+						           stretches);
 
-						if ( num_pix_displ[ifs+array_width*iss]>=
-						     conn_data[di].num_peaks_per_pixel ) {
-
-							int ifs1, iss1;
-							int max_fs1_tmp = p0->max_fs;
-							int max_ss1_tmp = p0->max_ss;
-
-							if ( num_ang>=max_num_ang ) break;
-
-							coX = slab_to_x[ifs+array_width*iss];
-							coY = slab_to_y[ifs+array_width*iss];
-							cdX = coX - displ_x[ifs+array_width*iss];
-							cdY = coY - displ_y[ifs+array_width*iss];
-
-							for (ifs1=ifs+1; ifs1<max_fs1_tmp+1; ifs1++) {
-
-								if ( ifs1 == max_fs1_tmp ) {
-									max_fs1_tmp = p1->max_fs;
-								}
-
-								for (iss1=iss+1; iss1<max_ss1_tmp+1; iss1++) {
-
-									if ( iss1 == max_ss1_tmp ) {
-										max_ss1_tmp = p1->max_ss;
-									}
-
-									if ( num_pix_displ[ifs1+array_width*iss1]>=
-									     conn_data[di].num_peaks_per_pixel ) {
-
-										double dist;
-										double coX1, coY1, cdX1, cdY1;
-										double len1, len2;
-										double scalM;
-										double multlen;
-
-										if ( num_ang>=max_num_ang ) break;
-										dist = modulus2d(ifs-ifs1,iss-iss1);
-										if (dist<minrad) continue;
-										coX1 = slab_to_x[ifs1+array_width*iss1];
-										coY1 = slab_to_y[ifs1+array_width*iss1];
-										cdX1 =
-										  coX1 - displ_x[ifs1+array_width*iss1];
-										cdY1 =
-										  coY1 - displ_y[ifs1+array_width*iss1];
-
-										len1 = modulus2d(coX1-coX, coY1-coY);
-										len2 = modulus2d(cdX1-cdX, cdY1-cdY);
-										scalM = (coX1-coX)*(cdX1-cdX)+
-										        (coY1-coY)*(cdY1-cdY)-
-										       FLT_EPSILON;
-										if ( len1<FLT_EPSILON ||
-										     len2<FLT_EPSILON ) {
-											continue;
-										}
-
-										multlen = len1*len2;
-										if ( fabs(scalM)>=multlen ) {
-											angles[num_ang] = 0.0;
-										} else {
-
-											angles[num_ang] = 1.0;
-
-											angles[num_ang] =
-											    acos(scalM/multlen);
-
-											if ((coY1-coY)*(cdX1-cdX)-
-											   (coX1-coX)*(cdY1-cdY) < 0) {
-												angles[num_ang] *= -1.;
-											}
-
-										}
-
-										stretches[num_ang] = len1/len2;
-
-										num_ang++;
-									}
-								}
-							}
-						}
+						if ( ret == -2 ) break;
 					}
 				}
 			}
@@ -1773,8 +1972,9 @@ static int compute_angles_and_stretch
 			stretch_cf = 0;
 			for ( di=0; di<num_coeff; di++ ) {
 				if ( conn_data[di].num_peaks_per_pixel>=ipp ) {
-					stretch_cf += total_num*csaa->stretch_coeff[di]*
-					              (double)csaa->num_angles[di];
+					stretch_cf +=
+					      total_num*csaa->stretch_coeff[di]*
+					           (double)csaa->num_angles[di];
 				}
 			}
 			break;
@@ -1789,7 +1989,8 @@ static int compute_angles_and_stretch
 	       stretch_cf);
 	if ( man_stretching_coeff>FLT_EPSILON ) {
 		stretch_cf = man_stretching_coeff;
-		STATUS("Using manually set stretch coefficient: %0.4f\n", stretch_cf);
+		STATUS("Using manually set stretch coefficient: %0.4f\n",
+		       stretch_cf);
 
 		for ( di=0; di<connected->n_rigid_groups; di++ ) {
 			conn_data[di].cstr = man_stretching_coeff;
@@ -1808,7 +2009,7 @@ static int compute_angles_and_stretch
 
 
 static int save_data_to_hdf5(char * filename, struct detector* det,
-                             int max_fs, int max_ss, double default_fill_value,
+                             int max_fs, int max_ss, double dfv,
                              double *data)
 {
 	struct image *im;
@@ -1833,7 +2034,7 @@ static int save_data_to_hdf5(char * filename, struct detector* det,
 	im->spectrum = NULL;
 
 	for ( i=0; i<(max_fs+1)*(max_ss+1); i++) {
-		if ( data[i] == default_fill_value ) {
+		if ( data[i] == dfv ) {
 			im->data[i] = 0.0;
 		} else {
 			im->data[i] = (float)data[i];
@@ -1855,6 +2056,60 @@ static int save_data_to_hdf5(char * filename, struct detector* det,
 }
 
 
+static void calculate_panel_correction(int di, int ip, int aw,
+                                       int *num_pix_displ,
+                                       struct rg_collection *connected,
+                                       struct connected_data *conn_data)
+{
+	struct panel *p;
+	int ifs, iss;
+
+	p = connected->rigid_groups[di]->panels[ip];
+	for (ifs=p->min_fs; ifs<p->max_fs+1; ifs++) {
+		for (iss=p->min_ss; iss<p->max_ss+1; iss++) {
+			if ( num_pix_displ[ifs+aw*iss]>=
+					conn_data[di].num_peaks_per_pixel ) {
+					conn_data[di].n_peaks_in_conn++;
+			}
+		}
+	}
+
+}
+
+
+static void compute_abs_displ(struct rg_collection *connected,
+                              struct connected_data *conn_data,
+			      int *num_pix_displ,
+			      double dfv, int di, int ip, int aw,
+		              double *displ_x,
+		              double *displ_y,
+			      double *displ_abs)
+{
+	struct panel *p;
+	int ifs, iss;
+
+	if (conn_data[di].sh_x < dfv+1) return;
+
+	p = connected->rigid_groups[di]->panels[ip];
+
+	for (ifs=p->min_fs; ifs<p->max_fs+1; ifs++) {
+		for (iss=p->min_ss; iss<p->max_ss+1; iss++) {
+			if ( num_pix_displ[ifs+aw*iss]>=
+			     conn_data[di].num_peaks_per_pixel ) {
+				displ_x[ifs+aw*iss] -= conn_data[di].sh_x;
+				displ_y[ifs+aw*iss] -= conn_data[di].sh_y;
+				displ_abs[ifs+aw*iss] = modulus2d(
+							   displ_x[ifs+aw*iss],
+							   displ_y[ifs+aw*iss]
+							   );
+			} else {
+				displ_abs[ifs+aw*iss] = dfv;
+			}
+		}
+	}
+}
+
+
 int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
                       struct detector *det, struct rg_collection* quadrants,
                       struct rg_collection* connected,
@@ -1866,24 +2121,25 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	int num_pix_in_slab;
 	int max_fs = 0;
 	int max_ss = 0;
-	int array_width = 0;
+	int aw = 0;
 	int pi, di, ip, pti;
 	int ret1, ret2, ret3;
 	int ret4, ret5, ret6;
 	int ret;
 	int write_ret;
 
+	int *num_pix_displ;
+
 	double res_sum;
 	double istep;
 	double clen_to_use;
 	double man_stretching_coeff = 0.0;
 	double avc[6] = {0.,0.,0.,0.,0.,0.};
-	double default_fill_value = -10000.0;
-	double dist_coeff_ang_str = 0.2; // for angles and stretch calculation use
-                                     // only pixels which are distco*size_panel
-                                     // away
-
-	int *num_pix_displ;
+	double dfv = -10000.0;
+	// for angles and stretch calculation use
+        // only pixels which are distco*size_panel
+        // away
+	double dist_coeff_ang_str = 0.2;
 	double *displ_x;
 	double *displ_y;
 	double *displ_abs;
@@ -1894,6 +2150,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	double* recomputed_slab_to_x;
 	double* recomputed_slab_to_y;
 	double stretch_coeff = 1;
+
 	struct single_pix_displ *all_pix_displ;
 	struct single_pix_displ **curr_pix_displ;
 	struct connected_data *conn_data = NULL;
@@ -1906,8 +2163,8 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	STATUS("Minimum number of measurements for pixel to be included in the "
 	       "refinement: %i\n",
 	       min_num_peaks_per_pixel);
-	STATUS("Minimum number of measurements for panel for accurate estimation of"
-	       " position/orientation: %i\n", min_num_peaks_per_panel);
+	STATUS("Minimum number of measurements for panel for accurate estimation "
+	       "of position/orientation: %i\n", min_num_peaks_per_panel);
 
 	pattern_list = read_patterns_from_steam_file(infile, det);
 	if ( pattern_list->n_patterns < 1 ) {
@@ -1931,7 +2188,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 
 	istep = res_sum/det->n_panels;
 
-	array_width = max_fs+1;
+	aw = max_fs+1;
 
 	clen_to_use = compute_clen_to_use(pattern_list, istep, avc,
 	                                  max_peak_dist,
@@ -1978,9 +2235,10 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 		return 1;
 	}
 
-	fill_coordinate_matrices(det, array_width, slab_to_x, slab_to_y);
+	fill_coordinate_matrices(det, aw, slab_to_x, slab_to_y);
 
-	all_pix_displ = calloc(num_pix_in_slab, sizeof(struct single_pix_displ));
+	all_pix_displ = calloc(num_pix_in_slab,
+	                       sizeof(struct single_pix_displ));
 	if ( all_pix_displ == NULL ) {
 		ERROR("Error allocating memory for connected structure data.\n");
 		free(displ_x);
@@ -1990,7 +2248,8 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 		free(slab_to_y);
 		return 1;
 	}
-	curr_pix_displ = calloc(num_pix_in_slab, sizeof(struct single_pix_displ*));
+	curr_pix_displ = calloc(num_pix_in_slab,
+	                        sizeof(struct single_pix_displ*));
 	if ( curr_pix_displ == NULL ) {
 		ERROR("Error allocating memory for connected structure data.\n");
 		free(displ_x);
@@ -2014,7 +2273,8 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 		return 1;
 	}
 
-	conn_data = malloc(connected->n_rigid_groups*sizeof(struct connected_data));
+	conn_data = malloc(connected->n_rigid_groups*
+	                   sizeof(struct connected_data));
 	if ( conn_data == NULL ) {
 		ERROR("Error allocating memory for connected structure data.\n");
 		free(displ_x);
@@ -2031,11 +2291,14 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	STATUS("Computing pixel statistics\n");
 	ret = compute_pixel_statistics(pattern_list, det, connected, quadrants,
 	                               num_pix_in_slab, max_peak_dist,
-	                               array_width, default_fill_value,
+	                               aw, dfv,
 	                               min_num_peaks_per_pixel,
-	                               min_num_peaks_per_panel, only_best_distance,
-	                               clen_to_use, slab_to_x, slab_to_y, conn_data,
-	                               displ_x, displ_y, displ_abs, all_pix_displ,
+	                               min_num_peaks_per_panel,
+	                               only_best_distance,
+	                               clen_to_use, slab_to_x,
+	                               slab_to_y, conn_data,
+	                               displ_x, displ_y, displ_abs,
+	                               all_pix_displ,
 	                               curr_pix_displ,
 	                               num_pix_displ);
 	if ( ret != 0 ) {
@@ -2044,7 +2307,8 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 		free(displ_abs);
 		free(slab_to_x);
 		free(slab_to_y);
-		free_all_curr_pix_displ(all_pix_displ, curr_pix_displ, num_pix_in_slab);
+		free_all_curr_pix_displ(all_pix_displ, curr_pix_displ,
+		                        num_pix_in_slab);
 		free(num_pix_displ);
 		free(conn_data);
 		return 1;
@@ -2056,7 +2320,8 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 
 		image_feature_list_free(pattern_list->patterns[pti]->im_list);
 		reflist_free(pattern_list->patterns[pti]->ref_list);
-		for ( nuc=0; nuc<pattern_list->patterns[pti]->n_unit_cells; nuc++) {
+		for ( nuc=0; nuc<pattern_list->patterns[pti]->n_unit_cells;
+		      nuc++) {
 			cell_free(pattern_list->patterns[pti]->unit_cells[nuc]);
 		}
 		free(pattern_list->patterns[pti]->filename);
@@ -2066,11 +2331,11 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 
 	STATUS("Saving displacements before corrections\n");
 	ret1 = save_data_to_hdf5("disp_x_before.h5", det, max_fs, max_ss,
-	                         default_fill_value, displ_x);
+	                         dfv, displ_x);
 	ret2 = save_data_to_hdf5("disp_y_before.h5", det, max_fs, max_ss,
-		                 default_fill_value, displ_y);
+		                 dfv, displ_y);
 	ret3 = save_data_to_hdf5("disp_abs_before.h5", det, max_fs, max_ss,
-                                default_fill_value, displ_abs);
+                                dfv, displ_abs);
 	if ( ret1!=0 || ret2!=0 || ret3!=0 ) {
 		ERROR("Error while writing data to file.\n");
 		free(conn_data);
@@ -2084,7 +2349,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	}
 
 	STATUS("Computing initial error.\n");
-	totalError = compute_error(connected, array_width, conn_data,
+	totalError = compute_error(connected, aw, conn_data,
 	                           num_pix_displ, displ_abs);
 
 	STATUS("The total initial error <delta^2> = %0.4f\n", totalError);
@@ -2096,18 +2361,9 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 
 		for (ip=0; ip<connected->rigid_groups[di]->n_panels; ip++) {
 
-			struct panel *p;
-			int ifs, iss;
+			calculate_panel_correction(di, ip, aw, num_pix_displ,
+			                           connected, conn_data);
 
-			p = connected->rigid_groups[di]->panels[ip];
-			for (ifs=p->min_fs; ifs<p->max_fs+1; ifs++) {
-				for (iss=p->min_ss; iss<p->max_ss+1; iss++) {
-					if ( num_pix_displ[ifs+array_width*iss]>=
-							conn_data[di].num_peaks_per_pixel ) {
-							conn_data[di].n_peaks_in_conn++;
-					}
-				}
-			}
 		}
 	}
 
@@ -2117,7 +2373,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	                             num_pix_displ,
 	                             slab_to_x, slab_to_y,
 	                             displ_x, displ_y,
-	                             array_width,
+	                             aw,
 	                             min_num_peaks_per_panel,
 	                             dist_coeff_ang_str,
 	                             min_num_peaks_per_pixel,
@@ -2178,16 +2434,17 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 		return 1;
 	}
 
-	fill_coordinate_matrices(det, array_width, recomputed_slab_to_x,
+	fill_coordinate_matrices(det, aw, recomputed_slab_to_x,
 	                         recomputed_slab_to_y);
 
-	recompute_differences(connected, slab_to_x, slab_to_y, recomputed_slab_to_x,
+	recompute_differences(connected, slab_to_x, slab_to_y,
+	                      recomputed_slab_to_x,
 	                      recomputed_slab_to_y, conn_data,
-	                      stretch_coeff, array_width, displ_x, displ_y,
+	                      stretch_coeff, aw, displ_x, displ_y,
 	                      num_pix_displ);
 
-	ret = compute_shifts(connected, conn_data, num_pix_displ, array_width,
-	                     min_num_peaks_per_panel, default_fill_value,
+	ret = compute_shifts(connected, conn_data, num_pix_displ, aw,
+	                     min_num_peaks_per_panel, dfv,
 	                     max_peak_dist, displ_x, displ_y );
 
 	if ( ret != 0 ) return 1;
@@ -2198,40 +2455,22 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	for ( di=0;di<connected->n_rigid_groups;di++ ) {
 		for (ip=0; ip<connected->rigid_groups[di]->n_panels; ip++) {
 
-			struct panel *p;
-			int ifs, iss;
+			compute_abs_displ(connected, conn_data,
+			                  num_pix_displ, dfv, di, ip, aw,
+			                  displ_x, displ_y, displ_abs);
 
-			if (conn_data[di].sh_x < default_fill_value+1) continue;
-
-			p = connected->rigid_groups[di]->panels[ip];
-
-			for (ifs=p->min_fs; ifs<p->max_fs+1; ifs++) {
-				for (iss=p->min_ss; iss<p->max_ss+1; iss++) {
-					if ( num_pix_displ[ifs+array_width*iss]>=
-					     conn_data[di].num_peaks_per_pixel ) {
-						displ_x[ifs+array_width*iss] -= conn_data[di].sh_x;
-						displ_y[ifs+array_width*iss] -= conn_data[di].sh_y;
-						displ_abs[ifs+array_width*iss] = modulus2d(
-						                           displ_x[ifs+array_width*iss],
-						                           displ_y[ifs+array_width*iss]
-						                           );
-					} else {
-						displ_abs[ifs+array_width*iss] = default_fill_value;
-					}
-				}
-			}
 		}
 	}
 
-	correct_shifts(connected, conn_data, default_fill_value, clen_to_use);
+	correct_shifts(connected, conn_data, dfv, clen_to_use);
 
 	STATUS("Saving displacements after corrections\n");
 	ret4 = save_data_to_hdf5("disp_x_after.h5", det,  max_fs, max_ss,
-	                         default_fill_value, displ_x);
+	                         dfv, displ_x);
 	ret5 = save_data_to_hdf5("disp_y_after.h5", det,  max_fs, max_ss,
-	                         default_fill_value, displ_y);
+	                         dfv, displ_y);
 	ret6 = save_data_to_hdf5("disp_abs_after.h5", det,  max_fs, max_ss,
-	                         default_fill_value, displ_abs);
+	                         dfv, displ_abs);
 	if ( ret4!=0 || ret5!=0 || ret6!=0 ) {
 		ERROR("Error while writing data to file.\n");
 		free(conn_data);
@@ -2247,7 +2486,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	}
 
 	STATUS("Computing final error.\n");
-	totalError = compute_error(connected, array_width, conn_data, num_pix_displ,
+	totalError = compute_error(connected, aw, conn_data, num_pix_displ,
 	                           displ_abs);
 
 	STATUS("The total final error <delta^2> = %0.4f\n",totalError);
@@ -2398,7 +2637,8 @@ int main(int argc, char *argv[])
 	}
 
 	if ( quadrant_coll_name == NULL ) {
-		ERROR("You must provide a rigid group collection for quadrants.\n");
+		ERROR("You must provide a rigid group collection for "
+		      "quadrants.\n");
 		return 1;
 	}
 
@@ -2417,10 +2657,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	connected = find_rigid_group_collection_by_name(det, connected_coll_name);
+	connected = find_rigid_group_collection_by_name(det,
+	                                                connected_coll_name);
 	if ( connected == NULL ) {
-		ERROR("Cannot find rigid group collection for connected asics: %s\n",
-		      connected_coll_name);
+		ERROR("Cannot find rigid group collection for connected "
+		      "asics: %s\n", connected_coll_name);
 		return 1;
 	}
 
