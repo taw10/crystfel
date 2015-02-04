@@ -29,12 +29,15 @@ For minimal basic use, you need to provide the list of diffraction patterns, the
 -i mypatterns.lst -j 10 -g mygeometry.geom --indexing=mosflm,dirax --peaks=hdf5 -b myxfel.beam -o test.stream -p mycell.pdb
 
 .PP
-More typical use includes all the above, but might also include extra parameters to modify the behaviour.  The HDF5 files might be in some
-folder a long way from the current directory, so you might want to specify a
-full pathname to be added in front of each filename.  You'll probably want to
+More typical use includes all the above, but might also include extra parameters to modify the behaviour. For example, you'll probably want to
 run more than one indexing job at a time (-j <n>).
 
-See \fBman crystfel_geometry\fR for information about how to create a geometry description file and a beam parameters file.
+See \fBman crystfel_geometry\fR for information about how to create a file describing detector geometry and beam characteristics.
+
+.SH DIFFRACTION PATTERN LIST
+
+Indexamajig requires an input file with a list of diffraction patterns ("events") to process. In its simplest form, this is just a text files containing a list of HDF5 filenames. The HDF5 files might be in some folder a long way from the current directory, so you might want to specify a full pathname to be added in front of each filename. The geometry file includes a description of the data layout within the HDF5 files. Indexamajig uses this description to make an educated guess at the number of diffraction patterns stored in each file, and tries to process them all.  You can however single out an event contained in the file for processing, by putting a string describing the event after the file name (see below).
+
 
 .SH PEAK DETECTION
 
@@ -205,12 +208,6 @@ Read the beam description from \fIfilename\fR.  See \fBman crystfel_geometry\fR 
 Specify the name of the file containing unit cell information, in PDB or CrystFEL format.
 
 .PD 0
-.IP "\fB-e\fR \fIpath\fR"
-.IP \fB--image=\fR\fIpath\fR
-.PD
-Get the image data to display from \fIpath\fR inside the HDF5 file.  For example: \fI/data/rawdata\fR.  If this is not specified, the default behaviour is to use the first two-dimensional dataset with both dimensions greater than 64.
-
-.PD 0
 .IP \fB--peak-radius=\fR\fIinner,middle,outer\fR
 .PD
 Set the inner, middle and outer radii for three-ring integration during the peak search.  See the section about \fBPEAK INTEGRATION\fR, above, for details of how to determine
@@ -333,6 +330,57 @@ When \fBrescut\fR is in the integration method, integrate \fIn\fR nm^-1 higher t
 .IP \fB--highres=\fIn\fR
 .PD
 Mark all pixels on the detector higher than \fIn\fR Angstroms as bad.  This might be useful when you have noisy patterns and don't expect any signal above a certain resolution.
+
+
+.SH IDENTIFYING SINGLE PATTERNS IN THE INPUT FILE
+
+By default indexamajig processes all diffraction patterns ("events") in each of the data files listed in the input list. It is however, possible, to only process single events in a multi-event file, by adding in the list an event description string after the data filename. The event description always includes a first section with alphanumeric strings separated by forward slashes ("/") and a second section with integer numbers also separated by forward slashes. The two sections are in turn separated by a double forward slash ('//'). Any of the two sections can be empty, but the double forward slash separator must always be present.  Indexmamajig matches the strings and the numbers in the event description with the event placeholders ('%') present respectively in the 'data' and 'dim' properties defined in the geometry file, and tries to retrieve the full HDF path to the event data and the the its location in a multi-dimensional data space. Consider the following examples:
+
+Example 1:
+.br
+
+Assuming that the 'data' and 'dim' properties have been defined like this in the geometry file:
+
+.br
+data = /data/%/rawdata
+.br
+dim0 = ss
+.br
+dim1 = fs
+
+The following line:
+.br
+
+filename.h5  event1//
+.br
+
+Identifies an event in the 2-dimensional data block lying at the /data/event1/rawdata HDF path in the filename.h5 file
+
+Example 2:
+.br
+
+Assuming that the 'data' and 'dim' properties have been defined like this in the geometry file:
+
+.br
+data = /data/rawdata
+.br
+dim0 = %
+.br
+dim1 = ss
+.br
+dim2 = fs
+
+The following line:
+.br
+
+filename.h5  //3
+.br
+
+Identifies an event in the 3-dimensional data block lying at the /data/rawdata HDF path in the filename.h5 file, specifically the 2-dimensional data slice defined by the value 3 of the first axis of the data space.
+
+Indexamajig tries to match the alphanumerical strings to the placeholders in the 'dim' property defined in the geometry file. The first string is matched to the first placeholder, the second to
+the second placeholder, and so on. A similar strategy is followed to match integer numbers to the placeholders in the 'dim' property defined in the geometry file.
+For a full explanation of how the internal layout of the data file can be  described in the geometry file, please see \fBman crystfel_geometry\fR.
 
 .SH BUGS
 ReAx indexing is experimental.  It works very nicely for some people, and crashes for others.  In a future version, it will be improved and fully supported.

@@ -1,0 +1,138 @@
+.\"
+.\" geoptimiser man page
+.\"
+.\" Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+.\"                       a research centre of the Helmholtz Association.
+.\"
+.\" Part of CrystFEL - crystallography with a FEL
+.\"
+
+.TH GEOPTIMISER 1
+.SH NAME
+geoptimiser \- detector geometry refinement
+.SH SYNOPSIS
+.PP
+.BR geoptimiser
+\fB-i\fR \fIinput.stream\fR \fB-g\fR \fIinput.geom\fR \fB-o\fR \fIoutput.geom\fR \fB-c=\fR\fIconnected_rigidgroup_coll\fR \fB-q=\fR\quadrant_rigigroup_coll\fR
+[\fBoptions\fR] \fB...\fR
+.PP
+\fBgeoptimiser --help\fR
+
+.SH DESCRIPTION
+
+\fBgeoptimiser\fR refines and optimizes the detector geometry by comparing the location of observed Bragg peaks in a set of indexed patterns with the spot locations predicted from
+the crystal indexing procedure. It can refine position, rotation and distance of each module ('panel') relative to the interaction region. It requires a stream file with indexed patterns,
+a geometry file with the detector geometry to refine, and some parameters to specify which modules are physically connected to each other and which are attached to the same physical support
+(for example, all panels in a quadrant of the CSPAD detector). The output is a geometry file with the optimized detector geometry and a set of diagnostic error maps in HDF5 format.
+Several options are available to tweak the number of peaks included in the optimization procedure based on a range of criteria.
+For a complete description of the optimization algorithm, see the following paper:
+
+.IP
+O. Yefanov, V. Mariani, C. Gati, T. A. White, H. N. Chapman, and A. Barty. "Accurate determination of segmented X-ray detector geometry". In preparation
+
+.PP
+For minimal basic use, you need to provide a stream file with diffraction patterns, a geometry file to optimize, a filename for the output optimized geometry, and
+the name of two rigid group collections defined in the geometry file: one describing which modules in the detector are physically connected (and hence whose geometry should
+be optimized as if they were a single panel), and one to describe which modules are attached to the same underlying support (whose position and orientation are likely to be correlated).
+Here is what the minimal use might look like on the command line:
+
+.IP \fBgeoptimiser\fR
+.PD
+-i input.stream -g input.geom -o output.geom -c connected_rg_coll_name -q same_support_rg_coll_name
+
+.PP
+See \fBman crystfel_geometry\fR for information on how to create a file describing the detector geometry, and guidelines to define the required rigid groups and rigid groups collections.
+
+.SH OPTIONS
+.PD 0
+.IP "\fB-i\fR \fIfilename\fR"
+.IP \fB--input=\fR\fIfilename\fR
+.PD
+Read the indexed patterns from the \fIfilename\fR stream file.
+
+.PD 0
+.IP "\fB-g\fR \fIfilename\fR"
+.IP \fB--geometry=\fR\fIfilename\fR
+.PD
+Read the detector geometry to optimize from the \fIfilename\fR file.
+
+.PD 0
+.IP "\fB-o\fR \fIfilename\fR"
+.IP \fB--output=\fR\fIfilename\fR
+.PD
+Write the optimized detector geometry to \fIfilename\fR.
+
+.PD 0
+.IP "\fB-c\fR \fIname\fR"
+.IP \fB--connected=\fR\fIname\fR
+.PD
+Sets the rigid group collection for connected panels to \fIname\fR.  This rigid group collection describes how the panels are physically connected in the detector.
+A set of rigid groups must be defined in the geometry file, with each group containing only panels that are physically connected to each other (for example the pairs of physically-connected ASICs in the
+CSPAD detector). The rigid group collection chosen using this option must also be defined in the geometry file, and must collect all these groups.
+
+.PD 0
+.IP "\fB-q\fR \fIname\fR"
+.IP \fB--quadrants=\fR\fIname\fR
+.PD
+Sets the rigid group collection for quadrants to \fIname\fR.  This rigid group collection describes how panels are connected to the underlying support of the detector.
+A set of rigid groups must be defined in the geometry file, with each group containing only panels that are attached to the same underlying support (for example, all panels belonging to the same quadrant of the CSPAD detector).
+The rigid group collection chosen using this option must also be defined in the geometry file and must collect all these groups.
+
+.PD 0
+.IP "\fB-x\fR \fIn\fR"
+.IP \fB--min-num-peaks-per-pixel=\fR\fIn\fR
+.PD
+Sets to \fIn\fR the minimum number of peaks that should fall within a pixel, across all indexed patterns, to contribute to the geometry optimization. The default value is 3.
+
+.PD 0
+.IP "\fB-p\fR \fIn\fR"
+.IP \fB--min-num-peaks-per-panel=\fR\fIn\fR
+.PD
+Sets to \fIn\fR the minimum number of peaks that should appear in a panel for the panel's geometry to be optimized independently. The default value is 100.
+
+.PD 0
+.IP "\fB-l\fR"
+.IP \fB--most-freq-clen\fR
+.PD
+Some stream files can contain patterns collected using different camera lengths. By default, detector distance is optimized using only patterns collected with the most frequent camera length in the stream file.
+However, all patterns are used to compute panel shifts and rotations. With this option, shifts are rotation are computed with the same subset of patterns used for the detector distance optimization.
+
+.PD 0
+.IP "\fB-s\fR"
+.IP \fB--individual-dist-offset\fR
+.PD
+By default, geoptimiser optimizes detector distance assuming that all panels have the same distance from the sample (i.e., a single distance is optimized for the whole detector). With this option, each panel's
+distance is instead optimized independently.
+
+.PD 0
+.IP "\fB-m\fR \fIdist\fR"
+.IP \fB--max-peak-dist=\fR\fIdist\fR
+.PD
+Geoptimiser refines detector geometry by comparing the predicted position of Bragg peaks with the location of detected peak in indexed patterns. This option sets the maximum distance in pixels between the predicted and the observed peaks for the pair
+to be included in the optimization process. The default maximum distance is 8 pixels.
+
+.PD 0
+.IP \fB--no-stretch\fR
+.PD
+By default, geoptimiser refines the distance between the detector and the sample. This option turns off this optimization.
+
+.SH AUTHOR
+This page was written by Valerio Mariani and Oleksandr Yefanov.
+
+.SH REPORTING BUGS
+Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+
+.SH COPYRIGHT AND DISCLAIMER
+Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+.P
+geoptimiser, and this manual, are part of CrystFEL.
+.P
+CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+.P
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+.P
+You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+.SH SEE ALSO
+.BR crystfel (7),
+.BR crystfel_geometry (5)
