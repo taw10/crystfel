@@ -13,7 +13,7 @@ indexamajig \- bulk indexing and data reduction program
 .SH SYNOPSIS
 .PP
 .BR indexamajig
-\fB-i\fR \fIfilename\fR \fB-o\fR \fIoutput.stream\fR \fB-g\fR \fIdetector.geom\fR \fB-b\fR \fIbeamline.beam\fR \fB--peaks=\fR\fImethod\fR \fB--indexing=\fR\fImethod\fR
+\fB-i\fR \fIfilename\fR \fB-o\fR \fIoutput.stream\fR \fB-g\fR \fIdetector.geom\fR \fB--peaks=\fR\fImethod\fR \fB--indexing=\fR\fImethod\fR
 [\fBoptions\fR] \fB...\fR
 .PP
 \fBindexamajig --help\fR
@@ -26,7 +26,7 @@ For minimal basic use, you need to provide the list of diffraction patterns, the
 
 .IP \fBindexamajig\fR
 .PD
--i mypatterns.lst -j 10 -g mygeometry.geom --indexing=mosflm,dirax --peaks=hdf5 -b myxfel.beam -o test.stream -p mycell.pdb
+-i mypatterns.lst -j 10 -g mygeometry.geom --indexing=mosflm,dirax --peaks=hdf5 -o test.stream -p mycell.pdb
 
 .PP
 More typical use includes all the above, but might also include extra parameters to modify the behaviour. For example, you'll probably want to
@@ -193,12 +193,6 @@ Integrate the reflections using \fImethod\fR.  See the section titled \fBPEAK IN
 .IP \fB--geometry=\fR\fIfilename\fR
 .PD
 Read the detector geometry description from \fIfilename\fR.  See \fBman crystfel_geometry\fR for more information.
-
-.PD 0
-.IP "\fB-b\fR \fIfilename\fR"
-.IP \fB--beam=\fR\fIfilename\fR
-.PD
-Read the beam description from \fIfilename\fR.  See \fBman crystfel_geometry\fR for more information.
 
 .PD 0
 .IP "\fB-p\fR \fIunitcell.cell\fR"
