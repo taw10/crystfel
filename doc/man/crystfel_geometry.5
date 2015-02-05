@@ -53,8 +53,7 @@ better to consider the precise way in which the coordinates are mapped.
 Some file formats store data for multiple patterns ("events") within a single file.
 Information about the layout of the file data can be included in the geometry file.
 This allows CrystFEL to unambigously identify data blocks which contain
-data for a specific event, and to make an educated guess at the number of events
-that each file contains.
+data for a specific event, and to determine the number of events that each file contains.
 
 
 The geometry file should contain lines of the following form:
@@ -108,7 +107,8 @@ the axis encodes the fast scan index
 .RE
 .IP
 CrystFEL assumes that the data block defined by the 'data' property has a dimensionality equal to the axis with the highest value of \fIn\fR defined by the 'dim' property, and requires the user to provide information about each of the axes in the data block. When no 'dim' property is defined in the geometry file, CrystFEL assumes the data block to be 2-dimensional, with the two axes encoding slow scan and fast scan information respectively.
-Note that this means you can assign the fast scan coordinates to the slow scan axis of the data block, and vice versa!  This "quirk" helps backwards compatibility with geometry files from older versions of CrystFEL.
+.IP
+Note that this does indeed mean that you can assign the fast scan coordinates to the slow scan axis of the data block, and vice versa!  This "quirk" helps backwards compatibility with geometry files from older versions of CrystFEL.
 
 Example:
 .RS
@@ -236,7 +236,7 @@ You can specify multiple sets of rigid groups.  For example, as well as specifyi
 .PP
 This creates a rigid group collection called \fIname\fR, containing rigid groups \fIrigidgroup1\fR and \fIrigidgroup2\fR.
 .PP
-Definitions of rigid groups and rigid groups collection can appear at any place in the geometry file and can be declared using the following global properties.  They are not panel properties, and therefore don't follow the usual panel/property syntax.  You can assign any number of panels to a rigid group, and any number of rigid groups to a rigid group collection.  A panel can be a member of any number of rigid groups.
+Definitions of rigid groups and rigid group collections can appear at any place in the geometry file and can be declared using the following global properties.  They are not panel properties, and therefore don't follow the usual panel/property syntax.  You can assign any number of panels to a rigid group, and any number of rigid groups to a rigid group collection.  A panel can be a member of any number of rigid groups.
 
 .PP
 See the "examples" folder for some examples (look at the ones ending in .geom).
