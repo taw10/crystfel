@@ -36,6 +36,7 @@ src/partial_sim
 src/cell_explorer
 src/ambigator
 src/whirligig
+src/geoptimiser
 src/.dirstamp
 *~
 doc/reference/libcrystfel/*
