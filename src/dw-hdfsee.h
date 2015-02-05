@@ -96,6 +96,7 @@ typedef struct {
 	struct image	*image;
 
 	char            *geom_filename;
+	char            *rg_coll_name;
 
 	/* Dialog boxes */
 	BinningDialog  *binning_dialog;

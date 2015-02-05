@@ -98,7 +98,6 @@ struct panel
         double   res;      /* Resolution in pixels per metre */
         char     badrow;   /* 'x' or 'y' */
         int      no_index; /* Don't index peaks in this panel if non-zero */
-        struct rigid_group *rigid_group;  /* Rigid group */
         double   adu_per_eV;   /* Number of ADU per eV */
         double   max_adu;  /* Treat pixel as unreliable if higher than this */
         char    *data;

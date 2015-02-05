@@ -312,10 +312,27 @@ static void show_simple_ring(cairo_t *cr, DisplayWindow *dw,
 	cairo_stroke(cr);
 }
 
+static struct rigid_group *find_corresponding_rigid_group(DisplayWindow *dw,
+                                                          struct panel *p) {
+
+	int gi;
+
+	for (gi=0; gi<dw->rg_coll->n_rigid_groups; gi++) {
+		if (panel_is_in_rigid_group(dw->rg_coll->rigid_groups[gi],
+		    p)) {
+			return dw->rg_coll->rigid_groups[gi];
+		}
+	}
+
+	return NULL;
+}
+
 
 static void maybe_draw_focus(DisplayWindow *dw, cairo_t *cr, int i,
                              cairo_matrix_t *basic_m)
 {
+	struct rigid_group *rg = NULL;
+
 	switch ( dw->calib_mode ) {
 
 		case CALIBMODE_NONE:
@@ -329,9 +346,9 @@ static void maybe_draw_focus(DisplayWindow *dw, cairo_t *cr, int i,
 		break;
 
 		case CALIBMODE_GROUPS:
-		if ( dw->image->det->panels[i].rigid_group ==
-		     dw->calib_mode_curr_rg )
-		{
+		rg = find_corresponding_rigid_group(dw,
+		                                    &dw->image->det->panels[i]);
+		if (rg == dw->calib_mode_curr_rg) {
 			draw_calib_focus_rectangle(cr, basic_m, dw, i);
 			cairo_stroke(cr);
 		}
@@ -1249,6 +1266,26 @@ static gint displaywindow_set_calibmode(GtkWidget *d, DisplayWindow *dw)
 	if ( dw->image->det == dw->simple_geom ) {
 		gtk_check_menu_item_set_state(GTK_CHECK_MENU_ITEM(w), 0);
 		return 0;
+	}
+
+	if (dw->rg_coll_name == NULL) {
+		dw->rg_coll = dw->image->det->rigid_group_collections[0];
+		if (dw->rg_coll == NULL) {
+			ERROR("Cannot find asuitable rigid group collection.\n");
+			gtk_check_menu_item_set_state(GTK_CHECK_MENU_ITEM(w),
+	                                              0);
+			return 0;
+		}
+	} else {
+		dw->rg_coll = find_rigid_group_collection_by_name(dw->image->det,
+		              dw->rg_coll_name);
+		if (dw->rg_coll == NULL) {
+			ERROR("Cannot find rigid group collection: %s\n",
+			      dw->rg_coll_name);
+			gtk_check_menu_item_set_state(GTK_CHECK_MENU_ITEM(w),
+			                              0);
+			return 0;
+		}
 	}
 
 	/* Get new value */
@@ -2203,8 +2240,14 @@ static void toggle_calibmode_groupmode(DisplayWindow *dw)
 		if ( det->n_rigid_groups != det->n_panels ) {
 			/* Only change if there are any rigid groups defined */
 			dw->calib_mode = CALIBMODE_GROUPS;
-			rg = dw->calib_mode_curr_p->rigid_group;
-			dw->calib_mode_curr_rg = rg;
+			rg = find_corresponding_rigid_group(dw,
+			     dw->calib_mode_curr_p);
+			if ( rg == NULL) {
+				dw->calib_mode = CALIBMODE_ALL;
+			} else {
+				dw->calib_mode_curr_rg = rg;
+			}
+
 		} else {
 			/* ...otherwise skip to ALL mode */
 			dw->calib_mode = CALIBMODE_ALL;
@@ -2521,6 +2564,12 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	} else {
 		dw->geom_filename = NULL;
 	}
+	if (rgcoll_name != NULL) {
+		dw->rg_coll_name = strdup(rgcoll_name);
+	} else {
+		dw->rg_coll_name = NULL;
+	}
+
 	dw->image->det = det_geom;
 	dw->image->beam = beam;
 	dw->image->lambda = 0.0;
@@ -2643,16 +2692,6 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 
 	if ( dw->image->det != dw->simple_geom ) {
 		gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-	}
-
-	if ( rgcoll_name != NULL ) {
-
-		dw->rg_coll = dw->image->det->rigid_group_collections[0];
-		if ( dw->rg_coll == NULL ) {
-			ERROR("Cannot find suitable rigid group collection.\n",
-			      rgcoll_name);
-			return NULL;
-		}
 	}
 
 	ww = gtk_ui_manager_get_widget(dw->ui,

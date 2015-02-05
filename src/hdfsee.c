@@ -300,10 +300,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (rgcoll_name == NULL) {
-		rgcoll_name = strdup("default");
-	}
-
 	if ( cscale == NULL ) cscale = strdup("colour");
 	if ( strcmp(cscale, "mono") == 0 ) {
 		colscale = SCALE_MONO;
