@@ -1,7 +1,7 @@
 .\"
 .\" Geometry man page
 .\"
-.\" Copyright © 2012-2014 Thomas White <taw@physics.org>
+.\" Copyright © 2012-2015 Thomas White <taw@physics.org>
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
 .\"
@@ -13,7 +13,7 @@ CRYSTFEL DETECTOR GEOMETRY DESCRIPTION FILES
 .SH CRYSTFEL DETECTOR GEOMETRY FILES
 The detector geometry is taken from a text file rather than hardcoded into the
 program.  Programs which care about the geometry (particularly
-\fBindexamajig\fR and \fBpattern_sim\fR take an argument
+\fBindexamajig\fR and \fBpattern_sim\fR) take an argument
 \fB--geometry=\fR\fIfilename\fR, where \fIfilename\fR contains the geometry.
 .PP
 A flexible (and pedantic) representation of the detector has been developed to
@@ -68,7 +68,7 @@ The geometry file should contain lines of the following form:
 You can also specify values without a panel name, for example:
 
 .IP
-peak_sep = 6.0
+clen = 0.560
 
 .PP
 In this case, the value will be used for all \fBsubsequent\fR panels appearing in the file which do not have their own specific values for the property, or until you specify another default value further down the file.  Panel-specific values always have priority over default values, and changing the default value has no effect for panels which had already be mentioned at the point in the file where the default value was specified.
@@ -94,27 +94,32 @@ The CrystFEL programs will look for the first event at /data/event1_name/rawdata
 .IP \fBdim\fIn\fR\fR
 .PD
 Information about the layout of the data block identified by the 'data' property. \fIn\fR is an integer number identifying an axis in a multidimensional HDF5 data block. The property value defines the kind of information encoded by the axis. Possible values are:
-.br
-% : event placeholder,the axis encodes events
-.br
-ss: the axis encodes the slow scan index
-.br
-fs: the axis encodes the fast scan index
-.br
-CrystFEL assumes that the data block defined by the 'data' property has a dimensionality equal to the axis with the highest value of \fIn\fR defined by the 'dim' property, and requires the user to provide information about each of the
-axes in the data block. When no 'dim' property is defined in the geometry file, CrystFEL assumes the data block to be 2-dimensional, with the two axes encoding slow scan and fast scan information respectively.
+.RS
+.IP %
+.PD
+event placeholder,the axis encodes events
+.IP ss
+.PD
+the axis encoding the slow scan index
+.IP fs
+.PD
+the axis encodes the fast scan index
+.RE
+.IP
+CrystFEL assumes that the data block defined by the 'data' property has a dimensionality equal to the axis with the highest value of \fIn\fR defined by the 'dim' property, and requires the user to provide information about each of the axes in the data block. When no 'dim' property is defined in the geometry file, CrystFEL assumes the data block to be 2-dimensional, with the two axes encoding slow scan and fast scan information respectively.
+Note that this means you can assign the fast scan coordinates to the slow scan axis of the data block, and vice versa!  This "quirk" helps backwards compatibility with geometry files from older versions of CrystFEL.
 
 Example:
-.br
-.br
+.RS
+.IP
 dim0 = %
-.br
+.IP
 dim1 = ss
-.br
+.IP
 dim2 = fs
-.br
-.br
-The data block is 3-dimensional. The first axis encodes events, the second the slow scan panel coordinate, and the third the fast scan panel coordinate
+.RE
+.IP
+The above snippet specifies that the data block is 3-dimensional. The first axis represents the event number, the second the slow scan panel coordinate, and the third the fast scan panel coordinate.
 
 .PD 0
 .IP \fBmin_fs\fR
@@ -216,19 +221,21 @@ badregionB/max_ss = 512
 
 .SH RIGID GROUPS AND RIGID GROUP COLLECTIONS
 
-Sometimes, some programs in CrystFEL need to treat a group of panels as a single rigid body. This often happens when the panels are physically connected (for example, a pair of adjacent ASICs in the CSPAD detector).
-Rigid groups can be defined in the geometry file by listing the panels belonging to each group and assigning the group a name.  At a higher level, collections of rigid groups can be defined when rigid groups belong to the same
-conceptual grouping scheme (for example, a collection of the four rigid groups defining quadrants in the CSPAD detector). Definitions of rigid groups and rigid groups collection can appear at any place in the geometry file and can be declared using the following global properties (these are not panel properties and don't follow the usual panel/property syntax):
-
-.PD 0
-.IP "\fBrigid_group_\fIname\fR = panel1 <, panel2> <, panel3> ...\fR"
-.PD
-This property defines the rigid group \fIname\fR, and lists the panels that belong to it
-
-.PD 0
-.IP "\fBrigid_group_collection_\fIname\fR = rigidgroup1 <, rigidgroup2> <, rigidgroup3> ...\fR"
-.PD
-This property defines the rigid group collection \fIname\fR, and lists the rigid groups that it contains
+Some operations in CrystFEL, such as refining the detector geometry, need a group of panels to be treated as a single rigid body.  Such "rigid groups" might describe the fact that certain panels are physically connected to one another, for example, a pair of adjacent ASICs in the CSPAD detector.  Rigid groups can be defined in the geometry file by listing the panels belonging to each group and assigning the group a name, like this:
+.RS
+.IP "\fBrigid_group_\fIname\fR = \fIpanel1\fR,\fIpanel2\fR"
+.RE
+.PP
+This creates a rigid group called \fIname\fR, containing panels \fIpanel1\fR and \fIpanel2\fR.
+.PP
+You can specify multiple sets of rigid groups.  For example, as well as specifying the relationships between pairs of ASICs mentioned above, you may also want to specify that certain groups of panels belong to an independently-movable quadrant of the detector.  You can declare and name such "rigid group collections" as follows:
+.RS
+.IP "\fBrigid_group_collection_\fIname\fR = \fIrigidgroup1\fR,\fIrigidgroup2\fR"
+.RE
+.PP
+This creates a rigid group collection called \fIname\fR, containing rigid groups \fIrigidgroup1\fR and \fIrigidgroup2\fR.
+.PP
+Definitions of rigid groups and rigid groups collection can appear at any place in the geometry file and can be declared using the following global properties.  They are not panel properties, and therefore don't follow the usual panel/property syntax.  You can assign any number of panels to a rigid group, and any number of rigid groups to a rigid group collection.  A panel can be a member of any number of rigid groups.
 
 .PP
 See the "examples" folder for some examples (look at the ones ending in .geom).
@@ -257,7 +264,7 @@ This page was written by Thomas White and Valerio Mariani.
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
 .SH COPYRIGHT AND DISCLAIMER
-Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .P
 CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 .P

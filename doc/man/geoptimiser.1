@@ -1,7 +1,7 @@
 .\"
 .\" geoptimiser man page
 .\"
-.\" Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+.\" Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
 .\"                       a research centre of the Helmholtz Association.
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
@@ -13,18 +13,14 @@ geoptimiser \- detector geometry refinement
 .SH SYNOPSIS
 .PP
 .BR geoptimiser
-\fB-i\fR \fIinput.stream\fR \fB-g\fR \fIinput.geom\fR \fB-o\fR \fIoutput.geom\fR \fB-c=\fR\fIconnected_rigidgroup_coll\fR \fB-q=\fR\quadrant_rigigroup_coll\fR
+\fB-i \fIinput.stream \fB-g \fIinput.geom \fB-o \fIoutput.geom \fB-c \fIconnected_rigidgroup_coll \fB-q \fI\quadrant_rigidgroup_coll\fR
 [\fBoptions\fR] \fB...\fR
 .PP
 \fBgeoptimiser --help\fR
 
 .SH DESCRIPTION
 
-\fBgeoptimiser\fR refines and optimizes the detector geometry by comparing the location of observed Bragg peaks in a set of indexed patterns with the spot locations predicted from
-the crystal indexing procedure. It can refine position, rotation and distance of each module ('panel') relative to the interaction region. It requires a stream file with indexed patterns,
-a geometry file with the detector geometry to refine, and some parameters to specify which modules are physically connected to each other and which are attached to the same physical support
-(for example, all panels in a quadrant of the CSPAD detector). The output is a geometry file with the optimized detector geometry and a set of diagnostic error maps in HDF5 format.
-Several options are available to tweak the number of peaks included in the optimization procedure based on a range of criteria.
+\fBgeoptimiser\fR refines and optimizes the detector geometry by comparing the locations of observed Bragg peaks in a set of indexed patterns with the spot locations predicted from the crystal indexing procedure. It can refine position, rotation and distance of each panel relative to the interaction region. It requires a stream file with indexed patterns, a geometry file with the detector geometry to refine, and some parameters to specify which panels are physically connected to each other and which are attached to the same physical support (for example, all panels in a quadrant of the CSPAD detector). The output is a geometry file with the optimized detector geometry and a set of diagnostic error maps in HDF5 format.  Several options are available to tweak the number of peaks included in the optimization procedure based on a range of criteria.
 For a complete description of the optimization algorithm, see the following paper:
 
 .IP
@@ -32,13 +28,7 @@ O. Yefanov, V. Mariani, C. Gati, T. A. White, H. N. Chapman, and A. Barty. "Accu
 
 .PP
 For minimal basic use, you need to provide a stream file with diffraction patterns, a geometry file to optimize, a filename for the output optimized geometry, and
-the name of two rigid group collections defined in the geometry file: one describing which modules in the detector are physically connected (and hence whose geometry should
-be optimized as if they were a single panel), and one to describe which modules are attached to the same underlying support (whose position and orientation are likely to be correlated).
-Here is what the minimal use might look like on the command line:
-
-.IP \fBgeoptimiser\fR
-.PD
--i input.stream -g input.geom -o output.geom -c connected_rg_coll_name -q same_support_rg_coll_name
+the name of two rigid group collections defined in the geometry file: one describing which panels in the detector are physically connected (and hence whose geometry should be optimized as if they were a single panel), and one to describe which panels are attached to the same underlying support (whose position and orientation are likely to be correlated).
 
 .PP
 See \fBman crystfel_geometry\fR for information on how to create a file describing the detector geometry, and guidelines to define the required rigid groups and rigid groups collections.
@@ -63,32 +53,34 @@ Read the detector geometry to optimize from the \fIfilename\fR file.
 Write the optimized detector geometry to \fIfilename\fR.
 
 .PD 0
-.IP "\fB-c\fR \fIname\fR"
-.IP \fB--connected=\fR\fIname\fR
+.IP "\fB-c \fIname\fR"
+.IP \fB--connected=\fIname\fR
 .PD
-Sets the rigid group collection for connected panels to \fIname\fR.  This rigid group collection describes how the panels are physically connected in the detector.
-A set of rigid groups must be defined in the geometry file, with each group containing only panels that are physically connected to each other (for example the pairs of physically-connected ASICs in the
-CSPAD detector). The rigid group collection chosen using this option must also be defined in the geometry file, and must collect all these groups.
+Specifies the name of the rigid group collection for connected panels.  This rigid group collection describes how the panels are physically connected in the detector.
+A set of rigid groups must be defined in the geometry file, with each group containing only panels that are physically connected to each other (for example the pairs of ASICs sharing the same piece of detector silicon in the CSPAD detector).
+.sp
+If a given rigid group is a member of \fIname\fR, then panels which are members of that rigid group will be kept strictly in the same relative position and orientation relative to one another.
 
 .PD 0
 .IP "\fB-q\fR \fIname\fR"
 .IP \fB--quadrants=\fR\fIname\fR
 .PD
-Sets the rigid group collection for quadrants to \fIname\fR.  This rigid group collection describes how panels are connected to the underlying support of the detector.
-A set of rigid groups must be defined in the geometry file, with each group containing only panels that are attached to the same underlying support (for example, all panels belonging to the same quadrant of the CSPAD detector).
-The rigid group collection chosen using this option must also be defined in the geometry file and must collect all these groups.
+Specifies the name of the rigid group collection for detector 'quadrants'.  This rigid group collection describes how panels are connected to the underlying support of the detector, for example, the panels belonging to the same quadrant of the CSPAD detector.
+.sp
+If a given rigid group is a member of \fIname\fR, then panels which are members of that rigid group and which do not contain enough peaks for positional refinement will be moved according to the average movement of the other panels in the group.
+
 
 .PD 0
 .IP "\fB-x\fR \fIn\fR"
 .IP \fB--min-num-peaks-per-pixel=\fR\fIn\fR
 .PD
-Sets to \fIn\fR the minimum number of peaks that should fall within a pixel, across all indexed patterns, to contribute to the geometry optimization. The default value is 3.
+Sets the minimum number of peaks that should fall within a pixel, across all indexed patterns, to contribute to the geometry optimization. The default value is 3.
 
 .PD 0
 .IP "\fB-p\fR \fIn\fR"
 .IP \fB--min-num-peaks-per-panel=\fR\fIn\fR
 .PD
-Sets to \fIn\fR the minimum number of peaks that should appear in a panel for the panel's geometry to be optimized independently. The default value is 100.
+Sets the minimum number of peaks that should appear in a panel for the panel's geometry to be optimized independently. The default value is 100.
 
 .PD 0
 .IP "\fB-l\fR"
@@ -117,13 +109,13 @@ to be included in the optimization process. The default maximum distance is 8 pi
 By default, geoptimiser refines the distance between the detector and the sample. This option turns off this optimization.
 
 .SH AUTHOR
-This page was written by Valerio Mariani and Oleksandr Yefanov.
+This page was written by Valerio Mariani, Oleksandr Yefanov and Thomas White.
 
 .SH REPORTING BUGS
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
 .SH COPYRIGHT AND DISCLAIMER
-Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .P
 geoptimiser, and this manual, are part of CrystFEL.
 .P
