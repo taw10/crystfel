@@ -27,7 +27,9 @@
  * along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -37,6 +39,8 @@
 #include <ctype.h>
 #include <time.h>
 #include <float.h>
+#include <cairo.h>
+#include <gdk/gdk.h>
 
 #include <detector.h>
 #include <stream.h>
@@ -44,6 +48,8 @@
 #include <crystal.h>
 #include <image.h>
 #include <utils.h>
+
+#include "hdfsee-render.h"
 
 struct imagefeature;
 
@@ -2008,13 +2014,97 @@ static int compute_angles_and_stretch(struct rg_collection *connected,
 }
 
 
-static int save_data_to_hdf5(char * filename, struct detector* det,
-                             int max_fs, int max_ss, double dfv,
-                             double *data)
+static void draw_panel(struct image *image, cairo_t *cr,
+                       cairo_matrix_t *basic_m, GdkPixbuf **pixbufs, int i) {
+	struct panel p = image->det->panels[i];
+	int w = gdk_pixbuf_get_width(pixbufs[i]);
+	int h = gdk_pixbuf_get_height(pixbufs[i]);
+	cairo_matrix_t m;
+
+	/* Start with the basic coordinate system */
+	cairo_set_matrix(cr, basic_m);
+
+	/* Move to the right location */
+	cairo_translate(cr, p.cnx, p.cny);
+
+	/* Twiddle directions according to matrix */
+	cairo_matrix_init(&m, p.fsx, p.fsy, p.ssx, p.ssy, 0.0, 0.0);
+	cairo_transform(cr, &m);
+
+	gdk_cairo_set_source_pixbuf(cr, pixbufs[i], 0.0, 0.0);
+	cairo_rectangle(cr, 0.0, 0.0, w, h);
+}
+
+
+struct rectangle
+{
+	int width, height;
+	double min_x, min_y, max_x, max_y;
+};
+
+
+static int draw_detector(cairo_surface_t *surf, struct image *image,
+                         struct rectangle rect) {
+	cairo_t *cr;
+	cairo_matrix_t basic_m;
+	cairo_matrix_t m;
+	GdkPixbuf **pixbufs;
+	int n_pixbufs;
+
+	cr = cairo_create(surf);
+
+	pixbufs = render_panels(image, 1, 1, 1, &n_pixbufs);
+
+	/* Blank grey background */
+	cairo_rectangle(cr, 0.0, 0.0, rect.width, rect.height);
+	cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+	cairo_fill(cr);
+
+	/* Set up basic coordinate system
+	 *  - origin in the centre, y upwards. */
+	cairo_identity_matrix(cr);
+	cairo_matrix_init(&m, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0);
+
+
+	cairo_translate(cr, -rect.min_x , rect.max_y);
+	cairo_transform(cr, &m);
+	cairo_get_matrix(cr, &basic_m);
+
+	if (pixbufs != NULL) {
+
+		int i;
+
+		for (i = 0; i < image->det->n_panels; i++) {
+			draw_panel(image, cr, &basic_m, pixbufs, i);
+			cairo_fill(cr);
+		}
+
+	}
+
+	/* Free old pixbufs */
+	if (pixbufs != NULL) {
+		int i;
+		for (i = 0; i < n_pixbufs; i++) {
+			g_object_unref(pixbufs[i]);
+		}
+		free(pixbufs);
+	}
+
+	return 0;
+
+}
+
+
+static int save_data_to_png(char * filename, struct detector* det,
+                            int max_fs, int max_ss, double default_fill_value,
+                            double *data)
 {
 	struct image *im;
 	int i;
-	int ret;
+	struct rectangle rect;
+
+	cairo_status_t r;
+	cairo_surface_t *surf;
 
 	im = malloc(sizeof(struct image));
 	if ( im == NULL ) {
@@ -2030,20 +2120,37 @@ static int save_data_to_hdf5(char * filename, struct detector* det,
 	im->det = det;
 	im->width = max_fs+1;
 	im->height = max_ss+1;
-	im->beam = NULL;
-	im->spectrum = NULL;
+	im->flags = NULL;
 
 	for ( i=0; i<(max_fs+1)*(max_ss+1); i++) {
-		if ( data[i] == dfv ) {
+		if ( data[i] == default_fill_value ) {
 			im->data[i] = 0.0;
 		} else {
 			im->data[i] = (float)data[i];
 		}
 	}
 
-	ret = hdf5_write_image(filename, im, NULL);
+	get_pixel_extents(im->det, &rect.min_x, &rect.min_y, &rect.max_x,
+	                  &rect.max_y);
 
-	if ( ret != 0 ) {
+	if (rect.min_x > 0.0) rect.min_x = 0.0;
+	if (rect.max_x < 0.0) rect.max_x = 0.0;
+	if (rect.min_y > 0.0) rect.min_y = 0.0;
+	if (rect.max_y < 0.0) rect.max_y = 0.0;
+
+	rect.width = (rect.max_x - rect.min_x);
+	rect.height = (rect.max_y - rect.min_y);
+
+	/* Add a thin border */
+	rect.width += 2.0;
+	rect.height += 2.0;
+	surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, rect.width,
+	                                  rect.height);
+
+	draw_detector(surf, im, rect);
+
+	r = cairo_surface_write_to_png(surf, filename);
+	if (r != CAIRO_STATUS_SUCCESS) {
 		free(im->data);
 		free(im);
 		return 1;
@@ -2330,11 +2437,11 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	free(pattern_list);
 
 	STATUS("Saving displacements before corrections\n");
-	ret1 = save_data_to_hdf5("disp_x_before.h5", det, max_fs, max_ss,
+	ret1 = save_data_to_png("disp_x_before.png", det, max_fs, max_ss,
 	                         dfv, displ_x);
-	ret2 = save_data_to_hdf5("disp_y_before.h5", det, max_fs, max_ss,
+	ret2 = save_data_to_png("disp_y_before.png", det, max_fs, max_ss,
 		                 dfv, displ_y);
-	ret3 = save_data_to_hdf5("disp_abs_before.h5", det, max_fs, max_ss,
+	ret3 = save_data_to_png("disp_abs_before.png", det, max_fs, max_ss,
                                 dfv, displ_abs);
 	if ( ret1!=0 || ret2!=0 || ret3!=0 ) {
 		ERROR("Error while writing data to file.\n");
@@ -2465,11 +2572,11 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	correct_shifts(connected, conn_data, dfv, clen_to_use);
 
 	STATUS("Saving displacements after corrections\n");
-	ret4 = save_data_to_hdf5("disp_x_after.h5", det,  max_fs, max_ss,
+	ret4 = save_data_to_png("disp_x_after.png", det,  max_fs, max_ss,
 	                         dfv, displ_x);
-	ret5 = save_data_to_hdf5("disp_y_after.h5", det,  max_fs, max_ss,
+	ret5 = save_data_to_png("disp_y_after.png", det,  max_fs, max_ss,
 	                         dfv, displ_y);
-	ret6 = save_data_to_hdf5("disp_abs_after.h5", det,  max_fs, max_ss,
+	ret6 = save_data_to_png("disp_abs_after.png", det,  max_fs, max_ss,
 	                         dfv, displ_abs);
 	if ( ret4!=0 || ret5!=0 || ret6!=0 ) {
 		ERROR("Error while writing data to file.\n");
@@ -2671,6 +2778,7 @@ int main(int argc, char *argv[])
 		strcat(command_line, buffer);
 	}
 
+	g_type_init();
 	ret_val = optimize_geometry(infile, outfile, geometry_filename, det,
 	                        quadrants, connected, min_num_peaks_per_pixel,
 	                        min_num_peaks_per_panel, only_best_distance,

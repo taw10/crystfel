@@ -95,7 +95,7 @@ src_partialator_SOURCES = src/partialator.c src/post-refinement.c \
 
 src_ambigator_SOURCES = src/ambigator.c
 
-src_geoptimiser_SOURCES = src/geoptimiser.c
+src_geoptimiser_SOURCES = src/geoptimiser.c src/hdfsee-render.c
 
 src_whirligig_SOURCES = src/whirligig.c
 
