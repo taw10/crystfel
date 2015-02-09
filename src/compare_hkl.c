@@ -60,7 +60,9 @@ enum fom
 	FOM_CCANO,
 	FOM_CRDANO,
 	FOM_RANO,
-	FOM_RANORSPLIT
+	FOM_RANORSPLIT,
+	FOM_D1SIG,
+	FOM_D2SIG
 };
 
 
@@ -76,6 +78,8 @@ static enum fom get_fom(const char *s)
 	if ( strcasecmp(s, "crdano") == 0 ) return FOM_CRDANO;
 	if ( strcasecmp(s, "rano") == 0 ) return FOM_RANO;
 	if ( strcasecmp(s, "rano/rsplit") == 0 ) return FOM_RANORSPLIT;
+	if ( strcasecmp(s, "d1sig") == 0 ) return FOM_D1SIG;
+	if ( strcasecmp(s, "d2sig") == 0 ) return FOM_D2SIG;
 
 	ERROR("Unknown figure of merit '%s'.\n", s);
 	exit(1);
@@ -92,7 +96,8 @@ static void show_help(const char *s)
 "  -p, --pdb=<filename>       Unit cell file to use.\n"
 "      --fom=<FoM>            Calculate this figure of merit  Choose from:\n"
 "                              R1I, R1F, R2, Rsplit, CC, CCstar,\n"
-"			       CCano, CRDano, Rano, Rano/Rsplit\n"
+"			       CCano, CRDano, Rano, Rano/Rsplit, d1sig,\n"
+"                              d2sig\n"
 "      --nshells=<n>          Use <n> resolution shells.\n"
 "  -u                         Force scale factor to 1.\n"
 "      --shell-file=<file>    Write resolution shells to <file>.\n"
@@ -118,6 +123,7 @@ struct fom_context
 {
 	enum fom fom;
 	int nshells;
+	int *cts;
 
 	/* For R-factors */
 	double *num;
@@ -132,6 +138,9 @@ struct fom_context
 	double **vec2;
 	int *n;
 	int nmax;
+
+	/* For "counting" things e.g. d1sig or d2sig */
+	int *n_within;
 };
 
 
@@ -145,6 +154,10 @@ static struct fom_context *init_fom(enum fom fom, int nmax, int nshells)
 
 	fctx->fom = fom;
 	fctx->nshells = nshells;
+	fctx->cts = malloc(nshells*sizeof(int));
+	for ( i=0; i<nshells; i++ ) {
+		fctx->cts[i] = 0;
+	}
 
 	switch ( fctx->fom ) {
 
@@ -190,8 +203,16 @@ static struct fom_context *init_fom(enum fom fom, int nmax, int nshells)
 		for ( i=0; i<nshells; i++ ) {
 			fctx->n[i] = 0;
 		}
-
 		fctx->nmax = nmax;
+		break;
+
+		case FOM_D1SIG :
+		case FOM_D2SIG :
+		fctx->n_within = malloc(nshells*sizeof(int));
+		if ( fctx->n_within == NULL ) return NULL;
+		for ( i=0; i<nshells; i++ ) {
+			fctx->n_within[i] = 0;
+		}
 		break;
 
 	}
@@ -201,10 +222,13 @@ static struct fom_context *init_fom(enum fom fom, int nmax, int nshells)
 
 
 static void add_to_fom(struct fom_context *fctx, double i1, double i2,
-                       double i1bij, double i2bij, int bin)
+                       double i1bij, double i2bij, double sig1, double sig2,
+                       int bin)
 {
 	double f1, f2;
 	double im, imbij;
+
+	fctx->cts[bin]++;
 
 	/* Negative intensities have already been weeded out. */
 	f1 = sqrt(i1);
@@ -260,6 +284,17 @@ static void add_to_fom(struct fom_context *fctx, double i1, double i2,
 		fctx->den[bin] += im + imbij;
 		break;
 
+		case FOM_D1SIG :
+		if ( fabs(i1-i2) < (sig1+sig2)/2.0 ) {
+			fctx->n_within[bin]++;
+		}
+		break;
+
+		case FOM_D2SIG :
+		if ( fabs(i1-i2) < sig1+sig2 ) {  /* = 2 * (sig1+sig2)/2 */
+			fctx->n_within[bin]++;
+		}
+		break;
 
 	}
 }
@@ -357,6 +392,16 @@ static double fom_overall(struct fom_context *fctx)
 		free(overall_perpend_diagonal);
 		break;
 
+		case FOM_D1SIG :
+		case FOM_D2SIG :
+		overall_num = 0.0;
+		overall_den = 0.0;
+		for ( i=0; i<fctx->nshells; i++ ) {
+			overall_num += fctx->n_within[i];
+			overall_den += fctx->cts[i];
+		}
+		break;
+
 	}
 
 	switch ( fctx->fom ) {
@@ -385,6 +430,10 @@ static double fom_overall(struct fom_context *fctx)
 		case FOM_RANORSPLIT :
 		return (2.0*(overall_num/overall_den)) /
 		       (2.0*(overall_num2/overall_den2) / sqrt(2.0));
+
+		case FOM_D1SIG :
+		case FOM_D2SIG :
+		return overall_num/overall_den;
 
 	}
 
@@ -447,6 +496,10 @@ static double fom_shell(struct fom_context *fctx, int i)
 		free(along_diagonal);
 		free(perpend_diagonal);
 		return sqrt(variance_signal / variance_error);
+
+		case FOM_D1SIG :
+		case FOM_D2SIG :
+		return (double)fctx->n_within[i] / fctx->cts[i];
 
 	}
 
@@ -614,7 +667,6 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
                    int config_intshells, double min_I, double max_I,
                    SymOpList *sym)
 {
-	int *cts;
 	int i;
 	Reflection *refl1;
 	RefListIterator *iter;
@@ -625,16 +677,11 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 	const char *t1, *t2;
 	int n_out;
 
-	cts = malloc(nshells*sizeof(int));
 	fctx = init_fom(fom, num_reflections(list1), nshells);
 
-	if ( (fctx==NULL) || (cts==NULL) ) {
+	if ( fctx==NULL ) {
 		ERROR("Couldn't allocate memory for resolution shells.\n");
 		return;
-	}
-
-	for ( i=0; i<nshells; i++ ) {
-		cts[i] = 0;
 	}
 
 	if ( config_unity ) {
@@ -664,6 +711,7 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		int bin;
 		double i1, i2;
 		double i1bij, i2bij;
+		double sig1, sig2;
 		Reflection *refl2;
 
 		get_indices(refl1, &h, &k, &l);
@@ -679,6 +727,8 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 
 		i1 = get_intensity(refl1);
 		i2 = scale * get_intensity(refl2);
+		sig1 = get_esd_intensity(refl1);
+		sig2 = scale * get_esd_intensity(refl2);
 
 		if ( (fom == FOM_CCANO) || (fom == FOM_CRDANO)
 		  || (fom == FOM_RANO) || (fom == FOM_RANORSPLIT) )
@@ -714,8 +764,7 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 
 		}
 
-		add_to_fom(fctx, i1, i2, i1bij, i2bij, bin);
-		cts[bin]++;
+		add_to_fom(fctx, i1, i2, i1bij, i2bij, sig1, sig2, bin);
 	}
 	if ( n_out)  {
 		ERROR("WARNING: %i reflection pairs outside range.\n", n_out);
@@ -762,6 +811,17 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		case FOM_RANORSPLIT :
 		STATUS("Overall Rano/Rsplit =  %.7f\n", fom_overall(fctx));
 		break;
+
+		case FOM_D1SIG :
+		STATUS("Fraction of differences less than 1 sigma = %.7f %%\n",
+		       100.0*fom_overall(fctx));
+		break;
+
+		case FOM_D2SIG :
+		STATUS("Fraction of differences less than 2 sigma = %.7f %%\n",
+		       100.0*fom_overall(fctx));
+		break;
+
 
 	}
 
@@ -821,6 +881,14 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		fprintf(fh, "%s Rano/Rsplit       nref%s\n", t1, t2);
 		break;
 
+		case FOM_D1SIG :
+		fprintf(fh, "%s D<1sigma/%%     nref%s\n", t1, t2);
+		break;
+
+		case FOM_D2SIG :
+		fprintf(fh, "%s D<2sigma/%%     nref%s\n", t1, t2);
+		break;
+
 	}
 
 	for ( i=0; i<nshells; i++ ) {
@@ -839,13 +907,14 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		case FOM_RANO :
 		if ( config_intshells ) {
 			fprintf(fh, "%10.3f %10.2f %10i\n",
-				cen, r*100.0, cts[i]);
+				cen, r*100.0, fctx->cts[i]);
 		} else {
 			fprintf(fh, "%10.3f %10.2f %10i %10.2f "
 			            "%10.3f  %10.3f\n",
-				cen*1.0e-9, r*100.0, cts[i], (1.0/cen)*1e10,
-				shells->rmins[i]*1.0e-9,
-				shells->rmaxs[i]*1.0e-9);
+			        cen*1.0e-9, r*100.0, fctx->cts[i],
+			        (1.0/cen)*1e10,
+			        shells->rmins[i]*1.0e-9,
+			        shells->rmaxs[i]*1.0e-9);
 		}
 		break;
 
@@ -855,28 +924,43 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		case FOM_CRDANO :
 		if ( config_intshells ) {
 			fprintf(fh, "%10.3f %10.7f %10i\n",
-				cen, r, cts[i]);
+				cen, r, fctx->cts[i]);
 		} else {
 			fprintf(fh, "%10.3f %10.7f %10i %10.2f "
 			            "%10.3f  %10.3f\n",
-				cen*1.0e-9, r, cts[i], (1.0/cen)*1e10,
-				shells->rmins[i]*1.0e-9,
-				shells->rmaxs[i]*1.0e-9);
+			        cen*1.0e-9, r, fctx->cts[i], (1.0/cen)*1e10,
+			        shells->rmins[i]*1.0e-9,
+			        shells->rmaxs[i]*1.0e-9);
 		}
 		break;
 
 		case FOM_RANORSPLIT :
 		if ( config_intshells ) {
 			fprintf(fh, "%10.3f    %10.7f %10i\n",
-				cen, r, cts[i]);
+				cen, r, fctx->cts[i]);
 		} else {
 			fprintf(fh, "%10.3f    %10.7f %10i %10.2f "
 			            "%10.3f  %10.3f\n",
-				cen*1.0e-9, r, cts[i], (1.0/cen)*1e10,
-				shells->rmins[i]*1.0e-9, shells->rmaxs[i]*1.0e-9);
+			        cen*1.0e-9, r, fctx->cts[i], (1.0/cen)*1e10,
+			        shells->rmins[i]*1.0e-9,
+			        shells->rmaxs[i]*1.0e-9);
 		}
 		break;
 
+		case FOM_D1SIG :
+		case FOM_D2SIG :
+		if ( config_intshells ) {
+			fprintf(fh, "%10.3f %10.2f %10i\n",
+				cen, r*100.0, fctx->cts[i]);
+		} else {
+			fprintf(fh, "%10.3f %10.2f %10i %10.2f "
+			            "%10.3f  %10.3f\n",
+			        cen*1.0e-9, r*100.0, fctx->cts[i],
+			        (1.0/cen)*1e10,
+			        shells->rmins[i]*1.0e-9,
+			        shells->rmaxs[i]*1.0e-9);
+		}
+		break;
 
 	}
 
@@ -1085,6 +1169,8 @@ int main(int argc, char *argv[])
 			case FOM_CRDANO :
 			case FOM_RANO :
 			case FOM_RANORSPLIT :
+			case FOM_D1SIG :
+			case FOM_D2SIG :
 			break;
 		}
 	}
@@ -1104,6 +1190,8 @@ int main(int argc, char *argv[])
 			case FOM_RSPLIT :
 			case FOM_CC :
 			case FOM_CCSTAR :
+			case FOM_D1SIG :
+			case FOM_D2SIG :
 			break;
 
 			case FOM_CCANO :
