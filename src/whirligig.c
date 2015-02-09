@@ -669,7 +669,9 @@ static void show_help(const char *s)
 "\n"
 "  -h, --help                 Display this help message.\n"
 "      --version              Print CrystFEL version number and exit.\n"
-"      --no-polarisation      Disable polarisation correction.\n");
+"\n"
+"      --window-size=n        History size for finding connected crystals.\n"
+"      --output-dir=folder    Put output files in <folder>.\n");
 }
 
 
@@ -697,7 +699,6 @@ int main(int argc, char *argv[])
 	int n_images = 0;
 
 	/* Defaults */
-	int polarisation = 1;
 	int default_window_size = 16;
 	char *outdir = ".";
 	int verbose = 0;
@@ -711,11 +712,6 @@ int main(int argc, char *argv[])
 		{"version",            0, NULL,                3 },
 		{"window-size",        1, NULL,                4 },
 		{"output-dir",         1, NULL,                5 },
-
-		{"no-polarisation",    0, &polarisation,       0},
-		{"no-polarization",    0, &polarisation,       0},
-		{"polarisation",       0, &polarisation,       1}, /* compat */
-		{"polarization",       0, &polarisation,       1}, /* compat */
 
 		{0, 0, NULL, 0}
 	};

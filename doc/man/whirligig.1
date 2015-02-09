@@ -1,0 +1,54 @@
+.\"
+.\" whirligig man page
+.\"
+.\" Copyright © 2015 Deutsches Elektronen-Synchrotron DESY,
+.\"                  a research centre of the Helmholtz Association.
+.\"
+.\" Part of CrystFEL - crystallography with a FEL
+.\"
+
+.TH WHIRLIGIG 1
+.SH NAME
+whirligig \- find rotation series
+.SH SYNOPSIS
+.PP
+\fBwhirligig \fR[\fIoptions\fR] \fIinput.stream 
+.PP
+\fBwhirligig --help\fI
+
+.SH DESCRIPTION
+\fBwhirligig\fR takes a stream containing indexing results (e.g. from a previous run of \fBindexamajig\fR) and searches for runs of crystals in adjacent frames which have similar orientations and unit cell parameters.  For each series found, a log file will be output with a filename in the form \fBseries-XX.log\fR, where \fBXX\fR is a number starting from zero, which contains the filenames, event IDs and crystal numbers for the frames concerned.
+.PP
+The program takes into account that the frames may not appear in the stream in chronological order (due, for example, to the use of \fBindexamajig -j\fR), and also that there may be multiple crystals per frame.
+
+.SH OPTIONS
+
+.IP \fB--output-dir=\fIfoldername\fR
+.PD
+Put the output log files in \fIfoldername\fR, instead of the working directory.  The folder must exist before running \fBwhirligig\fR.
+
+.IP \fB--window-size=\fIn\fR
+.PD
+Set the size of the history buffer to \fIn\fR.  The further apart adjacent frames can be in the input stream, for example the higher a number of parallel processes were used during indexing (see \fBindexamajig -j\fR), the larger the history buffer needs to be.  \fBwhirligig\fR will print a warning if it seems the window is too small.  Increasing the window size increases the amount of computation and memory required.  The default is \fB--window-size=16\fR.
+
+.SH AUTHOR
+This page was written by Thomas White.
+
+.SH REPORTING BUGS
+Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+
+.SH COPYRIGHT AND DISCLAIMER
+Copyright © 2015 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+.P
+whirligig, and this manual, are part of CrystFEL.
+.P
+CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+.P
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+.P
+You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+.SH SEE ALSO
+.BR crystfel (7),
+.BR indexamajig (1),
+.BR crystfel_geometry (5)
