@@ -853,9 +853,9 @@ static gint displaywindow_set_boostint(GtkWidget *widget, DisplayWindow *dw)
 		return 0;
 	}
 
-    if ( dw->hdfile == NULL ) {
-        return 0;
-    }
+	if ( dw->hdfile == NULL ) {
+	    return 0;
+	}
 
 	bd = malloc(sizeof(BoostIntDialog));
 	if ( bd == NULL ) return 0;
