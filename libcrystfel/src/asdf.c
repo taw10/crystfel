@@ -161,7 +161,8 @@ static int cross_product(gsl_vector *vec1, gsl_vector *vec2,
 }
 
 /* Returns triple product of three gsl_vectors */ 
-static double calc_volume(gsl_vector *vec1, gsl_vector *vec2, gsl_vector *vec3) {
+static double calc_volume(gsl_vector *vec1, gsl_vector *vec2, gsl_vector *vec3) 
+{
 	double volume;
 	gsl_vector *cross = gsl_vector_alloc(3);    
 	
@@ -289,7 +290,8 @@ static int calc_normal(gsl_vector *c1, gsl_vector *c2, gsl_vector *c3,
 	return 1;
 }
 
-static float find_ds_fft(double *projections, int N_projections, double d_max) {    
+static float find_ds_fft(double *projections, int N_projections, double d_max,
+                         fftw_plan p) {    
  
 	int n = N_projections; 
 	double projections_sorted[n];
@@ -300,7 +302,7 @@ static float find_ds_fft(double *projections, int N_projections, double d_max) {
 	
 	int N = 1024; // number of points in fft calculation
 	
-	double *in = malloc(sizeof(double) * N);
+	double in[N];
 	fftw_complex *out = fftw_malloc(sizeof (fftw_complex) * N);
 	
 	for ( i = 0; i < N; i++ ) {
@@ -311,10 +313,12 @@ static float find_ds_fft(double *projections, int N_projections, double d_max) {
 		in[(int)((projections_sorted[i] - projections_sorted[0]) / 
 		   (projections_sorted[n - 1] - projections_sorted[0]) * N)] ++;
 	}
-		
-	fftw_plan p = fftw_plan_dft_r2c_1d(N, in, out, FFTW_MEASURE);
-	fftw_execute(p);
-	fftw_destroy_plan(p);
+	
+	if ( !p ) {
+		p = fftw_plan_dft_r2c_1d(N, in, out, FFTW_MEASURE);
+	}
+	
+	fftw_execute_dft_r2c(p, in, out);
 	
 	int i_max = (int)(d_max * (projections_sorted[n - 1] - 
 	                           projections_sorted[0]));
@@ -332,7 +336,6 @@ static float find_ds_fft(double *projections, int N_projections, double d_max) {
 	
 	double ds = (projections_sorted[n - 1] - projections_sorted[0]) / d;
 	
-	free(in);
 	fftw_free(out);
 	return ds;
 }
@@ -855,7 +858,9 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 	int N_tvectors = 0;
 	
 	int n_max = 0; // maximum number of reflections fitting one of tvectors 
-
+	
+	fftw_plan p;
+	
 	for ( i = 0; i < i_max; i++ ) {
 		if ( calc_normal(reflections[triplets[i][0]],
 		                 reflections[triplets[i][1]],
@@ -870,7 +875,7 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 			}
 			
 			/* Find ds - period in 1d lattice of projections */
-			ds = find_ds_fft(projections, N_reflections, d_max);
+			ds = find_ds_fft(projections, N_reflections, d_max, p);
 			
 			/* Refine ds, write 1 to fits[i] if reflections[i] 
 			 * fits ds */
@@ -932,6 +937,8 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 		free(triplets[i]);
 	}
 	free(triplets);
+
+	fftw_destroy_plan(p);
 
 	if ( c->n ) return 1;
 	
