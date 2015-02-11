@@ -31,6 +31,7 @@ struct tvector {
 	int *fits; 
 };
 
+
 struct asdf_cell {
 	gsl_vector *axes[3];
 	gsl_vector *reciprocal[3];
@@ -46,7 +47,9 @@ struct asdf_cell {
 	int n_max; // maximum number of reflections fitting to some t-vector	
 };
 
-struct tvector tvector_new(int n) {
+
+struct tvector tvector_new(int n) 
+{
 	struct tvector t;
 	
 	t.t = gsl_vector_alloc(3);
@@ -56,14 +59,18 @@ struct tvector tvector_new(int n) {
 	return t;
 }
 
-static int tvector_free(struct tvector t) {
+
+static int tvector_free(struct tvector t) 
+{
 	gsl_vector_free(t.t);
 	free(t.fits);
 	
 	return 1;
 }
 
-static int tvector_memcpy(struct tvector *dest, struct tvector *src, int n) {
+
+static int tvector_memcpy(struct tvector *dest, struct tvector *src, int n) 
+{
 	gsl_vector_memcpy(dest->t, src->t);
 	dest->n = src->n;
 	memcpy(dest->fits, src->fits, sizeof(int) * n);
@@ -71,7 +78,9 @@ static int tvector_memcpy(struct tvector *dest, struct tvector *src, int n) {
 	return 1;
 }
 
-static int asdf_cell_free(struct asdf_cell c) {
+
+static int asdf_cell_free(struct asdf_cell c) 
+{
 	int i;
 	for ( i = 0; i < 3; i++ ) {
 		gsl_vector_free(c.axes[i]);
@@ -87,8 +96,9 @@ static int asdf_cell_free(struct asdf_cell c) {
 	return 1;
 }
 
-static struct asdf_cell asdf_cell_new(int n) {
-	
+
+static struct asdf_cell asdf_cell_new(int n) 
+{
 	struct asdf_cell c;
 
 	int i;
@@ -113,7 +123,9 @@ static struct asdf_cell asdf_cell_new(int n) {
 	return c;
 }
 
-static int asdf_cell_memcpy(struct asdf_cell *dest, struct asdf_cell *src) {
+
+static int asdf_cell_memcpy(struct asdf_cell *dest, struct asdf_cell *src) 
+{
 	int i;
 	for ( i = 0; i < 3; i++ ) {
 		gsl_vector_memcpy(dest->axes[i], src->axes[i]);
@@ -139,9 +151,11 @@ static int asdf_cell_memcpy(struct asdf_cell *dest, struct asdf_cell *src) {
 	return 1;
 }
 
+
 /* result = vec1 cross vec2 */
 static int cross_product(gsl_vector *vec1, gsl_vector *vec2, 
-                         gsl_vector **result) {
+                         gsl_vector **result) 
+{
 	double c1[3], c2[3], p[3];
 	int i;
 	for ( i = 0; i < 3; i++ ) {
@@ -160,6 +174,7 @@ static int cross_product(gsl_vector *vec1, gsl_vector *vec2,
 	return 1;
 }
 
+
 /* Returns triple product of three gsl_vectors */ 
 static double calc_volume(gsl_vector *vec1, gsl_vector *vec2, gsl_vector *vec3) 
 {
@@ -173,7 +188,9 @@ static double calc_volume(gsl_vector *vec1, gsl_vector *vec2, gsl_vector *vec3)
 	return volume;
 }
 
-static int calc_reciprocal(gsl_vector **direct, gsl_vector **reciprocal) {
+
+static int calc_reciprocal(gsl_vector **direct, gsl_vector **reciprocal) 
+{
 	double volume;
 	
 	cross_product(direct[1], direct[2], &reciprocal[0]);
@@ -188,6 +205,7 @@ static int calc_reciprocal(gsl_vector **direct, gsl_vector **reciprocal) {
 	
 	return 1;
 }
+
 
 static int check_cell(struct asdf_private *dp, struct image *image,
                       UnitCell *cell)
@@ -230,6 +248,7 @@ static int check_cell(struct asdf_private *dp, struct image *image,
 	return 1;
 }
 
+
 static int compare_doubles (const void *a, const void *b)
 {
 	const double *da = (const double *) a;
@@ -237,6 +256,7 @@ static int compare_doubles (const void *a, const void *b)
 	
 	return (*da > *db) - (*da < *db);
 }
+
 
 /* Compares tvectors by length */
 static int compare_tvectors (const void *a, const void *b)
@@ -252,11 +272,12 @@ static int compare_tvectors (const void *a, const void *b)
 	//~ return (ta->n > tb->n) - (ta->n < tb->n);
 }
 
+
 /* Calculates normal to a triplet c1, c2, c3. Returns 0 if reflections are on
  * the same line */
 static int calc_normal(gsl_vector *c1, gsl_vector *c2, gsl_vector *c3, 
-                       gsl_vector *normal) {
-    
+                       gsl_vector *normal) 
+{
 	gsl_vector *c12 = gsl_vector_alloc(3);
 	gsl_vector *c23 = gsl_vector_alloc(3);
 	gsl_vector *c31 = gsl_vector_alloc(3);
@@ -290,9 +311,10 @@ static int calc_normal(gsl_vector *c1, gsl_vector *c2, gsl_vector *c3,
 	return 1;
 }
 
+
 static float find_ds_fft(double *projections, int N_projections, double d_max,
-                         fftw_plan p) {    
- 
+                         fftw_plan p) 
+{    
 	int n = N_projections; 
 	double projections_sorted[n];
 	memcpy(projections_sorted, projections, sizeof(double) * n);    
@@ -340,13 +362,14 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 	return ds;
 }
 
+
 /* Returns number of reflections fitting ds.
  * A projected reflection fits a one-dimensional lattice with elementary 
  * lattice vector d* if its absolute distance to the nearest lattice 
  * point is less than LevelFit. */
 static int check_refl_fitting_ds(double *projections, int N_projections, 
-                                 double ds, double LevelFit) {
-	
+                                 double ds, double LevelFit) 
+{
 	if ( ds == 0 ) return 0;
 	
 	int i;
@@ -362,10 +385,11 @@ static int check_refl_fitting_ds(double *projections, int N_projections,
 	return n; 
 }
 
+
 /* Refines d*, writes 1 to fits[i] if the i-th projection fits d* */ 
 static float refine_ds(double *projections, int N_projections, double ds, 
-                       double LevelFit, int *fits) {
-	
+                       double LevelFit, int *fits) 
+{
 	double fit_refls[N_projections];
 	double indices[N_projections];
 	
@@ -404,10 +428,11 @@ static float refine_ds(double *projections, int N_projections, double ds,
 	return ds_new;
 }
 
+
 static int check_refl_fitting_cell(struct asdf_cell *c, 
                                    gsl_vector **reflections, 
-                                   int N_reflections, double IndexFit) {
-	      
+                                   int N_reflections, double IndexFit)
+{      
 	double dist[3];
 	
 	calc_reciprocal(c->axes, c->reciprocal);
@@ -443,7 +468,9 @@ static int check_refl_fitting_cell(struct asdf_cell *c,
 	return 1;
 }
 
-static void print_asdf_cell(struct asdf_cell cc) {
+
+static void print_asdf_cell(struct asdf_cell cc) 
+{
 	double a, b, c, alpha, beta, gamma, ab, bc, ca;
 	
 	a = gsl_blas_dnrm2(cc.axes[0]);
@@ -472,16 +499,17 @@ static void print_asdf_cell(struct asdf_cell cc) {
 
 }
 
+
 /* Returns 0 when refinement doesn't converge (i.e. all fitting reflections  
  * lie in the same plane) */
-static int refine_asdf_cell(struct asdf_cell c, gsl_vector **reflections, 
-                            int N_reflections, double IndexFit) {
-    
-	gsl_matrix *X = gsl_matrix_alloc(c.n, 3);
+static int refine_asdf_cell(struct asdf_cell *c, gsl_vector **reflections, 
+                            int N_reflections, double IndexFit)
+{
+	gsl_matrix *X = gsl_matrix_alloc(c->n, 3);
 	
-	gsl_vector *r[] = {gsl_vector_alloc(c.n), 
-	gsl_vector_alloc(c.n), 
-	gsl_vector_alloc(c.n)};
+	gsl_vector *r[] = {gsl_vector_alloc(c->n), 
+	gsl_vector_alloc(c->n), 
+	gsl_vector_alloc(c->n)};
 	
 	gsl_vector *res = gsl_vector_alloc(3);
 	gsl_matrix *cov = gsl_matrix_alloc (3, 3);
@@ -489,32 +517,33 @@ static int refine_asdf_cell(struct asdf_cell c, gsl_vector **reflections,
 	
 	int i, j;
 	int n = 0;
-	for ( i = 0; i < N_reflections; i++ ) if ( c.reflections[i] == 1 ) 
+	for ( i = 0; i < N_reflections; i++ ) if ( c->reflections[i] == 1 ) 
 	{
 		for ( j = 0; j < 3; j++ ) {
-			gsl_matrix_set(X, n, j, round(c.indices[i][j]));
+			gsl_matrix_set(X, n, j, round(c->indices[i][j]));
 			gsl_vector_set(r[j], n, 
 			               gsl_vector_get(reflections[i], j));
 		}
 		n++;
 	}
 	
-	gsl_multifit_linear_workspace *work = gsl_multifit_linear_alloc(c.n, 3);
+	gsl_multifit_linear_workspace *work = gsl_multifit_linear_alloc(c->n, 
+	                                                                3);
 	
 	for ( i = 0; i < 3; i++ ) {
 		gsl_multifit_linear (X, r[i], res, cov, &chisq, work);
 		
 		for (j = 0; j < 3; j++ ) {
-			gsl_vector_set(c.reciprocal[j], i, 
+			gsl_vector_set(c->reciprocal[j], i, 
 			               gsl_vector_get(res, j));
 		}
 	}
 	
-	calc_reciprocal(c.reciprocal, c.axes);
+	calc_reciprocal(c->reciprocal, c->axes);
 	
 	double a[3];
 	for ( i = 0; i < 3; i++ ) {
-		a[i] = gsl_blas_dnrm2(c.axes[i]);
+		a[i] = gsl_blas_dnrm2(c->axes[i]);
 	}
 	
 	gsl_multifit_linear_free(work);
@@ -534,7 +563,9 @@ static int refine_asdf_cell(struct asdf_cell c, gsl_vector **reflections,
 	return 1;
 }
 
-static int reduce_asdf_cell(struct asdf_cell *cl) {
+
+static int reduce_asdf_cell(struct asdf_cell *cl) 
+{
 	double a, b, c, alpha, beta, gamma, ab, bc, ca, bb, cc;
    
 	gsl_vector *va = gsl_vector_alloc(3);	
@@ -649,6 +680,7 @@ static int reduce_asdf_cell(struct asdf_cell *cl) {
 	return 1;
 }
 
+
 static int check_cell_angles(gsl_vector *va, gsl_vector *vb, gsl_vector *vc, 
                              double max_cos) 
 {
@@ -674,123 +706,134 @@ static int check_cell_angles(gsl_vector *va, gsl_vector *vb, gsl_vector *vc,
 	return 1;              
 }
 
+
 /* Returns min(t1.n, t2.n, t3.n) */
-static int find_acl(struct tvector t1, struct tvector t2, struct tvector t3) {
+static int find_acl(struct tvector t1, struct tvector t2, struct tvector t3) 
+{
 	int i = t1.n, j = t2.n, k = t3.n;
 	if ( i <= j && i <= k ) return i;
 	if ( j <= i && j <= k ) return j;
 	if ( k <= i && k <= j ) return k;
 }
 
+
+static int create_cell(struct tvector tvec1, struct tvector tvec2, 
+                       struct tvector tvec3, struct asdf_cell *c, 
+                       double IndexFit, double volume_min, double volume_max, 
+                       gsl_vector **reflections, int N_reflections)
+{
+	
+	double volume = calc_volume(tvec1.t, tvec2.t, tvec3.t);
+	if ( fabs(volume) < volume_min || fabs(volume) > volume_max ) return 0;
+	
+	gsl_vector_memcpy(c->axes[0], tvec1.t);
+	gsl_vector_memcpy(c->axes[1], tvec2.t);
+	gsl_vector_memcpy(c->axes[2], tvec3.t);
+	
+	c->volume = volume;
+	check_refl_fitting_cell(c, reflections, N_reflections, IndexFit);   
+
+	if ( c->n < 6 ) return 0;
+	
+	reduce_asdf_cell(c);
+	
+	/* If one of the cell angles > 135 or < 45 return 0 */
+	if ( !check_cell_angles(c->axes[0], c->axes[1], 
+	                        c->axes[2], 0.71) ) return 0;
+	
+	/* Index reflections with new cell axes */
+	check_refl_fitting_cell(c, reflections, N_reflections, IndexFit);
+		
+	/* Refine cell until the number of fitting 
+	 * reflections stops increasing */
+	int n = 0;
+	int cell_correct = 1;
+	while ( c->n - n && cell_correct ) {
+		n = c->n;
+		cell_correct = refine_asdf_cell(c, reflections, N_reflections, 
+					        IndexFit);	
+		check_refl_fitting_cell(c, reflections, N_reflections, 
+					IndexFit);
+	}
+	
+	return cell_correct;
+}
+
+
 static int find_cell(struct tvector *tvectors, int N_tvectors, double IndexFit, 
                      double volume_min, double volume_max, int n_max, 
                      gsl_vector **reflections, int N_reflections, 
-                     struct asdf_cell *result) {
-				  
-	int i, j, k, n, cell_correct;
-	
-	double volume;
-	
+                     struct asdf_cell *result) 
+{		  
+	int i, j, k;
+		
 	/* Only tvectors with the number of fitting reflections > acl are 
 	 * considered */
 	int acl = N_reflections < 18 ? 6 : N_reflections/3;
 	
 	struct asdf_cell c = asdf_cell_new(N_reflections);
-    
+	
 	/* Traversing a 3d array in slices perpendicular to the main diagonal */
 	int sl;
 	for ( sl = 0; sl < 3 * N_tvectors - 1; sl++ ) {
-        
-	int i_min = sl < 2 * N_tvectors ? 0 : sl - 2 * N_tvectors;
-	int i_max = sl < N_tvectors ? sl : N_tvectors;
 	
-	for ( i = i_min; i < i_max; i++) if (tvectors[i].n > acl ) {
-	
-	int j_min = sl - N_tvectors - 2 * i - 1 < 0 ? i + 1 : sl - N_tvectors - i;
-	int j_max = sl - N_tvectors - i < 0 ? sl - i : N_tvectors;
+		int i_min = sl < 2 * N_tvectors ? 0 : sl - 2 * N_tvectors;
+		int i_max = sl < N_tvectors ? sl : N_tvectors;
 		
-	for ( j = j_min; j < j_max; j++) if (tvectors[j].n > acl ) {
-	
-		k = sl - i - j - 1;
+		for ( i = i_min; i < i_max; i++) if (tvectors[i].n > acl ) {
 		
-		if ( k > j && tvectors[k].n > acl &&
-		     check_cell_angles(tvectors[i].t, 
-				       tvectors[j].t, 
-				       tvectors[k].t, 0.99) ) 
-		{
+			int j_min = sl - N_tvectors - 2 * i - 1 < 0 ? 
+			                            i + 1 : sl - N_tvectors - i;
+			int j_max = sl - N_tvectors - i < 0 ? 
+			                                    sl - i : N_tvectors;
+				
+			for ( j = j_min; j < j_max; j++ ) 
+			                            if ( tvectors[j].n > acl ) {
 		
-			volume = calc_volume(tvectors[i].t, 
-			                     tvectors[j].t, 
-			                     tvectors[k].t);
-			
-			if ( fabs(volume) > volume_min && 
-			     fabs(volume) < volume_max )
-			{
+				k = sl - i - j - 1;
 				
-				gsl_vector_memcpy(c.axes[0], tvectors[i].t);
-				gsl_vector_memcpy(c.axes[1], tvectors[j].t);
-				gsl_vector_memcpy(c.axes[2], tvectors[k].t);
-				
-				c.volume = volume;
-				check_refl_fitting_cell(&c, reflections, 
-				                        N_reflections, 
-				                        IndexFit);
-				
-				if ( c.n < 6 ) break;
-				
-				reduce_asdf_cell(&c);
-				
-				/* if one of the cell angles > 135 or < 45 
-				 * do not continue */
-				if ( !check_cell_angles(c.axes[0], c.axes[1], 
-				     c.axes[2], 0.71) ) break;
-				
-				/* index reflections with new cell axes */
-				check_refl_fitting_cell(&c, reflections, 
-				                        N_reflections, 
-				                        IndexFit);
-				
-				acl = find_acl(tvectors[i], 
-				               tvectors[j], 
-				               tvectors[k]);
-				
-				c.acl = acl;
-				c.n_max = n_max;
-				
-				/* refine cell until the number of fitting 
-				 * reflections stops increasing */
-				n = 0;
-				cell_correct = 1;
-				while ( c.n - n && cell_correct ) {
-					n = c.n;
-					cell_correct = refine_asdf_cell(c, 
-					                          reflections, 
-					                          N_reflections, 
-					                          IndexFit);
+				if ( k > j && tvectors[k].n > acl &&
+				     check_cell_angles(tvectors[i].t, 
+						       tvectors[j].t, 
+						       tvectors[k].t, 0.99) ) 
+				{
 					
-					check_refl_fitting_cell(&c, reflections, 
-					                        N_reflections, 
-					                        IndexFit);
-				}
-				
-				if ( cell_correct ) {
+					if ( !create_cell(tvectors[i], 
+						          tvectors[j], 
+						          tvectors[k],
+						          &c, IndexFit,
+						          volume_min, 
+						          volume_max,
+						          reflections,
+						          N_reflections) ) 
+					{
+						break;
+					}          
+					
+					acl = find_acl(tvectors[i], 
+					               tvectors[j], 
+					               tvectors[k]);
+					c.acl = acl;
+					c.n_max = n_max;
+					
 					reduce_asdf_cell(&c);
+					
+					/* If the new cell has more fitting 
+					 * reflections save it to result */
 					if ( result->n < c.n ) {
 						asdf_cell_memcpy(result, &c);      
 					}
-					acl++;                             
-				
-					if (acl > n_max) break;
-					if (tvectors[j].n <= acl || 
-					    tvectors[i].n <= acl) break;
+					acl++;  
+					
+					if ( acl > n_max ) break;
+					if ( tvectors[j].n <= acl || 
+					     tvectors[i].n <= acl ) break;
 				}
 			}
+			if ( acl > n_max ) break;
+			if ( tvectors[i].n <= acl ) break;
 		}
-	}
-	if ( acl > n_max ) break;
-	if ( tvectors[i].n <= acl ) break;
-	}
-	if ( acl > n_max ) break;
+		if ( acl > n_max ) break;
 	}
 	
 	asdf_cell_free(c);
@@ -799,7 +842,9 @@ static int find_cell(struct tvector *tvectors, int N_tvectors, double IndexFit,
 	return 0;
 }
 
-static void shuffle_triplets(int **triplets, int n) {
+
+static void shuffle_triplets(int **triplets, int n) 
+{
 	int i, j;
 	int t[3]; 
 	for ( i = 0; i < n - 1; i++ ) {
@@ -810,16 +855,20 @@ static void shuffle_triplets(int **triplets, int n) {
 	}
 }
 
-static double angle_between_gsl(gsl_vector *a, gsl_vector *b) {
+
+static double angle_between_gsl(gsl_vector *a, gsl_vector *b) 
+{
 	double ab;
 	gsl_blas_ddot(a, b, &ab);
 	return acos(ab/gsl_blas_dnrm2(a)/gsl_blas_dnrm2(b)) * 180 / M_PI;
 }
 
+
 static int index_refls(gsl_vector **reflections, int N_reflections, 
                        double d_max, double volume_min, double volume_max,
                        double LevelFit, double IndexFit, int i_max, 
-                       struct asdf_cell *c) {
+                       struct asdf_cell *c) 
+{
 
 	int i, j, k, l, n;
 	
@@ -945,6 +994,7 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 	return 0;
 }
 
+
 double cell_get_volume(UnitCell *cell)
 {
 	double asx, asy, asz;
@@ -971,8 +1021,10 @@ double cell_get_volume(UnitCell *cell)
 	return 1/volume;
 }
 
-int run_asdf(struct image *image, IndexingPrivate *ipriv) {
-	int i;
+
+int run_asdf(struct image *image, IndexingPrivate *ipriv) 
+{
+	int i, j;
 	
 	double LevelFit = 1./1000;
 	double IndexFit = 1./500;
@@ -1009,14 +1061,14 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv) {
 	
 	if ( N_reflections == 0 ) return 0;
 	
-	i = index_refls(reflections, N_reflections, d_max, volume_min, volume_max, 
-		        LevelFit, IndexFit, i_max, &c);
+	j = index_refls(reflections, N_reflections, d_max, volume_min, 
+	                volume_max, LevelFit, IndexFit, i_max, &c);
 	
 	for ( i = 0; i < N_reflections; i++ ) {
 		gsl_vector_free(reflections[i]);
 	}
 	
-	if ( i ) {
+	if ( j ) {
 		UnitCell *uc;
 		uc = cell_new();
 		 
@@ -1040,6 +1092,7 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv) {
 	
 	return 0;
 }
+
 
 IndexingPrivate *asdf_prepare(IndexingMethod *indm, UnitCell *cell,
                                struct detector *det, float *ltl)
