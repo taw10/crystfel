@@ -3,11 +3,11 @@
  *
  * The processing pipeline for one image
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2015 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -83,6 +83,9 @@ struct index_args
 	signed int int_diag_l;
 	float push_res;
 	float highres;
+	float fix_profile_r;
+	float fix_bandwidth;
+	float fix_divergence;
 };
 
 

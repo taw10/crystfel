@@ -3,13 +3,13 @@
  *
  * Index patterns, output hkl+intensity etc.
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2015 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -127,6 +127,10 @@ static void show_help(const char *s)
 "    --int-radius=<r>    Set the integration radii.  Default: 4,5,7.\n"
 "    --push-res=<n>      Integrate higher than apparent resolution cutoff.\n"
 "    --highres=<n>       Absolute resolution cutoff in Angstroms.\n"
+"    --fix-profile-radius Fix the reciprocal space profile radius for spot\n"
+"                         prediction (default: automatically determine.\n"
+"    --fix-bandwidth     Set the bandwidth for spot prediction.\n"
+"    --fix-divergence    Set the divergence (full angle) for spot prediction.\n"
 "\n"
 "\nFor time-resolved stuff, you might want to use:\n\n"
 "     --copy-hdf5-field <f>  Copy the value of field <f> into the stream. You\n"
@@ -238,6 +242,9 @@ int main(int argc, char *argv[])
 	iargs.int_meth = integration_method("rings-nocen", NULL);
 	iargs.push_res = 0.0;
 	iargs.highres = +INFINITY;
+	iargs.fix_profile_r = -1.0;
+	iargs.fix_bandwidth = -1.0;
+	iargs.fix_divergence = -1.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -293,6 +300,9 @@ int main(int argc, char *argv[])
 		{"res-push",           1, NULL,               19}, /* compat */
 		{"peak-radius",        1, NULL,               20},
 		{"highres",            1, NULL,               21},
+		{"fix-profile-radius", 1, NULL,               22},
+		{"fix-bandwidth",      1, NULL,               23},
+		{"fix-divergence",     1, NULL,               24},
 
 		{0, 0, NULL, 0}
 	};
@@ -438,6 +448,28 @@ int main(int argc, char *argv[])
 			}
 			/* A -> m^-1 */
 			iargs.highres = 1.0 / (iargs.highres/1e10);
+			break;
+
+			case 22 :
+			if ( sscanf(optarg, "%f", &iargs.fix_profile_r) != 1 ) {
+				ERROR("Invalid value for "
+				      "--fix-profile-radius\n");
+				return 1;
+			}
+			break;
+
+			case 23 :
+			if ( sscanf(optarg, "%f", &iargs.fix_bandwidth) != 1 ) {
+				ERROR("Invalid value for --fix-bandwidth\n");
+				return 1;
+			}
+			break;
+
+			case 24 :
+			if ( sscanf(optarg, "%f", &iargs.fix_divergence) != 1 ) {
+				ERROR("Invalid value for --fix-divergence\n");
+				return 1;
+			}
 			break;
 
 			case 0 :

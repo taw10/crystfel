@@ -1,7 +1,7 @@
 .\"
 .\" indexamajig man page
 .\"
-.\" Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+.\" Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
 .\"                       a research centre of the Helmholtz Association.
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
@@ -325,6 +325,15 @@ When \fBrescut\fR is in the integration method, integrate \fIn\fR nm^-1 higher t
 .PD
 Mark all pixels on the detector higher than \fIn\fR Angstroms as bad.  This might be useful when you have noisy patterns and don't expect any signal above a certain resolution.
 
+
+.PD 0
+.IP \fB--fix-profile-radius=\fIn\fR
+.IP \fB--fix-bandwidth=\fIn\fR
+.IP \fB--fix-divergence=\fIn\fR
+.PD
+Fix the beam and crystal paramters to the given values.  The profile radius is given in m^-1, the bandwidth as a decimal fraction and the divergence in radians (full angle).  The default is to set the divergence to zero, the bandwidth to a very small value, and then to automatically determine the profile radius.
+.IP
+You do not have to use all three of these options together.  For example, if the automatic profile radius determination is not working well for your data set, you could fix that alone and continue using the default values for the other parameters (which might be automatically determined in future versions of CrystFEL, but are not currently).
 
 .SH IDENTIFYING SINGLE PATTERNS IN THE INPUT FILE
 

@@ -279,31 +279,60 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		crystal_set_image(image.crystals[i], &image);
 	}
 
-	/* Default parameters */
-	image.div = 0.0;
-	image.bw = 0.00000001;
-	for ( i=0; i<image.n_crystals; i++ ) {
-		crystal_set_profile_radius(image.crystals[i], 0.01e9);
-		crystal_set_mosaicity(image.crystals[i], 0.0);  /* radians */
+	/* Set beam/crystal parameters */
+	if ( iargs->fix_divergence >= 0.0 ) {
+		image.div = iargs->fix_divergence;
+	} else {
+		image.div = 0.0;
+	}
+	if ( iargs->fix_bandwidth >= 0.0 ) {
+		image.bw = iargs->fix_bandwidth;
+	} else {
+		image.bw = 0.00000001;
+	}
+	if ( iargs->fix_profile_r >= 0.0 ) {
+		for ( i=0; i<image.n_crystals; i++ ) {
+			crystal_set_profile_radius(image.crystals[i],
+			                           iargs->fix_profile_r);
+			crystal_set_mosaicity(image.crystals[i], 0.0);
+		}
+	} else {
+		for ( i=0; i<image.n_crystals; i++ ) {
+			crystal_set_profile_radius(image.crystals[i], 0.01e9);
+			crystal_set_mosaicity(image.crystals[i], 0.0);
+		}
 	}
 
 	/* Integrate all the crystals at once - need all the crystals so that
 	 * overlaps can be detected. */
-	integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE, iargs->push_res,
-	                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
-	                INTDIAG_NONE, 0, 0, 0, results_pipe);
+	if ( iargs->fix_profile_r < 0.0 ) {
 
-	for ( i=0; i<image.n_crystals; i++ ) {
-		refine_radius(image.crystals[i], image.features);
-		reflist_free(crystal_get_reflections(image.crystals[i]));
-	}
-
-	integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE,
+		integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE,
 		                iargs->push_res,
-			        iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
-			        iargs->int_diag, iargs->int_diag_h,
-			        iargs->int_diag_k, iargs->int_diag_l,
-			        results_pipe);
+		                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
+		                INTDIAG_NONE, 0, 0, 0, results_pipe);
+
+		for ( i=0; i<image.n_crystals; i++ ) {
+			refine_radius(image.crystals[i], image.features);
+			reflist_free(crystal_get_reflections(image.crystals[i]));
+		}
+
+		integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE,
+		                iargs->push_res,
+		                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
+		                iargs->int_diag, iargs->int_diag_h,
+		                iargs->int_diag_k, iargs->int_diag_l,
+		                results_pipe);
+	} else {
+
+		integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE,
+		                iargs->push_res,
+		                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
+		                iargs->int_diag, iargs->int_diag_h,
+		                iargs->int_diag_k, iargs->int_diag_l,
+		                results_pipe);
+
+	}
 
 	ret = write_chunk(st, &image, hdfile,
 	                  iargs->stream_peaks, iargs->stream_refls,
