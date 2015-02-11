@@ -5,7 +5,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
                src/compare_hkl src/partialator src/check_hkl src/partial_sim \
-               src/ambigator src/geoptimiser src/whirligig
+               src/ambigator src/geoptimiser src/whirligig src/list_events
 
 noinst_PROGRAMS = tests/list_check tests/integration_check \
                   tests/pr_p_gradient_check tests/symmetry_check \
@@ -67,6 +67,8 @@ tests_gpu_sim_check_SOURCES = tests/gpu_sim_check.c src/diffraction.c \
 endif
 
 src_process_hkl_SOURCES = src/process_hkl.c
+
+src_list_events_SOURCES = src/list_events.c
 
 src_indexamajig_SOURCES = src/indexamajig.c src/im-sandbox.c src/process_image.c
 
