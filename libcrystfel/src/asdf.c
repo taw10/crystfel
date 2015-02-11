@@ -995,33 +995,6 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 }
 
 
-double cell_get_volume(UnitCell *cell)
-{
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	struct rvec aCb;
-	double volume;
-
-	if ( cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                               &bsx, &bsy, &bsz,
-	                               &csx, &csy, &csz) ) {
-		ERROR("Couldn't get cell cartesian.\n");
-		return 0;
-	}
-	
-	/* "a" cross "b" */
-	aCb.u = asy*bsz - asz*bsy;
-	aCb.v = - (asx*bsz - asz*bsx);
-	aCb.w = asx*bsy - asy*bsx;
-
-	/* "a cross b" dot "c" */
-	volume = (aCb.u*csx + aCb.v*csy + aCb.w*csz)/1e30;
-
-	return 1/volume;
-}
-
-
 int run_asdf(struct image *image, IndexingPrivate *ipriv) 
 {
 	int i, j;
