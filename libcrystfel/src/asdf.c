@@ -1011,8 +1011,10 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 	
 	if ( dp->indm & INDEXING_CHECK_CELL_AXES ) {
 		double volume = cell_get_volume(dp->template);
-		volume_min = volume * 0.95;
-		volume_max = volume * 1.05;
+		double vtol = (dp->ltl[0] + dp->ltl[1] + dp->ltl[2]) / 100 + 
+		              dp->ltl[3] / 180 * M_PI;
+		volume_min = volume * (1 - vtol);
+		volume_max = volume * (1 + vtol);
 	}
 	
 	int N_reflections = image_feature_count(image->features);
@@ -1060,7 +1062,7 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 			return 1;
 		}
 		
-	cell_free(uc);
+		cell_free(uc);
 	}
 	
 	return 0;
