@@ -44,6 +44,7 @@
 #include "utils.h"
 #include "peaks.h"
 #include "dirax.h"
+#include "asdf.h"
 #include "mosflm.h"
 #include "xds.h"
 #include "detector.h"
@@ -79,12 +80,16 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 			iprivs[n] = dirax_prepare(&indm[n], cell, det, ltl);
 			break;
 
+			case INDEXING_ASDF :
+			iprivs[n] = asdf_prepare(&indm[n], cell, det, ltl);
+			break;
+
 			case INDEXING_MOSFLM :
 			iprivs[n] = mosflm_prepare(&indm[n], cell, det, ltl);
 			break;
 
 			case INDEXING_XDS :
-                        iprivs[n] = xds_prepare(&indm[n], cell, det, ltl);
+            iprivs[n] = xds_prepare(&indm[n], cell, det, ltl);
 			break;
 
 			case INDEXING_REAX :
@@ -148,6 +153,10 @@ void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
 
 			case INDEXING_DIRAX :
 			dirax_cleanup(privs[n]);
+			break;
+
+			case INDEXING_ASDF :
+			asdf_cleanup(privs[n]);
 			break;
 
 			case INDEXING_MOSFLM :
@@ -215,6 +224,10 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		return run_dirax(image, ipriv);
 		break;
 
+		case INDEXING_ASDF :
+		return run_asdf(image, ipriv);
+		break;
+
 		case INDEXING_MOSFLM :
 		return run_mosflm(image, ipriv);
 		break;
@@ -247,11 +260,6 @@ void index_pattern(struct image *image,
 	int n = 0;
 
 	if ( indms == NULL ) return;
-
-	if ( image_feature_count(image->features) > 10000 ) {
-		STATUS("WARNING: The number of peaks is very large for '%s'.\n",
-		       image->filename);
-	}
 
 	map_all_peaks(image);
 	image->crystals = NULL;
@@ -349,6 +357,10 @@ char *indexer_str(IndexingMethod indm)
 		strcpy(str, "dirax");
 		break;
 
+		case INDEXING_ASDF :
+		strcpy(str, "asdf");
+		break;
+
 		case INDEXING_MOSFLM :
 		strcpy(str, "mosflm");
 		break;
@@ -423,13 +435,16 @@ IndexingMethod *build_indexer_list(const char *str)
 		if ( strcmp(methods[i], "dirax") == 0) {
 			list[++nmeth] = INDEXING_DEFAULTS_DIRAX;
 
+		} else if ( strcmp(methods[i], "asdf") == 0) {
+			list[++nmeth] = INDEXING_DEFAULTS_ASDF;
+
 		} else if ( strcmp(methods[i], "mosflm") == 0) {
 			list[++nmeth] = INDEXING_DEFAULTS_MOSFLM;
 
 		} else if ( strcmp(methods[i], "grainspotter") == 0) {
 			list[++nmeth] = INDEXING_DEFAULTS_GRAINSPOTTER;
 
-                } else if ( strcmp(methods[i], "xds") == 0) {
+        } else if ( strcmp(methods[i], "xds") == 0) {
 			list[++nmeth] = INDEXING_DEFAULTS_XDS;
 
 		} else if ( strcmp(methods[i], "reax") == 0) {
