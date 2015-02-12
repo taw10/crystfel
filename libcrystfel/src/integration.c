@@ -412,6 +412,9 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
 	endwin();
 
 	if ( results_pipe != 0 ) write(results_pipe, "RELEASE\n", 8);
+#else
+	STATUS("Not showing peak box because CrystFEL was compiled without "
+	       "ncurses.\n");
 #endif
 }
 
