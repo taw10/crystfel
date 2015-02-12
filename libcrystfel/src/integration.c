@@ -503,7 +503,7 @@ static int init_intcontext(struct intcontext *ic)
 	}
 
 	/* How many reference profiles? */
-	ic->n_reference_profiles = ic->image->det->n_panels;
+	ic->n_reference_profiles = 1;
 	ic->reference_profiles = calloc(ic->n_reference_profiles,
 	                                sizeof(double *));
 	if ( ic->reference_profiles == NULL ) return 1;
