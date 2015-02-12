@@ -197,7 +197,9 @@ mask_bad = 0x00
 
 .SH BAD REGIONS
 
-You can also specify bad regions.  Peaks with centroid locations within such a region will not be integrated nor used for indexing.  Bad regions are specified in pixel units, either in the lab coordinate system (see above) or in fast scan/slow scan coordinates (mixtures are not allowed).   In the latter case, the range of pixels is specified \fIinclusively\fR.  Bad regions are distinguished from normal panels by the fact that they begin with the three letters "bad".
+You can also specify bad regions.  Bad regions will be completely ignored by CrystFEL.  Bad regions are specified in pixel units, either in the lab coordinate system (see above) or in fast scan/slow scan coordinates (mixtures are not allowed).   In the latter case, the range of pixels is specified \fIinclusively\fR.  Bad regions are distinguished from normal panels by the fact that they begin with the three letters "bad".
+.PP
+You can specify a panel name for the bad region, in which case the pixels will only be considered bad if they are within the range you specify \fIand\fR in the panel you specify.  This might be necessary if your HDF5 file layout has overlapping ranges of fs/ss coordinates for different panels (e.g. if the data blocks for the panels are in different HDF5 datasets).
 
 Examples:
 .br

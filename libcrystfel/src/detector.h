@@ -3,12 +3,12 @@
  *
  * Detector properties
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2014 Thomas White <taw@physics.org>
+ *   2009-2015 Thomas White <taw@physics.org>
  *   2011-2012 Richard Kirian <rkirian@asu.edu>
  *   2014      Valerio Mariani
  *   2011      Andrew Aquila
@@ -131,6 +131,7 @@ struct badregion
 {
 	char name[1024];
 	int is_fsss;
+	char *panel;
 
 	double min_x;
 	double max_x;

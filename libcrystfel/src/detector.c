@@ -339,16 +339,23 @@ int in_bad_region(struct detector *det, double fs, double ss)
 
 		struct badregion *b = &det->bad[i];
 
+		if ( (b->panel != NULL)
+		  && (strcmp(b->panel, p->name) != 0) ) continue;
+
 		if ( b->is_fsss ) {
+
 			if ( fs < b->min_fs ) continue;
 			if ( fs > b->max_fs ) continue;
 			if ( ss < b->min_ss ) continue;
 			if ( ss > b->max_ss ) continue;
+
 		} else {
+
 			if ( rx < b->min_x ) continue;
 			if ( rx > b->max_x ) continue;
 			if ( ry < b->min_y ) continue;
 			if ( ry > b->max_y ) continue;
+
 		}
 
 		return 1;
@@ -681,7 +688,8 @@ static struct badregion *new_bad_region(struct detector *det, const char *name)
 	new->max_fs = 0;
 	new->min_ss = 0;
 	new->max_ss = 0;
-	new->is_fsss = 0;
+	new->is_fsss = 99; /* Slightly nasty: means "unassigned" */
+	new->panel = NULL;
 	strcpy(new->name, name);
 
 	return new;
@@ -952,6 +960,23 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 }
 
 
+static int check_badr_fsss(struct badregion *badr, int is_fsss)
+{
+	/* First assignment? */
+	if ( badr->is_fsss == 99 ) {
+		badr->is_fsss = is_fsss;
+		return 0;
+	}
+
+	if ( is_fsss != badr->is_fsss ) {
+		ERROR("You can't mix x/y and fs/ss in a bad region.\n");
+		return 1;
+	}
+
+	return 0;
+}
+
+
 static int parse_field_bad(struct badregion *badr, const char *key,
                            const char *val)
 {
@@ -959,36 +984,30 @@ static int parse_field_bad(struct badregion *badr, const char *key,
 
 	if ( strcmp(key, "min_x") == 0 ) {
 		badr->min_x = atof(val);
-		if ( badr->is_fsss ) {
-			ERROR("You can't mix x/y and fs/ss in a bad region.\n");
-		}
+		reject = check_badr_fsss(badr, 0);
 	} else if ( strcmp(key, "max_x") == 0 ) {
 		badr->max_x = atof(val);
-		if ( badr->is_fsss ) {
-			ERROR("You can't mix x/y and fs/ss in a bad region.\n");
-		}
+		reject = check_badr_fsss(badr, 0);
 	} else if ( strcmp(key, "min_y") == 0 ) {
 		badr->min_y = atof(val);
-		if ( badr->is_fsss ) {
-			ERROR("You can't mix x/y and fs/ss in a bad region.\n");
-		}
+		reject = check_badr_fsss(badr, 0);
 	} else if ( strcmp(key, "max_y") == 0 ) {
 		badr->max_y = atof(val);
-		if ( badr->is_fsss ) {
-			ERROR("You can't mix x/y and fs/ss in a bad region.\n");
-		}
+		reject = check_badr_fsss(badr, 0);
 	} else if ( strcmp(key, "min_fs") == 0 ) {
 		badr->min_fs = atof(val);
-		badr->is_fsss = 1;
+		reject = check_badr_fsss(badr, 1);
 	} else if ( strcmp(key, "max_fs") == 0 ) {
 		badr->max_fs = atof(val);
-		badr->is_fsss = 1;
+		reject = check_badr_fsss(badr, 1);
 	} else if ( strcmp(key, "min_ss") == 0 ) {
 		badr->min_ss = atof(val);
-		badr->is_fsss = 1;
+		reject = check_badr_fsss(badr, 1);
 	} else if ( strcmp(key, "max_ss") == 0 ) {
 		badr->max_ss = atof(val);
-		badr->is_fsss = 1;
+		reject = check_badr_fsss(badr, 1);
+	} else if ( strcmp(key, "panel") == 0 ) {
+		badr->panel = strdup(val);
 	} else {
 		ERROR("Unrecognised field '%s'\n", key);
 	}
@@ -1511,24 +1530,8 @@ struct detector *get_detector_geometry(const char *filename,
 	}
 
 	for ( i=0; i<det->n_bad; i++ ) {
-
-		if ( !det->bad[i].is_fsss && isnan(det->bad[i].min_x) ) {
-			ERROR("Please specify the minimum x coordinate for"
-			      " bad region %s\n", det->bad[i].name);
-			reject = 1;
-		}
-		if ( !det->bad[i].is_fsss && isnan(det->bad[i].min_y) ) {
-			ERROR("Please specify the minimum y coordinate for"
-			      " bad region %s\n", det->bad[i].name);
-			reject = 1;
-		}
-		if ( !det->bad[i].is_fsss && isnan(det->bad[i].max_x) ) {
-			ERROR("Please specify the maximum x coordinate for"
-			      " bad region %s\n", det->bad[i].name);
-			reject = 1;
-		}
-		if ( !det->bad[i].is_fsss && isnan(det->bad[i].max_y) ) {
-			ERROR("Please specify the maximum y coordinate for"
+		if ( det->bad[i].is_fsss == 99 ) {
+			ERROR("Please specify the coordinate ranges for"
 			      " bad region %s\n", det->bad[i].name);
 			reject = 1;
 		}
