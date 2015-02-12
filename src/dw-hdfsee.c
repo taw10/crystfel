@@ -1191,13 +1191,15 @@ static gint displaywindow_about(GtkWidget *widget, DisplayWindow *dw)
 	gtk_about_dialog_set_name(GTK_ABOUT_DIALOG(window), "hdfsee");
 	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window), PACKAGE_VERSION);
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window),
-		"(c) 2012-2013 Thomas White <taw@physics.org> and others");
+	         "© 2012-2015 Deutsches Elektronen-Synchrotron DESY,"
+		 " a research centre of the Helmholtz Association.");
 	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(window),
-		"Quick viewer for HDF files");
+	         "Quick viewer for HDF files");
 	gtk_about_dialog_set_license(GTK_ABOUT_DIALOG(window),
-		"(c) 2012-2013 Thomas White <taw@physics.org>\n");
+	         "© 2012-2015 Deutsches Elektronen-Synchrotron DESY,"
+		 " a research centre of the Helmholtz Association.");
 	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(window),
-		"http://www.desy.de/~twhite/crystfel");
+	         "http://www.desy.de/~twhite/crystfel");
 	gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(window), authors);
 
 	g_signal_connect(window, "response", G_CALLBACK(gtk_widget_destroy),
