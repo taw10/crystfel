@@ -3,12 +3,12 @@
  *
  * Detector properties
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2014 Thomas White <taw@physics.org>
+ *   2009-2015 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *   2011      Andrew Aquila
@@ -952,43 +952,43 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 }
 
 
-static int parse_field_bad(struct badregion *panel, const char *key,
-                                  const char *val)
+static int parse_field_bad(struct badregion *badr, const char *key,
+                           const char *val)
 {
 	int reject = 0;
 
 	if ( strcmp(key, "min_x") == 0 ) {
-		panel->min_x = atof(val);
-		if ( panel->is_fsss ) {
+		badr->min_x = atof(val);
+		if ( badr->is_fsss ) {
 			ERROR("You can't mix x/y and fs/ss in a bad region.\n");
 		}
 	} else if ( strcmp(key, "max_x") == 0 ) {
-		panel->max_x = atof(val);
-		if ( panel->is_fsss ) {
+		badr->max_x = atof(val);
+		if ( badr->is_fsss ) {
 			ERROR("You can't mix x/y and fs/ss in a bad region.\n");
 		}
 	} else if ( strcmp(key, "min_y") == 0 ) {
-		panel->min_y = atof(val);
-		if ( panel->is_fsss ) {
+		badr->min_y = atof(val);
+		if ( badr->is_fsss ) {
 			ERROR("You can't mix x/y and fs/ss in a bad region.\n");
 		}
 	} else if ( strcmp(key, "max_y") == 0 ) {
-		panel->max_y = atof(val);
-		if ( panel->is_fsss ) {
+		badr->max_y = atof(val);
+		if ( badr->is_fsss ) {
 			ERROR("You can't mix x/y and fs/ss in a bad region.\n");
 		}
 	} else if ( strcmp(key, "min_fs") == 0 ) {
-		panel->min_fs = atof(val);
-		panel->is_fsss = 1;
+		badr->min_fs = atof(val);
+		badr->is_fsss = 1;
 	} else if ( strcmp(key, "max_fs") == 0 ) {
-		panel->max_fs = atof(val);
-		panel->is_fsss = 1;
+		badr->max_fs = atof(val);
+		badr->is_fsss = 1;
 	} else if ( strcmp(key, "min_ss") == 0 ) {
-		panel->min_ss = atof(val);
-		panel->is_fsss = 1;
+		badr->min_ss = atof(val);
+		badr->is_fsss = 1;
 	} else if ( strcmp(key, "max_ss") == 0 ) {
-		panel->max_ss = atof(val);
-		panel->is_fsss = 1;
+		badr->max_ss = atof(val);
+		badr->is_fsss = 1;
 	} else {
 		ERROR("Unrecognised field '%s'\n", key);
 	}
