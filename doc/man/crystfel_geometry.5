@@ -149,7 +149,7 @@ The resolution (in pixels per metre) for this panel.  This is one over the pixel
 .PD 0
 .IP \fBclen\fR
 .PD
-The camera length (in metres) for this panel. You can also specify the HDF path to a floating point data block containing the camera length in millimetres.  For example: "panel0/clen = /LCLS/detectorPosition".  If the HDF file contains more than one event, and the data block is scalar, the camera length value
+The camera length (in metres) for this panel. You can also specify the HDF5 path to a floating point data block containing the camera length in millimetres.  For example: "panel0/clen = /LCLS/detectorPosition".  If the HDF5 file contains more than one event, and the data block is scalar, the camera length value
 it contains will be used for all events. If, however, the data block is multidimensional and the second dimension is bigger than one, the CrystFEL programs will try to match the content of the data block with the events in the file, assigning the first value in the data block to the first event in the file,
 the second value in the data block to the second event in the file, etc. See \fBcoffset\fR as well.
 
@@ -250,7 +250,7 @@ The geometry file can include information about beam characteristics, using gene
 .PD 0
 .IP \fBphoton_energy\fR
 .PD
-The beam photon energy in eV. You can also specify the HDF path to a floating point data block value containing the photon energy in eV.  For example: "photon_energy = /LCLS/photon_energy_eV".  If the HDF file contains more than one event, and the data block is scalar, the photon energy value
+The beam photon energy in eV. You can also specify the HDF5 path to a floating point data block value containing the photon energy in eV.  For example: "photon_energy = /LCLS/photon_energy_eV".  If the HDF5 file contains more than one event, and the data block is scalar, the photon energy value
 it contains will be used for all events. If, however, the data block is multidimensional and the second dimension is bigger than one, the CrystFEL programs will try to match the content of the data block with the events in the file, assigning the first value in the data block to the first event in the file,
 the second value in the data block to the second event in the file, etc. See also \fBphoton_energy_scale\fR.
 
