@@ -1,7 +1,7 @@
 CrystFEL - Crystallography with a FEL
 -------------------------------------
 
-Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
                       a research centre of the Helmholtz Association.
 
 Authors:
@@ -18,16 +18,25 @@ Authors:
   Anton Barty <anton.barty@desy.de>
   Cornelius Gati <cornelius.gati@desy.de>
   Fedor Chervinskii <fedor.chervinskii@gmail.com>
-  Alexandra Tolstikova
+  Alexandra Tolstikova <alexandra.tolstikova@desy.de>
   Wolfgang Brehm <wolfgang.brehm@gmail.com>
   Valerio Mariani <valerio.mariani@desy.de>
   Parker de Waal <Parker.deWaal@vai.org>
   Takanori Nakane <nakane.t@gmail.com>
   Keitaro Yamashita <k.yamashita@spring8.or.jp>
 
+CrystFEL is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
 
-Please read the AUTHORS file for a full list of contributions and contributors.
-See the COPYING file for licence conditions.  Summary: GPLv3+.
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
 
 Thank you for reading the documentation. :-)
 
@@ -55,9 +64,6 @@ CrystFEL includes programs for simulating and processing patterns subject to the
 above characteristics.  The main programs are:
 
 	- indexamajig, a "batch indexer" and data reduction program.
-	               It is used for finding hits, locating peaks, indexing
-	               patterns and constructing lists of h,k,l,I,sigma(I) (or
-	               similar) for each pattern.
 
 	- process_hkl, for merging per-pattern lists of intensities into a
 	               single reflection list.
@@ -65,6 +71,10 @@ above characteristics.  The main programs are:
 	- cell_explorer, for examining distributions of lattice parameters.
 
 	- ambigator, a tool for resolving indexing ambiguities,
+
+	- geoptimiser, for refining detector geometry.
+
+	- whirligig, for finding multiple shots from single crystals.
 
 	- partialator, for merging patterns more accurately (and much more
 	               slowly) using post refinement.
@@ -85,6 +95,8 @@ In addition, there is also:
 	- hdfsee, a simple viewer for images stored in HDF5 format.
 
 	- render_hkl, for turning reflection lists into pretty graphics.
+
+	- list_events, for creating event lists from multi-event files
 
 There is also a folder full of scripts for achieving many related tasks.
 
