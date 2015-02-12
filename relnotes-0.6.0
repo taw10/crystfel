@@ -1,0 +1,257 @@
+CrystFEL - Crystallography with a FEL
+-------------------------------------
+
+Release notes for version 0.6.0
+
+Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+                      a research centre of the Helmholtz Association.
+
+Authors:
+  Thomas White <taw@physics.org>
+  Richard Kirian <rkirian@asu.edu>
+  Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+  Andrew Aquila <andrew.aquila@cfel.de>
+  Andrew Martin <andrew.martin@desy.de>
+  Lorenzo Galli <lorenzo.galli@desy.de>
+  Chun Hong Yoon <chun.hong.yoon@desy.de>
+  Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+  Karol Nass <karol.nass@desy.de>
+  Nadia Zatsepin <nadia.zatsepin@asu.edu>
+  Anton Barty <anton.barty@desy.de>
+  Cornelius Gati <cornelius.gati@desy.de>
+  Fedor Chervinskii <fedor.chervinskii@gmail.com>
+  Alexandra Tolstikova <alexandra.tolstikova@desy.de>
+  Wolfgang Brehm <wolfgang.brehm@gmail.com>
+  Valerio Mariani <valerio.mariani@desy.de>
+  Parker de Waal <Parker.deWaal@vai.org>
+  Takanori Nakane <nakane.t@gmail.com>
+  Keitaro Yamashita <k.yamashita@spring8.or.jp>
+  Oleksandr Yefanov <oleksandr.yefanov@cfel.de>
+
+CrystFEL is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+
+Overview
+--------
+
+The most important new features in this version of CrystFEL are:
+
+- Support for multi-event HDF5 files (e.g. CXI format as used by CXIDB)
+
+- geoptimiser: a new tool for precisely optimising the detector geometry
+
+- Removal of beam files / automatic determination of spot prediction parameters
+
+- whirligig: a new tool for finding clusters of similarly-oriented
+   crystal snapshots, e.g. for finding "mini rotation series" in data
+   from slow extrusion sample delivery methods.
+
+- Introduction of "CrystFEL unit cell files".
+
+These new features have individual sections below.  In addition, there are many
+other new developments.  See the ChangeLog or the changes page on the website
+for more details.  There were, of course, the usual large number of smaller
+refinements and bug fixes.
+
+
+Support for multi-event HDF5 files
+----------------------------------
+
+CrystFEL's handling of HDF5 files has been made much more flexible.  Most
+importantly, it now offers the ability to handle HDF5 files which contain more
+than one event (frame).  Until now, CrystFEL has required that each event be
+contained in its own file, which can place a lot of unnecessary strain on
+filesystems.  Recent versions of Cheetah allow you to create larger files which
+contain many events each using the CXI format (see http://www.cxidb.org for more
+details).  CrystFEL now supports this as well as almost any reasonable
+multi-event HDF5 layout.
+
+If you choose to continue using many small files, you should not notice much
+difference.  However, some small updates will be required.  Firstly,
+indexamajig's "-e" and "--image" command-line parameters have been removed.
+Instead, you need to edit your geometry file and add a line such as this near
+the top:
+
+        data = /data/rawdata
+
+Geometry files now contain all the information needed to interpret the contents
+of the HDF5 files as a physical setup, including the photon energy.  Beam
+parameter files have been removed.  See below for more information about this.
+
+When using multi-event files in CXI format, the peak lists are read differently.
+Use --peaks=cxi to retrieve peak lists from CXI files.
+
+hdfsee has been extended to support multi-event files, including navigation
+between events.  You should always provide a geometry file on the command line,
+otherwise it won't know how to interpret the contents of your HDF5 file.
+
+A new tool in CrystFEL 0.6.0, list_events, is provided to simplify the process
+of creating lists of individual events.  However, most users will simply be
+able to list the multi-event filenames themselves in the input to indexamajig,
+which will then process all of the events in the file.  See "man indexamajig"
+and "man list_events" for more details.
+
+Finally, it may be necessary to update your check-near-bragg and
+check-peak-detection scripts.  Simply make a fresh copy from the CrystFEL
+"scripts" folder or download them from the website.
+
+
+geoptimiser: a tool for optimising the detector geometry
+--------------------------------------------------------
+
+CrystFEL 0.6.0 introduces a new tool, geoptimiser, for optimising the detector
+geometry.  You simply give it a stream containing indexing results obtained with
+the approximate geometry, and it gives you a refined geometry.  It can refine
+panel translations, rotations and camera lengths.
+
+To use geoptimiser, you need to add some extra information about the
+mechanical construction of your detector.  This is used to constrain the
+refinement appropriately, for example to ensure that panels which share sensor
+silicon do not move relative to one another.  If you're processing CSPAD data,
+you can simply copy all the rigid_group lines from one of the CSPAD geometry
+file examples (folder doc/examples) into your own geometry file.
+
+Refer to "man geoptimiser" and "man crystfel_geometry" for more information.
+
+
+Removal of beam files / automatic determination of spot prediction parameters
+-----------------------------------------------------------------------------
+
+As of version 0.6.0, "beam files" have been removed completely.  This should
+simplify usage for most people and remove a lot of ambiguity.  Programs which
+need X-ray beam parameters, such as pattern_sim, now have additional command-
+-line arguments to provide them.  indexamajig now determines these parameters
+automatically for the purposes of spot prediction.
+
+We are interested in feedback about the automatic spot prediction parameter
+determination.  If it appears not to work well for you, you can restore the old
+behaviour by using the new command-line options for indexamajig:
+--fix-profile-radius, --fix-bandwidth and --fix-divergence.  Simply set these
+parameters to the values you had in your old beam file.
+
+The photon energy, or information about where to get it, now needs to be in the
+geometry file.  This can be done with a line like this:
+
+       photon_energy = /LCLS/photon_energy_eV
+
+or, for a fixed value:
+
+       photon_energy = 8300
+
+
+whirligig: a tool for finding "mini rotation series"
+----------------------------------------------------
+
+CrystFEL 0.6.0 introduces yet another tool, whirligig, which can be used for
+locating "mini rotation series" in the output from indexamajig.  This might be
+used to perform an experiment similar to that described by Gati et al.,  IUCrJ
+1 (2014) p87.  In this initial version, whirligig finds runs of consecutive
+frames which contain crystals in similar orientations.  It writes the
+corresponding filenames and event/crystal identifiers to log files, which might
+be useful for further analysis.
+
+This is the program described by Nogly et al., IUCrJ 2 (2015).  Refer to "man
+whirligig" for usage information.
+
+
+Introduction of CrystFEL unit cell files
+----------------------------------------
+
+CrystFEL offers you the ability to index patterns using Bravais lattice
+information but without unit cell parameters, for example: "index these using
+only tetragonal primitive lattices, but any parameters".  However, it's awkward
+to give this information using a PDB file: you essentially have to "trick" it
+into interpreting the parameters correctly, then throw away the parameter
+information.
+
+Version 0.6.0 of CrystFEL introduces a new way of specifying unit cell
+information.  These new unit cell files look like this:
+
+         CrystFEL unit cell file version 1.0
+
+         lattice_type = cubic
+         centering = I
+
+         a = 66.2 A
+         b = 66.2 A
+         c = 66.2 A
+
+         al = 90.0 deg
+         be = 90.0 deg
+         ga = 90.0 deg
+
+In the event that you want to specify the lattice type information alone, you
+can simply omit the cell parameters:
+
+         CrystFEL unit cell file version 1.0
+
+         lattice_type = tetragonal
+         centering = P
+	 unique_axis = c
+
+Note that a unique axis must be specified for all types of cell where this makes
+sense, and can be omitted otherwise.  This was done in the first example above,
+which is cubic and therefore has no unique axis.
+
+You can, of course, continue to use PDB files just like before.
+
+
+API changes
+-----------
+
+The following changes have been made to the libcrystfel API:
+
+New functions:
+	- The event API (see libcrystfel/src/events.h)
+	- load_cell_from_file()
+	- cell_has_parameters()
+	- find_orig_panel()
+	- crystal_{get,set}_num_implausible_reflections() were added
+	- panel_is_in_rigid_group()
+	- rigid_group_is_in_collection()
+	- single_panel_data_source()
+	- find_rigid_group_collection_by_name()
+	- write_detector_geometry_2()
+	- find_intersections_to_res()
+	- sphere_fraction()
+	- gaussian_fraction()
+	- hdf5_read2()
+	- check_path_existence()
+	- get_peaks_cxi()
+	- hdfile_get_value()
+	- fill_event_list()
+	- image_reflection_closest()
+	- intmat_identity()
+	- extract_f_from_stuff()
+
+Removed functions:
+	- cell_set_cartesian_{a,b,c}()
+	- cell_{get,set}_pointgroup()
+	- twod_mapping()
+	- get_value()
+
+Changed function prototypes:
+	- record_image()
+	- get_detector_geometry()
+	- fill_in_values()
+	- write_detector_geometry()
+	- hdf5_write_image()
+	- hdf5_read()
+	- hdfile_set_image()
+	- hdfile_get_string_value()
+	- {get,set}_partial()
+	- write_chunk()
+	- prepare_indexing() and {dirax,mosflm,reax,grainspotter,xds}_prepare()
+
+beam-parameters.h was removed, and "struct beam_params" is now defined in
+image.h.

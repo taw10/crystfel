@@ -27,6 +27,7 @@ TESTS = tests/list_check $(MERGE_CHECKS) $(PARTIAL_CHECKS) \
         tests/cell_check tests/ring_check tests/prof2d_check tests/ambi_check
 
 EXTRA_DIST += $(MERGE_CHECKS) $(PARTIAL_CHECKS)
+EXTRA_DIST += relnotes-0.6.0
 
 if BUILD_HDFSEE
 bin_PROGRAMS += src/hdfsee

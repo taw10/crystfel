@@ -1,10 +1,32 @@
-Changes in this development version
------------------------------------
+CrystFEL version 0.6.0, 23rd February 2015
+------------------------------------------
 
-- The geometry specification was extended to allow multiple events per HDF5 file
-  as well as different panels in different HDF5 locations.
+- The geometry specification was extended to allow multiple events per HDF5
+  file as well as different panels in different HDF5 locations.
+- geoptimiser, list_events and whirligig were added.
+- CrystFEL unit cell files were introduced.
+- Beam parameter files are no longer used.
+- indexamajig auto-determination of prediction parameters was added.
+- indexamajig --fix-profile-radius, --fix-bandwidth and --fix-divergence were
+  added.
+- pattern_sim --beam-bandwidth, --photon-energy and --nphotons were added.
+- partial_sim --beam-bandwidth, --photon-energy, --beam-divergence and
+  --profile-radius were added.
+- Event serial numbers are now written in streams.
+- indexamajig -e/--image was removed.
+- process_hkl --stat and --min-cc were added.
+- render_hkl --highres and --no-axes were added.
+- partialator --max-adu was added.
+- 2D profile fitting (--integration=prof2d) was fixed.
+- CSPAD geometry file examples were improved.
+- compare_hkl --fom=d1sig and d2sig were added.
+- pattern_sim now simulates detector saturation.
+- Compression was switched off when saving HDF5 files.
+- The units conversion for the resolution limit written into the stream was
+  fixed.
+- The pre-merging Poission error calculation was improved.
 - A bug in pattern_sim's handling of symmetry was fixed.
-- The documentation for indexamajig --tolerance was updated.
+- {check,compare}_hkl now report the min/max bin ranges.
 
 
 CrystFEL version 0.5.4, 5th September 2014
