@@ -59,6 +59,12 @@ typedef struct {
 } RingRadiusDialog;
 
 
+typedef struct {
+	GtkWidget	*window;
+	GtkWidget	*entry;
+} EventDialog;
+
+
 struct numberswindow {
 	GtkWidget *window;
 	GtkWidget *labels[17*17];
@@ -83,6 +89,9 @@ typedef struct {
 	GtkWidget	*scrollarea;
 	GtkUIManager	*ui;
 	GtkActionGroup	*action_group;
+	GtkActionGroup	*calibration_action_group;
+	GtkActionGroup	*events_action_group;
+
 	int             n_pixbufs;
 	GdkPixbuf	**pixbufs;
 	gulong		motion_callback;
@@ -102,6 +111,7 @@ typedef struct {
 	BinningDialog  *binning_dialog;
 	BoostIntDialog *boostint_dialog;
 	RingRadiusDialog *ringradius_dialog;
+	EventDialog *event_dialog;
 	struct numberswindow *numbers_window;
 
 	int		width;

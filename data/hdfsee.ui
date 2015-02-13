@@ -29,8 +29,18 @@
 			<menuitem name="peaks" action="PeaksAction" />
 		</menu>
 
+		<menu name="calibration" action="CalibrationAction">
+			<menuitem name="calibrationprevious" action="CalibPreviousAction" />
+			<menuitem name="calibrationnext" action="CalibNextAction" />
+			<menuitem name="switchcalibmode" action="SwitchCalibModeAction" />
+			<menuitem name="focus" action="ToggleFocusAction" />
+			<menuitem name="savegeometry" action="SaveGeometryAction" />
+		</menu>
+
 		<menu name="events" action="EventsAction">
-			<menuitem name="about" action="AboutAction" />
+			<menuitem name="eventprevious" action="EventPreviousAction" />
+			<menuitem name="eventnext" action="EventNextAction" />
+			<menuitem name="gotoevent" action="GotoEventAction" />
 		</menu>
 
 		<menu name="help" action="HelpAction">

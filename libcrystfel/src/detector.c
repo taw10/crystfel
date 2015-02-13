@@ -2033,7 +2033,6 @@ int write_detector_geometry_2(const char *geometry_filename,
 
 	fh = fopen(output_filename, "w");
 	if ( fh == NULL ) {
-		fclose(fh);
 		return 1;
 	}
 
