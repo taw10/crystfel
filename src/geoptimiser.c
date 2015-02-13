@@ -1,15 +1,15 @@
 /*
  * geoptimiser.c
  *
- * Refines detector geometry
+ * Refine detector geometry
  *
- * Copyright © 2014 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2014-2015 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2014 Thomas White <taw@physics.org>
- *        Oleksandr Yefanov
- *        Valerio Mariani
+ *   2014-2015 Oleksandr Yefanov
+ *   2014-2015 Valerio Mariani
+ *   2014-2015 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
