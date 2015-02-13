@@ -263,7 +263,7 @@ Set the overall threshold for peak detection using \fB--peaks=zaef\fR to \fIthre
 .PD 0
 .IP \fB--min-gradient=\fR\fIgrad\fR
 .PD
-Set the gradient threshold for peak detection using \fB--peaks=zaef\fR to \fIgrad\fR, which units of "detector units per pixel".  The default is \fB--min-gradient=100000\fR.
+Set the square of the gradient threshold for peak detection using \fB--peaks=zaef\fR to \fIgrad\fR, which has units of "squared detector units per pixel".  The default is \fB--min-gradient=100000\fR.  The reason it's 'gradient squared' instead of just 'gradient' is historical.
 
 .PD 0
 .IP \fB--min-snr=\fR\fIsnr\fR
