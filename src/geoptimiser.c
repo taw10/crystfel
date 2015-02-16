@@ -86,8 +86,8 @@ static void show_help(const char *s)
 "      --no-stretch                     Do not optimize distance offset.\n"
 "                                        Default: distance offset is optimized\n"
 "  -m  --max-peak-dist=<num>            Maximum distance between predicted and\n"
-"                                        detected peaks\n"
-"                                        Default: 4.0.\n"
+"                                        detected peaks (in pixels)\n"
+"                                        Default: 4.0 pixels.\n"
 );
 }
 
@@ -385,7 +385,7 @@ static struct pattern_list *read_patterns_from_steam_file(const char *infile,
 
 			if ( pattern_list->n_patterns%1000 == 0 ) {
 				STATUS("Loaded %i indexed patterns from %i "
-				       "total patterns\n",
+				       "total patterns.\n",
 				       pattern_list->n_patterns, ++n_chunks);
 			}
 
@@ -395,7 +395,7 @@ static struct pattern_list *read_patterns_from_steam_file(const char *infile,
 
 	close_stream(st);
 
-	STATUS("Found %d indexed patterns in file %s (from a total of %d)\n",
+	STATUS("Found %d indexed patterns in file %s (from a total of %d).\n",
 	       pattern_list->n_patterns, infile, n_chunks );
 
 	return pattern_list;
@@ -472,16 +472,16 @@ static void compute_avg_cell_parameters(struct pattern_list *pattern_list,
 	}
 
 	STATUS("Average cell coordinates:\n");
-	STATUS("Average a, b, c (in A): %6.3f, %6.3f, %6.3f\n",
+	STATUS("Average a, b, c (in nm): %6.3f, %6.3f, %6.3f\n",
 	       avcp[0],avcp[1],avcp[2]);
 	STATUS("Minimum -Maximum a, b, c:\n"
 	       "\t%6.3f - %6.3f,\n"
 	       "\t%6.3f - %6.3f,\n"
 	       "\t%6.3f - %6.3f\n",
 	       minc[0], maxc[0], minc[1], maxc[1], minc[2], maxc[2]);
-	STATUS("Average alpha,beta,gamma: %6.3f, %6.3f, %6.3f\n",
+	STATUS("Average alpha,beta,gamma in degrees: %6.3f, %6.3f, %6.3f\n",
 	       avcp[3], avcp[4], avcp[5]);
-	STATUS("Minimum - Maximum alpha,beta,gamma:\n"
+	STATUS("Minimum - Maximum alpha,beta,gamma in degrees:\n"
 	       "\t%5.2f - %5.2f,\n"
 	       "\t%5.2f - %5.2f,\n"
 	       "\t%5.2f - %5.2f\n",
@@ -589,7 +589,7 @@ static double compute_clen_to_use(struct pattern_list *pattern_list,
 	}
 
 	if ( num_clens == 1 ) {
-		STATUS("All patterns have the same camera length: %f\n",
+		STATUS("All patterns have the same camera length: %f m.\n",
 		       clens[0]);
 	} else {
 		STATUS("%i different camera lengths were found for the input "
@@ -607,16 +607,17 @@ static double compute_clen_to_use(struct pattern_list *pattern_list,
 			min_braggp_dist = fmin(fmin(irecistep/avcp[0],
 			                       irecistep/avcp[1]),
 			                       irecistep/avcp[2]);
-			STATUS("Camera length %0.4f was found %i times.\n"
+			STATUS("Camera length %0.4f m was found %i times.\n"
 			       "Minimum inter-bragg peak distance (based on "
-			       "average cell parameters): %0.1f pixels\n",
+			       "average cell parameters): %0.1f pixels.\n",
 			       clens[i], clens_population[i],
 			       min_braggp_dist);
 			if ( min_braggp_dist<1.2*max_peak_distance ) {
 				STATUS("WARNING: The distance between Bragg "
 				       "peaks is too small: "
-				       "%0.1f < 1.2*%0.1f\n", min_braggp_dist,
-				       max_peak_distance);
+				       "%0.1f < 1.2*%0.1f pixels.\n",
+			               min_braggp_dist,
+			               max_peak_distance);
 			}
 			if ( clens_population[i] > clens_population[best_clen] ) {
 				best_clen = i;
@@ -626,7 +627,7 @@ static double compute_clen_to_use(struct pattern_list *pattern_list,
 	}
 
 	if ( only_best_distance ) {
-		STATUS("Only %i patterns with  CLEN=%0.4f will be used.\n",
+		STATUS("Only %i patterns with  CLEN=%0.4f m will be used.\n",
 		       clens_population[best_clen], clen_to_use);
 	}
 
@@ -1060,8 +1061,9 @@ static double compute_error(struct rg_collection *connected,
 			connected_error /= (double)num_connected_error;
 			connected_error = sqrt(connected_error);
 
-			STATUS("Error for connected group %s (%d peaks): "
-			       "<delta^2> = %0.4f\n", conn_data[di].name,
+			STATUS("Error for connected group %s: %d pixels with "
+				"more than %d peaks: <delta^2> = %0.4f pixels.\n",
+			       conn_data[di].name,
 			       conn_data[di].num_peaks_per_pixel,
 			       connected_error);
 		}
@@ -1166,7 +1168,7 @@ static int correct_empty_panels(struct rg_collection *quadrants,
 				conn_data[di].cstr =
 				               aver_str[conn_data[di].num_quad];
 				STATUS("Connected group %s has not enough peaks "
-				       "(%i). Using average angle: %0.4f\n",
+				       "(%i). Using average angle: %0.4f degrees\n",
 				       conn_data[di].name,
 				       conn_data[di].n_peaks_in_conn,
 				       conn_data[di].cang);
@@ -1231,8 +1233,8 @@ static void correct_angle_and_stretch(struct rg_collection *connected,
 		for (pi=0; pi<det->n_panels; pi++) {
 			det->panels[pi].coffset -= use_clen*(1.0-stretch_coeff);
 		}
-		STATUS("Using a single offset distance for the whole detector: %f\n",
-		       det->panels[0].coffset);
+		STATUS("Using a single offset distance for the whole detector: "
+		       "%f m.\n", det->panels[0].coffset);
 
 		for ( di=0; di<connected->n_rigid_groups; di++ ) {
 			conn_data[di].cstr = stretch_coeff;
@@ -1240,7 +1242,7 @@ static void correct_angle_and_stretch(struct rg_collection *connected,
 
 	} else {
 
-		STATUS("Using individual distances for rigid panels\n");
+		STATUS("Using individual distances for rigid panels.\n");
 		for ( di=0; di<connected->n_rigid_groups; di++ ) {
 			for ( ip=0; ip<connected->rigid_groups[di]->n_panels;
 			      ip++ ) {
@@ -1396,12 +1398,12 @@ static void fill_con_data_sh(struct connected_data *conn_data,
 	                                 conn_data[di].n_peaks_in_conn);
 	conn_data[di].sh_y = comp_median(av_in_panel_ss,
 	                                 conn_data[di].n_peaks_in_conn);
-	STATUS("Panel %s, num pixels: %i, shifts X,Y: %0.8f, %0.8f\n",
+	STATUS("Panel %s, num pixels: %i, shifts (in pixels) X,Y: %0.8f, %0.8f\n",
 	       conn_data[di].name, conn_data[di].n_peaks_in_conn,
 	       conn_data[di].sh_x, conn_data[di].sh_y);
 	if ( modulus2d(conn_data[di].sh_x, conn_data[di].sh_y) >
 			               0.8*max_peak_distance ) {
-		STATUS("  WARNING: absolute shift is: %0.1f > 0.8*%0.1f. "
+		STATUS("  WARNING: absolute shift is: %0.1f > 0.8*%0.1f pixels."
 		       "  Increase the value of the max_peak_distance parameter!\n",
 		       modulus2d(conn_data[di].sh_x, conn_data[di].sh_y),
 		       max_peak_distance);
@@ -1416,7 +1418,7 @@ static int compute_shifts(struct rg_collection *connected,
                           double dfv, double max_peak_distance,
                           double *displ_x, double *displ_y)
 {
-	STATUS("Median for panels\n");
+	STATUS("Median for panels.\n");
 
 	int di, ip;
 
@@ -1536,8 +1538,8 @@ static int compute_shifts_for_empty_panels(struct rg_collection *quadrants,
 				conn_data[di].sh_x = aver_x[conn_data[di].num_quad];
 				conn_data[di].sh_y = aver_y[conn_data[di].num_quad];
 				STATUS("Panel %s has not enough (%i) peaks. "
-				       "Using average shifts X,Y: %0.2f,%0.2f\n",
-				       conn_data[di].name,
+				       "Using average shifts (in pixels) X,Y: "
+				       "%0.2f,%0.2f\n", conn_data[di].name,
 				       conn_data[di].n_peaks_in_conn,
 				       conn_data[di].sh_x, conn_data[di].sh_y);
 			} else {
@@ -1944,7 +1946,8 @@ static int compute_angles_and_stretch(struct rg_collection *connected,
 		conn_data[di].cang = -comp_median(angles,num_ang);
 		conn_data[di].cstr = comp_median(stretches,num_ang);
 
-		STATUS("Panel %s, num: %i, angle: %0.4f, stretch: %0.4f\n",
+		STATUS("Panel %s, num: %i, angle: %0.4f deg, stretch coeff: "
+		       "%0.4f\n",
 		conn_data[di].name, num_ang, conn_data[di].cang,
                 conn_data[di].cstr);
 
@@ -2271,7 +2274,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 
 	if ( nostretch ) man_stretching_coeff = 1.0;
 
-	STATUS("Maximum distance between peaks: %0.1f\n", max_peak_dist);
+	STATUS("Maximum distance between peaks: %0.1f pixels.\n", max_peak_dist);
 
 	STATUS("Minimum number of measurements for pixel to be included in the "
 	       "refinement: %i\n",
@@ -2401,7 +2404,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 		return 1;
 	}
 
-	STATUS("Computing pixel statistics\n");
+	STATUS("Computing pixel statistics.\n");
 	ret = compute_pixel_statistics(pattern_list, det, connected, quadrants,
 	                               num_pix_in_slab, max_peak_dist,
 	                               aw, dfv,
@@ -2443,7 +2446,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	free(pattern_list);
 
 	if ( error_maps ) {
-		STATUS("Saving displacements before corrections\n");
+		STATUS("Saving displacements before corrections.\n");
 		ret1 = save_data_to_png("error_map_before.png", det, max_fs, max_ss,
 		                        dfv, displ_abs);
 		if ( ret1!=0 ) {
@@ -2463,8 +2466,9 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	totalError = compute_error(connected, aw, conn_data,
 	                           num_pix_displ, displ_abs);
 
-	STATUS("The total initial error <delta^2> = %0.4f\n", totalError);
-	STATUS("Now calculating corrections\n");
+	STATUS("The total initial error <delta^2> = %0.4f pixels.\n",
+	       totalError);
+	STATUS("Now calculating corrections.\n");
 
 	for ( di=0;di<connected->n_rigid_groups;di++ ) {
 
@@ -2478,7 +2482,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 		}
 	}
 
-	STATUS("Calculating angles and elongations (usually long)\n");
+	STATUS("Calculating angles and elongations.\n");
 
 	ret = compute_angles_and_stretch(connected, conn_data,
 	                             num_pix_displ,
@@ -2576,7 +2580,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	correct_shifts(connected, conn_data, dfv, clen_to_use);
 
 	if ( error_maps ) {
-		STATUS("Saving displacements after corrections\n");
+		STATUS("Saving displacements after corrections.\n");
 		ret2 = save_data_to_png("error_map_after.png", det,  max_fs, max_ss,
 		                        dfv, displ_x);
 		if ( ret2 !=0 ) {
@@ -2598,7 +2602,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	totalError = compute_error(connected, aw, conn_data, num_pix_displ,
 	                           displ_abs);
 
-	STATUS("The total final error <delta^2> = %0.4f\n",totalError);
+	STATUS("The total final error <delta^2> = %0.4f pixels.\n",totalError);
 
 	write_ret = write_detector_geometry_2(geometry_filename, outfile, det,
 	                                      command_line, 1);
