@@ -69,6 +69,13 @@ Specifies the name of the rigid group collection for detector 'quadrants'.  This
 .sp
 If a given rigid group is a member of \fIname\fR, then panels which are members of that rigid group and which do not contain enough peaks for positional refinement will be moved according to the average movement of the other panels in the group.
 
+.PD 0
+.IP "\fB-e\fR"
+.IP \fB--error-maps\fR
+.PD
+Saves error maps before and after the geometry optimization. These maps show an estimation of the geometry error as average displacement, for each pixel, between the predicted and the observed positions of the Bragg peaks. The maps are color-scaled PNG files and
+are named "error_map_before.png" and "error_map_after.png" respectively. In order to better visualize small local errors, the color range has been set to show all displacements bigger that 1 pixel as white (in other words, "displacement saturation" is set at 1 pixel).
+.sp
 
 .PD 0
 .IP "\fB-x\fR \fIn\fR"
