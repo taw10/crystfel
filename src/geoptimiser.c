@@ -72,6 +72,9 @@ static void show_help(const char *s)
 "  -q, --quadrants=<rg_coll>            Rigid group collection for quadrants.\n"
 "  -c, --connected=<rg_coll>            Rigid group collection for connected\n"
 "                                        ASICs.\n"
+"  -e, --error-maps                     Save error maps to disk, before and\n"
+"                                        after optimization.\n"
+"                                        Default: error maps are not saved.\n"
 "  -x, --min-num-peaks-per-pixel=<num>  Minimum number of peaks per pixel.\n"
 "                                        Default: 3. \n"
 "  -p, --min-num-peaks-per-panel=<num>  Minimum number of peaks per pixel.\n"
@@ -2055,7 +2058,7 @@ static int draw_detector(cairo_surface_t *surf, struct image *image,
 
 	cr = cairo_create(surf);
 
-	pixbufs = render_panels(image, 1, 1, 1, &n_pixbufs);
+	pixbufs = render_panels(image, 1, 0, 1, &n_pixbufs);
 
 	/* Blank grey background */
 	cairo_rectangle(cr, 0.0, 0.0, rect.width, rect.height);
@@ -2127,6 +2130,8 @@ static int save_data_to_png(char * filename, struct detector* det,
 	for ( i=0; i<(max_fs+1)*(max_ss+1); i++) {
 		if ( data[i] == default_fill_value ) {
 			im->data[i] = 0.0;
+		} else if ( data[i] > 1.0) {
+			im->data[i] = 1.0;
 		} else {
 			im->data[i] = (float)data[i];
 		}
@@ -2224,16 +2229,15 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
                       struct rg_collection* connected,
                       int min_num_peaks_per_pixel, int min_num_peaks_per_panel,
                       int only_best_distance, int nostretch,
-                      int individual_coffset, double max_peak_dist,
-                      const char *command_line)
+		      int individual_coffset, int error_maps,
+		      double max_peak_dist, const char *command_line)
 {
 	int num_pix_in_slab;
 	int max_fs = 0;
 	int max_ss = 0;
 	int aw = 0;
 	int pi, di, ip, pti;
-	int ret1, ret2, ret3;
-	int ret4, ret5, ret6;
+	int ret1, ret2;
 	int ret;
 	int write_ret;
 
@@ -2438,23 +2442,21 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	}
 	free(pattern_list);
 
-	STATUS("Saving displacements before corrections\n");
-	ret1 = save_data_to_png("disp_x_before.png", det, max_fs, max_ss,
-	                         dfv, displ_x);
-	ret2 = save_data_to_png("disp_y_before.png", det, max_fs, max_ss,
-		                 dfv, displ_y);
-	ret3 = save_data_to_png("disp_abs_before.png", det, max_fs, max_ss,
-                                dfv, displ_abs);
-	if ( ret1!=0 || ret2!=0 || ret3!=0 ) {
-		ERROR("Error while writing data to file.\n");
-		free(conn_data);
-		free(displ_x);
-		free(displ_y);
-		free(displ_abs);
-		free(num_pix_displ);
-		free(slab_to_x);
-		free(slab_to_y);
-		return 1;
+	if ( error_maps ) {
+		STATUS("Saving displacements before corrections\n");
+		ret1 = save_data_to_png("error_map_before.png", det, max_fs, max_ss,
+		                        dfv, displ_abs);
+		if ( ret1!=0 ) {
+			ERROR("Error while writing data to file.\n");
+			free(conn_data);
+			free(displ_x);
+			free(displ_y);
+			free(displ_abs);
+			free(num_pix_displ);
+			free(slab_to_x);
+			free(slab_to_y);
+			return 1;
+		}
 	}
 
 	STATUS("Computing initial error.\n");
@@ -2573,25 +2575,23 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 
 	correct_shifts(connected, conn_data, dfv, clen_to_use);
 
-	STATUS("Saving displacements after corrections\n");
-	ret4 = save_data_to_png("disp_x_after.png", det,  max_fs, max_ss,
-	                         dfv, displ_x);
-	ret5 = save_data_to_png("disp_y_after.png", det,  max_fs, max_ss,
-	                         dfv, displ_y);
-	ret6 = save_data_to_png("disp_abs_after.png", det,  max_fs, max_ss,
-	                         dfv, displ_abs);
-	if ( ret4!=0 || ret5!=0 || ret6!=0 ) {
-		ERROR("Error while writing data to file.\n");
-		free(conn_data);
-		free(displ_x);
-		free(displ_y);
-		free(displ_abs);
-		free(num_pix_displ);
-		free(slab_to_x);
-		free(slab_to_y);
-		free(recomputed_slab_to_x);
-		free(recomputed_slab_to_y);
-		return 1;
+	if ( error_maps ) {
+		STATUS("Saving displacements after corrections\n");
+		ret2 = save_data_to_png("error_map_after.png", det,  max_fs, max_ss,
+		                        dfv, displ_x);
+		if ( ret2 !=0 ) {
+			ERROR("Error while writing data to file.\n");
+			free(conn_data);
+			free(displ_x);
+			free(displ_y);
+			free(displ_abs);
+			free(num_pix_displ);
+			free(slab_to_x);
+			free(slab_to_y);
+			free(recomputed_slab_to_x);
+			free(recomputed_slab_to_y);
+			return 1;
+		}
 	}
 
 	STATUS("Computing final error.\n");
@@ -2636,6 +2636,7 @@ int main(int argc, char *argv[])
 	int only_best_distance = 0;
 	int nostretch = 0;
 	int individual_coffset = 0;
+	int error_maps = 0;
 	double max_peak_dist = 4.0;
 
 	struct detector *det = NULL;
@@ -2658,17 +2659,16 @@ int main(int argc, char *argv[])
         {"most-few-clen",          0, NULL,               'l'},
         {"max-peak-dist",          1, NULL,               'm'},
         {"individual-dist-offset", 0, NULL,               's'},
-
+	{"error-maps",             0, NULL,               'e'},
 
         /* Long-only options with no arguments */
         {"no-stretch",         0, &nostretch,       1},
 
-
-		{0, 0, NULL, 0}
+	{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ho:i:g:q:c:o:x:p:lsm:",
+	while ((c = getopt_long(argc, argv, "ho:i:g:q:c:o:x:p:lsm:e",
 	                       longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -2727,6 +2727,10 @@ int main(int argc, char *argv[])
 			case 's' :
 			individual_coffset = 1;
 			break;
+
+			case 'e' :
+			error_maps = 1;
+			break;
 		}
 	}
 
@@ -2784,7 +2788,7 @@ int main(int argc, char *argv[])
 	ret_val = optimize_geometry(infile, outfile, geometry_filename, det,
 	                        quadrants, connected, min_num_peaks_per_pixel,
 	                        min_num_peaks_per_panel, only_best_distance,
-	                        nostretch, individual_coffset,
+	                        nostretch, individual_coffset, error_maps,
 	                        max_peak_dist, command_line);
 
 	return ret_val;
