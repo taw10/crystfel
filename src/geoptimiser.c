@@ -55,7 +55,9 @@ struct imagefeature;
 
 static void show_help(const char *s)
 {
-	printf("Syntax: %s [options] input.stream\n\n", s);
+	printf("Syntax: %s -i input.stream -g input.geom -o refined.geom "
+	       "-c connected_rgcollection -q quadrant_rgcollection [options]\n",
+	       s);
 	printf(
 "Refines detector geometry.\n"
 "\n"
