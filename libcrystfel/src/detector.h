@@ -38,6 +38,7 @@
 #define DETECTOR_H
 
 struct rigid_group;
+struct rg_collection;
 struct detector;
 struct panel;
 struct badregion;

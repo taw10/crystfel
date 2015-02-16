@@ -43,6 +43,11 @@
   </chapter>
 
   <chapter>
+    <title>Events</title>
+        <xi:include href="xml/events.xml"/>
+  </chapter>
+
+  <chapter>
     <title>Geometry of diffraction</title>
         <xi:include href="xml/geometry.xml"/>
   </chapter>

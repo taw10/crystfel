@@ -3,13 +3,13 @@
  *
  * Unit Cell utility functions
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2012,2014 Thomas White <taw@physics.org>
- *   2012           Lorenzo Galli
+ *   2009-2012,2014-2015 Thomas White <taw@physics.org>
+ *   2012                Lorenzo Galli
  *
  * This file is part of CrystFEL.
  *
@@ -1090,8 +1090,9 @@ static void determine_lattice(UnitCell *cell,
 
 /**
  * load_cell_from_pdb:
+ * @filename: The filename from which to load the cell
  *
- * Loads a unit cell from a PDB file.
+ * Loads a unit cell from the CRYST1 line of a PDB file.
  *
  * Returns: a newly allocated %UnitCell.
  *
@@ -1225,6 +1226,7 @@ static int get_angle_rad(char **bits, int nbits, double *pl)
 
 /**
  * load_cell_from_file:
+ * @filename: The filename from which to load the cell
  *
  * Loads a unit cell from a file of any type (PDB or CrystFEL format)
  *

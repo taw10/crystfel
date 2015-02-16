@@ -94,6 +94,7 @@ cell_get_reciprocal
 cell_get_centering
 cell_get_lattice_type
 cell_get_unique_axis
+cell_has_parameters
 <SUBSECTION>
 cell_set_cartesian
 cell_set_parameters
@@ -132,6 +133,7 @@ right_handed
 str_lattice
 forbidden_reflection
 load_cell_from_pdb
+load_cell_from_file
 lattice_from_str
 </SECTION>
 
@@ -202,10 +204,15 @@ histogram_set_num_bins
 <SECTION>
 <FILE>image</FILE>
 image
+beam_params
+imagefeature
 ImageFeatureList
 SpectrumType
+sample
+<SUBSECTION>
 image_add_feature
 image_feature_closest
+image_reflection_closest
 image_feature_count
 image_feature_list_free
 image_feature_list_new
@@ -327,11 +334,18 @@ intmat_print
 
 <SECTION>
 <FILE>detector</FILE>
+detector
+panel
+badregion
+rigid_group
+rg_collection
+<SUBSECTION>
 copy_geom
 fill_in_values
 free_detector_geometry
 get_detector_geometry
 write_detector_geometry
+write_detector_geometry_2
 find_panel
 find_panel_by_name
 find_panel_number
@@ -342,15 +356,22 @@ get_q
 get_q_for_panel
 get_tt
 smallest_q
-twod_mapping
 reverse_2d_mapping
 largest_q
 in_bad_region
 mark_resolution_range_as_bad
+find_orig_panel
+panel_is_in_rigid_group
+rigid_group_is_in_collection
+single_panel_data_source
+find_rigid_group_collection_by_name
 </SECTION>
 
 <SECTION>
 <FILE>events</FILE>
+event
+event_list
+<SUBSECTION>
 initialize_event
 push_path_entry_to_event
 pop_path_entry_from_event
@@ -358,6 +379,7 @@ push_dim_entry_to_event
 pop_dim_entry_from_event
 copy_event
 free_event
+find_event
 get_event_string
 get_event_from_event_string
 event_path_placeholder_subst
@@ -374,6 +396,7 @@ initialize_dim_structure
 default_dim_structure
 set_dim_structure_entry
 free_dim_structure_entry
+free_dim_structure
 </SECTION>
 
 <SECTION>
@@ -383,6 +406,7 @@ free_dim_structure_entry
 <SECTION>
 <FILE>hdf5-file</FILE>
 hdf5_read
+hdf5_read2
 hdf5_write
 hdf5_write_image
 hdfile
@@ -394,13 +418,17 @@ hdfile_read_group
 hdfile_set_first_image
 hdfile_set_image
 get_value
+get_ev_based_value
 copy_hdf5_field
 copy_hdf5_fields
 add_copy_hdf5_field
 new_copy_hdf5_field_list
 free_copy_hdf5_field_list
 get_peaks
+get_peaks_cxi
 hdfile_is_scalar
+check_path_existence
+fill_event_list
 </SECTION>
 
 <SECTION>
@@ -419,6 +447,7 @@ crystal_get_profile_radius
 crystal_get_reflections
 crystal_get_resolution_limit
 crystal_get_user_flag
+crystal_get_num_implausible_reflections
 crystal_set_cell
 crystal_set_image
 crystal_set_mosaicity
@@ -428,16 +457,20 @@ crystal_set_profile_radius
 crystal_set_reflections
 crystal_set_resolution_limit
 crystal_set_user_flag
+crystal_set_num_implausible_reflections
 </SECTION>
 
 <SECTION>
 <FILE>geometry</FILE>
 PartialityModel
 find_intersections
+find_intersections_to_res
 select_intersections
 update_partialities
 update_partialities_2
 polarisation_correction
+sphere_fraction
+gaussian_fraction
 </SECTION>
 
 <SECTION>
@@ -501,4 +534,5 @@ rewind_stream
 is_stream
 write_command
 write_geometry_file
+extract_f_from_stuff
 </SECTION>
