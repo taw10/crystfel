@@ -93,20 +93,29 @@ Include a reflection in the output only if it appears at least least \fIn\fR tim
 
 The available partiality models are:
 
-.IP \fBsphere\fR
+.IP \fBscsphere\fR
 .PD
 The volume of intersection between a sphere centered on each reciprocal lattice
-point, and the part of reciprocal space excited by the Ewald sphere taking into
-account the finite bandwidth and convergence angle.  A Lorentz factor will also
-be used, proportional to the distance between the limiting Ewald spheres.
+point and the part of reciprocal space excited by the Ewald sphere taking into
+account the finite bandwidth and convergence angle.  A "source coverage factor"
+will be included to take into account the spectral brightness of the effective
+source for the reflection.
 
-For a full description including diagrams, see T. A. White et al., Acta Cryst.
-D69 (2013) p1231-1240.
+This model is similar to that described in Acta Cryst. D69 (2013) p1231-1240,
+and in Phil. Trans. Roy. Soc. B 369 (2014) 20130330, except that the "Lorentz
+factor" described there is no longer treated as a separate factor.
+
+
+.IP \fBscgaussian\fR
+.PD
+As \fBscsphere\fR, except that the shape of the scattering density centered on
+each reciprocal lattice point is taken to be a 3D Gaussian distribution instead
+of a sphere.  The standard deviation of the distribution will be the profile
+radius (determined by indexamajig) divided by 2.6.
 
 .IP \fBunity\fR
 .PD
-Fix all partialities at 1, and use no Lorentz factor at all.
-
+Fix all partialities at 1.
 
 
 .SH BUGS

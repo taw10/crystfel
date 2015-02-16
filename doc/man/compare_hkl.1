@@ -12,12 +12,12 @@
 compare_hkl \- compare reflection data
 .SH SYNOPSIS
 .PP
-\fBcompare_hkl\fR \fR [\fIoptions\fR] \fB...\fR \fIfile1.hkl\fR \fIfile2.hkl\fR
+\fBcompare_hkl\fR [\fIoptions\fR] \fB... \fIfile1.hkl \fIfile2.hkl\fR -p \fIcell.pdb\fR
 .PP
 \fBcompare_hkl --help\fR
 
 .SH DESCRIPTION
-compare_hkl compares two sets of reflection data and calculates figures of merit such as R-factors.  Reflections will be considered equivalent according to your choice of point group.
+compare_hkl compares two sets of reflection data and calculates figures of merit such as R-factors.  Reflections will be considered equivalent according to your choice of point group. You need to provide a unit cell, as a PDB file or a CrystFEL unit cell file.
 
 .SH OPTIONS
 .PD 0

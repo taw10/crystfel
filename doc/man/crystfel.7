@@ -25,7 +25,7 @@ The crystal orientations in each pattern are random and uncorrelated, which lead
 .RE
 
 CrystFEL includes programs for simulating and processing patterns subject to the
-above characteristics.  Twelve programs form the core of CrystFEL.  They are:
+above characteristics.  Fifteen programs form the core of CrystFEL.  They are:
 
 .IP \fBindexamajig\fR
 Batch indexing, integration and data reduction program, which produces a "stream" containing the indexing and integration results for each diffraction pattern.
@@ -62,6 +62,12 @@ A tool for rendering slices of reciprocal space in two dimensions.
 
 .IP \fBgeoptimiser\fR
 A program to refine and optimize detector geometry.
+
+.IP \fBlist_events\fR
+A tool for creating lists of events from multi-event data files.
+
+.IP \fBwhirligig\fR
+A tool for locating runs of crystals with similar orientations, e.g. from 'mini rotation series' arising from the use of a slow extrusion sample injector.
 
 .PP
 There is also a folder full of scripts for achieving many related tasks.
@@ -149,4 +155,7 @@ You should have received a copy of the GNU General Public License along with Cry
 .BR render_hkl (1),
 .BR hdfsee (1),
 .BR get_hkl (1),
+.BR geoptimiser (1),
+.BR whirligig (1),
+.BR list_events (1),
 .BR crystfel_geometry (5).
