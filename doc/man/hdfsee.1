@@ -91,9 +91,13 @@ Apply a noise filter to the image with checks 3x3 squares of pixels and sets all
 
 .SH CALIBRATION MODE
 Calibration mode allows you to visually adjust the locations of panels.  To enter calibration mode, select Tools->Calibration Mode from the menu.  The currently selected panel will be bordered in white.  Press + or - to move to the next or previous panel (as listed in the geometry file).  Use the arrow keys to move the current panel.  Press 'f' to hide or restore the white border.  Press 's' to save the geometry file with your modifications.  Press 'g' to toggle between moving individual panels, rigid groups (if any are defined in the geometry file) and moving all panels together.
+Most of these actions can also be accessed from the Calibration menu, which becomes aptive when calibration mode is toggled once
+
+.SH EVENT NAVIGATION
+When multi-event files are opened, the Events menu in the menubar becomes active, and some event navigation tools become available. The title bar shows, in addition to the file name, the name of the event currently displayed (See \fBman crystfel_geometry\fR and \fBman indexamajig\fR for a description of event naming). Press 'n' to move to the next event in the file, and 'p' to move to the previous one'. Press 'e' to jump to a specific event, by providing an event name (Use the \fBlist_events\fR program to get a list of the events included in a file). These actions are also accessible from the Events menu in the menubar.
 
 .SH AUTHOR
-This page was written by Thomas White.
+This page was written by Thomas White and Valerio Mariani.
 
 .SH REPORTING BUGS
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
