@@ -97,11 +97,9 @@ static void show_help(const char *s)
 "                           zaef  : Use Zaefferer (2000) gradient detection.\n"
 "                                    This is the default method.\n"
 "                           hdf5  : Get from a table in HDF5 file.\n"
+"                           cxi   : Get from CXI format HDF5 file.\n"
 "     --hdf5-peaks=<p>     Find peaks table in HDF5 file here.\n"
 "                           Default: /processing/hitfinder/peakinfo\n"
-"     --cxi-hdf5-peaks     Peaks in the HDF5 file are in CXI file format.\n"
-"                           Only used in conjunction with the --hdf5-peaks,\n"
-"                           ignored otherwise."
 "     --integration=<meth> Perform final pattern integration using <meth>.\n"
 "\n\n"
 "For more control over the process, you might need:\n\n"
@@ -219,7 +217,6 @@ int main(int argc, char *argv[])
 	iargs.peaks = PEAK_ZAEF;
 	iargs.beam = &beam;
 	iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
-	iargs.cxi_hdf5_peaks = 0;
 	iargs.copyme = NULL;
 	iargs.pk_inn = -1.0;
 	iargs.pk_mid = -1.0;
@@ -271,7 +268,6 @@ int main(int argc, char *argv[])
 		{"no-use-saturated",   0, &iargs.use_saturated,      0},
 		{"no-revalidate",      0, &iargs.no_revalidate,      1},
 		{"check-hdf5-snr",     0, &iargs.check_hdf5_snr,     1},
-		{"cxi-hdf5-peaks",     0, &iargs.cxi_hdf5_peaks,     1},
 
 		/* Long-only options which don't actually do anything */
 		{"no-sat-corr",        0, &iargs.satcorr,            0},
@@ -513,6 +509,8 @@ int main(int argc, char *argv[])
 		iargs.peaks = PEAK_ZAEF;
 	} else if ( strcmp(speaks, "hdf5") == 0 ) {
 		iargs.peaks = PEAK_HDF5;
+	} else if ( strcmp(speaks, "cxi") == 0 ) {
+		iargs.peaks = PEAK_CXI;
 	} else {
 		ERROR("Unrecognised peak detection method '%s'\n", speaks);
 		return 1;

@@ -225,11 +225,21 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	switch ( iargs->peaks ) {
 
 		case PEAK_HDF5:
-		/* Get peaks from HDF5 */
-
-		if ( get_peaks(&image, hdfile, iargs->hdf5_peak_path,
-		               iargs->cxi_hdf5_peaks, pargs->filename_p_e) ) {
+		if ( get_peaks(&image, hdfile, iargs->hdf5_peak_path) ) {
 			ERROR("Failed to get peaks from HDF5 file.\n");
+		}
+		if ( !iargs->no_revalidate ) {
+			validate_peaks(&image, iargs->min_snr,
+				       iargs->pk_inn, iargs->pk_mid,
+		                       iargs->pk_out, iargs->use_saturated,
+				       iargs->check_hdf5_snr);
+		}
+		break;
+
+		case PEAK_CXI:
+		if ( get_peaks_cxi(&image, hdfile, iargs->hdf5_peak_path,
+		                   pargs->filename_p_e) ) {
+			ERROR("Failed to get peaks from CXI file.\n");
 		}
 		if ( !iargs->no_revalidate ) {
 			validate_peaks(&image, iargs->min_snr,

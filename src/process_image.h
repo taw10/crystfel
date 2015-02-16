@@ -41,6 +41,7 @@
 enum {
 	PEAK_ZAEF,
 	PEAK_HDF5,
+	PEAK_CXI,
 };
 
 
@@ -63,7 +64,6 @@ struct index_args
 	float tols[4];
 	struct beam_params *beam;
 	char *hdf5_peak_path;
-	int cxi_hdf5_peaks;
 	float pk_inn;
 	float pk_mid;
 	float pk_out;

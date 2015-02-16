@@ -3,11 +3,11 @@
  *
  * Read/write HDF5 data files
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2015 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
 
  *
@@ -79,8 +79,10 @@ extern void hdfile_close(struct hdfile *f);
 extern int hdfile_is_scalar(struct hdfile *f, const char *name, int verbose);
 char *hdfile_get_string_value(struct hdfile *f, const char *name,
                               struct event* ev);
-extern int get_peaks(struct image *image, struct hdfile *f, const char *p,
-                     int cxi_format, struct filename_plus_event *fpe);
+extern int get_peaks(struct image *image, struct hdfile *f, const char *p);
+
+extern int get_peaks_cxi(struct image *image, struct hdfile *f, const char *p,
+                         struct filename_plus_event *fpe);
 extern double get_value(struct hdfile *f, const char *name);
 
 extern double get_ev_based_value(struct hdfile *f, const char *name,

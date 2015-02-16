@@ -378,168 +378,169 @@ static float *read_hdf5_data(struct hdfile *f, char *path, int line)
 }
 
 
-int get_peaks(struct image *image, struct hdfile *f, const char *p,
-              int cxi_format, struct filename_plus_event *fpe)
+/* Get peaks from HDF5, in "CXI format" (as in "CXIDB") */
+int get_peaks_cxi(struct image *image, struct hdfile *f, const char *p,
+                  struct filename_plus_event *fpe)
 {
-	if ( cxi_format ) {
+	char path_n[1024];
+	char path_x[1024];
+	char path_y[1024];
+	char path_i[1024];
+	int r;
+	int pk;
 
-		char path_n[1024];
-		char path_x[1024];
-		char path_y[1024];
-		char path_i[1024];
-		int r;
-		int pk;
+	int line = 0;
+	int num_peaks;
 
-		int line = 0;
-		int num_peaks;
+	float *buf_x;
+	float *buf_y;
+	float *buf_i;
 
-		float *buf_x;
-		float *buf_y;
-		float *buf_i;
-
-		if ( (fpe != NULL) && (fpe->ev != NULL)
-		  && (fpe->ev->dim_entries != NULL) )
-		{
-			line = fpe->ev->dim_entries[0];
-		} else {
-			ERROR("CXI format peak list format selected,"
-			      "but file has no event structure");
-			return 1;
-		}
-
-		snprintf(path_n, 1024, "%s/nPeaks", p);
-		snprintf(path_x, 1024, "%s/peakXPosRaw", p);
-		snprintf(path_y, 1024, "%s/peakYPosRaw", p);
-		snprintf(path_i, 1024, "%s/peakTotalIntensity", p);
-
-		r = read_peak_count(f, path_n, line, &num_peaks);
-		if ( r != 0 ) return 1;
-
-		buf_x = read_hdf5_data(f, path_x, line);
-		if ( r != 0 ) return 1;
-
-		buf_y = read_hdf5_data(f, path_y, line);
-		if ( r != 0 ) return 1;
-
-		buf_i = read_hdf5_data(f, path_i, line);
-		if ( r != 0 ) return 1;
-
-		if ( image->features != NULL ) {
-			image_feature_list_free(image->features);
-		}
-		image->features = image_feature_list_new();
-
-		for ( pk=0; pk<num_peaks; pk++ ) {
-
-			float fs, ss, val;
-			struct panel *p;
-
-			fs = buf_x[pk];
-			ss = buf_y[pk];
-			val = buf_i[pk];
-
-			p = find_orig_panel(image->det, fs, ss);
-			if ( p == NULL ) continue;
-			if ( p->no_index ) continue;
-
-			/* Convert coordinates to match rearranged
-			 * panels in memory */
-			fs = fs - p->orig_min_fs + p->min_fs;
-			ss = ss - p->orig_min_ss + p->min_ss;
-
-			image_add_feature(image->features, fs, ss, image,
-			                  val, NULL);
-
-		}
-
+	if ( (fpe != NULL) && (fpe->ev != NULL)
+	  && (fpe->ev->dim_entries != NULL) )
+	{
+		line = fpe->ev->dim_entries[0];
 	} else {
+		ERROR("CXI format peak list format selected,"
+		      "but file has no event structure");
+		return 1;
+	}
 
-		hid_t dh, sh;
-		hsize_t size[2];
-		hsize_t max_size[2];
-		int i;
-		float *buf;
-		herr_t r;
-		int tw;
+	snprintf(path_n, 1024, "%s/nPeaks", p);
+	snprintf(path_x, 1024, "%s/peakXPosRaw", p);
+	snprintf(path_y, 1024, "%s/peakYPosRaw", p);
+	snprintf(path_i, 1024, "%s/peakTotalIntensity", p);
 
-		dh = H5Dopen2(f->fh, p, H5P_DEFAULT);
-		if ( dh < 0 ) {
-			ERROR("Peak list (%s) not found.\n", p);
-			return 1;
-		}
+	r = read_peak_count(f, path_n, line, &num_peaks);
+	if ( r != 0 ) return 1;
 
-		sh = H5Dget_space(dh);
-		if ( sh < 0 ) {
-			H5Dclose(dh);
-			ERROR("Couldn't get dataspace for peak list.\n");
-			return 1;
-		}
+	buf_x = read_hdf5_data(f, path_x, line);
+	if ( r != 0 ) return 1;
 
-		if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
-			ERROR("Peak list has the wrong dimensionality (%i).\n",
-			H5Sget_simple_extent_ndims(sh));
-			H5Sclose(sh);
-			H5Dclose(dh);
-			return 1;
-		}
+	buf_y = read_hdf5_data(f, path_y, line);
+	if ( r != 0 ) return 1;
 
-		H5Sget_simple_extent_dims(sh, size, max_size);
+	buf_i = read_hdf5_data(f, path_i, line);
+	if ( r != 0 ) return 1;
 
-		tw = size[1];
-		if ( (tw != 3) && (tw != 4) ) {
-			H5Sclose(sh);
-			H5Dclose(dh);
-			ERROR("Peak list has the wrong dimensions.\n");
-			return 1;
-		}
+	if ( image->features != NULL ) {
+		image_feature_list_free(image->features);
+	}
+	image->features = image_feature_list_new();
 
-		buf = malloc(sizeof(float)*size[0]*size[1]);
-		if ( buf == NULL ) {
-			H5Sclose(sh);
-			H5Dclose(dh);
-			ERROR("Couldn't reserve memory for the peak list.\n");
-			return 1;
-		}
-		r = H5Dread(dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
-		            H5P_DEFAULT, buf);
-		if ( r < 0 ) {
-			ERROR("Couldn't read peak list.\n");
-			free(buf);
-			return 1;
-		}
+	for ( pk=0; pk<num_peaks; pk++ ) {
 
-		if ( image->features != NULL ) {
-			image_feature_list_free(image->features);
-		}
-		image->features = image_feature_list_new();
+		float fs, ss, val;
+		struct panel *p;
 
-		for ( i=0; i<size[0]; i++ ) {
+		fs = buf_x[pk];
+		ss = buf_y[pk];
+		val = buf_i[pk];
 
-			float fs, ss, val;
-			struct panel *p;
+		p = find_orig_panel(image->det, fs, ss);
+		if ( p == NULL ) continue;
+		if ( p->no_index ) continue;
 
-			fs = buf[tw*i+0];
-			ss = buf[tw*i+1];
-			val = buf[tw*i+2];
+		/* Convert coordinates to match rearranged
+		 * panels in memory */
+		fs = fs - p->orig_min_fs + p->min_fs;
+		ss = ss - p->orig_min_ss + p->min_ss;
 
-			p = find_orig_panel(image->det, fs, ss);
-			if ( p == NULL ) continue;
-			if ( p->no_index ) continue;
-
-			/* Convert coordinates to match rearranged panels in memory */
-			fs = fs - p->orig_min_fs + p->min_fs;
-			ss = ss - p->orig_min_ss + p->min_ss;
-
-			image_add_feature(image->features, fs, ss, image, val,
-			                  NULL);
-
-		}
-
-		free(buf);
-		H5Sclose(sh);
-		H5Dclose(dh);
+		image_add_feature(image->features, fs, ss, image,
+		                  val, NULL);
 
 	}
+
+	return 0;
+}
+
+
+int get_peaks(struct image *image, struct hdfile *f, const char *p)
+{
+	hid_t dh, sh;
+	hsize_t size[2];
+	hsize_t max_size[2];
+	int i;
+	float *buf;
+	herr_t r;
+	int tw;
+
+	dh = H5Dopen2(f->fh, p, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Peak list (%s) not found.\n", p);
+		return 1;
+	}
+
+	sh = H5Dget_space(dh);
+	if ( sh < 0 ) {
+		H5Dclose(dh);
+		ERROR("Couldn't get dataspace for peak list.\n");
+		return 1;
+	}
+
+	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
+		ERROR("Peak list has the wrong dimensionality (%i).\n",
+		H5Sget_simple_extent_ndims(sh));
+		H5Sclose(sh);
+		H5Dclose(dh);
+		return 1;
+	}
+
+	H5Sget_simple_extent_dims(sh, size, max_size);
+
+	tw = size[1];
+	if ( (tw != 3) && (tw != 4) ) {
+		H5Sclose(sh);
+		H5Dclose(dh);
+		ERROR("Peak list has the wrong dimensions.\n");
+		return 1;
+	}
+
+	buf = malloc(sizeof(float)*size[0]*size[1]);
+	if ( buf == NULL ) {
+		H5Sclose(sh);
+		H5Dclose(dh);
+		ERROR("Couldn't reserve memory for the peak list.\n");
+		return 1;
+	}
+	r = H5Dread(dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+	            H5P_DEFAULT, buf);
+	if ( r < 0 ) {
+		ERROR("Couldn't read peak list.\n");
+		free(buf);
+		return 1;
+	}
+
+	if ( image->features != NULL ) {
+		image_feature_list_free(image->features);
+	}
+	image->features = image_feature_list_new();
+
+	for ( i=0; i<size[0]; i++ ) {
+
+		float fs, ss, val;
+		struct panel *p;
+
+		fs = buf[tw*i+0];
+		ss = buf[tw*i+1];
+		val = buf[tw*i+2];
+
+		p = find_orig_panel(image->det, fs, ss);
+		if ( p == NULL ) continue;
+		if ( p->no_index ) continue;
+
+		/* Convert coordinates to match rearranged panels in memory */
+		fs = fs - p->orig_min_fs + p->min_fs;
+		ss = ss - p->orig_min_ss + p->min_ss;
+
+		image_add_feature(image->features, fs, ss, image, val,
+		                  NULL);
+
+	}
+
+	free(buf);
+	H5Sclose(sh);
+	H5Dclose(dh);
 
 	return 0;
 }
