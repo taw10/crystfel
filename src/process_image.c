@@ -54,14 +54,10 @@
 
 static int cmpd2(const void *av, const void *bv)
 {
-	double *ap, *bp;
 	double a, b;
 
-	ap = (double *)av;
-	bp = (double *)bv;
-
-	a = ap[1];
-	b = bp[1];
+	a = *(double *)av;
+	b = *(double *)bv;
 
 	if ( fabs(a) < fabs(b) ) return -1;
 	return 1;
@@ -161,7 +157,7 @@ static void refine_radius(Crystal *cr, ImageFeatureList *flist)
 
 	qsort(acc, n_acc, sizeof(double), cmpd2);
 	n = n_acc/50;
-	if ( n < 2 ) n = 2;
+	if ( n < 2 ) n = 2; /* n_acc is always >= 2 */
 	crystal_set_profile_radius(cr, acc[(n_acc-1)-n]);
 
 	free(acc);
