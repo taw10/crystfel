@@ -1572,6 +1572,7 @@ out:
 			if ( p == NULL ) {
 				ERROR("Cannot add panel to rigid group\n");
 				ERROR("Panel not found: %s\n", bits[pi]);
+				return NULL;
 			}
 			add_to_rigid_group(rigidgroup, p);
 			free(bits[pi]);
@@ -1599,7 +1600,8 @@ out:
 			r = find_rigid_group_by_name(det, bits[rgi]);
 			if ( r == NULL ) {
 				ERROR("Cannot add rigid group to collection\n");
-				ERROR("Rigid groups not found: %s\n", bits[rgi]);
+				ERROR("Rigid group not found: %s\n", bits[rgi]);
+				return NULL;
 			}
 			add_to_rigid_group_coll(rgcollection, r);
 			free(bits[rgi]);
