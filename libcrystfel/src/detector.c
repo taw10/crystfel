@@ -1045,12 +1045,14 @@ static void parse_toplevel(struct detector *det, struct beam_params *beam,
 		det->defaults.coffset = atof(val);
 
 	} else if ( strcmp(key, "photon_energy") == 0 ) {
-		if ( strncmp(val, "/", 1) == 0 ) {
-			beam->photon_energy = 0.0;
-			beam->photon_energy_from = strdup(val);
-		} else {
-			beam->photon_energy = atof(val);
-			beam->photon_energy_from = NULL;
+		if ( beam != NULL ) {
+			if ( strncmp(val, "/", 1) == 0 ) {
+				beam->photon_energy = 0.0;
+				beam->photon_energy_from = strdup(val);
+			} else {
+				beam->photon_energy = atof(val);
+				beam->photon_energy_from = NULL;
+			}
 		}
 
 	} else if ( strcmp(key, "photon_energy_scale") == 0 ) {

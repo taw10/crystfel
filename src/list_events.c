@@ -71,7 +71,6 @@ int main(int argc, char *argv[])
 	FILE *ifh;
 	FILE *ofh;
 	struct detector *det;
-	struct beam_params beam;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -142,7 +141,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	det = get_detector_geometry(geom, &beam);
+	det = get_detector_geometry(geom, NULL);
 	if ( det == NULL ) {
 		ERROR("Failed to read '%s'\n", geom);
 		return 1;
