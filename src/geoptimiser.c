@@ -1057,13 +1057,14 @@ static double compute_error(struct rg_collection *connected,
 			}
 		}
 
-		if ( num_connected_error>0 ) {
+		if ( num_connected_error > 0 ) {
+
 			connected_error /= (double)num_connected_error;
 			connected_error = sqrt(connected_error);
 
 			STATUS("Error for connected group %s: %d pixels with "
 				"more than %d peaks: <delta^2> = %0.4f pixels.\n",
-			       conn_data[di].name,
+			       conn_data[di].name, num_connected_error,
 			       conn_data[di].num_peaks_per_pixel,
 			       connected_error);
 		}
