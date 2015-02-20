@@ -1279,16 +1279,16 @@ static void shift_panels(struct rg_collection *connected,
 
 				struct panel *p0;
 				double connected_panel_dist;
+				double delta_x, delta_y;
 
 				p0 = connected->rigid_groups[di]->panels[0];
 
-				connected_panel_dist = modulus2d(
-				              p->cnx-p0->cnx/conn_data[di].cstr,
-				              p->cny-p0->cny/conn_data[di].cstr
-				              );
+				delta_x = (p->cnx-p0->cnx)/conn_data[di].cstr;
+				delta_y = (p->cny-p0->cny)/conn_data[di].cstr;
 
-				p->cnx = p0->cnx + connected_panel_dist*p0->fsx;
-				p->cny = p0->cny + connected_panel_dist*p0->fsy;
+				p->cnx = p0->cnx + delta_x;
+				p->cny = p0->cny + delta_y;
+
 			}
 		}
 	}
