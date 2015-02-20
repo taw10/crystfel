@@ -1966,7 +1966,7 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 
 
 char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
-                        int **p_is_group, int **p_is_image)
+                         int **p_is_group, int **p_is_image)
 {
 	hid_t gh;
 	hsize_t num;
