@@ -72,9 +72,7 @@ static void show_help(const char *s)
 "  -q, --quadrants=<rg_coll>            Rigid group collection for quadrants.\n"
 "  -c, --connected=<rg_coll>            Rigid group collection for connected\n"
 "                                        ASICs.\n"
-"  -e, --error-maps                     Save error maps to disk, before and\n"
-"                                        after optimization.\n"
-"                                        Default: error maps are not saved.\n"
+"      --no-error-maps                  Do not generate error map PNGs.\n"
 "  -x, --min-num-peaks-per-pixel=<num>  Minimum number of peaks per pixel.\n"
 "                                        Default: 3. \n"
 "  -p, --min-num-peaks-per-panel=<num>  Minimum number of peaks per pixel.\n"
@@ -2612,6 +2610,10 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 		return 1;
 	}
 	STATUS("All done!\n");
+	if ( error_maps ) {
+		STATUS("Be sure to inspect error_map_before.png and "
+		       "error_map_after.png !!\n");
+	}
 
 	free(conn_data);
 	free(displ_x);
@@ -2641,7 +2643,7 @@ int main(int argc, char *argv[])
 	int only_best_distance = 0;
 	int nostretch = 0;
 	int individual_coffset = 0;
-	int error_maps = 0;
+	int error_maps = 1;
 	double max_peak_dist = 4.0;
 
 	struct detector *det = NULL;
@@ -2664,16 +2666,16 @@ int main(int argc, char *argv[])
         {"most-few-clen",          0, NULL,               'l'},
         {"max-peak-dist",          1, NULL,               'm'},
         {"individual-dist-offset", 0, NULL,               's'},
-	{"error-maps",             0, NULL,               'e'},
 
         /* Long-only options with no arguments */
-        {"no-stretch",         0, &nostretch,       1},
+        {"no-stretch",             0, &nostretch,       1},
+	{"no-error-maps",          0, &error_maps,      0},
 
 	{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ho:i:g:q:c:o:x:p:lsm:e",
+	while ((c = getopt_long(argc, argv, "ho:i:g:q:c:o:x:p:lsm",
 	                       longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -2733,9 +2735,6 @@ int main(int argc, char *argv[])
 			individual_coffset = 1;
 			break;
 
-			case 'e' :
-			error_maps = 1;
-			break;
 		}
 	}
 
