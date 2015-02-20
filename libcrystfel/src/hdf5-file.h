@@ -83,10 +83,6 @@ extern int get_peaks(struct image *image, struct hdfile *f, const char *p);
 
 extern int get_peaks_cxi(struct image *image, struct hdfile *f, const char *p,
                          struct filename_plus_event *fpe);
-extern double get_value(struct hdfile *f, const char *name);
-
-extern double get_ev_based_value(struct hdfile *f, const char *name,
-                                 struct event *ev);
 
 extern struct copy_hdf5_field *new_copy_hdf5_field_list(void);
 extern void free_copy_hdf5_field_list(struct copy_hdf5_field *f);
@@ -98,6 +94,9 @@ extern void add_copy_hdf5_field(struct copy_hdf5_field *copyme,
                                 const char *name);
 extern struct event_list *fill_event_list(struct hdfile* hdfile,
                                           struct detector* det);
+
+extern int get_value(struct hdfile *f, const char *name,
+                     struct event *ev, void *val, hid_t memtype);
 
 #ifdef __cplusplus
 }

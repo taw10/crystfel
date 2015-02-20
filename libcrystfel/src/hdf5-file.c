@@ -1151,6 +1151,201 @@ static int unpack_panels(struct image *image, struct detector *det)
 }
 
 
+static int get_scalar_value(struct hdfile *f, const char *name, void *val,
+                            hid_t memtype)
+{
+	hid_t dh;
+	hid_t type;
+	hid_t class;
+	herr_t r;
+	int check;
+
+	if ( !hdfile_is_scalar(f, name, 1) ) return 1;
+
+	check = check_path_existence(f->fh, name);
+	if ( check == 0 ) {
+		ERROR("No such float field '%s'\n", name);
+		return 1;
+	}
+
+	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
+
+	type = H5Dget_type(dh);
+	class = H5Tget_class(type);
+
+	if ( class != H5T_FLOAT ) {
+		ERROR("Not a floating point value.\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return 1;
+	}
+
+	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
+	            H5P_DEFAULT, val);
+	if ( r < 0 )  {
+		ERROR("Couldn't read value.\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return 1;
+	}
+
+	return 0;
+}
+
+
+static int get_ev_based_value(struct hdfile *f, const char *name,
+                              struct event *ev, void *val, hid_t memtype)
+{
+	hid_t dh;
+	hid_t type;
+	hid_t class;
+	hid_t sh;
+	hid_t ms;
+	hsize_t *f_offset = NULL;
+	hsize_t *f_count = NULL;
+	hsize_t m_offset[1];
+	hsize_t m_count[1];
+	hsize_t msdims[1];
+	hsize_t size[3];
+	herr_t r;
+	herr_t check;
+	int check_pe;
+	int dim_flag;
+	int ndims;
+	int i;
+	char *subst_name = NULL;
+
+	if ( ev->path_length != 0 ) {
+		subst_name = partial_event_substitution(ev, name);
+	} else {
+		subst_name = strdup(name);
+	}
+
+	check_pe = check_path_existence(f->fh, subst_name);
+	if ( check_pe == 0 ) {
+		ERROR("No such event-based float field '%s'\n", subst_name);
+		return 1;
+	}
+
+	dh = H5Dopen2(f->fh, subst_name, H5P_DEFAULT);
+	type = H5Dget_type(dh);
+	class = H5Tget_class(type);
+
+	if ( class != H5T_FLOAT ) {
+		ERROR("Not a floating point value.\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return 1;
+	}
+
+	/* Get the dimensionality.  We have to cope with scalars expressed as
+	 * arrays with all dimensions 1, as well as zero-d arrays. */
+	sh = H5Dget_space(dh);
+	ndims = H5Sget_simple_extent_ndims(sh);
+	if ( ndims > 3 ) {
+		H5Tclose(type);
+		H5Dclose(dh);
+		return 1;
+	}
+	H5Sget_simple_extent_dims(sh, size, NULL);
+
+	m_offset[0] = 0;
+	m_count[0] = 1;
+	msdims[0] = 1;
+	ms = H5Screate_simple(1,msdims,NULL);
+
+	/* Check that the size in all dimensions is 1 */
+	/* or that one of the dimensions has the same */
+	/* size as the hyperplane events              */
+
+	dim_flag = 0;
+
+	for ( i=0; i<ndims; i++ ) {
+		if ( size[i] != 1 ) {
+			if ( i == 0 && size[i] > ev->dim_entries[0] ) {
+				dim_flag = 1;
+			} else {
+				H5Tclose(type);
+				H5Dclose(dh);
+				return 1;
+			}
+		}
+	}
+
+	if ( dim_flag == 0  ) {
+
+		r = H5Dread(dh, memtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, val);
+
+		if ( r < 0 )  {
+			ERROR("Couldn't read value.\n");
+			H5Tclose(type);
+			H5Dclose(dh);
+			return 1;
+		}
+
+	} else {
+
+		f_offset = malloc(ndims*sizeof(hsize_t));
+		f_count = malloc(ndims*sizeof(hsize_t));
+
+		for ( i=0; i<ndims; i++ ) {
+
+			if ( i == 0 ) {
+				f_offset[i] = ev->dim_entries[0];
+				f_count[i] = 1;
+			} else {
+				f_offset[i] = 0;
+				f_count[i] = 0;
+			}
+
+		}
+
+		check = H5Sselect_hyperslab(sh, H5S_SELECT_SET,
+		                            f_offset, NULL, f_count, NULL);
+		if ( check <0 ) {
+			ERROR("Error selecting dataspace for float value");
+			free(f_offset);
+			free(f_count);
+			return 1;
+		}
+
+		ms = H5Screate_simple(1,msdims,NULL);
+		check = H5Sselect_hyperslab(ms, H5S_SELECT_SET,
+		                            m_offset, NULL, m_count, NULL);
+		if ( check < 0 ) {
+			ERROR("Error selecting memory dataspace for float value");
+			free(f_offset);
+			free(f_count);
+			return 1;
+		}
+
+		r = H5Dread(dh, memtype, ms, sh, H5P_DEFAULT, val);
+		if ( r < 0 )  {
+			ERROR("Couldn't read value.\n");
+			H5Tclose(type);
+			H5Dclose(dh);
+			return 1;
+		}
+
+	}
+
+	free(subst_name);
+
+	return 0;
+}
+
+
+int get_value(struct hdfile *f, const char *name,
+                     struct event *ev, void *val, hid_t memtype)
+{
+	if ( ev == NULL ) {
+		return get_scalar_value(f, name, val, memtype);
+	} else {
+		return get_ev_based_value(f, name, ev, val, memtype);
+	}
+}
+
+
 void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f,
                              struct event *ev, struct image *image)
 {
@@ -1161,15 +1356,16 @@ void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f,
 		/* Explicit value given */
 		eV = beam->photon_energy;
 
-	} else if ( ev != NULL ) {
-
-		/* Value from HDF5 file, event-based structure */
-		eV = get_ev_based_value(f, beam->photon_energy_from, ev);
-
 	} else {
 
-		/* Value from HDF5 file, single-event structure */
-		eV = get_value(f, beam->photon_energy_from);
+		int r;
+
+		r = get_value(f, beam->photon_energy_from, ev, &eV,
+		              H5T_NATIVE_DOUBLE);
+		if ( r ) {
+			ERROR("Failed to read '%s'\n",
+			      beam->photon_energy_from);
+		}
 
 	}
 
@@ -1589,255 +1785,6 @@ int hdfile_is_scalar(struct hdfile *f, const char *name, int verbose)
 }
 
 
-
-
-static int get_f_value(struct hdfile *f, const char *name, double *val)
-{
-	hid_t dh;
-	hid_t type;
-	hid_t class;
-	herr_t r;
-	double buf;
-	int check;
-
-	if ( !hdfile_is_scalar(f, name, 1) ) return 1;
-
-	check = check_path_existence(f->fh, name);
-	if ( check == 0 ) {
-		ERROR("No such float field '%s'\n", name);
-		return 1;
-	}
-
-	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
-
-	type = H5Dget_type(dh);
-	class = H5Tget_class(type);
-
-	if ( class != H5T_FLOAT ) {
-		ERROR("Not a floating point value.\n");
-		H5Tclose(type);
-		H5Dclose(dh);
-		return 1;
-	}
-
-	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
-	            H5P_DEFAULT, &buf);
-	if ( r < 0 )  {
-		ERROR("Couldn't read value.\n");
-		H5Tclose(type);
-		H5Dclose(dh);
-		return 1;
-	}
-
-	*val = buf;
-	return 0;
-}
-
-
-static int get_ev_based_f_value(struct hdfile *f, const char *name,
-                                struct event *ev, double *val)
-{
-	hid_t dh;
-	hid_t type;
-	hid_t class;
-	hid_t sh;
-	hid_t ms;
-	hsize_t *f_offset = NULL;
-	hsize_t *f_count = NULL;
-	hsize_t m_offset[1];
-	hsize_t m_count[1];
-	hsize_t msdims[1];
-	hsize_t size[3];
-	herr_t r;
-	herr_t check;
-	double buf;
-	int check_pe;
-	int dim_flag;
-	int ndims;
-	int i;
-	char *subst_name = NULL;
-
-	if ( ev->path_length != 0 ) {
-		subst_name = partial_event_substitution(ev, name);
-	} else {
-		subst_name = strdup(name);
-	}
-
-	check_pe = check_path_existence(f->fh, subst_name);
-	if ( check_pe == 0 ) {
-		ERROR("No such event-based float field '%s'\n", subst_name);
-		return 1;
-	}
-
-	dh = H5Dopen2(f->fh, subst_name, H5P_DEFAULT);
-	type = H5Dget_type(dh);
-	class = H5Tget_class(type);
-
-	if ( class != H5T_FLOAT ) {
-		ERROR("Not a floating point value.\n");
-		H5Tclose(type);
-		H5Dclose(dh);
-		return 1;
-	}
-
-	/* Get the dimensionality.  We have to cope with scalars expressed as
-	 * arrays with all dimensions 1, as well as zero-d arrays. */
-	sh = H5Dget_space(dh);
-	ndims = H5Sget_simple_extent_ndims(sh);
-	if ( ndims > 3 ) {
-		H5Tclose(type);
-		H5Dclose(dh);
-		return 1;
-	}
-	H5Sget_simple_extent_dims(sh, size, NULL);
-
-	m_offset[0] = 0;
-	m_count[0] = 1;
-	msdims[0] = 1;
-	ms = H5Screate_simple(1,msdims,NULL);
-
-	/* Check that the size in all dimensions is 1 */
-	/* or that one of the dimensions has the same */
-	/* size as the hyperplane events              */
-
-	dim_flag = 0;
-
-	for ( i=0; i<ndims; i++ ) {
-		if ( size[i] != 1 ) {
-			if ( i == 0 && size[i] > ev->dim_entries[0] ) {
-				dim_flag = 1;
-			} else {
-				H5Tclose(type);
-				H5Dclose(dh);
-				return 1;
-			}
-		}
-	}
-
-	if ( dim_flag == 0  ) {
-
-		r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
-		            H5P_DEFAULT, &buf);
-
-		if ( r < 0 )  {
-			ERROR("Couldn't read value.\n");
-			H5Tclose(type);
-			H5Dclose(dh);
-			return 1;
-		}
-
-	} else {
-
-		f_offset = malloc(ndims*sizeof(hsize_t));
-		f_count = malloc(ndims*sizeof(hsize_t));
-
-		for ( i=0; i<ndims; i++ ) {
-
-			if ( i == 0 ) {
-				f_offset[i] = ev->dim_entries[0];
-				f_count[i] = 1;
-			} else {
-				f_offset[i] = 0;
-				f_count[i] = 0;
-			}
-
-		}
-
-		check = H5Sselect_hyperslab(sh, H5S_SELECT_SET,
-		                            f_offset, NULL, f_count, NULL);
-		if ( check <0 ) {
-			ERROR("Error selecting dataspace for float value");
-			free(f_offset);
-			free(f_count);
-			return 1;
-		}
-
-		ms = H5Screate_simple(1,msdims,NULL);
-		check = H5Sselect_hyperslab(ms, H5S_SELECT_SET,
-		                            m_offset, NULL, m_count, NULL);
-		if ( check < 0 ) {
-			ERROR("Error selecting memory dataspace for float value");
-			free(f_offset);
-			free(f_count);
-			return 1;
-		}
-
-		r = H5Dread(dh, H5T_NATIVE_DOUBLE, ms, sh,
-		            H5P_DEFAULT, &buf);
-		if ( r < 0 )  {
-			ERROR("Couldn't read value.\n");
-			H5Tclose(type);
-			H5Dclose(dh);
-			return 1;
-		}
-
-	}
-
-	free(subst_name);
-	*val = buf;
-
-	return 0;
-}
-
-
-static int get_i_value(struct hdfile *f, const char *name, int *val)
-{
-	hid_t dh;
-	hid_t type;
-	hid_t class;
-	herr_t r;
-	int buf;
-	int check;
-
-	if ( !hdfile_is_scalar(f, name, 1) ) return 1;
-
-	check = check_path_existence(f->fh, name);
-	if ( check == 0 ) {
-		ERROR("No such integer field '%s'\n", name);
-		return 1;
-	}
-
-	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
-	type = H5Dget_type(dh);
-	class = H5Tget_class(type);
-
-	if ( class != H5T_INTEGER ) {
-		ERROR("Not an integer value.\n");
-		H5Tclose(type);
-		H5Dclose(dh);
-		return 1;
-	}
-
-	r = H5Dread(dh, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
-	            H5P_DEFAULT, &buf);
-	if ( r < 0 )  {
-		ERROR("Couldn't read value.\n");
-		H5Tclose(type);
-		H5Dclose(dh);
-		return 1;
-	}
-
-	*val = buf;
-	return 0;
-}
-
-
-double get_value(struct hdfile *f, const char *name)
-{
-	double val = 0.0;
-	get_f_value(f, name, &val);
-	return val;
-}
-
-double get_ev_based_value(struct hdfile *f, const char *name,
-                          struct event *ev)
-{
-	double val = -1;
-	get_ev_based_f_value(f, name, ev, &val);
-	return val;
-}
-
-
 struct copy_hdf5_field
 {
 	char **fields;
@@ -1986,17 +1933,26 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 		}
 	} else {
 
+		int r;
+
 		switch ( class ) {
+
 			case H5T_FLOAT :
-			if ( get_f_value(f, subst_name, &buf_f) ) break;
-			tmp = malloc(256);
-			snprintf(tmp, 255, "%f", buf_f);
+			r = get_value(f, subst_name, ev, &buf_f,
+			              H5T_NATIVE_DOUBLE);
+			if ( r == 0 ) {
+				tmp = malloc(256);
+				snprintf(tmp, 255, "%f", buf_f);
+			}
 			break;
 
 			case H5T_INTEGER :
-			if ( get_i_value(f, subst_name, &buf_i) ) break;
-			tmp = malloc(256);
-			snprintf(tmp, 255, "%d", buf_i);
+			r = get_value(f, subst_name, ev, &buf_i,
+			              H5T_NATIVE_INT);
+			if ( r == 0 ) {
+				tmp = malloc(256);
+				snprintf(tmp, 255, "%d", buf_i);
+			}
 			break;
 		}
 

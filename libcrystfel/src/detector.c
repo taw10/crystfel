@@ -565,11 +565,15 @@ void fill_in_values(struct detector *det, struct hdfile *f, struct event* ev)
 
 		if ( p->clen_from != NULL ) {
 
-			if (det->path_dim !=0 || det->dim_dim !=0 ){
-				p->clen = get_ev_based_value(f, p->clen_from,
-				                             ev) * 1.0e-3;
+			double val;
+			int r;
+
+			r = get_value(f, p->clen_from, ev, &val,
+			              H5T_NATIVE_DOUBLE);
+			if ( r ) {
+				ERROR("Failed to read '%s'\n", p->clen_from);
 			} else {
-				p->clen = get_value(f, p->clen_from) * 1.0e-3;
+				p->clen = val * 1.0e-3;
 			}
 
 		}
