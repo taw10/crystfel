@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
 	iargs.det = NULL;
 	iargs.peaks = PEAK_ZAEF;
 	iargs.beam = &beam;
-	iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
+	iargs.hdf5_peak_path = NULL;
 	iargs.copyme = NULL;
 	iargs.pk_inn = -1.0;
 	iargs.pk_mid = -1.0;
@@ -516,6 +516,15 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	free(speaks);
+
+	/* Set default path for peaks, if appropriate */
+	if ( iargs.hdf5_peak_path == NULL ) {
+		if ( iargs.peaks == PEAK_HDF5 ) {
+			iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
+		} else if ( iargs.peaks == PEAK_CXI ) {
+			iargs.hdf5_peak_path = strdup("/entry_1/result_1");
+		}
+	}
 
 	if ( prefix == NULL ) {
 		prefix = strdup("");
