@@ -1710,6 +1710,8 @@ struct detector *copy_geom(const struct detector *in)
 
 	out->n_rigid_groups = 0;
 	out->rigid_groups = NULL;
+	out->n_rg_collections = 0;
+	out->rigid_group_collections = NULL;
 
 	for ( i=0; i<out->n_panels; i++ ) {
 
