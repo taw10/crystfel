@@ -344,10 +344,17 @@ int in_bad_region(struct detector *det, double fs, double ss)
 
 		if ( b->is_fsss ) {
 
-			if ( fs < b->min_fs ) continue;
-			if ( fs > b->max_fs ) continue;
-			if ( ss < b->min_ss ) continue;
-			if ( ss > b->max_ss ) continue;
+			int nfs, nss;
+
+			/* fs/ss bad regions are specified according to the
+			 * original coordinates */
+			nfs = (fs-p->min_fs) + p->orig_min_fs;
+			nss = (ss-p->min_ss) + p->orig_min_ss;
+
+			if ( nfs < b->min_fs ) continue;
+			if ( nfs > b->max_fs ) continue;
+			if ( nss < b->min_ss ) continue;
+			if ( nss > b->max_ss ) continue;
 
 		} else {
 
