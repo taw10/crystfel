@@ -1278,7 +1278,6 @@ static void shift_panels(struct rg_collection *connected,
 			} else {
 
 				struct panel *p0;
-				double connected_panel_dist;
 				double delta_x, delta_y;
 
 				p0 = connected->rigid_groups[di]->panels[0];
