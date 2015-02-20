@@ -186,7 +186,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	image.filename = pargs->filename_p_e->filename;
 	image.event = pargs->filename_p_e->ev;
 	image.beam = iargs->beam;
-	image.det = iargs->det;
+	image.det = copy_geom(iargs->det);
 	image.crystals = NULL;
 	image.n_crystals = 0;
 	image.serial = serial;
@@ -373,5 +373,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	free(image.data);
 	if ( image.flags != NULL ) free(image.flags);
 	image_feature_list_free(image.features);
+	free_detector_geometry(image.det);
 	hdfile_close(hdfile);
 }
