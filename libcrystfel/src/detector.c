@@ -1921,7 +1921,8 @@ static void process_panel_fields(const struct panel *p, char *line,
 
 	if(strstr(bits[1], "fs") != NULL &&
 	   strstr(bits[1], "min_fs") == NULL &&
-	   strstr(bits[1], "max_fs") == NULL) {
+	   strstr(bits[1], "max_fs") == NULL &&
+	   strstr(bits[1], "offset") == NULL   ) {
 
 		sprintf(string_to_write, "%+fx %+fy",
 			p->fsx, p->fsy);
