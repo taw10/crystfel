@@ -76,9 +76,6 @@ extern char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
 extern int hdfile_set_first_image(struct hdfile *f, const char *group);
 extern void hdfile_close(struct hdfile *f);
 
-extern int hdfile_is_scalar(struct hdfile *f, const char *name, int verbose);
-char *hdfile_get_string_value(struct hdfile *f, const char *name,
-                              struct event* ev);
 extern int get_peaks(struct image *image, struct hdfile *f, const char *p);
 
 extern int get_peaks_cxi(struct image *image, struct hdfile *f, const char *p,
@@ -95,8 +92,11 @@ extern void add_copy_hdf5_field(struct copy_hdf5_field *copyme,
 extern struct event_list *fill_event_list(struct hdfile* hdfile,
                                           struct detector* det);
 
-extern int get_value(struct hdfile *f, const char *name,
-                     struct event *ev, void *val, hid_t memtype);
+extern int hdfile_get_value(struct hdfile *f, const char *name,
+                            struct event *ev, void *val, hid_t memtype);
+extern int hdfile_is_scalar(struct hdfile *f, const char *name, int verbose);
+extern char *hdfile_get_string_value(struct hdfile *f, const char *name,
+                                     struct event *ev);
 
 #ifdef __cplusplus
 }

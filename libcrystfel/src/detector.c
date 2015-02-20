@@ -568,8 +568,8 @@ void fill_in_values(struct detector *det, struct hdfile *f, struct event* ev)
 			double val;
 			int r;
 
-			r = get_value(f, p->clen_from, ev, &val,
-			              H5T_NATIVE_DOUBLE);
+			r = hdfile_get_value(f, p->clen_from, ev, &val,
+			                     H5T_NATIVE_DOUBLE);
 			if ( r ) {
 				ERROR("Failed to read '%s'\n", p->clen_from);
 			} else {

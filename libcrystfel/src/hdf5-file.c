@@ -1335,7 +1335,7 @@ static int get_ev_based_value(struct hdfile *f, const char *name,
 }
 
 
-int get_value(struct hdfile *f, const char *name,
+int hdfile_get_value(struct hdfile *f, const char *name,
                      struct event *ev, void *val, hid_t memtype)
 {
 	if ( ev == NULL ) {
@@ -1360,8 +1360,8 @@ void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f,
 
 		int r;
 
-		r = get_value(f, beam->photon_energy_from, ev, &eV,
-		              H5T_NATIVE_DOUBLE);
+		r = hdfile_get_value(f, beam->photon_energy_from, ev, &eV,
+		                     H5T_NATIVE_DOUBLE);
 		if ( r ) {
 			ERROR("Failed to read '%s'\n",
 			      beam->photon_energy_from);
@@ -1938,8 +1938,8 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 		switch ( class ) {
 
 			case H5T_FLOAT :
-			r = get_value(f, subst_name, ev, &buf_f,
-			              H5T_NATIVE_DOUBLE);
+			r = hdfile_get_value(f, subst_name, ev, &buf_f,
+			                     H5T_NATIVE_DOUBLE);
 			if ( r == 0 ) {
 				tmp = malloc(256);
 				snprintf(tmp, 255, "%f", buf_f);
@@ -1947,8 +1947,8 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 			break;
 
 			case H5T_INTEGER :
-			r = get_value(f, subst_name, ev, &buf_i,
-			              H5T_NATIVE_INT);
+			r = hdfile_get_value(f, subst_name, ev, &buf_i,
+			                     H5T_NATIVE_INT);
 			if ( r == 0 ) {
 				tmp = malloc(256);
 				snprintf(tmp, 255, "%d", buf_i);
