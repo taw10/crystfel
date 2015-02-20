@@ -1762,11 +1762,14 @@ struct detector *copy_geom(const struct detector *in)
 		int rgi;
 
 		for ( rgi=0; rgi<in->n_rigid_groups; rgi++ ) {
+
 			if ( panel_is_in_rigid_group(in->rigid_groups[rgi],
-			     &in->panels[i])) {
-				add_to_rigid_group(find_or_add_rg(out,
-				                   in->rigid_groups[rgi]->name),
-				                   &out->panels[i]);
+			                             &in->panels[i]) )
+			{
+				struct rigid_group *g;
+				g = find_or_add_rg(out,
+				                   in->rigid_groups[rgi]->name);
+				add_to_rigid_group(g, &out->panels[i]);
 			}
 		}
 
@@ -1777,13 +1780,17 @@ struct detector *copy_geom(const struct detector *in)
 		int rgci;
 
 		for ( rgci=0; rgci<in->n_rg_collections; rgci++ ) {
+
+			const char *n = in->rigid_group_collections[rgci]->name;
+
 			if ( rigid_group_is_in_collection(
 			                      in->rigid_group_collections[rgci],
 			                      in->rigid_groups[i]) )
 			{
-				add_to_rigid_group_coll(find_or_add_rg_coll(out,
-				       in->rigid_group_collections[rgci]->name),
-				       out->rigid_groups[i]);
+				struct rg_collection *rgcoll;
+				rgcoll = find_or_add_rg_coll(out, n);
+				add_to_rigid_group_coll(rgcoll,
+				                        out->rigid_groups[i]);
 			}
 		}
 	}
