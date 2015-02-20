@@ -1728,7 +1728,7 @@ struct detector *copy_geom(const struct detector *in)
 		if ( p->data != NULL ) {
 			/* Make a copy of the data fields unique to this
 			 * copy of the structure. */
-			p->clen_from = strdup(p->clen_from);
+			p->data = strdup(p->data);
 		}
 
 		if ( p->dim_structure != NULL ) {
