@@ -146,6 +146,7 @@ typedef struct {
 	struct event_list  *ev_list;
 	int                curr_event;
 
+	gsl_rng          rng;
 
 
 } DisplayWindow;

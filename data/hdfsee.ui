@@ -41,6 +41,7 @@
 			<menuitem name="eventprevious" action="EventPreviousAction" />
 			<menuitem name="eventnext" action="EventNextAction" />
 			<menuitem name="gotoevent" action="GotoEventAction" />
+			<menuitem name="randomevent" action="RandomEventAction" />
 		</menu>
 
 		<menu name="help" action="HelpAction">

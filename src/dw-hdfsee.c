@@ -964,6 +964,18 @@ static gint displaywindow_newevent(DisplayWindow *dw, int new_event)
 }
 
 
+static gint displaywindow_randomevent(GtkWidget *widget, DisplayWindow *dw)
+{
+	int rand_event;
+
+	if ( dw->not_ready_yet ) return 0;
+
+	rand_event = gsl_rng_uniform_int(&dw->rng, dw->ev_list->num_events);
+
+	return displaywindow_newevent(dw, rand_event);
+}
+
+
 static gint displaywindow_set_newevent_response(GtkWidget *widget,
 						gint response,
 						DisplayWindow *dw)
@@ -1489,6 +1501,11 @@ static void set_events_menu_sensitivity(DisplayWindow *dw, int val) {
 	gtk_action_set_sensitive(GTK_ACTION(a), val);
 	a = gtk_ui_manager_get_action(dw->ui,
 	                  "/ui/displaywindow/events/gotevent");
+	gtk_action_set_sensitive(GTK_ACTION(a), val);
+	a = gtk_ui_manager_get_action(dw->ui,
+	                  "/ui/displaywindow/events/randomevent");
+	gtk_action_set_sensitive(GTK_ACTION(a), val);
+
 }
 
 
@@ -2110,8 +2127,6 @@ static void calibmode_prev(GtkWidget *widget, DisplayWindow *dw)
 }
 
 
-
-
 static void event_next(GtkWidget *widget, DisplayWindow *dw)
 {
 	int new_event;
@@ -2184,6 +2199,8 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 			G_CALLBACK(event_next) },
 		{ "GotoEventAction", NULL, "Go To Event", "e", NULL,
 			G_CALLBACK(displaywindow_set_newevent) },
+		{ "RandomEventAction", NULL, "Go To Random Event", "r", NULL,
+			G_CALLBACK(displaywindow_randomevent) },
 
 		{ "HelpAction", NULL, "_Help", NULL, NULL, NULL },
 		{ "AboutAction", GTK_STOCK_ABOUT, "_About hdfsee...",
@@ -2742,6 +2759,14 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	dw->statusbar = NULL;
 	dw->multi_event = 0;
 	dw->ev_list = NULL;
+	dw->rng = *gsl_rng_alloc(gsl_rng_mt19937);
+	FILE *fh;
+	unsigned long int seed;
+	fh = fopen("/dev/urandom", "r");
+	fread(&seed, sizeof(seed), 1, fh);
+	fclose(fh);
+	gsl_rng_set(&dw->rng, seed);
+
 	if ( geom_filename != NULL ) {
 		dw->geom_filename = strdup(geom_filename);
 	} else {
