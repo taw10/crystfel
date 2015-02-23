@@ -2136,6 +2136,7 @@ static int save_data_to_png(char * filename, struct detector* det,
 		} else {
 			im->data[i] = (float)data[i];
 		}
+		im->data[i] *= 10.0; /* render_panels sets this as max */
 	}
 
 	get_pixel_extents(im->det, &rect.min_x, &rect.min_y, &rect.max_x,
