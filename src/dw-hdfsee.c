@@ -1061,7 +1061,7 @@ static gint displaywindow_set_newevent(GtkWidget *widget, DisplayWindow *dw)
 	if ( ed == NULL ) return 0;
 	dw->event_dialog = ed;
 
-	ed->window = gtk_dialog_new_with_buttons("Intensity Boost",
+	ed->window = gtk_dialog_new_with_buttons("Go to event",
 					GTK_WINDOW(dw->window),
 					GTK_DIALOG_DESTROY_WITH_PARENT,
 					GTK_STOCK_CANCEL, GTK_RESPONSE_CLOSE,
@@ -1078,7 +1078,7 @@ static gint displaywindow_set_newevent(GtkWidget *widget, DisplayWindow *dw)
 	gtk_table_set_col_spacings(GTK_TABLE(table), 5);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(table), FALSE, FALSE, 0);
 
-	label = gtk_label_new("Boost Factor:");
+	label = gtk_label_new("Event ID:");
 	gtk_misc_set_alignment(GTK_MISC(label), 1, 0.5);
 	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(label),
 				  1, 2, 3, 4);
