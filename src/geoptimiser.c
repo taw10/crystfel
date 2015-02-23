@@ -342,7 +342,7 @@ static struct pattern_list *read_patterns_from_steam_file(const char *infile,
 				UnitCell *cell;
 				UnitCell **new_unit_cells;
 
-				cell = crystal_get_cell(cur.crystals[0]);
+				cell = crystal_get_cell(cur.crystals[i]);
 
 				new_unit_cells = realloc(patn->unit_cells,
 				                 (patn->n_unit_cells+1)*
