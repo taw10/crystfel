@@ -2668,6 +2668,30 @@ static gint displaywindow_keypress(GtkWidget *widget, GdkEventKey *event,
 }
 
 
+static void impose_twod_geometry(DisplayWindow *dw, const char *twod_element)
+{
+
+	int i;
+
+	for ( i=0; i<dw->image->det->n_panels; i++ ) {
+
+		struct panel *p;
+
+		p = &dw->image->det->panels[i];
+
+		if ( p->data != NULL ) free(p->data);
+		p->data = strdup(twod_element);
+
+		if ( p->dim_structure ) free_dim_structure(p->dim_structure);
+		p->dim_structure = default_dim_structure();
+	}
+
+	dw->image->det->path_dim = 0;
+	dw->image->det->dim_dim = 0;
+
+}
+
+
 DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
                                   const char *peaks,
                                   double boost, int binning,
@@ -2740,6 +2764,11 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 		free(dw->geom_filename);
 		free(dw);
 		return NULL;
+	}
+
+	if ( dw->image->det != NULL && element != NULL ) {
+		impose_twod_geometry(dw, element);
+		dw->multi_event = 0;
 	}
 
 	if ( dw->image->det != NULL && ( dw->image->det->path_dim != 0 ||

@@ -43,7 +43,11 @@ Show the image after binning down by a factor of \fIb\fR.
 .IP "\fB-e\fR \fIpath\fR"
 .IP \fB--image=\fR\fIpath\fR
 .PD
-Get the image data to display from \fIpath\fR inside the HDF5 file.  For example: \fI/data/rawdata\fR.  If this is not specified, the default behaviour is to display the first two-dimensional dataset with both dimensions greater than 64.
+Get the image data to display from \fIpath\fR inside the HDF5 file.  Example: \fI/data/rawdata\fR.
+.IP
+If no geometry file is provided (see \fB-g\fR) and this option is not used, hdfsee will display the first two-dimensional dataset it finds in the file with both dimensions greater than 64.  If a geometry file is provided, the data layout description from the file determines which image is displayed (see \fB man crystfel_geometry\fR).
+.IP
+If \fB-e\fR is used in combination with \fB-g\fR, hdfsee will attempt to show the specified dataset with the geometry applied.  The data layout description from the geometry file will be ignored, the data block to be used as data source for all panels will be set to \fIpath\fR and it will be assumed to be 2-dimensional.
 
 .PD 0
 .IP "\fB-g\fR \fIfilename\fR"
