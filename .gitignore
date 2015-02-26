@@ -56,3 +56,5 @@ lib/dummy.lo
 lib/libgnu.la
 libcrystfel/crystfel.pc
 version.h
+tests/*.log
+tests/*.trs
