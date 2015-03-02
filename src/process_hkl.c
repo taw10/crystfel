@@ -3,12 +3,12 @@
  *
  * Assemble and process FEL Bragg intensities
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2014 Thomas White <taw@physics.org>
+ *   2009-2015 Thomas White <taw@physics.org>
  *   2011      Andrew Martin <andrew.martin@desy.de>
  *   2012      Lorenzo Galli <lorenzo.galli@desy.de>
  *   2014      Chunhong Yoon <chun.hong.yoon@desy.de>
@@ -561,7 +561,8 @@ int main(int argc, char *argv[])
 			errno = 0;
 			start_after = strtod(optarg, &rval);
 			if ( *rval != '\0' ) {
-				ERROR("Invalid value for --start-after.\n");
+				ERROR("Invalid value for --start-after (%s)\n",
+				      optarg);
 				return 1;
 			}
 			break;
@@ -570,7 +571,8 @@ int main(int argc, char *argv[])
 			errno = 0;
 			stop_after = strtod(optarg, &rval);
 			if ( *rval != '\0' ) {
-				ERROR("Invalid value for --stop-after.\n");
+				ERROR("Invalid value for --stop-after (%s)\n",
+				      optarg);
 				return 1;
 			}
 			break;
