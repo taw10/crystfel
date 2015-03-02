@@ -1499,7 +1499,7 @@ void write_geometry_file(Stream *st, const char *geom_filename) {
 
 	do {
 		rval = fgets(line, 1023, geom_fh);
-		fputs(line, st->fh);
+		if ( rval != NULL ) fputs(line, st->fh);
 	} while ( rval != NULL );
 
 	fclose(geom_fh);
