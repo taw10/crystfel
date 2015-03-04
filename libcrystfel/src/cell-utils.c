@@ -1162,7 +1162,12 @@ UnitCell *load_cell_from_pdb(const char *filename)
 
 	fclose(fh);
 
-	validate_cell(cell);
+	if ( cell != NULL ) {
+		validate_cell(cell);
+	} else {
+		ERROR("Failed to load cell from %s\n", filename);
+	}
+
 
 	return cell;
 }
