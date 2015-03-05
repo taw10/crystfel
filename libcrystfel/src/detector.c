@@ -1787,6 +1787,10 @@ struct detector *copy_geom(const struct detector *in)
 		if ( &in->panels[i] == in->furthest_out_panel ) {
 			out->furthest_out_panel = &out->panels[i];
 		}
+		if ( &in->panels[i] == in->furthest_in_panel ) {
+			out->furthest_in_panel = &out->panels[i];
+		}
+
 
 	}
 
