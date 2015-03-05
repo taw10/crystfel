@@ -3,11 +3,11 @@
  *
  * A class representing a single crystal
  *
- * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2013-2015 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2013 Thomas White <taw@physics.org>
+ *   2013-2015 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -56,6 +56,7 @@ struct _crystal
 	UnitCell                *cell;
 	double                  m;     /* Mosaicity in radians */
 	double                  osf;
+	double                  Bfac;
 	double                  profile_radius;
 	int                     pr_dud;
 	double                  resolution_limit;
@@ -188,6 +189,12 @@ double crystal_get_osf(Crystal *cryst)
 }
 
 
+double crystal_get_Bfac(Crystal *cryst)
+{
+	return cryst->Bfac;
+}
+
+
 int crystal_get_user_flag(Crystal *cryst)
 {
 	return cryst->user_flag;
@@ -248,6 +255,12 @@ void crystal_set_image(Crystal *cryst, struct image *image)
 void crystal_set_osf(Crystal *cryst, double osf)
 {
 	cryst->osf = osf;
+}
+
+
+void crystal_set_Bfac(Crystal *cryst, double Bfac)
+{
+	cryst->Bfac = Bfac;
 }
 
 

@@ -3,11 +3,11 @@
  *
  * A class representing a single crystal
  *
- * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2013-2015 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2013 Thomas White <taw@physics.org>
+ *   2013-2015 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -62,6 +62,7 @@ extern long long int crystal_get_num_saturated_reflections(Crystal *cryst);
 extern long long int crystal_get_num_implausible_reflections(Crystal *cryst);
 extern int crystal_get_user_flag(Crystal *cryst);
 extern double crystal_get_osf(Crystal *cryst);
+extern double crystal_get_Bfac(Crystal *cryst);
 extern struct image *crystal_get_image(Crystal *cryst);
 extern double crystal_get_mosaicity(Crystal *cryst);
 
@@ -75,6 +76,7 @@ extern void crystal_set_num_implausible_reflections(Crystal *cryst,
                                                     long long int n);
 extern void crystal_set_user_flag(Crystal *cryst, int flag);
 extern void crystal_set_osf(Crystal *cryst, double osf);
+extern void crystal_set_Bfac(Crystal *cryst, double B);
 extern void crystal_set_image(Crystal *cryst, struct image *image);
 extern void crystal_set_mosaicity(Crystal *cryst, double m);
 
