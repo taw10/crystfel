@@ -1784,6 +1784,10 @@ struct detector *copy_geom(const struct detector *in)
 			}
 		}
 
+		if ( &in->panels[i] == in->furthest_out_panel ) {
+			out->furthest_out_panel = &out->panels[i];
+		}
+
 	}
 
 	for ( i=0; i<in->n_rigid_groups; i++ ) {
