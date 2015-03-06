@@ -38,5 +38,6 @@
 #include "crystal.h"
 
 extern void early_rejection(Crystal **crystals, int n);
+extern void check_rejection(Crystal **crystals, int n);
 
 #endif	/* REJECTION_H */

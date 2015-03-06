@@ -584,6 +584,7 @@ int main(int argc, char *argv[])
 	if ( noscale ) STATUS("Scale factors fixed at 1.\n");
 	full = scale_intensities(crystals, n_crystals,
 	                         nthreads, noscale, pmodel, min_measurements);
+	check_rejection(crystals, n_crystals);
 
 	srdata.crystals = crystals;
 	srdata.n = n_crystals;
@@ -609,11 +610,13 @@ int main(int argc, char *argv[])
 		           &srdata);
 
 		show_duds(crystals, n_crystals);
+		check_rejection(crystals, n_crystals);
 
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
 		full = scale_intensities(crystals, n_crystals, nthreads,
 		                         noscale, pmodel, min_measurements);
+		check_rejection(crystals, n_crystals);
 
 		srdata.full = full;
 

@@ -36,6 +36,7 @@
 
 #include "crystal.h"
 #include "reflist.h"
+#include "rejection.h"
 
 
 static double mean_intensity(RefList *list)
@@ -62,6 +63,7 @@ void early_rejection(Crystal **crystals, int n)
 {
 	int i;
 	double m = 0.0;
+	double mean_m;
 	FILE *fh = fopen("reject.dat", "w");
 	int n_flag = 0;
 
@@ -71,7 +73,13 @@ void early_rejection(Crystal **crystals, int n)
 		u = mean_intensity(list);
 		m += u;
 		fprintf(fh, "%i %f\n", i, u);
-		if ( u < 100.0 ) {
+	}
+	mean_m = m/n;
+	for ( i=0; i<n; i++ ) {
+		double u;
+		RefList *list = crystal_get_reflections(crystals[i]);
+		u = mean_intensity(list);
+		if ( u/mean_m < 0.2 ) {
 			crystal_set_user_flag(crystals[i], 5);
 			n_flag++;
 		}
@@ -80,4 +88,25 @@ void early_rejection(Crystal **crystals, int n)
 
 	STATUS("Mean intensity/peak = %f ADU\n", m/n);
 	STATUS("%i crystals flagged\n", n_flag);
+	check_rejection(crystals, n);
+}
+
+
+void check_rejection(Crystal **crystals, int n)
+{
+	int i;
+	int n_acc = 0;
+
+	for ( i=0; i<n; i++ ) {
+		if ( crystal_get_user_flag(crystals[i]) == 0 ) {
+			n_acc++;
+			if ( n_acc >= 2 ) break;
+		}
+	}
+
+	if ( n_acc < 2 ) {
+		ERROR("Not enough crystals left to proceed (%i).  Sorry.\n",
+		      n_acc);
+		exit(1);
+	}
 }
