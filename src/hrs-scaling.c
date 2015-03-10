@@ -279,9 +279,8 @@ static void run_merge_job(void *vwargs, int cookie)
 	{
 		Reflection *f;
 		signed int h, k, l;
-		double num, den;
-		int red;
-		double Ihl, corr, res;
+		double mean, sumweight, M2, temp, delta, R;
+		double corr, res, w, esd;
 
 		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
 
@@ -302,18 +301,15 @@ static void run_merge_job(void *vwargs, int cookie)
 				f = add_refl(full, h, k, l);
 				lock_reflection(f);
 				pthread_rwlock_unlock(wargs->full_lock);
-				num = 0.0;
-				den = 0.0;
-				red = 0;
+				set_intensity(f, 0.0);
+				set_temp1(f, 0.0);
+				set_temp2(f, 0.0);
 
 			} else {
 
 				/* Someone else created it */
 				lock_reflection(f);
 				pthread_rwlock_unlock(wargs->full_lock);
-				num = get_temp1(f);
-				den = get_temp2(f);
-				red = get_redundancy(f);
 
 			}
 
@@ -321,24 +317,30 @@ static void run_merge_job(void *vwargs, int cookie)
 
 			lock_reflection(f);
 			pthread_rwlock_unlock(wargs->full_lock);
-			num = get_temp1(f);
-			den = get_temp2(f);
-			red = get_redundancy(f);
 
 		}
 
+		mean = get_intensity(f);
+		sumweight = get_temp1(f);
+		M2 = get_temp2(f);
+
 		res = resolution(crystal_get_cell(cr), h, k, l);
-		corr = get_partiality(refl) * get_lorentz(refl);
 
-		Ihl = get_intensity(refl) / corr;
+		/* Total (multiplicative) correction factor */
+		corr = G * exp(2.0*B*res) * get_lorentz(refl)
+		        / get_partiality(refl);
 
-		num += Ihl * G * exp(2.0*B*res);
-		den += 1.0;
-		red++;
+		esd = get_esd_intensity(refl) * corr;
+		w = 1.0 / (esd*esd);
 
-		set_temp1(f, num);
-		set_temp2(f, den);
-		set_redundancy(f, red);
+		/* Running mean and variance calculation */
+		temp = w + sumweight;
+		delta = get_intensity(refl)*corr - mean;
+		R = delta * w / temp;
+		set_intensity(f, mean + R);
+		set_temp2(f, M2 + sumweight * delta * R);
+		set_temp1(f, temp);
+		set_redundancy(f, get_redundancy(f)+1);
 		unlock_reflection(f);
 	}
 }
@@ -375,138 +377,15 @@ static RefList *lsq_intensities(Crystal **crystals, int n, int n_threads,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		double Ih;
-		Ih = get_temp1(refl) / get_temp2(refl);
-		set_intensity(refl, Ih);
+		double var;
+		int red;
+
+		red = get_redundancy(refl);
+		var = get_temp2(refl) / get_temp1(refl);
+		set_esd_intensity(refl, sqrt(var)/sqrt(red));
 	}
 
 	return full;
-}
-
-
-
-struct esd_queue_args
-{
-	RefList *full;
-	Crystal **crystals;
-	int n_started;
-	PartialityModel pmodel;
-};
-
-
-struct esd_worker_args
-{
-	Crystal *crystal;
-	RefList *full;
-	PartialityModel pmodel;
-};
-
-
-static void *create_esd_job(void *vqargs)
-{
-	struct esd_worker_args *wargs;
-	struct esd_queue_args *qargs = vqargs;
-
-	wargs = malloc(sizeof(struct esd_worker_args));
-	wargs->full = qargs->full;
-	wargs->pmodel = qargs->pmodel;
-
-	wargs->crystal = qargs->crystals[qargs->n_started++];
-
-	return wargs;
-}
-
-
-static void run_esd_job(void *vwargs, int cookie)
-{
-	struct esd_worker_args *wargs = vwargs;
-	Crystal *cr = wargs->crystal;
-	RefList *full = wargs->full;
-	Reflection *refl;
-	RefListIterator *iter;
-	double G;
-
-	/* If this crystal's scaling was dodgy, it doesn't contribute to the
-	 * merged intensities */
-	if ( crystal_get_user_flag(cr) != 0 ) return;
-
-	G = crystal_get_osf(cr);
-
-	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		Reflection *f;
-		signed int h, k, l;
-		double num;
-		double Ihl, Ih, corr;
-
-		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
-
-		get_indices(refl, &h, &k, &l);
-		f = find_refl(full, h, k, l);
-		assert(f != NULL);
-
-		lock_reflection(f);
-
-		num = get_temp1(f);
-
-		corr = get_partiality(refl) * get_lorentz(refl);
-
-		Ih = get_intensity(f);
-		Ihl = get_intensity(refl) / (G*corr);
-
-		num += pow(Ihl - Ih, 2.0);
-
-		set_temp1(f, num);
-		unlock_reflection(f);
-	}
-}
-
-
-static void finalise_esd_job(void *vqargs, void *vwargs)
-{
-	free(vwargs);
-}
-
-
-static void calculate_esds(Crystal **crystals, int n, RefList *full,
-                           int n_threads, int min_red, PartialityModel pmodel)
-{
-	struct esd_queue_args qargs;
-	Reflection *refl;
-	RefListIterator *iter;
-
-	qargs.full = full;
-	qargs.n_started = 0;
-	qargs.crystals = crystals;
-	qargs.pmodel = pmodel;
-
-	for ( refl = first_refl(full, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		set_temp1(refl, 0.0);
-		set_temp2(refl, 0.0);
-	}
-
-	run_threads(n_threads, run_esd_job, create_esd_job,
-	            finalise_esd_job, &qargs, n, 0, 0, 0);
-
-	for ( refl = first_refl(full, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		double esd;
-		int red = get_redundancy(refl);
-		esd = sqrt(get_temp1(refl));
-		esd /= (double)red;
-		set_esd_intensity(refl, esd);
-
-		if ( red < min_red ) {
-			set_redundancy(refl, 0);
-		}
-	}
 }
 
 
@@ -586,8 +465,6 @@ RefList *scale_intensities(Crystal **crystals, int n,
 
 	if ( noscale ) {
 		full = lsq_intensities(crystals, n, n_threads, pmodel);
-		calculate_esds(crystals, n, full, n_threads, min_redundancy,
-		               pmodel);
 		return full;
 	}
 
@@ -641,8 +518,6 @@ RefList *scale_intensities(Crystal **crystals, int n,
 	if ( i == MAX_CYCLES ) {
 		ERROR("WARNING: Scaling did not converge.\n");
 	}
-
-	calculate_esds(crystals, n, full, n_threads, min_redundancy, pmodel);
 
 	free(old_osfs);
 	return full;
