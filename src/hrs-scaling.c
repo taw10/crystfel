@@ -109,8 +109,6 @@ static void run_scale_job(void *vwargs, int cookie)
 	double c0, c1, cov00, cov01, cov11, chisq;
 	double G, B;
 	int r;
-	int debug = 0;
-	FILE *fh;
 
 	/* If this crystal's scaling was dodgy, it doesn't contribute to the
 	 * merged intensities */
@@ -122,13 +120,6 @@ static void run_scale_job(void *vwargs, int cookie)
 	if ( (x==NULL) || (y==NULL) || (w==NULL) ) {
 		ERROR("Failed to allocate memory for scaling.\n");
 		return;
-	}
-
-	if ( wargs->crystal_number == 0 ) {
-		char fn[256];
-		snprintf(fn, 255, "scale-debug.%i", wargs->crystal_number);
-		debug = 1;
-		fh = fopen(fn, "w");
 	}
 
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
@@ -177,10 +168,6 @@ static void run_scale_job(void *vwargs, int cookie)
 		x[n] = res*res;
 		y[n] = log(Ihl/Ih);
 		w[n] = 1.0;//log(get_esd_intensity(refl)*corr);
-		if ( debug ) {
-			fprintf(fh, "%i %10.2e %10.2f %10.2f %.2f %.2f %.2f\n",
-			        n, x[n], y[n], w[n], Ihl, Ih, res/1e9);
-		}
 		n++;
 
 	}
@@ -195,12 +182,6 @@ static void run_scale_job(void *vwargs, int cookie)
 
 	G = 1.0/exp(c0);
 	B = -c1/2.0;
-	if ( debug ) {
-		printf("intercept = %e, gradient = %e\n", c0, c1);
-		printf("Scale factor = %f\n", G);
-		printf("Relative B = %.2f A^2\n", B * 1e20);
-		fclose(fh);
-	}
 
 	free(x);
 	free(y);
@@ -284,8 +265,6 @@ static void run_merge_job(void *vwargs, int cookie)
 	Reflection *refl;
 	RefListIterator *iter;
 	double G, B;
-	FILE *fh;
-	int debug = 0;
 
 	/* If this crystal's scaling was dodgy, it doesn't contribute to the
 	 * merged intensities */
@@ -293,13 +272,6 @@ static void run_merge_job(void *vwargs, int cookie)
 
 	G = crystal_get_osf(cr);
 	B = crystal_get_Bfac(cr);
-
-	if ( wargs->crystal_number == 0 ) {
-		char fn[256];
-		snprintf(fn, 255, "merge-debug.%i", wargs->crystal_number);
-		debug = 1;
-		fh = fopen(fn, "w");
-	}
 
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
@@ -364,18 +336,11 @@ static void run_merge_job(void *vwargs, int cookie)
 		den += 1.0;
 		red++;
 
-		if ( debug ) {
-			fprintf(fh, "%.2f %.2f %f %e\n", res/1e9,
-			                           Ihl*G*exp(2.0*B*res),
-						   G, B);
-		}
-
 		set_temp1(f, num);
 		set_temp2(f, den);
 		set_redundancy(f, red);
 		unlock_reflection(f);
 	}
-	if ( debug ) fclose(fh);
 }
 
 
@@ -658,7 +623,6 @@ RefList *scale_intensities(Crystal **crystals, int n,
 			}
 		}
 		norm_sf = total_sf / n_sf;
-		STATUS("norm = %f\n", norm_sf);
 		for ( j=0; j<n; j++ ) {
 			crystal_set_osf(crystals[j],
 			                crystal_get_osf(crystals[j])/norm_sf);
