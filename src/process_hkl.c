@@ -379,7 +379,6 @@ static void display_progress(int n_images, int n_crystals, int n_crystals_used)
 }
 
 
-
 static int merge_all(Stream *st, RefList *model, RefList *reference,
                      const SymOpList *sym,
                      double **hist_vals, signed int hist_h,
