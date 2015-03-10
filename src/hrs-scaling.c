@@ -352,8 +352,8 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 }
 
 
-static RefList *lsq_intensities(Crystal **crystals, int n, int n_threads,
-                                PartialityModel pmodel)
+RefList *lsq_intensities(Crystal **crystals, int n, int n_threads,
+                         PartialityModel pmodel)
 {
 	RefList *full;
 	struct merge_queue_args qargs;
@@ -448,9 +448,8 @@ static int test_convergence(double *old_osfs, int n, Crystal **crystals)
 
 
 /* Scale the stack of images */
-RefList *scale_intensities(Crystal **crystals, int n,
-                           int n_threads, int noscale, PartialityModel pmodel,
-                           int min_redundancy)
+RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
+                           PartialityModel pmodel, int min_redundancy)
 {
 	int i;
 	RefList *full = NULL;
@@ -461,11 +460,6 @@ RefList *scale_intensities(Crystal **crystals, int n,
 		reset_scaling_flag(crystals[i]);
 		crystal_set_osf(crystals[i], 1.0);
 		crystal_set_Bfac(crystals[i], 0.0);
-	}
-
-	if ( noscale ) {
-		full = lsq_intensities(crystals, n, n_threads, pmodel);
-		return full;
 	}
 
 	/* Create an initial list to refine against */
