@@ -576,8 +576,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* Make a first pass at cutting out crap */
-	STATUS("Checking patterns.\n");
-	early_rejection(crystals, n_crystals);
+//	STATUS("Checking patterns.\n");
+//	early_rejection(crystals, n_crystals);
 
 	/* Make initial estimates */
 	STATUS("Performing initial scaling.\n");
