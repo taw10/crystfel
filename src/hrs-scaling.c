@@ -56,7 +56,7 @@
 #define MIN_PART_MERGE (0.05)
 
 /* Maximum number of iterations of scaling per macrocycle. */
-#define MAX_CYCLES (10)
+#define MAX_CYCLES (100)
 
 
 struct scale_queue_args
