@@ -145,9 +145,10 @@ static void run_scale_job(void *vwargs, int cookie)
 			continue;
 		}
 
+		corr = get_lorentz(refl) / get_partiality(refl);
+
 		Ih = get_intensity(r);
-		corr = get_partiality(refl) * get_lorentz(refl);
-		Ihl = get_intensity(refl) / corr;
+		Ihl = get_intensity(refl) * corr;
 
 		if ( Ihl <= 0.0 ) continue;
 		if ( Ih <= 0.0 ) continue;
