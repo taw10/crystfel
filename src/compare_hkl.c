@@ -41,6 +41,7 @@
 #include <assert.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_statistics.h>
+#include <gsl/gsl_fit.h>
 
 #include "version.h"
 #include "utils.h"
@@ -661,6 +662,110 @@ static int get_bin(struct shells *s, Reflection *refl, UnitCell *cell)
 }
 
 
+static int wilson_scale(RefList *list1, RefList *list2, UnitCell *cell)
+{
+	Reflection *refl1;
+	Reflection *refl2;
+	RefListIterator *iter;
+	int max_n = 256;
+	int n = 0;
+	double *x;
+	double *y;
+	int r;
+	double G, B;
+	double c0, c1, cov00, cov01, cov11, chisq;
+
+	x = malloc(max_n*sizeof(double));
+	y = malloc(max_n*sizeof(double));
+	if ( (x==NULL) || (y==NULL) ) {
+		ERROR("Failed to allocate memory for scaling.\n");
+		return 1;
+	}
+
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) )
+	{
+		signed int h, k, l;
+		double Ih1, Ih2;
+		double res;
+
+		get_indices(refl1, &h, &k, &l);
+		res = resolution(cell, h, k, l);
+
+		refl2 = find_refl(list2, h, k, l);
+		assert(refl2 != NULL);
+
+		Ih1 = get_intensity(refl1);
+		Ih2 = get_intensity(refl2);
+
+		if ( (Ih1 <= 0.0) || (Ih2 <= 0.0) ) continue;
+		if ( isnan(Ih1) || isinf(Ih1) ) continue;
+		if ( isnan(Ih2) || isinf(Ih2) ) continue;
+
+		if ( n == max_n ) {
+			max_n *= 2;
+			x = realloc(x, max_n*sizeof(double));
+			y = realloc(y, max_n*sizeof(double));
+			if ( (x==NULL) || (y==NULL) ) {
+				ERROR("Failed to allocate memory for scaling.\n");
+				return 1;
+			}
+		}
+
+		x[n] = res*res;
+		y[n] = log(Ih1/Ih2);
+		n++;
+
+	}
+
+	if ( n < 2 ) {
+		ERROR("Not enough reflections for scaling\n");
+		return 1;
+	}
+
+	r = gsl_fit_linear(x, 1, y, 1, n, &c0, &c1,
+	                     &cov00, &cov01, &cov11, &chisq);
+
+	if ( r ) {
+		ERROR("Scaling failed.\n");
+		return 1;
+	}
+
+	G = exp(c0);
+	B = c1/2.0;
+
+	STATUS("Relative scale factor = %f, relative B factor = %f A^2\n",
+	       G, B*1e20);
+	STATUS("A scale factor greater than 1 means that the second reflection "
+	       "list is weaker than the first.\n");
+	STATUS("A positive relative B factor means that the second reflection "
+	       "list falls off with resolution more quickly than the first.\n");
+
+	free(x);
+	free(y);
+
+	/* Apply the scaling factor */
+	for ( refl2 = first_refl(list2, &iter);
+	      refl2 != NULL;
+	      refl2 = next_refl(refl2, iter) )
+	{
+		signed int h, k, l;
+		double res;
+		double corr;
+
+		get_indices(refl2, &h, &k, &l);
+		res = resolution(cell, h, k, l);
+
+		corr = G * exp(2.0*B*res*res);
+		set_intensity(refl2, get_intensity(refl2)*corr);
+		set_esd_intensity(refl2, get_esd_intensity(refl2)*corr);
+
+	}
+	return 0;
+}
+
+
 static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
                    double rmin, double rmax, enum fom fom,
                    int config_unity, int nshells, const char *filename,
@@ -671,7 +776,6 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 	Reflection *refl1;
 	RefListIterator *iter;
 	FILE *fh;
-	double scale;
 	struct fom_context *fctx;
 	struct shells *shells;
 	const char *t1, *t2;
@@ -684,10 +788,9 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		return;
 	}
 
-	if ( config_unity ) {
-		scale = 1.0;
-	} else {
-		scale = stat_scale_intensity(list1, list2);
+	if ( !config_unity && wilson_scale(list1, list2, cell) ) {
+		ERROR("Error with scaling.\n");
+		return;
 	}
 
 	/* Calculate the bins */
@@ -726,9 +829,9 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		}
 
 		i1 = get_intensity(refl1);
-		i2 = scale * get_intensity(refl2);
+		i2 = get_intensity(refl2);
 		sig1 = get_esd_intensity(refl1);
-		sig2 = scale * get_esd_intensity(refl2);
+		sig2 = get_esd_intensity(refl2);
 
 		if ( (fom == FOM_CCANO) || (fom == FOM_CRDANO)
 		  || (fom == FOM_RANO) || (fom == FOM_RANORSPLIT) )
@@ -754,7 +857,7 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 			assert(refl2_bij != NULL);
 
 			i1bij = get_intensity(refl1_bij);
-			i2bij = scale * get_intensity(refl2_bij);
+			i2bij = get_intensity(refl2_bij);
 
 		} else {
 
