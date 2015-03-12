@@ -168,7 +168,7 @@ static void run_scale_job(void *vwargs, int cookie)
 
 		x[n] = res*res;
 		y[n] = log(Ihl/Ih);
-		w[n] = 1.0;//log(get_esd_intensity(refl)*corr);
+		w[n] = log(get_esd_intensity(refl)*corr);
 		n++;
 
 	}
