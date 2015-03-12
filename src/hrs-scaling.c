@@ -151,7 +151,7 @@ static void run_scale_job(void *vwargs, int cookie)
 
 		if ( Ihl <= 0.0 ) continue;
 		if ( Ih <= 0.0 ) continue;
-		if ( isnan(Ih) || isinf(Ihl) ) continue;
+		if ( isnan(Ihl) || isinf(Ihl) ) continue;
 		if ( isnan(Ih) || isinf(Ih) ) continue;
 
 		if ( n == max_n ) {
@@ -399,8 +399,8 @@ static void reject_outliers(double *old_osfs, int n, Crystal **crystals)
 		double Bfac = crystal_get_Bfac(crystals[i]);
 		int bad = 0;
 
-		if ( isnan(osf) || (osf < 0.0) || (osf > 10.0) ) bad = 1;
-		if ( isnan(Bfac) || (Bfac<-40e-20) || (Bfac>40e-20) ) bad = 1;
+		if ( isnan(osf) || (osf < 0.0) ) bad = 1;
+		if ( isnan(Bfac) || (Bfac<-100e-20) || (Bfac>100e-20) ) bad = 1;
 
 		if ( bad ) {
 			crystal_set_user_flag(crystals[i], 1);
