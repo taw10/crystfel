@@ -501,8 +501,9 @@ RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
 	do {
 
 		double total_sf = 0.0;
+		double total_B = 0.0;
 		int n_sf = 0;
-		double norm_sf;
+		double norm_sf, norm_B;
 		int j;
 
 		for ( j=0; j<n; j++ ) {
@@ -517,16 +518,19 @@ RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
 
 		/* Normalise the scale factors */
 		for ( j=0; j<n; j++ ) {
-			double osf =  crystal_get_osf(crystals[j]);
 			if ( crystal_get_user_flag(crystals[j]) == 0 ) {
-				total_sf += osf;
+				total_sf += crystal_get_osf(crystals[j]);
+				total_B += crystal_get_Bfac(crystals[j]);
 				n_sf++;
 			}
 		}
 		norm_sf = total_sf / n_sf;
+		norm_B = total_B / n_sf;
 		for ( j=0; j<n; j++ ) {
 			crystal_set_osf(crystals[j],
 			                crystal_get_osf(crystals[j])/norm_sf);
+			crystal_set_Bfac(crystals[j],
+			                 crystal_get_Bfac(crystals[j])-norm_B);
 		}
 
 		done = test_convergence(old_osfs, old_Bs, old_flags,
