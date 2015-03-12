@@ -425,25 +425,33 @@ static void reset_scaling_flag(Crystal *crystal)
 }
 
 
-static int test_convergence(double *old_osfs, int n, Crystal **crystals)
+static int test_convergence(double *old_osfs, double *old_Bs, int n,
+                            Crystal **crystals)
 {
 	int i;
-	double total_change = 0.0;
-	double mean_change;
+	double total_osf_change = 0.0;
+	double total_B_change = 0.0;
 	int n_change = 0;
+	int n_reject = 0;
 
 	for ( i=0; i<n; i++ ) {
 		if ( crystal_get_user_flag(crystals[i]) == 0 ) {
 			double new_osf = crystal_get_osf(crystals[i]);
-			total_change += fabs(new_osf - old_osfs[i]);
+			double new_B = crystal_get_Bfac(crystals[i]);
+			total_osf_change += fabs(new_osf - old_osfs[i]);
+			total_B_change += fabs(new_B - old_Bs[i]);
 			n_change++;
+		} else {
+			n_reject++;
 		}
 	}
-	mean_change = total_change / n_change;
 
-	STATUS("Mean OSF change = %f\n", mean_change);
+	STATUS("Mean OSF change: %10.3f  Mean B change: %10.3f A^2  "
+	       "Rejected: %i\n",
+	       total_osf_change/n_change, 1e20*total_B_change/n_change,
+	       n_reject);
 
-	return mean_change < 0.01;
+	return (total_osf_change/n_change) < 0.01;
 }
 
 
@@ -454,6 +462,7 @@ RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
 	int i;
 	RefList *full = NULL;
 	double *old_osfs;
+	double *old_Bs;
 	int done;
 
 	for ( i=0; i<n; i++ ) {
@@ -466,7 +475,8 @@ RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
 	full = lsq_intensities(crystals, n, n_threads, pmodel);
 
 	old_osfs = malloc(n*sizeof(double));
-	if ( old_osfs == NULL ) return NULL;
+	old_Bs = malloc(n*sizeof(double));
+	if ( (old_osfs == NULL) || (old_Bs == NULL) ) return NULL;
 
 	/* Iterate */
 	i = 0;
@@ -479,6 +489,7 @@ RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
 
 		for ( j=0; j<n; j++ ) {
 			old_osfs[j] = crystal_get_osf(crystals[j]);
+			old_Bs[j] = crystal_get_Bfac(crystals[j]);
 			reset_scaling_flag(crystals[j]);
 		}
 
@@ -499,7 +510,7 @@ RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
 			                crystal_get_osf(crystals[j])/norm_sf);
 		}
 
-		done = test_convergence(old_osfs, n, crystals);
+		done = test_convergence(old_osfs, old_Bs, n, crystals);
 
 		/* Generate list for next iteration */
 		reflist_free(full);
@@ -514,5 +525,6 @@ RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
 	}
 
 	free(old_osfs);
+	free(old_Bs);
 	return full;
 }
