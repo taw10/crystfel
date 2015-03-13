@@ -223,7 +223,7 @@ gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt, int verbose)
 	/* "SAS" is now "U" */
 
 	/* Filter the eigenvalues */
-	*n_filt = check_eigen(s_val, verbose);
+	if ( n_filt != NULL ) *n_filt = check_eigen(s_val, verbose);
 
 	gsl_matrix_free(SAS_copy);
 
