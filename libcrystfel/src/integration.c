@@ -54,94 +54,6 @@
 #include "integration.h"
 
 
-static void check_eigen(gsl_vector *e_val)
-{
-	int i;
-	double vmax, vmin;
-	const int n = e_val->size;
-	const double max_condition = 1e6;
-	const int verbose = 0;
-
-	if ( verbose ) STATUS("Eigenvalues:\n");
-	vmin = +INFINITY;
-	vmax = 0.0;
-	for ( i=0; i<n; i++ ) {
-		double val = gsl_vector_get(e_val, i);
-		if ( verbose ) STATUS("%i: %e\n", i, val);
-		if ( val > vmax ) vmax = val;
-		if ( val < vmin ) vmin = val;
-	}
-
-	for ( i=0; i<n; i++ ) {
-		double val = gsl_vector_get(e_val, i);
-		if ( val < vmax/max_condition ) {
-			gsl_vector_set(e_val, i, 0.0);
-		}
-	}
-
-	vmin = +INFINITY;
-	vmax = 0.0;
-	for ( i=0; i<n; i++ ) {
-		double val = gsl_vector_get(e_val, i);
-		if ( val == 0.0 ) continue;
-		if ( val > vmax ) vmax = val;
-		if ( val < vmin ) vmin = val;
-	}
-	if ( verbose ) {
-		STATUS("Condition number: %e / %e = %5.2f\n",
-		       vmax, vmin, vmax/vmin);
-	}
-}
-
-
-static gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *Mp)
-{
-	gsl_matrix *s_vec;
-	gsl_vector *s_val;
-	int err, n;
-	gsl_vector *shifts;
-	gsl_matrix *M;
-
-	n = v->size;
-	if ( v->size != Mp->size1 ) return NULL;
-	if ( v->size != Mp->size2 ) return NULL;
-
-	M = gsl_matrix_alloc(n, n);
-	if ( M == NULL ) return NULL;
-	gsl_matrix_memcpy(M, Mp);
-
-	s_val = gsl_vector_calloc(n);
-	s_vec = gsl_matrix_calloc(n, n);
-
-	err = gsl_linalg_SV_decomp_jacobi(M, s_vec, s_val);
-	if ( err ) {
-		ERROR("SVD failed: %s\n", gsl_strerror(err));
-		gsl_matrix_free(s_vec);
-		gsl_vector_free(s_val);
-		return NULL;
-	}
-	/* "M" is now "U" */
-
-	check_eigen(s_val);
-
-	shifts = gsl_vector_calloc(n);
-	err = gsl_linalg_SV_solve(M, s_vec, s_val, v, shifts);
-	if ( err ) {
-		ERROR("Matrix solution failed: %s\n", gsl_strerror(err));
-		gsl_matrix_free(s_vec);
-		gsl_vector_free(s_val);
-		gsl_vector_free(shifts);
-		return NULL;
-	}
-
-	gsl_matrix_free(s_vec);
-	gsl_vector_free(s_val);
-	gsl_matrix_free(M);
-
-	return shifts;
-}
-
-
 enum boxmask_val
 {
 	BM_IG,  /* "Soft" ignore */
@@ -445,8 +357,8 @@ static void fit_bg(struct intcontext *ic, struct peak_box *bx)
 	}
 	}
 
-	/* SVD is massive overkill here */
-	ans = solve_svd(v, bx->bgm);
+	/* FIXME: SVD is massive overkill here */
+	ans = solve_svd(v, bx->bgm, NULL, 0);
 	gsl_vector_free(v);
 
 	bx->a = gsl_vector_get(ans, 0);
