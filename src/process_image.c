@@ -50,6 +50,7 @@
 #include "reflist-utils.h"
 #include "process_image.h"
 #include "integration.h"
+#include "predict-refine.h"
 
 
 static int cmpd2(const void *av, const void *bv)
@@ -310,36 +311,59 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		}
 	}
 
+	/* Preliminary integration, needed for refinement */
+	integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE,
+	                iargs->push_res,
+	                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
+	                INTDIAG_NONE, 0, 0, 0, results_pipe);
+
+	/* FIXME: Temporary to monitor R during refinement */
+	for ( i=0; i<image.n_crystals; i++ ) {
+		refine_radius(image.crystals[i], image.features);
+	}
+
 	/* Integrate all the crystals at once - need all the crystals so that
 	 * overlaps can be detected. */
 	if ( iargs->fix_profile_r < 0.0 ) {
 
-		integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE,
-		                iargs->push_res,
-		                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
-		                INTDIAG_NONE, 0, 0, 0, results_pipe);
-
 		for ( i=0; i<image.n_crystals; i++ ) {
+
+			if ( refine_prediction(&image, image.crystals[i]) ) {
+				ERROR("Prediction refinement failed.\n");
+				continue;
+			}
+
+			STATUS("R before: %e",
+			       crystal_get_profile_radius(image.crystals[i]));
+
+			/* Reset the profile radius and estimate again with
+			 * better geometry */
+			crystal_set_profile_radius(image.crystals[i], 0.02e9);
 			refine_radius(image.crystals[i], image.features);
-			reflist_free(crystal_get_reflections(image.crystals[i]));
+
+			STATUS("         after: %e\n",
+			       crystal_get_profile_radius(image.crystals[i]));
+
 		}
 
-		integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE,
-		                iargs->push_res,
-		                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
-		                iargs->int_diag, iargs->int_diag_h,
-		                iargs->int_diag_k, iargs->int_diag_l,
-		                results_pipe);
 	} else {
 
-		integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE,
-		                iargs->push_res,
-		                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
-		                iargs->int_diag, iargs->int_diag_h,
-		                iargs->int_diag_k, iargs->int_diag_l,
-		                results_pipe);
+		for ( i=0; i<image.n_crystals; i++ ) {
+			refine_prediction(&image, image.crystals[i]);
+		}
 
 	}
+
+	/* The final, definitive, integration */
+	for ( i=0; i<image.n_crystals; i++ ) {
+		reflist_free(crystal_get_reflections(image.crystals[i]));
+	}
+	integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE,
+	                iargs->push_res,
+	                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
+	                iargs->int_diag, iargs->int_diag_h,
+	                iargs->int_diag_k, iargs->int_diag_l,
+	                results_pipe);
 
 	ret = write_chunk(st, &image, hdfile,
 	                  iargs->stream_peaks, iargs->stream_refls,

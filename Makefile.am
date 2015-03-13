@@ -71,7 +71,8 @@ src_process_hkl_SOURCES = src/process_hkl.c
 
 src_list_events_SOURCES = src/list_events.c
 
-src_indexamajig_SOURCES = src/indexamajig.c src/im-sandbox.c src/process_image.c
+src_indexamajig_SOURCES = src/indexamajig.c src/im-sandbox.c \
+                          src/process_image.c src/predict-refine.c
 
 if BUILD_HDFSEE
 src_hdfsee_SOURCES = src/hdfsee.c src/dw-hdfsee.c src/hdfsee-render.c
@@ -136,7 +137,7 @@ EXTRA_DIST += src/dw-hdfsee.h src/hdfsee.h src/render_hkl.h \
               src/cl-utils.h src/hdfsee-render.h src/diffraction.h \
               src/diffraction-gpu.h src/pattern_sim.h src/list_tmp.h \
               src/im-sandbox.h src/process_image.h src/multihistogram.h \
-              src/rejection.h
+              src/rejection.h src/predict-refine.h
 
 crystfeldir = $(datadir)/crystfel
 crystfel_DATA = data/diffraction.cl data/hdfsee.ui
