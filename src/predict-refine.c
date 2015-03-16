@@ -42,7 +42,7 @@
 
 
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
-#define MAX_CYCLES (1)
+#define MAX_CYCLES (10)
 
 /* Weighting of excitation error term (m^-1) compared to position term (m) */
 #define EXC_WEIGHT (2e-11)
@@ -267,7 +267,7 @@ static double r_dev(struct reflpeak *rp)
 	/* Excitation error term */
 	double rlow, rhigh, p;
 	get_partial(rp->refl, &rlow, &rhigh, &p);
-	return pow((rlow+rhigh)/2.0, 2.0);
+	return (rlow+rhigh)/2.0;
 }
 
 
@@ -279,7 +279,7 @@ static double pos_dev(struct reflpeak *rp, struct detector *det)
 	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, det);
 	get_detector_pos(rp->refl, &fsh, &ssh);
 	twod_mapping(fsh, ssh, &xh, &yh, det);
-	return (xh-xpk)*(xh-xpk) + (yh-ypk)*(yh-ypk);
+	return (xh-xpk) + (yh-ypk);
 }
 
 
@@ -304,12 +304,11 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 		double gradients[9];
 		double w;
 
-		/* Weight for this peak */
-		w = rps[i].Ih;
+		/* Excitation error terms */
+		w = EXC_WEIGHT * rps[i].Ih;
 
 		for ( k=0; k<9; k++ ) {
 			gradients[k] = r_gradient(cell, k, rps[i].refl, image);
-			gradients[k] += pos_gradient(k, &rps[i], image->det);
 		}
 
 		for ( k=0; k<9; k++ ) {
@@ -331,9 +330,40 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 			}
 
-			v_c = EXC_WEIGHT * r_dev(&rps[i]);
-			v_c += pos_dev(&rps[i], image->det);
-			v_c *= w * gradients[k];
+			v_c = w * r_dev(&rps[i]);
+			v_c *= -gradients[k];
+			v_curr = gsl_vector_get(v, k);
+			gsl_vector_set(v, k, v_curr + v_c);
+
+		}
+
+		/* Positional terms */
+		for ( k=0; k<9; k++ ) {
+			gradients[k] = pos_gradient(k, &rps[i], image->det,
+			                            image->lambda, cell);
+		}
+
+		for ( k=0; k<9; k++ ) {
+
+			int g;
+			double v_c, v_curr;
+
+			for ( g=0; g<9; g++ ) {
+
+				double M_c, M_curr;
+
+				/* Matrix is symmetric */
+				if ( g > k ) continue;
+
+				M_c = gradients[g] * gradients[k];
+				M_curr = gsl_matrix_get(M, k, g);
+				gsl_matrix_set(M, k, g, M_curr + M_c);
+				gsl_matrix_set(M, g, k, M_curr + M_c);
+
+			}
+
+			v_c = pos_dev(&rps[i], image->det);
+			v_c *= -gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
 
@@ -423,10 +453,16 @@ int refine_prediction(struct image *image, Crystal *cr)
 	/* Refine */
 	STATUS("Initial residual = %e\n", residual(rps, n, image->det));
 	for ( i=0; i<MAX_CYCLES; i++ ) {
+		int n_gain = 0;
+		int n_lost = 0;
+		double mpc;
 		iterate(rps, n, crystal_get_cell(cr), image);
-		update_partialities(cr, PMODEL_SCSPHERE);
+		update_partialities_2(cr, PMODEL_SCSPHERE, &n_gain, &n_lost,
+		                      &mpc);
 		STATUS("Residual after iteration %i = %e\n",
 		        i, residual(rps, n, image->det));
+		STATUS("%i gained, %i lost, mean p change = %e\n", n_gain,
+		       n_lost, mpc);
 	}
 
 	free(rps);
