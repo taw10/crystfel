@@ -120,8 +120,8 @@ static void twod_mapping(double fs, double ss, double *px, double *py,
 	xs = fs*p->fsx + ss*p->ssx;
 	ys = fs*p->fsy + ss*p->ssy;
 
-	*px = xs + p->cnx;
-	*py = ys + p->cny;
+	*px = (xs + p->cnx) / p->res;
+	*py = (ys + p->cny) / p->res;
 }
 
 
@@ -171,11 +171,8 @@ static double r_gradient(UnitCell *cell, int k, Reflection *refl,
 
 	azi = atan2(yl, xl);
 
-	/* For many gradients, just multiply the above number by the gradient
-	 * of excitation error wrt whatever. */
 	switch ( k ) {
 
-		/* Cell parameters and orientation */
 		case REF_ASX :
 		return - hs * sin(phi) * cos(azi);
 
@@ -210,46 +207,53 @@ static double r_gradient(UnitCell *cell, int k, Reflection *refl,
 }
 
 
-static double pos_gradient(int param, struct reflpeak *rp, struct detector *det)
+/* Returns d(xh-xpk)/dP + d(yh-ypk)/dP, where P = any parameter */
+static double pos_gradient(int param, struct reflpeak *rp, struct detector *det,
+                           double lambda, UnitCell *cell)
 {
 	signed int h, k, l;
 	double xpk, ypk, xh, yh;
 	double fsh, ssh;
+	double tt, clen, azi, azf;
 
 	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, det);
 	get_detector_pos(rp->refl, &fsh, &ssh);
 	twod_mapping(fsh, ssh, &xh, &yh, det);
 	get_indices(rp->refl, &h, &k, &l);
 
+	tt = asin(lambda * resolution(cell, h, k, l));
+	clen = find_panel(det, fsh, ssh)->clen;
+	azi = atan2(yh, xh);
+	azf = 2.0*(cos(azi) + sin(azi));  /* FIXME: Why factor of 2? */
+
 	switch ( param ) {
 
-		/* Cell parameters and orientation */
 		case REF_ASX :
-		return 2.0 * h * (xh-xpk);
+		return h * lambda * clen / cos(tt);
 
 		case REF_BSX :
-		return 2.0 * k * (xh-xpk);
+		return k * lambda * clen / cos(tt);
 
 		case REF_CSX :
-		return 2.0 * l * (xh-xpk);
+		return l * lambda * clen / cos(tt);
 
 		case REF_ASY :
-		return 2.0 * h * (yh-ypk);
+		return h * lambda * clen / cos(tt);
 
 		case REF_BSY :
-		return 2.0 * k * (yh-ypk);
+		return k * lambda * clen / cos(tt);
 
 		case REF_CSY :
-		return 2.0 * l * (yh-ypk);
+		return l * lambda * clen / cos(tt);
 
 		case REF_ASZ :
-		return 0.0;
+		return -h * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
 
 		case REF_BSZ :
-		return 0.0;
+		return -k * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
 
 		case REF_CSZ :
-		return 0.0;
+		return -l * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
 
 	}
 
