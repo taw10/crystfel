@@ -69,7 +69,7 @@ static double *excitation_errors(UnitCell *cell, ImageFeatureList *flist,
                                  RefList *reflist, int *pnacc)
 {
 	int i;
-	const double min_dist = 0.25;
+	const double min_dist = 0.05;
 	double *acc;
 	int n_acc = 0;
 	int n_notintegrated = 0;

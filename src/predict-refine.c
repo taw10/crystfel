@@ -45,7 +45,7 @@
 #define MAX_CYCLES (10)
 
 /* Weighting of excitation error term (m^-1) compared to position term (m) */
-#define EXC_WEIGHT (2e-11)
+#define EXC_WEIGHT (4e-20)
 
 struct reflpeak {
 	Reflection *refl;
@@ -59,7 +59,7 @@ static int pair_peaks(ImageFeatureList *flist, UnitCell *cell, RefList *reflist,
                       struct reflpeak *rps, struct detector *det)
 {
 	int i;
-	const double min_dist = 0.25;
+	const double min_dist = 0.05;
 	int n_acc = 0;
 	int n_notintegrated = 0;
 
