@@ -282,9 +282,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 	free(rn);
 
-	pargs->n_crystals = image.n_crystals;
 	for ( i=0; i<image.n_crystals; i++ ) {
 		crystal_set_image(image.crystals[i], &image);
+		crystal_set_user_flag(image.crystals[i], 0);
 	}
 
 	/* Set beam/crystal parameters */
@@ -330,6 +330,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 			if ( refine_prediction(&image, image.crystals[i]) ) {
 				ERROR("Prediction refinement failed.\n");
+				crystal_set_user_flag(image.crystals[i], 1);
 				continue;
 			}
 
@@ -380,6 +381,14 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		STATUS("WARNING: %i implausibly negative reflection%s in %s "
 		       "%s\n", n, n>1?"s":"", image.filename,
 		       get_event_string(image.event));
+	}
+
+	/* Count crystals which are still good */
+	pargs->n_crystals = 0;
+	for ( i=0; i<image.n_crystals; i++ ) {
+		if ( crystal_get_user_flag(image.crystals[i]) == 0 ) {
+			pargs->n_crystals++;
+		}
 	}
 
 	for ( i=0; i<image.n_crystals; i++ ) {

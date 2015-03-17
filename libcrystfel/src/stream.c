@@ -842,7 +842,10 @@ int write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 	}
 
 	for ( j=0; j<i->n_crystals; j++ ) {
-		ret = write_crystal(st, i->crystals[j], include_reflections);
+		if ( crystal_get_user_flag(i->crystals[j]) == 0 ) {
+			ret = write_crystal(st, i->crystals[j],
+			                    include_reflections);
+		}
 	}
 
 	fprintf(st->fh, CHUNK_END_MARKER"\n");
