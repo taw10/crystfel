@@ -319,7 +319,7 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 				p = find_panel_by_name(det,pn);
 				write_fs = fs - p->orig_min_fs + p->min_fs;
 				write_ss = ss - p->orig_min_ss + p->min_ss;
-				set_detector_pos(refl, 0.0, write_fs, write_ss);
+				set_detector_pos(refl, write_fs, write_ss);
 			}
 			set_esd_intensity(refl, sigma);
 			set_peak(refl, pk);
@@ -383,11 +383,11 @@ static RefList *read_stream_reflections_2_1(FILE *fh, struct detector *det)
 				p = find_orig_panel(det, fs, ss);
 				write_fs = fs - p->orig_min_fs + p->min_fs;
 				write_ss = ss - p->orig_min_ss + p->min_ss;
-				set_detector_pos(refl, 0.0, write_fs, write_ss);
+				set_detector_pos(refl, write_fs, write_ss);
 
 			} else {
 
-				set_detector_pos(refl, 0.0, fs, ss);
+				set_detector_pos(refl, fs, ss);
 
 			}
 			set_esd_intensity(refl, sigma);
@@ -448,11 +448,11 @@ static RefList *read_stream_reflections_2_2(FILE *fh, struct detector *det)
 				p = find_orig_panel(det, fs, ss);
 				write_fs = fs - p->orig_min_fs + p->min_fs;
 				write_ss = ss - p->orig_min_ss + p->min_ss;
-				set_detector_pos(refl, 0.0, write_fs, write_ss);
+				set_detector_pos(refl, write_fs, write_ss);
 
 			} else {
 
-				set_detector_pos(refl, 0.0, fs, ss);
+				set_detector_pos(refl, fs, ss);
 
 			}
 

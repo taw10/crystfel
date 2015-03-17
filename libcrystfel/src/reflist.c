@@ -75,10 +75,7 @@ struct _refldata {
 	/* Location in image */
 	double fs;
 	double ss;
-
-	/* The distance from the exact Bragg position to the coordinates
-	 * given above. */
-	double excitation_error;
+	struct panel *panel;
 
 	/* Non-zero if this reflection can be used for scaling */
 	int scalable;
@@ -316,17 +313,6 @@ Reflection *next_found_refl(Reflection *refl)
 
 /********************************** Getters ***********************************/
 
-/**
- * get_excitation_error:
- * @refl: A %Reflection
- *
- * Returns: The excitation error for the reflection.
- **/
-double get_excitation_error(const Reflection *refl)
-{
-	return refl->data.excitation_error;
-}
-
 
 /**
  * get_detector_pos:
@@ -339,6 +325,19 @@ void get_detector_pos(const Reflection *refl, double *fs, double *ss)
 {
 	*fs = refl->data.fs;
 	*ss = refl->data.ss;
+}
+
+
+/**
+ * get_panel:
+ * @refl: A %Reflection
+ *
+ * Returns: the panel which the reflection appears on
+ *
+ **/
+struct panel *get_panel(const Reflection *refl)
+{
+	return refl->data.panel;
 }
 
 
@@ -570,16 +569,28 @@ void copy_data(Reflection *to, const Reflection *from)
 /**
  * set_detector_pos:
  * @refl: A %Reflection
- * @exerr: The excitation error for this reflection
  * @fs: The fast scan offset of the reflection
  * @ss: The slow scan offset of the reflection
  *
  **/
-void set_detector_pos(Reflection *refl, double exerr, double fs, double ss)
+void set_detector_pos(Reflection *refl, double fs, double ss)
 {
-	refl->data.excitation_error = exerr;
 	refl->data.fs = fs;
 	refl->data.ss = ss;
+}
+
+
+/**
+ * set_panel:
+ * @refl: A %Reflection
+ * @panel: Pointer to the panel structure on which the reflection appears
+ *
+ * Note that the pointer will be stored, not the contents of the structure.
+ *
+ **/
+void set_panel(Reflection *refl, struct panel *p)
+{
+	refl->data.panel = p;
 }
 
 

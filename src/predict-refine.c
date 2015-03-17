@@ -51,10 +51,12 @@ struct reflpeak {
 	Reflection *refl;
 	struct imagefeature *peak;
 	double Ih;   /* normalised */
+	struct panel *panel;  /* panel the reflection appears on
+                               * (we assume this never changes) */
 };
 
 static int pair_peaks(ImageFeatureList *flist, UnitCell *cell, RefList *reflist,
-                      struct reflpeak *rps)
+                      struct reflpeak *rps, struct detector *det)
 {
 	int i;
 	const double min_dist = 0.25;
@@ -102,6 +104,7 @@ static int pair_peaks(ImageFeatureList *flist, UnitCell *cell, RefList *reflist,
 
 			rps[n_acc].refl = refl;
 			rps[n_acc].peak = f;
+			rps[n_acc].panel = find_panel(det, f->fs, f->ss);
 			n_acc++;
 		}
 
@@ -112,10 +115,9 @@ static int pair_peaks(ImageFeatureList *flist, UnitCell *cell, RefList *reflist,
 
 
 static void twod_mapping(double fs, double ss, double *px, double *py,
-                         struct detector *det)
+                         struct panel *p)
 {
 	double xs, ys;
-	struct panel *p = find_panel(det, fs, ss);
 
 	xs = fs*p->fsx + ss*p->ssx;
 	ys = fs*p->fsy + ss*p->ssy;
@@ -216,13 +218,13 @@ static double pos_gradient(int param, struct reflpeak *rp, struct detector *det,
 	double fsh, ssh;
 	double tt, clen, azi, azf;
 
-	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, det);
+	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel);
 	get_detector_pos(rp->refl, &fsh, &ssh);
-	twod_mapping(fsh, ssh, &xh, &yh, det);
+	twod_mapping(fsh, ssh, &xh, &yh, rp->panel);
 	get_indices(rp->refl, &h, &k, &l);
 
 	tt = asin(lambda * resolution(cell, h, k, l));
-	clen = find_panel(det, fsh, ssh)->clen;
+	clen = rp->panel->clen;
 	azi = atan2(yh, xh);
 	azf = 2.0*(cos(azi) + sin(azi));  /* FIXME: Why factor of 2? */
 
@@ -276,9 +278,9 @@ static double pos_dev(struct reflpeak *rp, struct detector *det)
 	/* Peak position term */
 	double xpk, ypk, xh, yh;
 	double fsh, ssh;
-	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, det);
+	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel);
 	get_detector_pos(rp->refl, &fsh, &ssh);
-	twod_mapping(fsh, ssh, &xh, &yh, det);
+	twod_mapping(fsh, ssh, &xh, &yh, rp->panel);
 	return (xh-xpk) + (yh-ypk);
 }
 
@@ -427,7 +429,7 @@ int refine_prediction(struct image *image, Crystal *cr)
 	if ( rps == NULL ) return 1;
 
 	n = pair_peaks(image->features, crystal_get_cell(cr),
-	               crystal_get_reflections(cr), rps);
+	               crystal_get_reflections(cr), rps, image->det);
 	STATUS("%i peaks\n", n);
 	if ( n < 10 ) {
 		ERROR("Too few paired peaks to refine orientation.\n");
@@ -453,16 +455,10 @@ int refine_prediction(struct image *image, Crystal *cr)
 	/* Refine */
 	STATUS("Initial residual = %e\n", residual(rps, n, image->det));
 	for ( i=0; i<MAX_CYCLES; i++ ) {
-		int n_gain = 0;
-		int n_lost = 0;
-		double mpc;
 		iterate(rps, n, crystal_get_cell(cr), image);
-		update_partialities_2(cr, PMODEL_SCSPHERE, &n_gain, &n_lost,
-		                      &mpc);
+		update_partialities(cr, PMODEL_SCSPHERE);
 		STATUS("Residual after iteration %i = %e\n",
 		        i, residual(rps, n, image->det));
-		STATUS("%i gained, %i lost, mean p change = %e\n", n_gain,
-		       n_lost, mpc);
 	}
 
 	free(rps);

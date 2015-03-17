@@ -48,8 +48,7 @@ int checkrxy;
 
 
 static void scan(RefList *reflections, RefList *compare,
-                 int *valid, long double *vals[3], int idx,
-                 struct detector *det)
+                 int *valid, long double *vals[3], int idx)
 {
 	int i;
 	Reflection *refl;
@@ -64,6 +63,7 @@ static void scan(RefList *reflections, RefList *compare,
 		Reflection *refl2;
 		double rlow, rhigh, p;
 		double fs, ss, xh, yh;
+		struct panel *panel;
 
 		get_indices(refl, &h, &k, &l);
 		refl2 = find_refl(compare, h, k, l);
@@ -75,7 +75,8 @@ static void scan(RefList *reflections, RefList *compare,
 
 		get_partial(refl2, &rlow, &rhigh, &p);
 		get_detector_pos(refl2, &fs, &ss);
-		twod_mapping(fs, ss, &xh, &yh, det);
+		panel = get_panel(refl2);
+		twod_mapping(fs, ss, &xh, &yh, panel);
 
 		switch ( checkrxy ) {
 
@@ -169,16 +170,14 @@ static void calc_either_side(Crystal *cr, double incr_val,
 
 	cr_new = new_shifted_crystal(cr, refine, -incr_val);
 	compare = find_intersections(image, cr_new, PMODEL_SCSPHERE);
-	scan(crystal_get_reflections(cr), compare, valid, vals, 0,
-	     crystal_get_image(cr)->det);
+	scan(crystal_get_reflections(cr), compare, valid, vals, 0);
 	cell_free(crystal_get_cell(cr_new));
 	crystal_free(cr_new);
 	reflist_free(compare);
 
 	cr_new = new_shifted_crystal(cr, refine, +incr_val);
 	compare = find_intersections(image, cr_new, PMODEL_SCSPHERE);
-	scan(crystal_get_reflections(cr), compare, valid, vals, 2,
-	     crystal_get_image(cr)->det);
+	scan(crystal_get_reflections(cr), compare, valid, vals, 2);
 	cell_free(crystal_get_cell(cr_new));
 	crystal_free(cr_new);
 	reflist_free(compare);
@@ -231,8 +230,7 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 	}
 	for ( i=0; i<nref; i++ ) valid[i] = 1;
 
-	scan(reflections, reflections, valid, vals, 1,
-	     crystal_get_image(cr)->det);
+	scan(reflections, reflections, valid, vals, 1);
 
 	calc_either_side(cr, incr_val, valid, vals, refine);
 
@@ -282,11 +280,15 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 			} else {
 
 				struct imagefeature pk;
+				struct image *image;
 
 				pk.fs = 0.0;
 				pk.ss = 0.0;
+
+				image = crystal_get_image(cr);
 				rp.refl = refl;
 				rp.peak = &pk;
+				rp.panel = &image->det->panels[0];
 
 				cgrad = pos_gradient(refine, &rp,
 				                  crystal_get_image(cr)->det,

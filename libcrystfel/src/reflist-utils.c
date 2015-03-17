@@ -390,7 +390,7 @@ RefList *read_reflections_from_file(FILE *fh)
 
 			refl = add_refl(out, h, k, l);
 			set_intensity(refl, intensity);
-			set_detector_pos(refl, 0.0, fs, ss);
+			set_detector_pos(refl, fs, ss);
 
 			set_esd_intensity(refl, sigma);
 			set_redundancy(refl, cts);

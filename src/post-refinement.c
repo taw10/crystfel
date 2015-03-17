@@ -614,33 +614,17 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 		double bsx, bsy, bsz;
 		double csx, csy, csz;
 		double dev;
-		int n_total;
-		int n_gained = 0;
-		int n_lost = 0;
 
-		n_total = num_reflections(crystal_get_reflections(cr));
 		cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
 		pr_iterate(cr, full, pmodel, &prdata.n_filtered);
 
-		update_partialities_2(cr, pmodel, &n_gained, &n_lost,
-		                      &mean_p_change);
+		update_partialities(cr, pmodel);
 
 		if ( verbose ) {
 			dev = guide_dev(cr, full);
-			STATUS("PR Iteration %2i: mean p change = %10.2f"
-			       " dev = %10.5e, %i gained, %i lost, %i total\n",
-			       i+1, mean_p_change, dev,
-			       n_gained, n_lost, n_total);
-		}
-
-		if ( 3*n_lost > n_total ) {
-			revert_crystal(cr, backup);
-			update_partialities_2(cr, pmodel, &n_gained, &n_lost,
-			                      &mean_p_change);
-			crystal_set_user_flag(cr, 4);
-			break;
+			STATUS("PR Iteration %2i: dev = %10.5e\n", i+1, dev);
 		}
 
 		i++;

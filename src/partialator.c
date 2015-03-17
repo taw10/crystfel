@@ -626,17 +626,12 @@ int main(int argc, char *argv[])
 		for ( j=0; j<images[i].n_crystals; j++ ) {
 
 			Crystal *cryst;
-			int n_gained = 0;
-			int n_lost = 0;
-			double mean_p_change = 0.0;
 
 			cryst = images[i].crystals[j];
 			crystal_set_image(cryst, &images[i]);
 
 			/* Now it's safe to do the following */
-			update_partialities_2(cryst, pmodel, &n_gained, &n_lost,
-			                      &mean_p_change);
-			assert(n_gained == 0);  /* That'd just be silly */
+			update_partialities(cryst, pmodel);
 
 		}
 	}

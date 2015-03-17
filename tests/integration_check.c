@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
 
 		list = reflist_new();
 		refl = add_refl(list, 0, 0, 0);
-		set_detector_pos(refl, 0.0, 64, 64);
+		set_detector_pos(refl, 64, 64);
 		cell = cell_new();
 		cell_set_lattice_type(cell, L_CUBIC);
 		cell_set_centering(cell, 'P');
