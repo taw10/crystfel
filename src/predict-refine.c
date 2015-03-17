@@ -568,11 +568,11 @@ int refine_prediction(struct image *image, Crystal *cr)
 	}
 
 	/* Refine */
-	STATUS("Initial residual = %e\n", residual(rps, n, image->det));
+	printf("Initial residual = %e\n", residual(rps, n, image->det));
 	for ( i=0; i<MAX_CYCLES; i++ ) {
 		iterate(rps, n, crystal_get_cell(cr), image);
 		update_partialities(cr, PMODEL_SCSPHERE);
-		STATUS("Residual after iteration %i = %e\n",
+		printf("Residual after iteration %i = %e\n",
 		        i, residual(rps, n, image->det));
 	}
 
