@@ -345,11 +345,11 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 
 			} else {
 
-				STATUS("OK %s %3i %3i %3i"
-				       " %10.2Le %10.2e ratio = %5.2Lf"
-				       " %10.2e %10.2e\n",
-				       str, h, k, l, grad, cgrad, cgrad/grad,
-				       r1, r2);
+				//STATUS("OK %s %3i %3i %3i"
+				//       " %10.2Le %10.2e ratio = %5.2Lf"
+				//       " %10.2e %10.2e\n",
+				//       str, h, k, l, grad, cgrad, cgrad/grad,
+				//       r1, r2);
 
 				n_good++;
 

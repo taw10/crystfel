@@ -472,11 +472,11 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 	}
 
-	show_matrix_eqn(M, v);
-	shifts = solve_svd(v, M, NULL, 1);
+	//show_matrix_eqn(M, v);
+	shifts = solve_svd(v, M, NULL, 0);
 
 	for ( i=0; i<9; i++ ) {
-		STATUS("Shift %i = %e\n", i, gsl_vector_get(shifts, i));
+	//	STATUS("Shift %i = %e\n", i, gsl_vector_get(shifts, i));
 	}
 
 	/* Apply shifts */
@@ -546,7 +546,6 @@ int refine_prediction(struct image *image, Crystal *cr)
 
 	n = pair_peaks(image->features, crystal_get_cell(cr),
 	               crystal_get_reflections(cr), rps, image->det);
-	STATUS("%i peaks\n", n);
 	if ( n < 10 ) {
 		ERROR("Too few paired peaks to refine orientation.\n");
 		free(rps);
