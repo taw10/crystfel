@@ -85,7 +85,11 @@ static void scan(RefList *reflections, RefList *compare,
 			break;
 
 			case 1 :
-			vals[idx][i] = xh + yh;
+			vals[idx][i] = xh;
+			break;
+
+			case 2 :
+			vals[idx][i] = yh;
 			break;
 		}
 
@@ -290,10 +294,17 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 				rp.peak = &pk;
 				rp.panel = &image->det->panels[0];
 
-				cgrad = pos_gradient(refine, &rp,
-				                  crystal_get_image(cr)->det,
-				                  crystal_get_image(cr)->lambda,
-				                  crystal_get_cell(cr));
+				if ( checkrxy == 1 ) {
+					cgrad = x_gradient(refine, &rp,
+					          crystal_get_image(cr)->det,
+					          crystal_get_image(cr)->lambda,
+					          crystal_get_cell(cr));
+				} else {
+					cgrad = y_gradient(refine, &rp,
+					          crystal_get_image(cr)->det,
+					          crystal_get_image(cr)->lambda,
+					          crystal_get_cell(cr));
+				}
 			}
 
 			get_partial(refl, &r1, &r2, &p);
@@ -431,7 +442,7 @@ int main(int argc, char *argv[])
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
-	for ( checkrxy=1; checkrxy<2; checkrxy++ ) {
+	for ( checkrxy=0; checkrxy<3; checkrxy++ ) {
 
 
 		switch ( checkrxy ) {
@@ -439,9 +450,12 @@ int main(int argc, char *argv[])
 			STATUS("Excitation error:\n");
 			break;
 			case 1:
-			STATUS("x+y coordinate:\n");
+			STATUS("x coordinate:\n");
 			break;
 			default:
+			case 2:
+			STATUS("y coordinate:\n");
+			break;
 			STATUS("WTF??\n");
 			break;
 		}
