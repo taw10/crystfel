@@ -317,7 +317,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
 	                INTDIAG_NONE, 0, 0, 0, results_pipe);
 
-	/* FIXME: Temporary to monitor R during refinement */
+	/* Measure R before refinement */
 	for ( i=0; i<image.n_crystals; i++ ) {
 		refine_radius(image.crystals[i], image.features);
 	}
@@ -328,22 +328,28 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 		for ( i=0; i<image.n_crystals; i++ ) {
 
+			double old_R, new_R;
+			char notes[1024];
+
 			if ( refine_prediction(&image, image.crystals[i]) ) {
 				ERROR("Prediction refinement failed.\n");
 				crystal_set_user_flag(image.crystals[i], 1);
 				continue;
 			}
 
-			STATUS("R before: %e",
-			       crystal_get_profile_radius(image.crystals[i]));
+			old_R = crystal_get_profile_radius(image.crystals[i]);
 
 			/* Reset the profile radius and estimate again with
 			 * better geometry */
 			crystal_set_profile_radius(image.crystals[i], 0.02e9);
 			refine_radius(image.crystals[i], image.features);
 
-			STATUS("         after: %e\n",
-			       crystal_get_profile_radius(image.crystals[i]));
+			new_R = crystal_get_profile_radius(image.crystals[i]);
+
+			snprintf(notes, 1024, "predict_refine/R old "
+			                      "= %.5f new = %.5f nm^-1",
+			                      old_R/1e9, new_R/1e9);
+			crystal_set_notes(image.crystals[i], notes);
 
 		}
 
