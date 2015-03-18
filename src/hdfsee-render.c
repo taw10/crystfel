@@ -46,16 +46,15 @@
 #include <image.h>
 
 static float *get_binned_panel(struct image *image, int binning,
-                               struct panel *p, double *max, int *pw, int *ph)
+                               int pi, double *max, int *pw, int *ph)
 {
 	float *data;
 	int x, y;
 	int w, h;
 	int fw;
-	float *in;
+	struct panel *p = &image->det->panels[pi];
 
-	fw = image->width;
-	in = image->data;
+	fw = p->max_fs - p->min_fs + 1;
 
 	/* Some pixels might get discarded */
 	w = (p->max_fs - p->min_fs + 1) / binning;
@@ -80,31 +79,13 @@ static float *get_binned_panel(struct image *image, int binning,
 
 			double v;
 			int fs, ss;
-			int tbad = 0;
 
-			fs = binning*x+xb+p->min_fs;
-			ss = binning*y+yb+p->min_ss;
-			v = in[fs+ss*fw];
+			fs = binning*x+xb;
+			ss = binning*y+yb;
+			v = image->dp[pi][fs+ss*fw];
 			total += v;
 
-			if ( in_bad_region(image->det, fs, ss) ) tbad = 1;
-
-			if ( image->flags != NULL ) {
-
-				uint16_t flags = image->flags[fs+ss*fw];
-
-				if ( !((flags & image->det->mask_good)
-					           == image->det->mask_good) ) {
-					tbad = 1;
-				}
-
-				if ( flags & image->det->mask_bad ) {
-					tbad = 1;
-				}
-
-			}
-
-			if ( tbad ) bad = 1;
+			if ( image->bad[pi][fs+ss*fw] ) bad = 1;
 
 		}
 		}
@@ -205,8 +186,7 @@ GdkPixbuf **render_panels(struct image *image,
 	max = 0.0;
 	for ( i=0; i<np; i++ ) {
 		double this_max = 0.0;
-		hdrs[i] = get_binned_panel(image, binning,
-		                           &image->det->panels[i], &this_max,
+		hdrs[i] = get_binned_panel(image, binning, i, &this_max,
 		                           &ws[i], &hs[i]);
 		if ( this_max > max ) max = this_max;
 	}
