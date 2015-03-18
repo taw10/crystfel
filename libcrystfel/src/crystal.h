@@ -65,6 +65,7 @@ extern double crystal_get_osf(Crystal *cryst);
 extern double crystal_get_Bfac(Crystal *cryst);
 extern struct image *crystal_get_image(Crystal *cryst);
 extern double crystal_get_mosaicity(Crystal *cryst);
+extern const char *crystal_get_notes(Crystal *cryst);
 
 extern void crystal_set_cell(Crystal *cryst, UnitCell *cell);
 extern void crystal_set_profile_radius(Crystal *cryst, double r);
@@ -79,6 +80,7 @@ extern void crystal_set_osf(Crystal *cryst, double osf);
 extern void crystal_set_Bfac(Crystal *cryst, double B);
 extern void crystal_set_image(Crystal *cryst, struct image *image);
 extern void crystal_set_mosaicity(Crystal *cryst, double m);
+extern void crystal_set_notes(Crystal *cryst, const char *notes);
 
 #ifdef __cplusplus
 }

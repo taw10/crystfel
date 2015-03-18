@@ -69,6 +69,9 @@ struct _crystal
 
 	/* User flag, e.g. for "this is a bad crystal". */
 	int                     user_flag;
+
+	/* Text notes, which go in the stream */
+	char                    *notes;
 };
 
 
@@ -95,6 +98,7 @@ Crystal *crystal_new()
 	cryst->resolution_limit = 0.0;
 	cryst->n_saturated = 0;
 	cryst->n_implausible = 0;
+	cryst->notes = NULL;
 
 	return cryst;
 }
@@ -207,6 +211,12 @@ double crystal_get_mosaicity(Crystal *cryst)
 }
 
 
+const char *crystal_get_notes(Crystal *cryst)
+{
+	return cryst->notes;
+}
+
+
 /********************************** Setters ***********************************/
 
 
@@ -273,4 +283,11 @@ void crystal_set_user_flag(Crystal *cryst, int user_flag)
 void crystal_set_mosaicity(Crystal *cryst, double m)
 {
 	cryst->m = m;
+}
+
+
+void crystal_set_notes(Crystal *cryst, const char *notes)
+{
+	free(cryst->notes);  /* free(NULL) is OK */
+	cryst->notes = strdup(notes);
 }
