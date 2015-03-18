@@ -3,12 +3,12 @@
  *
  * Stream tools
  *
- * Copyright © 2013-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2015 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2011      Richard Kirian
  *   2011      Andrew Aquila
@@ -707,6 +707,10 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 
 	rad = crystal_get_profile_radius(cr);
 	fprintf(st->fh, "profile_radius = %.5f nm^-1\n", rad/1e9);
+
+	if ( crystal_get_notes(cr) != NULL ) {
+		fprintf(st->fh, "%s\n", crystal_get_notes(cr));
+	}
 
 	reflist = crystal_get_reflections(cr);
 	if ( reflist != NULL ) {
