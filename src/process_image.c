@@ -332,7 +332,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 			char notes[1024];
 
 			if ( refine_prediction(&image, image.crystals[i]) ) {
-				ERROR("Prediction refinement failed.\n");
 				crystal_set_user_flag(image.crystals[i], 1);
 				continue;
 			}
