@@ -1,0 +1,12 @@
+#!/bin/sh
+
+INFILE=$1
+
+grep "profile_radius" $INFILE > plotme1.dat
+grep "diffraction_resolution_limit" $INFILE > plotme2.dat
+paste plotme1.dat plotme2.dat > plotme.dat
+gnuplot -persist << EOF
+set xlabel "Estimated crystal diameter (= 2/profile radius) / nm"
+set ylabel "Resolution limit / nm^-1"
+plot "plotme.dat" using (2/\$3):7
+EOF

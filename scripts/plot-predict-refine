@@ -1,0 +1,11 @@
+#!/bin/sh
+
+INFILE=$1
+
+grep "predict_refine/R" $INFILE > plotme.dat
+gnuplot -persist << EOF
+set xlabel "Profile radius before refinement / nm^-1"
+set ylabel "Profile radius after refinement / nm^-1"
+plot "plotme.dat" using 4:7
+replot x
+EOF
