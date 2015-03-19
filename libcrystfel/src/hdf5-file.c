@@ -1405,7 +1405,14 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 	}
 	image->data = buf;
 
+	if ( image->det != NULL ) {
+		ERROR("WARNING: hdf5_read() called with geometry structure.\n");
+	}
+	image->det = simple_geometry(image);
+
 	if ( satcorr ) debodge_saturation(f, image);
+
+	unpack_panels(image, image->det);
 
 	if ( image->beam != NULL ) {
 

@@ -1533,7 +1533,7 @@ static gint displaywindow_set_calibmode(GtkWidget *d, DisplayWindow *dw)
 
 	w =  gtk_ui_manager_get_widget(dw->ui,
 	                               "/ui/displaywindow/tools/calibmode");
-	if ( dw->image->det == dw->simple_geom ) {
+	if ( dw->simple ) {
 		gtk_check_menu_item_set_state(GTK_CHECK_MENU_ITEM(w), 0);
 		return 0;
 	}
@@ -2290,14 +2290,15 @@ static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 	a = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(nh->widget));
 	if ( !a ) return 0;
 
+	/* hdf5_read() will create a new simple geom, so get rid of the old
+	 * one */
+	free_detector_geometry(nh->dw->image->det);
+	nh->dw->image->det = NULL;
 	fail = hdf5_read(nh->dw->hdfile, nh->dw->image, nh->name, 0);
 	if ( fail ) {
 		ERROR("Couldn't load image");
 		return 1;
 	}
-
-	nh->dw->simple_geom = simple_geometry(nh->dw->image);
-	nh->dw->image->det = nh->dw->simple_geom;
 
 	do_filters(nh->dw);
 	displaywindow_update(nh->dw);
@@ -2754,7 +2755,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	dw->boostint = 1;
 	dw->motion_callback = 0;
 	dw->numbers_window = NULL;
-	dw->simple_geom = NULL;
+	dw->simple = 0;
 	dw->image = NULL;
 	dw->show_rings = show_rings;
 	dw->show_peaks = 0;
@@ -2863,6 +2864,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 
 	} else {
 		check =	hdf5_read(dw->hdfile, dw->image, element, 0);
+		dw->simple = 1;
 	}
 	if ( check ) {
 		ERROR("Couldn't load file\n");
@@ -2872,11 +2874,6 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	}
 
 	dw->image->filename = strdup(filename);
-
-	if ( dw->image->det == NULL ) {
-		dw->simple_geom = simple_geometry(dw->image);
-		dw->image->det = dw->simple_geom;
-	}
 
 	/* Filters need geometry */
 	do_filters(dw);
@@ -2924,11 +2921,11 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	w = gtk_ui_manager_get_widget(dw->ui,
 	                   "/ui/displaywindow/view/images");
 
-	if ( dw->image->det != dw->simple_geom ) {
+	if ( !dw->simple ) {
 		gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
 	}
 
-	if ( dw->image->det == dw->simple_geom || dw->multi_event == 0) {
+	if ( dw->simple || dw->multi_event == 0) {
 		set_events_menu_sensitivity(dw, FALSE);
 	}
 
@@ -2952,7 +2949,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	g_signal_connect(GTK_OBJECT(dw->drawingarea), "key-press-event",
 	                 G_CALLBACK(displaywindow_keypress), dw);
 
-	if ( dw->image->det == dw->simple_geom ) {
+	if ( dw->simple ) {
 		displaywindow_update_menus(dw, element);
 	}
 

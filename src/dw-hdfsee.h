@@ -99,7 +99,7 @@ typedef struct {
 
 	int             not_ready_yet;
 
-	struct detector *simple_geom;
+	int             simple;
 
 	struct hdfile	*hdfile;
 	struct image	*image;
