@@ -93,15 +93,15 @@ static UnitCell *new_shifted_cell(UnitCell *input, int k, double shift)
 	                    &csx, &csy, &csz);
 	switch ( k )
 	{
-		case REF_ASX :  asx += shift;  break;
-		case REF_ASY :  asy += shift;  break;
-		case REF_ASZ :  asz += shift;  break;
-		case REF_BSX :  bsx += shift;  break;
-		case REF_BSY :  bsy += shift;  break;
-		case REF_BSZ :  bsz += shift;  break;
-		case REF_CSX :  csx += shift;  break;
-		case REF_CSY :  csy += shift;  break;
-		case REF_CSZ :  csz += shift;  break;
+		case GPARAM_ASX :  asx += shift;  break;
+		case GPARAM_ASY :  asy += shift;  break;
+		case GPARAM_ASZ :  asz += shift;  break;
+		case GPARAM_BSX :  bsx += shift;  break;
+		case GPARAM_BSY :  bsy += shift;  break;
+		case GPARAM_BSZ :  bsz += shift;  break;
+		case GPARAM_CSX :  csx += shift;  break;
+		case GPARAM_CSY :  csy += shift;  break;
+		case GPARAM_CSZ :  csz += shift;  break;
 	}
 	cell_set_reciprocal(cell, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
 
@@ -113,7 +113,7 @@ static void shift_parameter(struct image *image, int k, double shift)
 {
 	switch ( k )
 	{
-		case REF_DIV : image->div += shift;  break;
+		case GPARAM_DIV : image->div += shift;  break;
 	}
 }
 
@@ -135,21 +135,21 @@ static Crystal *new_shifted_crystal(Crystal *cr, int refine, double incr_val)
 
 	switch ( refine ) {
 
-		case REF_ASX :
-		case REF_ASY :
-		case REF_ASZ :
-		case REF_BSX :
-		case REF_BSY :
-		case REF_BSZ :
-		case REF_CSX :
-		case REF_CSY :
-		case REF_CSZ :
+		case GPARAM_ASX :
+		case GPARAM_ASY :
+		case GPARAM_ASZ :
+		case GPARAM_BSX :
+		case GPARAM_BSY :
+		case GPARAM_BSZ :
+		case GPARAM_CSX :
+		case GPARAM_CSY :
+		case GPARAM_CSZ :
 		cell = new_shifted_cell(crystal_get_cell(cr), refine,
 		                        incr_val);
 		crystal_set_cell(cr_new, cell);
 		break;
 
-		case REF_R :
+		case GPARAM_R :
 		cell = cell_new_from_cell(crystal_get_cell(cr));
 		crystal_set_cell(cr_new, cell);
 		crystal_set_profile_radius(cr_new, r + incr_val);
@@ -172,7 +172,7 @@ static void calc_either_side(Crystal *cr, double incr_val,
 	RefList *compare;
 	struct image *image = crystal_get_image(cr);
 
-	if ( (refine != REF_DIV) ) {
+	if ( (refine != GPARAM_DIV) ) {
 
 		Crystal *cr_new;
 
@@ -465,51 +465,51 @@ int main(int argc, char *argv[])
 			            &bz, &cx, &cy, &cz);
 
 		incr_val = incr_frac * image.div;
-		val =  test_gradients(cr, incr_val, REF_DIV, "div", "div",
+		val =  test_gradients(cr, incr_val, GPARAM_DIV, "div", "div",
 		                      pmodel, quiet, plot);
 		if ( val < 0.99 ) fail = 1;
 
 		incr_val = incr_frac * crystal_get_profile_radius(cr);
-		val = test_gradients(cr, incr_val, REF_R, "R", "R", pmodel,
+		val = test_gradients(cr, incr_val, GPARAM_R, "R", "R", pmodel,
 		                     quiet, plot);
 		if ( val < 0.99 ) fail = 1;
 
 		incr_val = incr_frac * ax;
-		val = test_gradients(cr, incr_val, REF_ASX, "ax*", "x", pmodel,
+		val = test_gradients(cr, incr_val, GPARAM_ASX, "ax*", "x", pmodel,
 		                     quiet, plot);
 		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * bx;
-		val = test_gradients(cr, incr_val, REF_BSX, "bx*", "x", pmodel,
+		val = test_gradients(cr, incr_val, GPARAM_BSX, "bx*", "x", pmodel,
 		                     quiet, plot);
 		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * cx;
-		val = test_gradients(cr, incr_val, REF_CSX, "cx*", "x", pmodel,
+		val = test_gradients(cr, incr_val, GPARAM_CSX, "cx*", "x", pmodel,
 		                     quiet, plot);
 		if ( val < 0.99 ) fail = 1;
 
 		incr_val = incr_frac * ay;
-		val = test_gradients(cr, incr_val, REF_ASY, "ay*", "y", pmodel,
+		val = test_gradients(cr, incr_val, GPARAM_ASY, "ay*", "y", pmodel,
 		                     quiet, plot);
 		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * by;
-		val = test_gradients(cr, incr_val, REF_BSY, "by*", "y", pmodel,
+		val = test_gradients(cr, incr_val, GPARAM_BSY, "by*", "y", pmodel,
 		                     quiet, plot);
 		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * cy;
-		val = test_gradients(cr, incr_val, REF_CSY, "cy*", "y", pmodel,
+		val = test_gradients(cr, incr_val, GPARAM_CSY, "cy*", "y", pmodel,
 		                     quiet, plot);
 		if ( val < 0.99 ) fail = 1;
 
 		incr_val = incr_frac * az;
-		val = test_gradients(cr, incr_val, REF_ASZ, "az*", "z", pmodel,
+		val = test_gradients(cr, incr_val, GPARAM_ASZ, "az*", "z", pmodel,
 		                     quiet, plot);
 		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * bz;
-		val = test_gradients(cr, incr_val, REF_BSZ, "bz*", "z", pmodel,
+		val = test_gradients(cr, incr_val, GPARAM_BSZ, "bz*", "z", pmodel,
 		                     quiet, plot);
 		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * cz;
-		val = test_gradients(cr, incr_val, REF_CSZ, "cz*", "z", pmodel,
+		val = test_gradients(cr, incr_val, GPARAM_CSZ, "cz*", "z", pmodel,
 		                     quiet, plot);
 		if ( val < 0.99 ) fail = 1;
 

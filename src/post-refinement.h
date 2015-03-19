@@ -43,24 +43,6 @@
 #include "geometry.h"
 
 
-/* Refineable parameters.
- * Don't forget to add new things to backup_crystal() et al.! */
-enum {
-	REF_ASX,
-	REF_ASY,
-	REF_ASZ,
-	REF_BSX,
-	REF_BSY,
-	REF_BSZ,
-	REF_CSX,
-	REF_CSY,
-	REF_CSZ,
-	NUM_PARAMS,
-	REF_R,
-	REF_DIV,
-};
-
-
 struct prdata
 {
 	int refined;

@@ -37,7 +37,7 @@
 #include <gsl/gsl_vector.h>
 
 #include "image.h"
-#include "post-refinement.h"
+#include "geometry.h"
 #include "cell-utils.h"
 
 
@@ -127,86 +127,6 @@ static void twod_mapping(double fs, double ss, double *px, double *py,
 }
 
 
-static double r_gradient(UnitCell *cell, int k, Reflection *refl,
-                         struct image *image)
-{
-	double azi;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	double xl, yl, zl;
-	signed int hs, ks, ls;
-	double rlow, rhigh, p;
-	double philow, phihigh, phi;
-	double khigh, klow;
-	double tl, cet, cez;
-
-	get_partial(refl, &rlow, &rhigh, &p);
-
-	get_symmetric_indices(refl, &hs, &ks, &ls);
-
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	xl = hs*asx + ks*bsx + ls*csx;
-	yl = hs*asy + ks*bsy + ls*csy;
-	zl = hs*asz + ks*bsz + ls*csz;
-
-	/* "low" gives the largest Ewald sphere (wavelength short => k large)
-	 * "high" gives the smallest Ewald sphere (wavelength long => k small)
-	 */
-	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
-	khigh = 1.0/(image->lambda + image->lambda*image->bw/2.0);
-
-	tl = sqrt(xl*xl + yl*yl);
-
-	cet = -sin(image->div/2.0) * klow;
-	cez = -cos(image->div/2.0) * klow;
-	philow = angle_between_2d(tl-cet, zl-cez, 0.0, 1.0);
-
-	cet = -sin(image->div/2.0) * khigh;
-	cez = -cos(image->div/2.0) * khigh;
-	phihigh = angle_between_2d(tl-cet, zl-cez, 0.0, 1.0);
-
-	/* Approximation: philow and phihigh are very similar */
-	phi = (philow + phihigh) / 2.0;
-
-	azi = atan2(yl, xl);
-
-	switch ( k ) {
-
-		case REF_ASX :
-		return - hs * sin(phi) * cos(azi);
-
-		case REF_BSX :
-		return - ks * sin(phi) * cos(azi);
-
-		case REF_CSX :
-		return - ls * sin(phi) * cos(azi);
-
-		case REF_ASY :
-		return - hs * sin(phi) * sin(azi);
-
-		case REF_BSY :
-		return - ks * sin(phi) * sin(azi);
-
-		case REF_CSY :
-		return - ls * sin(phi) * sin(azi);
-
-		case REF_ASZ :
-		return - hs * cos(phi);
-
-		case REF_BSZ :
-		return - ks * cos(phi);
-
-		case REF_CSZ :
-		return - ls * cos(phi);
-
-	}
-
-	ERROR("No gradient defined for parameter %i\n", k);
-	abort();
-}
 
 
 /* Returns d(xh-xpk)/dP + d(yh-ypk)/dP, where P = any parameter */
@@ -230,31 +150,31 @@ static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
 
 	switch ( param ) {
 
-		case REF_ASX :
+		case GPARAM_ASX :
 		return h * lambda * clen / cos(tt);
 
-		case REF_BSX :
+		case GPARAM_BSX :
 		return k * lambda * clen / cos(tt);
 
-		case REF_CSX :
+		case GPARAM_CSX :
 		return l * lambda * clen / cos(tt);
 
-		case REF_ASY :
+		case GPARAM_ASY :
 		return 0.0;
 
-		case REF_BSY :
+		case GPARAM_BSY :
 		return 0.0;
 
-		case REF_CSY :
+		case GPARAM_CSY :
 		return 0.0;
 
-		case REF_ASZ :
+		case GPARAM_ASZ :
 		return -h * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
 
-		case REF_BSZ :
+		case GPARAM_BSZ :
 		return -k * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
 
-		case REF_CSZ :
+		case GPARAM_CSZ :
 		return -l * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
 
 	}
@@ -285,31 +205,31 @@ static double y_gradient(int param, struct reflpeak *rp, struct detector *det,
 
 	switch ( param ) {
 
-		case REF_ASX :
+		case GPARAM_ASX :
 		return 0.0;
 
-		case REF_BSX :
+		case GPARAM_BSX :
 		return 0.0;
 
-		case REF_CSX :
+		case GPARAM_CSX :
 		return 0.0;
 
-		case REF_ASY :
+		case GPARAM_ASY :
 		return h * lambda * clen / cos(tt);
 
-		case REF_BSY :
+		case GPARAM_BSY :
 		return k * lambda * clen / cos(tt);
 
-		case REF_CSY :
+		case GPARAM_CSY :
 		return l * lambda * clen / cos(tt);
 
-		case REF_ASZ :
+		case GPARAM_ASZ :
 		return -h * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
 
-		case REF_BSZ :
+		case GPARAM_BSZ :
 		return -k * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
 
-		case REF_CSZ :
+		case GPARAM_CSZ :
 		return -l * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
 
 	}

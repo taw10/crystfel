@@ -297,6 +297,87 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 }
 
 
+double r_gradient(UnitCell *cell, int k, Reflection *refl, struct image *image)
+{
+	double azi;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	double xl, yl, zl;
+	signed int hs, ks, ls;
+	double rlow, rhigh, p;
+	double philow, phihigh, phi;
+	double khigh, klow;
+	double tl, cet, cez;
+
+	get_partial(refl, &rlow, &rhigh, &p);
+
+	get_symmetric_indices(refl, &hs, &ks, &ls);
+
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+	xl = hs*asx + ks*bsx + ls*csx;
+	yl = hs*asy + ks*bsy + ls*csy;
+	zl = hs*asz + ks*bsz + ls*csz;
+
+	/* "low" gives the largest Ewald sphere (wavelength short => k large)
+	 * "high" gives the smallest Ewald sphere (wavelength long => k small)
+	 */
+	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
+	khigh = 1.0/(image->lambda + image->lambda*image->bw/2.0);
+
+	tl = sqrt(xl*xl + yl*yl);
+
+	cet = -sin(image->div/2.0) * klow;
+	cez = -cos(image->div/2.0) * klow;
+	philow = angle_between_2d(tl-cet, zl-cez, 0.0, 1.0);
+
+	cet = -sin(image->div/2.0) * khigh;
+	cez = -cos(image->div/2.0) * khigh;
+	phihigh = angle_between_2d(tl-cet, zl-cez, 0.0, 1.0);
+
+	/* Approximation: philow and phihigh are very similar */
+	phi = (philow + phihigh) / 2.0;
+
+	azi = atan2(yl, xl);
+
+	switch ( k ) {
+
+		case GPARAM_ASX :
+		return - hs * sin(phi) * cos(azi);
+
+		case GPARAM_BSX :
+		return - ks * sin(phi) * cos(azi);
+
+		case GPARAM_CSX :
+		return - ls * sin(phi) * cos(azi);
+
+		case GPARAM_ASY :
+		return - hs * sin(phi) * sin(azi);
+
+		case GPARAM_BSY :
+		return - ks * sin(phi) * sin(azi);
+
+		case GPARAM_CSY :
+		return - ls * sin(phi) * sin(azi);
+
+		case GPARAM_ASZ :
+		return - hs * cos(phi);
+
+		case GPARAM_BSZ :
+		return - ks * cos(phi);
+
+		case GPARAM_CSZ :
+		return - ls * cos(phi);
+
+	}
+
+	ERROR("No r gradient defined for parameter %i\n", k);
+	abort();
+}
+
+
 RefList *find_intersections(struct image *image, Crystal *cryst,
                             PartialityModel pmodel)
 {
