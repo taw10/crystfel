@@ -80,7 +80,6 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
 	if ( ss < p->min_ss ) return 0;
 	if ( ss > p->max_ss ) return 0;
 
-
 	return 1;
 }
 
