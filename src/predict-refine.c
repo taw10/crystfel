@@ -450,6 +450,12 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 	//show_matrix_eqn(M, v);
 	shifts = solve_svd(v, M, NULL, 0);
+	if ( shifts == NULL ) {
+		ERROR("Failed to solve equations.\n");
+		gsl_matrix_free(M);
+		gsl_vector_free(v);
+		return 1;
+	}
 
 	for ( i=0; i<9; i++ ) {
 	//	STATUS("Shift %i = %e\n", i, gsl_vector_get(shifts, i));
@@ -524,8 +530,9 @@ int refine_prediction(struct image *image, Crystal *cr)
 	reflist = reflist_new();
 	n = pair_peaks(image, cr, reflist, rps);
 	if ( n < 10 ) {
-		ERROR("Too few paired peaks to refine orientation.\n");
+		ERROR("Too few paired peaks (%i) to refine orientation.\n", n);
 		free(rps);
+		reflist_free(reflist);
 		return 1;
 	}
 	crystal_set_reflections(cr, reflist);
@@ -547,8 +554,8 @@ int refine_prediction(struct image *image, Crystal *cr)
 
 	/* Refine */
 	for ( i=0; i<MAX_CYCLES; i++ ) {
-		iterate(rps, n, crystal_get_cell(cr), image);
 		update_partialities(cr, PMODEL_SCSPHERE);
+		if ( iterate(rps, n, crystal_get_cell(cr), image) ) return 1;
 	}
 
 	crystal_set_reflections(cr, NULL);
