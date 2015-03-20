@@ -53,118 +53,6 @@
 #include "predict-refine.h"
 
 
-static int cmpd2(const void *av, const void *bv)
-{
-	double a, b;
-
-	a = *(double *)av;
-	b = *(double *)bv;
-
-	if ( fabs(a) < fabs(b) ) return -1;
-	return 1;
-}
-
-
-static double *excitation_errors(UnitCell *cell, ImageFeatureList *flist,
-                                 RefList *reflist, int *pnacc)
-{
-	int i;
-	const double min_dist = 0.05;
-	double *acc;
-	int n_acc = 0;
-	int n_notintegrated = 0;
-	int max_acc = 1024;
-
-	acc = malloc(max_acc*sizeof(double));
-	if ( acc == NULL ) {
-		ERROR("Allocation failed when refining radius!\n");
-		return NULL;
-	}
-
-	for ( i=0; i<image_feature_count(flist); i++ ) {
-
-		struct imagefeature *f;
-		double h, k, l, hd, kd, ld;
-
-		/* Assume all image "features" are genuine peaks */
-		f = image_get_feature(flist, i);
-		if ( f == NULL ) continue;
-
-		double ax, ay, az;
-		double bx, by, bz;
-		double cx, cy, cz;
-
-		cell_get_cartesian(cell,
-		                   &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-
-		/* Decimal and fractional Miller indices of nearest
-		 * reciprocal lattice point */
-		hd = f->rx * ax + f->ry * ay + f->rz * az;
-		kd = f->rx * bx + f->ry * by + f->rz * bz;
-		ld = f->rx * cx + f->ry * cy + f->rz * cz;
-		h = lrint(hd);
-		k = lrint(kd);
-		l = lrint(ld);
-
-		/* Check distance */
-		if ( (fabs(h - hd) < min_dist)
-		  && (fabs(k - kd) < min_dist)
-		  && (fabs(l - ld) < min_dist) )
-		{
-			double rlow, rhigh, p;
-			Reflection *refl;
-
-			/* Dig out the reflection */
-			refl = find_refl(reflist, h, k, l);
-			if ( refl == NULL ) {
-				n_notintegrated++;
-				continue;
-			}
-
-			get_partial(refl, &rlow, &rhigh, &p);
-			acc[n_acc++] = fabs(rlow+rhigh)/2.0;
-			if ( n_acc == max_acc ) {
-				max_acc += 1024;
-				acc = realloc(acc, max_acc*sizeof(double));
-				if ( acc == NULL ) {
-					ERROR("Allocation failed during"
-					      " estimate_resolution!\n");
-					return NULL;
-				}
-			}
-		}
-
-	}
-
-	if ( n_acc < 3 ) {
-		STATUS("WARNING: Too few peaks to estimate profile radius.\n");
-		return NULL;
-	}
-
-	*pnacc = n_acc;
-	return acc;
-}
-
-
-static void refine_radius(Crystal *cr, ImageFeatureList *flist)
-{
-	int n = 0;
-	int n_acc;
-	double *acc;
-
-	acc = excitation_errors(crystal_get_cell(cr), flist,
-	                        crystal_get_reflections(cr), &n_acc);
-	if ( acc == NULL ) return;
-
-	qsort(acc, n_acc, sizeof(double), cmpd2);
-	n = n_acc/50;
-	if ( n < 2 ) n = 2; /* n_acc is always >= 2 */
-	crystal_set_profile_radius(cr, acc[(n_acc-1)-n]);
-
-	free(acc);
-}
-
-
 void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    Stream *st, int cookie, const char *tmpdir, int results_pipe,
                    int serial)
@@ -311,15 +199,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		}
 	}
 
-	/* Preliminary integration, needed for refinement */
-	integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE,
-	                iargs->push_res,
-	                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
-	                INTDIAG_NONE, 0, 0, 0, results_pipe);
-
 	/* Measure R before refinement */
 	for ( i=0; i<image.n_crystals; i++ ) {
-		refine_radius(image.crystals[i], image.features);
+		refine_radius(image.crystals[i], &image);
 	}
 
 	/* Integrate all the crystals at once - need all the crystals so that
@@ -341,7 +223,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 			/* Reset the profile radius and estimate again with
 			 * better geometry */
 			crystal_set_profile_radius(image.crystals[i], 0.02e9);
-			refine_radius(image.crystals[i], image.features);
+			refine_radius(image.crystals[i], &image);
 
 			new_R = crystal_get_profile_radius(image.crystals[i]);
 
@@ -360,10 +242,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	}
 
-	/* The final, definitive, integration */
-	for ( i=0; i<image.n_crystals; i++ ) {
-		reflist_free(crystal_get_reflections(image.crystals[i]));
-	}
+	/* Integrate! */
 	integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE,
 	                iargs->push_res,
 	                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,

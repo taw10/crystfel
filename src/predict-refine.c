@@ -55,28 +55,77 @@ struct reflpeak {
                                * (we assume this never changes) */
 };
 
-static int pair_peaks(ImageFeatureList *flist, UnitCell *cell, RefList *reflist,
-                      struct reflpeak *rps, struct detector *det)
+
+static void twod_mapping(double fs, double ss, double *px, double *py,
+                         struct panel *p)
+{
+	double xs, ys;
+
+	xs = fs*p->fsx + ss*p->ssx;
+	ys = fs*p->fsy + ss*p->ssy;
+
+	*px = (xs + p->cnx) / p->res;
+	*py = (ys + p->cny) / p->res;
+}
+
+
+static double r_dev(struct reflpeak *rp)
+{
+	/* Excitation error term */
+	double rlow, rhigh, p;
+	get_partial(rp->refl, &rlow, &rhigh, &p);
+	return (rlow+rhigh)/2.0;
+}
+
+
+static double x_dev(struct reflpeak *rp, struct detector *det)
+{
+	/* Peak position term */
+	double xpk, ypk, xh, yh;
+	double fsh, ssh;
+	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel);
+	get_detector_pos(rp->refl, &fsh, &ssh);
+	twod_mapping(fsh, ssh, &xh, &yh, rp->panel);
+	return xh-xpk;
+}
+
+
+static double y_dev(struct reflpeak *rp, struct detector *det)
+{
+	/* Peak position term */
+	double xpk, ypk, xh, yh;
+	double fsh, ssh;
+	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel);
+	get_detector_pos(rp->refl, &fsh, &ssh);
+	twod_mapping(fsh, ssh, &xh, &yh, rp->panel);
+	return yh-ypk;
+}
+
+
+/* Associate a Reflection with each peak in "image" which is close to Bragg.
+ * Reflections will be added to "reflist", which can be NULL if this is not
+ * needed.  "rps" must be an array of sufficient size for all the peaks */
+static int pair_peaks(struct image *image, Crystal *cr,
+                      RefList *reflist, struct reflpeak *rps)
 {
 	int i;
 	const double min_dist = 0.05;
 	int n_acc = 0;
-	int n_notintegrated = 0;
 
-	for ( i=0; i<image_feature_count(flist); i++ ) {
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
 		double h, k, l, hd, kd, ld;
 
 		/* Assume all image "features" are genuine peaks */
-		f = image_get_feature(flist, i);
+		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
 		double ax, ay, az;
 		double bx, by, bz;
 		double cx, cy, cz;
 
-		cell_get_cartesian(cell,
+		cell_get_cartesian(crystal_get_cell(cr),
 		                   &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
 		/* Decimal and fractional Miller indices of nearest
@@ -94,17 +143,28 @@ static int pair_peaks(ImageFeatureList *flist, UnitCell *cell, RefList *reflist,
 		  && (fabs(l - ld) < min_dist) )
 		{
 			Reflection *refl;
+			struct panel *p;
 
-			/* Dig out the reflection */
-			refl = find_refl(reflist, h, k, l);
+			refl = reflection_new(h, k, l);
 			if ( refl == NULL ) {
-				n_notintegrated++;
-				continue;
+				ERROR("Failed to create reflection\n");
+				return 0;
 			}
+
+			if ( reflist != NULL ) add_refl_to_list(refl, reflist);
+			set_symmetric_indices(refl, h, k, l);
+
+			/* It doesn't matter if the actual predicted location
+			 * doesn't fall on this panel.  We're only interested
+			 * in how far away it is from the peak location.
+			 * The predicted position and excitation errors will be
+			 * filled in by update_partialities(). */
+			p = find_panel(image->det, f->fs, f->ss);
+			set_panel(refl, p);
 
 			rps[n_acc].refl = refl;
 			rps[n_acc].peak = f;
-			rps[n_acc].panel = find_panel(det, f->fs, f->ss);
+			rps[n_acc].panel = p;
 			n_acc++;
 		}
 
@@ -114,19 +174,48 @@ static int pair_peaks(ImageFeatureList *flist, UnitCell *cell, RefList *reflist,
 }
 
 
-static void twod_mapping(double fs, double ss, double *px, double *py,
-                         struct panel *p)
+static int cmpd2(const void *av, const void *bv)
 {
-	double xs, ys;
+	struct reflpeak *a, *b;
 
-	xs = fs*p->fsx + ss*p->ssx;
-	ys = fs*p->fsy + ss*p->ssy;
+	a = (struct reflpeak *)av;
+	b = (struct reflpeak *)bv;
 
-	*px = (xs + p->cnx) / p->res;
-	*py = (ys + p->cny) / p->res;
+	if ( fabs(r_dev(a)) < fabs(r_dev(b)) ) return -1;
+	return 1;
 }
 
 
+void refine_radius(Crystal *cr, struct image *image)
+{
+	int n, n_acc;
+	struct reflpeak *rps;
+	RefList *reflist;
+
+	/* Maximum possible size */
+	rps = malloc(image_feature_count(image->features)
+	                  * sizeof(struct reflpeak));
+	if ( rps == NULL ) return;
+
+	reflist = reflist_new();
+	n_acc = pair_peaks(image, cr, reflist, rps);
+	if ( n_acc < 3 ) {
+		ERROR("Too few paired peaks (%i) to determine radius\n", n_acc);
+		free(rps);
+		return;
+	}
+	crystal_set_reflections(cr, reflist);
+	update_partialities(cr, PMODEL_SCSPHERE);
+	crystal_set_reflections(cr, NULL);
+
+	qsort(rps, n_acc, sizeof(struct reflpeak), cmpd2);
+	n = (n_acc-1) - n_acc/50;
+	if ( n < 2 ) n = 2; /* n_acc is always >= 2 */
+	crystal_set_profile_radius(cr, fabs(r_dev(&rps[n])));
+
+	reflist_free(reflist);
+	free(rps);
+}
 
 
 /* Returns d(xh-xpk)/dP + d(yh-ypk)/dP, where P = any parameter */
@@ -236,39 +325,6 @@ static double y_gradient(int param, struct reflpeak *rp, struct detector *det,
 
 	ERROR("Positional gradient requested for parameter %i?\n", param);
 	abort();
-}
-
-
-static double r_dev(struct reflpeak *rp)
-{
-	/* Excitation error term */
-	double rlow, rhigh, p;
-	get_partial(rp->refl, &rlow, &rhigh, &p);
-	return (rlow+rhigh)/2.0;
-}
-
-
-static double x_dev(struct reflpeak *rp, struct detector *det)
-{
-	/* Peak position term */
-	double xpk, ypk, xh, yh;
-	double fsh, ssh;
-	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel);
-	get_detector_pos(rp->refl, &fsh, &ssh);
-	twod_mapping(fsh, ssh, &xh, &yh, rp->panel);
-	return xh-xpk;
-}
-
-
-static double y_dev(struct reflpeak *rp, struct detector *det)
-{
-	/* Peak position term */
-	double xpk, ypk, xh, yh;
-	double fsh, ssh;
-	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel);
-	get_detector_pos(rp->refl, &fsh, &ssh);
-	twod_mapping(fsh, ssh, &xh, &yh, rp->panel);
-	return yh-ypk;
 }
 
 
@@ -459,18 +515,20 @@ int refine_prediction(struct image *image, Crystal *cr)
 	int i;
 	struct reflpeak *rps;
 	double max_I;
+	RefList *reflist;
 
 	rps = malloc(image_feature_count(image->features)
 	                       * sizeof(struct reflpeak));
 	if ( rps == NULL ) return 1;
 
-	n = pair_peaks(image->features, crystal_get_cell(cr),
-	               crystal_get_reflections(cr), rps, image->det);
+	reflist = reflist_new();
+	n = pair_peaks(image, cr, reflist, rps);
 	if ( n < 10 ) {
 		ERROR("Too few paired peaks to refine orientation.\n");
 		free(rps);
 		return 1;
 	}
+	crystal_set_reflections(cr, reflist);
 
 	/* Normalise the intensities to max 1 */
 	max_I = -INFINITY;
@@ -493,6 +551,8 @@ int refine_prediction(struct image *image, Crystal *cr)
 		update_partialities(cr, PMODEL_SCSPHERE);
 	}
 
+	crystal_set_reflections(cr, NULL);
+	reflist_free(reflist);
 	free(rps);
 	return 0;
 }
