@@ -2171,45 +2171,39 @@ static int draw_detector(cairo_surface_t *surf, struct image *image,
 }
 
 
-static int save_data_to_png(char * filename, struct detector* det,
+static int save_data_to_png(char *filename, struct detector *det,
                             int max_fs, int max_ss, double default_fill_value,
                             double *data)
 {
-	struct image *im;
+	struct image im;
 	int i;
 	struct rectangle rect;
 
 	cairo_status_t r;
 	cairo_surface_t *surf;
 
-	im = malloc(sizeof(struct image));
-	if ( im == NULL ) {
+	im.data = malloc((max_fs+1)*(max_ss+1)*sizeof(float));
+	if ( im.data == NULL ) {
 		ERROR("Failed to allocate memory to save data.\n");
 		return 1;
 	}
-	im->data = malloc((max_fs+1)*(max_ss+1)*sizeof(float));
-	if ( im->data == NULL ) {
-		ERROR("Failed to allocate memory to save data.\n");
-		free(im);
-		return 1;
-	}
-	im->det = det;
-	im->width = max_fs+1;
-	im->height = max_ss+1;
-	im->flags = NULL;
+	im.det = det;
+	im.width = max_fs+1;
+	im.height = max_ss+1;
+	im.flags = NULL;
 
 	for ( i=0; i<(max_fs+1)*(max_ss+1); i++) {
 		if ( data[i] == default_fill_value ) {
-			im->data[i] = 0.0;
+			im.data[i] = 0.0;
 		} else if ( data[i] > 1.0) {
-			im->data[i] = 1.0;
+			im.data[i] = 1.0;
 		} else {
-			im->data[i] = (float)data[i];
+			im.data[i] = (float)data[i];
 		}
-		im->data[i] *= 10.0; /* render_panels sets this as max */
+		im.data[i] *= 10.0; /* render_panels sets this as max */
 	}
 
-	get_pixel_extents(im->det, &rect.min_x, &rect.min_y, &rect.max_x,
+	get_pixel_extents(im.det, &rect.min_x, &rect.min_y, &rect.max_x,
 	                  &rect.max_y);
 
 	if (rect.min_x > 0.0) rect.min_x = 0.0;
@@ -2217,8 +2211,8 @@ static int save_data_to_png(char * filename, struct detector* det,
 	if (rect.min_y > 0.0) rect.min_y = 0.0;
 	if (rect.max_y < 0.0) rect.max_y = 0.0;
 
-	rect.width = (rect.max_x - rect.min_x);
-	rect.height = (rect.max_y - rect.min_y);
+	rect.width = rect.max_x - rect.min_x;
+	rect.height = rect.max_y - rect.min_y;
 
 	/* Add a thin border */
 	rect.width += 2.0;
@@ -2226,17 +2220,15 @@ static int save_data_to_png(char * filename, struct detector* det,
 	surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, rect.width,
 	                                  rect.height);
 
-	draw_detector(surf, im, rect);
+	draw_detector(surf, &im, rect);
 
 	r = cairo_surface_write_to_png(surf, filename);
 	if (r != CAIRO_STATUS_SUCCESS) {
-		free(im->data);
-		free(im);
+		free(im.data);
 		return 1;
 	}
 
-	free(im->data);
-	free(im);
+	free(im.data);
 
 	return 0;
 }
