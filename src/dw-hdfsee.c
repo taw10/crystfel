@@ -1517,7 +1517,7 @@ static void set_events_menu_sensitivity(DisplayWindow *dw, int val) {
 	                  "/ui/displaywindow/events/eventnext");
 	gtk_action_set_sensitive(GTK_ACTION(a), val);
 	a = gtk_ui_manager_get_action(dw->ui,
-	                  "/ui/displaywindow/events/gotevent");
+	                  "/ui/displaywindow/events/gotoevent");
 	gtk_action_set_sensitive(GTK_ACTION(a), val);
 	a = gtk_ui_manager_get_action(dw->ui,
 	                  "/ui/displaywindow/events/randomevent");
