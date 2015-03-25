@@ -110,9 +110,9 @@ static struct asdf_cell asdf_cell_new(int n)
 	c.N_refls = n;
 	c.reflections = malloc(sizeof(int) * n);
 	
-	c.indices = malloc(sizeof(int *) * n);
+	c.indices = malloc(sizeof(double *) * n);
 	for ( i = 0; i < n; i++ ) {
-		c.indices[i] = malloc(sizeof(int) * 3);
+		c.indices[i] = malloc(sizeof(double) * 3);
 	}
 	
 	c.n = 0;
@@ -139,11 +139,9 @@ static int asdf_cell_memcpy(struct asdf_cell *dest, struct asdf_cell *src)
 	
 	dest->n = src->n;
 	memcpy(dest->reflections, src->reflections, sizeof(int) * n);
-	
-	memcpy(dest->indices, src->indices, sizeof(int *) * n);
-	
+		
 	for (i  = 0; i < n; i++ ) {
-		memcpy(dest->indices[i], src->indices[i], sizeof(int) * 3);
+		memcpy(dest->indices[i], src->indices[i], sizeof(double) * 3);
 	}
 	
 	dest->acl = src->acl;
@@ -1012,7 +1010,7 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 	if ( dp->indm & INDEXING_CHECK_CELL_AXES ) {
 		double volume = cell_get_volume(dp->template);
 		double vtol = (dp->ltl[0] + dp->ltl[1] + dp->ltl[2]) / 100 + 
-		              dp->ltl[3] / 180 * M_PI;
+		               dp->ltl[3] / 180 * M_PI;
 		volume_min = volume * (1 - vtol);
 		volume_max = volume * (1 + vtol);
 	}
