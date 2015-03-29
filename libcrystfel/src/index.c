@@ -398,7 +398,7 @@ char *indexer_str(IndexingMethod indm)
 		break;
 
 		default :
-		ERROR("Unrecognised indexing method %i\n",
+		ERROR("No test description for indexing method %i\n",
 		      indm & INDEXING_METHOD_MASK);
 		strcpy(str, "(unknown)");
 		break;
