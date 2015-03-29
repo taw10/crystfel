@@ -63,7 +63,7 @@ typedef enum {
 
 
 /* Enumeration of parameters which may want to be refined */
-enum {
+enum gparam {
 	GPARAM_ASX,
 	GPARAM_ASY,
 	GPARAM_ASZ,
@@ -75,6 +75,9 @@ enum {
 	GPARAM_CSZ,
 	GPARAM_R,
 	GPARAM_DIV,
+	GPARAM_DETX,
+	GPARAM_DETY,
+	GPARAM_CLEN
 };
 
 

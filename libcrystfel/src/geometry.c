@@ -370,6 +370,11 @@ double r_gradient(UnitCell *cell, int k, Reflection *refl, struct image *image)
 		case GPARAM_CSZ :
 		return - ls * cos(phi);
 
+		case GPARAM_DETX :
+		case GPARAM_DETY :
+		case GPARAM_CLEN :
+		return 0.0;
+
 	}
 
 	ERROR("No r gradient defined for parameter %i\n", k);

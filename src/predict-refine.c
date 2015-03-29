@@ -235,7 +235,7 @@ static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
 	tt = asin(lambda * resolution(cell, h, k, l));
 	clen = rp->panel->clen;
 	azi = atan2(yh, xh);
-	azf = 2.0*cos(azi);  /* FIXME: Why factor of 2? */
+	azf = cos(azi);
 
 	switch ( param ) {
 
@@ -258,13 +258,22 @@ static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
 		return 0.0;
 
 		case GPARAM_ASZ :
-		return -h * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
+		return -h * lambda * clen * 2*azf * sin(tt) / (cos(tt)*cos(tt));
 
 		case GPARAM_BSZ :
-		return -k * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
+		return -k * lambda * clen * 2*azf * sin(tt) / (cos(tt)*cos(tt));
 
 		case GPARAM_CSZ :
-		return -l * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
+		return -l * lambda * clen * 2*azf * sin(tt) / (cos(tt)*cos(tt));
+
+		case GPARAM_DETX :
+		return -1;
+
+		case GPARAM_DETY :
+		return 0;
+
+		case GPARAM_CLEN :
+		return azf * cos(tt);
 
 	}
 
@@ -290,7 +299,7 @@ static double y_gradient(int param, struct reflpeak *rp, struct detector *det,
 	tt = asin(lambda * resolution(cell, h, k, l));
 	clen = rp->panel->clen;
 	azi = atan2(yh, xh);
-	azf = 2.0*sin(azi);  /* FIXME: Why factor of 2? */
+	azf = sin(azi);
 
 	switch ( param ) {
 
@@ -313,14 +322,22 @@ static double y_gradient(int param, struct reflpeak *rp, struct detector *det,
 		return l * lambda * clen / cos(tt);
 
 		case GPARAM_ASZ :
-		return -h * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
+		return -h * lambda * clen * 2*azf * sin(tt) / (cos(tt)*cos(tt));
 
 		case GPARAM_BSZ :
-		return -k * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
+		return -k * lambda * clen * 2*azf * sin(tt) / (cos(tt)*cos(tt));
 
 		case GPARAM_CSZ :
-		return -l * lambda * clen * azf * sin(tt) / (cos(tt)*cos(tt));
+		return -l * lambda * clen * 2*azf * sin(tt) / (cos(tt)*cos(tt));
 
+		case GPARAM_DETX :
+		return 0;
+
+		case GPARAM_DETY :
+		return -1;
+
+		case GPARAM_CLEN :
+		return azf * cos(tt);
 	}
 
 	ERROR("Positional gradient requested for parameter %i?\n", param);
