@@ -237,7 +237,7 @@ void refine_radius(Crystal *cr, struct image *image)
 }
 
 
-/* Returns d(xh-xpk)/dP + d(yh-ypk)/dP, where P = any parameter */
+/* Returns d(xh-xpk)/dP, where P = any parameter */
 static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
                          double lambda, UnitCell *cell)
 {
