@@ -47,6 +47,25 @@
 /* Weighting of excitation error term (m^-1) compared to position term (m) */
 #define EXC_WEIGHT (4e-20)
 
+/* Parameters to refine */
+static const enum gparam rv[] =
+{
+	GPARAM_ASX,
+	GPARAM_ASY,
+	GPARAM_ASZ,
+	GPARAM_BSX,
+	GPARAM_BSY,
+	GPARAM_BSZ,
+	GPARAM_CSX,
+	GPARAM_CSY,
+	GPARAM_CSZ,
+	GPARAM_DETX,
+	GPARAM_DETY,
+	GPARAM_CLEN
+};
+
+static const int num_params = 12;
+
 struct reflpeak {
 	Reflection *refl;
 	struct imagefeature *peak;
@@ -345,8 +364,23 @@ static double y_gradient(int param, struct reflpeak *rp, struct detector *det,
 }
 
 
+static void update_detector(struct detector *det, double xoffs, double yoffs,
+                            double coffs)
+{
+	int i;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+		struct panel *p = &det->panels[i];
+		p->cnx += xoffs * p->res;
+		p->cny += yoffs * p->res;
+		p->coffset += coffs;
+	}
+}
+
+
 static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
-                   struct image *image)
+                   struct image *image,
+                   double *total_x, double *total_y, double *total_z)
 {
 	int i;
 	gsl_matrix *M;
@@ -357,28 +391,29 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	double csx, csy, csz;
 
 	/* Number of parameters to refine */
-	M = gsl_matrix_calloc(9, 9);
-	v = gsl_vector_calloc(9);
+	M = gsl_matrix_calloc(num_params, num_params);
+	v = gsl_vector_calloc(num_params);
 
 	for ( i=0; i<n; i++ ) {
 
 		int k;
-		double gradients[9];
+		double gradients[num_params];
 		double w;
 
 		/* Excitation error terms */
 		w = EXC_WEIGHT * rps[i].Ih;
 
-		for ( k=0; k<9; k++ ) {
-			gradients[k] = r_gradient(cell, k, rps[i].refl, image);
+		for ( k=0; k<num_params; k++ ) {
+			gradients[k] = r_gradient(cell, rv[k], rps[i].refl,
+			                          image);
 		}
 
-		for ( k=0; k<9; k++ ) {
+		for ( k=0; k<num_params; k++ ) {
 
 			int g;
 			double v_c, v_curr;
 
-			for ( g=0; g<9; g++ ) {
+			for ( g=0; g<num_params; g++ ) {
 
 				double M_c, M_curr;
 
@@ -400,17 +435,17 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 		}
 
 		/* Positional x terms */
-		for ( k=0; k<9; k++ ) {
-			gradients[k] = x_gradient(k, &rps[i], image->det,
+		for ( k=0; k<num_params; k++ ) {
+			gradients[k] = x_gradient(rv[k], &rps[i], image->det,
 			                          image->lambda, cell);
 		}
 
-		for ( k=0; k<9; k++ ) {
+		for ( k=0; k<num_params; k++ ) {
 
 			int g;
 			double v_c, v_curr;
 
-			for ( g=0; g<9; g++ ) {
+			for ( g=0; g<num_params; g++ ) {
 
 				double M_c, M_curr;
 
@@ -432,17 +467,17 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 		}
 
 		/* Positional y terms */
-		for ( k=0; k<9; k++ ) {
-			gradients[k] = y_gradient(k, &rps[i], image->det,
+		for ( k=0; k<num_params; k++ ) {
+			gradients[k] = y_gradient(rv[k], &rps[i], image->det,
 			                          image->lambda, cell);
 		}
 
-		for ( k=0; k<9; k++ ) {
+		for ( k=0; k<num_params; k++ ) {
 
 			int g;
 			double v_c, v_curr;
 
-			for ( g=0; g<9; g++ ) {
+			for ( g=0; g<num_params; g++ ) {
 
 				double M_c, M_curr;
 
@@ -474,7 +509,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 		return 1;
 	}
 
-	for ( i=0; i<9; i++ ) {
+	for ( i=0; i<num_params; i++ ) {
 	//	STATUS("Shift %i = %e\n", i, gsl_vector_get(shifts, i));
 	}
 
@@ -482,6 +517,8 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
+
+	/* Ensure the order here matches the order in rv[] */
 	asx += gsl_vector_get(shifts, 0);
 	asy += gsl_vector_get(shifts, 1);
 	asz += gsl_vector_get(shifts, 2);
@@ -491,6 +528,13 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	csx += gsl_vector_get(shifts, 6);
 	csy += gsl_vector_get(shifts, 7);
 	csz += gsl_vector_get(shifts, 8);
+	update_detector(image->det, gsl_vector_get(shifts, 9),
+	                            gsl_vector_get(shifts, 10),
+	                            gsl_vector_get(shifts, 11));
+	*total_x += gsl_vector_get(shifts, 9);
+	*total_y += gsl_vector_get(shifts, 10);
+	*total_z += gsl_vector_get(shifts, 11);
+
 	cell_set_reciprocal(cell, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
 
 	gsl_vector_free(shifts);
@@ -539,6 +583,10 @@ int refine_prediction(struct image *image, Crystal *cr)
 	struct reflpeak *rps;
 	double max_I;
 	RefList *reflist;
+	double total_x = 0.0;
+	double total_y = 0.0;
+	double total_z = 0.0;
+	char tmp[1024];
 
 	rps = malloc(image_feature_count(image->features)
 	                       * sizeof(struct reflpeak));
@@ -572,8 +620,14 @@ int refine_prediction(struct image *image, Crystal *cr)
 	/* Refine */
 	for ( i=0; i<MAX_CYCLES; i++ ) {
 		update_partialities(cr, PMODEL_SCSPHERE);
-		if ( iterate(rps, n, crystal_get_cell(cr), image) ) return 1;
+		if ( iterate(rps, n, crystal_get_cell(cr), image,
+		             &total_x, &total_y, &total_z) ) return 1;
 	}
+
+	snprintf(tmp, 1024, "predict_refine/det_shift x = %.2f y = %.2f mm\n"
+	                    "predict_refine/clen_shift = %.2f mm",
+	                    total_x*1e3, total_y*1e3, total_z*1e3);
+	crystal_add_notes(cr, tmp);
 
 	crystal_set_reflections(cr, NULL);
 	reflist_free(reflist);

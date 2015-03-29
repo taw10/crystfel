@@ -230,7 +230,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 			snprintf(notes, 1024, "predict_refine/R old "
 			                      "= %.5f new = %.5f nm^-1",
 			                      old_R/1e9, new_R/1e9);
-			crystal_set_notes(image.crystals[i], notes);
+			crystal_add_notes(image.crystals[i], notes);
 
 		}
 
