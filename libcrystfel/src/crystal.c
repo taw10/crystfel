@@ -291,3 +291,28 @@ void crystal_set_notes(Crystal *cryst, const char *notes)
 	free(cryst->notes);  /* free(NULL) is OK */
 	cryst->notes = strdup(notes);
 }
+
+
+void crystal_add_notes(Crystal *cryst, const char *notes_add)
+{
+	size_t len;
+	char *nnotes;
+
+	if ( cryst->notes == NULL ) {
+		crystal_set_notes(cryst, notes_add);
+		return;
+	}
+
+	len = strlen(notes_add) + strlen(cryst->notes) + 2;
+	nnotes = malloc(len);
+	if ( nnotes == NULL ) {
+		ERROR("Failed to add notes to crystal.\n");
+		return;
+	}
+
+	strcpy(nnotes, cryst->notes);
+	strcat(nnotes, "\n");
+	strcat(nnotes, notes_add);
+	free(cryst->notes);
+	cryst->notes = nnotes;
+}

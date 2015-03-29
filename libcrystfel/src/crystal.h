@@ -82,6 +82,8 @@ extern void crystal_set_image(Crystal *cryst, struct image *image);
 extern void crystal_set_mosaicity(Crystal *cryst, double m);
 extern void crystal_set_notes(Crystal *cryst, const char *notes);
 
+extern void crystal_add_notes(Crystal *cryst, const char *notes_add);
+
 #ifdef __cplusplus
 }
 #endif
