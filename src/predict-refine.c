@@ -128,7 +128,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
                       RefList *reflist, struct reflpeak *rps)
 {
 	int i;
-	const double min_dist = 0.05;
+	const double min_dist = 0.25;
 	int n_acc = 0;
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
