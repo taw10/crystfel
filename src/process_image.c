@@ -190,6 +190,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	image.crystals = NULL;
 	image.n_crystals = 0;
 	image.serial = serial;
+	image.indexed_by = INDEXING_NONE;
 
 	hdfile = hdfile_open(image.filename);
 	if ( hdfile == NULL ) {
