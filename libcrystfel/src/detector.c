@@ -1223,7 +1223,7 @@ struct detector *get_detector_geometry(const char *filename,
 	det->defaults.orig_max_ss = -1;
 	det->defaults.cnx = NAN;
 	det->defaults.cny = NAN;
-	det->defaults.clen = -1.0;
+	det->defaults.clen = NAN;
 	det->defaults.coffset = 0.0;
 	det->defaults.res = -1.0;
 	det->defaults.badrow = '-';
@@ -1496,7 +1496,7 @@ struct detector *get_detector_geometry(const char *filename,
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( (det->panels[i].clen < 0.0)
+		if ( isnan(det->panels[i].clen)
 		  && (det->panels[i].clen_from == NULL) ) {
 			ERROR("Please specify the camera length for"
 			      " panel %s\n", det->panels[i].name);
