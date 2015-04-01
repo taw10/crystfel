@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
+import sys
+
+f = open(sys.argv[1])
+
+frame_number = 0
+crystal_number = 0
+
+while True:
+    fline = f.readline()
+    if not fline:
+        break
+    if fline.find("Image filename") != -1:
+        frame_number += 1
+        fn = fline.split(': ')[1].split(' ')[0].rstrip("\r\n")
+	print 'Frame %i: %s' % (frame_number, fn)
+    if fline.find("diffraction_resolution_limit") != -1:
+        crystal_number += 1
+	print '  Crystal %i: %s' % (crystal_number, fline.rstrip("\r\n"))
+
+f.close()
