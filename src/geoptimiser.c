@@ -2096,7 +2096,8 @@ static int unpack_slab(struct image *image)
 
 
 static int draw_detector(cairo_surface_t *surf, struct image *image,
-                         struct rectangle rect) {
+                         struct rectangle rect)
+{
 	cairo_t *cr;
 	cairo_matrix_t basic_m;
 	cairo_matrix_t m;
