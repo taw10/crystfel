@@ -3,6 +3,8 @@
 use strict;
 use File::Basename;
 
+my $skip = 0;
+
 my $only;
 my $file;
 my $start;
@@ -38,6 +40,8 @@ my $line;
 my $filename;
 my $event;
 my $indexed;
+my $n_seen = 0;
+
 while ( $line = <FH> ) {
 
 	chomp $line;
@@ -108,10 +112,18 @@ while ( $line = <FH> ) {
 			$ev = " --event=".$event;
 			$evr = ", event ".$event;
 		}
-		printf(STDERR "Viewing %s%s\n", $filename, $evr);
-		system("hdfsee ".$filename.$ev.
-		       " --peak-overlay=list.tmp ".$args);
-		if ( $? != 0 ) { exit; }
+
+		$n_seen++;
+		if ( $n_seen > $skip ) {
+
+			printf(STDERR "Viewing %s%s\n", $filename, $evr);
+			system("hdfsee ".$filename.$ev.
+			       " --peak-overlay=list.tmp ".$args);
+			if ( $? != 0 ) { exit; }
+		} else {
+			printf(STDERR "Skipping %s%s\n", $filename, $evr);
+		}
+
 		unlink("list.tmp");
 		open(TMP, "> list.tmp");
 		$in_image = 0;
