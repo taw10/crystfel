@@ -2049,6 +2049,52 @@ struct rectangle
 };
 
 
+static int unpack_slab(struct image *image)
+{
+	struct detector *det = image->det;
+	int pi;
+
+	image->dp = malloc(det->n_panels * sizeof(float *));
+	image->bad = malloc(det->n_panels * sizeof(int *));
+	if ( (image->dp == NULL) || (image->bad == NULL) ) {
+		ERROR("Failed to allocate panels.\n");
+		return 1;
+	}
+
+	for ( pi=0; pi<det->n_panels; pi++ ) {
+
+		struct panel *p;
+		int fs, ss;
+
+		p = &det->panels[pi];
+		image->dp[pi] = malloc(p->w*p->h*sizeof(float));
+		image->bad[pi] = calloc(p->w*p->h, sizeof(int));
+		if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL) ) {
+			ERROR("Failed to allocate panel\n");
+			return 1;
+		}
+
+		for ( ss=0; ss<p->h; ss++ ) {
+		for ( fs=0; fs<p->w; fs++ ) {
+
+			int idx;
+			int cfs, css;
+
+			cfs = fs+p->min_fs;
+			css = ss+p->min_ss;
+			idx = cfs + css*image->width;
+
+			image->dp[pi][fs+p->w*ss] = image->data[idx];
+			image->bad[pi][fs+p->w*ss] = 0;
+
+		}
+		}
+	}
+
+	return 0;
+}
+
+
 static int draw_detector(cairo_surface_t *surf, struct image *image,
                          struct rectangle rect) {
 	cairo_t *cr;
@@ -2059,6 +2105,7 @@ static int draw_detector(cairo_surface_t *surf, struct image *image,
 
 	cr = cairo_create(surf);
 
+	unpack_slab(image);
 	pixbufs = render_panels(image, 1, 0, 1, &n_pixbufs);
 
 	/* Blank grey background */
