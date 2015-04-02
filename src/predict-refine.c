@@ -635,7 +635,7 @@ int refine_prediction(struct image *image, Crystal *cr)
 		return 1;
 	}
 	crystal_set_reflections(cr, reflist);
-	write_pairs("pairs.lst", rps, n, image->det);
+	//write_pairs("pairs.lst", rps, n, image->det);
 
 	/* Normalise the intensities to max 1 */
 	max_I = -INFINITY;
