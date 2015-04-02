@@ -90,6 +90,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	int r;
 	int ret;
 	char *rn;
+	int n_crystals_left;
 
 	image.features = NULL;
 	image.data = NULL;
@@ -241,6 +242,17 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 			}
 		}
 
+	}
+
+	/* If there are no crystals left, set the indexing flag back to zero */
+	n_crystals_left = 0;
+	for ( i=0; i<image.n_crystals; i++ ) {
+		if ( crystal_get_user_flag(image.crystals[i]) == 0 ) {
+			n_crystals_left++;
+		}
+	}
+	if ( n_crystals_left == 0 ) {
+		image.indexed_by = INDEXING_NONE;
 	}
 
 	/* Integrate! */
