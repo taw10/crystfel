@@ -121,6 +121,40 @@ static double y_dev(struct reflpeak *rp, struct detector *det)
 }
 
 
+static void write_pairs(const char *filename, struct reflpeak *rps, int n,
+                        struct detector *det)
+{
+	int i;
+	FILE *fh;
+
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) {
+		ERROR("Failed to open '%s'\n", filename);
+		return;
+	}
+
+	for ( i=0; i<n; i++ ) {
+
+		double write_fs, write_ss;
+		double fs, ss;
+		struct panel *p;
+
+		fs = rps[i].peak->fs;
+		ss = rps[i].peak->ss;
+
+		p = find_panel(det, fs, ss);
+		write_fs = fs - p->min_fs + p->orig_min_fs;
+		write_ss = ss - p->min_ss + p->orig_min_ss;
+		fprintf(fh, "%f %f\n", write_fs, write_ss);
+
+	}
+
+	fclose(fh);
+
+	STATUS("Wrote %i pairs to %s\n", n, filename);
+}
+
+
 /* Associate a Reflection with each peak in "image" which is close to Bragg.
  * Reflections will be added to "reflist", which can be NULL if this is not
  * needed.  "rps" must be an array of sufficient size for all the peaks */
@@ -601,6 +635,7 @@ int refine_prediction(struct image *image, Crystal *cr)
 		return 1;
 	}
 	crystal_set_reflections(cr, reflist);
+	write_pairs("pairs.lst", rps, n, image->det);
 
 	/* Normalise the intensities to max 1 */
 	max_I = -INFINITY;
