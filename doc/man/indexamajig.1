@@ -337,6 +337,11 @@ Fix the beam and crystal paramters to the given values.  The profile radius is g
 .IP
 You do not have to use all three of these options together.  For example, if the automatic profile radius determination is not working well for your data set, you could fix that alone and continue using the default values for the other parameters (which might be automatically determined in future versions of CrystFEL, but are not currently).
 
+.PD 0
+.IP \fB--no-refine
+.PD
+Skip the prediction refinement step.
+
 .SH IDENTIFYING SINGLE PATTERNS IN THE INPUT FILE
 
 By default indexamajig processes all diffraction patterns ("events") in each of the data files listed in the input list. It is however, possible, to only process single events in a multi-event file, by adding in the list an event description string after the data filename. The event description always includes a first section with alphanumeric strings separated by forward slashes ("/") and a second section with integer numbers also separated by forward slashes. The two sections are in turn separated by a double forward slash ('//'). Any of the two sections can be empty, but the double forward slash separator must always be present.  Indexamajig matches the strings and the numbers in the event description with the event placeholders ('%') present respectively in the 'data' and 'dim' properties defined in the geometry file, and tries to retrieve the full HDF path to the event data and the the its location in a multi-dimensional data space. Consider the following examples:

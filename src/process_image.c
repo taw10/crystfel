@@ -53,6 +53,30 @@
 #include "predict-refine.h"
 
 
+static void try_refine_autoR(struct image *image, Crystal *cr)
+{
+	double old_R, new_R;
+	char notes[1024];
+
+	refine_radius(cr, image);
+	old_R = crystal_get_profile_radius(cr);
+
+	if ( refine_prediction(image, cr) ) {
+		crystal_set_user_flag(cr, 1);
+		return;
+	}
+
+	/* Reset the profile radius and estimate again with better geometry */
+	crystal_set_profile_radius(cr, 0.02e9);
+	refine_radius(cr, image);
+	new_R = crystal_get_profile_radius(cr);
+
+	snprintf(notes, 1024, "predict_refine/R old = %.5f new = %.5f nm^-1",
+	                      old_R/1e9, new_R/1e9);
+	crystal_add_notes(cr, notes);
+}
+
+
 void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    Stream *st, int cookie, const char *tmpdir, int results_pipe,
                    int serial)
@@ -199,45 +223,22 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		}
 	}
 
-	/* Measure R before refinement */
-	for ( i=0; i<image.n_crystals; i++ ) {
-		refine_radius(image.crystals[i], &image);
-	}
-
-	/* Integrate all the crystals at once - need all the crystals so that
-	 * overlaps can be detected. */
 	if ( iargs->fix_profile_r < 0.0 ) {
 
 		for ( i=0; i<image.n_crystals; i++ ) {
-
-			double old_R, new_R;
-			char notes[1024];
-
-			if ( refine_prediction(&image, image.crystals[i]) ) {
-				crystal_set_user_flag(image.crystals[i], 1);
-				continue;
+			if ( iargs->predict_refine ) {
+				try_refine_autoR(&image, image.crystals[i]);
+			} else {
+				refine_radius(image.crystals[i], &image);
 			}
-
-			old_R = crystal_get_profile_radius(image.crystals[i]);
-
-			/* Reset the profile radius and estimate again with
-			 * better geometry */
-			crystal_set_profile_radius(image.crystals[i], 0.02e9);
-			refine_radius(image.crystals[i], &image);
-
-			new_R = crystal_get_profile_radius(image.crystals[i]);
-
-			snprintf(notes, 1024, "predict_refine/R old "
-			                      "= %.5f new = %.5f nm^-1",
-			                      old_R/1e9, new_R/1e9);
-			crystal_add_notes(image.crystals[i], notes);
-
 		}
 
 	} else {
 
 		for ( i=0; i<image.n_crystals; i++ ) {
-			refine_prediction(&image, image.crystals[i]);
+			if ( iargs->predict_refine ) {
+				refine_prediction(&image, image.crystals[i]);
+			}
 		}
 
 	}

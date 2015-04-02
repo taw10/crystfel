@@ -147,6 +147,7 @@ static void show_help(const char *s)
 "     --no-peaks-in-stream Do not record peak search results in the stream.\n"
 "     --no-refls-in-stream Do not record integrated reflections in the stream.\n"
 "     --int-diag=<cond>    Show debugging information about reflections.\n"
+"     --no-refine          Skip the prediction refinement step.\n"
 );
 }
 
@@ -242,6 +243,7 @@ int main(int argc, char *argv[])
 	iargs.fix_profile_r = -1.0;
 	iargs.fix_bandwidth = -1.0;
 	iargs.fix_divergence = -1.0;
+	iargs.predict_refine = 1;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -268,6 +270,7 @@ int main(int argc, char *argv[])
 		{"no-use-saturated",   0, &iargs.use_saturated,      0},
 		{"no-revalidate",      0, &iargs.no_revalidate,      1},
 		{"check-hdf5-snr",     0, &iargs.check_hdf5_snr,     1},
+		{"no-refine",          0, &iargs.predict_refine,     0},
 
 		/* Long-only options which don't actually do anything */
 		{"no-sat-corr",        0, &iargs.satcorr,            0},
