@@ -695,7 +695,8 @@ static void scan_minmax(CellWindow *w)
 				fprintf(stderr, "Too many indexing methods\n");
 			} else {
 				IndexingMethod m = w->indms[i];
-				w->unique_indms[w->n_unique_indms++] = m;
+				w->unique_indms[w->n_unique_indms] = m;
+				w->active_indms[w->n_unique_indms++] = 1;
 			}
 		}
 
