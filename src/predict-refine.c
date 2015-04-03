@@ -659,8 +659,8 @@ int refine_prediction(struct image *image, Crystal *cr)
 		             &total_x, &total_y, &total_z) ) return 1;
 	}
 
-	snprintf(tmp, 1024, "predict_refine/det_shift x = %.2f y = %.2f mm\n"
-	                    "predict_refine/clen_shift = %.2f mm",
+	snprintf(tmp, 1024, "predict_refine/det_shift x = %.3f y = %.3f mm\n"
+	                    "predict_refine/clen_shift = %.3f mm",
 	                    total_x*1e3, total_y*1e3, total_z*1e3);
 	crystal_add_notes(cr, tmp);
 
