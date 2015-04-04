@@ -791,6 +791,7 @@ int main(int argc, char *argv[])
 	free(output_file);
 
 	image.det = det;
+	image.beam = &beam;
 	image.width = det->max_fs + 1;
 	image.height = det->max_ss + 1;
 
@@ -805,6 +806,8 @@ int main(int argc, char *argv[])
 	image.num_peaks = 0;
 	image.num_saturated_peaks = 0;
 	image.spectrum_size = 0;
+	image.spectrum = NULL;
+	image.serial = 0;
 	image.event = NULL;
 
 	STATUS("Simulation parameters:\n");
