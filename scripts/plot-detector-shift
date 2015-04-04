@@ -6,8 +6,6 @@ grep "predict_refine/det_shift" $INFILE > plotme.dat
 gnuplot -persist << EOF
 set xlabel "x shift / mm"
 set ylabel "y shift / mm"
-set grid x2tics
-set x2tics 10 lw 2 lc 0
 plot "plotme.dat" using 4:7
 replot 0 lw 2 lc 0
 EOF
