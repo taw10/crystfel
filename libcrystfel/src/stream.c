@@ -1530,27 +1530,3 @@ int rewind_stream(Stream *st)
 	return fseek(st->fh, 0, SEEK_SET);
 }
 
-
-
-double extract_f_from_stuff(const char *field_name,
-                            struct stuff_from_stream* stuff)
-{
-	int i;
-
-	char field_name_plus_equal[256];
-	sprintf(field_name_plus_equal, "hdf5%s = ", field_name);
-
-
-
-	for ( i=0; i<stuff->n_fields; i++ ) {
-
-		if ( strncmp(stuff->fields[i], field_name_plus_equal,
-		     strlen(field_name_plus_equal)) == 0 ) {
-			return atoi(stuff->fields[i]+
-			       strlen(field_name_plus_equal));
-		}
-	}
-
-	ERROR("Failed to recovery camera length from stream file\n");
-	return -1;
-}

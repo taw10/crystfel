@@ -229,6 +229,28 @@ static double compute_average_clen (struct detector *det, char **clen_from,
 }
 
 
+static double extract_f_from_stuff(const char *field_name,
+                                   struct stuff_from_stream* stuff)
+{
+	int i;
+
+	char field_name_plus_equal[256];
+	snprintf(field_name_plus_equal, 256, "hdf5%s = ", field_name);
+
+	for ( i=0; i<stuff->n_fields; i++ ) {
+
+		if ( strncmp(stuff->fields[i], field_name_plus_equal,
+		     strlen(field_name_plus_equal)) == 0 ) {
+			return atoi(stuff->fields[i]+
+			       strlen(field_name_plus_equal));
+		}
+	}
+
+	ERROR("Failed to recover camera length from stream file\n");
+	return -1;
+}
+
+
 static struct pattern_list *read_patterns_from_steam_file(const char *infile,
                                                           struct detector *det)
 {

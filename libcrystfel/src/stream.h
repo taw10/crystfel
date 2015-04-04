@@ -109,9 +109,6 @@ extern void write_geometry_file(Stream *st, const char *geom_filename);
 extern int rewind_stream(Stream *st);
 extern int is_stream(const char *filename);
 
-extern double extract_f_from_stuff(const char *field_name,
-                                   struct stuff_from_stream* stuff);
-
 #ifdef __cplusplus
 }
 #endif
