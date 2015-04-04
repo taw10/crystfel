@@ -7,15 +7,21 @@ open(FH, $ARGV[0]);
 my $line;
 my $is_indexed;
 my $filename;
+my $event = "";
 
 while ( $line = <FH> ) {
 
 	if ( $line =~ /^-----\ Begin chunk\ -----$/ ) {
 		$is_indexed = 0;
+		$event = "";
 	}
 
 	if ( $line =~ /^Image\ filename: (.*)$/ ) {
 		$filename = $1;
+	}
+
+	if ( $line =~ /^Event: (.*)$/ ) {
+		$event = $1;
 	}
 
 	if ( $line =~ /^Cell\ parameters/ ) {
@@ -24,7 +30,12 @@ while ( $line = <FH> ) {
 
 	if ( $line =~ /^-----\ End chunk\ -----$/ ) {
 		if ( $is_indexed ) {
-			printf("%s\n", $filename);
+			printf("%s", $filename);
+			if ( $event ) {
+				printf(" %s\n", $event);
+			} else {
+				printf("\n");
+			}
 		}
 	}
 
