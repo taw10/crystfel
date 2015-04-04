@@ -241,6 +241,7 @@ static void show_help(const char *s)
 "     --profile-radius     Reciprocal space reflection profile radius in m^-1.\n"
 "                           Default 0.001e9 m^-1\n"
 "     --photon-energy      Photon energy in eV.  Default 9000.\n"
+"     --really-random      Be non-deterministic.\n"
 "\n"
 );
 }
