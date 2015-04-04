@@ -99,6 +99,7 @@ Crystal *crystal_new()
 	cryst->n_saturated = 0;
 	cryst->n_implausible = 0;
 	cryst->notes = NULL;
+	cryst->user_flag = 0;
 
 	return cryst;
 }
