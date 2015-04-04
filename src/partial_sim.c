@@ -415,6 +415,27 @@ static void finalise_job(void *vqargs, void *vwargs)
 }
 
 
+static void fixup_geom(struct detector *det)
+{
+	int i;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+		det->panels[i].clen += det->panels[i].coffset;
+	}
+}
+
+
+static int geom_contains_references(struct detector *det)
+{
+	int i;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+		if ( det->panels[i].clen_from != NULL ) return 1;
+	}
+	return 0;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -708,6 +729,13 @@ int main(int argc, char *argv[])
 		ERROR("The value given on the command line "
 		      "(with --photon-energy) will be used instead.\n");
 	}
+	if ( geom_contains_references(det) ) {
+		ERROR("Geometry file contains a reference to an HDF5 location"
+		      " for the camera length.  Change it to a numerical value "
+		      " and try again.\n");
+		return 1;
+	}
+	fixup_geom(det);
 
 	if ( sym_str == NULL ) sym_str = strdup("1");
 	sym = get_pointgroup(sym_str);
