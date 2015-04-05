@@ -3,9 +3,12 @@
 INFILE=$1
 
 grep "predict_refine/det_shift" $INFILE > plotme.dat
+echo "0 0" > plotme2.dat
 gnuplot -persist << EOF
 set xlabel "x shift / mm"
 set ylabel "y shift / mm"
-plot "plotme.dat" using 4:7
-replot 0 lw 2 lc 0
+set size square
+plot [-1:1] [-1:1] "plotme.dat" using 4:7 title "Detector shifts"
+replot "plotme2.dat" using 1:2 w p ps 4 pt 6 title "0,0"
 EOF
+rm -f plotme.dat plotme2.dat
