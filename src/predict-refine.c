@@ -279,6 +279,8 @@ static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
 	double xpk, ypk, xh, yh;
 	double fsh, ssh;
 	double tt, clen, azi, azf;
+	double x, z, wn;
+	double ax, ay, az, bx, by, bz, cx, cy, cz;
 
 	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel);
 	get_detector_pos(rp->refl, &fsh, &ssh);
@@ -289,17 +291,22 @@ static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
 	clen = rp->panel->clen;
 	azi = atan2(yh, xh);
 	azf = cos(azi);
+	wn = 1.0 / lambda;
+
+	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	x = h*ax + k*bx + l*cx;
+	z = h*az + k*bz + l*cz;
 
 	switch ( param ) {
 
 		case GPARAM_ASX :
-		return h * lambda * clen / cos(tt);
+		return h * clen / (wn+z);
 
 		case GPARAM_BSX :
-		return k * lambda * clen / cos(tt);
+		return k * clen / (wn+z);
 
 		case GPARAM_CSX :
-		return l * lambda * clen / cos(tt);
+		return l * clen / (wn+z);
 
 		case GPARAM_ASY :
 		return 0.0;
@@ -311,13 +318,13 @@ static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
 		return 0.0;
 
 		case GPARAM_ASZ :
-		return -h * lambda * clen * 2*azf * sin(tt) / (cos(tt)*cos(tt));
+		return -h * x * clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_BSZ :
-		return -k * lambda * clen * 2*azf * sin(tt) / (cos(tt)*cos(tt));
+		return -k * x * clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_CSZ :
-		return -l * lambda * clen * 2*azf * sin(tt) / (cos(tt)*cos(tt));
+		return -l * x * clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_DETX :
 		return -1;
@@ -343,6 +350,8 @@ static double y_gradient(int param, struct reflpeak *rp, struct detector *det,
 	double xpk, ypk, xh, yh;
 	double fsh, ssh;
 	double tt, clen, azi, azf;
+	double y, z, wn;
+	double ax, ay, az, bx, by, bz, cx, cy, cz;
 
 	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel);
 	get_detector_pos(rp->refl, &fsh, &ssh);
@@ -353,6 +362,11 @@ static double y_gradient(int param, struct reflpeak *rp, struct detector *det,
 	clen = rp->panel->clen;
 	azi = atan2(yh, xh);
 	azf = sin(azi);
+	wn = 1.0 / lambda;
+
+	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	y = h*ay + k*by + l*cy;
+	z = h*az + k*bz + l*cz;
 
 	switch ( param ) {
 
@@ -366,22 +380,22 @@ static double y_gradient(int param, struct reflpeak *rp, struct detector *det,
 		return 0.0;
 
 		case GPARAM_ASY :
-		return h * lambda * clen / cos(tt);
+		return h * clen / (wn+z);
 
 		case GPARAM_BSY :
-		return k * lambda * clen / cos(tt);
+		return k * clen / (wn+z);
 
 		case GPARAM_CSY :
-		return l * lambda * clen / cos(tt);
+		return l * clen / (wn+z);
 
 		case GPARAM_ASZ :
-		return -h * lambda * clen * 2*azf * sin(tt) / (cos(tt)*cos(tt));
+		return -h * y * clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_BSZ :
-		return -k * lambda * clen * 2*azf * sin(tt) / (cos(tt)*cos(tt));
+		return -k * y * clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_CSZ :
-		return -l * lambda * clen * 2*azf * sin(tt) / (cos(tt)*cos(tt));
+		return -l * y * clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_DETX :
 		return 0;
