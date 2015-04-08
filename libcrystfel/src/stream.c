@@ -1264,7 +1264,12 @@ Stream *open_stream_for_read(const char *filename)
 	st = malloc(sizeof(struct _stream));
 	if ( st == NULL ) return NULL;
 
-	st->fh = fopen(filename, "r");
+	if ( strcmp(filename, "-") == 0 ) {
+		st->fh = stdin;
+	} else {
+		st->fh = fopen(filename, "r");
+	}
+
 	if ( st->fh == NULL ) {
 		free(st);
 		return NULL;
