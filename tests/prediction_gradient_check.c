@@ -467,31 +467,39 @@ int main(int argc, char *argv[])
 		cell_get_reciprocal(rot, &ax, &ay, &az,
 		                    &bx, &by, &bz, &cx, &cy, &cz);
 
-		incr_val = incr_frac * ax;
-		val = test_gradients(cr, incr_val, GPARAM_ASX, "ax*", "ax",
-		                     quiet, plot);
-		if ( val < 0.99 ) fail = 1;
-		incr_val = incr_frac * bx;
-		val = test_gradients(cr, incr_val, GPARAM_BSX, "bx*", "bx",
-		                     quiet, plot);
-		if ( val < 0.99 ) fail = 1;
-		incr_val = incr_frac * cx;
-		val = test_gradients(cr, incr_val, GPARAM_CSX, "cx*", "cx",
-		                     quiet, plot);
-		if ( val < 0.99 ) fail = 1;
+		if ( checkrxy != 2 ) {
 
-		incr_val = incr_frac * ay;
-		val = test_gradients(cr, incr_val, GPARAM_ASY, "ay*", "ay",
-		                     quiet, plot);
-		if ( val < 0.99 ) fail = 1;
-		incr_val = incr_frac * by;
-		val = test_gradients(cr, incr_val, GPARAM_BSY, "by*", "by",
-		                     quiet, plot);
-		if ( val < 0.99 ) fail = 1;
-		incr_val = incr_frac * cy;
-		val = test_gradients(cr, incr_val, GPARAM_CSY, "cy*", "cy",
-		                     quiet, plot);
-		if ( val < 0.99 ) fail = 1;
+			incr_val = incr_frac * ax;
+			val = test_gradients(cr, incr_val, GPARAM_ASX,
+			                     "ax*", "ax", quiet, plot);
+			if ( val < 0.99 ) fail = 1;
+			incr_val = incr_frac * bx;
+			val = test_gradients(cr, incr_val, GPARAM_BSX,
+			                     "bx*", "bx", quiet, plot);
+			if ( val < 0.99 ) fail = 1;
+			incr_val = incr_frac * cx;
+			val = test_gradients(cr, incr_val, GPARAM_CSX,
+			                     "cx*", "cx", quiet, plot);
+			if ( val < 0.99 ) fail = 1;
+
+		}
+
+		if ( checkrxy != 1 ) {
+
+			incr_val = incr_frac * ay;
+			val = test_gradients(cr, incr_val, GPARAM_ASY,
+			                     "ay*", "ay", quiet, plot);
+			if ( val < 0.99 ) fail = 1;
+			incr_val = incr_frac * by;
+			val = test_gradients(cr, incr_val, GPARAM_BSY,
+			                     "by*", "by", quiet, plot);
+			if ( val < 0.99 ) fail = 1;
+			incr_val = incr_frac * cy;
+			val = test_gradients(cr, incr_val, GPARAM_CSY,
+			                     "cy*", "cy", quiet, plot);
+			if ( val < 0.99 ) fail = 1;
+
+		}
 
 		incr_val = incr_frac * az;
 		val = test_gradients(cr, incr_val, GPARAM_ASZ, "az*", "az",
