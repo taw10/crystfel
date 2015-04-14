@@ -421,7 +421,7 @@ static void update_detector(struct detector *det, double xoffs, double yoffs,
 		struct panel *p = &det->panels[i];
 		p->cnx += xoffs * p->res;
 		p->cny += yoffs * p->res;
-		p->coffset += coffs;
+		p->clen += coffs;
 	}
 }
 
