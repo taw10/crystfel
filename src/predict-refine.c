@@ -278,7 +278,6 @@ static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
 	signed int h, k, l;
 	double xpk, ypk, xh, yh;
 	double fsh, ssh;
-	double tt, clen, azi, azf;
 	double x, z, wn;
 	double ax, ay, az, bx, by, bz, cx, cy, cz;
 
@@ -287,10 +286,6 @@ static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
 	twod_mapping(fsh, ssh, &xh, &yh, rp->panel);
 	get_indices(rp->refl, &h, &k, &l);
 
-	tt = asin(lambda * resolution(cell, h, k, l));
-	clen = rp->panel->clen;
-	azi = atan2(yh, xh);
-	azf = cos(azi);
 	wn = 1.0 / lambda;
 
 	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
@@ -300,13 +295,13 @@ static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
 	switch ( param ) {
 
 		case GPARAM_ASX :
-		return h * clen / (wn+z);
+		return h * rp->panel->clen / (wn+z);
 
 		case GPARAM_BSX :
-		return k * clen / (wn+z);
+		return k * rp->panel->clen / (wn+z);
 
 		case GPARAM_CSX :
-		return l * clen / (wn+z);
+		return l * rp->panel->clen / (wn+z);
 
 		case GPARAM_ASY :
 		return 0.0;
@@ -318,13 +313,13 @@ static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
 		return 0.0;
 
 		case GPARAM_ASZ :
-		return -h * x * clen / (wn*wn + 2*wn*z + z*z);
+		return -h * x * rp->panel->clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_BSZ :
-		return -k * x * clen / (wn*wn + 2*wn*z + z*z);
+		return -k * x * rp->panel->clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_CSZ :
-		return -l * x * clen / (wn*wn + 2*wn*z + z*z);
+		return -l * x * rp->panel->clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_DETX :
 		return -1;
@@ -333,7 +328,7 @@ static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
 		return 0;
 
 		case GPARAM_CLEN :
-		return azf * cos(tt);
+		return x / (wn+z);
 
 	}
 
@@ -349,7 +344,6 @@ static double y_gradient(int param, struct reflpeak *rp, struct detector *det,
 	signed int h, k, l;
 	double xpk, ypk, xh, yh;
 	double fsh, ssh;
-	double tt, clen, azi, azf;
 	double y, z, wn;
 	double ax, ay, az, bx, by, bz, cx, cy, cz;
 
@@ -358,10 +352,6 @@ static double y_gradient(int param, struct reflpeak *rp, struct detector *det,
 	twod_mapping(fsh, ssh, &xh, &yh, rp->panel);
 	get_indices(rp->refl, &h, &k, &l);
 
-	tt = asin(lambda * resolution(cell, h, k, l));
-	clen = rp->panel->clen;
-	azi = atan2(yh, xh);
-	azf = sin(azi);
 	wn = 1.0 / lambda;
 
 	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
@@ -380,22 +370,22 @@ static double y_gradient(int param, struct reflpeak *rp, struct detector *det,
 		return 0.0;
 
 		case GPARAM_ASY :
-		return h * clen / (wn+z);
+		return h * rp->panel->clen / (wn+z);
 
 		case GPARAM_BSY :
-		return k * clen / (wn+z);
+		return k * rp->panel->clen / (wn+z);
 
 		case GPARAM_CSY :
-		return l * clen / (wn+z);
+		return l * rp->panel->clen / (wn+z);
 
 		case GPARAM_ASZ :
-		return -h * y * clen / (wn*wn + 2*wn*z + z*z);
+		return -h * y * rp->panel->clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_BSZ :
-		return -k * y * clen / (wn*wn + 2*wn*z + z*z);
+		return -k * y * rp->panel->clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_CSZ :
-		return -l * y * clen / (wn*wn + 2*wn*z + z*z);
+		return -l * y * rp->panel->clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_DETX :
 		return 0;
@@ -404,7 +394,8 @@ static double y_gradient(int param, struct reflpeak *rp, struct detector *det,
 		return -1;
 
 		case GPARAM_CLEN :
-		return azf * cos(tt);
+		return y / (wn+z);
+
 	}
 
 	ERROR("Positional gradient requested for parameter %i?\n", param);
