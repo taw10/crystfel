@@ -188,7 +188,7 @@ script_DATA = scripts/alternate-stream scripts/cell-please \
               scripts/find-pairs scripts/plot-cc-and-scale.R \
               scripts/ave-resolution scripts/crystal-frame-number \
               scripts/plot-radius-resolution scripts/plot-predict-refine \
-              scripts/detector-shift scripts/plot-detector-shift
+              scripts/detector-shift
 
 EXTRA_DIST += $(script_DATA)
 
