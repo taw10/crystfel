@@ -162,27 +162,32 @@ static int pair_peaks(struct image *image, Crystal *cr,
                       RefList *reflist, struct reflpeak *rps)
 {
 	int i;
-	const double min_dist = 0.05;
 	int n_acc = 0;
+	int n = 0;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	RefList *all_reflist;
 
+	all_reflist = reflist_new();
+	cell_get_cartesian(crystal_get_cell(cr),
+	                   &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+
+	/* First, create a RefList containing the most likely indices for each
+	 * peak, with no exclusion criteria */
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
 		double h, k, l, hd, kd, ld;
+		Reflection *refl;
+		struct panel *p;
 
 		/* Assume all image "features" are genuine peaks */
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		double ax, ay, az;
-		double bx, by, bz;
-		double cx, cy, cz;
-
-		cell_get_cartesian(crystal_get_cell(cr),
-		                   &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-
-		/* Decimal and fractional Miller indices of nearest
-		 * reciprocal lattice point */
+		/* Decimal and fractional Miller indices of nearest reciprocal
+		 * lattice point */
 		hd = f->rx * ax + f->ry * ay + f->rz * az;
 		kd = f->rx * bx + f->ry * by + f->rz * bz;
 		ld = f->rx * cx + f->ry * cy + f->rz * cz;
@@ -190,38 +195,74 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		k = lrint(kd);
 		l = lrint(ld);
 
-		/* Check distance */
-		if ( (fabs(h - hd) < min_dist)
-		  && (fabs(k - kd) < min_dist)
-		  && (fabs(l - ld) < min_dist) )
-		{
-			Reflection *refl;
-			struct panel *p;
-
-			refl = reflection_new(h, k, l);
-			if ( refl == NULL ) {
-				ERROR("Failed to create reflection\n");
-				return 0;
-			}
-
-			if ( reflist != NULL ) add_refl_to_list(refl, reflist);
-			set_symmetric_indices(refl, h, k, l);
-
-			/* It doesn't matter if the actual predicted location
-			 * doesn't fall on this panel.  We're only interested
-			 * in how far away it is from the peak location.
-			 * The predicted position and excitation errors will be
-			 * filled in by update_partialities(). */
-			p = find_panel(image->det, f->fs, f->ss);
-			set_panel(refl, p);
-
-			rps[n_acc].refl = refl;
-			rps[n_acc].peak = f;
-			rps[n_acc].panel = p;
-			n_acc++;
+		refl = reflection_new(h, k, l);
+		if ( refl == NULL ) {
+			ERROR("Failed to create reflection\n");
+			return 0;
 		}
 
+		add_refl_to_list(refl, all_reflist);
+		set_symmetric_indices(refl, h, k, l);
+
+		/* It doesn't matter if the actual predicted location
+		 * doesn't fall on this panel.  We're only interested
+		 * in how far away it is from the peak location.
+		 * The predicted position and excitation errors will be
+		 * filled in by update_partialities(). */
+		p = find_panel(image->det, f->fs, f->ss);
+		set_panel(refl, p);
+
+		rps[n].refl = refl;
+		rps[n].peak = f;
+		rps[n].panel = p;
+		n++;
+
 	}
+
+	/* Get the excitation errors and detector positions for the candidate
+	 * reflections */
+	crystal_set_reflections(cr, all_reflist);
+	update_partialities(cr, PMODEL_SCSPHERE);
+
+	/* Pass over the peaks again, keeping only the ones which look like
+	 * good pairings */
+	for ( i=0; i<n; i++ ) {
+
+		double p, rlow, rhigh;
+		double fs, ss, pd;
+		signed int h, k, l;
+		Reflection *refl = rps[i].refl;
+
+		get_indices(refl, &h, &k, &l);
+
+		/* Is the supposed reflection anywhere near Bragg? */
+		get_partial(refl, &rlow, &rhigh, &p);
+		if ( (rlow-rhigh)/2.0 > 0.02e9 ) {
+			STATUS("rejecting %i %i %i because exerr=%e nm^-1\n",
+			       h, k, l, 1e9*(rlow-rhigh)/2.0);
+			continue;
+		}
+
+		/* Is the supposed reflection anywhere near the peak? */
+		get_detector_pos(refl, &fs, &ss);
+		pd = pow(fs - rps[i].peak->fs, 2.0)
+		   + pow(ss - rps[i].peak->ss, 2.0);
+		if ( pd > 100.0 * 100.0 ) {
+			STATUS("rejecting %i %i %i because %f %f -> %f %f\n",
+			       h, k, l, fs, ss, rps[i].peak->fs, rps[i].peak->ss);
+			continue;
+		}
+
+		rps[n_acc] = rps[i];
+		rps[n_acc].refl = reflection_new(h, k, l);
+		copy_data(rps[n_acc].refl, refl);
+		if ( reflist != NULL ) {
+			add_refl_to_list(rps[n_acc].refl, reflist);
+		}
+		n_acc++;
+
+	}
+	reflist_free(all_reflist);
 
 	return n_acc;
 }
