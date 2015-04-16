@@ -55,6 +55,19 @@
 #include "grainspotter.h"
 
 
+static int debug_index(struct image *image)
+{
+	Crystal *cr = crystal_new();
+	UnitCell *cell = cell_new();
+	cell_set_reciprocal(cell, +0.0000e9, +0.0000e9, +0.0000e9,
+	                          +0.0000e9, +0.0000e9, +0.0000e9,
+	                          +0.0000e9, +0.0000e9, +0.0000e9);
+	crystal_set_cell(cr, cell);
+	image_add_crystal(image, cr);
+	return 1;
+}
+
+
 IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
                                    struct detector *det, float *ltl)
 {
@@ -94,6 +107,10 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 			case INDEXING_GRAINSPOTTER :
 			iprivs[n] = grainspotter_prepare(&indm[n], cell,
 			                                 det, ltl);
+			break;
+
+			case INDEXING_DEBUG :
+			iprivs[n] = (IndexingPrivate *)strdup("Hello!");
 			break;
 
 			default :
@@ -166,6 +183,10 @@ void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
 			grainspotter_cleanup(privs[n]);
 			break;
 
+			case INDEXING_DEBUG :
+			free(privs[n]);
+			break;
+
 			default :
 			ERROR("Don't know how to clean up indexing method %i\n",
 			      indms[n]);
@@ -230,6 +251,9 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		case INDEXING_GRAINSPOTTER :
 		return grainspotter_index(image, ipriv);
 		break;
+
+		case INDEXING_DEBUG :
+		return debug_index(image);
 
 		default :
 		ERROR("Unrecognised indexing method: %i\n", indm);
@@ -369,6 +393,10 @@ char *indexer_str(IndexingMethod indm)
 		strcpy(str, "simulation");
 		break;
 
+		case INDEXING_DEBUG :
+		strcpy(str, "debug");
+		break;
+
 		default :
 		ERROR("Unrecognised indexing method %i\n",
 		      indm & INDEXING_METHOD_MASK);
@@ -440,6 +468,10 @@ IndexingMethod *build_indexer_list(const char *str)
 
 		} else if ( strcmp(methods[i], "simulation") == 0) {
 			list[++nmeth] = INDEXING_SIMULATION;
+			return list;
+
+		} else if ( strcmp(methods[i], "debug") == 0) {
+			list[++nmeth] = INDEXING_DEBUG;
 			return list;
 
 		} else if ( strcmp(methods[i], "raw") == 0) {

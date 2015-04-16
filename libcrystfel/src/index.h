@@ -3,13 +3,13 @@
  *
  * Perform indexing (somehow)
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2015 Thomas White <taw@physics.org>
  *   2010      Richard Kirian
  *   2012      Lorenzo Galli
  *
@@ -69,6 +69,7 @@
  * @INDEXING_GRAINSPOTTER: Invoke GrainSpotter
  * @INDEXING_XDS: Invoke XDS
  * @INDEXING_SIMULATION: Dummy value
+ * @INDEXING_DEBUG: Results injector for debugging
  * @INDEXING_CHECK_CELL_COMBINATIONS: Check linear combinations of unit cell
  *   axes for agreement with given cell.
  * @INDEXING_CHECK_CELL_AXES: Check unit cell axes for agreement with given
@@ -95,6 +96,7 @@ typedef enum {
 	INDEXING_GRAINSPOTTER = 4,
 	INDEXING_XDS = 5,
 	INDEXING_SIMULATION = 6,
+	INDEXING_DEBUG = 7,
 
 	/* Bits at the top of the IndexingMethod are flags which modify the
 	 * behaviour of the indexer. */
