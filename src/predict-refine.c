@@ -247,7 +247,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		get_detector_pos(refl, &fs, &ss);
 		pd = pow(fs - rps[i].peak->fs, 2.0)
 		   + pow(ss - rps[i].peak->ss, 2.0);
-		if ( pd > 100.0 * 100.0 ) {
+		if ( pd > 10.0 * 10.0 ) {
 			//STATUS("rejecting %i %i %i because %f %f -> %f %f\n",
 			//       h, k, l, fs, ss, rps[i].peak->fs, rps[i].peak->ss);
 			continue;
