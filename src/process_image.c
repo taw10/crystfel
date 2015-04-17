@@ -71,6 +71,13 @@ static void try_refine_autoR(struct image *image, Crystal *cr)
 	refine_radius(cr, image);
 	new_R = crystal_get_profile_radius(cr);
 
+	if ( (new_R > 0.02e9) || (new_R > 1.2*old_R) ) {
+		STATUS("Rejecting refinement solution with "
+		       "R %.3f -> %.3f nm^-1\n", old_R, new_R);
+		crystal_set_user_flag(cr, 1);
+		return;
+	}
+
 	snprintf(notes, 1024, "predict_refine/R old = %.5f new = %.5f nm^-1",
 	                      old_R/1e9, new_R/1e9);
 	crystal_add_notes(cr, notes);

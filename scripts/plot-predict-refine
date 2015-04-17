@@ -8,4 +8,5 @@ set xlabel "Profile radius before refinement / nm^-1"
 set ylabel "Profile radius after refinement / nm^-1"
 plot "plotme.dat" using 4:7
 replot x
+replot 1.2*x
 EOF
