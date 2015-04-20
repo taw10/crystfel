@@ -423,6 +423,40 @@ static void diffraction_at_k(struct image *image, const double *intensities,
 }
 
 
+static void normalise_sampled_spectrum(struct sample *spec, int n, int nsamp)
+{
+	int i;
+	double total_w = 0.0;
+	double samp_w = 0.0;
+
+	for ( i=0; i<n; i++ ) {
+		total_w += spec[i].weight;
+	}
+	STATUS("%i energies in spectrum, %i samples requested.\n", n, nsamp);
+
+	for ( i=0; i<nsamp; i++ ) {
+		samp_w += spec[i].weight;
+	}
+
+	if ( samp_w < 0.8 * total_w ) {
+		ERROR("WARNING: Only %.1f %% of the calculated spectrum "
+		      "intensity was sampled.\n", 100.0 * samp_w / total_w);
+		ERROR("I've increased the weighting of the sampled points to "
+		      "keep the final intensity constant, but the spectrum "
+		      "might be very far from accurate.  Consider increasing "
+		      "the number of spectrum samples.\n");
+	} else {
+		STATUS("%.1f %% of calculated spectrum intensity sampled.\n",
+		       100.0 * samp_w / total_w);
+		STATUS("Normalised to keep total intensity constant.\n");
+	}
+
+	for ( i=0; i<n; i++ ) {
+		spec[i].weight /= samp_w;
+	}
+}
+
+
 static int compare_samples(const void *a, const void *b)
 {
 	struct sample *sample1 = (struct sample *)a;
@@ -548,6 +582,7 @@ struct sample *generate_tophat(struct image *image)
 	}
 
 	image->spectrum_size = image->nsamples;
+	/* No need to call normalise_sampled_spectrum() in this case */
 
 	return spectrum;
 }
@@ -556,7 +591,6 @@ struct sample *generate_tophat(struct image *image)
 struct sample *generate_SASE(struct image *image, gsl_rng *rng)
 {
 	struct sample *spectrum;
-	int i;
 	const int spec_size = 1024;
 	double eV_cen;  /* Central photon energy for this spectrum */
 	const double jitter_sigma_eV = 8.0;
@@ -581,21 +615,13 @@ struct sample *generate_SASE(struct image *image, gsl_rng *rng)
 	/* Add SASE-type noise to Gaussian spectrum */
 	add_sase_noise(spectrum, spec_size, rng);
 
-	/* Normalise intensity (before taking restricted number of samples) */
-	double total_weight = 0.0;
-	for ( i=0; i<spec_size; i++ ) {
-		total_weight += spectrum[i].weight;
-	}
-	for ( i=0; i<spec_size; i++ ) {
-		spectrum[i].weight /= total_weight;
-	}
-
 	/* Sort samples in spectrum by weight.  Diffraction calculation will
 	 * take the requested number, starting from the brightest */
 	qsort(spectrum, spec_size, sizeof(struct sample), compare_samples);
 
-	image->spectrum_size = spec_size;
+	normalise_sampled_spectrum(spectrum, spec_size, image->nsamples);
 
+	image->spectrum_size = spec_size;
 	return spectrum;
 }
 
@@ -662,8 +688,9 @@ struct sample *generate_twocolour(struct image *image)
 	* take the requested number, starting from the brightest */
 	qsort(spectrum, spec_size, sizeof(struct sample), compare_samples);
 
-	image->spectrum_size = spec_size;
+	normalise_sampled_spectrum(spectrum, spec_size, image->nsamples);
 
+	image->spectrum_size = spec_size;
 	return spectrum;
 }
 
