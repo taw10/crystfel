@@ -17,10 +17,19 @@
 #include "asdf.h"
 
 
+struct fftw_vars {
+	int N;
+	fftw_plan p;
+	double *in;
+	fftw_complex *out;
+};
+
+
 struct asdf_private {
 	IndexingMethod          indm;
 	float                   *ltl;
 	UnitCell                *template;
+	struct fftw_vars        fftw;
 };
 
 
@@ -30,6 +39,30 @@ struct tvector {
 	int n; // number of fitting reflections
 	int *fits; 
 };
+
+
+struct fftw_vars fftw_vars_new()
+{	
+	int N = 1024;
+	
+	struct fftw_vars fftw;
+	
+	fftw.N = N;
+	fftw.in = fftw_malloc(N * sizeof(double));
+	fftw.out = fftw_malloc(N * sizeof(fftw_complex));
+	fftw.p = fftw_plan_dft_r2c_1d(N, fftw.in, fftw.out, FFTW_MEASURE);
+	
+	return fftw;
+}
+
+
+static int fftw_vars_free(struct fftw_vars fftw)
+{
+	fftw_free(fftw.in);
+	fftw_free(fftw.out);
+	fftw_destroy_plan(fftw.p);
+	fftw_cleanup();
+}
 
 
 struct asdf_cell {
@@ -311,7 +344,7 @@ static int calc_normal(gsl_vector *c1, gsl_vector *c2, gsl_vector *c3,
 
 
 static float find_ds_fft(double *projections, int N_projections, double d_max,
-                         fftw_plan p) 
+                         struct fftw_vars fftw) 
 {    
 	int n = N_projections; 
 	double projections_sorted[n];
@@ -320,10 +353,10 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 	
 	int i;
 	
-	int N = 1024; // number of points in fft calculation
-	
-	double in[N];
-	fftw_complex *out = fftw_malloc(sizeof (fftw_complex) * N);
+	int N = fftw.N; // number of points in fft calculation
+	double *in = fftw.in;
+	fftw_complex *out = fftw.out;
+	fftw_plan p = fftw.p;
 	
 	for ( i = 0; i < N; i++ ) {
 		in[i] = 0;
@@ -332,10 +365,6 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 	for ( i = 0; i < n; i++ ) {
 		in[(int)((projections_sorted[i] - projections_sorted[0]) / 
 		   (projections_sorted[n - 1] - projections_sorted[0]) * N)] ++;
-	}
-	
-	if ( !p ) {
-		p = fftw_plan_dft_r2c_1d(N, in, out, FFTW_MEASURE);
 	}
 	
 	fftw_execute_dft_r2c(p, in, out);
@@ -356,7 +385,6 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 	
 	double ds = (projections_sorted[n - 1] - projections_sorted[0]) / d;
 	
-	fftw_free(out);
 	return ds;
 }
 
@@ -865,7 +893,7 @@ static double angle_between_gsl(gsl_vector *a, gsl_vector *b)
 static int index_refls(gsl_vector **reflections, int N_reflections, 
                        double d_max, double volume_min, double volume_max,
                        double LevelFit, double IndexFit, int i_max, 
-                       struct asdf_cell *c) 
+                       struct asdf_cell *c, struct fftw_vars fftw) 
 {
 
 	int i, j, k, l, n;
@@ -906,8 +934,6 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 	
 	int n_max = 0; // maximum number of reflections fitting one of tvectors 
 	
-	fftw_plan p;
-	
 	for ( i = 0; i < i_max; i++ ) {
 		if ( calc_normal(reflections[triplets[i][0]],
 		                 reflections[triplets[i][1]],
@@ -922,7 +948,8 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 			}
 			
 			/* Find ds - period in 1d lattice of projections */
-			ds = find_ds_fft(projections, N_reflections, d_max, p);
+			ds = find_ds_fft(projections, N_reflections, d_max, 
+			                 fftw);
 			
 			/* Refine ds, write 1 to fits[i] if reflections[i] 
 			 * fits ds */
@@ -952,7 +979,7 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 				if (n > n_max) n_max = n;
 			}
 		}
-		
+				
 		if ( (i != 0 && i % 10000 == 0) || i == i_max - 1 ) {
 			
 			/* Sort tvectors by length */
@@ -984,9 +1011,7 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 		free(triplets[i]);
 	}
 	free(triplets);
-
-	fftw_destroy_plan(p);
-
+	
 	if ( c->n ) return 1;
 	
 	return 0;
@@ -1035,7 +1060,7 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 	if ( N_reflections == 0 ) return 0;
 	
 	j = index_refls(reflections, N_reflections, d_max, volume_min, 
-	                volume_max, LevelFit, IndexFit, i_max, &c);
+	                volume_max, LevelFit, IndexFit, i_max, &c, dp->fftw);
 	
 	for ( i = 0; i < N_reflections; i++ ) {
 		gsl_vector_free(reflections[i]);
@@ -1055,7 +1080,8 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 				       gsl_vector_get(c.axes[2], 1) * 1e-10,
 				       gsl_vector_get(c.axes[2], 2) * 1e-10);
 	
-		if ( check_cell(dp, image, uc) ) {
+		if ( check_cell(dp, image, uc) ) {	
+			asdf_cell_free(c);
 			cell_free(uc);
 			return 1;
 		}
@@ -1063,6 +1089,7 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 		cell_free(uc);
 	}
 	
+	asdf_cell_free(c);
 	return 0;
 }
 
@@ -1093,7 +1120,9 @@ IndexingPrivate *asdf_prepare(IndexingMethod *indm, UnitCell *cell,
 	dp->ltl = ltl;
 	dp->template = cell;
 	dp->indm = *indm;
-
+	
+	dp->fftw = fftw_vars_new();
+	
 	return (IndexingPrivate *)dp;
 }
 
@@ -1102,5 +1131,6 @@ void asdf_cleanup(IndexingPrivate *pp)
 {
 	struct asdf_private *p;
 	p = (struct asdf_private *)pp;
+	fftw_vars_free(p->fftw);
 	free(p);
 }
