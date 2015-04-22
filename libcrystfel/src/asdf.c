@@ -1012,6 +1012,8 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 	}
 	free(triplets);
 	
+	gsl_vector_free(normal);
+	
 	if ( c->n ) return 1;
 	
 	return 0;
