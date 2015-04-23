@@ -302,6 +302,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if ( event != NULL && geom_filename == NULL) {
+		ERROR("The '--event' option requires geometry file\n");
+		return 1;
+	}
+
 	if ( cscale == NULL ) cscale = strdup("colour");
 	if ( strcmp(cscale, "mono") == 0 ) {
 		colscale = SCALE_MONO;
