@@ -279,20 +279,11 @@ static int pair_peaks(struct image *image, Crystal *cr,
 	 * good pairings */
 	for ( i=0; i<n; i++ ) {
 
-		double p, rlow, rhigh;
 		double fs, ss, pd;
 		signed int h, k, l;
 		Reflection *refl = rps[i].refl;
 
 		get_indices(refl, &h, &k, &l);
-
-		/* Is the supposed reflection anywhere near Bragg? */
-		get_partial(refl, &rlow, &rhigh, &p);
-		if ( (rlow-rhigh)/2.0 > 0.02e9 ) {
-			STATUS("rejecting %i %i %i because exerr=%e nm^-1\n",
-			       h, k, l, 1e9*(rlow-rhigh)/2.0);
-			continue;
-		}
 
 		/* Is the supposed reflection anywhere near the peak? */
 		get_detector_pos(refl, &fs, &ss);
