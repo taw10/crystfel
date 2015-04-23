@@ -654,7 +654,7 @@ static double residual(struct reflpeak *rps, int n, struct detector *det)
 	for ( i=0; i<n; i++ ) {
 		r += pow(y_dev(&rps[i], det), 2.0);
 	}
-	printf("%e ", r);
+	printf("%e\n", r);
 	res += r;
 
 	return res;
