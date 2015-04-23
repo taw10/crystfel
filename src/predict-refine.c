@@ -727,12 +727,16 @@ int refine_prediction(struct image *image, Crystal *cr)
 		rps[i].Ih = rps[i].peak->intensity / max_I;
 	}
 
+	STATUS("Initial residual = %e\n", residual(rps, n, image->det));
+
 	/* Refine */
 	for ( i=0; i<MAX_CYCLES; i++ ) {
 		update_partialities(cr, PMODEL_SCSPHERE);
 		if ( iterate(rps, n, crystal_get_cell(cr), image,
 		             &total_x, &total_y, &total_z) ) return 1;
+		STATUS("Residual after %i = %e\n", i, residual(rps, n, image->det));
 	}
+	STATUS("Final residual = %e\n", residual(rps, n, image->det));
 
 	snprintf(tmp, 1024, "predict_refine/det_shift x = %.3f y = %.3f mm\n"
 	                    "predict_refine/clen_shift = %.3f mm",
