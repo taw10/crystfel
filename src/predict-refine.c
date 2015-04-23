@@ -145,7 +145,12 @@ static void write_pairs(const char *filename, struct reflpeak *rps, int n,
 		p = find_panel(det, fs, ss);
 		write_fs = fs - p->min_fs + p->orig_min_fs;
 		write_ss = ss - p->min_ss + p->orig_min_ss;
-		fprintf(fh, "%f %f\n", write_fs, write_ss);
+
+		fprintf(fh, "%7.2f %7.2f dev r,x,y: %9f %9f %9f %9f\n",
+		        write_fs, write_ss,
+		        r_dev(&rps[i])/1e9, fabs(r_dev(&rps[i])/1e9),
+		        x_dev(&rps[i], det),
+		        y_dev(&rps[i], det));
 
 	}
 
