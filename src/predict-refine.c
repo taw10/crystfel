@@ -289,11 +289,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		get_detector_pos(refl, &fs, &ss);
 		pd = pow(fs - rps[i].peak->fs, 2.0)
 		   + pow(ss - rps[i].peak->ss, 2.0);
-		if ( pd > 10.0 * 10.0 ) {
-			//STATUS("rejecting %i %i %i because %f %f -> %f %f\n",
-			//       h, k, l, fs, ss, rps[i].peak->fs, rps[i].peak->ss);
-			continue;
-		}
+		if ( pd > 10.0 * 10.0 ) continue;
 
 		rps[n_acc] = rps[i];
 		rps[n_acc].refl = reflection_new(h, k, l);
@@ -715,7 +711,6 @@ int refine_prediction(struct image *image, Crystal *cr)
 		return 1;
 	}
 	crystal_set_reflections(cr, reflist);
-	//write_pairs("pairs.lst", rps, n, image->det);
 
 	/* Normalise the intensities to max 1 */
 	max_I = -INFINITY;
