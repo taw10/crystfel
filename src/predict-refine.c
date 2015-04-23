@@ -160,6 +160,52 @@ static void write_pairs(const char *filename, struct reflpeak *rps, int n,
 }
 
 
+static int cmpd2(const void *av, const void *bv)
+{
+	struct reflpeak *a, *b;
+
+	a = (struct reflpeak *)av;
+	b = (struct reflpeak *)bv;
+
+	if ( fabs(r_dev(a)) < fabs(r_dev(b)) ) return -1;
+	return 1;
+}
+
+
+static int check_outlier_transition(struct reflpeak *rps, int n,
+                                    struct detector *det)
+{
+	int i;
+
+	if ( n < 3 ) return n;
+
+	qsort(rps, n, sizeof(struct reflpeak), cmpd2);
+	write_pairs("pairs-before-outlier.lst", rps, n, det);
+
+	for ( i=1; i<n-1; i++ ) {
+
+		int j;
+		double grad = fabs(r_dev(&rps[i])) / i;
+
+		STATUS("Trying gradient %i\n", i);
+		for ( j=i+1; j<n; j++ ) {
+			if ( fabs(r_dev(&rps[j])) < 0.001e9+grad*j ) {
+				STATUS("Exit %i\n", j);
+				break;
+			}
+		}
+		if ( j == n ) {
+			STATUS("Outlier transition found at position %i / %i\n",
+			       i, n);
+			return i;
+		}
+	}
+
+	STATUS("No outlier transition found.\n");
+	return n;
+}
+
+
 /* Associate a Reflection with each peak in "image" which is close to Bragg.
  * Reflections will be added to "reflist", which can be NULL if this is not
  * needed.  "rps" must be an array of sufficient size for all the peaks */
@@ -269,19 +315,11 @@ static int pair_peaks(struct image *image, Crystal *cr,
 	}
 	reflist_free(all_reflist);
 
+	/* Sort the pairings by excitation error and look for a transition
+	 * between good pairings and outliers */
+	n_acc = check_outlier_transition(rps, n_acc, image->det);
+
 	return n_acc;
-}
-
-
-static int cmpd2(const void *av, const void *bv)
-{
-	struct reflpeak *a, *b;
-
-	a = (struct reflpeak *)av;
-	b = (struct reflpeak *)bv;
-
-	if ( fabs(r_dev(a)) < fabs(r_dev(b)) ) return -1;
-	return 1;
 }
 
 
