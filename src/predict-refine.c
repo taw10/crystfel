@@ -187,10 +187,8 @@ static int check_outlier_transition(struct reflpeak *rps, int n,
 		int j;
 		double grad = fabs(r_dev(&rps[i])) / i;
 
-		STATUS("Trying gradient %i\n", i);
 		for ( j=i+1; j<n; j++ ) {
 			if ( fabs(r_dev(&rps[j])) < 0.001e9+grad*j ) {
-				STATUS("Exit %i\n", j);
 				break;
 			}
 		}
