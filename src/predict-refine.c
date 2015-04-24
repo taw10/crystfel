@@ -743,6 +743,13 @@ int refine_prediction(struct image *image, Crystal *cr)
 
 	crystal_set_reflections(cr, NULL);
 	reflist_free(reflist);
+
+	n = pair_peaks(image, cr, NULL, rps);
 	free(rps);
+	if ( n < 10 ) {
+		ERROR("Too few paired peaks (%i) after refinement.\n", n);
+		return 1;
+	}
+
 	return 0;
 }
