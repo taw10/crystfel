@@ -120,8 +120,8 @@ static double y_dev(struct reflpeak *rp, struct detector *det)
 }
 
 
-static void write_pairs(const char *filename, struct reflpeak *rps, int n,
-                        struct detector *det)
+static void UNUSED write_pairs(const char *filename, struct reflpeak *rps,
+                               int n, struct detector *det)
 {
 	int i;
 	FILE *fh;
@@ -179,7 +179,7 @@ static int check_outlier_transition(struct reflpeak *rps, int n,
 	if ( n < 3 ) return n;
 
 	qsort(rps, n, sizeof(struct reflpeak), cmpd2);
-	write_pairs("pairs-before-outlier.lst", rps, n, det);
+	//write_pairs("pairs-before-outlier.lst", rps, n, det);
 
 	for ( i=1; i<n-1; i++ ) {
 
@@ -192,13 +192,13 @@ static int check_outlier_transition(struct reflpeak *rps, int n,
 			}
 		}
 		if ( j == n ) {
-			STATUS("Outlier transition found at position %i / %i\n",
-			       i, n);
+			//STATUS("Outlier transition found at position %i / %i\n",
+			//       i, n);
 			return i;
 		}
 	}
 
-	STATUS("No outlier transition found.\n");
+	//STATUS("No outlier transition found.\n");
 	return n;
 }
 
@@ -652,7 +652,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 }
 
 
-static double residual(struct reflpeak *rps, int n, struct detector *det)
+static double UNUSED residual(struct reflpeak *rps, int n, struct detector *det)
 {
 	int i;
 	double res = 0.0;
@@ -724,16 +724,17 @@ int refine_prediction(struct image *image, Crystal *cr)
 		rps[i].Ih = rps[i].peak->intensity / max_I;
 	}
 
-	STATUS("Initial residual = %e\n", residual(rps, n, image->det));
+	//STATUS("Initial residual = %e\n", residual(rps, n, image->det));
 
 	/* Refine */
 	for ( i=0; i<MAX_CYCLES; i++ ) {
 		update_partialities(cr, PMODEL_SCSPHERE);
 		if ( iterate(rps, n, crystal_get_cell(cr), image,
 		             &total_x, &total_y, &total_z) ) return 1;
-		STATUS("Residual after %i = %e\n", i, residual(rps, n, image->det));
+		//STATUS("Residual after %i = %e\n", i,
+		//       residual(rps, n, image->det));
 	}
-	STATUS("Final residual = %e\n", residual(rps, n, image->det));
+	//STATUS("Final residual = %e\n", residual(rps, n, image->det));
 
 	snprintf(tmp, 1024, "predict_refine/det_shift x = %.3f y = %.3f mm",
 	                    total_x*1e3, total_y*1e3);
