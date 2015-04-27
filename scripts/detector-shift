@@ -50,21 +50,9 @@ while True:
 
 f.close()
 
-if len(x_shifts) != len(z_shifts):
-    print 'Warning: number of xy shifts not equal to number of z shifts'
-
-n = len(z_shifts)
-z_shifts = [t for t in z_shifts if abs(t) < 2.0]
-if len(z_shifts) < n:
-    print 'Warning: %i camera length shifts of more than 2 mm ignored' \
-           % (n-len(z_shifts))
-
 mean_x = sum(x_shifts) / len(x_shifts)
 mean_y = sum(y_shifts) / len(y_shifts)
-mean_z = sum(z_shifts) / len(z_shifts)
-print 'From %i measurements:' % len(x_shifts)
-print 'Mean shifts: dx = %.2f mm,  dy = %.2f mm;  dz = %.2f mm' \
-      % (mean_x,mean_y,mean_z)
+print 'Mean shifts: dx = %.2f mm,  dy = %.2f mm' % (mean_x,mean_y)
 
 # Apply shifts to geometry
 if have_geom:
@@ -121,20 +109,12 @@ if have_geom:
     g.close()
     h.close()
 
-plt.suptitle('Detector shifts according to prediction refinement')
-plt.subplot(121, autoscale_on=False, aspect='equal')
 plt.plot(x_shifts, y_shifts, 'rx')
 plt.plot(0, 0, 'bo')
 plt.axis([-2,2,-2,2])
-plt.title('In-plane')
+plt.title('Detector shifts according to prediction refinement')
 plt.xlabel('x shift / mm')
 plt.ylabel('y shift / mm')
-plt.grid(True)
-plt.subplot(122)
-plt.hist(z_shifts,bins=30,range=[-2,2])
-plt.title('Camera length')
-plt.xlabel('z shift / mm')
-plt.ylabel('Frequency')
 plt.grid(True)
 plt.show()
 

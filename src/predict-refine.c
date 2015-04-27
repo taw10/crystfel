@@ -61,10 +61,9 @@ static const enum gparam rv[] =
 	GPARAM_CSZ,
 	GPARAM_DETX,
 	GPARAM_DETY,
-	GPARAM_CLEN
 };
 
-static const int num_params = 12;
+static const int num_params = 11;
 
 struct reflpeak {
 	Reflection *refl;
@@ -736,9 +735,8 @@ int refine_prediction(struct image *image, Crystal *cr)
 	}
 	STATUS("Final residual = %e\n", residual(rps, n, image->det));
 
-	snprintf(tmp, 1024, "predict_refine/det_shift x = %.3f y = %.3f mm\n"
-	                    "predict_refine/clen_shift = %.3f mm",
-	                    total_x*1e3, total_y*1e3, total_z*1e3);
+	snprintf(tmp, 1024, "predict_refine/det_shift x = %.3f y = %.3f mm",
+	                    total_x*1e3, total_y*1e3);
 	crystal_add_notes(cr, tmp);
 
 	crystal_set_reflections(cr, NULL);
