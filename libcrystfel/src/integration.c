@@ -1397,6 +1397,7 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 		r = check_box(ic, bx, &saturated);
 		if ( !r ) {
 			fit_bg(ic, bx);
+			if ( !bg_ok(bx) ) r = 1;
 		}
 		bx->offs_fs = 0.0;
 		bx->offs_ss = 0.0;
