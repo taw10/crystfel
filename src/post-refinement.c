@@ -506,26 +506,6 @@ static struct param_backup backup_crystal(Crystal *cr)
 }
 
 
-static void revert_crystal(Crystal *cr, struct param_backup b)
-{
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	struct image *image = crystal_get_image(cr);
-
-	cell_get_reciprocal(b.cell, &asx, &asy, &asz,
-	                            &bsx, &bsy, &bsz,
-	                            &csx, &csy, &csz);
-
-	cell_set_reciprocal(crystal_get_cell(cr), asx, asy, asz,
-	                                          bsx, bsy, bsz,
-	                                          csx, csy, csz);
-
-	crystal_set_profile_radius(cr, b.profile_radius);
-	image->div = b.div;
-}
-
-
 static void free_backup_crystal(struct param_backup b)
 {
 	cell_free(b.cell);
