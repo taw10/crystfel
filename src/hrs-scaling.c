@@ -354,9 +354,10 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 
 
 RefList *lsq_intensities(Crystal **crystals, int n, int n_threads,
-                         PartialityModel pmodel)
+                         PartialityModel pmodel, int min_meas)
 {
 	RefList *full;
+	RefList *full2;
 	struct merge_queue_args qargs;
 	Reflection *refl;
 	RefListIterator *iter;
@@ -374,6 +375,10 @@ RefList *lsq_intensities(Crystal **crystals, int n, int n_threads,
 
 	pthread_rwlock_destroy(&qargs.full_lock);
 
+	/* Calculate ESDs from variances, including only reflections with
+	 * enough measurements */
+	full2 = reflist_new();
+	if ( full2 == NULL ) return NULL;
 	for ( refl = first_refl(full, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
@@ -384,9 +389,20 @@ RefList *lsq_intensities(Crystal **crystals, int n, int n_threads,
 		red = get_redundancy(refl);
 		var = get_temp2(refl) / get_temp1(refl);
 		set_esd_intensity(refl, sqrt(var)/sqrt(red));
+
+		if ( red >= min_meas ) {
+
+			signed int h, k, l;
+			Reflection *r2;
+
+			get_indices(refl, &h, &k, &l);
+			r2 =  add_refl(full2, h, k, l);
+			copy_data(r2, refl);
+		}
 	}
 
-	return full;
+	reflist_free(full);
+	return full2;
 }
 
 
@@ -488,7 +504,7 @@ RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
 	}
 
 	/* Create an initial list to refine against */
-	full = lsq_intensities(crystals, n, n_threads, pmodel);
+	full = lsq_intensities(crystals, n, n_threads, pmodel, min_redundancy);
 
 	old_osfs = malloc(n*sizeof(double));
 	old_Bs = malloc(n*sizeof(double));
@@ -539,7 +555,8 @@ RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
 
 		/* Generate list for next iteration */
 		reflist_free(full);
-		full = lsq_intensities(crystals, n, n_threads, pmodel);
+		full = lsq_intensities(crystals, n, n_threads, pmodel,
+		                       min_redundancy);
 
 		i++;
 

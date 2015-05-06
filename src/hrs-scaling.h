@@ -44,6 +44,6 @@ extern RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
 
 
 extern RefList *lsq_intensities(Crystal **crystals, int n, int n_threads,
-                                PartialityModel pmodel);
+                                PartialityModel pmodel, int min_meas);
 
 #endif	/* HRS_SCALING_H */

@@ -644,7 +644,8 @@ int main(int argc, char *argv[])
 	STATUS("Performing initial scaling.\n");
 	if ( noscale ) {
 		STATUS("Skipping scaling step (--no-scale).\n");
-		full = lsq_intensities(crystals, n_crystals, nthreads, pmodel);
+		full = lsq_intensities(crystals, n_crystals, nthreads, pmodel,
+		                       min_measurements);
 	} else {
 		full = scale_intensities(crystals, n_crystals, nthreads, pmodel,
 		                         min_measurements);
@@ -683,7 +684,7 @@ int main(int argc, char *argv[])
 		if ( noscale ) {
 			STATUS("Skipping scaling step (--no-scale).\n");
 			full = lsq_intensities(crystals, n_crystals, nthreads,
-			                       pmodel);
+			                       pmodel, min_measurements);
 		} else {
 			full = scale_intensities(crystals, n_crystals, nthreads,
 			                         pmodel, min_measurements);
