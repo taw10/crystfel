@@ -485,39 +485,11 @@ static double guide_dev(Crystal *cr, const RefList *full)
 }
 
 
-struct param_backup
-{
-	UnitCell *cell;
-	double profile_radius;
-	double div;
-};
-
-
-static struct param_backup backup_crystal(Crystal *cr)
-{
-	struct param_backup b;
-	struct image *image = crystal_get_image(cr);
-
-	b.cell = cell_new_from_cell(crystal_get_cell(cr));
-	b.profile_radius = crystal_get_profile_radius(cr);
-	b.div = image->div;
-
-	return b;
-}
-
-
-static void free_backup_crystal(struct param_backup b)
-{
-	cell_free(b.cell);
-}
-
-
 struct prdata pr_refine(Crystal *cr, const RefList *full,
                         PartialityModel pmodel)
 {
 	double dev;
 	int i;
-	struct param_backup backup;
 	const int verbose = 0;
 	struct prdata prdata;
 	double mean_p_change = 0.0;
@@ -534,8 +506,6 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 		STATUS("Before iteration:                       dev = %10.5e\n",
 		       dev);
 	}
-
-	backup = backup_crystal(cr);
 
 	i = 0;
 	do {
@@ -560,8 +530,6 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 		i++;
 
 	} while ( (mean_p_change > 0.01) && (i < MAX_CYCLES) );
-
-	free_backup_crystal(backup);
 
 	if ( crystal_get_user_flag(cr) == 0 ) {
 		prdata.refined = 1;
