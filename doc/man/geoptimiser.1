@@ -117,6 +117,16 @@ to be included in the optimization process. The default maximum distance is 8 pi
 .PD
 By default, geoptimiser refines the distance between the detector and the sample. This option turns off this optimization.
 
+.PD 0
+.IP \fB--no-cspad\fR
+.PD
+If a geometry file containing 64 panels (ASICs) is provided by the user, geoptimiser assumes that the detector described by the geometry file is a CSPAD, and performs some sanity-checks on the relative ditance and orientation of connected panels. If the checks fail, the geometry optimization is stopped. This option turns off these checks.
+
+.PD 0
+.IP \fB--enforce-cspad-layout\fR
+.PD
+When this option is used, geoptimiser tries to fix the CSPAD layout problems detected by the checks described in the entry for the \fB--no-cspad\fR option. Immediately after performing this operation, geoptimser saves the new detector layout in the output refined geometry file and exits.
+
 .SH AUTHOR
 This page was written by Valerio Mariani, Oleksandr Yefanov and Thomas White.
 
