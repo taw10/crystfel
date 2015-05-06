@@ -3,11 +3,11 @@
  *
  * Post refinement
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2015 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -53,9 +53,6 @@
 
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
 #define MAX_CYCLES (10)
-
-/* Number of parameters to refine, in the order they appear in the enum */
-#define NUM_PARAMS (9)
 
 /* Returns dp(gauss)/dr at "r" */
 static double gaussian_fraction_gradient(double r, double R)
@@ -311,13 +308,31 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	double max_shift;
 	int nref = 0;
 	const int verbose = 0;
+	int num_params = 0;
+	enum gparam rv[32];
 
 	*n_filtered = 0;
 
+	/* If partiality model is anything other than "unity", refine all the
+	 * geometrical parameters */
+	if ( pmodel != PMODEL_UNITY ) {
+		rv[num_params++] = GPARAM_ASX;
+		rv[num_params++] = GPARAM_ASY;
+		rv[num_params++] = GPARAM_ASZ;
+		rv[num_params++] = GPARAM_BSX;
+		rv[num_params++] = GPARAM_BSY;
+		rv[num_params++] = GPARAM_BSZ;
+		rv[num_params++] = GPARAM_CSX;
+		rv[num_params++] = GPARAM_CSY;
+		rv[num_params++] = GPARAM_CSZ;
+	}
+
+	STATUS("Refining %i parameters.\n", num_params);
+
 	reflections = crystal_get_reflections(cr);
 
-	M = gsl_matrix_calloc(NUM_PARAMS, NUM_PARAMS);
-	v = gsl_vector_calloc(NUM_PARAMS);
+	M = gsl_matrix_calloc(num_params, num_params);
+	v = gsl_vector_calloc(num_params);
 
 	/* Construct the equations, one per reflection in this image */
 	for ( refl = first_refl(reflections, &iter);
@@ -331,7 +346,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		int k;
 		double p, l;
 		Reflection *match;
-		double gradients[NUM_PARAMS];
+		double gradients[num_params];
 
 		/* Find the full version */
 		get_indices(refl, &ha, &ka, &la);
@@ -355,16 +370,16 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		w = pow(w, -1.0);
 
 		/* Calculate all gradients for this reflection */
-		for ( k=0; k<NUM_PARAMS; k++ ) {
-			gradients[k] = p_gradient(cr, k, refl, pmodel) * l;
+		for ( k=0; k<num_params; k++ ) {
+			gradients[k] = p_gradient(cr, rv[k], refl, pmodel) * l;
 		}
 
-		for ( k=0; k<NUM_PARAMS; k++ ) {
+		for ( k=0; k<num_params; k++ ) {
 
 			int g;
 			double v_c, v_curr;
 
-			for ( g=0; g<NUM_PARAMS; g++ ) {
+			for ( g=0; g<num_params; g++ ) {
 
 				double M_c, M_curr;
 
@@ -406,9 +421,9 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	shifts = solve_svd(v, M, n_filtered, verbose);
 	if ( shifts != NULL ) {
 
-		for ( param=0; param<NUM_PARAMS; param++ ) {
+		for ( param=0; param<num_params; param++ ) {
 			double shift = gsl_vector_get(shifts, param);
-			apply_shift(cr, param, shift);
+			apply_shift(cr, rv[param], shift);
 			//STATUS("Shift %i: %e\n", param, shift);
 			if ( fabs(shift) > max_shift ) max_shift = fabs(shift);
 		}
