@@ -437,9 +437,9 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	if ( verbose ) {
 		STATUS("The original equation:\n");
 		show_matrix_eqn(M, v);
+		STATUS("%i reflections went into the equations.\n", nref);
 	}
 
-	//STATUS("%i reflections went into the equations.\n", nref);
 	if ( nref == 0 ) {
 		crystal_set_user_flag(cr, 2);
 		gsl_matrix_free(M);
