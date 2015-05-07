@@ -522,7 +522,6 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 	int i;
 	const int verbose = 0;
 	struct prdata prdata;
-	double mean_p_change = 0.0;
 
 	prdata.refined = 0;
 	prdata.n_filtered = 0;
@@ -559,7 +558,7 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 
 		i++;
 
-	} while ( (mean_p_change > 0.01) && (i < MAX_CYCLES) );
+	} while ( i < MAX_CYCLES );
 
 	if ( crystal_get_user_flag(cr) == 0 ) {
 		prdata.refined = 1;
