@@ -85,6 +85,7 @@ struct refine_args
 	RefList *full;
 	Crystal *crystal;
 	PartialityModel pmodel;
+	int no_scale;
 	struct prdata prdata;
 };
 
@@ -105,7 +106,8 @@ static void refine_image(void *task, int id)
 	struct refine_args *pargs = task;
 	Crystal *cr = pargs->crystal;
 
-	pargs->prdata = pr_refine(cr, pargs->full, pargs->pmodel);
+	pargs->prdata = pr_refine(cr, pargs->full, pargs->pmodel,
+	                          pargs->no_scale);
 }
 
 
@@ -147,10 +149,6 @@ static void refine_all(Crystal **crystals, int n_crystals,
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
-
-	/* If the partiality model is "p=1", this refinement is really, really
-	 * easy... */
-	if ( pmodel == PMODEL_UNITY ) return;
 
 	task_defaults.full = full;
 	task_defaults.crystal = NULL;
@@ -641,15 +639,8 @@ int main(int argc, char *argv[])
 //	early_rejection(crystals, n_crystals);
 
 	/* Make initial estimates */
-	STATUS("Performing initial scaling.\n");
-	if ( noscale ) {
-		STATUS("Skipping scaling step (--no-scale).\n");
-		full = lsq_intensities(crystals, n_crystals, nthreads, pmodel,
-		                       min_measurements);
-	} else {
-		full = scale_intensities(crystals, n_crystals, nthreads, pmodel,
-		                         min_measurements);
-	}
+	full = lsq_intensities(crystals, n_crystals, nthreads, pmodel,
+	                       min_measurements);
 
 	check_rejection(crystals, n_crystals);
 
@@ -668,11 +659,11 @@ int main(int argc, char *argv[])
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
 
-		STATUS("Post refinement cycle %i of %i\n", i+1, n_iter);
+		STATUS("Refinement cycle %i of %i\n", i+1, n_iter);
 
 		srdata.n_filtered = 0;
 
-		/* Refine the geometry of all patterns to get the best fit */
+		/* Refine all crystals to get the best fit */
 		refine_all(crystals, n_crystals, full, nthreads, pmodel,
 		           &srdata);
 
@@ -681,14 +672,8 @@ int main(int argc, char *argv[])
 
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
-		if ( noscale ) {
-			STATUS("Skipping scaling step (--no-scale).\n");
-			full = lsq_intensities(crystals, n_crystals, nthreads,
-			                       pmodel, min_measurements);
-		} else {
-			full = scale_intensities(crystals, n_crystals, nthreads,
-			                         pmodel, min_measurements);
-		}
+		full = lsq_intensities(crystals, n_crystals, nthreads,
+		                       pmodel, min_measurements);
 
 		check_rejection(crystals, n_crystals);
 

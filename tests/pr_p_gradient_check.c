@@ -303,7 +303,7 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 			grad = (grad1 + grad2) / 2.0;
 			i++;
 
-			cgrad = p_gradient(cr, refine, refl, pmodel);
+			cgrad = gradient(cr, refine, refl, pmodel);
 
 			get_partial(refl, &r1, &r2, &p);
 

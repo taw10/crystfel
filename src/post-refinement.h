@@ -3,11 +3,11 @@
  *
  * Post refinement
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2015 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -51,10 +51,10 @@ struct prdata
 
 
 extern struct prdata pr_refine(Crystal *cr, const RefList *full,
-                               PartialityModel pmodel);
+                               PartialityModel pmodel, int no_scale);
 
 /* Exported so it can be poked by tests/pr_p_gradient_check */
-extern double p_gradient(Crystal *cr, int k, Reflection *refl,
-                         PartialityModel pmodel);
+extern double gradient(Crystal *cr, int k, Reflection *refl,
+                       PartialityModel pmodel);
 
 #endif	/* POST_REFINEMENT_H */

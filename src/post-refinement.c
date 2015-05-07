@@ -174,14 +174,16 @@ static double volume_fraction(double rlow, double rhigh, double pr,
 }
 
 
-/* Return the gradient of partiality wrt parameter 'k' given the current status
- * of 'image'. */
-double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
+/* Return the gradient of p/G wrt parameter 'k' given the current status
+ * of the crystal. */
+double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 {
 	double glow, ghigh;
 	double rlow, rhigh, p;
 	struct image *image = crystal_get_image(cr);
 	double R = crystal_get_profile_radius(cr);
+	double osf = crystal_get_osf(cr);
+	double gr;
 
 	get_partial(refl, &rlow, &rhigh, &p);
 
@@ -196,7 +198,8 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 		Rglow = volume_fraction_rgradient(rlow, R, pmodel);
 		Rghigh = volume_fraction_rgradient(rhigh, R, pmodel);
 
-		return 4.0*psph/(3.0*D) + (4.0*R/(3.0*D))*(Rglow - Rghigh);
+		gr = 4.0*psph/(3.0*D) + (4.0*R/(3.0*D))*(Rglow - Rghigh);
+		return gr / osf;
 
 	}
 
@@ -214,11 +217,17 @@ double p_gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 		get_symmetric_indices(refl, &hs, &ks, &ls);
 		ds = 2.0 * resolution(crystal_get_cell(cr), hs, ks, ls);
 
-		return (ds/2.0)*(glow+ghigh) - 4.0*R*psph*ds/(3.0*D*D);
+		gr = (ds/2.0)*(glow+ghigh) - 4.0*R*psph*ds/(3.0*D*D);
+		return gr / osf;
 
 	}
 
-	return r_gradient(crystal_get_cell(cr), k, refl, image) * (glow-ghigh);
+	if ( k == GPARAM_OSF ) {
+		return -p/(osf*osf);
+	}
+
+	gr = r_gradient(crystal_get_cell(cr), k, refl, image) * (glow-ghigh);
+	return gr / osf;
 }
 
 
@@ -274,6 +283,18 @@ static void apply_shift(Crystal *cr, int k, double shift)
 		crystal_set_profile_radius(cr, t);
 		break;
 
+		case GPARAM_OSF :
+		if ( isnan(shift) ) {
+			ERROR("Refusing nan shift of OSF\n");
+		} else if (shift > 100.0 ) {
+			ERROR("Refusing large (%e) OSF shift.\n", shift);
+		} else {
+			t = crystal_get_osf(cr);
+			t += shift;
+			crystal_set_osf(cr, t);
+		}
+		break;
+
 		case GPARAM_ASX :
 		case GPARAM_ASY :
 		case GPARAM_ASZ :
@@ -296,7 +317,7 @@ static void apply_shift(Crystal *cr, int k, double shift)
 
 /* Perform one cycle of post refinement on 'image' against 'full' */
 static double pr_iterate(Crystal *cr, const RefList *full,
-                         PartialityModel pmodel, int *n_filtered)
+                         PartialityModel pmodel, int no_scale, int *n_filtered)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
@@ -310,6 +331,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	const int verbose = 0;
 	int num_params = 0;
 	enum gparam rv[32];
+	double G;
 
 	*n_filtered = 0;
 
@@ -327,12 +349,18 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		rv[num_params++] = GPARAM_CSZ;
 	}
 
-	STATUS("Refining %i parameters.\n", num_params);
+	/* If we are scaling, refine scale factors (duh) */
+	if ( !no_scale ) {
+		rv[num_params++] = GPARAM_OSF;
+		//rv[num_params++] = GPARAM_BFAC;  FIXME: Next
+	}
 
 	reflections = crystal_get_reflections(cr);
 
 	M = gsl_matrix_calloc(num_params, num_params);
 	v = gsl_vector_calloc(num_params);
+
+	G = crystal_get_osf(cr);
 
 	/* Construct the equations, one per reflection in this image */
 	for ( refl = first_refl(reflections, &iter);
@@ -344,7 +372,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		double w;
 		double I_partial;
 		int k;
-		double p, l;
+		double p, L;
 		Reflection *match;
 		double gradients[num_params];
 
@@ -359,19 +387,22 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 
 		I_full = get_intensity(match);
 
-		/* Actual measurement of this reflection from this pattern? */
-		I_partial = get_intensity(refl) / crystal_get_osf(cr);
 		p = get_partiality(refl);
-		l = get_lorentz(refl);
+		L = get_lorentz(refl);
+
+		/* Actual measurement of this reflection from this pattern? */
+		I_partial = get_intensity(refl);
 
 		/* Calculate the weight for this reflection */
-		w =  pow(get_esd_intensity(refl), 2.0);
-		w += l * p * I_full * pow(get_esd_intensity(match), 2.0);
-		w = pow(w, -1.0);
+		//w = pow(get_esd_intensity(refl), 2.0);
+		//w += (p/L) * I_full * pow(get_esd_intensity(match), 2.0);
+		//w = pow(w, -1.0);
+		w = 1.0;
 
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<num_params; k++ ) {
-			gradients[k] = p_gradient(cr, rv[k], refl, pmodel) * l;
+			gradients[k] = gradient(cr, rv[k], refl, pmodel);
+			gradients[k] *= I_full / L;
 		}
 
 		for ( k=0; k<num_params; k++ ) {
@@ -386,8 +417,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 				/* Matrix is symmetric */
 				if ( g > k ) continue;
 
-				M_c = gradients[g] * gradients[k];
-				M_c *= w * pow(I_full, 2.0);
+				M_c = w * gradients[g] * gradients[k];
 
 				M_curr = gsl_matrix_get(M, k, g);
 				gsl_matrix_set(M, k, g, M_curr + M_c);
@@ -395,8 +425,8 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 
 			}
 
-			delta_I = I_partial - (l * p * I_full);
-			v_c = w * delta_I * I_full * gradients[k];
+			delta_I = I_partial - (p * I_full / (L*G));
+			v_c = w * delta_I * gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
 
@@ -486,7 +516,7 @@ static double guide_dev(Crystal *cr, const RefList *full)
 
 
 struct prdata pr_refine(Crystal *cr, const RefList *full,
-                        PartialityModel pmodel)
+                        PartialityModel pmodel, int no_scale)
 {
 	double dev;
 	int i;
@@ -518,7 +548,7 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 		cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
-		pr_iterate(cr, full, pmodel, &prdata.n_filtered);
+		pr_iterate(cr, full, pmodel, no_scale, &prdata.n_filtered);
 
 		update_partialities(cr, pmodel);
 
