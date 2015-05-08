@@ -291,7 +291,11 @@ static void apply_shift(Crystal *cr, int k, double shift)
 		} else {
 			t = crystal_get_osf(cr);
 			t += shift;
-			crystal_set_osf(cr, t);
+			if ( t < 0.0 ) {
+				ERROR("Refusing to make OSF negative.\n");
+			} else {
+				crystal_set_osf(cr, t);
+			}
 		}
 		break;
 
