@@ -458,7 +458,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		for ( param=0; param<num_params; param++ ) {
 			double shift = gsl_vector_get(shifts, param);
 			apply_shift(cr, rv[param], shift);
-			//STATUS("Shift %i: %e\n", param, shift);
+			if ( verbose ) STATUS("Shift %i: %e\n", param, shift);
 			if ( fabs(shift) > max_shift ) max_shift = fabs(shift);
 		}
 
