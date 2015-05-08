@@ -520,6 +520,71 @@ static double guide_dev(Crystal *cr, const RefList *full)
 }
 
 
+static double all_gradients(Crystal *cr, const RefList *full)
+{
+	double gr = 0.0;
+
+	Reflection *refl;
+	RefListIterator *iter;
+
+	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
+
+		double L;
+		signed int h, k, l;
+		Reflection *full_version;
+		double I_full;
+
+		if ( (get_intensity(refl) < 3.0*get_esd_intensity(refl))
+		  || (get_partiality(refl) < MIN_PART_REFINE) ) continue;
+
+		get_indices(refl, &h, &k, &l);
+		assert((h!=0) || (k!=0) || (l!=0));
+
+		full_version = find_refl(full, h, k, l);
+		if ( full_version == NULL ) continue;
+
+		L = get_lorentz(refl);
+
+		I_full = get_intensity(full_version);
+
+		gr += I_full*gradient(cr, GPARAM_OSF, refl, PMODEL_UNITY)/L;
+
+	}
+
+	return gr;
+}
+
+
+static void check_gradient_stuff(Crystal *cr, const RefList *full)
+{
+	int i;
+	double old_osf = crystal_get_osf(cr);
+	FILE *fh;
+	char tmp[256];
+	double last_v = 0.0;
+
+	STATUS("initial osf = %f\n", old_osf);
+
+	snprintf(tmp, 255, "osf.dat");
+
+	fh = fopen(tmp, "w");
+
+	for ( i=0; i<2000; i++ ) {
+		double dev = guide_dev(cr, full);
+		crystal_set_osf(cr, old_osf+(i-1000)*0.01);
+		fprintf(fh, "%f %e %e %e\n", crystal_get_osf(cr),
+		        dev, all_gradients(cr, full),
+		        dev-last_v);
+		last_v = dev;
+	}
+
+	fclose(fh);
+	crystal_set_osf(cr, old_osf);
+}
+
+
 struct prdata pr_refine(Crystal *cr, const RefList *full,
                         PartialityModel pmodel, int no_scale)
 {
@@ -552,6 +617,7 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 		cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
+		check_gradient_stuff(cr, full);
 		pr_iterate(cr, full, pmodel, no_scale, &prdata.n_filtered);
 
 		update_partialities(cr, pmodel);
