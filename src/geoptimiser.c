@@ -48,6 +48,7 @@
 #include <crystal.h>
 #include <image.h>
 #include <utils.h>
+#include <render.h>
 
 #include "hdfsee-render.h"
 
@@ -2129,7 +2130,7 @@ static int draw_detector(cairo_surface_t *surf, struct image *image,
 	cr = cairo_create(surf);
 
 	unpack_slab(image);
-	pixbufs = render_panels(image, 1, 4, 1, &n_pixbufs);
+	pixbufs = render_panels(image, 1, SCALE_GEOPTIMISER, 1, &n_pixbufs);
 
 	/* Blank grey background */
 	cairo_rectangle(cr, 0.0, 0.0, rect.width, rect.height);
@@ -2224,7 +2225,7 @@ static int save_data_to_png(char *filename, struct detector *det,
 
 	draw_detector(surf, &im, rect);
 
-	col_scale = render_get_colour_scale(20, rect.height, 4);
+	col_scale = render_get_colour_scale(20, rect.height, SCALE_GEOPTIMISER);
 
 	cr = cairo_create(surf);
 	cairo_identity_matrix(cr);
