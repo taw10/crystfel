@@ -174,7 +174,7 @@ static double volume_fraction(double rlow, double rhigh, double pr,
 }
 
 
-/* Return the gradient of p/G wrt parameter 'k' given the current status
+/* Return the gradient of pG wrt parameter 'k' given the current status
  * of the crystal. */
 double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 {
@@ -188,7 +188,7 @@ double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 	get_partial(refl, &rlow, &rhigh, &p);
 
 	if ( k == GPARAM_OSF ) {
-		return -p/(osf*osf);
+		return p;
 	}
 
 	if ( k == GPARAM_R ) {
@@ -203,7 +203,7 @@ double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 		Rghigh = volume_fraction_rgradient(rhigh, R, pmodel);
 
 		gr = 4.0*psph/(3.0*D) + (4.0*R/(3.0*D))*(Rglow - Rghigh);
-		return gr / osf;
+		return gr * osf;
 
 	}
 
@@ -222,12 +222,12 @@ double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 		ds = 2.0 * resolution(crystal_get_cell(cr), hs, ks, ls);
 
 		gr = (ds/2.0)*(glow+ghigh) - 4.0*R*psph*ds/(3.0*D*D);
-		return gr / osf;
+		return gr * osf;
 
 	}
 
 	gr = r_gradient(crystal_get_cell(cr), k, refl, image) * (glow-ghigh);
-	return gr / osf;
+	return gr * osf;
 }
 
 
@@ -429,7 +429,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 
 			}
 
-			delta_I = I_partial - (p * I_full / (L*G));
+			delta_I = I_partial - (G * p * I_full / L);
 			v_c = w * delta_I * gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
@@ -512,7 +512,7 @@ static double guide_dev(Crystal *cr, const RefList *full)
 		//       h, k, l, G, p, I_partial, I_full,
 		//       I_partial - p*G*I_full);
 
-		dev += pow(I_partial - p*I_full/(G*L), 2.0);
+		dev += pow(I_partial - G*p*I_full/L, 2.0);
 
 	}
 

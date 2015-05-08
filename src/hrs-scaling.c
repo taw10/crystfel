@@ -328,8 +328,8 @@ static void run_merge_job(void *vwargs, int cookie)
 		res = resolution(crystal_get_cell(cr), h, k, l);
 
 		/* Total (multiplicative) correction factor */
-		corr = G * exp(2.0*B*res*res) * get_lorentz(refl)
-		        / get_partiality(refl);
+		corr = exp(2.0*B*res*res) * get_lorentz(refl)
+		        / (G * get_partiality(refl));
 
 		esd = get_esd_intensity(refl) * corr;
 		w = 1.0 / pow(esd, 0.5);
