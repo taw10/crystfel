@@ -486,7 +486,7 @@ static double guide_dev(Crystal *cr, const RefList *full)
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 
-		double G, p;
+		double G, p, L;
 		signed int h, k, l;
 		Reflection *full_version;
 		double I_full, I_partial;
@@ -505,13 +505,14 @@ static double guide_dev(Crystal *cr, const RefList *full)
 
 		G = crystal_get_osf(cr);
 		p = get_partiality(refl);
+		L = get_lorentz(refl);
 		I_partial = get_intensity(refl);
 		I_full = get_intensity(full_version);
 		//STATUS("%3i %3i %3i  %5.2f  %5.2f  %5.2f  %5.2f  %5.2f\n",
 		//       h, k, l, G, p, I_partial, I_full,
 		//       I_partial - p*G*I_full);
 
-		dev += pow(I_partial - p*G*I_full, 2.0);
+		dev += pow(I_partial - p*I_full/(G*L), 2.0);
 
 	}
 
