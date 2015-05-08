@@ -226,7 +226,7 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
 	data = malloc(3*w*h);
 	if ( data == NULL ) return NULL;
 
-	max = h;
+	max = h-(h/6);
 
 	for ( y=0; y<h; y++ ) {
 
