@@ -187,6 +187,10 @@ double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 
 	get_partial(refl, &rlow, &rhigh, &p);
 
+	if ( k == GPARAM_OSF ) {
+		return -p/(osf*osf);
+	}
+
 	if ( k == GPARAM_R ) {
 
 		double Rglow, Rghigh;
@@ -220,10 +224,6 @@ double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 		gr = (ds/2.0)*(glow+ghigh) - 4.0*R*psph*ds/(3.0*D*D);
 		return gr / osf;
 
-	}
-
-	if ( k == GPARAM_OSF ) {
-		return -p/(osf*osf);
 	}
 
 	gr = r_gradient(crystal_get_cell(cr), k, refl, image) * (glow-ghigh);
