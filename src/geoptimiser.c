@@ -2129,7 +2129,7 @@ static int draw_detector(cairo_surface_t *surf, struct image *image,
 	cr = cairo_create(surf);
 
 	unpack_slab(image);
-	pixbufs = render_panels(image, 1, 0, 1, &n_pixbufs);
+	pixbufs = render_panels(image, 1, 4, 1, &n_pixbufs);
 
 	/* Blank grey background */
 	cairo_rectangle(cr, 0.0, 0.0, rect.width, rect.height);
@@ -2178,6 +2178,8 @@ static int save_data_to_png(char *filename, struct detector *det,
 	struct image im;
 	int i;
 	struct rectangle rect;
+	GdkPixbuf *col_scale;
+	cairo_t *cr;
 
 	cairo_status_t r;
 	cairo_surface_t *surf;
@@ -2217,10 +2219,20 @@ static int save_data_to_png(char *filename, struct detector *det,
 	/* Add a thin border */
 	rect.width += 2.0;
 	rect.height += 2.0;
-	surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, rect.width,
+	surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, rect.width + 20,
 	                                  rect.height);
 
 	draw_detector(surf, &im, rect);
+
+	col_scale = render_get_colour_scale(20, rect.height, 4);
+
+	cr = cairo_create(surf);
+	cairo_identity_matrix(cr);
+	cairo_translate(cr, rect.width, 0.0);
+	cairo_rectangle(cr, 0.0, 0.0, 20.0, rect.height);
+	gdk_cairo_set_source_pixbuf(cr, col_scale, 0.0, 0.0);
+	cairo_fill(cr);
+	cairo_destroy(cr);
 
 	r = cairo_surface_write_to_png(surf, filename);
 	if (r != CAIRO_STATUS_SUCCESS) {

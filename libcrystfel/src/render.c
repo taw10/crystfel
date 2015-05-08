@@ -104,6 +104,84 @@ static void render_rgb(double val, double max,
 }
 
 
+static void render_geoptimiser(double val, double max,
+                               double *rp, double *gp, double *bp)
+{
+	double r;
+	double p;
+
+	r = val/max;
+
+	if ( val < 0.0 ) {
+		*rp = 0.0;
+		*gp = 0.0;
+		*bp = 0.0;
+		return;
+	}
+
+	if ( r >= 0.0 && r < 0.059 ) {
+		p = (r-0.0)/(0.059-0.0);
+		*rp = 0.0;
+		*gp = 0.0;
+		*bp = ((91.0/256.0)-0.0)*p;
+		return;
+	}
+
+	if ( r >= 0.059 && r < 0.220 ) {
+		p = (r-0.059)/(0.220-0.059);
+		*rp = ((122.0/256.0)-0.0)*p;
+		*gp = 0.0;
+		*bp = ((227.0/256.0)-(91.0/256.0))*p+(91.0/256.0);
+		return;
+	}
+
+	if ( r >= 0.220 && r < 0.376 ) {
+		p = (r-0.220)/(0.376-0.220);
+		*rp = ((195.0/256.0)-(122.0/256.0))*p+(122.0/256.0);
+		*gp = 0.0;
+		*bp = ((93.0/256.0)-(227.0/256.0))*p+(227.0/256.0);
+		return;
+	}
+
+	if ( r >= 0.376 && r < 0.498 ) {
+		p = (r-0.376)/(0.498-0.376);
+		*rp = ((238.0/256.0)-(195.0/256.0))*p+(195.0/256.0);
+		*gp = ((76.0/256.0)-0.0)*p;
+		*bp = (0.0-(93.0/256.0))*p+(93.0/256.0);
+		return;
+	}
+
+	if ( r >= 0.498 && r < 0.564 ) {
+		p = (r-0.498)/(0.564-0.498);
+		*rp = (1.0-(238.0/256.0))*p+(238.0/256.0);
+		*gp = ((117.0/256.0)-(76.0/256.0))*p+(76.0/256.0);
+		*bp = 0.0;
+		return;
+	}
+
+	if ( r >= 0.564 && r < 0.815 ) {
+		p = (r-0.564)/(0.815-0.564);
+		*rp = 1.0;
+		*gp = ((234.0/256.0)-(117.0/256.0))*p+(117.0/256.0);
+		*bp = 0.0;
+		return;
+	}
+
+	if ( r >= 0.815 && r < 1.0 ) {
+		p = (r-0.815)/(1.0-0.815);
+		*rp = 1.0;
+		*gp = (1.0-(234.0/256.0))*p+(234.0/256.0);
+		*bp = (1.0-0.0)*p;
+		return;
+	}
+
+	if ( r >= 1.0 ) {
+		*rp = 1.0; *gp = 1.0; *bp = 1.0;
+		return;
+	}
+}
+
+
 static void render_ratio(double val, double max,
                          double *rp, double *gp, double *bp)
 {
@@ -163,6 +241,10 @@ void render_scale(double val, double max, int scale,
 
 		case SCALE_RATIO :
 		render_ratio(val, max, rp, gp, bp);
+		break;
+
+		case SCALE_GEOPTIMISER :
+		render_geoptimiser(val, max, rp, gp, bp);
 		break;
 	}
 }
