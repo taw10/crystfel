@@ -174,8 +174,8 @@ static double volume_fraction(double rlow, double rhigh, double pr,
 }
 
 
-/* Return the gradient of pG wrt parameter 'k' given the current status
- * of the crystal. */
+/* Return the gradient of pGexp(-Bs^2) wrt parameter 'k' given the current
+ * status of the crystal. */
 double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 {
 	double glow, ghigh;
@@ -184,11 +184,20 @@ double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 	double R = crystal_get_profile_radius(cr);
 	double osf = crystal_get_osf(cr);
 	double gr;
+	signed int hi, ki, li;
+	double s, B;
 
+	get_indices(refl, &hi, &ki, &li);
+	s = resolution(crystal_get_cell(cr), hi, ki, li);
+	B = crystal_get_Bfac(cr);
 	get_partial(refl, &rlow, &rhigh, &p);
 
 	if ( k == GPARAM_OSF ) {
-		return p;
+		return p*exp(-B*s*s);
+	}
+
+	if ( k == GPARAM_BFAC ) {
+		return -s*s*osf*p*exp(-B*s*s);
 	}
 
 	if ( k == GPARAM_R ) {
@@ -283,6 +292,12 @@ static void apply_shift(Crystal *cr, int k, double shift)
 		crystal_set_profile_radius(cr, t);
 		break;
 
+		case GPARAM_BFAC :
+		t = crystal_get_Bfac(cr);
+		t += shift;
+		crystal_set_Bfac(cr, t);
+		break;
+
 		case GPARAM_OSF :
 		if ( isnan(shift) ) {
 			ERROR("Refusing nan shift of OSF\n");
@@ -335,7 +350,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	const int verbose = 0;
 	int num_params = 0;
 	enum gparam rv[32];
-	double G;
+	double G, B;
 
 	*n_filtered = 0;
 
@@ -356,7 +371,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	/* If we are scaling, refine scale factors (duh) */
 	if ( !no_scale ) {
 		rv[num_params++] = GPARAM_OSF;
-		//rv[num_params++] = GPARAM_BFAC;  FIXME: Next
+		rv[num_params++] = GPARAM_BFAC;
 	}
 
 	reflections = crystal_get_reflections(cr);
@@ -365,6 +380,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	v = gsl_vector_calloc(num_params);
 
 	G = crystal_get_osf(cr);
+	B = crystal_get_Bfac(cr);
 
 	/* Construct the equations, one per reflection in this image */
 	for ( refl = first_refl(reflections, &iter);
@@ -376,7 +392,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		double w;
 		double I_partial;
 		int k;
-		double p, L;
+		double p, L, s;
 		Reflection *match;
 		double gradients[num_params];
 
@@ -393,6 +409,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 
 		p = get_partiality(refl);
 		L = get_lorentz(refl);
+		s = resolution(crystal_get_cell(cr), ha, ka, la);
 
 		/* Actual measurement of this reflection from this pattern? */
 		I_partial = get_intensity(refl);
@@ -429,7 +446,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 
 			}
 
-			delta_I = I_partial - (G * p * I_full / L);
+			delta_I = I_partial - G*exp(-B*s*s)*p*I_full / L;
 			v_c = w * delta_I * gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
@@ -477,6 +494,10 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 static double guide_dev(Crystal *cr, const RefList *full)
 {
 	double dev = 0.0;
+	double G, B;
+
+	G = crystal_get_osf(cr);
+	B = crystal_get_Bfac(cr);
 
 	/* For each reflection */
 	Reflection *refl;
@@ -486,7 +507,7 @@ static double guide_dev(Crystal *cr, const RefList *full)
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 
-		double G, p, L;
+		double p, L, s;
 		signed int h, k, l;
 		Reflection *full_version;
 		double I_full, I_partial;
@@ -503,16 +524,16 @@ static double guide_dev(Crystal *cr, const RefList *full)
 		 * scale_intensities() might not yet have been called, so the
 		 * full version may not have been calculated yet. */
 
-		G = crystal_get_osf(cr);
 		p = get_partiality(refl);
 		L = get_lorentz(refl);
 		I_partial = get_intensity(refl);
 		I_full = get_intensity(full_version);
+		s = resolution(crystal_get_cell(cr), h, k, l);
 		//STATUS("%3i %3i %3i  %5.2f  %5.2f  %5.2f  %5.2f  %5.2f\n",
 		//       h, k, l, G, p, I_partial, I_full,
 		//       I_partial - p*G*I_full);
 
-		dev += pow(I_partial - G*p*I_full/L, 2.0);
+		dev += pow(I_partial - G*exp(-B*s*s)*p*I_full/L, 2.0);
 
 	}
 
