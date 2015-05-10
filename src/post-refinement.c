@@ -301,13 +301,12 @@ static void apply_shift(Crystal *cr, int k, double shift)
 		case GPARAM_OSF :
 		if ( isnan(shift) ) {
 			ERROR("Refusing nan shift of OSF\n");
-		} else if (shift > 100.0 ) {
-			ERROR("Refusing large (%e) OSF shift.\n", shift);
 		} else {
 			t = crystal_get_osf(cr);
 			t += shift;
 			if ( t < 0.0 ) {
 				ERROR("Refusing to make OSF negative.\n");
+				exit(0);
 			} else {
 				crystal_set_osf(cr, t);
 			}
@@ -347,7 +346,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	RefList *reflections;
 	double max_shift;
 	int nref = 0;
-	const int verbose = 0;
+	const int verbose = 1;
 	int num_params = 0;
 	enum gparam rv[32];
 	double G, B;
@@ -424,6 +423,9 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		for ( k=0; k<num_params; k++ ) {
 			gradients[k] = gradient(cr, rv[k], refl, pmodel);
 			gradients[k] *= I_full / L;
+			if ( verbose ) {
+				STATUS("gradient %i: %e\n", k, gradients[k]);
+			}
 		}
 
 		for ( k=0; k<num_params; k++ ) {
@@ -474,8 +476,8 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 
 		for ( param=0; param<num_params; param++ ) {
 			double shift = gsl_vector_get(shifts, param);
-			apply_shift(cr, rv[param], shift);
 			if ( verbose ) STATUS("Shift %i: %e\n", param, shift);
+			apply_shift(cr, rv[param], shift);
 			if ( fabs(shift) > max_shift ) max_shift = fabs(shift);
 		}
 
@@ -581,28 +583,29 @@ static double all_gradients(Crystal *cr, const RefList *full)
 static void check_gradient_stuff(Crystal *cr, const RefList *full)
 {
 	int i;
-	double old_osf = crystal_get_osf(cr);
+	double old_Bfac = crystal_get_Bfac(cr);
 	FILE *fh;
 	char tmp[256];
 	double last_v = 0.0;
 
-	STATUS("initial osf = %f\n", old_osf);
+	STATUS("initial B = %e\n", old_Bfac);
 
 	snprintf(tmp, 255, "osf.dat");
 
 	fh = fopen(tmp, "w");
+	fprintf(fh, "Serial: %i\n", crystal_get_image(cr)->serial);
 
 	for ( i=0; i<2000; i++ ) {
 		double dev = guide_dev(cr, full);
-		crystal_set_osf(cr, old_osf+(i-1000)*0.01);
-		fprintf(fh, "%f %e %e %e\n", crystal_get_osf(cr),
+		crystal_set_Bfac(cr, old_Bfac+(i-1000)*0.01e-20);
+		fprintf(fh, "%e %e %e %e\n", crystal_get_Bfac(cr),
 		        dev, all_gradients(cr, full),
 		        dev-last_v);
 		last_v = dev;
 	}
 
 	fclose(fh);
-	crystal_set_osf(cr, old_osf);
+	crystal_set_Bfac(cr, old_Bfac);
 }
 
 
@@ -611,7 +614,7 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 {
 	double dev;
 	int i;
-	const int verbose = 0;
+	const int verbose = 1;
 	struct prdata prdata;
 
 	prdata.refined = 0;
@@ -638,7 +641,7 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 		cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
-		check_gradient_stuff(cr, full);
+		if ( verbose ) check_gradient_stuff(cr, full);
 		pr_iterate(cr, full, pmodel, no_scale, &prdata.n_filtered);
 
 		update_partialities(cr, pmodel);
