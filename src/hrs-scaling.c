@@ -331,7 +331,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		corr = exp(2.0*B*res*res) * get_lorentz(refl)
 		        / (G * get_partiality(refl));
 
-		esd = get_esd_intensity(refl) * corr;
+		esd = fabs(get_esd_intensity(refl) * corr);
 		w = 1.0 / pow(esd, 0.5);
 
 		/* Running mean and variance calculation */

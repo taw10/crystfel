@@ -299,18 +299,9 @@ static void apply_shift(Crystal *cr, int k, double shift)
 		break;
 
 		case GPARAM_OSF :
-		if ( isnan(shift) ) {
-			ERROR("Refusing nan shift of OSF\n");
-		} else {
-			t = crystal_get_osf(cr);
-			t += shift;
-			if ( t < 0.0 ) {
-				ERROR("Refusing to make OSF negative.\n");
-				exit(0);
-			} else {
-				crystal_set_osf(cr, t);
-			}
-		}
+		t = crystal_get_osf(cr);
+		t += shift;
+		crystal_set_osf(cr, t);
 		break;
 
 		case GPARAM_ASX :
