@@ -209,6 +209,16 @@ gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *pn_filt, int verbose)
 	SAS_copy = gsl_matrix_alloc(SAS->size1, SAS->size2);
 	gsl_matrix_memcpy(SAS_copy, SAS);
 
+	for ( i=0; i<n; i++ ) {
+		int j;
+		if ( isnan(gsl_vector_get(SB, i)) ) gsl_vector_set(SB, i, 0.0);
+		for ( j=0; j<n; j++ ) {
+			if ( isnan(gsl_matrix_get(SAS, i, j)) ) {
+					gsl_matrix_set(SAS, i, j, 0.0);
+			}
+		}
+	}
+
 	/* Do the SVD */
 	s_val = gsl_vector_calloc(n);
 	s_vec = gsl_matrix_calloc(n, n);
