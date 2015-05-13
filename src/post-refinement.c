@@ -174,7 +174,7 @@ static double volume_fraction(double rlow, double rhigh, double pr,
 }
 
 
-/* Return the gradient of pGexp(-Bs^2) wrt parameter 'k' given the current
+/* Return the gradient of "fx" wrt parameter 'k' given the current
  * status of the crystal. */
 double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 {
@@ -185,19 +185,18 @@ double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 	double osf = crystal_get_osf(cr);
 	double gr;
 	signed int hi, ki, li;
-	double s, B;
+	double s;
 
 	get_indices(refl, &hi, &ki, &li);
 	s = resolution(crystal_get_cell(cr), hi, ki, li);
-	B = crystal_get_Bfac(cr);
 	get_partial(refl, &rlow, &rhigh, &p);
 
 	if ( k == GPARAM_OSF ) {
-		return p*exp(-B*s*s);
+		return 1.0/osf;
 	}
 
 	if ( k == GPARAM_BFAC ) {
-		return -s*s*osf*p*exp(-B*s*s);
+		return -s*s;
 	}
 
 	if ( k == GPARAM_R ) {
