@@ -689,6 +689,33 @@ int main(int argc, char *argv[])
 	/* Output results */
 	write_reflist(outfile, full);
 
+	/* Output split results */
+	char tmp[1024];
+	RefList *split;
+	Crystal *crystals1[n_crystals];
+	Crystal *crystals2[n_crystals];
+	int n_crystals1 = 0;
+	int n_crystals2 = 0;
+	for ( i=0; i<n_crystals; i++ ) {
+		if ( i % 2 ) {
+			crystals1[n_crystals1] = crystals[i];
+			n_crystals1++;
+		} else {
+			crystals2[n_crystals2] = crystals[i];
+			n_crystals2++;
+		}
+	}
+	snprintf(tmp, 1024, "%s1", outfile);
+	split = lsq_intensities(crystals1, n_crystals1, nthreads,
+		                pmodel, min_measurements);
+	write_reflist(tmp, split);
+	reflist_free(split);
+	snprintf(tmp, 1024, "%s2", outfile);
+	split = lsq_intensities(crystals2, n_crystals2, nthreads,
+		                pmodel, min_measurements);
+	write_reflist(tmp, split);
+	reflist_free(split);
+
 	/* Dump parameters */
 	FILE *fh;
 	fh = fopen("partialator.params", "w");
