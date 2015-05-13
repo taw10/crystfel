@@ -364,6 +364,8 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		rv[num_params++] = GPARAM_BFAC;
 	}
 
+	if ( num_params == 0 ) return 0.0;
+
 	reflections = crystal_get_reflections(cr);
 
 	M = gsl_matrix_calloc(num_params, num_params);

@@ -145,7 +145,7 @@ static void done_image(void *vqargs, void *task)
 
 static void refine_all(Crystal **crystals, int n_crystals,
                        RefList *full, int nthreads, PartialityModel pmodel,
-                       struct srdata *srdata)
+                       int no_scale, struct srdata *srdata)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
@@ -155,6 +155,7 @@ static void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.pmodel = pmodel;
 	task_defaults.prdata.refined = 0;
 	task_defaults.prdata.n_filtered = 0;
+	task_defaults.no_scale = no_scale;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;
@@ -353,7 +354,7 @@ int main(int argc, char *argv[])
 	int n_crystals = 0;
 	char cmdline[1024];
 	SRContext *sr;
-	int noscale = 0;
+	int no_scale = 0;
 	Stream *st;
 	Crystal **crystals;
 	char *pmodel_str = NULL;
@@ -382,7 +383,7 @@ int main(int argc, char *argv[])
 		{"max-adu",            1, NULL,                3},
 		{"start-params",       1, NULL,                4},
 
-		{"no-scale",           0, &noscale,            1},
+		{"no-scale",           0, &no_scale,            1},
 		{"no-polarisation",    0, &polarisation,       0},
 		{"no-polarization",    0, &polarisation,       0},
 		{"polarisation",       0, &polarisation,       1}, /* compat */
@@ -665,7 +666,7 @@ int main(int argc, char *argv[])
 
 		/* Refine all crystals to get the best fit */
 		refine_all(crystals, n_crystals, full, nthreads, pmodel,
-		           &srdata);
+		           no_scale, &srdata);
 
 		show_duds(crystals, n_crystals);
 		check_rejection(crystals, n_crystals);
