@@ -618,6 +618,9 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 	for ( i=0; i<num_params; i++ ) {
 	//	STATUS("Shift %i = %e\n", i, gsl_vector_get(shifts, i));
+		if ( isnan(gsl_vector_get(shifts, i)) ) {
+			gsl_vector_set(shifts, i, 0.0);
+		}
 	}
 
 	/* Apply shifts */
