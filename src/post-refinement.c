@@ -416,9 +416,6 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<num_params; k++ ) {
 			gradients[k] = gradient(cr, rv[k], refl, pmodel);
-			if ( verbose ) {
-				STATUS("gradient %i: %e\n", k, gradients[k]);
-			}
 		}
 
 		for ( k=0; k<num_params; k++ ) {
@@ -517,18 +514,12 @@ static double guide_dev(Crystal *cr, const RefList *full)
 
 		full_version = find_refl(full, h, k, l);
 		if ( full_version == NULL ) continue;
-		/* Some reflections may have recently become scalable, but
-		 * scale_intensities() might not yet have been called, so the
-		 * full version may not have been calculated yet. */
 
 		p = get_partiality(refl);
 		L = get_lorentz(refl);
 		I_partial = get_intensity(refl);
 		I_full = get_intensity(full_version);
 		s = resolution(crystal_get_cell(cr), h, k, l);
-		//STATUS("%3i %3i %3i  %5.2f  %5.2f  %5.2f  %5.2f  %5.2f\n",
-		//       h, k, l, G, p, I_partial, I_full,
-		//       I_partial - p*G*I_full);
 
 		fx = log(G) + log(p) - log(L) - B*s*s + log(I_full);
 		dc = log(I_partial) - fx;
@@ -537,57 +528,6 @@ static double guide_dev(Crystal *cr, const RefList *full)
 	}
 
 	return dev;
-}
-
-
-static double all_gradients(Crystal *cr, const RefList *full)
-{
-	double gr = 0.0;
-
-	Reflection *refl;
-	RefListIterator *iter;
-
-	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
-		if ( (get_intensity(refl) < 3.0*get_esd_intensity(refl))
-		  || (get_partiality(refl) < MIN_PART_REFINE) ) continue;
-
-		gr += gradient(cr, kk, refl, PMODEL_UNITY);
-
-	}
-
-	return gr;
-}
-
-
-static void check_gradient_stuff(Crystal *cr, const RefList *full)
-{
-	int i;
-	double old_Bfac = crystal_get_Bfac(cr);
-	FILE *fh;
-	char tmp[256];
-	double last_v = 0.0;
-
-	STATUS("initial B = %e\n", old_Bfac);
-
-	snprintf(tmp, 255, "osf.dat");
-
-	fh = fopen(tmp, "w");
-	fprintf(fh, "Serial: %i\n", crystal_get_image(cr)->serial);
-
-	for ( i=0; i<2000; i++ ) {
-		double dev = guide_dev(cr, full);
-		crystal_set_Bfac(cr, old_Bfac+(i-1000)*0.01e-20);
-		fprintf(fh, "%e %e %e %e\n", crystal_get_Bfac(cr),
-		        dev, all_gradients(cr, full),
-		        dev-last_v);
-		last_v = dev;
-	}
-
-	fclose(fh);
-	crystal_set_Bfac(cr, old_Bfac);
 }
 
 
@@ -623,8 +563,7 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 		cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
-		if ( verbose ) check_gradient_stuff(cr, full);
-		pr_iterate(cr, full, pmodel, no_scale, &prdata.n_filtered, verbose);
+		pr_iterate(cr, full, pmodel, no_scale, &prdata.n_filtered, 0);
 
 		update_partialities(cr, pmodel);
 
