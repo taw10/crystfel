@@ -392,6 +392,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		double I_partial;
 		int k;
 		double p, L, s;
+		double fx;
 		Reflection *match;
 		double gradients[num_params];
 
@@ -422,7 +423,6 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<num_params; k++ ) {
 			gradients[k] = gradient(cr, rv[k], refl, pmodel);
-			gradients[k] *= I_full / L;
 			if ( verbose ) {
 				STATUS("gradient %i: %e\n", k, gradients[k]);
 			}
@@ -448,7 +448,8 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 
 			}
 
-			delta_I = I_partial - G*exp(-B*s*s)*p*I_full / L;
+			fx = log(G) + log(p) - log(L) - B*s*s + log(I_full);
+			delta_I = log(I_partial) - fx;
 			v_c = w * delta_I * gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
@@ -513,6 +514,7 @@ static double guide_dev(Crystal *cr, const RefList *full)
 		signed int h, k, l;
 		Reflection *full_version;
 		double I_full, I_partial;
+		double fx, dc;
 
 		if ( (get_intensity(refl) < 3.0*get_esd_intensity(refl))
 		  || (get_partiality(refl) < MIN_PART_REFINE) ) continue;
@@ -535,7 +537,9 @@ static double guide_dev(Crystal *cr, const RefList *full)
 		//       h, k, l, G, p, I_partial, I_full,
 		//       I_partial - p*G*I_full);
 
-		dev += pow(I_partial - G*exp(-B*s*s)*p*I_full/L, 2.0);
+		fx = log(G) + log(p) - log(L) - B*s*s + log(I_full);
+		dc = log(I_partial) - fx;
+		dev += dc*dc;
 
 	}
 
@@ -554,25 +558,10 @@ static double all_gradients(Crystal *cr, const RefList *full)
 	      refl != NULL;
 	      refl = next_refl(refl, iter) ) {
 
-		double L;
-		signed int h, k, l;
-		Reflection *full_version;
-		double I_full;
-
 		if ( (get_intensity(refl) < 3.0*get_esd_intensity(refl))
 		  || (get_partiality(refl) < MIN_PART_REFINE) ) continue;
 
-		get_indices(refl, &h, &k, &l);
-		assert((h!=0) || (k!=0) || (l!=0));
-
-		full_version = find_refl(full, h, k, l);
-		if ( full_version == NULL ) continue;
-
-		L = get_lorentz(refl);
-
-		I_full = get_intensity(full_version);
-
-		gr += I_full*gradient(cr, GPARAM_OSF, refl, PMODEL_UNITY)/L;
+		gr += gradient(cr, kk, refl, PMODEL_UNITY);
 
 	}
 
