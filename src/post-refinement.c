@@ -335,7 +335,8 @@ static void apply_shift(Crystal *cr, int k, double shift)
 
 /* Perform one cycle of post refinement on 'image' against 'full' */
 static double pr_iterate(Crystal *cr, const RefList *full,
-                         PartialityModel pmodel, int no_scale, int *n_filtered)
+                         PartialityModel pmodel, int no_scale, int *n_filtered,
+                         int verbose)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
@@ -346,7 +347,6 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	RefList *reflections;
 	double max_shift;
 	int nref = 0;
-	const int verbose = 1;
 	int num_params = 0;
 	enum gparam rv[32];
 	double G, B;
@@ -614,7 +614,7 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 {
 	double dev;
 	int i;
-	const int verbose = 1;
+	int verbose = 0;
 	struct prdata prdata;
 
 	prdata.refined = 0;
@@ -642,7 +642,7 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
 		if ( verbose ) check_gradient_stuff(cr, full);
-		pr_iterate(cr, full, pmodel, no_scale, &prdata.n_filtered);
+		pr_iterate(cr, full, pmodel, no_scale, &prdata.n_filtered, verbose);
 
 		update_partialities(cr, pmodel);
 
