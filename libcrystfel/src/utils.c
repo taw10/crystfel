@@ -164,7 +164,7 @@ static int check_eigen(gsl_vector *e_val, int verbose)
  * Solves the matrix equation M.x = v, returning x.
  * Performs rescaling and eigenvalue filtering.
  **/
-gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt, int verbose)
+gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *pn_filt, int verbose)
 {
 	gsl_matrix *s_vec;
 	gsl_vector *s_val;
@@ -176,6 +176,7 @@ gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt, int verbose)
 	gsl_matrix *AS;
 	gsl_matrix *SAS;
 	int i;
+	int n_filt;
 	gsl_matrix *SAS_copy;
 
 	n = v->size;
@@ -223,7 +224,8 @@ gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt, int verbose)
 	/* "SAS" is now "U" */
 
 	/* Filter the eigenvalues */
-	if ( n_filt != NULL ) *n_filt = check_eigen(s_val, verbose);
+	n_filt = check_eigen(s_val, verbose);
+	if ( pn_filt != NULL ) *pn_filt = n_filt;
 
 	gsl_matrix_free(SAS_copy);
 
