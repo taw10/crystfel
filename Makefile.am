@@ -95,7 +95,7 @@ src_render_hkl_SOURCES = src/render_hkl.c
 endif
 
 src_partialator_SOURCES = src/partialator.c src/post-refinement.c \
-                          src/hrs-scaling.c src/rejection.c
+                          src/merge.c src/rejection.c
 
 src_ambigator_SOURCES = src/ambigator.c
 
@@ -137,7 +137,7 @@ tests_cell_check_SOURCES = tests/cell_check.c
 INCLUDES = -I$(top_srcdir)/libcrystfel/src -I$(top_srcdir)/data
 
 EXTRA_DIST += src/dw-hdfsee.h src/hdfsee.h src/render_hkl.h \
-              src/post-refinement.h src/hrs-scaling.h src/scaling-report.h \
+              src/post-refinement.h src/merge.h src/scaling-report.h \
               src/cl-utils.h src/hdfsee-render.h src/diffraction.h \
               src/diffraction-gpu.h src/pattern_sim.h src/list_tmp.h \
               src/im-sandbox.h src/process_image.h src/multihistogram.h \

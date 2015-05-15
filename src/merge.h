@@ -1,7 +1,7 @@
 /*
- * hrs-scaling.h
+ * merge.h
  *
- * Intensity scaling using generalised HRS target function
+ * Parallel weighted merging of intensities
  *
  * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
@@ -26,8 +26,8 @@
  *
  */
 
-#ifndef HRS_SCALING_H
-#define HRS_SCALING_H
+#ifndef MERGE_H
+#define MERGE_H
 
 
 #ifdef HAVE_CONFIG_H
@@ -39,12 +39,8 @@
 #include "reflist.h"
 #include "geometry.h"
 
-extern RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
-                                  PartialityModel pmodel, int min_redundancy);
-
-
 extern RefList *lsq_intensities(Crystal **crystals, int n, int n_threads,
                                 PartialityModel pmodel, int min_meas,
                                 double push_res);
 
-#endif	/* HRS_SCALING_H */
+#endif	/* MERGE */

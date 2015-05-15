@@ -53,7 +53,7 @@
 
 #include "version.h"
 #include "post-refinement.h"
-#include "hrs-scaling.h"
+#include "merge.h"
 #include "scaling-report.h"
 #include "rejection.h"
 
