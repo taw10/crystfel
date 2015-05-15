@@ -235,7 +235,7 @@ double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 	}
 
 	gr = r_gradient(crystal_get_cell(cr), k, refl, image) * (glow-ghigh);
-	return gr * osf;
+	return gr/p;
 }
 
 
