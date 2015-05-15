@@ -192,7 +192,7 @@ double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 	get_partial(refl, &rlow, &rhigh, &p);
 
 	if ( k == GPARAM_OSF ) {
-		return 1.0/osf;
+		return 1.0;
 	}
 
 	if ( k == GPARAM_BFAC ) {
@@ -379,7 +379,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	      refl = next_refl(refl, iter) )
 	{
 		signed int ha, ka, la;
-		double I_full, delta_I;
+		double I_full, delta_I, esd;
 		double w;
 		double I_partial;
 		int k;
@@ -393,23 +393,22 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		match = find_refl(full, ha, ka, la);
 		if ( match == NULL ) continue;
 
-		if ( (get_intensity(refl) < 3.0*get_esd_intensity(refl))
-		  || (get_partiality(refl) < MIN_PART_REFINE)
-		  || (get_redundancy(match) < 2) ) continue;
-
+		/* Merged intensitty */
 		I_full = get_intensity(match);
+
+		/* Actual measurement of this reflection from this pattern */
+		I_partial = get_intensity(refl);
+		esd = get_esd_intensity(refl);
+
+		if ( (get_partiality(refl) < MIN_PART_REFINE)
+		  || (get_redundancy(match) < 2)
+		  || (I_full <= 0) || (I_partial < 3*esd) ) continue;
 
 		p = get_partiality(refl);
 		L = get_lorentz(refl);
 		s = resolution(crystal_get_cell(cr), ha, ka, la);
 
-		/* Actual measurement of this reflection from this pattern? */
-		I_partial = get_intensity(refl);
-
 		/* Calculate the weight for this reflection */
-		//w = pow(get_esd_intensity(refl), 2.0);
-		//w += (p/L) * I_full * pow(get_esd_intensity(match), 2.0);
-		//w = pow(w, -1.0);
 		w = 1.0;
 
 		/* Calculate all gradients for this reflection */
@@ -437,7 +436,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 
 			}
 
-			fx = log(G) + log(p) - log(L) - B*s*s + log(I_full);
+			fx = G + log(p) - log(L) - B*s*s + log(I_full);
 			delta_I = log(I_partial) - fx;
 			v_c = w * delta_I * gradients[k];
 			v_curr = gsl_vector_get(v, k);
@@ -483,48 +482,58 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 }
 
 
-static double guide_dev(Crystal *cr, const RefList *full)
+static double residual(Crystal *cr, const RefList *full, int verbose)
 {
 	double dev = 0.0;
 	double G, B;
+	Reflection *refl;
+	RefListIterator *iter;
+	FILE *fh = NULL;
+
+	if ( verbose ) {
+		fh = fopen("residual.dat", "w");
+	}
 
 	G = crystal_get_osf(cr);
 	B = crystal_get_Bfac(cr);
 
-	/* For each reflection */
-	Reflection *refl;
-	RefListIterator *iter;
-
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
-
-		double p, L, s;
+	      refl = next_refl(refl, iter) )
+	{
+		double p, L, s, w;
 		signed int h, k, l;
-		Reflection *full_version;
-		double I_full, I_partial;
+		Reflection *match;
+		double esd, I_full, I_partial;
 		double fx, dc;
 
-		if ( (get_intensity(refl) < 3.0*get_esd_intensity(refl))
-		  || (get_partiality(refl) < MIN_PART_REFINE) ) continue;
-
 		get_indices(refl, &h, &k, &l);
-		assert((h!=0) || (k!=0) || (l!=0));
-
-		full_version = find_refl(full, h, k, l);
-		if ( full_version == NULL ) continue;
+		match = find_refl(full, h, k, l);
+		if ( match == NULL ) continue;
 
 		p = get_partiality(refl);
 		L = get_lorentz(refl);
 		I_partial = get_intensity(refl);
-		I_full = get_intensity(full_version);
+		I_full = get_intensity(match);
+		esd = get_esd_intensity(refl);
 		s = resolution(crystal_get_cell(cr), h, k, l);
 
-		fx = log(G) + log(p) - log(L) - B*s*s + log(I_full);
-		dc = log(I_partial) - fx;
-		dev += dc*dc;
+		if ( (get_partiality(refl) < MIN_PART_REFINE)
+		  || (get_redundancy(match) < 2)
+		  || (I_full <= 0) || (I_partial < 3*esd) ) continue;
 
+		fx = G + log(p) - log(L) - B*s*s + log(I_full);
+		dc = log(I_partial) - fx;
+		w = 1.0;
+		dev += w*dc*dc;
+
+		if ( fh != NULL ) {
+			fprintf(fh, "%4i %4i %4i %e %.2f %e %f %f\n",
+			        h, k, l, s, G, B, I_partial, I_full);
+		}
 	}
+
+	if ( fh != NULL ) fclose(fh);
 
 	return dev;
 }
@@ -545,10 +554,11 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 	if ( crystal_get_user_flag(cr) != 0 ) return prdata;
 
 	if ( verbose ) {
-		dev = guide_dev(cr, full);
+		dev = residual(cr, full, 1);
 		STATUS("\n");  /* Deal with progress bar */
-		STATUS("Before iteration:                       dev = %10.5e\n",
-		       dev);
+		STATUS("Initial G=%.2f, B=%e\n",
+		       crystal_get_osf(cr), crystal_get_Bfac(cr));
+		STATUS("Initial dev =          %10.5e\n", dev);
 	}
 
 	i = 0;
@@ -567,7 +577,7 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 		update_partialities(cr, pmodel);
 
 		if ( verbose ) {
-			dev = guide_dev(cr, full);
+			dev = residual(cr, full, 0);
 			STATUS("PR Iteration %2i: dev = %10.5e\n", i+1, dev);
 		}
 
@@ -577,6 +587,11 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 
 	if ( crystal_get_user_flag(cr) == 0 ) {
 		prdata.refined = 1;
+	}
+
+	if ( verbose ) {
+		STATUS("Final G=%.2f, B=%e\n", crystal_get_osf(cr),
+		       crystal_get_Bfac(cr));
 	}
 
 	return prdata;
