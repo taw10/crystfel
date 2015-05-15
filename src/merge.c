@@ -187,8 +187,9 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 }
 
 
-RefList *lsq_intensities(Crystal **crystals, int n, int n_threads,
-                         PartialityModel pmodel, int min_meas, double push_res)
+RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
+                           PartialityModel pmodel, int min_meas,
+                           double push_res)
 {
 	RefList *full;
 	RefList *full2;

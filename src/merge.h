@@ -39,8 +39,8 @@
 #include "reflist.h"
 #include "geometry.h"
 
-extern RefList *lsq_intensities(Crystal **crystals, int n, int n_threads,
-                                PartialityModel pmodel, int min_meas,
-                                double push_res);
+extern RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
+                                  PartialityModel pmodel, int min_meas,
+                                  double push_res);
 
 #endif	/* MERGE */

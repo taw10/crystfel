@@ -648,8 +648,8 @@ int main(int argc, char *argv[])
 //	early_rejection(crystals, n_crystals);
 
 	/* Make initial estimates */
-	full = lsq_intensities(crystals, n_crystals, nthreads, pmodel,
-	                       min_measurements, push_res);
+	full = merge_intensities(crystals, n_crystals, nthreads, pmodel,
+	                         min_measurements, push_res);
 
 	check_rejection(crystals, n_crystals);
 
@@ -681,8 +681,8 @@ int main(int argc, char *argv[])
 
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
-		full = lsq_intensities(crystals, n_crystals, nthreads,
-		                       pmodel, min_measurements, push_res);
+		full = merge_intensities(crystals, n_crystals, nthreads,
+		                         pmodel, min_measurements, push_res);
 
 		check_rejection(crystals, n_crystals);
 
@@ -714,13 +714,13 @@ int main(int argc, char *argv[])
 		}
 	}
 	snprintf(tmp, 1024, "%s1", outfile);
-	split = lsq_intensities(crystals1, n_crystals1, nthreads,
-		                pmodel, min_measurements, push_res);
+	split = merge_intensities(crystals1, n_crystals1, nthreads,
+		                  pmodel, min_measurements, push_res);
 	write_reflist(tmp, split);
 	reflist_free(split);
 	snprintf(tmp, 1024, "%s2", outfile);
-	split = lsq_intensities(crystals2, n_crystals2, nthreads,
-		                pmodel, min_measurements, push_res);
+	split = merge_intensities(crystals2, n_crystals2, nthreads,
+		                  pmodel, min_measurements, push_res);
 	write_reflist(tmp, split);
 	reflist_free(split);
 
