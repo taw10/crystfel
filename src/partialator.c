@@ -381,7 +381,7 @@ int main(int argc, char *argv[])
 		{"push-res",           1, NULL,                5},
 		{"res-push",           1, NULL,                5}, /* compat */
 
-		{"no-scale",           0, &no_scale,            1},
+		{"no-scale",           0, &no_scale,           1},
 		{"no-polarisation",    0, &polarisation,       0},
 		{"no-polarization",    0, &polarisation,       0},
 		{"polarisation",       0, &polarisation,       1}, /* compat */
