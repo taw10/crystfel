@@ -245,7 +245,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	/* If we are updating a previous reflection, assume it stays
 	 * on the same panel and calculate the new position even if it's
 	 * fallen off the edge of the panel. */
-	if ( updateme != NULL ) {
+	if ( (image->det != NULL) && (updateme != NULL) ) {
 
 		double fs, ss;
 		locate_peak_on_panel(xl, yl, zl, 1.0/image->lambda,
