@@ -233,10 +233,8 @@ struct merge_queue_args
 
 struct merge_worker_args
 {
+	struct merge_queue_args *qargs;
 	Crystal *crystal;
-	RefList *full;
-	pthread_rwlock_t *full_lock;
-	PartialityModel pmodel;
 	int crystal_number;
 };
 
@@ -247,10 +245,7 @@ static void *create_merge_job(void *vqargs)
 	struct merge_queue_args *qargs = vqargs;
 
 	wargs = malloc(sizeof(struct merge_worker_args));
-	wargs->full = qargs->full;
-	wargs->full_lock = &qargs->full_lock;
-	wargs->pmodel = qargs->pmodel;
-
+	wargs->qargs = qargs;
 	wargs->crystal_number = qargs->n_started;
 	wargs->crystal = qargs->crystals[qargs->n_started++];
 
@@ -262,7 +257,8 @@ static void run_merge_job(void *vwargs, int cookie)
 {
 	struct merge_worker_args *wargs = vwargs;
 	Crystal *cr = wargs->crystal;
-	RefList *full = wargs->full;
+	RefList *full = wargs->qargs->full;
+	double push_res = wargs->qargs->push_res;
 	Reflection *refl;
 	RefListIterator *iter;
 	double G, B;
@@ -286,13 +282,13 @@ static void run_merge_job(void *vwargs, int cookie)
 		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
 
 		get_indices(refl, &h, &k, &l);
-		pthread_rwlock_rdlock(wargs->full_lock);
+		pthread_rwlock_rdlock(&wargs->qargs->full_lock);
 		f = find_refl(full, h, k, l);
 		if ( f == NULL ) {
 
 			/* Swap read lock for write lock */
-			pthread_rwlock_unlock(wargs->full_lock);
-			pthread_rwlock_wrlock(wargs->full_lock);
+			pthread_rwlock_unlock(&wargs->qargs->full_lock);
+			pthread_rwlock_wrlock(&wargs->qargs->full_lock);
 
 			/* In the gap between the unlock and the wrlock, the
 			 * reflection might have been created by another thread.
@@ -301,7 +297,7 @@ static void run_merge_job(void *vwargs, int cookie)
 			if ( f == NULL ) {
 				f = add_refl(full, h, k, l);
 				lock_reflection(f);
-				pthread_rwlock_unlock(wargs->full_lock);
+				pthread_rwlock_unlock(&wargs->qargs->full_lock);
 				set_intensity(f, 0.0);
 				set_temp1(f, 0.0);
 				set_temp2(f, 0.0);
@@ -310,14 +306,14 @@ static void run_merge_job(void *vwargs, int cookie)
 
 				/* Someone else created it */
 				lock_reflection(f);
-				pthread_rwlock_unlock(wargs->full_lock);
+				pthread_rwlock_unlock(&wargs->qargs->full_lock);
 
 			}
 
 		} else {
 
 			lock_reflection(f);
-			pthread_rwlock_unlock(wargs->full_lock);
+			pthread_rwlock_unlock(&wargs->qargs->full_lock);
 
 		}
 
