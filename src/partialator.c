@@ -289,7 +289,6 @@ static void show_duds(Crystal **crystals, int n_crystals)
 	int n_noscale = 0;
 	int n_noref = 0;
 	int n_solve = 0;
-	int n_lost = 0;
 	int n_early = 0;
 
 	for ( j=0; j<n_crystals; j++ ) {
@@ -313,10 +312,6 @@ static void show_duds(Crystal **crystals, int n_crystals)
 			n_solve++;
 			break;
 
-			case 4:
-			n_lost++;
-			break;
-
 			case 5:
 			n_early++;
 			break;
@@ -332,7 +327,6 @@ static void show_duds(Crystal **crystals, int n_crystals)
 		STATUS(" %i scaling failed.\n", n_noscale);
 		STATUS(" %i not enough reflections.\n", n_noref);
 		STATUS(" %i solve failed.\n", n_solve);
-		STATUS(" %i lost too many reflections.\n", n_lost);
 		STATUS(" %i early rejection.\n", n_early);
 	}
 }
