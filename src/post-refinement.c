@@ -454,7 +454,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		STATUS("%i reflections went into the equations.\n", nref);
 	}
 
-	if ( nref == 0 ) {
+	if ( nref < num_params ) {
 		crystal_set_user_flag(cr, 2);
 		gsl_matrix_free(M);
 		gsl_vector_free(v);
