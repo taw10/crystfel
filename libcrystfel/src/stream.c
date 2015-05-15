@@ -320,6 +320,7 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 				write_fs = fs - p->orig_min_fs + p->min_fs;
 				write_ss = ss - p->orig_min_ss + p->min_ss;
 				set_detector_pos(refl, write_fs, write_ss);
+				set_panel(refl, p);
 			}
 			set_esd_intensity(refl, sigma);
 			set_peak(refl, pk);
