@@ -76,6 +76,7 @@ static void show_help(const char *s)
 "      --min-measurements=<n> Minimum number of measurements to require.\n"
 "      --no-polarisation      Disable polarisation correction.\n"
 "      --max-adu=<n>          Saturation value of detector.\n"
+"      --push-res=<n>         Merge higher than apparent resolution cutoff.\n"
 "  -j <n>                     Run <n> analyses in parallel.\n");
 }
 
@@ -360,6 +361,7 @@ int main(int argc, char *argv[])
 	double max_adu = +INFINITY;
 	char *sparams_fn = NULL;
 	FILE *sparams_fh;
+	double push_res = 0.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -376,6 +378,8 @@ int main(int argc, char *argv[])
 		{"min-measurements",   1, NULL,                2},
 		{"max-adu",            1, NULL,                3},
 		{"start-params",       1, NULL,                4},
+		{"push-res",           1, NULL,                5},
+		{"res-push",           1, NULL,                5}, /* compat */
 
 		{"no-scale",           0, &no_scale,            1},
 		{"no-polarisation",    0, &polarisation,       0},
@@ -452,6 +456,16 @@ int main(int argc, char *argv[])
 
 			case 4 :
 			sparams_fn = strdup(optarg);
+			break;
+
+			case 5 :
+			errno = 0;
+			push_res = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --push-res.\n");
+				return 1;
+			}
+			push_res = push_res*1e9;
 			break;
 
 			case 0 :
@@ -635,7 +649,7 @@ int main(int argc, char *argv[])
 
 	/* Make initial estimates */
 	full = lsq_intensities(crystals, n_crystals, nthreads, pmodel,
-	                       min_measurements);
+	                       min_measurements, push_res);
 
 	check_rejection(crystals, n_crystals);
 
@@ -668,7 +682,7 @@ int main(int argc, char *argv[])
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
 		full = lsq_intensities(crystals, n_crystals, nthreads,
-		                       pmodel, min_measurements);
+		                       pmodel, min_measurements, push_res);
 
 		check_rejection(crystals, n_crystals);
 
@@ -701,12 +715,12 @@ int main(int argc, char *argv[])
 	}
 	snprintf(tmp, 1024, "%s1", outfile);
 	split = lsq_intensities(crystals1, n_crystals1, nthreads,
-		                pmodel, min_measurements);
+		                pmodel, min_measurements, push_res);
 	write_reflist(tmp, split);
 	reflist_free(split);
 	snprintf(tmp, 1024, "%s2", outfile);
 	split = lsq_intensities(crystals2, n_crystals2, nthreads,
-		                pmodel, min_measurements);
+		                pmodel, min_measurements, push_res);
 	write_reflist(tmp, split);
 	reflist_free(split);
 

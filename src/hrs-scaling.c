@@ -228,6 +228,7 @@ struct merge_queue_args
 	Crystal **crystals;
 	int n_started;
 	PartialityModel pmodel;
+	double push_res;
 };
 
 
@@ -323,7 +324,7 @@ static void run_merge_job(void *vwargs, int cookie)
 
 		res = resolution(crystal_get_cell(cr), h, k, l);
 
-		if ( 2.0*res > crystal_get_resolution_limit(cr) ) {
+		if ( 2.0*res > crystal_get_resolution_limit(cr)+push_res ) {
 			unlock_reflection(f);
 			continue;
 		}
@@ -355,7 +356,7 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 
 
 RefList *lsq_intensities(Crystal **crystals, int n, int n_threads,
-                         PartialityModel pmodel, int min_meas)
+                         PartialityModel pmodel, int min_meas, double push_res)
 {
 	RefList *full;
 	RefList *full2;
@@ -369,6 +370,7 @@ RefList *lsq_intensities(Crystal **crystals, int n, int n_threads,
 	qargs.n_started = 0;
 	qargs.crystals = crystals;
 	qargs.pmodel = pmodel;
+	qargs.push_res = push_res;
 	pthread_rwlock_init(&qargs.full_lock, NULL);
 
 	run_threads(n_threads, run_merge_job, create_merge_job,
@@ -505,7 +507,7 @@ RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
 	}
 
 	/* Create an initial list to refine against */
-	full = lsq_intensities(crystals, n, n_threads, pmodel, min_redundancy);
+	full = lsq_intensities(crystals, n, n_threads, pmodel, min_redundancy, 0.0);
 
 	old_osfs = malloc(n*sizeof(double));
 	old_Bs = malloc(n*sizeof(double));
@@ -557,7 +559,7 @@ RefList *scale_intensities(Crystal **crystals, int n, int n_threads,
 		/* Generate list for next iteration */
 		reflist_free(full);
 		full = lsq_intensities(crystals, n, n_threads, pmodel,
-		                       min_redundancy);
+		                       min_redundancy, 0.0);
 
 		i++;
 
