@@ -327,6 +327,11 @@ static void run_merge_job(void *vwargs, int cookie)
 
 		res = resolution(crystal_get_cell(cr), h, k, l);
 
+		if ( 2.0*res > crystal_get_resolution_limit(cr) ) {
+			unlock_reflection(f);
+			continue;
+		}
+
 		/* Total (multiplicative) correction factor */
 		corr = exp(-G) * exp(B*res*res) * get_lorentz(refl)
 		        / get_partiality(refl);
