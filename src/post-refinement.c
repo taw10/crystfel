@@ -274,15 +274,17 @@ static void apply_shift(Crystal *cr, int k, double shift)
 	double t;
 	struct image *image = crystal_get_image(cr);
 
+	if ( isnan(shift) ) {
+		ERROR("Refusing NaN shift for parameter %i\n", k);
+		ERROR("Image serial %i\n", image->serial);
+		return;
+	}
+
 	switch ( k ) {
 
 		case GPARAM_DIV :
-		if ( isnan(shift) ) {
-			ERROR("NaN divergence shift\n");
-		} else {
-			image->div += shift;
-			if ( image->div < 0.0 ) image->div = 0.0;
-		}
+		image->div += shift;
+		if ( image->div < 0.0 ) image->div = 0.0;
 		break;
 
 		case GPARAM_R :
