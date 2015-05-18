@@ -103,6 +103,7 @@ extern double get_esd_intensity(const Reflection *refl);
 extern double get_phase(const Reflection *refl, int *have_phase);
 extern double get_peak(const Reflection *refl);
 extern double get_mean_bg(const Reflection *refl);
+extern int get_flag(const Reflection *refl);
 
 /* Set */
 extern void copy_data(Reflection *to, const Reflection *from);
@@ -121,6 +122,7 @@ extern void set_peak(Reflection *refl, double peak);
 extern void set_mean_bg(Reflection *refl, double mean_bg);
 extern void set_symmetric_indices(Reflection *refl,
                                   signed int hs, signed int ks, signed int ls);
+extern void set_flag(Reflection *refl, int flag);
 
 /* Insertion */
 extern Reflection *add_refl(RefList *list,

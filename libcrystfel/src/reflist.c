@@ -102,6 +102,7 @@ struct _refldata {
 	/* User-specified temporary values */
 	double temp1;
 	double temp2;
+	int flag;
 };
 
 
@@ -546,6 +547,22 @@ double get_temp2(const Reflection *refl)
 }
 
 
+/**
+ * get_flag:
+ * @refl: A %Reflection
+ *
+ * The integer flag value can be used according to the needs of the calling
+ * program.
+ *
+ * Returns: the flag for this reflection.
+ *
+ **/
+int get_flag(const Reflection *refl)
+{
+	return refl->data.flag;
+}
+
+
 /********************************** Setters ***********************************/
 
 /**
@@ -769,6 +786,21 @@ void set_temp1(Reflection *refl, double temp)
 void set_temp2(Reflection *refl, double temp)
 {
 	refl->data.temp2 = temp;
+}
+
+
+/**
+ * set_flag
+ * @refl: A %Reflection
+ * @flag: New flag value
+ *
+ * @flag is an integer value which can be used according to the needs of the
+ * calling program.
+ *
+ **/
+void set_flag(Reflection *refl, int flag)
+{
+	refl->data.flag = flag;
 }
 
 
