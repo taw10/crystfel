@@ -50,6 +50,8 @@
 #include <thread-pool.h>
 #include <reflist.h>
 #include <reflist-utils.h>
+#include <cell.h>
+#include <cell-utils.h>
 
 #include "version.h"
 #include "post-refinement.h"
@@ -322,6 +324,90 @@ static void show_duds(Crystal **crystals, int n_crystals)
 }
 
 
+/* Flag a random 5% of reflections */
+static void select_free_reflections(RefList *list, gsl_rng *rng)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		set_flag(refl, random_flat(rng, 1.0) > 0.95);
+	}
+}
+
+
+static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
+                            int fr)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	double G = crystal_get_osf(cr);
+	double B = crystal_get_Bfac(cr);
+	UnitCell *cell = crystal_get_cell(cr);
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		double pobs, pcalc;
+		double res, corr, Ipart;
+		Reflection *match;
+
+		if ( !get_flag(refl) ) continue;  /* Not free-flagged */
+
+		get_indices(refl, &h, &k, &l);
+		res = resolution(cell, h, k, l);
+		if ( 2.0*res > crystal_get_resolution_limit(cr) ) continue;
+
+		match = find_refl(full, h, k, l);
+		if ( match == NULL ) continue;
+
+		/* Calculated partiality */
+		pcalc = get_partiality(refl);
+
+		/* Observed partiality */
+		corr = exp(-G) * exp(B*res*res) * get_lorentz(refl);
+		Ipart = get_intensity(refl) * corr;
+		pobs = Ipart / get_intensity(match);
+
+		fprintf(fh, "%5i %4i %4i %4i %8.4f %8.3f %8.3f\n",
+		        fr, h, k, l, 2*res/1e9, pcalc, pobs);
+
+	}
+}
+
+
+static void write_pgraph(RefList *full, Crystal **crystals, int n_crystals,
+                         int iter)
+{
+	FILE *fh;
+	char tmp[256];
+	int i;
+
+	snprintf(tmp, 256, "pgraph-iter%i.dat", iter);
+
+	fh = fopen(tmp, "w");
+	if ( fh == NULL ) {
+		ERROR("Failed to open '%s'\n", tmp);
+		return;
+	}
+
+	fprintf(fh, "   fr    h    k    l  1/d(nm)     pcalc   pobs\n");
+
+	for ( i=0; i<n_crystals; i++ ) {
+		write_to_pgraph(fh, crystal_get_reflections(crystals[i]), full,
+		                crystals[i], i);
+	}
+
+	fclose(fh);
+
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -349,6 +435,7 @@ int main(int argc, char *argv[])
 	char *sparams_fn = NULL;
 	FILE *sparams_fh;
 	double push_res = 0.0;
+	gsl_rng *rng;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -507,6 +594,7 @@ int main(int argc, char *argv[])
 	}
 
 	gsl_set_error_handler_off();
+	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
 	/* Fill in what we know about the images so far */
 	n_images = 0;
@@ -589,6 +677,8 @@ int main(int argc, char *argv[])
 						        cur);
 			}
 
+			select_free_reflections(cr_refl, rng);
+
 			as = asymmetric_indices(cr_refl, sym);
 			crystal_set_reflections(cr, as);
 			crystal_set_user_flag(cr, 0);
@@ -642,6 +732,8 @@ int main(int argc, char *argv[])
 
 	show_duds(crystals, n_crystals);
 
+	write_pgraph(full, crystals, n_crystals, 0);
+
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
 
@@ -660,6 +752,7 @@ int main(int argc, char *argv[])
 		                         pmodel, min_measurements, push_res);
 
 		check_rejection(crystals, n_crystals);
+		write_pgraph(full, crystals, n_crystals, i+1);
 
 	}
 
@@ -711,6 +804,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Clean up */
+	gsl_rng_free(rng);
 	for ( i=0; i<n_crystals; i++ ) {
 		reflist_free(crystal_get_reflections(crystals[i]));
 		crystal_free(crystals[i]);

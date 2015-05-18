@@ -390,6 +390,9 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		Reflection *match;
 		double gradients[num_params];
 
+		/* If reflection is free-flagged, don't use it here */
+		if ( get_flag(refl) ) continue;
+
 		/* Find the full version */
 		get_indices(refl, &ha, &ka, &la);
 		match = find_refl(full, ha, ka, la);
