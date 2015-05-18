@@ -103,14 +103,6 @@ src_geoptimiser_SOURCES = src/geoptimiser.c src/hdfsee-render.c
 
 src_whirligig_SOURCES = src/whirligig.c
 
-if HAVE_CAIRO
-if HAVE_PANGO
-if HAVE_PANGOCAIRO
-src_partialator_SOURCES += src/scaling-report.c
-endif
-endif
-endif
-
 tests_list_check_SOURCES = tests/list_check.c
 
 tests_integration_check_SOURCES = tests/integration_check.c
@@ -137,7 +129,7 @@ tests_cell_check_SOURCES = tests/cell_check.c
 INCLUDES = -I$(top_srcdir)/libcrystfel/src -I$(top_srcdir)/data
 
 EXTRA_DIST += src/dw-hdfsee.h src/hdfsee.h src/render_hkl.h \
-              src/post-refinement.h src/merge.h src/scaling-report.h \
+              src/post-refinement.h src/merge.h \
               src/cl-utils.h src/hdfsee-render.h src/diffraction.h \
               src/diffraction-gpu.h src/pattern_sim.h src/list_tmp.h \
               src/im-sandbox.h src/process_image.h src/multihistogram.h \

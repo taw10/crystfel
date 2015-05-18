@@ -54,7 +54,6 @@
 #include "version.h"
 #include "post-refinement.h"
 #include "merge.h"
-#include "scaling-report.h"
 #include "rejection.h"
 
 
@@ -97,7 +96,6 @@ struct queue_args
 	int n_done;
 	Crystal **crystals;
 	int n_crystals;
-	struct srdata *srdata;
 	struct refine_args task_defaults;
 };
 
@@ -134,10 +132,6 @@ static void done_image(void *vqargs, void *task)
 	struct refine_args *pargs = task;
 
 	qargs->n_done++;
-	if ( pargs->prdata.refined ) {
-		qargs->srdata->n_refined += pargs->prdata.refined;
-		qargs->srdata->n_filtered += pargs->prdata.n_filtered;
-	}
 
 	progress_bar(qargs->n_done, qargs->n_crystals, "Refining");
 	free(task);
@@ -146,7 +140,7 @@ static void done_image(void *vqargs, void *task)
 
 static void refine_all(Crystal **crystals, int n_crystals,
                        RefList *full, int nthreads, PartialityModel pmodel,
-                       int no_scale, struct srdata *srdata)
+                       int no_scale)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
@@ -163,17 +157,12 @@ static void refine_all(Crystal **crystals, int n_crystals,
 	qargs.n_done = 0;
 	qargs.n_crystals = n_crystals;
 	qargs.crystals = crystals;
-	qargs.srdata = srdata;
 
 	/* Don't have threads which are doing nothing */
 	if ( n_crystals < nthreads ) nthreads = n_crystals;
 
 	run_threads(nthreads, refine_image, get_image, done_image,
 	            &qargs, n_crystals, 0, 0, 0);
-
-	STATUS("%5.2f eigenvalues filtered on final iteration per successfully "
-	       "refined crystal\n",
-	       (double)srdata->n_filtered/srdata->n_refined);
 }
 
 
@@ -348,7 +337,6 @@ int main(int argc, char *argv[])
 	int n_images = 0;
 	int n_crystals = 0;
 	char cmdline[1024];
-	SRContext *sr;
 	int no_scale = 0;
 	Stream *st;
 	Crystal **crystals;
@@ -356,7 +344,6 @@ int main(int argc, char *argv[])
 	PartialityModel pmodel = PMODEL_SCSPHERE;
 	int min_measurements = 2;
 	char *rval;
-	struct srdata srdata;
 	int polarisation = 1;
 	double max_adu = +INFINITY;
 	char *sparams_fn = NULL;
@@ -653,16 +640,6 @@ int main(int argc, char *argv[])
 
 	check_rejection(crystals, n_crystals);
 
-	srdata.crystals = crystals;
-	srdata.n = n_crystals;
-	srdata.full = full;
-	srdata.n_filtered = 0;
-	srdata.n_refined = 0;
-
-	sr = sr_titlepage(crystals, n_crystals, "scaling-report.pdf",
-	                  infile, cmdline);
-	sr_iteration(sr, 0, &srdata);
-
 	show_duds(crystals, n_crystals);
 
 	/* Iterate */
@@ -670,11 +647,9 @@ int main(int argc, char *argv[])
 
 		STATUS("Refinement cycle %i of %i\n", i+1, n_iter);
 
-		srdata.n_filtered = 0;
-
 		/* Refine all crystals to get the best fit */
 		refine_all(crystals, n_crystals, full, nthreads, pmodel,
-		           no_scale, &srdata);
+		           no_scale);
 
 		show_duds(crystals, n_crystals);
 		check_rejection(crystals, n_crystals);
@@ -686,13 +661,7 @@ int main(int argc, char *argv[])
 
 		check_rejection(crystals, n_crystals);
 
-		srdata.full = full;
-
-		sr_iteration(sr, i+1, &srdata);
-
 	}
-
-	sr_finish(sr);
 
 	/* Output results */
 	write_reflist(outfile, full);
