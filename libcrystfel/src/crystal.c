@@ -95,7 +95,7 @@ Crystal *crystal_new()
 
 	cryst->cell = NULL;
 	cryst->reflections = NULL;
-	cryst->resolution_limit = 0.0;
+	cryst->resolution_limit = INFINITY;
 	cryst->n_saturated = 0;
 	cryst->n_implausible = 0;
 	cryst->notes = NULL;
