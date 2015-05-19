@@ -164,6 +164,12 @@ static void run_merge_job(void *vwargs, int cookie)
 		/* Total (multiplicative) correction factor */
 		corr = exp(-G) * exp(B*res*res) * get_lorentz(refl)
 		        / get_partiality(refl);
+		if ( isnan(corr) ) {
+			ERROR("NaN corr:\n");
+			ERROR("G = %f, B = %e\n", G, B);
+			ERROR("res = %e\n", res);
+			ERROR("p = %f\n", get_partiality(refl));
+		}
 
 		esd = get_esd_intensity(refl) * corr;
 		w = 1.0;
