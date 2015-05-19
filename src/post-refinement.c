@@ -487,7 +487,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 }
 
 
-static double residual(Crystal *cr, const RefList *full, int verbose)
+static double residual(Crystal *cr, const RefList *full, int verbose, int free)
 {
 	double dev = 0.0;
 	double G, B;
@@ -511,6 +511,8 @@ static double residual(Crystal *cr, const RefList *full, int verbose)
 		Reflection *match;
 		double esd, I_full, I_partial;
 		double fx, dc;
+
+		if ( free && !get_flag(refl) ) continue;
 
 		get_indices(refl, &h, &k, &l);
 		match = find_refl(full, h, k, l);
@@ -547,10 +549,11 @@ static double residual(Crystal *cr, const RefList *full, int verbose)
 struct prdata pr_refine(Crystal *cr, const RefList *full,
                         PartialityModel pmodel, int no_scale)
 {
-	double dev;
 	int i;
 	int verbose = 0;
 	struct prdata prdata;
+	int done = 0;
+	double old_dev;
 
 	prdata.refined = 0;
 	prdata.n_filtered = 0;
@@ -558,12 +561,14 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 	/* Don't refine crystal if scaling was bad */
 	if ( crystal_get_user_flag(cr) != 0 ) return prdata;
 
+	old_dev = residual(cr, full, 0, 0);
+
 	if ( verbose ) {
-		dev = residual(cr, full, 1);
 		STATUS("\n");  /* Deal with progress bar */
 		STATUS("Initial G=%.2f, B=%e\n",
 		       crystal_get_osf(cr), crystal_get_Bfac(cr));
-		STATUS("Initial dev =          %10.5e\n", dev);
+		STATUS("Initial  dev =  %10.5e, free dev = %10.5e\n",
+		       old_dev, residual(cr, full, 0, 1));
 	}
 
 	i = 0;
@@ -581,14 +586,18 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 
 		update_partialities(cr, pmodel);
 
+		dev = residual(cr, full, 0, 0);
+		if ( fabs(dev - old_dev) < dev*0.01 ) done = 1;
+
 		if ( verbose ) {
-			dev = residual(cr, full, 0);
-			STATUS("PR Iteration %2i: dev = %10.5e\n", i+1, dev);
+			STATUS("Iter %2i: dev = %10.5e, free dev = %10.5e\n",
+			       i+1, dev, residual(cr, full, 0, 1));
 		}
 
 		i++;
+		old_dev = dev;
 
-	} while ( i < MAX_CYCLES );
+	} while ( i < MAX_CYCLES && !done );
 
 	if ( crystal_get_user_flag(cr) == 0 ) {
 		prdata.refined = 1;
