@@ -418,6 +418,7 @@ static void write_pgraph(RefList *full, Crystal **crystals, int n_crystals,
 	fprintf(fh, "   fr    h    k    l  1/d(nm)     pcalc   pobs\n");
 
 	for ( i=0; i<n_crystals; i++ ) {
+		if ( crystal_get_user_flag(crystals[i]) != 0 ) continue;
 		write_to_pgraph(fh, crystal_get_reflections(crystals[i]), full,
 		                crystals[i], i);
 	}
