@@ -99,6 +99,10 @@ struct queue_args
 	Crystal **crystals;
 	int n_crystals;
 	struct refine_args task_defaults;
+	double initial_residual;
+	double initial_free_residual;
+	double final_residual;
+	double final_free_residual;
 };
 
 
@@ -134,6 +138,10 @@ static void done_image(void *vqargs, void *task)
 	struct refine_args *pargs = task;
 
 	qargs->n_done++;
+	qargs->initial_residual += pargs->prdata.initial_residual;
+	qargs->initial_free_residual += pargs->prdata.initial_free_residual;
+	qargs->final_residual += pargs->prdata.final_residual;
+	qargs->final_free_residual += pargs->prdata.final_free_residual;
 
 	progress_bar(qargs->n_done, qargs->n_crystals, "Refining");
 	free(task);
@@ -142,7 +150,9 @@ static void done_image(void *vqargs, void *task)
 
 static void refine_all(Crystal **crystals, int n_crystals,
                        RefList *full, int nthreads, PartialityModel pmodel,
-                       int no_scale)
+                       int no_scale,
+                       double *initial_residual, double *initial_free_residual,
+                       double *final_residual, double *final_free_residual)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
@@ -159,12 +169,21 @@ static void refine_all(Crystal **crystals, int n_crystals,
 	qargs.n_done = 0;
 	qargs.n_crystals = n_crystals;
 	qargs.crystals = crystals;
+	qargs.initial_residual = 0.0;
+	qargs.initial_free_residual = 0.0;
+	qargs.final_residual = 0.0;
+	qargs.final_free_residual = 0.0;
 
 	/* Don't have threads which are doing nothing */
 	if ( n_crystals < nthreads ) nthreads = n_crystals;
 
 	run_threads(nthreads, refine_image, get_image, done_image,
 	            &qargs, n_crystals, 0, 0, 0);
+
+	*initial_residual = qargs.initial_residual;
+	*initial_free_residual = qargs.initial_free_residual;
+	*final_residual = qargs.final_residual;
+	*final_free_residual = qargs.final_free_residual;
 }
 
 
@@ -737,11 +756,20 @@ int main(int argc, char *argv[])
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
 
+		double init_dev, init_free_dev;
+		double final_dev, final_free_dev;
+
 		STATUS("Refinement cycle %i of %i\n", i+1, n_iter);
 
 		/* Refine all crystals to get the best fit */
 		refine_all(crystals, n_crystals, full, nthreads, pmodel,
-		           no_scale);
+		           no_scale, &init_dev, &init_free_dev,
+		           &final_dev, &final_free_dev);
+
+		STATUS("Overall residual: initial = %e, final = %e\n",
+		       init_dev, final_dev);
+		STATUS("Overall free residual: initial = %e, final = %e\n",
+		       init_free_dev, final_free_dev);
 
 		show_duds(crystals, n_crystals);
 		check_rejection(crystals, n_crystals);

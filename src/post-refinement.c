@@ -562,6 +562,8 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 	if ( crystal_get_user_flag(cr) != 0 ) return prdata;
 
 	old_dev = residual(cr, full, 0, 0);
+	prdata.initial_free_residual = residual(cr, full, 0, 1);
+	prdata.initial_residual = old_dev;
 
 	if ( verbose ) {
 		STATUS("\n");  /* Deal with progress bar */
@@ -602,6 +604,8 @@ struct prdata pr_refine(Crystal *cr, const RefList *full,
 	if ( crystal_get_user_flag(cr) == 0 ) {
 		prdata.refined = 1;
 	}
+	prdata.final_free_residual = residual(cr, full, 0, 1);
+	prdata.final_residual = old_dev;
 
 	if ( verbose ) {
 		STATUS("Final G=%.2f, B=%e\n", crystal_get_osf(cr),

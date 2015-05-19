@@ -47,6 +47,10 @@ struct prdata
 {
 	int refined;
 	int n_filtered;
+	double initial_residual;
+	double initial_free_residual;
+	double final_residual;
+	double final_free_residual;
 };
 
 
