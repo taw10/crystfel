@@ -400,6 +400,18 @@ double get_tt(struct image *image, double fs, double ss, int *err)
 }
 
 
+int detector_has_clen_references(struct detector *det)
+{
+	int i;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+		if ( det->panels[i].clen_from != NULL ) return 1;
+	}
+
+	return 0;
+}
+
+
 void record_image(struct image *image, int do_poisson, double background,
                   gsl_rng *rng, double beam_radius, double nphotons)
 {

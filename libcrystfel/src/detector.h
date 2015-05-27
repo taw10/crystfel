@@ -255,6 +255,8 @@ extern int single_panel_data_source (struct detector *det, const char *element);
 struct rg_collection *find_rigid_group_collection_by_name(struct detector *det,
                                                           const char *name);
 
+extern int detector_has_clen_references(struct detector *det);
+
 #ifdef __cplusplus
 }
 #endif
