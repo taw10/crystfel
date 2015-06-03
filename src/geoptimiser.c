@@ -39,8 +39,14 @@
 #include <ctype.h>
 #include <time.h>
 #include <float.h>
+
+#ifdef HAVE_CAIRO
+#ifdef HAVE_GTK
+#define HAVE_SAVE_TO_PNG 1
 #include <cairo.h>
 #include <gdk/gdk.h>
+#endif /* HAVE_CAIRO */
+#endif /* HAVE_GTK */
 
 #include <detector.h>
 #include <stream.h>
@@ -2043,6 +2049,8 @@ static int compute_angles_and_stretch(struct rg_collection *connected,
 }
 
 
+#ifdef HAVE_SAVE_TO_PNG
+
 static void draw_panel(struct image *image, cairo_t *cr,
                        cairo_matrix_t *basic_m, GdkPixbuf **pixbufs, int i) {
 	struct panel p = image->det->panels[i];
@@ -2246,6 +2254,7 @@ static int save_data_to_png(char *filename, struct detector *det,
 	return 0;
 }
 
+#endif /* HAVE_SAVE_TO_PNG */
 
 static void calculate_panel_correction(int di, int ip, int aw,
                                        int *num_pix_displ,
@@ -2645,6 +2654,9 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 
 	if ( error_maps ) {
 		STATUS("Saving displacements before corrections.\n");
+
+#ifdef HAVE_SAVE_TO_PNG
+
 		ret1 = save_data_to_png("error_map_before.png", det, max_fs, max_ss,
 		                        dfv, displ_abs);
 		if ( ret1!=0 ) {
@@ -2658,6 +2670,14 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 			free(slab_to_y);
 			return 1;
 		}
+
+#else /* HAVE_SAVE_TO_PNG */
+
+		STATUS("ERROR: geoptimiser was compiled without GTK and cairo "
+		       "support. Error maps will not be saved.\n");
+
+#endif /* HAVE_SAVE_TO_PNG */
+
 	}
 
 	STATUS("Computing initial error.\n");
@@ -2778,6 +2798,10 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	correct_shifts(connected, conn_data, dfv, clen_to_use);
 
 	if ( error_maps ) {
+
+
+#ifdef HAVE_SAVE_TO_PNG
+
 		STATUS("Saving displacements after corrections.\n");
 		ret2 = save_data_to_png("error_map_after.png", det,  max_fs, max_ss,
 		                        dfv, displ_x);
@@ -2794,6 +2818,14 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 			free(recomputed_slab_to_y);
 			return 1;
 		}
+
+#else /* HAVE_SAVE_TO_PNG */
+
+		STATUS("ERROR: geoptimiser was compiled without GTK and cairo support.\n"
+		       "Error maps will not be saved.\n");
+
+#endif /* HAVE_SAVE_TO_PNG */
+
 	}
 
 	STATUS("Computing final error.\n");
@@ -2810,8 +2842,13 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	}
 	STATUS("All done!\n");
 	if ( error_maps ) {
+
+#ifdef HAVE_SAVE_TO_PNG
+
 		STATUS("Be sure to inspect error_map_before.png and "
 		       "error_map_after.png !!\n");
+
+#endif /* HAVE_SAVE_TO_PNG */
 	}
 
 	free(conn_data);
