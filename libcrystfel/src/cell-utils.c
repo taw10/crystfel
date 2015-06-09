@@ -606,10 +606,12 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 
 	/* "Un-center" the template unit cell to make the comparison easier */
 	template = uncenter_cell(template_in, &uncentering);
+	if ( template == NULL ) return NULL;
 
 	/* The candidate cell is also uncentered, because it might be centered
 	 * if it came from (e.g.) MOSFLM */
 	cell = uncenter_cell(cell_in, NULL);
+	if ( cell == NULL ) return NULL;
 
 	if ( cell_get_reciprocal(template, &asx, &asy, &asz,
 	                         &bsx, &bsy, &bsz,
