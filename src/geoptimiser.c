@@ -1311,12 +1311,13 @@ static void shift_panels(struct rg_collection *connected,
 
 				p0 = connected->rigid_groups[di]->panels[0];
 
-				delta_x = (p->cnx-p0->cnx)/conn_data[di].cstr;
-				delta_y = (p->cny-p0->cny)/conn_data[di].cstr;
+				delta_x = (p->cnx-p0->cnx/conn_data[di].cstr);
+				delta_y = (p->cny-p0->cny/conn_data[di].cstr);
 
-				p->cnx = p0->cnx + delta_x;
-				p->cny = p0->cny + delta_y;
-
+				p->cnx = p0->cnx + delta_x * cos(conn_data[di].cang)
+						 - delta_y * sin(conn_data[di].cang);
+				p->cny = p0->cny + delta_x * sin(conn_data[di].cang)
+						 + delta_y * cos(conn_data[di].cang);
 			}
 		}
 	}
