@@ -67,7 +67,7 @@ struct dim_structure
 	int num_dims;
 };
 
-extern struct event *initialize_event();
+extern struct event *initialize_event(void);
 extern int push_path_entry_to_event(struct event *ev, const char *entry);
 extern int pop_path_entry_from_event(struct event *ev);
 extern int push_dim_entry_to_event(struct event *ev, int entry);
@@ -82,22 +82,22 @@ extern char *partial_event_substitution(struct event *ev, const char *data);
 extern char *retrieve_full_path(struct event *ev, const char *data);
 
 
-extern struct filename_plus_event *initialize_filename_plus_event();
+extern struct filename_plus_event *initialize_filename_plus_event(void);
 extern void free_filename_plus_event(struct filename_plus_event *fpe);
 
 
-extern struct event_list *initialize_event_list();
+extern struct event_list *initialize_event_list(void);
 extern int append_event_to_event_list(struct event_list *ev_list,
                                    struct event *ev);
-int add_non_existing_event_to_event_list(struct event_list *ev_list,
+extern int add_non_existing_event_to_event_list(struct event_list *ev_list,
                                          struct event *ev);
 extern struct event_list *copy_event_list(struct event_list *el);
 extern int find_event(struct event *ev, struct event_list *el);
 extern void free_event_list(struct event_list *el);
 
 
-extern struct dim_structure *initialize_dim_structure();
-extern struct dim_structure *default_dim_structure();
+extern struct dim_structure *initialize_dim_structure(void);
+extern struct dim_structure *default_dim_structure(void);
 extern int set_dim_structure_entry(struct dim_structure *hsd,
                                    const char *string_dim,
                                    const char *val_string);
