@@ -3,13 +3,13 @@
  *
  * Resolve indexing ambiguities
  *
- * Copyright © 2014 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2014-2015 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2014 Wolfgang Brehm
  *
  * Authors:
- *   2014 Thomas White <taw@physics.org>
- *   2014 Wolfgang Brehm <wolfgang.brehm@gmail.com>
+ *   2014-2015 Thomas White <taw@physics.org>
+ *   2014      Wolfgang Brehm <wolfgang.brehm@gmail.com>
  *
  * This file is part of CrystFEL.
  *
@@ -1049,18 +1049,6 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( argc != (optind+1) ) {
-		ERROR("Please provide exactly one stream filename.\n");
-		return 1;
-	}
-
-	infile = argv[optind++];
-	st = open_stream_for_read(infile);
-	if ( st == NULL ) {
-		ERROR("Failed to open input stream '%s'\n", infile);
-		return 1;
-	}
-
 	if ( s_sym_str == NULL ) {
 		ERROR("You must specify the input symmetry (with -y)\n");
 		return 1;
@@ -1110,6 +1098,19 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 	}
+
+	if ( argc != (optind+1) ) {
+		ERROR("Please provide exactly one stream filename.\n");
+		return 1;
+	}
+
+	infile = argv[optind++];
+	st = open_stream_for_read(infile);
+	if ( st == NULL ) {
+		ERROR("Failed to open input stream '%s'\n", infile);
+		return 1;
+	}
+
 
 	crystals = NULL;
 	n_crystals = 0;
