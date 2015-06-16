@@ -748,7 +748,7 @@ int main(int argc, char *argv[])
 
 	/* Make a first pass at cutting out crap */
 	STATUS("Checking patterns.\n");
-	early_rejection(crystals, n_crystals);
+	//early_rejection(crystals, n_crystals);
 
 	/* Make initial estimates */
 	full = merge_intensities(crystals, n_crystals, nthreads, pmodel,
