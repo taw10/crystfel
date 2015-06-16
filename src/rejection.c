@@ -33,10 +33,12 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include <gsl/gsl_statistics.h>
 
 #include "crystal.h"
 #include "reflist.h"
 #include "rejection.h"
+#include "cell-utils.h"
 
 
 static double mean_intensity(RefList *list)
@@ -88,20 +90,98 @@ void early_rejection(Crystal **crystals, int n)
 
 	STATUS("Mean intensity/peak = %f ADU\n", m/n);
 	STATUS("%i crystals flagged\n", n_flag);
-	check_rejection(crystals, n);
+	check_rejection(crystals, n, NULL);
 }
 
 
-void check_rejection(Crystal **crystals, int n)
+static void check_cc(Crystal *cr, RefList *full)
+{
+	RefList *list = crystal_get_reflections(cr);
+	Reflection *refl;
+	RefListIterator *iter;
+	double G = crystal_get_osf(cr);
+	double B = crystal_get_Bfac(cr);
+	UnitCell *cell = crystal_get_cell(cr);
+	double *vec1, *vec2;
+	int n, i;
+	double cc;
+
+	n = num_reflections(list);
+	vec1 = malloc(n*sizeof(double));
+	vec2 = malloc(n*sizeof(double));
+	if ( (vec1 == NULL) || (vec2 == NULL) ) {
+		ERROR("Not enough memory to check CCs\n");
+		return;
+	}
+
+	i = 0;
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		double pobs, pcalc;
+		double res, corr, Ipart;
+		Reflection *match;
+
+		if ( !get_flag(refl) ) continue;  /* Not free-flagged */
+
+		get_indices(refl, &h, &k, &l);
+		res = resolution(cell, h, k, l);
+		if ( 2.0*res > crystal_get_resolution_limit(cr) ) continue;
+
+		match = find_refl(full, h, k, l);
+		if ( match == NULL ) continue;
+
+		/* Calculated partiality */
+		pcalc = get_partiality(refl);
+
+		/* Observed partiality */
+		corr = exp(-G) * exp(B*res*res) * get_lorentz(refl);
+		Ipart = get_intensity(refl) * corr;
+		pobs = Ipart / get_intensity(match);
+
+		vec1[i] = pobs;
+		vec2[i] = pcalc;
+		i++;
+	}
+
+	cc = gsl_stats_correlation(vec1, 1, vec2, 1, i);
+	//printf("%f\n", cc);
+	if ( cc < 0.5 ) crystal_set_user_flag(cr, 6);
+
+	free(vec1);
+	free(vec2);
+}
+
+
+static void check_ccs(Crystal **crystals, int n_crystals, RefList *full)
+{
+	int i;
+
+	for ( i=0; i<n_crystals; i++ ) {
+		check_cc(crystals[i], full);
+	}
+}
+
+
+void check_rejection(Crystal **crystals, int n, RefList *full)
 {
 	int i;
 	int n_acc = 0;
 
+	/* Check according to CCs FIXME: Disabled */
+	//if ( full != NULL ) check_ccs(crystals, n, full);
+
 	for ( i=0; i<n; i++ ) {
-		if ( crystal_get_user_flag(crystals[i]) == 0 ) {
-			n_acc++;
-			if ( n_acc >= 2 ) break;
+
+		/* Reject if B factor modulus is very large */
+		if ( fabs(crystal_get_Bfac(crystals[i])) > 1e18 ) {
+			crystal_set_user_flag(crystals[i], 1);
 		}
+
+		if ( crystal_get_user_flag(crystals[i]) == 0 ) n_acc++;
+
 	}
 
 	if ( n_acc < 2 ) {

@@ -301,6 +301,7 @@ static void show_duds(Crystal **crystals, int n_crystals)
 	int n_noref = 0;
 	int n_solve = 0;
 	int n_early = 0;
+	int n_cc = 0;
 
 	for ( j=0; j<n_crystals; j++ ) {
 		int flag;
@@ -327,6 +328,10 @@ static void show_duds(Crystal **crystals, int n_crystals)
 			n_early++;
 			break;
 
+			case 6:
+			n_cc++;
+			break;
+
 			default:
 			STATUS("Unknown flag %i\n", flag);
 			break;
@@ -339,6 +344,7 @@ static void show_duds(Crystal **crystals, int n_crystals)
 		STATUS(" %i not enough reflections.\n", n_noref);
 		STATUS(" %i solve failed.\n", n_solve);
 		STATUS(" %i early rejection.\n", n_early);
+		STATUS(" %i bad CC.\n", n_cc);
 	}
 }
 
@@ -741,14 +747,14 @@ int main(int argc, char *argv[])
 	}
 
 	/* Make a first pass at cutting out crap */
-//	STATUS("Checking patterns.\n");
-//	early_rejection(crystals, n_crystals);
+	STATUS("Checking patterns.\n");
+	early_rejection(crystals, n_crystals);
 
 	/* Make initial estimates */
 	full = merge_intensities(crystals, n_crystals, nthreads, pmodel,
 	                         min_measurements, push_res);
 
-	check_rejection(crystals, n_crystals);
+	check_rejection(crystals, n_crystals, full);
 
 	show_duds(crystals, n_crystals);
 
@@ -773,14 +779,13 @@ int main(int argc, char *argv[])
 		       init_free_dev, final_free_dev);
 
 		show_duds(crystals, n_crystals);
-		check_rejection(crystals, n_crystals);
+		check_rejection(crystals, n_crystals, full);
 
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         pmodel, min_measurements, push_res);
 
-		check_rejection(crystals, n_crystals);
 		write_pgraph(full, crystals, n_crystals, i+1);
 
 	}
