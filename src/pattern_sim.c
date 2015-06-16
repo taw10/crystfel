@@ -97,6 +97,7 @@ static void show_help(const char *s)
 "     --beam-bandwidth      Beam bandwidth as a fraction. Default 1%%.\n"
 "     --photon-energy       Photon energy in eV.  Default 9000.\n"
 "     --nphotons            Number of photons per X-ray pulse.  Default 1e12.\n"
+"     --beam-radius         Radius of beam in metres (default 1e-6).\n"
 );
 }
 
@@ -661,7 +662,11 @@ int main(int argc, char *argv[])
 	STATUS("Simulation parameters:\n");
 	STATUS("                  Photon energy: %.2f eV (wavelength %.5f A)\n",
 	       photon_energy, image.lambda*1e10);
+	STATUS("              Number of photons: %.0f (%.2f mJ)\n", nphotons,
+	       eV_to_J(photon_energy)*1e3);
 	STATUS("                Beam divergence: not simulated\n");
+	STATUS("                    Beam radius: %.2f microns\n",
+	      beam_radius*1e6);
 	STATUS("                     Background: %.2f photons\n", background);
 
 	switch ( spectrum_type ) {
