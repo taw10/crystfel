@@ -286,7 +286,7 @@ static int check_cell(struct asdf_private *dp, struct image *image,
 }
 
 
-static int compare_doubles (const void *a, const void *b)
+static int compare_doubles(const void *a, const void *b)
 {
 	const double *da = (const double *) a;
 	const double *db = (const double *) b;
@@ -296,7 +296,7 @@ static int compare_doubles (const void *a, const void *b)
 
 
 /* Compares tvectors by length */
-static int compare_tvectors (const void *a, const void *b)
+static int compare_tvectors(const void *a, const void *b)
 {
 	struct tvector *ta = (struct tvector *) a;
 	struct tvector *tb = (struct tvector *) b;
@@ -357,7 +357,7 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 	memcpy(projections_sorted, projections, sizeof(double) * n);    
 	qsort(projections_sorted, n, sizeof(double), compare_doubles);
 	
-	int i;
+	int i, k;
 	
 	int N = fftw.N; // number of points in fft calculation
 	double *in = fftw.in;
@@ -369,8 +369,11 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 	}
 	
 	for ( i = 0; i < n; i++ ) {
-		in[(int)((projections_sorted[i] - projections_sorted[0]) / 
-		   (projections_sorted[n - 1] - projections_sorted[0]) * N)] ++;
+		
+		k = (int)((projections_sorted[i] - projections_sorted[0]) / 
+		          (projections_sorted[n - 1] - projections_sorted[0]) * 
+		          (N - 1));
+		in[k] ++;
 	}
 	
 	fftw_execute_dft_r2c(p, in, out);
