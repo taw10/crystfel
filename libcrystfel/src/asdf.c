@@ -7,6 +7,7 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_multifit.h>
+#include <gsl/gsl_fit.h>
 #include <fftw3.h>
 
 #include "image.h"
@@ -56,7 +57,7 @@ struct fftw_vars fftw_vars_new()
 }
 
 
-static int fftw_vars_free(struct fftw_vars fftw)
+static void fftw_vars_free(struct fftw_vars fftw)
 {
 	fftw_free(fftw.in);
 	fftw_free(fftw.out);
@@ -97,16 +98,6 @@ static int tvector_free(struct tvector t)
 {
 	gsl_vector_free(t.t);
 	free(t.fits);
-	
-	return 1;
-}
-
-
-static int tvector_memcpy(struct tvector *dest, struct tvector *src, int n) 
-{
-	gsl_vector_memcpy(dest->t, src->t);
-	dest->n = src->n;
-	memcpy(dest->fits, src->fits, sizeof(int) * n);
 	
 	return 1;
 }
@@ -364,12 +355,11 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 	fftw_complex *out = fftw.out;
 	fftw_plan p = fftw.p;
 	
-	for ( i = 0; i < N; i++ ) {
+	for ( i=0; i<N; i++ ) {
 		in[i] = 0;
 	}
 	
 	for ( i = 0; i < n; i++ ) {
-		
 		k = (int)((projections_sorted[i] - projections_sorted[0]) / 
 		          (projections_sorted[n - 1] - projections_sorted[0]) * 
 		          (N - 1));
@@ -384,7 +374,7 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 	int d = 1;
 	double max = 0;
 	double a;
-	for ( i = 1; i <= i_max; i++ ) {
+	for ( i=1; i<=i_max; i++ ) {
 		a = sqrt(out[i][0] * out[i][0] + out[i][1] * out[i][1]);
 		if (a > max) {
 			max = a;
@@ -501,37 +491,6 @@ static int check_refl_fitting_cell(struct asdf_cell *c,
 	}
 	
 	return 1;
-}
-
-
-static void print_asdf_cell(struct asdf_cell *cc) 
-{
-	double a, b, c, alpha, beta, gamma, ab, bc, ca;
-	
-	a = gsl_blas_dnrm2(cc->axes[0]);
-	b = gsl_blas_dnrm2(cc->axes[1]);
-	c = gsl_blas_dnrm2(cc->axes[2]);
-	
-	gsl_blas_ddot(cc->axes[0], cc->axes[1], &ab);
-	gsl_blas_ddot(cc->axes[1], cc->axes[2], &bc);
-	gsl_blas_ddot(cc->axes[0], cc->axes[2], &ca);
-	
-	alpha = acos(bc/b/c)/M_PI*180;
-	beta = acos(ca/a/c)/M_PI*180;
-	gamma = acos(ab/a/b)/M_PI*180;
-	
-	//~ int i, j;
-	//~ for (i = 0; i < 3; i ++) {
-		//~ for (j = 0; j < 3; j ++) {
-			//~ printf("%f ", gsl_vector_get(cc.axes[i], j));
-		//~ }
-		//~ printf("\n");
-	//~ }
-	
-	printf("%.2f %.2f %.2f %.2f %.2f %.2f %.0f %d \n", a, b, c, 
-						           alpha, beta, gamma, 
-						           cc->volume, cc->n);
-
 }
 
 
@@ -749,6 +708,8 @@ static int find_acl(struct tvector t1, struct tvector t2, struct tvector t3)
 	if ( i <= j && i <= k ) return i;
 	if ( j <= i && j <= k ) return j;
 	if ( k <= i && k <= j ) return k;
+	ERROR("This point never reached!\n");
+	abort();
 }
 
 
@@ -893,14 +854,6 @@ static void shuffle_triplets(int **triplets, int n)
 		memcpy(triplets[j], triplets[i], 3 * sizeof(int));
 		memcpy(triplets[i], t,  3 * sizeof(int));
 	}
-}
-
-
-static double angle_between_gsl(gsl_vector *a, gsl_vector *b) 
-{
-	double ab;
-	gsl_blas_ddot(a, b, &ab);
-	return acos(ab/gsl_blas_dnrm2(a)/gsl_blas_dnrm2(b)) * 180 / M_PI;
 }
 
 
