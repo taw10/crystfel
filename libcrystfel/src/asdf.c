@@ -545,7 +545,7 @@ static int refine_asdf_cell(struct asdf_cell *c, gsl_vector **reflections,
 	gsl_vector *r[] = {gsl_vector_alloc(c->n), 
 	                   gsl_vector_alloc(c->n), 
 	                   gsl_vector_alloc(c->n)};
-	
+		
 	gsl_vector *res = gsl_vector_alloc(3);
 	gsl_matrix *cov = gsl_matrix_alloc (3, 3);
 	double chisq;
@@ -778,7 +778,8 @@ static int create_cell(struct tvector tvec1, struct tvector tvec2,
 	
 	/* Index reflections with new cell axes */
 	check_refl_fitting_cell(c, reflections, N_reflections, IndexFit);
-		
+	if ( c->n < 6 ) return 0;	
+	
 	/* Refine cell until the number of fitting 
 	 * reflections stops increasing */
 	int n = 0;
@@ -1053,7 +1054,7 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 
 
 int run_asdf(struct image *image, IndexingPrivate *ipriv) 
-{
+{	
 	int i, j;
 	
 	double LevelFit = 1./1000;
