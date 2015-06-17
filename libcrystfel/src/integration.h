@@ -3,11 +3,11 @@
  *
  * Integration of intensities
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2015 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -33,6 +33,7 @@
 #include <config.h>
 #endif
 
+#include <semaphore.h>
 
 #include "geometry.h"
 
@@ -127,7 +128,7 @@ extern void integrate_all_4(struct image *image, IntegrationMethod meth,
                             double ir_inn, double ir_mid, double ir_out,
                             IntDiag int_diag,
                             signed int idh, signed int idk, signed int idl,
-                            int results_pipe);
+                            sem_t *term_sem);
 
 
 #ifdef __cplusplus

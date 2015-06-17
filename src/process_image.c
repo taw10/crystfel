@@ -78,7 +78,7 @@ static void try_refine_autoR(struct image *image, Crystal *cr)
 
 void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    Stream *st, int cookie, const char *tmpdir, int results_pipe,
-                   int serial)
+                   int serial, sem_t *term_sem)
 {
 	float *data_for_measurement;
 	size_t data_size;
@@ -260,7 +260,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
 	                iargs->int_diag, iargs->int_diag_h,
 	                iargs->int_diag_k, iargs->int_diag_l,
-	                results_pipe);
+	                term_sem);
 
 	ret = write_chunk(st, &image, hdfile,
 	                  iargs->stream_peaks, iargs->stream_refls,

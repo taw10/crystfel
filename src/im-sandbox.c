@@ -48,6 +48,8 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <assert.h>
+#include <sys/mman.h>
+#include <semaphore.h>
 
 #ifdef HAVE_CLOCK_GETTIME
 #include <time.h>
@@ -85,6 +87,12 @@ struct sb_reader
 };
 
 
+struct sb_shm
+{
+	sem_t term_sem;
+};
+
+
 struct sandbox
 {
 	pthread_mutex_t lock;
@@ -96,7 +104,6 @@ struct sandbox
 	int n_hadcrystals_last_stats;
 	int n_crystals_last_stats;
 	int t_last_stats;
-	int suspend_stats;
 
 	struct index_args *iargs;
 
@@ -109,6 +116,8 @@ struct sandbox
 	int *stream_pipe_write;
 	struct filename_plus_event **last_filename;
 	int serial;
+
+	struct sb_shm *shared;
 
 	char *tmpdir;
 
@@ -359,7 +368,7 @@ static int read_fpe_data(struct buffer_data *bd)
 
 static void run_work(const struct index_args *iargs,
                      int filename_pipe, int results_pipe, Stream *st,
-                     int cookie, const char *tmpdir)
+                     int cookie, const char *tmpdir, sem_t *term_sem)
 {
 	FILE *fh;
 	int allDone = 0;
@@ -494,7 +503,7 @@ static void run_work(const struct index_args *iargs,
 
 			pargs.n_crystals = 0;
 			process_image(iargs, &pargs, st, cookie, tmpdir,
-			              results_pipe, ser);
+			              results_pipe, ser, term_sem);
 
 			/* Request another image */
 			c = sprintf(buf, "%i\n", pargs.n_crystals);
@@ -815,11 +824,12 @@ static void start_worker_process(struct sandbox *sb, int slot)
 
 		st = open_stream_fd_for_write(stream_pipe[1]);
 		run_work(sb->iargs, filename_pipe[0], result_pipe[1],
-		         st, slot, tmp);
+		         st, slot, tmp, &sb->shared->term_sem);
 		close_stream(st);
 
 		//close(filename_pipe[0]);
 		close(result_pipe[1]);
+		munmap(sb->shared, sizeof(struct sb_shm));
 
 		free(sb);
 
@@ -894,6 +904,25 @@ static void handle_zombie(struct sandbox *sb)
 }
 
 
+static int setup_shm(struct sandbox *sb)
+{
+	sb->shared = mmap(NULL, sizeof(struct sb_shm), PROT_READ | PROT_WRITE,
+	                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
+	if ( sb->shared == MAP_FAILED ) {
+		ERROR("SHM setup failed: %s\n", strerror(errno));
+		return 1;
+	}
+
+	if ( sem_init(&sb->shared->term_sem, 1, 1) ) {
+		ERROR("Terminal semaphore setup failed: %s\n", strerror(errno));
+		return 1;
+	}
+
+	return 0;
+}
+
+
 void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                     int config_basename, FILE *fh,
                     Stream *stream, const char *tempdir)
@@ -930,7 +959,6 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->n_hadcrystals_last_stats = 0;
 	sb->n_crystals_last_stats = 0;
 	sb->t_last_stats = get_monotonic_seconds();
-	sb->suspend_stats = 0;
 	sb->n_proc = n_proc;
 	sb->iargs = iargs;
 	sb->serial = 1;
@@ -938,6 +966,12 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->reader->fds = NULL;
 	sb->reader->fhs = NULL;
 	sb->reader->stream = stream;
+
+	if ( setup_shm(sb) ) {
+		ERROR("Failed to set up SHM.\n");
+		free(sb);
+		return;
+	}
 
 	sb->stream_pipe_write = calloc(n_proc, sizeof(int));
 	if ( sb->stream_pipe_write == NULL ) {
@@ -1106,34 +1140,20 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 			chomp(results);
 
-			if ( strcmp(results, "SUSPEND") == 0 ) {
-				sb->suspend_stats++;
-				continue;  /* Do not send next filename */
-			} else if ( strcmp(results, "RELEASE") == 0 ) {
-				if ( sb->suspend_stats > 0 ) {
-					sb->suspend_stats--;
-				} else {
-					ERROR("RELEASE before SUSPEND.\n");
+			strtol(results, &eptr, 10);
+			if ( eptr == results ) {
+				if ( strlen(results) > 0 ) {
+					ERROR("Invalid result '%s'\n",
+					      results);
 				}
-				continue;  /* Do not send next filename */
 			} else {
 
-				strtol(results, &eptr, 10);
-				if ( eptr == results ) {
-					if ( strlen(results) > 0 ) {
-						ERROR("Invalid result '%s'\n",
-						      results);
-					}
-				} else {
-
-					int nc = atoi(results);
-					sb->n_crystals += nc;
-					if ( nc > 0 ) {
-						sb->n_hadcrystals++;
-					}
-					sb->n_processed++;
-
+				int nc = atoi(results);
+				sb->n_crystals += nc;
+				if ( nc > 0 ) {
+					sb->n_hadcrystals++;
 				}
+				sb->n_processed++;
 
 			}
 
@@ -1210,8 +1230,8 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		/* Update progress */
 		lock_sandbox(sb);
 		tNow = get_monotonic_seconds();
-		if ( !sb->suspend_stats
-		    && (tNow >= sb->t_last_stats+STATS_EVERY_N_SECONDS) )
+		r = sem_trywait(&sb->shared->term_sem);
+		if ((r==0) && (tNow >= sb->t_last_stats+STATS_EVERY_N_SECONDS))
 		{
 
 			STATUS("%4i indexable out of %4i processed (%4.1f%%), "
@@ -1228,7 +1248,9 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			sb->n_crystals_last_stats = sb->n_crystals;
 			sb->t_last_stats = tNow;
 
+
 		}
+		if ( r == 0 ) sem_post(&sb->shared->term_sem);
 		unlock_sandbox(sb);
 
 		allDone = 1;
@@ -1264,6 +1286,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	free(sb->result_fhs);
 	free(sb->pids);
 	free(sb->tmpdir);
+	munmap(sb->shared, sizeof(struct sb_shm));
 
 	pthread_mutex_destroy(&sb->lock);
 

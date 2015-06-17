@@ -38,6 +38,7 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_eigen.h>
+#include <semaphore.h>
 
 #ifdef HAVE_CURSES_COLOR
 #include <ncurses.h>
@@ -252,14 +253,14 @@ static void show_reference_profile(struct intcontext *ic, int i)
 
 
 static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
-                          int results_pipe)
+                          sem_t *term_sem)
 {
 #ifdef HAVE_CURSES_COLOR
 	int q;
 	signed int h, k, l;
 	double fs, ss;
 
-	if ( results_pipe != 0 ) write(results_pipe, "SUSPEND\n", 8);
+	if ( term_sem != NULL ) sem_wait(term_sem);
 
 	initscr();
 	clear();
@@ -323,7 +324,7 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
 	getch();
 	endwin();
 
-	if ( results_pipe != 0 ) write(results_pipe, "RELEASE\n", 8);
+	if ( term_sem != NULL ) sem_post(term_sem);
 #else
 	STATUS("Not showing peak box because CrystFEL was compiled without "
 	       "ncurses.\n");
@@ -1170,7 +1171,7 @@ static int get_int_diag(struct intcontext *ic, Reflection *refl)
 
 
 static void integrate_prof2d_once(struct intcontext *ic, struct peak_box *bx,
-                                  int results_pipe)
+                                  sem_t *sem)
 {
 	bx->intensity = fit_intensity(ic, bx);
 	bx->sigma = calc_sigma(ic, bx);
@@ -1200,8 +1201,7 @@ static void integrate_prof2d_once(struct intcontext *ic, struct peak_box *bx,
 			set_redundancy(bx->refl, 0);
 		}
 
-		if ( get_int_diag(ic, bx->refl) ) show_peak_box(ic, bx,
-		                                                results_pipe);
+		if ( get_int_diag(ic, bx->refl) ) show_peak_box(ic, bx, sem);
 
 	} else {
 
@@ -1294,7 +1294,7 @@ static void integrate_prof2d(IntegrationMethod meth,
                              Crystal *cr, struct image *image, IntDiag int_diag,
                              signed int idh, signed int idk, signed int idl,
                              double ir_inn, double ir_mid, double ir_out,
-                             int results_pipe, int **masks)
+                             sem_t *term_sem, int **masks)
 {
 	RefList *list;
 	UnitCell *cell;
@@ -1338,7 +1338,7 @@ static void integrate_prof2d(IntegrationMethod meth,
 	for ( i=0; i<ic.n_boxes; i++ ) {
 		struct peak_box *bx;
 		bx = &ic.boxes[i];
-		integrate_prof2d_once(&ic, bx, results_pipe);
+		integrate_prof2d_once(&ic, bx, term_sem);
 	}
 
 	//refine_rigid_groups(&ic);
@@ -1351,7 +1351,7 @@ static void integrate_prof2d(IntegrationMethod meth,
 
 static void integrate_rings_once(Reflection *refl, struct image *image,
                                  struct intcontext *ic, UnitCell *cell,
-                                 int results_pipe)
+                                 sem_t *term_sem)
 {
 	double pfs, pss;
 	struct peak_box *bx;
@@ -1450,7 +1450,7 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	pss += bx->offs_ss;
 	set_detector_pos(refl, pfs, pss);
 
-	if ( get_int_diag(ic, refl) ) show_peak_box(ic, bx, results_pipe);
+	if ( get_int_diag(ic, refl) ) show_peak_box(ic, bx, term_sem);
 
 	if ( intensity < -5.0*sigma ) {
 		ic->n_implausible++;
@@ -1550,7 +1550,7 @@ static void integrate_rings(IntegrationMethod meth,
                             Crystal *cr, struct image *image, IntDiag int_diag,
                             signed int idh, signed int idk, signed int idl,
                             double ir_inn, double ir_mid, double ir_out,
-                            int results_pipe, int **masks)
+                            sem_t *term_sem, int **masks)
 {
 	RefList *list;
 	Reflection *refl;
@@ -1586,7 +1586,7 @@ static void integrate_rings(IntegrationMethod meth,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		integrate_rings_once(refl, image, &ic, cell, results_pipe);
+		integrate_rings_once(refl, image, &ic, cell, term_sem);
 	}
 
 	//refine_rigid_groups(&ic);
@@ -1602,8 +1602,7 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
                      PartialityModel pmodel, double push_res,
                      double ir_inn, double ir_mid, double ir_out,
                      IntDiag int_diag,
-                     signed int idh, signed int idk, signed int idl,
-                     int results_pipe)
+                     signed int idh, signed int idk, signed int idl, sem_t *sem)
 {
 	int i;
 	int *masks[image->det->n_panels];
@@ -1643,14 +1642,14 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 			integrate_rings(meth, cr, image,
 			                int_diag, idh, idk, idl,
 			                ir_inn, ir_mid, ir_out,
-			                results_pipe, masks);
+			                sem, masks);
 			break;
 
 			case INTEGRATION_PROF2D :
 			integrate_prof2d(meth, cr, image,
 			                 int_diag, idh, idk, idl,
 			                 ir_inn, ir_mid, ir_out,
-			                 results_pipe, masks);
+			                 sem, masks);
 			break;
 
 			default :

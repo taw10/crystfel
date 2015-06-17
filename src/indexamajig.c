@@ -695,11 +695,6 @@ int main(int argc, char *argv[])
 
 		free(int_diag);
 
-		if ( (n_proc > 1) && (iargs.int_diag != INTDIAG_NONE) ) {
-			n_proc = 1;
-			STATUS("Ignored \"-j\" because you used --int-diag.\n");
-		}
-
 	}
 
 	st = open_stream_for_write_2(outfile, geom_filename, argc, argv);
