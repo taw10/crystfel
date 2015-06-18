@@ -1576,3 +1576,31 @@ int forbidden_reflection(UnitCell *cell,
 
 	return 0;
 }
+
+
+/* Returns cell volume in A^3 */
+double cell_get_volume(UnitCell *cell)
+{
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	struct rvec aCb;
+	double rec_volume;
+	
+	if ( cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                               &bsx, &bsy, &bsz,
+	                               &csx, &csy, &csz) ) {
+		ERROR("Couldn't get reciprocal cell.\n");
+		return 0;
+	}
+	
+	/* "a" cross "b" */
+	aCb.u = asy*bsz - asz*bsy;
+	aCb.v = - (asx*bsz - asz*bsx);
+	aCb.w = asx*bsy - asy*bsx;
+	
+	/* "a cross b" dot "c" */
+	rec_volume = (aCb.u*csx + aCb.v*csy + aCb.w*csz)/1e30;
+	
+	return 1/rec_volume;
+}

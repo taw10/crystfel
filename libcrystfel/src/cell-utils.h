@@ -74,6 +74,8 @@ extern LatticeType lattice_from_str(const char *s);
 extern int forbidden_reflection(UnitCell *cell,
                                 signed int h, signed int k, signed int l);
 
+extern double cell_get_volume(UnitCell *cell);
+
 #ifdef __cplusplus
 }
 #endif

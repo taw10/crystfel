@@ -41,6 +41,9 @@
 #define INDEXING_DEFAULTS_DIRAX (INDEXING_DIRAX | INDEXING_CHECK_PEAKS         \
                                      | INDEXING_CHECK_CELL_COMBINATIONS)
 
+#define INDEXING_DEFAULTS_ASDF (INDEXING_ASDF | INDEXING_CHECK_PEAKS         \
+                                     | INDEXING_CHECK_CELL_COMBINATIONS)
+
 #define INDEXING_DEFAULTS_MOSFLM (INDEXING_MOSFLM | INDEXING_CHECK_PEAKS       \
                                      | INDEXING_CHECK_CELL_COMBINATIONS        \
                                      | INDEXING_USE_LATTICE_TYPE)
@@ -97,6 +100,7 @@ typedef enum {
 	INDEXING_XDS = 5,
 	INDEXING_SIMULATION = 6,
 	INDEXING_DEBUG = 7,
+	INDEXING_ASDF = 8,
 
 	/* Bits at the top of the IndexingMethod are flags which modify the
 	 * behaviour of the indexer. */
