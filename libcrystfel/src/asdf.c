@@ -778,13 +778,13 @@ static int create_cell(struct tvector tvec1, struct tvector tvec2,
 	
 	/* Index reflections with new cell axes */
 	check_refl_fitting_cell(c, reflections, N_reflections, IndexFit);
-	if ( c->n < 6 ) return 0;	
 	
 	/* Refine cell until the number of fitting 
 	 * reflections stops increasing */
 	int n = 0;
 	int cell_correct = 1;
-	while ( c->n - n && cell_correct ) {
+	while ( c->n - n > 0 && cell_correct ) {
+		
 		n = c->n;
 		cell_correct = refine_asdf_cell(c, reflections, N_reflections, 
 					        IndexFit);	
