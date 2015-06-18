@@ -3,13 +3,13 @@
  *
  * Sandbox for indexing
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2015 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
@@ -49,7 +49,6 @@
 #include <sys/stat.h>
 #include <assert.h>
 #include <sys/mman.h>
-#include <semaphore.h>
 
 #ifdef HAVE_CLOCK_GETTIME
 #include <time.h>
@@ -89,7 +88,7 @@ struct sb_reader
 
 struct sb_shm
 {
-	sem_t term_sem;
+	pthread_mutex_t term_lock;
 };
 
 
@@ -368,7 +367,7 @@ static int read_fpe_data(struct buffer_data *bd)
 
 static void run_work(const struct index_args *iargs,
                      int filename_pipe, int results_pipe, Stream *st,
-                     int cookie, const char *tmpdir, sem_t *term_sem)
+                     int cookie, const char *tmpdir, pthread_mutex_t *term_lock)
 {
 	FILE *fh;
 	int allDone = 0;
@@ -503,7 +502,7 @@ static void run_work(const struct index_args *iargs,
 
 			pargs.n_crystals = 0;
 			process_image(iargs, &pargs, st, cookie, tmpdir,
-			              results_pipe, ser, term_sem);
+			              results_pipe, ser, term_lock);
 
 			/* Request another image */
 			c = sprintf(buf, "%i\n", pargs.n_crystals);
@@ -824,7 +823,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 
 		st = open_stream_fd_for_write(stream_pipe[1]);
 		run_work(sb->iargs, filename_pipe[0], result_pipe[1],
-		         st, slot, tmp, &sb->shared->term_sem);
+		         st, slot, tmp, &sb->shared->term_lock);
 		close_stream(st);
 
 		//close(filename_pipe[0]);
@@ -906,6 +905,8 @@ static void handle_zombie(struct sandbox *sb)
 
 static int setup_shm(struct sandbox *sb)
 {
+	pthread_mutexattr_t attr;
+
 	sb->shared = mmap(NULL, sizeof(struct sb_shm), PROT_READ | PROT_WRITE,
 	                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
@@ -914,10 +915,22 @@ static int setup_shm(struct sandbox *sb)
 		return 1;
 	}
 
-	if ( sem_init(&sb->shared->term_sem, 1, 1) ) {
-		ERROR("Terminal semaphore setup failed: %s\n", strerror(errno));
+	if ( pthread_mutexattr_init(&attr) ) {
+		ERROR("Failed to initialise mutex attr.\n");
 		return 1;
 	}
+
+	if ( pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED) ) {
+		ERROR("Failed to set process shared attribute.\n");
+		return 1;
+	}
+
+	if ( pthread_mutex_init(&sb->shared->term_lock, &attr) ) {
+		ERROR("Terminal lock setup failed.\n");
+		return 1;
+	}
+
+	pthread_mutexattr_destroy(&attr);
 
 	return 0;
 }
@@ -1230,7 +1243,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		/* Update progress */
 		lock_sandbox(sb);
 		tNow = get_monotonic_seconds();
-		r = sem_trywait(&sb->shared->term_sem);
+		r = pthread_mutex_trylock(&sb->shared->term_lock);
 		if ((r==0) && (tNow >= sb->t_last_stats+STATS_EVERY_N_SECONDS))
 		{
 
@@ -1250,7 +1263,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 
 		}
-		if ( r == 0 ) sem_post(&sb->shared->term_sem);
+		if ( r == 0 ) pthread_mutex_unlock(&sb->shared->term_lock);
 		unlock_sandbox(sb);
 
 		allDone = 1;

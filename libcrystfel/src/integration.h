@@ -33,8 +33,6 @@
 #include <config.h>
 #endif
 
-#include <semaphore.h>
-
 #include "geometry.h"
 
 /**
@@ -128,7 +126,7 @@ extern void integrate_all_4(struct image *image, IntegrationMethod meth,
                             double ir_inn, double ir_mid, double ir_out,
                             IntDiag int_diag,
                             signed int idh, signed int idk, signed int idl,
-                            sem_t *term_sem);
+                            pthread_mutex_t *term_lock);
 
 
 #ifdef __cplusplus

@@ -104,7 +104,7 @@ struct pattern_args
 extern void process_image(const struct index_args *iargs,
                           struct pattern_args *pargs, Stream *st,
                           int cookie, const char *tmpdir, int results_pipe,
-                          int serial, sem_t *term_sem);
+                          int serial, pthread_mutex_t *term_lock);
 
 
 #endif	/* PROCESS_IMAGEs_H */
