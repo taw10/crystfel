@@ -56,25 +56,15 @@ You can choose between a variety of indexing methods.  You can choose more than 
 
 .IP \fBdirax\fR
 .PD
-Invoke DirAx, check linear combinations of the resulting cell axes for agreement with your cell, and then check that the cell accounts for at least half of the peaks from the peak search.
-.sp
-To use this option, 'dirax' must be in your shell's search path.  If you see the DirAx version and copyright information when you run \fBdirax\fR on the command line, things are set up correctly.
+Invoke DirAx.  To use this option, 'dirax' must be in your shell's search path.  If you see the DirAx version and copyright information when you run \fBdirax\fR on the command line, things are set up correctly.
 
 .IP \fBmosflm\fR
 .PD
-As \fBdirax\fR, but invoke MOSFLM instead.  If you provide a unit cell (with \fB-p\fR), the lattice type and centering information will be passed to MOSFLM, which will then return solutions which match.  Note that the lattice parameter information will \fBnot\fR be given to MOSFLM, because it has no way to make use of it.
-.sp
-To use this option, 'ipmosflm' must be in your shell's search path.  If you see the MOSFLM version and copyright information when you run \fBipmosflm\fR on the command line, things are set up correctly.
+Invoke Mosflm.  To use this option, 'ipmosflm' must be in your shell's search path.  If you see the MOSFLM version and copyright information when you run \fBipmosflm\fR on the command line, things are set up correctly.
 
-.IP \fBreax\fR
+.IP \fBasdf\fR
 .PD
-Run the DPS algorithm, looking only for lattice repeats which are close to the axes of the unit cell parameters you gave.  In theory, this method is similar to \fBmosflm\fR but should work better because of making better use of the prior cell information you gave.  In practice, it's experimental.
-
-.IP \fBgrainspotter\fR
-.PD
-Invoke GrainSpotter, which will use your cell parameters to find multiple crystals in each pattern.
-.sp
-To use this option, 'GrainSpotter.0.93' must be in your shell's search path.  If you see the GrainSpotter version information when you run \fBGrainSpotter.0.93\fR on the command line, things are set up correctly.
+This is a implementation of the \fBdirax\fR algorithm, with some very small changes such as using a 1D Fourier transform for finding the lattice repeats.  This algorithm is implemented natively within CrystFEL meaning that no external software is required.
 
 .IP \fBxds\fR
 .PD
@@ -85,46 +75,49 @@ You can add one or more of the following to the above indexing methods:
 
 .IP \fB-raw\fR
 .PD
-Do not check the resulting unit cell.  This option is useful when you need to determine the unit cell ab initio.  Use with 'dirax' and 'mosflm' - the other indexing methods need the unit cell as input in any case, and cannot determine the unit cell ab initio.  See \fB-comb\fR and \fB-axes\fR.
+Do not check the resulting unit cell for correspondence with the target cell.  This option is useful when you need to determine the unit cell ab initio.  See \fB-comb\fR and \fB-axes\fR.
 
 .IP \fB-axes\fR
 .PD
-Check permutations of the axes for correspondence with your cell, but do not check linear combinations.  This is useful to avoid a potential problem when one of the unit cell axis lengths is close to a multiple of one of the others.  Can be used with \fBdirax\fR and \fBmosflm\fR.  See \fB-raw\fR and \fB-comb\fR.
+Check permutations of the axes for correspondence with your cell, but do not check linear combinations.  This is useful to avoid a potential problem when one of the unit cell axis lengths is close to a multiple of one of the others.  See \fB-raw\fR and \fB-comb\fR.
 
 .IP \fB-comb\fR
 .PD
-Check linear combinations of the unit cell basis vectors to see if a cell can be produced which looks like your unit cell.  This is the default behaviour for \fBdirax\fR and \fBmosflm\fR.  See \fB-raw\fR and \fB-axes\fR.
+Check linear combinations of the unit cell basis vectors to see if a cell can be produced which looks like your unit cell.  See \fB-raw\fR and \fB-axes\fR.
 
 .IP \fB-bad\fR
 .PD
-Do not check that the cell accounts for any of the peaks as described in \fBdirax\fR above.  Might be useful to debug initial indexing problems, or if there are many multi-crystal patterns and the indexing method has no concept of multiple crystals per pattern (which, at the moment, means all of them except \fBgrainspotter\fR).  Can be used with any indexing method, but is generally a bad idea.
-
-.IP \fB-nolatt\fR
-.PD
-Do not use the lattice type information to help guide the indexing.  Use with \fBmosflm\fR, which is the only indexing method which can optionally take advantage of this information.  This is the default behaviour for \fBdirax\fR.  This option makes no sense for \fBreax\fR, which is intrinsically based on using known lattice information.
+Do not check that the cell accounts for the peaks found by the peak search.  This might be useful to debug initial indexing problems, but as its name suggests it is usually a bad idea.
 
 .IP \fB-latt\fR
 .PD
-This is the opposite of \fB-nolatt\fR, and is the default behaviour for \fBmosflm\fR, \fBxds\fR and \fBgrainspotter\fR.  It is the only behaviour for \fBreax\fR.
+Use the lattice type information, e.g. the knowledge that the lattice (say) tetragonal primitive, to help guide the indexing.
+
+.IP \fB-nolatt\fR
+.PD
+The opposite of \fB-latt\fR: do not use lattice type information to guide the indexing.
 
 .IP \fB-cell\fR
 .PD
-Provide your unit cell parameters to the indexing algorithm.  This is the default for \fBxds\fR and \fBgrainspotter\fR, and the only behaviour for \fBreax\fR.  This option makes no sense for \fBdirax\fR and \fBmosflm\fR, neither of which can make use of this information.
+Provide your unit cell parameters as prior information to the core indexing algorithm (not just for a filtering step after indexing as with \fBcomb\fR and \fBaxes\fR).
 
 .IP \fB-nocell\fR
 .PD
-Do not provide your unit cell parameters to the indexing algorithm.  This is the only behaviour for \fBmosflm\fR and \fBdirax\fR, both of which cannot make use of the information.  Can be used with \fBgrainspotter\fR and \fBxds\fR, and makes no sense for \fBreax\fR, which is intrinsically based on using known cell parameters.
+The opposite of \fB-cell\fR: do not use unit cell parameters as prior information for the core indexing algorithm.
 
 .PP
 The default indexing method is 'none', which means no indexing will be done.  This is useful if you just want to check that the peak detection is working properly.
 
 .PP
-Your indexing methods will be checked for validity, incompatible flags removed, and warnings given about duplicates.  For example, \fBmosflm\fR and \fBmosflm-comb-latt\fR represent the same indexing method, because \fB-comb\fR and \fB-latt\fR are the default behaviour for \fBmosflm\fR.  The 'long version' of each of your indexing methods will be listed in the output, and the stream will contain a record of which indexing method successfully indexed each pattern.
+You do not need to explicitly specify anything more than the indexing method itself (e.g. \fBmosflm\fR or \fBasdf\fR).  The default behaviour for all indexing methods is to make the maximum possible use of prior information such as the lattice type and cell parameters.  If you do not provide this information, for example if you do not give any unit cell file or if the unit cell file does not contain cell parameters (only lattice type information), the indexing methods you give will be modified accordingly.  If you only specify the indexing methods themselves, in most cases \fBindexamajig\fR will do what you want and intuitively expect!  However, the options are available if you need finer control.
+
+.PP
+Your indexing methods will be checked for validity, incompatible flags removed, and warnings given about duplicates  For example, \fBmosflm\fR and \fBmosflm-comb-latt\fR represent the same indexing method, because \fB-comb\fR and \fB-latt\fR are the default behaviour for \fBmosflm\fR.  The 'long version' of each of your indexing methods will be listed in the output, and the stream will contain a record of which indexing method successfully indexed each pattern.
 
 .PP
 It's risky to use \fBmosflm-nolatt\fR in conjunction with either \fB-comb\fR or \fB-axes\fR when you have a rhombohedral cell.  This would be an odd thing to do anyway: why withhold the lattice information from MOSFLM if you know what it is, and want to use it to check the result?  It's risky because MOSFLM will by default return the "H centered" lattice for your rhombohedral cell, and it's not completely certain that MOSFLM consistently uses one or other of the two possible conventions for the relationship between the "H" and "R" cells.  It is, however, very likely that it does.
 
-Examples of indexing methods: 'dirax,mosflm,reax', 'dirax-raw,mosflm-raw', 'dirax-raw-bad'.
+If you don't know what to give for this option, try \fB--indexing=asdf,dirax-axes,mosflm-axes-latt,mosflm-axes-nolatt,xds\fR.
 
 
 .SH PEAK INTEGRATION
@@ -387,10 +380,6 @@ the second placeholder, and so on. A similar strategy is followed to match integ
 For a full explanation of how the internal layout of the data file can be  described in the geometry file, please see \fBman crystfel_geometry\fR.
 
 You can use \fBlist_events\fR to prepare a list of each event in one or more input files.  Note that you only need to do this if you need to perform some sorting or filtering on this list.  If you want to process every event in a file, simply specify the filename in the input file.
-
-
-.SH BUGS
-ReAx indexing is experimental.  It works very nicely for some people, and crashes for others.  In a future version, it will be improved and fully supported.
 
 .SH AUTHOR
 This page was written by Thomas White.
