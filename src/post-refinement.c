@@ -547,7 +547,7 @@ static double residual(Crystal *cr, const RefList *full, int verbose, int free)
 
 
 struct prdata pr_refine(Crystal *cr, const RefList *full,
-                        PartialityModel pmodel, int no_scale)
+		PartialityModel pmodel, int no_scale)
 {
 	int i;
 	int verbose = 0;

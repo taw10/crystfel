@@ -472,7 +472,6 @@ int main(int argc, char *argv[])
 		{"output",             1, NULL,               'o'},
 		{"symmetry",           1, NULL,               'y'},
 		{"iterations",         1, NULL,               'n'},
-		{"reference",          1, NULL,               'r'},
 		{"model",              1, NULL,               'm'},
 
 		{"min-measurements",   1, NULL,                2},
