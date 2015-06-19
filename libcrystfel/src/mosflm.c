@@ -519,7 +519,8 @@ static char *spacegroup_for_lattice(UnitCell *cell)
 
 static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 {
-	char tmp[256], *symm;
+	char tmp[256];
+	char cen;
 	double wavelength;
 	double a = 0, b = 0, c = 0, alpha = 0, beta = 0, gamma = 0;
 
@@ -535,6 +536,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		if ( (mosflm->mp->indm & INDEXING_USE_LATTICE_TYPE)
 		  && (mosflm->mp->template != NULL) )
 		{
+			char *symm;
 
 			if ( cell_get_lattice_type(mosflm->mp->template)
 			     == L_RHOMBOHEDRAL ) {
@@ -577,22 +579,22 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		break;
 
 		case 8 :
-                symm = NULL;
-		if (mosflm->mp->indm & INDEXING_USE_CELL_PARAMETERS) {
-			cell_get_parameters(mosflm->mp->template, &a, &b, &c, &alpha, &beta, &gamma);
-			symm = spacegroup_for_lattice(mosflm->mp->template);
+		if ( mosflm->mp->indm & INDEXING_USE_CELL_PARAMETERS ) {
+			cell_get_parameters(mosflm->mp->template,
+			                    &a, &b, &c, &alpha, &beta, &gamma);
+			cen = cell_get_centering(mosflm->mp->template);
                 } else {
-			symm = strdup("P");
-			a = 0; // This disables prior-cell algorithm in MOSFLM
+			cen = 'P';
+			a = 0; /* Disables prior-cell algorithm in MOSFLM */
 		}
-		// Old MOSFLM simply ignores CELL and CENTERING subkeywords.
-		// So this doesn't do any harm. TODO: but still better to show WARNING if MOSFLM is old.
-		snprintf(tmp, 255, "AUTOINDEX DPS FILE %s IMAGE 1 MAXCELL 1000 REFINE "
-			"CELL %.1f %.1f %.1f %.1f %.1f %.1f CENTERING %c\n",
-			mosflm->sptfile, 1E10 * a, 1E10 * b, 1E10 * c, 
-			alpha / M_PI * 180, beta / M_PI *180, gamma / M_PI * 180, symm[0]);
-		free(symm);
-
+		/* Old MOSFLM simply ignores CELL and CENTERING subkeywords.
+		 * So this doesn't do any harm.
+		 * TODO: but still better to show WARNING if MOSFLM is old. */
+		snprintf(tmp, 255, "AUTOINDEX DPS FILE %s IMAGE 1 MAXCELL 1000"
+		         "REFINE "
+		         "CELL %.1f %.1f %.1f %.1f %.1f %.1f CENTERING %c\n",
+			 mosflm->sptfile, a*1e10, b*1e10, c*1e10,
+			 rad2deg(alpha), rad2deg(beta), rad2deg(gamma), cen);
 		mosflm_sendline(tmp, mosflm);
 		break;
 
