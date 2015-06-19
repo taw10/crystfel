@@ -10,9 +10,10 @@ libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/render.c src/index.c src/dirax.c src/mosflm.c \
                          src/cell-utils.c src/integer_matrix.c src/crystal.c \
                          src/xds.c src/integration.c \
-                         src/histogram.c src/events.c src/asdf.c
+                         src/histogram.c src/events.c
 
 if HAVE_FFTW
+libcrystfel_la_SOURCES += src/asdf.c
 endif
 
 libcrystfel_la_includedir=$(includedir)/crystfel/
