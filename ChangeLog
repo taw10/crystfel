@@ -1,3 +1,21 @@
+Changes in this development version of CrystFEL
+-----------------------------------------------
+
+- partialator: big improvements, now works well on most data sets.
+- indexamajig: prediction refinement added.
+- "mosflm" indexing method now uses prior cell information when used with
+  mosflm version 7.2.0 or later.
+- "asdf" indexing method added, which needs no external program.
+- indexamajig: Can now use --int-diag with -j n where n>1
+- compare_hkl now uses a B-factor for scaling the datasets.
+- pattern_sim: spectrum normalisation added.
+- scripts/ave-resolution and scripts/create-frame-number added.
+- scripts/plot-predict-refine and scripts/plot-radius-resolution added.
+- scripts/detector-shift added.
+- "reax" and "grainspotter" indexing methods removed.
+- Many other small but important bug fixes and improvements to data quality.
+
+
 CrystFEL version 0.6.0, 23rd February 2015
 ------------------------------------------
 
