@@ -282,7 +282,6 @@ PKG_CHECK_MODULES([FFTW], [fftw3],
    have_fftw=true
    AC_DEFINE([HAVE_FFTW], [1], [Define to 1 if FFTW is available])
 ], [
-   AC_MSG_WARN([ReAx indexing will not be available.])
    have_fftw=false
 ])
 

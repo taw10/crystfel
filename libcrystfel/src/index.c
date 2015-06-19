@@ -49,11 +49,8 @@
 #include "xds.h"
 #include "detector.h"
 #include "index.h"
-#include "reax.h"
-#include "grainspotter.h"
 #include "geometry.h"
 #include "cell-utils.h"
-#include "grainspotter.h"
 
 
 static int debug_index(struct image *image)
@@ -102,16 +99,7 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 			break;
 
 			case INDEXING_XDS :
-            iprivs[n] = xds_prepare(&indm[n], cell, det, ltl);
-			break;
-
-			case INDEXING_REAX :
-			iprivs[n] = reax_prepare(&indm[n], cell, det, ltl);
-			break;
-
-			case INDEXING_GRAINSPOTTER :
-			iprivs[n] = grainspotter_prepare(&indm[n], cell,
-			                                 det, ltl);
+			iprivs[n] = xds_prepare(&indm[n], cell, det, ltl);
 			break;
 
 			case INDEXING_DEBUG :
@@ -184,14 +172,6 @@ void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
 			xds_cleanup(privs[n]);
 			break;
 
-			case INDEXING_REAX :
-			reax_cleanup(privs[n]);
-			break;
-
-			case INDEXING_GRAINSPOTTER :
-			grainspotter_cleanup(privs[n]);
-			break;
-
 			case INDEXING_DEBUG :
 			free(privs[n]);
 			break;
@@ -255,14 +235,6 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		case INDEXING_XDS :
 		return run_xds(image, ipriv);
-		break;
-
-		case INDEXING_REAX :
-		return reax_index(ipriv, image);
-		break;
-
-		case INDEXING_GRAINSPOTTER :
-		return grainspotter_index(image, ipriv);
 		break;
 
 		case INDEXING_DEBUG :
@@ -389,14 +361,6 @@ char *indexer_str(IndexingMethod indm)
 		strcpy(str, "mosflm");
 		break;
 
-		case INDEXING_REAX :
-		strcpy(str, "reax");
-		break;
-
-		case INDEXING_GRAINSPOTTER :
-		strcpy(str, "grainspotter");
-		break;
-
 		case INDEXING_XDS :
 		strcpy(str, "xds");
 		break;
@@ -469,14 +433,8 @@ IndexingMethod *build_indexer_list(const char *str)
 		} else if ( strcmp(methods[i], "mosflm") == 0) {
 			list[++nmeth] = INDEXING_DEFAULTS_MOSFLM;
 
-		} else if ( strcmp(methods[i], "grainspotter") == 0) {
-			list[++nmeth] = INDEXING_DEFAULTS_GRAINSPOTTER;
-
         } else if ( strcmp(methods[i], "xds") == 0) {
 			list[++nmeth] = INDEXING_DEFAULTS_XDS;
-
-		} else if ( strcmp(methods[i], "reax") == 0) {
-			list[++nmeth] = INDEXING_DEFAULTS_REAX;
 
 		} else if ( strcmp(methods[i], "none") == 0) {
 			list[++nmeth] = INDEXING_NONE;
