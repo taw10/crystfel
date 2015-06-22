@@ -34,8 +34,10 @@
 #include <config.h>
 #endif
 
+struct index_args;
 
 #include "integration.h"
+#include "im-sandbox.h"
 
 
 enum {
@@ -95,16 +97,13 @@ struct pattern_args
 {
 	/* "Input" */
 	struct filename_plus_event *filename_p_e;
-
-	/* "Output" */
-	int n_crystals;
 };
 
 
 extern void process_image(const struct index_args *iargs,
                           struct pattern_args *pargs, Stream *st,
-                          int cookie, const char *tmpdir, int results_pipe,
-                          int serial, pthread_mutex_t *term_lock);
+                          int cookie, const char *tmpdir, int serial,
+                          struct sb_shm *sb_shared);
 
 
-#endif	/* PROCESS_IMAGEs_H */
+#endif	/* PROCESS_IMAGE_H */

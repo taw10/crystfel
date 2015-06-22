@@ -51,6 +51,7 @@
 #include "process_image.h"
 #include "integration.h"
 #include "predict-refine.h"
+#include "im-sandbox.h"
 
 
 static void try_refine_autoR(struct image *image, Crystal *cr)
@@ -119,8 +120,8 @@ static void restore_image_data(float **dp, struct detector *det, float **bu)
 
 
 void process_image(const struct index_args *iargs, struct pattern_args *pargs,
-                   Stream *st, int cookie, const char *tmpdir, int results_pipe,
-                   int serial, pthread_mutex_t *term_lock)
+                   Stream *st, int cookie, const char *tmpdir,
+                   int serial, struct sb_shm *sb_shared)
 {
 	int check;
 	struct hdfile *hdfile;
@@ -131,6 +132,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	char *rn;
 	int n_crystals_left;
 	float **prefilter;
+	int any_crystals;
 
 	image.features = NULL;
 	image.data = NULL;
@@ -295,7 +297,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
 	                iargs->int_diag, iargs->int_diag_h,
 	                iargs->int_diag_k, iargs->int_diag_l,
-	                term_lock);
+	                &sb_shared->term_lock);
 
 	ret = write_chunk(st, &image, hdfile,
 	                  iargs->stream_peaks, iargs->stream_refls,
@@ -315,12 +317,17 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 	/* Count crystals which are still good */
-	pargs->n_crystals = 0;
+	pthread_mutex_lock(&sb_shared->totals_lock);
+	any_crystals = 0;
 	for ( i=0; i<image.n_crystals; i++ ) {
 		if ( crystal_get_user_flag(image.crystals[i]) == 0 ) {
-			pargs->n_crystals++;
+			sb_shared->n_crystals++;
+			any_crystals = 1;
 		}
 	}
+	sb_shared->n_processed++;
+	sb_shared->n_hadcrystals += any_crystals;
+	pthread_mutex_unlock(&sb_shared->totals_lock);
 
 	for ( i=0; i<image.n_crystals; i++ ) {
 		cell_free(crystal_get_cell(image.crystals[i]));
