@@ -908,7 +908,7 @@ static int setup_shm(struct sandbox *sb)
 	pthread_mutexattr_t attr;
 
 	sb->shared = mmap(NULL, sizeof(struct sb_shm), PROT_READ | PROT_WRITE,
-	                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	                  MAP_SHARED | MAP_ANON, -1, 0);
 
 	if ( sb->shared == MAP_FAILED ) {
 		ERROR("SHM setup failed: %s\n", strerror(errno));
