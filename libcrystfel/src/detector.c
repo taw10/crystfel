@@ -1634,6 +1634,7 @@ out:
 		free(rgc_defl[rgci]->name);
 		free(rgc_defl[rgci]->rgs);
 		free(rgc_defl[rgci]);
+
 	}
 	free(rgc_defl);
 
