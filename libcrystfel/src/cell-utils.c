@@ -1348,6 +1348,8 @@ UnitCell *load_cell_from_file(const char *filename)
 
 	} while ( rval != NULL );
 
+	fclose(fh);
+
 	if ( have_a && have_b && have_c && have_al && have_be && have_ga ) {
 		cell_set_parameters(cell, a, b, c, al, be, ga);
 	}

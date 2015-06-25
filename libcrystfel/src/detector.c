@@ -1631,6 +1631,7 @@ out:
 			add_to_rigid_group_coll(rgcollection, r);
 			free(bits[rgi]);
 		}
+		free(bits);
 		free(rgc_defl[rgci]->name);
 		free(rgc_defl[rgci]->rgs);
 		free(rgc_defl[rgci]);
@@ -1771,12 +1772,6 @@ struct detector *copy_geom(const struct detector *in)
 
 			p->dim_structure = dim_new;
 
-		}
-
-		if ( p->clen_from != NULL ) {
-			/* Make a copy of the mask fields unique to this
-			 * copy of the structure. */
-			p->clen_from = strdup(p->clen_from);
 		}
 
 	}

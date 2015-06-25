@@ -186,6 +186,9 @@ void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
 		n++;
 
 	}
+
+	free(indms);
+	free(privs);
 }
 
 

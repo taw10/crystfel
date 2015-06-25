@@ -724,9 +724,13 @@ int main(int argc, char *argv[])
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
 	               st, tempdir);
 
+	free_copy_hdf5_field_list(iargs.copyme);
+	cell_free(iargs.cell);
+	free(iargs.beam->photon_energy_from);
 	free(prefix);
 	free(tempdir);
 	free_detector_geometry(iargs.det);
+	free(iargs.hdf5_peak_path);
 	close_stream(st);
 	cleanup_indexing(indm, ipriv);
 
