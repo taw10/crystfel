@@ -764,6 +764,7 @@ int run_mosflm(struct image *image, IndexingPrivate *ipriv)
 		t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
 		tcsetattr(STDIN_FILENO, TCSANOW, &t);
 
+		execlp("mosflm", "", (char *)NULL);
 		execlp("ipmosflm", "", (char *)NULL);
 		ERROR("Invocation: Failed to invoke MOSFLM: %s\n",
 		      strerror(errno));
