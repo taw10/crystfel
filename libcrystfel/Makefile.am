@@ -9,7 +9,7 @@ libcrystfel_la_SOURCES = src/reflist.c src/utils.c src/cell.c src/detector.c \
                          src/reflist-utils.c src/filters.c \
                          src/render.c src/index.c src/dirax.c src/mosflm.c \
                          src/cell-utils.c src/integer_matrix.c src/crystal.c \
-                         src/xds.c src/integration.c \
+                         src/xds.c src/integration.c src/predict-refine.c \
                          src/histogram.c src/events.c
 
 if HAVE_FFTW
@@ -28,7 +28,7 @@ libcrystfel_la_include_HEADERS = ${top_srcdir}/version.h \
                                  src/filters.h src/dirax.h src/mosflm.h \
                                  src/cell-utils.h \
                                  src/integer_matrix.h src/crystal.h \
-                                 src/xds.h \
+                                 src/xds.h src/predict-refine.h \
                                  src/integration.h src/histogram.h \
                                  src/events.h src/asdf.h
 
