@@ -46,7 +46,8 @@
 
 #define INDEXING_DEFAULTS_MOSFLM (INDEXING_MOSFLM | INDEXING_CHECK_PEAKS       \
                                      | INDEXING_CHECK_CELL_COMBINATIONS        \
-                                     | INDEXING_USE_LATTICE_TYPE)
+                                     | INDEXING_USE_LATTICE_TYPE               \
+                                     | INDEXING_USE_CELL_PARAMETERS)
 
 /* Axis check is needed for XDS, because it likes to permute the axes */
 #define INDEXING_DEFAULTS_XDS (INDEXING_XDS | INDEXING_USE_LATTICE_TYPE        \

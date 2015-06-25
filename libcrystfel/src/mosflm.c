@@ -852,11 +852,13 @@ IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
 	/* Check if cell parameters are needed/provided */
 	if ( *indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
 	if ( *indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
+	if ( *indm & INDEXING_USE_CELL_PARAMETERS ) need_cell = 1;
 	if ( need_cell && !cell_has_parameters(cell) ) {
 		ERROR("Altering your MOSFLM flags because cell parameters were"
 		      " not provided.\n");
 		*indm &= ~INDEXING_CHECK_CELL_COMBINATIONS;
 		*indm &= ~INDEXING_CHECK_CELL_AXES;
+		*indm &= ~INDEXING_USE_CELL_PARAMETERS;
 	}
 
 	/* Check if lattice type information is needed/provided */
@@ -869,7 +871,7 @@ IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
 	/* Flags that MOSFLM knows about */
 	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_CELL_COMBINATIONS
 	       | INDEXING_CHECK_CELL_AXES | INDEXING_CHECK_PEAKS
-	       | INDEXING_USE_LATTICE_TYPE| INDEXING_USE_CELL_PARAMETERS;;
+	       | INDEXING_USE_LATTICE_TYPE| INDEXING_USE_CELL_PARAMETERS;
 
 	if ( (*indm & INDEXING_USE_LATTICE_TYPE)
 	   && !((*indm & INDEXING_CHECK_CELL_COMBINATIONS)
@@ -884,7 +886,17 @@ IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
 		      "If this is a problem, consider using "
 		      "mosflm-axes-latt or mosflm-comb-latt instead of "
 		      "mosflm-raw-latt.\n", indexer_str(*indm));
+		/* It'll be OK if INDEXING_CHECK_CELL_PARAMETERS and
+		 * MOSFLM 7.2.0 or later, but that's getting a bit too
+		 * complicated to explain to the user. */
+	}
 
+	if ( (*indm & INDEXING_USE_CELL_PARAMETERS)
+	  && !((*indm & INDEXING_CHECK_CELL_COMBINATIONS)
+	    || (*indm & INDEXING_CHECK_CELL_AXES)) )
+	{
+		ERROR("WARNING: Using 'mosflm-raw' but providing cell "
+		      "parameters as prior information to mosflm.\n");
 	}
 
 	mp = malloc(sizeof(struct mosflm_private));

@@ -121,7 +121,9 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 
 		if ( in != indm[n] ) {
 			ERROR("Note: flags were altered to take into account "
-			      "the limitations of the indexing method.\n");
+			      "the information provided and/or the limitations "
+			      "of the indexing method.\nPlease check the "
+			      "methods listed above carefully.\n");
 		}
 
 		for ( i=0; i<n; i++ ) {
