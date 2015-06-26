@@ -434,7 +434,9 @@ static int dirax_readable(struct image *image, struct dirax_data *dirax)
 			switch ( type ) {
 
 				case DIRAX_INPUT_LINE :
-				block_buffer = malloc(i+1);
+				/* Make buffer a bit too big to keep Valgrind
+				 * quiet about alignment errors */
+				block_buffer = malloc(i+4);
 				memcpy(block_buffer, dirax->rbuffer, i);
 				block_buffer[i] = '\0';
 
