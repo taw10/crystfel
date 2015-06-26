@@ -3,12 +3,12 @@
  *
  * Invoke xds for crystal autoindexing
  *
- * Copyright © 2013-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2013 Cornelius Gati
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2015 Thomas White <taw@physics.org>
  *        2013 Cornelius Gati <cornelius.gati@cfel.de>
  *
  * This file is part of CrystFEL.
@@ -519,11 +519,15 @@ int run_xds(struct image *image, IndexingPrivate *priv)
 
 	if ( write_inp(image, xp) ) {
 		ERROR("Failed to write XDS.INP file for XDS.\n");
+		free(xds);
 		return 0;
 	}
 
 	n = image_feature_count(image->features);
-	if (n < 25) return 0;
+	if ( n < 25 ) {
+		free(xds);
+		return 0;
+	}
 
 	write_spot(image);
 

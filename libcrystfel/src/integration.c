@@ -1533,6 +1533,7 @@ static double estimate_resolution(UnitCell *cell, ImageFeatureList *flist)
 
 	if ( n_acc < 3 ) {
 		STATUS("WARNING: Too few peaks to estimate resolution.\n");
+		free(acc);
 		return 0.0;
 	}
 
