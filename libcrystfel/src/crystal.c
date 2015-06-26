@@ -139,6 +139,7 @@ Crystal *crystal_copy(Crystal *cryst)
 void crystal_free(Crystal *cryst)
 {
 	if ( cryst == NULL ) return;
+	free(cryst->notes);
 	free(cryst);
 }
 
