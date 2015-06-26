@@ -211,6 +211,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
 {
 	int i;
 	int n_acc = 0;
+	int n_final;
 	int n = 0;
 	double ax, ay, az;
 	double bx, by, bz;
@@ -291,9 +292,6 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		rps[n_acc] = rps[i];
 		rps[n_acc].refl = reflection_new(h, k, l);
 		copy_data(rps[n_acc].refl, refl);
-		if ( reflist != NULL ) {
-			add_refl_to_list(rps[n_acc].refl, reflist);
-		}
 		n_acc++;
 
 	}
@@ -301,9 +299,21 @@ static int pair_peaks(struct image *image, Crystal *cr,
 
 	/* Sort the pairings by excitation error and look for a transition
 	 * between good pairings and outliers */
-	n_acc = check_outlier_transition(rps, n_acc, image->det);
+	n_final = check_outlier_transition(rps, n_acc, image->det);
 
-	return n_acc;
+	/* Add the final accepted reflections to the caller's list */
+	if ( reflist != NULL ) {
+		for ( i=0; i<n_final; i++ ) {
+			add_refl_to_list(rps[i].refl, reflist);
+		}
+	}
+
+	/* Free the reflections beyond the outlier cutoff */
+	for ( i=n_final; i<n_acc; i++ ) {
+		reflection_free(rps[i].refl);
+	}
+
+	return n_final;
 }
 
 
@@ -686,6 +696,19 @@ static double UNUSED residual(struct reflpeak *rps, int n, struct detector *det)
 }
 
 
+/* NB Only for use when the list of reflpeaks was created without a RefList.
+ * If a RefList was used, then reflist_free the list then just free() the rps */
+static void free_rps_noreflist(struct reflpeak *rps, int n)
+{
+	int i;
+
+	for ( i=0; i<n; i++ ) {
+		reflection_free(rps[i].refl);
+	}
+	free(rps);
+}
+
+
 int refine_prediction(struct image *image, Crystal *cr)
 {
 	int n;
@@ -747,7 +770,7 @@ int refine_prediction(struct image *image, Crystal *cr)
 	reflist_free(reflist);
 
 	n = pair_peaks(image, cr, NULL, rps);
-	free(rps);
+	free_rps_noreflist(rps, n);
 	if ( n < 10 ) {
 		ERROR("Too few paired peaks (%i) after refinement.\n", n);
 		return 1;
