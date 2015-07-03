@@ -71,6 +71,8 @@ static void show_help(const char *s)
 "  -i, --input=<filename>     Specify the name of the input 'stream'.\n"
 "  -o, --output=<filename>    Output filename.  Default: partialator.hkl.\n"
 "  -y, --symmetry=<sym>       Merge according to symmetry <sym>.\n"
+"      --start-after=<n>     Skip <n> crystals at the start of the stream.\n"
+"      --stop-after=<n>      Stop after merging <n> crystals.\n"
 "  -n, --iterations=<n>       Run <n> cycles of scaling and post-refinement.\n"
 "      --no-scale             Fix all the scaling factors at unity.\n"
 "  -m, --model=<model>        Specify partiality model.\n"
@@ -447,7 +449,9 @@ int main(int argc, char *argv[])
 	int n_iter = 10;
 	RefList *full;
 	int n_images = 0;
+	int n_images_seen = 0;
 	int n_crystals = 0;
+	int n_crystals_seen = 0;
 	char cmdline[1024];
 	int no_scale = 0;
 	Stream *st;
@@ -457,6 +461,8 @@ int main(int argc, char *argv[])
 	int min_measurements = 2;
 	char *rval;
 	int polarisation = 1;
+	int start_after = 0;
+	int stop_after = 0;
 	double max_adu = +INFINITY;
 	char *sparams_fn = NULL;
 	FILE *sparams_fh;
@@ -470,6 +476,8 @@ int main(int argc, char *argv[])
 		{"version",            0, NULL,               'v'},
 		{"input",              1, NULL,               'i'},
 		{"output",             1, NULL,               'o'},
+		{"start-after",        1, NULL,               's'},
+		{"stop-after",         1, NULL,               'f'},
 		{"symmetry",           1, NULL,               'y'},
 		{"iterations",         1, NULL,               'n'},
 		{"model",              1, NULL,               'm'},
@@ -517,6 +525,26 @@ int main(int argc, char *argv[])
 
 			case 'j' :
 			nthreads = atoi(optarg);
+			break;
+
+			case 's' :
+			errno = 0;
+			start_after = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --start-after (%s)\n",
+				      optarg);
+				return 1;
+			}
+			break;
+
+			case 'f' :
+			errno = 0;
+			stop_after = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --stop-after (%s)\n",
+				      optarg);
+				return 1;
+			}
 			break;
 
 			case 'y' :
@@ -623,7 +651,9 @@ int main(int argc, char *argv[])
 
 	/* Fill in what we know about the images so far */
 	n_images = 0;
+	n_images_seen = 0;
 	n_crystals = 0;
+	n_crystals_seen = 0;
 	images = NULL;
 	crystals = NULL;
 	if ( sparams_fn != NULL ) {
@@ -669,13 +699,16 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		n_images++;
+		n_images_seen++;
 
 		for ( i=0; i<cur->n_crystals; i++ ) {
 
 			Crystal *cr;
 			Crystal **crystals_new;
 			RefList *cr_refl;
+
+			n_crystals_seen++;
+			if ( n_crystals_seen <= start_after ) continue;
 
 			crystals_new = realloc(crystals,
 			                      (n_crystals+1)*sizeof(Crystal *));
@@ -716,11 +749,19 @@ int main(int argc, char *argv[])
 
 			n_crystals++;
 
+			if ( n_crystals == stop_after ) break;
+
+		}
+
+		if ( n_crystals > 0 ) {
+			n_images++;
 		}
 
 		if ( n_images % 100 == 0 ) {
 			display_progress(n_images, n_crystals);
 		}
+
+		if ( (stop_after>0) && (n_crystals == stop_after) ) break;
 
 	} while ( 1 );
 	display_progress(n_images, n_crystals);
@@ -790,7 +831,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Output results */
-	write_reflist(outfile, full);
+	write_reflist_2(outfile, full, sym);
 
 	/* Output split results */
 	char tmp[1024];
@@ -811,12 +852,12 @@ int main(int argc, char *argv[])
 	snprintf(tmp, 1024, "%s1", outfile);
 	split = merge_intensities(crystals1, n_crystals1, nthreads,
 		                  pmodel, min_measurements, push_res);
-	write_reflist(tmp, split);
+	write_reflist_2(tmp, split, sym);
 	reflist_free(split);
 	snprintf(tmp, 1024, "%s2", outfile);
 	split = merge_intensities(crystals2, n_crystals2, nthreads,
 		                  pmodel, min_measurements, push_res);
-	write_reflist(tmp, split);
+	write_reflist_2(tmp, split, sym);
 	reflist_free(split);
 
 	/* Dump parameters */
