@@ -1,10 +1,18 @@
 ; Example of a geometry file for CSPAD data output by Cheetah in CXI format
+;
 
-photon_energy = /LCLS/photon_energy_eV
-clen = /LCLS/detector_1/EncoderValue
-coffset = 0.573224
-adu_per_eV = 0.00338
-res = 9097.53
+; The following lines define some basic parameters of the detector and beamline
+
+adu_per_eV = 0.00338                   ; correct value for CSPAD 1.2 (i.e. new versions only)
+                                       ; for older versions (earlier than about 2013), use 0.00105 instead
+res = 9090.91                          ; detector resolution in pixels per metre
+clen = /LCLS/detector_1/EncoderValue   ; location of camera length (in mm) in file
+coffset = 0.573224                     ; adjustment to camera length, in m, from HDF5 file
+                                       ; (position given above is actually "encoder position",
+				       ;  a value from -500 (fully forward) to 0 (fully back
+				       ;  from sample.  Therefore we add 0.5 m plus a calibration
+				       ;  offset)
+photon_energy = /LCLS/photon_energy_eV ; photon energy (in eV) from HDF5 file
 
 
 ; The following lines define how to interpret the three-dimensional data array

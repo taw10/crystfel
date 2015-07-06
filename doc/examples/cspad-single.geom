@@ -1,13 +1,34 @@
 ; Example of a CrystFEL geometry file for CSPAD data in single-event HDF5
 ; format, with the panel data arranged as by Cheetah
 
+; The following lines define some basic parameters of the detector and beamline
+
 adu_per_eV = 0.00105                   ; correct value for CSPAD 1.0 (i.e. old versions only)
                                        ; for newer versions (since about 2013), use 0.00338 instead
-res = 9090.91                          ; pixels per metre
-clen = /LCLS/detectorPosition          ; camera length from HDF5 file
-coffset = 0.0                          ; no adjustment to camera length from HDF5 file
+res = 9090.91                          ; detector resolution in pixels per metre
+clen = /LCLS/detectorPosition          ; location of camera length (in mm) in file
+coffset = 0.573224                     ; adjustment to camera length, in m, from HDF5 file
+                                       ; (position given above is actually "encoder position",
+				       ;  a value from -500 (fully forward) to 0 (fully back
+				       ;  from sample.  Therefore we add 0.5 m plus a calibration
+				       ;  offset)
 photon_energy = /LCLS/photon_energy_eV ; photon energy (in eV) from HDF5 file
+
+
+; The following line defines where to get the image data from
+
 data = /data/rawdata                   ; where to find the image data in the HDF5 file
+
+
+
+
+
+; These following lines define where to find a "bad pixel mask" for each event,
+; and how to interpret its contents.
+
+mask = /processing/hitfinder/pixelmasks
+mask_good = 0x0000
+mask_bad = 0xffff
 
 
 ; The following lines define "rigid groups" which express the physical
