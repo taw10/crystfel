@@ -57,8 +57,12 @@
 
 * Takanori Nakane <nakane.t@gmail.com>
   hdfsee ADSC export and scrollbars
-  Some other bits and pieces
   Hit rate calculator (doc/hitrate.{html,png})
+  Mosflm prior-cell interface
+  Many other bits and pieces
 
 * Keitaro Yamashita <k.yamashita@spring8.or.jp>
   Bug fixes
+  process_hkl --even-only/--odd-only
+  partialator --start-after/--stop-after
+  Other bits and pieces

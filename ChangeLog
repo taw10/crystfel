@@ -6,6 +6,8 @@ Changes in this development version of CrystFEL
 - "mosflm" indexing method now uses prior cell information when used with
   mosflm version 7.2.0 or later.
 - "asdf" indexing method added, which needs no external program.
+- process_hkl --even-only and --odd-only were added.
+- External bad pixel masks can now be used (see "mask_file" in geometry file).
 - indexamajig: Can now use --int-diag with -j n where n>1
 - compare_hkl now uses a B-factor for scaling the datasets.
 - pattern_sim: spectrum normalisation added.

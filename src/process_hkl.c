@@ -8,6 +8,7 @@
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
+ *   2015      Keitaro Yamashita <k.yamashita@spring8.or.jp>
  *   2009-2015 Thomas White <taw@physics.org>
  *   2011      Andrew Martin <andrew.martin@desy.de>
  *   2012      Lorenzo Galli <lorenzo.galli@desy.de>
