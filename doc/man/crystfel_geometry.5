@@ -87,7 +87,7 @@ Example:
 .IP
 data = /data/%/rawdata
 
-The CrystFEL programs will look for the first event at /data/event1_name/rawdata, for the second at /data/event2_name/rawdata, etc.
+The CrystFEL programs will look for the first event at /data/\fIevent1_name\fR/rawdata, for the second at /data/\fIevent2_name\fR/rawdata, etc., where \fIevent_name\fR and \fIevent2_name\fR are simply whatever the program could find in the HDF5 file which matched the pattern you gave.
 
 .PD 0
 .IP \fBdim\fIn\fR\fR
@@ -175,11 +175,11 @@ The maximum value, in ADU, before the pixel will be considered as bad.  That is,
 
 .PD 0
 .IP \fBmask\fR
-If you have a bad pixel mask, you can include it in the HDF5 file as data blocks with the same structure and size as the panel data.  You need to specify the location of each panel's mask data block using this property, and two bitmasks (see below).
+If you have a bad pixel mask, you can include it in the HDF5 file as data blocks with the same structure and size as the panel data.  You need to specify the location of each panel's mask data block using this property, and two bitmasks (see below).  The number of placeholders ('%') in the \fBmask\fR must be the same for all panels.  They will be substituted with the same values as used for the placeholders in the \fBdata\fR fields, although there may be fewer of them for \fBmask\fR than for \fBdata\fR.
 
 .PD 0
-.IP \fBno_index\fR
-Set this to 1 or "true" to ignore this panel completely.
+.IP \fBmask_file\fR
+Use this option to specify that the bad pixel mask should be read from a different file to the image data.  The \fBmask\fR field, if it contains placeholders, will be expanded in exactly the same way as normal, it's just that the data will be read from the file you specify instead of the image data file.  The \fBmask_file\fR may be specified as an absolute filename, or relative to the working directory.
 
 .PD 0
 .IP \fBmask_good\fR
@@ -193,6 +193,9 @@ mask_good = 0x27
 .br
 mask_bad = 0x00
 
+.PD 0
+.IP \fBno_index\fR
+Set this to 1 or "true" to ignore this panel completely.
 
 .SH BAD REGIONS
 

@@ -1133,8 +1133,8 @@ static int unpack_panels(struct image *image, struct detector *det)
 				flags = image->flags[idx];
 
 				/* Bad if it's missing any of the "good" bits */
-				if ( !((flags & image->det->mask_good)
-			                   == image->det->mask_good) ) bad = 1;
+				if ( (flags & image->det->mask_good)
+				       != image->det->mask_good ) bad = 1;
 
 				/* Bad if it has any of the "bad" bits. */
 				if ( flags & image->det->mask_bad ) bad = 1;
@@ -1433,6 +1433,7 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 
 
 static void load_mask(struct hdfile *f, struct event *ev, char *mask,
+                      const char *mask_file,
                       const char *pname, struct image *image,
                       size_t p_w, size_t sum_p_h,
                       hsize_t *f_offset, hsize_t *f_count,
@@ -1443,18 +1444,29 @@ static void load_mask(struct hdfile *f, struct event *ev, char *mask,
 	int check, r;
 	hid_t memspace;
 	hsize_t dimsm[2];
+	hid_t fh;
+
+	if ( mask_file != NULL ) {
+		fh = H5Fopen(mask_file, H5F_ACC_RDONLY, H5P_DEFAULT);
+		if ( fh < 0 ) {
+			ERROR("Couldn't open mask file '%s'\n", mask_file);
+			return;
+		}
+	} else {
+		fh = f->fh;
+	}
 
 	if ( ev != NULL ) {
 		mask = retrieve_full_path(ev, mask);
 	}
 
-	exists = check_path_existence(f->fh, mask);
+	exists = check_path_existence(fh, mask);
 	if ( !exists ) {
 		ERROR("Cannot find flags for panel %s\n", pname);
 		goto err;
 	}
 
-	mask_dh = H5Dopen2(f->fh, mask, H5P_DEFAULT);
+	mask_dh = H5Dopen2(fh, mask, H5P_DEFAULT);
 	if ( mask_dh <= 0 ) {
 		ERROR("Couldn't open flags for panel %s\n", pname);
 		goto err;
@@ -1492,6 +1504,7 @@ static void load_mask(struct hdfile *f, struct event *ev, char *mask,
 	return;
 
 err:
+	if ( mask_file != NULL ) H5Fclose(fh);
 	if ( ev != NULL ) free(mask);
 	free(image->flags);
 	image->flags = NULL;
@@ -1682,7 +1695,8 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		H5Sclose(memspace);
 
 		if ( p->mask != NULL ) {
-			load_mask(f, ev, p->mask, p->name, image, p_w, sum_p_h,
+			load_mask(f, ev, p->mask, p->mask_file, p->name,
+			          image, p_w, sum_p_h,
 			          f_offset, f_count, m_offset, m_count);
 		}
 

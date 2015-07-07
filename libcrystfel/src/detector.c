@@ -941,6 +941,9 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 		}
 		panel->mask = strdup(val);
 
+	} else if ( strcmp(key, "mask_file") == 0 ) {
+		panel->mask_file = strdup(val);
+
 	} else if ( strcmp(key, "coffset") == 0) {
 		panel->coffset = atof(val);
 	} else if ( strcmp(key, "res") == 0 ) {
@@ -1247,6 +1250,7 @@ struct detector *get_detector_geometry(const char *filename,
 	det->defaults.adu_per_eV = NAN;
 	det->defaults.max_adu = +INFINITY;
 	det->defaults.mask = NULL;
+	det->defaults.mask_file = NULL;
 	det->defaults.data = NULL;
 	det->defaults.dim_structure = NULL;
 	strncpy(det->defaults.name, "", 1023);
