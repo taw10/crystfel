@@ -79,6 +79,8 @@ static void show_help(const char *s)
 "\n"
 "      --scale               Scale each pattern for best fit with the current\n"
 "                             model.\n"
+"      --even-only           Merge even numbered crystals only\n"
+"      --odd-only            Merge odd numbered crystals only\n"
 "      --no-polarisation     Disable polarisation correction.\n"
 "      --min-measurements=<n> Require at least <n> measurements before a\n"
 "                             reflection appears in the output.  Default: 2\n"
@@ -386,7 +388,7 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
                      int *hist_i, int config_nopolar, int min_measurements,
                      double min_snr, double max_adu,
                      int start_after, int stop_after, double min_res,
-                     double push_res, double min_cc, int do_scale, char *stat_output)
+                     double push_res, double min_cc, int do_scale, int flag_even_odd, char *stat_output)
 {
 	int rval;
 	int n_images = 0;
@@ -426,7 +428,8 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 
 			n_crystals_seen++;
 			if ( (n_crystals_seen > start_after)
-			  && (crystal_get_resolution_limit(cr) >= min_res) )
+			  && (crystal_get_resolution_limit(cr) >= min_res)
+			  && (flag_even_odd == 2 || n_crystals_seen%2 == flag_even_odd) )
 			{
 				n_crystals++;
 				r = merge_crystal(model, &image, cr, reference,
@@ -490,6 +493,9 @@ int main(int argc, char *argv[])
 	Stream *st;
 	RefList *model;
 	int config_scale = 0;
+	int config_evenonly = 0;
+	int config_oddonly = 0;
+	int flag_even_odd = 2;
 	char *sym_str = NULL;
 	SymOpList *sym;
 	char *histo = NULL;
@@ -521,6 +527,8 @@ int main(int argc, char *argv[])
 		{"start-after",        1, NULL,               's'},
 		{"stop-after",         1, NULL,               'f'},
 		{"scale",              0, &config_scale,       1},
+		{"even-only",          0, &config_evenonly,    1},
+		{"odd-only",           0, &config_oddonly,     1},
 		{"no-polarisation",    0, &config_nopolar,     1},
 		{"no-polarization",    0, &config_nopolar,     1},
 		{"symmetry",           1, NULL,               'y'},
@@ -737,6 +745,14 @@ int main(int argc, char *argv[])
 
 	}
 
+	if ( config_evenonly && config_oddonly ) {
+		ERROR("Don't specify both --even-only and --odd-only\n")
+		return 1;
+	}
+
+	/* 0: even-only, 1: odd-only, 2: use all */
+	flag_even_odd = config_evenonly ? 0 : config_oddonly ? 1 : 2;
+
 	/* Need to do a second pass if we are scaling */
 	if ( config_scale ) twopass = 1;
 
@@ -744,7 +760,7 @@ int main(int argc, char *argv[])
 	r = merge_all(st, model, NULL, sym, &hist_vals, hist_h, hist_k, hist_l,
 	              &hist_i, config_nopolar, min_measurements, min_snr,
 	              max_adu, start_after, stop_after, min_res, push_res,
-	              min_cc, config_scale, stat_output);
+	              min_cc, config_scale, flag_even_odd, stat_output);
 	fprintf(stderr, "\n");
 	if ( r ) {
 		ERROR("Error while reading stream.\n");
@@ -780,7 +796,7 @@ int main(int argc, char *argv[])
 				      config_nopolar, min_measurements, min_snr,
 				      max_adu, start_after, stop_after, min_res,
 				      push_res, min_cc, config_scale,
-				      stat_output);
+				      flag_even_odd, stat_output);
 			fprintf(stderr, "\n");
 			if ( r ) {
 				ERROR("Error while reading stream.\n");
