@@ -436,6 +436,27 @@ static void write_pgraph(RefList *full, Crystal **crystals, int n_crystals,
 }
 
 
+static void normalise_scales(Crystal **crystals, int n_crystals)
+{
+	int i;
+	int n = 0;
+	double sum_B = 0.0;
+	double mean_B;
+
+	for ( i=0; i<n_crystals; i++ ) {
+		if ( crystal_get_user_flag(crystals[i]) != 0 ) continue;
+		sum_B += crystal_get_Bfac(crystals[i]);
+		n++;
+	}
+	mean_B = sum_B / n;
+	STATUS("Mean B = %e A^2\n", mean_B*1e20);
+	for ( i=0; i<n_crystals; i++ ) {
+		double B = crystal_get_Bfac(crystals[i]);
+		crystal_set_Bfac(crystals[i], B-mean_B);
+	}
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -820,6 +841,7 @@ int main(int argc, char *argv[])
 
 		show_duds(crystals, n_crystals);
 		check_rejection(crystals, n_crystals, full);
+		normalise_scales(crystals, n_crystals);
 
 		/* Re-estimate all the full intensities */
 		reflist_free(full);
