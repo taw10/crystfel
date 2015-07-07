@@ -95,6 +95,16 @@ Include a reflection in the output only if it appears at least least \fIn\fR tim
 .PD
 Merge reflections which are up to \fIn\fR nm^-1 higher than the apparent resolution limit of each individual crystal.  \fIn\fR can be negative to merge \fIlower\fR than the apparent resolution limit.  The default is \fBpush-res=0\fR - note that this is different to the default behaviour of \fBprocess_hkl\fR.
 
+.PD 0
+.IP \fB--start-after=\fR\fIn\fR
+.PD
+Ignore the first \fIn\fR crystals in the input.  The default is \fB--start-after=0\fR, i.e. start at the beginning.
+
+.PD 0
+.IP \fB--stop-after=\fR\fIn\fR
+.PD
+Stop processing after \fIn\fR crystals have been successfully read.  The default is \fB--stop-after=0\fR, which means to process all the patterns from the start point to the end of the input (see \fB--start-after\fR).
+
 .SH PARTIALITY MODELS
 
 The available partiality models are:
