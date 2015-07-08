@@ -41,10 +41,22 @@
 #include <cell-utils.h>
 #include <geometry.h>
 #include <reflist.h>
-#include "../src/predict-refine.c"
 
 
 int checkrxy;
+
+
+static void twod_mapping(double fs, double ss, double *px, double *py,
+                         struct panel *p)
+{
+	double xs, ys;
+
+	xs = fs*p->fsx + ss*p->ssx;
+	ys = fs*p->fsy + ss*p->ssy;
+
+	*px = (xs + p->cnx) / p->res;
+	*py = (ys + p->cny) / p->res;
+}
 
 
 static void scan(RefList *reflections, RefList *compare,
@@ -260,7 +272,6 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 		long double grad1, grad2, grad;
 		double cgrad;
 		signed int h, k, l;
-		struct reflpeak rp;
 
 		get_indices(refl, &h, &k, &l);
 
@@ -283,27 +294,20 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 
 			} else {
 
-				struct imagefeature pk;
 				struct image *image;
 
-				pk.fs = 0.0;
-				pk.ss = 0.0;
-
 				image = crystal_get_image(cr);
-				rp.refl = refl;
-				rp.peak = &pk;
-				rp.panel = &image->det->panels[0];
 
 				if ( checkrxy == 1 ) {
-					cgrad = x_gradient(refine, &rp,
-					          crystal_get_image(cr)->det,
-					          crystal_get_image(cr)->lambda,
-					          crystal_get_cell(cr));
+					cgrad = x_gradient(refine, refl,
+					         crystal_get_cell(cr),
+					         &image->det->panels[0],
+					         crystal_get_image(cr)->lambda);
 				} else {
-					cgrad = y_gradient(refine, &rp,
-					          crystal_get_image(cr)->det,
-					          crystal_get_image(cr)->lambda,
-					          crystal_get_cell(cr));
+					cgrad = y_gradient(refine, refl,
+					         crystal_get_cell(cr),
+					         &image->det->panels[0],
+					         crystal_get_image(cr)->lambda);
 				}
 			}
 

@@ -349,23 +349,16 @@ void refine_radius(Crystal *cr, struct image *image)
 }
 
 
-/* Returns d(xh-xpk)/dP, where P = any parameter */
-static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
-                         double lambda, UnitCell *cell)
+/* Returns dx_h/dP, where P = any parameter */
+static double x_gradient(int param, Reflection *refl, UnitCell *cell,
+                         struct panel *p, double lambda)
 {
 	signed int h, k, l;
-	double xpk, ypk, xh, yh;
-	double fsh, ssh;
 	double x, z, wn;
 	double ax, ay, az, bx, by, bz, cx, cy, cz;
 
-	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel);
-	get_detector_pos(rp->refl, &fsh, &ssh);
-	twod_mapping(fsh, ssh, &xh, &yh, rp->panel);
-	get_indices(rp->refl, &h, &k, &l);
-
+	get_indices(refl, &h, &k, &l);
 	wn = 1.0 / lambda;
-
 	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	x = h*ax + k*bx + l*cx;
 	z = h*az + k*bz + l*cz;
@@ -373,13 +366,13 @@ static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
 	switch ( param ) {
 
 		case GPARAM_ASX :
-		return h * rp->panel->clen / (wn+z);
+		return h * p->clen / (wn+z);
 
 		case GPARAM_BSX :
-		return k * rp->panel->clen / (wn+z);
+		return k * p->clen / (wn+z);
 
 		case GPARAM_CSX :
-		return l * rp->panel->clen / (wn+z);
+		return l * p->clen / (wn+z);
 
 		case GPARAM_ASY :
 		return 0.0;
@@ -391,13 +384,13 @@ static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
 		return 0.0;
 
 		case GPARAM_ASZ :
-		return -h * x * rp->panel->clen / (wn*wn + 2*wn*z + z*z);
+		return -h * x * p->clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_BSZ :
-		return -k * x * rp->panel->clen / (wn*wn + 2*wn*z + z*z);
+		return -k * x * p->clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_CSZ :
-		return -l * x * rp->panel->clen / (wn*wn + 2*wn*z + z*z);
+		return -l * x * p->clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_DETX :
 		return -1;
@@ -415,23 +408,16 @@ static double x_gradient(int param, struct reflpeak *rp, struct detector *det,
 }
 
 
-/* Returns d(yh-ypk)/dP, where P = any parameter */
-static double y_gradient(int param, struct reflpeak *rp, struct detector *det,
-                         double lambda, UnitCell *cell)
+/* Returns dy_h/dP, where P = any parameter */
+static double y_gradient(int param, Reflection *refl, UnitCell *cell,
+                         struct panel *p, double lambda)
 {
 	signed int h, k, l;
-	double xpk, ypk, xh, yh;
-	double fsh, ssh;
 	double y, z, wn;
 	double ax, ay, az, bx, by, bz, cx, cy, cz;
 
-	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel);
-	get_detector_pos(rp->refl, &fsh, &ssh);
-	twod_mapping(fsh, ssh, &xh, &yh, rp->panel);
-	get_indices(rp->refl, &h, &k, &l);
-
+	get_indices(refl, &h, &k, &l);
 	wn = 1.0 / lambda;
-
 	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	y = h*ay + k*by + l*cy;
 	z = h*az + k*bz + l*cz;
@@ -448,22 +434,22 @@ static double y_gradient(int param, struct reflpeak *rp, struct detector *det,
 		return 0.0;
 
 		case GPARAM_ASY :
-		return h * rp->panel->clen / (wn+z);
+		return h * p->clen / (wn+z);
 
 		case GPARAM_BSY :
-		return k * rp->panel->clen / (wn+z);
+		return k * p->clen / (wn+z);
 
 		case GPARAM_CSY :
-		return l * rp->panel->clen / (wn+z);
+		return l * p->clen / (wn+z);
 
 		case GPARAM_ASZ :
-		return -h * y * rp->panel->clen / (wn*wn + 2*wn*z + z*z);
+		return -h * y * p->clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_BSZ :
-		return -k * y * rp->panel->clen / (wn*wn + 2*wn*z + z*z);
+		return -k * y * p->clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_CSZ :
-		return -l * y * rp->panel->clen / (wn*wn + 2*wn*z + z*z);
+		return -l * y * p->clen / (wn*wn + 2*wn*z + z*z);
 
 		case GPARAM_DETX :
 		return 0;
@@ -553,8 +539,8 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 		/* Positional x terms */
 		for ( k=0; k<num_params; k++ ) {
-			gradients[k] = x_gradient(rv[k], &rps[i], image->det,
-			                          image->lambda, cell);
+			gradients[k] = x_gradient(rv[k], rps[i].refl, cell,
+			                          rps[i].panel, image->lambda);
 		}
 
 		for ( k=0; k<num_params; k++ ) {
@@ -585,8 +571,8 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 		/* Positional y terms */
 		for ( k=0; k<num_params; k++ ) {
-			gradients[k] = y_gradient(rv[k], &rps[i], image->det,
-			                          image->lambda, cell);
+			gradients[k] = y_gradient(rv[k], rps[i].refl, cell,
+			                          rps[i].panel, image->lambda);
 		}
 
 		for ( k=0; k<num_params; k++ ) {
