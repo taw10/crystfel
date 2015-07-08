@@ -98,6 +98,11 @@ extern void polarisation_correction(RefList *list, UnitCell *cell,
 extern double sphere_fraction(double rlow, double rhigh, double pr);
 extern double gaussian_fraction(double rlow, double rhigh, double pr);
 
+extern double x_gradient(int param, Reflection *refl, UnitCell *cell,
+                         struct panel *p, double lambda);
+extern double y_gradient(int param, Reflection *refl, UnitCell *cell,
+                         struct panel *p, double lambda);
+
 #ifdef __cplusplus
 }
 #endif

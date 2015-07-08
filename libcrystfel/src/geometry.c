@@ -563,3 +563,121 @@ void polarisation_correction(RefList *list, UnitCell *cell, struct image *image)
 		set_intensity(refl, intensity / pol);
 	}
 }
+
+
+/* Returns dx_h/dP, where P = any parameter */
+double x_gradient(int param, Reflection *refl, UnitCell *cell,
+                  struct panel *p, double lambda)
+{
+	signed int h, k, l;
+	double x, z, wn;
+	double ax, ay, az, bx, by, bz, cx, cy, cz;
+
+	get_indices(refl, &h, &k, &l);
+	wn = 1.0 / lambda;
+	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	x = h*ax + k*bx + l*cx;
+	z = h*az + k*bz + l*cz;
+
+	switch ( param ) {
+
+		case GPARAM_ASX :
+		return h * p->clen / (wn+z);
+
+		case GPARAM_BSX :
+		return k * p->clen / (wn+z);
+
+		case GPARAM_CSX :
+		return l * p->clen / (wn+z);
+
+		case GPARAM_ASY :
+		return 0.0;
+
+		case GPARAM_BSY :
+		return 0.0;
+
+		case GPARAM_CSY :
+		return 0.0;
+
+		case GPARAM_ASZ :
+		return -h * x * p->clen / (wn*wn + 2*wn*z + z*z);
+
+		case GPARAM_BSZ :
+		return -k * x * p->clen / (wn*wn + 2*wn*z + z*z);
+
+		case GPARAM_CSZ :
+		return -l * x * p->clen / (wn*wn + 2*wn*z + z*z);
+
+		case GPARAM_DETX :
+		return -1;
+
+		case GPARAM_DETY :
+		return 0;
+
+		case GPARAM_CLEN :
+		return x / (wn+z);
+
+	}
+
+	ERROR("Positional gradient requested for parameter %i?\n", param);
+	abort();
+}
+
+
+/* Returns dy_h/dP, where P = any parameter */
+double y_gradient(int param, Reflection *refl, UnitCell *cell,
+                  struct panel *p, double lambda)
+{
+	signed int h, k, l;
+	double y, z, wn;
+	double ax, ay, az, bx, by, bz, cx, cy, cz;
+
+	get_indices(refl, &h, &k, &l);
+	wn = 1.0 / lambda;
+	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	y = h*ay + k*by + l*cy;
+	z = h*az + k*bz + l*cz;
+
+	switch ( param ) {
+
+		case GPARAM_ASX :
+		return 0.0;
+
+		case GPARAM_BSX :
+		return 0.0;
+
+		case GPARAM_CSX :
+		return 0.0;
+
+		case GPARAM_ASY :
+		return h * p->clen / (wn+z);
+
+		case GPARAM_BSY :
+		return k * p->clen / (wn+z);
+
+		case GPARAM_CSY :
+		return l * p->clen / (wn+z);
+
+		case GPARAM_ASZ :
+		return -h * y * p->clen / (wn*wn + 2*wn*z + z*z);
+
+		case GPARAM_BSZ :
+		return -k * y * p->clen / (wn*wn + 2*wn*z + z*z);
+
+		case GPARAM_CSZ :
+		return -l * y * p->clen / (wn*wn + 2*wn*z + z*z);
+
+		case GPARAM_DETX :
+		return 0;
+
+		case GPARAM_DETY :
+		return -1;
+
+		case GPARAM_CLEN :
+		return y / (wn+z);
+
+	}
+
+	ERROR("Positional gradient requested for parameter %i?\n", param);
+	abort();
+}
