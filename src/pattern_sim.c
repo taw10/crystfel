@@ -663,7 +663,7 @@ int main(int argc, char *argv[])
 	STATUS("                  Photon energy: %.2f eV (wavelength %.5f A)\n",
 	       photon_energy, image.lambda*1e10);
 	STATUS("              Number of photons: %.0f (%.2f mJ)\n", nphotons,
-	       eV_to_J(photon_energy)*1e3);
+	       eV_to_J(photon_energy)*nphotons*1e3);
 	STATUS("                Beam divergence: not simulated\n");
 	STATUS("                    Beam radius: %.2f microns\n",
 	      beam_radius*1e6);
