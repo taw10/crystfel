@@ -266,7 +266,7 @@ cl_program load_program(const char *filename, cl_context ctx,
 		return 0;
 	}
 
-	snprintf(cflags, 1023, "-Werror ");
+	cflags[0] = '\0';
 	strncat(cflags, "-I"DATADIR"/crystfel/ ", 1023-strlen(cflags));
 	strncat(cflags, "-cl-no-signed-zeros ", 1023-strlen(cflags));
 	strncat(cflags, extra_cflags, 1023-strlen(cflags));
