@@ -76,12 +76,52 @@ static void try_refine_autoR(struct image *image, Crystal *cr)
 }
 
 
+static float **backup_image_data(float **dp, struct detector *det)
+{
+	float **bu;
+	int i;
+
+	bu = malloc(det->n_panels * sizeof(float *));
+	if ( bu == NULL ) return NULL;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		size_t data_size;
+
+		data_size = det->panels[i].w * det->panels[i].h * sizeof(float);
+		bu[i] = malloc(data_size);
+		if ( bu[i] == NULL ) {
+			free(bu);
+			ERROR("Failed to allocate pre-filter backup.\n");
+			return NULL;
+		}
+
+		memcpy(bu[i], dp[i], data_size);
+
+	}
+
+	return bu;
+}
+
+
+static void restore_image_data(float **dp, struct detector *det, float **bu)
+{
+	int i;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+		size_t data_size;
+		data_size = det->panels[i].w * det->panels[i].h * sizeof(float);
+		memcpy(dp[i], bu[i], data_size);
+		free(bu[i]);
+	}
+	free(bu);
+}
+
+
 void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    Stream *st, int cookie, const char *tmpdir, int results_pipe,
                    int serial, pthread_mutex_t *term_lock)
 {
-	float *data_for_measurement;
-	size_t data_size;
 	int check;
 	struct hdfile *hdfile;
 	struct image image;
@@ -90,6 +130,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	int ret;
 	char *rn;
 	int n_crystals_left;
+	float **prefilter;
 
 	image.features = NULL;
 	image.data = NULL;
@@ -116,11 +157,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		return;
 	}
 
-	/* Take snapshot of image after CM subtraction but before applying
-	 * horrible noise filters to it */
-	data_size = image.width * image.height * sizeof(float);
-	data_for_measurement = malloc(data_size);
-	memcpy(data_for_measurement, image.data, data_size);
+	/* Take snapshot of image before applying horrible noise filters */
+	prefilter = backup_image_data(image.dp, image.det);
 
 	if ( iargs->median_filter > 0 ) {
 		filter_median(&image, iargs->median_filter);
@@ -168,10 +206,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	}
 
-	/* Get rid of noise-filtered version at this point
-	 * - it was strictly for the purposes of peak detection. */
-	free(image.data);
-	image.data = data_for_measurement;
+	restore_image_data(image.dp, image.det, prefilter);
 
 	rn = getcwd(NULL, 0);
 
