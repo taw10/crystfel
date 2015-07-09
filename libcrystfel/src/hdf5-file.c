@@ -2370,6 +2370,11 @@ struct event_list *fill_event_list(struct hdfile *hdfile, struct detector *det)
 
 				dh = H5Dopen2(hdfile->fh, full_panel_path,
 				              H5P_DEFAULT);
+				if ( dh < 0 ) {
+					ERROR("Failed to enumerate events.  "
+					      "Check your geometry file.\n");
+					return NULL;
+				}
 				sh = H5Dget_space(dh);
 				dims = H5Sget_simple_extent_ndims(sh);
 

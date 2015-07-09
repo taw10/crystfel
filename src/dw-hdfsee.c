@@ -2831,7 +2831,6 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 
 		if ( dw->ev_list == NULL ) {
 			ERROR("Error while parsing file structure\n");
-			free_event_list(dw->ev_list);
 			free(dw->geom_filename);
 			free(dw);
 			return NULL;

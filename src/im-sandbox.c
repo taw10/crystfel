@@ -222,6 +222,10 @@ static struct filename_plus_event *get_pattern(FILE *fh, int config_basename,
 				}
 
 				ev_list = fill_event_list(hdfile, det);
+				if ( ev_list == NULL ) {
+					ERROR("Failed to get event list.\n");
+					return NULL;
+				}
 
 				if ( ev_list->num_events == 0 ) {
 					event_index = -1;
