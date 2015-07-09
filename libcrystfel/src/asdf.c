@@ -597,7 +597,10 @@ static int reduce_asdf_cell(struct asdf_cell *cl)
 	gsl_vector *vc = gsl_vector_alloc(3);
 
 	int changed = 1;
+
+	int n = 0;
 	while ( changed ) {
+		n += 1;
 		changed = 0;
 
 		gsl_vector_memcpy(va, cl->axes[0]);
@@ -688,6 +691,8 @@ static int reduce_asdf_cell(struct asdf_cell *cl)
 				changed = 1;
 			}
 		}
+
+		if (n > 30) changed = 0;
 	}
 
 	cross_product(cl->axes[0], cl->axes[1], &vc);
