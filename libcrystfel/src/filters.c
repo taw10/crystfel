@@ -3,11 +3,11 @@
  *
  * Image filtering
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
+ *   2010-2015 Thomas White <taw@physics.org>
  *   2013      Anton Barty <anton.barty@desy.de>
  *
  * This file is part of CrystFEL.
@@ -42,20 +42,20 @@
 #include "image.h"
 
 
-void filter_noise(struct image *image)
+static void filter_noise_in_panel(float *data, int width, int height)
 {
 	int x, y;
 
-	for ( x=0; x<image->width; x++ ) {
-	for ( y=0; y<image->height; y++ ) {
+	for ( x=0; x<width; x++ ) {
+	for ( y=0; y<height; y++ ) {
 
 		int dx, dy;
-		float val = image->data[x+image->width*y];
+		float val = data[x+width*y];
 
-		/* FIXME: This isn't really the right thing to do
-		 * at the edges. */
-		if ( (x==0) || (x==image->width-1)
-		  || (y==0) || (y==image->height-1) ) {
+		/* This isn't really the right thing to do at the edges,
+		 * but this filter is so horrible it's unlikely to matter. */
+		if ( (x==0) || (x==width-1)
+		  || (y==0) || (y==height-1) ) {
 			if ( val < 0 ) val = 0;
 			continue;
 		}
@@ -65,16 +65,27 @@ void filter_noise(struct image *image)
 
 			int val2;
 
-			val2 = image->data[(x+dx)+image->width*(y+dy)];
+			val2 = data[(x+dx)+width*(y+dy)];
 
 			if ( val2 < 0 ) val = 0;
 
 		}
 		}
 
-		image->data[x+image->width*y] = val;
+		data[x+width*y] = val;
 
 	}
+	}
+}
+
+
+void filter_noise(struct image *image)
+{
+	int i;
+
+	for ( i=0; i<image->det->n_panels; i++ ) {
+		struct panel *p = &image->det->panels[i];
+		filter_noise_in_panel(image->dp[i], p->w, p->h);
 	}
 }
 
@@ -123,13 +134,13 @@ void filter_median(struct image *image, int size)
 	float *buffer;
 	float *localBg;
 	int pn;
-	int i;
 
 	if ( size <= 0 ) return;
 
 	nn = 2*size+1;
 	nn = nn*nn;
 
+	/* "localBg" is way too big, but guaranteed big enough */
 	buffer = calloc(nn, sizeof(float));
 	localBg = calloc(image->width*image->height, sizeof(float));
 	if ( (buffer == NULL) || (localBg == NULL) ) {
@@ -142,22 +153,17 @@ void filter_median(struct image *image, int size)
 	for ( pn=0; pn<image->det->n_panels; pn++ ) {
 
 		int fs, ss;
+		int i;
 		struct panel *p;
-		int p_w, p_h;
 
 		p = &image->det->panels[pn];
-		p_w = (p->max_fs-p->min_fs)+1;
-		p_h = (p->max_ss-p->min_ss)+1;
 
-		for ( fs=0; fs<p_w; fs++ ) {
-		for ( ss=0; ss<p_h; ss++ ) {
+		for ( fs=0; fs<p->w; fs++ ) {
+		for ( ss=0; ss<p->h; ss++ ) {
 
 			int ifs, iss;
-			int e;
 
 			counter = 0;
-			e = fs+p->min_fs;
-			e += (ss+p->min_ss)*image->width;
 
 			// Loop over median window
 			for ( ifs=-size; ifs<=size; ifs++ ) {
@@ -166,29 +172,27 @@ void filter_median(struct image *image, int size)
 				int idx;
 
 				if ( (fs+ifs) < 0 ) continue;
-				if ( (fs+ifs) >= p_w ) continue;
+				if ( (fs+ifs) >= p->w ) continue;
 				if ( (ss+iss) < 0 ) continue;
-				if ( (ss+iss) >= p_h ) continue;
+				if ( (ss+iss) >= p->h ) continue;
 
-				idx = fs+ifs+p->min_fs;
-				idx += (ss+iss+p->min_ss)*image->width;
-
-				buffer[counter++] = image->data[idx];
+				idx = fs+ifs + (ss+iss)*p->w;
+				buffer[counter++] = image->dp[pn][idx];
 
 			}
 			}
 
 			// Find median value
-			localBg[e] = kth_smallest(buffer, counter, counter/2);
+			localBg[fs+p->w*ss] = kth_smallest(buffer, counter,
+			                                   counter/2);
 
 		}
 		}
-	}
 
-
-	/* Do the background subtraction */
-	for ( i=0; i<image->width*image->height; i++ ) {
-		image->data[i] -= localBg[i];
+		/* Do the background subtraction */
+		for ( i=0; i<p->w*p->h; i++ ) {
+			image->dp[pn][i] -= localBg[i];
+		}
 	}
 
 	free(localBg);
