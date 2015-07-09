@@ -1876,8 +1876,16 @@ static void numbers_update(DisplayWindow *dw)
 		if ( !invalid ) {
 
 			float val;
+			int pn;
+			struct panel *p;
 
-			val = dw->image->data[fs+ss*dw->image->width];
+			pn = find_panel_number(dw->image->det, fs, ss);
+			p = &dw->image->det->panels[pn];
+
+			fs -= p->min_fs;
+			ss -= p->min_ss;
+
+			val = dw->image->dp[pn][fs+ss*p->w];
 
 			if ( (val > 0.0) && (log(val)/log(10.0) >= 5) ) {
 				snprintf(s, 31, "HUGE");
