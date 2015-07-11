@@ -61,7 +61,6 @@ struct sb_shm
 	char queue[QUEUE_SIZE][MAX_EV_LEN];
 	int no_more;
 	char last_ev[MAX_NUM_WORKERS][MAX_EV_LEN];
-	sem_t queue_sem;
 
 	pthread_mutex_t totals_lock;
 	int n_processed;
