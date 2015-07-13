@@ -68,8 +68,6 @@
 struct sandbox
 {
 	int n_processed_last_stats;
-	int n_hadcrystals_last_stats;
-	int n_crystals_last_stats;
 	int t_last_stats;
 
 	struct index_args *iargs;
@@ -749,6 +747,35 @@ static void check_signals(struct sandbox *sb, const char *semname_q,
 }
 
 
+static void try_status(struct sandbox *sb, time_t tNow)
+{
+	int r;
+	int n_proc_this;
+	double indexable;
+
+	r = pthread_mutex_trylock(&sb->shared->term_lock);
+	if ( r ) return; /* No lock -> don't bother */
+
+	n_proc_this = sb->shared->n_processed
+	              - sb->n_processed_last_stats;
+	indexable = (sb->shared->n_processed == 0) ? 0 :
+	            100.0 * sb->shared->n_hadcrystals
+	              / sb->shared->n_processed;
+
+	STATUS("%4i indexable out of %4i processed (%4.1f%%), "
+	       "%4i crystals so far. "
+	       "%4i images processed since the last message.\n",
+	       sb->shared->n_hadcrystals,
+	       sb->shared->n_processed, indexable,
+	       sb->shared->n_crystals, n_proc_this);
+
+	sb->n_processed_last_stats = sb->shared->n_processed;
+	sb->t_last_stats = tNow;
+
+	pthread_mutex_unlock(&sb->shared->term_lock);
+}
+
+
 void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                     int config_basename, FILE *fh,
                     Stream *stream, const char *tempdir)
@@ -775,8 +802,6 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	}
 
 	sb->n_processed_last_stats = 0;
-	sb->n_hadcrystals_last_stats = 0;
-	sb->n_crystals_last_stats = 0;
 	sb->t_last_stats = get_monotonic_seconds();
 	sb->n_proc = n_proc;
 	sb->iargs = iargs;
@@ -885,51 +910,24 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	do {
 
-		int r;
-		double tNow;
+		time_t tNow;
 
+		/* Check for stream output from workers */
 		try_read(sb);
+
+		/* Check for interrupt or zombies */
 		check_signals(sb, semname_q, 1);
 
 		/* Top up the queue if necessary */
-		r = 0;
 		pthread_mutex_lock(&sb->shared->queue_lock);
 		if ( sb->shared->n_events < QUEUE_SIZE/2 ) {
-			r = fill_queue(fh, config_basename, iargs->det, prefix,
-			               sb);
+			fill_queue(fh, config_basename, iargs->det, prefix, sb);
 		}
 		pthread_mutex_unlock(&sb->shared->queue_lock);
 
 		/* Update progress */
 		tNow = get_monotonic_seconds();
-		r = pthread_mutex_trylock(&sb->shared->term_lock);
-		if ( r == 0 ) {
-
-			/* Could get lock, so write status */
-			int n_proc_this;
-			double indexable;
-
-			n_proc_this = sb->shared->n_processed
-			              - sb->n_processed_last_stats;
-			indexable = (sb->shared->n_processed == 0) ? 0 :
-			            100.0 * sb->shared->n_hadcrystals
-			              / sb->shared->n_processed;
-
-			STATUS("%4i indexable out of %4i processed (%4.1f%%), "
-			       "%4i crystals so far. "
-			       "%4i images processed since the last message.\n",
-			       sb->shared->n_hadcrystals,
-			       sb->shared->n_processed, indexable,
-			       sb->shared->n_crystals, n_proc_this);
-
-			sb->n_processed_last_stats = sb->shared->n_processed;
-			sb->n_hadcrystals_last_stats = sb->shared->n_hadcrystals;
-			sb->n_crystals_last_stats = sb->shared->n_crystals;
-			sb->t_last_stats = tNow;
-
-			pthread_mutex_unlock(&sb->shared->term_lock);
-
-		}
+		if ( tNow > sb->t_last_stats+5 ) try_status(sb, tNow);
 
 		/* Have all the events been swallowed? */
 		pthread_mutex_lock(&sb->shared->queue_lock);

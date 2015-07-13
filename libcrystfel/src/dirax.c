@@ -43,12 +43,6 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 
-#ifdef HAVE_CLOCK_GETTIME
-#include <time.h>
-#else
-#include <sys/time.h>
-#endif
-
 #include "image.h"
 #include "dirax.h"
 #include "utils.h"

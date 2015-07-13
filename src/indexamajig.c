@@ -48,12 +48,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#ifdef HAVE_CLOCK_GETTIME
-#include <time.h>
-#else
-#include <sys/time.h>
-#endif
-
 #include "version.h"
 #include "utils.h"
 #include "hdf5-file.h"
