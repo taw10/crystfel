@@ -777,7 +777,7 @@ int main(int argc, char *argv[])
 	/* Allocate initial window */
 	win.ws = default_window_size;
 	win.img = calloc(win.ws, sizeof(struct image));
-	if ( (win.img == NULL) ) {
+	if ( win.img == NULL ) {
 		ERROR("Failed to allocate series buffers\n");
 		return 1;
 	}

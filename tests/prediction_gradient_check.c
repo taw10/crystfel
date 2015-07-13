@@ -326,12 +326,12 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 			vec2[n_line] = grad;
 			n_line++;
 
-			if ( (fabs(cgrad) < 5e-12) && (fabs(grad) < 5e-12) ) {
+			if ( (fabsl(cgrad) < 5e-12) && (fabsl(grad) < 5e-12) ) {
 				n_small++;
 				continue;
 			}
 
-			total += fabs(cgrad - grad);
+			total += fabsl(cgrad - grad);
 			ntot++;
 
 			if ( !within_tolerance(grad, cgrad, 5.0)
