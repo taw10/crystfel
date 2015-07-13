@@ -276,14 +276,22 @@ AC_CHECK_LIB([rt], [clock_gettime],
    AC_MSG_WARN([Time intervals may not be correct in certain circumstances.])
 ])
 
-
-PKG_CHECK_MODULES([FFTW], [fftw3],
+AC_ARG_WITH(fftw,
+[AS_HELP_STRING([--with-ffftw],
+                [specify location of FFTW (instead of using pkg-config)])],
+[FFTW_CFLAGS="-I$withflag/include"
+ FFTW_LIBS="-L$withval/lib -L$withval/lib64 -lfftw3"
+ have_fftw=true],
+[PKG_CHECK_MODULES([FFTW], [fftw3],
 [
    have_fftw=true
-   AC_DEFINE([HAVE_FFTW], [1], [Define to 1 if FFTW is available])
 ], [
    AC_MSG_WARN([asdf indexing wil not be available.])
    have_fftw=false
+])])
+AS_IF([test x$have_fftw = xtrue],
+[
+   AC_DEFINE([HAVE_FFTW], [1], [Define to 1 if FFTW is available])
 ])
 
 AX_WITH_CURSES
