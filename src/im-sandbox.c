@@ -787,6 +787,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	char semname_q[64];
 	struct sigaction sa;
 	int r;
+	int no_more = 0;
 	int allDone = 0;
 
 	if ( n_proc > MAX_NUM_WORKERS ) {
@@ -920,8 +921,9 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 		/* Top up the queue if necessary */
 		pthread_mutex_lock(&sb->shared->queue_lock);
-		if ( sb->shared->n_events < QUEUE_SIZE/2 ) {
-			fill_queue(fh, config_basename, iargs->det, prefix, sb);
+		if ( !no_more && (sb->shared->n_events < QUEUE_SIZE/2) ) {
+			if ( fill_queue(fh, config_basename, iargs->det,
+			                prefix, sb) ) no_more = 1;
 		}
 		pthread_mutex_unlock(&sb->shared->queue_lock);
 
@@ -931,7 +933,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 		/* Have all the events been swallowed? */
 		pthread_mutex_lock(&sb->shared->queue_lock);
-		if ( sb->shared->n_events == 0 ) allDone = 1;
+		if ( no_more && (sb->shared->n_events == 0) ) allDone = 1;
 		pthread_mutex_unlock(&sb->shared->queue_lock);
 
 	} while ( !allDone );
