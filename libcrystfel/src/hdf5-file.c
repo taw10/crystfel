@@ -1741,10 +1741,12 @@ static int looks_like_image(hid_t h)
 	if ( sh < 0 ) return 0;
 
 	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
+		H5Sclose(sh);
 		return 0;
 	}
 
 	H5Sget_simple_extent_dims(sh, size, max_size);
+	H5Sclose(sh);
 
 	if ( ( size[0] > 64 ) && ( size[1] > 64 ) ) return 1;
 
@@ -1779,6 +1781,7 @@ int hdfile_is_scalar(struct hdfile *f, const char *name, int verbose)
 		if ( verbose ) {
 			ERROR("Too many dimensions (%i).\n", ndims);
 		}
+		H5Sclose(sh);
 		H5Tclose(type);
 		H5Dclose(dh);
 		return 0;
@@ -1786,6 +1789,9 @@ int hdfile_is_scalar(struct hdfile *f, const char *name, int verbose)
 
 	/* Check that the size in all dimensions is 1 */
 	H5Sget_simple_extent_dims(sh, size, NULL);
+	H5Sclose(sh);
+	H5Tclose(type);
+	H5Dclose(dh);
 	for ( i=0; i<ndims; i++ ) {
 		if ( size[i] != 1 ) {
 			if ( verbose ) {
@@ -1793,14 +1799,9 @@ int hdfile_is_scalar(struct hdfile *f, const char *name, int verbose)
 				      "size[%i]=%i)\n",
 				      name, ndims, i, (int)size[i]);
 			}
-			H5Tclose(type);
-			H5Dclose(dh);
 			return 0;
 		}
 	}
-
-	H5Tclose(type);
-	H5Dclose(dh);
 
 	return 1;
 }
@@ -1952,6 +1953,9 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 			tmp[size] = '\0';
 			chomp(tmp);
 		}
+
+		H5Sclose(sh);
+
 	} else {
 
 		int r;
