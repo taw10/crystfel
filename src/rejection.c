@@ -175,7 +175,7 @@ void check_rejection(Crystal **crystals, int n, RefList *full)
 	for ( i=0; i<n; i++ ) {
 
 		/* Reject if B factor modulus is very large */
-		if ( fabs(crystal_get_Bfac(crystals[i])) > 1e-17 ) {
+		if ( fabs(crystal_get_Bfac(crystals[i])) > 1e-18 ) {
 			crystal_set_user_flag(crystals[i], 1);
 		}
 
