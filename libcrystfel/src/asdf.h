@@ -55,6 +55,8 @@ extern void asdf_cleanup(IndexingPrivate *pp);
 
 int run_asdf(struct image *image, IndexingPrivate *ipriv)
 {
+	ERROR("This copy of CrystFEL was compiled without FFTW support.\n");
+	return 0;
 }
 
 
@@ -62,6 +64,8 @@ IndexingPrivate *asdf_prepare(IndexingMethod *indm,
                               UnitCell *cell, struct detector *det,
                               float *ltl)
 {
+	ERROR("This copy of CrystFEL was compiled without FFTW support.\n");
+	ERROR("To use asdf indexing, recompile with FFTW.\n");
 	return NULL;
 }
 
