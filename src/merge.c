@@ -169,6 +169,8 @@ static void run_merge_job(void *vwargs, int cookie)
 			ERROR("G = %f, B = %e\n", G, B);
 			ERROR("res = %e\n", res);
 			ERROR("p = %f\n", get_partiality(refl));
+			unlock_reflection(f);
+			continue;
 		}
 
 		esd = get_esd_intensity(refl) * corr;
