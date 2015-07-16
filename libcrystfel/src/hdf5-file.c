@@ -2131,6 +2131,11 @@ int check_path_existence(hid_t fh, const char *path)
 		int check;
 
 		sep = strstr(start, "/");
+		if ( strlen(sep) == 1 ) {
+			ERROR("Error: Data path ends with a / symbol\n");
+			free(path_copy);
+			return 1;
+		}
 
 		if ( sep != NULL ) {
 
