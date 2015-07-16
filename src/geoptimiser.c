@@ -2805,7 +2805,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 
 		STATUS("Saving displacements after corrections.\n");
 		ret2 = save_data_to_png("error_map_after.png", det,  max_fs, max_ss,
-		                        dfv, displ_x);
+					dfv, displ_abs);
 		if ( ret2 !=0 ) {
 			ERROR("Error while writing data to file.\n");
 			free(conn_data);
