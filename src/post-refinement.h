@@ -57,7 +57,7 @@ struct prdata
 
 extern void refine_all(Crystal **crystals, int n_crystals,
                        RefList *full, int nthreads, PartialityModel pmodel,
-                       int no_scale,
+                       int no_scale, int no_pr,
                        double *initial_residual, double *initial_free_residual,
                        double *final_residual, double *final_free_residual);
 

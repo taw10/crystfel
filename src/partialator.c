@@ -74,7 +74,8 @@ static void show_help(const char *s)
 "      --start-after=<n>      Skip <n> crystals at the start of the stream.\n"
 "      --stop-after=<n>       Stop after merging <n> crystals.\n"
 "  -n, --iterations=<n>       Run <n> cycles of scaling and post-refinement.\n"
-"      --no-scale             Fix all the scaling factors at unity.\n"
+"      --no-scale             Disable scale factor (G, B) refinement.\n"
+"      --no-pr                Disable orientation/physics refinement.\n"
 "  -m, --model=<model>        Specify partiality model.\n"
 "      --min-measurements=<n> Minimum number of measurements to require.\n"
 "      --no-polarisation      Disable polarisation correction.\n"
@@ -370,6 +371,7 @@ int main(int argc, char *argv[])
 	int n_crystals_seen = 0;
 	char cmdline[1024];
 	int no_scale = 0;
+	int no_pr = 0;
 	Stream *st;
 	Crystal **crystals;
 	char *pmodel_str = NULL;
@@ -405,6 +407,7 @@ int main(int argc, char *argv[])
 		{"res-push",           1, NULL,                5}, /* compat */
 
 		{"no-scale",           0, &no_scale,           1},
+		{"no-pr",              0, &no_pr,              1},
 		{"no-polarisation",    0, &polarisation,       0},
 		{"no-polarization",    0, &polarisation,       0},
 		{"polarisation",       0, &polarisation,       1}, /* compat */
@@ -726,7 +729,7 @@ int main(int argc, char *argv[])
 
 		/* Refine all crystals to get the best fit */
 		refine_all(crystals, n_crystals, full, nthreads, pmodel,
-		           no_scale, &init_dev, &init_free_dev,
+		           no_scale, no_pr, &init_dev, &init_free_dev,
 		           &final_dev, &final_free_dev);
 
 		STATUS("Overall residual: initial = %e, final = %e\n",

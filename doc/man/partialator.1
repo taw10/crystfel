@@ -62,7 +62,12 @@ Run \fIn\fR cycles of scaling and post refinement.
 .PD 0
 .IP \fB--no-scale\fR
 .PD
-Fix all the overall scaling factors to be unity.
+Disable the scaling part of the refinement calculation.
+
+.PD 0
+.IP \fB--no-pr\fR
+.PD
+Disable the orientation/physics model part of the refinement calculation.
 
 .PD 0
 .IP "\fB-m\fR \fImodel\fR"
@@ -148,6 +153,10 @@ partialator -i \fImy.stream \fR-o \fImy.hkl\fR -y \fImypointgroup \fB--model=uni
 .IP "Merging with partialities, but without post-refinement and without scaling:"
 .PD
 partialator -i \fImy.stream \fR-o \fImy.hkl\fR -y \fImypointgroup \fB--model=scsphere --iterations=0\fR
+
+.IP "Merging with partialities, with scaling but without post-refinement:"
+.PD
+partialator -i \fImy.stream \fR-o \fImy.hkl\fR -y \fImypointgroup \fB--model=scsphere --iterations=1 --no-pr\fR
 
 .IP "Merging with partialities, post-refinement and scaling:"
 .PD

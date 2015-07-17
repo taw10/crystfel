@@ -326,8 +326,8 @@ static void apply_shift(Crystal *cr, int k, double shift)
 
 /* Perform one cycle of post refinement on 'image' against 'full' */
 static double pr_iterate(Crystal *cr, const RefList *full,
-                         PartialityModel pmodel, int no_scale, int *n_filtered,
-                         int verbose)
+                         PartialityModel pmodel, int no_scale, int no_pr,
+                         int *n_filtered, int verbose)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
@@ -346,7 +346,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 
 	/* If partiality model is anything other than "unity", refine all the
 	 * geometrical parameters */
-	if ( pmodel != PMODEL_UNITY ) {
+	if ( (pmodel != PMODEL_UNITY) && !no_pr ) {
 		rv[num_params++] = GPARAM_ASX;
 		rv[num_params++] = GPARAM_ASY;
 		rv[num_params++] = GPARAM_ASZ;
@@ -547,7 +547,7 @@ static double residual(Crystal *cr, const RefList *full, int verbose, int free)
 
 
 static struct prdata pr_refine(Crystal *cr, const RefList *full,
-                               PartialityModel pmodel, int no_scale)
+                               PartialityModel pmodel, int no_scale, int no_pr)
 {
 	int i;
 	int verbose = 0;
@@ -584,7 +584,8 @@ static struct prdata pr_refine(Crystal *cr, const RefList *full,
 		cell_get_reciprocal(crystal_get_cell(cr), &asx, &asy, &asz,
 			               &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
-		pr_iterate(cr, full, pmodel, no_scale, &prdata.n_filtered, 0);
+		pr_iterate(cr, full, pmodel, no_scale, no_pr,
+		           &prdata.n_filtered, verbose);
 
 		update_partialities(cr, pmodel);
 
@@ -622,6 +623,7 @@ struct refine_args
 	Crystal *crystal;
 	PartialityModel pmodel;
 	int no_scale;
+	int no_pr;
 	struct prdata prdata;
 };
 
@@ -646,7 +648,7 @@ static void refine_image(void *task, int id)
 	Crystal *cr = pargs->crystal;
 
 	pargs->prdata = pr_refine(cr, pargs->full, pargs->pmodel,
-	                          pargs->no_scale);
+	                          pargs->no_scale, pargs->no_pr);
 }
 
 
@@ -684,7 +686,7 @@ static void done_image(void *vqargs, void *task)
 
 void refine_all(Crystal **crystals, int n_crystals,
                 RefList *full, int nthreads, PartialityModel pmodel,
-                int no_scale,
+                int no_scale, int no_pr,
                 double *initial_residual, double *initial_free_residual,
                 double *final_residual, double *final_free_residual)
 {
@@ -697,6 +699,7 @@ void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.prdata.refined = 0;
 	task_defaults.prdata.n_filtered = 0;
 	task_defaults.no_scale = no_scale;
+	task_defaults.no_pr = no_pr;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;
