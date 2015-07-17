@@ -1155,7 +1155,7 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 			image->bw = bw;
 		}
 
-		if ( sscanf(line, "num_peaks = %lld %%", &num_peaks) == 1 ) {
+		if ( sscanf(line, "num_peaks = %lld", &num_peaks) == 1 ) {
 			image->num_peaks = num_peaks;
 		}
 
