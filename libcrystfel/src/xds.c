@@ -619,6 +619,19 @@ IndexingPrivate *xds_prepare(IndexingMethod *indm, UnitCell *cell,
                              struct detector *det, float *ltl)
 {
 	struct xds_private *xp;
+	int need_cell = 0;
+
+	/* Check if cell parameters are needed/provided */
+	if ( *indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
+	if ( *indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
+	if ( *indm & INDEXING_USE_CELL_PARAMETERS ) need_cell = 1;
+	if ( need_cell && !cell_has_parameters(cell) ) {
+		ERROR("Altering your XDS flags because cell parameters were"
+		      " not provided.\n");
+		*indm &= ~INDEXING_CHECK_CELL_COMBINATIONS;
+		*indm &= ~INDEXING_CHECK_CELL_AXES;
+		*indm &= ~INDEXING_USE_CELL_PARAMETERS;
+	}
 
 	/* Either cell,latt and cell provided, or nocell-nolatt and no cell
 	 * - complain about anything else.  Could figure this out automatically,
