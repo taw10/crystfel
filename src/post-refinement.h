@@ -54,8 +54,12 @@ struct prdata
 };
 
 
-extern struct prdata pr_refine(Crystal *cr, const RefList *full,
-                               PartialityModel pmodel, int no_scale);
+
+extern void refine_all(Crystal **crystals, int n_crystals,
+                       RefList *full, int nthreads, PartialityModel pmodel,
+                       int no_scale,
+                       double *initial_residual, double *initial_free_residual,
+                       double *final_residual, double *final_free_residual);
 
 /* Exported so it can be poked by tests/pr_p_gradient_check */
 extern double gradient(Crystal *cr, int k, Reflection *refl,
