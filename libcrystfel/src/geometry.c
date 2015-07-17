@@ -236,6 +236,17 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	/* Calculate partiality */
 	part = partiality(pmodel, rlow, rhigh, pr);
 
+	if ( isnan(part) ) {
+		ERROR("Assigning NAN partiality!\n");
+		ERROR("%3i %3i %3i  rlow = %e, rhigh = %e\n",
+		      h, k, l, rlow, rhigh);
+		ERROR("div + m = %e, R = %e, bw = %e\n", del, pr, image->bw);
+		ERROR("D = %e\n", rlow - rhigh);
+		ERROR("klow = %e  khigh = %e\n", klow, khigh);
+		ERROR("distance(..) = %e\n", distance(cet, cez, tl, zl));
+		abort();
+	}
+
 	if ( updateme == NULL ) {
 		refl = reflection_new(h, k, l);
 	} else {
