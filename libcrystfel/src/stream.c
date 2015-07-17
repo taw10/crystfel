@@ -1151,8 +1151,8 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 			image->div = div;
 		}
 
-		if ( sscanf(line, "beam_bandwidth = %f %%", &bw) == 1 ) {
-			image->bw = bw/100.0;
+		if ( sscanf(line, "beam_bandwidth = %f", &bw) == 1 ) {
+			image->bw = bw;
 		}
 
 		if ( sscanf(line, "num_peaks = %lld %%", &num_peaks) == 1 ) {
