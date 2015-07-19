@@ -520,9 +520,7 @@ static char *spacegroup_for_lattice(UnitCell *cell)
 static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 {
 	char tmp[256];
-	char cen;
 	double wavelength;
-	double a = 0, b = 0, c = 0, alpha = 0, beta = 0, gamma = 0;
 
 	switch ( mosflm->step )
 	{
@@ -580,21 +578,28 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 
 		case 8 :
 		if ( mosflm->mp->indm & INDEXING_USE_CELL_PARAMETERS ) {
+
+			char cen;
+			double a, b, c, alpha, beta, gamma;
+
 			cell_get_parameters(mosflm->mp->template,
 			                    &a, &b, &c, &alpha, &beta, &gamma);
 			cen = cell_get_centering(mosflm->mp->template);
+
+			snprintf(tmp, 255, "AUTOINDEX DPS FILE %s IMAGE 1 "
+			         "MAXCELL 1000 REFINE "
+			         "CELL %.1f %.1f %.1f %.1f %.1f %.1f "
+			         "CENTERING %c\n",
+				 mosflm->sptfile, a*1e10, b*1e10, c*1e10,
+				 rad2deg(alpha), rad2deg(beta), rad2deg(gamma),
+				 cen);
+
                 } else {
-			cen = 'P';
-			a = 0; /* Disables prior-cell algorithm in MOSFLM */
+		        snprintf(tmp, 255, "AUTOINDEX DPS FILE %s"
+			                   " IMAGE 1 MAXCELL 1000 REFINE\n",
+			                   mosflm->sptfile);
+
 		}
-		/* Old MOSFLM simply ignores CELL and CENTERING subkeywords.
-		 * So this doesn't do any harm.
-		 * TODO: but still better to show WARNING if MOSFLM is old. */
-		snprintf(tmp, 255, "AUTOINDEX DPS FILE %s IMAGE 1 MAXCELL 1000"
-		         "REFINE "
-		         "CELL %.1f %.1f %.1f %.1f %.1f %.1f CENTERING %c\n",
-			 mosflm->sptfile, a*1e10, b*1e10, c*1e10,
-			 rad2deg(alpha), rad2deg(beta), rad2deg(gamma), cen);
 		mosflm_sendline(tmp, mosflm);
 		break;
 
