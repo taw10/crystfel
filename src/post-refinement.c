@@ -458,7 +458,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 	}
 
 	if ( nref < num_params ) {
-		crystal_set_user_flag(cr, 2);
+		crystal_set_user_flag(cr, PRFLAG_FEWREFL);
 		gsl_matrix_free(M);
 		gsl_vector_free(v);
 		return 0.0;
@@ -476,7 +476,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		}
 
 	} else {
-		crystal_set_user_flag(cr, 3);
+		crystal_set_user_flag(cr, PRFLAG_SOLVEFAIL);
 	}
 
 	gsl_matrix_free(M);

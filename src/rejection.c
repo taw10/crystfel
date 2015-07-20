@@ -39,6 +39,7 @@
 #include "reflist.h"
 #include "rejection.h"
 #include "cell-utils.h"
+#include "post-refinement.h"
 
 
 static double mean_intensity(RefList *list)
@@ -147,7 +148,7 @@ static void check_cc(Crystal *cr, RefList *full)
 
 	cc = gsl_stats_correlation(vec1, 1, vec2, 1, i);
 	//printf("%f\n", cc);
-	if ( cc < 0.5 ) crystal_set_user_flag(cr, 6);
+	if ( cc < 0.5 ) crystal_set_user_flag(cr, PRFLAG_CC);
 
 	free(vec1);
 	free(vec2);
@@ -176,7 +177,7 @@ void check_rejection(Crystal **crystals, int n, RefList *full)
 
 		/* Reject if B factor modulus is very large */
 		if ( fabs(crystal_get_Bfac(crystals[i])) > 1e-18 ) {
-			crystal_set_user_flag(crystals[i], 1);
+			crystal_set_user_flag(crystals[i], PRFLAG_BIGB);
 		}
 
 		if ( crystal_get_user_flag(crystals[i]) == 0 ) n_acc++;

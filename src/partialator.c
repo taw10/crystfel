@@ -99,27 +99,27 @@ static void display_progress(int n_images, int n_crystals)
 }
 
 
-static const char *str_flags(Crystal *cr)
+static const char *str_flags(flag)
 {
-	switch ( crystal_get_user_flag(cr) ) {
+	switch ( flag ) {
 
-		case 0 :
+		case PRFLAG_OK :
 		return "OK";
 
-		case 1 :
-		return "bad scaling";
-
-		case 2 :
+		case PRFLAG_FEWREFL :
 		return "not enough reflections";
 
-		case 3 :
+		case PRFLAG_SOLVEFAIL :
 		return "PR solve failed";
 
-		case 4 :
-		return "PR lost too many reflections";
+		case PRFLAG_EARLY :
+		return "early rejection";
 
-		case 5 :
-		return "Early rejection";
+		case PRFLAG_CC :
+		return "low CC";
+
+		case PRFLAG_BIGB :
+		return "B too big";
 
 		default :
 		return "Unknown flag";
@@ -194,55 +194,26 @@ static int set_initial_params(Crystal *cr, FILE *fh)
 static void show_duds(Crystal **crystals, int n_crystals)
 {
 	int j;
-	int n_dud = 0;
-	int n_noscale = 0;
-	int n_noref = 0;
-	int n_solve = 0;
-	int n_early = 0;
-	int n_cc = 0;
+	int bads[32];
+	int any_bad = 0;
+
+	for ( j=0; j<32; j++ ) bads[j] = 0;
 
 	for ( j=0; j<n_crystals; j++ ) {
 		int flag;
 		flag = crystal_get_user_flag(crystals[j]);
-		if ( flag != 0 ) n_dud++;
-		switch ( flag ) {
-
-			case 0:
-			break;
-
-			case 1:
-			n_noscale++;
-			break;
-
-			case 2:
-			n_noref++;
-			break;
-
-			case 3:
-			n_solve++;
-			break;
-
-			case 5:
-			n_early++;
-			break;
-
-			case 6:
-			n_cc++;
-			break;
-
-			default:
-			STATUS("Unknown flag %i\n", flag);
-			break;
-		}
+		assert(flag < 32);
+		bads[flag]++;
+		if ( flag != PRFLAG_OK ) any_bad++;
 	}
 
-	if ( n_dud ) {
-		STATUS("%i bad crystals:\n", n_dud);
-		STATUS(" %i scaling failed.\n", n_noscale);
-		STATUS(" %i not enough reflections.\n", n_noref);
-		STATUS(" %i solve failed.\n", n_solve);
-		STATUS(" %i early rejection.\n", n_early);
-		STATUS(" %i bad CC.\n", n_cc);
+	if ( any_bad ) {
+		STATUS("%i bad crystals:\n", any_bad);
+		for ( j=0; j<32; j++ ) {
+			if ( bads[j] ) {
+				STATUS("  %i %s\n", bads[j], str_flags(j));
+			}
+		}
 	}
 }
 
@@ -658,7 +629,7 @@ int main(int argc, char *argv[])
 
 			as = asymmetric_indices(cr_refl, sym);
 			crystal_set_reflections(cr, as);
-			crystal_set_user_flag(cr, 0);
+			crystal_set_user_flag(cr, PRFLAG_OK);
 			reflist_free(cr_refl);
 
 			if ( set_initial_params(cr, sparams_fh) ) {
@@ -792,7 +763,7 @@ int main(int argc, char *argv[])
 			        crystal_get_osf(crystals[i]),
 				crystal_get_Bfac(crystals[i])*1e20,
 			        crystal_get_image(crystals[i])->div,
-			        str_flags(crystals[i]));
+			        str_flags(crystal_get_user_flag(crystals[i])));
 		}
 		fclose(fh);
 	}

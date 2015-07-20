@@ -53,6 +53,16 @@ struct prdata
 	double final_free_residual;
 };
 
+enum prflag
+{
+	PRFLAG_OK = 0,
+	PRFLAG_FEWREFL = 16,
+	PRFLAG_SOLVEFAIL = 17,
+	PRFLAG_EARLY = 18,
+	PRFLAG_CC = 19,
+	PRFLAG_BIGB = 20,
+};
+
 
 
 extern void refine_all(Crystal **crystals, int n_crystals,
