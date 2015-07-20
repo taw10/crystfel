@@ -156,10 +156,10 @@ static int check_eigen(gsl_vector *e_val, int verbose)
 
 /**
  * solve_svd:
- * v: a gsl_vector
- * M: a gsl_matrix
- * n_filt: pointer to store the number of filtered eigenvalues
- * verbose: flag for verbosity on the terminal
+ * @v: a gsl_vector
+ * @M: a gsl_matrix
+ * @n_filt: pointer to store the number of filtered eigenvalues
+ * @verbose: flag for verbosity on the terminal
  *
  * Solves the matrix equation M.x = v, returning x.
  * Performs rescaling and eigenvalue filtering.

@@ -600,7 +600,7 @@ void set_detector_pos(Reflection *refl, double fs, double ss)
 /**
  * set_panel:
  * @refl: A %Reflection
- * @panel: Pointer to the panel structure on which the reflection appears
+ * @p: Pointer to the panel structure on which the reflection appears
  *
  * Note that the pointer will be stored, not the contents of the structure.
  *

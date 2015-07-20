@@ -495,7 +495,14 @@ static void set_unity_partialities(Crystal *cryst)
 }
 
 
-/* Calculate partialities and apply them to the image's reflections */
+/**
+ * update_partialities:
+ * @cryst: A %Crystal
+ * @pmodel: A %PartialityModel
+ *
+ * Updates the partialities of @cryst's reflections according to @pmodel and
+ * the current state of the crystal (e.g. its unit cell parameters).
+ */
 void update_partialities(Crystal *cryst, PartialityModel pmodel)
 {
 	Reflection *refl;
