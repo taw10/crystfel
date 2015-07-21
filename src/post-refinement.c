@@ -245,10 +245,36 @@ static void apply_cell_shift(UnitCell *cell, int k, double shift)
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
+	double as, bs, cs;
 
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
+	as = modulus(asx, asy, asz);
+	bs = modulus(bsx, bsy, bsz);
+	cs = modulus(csx, csy, csz);
+
+	/* Forbid any step which looks too large */
+	switch ( k )
+	{
+		case GPARAM_ASX :
+		case GPARAM_ASY :
+		case GPARAM_ASZ :
+		if ( fabs(shift) > 0.1*as ) return;
+		break;
+
+		case GPARAM_BSX :
+		case GPARAM_BSY :
+		case GPARAM_BSZ :
+		if ( fabs(shift) > 0.1*bs ) return;
+		break;
+
+		case GPARAM_CSX :
+		case GPARAM_CSY :
+		case GPARAM_CSZ :
+		if ( fabs(shift) > 0.1*cs ) return;
+		break;
+	}
 
 	switch ( k )
 	{
@@ -284,12 +310,14 @@ static void apply_shift(Crystal *cr, int k, double shift)
 	switch ( k ) {
 
 		case GPARAM_DIV :
+		if ( shift > 0.1*image->div ) return;
 		image->div += shift;
 		if ( image->div < 0.0 ) image->div = 0.0;
 		break;
 
 		case GPARAM_R :
 		t = crystal_get_profile_radius(cr);
+		if ( shift > 0.1*t ) return;
 		t += shift;
 		crystal_set_profile_radius(cr, t);
 		break;
