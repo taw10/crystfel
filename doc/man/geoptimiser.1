@@ -110,7 +110,7 @@ distance is instead optimized independently.
 .IP \fB--max-peak-dist=\fR\fIdist\fR
 .PD
 Geoptimiser refines detector geometry by comparing the predicted position of Bragg peaks with the location of detected peak in indexed patterns. This option sets the maximum distance in pixels between the predicted and the observed peaks for the pair
-to be included in the optimization process. The default maximum distance is 8 pixels.
+to be included in the optimization process. The default maximum distance is half of the minimum distance between Bragg peaks derived from the data.
 
 .PD 0
 .IP \fB--no-stretch\fR

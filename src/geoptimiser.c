@@ -518,9 +518,10 @@ static void compute_avg_cell_parameters(struct pattern_list *pattern_list,
 
 
 static double compute_clen_to_use(struct pattern_list *pattern_list,
-                                    double istep, double *avcp,
-                                    double max_peak_distance,
-                                    int only_best_distance)
+                                  double istep, double *avcp,
+                                  double max_peak_distance,
+                                  int only_best_distance,
+                                  double* min_braggp_dist)
 {
 	int cp, i, u;
 	int num_clens;
@@ -530,8 +531,8 @@ static double compute_clen_to_use(struct pattern_list *pattern_list,
 	double *clens;
 	double *lambdas;
 	double irecistep;
-	double min_braggp_dist;
 	double clen_to_use;
+	double *braggp_dist;
 	struct rvec cqu;
 
 	max_clens = 1024;
@@ -604,6 +605,7 @@ static double compute_clen_to_use(struct pattern_list *pattern_list,
 		}
 
 		clens[num_clens] = pattern_list->patterns[cp]->clen;
+
 		clens_population[num_clens] = 1;
 		lambdas[num_clens] = pattern_list->patterns[cp]->lambda;
 		num_clens++;
@@ -616,13 +618,16 @@ static double compute_clen_to_use(struct pattern_list *pattern_list,
 	}
 
 	if ( num_clens == 1 ) {
-		STATUS("All patterns have the same camera length: %f m.\n",
+		STATUS("All patterns in the stream file have the same camera "
+		       "length: %f m.\n",
 		       clens[0]);
 	} else {
 		STATUS("%i different camera lengths were found for the input "
-		       "patterns:\n", num_clens);
+		       "patterns in the stream file:\n", num_clens);
 	}
 
+	braggp_dist = calloc(num_clens, sizeof(double));
+	*min_braggp_dist = 999999.0;
 	best_clen = 0;
 	clen_to_use = clens[0];
 	for ( i=0; i<num_clens; i++) {
@@ -631,21 +636,19 @@ static double compute_clen_to_use(struct pattern_list *pattern_list,
 
 			irecistep = 1/cqu.u;
 
-			min_braggp_dist = fmin(fmin(irecistep/avcp[0],
-			                       irecistep/avcp[1]),
-			                       irecistep/avcp[2]);
-			STATUS("Camera length %0.4f m was found %i times.\n"
-			       "Minimum inter-bragg peak distance (based on "
-			       "average cell parameters): %0.1f pixels.\n",
-			       clens[i], clens_population[i],
-			       min_braggp_dist);
-			if ( min_braggp_dist<1.2*max_peak_distance ) {
-				STATUS("WARNING: The distance between Bragg "
-				       "peaks is too small: "
-				       "%0.1f < 1.2*%0.1f pixels.\n",
-			               min_braggp_dist,
-			               max_peak_distance);
+			braggp_dist[i] = fmin(fmin(irecistep/avcp[0],
+						   irecistep/avcp[1]),
+						   irecistep/avcp[2]);
+			if (braggp_dist[i] < *min_braggp_dist) {
+				*min_braggp_dist = braggp_dist[i];
 			}
+			STATUS("Camera length %0.4f m was found %i times in the "
+			       "stream file.\n"
+			       "Corresponding minimum inter-bragg peak distance "
+			       "is (based on average cell parameters): "
+			       " %0.1f pixels.\n",
+			       clens[i], clens_population[i],
+			       braggp_dist[i]);
 			if ( clens_population[i] > clens_population[best_clen] ) {
 				best_clen = i;
 				clen_to_use = clens[best_clen];
@@ -654,14 +657,15 @@ static double compute_clen_to_use(struct pattern_list *pattern_list,
 	}
 
 	if ( only_best_distance ) {
-		STATUS("Only %i patterns with  CLEN=%0.4f m will be used.\n",
+		STATUS("Only the %i patterns with clen=%0.4f m will be used.\n",
 		       clens_population[best_clen], clen_to_use);
+		*min_braggp_dist = braggp_dist[best_clen];
 	}
 
 	free(clens);
 	free(lambdas);
 	free(clens_population);
-
+	free(braggp_dist);
 	return clen_to_use;
 }
 
@@ -1089,10 +1093,11 @@ static double compute_error(struct rg_collection *connected,
 			connected_error /= (double)num_connected_error;
 			connected_error = sqrt(connected_error);
 
-			STATUS("Error for connected group %s: %d pixels with "
-				"more than %d peaks: <delta^2> = %0.4f pixels.\n",
-			       conn_data[di].name, num_connected_error,
-			       conn_data[di].num_peaks_per_pixel,
+			STATUS("Connected group %s: \n"
+			       "  Pixels with more than %d measurements: %i "
+			       "  Error:  <delta^2> = %0.4f pixels.\n",
+			       conn_data[di].name, conn_data[di].num_peaks_per_pixel,
+			       num_connected_error,
 			       connected_error);
 		}
 	}
@@ -1270,7 +1275,7 @@ static void correct_angle_and_stretch(struct rg_collection *connected,
 
 	} else {
 
-		STATUS("Using individual distances for rigid panels.\n");
+		STATUS("Using an individual distance for each connected group.\n");
 		for ( di=0; di<connected->n_rigid_groups; di++ ) {
 			for ( ip=0; ip<connected->rigid_groups[di]->n_panels;
 			      ip++ ) {
@@ -1426,7 +1431,7 @@ static void fill_con_data_sh(struct connected_data *conn_data,
 	                                 conn_data[di].n_peaks_in_conn);
 	conn_data[di].sh_y = comp_median(av_in_panel_ss,
 	                                 conn_data[di].n_peaks_in_conn);
-	STATUS("Panel %s, num pixels: %i, shifts (in pixels) X,Y: %0.8f, %0.8f\n",
+	STATUS("Panel %s, num of considered pixels: %i, shifts (in pixels) x,y: %0.8f, %0.8f\n",
 	       conn_data[di].name, conn_data[di].n_peaks_in_conn,
 	       conn_data[di].sh_x, conn_data[di].sh_y);
 	if ( modulus2d(conn_data[di].sh_x, conn_data[di].sh_y) >
@@ -1446,7 +1451,7 @@ static int compute_shifts(struct rg_collection *connected,
                           double dfv, double max_peak_distance,
                           double *displ_x, double *displ_y)
 {
-	STATUS("Median for panels.\n");
+        STATUS("Computing average shifts for connected groups.\n");
 
 	int di, ip;
 
@@ -1609,7 +1614,8 @@ static void correct_shifts(struct rg_collection *connected,
 				p->cny -= conn_data[di].sh_y;
 
 			} else {
-				STATUS("For some reason pannel %s is empty!\n",
+				STATUS("For some reason connected group %s is "
+				       "empty! Left unchanged.\n",
 				       p->name);
 			}
 		}
@@ -1974,8 +1980,9 @@ static int compute_angles_and_stretch(struct rg_collection *connected,
 		conn_data[di].cang = -comp_median(angles,num_ang);
 		conn_data[di].cstr = comp_median(stretches,num_ang);
 
-		STATUS("Panel %s, num: %i, angle: %0.4f deg, stretch coeff: "
-		       "%0.4f\n",
+		STATUS("Connected group %s:\n"
+		       "  Number of measurements: %i   Angle: %0.4f deg   "
+		       "Stretch coefficient: %0.4f\n",
 		conn_data[di].name, num_ang, conn_data[di].cang,
                 conn_data[di].cstr);
 
@@ -2027,7 +2034,7 @@ static int compute_angles_and_stretch(struct rg_collection *connected,
 		stretch_cf = 1.0;
 	}
 
-	STATUS("The stretch coefficient for the patterns is %0.4f\n",
+	STATUS("The average stretch coefficient for all patterns is %0.4f\n",
 	       stretch_cf);
 	if ( man_stretching_coeff>FLT_EPSILON ) {
 		stretch_cf = man_stretching_coeff;
@@ -2419,6 +2426,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	double *displ_y;
 	double *displ_abs;
 	double totalError;
+	double min_braggp_dist;
 
 	double* slab_to_x;
 	double* slab_to_y;
@@ -2432,14 +2440,6 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	struct pattern_list *pattern_list;
 
 	if ( nostretch ) man_stretching_coeff = 1.0;
-
-	STATUS("Maximum distance between peaks: %0.1f pixels.\n", max_peak_dist);
-
-	STATUS("Minimum number of measurements for pixel to be included in the "
-	       "refinement: %i\n",
-	       min_num_peaks_per_pixel);
-	STATUS("Minimum number of measurements for panel for accurate estimation "
-	       "of position/orientation: %i\n", min_num_peaks_per_panel);
 
 	if ( det->n_panels == 64 ) {
 		maybe_cspad = 1;
@@ -2482,7 +2482,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 
 		if ( !enforce_cspad_layout && num_errors > 0 ) {
 			ERROR("Relative distance and orientation of connected "
-			      "ASICS do not respect the CSPAD layout.\n"
+			      "panels do not respect the CSPAD layout.\n"
 			      "Geometry optimization cannot continue.\n"
 			      "Please rerun the program with the "
 			      "--enforce-cspad-layout option.\n");
@@ -2516,9 +2516,31 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 
 	clen_to_use = compute_clen_to_use(pattern_list, istep, avc,
 	                                  max_peak_dist,
-	                                  only_best_distance);
+					  only_best_distance,
+					  &min_braggp_dist);
 
 	if ( clen_to_use == -1.0 ) return 1;
+
+	if ( max_peak_dist == -1.0 ) {
+		STATUS ("Setting maximum distance for peak search to 0.5*"
+			"minimum Bragg peak distance from the data\n");
+		max_peak_dist = 0.5*min_braggp_dist;
+	}
+	STATUS("Maximum distance for peak search: %0.1f pixels.\n", max_peak_dist);
+	if ( min_braggp_dist<1.2*max_peak_dist ) {
+		STATUS("WARNING: The maximum distance for peak search "
+		       "is too small compared to minimum Bragg peak "
+		       "distance: %0.1f < 1.2*%0.1f pixels.\n",
+		       min_braggp_dist,
+		       max_peak_dist);
+	}
+
+	STATUS("Minimum number of measurements for a pixel to be included in the "
+	       "refinement: %i\n",
+	       min_num_peaks_per_pixel);
+	STATUS("Minimum number of measurements per connected group for accurate "
+	       "estimation of position/orientation: %i\n",
+	       min_num_peaks_per_panel);
 
 	num_pix_in_slab = (max_fs+1)*(max_ss+1);
 	displ_x = calloc(num_pix_in_slab,sizeof(double));
@@ -2654,7 +2676,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 	free(pattern_list);
 
 	if ( error_maps ) {
-		STATUS("Saving displacements before corrections.\n");
+		STATUS("Saving pixel position errors before correction.\n");
 
 #ifdef HAVE_SAVE_TO_PNG
 
@@ -2803,7 +2825,7 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 
 #ifdef HAVE_SAVE_TO_PNG
 
-		STATUS("Saving displacements after corrections.\n");
+		STATUS("Saving pixel position errors after correction.\n");
 		ret2 = save_data_to_png("error_map_after.png", det,  max_fs, max_ss,
 					dfv, displ_abs);
 		if ( ret2 !=0 ) {
@@ -2822,8 +2844,8 @@ int optimize_geometry(char *infile, char *outfile, char *geometry_filename,
 
 #else /* HAVE_SAVE_TO_PNG */
 
-		STATUS("ERROR: geoptimiser was compiled without GTK and cairo support.\n"
-		       "Error maps will not be saved.\n");
+		STATUS("ERROR: geoptimiser was compiled without GTK and cairo "
+		       "support. Error maps will not be saved.\n");
 
 #endif /* HAVE_SAVE_TO_PNG */
 
@@ -2883,7 +2905,7 @@ int main(int argc, char *argv[])
 	int individual_coffset = 0;
 	int no_cspad = 0;
 	int error_maps = 1;
-	double max_peak_dist = 4.0;
+	double max_peak_dist = -1.0;
 
 	struct detector *det = NULL;
 	struct rg_collection *quadrants;
