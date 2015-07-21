@@ -479,13 +479,33 @@ int main(int argc, char *argv[])
 
 	}
 
+	/* Check for minimal information */
+	if ( filename == NULL ) {
+		ERROR("You need to provide the input filename (use -i)\n");
+		return 1;
+	}
+	if ( geom_filename == NULL ) {
+		ERROR("You need to specify the geometry filename (use -g)\n");
+		return 1;
+	}
+	if ( outfile == NULL ) {
+		ERROR("You need to specify the output filename (use -o)\n");
+		return 1;
+	}
+
+	/* Defaults */
 	if ( tempdir == NULL ) {
 		tempdir = strdup(".");
 	}
-
-	if ( filename == NULL ) {
-		filename = strdup("-");
+	if ( iargs.hdf5_peak_path == NULL ) {
+		if ( iargs.peaks == PEAK_HDF5 ) {
+			iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
+		} else if ( iargs.peaks == PEAK_CXI ) {
+			iargs.hdf5_peak_path = strdup("/entry_1/result_1");
+		}
 	}
+
+	/* Open input */
 	if ( strcmp(filename, "-") == 0 ) {
 		fh = stdin;
 	} else {
@@ -497,6 +517,7 @@ int main(int argc, char *argv[])
 	}
 	free(filename);
 
+	/* Parse peak detection method */
 	if ( speaks == NULL ) {
 		speaks = strdup("zaef");
 		STATUS("You didn't specify a peak detection method.\n");
@@ -514,15 +535,7 @@ int main(int argc, char *argv[])
 	}
 	free(speaks);
 
-	/* Set default path for peaks, if appropriate */
-	if ( iargs.hdf5_peak_path == NULL ) {
-		if ( iargs.peaks == PEAK_HDF5 ) {
-			iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
-		} else if ( iargs.peaks == PEAK_CXI ) {
-			iargs.hdf5_peak_path = strdup("/entry_1/result_1");
-		}
-	}
-
+	/* Check prefix (if given) */
 	if ( prefix == NULL ) {
 		prefix = strdup("");
 	} else {
@@ -531,18 +544,22 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	/* Check number of processes */
 	if ( n_proc == 0 ) {
 		ERROR("Invalid number of processes.\n");
 		return 1;
 	}
 
+	/* Load detector geometry */
 	iargs.det = get_detector_geometry(geom_filename, iargs.beam);
 	if ( iargs.det == NULL ) {
 		ERROR("Failed to read detector geometry from  '%s'\n",
 		      geom_filename);
 		return 1;
 	}
+	add_geom_beam_stuff_to_copy_hdf5(iargs.copyme, iargs.det, iargs.beam);
 
+	/* Parse indexing methods */
 	if ( indm_str == NULL ) {
 
 		STATUS("You didn't specify an indexing method, so I  won't try "
@@ -561,6 +578,7 @@ int main(int argc, char *argv[])
 		free(indm_str);
 	}
 
+	/* Parse integration method */
 	if ( int_str != NULL ) {
 
 		int err;
@@ -576,12 +594,12 @@ int main(int argc, char *argv[])
 		/* Option provided for backwards compatibility */
 		iargs.int_meth |= INTEGRATION_SATURATED;
 	}
-
 	if ( have_push_res && !(iargs.int_meth & INTEGRATION_RESCUT) ) {
 		ERROR("WARNING: You used --push-res, but not -rescut, "
 		      "therefore --push-res will have no effect.\n");
 	}
 
+	/* Parse unit cell tolerance */
 	if ( toler != NULL ) {
 		int ttt;
 		ttt = sscanf(toler, "%f,%f,%f,%f",
@@ -594,6 +612,7 @@ int main(int argc, char *argv[])
 		free(toler);
 	}
 
+	/* Parse integration radii */
 	if ( intrad != NULL ) {
 		int r;
 		r = sscanf(intrad, "%f,%f,%f",
@@ -609,6 +628,7 @@ int main(int argc, char *argv[])
 		       " probably not appropriate for your patterns.\n");
 	}
 
+	/* Parse peak radii (used for peak detection) */
 	if ( pkrad != NULL ) {
 		int r;
 		r = sscanf(pkrad, "%f,%f,%f",
@@ -619,21 +639,13 @@ int main(int argc, char *argv[])
 		}
 		free(pkrad);
 	}
-
 	if ( iargs.pk_inn < 0.0 ) {
 		iargs.pk_inn = iargs.ir_inn;
 		iargs.pk_mid = iargs.ir_mid;
 		iargs.pk_out = iargs.ir_out;
 	}
 
-	if ( iargs.det == NULL ) {
-		ERROR("You need to provide a geometry file (please read the"
-		      " manual for more details).\n");
-		return 1;
-	}
-
-	add_geom_beam_stuff_to_copy_hdf5(iargs.copyme, iargs.det, iargs.beam);
-
+	/* Load unit cell (if given) */
 	if ( cellfile != NULL ) {
 		iargs.cell = load_cell_from_file(cellfile);
 		if ( iargs.cell == NULL ) {
@@ -648,6 +660,7 @@ int main(int argc, char *argv[])
 		iargs.cell = NULL;
 	}
 
+	/* Parse integration diagnostic */
 	if ( int_diag != NULL ) {
 
 		int r;
@@ -691,6 +704,7 @@ int main(int argc, char *argv[])
 
 	}
 
+	/* Open output stream */
 	st = open_stream_for_write_2(outfile, geom_filename, argc, argv);
 	if ( st == NULL ) {
 		ERROR("Failed to open stream '%s'\n", outfile);
