@@ -538,6 +538,11 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if ( (pmodel == PMODEL_UNITY) && !no_pr ) {
+		no_pr = 1;
+		STATUS("Not going to refine the unity model.\n");
+	}
+
 	gsl_set_error_handler_off();
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
