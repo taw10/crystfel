@@ -49,6 +49,7 @@ extern "C" {
  * @PMODEL_UNITY : Set all all partialities and Lorentz factors to 1.
  * @PMODEL_SCSPHERE : Sphere model with source coverage factor included
  * @PMODEL_SCGAUSSIAN : Gaussian model with source coverage factor included
+ * @PMODEL_RANDOM : Randomly assigned partialities
  *
  * A %PartialityModel describes a geometrical model which can be used to
  * calculate spot partialities and Lorentz correction factors.
@@ -58,6 +59,7 @@ typedef enum {
 	PMODEL_UNITY,
 	PMODEL_SCSPHERE,
 	PMODEL_SCGAUSSIAN,
+	PMODEL_RANDOM,
 
 } PartialityModel;
 

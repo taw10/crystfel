@@ -147,10 +147,11 @@ static double volume_fraction_rgradient(double r, double pr,
 
 		case PMODEL_SCGAUSSIAN :
 		return gaussian_fraction_rgradient(r, pr);
-	}
 
-	ERROR("No pmodel in volume_fraction_rgradient!\n");
-	return 1.0;
+		default :
+		ERROR("No pmodel in volume_fraction_rgradient!\n");
+		return 1.0;
+	}
 }
 
 
@@ -167,10 +168,11 @@ static double volume_fraction(double rlow, double rhigh, double pr,
 
 		case PMODEL_SCGAUSSIAN :
 		return gaussian_fraction(rlow, rhigh, pr);
-	}
 
-	ERROR("No pmodel in volume_fraction!\n");
-	return 1.0;
+		default :
+		ERROR("No pmodel in volume_fraction!\n");
+		return 1.0;
+	}
 }
 
 

@@ -164,7 +164,42 @@ double gaussian_fraction(double rlow, double rhigh, double R)
 }
 
 
+static double random_partiality(signed int h, signed int k, signed int l,
+                                int serial)
+{
+	gsl_rng *rng = gsl_rng_alloc(gsl_rng_mt19937);
+	unsigned long int seed;
+	double p;
+	int i;
+
+	gsl_rng_set(rng, serial);
+	for ( i=0; i<abs(h)+1; i++ ) {
+		seed = gsl_rng_get(rng);
+	}
+	if ( h < 0 ) seed = gsl_rng_get(rng);
+	gsl_rng_set(rng, seed);
+
+	for ( i=0; i<abs(k)+1; i++ ) {
+		seed = gsl_rng_get(rng);
+	}
+	if ( k < 0 ) seed = gsl_rng_get(rng);
+	gsl_rng_set(rng, seed);
+
+	for ( i=0; i<abs(l)+1; i++ ) {
+		seed = gsl_rng_get(rng);
+	}
+	if ( l < 0 ) seed = gsl_rng_get(rng);
+	gsl_rng_set(rng, seed);
+
+	p = gsl_rng_uniform(rng);
+	gsl_rng_free(rng);
+	return p;
+}
+
+
 static double partiality(PartialityModel pmodel,
+                         signed int h, signed int k, signed int l,
+                         int serial,
                          double rlow, double rhigh, double pr)
 {
 	double D = rlow - rhigh;
@@ -181,6 +216,9 @@ static double partiality(PartialityModel pmodel,
 
 		case PMODEL_SCGAUSSIAN:
 		return 4.0*gaussian_fraction(rlow, rhigh, pr)*pr / (3.0*D);
+
+		case PMODEL_RANDOM:
+		return random_partiality(h, k, l, serial);
 
 	}
 }
@@ -234,7 +272,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	     && (fabs(rhigh) > pr) ) return NULL;
 
 	/* Calculate partiality */
-	part = partiality(pmodel, rlow, rhigh, pr);
+	part = partiality(pmodel, h, k, l, image->serial, rlow, rhigh, pr);
 
 	if ( isnan(part) ) {
 		ERROR("Assigning NAN partiality!\n");

@@ -530,6 +530,8 @@ int main(int argc, char *argv[])
 			pmodel = PMODEL_SCGAUSSIAN;
 		} else if ( strcmp(pmodel_str, "scsphere") == 0 ) {
 			pmodel = PMODEL_SCSPHERE;
+		} else if ( strcmp(pmodel_str, "random") == 0 ) {
+			pmodel = PMODEL_RANDOM;
 		} else {
 			ERROR("Unknown partiality model '%s'.\n", pmodel_str);
 			return 1;
