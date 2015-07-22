@@ -553,7 +553,7 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		s = resolution(crystal_get_cell(cr), ha, ka, la);
 
 		/* Calculate the weight for this reflection */
-		w = 1.0;
+		w = (s/1e9)*(s/1e9) / (esd*esd);
 
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<num_params; k++ ) {
@@ -725,7 +725,7 @@ static double residual(Crystal *cr, const RefList *full, int verbose, int free,
 
 		fx = exp(G)*p*exp(-B*s*s)*I_full/L;
 		dc = I_partial - fx;
-		w = 1.0;
+		w = (s/1e9)*(s/1e9)/(esd*esd);
 		dev += w*dc*dc;
 		n_used++;
 
