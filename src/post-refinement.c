@@ -864,7 +864,7 @@ static double do_pr_refine(Crystal *cr, const RefList *full,
 		update_partialities(cr, pmodel);
 
 		dev = residual(cr, full, 0, 0, NULL);
-		if ( fabs(dev - old_dev) < dev*0.01 ) done = 1;
+		if ( fabs(dev - old_dev) < dev*0.0001 ) done = 1;
 
 		if ( verbose ) {
 			STATUS("PR iter %2i: dev = %10.5e, free dev = %10.5e\n",
