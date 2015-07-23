@@ -449,6 +449,12 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		/* Calculate all gradients for this reflection */
 		for ( k=0; k<num_params; k++ ) {
 			gradients[k] = gradient(cr, rv[k], refl, pmodel);
+
+			/* Gradients affecting the "p" part of the residual
+			 * need to account for it being ln(p) */
+			if ( (rv[k] != GPARAM_OSF) && (rv[k] != GPARAM_BFAC) ) {
+				gradients[k] /= p;
+			}
 		}
 
 		for ( k=0; k<num_params; k++ ) {
