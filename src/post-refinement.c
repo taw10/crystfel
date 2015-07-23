@@ -552,6 +552,8 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 		esd = get_esd_intensity(refl);
 		s = resolution(crystal_get_cell(cr), ha, ka, la);
 
+		if ( I_partial < 3.0*esd ) continue;
+
 		/* Calculate the weight for this reflection */
 		w = (s/1e9)*(s/1e9) / (esd*esd);
 
@@ -722,6 +724,8 @@ static double residual(Crystal *cr, const RefList *full, int verbose, int free,
 		I_partial = get_intensity(refl);
 		esd = get_esd_intensity(refl);
 		s = resolution(crystal_get_cell(cr), h, k, l);
+
+		if ( I_partial < 3.0*esd ) continue;
 
 		fx = exp(G)*p*exp(-B*s*s)*I_full/L;
 		dc = I_partial - fx;
