@@ -493,16 +493,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* Defaults */
 	if ( tempdir == NULL ) {
 		tempdir = strdup(".");
-	}
-	if ( iargs.hdf5_peak_path == NULL ) {
-		if ( iargs.peaks == PEAK_HDF5 ) {
-			iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
-		} else if ( iargs.peaks == PEAK_CXI ) {
-			iargs.hdf5_peak_path = strdup("/entry_1/result_1");
-		}
 	}
 
 	/* Open input */
@@ -534,6 +526,13 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	free(speaks);
+	if ( iargs.hdf5_peak_path == NULL ) {
+		if ( iargs.peaks == PEAK_HDF5 ) {
+			iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
+		} else if ( iargs.peaks == PEAK_CXI ) {
+			iargs.hdf5_peak_path = strdup("/entry_1/result_1");
+		}
+	}
 
 	/* Check prefix (if given) */
 	if ( prefix == NULL ) {
