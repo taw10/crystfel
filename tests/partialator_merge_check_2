@@ -17,6 +17,7 @@ profile_radius = 0.005 nm^-1
 Reflections measured after indexing
   h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
   1   0   0     100.00        -       1.00       1  938.0  629.0
+ 19   0   0      50.00        -       1.00       1  938.0  629.0
 End of reflections
 --- End crystal
 --- Begin crystal
@@ -28,6 +29,7 @@ profile_radius = 0.005 nm^-1
 Reflections measured after indexing
   h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
   1   0   0     200.00        -       1.00       1  938.0  629.0
+ 19   0   0     100.00        -       1.00       1  938.0  629.0
 End of reflections
 --- End crystal
 ----- End chunk -----
@@ -38,15 +40,17 @@ EOF
 # factor can absorb the difference.
 cat > partialator_merge_check_2_ans.hkl << EOF
 CrystFEL reflection list version 2.0
-Symmetry: unknown
+Symmetry: 1
    h    k    l          I    phase   sigma(I)   nmeas
    1    0    0     150.00        -       0.00       2
+  19    0    0      75.00        -       0.00       2
 End of reflections
 EOF
 
 src/partialator -i partialator_merge_check_2.stream \
                 -o partialator_merge_check_2.hkl  \
-                --model=unity --iterations=0 --no-polarisation
+                --model=unity --iterations=1 --no-polarisation \
+                --no-free
 
 diff partialator_merge_check_2.hkl partialator_merge_check_2_ans.hkl
 if [ $? -ne 0 ]; then
