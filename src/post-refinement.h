@@ -64,6 +64,7 @@ enum prflag
 };
 
 
+extern const char *str_prflag(enum prflag flag);
 
 extern void refine_all(Crystal **crystals, int n_crystals,
                        RefList *full, int nthreads, PartialityModel pmodel,

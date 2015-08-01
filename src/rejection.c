@@ -165,6 +165,34 @@ static void check_ccs(Crystal **crystals, int n_crystals, RefList *full)
 }
 
 
+
+static void show_duds(Crystal **crystals, int n_crystals)
+{
+	int j;
+	int bads[32];
+	int any_bad = 0;
+
+	for ( j=0; j<32; j++ ) bads[j] = 0;
+
+	for ( j=0; j<n_crystals; j++ ) {
+		int flag;
+		flag = crystal_get_user_flag(crystals[j]);
+		assert(flag < 32);
+		bads[flag]++;
+		if ( flag != PRFLAG_OK ) any_bad++;
+	}
+
+	if ( any_bad ) {
+		STATUS("%i bad crystals:\n", any_bad);
+		for ( j=0; j<32; j++ ) {
+			if ( bads[j] ) {
+				STATUS("  %i %s\n", bads[j], str_prflag(j));
+			}
+		}
+	}
+}
+
+
 void check_rejection(Crystal **crystals, int n, RefList *full)
 {
 	int i;
@@ -183,6 +211,8 @@ void check_rejection(Crystal **crystals, int n, RefList *full)
 		if ( crystal_get_user_flag(crystals[i]) == 0 ) n_acc++;
 
 	}
+
+	show_duds(crystals, n);
 
 	if ( n_acc < 2 ) {
 		ERROR("Not enough crystals left to proceed (%i).  Sorry.\n",

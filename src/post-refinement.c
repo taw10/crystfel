@@ -54,6 +54,34 @@
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
 #define MAX_CYCLES (10)
 
+const char *str_prflag(enum prflag flag)
+{
+	switch ( flag ) {
+
+		case PRFLAG_OK :
+		return "OK";
+
+		case PRFLAG_FEWREFL :
+		return "not enough reflections";
+
+		case PRFLAG_SOLVEFAIL :
+		return "PR solve failed";
+
+		case PRFLAG_EARLY :
+		return "early rejection";
+
+		case PRFLAG_CC :
+		return "low CC";
+
+		case PRFLAG_BIGB :
+		return "B too big";
+
+		default :
+		return "Unknown flag";
+	}
+}
+
+
 /* Returns dp(gauss)/dr at "r" */
 static double gaussian_fraction_gradient(double r, double R)
 {

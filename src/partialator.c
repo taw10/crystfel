@@ -100,34 +100,6 @@ static void display_progress(int n_images, int n_crystals)
 }
 
 
-static const char *str_flags(flag)
-{
-	switch ( flag ) {
-
-		case PRFLAG_OK :
-		return "OK";
-
-		case PRFLAG_FEWREFL :
-		return "not enough reflections";
-
-		case PRFLAG_SOLVEFAIL :
-		return "PR solve failed";
-
-		case PRFLAG_EARLY :
-		return "early rejection";
-
-		case PRFLAG_CC :
-		return "low CC";
-
-		case PRFLAG_BIGB :
-		return "B too big";
-
-		default :
-		return "Unknown flag";
-	}
-}
-
-
 static RefList *apply_max_adu(RefList *list, double max_adu)
 {
 	RefList *nlist;
@@ -189,33 +161,6 @@ static int set_initial_params(Crystal *cr, FILE *fh)
 	}
 
 	return 0;
-}
-
-
-static void show_duds(Crystal **crystals, int n_crystals)
-{
-	int j;
-	int bads[32];
-	int any_bad = 0;
-
-	for ( j=0; j<32; j++ ) bads[j] = 0;
-
-	for ( j=0; j<n_crystals; j++ ) {
-		int flag;
-		flag = crystal_get_user_flag(crystals[j]);
-		assert(flag < 32);
-		bads[flag]++;
-		if ( flag != PRFLAG_OK ) any_bad++;
-	}
-
-	if ( any_bad ) {
-		STATUS("%i bad crystals:\n", any_bad);
-		for ( j=0; j<32; j++ ) {
-			if ( bads[j] ) {
-				STATUS("  %i %s\n", bads[j], str_flags(j));
-			}
-		}
-	}
 }
 
 
@@ -696,8 +641,6 @@ int main(int argc, char *argv[])
 
 	check_rejection(crystals, n_crystals, full);
 
-	show_duds(crystals, n_crystals);
-
 	write_pgraph(full, crystals, n_crystals, 0);
 
 	/* Iterate */
@@ -718,7 +661,6 @@ int main(int argc, char *argv[])
 		STATUS("Overall free residual: initial = %e, final = %e\n",
 		       init_free_dev, final_free_dev);
 
-		show_duds(crystals, n_crystals);
 		check_rejection(crystals, n_crystals, full);
 		normalise_scales(crystals, n_crystals);
 
@@ -773,7 +715,7 @@ int main(int argc, char *argv[])
 			        crystal_get_osf(crystals[i]),
 				crystal_get_Bfac(crystals[i])*1e20,
 			        crystal_get_image(crystals[i])->div,
-			        str_flags(crystal_get_user_flag(crystals[i])));
+			        str_prflag(crystal_get_user_flag(crystals[i])));
 		}
 		fclose(fh);
 	}
