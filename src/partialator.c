@@ -81,7 +81,8 @@ static void show_help(const char *s)
 "      --no-polarisation      Disable polarisation correction.\n"
 "      --max-adu=<n>          Saturation value of detector.\n"
 "      --push-res=<n>         Merge higher than apparent resolution cutoff.\n"
-"  -j <n>                     Run <n> analyses in parallel.\n");
+"  -j <n>                     Run <n> analyses in parallel.\n"
+"      --no-free              Disable cross-validation (testing only).\n");
 }
 
 
@@ -357,6 +358,7 @@ int main(int argc, char *argv[])
 	FILE *sparams_fh;
 	double push_res = 0.0;
 	gsl_rng *rng;
+	int no_free = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -383,6 +385,7 @@ int main(int argc, char *argv[])
 		{"no-polarization",    0, &polarisation,       0},
 		{"polarisation",       0, &polarisation,       1}, /* compat */
 		{"polarization",       0, &polarisation,       1}, /* compat */
+		{"no-free",            0, &no_free,            1},
 
 		{0, 0, NULL, 0}
 	};
@@ -632,7 +635,7 @@ int main(int argc, char *argv[])
 						        cur);
 			}
 
-			select_free_reflections(cr_refl, rng);
+			if ( !no_free ) select_free_reflections(cr_refl, rng);
 
 			as = asymmetric_indices(cr_refl, sym);
 			crystal_set_reflections(cr, as);
