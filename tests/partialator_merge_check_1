@@ -52,5 +52,7 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 rm -f partialator_merge_check_1.stream partialator_merge_check_1.hkl \
-      partialator_merge_check_1_ans.hkl scaling-report.pdf partialator.params
+      partialator_merge_check_1_ans.hkl partialator.params \
+      partialator_merge_check_1.hkl1 partialator_merge_check_1.hkl2 \
+      pgraph-iter0.dat pgraph-iter1.dat
 exit 0
