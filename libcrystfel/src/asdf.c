@@ -884,59 +884,93 @@ static int find_cell(struct tvector *tvectors, int N_tvectors, double IndexFit,
 	return 0;
 }
 
-
-static void shuffle_triplets(int **triplets, int n)
-{
-	int i, j;
-	int t[3];
-	for ( i = 0; i < n - 1; i++ ) {
-		j = i + rand() / (RAND_MAX / (n - i) + 1);
-		memcpy(t, triplets[j], 3 * sizeof(int));
-		memcpy(triplets[j], triplets[i], 3 * sizeof(int));
-		memcpy(triplets[i], t,  3 * sizeof(int));
-	}
+void swap(int *a, int *b) {
+	int c = *a;
+	*a = *b;
+	*b = c;
 }
 
-
-static int index_refls(gsl_vector **reflections, int N_reflections,
-                       double d_max, double volume_min, double volume_max,
-                       double LevelFit, double IndexFit, int i_max,
-                       struct asdf_cell *c, struct fftw_vars fftw)
-{
-
+/* Generate triplets of integers < N_reflections in random sequence */
+static int **generate_triplets(int N_reflections, int N_triplets_max, 
+                               int *N) {
 	int i, j, k, l, n;
 
 	/* Number of triplets = c_n^3 if n - number of reflections */
 	int N_triplets = N_reflections * (N_reflections - 1) *
 	                                 (N_reflections - 2) / 6;
 
+	if ( N_triplets > N_triplets_max ) N_triplets = N_triplets_max;
+	*N = N_triplets;
+
 	int **triplets = malloc(N_triplets * sizeof(int *));
 	if (triplets == NULL) {
-		ERROR("Failed to allocate triplets in index_refls!\n");
+		ERROR("Failed to allocate triplets in generate_triplets!\n");
 		return 0;
 	}
 
-	l = 0;
-	for ( i = 0; i < N_reflections; i++ ) {
-		for ( j = i + 1; j < N_reflections; j++ ) {
-			for ( k = j + 1; k < N_reflections; k++ ) {
-				triplets[l] = malloc(3 * sizeof(int));
-				if (triplets[l] == NULL) {
-					ERROR("Failed to allocate triplets "
-					      " in index_refls!\n");
-					return 0;
-				}
+	int is_in_triplets;
+	n = 0;
 
-				triplets[l][0] = i;
-				triplets[l][1] = j;
-				triplets[l][2] = k;
-				l++;
+	while ( n < N_triplets ) {
+		/* Generate three different integer numbers < N_reflections */
+		i = rand() % N_reflections;
+		j = i;
+		k = i;
+		while ( j == i ) {
+			j = rand() % N_reflections;
+		}
+		while ( k == i || k == j ) {
+			k = rand() % N_reflections;
+		}
+
+		/* Sort (i, j, k) */
+		if ( i > k ) swap(&i, &k);
+		if ( i > j ) swap(&i, &j);
+		if ( j > k ) swap(&j, &k);
+
+		/* Check if it's already in triplets[] */
+		is_in_triplets = 0;
+		for ( l = 0; l < n; l++ ) {
+			if ( triplets[l][0] == i &&
+			     triplets[l][1] == j &&
+			     triplets[l][2] == k ) {
+				is_in_triplets = 1;
+				break;
 			}
 		}
-	}
 
-	/* Triplets are processed in a random sequence if N_triplets > 10000 */
-	if ( N_reflections > 40 ) shuffle_triplets(triplets, N_triplets);
+		if ( is_in_triplets == 0 ) {
+			triplets[n] = malloc(3 * sizeof(int));
+			if (triplets[n] == NULL) {
+				ERROR("Failed to allocate triplets "
+				      " in generate_triplets!\n");
+				return 0;
+			}
+			triplets[n][0] = i;
+			triplets[n][1] = j;
+			triplets[n][2] = k;
+
+			n++;
+		}	
+	}
+	
+	return triplets;
+}
+
+static int index_refls(gsl_vector **reflections, int N_reflections,
+                       double d_max, double volume_min, double volume_max,
+                       double LevelFit, double IndexFit, int N_triplets_max,
+                       struct asdf_cell *c, struct fftw_vars fftw)
+{
+
+	int i, k, n;
+
+	int N_triplets;
+	int **triplets = generate_triplets(N_reflections, N_triplets_max, 
+	                                   &N_triplets);
+	if ( N_triplets == 0 ) {
+		return 0;
+	}
 
 	gsl_vector *normal = gsl_vector_alloc(3);
 
@@ -949,9 +983,7 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 		return 0;
 	}
 
-	if ( i_max > N_triplets ) i_max = N_triplets;
-
-	struct tvector *tvectors = malloc(i_max * sizeof(struct tvector));
+	struct tvector *tvectors = malloc(N_triplets * sizeof(struct tvector));
 	if (tvectors == NULL) {
 		ERROR("Failed to allocate tvectors in index_refls!\n");
 		return 0;
@@ -961,7 +993,7 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 
 	int n_max = 0; // maximum number of reflections fitting one of tvectors
 
-	for ( i = 0; i < i_max; i++ ) {
+	for ( i = 0; i < N_triplets; i++ ) {
 		if ( calc_normal(reflections[triplets[i][0]],
 		                 reflections[triplets[i][1]],
 		                 reflections[triplets[i][2]],
@@ -1007,7 +1039,7 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 			}
 		}
 
-		if ( (i != 0 && i % 10000 == 0) || i == i_max - 1 ) {
+		if ( (i != 0 && i % 10000 == 0) || i == N_triplets - 1 ) {
 
 			/* Sort tvectors by length */
 			qsort(tvectors, N_tvectors, sizeof(struct tvector),
@@ -1057,7 +1089,7 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 	double volume_min = 100.;
 	double volume_max = 1000000.;
 
-	int i_max = 10000; // maximum number of triplets
+	int N_triplets_max = 10000; // maximum number of triplets
 
 	struct asdf_private *dp = (struct asdf_private *)ipriv;
 
@@ -1093,7 +1125,8 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 	if ( N_reflections == 0 ) return 0;
 
 	j = index_refls(reflections, N_reflections, d_max, volume_min,
-	                volume_max, LevelFit, IndexFit, i_max, c, dp->fftw);
+	                volume_max, LevelFit, IndexFit, N_triplets_max, c, 
+	                dp->fftw);
 
 	for ( i = 0; i < N_reflections; i++ ) {
 		gsl_vector_free(reflections[i]);
