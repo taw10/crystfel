@@ -322,6 +322,15 @@ static int compare_doubles(const void *a, const void *b)
 }
 
 
+static double max(double a, double b, double c)
+{
+     double m = a;
+     if ( m < b ) m = b;
+     if ( m < c ) m = c;
+     return m;
+}
+
+
 /* Compares tvectors by length */
 static int compare_tvectors(const void *a, const void *b)
 {
@@ -889,11 +898,13 @@ static int find_cell(struct tvector *tvectors, int N_tvectors, double IndexFit,
 	return 0;
 }
 
+
 void swap(int *a, int *b) {
 	int c = *a;
 	*a = *b;
 	*b = c;
 }
+
 
 /* Generate triplets of integers < N_reflections in random sequence */
 static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
@@ -961,6 +972,7 @@ static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
 
 	return triplets;
 }
+
 
 static int index_refls(gsl_vector **reflections, int N_reflections,
                        double d_max, double volume_min, double volume_max,
@@ -1094,7 +1106,7 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 
 	double LevelFit = 1./1000;
 	double IndexFit = 1./500;
-	double d_max = 220.; // thrice the maximum expected axis length
+	double d_max = 400.; // thrice the maximum expected axis length
 	double volume_min = 100.;
 	double volume_max = 1000000.;
 
@@ -1103,6 +1115,12 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 	struct asdf_private *dp = (struct asdf_private *)ipriv;
 
 	if ( dp->indm & INDEXING_CHECK_CELL_AXES ) {
+		double a, b, c, gamma, beta, alpha;
+		cell_get_parameters(dp->template, &a, &b, &c,
+                                                  &alpha, &beta, &gamma);
+
+		d_max = max(a, b, c) * 3 * 1e10;
+
 		double volume = cell_get_volume(dp->template);
 		double vtol = (dp->ltl[0] + dp->ltl[1] + dp->ltl[2]) / 100 +
 		               dp->ltl[3] / 180 * M_PI;
