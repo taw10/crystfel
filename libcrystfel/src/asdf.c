@@ -891,8 +891,8 @@ void swap(int *a, int *b) {
 }
 
 /* Generate triplets of integers < N_reflections in random sequence */
-static int **generate_triplets(int N_reflections, int N_triplets_max, 
-                               int *N) {
+static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
+{
 	int i, j, k, l, n;
 
 	/* Number of triplets = c_n^3 if n - number of reflections */
@@ -951,9 +951,9 @@ static int **generate_triplets(int N_reflections, int N_triplets_max,
 			triplets[n][2] = k;
 
 			n++;
-		}	
+		}
 	}
-	
+
 	return triplets;
 }
 
@@ -966,7 +966,7 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 	int i, k, n;
 
 	int N_triplets;
-	int **triplets = generate_triplets(N_reflections, N_triplets_max, 
+	int **triplets = generate_triplets(N_reflections, N_triplets_max,
 	                                   &N_triplets);
 	if ( N_triplets == 0 ) {
 		return 0;
@@ -1125,7 +1125,7 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 	if ( N_reflections == 0 ) return 0;
 
 	j = index_refls(reflections, N_reflections, d_max, volume_min,
-	                volume_max, LevelFit, IndexFit, N_triplets_max, c, 
+	                volume_max, LevelFit, IndexFit, N_triplets_max, c,
 	                dp->fftw);
 
 	for ( i = 0; i < N_reflections; i++ ) {
