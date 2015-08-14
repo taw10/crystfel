@@ -87,9 +87,15 @@ Sets the minimum number of peaks that should fall within a pixel, across all ind
 
 .PD 0
 .IP "\fB-p\fR \fIn\fR"
+.IP \fB--min-num-pixels-per-conn-group=\fR\fIn\fR
+.PD
+Sets the minimum number of pixels that contribute to the geometry opimization (see the \fB--min-num-peaks-per-pixel\fR option above ) that a connected group should have for the group to be optimized independently. The default value is 100.
+
+.PD 0
+.IP "\fB-p\fR \fIn\fR"
 .IP \fB--min-num-peaks-per-panel=\fR\fIn\fR
 .PD
-Sets the minimum number of peaks that should appear in a panel for the panel's geometry to be optimized independently. The default value is 100.
+This option has been renamd to  \fB--min-num-pixels-per-conn-group\fR. It has been deprecated and will soon be removed. It is currently mapped to the \fB--min-num-pixels-per-conn-group\fR option.
 
 .PD 0
 .IP "\fB-l\fR"
