@@ -323,8 +323,8 @@ struct queue_args
 	int n_started;
 	int n_finished;
 	int n_to_do;
-	int mean_nac;
-	int nmean_nac;
+	long long int mean_nac;
+	long long int nmean_nac;
 
 	struct cc_list *ccs;
 	struct flist **crystals;
