@@ -173,22 +173,37 @@ static double random_partiality(signed int h, signed int k, signed int l,
 	int i;
 
 	gsl_rng_set(rng, serial);
+	seed = gsl_rng_get(rng);
+	gsl_rng_set(rng, seed);
+
 	for ( i=0; i<abs(h)+1; i++ ) {
 		seed = gsl_rng_get(rng);
 	}
-	if ( h < 0 ) seed = gsl_rng_get(rng);
+	gsl_rng_set(rng, seed);
+	if ( h >= 0 ) {
+		seed = gsl_rng_get(rng);
+	}
+	seed = gsl_rng_get(rng);
 	gsl_rng_set(rng, seed);
 
 	for ( i=0; i<abs(k)+1; i++ ) {
 		seed = gsl_rng_get(rng);
 	}
-	if ( k < 0 ) seed = gsl_rng_get(rng);
+	gsl_rng_set(rng, seed);
+	if ( k >= 0 ) {
+		seed = gsl_rng_get(rng);
+	}
+	seed = gsl_rng_get(rng);
 	gsl_rng_set(rng, seed);
 
 	for ( i=0; i<abs(l)+1; i++ ) {
 		seed = gsl_rng_get(rng);
 	}
-	if ( l < 0 ) seed = gsl_rng_get(rng);
+	gsl_rng_set(rng, seed);
+	if ( l >= 0 ) {
+		seed = gsl_rng_get(rng);
+	}
+	seed = gsl_rng_get(rng);
 	gsl_rng_set(rng, seed);
 
 	p = gsl_rng_uniform(rng);
