@@ -45,8 +45,8 @@
 #define HAVE_SAVE_TO_PNG 1
 #include <cairo.h>
 #include <gdk/gdk.h>
-#endif /* HAVE_CAIRO */
 #endif /* HAVE_GTK */
+#endif /* HAVE_CAIRO */
 
 #include <detector.h>
 #include <stream.h>
