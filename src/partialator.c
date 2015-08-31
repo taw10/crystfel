@@ -774,16 +774,15 @@ int main(int argc, char *argv[])
 	}
 
 	if ( infile == NULL ) {
-		infile = strdup("-");
+		ERROR("Please give the input filename (with -i)\n");
+		return 1;
 	}
 	st = open_stream_for_read(infile);
 	if ( st == NULL ) {
 		ERROR("Failed to open input stream '%s'\n", infile);
 		return 1;
 	}
-	/* Don't free "infile", because it's needed for the scaling report */
 
-	/* Sanitise output filename */
 	if ( outfile == NULL ) {
 		outfile = strdup("partialator.hkl");
 	}
