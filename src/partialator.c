@@ -59,6 +59,234 @@
 #include "rejection.h"
 
 
+struct csplit_hash_entry
+{
+	int    n_events;
+	char **events;
+	int   *datasets;
+};
+
+#define CSPLIT_HASH_MAX (65536)
+
+struct custom_split
+{
+	int    n_events_total;
+	int    n_datasets;
+	char **dataset_names;
+	struct csplit_hash_entry hashes[CSPLIT_HASH_MAX];
+};
+
+
+static int csplit_hash(const char *id)
+{
+	int i;
+	size_t len = strlen(id);
+	int h = 0;
+
+	for ( i=0; i<len; i++ ) {
+		h += id[i] * i;
+		h = h % CSPLIT_HASH_MAX;
+	}
+	assert(h < CSPLIT_HASH_MAX);
+
+	return h;
+}
+
+
+static void add_to_hash_entry(struct csplit_hash_entry *he, const char *id,
+                              int dsn)
+{
+	he->events = realloc(he->events, (1+he->n_events)*sizeof(char *));
+	he->datasets = realloc(he->datasets, (1+he->n_events)*sizeof(int));
+	if ( (he->events == NULL) || (he->datasets == NULL) ) {
+		ERROR("Failed to grow csplit hash entry.\n");
+		abort();
+	}
+
+	he->events[he->n_events] = strdup(id);
+	he->datasets[he->n_events] = dsn;
+	he->n_events++;
+}
+
+
+static signed int find_dsn_for_id(struct custom_split *csplit, const char *id)
+{
+	int hash = csplit_hash(id);
+	int i;
+	struct csplit_hash_entry *he = &csplit->hashes[hash];
+
+	for ( i=0; i<he->n_events; i++ ) {
+		if ( strcmp(he->events[i], id) == 0 ) {
+			return he->datasets[i];
+		}
+	}
+
+	return -1;
+}
+
+
+/* Find dataset number */
+static int find_dsn(struct custom_split *csplit, const char *ds)
+{
+	int i;
+
+	for ( i=0; i<csplit->n_datasets; i++ ) {
+		if ( strcmp(csplit->dataset_names[i], ds) == 0 ) {
+			return i;
+		}
+	}
+
+	csplit->dataset_names = realloc(csplit->dataset_names,
+	                                (1+csplit->n_datasets)*sizeof(char *));
+	if ( csplit->dataset_names == NULL ) {
+		ERROR("Failed to grow list of dataset names\n");
+		abort();
+	}
+
+	csplit->n_datasets++;
+	csplit->dataset_names[csplit->n_datasets-1] = strdup(ds);
+	return csplit->n_datasets-1;
+}
+
+
+/* Add arbitrary ID 'id' to dataset table with name 'ds' */
+static void add_to_csplit(struct custom_split *csplit, const char *id,
+                          const char *ds)
+{
+	int dsn;
+	int hash;
+	struct csplit_hash_entry *he;
+
+	dsn = find_dsn(csplit, ds);
+
+	hash = csplit_hash(id);
+	he = &csplit->hashes[hash];
+	add_to_hash_entry(he, id, dsn);
+	csplit->n_events_total++;
+}
+
+
+/* Write two-way split results (i.e. for CC1/2 etc) for this list of crystals */
+static void write_split(Crystal **crystals, int n_crystals, const char *outfile,
+                        int nthreads, PartialityModel pmodel,
+                        int min_measurements, SymOpList *sym, double push_res)
+{
+	char tmp[1024];
+	RefList *split;
+	Crystal *crystals1[n_crystals];
+	Crystal *crystals2[n_crystals];
+	int n_crystals1 = 0;
+	int n_crystals2 = 0;
+	int i;
+
+	for ( i=0; i<n_crystals; i++ ) {
+		if ( i % 2 ) {
+			crystals1[n_crystals1] = crystals[i];
+			n_crystals1++;
+		} else {
+			crystals2[n_crystals2] = crystals[i];
+			n_crystals2++;
+		}
+	}
+	snprintf(tmp, 1024, "%s1", outfile);
+	split = merge_intensities(crystals1, n_crystals1, nthreads,
+		                  pmodel, min_measurements, push_res);
+	STATUS("Writing two-way split to %s ", tmp);
+	write_reflist_2(tmp, split, sym);
+	reflist_free(split);
+	snprintf(tmp, 1024, "%s2", outfile);
+	split = merge_intensities(crystals2, n_crystals2, nthreads,
+		                  pmodel, min_measurements, push_res);
+	STATUS("and %s\n", tmp);
+	write_reflist_2(tmp, split, sym);
+	reflist_free(split);
+}
+
+
+static char *insert_into_filename(const char *fn, const char *add)
+{
+	int i;
+	char *out;
+
+	out = malloc(strlen(fn) + strlen(add) + 2);
+	if ( out == NULL ) return NULL;
+
+	for ( i=strlen(fn); i>0; i-- ) {
+		if ( fn[i] == '.' ) {
+			strncpy(out, fn, i);
+			out[i] = '\0';
+			strcat(out, "-");
+			strcat(out, add);
+			strcat(out, fn+i);
+			return out;
+		}
+	}
+
+	/* Fallback if fn does not contain a dot */
+	strcpy(out, fn);
+	strcat(out, "-");
+	strcat(out, add);
+	return out;
+}
+
+
+/* Write custom split results (including a two-way split) */
+static void write_custom_split(struct custom_split *csplit, int dsn,
+                               Crystal **crystals, int n_crystals,
+                               PartialityModel pmodel, int min_measurements,
+                               double push_res, SymOpList *sym, int nthreads,
+                               const char *outfile)
+{
+	char *tmp;
+	RefList *split;
+	Crystal *crystalsn[n_crystals];
+	int n_crystalsn = 0;
+	int i;
+
+	for ( i=0; i<n_crystals; i++ ) {
+
+		const char *fn;
+		struct event *ev;
+		char *evs;
+		char *id;
+		int dsn_crystal;
+
+		fn = crystal_get_image(crystals[i])->filename;
+		ev = crystal_get_image(crystals[i])->event;
+		evs = get_event_string(ev);
+
+		id = malloc(strlen(evs)+strlen(fn)+2);
+		if ( id == NULL ) {
+			ERROR("Failed to allocate ID\n");
+			return;
+		}
+		strcpy(id, fn);
+		strcat(id, " ");
+		strcat(id, evs);
+		dsn_crystal = find_dsn_for_id(csplit, id);
+		free(id);
+		if ( dsn == dsn_crystal ) {
+			crystalsn[n_crystalsn] = crystals[i];
+			n_crystalsn++;
+		}
+
+	}
+
+	tmp = insert_into_filename(outfile, csplit->dataset_names[dsn]);
+
+	STATUS("Writing dataset '%s' to %s (%i crystals)\n",
+	       csplit->dataset_names[dsn], tmp, n_crystalsn);
+	split = merge_intensities(crystalsn, n_crystalsn, nthreads,
+		                  pmodel, min_measurements, push_res);
+	write_reflist_2(tmp, split, sym);
+	reflist_free(split);
+
+	write_split(crystalsn, n_crystalsn, tmp, nthreads, pmodel,
+	            min_measurements, sym, push_res);
+	free(tmp);
+}
+
+
 static void show_help(const char *s)
 {
 	printf("Syntax: %s [options]\n\n", s);
@@ -82,7 +310,79 @@ static void show_help(const char *s)
 "      --max-adu=<n>          Saturation value of detector.\n"
 "      --push-res=<n>         Merge higher than apparent resolution cutoff.\n"
 "  -j <n>                     Run <n> analyses in parallel.\n"
-"      --no-free              Disable cross-validation (testing only).\n");
+"      --no-free              Disable cross-validation (testing only).\n"
+"      --custom-split         List of files for custom dataset splitting.\n");
+}
+
+
+static struct custom_split *load_custom_split(const char *filename)
+{
+	struct custom_split *csplit;
+	FILE *fh;
+	int i;
+
+	csplit = malloc(sizeof(struct custom_split));
+	if ( csplit == NULL ) return NULL;
+	csplit->n_datasets = 0;
+	csplit->n_events_total = 0;
+	csplit->dataset_names = NULL;
+	for ( i=0; i<CSPLIT_HASH_MAX; i++ ) {
+		csplit->hashes[i].n_events = 0;
+		csplit->hashes[i].events = NULL;
+		csplit->hashes[i].datasets = NULL;
+	}
+
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) {
+		ERROR("Failed to open '%s'\n", filename);
+		free(csplit);
+		return NULL;
+	}
+
+	do {
+
+		char *rval;
+		char line[1024];
+		int i;
+		char *fn;
+		struct event *ev;
+		char *evs;
+		char *id;
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) break;
+
+		chomp(line);
+		notrail(line);
+
+		for ( i=strlen(line); i>0; i-- ) {
+			if ( (line[i] == ' ') || (line[i]=='\t') ) break;
+		}
+		if ( i == 0 ) {
+			ERROR("Badly formatted line '%s'\n", line);
+			return NULL;
+		}
+		i++;
+
+		fn = strndup(line, i);
+		ev = get_event_from_event_string(line);
+		evs = get_event_string(ev);
+		notrail(fn);
+		id = malloc(strlen(fn) + strlen(evs) + 2);
+		strcpy(id, fn);
+		strcat(id, " ");
+		strcat(id, evs);
+		add_to_csplit(csplit, id, line+i);
+		free(id);
+
+	} while ( 1 );
+
+	fclose(fh);
+
+	STATUS("Hash table load factor = %.2f\n",
+	       (double)csplit->n_events_total / CSPLIT_HASH_MAX);
+
+	return csplit;
 }
 
 
@@ -304,6 +604,8 @@ int main(int argc, char *argv[])
 	double push_res = 0.0;
 	gsl_rng *rng;
 	int no_free = 0;
+	char *csplit_fn = NULL;
+	struct custom_split *csplit = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -323,6 +625,7 @@ int main(int argc, char *argv[])
 		{"start-params",       1, NULL,                4},
 		{"push-res",           1, NULL,                5},
 		{"res-push",           1, NULL,                5}, /* compat */
+		{"custom-split",       1, NULL,                6},
 
 		{"no-scale",           0, &no_scale,           1},
 		{"no-pr",              0, &no_pr,              1},
@@ -433,6 +736,10 @@ int main(int argc, char *argv[])
 			push_res = push_res*1e9;
 			break;
 
+			case 6 :
+			csplit_fn = strdup(optarg);
+			break;
+
 			case 0 :
 			break;
 
@@ -489,6 +796,16 @@ int main(int argc, char *argv[])
 	if ( (pmodel == PMODEL_UNITY) && !no_pr ) {
 		no_pr = 1;
 		STATUS("Not going to refine the unity model.\n");
+	}
+
+	/* Read the custom split list (if applicable) */
+	if ( csplit_fn != NULL ) {
+		csplit = load_custom_split(csplit_fn);
+		if ( csplit == NULL ) {
+			ERROR("Failed to load custom split list.\n");
+			return 1;
+		}
+		free(csplit_fn);
 	}
 
 	gsl_set_error_handler_off();
@@ -674,34 +991,21 @@ int main(int argc, char *argv[])
 	}
 
 	/* Output results */
+	STATUS("Writing overall results to %s\n", outfile);
 	write_reflist_2(outfile, full, sym);
 
 	/* Output split results */
-	char tmp[1024];
-	RefList *split;
-	Crystal *crystals1[n_crystals];
-	Crystal *crystals2[n_crystals];
-	int n_crystals1 = 0;
-	int n_crystals2 = 0;
-	for ( i=0; i<n_crystals; i++ ) {
-		if ( i % 2 ) {
-			crystals1[n_crystals1] = crystals[i];
-			n_crystals1++;
-		} else {
-			crystals2[n_crystals2] = crystals[i];
-			n_crystals2++;
+	write_split(crystals, n_crystals, outfile, nthreads, pmodel,
+	            min_measurements, sym, push_res);
+
+	/* Output custom split results */
+	if ( csplit != NULL ) {
+		for ( i=0; i<csplit->n_datasets; i++ ) {
+			write_custom_split(csplit, i, crystals, n_crystals,
+			                   pmodel, min_measurements, push_res,
+			                   sym, nthreads, outfile);
 		}
 	}
-	snprintf(tmp, 1024, "%s1", outfile);
-	split = merge_intensities(crystals1, n_crystals1, nthreads,
-		                  pmodel, min_measurements, push_res);
-	write_reflist_2(tmp, split, sym);
-	reflist_free(split);
-	snprintf(tmp, 1024, "%s2", outfile);
-	split = merge_intensities(crystals2, n_crystals2, nthreads,
-		                  pmodel, min_measurements, push_res);
-	write_reflist_2(tmp, split, sym);
-	reflist_free(split);
 
 	/* Dump parameters */
 	FILE *fh;
