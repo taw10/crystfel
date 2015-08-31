@@ -84,7 +84,7 @@ static int csplit_hash(const char *id)
 	int h = 0;
 
 	for ( i=0; i<len; i++ ) {
-		h = (h*i +id[i]) % CSPLIT_HASH_MAX;
+		h = (h*31 + id[i]) % CSPLIT_HASH_MAX;
 	}
 	assert(h < CSPLIT_HASH_MAX);
 
