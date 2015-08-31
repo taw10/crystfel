@@ -205,6 +205,11 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 	Reflection *refl;
 	RefListIterator *iter;
 
+	if ( n == 0 ) {
+		ERROR("No crystals!\n");
+		return NULL;
+	}
+
 	full = reflist_new();
 
 	qargs.full = full;
