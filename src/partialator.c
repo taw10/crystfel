@@ -343,37 +343,45 @@ static struct custom_split *load_custom_split(const char *filename)
 
 		char *rval;
 		char line[1024];
-		int i;
 		char *fn;
-		struct event *ev;
 		char *evs;
+		char *ds;
 		char *id;
+		int n;
+		char **bits;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) break;
 
 		chomp(line);
 		notrail(line);
-
-		for ( i=strlen(line); i>0; i-- ) {
-			if ( (line[i] == ' ') || (line[i]=='\t') ) break;
-		}
-		if ( i == 0 ) {
+		n = assplode(line, " \t,", &bits, ASSPLODE_NONE);
+		if ( n < 2 ) {
 			ERROR("Badly formatted line '%s'\n", line);
 			return NULL;
 		}
-		i++;
 
-		fn = strndup(line, i);
-		ev = get_event_from_event_string(line);
-		evs = get_event_string(ev);
-		notrail(fn);
+		if ( n == 3 ) {
+			/* Filename, event, dataset */
+			fn = bits[0];
+			evs = bits[1];
+			ds = bits[2];
+		} else {
+			fn = bits[0];
+			evs = get_event_string(NULL);
+			ds = bits[1];
+		}
+		free(bits);
+
 		id = malloc(strlen(fn) + strlen(evs) + 2);
 		strcpy(id, fn);
 		strcat(id, " ");
 		strcat(id, evs);
-		add_to_csplit(csplit, id, line+i);
+		add_to_csplit(csplit, id, ds);
 		free(id);
+		free(fn);
+		free(evs);
+		free(ds);
 
 	} while ( 1 );
 
