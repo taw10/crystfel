@@ -122,6 +122,11 @@ Disable cross-validation (for testing only).
 .PD
 Read a list of filenames, event IDs and dataset IDs from \fIfilename\fR.  See the section on \fBCUSTOM DATASET SPLITTING\fR below.
 
+.PD 0
+.IP \fB--max-rel-B=\fIn\fR
+.PD
+Reject crystals if the absolute values of their relative Debye-Waller ("B") factors are more than \fIn\fR square Angstroms.  The default is \fB--max-rel-B=100\fR.
+
 .SH PARTIALITY MODELS
 
 The available partiality models are:

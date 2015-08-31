@@ -310,7 +310,8 @@ static void show_help(const char *s)
 "      --push-res=<n>         Merge higher than apparent resolution cutoff.\n"
 "  -j <n>                     Run <n> analyses in parallel.\n"
 "      --no-free              Disable cross-validation (testing only).\n"
-"      --custom-split         List of files for custom dataset splitting.\n");
+"      --custom-split         List of files for custom dataset splitting.\n"
+"      --max-rel-B            Maximum allowable relative |B| factor.\n");
 }
 
 
@@ -620,6 +621,7 @@ int main(int argc, char *argv[])
 	int no_free = 0;
 	char *csplit_fn = NULL;
 	struct custom_split *csplit = NULL;
+	double max_B = 1e-18;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -640,6 +642,8 @@ int main(int argc, char *argv[])
 		{"push-res",           1, NULL,                5},
 		{"res-push",           1, NULL,                5}, /* compat */
 		{"custom-split",       1, NULL,                6},
+		{"max-rel-B"   ,       1, NULL,                7},
+		{"max-rel-b"   ,       1, NULL,                7}, /* compat */
 
 		{"no-scale",           0, &no_scale,           1},
 		{"no-pr",              0, &no_pr,              1},
@@ -752,6 +756,16 @@ int main(int argc, char *argv[])
 
 			case 6 :
 			csplit_fn = strdup(optarg);
+			break;
+
+			case 7 :
+			errno = 0;
+			max_B = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --max-rel-B.\n");
+				return 1;
+			}
+			max_B = max_B * 1e-20;
 			break;
 
 			case 0 :
@@ -969,7 +983,7 @@ int main(int argc, char *argv[])
 	full = merge_intensities(crystals, n_crystals, nthreads, pmodel,
 	                         min_measurements, push_res);
 
-	check_rejection(crystals, n_crystals, full);
+	check_rejection(crystals, n_crystals, full, max_B);
 
 	write_pgraph(full, crystals, n_crystals, 0);
 
@@ -991,7 +1005,7 @@ int main(int argc, char *argv[])
 		STATUS("Overall free residual: initial = %e, final = %e\n",
 		       init_free_dev, final_free_dev);
 
-		check_rejection(crystals, n_crystals, full);
+		check_rejection(crystals, n_crystals, full, max_B);
 		normalise_scales(crystals, n_crystals);
 
 		/* Re-estimate all the full intensities */
