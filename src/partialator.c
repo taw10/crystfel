@@ -644,8 +644,8 @@ int main(int argc, char *argv[])
 		{"no-scale",           0, &no_scale,           1},
 		{"no-pr",              0, &no_pr,              1},
 		{"no-polarisation",    0, &polarisation,       0},
-		{"no-polarization",    0, &polarisation,       0},
-		{"polarisation",       0, &polarisation,       1}, /* compat */
+		{"no-polarization",    0, &polarisation,       0}, /* compat */
+		{"polarisation",       0, &polarisation,       1},
 		{"polarization",       0, &polarisation,       1}, /* compat */
 		{"no-free",            0, &no_free,            1},
 
