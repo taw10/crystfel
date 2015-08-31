@@ -29,10 +29,12 @@ X-ray bandwidth and so on) and attempts to optimise the geometrical parameters
 to make the fully integrated intensities calculated using the model agree as
 closely as possible between the many patterns.
 
-See USAGE CASES below for examples of commands to merge reflections in different
+See \fBUSAGE CASES\fR below for examples of commands to merge reflections in different
 ways, for example with and without partiality or scaling.
 
 In addition to the output reflection list, \fBpartialator\fR will write a file called partialator.params which contains the scaling factors determined for each crystal.  After each iteration, a file will be written called pgraph-iter\fIn\fR.dat which contains the observed and calculated partialities for a randomly chosen set of "free" reflections which were not included in the refinement.
+
+\fBpartialator\fR will also write datasets merged using two halves of the total data using the same filename as you give for \fB-o\fR or \fB--output\fR, with \fB1\fR and \fB2\fR appended.  For example, \fBpartialator.hkl1\fR and \fBpartialator.hkl2\fR.  Compare these two files with each other to calculate figures of merit such as Rsplit and CC1/2.  See the section on \fBCUSTOM DATASET SPLITTING\fR for more discussion on this topic.
 
 .SH OPTIONS
 .PD 0
@@ -115,6 +117,11 @@ Stop processing after \fIn\fR crystals have been successfully read.  The default
 .PD
 Disable cross-validation (for testing only).
 
+.PD 0
+.IP \fB--custom-split=\fIfilename\fR
+.PD
+Read a list of filenames, event IDs and dataset IDs from \fIfilename\fR.  See the section on \fBCUSTOM DATASET SPLITTING\fR below.
+
 .SH PARTIALITY MODELS
 
 The available partiality models are:
@@ -178,6 +185,17 @@ partialator -i \fImy.stream \fR-o \fImy.hkl\fR -y \fImypointgroup \fB--model=scs
 (Use a higher number of iterations to increase the accuracy of post-refinement, but at a cost of more CPU time and possibly more rejected crystals)
 .PP
 \fBscguassian\fR could be substituted for \fBscsphere\fR in the above examples to use the Gaussian partiality model instead of the spherical one.
+
+.SH CUSTOM DATASET SPLITTING
+When performing a time-resolved experiment (for example), it is preferable to ensure that the data for all time points has been processed identically.  Rather than processing each time point independently with separate runs of partialator, it is better to process them all together and do the splitting into time points just before the final output.  Consider, for example, the case of simple scaling (without a B factor): when merging independently, the resulting datasets would probably end up with different overall scaling factors.  When comparing the results, you would need to take this difference into account.  In practice, most programs can do that job easily, but what about if a B factor is included?  And what if partialities are included - how unique is the solution?
+
+With \fBpartialator --custom-split\fR, you can provide a separate text file containing a list of filenames, event numbers and \fIdataset names\fR, one event (detector frame) per line, with the fields separated by any number of spaces, commas or tabs.  For each unique \fIdataset name\fR, a separate reflection list will be output.  All crystals will be refined together, but they will be merged according to the dataset names you give.  The parameters (scaling factors, partialities etc) determined during the joint refinement will be applied.  For each dataset, a separate pair of split half-datasets will also be written, allowing you to calculate figures of merit such as Rsplit and CC1/2 for each one.
+
+If the overall output filename (given with \fB-o\fR or \fB--output\fR) were \fBmerged.hkl\fR, then a dataset named \fIdataset\fR would be written to \fBmerged-\fIdataset\fB.hkl\fR.  The corresponding half-datasets would be written to \fBmerged-\fIdataset\fB.hkl1\fR and \fBmerged-\fIdataset\fB.hkl2\fR.
+
+Note that the filenames and event names must match \fBexactly\fR what is written into the stream as the \fBImage filename\fR and \fBEvent\fR, taking into account options such as \fBindexamajig --prefix\fR and \fB--basename\fR.  We recommend that you check that the numbers of crystals in each dataset, which will be written on the terminal by partialator, match your expectations and that no patterns have been "lost".
+
+Note further that the main and all custom split datasets, and also all the half-datasets, are subject to --min-measurements.
 
 .SH AUTHOR
 This page was written by Thomas White.
