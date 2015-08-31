@@ -195,7 +195,9 @@ If the overall output filename (given with \fB-o\fR or \fB--output\fR) were \fBm
 
 Note that the filenames and event names must match \fBexactly\fR what is written into the stream as the \fBImage filename\fR and \fBEvent\fR, taking into account options such as \fBindexamajig --prefix\fR and \fB--basename\fR.  We recommend that you check that the numbers of crystals in each dataset, which will be written on the terminal by partialator, match your expectations and that no patterns have been "lost".
 
-Note further that the main and all custom split datasets, and also all the half-datasets, are subject to --min-measurements.
+If you do not have event IDs for your data, i.e. if you have one detector frame per input file, simply leave out the event IDs from the custom split file.
+
+Finally, note that the main and all custom split datasets, and also all the half-datasets, are subject to --min-measurements.
 
 .SH AUTHOR
 This page was written by Thomas White.
