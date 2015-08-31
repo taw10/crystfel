@@ -66,7 +66,7 @@ struct csplit_hash_entry
 	int   *datasets;
 };
 
-#define CSPLIT_HASH_MAX (65536)
+#define CSPLIT_HASH_MAX (65521)
 
 struct custom_split
 {
@@ -84,8 +84,7 @@ static int csplit_hash(const char *id)
 	int h = 0;
 
 	for ( i=0; i<len; i++ ) {
-		h += id[i] * i;
-		h = h % CSPLIT_HASH_MAX;
+		h = (h*i +id[i]) % CSPLIT_HASH_MAX;
 	}
 	assert(h < CSPLIT_HASH_MAX);
 
@@ -387,8 +386,15 @@ static struct custom_split *load_custom_split(const char *filename)
 
 	fclose(fh);
 
-	STATUS("Hash table load factor = %.2f\n",
-	       (double)csplit->n_events_total / CSPLIT_HASH_MAX);
+	int max = 0;
+	for ( i=0; i<CSPLIT_HASH_MAX; i++ ) {
+		if ( csplit->hashes[i].n_events > max ) {
+			max = csplit->hashes[i].n_events;
+		}
+	}
+
+	STATUS("Hash table load factor = %.2f (max %i)\n",
+	       (double)csplit->n_events_total / CSPLIT_HASH_MAX, max);
 
 	return csplit;
 }
