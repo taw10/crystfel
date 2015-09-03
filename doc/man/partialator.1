@@ -198,7 +198,7 @@ With \fBpartialator --custom-split\fR, you can provide a separate text file cont
 
 If the overall output filename (given with \fB-o\fR or \fB--output\fR) were \fBmerged.hkl\fR, then a dataset named \fIdataset\fR would be written to \fBmerged-\fIdataset\fB.hkl\fR.  The corresponding half-datasets would be written to \fBmerged-\fIdataset\fB.hkl1\fR and \fBmerged-\fIdataset\fB.hkl2\fR.
 
-Note that the filenames and event names must match \fBexactly\fR what is written into the stream as the \fBImage filename\fR and \fBEvent\fR, taking into account options such as \fBindexamajig --prefix\fR and \fB--basename\fR.  We recommend that you check that the numbers of crystals in each dataset, which will be written on the terminal by partialator, match your expectations and that no patterns have been "lost".
+Note that the filenames and event names must match \fBexactly\fR what is written into the stream as the \fBImage filename\fR and \fBEvent\fR, taking into account options such as \fBindexamajig --prefix\fR and \fB--basename\fR.  You should therefore check that the numbers of crystals in each dataset, which will be written on the terminal by partialator, match your expectations and that no patterns have been "lost".  There is no requirement for every event in the list to appear in the stream, nor for every event in the stream to belong to one of the datasets.  If an event is listed for more than one dataset, the results are "undefined".
 
 If you do not have event IDs for your data, i.e. if you have one detector frame per input file, simply leave out the event IDs from the custom split file.
 
