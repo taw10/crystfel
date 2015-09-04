@@ -805,6 +805,19 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		return;
 	}
 
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) )
+	{
+		Reflection *refl2;
+		signed int h, k, l;
+		set_flag(refl1, 0);
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		assert(refl2 != NULL);
+		set_flag(refl2, 0);
+	}
+
 	n_out = 0;
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
@@ -852,6 +865,15 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 			{
 				refl2_bij = find_refl(list2, hb, kb, lb);
 			}
+
+			/* Each reflection must only be counted once, whether
+			 * we are visiting it now as "normal" or "bij" */
+			if ( get_flag(refl1) ) continue;
+			assert(!get_flag(refl2));
+			set_flag(refl1, 1);
+			set_flag(refl1_bij, 1);
+			set_flag(refl2, 1);
+			set_flag(refl2_bij, 1);
 
 			assert(refl1_bij != NULL);
 			assert(refl2_bij != NULL);
