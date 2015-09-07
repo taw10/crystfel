@@ -991,19 +991,28 @@ int main(int argc, char *argv[])
 	for ( i=0; i<n_iter; i++ ) {
 
 		double init_dev, init_free_dev;
+		double init_log_dev, init_free_log_dev;
 		double final_dev, final_free_dev;
+		double final_log_dev, final_free_log_dev;
 
 		STATUS("Refinement cycle %i of %i\n", i+1, n_iter);
 
 		/* Refine all crystals to get the best fit */
 		refine_all(crystals, n_crystals, full, nthreads, pmodel,
-		           no_scale, no_pr, &init_dev, &init_free_dev,
-		           &final_dev, &final_free_dev);
+		           no_scale, no_pr,
+		           &init_dev, &init_free_dev,
+		           &init_log_dev, &init_free_log_dev,
+		           &final_dev, &final_free_dev,
+		           &final_log_dev, &final_free_log_dev);
 
 		STATUS("Overall residual: initial = %e, final = %e\n",
 		       init_dev, final_dev);
 		STATUS("Overall free residual: initial = %e, final = %e\n",
 		       init_free_dev, final_free_dev);
+		STATUS("Overall log residual: initial = %e, final = %e\n",
+		       init_log_dev, final_log_dev);
+		STATUS("Overall log free residual: initial = %e, final = %e\n",
+		       init_free_log_dev, final_free_log_dev);
 
 		check_rejection(crystals, n_crystals, full, max_B);
 		normalise_scales(crystals, n_crystals);
