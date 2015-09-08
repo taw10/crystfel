@@ -38,7 +38,6 @@
 #include "crystal.h"
 
 extern void early_rejection(Crystal **crystals, int n);
-extern void check_rejection(Crystal **crystals, int n, RefList *full,
-                            double max_B);
+extern void check_rejection(Crystal **crystals, int n, RefList *full);
 
 #endif	/* REJECTION_H */

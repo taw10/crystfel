@@ -983,7 +983,7 @@ int main(int argc, char *argv[])
 	full = merge_intensities(crystals, n_crystals, nthreads, pmodel,
 	                         min_measurements, push_res);
 
-	check_rejection(crystals, n_crystals, full, max_B);
+	check_rejection(crystals, n_crystals, full);
 
 	write_pgraph(full, crystals, n_crystals, 0);
 
@@ -999,7 +999,7 @@ int main(int argc, char *argv[])
 
 		/* Refine all crystals to get the best fit */
 		refine_all(crystals, n_crystals, full, nthreads, pmodel,
-		           no_scale, no_pr,
+		           no_scale, no_pr, max_B,
 		           &init_dev, &init_free_dev,
 		           &init_log_dev, &init_free_log_dev,
 		           &final_dev, &final_free_dev,
@@ -1014,7 +1014,7 @@ int main(int argc, char *argv[])
 		STATUS("Overall log free residual: initial = %e, final = %e\n",
 		       init_free_log_dev, final_free_log_dev);
 
-		check_rejection(crystals, n_crystals, full, max_B);
+		check_rejection(crystals, n_crystals, full);
 		normalise_scales(crystals, n_crystals);
 
 		/* Re-estimate all the full intensities */

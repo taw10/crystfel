@@ -76,7 +76,7 @@ extern const char *str_prflag(enum prflag flag);
 
 extern void refine_all(Crystal **crystals, int n_crystals,
                        RefList *full, int nthreads, PartialityModel pmodel,
-                       int no_scale, int no_pr,
+                       int no_scale, int no_pr, double max_B,
                        double *initial_residual,
                        double *initial_free_residual,
                        double *initial_log_residual,

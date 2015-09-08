@@ -193,7 +193,7 @@ static void show_duds(Crystal **crystals, int n_crystals)
 }
 
 
-void check_rejection(Crystal **crystals, int n, RefList *full, double max_B)
+void check_rejection(Crystal **crystals, int n, RefList *full)
 {
 	int i;
 	int n_acc = 0;
@@ -202,14 +202,7 @@ void check_rejection(Crystal **crystals, int n, RefList *full, double max_B)
 	//if ( full != NULL ) check_ccs(crystals, n, full);
 
 	for ( i=0; i<n; i++ ) {
-
-		/* Reject if B factor modulus is very large */
-		if ( fabs(crystal_get_Bfac(crystals[i])) > max_B ) {
-			crystal_set_user_flag(crystals[i], PRFLAG_BIGB);
-		}
-
 		if ( crystal_get_user_flag(crystals[i]) == 0 ) n_acc++;
-
 	}
 
 	show_duds(crystals, n);

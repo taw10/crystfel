@@ -919,7 +919,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 
 static struct prdata pr_refine(Crystal *cr, const RefList *full,
-                               PartialityModel pmodel, int no_scale, int no_pr)
+                               PartialityModel pmodel, int no_scale, int no_pr,
+                               double max_B)
 {
 	int verbose = 0;
 	struct prdata prdata;
@@ -934,6 +935,12 @@ static struct prdata pr_refine(Crystal *cr, const RefList *full,
 
 	if ( !no_scale ) {
 		do_scale_refine(cr, full, pmodel, verbose);
+	}
+
+	/* Reject if B factor modulus is very large */
+	if ( fabs(crystal_get_Bfac(cr)) > max_B ) {
+		crystal_set_user_flag(cr, PRFLAG_BIGB);
+		return prdata;
 	}
 
 	if ( verbose ) {
@@ -968,6 +975,7 @@ struct refine_args
 	PartialityModel pmodel;
 	int no_scale;
 	int no_pr;
+	double max_B;
 	struct prdata prdata;
 };
 
@@ -996,7 +1004,7 @@ static void refine_image(void *task, int id)
 	Crystal *cr = pargs->crystal;
 
 	pargs->prdata = pr_refine(cr, pargs->full, pargs->pmodel,
-	                          pargs->no_scale, pargs->no_pr);
+	                          pargs->no_scale, pargs->no_pr, pargs->max_B);
 }
 
 
@@ -1050,7 +1058,7 @@ static void done_image(void *vqargs, void *task)
 
 void refine_all(Crystal **crystals, int n_crystals,
                 RefList *full, int nthreads, PartialityModel pmodel,
-                int no_scale, int no_pr,
+                int no_scale, int no_pr, double max_B,
                 double *initial_residual, double *initial_free_residual,
                 double *initial_log_residual, double *initial_free_log_residual,
                 double *final_residual, double *final_free_residual,
@@ -1066,6 +1074,7 @@ void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.prdata.n_filtered = 0;
 	task_defaults.no_scale = no_scale;
 	task_defaults.no_pr = no_pr;
+	task_defaults.max_B = max_B;
 	task_defaults.prdata.initial_residual = 0.0;
 	task_defaults.prdata.initial_free_residual = 0.0;
 	task_defaults.prdata.initial_log_residual = 0.0;
