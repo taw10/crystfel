@@ -1066,6 +1066,14 @@ void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.prdata.n_filtered = 0;
 	task_defaults.no_scale = no_scale;
 	task_defaults.no_pr = no_pr;
+	task_defaults.prdata.initial_residual = 0.0;
+	task_defaults.prdata.initial_free_residual = 0.0;
+	task_defaults.prdata.initial_log_residual = 0.0;
+	task_defaults.prdata.initial_free_log_residual = 0.0;
+	task_defaults.prdata.final_residual = 0.0;
+	task_defaults.prdata.final_free_residual = 0.0;
+	task_defaults.prdata.final_log_residual = 0.0;
+	task_defaults.prdata.final_free_log_residual = 0.0;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;
