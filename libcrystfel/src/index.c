@@ -3,7 +3,7 @@
  *
  * Perform indexing (somehow)
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
@@ -12,7 +12,7 @@
  *   2010-2011 Richard Kirian <rkirian@asu.edu>
  *   2012      Lorenzo Galli
  *   2013      Cornelius Gati <cornelius.gati@cfel.de>
- *   2015	   Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+ *   2015      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *
  * This file is part of CrystFEL.
  *
