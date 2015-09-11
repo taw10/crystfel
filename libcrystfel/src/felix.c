@@ -553,60 +553,17 @@ int felix_index(struct image *image, IndexingPrivate *ipriv)
 
 }
 
-IndexingPrivate *felix_prepare(IndexingMethod *indm, UnitCell *cell,
-                               struct detector *det, float *ltl,
-                               const char *options)
+
+static void parse_options(const char *options, struct felix_private *gp)
 {
-	struct felix_private *gp;
-	char *temp_options=NULL;
-	char *option=NULL;
+	char *temp_options;
+	char *option;
+	char *freeme;
 
-	if ( cell == NULL ) {
-		ERROR("Felix needs a unit cell.\n");
-		return NULL;
-	}
+	temp_options = strdup(options);
+	freeme = temp_options;
 
-	if ( options != NULL ){
-		temp_options = strdup(options);
-	}
-
-	gp = calloc(1, sizeof(*gp));
-	if ( gp == NULL ) return NULL;
-
-	/* Flags that Felix knows about */
-	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_PEAKS
-	       | INDEXING_USE_LATTICE_TYPE | INDEXING_USE_CELL_PARAMETERS;
-
-	gp->cell = cell;
-	gp->indm = *indm;
-
-	/* Default values of felix options */
-	gp->spacegroup = 0;
-	gp->tthrange_min = 0;
-	gp->tthrange_max = 30.0;
-	gp->etarange_min = 0;
-	gp->etarange_max = 360;
-	gp->domega = 2;
-	gp->omegarange_min = -1.0;
-	gp->omegarange_max = 1.0;
-	gp->min_measurements = 15;
-	gp->min_completeness = 0.001;
-	gp->min_uniqueness = 0.5;
-	gp->n_voxels = 100;
-	gp->test_fraction = 0.75;
-	gp->sigma_tth = 0.15;
-	gp->sigma_eta = 0.2;
-	gp->sigma_omega = 0.2;
-	gp->n_sigmas = 2;
-	gp->force4frustums = 0;
-	gp->orispace_frustum = 1;
-	gp->orispace_octa = 0;
-	gp->readhkl_file = NULL;
-	gp->maxtime = 30.0;
-
-	/*Parse the options string and fill in the necessary private variables. */
-	if (temp_options != NULL){
-	while((option=strsep(&temp_options, ","))!=NULL) {
+	while ( (option=strsep(&temp_options, ",")) != NULL ) {
 
 		if ( strncmp(option, "spacegroup=", 11) == 0 ){
 			gp->spacegroup = atoi(option+11);
@@ -697,7 +654,59 @@ IndexingPrivate *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 		}
 
 	}
+
+	free(freeme);
+	free(option);
+}
+
+IndexingPrivate *felix_prepare(IndexingMethod *indm, UnitCell *cell,
+                                      struct detector *det, float *ltl,
+                                      const char *options)
+{
+	struct felix_private *gp;
+
+	if ( cell == NULL ) {
+		ERROR("Felix needs a unit cell.\n");
+		return NULL;
 	}
+
+	gp = calloc(1, sizeof(*gp));
+	if ( gp == NULL ) return NULL;
+
+	/* Flags that Felix knows about */
+	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_PEAKS
+	       | INDEXING_USE_LATTICE_TYPE | INDEXING_USE_CELL_PARAMETERS;
+
+	gp->cell = cell;
+	gp->indm = *indm;
+
+	/* Default values of felix options */
+	gp->spacegroup = 0;
+	gp->tthrange_min = 0;
+	gp->tthrange_max = 30.0;
+	gp->etarange_min = 0;
+	gp->etarange_max = 360;
+	gp->domega = 2;
+	gp->omegarange_min = -1.0;
+	gp->omegarange_max = 1.0;
+	gp->min_measurements = 15;
+	gp->min_completeness = 0.001;
+	gp->min_uniqueness = 0.5;
+	gp->n_voxels = 100;
+	gp->test_fraction = 0.75;
+	gp->sigma_tth = 0.15;
+	gp->sigma_eta = 0.2;
+	gp->sigma_omega = 0.2;
+	gp->n_sigmas = 2;
+	gp->force4frustums = 0;
+	gp->orispace_frustum = 1;
+	gp->orispace_octa = 0;
+	gp->readhkl_file = NULL;
+	gp->maxtime = 30.0;
+
+	/* Parse the options string and fill in the necessary
+	 * private variables. */
+	if ( options != NULL ) parse_options(options, gp);
 
 	/* Make sure that they at least specified the spacegroup number.*/
 
@@ -706,9 +715,6 @@ IndexingPrivate *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 		ERROR("You should use the argument --felix-options=spacegroup=xx\n");
 		return NULL;
 	}
-
-	free(temp_options);
-	free(option);
 
 	return (IndexingPrivate *)gp;
 }
