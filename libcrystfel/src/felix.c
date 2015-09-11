@@ -125,7 +125,6 @@ static int read_felix(struct felix_private *gp, struct image *image,
 	float ubi21, ubi22, ubi23;
 	float ubi31, ubi32, ubi33;
 	float mean_ia;
-	/* int ngv_unique;  /* Used in Felix 0.1 */
 	int ngv;
 	char line[1024];
 	int r;
@@ -178,7 +177,8 @@ static int read_felix(struct felix_private *gp, struct image *image,
 					 &ubi31, &ubi32, &ubi33);
 
 		if ( r != 21 ) {
-			ERROR("Only %i parameters in .felix file, check version and format.\n", r);
+			ERROR("Only %i parameters in .felix file, "
+			      "check version and format.\n", r);
 			return 1;
 		}
 
@@ -554,8 +554,8 @@ int felix_index(struct image *image, IndexingPrivate *ipriv)
 }
 
 IndexingPrivate *felix_prepare(IndexingMethod *indm, UnitCell *cell,
-                                      struct detector *det, float *ltl,
-                                      const char *options)
+                               struct detector *det, float *ltl,
+                               const char *options)
 {
 	struct felix_private *gp;
 	char *temp_options=NULL;
@@ -701,7 +701,7 @@ IndexingPrivate *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 
 	/* Make sure that they at least specified the spacegroup number.*/
 
-	if ( gp->spacegroup == 0 ){
+	if ( gp->spacegroup == 0 ) {
 		ERROR("Felix requires that you specify the spacegroup number.\n");
 		ERROR("You should use the argument --felix-options=spacegroup=xx\n");
 		return NULL;
@@ -710,7 +710,7 @@ IndexingPrivate *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	free(temp_options);
 	free(option);
 
-	return (IndexingPrivate *) gp;
+	return (IndexingPrivate *)gp;
 }
 
 

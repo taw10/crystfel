@@ -110,7 +110,8 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 			break;
 
 			case INDEXING_FELIX :
-			iprivs[n] = felix_prepare(&indm[n], cell, det, ltl, options);
+			iprivs[n] = felix_prepare(&indm[n], cell, det, ltl,
+			                          options);
 			break;
 
 			default :
