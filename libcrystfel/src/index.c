@@ -235,31 +235,24 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		case INDEXING_NONE :
 		return 0;
-		break;
 
 		case INDEXING_DIRAX :
 		return run_dirax(image, ipriv);
-		break;
 
 		case INDEXING_ASDF :
 		return run_asdf(image, ipriv);
-		break;
 
 		case INDEXING_MOSFLM :
 		return run_mosflm(image, ipriv);
-		break;
 
 		case INDEXING_XDS :
 		return run_xds(image, ipriv);
-		break;
 
 		case INDEXING_DEBUG :
 		return debug_index(image);
-		break;
 
 		case INDEXING_FELIX :
 		return felix_index(image, ipriv);
-		break;
 
 		default :
 		ERROR("Unrecognised indexing method: %i\n", indm);
