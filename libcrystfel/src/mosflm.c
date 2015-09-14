@@ -590,7 +590,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		/* Old MOSFLM simply ignores CELL and CENTERING subkeywords.
 		 * So this doesn't do any harm.
 		 * TODO: but still better to show WARNING if MOSFLM is old. */
-		snprintf(tmp, 255, "AUTOINDEX DPS FILE %s IMAGE 1 MAXCELL 1000"
+		snprintf(tmp, 255, "AUTOINDEX DPS FILE %s IMAGE 1 MAXCELL 1000 "
 		         "REFINE "
 		         "CELL %.1f %.1f %.1f %.1f %.1f %.1f CENTERING %c\n",
 			 mosflm->sptfile, a*1e10, b*1e10, c*1e10,
