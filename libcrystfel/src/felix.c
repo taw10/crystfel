@@ -187,6 +187,7 @@ static int read_felix(struct felix_private *gp, struct image *image,
 		cell_set_cartesian(cell, ubi12/1e10, ubi13/1e10, ubi11/1e10,
 			                 ubi22/1e10, ubi23/1e10, ubi21/1e10,
 			                 ubi32/1e10, ubi33/1e10, ubi31/1e10);
+		cell_set_centering(cell, cell_get_centering(gp->cell));
 
 		cr = crystal_new();
 		if ( cr == NULL ) {
