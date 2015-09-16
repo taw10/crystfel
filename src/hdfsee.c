@@ -83,8 +83,7 @@ static void show_help(const char *s)
 "      --event=<event code>         Event to show from multi-event file.\n"
 "  -g, --geometry=<filename>        Use geometry from file for display.\n"
 "                                   (When this option is used, the value of\n"
-"                                    of the -e parameter is ignored)"
-"  -m, --beam=<filename>            Get beam parameters from <filename>.\n"
+"                                    of the -e parameter is ignored)\n"
 "  -o, --rigid-groups=<coll>        Use rigid group collection <coll>.\n"
 "\n");
 }
