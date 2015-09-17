@@ -281,6 +281,10 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 	RefList *out;
 
 	out = reflist_new();
+	if ( out == NULL ) {
+		ERROR("Failed to allocate reflection list\n");
+		return NULL;
+	}
 
 	do {
 
@@ -313,14 +317,22 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 			struct panel *p;
 
 			refl = add_refl(out, h, k, l);
+			if ( refl == NULL ) {
+				ERROR("Failed to add reflection\n");
+				return NULL;
+			}
 			set_intensity(refl, intensity);
 			if ( det != NULL ) {
 				double write_fs, write_ss;
 				p = find_panel_by_name(det,pn);
-				write_fs = fs - p->orig_min_fs + p->min_fs;
-				write_ss = ss - p->orig_min_ss + p->min_ss;
-				set_detector_pos(refl, write_fs, write_ss);
-				set_panel(refl, p);
+				if ( p == NULL ) {
+					ERROR("Couldn't find panel '%s'\n", pn);
+				} else {
+					write_fs = fs - p->orig_min_fs + p->min_fs;
+					write_ss = ss - p->orig_min_ss + p->min_ss;
+					set_detector_pos(refl, write_fs, write_ss);
+					set_panel(refl, p);
+				}
 			}
 			set_esd_intensity(refl, sigma);
 			set_peak(refl, pk);
@@ -342,6 +354,10 @@ static RefList *read_stream_reflections_2_1(FILE *fh, struct detector *det)
 	RefList *out;
 
 	out = reflist_new();
+	if ( out == NULL ) {
+		ERROR("Failed to allocate reflection list\n");
+		return NULL;
+	}
 
 	do {
 
@@ -374,6 +390,10 @@ static RefList *read_stream_reflections_2_1(FILE *fh, struct detector *det)
 			char *v;
 
 			refl = add_refl(out, h, k, l);
+			if ( refl == NULL ) {
+				ERROR("Failed to add reflection\n");
+				return NULL;
+			}
 			set_intensity(refl, intensity);
 
 			if ( det != NULL ) {
@@ -382,9 +402,14 @@ static RefList *read_stream_reflections_2_1(FILE *fh, struct detector *det)
 				struct panel *p;
 
 				p = find_orig_panel(det, fs, ss);
-				write_fs = fs - p->orig_min_fs + p->min_fs;
-				write_ss = ss - p->orig_min_ss + p->min_ss;
-				set_detector_pos(refl, write_fs, write_ss);
+				if ( p == NULL ) {
+					ERROR("No panel at %.2f,%.2f\n",
+					      fs, ss);
+				} else {
+					write_fs = fs - p->orig_min_fs + p->min_fs;
+					write_ss = ss - p->orig_min_ss + p->min_ss;
+					set_detector_pos(refl, write_fs, write_ss);
+				}
 
 			} else {
 
@@ -439,6 +464,10 @@ static RefList *read_stream_reflections_2_2(FILE *fh, struct detector *det)
 		if ( r == 9 ) {
 
 			refl = add_refl(out, h, k, l);
+			if ( refl == NULL ) {
+				ERROR("Failed to add reflection\n");
+				return NULL;
+			}
 			set_intensity(refl, intensity);
 
 			if ( det != NULL ) {
@@ -447,9 +476,14 @@ static RefList *read_stream_reflections_2_2(FILE *fh, struct detector *det)
 				struct panel *p;
 
 				p = find_orig_panel(det, fs, ss);
-				write_fs = fs - p->orig_min_fs + p->min_fs;
-				write_ss = ss - p->orig_min_ss + p->min_ss;
-				set_detector_pos(refl, write_fs, write_ss);
+				if ( p == NULL ) {
+					ERROR("No panel at %.2f,%.2f\n",
+					      fs, ss);
+				} else {
+					write_fs = fs - p->orig_min_fs + p->min_fs;
+					write_ss = ss - p->orig_min_ss + p->min_ss;
+					set_detector_pos(refl, write_fs, write_ss);
+				}
 
 			} else {
 
@@ -1028,6 +1062,10 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 		}
 
 		cell = cell_new_from_reciprocal_axes(as, bs, cs);
+		if ( cell == NULL ) {
+			ERROR("Failed to allocate cell\n");
+			return;
+		}
 
 		if ( have_cen && have_ua && have_latt ) {
 			cell_set_centering(cell, centering);
@@ -1062,6 +1100,7 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 static int read_and_store_hdf5_field(struct image *image, const char *line)
 {
 	char **new_fields;
+	char *nf;
 
 	if ( image->stuff_from_stream == NULL ) {
 		image->stuff_from_stream =
@@ -1082,8 +1121,13 @@ static int read_and_store_hdf5_field(struct image *image, const char *line)
 		return 1;
 	}
 	image->stuff_from_stream->fields = new_fields;
-	image->stuff_from_stream->fields[image->stuff_from_stream->n_fields]
-							     = strdup(line);
+
+	nf = strdup(line);
+	if ( nf == NULL ) {
+		ERROR("Failed to allocate HDF5 field from stream\n");
+		return 1;
+	}
+	image->stuff_from_stream->fields[image->stuff_from_stream->n_fields] = nf;
 	image->stuff_from_stream->n_fields++;
 
 	return 0;
@@ -1135,9 +1179,12 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 		if ( strncmp(line, "indexed_by = ", 13) == 0 ) {
 			IndexingMethod *list;
 			list = build_indexer_list(line+13);
-			image->indexed_by = list[0];
-			free(list);
-			have_filename = 1;
+			if ( list == NULL ) {
+				ERROR("Failed to read indexer list\n");
+			} else {
+				image->indexed_by = list[0];
+				free(list);
+			}
 		}
 
 		if ( strncmp(line, "photon_energy_eV = ", 19) == 0 ) {
