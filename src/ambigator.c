@@ -341,6 +341,7 @@ struct cc_job
 	int i;
 	int mean_nac;
 	int nmean_nac;
+	int fail;
 
 	struct flist **crystals;
 	int n_crystals;
@@ -380,6 +381,10 @@ static void final(void *qp, void *wp)
 
 	qargs->mean_nac += job->mean_nac;
 	qargs->nmean_nac += job->nmean_nac;
+	if ( job->fail ) {
+		ERROR("Failed to calculate CCs (out of memory?)\n");
+		abort();
+	}
 
 	free(job);
 
@@ -402,7 +407,10 @@ static void work(void *wp, int cookie)
 	int nmean_nac = 0;
 	gsl_permutation *p;
 
+	job->fail = 1;
+
 	p = gsl_permutation_alloc(n_crystals);
+	if ( p == NULL ) return;
 	gsl_permutation_init(p);
 	gsl_ran_shuffle(job->rngs[cookie], p->data, n_crystals, sizeof(size_t));
 
@@ -473,6 +481,7 @@ static void work(void *wp, int cookie)
 
 	job->mean_nac = mean_nac;
 	job->nmean_nac = nmean_nac;
+	job->fail = 0;
 }
 
 
@@ -801,19 +810,17 @@ static void save_corr(const char *filename, struct cc_list *ccs, int n_crystals,
 	float *rmatrix;
 	int i;
 
-	matrix = malloc(n_crystals*n_crystals*sizeof(float));
-	rmatrix = malloc(n_crystals*n_crystals*sizeof(float));
-	if ( (matrix == NULL) || (rmatrix == NULL) ) return;
+	matrix = calloc(n_crystals*n_crystals, sizeof(float));
+	rmatrix = calloc(n_crystals*n_crystals, sizeof(float));
+	if ( (matrix == NULL) || (rmatrix == NULL) ) {
+		ERROR("Failed to allocate space for correlation matrices.\n");
+		ERROR("Correlation matrices will not be written.\n");
+		return;
+	}
 
 	for ( i=0; i<n_crystals; i++ ) {
 
 		int k;
-
-		/* Set all values to zero */
-		for ( k=0; k<n_crystals; k++ ) {
-			matrix[i+n_crystals*k] = 0.0;
-			rmatrix[i+n_crystals*k] = 0.0;
-		}
 
 		/* CCs in current orientation */
 		k = 0;
