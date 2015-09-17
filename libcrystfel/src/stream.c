@@ -115,7 +115,7 @@ static int read_peaks(FILE *fh, struct image *image)
 			} else {
 
 				image_add_feature(image->features, x, y,
-				image, intensity, NULL);
+				                  image, intensity, NULL);
 			}
 		}
 
@@ -1061,15 +1061,13 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 
 static int read_and_store_hdf5_field(struct image *image, const char *line)
 {
-
 	char **new_fields;
 
 	if ( image->stuff_from_stream == NULL ) {
 		image->stuff_from_stream =
 		       malloc(sizeof(struct stuff_from_stream));
 		if ( image->stuff_from_stream == NULL) {
-			ERROR("Failed reading hdf5 entries from "
-			      "stream\n");
+			ERROR("Failed reading hdf5 entries from stream\n");
 			return 1;
 		}
 		image->stuff_from_stream->fields = NULL;
