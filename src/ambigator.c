@@ -208,6 +208,10 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 			get_asymm(sym, hr, kr, lr, &hra, &kra, &lra);
 
 			cr = add_refl(reidx, hra, kra, lra);
+			if ( cr == NULL ) {
+				ERROR("Failed to add reflection\n");
+				return NULL;
+			}
 			copy_data(cr, refl);
 		}
 
@@ -495,6 +499,7 @@ static gsl_rng **setup_random(gsl_rng *rng, int n)
 
 	for ( i=0; i<n; i++ ) {
 		rngs[i] = gsl_rng_alloc(gsl_rng_mt19937);
+		if ( rngs[i] == NULL ) return NULL;
 		gsl_rng_set(rngs[i], gsl_rng_get(rng));
 	}
 
@@ -514,6 +519,10 @@ static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
 	ncorr++;  /* Extra value at end for sentinel */
 
 	qargs.rngs = setup_random(rng, nthreads);
+	if ( qargs.rngs == NULL ) {
+		ERROR("Failed to set up RNGs\n");
+		return NULL;
+	}
 
 	ccs = malloc(n_crystals*sizeof(struct cc_list));
 	if ( ccs == NULL ) return NULL;
@@ -730,6 +739,7 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 			double a, b, c, al, be, ga;
 
 			cell = cell_new_from_reciprocal_axes(as, bs, cs);
+			assert(cell != NULL);
 
 			if ( assignments[i] ) {
 
@@ -1156,7 +1166,7 @@ int main(int argc, char *argv[])
 				if ( crystals_new == NULL ) {
 					fprintf(stderr, "Failed to allocate "
 					        "memory for crystals.\n");
-					break;
+					return 1;
 				}
 
 				max_crystals += 1024;
@@ -1169,6 +1179,10 @@ int main(int argc, char *argv[])
 			                                       cell,
 			                                       rmin, rmax,
 			                                       amb);
+			if ( crystals[n_crystals] == NULL ) {
+				ERROR("asymm_and_merge failed!\n");
+				return 1;
+			}
 			cell_free(cell);
 			n_crystals++;
 			reflist_free(list);
