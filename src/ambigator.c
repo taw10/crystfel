@@ -812,25 +812,58 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 static void save_corr(const char *filename, struct cc_list *ccs, int n_crystals,
                       int *assignments)
 {
-	hid_t fh, sh, dh;
-	hid_t ph;  /* Property list */
+	hid_t fh, fsh, msh, cdh, rdh;
 	herr_t r;
 	hsize_t size[2];
-	float *matrix;
-	float *rmatrix;
 	int i;
 
-	matrix = calloc(n_crystals*n_crystals, sizeof(float));
-	rmatrix = calloc(n_crystals*n_crystals, sizeof(float));
-	if ( (matrix == NULL) || (rmatrix == NULL) ) {
-		ERROR("Failed to allocate space for correlation matrices.\n");
+	/* Create file */
+	fh = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	if ( fh < 0 ) {
+		ERROR("Couldn't create file: %s\n", filename);
+		return;
+	}
+
+	/* Size of overall dataset */
+	size[0] = n_crystals;
+	size[1] = n_crystals;
+	fsh = H5Screate_simple(2, size, NULL);
+	msh = H5Screate_simple(2, size, NULL);
+
+	/* Create overall correlation matrix dataset */
+	cdh = H5Dcreate2(fh, "correlation_matrix", H5T_NATIVE_FLOAT, fsh,
+	                 H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if ( cdh < 0 ) {
+		ERROR("Couldn't create dataset\n");
 		ERROR("Correlation matrices will not be written.\n");
+		H5Fclose(fh);
+		return;
+	}
+	/* Create overall reindexed correlation matrix dataset */
+	rdh = H5Dcreate2(fh, "correlation_matrix_reindexed", H5T_NATIVE_FLOAT,
+	                 fsh, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if ( rdh < 0 ) {
+		ERROR("Couldn't create dataset\n");
+		ERROR("Correlation matrices will not be written.\n");
+		H5Fclose(fh);
 		return;
 	}
 
 	for ( i=0; i<n_crystals; i++ ) {
 
 		int k;
+		hsize_t f_count[2], f_offset[2];
+		float *line;
+		float *rline;
+
+		line = calloc(n_crystals, sizeof(float));
+		rline = calloc(n_crystals, sizeof(float));
+		if ( (line == NULL) || (rline == NULL) ) {
+			ERROR("Failed to allocate space for matrices.\n");
+			ERROR("Correlation matrices will not be written.\n");
+			H5Fclose(fh);
+			return;
+		}
 
 		/* CCs in current orientation */
 		k = 0;
@@ -838,7 +871,7 @@ static void save_corr(const char *filename, struct cc_list *ccs, int n_crystals,
 			int j = ccs[i].ind[k];
 			if ( j == 0 ) break;
 			j -= 1;  /* Because we add one to use 0 as a marker */
-			matrix[i+n_crystals*j] = ccs[i].cc[k];
+			line[j] = ccs[i].cc[k];
 			k++;
 		} while ( 1 );
 
@@ -848,64 +881,61 @@ static void save_corr(const char *filename, struct cc_list *ccs, int n_crystals,
 			int j = ccs[i].ind_reidx[k];
 			if ( j == 0 ) break;
 			j -= 1;
-			rmatrix[i+n_crystals*j] = ccs[i].cc_reidx[k];
+			rline[j] = ccs[i].cc_reidx[k];
 			k++;
 		} while ( 1 );
 
+		/* Select region in file */
+		f_offset[0] = i;
+		f_offset[1] = 0;
+		f_count[0] = 1;
+		f_count[1] = n_crystals;
+		r = H5Sselect_hyperslab(fsh, H5S_SELECT_SET,
+		                        f_offset, NULL, f_count, NULL);
+		if ( r ) {
+			ERROR("Failed to select file slab\n");
+			return;
+		}
+
+		/* Select region in memory */
+		f_offset[0] = 0;
+		f_offset[1] = 0;
+		f_count[0] = 1;
+		f_count[1] = n_crystals;
+		r = H5Sselect_hyperslab(msh, H5S_SELECT_SET,
+		                        f_offset, NULL, f_count, NULL);
+		if ( r ) {
+			ERROR("Failed to select memory slab\n");
+			return;
+		}
+
+		/* Write the line */
+		r = H5Dwrite(cdh, H5T_NATIVE_FLOAT, msh, fsh, H5P_DEFAULT,
+		             line);
+		if ( r ) {
+			ERROR("Failed to write line\n");
+			return;
+		}
+
+		r = H5Dwrite(rdh, H5T_NATIVE_FLOAT, msh, fsh, H5P_DEFAULT,
+		             rline);
+		if ( r ) {
+			ERROR("Failed to write rline\n");
+			return;
+		}
+
+		free(line);
+		free(rline);
+
+		progress_bar(i+1, n_crystals, "Writing CCs to file");
+
 	}
 
-	fh = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-	if ( fh < 0 ) {
-		ERROR("Couldn't create file: %s\n", filename);
-		return;
-	}
-
-	size[0] = n_crystals;
-	size[1] = n_crystals;
-	sh = H5Screate_simple(2, size, NULL);
-
-	/* Set compression */
-	ph = H5Pcreate(H5P_DATASET_CREATE);
-	H5Pset_chunk(ph, 2, size);
-	H5Pset_deflate(ph, 3);
-
-	dh = H5Dcreate2(fh, "correlation_matrix", H5T_NATIVE_FLOAT, sh,
-	                H5P_DEFAULT, ph, H5P_DEFAULT);
-	if ( dh < 0 ) {
-		ERROR("Couldn't create dataset\n");
-		H5Fclose(fh);
-		return;
-	}
-	r = H5Dwrite(dh, H5T_NATIVE_FLOAT, H5S_ALL,
-	             H5S_ALL, H5P_DEFAULT, matrix);
-	if ( r < 0 ) {
-		ERROR("Couldn't write data\n");
-		H5Dclose(dh);
-		H5Fclose(fh);
-		return;
-	}
-	H5Dclose(dh);
-
-	dh = H5Dcreate2(fh, "correlation_matrix_reindexed", H5T_NATIVE_FLOAT,
-	                sh, H5P_DEFAULT, ph, H5P_DEFAULT);
-	if ( dh < 0 ) {
-		ERROR("Couldn't create dataset\n");
-		H5Fclose(fh);
-		return;
-	}
-	r = H5Dwrite(dh, H5T_NATIVE_FLOAT, H5S_ALL,
-	             H5S_ALL, H5P_DEFAULT, rmatrix);
-	if ( r < 0 ) {
-		ERROR("Couldn't write data\n");
-		H5Dclose(dh);
-		H5Fclose(fh);
-		return;
-	}
-	H5Dclose(dh);
-
+	H5Sclose(msh);
+	H5Sclose(fsh);
+	H5Dclose(cdh);
+	H5Dclose(rdh);
 	H5Fclose(fh);
-	free(matrix);
-	free(rmatrix);
 
 	STATUS("Wrote correlation matrix in HDF5 format to %s\n", filename);
 }
