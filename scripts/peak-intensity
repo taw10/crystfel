@@ -1,50 +1,47 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env python
 
-use strict;
+#
+# Quantify peak intensities
+#
+# Copyright (c) 2015 Deutsches Elektronen-Synchrotron DESY,
+#                    a research centre of the Helmholtz Association.
+#
+# Author:
+#    2015 Thomas White <taw@physics.org>
+#
 
-open(FH, $ARGV[0]);
+import sys
+import os
+import re
 
-my $line;
-my $total_i;
-my $n = 0;
-my $n_patt = 0;
-my $num_peaks_tot = 0;
-my $num_sat_peaks_tot = 0;
-my $num_pats_with_sat = 0;
+f = open(sys.argv[1], 'r')
 
-while ( $line = <FH> ) {
+prog1 = re.compile("^\s*[\d\-\.]+\s+[\d\-\.]+\s+[\d\-\.]+\s+([\d\-\.]+)\s+.+$")
 
-	if ( $line =~ /^-----\ Begin chunk\ -----$/ ) {
-		$n_patt++;
-	}
+n_peaks = 0
+n_patt = 0
+total_intens = 0.0
 
-	if ( $line =~ /^\s*([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)$/ ) {
+while True:
 
-		my $fs = $1;
-		my $ss = $2;
-		my $one_over_d = $3;
-		my $i = $4;
+    fline = f.readline()
+    if not fline:
+        break
 
-		$total_i += $i;
-		$n++;
+    if fline == '----- Begin chunk -----\n':
+        n_patt += 1
 
-	}
+    match = prog1.match(fline)
+    if match:
+        intens = float(match.group(1))
+        total_intens += intens
+        n_peaks += 1
 
-	if ( $line =~ /^num_saturated_peaks\s=\s(\d+)$/ ) {
-		$num_sat_peaks_tot += $1;
-		if ( $1 > 0 ) {
-			$num_pats_with_sat++;
-		}
-	}
 
-}
+f.close()
 
-printf("%i patterns, %i peaks, %.2f total ADU\n", $n_patt, $n, $total_i);
-printf("Mean %i peaks per hit\n", $n / $n_patt);
-printf("Mean %.2f ADU per peak\n", $total_i / $n);
-printf("Mean %.2f ADU per hit\n", $total_i / $n_patt);
-printf("%i out of %i patterns contained any saturation\n", $num_pats_with_sat, $n_patt);
-if ( $num_pats_with_sat > 0 ) {
-	printf(" of those, there was an average of %.2f saturated peaks per pattern\n",
-	       $num_sat_peaks_tot/$num_pats_with_sat);
-}
+print '%i patterns, %i peaks' % (n_patt,n_peaks)
+print 'Mean %.2f peaks per pattern' % (n_peaks/n_patt)
+print 'Mean %.2f ADU per peak' % (total_intens/n_peaks)
+print 'Mean %.2f ADU total per pattern' % (total_intens/n_patt)
+
