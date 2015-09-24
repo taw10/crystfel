@@ -585,6 +585,20 @@ static void normalise_scales(Crystal **crystals, int n_crystals)
 }
 
 
+static void show_all_residuals(Crystal **crystals, int n_crystals,
+                               RefList *full)
+{
+	double dev, free_dev, log_dev, free_log_dev;
+
+	all_residuals(crystals, n_crystals, full,
+	              &dev, &free_dev, &log_dev, &free_log_dev);
+	STATUS("Residuals:"
+	       "  linear          linear free     log             log free\n");
+	STATUS("         ");
+	STATUS("%15e %15e %15e %15e\n", dev, free_dev, log_dev, free_log_dev);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -990,29 +1004,15 @@ int main(int argc, char *argv[])
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
 
-		double init_dev, init_free_dev;
-		double init_log_dev, init_free_log_dev;
-		double final_dev, final_free_dev;
-		double final_log_dev, final_free_log_dev;
+		show_all_residuals(crystals, n_crystals, full);
 
 		STATUS("Refinement cycle %i of %i\n", i+1, n_iter);
 
 		/* Refine all crystals to get the best fit */
 		refine_all(crystals, n_crystals, full, nthreads, pmodel,
-		           no_scale, no_pr, max_B,
-		           &init_dev, &init_free_dev,
-		           &init_log_dev, &init_free_log_dev,
-		           &final_dev, &final_free_dev,
-		           &final_log_dev, &final_free_log_dev);
+		           no_scale, no_pr, max_B);
 
-		STATUS("Overall residual: initial = %e, final = %e\n",
-		       init_dev, final_dev);
-		STATUS("Overall free residual: initial = %e, final = %e\n",
-		       init_free_dev, final_free_dev);
-		STATUS("Overall log residual: initial = %e, final = %e\n",
-		       init_log_dev, final_log_dev);
-		STATUS("Overall log free residual: initial = %e, final = %e\n",
-		       init_free_log_dev, final_free_log_dev);
+		show_all_residuals(crystals, n_crystals, full);
 
 		check_rejection(crystals, n_crystals, full);
 		normalise_scales(crystals, n_crystals);
@@ -1025,6 +1025,8 @@ int main(int argc, char *argv[])
 		write_pgraph(full, crystals, n_crystals, i+1);
 
 	}
+
+	show_all_residuals(crystals, n_crystals, full);
 
 	/* Output results */
 	STATUS("Writing overall results to %s\n", outfile);

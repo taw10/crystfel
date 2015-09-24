@@ -43,24 +43,6 @@
 #include "geometry.h"
 
 
-struct prdata
-{
-	int refined;
-	int n_filtered;
-
-	/* Before refinement */
-	double initial_residual;
-	double initial_free_residual;
-	double initial_log_residual;
-	double initial_free_log_residual;
-
-	/* After refinement */
-	double final_residual;
-	double final_free_residual;
-	double final_log_residual;
-	double final_free_log_residual;
-};
-
 enum prflag
 {
 	PRFLAG_OK = 0,
@@ -76,18 +58,14 @@ extern const char *str_prflag(enum prflag flag);
 
 extern void refine_all(Crystal **crystals, int n_crystals,
                        RefList *full, int nthreads, PartialityModel pmodel,
-                       int no_scale, int no_pr, double max_B,
-                       double *initial_residual,
-                       double *initial_free_residual,
-                       double *initial_log_residual,
-                       double *initial_free_log_residual,
-                       double *final_residual,
-                       double *final_free_residual,
-                       double *final_log_residual,
-                       double *final_free_log_residual);
+                       int no_scale, int no_pr, double max_B);
 
 /* Exported so it can be poked by tests/pr_p_gradient_check */
 extern double gradient(Crystal *cr, int k, Reflection *refl,
                        PartialityModel pmodel);
+
+extern void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
+                          double *residual, double *free_residual,
+                          double *log_residual, double *free_log_residual);
 
 #endif	/* POST_REFINEMENT_H */

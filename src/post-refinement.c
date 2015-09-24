@@ -54,6 +54,12 @@
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
 #define MAX_CYCLES (10)
 
+struct prdata
+{
+	int refined;
+	int n_filtered;
+};
+
 const char *str_prflag(enum prflag flag)
 {
 	switch ( flag ) {
@@ -774,6 +780,38 @@ static double residual(Crystal *cr, const RefList *full, int verbose, int free,
 }
 
 
+void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
+                   double *presidual, double *pfree_residual,
+                   double *plog_residual, double *pfree_log_residual)
+{
+	int i;
+	*presidual = 0.0;
+	*pfree_residual = 0.0;
+	*plog_residual = 0.0;
+	*pfree_log_residual = 0.0;
+
+	for ( i=0; i<n_crystals; i++ ) {
+
+		double r, free_r, log_r, free_log_r;
+
+		if ( crystal_get_user_flag(crystals[i]) ) continue;
+
+		r = residual(crystals[i], full, 0, 0, NULL);
+		free_r = residual(crystals[i], full, 0, 1, NULL);
+		log_r = log_residual(crystals[i], full, 0);
+		free_log_r = log_residual(crystals[i], full, 1);
+
+		if ( isnan(r) || isnan(free_r)
+		  || isnan(log_r) || isnan(free_log_r) ) continue;
+
+		*presidual += r;
+		*pfree_residual += free_r;
+		*plog_residual += log_r;
+		*pfree_log_residual += free_log_r;
+	}
+}
+
+
 static void write_residual_graph(Crystal *cr, const RefList *full)
 {
 	int i;
@@ -928,11 +966,6 @@ static struct prdata pr_refine(Crystal *cr, const RefList *full,
 	prdata.refined = 0;
 	prdata.n_filtered = 0;
 
-	prdata.initial_residual = residual(cr, full, 0, 0, NULL);
-	prdata.initial_free_residual = residual(cr, full, 0, 1, NULL);
-	prdata.initial_log_residual = log_residual(cr, full, 0);
-	prdata.initial_free_log_residual = log_residual(cr, full, 1);
-
 	if ( !no_scale ) {
 		do_scale_refine(cr, full, pmodel, verbose);
 	}
@@ -953,15 +986,6 @@ static struct prdata pr_refine(Crystal *cr, const RefList *full,
 
 	if ( crystal_get_user_flag(cr) == 0 ) {
 		prdata.refined = 1;
-	}
-	prdata.final_residual = residual(cr, full, 0, 0, NULL);
-	prdata.final_free_residual = residual(cr, full, 0, 1, NULL);
-	prdata.final_log_residual = log_residual(cr, full, 0);
-	prdata.final_free_log_residual = log_residual(cr, full, 1);
-
-	if ( isnan(prdata.final_residual) ) {
-		STATUS("nan residual!  Image serial %i\n",
-		       crystal_get_image(cr)->serial);
 	}
 
 	return prdata;
@@ -987,14 +1011,6 @@ struct queue_args
 	Crystal **crystals;
 	int n_crystals;
 	struct refine_args task_defaults;
-	double initial_residual;
-	double initial_free_residual;
-	double initial_log_residual;
-	double initial_free_log_residual;
-	double final_residual;
-	double final_free_residual;
-	double final_log_residual;
-	double final_free_log_residual;
 };
 
 
@@ -1027,29 +1043,8 @@ static void *get_image(void *vqargs)
 static void done_image(void *vqargs, void *task)
 {
 	struct queue_args *qa = vqargs;
-	struct refine_args *pargs = task;
-	struct prdata *prd = &pargs->prdata;
 
 	qa->n_done++;
-
-	if ( !isnan(prd->initial_residual)
-	  && !isnan(prd->initial_free_residual)
-	  && !isnan(prd->initial_log_residual)
-	  && !isnan(prd->initial_free_log_residual)
-	  && !isnan(prd->final_residual)
-	  && !isnan(prd->final_free_residual)
-	  && !isnan(prd->final_log_residual)
-	  && !isnan(prd->final_free_log_residual) )
-	{
-		qa->initial_residual += prd->initial_residual;
-		qa->initial_free_residual += prd->initial_free_residual;
-		qa->initial_log_residual += prd->initial_log_residual;
-		qa->initial_free_log_residual += prd->initial_free_log_residual;
-		qa->final_residual += prd->final_residual;
-		qa->final_free_residual += prd->final_free_residual;
-		qa->final_log_residual += prd->final_log_residual;
-		qa->final_free_log_residual += prd->final_free_log_residual;
-	}
 
 	progress_bar(qa->n_done, qa->n_crystals, "Refining");
 	free(task);
@@ -1058,11 +1053,7 @@ static void done_image(void *vqargs, void *task)
 
 void refine_all(Crystal **crystals, int n_crystals,
                 RefList *full, int nthreads, PartialityModel pmodel,
-                int no_scale, int no_pr, double max_B,
-                double *initial_residual, double *initial_free_residual,
-                double *initial_log_residual, double *initial_free_log_residual,
-                double *final_residual, double *final_free_residual,
-                double *final_log_residual, double *final_free_log_residual)
+                int no_scale, int no_pr, double max_B)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
@@ -1075,41 +1066,16 @@ void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.no_scale = no_scale;
 	task_defaults.no_pr = no_pr;
 	task_defaults.max_B = max_B;
-	task_defaults.prdata.initial_residual = 0.0;
-	task_defaults.prdata.initial_free_residual = 0.0;
-	task_defaults.prdata.initial_log_residual = 0.0;
-	task_defaults.prdata.initial_free_log_residual = 0.0;
-	task_defaults.prdata.final_residual = 0.0;
-	task_defaults.prdata.final_free_residual = 0.0;
-	task_defaults.prdata.final_log_residual = 0.0;
-	task_defaults.prdata.final_free_log_residual = 0.0;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;
 	qargs.n_done = 0;
 	qargs.n_crystals = n_crystals;
 	qargs.crystals = crystals;
-	qargs.initial_residual = 0.0;
-	qargs.initial_free_residual = 0.0;
-	qargs.initial_log_residual = 0.0;
-	qargs.initial_free_log_residual = 0.0;
-	qargs.final_residual = 0.0;
-	qargs.final_free_residual = 0.0;
-	qargs.final_log_residual = 0.0;
-	qargs.final_free_log_residual = 0.0;
 
 	/* Don't have threads which are doing nothing */
 	if ( n_crystals < nthreads ) nthreads = n_crystals;
 
 	run_threads(nthreads, refine_image, get_image, done_image,
 	            &qargs, n_crystals, 0, 0, 0);
-
-	*initial_residual = qargs.initial_residual;
-	*initial_free_residual = qargs.initial_free_residual;
-	*initial_log_residual = qargs.initial_log_residual;
-	*initial_free_log_residual = qargs.initial_free_log_residual;
-	*final_residual = qargs.final_residual;
-	*final_free_residual = qargs.final_free_residual;
-	*final_log_residual = qargs.final_log_residual;
-	*final_free_log_residual = qargs.final_free_log_residual;
 }
