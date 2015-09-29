@@ -670,12 +670,14 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 }
 
 
-static double log_residual(Crystal *cr, const RefList *full, int free)
+static double log_residual(Crystal *cr, const RefList *full, int verbose,
+                           int free, int *pn_used)
 {
 	double dev = 0.0;
 	double G, B;
 	Reflection *refl;
 	RefListIterator *iter;
+	int n_used = 0;
 
 	G = crystal_get_osf(cr);
 	B = crystal_get_Bfac(cr);
@@ -714,8 +716,10 @@ static double log_residual(Crystal *cr, const RefList *full, int free)
 		dev += w*dc*dc;
 	}
 
+	if ( pn_used != NULL ) *pn_used = n_used;
 	return dev;
 }
+
 
 static double residual(Crystal *cr, const RefList *full, int verbose, int free,
                        int *pn_used)
@@ -798,8 +802,8 @@ void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
 
 		r = residual(crystals[i], full, 0, 0, NULL);
 		free_r = residual(crystals[i], full, 0, 1, NULL);
-		log_r = log_residual(crystals[i], full, 0);
-		free_log_r = log_residual(crystals[i], full, 1);
+		log_r = log_residual(crystals[i], full, 0, 0, NULL);
+		free_log_r = log_residual(crystals[i], full, 0, 1, NULL);
 
 		if ( isnan(r) || isnan(free_r)
 		  || isnan(log_r) || isnan(free_log_r) ) continue;
@@ -863,13 +867,13 @@ static void do_scale_refine(Crystal *cr, const RefList *full,
 	int i, done;
 	double old_dev;
 
-	old_dev = log_residual(cr, full, 0);
+	old_dev = log_residual(cr, full, 0, 0, NULL);
 
 	if ( verbose ) {
 		STATUS("Initial G=%.2f, B=%e\n",
 		       crystal_get_osf(cr), crystal_get_Bfac(cr));
 		STATUS("Scaling initial  dev =  %10.5e, free dev = %10.5e\n",
-		       old_dev, log_residual(cr, full, 0));
+		       old_dev, log_residual(cr, full, 0, 1, NULL));
 	}
 
 	i = 0;
@@ -880,12 +884,12 @@ static void do_scale_refine(Crystal *cr, const RefList *full,
 
 		scale_iterate(cr, full, pmodel);
 
-		dev = log_residual(cr, full, 0);
+		dev = log_residual(cr, full, 0, 0, NULL);
 		if ( fabs(dev - old_dev) < dev*0.01 ) done = 1;
 
 		if ( verbose ) {
 			STATUS("Scaling %2i: dev = %10.5e, free dev = %10.5e\n",
-			       i+1, dev, log_residual(cr, full, 0));
+			       i+1, dev, log_residual(cr, full, 0, 0, NULL));
 		}
 
 		i++;
