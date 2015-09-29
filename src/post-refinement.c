@@ -670,17 +670,24 @@ static double pr_iterate(Crystal *cr, const RefList *full,
 }
 
 
-static double log_residual(Crystal *cr, const RefList *full, int verbose,
-                           int free, int *pn_used)
+static double log_residual(Crystal *cr, const RefList *full, int free,
+                           int *pn_used, const char *filename)
 {
 	double dev = 0.0;
 	double G, B;
 	Reflection *refl;
 	RefListIterator *iter;
 	int n_used = 0;
+	FILE *fh = NULL;
 
 	G = crystal_get_osf(cr);
 	B = crystal_get_Bfac(cr);
+	if ( filename != NULL ) {
+		fh = fopen(filename, "a");
+		if ( fh == NULL ) {
+			ERROR("Failed to open '%s'\n", filename);
+		}
+	}
 
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
@@ -714,15 +721,23 @@ static double log_residual(Crystal *cr, const RefList *full, int verbose,
 		dc = log(I_partial) - fx;
 		w = 1.0;
 		dev += w*dc*dc;
+
+		if ( fh != NULL ) {
+			fprintf(fh, "%4i %4i %4i %e %e\n",
+			        h, k, l, s, dev);
+		}
+
 	}
+
+	if ( fh != NULL ) fclose(fh);
 
 	if ( pn_used != NULL ) *pn_used = n_used;
 	return dev;
 }
 
 
-static double residual(Crystal *cr, const RefList *full, int verbose, int free,
-                       int *pn_used)
+static double residual(Crystal *cr, const RefList *full, int free,
+                       int *pn_used, const char *filename)
 {
 	double dev = 0.0;
 	double G, B;
@@ -731,8 +746,11 @@ static double residual(Crystal *cr, const RefList *full, int verbose, int free,
 	FILE *fh = NULL;
 	int n_used = 0;
 
-	if ( verbose ) {
-		fh = fopen("residual.dat", "w");
+	if ( filename != NULL ) {
+		fh = fopen(filename, "a");
+		if ( fh == NULL ) {
+			ERROR("Failed to open '%s'\n", filename);
+		}
 	}
 
 	G = crystal_get_osf(cr);
@@ -772,14 +790,14 @@ static double residual(Crystal *cr, const RefList *full, int verbose, int free,
 		n_used++;
 
 		if ( fh != NULL ) {
-			fprintf(fh, "%4i %4i %4i %e %.2f %e %f %f %f\n",
-			        h, k, l, s, G, B, I_partial, p, I_full);
+			fprintf(fh, "%4i %4i %4i %e %e\n",
+			        h, k, l, s, dev);
 		}
 	}
 
 	if ( fh != NULL ) fclose(fh);
-	if ( pn_used != NULL ) *pn_used = n_used;
 
+	if ( pn_used != NULL ) *pn_used = n_used;
 	return dev;
 }
 
@@ -789,6 +807,7 @@ void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
                    double *plog_residual, double *pfree_log_residual)
 {
 	int i;
+
 	*presidual = 0.0;
 	*pfree_residual = 0.0;
 	*plog_residual = 0.0;
@@ -800,10 +819,10 @@ void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
 
 		if ( crystal_get_user_flag(crystals[i]) ) continue;
 
-		r = residual(crystals[i], full, 0, 0, NULL);
-		free_r = residual(crystals[i], full, 0, 1, NULL);
-		log_r = log_residual(crystals[i], full, 0, 0, NULL);
-		free_log_r = log_residual(crystals[i], full, 0, 1, NULL);
+		r = residual(crystals[i], full, 0, NULL, NULL);
+		free_r = residual(crystals[i], full, 1, NULL, NULL);
+		log_r = log_residual(crystals[i], full, 0, NULL, NULL);
+		free_log_r = log_residual(crystals[i], full, 1, NULL, NULL);
 
 		if ( isnan(r) || isnan(free_r)
 		  || isnan(log_r) || isnan(free_log_r) ) continue;
@@ -849,7 +868,7 @@ static void write_residual_graph(Crystal *cr, const RefList *full)
 		                          bsx, bsy, bsz,
 		                          csx, csy, csz);
 		update_partialities(cr, PMODEL_SCSPHERE);
-		res = residual(cr, full, 0, 0, &n);
+		res = residual(cr, full, 0, &n, NULL);
 		fprintf(fh, "%i %e %e %i\n", i, asx, res, n);
 	}
 
@@ -867,13 +886,13 @@ static void do_scale_refine(Crystal *cr, const RefList *full,
 	int i, done;
 	double old_dev;
 
-	old_dev = log_residual(cr, full, 0, 0, NULL);
+	old_dev = log_residual(cr, full, 0, NULL, NULL);
 
 	if ( verbose ) {
 		STATUS("Initial G=%.2f, B=%e\n",
 		       crystal_get_osf(cr), crystal_get_Bfac(cr));
 		STATUS("Scaling initial  dev =  %10.5e, free dev = %10.5e\n",
-		       old_dev, log_residual(cr, full, 0, 1, NULL));
+		       old_dev, log_residual(cr, full, 1, NULL, NULL));
 	}
 
 	i = 0;
@@ -922,7 +941,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		                          &csx, &csy, &csz);
 		STATUS("Initial asx = %e\n", asx);
 		STATUS("PR initial  dev =  %10.5e, free dev = %10.5e\n",
-		       old_dev, residual(cr, full, 0, 1, NULL));
+		       old_dev, residual(cr, full, 1, NULL, NULL));
 	}
 
 	i = 0;
@@ -940,7 +959,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 		if ( verbose ) {
 			STATUS("PR iter %2i: dev = %10.5e, free dev = %10.5e\n",
-			       i+1, dev, residual(cr, full, 0, 1, NULL));
+			       i+1, dev, residual(cr, full, 1, NULL, NULL));
 		}
 
 		i++;
