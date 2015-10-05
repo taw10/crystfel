@@ -1173,8 +1173,8 @@ static int get_scalar_value(struct hdfile *f, const char *name, void *val,
 	type = H5Dget_type(dh);
 	class = H5Tget_class(type);
 
-	if ( class != H5T_FLOAT ) {
-		ERROR("Not a floating point value.\n");
+	if ( (class != H5T_FLOAT) && (class != H5T_INTEGER) ) {
+		ERROR("Not a floating point or integer value.\n");
 		H5Tclose(type);
 		H5Dclose(dh);
 		return 1;
