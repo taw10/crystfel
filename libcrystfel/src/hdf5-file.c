@@ -748,7 +748,7 @@ static struct hdf5_write_location *make_location_list(struct detector *det,
 }
 
 
-static void write_location(hid_t fh, const struct image *image,
+static void write_location(hid_t fh, struct detector *det, float *data,
                            struct hdf5_write_location *loc)
 {
 	hid_t sh, dh, ph;
@@ -784,7 +784,7 @@ static void write_location(hid_t fh, const struct image *image,
 		struct panel p;
 		int r;
 
-		p = image->det->panels[loc->panel_idxs[pi]];
+		p = det->panels[loc->panel_idxs[pi]];
 
 		f_offset[0] = p.orig_min_ss;
 		f_offset[1] = p.orig_min_fs;
@@ -810,14 +810,14 @@ static void write_location(hid_t fh, const struct image *image,
 		m_count[0] = p.max_ss - p.min_ss +1;
 		m_count[1] = p.max_fs - p.min_fs +1;
 
-		dimsm[0] = image->height;
-		dimsm[1] = image->width;
+		dimsm[0] = det->max_fs + 1;
+		dimsm[1] = det->max_ss + 1;
 		memspace = H5Screate_simple(2, dimsm, NULL);
 
 		r = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
 		                        m_offset, NULL, m_count, NULL);
 		r = H5Dwrite(dh, H5T_NATIVE_FLOAT, memspace,
-		             dh_dataspace, H5P_DEFAULT, image->data);
+		             dh_dataspace, H5P_DEFAULT, data);
 		if ( r < 0 ) {
 			ERROR("Couldn't write data\n");
 			H5Pclose(ph);
@@ -948,6 +948,34 @@ static void write_spectrum(hid_t fh, struct sample *spectrum, int spectrum_size,
 }
 
 
+static float *make_array_from_dp(const struct image *image)
+{
+	int i;
+	float *data;
+
+	data = malloc(image->width * image->height * sizeof(float));
+	if ( data == NULL ) {
+		ERROR("Failed to allocate data\n");
+		return NULL;
+	}
+
+	for ( i=0; i<image->det->n_panels; i++ ) {
+
+		int fs, ss;
+		struct panel *p = &image->det->panels[i];
+
+		for ( ss=0; ss<p->h; ss++ ) {
+		for ( fs=0; fs<p->w; fs++ ) {
+			int idx = p->min_fs+fs + image->width*(p->min_ss+ss);
+			data[idx] = image->dp[i][fs + p->w*ss];
+		}
+		}
+	}
+
+	return data;
+}
+
+
 int hdf5_write_image(const char *filename, const struct image *image,
                      char *element)
 {
@@ -957,11 +985,15 @@ int hdf5_write_image(const char *filename, const struct image *image,
 	struct hdf5_write_location *locations;
 	int num_locations;
 	const char *ph_en_loc;
+	float *data;
 
 	if ( image->det == NULL ) {
 		ERROR("Geometry not available\n");
 		return 1;
 	}
+
+	data = make_array_from_dp(image);
+	if ( data == NULL ) return 1;
 
 	fh = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	if ( fh < 0 ) {
@@ -979,7 +1011,7 @@ int hdf5_write_image(const char *filename, const struct image *image,
 	                               &num_locations);
 
 	for ( li=0; li<num_locations; li++ ) {
-		write_location(fh, image, &locations[li]);
+		write_location(fh, image->det, data, &locations[li]);
 	}
 
 	if ( image->beam == NULL || image->beam->photon_energy_from == NULL ) {
@@ -1001,7 +1033,7 @@ int hdf5_write_image(const char *filename, const struct image *image,
 	for ( li=0; li<num_locations; li ++ ) {
 		free(locations[li].panel_idxs);
 	}
-
+	free(data);
 	free(locations);
 	return 0;
 }
