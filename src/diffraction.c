@@ -361,31 +361,30 @@ static double molecule_factor(const double *intensities, const double *phases,
 }
 
 
-
-static void diffraction_at_k(struct image *image, const double *intensities,
-                             const double *phases, const unsigned char *flags,
-                             UnitCell *cell, GradientMethod m,
-                             const SymOpList *sym, double k,
-                             double ax, double ay, double az,
-                             double bx, double by, double bz,
-                             double cx, double cy, double cz,
-                             double *lut_a, double *lut_b, double *lut_c,
-                             double weight)
+static void diffraction_panel(struct image *image, const double *intensities,
+                              const double *phases, const unsigned char *flags,
+                              UnitCell *cell, GradientMethod m,
+                              const SymOpList *sym, double k,
+                              double ax, double ay, double az,
+                              double bx, double by, double bz,
+                              double cx, double cy, double cz,
+                              double *lut_a, double *lut_b, double *lut_c,
+                              int pn, double weight)
 {
-	unsigned int fs, ss;
+	int fs, ss;
 	const int nxs = 4;
 	const int nys = 4;
+	struct panel *p = &image->det->panels[pn];
 
 	weight /= nxs*nys;
 
-	for ( fs=0; fs<image->width; fs++ ) {
-	for ( ss=0; ss<image->height; ss++ ) {
+	for ( ss=0; ss<p->h; ss++ ) {
+	for ( fs=0; fs<p->w; fs++ ) {
 
 		int idx;
 		double f_lattice, I_lattice;
 		double I_molecule;
 		struct rvec q;
-		double twotheta;
 		int xs, ys;
 		float xo, yo;
 
@@ -395,7 +394,7 @@ static void diffraction_at_k(struct image *image, const double *intensities,
 			xo = (1.0/nxs) * xs;
 			yo = (1.0/nys) * ys;
 
-			q = get_q(image, fs+xo, ss+yo, &twotheta, k);
+			q = get_q_for_panel(p, fs+xo, ss+yo, NULL, k);
 
 			f_lattice = lattice_factor(q, ax, ay, az,
 					           bx, by, bz,
@@ -411,14 +410,33 @@ static void diffraction_at_k(struct image *image, const double *intensities,
 
 			I_lattice = pow(f_lattice, 2.0);
 
-			idx = fs + image->width*ss;
-			image->data[idx] += I_lattice * I_molecule * weight;
-			image->twotheta[idx] = twotheta;
+			idx = fs + p->w*ss;
+			image->dp[pn][idx] += I_lattice * I_molecule * weight;
 
 		}
 		}
 	}
-	progress_bar(fs, image->width-1, "Calculating diffraction");
+	progress_bar(ss, p->h-1, "Calculating diffraction");
+	}
+}
+
+
+static void diffraction_at_k(struct image *image, const double *intensities,
+                             const double *phases, const unsigned char *flags,
+                             UnitCell *cell, GradientMethod m,
+                             const SymOpList *sym, double k,
+                             double ax, double ay, double az,
+                             double bx, double by, double bz,
+                             double cx, double cy, double cz,
+                             double *lut_a, double *lut_b, double *lut_c,
+                             double weight)
+{
+	int i;
+
+	for ( i=0; i<image->det->n_panels; i++ ) {
+		diffraction_panel(image, intensities, phases, flags, cell, m,
+		                  sym, k, ax, ay, az, bx, by, bz, cx, cy, cz,
+		                  lut_a, lut_b, lut_c, i, weight);
 	}
 }
 
@@ -709,12 +727,6 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	int i;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-
-	/* Allocate (and zero) the "diffraction array" */
-	image->data = calloc(image->width * image->height, sizeof(float));
-
-	/* Needed later for Lorentz calculation */
-	image->twotheta = malloc(image->width * image->height * sizeof(double));
 
 	lut_a = get_sinc_lut(na, no_fringes);
 	lut_b = get_sinc_lut(nb, no_fringes);

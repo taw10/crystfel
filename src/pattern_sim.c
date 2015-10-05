@@ -249,8 +249,7 @@ int main(int argc, char *argv[])
 	int c;
 	struct image image;
 	struct gpu_context *gctx = NULL;
-	struct image *powder;
-	float *powder_data;
+	struct image powder;
 	char *intfile = NULL;
 	double *intensities;
 	char *rval;
@@ -293,6 +292,7 @@ int main(int argc, char *argv[])
 	double bandwidth = 0.01;
 	double photon_energy = 9000.0;
 	struct beam_params beam;
+	int i;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -667,7 +667,21 @@ int main(int argc, char *argv[])
 	/* Initialise stuff */
 	image.filename = NULL;
 	image.features = NULL;
-	image.flags = NULL;
+	image.bad = NULL;
+	image.dp = malloc(image.det->n_panels*sizeof(float *));
+	if ( image.dp == NULL ) {
+		ERROR("Failed to allocate data\n");
+		return 1;
+	}
+	for ( i=0; i<image.det->n_panels; i++ ) {
+		image.dp[i] = calloc(image.det->panels[i].w *
+		                     image.det->panels[i].h,
+		                     sizeof(float));
+		if ( image.dp[i] == NULL ) {
+			ERROR("Failed to allocate data\n");
+			return 1;
+		}
+	}
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 	if ( config_random ) {
@@ -679,12 +693,23 @@ int main(int argc, char *argv[])
 		gsl_rng_set(rng, seed);
 	}
 
-	powder = calloc(1, sizeof(struct image));
-	powder->width = image.width;
-	powder->height = image.height;
-	powder->det = image.det;
-	powder_data = calloc(image.width*image.height, sizeof(float));
-	powder->data = powder_data;
+	powder.width = image.width;
+	powder.height = image.height;
+	powder.det = image.det;
+	powder.dp = malloc(image.det->n_panels*sizeof(float *));
+	if ( powder.dp == NULL ) {
+		ERROR("Failed to allocate powder data\n");
+		return 1;
+	}
+	for ( i=0; i<image.det->n_panels; i++ ) {
+		powder.dp[i] = calloc(image.det->panels[i].w *
+		                      image.det->panels[i].h,
+		                      sizeof(float));
+		if ( powder.dp[i] == NULL ) {
+			ERROR("Failed to allocate powder data\n");
+			return 1;
+		}
+	}
 
 	/* Splurge a few useful numbers */
 	STATUS("Simulation parameters:\n");
@@ -732,6 +757,7 @@ int main(int argc, char *argv[])
 		int na, nb, nc;
 		double a, b, c, d;
 		UnitCell *cell;
+		int err = 0;
 
 		if ( random_size ) {
 
@@ -825,18 +851,12 @@ int main(int argc, char *argv[])
 
 		}
 
-		/* Ensure no residual information */
-		image.data = NULL;
-		image.twotheta = NULL;
-
 		cell_get_parameters(cell, &a, &b, &c, &d, &d, &d);
 		STATUS("Particle size = %i x %i x %i"
 		       " ( = %5.2f x %5.2f x %5.2f nm)\n",
 	               na, nb, nc, na*a/1.0e-9, nb*b/1.0e-9, nc*c/1.0e-9);
 
 		if ( config_gpu ) {
-
-			int err;
 
 			if ( gctx == NULL ) {
 				gctx = setup_gpu(config_nosfac,
@@ -845,13 +865,12 @@ int main(int argc, char *argv[])
 			}
 			err = get_diffraction_gpu(gctx, &image, na, nb, nc,
 			                          cell, no_fringes);
-			if ( err ) image.data = NULL;
 
 		} else {
 			get_diffraction(&image, na, nb, nc, intensities, phases,
 			                flags, cell, grad, sym, no_fringes);
 		}
-		if ( image.data == NULL ) {
+		if ( err ) {
 			ERROR("Diffraction calculation failed.\n");
 			done = 1;
 			goto skip;
@@ -862,18 +881,23 @@ int main(int argc, char *argv[])
 
 		if ( powder_fn != NULL ) {
 
-			int x, y, w;
+			int pn;
 
-			w = image.width;
+			for ( pn=0; pn<image.det->n_panels; pn++ ) {
 
-			for ( x=0; x<image.width; x++ ) {
-			for ( y=0; y<image.height; y++ ) {
-				powder->data[x+w*y] += (double)image.data[x+w*y];
-			}
+				size_t w, i;
+
+				w = image.det->panels[pn].w
+				  * image.det->panels[pn].h;
+
+				for ( i=0; i<w; i++ ) {
+					powder.dp[pn][i] += (double)image.dp[pn][i];
+				}
+
 			}
 
 			if ( !(ndone % 10) ) {
-				hdf5_write_image(powder_fn, powder, NULL);
+				hdf5_write_image(powder_fn, &powder, NULL);
 			}
 		}
 
@@ -895,10 +919,6 @@ int main(int argc, char *argv[])
 
 		}
 
-		/* Clean up */
-		free(image.data);
-		free(image.twotheta);
-
 		cell_free(cell);
 
 skip:
@@ -909,18 +929,18 @@ skip:
 	} while ( !done );
 
 	if ( powder_fn != NULL ) {
-		hdf5_write_image(powder_fn, powder, NULL);
+		hdf5_write_image(powder_fn, &powder, NULL);
 	}
 
 	if ( gctx != NULL ) {
 		cleanup_gpu(gctx);
 	}
 
-	free(image.det->panels);
+	for ( i=0; i<image.det->n_panels; i++ ) {
+		free(powder.dp[i]);
+	}
 	free(intfile);
 	free(image.det);
-	free(powder->data);
-	free(powder);
 	cell_free(input_cell);
 	free(intensities);
 	free(outfile);
