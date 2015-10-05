@@ -1934,27 +1934,46 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 
 		herr_t r;
 		hid_t sh;
+		htri_t v;
 
-		size = H5Tget_size(type);
-		tmp = malloc(size+1);
-
-		sh = H5Screate(H5S_SCALAR);
-
-		r = H5Dread(dh, type, sh, sh, H5P_DEFAULT, tmp);
-		if ( r < 0 ) {
-			free(tmp);
-			tmp = NULL;
-		} else {
-
-			/* Two possibilities:
-			 *   String is already zero-terminated
-			 *   String is not terminated.
-			 * Make sure things are done properly... */
-			tmp[size] = '\0';
-			chomp(tmp);
+		v = H5Tis_variable_str(type);
+		if ( v < 0 ) {
+			return "WTF?";
 		}
 
-		H5Sclose(sh);
+		if ( v && (v>0) ) {
+
+			r = H5Dread(dh, type, H5S_ALL, H5S_ALL,
+			            H5P_DEFAULT, &tmp);
+			if ( r < 0 ) {
+				tmp = NULL;
+			}
+
+		} else {
+
+			size = H5Tget_size(type);
+			tmp = malloc(size+1);
+
+			sh = H5Screate(H5S_SCALAR);
+
+			r = H5Dread(dh, type, sh, sh, H5P_DEFAULT, tmp);
+			if ( r < 0 ) {
+				free(tmp);
+				tmp = NULL;
+			} else {
+
+				/* Two possibilities:
+				 *   String is already zero-terminated
+				 *   String is not terminated.
+				 * Make sure things are done properly... */
+				tmp[size] = '\0';
+				chomp(tmp);
+			}
+
+			H5Sclose(sh);
+
+		}
+
 
 	} else {
 
