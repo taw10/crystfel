@@ -412,33 +412,17 @@ int detector_has_clen_references(struct detector *det)
 }
 
 
-void record_image(struct image *image, int do_poisson, double background,
-                  gsl_rng *rng, double beam_radius, double nphotons)
+static void record_panel(struct panel *p, float *dp, int do_poisson,
+                         gsl_rng *rng, double ph_per_e, double background,
+			 double lambda,
+                         int *n_neg1, int *n_inf1, int *n_nan1,
+                         int *n_neg2, int *n_inf2, int *n_nan2,
+			 double *max_tt)
 {
-	int x, y;
-	double total_energy, energy_density;
-	double ph_per_e;
-	double area;
-	double max_tt = 0.0;
-	int n_inf1 = 0;
-	int n_neg1 = 0;
-	int n_nan1 = 0;
-	int n_inf2 = 0;
-	int n_neg2 = 0;
-	int n_nan2 = 0;
+	int fs, ss;
 
-	/* How many photons are scattered per electron? */
-	area = M_PI*pow(beam_radius, 2.0);
-	total_energy = nphotons * ph_lambda_to_en(image->lambda);
-	energy_density = total_energy / area;
-	ph_per_e = (nphotons /area) * pow(THOMSON_LENGTH, 2.0);
-	STATUS("Fluence = %8.2e photons, "
-	       "Energy density = %5.3f kJ/cm^2, "
-	       "Total energy = %5.3f microJ\n",
-	       nphotons, energy_density/1e7, total_energy*1e6);
-
-	for ( x=0; x<image->width; x++ ) {
-	for ( y=0; y<image->height; y++ ) {
+	for ( ss=0; ss>p->h; ss++ ) {
+	for ( fs=0; fs>p->w; fs++ ) {
 
 		double counts;
 		double cf;
@@ -447,28 +431,27 @@ void record_image(struct image *image, int do_poisson, double background,
 		double xs, ys, rx, ry;
 		double dsq, proj_area;
 		float dval;
-		struct panel *p;
+		double twotheta;
 
-		intensity = (double)image->data[x + image->width*y];
-		if ( isinf(intensity) ) n_inf1++;
-		if ( intensity < 0.0 ) n_neg1++;
-		if ( isnan(intensity) ) n_nan1++;
-
-		p = find_panel(image->det, x, y);
+		intensity = (double)dp[fs + p->w*ss];
+		if ( isinf(intensity) ) (*n_inf1)++;
+		if ( intensity < 0.0 ) (*n_neg1)++;
+		if ( isnan(intensity) ) (*n_nan1)++;
 
 		/* Area of one pixel */
 		pix_area = pow(1.0/p->res, 2.0);
 		Lsq = pow(p->clen, 2.0);
 
-		/* Area of pixel as seen from crystal (approximate) */
-		proj_area = pix_area * cos(image->twotheta[x + image->width*y]);
-
 		/* Calculate distance from crystal to pixel */
-		xs = (x-p->min_fs)*p->fsx + (y-p->min_ss)*p->ssx;
-		ys = (x-p->min_fs)*p->fsy + (y-p->min_ss)*p->ssy;
+		xs = fs*p->fsx + ss*p->ssx;
+		ys = ss*p->fsy + ss*p->ssy;
 		rx = (xs + p->cnx) / p->res;
 		ry = (ys + p->cny) / p->res;
 		dsq = pow(rx, 2.0) + pow(ry, 2.0);
+		twotheta = atan2(sqrt(dsq), p->clen);
+
+		/* Area of pixel as seen from crystal (approximate) */
+		proj_area = pix_area * cos(twotheta);
 
 		/* Projected area of pixel divided by distance squared */
 		sa = proj_area / (dsq + Lsq);
@@ -484,36 +467,60 @@ void record_image(struct image *image, int do_poisson, double background,
 		dval = counts + poisson_noise(rng, background);
 
 		/* Convert to ADU */
-		dval *= p->adu_per_eV * ph_lambda_to_eV(image->lambda);
+		dval *= p->adu_per_eV * ph_lambda_to_eV(lambda);
 
 		/* Saturation */
 		if ( dval > p->max_adu ) dval = p->max_adu;
 
-		image->data[x + image->width*y] = dval;
+		dp[fs + p->w*ss] = dval;
 
 		/* Sanity checks */
-		if ( isinf(image->data[x+image->width*y]) ) n_inf2++;
-		if ( isnan(image->data[x+image->width*y]) ) n_nan2++;
-		if ( image->data[x+image->width*y] < 0.0 ) n_neg2++;
+		if ( isinf(dp[fs + p->w*ss]) ) n_inf2++;
+		if ( isnan(dp[fs + p->w*ss]) ) n_nan2++;
+		if ( dp[fs + p->w*ss] < 0.0 ) n_neg2++;
 
-		if ( image->twotheta[x + image->width*y] > max_tt ) {
-			max_tt = image->twotheta[x + image->width*y];
-		}
+		if ( twotheta > *max_tt ) *max_tt = twotheta;
 
 	}
-	progress_bar(x, image->width-1, "Post-processing");
+	}
+}
+
+
+void record_image(struct image *image, int do_poisson, double background,
+                  gsl_rng *rng, double beam_radius, double nphotons)
+{
+	double total_energy, energy_density;
+	double ph_per_e;
+	double area;
+	double max_tt = 0.0;
+	int n_inf1 = 0;
+	int n_neg1 = 0;
+	int n_nan1 = 0;
+	int n_inf2 = 0;
+	int n_neg2 = 0;
+	int n_nan2 = 0;
+	int pn;
+
+	/* How many photons are scattered per electron? */
+	area = M_PI*pow(beam_radius, 2.0);
+	total_energy = nphotons * ph_lambda_to_en(image->lambda);
+	energy_density = total_energy / area;
+	ph_per_e = (nphotons /area) * pow(THOMSON_LENGTH, 2.0);
+	STATUS("Fluence = %8.2e photons, "
+	       "Energy density = %5.3f kJ/cm^2, "
+	       "Total energy = %5.3f microJ\n",
+	       nphotons, energy_density/1e7, total_energy*1e6);
+
+	for ( pn=0; pn<image->det->n_panels; pn++ ) {
+		record_panel(&image->det->panels[pn], image->dp[pn],
+		             do_poisson, rng, ph_per_e, background,
+			     image->lambda,
+		             &n_neg1, &n_inf1, &n_nan1,
+		             &n_neg2, &n_inf2, &n_nan2, &max_tt);
 	}
 
 	STATUS("Max 2theta = %.2f deg, min d = %.2f nm\n",
 	        rad2deg(max_tt), (image->lambda/(2.0*sin(max_tt/2.0)))/1e-9);
-
-	double tt_side = image->twotheta[(image->width/2)+image->width*0];
-	STATUS("At middle of bottom edge: %.2f deg, min d = %.2f nm\n",
-	        rad2deg(tt_side), (image->lambda/(2.0*sin(tt_side/2.0)))/1e-9);
-
-	tt_side = image->twotheta[0+image->width*(image->height/2)];
-	STATUS("At middle of left edge: %.2f deg, min d = %.2f nm\n",
-	        rad2deg(tt_side), (image->lambda/(2.0*sin(tt_side/2.0)))/1e-9);
 
 	STATUS("Halve the d values to get the voxel size for a synthesis.\n");
 
