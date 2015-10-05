@@ -2193,51 +2193,6 @@ struct rectangle
 };
 
 
-static int unpack_slab(struct image *image)
-{
-	struct detector *det = image->det;
-	int pi;
-
-	image->dp = malloc(det->n_panels * sizeof(float *));
-	image->bad = malloc(det->n_panels * sizeof(int *));
-	if ( (image->dp == NULL) || (image->bad == NULL) ) {
-		ERROR("Failed to allocate panels.\n");
-		return 1;
-	}
-
-	for ( pi=0; pi<det->n_panels; pi++ ) {
-
-		struct panel *p;
-		int fs, ss;
-
-		p = &det->panels[pi];
-		image->dp[pi] = malloc(p->w*p->h*sizeof(float));
-		image->bad[pi] = calloc(p->w*p->h, sizeof(int));
-		if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL) ) {
-			ERROR("Failed to allocate panel\n");
-			return 1;
-		}
-
-		for ( ss=0; ss<p->h; ss++ ) {
-			for ( fs=0; fs<p->w; fs++ ) {
-
-				int idx;
-				int cfs, css;
-
-				cfs = fs+p->min_fs;
-				css = ss+p->min_ss;
-				idx = cfs + css*image->width;
-
-				image->dp[pi][fs+p->w*ss] = image->data[idx];
-				image->bad[pi][fs+p->w*ss] = 0;
-			}
-		}
-	}
-
-	return 0;
-}
-
-
 static int draw_detector(cairo_surface_t *surf, struct image *image,
                          struct rectangle rect)
 {
@@ -2249,7 +2204,6 @@ static int draw_detector(cairo_surface_t *surf, struct image *image,
 
 	cr = cairo_create(surf);
 
-	unpack_slab(image);
 	pixbufs = render_panels(image, 1, SCALE_GEOPTIMISER, 1, &n_pixbufs);
 
 	/* Blank grey background */
@@ -2304,25 +2258,51 @@ static int save_data_to_png(char *filename, struct enhanced_det *edet,
 	cairo_status_t r;
 	cairo_surface_t *surf;
 
-	im.data = malloc((edet->width)*(edet->height)*sizeof(float));
-	if ( im.data == NULL ) {
-		ERROR("Failed to allocate memory to save data.\n");
-		return 1;
-	}
 	im.det = edet->det;
 	im.width = edet->width;
 	im.height = edet->height;
-	im.flags = NULL;
+	im.dp = malloc(edet->det->n_panels*sizeof(float *));
+	if ( im.dp == NULL ) {
+		ERROR("Failed to allocate data\n");
+		return 1;
+	}
+	for ( i=0; i<edet->det->n_panels; i++ ) {
 
-	for ( i=0; i<(edet->width)*(edet->height); i++) {
-		if ( data[i] == -10000.0) {
-			im.data[i] = 0.0;
-		} else if ( data[i] > 1.0) {
-			im.data[i] = 1.0;
-		} else {
-			im.data[i] = (float)data[i];
+		int fs, ss;
+		struct panel *p;
+
+		p = &edet->det->panels[i];
+
+		im.dp[i] = calloc(p->w * p->h, sizeof(float));
+		if ( im.dp[i] == NULL ) {
+			ERROR("Failed to allocate data\n");
+			return 1;
 		}
-		im.data[i] *= 10.0; /* render_panels sets this as max */
+
+		for ( ss=0; ss<p->h; ss++ ) {
+		for ( fs=0; fs<p->w; fs++ ) {
+
+			int idx;
+			int cfs, css;
+			float val;
+
+			cfs = fs+p->min_fs;
+			css = ss+p->min_ss;
+			idx = cfs + css*edet->width;
+
+			if ( data[idx] == -10000.0) {
+				val = 0.0;
+			} else if ( data[idx] > 1.0) {
+				val = 1.0;
+			} else {
+				val = (float)data[idx];
+			}
+			val *= 10.0; /* render_panels sets this as max */
+
+			im.dp[i][fs+p->w*ss] = val;
+
+		}
+		}
 	}
 
 	get_pixel_extents(im.det, &rect.min_x, &rect.min_y, &rect.max_x,
@@ -2354,13 +2334,13 @@ static int save_data_to_png(char *filename, struct enhanced_det *edet,
 	cairo_fill(cr);
 	cairo_destroy(cr);
 
-	r = cairo_surface_write_to_png(surf, filename);
-	if (r != CAIRO_STATUS_SUCCESS) {
-		free(im.data);
-		return 1;
+	for ( i=0; i<edet->det->n_panels; i++ ) {
+		free(im.dp[i]);
 	}
+	free(im.dp);
 
-	free(im.data);
+	r = cairo_surface_write_to_png(surf, filename);
+	if ( r != CAIRO_STATUS_SUCCESS ) return 1;
 
 	return 0;
 }
