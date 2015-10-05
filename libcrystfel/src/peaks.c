@@ -283,8 +283,8 @@ static int integrate_peak(struct image *image, int cfs, int css,
 			return 14;
 		}
 
-		idx = dfs+cfs+image->width*(dss+css);
-		val = image->data[idx];
+		idx = dfs+p_cfs+p_w*(dss+p_css);
+		val = image->dp[pn][idx];
 
 		/* Check if peak contains saturation in bg region */
 		if ( (saturated != NULL) && (val > p->max_adu) ) *saturated = 1;
@@ -322,8 +322,8 @@ static int integrate_peak(struct image *image, int cfs, int css,
 			return 15;
 		}
 
-		idx = dfs+cfs+image->width*(dss+css);
-		val = image->data[idx];
+		idx = dfs+p_cfs+p_w*(dss+p_css);
+		val = image->dp[pn][idx];
 
 		/* Check if peak contains saturation */
 		if ( (saturated != NULL) && (val > p->max_adu) ) *saturated = 1;
@@ -356,13 +356,13 @@ static int integrate_peak(struct image *image, int cfs, int css,
 
 
 static void search_peaks_in_panel(struct image *image, float threshold,
-                                  float min_gradient, float min_snr,
-                                  struct panel *p,
+                                  float min_gradient, float min_snr, int pn,
                                   double ir_inn, double ir_mid, double ir_out,
                                   int use_saturated)
 {
 	int fs, ss, stride;
 	float *data;
+	struct panel *p;
 	double d;
 	int idx;
 	double f_fs = 0.0;
@@ -378,11 +378,12 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	int nacc = 0;
 	int ncull;
 
-	data = image->data;
-	stride = image->width;
+	p = &image->det->panels[pn];
+	data = image->dp[pn];
+	stride = p->w;
 
-	for ( fs = p->min_fs+1; fs <= p->max_fs-1; fs++ ) {
-	for ( ss = p->min_ss+1; ss <= p->max_ss-1; ss++ ) {
+	for ( ss=0; ss<=p->h; ss++ ) {
+	for ( fs=0; fs<=p->w; fs++ ) {
 
 		double dx1, dx2, dy1, dy2;
 		double dxs, dys;
@@ -425,12 +426,12 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 			max = data[mask_fs+stride*mask_ss];
 			did_something = 0;
 
-			for ( s_ss=biggest(mask_ss-ir_inn, p->min_ss);
-			      s_ss<=smallest(mask_ss+ir_inn, p->max_ss);
+			for ( s_ss=biggest(mask_ss-ir_inn, 0);
+			      s_ss<=smallest(mask_ss+ir_inn, p->h-1);
 			      s_ss++ )
 			{
-			for ( s_fs=biggest(mask_fs-ir_inn, p->min_fs);
-			      s_fs<=smallest(mask_fs+ir_inn, p->max_fs);
+			for ( s_fs=biggest(mask_fs-ir_inn, 0);
+			      s_fs<=smallest(mask_fs+ir_inn, p->w-1);
 			      s_fs++ )
 			{
 
@@ -459,13 +460,13 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		}
 
 		/* Should be enforced by bounds used above.  Muppet check. */
-		assert(mask_fs <= p->max_fs);
-		assert(mask_ss <= p->max_ss);
-		assert(mask_fs >= p->min_fs);
-		assert(mask_ss >= p->min_ss);
+		assert(mask_fs <= p->w);
+		assert(mask_ss <= p->h);
+		assert(mask_fs >= 0);
+		assert(mask_ss >= 0);
 
 		/* Centroid peak and get better coordinates. */
-		r = integrate_peak(image, mask_fs, mask_ss,
+		r = integrate_peak(image, mask_fs+p->min_fs, mask_ss+p->min_ss,
 		                   &f_fs, &f_ss, &intensity, &sigma,
 		                   ir_inn, ir_mid, ir_out, &saturated);
 
@@ -504,8 +505,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		}
 
 		/* Add using "better" coordinates */
-		image_add_feature(image->features, f_fs, f_ss, image, intensity,
-		                  NULL);
+		image_add_feature(image->features, f_fs, f_ss,
+		                  image, intensity, NULL);
 		nacc++;
 
 	}
@@ -551,11 +552,10 @@ void search_peaks(struct image *image, float threshold, float min_gradient,
 
 	for ( i=0; i<image->det->n_panels; i++ ) {
 
-		struct panel *p = &image->det->panels[i];
+		if ( image->det->panels[i].no_index ) continue;
 
-		if ( p->no_index ) continue;
 		search_peaks_in_panel(image, threshold, min_gradient,
-		                      min_snr, p, ir_inn, ir_mid, ir_out,
+		                      min_snr, i, ir_inn, ir_mid, ir_out,
 		                      use_saturated);
 
 	}
