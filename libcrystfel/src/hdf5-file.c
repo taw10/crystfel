@@ -1094,18 +1094,28 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 
 	for ( i=0; i<size[0]; i++ ) {
 
-		unsigned int x, y;
+		unsigned int fs, ss;
 		float val;
+		struct panel *p;
+		signed int pn;
 
-		x = buf[3*i+0];
-		y = buf[3*i+1];
+		fs = buf[3*i+0];
+		ss = buf[3*i+1];
 		val = buf[3*i+2];
 
-		image->data[x+image->width*y] = val / 5.0;
-		image->data[x+1+image->width*y] = val / 5.0;
-		image->data[x-1+image->width*y] = val / 5.0;
-		image->data[x+image->width*(y+1)] = val / 5.0;
-		image->data[x+image->width*(y-1)] = val / 5.0;
+		/* Turn "original" position into "panel" position */
+		pn = find_orig_panel_number(image->det, fs, ss);
+		if ( pn == -1 ) {
+			ERROR("Failed to find panel!\n");
+			continue;
+		}
+		p = &image->det->panels[pn];
+
+		image->dp[pn][fs+p->w*ss] = val/5.0;
+		image->dp[pn][fs+1+p->w*ss] = val/5.0;
+		image->dp[pn][fs-1+p->w*ss] = val/5.0;
+		image->dp[pn][fs+p->w*(ss-1)] = val/5.0;
+		image->dp[pn][fs+p->w*(ss+1)] = val/5.0;
 
 	}
 
@@ -1442,9 +1452,8 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 	}
 	image->det = simple_geometry(image);
 
-	if ( satcorr ) debodge_saturation(f, image);
-
 	unpack_panels(image, image->det);
+	if ( satcorr ) debodge_saturation(f, image);
 
 	if ( image->beam != NULL ) {
 
@@ -1739,11 +1748,10 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 
 	image->data = buf;
 
-	if ( satcorr ) debodge_saturation(f, image);
-
 	fill_in_values(image->det, f, ev);
 
 	unpack_panels(image, image->det);
+	if ( satcorr ) debodge_saturation(f, image);
 
 	if ( image->beam != NULL ) {
 
