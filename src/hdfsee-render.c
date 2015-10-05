@@ -283,8 +283,9 @@ int render_tiff_fp(struct image *image, const char *filename)
 
 	line = _TIFFmalloc(TIFFScanlineSize(th));
 	for ( y=0; y<image->height; y++ ) {
-		memcpy(line, &image->data[(image->height-1-y)*image->width],
-		       image->width*4);
+		//memcpy(line, &image->data[(image->height-1-y)*image->width],
+		//       image->width*4);
+		//       FIXME!
 		TIFFWriteScanline(th, line, y, 0);
 	}
 	_TIFFfree(line);
@@ -325,7 +326,8 @@ int render_tiff_int16(struct image *image, const char *filename, double boost)
 	for ( y=0; y<image->height; y++ ) {
 	for ( x=0;x<image->width; x++ ) {
 		double val;
-		val = image->data[x+image->height*y];
+		//val = image->data[x+image->height*y];
+		val = 0.0;  // FIXME!
 		if ( val > max ) max = val;
 	}
 	}
@@ -336,7 +338,8 @@ int render_tiff_int16(struct image *image, const char *filename, double boost)
 
 			double val;
 
-			val = image->data[x+(image->height-1-y)*image->width];
+			//val = image->data[x+(image->height-1-y)*image->width];
+			val = 0.0;  // FIXME!
 			val *= ((double)boost/max);
 
 			/* Clamp to 16-bit range,

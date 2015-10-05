@@ -205,7 +205,7 @@ static int render_adsc_uint16(DisplayWindow *dw, const char *filename)
 
 		fs = dfs;
 		ss = dss;
-		val = image->data[fs + image->width * ss];
+		val = 0.0;//image->data[fs + image->width * ss]; FIXME!
 		if ( val < 0 ) {
 			out = 0;
 		} else if ( val > 65535 ) {
