@@ -242,7 +242,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	double bg_tot_sq = 0.0;
 	double var;
 	double aduph;
-	int p_cfs, p_css, p_w, p_h;
+	int p_cfs, p_css;
 	signed int pn;
 
 	pn = find_panel_number(image->det, cfs, css);
@@ -254,8 +254,6 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	/* Determine regions where there is expected to be a peak */
 	p_cfs = cfs - p->min_fs;
 	p_css = css - p->min_ss;  /* Panel-relative coordinates */
-	p_w = p->max_fs - p->min_fs + 1;
-	p_h = p->max_ss - p->min_ss + 1;
 
 	aduph = p->adu_per_eV * ph_lambda_to_eV(image->lambda);
 
@@ -264,8 +262,8 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	out_lim_sq = pow(ir_out, 2.0);
 
 	/* Estimate the background */
-	for ( dfs=-ir_out; dfs<=+ir_out; dfs++ ) {
 	for ( dss=-ir_out; dss<=+ir_out; dss++ ) {
+	for ( dfs=-ir_out; dfs<=+ir_out; dfs++ ) {
 
 		double val;
 		int idx;
@@ -275,7 +273,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		if ( dfs*dfs + dss*dss < mid_lim_sq ) continue;
 
 		/* Strayed off one panel? */
-		if ( (p_cfs+dfs >= p_w) || (p_css+dss >= p_h)
+		if ( (p_cfs+dfs >= p->w) || (p_css+dss >= p->h)
 		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) ) return 4;
 
 		/* Wandered into a bad region? */
@@ -283,7 +281,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 			return 14;
 		}
 
-		idx = dfs+p_cfs+p_w*(dss+p_css);
+		idx = dfs+p_cfs+p->w*(dss+p_css);
 		val = image->dp[pn][idx];
 
 		/* Check if peak contains saturation in bg region */
@@ -304,8 +302,8 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	pk_total = 0.0;
 	pk_counts = 0;
 	fsct = 0.0;  ssct = 0.0;
-	for ( dfs=-ir_inn; dfs<=+ir_inn; dfs++ ) {
 	for ( dss=-ir_inn; dss<=+ir_inn; dss++ ) {
+	for ( dfs=-ir_inn; dfs<=+ir_inn; dfs++ ) {
 
 		double val;
 		int idx;
@@ -314,7 +312,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		if ( dfs*dfs + dss*dss > lim_sq ) continue;
 
 		/* Strayed off one panel? */
-		if ( (p_cfs+dfs >= p_w) || (p_css+dss >= p_h)
+		if ( (p_cfs+dfs >= p->w) || (p_css+dss >= p->h)
 		  || (p_cfs+dfs < 0 ) || (p_css+dss < 0) ) return 8;
 
 		/* Wandered into a bad region? */
@@ -322,7 +320,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 			return 15;
 		}
 
-		idx = dfs+p_cfs+p_w*(dss+p_css);
+		idx = dfs+p_cfs+p->w*(dss+p_css);
 		val = image->dp[pn][idx];
 
 		/* Check if peak contains saturation */
