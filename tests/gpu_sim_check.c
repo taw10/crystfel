@@ -3,11 +3,11 @@
  *
  * Check that GPU simulation agrees with CPU version
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2012-2014 Thomas White <taw@physics.org>
+ *   2012-2015 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -110,11 +110,19 @@ int main(int argc, char *argv[])
 	det = calloc(1, sizeof(struct detector));
 	det->n_panels = 2;
 	det->panels = calloc(2, sizeof(struct panel));
+	det->max_fs = 1024;
+	det->max_ss = 1024;
 
 	det->panels[0].min_fs = 0;
 	det->panels[0].max_fs = 1023;
 	det->panels[0].min_ss = 0;
 	det->panels[0].max_ss = 511;
+	det->panels[0].orig_min_fs = 0;
+	det->panels[0].orig_max_fs = 1023;
+	det->panels[0].orig_min_ss = 0;
+	det->panels[0].orig_max_ss = 511;
+	det->panels[0].w = 1024;
+	det->panels[0].h = 512;
 	det->panels[0].fsx = 1;
 	det->panels[0].fsy = 0;
 	det->panels[0].ssx = 0;
@@ -128,11 +136,18 @@ int main(int argc, char *argv[])
 	det->panels[0].clen = 100.0e-3;
 	det->panels[0].res = 9090.91;
 	det->panels[0].adu_per_eV = 1.0;
+	det->panels[0].data = NULL;
 
 	det->panels[1].min_fs = 0;
 	det->panels[1].max_fs = 1023;
 	det->panels[1].min_ss = 512;
 	det->panels[1].max_ss = 1023;
+	det->panels[1].orig_min_fs = 0;
+	det->panels[1].orig_max_fs = 1023;
+	det->panels[1].orig_min_ss = 512;
+	det->panels[1].orig_max_ss = 1023;
+	det->panels[1].w = 1024;
+	det->panels[1].h = 512;
 	det->panels[1].fsx = 1;
 	det->panels[1].fsy = 0;
 	det->panels[1].ssx = 0;
@@ -145,12 +160,15 @@ int main(int argc, char *argv[])
 	det->panels[1].cny = sep;
 	det->panels[1].clen = 100.0e-3;
 	det->panels[1].res = 9090.91;
-	det->panels[0].adu_per_eV = 1.0;
+	det->panels[1].adu_per_eV = 1.0;
+	det->panels[1].data = NULL;
 
 	cpu_image.det = det;
 	gpu_image.det = det;
 	cpu_image.beam = NULL;
 	gpu_image.beam = NULL;
+	cpu_image.spectrum = NULL;
+	gpu_image.spectrum = NULL;
 
 	cpu_image.lambda = ph_en_to_lambda(eV_to_J(6000));
 	gpu_image.lambda = ph_en_to_lambda(eV_to_J(6000));
@@ -171,6 +189,20 @@ int main(int argc, char *argv[])
 
 	sym = get_pointgroup("1");
 
+	cpu_image.dp = malloc(det->n_panels * sizeof(float *));
+	if ( cpu_image.dp == NULL ) {
+		ERROR("Couldn't allocate memory for result.\n");
+		return 1;
+	}
+	for ( i=0; i<det->n_panels; i++ ) {
+		struct panel *p = &det->panels[i];
+		cpu_image.dp[i] = calloc(p->w * p->h, sizeof(float));
+		if ( cpu_image.dp[i] == NULL ) {
+			ERROR("Couldn't allocate memory for panel %i\n", i);
+			return 1;
+		}
+	}
+
 	start = get_hires_seconds();
 	get_diffraction(&cpu_image, 8, 8, 8, NULL, NULL, NULL, cell,
 	                GRADIENT_MOSAIC, sym, 1);
@@ -184,18 +216,25 @@ int main(int argc, char *argv[])
 	gpu_min = +INFINITY;  gpu_max = -INFINITY;  gpu_tot = 0.0;
 	cpu_min = +INFINITY;  cpu_max = -INFINITY;  cpu_tot = 0.0;
 	dev = 0.0;
-	for ( i=0; i<1024*1024; i++ ) {
+	for ( i=0; i<det->n_panels; i++ ) {
 
-		const double cpu = cpu_image.data[i];
-		const double gpu = gpu_image.data[i];
+		int j;
+		struct panel *p = &det->panels[i];
 
-		if ( cpu > cpu_max ) cpu_max = cpu;
-		if ( cpu < cpu_min ) cpu_min = cpu;
-		if ( gpu > gpu_max ) gpu_max = gpu;
-		if ( gpu < gpu_min ) gpu_min = gpu;
-		gpu_tot += gpu;
-		cpu_tot += cpu;
-		dev += fabs(gpu - cpu);
+		for ( j=0; j<p->w*p->h; j++ ) {
+
+			const double cpu = cpu_image.dp[i][j];
+			const double gpu = gpu_image.dp[i][j];
+
+			if ( cpu > cpu_max ) cpu_max = cpu;
+			if ( cpu < cpu_min ) cpu_min = cpu;
+			if ( gpu > gpu_max ) gpu_max = gpu;
+			if ( gpu < gpu_min ) gpu_min = gpu;
+			gpu_tot += gpu;
+			cpu_tot += cpu;
+			dev += fabs(gpu - cpu);
+
+		}
 
 	}
 	perc = 100.0*dev/cpu_tot;
@@ -204,25 +243,22 @@ int main(int argc, char *argv[])
 	STATUS("CPU: min=%8e, max=%8e, total=%8e\n", cpu_min, cpu_max, cpu_tot);
 	STATUS("dev = %8e (%5.2f%% of CPU total)\n", dev, perc);
 
-	cell_free(cell);
-	free_detector_geometry(det);
-
-	if ( perc > 1.0 ) {
+	if ( 1 ) {
 
 		STATUS("Test failed!  I'm writing cpu-sim.h5 and gpu-sim.h5"
 		       " for you to inspect.\n");
 
-		hdf5_write("cpu-sim.h5", cpu_image.data, cpu_image.width,
-		            cpu_image.height, H5T_NATIVE_FLOAT);
-
-		hdf5_write("gpu-sim.h5", gpu_image.data, gpu_image.width,
-		            gpu_image.height, H5T_NATIVE_FLOAT);
+		hdf5_write_image("cpu-sim.h5", &cpu_image, NULL);
+		hdf5_write_image("gpu-sim.h5", &gpu_image, NULL);
 
 		return 1;
 
 	}
 
 	gsl_rng_free(rng);
+	cell_free(cell);
+	free_detector_geometry(det);
+
 
 	return 0;
 }
