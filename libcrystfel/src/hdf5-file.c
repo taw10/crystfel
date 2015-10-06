@@ -3,11 +3,11 @@
  *
  * Read/write HDF5 data files
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2015 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -727,18 +727,18 @@ static struct hdf5_write_location *make_location_list(struct detector *det,
 
 	for ( pi=0; pi<det->n_panels; pi++ ) {
 
-		struct panel p;
+		struct panel *p;
 		const char *p_location;
 
-		p = det->panels[pi];
+		p = &det->panels[pi];
 
-		if ( p.data == NULL ) {
+		if ( p->data == NULL ) {
 			p_location = def_location;
 		} else {
-			p_location = p.data;
+			p_location = p->data;
 		}
 
-		add_panel_location(&p, p_location, pi,
+		add_panel_location(p, p_location, pi,
 		                   &locations, &num_locations);
 
 	}
