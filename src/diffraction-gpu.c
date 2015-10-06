@@ -3,11 +3,11 @@
  *
  * Calculate diffraction patterns by Fourier methods (GPU version)
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2014 Thomas White <taw@physics.org>
+ *   2009-2015 Thomas White <taw@physics.org>
  *   2013      Alexandra Tolstikova
  *   2013-2014 Chun Hong Yoon <chun.hong.yoon@desy.de>
  *
@@ -253,20 +253,17 @@ static int do_panels(struct gpu_context *gctx, struct image *image,
 			return 1;
 		}
 
-		for ( fs=0; fs<pan_width; fs++ ) {
 		for ( ss=0; ss<pan_height; ss++ ) {
+		for ( fs=0; fs<pan_width; fs++ ) {
 
 			float val;
-			int tfs, tss;
 
 			val = diff_ptr[fs + pan_width*ss];
 			if ( isinf(val) ) (*n_inf)++;
 			if ( val < 0.0 ) (*n_neg)++;
 			if ( isnan(val) ) (*n_nan)++;
 
-			tfs = p->min_fs + fs;
-			tss = p->min_ss + ss;
-			image->data[tfs + image->width*tss] += val;
+			image->dp[i][fs + pan_width*ss] += val;
 
 		}
 		}
@@ -294,7 +291,6 @@ int get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	int n_inf = 0;
 	int n_neg = 0;
 	int n_nan = 0;
-	int fs, ss;
 	int i;
 
 	if ( gctx == NULL ) {
@@ -326,10 +322,18 @@ int get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	if ( set_arg_mem(gctx, 17, gctx->sinc_luts[nc-1]) ) return 1;
 
 	/* Allocate memory for the result */
-	image->data = calloc(image->width * image->height, sizeof(float));
-	if ( image->data == NULL ) {
+	image->dp = malloc(image->det->n_panels * sizeof(float *));
+	if ( image->dp == NULL ) {
 		ERROR("Couldn't allocate memory for result.\n");
 		return 1;
+	}
+	for ( i=0; i<image->det->n_panels; i++ ) {
+		struct panel *p = &image->det->panels[i];
+		image->dp[i] = calloc(p->w * p->h, sizeof(float));
+		if ( image->dp[i] == NULL ) {
+			ERROR("Couldn't allocate memory for panel %i\n", i);
+			return 1;
+		}
 	}
 
 	double tot = 0.0;
@@ -354,18 +358,6 @@ int get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		ERROR("WARNING: The GPU calculation produced %i negative"
 		      " values, %i infinities and %i NaNs.\n",
 		      n_neg, n_inf, n_nan);
-	}
-
-	/* Calculate "2theta" values for detector geometry */
-	image->twotheta = calloc(image->width * image->height, sizeof(double));
-	for ( fs=0; fs<image->width; fs++ ) {
-	for ( ss=0; ss<image->height; ss++ ) {
-
-		double twotheta;
-		get_q(image, fs, ss, &twotheta, 1.0/image->lambda);
-		image->twotheta[fs + image->width*ss] = twotheta;
-
-	}
 	}
 
 	return 0;
