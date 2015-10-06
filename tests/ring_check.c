@@ -170,7 +170,6 @@ int main(int argc, char *argv[])
 	int r, npx;
 	double ex;
 	gsl_rng *rng;
-	int *bad;
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
@@ -181,8 +180,8 @@ int main(int argc, char *argv[])
 
 	image.dp = malloc(sizeof(float *));
 	image.dp[0] = malloc(128*128*sizeof(float));
-	bad = calloc(128*128, sizeof(int));
-	image.bad = &bad;
+	image.bad = malloc(sizeof(uint16_t *));
+	image.bad[0] = calloc(128*128, sizeof(uint16_t));
 	image.beam = NULL;
 	image.lambda = ph_eV_to_lambda(1000.0);
 
@@ -191,9 +190,9 @@ int main(int argc, char *argv[])
 	image.det->panels = calloc(1, sizeof(struct panel));
 
 	image.det->panels[0].min_fs = 0;
-	image.det->panels[0].max_fs = 128;
+	image.det->panels[0].max_fs = 127;
 	image.det->panels[0].min_ss = 0;
-	image.det->panels[0].max_ss = 128;
+	image.det->panels[0].max_ss = 127;
 	image.det->panels[0].fsx = 1.0;
 	image.det->panels[0].fsy = 0.0;
 	image.det->panels[0].ssx = 0.0;
@@ -206,6 +205,8 @@ int main(int argc, char *argv[])
 	image.det->panels[0].cny = -64.0;
 	image.det->panels[0].clen = 1.0;
 	image.det->panels[0].res = 1.0;
+	image.det->panels[0].w = 128;
+	image.det->panels[0].h = 128;
 	image.det->panels[0].adu_per_eV = 1.0/1000.0;  /* -> 1 adu per photon */
 	image.det->panels[0].max_adu = +INFINITY;  /* No cutoff */
 
