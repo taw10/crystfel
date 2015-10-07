@@ -2407,6 +2407,7 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 
 	free(is_group);
 	free(is_image);
+	free(names);
 
 	return ms;
 }
