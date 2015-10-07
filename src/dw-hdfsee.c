@@ -2380,7 +2380,7 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 
 			if ( hdfile_is_scalar(hdfile, names[i], 0) ) {
 				tmp = hdfile_get_string_value(hdfile, names[i],
-				      NULL);
+				                              NULL);
 			} else {
 				tmp = NULL;
 			}
