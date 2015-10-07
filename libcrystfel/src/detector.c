@@ -2210,7 +2210,7 @@ void mark_resolution_range_as_bad(struct image *image,
 }
 
 
-extern int single_panel_data_source(struct detector *det, const char *element)
+int single_panel_data_source(struct detector *det, const char *element)
 {
 	int pi;
 	char *first_datafrom = NULL;

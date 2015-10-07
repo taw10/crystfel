@@ -251,7 +251,7 @@ extern void mark_resolution_range_as_bad(struct image *image,
                                          double min, double max);
 
 
-extern int single_panel_data_source (struct detector *det, const char *element);
+extern int single_panel_data_source(struct detector *det, const char *element);
 
 struct rg_collection *find_rigid_group_collection_by_name(struct detector *det,
                                                           const char *name);
