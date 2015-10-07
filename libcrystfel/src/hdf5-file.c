@@ -3,11 +3,11 @@
  *
  * Read/write HDF5 data files
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2012 Thomas White <taw@physics.org>
+ *   2009-2015 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -727,18 +727,18 @@ static struct hdf5_write_location *make_location_list(struct detector *det,
 
 	for ( pi=0; pi<det->n_panels; pi++ ) {
 
-		struct panel p;
+		struct panel *p;
 		const char *p_location;
 
-		p = det->panels[pi];
+		p = &det->panels[pi];
 
-		if ( p.data == NULL ) {
+		if ( p->data == NULL ) {
 			p_location = def_location;
 		} else {
-			p_location = p.data;
+			p_location = p->data;
 		}
 
-		add_panel_location(&p, p_location, pi,
+		add_panel_location(p, p_location, pi,
 		                   &locations, &num_locations);
 
 	}
@@ -1968,7 +1968,10 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 	}
 
 	dh = H5Dopen2(f->fh, subst_name, H5P_DEFAULT);
-	if ( dh < 0 ) return NULL;
+	if ( dh < 0 ) {
+		free(subst_name);
+		return NULL;
+	}
 	type = H5Dget_type(dh);
 	class = H5Tget_class(type);
 
@@ -1980,6 +1983,8 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 
 		v = H5Tis_variable_str(type);
 		if ( v < 0 ) {
+			H5Tclose(type);
+			free(subst_name);
 			return "WTF?";
 		}
 
@@ -1988,8 +1993,12 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 			r = H5Dread(dh, type, H5S_ALL, H5S_ALL,
 			            H5P_DEFAULT, &tmp);
 			if ( r < 0 ) {
-				tmp = NULL;
+				H5Tclose(type);
+				free(subst_name);
+				return NULL;
 			}
+
+			return tmp;
 
 		} else {
 
@@ -1999,9 +2008,11 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 			sh = H5Screate(H5S_SCALAR);
 
 			r = H5Dread(dh, type, sh, sh, H5P_DEFAULT, tmp);
+			H5Sclose(sh);
 			if ( r < 0 ) {
 				free(tmp);
-				tmp = NULL;
+				free(subst_name);
+				return NULL;
 			} else {
 
 				/* Two possibilities:
@@ -2010,16 +2021,19 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 				 * Make sure things are done properly... */
 				tmp[size] = '\0';
 				chomp(tmp);
+				H5Dclose(dh);
+				free(subst_name);
+				return tmp;
 			}
 
-			H5Sclose(sh);
-
 		}
-
 
 	} else {
 
 		int r;
+
+		H5Dclose(dh);
+		H5Tclose(type);
 
 		switch ( class ) {
 
@@ -2028,7 +2042,15 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 			                     H5T_NATIVE_DOUBLE);
 			if ( r == 0 ) {
 				tmp = malloc(256);
+				if ( tmp == NULL ) {
+					ERROR("Failed to allocate float\n");
+					return NULL;
+				}
 				snprintf(tmp, 255, "%f", buf_f);
+				return tmp;
+			} else {
+				ERROR("Failed to read value\n");
+				return NULL;
 			}
 			break;
 
@@ -2037,17 +2059,25 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 			                     H5T_NATIVE_INT);
 			if ( r == 0 ) {
 				tmp = malloc(256);
+				if ( tmp == NULL ) {
+					ERROR("Failed to allocate int buf!\n");
+					return NULL;
+				}
 				snprintf(tmp, 255, "%d", buf_i);
+				return tmp;
+
+			} else {
+				ERROR("Failed to read value\n");
+				return NULL;
 			}
 			break;
+
+			default :
+			ERROR("Don't know what to do!\n");
+			return NULL;
 		}
 
 	}
-
-	H5Tclose(type);
-	H5Dclose(dh);
-	free(subst_name);
-	return tmp;
 }
 
 
