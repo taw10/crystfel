@@ -126,7 +126,7 @@ Include \fIn\fR samples from the spectrum in the calculation.
 .IP "\fB-x\fR \fItype\fR"
 .IP \fB--spectrum=\fR\fItype\fR
 .PD
-Use \fItype\fR of spectrum.  \fItype\fR can be one of \fBtophat\fR or \fBsase\fR.
+Use \fItype\fR of spectrum.  \fItype\fR can be one of \fBtophat\fR, \fBsase\fR or \fBtwocolour\fR.  See the section \fBSPECTRUM TYPES\fR below.
 
 .PD 0
 .IP \fB--background=\fR\fIn\fR
@@ -157,6 +157,10 @@ Set the central photon energy, in eV, for the incident beam.  The default is \fB
 .IP "\fB--nphotons=\fIval\fR"
 .PD
 Set the number of photons per X-ray pulse.  The default is \fB--nphotons=1e12\fR.  A physically reasonable value is such that the pulse energy (number of photons multiplied by photon energy) is about 1 mJ.
+
+.IP "\fB--beam-radius=\fIval\fR"
+.PD
+Set the radius of the X-ray beam, in metres.  The default is \fB--beam-radius=1e-6\fR, i.e. a beam of 2 microns' diameter.
 
 .SH REFLECTION LISTS
 
@@ -218,6 +222,22 @@ Interpolate trilinearly between six adjacent Bragg intensities. This method has 
 .IP \fBphased\fR
 .PD
 As 'interpolate', but take phase values into account.  This is the most accurate method, but the slowest.
+
+.SH SPECTRUM TYPES
+
+The available options for \fB--spectrum\fR are:
+
+.IP \fBtophat\fR
+.PD
+The spectrum samples will be distributed equidistantly either side of the specified photon energy to give a uniform distribution.
+
+.IP \fBsase\fR
+.PD
+A self-amplified spontaneous emission (SASE) spectrum will be simulated, as follows.  First, a central photon energy will be chosen using a Gaussian distribution centered on the specified photon energy with a standard deviation of 8 eV.  A Gaussian spectrum will then be calculated using the specified bandwidth, and noise added to simulatie the SASE 'spikes'.
+
+.IP \fBtwocolour\fR
+.PD
+The spectrum will consist of two Gaussian peaks separated by the specified bandwidth, each with a standard deviation of one fifth the specified bandwidth.
 
 .SH AUTHOR
 This page was written by Thomas White.
