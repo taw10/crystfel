@@ -1106,15 +1106,16 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 
 	double LevelFit = 1./1000;
 	double IndexFit = 1./500;
-	double d_max = 400.; // thrice the maximum expected axis length
+	double d_max = 1000.; // thrice the maximum expected axis length
 	double volume_min = 100.;
-	double volume_max = 1000000.;
+	double volume_max = 100000000.;
 
 	int N_triplets_max = 10000; // maximum number of triplets
 
 	struct asdf_private *dp = (struct asdf_private *)ipriv;
 
-	if ( dp->indm & INDEXING_CHECK_CELL_AXES ) {
+	if ( dp->indm & INDEXING_CHECK_CELL_AXES ||
+             dp->indm & INDEXING_CHECK_CELL_COMBINATIONS) {
 		double a, b, c, gamma, beta, alpha;
 		cell_get_parameters(dp->template, &a, &b, &c,
                                                   &alpha, &beta, &gamma);
