@@ -915,10 +915,13 @@ static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
 	int N_triplets = N_reflections * (N_reflections - 1) *
 	                                 (N_reflections - 2) / 6;
 
-	if ( N_triplets > N_triplets_max ) N_triplets = N_triplets_max;
+	if ( N_triplets > N_triplets_max || N_reflections > 1000 ) {
+		N_triplets = N_triplets_max;
+	}
 	*N = N_triplets;
 
 	int **triplets = malloc(N_triplets * sizeof(int *));
+
 	if (triplets == NULL) {
 		ERROR("Failed to allocate triplets in generate_triplets!\n");
 		return 0;
