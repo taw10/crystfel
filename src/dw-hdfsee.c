@@ -1987,7 +1987,8 @@ static int curr_rg_pointer_index(DisplayWindow *dw)
 	}
 
 	/* Never reached (we hope) */
-	return 999;
+	ERROR("Failed to find index for rg!\n");
+	return 0;
 }
 
 static int curr_p_pointer_index(DisplayWindow *dw)
@@ -2001,28 +2002,33 @@ static int curr_p_pointer_index(DisplayWindow *dw)
 	}
 
 	/* Never reached (we hope) */
-	return 999;
+	ERROR("Failed to find index for panel!\n");
+	return 0;
 }
 
 
-static void select_next_group(DisplayWindow *dw, int num_rg)
+static void select_next_group(DisplayWindow *dw)
 {
-	if ( dw->calib_mode_curr_rg == dw->rg_coll->rigid_groups[num_rg-1] ) {
+	int idx = curr_rg_pointer_index(dw);
+	int n_rgs = dw->rg_coll->n_rigid_groups;
+
+	if ( idx == n_rgs-1 ) {
 		dw->calib_mode_curr_rg = dw->rg_coll->rigid_groups[0];
 	} else {
-		dw->calib_mode_curr_rg =
-		  dw->rg_coll->rigid_groups[curr_rg_pointer_index(dw)+1];
+		dw->calib_mode_curr_rg = dw->rg_coll->rigid_groups[idx+1];
 	}
 }
 
 
-static void select_prev_group(DisplayWindow *dw, int num_rg)
+static void select_prev_group(DisplayWindow *dw)
 {
-	if ( dw->calib_mode_curr_rg == dw->rg_coll->rigid_groups[0] ) {
-		dw->calib_mode_curr_rg = dw->rg_coll->rigid_groups[num_rg-1];
+	int idx = curr_rg_pointer_index(dw);
+	int n_rgs = dw->rg_coll->n_rigid_groups;
+
+	if ( idx == 0 ) {
+		dw->calib_mode_curr_rg = dw->rg_coll->rigid_groups[n_rgs-1];
 	} else {
-		dw->calib_mode_curr_rg =
-		    dw->rg_coll->rigid_groups[curr_rg_pointer_index(dw)-1];
+		dw->calib_mode_curr_rg = dw->rg_coll->rigid_groups[idx-1];
 	}
 }
 
@@ -2113,8 +2119,7 @@ static void calibmode_next(GtkWidget *widget, DisplayWindow *dw)
 		break;
 
 		case CALIBMODE_GROUPS:
-		n = dw->image->det->n_rigid_groups;
-		select_next_group(dw, n);
+		select_next_group(dw);
 		break;
 
 		case CALIBMODE_ALL:
@@ -2141,7 +2146,7 @@ static void calibmode_prev(GtkWidget *widget, DisplayWindow *dw)
 
 		case CALIBMODE_GROUPS:
 		n = dw->image->det->n_rigid_groups;
-		select_prev_group(dw, n);
+		select_prev_group(dw);
 		break;
 
 		case CALIBMODE_ALL:
