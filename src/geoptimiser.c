@@ -2380,21 +2380,25 @@ int check_and_enforce_cspad_dist(struct geoptimiser_params *gparams,
 	for ( np=0; np<det->n_panels; np = np+2 ) {
 
 		double dist2;
+                double cnx2, cny2;
 
 		struct panel *ep = &det->panels[np];
 		struct panel *op = &det->panels[np+1];
 
-		dist2 = (( ep->cnx - op->cnx )*( ep->cnx - op->cnx ) +
-		         ( ep->cny - op->cny )*( ep->cny - op->cny ));
+                cnx2 = ep->cnx + 197.0*ep->fsx;
+                cny2 = ep->cny + 197.0*ep->fsy;
 
-		if ( dist2 > (dist_to_check+tol)*(dist_to_check+tol) ||
-		     dist2 < (dist_to_check-tol)*(dist_to_check-tol) ) {
+		dist2 = (( cnx2 - op->cnx )*( cnx2 - op->cnx ) +
+		         ( cny2 - op->cny )*( cny2 - op->cny ));
+
+		if ( dist2 > (tol*tol)) {
 
 			num_errors_found += 1;
 
 			STATUS("Warning: distance between panels %s and %s "
-			       "is outside acceptable margins.\n", ep->name,
-			       op->name);
+			       "is outside acceptable margins (Corners are "
+                               "more than 0.2 pixels away: %3.2f).\n", ep->name,
+			       op->name, sqrt(dist2));
 
 			if ( gparams->enforce_cspad_layout ) {
 
