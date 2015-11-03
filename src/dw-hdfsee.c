@@ -94,8 +94,6 @@ static gint displaywindow_closed(GtkWidget *window, DisplayWindow *dw)
 	if ( dw->image != NULL ) {
 
 		free(dw->image->filename);
-		free(dw->image->data);
-		free(dw->image->flags);
 		free(dw->image);
 	}
 
@@ -207,7 +205,7 @@ static int render_adsc_uint16(DisplayWindow *dw, const char *filename)
 
 		fs = dfs;
 		ss = dss;
-		val = image->data[fs + image->width * ss];
+		val = 0.0;//image->data[fs + image->width * ss]; FIXME!
 		if ( val < 0 ) {
 			out = 0;
 		} else if ( val > 65535 ) {
@@ -925,8 +923,6 @@ static gint displaywindow_newevent(DisplayWindow *dw, int new_event)
 
 	if ( dw->not_ready_yet ) return 0;
 
-	float *old_data = dw->image->data;
-	uint16_t *old_flags = dw->image->flags;
 	float **old_dp = dw->image->dp;
 	int **old_bad = dw->image->bad;
 
@@ -934,8 +930,6 @@ static gint displaywindow_newevent(DisplayWindow *dw, int new_event)
                           dw->ev_list->events[new_event], 0);
 	if ( fail ) {
 		ERROR("Couldn't load image");
-		dw->image->data = old_data;
-		dw->image->flags = old_flags;
 		dw->image->dp = old_dp;
 		dw->image->bad = old_bad;
 		return 1;
@@ -956,8 +950,6 @@ static gint displaywindow_newevent(DisplayWindow *dw, int new_event)
 		free(old_dp[i]);
 		free(old_bad[i]);
 	}
-	free(old_data);
-	free(old_flags);
 	free(old_dp);
 	free(old_bad);
 	return 0;

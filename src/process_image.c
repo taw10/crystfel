@@ -135,8 +135,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	int any_crystals;
 
 	image.features = NULL;
-	image.data = NULL;
-	image.flags = NULL;
 	image.copyme = iargs->copyme;
 	image.id = cookie;
 	image.filename = pargs->filename_p_e->filename;
@@ -343,8 +341,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	free(image.dp);
 	free(image.bad);
 
-	free(image.data);
-	if ( image.flags != NULL ) free(image.flags);
 	image_feature_list_free(image.features);
 	free_detector_geometry(image.det);
 	hdfile_close(hdfile);

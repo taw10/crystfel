@@ -77,7 +77,6 @@ int main(int argc, char *argv[])
 	fclose(fh);
 	gsl_rng_set(rng, seed);
 
-	image.flags = NULL;
 	image.beam = NULL;
 	image.lambda = ph_eV_to_lambda(9000.0);
 	image.bw = 0.000001;

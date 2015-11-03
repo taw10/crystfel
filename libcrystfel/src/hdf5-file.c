@@ -748,7 +748,7 @@ static struct hdf5_write_location *make_location_list(struct detector *det,
 }
 
 
-static void write_location(hid_t fh, const struct image *image,
+static void write_location(hid_t fh, struct detector *det, float *data,
                            struct hdf5_write_location *loc)
 {
 	hid_t sh, dh, ph;
@@ -784,7 +784,7 @@ static void write_location(hid_t fh, const struct image *image,
 		struct panel p;
 		int r;
 
-		p = image->det->panels[loc->panel_idxs[pi]];
+		p = det->panels[loc->panel_idxs[pi]];
 
 		f_offset[0] = p.orig_min_ss;
 		f_offset[1] = p.orig_min_fs;
@@ -810,14 +810,14 @@ static void write_location(hid_t fh, const struct image *image,
 		m_count[0] = p.max_ss - p.min_ss +1;
 		m_count[1] = p.max_fs - p.min_fs +1;
 
-		dimsm[0] = image->height;
-		dimsm[1] = image->width;
+		dimsm[0] = det->max_fs + 1;
+		dimsm[1] = det->max_ss + 1;
 		memspace = H5Screate_simple(2, dimsm, NULL);
 
 		r = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
 		                        m_offset, NULL, m_count, NULL);
 		r = H5Dwrite(dh, H5T_NATIVE_FLOAT, memspace,
-		             dh_dataspace, H5P_DEFAULT, image->data);
+		             dh_dataspace, H5P_DEFAULT, data);
 		if ( r < 0 ) {
 			ERROR("Couldn't write data\n");
 			H5Pclose(ph);
@@ -948,6 +948,34 @@ static void write_spectrum(hid_t fh, struct sample *spectrum, int spectrum_size,
 }
 
 
+static float *make_array_from_dp(const struct image *image)
+{
+	int i;
+	float *data;
+
+	data = malloc(image->width * image->height * sizeof(float));
+	if ( data == NULL ) {
+		ERROR("Failed to allocate data\n");
+		return NULL;
+	}
+
+	for ( i=0; i<image->det->n_panels; i++ ) {
+
+		int fs, ss;
+		struct panel *p = &image->det->panels[i];
+
+		for ( ss=0; ss<p->h; ss++ ) {
+		for ( fs=0; fs<p->w; fs++ ) {
+			int idx = p->min_fs+fs + image->width*(p->min_ss+ss);
+			data[idx] = image->dp[i][fs + p->w*ss];
+		}
+		}
+	}
+
+	return data;
+}
+
+
 int hdf5_write_image(const char *filename, const struct image *image,
                      char *element)
 {
@@ -957,11 +985,15 @@ int hdf5_write_image(const char *filename, const struct image *image,
 	struct hdf5_write_location *locations;
 	int num_locations;
 	const char *ph_en_loc;
+	float *data;
 
 	if ( image->det == NULL ) {
 		ERROR("Geometry not available\n");
 		return 1;
 	}
+
+	data = make_array_from_dp(image);
+	if ( data == NULL ) return 1;
 
 	fh = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	if ( fh < 0 ) {
@@ -979,7 +1011,7 @@ int hdf5_write_image(const char *filename, const struct image *image,
 	                               &num_locations);
 
 	for ( li=0; li<num_locations; li++ ) {
-		write_location(fh, image, &locations[li]);
+		write_location(fh, image->det, data, &locations[li]);
 	}
 
 	if ( image->beam == NULL || image->beam->photon_energy_from == NULL ) {
@@ -1001,7 +1033,7 @@ int hdf5_write_image(const char *filename, const struct image *image,
 	for ( li=0; li<num_locations; li ++ ) {
 		free(locations[li].panel_idxs);
 	}
-
+	free(data);
 	free(locations);
 	return 0;
 }
@@ -1062,18 +1094,28 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 
 	for ( i=0; i<size[0]; i++ ) {
 
-		unsigned int x, y;
+		unsigned int fs, ss;
 		float val;
+		struct panel *p;
+		signed int pn;
 
-		x = buf[3*i+0];
-		y = buf[3*i+1];
+		fs = buf[3*i+0];
+		ss = buf[3*i+1];
 		val = buf[3*i+2];
 
-		image->data[x+image->width*y] = val / 5.0;
-		image->data[x+1+image->width*y] = val / 5.0;
-		image->data[x-1+image->width*y] = val / 5.0;
-		image->data[x+image->width*(y+1)] = val / 5.0;
-		image->data[x+image->width*(y-1)] = val / 5.0;
+		/* Turn "original" position into "panel" position */
+		pn = find_orig_panel_number(image->det, fs, ss);
+		if ( pn == -1 ) {
+			ERROR("Failed to find panel!\n");
+			continue;
+		}
+		p = &image->det->panels[pn];
+
+		image->dp[pn][fs+p->w*ss] = val/5.0;
+		image->dp[pn][fs+1+p->w*ss] = val/5.0;
+		image->dp[pn][fs-1+p->w*ss] = val/5.0;
+		image->dp[pn][fs+p->w*(ss-1)] = val/5.0;
+		image->dp[pn][fs+p->w*(ss+1)] = val/5.0;
 
 	}
 
@@ -1083,7 +1125,8 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 }
 
 
-static int unpack_panels(struct image *image, struct detector *det)
+static int unpack_panels(struct image *image, struct detector *det,
+                         float *data, uint16_t *flags)
 {
 	int pi;
 
@@ -1118,7 +1161,7 @@ static int unpack_panels(struct image *image, struct detector *det)
 			css = ss+p->min_ss;
 			idx = cfs + css*image->width;
 
-			image->dp[pi][fs+p->w*ss] = image->data[idx];
+			image->dp[pi][fs+p->w*ss] = data[idx];
 
 			if ( p->no_index ) bad = 1;
 
@@ -1126,18 +1169,18 @@ static int unpack_panels(struct image *image, struct detector *det)
 				bad = 1;
 			}
 
-			if ( image->flags != NULL ) {
+			if ( flags != NULL ) {
 
-				int flags;
+				int f;
 
-				flags = image->flags[idx];
+				f = flags[idx];
 
 				/* Bad if it's missing any of the "good" bits */
-				if ( (flags & image->det->mask_good)
+				if ( (f & image->det->mask_good)
 				       != image->det->mask_good ) bad = 1;
 
 				/* Bad if it has any of the "bad" bits. */
-				if ( flags & image->det->mask_bad ) bad = 1;
+				if ( f & image->det->mask_bad ) bad = 1;
 
 			}
 			image->bad[pi][fs+p->w*ss] = bad;
@@ -1403,16 +1446,14 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 		free(buf);
 		return 1;
 	}
-	image->data = buf;
 
 	if ( image->det != NULL ) {
 		ERROR("WARNING: hdf5_read() called with geometry structure.\n");
 	}
 	image->det = simple_geometry(image);
 
+	unpack_panels(image, image->det, buf, NULL);
 	if ( satcorr ) debodge_saturation(f, image);
-
-	unpack_panels(image, image->det);
 
 	if ( image->beam != NULL ) {
 
@@ -1432,12 +1473,12 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 }
 
 
-static void load_mask(struct hdfile *f, struct event *ev, char *mask,
-                      const char *mask_file,
-                      const char *pname, struct image *image,
-                      size_t p_w, size_t sum_p_h,
-                      hsize_t *f_offset, hsize_t *f_count,
-                      hsize_t *m_offset, hsize_t *m_count)
+static int load_mask(struct hdfile *f, struct event *ev, char *mask,
+                     const char *mask_file,
+                     const char *pname, struct image *image,
+                     size_t p_w, size_t sum_p_h, uint16_t *flags,
+                     hsize_t *f_offset, hsize_t *f_count,
+                     hsize_t *m_offset, hsize_t *m_count)
 {
 	hid_t mask_dataspace, mask_dh;
 	int exists;
@@ -1450,7 +1491,7 @@ static void load_mask(struct hdfile *f, struct event *ev, char *mask,
 		fh = H5Fopen(mask_file, H5F_ACC_RDONLY, H5P_DEFAULT);
 		if ( fh < 0 ) {
 			ERROR("Couldn't open mask file '%s'\n", mask_file);
-			return;
+			return 1;
 		}
 	} else {
 		fh = f->fh;
@@ -1491,7 +1532,7 @@ static void load_mask(struct hdfile *f, struct event *ev, char *mask,
 	}
 
 	r = H5Dread(mask_dh, H5T_NATIVE_UINT16, memspace,
-	            mask_dataspace, H5P_DEFAULT, image->flags);
+	            mask_dataspace, H5P_DEFAULT, flags);
 	if ( r < 0 ) {
 		ERROR("Couldn't read flags for panel %s\n", pname);
 		goto err;
@@ -1501,14 +1542,12 @@ static void load_mask(struct hdfile *f, struct event *ev, char *mask,
 	H5Dclose(mask_dh);
 	if ( ev != NULL ) free(mask);
 
-	return;
+	return 0;
 
 err:
 	if ( mask_file != NULL ) H5Fclose(fh);
 	if ( ev != NULL ) free(mask);
-	free(image->flags);
-	image->flags = NULL;
-	return;
+	return 1;
 }
 
 
@@ -1517,6 +1556,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 {
 	herr_t r;
 	float *buf;
+	uint16_t *flags;
 	int sum_p_h;
 	int p_w;
 	int pi;
@@ -1548,8 +1588,8 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 	image->width = p_w;
 	image->height = sum_p_h;
 
-	image->flags = calloc(p_w*sum_p_h,sizeof(uint16_t));
-	if ( image->flags == NULL ) {
+	flags = calloc(p_w*sum_p_h,sizeof(uint16_t));
+	if ( flags == NULL ) {
 		ERROR("Failed to allocate memory for flags\n");
 		return 1;
 	}
@@ -1695,9 +1735,11 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		H5Sclose(memspace);
 
 		if ( p->mask != NULL ) {
-			load_mask(f, ev, p->mask, p->mask_file, p->name,
-			          image, p_w, sum_p_h,
-			          f_offset, f_count, m_offset, m_count);
+			if ( load_mask(f, ev, p->mask, p->mask_file, p->name,
+			               image, p_w, sum_p_h, flags,
+			               f_offset, f_count, m_offset, m_count) ) {
+				ERROR("Error loading bad pixel mask!\n");
+			}
 		}
 
 		free(f_offset);
@@ -1705,13 +1747,10 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 
 	}
 
-	image->data = buf;
-
-	if ( satcorr ) debodge_saturation(f, image);
-
 	fill_in_values(image->det, f, ev);
 
-	unpack_panels(image, image->det);
+	unpack_panels(image, image->det, buf, flags);
+	if ( satcorr ) debodge_saturation(f, image);
 
 	if ( image->beam != NULL ) {
 
@@ -1726,6 +1765,9 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		}
 
 	}
+
+	free(buf);
+	free(flags);
 
 	return 0;
 }

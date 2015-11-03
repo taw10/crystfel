@@ -113,10 +113,6 @@ struct beam_params
  * <programlisting>
  * struct image
  * {
- *    float                   *data;
- *    uint16_t                *flags;
- *    double                  *twotheta;
- *
  *    Crystal                 **crystals;
  *    int                     n_crystals;
  *    IndexingMethod          indexed_by;
@@ -162,11 +158,6 @@ struct beam_params
 struct image;
 
 struct image {
-
-	/* The following three fields will be going away in the future */
-	float                   *data;
-	uint16_t                *flags;
-	double                  *twotheta;
 
 	float                   **dp;    /* Data in panel */
 	int                     **bad;   /* Bad pixels by panel */

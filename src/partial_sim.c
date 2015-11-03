@@ -170,6 +170,18 @@ static void calculate_partials(Crystal *cr,
 }
 
 
+static signed int panel_number(struct detector *det, struct panel *p)
+{
+	int i;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+		if ( &det->panels[i] == p ) return i;
+	}
+
+	return -1;
+}
+
+
 static void draw_and_write_image(struct image *image, RefList *reflections,
                                  gsl_rng *rng, double background)
 {
@@ -177,7 +189,26 @@ static void draw_and_write_image(struct image *image, RefList *reflections,
 	RefListIterator *iter;
 	int i;
 
-	image->data = calloc(image->width*image->height, sizeof(float));
+	image->dp = malloc(image->det->n_panels*sizeof(float *));
+	if ( image->dp == NULL ) {
+		ERROR("Failed to allocate data\n");
+		return;
+	}
+	for ( i=0; i<image->det->n_panels; i++ ) {
+
+		int j;
+		struct panel *p = &image->det->panels[i];
+
+		image->dp[i] = calloc(p->w * p->h, sizeof(float));
+		if ( image->dp[i] == NULL ) {
+			ERROR("Failed to allocate data\n");
+			return;
+		}
+		for ( j=0; j<p->w*p->h; j++ ) {
+			image->dp[i][j] = poisson_noise(rng, background);
+		}
+
+	}
 
 	for ( refl = first_refl(reflections, &iter);
 	      refl != NULL;
@@ -186,26 +217,32 @@ static void draw_and_write_image(struct image *image, RefList *reflections,
 		double Ip;
 		double dfs, dss;
 		int fs, ss;
+		struct panel *p;
+		signed int pn;
 
 		Ip = get_intensity(refl);
 
 		get_detector_pos(refl, &dfs, &dss);
-		fs = nearbyint(dfs);
-		ss = nearbyint(dss);
+		p = get_panel(refl);
+		pn = panel_number(image->det, p);  /* Yeurgh */
+		assert(pn != -1);
+
+		fs = nearbyint(dfs) - p->min_fs;
+		ss = nearbyint(dss) - p->min_ss;
 		assert(fs >= 0);
 		assert(ss >= 0);
-		assert(fs < image->width);
-		assert(ss < image->height);
-		image->data[fs + image->width*ss] += Ip;
+		assert(fs < p->w);
+		assert(ss < p->h);
+		image->dp[pn][fs + p->w*ss] += Ip;
 
-	}
-
-	for ( i=0; i<image->width*image->height; i++ ) {
-		image->data[i] += poisson_noise(rng, background);
 	}
 
 	hdf5_write_image(image->filename, image, NULL);
-	free(image->data);
+
+	for ( i=0; i<image->det->n_panels; i++ ) {
+		free(image->dp[i]);
+	}
+	free(image->dp);
 }
 
 
