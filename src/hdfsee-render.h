@@ -3,11 +3,11 @@
  *
  * Rendering bits for hdfsee
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2012 Thomas White <taw@physics.org>
+ *   2011-2015 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -38,15 +38,18 @@
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
+#include "dw-hdfsee.h"
+
 extern GdkPixbuf **render_panels(struct image *image,
                                  int binning, int scale, double boost,
                                  int *n_pixbufs);
 
 extern GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale);
 
-extern int render_tiff_fp(struct image *image, const char *filename);
-extern int render_tiff_int16(struct image *image, const char *filename,
-                             double boost);
+extern int render_tiff_fp(DisplayWindow *dw, struct image *image,
+                          const char *filename);
+extern int render_tiff_int16(DisplayWindow *dw, struct image *image,
+                             const char *filename, double boost);
 
 #endif /* HAVE_GTK */
 

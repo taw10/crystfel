@@ -3,11 +3,11 @@
  *
  * Rendering bits for hdfsee
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2012,2014 Thomas White <taw@physics.org>
+ *   2011-2012,2015 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
+#include <assert.h>
 
 #ifdef HAVE_TIFF
 #include <tiffio.h>
@@ -44,6 +45,8 @@
 
 #include <render.h>
 #include <image.h>
+
+#include "dw-hdfsee.h"
 
 static float *get_binned_panel(struct image *image, int binning,
                                int pi, double *max, int *pw, int *ph)
@@ -260,38 +263,78 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
 }
 
 
-int render_tiff_fp(struct image *image, const char *filename)
+int render_tiff_fp(DisplayWindow *dw, struct image *image, const char *filename)
 {
 #ifdef HAVE_TIFF
 	TIFF *th;
-	float *line;
-	int y;
+	int16_t *line;
+	int x, y;
+	int min_x = (int)dw->min_x;
+	int max_x = (int)dw->max_x;
+	int min_y = (int)dw->min_y;
+	int max_y = (int)dw->max_y;
+	int width = max_x - min_x;
+	int height = max_y - min_y;
+	float *buf;
+
+	if ( image == NULL ) return 1;
+	if ( image->det == NULL ) return 1;
+	if ( image->det->n_panels == 0 ) return 1;
+
+	buf = calloc(width * height, sizeof(float));
+	if ( buf == NULL ) return 1;
+
+	/* Prepare image data */
+	for ( y=min_y; y<max_y; y++ ) {
+	for ( x=min_x; x<max_x; x++ ) {
+
+		int invalid;
+		float val;
+		signed int pn;
+		struct panel *p;
+		double dfs, dss;
+		int fs, ss;
+
+		invalid = reverse_2d_mapping(x, y, &dfs, &dss, image->det);
+		if ( invalid ) continue;
+
+		fs = dfs;
+		ss = dss; /* Explicit rounding */
+
+		pn = find_panel_number(image->det, fs, ss);
+		assert(pn != -1);
+		p = &image->det->panels[pn];
+		fs -= p->min_fs;
+		ss -= p->min_ss;
+		val = image->dp[pn][fs + p->w* ss];
+
+		buf[(x - min_x) + (y - min_y) * width] = val;
+
+	}
+	}
 
 	th = TIFFOpen(filename, "w");
 	if ( th == NULL ) return 1;
 
-	TIFFSetField(th, TIFFTAG_IMAGEWIDTH, image->width);
-	TIFFSetField(th, TIFFTAG_IMAGELENGTH, image->height);
+	TIFFSetField(th, TIFFTAG_IMAGEWIDTH, width);
+	TIFFSetField(th, TIFFTAG_IMAGELENGTH, height);
 	TIFFSetField(th, TIFFTAG_SAMPLESPERPIXEL, 1);
 	TIFFSetField(th, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
 	TIFFSetField(th, TIFFTAG_BITSPERSAMPLE, 32);
 	TIFFSetField(th, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
 	TIFFSetField(th, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
 	TIFFSetField(th, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-	TIFFSetField(th, TIFFTAG_ROWSPERSTRIP,
-	             TIFFDefaultStripSize(th, image->width*4));
+	TIFFSetField(th, TIFFTAG_ROWSPERSTRIP, TIFFDefaultStripSize(th, 0));
 
 	line = _TIFFmalloc(TIFFScanlineSize(th));
-	for ( y=0; y<image->height; y++ ) {
-		//memcpy(line, &image->data[(image->height-1-y)*image->width],
-		//       image->width*4);
-		//       FIXME!
-		TIFFWriteScanline(th, line, y, 0);
+
+	for ( y=0; y<height; y++ ) {
+		TIFFWriteScanline(th, &buf[y*width], y, 0);
 	}
 	_TIFFfree(line);
 
 	TIFFClose(th);
-
+	free(buf);
 #else
 	STATUS("No TIFF support.\n");
 #endif
@@ -299,64 +342,87 @@ int render_tiff_fp(struct image *image, const char *filename)
 }
 
 
-int render_tiff_int16(struct image *image, const char *filename, double boost)
+int render_tiff_int16(DisplayWindow *dw, struct image *image,
+                      const char *filename, double boost)
 {
 #ifdef HAVE_TIFF
 	TIFF *th;
 	int16_t *line;
 	int x, y;
-	double max;
+	int min_x = (int)dw->min_x;
+	int max_x = (int)dw->max_x;
+	int min_y = (int)dw->min_y;
+	int max_y = (int)dw->max_y;
+	int width = max_x - min_x;
+	int height = max_y - min_y;
+	int16_t *buf;
+
+	if ( image == NULL ) return 1;
+	if ( image->det == NULL ) return 1;
+	if ( image->det->n_panels == 0 ) return 1;
+
+	buf = calloc(width * height, sizeof(int16_t));
+	if ( buf == NULL ) return 1;
+
+	/* Prepare image data */
+	for ( y=min_y; y<max_y; y++ ) {
+	for ( x=min_x; x<max_x; x++ ) {
+
+		int val, invalid;
+		unsigned short out;
+		signed int pn;
+		struct panel *p;
+		double dfs, dss;
+		int fs, ss;
+
+		invalid = reverse_2d_mapping(x, y, &dfs, &dss, image->det);
+		if ( invalid ) continue;
+
+		fs = dfs;
+		ss = dss; /* Explicit rounding */
+
+		pn = find_panel_number(image->det, fs, ss);
+		assert(pn != -1);
+		p = &image->det->panels[pn];
+		fs -= p->min_fs;
+		ss -= p->min_ss;
+		val = image->dp[pn][fs + p->w* ss];
+
+		if ( val < -32767 ) {
+			out = -32767;
+		} else if ( val > 32767 ) {
+			out = 32767;
+		} else {
+			out = val;
+		}
+
+		buf[(x - min_x) + (y - min_y) * width] = out;
+
+	}
+	}
 
 	th = TIFFOpen(filename, "w");
 	if ( th == NULL ) return 1;
 
-	TIFFSetField(th, TIFFTAG_IMAGEWIDTH, image->width);
-	TIFFSetField(th, TIFFTAG_IMAGELENGTH, image->height);
+	TIFFSetField(th, TIFFTAG_IMAGEWIDTH, width);
+	TIFFSetField(th, TIFFTAG_IMAGELENGTH, height);
 	TIFFSetField(th, TIFFTAG_SAMPLESPERPIXEL, 1);
 	TIFFSetField(th, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_INT); /* (signed) */
 	TIFFSetField(th, TIFFTAG_BITSPERSAMPLE, 16);
 	TIFFSetField(th, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
 	TIFFSetField(th, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
 	TIFFSetField(th, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-	TIFFSetField(th, TIFFTAG_ROWSPERSTRIP,
-	             TIFFDefaultStripSize(th, image->width*4));
+	TIFFSetField(th, TIFFTAG_ROWSPERSTRIP, TIFFDefaultStripSize(th, 0));
 
 	line = _TIFFmalloc(TIFFScanlineSize(th));
-	max = 0.0;
-	for ( y=0; y<image->height; y++ ) {
-	for ( x=0;x<image->width; x++ ) {
-		double val;
-		//val = image->data[x+image->height*y];
-		val = 0.0;  // FIXME!
-		if ( val > max ) max = val;
-	}
-	}
-	max /= 32767.0;
 
-	for ( y=0; y<image->height; y++ ) {
-		for ( x=0;x<image->width; x++ ) {
-
-			double val;
-
-			//val = image->data[x+(image->height-1-y)*image->width];
-			val = 0.0;  // FIXME!
-			val *= ((double)boost/max);
-
-			/* Clamp to 16-bit range,
-			 * and work round inability of most readers to deal
-			 * with signed integers. */
-			val += 1000.0;
-			if ( val > 32767.0 ) val = 32767.0;
-			if ( val < 0.0 ) val = 0.0;
-
-			line[x] = val;
-		}
-
-		TIFFWriteScanline(th, line, y, 0);
+	for ( y=0; y<height; y++ ) {
+		TIFFWriteScanline(th, &buf[y*width], y, 0);
 	}
 	_TIFFfree(line);
 
 	TIFFClose(th);
+	free(buf);
 #else
 	STATUS("No TIFF support.\n");
 #endif

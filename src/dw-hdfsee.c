@@ -1650,7 +1650,7 @@ static gint displaywindow_save_response(GtkWidget *d, gint response,
 				 "Therefore, it can't be saved as TIFF.");
 				r = 0;
 			} else {
-				r = render_tiff_fp(dw->image, file);
+				r = render_tiff_fp(dw, dw->image, file);
 			}
 		} else if ( type == 2 ) {
 			if ( !single_panel_data_source(dw->image->det, NULL) ) {
@@ -1659,7 +1659,7 @@ static gint displaywindow_save_response(GtkWidget *d, gint response,
 				 "Therefore, it can't be saved as TIFF.");
 				r = 0;
 			} else {
-				r = render_tiff_int16(dw->image, file,
+				r = render_tiff_int16(dw, dw->image, file,
 				                      dw->boostint);
 			}
 		} else if ( type == 3 ) {
@@ -1727,15 +1727,13 @@ static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
 	gtk_box_pack_end(GTK_BOX(hbox), GTK_WIDGET(l), FALSE, FALSE, 5);
 
 	gtk_combo_box_append_text(GTK_COMBO_BOX(cb),
-	       "PNG - 8 bit RGB (colour, binned, filtered, boosted)");
+	       "PNG (colour)");
 	gtk_combo_box_append_text(GTK_COMBO_BOX(cb),
-	       "TIFF - Floating point (mono, unbinned, filtered, not boosted)");
+	       "TIFF (floating point)");
 	gtk_combo_box_append_text(GTK_COMBO_BOX(cb),
-	       "TIFF - 16 bit signed integer "
-	       "(mono, unbinned, filtered, boosted)");
+	       "TIFF (16 bit signed integer)");
 	gtk_combo_box_append_text(GTK_COMBO_BOX(cb),
-	       "ADSC - 16 bit unsigned integer "
-	       "(unbinned, filtered, not boosted)");
+	       "ADSC (16 bit unsigned integer)");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(cb), 0);
 
 	cd = malloc(sizeof(*cd));
