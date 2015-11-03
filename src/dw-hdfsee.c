@@ -3,12 +3,12 @@
  *
  * Quick yet non-crappy HDF viewer
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2014 Thomas White <taw@physics.org>
+ *   2009-2015 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2014      Takanori Nakane
  *   2012      Richard Kirian
@@ -42,6 +42,7 @@
 #include <cairo.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gdk/gdkkeysyms.h>
+#include <assert.h>
 
 #include "dw-hdfsee.h"
 #include "hdfsee-render.h"
@@ -158,7 +159,7 @@ static int render_adsc_uint16(DisplayWindow *dw, const char *filename)
 
 	if ( image == NULL ) return 1;
 	if ( image->det == NULL ) return 1;
-	if ( image->det->n_panels == 0)  return 1;
+	if ( image->det->n_panels == 0 ) return 1;
 
 	buf = calloc(width * height, sizeof(unsigned short));
 	if ( buf == NULL ) return 1;
@@ -199,13 +200,22 @@ static int render_adsc_uint16(DisplayWindow *dw, const char *filename)
 
 		int val, invalid;
 		unsigned short out;
+		signed int pn;
+		struct panel *p;
 
 		invalid = reverse_2d_mapping(x, y, &dfs, &dss, image->det);
 		if ( invalid ) continue;
 
 		fs = dfs;
-		ss = dss;
-		val = 0.0;//image->data[fs + image->width * ss]; FIXME!
+		ss = dss; /* Explicit rounding */
+
+		pn = find_panel_number(image->det, fs, ss);
+		assert(pn != -1);
+		p = &image->det->panels[pn];
+		fs -= p->min_fs;
+		ss -= p->min_ss;
+		val = image->dp[pn][fs + p->w* ss];
+
 		if ( val < 0 ) {
 			out = 0;
 		} else if ( val > 65535 ) {
@@ -1634,11 +1644,33 @@ static gint displaywindow_save_response(GtkWidget *d, gint response,
 		if ( type == 0 ) {
 			r = write_png(file, dw);
 		} else if ( type == 1 ) {
-			r = render_tiff_fp(dw->image, file);
+			if ( !single_panel_data_source(dw->image->det, NULL) ) {
+				displaywindow_error(dw, "The image data isn't "
+				 "held in a single array in the HDF5 file. "
+				 "Therefore, it can't be saved as TIFF.");
+				r = 0;
+			} else {
+				r = render_tiff_fp(dw->image, file);
+			}
 		} else if ( type == 2 ) {
-			r = render_tiff_int16(dw->image, file, dw->boostint);
-		} else if (type == 3) {
-		  r = render_adsc_uint16(dw, file);
+			if ( !single_panel_data_source(dw->image->det, NULL) ) {
+				displaywindow_error(dw, "The image data isn't "
+				 "held in a single array in the HDF5 file. "
+				 "Therefore, it can't be saved as TIFF.");
+				r = 0;
+			} else {
+				r = render_tiff_int16(dw->image, file,
+				                      dw->boostint);
+			}
+		} else if ( type == 3 ) {
+			if ( !single_panel_data_source(dw->image->det, NULL) ) {
+				displaywindow_error(dw, "The image data isn't "
+				 "held in a single array in the HDF5 file. "
+				 "Therefore, it can't be saved as ADSC.");
+				r = 0;
+			} else {
+				r = render_adsc_uint16(dw, file);
+			}
 		} else {
 			r = -1;
 		}
