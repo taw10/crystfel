@@ -253,8 +253,8 @@ cl_program load_program(const char *filename, cl_context ctx,
 			memcpy(source2+il, insert_stuff, strlen(insert_stuff)+1);
 			memcpy(source2+il+strlen(insert_stuff),
 			       source+il+11, strlen(source+il+11)+1);
-			source = source2;
 			free(source);
+			source = source2;
 
 		}
 	}
