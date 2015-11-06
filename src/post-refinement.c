@@ -48,9 +48,6 @@
 #include "cell-utils.h"
 
 
-/* Minimum partiality of a reflection for it to be used for refinement */
-#define MIN_PART_REFINE (0.1)
-
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
 #define MAX_CYCLES (10)
 
