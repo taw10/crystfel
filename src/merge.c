@@ -61,6 +61,7 @@ struct merge_queue_args
 	int n_started;
 	PartialityModel pmodel;
 	double push_res;
+	int use_weak;
 };
 
 
@@ -113,6 +114,11 @@ static void run_merge_job(void *vwargs, int cookie)
 		double corr, res, w, esd;
 
 		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
+
+		if ( !wargs->qargs->use_weak
+		  && (get_intensity(refl) < 3.0*get_esd_intensity(refl)) ) {
+			continue;
+		}
 
 		get_indices(refl, &h, &k, &l);
 		pthread_rwlock_rdlock(&wargs->qargs->full_lock);
@@ -197,7 +203,7 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 
 RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
                            PartialityModel pmodel, int min_meas,
-                           double push_res)
+                           double push_res, int use_weak)
 {
 	RefList *full;
 	RefList *full2;
@@ -217,6 +223,7 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 	qargs.crystals = crystals;
 	qargs.pmodel = pmodel;
 	qargs.push_res = push_res;
+	qargs.use_weak = use_weak;
 	pthread_rwlock_init(&qargs.full_lock, NULL);
 
 	run_threads(n_threads, run_merge_job, create_merge_job,
