@@ -1350,8 +1350,6 @@ static void integrate_prof2d(IntegrationMethod meth,
 		integrate_prof2d_once(&ic, bx, term_lock);
 	}
 
-	//refine_rigid_groups(&ic);
-
 	free_intcontext(&ic);
 
 	image->num_saturated_peaks = n_saturated;
@@ -1598,8 +1596,6 @@ static void integrate_rings(IntegrationMethod meth,
 	{
 		integrate_rings_once(refl, image, &ic, cell, term_lock);
 	}
-
-	//refine_rigid_groups(&ic);
 
 	free_intcontext(&ic);
 
