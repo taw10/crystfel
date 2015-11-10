@@ -1089,21 +1089,10 @@ static double bg_under_peak(struct intcontext *ic, struct peak_box *bx)
 }
 
 
-static int bg_ok(struct peak_box *bx)
-{
-	if ( (fabs(bx->a) > 10.0) || (fabs(bx->b) > 10.0) ) {
-		return 0;
-	} else {
-		return 1;
-	}
-}
-
-
-static int suitable_reference(struct intcontext *ic, struct peak_box *bx)
+static double peak_height(struct intcontext *ic, struct peak_box *bx)
 {
 	int p, q;
 	double max = 0.0;
-	int height_ok;
 
 	for ( p=0; p<ic->w; p++ ) {
 	for ( q=0; q<ic->w; q++ ) {
@@ -1118,9 +1107,28 @@ static int suitable_reference(struct intcontext *ic, struct peak_box *bx)
 	}
 	}
 
-	height_ok = max > 10.0 * bg_under_peak(ic, bx);
+	return max;
+}
 
-	return bg_ok(bx) && height_ok;
+
+static int bg_ok(struct intcontext *ic, struct peak_box *bx)
+{
+	double max_grad = (peak_height(ic, bx) - bg_under_peak(ic, bx)) / 10.0;
+
+	if ( (fabs(bx->a) > max_grad) || (fabs(bx->b) > max_grad) ) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+
+static int suitable_reference(struct intcontext *ic, struct peak_box *bx)
+{
+	int height_ok;
+	double max = peak_height(ic, bx);
+	height_ok = max > 10.0 * bg_under_peak(ic, bx);
+	return bg_ok(ic, bx) && height_ok;
 }
 
 
@@ -1175,7 +1183,7 @@ static void integrate_prof2d_once(struct intcontext *ic, struct peak_box *bx,
 	bx->intensity = fit_intensity(ic, bx);
 	bx->sigma = calc_sigma(ic, bx);
 
-	if ( bg_ok(bx) ) {
+	if ( bg_ok(ic, bx) ) {
 
 		double pfs, pss;
 		double bgmean;
@@ -1398,7 +1406,7 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 		r = check_box(ic, bx, &saturated);
 		if ( !r ) {
 			fit_bg(ic, bx);
-			if ( !bg_ok(bx) ) r = 1;
+			if ( !bg_ok(ic, bx) ) r = 1;
 		}
 		bx->offs_fs = 0.0;
 		bx->offs_ss = 0.0;
