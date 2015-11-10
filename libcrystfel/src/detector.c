@@ -2222,41 +2222,55 @@ void mark_resolution_range_as_bad(struct image *image,
 }
 
 
+static int safe_strcmp(const char *a, const char *b)
+{
+	/* If both are NULL, they count as equal */
+	if ( (a == NULL) && (b == NULL) ) return 0;
+
+	/* Otherwise, if either is NULL then they're different */
+	if ( a == NULL ) return 1;
+	if ( b == NULL ) return 1;
+
+	/* Otherwise, normal string comparison */
+	return strcmp(a, b);
+}
+
+
+/**
+ * single_panel_data_source:
+ * @det: A detector structure
+ * @element: If manually selected by the user, the HDF5 element being used.
+ * Otherwise NULL.
+ *
+ * Returns: non-zero if the combination of @det and @element mean that all the
+ * data comes from a single block.
+ *
+ */
 int single_panel_data_source(struct detector *det, const char *element)
 {
 	int pi;
-	char *first_datafrom = NULL;
-	char *curr_datafrom = NULL;
+	const char *first_datafrom = NULL;
+	const char *curr_datafrom = NULL;
 
 	if ( det->panels[0].data == NULL ) {
-		if ( element != NULL ) {
-			first_datafrom = strdup(element);
-		} else {
-			first_datafrom = strdup("/data/data");
-		}
+		first_datafrom = element; /* Might be NULL */
 	} else {
-		first_datafrom = strdup(det->panels[0].data);
+		first_datafrom = det->panels[0].data;
 	}
 
-	for ( pi=1;pi<det->n_panels;pi++ ) {
+	for ( pi=1; pi<det->n_panels; pi++ ) {
 
 		if ( det->panels[pi].data == NULL ) {
-			if ( element != NULL ) {
-				curr_datafrom = strdup(element);
-			} else {
-				curr_datafrom = strdup("/data/data");
-			}
+			curr_datafrom = element; /* Might be NULL */
 		} else {
-			curr_datafrom = strdup(det->panels[pi].data);
+			curr_datafrom = det->panels[pi].data;
 		}
 
-		if ( strcmp(curr_datafrom, first_datafrom) != 0 ) {
+		if ( safe_strcmp(curr_datafrom, first_datafrom) != 0 ) {
 			return 0;
 		}
-	}
 
-	free(first_datafrom);
-	free(curr_datafrom);
+	}
 
 	return 1;
 }
