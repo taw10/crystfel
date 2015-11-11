@@ -54,6 +54,7 @@
 #include <cell-utils.h>
 
 #include "version.h"
+#include "scaling.h"
 #include "post-refinement.h"
 #include "merge.h"
 #include "rejection.h"
@@ -564,23 +565,35 @@ static void write_pgraph(RefList *full, Crystal **crystals, int n_crystals,
 }
 
 
-static void normalise_scales(Crystal **crystals, int n_crystals)
+static void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
+                          double *presidual, double *pfree_residual,
+                          double *plog_residual, double *pfree_log_residual)
 {
 	int i;
-	int n = 0;
-	double sum_B = 0.0;
-	double mean_B;
+
+	*presidual = 0.0;
+	*pfree_residual = 0.0;
+	*plog_residual = 0.0;
+	*pfree_log_residual = 0.0;
 
 	for ( i=0; i<n_crystals; i++ ) {
-		if ( crystal_get_user_flag(crystals[i]) != 0 ) continue;
-		sum_B += crystal_get_Bfac(crystals[i]);
-		n++;
-	}
-	mean_B = sum_B / n;
-	STATUS("Mean B = %e A^2\n", mean_B*1e20);
-	for ( i=0; i<n_crystals; i++ ) {
-		double B = crystal_get_Bfac(crystals[i]);
-		crystal_set_Bfac(crystals[i], B-mean_B);
+
+		double r, free_r, log_r, free_log_r;
+
+		if ( crystal_get_user_flag(crystals[i]) ) continue;
+
+		r = residual(crystals[i], full, 0, NULL, NULL);
+		free_r = residual(crystals[i], full, 1, NULL, NULL);
+		log_r = log_residual(crystals[i], full, 0, NULL, NULL);
+		free_log_r = log_residual(crystals[i], full, 1, NULL, NULL);
+
+		if ( isnan(r) || isnan(free_r)
+		  || isnan(log_r) || isnan(free_log_r) ) continue;
+
+		*presidual += r;
+		*pfree_residual += free_r;
+		*plog_residual += log_r;
+		*pfree_log_residual += free_log_r;
 	}
 }
 
@@ -993,40 +1006,50 @@ int main(int argc, char *argv[])
 	STATUS("Checking patterns.\n");
 	//early_rejection(crystals, n_crystals);
 
-	/* Make initial estimates */
+	/* Initial rejection, figures of merit etc */
 	full = merge_intensities(crystals, n_crystals, nthreads, pmodel,
 	                         min_measurements, push_res, 1);
-
 	check_rejection(crystals, n_crystals, full);
-
+	show_all_residuals(crystals, n_crystals, full);
 	write_pgraph(full, crystals, n_crystals, 0);
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
 
-		show_all_residuals(crystals, n_crystals, full);
+		STATUS("Scaling and refinement cycle %i of %i\n", i+1, n_iter);
 
-		STATUS("Refinement cycle %i of %i\n", i+1, n_iter);
+		if ( !no_scale ) {
+			scale_all(crystals, n_crystals, nthreads, pmodel,
+			          max_B);
+			reflist_free(full);
+			full = merge_intensities(crystals, n_crystals, nthreads,
+			                         pmodel, min_measurements,
+			                         push_res, 1);
+		}
 
-		/* Refine all crystals to get the best fit */
-		refine_all(crystals, n_crystals, full, nthreads, pmodel,
-		           no_scale, no_pr, max_B);
-
-		show_all_residuals(crystals, n_crystals, full);
+		if ( !no_pr ) {
+			refine_all(crystals, n_crystals, full, nthreads,
+			           pmodel);
+			reflist_free(full);
+			full = merge_intensities(crystals, n_crystals, nthreads,
+			                         pmodel, min_measurements,
+			                         push_res, 1);
+		}
 
 		check_rejection(crystals, n_crystals, full);
-		normalise_scales(crystals, n_crystals);
-
-		/* Re-estimate all the full intensities */
 		reflist_free(full);
 		full = merge_intensities(crystals, n_crystals, nthreads,
-		                         pmodel, min_measurements, push_res, 1);
-
+		                         pmodel, min_measurements,
+		                         push_res, 1);
+		show_all_residuals(crystals, n_crystals, full);
 		write_pgraph(full, crystals, n_crystals, i+1);
 
 	}
 
+	full = merge_intensities(crystals, n_crystals, nthreads, pmodel,
+	                         min_measurements, push_res, 1);
 	show_all_residuals(crystals, n_crystals, full);
+	write_pgraph(full, crystals, n_crystals, n_iter+1);
 
 	/* Output results */
 	STATUS("Writing overall results to %s\n", outfile);

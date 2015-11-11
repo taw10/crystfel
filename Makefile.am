@@ -95,7 +95,7 @@ src_render_hkl_SOURCES = src/render_hkl.c
 endif
 
 src_partialator_SOURCES = src/partialator.c src/post-refinement.c \
-                          src/merge.c src/rejection.c
+                          src/merge.c src/rejection.c src/scaling.c
 
 src_ambigator_SOURCES = src/ambigator.c
 
@@ -133,7 +133,7 @@ EXTRA_DIST += src/dw-hdfsee.h src/hdfsee.h src/render_hkl.h \
               src/cl-utils.h src/hdfsee-render.h src/diffraction.h \
               src/diffraction-gpu.h src/pattern_sim.h src/list_tmp.h \
               src/im-sandbox.h src/process_image.h src/multihistogram.h \
-              src/rejection.h
+              src/rejection.h src/scaling.h
 
 crystfeldir = $(datadir)/crystfel
 crystfel_DATA = data/diffraction.cl data/hdfsee.ui

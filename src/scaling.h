@@ -1,7 +1,7 @@
 /*
- * post-refinement.h
+ * scaling.h
  *
- * Post refinement
+ * Scaling
  *
  * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
@@ -26,8 +26,8 @@
  *
  */
 
-#ifndef POST_REFINEMENT_H
-#define POST_REFINEMENT_H
+#ifndef SCALING_H
+#define SCALING_H
 
 
 #ifdef HAVE_CONFIG_H
@@ -35,35 +35,13 @@
 #endif
 
 
-#include <stdio.h>
-
-#include "image.h"
-#include "utils.h"
 #include "crystal.h"
 #include "geometry.h"
 
+extern double log_residual(Crystal *cr, const RefList *full, int free,
+                           int *pn_used, const char *filename);
 
-enum prflag
-{
-	PRFLAG_OK = 0,
-	PRFLAG_FEWREFL = 16,
-	PRFLAG_SOLVEFAIL = 17,
-	PRFLAG_EARLY = 18,
-	PRFLAG_CC = 19,
-	PRFLAG_BIGB = 20,
-};
+extern void scale_all(Crystal **crystals, int n_crystals, int nthreads,
+                      PartialityModel pmodel, double max_B);
 
-
-extern const char *str_prflag(enum prflag flag);
-
-extern void refine_all(Crystal **crystals, int n_crystals,
-                       RefList *full, int nthreads, PartialityModel pmodel);
-
-/* Exported so it can be poked by tests/pr_p_gradient_check */
-extern double gradient(Crystal *cr, int k, Reflection *refl,
-                       PartialityModel pmodel);
-
-extern double residual(Crystal *cr, const RefList *full, int free,
-                       int *pn_used, const char *filename);
-
-#endif	/* POST_REFINEMENT_H */
+#endif	/* SCALING_H */
