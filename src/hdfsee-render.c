@@ -88,7 +88,8 @@ static float *get_binned_panel(struct image *image, int binning,
 			v = image->dp[pi][fs+ss*fw];
 			total += v;
 
-			if ( image->bad[pi][fs+ss*fw] ) bad = 1;
+			if ( (image->bad != NULL)
+			  && (image->bad[pi][fs+ss*fw]) ) bad = 1;
 
 		}
 		}

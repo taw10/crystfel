@@ -2261,6 +2261,7 @@ static int save_data_to_png(char *filename, struct enhanced_det *edet,
 	im.det = edet->det;
 	im.width = edet->width;
 	im.height = edet->height;
+	im.bad = NULL;
 	im.dp = malloc(edet->det->n_panels*sizeof(float *));
 	if ( im.dp == NULL ) {
 		ERROR("Failed to allocate data\n");
