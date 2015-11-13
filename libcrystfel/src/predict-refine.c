@@ -287,7 +287,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		get_detector_pos(refl, &fs, &ss);
 		pd = pow(fs - rps[i].peak->fs, 2.0)
 		   + pow(ss - rps[i].peak->ss, 2.0);
-		if ( pd > 10.0 * 10.0 ) continue;
+		if ( pd > 10.0 * 10.0 ) continue; /* FIXME Hardcoded distance */
 
 		rps[n_acc] = rps[i];
 		rps[n_acc].refl = reflection_new(h, k, l);

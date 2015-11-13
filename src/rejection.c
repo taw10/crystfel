@@ -165,7 +165,6 @@ static void check_ccs(Crystal **crystals, int n_crystals, RefList *full)
 }
 
 
-
 static void show_duds(Crystal **crystals, int n_crystals)
 {
 	int j;
