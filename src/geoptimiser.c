@@ -2215,8 +2215,6 @@ static int draw_detector(cairo_surface_t *surf, struct image *image,
 	 *  - origin in the centre, y upwards. */
 	cairo_identity_matrix(cr);
 	cairo_matrix_init(&m, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0);
-
-
 	cairo_translate(cr, -rect.min_x , rect.max_y);
 	cairo_transform(cr, &m);
 	cairo_get_matrix(cr, &basic_m);
