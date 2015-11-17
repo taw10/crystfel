@@ -151,6 +151,10 @@ Normally, reflections which contain one or more pixels above max_adu (defined in
 .PD
 Normally, reflections are integrated all the way to the edge of the detector, even if the crystal diffracts to a lower resolution.  With this option, integration will be performed up to the apparent diffraction limit of the crystal.  You can use \fB--push-res\fR (see below) to integrate to a slightly higher or lower resolution.  The resolution limit is determined by comparing the peaks found by the peak search to the indexing results, so good peak detection is essential when using this option (as it is always).  The opposite is \fB-norescut\fR, which is the default.
 
+.IP \fB-grad\fR
+.PD
+Fit the background around the reflection using gradients in two dimensions.  This was the default until version 0.6.1.  Without the option (or with its opposite, \fB-nograd\fR, which is the default), the background will be considered to have the same value across the entire integration box.
+
 .SH OPTIMISING THE INTEGRATION RADII
 To determine appropriate values for the integration radii, index some patterns with the default values and view the results using \fBcheck-near-bragg\fR (in the scripts folder).  Set the binning in \fBhdfsee\fR to 1, and adjust the ring radius until none of the rings overlap for any of the patterns.  This ring radius is the outer radius to use. Then reduce the radius until the circles match the sizes of the peaks as closely as possible.  This value is the inner radius.  The middle radius should be between the two, ideally between two and three pixels smaller than the outer radius.
 .PP
