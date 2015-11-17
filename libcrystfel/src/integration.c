@@ -1672,6 +1672,8 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 		switch ( meth & INTEGRATION_METHOD_MASK ) {
 
 			case INTEGRATION_NONE :
+			ERROR("WARNING: Reflections are being predicted, but "
+			      "not integrated.\n");
 			break;
 
 			case INTEGRATION_RINGS :
