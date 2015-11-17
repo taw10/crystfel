@@ -75,6 +75,7 @@ typedef enum {
  * @INTEGRATION_SATURATED: Integrate saturated reflections
  * @INTEGRATION_CENTER: Center the peak in the box prior to integration
  * @INTEGRATION_RESCUT: Stop integrating at the diffraction limit of the crystal
+ * @INTEGRATION_GRADIENTBG: Fit a gradient to the background
  *
  * An enumeration of all the available integration methods.
  **/
@@ -91,6 +92,7 @@ typedef enum {
 	INTEGRATION_SATURATED = 256,
 	INTEGRATION_CENTER = 512,
 	INTEGRATION_RESCUT = 1024,
+	INTEGRATION_GRADIENTBG = 2048,
 
 } IntegrationMethod;
 

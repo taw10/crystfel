@@ -235,7 +235,7 @@ int main(int argc, char *argv[])
 	}
 	iargs.indm = NULL;  /* No default */
 	iargs.ipriv = NULL;  /* No default */
-	iargs.int_meth = integration_method("rings-nocen", NULL);
+	iargs.int_meth = integration_method("rings-nocen-nosat-grad", NULL);
 	iargs.push_res = 0.0;
 	iargs.highres = +INFINITY;
 	iargs.fix_profile_r = -1.0;

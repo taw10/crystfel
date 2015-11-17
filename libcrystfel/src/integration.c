@@ -331,7 +331,7 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
 }
 
 
-static void fit_bg(struct intcontext *ic, struct peak_box *bx)
+static void fit_gradient_bg(struct intcontext *ic, struct peak_box *bx)
 {
 	int p, q;
 	gsl_vector *v;
@@ -366,6 +366,33 @@ static void fit_bg(struct intcontext *ic, struct peak_box *bx)
 	bx->c = gsl_vector_get(ans, 2);
 
 	gsl_vector_free(ans);
+}
+
+
+static void fit_bg(struct intcontext *ic, struct peak_box *bx)
+{
+	int p, q;
+	double tbg = 0.0;
+	int n = 0;
+
+	if ( ic->meth & INTEGRATION_GRADIENTBG ) {
+		fit_gradient_bg(ic, bx);
+		return;
+	}
+
+	/* else do a flat background */
+	for ( p=0; p<ic->w; p++ ) {
+	for ( q=0; q<ic->w; q++ ) {
+		if ( bx->bm[p + ic->w*q] == BM_BG ) {
+			tbg += boxi(ic, bx, p, q);
+			n++;
+		}
+	}
+	}
+
+	bx->a = 0.0;
+	bx->b = 0.0;
+	bx->c = tbg / n;
 }
 
 
@@ -1113,7 +1140,9 @@ static double peak_height(struct intcontext *ic, struct peak_box *bx)
 
 static int bg_ok(struct intcontext *ic, struct peak_box *bx)
 {
-	double max_grad = (peak_height(ic, bx) - bg_under_peak(ic, bx)) / 10.0;
+	double max_grad;
+
+	max_grad = fabs((peak_height(ic, bx) - bg_under_peak(ic, bx))) / 10.0;
 
 	if ( (fabs(bx->a) > max_grad) || (fabs(bx->b) > max_grad) ) {
 		return 0;
@@ -1717,32 +1746,38 @@ IntegrationMethod integration_method(const char *str, int *err)
 
 	for ( i=0; i<n; i++ ) {
 
-		if ( strcmp(methods[i], "rings") == 0) {
+		if ( strcmp(methods[i], "rings") == 0 ) {
 			meth = INTEGRATION_DEFAULTS_RINGS;
 
-		} else if ( strcmp(methods[i], "prof2d") == 0) {
+		} else if ( strcmp(methods[i], "prof2d") == 0 ) {
 			meth = INTEGRATION_DEFAULTS_PROF2D;
 
-		} else if ( strcmp(methods[i], "none") == 0) {
+		} else if ( strcmp(methods[i], "none") == 0 ) {
 			return INTEGRATION_NONE;
 
-		} else if ( strcmp(methods[i], "sat") == 0) {
+		} else if ( strcmp(methods[i], "sat") == 0 ) {
 			meth |= INTEGRATION_SATURATED;
 
-		} else if ( strcmp(methods[i], "nosat") == 0) {
+		} else if ( strcmp(methods[i], "nosat") == 0 ) {
 			meth &= ~INTEGRATION_SATURATED;
 
-		} else if ( strcmp(methods[i], "cen") == 0) {
+		} else if ( strcmp(methods[i], "cen") == 0 ) {
 			meth |= INTEGRATION_CENTER;
 
-		} else if ( strcmp(methods[i], "rescut") == 0) {
+		} else if ( strcmp(methods[i], "nocen") == 0 ) {
+			meth &= ~INTEGRATION_CENTER;
+
+		} else if ( strcmp(methods[i], "rescut") == 0 ) {
 			meth |= INTEGRATION_RESCUT;
 
-		} else if ( strcmp(methods[i], "norescut") == 0) {
+		} else if ( strcmp(methods[i], "norescut") == 0 ) {
 			meth &= ~INTEGRATION_RESCUT;
 
-		} else if ( strcmp(methods[i], "nocen") == 0) {
-			meth &= ~INTEGRATION_CENTER;
+		} else if ( strcmp(methods[i], "grad") == 0 ) {
+			meth |= INTEGRATION_GRADIENTBG;
+
+		} else if ( strcmp(methods[i], "nograd") == 0 ) {
+			meth &= ~INTEGRATION_GRADIENTBG;
 
 		} else {
 			ERROR("Bad integration method: '%s'\n", str);
