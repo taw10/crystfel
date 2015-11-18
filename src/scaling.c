@@ -317,7 +317,6 @@ struct scale_args
 	RefList *full;
 	Crystal *crystal;
 	PartialityModel pmodel;
-	double max_B;
 };
 
 
@@ -335,11 +334,6 @@ static void scale_crystal(void *task, int id)
 {
 	struct scale_args *pargs = task;
 	do_scale_refine(pargs->crystal, pargs->full, pargs->pmodel);
-
-	/* Reject if B factor modulus is very large */
-	if ( fabs(crystal_get_Bfac(pargs->crystal)) > pargs->max_B ) {
-		crystal_set_user_flag(pargs->crystal, PRFLAG_BIGB);
-	}
 }
 
 
@@ -395,7 +389,7 @@ static double total_log_r(Crystal **crystals, int n_crystals, RefList *full,
 
 /* Perform iterative scaling, all the way to convergence */
 void scale_all(Crystal **crystals, int n_crystals, int nthreads,
-               PartialityModel pmodel, double max_B)
+               PartialityModel pmodel)
 {
 	struct scale_args task_defaults;
 	struct queue_args qargs;
@@ -403,7 +397,6 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads,
 
 	task_defaults.crystal = NULL;
 	task_defaults.pmodel = pmodel;
-	task_defaults.max_B = max_B;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_crystals = n_crystals;

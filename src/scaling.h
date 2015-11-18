@@ -42,6 +42,6 @@ extern double log_residual(Crystal *cr, const RefList *full, int free,
                            int *pn_used, const char *filename);
 
 extern void scale_all(Crystal **crystals, int n_crystals, int nthreads,
-                      PartialityModel pmodel, double max_B);
+                      PartialityModel pmodel);
 
 #endif	/* SCALING_H */

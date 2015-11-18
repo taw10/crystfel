@@ -1009,7 +1009,7 @@ int main(int argc, char *argv[])
 	/* Initial rejection, figures of merit etc */
 	full = merge_intensities(crystals, n_crystals, nthreads, pmodel,
 	                         min_measurements, push_res, 1);
-	check_rejection(crystals, n_crystals, full);
+	check_rejection(crystals, n_crystals, full, max_B);
 	show_all_residuals(crystals, n_crystals, full);
 	write_pgraph(full, crystals, n_crystals, 0);
 
@@ -1019,8 +1019,7 @@ int main(int argc, char *argv[])
 		STATUS("Scaling and refinement cycle %i of %i\n", i+1, n_iter);
 
 		if ( !no_scale ) {
-			scale_all(crystals, n_crystals, nthreads, pmodel,
-			          max_B);
+			scale_all(crystals, n_crystals, nthreads, pmodel);
 			reflist_free(full);
 			full = merge_intensities(crystals, n_crystals, nthreads,
 			                         pmodel, min_measurements,
@@ -1036,7 +1035,7 @@ int main(int argc, char *argv[])
 			                         push_res, 1);
 		}
 
-		check_rejection(crystals, n_crystals, full);
+		check_rejection(crystals, n_crystals, full, max_B);
 		reflist_free(full);
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         pmodel, min_measurements,
