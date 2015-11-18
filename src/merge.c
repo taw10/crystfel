@@ -164,6 +164,7 @@ static void run_merge_job(void *vwargs, int cookie)
 				continue;
 			}
 
+			if ( get_flag(refl) ) continue;
 
 		}
 
