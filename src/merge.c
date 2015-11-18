@@ -87,6 +87,49 @@ static void *create_merge_job(void *vqargs)
 }
 
 
+/* Find reflection hkl in 'list', creating it if it's not there, under
+ * protection of 'lock' and returning a locked reflection */
+static Reflection *get_locked_reflection(RefList *list, pthread_rwlock_t *lock,
+                                      signed int h, signed int k, signed  int l)
+{
+	Reflection *f;
+
+	pthread_rwlock_rdlock(lock);
+	f = find_refl(list, h, k, l);
+	if ( f == NULL ) {
+
+		/* Swap read lock for write lock */
+		pthread_rwlock_unlock(lock);
+		pthread_rwlock_wrlock(lock);
+
+		/* In the gap between the unlock and the wrlock, the
+		 * reflection might have been created by another thread.
+		 * So, we must check again */
+		f = find_refl(list, h, k, l);
+		if ( f == NULL ) {
+			f = add_refl(list, h, k, l);
+			lock_reflection(f);
+			pthread_rwlock_unlock(lock);
+			set_intensity(f, 0.0);
+			set_temp1(f, 0.0);
+			set_temp2(f, 0.0);
+		} else {
+			/* Someone else created it */
+			lock_reflection(f);
+			pthread_rwlock_unlock(lock);
+		}
+
+	} else {
+
+		lock_reflection(f);
+		pthread_rwlock_unlock(lock);
+
+	}
+
+	return f;
+}
+
+
 static void run_merge_job(void *vwargs, int cookie)
 {
 	struct merge_worker_args *wargs = vwargs;
@@ -115,46 +158,18 @@ static void run_merge_job(void *vwargs, int cookie)
 
 		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
 
-		if ( !wargs->qargs->use_weak
-		  && (get_intensity(refl) < 3.0*get_esd_intensity(refl)) ) {
-			continue;
+		if ( !wargs->qargs->use_weak ) {
+
+			if (get_intensity(refl) < 3.0*get_esd_intensity(refl)) {
+				continue;
+			}
+
+
 		}
 
 		get_indices(refl, &h, &k, &l);
-		pthread_rwlock_rdlock(&wargs->qargs->full_lock);
-		f = find_refl(full, h, k, l);
-		if ( f == NULL ) {
-
-			/* Swap read lock for write lock */
-			pthread_rwlock_unlock(&wargs->qargs->full_lock);
-			pthread_rwlock_wrlock(&wargs->qargs->full_lock);
-
-			/* In the gap between the unlock and the wrlock, the
-			 * reflection might have been created by another thread.
-			 * So, we must check again */
-			f = find_refl(full, h, k, l);
-			if ( f == NULL ) {
-				f = add_refl(full, h, k, l);
-				lock_reflection(f);
-				pthread_rwlock_unlock(&wargs->qargs->full_lock);
-				set_intensity(f, 0.0);
-				set_temp1(f, 0.0);
-				set_temp2(f, 0.0);
-
-			} else {
-
-				/* Someone else created it */
-				lock_reflection(f);
-				pthread_rwlock_unlock(&wargs->qargs->full_lock);
-
-			}
-
-		} else {
-
-			lock_reflection(f);
-			pthread_rwlock_unlock(&wargs->qargs->full_lock);
-
-		}
+		f = get_locked_reflection(full, &wargs->qargs->full_lock,
+		                          h, k, l);
 
 		mean = get_intensity(f);
 		sumweight = get_temp1(f);
