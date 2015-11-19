@@ -643,7 +643,7 @@ int main(int argc, char *argv[])
 	double max_adu = +INFINITY;
 	char *sparams_fn = NULL;
 	FILE *sparams_fh;
-	double push_res = 0.0;
+	double push_res = +INFINITY;
 	gsl_rng *rng;
 	int no_free = 0;
 	char *csplit_fn = NULL;
