@@ -403,6 +403,7 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads,
 	struct scale_args task_defaults;
 	struct queue_args qargs;
 	double old_res, new_res;
+	int niter = 0;
 
 	task_defaults.crystal = NULL;
 	task_defaults.pmodel = pmodel;
@@ -447,6 +448,11 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads,
 		STATUS("Mean B = %e\n", meanB);
 
 		reflist_free(full);
+		niter++;
 
-	} while ( fabs(new_res-old_res) >= 0.01*old_res );
+	} while ( (fabs(new_res-old_res) >= 0.01*old_res) && (niter < 10) );
+
+	if ( niter == 10 ) {
+		ERROR("Too many iterations - giving up!\n");
+	}
 }
