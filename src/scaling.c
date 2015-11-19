@@ -438,6 +438,14 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads,
 		STATUS("Log residual went from %e to %e, %i crystals\n",
 		       bef_res, new_res, ninc);
 
+		int i;
+		double meanB = 0.0;
+		for ( i=0; i<n_crystals; i++ ) {
+			meanB += crystal_get_Bfac(crystals[i]);
+		}
+		meanB /= n_crystals;
+		STATUS("Mean B = %e\n", meanB);
+
 		reflist_free(full);
 
 	} while ( fabs(new_res-old_res) >= 0.01*old_res );
