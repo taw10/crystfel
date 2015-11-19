@@ -79,7 +79,7 @@ static void apply_shift(Crystal *cr, int k, double shift)
 
 /* Perform one cycle of scaling of 'cr' against 'full' */
 static double scale_iterate(Crystal *cr, const RefList *full,
-                            PartialityModel pmodel)
+                            PartialityModel pmodel, int *nr)
 {
 	gsl_matrix *M;
 	gsl_vector *v;
@@ -93,6 +93,8 @@ static double scale_iterate(Crystal *cr, const RefList *full,
 	int num_params = 0;
 	enum gparam rv[32];
 	double G, B;
+
+	*nr = 0;
 
 	rv[num_params++] = GPARAM_OSF;
 	rv[num_params++] = GPARAM_BFAC;
@@ -191,6 +193,8 @@ static double scale_iterate(Crystal *cr, const RefList *full,
 		nref++;
 	}
 
+	*nr = nref;
+
 	if ( nref < num_params ) {
 		crystal_set_user_flag(cr, PRFLAG_FEWREFL);
 		gsl_matrix_free(M);
@@ -287,7 +291,7 @@ double log_residual(Crystal *cr, const RefList *full, int free,
 
 
 static void do_scale_refine(Crystal *cr, const RefList *full,
-                            PartialityModel pmodel)
+                            PartialityModel pmodel, int *nr)
 {
 	int i, done;
 	double old_dev;
@@ -300,7 +304,7 @@ static void do_scale_refine(Crystal *cr, const RefList *full,
 
 		double dev;
 
-		scale_iterate(cr, full, pmodel);
+		scale_iterate(cr, full, pmodel, nr);
 
 		dev = log_residual(cr, full, 0, 0, NULL);
 		if ( fabs(dev - old_dev) < dev*0.01 ) done = 1;
@@ -317,6 +321,7 @@ struct scale_args
 	RefList *full;
 	Crystal *crystal;
 	PartialityModel pmodel;
+	int n_reflections;
 };
 
 
@@ -326,6 +331,7 @@ struct queue_args
 	int n_done;
 	Crystal **crystals;
 	int n_crystals;
+	long long int n_reflections;
 	struct scale_args task_defaults;
 };
 
@@ -333,7 +339,8 @@ struct queue_args
 static void scale_crystal(void *task, int id)
 {
 	struct scale_args *pargs = task;
-	do_scale_refine(pargs->crystal, pargs->full, pargs->pmodel);
+	do_scale_refine(pargs->crystal, pargs->full, pargs->pmodel,
+	                &pargs->n_reflections);
 }
 
 
@@ -356,8 +363,10 @@ static void *get_crystal(void *vqargs)
 static void done_crystal(void *vqargs, void *task)
 {
 	struct queue_args *qa = vqargs;
+	struct scale_args *wargs = task;
 
 	qa->n_done++;
+	qa->n_reflections += wargs->n_reflections;
 
 	progress_bar(qa->n_done, qa->n_crystals, "Scaling");
 	free(task);
@@ -419,8 +428,11 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads,
 		qargs.task_defaults.full = full;
 		qargs.n_started = 0;
 		qargs.n_done = 0;
+		qargs.n_reflections = 0;
 		run_threads(nthreads, scale_crystal, get_crystal, done_crystal,
 		            &qargs, n_crystals, 0, 0, 0);
+		STATUS("%lli reflections went into the scaling.\n",
+		       qargs.n_reflections);
 
 		new_res = total_log_r(crystals, n_crystals, full, &ninc);
 		STATUS("Log residual went from %e to %e, %i crystals\n",

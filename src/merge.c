@@ -62,6 +62,7 @@ struct merge_queue_args
 	PartialityModel pmodel;
 	double push_res;
 	int use_weak;
+	long long int n_reflections;
 };
 
 
@@ -70,6 +71,7 @@ struct merge_worker_args
 	struct merge_queue_args *qargs;
 	Crystal *crystal;
 	int crystal_number;
+	int n_reflections;
 };
 
 
@@ -140,6 +142,8 @@ static void run_merge_job(void *vwargs, int cookie)
 	RefListIterator *iter;
 	double G, B;
 
+	wargs->n_reflections = 0;
+
 	/* If this crystal's scaling was dodgy, it doesn't contribute to the
 	 * merged intensities */
 	if ( crystal_get_user_flag(cr) != 0 ) return;
@@ -207,12 +211,18 @@ static void run_merge_job(void *vwargs, int cookie)
 		set_temp1(f, temp);
 		set_redundancy(f, get_redundancy(f)+1);
 		unlock_reflection(f);
+
+		wargs->n_reflections++;
+
 	}
 }
 
 
 static void finalise_merge_job(void *vqargs, void *vwargs)
 {
+	struct merge_queue_args *qargs = vqargs;
+	struct merge_worker_args *wargs = vwargs;
+	qargs->n_reflections += wargs->n_reflections;
 	free(vwargs);
 }
 
@@ -240,6 +250,7 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 	qargs.pmodel = pmodel;
 	qargs.push_res = push_res;
 	qargs.use_weak = use_weak;
+	qargs.n_reflections = 0;
 	pthread_rwlock_init(&qargs.full_lock, NULL);
 
 	run_threads(n_threads, run_merge_job, create_merge_job,
@@ -272,6 +283,8 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 			copy_data(r2, refl);
 		}
 	}
+
+	STATUS("%lli reflections went into the merge.\n", qargs.n_reflections);
 
 	reflist_free(full);
 	return full2;
