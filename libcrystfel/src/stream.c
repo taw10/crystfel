@@ -1465,9 +1465,6 @@ Stream *open_stream_for_write_3(const char *filename,
  * Creates a new stream with name @filename, and adds the stream format
  * and version header, plus a verbatim copy of the geometry file
  *
- * You may want to follow this with a call to write_command() to record the
- * command line.
- *
  * Returns: a %Stream, or NULL on failure.
  */
 Stream *open_stream_for_write_2(const char *filename,
