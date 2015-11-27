@@ -39,9 +39,12 @@
 struct image;
 struct hdfile;
 struct event;
+#include "cell.h"
 
 #define GEOM_START_MARKER "----- Begin geometry file -----"
 #define GEOM_END_MARKER "----- End geometry file -----"
+#define CELL_START_MARKER "----- Begin unit cell -----"
+#define CELL_END_MARKER "----- End unit cell -----"
 #define CHUNK_START_MARKER "----- Begin chunk -----"
 #define CHUNK_END_MARKER "----- End chunk -----"
 #define PEAK_LIST_START_MARKER "Peaks from peak search"
@@ -92,6 +95,9 @@ extern Stream *open_stream_for_write(const char *filename);
 extern Stream *open_stream_for_write_2(const char *filename,
                                 const char* geom_filename, int argc,
                                 char *argv[]);
+extern Stream *open_stream_for_write_3(const char *filename,
+                                const char* geom_filename, UnitCell *cell,
+                                int argc, char *argv[]);
 extern Stream *open_stream_fd_for_write(int fd);
 extern int get_stream_fd(Stream *st);
 extern void close_stream(Stream *st);

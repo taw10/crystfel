@@ -724,7 +724,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* Open output stream */
-	st = open_stream_for_write_2(outfile, geom_filename, argc, argv);
+	st = open_stream_for_write_3(outfile, geom_filename, iargs.cell,
+	                             argc, argv);
 	if ( st == NULL ) {
 		ERROR("Failed to open stream '%s'\n", outfile);
 		return 1;

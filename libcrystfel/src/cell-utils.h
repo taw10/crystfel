@@ -57,6 +57,7 @@ extern UnitCell *match_cell_ab(UnitCell *cell, UnitCell *tempcell);
 
 extern UnitCell *load_cell_from_pdb(const char *filename);
 extern UnitCell *load_cell_from_file(const char *filename);
+extern void write_cell(UnitCell *cell, FILE *fh);
 
 extern int cell_is_sensible(UnitCell *cell);
 
