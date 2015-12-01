@@ -129,11 +129,11 @@ static void draw_panel_rectangle(cairo_t *cr, cairo_matrix_t *basic_m,
 	cairo_set_matrix(cr, basic_m);
 
 	/* Move to the right location */
-	cairo_translate(cr, p.cnx/dw->binning,
-	                    p.cny/dw->binning);
+	cairo_translate(cr, rint(p.cnx/dw->binning),
+	                    rint(p.cny/dw->binning));
 
 	/* Twiddle directions according to matrix */
-	cairo_matrix_init(&m, p.fsx, p.fsy, p.ssx, p.ssy,
+	cairo_matrix_init(&m, rint(p.fsx), rint(p.fsy), rint(p.ssx), rint(p.ssy),
 	                      0.0, 0.0);
 	cairo_transform(cr, &m);
 
