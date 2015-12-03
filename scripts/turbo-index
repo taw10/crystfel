@@ -22,4 +22,4 @@ for FILE in split-events-${RUN}.lst*; do
 	            indexamajig \
                            -i $FILE -o $STREAM -j 32 -g $GEOM --peaks=cxi
 
-
+done
