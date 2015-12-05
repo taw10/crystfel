@@ -161,6 +161,7 @@ struct image {
 
 	float                   **dp;    /* Data in panel */
 	int                     **bad;   /* Bad pixels by panel */
+	float                   **sat;   /* Per-pixel saturation values */
 
 	Crystal                 **crystals;
 	int                     n_crystals;

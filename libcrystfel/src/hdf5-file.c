@@ -1126,13 +1126,16 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 
 
 static int unpack_panels(struct image *image, struct detector *det,
-                         float *data, uint16_t *flags)
+                         float *data, uint16_t *flags, float *sat)
 {
 	int pi;
 
 	image->dp = malloc(det->n_panels * sizeof(float *));
 	image->bad = malloc(det->n_panels * sizeof(int *));
-	if ( (image->dp == NULL) || (image->bad == NULL) ) {
+	image->sat = malloc(det->n_panels * sizeof(float *));
+	if ( (image->dp == NULL) || (image->bad == NULL)
+	  || (image->sat == NULL) )
+	{
 		ERROR("Failed to allocate panels.\n");
 		return 1;
 	}
@@ -1145,7 +1148,10 @@ static int unpack_panels(struct image *image, struct detector *det,
 		p = &det->panels[pi];
 		image->dp[pi] = malloc(p->w*p->h*sizeof(float));
 		image->bad[pi] = calloc(p->w*p->h, sizeof(int));
-		if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL) ) {
+		image->sat[pi] = malloc(p->w*p->h*sizeof(float));
+		if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL)
+		  || (image->sat[pi] == NULL) )
+		{
 			ERROR("Failed to allocate panel\n");
 			return 1;
 		}
@@ -1162,6 +1168,10 @@ static int unpack_panels(struct image *image, struct detector *det,
 			idx = cfs + css*image->width;
 
 			image->dp[pi][fs+p->w*ss] = data[idx];
+
+			if ( sat != NULL ) {
+				image->sat[pi][fs+p->w*ss] = sat[idx];
+			}
 
 			if ( p->no_index ) bad = 1;
 
@@ -1452,7 +1462,7 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 	}
 	image->det = simple_geometry(image);
 
-	unpack_panels(image, image->det, buf, NULL);
+	unpack_panels(image, image->det, buf, NULL, NULL);
 	if ( satcorr ) debodge_saturation(f, image);
 
 	if ( image->beam != NULL ) {
@@ -1551,15 +1561,95 @@ err:
 }
 
 
+static int load_satmap(struct hdfile *f, struct event *ev, char *satmap,
+                       const char *satmap_file,
+                       const char *pname, struct image *image,
+                       size_t p_w, size_t sum_p_h, float *smap,
+                       hsize_t *f_offset, hsize_t *f_count,
+                       hsize_t *m_offset, hsize_t *m_count)
+{
+	hid_t satmap_dataspace, satmap_dh;
+	int exists;
+	int check, r;
+	hid_t memspace;
+	hsize_t dimsm[2];
+	hid_t fh;
+
+	if ( satmap_file != NULL ) {
+		fh = H5Fopen(satmap_file, H5F_ACC_RDONLY, H5P_DEFAULT);
+		if ( fh < 0 ) {
+			ERROR("Couldn't open satmap file '%s'\n", satmap_file);
+			return 1;
+		}
+	} else {
+		fh = f->fh;
+	}
+
+	if ( ev != NULL ) {
+		satmap = retrieve_full_path(ev, satmap);
+	}
+
+	exists = check_path_existence(fh, satmap);
+	if ( !exists ) {
+		ERROR("Cannot find satmap for panel %s\n", pname);
+		goto err;
+	}
+
+	satmap_dh = H5Dopen2(fh, satmap, H5P_DEFAULT);
+	if ( satmap_dh <= 0 ) {
+		ERROR("Couldn't open satmap for panel %s\n", pname);
+		goto err;
+	}
+
+	satmap_dataspace = H5Dget_space(satmap_dh);
+	check = H5Sselect_hyperslab(satmap_dataspace, H5S_SELECT_SET,
+	                            f_offset, NULL, f_count, NULL);
+	if ( check < 0 ) {
+		ERROR("Error selecting satmap dataspace for panel %s\n", pname);
+		goto err;
+	}
+
+	dimsm[0] = sum_p_h;
+	dimsm[1] = p_w;
+	memspace = H5Screate_simple(2, dimsm, NULL);
+	check = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
+	                            m_offset, NULL, m_count, NULL);
+	if ( check < 0 ) {
+		ERROR("Error selecting memory dataspace for panel %s\n", pname);
+		goto err;
+	}
+
+	r = H5Dread(satmap_dh, H5T_NATIVE_FLOAT, memspace,
+	            satmap_dataspace, H5P_DEFAULT, smap);
+	if ( r < 0 ) {
+		ERROR("Couldn't read satmap for panel %s\n", pname);
+		goto err;
+	}
+
+	H5Sclose(satmap_dataspace);
+	H5Dclose(satmap_dh);
+	if ( ev != NULL ) free(satmap);
+
+	return 0;
+
+err:
+	if ( satmap_file != NULL ) H5Fclose(fh);
+	if ( ev != NULL ) free(satmap);
+	return 1;
+}
+
+
 int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
                int satcorr)
 {
 	herr_t r;
 	float *buf;
 	uint16_t *flags;
+	float *smap;
 	int sum_p_h;
 	int p_w;
 	int pi;
+	int i;
 
 	if ( image->det == NULL ) {
 		ERROR("Geometry not available\n");
@@ -1594,6 +1684,12 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		return 1;
 	}
 
+	smap = calloc(p_w*sum_p_h,sizeof(float));
+	if ( smap == NULL ) {
+		ERROR("Failed to allocate memory for satmap\n");
+		return 1;
+	}
+	for ( i=0; i<p_w*sum_p_h; i++ ) smap[i] = INFINITY;
 
 	for ( pi=0; pi<image->det->n_panels; pi++ ) {
 
@@ -1742,6 +1838,15 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			}
 		}
 
+		if ( p->satmap != NULL ) {
+			if ( load_satmap(f, ev, p->satmap, p->satmap_file,
+			                 p->name, image, p_w, sum_p_h, smap,
+			                 f_offset, f_count, m_offset, m_count) )
+			{
+				ERROR("Error loading saturation map!\n");
+			}
+		}
+
 		free(f_offset);
 		free(f_count);
 
@@ -1749,7 +1854,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 
 	fill_in_values(image->det, f, ev);
 
-	unpack_panels(image, image->det, buf, flags);
+	unpack_panels(image, image->det, buf, flags, smap);
 	if ( satcorr ) debodge_saturation(f, image);
 
 	if ( image->beam != NULL ) {
@@ -1768,6 +1873,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 
 	free(buf);
 	free(flags);
+	free(smap);
 
 	return 0;
 }

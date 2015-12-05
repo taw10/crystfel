@@ -97,6 +97,8 @@ struct panel
         char    *clen_from;
         char    *mask;
         char    *mask_file;
+	char    *satmap;
+	char    *satmap_file;
         double   res;      /* Resolution in pixels per metre */
         char     badrow;   /* 'x' or 'y' */
         int      no_index; /* Don't index peaks in this panel if non-zero */
