@@ -101,6 +101,7 @@ int main(int argc, char *argv[])
 	image.bad = malloc(sizeof(int *));
 	image.bad[0] = malloc(w*h*sizeof(int));
 	memset(image.bad[0], 0, w*h*sizeof(int));
+	image.sat = NULL;
 
 	image.n_crystals = 0;
 	image.crystals = NULL;

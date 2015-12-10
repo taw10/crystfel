@@ -846,7 +846,11 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 		}
 
 		/* Per-pixel saturation value */
-		lsat = ic->image->sat[bx->pn][fs + bx->p->w*ss];
+		if ( ic->image->sat != NULL ) {
+			lsat = ic->image->sat[bx->pn][fs + bx->p->w*ss];
+		} else {
+			lsat = INFINITY;
+		}
 		if ( (bx->bm[p+ic->w*q] != BM_IG)
 		  && (bx->bm[p+ic->w*q] != BM_BH)
 		  && ((boxi(ic, bx, p, q) > bx->p->max_adu)

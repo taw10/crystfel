@@ -120,6 +120,7 @@ int main(int argc, char *argv[])
 	memset(image.dp[0], 0, w*h*sizeof(float));
 	image.bad[0] = malloc(w*h*sizeof(int));
 	memset(image.bad[0], 0, w*h*sizeof(int));
+	image.sat = NULL;
 
 	cell = cell_new();
 	cell_set_lattice_type(cell, L_CUBIC);
