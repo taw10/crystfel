@@ -374,7 +374,7 @@ static int pump_chunk(FILE *fh, int ofd)
 			}
 
 			ERROR("fgets() failed: %s\n", strerror(errno));
-			return 1;
+			if ( errno != EINTR ) return 1;
 
 		}
 
