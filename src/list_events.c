@@ -175,6 +175,11 @@ int main(int argc, char *argv[])
 			}
 
 			evlist = fill_event_list(hdfile, det);
+			if ( evlist == NULL ) {
+				ERROR("Failed to read %s\n", filename);
+				hdfile_close(hdfile);
+				continue;
+			}
 
 			for ( i=0; i<evlist->num_events; i++ ) {
 				char *str = get_event_string(evlist->events[i]);
