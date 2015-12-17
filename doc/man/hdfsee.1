@@ -50,6 +50,11 @@ If no geometry file is provided (see \fB-g\fR) and this option is not used, hdfs
 If \fB-e\fR is used in combination with \fB-g\fR, hdfsee will attempt to show the specified dataset with the geometry applied.  The data layout description from the geometry file will be ignored, the data block to be used as data source for all panels will be set to \fIpath\fR and it will be assumed to be 2-dimensional.
 
 .PD 0
+.IP \fB--event=\fIID\fR
+.PD
+Show the event identified by \fIID\fR.  Use this when you have a multi-event HDF5 file and the corresponding geometry file.
+
+.PD 0
 .IP "\fB-g\fR \fIfilename\fR"
 .IP \fB--geometry=\fR\fIfilename\fR
 .PD
