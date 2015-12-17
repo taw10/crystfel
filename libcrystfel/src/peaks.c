@@ -54,9 +54,6 @@
 #include "geometry.h"
 
 
-/* Degree of polarisation of X-ray beam */
-#define POL (1.0)
-
 static int cull_peaks_in_panel(struct image *image, struct panel *p)
 {
 	int i, n;
