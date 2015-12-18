@@ -1171,6 +1171,8 @@ static int unpack_panels(struct image *image, struct detector *det,
 
 			if ( sat != NULL ) {
 				image->sat[pi][fs+p->w*ss] = sat[idx];
+			} else {
+				image->sat[pi][fs+p->w*ss] = INFINITY;
 			}
 
 			if ( p->no_index ) bad = 1;

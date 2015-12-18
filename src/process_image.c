@@ -337,9 +337,11 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	for ( i=0; i<image.det->n_panels; i++ ) {
 		free(image.dp[i]);
 		free(image.bad[i]);
+		free(image.sat[i]);
 	}
 	free(image.dp);
 	free(image.bad);
+	free(image.sat);
 
 	image_feature_list_free(image.features);
 	free_detector_geometry(image.det);
