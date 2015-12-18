@@ -224,6 +224,7 @@ extern Reflection *image_reflection_closest(RefList *rlist,
 
 extern int image_feature_count(ImageFeatureList *flist);
 extern struct imagefeature *image_get_feature(ImageFeatureList *flist, int idx);
+extern ImageFeatureList *sort_peaks(ImageFeatureList *flist);
 
 extern void image_add_crystal(struct image *image, Crystal *cryst);
 extern void free_all_crystals(struct image *image);

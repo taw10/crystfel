@@ -13,6 +13,7 @@
  *   2012      Lorenzo Galli
  *   2013      Cornelius Gati <cornelius.gati@cfel.de>
  *   2015      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+ *   2014      Takanori Nakane <nakane.t@gmail.com>
  *
  * This file is part of CrystFEL.
  *
@@ -40,6 +41,7 @@
 #include <math.h>
 #include <string.h>
 #include <assert.h>
+#include <fenv.h>
 
 #include "image.h"
 #include "utils.h"
@@ -265,10 +267,91 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 }
 
 
+static int delete_weakest_peaks(ImageFeatureList *peaks)
+{
+	int i;
+	int np, ndel, n;
+
+	np = image_feature_count(peaks);
+	n = 0;
+	for ( i=0; i<np; i++ ) {
+		if ( image_get_feature(peaks, i) != NULL ) n++;
+	}
+
+	if ( n < 6 ) return 1;
+
+	/* Delete 10% weakest peaks */
+	ndel = n/10;
+	if ( ndel == 0 ) return 1;
+
+	for ( i=n-1; i>n-ndel-1; i-- ) {
+		image_remove_feature(peaks, i);
+	}
+
+	return 0;
+}
+
+
+static int delete_explained_peaks(struct image *image, Crystal *cr)
+{
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	const double min_dist = 0.25;
+	int i, nspots = 0, nindexed = 0;
+
+	/* Round towards nearest */
+	fesetround(1);
+
+	/* Cell basis vectors for this image */
+	cell_get_cartesian(crystal_get_cell(cr), &ax, &ay, &az,
+	                   &bx, &by, &bz, &cx, &cy, &cz);
+
+	/* Loop over peaks, checking proximity to nearest reflection */
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
+
+		struct imagefeature *f;
+		struct rvec q;
+		double h, k, l, hd, kd, ld;
+		double dsq;
+
+		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
+		nspots++;
+
+		/* Reciprocal space position of found peak */
+		q = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
+
+		/* Decimal and fractional Miller indices of nearest
+		 * reciprocal lattice point */
+		hd = q.u * ax + q.v * ay + q.w * az;
+		kd = q.u * bx + q.v * by + q.w * bz;
+		ld = q.u * cx + q.v * cy + q.w * cz;
+		h = lrint(hd);
+		k = lrint(kd);
+		l = lrint(ld);
+
+		/* Check distance */
+		dsq = pow(h-hd, 2.0) + pow(k-kd, 2.0) + pow(l-ld, 2.0);
+
+		if ( sqrt(dsq) < min_dist ) {
+			image_remove_feature(image->features, i);
+			nindexed++;
+		}
+	}
+
+	/* Return TRUE if not enough peaks to continue */
+	return (nspots - nindexed) < 5;
+
+}
+
+
 void index_pattern(struct image *image,
                    IndexingMethod *indms, IndexingPrivate **iprivs)
 {
 	int n = 0;
+	ImageFeatureList *peaks;
+	ImageFeatureList *orig;
 
 	if ( indms == NULL ) return;
 
@@ -276,14 +359,43 @@ void index_pattern(struct image *image,
 	image->crystals = NULL;
 	image->n_crystals = 0;
 
+	peaks = sort_peaks(image->features);
+	orig = image->features;
+	image->features = peaks;
+
 	while ( indms[n] != INDEXING_NONE ) {
 
-		if ( try_indexer(image, indms[n], iprivs[n]) ) break;
+		int done = 0;
+		int r;
+		int ntry = 0;
+
+		do {
+
+			r = try_indexer(image, indms[n], iprivs[n]);
+			ntry++;
+
+			if ( r == 0 ) {
+				/* Retry with fewer peaks */
+				done = delete_weakest_peaks(image->features);
+			} else {
+				/* Remove "used" spots and try for
+				 * another lattice */
+				Crystal *cr;
+				cr = image->crystals[image->n_crystals-1];
+				done = delete_explained_peaks(image, cr);
+			}
+
+			if ( ntry > 5 ) done = 1;
+
+		} while ( !done );
+
 		n++;
 
 	}
 
 	image->indexed_by = indms[n];
+	image->features = orig;
+	image_feature_list_free(peaks);
 }
 
 

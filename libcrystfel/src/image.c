@@ -95,6 +95,45 @@ ImageFeatureList *image_feature_list_new()
 }
 
 
+static int comp(const void *a, const void *b)
+{
+	const struct imagefeature *ap = a;
+	const struct imagefeature *bp = b;
+
+	return ap->intensity < bp->intensity;
+}
+
+
+/* Strongest first.  Returned list is guaranteed not to have any holes
+ * (feature->valid = 0) */
+ImageFeatureList *sort_peaks(ImageFeatureList *flist)
+{
+	ImageFeatureList *n = image_feature_list_new();
+	int nf, i;
+
+	if ( n == NULL ) return NULL;
+
+	n->features = malloc(flist->n_features*sizeof(struct imagefeature));
+	if ( n->features == NULL ) {
+		free(n);
+		return NULL;
+	}
+
+	nf = 0;
+	for ( i=0; i<flist->n_features; i++ ) {
+		struct imagefeature *f;
+		f = image_get_feature(flist, i);
+		if ( f == NULL ) continue;
+		n->features[nf++] = flist->features[i];
+	}
+	n->n_features = nf;
+
+	qsort(n->features, nf, sizeof(struct imagefeature), comp);
+
+	return n;
+}
+
+
 void image_feature_list_free(ImageFeatureList *flist)
 {
 	if ( !flist ) return;
