@@ -1073,18 +1073,19 @@ int main(int argc, char *argv[])
 	if ( fh == NULL ) {
 		ERROR("Couldn't open partialator.params!\n");
 	} else {
-		fprintf(fh, "filename     event     cr        OSF       relB         div flag\n");
+		fprintf(fh, "  cr        OSF       relB         div"
+		            " flag                      filename  event\n");
 		for ( i=0; i<n_crystals; i++ ) {
 			struct image *img;
                         char *evt_str;
 			img = crystal_get_image(crystals[i]);
                         evt_str = get_event_string(img->event);
-			fprintf(fh, "%s %s %4i %10.5f %10.2f %8.5e %s\n",
-				img->filename, evt_str, i,
-			        crystal_get_osf(crystals[i]),
+			fprintf(fh, "%4i %10.5f %10.2f %8.5e %-25s %s %s\n",
+				i, crystal_get_osf(crystals[i]),
 				crystal_get_Bfac(crystals[i])*1e20,
 			        crystal_get_image(crystals[i])->div,
-			        str_prflag(crystal_get_user_flag(crystals[i])));
+			        str_prflag(crystal_get_user_flag(crystals[i])),
+			        img->filename, evt_str);
                         free(evt_str);
 		}
 		fclose(fh);
