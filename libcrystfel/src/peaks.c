@@ -377,8 +377,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	data = image->dp[pn];
 	stride = p->w;
 
-	for ( ss=0; ss<p->h; ss++ ) {
-	for ( fs=0; fs<p->w; fs++ ) {
+	for ( ss=1; ss<p->h-1; ss++ ) {
+	for ( fs=1; fs<p->w-1; fs++ ) {
 
 		double dx1, dx2, dy1, dy2;
 		double dxs, dys;
