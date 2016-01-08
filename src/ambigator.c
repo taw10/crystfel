@@ -3,12 +3,12 @@
  *
  * Resolve indexing ambiguities
  *
- * Copyright © 2014-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2014-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2014 Wolfgang Brehm
  *
  * Authors:
- *   2014-2015 Thomas White <taw@physics.org>
+ *   2014-2016 Thomas White <taw@physics.org>
  *   2014      Wolfgang Brehm <wolfgang.brehm@gmail.com>
  *
  * This file is part of CrystFEL.
@@ -1097,8 +1097,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ( s_sym_str == NULL ) {
-		ERROR("You must specify the input symmetry (with -y)\n");
-		return 1;
+		s_sym_str = strdup("1");
 	}
 	s_sym = get_pointgroup(s_sym_str);
 	if ( s_sym == NULL ) return 1;
