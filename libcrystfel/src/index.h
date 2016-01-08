@@ -3,13 +3,13 @@
  *
  * Perform indexing (somehow)
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2016 Thomas White <taw@physics.org>
  *   2010      Richard Kirian
  *   2012      Lorenzo Galli
  *   2015      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
@@ -40,25 +40,31 @@
 
 
 #define INDEXING_DEFAULTS_DIRAX (INDEXING_DIRAX | INDEXING_CHECK_PEAKS         \
-                                     | INDEXING_CHECK_CELL_COMBINATIONS)
+                                     | INDEXING_CHECK_CELL_COMBINATIONS        \
+                                     | INDEXING_RETRY | INDEXING_MULTI)
 
-#define INDEXING_DEFAULTS_ASDF (INDEXING_ASDF | INDEXING_CHECK_PEAKS         \
-                                     | INDEXING_CHECK_CELL_COMBINATIONS)
+#define INDEXING_DEFAULTS_ASDF (INDEXING_ASDF | INDEXING_CHECK_PEAKS           \
+                                     | INDEXING_CHECK_CELL_COMBINATIONS        \
+                                     | INDEXING_RETRY | INDEXING_MULTI)
 
 #define INDEXING_DEFAULTS_MOSFLM (INDEXING_MOSFLM | INDEXING_CHECK_PEAKS       \
                                      | INDEXING_CHECK_CELL_COMBINATIONS        \
                                      | INDEXING_USE_LATTICE_TYPE               \
-                                     | INDEXING_USE_CELL_PARAMETERS)
+                                     | INDEXING_USE_CELL_PARAMETERS            \
+                                     | INDEXING_RETRY | INDEXING_MULTI)
 
-#define INDEXING_DEFAULTS_FELIX (INDEXING_FELIX                  \
+/* Note: no INDEXING_MULTI because Felix is already multi-crystal */
+#define INDEXING_DEFAULTS_FELIX (INDEXING_FELIX                                \
                                      | INDEXING_USE_LATTICE_TYPE               \
-                                     | INDEXING_USE_CELL_PARAMETERS)
+                                     | INDEXING_USE_CELL_PARAMETERS            \
+                                     | INDEXING_RETRY)
 
 /* Axis check is needed for XDS, because it likes to permute the axes */
 #define INDEXING_DEFAULTS_XDS (INDEXING_XDS | INDEXING_USE_LATTICE_TYPE        \
                                      | INDEXING_USE_CELL_PARAMETERS            \
                                      | INDEXING_CHECK_CELL_AXES                \
-                                     | INDEXING_CHECK_PEAKS)
+                                     | INDEXING_CHECK_PEAKS                    \
+                                     | INDEXING_RETRY | INDEXING_MULTI)
 
 /**
  * IndexingMethod:
@@ -80,6 +86,10 @@
  *   guide the indexing process.
  * @INDEXING_USE_CELL_PARAMETERS: Use the unit cell parameters to guide the
  *   indexingprocess.
+ * @INDEXING_RETRY: If the indexer doesn't succeed, delete the weakest peaks
+ *   and try again.
+ * @INDEXING_MULTI: If the indexer succeeds, delete the peaks explained by the
+ *   lattice and try again in the hope of finding another crystal.
  *
  * An enumeration of all the available indexing methods.  The dummy value
  * @INDEXING_SIMULATION is used by partial_sim to indicate that no indexing was
@@ -105,6 +115,8 @@ typedef enum {
 	INDEXING_CHECK_PEAKS             = 1024,
 	INDEXING_USE_LATTICE_TYPE        = 2048,
 	INDEXING_USE_CELL_PARAMETERS     = 4096,
+	INDEXING_RETRY                   = 8192,
+	INDEXING_MULTI                   = 16384
 
 } IndexingMethod;
 

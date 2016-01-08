@@ -91,6 +91,14 @@ Check permutations of the axes for correspondence with your cell, but do not che
 .PD
 Check linear combinations of the unit cell basis vectors to see if a cell can be produced which looks like your unit cell.  See \fB-raw\fR and \fB-axes\fR.
 
+.IP \fB-retry\fR
+.PD
+If indexing fails, delete some of the weakest peaks and try again.  This increases the indexing yield, but decreases the speed.  The opposite is \fB-noretry\fR, which prevents indexing from being retried.  \fB-retry\R is the default for all indexing methods.
+
+.IP \fB-multi\fR
+.PD
+If indexing succeeds, delete the peaks which are explained by the lattice and try again to see if another lattice can be found.  This allows the possibility of finding multiple crystals per pattern (above and beyond what is already found by multi-crystal indexing methods such as \fBfelix\fR.  The opposite is \fB-nomulti\fR, which prevents that further indexing attempts.  \fB-multi\fR is the default for all the single-crystal indexing methods (i.e. not \fBfelix\fR).
+
 .IP \fB-bad\fR
 .PD
 Do not check that the cell accounts for the peaks found by the peak search.  This might be useful to debug initial indexing problems, but as its name suggests it is usually a bad idea.

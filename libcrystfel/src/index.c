@@ -346,6 +346,46 @@ static int delete_explained_peaks(struct image *image, Crystal *cr)
 }
 
 
+/* indm = the current indexing method
+ * r = the result from try_indexer() on this method just now
+ * image = the image structure
+ *
+ * Returns false for "try again", true for "no, stop now"
+ */
+static int finished_retry(IndexingMethod indm, int r, struct image *image)
+{
+	if ( r == 0 ) {
+
+		/* Indexing failed on the previous attempt.  Maybe try again
+		 * after poking the peak list a bit */
+
+		if ( indm & INDEXING_RETRY ) {
+			/* Retry with fewer peaks */
+			return delete_weakest_peaks(image->features);
+		} else {
+			/* Indexing failed, opted not to try again */
+			return 1;
+		}
+
+	} else {
+
+		/* Indexing succeeded on previous attempt.  Maybe try again
+		 * after deleting the explained peaks */
+
+		if ( indm & INDEXING_MULTI ) {
+			/* Remove "used" spots and try for
+			 * another lattice */
+			Crystal *cr;
+			cr = image->crystals[image->n_crystals-1];
+			return delete_explained_peaks(image, cr);
+		} else {
+			return 1;
+		}
+
+	}
+}
+
+
 void index_pattern(struct image *image,
                    IndexingMethod *indms, IndexingPrivate **iprivs)
 {
@@ -373,18 +413,7 @@ void index_pattern(struct image *image,
 
 			r = try_indexer(image, indms[n], iprivs[n]);
 			ntry++;
-
-			if ( r == 0 ) {
-				/* Retry with fewer peaks */
-				done = delete_weakest_peaks(image->features);
-			} else {
-				/* Remove "used" spots and try for
-				 * another lattice */
-				Crystal *cr;
-				cr = image->crystals[image->n_crystals-1];
-				done = delete_explained_peaks(image, cr);
-			}
-
+			done = finished_retry(indms[n], r, image);
 			if ( ntry > 5 ) done = 1;
 
 		} while ( !done );
@@ -459,11 +488,12 @@ static IndexingMethod set_cellparams(IndexingMethod a)
 	return a | INDEXING_USE_CELL_PARAMETERS;
 }
 
+
 char *indexer_str(IndexingMethod indm)
 {
 	char *str;
 
-	str = malloc(32);
+	str = malloc(256);
 	if ( str == NULL ) {
 		ERROR("Failed to allocate string.\n");
 		return NULL;
@@ -538,6 +568,18 @@ char *indexer_str(IndexingMethod indm)
 		strcat(str, "-nocell");
 	}
 
+	if ( indm & INDEXING_RETRY ) {
+		strcat(str, "-retry");
+	} else {
+		strcat(str, "-noretry");
+	}
+
+	if ( indm & INDEXING_MULTI ) {
+		strcat(str, "-multi");
+	} else {
+		strcat(str, "-nomulti");
+	}
+
 	return str;
 }
 
@@ -604,6 +646,18 @@ IndexingMethod *build_indexer_list(const char *str)
 
 		} else if ( strcmp(methods[i], "nocell") == 0) {
 			list[nmeth] = set_nocellparams(list[nmeth]);
+
+		} else if ( strcmp(methods[i], "retry") == 0) {
+			list[nmeth] |= INDEXING_RETRY;
+
+		} else if ( strcmp(methods[i], "noretry") == 0) {
+			list[nmeth] &= ~INDEXING_RETRY;
+
+		} else if ( strcmp(methods[i], "multi") == 0) {
+			list[nmeth] |= INDEXING_MULTI;
+
+		} else if ( strcmp(methods[i], "nomulti") == 0) {
+			list[nmeth] &= ~INDEXING_MULTI;
 
 		} else {
 			ERROR("Bad list of indexing methods: '%s'\n", str);
