@@ -1199,7 +1199,7 @@ static double compute_error(struct rg_collection *connected,
 			connected_error = sqrt(connected_error);
 
 			STATUS("Error for connected group %s: %d pixels with "
-			       "more than %d peaks: <delta^2> = %0.4f pixels.\n",
+			       "more than %d peaks: RMSD = %0.4f pixels.\n",
 			       conn_data[di].name, num_connected_error,
 			       conn_data[di].num_peaks_per_pixel,
 			       connected_error);
@@ -2874,7 +2874,7 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 	total_error = compute_error(connected, &edet, conn_data,
 	                            num_pix_displ, avg_displ->displ_abs);
 
-	STATUS("Detector-wide error before correction <delta^2> = %0.4f pixels.\n",
+	STATUS("Detector-wide error before correction: RMSD = %0.4f pixels.\n",
 	       total_error);
 
 	if ( gparams->error_maps ) {
@@ -2999,7 +2999,7 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 	total_error = compute_error(connected, &edet, conn_data,
 	              num_pix_displ, avg_displ->displ_abs);
 
-	STATUS("Detector-wide error after correction <delta^2> = %0.4f pixels.\n",
+	STATUS("Detector-wide error after correction: RMSD = %0.4f pixels.\n",
 	       total_error);
 
 	write_ret = write_detector_geometry_2(gparams->geometry_filename,
