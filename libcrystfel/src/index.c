@@ -408,15 +408,21 @@ void index_pattern(struct image *image,
 		int done = 0;
 		int r;
 		int ntry = 0;
+		int success = 0;
 
 		do {
 
 			r = try_indexer(image, indms[n], iprivs[n]);
+			success += r;
 			ntry++;
 			done = finished_retry(indms[n], r, image);
 			if ( ntry > 5 ) done = 1;
 
 		} while ( !done );
+
+		/* Stop now if the pattern is indexed (don't try again for more
+		 * crystals with a different indexing method) */
+		if ( success ) break;
 
 		n++;
 
