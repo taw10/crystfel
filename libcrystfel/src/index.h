@@ -41,19 +41,18 @@
 
 #define INDEXING_DEFAULTS_DIRAX (INDEXING_DIRAX | INDEXING_CHECK_PEAKS         \
                                      | INDEXING_CHECK_CELL_COMBINATIONS        \
-                                     | INDEXING_RETRY | INDEXING_MULTI)
+                                     | INDEXING_RETRY)
 
 #define INDEXING_DEFAULTS_ASDF (INDEXING_ASDF | INDEXING_CHECK_PEAKS           \
                                      | INDEXING_CHECK_CELL_COMBINATIONS        \
-                                     | INDEXING_RETRY | INDEXING_MULTI)
+                                     | INDEXING_RETRY)
 
 #define INDEXING_DEFAULTS_MOSFLM (INDEXING_MOSFLM | INDEXING_CHECK_PEAKS       \
                                      | INDEXING_CHECK_CELL_COMBINATIONS        \
                                      | INDEXING_USE_LATTICE_TYPE               \
                                      | INDEXING_USE_CELL_PARAMETERS            \
-                                     | INDEXING_RETRY | INDEXING_MULTI)
+                                     | INDEXING_RETRY)
 
-/* Note: no INDEXING_MULTI because Felix is already multi-crystal */
 #define INDEXING_DEFAULTS_FELIX (INDEXING_FELIX                                \
                                      | INDEXING_USE_LATTICE_TYPE               \
                                      | INDEXING_USE_CELL_PARAMETERS            \
@@ -64,7 +63,7 @@
                                      | INDEXING_USE_CELL_PARAMETERS            \
                                      | INDEXING_CHECK_CELL_AXES                \
                                      | INDEXING_CHECK_PEAKS                    \
-                                     | INDEXING_RETRY | INDEXING_MULTI)
+                                     | INDEXING_RETRY)
 
 /**
  * IndexingMethod:

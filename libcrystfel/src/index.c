@@ -377,6 +377,8 @@ static int finished_retry(IndexingMethod indm, int r, struct image *image)
 			 * another lattice */
 			Crystal *cr;
 			cr = image->crystals[image->n_crystals-1];
+			STATUS("WARNING: Multi-lattice indexing does not work"
+			       " well in this version.\n");
 			return delete_explained_peaks(image, cr);
 		} else {
 			return 1;
