@@ -1485,12 +1485,30 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 }
 
 
+static hsize_t *first_two_dims(hsize_t *in, struct dim_structure *ds)
+{
+	int i, j;
+	hsize_t *out = malloc(2*sizeof(hsize_t));
+
+	if ( out == NULL ) return NULL;
+
+	j = 0;
+	for ( i=0; i<ds->num_dims; i++ ) {
+		if ( (ds->dims[i] == HYSL_FS) || (ds->dims[i] == HYSL_SS) ) {
+			out[j++] = in[i];
+		}
+	}
+	return out;
+}
+
+
 static int load_mask(struct hdfile *f, struct event *ev, char *mask,
                      const char *mask_file,
                      const char *pname, struct image *image,
                      size_t p_w, size_t sum_p_h, uint16_t *flags,
-                     hsize_t *f_offset, hsize_t *f_count,
-                     hsize_t *m_offset, hsize_t *m_count)
+                     hsize_t *in_f_offset, hsize_t *in_f_count,
+                     hsize_t *m_offset, hsize_t *m_count,
+                     struct dim_structure *dim_struct)
 {
 	hid_t mask_dataspace, mask_dh;
 	int exists;
@@ -1498,15 +1516,25 @@ static int load_mask(struct hdfile *f, struct event *ev, char *mask,
 	hid_t memspace;
 	hsize_t dimsm[2];
 	hid_t fh;
+	hsize_t *f_offset, *f_count;
 
 	if ( mask_file != NULL ) {
+
 		fh = H5Fopen(mask_file, H5F_ACC_RDONLY, H5P_DEFAULT);
 		if ( fh < 0 ) {
 			ERROR("Couldn't open mask file '%s'\n", mask_file);
 			return 1;
 		}
+
+		/* If we have an external map file, we assume it to be a simple
+		 * 2D job */
+		f_offset = first_two_dims(in_f_offset, dim_struct);
+		f_count = first_two_dims(in_f_count, dim_struct);
+
 	} else {
 		fh = f->fh;
+		f_offset = in_f_offset;
+		f_count = in_f_count;
 	}
 
 	if ( ev != NULL ) {
@@ -1567,8 +1595,9 @@ static int load_satmap(struct hdfile *f, struct event *ev, char *satmap,
                        const char *satmap_file,
                        const char *pname, struct image *image,
                        size_t p_w, size_t sum_p_h, float *smap,
-                       hsize_t *f_offset, hsize_t *f_count,
-                       hsize_t *m_offset, hsize_t *m_count)
+                       hsize_t *in_f_offset, hsize_t *in_f_count,
+                       hsize_t *m_offset, hsize_t *m_count,
+		       struct dim_structure *dim_struct)
 {
 	hid_t satmap_dataspace, satmap_dh;
 	int exists;
@@ -1576,15 +1605,25 @@ static int load_satmap(struct hdfile *f, struct event *ev, char *satmap,
 	hid_t memspace;
 	hsize_t dimsm[2];
 	hid_t fh;
+	hsize_t *f_offset, *f_count;
 
 	if ( satmap_file != NULL ) {
+
 		fh = H5Fopen(satmap_file, H5F_ACC_RDONLY, H5P_DEFAULT);
 		if ( fh < 0 ) {
 			ERROR("Couldn't open satmap file '%s'\n", satmap_file);
 			return 1;
 		}
+
+		/* If we have an external map file, we assume it to be a simple
+		 * 2D job */
+		f_offset = first_two_dims(in_f_offset, dim_struct);
+		f_count = first_two_dims(in_f_count, dim_struct);
+
 	} else {
 		fh = f->fh;
+		f_offset = in_f_offset;
+		f_count = in_f_count;
 	}
 
 	if ( ev != NULL ) {
@@ -1835,7 +1874,8 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		if ( p->mask != NULL ) {
 			if ( load_mask(f, ev, p->mask, p->mask_file, p->name,
 			               image, p_w, sum_p_h, flags,
-			               f_offset, f_count, m_offset, m_count) ) {
+			               f_offset, f_count, m_offset, m_count,
+			               hsd) ) {
 				ERROR("Error loading bad pixel mask!\n");
 			}
 		}
@@ -1843,7 +1883,8 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		if ( p->satmap != NULL ) {
 			if ( load_satmap(f, ev, p->satmap, p->satmap_file,
 			                 p->name, image, p_w, sum_p_h, smap,
-			                 f_offset, f_count, m_offset, m_count) )
+			                 f_offset, f_count, m_offset, m_count,
+			                 hsd) )
 			{
 				ERROR("Error loading saturation map!\n");
 			}
