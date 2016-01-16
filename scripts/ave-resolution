@@ -13,6 +13,7 @@
 
 import sys
 import numpy
+import matplotlib.pyplot as plt
 
 f = open(sys.argv[1])
 a = []
@@ -33,3 +34,10 @@ print " Mean: %.2f nm^-1 = %.2f A" % (numpy.mean(b),10.0/numpy.mean(b))
 print " Best: %.2f nm^-1 = %.2f A" % (numpy.max(b),10.0/numpy.max(b))
 print "Worst: %.2f nm^-1 = %.2f A" % (numpy.min(b),10.0/numpy.min(b))
 print "Std deviation: %.2f nm^-1" % (numpy.std(b))
+
+plt.hist(a,bins=30)
+plt.title('Resolution based on indexing results')
+plt.xlabel('Resolution / nm^-1')
+plt.ylabel('Frequency')
+plt.grid(True)
+plt.show()
