@@ -392,7 +392,6 @@ void index_pattern(struct image *image,
                    IndexingMethod *indms, IndexingPrivate **iprivs)
 {
 	int n = 0;
-	ImageFeatureList *peaks;
 	ImageFeatureList *orig;
 
 	if ( indms == NULL ) return;
@@ -401,9 +400,7 @@ void index_pattern(struct image *image,
 	image->crystals = NULL;
 	image->n_crystals = 0;
 
-	peaks = sort_peaks(image->features);
 	orig = image->features;
-	image->features = peaks;
 
 	while ( indms[n] != INDEXING_NONE ) {
 
@@ -411,6 +408,8 @@ void index_pattern(struct image *image,
 		int r;
 		int ntry = 0;
 		int success = 0;
+
+		image->features = sort_peaks(orig);
 
 		do {
 
@@ -422,6 +421,8 @@ void index_pattern(struct image *image,
 
 		} while ( !done );
 
+		image_feature_list_free(image->features);
+
 		/* Stop now if the pattern is indexed (don't try again for more
 		 * crystals with a different indexing method) */
 		if ( success ) break;
@@ -432,7 +433,6 @@ void index_pattern(struct image *image,
 
 	image->indexed_by = indms[n];
 	image->features = orig;
-	image_feature_list_free(peaks);
 }
 
 
