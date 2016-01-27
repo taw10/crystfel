@@ -1101,19 +1101,21 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 		volume_max = volume * (1 + vtol);
 	}
 
-	int N_reflections = image_feature_count(image->features);
-	gsl_vector *reflections[N_reflections];
+	int n = image_feature_count(image->features);
+	int N_reflections = 0;
+	gsl_vector *reflections[n];
 
-	for ( i = 0; i < N_reflections; i++ ) {
+	for ( i=0; i<n; i++ ) {
 		struct imagefeature *f;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		reflections[i] = gsl_vector_alloc(3);
-		gsl_vector_set(reflections[i], 0, f->rx/1e10);
-		gsl_vector_set(reflections[i], 1, f->ry/1e10);
-		gsl_vector_set(reflections[i], 2, f->rz/1e10);
+		reflections[N_reflections] = gsl_vector_alloc(3);
+		gsl_vector_set(reflections[N_reflections], 0, f->rx/1e10);
+		gsl_vector_set(reflections[N_reflections], 1, f->ry/1e10);
+		gsl_vector_set(reflections[N_reflections], 2, f->rz/1e10);
+		N_reflections++;
 	}
 
 	struct asdf_cell *c = asdf_cell_new(N_reflections);
