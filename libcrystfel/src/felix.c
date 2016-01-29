@@ -128,6 +128,7 @@ static int read_felix(struct felix_private *gp, struct image *image,
 	int ngv;
 	char line[1024];
 	int r;
+	int n_crystals = 0;
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
@@ -215,6 +216,7 @@ static int read_felix(struct felix_private *gp, struct image *image,
 		 */
 
 		image_add_crystal(image, cr);
+		n_crystals++;
 
 	} while ( !feof(fh) );
 
@@ -229,7 +231,7 @@ static int read_felix(struct felix_private *gp, struct image *image,
 		}
 	}
 
-        return 0;
+        return n_crystals;
 }
 
 
