@@ -54,29 +54,6 @@
 #include "im-sandbox.h"
 
 
-static void try_refine_autoR(struct image *image, Crystal *cr)
-{
-	double old_R, new_R;
-	char notes[1024];
-
-	refine_radius(cr, image);
-	old_R = crystal_get_profile_radius(cr);
-
-	if ( refine_prediction(image, cr) ) {
-		crystal_set_user_flag(cr, 1);
-		return;
-	}
-
-	/* Estimate radius again with better geometry */
-	refine_radius(cr, image);
-	new_R = crystal_get_profile_radius(cr);
-
-	snprintf(notes, 1024, "predict_refine/R old = %.5f new = %.5f nm^-1",
-	                      old_R/1e9, new_R/1e9);
-	crystal_add_notes(cr, notes);
-}
-
-
 static float **backup_image_data(float **dp, struct detector *det)
 {
 	float **bu;
@@ -130,7 +107,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	int r;
 	int ret;
 	char *rn;
-	int n_crystals_left;
 	float **prefilter;
 	int any_crystals;
 
@@ -218,6 +194,18 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		return;
 	}
 
+	/* Set beam parameters */
+	if ( iargs->fix_divergence >= 0.0 ) {
+		image.div = iargs->fix_divergence;
+	} else {
+		image.div = 0.0;
+	}
+	if ( iargs->fix_bandwidth >= 0.0 ) {
+		image.bw = iargs->fix_bandwidth;
+	} else {
+		image.bw = 0.00000001;
+	}
+
 	/* Index the pattern */
 	index_pattern(&image, iargs->indm, iargs->ipriv);
 
@@ -229,22 +217,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 	free(rn);
 
-	for ( i=0; i<image.n_crystals; i++ ) {
-		crystal_set_image(image.crystals[i], &image);
-		crystal_set_user_flag(image.crystals[i], 0);
-	}
-
 	/* Set beam/crystal parameters */
-	if ( iargs->fix_divergence >= 0.0 ) {
-		image.div = iargs->fix_divergence;
-	} else {
-		image.div = 0.0;
-	}
-	if ( iargs->fix_bandwidth >= 0.0 ) {
-		image.bw = iargs->fix_bandwidth;
-	} else {
-		image.bw = 0.00000001;
-	}
 	if ( iargs->fix_profile_r >= 0.0 ) {
 		for ( i=0; i<image.n_crystals; i++ ) {
 			crystal_set_profile_radius(image.crystals[i],
@@ -259,34 +232,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 	if ( iargs->fix_profile_r < 0.0 ) {
-
 		for ( i=0; i<image.n_crystals; i++ ) {
-			if ( iargs->predict_refine ) {
-				try_refine_autoR(&image, image.crystals[i]);
-			} else {
-				refine_radius(image.crystals[i], &image);
-			}
+			refine_radius(image.crystals[i], &image);
 		}
-
-	} else {
-
-		for ( i=0; i<image.n_crystals; i++ ) {
-			if ( iargs->predict_refine ) {
-				refine_prediction(&image, image.crystals[i]);
-			}
-		}
-
-	}
-
-	/* If there are no crystals left, set the indexing flag back to zero */
-	n_crystals_left = 0;
-	for ( i=0; i<image.n_crystals; i++ ) {
-		if ( crystal_get_user_flag(image.crystals[i]) == 0 ) {
-			n_crystals_left++;
-		}
-	}
-	if ( n_crystals_left == 0 ) {
-		image.indexed_by = INDEXING_NONE;
 	}
 
 	/* Integrate! */

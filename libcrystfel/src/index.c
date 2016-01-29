@@ -55,6 +55,7 @@
 #include "geometry.h"
 #include "cell-utils.h"
 #include "felix.h"
+#include "predict-refine.h"
 
 
 static int debug_index(struct image *image)
@@ -234,36 +235,61 @@ void map_all_peaks(struct image *image)
 static int try_indexer(struct image *image, IndexingMethod indm,
                        IndexingPrivate *ipriv)
 {
+	int i, r, n_bad;
+
 	switch ( indm & INDEXING_METHOD_MASK ) {
 
 		case INDEXING_NONE :
 		return 0;
 
 		case INDEXING_DIRAX :
-		return run_dirax(image, ipriv);
+		r = run_dirax(image, ipriv);
+		break;
 
 		case INDEXING_ASDF :
-		return run_asdf(image, ipriv);
+		r = run_asdf(image, ipriv);
+		break;
 
 		case INDEXING_MOSFLM :
-		return run_mosflm(image, ipriv);
+		r = run_mosflm(image, ipriv);
+		break;
 
 		case INDEXING_XDS :
-		return run_xds(image, ipriv);
+		r = run_xds(image, ipriv);
+		break;
 
 		case INDEXING_DEBUG :
-		return debug_index(image);
+		r = debug_index(image);
+		break;
 
 		case INDEXING_FELIX :
-		return felix_index(image, ipriv);
+		r = felix_index(image, ipriv);
+		break;
 
 		default :
 		ERROR("Unrecognised indexing method: %i\n", indm);
-		break;
+		return 0;
 
 	}
 
-	return 0;
+	/* Attempt prediction refinement */
+	n_bad = 0;
+	for ( i=0; i<r; i++ ) {
+		Crystal *cr = image->crystals[image->n_crystals-i-1];
+		crystal_set_image(cr, image);
+		crystal_set_user_flag(cr, 0);
+		crystal_set_profile_radius(cr, 0.02e9);
+		crystal_set_mosaicity(cr, 0.0);
+		if ( refine_prediction(image, cr) != 0 ) {
+			crystal_set_user_flag(cr, 1);
+			n_bad++;
+		}
+	}
+
+	remove_flagged_crystals(image);
+
+	if ( n_bad == r ) return 0;
+	return r;
 }
 
 

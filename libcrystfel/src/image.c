@@ -280,6 +280,26 @@ void image_add_crystal(struct image *image, Crystal *cryst)
 }
 
 
+void remove_flagged_crystals(struct image *image)
+{
+	int i;
+
+	for ( i=0; i<image->n_crystals; i++ ) {
+		if ( crystal_get_user_flag(image->crystals[i]) ) {
+			int j;
+			Crystal *deleteme = image->crystals[i];
+			cell_free(crystal_get_cell(deleteme));
+			crystal_free(deleteme);
+			for ( j=i; j<image->n_crystals-1; j++ ) {
+				image->crystals[j] = image->crystals[j+1];
+			}
+			image->n_crystals--;
+		}
+	}
+
+}
+
+
 /* Free all crystals, including their RefLists and UnitCells */
 void free_all_crystals(struct image *image)
 {
