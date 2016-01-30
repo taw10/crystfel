@@ -198,6 +198,7 @@ int main(int argc, char *argv[])
 	struct beam_params beam;
 	int have_push_res = 0;
 	int len;
+	int no_refine = 0;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -241,7 +242,6 @@ int main(int argc, char *argv[])
 	iargs.fix_profile_r = -1.0;
 	iargs.fix_bandwidth = -1.0;
 	iargs.fix_divergence = -1.0;
-	iargs.predict_refine = 1;
 	iargs.felix_options = NULL;
 
 	/* Long options */
@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
 		{"no-use-saturated",   0, &iargs.use_saturated,      0},
 		{"no-revalidate",      0, &iargs.no_revalidate,      1},
 		{"check-hdf5-snr",     0, &iargs.check_hdf5_snr,     1},
-		{"no-refine",          0, &iargs.predict_refine,     0},
+		{"no-refine",          0, &no_refine,                1},
 
 		/* Long-only options which don't actually do anything */
 		{"no-sat-corr",        0, &iargs.satcorr,            0},
@@ -589,12 +589,22 @@ int main(int argc, char *argv[])
 
 	} else {
 
+		int i = 0;
+
 		indm = build_indexer_list(indm_str);
 		if ( indm == NULL ) {
 			ERROR("Invalid indexer list '%s'\n", indm_str);
 			return 1;
 		}
 		free(indm_str);
+
+		/* If --no-refine, unset the refinement flag on all methods */
+		if ( no_refine ) {
+			while ( indm[i] != INDEXING_NONE ) {
+				indm[i] &= ~INDEXING_REFINE;
+				i++;
+			}
+		}
 	}
 
 	/* Parse integration method */

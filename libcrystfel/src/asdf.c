@@ -1181,7 +1181,7 @@ IndexingPrivate *asdf_prepare(IndexingMethod *indm, UnitCell *cell,
 	/* Flags that asdf knows about */
 	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_CELL_COMBINATIONS
 	       | INDEXING_CHECK_CELL_AXES | INDEXING_CHECK_PEAKS
-	       | INDEXING_RETRY | INDEXING_MULTI;
+	       | INDEXING_CONTROL_FLAGS;
 
 	dp = malloc(sizeof(struct asdf_private));
 	if ( dp == NULL ) return NULL;

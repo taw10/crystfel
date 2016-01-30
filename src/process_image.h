@@ -88,7 +88,6 @@ struct index_args
 	float fix_profile_r;
 	float fix_bandwidth;
 	float fix_divergence;
-	int predict_refine;
 	char *felix_options;
 };
 

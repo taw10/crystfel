@@ -679,7 +679,7 @@ IndexingPrivate *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	/* Flags that Felix knows about */
 	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_PEAKS
 	       | INDEXING_USE_LATTICE_TYPE | INDEXING_USE_CELL_PARAMETERS
-	       | INDEXING_RETRY | INDEXING_MULTI;
+	       | INDEXING_CONTROL_FLAGS;
 
 	gp->cell = cell;
 	gp->indm = *indm;

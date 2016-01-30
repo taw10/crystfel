@@ -41,29 +41,29 @@
 
 #define INDEXING_DEFAULTS_DIRAX (INDEXING_DIRAX | INDEXING_CHECK_PEAKS         \
                                      | INDEXING_CHECK_CELL_COMBINATIONS        \
-                                     | INDEXING_RETRY)
+                                     | INDEXING_RETRY | INDEXING_REFINE)
 
 #define INDEXING_DEFAULTS_ASDF (INDEXING_ASDF | INDEXING_CHECK_PEAKS           \
                                      | INDEXING_CHECK_CELL_COMBINATIONS        \
-                                     | INDEXING_RETRY)
+                                     | INDEXING_RETRY | INDEXING_REFINE)
 
 #define INDEXING_DEFAULTS_MOSFLM (INDEXING_MOSFLM | INDEXING_CHECK_PEAKS       \
                                      | INDEXING_CHECK_CELL_COMBINATIONS        \
                                      | INDEXING_USE_LATTICE_TYPE               \
                                      | INDEXING_USE_CELL_PARAMETERS            \
-                                     | INDEXING_RETRY)
+                                     | INDEXING_RETRY | INDEXING_REFINE)
 
 #define INDEXING_DEFAULTS_FELIX (INDEXING_FELIX                                \
                                      | INDEXING_USE_LATTICE_TYPE               \
                                      | INDEXING_USE_CELL_PARAMETERS            \
-                                     | INDEXING_RETRY)
+                                     | INDEXING_RETRY | INDEXING_REFINE)
 
 /* Axis check is needed for XDS, because it likes to permute the axes */
 #define INDEXING_DEFAULTS_XDS (INDEXING_XDS | INDEXING_USE_LATTICE_TYPE        \
                                      | INDEXING_USE_CELL_PARAMETERS            \
                                      | INDEXING_CHECK_CELL_AXES                \
                                      | INDEXING_CHECK_PEAKS                    \
-                                     | INDEXING_RETRY)
+                                     | INDEXING_RETRY | INDEXING_REFINE)
 
 /**
  * IndexingMethod:
@@ -89,6 +89,7 @@
  *   and try again.
  * @INDEXING_MULTI: If the indexer succeeds, delete the peaks explained by the
  *   lattice and try again in the hope of finding another crystal.
+ * @INDEXING_REFINE: Perform "prediction refinement" after indexing.
  *
  * An enumeration of all the available indexing methods.  The dummy value
  * @INDEXING_SIMULATION is used by partial_sim to indicate that no indexing was
@@ -115,13 +116,17 @@ typedef enum {
 	INDEXING_USE_LATTICE_TYPE        = 2048,
 	INDEXING_USE_CELL_PARAMETERS     = 4096,
 	INDEXING_RETRY                   = 8192,
-	INDEXING_MULTI                   = 16384
+	INDEXING_MULTI                   = 16384,
+	INDEXING_REFINE                  = 32768,
 
 } IndexingMethod;
 
 /* This defines the bits in "IndexingMethod" which are used to represent the
  * core of the indexing method */
 #define INDEXING_METHOD_MASK (0xff)
+
+/* Indexing flags which the indexing method does not need to know about */
+#define INDEXING_CONTROL_FLAGS (INDEXING_RETRY | INDEXING_MULTI | INDEXING_REFINE)
 
 #ifdef __cplusplus
 extern "C" {

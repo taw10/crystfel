@@ -235,7 +235,7 @@ void map_all_peaks(struct image *image)
 static int try_indexer(struct image *image, IndexingMethod indm,
                        IndexingPrivate *ipriv)
 {
-	int i, r, n_bad;
+	int i, r;
 
 	switch ( indm & INDEXING_METHOD_MASK ) {
 
@@ -272,23 +272,28 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 	}
 
-	/* Attempt prediction refinement */
-	n_bad = 0;
-	for ( i=0; i<r; i++ ) {
-		Crystal *cr = image->crystals[image->n_crystals-i-1];
-		crystal_set_image(cr, image);
-		crystal_set_user_flag(cr, 0);
-		crystal_set_profile_radius(cr, 0.02e9);
-		crystal_set_mosaicity(cr, 0.0);
-		if ( refine_prediction(image, cr) != 0 ) {
-			crystal_set_user_flag(cr, 1);
-			n_bad++;
+	if ( indm & INDEXING_REFINE ) {
+
+		/* Attempt prediction refinement */
+		int n_bad = 0;
+		for ( i=0; i<r; i++ ) {
+			Crystal *cr = image->crystals[image->n_crystals-i-1];
+			crystal_set_image(cr, image);
+			crystal_set_user_flag(cr, 0);
+			crystal_set_profile_radius(cr, 0.02e9);
+			crystal_set_mosaicity(cr, 0.0);
+			if ( refine_prediction(image, cr) != 0 ) {
+				crystal_set_user_flag(cr, 1);
+				n_bad++;
+			}
 		}
+
+		remove_flagged_crystals(image);
+
+		if ( n_bad == r ) return 0;
+
 	}
 
-	remove_flagged_crystals(image);
-
-	if ( n_bad == r ) return 0;
 	return r;
 }
 
@@ -614,6 +619,12 @@ char *indexer_str(IndexingMethod indm)
 		strcat(str, "-nomulti");
 	}
 
+	if ( indm & INDEXING_REFINE ) {
+		strcat(str, "-refine");
+	} else {
+		strcat(str, "-norefine");
+	}
+
 	return str;
 }
 
@@ -692,6 +703,12 @@ IndexingMethod *build_indexer_list(const char *str)
 
 		} else if ( strcmp(methods[i], "nomulti") == 0) {
 			list[nmeth] &= ~INDEXING_MULTI;
+
+		} else if ( strcmp(methods[i], "refine") == 0) {
+			list[nmeth] |= INDEXING_REFINE;
+
+		} else if ( strcmp(methods[i], "norefine") == 0) {
+			list[nmeth] &= ~INDEXING_REFINE;
 
 		} else {
 			ERROR("Bad list of indexing methods: '%s'\n", str);
