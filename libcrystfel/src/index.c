@@ -236,6 +236,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
                        IndexingPrivate *ipriv)
 {
 	int i, r;
+	int n_bad = 0;
 
 	switch ( indm & INDEXING_METHOD_MASK ) {
 
@@ -272,27 +273,27 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 	}
 
-	if ( indm & INDEXING_REFINE ) {
+	for ( i=0; i<r; i++ ) {
 
-		/* Attempt prediction refinement */
-		int n_bad = 0;
-		for ( i=0; i<r; i++ ) {
-			Crystal *cr = image->crystals[image->n_crystals-i-1];
-			crystal_set_image(cr, image);
-			crystal_set_user_flag(cr, 0);
-			crystal_set_profile_radius(cr, 0.02e9);
-			crystal_set_mosaicity(cr, 0.0);
-			if ( refine_prediction(image, cr) != 0 ) {
-				crystal_set_user_flag(cr, 1);
-				n_bad++;
-			}
+		Crystal *cr = image->crystals[image->n_crystals-i-1];
+		crystal_set_image(cr, image);
+		crystal_set_user_flag(cr, 0);
+		crystal_set_profile_radius(cr, 0.02e9);
+		crystal_set_mosaicity(cr, 0.0);
+
+		/* Prediction refinement if requested */
+		if ( (indm & INDEXING_REFINE)
+		   && (refine_prediction(image, cr) != 0) )
+		{
+			crystal_set_user_flag(cr, 1);
+			n_bad++;
 		}
 
-		remove_flagged_crystals(image);
-
-		if ( n_bad == r ) return 0;
-
 	}
+
+	remove_flagged_crystals(image);
+
+	if ( n_bad == r ) return 0;
 
 	return r;
 }
