@@ -133,13 +133,13 @@ static int read_felix(struct felix_private *gp, struct image *image,
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
 		ERROR("Can't open '%s'\n", filename);
-		return 1;
+		return 0;
 	}
 
 	/* Read and discard first line */
 	if ( fgets( line, 1024, fh ) == NULL ) {
 		ERROR("Failed to read *.felix file.\n");
-		return 1;
+		return 0;
 	}
 
 	do {
@@ -180,7 +180,7 @@ static int read_felix(struct felix_private *gp, struct image *image,
 		if ( r != 21 ) {
 			ERROR("Only %i parameters in .felix file, "
 			      "check version and format.\n", r);
-			return 1;
+			return -1;
 		}
 
 		cell = cell_new();
@@ -231,7 +231,7 @@ static int read_felix(struct felix_private *gp, struct image *image,
 		}
 	}
 
-        return n_crystals;
+    return n_crystals;
 }
 
 
@@ -545,14 +545,10 @@ int felix_index(struct image *image, IndexingPrivate *ipriv)
 		return 0;
 	}
 
-	if ( read_felix(gp, image, gff_filename) != 0 ) {
-		free(felix);
-		return 0;
-	}
+	rval = read_felix(gp, image, gff_filename);
 
-	/* Success! */
 	free(felix);
-	return 1;
+	return rval;
 
 }
 
