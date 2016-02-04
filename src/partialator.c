@@ -298,6 +298,7 @@ static void show_help(const char *s)
 "\n"
 "  -i, --input=<filename>     Specify the name of the input 'stream'.\n"
 "  -o, --output=<filename>    Output filename.  Default: partialator.hkl.\n"
+"      --output-every-cycle   Write .hkl* and .params files in every cycle.\n"
 "  -y, --symmetry=<sym>       Merge according to symmetry <sym>.\n"
 "      --start-after=<n>      Skip <n> crystals at the start of the stream.\n"
 "      --stop-after=<n>       Stop after merging <n> crystals.\n"
@@ -611,6 +612,33 @@ static void show_all_residuals(Crystal **crystals, int n_crystals,
 	STATUS("%15e %15e %15e %15e\n", dev, free_dev, log_dev, free_log_dev);
 }
 
+static void dump_parameters(const char *filename, Crystal **crystals, int n_crystals)
+{
+	/* Dump parameters */
+	FILE *fh;
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) {
+		ERROR("Couldn't open partialator.params!\n");
+	} else {
+		fprintf(fh, "  cr        OSF       relB         div"
+		            " flag                      filename  event\n");
+		int i;
+		for ( i=0; i<n_crystals; i++ ) {
+			struct image *img;
+                        char *evt_str;
+			img = crystal_get_image(crystals[i]);
+                        evt_str = get_event_string(img->event);
+			fprintf(fh, "%4i %10.5f %10.2f %8.5e %-25s %s %s\n",
+				i, crystal_get_osf(crystals[i]),
+				crystal_get_Bfac(crystals[i])*1e20,
+			        crystal_get_image(crystals[i])->div,
+			        str_prflag(crystal_get_user_flag(crystals[i])),
+			        img->filename, evt_str);
+                        free(evt_str);
+		}
+		fclose(fh);
+	}
+}
 
 int main(int argc, char *argv[])
 {
@@ -646,6 +674,7 @@ int main(int argc, char *argv[])
 	double push_res = +INFINITY;
 	gsl_rng *rng;
 	int no_free = 0;
+	int output_everycycle = 0;
 	char *csplit_fn = NULL;
 	struct custom_split *csplit = NULL;
 	double max_B = 1e-18;
@@ -679,6 +708,7 @@ int main(int argc, char *argv[])
 		{"polarisation",       0, &polarisation,       1},
 		{"polarization",       0, &polarisation,       1}, /* compat */
 		{"no-free",            0, &no_free,            1},
+		{"output-every-cycle", 0, &output_everycycle,  1},
 
 		{0, 0, NULL, 0}
 	};
@@ -1043,6 +1073,31 @@ int main(int argc, char *argv[])
 		show_all_residuals(crystals, n_crystals, full);
 		write_pgraph(full, crystals, n_crystals, i+1);
 
+		if ( output_everycycle ) {
+			char tmp[1024];
+			snprintf(tmp, 1024, "iter%.2d_%s", i+1, outfile);
+			/* Output results */
+			STATUS("Writing overall results to %s\n", tmp);
+			write_reflist_2(tmp, full, sym);
+
+			/* Output split results */
+			write_split(crystals, n_crystals, tmp, nthreads, pmodel,
+			            min_measurements, sym, push_res);
+
+			/* Output custom split results */
+			if ( csplit != NULL ) {
+				int j;
+				for ( j=0; j<csplit->n_datasets; j++ ) {
+					write_custom_split(csplit, j, crystals, n_crystals,
+					                   pmodel, min_measurements, push_res,
+					                   sym, nthreads, tmp);
+				}
+			}
+
+			/* Dump parameters */
+			snprintf(tmp, 1024, "iter%.2d_partialator.params", i+1);
+			dump_parameters(tmp, crystals, n_crystals);
+		}
 	}
 
 	full = merge_intensities(crystals, n_crystals, nthreads, pmodel,
@@ -1068,28 +1123,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Dump parameters */
-	FILE *fh;
-	fh = fopen("partialator.params", "w");
-	if ( fh == NULL ) {
-		ERROR("Couldn't open partialator.params!\n");
-	} else {
-		fprintf(fh, "  cr        OSF       relB         div"
-		            " flag                      filename  event\n");
-		for ( i=0; i<n_crystals; i++ ) {
-			struct image *img;
-                        char *evt_str;
-			img = crystal_get_image(crystals[i]);
-                        evt_str = get_event_string(img->event);
-			fprintf(fh, "%4i %10.5f %10.2f %8.5e %-25s %s %s\n",
-				i, crystal_get_osf(crystals[i]),
-				crystal_get_Bfac(crystals[i])*1e20,
-			        crystal_get_image(crystals[i])->div,
-			        str_prflag(crystal_get_user_flag(crystals[i])),
-			        img->filename, evt_str);
-                        free(evt_str);
-		}
-		fclose(fh);
-	}
+	dump_parameters("partialator.params", crystals, n_crystals);
 
 	/* Clean up */
 	gsl_rng_free(rng);
