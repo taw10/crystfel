@@ -1,7 +1,7 @@
 .\"
 .\" partialator man page
 .\"
-.\" Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+.\" Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
 .\"                       a research centre of the Helmholtz Association.
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
@@ -126,6 +126,11 @@ Read a list of filenames, event IDs and dataset IDs from \fIfilename\fR.  See th
 .IP \fB--max-rel-B=\fIn\fR
 .PD
 Reject crystals if the absolute values of their relative Debye-Waller ("B") factors are more than \fIn\fR square Angstroms.  The default is \fB--max-rel-B=100\fR.
+
+.PD 0
+.IP \fB--output-every-cycle\fR
+.PD
+Write out the per-crystal parameters and reflection lists after every cycle of refinement, instead of only at the end.  The intermediate reflection lists and parameter filenames will be prefixed with \fBiter\fIN\fB_\fR (note the trailing underscore), where \fIN\fR is the iteration number.  If you use \fB--custom-split\fR, intermediate results will also be output for each custom dataset.
 
 .SH PARTIALITY MODELS
 
