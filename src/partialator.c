@@ -612,9 +612,10 @@ static void show_all_residuals(Crystal **crystals, int n_crystals,
 	STATUS("%15e %15e %15e %15e\n", dev, free_dev, log_dev, free_log_dev);
 }
 
-static void dump_parameters(const char *filename, Crystal **crystals, int n_crystals)
+
+static void dump_parameters(const char *filename, Crystal **crystals,
+                            int n_crystals)
 {
-	/* Dump parameters */
 	FILE *fh;
 	fh = fopen(filename, "w");
 	if ( fh == NULL ) {
@@ -629,8 +630,8 @@ static void dump_parameters(const char *filename, Crystal **crystals, int n_crys
 			img = crystal_get_image(crystals[i]);
                         evt_str = get_event_string(img->event);
 			fprintf(fh, "%4i %10.5f %10.2f %8.5e %-25s %s %s\n",
-				i, crystal_get_osf(crystals[i]),
-				crystal_get_Bfac(crystals[i])*1e20,
+			        i, crystal_get_osf(crystals[i]),
+			        crystal_get_Bfac(crystals[i])*1e20,
 			        crystal_get_image(crystals[i])->div,
 			        str_prflag(crystal_get_user_flag(crystals[i])),
 			        img->filename, evt_str);
@@ -639,6 +640,7 @@ static void dump_parameters(const char *filename, Crystal **crystals, int n_crys
 		fclose(fh);
 	}
 }
+
 
 int main(int argc, char *argv[])
 {
@@ -1074,8 +1076,10 @@ int main(int argc, char *argv[])
 		write_pgraph(full, crystals, n_crystals, i+1);
 
 		if ( output_everycycle ) {
+
 			char tmp[1024];
 			snprintf(tmp, 1024, "iter%.2d_%s", i+1, outfile);
+
 			/* Output results */
 			STATUS("Writing overall results to %s\n", tmp);
 			write_reflist_2(tmp, full, sym);
@@ -1088,15 +1092,18 @@ int main(int argc, char *argv[])
 			if ( csplit != NULL ) {
 				int j;
 				for ( j=0; j<csplit->n_datasets; j++ ) {
-					write_custom_split(csplit, j, crystals, n_crystals,
-					                   pmodel, min_measurements, push_res,
-					                   sym, nthreads, tmp);
+					write_custom_split(csplit, j, crystals,
+					                   n_crystals, pmodel,
+					                   min_measurements,
+							   push_res, sym,
+					                   nthreads, tmp);
 				}
 			}
 
 			/* Dump parameters */
 			snprintf(tmp, 1024, "iter%.2d_partialator.params", i+1);
 			dump_parameters(tmp, crystals, n_crystals);
+
 		}
 	}
 
