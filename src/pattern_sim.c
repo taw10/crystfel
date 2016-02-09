@@ -696,6 +696,9 @@ int main(int argc, char *argv[])
 	powder.width = image.width;
 	powder.height = image.height;
 	powder.det = image.det;
+	powder.beam = NULL;
+	powder.lambda = 0.0;
+	powder.spectrum = NULL;
 	powder.dp = malloc(image.det->n_panels*sizeof(float *));
 	if ( powder.dp == NULL ) {
 		ERROR("Failed to allocate powder data\n");
