@@ -1014,7 +1014,8 @@ int hdf5_write_image(const char *filename, const struct image *image,
 		write_location(fh, image->det, data, &locations[li]);
 	}
 
-	if ( image->beam == NULL || image->beam->photon_energy_from == NULL ) {
+	if ( image->beam == NULL
+	 || (image->beam != NULL && image->beam->photon_energy_from == NULL) ) {
 		ph_en_loc = "photon_energy_eV";
 	} else {
 		ph_en_loc = image->beam->photon_energy_from;
