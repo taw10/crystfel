@@ -810,8 +810,8 @@ static void write_location(hid_t fh, struct detector *det, float *data,
 		m_count[0] = p.max_ss - p.min_ss +1;
 		m_count[1] = p.max_fs - p.min_fs +1;
 
-		dimsm[0] = det->max_fs + 1;
-		dimsm[1] = det->max_ss + 1;
+		dimsm[0] = det->max_ss + 1;
+		dimsm[1] = det->max_fs + 1;
 		memspace = H5Screate_simple(2, dimsm, NULL);
 
 		r = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
