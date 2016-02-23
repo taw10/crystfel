@@ -3,12 +3,12 @@
  *
  * Quick yet non-crappy HDF viewer
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2015 Thomas White <taw@physics.org>
+ *   2009-2016 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2014      Takanori Nakane
  *   2012      Richard Kirian
@@ -1927,8 +1927,8 @@ static void numbers_update(DisplayWindow *dw)
 			}
 
 			if ( (px==8) && (py==8) ) {
-				ffs = fs;
-				fss = ss;
+				ffs = fs + p->min_fs;
+				fss = ss + p->min_ss;
 				found = 1;
 			}
 
