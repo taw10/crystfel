@@ -1128,8 +1128,18 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 		double volume = cell_get_volume(dp->template);
 		double vtol = (dp->ltl[0] + dp->ltl[1] + dp->ltl[2]) / 100 +
 		               dp->ltl[3] / 180 * M_PI;
-		volume_min = volume * (1 - vtol);
-		volume_max = volume * (1 + vtol);
+
+		/* Divide volume constraints by number of lattice points per
+		 * unit cell since asdf always finds primitive cell */
+		int latt_points_per_uc = 1;
+		char centering = cell_get_centering(dp->template);
+		if ( centering == 'A' ||
+		     centering == 'B' ||
+		     centering == 'C' ||
+		     centering == 'I') latt_points_per_uc = 2;
+
+		volume_min = volume * (1 - vtol)/latt_points_per_uc;
+		volume_max = volume * (1 + vtol)/latt_points_per_uc;
 	}
 
 	int n = image_feature_count(image->features);
