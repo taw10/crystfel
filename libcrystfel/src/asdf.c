@@ -399,7 +399,12 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 		k = (int)((projections_sorted[i] - projections_sorted[0]) /
 		          (projections_sorted[n - 1] - projections_sorted[0]) *
 		          (N - 1));
-		in[k] ++;
+		if ( (k>=N) || (k<0) ) {
+			ERROR("Bad k value in find_ds_fft() (k=%i, N=%i)\n",
+			      k, N);
+			return -1.0;
+		}
+		in[k]++;
 	}
 
 	fftw_execute_dft_r2c(p, in, out);
@@ -1009,6 +1014,10 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 			/* Find ds - period in 1d lattice of projections */
 			ds = find_ds_fft(projections, N_reflections, d_max,
 			                 fftw);
+			if ( ds < 0.0 ) {
+				ERROR("find_ds_fft() failed.\n");
+				return 0;
+			}
 
 			/* Refine ds, write 1 to fits[i] if reflections[i]
 			 * fits ds */
