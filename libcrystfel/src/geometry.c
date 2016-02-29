@@ -289,7 +289,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	/* Calculate partiality */
 	part = partiality(pmodel, h, k, l, image->serial, rlow, rhigh, pr);
 
-	if ( isnan(part) ) {
+	if ( isnan(part) && ((h!=0) || (k!=0) || (l!=0)) ) {
 		ERROR("Assigning NAN partiality!\n");
 		ERROR("%3i %3i %3i  rlow = %e, rhigh = %e\n",
 		      h, k, l, rlow, rhigh);
