@@ -395,7 +395,7 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 		in[i] = 0;
 	}
 
-	for ( i = 0; i < n; i++ ) {
+	for ( i=0; i<n; i++ ) {
 		k = (int)((projections_sorted[i] - projections_sorted[0]) /
 		          (projections_sorted[n - 1] - projections_sorted[0]) *
 		          (N - 1));
