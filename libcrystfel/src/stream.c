@@ -1038,6 +1038,8 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 			}
 			if ( reflist == NULL ) {
 				ERROR("Failed while reading reflections\n");
+				ERROR("Filename = %s\n", image->filename);
+				ERROR("Event = %s\n", get_event_string(image->event));
 				break;
 			}
 
