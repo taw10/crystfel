@@ -1136,7 +1136,8 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 		if ( centering == 'A' ||
 		     centering == 'B' ||
 		     centering == 'C' ||
-		     centering == 'I') latt_points_per_uc = 2;
+		     centering == 'I' ) latt_points_per_uc = 2;
+		else if ( centering == 'F' ) latt_points_per_uc = 4;
 
 		volume_min = volume * (1 - vtol)/latt_points_per_uc;
 		volume_max = volume * (1 + vtol)/latt_points_per_uc;
