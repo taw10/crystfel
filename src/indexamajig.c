@@ -140,6 +140,7 @@ static void show_help(const char *s)
 "     --no-refls-in-stream Do not record integrated reflections in the stream.\n"
 "     --int-diag=<cond>    Show debugging information about reflections.\n"
 "     --no-refine          Skip the prediction refinement step.\n"
+"     --profile            Show timing data for performance monitoring.\n"
 "\nLow-level options for the felix indexer:\n\n"
 "     --felix-options      Change the default arguments passed to the indexer.\n"
 "                          Given as a list of comma separated list of \n"
@@ -243,6 +244,7 @@ int main(int argc, char *argv[])
 	iargs.fix_bandwidth = -1.0;
 	iargs.fix_divergence = -1.0;
 	iargs.felix_options = NULL;
+	iargs.profile = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -270,6 +272,7 @@ int main(int argc, char *argv[])
 		{"no-revalidate",      0, &iargs.no_revalidate,      1},
 		{"check-hdf5-snr",     0, &iargs.check_hdf5_snr,     1},
 		{"no-refine",          0, &no_refine,                1},
+		{"profile",            0, &iargs.profile,            1},
 
 		/* Long-only options which don't actually do anything */
 		{"no-sat-corr",        0, &iargs.satcorr,            0},

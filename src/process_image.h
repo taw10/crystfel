@@ -3,11 +3,11 @@
  *
  * The processing pipeline for one image
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2016 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -38,6 +38,7 @@ struct index_args;
 
 #include "integration.h"
 #include "im-sandbox.h"
+#include "time-accounts.h"
 
 
 enum {
@@ -89,6 +90,7 @@ struct index_args
 	float fix_bandwidth;
 	float fix_divergence;
 	char *felix_options;
+	int profile;  /* Whether or not to do wall clock profiling */
 };
 
 
@@ -103,7 +105,7 @@ struct pattern_args
 extern void process_image(const struct index_args *iargs,
                           struct pattern_args *pargs, Stream *st,
                           int cookie, const char *tmpdir, int serial,
-                          struct sb_shm *sb_shared);
+                          struct sb_shm *sb_shared, TimeAccounts *taccs);
 
 
 #endif	/* PROCESS_IMAGE_H */
