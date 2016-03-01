@@ -38,7 +38,7 @@ open(TMP, "> list.tmp");
 my $in_image = 0;
 my $line;
 my $filename;
-my $event;
+my $event = "";
 my $indexed;
 my $n_seen = 0;
 
