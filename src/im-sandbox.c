@@ -895,7 +895,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	}
 
 	/* Set up signal handler to take action if any children die */
-	sa.sa_flags = SA_SIGINFO | SA_NOCLDSTOP;
+	sa.sa_flags = SA_SIGINFO | SA_NOCLDSTOP | SA_RESTART;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_sigaction = sigchld_handler;
 	r = sigaction(SIGCHLD, &sa, NULL);
@@ -905,7 +905,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	}
 
 	/* Set up signal handler to clean up semaphore on exit */
-	sa.sa_flags = SA_SIGINFO | SA_NOCLDSTOP;
+	sa.sa_flags = SA_SIGINFO | SA_NOCLDSTOP | SA_RESTART;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_sigaction = sigint_handler;
 	r = sigaction(SIGINT, &sa, NULL);
