@@ -2080,105 +2080,129 @@ void get_pixel_extents(struct detector *det,
 }
 
 
+static char **file_to_lines(const char *fn)
+{
+	char **lines;
+	FILE *fh;
+	int i = 0;
+	int max_lines = 64;
+
+	fh = fopen(fn, "r");
+	if ( fh == NULL ) return NULL;
+
+	lines = malloc(max_lines*sizeof(char *));
+	if ( lines == NULL ) return NULL;
+
+	do {
+		char line[2048];
+		char *rval;
+		rval = fgets(line, 2048, fh);
+		if ( rval == NULL ) break;
+		lines[i++] = strdup(line);
+
+		/* Allow one space so the terminator always fits */
+		if ( i == max_lines-1 ) {
+			max_lines += 64;
+			lines = realloc(lines, max_lines*sizeof(char *));
+			if ( lines == NULL ) return NULL;
+		}
+	} while ( 1 );
+
+	lines[i++] = NULL;
+	return lines;
+}
+
+
+static void free_lines(char **lines)
+{
+	int i = 0;
+	while ( lines[i] != NULL ) {
+		free(lines[i++]);
+	};
+	free(lines);
+}
+
+
 int write_detector_geometry_2(const char *geometry_filename,
                               const char *output_filename, struct detector *det,
                               const char *additional_comment,
                               int write_panel_coffset)
 {
-	FILE *ifh;
 	FILE *fh;
+	char **lines;
+	int lno = 0;
 
 	if ( geometry_filename == NULL ) return 2;
 	if ( output_filename == NULL ) return 2;
 	if ( det->n_panels < 1 ) return 3;
 
-	ifh = fopen(geometry_filename, "r");
-	if ( ifh == NULL ) return 1;
+	lines = file_to_lines(geometry_filename);
+	if ( lines == NULL ) return 1;
 
 	fh = fopen(output_filename, "w");
-	if ( fh == NULL ) {
-		return 1;
-	}
+	if ( fh == NULL ) return 1;
 
 	if ( additional_comment != NULL ) {
-
-		char additional_comment_tmp[1024];
-
-		strcpy(additional_comment_tmp, "; ");
-		strncat(additional_comment_tmp, additional_comment, 1021);
-		strcat(additional_comment_tmp, "\n");
-		if ( strlen(additional_comment) > 1021 ) {
-			strncpy(&additional_comment_tmp[1023], "\0", 1);
-		}
-		fputs(additional_comment_tmp, fh);
+		fputs("; ", fh);
+		fputs(additional_comment, fh);
+		fputs("\n", fh);
 	}
+
 	if  ( write_panel_coffset ) {
-
-		char new_line[1024];
-		strcpy(new_line,"; Optimized panel offsets can be found at the "
-		                "end of the file\n");
-		fputs(new_line, fh);
-
+		fputs("; Optimized panel offsets can be found at the "
+		      "end of the file\n", fh);
 	}
 
-	do {
-
-		char *rval;
-		char line[1024];
+	lno = 0;
+	while ( lines[lno] != NULL) {
 
 		int n_bits;
 		char **bits;
-
 		int i;
 		struct panel *p;
 
-		rval = fgets(line, 1023, ifh);
-		if ( rval == NULL ) break;
-
-		n_bits = assplode(line, "/=", &bits, ASSPLODE_NONE);
+		n_bits = assplode(lines[lno], "/=", &bits, ASSPLODE_NONE);
 
 		if ( n_bits != 3 ) {
 			if ( strstr(bits[0], "coffset" ) != NULL &&
 			     write_panel_coffset ) {
 				continue;
 			} else {
-				fputs(line, fh);
+				fputs(lines[lno], fh);
 			}
 		} else {
 
 			p = find_panel_by_name(det, bits[0]);
 
 			if ( p != NULL ) {
-				process_panel_fields(p, line, fh, bits,
+				process_panel_fields(p, lines[lno], fh, bits,
 						     write_panel_coffset);
 
 			} else {
-				fputs(line, fh);
+				fputs(lines[lno], fh);
 			}
 		}
 
 		for ( i=0; i<n_bits; i++ ) free(bits[i]);
 
-	} while ( 1 );
+		lno++;
+
+	};
 
 	if ( write_panel_coffset ) {
 
 		int pi;
-		char new_line[1024];
 
-		strcpy(new_line, "\n");
-		fputs(new_line, fh);
+		fputs("\n", fh);
 
 		for ( pi=0; pi<det->n_panels; pi++ ) {
-			sprintf(new_line, "%s/coffset = %f\n",
+			fprintf(fh, "%s/coffset = %f\n",
 			        det->panels[pi].name, det->panels[pi].coffset);
-			fputs(new_line, fh);
 		}
 	}
 
-
-	fclose(ifh);
 	fclose(fh);
+	free_lines(lines);
 
 	return 0;
 }
