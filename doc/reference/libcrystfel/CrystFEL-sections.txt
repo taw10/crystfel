@@ -139,6 +139,7 @@ str_lattice
 forbidden_reflection
 load_cell_from_pdb
 load_cell_from_file
+write_cell
 lattice_from_str
 cell_get_volume
 </SECTION>
@@ -227,6 +228,7 @@ image_get_feature
 image_add_crystal
 image_remove_feature
 free_all_crystals
+remove_flagged_crystals
 </SECTION>
 
 <SECTION>
@@ -263,7 +265,9 @@ INDEXING_DEFAULTS_DIRAX
 INDEXING_DEFAULTS_MOSFLM
 INDEXING_DEFAULTS_XDS
 INDEXING_DEFAULTS_ASDF
+INDEXING_DEFAULTS_FELIX
 INDEXING_METHOD_MASK
+INDEXING_CONTROL_FLAGS
 build_indexer_list
 cleanup_indexing
 prepare_indexing
@@ -281,6 +285,9 @@ xds_cleanup
 asdf_prepare
 run_asdf
 asdf_cleanup
+felix_prepare
+felix_index
+felix_cleanup
 </SECTION>
 
 <SECTION>
@@ -364,6 +371,7 @@ largest_q
 in_bad_region
 mark_resolution_range_as_bad
 find_orig_panel
+find_orig_panel_number
 panel_is_in_rigid_group
 rigid_group_is_in_collection
 single_panel_data_source
@@ -491,6 +499,7 @@ peak_sanity_check
 search_peaks
 make_BgMask
 validate_peaks
+sort_peaks
 </SECTION>
 
 <SECTION>
@@ -523,20 +532,23 @@ integration_method
 <FILE>stream</FILE>
 Stream
 StreamReadFlags
-CHUNK_END_MARKER
 CHUNK_START_MARKER
-CRYSTAL_END_MARKER
+CHUNK_END_MARKER
 CRYSTAL_START_MARKER
-PEAK_LIST_END_MARKER
+CRYSTAL_END_MARKER
 PEAK_LIST_START_MARKER
-REFLECTION_END_MARKER
+PEAK_LIST_END_MARKER
 REFLECTION_START_MARKER
-GEOM_END_MARKER
+REFLECTION_END_MARKER
 GEOM_START_MARKER
+GEOM_END_MARKER
+CELL_START_MARKER
+CELL_END_MARKER
 open_stream_fd_for_write
 open_stream_for_read
 open_stream_for_write
 open_stream_for_write_2
+open_stream_for_write_3
 get_stream_fd
 close_stream
 read_chunk
