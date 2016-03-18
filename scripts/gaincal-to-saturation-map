@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+
+import numpy as np
+import h5py
+import sys
+
+fh = h5py.File(sys.argv[1], 'r')
+gains = fh['/data/data'].value
+fh.close()
+
+satns = np.ones_like(gains) * 13000
+satns[gains > 4] = 60000
+
+fh = h5py.File('saturation_map.h5', 'w')
+fh.create_dataset('/data/data', data=satns)
+fh.close()
+
