@@ -182,6 +182,14 @@ If you have a bad pixel mask, you can include it in the HDF5 file as data blocks
 Use this option to specify that the bad pixel mask should be read from a different file to the image data.  The \fBmask\fR field, if it contains placeholders, will be expanded in exactly the same way as normal, it's just that the data will be read from the file you specify instead of the image data file.  The \fBmask_file\fR may be specified as an absolute filename, or relative to the working directory.
 
 .PD 0
+.IP \fBsaturation_map\fR
+This specifies the location of the per-pixel saturation map in the HDF5 file.  This works just like \fBmask\fR in that it can come from the current file or a separate one (see \fBsaturation_map_file\fR).  Reflections will be rejected if they contain any pixel above the per-pixel values, \fBin addition\fR to the other checks (see \fBmax_adu\fR).
+
+.PD
+.IP \fBsaturation_map_file\fR
+Specifies that the saturation map should come from the HDF5 file named here, instead of the HDF5 file being processed.  It can be an absolute filename or relative to the working directory.
+
+.PD 0
 .IP \fBmask_good\fR
 .IP \fBmask_bad\fR
 .PD
