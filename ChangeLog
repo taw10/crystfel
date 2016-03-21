@@ -1,3 +1,34 @@
+CrystFEL version 0.6.2, 21st March 2016
+---------------------------------------
+
+- partialator: Stability improvements to scaling algorithm, default --push-res
+  value changed from zero to infinity (no resolution cutoff by default).
+- partialator: Added --custom-split, --max-rel-B and --output-every-cycle
+- Added "retry" indexing method to improve indexing rate.
+- Per-pixel saturation values can now be used (needed for CSPAD dual-gain mode).
+- Fixed a regression with indexing using MOSFLM introduced near 0.6.1.
+- indexamajig: Fixed a bug which occasionally caused corrupted stream output
+  ("Failed while reading reflections").
+- indexamajig: gradient fitting of background now optional and OFF by default.
+- indexamajig: Added --profile for speed monitoring.
+- indexamajig: Added "felix" indexing method.
+- scripts/ave-resolution: Show resolution histogram.
+- scripts/turbo-index: Added a missing line
+- hdfsee: Improve quality of display by rounding pixel coordinates.
+- hdfsee: Can now safely save new geometry file over old one.
+- Target unit cell is now written to the stream.
+- pattern_sim: Fixed bugs in --gpu and --powder.
+- compare_hkl: Avoid double counting of reflections when calculating anomalous
+  figures of merit.
+- geoptimiser: Major refactoring
+- ambigator: fixes for a few problem when using very large numbers of correlation
+  coefficients or patterns.
+- Some crashes and hangs in asdf were fixed.
+- The "random" partiality model was improved.
+- Prototype for prepare_indexing() changed, otherwise only additions were made
+  to the API.
+
+
 CrystFEL version 0.6.1, 3rd August 2015
 ---------------------------------------
 
