@@ -40,6 +40,10 @@
 
 #define MAX_ACCOUNTS 256
 
+#ifndef CLOCK_MONOTONIC_RAW
+#define CLOCK_MONOTONIC_RAW (CLOCK_MONOTONIC)
+#endif
+
 struct _timeaccounts
 {
 	enum timeaccount accs[MAX_ACCOUNTS];
