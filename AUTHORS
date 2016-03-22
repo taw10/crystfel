@@ -66,3 +66,6 @@
   process_hkl --even-only/--odd-only
   partialator --start-after/--stop-after
   Other bits and pieces
+
+* Marmoru Suzuki <mamoru.suzuki@protein.osaka-u.ac.jp>
+  Improvements to scripts/detector-shift

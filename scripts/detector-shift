@@ -8,11 +8,13 @@
 #
 # Author:
 #    2015-2016 Thomas White <taw@physics.org>
+#    2016      Marmoru Suzuki <mamoru.suzuki@protein.osaka-u.ac.jp>
 #
 
 import sys
 import os
 import re
+import numpy as np
 import matplotlib.pyplot as plt
 
 f = open(sys.argv[1], 'r')
@@ -118,12 +120,25 @@ if have_geom:
     g.close()
     h.close()
 
-plt.plot(x_shifts, y_shifts, 'rx')
-plt.plot(0, 0, 'bo')
-plt.axis([-2,2,-2,2])
+nbins = 200
+H, xedges, yedges = np.histogram2d(x_shifts,y_shifts,bins=nbins)
+H = np.rot90(H)
+H = np.flipud(H)
+Hmasked = np.ma.masked_where(H==0,H)
+
+# Plot 2D histogram using pcolor
+fig2 = plt.figure()
+plt.pcolormesh(xedges,yedges,Hmasked)
 plt.title('Detector shifts according to prediction refinement')
 plt.xlabel('x shift / mm')
 plt.ylabel('y shift / mm')
+circle1 = plt.Circle((mean_x,mean_y),.1,color='r',fill=False)
+fig = plt.gcf()
+fig.gca().add_artist(circle1)
+cbar = plt.colorbar()
+cbar.ax.set_ylabel('Counts')
+plt.plot(0, 0, 'bH', color='c')
+plt.plot(mean_x, mean_y, 'b8', color='m')
 plt.grid(True)
 plt.show()
 
