@@ -31,7 +31,7 @@ CMIN=-0.1
 CMAX=0.3
 
 gnuplot -p << EOF
-set terminal pngcairo size 1600,1000 enhanced monochrome font 'Helvetica,20' linewidth 2
+set terminal pngcairo size 1600,1000 enhanced font 'Helvetica,20' linewidth 2
 set output "correlation.png"
 set xlabel "Number of crystals"
 set ylabel "Correlation"
