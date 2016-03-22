@@ -3,11 +3,11 @@
 #
 # Determine mean detector shift based on prediction refinement results
 #
-# Copyright (c) 2015 Deutsches Elektronen-Synchrotron DESY,
-#                    a research centre of the Helmholtz Association.
+# Copyright (c) 2015-2016 Deutsches Elektronen-Synchrotron DESY,
+#                         a research centre of the Helmholtz Association.
 #
 # Author:
-#    2015 Thomas White <taw@physics.org>
+#    2015-2016 Thomas White <taw@physics.org>
 #
 
 import sys
@@ -61,6 +61,7 @@ if have_geom:
     print 'Applying corrections to %s, output filename %s' % (geom,out)
     g = open(geom, 'r')
     h = open(out, 'w')
+    panel_resolutions = {}
 
     prog1 = re.compile("^\s*res\s+=\s+([0-9\.]+)\s")
     prog2 = re.compile("^\s*(.*)\/res\s+=\s+([0-9\.]+)\s")
@@ -76,7 +77,6 @@ if have_geom:
         match = prog1.match(fline)
         if match:
             default_res = float(match.group(1))
-            print 'default res %f' % (default_res)
             h.write(fline)
             continue
 
@@ -84,7 +84,8 @@ if have_geom:
         if match:
             panel = match.group(1)
             panel_res = float(match.group(2))
-            print 'panel res %s / %f' % (panel, panel_res)
+            default_res =  panel_res
+            panel_resolutions[panel] = panel_res
             h.write(fline)
             continue
 
@@ -92,7 +93,11 @@ if have_geom:
         if match:
             panel = match.group(1)
             panel_cnx = float(match.group(2))
-            res = default_res     # FIXME!
+            if panel in panel_resolutions:
+                res = panel_resolutions[panel]
+            else:
+                res = default_res
+                print 'Using default resolution (%f px/m) for panel %s' % (res, panel)
             h.write('%s/corner_x = %f\n' % (panel,panel_cnx+(mean_x*res*1e-3)))
             continue
 
@@ -100,7 +105,11 @@ if have_geom:
         if match:
             panel = match.group(1)
             panel_cny = float(match.group(2))
-            res = default_res     # FIXME!
+            if panel in panel_resolutions:
+                res = panel_resolutions[panel]
+            else:
+                res = default_res
+                print 'Using default resolution (%f px/m) for panel %s' % (res, panel)
             h.write('%s/corner_y = %f\n' % (panel,panel_cny+(mean_y*res*1e-3)))
             continue
 
