@@ -2462,7 +2462,7 @@ static herr_t parse_file_event_structure(hid_t loc_id, char *name,
 	truncated_path = strdup(substituted_path);
 	ph_loc = strstr(substituted_path,"%");
 	if ( ph_loc != NULL) {
-		strncpy(&truncated_path[ph_loc-substituted_path],"\0",1);
+		truncated_path[ph_loc-substituted_path] = '\0';
 	}
 
 	herrt_iterate = 0;
@@ -2482,8 +2482,9 @@ static herr_t parse_file_event_structure(hid_t loc_id, char *name,
 			return -1;
 		}
 
-		if ( pp->curr_event->path_length == pp->path_dim &&
-			object_info.type == H5O_TYPE_DATASET ) {
+		if ( pp->curr_event->path_length == pp->path_dim
+		 &&  object_info.type == H5O_TYPE_DATASET )
+		{
 
 			int fail_append;
 
