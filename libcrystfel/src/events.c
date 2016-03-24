@@ -34,6 +34,7 @@
 #include <hdf5.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 
 struct event *initialize_event()
@@ -555,23 +556,27 @@ int pop_dim_entry_from_event(struct event *ev)
 }
 
 
-char *event_path_placeholder_subst(const char *entry,
-                                   const char *data)
+char *event_path_placeholder_subst(const char *entry, const char *data)
 {
 
 	char *ph_loc;
 	char *full_path;
-	int len_head, len_tail;
+	ptrdiff_t len_head;
+	size_t len_entry, len_data;
 
-	full_path = malloc((strlen(data) + strlen(entry)+1)*sizeof(char));
-	ph_loc = strstr(data, "%");
-	len_head = ph_loc-data;
-	len_tail = strlen(ph_loc);
+	len_entry = strlen(entry);
+	len_data = strlen(data);
+	full_path = malloc(len_data + len_entry + 1);
+	if ( full_path == NULL ) return NULL;
+
+	ph_loc = strchr(data, '%');
+	len_head = ph_loc - data;
+	assert(len_head >= 0);
 
 	strncpy(full_path, data, len_head);
-	strncpy(full_path+len_head, entry, strlen(entry));
-	strncpy(full_path+len_head+strlen(entry), ph_loc+1, len_tail);
-	strncpy(&full_path[strlen(data) + strlen(entry)],"\0",1);
+	strcat(full_path, entry);
+	strcat(full_path, ph_loc+1);
+	full_path[len_data + len_entry] = '\0';
 
 	return full_path;
 }
