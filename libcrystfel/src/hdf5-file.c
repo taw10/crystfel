@@ -464,10 +464,18 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p)
 	float *buf;
 	herr_t r;
 	int tw;
+	char *np;
 
-	dh = H5Dopen2(f->fh, p, H5P_DEFAULT);
+	if ( image->event != NULL ) {
+		np = retrieve_full_path(image->event, p);
+		free(np);
+	} else {
+		np = strdup(p);
+	}
+
+	dh = H5Dopen2(f->fh, np, H5P_DEFAULT);
 	if ( dh < 0 ) {
-		ERROR("Peak list (%s) not found.\n", p);
+		ERROR("Peak list (%s) not found.\n", np);
 		return 1;
 	}
 
@@ -475,6 +483,7 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p)
 	if ( sh < 0 ) {
 		H5Dclose(dh);
 		ERROR("Couldn't get dataspace for peak list.\n");
+		free(np);
 		return 1;
 	}
 
@@ -483,6 +492,7 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p)
 		H5Sget_simple_extent_ndims(sh));
 		H5Sclose(sh);
 		H5Dclose(dh);
+		free(np);
 		return 1;
 	}
 
@@ -493,6 +503,7 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p)
 		H5Sclose(sh);
 		H5Dclose(dh);
 		ERROR("Peak list has the wrong dimensions.\n");
+		free(np);
 		return 1;
 	}
 
@@ -501,6 +512,7 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p)
 		H5Sclose(sh);
 		H5Dclose(dh);
 		ERROR("Couldn't reserve memory for the peak list.\n");
+		free(np);
 		return 1;
 	}
 	r = H5Dread(dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
@@ -508,6 +520,7 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p)
 	if ( r < 0 ) {
 		ERROR("Couldn't read peak list.\n");
 		free(buf);
+		free(np);
 		return 1;
 	}
 
@@ -539,6 +552,7 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p)
 	}
 
 	free(buf);
+	free(np);
 	H5Sclose(sh);
 	H5Dclose(dh);
 
