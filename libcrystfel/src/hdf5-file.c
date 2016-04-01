@@ -468,7 +468,6 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p)
 
 	if ( image->event != NULL ) {
 		np = retrieve_full_path(image->event, p);
-		free(np);
 	} else {
 		np = strdup(p);
 	}

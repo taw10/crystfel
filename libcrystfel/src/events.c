@@ -574,9 +574,9 @@ char *event_path_placeholder_subst(const char *entry, const char *data)
 	assert(len_head >= 0);
 
 	strncpy(full_path, data, len_head);
+	full_path[len_head] = '\0';
 	strcat(full_path, entry);
 	strcat(full_path, ph_loc+1);
-	full_path[len_data + len_entry] = '\0';
 
 	return full_path;
 }
@@ -591,13 +591,12 @@ char *retrieve_full_path(struct event *ev, const char *data)
 
 	for ( ei=0; ei<ev->path_length; ei++ ) {
 
-		char *tmp_subst_data;
-		tmp_subst_data = event_path_placeholder_subst(ev->path_entries[ei],
-		                                              return_value);
+		char *tmp;
+		tmp = event_path_placeholder_subst(ev->path_entries[ei],
+		                                   return_value);
 
 		free(return_value);
-		return_value = strdup(tmp_subst_data);
-		free(tmp_subst_data);
+		return_value = tmp;
 
 	}
 
