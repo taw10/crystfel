@@ -132,7 +132,12 @@ The range of pixels in the data block specified by the 'data' property that corr
 .PD 0
 .IP \fBadu_per_eV\fR
 .PD
-The number of detector intensity units (ADU) which will arise from one electron-Volt of photon energy.  This is used to estimate Poisson errors.  Note that setting different values for this parameter for different panels does \fBnot\fR result in the intensities being scaled accordingly.
+The number of detector intensity units (ADU) which will arise from one electron-Volt of photon energy.  This is used to estimate Poisson errors.  Note that setting different values for this parameter for different panels does \fBnot\fR result in the intensities being scaled accordingly when integrating data, but it does affect the intensities calculated by \fBpattern_sim\fR.  You should only specify one out of \fBadu_per_eV\fR and \fBadu_per_photon\fR, but if you use both then \fBadu_per_photon\fR will have priority.
+
+.PD 0
+.IP \fBadu_per_photon\fR
+.PD
+The number of detector intensity units (ADU) which will arise from one photon.  This is used to estimate Poisson errors.  Note that setting different values for this parameter for different panels does \fBnot\fR result in the intensities being scaled accordingly when integrating data, but it does affect the intensities calculated by \fBpattern_sim\fR.  You should only specify one out of \fBadu_per_eV\fR and \fBadu_per_photon\fR, but if you use both then \fBadu_per_photon\fR will have priority.
 
 .PD 0
 .IP \fBbadrow_direction\fR

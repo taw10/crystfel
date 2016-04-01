@@ -1463,7 +1463,7 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	intensity = tentative_intensity(ic, bx);
 	mean_var_area(ic, bx, BM_BG, &bgmean, &sig2_bg);
 
-	aduph = bx->p->adu_per_eV * ph_lambda_to_eV(ic->image->lambda);
+	aduph = bx->p->adu_per_photon;
 	sig2_poisson = aduph * intensity;
 
 	/* If intensity is within one photon of nothing, set the Poisson

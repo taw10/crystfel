@@ -1482,6 +1482,8 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 
 	}
 
+	fill_in_adu(image);
+
 	return 0;
 }
 
@@ -1914,6 +1916,8 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		}
 
 	}
+
+	fill_in_adu(image);
 
 	free(buf);
 	free(flags);

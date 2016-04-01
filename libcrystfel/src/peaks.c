@@ -252,7 +252,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	p_cfs = cfs - p->min_fs;
 	p_css = css - p->min_ss;  /* Panel-relative coordinates */
 
-	aduph = p->adu_per_eV * ph_lambda_to_eV(image->lambda);
+	aduph = p->adu_per_photon;
 
 	lim_sq = pow(ir_inn, 2.0);
 	mid_lim_sq = pow(ir_mid, 2.0);

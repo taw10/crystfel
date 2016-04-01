@@ -102,9 +102,11 @@ struct panel
         double   res;      /* Resolution in pixels per metre */
         char     badrow;   /* 'x' or 'y' */
         int      no_index; /* Don't index peaks in this panel if non-zero */
-        double   adu_per_eV;   /* Number of ADU per eV */
+        double   adu_per_photon;   /* Number of ADU per photon */
         double   max_adu;  /* Treat pixel as unreliable if higher than this */
         char    *data;
+
+        double   adu_per_eV;   /* Number of ADU per eV */
 
         struct dim_structure *dim_structure;
 
@@ -223,6 +225,7 @@ extern void get_pixel_extents(struct detector *det,
 
 extern void fill_in_values(struct detector *det, struct hdfile *f,
                            struct event* ev);
+extern void fill_in_adu(struct image *image);
 
 extern int panel_is_in_rigid_group(const struct rigid_group *rg,
                                    struct panel *p);

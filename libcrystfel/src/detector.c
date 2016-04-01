@@ -467,7 +467,7 @@ static void record_panel(struct panel *p, float *dp, int do_poisson,
 		dval = counts + poisson_noise(rng, background);
 
 		/* Convert to ADU */
-		dval *= p->adu_per_eV * ph_lambda_to_eV(lambda);
+		dval *= p->adu_per_photon;
 
 		/* Saturation */
 		if ( dval > p->max_adu ) dval = p->max_adu;
@@ -511,7 +511,10 @@ void record_image(struct image *image, int do_poisson, double background,
 	       "Total energy = %5.3f microJ\n",
 	       nphotons, energy_density/1e7, total_energy*1e6);
 
+	fill_in_adu(image);
+
 	for ( pn=0; pn<image->det->n_panels; pn++ ) {
+
 		record_panel(&image->det->panels[pn], image->dp[pn],
 		             do_poisson, rng, ph_per_e, background,
 			     image->lambda,
@@ -611,6 +614,32 @@ void fill_in_values(struct detector *det, struct hdfile *f, struct event* ev)
 
 		p->clen += p->coffset;
 
+	}
+}
+
+
+void fill_in_adu(struct image *image)
+{
+	int i;
+
+	if ( image->det == NULL ) return;
+
+	for ( i=0; i<image->det->n_panels; i++ ) {
+
+		struct panel *p = &image->det->panels[i];
+
+		/* Already have ADU per photon? */
+		if ( !isnan(p->adu_per_photon) ) continue;
+
+		if ( isnan(p->adu_per_eV) ) {
+			ERROR("Neither adu_per_eV nor adu_per_photon set for "
+			      "panel %s\n", p->name);
+			continue;
+		}
+
+		/* Convert ADU per eV to ADU per photon */
+		p->adu_per_photon = ph_lambda_to_eV(image->lambda)
+		                               * p->adu_per_eV;
 	}
 }
 
@@ -924,6 +953,9 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 		panel->cny = atof(val);
 	} else if ( strcmp(key, "adu_per_eV") == 0 ) {
 		panel->adu_per_eV = atof(val);
+	} else if ( strcmp(key, "adu_per_photon") == 0 ) {
+		panel->adu_per_photon = atof(val);
+		STATUS("got adu per photon: %s\n", val);
 	} else if ( strcmp(key, "rigid_group") == 0 ) {
 		add_to_rigid_group(find_or_add_rg(det, val), panel);
 	} else if ( strcmp(key, "clen") == 0 ) {
@@ -1265,6 +1297,7 @@ struct detector *get_detector_geometry(const char *filename,
 	det->defaults.ssx = 0.0;
 	det->defaults.ssy = 1.0;
 	det->defaults.adu_per_eV = NAN;
+	det->defaults.adu_per_photon = NAN;
 	det->defaults.max_adu = +INFINITY;
 	det->defaults.mask = NULL;
 	det->defaults.mask_file = NULL;
@@ -1542,9 +1575,11 @@ struct detector *get_detector_geometry(const char *filename,
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( isnan(det->panels[i].adu_per_eV) ) {
-			ERROR("Please specify the number of ADU per eV for"
-			      " panel %s\n", det->panels[i].name);
+		if ( isnan(det->panels[i].adu_per_eV)
+		  && isnan(det->panels[i].adu_per_photon) ) {
+			ERROR("Please specify either adu_per_eV or "
+			      "adu_per_photon for panel %s\n",
+			      det->panels[i].name);
 			reject = 1;
 		}
 
