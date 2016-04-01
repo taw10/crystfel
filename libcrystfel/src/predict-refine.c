@@ -331,7 +331,6 @@ void refine_radius(Crystal *cr, struct image *image)
 	reflist = reflist_new();
 	n_acc = pair_peaks(image, cr, reflist, rps);
 	if ( n_acc < 3 ) {
-		ERROR("Too few paired peaks (%i) to determine radius\n", n_acc);
 		free(rps);
 		return;
 	}
@@ -596,7 +595,6 @@ int refine_prediction(struct image *image, Crystal *cr)
 	reflist = reflist_new();
 	n = pair_peaks(image, cr, reflist, rps);
 	if ( n < 10 ) {
-		ERROR("Too few paired peaks (%i) to refine orientation.\n", n);
 		free(rps);
 		reflist_free(reflist);
 		return 1;
@@ -640,7 +638,6 @@ int refine_prediction(struct image *image, Crystal *cr)
 	n = pair_peaks(image, cr, NULL, rps);
 	free_rps_noreflist(rps, n);
 	if ( n < 10 ) {
-		ERROR("Too few paired peaks (%i) after refinement.\n", n);
 		return 1;
 	}
 
