@@ -3,12 +3,12 @@
  *
  * Detector properties
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2015 Thomas White <taw@physics.org>
+ *   2009-2016 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *   2011      Andrew Aquila
@@ -298,39 +298,19 @@ struct rvec get_q_for_panel(struct panel *p, double fs, double ss,
 }
 
 
-struct rvec get_q(struct image *image, double fs, double ss,
-                  double *ttp, double k)
-{
-	struct panel *p;
-	const unsigned int fsi = fs;
-	const unsigned int ssi = ss;  /* Explicit rounding */
-
-	/* Determine which panel to use */
-	p = find_panel(image->det, fsi, ssi);
-	assert(p != NULL);
-
-	return get_q_for_panel(p, fs-(double)p->min_fs, ss-(double)p->min_ss,
-	                       ttp, k);
-}
-
-
-int in_bad_region(struct detector *det, double fs, double ss)
+int in_bad_region(struct detector *det, struct panel *p, double fs, double ss)
 {
 	double rx, ry;
-	struct panel *p;
 	double xs, ys;
 	int i;
-
-	/* Determine which panel to use */
-	p = find_panel(det, fs, ss);
 
 	/* No panel found -> definitely bad! */
 	if ( p == NULL ) return 1;
 
 	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
 	 * to x and y */
-	xs = (fs-(double)p->min_fs)*p->fsx + (ss-(double)p->min_ss)*p->ssx;
-	ys = (fs-(double)p->min_fs)*p->fsy + (ss-(double)p->min_ss)*p->ssy;
+	xs = fs*p->fsx + ss*p->ssx;
+	ys = fs*p->fsy + ss*p->ssy;
 
 	rx = xs + p->cnx;
 	ry = ys + p->cny;
@@ -348,8 +328,8 @@ int in_bad_region(struct detector *det, double fs, double ss)
 
 			/* fs/ss bad regions are specified according to the
 			 * original coordinates */
-			nfs = (fs-p->min_fs) + p->orig_min_fs;
-			nss = (ss-p->min_ss) + p->orig_min_ss;
+			nfs = fs + p->orig_min_fs;
+			nss = ss + p->orig_min_ss;
 
 			if ( nfs < b->min_fs ) continue;
 			if ( nfs > b->max_fs ) continue;
@@ -369,34 +349,6 @@ int in_bad_region(struct detector *det, double fs, double ss)
 	}
 
 	return 0;
-}
-
-
-double get_tt(struct image *image, double fs, double ss, int *err)
-{
-	double r, rx, ry;
-	struct panel *p;
-	double xs, ys;
-
-	*err = 0;
-
-	p = find_panel(image->det, fs, ss);
-	if ( p == NULL ) {
-		*err = 1;
-		return 0.0;
-	}
-
-	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
-	 * to x and y */
-	xs = (fs-p->min_fs)*p->fsx + (ss-p->min_ss)*p->ssx;
-	ys = (fs-p->min_fs)*p->fsy + (ss-p->min_ss)*p->ssy;
-
-	rx = (xs + p->cnx) / p->res;
-	ry = (ys + p->cny) / p->res;
-
-	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
-
-	return atan2(r, p->clen);
 }
 
 
@@ -538,32 +490,6 @@ void record_image(struct image *image, int do_poisson, double background,
 }
 
 
-signed int find_panel_number(struct detector *det, double fs, double ss)
-{
-	int p;
-
-	/* Fractional pixel coordinates are allowed to be a little further along
-	 * than "== max_{f,s}s" for an integer. */
-
-	for ( p=0; p<det->n_panels; p++ ) {
-		if ( (fs >= det->panels[p].min_fs)
-		  && (fs < det->panels[p].max_fs+1)
-		  && (ss >= det->panels[p].min_ss)
-		  && (ss < det->panels[p].max_ss+1) ) return p;
-	}
-
-	return -1;
-}
-
-
-struct panel *find_panel(struct detector *det, double fs, double ss)
-{
-	signed int pn = find_panel_number(det, fs, ss);
-	if ( pn == -1 ) return NULL;
-	return &det->panels[pn];
-}
-
-
 signed int find_orig_panel_number(struct detector *det, double fs, double ss)
 {
 	int p;
@@ -586,6 +512,18 @@ struct panel *find_orig_panel(struct detector *det, double fs, double ss)
 	signed int pn = find_orig_panel_number(det, fs, ss);
 	if ( pn == -1 ) return NULL;
 	return &det->panels[pn];
+}
+
+
+int panel_number(struct detector *det, struct panel *p)
+{
+	int pn;
+
+	for ( pn=0; pn<det->n_panels; pn++ ) {
+		if ( &det->panels[pn] == p ) return pn;
+	}
+
+	return det->n_panels;
 }
 
 
@@ -940,13 +878,13 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 	int reject = 0;
 
 	if ( strcmp(key, "min_fs") == 0 ) {
-		panel->min_fs = atof(val);
+		panel->orig_min_fs = atof(val);
 	} else if ( strcmp(key, "max_fs") == 0 ) {
-		panel->max_fs = atof(val);
+		panel->orig_max_fs = atof(val);
 	} else if ( strcmp(key, "min_ss") == 0 ) {
-		panel->min_ss = atof(val);
+		panel->orig_min_ss = atof(val);
 	} else if ( strcmp(key, "max_ss") == 0 ) {
-		panel->max_ss = atof(val);
+		panel->orig_max_ss = atof(val);
 	} else if ( strcmp(key, "corner_x") == 0 ) {
 		panel->cnx = atof(val);
 	} else if ( strcmp(key, "corner_y") == 0 ) {
@@ -1212,16 +1150,13 @@ static void find_min_max_d(struct detector *det)
 	for ( i=0; i<det->n_panels; i++ ) {
 
 		struct panel *p;
-		double w, h;
 
 		p = &det->panels[i];
-		w = p->max_fs - p->min_fs + 1;
-		h = p->max_ss - p->min_ss + 1;
 
-		check_point(p, 0, 0, &min_d, &max_d, det);
-		check_point(p, w, 0, &min_d, &max_d, det);
-		check_point(p, 0, h, &min_d, &max_d, det);
-		check_point(p, w, h, &min_d, &max_d, det);
+		check_point(p, 0,    0, &min_d, &max_d, det);
+		check_point(p, p->w, 0, &min_d, &max_d, det);
+		check_point(p, 0,    p->h, &min_d, &max_d, det);
+		check_point(p, p->w, p->h, &min_d, &max_d, det);
 
 	}
 }
@@ -1239,8 +1174,6 @@ struct detector *get_detector_geometry(const char *filename,
 	int reject = 0;
 	int path_dim;
 	int dim_dim;
-	int curr_ss;
-	int x, y, max_fs, max_ss;
 	int dim_reject = 0;
 	int dim_dim_reject = 0;
 	struct rg_definition **rg_defl = NULL;
@@ -1277,10 +1210,6 @@ struct detector *get_detector_geometry(const char *filename,
 	det->rigid_group_collections = NULL;
 
 	/* The default defaults... */
-	det->defaults.min_fs = -1;
-	det->defaults.min_ss = -1;
-	det->defaults.max_fs = -1;
-	det->defaults.max_ss = -1;
 	det->defaults.orig_min_fs = -1;
 	det->defaults.orig_min_ss = -1;
 	det->defaults.orig_max_fs = -1;
@@ -1393,9 +1322,6 @@ struct detector *get_detector_geometry(const char *filename,
 		free(det);
 		return NULL;
 	}
-
-	max_fs = 0;
-	max_ss = 0;
 
 	path_dim = -1;
 	dim_reject = 0;
@@ -1524,32 +1450,24 @@ struct detector *get_detector_geometry(const char *filename,
 
 	det->dim_dim = dim_dim;
 
-	curr_ss = 0;
-
 	for ( i=0; i<det->n_panels; i++ ) {
 
-		if ( det->panels[i].max_fs-det->panels[i].min_fs+1 !=
-			det->panels[0].max_fs-det->panels[0].min_fs+1 ) {
-			ERROR("All panels should have the same fs extent\n");
-			reject = 1;
-		}
-
-		if ( det->panels[i ].min_fs < 0 ) {
+		if ( det->panels[i].orig_min_fs < 0 ) {
 			ERROR("Please specify the minimum FS coordinate for"
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( det->panels[i].max_fs < 0 ) {
+		if ( det->panels[i].orig_max_fs < 0 ) {
 			ERROR("Please specify the maximum FS coordinate for"
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( det->panels[i].min_ss < 0 ) {
+		if ( det->panels[i].orig_min_ss < 0 ) {
 			ERROR("Please specify the minimum SS coordinate for"
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( det->panels[i].max_ss < 0 ) {
+		if ( det->panels[i].orig_max_ss < 0 ) {
 			ERROR("Please specify the maximum SS coordinate for"
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
@@ -1587,28 +1505,10 @@ struct detector *get_detector_geometry(const char *filename,
 		/* It's not a problem if "no_index" is still zero */
 		/* The default transformation matrix is at least valid */
 
-		det->panels[i].orig_max_fs = det->panels[i].max_fs;
-		det->panels[i].orig_min_fs = det->panels[i].min_fs;
-		det->panels[i].orig_max_ss = det->panels[i].max_ss;
-		det->panels[i].orig_min_ss = det->panels[i].min_ss;
-
-		det->panels[i].w =
-		                 det->panels[i].max_fs-det->panels[i].min_fs+1;
-		det->panels[i].h =
-		                 det->panels[i].max_ss-det->panels[i].min_ss+1;
-
-		det->panels[i].min_fs = 0;
-		det->panels[i].max_fs = det->panels[i].w-1;
-		det->panels[i].min_ss = curr_ss;
-		det->panels[i].max_ss = curr_ss+det->panels[i].h-1;
-		curr_ss += det->panels[i].h;
-
-		if ( det->panels[i].max_fs > max_fs ) {
-			max_fs = det->panels[i].max_fs;
-		}
-		if ( det->panels[i].max_ss > max_ss ) {
-			max_ss = det->panels[i].max_ss;
-		}
+		det->panels[i].w = det->panels[i].orig_max_fs
+		                 - det->panels[i].orig_min_fs+1;
+		det->panels[i].h = det->panels[i].orig_max_ss
+		                 - det->panels[i].orig_min_ss+1;
 
 	}
 
@@ -1619,20 +1519,6 @@ struct detector *get_detector_geometry(const char *filename,
 			reject = 1;
 		}
 	}
-
-	for ( x=0; x<=max_fs; x++ ) {
-	for ( y=0; y<=max_ss; y++ ) {
-		if ( find_panel(det, x, y) == NULL ) {
-			ERROR("Detector geometry invalid: contains gaps.\n");
-			reject = 1;
-			goto out;
-		}
-	}
-	}
-
-out:
-	det->max_fs = max_fs;
-	det->max_ss = max_ss;
 
 	free(det->defaults.clen_from);
 	free(det->defaults.data);
@@ -1744,8 +1630,8 @@ out:
 		p->xss = -p->fsy / d;
 		p->yss = p->fsx / d;
 
-		p->w = p->max_fs - p->min_fs + 1;
-		p->h = p->max_ss - p->min_ss + 1;
+		p->w = p->orig_max_fs - p->orig_min_fs + 1;
+		p->h = p->orig_max_ss - p->orig_min_ss + 1;
 
 	}
 
@@ -1884,7 +1770,7 @@ struct detector *copy_geom(const struct detector *in)
 }
 
 
-struct detector *simple_geometry(const struct image *image)
+struct detector *simple_geometry(const struct image *image, int w, int h)
 {
 	struct detector *geom;
 
@@ -1893,16 +1779,12 @@ struct detector *simple_geometry(const struct image *image)
 	geom->n_panels = 1;
 	geom->panels = calloc(1, sizeof(struct panel));
 
-	geom->panels[0].min_fs = 0;
-	geom->panels[0].max_fs = image->width-1;
-	geom->panels[0].min_ss = 0;
-	geom->panels[0].max_ss = image->height-1;
 	geom->panels[0].orig_min_fs = 0;
-	geom->panels[0].orig_max_fs = image->width-1;
+	geom->panels[0].orig_max_fs = w-1;
 	geom->panels[0].orig_min_ss = 0;
-	geom->panels[0].orig_max_ss = image->height-1;
-	geom->panels[0].cnx = -image->width / 2.0;
-	geom->panels[0].cny = -image->height / 2.0;
+	geom->panels[0].orig_max_ss = h-1;
+	geom->panels[0].cnx = -w / 2.0;
+	geom->panels[0].cny = -h / 2.0;
 	geom->panels[0].max_adu = INFINITY;
 	geom->panels[0].orig_min_fs = -1;
 	geom->panels[0].orig_max_fs = -1;
@@ -1919,8 +1801,8 @@ struct detector *simple_geometry(const struct image *image)
 	geom->panels[0].yfs = 0;
 	geom->panels[0].yss = 1;
 
-	geom->panels[0].w = image->width;
-	geom->panels[0].h = image->height;
+	geom->panels[0].w = w;
+	geom->panels[0].h = h;
 
 	geom->panels[0].mask = NULL;
 	geom->panels[0].data = NULL;
@@ -1931,8 +1813,8 @@ struct detector *simple_geometry(const struct image *image)
 }
 
 
-int reverse_2d_mapping(double x, double y, double *pfs, double *pss,
-                       struct detector *det)
+int reverse_2d_mapping(double x, double y, struct detector *det,
+                       struct panel **pp, double *pfs, double *pss)
 {
 	int i;
 
@@ -1952,11 +1834,12 @@ int reverse_2d_mapping(double x, double y, double *pfs, double *pss,
 		/* In range? */
 		if ( fs < 0 ) continue;
 		if ( ss < 0 ) continue;
-		if ( fs > p->max_fs-p->min_fs ) continue;
-		if ( ss > p->max_ss-p->min_ss ) continue;
+		if ( fs > p->w ) continue;
+		if ( ss > p->h ) continue;
 
-		*pfs = fs + p->min_fs;
-		*pss = ss + p->min_ss;
+		*pfs = fs;
+		*pss = ss;
+		*pp = p;
 		return 0;
 
 	}
@@ -2095,20 +1978,16 @@ void get_pixel_extents(struct detector *det,
 	for ( i=0; i<det->n_panels; i++ ) {
 
 		check_extents(det->panels[i], min_x, min_y, max_x, max_y,
-		              0.0,
-		              0.0);
+		              0.0, 0.0);
 
 		check_extents(det->panels[i], min_x, min_y, max_x, max_y,
-		              0.0,
-		              det->panels[i].max_ss-det->panels[i].min_ss+1);
+		              0.0, det->panels[i].h+1);
 
 		check_extents(det->panels[i], min_x, min_y, max_x, max_y,
-		              det->panels[i].max_fs-det->panels[i].min_fs+1,
-		              0.0);
+		              det->panels[i].w+1, 0.0);
 
 		check_extents(det->panels[i], min_x, min_y, max_x, max_y,
-		              det->panels[i].max_fs-det->panels[i].min_fs+1,
-		              det->panels[i].max_ss-det->panels[i].min_ss+1);
+		              det->panels[i].w+1, det->panels[i].h+1);
 
 
 	}

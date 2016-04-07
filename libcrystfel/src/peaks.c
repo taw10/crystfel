@@ -3,12 +3,12 @@
  *
  * Peak search and other image analysis
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2016 Thomas White <taw@physics.org>
  *   2012      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *   2011      Andrew Martin <andrew.martin@desy.de>
  *   2011      Richard Kirian
@@ -69,10 +69,7 @@ static int cull_peaks_in_panel(struct image *image, struct panel *p)
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		if ( f->fs < p->min_fs ) continue;
-		if ( f->fs > p->max_fs ) continue;
-		if ( f->ss < p->min_ss ) continue;
-		if ( f->ss > p->max_ss ) continue;
+		if ( f->p != p ) continue;
 
 		/* How many peaks are in the same column? */
 		ncol = 0;
@@ -145,8 +142,7 @@ static int cull_peaks(struct image *image)
 
 
 static void add_crystal_to_mask(struct image *image, struct panel *p,
-                                double ir_inn, int w, int h,
-                                int *mask, Crystal *cr)
+                                double ir_inn, int *mask, Crystal *cr)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -156,19 +152,13 @@ static void add_crystal_to_mask(struct image *image, struct panel *p,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		struct panel *p2;
 		double pk2_fs, pk2_ss;
 		signed int dfs, dss;
-		double pk2_cfs, pk2_css;
 
 		get_detector_pos(refl, &pk2_fs, &pk2_ss);
 
 		/* Determine if reflection is in the same panel */
-		p2 = find_panel(image->det, pk2_fs, pk2_ss);
-		if ( p2 != p ) continue;
-
-		pk2_cfs = pk2_fs - p->min_fs;
-		pk2_css = pk2_ss - p->min_ss;
+		if ( get_panel(refl) != p ) continue;
 
 		for ( dfs=-ir_inn; dfs<=ir_inn; dfs++ ) {
 		for ( dss=-ir_inn; dss<=ir_inn; dss++ ) {
@@ -178,16 +168,16 @@ static void add_crystal_to_mask(struct image *image, struct panel *p,
 			/* In peak region for this peak? */
 			if ( dfs*dfs + dss*dss > ir_inn*ir_inn ) continue;
 
-			fs = pk2_cfs + dfs;
-			ss = pk2_css + dss;
+			fs = pk2_fs + dfs;
+			ss = pk2_ss + dss;
 
 			/* On panel? */
-			if ( fs >= w ) continue;
-			if ( ss >= h ) continue;
+			if ( fs >= p->w ) continue;
+			if ( ss >= p->h ) continue;
 			if ( fs < 0 ) continue;
 			if ( ss < 0 ) continue;
 
-			mask[fs + ss*w]++;
+			mask[fs + ss*p->w]++;
 
 		}
 		}
@@ -200,19 +190,16 @@ static void add_crystal_to_mask(struct image *image, struct panel *p,
 int *make_BgMask(struct image *image, struct panel *p, double ir_inn)
 {
 	int *mask;
-	int w, h;
 	int i;
 
-	w = p->max_fs - p->min_fs + 1;
-	h = p->max_ss - p->min_ss + 1;
-	mask = calloc(w*h, sizeof(int));
+	mask = calloc(p->w*p->h, sizeof(int));
 	if ( mask == NULL ) return NULL;
 
 	if ( image->crystals == NULL ) return mask;
 
 	for ( i=0; i<image->n_crystals; i++ ) {
 		add_crystal_to_mask(image, p, ir_inn,
-		                    w, h, mask, image->crystals[i]);
+		                    mask, image->crystals[i]);
 	}
 
 	return mask;
@@ -221,7 +208,8 @@ int *make_BgMask(struct image *image, struct panel *p, double ir_inn)
 
 /* Returns non-zero if peak has been vetoed.
  * i.e. don't use result if return value is not zero. */
-static int integrate_peak(struct image *image, int cfs, int css,
+static int integrate_peak(struct image *image,
+                          int p_cfs, int p_css, struct panel *p,
                           double *pfs, double *pss,
                           double *intensity, double *sigma,
                           double ir_inn, double ir_mid, double ir_out,
@@ -234,29 +222,25 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	double fsct, ssct;
 	double bg_tot = 0.0;
 	int bg_counts = 0;
-	struct panel *p;
 	double bg_mean, bg_var;
 	double bg_tot_sq = 0.0;
 	double var;
 	double aduph;
-	int p_cfs, p_css;
-	signed int pn;
-
-	pn = find_panel_number(image->det, cfs, css);
-	if ( pn == -1 ) return 2;
-	p = &image->det->panels[pn];
+	int pn;
 
 	if ( saturated != NULL ) *saturated = 0;
-
-	/* Determine regions where there is expected to be a peak */
-	p_cfs = cfs - p->min_fs;
-	p_css = css - p->min_ss;  /* Panel-relative coordinates */
 
 	aduph = p->adu_per_photon;
 
 	lim_sq = pow(ir_inn, 2.0);
 	mid_lim_sq = pow(ir_mid, 2.0);
 	out_lim_sq = pow(ir_out, 2.0);
+
+	pn = panel_number(image->det, p);
+	if ( pn == image->det->n_panels ) {
+		ERROR("Couldn't find panel %p\n", p);
+		return 20;
+	}
 
 	/* Estimate the background */
 	for ( dss=-ir_out; dss<=+ir_out; dss++ ) {
@@ -328,8 +312,8 @@ static int integrate_peak(struct image *image, int cfs, int css,
 		pk_counts++;
 		pk_total += val;
 
-		fsct += val*(cfs+dfs);
-		ssct += val*(css+dss);
+		fsct += val*(p_cfs+dfs);
+		ssct += val*(p_css+dss);
 
 	}
 	}
@@ -462,7 +446,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		assert(mask_ss >= 0);
 
 		/* Centroid peak and get better coordinates. */
-		r = integrate_peak(image, mask_fs+p->min_fs, mask_ss+p->min_ss,
+		r = integrate_peak(image, mask_fs, mask_ss, p,
 		                   &f_fs, &f_ss, &intensity, &sigma,
 		                   ir_inn, ir_mid, ir_out, &saturated);
 
@@ -473,8 +457,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		}
 
 		/* It is possible for the centroid to fall outside the image */
-		if ( (f_fs < p->min_fs) || (f_fs > p->max_fs)
-		  || (f_ss < p->min_ss) || (f_ss > p->max_ss) ) {
+		if ( (f_fs < 0) || (f_fs > p->w)
+		  || (f_ss < 0) || (f_ss > p->h) ) {
 			nrej_fra++;
 			continue;
 		}
@@ -485,8 +469,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		}
 
 		/* Check for a nearby feature */
-		image_feature_closest(image->features, f_fs, f_ss, &d, &idx,
-		                      image->det);
+		image_feature_closest(image->features, f_fs, f_ss, p, &d, &idx);
 		if ( d < 2.0*ir_inn ) {
 			nrej_pro++;
 			continue;
@@ -501,7 +484,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		}
 
 		/* Add using "better" coordinates */
-		image_add_feature(image->features, f_fs, f_ss,
+		image_add_feature(image->features, f_fs, f_ss, p,
 		                  image, intensity, NULL);
 		nacc++;
 
@@ -578,7 +561,8 @@ int peak_sanity_check(struct image *image, Crystal **crystals, int n_cryst)
 		n_feat++;
 
 		/* Reciprocal space position of found peak */
-		q = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
+		q = get_q_for_panel(f->p, f->fs, f->ss,
+		                    NULL, 1.0/image->lambda);
 
 		for ( j=0; j<n_cryst; j++ ) {
 
@@ -642,7 +626,6 @@ void validate_peaks(struct image *image, double min_snr,
 		int idx;
 		double f_fs, f_ss;
 		double intensity, sigma;
-		struct panel *p;
 		int saturated;
 
 		f = image_get_feature(image->features, i);
@@ -651,13 +634,7 @@ void validate_peaks(struct image *image, double min_snr,
 			continue;
 		}
 
-		p = find_panel(image->det, f->fs, f->ss);
-		if ( p == NULL ) {
-			n_wtf++;
-			continue;
-		}
-
-		r = integrate_peak(image, f->fs, f->ss,
+		r = integrate_peak(image, f->fs, f->ss, f->p,
 		                   &f_fs, &f_ss, &intensity, &sigma,
 		                   ir_inn, ir_mid, ir_out, &saturated);
 		if ( r ) {
@@ -673,8 +650,8 @@ void validate_peaks(struct image *image, double min_snr,
 		}
 
 		/* It is possible for the centroid to fall outside the image */
-		if ( (f_fs < p->min_fs) || (f_fs > p->max_fs)
-		  || (f_ss < p->min_ss) || (f_ss > p->max_ss) )
+		if ( (f_fs < 0) || (f_fs > f->p->w)
+		  || (f_ss < 0) || (f_ss > f->p->h) )
 		{
 			n_dft++;
 			continue;
@@ -686,14 +663,15 @@ void validate_peaks(struct image *image, double min_snr,
 		}
 
 		/* Check for a nearby feature */
-		image_feature_closest(flist, f_fs, f_ss, &d, &idx, image->det);
+		image_feature_closest(flist, f_fs, f_ss, f->p, &d, &idx);
 		if ( d < 2.0*ir_inn ) {
 			n_prx++;
 			continue;
 		}
 
 		/* Add using "better" coordinates */
-		image_add_feature(flist, f_fs, f_ss, image, intensity, NULL);
+		image_add_feature(flist, f_fs, f_ss, f->p, image, intensity,
+		                  NULL);
 
 	}
 

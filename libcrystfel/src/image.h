@@ -3,11 +3,11 @@
  *
  * Handle images and image features
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2013 Thomas White <taw@physics.org>
+ *   2009-2016 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  *
@@ -73,7 +73,7 @@ struct imagefeature {
 	struct image                    *parent;
 	double                          fs;
 	double                          ss;
-	char                            *pn;
+	struct panel                    *p;
 	double                          intensity;
 
 	/* Reciprocal space coordinates (m^-1 of course) of this feature */
@@ -188,9 +188,6 @@ struct image {
 	double                  div;           /* Divergence in radians */
 	double                  bw;            /* Bandwidth as a fraction */
 
-	int                     width;
-	int                     height;
-
 	/* Detected peaks */
 	long long int           num_peaks;
 	long long int           num_saturated_peaks;
@@ -208,6 +205,7 @@ extern ImageFeatureList *image_feature_list_new(void);
 extern void image_feature_list_free(ImageFeatureList *flist);
 
 extern void image_add_feature(ImageFeatureList *flist, double x, double y,
+                              struct panel *p,
                               struct image *parent, double intensity,
                               const char *name);
 
@@ -215,10 +213,12 @@ extern void image_remove_feature(ImageFeatureList *flist, int idx);
 
 extern struct imagefeature *image_feature_closest(ImageFeatureList *flist,
                                                   double fs, double ss,
-                                                  double *d, int *idx,
-                                                  struct detector *det);
+                                                  struct panel *p,
+                                                  double *d, int *idx);
+
 extern Reflection *image_reflection_closest(RefList *rlist,
                                             double fs, double ss,
+                                            struct panel *p,
                                             struct detector *det,
                                             double *d);
 

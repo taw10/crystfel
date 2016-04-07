@@ -3,12 +3,12 @@
  *
  * Detector properties
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2015 Thomas White <taw@physics.org>
+ *   2009-2016 Thomas White <taw@physics.org>
  *   2011-2012 Richard Kirian <rkirian@asu.edu>
  *   2014      Valerio Mariani
  *   2011      Andrew Aquila
@@ -84,12 +84,6 @@ struct panel
 {
         char     name[1024];  /* Name for this panel */
 
-        /* Position of panel in the data block in memory (see below) */
-        int      min_fs;  /* Smallest FS value considered to be in the panel */
-        int      max_fs;  /* Largest FS value considered to be in this panel */
-        int      min_ss;  /* ... and so on */
-        int      max_ss;
-
         double   cnx;       /* Location of corner (min_fs,min_ss) in pixels */
         double   cny;
         double   coffset;
@@ -158,9 +152,6 @@ struct detector
 	struct panel     *panels;
 	int               n_panels;
 
-	int               max_fs;
-	int               max_ss;  /* Size of overall array needed, minus 1 */
-
 	struct badregion *bad;
 	int               n_bad;
 
@@ -192,32 +183,31 @@ struct detector
 };
 
 
-extern struct rvec get_q(struct image *image, double fs, double ss,
-                         double *ttp, double k);
-
 extern struct rvec get_q_for_panel(struct panel *p, double fs, double ss,
                                    double *ttp, double k);
 
 extern double get_tt(struct image *image, double xs, double ys, int *err);
 
-extern int in_bad_region(struct detector *det, double fs, double ss);
+extern int in_bad_region(struct detector *det, struct panel *p,
+                         double fs, double ss);
 
 extern void record_image(struct image *image, int do_poisson, double background,
                          gsl_rng *rng, double beam_radius, double nphotons);
 
-extern struct panel *find_panel(struct detector *det, double fs, double ss);
-extern signed int find_panel_number(struct detector *det, double fs, double ss);
 extern struct panel *find_orig_panel(struct detector *det,
                                      double fs, double ss);
+
 extern signed int find_orig_panel_number(struct detector *det,
                                          double fs, double ss);
+
+extern int panel_number(struct detector *det, struct panel *p);
 
 extern struct detector *get_detector_geometry(const char *filename,
                                               struct beam_params *beam);
 
 extern void free_detector_geometry(struct detector *det);
 
-extern struct detector *simple_geometry(const struct image *image);
+extern struct detector *simple_geometry(const struct image *image, int w, int h);
 
 extern void get_pixel_extents(struct detector *det,
                               double *min_x, double *min_y,
@@ -235,8 +225,8 @@ extern int rigid_group_is_in_collection(struct rg_collection *c,
 
 extern struct detector *copy_geom(const struct detector *in);
 
-extern int reverse_2d_mapping(double x, double y, double *pfs, double *pss,
-                              struct detector *det);
+extern int reverse_2d_mapping(double x, double y, struct detector *det,
+                              struct panel **pp, double *pfs, double *pss);
 
 extern double largest_q(struct image *image);
 

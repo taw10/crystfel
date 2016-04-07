@@ -3,12 +3,12 @@
  *
  * Handle images and image features
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
- *   2011-2014 Thomas White <taw@physics.org>
+ *   2011-2016 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -59,6 +59,7 @@ struct _imagefeaturelist
 
 
 void image_add_feature(ImageFeatureList *flist, double fs, double ss,
+                       struct panel *p,
                        struct image *parent, double intensity, const char *name)
 {
 	if ( flist->features ) {
@@ -72,6 +73,7 @@ void image_add_feature(ImageFeatureList *flist, double fs, double ss,
 
 	flist->features[flist->n_features].fs = fs;
 	flist->features[flist->n_features].ss = ss;
+	flist->features[flist->n_features].p = p;
 	flist->features[flist->n_features].intensity = intensity;
 	flist->features[flist->n_features].parent = parent;
 	flist->features[flist->n_features].name = name;
@@ -145,27 +147,17 @@ void image_feature_list_free(ImageFeatureList *flist)
 
 struct imagefeature *image_feature_closest(ImageFeatureList *flist,
                                            double fs, double ss,
-                                           double *d, int *idx,
-                                           struct detector *det)
+                                           struct panel *p, double *d, int *idx)
 {
 	int i;
 	double dmin = +HUGE_VAL;
 	int closest = 0;
-	struct panel *p1;
-
-	p1 = find_panel(det, fs, ss);
 
 	for ( i=0; i<flist->n_features; i++ ) {
 
 		double ds;
-		struct panel *p2;
 
-		p2 = find_panel(det, flist->features[i].fs,
-		                flist->features[i].ss);
-
-		if ( p1 != p2 ) {
-			continue;
-		}
+		if ( p != flist->features[i].p ) continue;
 
 		ds = distance(flist->features[i].fs, flist->features[i].ss,
 		              fs, ss);
@@ -189,18 +181,15 @@ struct imagefeature *image_feature_closest(ImageFeatureList *flist,
 
 
 Reflection *image_reflection_closest(RefList *rlist,
-                                     double fs, double ss,
+                                     double fs, double ss, struct panel *p,
                                      struct detector *det,
                                      double *d)
 {
 
 	double dmin = HUGE_VAL;
 	Reflection *closest = NULL;
-	struct panel *p1;
 	Reflection *refl;
 	RefListIterator *iter;
-
-	p1 = find_panel(det, fs, ss);
 
 	for ( refl = first_refl(rlist, &iter);
 	      refl != NULL;
@@ -211,12 +200,9 @@ Reflection *image_reflection_closest(RefList *rlist,
 		double rfs, rss;
 
 		get_detector_pos(refl, &rfs, &rss);
+		p2 = get_panel(refl);
 
-		p2 = find_panel(det, rfs, rss);
-
-		if ( p1 != p2 ) {
-			continue;
-		}
+		if ( p != p2 ) continue;
 
 		ds = distance(rfs, rss, fs, ss);
 

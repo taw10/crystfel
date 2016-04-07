@@ -69,16 +69,13 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
 	fs = p->xfs*plx + p->yfs*ply;
 	ss = p->xss*plx + p->yss*ply;
 
-	fs += p->min_fs;
-	ss += p->min_ss;
-
 	*pfs = fs;  *pss = ss;
 
 	/* Now, is this on this panel? */
-	if ( fs < p->min_fs ) return 0;
-	if ( fs > p->max_fs ) return 0;
-	if ( ss < p->min_ss ) return 0;
-	if ( ss > p->max_ss ) return 0;
+	if ( fs < 0 ) return 0;
+	if ( fs > p->w ) return 0;
+	if ( ss < 0 ) return 0;
+	if ( ss > p->h ) return 0;
 
 	return 1;
 }

@@ -3,12 +3,12 @@
  *
  * Invoke xds for crystal autoindexing
  *
- * Copyright © 2013-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2013 Cornelius Gati
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2016 Thomas White <taw@physics.org>
  *        2013 Cornelius Gati <cornelius.gati@cfel.de>
  *
  * This file is part of CrystFEL.
@@ -321,26 +321,18 @@ static void write_spot(struct image *image)
 
         {
 		struct imagefeature *f;
-		struct panel *p;
 		double xs, ys, rx, ry, x, y;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		p = find_panel(image->det, f->fs, f->ss);
-		if ( p == NULL ) continue;
-
-		xs = (f->fs-p->min_fs)*p->fsx + (f->ss-p->min_ss)*p->ssx;
-		ys = (f->fs-p->min_fs)*p->fsy + (f->ss-p->min_ss)*p->ssy;
-		rx = ((xs + p->cnx) / p->res);
-		ry = ((ys + p->cny) / p->res);
-
-		//printf("xs=%f ys=%f  ---->  rx=%f ry=%f\n", xs, ys, rx, ry);
+		xs = f->fs*f->p->fsx + f->ss*f->p->ssx;
+		ys = f->fs*f->p->fsy + f->ss*f->p->ssy;
+		rx = (xs + f->p->cnx) / f->p->res;
+		ry = (ys + f->p->cny) / f->p->res;
 
 		x = rx;
 		y = ry; /* Peak positions in m */
-
-		//printf("x=%f y=%f\n", x, y);
 
 		x = (rx / 70e-6) + 1500;
 		y = (ry / 70e-6) + 1500;

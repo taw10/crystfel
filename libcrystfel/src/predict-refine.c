@@ -3,11 +3,11 @@
  *
  * Prediction refinement
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2016 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -140,10 +140,10 @@ static void UNUSED write_pairs(const char *filename, struct reflpeak *rps,
 
 		fs = rps[i].peak->fs;
 		ss = rps[i].peak->ss;
+		p = rps[i].panel;
 
-		p = find_panel(det, fs, ss);
-		write_fs = fs - p->min_fs + p->orig_min_fs;
-		write_ss = ss - p->min_ss + p->orig_min_ss;
+		write_fs = fs + p->orig_min_fs;
+		write_ss = ss + p->orig_min_ss;
 
 		fprintf(fh, "%7.2f %7.2f dev r,x,y: %9f %9f %9f %9f\n",
 		        write_fs, write_ss,
@@ -229,7 +229,6 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		struct imagefeature *f;
 		double h, k, l, hd, kd, ld;
 		Reflection *refl;
-		struct panel *p;
 
 		/* Assume all image "features" are genuine peaks */
 		f = image_get_feature(image->features, i);
@@ -258,12 +257,11 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		 * in how far away it is from the peak location.
 		 * The predicted position and excitation errors will be
 		 * filled in by update_partialities(). */
-		p = find_panel(image->det, f->fs, f->ss);
-		set_panel(refl, p);
+		set_panel(refl, f->p);
 
 		rps[n].refl = refl;
 		rps[n].peak = f;
-		rps[n].panel = p;
+		rps[n].panel = f->p;
 		n++;
 
 	}

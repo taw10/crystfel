@@ -3,11 +3,11 @@
  *
  * Integration of intensities
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2016 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -271,8 +271,8 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
 	get_indices(bx->refl, &h, &k, &l);
 	get_detector_pos(bx->refl, &fs, &ss);
 	/* Convert coordinates to match arrangement of panels in HDF5 file */
-	fs = fs - bx->p->min_fs + bx->p->orig_min_fs;
-	ss = ss - bx->p->min_ss + bx->p->orig_min_ss;
+	fs = fs + bx->p->orig_min_fs;
+	ss = ss + bx->p->orig_min_ss;
 	printw("Indices %i %i %i\nPanel %s\nPosition fs = %.1f, ss = %.1f\n\n",
 	       h, k, l, bx->p->name, fs, ss);
 
@@ -1280,6 +1280,12 @@ static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 		set_redundancy(refl, 0);
 
 		get_detector_pos(refl, &pfs, &pss);
+		p = get_panel(refl);
+		pn = panel_number(ic->image->det, p);
+		if ( pn == ic->image->det->n_panels ) {
+			ERROR("Couldn't find panel %p\n", p);
+			continue;
+		}
 
 		/* Explicit truncation of digits after the decimal point.
 		 * This is actually the correct thing to do here, not
@@ -1289,12 +1295,11 @@ static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 		 * belongs to pixel index 2. */
 		fid_fs = pfs;
 		fid_ss = pss;
-		pn = find_panel_number(ic->image->det, fid_fs, fid_ss);
-		p = &ic->image->det->panels[pn];
 
-		cfs = (fid_fs-p->min_fs) - ic->halfw;
-		css = (fid_ss-p->min_ss) - ic->halfw;
+		cfs = fid_fs - ic->halfw;
+		css = fid_ss - ic->halfw;
 
+		/* Add the box */
 		bx = add_box(ic);
 		bx->refl = refl;
 		bx->cfs = cfs;
@@ -1414,6 +1419,12 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	set_redundancy(refl, 0);
 
 	get_detector_pos(refl, &pfs, &pss);
+	p = get_panel(refl);
+	pn = panel_number(image->det, p);
+	if ( pn == image->det->n_panels ) {
+		ERROR("Couldn't find panel %p\n", p);
+		return;
+	}
 
 	/* Explicit truncation of digits after the decimal point.
 	 * This is actually the correct thing to do here, not
@@ -1423,11 +1434,9 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	 * belongs to pixel index 2. */
 	fid_fs = pfs;
 	fid_ss = pss;
-	pn = find_panel_number(image->det, fid_fs, fid_ss);
-	p = &image->det->panels[pn];
 
-	cfs = (fid_fs-p->min_fs) - ic->halfw;
-	css = (fid_ss-p->min_ss) - ic->halfw;
+	cfs = fid_fs - ic->halfw;
+	css = fid_ss - ic->halfw;
 
 	bx = add_box(ic);
 	bx->refl = refl;

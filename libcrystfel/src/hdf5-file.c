@@ -88,9 +88,6 @@ struct hdfile {
 
 	const char      *path;  /* Current data path */
 
-	size_t          nfs;  /* Image width */
-	size_t          nss;  /* Image height */
-
 	hid_t           fh;  /* HDF file handle */
 	hid_t           dh;  /* Dataset handle */
 
@@ -127,67 +124,12 @@ struct hdfile *hdfile_open(const char *filename)
 int hdfile_set_image(struct hdfile *f, const char *path,
                      struct panel *p)
 {
-	hsize_t *size;
-	hsize_t *max_size;
-	hid_t sh;
-	int sh_dim;
-	int di;
-
 	f->dh = H5Dopen2(f->fh, path, H5P_DEFAULT);
 	if ( f->dh < 0 ) {
 		ERROR("Couldn't open dataset\n");
 		return -1;
 	}
 	f->data_open = 1;
-	sh = H5Dget_space(f->dh);
-	sh_dim = H5Sget_simple_extent_ndims(sh);
-
-	if ( p == NULL ) {
-
-		if ( sh_dim != 2 ) {
-			ERROR("Dataset is not two-dimensional\n");
-			return -1;
-		}
-
-	} else {
-
-		if ( sh_dim != p->dim_structure->num_dims ) {
-			ERROR("Dataset dimensionality does not match "
-			      "geometry file\n");
-			return -1;
-		}
-
-	}
-
-	size = malloc(sh_dim*sizeof(hsize_t));
-	max_size = malloc(sh_dim*sizeof(hsize_t));
-
-	H5Sget_simple_extent_dims(sh, size, max_size);
-	H5Sclose(sh);
-
-	if ( p == NULL ) {
-
-		f->nss = size[0];
-		f->nfs = size[1];
-
-	} else {
-
-		for ( di=0; di<p->dim_structure->num_dims; di++ ) {
-
-			if ( p->dim_structure->dims[di] == HYSL_SS ) {
-				f->nss = size[di];
-			}
-			if ( p->dim_structure->dims[di] == HYSL_FS ) {
-				f->nfs = size[di];
-			}
-
-		}
-
-	}
-
-	free(size);
-	free(max_size);
-
 	return 0;
 }
 
@@ -441,13 +383,11 @@ int get_peaks_cxi(struct image *image, struct hdfile *f, const char *p,
 		if ( p == NULL ) continue;
 		if ( p->no_index ) continue;
 
-		/* Convert coordinates to match rearranged
-		 * panels in memory */
-		fs = fs - p->orig_min_fs + p->min_fs;
-		ss = ss - p->orig_min_ss + p->min_ss;
+		/* Convert coordinates to panel-relative */
+		fs = fs - p->orig_min_fs;
+		ss = ss - p->orig_min_ss;
 
-		image_add_feature(image->features, fs, ss, image,
-		                  val, NULL);
+		image_add_feature(image->features, fs, ss, p, image, val, NULL);
 
 	}
 
@@ -541,11 +481,11 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p)
 		if ( p == NULL ) continue;
 		if ( p->no_index ) continue;
 
-		/* Convert coordinates to match rearranged panels in memory */
-		fs = fs - p->orig_min_fs + p->min_fs;
-		ss = ss - p->orig_min_ss + p->min_ss;
+		/* Convert coordinates to panel-relative */
+		fs = fs - p->orig_min_fs;
+		ss = ss - p->orig_min_ss;
 
-		image_add_feature(image->features, fs, ss, image, val,
+		image_add_feature(image->features, fs, ss, p, image, val,
 		                  NULL);
 
 	}
@@ -791,9 +731,6 @@ static void write_location(hid_t fh, struct detector *det, float *data,
 	for ( pi=0; pi<loc->n_panels; pi++ ) {
 
 		hsize_t f_offset[2], f_count[2];
-		hsize_t m_offset[2], m_count[2];
-		hsize_t dimsm[2];
-		hid_t memspace;
 		struct panel p;
 		int r;
 
@@ -818,18 +755,7 @@ static void write_location(hid_t fh, struct detector *det, float *data,
 			return;
 		}
 
-		m_offset[0] = p.min_ss;
-		m_offset[1] = p.min_fs;
-		m_count[0] = p.max_ss - p.min_ss +1;
-		m_count[1] = p.max_fs - p.min_fs +1;
-
-		dimsm[0] = det->max_ss + 1;
-		dimsm[1] = det->max_fs + 1;
-		memspace = H5Screate_simple(2, dimsm, NULL);
-
-		r = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
-		                        m_offset, NULL, m_count, NULL);
-		r = H5Dwrite(dh, H5T_NATIVE_FLOAT, memspace,
+		r = H5Dwrite(dh, H5T_NATIVE_FLOAT, H5S_ALL,
 		             dh_dataspace, H5P_DEFAULT, data);
 		if ( r < 0 ) {
 			ERROR("Couldn't write data\n");
@@ -837,13 +763,11 @@ static void write_location(hid_t fh, struct detector *det, float *data,
 			H5Dclose(dh);
 			H5Sclose(dh_dataspace);
 			H5Sclose(sh);
-			H5Sclose(memspace);
 			H5Fclose(fh);
 			return;
 		}
 
 		H5Sclose(dh_dataspace);
-		H5Sclose(memspace);
 	}
 	H5Pclose(ph);
 	H5Sclose(sh);
@@ -961,34 +885,6 @@ static void write_spectrum(hid_t fh, struct sample *spectrum, int spectrum_size,
 }
 
 
-static float *make_array_from_dp(const struct image *image)
-{
-	int i;
-	float *data;
-
-	data = malloc(image->width * image->height * sizeof(float));
-	if ( data == NULL ) {
-		ERROR("Failed to allocate data\n");
-		return NULL;
-	}
-
-	for ( i=0; i<image->det->n_panels; i++ ) {
-
-		int fs, ss;
-		struct panel *p = &image->det->panels[i];
-
-		for ( ss=0; ss<p->h; ss++ ) {
-		for ( fs=0; fs<p->w; fs++ ) {
-			int idx = p->min_fs+fs + image->width*(p->min_ss+ss);
-			data[idx] = image->dp[i][fs + p->w*ss];
-		}
-		}
-	}
-
-	return data;
-}
-
-
 int hdf5_write_image(const char *filename, const struct image *image,
                      char *element)
 {
@@ -998,15 +894,11 @@ int hdf5_write_image(const char *filename, const struct image *image,
 	struct hdf5_write_location *locations;
 	int num_locations;
 	const char *ph_en_loc;
-	float *data;
 
 	if ( image->det == NULL ) {
 		ERROR("Geometry not available\n");
 		return 1;
 	}
-
-	data = make_array_from_dp(image);
-	if ( data == NULL ) return 1;
 
 	fh = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	if ( fh < 0 ) {
@@ -1024,7 +916,7 @@ int hdf5_write_image(const char *filename, const struct image *image,
 	                               &num_locations);
 
 	for ( li=0; li<num_locations; li++ ) {
-		write_location(fh, image->det, data, &locations[li]);
+		write_location(fh, image->det, image->dp[li], &locations[li]);
 	}
 
 	if ( image->beam == NULL
@@ -1047,7 +939,6 @@ int hdf5_write_image(const char *filename, const struct image *image,
 	for ( li=0; li<num_locations; li ++ ) {
 		free(locations[li].panel_idxs);
 	}
-	free(data);
 	free(locations);
 	return 0;
 }
@@ -1139,84 +1030,44 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 }
 
 
-static int unpack_panels(struct image *image, struct detector *det,
-                         float *data, uint16_t *flags, float *sat)
+static int *make_badmask(int *flags, struct panel *p, struct detector *det)
 {
-	int pi;
+	int *badmap;
+	int fs, ss;
 
-	image->dp = malloc(det->n_panels * sizeof(float *));
-	image->bad = malloc(det->n_panels * sizeof(int *));
-	image->sat = malloc(det->n_panels * sizeof(float *));
-	if ( (image->dp == NULL) || (image->bad == NULL)
-	  || (image->sat == NULL) )
-	{
-		ERROR("Failed to allocate panels.\n");
-		return 1;
+	badmap = malloc(p->w*p->h*sizeof(int));
+	if ( badmap == NULL ) {
+		ERROR("Failed to allocate bad mask for panel %s\n",
+		      p->name);
+		return NULL;
 	}
 
-	for ( pi=0; pi<det->n_panels; pi++ ) {
+	for ( ss=0; ss<p->h; ss++ ) {
+	for ( fs=0; fs<p->w; fs++ ) {
 
-		struct panel *p;
-		int fs, ss;
+		int bad = 0;
+		int f;
 
-		p = &det->panels[pi];
-		image->dp[pi] = malloc(p->w*p->h*sizeof(float));
-		image->bad[pi] = calloc(p->w*p->h, sizeof(int));
-		image->sat[pi] = malloc(p->w*p->h*sizeof(float));
-		if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL)
-		  || (image->sat[pi] == NULL) )
-		{
-			ERROR("Failed to allocate panel\n");
-			return 1;
+		if ( p->no_index ) bad = 1;
+
+		if ( in_bad_region(det, p, fs, ss) ) {
+			bad = 1;
 		}
 
-		for ( ss=0; ss<p->h; ss++ ) {
-		for ( fs=0; fs<p->w; fs++ ) {
+		f = flags[fs+p->w*ss];
 
-			int idx;
-			int cfs, css;
-			int bad = 0;
+		/* Bad if it's missing any of the "good" bits */
+		if ( (f & det->mask_good) != det->mask_good ) bad = 1;
 
-			cfs = fs+p->min_fs;
-			css = ss+p->min_ss;
-			idx = cfs + css*image->width;
+		/* Bad if it has any of the "bad" bits. */
+		if ( f & det->mask_bad ) bad = 1;
 
-			image->dp[pi][fs+p->w*ss] = data[idx];
-
-			if ( sat != NULL ) {
-				image->sat[pi][fs+p->w*ss] = sat[idx];
-			} else {
-				image->sat[pi][fs+p->w*ss] = INFINITY;
-			}
-
-			if ( p->no_index ) bad = 1;
-
-			if ( in_bad_region(det, cfs, css) ) {
-				bad = 1;
-			}
-
-			if ( flags != NULL ) {
-
-				int f;
-
-				f = flags[idx];
-
-				/* Bad if it's missing any of the "good" bits */
-				if ( (f & image->det->mask_good)
-				       != image->det->mask_good ) bad = 1;
-
-				/* Bad if it has any of the "bad" bits. */
-				if ( f & image->det->mask_bad ) bad = 1;
-
-			}
-			image->bad[pi][fs+p->w*ss] = bad;
-
-		}
-		}
+		badmap[fs+p->w*ss] = bad;
 
 	}
+	}
 
-	return 0;
+	return badmap;
 }
 
 
@@ -1448,6 +1299,11 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 	herr_t r;
 	float *buf;
 	int fail;
+	hsize_t *size;
+	hsize_t *max_size;
+	hid_t sh;
+	int sh_dim;
+	int w, h;
 
 	if ( element == NULL ) {
 		fail = hdfile_set_first_image(f, "/");
@@ -1460,13 +1316,26 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 		return 1;
 	}
 
-	image->width = f->nfs;
-	image->height = f->nss;
+	sh = H5Dget_space(f->dh);
+	sh_dim = H5Sget_simple_extent_ndims(sh);
 
-	buf = malloc(sizeof(float)*f->nfs*f->nss);
+	if ( sh_dim != 2 ) {
+		ERROR("Dataset is not two-dimensional\n");
+		return -1;
+	}
 
+	size = malloc(sh_dim*sizeof(hsize_t));
+	max_size = malloc(sh_dim*sizeof(hsize_t));
+	H5Sget_simple_extent_dims(sh, size, max_size);
+	H5Sclose(sh);
+	w = size[1];
+	h = size[0];
+	free(size);
+	free(max_size);
+
+	buf = malloc(sizeof(float)*w*h);
 	r = H5Dread(f->dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
-				H5P_DEFAULT, buf);
+	            H5P_DEFAULT, buf);
 	if ( r < 0 ) {
 		ERROR("Couldn't read data\n");
 		free(buf);
@@ -1476,9 +1345,8 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 	if ( image->det != NULL ) {
 		ERROR("WARNING: hdf5_read() called with geometry structure.\n");
 	}
-	image->det = simple_geometry(image);
+	image->det = simple_geometry(image, w, h);
 
-	unpack_panels(image, image->det, buf, NULL, NULL);
 	if ( satcorr ) debodge_saturation(f, image);
 
 	if ( image->beam != NULL ) {
@@ -1501,210 +1369,10 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 }
 
 
-static hsize_t *first_two_dims(hsize_t *in, struct dim_structure *ds)
-{
-	int i, j;
-	hsize_t *out = malloc(2*sizeof(hsize_t));
-
-	if ( out == NULL ) return NULL;
-
-	j = 0;
-	for ( i=0; i<ds->num_dims; i++ ) {
-		if ( (ds->dims[i] == HYSL_FS) || (ds->dims[i] == HYSL_SS) ) {
-			out[j++] = in[i];
-		}
-	}
-	return out;
-}
-
-
-static int load_mask(struct hdfile *f, struct event *ev, char *mask,
-                     const char *mask_file,
-                     const char *pname, struct image *image,
-                     size_t p_w, size_t sum_p_h, uint16_t *flags,
-                     hsize_t *in_f_offset, hsize_t *in_f_count,
-                     hsize_t *m_offset, hsize_t *m_count,
-                     struct dim_structure *dim_struct)
-{
-	hid_t mask_dataspace, mask_dh;
-	int exists;
-	int check, r;
-	hid_t memspace;
-	hsize_t dimsm[2];
-	hid_t fh;
-	hsize_t *f_offset, *f_count;
-
-	if ( mask_file != NULL ) {
-
-		fh = H5Fopen(mask_file, H5F_ACC_RDONLY, H5P_DEFAULT);
-		if ( fh < 0 ) {
-			ERROR("Couldn't open mask file '%s'\n", mask_file);
-			return 1;
-		}
-
-		/* If we have an external map file, we assume it to be a simple
-		 * 2D job */
-		f_offset = first_two_dims(in_f_offset, dim_struct);
-		f_count = first_two_dims(in_f_count, dim_struct);
-
-	} else {
-		fh = f->fh;
-		f_offset = in_f_offset;
-		f_count = in_f_count;
-	}
-
-	if ( ev != NULL ) {
-		mask = retrieve_full_path(ev, mask);
-	}
-
-	exists = check_path_existence(fh, mask);
-	if ( !exists ) {
-		ERROR("Cannot find flags for panel %s\n", pname);
-		goto err;
-	}
-
-	mask_dh = H5Dopen2(fh, mask, H5P_DEFAULT);
-	if ( mask_dh <= 0 ) {
-		ERROR("Couldn't open flags for panel %s\n", pname);
-		goto err;
-	}
-
-	mask_dataspace = H5Dget_space(mask_dh);
-	check = H5Sselect_hyperslab(mask_dataspace, H5S_SELECT_SET,
-	                            f_offset, NULL, f_count, NULL);
-	if ( check < 0 ) {
-		ERROR("Error selecting mask dataspace for panel %s\n", pname);
-		goto err;
-	}
-
-	dimsm[0] = sum_p_h;
-	dimsm[1] = p_w;
-	memspace = H5Screate_simple(2, dimsm, NULL);
-	check = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
-	                            m_offset, NULL, m_count, NULL);
-	if ( check < 0 ) {
-		ERROR("Error selecting memory dataspace for panel %s\n", pname);
-		goto err;
-	}
-
-	r = H5Dread(mask_dh, H5T_NATIVE_UINT16, memspace,
-	            mask_dataspace, H5P_DEFAULT, flags);
-	if ( r < 0 ) {
-		ERROR("Couldn't read flags for panel %s\n", pname);
-		goto err;
-	}
-
-	H5Sclose(mask_dataspace);
-	H5Dclose(mask_dh);
-	if ( ev != NULL ) free(mask);
-
-	return 0;
-
-err:
-	if ( mask_file != NULL ) H5Fclose(fh);
-	if ( ev != NULL ) free(mask);
-	return 1;
-}
-
-
-static int load_satmap(struct hdfile *f, struct event *ev, char *satmap,
-                       const char *satmap_file,
-                       const char *pname, struct image *image,
-                       size_t p_w, size_t sum_p_h, float *smap,
-                       hsize_t *in_f_offset, hsize_t *in_f_count,
-                       hsize_t *m_offset, hsize_t *m_count,
-		       struct dim_structure *dim_struct)
-{
-	hid_t satmap_dataspace, satmap_dh;
-	int exists;
-	int check, r;
-	hid_t memspace;
-	hsize_t dimsm[2];
-	hid_t fh;
-	hsize_t *f_offset, *f_count;
-
-	if ( satmap_file != NULL ) {
-
-		fh = H5Fopen(satmap_file, H5F_ACC_RDONLY, H5P_DEFAULT);
-		if ( fh < 0 ) {
-			ERROR("Couldn't open satmap file '%s'\n", satmap_file);
-			return 1;
-		}
-
-		/* If we have an external map file, we assume it to be a simple
-		 * 2D job */
-		f_offset = first_two_dims(in_f_offset, dim_struct);
-		f_count = first_two_dims(in_f_count, dim_struct);
-
-	} else {
-		fh = f->fh;
-		f_offset = in_f_offset;
-		f_count = in_f_count;
-	}
-
-	if ( ev != NULL ) {
-		satmap = retrieve_full_path(ev, satmap);
-	}
-
-	exists = check_path_existence(fh, satmap);
-	if ( !exists ) {
-		ERROR("Cannot find satmap for panel %s\n", pname);
-		goto err;
-	}
-
-	satmap_dh = H5Dopen2(fh, satmap, H5P_DEFAULT);
-	if ( satmap_dh <= 0 ) {
-		ERROR("Couldn't open satmap for panel %s\n", pname);
-		goto err;
-	}
-
-	satmap_dataspace = H5Dget_space(satmap_dh);
-	check = H5Sselect_hyperslab(satmap_dataspace, H5S_SELECT_SET,
-	                            f_offset, NULL, f_count, NULL);
-	if ( check < 0 ) {
-		ERROR("Error selecting satmap dataspace for panel %s\n", pname);
-		goto err;
-	}
-
-	dimsm[0] = sum_p_h;
-	dimsm[1] = p_w;
-	memspace = H5Screate_simple(2, dimsm, NULL);
-	check = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
-	                            m_offset, NULL, m_count, NULL);
-	if ( check < 0 ) {
-		ERROR("Error selecting memory dataspace for panel %s\n", pname);
-		goto err;
-	}
-
-	r = H5Dread(satmap_dh, H5T_NATIVE_FLOAT, memspace,
-	            satmap_dataspace, H5P_DEFAULT, smap);
-	if ( r < 0 ) {
-		ERROR("Couldn't read satmap for panel %s\n", pname);
-		goto err;
-	}
-
-	H5Sclose(satmap_dataspace);
-	H5Dclose(satmap_dh);
-	if ( ev != NULL ) free(satmap);
-
-	return 0;
-
-err:
-	if ( satmap_file != NULL ) H5Fclose(fh);
-	if ( ev != NULL ) free(satmap);
-	return 1;
-}
-
-
 int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
                int satcorr)
 {
 	herr_t r;
-	float *buf;
-	uint16_t *flags;
-	float *smap;
-	int sum_p_h;
-	int p_w;
 	int pi;
 	int i;
 
@@ -1713,51 +1381,21 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		return 1;
 	}
 
-	p_w = image->det->panels[0].w;
-	sum_p_h = 0;
+	image->dp = malloc(image->det->n_panels*sizeof(float *));
+	image->bad = malloc(image->det->n_panels*sizeof(int *));
+	image->sat = malloc(image->det->n_panels*sizeof(float *));
+	if ( (image->dp==NULL) || (image->bad==NULL) || (image->sat==NULL) ) {
+		ERROR("Failed to allocate data arrays.\n");
+		return 1;
+	}
 
 	for ( pi=0; pi<image->det->n_panels; pi++ ) {
 
-		if ( image->det->panels[pi].w != p_w ) {
-			ERROR("Panels must have the same width.");
-			return 1;
-		}
-
-		sum_p_h += image->det->panels[pi].h;
-
-	}
-
-	buf = malloc(sizeof(float)*p_w*sum_p_h);
-	if ( buf == NULL ) {
-		ERROR("Failed to allocate memory for image\n");
-		return 1;
-	}
-	image->width = p_w;
-	image->height = sum_p_h;
-
-	flags = calloc(p_w*sum_p_h,sizeof(uint16_t));
-	if ( flags == NULL ) {
-		ERROR("Failed to allocate memory for flags\n");
-		return 1;
-	}
-
-	smap = calloc(p_w*sum_p_h,sizeof(float));
-	if ( smap == NULL ) {
-		ERROR("Failed to allocate memory for satmap\n");
-		return 1;
-	}
-	for ( i=0; i<p_w*sum_p_h; i++ ) smap[i] = INFINITY;
-
-	for ( pi=0; pi<image->det->n_panels; pi++ ) {
-
-		int data_width, data_height;
 		hsize_t *f_offset, *f_count;
 		int hsi;
 		struct dim_structure *hsd;
-		hsize_t m_offset[2], m_count[2];
-		hsize_t dimsm[2];
 		herr_t check;
-		hid_t dataspace, memspace;
+		hid_t dataspace;
 		int fail;
 		struct panel *p;
 
@@ -1807,25 +1445,14 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			return 1;
 		}
 
-		data_width = f->nfs;
-		data_height = f->nss;
-
-		if ( (data_width < p->w )
-		  || (data_height < p->h) )
-		{
-			ERROR("Data size doesn't match panel geometry size"
-			      " - rejecting image.\n");
-			ERROR("Panel name: %s.  Data size: %i,%i. "
-			      "Geometry size: %i,%i\n",
-			      p->name, data_width, data_height, p->w, p->h);
-			return 1;
-		}
-
+		/* Determine where to read the data from in the file */
 		hsd = image->det->panels[pi].dim_structure;
-
 		f_offset = malloc(hsd->num_dims*sizeof(hsize_t));
 		f_count = malloc(hsd->num_dims*sizeof(hsize_t));
-
+		if ( (f_offset == NULL) || (f_count == NULL ) ) {
+			ERROR("Failed to allocate offset or count.\n");
+			return 1;
+		}
 		for ( hsi=0; hsi<hsd->num_dims; hsi++ ) {
 
 			if ( hsd->dims[hsi] == HYSL_FS ) {
@@ -1844,76 +1471,74 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 
 		}
 
+		/* Set up dataspace for file */
 		dataspace = H5Dget_space(f->dh);
 		check = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
 		                            f_offset, NULL, f_count, NULL);
 		if ( check < 0 ) {
 			ERROR("Error selecting file dataspace for panel %s\n",
 			      p->name);
-			free(buf);
 			return 1;
 		}
 
-		m_offset[0] = p->min_ss;
-		m_offset[1] = p->min_fs;
-		m_count[0] = p->max_ss - p->min_ss +1;
-		m_count[1] = p->max_fs - p->min_fs +1;
-		dimsm[0] = sum_p_h;
-		dimsm[1] = p_w;
-		memspace = H5Screate_simple(2, dimsm, NULL);
-		check = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
-		                            m_offset, NULL, m_count, NULL);
-		if ( check < 0 ) {
-			ERROR("Error selecting memory dataspace for panel %s\n",
-			      p->name);
-			free(buf);
+		image->dp[pi] = malloc(p->w*p->h*sizeof(float));
+		image->sat[pi] = malloc(p->w*p->h*sizeof(float));
+		if ( (image->dp[pi] == NULL) || (image->sat[pi] == NULL) ) {
+			ERROR("Failed to allocate panel %s\n", p->name);
 			free(f_offset);
 			free(f_count);
 			return 1;
 		}
+		for ( i=0; i<p->w*p->h; i++ ) image->sat[pi][i] = INFINITY;
 
-		r = H5Dread(f->dh, H5T_NATIVE_FLOAT, memspace, dataspace,
-		            H5P_DEFAULT, buf);
+		r = H5Dread(f->dh, H5T_NATIVE_FLOAT, H5S_ALL, dataspace,
+		            H5P_DEFAULT, image->dp[pi]);
 		if ( r < 0 ) {
 			ERROR("Couldn't read data for panel %s\n",
 			      p->name);
-			free(buf);
 			free(f_offset);
 			free(f_count);
 			return 1;
 		}
-		H5Dclose(f->dh);
-		f->data_open = 0;
-		H5Sclose(dataspace);
-		H5Sclose(memspace);
 
 		if ( p->mask != NULL ) {
-			if ( load_mask(f, ev, p->mask, p->mask_file, p->name,
-			               image, p_w, sum_p_h, flags,
-			               f_offset, f_count, m_offset, m_count,
-			               hsd) ) {
-				ERROR("Error loading bad pixel mask!\n");
+			int *flags = malloc(p->w*p->h*sizeof(int));
+			r = H5Dread(f->dh, H5T_NATIVE_FLOAT, H5S_ALL, dataspace,
+			            H5P_DEFAULT, flags);
+			if ( r < 0 ) {
+				ERROR("Couldn't read flags for panel %s\n",
+				      p->name);
+				free(f_offset);
+				free(f_count);
+				return 1;
 			}
+			image->bad[pi] = make_badmask(flags, p, image->det);
+		} else {
+			image->bad[pi] = calloc(p->w*p->h, sizeof(int));
 		}
 
 		if ( p->satmap != NULL ) {
-			if ( load_satmap(f, ev, p->satmap, p->satmap_file,
-			                 p->name, image, p_w, sum_p_h, smap,
-			                 f_offset, f_count, m_offset, m_count,
-			                 hsd) )
-			{
-				ERROR("Error loading saturation map!\n");
+			r = H5Dread(f->dh, H5T_NATIVE_FLOAT, H5S_ALL, dataspace,
+			            H5P_DEFAULT, image->sat[pi]);
+			if ( r < 0 ) {
+				ERROR("Couldn't read satmap for panel %s\n",
+				      p->name);
+				free(f_offset);
+				free(f_count);
+				return 1;
 			}
 		}
 
+		H5Sclose(dataspace);
 		free(f_offset);
 		free(f_count);
 
 	}
 
+	H5Dclose(f->dh);
+	f->data_open = 0;
 	fill_in_values(image->det, f, ev);
 
-	unpack_panels(image, image->det, buf, flags, smap);
 	if ( satcorr ) debodge_saturation(f, image);
 
 	if ( image->beam != NULL ) {
@@ -1931,10 +1556,6 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 	}
 
 	fill_in_adu(image);
-
-	free(buf);
-	free(flags);
-	free(smap);
 
 	return 0;
 }

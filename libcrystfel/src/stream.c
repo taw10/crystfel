@@ -3,12 +3,12 @@
  *
  * Stream tools
  *
- * Copyright © 2013-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2016 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2011      Richard Kirian
  *   2011      Andrew Aquila
@@ -106,16 +106,16 @@ static int read_peaks(FILE *fh, struct image *image)
 					return 1;
 				}
 
-				add_x = x-p->orig_min_fs+p->min_fs;
-				add_y = y-p->orig_min_ss+p->min_ss;
+				add_x = x-p->orig_min_fs;
+				add_y = y-p->orig_min_ss;
 
 				image_add_feature(image->features, add_x, add_y,
-				                  image, intensity, NULL);
+				                  p, image, intensity, NULL);
 
 			} else {
 
 				image_add_feature(image->features, x, y,
-				                  image, intensity, NULL);
+				                  p, image, intensity, NULL);
 			}
 		}
 
@@ -165,10 +165,10 @@ static int read_peaks_2_3(FILE *fh, struct image *image)
 				return 1;
 			}
 
-			add_x = x-p->orig_min_fs+p->min_fs;
-			add_y = y-p->orig_min_ss+p->min_ss;
+			add_x = x-p->orig_min_fs;
+			add_y = y-p->orig_min_ss;
 
-			image_add_feature(image->features, add_x, add_y,
+			image_add_feature(image->features, add_x, add_y, p,
 			                  image, intensity, NULL);
 
 		}
@@ -196,7 +196,8 @@ static int write_peaks(struct image *image, FILE *ofh)
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		r = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
+		r = get_q_for_panel(f->p, f->fs, f->ss,
+		                    NULL, 1.0/image->lambda);
 		q = modulus(r.u, r.v, r.w);
 
 		if ( image->det != NULL ) {
@@ -212,8 +213,8 @@ static int write_peaks(struct image *image, FILE *ofh)
 
 			/* Convert coordinates to match arrangement of panels in
 			 * HDF5 file */
-			write_fs = f->fs - p->min_fs + p->orig_min_fs;
-			write_ss = f->ss - p->min_ss + p->orig_min_ss;
+			write_fs = f->fs + p->orig_min_fs;
+			write_ss = f->ss + p->orig_min_ss;
 
 			fprintf(ofh, "%7.2f %7.2f   %10.2f  %10.2f\n",
 			        write_fs, write_ss, q/1.0e9, f->intensity);
@@ -244,28 +245,22 @@ static int write_peaks_2_3(struct image *image, FILE *ofh)
 		struct imagefeature *f;
 		struct rvec r;
 		double q;
-		struct panel *p;
 		double write_fs, write_ss;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		r = get_q(image, f->fs, f->ss, NULL, 1.0/image->lambda);
+		r = get_q_for_panel(f->p, f->fs, f->ss,
+		                    NULL, 1.0/image->lambda);
 		q = modulus(r.u, r.v, r.w);
-
-		p = find_panel(image->det, f->fs, f->ss);
-		if ( p == NULL ) {
-			ERROR("Panel not found\n");
-			return 1;
-		}
 
 		/* Convert coordinates to match arrangement of panels in HDF5
 		 * file */
-		write_fs = f->fs - p->min_fs + p->orig_min_fs;
-		write_ss = f->ss - p->min_ss + p->orig_min_ss;
+		write_fs = f->fs + f->p->orig_min_fs;
+		write_ss = f->ss + f->p->orig_min_ss;
 
 		fprintf(ofh, "%7.2f %7.2f %10.2f  %10.2f   %s\n",
-		        write_fs, write_ss, q/1.0e9, f->intensity, p->name);
+		        write_fs, write_ss, q/1.0e9, f->intensity, f->p->name);
 
 	}
 
@@ -328,8 +323,8 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 				if ( p == NULL ) {
 					ERROR("Couldn't find panel '%s'\n", pn);
 				} else {
-					write_fs = fs - p->orig_min_fs + p->min_fs;
-					write_ss = ss - p->orig_min_ss + p->min_ss;
+					write_fs = fs - p->orig_min_fs;
+					write_ss = ss - p->orig_min_ss;
 					set_detector_pos(refl, write_fs, write_ss);
 					set_panel(refl, p);
 				}
@@ -406,8 +401,8 @@ static RefList *read_stream_reflections_2_1(FILE *fh, struct detector *det)
 					ERROR("No panel at %.2f,%.2f\n",
 					      fs, ss);
 				} else {
-					write_fs = fs - p->orig_min_fs + p->min_fs;
-					write_ss = ss - p->orig_min_ss + p->min_ss;
+					write_fs = fs - p->orig_min_fs;
+					write_ss = ss - p->orig_min_ss;
 					set_detector_pos(refl, write_fs, write_ss);
 				}
 
@@ -480,8 +475,8 @@ static RefList *read_stream_reflections_2_2(FILE *fh, struct detector *det)
 					ERROR("No panel at %.2f,%.2f\n",
 					      fs, ss);
 				} else {
-					write_fs = fs - p->orig_min_fs + p->min_fs;
-					write_ss = ss - p->orig_min_ss + p->min_ss;
+					write_fs = fs - p->orig_min_fs;
+					write_ss = ss - p->orig_min_ss;
 					set_detector_pos(refl, write_fs, write_ss);
 				}
 
@@ -555,8 +550,8 @@ static int write_stream_reflections_2_1(FILE *fh, RefList *list,
 
 			/* Convert coordinates to match arrangement of panels
 			 * in HDF5 file */
-			write_fs = fs - p->min_fs + p->orig_min_fs;
-			write_ss = ss - p->min_ss + p->orig_min_ss;
+			write_fs = fs + p->orig_min_fs;
+			write_ss = ss + p->orig_min_ss;
 
 			fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %7i "
 			            "%6.1f %6.1f\n",
@@ -617,8 +612,8 @@ static int write_stream_reflections_2_2(FILE *fh, RefList *list,
 
 			/* Convert coordinates to match arrangement of panels in HDF5
 			 * file */
-			write_fs = fs - p->min_fs + p->orig_min_fs;
-			write_ss = ss - p->min_ss + p->orig_min_ss;
+			write_fs = fs + p->orig_min_fs;
+			write_ss = ss + p->orig_min_ss;
 
 			fprintf(fh, "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f"
 			            " %6.1f %6.1f\n",
@@ -654,10 +649,11 @@ static int write_stream_reflections_2_3(FILE *fh, RefList *list,
 		double intensity, esd_i, pk, bg;
 		double fs, ss;
 		double write_fs, write_ss;
-		struct panel *p = NULL;
+		struct panel *p;
 
 		get_indices(refl, &h, &k, &l);
 		get_detector_pos(refl, &fs, &ss);
+		p = get_panel(refl);
 		intensity = get_intensity(refl);
 		esd_i = get_esd_intensity(refl);
 		pk = get_peak(refl);
@@ -666,14 +662,8 @@ static int write_stream_reflections_2_3(FILE *fh, RefList *list,
 		/* Reflections with redundancy = 0 are not written */
 		if ( get_redundancy(refl) == 0 ) continue;
 
-		p = find_panel(image->det,fs,ss);
-		if ( p == NULL ) {
-			ERROR("Panel not found\n");
-			return 1;
-		}
-
-		write_fs = fs-p->min_fs+p->orig_min_fs;
-		write_ss = ss-p->min_ss+p->orig_min_ss;
+		write_fs = fs+p->orig_min_fs;
+		write_ss = ss+p->orig_min_ss;
 
 		fprintf(fh,
                           "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f "

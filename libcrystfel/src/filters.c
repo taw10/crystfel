@@ -3,11 +3,11 @@
  *
  * Image filtering
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2016 Thomas White <taw@physics.org>
  *   2013      Anton Barty <anton.barty@desy.de>
  *
  * This file is part of CrystFEL.
@@ -132,7 +132,6 @@ void filter_median(struct image *image, int size)
 	int counter;
 	int nn;
 	float *buffer;
-	float *localBg;
 	int pn;
 
 	if ( size <= 0 ) return;
@@ -142,9 +141,8 @@ void filter_median(struct image *image, int size)
 
 	/* "localBg" is way too big, but guaranteed big enough */
 	buffer = calloc(nn, sizeof(float));
-	localBg = calloc(image->width*image->height, sizeof(float));
-	if ( (buffer == NULL) || (localBg == NULL) ) {
-		ERROR("Failed to allocate LB buffers.\n");
+	if ( buffer == NULL ) {
+		ERROR("Failed to allocate LB buffer.\n");
 		return;
 	}
 
@@ -155,8 +153,15 @@ void filter_median(struct image *image, int size)
 		int fs, ss;
 		int i;
 		struct panel *p;
+		float *localBg;
 
 		p = &image->det->panels[pn];
+
+		localBg = calloc(p->w*p->h, sizeof(float));
+		if ( localBg == NULL ) {
+			ERROR("Failed to allocate LB buffer.\n");
+			return;
+		}
 
 		for ( fs=0; fs<p->w; fs++ ) {
 		for ( ss=0; ss<p->h; ss++ ) {
@@ -193,8 +198,9 @@ void filter_median(struct image *image, int size)
 		for ( i=0; i<p->w*p->h; i++ ) {
 			image->dp[pn][i] -= localBg[i];
 		}
+
+		free(localBg);
 	}
 
-	free(localBg);
 	free(buffer);
 }

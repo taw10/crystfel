@@ -3,13 +3,13 @@
  *
  * Invoke the DPS auto-indexing algorithm through MOSFLM
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
  *   2010      Richard Kirian <rkirian@asu.edu>
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2016 Thomas White <taw@physics.org>
  *   2014      Takanori Nakane <nakane.t@gmail.com>
  *
  * This file is part of CrystFEL.
@@ -373,22 +373,18 @@ static void write_spt(struct image *image, const char *filename)
 	for ( i=0; i<n; i++ ) {
 
 		struct imagefeature *f;
-		struct panel *p;
 		double xs, ys, rx, ry, x, y;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		p = find_panel(image->det, f->fs, f->ss);
-		if ( p == NULL ) continue;
+		xs = f->fs*f->p->fsx + f->ss*f->p->ssx;
+		ys = f->fs*f->p->fsy + f->ss*f->p->ssy;
+		rx = (xs + f->p->cnx) / f->p->res;
+		ry = (ys + f->p->cny) / f->p->res;
 
-		xs = (f->fs-p->min_fs)*p->fsx + (f->ss-p->min_ss)*p->ssx;
-		ys = (f->fs-p->min_fs)*p->fsy + (f->ss-p->min_ss)*p->ssy;
-		rx = (xs + p->cnx) / p->res;
-		ry = (ys + p->cny) / p->res;
-
-		x = -rx*fclen/p->clen;
-		y = ry*fclen/p->clen;  /* Peak positions in m */
+		x = -rx*fclen/f->p->clen;
+		y = ry*fclen/f->p->clen;  /* Peak positions in m */
 
 		fprintf(fh, "%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
 		        x*1e3, y*1e3, 0.0, 0.0, 1000.0, 10.0);
