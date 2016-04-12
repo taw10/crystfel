@@ -129,7 +129,7 @@ static int assplode_algebraic(const char *a_orig, char ***pbits)
 		if ( !isdigit(ch) && (ch != '.') && (ch != 'x') && (ch != 'y')
 		  && (ch != '+') && (ch != '-') )
 		{
-			ERROR("Invalid character '%C' found.\n", ch);
+			ERROR("Invalid character '%c' found.\n", ch);
 			return 0;
 		}
 
@@ -174,7 +174,7 @@ static int dir_conv(const char *a, double *sx, double *sy)
 		assert(len != 0);
 		axis = bits[i][len-1];
 		if ( (axis != 'x') && (axis != 'y') ) {
-			ERROR("Invalid symbol '%C' - must be x or y.\n", axis);
+			ERROR("Invalid symbol '%c' - must be x or y.\n", axis);
 			return 1;
 		}
 
