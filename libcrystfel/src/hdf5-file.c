@@ -2592,8 +2592,8 @@ static int fill_paths(struct hdfile *hdfile, struct detector *det, int pi,
 }
 
 
-static int fill_dims(struct hdfile *hdfile, struct panel *p, struct event *ev,
-                     struct event_list *events)
+static int check_dims(struct hdfile *hdfile, struct panel *p, struct event *ev,
+                      struct event_list *events, int *global_path_dim)
 {
 	char *full_panel_path;
 	hid_t dh;
@@ -2603,8 +2603,6 @@ static int fill_dims(struct hdfile *hdfile, struct panel *p, struct event *ev,
 	hsize_t *max_size;
 	int hsdi;
 	int panel_path_dim = 0;
-	int global_path_dim = -1;
-	int mlwd;
 	struct dim_structure *panel_dim_structure;
 
 	/* Get the full path for this panel in this event */
@@ -2636,28 +2634,17 @@ static int fill_dims(struct hdfile *hdfile, struct panel *p, struct event *ev,
 		}
 	}
 
-	if ( global_path_dim == -1 ) {
+	if ( *global_path_dim == -1 ) {
 
-		global_path_dim = panel_path_dim;
+		*global_path_dim = panel_path_dim;
 
-	} else if ( panel_path_dim != global_path_dim ) {
+	} else if ( panel_path_dim != *global_path_dim ) {
 
 		ERROR("Data blocks paths for panels must have the same number"
 		      " of placeholders\n");
 		free(size);
 		free(max_size);
 		return 1;
-	}
-
-
-	for ( mlwd=0; mlwd<global_path_dim; mlwd++ ) {
-
-		struct event *mlwd_ev;
-
-		mlwd_ev = copy_event(ev);
-		push_dim_entry_to_event(mlwd_ev, mlwd);
-		append_event_to_event_list(events, mlwd_ev);
-		free(mlwd_ev);
 	}
 
 	return 0;
@@ -2703,16 +2690,35 @@ struct event_list *fill_event_list(struct hdfile *hdfile, struct detector *det)
 
 		/* For each event so far, expand the dimensions */
 		for ( evi=0; evi<master_el->num_events; evi++ ) {
+
 			int pi;
+			int global_path_dim = -1;
+			int mlwd;
+
+			/* Check the dimensionality of each panel */
 			for ( pi=0; pi<det->n_panels; pi++ ) {
-				if ( fill_dims(hdfile, &det->panels[pi],
-				               master_el->events[evi],
-				               master_el_with_dims) )
+				if ( check_dims(hdfile, &det->panels[pi],
+				                master_el->events[evi],
+				                master_el_with_dims,
+				                &global_path_dim) )
 				{
 					ERROR("Failed to enumerate dims.\n");
 					return NULL;
 				}
 			}
+
+			/* Add this dimensionality to all events */
+			for ( mlwd=0; mlwd<global_path_dim; mlwd++ ) {
+
+				struct event *mlwd_ev;
+
+				mlwd_ev = copy_event(master_el->events[evi]);
+				push_dim_entry_to_event(mlwd_ev, mlwd);
+				append_event_to_event_list(master_el_with_dims,
+				                           mlwd_ev);
+				free_event(mlwd_ev);
+			}
+
 		}
 
 		free_event_list(master_el);
