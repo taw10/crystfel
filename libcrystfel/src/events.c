@@ -135,10 +135,9 @@ int append_event_to_event_list(struct event_list *ev_list, struct event *ev)
 	struct event **new_el;
 
 	new_el = realloc(ev_list->events,
-                     (1+ev_list->num_events)*sizeof(struct event*));
-	if ( new_el == NULL ) {
-        return 1;
-	}
+                         (1+ev_list->num_events)*sizeof(struct event*));
+	if ( new_el == NULL ) return 1;
+
 	ev_list->events = new_el;
 	ev_list->events[ev_list->num_events] = copy_event(ev);
 	ev_list->num_events +=1;
