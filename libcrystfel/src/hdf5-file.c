@@ -2174,7 +2174,7 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 
 			sh = H5Screate(H5S_SCALAR);
 
-			r = H5Dread(dh, type, sh, sh, H5P_DEFAULT, tmp);
+			r = H5Dread(dh, type, sh, H5S_ALL, H5P_DEFAULT, tmp);
 			H5Sclose(sh);
 			if ( r < 0 ) {
 				free(tmp);
