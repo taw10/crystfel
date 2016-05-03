@@ -3,11 +3,11 @@
  *
  * Check partiality gradients for prediction refinement
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2012-2015 Thomas White <taw@physics.org>
+ *   2012-2016 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -418,9 +418,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	image.width = 1024;
-	image.height = 1024;
-	image.det = simple_geometry(&image);
+	image.det = simple_geometry(&image, 1024, 1024);
 	image.det->panels[0].res = 13333.3;
 	image.det->panels[0].clen = 80e-3;
 	image.det->panels[0].coffset = 0.0;

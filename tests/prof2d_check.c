@@ -89,12 +89,6 @@ int main(int argc, char *argv[])
 	image.dp = calloc(1, sizeof(float *));
 	image.bad = calloc(1, sizeof(int *));
 
-	image.width = w;
-	image.height = h;
-	image.det->panels[0].min_fs = 0;
-	image.det->panels[0].max_fs = w;
-	image.det->panels[0].min_ss = 0;
-	image.det->panels[0].max_ss = h;
 	image.det->panels[0].w = w;
 	image.det->panels[0].h = h;
 	image.det->panels[0].fsx = 1.0;

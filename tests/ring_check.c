@@ -3,11 +3,11 @@
  *
  * Check peak integration
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2014 Thomas White <taw@physics.org>
+ *   2011-2016 Thomas White <taw@physics.org>
  *   2012      Andrew Martin <andrew.martin@desy.de>
  *
  * This file is part of CrystFEL.
@@ -60,15 +60,16 @@ static void third_integration_check(struct image *image, int n_trials,
 		double fsp, ssp;
 		int r;
 
-		for ( fs=0; fs<image->width; fs++ ) {
-		for ( ss=0; ss<image->height; ss++ ) {
-			image->dp[0][fs+image->width*ss]
+		for ( fs=0; fs<image->det->panels[0].w; fs++ ) {
+		for ( ss=0; ss<image->det->panels[0].h; ss++ ) {
+			image->dp[0][fs+image->det->panels[0].w*ss]
 			                           = poisson_noise(rng, 1000.0);
 		}
 		}
 
-		r = integrate_peak(image, 64, 64, &fsp, &ssp,
-		                   &intensity, &sigma, 10.0, 15.0, 17.0, NULL);
+		r = integrate_peak(image, 64, 64, &image->det->panels[0],
+		                   &fsp, &ssp, &intensity, &sigma,
+		                   10.0, 15.0, 17.0, NULL);
 
 		if ( r == 0 ) {
 			mean_intensity += intensity;
@@ -118,9 +119,9 @@ static void fourth_integration_check(struct image *image, int n_trials,
 		double fsp, ssp;
 		int r;
 
-		for ( fs=0; fs<image->width; fs++ ) {
-		for ( ss=0; ss<image->height; ss++ ) {
-			int idx = fs+image->width*ss;
+		for ( fs=0; fs<image->det->panels[0].w; fs++ ) {
+		for ( ss=0; ss<image->det->panels[0].h; ss++ ) {
+			int idx = fs+image->det->panels[0].w*ss;
 			image->dp[0][idx] = poisson_noise(rng, 1000.0);
 			if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
 			image->dp[0][idx] += 1000.0;
@@ -128,8 +129,9 @@ static void fourth_integration_check(struct image *image, int n_trials,
 		}
 		}
 
-		r = integrate_peak(image, 64, 64, &fsp, &ssp,
-		                   &intensity, &sigma, 10.0, 15.0, 17.0, NULL);
+		r = integrate_peak(image, 64, 64, &image->det->panels[0],
+		                   &fsp, &ssp, &intensity, &sigma,
+		                   10.0, 15.0, 17.0, NULL);
 
 		if ( r == 0 ) {
 			mean_intensity += intensity;
@@ -189,10 +191,6 @@ int main(int argc, char *argv[])
 	image.det->n_panels = 1;
 	image.det->panels = calloc(1, sizeof(struct panel));
 
-	image.det->panels[0].min_fs = 0;
-	image.det->panels[0].max_fs = 127;
-	image.det->panels[0].min_ss = 0;
-	image.det->panels[0].max_ss = 127;
 	image.det->panels[0].fsx = 1.0;
 	image.det->panels[0].fsy = 0.0;
 	image.det->panels[0].ssx = 0.0;
@@ -207,18 +205,18 @@ int main(int argc, char *argv[])
 	image.det->panels[0].res = 1.0;
 	image.det->panels[0].w = 128;
 	image.det->panels[0].h = 128;
-	image.det->panels[0].adu_per_eV = 1.0/1000.0;  /* -> 1 adu per photon */
+	image.det->panels[0].adu_per_eV = NAN;
+	image.det->panels[0].adu_per_photon = 1.0;
 	image.det->panels[0].max_adu = +INFINITY;  /* No cutoff */
 
-	image.width = 128;
-	image.height = 128;
 	memset(image.dp[0], 0, 128*128*sizeof(float));
 
 	image.n_crystals = 0;
 	image.crystals = NULL;
 
 	/* First check: no intensity -> no peak, or very low intensity */
-	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma,
+	r = integrate_peak(&image, 64, 64, &image.det->panels[0],
+	                   &fsp, &ssp, &intensity, &sigma,
 	                   10.0, 15.0, 17.0, NULL);
 	STATUS("  First check: integrate_peak() returned %i", r);
 	if ( r == 0 ) {
@@ -236,15 +234,16 @@ int main(int argc, char *argv[])
 
 	/* Second check: uniform peak gives correct I and low sigma(I) */
 	npx = 0;
-	for ( fs=0; fs<image.width; fs++ ) {
-	for ( ss=0; ss<image.height; ss++ ) {
+	for ( fs=0; fs<image.det->panels[0].w; fs++ ) {
+	for ( ss=0; ss<image.det->panels[0].h; ss++ ) {
 		if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
-		image.dp[0][fs+image.width*ss] = 1000.0;
+		image.dp[0][fs+image.det->panels[0].w*ss] = 1000.0;
 		npx++;
 	}
 	}
 
-	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma,
+	r = integrate_peak(&image, 64, 64, &image.det->panels[0],
+	                   &fsp, &ssp, &intensity, &sigma,
 	                   10.0, 15.0, 17.0, NULL);
 	if ( r ) {
 		ERROR(" Second check: integrate_peak() returned %i (wrong).\n",
@@ -277,16 +276,17 @@ int main(int argc, char *argv[])
 
 	/* Fifth check: uniform peak on uniform background */
 	npx = 0;
-	for ( fs=0; fs<image.width; fs++ ) {
-	for ( ss=0; ss<image.height; ss++ ) {
-		image.dp[0][fs+image.width*ss] = 1000.0;
+	for ( fs=0; fs<image.det->panels[0].w; fs++ ) {
+	for ( ss=0; ss<image.det->panels[0].h; ss++ ) {
+		image.dp[0][fs+image.det->panels[0].w*ss] = 1000.0;
 		if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
-		image.dp[0][fs+image.width*ss] += 1000.0;
+		image.dp[0][fs+image.det->panels[0].w*ss] += 1000.0;
 		npx++;
 	}
 	}
 
-	r = integrate_peak(&image, 64, 64, &fsp, &ssp, &intensity, &sigma,
+	r = integrate_peak(&image, 64, 64, &image.det->panels[0],
+	                   &fsp, &ssp, &intensity, &sigma,
 	                   10.0, 15.0, 17.0, NULL);
 	if ( r ) {
 		ERROR("   Fifth check: integrate_peak() returned %i (wrong).\n",

@@ -411,9 +411,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	image.width = 1024;
-	image.height = 1024;
-	image.det = simple_geometry(&image);
+	image.det = simple_geometry(&image, 1024, 1024);
 	image.det->panels[0].res = 13333.3;
 	image.det->panels[0].clen = 80e-3;
 	image.det->panels[0].coffset = 0.0;

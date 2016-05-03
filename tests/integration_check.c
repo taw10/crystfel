@@ -3,7 +3,11 @@
  *
  * Check reflection integration
  *
- * Copyright © 2013 Thomas White <taw@physics.org>
+ * Copyright © 2013-2016 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2013-2016 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -72,10 +76,6 @@ int main(int argc, char *argv[])
 	image.det->n_panels = 1;
 	image.det->panels = calloc(1, sizeof(struct panel));
 
-	image.det->panels[0].min_fs = 0;
-	image.det->panels[0].max_fs = w;
-	image.det->panels[0].min_ss = 0;
-	image.det->panels[0].max_ss = h;
 	image.det->panels[0].w = w;
 	image.det->panels[0].h = h;
 	image.det->panels[0].fsx = 1.0;
@@ -90,11 +90,10 @@ int main(int argc, char *argv[])
 	image.det->panels[0].cny = -h/2;
 	image.det->panels[0].clen = 60.0e-3;
 	image.det->panels[0].res = 100000;  /* 10 px per mm */
-	image.det->panels[0].adu_per_eV = 10.0/9000.0; /* 10 adu/ph */
+	image.det->panels[0].adu_per_eV = NAN;
+	image.det->panels[0].adu_per_photon = 10;
 	image.det->panels[0].max_adu = +INFINITY;  /* No cutoff */
 
-	image.width = w;
-	image.height = h;
 	image.dp = malloc(sizeof(float *));
 	image.dp[0] = malloc(w*h*sizeof(float));
 	memset(image.dp[0], 0, w*h*sizeof(float));
@@ -121,6 +120,7 @@ int main(int argc, char *argv[])
 		list = reflist_new();
 		refl = add_refl(list, 0, 0, 0);
 		set_detector_pos(refl, 64, 64);
+		set_panel(refl, &image.det->panels[0]);
 		cell = cell_new();
 		cell_set_lattice_type(cell, L_CUBIC);
 		cell_set_centering(cell, 'P');
