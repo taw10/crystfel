@@ -174,6 +174,9 @@ struct image {
 	const struct copy_hdf5_field *copyme;
 	struct stuff_from_stream *stuff_from_stream;
 
+	double                  avg_clen;  /* Average camera length extracted
+	                                    * from stuff_from_stream */
+
 	int                     id;   /* ID number of the thread
 	                               * handling this image */
 	int                     serial;  /* Monotonically ascending serial
