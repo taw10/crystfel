@@ -3,11 +3,11 @@
  *
  * Simulate diffraction patterns from small crystals
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2015 Thomas White <taw@physics.org>
+ *   2009-2016 Thomas White <taw@physics.org>
  *   2013-2014 Chun Hong Yoon <chun.hong.yoon@desy.de>
  *   2014      Valerio Mariani
  *   2013      Alexandra Tolstikova
@@ -655,12 +655,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	/* Define image parameters */
-	image.width = image.det->max_fs + 1;
-	image.height = image.det->max_ss + 1;
-
-	double wl = ph_en_to_lambda(eV_to_J(photon_energy));
-	image.lambda = wl;
+	image.lambda = ph_en_to_lambda(eV_to_J(photon_energy));
 	image.bw = bandwidth;
 	image.nsamples = nsamples;
 
@@ -693,8 +688,6 @@ int main(int argc, char *argv[])
 		gsl_rng_set(rng, seed);
 	}
 
-	powder.width = image.width;
-	powder.height = image.height;
 	powder.det = image.det;
 	powder.beam = NULL;
 	powder.lambda = 0.0;

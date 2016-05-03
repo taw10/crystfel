@@ -3,11 +3,11 @@
  *
  * Generate partials for testing scaling
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2015 Thomas White <taw@physics.org>
+ *   2011-2016 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -170,18 +170,6 @@ static void calculate_partials(Crystal *cr,
 }
 
 
-static signed int panel_number(struct detector *det, struct panel *p)
-{
-	int i;
-
-	for ( i=0; i<det->n_panels; i++ ) {
-		if ( &det->panels[i] == p ) return i;
-	}
-
-	return -1;
-}
-
-
 static void draw_and_write_image(struct image *image, RefList *reflections,
                                  gsl_rng *rng, double background)
 {
@@ -224,11 +212,11 @@ static void draw_and_write_image(struct image *image, RefList *reflections,
 
 		get_detector_pos(refl, &dfs, &dss);
 		p = get_panel(refl);
-		pn = panel_number(image->det, p);  /* Yeurgh */
-		assert(pn != -1);
+		pn = panel_number(image->det, p);
+		assert(pn != image->det->n_panels);
 
-		fs = nearbyint(dfs) - p->min_fs;
-		ss = nearbyint(dss) - p->min_ss;
+		fs = nearbyint(dfs);
+		ss = nearbyint(dss);
 		assert(fs >= 0);
 		assert(ss >= 0);
 		assert(fs < p->w);
@@ -829,8 +817,6 @@ int main(int argc, char *argv[])
 
 	image.det = det;
 	image.beam = &beam;
-	image.width = det->max_fs + 1;
-	image.height = det->max_ss + 1;
 
 	image.lambda = ph_en_to_lambda(eV_to_J(photon_energy));
 	image.div = divergence;
