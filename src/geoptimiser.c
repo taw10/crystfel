@@ -3213,7 +3213,10 @@ int main(int argc, char *argv[])
 		strcat(command_line, buffer);
 	}
 
+#ifdef HAVE_SAVE_TO_PNG
 	g_type_init();
+#endif
+
 	ret_val = optimize_geometry(gparams, det, quadrants, connected);
 
 	return ret_val;
