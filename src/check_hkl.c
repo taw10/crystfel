@@ -3,11 +3,11 @@
  *
  * Characterise reflection lists
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2016 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -780,6 +780,9 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --sigma-cutoff\n");
 				return 1;
 			}
+			STATUS("WARNING: You are using --sigma-cutoff.  "
+			       "Be aware that the figures of merit will not "
+			       "reflect the entire data set!\n");
 			break;
 
 			case 5 :
@@ -825,6 +828,13 @@ int main(int argc, char *argv[])
 	if ( argc != (optind+1) ) {
 		ERROR("Please provide exactly one HKL file to check.\n");
 		return 1;
+	}
+
+	if ( !ltest && (ignorenegs || zeronegs) ) {
+		ERROR("WARNING: You are using --zero-negs or --ignore-negs "
+		      "even though it's not required.\n");
+		ERROR("The figures of merit will not reflect the entire data "
+		      "set!\n");
 	}
 
 	if ( sym_str == NULL ) {

@@ -3,11 +3,11 @@
  *
  * Compare reflection lists
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2016 Thomas White <taw@physics.org>
  *   2013      Lorenzo Galli <lorenzo.galli@desy.de>
  *
  * This file is part of CrystFEL.
@@ -1226,6 +1226,9 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --sigma-cutoff\n");
 				return 1;
 			}
+			STATUS("WARNING: You are using --sigma-cutoff.  "
+			       "Be aware that the figures of merit will not "
+			       "reflect the entire data set!\n");
 			break;
 
 			case 6 :
@@ -1298,6 +1301,14 @@ int main(int argc, char *argv[])
 			case FOM_D2SIG :
 			break;
 		}
+	}
+
+	if ( (fom != FOM_R1F) && (config_ignorenegs || config_zeronegs) ) {
+		ERROR("WARNING: You are using --zero-negs or --ignore-negs "
+		      "even though your chosen figure of merit does not "
+		      "require it.\n");
+		ERROR("The figures of merit will not reflect the entire data "
+		      "set!\n");
 	}
 
 	if ( sym_str == NULL ) {
