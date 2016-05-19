@@ -2201,6 +2201,7 @@ int write_detector_geometry_2(const char *geometry_filename,
 		if ( n_bits != 3 ) {
 			if ( strstr(bits[0], "coffset" ) != NULL &&
 			     write_panel_coffset ) {
+				lno++;
 				continue;
 			} else {
 				fputs(lines[lno], fh);
