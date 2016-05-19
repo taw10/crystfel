@@ -335,6 +335,7 @@ static int integrate_peak(struct image *image, int cfs, int css,
 	}
 
 	if ( pk_counts == 0 ) return 11;
+	if ( pk_total == 0 ) return 13;
 
 	*pfs = ((double)fsct / pk_total) + 0.5;
 	*pss = ((double)ssct / pk_total) + 0.5;
