@@ -1089,7 +1089,7 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 }
 
 
-static int read_and_store_hdf5_field(struct image *image, const char *line)
+static int read_and_store_field(struct image *image, const char *line)
 {
 	char **new_fields;
 	char *nf;
@@ -1098,7 +1098,7 @@ static int read_and_store_hdf5_field(struct image *image, const char *line)
 		image->stuff_from_stream =
 		       malloc(sizeof(struct stuff_from_stream));
 		if ( image->stuff_from_stream == NULL) {
-			ERROR("Failed reading hdf5 entries from stream\n");
+			ERROR("Failed reading entries from stream\n");
 			return 1;
 		}
 		image->stuff_from_stream->fields = NULL;
@@ -1109,14 +1109,14 @@ static int read_and_store_hdf5_field(struct image *image, const char *line)
 			     (1+image->stuff_from_stream->n_fields)*
 			     sizeof(char *));
 	if ( new_fields == NULL ) {
-		ERROR("Failed reading hdf5 entries from stream\n");
+		ERROR("Failed reading entries from stream\n");
 		return 1;
 	}
 	image->stuff_from_stream->fields = new_fields;
 
 	nf = strdup(line);
 	if ( nf == NULL ) {
-		ERROR("Failed to allocate HDF5 field from stream\n");
+		ERROR("Failed to allocate field from stream\n");
 		return 1;
 	}
 	image->stuff_from_stream->fields[image->stuff_from_stream->n_fields] = nf;
@@ -1226,13 +1226,13 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 			}
 		}
 
-		if ( strncmp(line, "hdf5", 3) == 0 ) {
+		if ( strstr(line, " = ") != NULL ) {
 
 			int fail;
 
-			fail = read_and_store_hdf5_field(image, line);
+			fail = read_and_store_field(image, line);
 			if ( fail ) {
-				ERROR("Failed to read hd5 fields from stream.\n");
+				ERROR("Failed to read fields from stream.\n");
 				return 1;
 			}
 		}
