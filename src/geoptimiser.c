@@ -39,6 +39,9 @@
 #include <ctype.h>
 #include <time.h>
 #include <float.h>
+#include <assert.h>
+#include <gsl/gsl_statistics_double.h>
+#include <gsl/gsl_sort.h>
 
 #ifdef HAVE_CAIRO
 #ifdef HAVE_GTK
@@ -749,77 +752,8 @@ static double pick_clen_to_use(struct geoptimiser_params *gparams,
 
 static double comp_median(double *arr, long n)
 {
-
-	long low, high, median, middle, ll, hh;
-	double A;
-
-	if (n<1) return 0.0;
-
-	low = 0;
-	high = n-1 ;
-	median = (low + high) / 2;
-	while (1) {
-		if (high <= low) return arr[median] ;
-
-		if (high == low + 1) {
-			if (arr[low] > arr[high]) {
-				A = arr[low];
-				arr[low] = arr[high];
-				arr[high] = A;
-			}
-			return arr[median] ;
-		}
-
-		// Find median of low, middle and high items; swap into position
-		// low
-		middle = (low + high) / 2;
-		if ( arr[middle]>arr[high] ) {
-			A = arr[middle];
-			arr[middle] = arr[high];
-			arr[high] = A;
-		}
-		if ( arr[low]>arr[high] ) {
-			A = arr[low];
-			arr[low] = arr[high];
-			arr[high] = A;
-		}
-		if ( arr[middle]>arr[low] ) {
-			A = arr[middle];
-			arr[middle] = arr[low];
-			arr[low] = A;
-		}
-
-		// Swap low item (now in position middle) into position
-		// (low+1)
-		A = arr[middle];
-		arr[middle] = arr[low+1];
-		arr[low+1] = A;
-
-		// Nibble from each end towards middle, swapping items when
-		// stuck
-		ll = low + 1;
-		hh = high;
-		while (1) {
-			do ll++; while (arr[low] > arr[ll]);
-			do hh--; while (arr[hh]  > arr[low]);
-
-			if (hh < ll) break;
-
-			A = arr[ll];
-			arr[ll] = arr[hh];
-			arr[hh] = A;
-		}
-
-		A = arr[low];
-		arr[low] = arr[hh];
-		arr[hh] = A;
-
-		/* Re-set active partition */
-		if ( hh<=median ) low = ll;
-		if ( hh>=median ) high = hh-1;
-	}
-
-	return 0.0;
+	gsl_sort(arr, 1, n);
+	return gsl_stats_median_from_sorted_data(arr, 1, n);
 }
 
 
