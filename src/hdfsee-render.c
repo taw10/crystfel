@@ -54,14 +54,11 @@ static float *get_binned_panel(struct image *image, int binning,
 	float *data;
 	int x, y;
 	int w, h;
-	int fw;
 	struct panel *p = &image->det->panels[pi];
 
-	fw = p->max_fs - p->min_fs + 1;
-
 	/* Some pixels might get discarded */
-	w = (p->max_fs - p->min_fs + 1) / binning;
-	h = (p->max_ss - p->min_ss + 1) / binning;
+	w = p->w / binning;
+	h = p->h / binning;
 	*pw = w;
 	*ph = h;
 
@@ -85,11 +82,11 @@ static float *get_binned_panel(struct image *image, int binning,
 
 			fs = binning*x+xb;
 			ss = binning*y+yb;
-			v = image->dp[pi][fs+ss*fw];
+			v = image->dp[pi][fs+ss*p->w];
 			total += v;
 
 			if ( (image->bad != NULL)
-			  && (image->bad[pi][fs+ss*fw]) ) bad = 1;
+			  && (image->bad[pi][fs+ss*p->w]) ) bad = 1;
 
 		}
 		}
@@ -296,17 +293,15 @@ int render_tiff_fp(DisplayWindow *dw, struct image *image, const char *filename)
 		double dfs, dss;
 		int fs, ss;
 
-		invalid = reverse_2d_mapping(x, y, &dfs, &dss, image->det);
+		invalid = reverse_2d_mapping(x, y, image->det, &p, &dfs, &dss);
 		if ( invalid ) continue;
 
 		fs = dfs;
 		ss = dss; /* Explicit rounding */
 
-		pn = find_panel_number(image->det, fs, ss);
+		pn = panel_number(image->det, p);
 		assert(pn != -1);
 		p = &image->det->panels[pn];
-		fs -= p->min_fs;
-		ss -= p->min_ss;
 		val = image->dp[pn][fs + p->w* ss];
 
 		buf[(x - min_x) + (y - min_y) * width] = val;
@@ -376,17 +371,15 @@ int render_tiff_int16(DisplayWindow *dw, struct image *image,
 		double dfs, dss;
 		int fs, ss;
 
-		invalid = reverse_2d_mapping(x, y, &dfs, &dss, image->det);
+		invalid = reverse_2d_mapping(x, y, image->det, &p, &dfs, &dss);
 		if ( invalid ) continue;
 
 		fs = dfs;
 		ss = dss; /* Explicit rounding */
 
-		pn = find_panel_number(image->det, fs, ss);
+		pn = panel_number(image->det, p);
 		assert(pn != -1);
 		p = &image->det->panels[pn];
-		fs -= p->min_fs;
-		ss -= p->min_ss;
 		val = image->dp[pn][fs + p->w* ss];
 
 		if ( val < -32767 ) {
