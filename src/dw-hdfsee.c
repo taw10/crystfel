@@ -203,17 +203,14 @@ static int render_adsc_uint16(DisplayWindow *dw, const char *filename)
 		signed int pn;
 		struct panel *p;
 
-		invalid = reverse_2d_mapping(x, y, &dfs, &dss, image->det);
+		invalid = reverse_2d_mapping(x, y, image->det, &p, &dfs, &dss);
 		if ( invalid ) continue;
 
 		fs = dfs;
 		ss = dss; /* Explicit rounding */
 
-		pn = find_panel_number(image->det, fs, ss);
+		pn = panel_number(image->det, p);
 		assert(pn != -1);
-		p = &image->det->panels[pn];
-		fs -= p->min_fs;
-		ss -= p->min_ss;
 		val = image->dp[pn][fs + p->w* ss];
 
 		if ( val < 0 ) {
@@ -476,7 +473,7 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 		for ( i=0; i<image_feature_count(dw->image->features); i++ ) {
 
 			double fs, ss;
-			double x, y, xs, ys;
+			double x, y;
 			struct imagefeature *f;
 			struct panel *p;
 			double radius = dw->ring_radius;
@@ -486,15 +483,11 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 
 			fs = f->fs;
 			ss = f->ss;
-
-			p = find_panel(dw->image->det, fs, ss);
-
+			p = f->p;
 			if ( p == NULL ) continue;
 
-			xs = (fs-p->min_fs)*p->fsx + (ss-p->min_ss)*p->ssx;
-			ys = (fs-p->min_fs)*p->fsy + (ss-p->min_ss)*p->ssy;
-			x = xs + p->cnx;
-			y = ys + p->cny;
+			x = fs*p->fsx + ss*p->ssx + p->cnx;
+			y = fs*p->fsy + ss*p->ssy + p->cny;
 
 			cairo_arc(cr, x/dw->binning, y/dw->binning,
 				  radius, 0.0, 2.0*M_PI);
@@ -681,8 +674,7 @@ static gint displaywindow_set_binning_response(GtkWidget *widget, gint response,
 				"binning factor.");
 			done = 0;
 		} else {
-			if ((binning < dw->image->width/10)
-			 && (binning < dw->image->height/10)) {
+			if ( binning < 100 ) {
 				dw->binning = binning;
 				displaywindow_update(dw);
 			} else {
@@ -766,8 +758,7 @@ static gint displaywindow_set_binning(GtkWidget *widget, DisplayWindow *dw)
 	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(label),
 				  1, 3, 1, 2);
 
-	snprintf(tmp, 63, "Raw image size: %i by %i pixels",
-		 dw->image->width, dw->image->height);
+	snprintf(tmp, 63, "Raw image size: (unknown)");
 	label = gtk_label_new(tmp);
 	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(label),
 				  1, 3, 2, 3);
@@ -1269,12 +1260,12 @@ static void load_features_from_file(struct image *image, const char *filename)
 
 				/* Convert coordinates to match rearranged
 				 * panels in memory */
-				fs = fs-p->orig_min_fs+p->min_fs;
-				ss = ss-p->orig_min_ss+p->min_ss;
+				fs = fs-p->orig_min_fs;
+				ss = ss-p->orig_min_ss;
 
 			}
 
-			image_add_feature(image->features, fs, ss,
+			image_add_feature(image->features, fs, ss, p,
 			                  image, 1.0, strdup(name));
 			continue;
 
@@ -1294,12 +1285,12 @@ static void load_features_from_file(struct image *image, const char *filename)
 
 				/* Convert coordinates to match rearranged
 				 * panels in memory */
-				fs = fs - p->orig_min_fs + p->min_fs;
-				ss = ss - p->orig_min_ss + p->min_ss;
+				fs = fs - p->orig_min_fs;
+				ss = ss - p->orig_min_ss;
 
 			}
 
-			image_add_feature(image->features, fs, ss,
+			image_add_feature(image->features, fs, ss, p,
 			                  image, 1.0, strdup(name));
 			continue;
 
@@ -1319,13 +1310,13 @@ static void load_features_from_file(struct image *image, const char *filename)
 
 				/* Convert coordinates to match rearranged panels
 				 * in memory */
-				fs = fs - p->orig_min_fs + p->min_fs;
-				ss = ss - p->orig_min_ss + p->min_ss;
+				fs = fs - p->orig_min_fs;
+				ss = ss - p->orig_min_ss;
 
 			}
 
-			image_add_feature(image->features, fs, ss, image, 1.0,
-			                  "peak");
+			image_add_feature(image->features, fs, ss, p, image,
+			                  1.0, "peak");
 		} else if ( r == 4 ) {
 
 			p = find_orig_panel(image->det, fs, ss);
@@ -1337,11 +1328,11 @@ static void load_features_from_file(struct image *image, const char *filename)
 
 				/* Convert coordinates to match rearranged
 				 * panels in memory */
-				fs = fs - p->orig_min_fs + p->min_fs;
-				ss = ss - p->orig_min_ss + p->min_ss;
+				fs = fs - p->orig_min_fs;
+				ss = ss - p->orig_min_ss;
 			}
-			image_add_feature(image->features, fs, ss, image, 1.0,
-			                  "peak");
+			image_add_feature(image->features, fs, ss, p, image,
+			                  1.0, "peak");
 
 		} else if ( r == 2 ) {
 
@@ -1354,11 +1345,11 @@ static void load_features_from_file(struct image *image, const char *filename)
 
 				/* Convert coordinates to match rearranged
 				 * panels in memory */
-				fs = fs - p->orig_min_fs + p->min_fs;
-				ss = ss - p->orig_min_ss + p->min_ss;
+				fs = fs - p->orig_min_fs;
+				ss = ss - p->orig_min_ss;
 			}
-			image_add_feature(image->features, fs, ss, image, 1.0,
-			                  "peak");
+			image_add_feature(image->features, fs, ss, p, image,
+			                  1.0, "peak");
 
 		}
 
@@ -1874,6 +1865,7 @@ static void numbers_update(DisplayWindow *dw)
 	struct imagefeature *f;
 	int ffs = 0;
 	int fss = 0;
+	struct panel *fp = NULL;
 	int found = 0;
 
 	for ( px=0; px<17; px++ ) {
@@ -1885,6 +1877,7 @@ static void numbers_update(DisplayWindow *dw)
 		int invalid;
 		double dfs, dss;
 		int fs, ss;
+		struct panel *p;
 
 		x = dw->binning * dw->numbers_window->cx + (px-8);
 		y = dw->binning * dw->numbers_window->cy + (17-py-8);
@@ -1892,21 +1885,16 @@ static void numbers_update(DisplayWindow *dw)
 		y += dw->min_y;
 
 		/* Map from unbinned mapped pixel coordinates to a panel */
-		invalid = reverse_2d_mapping(x, y, &dfs, &dss, dw->image->det);
+		invalid = reverse_2d_mapping(x, y, dw->image->det,
+		                             &p, &dfs, &dss);
 		fs = dfs;  ss = dss;
 
 		if ( !invalid ) {
 
 			float val;
 			int pn;
-			struct panel *p;
 
-			pn = find_panel_number(dw->image->det, fs, ss);
-			p = &dw->image->det->panels[pn];
-
-			fs -= p->min_fs;
-			ss -= p->min_ss;
-
+			pn = panel_number(dw->image->det, p);
 			val = dw->image->dp[pn][fs+ss*p->w];
 
 			if ( (val > 0.0) && (log(val)/log(10.0) >= 5) ) {
@@ -1927,8 +1915,9 @@ static void numbers_update(DisplayWindow *dw)
 			}
 
 			if ( (px==8) && (py==8) ) {
-				ffs = fs + p->min_fs;
-				fss = ss + p->min_ss;
+				ffs = fs;
+				fss = ss;
+				fp = p;
 				found = 1;
 			}
 
@@ -1945,8 +1934,8 @@ static void numbers_update(DisplayWindow *dw)
 
 		char text[64];
 
-		f = image_feature_closest(dw->image->features, ffs, fss,
-		                          &dmin, &imin, dw->image->det);
+		f = image_feature_closest(dw->image->features, ffs, fss, fp,
+		                          &dmin, &imin);
 		if ( dmin < dw->ring_radius*dw->binning ) {
 			strncpy(text, f->name, 32);
 		} else {
@@ -1954,7 +1943,7 @@ static void numbers_update(DisplayWindow *dw)
 		}
 
 		strcat(text, " (panel ");
-		strncat(text, find_panel(dw->image->det, ffs, fss)->name, 20);
+		strncat(text, fp->name, 20);
 		strcat(text, ")");
 
 		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat), text);
@@ -1965,7 +1954,7 @@ static void numbers_update(DisplayWindow *dw)
 
 		text[0] = '\0';
 		strcat(text, "Panel ");
-		strncat(text, find_panel(dw->image->det, ffs, fss)->name, 20);
+		strncat(text, fp->name, 20);
 
 		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat), text);
 	}
@@ -2521,6 +2510,7 @@ static void calibmode_press(DisplayWindow *dw, GdkEventButton *event)
 	int fs, ss, revmap_return_value;
 	char statusbar_string[80];
 	guint cc;
+	struct panel *p;
 
 	cc = gtk_statusbar_get_context_id(GTK_STATUSBAR(dw->statusbar),
 	                                  "calibmode");
@@ -2532,15 +2522,14 @@ static void calibmode_press(DisplayWindow *dw, GdkEventButton *event)
 	snprintf(statusbar_string, 80,
 	         "Last clicked position: x: %i, y: %i (Not in panel)", x, y);
 
-	revmap_return_value = reverse_2d_mapping(x, y, &dfs, &dss,
-	                                         dw->image->det);
+	revmap_return_value = reverse_2d_mapping(x, y, dw->image->det,
+	                                         &p, &dfs, &dss);
 	if ( revmap_return_value == 0 ) {
 		fs = dfs;
 		ss = dss;
 		snprintf(statusbar_string, 80,
                         "Last clicked position: x: %i, y: %i, fs: %u, ss: %u,"
-                        " (panel %s)",
-                        x, y, fs, ss, find_panel(dw->image->det, fs, ss)->name);
+                        " (panel %s)", x, y, fs, ss, p->name);
 	}
 	gtk_statusbar_push(GTK_STATUSBAR(dw->statusbar), cc, statusbar_string);
 }
