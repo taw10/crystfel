@@ -1395,9 +1395,10 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		int hsi;
 		struct dim_structure *hsd;
 		herr_t check;
-		hid_t dataspace;
+		hid_t dataspace, memspace;
 		int fail;
 		struct panel *p;
+		hsize_t dims[2];
 
 		p = &image->det->panels[pi];
 
@@ -1481,6 +1482,10 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			return 1;
 		}
 
+		dims[0] = p->h;
+		dims[1] = p->w;
+		memspace = H5Screate_simple(2, dims, NULL);
+
 		image->dp[pi] = malloc(p->w*p->h*sizeof(float));
 		image->sat[pi] = malloc(p->w*p->h*sizeof(float));
 		if ( (image->dp[pi] == NULL) || (image->sat[pi] == NULL) ) {
@@ -1491,7 +1496,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		}
 		for ( i=0; i<p->w*p->h; i++ ) image->sat[pi][i] = INFINITY;
 
-		r = H5Dread(f->dh, H5T_NATIVE_FLOAT, H5S_ALL, dataspace,
+		r = H5Dread(f->dh, H5T_NATIVE_FLOAT, memspace, dataspace,
 		            H5P_DEFAULT, image->dp[pi]);
 		if ( r < 0 ) {
 			ERROR("Couldn't read data for panel %s\n",
@@ -1503,7 +1508,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 
 		if ( p->mask != NULL ) {
 			int *flags = malloc(p->w*p->h*sizeof(int));
-			r = H5Dread(f->dh, H5T_NATIVE_FLOAT, H5S_ALL, dataspace,
+			r = H5Dread(f->dh, H5T_NATIVE_FLOAT, memspace, dataspace,
 			            H5P_DEFAULT, flags);
 			if ( r < 0 ) {
 				ERROR("Couldn't read flags for panel %s\n",
@@ -1518,7 +1523,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		}
 
 		if ( p->satmap != NULL ) {
-			r = H5Dread(f->dh, H5T_NATIVE_FLOAT, H5S_ALL, dataspace,
+			r = H5Dread(f->dh, H5T_NATIVE_FLOAT, memspace, dataspace,
 			            H5P_DEFAULT, image->sat[pi]);
 			if ( r < 0 ) {
 				ERROR("Couldn't read satmap for panel %s\n",
