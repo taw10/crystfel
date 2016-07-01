@@ -1212,45 +1212,47 @@ static void adjust_displ_for_stretch(struct rg_collection *connected,
 }
 
 
-static void fill_av_conn(struct rg_collection *connected, int di,
-                         struct connected_data *conn_data,
-                         struct detector *det, struct gpanel *gpanels,
-                         double *list_displ_in_conn_fs,
-                         double *list_displ_in_conn_ss)
+/* Collect together all the offsets for each group in "connected"
+ * Only offsets which have enough peaks per pixel will be used. */
+static int collate_offsets_for_rg(struct rigid_group *group,
+                                  struct detector *det,
+                                  struct gpanel *gpanels,
+                                  int num_peaks_per_pixel,
+                                  double *list_dx, double *list_dy, int list_sz)
 {
 	int ip;
 	int counter = 0;
 
-	for ( ip=0; ip<connected->rigid_groups[di]->n_panels; ip++ ) {
+	for ( ip=0; ip<group->n_panels; ip++ ) {
 
 		int ifs, iss;
-		struct panel *p = connected->rigid_groups[di]->panels[ip];
+		struct panel *p = group->panels[ip];
 		struct gpanel *gp = &gpanels[panel_number(det, p)];
 
 		for ( iss=0; iss<p->h; iss++ ) {
 		for ( ifs=0; ifs<p->w; ifs++ ) {
 
-			int pix_index = ifs+p->w*iss;
+			int idx = ifs+p->w*iss;
 
-			if ( gp->num_pix_displ[pix_index]
-			         >= conn_data[di].num_peaks_per_pixel )
-			{
-				list_displ_in_conn_fs[counter] =
-				          gp->avg_displ_x[pix_index];
-				list_displ_in_conn_ss[counter] =
-				          gp->avg_displ_y[pix_index];
-				counter++;
+			if ( gp->num_pix_displ[idx] < num_peaks_per_pixel ) {
+				continue;
 			}
 
+			if ( list_sz == counter ) {
+				ERROR("Too many offsets in group %s!\n",
+				      group->name);
+				return 0;
+			}
+
+			list_dx[counter] = gp->avg_displ_x[idx];
+			list_dy[counter] = gp->avg_displ_y[idx];
+			counter++;
+
 		}
 		}
 	}
 
-	if ( counter != conn_data[di].n_peaks_in_conn ) {
-		ERROR("counter: %i n_peaks_in_conn: %i\n",
-		       counter, conn_data[di].n_peaks_in_conn);
-		abort();
-	}
+	return counter;
 }
 
 
@@ -1263,12 +1265,12 @@ static void fill_conn_data_sh(struct connected_data *conn_data,
 	conn_data[di].sh_y = comp_median(av_in_panel_ss,
 	                                 conn_data[di].n_peaks_in_conn);
 
-	STATUS("Panel %s, num pixels: %i, shifts (in pixels) X,Y: %0.8f, %0.8f\n",
+	STATUS("Group %s, num pixels: %i, shifts x,y: %0.8f, %0.8f px\n",
 	       conn_data[di].name, conn_data[di].n_peaks_in_conn,
 	       conn_data[di].sh_x, conn_data[di].sh_y);
 
 	if ( modulus2d(conn_data[di].sh_x, conn_data[di].sh_y ) > 0.8*mpd ) {
-		STATUS("WARNING: absolute shift is: %0.1f > 0.8*%0.1f pixels. "
+		STATUS("WARNING: absolute shift is: %0.1f > 0.8*%0.1f px "
 		       "Increase the value of max_peak_distance!\n",
 		       modulus2d(conn_data[di].sh_x, conn_data[di].sh_y), mpd);
 	}
@@ -1287,39 +1289,46 @@ static int compute_shift(struct rg_collection *connected,
 
 	for ( di=0; di<connected->n_rigid_groups; di++ ) {
 
-		double *list_displ_in_conn_fs;
-		double *list_displ_in_conn_ss;
+		double *list_dx;
+		double *list_dy;
+		int ct;
 
-		list_displ_in_conn_fs = malloc(conn_data[di].n_peaks_in_conn
-		                               * sizeof(double));
-		list_displ_in_conn_ss = malloc(conn_data[di].n_peaks_in_conn
-		                               * sizeof(double));
-		if  ( (list_displ_in_conn_fs == NULL)
-		   || (list_displ_in_conn_ss == NULL) )
-		{
+		list_dx = malloc(conn_data[di].n_peaks_in_conn*sizeof(double));
+		list_dy = malloc(conn_data[di].n_peaks_in_conn*sizeof(double));
+		if  ( (list_dx == NULL) || (list_dy == NULL) ) {
 			ERROR("Failed to allocate memory for computing shifts\n");
-			free(list_displ_in_conn_fs);
-			free(list_displ_in_conn_ss);
+			free(list_dx);
+			free(list_dy);
 			return 1;
 		}
 
-		fill_av_conn(connected, di, conn_data, det, gpanels,
-		             list_displ_in_conn_fs, list_displ_in_conn_ss);
+		ct = collate_offsets_for_rg(connected->rigid_groups[di], det,
+		                            gpanels,
+		                            conn_data[di].num_peaks_per_pixel,
+		                            list_dx, list_dy,
+		                            conn_data[di].n_peaks_in_conn);
+
+		if ( ct != conn_data[di].n_peaks_in_conn ) {
+			ERROR("Wrong number of peaks for group %s!\n",
+			      connected->rigid_groups[di]->name);
+			ERROR("Counter: %i n_peaks_in_conn: %i\n",
+			       ct, conn_data[di].n_peaks_in_conn);
+			abort();
+		}
 
 		if ( conn_data[di].n_peaks_in_conn
 		          >= gparams->min_num_pix_per_conn_group )
 		{
-
-			fill_conn_data_sh(conn_data, list_displ_in_conn_fs,
-			                  list_displ_in_conn_ss, di,
+			fill_conn_data_sh(conn_data, list_dx, list_dy, di,
 			                  gparams->max_peak_dist);
+
 		} else {
 			conn_data[di].sh_x = -10000.0;
 			conn_data[di].sh_y = -10000.0;
 		}
 
-		free(list_displ_in_conn_fs);
-		free(list_displ_in_conn_ss);
+		free(list_dx);
+		free(list_dy);
 	}
 
 	return 0;
