@@ -324,16 +324,19 @@ static struct image *read_patterns_from_stream(const char *infile,
 			images = images_new;
 		}
 
-		if ( n_chunks % 1000 == 0 ) {
-			STATUS("Loaded %i indexed patterns from %i "
-			       "total patterns.\n",
-			       n_images, n_chunks);
+		if ( n_images % 1000 == 0 ) {
+			STATUS("Loaded %i indexed patterns from %i total "
+			       "patterns.\n", n_images, n_chunks);
 		}
+
 
 	} while ( 1 );
 
 	close_stream(st);
 	*n = n_images;
+
+	STATUS("Found %i indexed patterns in file %s (from a total of %i).\n",
+	       n_images, infile, n_chunks);
 
 	return images;
 }
