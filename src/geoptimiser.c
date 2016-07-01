@@ -580,17 +580,17 @@ static int find_quad_for_connected(struct rigid_group *rg,
  * the median displacements in each direction and the modulus */
 static int fill_avg_pixel_displ(struct gpanel *gp, int i)
 {
-	double *list_fs_displ;
-	double *list_ss_displ;
+	double *list_dx;
+	double *list_dy;
 	int count = 0;
 	int ei;
 
-	list_fs_displ = calloc(gp->num_pix_displ[i], sizeof(double));
-	list_ss_displ = calloc(gp->num_pix_displ[i], sizeof(double));
-	if ( (list_fs_displ == NULL) || (list_ss_displ == NULL) ) {
+	list_dx = calloc(gp->num_pix_displ[i], sizeof(double));
+	list_dy = calloc(gp->num_pix_displ[i], sizeof(double));
+	if ( (list_dx == NULL) || (list_dy == NULL) ) {
 		ERROR("Failed to allocate memory for pixel statistics.\n");
-		free(list_fs_displ);
-		free(list_ss_displ);
+		free(list_dx);
+		free(list_dy);
 		return 1;
 	}
 
@@ -603,8 +603,8 @@ static int fill_avg_pixel_displ(struct gpanel *gp, int i)
 		pix = gp->curr_pix_displ[i];
 
 		if ( pix->dx == -10000.0 ) break;
-		list_fs_displ[count] = pix->dx;
-		list_ss_displ[count] = pix->dy;
+		list_dx[count] = pix->dx;
+		list_dy[count] = pix->dy;
 		count++;
 		if ( pix->ne == NULL ) {
 			break;
@@ -614,18 +614,18 @@ static int fill_avg_pixel_displ(struct gpanel *gp, int i)
 	}
 
 	if ( count < 1 ) {
-		free(list_fs_displ);
-		free(list_ss_displ);
+		free(list_dx);
+		free(list_dy);
 		return 0;
 	}
 
-	gp->avg_displ_x[i] = comp_median(list_fs_displ, count);
-	gp->avg_displ_y[i] = comp_median(list_ss_displ, count);
+	gp->avg_displ_x[i] = comp_median(list_dx, count);
+	gp->avg_displ_y[i] = comp_median(list_dy, count);
 	gp->avg_displ_abs[i] = modulus2d(gp->avg_displ_x[i],
 	                                 gp->avg_displ_y[i]);
 
-	free(list_fs_displ);
-	free(list_ss_displ);
+	free(list_dx);
+	free(list_dy);
 	return 0;
 }
 
@@ -1257,12 +1257,12 @@ static int collate_offsets_for_rg(struct rigid_group *group,
 
 
 static void fill_conn_data_sh(struct connected_data *conn_data,
-                              double *av_in_panel_fs, double *av_in_panel_ss,
+                              double *list_dx, double *list_dy,
                               int di, double mpd)
 {
-	conn_data[di].sh_x = comp_median(av_in_panel_fs,
+	conn_data[di].sh_x = comp_median(list_dx,
 	                                 conn_data[di].n_peaks_in_conn);
-	conn_data[di].sh_y = comp_median(av_in_panel_ss,
+	conn_data[di].sh_y = comp_median(list_dy,
 	                                 conn_data[di].n_peaks_in_conn);
 
 	STATUS("Group %s, num pixels: %i, shifts x,y: %0.8f, %0.8f px\n",
