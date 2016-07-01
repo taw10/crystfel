@@ -1422,7 +1422,7 @@ static int compute_shift_for_empty_panels(struct rg_collection *quadrants,
 				          av_sh->aver_x[conn_data[di].num_quad];
 				conn_data[di].sh_y =
 				          av_sh->aver_y[conn_data[di].num_quad];
-				STATUS("Panel %s doesn't not have eough (%i) "
+				STATUS("Panel %s doesn't not have enough (%i) "
 				       "peaks. Using average shifts (in pixels) "
 				       "X,Y: %0.2f,%0.2f\n", conn_data[di].name,
 				       conn_data[di].n_peaks_in_conn,
