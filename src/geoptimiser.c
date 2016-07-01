@@ -135,8 +135,8 @@ struct connected_data
 
 struct single_pixel_displ
 {
-	double dfs;
-	double dss;
+	double dx;
+	double dy;
 	struct single_pixel_displ *ne;
 };
 
@@ -602,9 +602,9 @@ static int fill_avg_pixel_displ(struct gpanel *gp, int i)
 
 		pix = gp->curr_pix_displ[i];
 
-		if ( pix->dfs == -10000.0 ) break;
-		list_fs_displ[count] = pix->dfs;
-		list_ss_displ[count] = pix->dss;
+		if ( pix->dx == -10000.0 ) break;
+		list_fs_displ[count] = pix->dx;
+		list_ss_displ[count] = pix->dy;
 		count++;
 		if ( pix->ne == NULL ) {
 			break;
@@ -619,7 +619,6 @@ static int fill_avg_pixel_displ(struct gpanel *gp, int i)
 		return 0;
 	}
 
-	/* FIXME: Is this fs/ss or x/y ??? */
 	gp->avg_displ_x[i] = comp_median(list_fs_displ, count);
 	gp->avg_displ_y[i] = comp_median(list_ss_displ, count);
 	gp->avg_displ_abs[i] = modulus2d(gp->avg_displ_x[i],
@@ -668,8 +667,8 @@ static int add_distance_to_list(struct gpanel *gp,
 
 	get_detector_pos(refl, &rfs, &rss);
 	compute_x_y(rfs, rss, get_panel(refl), &crx, &cry);
-	gp->curr_pix_displ[pix_index]->dfs = fx - crx;
-	gp->curr_pix_displ[pix_index]->dss = fy - cry;
+	gp->curr_pix_displ[pix_index]->dx = fx - crx;
+	gp->curr_pix_displ[pix_index]->dy = fy - cry;
 	gp->curr_pix_displ[pix_index]->ne = NULL;
 	gp->num_pix_displ[pix_index]++;
 
@@ -2102,8 +2101,8 @@ static int initialize_pixel_displacement_list(struct gpanel *gp)
 	}
 
 	for ( ipx=0; ipx<gp->p->w*gp->p->h; ipx++ ) {
-		gp->pix_displ_list[ipx].dfs = -10000.0;
-		gp->pix_displ_list[ipx].dss = -10000.0;
+		gp->pix_displ_list[ipx].dx = -10000.0;
+		gp->pix_displ_list[ipx].dy = -10000.0;
 		gp->pix_displ_list[ipx].ne = NULL;
 		gp->curr_pix_displ[ipx] = &gp->pix_displ_list[ipx];
 		gp->num_pix_displ[ipx] = 0;
