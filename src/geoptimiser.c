@@ -1556,9 +1556,7 @@ static void scan_p1(int ip0, int ip1, struct rg_collection *connected,
 			double scal_m;
 			double multlen;
 
-			scal_m = d_c_x * d_cd_x+
-			         d_c_y * d_cd_y -
-				 FLT_EPSILON;
+			scal_m = d_c_x * d_cd_x+ d_c_y * d_cd_y - FLT_EPSILON;
 
 			multlen = len1*len2;
 			if ( fabs(scal_m)>=multlen ) {
