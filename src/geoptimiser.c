@@ -141,30 +141,6 @@ struct single_pixel_displ
 };
 
 
-struct connected_stretch_and_angles
-{
-	double *stretch_coeff;
-	long *num_angles;
-	long num_coeff;
-};
-
-
-struct avg_rot_and_stretch
-{
-	double *aver_ang;
-	double *aver_str;
-	int *aver_num_ang;
-};
-
-
-struct avg_shift
-{
-	double *aver_x;
-	double *aver_y;
-	int *aver_num_sh;
-};
-
-
 struct gpanel
 {
 	struct panel               *p;
@@ -173,9 +149,6 @@ struct gpanel
 	struct single_pixel_displ  *pix_displ_list;
 	struct single_pixel_displ **curr_pix_displ;
 	int                        *num_pix_displ;
-
-	struct avg_shift            avg_shift;
-	struct avg_rot_and_stretch  avg_rot_and_stretch;
 
 	/* Average displacements for each pixel */
 	double                     *avg_displ_x;
@@ -934,120 +907,74 @@ static double compute_error(struct rg_collection *connected,
 }
 
 
-struct avg_rot_and_stretch *initialize_avg_rot_stretch(int num_rigid_groups)
+static int compute_rot_stretch_for_empty_panels(struct rg_collection *quads,
+                                                struct rg_collection *conn,
+                                                int min_pix,
+                                                struct connected_data *conn_data)
 {
-	int i;
-
-	struct avg_rot_and_stretch *avg_rot_str;
-
-	avg_rot_str = malloc(sizeof(struct avg_rot_and_stretch));
-	if ( avg_rot_str == NULL ) {
-		ERROR("Failed to allocate memory to correct empty panels.|n");
-		return NULL;
-	}
-
-	avg_rot_str->aver_ang = malloc(num_rigid_groups*sizeof(double));
-	if ( avg_rot_str->aver_ang == NULL ) {
-		ERROR("Failed to allocate memory to correct empty panels.|n");
-		free(avg_rot_str);
-		return NULL;
-	}
-
-	avg_rot_str->aver_str = malloc(num_rigid_groups*sizeof(double));
-	if ( avg_rot_str->aver_str == NULL ) {
-		ERROR("Failed to allocate memory to correct empty panels.|n");
-		free(avg_rot_str->aver_ang);
-		free(avg_rot_str);
-		return NULL;
-	}
-
-	avg_rot_str->aver_num_ang = malloc(num_rigid_groups*sizeof(int));
-	if ( avg_rot_str->aver_num_ang == NULL ) {
-		ERROR("Failed to allocate memory to correct empty panels.|n");
-		free(avg_rot_str->aver_ang);
-		free(avg_rot_str->aver_str);
-		free(avg_rot_str);
-		return NULL;
-	}
-
-	for (i=0; i<num_rigid_groups; i++) {
-		avg_rot_str->aver_ang[i] = 0.0;
-		avg_rot_str->aver_str[i] = 0.0;
-		avg_rot_str->aver_num_ang[i] = 0;
-	}
-
-	return avg_rot_str;
-}
-
-
-void free_avg_angle_and_stretches(struct avg_rot_and_stretch* avg_rot_str)
-{
-	free(avg_rot_str->aver_ang);
-	free(avg_rot_str->aver_str);
-	free(avg_rot_str->aver_num_ang);
-}
-
-
-static int compute_rot_stretch_for_empty_panels(
-                                            struct rg_collection *quadrants,
-                                            struct rg_collection *connected,
-                                            struct geoptimiser_params *gparams,
-                                            struct connected_data *conn_data)
-{
-	struct avg_rot_and_stretch *avg_rot_str;
 	int di,i;
+	double *aver_ang;
+	double *aver_str;
+	int *n;
 
 	STATUS("Computing rotation and elongation corrections for groups "
 	       "without the required number of measurements.\n");
 
-	avg_rot_str = initialize_avg_rot_stretch(quadrants->n_rigid_groups);
-	if ( avg_rot_str == NULL ) {
-		return 1;
+	aver_ang = malloc(quads->n_rigid_groups*sizeof(double));
+	aver_str = malloc(quads->n_rigid_groups*sizeof(double));
+	n = malloc(quads->n_rigid_groups*sizeof(double));
+
+	for ( i=0; i<quads->n_rigid_groups; i++ ) {
+		aver_ang[i] = 0.0;
+		aver_str[i] = 0.0;
+		n[i] = 0;
 	}
 
-	for (di=0; di<connected->n_rigid_groups; di++) {
-		if ( conn_data[di].n_peaks_in_conn >=
-		     gparams->min_num_pix_per_conn_group ) {
-			avg_rot_str->aver_ang[conn_data[di].num_quad] +=
-			                      conn_data[di].cang;
-			avg_rot_str->aver_str[conn_data[di].num_quad] +=
-			                      conn_data[di].cstr;
-			avg_rot_str->aver_num_ang[conn_data[di].num_quad]++;
+	/* Calculate the mean values for the groups which DO have
+	 * enough measurements */
+	for ( di=0; di<conn->n_rigid_groups; di++ ) {
+		if ( conn_data[di].n_peaks_in_conn >= min_pix ) {
+			aver_ang[conn_data[di].num_quad] += conn_data[di].cang;
+			aver_str[conn_data[di].num_quad] += conn_data[di].cstr;
+			n[conn_data[di].num_quad]++;
 		}
 	}
 
-	for ( i=0; i<quadrants->n_rigid_groups; i++ ) {
-		if ( avg_rot_str->aver_num_ang[i] > 0 ) {
-			avg_rot_str->aver_ang[i] /=
-					   (double)avg_rot_str->aver_num_ang[i];
-			avg_rot_str->aver_str[i] /=
-					   (double)avg_rot_str->aver_num_ang[i];
+	/* Divide totals to get means */
+	for ( i=0; i<quads->n_rigid_groups; i++ ) {
+		aver_ang[i] /= (double)n[i];
+		aver_str[i] /= (double)n[i];
+	}
+
+	for ( di=0; di<conn->n_rigid_groups; di++ ) {
+
+		int qn = conn_data[di].num_quad;
+		assert(qn < quads->n_rigid_groups);
+
+		if ( conn_data[di].n_peaks_in_conn >= min_pix ) continue;
+
+		if ( n[qn] > 0 ) {
+
+			conn_data[di].cang = aver_ang[qn];
+			conn_data[di].cstr = aver_str[qn];
+			STATUS("Connected group %s has only %i useful "
+			       "pixels. Using average angle: %0.4f "
+			       "degrees\n", conn_data[di].name,
+			       conn_data[di].n_peaks_in_conn,
+			       conn_data[di].cang);
+
+		} else {
+
+			STATUS("Connected group %s does not have enough "
+			       " peaks (%i). It will not be moved.\n",
+			       conn_data[di].name,
+			       conn_data[di].n_peaks_in_conn);
 		}
 	}
 
-	for ( di=0; di<connected->n_rigid_groups; di++ ) {
-
-		if ( conn_data[di].n_peaks_in_conn <
-		     gparams->min_num_pix_per_conn_group ) {
-			if ( avg_rot_str->aver_num_ang[conn_data[di].num_quad]
-			     > 0) {
-				conn_data[di].cang =
-				  avg_rot_str->aver_ang[conn_data[di].num_quad];
-				conn_data[di].cstr =
-				  avg_rot_str->aver_str[conn_data[di].num_quad];
-				STATUS("Connected group %s has only %i useful "
-				       "pixels. Using average angle: %0.4f "
-				       "degrees\n", conn_data[di].name,
-				       conn_data[di].n_peaks_in_conn,
-				       conn_data[di].cang);
-			} else {
-				STATUS("Connected group %s does not have enough "
-				       " peaks (%i). It will not be moved.\n",
-				       conn_data[di].name,
-				       conn_data[di].n_peaks_in_conn);
-			}
-		}
-	}
+	free(aver_ang);
+	free(aver_str);
+	free(n);
 
 	return 0;
 }
@@ -1319,116 +1246,71 @@ static int compute_shift(struct rg_collection *connected,
 }
 
 
-struct avg_shift *initialize_avg_shift(int num_rigid_groups)
-{
-	struct avg_shift *avg_sh;
-	int i;
-
-	avg_sh = malloc(sizeof(struct avg_shift));
-	if ( avg_sh == NULL ) {
-		ERROR("Failed to allocate memory to compute shifts for "
-		      "empty panels.\n");
-		return NULL;
-	}
-
-	avg_sh->aver_x = malloc(num_rigid_groups*sizeof(double));
-	if ( avg_sh->aver_x == NULL ) {
-		ERROR("Failed to allocate memory to compute shifts for "
-		      "empty panels.\n");
-		free(avg_sh);
-		return NULL;
-	}
-	avg_sh->aver_y = malloc(num_rigid_groups*sizeof(double));
-	if ( avg_sh->aver_y == NULL ) {
-		ERROR("Failed to allocate memory to compute shifts for "
-		      "empty panels.\n");
-		free(avg_sh->aver_x);
-		free(avg_sh);
-		return NULL;
-	}
-	avg_sh->aver_num_sh = malloc(num_rigid_groups*sizeof(int));
-	if ( avg_sh->aver_num_sh == NULL ) {
-		ERROR("Failed to allocate memory to compute shifts for "
-		      "empty panels.\n");
-		free(avg_sh->aver_x);
-		free(avg_sh->aver_y);
-		free(avg_sh);
-		return NULL;
-	}
-
-	for ( i=0; i<num_rigid_groups; i++ ) {
-		avg_sh->aver_x[i] = 0.0;
-		avg_sh->aver_y[i] = 0.0;
-		avg_sh->aver_num_sh[i] = 0;
-	}
-
-	return avg_sh;
-}
-
-
-void free_avg_shift(struct avg_shift *av_sh) {
-	free(av_sh->aver_x);
-	free(av_sh->aver_y);
-	free(av_sh->aver_num_sh);
-	free(av_sh);
-}
-
-
 static int compute_shift_for_empty_panels(struct rg_collection *quadrants,
                                             struct rg_collection *connected,
                                             struct connected_data *conn_data,
-                                            struct geoptimiser_params* gparams)
+                                            int min_pix)
 {
-
-	struct avg_shift *av_sh;
 	int di, i;
+	double *aver_x;
+	double *aver_y;
+	int *n;
+
+	aver_x = malloc(quadrants->n_rigid_groups * sizeof(double));
+	aver_y = malloc(quadrants->n_rigid_groups * sizeof(double));
+	n = malloc(quadrants->n_rigid_groups * sizeof(int));
+
+	for ( i=0; i<quadrants->n_rigid_groups; i++ ) {
+		aver_x[i] = 0.0;
+		aver_y[i] = 0.0;
+		n[i] = 0;
+	}
 
 	STATUS("Computing shift corrections for groups without the required "
 	       "number of measurements.\n");
-	av_sh = initialize_avg_shift(quadrants->n_rigid_groups);
-	if ( av_sh == NULL ) return 1;
 
 	for ( di=0; di<connected->n_rigid_groups; di++ ) {
-		if ( conn_data[di].n_peaks_in_conn >=
-		     gparams->min_num_pix_per_conn_group ) {
-			av_sh->aver_x[conn_data[di].num_quad] +=
-			              conn_data[di].sh_x;
-			av_sh->aver_y[conn_data[di].num_quad] +=
-			              conn_data[di].sh_y;
-			av_sh->aver_num_sh[conn_data[di].num_quad]++;
+		if ( conn_data[di].n_peaks_in_conn >= min_pix ) {
+			aver_x[conn_data[di].num_quad] += conn_data[di].sh_x;
+			aver_y[conn_data[di].num_quad] += conn_data[di].sh_y;
+			n[conn_data[di].num_quad]++;
 		}
 	}
 
 	for ( i=0; i<quadrants->n_rigid_groups; i++ ) {
-		if (av_sh->aver_num_sh[i]>0) {
-			av_sh->aver_x[i] /= (double)av_sh->aver_num_sh[i];
-			av_sh->aver_y[i] /= (double)av_sh->aver_num_sh[i];
+		aver_x[i] /= (double)n[i];
+		aver_y[i] /= (double)n[i];
+	}
+
+	for ( di=0; di<connected->n_rigid_groups; di++ ) {
+		if ( conn_data[di].n_peaks_in_conn >= min_pix ) continue;
+
+		int qn = conn_data[di].num_quad;
+
+		if ( n[qn] > 0 ) {
+
+			conn_data[di].sh_x = aver_x[qn];
+			conn_data[di].sh_y = aver_y[qn];
+			STATUS("Panel %s doesn't not have enough (%i) "
+			       "peaks. Using average shifts (in pixels) "
+			       "X,Y: %0.2f,%0.2f\n", conn_data[di].name,
+			       conn_data[di].n_peaks_in_conn,
+			       conn_data[di].sh_x, conn_data[di].sh_y);
+
+		} else {
+
+			STATUS("Panel %s has not enough (%i) peaks. "
+			       "It will not be moved.\n",
+			       conn_data[di].name,
+			       conn_data[di].n_peaks_in_conn);
+
 		}
 	}
 
-	for (di=0; di<connected->n_rigid_groups; di++) {
-		if ( conn_data[di].n_peaks_in_conn <
-		     gparams->min_num_pix_per_conn_group ) {
-			if ( av_sh->aver_num_sh[conn_data[di].num_quad] > 0 ) {
-				conn_data[di].sh_x =
-				          av_sh->aver_x[conn_data[di].num_quad];
-				conn_data[di].sh_y =
-				          av_sh->aver_y[conn_data[di].num_quad];
-				STATUS("Panel %s doesn't not have enough (%i) "
-				       "peaks. Using average shifts (in pixels) "
-				       "X,Y: %0.2f,%0.2f\n", conn_data[di].name,
-				       conn_data[di].n_peaks_in_conn,
-				       conn_data[di].sh_x, conn_data[di].sh_y);
-			} else {
-				STATUS("Panel %s has not enough (%i) peaks. "
-				       "It will not be moved.\n",
-				       conn_data[di].name,
-				       conn_data[di].n_peaks_in_conn);
-			}
-		}
-	}
 
-	free_avg_shift(av_sh);
+	free(aver_x);
+	free(aver_y);
+	free(n);
 
 	return 0;
 }
@@ -1463,38 +1345,6 @@ static void correct_shift(struct rg_collection *connected,
 			}
 		}
 	}
-}
-
-
-static struct connected_stretch_and_angles *initialize_connected_stretch_angles(
-						 struct rg_collection *connected)
-{
-
-	struct connected_stretch_and_angles *csaa;
-
-	csaa = malloc(sizeof(struct connected_stretch_and_angles));
-	if ( csaa == NULL ) {
-		ERROR("Failed to allocate memory to compute angles and "
-		      "stretch.\n");
-		return NULL;
-	}
-	csaa->stretch_coeff = malloc(connected->n_rigid_groups*sizeof(double));
-	if ( csaa->stretch_coeff == NULL ) {
-		ERROR("Failed to allocate memory to compute angles and "
-		      "stretch.\n");
-		free(csaa);
-		return NULL;
-	}
-	csaa->num_angles = malloc(connected->n_rigid_groups*sizeof(long));
-	if ( csaa->num_angles == NULL ) {
-		ERROR("Failed to allocate memory to compute angles and "
-		      "stretch.\n");
-		free(csaa->stretch_coeff);
-		free(csaa);
-		return NULL;
-	}
-	csaa->num_coeff=0;
-	return csaa;
 }
 
 
@@ -1632,21 +1482,23 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 {
 	int di;
 	double stretch_cf;
-
-	struct connected_stretch_and_angles *csaa;
+	long num_coeff;
+	long *num_angles;
+	double *stretch_coeff;
 
 	STATUS("Computing rotation and stretch corrections.\n");
 
-	csaa = initialize_connected_stretch_angles(connected);
-	if ( csaa == NULL ) return -1.0;
+	stretch_coeff = malloc(connected->n_rigid_groups*sizeof(double));
+	num_angles = malloc(connected->n_rigid_groups*sizeof(long));
+	num_coeff = 0;
 
 	for ( di=0; di<connected->n_rigid_groups; di++ ) {
 
 		long max_num_ang = 0;
 
 		double min_dist;
-		double* angles;
-		double* stretches;
+		double *angles;
+		double *stretches;
 
 		struct panel *first_p;
 		long num_ang = 0;
@@ -1676,19 +1528,12 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 		if ( angles == NULL ) {
 			ERROR("Error allocating memory for angle "
 			      "optimization\n");
-			free(csaa->stretch_coeff);
-			free(csaa->num_angles);
-			free(csaa);
 			return -1.0;
 		}
 		stretches = malloc(max_num_ang*sizeof(double));
 		if ( stretches == NULL ) {
 			ERROR("Error allocating memory for stretch "
 			      "optimization\n");
-			free(angles);
-			free(csaa->stretch_coeff);
-			free(csaa->num_angles);
-			free(csaa);
 			return -1.0;
 		}
 
@@ -1708,9 +1553,9 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 		       "%0.4f\n", conn_data[di].name, num_ang,
 		                  conn_data[di].cang, conn_data[di].cstr);
 
-		csaa->stretch_coeff[csaa->num_coeff] = conn_data[di].cstr;
-		csaa->num_angles[csaa->num_coeff] = num_ang;
-		csaa->num_coeff++;
+		stretch_coeff[num_coeff] = conn_data[di].cstr;
+		num_angles[num_coeff] = num_ang;
+		num_coeff++;
 
 		free(angles);
 		free(stretches);
@@ -1720,7 +1565,7 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 
 	printf("Computing overall stretch coefficient.\n");
 
-	if ( csaa->num_coeff>0 ) {
+	if ( num_coeff>0 ) {
 
 		int peaks_per_p;
 
@@ -1733,12 +1578,12 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 
 			stretch_cf = 0;
 			total_num = 0;
-			for ( di=0; di<csaa->num_coeff; di++ ) {
+			for ( di=0; di<num_coeff; di++ ) {
 				if ( conn_data[di].num_peaks_per_pixel >=
 				     peaks_per_p ) {
-					stretch_cf += csaa->stretch_coeff[di]*
-					         (double)csaa->num_angles[di];
-					total_num += csaa->num_angles[di];
+					stretch_cf += stretch_coeff[di]*
+					         (double)num_angles[di];
+					total_num += num_angles[di];
 				}
 			}
 
@@ -1771,9 +1616,8 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 
 	}
 
-	free(csaa->stretch_coeff);
-	free(csaa->num_angles);
-	free(csaa);
+	free(stretch_coeff);
+	free(num_angles);
 
 	return stretch_cf;
 }
@@ -2383,7 +2227,7 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 	}
 
 	ret = compute_rot_stretch_for_empty_panels(quadrants, connected,
-	                                           gparams, conn_data);
+	                        gparams->min_num_pix_per_conn_group, conn_data);
 	if ( ret ) {
 		free(conn_data);
 		return 1;
@@ -2400,7 +2244,7 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 	}
 
 	compute_shift_for_empty_panels(quadrants, connected, conn_data,
-	                               gparams);
+	                               gparams->min_num_pix_per_conn_group);
 
 	correct_shift(connected, conn_data, clen_to_use);
 
