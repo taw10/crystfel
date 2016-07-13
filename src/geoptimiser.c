@@ -992,52 +992,6 @@ static void correct_rotation_and_stretch(struct rg_collection *connected,
 	int di, ip;
 
 	STATUS("Applying rotation and stretch corrections.\n");
-	for ( di=0; di<connected->n_rigid_groups; di++ ) {
-
-		int npp = conn_data[di].num_peaks_per_pixel;
-		double cs = conn_data[di].cstr;
-
-		if ( fabs(cs)<FLT_EPSILON ) cs = stretch_coeff;
-
-		for ( ip=0; ip<connected->rigid_groups[di]->n_panels; ip++ ) {
-
-			struct panel *p;
-			double new_fsx, new_fsy, new_ssx, new_ssy;
-			int fs, ss;
-			struct gpanel *gp;
-
-			p = connected->rigid_groups[di]->panels[ip];
-			gp = &gpanels[panel_number(det, p)];
-
-			new_fsx = p->fsx*cos(conn_data[di].cang)-
-			          p->fsy*sin(conn_data[di].cang);
-			new_fsy = p->fsx*sin(conn_data[di].cang)+
-			          p->fsy*cos(conn_data[di].cang);
-			new_ssx = p->ssx*cos(conn_data[di].cang)-
-			          p->ssy*sin(conn_data[di].cang);
-			new_ssy = p->ssx*sin(conn_data[di].cang)+
-			          p->ssy*cos(conn_data[di].cang);
-
-			/* The average displacements now need to be updated
-			 * (stretch and angle here, corner below, shift later) */
-			for ( ss=0; ss<p->h; ss++ ) {
-			for ( fs=0; fs<p->w; fs++ ) {
-				int i = fs + p->w*ss;
-				if ( gp->num_pix_displ[i] < npp ) continue;
-				gp->avg_displ_x[i] += fs*(new_fsx/cs - p->fsx);
-				gp->avg_displ_x[i] += ss*(new_ssx/cs - p->ssx);
-				gp->avg_displ_y[i] += fs*(new_fsy/cs - p->fsy);
-				gp->avg_displ_y[i] += ss*(new_ssy/cs - p->ssy);
-			}
-			}
-
-			p->fsx = new_fsx;
-			p->fsy = new_fsy;
-			p->ssx = new_ssx;
-			p->ssy = new_ssy;
-
-		}
-	}
 
 	if ( gparams->individual_coffset ) {
 
@@ -1069,14 +1023,17 @@ static void correct_rotation_and_stretch(struct rg_collection *connected,
 		       det->panels[0].coffset, stretch_coeff);
 	}
 
-	/* Correct corner coordinates */
 	for ( di=0; di<connected->n_rigid_groups; di++ ) {
 
 		int npp = conn_data[di].num_peaks_per_pixel;
+		double cs = conn_data[di].cstr;
+
+		if ( fabs(cs)<FLT_EPSILON ) cs = stretch_coeff;
 
 		for ( ip=0; ip<connected->rigid_groups[di]->n_panels; ip++ ) {
 
 			struct panel *p;
+			double new_fsx, new_fsy, new_ssx, new_ssy;
 			double new_cnx, new_cny;
 			int fs, ss;
 			struct gpanel *gp;
@@ -1084,11 +1041,21 @@ static void correct_rotation_and_stretch(struct rg_collection *connected,
 			p = connected->rigid_groups[di]->panels[ip];
 			gp = &gpanels[panel_number(det, p)];
 
-			/* NB All panels follow the first one */
+			new_fsx = p->fsx*cos(conn_data[di].cang)-
+			          p->fsy*sin(conn_data[di].cang);
+			new_fsy = p->fsx*sin(conn_data[di].cang)+
+			          p->fsy*cos(conn_data[di].cang);
+			new_ssx = p->ssx*cos(conn_data[di].cang)-
+			          p->ssy*sin(conn_data[di].cang);
+			new_ssy = p->ssx*sin(conn_data[di].cang)+
+			          p->ssy*cos(conn_data[di].cang);
+
+			/* Calculate corner adjustment
+			 * NB All panels follow the first one */
 			if ( ip == 0 ) {
 
-				new_cnx = p->cnx * conn_data[di].cstr;
-				new_cny = p->cny * conn_data[di].cstr;
+				new_cnx = p->cnx * cs;
+				new_cny = p->cny * cs;
 
 			} else {
 
@@ -1097,29 +1064,43 @@ static void correct_rotation_and_stretch(struct rg_collection *connected,
 
 				p0 = connected->rigid_groups[di]->panels[0];
 
-				delta_x = p->cnx-p0->cnx/conn_data[di].cstr;
-				delta_y = p->cny-p0->cny/conn_data[di].cstr;
+				delta_x = p->cnx - p0->cnx / cs;
+				delta_y = p->cny - p0->cny / cs;
 
 				new_cnx = p0->cnx + delta_x;
 				new_cny = p0->cny + delta_y;
 
 			}
 
-			/* The average displacements now need to be updated
-			 * (corner here, stretch and angle above, shift later) */
+			/* The average displacements now need to be updated */
 			for ( ss=0; ss<p->h; ss++ ) {
 			for ( fs=0; fs<p->w; fs++ ) {
-				int idx = fs + p->w*ss;
-				if ( gp->num_pix_displ[idx] < npp ) continue;
-				gp->avg_displ_x[idx] += new_cnx - p->cnx;
-				gp->avg_displ_y[idx] += new_cny - p->cny;
+
+				int i = fs + p->w*ss;
+
+				if ( gp->num_pix_displ[i] < npp ) continue;
+
+				gp->avg_displ_x[i] += fs*(new_fsx/cs - p->fsx)
+				                    + ss*(new_ssx/cs - p->ssx)
+				                    + new_cnx/cs - p->cnx;
+
+				gp->avg_displ_y[i] += fs*(new_fsy/cs - p->fsy)
+				                    + ss*(new_ssy/cs - p->ssy)
+				                    + new_cny/cs - p->cny;
 			}
 			}
 
+			p->fsx = new_fsx;
+			p->fsy = new_fsy;
+			p->ssx = new_ssx;
+			p->ssy = new_ssy;
+
 			p->cnx = new_cnx;
 			p->cny = new_cny;
+
 		}
 	}
+
 }
 
 
