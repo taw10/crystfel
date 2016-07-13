@@ -961,7 +961,7 @@ static int compute_rot_stretch_for_empty_panels(struct rg_collection *quads,
 			       "pixels. Using average angle: %0.4f "
 			       "degrees\n", conn_data[di].name,
 			       conn_data[di].n_peaks_in_conn,
-			       conn_data[di].cang);
+			       rad2deg(conn_data[di].cang));
 
 		} else {
 
@@ -1551,7 +1551,8 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 
 		STATUS("Panel %s, num: %li, angle: %0.4f deg, stretch coeff: "
 		       "%0.4f\n", conn_data[di].name, num_ang,
-		                  conn_data[di].cang, conn_data[di].cstr);
+		                  rad2deg(conn_data[di].cang),
+		                  conn_data[di].cstr);
 
 		stretch_coeff[num_coeff] = conn_data[di].cstr;
 		num_angles[num_coeff] = num_ang;
