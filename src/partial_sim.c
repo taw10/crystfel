@@ -215,12 +215,13 @@ static void draw_and_write_image(struct image *image, RefList *reflections,
 		pn = panel_number(image->det, p);
 		assert(pn != image->det->n_panels);
 
-		fs = nearbyint(dfs);
-		ss = nearbyint(dss);
+		/* Explicit rounding, downwards */
+		fs = dfs;  ss = dss;
 		assert(fs >= 0);
 		assert(ss >= 0);
 		assert(fs < p->w);
 		assert(ss < p->h);
+
 		image->dp[pn][fs + p->w*ss] += Ip;
 
 	}
