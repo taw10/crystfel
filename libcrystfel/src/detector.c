@@ -126,8 +126,8 @@ static int assplode_algebraic(const char *a_orig, char ***pbits)
 			istr = 0;
 		}
 
-		if ( !isdigit(ch) && (ch != '.') && (ch != 'x') && (ch != 'y')
-		  && (ch != '+') && (ch != '-') )
+		if ( !isdigit(ch) && (ch != '.') && (ch != '+') && (ch != '-')
+		  && (ch != 'x') && (ch != 'y') && (ch != 'z') )
 		{
 			ERROR("Invalid character '%c' found.\n", ch);
 			return 0;
@@ -148,7 +148,7 @@ static int assplode_algebraic(const char *a_orig, char ***pbits)
 
 /* Parses the scan directions (accounting for possible rotation)
  * Assumes all white spaces have been already removed */
-static int dir_conv(const char *a, double *sx, double *sy)
+static int dir_conv(const char *a, double *sx, double *sy, double *sz)
 {
 	int n;
 	char **bits;
@@ -173,8 +173,9 @@ static int dir_conv(const char *a, double *sx, double *sy)
 		len = strlen(bits[i]);
 		assert(len != 0);
 		axis = bits[i][len-1];
-		if ( (axis != 'x') && (axis != 'y') ) {
-			ERROR("Invalid symbol '%c' - must be x or y.\n", axis);
+		if ( (axis != 'x') && (axis != 'y') && (axis != 'z') ) {
+			ERROR("Invalid symbol '%c' - must be x, y or z.\n",
+			      axis);
 			return 1;
 		}
 
@@ -199,18 +200,25 @@ static int dir_conv(const char *a, double *sx, double *sy)
 			if ( bits[i][0] == '+' ) val = 1.0;
 			if ( bits[i][0] == '-' ) val = -1.0;
 		}
-		if ( axis == 'x' ) {
+		switch ( axis ) {
+
+			case 'x' :
 			*sx += val;
-		} else if ( axis == 'y' ) {
+			break;
+
+			case 'y' :
 			*sy += val;
+			break;
+
+			case 'z' :
+			*sz += val;
+			break;
 		}
 
 		free(bits[i]);
 
 	}
 	free(bits);
-
-	//STATUS("'%s' -> %5.2fx + %5.2fy\n", a, *sx, *sy);
 
 	return 0;
 }
@@ -271,28 +279,23 @@ struct rvec get_q_for_panel(struct panel *p, double fs, double ss,
                             double *ttp, double k)
 {
 	struct rvec q;
-	double twotheta, r, az;
-	double rx, ry;
-	double xs, ys;
+	double ctt, twotheta;
+	double xs, ys, zs;
+	double az;
 
-	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
-	 * to x and y */
-	xs = fs*p->fsx + ss*p->ssx;
-	ys = fs*p->fsy + ss*p->ssy;
+	/* Calculate 3D position of given position, in m */
+	xs = (p->cnx  + fs*p->fsx + ss*p->ssx) / p->res;
+	ys = (p->cny  + fs*p->fsy + ss*p->ssy) / p->res;
+	zs = p->clen + (fs*p->fsz + ss*p->ssz) / p->res;
 
-	rx = (xs + p->cnx) / p->res;
-	ry = (ys + p->cny) / p->res;
-
-	/* Calculate q-vector for this sub-pixel */
-	r = sqrt(pow(rx, 2.0) + pow(ry, 2.0));
-
-	twotheta = atan2(r, p->clen);
-	az = atan2(ry, rx);
+	ctt = zs/sqrt(xs*xs + ys*ys + zs*zs);
+	twotheta = acos(ctt);
+	az = atan2(ys, xs);
 	if ( ttp != NULL ) *ttp = twotheta;
 
 	q.u = k * sin(twotheta)*cos(az);
 	q.v = k * sin(twotheta)*sin(az);
-	q.w = k * (cos(twotheta) - 1.0);
+	q.w = k * (ctt - 1.0);
 
 	return q;
 }
@@ -951,12 +954,14 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 	} else if ( strcmp(key, "no_index") == 0 ) {
 		panel->no_index = atob(val);
 	} else if ( strcmp(key, "fs") == 0 ) {
-		if ( dir_conv(val, &panel->fsx, &panel->fsy) != 0 ) {
+		if ( dir_conv(val, &panel->fsx, &panel->fsy, &panel->fsz) != 0 )
+		{
 			ERROR("Invalid fast scan direction '%s'\n", val);
 			reject = 1;
 		}
 	} else if ( strcmp(key, "ss") == 0 ) {
-		if ( dir_conv(val, &panel->ssx, &panel->ssy) != 0 ) {
+		if ( dir_conv(val, &panel->ssx, &panel->ssy, &panel->ssz) != 0 )
+		{
 			ERROR("Invalid slow scan direction '%s'\n", val);
 			reject = 1;
 		}
@@ -1223,8 +1228,10 @@ struct detector *get_detector_geometry(const char *filename,
 	det->defaults.no_index = 0;
 	det->defaults.fsx = 1.0;
 	det->defaults.fsy = 0.0;
+	det->defaults.fsz = 0.0;
 	det->defaults.ssx = 0.0;
 	det->defaults.ssy = 1.0;
+	det->defaults.ssz = 0.0;
 	det->defaults.adu_per_eV = NAN;
 	det->defaults.adu_per_photon = NAN;
 	det->defaults.max_adu = +INFINITY;
@@ -1793,8 +1800,10 @@ struct detector *simple_geometry(const struct image *image, int w, int h)
 
 	geom->panels[0].fsx = 1;
 	geom->panels[0].fsy = 0;
+	geom->panels[0].fsz = 0;
 	geom->panels[0].ssx = 0;
 	geom->panels[0].ssy = 1;
+	geom->panels[0].ssz = 0;
 
 	geom->panels[0].xfs = 1;
 	geom->panels[0].xss = 0;

@@ -106,8 +106,10 @@ struct panel
 
         double fsx;
         double fsy;
+        double fsz;
         double ssx;
         double ssy;
+        double ssz;
 
         double xfs;
         double yfs;
