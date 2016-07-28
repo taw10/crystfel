@@ -2518,7 +2518,7 @@ static void calibmode_press(DisplayWindow *dw, GdkEventButton *event)
 	x = dw->binning * (event->x);
 	y = dw->binning * (dw->height - 1 - event->y);
 	x += dw->min_x;
-	y += dw->min_x;
+	y += dw->min_y;
 	snprintf(statusbar_string, 80,
 	         "Last clicked position: x: %i, y: %i (Not in panel)", x, y);
 
