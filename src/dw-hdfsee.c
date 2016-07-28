@@ -1948,7 +1948,7 @@ static void numbers_update(DisplayWindow *dw)
 
 		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat), text);
 
-	} else {
+	} else if ( fp != NULL ) {
 
 		char text[64];
 
@@ -1957,6 +1957,8 @@ static void numbers_update(DisplayWindow *dw)
 		strncat(text, fp->name, 20);
 
 		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat), text);
+	} else {
+		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat), "-");
 	}
 }
 
