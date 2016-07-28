@@ -3,11 +3,11 @@
  *
  * Geometry of diffraction
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2016 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -35,6 +35,7 @@
 #include <assert.h>
 #include <fenv.h>
 #include <gsl/gsl_sf_erf.h>
+#include <gsl/gsl_linalg.h>
 
 #include "utils.h"
 #include "cell.h"
@@ -51,31 +52,60 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
                                 struct panel *p,
                                 double *pfs, double *pss)
 {
-	const double den = k + z;
-	double fs, ss, plx, ply, xd, yd;
+	double r2, ctt, tta, phi;
+	gsl_vector *v;
+	gsl_vector *t;
+	gsl_matrix *M;
+	double fs, ss, one_over_mu;
 
-	/* Coordinates of peak relative to central beam, in m */
-	xd = p->clen * x / den;
-	yd = p->clen * y / den;
+	/* Calculate 2theta (scattering angle) and azimuth (phi) */
+	r2 = x*x + y*y + z*z;
+	ctt = 1.0 - r2 / (2.0*k*k);  /* cos(2theta) */
+	tta = acos(ctt);
+	phi = atan2(y, x);
 
-	/* Convert to pixels */
-	xd *= p->res;
-	yd *= p->res;
+	/* Set up matrix equation */
+	M = gsl_matrix_alloc(3, 3);
+	v = gsl_vector_alloc(3);
+	t = gsl_vector_alloc(3);
+	if ( (M==NULL) || (v==NULL) || (t==NULL) ) {
+		ERROR("Failed to allocate vectors for prediction\n");
+		return 0;
+	}
 
-	/* Convert to relative to the panel corner */
-	plx = xd - p->cnx;
-	ply = yd - p->cny;
+	gsl_vector_set(t, 0, sin(tta)*cos(phi));
+	gsl_vector_set(t, 1, sin(tta)*sin(phi));
+	gsl_vector_set(t, 2, ctt);
 
-	fs = p->xfs*plx + p->yfs*ply;
-	ss = p->xss*plx + p->yss*ply;
+	gsl_matrix_set(M, 0, 0, p->cnx);
+	gsl_matrix_set(M, 0, 1, p->fsx);
+	gsl_matrix_set(M, 0, 2, p->ssx);
+	gsl_matrix_set(M, 1, 0, p->cny);
+	gsl_matrix_set(M, 1, 1, p->fsy);
+	gsl_matrix_set(M, 1, 2, p->ssy);
+	gsl_matrix_set(M, 2, 0, p->clen*p->res);
+	gsl_matrix_set(M, 2, 1, p->fsz);
+	gsl_matrix_set(M, 2, 2, p->ssz);
+
+	if ( gsl_linalg_HH_solve(M, t, v) ) {
+		ERROR("Failed to solve prediction equation\n");
+		return 0;
+	}
+
+	one_over_mu = gsl_vector_get(v, 0);
+	fs = gsl_vector_get(v, 1) / one_over_mu;
+	ss = gsl_vector_get(v, 2) / one_over_mu;
+	gsl_vector_free(v);
+	gsl_vector_free(t);
+	gsl_matrix_free(M);
 
 	*pfs = fs;  *pss = ss;
 
 	/* Now, is this on this panel? */
-	if ( fs < 0 ) return 0;
-	if ( fs > p->w ) return 0;
-	if ( ss < 0 ) return 0;
-	if ( ss > p->h ) return 0;
+	if ( fs < 0.0 ) return 0;
+	if ( fs >= p->w ) return 0;
+	if ( ss < 0.0 ) return 0;
+	if ( ss >= p->h ) return 0;
 
 	return 1;
 }
