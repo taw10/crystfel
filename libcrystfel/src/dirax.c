@@ -292,7 +292,9 @@ static void dirax_sendline(const char *line, struct dirax_data *dirax)
 	free(copy);
 	#endif
 
-	write(dirax->pty, line, strlen(line));
+	if ( write(dirax->pty, line, strlen(line)) == -1 ) {
+		ERROR("write() To dirax failed: %s\n", strerror(errno));
+	}
 }
 
 

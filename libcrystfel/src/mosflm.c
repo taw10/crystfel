@@ -446,7 +446,9 @@ static void mosflm_sendline(const char *line, struct mosflm_data *mosflm)
 	free(copy);
 	#endif
 
-	write(mosflm->pty, line, strlen(line));
+	if ( write(mosflm->pty, line, strlen(line)) == -1 ) {
+		ERROR("write() to MOSFLM failed: %s\n", strerror(errno));
+	}
 }
 
 
