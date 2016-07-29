@@ -103,20 +103,10 @@ int main(int argc, char *argv[])
 
 	cell = cell_rotate(cell_raw, random_quaternion(rng));
 
-	gpu_image.width = 1024;
-	gpu_image.height = 1024;
-	cpu_image.width = 1024;
-	cpu_image.height = 1024;
 	det = calloc(1, sizeof(struct detector));
 	det->n_panels = 2;
 	det->panels = calloc(2, sizeof(struct panel));
-	det->max_fs = 1024;
-	det->max_ss = 1024;
 
-	det->panels[0].min_fs = 0;
-	det->panels[0].max_fs = 1023;
-	det->panels[0].min_ss = 0;
-	det->panels[0].max_ss = 511;
 	det->panels[0].orig_min_fs = 0;
 	det->panels[0].orig_max_fs = 1023;
 	det->panels[0].orig_min_ss = 0;
@@ -138,10 +128,6 @@ int main(int argc, char *argv[])
 	det->panels[0].adu_per_eV = 1.0;
 	det->panels[0].data = NULL;
 
-	det->panels[1].min_fs = 0;
-	det->panels[1].max_fs = 1023;
-	det->panels[1].min_ss = 512;
-	det->panels[1].max_ss = 1023;
 	det->panels[1].orig_min_fs = 0;
 	det->panels[1].orig_max_fs = 1023;
 	det->panels[1].orig_min_ss = 512;

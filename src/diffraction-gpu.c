@@ -191,17 +191,13 @@ static int do_panels(struct gpu_context *gctx, struct image *image,
 		cl_mem diff;
 		size_t diff_size;
 		float *diff_ptr;
-		int pan_width, pan_height;
 		int fs, ss;
 		cl_int err;
 
 		p = &image->det->panels[i];
 
-		pan_width = 1 + p->max_fs - p->min_fs;
-		pan_height = 1 + p->max_ss - p->min_ss;
-
 		/* Buffer for the results of this panel */
-		diff_size = pan_width * pan_height * sizeof(cl_float);
+		diff_size = p->w * p->h * sizeof(cl_float);
 		diff = clCreateBuffer(gctx->ctx, CL_MEM_WRITE_ONLY,
 	                              diff_size, NULL, &err);
 		if ( err != CL_SUCCESS ) {
@@ -211,7 +207,7 @@ static int do_panels(struct gpu_context *gctx, struct image *image,
 
 		if ( set_arg_mem(gctx, 0, diff) ) return 1;
 
-		if ( set_arg_int(gctx, 3, pan_width) ) return 1;
+		if ( set_arg_int(gctx, 3, p->w) ) return 1;
 		if ( set_arg_float(gctx, 4, p->cnx) ) return 1;
 		if ( set_arg_float(gctx, 5, p->cny) ) return 1;
 		if ( set_arg_float(gctx, 6, p->fsx) ) return 1;
@@ -221,8 +217,8 @@ static int do_panels(struct gpu_context *gctx, struct image *image,
 		if ( set_arg_float(gctx, 10, p->res) ) return 1;
 		if ( set_arg_float(gctx, 11, p->clen) ) return 1;
 
-		dims[0] = pan_width * sampling;
-		dims[1] = pan_height * sampling;
+		dims[0] = p->w * sampling;
+		dims[1] = p->h * sampling;
 
 		ldims[0] = sampling;
 		ldims[1] = sampling;
@@ -253,17 +249,17 @@ static int do_panels(struct gpu_context *gctx, struct image *image,
 			return 1;
 		}
 
-		for ( ss=0; ss<pan_height; ss++ ) {
-		for ( fs=0; fs<pan_width; fs++ ) {
+		for ( ss=0; ss<p->h; ss++ ) {
+		for ( fs=0; fs<p->w; fs++ ) {
 
 			float val;
 
-			val = diff_ptr[fs + pan_width*ss];
+			val = diff_ptr[fs + p->w*ss];
 			if ( isinf(val) ) (*n_inf)++;
 			if ( val < 0.0 ) (*n_neg)++;
 			if ( isnan(val) ) (*n_nan)++;
 
-			image->dp[i][fs + pan_width*ss] += val;
+			image->dp[i][fs + p->w*ss] += val;
 
 		}
 		}
