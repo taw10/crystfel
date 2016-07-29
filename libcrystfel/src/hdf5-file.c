@@ -1346,6 +1346,12 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 		ERROR("WARNING: hdf5_read() called with geometry structure.\n");
 	}
 	image->det = simple_geometry(image, w, h);
+	image->dp = malloc(sizeof(double *));
+	if ( image->dp == NULL ) {
+		ERROR("Failed to allocate memory for image data!\n");
+		return 1;
+	}
+	image->dp[0] = buf;
 
 	if ( satcorr ) debodge_saturation(f, image);
 
