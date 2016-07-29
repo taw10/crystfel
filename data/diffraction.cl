@@ -51,29 +51,27 @@ const sampler_t sampler_c = CLK_NORMALIZED_COORDS_TRUE
 
 float4 get_q(float fs, float ss, float res, float clen, float k,
              float corner_x, float corner_y,
-             float fsx, float fsy, float ssx, float ssy)
+             float fsx, float fsy, float fsz, float ssx, float ssy, float ssz)
 {
-	float rx, ry, r;
+	float rx, ry, rz;
 	float az, tt;
 	float4 q;
 	float xs, ys;
 	float kx, ky, kz;
+	float ctt;
 
-	xs = fs*fsx + ss*ssx;
-	ys = fs*fsy + ss*ssy;
+	/* Calculate 3D position of given position, in m */
+	rx = (corner_x + fs*fsx + ss*ssx) / res;
+	ry = (corner_y + fs*fsy + ss*ssy) / res;
+	rz = clen + (fs*fsz + ss*ssz)/res;
 
-	rx = (xs + corner_x) / res;
-	ry = (ys + corner_y) / res;
-
-	r = sqrt(pow(rx, 2.0f) + pow(ry, 2.0f));
-
-	tt = atan2(r, clen);
-
+	ctt = rz / sqrt(rx*rx + ry*ry + rz*rz);  /* cos(2theta) */
+	tt = acos(ctt);
 	az = atan2(ry, rx);
 
 	kx = k*native_sin(tt)*native_cos(az);
 	ky = k*native_sin(tt)*native_sin(az);
-	kz = k*(native_cos(tt)-1.0);
+	kz = k*(ctt - 1.0);
 
 	q = (float4)(kx, ky, kz, 0.0);
 
@@ -159,7 +157,8 @@ float molecule_factor(global float *intensities, global float *flags,
 
 kernel void diffraction(global float *diff, float k, float weight,
                         int w, float corner_x, float corner_y,
-                        float fsx, float fsy, float ssx, float ssy,
+                        float fsx, float fsy, float fsz,
+                        float ssx, float ssy, float ssz,
                         float res, float clen, float16 cell,
                         global float *intensities, global float *flags,
                         read_only image2d_t func_a,
@@ -183,7 +182,7 @@ kernel void diffraction(global float *diff, float k, float weight,
 
 	/* Get the scattering vector */
 	q = get_q(fs, ss, res, clen, k,
-	          corner_x, corner_y, fsx, fsy, ssx, ssy);
+	          corner_x, corner_y, fsx, fsy, fsz, ssx, ssy, ssz);
 
 	/* Calculate the diffraction */
 	f_lattice = lattice_factor(cell, q, func_a, func_b, func_c);

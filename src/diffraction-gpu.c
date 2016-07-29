@@ -212,10 +212,12 @@ static int do_panels(struct gpu_context *gctx, struct image *image,
 		if ( set_arg_float(gctx, 5, p->cny) ) return 1;
 		if ( set_arg_float(gctx, 6, p->fsx) ) return 1;
 		if ( set_arg_float(gctx, 7, p->fsy) ) return 1;
-		if ( set_arg_float(gctx, 8, p->ssx) ) return 1;
-		if ( set_arg_float(gctx, 9, p->ssy) ) return 1;
-		if ( set_arg_float(gctx, 10, p->res) ) return 1;
-		if ( set_arg_float(gctx, 11, p->clen) ) return 1;
+		if ( set_arg_float(gctx, 8, p->fsz) ) return 1;
+		if ( set_arg_float(gctx, 9, p->ssx) ) return 1;
+		if ( set_arg_float(gctx, 10, p->ssy) ) return 1;
+		if ( set_arg_float(gctx, 11, p->ssz) ) return 1;
+		if ( set_arg_float(gctx, 12, p->res) ) return 1;
+		if ( set_arg_float(gctx, 13, p->clen) ) return 1;
 
 		dims[0] = p->w * sampling;
 		dims[1] = p->h * sampling;
@@ -223,7 +225,7 @@ static int do_panels(struct gpu_context *gctx, struct image *image,
 		ldims[0] = sampling;
 		ldims[1] = sampling;
 
-		err = clSetKernelArg(gctx->kern, 18,
+		err = clSetKernelArg(gctx->kern, 20,
 		                     sampling*sampling*sizeof(cl_float), NULL);
 		if ( err != CL_SUCCESS ) {
 			ERROR("Couldn't set local memory: %s\n", clError(err));
@@ -305,17 +307,17 @@ int get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	cell.s[3] = bx;  cell.s[4] = by;  cell.s[5] = bz;
 	cell.s[6] = cx;  cell.s[7] = cy;  cell.s[8] = cz;
 
-	err = clSetKernelArg(gctx->kern, 12, sizeof(cl_float16), &cell);
+	err = clSetKernelArg(gctx->kern, 14, sizeof(cl_float16), &cell);
 	if ( err != CL_SUCCESS ) {
 		ERROR("Couldn't set unit cell: %s\n", clError(err));
 		return 1;
 	}
 
-	if ( set_arg_mem(gctx, 13, gctx->intensities) ) return 1;
-	if ( set_arg_mem(gctx, 14, gctx->flags) ) return 1;
-	if ( set_arg_mem(gctx, 15, gctx->sinc_luts[na-1]) ) return 1;
-	if ( set_arg_mem(gctx, 16, gctx->sinc_luts[nb-1]) ) return 1;
-	if ( set_arg_mem(gctx, 17, gctx->sinc_luts[nc-1]) ) return 1;
+	if ( set_arg_mem(gctx, 15, gctx->intensities) ) return 1;
+	if ( set_arg_mem(gctx, 16, gctx->flags) ) return 1;
+	if ( set_arg_mem(gctx, 17, gctx->sinc_luts[na-1]) ) return 1;
+	if ( set_arg_mem(gctx, 18, gctx->sinc_luts[nb-1]) ) return 1;
+	if ( set_arg_mem(gctx, 19, gctx->sinc_luts[nc-1]) ) return 1;
 
 	/* Allocate memory for the result */
 	image->dp = malloc(image->det->n_panels * sizeof(float *));
