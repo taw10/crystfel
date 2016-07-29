@@ -229,7 +229,7 @@ int main(int argc, char *argv[])
 	STATUS("CPU: min=%8e, max=%8e, total=%8e\n", cpu_min, cpu_max, cpu_tot);
 	STATUS("dev = %8e (%5.2f%% of CPU total)\n", dev, perc);
 
-	if ( 1 ) {
+	if ( perc > 1.0 ) {
 
 		STATUS("Test failed!  I'm writing cpu-sim.h5 and gpu-sim.h5"
 		       " for you to inspect.\n");
