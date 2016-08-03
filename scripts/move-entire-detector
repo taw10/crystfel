@@ -1,0 +1,127 @@
+#!/usr/bin/env python
+
+#
+# Shift the detector by a given amount
+#
+# Copyright (c) 2016 Deutsches Elektronen-Synchrotron DESY,
+#                    a research centre of the Helmholtz Association.
+#
+# Author:
+#    2016 Thomas White <taw@physics.org>
+#
+
+import sys
+import optparse
+import os
+import re
+
+op = optparse.OptionParser(usage="%prog input.geom xshift yshift")
+op.add_option('', '--output', action='store', type='string', dest='ofn',
+              help="Output geometry file")
+op.add_option('', '--pixels', action='store_true', dest='px',
+              help="Specify shifts in pixel units")
+op.add_option('', '--mm', action='store_false', dest='px',
+              help="Specify shifts in millimeters (this is the default)")
+op.add_option('', '--beam', action='store_true', dest='beam',
+              help="Specify shift of X-ray beam")
+op.add_option('', '--detector', action='store_false', dest='beam',
+              help="Specify shift of detector (this is the default)")
+opt,args = op.parse_args(sys.argv)
+
+if len(args) < 3:
+    print 'Usage: %s input.geom xshift yshift' % args[0]
+    sys.exit(1)
+
+geom = args[1]
+if not opt.ofn:
+    out = os.path.splitext(geom)[0]+'-shifted.geom'
+else:
+    out = opt.ofn
+xshift = float(args[2])
+yshift = float(args[3])
+
+if opt.px:
+    units = 'px'
+else:
+    units = 'mm'
+
+if opt.beam:
+    bm = 'beam'
+else:
+    bm = 'detector'
+
+print 'Input filename %s\nOutput filename %s' % (geom,out)
+print 'Shifting %s by %f,%f %s' % (bm, xshift, yshift, units)
+
+if opt.beam:
+    xshift = -xshift
+    yshift = -yshift
+
+f = open(geom, 'r')
+g = open(args[1], 'r')
+h = open(out, 'w')
+panel_resolutions = {}
+
+prog1 = re.compile("^\s*res\s+=\s+([0-9\.]+)\s")
+prog2 = re.compile("^\s*(.*)\/res\s+=\s+([0-9\.]+)\s")
+prog3 = re.compile("^\s*(.*)\/corner_x\s+=\s+([0-9\.\-]+)\s")
+prog4 = re.compile("^\s*(.*)\/corner_y\s+=\s+([0-9\.\-]+)\s")
+default_res = 0
+while True:
+
+    fline = g.readline()
+    if not fline:
+        break
+
+    match = prog1.match(fline)
+    if match:
+        default_res = float(match.group(1))
+        h.write(fline)
+        continue
+
+    match = prog2.match(fline)
+    if match:
+        panel = match.group(1)
+        panel_res = float(match.group(2))
+        default_res =  panel_res
+        panel_resolutions[panel] = panel_res
+        h.write(fline)
+        continue
+
+    match = prog3.match(fline)
+    if match:
+        panel = match.group(1)
+        panel_cnx = float(match.group(2))
+        if panel in panel_resolutions:
+            res = panel_resolutions[panel]
+        else:
+            res = default_res
+            if not opt.px:
+                print 'Using default resolution (%f px/m) for panel %s' % (res, panel)
+        if opt.px:
+            h.write('%s/corner_x = %f\n' % (panel,panel_cnx+xshift))
+        else:
+            h.write('%s/corner_x = %f\n' % (panel,panel_cnx+(xshift*res*1e-3)))
+        continue
+
+    match = prog4.match(fline)
+    if match:
+        panel = match.group(1)
+        panel_cny = float(match.group(2))
+        if panel in panel_resolutions:
+            res = panel_resolutions[panel]
+        else:
+            res = default_res
+            if not opt.px:
+                print 'Using default resolution (%f px/m) for panel %s' % (res, panel)
+        if opt.px:
+            h.write('%s/corner_y = %f\n' % (panel,panel_cny+yshift))
+        else:
+            h.write('%s/corner_y = %f\n' % (panel,panel_cny+(yshift*res*1e-3)))
+        continue
+
+    h.write(fline)
+
+g.close()
+h.close()
+

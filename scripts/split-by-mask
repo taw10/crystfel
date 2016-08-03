@@ -1,0 +1,87 @@
+#!/usr/bin/env python
+
+#
+# Split stream according to an external mask
+#
+# Copyright (c) 2014-2016 Deutsches Elektronen-Synchrotron DESY,
+#                         a research centre of the Helmholtz Association.
+#
+# Author:
+#    2014-2016 Thomas White <taw@physics.org>
+#
+
+import sys
+import optparse
+from collections import deque
+import h5py
+import re
+
+prog = re.compile("^\s+([\d-]+)\s+([\d-]+)\s+([\d-]+)\s+[\d\.\-]+\s+[\d\.\-]+\s+[\d\.\-]+\s+[\d\.\-]+\s+([\d\.]+)\s+([\d\.]+)")
+
+def process_refln(fline, g, h, mask):
+    match = prog.match(fline)
+    if not match:
+        print 'Line not understood, WTF? %s' % fline
+	return
+    fs = int(round(float(match.group(4))))
+    ss = int(round(float(match.group(5))))
+    m = mask[ss][fs]
+    if m:
+        g.write(fline)
+    else:
+        h.write(fline)
+
+op = optparse.OptionParser()
+
+op.add_option('', '--input', action='store', type='string', dest='ifn',
+              help="Input stream")
+
+op.add_option('', '--output1', action='store', type='string', dest='ofn1',
+              help="Output stream", default='mask-split.stream1')
+
+op.add_option('', '--output2', action='store', type='string', dest='ofn2',
+              help="Output stream", default='mask-split.stream2')
+
+op.add_option('', '--mask', action='store', type='string', dest='mask_fn',
+              help="Filename of mask", default='mask.h5')
+
+opt,arg = op.parse_args(sys.argv)
+
+if not opt.ifn:
+    print "You need at least --input"
+    exit(1)
+
+f = open(opt.ifn, 'r')
+g = open(opt.ofn1, 'w')
+h = open(opt.ofn2, 'w')
+
+fh = h5py.File(opt.mask_fn, 'r')
+mask = fh['/data/data'].value
+fh.close()
+
+in_refl = 0
+while True:
+
+    fline = f.readline()
+    if not fline:
+        break
+    if fline.find("End of reflections") != -1:
+        in_refl = 0
+
+    if in_refl == 1:
+        process_refln(fline, g, h, mask)
+    else:
+        g.write(fline)
+        h.write(fline)
+	if in_refl == 2:
+	    in_refl = 1
+
+    if fline.find("Reflections measured after indexing") != -1:
+        in_refl = 2
+
+
+
+
+f.close()
+g.close()
+

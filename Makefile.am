@@ -181,7 +181,8 @@ script_DATA = scripts/alternate-stream scripts/cell-please \
               scripts/ave-resolution scripts/crystal-frame-number \
               scripts/plot-radius-resolution \
               scripts/detector-shift scripts/turbo-index \
-              scripts/gaincal-to-saturation-map
+              scripts/gaincal-to-saturation-map scripts/move-entire-detector \
+              scripts/split-by-mask
 
 EXTRA_DIST += $(script_DATA)
 
