@@ -536,6 +536,7 @@ void fill_in_values(struct detector *det, struct hdfile *f, struct event* ev)
 
 	for ( i=0; i<det->n_panels; i++ ) {
 
+		double offs;
 		struct panel *p = &det->panels[i];
 
 		if ( p->clen_from != NULL ) {
@@ -553,7 +554,13 @@ void fill_in_values(struct detector *det, struct hdfile *f, struct event* ev)
 
 		}
 
-		p->clen += p->coffset;
+                /* Offset in +z direction from calibrated clen to actual */
+		STATUS("%f %f %f (%f) --->", p->cnx, p->cny, p->clen, p->coffset);
+		offs = p->clen - p->clen_for_centering;
+		p->cnx += p->rail_x * offs;
+		p->cny += p->rail_y * offs;
+		p->clen = p->clen_for_centering + p->coffset + p->rail_z * offs;
+		STATUS("%f %f %f\n", p->cnx, p->cny, p->clen);
 
 	}
 }
@@ -892,6 +899,14 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 		panel->cnx = atof(val);
 	} else if ( strcmp(key, "corner_y") == 0 ) {
 		panel->cny = atof(val);
+	} else if ( strcmp(key, "rail_x") == 0 ) {
+		panel->rail_x = atof(val);
+	} else if ( strcmp(key, "rail_y") == 0 ) {
+		panel->rail_y = atof(val);
+	} else if ( strcmp(key, "rail_z") == 0 ) {
+		panel->rail_z = atof(val);
+	} else if ( strcmp(key, "clen_for_centering") == 0 ) {
+		panel->clen_for_centering = atof(val);
 	} else if ( strcmp(key, "adu_per_eV") == 0 ) {
 		panel->adu_per_eV = atof(val);
 	} else if ( strcmp(key, "adu_per_photon") == 0 ) {
@@ -1232,6 +1247,10 @@ struct detector *get_detector_geometry(const char *filename,
 	det->defaults.ssx = 0.0;
 	det->defaults.ssy = 1.0;
 	det->defaults.ssz = 0.0;
+        det->defaults.rail_x = NAN;  /* The actual default rail direction */
+        det->defaults.rail_y = NAN;  /*  is below */
+        det->defaults.rail_z = NAN;
+        det->defaults.clen_for_centering = NAN;
 	det->defaults.adu_per_eV = NAN;
 	det->defaults.adu_per_photon = NAN;
 	det->defaults.max_adu = +INFINITY;
@@ -1459,54 +1478,69 @@ struct detector *get_detector_geometry(const char *filename,
 
 	for ( i=0; i<det->n_panels; i++ ) {
 
-		if ( det->panels[i].orig_min_fs < 0 ) {
+		struct panel *p = &det->panels[i];
+
+		if ( p->orig_min_fs < 0 ) {
 			ERROR("Please specify the minimum FS coordinate for"
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( det->panels[i].orig_max_fs < 0 ) {
+		if ( p->orig_max_fs < 0 ) {
 			ERROR("Please specify the maximum FS coordinate for"
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( det->panels[i].orig_min_ss < 0 ) {
+		if ( p->orig_min_ss < 0 ) {
 			ERROR("Please specify the minimum SS coordinate for"
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( det->panels[i].orig_max_ss < 0 ) {
+		if ( p->orig_max_ss < 0 ) {
 			ERROR("Please specify the maximum SS coordinate for"
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( isnan(det->panels[i].cnx)  ) {
+		if ( isnan(p->cnx) ) {
 			ERROR("Please specify the corner X coordinate for"
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( isnan(det->panels[i].cny) ) {
+		if ( isnan(p->cny) ) {
 			ERROR("Please specify the corner Y coordinate for"
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( isnan(det->panels[i].clen)
-		  && (det->panels[i].clen_from == NULL) ) {
+		if ( isnan(p->clen) && (p->clen_from == NULL) ) {
 			ERROR("Please specify the camera length for"
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( det->panels[i].res < 0 ) {
+		if ( p->res < 0 ) {
 			ERROR("Please specify the resolution for"
 			      " panel %s\n", det->panels[i].name);
 			reject = 1;
 		}
-		if ( isnan(det->panels[i].adu_per_eV)
-		  && isnan(det->panels[i].adu_per_photon) ) {
+		if ( isnan(p->adu_per_eV) && isnan(p->adu_per_photon) ) {
 			ERROR("Please specify either adu_per_eV or "
 			      "adu_per_photon for panel %s\n",
 			      det->panels[i].name);
 			reject = 1;
 		}
+
+		if ( isnan(p->clen_for_centering)
+		  && ( !isnan(p->rail_x) || !isnan(p->rail_y)
+		       || !isnan(p->rail_z) ) )
+		{
+			ERROR("You must specify clen_for_centering if you "
+			      "specify the rail direction (panel %s)\n",
+			      p->name);
+			reject = 1;
+		}
+
+		/* The default rail direction */
+		if ( isnan(p->rail_x) ) p->rail_x = 0.0;
+		if ( isnan(p->rail_y) ) p->rail_y = 0.0;
+		if ( isnan(p->rail_z) ) p->rail_z = 1.0;
 
 		/* It's OK if the badrow direction is '0' */
 		/* It's not a problem if "no_index" is still zero */

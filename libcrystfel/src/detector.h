@@ -111,6 +111,11 @@ struct panel
         double ssy;
         double ssz;
 
+        double rail_x;
+        double rail_y;
+        double rail_z;
+        double clen_for_centering;
+
         double xfs;
         double yfs;
         double xss;
