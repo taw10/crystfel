@@ -555,12 +555,10 @@ void fill_in_values(struct detector *det, struct hdfile *f, struct event* ev)
 		}
 
                 /* Offset in +z direction from calibrated clen to actual */
-		STATUS("%f %f %f (%f) --->", p->cnx, p->cny, p->clen, p->coffset);
 		offs = p->clen - p->clen_for_centering;
 		p->cnx += p->rail_x * offs;
 		p->cny += p->rail_y * offs;
 		p->clen = p->clen_for_centering + p->coffset + p->rail_z * offs;
-		STATUS("%f %f %f\n", p->cnx, p->cny, p->clen);
 
 	}
 }
