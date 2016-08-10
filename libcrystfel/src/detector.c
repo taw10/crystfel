@@ -1551,6 +1551,7 @@ struct detector *get_detector_geometry_2(const char *filename,
 		if ( isnan(p->rail_x) ) p->rail_x = 0.0;
 		if ( isnan(p->rail_y) ) p->rail_y = 0.0;
 		if ( isnan(p->rail_z) ) p->rail_z = 1.0;
+		if ( isnan(p->clen_for_centering) ) p->clen_for_centering = 0.0;
 
 		/* It's OK if the badrow direction is '0' */
 		/* It's not a problem if "no_index" is still zero */
