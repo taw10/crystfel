@@ -154,7 +154,7 @@ static int dir_conv(const char *a, double *sx, double *sy, double *sz)
 	char **bits;
 	int i;
 
-	*sx = 0.0;  *sy = 0.0;
+	*sx = 0.0;  *sy = 0.0;  *sz = 0.0;
 
 	n = assplode_algebraic(a, &bits);
 
