@@ -212,6 +212,10 @@ extern int panel_number(struct detector *det, struct panel *p);
 extern struct detector *get_detector_geometry(const char *filename,
                                               struct beam_params *beam);
 
+extern struct detector *get_detector_geometry_2(const char *filename,
+                                                struct beam_params *beam,
+						char **hdf5_peak_path);
+
 extern void free_detector_geometry(struct detector *det);
 
 extern struct detector *simple_geometry(const struct image *image, int w, int h);

@@ -1051,7 +1051,7 @@ static void parse_toplevel(struct detector *det, struct beam_params *beam,
                            const char *key, const char *val,
                            struct rg_definition ***rg_defl,
                            struct rgc_definition ***rgc_defl, int *n_rg_defs,
-                           int *n_rgc_defs)
+                           int *n_rgc_defs, char **hdf5_peak_path)
 {
 
 	if ( strcmp(key, "mask_bad") == 0 ) {
@@ -1089,6 +1089,11 @@ static void parse_toplevel(struct detector *det, struct beam_params *beam,
 	} else if ( strcmp(key, "photon_energy_scale") == 0 ) {
 		if ( beam != NULL ) {
 			beam->photon_energy_scale = atof(val);
+		}
+
+	} else if ( strcmp(key, "peak_info_location") == 0 ) {
+		if ( hdf5_peak_path != NULL ) {
+			*hdf5_peak_path = strdup(val);
 		}
 
 	} else if (strncmp(key, "rigid_group", 11) == 0
@@ -1179,9 +1184,16 @@ static void find_min_max_d(struct detector *det)
 	}
 }
 
-
 struct detector *get_detector_geometry(const char *filename,
                                        struct beam_params *beam)
+{
+	return get_detector_geometry_2(filename, beam, NULL);
+}
+
+
+struct detector *get_detector_geometry_2(const char *filename,
+                                         struct beam_params *beam,
+                                         char **hdf5_peak_path)
 {
 	FILE *fh;
 	struct detector *det;
@@ -1301,7 +1313,7 @@ struct detector *get_detector_geometry(const char *filename,
 			/* This was a top-level option, not handled above. */
 			parse_toplevel(det, beam, bits[0], bits[2], &rg_defl,
 			               &rgc_defl, &n_rg_definitions,
-				       &n_rgc_definitions);
+				       &n_rgc_definitions, hdf5_peak_path);
 			for ( i=0; i<n1; i++ ) free(bits[i]);
 			free(bits);
 			for ( i=0; i<n2; i++ ) free(path[i]);

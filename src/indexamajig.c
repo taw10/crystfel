@@ -200,6 +200,7 @@ int main(int argc, char *argv[])
 	int have_push_res = 0;
 	int len;
 	int no_refine = 0;
+	char *command_line_peak_path = NULL;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -394,8 +395,8 @@ int main(int argc, char *argv[])
 			break;
 
 			case 9 :
-			free(iargs.hdf5_peak_path);
-			iargs.hdf5_peak_path = strdup(optarg);
+			free(command_line_peak_path);
+			command_line_peak_path = strdup(optarg);
 			break;
 
 			case 10 :
@@ -549,13 +550,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	free(speaks);
-	if ( iargs.hdf5_peak_path == NULL ) {
-		if ( iargs.peaks == PEAK_HDF5 ) {
-			iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
-		} else if ( iargs.peaks == PEAK_CXI ) {
-			iargs.hdf5_peak_path = strdup("/entry_1/result_1");
-		}
-	}
 
 	/* Check prefix (if given) */
 	if ( prefix == NULL ) {
@@ -573,13 +567,29 @@ int main(int argc, char *argv[])
 	}
 
 	/* Load detector geometry */
-	iargs.det = get_detector_geometry(geom_filename, iargs.beam);
+	iargs.det = get_detector_geometry_2(geom_filename, iargs.beam,
+	                                    &iargs.hdf5_peak_path);
 	if ( iargs.det == NULL ) {
 		ERROR("Failed to read detector geometry from  '%s'\n",
 		      geom_filename);
 		return 1;
 	}
 	add_geom_beam_stuff_to_copy_hdf5(iargs.copyme, iargs.det, iargs.beam);
+
+	/* If no peak path from geometry file, use these (but see later) */
+	if ( iargs.hdf5_peak_path == NULL ) {
+		if ( iargs.peaks == PEAK_HDF5 ) {
+			iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
+		} else if ( iargs.peaks == PEAK_CXI ) {
+			iargs.hdf5_peak_path = strdup("/entry_1/result_1");
+		}
+	}
+
+	/* If an HDF5 peak path was given on the command line, use it */
+	if ( command_line_peak_path != NULL ) {
+		free(iargs.hdf5_peak_path);
+		iargs.hdf5_peak_path = command_line_peak_path;
+	}
 
 	/* Parse indexing methods */
 	if ( indm_str == NULL ) {

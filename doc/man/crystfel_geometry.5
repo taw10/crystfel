@@ -285,6 +285,10 @@ the second value in the data block to the second event in the file, etc. See als
 Sometimes the photon energy value recorded in an HDF5 file differs from the true photon energy value by a multiplication factor. This property defines a correction factor that is applied by the CrystFEL programs. The photon energy value read from a file is multiplied by the value of this property if the property is defined in the geometry file.
 
 
+.SH PEAK INFO LOCATION
+
+Finally, the geometry file can include information about where to look in the HDF5 or CXI files for the table of peak positions.  CrystFEL can use these peak locations for indexing.  Simply include \fBpeak_info_location\fR = \fIlocation\fR, where \fIlocation\fR could be something like /processing/hitfinder/peakinfo.  A peak location given on the indexamajig command line, e.g. \fB--hdf5-peaks=/some/location\fR, has priority over the location in the geometry file.  If neither the geometry file nor the command line specify a location, the default is \fB/processing/hitfinder/peakinfo\fR when \fB--peaks=hdf5\fR is used, and \fB/entry_1/result_1\fR when \fB--peaks=cxi\fR is used.
+
 .SH AUTHOR
 This page was written by Thomas White and Valerio Mariani.
 

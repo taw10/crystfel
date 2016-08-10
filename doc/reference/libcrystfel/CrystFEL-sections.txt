@@ -354,6 +354,7 @@ copy_geom
 fill_in_values
 free_detector_geometry
 get_detector_geometry
+get_detector_geometry_2
 write_detector_geometry
 write_detector_geometry_2
 find_panel
