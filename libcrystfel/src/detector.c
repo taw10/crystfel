@@ -1311,7 +1311,7 @@ struct detector *get_detector_geometry_2(const char *filename,
 		if ( n2 < 2 ) {
 
 			/* This was a top-level option, not handled above. */
-			parse_toplevel(det, beam, bits[0], bits[2], &rg_defl,
+			parse_toplevel(det, beam, bits[0], wholeval, &rg_defl,
 			               &rgc_defl, &n_rg_definitions,
 				       &n_rgc_definitions, hdf5_peak_path);
 			for ( i=0; i<n1; i++ ) free(bits[i]);
