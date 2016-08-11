@@ -897,12 +897,14 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 		panel->cnx = atof(val);
 	} else if ( strcmp(key, "corner_y") == 0 ) {
 		panel->cny = atof(val);
-	} else if ( strcmp(key, "rail_x") == 0 ) {
-		panel->rail_x = atof(val);
-	} else if ( strcmp(key, "rail_y") == 0 ) {
-		panel->rail_y = atof(val);
-	} else if ( strcmp(key, "rail_z") == 0 ) {
-		panel->rail_z = atof(val);
+	} else if ( strcmp(key, "rail_direction") == 0 ) {
+		if ( dir_conv(val, &panel->rail_x,
+		                   &panel->rail_y,
+		                   &panel->rail_z) )
+		{
+			ERROR("Invalid rail direction '%s'\n", val);
+			reject = 1;
+		}
 	} else if ( strcmp(key, "clen_for_centering") == 0 ) {
 		panel->clen_for_centering = atof(val);
 	} else if ( strcmp(key, "adu_per_eV") == 0 ) {
@@ -1537,9 +1539,7 @@ struct detector *get_detector_geometry_2(const char *filename,
 			reject = 1;
 		}
 
-		if ( isnan(p->clen_for_centering)
-		  && ( !isnan(p->rail_x) || !isnan(p->rail_y)
-		       || !isnan(p->rail_z) ) )
+		if ( isnan(p->clen_for_centering) && !isnan(p->rail_x) )
 		{
 			ERROR("You must specify clen_for_centering if you "
 			      "specify the rail direction (panel %s)\n",
@@ -1548,9 +1548,11 @@ struct detector *get_detector_geometry_2(const char *filename,
 		}
 
 		/* The default rail direction */
-		if ( isnan(p->rail_x) ) p->rail_x = 0.0;
-		if ( isnan(p->rail_y) ) p->rail_y = 0.0;
-		if ( isnan(p->rail_z) ) p->rail_z = 1.0;
+		if ( isnan(p->rail_x) ) {
+			p->rail_x = 0.0;
+			p->rail_y = 0.0;
+			p->rail_z = 1.0;
+		}
 		if ( isnan(p->clen_for_centering) ) p->clen_for_centering = 0.0;
 
 		/* It's OK if the badrow direction is '0' */

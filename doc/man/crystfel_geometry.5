@@ -211,12 +211,10 @@ mask_bad = 0x00
 Set this to 1 or "true" to ignore this panel completely.
 
 .PD 0
-.IP \fBrail_x\fR
-.IP \fBrail_y\fR
-.IP \fBrail_z\fR
+.IP \fBrail_direction\fR
 .IP \fBclen_for_centering\fR
 .PD
-Specify the direction in which the panel should move when the camera length is increased.  \fBclen_for_centering\fR is the camera length at which the central beam intersects the centre of the detector.  If you've only calibrated the detector at one camera length, perhaps using prior known values for the rail direction, then this should be the camera length at which you calibrated the detector.  \fBclen_for_centering\fR is the camera length \fBbefore\fR applying the \fBcoffset\fR, i.e. for CSPAD/CXI/LCLS data this value should be an "encoder value" in metres. If you specify any of the rail_{x,y,z} values, you must also specify clen_for_centering.  The default is for the panel to move in the +z direction, so rail_x=0, rail_y=0, rail_z=1 and clen_for_centering is irrelevant.  The square root of the sum of the squares of the rail values (i.e. the modulus of the "rail vector") should normally be equal to one.  Otherwise, the camera length changes from the centering value will be correspondingly scaled.
+Specify the direction in which the panel should move when the camera length is increased.  \fBclen_for_centering\fR is the camera length at which the central beam intersects the centre of the detector.  If you've only calibrated the detector at one camera length, perhaps using prior known values for the rail direction, then this should be the camera length at which you calibrated the detector.  \fBclen_for_centering\fR is the camera length \fBbefore\fR applying the \fBcoffset\fR, i.e. for CSPAD/CXI/LCLS data this value should be an "encoder value" in metres. If you specify the rail direction, you must also specify clen_for_centering.  The default is for the panel to move in the +z direction, so rail_direction = z and clen_for_centering is irrelevant.  The modulus of the "rail vector" should normally be equal to one.  Otherwise, the camera length changes from the centering value will be correspondingly scaled (which might sometimes be what you want!).
 
 .SH BAD REGIONS
 
