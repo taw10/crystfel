@@ -3,11 +3,11 @@
  *
  * Small program to manipulate reflection lists
  *
- * Copyright © 2013-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2015 Thomas White <taw@physics.org>
+ *   2009-2016 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -829,6 +829,7 @@ int main(int argc, char *argv[])
 
 	}
 
+	reflist_add_command_and_version(input, argc, argv); /* Yes, really! */
 	write_reflist(output, input);
 
 	reflist_free(input);

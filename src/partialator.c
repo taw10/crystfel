@@ -1114,6 +1114,7 @@ int main(int argc, char *argv[])
 
 	/* Output results */
 	STATUS("Writing overall results to %s\n", outfile);
+	reflist_add_command_and_version(full, argc, argv);
 	write_reflist_2(outfile, full, sym);
 
 	/* Output split results */

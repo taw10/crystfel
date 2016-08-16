@@ -3,13 +3,13 @@
  *
  * Assemble and process FEL Bragg intensities
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
  *   2015      Keitaro Yamashita <k.yamashita@spring8.or.jp>
- *   2009-2015 Thomas White <taw@physics.org>
+ *   2009-2016 Thomas White <taw@physics.org>
  *   2011      Andrew Martin <andrew.martin@desy.de>
  *   2012      Lorenzo Galli <lorenzo.galli@desy.de>
  *   2014      Chunhong Yoon <chun.hong.yoon@desy.de>
@@ -821,6 +821,7 @@ int main(int argc, char *argv[])
 		               hist_nbins);
 	}
 
+	reflist_add_command_and_version(model, argc, argv);
 	write_reflist_2(output, model, sym);
 
 	close_stream(st);
