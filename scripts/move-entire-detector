@@ -11,54 +11,61 @@
 #
 
 import sys
-import optparse
+import argparse
 import os
 import re
 
-op = optparse.OptionParser(usage="%prog input.geom xshift yshift")
-op.add_option('', '--output', action='store', type='string', dest='ofn',
+op = argparse.ArgumentParser()
+
+op.add_argument('--output', dest='ofn', metavar='output.geom',
               help="Output geometry file")
-op.add_option('', '--pixels', action='store_true', dest='px',
-              help="Specify shifts in pixel units")
-op.add_option('', '--mm', action='store_false', dest='px',
-              help="Specify shifts in millimeters (this is the default)")
-op.add_option('', '--beam', action='store_true', dest='beam',
-              help="Specify shift of X-ray beam")
-op.add_option('', '--detector', action='store_false', dest='beam',
-              help="Specify shift of detector (this is the default)")
-opt,args = op.parse_args(sys.argv)
 
-if len(args) < 3:
-    print 'Usage: %s input.geom xshift yshift' % args[0]
-    sys.exit(1)
+op.add_argument('--pixels', action='store_true', dest='px',
+              help="Indicates that the shifts are in pixel units")
 
-geom = args[1]
-if not opt.ofn:
-    out = os.path.splitext(geom)[0]+'-shifted.geom'
+op.add_argument('--mm', action='store_false', dest='px',
+              help="Indicates that the shifts are in millimeters (this is the default)")
+
+op.add_argument('--beam', action='store_true', dest='beam',
+              help="Shift the X-ray beam rather than the detector")
+
+op.add_argument('--detector', action='store_false', dest='beam',
+              help="Shift the detector rather than the X-ray beam.  This is the default.")
+
+op.add_argument('ifn', metavar='input.geom',
+               help="The name of the geometry file to shift")
+
+op.add_argument('xshift', type=float, metavar='XXX',
+               help="The shift in the x direction")
+
+op.add_argument('yshift', type=float, metavar='YYY',
+               help="The shift in the y direction")
+
+args = op.parse_args()
+
+if not args.ofn:
+    out = os.path.splitext(args.ifn)[0]+'-shifted.geom'
 else:
     out = opt.ofn
-xshift = float(args[2])
-yshift = float(args[3])
 
-if opt.px:
+if args.px:
     units = 'px'
 else:
     units = 'mm'
 
-if opt.beam:
+if args.beam:
     bm = 'beam'
 else:
     bm = 'detector'
 
-print 'Input filename %s\nOutput filename %s' % (geom,out)
-print 'Shifting %s by %f,%f %s' % (bm, xshift, yshift, units)
+print 'Input filename %s\nOutput filename %s' % (args.ifn,out)
+print 'Shifting %s by %f,%f %s' % (bm, args.xshift, args.yshift, units)
 
-if opt.beam:
-    xshift = -xshift
-    yshift = -yshift
+if args.beam:
+    args.xshift = -args.xshift
+    args.yshift = -args.yshift
 
-f = open(geom, 'r')
-g = open(args[1], 'r')
+f = open(args.ifn, 'r')
 h = open(out, 'w')
 panel_resolutions = {}
 
@@ -69,7 +76,7 @@ prog4 = re.compile("^\s*(.*)\/corner_y\s+=\s+([0-9\.\-]+)\s")
 default_res = 0
 while True:
 
-    fline = g.readline()
+    fline = f.readline()
     if not fline:
         break
 
@@ -96,12 +103,12 @@ while True:
             res = panel_resolutions[panel]
         else:
             res = default_res
-            if not opt.px:
+            if not args.px:
                 print 'Using default resolution (%f px/m) for panel %s' % (res, panel)
-        if opt.px:
-            h.write('%s/corner_x = %f\n' % (panel,panel_cnx+xshift))
+        if args.px:
+            h.write('%s/corner_x = %f\n' % (panel,panel_cnx+args.xshift))
         else:
-            h.write('%s/corner_x = %f\n' % (panel,panel_cnx+(xshift*res*1e-3)))
+            h.write('%s/corner_x = %f\n' % (panel,panel_cnx+(args.xshift*res*1e-3)))
         continue
 
     match = prog4.match(fline)
@@ -112,16 +119,16 @@ while True:
             res = panel_resolutions[panel]
         else:
             res = default_res
-            if not opt.px:
+            if not args.px:
                 print 'Using default resolution (%f px/m) for panel %s' % (res, panel)
-        if opt.px:
-            h.write('%s/corner_y = %f\n' % (panel,panel_cny+yshift))
+        if args.px:
+            h.write('%s/corner_y = %f\n' % (panel,panel_cny+args.yshift))
         else:
-            h.write('%s/corner_y = %f\n' % (panel,panel_cny+(yshift*res*1e-3)))
+            h.write('%s/corner_y = %f\n' % (panel,panel_cny+(args.yshift*res*1e-3)))
         continue
 
     h.write(fline)
 
-g.close()
+f.close()
 h.close()
 
