@@ -3,11 +3,11 @@
  *
  * Fast reflection/peak list
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2014 Thomas White <taw@physics.org>
+ *   2011-2016 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -131,6 +131,7 @@ struct _reflist {
 
 	struct _reflection *head;
 	struct _reflection *tail;
+	char *notes;
 
 };
 
@@ -169,6 +170,7 @@ RefList *reflist_new()
 	if ( new == NULL ) return NULL;
 
 	new->head = NULL;
+	new->notes = NULL;
 
 	return new;
 }
@@ -1149,4 +1151,60 @@ void lock_reflection(Reflection *refl)
 void unlock_reflection(Reflection *refl)
 {
 	pthread_mutex_unlock(&refl->lock);
+}
+
+
+static void reflist_set_notes(RefList *reflist, const char *notes)
+{
+	free(reflist->notes);  /* free(NULL) is OK */
+	reflist->notes = strdup(notes);
+}
+
+
+/**
+ * reflist_get_notes:
+ * @reflist: A %RefList
+ *
+ * Returns the notes field for @reflist, or NULL if there are no notes.
+ * See reflist_add_notes() for more details.
+ */
+const char *reflist_get_notes(RefList *reflist)
+{
+	return reflist->notes;
+}
+
+
+/**
+ * reflist_add_notes:
+ * @reflist: A %RefList
+ * @notes_add: Notes to add
+ *
+ * Appends the string @notes_add to the notes field for @reflist.  The notes
+ * will be stored in the reflection list file by, e.g.,
+ * write_reflections_to_file(), and are meant to be for humans to read.
+ * Possible uses include making a record of the command line arguments used to
+ * create the reflection list.
+ */
+void reflist_add_notes(RefList *reflist, const char *notes_add)
+{
+	size_t len;
+	char *nnotes;
+
+	if ( reflist->notes == NULL ) {
+		reflist_set_notes(reflist, notes_add);
+		return;
+	}
+
+	len = strlen(notes_add) + strlen(reflist->notes) + 2;
+	nnotes = malloc(len);
+	if ( nnotes == NULL ) {
+		ERROR("Failed to add notes to crystal.\n");
+		return;
+	}
+
+	strcpy(nnotes, reflist->notes);
+	strcat(nnotes, "\n");
+	strcat(nnotes, notes_add);
+	free(reflist->notes);
+	reflist->notes = nnotes;
 }

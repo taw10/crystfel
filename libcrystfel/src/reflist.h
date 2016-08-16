@@ -3,11 +3,11 @@
  *
  * Fast reflection/peak list
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2015 Thomas White <taw@physics.org>
+ *   2011-2016 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -138,6 +138,8 @@ extern int num_reflections(RefList *list);
 extern int tree_depth(RefList *list);
 extern void lock_reflection(Reflection *refl);
 extern void unlock_reflection(Reflection *refl);
+extern const char *reflist_get_notes(RefList *reflist);
+extern void reflist_add_notes(RefList *reflist, const char *notes_add);
 
 #ifdef __cplusplus
 }
