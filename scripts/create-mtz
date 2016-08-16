@@ -5,15 +5,14 @@ echo "You need to edit this script first, to set the space group and cell parame
 exit 1
 
 OUTFILE=`echo $1 | sed -e 's/\.hkl$/.mtz/'`
-TMPHKL=`echo $1 | sed -e 's/\.hkl$/.temp.hkl/'`
 
 echo " Input: $1"
 echo "Output: $OUTFILE"
-if [ -e $TMPHKL -o -e $OUTFILE ]; then
+if [ -e create-mtz.temp.hkl -o -e $OUTFILE ]; then
 	echo "   I'm about to write to the following files, but one or more"
 	echo "   of them already exist:"
 	echo "   " $OUTFILE
-	echo "   " $TMPHKL
+	echo "    create-mtz.temp.hkl"
 	echo "   To confirm that you want to continue, which will DESTROY the"
 	echo "   current contents of these files, type 'y' and press enter."
 	read conf
@@ -22,13 +21,17 @@ if [ -e $TMPHKL -o -e $OUTFILE ]; then
 		exit 1
 	else
 		echo "Proceeding"
+		rm -f create-mtz.temp.hkl
 	fi
 fi
 
-grep -v "End of reflections" $1 > $TMPHKL
+ex -c '/End of reflections/
+.,$d
+w create-mtz.temp.hkl
+q!' $1
 
 echo "Running 'f2mtz'..."
-f2mtz HKLIN $TMPHKL HKLOUT $OUTFILE > out.html << EOF
+f2mtz HKLIN create-mtz.temp.hkl HKLOUT $OUTFILE > out.html << EOF
 TITLE Reflections from CrystFEL
 NAME PROJECT wibble CRYSTAL wibble DATASET wibble
 CELL 100 100 100  90  90 90
