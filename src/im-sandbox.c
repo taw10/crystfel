@@ -77,7 +77,6 @@ struct sandbox
 	pid_t *pids;
 
 	int *running;
-	struct filename_plus_event **last_event;
 	int serial;
 
 	struct sb_shm *shared;
