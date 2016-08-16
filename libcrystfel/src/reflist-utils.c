@@ -3,11 +3,11 @@
  *
  * Utilities to complement the core reflist.c
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2014 Thomas White <taw@physics.org>
+ *   2011-2016 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -249,6 +249,10 @@ int write_reflist_2(const char *filename, RefList *list, SymOpList *sym)
 	write_reflections_to_file(fh, list);
 	fprintf(fh, REFLECTION_END_MARKER"\n");
 
+	if ( reflist_get_notes(list) != NULL ) {
+		fprintf(fh, "%s\n", reflist_get_notes(list));
+	}
+
 	fclose(fh);
 
 	return 0;
@@ -338,7 +342,7 @@ RefList *read_reflections_from_file(FILE *fh)
 		if ( rval == NULL ) continue;
 		chomp(line);
 
-		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
+		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) break;
 
 		if ( major_version >= 2 ) {
 
@@ -402,8 +406,22 @@ RefList *read_reflections_from_file(FILE *fh)
 
 	} while ( rval != NULL );
 
-	/* Got read error of some kind before finding PEAK_LIST_END_MARKER */
-	return NULL;
+	if ( strcmp(line, REFLECTION_END_MARKER) != 0 ) {
+		/* Got read error of some kind before finding
+		 * PEAK_LIST_END_MARKER */
+		return NULL;
+	}
+
+	/* We are now in the notes region */
+	do {
+		char line[1024];
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) continue;
+		chomp(line);
+		reflist_add_notes(out, line);
+	} while ( rval != NULL );
+
+	return out;
 }
 
 
