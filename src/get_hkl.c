@@ -96,6 +96,12 @@ static void show_help(const char *s)
 }
 
 
+static void copy_notes(RefList *out, RefList *in)
+{
+	reflist_add_notes(out, reflist_get_notes(in));
+}
+
+
 /* Apply Poisson noise to all reflections */
 static void poisson_reflections(RefList *list, double adu_per_photon)
 {
@@ -152,6 +158,7 @@ static RefList *template_reflections(RefList *list, RefList *template)
 	RefList *out;
 
 	out = reflist_new();
+	copy_notes(out, list);
 
 	for ( refl = first_refl(template, &iter);
 	      refl != NULL;
@@ -185,6 +192,7 @@ static RefList *twin_reflections(RefList *in, int need_all_parts,
 	int n;
 
 	out = reflist_new();
+	copy_notes(out, in);
 
 	/* No need to free and reallocate this for every reflection */
 	m = new_symopmask(holo);
@@ -296,6 +304,7 @@ static RefList *expand_reflections(RefList *in, const SymOpList *initial,
 	}
 
 	out = reflist_new();
+	copy_notes(out, in);
 	m = new_symopmask(initial);
 
 	for ( refl = first_refl(in, &iter);
@@ -361,6 +370,7 @@ static RefList *trim_centrics(RefList *in, const SymOpList *sym)
 	long long int ntrim = 0;
 
 	out = reflist_new();
+	copy_notes(out, in);
 
 	for ( refl = first_refl(in, &iter);
 	      refl != NULL;
@@ -721,6 +731,7 @@ int main(int argc, char *argv[])
 		free(cellfile);
 
 		n = reflist_new();
+		copy_notes(n, input);
 
 		for ( refl = first_refl(input, &iter);
 		      refl != NULL;
@@ -775,6 +786,7 @@ int main(int argc, char *argv[])
 		cs = modulus(csx, csy, csz);
 
 		n = reflist_new();
+		copy_notes(n, input);
 
 		for ( refl = first_refl(input, &iter);
 		      refl != NULL;
@@ -809,6 +821,7 @@ int main(int argc, char *argv[])
 		RefListIterator *iter;
 
 		n = reflist_new();
+		copy_notes(n, input);
 
 		for ( refl = first_refl(input, &iter);
 		      refl != NULL;
