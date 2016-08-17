@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
 	image.dp = malloc(sizeof(float *));
 	image.dp[0] = malloc(128*128*sizeof(float));
 	image.bad = malloc(sizeof(uint16_t *));
-	image.bad[0] = calloc(128*128, sizeof(uint16_t));
+	image.bad[0] = calloc(128*128, sizeof(int));
 	image.beam = NULL;
 	image.lambda = ph_eV_to_lambda(1000.0);
 
