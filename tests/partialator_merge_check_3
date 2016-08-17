@@ -46,7 +46,6 @@ Symmetry: 4
    1    0    0      75.00        -       0.00       2
    2    0    0     150.00        -       0.00       2
   20    0    0      75.00        -       0.00       2
-End of reflections
 EOF
 
 src/partialator -i partialator_merge_check_3.stream \
@@ -54,6 +53,9 @@ src/partialator -i partialator_merge_check_3.stream \
                 --model=unity --iterations=1 -y 4 --no-polarisation \
                 --no-free
 
+ex -c '/End of reflections/
+.,$d
+x' partialator_merge_check_3.hkl
 diff partialator_merge_check_3.hkl partialator_merge_check_3_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1

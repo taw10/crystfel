@@ -39,10 +39,12 @@ CrystFEL reflection list version 2.0
 Symmetry: -1
    h    k    l          I    phase   sigma(I)   nmeas
    1    0    0     150.03        -      35.36       2
-End of reflections
 EOF
 
 src/process_hkl -y -1 -i second_merge_check.stream -o second_merge_check.hkl
+ex -c '/End of reflections/
+.,$d
+x' second_merge_check.hkl
 diff second_merge_check.hkl second_merge_check_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1

@@ -23,10 +23,12 @@ cat > fourth_merge_check_ans.hkl << EOF
 CrystFEL reflection list version 2.0
 Symmetry: 1
    h    k    l          I    phase   sigma(I)   nmeas
-End of reflections
 EOF
 
 src/process_hkl -i fourth_merge_check.stream -o fourth_merge_check.hkl
+ex -c '/End of reflections/
+.,$d
+x' fourth_merge_check.hkl
 diff fourth_merge_check.hkl fourth_merge_check_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1

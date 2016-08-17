@@ -44,7 +44,6 @@ Symmetry: 1
    h    k    l          I    phase   sigma(I)   nmeas
    1    0    0     150.00        -       0.00       2
   19    0    0      75.00        -       0.00       2
-End of reflections
 EOF
 
 src/partialator -i partialator_merge_check_2.stream \
@@ -52,6 +51,9 @@ src/partialator -i partialator_merge_check_2.stream \
                 --model=unity --iterations=1 --no-polarisation \
                 --no-free
 
+ex -c '/End of reflections/
+.,$d
+x' partialator_merge_check_2.hkl
 diff partialator_merge_check_2.hkl partialator_merge_check_2_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1
