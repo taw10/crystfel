@@ -85,6 +85,7 @@
 
 
 #define MOSFLM_VERBOSE 0
+#define FAKE_CLEN (0.1)
 
 
 typedef enum {
@@ -350,7 +351,6 @@ static void write_spt(struct image *image, const char *filename)
 {
 	FILE *fh;
 	int i;
-	double fclen = 67.8e-3;  /* fake camera length in m */
 	int n;
 
 	fh = fopen(filename, "w");
@@ -361,38 +361,39 @@ static void write_spt(struct image *image, const char *filename)
 
 	/* Number of pixels in x, number of pixels in y, pixel size (mm),
 	 * YSCALE, OMEGA */
-	fprintf(fh, "%10d %10d %10.8f %10.6f %10.6f\n", 1, 1, 0.0, 1.0, 0.0);
+	fputs("1 1 0.0 1.0 0.0\n", fh);
 
 	/* INVERTX, ISWUNG */
-	fprintf(fh, "%10d %10d\n", 0, 1);
+	fputs("0 1\n", fh);
 
 	/* XBEAM, YBEAM */
-	fprintf(fh, "%10.5f %10.5f\n", 0.0, 0.0);
+	fputs("0.0 0.0\n", fh);
 
 	n = image_feature_count(image->features);
 	for ( i=0; i<n; i++ ) {
 
 		struct imagefeature *f;
-		double xs, ys, rx, ry, x, y;
+		double ttx, tty, x, y;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		xs = f->fs*f->p->fsx + f->ss*f->p->ssx;
-		ys = f->fs*f->p->fsy + f->ss*f->p->ssy;
-		rx = (xs + f->p->cnx) / f->p->res;
-		ry = (ys + f->p->cny) / f->p->res;
+		ttx = angle_between_2d(0.0, 1.0,
+		                       f->rx, 1.0/image->lambda + f->rz);
+		tty = angle_between_2d(0.0, 1.0,
+		                       f->ry, 1.0/image->lambda + f->rz);
+		if ( f->rx < 0.0 ) ttx *= -1.0;
+		if ( f->ry < 0.0 ) tty *= -1.0;
+		x = -tan(ttx)*FAKE_CLEN;
+		y = tan(tty)*FAKE_CLEN;
 
-		x = -rx*fclen/f->p->clen;
-		y = ry*fclen/f->p->clen;  /* Peak positions in m */
-
-		fprintf(fh, "%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
-		        x*1e3, y*1e3, 0.0, 0.0, 1000.0, 10.0);
+		fprintf(fh, "%10.2f %10.2f 0.0 0.0 1000.0 10.0\n",
+		        x*1e3, y*1e3);
 
 	}
 
-	fprintf(fh,"%10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
-	           -999.0,-999.0,-999.0,-999.0,-999.0,-999.0);
+	fputs("-999.0 -999.0 -999.0 -999.0 -999.0 -999.0\n", fh);
+
 	fclose(fh);
 }
 
@@ -553,7 +554,8 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		break;
 
 		case 3 :
-		mosflm_sendline("DISTANCE 67.8\n", mosflm);
+		snprintf(tmp, 255, "DISTANCE %f\n", FAKE_CLEN*1e3);
+		mosflm_sendline(tmp, mosflm);
 		break;
 
 		case 4 :
