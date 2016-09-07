@@ -54,6 +54,7 @@
 
 
 #define XDS_VERBOSE 0
+#define FAKE_CLEN (0.1)
 
 
 /* Global private data, prepared once */
@@ -321,23 +322,23 @@ static void write_spot(struct image *image)
 
         {
 		struct imagefeature *f;
-		double xs, ys, rx, ry, x, y;
+		double ttx, tty, x, y;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
+		if ( f->intensity <= 0 ) continue;
 
-		xs = f->fs*f->p->fsx + f->ss*f->p->ssx;
-		ys = f->fs*f->p->fsy + f->ss*f->p->ssy;
-		rx = (xs + f->p->cnx) / f->p->res;
-		ry = (ys + f->p->cny) / f->p->res;
+		ttx = angle_between_2d(0.0, 1.0,
+		                       f->rx, 1.0/image->lambda + f->rz);
+		tty = angle_between_2d(0.0, 1.0,
+		                       f->ry, 1.0/image->lambda + f->rz);
+		if ( f->rx < 0.0 ) ttx *= -1.0;
+		if ( f->ry < 0.0 ) tty *= -1.0;
+		x = tan(ttx)*FAKE_CLEN;
+		y = tan(tty)*FAKE_CLEN;
 
-		x = rx;
-		y = ry; /* Peak positions in m */
-
-		x = (rx / 70e-6) + 1500;
-		y = (ry / 70e-6) + 1500;
-
-		if (f->intensity <= 0) continue;
+		x = (x / 70e-6) + 1500;
+		y = (y / 70e-6) + 1500;
 
 		fprintf(fh, "%10.2f %10.2f %10.2f %10.0f.\n",
 		        x, y, 0.5, f->intensity);
@@ -433,7 +434,7 @@ static int write_inp(struct image *image, struct xds_private *xp)
 	fprintf(fh, "JOB= IDXREF\n");
 	fprintf(fh, "ORGX= 1500\n");
 	fprintf(fh, "ORGY= 1500\n");
-	fprintf(fh, "DETECTOR_DISTANCE= %f\n", image->det->panels[0].clen*1000);
+	fprintf(fh, "DETECTOR_DISTANCE= %f\n", FAKE_CLEN*1e3);
 	fprintf(fh, "OSCILLATION_RANGE= 0.300\n");
 	fprintf(fh, "X-RAY_WAVELENGTH= %.6f\n", image->lambda*1e10);
 	fprintf(fh, "NAME_TEMPLATE_OF_DATA_FRAMES=???.img \n");
