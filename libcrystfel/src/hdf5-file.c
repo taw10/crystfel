@@ -1392,6 +1392,99 @@ static hsize_t *first_two_dims(hsize_t *in, struct dim_structure *ds)
 }
 
 
+static int load_satmap(struct hdfile *f, struct event *ev, struct panel *p,
+                       hsize_t *in_f_offset, hsize_t *in_f_count,
+                       struct dim_structure *dim_struct,
+                       float *satmap)
+{
+	char *loc;  /* Sat map location after possible substitution */
+	hid_t satmap_dataspace, satmap_dh;
+	int exists;
+	int check, r;
+	hid_t memspace;
+	hsize_t dimsm[2];
+	hid_t fh;
+	hsize_t *f_offset, *f_count;
+
+	if ( p->satmap_file != NULL ) {
+
+		fh = H5Fopen(p->satmap_file, H5F_ACC_RDONLY, H5P_DEFAULT);
+		if ( fh < 0 ) {
+			ERROR("Couldn't open satmap file '%s'\n", p->satmap_file);
+			return 1;
+		}
+
+		/* If we have an external map file, we assume it to be a simple
+		 * 2D job */
+		f_offset = first_two_dims(in_f_offset, dim_struct);
+		f_count = first_two_dims(in_f_count, dim_struct);
+
+	} else {
+
+		/* Otherwise, we assume it has the same dimensions as the
+		 * image data itself */
+		fh = f->fh;
+		f_offset = in_f_offset;
+		f_count = in_f_count;
+	}
+
+	if ( ev != NULL ) {
+		loc = retrieve_full_path(ev, p->satmap);
+	} else {
+		loc = strdup(p->satmap);
+	}
+
+	exists = check_path_existence(fh, loc);
+	if ( !exists ) {
+		ERROR("Cannot find satmap for panel %s\n", p->name);
+		goto err;
+	}
+
+	satmap_dh = H5Dopen2(fh, loc, H5P_DEFAULT);
+	if ( satmap_dh <= 0 ) {
+		ERROR("Couldn't open satmap for panel %s\n", p->name);
+		goto err;
+	}
+
+	satmap_dataspace = H5Dget_space(satmap_dh);
+	check = H5Sselect_hyperslab(satmap_dataspace, H5S_SELECT_SET,
+	                            f_offset, NULL, f_count, NULL);
+	if ( check < 0 ) {
+		ERROR("Error selecting satmap dataspace for panel %s\n",
+		      p->name);
+		goto err;
+	}
+
+	dimsm[0] = p->h;
+	dimsm[1] = p->w;
+	memspace = H5Screate_simple(2, dimsm, NULL);
+	if ( check < 0 ) {
+		ERROR("Error selecting satmap memory dataspace for panel %s\n",
+		      p->name);
+		goto err;
+	}
+
+	r = H5Dread(satmap_dh, H5T_NATIVE_FLOAT, memspace,
+	            satmap_dataspace, H5P_DEFAULT, satmap);
+	if ( r < 0 ) {
+		ERROR("Couldn't read satmap for panel %s\n", p->name);
+		goto err;
+	}
+
+	H5Sclose(satmap_dataspace);
+	H5Dclose(satmap_dh);
+	free(loc);
+
+	return 0;
+
+err:
+	if ( p->satmap_file != NULL ) H5Fclose(fh);
+	free(loc);
+	return 1;
+}
+
+
+
 static int load_mask(struct hdfile *f, struct event *ev, struct panel *p,
                      int *flags,
                      hsize_t *in_f_offset, hsize_t *in_f_count,
@@ -1626,14 +1719,11 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		}
 
 		if ( p->satmap != NULL ) {
-			r = H5Dread(f->dh, H5T_NATIVE_FLOAT, memspace, dataspace,
-			            H5P_DEFAULT, image->sat[pi]);
-			if ( r < 0 ) {
-				ERROR("Couldn't read satmap for panel %s\n",
+			if ( load_satmap(f, ev, p, f_offset, f_count, hsd,
+			                 image->sat[pi]) )
+			{
+				ERROR("Failed to laod sat map for panel %s\n",
 				      p->name);
-				free(f_offset);
-				free(f_count);
-				return 1;
 			}
 		}
 
