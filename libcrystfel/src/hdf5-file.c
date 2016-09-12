@@ -3,11 +3,11 @@
  *
  * Read/write HDF5 data files
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2015 Thomas White <taw@physics.org>
+ *   2009-2016 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -1375,6 +1375,110 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 }
 
 
+static hsize_t *first_two_dims(hsize_t *in, struct dim_structure *ds)
+{
+	int i, j;
+	hsize_t *out = malloc(2*sizeof(hsize_t));
+
+	if ( out == NULL ) return NULL;
+
+	j = 0;
+	for ( i=0; i<ds->num_dims; i++ ) {
+		if ( (ds->dims[i] == HYSL_FS) || (ds->dims[i] == HYSL_SS) ) {
+			out[j++] = in[i];
+		}
+	}
+	return out;
+}
+
+
+static int load_mask(struct hdfile *f, struct event *ev, struct panel *p,
+                     int *flags,
+                     hsize_t *in_f_offset, hsize_t *in_f_count,
+                     struct dim_structure *dim_struct)
+{
+	char *mask;  /* Mask location after possible substitution */
+	hid_t mask_dataspace, mask_dh;
+	int exists;
+	int check, r;
+	hid_t memspace;
+	hsize_t dimsm[2];
+	hid_t fh;
+	hsize_t *f_offset, *f_count;
+
+	if ( p->mask_file != NULL ) {
+
+		fh = H5Fopen(p->mask_file, H5F_ACC_RDONLY, H5P_DEFAULT);
+		if ( fh < 0 ) {
+			ERROR("Couldn't open mask file '%s'\n", p->mask_file);
+			return 1;
+		}
+
+		/* If we have an external map file, we assume it to be a simple
+		 * 2D job */
+		f_offset = first_two_dims(in_f_offset, dim_struct);
+		f_count = first_two_dims(in_f_count, dim_struct);
+
+	} else {
+		fh = f->fh;
+		f_offset = in_f_offset;
+		f_count = in_f_count;
+	}
+
+	if ( ev != NULL ) {
+		mask = retrieve_full_path(ev, p->mask);
+	} else {
+		mask = strdup(p->mask);
+	}
+
+	exists = check_path_existence(fh, mask);
+	if ( !exists ) {
+		ERROR("Cannot find flags for panel %s\n", p->name);
+		goto err;
+	}
+
+	mask_dh = H5Dopen2(fh, mask, H5P_DEFAULT);
+	if ( mask_dh <= 0 ) {
+		ERROR("Couldn't open flags for panel %s\n", p->name);
+		goto err;
+	}
+
+	mask_dataspace = H5Dget_space(mask_dh);
+	check = H5Sselect_hyperslab(mask_dataspace, H5S_SELECT_SET,
+	                            f_offset, NULL, f_count, NULL);
+	if ( check < 0 ) {
+		ERROR("Error selecting mask dataspace for panel %s\n", p->name);
+		goto err;
+	}
+
+	dimsm[0] = p->h;
+	dimsm[1] = p->w;
+	memspace = H5Screate_simple(2, dimsm, NULL);
+	if ( check < 0 ) {
+		ERROR("Error selecting memory dataspace for panel %s\n", p->name);
+		goto err;
+	}
+
+	r = H5Dread(mask_dh, H5T_NATIVE_INT, memspace,
+	            mask_dataspace, H5P_DEFAULT, flags);
+	if ( r < 0 ) {
+		ERROR("Couldn't read flags for panel %s\n", p->name);
+		goto err;
+	}
+
+	H5Sclose(mask_dataspace);
+	H5Dclose(mask_dh);
+	free(mask);
+
+	return 0;
+
+err:
+	if ( p->mask_file != NULL ) H5Fclose(fh);
+	free(mask);
+	return 1;
+}
+
+
 int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
                int satcorr)
 {
@@ -1514,16 +1618,9 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 
 		if ( p->mask != NULL ) {
 			int *flags = malloc(p->w*p->h*sizeof(int));
-			r = H5Dread(f->dh, H5T_NATIVE_FLOAT, memspace, dataspace,
-			            H5P_DEFAULT, flags);
-			if ( r < 0 ) {
-				ERROR("Couldn't read flags for panel %s\n",
-				      p->name);
-				free(f_offset);
-				free(f_count);
-				return 1;
-			}
+			load_mask(f, ev, p, flags, f_offset, f_count, hsd);
 			image->bad[pi] = make_badmask(flags, p, image->det);
+			free(flags);
 		} else {
 			image->bad[pi] = calloc(p->w*p->h, sizeof(int));
 		}
