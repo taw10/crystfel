@@ -1598,6 +1598,7 @@ void write_geometry_file(Stream *st, const char *geom_filename) {
 	char line[2014];
 	FILE *geom_fh;
 	char *rval;
+	int eol;
 
 	if ( geom_filename == NULL ) return;
 
@@ -1612,7 +1613,13 @@ void write_geometry_file(Stream *st, const char *geom_filename) {
 	do {
 		rval = fgets(line, 1023, geom_fh);
 		if ( rval != NULL ) fputs(line, st->fh);
+		eol = ( line[strlen(line)-1] == '\n' );
 	} while ( rval != NULL );
+
+
+	if ( !eol ) {
+		fprintf(st->fh, "\n");
+	}
 
 	fclose(geom_fh);
 
