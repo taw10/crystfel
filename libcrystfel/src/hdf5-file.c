@@ -730,7 +730,8 @@ static void write_location(hid_t fh, struct detector *det, float *data,
 
 	for ( pi=0; pi<loc->n_panels; pi++ ) {
 
-		hsize_t f_offset[2], f_count[2];
+		hsize_t f_offset[2], f_count[2], dims[2];
+		hid_t memspace;
 		struct panel p;
 		int r;
 
@@ -755,19 +756,25 @@ static void write_location(hid_t fh, struct detector *det, float *data,
 			return;
 		}
 
-		r = H5Dwrite(dh, H5T_NATIVE_FLOAT, H5S_ALL,
-		             dh_dataspace, H5P_DEFAULT, data);
+		dims[0] = p.h;
+		dims[1] = p.w;
+		memspace = H5Screate_simple(2, dims, NULL);
+
+		r = H5Dwrite(dh, H5T_NATIVE_FLOAT, memspace, dh_dataspace,
+		             H5P_DEFAULT, data);
 		if ( r < 0 ) {
 			ERROR("Couldn't write data\n");
 			H5Pclose(ph);
 			H5Dclose(dh);
 			H5Sclose(dh_dataspace);
+			H5Sclose(memspace);
 			H5Sclose(sh);
 			H5Fclose(fh);
 			return;
 		}
 
 		H5Sclose(dh_dataspace);
+		H5Sclose(memspace);
 	}
 	H5Pclose(ph);
 	H5Sclose(sh);
