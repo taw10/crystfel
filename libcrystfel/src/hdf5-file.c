@@ -701,7 +701,7 @@ static struct hdf5_write_location *make_location_list(struct detector *det,
 }
 
 
-static void write_location(hid_t fh, struct detector *det, float *data,
+static void write_location(hid_t fh, struct detector *det, float **dp,
                            struct hdf5_write_location *loc)
 {
 	hid_t sh, dh, ph;
@@ -761,7 +761,7 @@ static void write_location(hid_t fh, struct detector *det, float *data,
 		memspace = H5Screate_simple(2, dims, NULL);
 
 		r = H5Dwrite(dh, H5T_NATIVE_FLOAT, memspace, dh_dataspace,
-		             H5P_DEFAULT, data);
+		             H5P_DEFAULT, dp[loc->panel_idxs[pi]]);
 		if ( r < 0 ) {
 			ERROR("Couldn't write data\n");
 			H5Pclose(ph);
@@ -923,7 +923,7 @@ int hdf5_write_image(const char *filename, const struct image *image,
 	                               &num_locations);
 
 	for ( li=0; li<num_locations; li++ ) {
-		write_location(fh, image->det, image->dp[li], &locations[li]);
+		write_location(fh, image->det, image->dp, &locations[li]);
 	}
 
 	if ( image->beam == NULL
