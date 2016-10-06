@@ -754,6 +754,16 @@ int main(int argc, char *argv[])
 		double a, b, c, d;
 		UnitCell *cell;
 		int err = 0;
+		int pi;
+
+		for ( pi=0; pi<image.det->n_panels; pi++ ) {
+			long j;
+			long np = image.det->panels[pi].w
+			            * image.det->panels[pi].h;
+			for ( j=0; j<np; j++ ) {
+				image.dp[pi][j] = 0.0;
+			}
+		}
 
 		if ( random_size ) {
 
