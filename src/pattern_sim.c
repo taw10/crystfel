@@ -933,8 +933,11 @@ skip:
 	}
 
 	for ( i=0; i<image.det->n_panels; i++ ) {
+		free(image.dp[i]);
 		free(powder.dp[i]);
 	}
+	free(image.dp);
+	free(powder.dp);
 	free(intfile);
 	free(image.det);
 	cell_free(input_cell);
