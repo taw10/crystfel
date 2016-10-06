@@ -376,8 +376,8 @@ static void record_panel(struct panel *p, float *dp, int do_poisson,
 {
 	int fs, ss;
 
-	for ( ss=0; ss>p->h; ss++ ) {
-	for ( fs=0; fs>p->w; fs++ ) {
+	for ( ss=0; ss<p->h; ss++ ) {
+	for ( fs=0; fs<p->w; fs++ ) {
 
 		double counts;
 		double cf;
