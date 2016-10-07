@@ -1078,15 +1078,17 @@ static void correct_rotation_and_stretch(struct rg_collection *connected,
 			} else {
 
 				struct panel *p0;
-				double delta_x, delta_y;
+				double delta_x, delta_y, delta;
 
 				p0 = connected->rigid_groups[di]->panels[0];
 
 				delta_x = p->cnx - p0->cnx / cs;
 				delta_y = p->cny - p0->cny / cs;
 
-				new_cnx = p0->cnx + delta_x;
-				new_cny = p0->cny + delta_y;
+				delta = sqrt(delta_x*delta_x + delta_y*delta_y);
+
+				new_cnx = p0->cnx + delta*p0->fsx;
+				new_cny = p0->cny + delta*p0->fsy;
 
 			}
 
