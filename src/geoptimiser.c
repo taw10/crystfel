@@ -87,9 +87,9 @@ static void show_help(const char *s)
 "	                                         Default: 3. \n"
 "      --min-num-peaks-per-panel=<num>          DEPRECATED. This option has been\n"
 "                                                renamed to  --min-num-pixels-per-conn-group.\n"
-"  -p, --min-num-pixels-per-conn-group=<num>    Minimum number of useful pixels pern"
+"  -p, --min-num-pixels-per-conn-group=<num>    Minimum number of useful pixels per\n"
 "                                                connected group.\n"
-"                         f                        Default: 100.\n"
+"                         f                       Default: 100.\n"
 "  -l, --most-freq-clen                         Use only the most frequent camera\n"
 "                                                length.\n"
 "  -s, --individual-dist-offset                 Use a distance offset for each panel.\n"
@@ -98,7 +98,7 @@ static void show_help(const char *s)
 "                                                Default: distance offset is optimized\n"
 "  -m  --max-peak-dist=<num>                    Maximum distance between predicted and\n"
 "                                                detected peaks (in pixels)\n"
-"                                                 Default: 4.0 pixels.\n"
+"                                                 Default: half of minimal inter-Bragg distance\n"
 );
 }
 
@@ -498,6 +498,13 @@ static double pick_clen_to_use(struct geoptimiser_params *gparams,
 			STATUS("WARNING: The distance between Bragg peaks is "
 			       "too small: %0.1f < 1.2*%0.1f pixels.\n",
 		               min_braggp_dist, gparams->max_peak_dist);
+		}
+
+		if ( gparams->max_peak_dist==0.0 ) {
+                        gparams->max_peak_dist = 0.5*min_braggp_dist;
+			STATUS("WARNING: Maximum distance between peaks is "
+			       "set to: %0.1f pixels.\n",
+			       gparams->max_peak_dist);
 		}
 
 		if ( clens_population[i] > clens_population[best_clen] ) {
@@ -2312,7 +2319,7 @@ int main(int argc, char *argv[])
 	gparams->individual_coffset = 0;
 	gparams->no_cspad = 0;
 	gparams->error_maps = 1;
-	gparams->max_peak_dist = 4.0;
+	gparams->max_peak_dist = 0.0;
 
 	const struct option longopts[] = {
 
