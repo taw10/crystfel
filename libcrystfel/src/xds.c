@@ -247,29 +247,42 @@ static int read_cell(struct image *image, struct xds_private *xp)
 
 	do {
 		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) return 0;
+		if ( rval == NULL ) {
+			fclose(fh);
+			return 0;
+		}
 
 	} while ( strcmp(line, "   #  COORDINATES OF REC. BASIS VECTOR"
 	                       "    LENGTH   1/LENGTH\n") != 0 );
 
 	/* Free line after chunk */
 	rval = fgets(line, 1023, fh);
-	if ( rval == NULL ) return 0;
+	if ( rval == NULL ) {
+		fclose(fh);
+		return 0;
+	}
 	rval = fgets(line, 1023, fh);
-	if ( rval == NULL ) return 0;
+	if ( rval == NULL ) {
+		fclose(fh);
+		return 0;
+	}
 
 	memcpy(asx, line+7, 10);    asx[10] = '\0';
 	memcpy(asy, line+17, 10);   asy[10] = '\0';
 	memcpy(asz, line+27, 10);   asz[10] = '\0';
 
 	rval = fgets(line, 1023, fh);
-	if ( rval == NULL ) return 0;
+	if ( rval == NULL ) {
+		fclose(fh);
+		return 0;
+	}
 
 	memcpy(bsx, line+7, 10);    bsx[10] = '\0';
 	memcpy(bsy, line+17, 10);   bsy[10] = '\0';
 	memcpy(bsz, line+27, 10);   bsz[10] = '\0';
 
 	rval = fgets(line, 1023, fh);
+	fclose(fh);
 	if ( rval == NULL ) return 0;
 
 	memcpy(csx, line+7, 10);    csx[10] = '\0';
@@ -290,8 +303,6 @@ static int read_cell(struct image *image, struct xds_private *xp)
 		STATUS("Fewer than 9 parameters found in NEWMAT file.\n");
 		return 0;
 	}
-
-	fclose(fh);
 
 	cell = cell_new();
 	cell_set_reciprocal(cell,
