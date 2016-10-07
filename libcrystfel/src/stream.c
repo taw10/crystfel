@@ -702,6 +702,7 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 	double csx, csy, csz;
 	double a, b, c, al, be, ga;
 	double rad;
+	double det_shift_x, det_shift_y;
 	int ret = 0;
 
 	fprintf(st->fh, CRYSTAL_START_MARKER"\n");
@@ -736,6 +737,11 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 	if ( crystal_get_notes(cr) != NULL ) {
 		fprintf(st->fh, "%s\n", crystal_get_notes(cr));
 	}
+
+	crystal_get_det_shift(cr, &det_shift_x, &det_shift_y);
+
+	fprintf(st->fh, "predict_refine/det_shift x = %.3f y = %.3f mm",
+	        det_shift_x*1e3, det_shift_y*1e3);
 
 	reflist = crystal_get_reflections(cr);
 	if ( reflist != NULL ) {
@@ -918,6 +924,7 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 	Crystal *cr;
 	int n;
 	Crystal **crystals_new;
+	double shift_x, shift_y;
 
 	as.u = 0.0;  as.v = 0.0;  as.w = 0.0;
 	bs.u = 0.0;  bs.v = 0.0;  bs.w = 0.0;
@@ -1008,6 +1015,12 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 			crystal_set_profile_radius(cr, rad*1e9);
 		}
 
+		if ( sscanf(line, "predict_refine/det_shift x = %lf "
+		                  "y = %lf mm\n", &shift_x, &shift_y ) == 2 ) {
+			crystal_set_det_shift(cr, shift_x*1e-3, shift_y*1e-3);
+		}
+
+
 		if ( (strcmp(line, REFLECTION_START_MARKER) == 0)
 		  && (srf & STREAM_READ_REFLECTIONS) )
 		{
@@ -1029,7 +1042,8 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 			if ( reflist == NULL ) {
 				ERROR("Failed while reading reflections\n");
 				ERROR("Filename = %s\n", image->filename);
-				ERROR("Event = %s\n", get_event_string(image->event));
+				ERROR("Event = %s\n",
+				      get_event_string(image->event));
 				break;
 			}
 

@@ -584,7 +584,6 @@ int refine_prediction(struct image *image, Crystal *cr)
 	double total_x = 0.0;
 	double total_y = 0.0;
 	double total_z = 0.0;
-	char tmp[1024];
 
 	rps = malloc(image_feature_count(image->features)
 	                       * sizeof(struct reflpeak));
@@ -626,9 +625,7 @@ int refine_prediction(struct image *image, Crystal *cr)
 	}
 	//STATUS("Final residual = %e\n", residual(rps, n, image->det));
 
-	snprintf(tmp, 1024, "predict_refine/det_shift x = %.3f y = %.3f mm",
-	                    total_x*1e3, total_y*1e3);
-	crystal_add_notes(cr, tmp);
+	crystal_set_det_shift(cr, total_x, total_y);
 
 	crystal_set_reflections(cr, NULL);
 	reflist_free(reflist);

@@ -72,6 +72,10 @@ struct _crystal
 
 	/* Text notes, which go in the stream */
 	char                    *notes;
+
+	/* Detector shift */
+	double			det_shift_x;
+	double			det_shift_y;
 };
 
 
@@ -100,6 +104,8 @@ Crystal *crystal_new()
 	cryst->n_implausible = 0;
 	cryst->notes = NULL;
 	cryst->user_flag = 0;
+	cryst->det_shift_x = 0;
+	cryst->det_shift_y = 0;
 
 	return cryst;
 }
@@ -219,6 +225,15 @@ const char *crystal_get_notes(Crystal *cryst)
 }
 
 
+void crystal_get_det_shift(Crystal *cryst, double* shift_x,
+                                       double *shift_y)
+{
+	*shift_x = cryst->det_shift_x;
+	*shift_y = cryst->det_shift_y;
+}
+
+
+
 /********************************** Setters ***********************************/
 
 
@@ -317,4 +332,11 @@ void crystal_add_notes(Crystal *cryst, const char *notes_add)
 	strcat(nnotes, notes_add);
 	free(cryst->notes);
 	cryst->notes = nnotes;
+}
+
+
+void crystal_set_det_shift(Crystal *cryst, double shift_x, double shift_y)
+{
+	cryst->det_shift_x = shift_x;
+	cryst->det_shift_y = shift_y;
 }
