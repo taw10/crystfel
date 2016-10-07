@@ -172,7 +172,7 @@ static void compute_x_y(double fs, double ss, struct panel *p,
 
 static Reflection *find_closest_reflection(struct image *image,
                                            double fx, double fy,
-                                           double *d)
+                                           double *d, double *det_shift)
 {
 	double dmin = HUGE_VAL;
 	Reflection *closest = NULL;
@@ -196,7 +196,7 @@ static Reflection *find_closest_reflection(struct image *image,
 
 			compute_x_y(rfs, rss, get_panel(refl), &rx, &ry);
 
-			ds = distance(rx, ry, fx, fy);
+			ds = distance(rx+det_shift[0], ry+det_shift[1], fx, fy);
 
 			if ( ds < dmin ) {
 				dmin = ds;
@@ -627,7 +627,8 @@ static int allocate_next_element(struct single_pixel_displ **curr_pix_displ,
 
 static int add_distance_to_list(struct gpanel *gp,
 				struct imagefeature *imfe,
-				Reflection *refl, double fx, double fy)
+                                Reflection *refl, double fx, double fy,
+                                double *det_shift)
 {
 	int pix_index;
 	double rfs, rss;
@@ -646,9 +647,10 @@ static int add_distance_to_list(struct gpanel *gp,
 	}
 
 	get_detector_pos(refl, &rfs, &rss);
+
 	compute_x_y(rfs, rss, get_panel(refl), &crx, &cry);
-	gp->curr_pix_displ[pix_index]->dx = fx - crx;
-	gp->curr_pix_displ[pix_index]->dy = fy - cry;
+	gp->curr_pix_displ[pix_index]->dx = fx - crx - det_shift[0];
+	gp->curr_pix_displ[pix_index]->dy = fy - cry - det_shift[1];
 	gp->curr_pix_displ[pix_index]->ne = NULL;
 	gp->num_pix_displ[pix_index]++;
 
@@ -740,12 +742,20 @@ static int compute_pixel_displacements(struct image *images, int n_images,
 
 		int fi;
 		ImageFeatureList *flist = images[cp].features;
+		double det_shift[2] = {0.0, 0.0};
+		double shift_x, shift_y;
 
 		if ( gparams->only_best_distance ) {
 			if ( fabs(images[cp].avg_clen - clen_to_use) > 0.0001 ) {
 				continue;
 			}
 		}
+
+
+		crystal_get_det_shift(images[cp].crystals[0], &shift_x,
+		                      &shift_y);
+		det_shift[0] = shift_x * det->panels[0].res;
+		det_shift[1] = shift_y * det->panels[0].res;
 
 		for ( fi=0; fi<image_feature_count(images[cp].features); fi++ ) {
 
@@ -761,7 +771,7 @@ static int compute_pixel_displacements(struct image *images, int n_images,
 
 			/* Find the closest reflection (from all crystals) */
 			refl = find_closest_reflection(&images[cp], fx, fy,
-			                               &min_dist);
+			                               &min_dist, det_shift);
 			if ( refl == NULL ) continue;
 
 			if ( min_dist < gparams->max_peak_dist ) {
@@ -770,7 +780,8 @@ static int compute_pixel_displacements(struct image *images, int n_images,
 				int r;
 				gp = &gpanels[panel_number(det, imfe->p)];
 
-				r = add_distance_to_list(gp, imfe, refl, fx, fy);
+				r = add_distance_to_list(gp, imfe, refl, fx, fy,
+				                         det_shift);
 				if ( r ) return r;
 
 			}
