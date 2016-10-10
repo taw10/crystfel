@@ -740,7 +740,7 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 
 	crystal_get_det_shift(cr, &det_shift_x, &det_shift_y);
 
-	fprintf(st->fh, "predict_refine/det_shift x = %.3f y = %.3f mm",
+	fprintf(st->fh, "predict_refine/det_shift x = %.3f y = %.3f mm\n",
 	        det_shift_x*1e3, det_shift_y*1e3);
 
 	reflist = crystal_get_reflections(cr);
