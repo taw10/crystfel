@@ -9,7 +9,7 @@
  *
  * Authors:
  *   2010-2016 Thomas White <taw@physics.org>
- *   2014      Valerio Mariani
+ *   2014-2016 Valerio Mariani
  *   2011      Richard Kirian
  *   2011      Andrew Aquila
  *   2014      Takanori Nakane <nakane.t@gmail.com>

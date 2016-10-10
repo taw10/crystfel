@@ -3,11 +3,12 @@
  *
  * A class representing a single crystal
  *
- * Copyright © 2013-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2013-2015 Thomas White <taw@physics.org>
+ *   2013-2016 Thomas White <taw@physics.org>
+ *   2016      Valerio Mariani
  *
  * This file is part of CrystFEL.
  *
@@ -225,8 +226,7 @@ const char *crystal_get_notes(Crystal *cryst)
 }
 
 
-void crystal_get_det_shift(Crystal *cryst, double* shift_x,
-                                       double *shift_y)
+void crystal_get_det_shift(Crystal *cryst, double* shift_x, double *shift_y)
 {
 	*shift_x = cryst->det_shift_x;
 	*shift_y = cryst->det_shift_y;
