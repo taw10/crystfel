@@ -45,6 +45,7 @@
 #include "image.h"
 #include "utils.h"
 #include "index.h"
+#include "cell-utils.h"
 
 #include "multihistogram.h"
 
@@ -143,6 +144,22 @@ typedef struct _cellwindow {
 #define F_COL 1.0, 0.3, 1.0
 #define H_COL 0.8, 0.0, 0.0
 #define R_COL 0.6, 0.6, 0.0
+
+static void error_box(CellWindow *w, const char *message)
+{
+	GtkWidget *window;
+
+	window = gtk_message_dialog_new(GTK_WINDOW(w->window),
+					GTK_DIALOG_DESTROY_WITH_PARENT,
+					GTK_MESSAGE_WARNING,
+					GTK_BUTTONS_CLOSE, "%s", message);
+	gtk_window_set_title(GTK_WINDOW(window), "Error");
+
+	g_signal_connect_swapped(window, "response",
+				 G_CALLBACK(gtk_widget_destroy), window);
+	gtk_widget_show(window);
+}
+
 
 static void set_col(cairo_t *cr, CellWindow *w, int cat)
 {
@@ -892,6 +909,248 @@ static gint fit_sig(GtkWidget *widget, CellWindow *w)
 	return TRUE;
 }
 
+
+static int ninety(double a)
+{
+	if ( fabs(rad2deg(a) - 90.0) < 0.3 ) return 1;
+	return 0;
+}
+
+
+static int onetwenty(double a)
+{
+	if ( fabs(rad2deg(a) - 120.0) < 0.3 ) return 1;
+	return 0;
+}
+
+
+static int same2a(double a, double b)
+{
+	return rad2deg(fabs(a-b)) < 0.3;
+}
+
+
+static int same3a(double a, double b, double c)
+{
+	return same2a(a, b) && same2a(b, c);
+}
+
+
+static int same2(double a, double b)
+{
+	return within_tolerance(a, b, 1.0);
+}
+
+
+static int same3(double a, double b, double c)
+{
+	return same2(a, b) && same2(b, c);
+}
+
+
+static void guess_lattice_type(UnitCell *cell)
+{
+	double a, b, c, al, be, ga;
+	LatticeType lt;
+	char ua;
+
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+
+	/* Are all the angles close to 90 degrees? */
+	if ( ninety(al) && ninety(be) && ninety(ga) ) {
+		if ( same3(a, b, c) ) {
+			lt = L_CUBIC;
+			ua = '*';
+		} else if ( same2(a, b) ) {
+			lt = L_TETRAGONAL;
+			ua = 'c';
+		} else if ( same2(a, c) ) {
+			lt = L_TETRAGONAL;
+			ua = 'b';
+		} else if ( same2(b, c) ) {
+			lt = L_TETRAGONAL;
+			ua = 'a';
+		} else {
+			lt = L_ORTHORHOMBIC;
+			ua = '*';
+		}
+	} else if ( ninety(al) && ninety(be) && onetwenty(ga) ) {
+		lt = L_HEXAGONAL;
+		ua = 'c';
+	} else if ( ninety(al) && ninety(ga) && onetwenty(be) ) {
+		lt = L_HEXAGONAL;
+		ua = 'b';
+	} else if ( ninety(be) && ninety(ga) && onetwenty(al) ) {
+		lt = L_HEXAGONAL;
+		ua = 'a';
+	} else if ( ninety(al) && ninety(be) ) {
+		lt = L_MONOCLINIC;
+		ua = 'c';
+	} else if ( ninety(al) && ninety(ga) ) {
+		lt = L_MONOCLINIC;
+		ua = 'b';
+	} else if ( ninety(be) && ninety(ga) ) {
+		lt = L_MONOCLINIC;
+		ua = 'a';
+	} else if ( same3a(al, be, ga) && same3(a, b, c) ) {
+		lt = L_RHOMBOHEDRAL;
+		ua = '*';
+	} else {
+		lt = L_TRICLINIC;
+		ua = '*';
+	}
+
+	cell_set_lattice_type(cell, lt);
+	cell_set_unique_axis(cell, ua);
+}
+
+
+static int guess_centering(HistoBox *b, UnitCell *cell)
+{
+	int *data[8];
+	long int tots[8];
+	long int max = 0;
+	long int total = 0;
+	int i, j, mxj;
+
+	/* Since the six histograms (a,b,c,al,be,ga) come from the same cells,
+	 * we only need to look at one of them */
+	data[0] = multihistogram_get_data(b->h, CAT_P);
+	data[1] = multihistogram_get_data(b->h, CAT_A);
+	data[2] = multihistogram_get_data(b->h, CAT_B);
+	data[3] = multihistogram_get_data(b->h, CAT_C);
+	data[4] = multihistogram_get_data(b->h, CAT_I);
+	data[5] = multihistogram_get_data(b->h, CAT_F);
+	data[6] = multihistogram_get_data(b->h, CAT_H);
+	data[7] = multihistogram_get_data(b->h, CAT_R);
+
+	for ( j=0; j<8; j++ ) {
+		tots[j] = 0;
+		for ( i=0; i<b->n; i++ ) {
+			tots[j] += data[j][i];
+		}
+	}
+
+	/* Which centering is most common? */
+	for ( j=0; j<8; j++ ) {
+		if ( tots[j] > max ) {
+			max = tots[j];
+			mxj = j;
+		}
+		total += tots[j];
+	}
+
+	switch ( mxj ) {
+
+		case 0 : cell_set_centering(cell, 'P'); break;
+		case 1 : cell_set_centering(cell, 'A'); break;
+		case 2 : cell_set_centering(cell, 'B'); break;
+		case 3 : cell_set_centering(cell, 'C'); break;
+		case 4 : cell_set_centering(cell, 'I'); break;
+		case 5 : cell_set_centering(cell, 'F'); break;
+		case 6 : cell_set_centering(cell, 'H'); break;
+		case 7 : cell_set_centering(cell, 'R'); break;
+
+		default :
+		ERROR("WTF?\n");
+		cell_set_centering(cell, 'P');
+		return 1;
+	}
+
+	if ( max < 0.8*total ) {
+		ERROR("Centering is not conclusive\n");
+		return 1;
+	}
+
+	return 0;
+}
+
+
+static UnitCell *get_cell(CellWindow *w)
+{
+	UnitCell *cell;
+
+	if ( !( w->hist_a->have_fit
+	     && w->hist_b->have_fit
+	     && w->hist_c->have_fit
+	     && w->hist_al->have_fit
+	     && w->hist_be->have_fit
+	     && w->hist_ga->have_fit) )
+	{
+		error_box(w, "Fit all six parameters first.\n");
+		return NULL;
+	}
+
+	cell = cell_new();
+	if ( cell == NULL ) return NULL;
+
+	/* First the easy part: get the parameters */
+	cell_set_parameters(cell, w->hist_a->fit_b*1e-10,
+	                          w->hist_b->fit_b*1e-10,
+	                          w->hist_c->fit_b*1e-10,
+	                          deg2rad(w->hist_al->fit_b),
+	                          deg2rad(w->hist_be->fit_b),
+	                          deg2rad(w->hist_ga->fit_b));
+
+	/* Medium difficulty: guess at the lattice type and unique axis */
+	guess_lattice_type(cell);
+
+	/* The hard part: determine the centering */
+	if ( guess_centering(w->hist_a, cell) ) {
+		error_box(w, "Centering could not be determined unambiguously. "
+		             "Select the unit cells more decisively.");
+		cell_free(cell);
+		return NULL;
+	}
+
+	return cell;
+}
+
+
+static int write_cell_to_file(UnitCell *cell, const char *filename)
+{
+	FILE *fh = fopen(filename, "w");
+	if ( fh == NULL ) return 1;
+	write_cell(cell, fh);
+	fclose(fh);
+	return 0;
+}
+
+
+static gint savecell_sig(GtkWidget *widget, CellWindow *w)
+{
+	GtkWidget *d;
+	gchar *output_filename;
+	UnitCell *cell;
+
+	cell = get_cell(w);
+	if ( cell == NULL ) return FALSE;
+
+	d = gtk_file_chooser_dialog_new("Save Unit Cell File",
+	                                GTK_WINDOW(w->window),
+	                                GTK_FILE_CHOOSER_ACTION_SAVE,
+	                                GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                        GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+	                                NULL);
+	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(d),
+	                                               TRUE);
+
+	if ( gtk_dialog_run(GTK_DIALOG(d)) == GTK_RESPONSE_CANCEL ) {
+		gtk_widget_destroy(d);
+		return FALSE;
+	}
+	output_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
+
+	if ( write_cell_to_file(cell, output_filename) ) {
+		error_box(w, "Failed to save unit cell");
+	}
+
+	gtk_widget_destroy(d);
+	g_free(output_filename);
+	return FALSE;
+}
+
+
 static gint about_sig(GtkWidget *widget, CellWindow *w)
 {
 	GtkWidget *window;
@@ -908,12 +1167,12 @@ static gint about_sig(GtkWidget *widget, CellWindow *w)
 	        "Unit Cell Explorer");
 	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window), "0.0.1");
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window),
-		"© 2014 Deutsches Elektronen-Synchrotron DESY, "
+		"© 2014-2016 Deutsches Elektronen-Synchrotron DESY, "
 		"a research centre of the Helmholtz Association.");
 	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(window),
 		"Examine unit cell distributions");
 	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(window),
-		"http://www.desy.de/~twhite/crystfel");
+		"https://www.desy.de/~twhite/crystfel");
 	gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(window), authors);
 
 	g_signal_connect(window, "response", G_CALLBACK(gtk_widget_destroy),
@@ -931,6 +1190,7 @@ static void add_menu_bar(CellWindow *w, GtkWidget *vbox)
 
 	const char *ui = "<ui> <menubar name=\"cellwindow\">"
 		"<menu name=\"file\" action=\"FileAction\">"
+		"	<menuitem name=\"savecell\" action=\"SaveCellAction\" />"
 		"	<menuitem name=\"quit\" action=\"QuitAction\" />"
 		"</menu>"
 		"<menu name=\"tools\" action=\"ToolsAction\" >"
@@ -944,6 +1204,8 @@ static void add_menu_bar(CellWindow *w, GtkWidget *vbox)
 	GtkActionEntry entries[] = {
 
 		{ "FileAction", NULL, "_File", NULL, NULL, NULL },
+		{ "SaveCellAction", GTK_STOCK_SAVE, "_Create unit cell file",
+			NULL, NULL, G_CALLBACK(savecell_sig) },
 		{ "QuitAction", GTK_STOCK_QUIT, "_Quit", NULL, NULL,
 			G_CALLBACK(quit_sig) },
 
