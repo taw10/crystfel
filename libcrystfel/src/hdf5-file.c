@@ -1049,11 +1049,11 @@ static int *make_badmask(int *flags, struct panel *p, struct detector *det)
 		return NULL;
 	}
 
+	/* Defaults, then bad pixels arising from bad regions or panels */
 	for ( ss=0; ss<p->h; ss++ ) {
 	for ( fs=0; fs<p->w; fs++ ) {
 
 		int bad = 0;
-		int f;
 
 		if ( p->no_index ) bad = 1;
 
@@ -1061,17 +1061,28 @@ static int *make_badmask(int *flags, struct panel *p, struct detector *det)
 			bad = 1;
 		}
 
-		f = flags[fs+p->w*ss];
-
-		/* Bad if it's missing any of the "good" bits */
-		if ( (f & det->mask_good) != det->mask_good ) bad = 1;
-
-		/* Bad if it has any of the "bad" bits. */
-		if ( f & det->mask_bad ) bad = 1;
-
 		badmap[fs+p->w*ss] = bad;
-
 	}
+	}
+
+	/* Bad pixels from mask */
+	if ( flags != NULL ) {
+		for ( ss=0; ss<p->h; ss++ ) {
+		for ( fs=0; fs<p->w; fs++ ) {
+
+			int f = flags[fs+p->w*ss];
+			int bad = badmap[fs+p->w*ss];
+
+			/* Bad if it's missing any of the "good" bits */
+			if ( (f & det->mask_good) != det->mask_good ) bad = 1;
+
+			/* Bad if it has any of the "bad" bits. */
+			if ( f & det->mask_bad ) bad = 1;
+
+			badmap[fs+p->w*ss] = bad;
+
+		}
+		}
 	}
 
 	return badmap;
@@ -1722,7 +1733,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			image->bad[pi] = make_badmask(flags, p, image->det);
 			free(flags);
 		} else {
-			image->bad[pi] = calloc(p->w*p->h, sizeof(int));
+			image->bad[pi] = make_badmask(NULL, p, image->det);
 		}
 
 		if ( p->satmap != NULL ) {
