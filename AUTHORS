@@ -69,3 +69,6 @@
 
 * Marmoru Suzuki <mamoru.suzuki@protein.osaka-u.ac.jp>
   Improvements to scripts/detector-shift
+
+* Thomas Grant <tgrant@hwi.buffalo.edu>
+  Original version of scripts/peakogram-stream
