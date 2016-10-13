@@ -609,7 +609,7 @@ void validate_peaks(struct image *image, double min_snr,
 {
 	int i, n;
 	ImageFeatureList *flist;
-	int n_wtf, n_int, n_dft, n_snr, n_prx, n_sat;
+	int n_wtf, n_int, n_snr, n_sat;
 
 	flist = image_feature_list_new();
 	if ( flist == NULL ) return;
@@ -617,13 +617,11 @@ void validate_peaks(struct image *image, double min_snr,
 	n = image_feature_count(image->features);
 
 	/* Loop over peaks, putting each one through the integrator */
-	n_wtf = 0;  n_int = 0;  n_dft = 0;  n_snr = 0;  n_prx = 0;  n_sat = 0;
+	n_wtf = 0;  n_int = 0;  n_snr = 0;  n_sat = 0;
 	for ( i=0; i<n; i++ ) {
 
 		struct imagefeature *f;
 		int r;
-		double d;
-		int idx;
 		double f_fs, f_ss;
 		double intensity, sigma;
 		int saturated;
@@ -649,36 +647,20 @@ void validate_peaks(struct image *image, double min_snr,
 			}
 		}
 
-		/* It is possible for the centroid to fall outside the image */
-		if ( (f_fs < 0) || (f_fs > f->p->w)
-		  || (f_ss < 0) || (f_ss > f->p->h) )
-		{
-			n_dft++;
-			continue;
-		}
-
 		if ( check_snr && (fabs(intensity)/sigma < min_snr) ) {
 			n_snr++;
 			continue;
 		}
 
-		/* Check for a nearby feature */
-		image_feature_closest(flist, f_fs, f_ss, f->p, &d, &idx);
-		if ( d < 2.0*ir_inn ) {
-			n_prx++;
-			continue;
-		}
-
 		/* Add using "better" coordinates */
-		image_add_feature(flist, f_fs, f_ss, f->p, image, intensity,
+		image_add_feature(flist, f->fs, f->ss, f->p, image, intensity,
 		                  NULL);
 
 	}
 
-	//STATUS("HDF5: %i peaks, validated: %i.  WTF: %i, integration: %i,"
-	//       " drifted: %i, SNR: %i, proximity: %i, saturated: %i\n",
-	//       n, image_feature_count(flist),
-	//       n_wtf, n_int, n_dft, n_snr, n_prx, n_sat);
+	//STATUS("HDF5: %i peaks, validated: %i.  WTF: %i, integration: %i, "
+	//       "SNR: %i, saturated: %i\n",
+	//       n, image_feature_count(flist), n_wtf, n_int, n_snr, n_sat);
 	image_feature_list_free(image->features);
 	image->features = flist;
 	image->num_saturated_peaks = n_sat;
