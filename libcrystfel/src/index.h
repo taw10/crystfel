@@ -58,6 +58,10 @@
                                      | INDEXING_USE_CELL_PARAMETERS            \
                                      | INDEXING_RETRY | INDEXING_REFINE)
 
+#define INDEXING_DEFAULTS_TAKETWO (INDEXING_TAKETWO                            \
+                                     | INDEXING_USE_CELL_PARAMETERS            \
+                                     | INDEXING_RETRY | INDEXING_REFINE)
+
 /* Axis check is needed for XDS, because it likes to permute the axes */
 #define INDEXING_DEFAULTS_XDS (INDEXING_XDS | INDEXING_USE_LATTICE_TYPE        \
                                      | INDEXING_USE_CELL_PARAMETERS            \
@@ -75,6 +79,7 @@
  * @INDEXING_SIMULATION: Dummy value
  * @INDEXING_DEBUG: Results injector for debugging
  * @INDEXING_ASDF: Use in-built "asdf" indexer
+ * @INDEXING_TAKETWO: Use in-built "taketwo" indexer
  * @INDEXING_CHECK_CELL_COMBINATIONS: Check linear combinations of unit cell
  *   axes for agreement with given cell.
  * @INDEXING_CHECK_CELL_AXES: Check unit cell axes for agreement with given
@@ -107,6 +112,7 @@ typedef enum {
 	INDEXING_SIMULATION = 6,
 	INDEXING_DEBUG = 7,
 	INDEXING_ASDF = 8,
+	INDEXING_TAKETWO = 9,
 
 	/* Bits at the top of the IndexingMethod are flags which modify the
 	 * behaviour of the indexer. */

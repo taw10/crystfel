@@ -3,12 +3,12 @@
  *
  * Perform indexing (somehow)
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2016 Thomas White <taw@physics.org>
  *   2010-2011 Richard Kirian <rkirian@asu.edu>
  *   2012      Lorenzo Galli
  *   2013      Cornelius Gati <cornelius.gati@cfel.de>
@@ -56,6 +56,7 @@
 #include "cell-utils.h"
 #include "felix.h"
 #include "predict-refine.h"
+#include "taketwo.h"
 
 
 static int debug_index(struct image *image)
@@ -115,6 +116,10 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 			case INDEXING_FELIX :
 			iprivs[n] = felix_prepare(&indm[n], cell, det, ltl,
 			                          options);
+			break;
+
+			case INDEXING_TAKETWO :
+			iprivs[n] = taketwo_prepare(&indm[n], cell, det, ltl);
 			break;
 
 			default :
@@ -193,6 +198,10 @@ void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
 			free(privs[n]);
 			break;
 
+			case INDEXING_TAKETWO :
+			taketwo_cleanup(privs[n]);
+			break;
+
 			default :
 			ERROR("Don't know how to clean up indexing method %i\n",
 			      indms[n]);
@@ -266,6 +275,10 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		case INDEXING_FELIX :
 		r = felix_index(image, ipriv);
+		break;
+
+		case INDEXING_TAKETWO :
+		r = taketwo_index(image, ipriv);
 		break;
 
 		default :
@@ -568,6 +581,10 @@ char *indexer_str(IndexingMethod indm)
 		strcpy(str, "xds");
 		break;
 
+		case INDEXING_TAKETWO :
+		strcpy(str, "taketwo");
+		break;
+
 		case INDEXING_SIMULATION :
 		strcpy(str, "simulation");
 		break;
@@ -659,6 +676,9 @@ IndexingMethod *build_indexer_list(const char *str)
 
 		} else if ( strcmp(methods[i], "felix") == 0) {
 			list[++nmeth] = INDEXING_DEFAULTS_FELIX;
+
+		} else if ( strcmp(methods[i], "taketwo") == 0) {
+			list[++nmeth] = INDEXING_DEFAULTS_TAKETWO;
 
 		} else if ( strcmp(methods[i], "none") == 0) {
 			list[++nmeth] = INDEXING_NONE;
