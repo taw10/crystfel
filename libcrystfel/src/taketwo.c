@@ -58,6 +58,15 @@ struct SpotVec
 	struct rvec *his_rlp;
 };
 
+
+struct taketwo_private
+{
+	IndexingMethod indm;
+	float          *ltl;
+	UnitCell       *cell;
+};
+
+
 /* Maximum distance between two rlp sizes to consider info for indexing */
 #define MAX_RECIP_DISTANCE 0.15
 
@@ -432,18 +441,17 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 	                                         (int **)&members,
 	                                         start, member_num);
 
+		if ( member_num < 2 ) return 0;
+
 		if ( next_index < 0 ) {
 			/* If there have been too many dead ends, give up
 			 * on indexing altogether.
 			 **/
-			if ( dead_ends > MAX_DEAD_ENDS ) {
-				break;
-			}
+			if ( dead_ends > MAX_DEAD_ENDS ) break;
 
 			/* We have not had too many dead ends. Try removing
 			   the last member and continue. */
-			int failed = members[member_num - 1];
-			start = failed + 1;
+			start = members[member_num - 1] + 1;
 			member_num--;
 			dead_ends++;
 
@@ -698,15 +706,16 @@ static void generate_basis_vectors(UnitCell *cell, gsl_matrix *rot,
  * cleanup functions - called from run_taketwo().
  * ------------------------------------------------------------------------*/
 
-static int cleanup_taketwo_cell_vecs(struct rvec *cell_vecs)
+static void cleanup_taketwo_cell_vecs(struct rvec *cell_vecs)
 {
 	free(cell_vecs);
 }
 
-static int cleanup_taketwo_obs_vecs(struct SpotVec *obs_vecs,
+static void cleanup_taketwo_obs_vecs(struct SpotVec *obs_vecs,
                                     int obs_vec_count)
 {
-	for ( int i=0; i<obs_vec_count; i++ ) {
+	int i;
+	for ( i=0; i<obs_vec_count; i++ ) {
 		free(obs_vecs[i].matches);
 	}
 
@@ -777,6 +786,7 @@ int run_taketwo(UnitCell *cell, struct rvec *rlps,
 int taketwo_index(struct image *image, IndexingPrivate *ipriv)
 {
 	struct taketwo_private *tp = (struct taketwo_private *)ipriv;
+	return 1;
 }
 
 
@@ -801,11 +811,11 @@ IndexingPrivate *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
 	       | INDEXING_CHECK_CELL_AXES | INDEXING_CHECK_PEAKS
 	       | INDEXING_CONTROL_FLAGS;
 
-	tp = malloc(sizeof(struct dirax_private));
+	tp = malloc(sizeof(struct taketwo_private));
 	if ( tp == NULL ) return NULL;
 
 	tp->ltl = ltl;
-	tp->template = cell;
+	tp->cell = cell;
 	tp->indm = *indm;
 
 	return (IndexingPrivate *)tp;
