@@ -181,46 +181,63 @@ static struct rvec rvec_cross(struct rvec a, struct rvec b)
  * functions called under the core functions, still specialised (Level 3)
  * ------------------------------------------------------------------------*/
 
+static gsl_matrix *rotation_around_axis(struct rvec c, double th)
+{
+	double omc = 1.0 - cos(th);
+	double s = sin(th);
+	gsl_matrix *res = gsl_matrix_alloc(3, 3);
+
+	gsl_matrix_set(res, 0, 0, cos(th) + c.u*c.u*omc);
+	gsl_matrix_set(res, 0, 1, c.u*c.v*omc - c.w*s);
+	gsl_matrix_set(res, 0, 2, c.u*c.w*omc + c.v*s);
+	gsl_matrix_set(res, 1, 0, c.u*c.v*omc + c.w*s);
+	gsl_matrix_set(res, 1, 1, cos(th) + c.v*c.v*omc);
+	gsl_matrix_set(res, 1, 2, c.v*c.w*omc - c.u*s);
+	gsl_matrix_set(res, 2, 0, c.w*c.u*omc - c.v*s);
+	gsl_matrix_set(res, 2, 1, c.w*c.v*omc + c.u*s);
+	gsl_matrix_set(res, 2, 2, cos(th) + c.w*c.w*omc);
+
+	return res;
+}
+
+
 /* Rotate vector (vec1) around axis (axis) by angle theta. Find value of
  * theta for which the angle between (vec1) and (vec2) is minimised.
  * Behold! Finally an analytical solution for this one. Assuming
  * that @result has already been allocated. Will upload the maths to the
  * shared Google drive. */
-static int closest_rot_mat(struct rvec vec1, struct rvec vec2,
-                           struct rvec axis, gsl_matrix *result)
+static gsl_matrix *closest_rot_mat(struct rvec vec1, struct rvec vec2,
+                                   struct rvec axis)
 {
-        /* Let's have unit vectors */
-        normalise_rvec(&vec1);
-        normalise_rvec(&vec2);
-        normalise_rvec(&axis);
+	/* Let's have unit vectors */
+	normalise_rvec(&vec1);
+	normalise_rvec(&vec2);
+	normalise_rvec(&axis);
 
-        /* Redeclaring these to try and maintain readability and
-         * check-ability against the maths I wrote down */
-        double a = vec2.u; double b = vec2.w; double c = vec2.v;
-        double p = vec1.u; double q = vec1.w; double r = vec1.v;
-        double x = axis.u; double y = axis.w; double z = axis.v;
+	/* Redeclaring these to try and maintain readability and
+	 * check-ability against the maths I wrote down */
+	double a = vec2.u; double b = vec2.w; double c = vec2.v;
+	double p = vec1.u; double q = vec1.w; double r = vec1.v;
+	double x = axis.u; double y = axis.w; double z = axis.v;
 
-        /* Components in handwritten maths online when I upload it */
-        double A = a*(p*x*x - p + x*y*q + x*z*r) +
-                   b*(p*x*y + q*y*y - q + r*y*z) +
-                   c*(p*x*z + q*y*z + r*z*z - r);
+	/* Components in handwritten maths online when I upload it */
+	double A = a*(p*x*x - p + x*y*q + x*z*r) +
+	           b*(p*x*y + q*y*y - q + r*y*z) +
+	           c*(p*x*z + q*y*z + r*z*z - r);
 
-        double B = a*(y*r - z*q) + b*(p*z - r*x) + c*(q*x - p*y);
+	double B = a*(y*r - z*q) + b*(p*z - r*x) + c*(q*x - p*y);
 
-        double tan_theta = - B / A;
+	double tan_theta = - B / A;
 
-        /* Not sure why I always have to take the + M_PI solution. Work
-         * this one out. But it always works!? */
-        double theta = atan(tan_theta) + M_PI;
+	/* Not sure why I always have to take the + M_PI solution. Work
+	 * this one out. But it always works!? */
+	double theta = atan(tan_theta) + M_PI;
 
-        /* FIXME: fill in the gsl_matrix *result with an identity matrix
-         * which has subsequently been rotated by theta around the axis.
-         * Help from Tom, probably. */
-
-         result = result;
-
-         return 1;
+	/* Return an identity matrix which has been rotated by
+	 * theta around "axis" */
+	return rotation_around_axis(axis, theta);
 }
+
 
 static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2)
 {
@@ -235,21 +252,7 @@ static gsl_matrix *rotation_between_vectors(struct rvec a, struct rvec b)
 {
 	double th = rvec_angle(a, b);
 	struct rvec c = rvec_cross(a, b);
-	gsl_matrix *res = gsl_matrix_alloc(3, 3);
-	double omc = 1.0 - cos(th);
-	double s = sin(th);
-
-	gsl_matrix_set(res, 0, 0, cos(th) + c.u*c.u*omc);
-	gsl_matrix_set(res, 0, 1, c.u*c.v*omc - c.w*s);
-	gsl_matrix_set(res, 0, 2, c.u*c.w*omc + c.v*s);
-	gsl_matrix_set(res, 1, 0, c.u*c.v*omc + c.w*s);
-	gsl_matrix_set(res, 1, 1, cos(th) + c.v*c.v*omc);
-	gsl_matrix_set(res, 1, 2, c.v*c.w*omc - c.u*s);
-	gsl_matrix_set(res, 2, 0, c.w*c.u*omc - c.v*s);
-	gsl_matrix_set(res, 2, 1, c.w*c.v*omc + c.u*s);
-	gsl_matrix_set(res, 2, 2, cos(th) + c.w*c.w*omc);
-
-	return res;
+	return rotation_around_axis(c, th);
 }
 
 
