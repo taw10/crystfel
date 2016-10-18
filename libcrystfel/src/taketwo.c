@@ -29,6 +29,7 @@
  */
 
 #include <gsl/gsl_matrix.h>
+#include <gsl/gsl_blas.h>
 #include <math.h>
 
 #include "cell-utils.h"
@@ -252,6 +253,16 @@ static gsl_matrix *rotation_between_vectors(struct rvec a, struct rvec b)
 }
 
 
+static gsl_vector *rvec_to_gsl(struct rvec v)
+{
+	gsl_vector *a = gsl_vector_alloc(3);
+	gsl_vector_set(a, 0, v.u);
+	gsl_vector_set(a, 1, v.v);
+	gsl_vector_set(a, 2, v.w);
+	return a;
+}
+
+
 /* Code me in gsl_matrix language to copy the contents of the function
  * in cppxfel (IndexingSolution::createSolution). This function is quite
  * intensive on the number crunching side so simple angle checks are used
@@ -263,10 +274,18 @@ static int generate_rot_mat(struct rvec obs1, struct rvec obs2,
 	gsl_matrix *rotateSpotDiffMatrix;
 	gsl_matrix *secondTwizzleMatrix;
 	gsl_matrix *fullMat;
+	gsl_vector *zero = gsl_vector_calloc(3);
+	gsl_vector *obs2v = rvec_to_gsl(obs2);
 
 	/* Rotate reciprocal space so that the first observed vector lines up
 	 * with the simulated vector. */
 	rotateSpotDiffMatrix = rotation_between_vectors(obs1, cell1);
+
+	normalise_rvec(&cell1);
+
+	/* Multiply obs2 by rotateSpotDiffMatrix */
+	gsl_blas_dgemv(CblasNoTrans, 1.0,  rotateSpotDiffMatrix, obs2v,
+	               0.0, zero);
 	return 1;
 }
 
