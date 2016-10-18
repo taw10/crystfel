@@ -164,6 +164,18 @@ static double rvec_angle(struct rvec v1, struct rvec v2)
 	return angle;
 }
 
+static struct rvec rvec_cross(struct rvec a, struct rvec b)
+{
+	struct rvec c;
+
+	c.u = a.v*b.w - a.w*b.v;
+	c.v = -(a.u*b.w - a.w*b.u);
+	c.w = a.u*b.v - a.v-b.u;
+
+	return c;
+}
+
+
 /* ------------------------------------------------------------------------
  * functions called under the core functions, still specialised (Level 3)
  * ------------------------------------------------------------------------*/
@@ -217,6 +229,29 @@ static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2)
 	return 0;
 }
 
+
+static gsl_matrix *rotation_between_vectors(struct rvec a, struct rvec b)
+{
+	double th = rvec_angle(a, b);
+	struct rvec c = rvec_cross(a, b);
+	gsl_matrix *res = gsl_matrix_alloc(3, 3);
+	double omc = 1.0 - cos(th);
+	double s = sin(th);
+
+	gsl_matrix_set(res, 0, 0, cos(th) + c.u*c.u*omc);
+	gsl_matrix_set(res, 0, 1, c.u*c.v*omc - c.w*s);
+	gsl_matrix_set(res, 0, 2, c.u*c.w*omc + c.v*s);
+	gsl_matrix_set(res, 1, 0, c.u*c.v*omc + c.w*s);
+	gsl_matrix_set(res, 1, 1, cos(th) + c.v*c.v*omc);
+	gsl_matrix_set(res, 1, 2, c.v*c.w*omc - c.u*s);
+	gsl_matrix_set(res, 2, 0, c.w*c.u*omc - c.v*s);
+	gsl_matrix_set(res, 2, 1, c.w*c.v*omc + c.u*s);
+	gsl_matrix_set(res, 2, 2, cos(th) + c.w*c.w*omc);
+
+	return res;
+}
+
+
 /* Code me in gsl_matrix language to copy the contents of the function
  * in cppxfel (IndexingSolution::createSolution). This function is quite
  * intensive on the number crunching side so simple angle checks are used
@@ -225,8 +260,13 @@ static int generate_rot_mat(struct rvec obs1, struct rvec obs2,
                             struct rvec cell1, struct rvec cell2,
                             gsl_matrix *mat)
 {
-	/* FIXME: Write this code - assume *mat has already been allocated
-	 * and insert a CrystFEL-friendly rotation matrix. Help from Tom. */
+	gsl_matrix *rotateSpotDiffMatrix;
+	gsl_matrix *secondTwizzleMatrix;
+	gsl_matrix *fullMat;
+
+	/* Rotate reciprocal space so that the first observed vector lines up
+	 * with the simulated vector. */
+	rotateSpotDiffMatrix = rotation_between_vectors(obs1, cell1);
 	return 1;
 }
 
