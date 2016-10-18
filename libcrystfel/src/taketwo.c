@@ -274,8 +274,8 @@ static int generate_rot_mat(struct rvec obs1, struct rvec obs2,
 	gsl_matrix *rotateSpotDiffMatrix;
 	gsl_matrix *secondTwizzleMatrix;
 	gsl_matrix *fullMat;
-	gsl_vector *zero = gsl_vector_calloc(3);
 	gsl_vector *obs2v = rvec_to_gsl(obs2);
+	gsl_vector *obs2vr = gsl_vector_calloc(3);
 
 	/* Rotate reciprocal space so that the first observed vector lines up
 	 * with the simulated vector. */
@@ -283,9 +283,9 @@ static int generate_rot_mat(struct rvec obs1, struct rvec obs2,
 
 	normalise_rvec(&cell1);
 
-	/* Multiply obs2 by rotateSpotDiffMatrix */
+	/* Multiply obs2 by rotateSpotDiffMatrix --> obs2vr */
 	gsl_blas_dgemv(CblasNoTrans, 1.0,  rotateSpotDiffMatrix, obs2v,
-	               0.0, zero);
+	               0.0, obs2vr);
 	return 1;
 }
 
