@@ -266,6 +266,16 @@ static gsl_vector *rvec_to_gsl(struct rvec v)
 }
 
 
+struct rvec gsl_to_rvec(gsl_vector *a)
+{
+	struct rvec v;
+	v.u = gsl_vector_get(a, 0);
+	v.v = gsl_vector_get(a, 1);
+	v.w = gsl_vector_get(a, 2);
+	return v;
+}
+
+
 /* Code me in gsl_matrix language to copy the contents of the function
  * in cppxfel (IndexingSolution::createSolution). This function is quite
  * intensive on the number crunching side so simple angle checks are used
@@ -292,7 +302,7 @@ static int generate_rot_mat(struct rvec obs1, struct rvec obs2,
 
 	/* Now we twirl around the firstAxisUnit until the rotated observed
 	 * vector matches the second simulated vector as closely as possible. */
-	secondTwizzleMatrix = closest_rotmat(obs2vr, cell2, cell1);
+	secondTwizzleMatrix = closest_rot_mat(gsl_to_rvec(obs2vr), cell2, cell1);
 	return 1;
 }
 
