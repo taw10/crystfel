@@ -289,6 +289,10 @@ static int generate_rot_mat(struct rvec obs1, struct rvec obs2,
 	/* Multiply obs2 by rotateSpotDiffMatrix --> obs2vr */
 	gsl_blas_dgemv(CblasNoTrans, 1.0,  rotateSpotDiffMatrix, obs2v,
 	               0.0, obs2vr);
+
+	/* Now we twirl around the firstAxisUnit until the rotated observed
+	 * vector matches the second simulated vector as closely as possible. */
+	secondTwizzleMatrix = closest_rotmat(obs2vr, cell2, cell1);
 	return 1;
 }
 
