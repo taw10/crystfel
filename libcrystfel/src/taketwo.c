@@ -82,10 +82,8 @@ struct taketwo_private
 /* Maximum dead ends for a single branch extension during indexing */
 #define MAX_DEAD_ENDS 5
 
-/* FIXME: Tolerance for two angles to be considered the same - is there some
- * pre-existing degrees-to-radians in CrystFEL to use here or not?
- */
-#define ANGLE_TOLERANCE 1.0 * M_PI / 180
+/* Tolerance for two angles to be considered the same */
+#define ANGLE_TOLERANCE (deg2rad(1.0))
 
 /** TODO:
  *
