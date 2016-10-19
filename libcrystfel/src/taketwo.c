@@ -770,9 +770,9 @@ static int gen_theoretical_vecs(UnitCell *cell, struct rvec **cell_vecs,
 	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
 
 	/* find maximum Miller (h, k, l) indices for a given resolution */
-	h_max = MAX_RECIP_DISTANCE / a + 1;
-	k_max = MAX_RECIP_DISTANCE / b + 1;
-	l_max = MAX_RECIP_DISTANCE / c + 1;
+	h_max = MAX_RECIP_DISTANCE * a;
+	k_max = MAX_RECIP_DISTANCE * b;
+	l_max = MAX_RECIP_DISTANCE * c;
 
 	int h, k, l;
 	int count = 0;
