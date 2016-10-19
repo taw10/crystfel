@@ -713,44 +713,43 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 	/* maximum distance squared for comparisons */
 	double max_sq_length = pow(MAX_RECIP_DISTANCE, 2);
 
-	/* Indentation... bending the rules a bit? */
 	for ( i=0; i<rlp_count-1; i++ ) {
-	for ( j=i+1; j<rlp_count; j++ ) {
+		for ( j=i+1; j<rlp_count; j++ ) {
 
-		/* calculate difference vector between rlps */
-		struct rvec diff = diff_vec(rlps[i], rlps[j]);
+			/* calculate difference vector between rlps */
+			struct rvec diff = diff_vec(rlps[i], rlps[j]);
 
-		/* are these two far from each other? */
-		double sqlength = sq_length(diff);
+			/* are these two far from each other? */
+			double sqlength = sq_length(diff);
 
-		if ( sqlength > max_sq_length ) {
-			continue;
+			if ( sqlength > max_sq_length ) {
+				continue;
+			}
+
+			count++;
+
+			struct SpotVec *temp_obs_vecs;
+			temp_obs_vecs = realloc(*obs_vecs,
+			                        count*sizeof(struct SpotVec));
+
+			if ( temp_obs_vecs == NULL ) {
+				return 0;
+			} else {
+				*obs_vecs = temp_obs_vecs;
+
+				/* initialise all SpotVec struct members */
+
+				struct SpotVec spot_vec;
+				spot_vec.obsvec = diff;
+				spot_vec.distance = sqrt(sqlength);
+				spot_vec.matches = NULL;
+				spot_vec.match_num = 0;
+				spot_vec.her_rlp = &rlps[i];
+				spot_vec.his_rlp = &rlps[j];
+
+				(*obs_vecs)[count - 1] = spot_vec;
+			}
 		}
-
-		count++;
-
-		struct SpotVec *temp_obs_vecs;
-		temp_obs_vecs = realloc(*obs_vecs,
-		                        count*sizeof(struct SpotVec));
-
-		if ( temp_obs_vecs == NULL ) {
-			return 0;
-		} else {
-			*obs_vecs = temp_obs_vecs;
-
-			/* initialise all SpotVec struct members */
-
-			struct SpotVec spot_vec;
-			spot_vec.obsvec = diff;
-			spot_vec.distance = sqrt(sqlength);
-			spot_vec.matches = NULL;
-			spot_vec.match_num = 0;
-			spot_vec.her_rlp = &rlps[i];
-			spot_vec.his_rlp = &rlps[j];
-
-			(*obs_vecs)[count - 1] = spot_vec;
-		}
-	}
 	}
 
 	*obs_vec_count = count;
