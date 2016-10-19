@@ -714,8 +714,8 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 	double max_sq_length = pow(MAX_RECIP_DISTANCE, 2);
 
 	/* Indentation... bending the rules a bit? */
-	for ( i=0; i<rlp_count; i++ ) {
-	for ( j=0; j<rlp_count; j++ ) {
+	for ( i=0; i<rlp_count-1; i++ ) {
+	for ( j=i+1; j<rlp_count; j++ ) {
 
 		/* calculate difference vector between rlps */
 		struct rvec diff = diff_vec(rlps[i], rlps[j]);
