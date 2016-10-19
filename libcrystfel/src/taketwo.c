@@ -927,22 +927,24 @@ IndexingPrivate *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
                                  struct detector *det, float *ltl)
 {
 	struct taketwo_private *tp;
-	int need_cell = 0;
-
-	if ( *indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
-	if ( *indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
-
-	if ( need_cell && !cell_has_parameters(cell) ) {
-		ERROR("Altering your TakeTwo flags because cell parameters were"
-		      " not provided.\n");
-		*indm &= ~INDEXING_CHECK_CELL_COMBINATIONS;
-		*indm &= ~INDEXING_CHECK_CELL_AXES;
-	}
 
 	/* Flags that TakeTwo knows about */
-	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_CELL_COMBINATIONS
-	       | INDEXING_CHECK_CELL_AXES | INDEXING_CHECK_PEAKS
+	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_PEAKS
+	       | INDEXING_USE_LATTICE_TYPE | INDEXING_USE_CELL_PARAMETERS
 	       | INDEXING_CONTROL_FLAGS;
+
+	if ( !( (*indm & INDEXING_USE_LATTICE_TYPE)
+	     && (*indm & INDEXING_USE_CELL_PARAMETERS)) )
+	{
+		ERROR("TakeTwo indexing requires cell and lattice type "
+		      "information.\n");
+		return NULL;
+	}
+
+	if ( cell == NULL ) {
+		ERROR("TakeTwo indexing requires a unit cell.\n");
+		return NULL;
+	}
 
 	tp = malloc(sizeof(struct taketwo_private));
 	if ( tp == NULL ) return NULL;

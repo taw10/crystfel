@@ -58,8 +58,9 @@
                                      | INDEXING_USE_CELL_PARAMETERS            \
                                      | INDEXING_RETRY | INDEXING_REFINE)
 
-#define INDEXING_DEFAULTS_TAKETWO (INDEXING_TAKETWO                            \
+#define INDEXING_DEFAULTS_TAKETWO (INDEXING_TAKETWO | INDEXING_CHECK_PEAKS     \
                                      | INDEXING_USE_CELL_PARAMETERS            \
+                                     | INDEXING_USE_LATTICE_TYPE               \
                                      | INDEXING_RETRY | INDEXING_REFINE)
 
 /* Axis check is needed for XDS, because it likes to permute the axes */
