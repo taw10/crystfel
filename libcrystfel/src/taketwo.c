@@ -254,7 +254,7 @@ static double matrix_trace(gsl_matrix *a)
 	double tr = 0.0;
 
 	assert(a->size1 == a->size2);
-	for ( i=0; i<a->size1; a++ ) {
+	for ( i=0; i<a->size1; i++ ) {
 		tr += gsl_matrix_get(a, i, i);
 	}
 	return tr;
