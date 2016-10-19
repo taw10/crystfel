@@ -285,6 +285,7 @@ static gsl_matrix *rotation_between_vectors(struct rvec a, struct rvec b)
 {
 	double th = rvec_angle(a, b);
 	struct rvec c = rvec_cross(a, b);
+	normalise_rvec(&c);
 	return rotation_around_axis(c, th);
 }
 
