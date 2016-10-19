@@ -465,18 +465,14 @@ static int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		int shared = obs_shares_spot_w_array(obs_vecs, i, members,
 		                                     member_num);
 
-		if ( !shared ) {
-			continue;
-		}
+		if ( !shared ) continue;
 
 		/* now we check that angles between all vectors match */
 
 		int matches = obs_angles_match_array(obs_vecs, i, members,
 		                                     member_num);
 
-		if ( !matches ) {
-			continue;
-		}
+		if ( !matches ) continue;
 
 		/* final test: does the corresponding rotation matrix
 		 * match the others? NOTE: have not tested to see if
@@ -502,7 +498,7 @@ static int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		 */
 		int ok = 1;
 
-		for ( j=0; j<2 && ok; j++ ) {
+		for ( j=0; j<2; j++ ) {
 			gsl_matrix *test_rot = gsl_matrix_calloc(3, 3);
 
 			int j_idx = members[j];
@@ -512,11 +508,10 @@ static int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 			                            *test_match);
 
 			ok = rot_mats_are_similar(rot, test_rot);
+			if ( !ok ) break;
 		}
 
-		if ( !ok ) {
-			continue;
-		}
+		if ( !ok ) continue;
 
 		/* successful branch - return to calling function...*/
 
@@ -548,9 +543,7 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 	int start = obs_idx2 + 1;
 
 	while ( 1 ) {
-		/* There must be a better way of passing int *[100] pointer
-		 * to an int ** parameter, but I don't know...
-		 **/
+
 		int next_index = find_next_index(rot, obs_vecs, obs_vec_count,
 	                                         members, start, member_num);
 
