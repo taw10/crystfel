@@ -35,6 +35,8 @@
 #include <config.h>
 #endif
 
+#include <gsl/gsl_matrix.h>
+
 #include "cell.h"
 
 #ifdef __cplusplus
@@ -47,6 +49,7 @@ extern double resolution(UnitCell *cell,
 extern UnitCell *cell_rotate(UnitCell *in, struct quaternion quat);
 extern UnitCell *rotate_cell(UnitCell *in, double omega, double phi,
                              double rot);
+extern UnitCell *transform_cell_gsl(UnitCell *in, gsl_matrix *m);
 
 extern void cell_print(UnitCell *cell);
 
