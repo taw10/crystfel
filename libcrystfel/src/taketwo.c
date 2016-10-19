@@ -90,6 +90,7 @@ struct taketwo_private
 /** TODO:
  *
  * - May need to be capable of playing with the tolerances/#defined stuff.
+ * - Multiple lattices
  */
 
 
@@ -815,15 +816,6 @@ static int gen_theoretical_vecs(UnitCell *cell, struct rvec **cell_vecs,
 }
 
 
-static void generate_basis_vectors(UnitCell *cell, gsl_matrix *rot,
-                                   struct rvec *a_star, struct rvec *b_star,
-                                   struct rvec *c_star)
-{
-        /* FIXME: more matrix stuff - multiply cell matrix by rotation matrix
-         * and extract the reciprocal axes from the definition of the matrix.
-         */
-}
-
 /* ------------------------------------------------------------------------
  * cleanup functions - called from run_taketwo().
  * ------------------------------------------------------------------------*/
@@ -858,12 +850,11 @@ static void cleanup_taketwo_obs_vecs(struct SpotVec *obs_vecs,
  * @rot: pointer to be given an assignment (hopefully) if indexing is
  * successful.
  **/
-int run_taketwo(UnitCell *cell, struct rvec *rlps,
-                int rlp_count, struct rvec *a_star, struct rvec *b_star,
-                struct rvec *c_star)
+static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 {
 	int cell_vec_count = 0;
 	struct rvec *cell_vecs = NULL;
+	UnitCell *result;
 
 	int success = 0;
 	success = gen_theoretical_vecs(cell, &cell_vecs, &cell_vec_count);
@@ -897,7 +888,7 @@ int run_taketwo(UnitCell *cell, struct rvec *rlps,
 
 	find_seed_and_network(obs_vecs, obs_vec_count, &solution);
 
-        generate_basis_vectors(cell, solution, a_star, b_star, c_star);
+	result = transform_cell_gsl(cell, solution);
 
 	cleanup_taketwo_obs_vecs(obs_vecs, obs_vec_count);
 
