@@ -31,6 +31,7 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include <math.h>
+#include <assert.h>
 
 #include "cell-utils.h"
 #include "index.h"
@@ -245,12 +246,36 @@ static gsl_matrix *closest_rot_mat(struct rvec vec1, struct rvec vec2,
 }
 
 
+static double matrix_trace(gsl_matrix *a)
+{
+	int i;
+	double tr = 0.0;
+
+	assert(a->size1 == a->size2);
+	for ( i=0; i<a->size1; a++ ) {
+		tr += gsl_matrix_get(a, i, i);
+	}
+	return tr;
+}
+
+
 static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2)
 {
-	/* FIXME: write me!
-	 * Write code for that fancy algorithm here from XPLOR */
+	double tr;
+	gsl_matrix *sub;
+	gsl_matrix *mul;
 
-	return 0;
+	sub = gsl_matrix_calloc(3, 3);
+	gsl_matrix_memcpy(sub, rot1);
+	gsl_matrix_sub(sub, rot2);  /* sub = rot1 - rot2 */
+
+	mul = gsl_matrix_calloc(3, 3);
+	gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, sub, sub, 0.0, mul);
+
+	tr = matrix_trace(mul);
+	gsl_matrix_free(mul);
+
+	return tr < sqrt(4.0*(1.0-cos(ANGLE_TOLERANCE)));;
 }
 
 
