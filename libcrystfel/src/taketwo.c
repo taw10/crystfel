@@ -762,6 +762,9 @@ static int gen_theoretical_vecs(UnitCell *cell, struct rvec **cell_vecs,
 {
 	double a, b, c, alpha, beta, gamma;
 	int h_max, k_max, l_max;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
 
 	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
 
@@ -773,26 +776,22 @@ static int gen_theoretical_vecs(UnitCell *cell, struct rvec **cell_vecs,
 	int h, k, l;
 	int count = 0;
 
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+
 	for ( h=-h_max; h<=+h_max; h++ ) {
 	for ( k=-k_max; k<=+k_max; k++ ) {
 	for ( l=-l_max; l<=+l_max; l++ ) {
 
+		struct rvec cell_vec;
+
 		/* Exclude systematic absences from centering concerns */
-		if ( forbidden_reflection(cell, h, k, l) ) {
-			continue;
-		}
+		if ( forbidden_reflection(cell, h, k, l) ) continue;
 
-		struct rvec cell_vec = new_rvec(h, k, l);
-
-		/* FIXME: transform int (h, k, l) to reciprocal coordinates.
-		 * Don't want to do this manually if there is already a
-		 * function in libcrystfel to do this. Would like to map
-		 * Miller index (5, 13, 2) onto (0.05, 0.13, 0.02) for example,
-		 * if I had a 100 x 100 x 100 Å cubic cell. */
-
-		cell_vec = cell_vec;
-
-		/* Assumption that "cell_vec" now has transformed coords */
+		cell_vec.u = h*asx + k*bsx + l*csx;
+		cell_vec.v = h*asy + k*bsy + l*csy;
+		cell_vec.w = h*asz + k*bsz + l*csz;
 
 		/* add this to our array - which may require expanding */
 		count++;
