@@ -36,6 +36,7 @@
 #include "cell-utils.h"
 #include "index.h"
 #include "taketwo.h"
+#include "peaks.h"
 
 /**
  * spotvec
@@ -855,44 +856,32 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 	int cell_vec_count = 0;
 	struct rvec *cell_vecs = NULL;
 	UnitCell *result;
-
-	int success = 0;
-	success = gen_theoretical_vecs(cell, &cell_vecs, &cell_vec_count);
-
-	if ( !success ) {
-		apologise();
-		return 0;
-	}
-
 	int obs_vec_count = 0;
 	struct SpotVec *obs_vecs = NULL;
+	int success = 0;
+	gsl_matrix *solution = NULL;
+
+	success = gen_theoretical_vecs(cell, &cell_vecs, &cell_vec_count);
+	if ( !success ) return NULL;
 
 	success = gen_observed_vecs(rlps, rlp_count, &obs_vecs, &obs_vec_count);
-
-	if ( !success ) {
-		apologise();
-		return 0;
-	}
+	if ( !success ) return NULL;
 
 	success = match_obs_to_cell_vecs(cell_vecs, cell_vec_count,
 	                                 obs_vecs, obs_vec_count);
 
-	if ( !success ) {
-		apologise();
-		return 0;
-	}
+	if ( !success ) return NULL;
 
 	cleanup_taketwo_cell_vecs(cell_vecs);
 
-	gsl_matrix *solution = NULL;
-
 	find_seed_and_network(obs_vecs, obs_vec_count, &solution);
+	if ( solution == NULL ) return NULL;
 
 	result = transform_cell_gsl(cell, solution);
 
 	cleanup_taketwo_obs_vecs(obs_vecs, obs_vec_count);
 
-	return (solution != NULL);
+	return result;
 }
 
 
@@ -900,7 +889,44 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 
 int taketwo_index(struct image *image, IndexingPrivate *ipriv)
 {
+	Crystal *cr;
+	UnitCell *cell;
+	struct rvec *rlps;
+	int n_rlps = 0;
+	int i;
 	struct taketwo_private *tp = (struct taketwo_private *)ipriv;
+
+	rlps = malloc(image_feature_count(image->features)*sizeof(struct rvec));
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
+		struct imagefeature *pk = image_get_feature(image->features, i);
+		if ( pk == NULL ) continue;
+		rlps[n_rlps].u = pk->rx;
+		rlps[n_rlps].v = pk->ry;
+		rlps[n_rlps].w = pk->rz;
+		n_rlps++;
+	}
+
+	cell = run_taketwo(tp->cell, rlps, n_rlps);
+	if ( cell == NULL ) return 0;
+
+	cr = crystal_new();
+	if ( cr == NULL ) {
+		ERROR("Failed to allocate crystal.\n");
+		return 0;
+	}
+
+	crystal_set_cell(cr, cell);
+
+	if ( tp->indm & INDEXING_CHECK_PEAKS ) {
+		if ( !peak_sanity_check(image, &cr, 1) ) {
+			cell_free(cell);
+			crystal_free(cr);
+			return 0;
+		}
+	}
+
+	image_add_crystal(image, cr);
+
 	return 1;
 }
 
