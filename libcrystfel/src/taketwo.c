@@ -362,19 +362,17 @@ static int obs_vecs_share_spot(struct SpotVec *her_obs, struct SpotVec *his_obs)
 
 
 static int obs_shares_spot_w_array(struct SpotVec *obs_vecs, int test_idx,
-                                   int *members[MAX_NETWORK_MEMBERS], int num)
+                                   int *members, int num)
 {
 	int i;
 	struct SpotVec *her_obs = &obs_vecs[test_idx];
 
 	for ( i=0; i<num; i++ ) {
-		struct SpotVec *his_obs = &obs_vecs[i];
+		struct SpotVec *his_obs = &obs_vecs[members[i]];
 
 		int shares = obs_vecs_share_spot(her_obs, his_obs);
 
-		if ( shares ) {
-			return 1;
-		}
+		if ( shares ) return 1;
 	}
 
 	return 0;
@@ -386,8 +384,8 @@ static int obs_shares_spot_w_array(struct SpotVec *obs_vecs, int test_idx,
  * cosine graph are more sensitive than others, so may be a trade off... or not.
  */
 static int obs_vecs_match_angles(struct SpotVec *her_obs,
-                          struct SpotVec *his_obs, int *her_match_idx,
-                          int *his_match_idx)
+                                 struct SpotVec *his_obs, int *her_match_idx,
+                                 int *his_match_idx)
 {
 	int i, j;
 
@@ -411,7 +409,6 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 		if ( angle_diff < ANGLE_TOLERANCE ) {
 			*her_match_idx = i;
 			*his_match_idx = j;
-
 			return 1;
 		}
 	}
@@ -422,7 +419,7 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 
 
 static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
-                                  int *members[MAX_NETWORK_MEMBERS], int num)
+                                  int *members, int num)
 {
 	/* note: this is just a preliminary check to reduce unnecessary
 	 * computation later down the line, but is not entirely accurate.
@@ -434,7 +431,7 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
 	struct SpotVec *her_obs = &obs_vecs[test_idx];
 
 	for ( i=0; i<num; i++ ) {
-		struct SpotVec *his_obs = &obs_vecs[i];
+		struct SpotVec *his_obs = &obs_vecs[members[i]];
 
 		/* placeholders, but results are ignored */
 		int idx1, idx2;
@@ -444,10 +441,7 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
 		int matches = obs_vecs_match_angles(her_obs, his_obs,
 						    &idx1, &idx2);
 
-		if ( !matches )
-		{
-			return 0;
-		}
+		if ( !matches ) return 0;
 	}
 
 	return 1;
@@ -459,7 +453,7 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
  * ------------------------------------------------------------------------*/
 
 static int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
-                           int obs_vec_count, int **members,
+                           int obs_vec_count, int *members,
                            int start, int member_num)
 {
 	int i;
@@ -493,12 +487,12 @@ static int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
 		int member_idx, test_idx;
 
-		obs_vecs_match_angles(&obs_vecs[(*members)[0]], &obs_vecs[i],
+		obs_vecs_match_angles(&obs_vecs[members[0]], &obs_vecs[i],
 		                      &member_idx, &test_idx);
 
 		struct rvec *test_match = &obs_vecs[i].matches[test_idx];
 		struct rvec *member_match;
-		member_match = &obs_vecs[(*members)[0]].matches[member_idx];
+		member_match = &obs_vecs[members[0]].matches[member_idx];
 
 		int j;
 
@@ -510,7 +504,7 @@ static int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		for ( j=0; j<2 && ok; j++ ) {
 			gsl_matrix *test_rot = gsl_matrix_calloc(3, 3);
 
-			int j_idx = (*members)[j];
+			int j_idx = members[j];
 			test_rot = generate_rot_mat(obs_vecs[j_idx].obsvec,
 			                            obs_vecs[i].obsvec,
 			                            *member_match,
@@ -557,8 +551,7 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		 * to an int ** parameter, but I don't know...
 		 **/
 		int next_index = find_next_index(rot, obs_vecs, obs_vec_count,
-	                                         (int **)&members,
-	                                         start, member_num);
+	                                         members, start, member_num);
 
 		if ( member_num < 2 ) return 0;
 
