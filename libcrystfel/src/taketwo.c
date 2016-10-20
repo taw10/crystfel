@@ -74,7 +74,7 @@ struct taketwo_private
 #define MAX_RECIP_DISTANCE (0.15*1e10)
 
 /* Tolerance for two lengths in reciprocal space to be considered the same */
-#define RECIP_TOLERANCE (0.001*1e10)
+#define RECIP_TOLERANCE (0.0002*1e10)
 
 /* Threshold for network members to consider a potential solution */
 #define NETWORK_MEMBER_THRESHOLD (20)
