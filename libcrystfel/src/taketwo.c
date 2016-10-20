@@ -620,7 +620,7 @@ static int find_seed_and_network(struct SpotVec *obs_vecs, int obs_vec_count,
 		/* try to expand this rotation matrix to a larger network */
 
 		int success = grow_network(rot_mat, obs_vecs, obs_vec_count,
-		                           i_idx, j_idx);
+		                           i, j);
 
 		/* return this matrix or free it and try again */
 		if ( success ) {
