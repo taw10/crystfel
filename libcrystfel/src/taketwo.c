@@ -385,8 +385,8 @@ static int obs_shares_spot_w_array(struct SpotVec *obs_vecs, int test_idx,
  * cosine graph are more sensitive than others, so may be a trade off... or not.
  */
 static int obs_vecs_match_angles(struct SpotVec *her_obs,
-                                 struct SpotVec *his_obs, int *her_match_idx,
-                                 int *his_match_idx)
+                                 struct SpotVec *his_obs,
+				 int *her_match_idx, int *his_match_idx)
 {
 	int i, j;
 
@@ -468,7 +468,6 @@ static int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		if ( !shared ) continue;
 
 		/* now we check that angles between all vectors match */
-
 		int matches = obs_angles_match_array(obs_vecs, i, members,
 		                                     member_num);
 
@@ -572,10 +571,7 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		member_num++;
 
 		/* If member_num is high enough, we want to return a yes */
-
-		if ( member_num > NETWORK_MEMBER_THRESHOLD ) {
-			break;
-		}
+		if ( member_num > NETWORK_MEMBER_THRESHOLD ) break;
 	}
 
 	/* Deal with this shit after coffee */
@@ -601,26 +597,19 @@ static int find_seed_and_network(struct SpotVec *obs_vecs, int obs_vec_count,
 		  */
 		int shared = obs_vecs_share_spot(&obs_vecs[i], &obs_vecs[j]);
 
-		if ( !shared ) {
-			continue;
-		}
+		if ( !shared ) continue;
 
 		/* cell vector "matches" index for i, j respectively */
 		int i_idx = -1;
 		int j_idx = -1;
 
 		/* Check to see if any angles match from the cell vectors */
-
 		int match = 0;
 		match = obs_vecs_match_angles(&obs_vecs[i], &obs_vecs[j],
-					     &i_idx, &j_idx);
-
-		if ( !match ) {
-			continue;
-		}
+		                              &i_idx, &j_idx);
+		if ( !match ) continue;
 
 		/* We have a seed! Generate a matrix based on this solution */
-
 		gsl_matrix *rot_mat = gsl_matrix_calloc(3, 3);
 
 		rot_mat = generate_rot_mat(obs_vecs[i].obsvec,
@@ -634,7 +623,6 @@ static int find_seed_and_network(struct SpotVec *obs_vecs, int obs_vec_count,
 		                           i_idx, j_idx);
 
 		/* return this matrix or free it and try again */
-
 		if ( success ) {
 			*rotation = rot_mat;
 			return 1;
@@ -709,9 +697,7 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 			/* are these two far from each other? */
 			double sqlength = sq_length(diff);
 
-			if ( sqlength > max_sq_length ) {
-				continue;
-			}
+			if ( sqlength > max_sq_length ) continue;
 
 			count++;
 
