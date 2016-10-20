@@ -180,7 +180,7 @@ static struct rvec rvec_cross(struct rvec a, struct rvec b)
 
 	c.u = a.v*b.w - a.w*b.v;
 	c.v = -(a.u*b.w - a.w*b.u);
-	c.w = a.u*b.v - a.v-b.u;
+	c.w = a.u*b.v - a.v*b.u;
 
 	return c;
 }
@@ -492,9 +492,7 @@ static int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		                      &member_idx, &test_idx);
 
                 *match_found = test_idx;
-		struct rvec *test_match = &obs_vecs[i].matches[test_idx];
-		struct rvec *member_match;
-		member_match = &obs_vecs[obs_members[0]].matches[member_idx];
+		struct rvec test_match = obs_vecs[i].matches[test_idx];
 
 		int j;
 
@@ -504,13 +502,16 @@ static int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		int ok = 1;
 
 		for ( j=0; j<2; j++ ) {
-			gsl_matrix *test_rot = gsl_matrix_calloc(3, 3);
 
+			gsl_matrix *test_rot = gsl_matrix_calloc(3, 3);
+			struct rvec member_match;
 			int j_idx = obs_members[j];
+
+			member_match = obs_vecs[j].matches[match_members[j]];
 			test_rot = generate_rot_mat(obs_vecs[j_idx].obsvec,
 			                            obs_vecs[i].obsvec,
-			                            *member_match,
-			                            *test_match);
+			                            member_match,
+			                            test_match);
 
 			ok = rot_mats_are_similar(rot, test_rot);
 			if ( !ok ) break;
@@ -635,7 +636,7 @@ static int find_seed_and_network(struct SpotVec *obs_vecs, int obs_vec_count,
 		/* try to expand this rotation matrix to a larger network */
 
 		int success = grow_network(rot_mat, obs_vecs, obs_vec_count,
-		                           i, j);
+		                           i, j, i_idx, j_idx);
 
 		/* return this matrix or free it and try again */
 		if ( success ) {
