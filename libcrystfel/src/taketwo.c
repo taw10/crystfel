@@ -330,7 +330,7 @@ static gsl_matrix *generate_rot_mat(struct rvec obs1, struct rvec obs2,
 	normalise_rvec(&obs1);
 
 	/* Multiply cell2 by rotateSpotDiffMatrix --> cell2vr */
-	gsl_blas_dgemv(CblasNoTrans, 1.0,  rotateSpotDiffMatrix, cell2v,
+	gsl_blas_dgemv(CblasNoTrans, 1.0, rotateSpotDiffMatrix, cell2v,
 	               0.0, cell2vr);
 
 	/* Now we twirl around the firstAxisUnit until the rotated simulated
@@ -441,7 +441,6 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
 		int idx1, idx2;
 
 		/* check our test vector matches existing network member */
-
 		int matches = obs_vecs_match_angles(her_obs, his_obs,
 						    &idx1, &idx2);
 
@@ -456,10 +455,10 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
  * core functions regarding the meat of the TakeTwo algorithm (Level 2)
  * ------------------------------------------------------------------------*/
 
-static int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
-                           int obs_vec_count, int *obs_members,
-                           int *match_members, int start, int member_num,
-                           int *match_found)
+static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
+                                  int obs_vec_count, int *obs_members,
+                                  int *match_members, int start, int member_num,
+                                  int *match_found)
 {
 	int i;
 
@@ -555,7 +554,7 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 	while ( 1 ) {
 
                 int match_found = -1;
-		int next_index = find_next_index(rot, obs_vecs, obs_vec_count,
+		signed int next_index = find_next_index(rot, obs_vecs, obs_vec_count,
 	                                         obs_members, match_members,
 	                                         start, member_num,
 	                                         &match_found);
