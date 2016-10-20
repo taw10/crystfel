@@ -390,6 +390,9 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 {
 	int i, j;
 
+        *her_match_idx = -1;
+        *his_match_idx = -1;
+
 	/* calculate angle between observed vectors */
 	double obs_angle = rvec_angle(her_obs->obsvec, his_obs->obsvec);
 
@@ -420,7 +423,7 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 
 
 static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
-                                  int *members, int num)
+                                  int *obs_members, int *match_members, int num)
 {
 	/* note: this is just a preliminary check to reduce unnecessary
 	 * computation later down the line, but is not entirely accurate.
@@ -432,7 +435,7 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
 	struct SpotVec *her_obs = &obs_vecs[test_idx];
 
 	for ( i=0; i<num; i++ ) {
-		struct SpotVec *his_obs = &obs_vecs[members[i]];
+		struct SpotVec *his_obs = &obs_vecs[obs_members[i]];
 
 		/* placeholders, but results are ignored */
 		int idx1, idx2;
@@ -442,7 +445,7 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
 		int matches = obs_vecs_match_angles(her_obs, his_obs,
 						    &idx1, &idx2);
 
-		if ( !matches ) return 0;
+                if (idx2 != match_members[i]) return 0;
 	}
 
 	return 1;
@@ -454,22 +457,23 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
  * ------------------------------------------------------------------------*/
 
 static int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
-                           int obs_vec_count, int *members,
-                           int start, int member_num)
+                           int obs_vec_count, int *obs_members,
+                           int *match_members, int start, int member_num,
+                           int *match_found)
 {
 	int i;
 
 	for ( i=start; i<obs_vec_count; i++ ) {
 
 		/* first we check for a shared spot - harshest condition */
-		int shared = obs_shares_spot_w_array(obs_vecs, i, members,
+		int shared = obs_shares_spot_w_array(obs_vecs, i, obs_members,
 		                                     member_num);
 
 		if ( !shared ) continue;
 
 		/* now we check that angles between all vectors match */
-		int matches = obs_angles_match_array(obs_vecs, i, members,
-		                                     member_num);
+		int matches = obs_angles_match_array(obs_vecs, i, obs_members,
+		                                     match_members, member_num);
 
 		if ( !matches ) continue;
 
@@ -483,12 +487,14 @@ static int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
 		int member_idx, test_idx;
 
-		obs_vecs_match_angles(&obs_vecs[members[0]], &obs_vecs[i],
+                /* FIXME: this may be a source of a problem */
+		obs_vecs_match_angles(&obs_vecs[obs_members[0]], &obs_vecs[i],
 		                      &member_idx, &test_idx);
 
+                *match_found = test_idx;
 		struct rvec *test_match = &obs_vecs[i].matches[test_idx];
 		struct rvec *member_match;
-		member_match = &obs_vecs[members[0]].matches[member_idx];
+		member_match = &obs_vecs[obs_members[0]].matches[member_idx];
 
 		int j;
 
@@ -500,7 +506,7 @@ static int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		for ( j=0; j<2; j++ ) {
 			gsl_matrix *test_rot = gsl_matrix_calloc(3, 3);
 
-			int j_idx = members[j];
+			int j_idx = obs_members[j];
 			test_rot = generate_rot_mat(obs_vecs[j_idx].obsvec,
 			                            obs_vecs[i].obsvec,
 			                            *member_match,
@@ -524,14 +530,18 @@ static int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
 
 static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
-                        int obs_vec_count, int obs_idx1, int obs_idx2)
+                        int obs_vec_count, int obs_idx1, int obs_idx2,
+                        int match_idx1, int match_idx2)
 {
 	/* indices of members of the self-consistent network of vectors */
-	int members[MAX_NETWORK_MEMBERS];
+	int obs_members[MAX_NETWORK_MEMBERS];
+        int match_members[MAX_NETWORK_MEMBERS];
 
 	/* initialise the ones we know already */
-	members[0] = obs_idx1;
-	members[1] = obs_idx2;
+	obs_members[0] = obs_idx1;
+	obs_members[1] = obs_idx2;
+	match_members[0] = match_idx1;
+	match_members[1] = match_idx2;
 	int member_num = 2;
 
 	/* counter for dead ends which must not exceed MAX_DEAD_ENDS
@@ -543,8 +553,11 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
 	while ( 1 ) {
 
+                int match_found = -1;
 		int next_index = find_next_index(rot, obs_vecs, obs_vec_count,
-	                                         members, start, member_num);
+	                                         obs_members, match_members,
+	                                         start, member_num,
+	                                         &match_found);
 
 		if ( member_num < 2 ) return 0;
 
@@ -556,7 +569,7 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
 			/* We have not had too many dead ends. Try removing
 			   the last member and continue. */
-			start = members[member_num - 1] + 1;
+			start = obs_members[member_num - 1] + 1;
 			member_num--;
 			dead_ends++;
 
@@ -566,7 +579,9 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		/* we have elongated membership - so reset dead_ends counter */
 		dead_ends = 0;
 
-		members[member_num] = next_index;
+		obs_members[member_num] = next_index;
+		match_members[member_num] = match_found;
+		
 		start = next_index + 1;
 		member_num++;
 
