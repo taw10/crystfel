@@ -868,7 +868,7 @@ int taketwo_index(struct image *image, IndexingPrivate *ipriv)
 	int i;
 	struct taketwo_private *tp = (struct taketwo_private *)ipriv;
 
-	rlps = malloc(image_feature_count(image->features)*sizeof(struct rvec));
+	rlps = malloc((image_feature_count(image->features)+1)*sizeof(struct rvec));
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 		struct imagefeature *pk = image_get_feature(image->features, i);
 		if ( pk == NULL ) continue;
@@ -877,6 +877,9 @@ int taketwo_index(struct image *image, IndexingPrivate *ipriv)
 		rlps[n_rlps].w = pk->rz;
 		n_rlps++;
 	}
+	rlps[n_rlps].u = 0.0;
+	rlps[n_rlps].v = 0.0;
+	rlps[n_rlps++].w = 0.0;
 
 	cell = run_taketwo(tp->cell, rlps, n_rlps);
 	if ( cell == NULL ) return 0;
