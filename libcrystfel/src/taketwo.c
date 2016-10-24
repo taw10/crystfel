@@ -88,6 +88,9 @@ struct taketwo_private
 /* Tolerance for two angles to be considered the same */
 #define ANGLE_TOLERANCE (deg2rad(1.0))
 
+/* Tolerance for rot_mats_are_similar */
+#define TRACE_TOLERANCE (deg2rad(8.0))
+
 /** TODO:
  *
  * - May need to be capable of playing with the tolerances/#defined stuff.
@@ -277,7 +280,7 @@ static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2)
 	tr = matrix_trace(mul);
 	gsl_matrix_free(mul);
 
-	return tr < sqrt(4.0*(1.0-cos(ANGLE_TOLERANCE)));;
+	return tr < sqrt(4.0*(1.0-cos(TRACE_TOLERANCE)));;
 }
 
 
