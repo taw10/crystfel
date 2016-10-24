@@ -225,9 +225,9 @@ static gsl_matrix *closest_rot_mat(struct rvec vec1, struct rvec vec2,
 
 	/* Redeclaring these to try and maintain readability and
 	 * check-ability against the maths I wrote down */
-	double a = vec2.u; double b = vec2.w; double c = vec2.v;
-	double p = vec1.u; double q = vec1.w; double r = vec1.v;
-	double x = axis.u; double y = axis.w; double z = axis.v;
+	double a = vec2.u; double b = vec2.v; double c = vec2.w;
+	double p = vec1.u; double q = vec1.v; double r = vec1.w;
+	double x = axis.u; double y = axis.v; double z = axis.w;
 
 	/* Components in handwritten maths online when I upload it */
 	double A = a*(p*x*x - p + x*y*q + x*z*r) +
