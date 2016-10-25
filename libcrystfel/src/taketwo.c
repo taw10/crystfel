@@ -74,7 +74,7 @@ struct taketwo_private
 #define MAX_RECIP_DISTANCE (0.15*1e10)
 
 /* Tolerance for two lengths in reciprocal space to be considered the same */
-#define RECIP_TOLERANCE (0.0002*1e10)
+#define RECIP_TOLERANCE (0.001*1e10)
 
 /* Threshold for network members to consider a potential solution */
 #define NETWORK_MEMBER_THRESHOLD (20)
@@ -654,6 +654,20 @@ static int find_seed_and_network(struct SpotVec *obs_vecs, int obs_vec_count,
 }
 
 
+struct sortme
+{
+	struct rvec v;
+	double dist;
+};
+
+static int sort_func(const void *av, const void *bv)
+{
+	struct sortme *a = (struct sortme *)av;
+	struct sortme *b = (struct sortme *)bv;
+	return a->dist > b->dist;
+}
+
+
 static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
                                   struct SpotVec *obs_vecs, int obs_vec_count)
 {
@@ -661,36 +675,41 @@ static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
 
 	/* Now I'm definitely bending the indentation rules! */
 	for ( i=0; i<obs_vec_count; i++ ) {
+
 		int count = 0;
+		struct sortme *for_sort = NULL;
 
-	for ( j=0; j<cell_vec_count; j++ ) {
 
-		/* get distance for unit cell vector */
-		double cell_length = rvec_length(cell_vecs[j]);
-		double obs_length = obs_vecs[i].distance;
+		for ( j=0; j<cell_vec_count; j++ ) {
 
-		/* check if this matches the observed length */
-		double dist_diff = fabs(cell_length - obs_length);
+			/* get distance for unit cell vector */
+			double cell_length = rvec_length(cell_vecs[j]);
+			double obs_length = obs_vecs[i].distance;
 
-		if ( dist_diff > RECIP_TOLERANCE ) {
-			continue;
+			/* check if this matches the observed length */
+			double dist_diff = fabs(cell_length - obs_length);
+
+			if ( dist_diff > RECIP_TOLERANCE ) continue;
+
+			/* we have a match, add to array! */
+
+			size_t new_size = (count+1)*sizeof(struct sortme);
+			for_sort = realloc(for_sort, new_size);
+
+			if ( for_sort == NULL ) return 0;
+
+			for_sort[count].v = cell_vecs[j];
+			for_sort[count].dist = dist_diff;
+			count++;
+
 		}
-
-		/* we have a match, add to array! */
-
-		count++;
-		int new_size = count*sizeof(struct rvec);
-		struct rvec *temp_matches;
-		temp_matches = realloc(obs_vecs[i].matches, new_size);
-
-		if ( temp_matches == NULL ) {
-			return 0;
-		} else {
-			obs_vecs[i].matches = temp_matches;
-			temp_matches[count - 1] = cell_vecs[j];
-			obs_vecs[i].match_num = count;
+		qsort(for_sort, count, sizeof(struct sortme), sort_func);
+		obs_vecs[i].matches = malloc(count*sizeof(struct rvec));
+		for ( j=0; j<count; j++ ) {
+			obs_vecs[i].matches[j] = for_sort[j].v;
 		}
-	}
+		free(for_sort);
+
 	}
 
 	return 1;
