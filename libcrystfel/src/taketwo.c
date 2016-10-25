@@ -509,7 +509,8 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 			struct rvec member_match;
 			int j_idx = obs_members[j];
 
-			member_match = obs_vecs[j].matches[match_members[j]];
+			member_match = obs_vecs[j_idx].matches[match_members[j]];
+
 			test_rot = generate_rot_mat(obs_vecs[j_idx].obsvec,
 			                            obs_vecs[i].obsvec,
 			                            member_match,
