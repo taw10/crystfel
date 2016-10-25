@@ -1445,27 +1445,33 @@ UnitCell *transform_cell_gsl(UnitCell *in, gsl_matrix *m)
 
 	c = gsl_matrix_alloc(3, 3);
 	gsl_matrix_set(c, 0, 0, asx);
-	gsl_matrix_set(c, 0, 1, asy);
-	gsl_matrix_set(c, 0, 2, asz);
-	gsl_matrix_set(c, 1, 0, bsx);
+	gsl_matrix_set(c, 1, 0, asy);
+	gsl_matrix_set(c, 2, 0, asz);
+	gsl_matrix_set(c, 0, 1, bsx);
 	gsl_matrix_set(c, 1, 1, bsy);
-	gsl_matrix_set(c, 1, 2, bsz);
-	gsl_matrix_set(c, 2, 0, csx);
-	gsl_matrix_set(c, 2, 1, csy);
+	gsl_matrix_set(c, 2, 1, bsz);
+	gsl_matrix_set(c, 0, 2, csx);
+	gsl_matrix_set(c, 1, 2, csy);
 	gsl_matrix_set(c, 2, 2, csz);
 
+	STATUS("---\n");
+	show_matrix(m);
+	STATUS("\n");
+	show_matrix(c);
+	STATUS("\n");
 	res = gsl_matrix_calloc(3, 3);
 	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, m, c, 0.0, res);
+	show_matrix(res);
 
 	out = cell_new_from_cell(in);
 	cell_set_reciprocal(out, gsl_matrix_get(res, 0, 0),
-	                         gsl_matrix_get(res, 0, 1),
-	                         gsl_matrix_get(res, 0, 2),
 	                         gsl_matrix_get(res, 1, 0),
-	                         gsl_matrix_get(res, 1, 1),
-	                         gsl_matrix_get(res, 1, 2),
 	                         gsl_matrix_get(res, 2, 0),
+	                         gsl_matrix_get(res, 0, 1),
+	                         gsl_matrix_get(res, 1, 1),
 	                         gsl_matrix_get(res, 2, 1),
+	                         gsl_matrix_get(res, 0, 2),
+	                         gsl_matrix_get(res, 1, 2),
 	                         gsl_matrix_get(res, 2, 2));
 
 	gsl_matrix_free(res);
