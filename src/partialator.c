@@ -274,6 +274,12 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 
 	tmp = insert_into_filename(outfile, csplit->dataset_names[dsn]);
 
+	if ( n_crystalsn == 0 ) {
+		ERROR("Not writing dataset '%s' because it contains no "
+		      "crystals\n", csplit->dataset_names[dsn]);
+		return;
+	}
+
 	STATUS("Writing dataset '%s' to %s (%i crystals)\n",
 	       csplit->dataset_names[dsn], tmp, n_crystalsn);
 	split = merge_intensities(crystalsn, n_crystalsn, nthreads,
