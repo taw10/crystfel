@@ -323,6 +323,101 @@ static void show_help(const char *s)
 }
 
 
+static signed int find_first_crystal(Crystal **crystals, int n_crystals,
+                                     struct custom_split *csplit, int dsn)
+{
+	int i;
+
+	for ( i=0; i<n_crystals; i++ ) {
+		const char *fn;
+		struct event *ev;
+		char *evs;
+		char *id;
+		int dsn_crystal;
+
+		fn = crystal_get_image(crystals[i])->filename;
+		ev = crystal_get_image(crystals[i])->event;
+		evs = get_event_string(ev);
+
+		id = malloc(strlen(evs)+strlen(fn)+2);
+		if ( id == NULL ) {
+			ERROR("Failed to allocate ID\n");
+			return -1;
+		}
+		strcpy(id, fn);
+		strcat(id, " ");
+		strcat(id, evs);
+		dsn_crystal = find_dsn_for_id(csplit, id);
+		free(id);
+
+		if ( dsn == dsn_crystal ) return i;
+	}
+	return -1;
+}
+
+
+static void check_csplit(Crystal **crystals, int n_crystals,
+                         struct custom_split *csplit)
+{
+	int i;
+	int n_nosplit = 0;
+	int n_split = 0;
+	int n_cry = 0;
+	int n_nocry = 0;
+
+	STATUS("Checking your custom split datasets...\n");
+
+	for ( i=0; i<n_crystals; i++ ) {
+
+		const char *fn;
+		struct event *ev;
+		char *evs;
+		char *id;
+		int dsn_crystal;
+
+		fn = crystal_get_image(crystals[i])->filename;
+		ev = crystal_get_image(crystals[i])->event;
+		evs = get_event_string(ev);
+
+		id = malloc(strlen(evs)+strlen(fn)+2);
+		if ( id == NULL ) {
+			ERROR("Failed to allocate ID\n");
+			return;
+		}
+		strcpy(id, fn);
+		strcat(id, " ");
+		strcat(id, evs);
+		dsn_crystal = find_dsn_for_id(csplit, id);
+		free(id);
+		if ( dsn_crystal == -1 ) {
+			n_nosplit++;
+		} else {
+			n_split++;
+		}
+
+	}
+
+	for ( i=0; i<csplit->n_datasets; i++ ) {
+
+		/* Try to find a crystal with dsn = i */
+		if ( find_first_crystal(crystals, n_crystals, csplit, i) != -1 )
+		{
+			n_cry++;
+		} else {
+			n_nocry++;
+			STATUS("Dataset %s has no crystals.\n",
+			       csplit->dataset_names[i]);
+		}
+	}
+
+	STATUS("Please check that these numbers match your expectations:\n");
+	STATUS("    Number of crystals assigned to a dataset: %i\n", n_split);
+	STATUS("Number of crystals with no dataset asssigned: %i\n", n_nosplit);
+	STATUS("Number of datasets with at least one crystal: %i\n", n_cry);
+	STATUS("         Number of datasets with no crystals: %i\n", n_nocry);
+}
+
+
 static struct custom_split *load_custom_split(const char *filename)
 {
 	struct custom_split *csplit;
@@ -1039,6 +1134,8 @@ int main(int argc, char *argv[])
 
 		}
 	}
+
+	check_csplit(crystals, n_crystals, csplit);
 
 	/* Make a first pass at cutting out crap */
 	STATUS("Checking patterns.\n");
