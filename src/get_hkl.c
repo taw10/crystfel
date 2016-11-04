@@ -561,18 +561,21 @@ int main(int argc, char *argv[])
 	}
 
 	if ( holo_str != NULL ) {
+		pointgroup_warning(holo_str);
 		holo = get_pointgroup(holo_str);
 		free(holo_str);
 	} else {
 		holo = NULL;
 	}
 	if ( mero_str != NULL ) {
+		pointgroup_warning(mero_str);
 		mero = get_pointgroup(mero_str);
 		free(mero_str);
 	} else {
 		mero = NULL;
 	}
 	if ( expand_str != NULL ) {
+		pointgroup_warning(expand_str);
 		expand = get_pointgroup(expand_str);
 		free(expand_str);
 	} else {

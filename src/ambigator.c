@@ -1099,6 +1099,7 @@ int main(int argc, char *argv[])
 	if ( s_sym_str == NULL ) {
 		s_sym_str = strdup("1");
 	}
+	pointgroup_warning(s_sym_str);
 	s_sym = get_pointgroup(s_sym_str);
 	if ( s_sym == NULL ) return 1;
 	free(s_sym_str);
@@ -1113,6 +1114,7 @@ int main(int argc, char *argv[])
 		w_sym = NULL;
 		amb = NULL;
 	} else {
+		pointgroup_warning(w_sym_str);
 		w_sym = get_pointgroup(w_sym_str);
 		free(w_sym_str);
 		if ( w_sym == NULL ) return 1;

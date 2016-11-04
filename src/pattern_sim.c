@@ -533,6 +533,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ( sym_str == NULL ) sym_str = strdup("1");
+	pointgroup_warning(sym_str);
 	sym = get_pointgroup(sym_str);
 	/* sym_str is used below */
 
