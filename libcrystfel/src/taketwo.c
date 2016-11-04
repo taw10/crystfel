@@ -249,14 +249,36 @@ static gsl_matrix *closest_rot_mat(struct rvec vec1, struct rvec vec2,
 	double B = a*(y*r - z*q) + b*(p*z - r*x) + c*(q*x - p*y);
 
 	double tan_theta = - B / A;
+	double theta = atan(tan_theta);
 
-	/* Not sure why I always have to take the + M_PI solution. Work
-	 * this one out. But it always works!? */
-	double theta = atan(tan_theta) + M_PI;
+	/* Now we have two possible solutions, theta or theta+pi
+	 * and we need to work out which one. This could potentially be
+	 * simplified - do we really need so many cos/sins? maybe check
+	 * the 2nd derivative instead? */
+        double cc = cos(theta);
+        double C = 1 - cc;
+        double s = sin(theta);
+        double occ = -cc;
+        double oC = 1 - occ;
+        double os = -s;
+
+        double pPrime = (x*x*C+cc)*p + (x*y*C-z*s)*q + (x*z*C+y*s)*r;
+        double qPrime = (y*x*C+z*s)*p + (y*y*C+cc)*q + (y*z*C-x*s)*r;
+        double rPrime = (z*x*C-y*s)*p + (z*y*C+x*s)*q + (z*z*C+cc)*r;
+
+        double pDbPrime = (x*x*oC+occ)*p + (x*y*oC-z*os)*q + (x*z*oC+y*os)*r;
+        double qDbPrime = (y*x*oC+z*os)*p + (y*y*oC+occ)*q + (y*z*oC-x*os)*r;
+        double rDbPrime = (z*x*oC-y*os)*p + (z*y*oC+x*os)*q + (z*z*oC+occ)*r;
+
+        double cosAlpha = pPrime * a + qPrime * b + rPrime * c;
+        double cosAlphaOther = pDbPrime * a + qDbPrime * b + rDbPrime * c;
+
+        int addPi = (cosAlphaOther > cosAlpha);
+        double bestAngle = theta + addPi * M_PI;
 
 	/* Return an identity matrix which has been rotated by
 	 * theta around "axis" */
-	return rotation_around_axis(axis, theta);
+	return rotation_around_axis(axis, bestAngle);
 }
 
 
