@@ -606,7 +606,8 @@ static void write_residual_graph(Crystal *cr, const RefList *full)
 		cell_set_reciprocal(cell, asx, asy, asz,
 		                          bsx, bsy, bsz,
 		                          csx, csy, csz);
-		update_partialities(cr, PMODEL_SCSPHERE);
+		update_predictions(cr);
+		calculate_partialities(cr, PMODEL_SCSPHERE);
 		res = residual(cr, full, 0, &n, NULL);
 		fprintf(fh, "%i %e %e %i\n", i, asx, res, n);
 	}
@@ -614,7 +615,8 @@ static void write_residual_graph(Crystal *cr, const RefList *full)
 	cell_set_reciprocal(cell, orig_asx, asy, asz,
 	                          bsx, bsy, bsz,
 	                          csx, csy, csz);
-	update_partialities(cr, PMODEL_SCSPHERE);
+	update_predictions(cr);
+	calculate_partialities(cr, PMODEL_SCSPHERE);
 	fclose(fh);
 }
 
@@ -648,7 +650,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 		pr_iterate(cr, full, pmodel, NULL, verbose);
 
-		update_partialities(cr, pmodel);
+		update_predictions(cr);
+		calculate_partialities(cr, pmodel);
 
 		dev = residual(cr, full, 0, 0, NULL);
 		if ( fabs(dev - old_dev) < dev*0.0001 ) done = 1;

@@ -266,15 +266,12 @@ static double partiality(PartialityModel pmodel,
 
 
 static Reflection *check_reflection(struct image *image, Crystal *cryst,
-                                    PartialityModel pmodel,
                                     signed int h, signed int k, signed int l,
                                     double xl, double yl, double zl,
                                     Reflection *updateme)
 {
-	const int output = 0;
 	double tl;
-	double rlow, rhigh;     /* "Excitation error" */
-	double part;            /* Partiality */
+	double rlow, rhigh;    /* "Excitation error" */
 	double klow, khigh;    /* Wavenumber */
 	Reflection *refl;
 	double cet, cez;  /* Centre of Ewald sphere */
@@ -311,20 +308,6 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	     && (signbit(rlow) == signbit(rhigh))
 	     && (fabs(rlow) > pr)
 	     && (fabs(rhigh) > pr) ) return NULL;
-
-	/* Calculate partiality */
-	part = partiality(pmodel, h, k, l, image->serial, rlow, rhigh, pr);
-
-	if ( isnan(part) && ((h!=0) || (k!=0) || (l!=0)) ) {
-		ERROR("Assigning NAN partiality!\n");
-		ERROR("%3i %3i %3i  rlow = %e, rhigh = %e\n",
-		      h, k, l, rlow, rhigh);
-		ERROR("div + m = %e, R = %e, bw = %e\n", del, pr, image->bw);
-		ERROR("D = %e\n", rlow - rhigh);
-		ERROR("klow = %e  khigh = %e\n", klow, khigh);
-		ERROR("distance(..) = %e\n", distance(cet, cez, tl, zl));
-		abort();
-	}
 
 	if ( updateme == NULL ) {
 		refl = reflection_new(h, k, l);
@@ -373,14 +356,11 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 		}
 	}
 
-	set_partial(refl, rlow, rhigh, part);
+	set_partial(refl, rlow, rhigh, 1.0); /* Actual partiality set by
+	                                      * calculate_partialities() */
 	set_lorentz(refl, 1.0);
 	set_symmetric_indices(refl, h, k, l);
 	set_redundancy(refl, 1);
-
-	if ( output ) {
-		printf("%3i %3i %3i %6f %5.2f\n", h, k, l, 0.0, part);
-	}
 
 	return refl;
 }
@@ -472,15 +452,7 @@ double r_gradient(UnitCell *cell, int k, Reflection *refl, struct image *image)
 }
 
 
-RefList *find_intersections(struct image *image, Crystal *cryst,
-                            PartialityModel pmodel)
-{
-	return find_intersections_to_res(image, cryst, pmodel, INFINITY);
-}
-
-
-RefList *find_intersections_to_res(struct image *image, Crystal *cryst,
-                                   PartialityModel pmodel, double max_res)
+RefList *predict_to_res(Crystal *cryst, double max_res)
 {
 	double ax, ay, az;
 	double bx, by, bz;
@@ -509,7 +481,7 @@ RefList *find_intersections_to_res(struct image *image, Crystal *cryst,
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
-	mres = largest_q(image);
+	mres = largest_q(crystal_get_image(cryst));
 	if ( mres > max_res ) mres = max_res;
 
 	hmax = mres * modulus(ax, ay, az);
@@ -544,7 +516,7 @@ RefList *find_intersections_to_res(struct image *image, Crystal *cryst,
 		yl = h*asy + k*bsy + l*csy;
 		zl = h*asz + k*bsz + l*csz;
 
-		refl = check_reflection(image, cryst, pmodel,
+		refl = check_reflection(crystal_get_image(cryst), cryst,
 		                        h, k, l, xl, yl, zl, NULL);
 
 		if ( refl != NULL ) {
@@ -559,12 +531,12 @@ RefList *find_intersections_to_res(struct image *image, Crystal *cryst,
 }
 
 
-static void set_unity_partialities(Crystal *cryst)
+static void set_unity_partialities(RefList *list)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 
-	for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
+	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -575,14 +547,85 @@ static void set_unity_partialities(Crystal *cryst)
 
 
 /**
- * update_partialities:
+ * calculate_partialities:
  * @cryst: A %Crystal
  * @pmodel: A %PartialityModel
  *
- * Updates the partialities of @cryst's reflections according to @pmodel and
- * the current state of the crystal (e.g. its unit cell parameters).
+ * Calculates the partialities for the reflections in @cryst, given the current
+ * crystal and image parameters.  The crystal's image and reflection lists
+ * must be set.  The specified %PartialityModel will be used.
+ *
+ * You must not have changed the crystal or image parameters since you last
+ * called predict_to_res() or update_predictions(), because this function
+ * relies on the limiting wavelength values calculated by those functions.
  */
-void update_partialities(Crystal *cryst, PartialityModel pmodel)
+void calculate_partialities(Crystal *cryst, PartialityModel pmodel)
+{
+	RefList *list;
+	Reflection *refl;
+	RefListIterator *iter;
+	double pr;
+	struct image *image;
+
+	list = crystal_get_reflections(cryst);
+	if ( list == NULL ) {
+		ERROR("No reflections for partiality calculation!\n");
+		return;
+	}
+
+	if ( pmodel == PMODEL_UNITY ) {
+		set_unity_partialities(list);
+		return;
+	}
+
+	image = crystal_get_image(cryst);
+	if ( image == NULL ) {
+		ERROR("No image for partiality calculation!\n");
+		return;
+	}
+
+	pr = crystal_get_profile_radius(cryst);
+
+	for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double rlow, rhigh, part;
+		signed int h, k, l;
+
+		get_symmetric_indices(refl, &h, &k, &l);
+		get_partial(refl, &rlow, &rhigh, &part);
+
+		part = partiality(pmodel, h, k, l, image->serial,
+		                  rlow, rhigh, pr);
+
+		if ( isnan(part) && ((h!=0) || (k!=0) || (l!=0)) ) {
+			ERROR("Assigning NAN partiality!\n");
+			ERROR("%3i %3i %3i  rlow = %e, rhigh = %e\n",
+			      h, k, l, rlow, rhigh);
+			ERROR("R = %e, bw = %e\n", pr, image->bw);
+			ERROR("D = %e\n", rlow - rhigh);
+			abort();
+	        }
+
+	        set_partiality(refl, part);
+
+	}
+}
+
+
+/**
+ * update_predictions:
+ * @cryst: A %Crystal
+ *
+ * Updates the predicted reflections (positions and excitation errors, but not
+ * the actual partialities) of @cryst's reflections according to
+ * the current state of the crystal (e.g. its unit cell parameters).
+ *
+ * If you need to update the partialities as well, call calculate_partialities()
+ * afterwards.
+ */
+void update_predictions(Crystal *cryst)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -590,11 +633,6 @@ void update_partialities(Crystal *cryst, PartialityModel pmodel)
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	struct image *image = crystal_get_image(cryst);
-
-	if ( pmodel == PMODEL_UNITY ) {
-		set_unity_partialities(cryst);
-		return;
-	}
 
 	cell_get_reciprocal(crystal_get_cell(cryst), &asx, &asy, &asz,
 	                    &bsx, &bsy, &bsz, &csx, &csy, &csz);
@@ -613,8 +651,8 @@ void update_partialities(Crystal *cryst, PartialityModel pmodel)
 		yl = h*asy + k*bsy + l*csy;
 		zl = h*asz + k*bsz + l*csz;
 
-		check_reflection(image, cryst, pmodel,
-		                 h, k, l, xl, yl, zl, refl);
+		check_reflection(image, cryst, h, k, l,
+		                 xl, yl, zl, refl);
 
 	}
 }

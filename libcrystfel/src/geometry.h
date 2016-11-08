@@ -3,12 +3,12 @@
  *
  * Geometry of diffraction
  *
- * Copyright © 2013-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2016 Thomas White <taw@physics.org>
  *   2012      Richard Kirian
  *
  * This file is part of CrystFEL.
@@ -85,15 +85,13 @@ enum gparam {
 };
 
 
-extern RefList *find_intersections(struct image *image, Crystal *cryst,
-                                   PartialityModel pmodel);
-extern RefList *find_intersections_to_res(struct image *image, Crystal *cryst,
-                                          PartialityModel pmodel,
-					  double max_res);
+extern RefList *predict_to_res(Crystal *cryst, double max_res);
+
+extern void calculate_partialities(Crystal *cryst, PartialityModel pmodel);
 
 extern double r_gradient(UnitCell *cell, int k, Reflection *refl,
                          struct image *image);
-extern void update_partialities(Crystal *cryst, PartialityModel pmodel);
+extern void update_predictions(Crystal *cryst);
 extern void polarisation_correction(RefList *list, UnitCell *cell,
                                     struct image *image);
 

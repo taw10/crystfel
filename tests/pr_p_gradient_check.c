@@ -178,7 +178,9 @@ static void calc_either_side(Crystal *cr, double incr_val,
 
 		/* Crystal properties */
 		cr_new = new_shifted_crystal(cr, refine, -incr_val);
-		compare = find_intersections(image, cr_new, pmodel);
+		compare = predict_to_res(cr_new, largest_q(image));
+		crystal_set_reflections(cr_new, compare);
+		calculate_partialities(cr_new, pmodel);
 		scan_partialities(crystal_get_reflections(cr), compare, valid,
 		                  vals, 0, pmodel);
 		cell_free(crystal_get_cell(cr_new));
@@ -186,7 +188,9 @@ static void calc_either_side(Crystal *cr, double incr_val,
 		reflist_free(compare);
 
 		cr_new = new_shifted_crystal(cr, refine, +incr_val);
-		compare = find_intersections(image, cr_new, pmodel);
+		compare = predict_to_res(cr_new, largest_q(image));
+		crystal_set_reflections(cr_new, compare);
+		calculate_partialities(cr_new, pmodel);
 		scan_partialities(crystal_get_reflections(cr), compare, valid,
 		                  vals, 2, pmodel);
 		cell_free(crystal_get_cell(cr_new));
@@ -196,18 +200,24 @@ static void calc_either_side(Crystal *cr, double incr_val,
 	} else {
 
 		struct image im_moved;
+		Crystal *cr_new = crystal_copy(cr);
+		crystal_set_image(cr_new, &im_moved);
 
 		/* "Image" properties */
 		im_moved = *image;
 		shift_parameter(&im_moved, refine, -incr_val);
-		compare = find_intersections(&im_moved, cr, pmodel);
+		compare = predict_to_res(cr_new, largest_q(&im_moved));
+		crystal_set_reflections(cr_new, compare);
+		calculate_partialities(cr_new, pmodel);
 		scan_partialities(crystal_get_reflections(cr), compare,
 		                  valid, vals, 0, pmodel);
 		reflist_free(compare);
 
 		im_moved = *image;
 		shift_parameter(&im_moved, refine, +incr_val);
-		compare = find_intersections(&im_moved, cr, pmodel);
+		compare = predict_to_res(cr_new, largest_q(&im_moved));
+		crystal_set_reflections(cr_new, compare);
+		calculate_partialities(cr_new, pmodel);
 		scan_partialities(crystal_get_reflections(cr), compare,
 		                  valid, vals, 2, pmodel);
 		reflist_free(compare);
@@ -237,7 +247,7 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 	int n_line;
 	double cc;
 
-	reflections = find_intersections(crystal_get_image(cr), cr, pmodel);
+	reflections = predict_to_res(cr, largest_q(crystal_get_image(cr)));
 	crystal_set_reflections(cr, reflections);
 
 	nref = num_reflections(reflections);

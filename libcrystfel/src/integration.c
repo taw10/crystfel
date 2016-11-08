@@ -1673,8 +1673,7 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 		                          image->features);
 		crystal_set_resolution_limit(image->crystals[i], res);
 
-		list = find_intersections_to_res(image, image->crystals[i],
-		                                 pmodel, res+push_res);
+		list = predict_to_res(image->crystals[i], res+push_res);
 		crystal_set_reflections(image->crystals[i], list);
 
 	}

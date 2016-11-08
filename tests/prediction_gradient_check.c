@@ -185,14 +185,14 @@ static void calc_either_side(Crystal *cr, double incr_val,
 	Crystal *cr_new;
 
 	cr_new = new_shifted_crystal(cr, refine, -incr_val);
-	compare = find_intersections(image, cr_new, PMODEL_SCSPHERE);
+	compare = predict_to_res(cr_new, largest_q(image));
 	scan(crystal_get_reflections(cr), compare, valid, vals, 0);
 	cell_free(crystal_get_cell(cr_new));
 	crystal_free(cr_new);
 	reflist_free(compare);
 
 	cr_new = new_shifted_crystal(cr, refine, +incr_val);
-	compare = find_intersections(image, cr_new, PMODEL_SCSPHERE);
+	compare = predict_to_res(cr_new, largest_q(image));
 	scan(crystal_get_reflections(cr), compare, valid, vals, 2);
 	cell_free(crystal_get_cell(cr_new));
 	crystal_free(cr_new);
@@ -221,8 +221,7 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 	int n_line;
 	double cc;
 
-	reflections = find_intersections(crystal_get_image(cr), cr,
-	                                 PMODEL_SCSPHERE);
+	reflections = predict_to_res(cr, largest_q(crystal_get_image(cr)));
 	crystal_set_reflections(cr, reflections);
 
 	nref = num_reflections(reflections);

@@ -3,11 +3,11 @@
  *
  * Check 2D profile fitting
  *
- * Copyright © 2013-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2013-2014 Thomas White <taw@physics.org>
+ *   2013-2014,2016 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
 	image.n_crystals = 1;
 	image.crystals = &cr;
 
-	list = find_intersections(&image, cr, PMODEL_SCSPHERE);
+	list = predict_to_res(cr, largest_q(&image));
 	crystal_set_reflections(cr, list);
 
 	for ( fs=0; fs<w; fs++ ) {

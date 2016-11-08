@@ -1135,7 +1135,8 @@ int main(int argc, char *argv[])
 			crystal_set_image(cryst, &images[i]);
 
 			/* Now it's safe to do the following */
-			update_partialities(cryst, pmodel);
+			update_predictions(cryst);
+			calculate_partialities(cryst, pmodel);
 
 		}
 	}

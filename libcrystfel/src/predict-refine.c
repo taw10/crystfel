@@ -262,7 +262,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		 * doesn't fall on this panel.  We're only interested
 		 * in how far away it is from the peak location.
 		 * The predicted position and excitation errors will be
-		 * filled in by update_partialities(). */
+		 * filled in by update_predictions(). */
 		set_panel(refl, f->p);
 
 		rps[n].refl = refl;
@@ -275,7 +275,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
 	/* Get the excitation errors and detector positions for the candidate
 	 * reflections */
 	crystal_set_reflections(cr, all_reflist);
-	update_partialities(cr, PMODEL_SCSPHERE);
+	update_predictions(cr);
 
 	/* Pass over the peaks again, keeping only the ones which look like
 	 * good pairings */
@@ -339,7 +339,7 @@ void refine_radius(Crystal *cr, struct image *image)
 		return;
 	}
 	crystal_set_reflections(cr, reflist);
-	update_partialities(cr, PMODEL_SCSPHERE);
+	update_predictions(cr);
 	crystal_set_reflections(cr, NULL);
 
 	qsort(rps, n_acc, sizeof(struct reflpeak), cmpd2);
@@ -635,7 +635,7 @@ int refine_prediction(struct image *image, Crystal *cr)
 
 	/* Refine */
 	for ( i=0; i<MAX_CYCLES; i++ ) {
-		update_partialities(cr, PMODEL_SCSPHERE);
+		update_predictions(cr);
 		if ( iterate(rps, n, crystal_get_cell(cr), image,
 		             &total_x, &total_y, &total_z) ) return 1;
 		//STATUS("Residual after %i = %e\n", i,
