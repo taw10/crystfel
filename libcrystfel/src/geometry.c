@@ -52,16 +52,15 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
                                 struct panel *p,
                                 double *pfs, double *pss)
 {
-	double r2, ctt, tta, phi;
+	double ctt, tta, phi;
 	gsl_vector *v;
 	gsl_vector *t;
 	gsl_matrix *M;
 	double fs, ss, one_over_mu;
 
 	/* Calculate 2theta (scattering angle) and azimuth (phi) */
-	r2 = x*x + y*y + z*z;
-	ctt = 1.0 - r2 / (2.0*k*k);  /* cos(2theta) */
-	tta = acos(ctt);
+	tta = atan2(sqrt(x*x+y*y), k+z);
+	ctt = cos(tta);
 	phi = atan2(y, x);
 
 	/* Set up matrix equation */
