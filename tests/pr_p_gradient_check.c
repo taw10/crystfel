@@ -59,7 +59,7 @@ static void scan_partialities(RefList *reflections, RefList *compare,
 	{
 		signed int h, k, l;
 		Reflection *refl2;
-		double rlow, rhigh, p;
+		double p;
 
 		get_indices(refl, &h, &k, &l);
 		refl2 = find_refl(compare, h, k, l);
@@ -69,7 +69,7 @@ static void scan_partialities(RefList *reflections, RefList *compare,
 			continue;
 		}
 
-		get_partial(refl2, &rlow, &rhigh, &p);
+		p = get_partiality(refl2);
 		vals[idx][i] = p;
 		if ( unlikely(p < 0.0) ) {
 			ERROR("Negative partiality! %3i %3i %3i  %f\n",
@@ -306,16 +306,12 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 			i++;
 		} else {
 
-			double r1, r2, p;
-
 			grad1 = (vals[1][i] - vals[0][i]) / incr_val;
 			grad2 = (vals[2][i] - vals[1][i]) / incr_val;
 			grad = (grad1 + grad2) / 2.0;
 			i++;
 
 			cgrad = gradient(cr, refine, refl, pmodel);
-
-			get_partial(refl, &r1, &r2, &p);
 
 			if ( isnan(cgrad) ) {
 				n_nan++;
@@ -343,11 +339,11 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 			{
 
 				if ( !quiet ) {
-					STATUS("!- %s %3i %3i %3i"
-					       " %10.2Le %10.2e ratio = %5.2Lf"
-					       " %10.2e %10.2e\n",
+					STATUS("!- %s %3i %3i %3i "
+					       "%10.2Le %10.2e "
+                                               "ratio = %5.2Lf\n",
 					       str, h, k, l, grad, cgrad,
-					       cgrad/grad, r1, r2);
+					       cgrad/grad);
 				}
 				n_bad++;
 
@@ -447,18 +443,15 @@ int main(int argc, char *argv[])
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
-	for ( i=0; i<2; i++ ) {
+	for ( i=0; i<1; i++ ) {
 
 		UnitCell *rot;
 		double val;
 		PartialityModel pmodel;
 
 		if ( i == 0 ) {
-			pmodel = PMODEL_SCSPHERE;
-			STATUS("Testing SCSphere model:\n");
-		} else if ( i == 1 ) {
-			pmodel = PMODEL_SCGAUSSIAN;
-			STATUS("Testing SCGaussian model.\n");
+			pmodel = PMODEL_XSPHERE;
+			STATUS("Testing XSphere model:\n");
 		} else {
 			ERROR("WTF?\n");
 			return 1;

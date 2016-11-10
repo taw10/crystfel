@@ -770,7 +770,7 @@ int main(int argc, char *argv[])
 	Stream *st;
 	Crystal **crystals;
 	char *pmodel_str = NULL;
-	PartialityModel pmodel = PMODEL_SCSPHERE;
+	PartialityModel pmodel = PMODEL_XSPHERE;
 	int min_measurements = 2;
 	char *rval;
 	int polarisation = 1;
@@ -975,10 +975,8 @@ int main(int argc, char *argv[])
 	if ( pmodel_str != NULL ) {
 		if ( strcmp(pmodel_str, "unity") == 0 ) {
 			pmodel = PMODEL_UNITY;
-		} else if ( strcmp(pmodel_str, "scgaussian") == 0 ) {
-			pmodel = PMODEL_SCGAUSSIAN;
-		} else if ( strcmp(pmodel_str, "scsphere") == 0 ) {
-			pmodel = PMODEL_SCSPHERE;
+		} else if ( strcmp(pmodel_str, "xsphere") == 0 ) {
+			pmodel = PMODEL_XSPHERE;
 		} else if ( strcmp(pmodel_str, "random") == 0 ) {
 			pmodel = PMODEL_RANDOM;
 		} else {

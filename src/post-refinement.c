@@ -85,20 +85,6 @@ const char *str_prflag(enum prflag flag)
 }
 
 
-/* Returns dp(gauss)/dr at "r" */
-static double gaussian_fraction_gradient(double r, double R)
-{
-	const double ng = 2.6;
-	const double sig = R/ng;
-
-	/* If the Ewald sphere isn't within the profile, the gradient is zero */
-	if ( r < -R ) return 0.0;
-	if ( r > +R ) return 0.0;
-
-	return exp(-pow(r/sig, 2.0)/2.0) / (sig*sqrt(2.0*M_PI));
-}
-
-
 /* Returns dp(sph)/dr at "r" */
 static double sphere_fraction_gradient(double r, double pr)
 {
@@ -130,12 +116,8 @@ static double partiality_gradient(double r, double pr,
 		case PMODEL_UNITY:
 		return 0.0;
 
-		case PMODEL_SCSPHERE:
+		case PMODEL_XSPHERE:
 		A = sphere_fraction_gradient(r, pr)/D;
-		return 4.0*pr*A/3.0;
-
-		case PMODEL_SCGAUSSIAN:
-		A = gaussian_fraction_gradient(r, pr)/D;
 		return 4.0*pr*A/3.0;
 
 	}
@@ -152,19 +134,6 @@ static double sphere_fraction_rgradient(double r, double R)
 }
 
 
-static double gaussian_fraction_rgradient(double r, double R)
-{
-	const double ng = 2.6;
-	const double sig = R/ng;
-
-	/* If the Ewald sphere isn't within the profile, the gradient is zero */
-	if ( r < -R ) return 0.0;
-	if ( r > +R ) return 0.0;
-
-	return -(ng*r/(sqrt(2.0*M_PI)*R*R))*exp(-r*r/(2.0*sig*sig));
-}
-
-
 static double volume_fraction_rgradient(double r, double pr,
                                        PartialityModel pmodel)
 {
@@ -173,11 +142,8 @@ static double volume_fraction_rgradient(double r, double pr,
 		case PMODEL_UNITY :
 		return 1.0;
 
-		case PMODEL_SCSPHERE :
+		case PMODEL_XSPHERE :
 		return sphere_fraction_rgradient(r, pr);
-
-		case PMODEL_SCGAUSSIAN :
-		return gaussian_fraction_rgradient(r, pr);
 
 		default :
 		ERROR("No pmodel in volume_fraction_rgradient!\n");
@@ -194,11 +160,8 @@ static double volume_fraction(double rlow, double rhigh, double pr,
 		case PMODEL_UNITY :
 		return 1.0;
 
-		case PMODEL_SCSPHERE :
+		case PMODEL_XSPHERE :
 		return sphere_fraction(rlow, rhigh, pr);
-
-		case PMODEL_SCGAUSSIAN :
-		return gaussian_fraction(rlow, rhigh, pr);
 
 		default :
 		ERROR("No pmodel in volume_fraction!\n");
@@ -212,12 +175,14 @@ static double volume_fraction(double rlow, double rhigh, double pr,
 double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
 {
 	double glow, ghigh;
-	double rlow, rhigh, p;
+	double rlow, rhigh;
 	struct image *image = crystal_get_image(cr);
 	double R = crystal_get_profile_radius(cr);
 	double gr;
 
-	get_partial(refl, &rlow, &rhigh, &p);
+	/* FIXME ! */
+	rlow = 0.0;
+	rhigh = 0.0;
 
 	if ( k == GPARAM_R ) {
 
@@ -607,7 +572,7 @@ static void write_residual_graph(Crystal *cr, const RefList *full)
 		                          bsx, bsy, bsz,
 		                          csx, csy, csz);
 		update_predictions(cr);
-		calculate_partialities(cr, PMODEL_SCSPHERE);
+		calculate_partialities(cr, PMODEL_XSPHERE);
 		res = residual(cr, full, 0, &n, NULL);
 		fprintf(fh, "%i %e %e %i\n", i, asx, res, n);
 	}
@@ -616,7 +581,7 @@ static void write_residual_graph(Crystal *cr, const RefList *full)
 	                          bsx, bsy, bsz,
 	                          csx, csy, csz);
 	update_predictions(cr);
-	calculate_partialities(cr, PMODEL_SCSPHERE);
+	calculate_partialities(cr, PMODEL_XSPHERE);
 	fclose(fh);
 }
 

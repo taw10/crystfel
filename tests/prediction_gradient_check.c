@@ -73,7 +73,6 @@ static void scan(RefList *reflections, RefList *compare,
 	{
 		signed int h, k, l;
 		Reflection *refl2;
-		double rlow, rhigh, p;
 		double fs, ss, xh, yh;
 		struct panel *panel;
 
@@ -85,7 +84,6 @@ static void scan(RefList *reflections, RefList *compare,
 			continue;
 		}
 
-		get_partial(refl2, &rlow, &rhigh, &p);
 		get_detector_pos(refl2, &fs, &ss);
 		panel = get_panel(refl2);
 		twod_mapping(fs, ss, &xh, &yh, panel);
@@ -93,7 +91,7 @@ static void scan(RefList *reflections, RefList *compare,
 		switch ( checkrxy ) {
 
 			case 0 :
-			vals[idx][i] = (rlow + rhigh)/2.0;
+			vals[idx][i] = get_exerr(refl2);
 			break;
 
 			case 1 :
@@ -279,8 +277,6 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 			i++;
 		} else {
 
-			double r1, r2, p;
-
 			grad1 = (vals[1][i] - vals[0][i]) / incr_val;
 			grad2 = (vals[2][i] - vals[1][i]) / incr_val;
 			grad = (grad1 + grad2) / 2.0;
@@ -300,17 +296,13 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 				if ( checkrxy == 1 ) {
 					cgrad = x_gradient(refine, refl,
 					         crystal_get_cell(cr),
-					         &image->det->panels[0],
-					         crystal_get_image(cr)->lambda);
+					         &image->det->panels[0]);
 				} else {
 					cgrad = y_gradient(refine, refl,
 					         crystal_get_cell(cr),
-					         &image->det->panels[0],
-					         crystal_get_image(cr)->lambda);
+					         &image->det->panels[0]);
 				}
 			}
-
-			get_partial(refl, &r1, &r2, &p);
 
 			if ( isnan(cgrad) ) {
 				n_nan++;
@@ -338,11 +330,11 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 			{
 
 				if ( !quiet ) {
-					STATUS("!- %s %3i %3i %3i"
-					       " %10.2Le %10.2e ratio = %5.2Lf"
-					       " %10.2e %10.2e\n",
+					STATUS("!- %s %3i %3i %3i "
+					       "%10.2Le %10.2e "
+					       "ratio = %5.2Lf\n",
 					       str, h, k, l, grad, cgrad,
-					       cgrad/grad, r1, r2);
+					       cgrad/grad);
 				}
 				n_bad++;
 

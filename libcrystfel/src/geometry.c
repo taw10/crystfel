@@ -238,76 +238,37 @@ static double random_partiality(signed int h, signed int k, signed int l,
 }
 
 
-static double partiality(PartialityModel pmodel,
-                         signed int h, signed int k, signed int l,
-                         int serial,
-                         double rlow, double rhigh, double pr)
-{
-	double D = rlow - rhigh;
-
-	/* Convert to partiality */
-	switch ( pmodel ) {
-
-		default:
-		case PMODEL_UNITY:
-		return 1.0;
-
-		case PMODEL_SCSPHERE:
-		return 4.0*sphere_fraction(rlow, rhigh, pr)*pr / (3.0*D);
-
-		case PMODEL_SCGAUSSIAN:
-		return 4.0*gaussian_fraction(rlow, rhigh, pr)*pr / (3.0*D);
-
-		case PMODEL_RANDOM:
-		return random_partiality(h, k, l, serial);
-
-	}
-}
-
-
 static Reflection *check_reflection(struct image *image, Crystal *cryst,
                                     signed int h, signed int k, signed int l,
                                     double xl, double yl, double zl,
                                     Reflection *updateme)
 {
-	double tl;
-	double rlow, rhigh;    /* "Excitation error" */
-	double klow, khigh;    /* Wavenumber */
 	Reflection *refl;
-	double cet, cez;  /* Centre of Ewald sphere */
-	double pr;
-	double del;
+	double R, top;
+	double kmin, kmax, k0, knom, k1;
+	double dcs, exerr;
 
 	/* Don't predict 000 */
 	if ( (updateme == NULL) && (abs(h)+abs(k)+abs(l) == 0) ) return NULL;
 
-	pr = crystal_get_profile_radius(cryst);
-	del = image->div + crystal_get_mosaicity(cryst);
+	/* Calculate the limiting wavelengths, lambda0 and lambda1
+	 * = 1/k0 and 1/k1 respectively */
+	R = crystal_get_profile_radius(cryst);
+	top = R*R - xl*xl - yl*yl - zl*zl;
+	k0 = top/(2.0*(zl+R));
+	k1 = top/(2.0*(zl-R));
 
-	/* "low" gives the largest Ewald sphere (wavelength short => k large)
-	 * "high" gives the smallest Ewald sphere (wavelength long => k small)
-	 */
-	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
-	khigh = 1.0/(image->lambda + image->lambda*image->bw/2.0);
+	/* The reflection is excited if any of the reflection is within 2sigma
+	 * of the nominal * wavelength of the X-ray beam
+	 * (NB image->bw is full width) */
+	kmin = 1.0/(image->lambda + image->lambda*image->bw);
+	knom = 1.0/image->lambda;
+	kmax = 1.0/(image->lambda - image->lambda*image->bw);
+	if ( (k1>kmax) || (k0<kmin) ) return NULL;
 
-	/* If the point is looking "backscattery", reject it straight away */
-	if ( (updateme == NULL) && (zl < -khigh/2.0) ) return NULL;
-
-	tl = sqrt(xl*xl + yl*yl);
-
-	cet = -sin(del/2.0) * khigh;
-	cez = -cos(del/2.0) * khigh;
-	rhigh = khigh - distance(cet, cez, tl, zl);  /* Loss of precision */
-
-	cet =  sin(del/2.0) * klow;
-	cez = -cos(del/2.0) * klow;
-	rlow = klow - distance(cet, cez, tl, zl);  /* Loss of precision */
-
-	/* Condition for reflection to be excited at all */
-	if ( (updateme == NULL)
-	     && (signbit(rlow) == signbit(rhigh))
-	     && (fabs(rlow) > pr)
-	     && (fabs(rhigh) > pr) ) return NULL;
+	/* Calculate excitation error */
+	dcs = distance3d(0.0, 0.0, -knom, xl, yl, zl);
+	exerr = 1.0/image->lambda - dcs;  /* Loss of precision */
 
 	if ( updateme == NULL ) {
 		refl = reflection_new(h, k, l);
@@ -321,7 +282,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	if ( (image->det != NULL) && (updateme != NULL) ) {
 
 		double fs, ss;
-		locate_peak_on_panel(xl, yl, zl, 1.0/image->lambda,
+		locate_peak_on_panel(xl, yl, zl, knom,
 		                     get_panel(updateme), &fs, &ss);
 		set_detector_pos(refl, fs, ss);
 
@@ -333,7 +294,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 
 		double fs, ss;        /* Position on detector */
 		signed int p;         /* Panel number */
-		p = locate_peak(xl, yl, zl, 1.0/image->lambda,
+		p = locate_peak(xl, yl, zl, knom,
 		                image->det, &fs, &ss);
 		if ( p == -1 ) {
 			reflection_free(refl);
@@ -344,20 +305,8 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 
 	}
 
-	if ( unlikely(rlow < rhigh) ) {
-		ERROR("Reflection with rlow < rhigh!\n");
-		ERROR("%3i %3i %3i  rlow = %e, rhigh = %e\n",
-		      h, k, l, rlow, rhigh);
-		ERROR("div + m = %e, R = %e, bw = %e\n", del, pr, image->bw);
-		/* If we are updating, this is (kind of) OK */
-		if ( updateme == NULL ) {
-			reflection_free(refl);
-			return NULL;
-		}
-	}
-
-	set_partial(refl, rlow, rhigh, 1.0); /* Actual partiality set by
-	                                      * calculate_partialities() */
+	set_kpred(refl, knom);
+	set_exerr(refl, exerr);
 	set_lorentz(refl, 1.0);
 	set_symmetric_indices(refl, h, k, l);
 	set_redundancy(refl, 1);
@@ -368,18 +317,12 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 
 double r_gradient(UnitCell *cell, int k, Reflection *refl, struct image *image)
 {
-	double azi;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	double xl, yl, zl;
 	signed int hs, ks, ls;
-	double rlow, rhigh, p;
-	double philow, phihigh, phi;
-	double khigh, klow;
-	double tl, cet, cez;
-
-	get_partial(refl, &rlow, &rhigh, &p);
+	double tl, phi, azi;
 
 	get_symmetric_indices(refl, &hs, &ks, &ls);
 
@@ -390,26 +333,9 @@ double r_gradient(UnitCell *cell, int k, Reflection *refl, struct image *image)
 	yl = hs*asy + ks*bsy + ls*csy;
 	zl = hs*asz + ks*bsz + ls*csz;
 
-	/* "low" gives the largest Ewald sphere (wavelength short => k large)
-	 * "high" gives the smallest Ewald sphere (wavelength long => k small)
-	 */
-	klow = 1.0/(image->lambda - image->lambda*image->bw/2.0);
-	khigh = 1.0/(image->lambda + image->lambda*image->bw/2.0);
-
 	tl = sqrt(xl*xl + yl*yl);
-
-	cet = -sin(image->div/2.0) * klow;
-	cez = -cos(image->div/2.0) * klow;
-	philow = angle_between_2d(tl-cet, zl-cez, 0.0, 1.0);
-
-	cet = -sin(image->div/2.0) * khigh;
-	cez = -cos(image->div/2.0) * khigh;
-	phihigh = angle_between_2d(tl-cet, zl-cez, 0.0, 1.0);
-
-	/* Approximation: philow and phihigh are very similar */
-	phi = (philow + phihigh) / 2.0;
-
-	azi = atan2(yl, xl);
+	phi = angle_between_2d(tl, zl+1.0/image->lambda, 0.0, 1.0); /* 2theta */
+	azi = atan2(yl, xl); /* azimuth */
 
 	switch ( k ) {
 
@@ -531,17 +457,199 @@ RefList *predict_to_res(Crystal *cryst, double max_res)
 }
 
 
-static void set_unity_partialities(RefList *list)
+static void set_unity_partialities(Crystal *cryst)
 {
+	RefList *list;
 	Reflection *refl;
 	RefListIterator *iter;
 
+	list = crystal_get_reflections(cryst);
+	if ( list == NULL ) {
+		ERROR("No reflections for partiality calculation!\n");
+		return;
+	}
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
 		set_partiality(refl, 1.0);
 		set_lorentz(refl, 1.0);
+	}
+}
+
+
+static void set_random_partialities(Crystal *cryst)
+{
+	RefList *list;
+	Reflection *refl;
+	RefListIterator *iter;
+	struct image *image;
+
+	list = crystal_get_reflections(cryst);
+	if ( list == NULL ) {
+		ERROR("No reflections for partiality calculation!\n");
+		return;
+	}
+
+	image = crystal_get_image(cryst);
+	if ( image == NULL ) {
+		ERROR("No image structure for partiality calculation!\n");
+		return;
+	}
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		get_symmetric_indices(refl, &h, &k, &l);
+		set_partiality(refl, random_partiality(h, k, l, image->serial));
+		set_lorentz(refl, 1.0);
+	}
+}
+
+
+static double do_integral(double q2, double zl, double R,
+                          double lambda, double sig, int verbose)
+{
+	int i;
+	double kmin, kmax, kstart, kfinis;
+	double inc;
+	double total = 0.0;
+	double k0, k1;
+	const int SAMPLES = 50;  /* Number of samples for integration */
+	const double N = 1.5;  /* Pointiness of spectrum */
+	FILE *fh = NULL;
+
+	k0 = (R*R - q2)/(2.0*(zl+R));
+	k1 = (R*R - q2)/(2.0*(zl-R));
+
+	/* Range over which E is significantly different from zero */
+	kmin = 1.0 / (lambda + 5.0*sig);
+	kmax = 1.0 / (lambda - 5.0*sig);
+
+	kstart = kmin > k1 ? kmin : k1;
+	kfinis = (k0 < 0.0) || (kmax < k0) ? kmax : k0;
+	inc = (kfinis - kstart) / SAMPLES;
+
+	if ( verbose ) {
+		char fn[64];
+		snprintf(fn, 63, "partial%i.graph", verbose);
+		fh = fopen(fn, "w");
+		fprintf(fh, "  n    p      wavelength   E           P\n");
+		STATUS("Nominal k = %e m^-1\n", 1.0/lambda);
+		STATUS(" (wavelength %e m)\n", lambda);
+		STATUS("Bandwidth %e m\n", sig);
+		STATUS("k1/2 = %e m^-1\n", -q2/(2.0*zl));
+		STATUS(" (wavelength %e m)\n", 1.0/(-q2/(2.0*zl)));
+		STATUS("Reflection k goes from %e to %e m^-1\n", k1, k0);
+		STATUS(" (wavelengths from %e to %e m\n", 1.0/k1, 1.0/k0);
+		STATUS("Beam goes from %e to %e m^-1\n", kmin, kmax);
+		STATUS(" (wavelengths from %e to %e m\n", 1.0/kmin, 1.0/kmax);
+		STATUS("Integration goes from %e to %e m^-1\n", kstart, kfinis);
+		STATUS(" (wavelengths from %e to %e m\n", 1.0/kstart, 1.0/kfinis);
+	}
+
+	for ( i=0; i<SAMPLES; i++ ) {
+
+		double p, kp, lrel;
+		double E, P;
+
+		kp = kstart + i*inc;
+		double pref = sqrt(q2 + kp*kp + 2.0*zl*kp)/(2.0*R);
+		p = pref + 0.5 - kp/(2.0*R);
+
+		/* Spectral energy term */
+		lrel = fabs(1.0/kp - lambda);
+		E = exp(-0.5 * pow(lrel / sig, N));
+		E /= sqrt(2.0 * M_PI * sig);
+
+		/* RLP profile term */
+		P = 4.0*p * (1.0 - p);
+
+		total += E*P*inc;
+
+		if ( fh != NULL ) {
+			fprintf(fh, "%3i %f %e %e %e\n", i, p, 1.0/kp, E, P);
+		}
+	}
+
+	if ( fh != NULL ) fclose(fh);
+
+	return total;
+}
+
+
+
+static void ginn_spectrum_partialities(Crystal *cryst)
+{
+	RefList *list;
+	Reflection *refl;
+	RefListIterator *iter;
+	double r0, m, lambda, sig;
+	struct image *image;
+	UnitCell *cell;
+	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+
+	list = crystal_get_reflections(cryst);
+	if ( list == NULL ) {
+		ERROR("No reflections for partiality calculation!\n");
+		return;
+	}
+
+	image = crystal_get_image(cryst);
+	if ( image == NULL ) {
+		ERROR("No image for partiality calculation!\n");
+		return;
+	}
+
+	cell = crystal_get_cell(cryst);
+	if ( cell == NULL ) {
+		ERROR("No unit cell for partiality calculation!\n");
+		return;
+	}
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+
+	r0 = crystal_get_profile_radius(cryst);
+	m = crystal_get_mosaicity(cryst);
+	lambda = image->lambda;
+	sig = image->bw * lambda;
+
+	for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double R;
+		signed int h, k, l;
+		double xl, yl, zl;
+		double q2;
+		double total, norm;
+
+		get_symmetric_indices(refl, &h, &k, &l);
+		xl = h*asx + k*bsx + l*csx;
+		yl = h*asy + k*bsy + l*csy;
+		zl = h*asz + k*bsz + l*csz;
+
+		/* Radius of rlp profile */
+		q2 = xl*xl + yl*yl + zl*zl;
+
+		R = r0 + m * sqrt(q2);
+
+		total = do_integral(q2, zl, R, lambda, sig, 0);
+		norm = do_integral(q2, -0.5*q2*lambda, R, lambda, sig, 0);
+
+	        set_partiality(refl, total/norm);
+		set_lorentz(refl, 1.0);
+
+		if ( total > 2.0*norm ) {
+			/* Error! */
+			do_integral(q2, zl, R, lambda, sig, 1);
+			do_integral(q2, -0.5*q2*lambda, R, lambda, sig, 2);
+			abort();
+		}
+
 	}
 }
 
@@ -561,54 +669,23 @@ static void set_unity_partialities(RefList *list)
  */
 void calculate_partialities(Crystal *cryst, PartialityModel pmodel)
 {
-	RefList *list;
-	Reflection *refl;
-	RefListIterator *iter;
-	double pr;
-	struct image *image;
+	switch ( pmodel ) {
 
-	list = crystal_get_reflections(cryst);
-	if ( list == NULL ) {
-		ERROR("No reflections for partiality calculation!\n");
-		return;
-	}
+		case PMODEL_UNITY :
+		set_unity_partialities(cryst);
+		break;
 
-	if ( pmodel == PMODEL_UNITY ) {
-		set_unity_partialities(list);
-		return;
-	}
+		case PMODEL_XSPHERE :
+		ginn_spectrum_partialities(cryst);
+		break;
 
-	image = crystal_get_image(cryst);
-	if ( image == NULL ) {
-		ERROR("No image for partiality calculation!\n");
-		return;
-	}
+		case PMODEL_RANDOM :
+		set_random_partialities(cryst);
+		break;
 
-	pr = crystal_get_profile_radius(cryst);
-
-	for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		double rlow, rhigh, part;
-		signed int h, k, l;
-
-		get_symmetric_indices(refl, &h, &k, &l);
-		get_partial(refl, &rlow, &rhigh, &part);
-
-		part = partiality(pmodel, h, k, l, image->serial,
-		                  rlow, rhigh, pr);
-
-		if ( isnan(part) && ((h!=0) || (k!=0) || (l!=0)) ) {
-			ERROR("Assigning NAN partiality!\n");
-			ERROR("%3i %3i %3i  rlow = %e, rhigh = %e\n",
-			      h, k, l, rlow, rhigh);
-			ERROR("R = %e, bw = %e\n", pr, image->bw);
-			ERROR("D = %e\n", rlow - rhigh);
-			abort();
-	        }
-
-	        set_partiality(refl, part);
+		default :
+		ERROR("Unknown partiality model %i\n", pmodel);
+		break;
 
 	}
 }
@@ -694,29 +771,30 @@ void polarisation_correction(RefList *list, UnitCell *cell, struct image *image)
 
 
 /* Returns dx_h/dP, where P = any parameter */
-double x_gradient(int param, Reflection *refl, UnitCell *cell,
-                  struct panel *p, double lambda)
+double x_gradient(int param, Reflection *refl, UnitCell *cell, struct panel *p)
 {
 	signed int h, k, l;
-	double x, z, wn;
-	double ax, ay, az, bx, by, bz, cx, cy, cz;
+	double xl, zl, kpred;
+	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
 
 	get_indices(refl, &h, &k, &l);
-	wn = 1.0 / lambda;
-	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	x = h*ax + k*bx + l*cx;
-	z = h*az + k*bz + l*cz;
+	kpred = get_kpred(refl);
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+	xl = h*asx + k*bsx + l*csx;
+	zl = h*asz + k*bsz + l*csz;
 
 	switch ( param ) {
 
 		case GPARAM_ASX :
-		return h * p->clen / (wn+z);
+		return h * p->clen / (kpred + zl);
 
 		case GPARAM_BSX :
-		return k * p->clen / (wn+z);
+		return k * p->clen / (kpred + zl);
 
 		case GPARAM_CSX :
-		return l * p->clen / (wn+z);
+		return l * p->clen / (kpred + zl);
 
 		case GPARAM_ASY :
 		return 0.0;
@@ -728,13 +806,13 @@ double x_gradient(int param, Reflection *refl, UnitCell *cell,
 		return 0.0;
 
 		case GPARAM_ASZ :
-		return -h * x * p->clen / (wn*wn + 2*wn*z + z*z);
+		return -h * xl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_BSZ :
-		return -k * x * p->clen / (wn*wn + 2*wn*z + z*z);
+		return -k * xl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_CSZ :
-		return -l * x * p->clen / (wn*wn + 2*wn*z + z*z);
+		return -l * xl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_DETX :
 		return -1;
@@ -743,7 +821,7 @@ double x_gradient(int param, Reflection *refl, UnitCell *cell,
 		return 0;
 
 		case GPARAM_CLEN :
-		return x / (wn+z);
+		return xl / (kpred+zl);
 
 	}
 
@@ -753,18 +831,19 @@ double x_gradient(int param, Reflection *refl, UnitCell *cell,
 
 
 /* Returns dy_h/dP, where P = any parameter */
-double y_gradient(int param, Reflection *refl, UnitCell *cell,
-                  struct panel *p, double lambda)
+double y_gradient(int param, Reflection *refl, UnitCell *cell, struct panel *p)
 {
 	signed int h, k, l;
-	double y, z, wn;
-	double ax, ay, az, bx, by, bz, cx, cy, cz;
+	double yl, zl, kpred;
+	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
 
 	get_indices(refl, &h, &k, &l);
-	wn = 1.0 / lambda;
-	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	y = h*ay + k*by + l*cy;
-	z = h*az + k*bz + l*cz;
+	kpred = get_kpred(refl);
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+	yl = h*asy + k*bsy + l*csy;
+	zl = h*asz + k*bsz + l*csz;
 
 	switch ( param ) {
 
@@ -778,22 +857,22 @@ double y_gradient(int param, Reflection *refl, UnitCell *cell,
 		return 0.0;
 
 		case GPARAM_ASY :
-		return h * p->clen / (wn+z);
+		return h * p->clen / (kpred + zl);
 
 		case GPARAM_BSY :
-		return k * p->clen / (wn+z);
+		return k * p->clen / (kpred + zl);
 
 		case GPARAM_CSY :
-		return l * p->clen / (wn+z);
+		return l * p->clen / (kpred + zl);
 
 		case GPARAM_ASZ :
-		return -h * y * p->clen / (wn*wn + 2*wn*z + z*z);
+		return -h * yl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_BSZ :
-		return -k * y * p->clen / (wn*wn + 2*wn*z + z*z);
+		return -k * yl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_CSZ :
-		return -l * y * p->clen / (wn*wn + 2*wn*z + z*z);
+		return -l * yl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_DETX :
 		return 0;
@@ -802,7 +881,7 @@ double y_gradient(int param, Reflection *refl, UnitCell *cell,
 		return -1;
 
 		case GPARAM_CLEN :
-		return y / (wn+z);
+		return yl / (kpred+zl);
 
 	}
 

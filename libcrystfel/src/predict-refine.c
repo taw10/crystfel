@@ -91,9 +91,7 @@ static void twod_mapping(double fs, double ss, double *px, double *py,
 static double r_dev(struct reflpeak *rp)
 {
 	/* Excitation error term */
-	double rlow, rhigh, p;
-	get_partial(rp->refl, &rlow, &rhigh, &p);
-	return (rlow+rhigh)/2.0;
+	return get_exerr(rp->refl);
 }
 
 
@@ -425,7 +423,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 		/* Positional x terms */
 		for ( k=0; k<num_params; k++ ) {
 			gradients[k] = x_gradient(rv[k], rps[i].refl, cell,
-			                          rps[i].panel, image->lambda);
+			                          rps[i].panel);
 		}
 
 		for ( k=0; k<num_params; k++ ) {
@@ -457,7 +455,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 		/* Positional y terms */
 		for ( k=0; k<num_params; k++ ) {
 			gradients[k] = y_gradient(rv[k], rps[i].refl, cell,
-			                          rps[i].panel, image->lambda);
+			                          rps[i].panel);
 		}
 
 		for ( k=0; k<num_params; k++ ) {

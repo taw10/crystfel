@@ -386,7 +386,7 @@ static void run_job(void *vwargs, int cookie)
 
 	reflections = predict_to_res(cr, largest_q(&wargs->image));
 	crystal_set_reflections(cr, reflections);
-	calculate_partialities(cr, PMODEL_SCSPHERE);
+	calculate_partialities(cr, PMODEL_XSPHERE);
 
 	for ( i=0; i<NBINS; i++ ) {
 		wargs->n_ref[i] = 0;
