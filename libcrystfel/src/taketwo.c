@@ -584,12 +584,12 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 //                               idx0, i, match_members[0], test_idx);
 
                         /* Potential match with another vector */
-                      	struct rvec test_match = obs_vecs[i].matches[test_idx[j]];
+                      	struct rvec a_match = obs_vecs[i].matches[test_idx[j]];
   
                         test_rot = generate_rot_mat(obs_vecs[idx0].obsvec,
                                                     obs_vecs[i].obsvec,
                                                     member_match,
-                                                    test_match);
+                                                    a_match);
 
                         int ok = rot_mats_are_similar(rot, test_rot);
 
@@ -685,9 +685,40 @@ static signed int spot_idx(struct rvec *rlp)
 	return -1;
 }
 
+static int start_seed(struct SpotVec *obs_vecs, int i, int j,
+                      int i_match, int j_match, gsl_matrix **rotation)
+{
+        gsl_matrix *rot_mat = gsl_matrix_calloc(3, 3);
 
+        // FIXME: go through ALL matches, not jsut first
+        rot_mat = generate_rot_mat(obs_vecs[i].obsvec,
+                                   obs_vecs[j].obsvec,
+                                   obs_vecs[i].matches[i_match],
+                                   obs_vecs[j].matches[j_match]);
 
-static int find_seed_and_network(struct SpotVec *obs_vecs, int obs_vec_count,
+        /* Try to expand this rotation matrix to a larger network */
+        STATUS("idx: %i %i %i %i spots %i %i and %i %i\n",
+               i_match, j_match, i, j,
+               spot_idx(obs_vecs[i].her_rlp),
+               spot_idx(obs_vecs[i].his_rlp),
+               spot_idx(obs_vecs[j].her_rlp),
+               spot_idx(obs_vecs[j].his_rlp));
+        show_matrix(rot_mat);
+
+        int success = grow_network(rot_mat, obs_vecs, obs_vec_count,
+                                   i, j, i_match, j_match);
+
+        /* return this matrix or free it and try again */
+        if ( success ) {
+                *rotation = rot_mat;
+                return 1;
+        } else {
+                gsl_matrix_free(rot_mat);
+                return 0;
+        }
+}
+
+static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
                                  gsl_matrix **rotation)
 {
 	/* loop round pairs of vectors to try and find a suitable
@@ -718,33 +749,16 @@ static int find_seed_and_network(struct SpotVec *obs_vecs, int obs_vec_count,
 		if ( matches == 0 ) continue;
 		STATUS("...ok\n");
 
-		/* We have a seed! Generate a matrix based on this solution */
-		gsl_matrix *rot_mat = gsl_matrix_calloc(3, 3);
-
-                // FIXME: go through ALL matches, not jsut first
-		rot_mat = generate_rot_mat(obs_vecs[i].obsvec,
-		                           obs_vecs[j].obsvec,
-		                           obs_vecs[i].matches[i_idx[0]],
-		                           obs_vecs[j].matches[j_idx[0]]);
-
-		/* Try to expand this rotation matrix to a larger network */
-		STATUS("idx: %i %i %i %i spots %i %i and %i %i\n",
-		       i_idx[0], j_idx[0], i, j,
-		       spot_idx(obs_vecs[i].her_rlp),
-		       spot_idx(obs_vecs[i].his_rlp),
-		       spot_idx(obs_vecs[j].her_rlp),
-		       spot_idx(obs_vecs[j].his_rlp));
-		show_matrix(rot_mat);
-		int success = grow_network(rot_mat, obs_vecs, obs_vec_count,
-		                           i, j, i_idx[0], j_idx[0]);
-
-		/* return this matrix or free it and try again */
-		if ( success ) {
-			*rotation = rot_mat;
-			return 1;
-		} else {
-			gsl_matrix_free(rot_mat);
+		/* We have seeds! Pass each of them through the seed-starter */
+		int k;
+		for ( k=0; k<matches; k++ ) {
+		        int success = start_seed(obs_vecs, i, j,
+		                                 i_idx[k], j_idx[j],
+		                                 rotation);
+		        
+		        if (success) { return success; }
 		}
+		
 	}
 	} /* yes this } is meant to be here */
 
@@ -1001,7 +1015,7 @@ global_nrlps = rlp_count;
 
 	cleanup_taketwo_cell_vecs(cell_vecs);
 
-	find_seed_and_network(obs_vecs, obs_vec_count, &solution);
+	find_seed(obs_vecs, obs_vec_count, &solution);
 	if ( solution == NULL ) return NULL;
 
 	result = transform_cell_gsl(cell, solution);
