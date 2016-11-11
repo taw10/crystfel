@@ -635,8 +635,9 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
                 int match_found = -1;
 		STATUS("member_num = %i\n", member_num);
 
-		signed int next_index = find_next_index(rot, obs_vecs, obs_vec_count,
-	                                         obs_members, match_members,
+		signed int next_index = find_next_index(rot, obs_vecs,
+		                                 obs_vec_count, obs_members,
+		                                 match_members,
 	                                         start, member_num,
 	                                         &match_found);
 
@@ -671,6 +672,7 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 	}
 
 	/* Deal with this shit after coffee */
+        /* (note: turns out there's no shit to deal with) */
 
 	return ( member_num > NETWORK_MEMBER_THRESHOLD );
 }
@@ -685,8 +687,8 @@ static signed int spot_idx(struct rvec *rlp)
 	return -1;
 }
 
-static int start_seed(struct SpotVec *obs_vecs, int i, int j,
-                      int i_match, int j_match, gsl_matrix **rotation)
+static int start_seed(struct SpotVec *obs_vecs, int obs_vec_count, int i,
+                      int j, int i_match, int j_match, gsl_matrix **rotation)
 {
         gsl_matrix *rot_mat = gsl_matrix_calloc(3, 3);
 
@@ -752,7 +754,7 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 		/* We have seeds! Pass each of them through the seed-starter */
 		int k;
 		for ( k=0; k<matches; k++ ) {
-		        int success = start_seed(obs_vecs, i, j,
+		        int success = start_seed(obs_vecs, obs_vec_count, i, j,
 		                                 i_idx[k], j_idx[j],
 		                                 rotation);
 		        
@@ -792,7 +794,8 @@ static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
 		struct sortme *for_sort = NULL;
 
 		if ( (i==0) || (i==1) || (i==2) ) {
-			STATUS("length of %i = %f\n", i, obs_vecs[i].distance/1e10);
+			STATUS("length of %i = %f\n", i,
+			       obs_vecs[i].distance/1e10);
 		}
 
 		for ( j=0; j<cell_vec_count; j++ ) {
