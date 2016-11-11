@@ -144,7 +144,7 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads, int scaleflags)
 		double bef_res;
 
 		full = merge_intensities(crystals, n_crystals, nthreads,
-		                         2, INFINITY, 0);
+		                         2, INFINITY, 0, 1);
 		old_res = new_res;
 		bef_res = total_log_r(crystals, n_crystals, full, NULL);
 
