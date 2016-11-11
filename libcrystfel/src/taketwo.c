@@ -431,18 +431,21 @@ static int obs_shares_spot_w_array(struct SpotVec *obs_vecs, int test_idx,
 }
 
 
+// FIXME: decide if match count is returned or put in variable name
 /** Note: this could potentially (and cautiously) converted to comparing
  * cosines rather than angles, to lose an "acos" but different parts of the
  * cosine graph are more sensitive than others, so may be a trade off... or not.
  */
 static int obs_vecs_match_angles(struct SpotVec *her_obs,
                                  struct SpotVec *his_obs,
-				 int *her_match_idx, int *his_match_idx)
+				 int **her_match_idxs, int **his_match_idxs,
+				 int *match_count)
 {
 	int i, j;
+	*match_count = 0;
 
-        *her_match_idx = -1;
-        *his_match_idx = -1;
+       // *her_match_idx = -1;
+       // *his_match_idx = -1;
 
 	/* calculate angle between observed vectors */
 	double obs_angle = rvec_angle(her_obs->obsvec, his_obs->obsvec);
@@ -462,14 +465,31 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 		double angle_diff = fabs(theory_angle - obs_angle);
 
 		if ( angle_diff < ANGLE_TOLERANCE ) {
-			*her_match_idx = i;
-			*his_match_idx = j;
-			return 1;
+		        
+		        /* Reallocate the array to fit in another match */ 
+		        int *temp_hers;
+		        temp_hers = realloc(her_match_idxs, *match_count *
+		                            sizeof(int));
+		        int *temp_his;
+		        temp_his = realloc(his_match_idxs, *match_count *
+		                            sizeof(int));
+		        
+		        if ( temp_hers == NULL || temp_his == NULL ) {
+		                apologise();
+		        }
+		        
+		        (*her_match_idxs) = temp_hers;
+		        (*his_match_idxs) = temp_his;
+		        
+		        (*her_match_idxs)[*match_count] = i;
+		        (*his_match_idxs)[*match_count] = j;
+			
+			(*match_count)++;
 		}
 	}
 	}
 
-	return 0;
+	return (match_count > 0);
 }
 
 
@@ -489,13 +509,16 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
 		struct SpotVec *his_obs = &obs_vecs[obs_members[i]];
 
 		/* placeholders, but results are ignored */
-		int idx1, idx2;
+		int *idx1;
+		int *idx2;
+                int match_count;
 
 		/* check our test vector matches existing network member */
-		int matches = obs_vecs_match_angles(her_obs, his_obs,
-						    &idx1, &idx2);
+		obs_vecs_match_angles(her_obs, his_obs,
+		                      &idx1, &idx2, &match_count);
 
-                if (idx2 != match_members[i]) return 0;
+                /* FIXME: this is going to be broken */
+           //     if (idx2 != match_members[i]) return 0;
 		//STATUS("match %i %i %i %i\n", idx1, idx2, test_idx,
 		//		match_members[i]);
 	}
@@ -535,60 +558,47 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		 * so for now, just sticking to the first two...
 		 */
 
-		/* need to grab the matching vector index */
+		/* need to grab all the matching vector indices */
 
-		int member_idx, test_idx;
+		int *member_idx;
+		int *test_idx;
+		int match_num;
 
                 /* FIXME: this may be a source of a problem */
 		obs_vecs_match_angles(&obs_vecs[obs_members[0]], &obs_vecs[i],
-		                      &member_idx, &test_idx);
-
-                *match_found = test_idx;
-		struct rvec test_match = obs_vecs[i].matches[test_idx];
-
-		int j;
+		                      &member_idx, &test_idx, &match_num);
 
 		/* if ok is set to 0, give up on this vector before
-		 * thecking the next value of j */
-		int ok = 1;
+		 * checking the next value of j */
+                int j;
 
-		for ( j=0; j<2; j++ ) {
+                for ( j=0; j<match_num; j++ ) {
+                        gsl_matrix *test_rot = gsl_matrix_calloc(3, 3);
+                        struct rvec member_match;
+                        int idx0 = obs_members[0];
 
-			gsl_matrix *test_rot = gsl_matrix_calloc(3, 3);
-			struct rvec member_match;
-			int j_idx = obs_members[j];
+                        /* First observed vector and matching theoretical */
+                        member_match = obs_vecs[idx0].matches[match_members[0]];
 
-			member_match = obs_vecs[j_idx].matches[match_members[j]];
-			STATUS("]]]]] %i %i %i %i\n",
-			       j_idx, i, match_members[j], test_idx);
+//                        STATUS("]]]]] %i %i %i %i\n",
+//                               idx0, i, match_members[0], test_idx);
 
-			//STATUS("test:\n");
-			//struct rvec obs1 = {0, 1, 2};
-			//struct rvec obs2 = {3, 4, 5};
-			//struct rvec cell1 = {5, 7, 2};
-			//struct rvec cell2 = {-1, 4, 3};
-			//generate_rot_mat(obs1, obs2, cell1, cell2);
-			//STATUS("end of test\n");
-			//exit(0);
+                        /* Potential match with another vector */
+                      	struct rvec test_match = obs_vecs[i].matches[test_idx[j]];
+  
+                        test_rot = generate_rot_mat(obs_vecs[idx0].obsvec,
+                                                    obs_vecs[i].obsvec,
+                                                    member_match,
+                                                    test_match);
 
-			test_rot = generate_rot_mat(obs_vecs[j_idx].obsvec,
-			                            obs_vecs[i].obsvec,
-			                            member_match,
-			                            test_match);
+                        int ok = rot_mats_are_similar(rot, test_rot);
 
-			ok = rot_mats_are_similar(rot, test_rot);
-			//exit(0);
-			//STATUS("--\n");
-			//show_matrix(rot);
-			STATUS("ok = %i\n", ok);
-			if ( !ok ) break;
-		}
-
-		if ( !ok ) continue;
-
-		/* successful branch - return to calling function...*/
-
-		return i;
+                        if (ok)
+                        {
+                                *match_found = test_idx[j];
+                                return 1;
+                        }
+                }
 	}
 
 	/* give up. */
@@ -698,34 +708,35 @@ static int find_seed_and_network(struct SpotVec *obs_vecs, int obs_vec_count,
 		if ( !shared ) continue;
 
 		/* cell vector "matches" index for i, j respectively */
-		int i_idx = -1;
-		int j_idx = -1;
+		int *i_idx;
+		int *j_idx;
+		int matches;
 
 		/* Check to see if any angles match from the cell vectors */
-		int match = 0;
-		match = obs_vecs_match_angles(&obs_vecs[i], &obs_vecs[j],
-		                              &i_idx, &j_idx);
-		if ( !match ) continue;
+		obs_vecs_match_angles(&obs_vecs[i], &obs_vecs[j],
+		                              &i_idx, &j_idx, &matches);
+		if ( matches == 0 ) continue;
 		STATUS("...ok\n");
 
 		/* We have a seed! Generate a matrix based on this solution */
 		gsl_matrix *rot_mat = gsl_matrix_calloc(3, 3);
 
+                // FIXME: go through ALL matches, not jsut first
 		rot_mat = generate_rot_mat(obs_vecs[i].obsvec,
 		                           obs_vecs[j].obsvec,
-		                           obs_vecs[i].matches[i_idx],
-		                           obs_vecs[j].matches[j_idx]);
+		                           obs_vecs[i].matches[i_idx[0]],
+		                           obs_vecs[j].matches[j_idx[0]]);
 
 		/* Try to expand this rotation matrix to a larger network */
 		STATUS("idx: %i %i %i %i spots %i %i and %i %i\n",
-		       i_idx, j_idx, i, j,
+		       i_idx[0], j_idx[0], i, j,
 		       spot_idx(obs_vecs[i].her_rlp),
 		       spot_idx(obs_vecs[i].his_rlp),
 		       spot_idx(obs_vecs[j].her_rlp),
 		       spot_idx(obs_vecs[j].his_rlp));
 		show_matrix(rot_mat);
 		int success = grow_network(rot_mat, obs_vecs, obs_vec_count,
-		                           i, j, i_idx, j_idx);
+		                           i, j, i_idx[0], j_idx[0]);
 
 		/* return this matrix or free it and try again */
 		if ( success ) {
@@ -801,7 +812,7 @@ static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
 		for ( j=0; j<count; j++ ) {
 			obs_vecs[i].matches[j] = for_sort[j].v;
 			if ( (i==0) || (i==1) || (i==2) ) {
-				STATUS("%i %14f %14f : ", j,
+				STATUS("fluff %i %14f %14f : ", j,
 				       rvec_length(for_sort[j].v)/1e10,
 				       for_sort[j].dist/1e10);
 				show_rvec(for_sort[j].v);
@@ -971,7 +982,6 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 	int success = 0;
 	gsl_matrix *solution = NULL;
 
-	STATUS("theoretical..\n");
 	success = gen_theoretical_vecs(cell, &cell_vecs, &cell_vec_count);
 	if ( !success ) return NULL;
 	STATUS("cell_vec_count = %i\n", cell_vec_count);
