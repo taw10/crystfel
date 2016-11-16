@@ -1136,7 +1136,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	check_csplit(crystals, n_crystals, csplit);
+	if (csplit != NULL) check_csplit(crystals, n_crystals, csplit);
 
 	/* Make a first pass at cutting out crap */
 	STATUS("Checking patterns.\n");
