@@ -756,7 +756,6 @@ int main(int argc, char *argv[])
 	int n_iter = 10;
 	RefList *full;
 	int n_images = 0;
-	int n_images_seen = 0;
 	int n_crystals = 0;
 	int n_crystals_seen = 0;
 	char cmdline[1024];
@@ -1001,7 +1000,6 @@ int main(int argc, char *argv[])
 
 	/* Fill in what we know about the images so far */
 	n_images = 0;
-	n_images_seen = 0;
 	n_crystals = 0;
 	n_crystals_seen = 0;
 	images = NULL;
@@ -1048,8 +1046,6 @@ int main(int argc, char *argv[])
 			ERROR("Chunk doesn't contain beam parameters.\n");
 			return 1;
 		}
-
-		n_images_seen++;
 
 		for ( i=0; i<cur->n_crystals; i++ ) {
 
@@ -1103,9 +1099,7 @@ int main(int argc, char *argv[])
 
 		}
 
-		if ( n_crystals > 0 ) {
-			n_images++;
-		}
+		n_images++;
 
 		if ( n_images % 100 == 0 ) {
 			display_progress(n_images, n_crystals);
