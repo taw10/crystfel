@@ -3,12 +3,12 @@
  *
  * Perform indexing (somehow)
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2017 Thomas White <taw@physics.org>
  *   2010-2011 Richard Kirian <rkirian@asu.edu>
  *   2012      Lorenzo Galli
  *   2013      Cornelius Gati <cornelius.gati@cfel.de>
@@ -421,9 +421,15 @@ static int finished_retry(IndexingMethod indm, int r, struct image *image)
 	}
 }
 
-
 void index_pattern(struct image *image,
                    IndexingMethod *indms, IndexingPrivate **iprivs)
+{
+	index_pattern_2(image, indms, iprivs, NULL);
+}
+
+
+void index_pattern_2(struct image *image, IndexingMethod *indms,
+                     IndexingPrivate **iprivs, int *ping)
 {
 	int n = 0;
 	ImageFeatureList *orig;
@@ -452,6 +458,7 @@ void index_pattern(struct image *image,
 			ntry++;
 			done = finished_retry(indms[n], r, image);
 			if ( ntry > 5 ) done = 1;
+			if ( ping != NULL ) (*ping)++;
 
 		} while ( !done );
 
