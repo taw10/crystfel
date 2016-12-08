@@ -636,25 +636,18 @@ void polarisation_correction(RefList *list, UnitCell *cell, struct image *image)
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		double pol, pa, pb, phi, tt, ool;
+		double pol;
 		double intensity;
-		double xl, yl, zl;
+		double xl, yl;
 		signed int h, k, l;
+		const double P = 1.0;  /* degree of polarisation */
 
 		get_indices(refl, &h, &k, &l);
 
-		/* Polarisation correction assuming 100% polarisation
-		 * along the x direction */
-		xl = h*asx + k*bsx + l*csx;
-		yl = h*asy + k*bsy + l*csy;
-		zl = h*asz + k*bsz + l*csz;
+		xl = (h*asx + k*bsx + l*csx)*image->lambda;
+		yl = (h*asy + k*bsy + l*csy)*image->lambda;
 
-		ool = 1.0 / image->lambda;
-		tt = angle_between(0.0, 0.0, 1.0,  xl, yl, zl+ool);
-		phi = atan2(yl, xl);
-		pa = pow(sin(phi)*sin(tt), 2.0);
-		pb = pow(cos(tt), 2.0);
-		pol = 1.0 - 2.0*(1.0-pa) + (1.0+pb);
+		pol = P*(1.0 - xl*xl) + (1.0-P)*(1.0 - yl*yl);
 
 		intensity = get_intensity(refl);
 		set_intensity(refl, intensity / pol);
