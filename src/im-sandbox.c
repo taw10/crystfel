@@ -3,13 +3,13 @@
  *
  * Sandbox for indexing
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2016 Thomas White <taw@physics.org>
+ *   2010-2017 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
@@ -73,24 +73,23 @@ struct sandbox
 
 	struct index_args *iargs;
 
+	/* Worker processes */
 	int n_proc;
 	pid_t *pids;
-
 	int *running;
+	time_t *last_response;
+
+	/* Streams to read from (NB not the same indices as the above) */
+	int n_read;
+	FILE **fhs;
+	int *fds;
+
 	int serial;
 
 	struct sb_shm *shared;
 	sem_t *queue_sem;
 
 	char *tmpdir;
-
-	/* The last time each worker was heard from */
-	time_t *last_response;
-
-	/* Streams to read from */
-	int n_read;
-	FILE **fhs;
-	int *fds;
 
 	/* Final output */
 	Stream *stream;
@@ -131,7 +130,7 @@ static void check_hung_workers(struct sandbox *sb)
 {
 	int i;
 	time_t tnow = get_monotonic_seconds();
-	for ( i=0; i<sb->n_read; i++ ) {
+	for ( i=0; i<sb->n_proc; i++ ) {
 		if ( !sb->running[i] ) continue;
 		if ( tnow - sb->last_response[i] > 240 ) {
 			STATUS("Worker %i did not respond for 240 seconds - "
