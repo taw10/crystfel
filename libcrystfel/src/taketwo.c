@@ -86,13 +86,13 @@ int global_nrlps;
 #define MAX_NETWORK_MEMBERS (500)
 
 /* Maximum dead ends for a single branch extension during indexing */
-#define MAX_DEAD_ENDS (15)
+#define MAX_DEAD_ENDS (10)
 
 /* Tolerance for two angles to be considered the same */
 #define ANGLE_TOLERANCE (deg2rad(1.0))
 
 /* Tolerance for rot_mats_are_similar */
-#define TRACE_TOLERANCE (deg2rad(7.0))
+#define TRACE_TOLERANCE (deg2rad(4.0))
 
 /** TODO:
  *
@@ -617,10 +617,10 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
                         if (ok)
                         {
-                                generate_rot_mat(obs_vecs[idx0].obsvec,
+                            /*    generate_rot_mat(obs_vecs[idx0].obsvec,
                                                     obs_vecs[i].obsvec,
                                                     member_match,
-                                                    a_match, 1);
+                                                    a_match, 0);*/
                                 *match_found = j;
                                 return i;
                         }
@@ -678,12 +678,10 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		}
 
 		if ( next_index < 0 ) {
-		    STATUS("dead end number %i..\n", dead_ends);
-            /* If there have been too many dead ends, give up
+		    /* If there have been too many dead ends, give up
 			 * on indexing altogether.
 			 **/
 			if ( dead_ends > MAX_DEAD_ENDS ) {
-			    STATUS("Too many dead ends!\n");
 			    dead_ends = 0;
 			    continue;
 			}
@@ -693,7 +691,6 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 			start++;
 			member_num--;
 			dead_ends++;
-			STATUS("Shaving back one.\n");
 
 			continue;
 		}
@@ -744,7 +741,7 @@ static int start_seed(struct SpotVec *obs_vecs, int obs_vec_count, int i,
         rot_mat = generate_rot_mat(obs_vecs[i].obsvec,
                                    obs_vecs[j].obsvec,
                                    obs_vecs[i].matches[i_match],
-                                   obs_vecs[j].matches[j_match], 1);
+                                   obs_vecs[j].matches[j_match], 0);
 
         /* Try to expand this rotation matrix to a larger network */
         STATUS("idx: %i %i %i %i spots %i %i and %i %i\n",
@@ -801,7 +798,7 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 
 		/* We have seeds! Pass each of them through the seed-starter */
 		int k;
-		for ( k=0; k<matches; k++ ) {
+		for ( k=0; k<1; k++ ) {
 		        int success = start_seed(obs_vecs, obs_vec_count, i, j,
 		                                 i_idx[k], j_idx[k],
 		                                 rotation);
@@ -912,11 +909,8 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 			double sqlength = sq_length(diff);
 
 			if ( sqlength > max_sq_length ) continue;
-            STATUS("obs %i (spots %i and %i)", count, i, j);
-            struct rvec norm = new_rvec(diff.u, diff.v, diff.w);
-            normalise_rvec(&norm);
-            show_rvec(norm);
-
+//            STATUS("obs %i (spots %i and %i)", count, i, j);
+            
 			count++;
 
 			struct SpotVec *temp_obs_vecs;
@@ -1098,8 +1092,23 @@ int taketwo_index(struct image *image, IndexingPrivate *ipriv)
 	UnitCell *cell;
 	struct rvec *rlps;
 	int n_rlps = 0;
+	int i;
 	struct taketwo_private *tp = (struct taketwo_private *)ipriv;
 
+    rlps = malloc((image_feature_count(image->features)+1)*sizeof(struct rvec));
+    for ( i=0; i<image_feature_count(image->features); i++ ) {
+            struct imagefeature *pk = image_get_feature(image->features, i);
+            if ( pk == NULL ) continue;
+            rlps[n_rlps].u = pk->rx;
+            rlps[n_rlps].v = pk->ry;
+            rlps[n_rlps].w = pk->rz;
+            n_rlps++;
+    }
+    rlps[n_rlps].u = 0.0;
+    rlps[n_rlps].v = 0.0;
+    rlps[n_rlps++].w = 0.0;
+        
+/*
 	FILE *fh = fopen("../../spots.csv", "r");
 	rlps = malloc(500*sizeof(struct rvec));
 	while ( (fh != NULL) && !feof(fh) ) {
@@ -1122,7 +1131,8 @@ int taketwo_index(struct image *image, IndexingPrivate *ipriv)
 	rlps[n_rlps].u = 0.0;
 	rlps[n_rlps].v = 0.0;
 	rlps[n_rlps++].w = 0.0;
-	if ( fh != NULL ) fclose(fh);
+	
+	if ( fh != NULL ) fclose(fh);*/
 
 	cell = run_taketwo(tp->cell, rlps, n_rlps);
 	if ( cell == NULL ) return 0;
