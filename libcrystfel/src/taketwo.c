@@ -80,7 +80,7 @@ int global_nrlps;
 #define RECIP_TOLERANCE (0.00015*1e10)
 
 /* Threshold for network members to consider a potential solution */
-#define NETWORK_MEMBER_THRESHOLD (25)
+#define NETWORK_MEMBER_THRESHOLD (11)
 
 /* Maximum network members (obviously a solution so should stop) */
 #define MAX_NETWORK_MEMBERS (500)
