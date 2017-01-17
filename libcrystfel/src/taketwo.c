@@ -74,13 +74,13 @@ int global_nrlps;
 
 
 /* Maximum distance between two rlp sizes to consider info for indexing */
-#define MAX_RECIP_DISTANCE (0.12*1e10)
+#define MAX_RECIP_DISTANCE (0.15*1e10)
 
 /* Tolerance for two lengths in reciprocal space to be considered the same */
-#define RECIP_TOLERANCE (0.00015*1e10)
+#define RECIP_TOLERANCE (0.0002*1e10)
 
 /* Threshold for network members to consider a potential solution */
-#define NETWORK_MEMBER_THRESHOLD (30)
+#define NETWORK_MEMBER_THRESHOLD (50)
 
 /* Maximum network members (obviously a solution so should stop) */
 #define MAX_NETWORK_MEMBERS (500)
@@ -1039,18 +1039,18 @@ int taketwo_index(struct image *image, IndexingPrivate *ipriv)
 	int i;
 	struct taketwo_private *tp = (struct taketwo_private *)ipriv;
 
-    rlps = malloc((image_feature_count(image->features)+1)*sizeof(struct rvec));
-    for ( i=0; i<image_feature_count(image->features); i++ ) {
+        rlps = malloc((image_feature_count(image->features)+1)*sizeof(struct rvec));
+        for ( i=0; i<image_feature_count(image->features); i++ ) {
             struct imagefeature *pk = image_get_feature(image->features, i);
             if ( pk == NULL ) continue;
             rlps[n_rlps].u = pk->rx;
             rlps[n_rlps].v = pk->ry;
             rlps[n_rlps].w = pk->rz;
             n_rlps++;
-    }
-    rlps[n_rlps].u = 0.0;
-    rlps[n_rlps].v = 0.0;
-    rlps[n_rlps++].w = 0.0;
+        }
+        rlps[n_rlps].u = 0.0;
+        rlps[n_rlps].v = 0.0;
+        rlps[n_rlps++].w = 0.0;
 
 	cell = run_taketwo(tp->cell, rlps, n_rlps);
 	if ( cell == NULL ) return 0;
