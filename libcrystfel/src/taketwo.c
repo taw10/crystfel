@@ -74,13 +74,13 @@ int global_nrlps;
 
 
 /* Maximum distance between two rlp sizes to consider info for indexing */
-#define MAX_RECIP_DISTANCE (0.1*1e10)
+#define MAX_RECIP_DISTANCE (0.12*1e10)
 
 /* Tolerance for two lengths in reciprocal space to be considered the same */
 #define RECIP_TOLERANCE (0.00015*1e10)
 
 /* Threshold for network members to consider a potential solution */
-#define NETWORK_MEMBER_THRESHOLD (11)
+#define NETWORK_MEMBER_THRESHOLD (30)
 
 /* Maximum network members (obviously a solution so should stop) */
 #define MAX_NETWORK_MEMBERS (500)
@@ -92,7 +92,7 @@ int global_nrlps;
 #define ANGLE_TOLERANCE (deg2rad(1.0))
 
 /* Tolerance for rot_mats_are_similar */
-#define TRACE_TOLERANCE (deg2rad(4.0))
+#define TRACE_TOLERANCE (deg2rad(8.0))
 
 /** TODO:
  *
