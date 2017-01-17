@@ -1454,14 +1454,8 @@ UnitCell *transform_cell_gsl(UnitCell *in, gsl_matrix *m)
 	gsl_matrix_set(c, 1, 2, csy);
 	gsl_matrix_set(c, 2, 2, csz);
 
-	STATUS("---\n");
-	show_matrix(m);
-	STATUS("\n");
-	show_matrix(c);
-	STATUS("\n");
 	res = gsl_matrix_calloc(3, 3);
 	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, m, c, 0.0, res);
-	show_matrix(res);
 
 	out = cell_new_from_cell(in);
 	cell_set_reciprocal(out, gsl_matrix_get(res, 0, 0),
