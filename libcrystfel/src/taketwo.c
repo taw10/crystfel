@@ -1066,7 +1066,7 @@ global_nrlps = rlp_count;
 
 	find_seed(obs_vecs, obs_vec_count, &solution);
 	if ( solution == NULL ) return NULL;
-
+/*
     double x0 = gsl_matrix_get(solution, 0, 0);
     gsl_matrix_set(solution, 0, 0, -x0);
 
@@ -1074,7 +1074,7 @@ global_nrlps = rlp_count;
     gsl_matrix_set(solution, 0, 1, -x1);
 
     double x2 = gsl_matrix_get(solution, 0, 2);
-    gsl_matrix_set(solution, 0, 2, -x2);
+    gsl_matrix_set(solution, 0, 2, -x2);*/
 
 	result = transform_cell_gsl(cell, solution);
 
