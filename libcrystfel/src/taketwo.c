@@ -74,25 +74,25 @@ int global_nrlps;
 
 
 /* Maximum distance between two rlp sizes to consider info for indexing */
-#define MAX_RECIP_DISTANCE (0.15*1e10)
+#define MAX_RECIP_DISTANCE (0.1*1e10)
 
 /* Tolerance for two lengths in reciprocal space to be considered the same */
-#define RECIP_TOLERANCE (0.001*1e10)
+#define RECIP_TOLERANCE (0.00015*1e10)
 
 /* Threshold for network members to consider a potential solution */
-#define NETWORK_MEMBER_THRESHOLD (500)
+#define NETWORK_MEMBER_THRESHOLD (25)
 
 /* Maximum network members (obviously a solution so should stop) */
 #define MAX_NETWORK_MEMBERS (500)
 
 /* Maximum dead ends for a single branch extension during indexing */
-#define MAX_DEAD_ENDS (5)
+#define MAX_DEAD_ENDS (15)
 
 /* Tolerance for two angles to be considered the same */
 #define ANGLE_TOLERANCE (deg2rad(1.0))
 
 /* Tolerance for rot_mats_are_similar */
-#define TRACE_TOLERANCE (deg2rad(8.0))
+#define TRACE_TOLERANCE (deg2rad(7.0))
 
 /** TODO:
  *
@@ -194,7 +194,7 @@ static struct rvec rvec_cross(struct rvec a, struct rvec b)
 
 static void show_rvec(struct rvec r)
 {
-	STATUS("[ %+9.3e %+9.3e %+9.3e ]\n", r.u, r.v, r.w);
+	STATUS("[ %.3f %.3f %.3f ]\n", r.u, r.v, r.w);
 }
 
 
@@ -310,8 +310,11 @@ static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2)
 
 	tr = matrix_trace(mul);
 	gsl_matrix_free(mul);
+    double max = sqrt(4.0*(1.0-cos(TRACE_TOLERANCE)));
 
-	return tr < sqrt(4.0*(1.0-cos(TRACE_TOLERANCE)));;
+  //  STATUS("Trace is %.3f (max %.3f)\n", tr, max);
+
+	return (tr < max);
 }
 
 
@@ -349,7 +352,7 @@ struct rvec gsl_to_rvec(gsl_vector *a)
  * intensive on the number crunching side so simple angle checks are used
  * to 'pre-scan' vectors beforehand. */
 static gsl_matrix *generate_rot_mat(struct rvec obs1, struct rvec obs2,
-                                    struct rvec cell1, struct rvec cell2)
+                                    struct rvec cell1, struct rvec cell2, int printDebug)
 {
 	gsl_matrix *rotateSpotDiffMatrix;
 	gsl_matrix *secondTwizzleMatrix;
@@ -357,18 +360,29 @@ static gsl_matrix *generate_rot_mat(struct rvec obs1, struct rvec obs2,
 	gsl_vector *cell2v = rvec_to_gsl(cell2);
 	gsl_vector *cell2vr = gsl_vector_calloc(3);
 
-	STATUS("--\n");
-	show_rvec(obs1);
-	show_rvec(obs2);
-	show_rvec(cell1);
-	show_rvec(cell2);
-	STATUS(".....\n");
+    normalise_rvec(&obs1);
+    normalise_rvec(&obs2);
+    normalise_rvec(&cell1);
+    normalise_rvec(&cell2);
+
+    if (0 && printDebug)
+    {
+        STATUS("--\n");
+        show_rvec(obs1);
+        show_rvec(obs2);
+        show_rvec(cell1);
+        show_rvec(cell2);
+        STATUS(".....\n");
+    }
 
 	/* Rotate reciprocal space so that the first simulated vector lines up
 	 * with the observed vector. */
 	rotateSpotDiffMatrix = rotation_between_vectors(cell1, obs1);
-	STATUS("rotateSpotDiffMatrix:\n");
-	show_matrix(rotateSpotDiffMatrix);
+	if (printDebug)
+    {
+    //    STATUS("rotateSpotDiffMatrix:\n");
+    //    show_matrix(rotateSpotDiffMatrix);
+    }
 
 	normalise_rvec(&obs1);
 
@@ -378,22 +392,27 @@ static gsl_matrix *generate_rot_mat(struct rvec obs1, struct rvec obs2,
 
 	/* Now we twirl around the firstAxisUnit until the rotated simulated
 	 * vector matches the second observed vector as closely as possible. */
-	STATUS("for secondTwizzleMatrix:\n");
-	show_rvec(gsl_to_rvec(cell2vr));
-	show_rvec(obs2);
-	show_rvec(obs1);
-	STATUS("..\n");
-	secondTwizzleMatrix = closest_rot_mat(gsl_to_rvec(cell2vr), obs2, obs1);
-	STATUS("secondTwizzleMatrix:\n");
-	show_matrix(secondTwizzleMatrix);
+
+    secondTwizzleMatrix = closest_rot_mat(gsl_to_rvec(cell2vr), obs2, obs1);
+    
+    if (printDebug)
+    {
+    //    STATUS("secondTwizzleMatrix:\n");
+    //    show_matrix(secondTwizzleMatrix);
+    }
 
 	/* We want to apply the first matrix and then the second matrix,
 	 * so we multiply these. */
 	fullMat = gsl_matrix_calloc(3, 3);
 	gsl_blas_dgemm(CblasTrans, CblasTrans, 1.0,
 	               rotateSpotDiffMatrix, secondTwizzleMatrix, 0.0, fullMat);
-	STATUS("final matrix:\n");
-	show_matrix(fullMat);
+	gsl_matrix_transpose(fullMat);
+	
+	if (printDebug)
+    {
+        STATUS("final matrix:\n");
+	    show_matrix(fullMat);
+	}
 
 	return fullMat;
 }
@@ -441,7 +460,7 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 				 int **her_match_idxs, int **his_match_idxs,
 				 int *match_count)
 {
-	int i, j;
+    int i, j;
 	*match_count = 0;
 
        // *her_match_idx = -1;
@@ -464,28 +483,30 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 
 		double angle_diff = fabs(theory_angle - obs_angle);
 
-		if ( angle_diff < ANGLE_TOLERANCE ) {
-		        
-		        /* Reallocate the array to fit in another match */ 
-		        int *temp_hers;
-		        temp_hers = realloc(her_match_idxs, *match_count *
-		                            sizeof(int));
-		        int *temp_his;
-		        temp_his = realloc(his_match_idxs, *match_count *
-		                            sizeof(int));
-		        
-		        if ( temp_hers == NULL || temp_his == NULL ) {
-		                apologise();
-		        }
-		        
-		        (*her_match_idxs) = temp_hers;
-		        (*his_match_idxs) = temp_his;
-		        
-		        (*her_match_idxs)[*match_count] = i;
-		        (*his_match_idxs)[*match_count] = j;
-			
+        if ( angle_diff < ANGLE_TOLERANCE ) {
+            size_t new_size = (*match_count + 1) *
+                                sizeof(int);
+            if (her_match_idxs && his_match_idxs)
+            {
+                /* Reallocate the array to fit in another match */ 
+                int *temp_hers;
+                temp_hers = realloc(*her_match_idxs, new_size);
+                int *temp_his;
+                temp_his = realloc(*his_match_idxs, new_size);
+            
+                if ( temp_hers == NULL || temp_his == NULL ) {
+                        apologise();
+                }
+
+                (*her_match_idxs) = temp_hers;
+                (*his_match_idxs) = temp_his;
+            
+                (*her_match_idxs)[*match_count] = i;
+                (*his_match_idxs)[*match_count] = j;
+            }
+
 			(*match_count)++;
-		}
+        }
 	}
 	}
 
@@ -509,13 +530,11 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
 		struct SpotVec *his_obs = &obs_vecs[obs_members[i]];
 
 		/* placeholders, but results are ignored */
-		int *idx1;
-		int *idx2;
-                int match_count;
+        int match_count = 0;
 
 		/* check our test vector matches existing network member */
 		obs_vecs_match_angles(her_obs, his_obs,
-		                      &idx1, &idx2, &match_count);
+		                      NULL, NULL, &match_count);
 
                 /* FIXME: this is going to be broken */
            //     if (idx2 != match_members[i]) return 0;
@@ -537,6 +556,7 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
                                   int *match_found)
 {
 	int i;
+ //   STATUS("Checking for next index from start=%i, max %i\n", start, obs_vec_count);
 
 	for ( i=start; i<obs_vec_count; i++ ) {
 
@@ -560,13 +580,15 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
 		/* need to grab all the matching vector indices */
 
-		int *member_idx;
-		int *test_idx;
+		int *member_idx = 0;
+		int *test_idx = 0;
 		int match_num;
 
                 /* FIXME: this may be a source of a problem */
 		obs_vecs_match_angles(&obs_vecs[obs_members[0]], &obs_vecs[i],
 		                      &member_idx, &test_idx, &match_num);
+
+     //   STATUS("There are %i matches for next obs vector %i\n", match_num, i)
 
 		/* if ok is set to 0, give up on this vector before
 		 * checking the next value of j */
@@ -589,14 +611,18 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
                         test_rot = generate_rot_mat(obs_vecs[idx0].obsvec,
                                                     obs_vecs[i].obsvec,
                                                     member_match,
-                                                    a_match);
+                                                    a_match, 0);
 
                         int ok = rot_mats_are_similar(rot, test_rot);
 
                         if (ok)
                         {
-                                *match_found = test_idx[j];
-                                return 1;
+                                generate_rot_mat(obs_vecs[idx0].obsvec,
+                                                    obs_vecs[i].obsvec,
+                                                    member_match,
+                                                    a_match, 1);
+                                *match_found = j;
+                                return i;
                         }
                 }
 	}
@@ -613,7 +639,7 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 {
 	/* indices of members of the self-consistent network of vectors */
 	int obs_members[MAX_NETWORK_MEMBERS];
-        int match_members[MAX_NETWORK_MEMBERS];
+    int match_members[MAX_NETWORK_MEMBERS];
 
 	/* initialise the ones we know already */
 	obs_members[0] = obs_idx1;
@@ -628,45 +654,66 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
 	/* we can start from after the 2nd observed vector in the seed */
 	int start = obs_idx2 + 1;
+    STATUS("obs_vec_count = %i\n", obs_vec_count);
 
-	STATUS("starting..\n");
 	while ( 1 ) {
 
-                int match_found = -1;
-		STATUS("member_num = %i\n", member_num);
+        if (start > obs_vec_count) {
+            STATUS("Reached end of observed vectors.\n");
+            return -1;
+        }
 
+        int match_found = -1;
+		
 		signed int next_index = find_next_index(rot, obs_vecs,
 		                                 obs_vec_count, obs_members,
 		                                 match_members,
 	                                         start, member_num,
 	                                         &match_found);
+    //    STATUS("Next index is %i, match is %i\n", next_index, match_found);
 
-		if ( member_num < 2 ) return 0;
+		if ( member_num < 2 ) {
+		    STATUS("giving up on seed..\n");
+		    return 0;
+		}
 
 		if ( next_index < 0 ) {
-			/* If there have been too many dead ends, give up
+		    STATUS("dead end number %i..\n", dead_ends);
+            /* If there have been too many dead ends, give up
 			 * on indexing altogether.
 			 **/
-			if ( dead_ends > MAX_DEAD_ENDS ) break;
+			if ( dead_ends > MAX_DEAD_ENDS ) {
+			    STATUS("Too many dead ends!\n");
+			    dead_ends = 0;
+			    continue;
+			}
 
 			/* We have not had too many dead ends. Try removing
 			   the last member and continue. */
-			start = obs_members[member_num - 1] + 1;
+			start++;
 			member_num--;
 			dead_ends++;
+			STATUS("Shaving back one.\n");
 
 			continue;
 		}
 
 		/* we have elongated membership - so reset dead_ends counter */
-		dead_ends = 0;
+	//	dead_ends = 0;
 
 		obs_members[member_num] = next_index;
 		match_members[member_num] = match_found;
 
 		start = next_index + 1;
 		member_num++;
-
+        STATUS("elongating seed, now %i members. They are: ", member_num);
+        int c;
+        for (c = 0; c < member_num; c++) {
+            STATUS("%i, ", obs_members[c]);
+        }
+        
+        STATUS("\n");
+		    
 		/* If member_num is high enough, we want to return a yes */
 		if ( member_num > NETWORK_MEMBER_THRESHOLD ) break;
 	}
@@ -690,13 +737,14 @@ static signed int spot_idx(struct rvec *rlp)
 static int start_seed(struct SpotVec *obs_vecs, int obs_vec_count, int i,
                       int j, int i_match, int j_match, gsl_matrix **rotation)
 {
-        gsl_matrix *rot_mat = gsl_matrix_calloc(3, 3);
+        STATUS("starting new seed for obsvs %i and %i..\n", i, j);
+	    gsl_matrix *rot_mat = gsl_matrix_calloc(3, 3);
 
         // FIXME: go through ALL matches, not jsut first
         rot_mat = generate_rot_mat(obs_vecs[i].obsvec,
                                    obs_vecs[j].obsvec,
                                    obs_vecs[i].matches[i_match],
-                                   obs_vecs[j].matches[j_match]);
+                                   obs_vecs[j].matches[j_match], 1);
 
         /* Try to expand this rotation matrix to a larger network */
         STATUS("idx: %i %i %i %i spots %i %i and %i %i\n",
@@ -741,21 +789,21 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 		if ( !shared ) continue;
 
 		/* cell vector "matches" index for i, j respectively */
-		int *i_idx;
-		int *j_idx;
+		int *i_idx = 0;
+		int *j_idx = 0;
 		int matches;
 
 		/* Check to see if any angles match from the cell vectors */
 		obs_vecs_match_angles(&obs_vecs[i], &obs_vecs[j],
 		                              &i_idx, &j_idx, &matches);
 		if ( matches == 0 ) continue;
-		STATUS("...ok\n");
+		STATUS("...ok, %i matches\n", matches);
 
 		/* We have seeds! Pass each of them through the seed-starter */
 		int k;
 		for ( k=0; k<matches; k++ ) {
 		        int success = start_seed(obs_vecs, obs_vec_count, i, j,
-		                                 i_idx[k], j_idx[j],
+		                                 i_idx[k], j_idx[k],
 		                                 rotation);
 		        
 		        if (success) { return success; }
@@ -787,7 +835,6 @@ static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
 {
 	int i, j;
 
-	/* Now I'm definitely bending the indentation rules! */
 	for ( i=0; i<obs_vec_count; i++ ) {
 
 		int count = 0;
@@ -826,13 +873,14 @@ static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
 		}
 		qsort(for_sort, count, sizeof(struct sortme), sort_func);
 		obs_vecs[i].matches = malloc(count*sizeof(struct rvec));
+		obs_vecs[i].match_num = count;
 		for ( j=0; j<count; j++ ) {
 			obs_vecs[i].matches[j] = for_sort[j].v;
 			if ( (i==0) || (i==1) || (i==2) ) {
-				STATUS("fluff %i %14f %14f : ", j,
+		/*		STATUS("fluff %i %14f %14f : ", j,
 				       rvec_length(for_sort[j].v)/1e10,
 				       for_sort[j].dist/1e10);
-				show_rvec(for_sort[j].v);
+				show_rvec(for_sort[j].v);*/
 			}
 		}
 		free(for_sort);
@@ -864,6 +912,10 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 			double sqlength = sq_length(diff);
 
 			if ( sqlength > max_sq_length ) continue;
+            STATUS("obs %i (spots %i and %i)", count, i, j);
+            struct rvec norm = new_rvec(diff.u, diff.v, diff.w);
+            normalise_rvec(&norm);
+            show_rvec(norm);
 
 			count++;
 
@@ -1021,6 +1073,15 @@ global_nrlps = rlp_count;
 	find_seed(obs_vecs, obs_vec_count, &solution);
 	if ( solution == NULL ) return NULL;
 
+    double x0 = gsl_matrix_get(solution, 0, 0);
+    gsl_matrix_set(solution, 0, 0, -x0);
+
+    double x1 = gsl_matrix_get(solution, 0, 1);
+    gsl_matrix_set(solution, 0, 1, -x1);
+
+    double x2 = gsl_matrix_get(solution, 0, 2);
+    gsl_matrix_set(solution, 0, 2, -x2);
+
 	result = transform_cell_gsl(cell, solution);
 
 	cleanup_taketwo_obs_vecs(obs_vecs, obs_vec_count);
@@ -1040,7 +1101,7 @@ int taketwo_index(struct image *image, IndexingPrivate *ipriv)
 	struct taketwo_private *tp = (struct taketwo_private *)ipriv;
 
 	FILE *fh = fopen("../../spots.csv", "r");
-	rlps = malloc(100*sizeof(struct rvec));
+	rlps = malloc(500*sizeof(struct rvec));
 	while ( (fh != NULL) && !feof(fh) ) {
 		float x, y, z;
 		float dd;
