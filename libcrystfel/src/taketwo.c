@@ -536,6 +536,7 @@ static signed int finalise_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
         gsl_matrix **rotations = malloc(sizeof(*rotations)* pow(member_num, 2) - member_num);
         
         int i, j, count;
+        
         for ( i=0; i<1; i++ ) {
         for ( j=0; j<member_num; j++ ) {                
                 if (i == j) continue;
@@ -811,7 +812,11 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 		/* Check to see if any angles match from the cell vectors */
 		obs_vecs_match_angles(&obs_vecs[i], &obs_vecs[j],
 		                              &i_idx, &j_idx, &matches);
-		if ( matches == 0 ) continue;
+		if ( matches == 0 ) {
+		        free(i_idx);
+		        free(j_idx);
+		        continue;
+		}
 		
 		/* We have seeds! Pass each of them through the seed-starter  */
 		/* If a seed has the highest achieved membership, make note...*/
@@ -825,12 +830,15 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 		        
 		        if (success) {
 		                free(i_idx); free(j_idx);
+		                gsl_matrix_free(best_rotation);
+		                STATUS("Return normal\n");
 		                return success;
 		        } else {
 		            if (max_members > max_max_members) {
 		                max_max_members = max_members;
 		                gsl_matrix_free(best_rotation);
 		                best_rotation = *rotation;
+		                *rotation = NULL;
 		            } else {
 		                gsl_matrix_free(*rotation);
 		                *rotation = NULL;
@@ -843,18 +851,20 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 		        if (seconds > 30) {
 		                /* Heading towards CrystFEL cutoff so
 		                   return your best guess and run */
-		                
 		                free(i_idx); free(j_idx);
+		                
 		                *rotation = best_rotation;
-		                return (best_rotation != NULL);
+		                STATUS("Return timeout\n");
+                                return (best_rotation != NULL);
 		        }
 		}
 		
-                free(i_idx); i_idx = NULL;
-                free(j_idx); j_idx = NULL;
+                free(i_idx);
+                free(j_idx);
 	}
 	} /* yes this } is meant to be here */
 
+	STATUS("Return exhaustion\n");
         *rotation = best_rotation;
 	return (best_rotation != NULL);
 }
@@ -1097,7 +1107,7 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 	}
 
 	result = transform_cell_gsl(cell, solution);
-
+	gsl_matrix_free(solution);
 	cleanup_taketwo_obs_vecs(obs_vecs, obs_vec_count);
 
 	return result;
