@@ -71,15 +71,12 @@ struct taketwo_private
 	UnitCell       *cell;
 };
 
-struct rvec *global_rlps;
-int global_nrlps;
-
 
 /* Maximum distance between two rlp sizes to consider info for indexing */
 #define MAX_RECIP_DISTANCE (0.12*1e10)
 
 /* Tolerance for two lengths in reciprocal space to be considered the same */
-#define RECIP_TOLERANCE (0.0005*1e10)
+#define RECIP_TOLERANCE (0.001*1e10)
 
 /* Threshold for network members to consider a potential solution */
 #define NETWORK_MEMBER_THRESHOLD (20)
@@ -317,6 +314,7 @@ static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
 	if (score != NULL) *score = tr;
 	
 	gsl_matrix_free(mul);
+	gsl_matrix_free(sub);
         double max = sqrt(4.0*(1.0-cos(TRACE_TOLERANCE)));
 
   	return (tr < max);
@@ -394,6 +392,8 @@ static gsl_matrix *generate_rot_mat(struct rvec obs1, struct rvec obs2,
 	
 	free(cell2v);
 	free(cell2vr);
+	free(secondTwizzleMatrix);
+	free(rotateSpotDiffMatrix);
 
 	return fullMat;
 }
@@ -646,13 +646,13 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
                                 double trace = 0;
                                 int ok = rot_mats_are_similar(rot, test_rot, &trace);
+                                free(test_rot);
                                 
                                 if (!ok) {
                                         all_ok = 0;
                                         break;
                                 }
                         
-                                free(test_rot);
                         }
 
                         if (all_ok) {
@@ -756,15 +756,6 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 }
 
 
-static signed int spot_idx(struct rvec *rlp)
-{
-	int i;
-	for ( i=0; i<global_nrlps; i++ ) {
-		if ( rlp == &global_rlps[i] ) return i;
-	}
-	return -1;
-}
-
 static int start_seed(struct SpotVec *obs_vecs, int obs_vec_count, int i,
                       int j, int i_match, int j_match, gsl_matrix **rotation,
                       int *max_members)
@@ -833,7 +824,8 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 		                                 rotation, &max_members);
 		        
 		        if (success) {
-		            return success;
+		                free(i_idx); free(j_idx);
+		                return success;
 		        } else {
 		            if (max_members > max_max_members) {
 		                max_max_members = max_members;
@@ -848,13 +840,12 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 		        unsigned long now_time = time(NULL);
 		        unsigned int seconds = now_time - start_time;
 		        
-		        if (seconds > 60) {
+		        if (seconds > 30) {
 		                /* Heading towards CrystFEL cutoff so
 		                   return your best guess and run */
 		                
 		                free(i_idx); free(j_idx);
 		                *rotation = best_rotation;
-		                STATUS("After %i seconds, returning best guess\n", seconds);
 		                return (best_rotation != NULL);
 		        }
 		}
@@ -1088,9 +1079,6 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 	success = gen_theoretical_vecs(cell, &cell_vecs, &cell_vec_count);
 	if ( !success ) return NULL;
 
-global_rlps = rlps;
-global_nrlps = rlp_count;
-
 	success = gen_observed_vecs(rlps, rlp_count, &obs_vecs, &obs_vec_count);
 	if ( !success ) return NULL;
 	
@@ -1139,10 +1127,10 @@ int taketwo_index(struct image *image, IndexingPrivate *ipriv)
         rlps[n_rlps].v = 0.0;
         rlps[n_rlps++].w = 0.0;
 
-//        STATUS("n_rlps = %i", n_rlps);
-
 	cell = run_taketwo(tp->cell, rlps, n_rlps);
 	if ( cell == NULL ) return 0;
+
+        free(rlps);
 
 	cr = crystal_new();
 	if ( cr == NULL ) {
@@ -1156,6 +1144,7 @@ int taketwo_index(struct image *image, IndexingPrivate *ipriv)
 		if ( !peak_sanity_check(image, &cr, 1) ) {
 			cell_free(cell);
 			crystal_free(cr);
+			
 			return 0;
 		}
 	}
