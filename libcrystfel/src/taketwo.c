@@ -831,7 +831,6 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 		        if (success) {
 		                free(i_idx); free(j_idx);
 		                gsl_matrix_free(best_rotation);
-		                STATUS("Return normal\n");
 		                return success;
 		        } else {
 		            if (max_members > max_max_members) {
@@ -854,8 +853,7 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 		                free(i_idx); free(j_idx);
 		                
 		                *rotation = best_rotation;
-		                STATUS("Return timeout\n");
-                                return (best_rotation != NULL);
+		                return (best_rotation != NULL);
 		        }
 		}
 		
@@ -864,8 +862,7 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 	}
 	} /* yes this } is meant to be here */
 
-	STATUS("Return exhaustion\n");
-        *rotation = best_rotation;
+	*rotation = best_rotation;
 	return (best_rotation != NULL);
 }
 
