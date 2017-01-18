@@ -30,6 +30,7 @@
 
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
+#include <float.h>
 #include <math.h>
 #include <assert.h>
 
@@ -37,6 +38,7 @@
 #include "index.h"
 #include "taketwo.h"
 #include "peaks.h"
+#include <time.h>
 
 /**
  * spotvec
@@ -74,25 +76,25 @@ int global_nrlps;
 
 
 /* Maximum distance between two rlp sizes to consider info for indexing */
-#define MAX_RECIP_DISTANCE (0.15*1e10)
+#define MAX_RECIP_DISTANCE (0.12*1e10)
 
 /* Tolerance for two lengths in reciprocal space to be considered the same */
-#define RECIP_TOLERANCE (0.0002*1e10)
+#define RECIP_TOLERANCE (0.0005*1e10)
 
 /* Threshold for network members to consider a potential solution */
-#define NETWORK_MEMBER_THRESHOLD (50)
+#define NETWORK_MEMBER_THRESHOLD (20)
 
 /* Maximum network members (obviously a solution so should stop) */
-#define MAX_NETWORK_MEMBERS (500)
+#define MAX_NETWORK_MEMBERS (NETWORK_MEMBER_THRESHOLD + 5)
 
 /* Maximum dead ends for a single branch extension during indexing */
-#define MAX_DEAD_ENDS (10)
+#define MAX_DEAD_ENDS (5)
 
 /* Tolerance for two angles to be considered the same */
 #define ANGLE_TOLERANCE (deg2rad(1.0))
 
 /* Tolerance for rot_mats_are_similar */
-#define TRACE_TOLERANCE (deg2rad(8.0))
+#define TRACE_TOLERANCE (deg2rad(3.0))
 
 /** TODO:
  *
@@ -192,8 +194,10 @@ static struct rvec rvec_cross(struct rvec a, struct rvec b)
 }
 
 
-static void show_rvec(struct rvec r)
+static void show_rvec(struct rvec r2)
 {
+        struct rvec r = r2;
+        normalise_rvec(&r);
 	STATUS("[ %.3f %.3f %.3f ]\n", r.u, r.v, r.w);
 }
 
@@ -295,7 +299,8 @@ static double matrix_trace(gsl_matrix *a)
 }
 
 
-static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2)
+static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
+                                double *score)
 {
 	double tr;
 	gsl_matrix *sub;
@@ -309,6 +314,8 @@ static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2)
 	gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, sub, sub, 0.0, mul);
 
 	tr = matrix_trace(mul);
+	if (score != NULL) *score = tr;
+	
 	gsl_matrix_free(mul);
         double max = sqrt(4.0*(1.0-cos(TRACE_TOLERANCE)));
 
@@ -464,24 +471,24 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
                         temp_hers = realloc(*her_match_idxs, new_size);
                         int *temp_his;
                         temp_his = realloc(*his_match_idxs, new_size);
-            
+
                         if ( temp_hers == NULL || temp_his == NULL ) {
                                 apologise();
                         }
 
                         (*her_match_idxs) = temp_hers;
                         (*his_match_idxs) = temp_his;
-            
+
                         (*her_match_idxs)[*match_count] = i;
                         (*his_match_idxs)[*match_count] = j;
                     }
 
-                                (*match_count)++;
+                (*match_count)++;
                 }
 	}
 	}
 
-	return (match_count > 0);
+	return (*match_count > 0);
 }
 
 
@@ -494,7 +501,7 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
 	 * is identical - too much faff.
 	 **/
 
-	int i;
+	int i, j;
 	struct SpotVec *her_obs = &obs_vecs[test_idx];
 
 	for ( i=0; i<num; i++ ) {
@@ -502,11 +509,15 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
 
 		/* placeholders, but results are ignored */
                 int match_count = 0;
+                int *her_match_idxs;
+                int *his_match_idxs;
 
 		/* check our test vector matches existing network member */
-		obs_vecs_match_angles(her_obs, his_obs,
-		                      NULL, NULL, &match_count);
-
+		int success = obs_vecs_match_angles(her_obs, his_obs,
+		                      NULL, NULL,
+		                      &match_count);
+		
+		if (!success) return 0;
 	}
 
 	return 1;
@@ -517,10 +528,65 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
  * core functions regarding the meat of the TakeTwo algorithm (Level 2)
  * ------------------------------------------------------------------------*/
 
+static signed int finalise_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
+                                    int *obs_members, int *match_members,
+                                    int member_num)
+{
+        gsl_matrix **rotations = malloc(sizeof(*rotations)* pow(member_num, 2) - member_num);
+        
+        int i, j, count;
+        for ( i=0; i<1; i++ ) {
+        for ( j=0; j<member_num; j++ ) {                
+                if (i == j) continue;
+                struct SpotVec i_vec = obs_vecs[obs_members[i]];
+                struct SpotVec j_vec = obs_vecs[obs_members[j]];
+                
+                struct rvec i_obsvec = i_vec.obsvec;
+                struct rvec j_obsvec = j_vec.obsvec;
+                struct rvec i_cellvec = i_vec.matches[match_members[i]];
+                struct rvec j_cellvec = j_vec.matches[match_members[j]];
+                
+                rotations[count] = generate_rot_mat(i_obsvec, j_obsvec,
+                                                    i_cellvec, j_cellvec);
+
+                count++;
+        }
+        }
+        
+        double min_score = FLT_MAX;
+        int min_rot_index = 0;
+        
+        for (i=0; i<count; i++) {
+                double current_score = 0;
+                for (j=0; j<count; j++) {
+                        double addition;
+                        rot_mats_are_similar(rotations[i], rotations[j],
+                                             &addition);
+                
+                        current_score += addition;
+                }
+                
+                if (current_score < min_score) {
+                        min_score = current_score;
+                        min_rot_index = i;
+                }
+        }
+
+        gsl_matrix_memcpy(rot, rotations[min_rot_index]);
+        
+        for (i=0; i<count; i++) {
+                gsl_matrix_free(rotations[i]);
+        }
+        
+        free(rotations);
+        
+        return 1;
+}
+
 static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
                                   int obs_vec_count, int *obs_members,
                                   int *match_members, int start, int member_num,
-                                  int *match_found)
+                                  int *match_found, int match_start)
 {
 	int i;
  
@@ -533,11 +599,11 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		if ( !shared ) continue;
 
 		/* now we check that angles between all vectors match */
-		int matches = obs_angles_match_array(obs_vecs, i, obs_members,
+	/*	int matches = obs_angles_match_array(obs_vecs, i, obs_members,
 		                                     match_members, member_num);
 
 		if ( !matches ) continue;
-
+*/
 		/* final test: does the corresponding rotation matrix
 		 * match the others? NOTE: have not tested to see if
 		 * every combination of test/existing member has to be checked
@@ -549,36 +615,47 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		int *member_idx = 0;
 		int *test_idx = 0;
 		int match_num;
-
-                /* FIXME: this may be a source of a problem */
+		
 		obs_vecs_match_angles(&obs_vecs[obs_members[0]], &obs_vecs[i],
-		                      &member_idx, &test_idx, &match_num);
-
+                                      &member_idx, &test_idx, &match_num);
+		
 		/* if ok is set to 0, give up on this vector before
 		 * checking the next value of j */
-                int j;
+                int j, k;
 
-                for ( j=0; j<match_num; j++ ) {
-                        gsl_matrix *test_rot = gsl_matrix_calloc(3, 3);
-                        struct rvec member_match;
-                        int idx0 = obs_members[0];
-
-                        /* First observed vector and matching theoretical */
-                        member_match = obs_vecs[idx0].matches[match_members[0]];
-
-                        /* Potential match with another vector */
-                      	struct rvec a_match = obs_vecs[i].matches[test_idx[j]];
-  
-                        test_rot = generate_rot_mat(obs_vecs[idx0].obsvec,
-                                                    obs_vecs[i].obsvec,
-                                                    member_match,
-                                                    a_match);
-
-                        int ok = rot_mats_are_similar(rot, test_rot);
-
-                        if (ok)
+                for ( j=match_start; j<match_num; j++ ) {
+                        int all_ok = 1;
+                        for ( k=0; k<member_num; k++ )
                         {
-                                *match_found = j;
+                                gsl_matrix *test_rot = gsl_matrix_calloc(3, 3);
+                                struct rvec member_match;
+                        
+                                int idx_k = obs_members[k];
+
+                                /* First observed vector and matching theoretical */
+                                member_match = obs_vecs[idx_k].matches[match_members[k]];
+
+                                /* Potential match with another vector */
+                                struct rvec a_match = obs_vecs[i].matches[test_idx[j]];
+  
+                                test_rot = generate_rot_mat(obs_vecs[idx_k].obsvec,
+                                                            obs_vecs[i].obsvec,
+                                                            member_match,
+                                                            a_match);
+
+                                double trace = 0;
+                                int ok = rot_mats_are_similar(rot, test_rot, &trace);
+                                
+                                if (!ok) {
+                                        all_ok = 0;
+                                        break;
+                                }
+                        
+                                free(test_rot);
+                        }
+
+                        if (all_ok) {
+                                *match_found = test_idx[j];
                                 return i;
                         }
                 }
@@ -592,8 +669,7 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
 static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
                         int obs_vec_count, int obs_idx1, int obs_idx2,
-                        int match_idx1, int match_idx2, int *max_members,
-                        int accept_anything)
+                        int match_idx1, int match_idx2, int *max_members)
 {
 	/* indices of members of the self-consistent network of vectors */
 	int obs_members[MAX_NETWORK_MEMBERS];
@@ -605,6 +681,7 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 	match_members[0] = match_idx1;
 	match_members[1] = match_idx2;
 	int member_num = 2;
+        *max_members = 2;
 
 	/* counter for dead ends which must not exceed MAX_DEAD_ENDS
 	 * before it is reset in an additional branch */
@@ -616,7 +693,7 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 	while ( 1 ) {
 
                 if (start > obs_vec_count) {
-                    return -1;
+                    return 0;
                 }
 
                 int match_found = -1;
@@ -625,7 +702,7 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
                                                  obs_vec_count, obs_members,
                                                  match_members,
                                                  start, member_num,
-                                                 &match_found);
+                                                 &match_found, 0);
 
                 if ( member_num < 2 ) {
                     return 0;
@@ -636,8 +713,7 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
                          * on indexing altogether.
                          **/
                         if ( dead_ends > MAX_DEAD_ENDS ) {
-                            dead_ends = 0;
-                            continue;
+                            break;
                         }
 
                         /* We have not had too many dead ends. Try removing
@@ -650,7 +726,7 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
                 }
 
                 /* we have elongated membership - so reset dead_ends counter */
-        //	dead_ends = 0;
+        	dead_ends = 0;
 
                 obs_members[member_num] = next_index;
                 match_members[member_num] = match_found;
@@ -666,8 +742,8 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
                 if ( member_num > NETWORK_MEMBER_THRESHOLD ) break;
 	}
 
-	/* Deal with this shit after coffee */
-        /* (note: turns out there's no shit to deal with) */
+        finalise_solution(rot, obs_vecs, obs_members,
+                          match_members, member_num);
 
 	return ( member_num > NETWORK_MEMBER_THRESHOLD );
 }
@@ -684,11 +760,10 @@ static signed int spot_idx(struct rvec *rlp)
 
 static int start_seed(struct SpotVec *obs_vecs, int obs_vec_count, int i,
                       int j, int i_match, int j_match, gsl_matrix **rotation,
-                      int *max_members, int accept_anything)
+                      int *max_members)
 {
         gsl_matrix *rot_mat = gsl_matrix_calloc(3, 3);
 
-        // FIXME: go through ALL matches, not jsut first
         rot_mat = generate_rot_mat(obs_vecs[i].obsvec,
                                    obs_vecs[j].obsvec,
                                    obs_vecs[i].matches[i_match],
@@ -697,17 +772,12 @@ static int start_seed(struct SpotVec *obs_vecs, int obs_vec_count, int i,
         /* Try to expand this rotation matrix to a larger network */
         
         int success = grow_network(rot_mat, obs_vecs, obs_vec_count,
-                                   i, j, i_match, j_match, max_members,
-                                   accept_anything);
+                                       i, j, i_match, j_match, max_members);
 
-        /* return this matrix or free it and try again */
-        if ( success ) {
-                *rotation = rot_mat;
-                return 1;
-        } else {
-                gsl_matrix_free(rot_mat);
-                return 0;
-        }
+        /* return this matrix and if it was immediately successful */
+        *rotation = rot_mat;
+        
+        return success;
 }
 
 static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
@@ -715,7 +785,9 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 {
     /* META: Maximum achieved maximum network membership */
 	int max_max_members = 0;
-	int best_i, best_j, best_i_idx, best_j_idx;
+	gsl_matrix *best_rotation = NULL;
+	
+	unsigned long start_time = time(NULL);
 	
 	/* loop round pairs of vectors to try and find a suitable
 	 * seed to start building a self-consistent network of vectors
@@ -746,42 +818,43 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 		/* We have seeds! Pass each of them through the seed-starter  */
 		/* If a seed has the highest achieved membership, make note...*/
 		int k;
-		for ( k=0; k<1; k++ ) {
+		for ( k=0; k<matches && k < 10; k++ ) {
 		        int max_members = 0;
 
 		        int success = start_seed(obs_vecs, obs_vec_count, i, j,
 		                                 i_idx[k], j_idx[k],
-		                                 rotation, &max_members,
-		                                 0);
+		                                 rotation, &max_members);
 		        
 		        if (success) {
 		            return success;
 		        } else {
 		            if (max_members > max_max_members) {
 		                max_max_members = max_members;
-		                best_i = i;
-		                best_j = j;
-		                best_i_idx = i_idx[k];
-		                best_j_idx = j_idx[k];
+		                gsl_matrix_free(best_rotation);
+		                best_rotation = *rotation;
+		            } else {
+		                gsl_matrix_free(*rotation);
+		                *rotation = NULL;
 		            }
+		        }
+		        
+		        unsigned long now_time = time(NULL);
+		        unsigned int seconds = now_time - start_time;
+		        
+		        if (seconds > 60) {
+		                /* Heading towards CrystFEL cutoff so
+		                   return your best guess and run */
+		                *rotation = best_rotation;
+		                STATUS("After %i seconds, returning best guess\n", seconds);
+		                return (best_rotation != NULL);
 		        }
 		}
 		
 	}
 	} /* yes this } is meant to be here */
 
-        int max_members = 0;
-        int success = start_seed(obs_vecs, obs_vec_count, best_i, best_j,
-                                 best_i_idx, best_j_idx,
-                                 rotation, &max_members,
-                                 1);
-
-        if (success) {
-                return success;
-        } else {
-                /* Well, shit... something went wrong. */
-                return 0;
-        }
+        *rotation = best_rotation;
+	return (best_rotation != NULL);
 }
 
 
@@ -1017,8 +1090,11 @@ global_nrlps = rlp_count;
 
 	cleanup_taketwo_cell_vecs(cell_vecs);
 
-	find_seed(obs_vecs, obs_vec_count, &solution);
-	if ( solution == NULL ) return NULL;
+	int threshold_reached = find_seed(obs_vecs, obs_vec_count, &solution);
+
+	if ( solution == NULL ) {
+	        return NULL;
+	}
 
 	result = transform_cell_gsl(cell, solution);
 
@@ -1051,6 +1127,8 @@ int taketwo_index(struct image *image, IndexingPrivate *ipriv)
         rlps[n_rlps].u = 0.0;
         rlps[n_rlps].v = 0.0;
         rlps[n_rlps++].w = 0.0;
+
+//        STATUS("n_rlps = %i", n_rlps);
 
 	cell = run_taketwo(tp->cell, rlps, n_rlps);
 	if ( cell == NULL ) return 0;
@@ -1099,6 +1177,11 @@ IndexingPrivate *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
 		ERROR("TakeTwo indexing requires a unit cell.\n");
 		return NULL;
 	}
+	
+	STATUS("Welcome to TakeTwo\n");
+        STATUS("If you use these indexing results, please cite:\n");
+        STATUS("Ginn et al., Acta Cryst. (2016). D72, 956-965\n");
+
 
 	tp = malloc(sizeof(struct taketwo_private));
 	if ( tp == NULL ) return NULL;
