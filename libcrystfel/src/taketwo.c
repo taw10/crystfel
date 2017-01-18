@@ -391,6 +391,9 @@ static gsl_matrix *generate_rot_mat(struct rvec obs1, struct rvec obs2,
 	gsl_blas_dgemm(CblasTrans, CblasTrans, 1.0,
 	               rotateSpotDiffMatrix, secondTwizzleMatrix, 0.0, fullMat);
 	gsl_matrix_transpose(fullMat);
+	
+	free(cell2v);
+	free(cell2vr);
 
 	return fullMat;
 }
@@ -509,8 +512,6 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
 
 		/* placeholders, but results are ignored */
                 int match_count = 0;
-                int *her_match_idxs;
-                int *his_match_idxs;
 
 		/* check our test vector matches existing network member */
 		int success = obs_vecs_match_angles(her_obs, his_obs,
@@ -656,9 +657,15 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
                         if (all_ok) {
                                 *match_found = test_idx[j];
+                                free(member_idx);
+                                free(test_idx);
                                 return i;
                         }
                 }
+                
+                free(member_idx); member_idx = NULL;
+                free(test_idx); member_idx = NULL;
+
 	}
 
 	/* give up. */
@@ -844,12 +851,16 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 		        if (seconds > 60) {
 		                /* Heading towards CrystFEL cutoff so
 		                   return your best guess and run */
+		                
+		                free(i_idx); free(j_idx);
 		                *rotation = best_rotation;
 		                STATUS("After %i seconds, returning best guess\n", seconds);
 		                return (best_rotation != NULL);
 		        }
 		}
 		
+                free(i_idx); i_idx = NULL;
+                free(j_idx); j_idx = NULL;
 	}
 	} /* yes this } is meant to be here */
 
