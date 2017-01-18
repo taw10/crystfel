@@ -390,10 +390,10 @@ static gsl_matrix *generate_rot_mat(struct rvec obs1, struct rvec obs2,
 	               rotateSpotDiffMatrix, secondTwizzleMatrix, 0.0, fullMat);
 	gsl_matrix_transpose(fullMat);
 	
-	free(cell2v);
-	free(cell2vr);
-	free(secondTwizzleMatrix);
-	free(rotateSpotDiffMatrix);
+	gsl_vector_free(cell2v);
+	gsl_vector_free(cell2vr);
+	gsl_matrix_free(secondTwizzleMatrix);
+	gsl_matrix_free(rotateSpotDiffMatrix);
 
 	return fullMat;
 }
@@ -628,7 +628,7 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
                         int all_ok = 1;
                         for ( k=0; k<member_num; k++ )
                         {
-                                gsl_matrix *test_rot = gsl_matrix_calloc(3, 3);
+                                gsl_matrix *test_rot;
                                 struct rvec member_match;
                         
                                 int idx_k = obs_members[k];
@@ -646,7 +646,7 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
                                 double trace = 0;
                                 int ok = rot_mats_are_similar(rot, test_rot, &trace);
-                                free(test_rot);
+                                gsl_matrix_free(test_rot);
                                 
                                 if (!ok) {
                                         all_ok = 0;
@@ -760,7 +760,7 @@ static int start_seed(struct SpotVec *obs_vecs, int obs_vec_count, int i,
                       int j, int i_match, int j_match, gsl_matrix **rotation,
                       int *max_members)
 {
-        gsl_matrix *rot_mat = gsl_matrix_calloc(3, 3);
+        gsl_matrix *rot_mat;
 
         rot_mat = generate_rot_mat(obs_vecs[i].obsvec,
                                    obs_vecs[j].obsvec,
@@ -1085,13 +1085,14 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 	success = match_obs_to_cell_vecs(cell_vecs, cell_vec_count,
 	                                 obs_vecs, obs_vec_count);
 
-	if ( !success ) return NULL;
-
 	cleanup_taketwo_cell_vecs(cell_vecs);
+
+	if ( !success ) return NULL;
 
 	int threshold_reached = find_seed(obs_vecs, obs_vec_count, &solution);
 
 	if ( solution == NULL ) {
+                cleanup_taketwo_obs_vecs(obs_vecs, obs_vec_count);
 	        return NULL;
 	}
 
@@ -1128,9 +1129,8 @@ int taketwo_index(struct image *image, IndexingPrivate *ipriv)
         rlps[n_rlps++].w = 0.0;
 
 	cell = run_taketwo(tp->cell, rlps, n_rlps);
-	if ( cell == NULL ) return 0;
-
         free(rlps);
+	if ( cell == NULL ) return 0;
 
 	cr = crystal_new();
 	if ( cr == NULL ) {
