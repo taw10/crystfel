@@ -645,6 +645,63 @@ static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
 }
 
 
+static void write_specgraph(RefList *full, Crystal *crystal, int in)
+{
+	FILE *fh;
+	char tmp[256];
+	Reflection *refl;
+	RefListIterator *iter;
+	double G, B;
+	UnitCell *cell;
+	struct image *image = crystal_get_image(crystal);
+
+	snprintf(tmp, 256, "specgraph-iter%i.dat", in);
+
+	fh = fopen(tmp, "w");
+	if ( fh == NULL ) {
+		ERROR("Failed to open '%s'\n", tmp);
+		return;
+	}
+
+	fprintf(fh, "Image: %s %s\n",
+	        image->filename, get_event_string(image->event));
+
+	fprintf(fh, "khalf/m   pcalc    pobs\n");
+
+	G = crystal_get_osf(crystal);
+	B = crystal_get_Bfac(crystal);
+	cell = crystal_get_cell(crystal);
+
+	for ( refl = first_refl(crystal_get_reflections(crystal), &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double corr, Ipart, Ifull, pobs, pcalc;
+		double res, esd;
+		signed int h, k, l;
+		Reflection *match;
+
+		get_indices(refl, &h, &k, &l);
+		res = resolution(cell, h, k, l);
+
+		match = find_refl(full, h, k, l);
+		if ( match == NULL ) continue;
+
+		corr = exp(-G) * exp(B*res*res) * get_lorentz(refl);
+		Ipart = get_intensity(refl) * corr;
+		Ifull = get_intensity(match);
+		esd = get_esd_intensity(match);
+		pobs = Ipart / Ifull;
+		pcalc = get_partiality(refl);
+
+		fprintf(fh, "%e   %f   %f\n", get_khalf(refl), pcalc, pobs);
+
+	}
+
+	fclose(fh);
+}
+
+
 static void write_pgraph(RefList *full, Crystal **crystals, int n_crystals,
                          int iter)
 {
@@ -1181,6 +1238,7 @@ int main(int argc, char *argv[])
 		                         push_res, 1);
 		show_all_residuals(crystals, n_crystals, full);
 		write_pgraph(full, crystals, n_crystals, i+1);
+		write_specgraph(full, crystals[0], i+1);
 
 		if ( output_everycycle ) {
 
