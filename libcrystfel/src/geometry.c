@@ -245,7 +245,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 {
 	Reflection *refl;
 	double R, top;
-	double kmin, kmax, k0, knom, k1;
+	double kmin, kmax, k0, knom, k1, khalf;
 	double dcs, exerr;
 
 	/* Don't predict 000 */
@@ -256,6 +256,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	R = crystal_get_profile_radius(cryst);
 	top = R*R - xl*xl - yl*yl - zl*zl;
 	k0 = top/(2.0*(zl+R));
+	khalf = (- xl*xl - yl*yl - zl*zl) / (2.0*zl);
 	k1 = top/(2.0*(zl-R));
 
 	/* The reflection is excited if any of the reflection is within 2sigma
@@ -306,6 +307,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	}
 
 	set_kpred(refl, knom);
+	set_khalf(refl, khalf);
 	set_exerr(refl, exerr);
 	set_lorentz(refl, 1.0);
 	set_symmetric_indices(refl, h, k, l);

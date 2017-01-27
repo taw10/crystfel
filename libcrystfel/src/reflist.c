@@ -67,7 +67,8 @@ struct _refldata {
 	signed int ls;
 
 	/* Partiality and related geometrical stuff */
-	double kpred; /* Wavenumber of middle of reflection */
+	double khalf; /* Wavenumber of middle of reflection */
+	double kpred; /* Wavenumber for prediction */
 	double exerr; /* Excitation error */
 	double p;     /* Partiality */
 	double L;     /* Lorentz factor */
@@ -422,10 +423,25 @@ double get_intensity(const Reflection *refl)
 
 
 /**
- * get_kpred:
+ * get_khalf
  * @refl: A %Reflection
  *
  * Returns: the wavenumber at the centre of the reflection
+ *
+ **/
+double get_khalf(const Reflection *refl)
+{
+	return refl->data.khalf;
+}
+
+
+
+
+/**
+ * get_kpred:
+ * @refl: A %Reflection
+ *
+ * Returns: the wavenumber which should be used for prediction of this reflection
  *
  **/
 double get_kpred(const Reflection *refl)
@@ -618,14 +634,27 @@ void set_panel(Reflection *refl, struct panel *p)
 	refl->data.panel = p;
 }
 
+/**
+ * set_khalf:
+ * @refl: A %Reflection
+ * @khalf: The wavenumber at which the reflection should be predicted
+ *
+ * Sets the wavenumber at the centre of the reflection.
+ **/
+void set_khalf(Reflection *refl, double khalf)
+{
+	refl->data.khalf = khalf;
+}
+
+
 
 /**
  * set_kpred:
  * @refl: A %Reflection
  * @kpred: The wavenumber at which the reflection should be predicted
  *
- * Sets the wavenumber at the centre of the reflection.  Used by
- * predict_to_res() and update_predictions()
+ * Sets the wavenumber at which the reflection should be predicted.
+ * Used by predict_to_res() and update_predictions()
  **/
 void set_kpred(Reflection *refl, double kpred)
 {
