@@ -964,6 +964,7 @@ int main(int argc, char *argv[])
 	pointgroup_warning(sym_str);
 	sym = get_pointgroup(sym_str);
 	free(sym_str);
+	if ( sym == NULL ) return 1;
 
 	if ( pmodel_str != NULL ) {
 		if ( strcmp(pmodel_str, "unity") == 0 ) {
