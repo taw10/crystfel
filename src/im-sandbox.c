@@ -524,7 +524,6 @@ static void try_read(struct sandbox *sb, TimeAccounts *taccs)
 		/* If the chunk cannot be read, assume the connection
 		 * is broken and that the process will die soon. */
 		time_accounts_set(taccs, TACC_STREAMREAD);
-		stamp_response(sb, i);
 		if ( pump_chunk(sb->fhs[i], ofd) ) {
 			remove_pipe(sb, i);
 		}
