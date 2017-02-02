@@ -3,11 +3,11 @@
  *
  * Examine cell parameter histograms
  *
- * Copyright © 2014 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2014-2017 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2014 Thomas White <taw@physics.org>
+ *   2014,2017 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -270,6 +270,52 @@ static void draw_axis(cairo_t *cr, HistoBox *b, int width, int height)
 }
 
 
+static void draw_label(cairo_t *cr, HistoBox *b, int width, int height)
+{
+	PangoLayout *layout;
+	PangoFontDescription *fontdesc;
+	PangoRectangle ext;
+	char label[256];
+	double sz;
+
+	layout = pango_cairo_create_layout(cr);
+
+	if ( b->have_fit ) {
+		snprintf(label, 255, "%s = %.2f ± %.2f%s",
+		         b->label, b->fit_b, b->fit_c/sqrt(2), b->units);
+	} else {
+		strncpy(label, b->label, 255);
+	}
+	pango_layout_set_text(layout, label, -1);
+
+	sz = (height*PANGO_SCALE)/10.0;
+
+	fontdesc = pango_font_description_new();
+	pango_font_description_set_family_static(fontdesc, "Serif");
+	pango_font_description_set_style(fontdesc, PANGO_STYLE_ITALIC);
+	pango_font_description_set_absolute_size(fontdesc, sz);
+	pango_layout_set_font_description(layout, fontdesc);
+
+	/* If text is too wide for box, adjust the size so it fits */
+	pango_layout_get_extents(layout, NULL, &ext);
+	if ( ext.width > PANGO_SCALE*(width-20.0) ) {
+		sz = ((double)PANGO_SCALE*(width-20.0) / ext.width)*sz;
+		pango_font_description_set_absolute_size(fontdesc, sz);
+		pango_layout_set_font_description(layout, fontdesc);
+	}
+
+
+	cairo_move_to(cr, 10.0, 10.0);
+	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+	pango_cairo_update_layout(cr, layout);
+	pango_cairo_show_layout(cr, layout);
+	cairo_fill(cr);
+
+	g_object_unref(layout);
+	pango_font_description_free(fontdesc);
+}
+
+
 static gboolean draw_sig(GtkWidget *da, GdkEventExpose *event, HistoBox *b)
 {
 	int width, height;
@@ -431,24 +477,7 @@ static gboolean draw_sig(GtkWidget *da, GdkEventExpose *event, HistoBox *b)
 	cairo_restore(cr);
 
 	draw_axis(cr, b, width, height);
-
-	cairo_text_extents_t ext;
-	char label[256];
-
-	cairo_select_font_face(cr, "Serif", CAIRO_FONT_SLANT_ITALIC,
-	                       CAIRO_FONT_WEIGHT_BOLD);
-	cairo_set_font_size(cr, height/10.0);
-
-	if ( b->have_fit ) {
-		snprintf(label, 255, "%s = %.2f ± %.2f%s",
-		         b->label, b->fit_b, b->fit_c/sqrt(2), b->units);
-	} else {
-		strncpy(label, b->label, 255);
-	}
-
-	cairo_text_extents(cr, label, &ext);
-	cairo_move_to(cr, 10.0, 10.0+ext.height);
-	cairo_show_text(cr, label);
+	draw_label(cr, b, width, height);
 
 	cairo_destroy(cr);
 
@@ -1598,9 +1627,9 @@ int main(int argc, char *argv[])
 	w.cols_on[0] = 1;
 	for ( i=1; i<8; i++ ) w.cols_on[i] = 2;
 
-	w.hist_a = histobox_new(&w, " A", "a");
-	w.hist_b = histobox_new(&w, " A", "b");
-	w.hist_c = histobox_new(&w, " A", "c");
+	w.hist_a = histobox_new(&w, " Å", "a");
+	w.hist_b = histobox_new(&w, " Å", "b");
+	w.hist_c = histobox_new(&w, " Å", "c");
 	w.hist_al = histobox_new(&w, "°", "α");
 	w.hist_be = histobox_new(&w, "°", "β");
 	w.hist_ga = histobox_new(&w, "°", "γ");
