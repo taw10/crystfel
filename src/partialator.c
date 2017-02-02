@@ -274,6 +274,12 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 
 	tmp = insert_into_filename(outfile, csplit->dataset_names[dsn]);
 
+	if ( n_crystalsn == 0 ) {
+		ERROR("Not writing dataset '%s' because it contains no "
+		      "crystals\n", csplit->dataset_names[dsn]);
+		return;
+	}
+
 	STATUS("Writing dataset '%s' to %s (%i crystals)\n",
 	       csplit->dataset_names[dsn], tmp, n_crystalsn);
 	split = merge_intensities(crystalsn, n_crystalsn, nthreads,
@@ -314,6 +320,101 @@ static void show_help(const char *s)
 "      --no-free              Disable cross-validation (testing only).\n"
 "      --custom-split         List of files for custom dataset splitting.\n"
 "      --max-rel-B            Maximum allowable relative |B| factor.\n");
+}
+
+
+static signed int find_first_crystal(Crystal **crystals, int n_crystals,
+                                     struct custom_split *csplit, int dsn)
+{
+	int i;
+
+	for ( i=0; i<n_crystals; i++ ) {
+		const char *fn;
+		struct event *ev;
+		char *evs;
+		char *id;
+		int dsn_crystal;
+
+		fn = crystal_get_image(crystals[i])->filename;
+		ev = crystal_get_image(crystals[i])->event;
+		evs = get_event_string(ev);
+
+		id = malloc(strlen(evs)+strlen(fn)+2);
+		if ( id == NULL ) {
+			ERROR("Failed to allocate ID\n");
+			return -1;
+		}
+		strcpy(id, fn);
+		strcat(id, " ");
+		strcat(id, evs);
+		dsn_crystal = find_dsn_for_id(csplit, id);
+		free(id);
+
+		if ( dsn == dsn_crystal ) return i;
+	}
+	return -1;
+}
+
+
+static void check_csplit(Crystal **crystals, int n_crystals,
+                         struct custom_split *csplit)
+{
+	int i;
+	int n_nosplit = 0;
+	int n_split = 0;
+	int n_cry = 0;
+	int n_nocry = 0;
+
+	STATUS("Checking your custom split datasets...\n");
+
+	for ( i=0; i<n_crystals; i++ ) {
+
+		const char *fn;
+		struct event *ev;
+		char *evs;
+		char *id;
+		int dsn_crystal;
+
+		fn = crystal_get_image(crystals[i])->filename;
+		ev = crystal_get_image(crystals[i])->event;
+		evs = get_event_string(ev);
+
+		id = malloc(strlen(evs)+strlen(fn)+2);
+		if ( id == NULL ) {
+			ERROR("Failed to allocate ID\n");
+			return;
+		}
+		strcpy(id, fn);
+		strcat(id, " ");
+		strcat(id, evs);
+		dsn_crystal = find_dsn_for_id(csplit, id);
+		free(id);
+		if ( dsn_crystal == -1 ) {
+			n_nosplit++;
+		} else {
+			n_split++;
+		}
+
+	}
+
+	for ( i=0; i<csplit->n_datasets; i++ ) {
+
+		/* Try to find a crystal with dsn = i */
+		if ( find_first_crystal(crystals, n_crystals, csplit, i) != -1 )
+		{
+			n_cry++;
+		} else {
+			n_nocry++;
+			STATUS("Dataset %s has no crystals.\n",
+			       csplit->dataset_names[i]);
+		}
+	}
+
+	STATUS("Please check that these numbers match your expectations:\n");
+	STATUS("    Number of crystals assigned to a dataset: %i\n", n_split);
+	STATUS("Number of crystals with no dataset asssigned: %i\n", n_nosplit);
+	STATUS("Number of datasets with at least one crystal: %i\n", n_cry);
+	STATUS("         Number of datasets with no crystals: %i\n", n_nocry);
 }
 
 
@@ -655,7 +756,6 @@ int main(int argc, char *argv[])
 	int n_iter = 10;
 	RefList *full;
 	int n_images = 0;
-	int n_images_seen = 0;
 	int n_crystals = 0;
 	int n_crystals_seen = 0;
 	char cmdline[1024];
@@ -861,8 +961,10 @@ int main(int argc, char *argv[])
 	}
 
 	if ( sym_str == NULL ) sym_str = strdup("1");
+	pointgroup_warning(sym_str);
 	sym = get_pointgroup(sym_str);
 	free(sym_str);
+	if ( sym == NULL ) return 1;
 
 	if ( pmodel_str != NULL ) {
 		if ( strcmp(pmodel_str, "unity") == 0 ) {
@@ -899,7 +1001,6 @@ int main(int argc, char *argv[])
 
 	/* Fill in what we know about the images so far */
 	n_images = 0;
-	n_images_seen = 0;
 	n_crystals = 0;
 	n_crystals_seen = 0;
 	images = NULL;
@@ -946,8 +1047,6 @@ int main(int argc, char *argv[])
 			ERROR("Chunk doesn't contain beam parameters.\n");
 			return 1;
 		}
-
-		n_images_seen++;
 
 		for ( i=0; i<cur->n_crystals; i++ ) {
 
@@ -1001,9 +1100,7 @@ int main(int argc, char *argv[])
 
 		}
 
-		if ( n_crystals > 0 ) {
-			n_images++;
-		}
+		n_images++;
 
 		if ( n_images % 100 == 0 ) {
 			display_progress(n_images, n_crystals);
@@ -1033,6 +1130,8 @@ int main(int argc, char *argv[])
 
 		}
 	}
+
+	if (csplit != NULL) check_csplit(crystals, n_crystals, csplit);
 
 	/* Make a first pass at cutting out crap */
 	STATUS("Checking patterns.\n");

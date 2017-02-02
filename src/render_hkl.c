@@ -90,6 +90,7 @@ static void show_help(const char *s)
 "                            rawcts : the raw number of measurements for the\n"
 "                                     reflection (no 'epsilon' correction).\n"
 "\n"
+"      --scale-top=<n>     Manually set the top of the colour scale\n"
 "      --res-ring=<r>      Draw a resolution ring at <r> Angstroms.\n"
 "      --highres=<r>       Render spots only up to <r> Angstroms.\n"
 "      --no-axes           Do not draw reciprocal space axes.\n"
@@ -477,7 +478,11 @@ static void render_za(UnitCell *cell, RefList *list,
 	/* Use manual scale top if specified */
 	if ( scale_top > 0.0 ) {
 		max_val = scale_top;
+		STATUS("Ignoring boost value (%f) because you used "
+		       "--scale-top\n", boost);
+		boost = 1.0;
 	}
+	STATUS("Top of colour scale = %e\n", max_val/boost);
 
 	scale1 = ((double)wh-border) / (2.0*rmax);
 	scale2 = ((double)ht-border) / (2.0*rmax);
@@ -914,6 +919,7 @@ int main(int argc, char *argv[])
 	if ( sym_str == NULL ) {
 		sym_str = strdup("1");
 	}
+	pointgroup_warning(sym_str);
 	sym = get_pointgroup(sym_str);
 	free(sym_str);
 
