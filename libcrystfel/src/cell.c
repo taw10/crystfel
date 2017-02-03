@@ -3,15 +3,15 @@
  *
  * A class representing a unit cell
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2012,2014 Thomas White <taw@physics.org>
- *   2010           Richard Kirian
- *   2012           Lorenzo Galli
+ *   2009-2012,2014,2017 Thomas White <taw@physics.org>
+ *   2010                Richard Kirian
+ *   2012                Lorenzo Galli
  *
  * This file is part of CrystFEL.
  *
@@ -244,43 +244,12 @@ UnitCell *cell_new_from_direct_axes(struct rvec a, struct rvec b, struct rvec c)
 }
 
 
-UnitCell *cell_new_from_cell(UnitCell *orig)
+UnitCell *cell_new_from_cell(const UnitCell *orig)
 {
-	UnitCell *n;
-
-	n = cell_new();
-
-	switch ( orig->rep ) {
-
-		case CELL_REP_CRYST :
-		n->a = orig->a;  n->b = orig->b;  n->c = orig->c;
-		n->alpha = orig->alpha;  n->beta = orig->beta;  n->gamma = orig->gamma;
-		break;
-
-		case CELL_REP_CART :
-		n->ax = orig->ax;  n->bx = orig->bx;  n->cx = orig->cx;
-		n->ay = orig->ay;  n->by = orig->by;  n->cy = orig->cy;
-		n->az = orig->az;  n->bz = orig->bz;  n->cz = orig->cz;
-		break;
-
-		case CELL_REP_RECIP :
-		n->axs = orig->axs;  n->bxs = orig->bxs;  n->cxs = orig->cxs;
-		n->ays = orig->ays;  n->bys = orig->bys;  n->cys = orig->cys;
-		n->azs = orig->azs;  n->bzs = orig->bzs;  n->czs = orig->czs;
-		break;
-
-		default :
-		ERROR("Bad cell representation %i\n", orig->rep);
-
-	}
-
-	n->lattice_type = orig->lattice_type;
-	n->centering = orig->centering;
-	n->unique_axis = orig->unique_axis;
-	n->rep = orig->rep;
-	n->have_parameters = orig->have_parameters;
-
-	return n;
+	UnitCell *new;
+	new = cell_new();
+	*new = *orig;
+	return new;
 }
 
 

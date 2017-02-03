@@ -52,10 +52,11 @@ extern "C" {
 #endif
 
 extern Crystal *crystal_new(void);
-extern Crystal *crystal_copy(Crystal *cryst);
+extern Crystal *crystal_copy(const Crystal *cryst);
 extern void crystal_free(Crystal *cryst);
 
 extern UnitCell *crystal_get_cell(Crystal *cryst);
+extern const UnitCell *crystal_get_cell_const(const Crystal *cryst);
 extern double crystal_get_profile_radius(Crystal *cryst);
 extern RefList *crystal_get_reflections(Crystal *cryst);
 extern double crystal_get_resolution_limit(Crystal *cryst);

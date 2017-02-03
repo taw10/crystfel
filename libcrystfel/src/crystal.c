@@ -123,7 +123,7 @@ Crystal *crystal_new()
  * Returns: a (shallow) copy of @cryst, or NULL on failure.
  *
  */
-Crystal *crystal_copy(Crystal *cryst)
+Crystal *crystal_copy(const Crystal *cryst)
 {
 	Crystal *c;
 
@@ -155,6 +155,12 @@ void crystal_free(Crystal *cryst)
 
 
 UnitCell *crystal_get_cell(Crystal *cryst)
+{
+	return cryst->cell;
+}
+
+
+const UnitCell *crystal_get_cell_const(const Crystal *cryst)
 {
 	return cryst->cell;
 }

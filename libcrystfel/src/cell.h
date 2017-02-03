@@ -3,15 +3,15 @@
  *
  * A class representing a unit cell
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2012,2014 Thomas White <taw@physics.org>
- *   2010,2012      Richard Kirian
- *   2012           Lorenzo Galli
+ *   2009-2012,2014,2017 Thomas White <taw@physics.org>
+ *   2010,2012           Richard Kirian
+ *   2012                Lorenzo Galli
  *
  * This file is part of CrystFEL.
  *
@@ -104,7 +104,7 @@ extern "C" {
 #endif
 
 extern UnitCell *cell_new(void);
-extern UnitCell *cell_new_from_cell(UnitCell *orig);
+extern UnitCell *cell_new_from_cell(const UnitCell *orig);
 extern void cell_free(UnitCell *cell);
 
 /* Lengths in m, angles in radians */
