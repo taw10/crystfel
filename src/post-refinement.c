@@ -42,6 +42,7 @@
 #include "geometry.h"
 #include "cell.h"
 #include "cell-utils.h"
+#include "reflist-utils.h"
 
 
 struct prdata
@@ -307,6 +308,7 @@ static double residual_f(const gsl_vector *v, void *pp)
 	struct rf_priv *pv = pp;
 	int i;
 	UnitCell *cell;
+	RefList *list;
 	Crystal *cr;
 	double res;
 	double ang1 = 0.0;
@@ -332,6 +334,8 @@ static double residual_f(const gsl_vector *v, void *pp)
 
 	cell = rotate_cell_xy(crystal_get_cell_const(pv->cr), ang1, ang2);
 	cr = crystal_copy(pv->cr);
+	list = copy_reflist(crystal_get_reflections(cr));
+	crystal_set_reflections(cr, list);
 	crystal_set_cell(cr, cell);
 
 	update_predictions(cr);
@@ -339,6 +343,7 @@ static double residual_f(const gsl_vector *v, void *pp)
 	res = residual(cr, pv->full, 0, NULL, NULL);
 
 	cell_free(cell);
+	reflist_free(list);
 	crystal_free(cr);
 
 	return res;
