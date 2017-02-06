@@ -523,15 +523,55 @@ static double do_integral(double q2, double zl, double R,
 	const double N = 1.5;  /* Pointiness of spectrum */
 	FILE *fh = NULL;
 
+	/* Range over which P is different from zero */
 	k0 = (R*R - q2)/(2.0*(zl+R));
 	k1 = (R*R - q2)/(2.0*(zl-R));
+
+	/* Check for reflections partially "behind the beam" */
+	if ( k0 < 0.0 ) k0 = +INFINITY;
+	if ( k1 < 0.0 ) k1 = +INFINITY;
 
 	/* Range over which E is significantly different from zero */
 	kmin = 1.0 / (lambda + 5.0*sig);
 	kmax = 1.0 / (lambda - 5.0*sig);
 
-	kstart = kmin > k1 ? kmin : k1;
-	kfinis = (k0 < 0.0) || (kmax < k0) ? kmax : k0;
+	/* Calculate range over which E*P is different from zero */
+	if ( k0 < k1 ) {
+		STATUS("%e %e\n", k0, k1);
+		STATUS("%e %e %e\n", q2, zl, R);
+		STATUS("%e %e\n", kmin, kmax);
+	}
+	assert((isinf(k0) && isinf(k1)) || (k0 > k1));
+	assert(kmax > kmin);
+	if ( kmin < k1 ) {
+		if ( kmax < k1 ) {
+			/* Case 1 */
+			kstart = k1;   kfinis = k0;
+			return 0.0;
+		} else if ( kmax < k0 ) {
+			/* Case 2 (kmax > k1)*/
+			kstart = k1;   kfinis = kmax;
+		} else {
+			/* Case 3 (kmax > k1 and kmax > k0) */
+			kstart = k1;   kfinis = k0;
+		}
+	} else if ( kmin < k0 ) { /* kmin > k1 */
+		if ( kmax < k0 ) {
+			/* Case 4 */
+			kstart = kmin;   kfinis = kmax;
+		} else {
+			/* Case 5  (kmax > k0) */
+			kstart = kmin;   kfinis = k0;
+		}
+	} else {
+		/* Case 6 (kmin > k1 and (kmax>)kmin > k0) */
+		kstart = k1;   kfinis = k0;
+		return 0.0;
+	}
+
+	if ( kstart < 0.0 ) kstart = kmin;
+	if ( kfinis < 0.0 ) kfinis = kmax;
+
 	inc = (kfinis - kstart) / SAMPLES;
 
 	if ( verbose ) {
