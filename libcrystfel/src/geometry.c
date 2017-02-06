@@ -622,7 +622,6 @@ static double do_integral(double q2, double zl, double R,
 }
 
 
-
 static void ginn_spectrum_partialities(Crystal *cryst)
 {
 	RefList *list;
