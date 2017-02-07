@@ -1154,7 +1154,7 @@ static int get_ev_based_value(struct hdfile *f, const char *name,
 	char *subst_name = NULL;
 
 	if ( ev->path_length != 0 ) {
-		subst_name = partial_event_substitution(ev, name);
+		subst_name = retrieve_full_path(ev, name);
 	} else {
 		subst_name = strdup(name);
 	}
@@ -1966,7 +1966,7 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 	char *tmp = NULL, *subst_name = NULL;
 
 	if (ev != NULL && ev->path_length != 0 ) {
-		subst_name = partial_event_substitution(ev, name);
+		subst_name = retrieve_full_path(ev, name);
 	} else {
 		subst_name = strdup(name);
 	}

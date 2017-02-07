@@ -1204,7 +1204,7 @@ struct detector *get_detector_geometry_2(const char *filename,
 	int i;
 	int rgi, rgci;
 	int reject = 0;
-	int path_dim;
+	int path_dim, mask_path_dim;
 	int dim_dim;
 	int dim_reject = 0;
 	int dim_dim_reject = 0;
@@ -1389,6 +1389,7 @@ struct detector *get_detector_geometry_2(const char *filename,
 
 	}
 
+	mask_path_dim = -1;
 	for ( i=0; i<det->n_panels; i++ ) {
 
 		int panel_mask_dim = 0;
@@ -1398,8 +1399,7 @@ struct detector *get_detector_geometry_2(const char *filename,
 
 			next_instance = det->panels[i].mask;
 
-			while(next_instance)
-			{
+			while ( next_instance ) {
 				next_instance = strstr(next_instance, "%");
 				if ( next_instance != NULL ) {
 					next_instance += 1*sizeof(char);
@@ -1407,15 +1407,26 @@ struct detector *get_detector_geometry_2(const char *filename,
 				}
 			}
 
-			if ( panel_mask_dim != path_dim ) {
-				dim_reject = 1;
+			if ( mask_path_dim == -1 ) {
+				mask_path_dim = panel_mask_dim;
+			} else {
+				if ( panel_mask_dim != mask_path_dim ) {
+					dim_reject = 1;
+				}
 			}
+
 		}
 	}
 
-	if ( dim_reject ==  1) {
+	if ( dim_reject ==  1 ) {
 		ERROR("All panels' data and mask entries must have the same "
 		      "number of placeholders\n");
+		reject = 1;
+	}
+
+	if ( mask_path_dim > path_dim ) {
+		ERROR("Number of placeholders in mask cannot be larger than "
+		      "for data\n");
 		reject = 1;
 	}
 
