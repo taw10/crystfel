@@ -618,6 +618,21 @@ static double do_integral(double q2, double zl, double R,
 
 	if ( fh != NULL ) fclose(fh);
 
+	if ( isnan(total) ) {
+		ERROR("NaN total!\n");
+		STATUS("Nominal k = %e m^-1\n", 1.0/lambda);
+		STATUS(" (wavelength %e m)\n", lambda);
+		STATUS("Bandwidth %e m\n", sig);
+		STATUS("k1/2 = %e m^-1\n", -q2/(2.0*zl));
+		STATUS(" (wavelength %e m)\n", 1.0/(-q2/(2.0*zl)));
+		STATUS("Reflection k goes from %e to %e m^-1\n", k1, k0);
+		STATUS(" (wavelengths from %e to %e m\n", 1.0/k1, 1.0/k0);
+		STATUS("Beam goes from %e to %e m^-1\n", kmin, kmax);
+		STATUS(" (wavelengths from %e to %e m\n", 1.0/kmin, 1.0/kmax);
+		STATUS("Integration goes from %e to %e m^-1\n", kstart, kfinis);
+		STATUS(" (wavelengths from %e to %e m\n", 1.0/kstart, 1.0/kfinis);
+	}
+
 	return total;
 }
 
@@ -686,6 +701,7 @@ static void ginn_spectrum_partialities(Crystal *cryst)
 
 		if ( total > 2.0*norm ) {
 			/* Error! */
+			STATUS("total > 2*norm!\n");
 			do_integral(q2, zl, R, lambda, sig, 1);
 			do_integral(q2, -0.5*q2*lambda, R, lambda, sig, 2);
 			abort();

@@ -89,7 +89,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 	int n_used = 0;
 
 	if ( filename != NULL ) {
-		fh = fopen(filename, "a");
+		fh = fopen(filename, "w");
 		if ( fh == NULL ) {
 			ERROR("Failed to open '%s'\n", filename);
 		}
@@ -204,6 +204,7 @@ struct rf_priv {
 	const Crystal *cr;
 	const RefList *full;
 	enum gparam *rv;
+	int verbose;
 };
 
 
@@ -244,7 +245,15 @@ static double residual_f(const gsl_vector *v, void *pp)
 
 	update_predictions(cr);
 	calculate_partialities(cr, PMODEL_XSPHERE);
+
 	res = residual(cr, pv->full, 0, NULL, NULL);
+
+	if ( isnan(res) ) {
+		ERROR("NaN residual\n");
+		ERROR("G=%e, B=%e\n", crystal_get_osf(cr), crystal_get_Bfac(cr));
+		residual(cr, pv->full, 0, NULL, "nan-residual.dat");
+		abort();
+	}
 
 	cell_free(cell);
 	reflist_free(list);
@@ -295,7 +304,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	int status;
 
 	if ( verbose ) {
-		STATUS("PR initial: dev = %10.5e, free dev = %10.5e\n",
+		STATUS("\nPR initial: dev = %10.5e, free dev = %10.5e\n",
 		       residual(cr, full, 0, NULL, NULL),
 		       residual(cr, full, 1, NULL, NULL));
 	}
@@ -307,6 +316,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	residual_f_priv.cr = cr;
 	residual_f_priv.full = full;
 	residual_f_priv.rv = rv;
+	residual_f_priv.verbose = 1;
 	f.f = residual_f;
 	f.n = n_params;
 	f.params = &residual_f_priv;
@@ -329,19 +339,40 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		status = gsl_multimin_fminimizer_iterate(min);
 		if ( status ) break;
 
-		status = gsl_multimin_test_size(min->size, 1.0e-3);
-
-		if ( status == GSL_SUCCESS ) {
-			STATUS("Done!\n");
-		}
-
 		if ( verbose ) {
-			STATUS("PR iter %2i: dev = %10.5e, free dev = %10.5e\n",
-			       n_iter, residual(cr, full, 0, NULL, NULL),
-			               residual(cr, full, 1, NULL, NULL));
+			double res = residual_f(min->x, &residual_f_priv);
+			STATUS("%f %f residual = %e\n",
+			       rad2deg(gsl_vector_get(min->x, 0)),
+			       rad2deg(gsl_vector_get(min->x, 1)), res);
 		}
 
-	} while ( status == GSL_CONTINUE && n_iter < 30 );
+		status = gsl_multimin_test_size(min->size, 1.0e-8);
+
+	} while ( status == GSL_CONTINUE && n_iter < 100 );
+
+	if ( verbose ) {
+		STATUS("Done with refinement after %i iter\n", n_iter);
+		STATUS("status = %i (%s)\n", status, gsl_strerror(status));
+	}
+
+	double tang;
+	tang = fabs(gsl_vector_get(min->x, 0)) + fabs(gsl_vector_get(min->x, 1));
+	if ( rad2deg(tang) > 5.0 ) {
+		ERROR("More than 5 degrees total rotation!\n");
+		residual_f_priv.verbose = 1;
+		double res = residual_f(min->x, &residual_f_priv);
+		STATUS("residual after rotation = %e\n", res);
+		residual_f_priv.verbose = 2;
+		res = residual_f(v, &residual_f_priv);
+		STATUS("residual before rotation = %e\n", res);
+		return;
+	}
+
+	if ( verbose ) {
+		STATUS("PR final: dev = %10.5e, free dev = %10.5e\n",
+		       residual(cr, full, 0, NULL, NULL),
+		       residual(cr, full, 1, NULL, NULL));
+	}
 
 	gsl_multimin_fminimizer_free(min);
 	gsl_vector_free(v);
@@ -352,7 +383,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 static struct prdata pr_refine(Crystal *cr, const RefList *full,
                                PartialityModel pmodel)
 {
-	int verbose = 1;
+	int verbose = 0;
 	struct prdata prdata;
 
 	prdata.refined = 0;
