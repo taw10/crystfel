@@ -302,6 +302,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	int n_params = 0;
 	int n_iter = 0;
 	int status;
+	double ang1, ang2;
 
 	if ( verbose ) {
 		STATUS("\nPR initial: dev = %10.5e, free dev = %10.5e\n",
@@ -355,9 +356,9 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		STATUS("status = %i (%s)\n", status, gsl_strerror(status));
 	}
 
-	double tang;
-	tang = fabs(gsl_vector_get(min->x, 0)) + fabs(gsl_vector_get(min->x, 1));
-	if ( rad2deg(tang) > 5.0 ) {
+	ang1 = gsl_vector_get(min->x, 0);
+	ang2 = gsl_vector_get(min->x, 1);
+	if ( rad2deg(fabs(ang1)+fabs(ang2)) > 5.0 ) {
 		ERROR("More than 5 degrees total rotation!\n");
 		residual_f_priv.verbose = 1;
 		double res = residual_f(min->x, &residual_f_priv);
@@ -370,8 +371,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 	/* Apply the final shifts */
 	UnitCell *cnew;
-	cnew = rotate_cell_xy(crystal_get_cell(cr), gsl_vector_get(min->x, 0),
-	                                           gsl_vector_get(min->x, 1));
+	cnew = rotate_cell_xy(crystal_get_cell(cr), ang1, ang2);
 	cell_free(crystal_get_cell(cr));
 	crystal_set_cell(cr, cnew);
 
