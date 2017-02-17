@@ -208,19 +208,19 @@ struct rf_priv {
 };
 
 
-static double residual_f(const gsl_vector *v, void *pp)
+static void apply_parameters(const gsl_vector *v, enum gparam *rv, Crystal *cr)
 {
-	struct rf_priv *pv = pp;
 	int i;
+	double ang1, ang2, R;
 	UnitCell *cell;
-	RefList *list;
-	Crystal *cr;
-	double res;
-	double ang1 = 0.0;
-	double ang2 = 0.0;
+
+	/* Default parameters if not used in refinement */
+	ang1 = 0.0;
+	ang2 = 0.0;
+	R = crystal_get_profile_radius(cr);
 
 	for ( i=0; i<v->size; i++ ) {
-		switch ( pv->rv[i] ) {
+		switch ( rv[i] ) {
 
 			case GPARAM_ANG1 :
 			ang1 = gsl_vector_get(v, i);
@@ -230,18 +230,36 @@ static double residual_f(const gsl_vector *v, void *pp)
 			ang2 = gsl_vector_get(v, i);
 			break;
 
+			case GPARAM_R :
+			R = gsl_vector_get(v, i);
+			break;
+
 			default :
-			ERROR("Don't understand parameter %i\n", pv->rv[i]);
+			ERROR("Don't understand parameter %i\n", rv[i]);
 			break;
 
 		}
 	}
 
-	cell = rotate_cell_xy(crystal_get_cell_const(pv->cr), ang1, ang2);
+	cell = rotate_cell_xy(crystal_get_cell_const(cr), ang1, ang2);
+	crystal_set_cell(cr, cell);
+
+	crystal_set_profile_radius(cr, R);
+}
+
+
+static double residual_f(const gsl_vector *v, void *pp)
+{
+	struct rf_priv *pv = pp;
+	RefList *list;
+	Crystal *cr;
+	double res;
+
 	cr = crystal_copy(pv->cr);
+	apply_parameters(v, pv->rv, cr);
+
 	list = copy_reflist(crystal_get_reflections(cr));
 	crystal_set_reflections(cr, list);
-	crystal_set_cell(cr, cell);
 
 	update_predictions(cr);
 	calculate_partialities(cr, PMODEL_XSPHERE);
@@ -255,8 +273,8 @@ static double residual_f(const gsl_vector *v, void *pp)
 		abort();
 	}
 
-	cell_free(cell);
-	reflist_free(list);
+	cell_free(crystal_get_cell(cr));
+	reflist_free(crystal_get_reflections(cr));
 	crystal_free(cr);
 
 	return res;
@@ -269,6 +287,7 @@ static double get_initial_param(Crystal *cr, enum gparam p)
 
 		case GPARAM_ANG1 : return 0.0;
 		case GPARAM_ANG2 : return 0.0;
+		case GPARAM_R : return crystal_get_profile_radius(cr);
 
 		default: return 0.0;
 
@@ -282,6 +301,7 @@ static double get_stepsize(enum gparam p)
 
 		case GPARAM_ANG1 : return deg2rad(0.01);
 		case GPARAM_ANG2 : return deg2rad(0.01);
+		case GPARAM_R : return 0.00005e9;
 
 		default : return 0.0;
 
@@ -313,6 +333,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	/* The parameters to be refined */
 	rv[n_params++] = GPARAM_ANG1;
 	rv[n_params++] = GPARAM_ANG2;
+	//rv[n_params++] = GPARAM_R;
 
 	residual_f_priv.cr = cr;
 	residual_f_priv.full = full;
@@ -356,6 +377,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		STATUS("status = %i (%s)\n", status, gsl_strerror(status));
 	}
 
+	/* FIXME: Not the right way to get the angles */
 	ang1 = gsl_vector_get(min->x, 0);
 	ang2 = gsl_vector_get(min->x, 1);
 	if ( rad2deg(fabs(ang1)+fabs(ang2)) > 5.0 ) {
@@ -370,11 +392,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	}
 
 	/* Apply the final shifts */
-	UnitCell *cnew;
-	cnew = rotate_cell_xy(crystal_get_cell(cr), ang1, ang2);
-	cell_free(crystal_get_cell(cr));
-	crystal_set_cell(cr, cnew);
-
+	apply_parameters(min->x, rv, cr);
 	update_predictions(cr);
 	calculate_partialities(cr, PMODEL_XSPHERE);
 
