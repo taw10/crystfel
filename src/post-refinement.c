@@ -368,6 +368,16 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		return;
 	}
 
+	/* Apply the final shifts */
+	UnitCell *cnew;
+	cnew = rotate_cell_xy(crystal_get_cell(cr), gsl_vector_get(min->x, 0),
+	                                           gsl_vector_get(min->x, 1));
+	cell_free(crystal_get_cell(cr));
+	crystal_set_cell(cr, cnew);
+
+	update_predictions(cr);
+	calculate_partialities(cr, PMODEL_XSPHERE);
+
 	if ( verbose ) {
 		STATUS("PR final: dev = %10.5e, free dev = %10.5e\n",
 		       residual(cr, full, 0, NULL, NULL),
