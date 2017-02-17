@@ -1,7 +1,7 @@
 CrystFEL - Crystallography with a FEL
 -------------------------------------
 
-Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
                       a research centre of the Helmholtz Association.
 
 Authors:
@@ -174,3 +174,19 @@ If you are installing from Git, the following extra things apply:
 - You will not be able to use the "--enable-gtk-doc" option to configure unless
   you have at least version 1.9 of gtk-doc installed.
 
+
+Funding acknowledgements
+------------------------
+
+Development of CrystFEL is primarily funded by the Helmholtz Association via
+programme-oriented funds.
+
+Additional funding for CrystFEL is provided by "X-Probe", a project of the
+European Union's 2020 Research and Innovation Program Under the Marie
+Skłodowska-Curie grant agreement 637295 (2015-2018).
+
+Additional funding for CrystFEL is provided by the BMBF German-Russian
+Cooperation "SyncFELMed", grant 05K14CHA (2014-2017).
+
+Past funding for CrystFEL has been received from BioStruct-X, a project funded
+by the Seventh Framework Programme (FP7) of the European Commission.
