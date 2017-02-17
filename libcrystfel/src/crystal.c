@@ -166,7 +166,7 @@ const UnitCell *crystal_get_cell_const(const Crystal *cryst)
 }
 
 
-double crystal_get_profile_radius(Crystal *cryst)
+double crystal_get_profile_radius(const Crystal *cryst)
 {
 	return cryst->profile_radius;
 }

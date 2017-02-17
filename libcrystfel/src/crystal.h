@@ -57,7 +57,7 @@ extern void crystal_free(Crystal *cryst);
 
 extern UnitCell *crystal_get_cell(Crystal *cryst);
 extern const UnitCell *crystal_get_cell_const(const Crystal *cryst);
-extern double crystal_get_profile_radius(Crystal *cryst);
+extern double crystal_get_profile_radius(const Crystal *cryst);
 extern RefList *crystal_get_reflections(Crystal *cryst);
 extern double crystal_get_resolution_limit(Crystal *cryst);
 extern long long int crystal_get_num_saturated_reflections(Crystal *cryst);
