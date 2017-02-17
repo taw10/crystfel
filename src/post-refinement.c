@@ -177,24 +177,24 @@ static UnitCell *rotate_cell_xy(const UnitCell *cell, double ang1, double ang2)
 	csx = xnew;  csy = ynew;  csz = znew;
 
 	/* "a" around y */
-	xnew = asx*cos(ang1) + asz*sin(ang2);
+	xnew = asx*cos(ang2) + asz*sin(ang2);
 	ynew = asy;
 	znew = -asx*sin(ang2) + asz*cos(ang2);
 	asx = xnew;  asy = ynew;  asz = znew;
 
 	/* "b" around y */
-	xnew = bsx*cos(ang1) + bsz*sin(ang2);
+	xnew = bsx*cos(ang2) + bsz*sin(ang2);
 	ynew = bsy;
 	znew = -bsx*sin(ang2) + bsz*cos(ang2);
 	bsx = xnew;  bsy = ynew;  bsz = znew;
 
 	/* "c" around y */
-	xnew = csx*cos(ang1) + csz*sin(ang2);
+	xnew = csx*cos(ang2) + csz*sin(ang2);
 	ynew = csy;
 	znew = -csx*sin(ang2) + csz*cos(ang2);
 	csx = xnew;  csy = ynew;  csz = znew;
 
-	cell_set_reciprocal(o, asx, asy, asy, bsx, bsy, bsz, csx, csy, csz);
+	cell_set_reciprocal(o, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
 
 	return o;
 }
@@ -346,7 +346,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 			       rad2deg(gsl_vector_get(min->x, 1)), res);
 		}
 
-		status = gsl_multimin_test_size(min->size, 1.0e-8);
+		status = gsl_multimin_test_size(min->size, 1.0e-5);
 
 	} while ( status == GSL_CONTINUE && n_iter < 100 );
 

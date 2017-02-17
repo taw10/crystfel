@@ -265,7 +265,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	kmin = 1.0/(image->lambda + image->lambda*image->bw);
 	knom = 1.0/image->lambda;
 	kmax = 1.0/(image->lambda - image->lambda*image->bw);
-	if ( (k1>kmax) || (k0<kmin) ) return NULL;
+	if ( (updateme == NULL) && ((k1>kmax) || (k0<kmin)) ) return NULL;
 
 	/* Calculate excitation error */
 	dcs = distance3d(0.0, 0.0, -knom, xl, yl, zl);
