@@ -81,7 +81,8 @@ enum gparam {
 	GPARAM_OSF,   /* Linear scale factor */
 	GPARAM_BFAC,  /* D-W scale factor */
 	GPARAM_ANG1,  /* Out of plane rotation angles of crystal */
-	GPARAM_ANG2
+	GPARAM_ANG2,
+	GPARAM_WAVELENGTH
 };
 
 

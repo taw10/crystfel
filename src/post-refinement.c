@@ -200,38 +200,76 @@ static UnitCell *rotate_cell_xy(const UnitCell *cell, double ang1, double ang2)
 }
 
 
+/* We set all the step sizes to 1, then scale them.
+ * This way, the size of the simplex stays meaningful and we possibly also
+ *  avoid some roundoff errors */
+static double get_scale(enum gparam p)
+{
+	switch ( p ) {
+
+		case GPARAM_ANG1 : return deg2rad(0.01);
+		case GPARAM_ANG2 : return deg2rad(0.01);
+		case GPARAM_R : return 0.0005e9;
+		case GPARAM_WAVELENGTH : return 0.001e-10;
+
+		default : return 0.0;
+
+	}
+}
+
+
 struct rf_priv {
 	const Crystal *cr;
 	const RefList *full;
 	enum gparam *rv;
 	int verbose;
+	const gsl_vector *initial;
 };
 
 
-static void apply_parameters(const gsl_vector *v, enum gparam *rv, Crystal *cr)
+static double get_actual_val(const gsl_vector *v, const gsl_vector *initial,
+                             enum gparam *rv, int i)
+{
+	return gsl_vector_get(v, i) * get_scale(rv[i])
+	             + gsl_vector_get(initial, i);
+}
+
+
+static void apply_parameters(const gsl_vector *v, const gsl_vector *initial,
+                             enum gparam *rv, Crystal *cr)
 {
 	int i;
-	double ang1, ang2, R;
+	double ang1, ang2, R, lambda;
 	UnitCell *cell;
 
 	/* Default parameters if not used in refinement */
 	ang1 = 0.0;
 	ang2 = 0.0;
 	R = crystal_get_profile_radius(cr);
+	lambda = crystal_get_image(cr)->lambda;
 
 	for ( i=0; i<v->size; i++ ) {
+
+		double val;
+
+		val = get_actual_val(v, initial, rv, i);
+
 		switch ( rv[i] ) {
 
 			case GPARAM_ANG1 :
-			ang1 = gsl_vector_get(v, i);
+			ang1 = val;
 			break;
 
 			case GPARAM_ANG2 :
-			ang2 = gsl_vector_get(v, i);
+			ang2 = val;
 			break;
 
 			case GPARAM_R :
-			R = gsl_vector_get(v, i);
+			R = val;
+			break;
+
+			case GPARAM_WAVELENGTH :
+			lambda = val;
 			break;
 
 			default :
@@ -245,6 +283,7 @@ static void apply_parameters(const gsl_vector *v, enum gparam *rv, Crystal *cr)
 	crystal_set_cell(cr, cell);
 
 	crystal_set_profile_radius(cr, R);
+	crystal_get_image(cr)->lambda = lambda;
 }
 
 
@@ -252,11 +291,14 @@ static double residual_f(const gsl_vector *v, void *pp)
 {
 	struct rf_priv *pv = pp;
 	RefList *list;
+	struct image im;
 	Crystal *cr;
 	double res;
 
 	cr = crystal_copy(pv->cr);
-	apply_parameters(v, pv->rv, cr);
+	im = *crystal_get_image(cr);
+	crystal_set_image(cr, &im);
+	apply_parameters(v, pv->initial, pv->rv, cr);
 
 	list = copy_reflist(crystal_get_reflections(cr));
 	crystal_set_reflections(cr, list);
@@ -288,22 +330,9 @@ static double get_initial_param(Crystal *cr, enum gparam p)
 		case GPARAM_ANG1 : return 0.0;
 		case GPARAM_ANG2 : return 0.0;
 		case GPARAM_R : return crystal_get_profile_radius(cr);
+		case GPARAM_WAVELENGTH : return crystal_get_image(cr)->lambda;
 
 		default: return 0.0;
-
-	}
-}
-
-
-static double get_stepsize(enum gparam p)
-{
-	switch ( p ) {
-
-		case GPARAM_ANG1 : return deg2rad(0.01);
-		case GPARAM_ANG2 : return deg2rad(0.01);
-		case GPARAM_R : return 0.00005e9;
-
-		default : return 0.0;
 
 	}
 }
@@ -314,7 +343,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 {
 	int i;
 	gsl_multimin_fminimizer *min;
-	gsl_vector *v;
+	gsl_vector *initial;
+	gsl_vector *vals;
 	gsl_vector *step;
 	gsl_multimin_function f;
 	enum gparam rv[32];
@@ -333,7 +363,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	/* The parameters to be refined */
 	rv[n_params++] = GPARAM_ANG1;
 	rv[n_params++] = GPARAM_ANG2;
-	//rv[n_params++] = GPARAM_R;
+	rv[n_params++] = GPARAM_R;
+	rv[n_params++] = GPARAM_WAVELENGTH;
 
 	residual_f_priv.cr = cr;
 	residual_f_priv.full = full;
@@ -343,17 +374,20 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	f.n = n_params;
 	f.params = &residual_f_priv;
 
-	v = gsl_vector_alloc(n_params);
+	initial = gsl_vector_alloc(n_params);
+	vals = gsl_vector_alloc(n_params);
 	step = gsl_vector_alloc(n_params);
 
 	for ( i=0; i<n_params; i++ ) {
-		gsl_vector_set(v, i, get_initial_param(cr, rv[i]));
-		gsl_vector_set(step, i, get_stepsize(rv[i]));
+		gsl_vector_set(initial, i, get_initial_param(cr, rv[i]));
+		gsl_vector_set(vals, i, 0.0);
+		gsl_vector_set(step, i, 1.0);
 	}
 
+	residual_f_priv.initial = initial;
 	min = gsl_multimin_fminimizer_alloc(gsl_multimin_fminimizer_nmsimplex2,
 	                                    n_params);
-	gsl_multimin_fminimizer_set(min, &f, v, step);
+	gsl_multimin_fminimizer_set(min, &f, vals, step);
 
 	do {
 		n_iter++;
@@ -363,14 +397,22 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 		if ( verbose ) {
 			double res = residual_f(min->x, &residual_f_priv);
-			STATUS("%f %f residual = %e\n",
-			       rad2deg(gsl_vector_get(min->x, 0)),
-			       rad2deg(gsl_vector_get(min->x, 1)), res);
+			double size = gsl_multimin_fminimizer_size(min);
+			STATUS("%f %f %f %f ----> %f %f %e %f residual = %e size %f\n",
+			       gsl_vector_get(min->x, 0),
+			       gsl_vector_get(min->x, 1),
+			       gsl_vector_get(min->x, 2),
+			       gsl_vector_get(min->x, 3),
+			       rad2deg(get_actual_val(min->x, initial, rv, 0)),
+			       rad2deg(get_actual_val(min->x, initial, rv, 1)),
+			       get_actual_val(min->x, initial, rv, 2)/1e9,
+			       get_actual_val(min->x, initial, rv, 3)*1e10,
+			       res, size);
 		}
 
-		status = gsl_multimin_test_size(min->size, 1.0e-5);
+		status = gsl_multimin_test_size(min->size, 0.1);
 
-	} while ( status == GSL_CONTINUE && n_iter < 100 );
+	} while ( status == GSL_CONTINUE && n_iter < 1000 );
 
 	if ( verbose ) {
 		STATUS("Done with refinement after %i iter\n", n_iter);
@@ -378,21 +420,21 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	}
 
 	/* FIXME: Not the right way to get the angles */
-	ang1 = gsl_vector_get(min->x, 0);
-	ang2 = gsl_vector_get(min->x, 1);
+	ang1 = get_actual_val(min->x, initial, rv, 0);
+	ang2 = get_actual_val(min->x, initial, rv, 1);
 	if ( rad2deg(fabs(ang1)+fabs(ang2)) > 5.0 ) {
 		ERROR("More than 5 degrees total rotation!\n");
 		residual_f_priv.verbose = 1;
 		double res = residual_f(min->x, &residual_f_priv);
 		STATUS("residual after rotation = %e\n", res);
 		residual_f_priv.verbose = 2;
-		res = residual_f(v, &residual_f_priv);
+		res = residual_f(initial, &residual_f_priv);
 		STATUS("residual before rotation = %e\n", res);
 		return;
 	}
 
 	/* Apply the final shifts */
-	apply_parameters(min->x, rv, cr);
+	apply_parameters(min->x, initial, rv, cr);
 	update_predictions(cr);
 	calculate_partialities(cr, PMODEL_XSPHERE);
 
@@ -403,7 +445,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	}
 
 	gsl_multimin_fminimizer_free(min);
-	gsl_vector_free(v);
+	gsl_vector_free(initial);
+	gsl_vector_free(vals);
 	gsl_vector_free(step);
 }
 
