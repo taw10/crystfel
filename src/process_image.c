@@ -197,7 +197,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		case PEAK_ZAEF:
 		search_peaks(&image, iargs->threshold,
 		             iargs->min_gradient, iargs->min_snr,
-		             iargs->pk_inn, iargs->pk_mid,iargs->pk_out,
+		             iargs->pk_inn, iargs->pk_mid, iargs->pk_out,
 		             iargs->use_saturated);
 		break;
 
