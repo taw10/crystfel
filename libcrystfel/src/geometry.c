@@ -523,6 +523,8 @@ static double do_integral(double q2, double zl, double R,
 	const double N = 1.5;  /* Pointiness of spectrum */
 	FILE *fh = NULL;
 
+	assert(R*R < q2);
+
 	/* Range over which P is different from zero */
 	k0 = (R*R - q2)/(2.0*(zl+R));
 	k1 = (R*R - q2)/(2.0*(zl-R));

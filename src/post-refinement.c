@@ -294,6 +294,11 @@ static double residual_f(const gsl_vector *v, void *pp)
 	struct image im;
 	Crystal *cr;
 	double res;
+	int i;
+
+	for ( i=0; i<v->size; i++ ) {
+		if ( gsl_vector_get(v, i) > 100.0 ) return INFINITY;
+	}
 
 	cr = crystal_copy(pv->cr);
 	im = *crystal_get_image(cr);
