@@ -365,11 +365,14 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	int n_iter = 0;
 	int status;
 	double ang1, ang2;
+	double residual_start, residual_free_start;
+
+	residual_start = residual(cr, full, 0, NULL, NULL);
+	residual_free_start = residual(cr, full, 1, NULL, NULL);
 
 	if ( verbose ) {
 		STATUS("\nPR initial: dev = %10.5e, free dev = %10.5e\n",
-		       residual(cr, full, 0, NULL, NULL),
-		       residual(cr, full, 1, NULL, NULL));
+		       residual_start, residual_free_start);
 	}
 
 	/* The parameters to be refined */
