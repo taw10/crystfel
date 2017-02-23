@@ -307,6 +307,11 @@ static double residual_f(const gsl_vector *v, void *pp)
 	crystal_set_image(cr, &im);
 	apply_parameters(v, pv->initial, pv->rv, cr);
 
+	if ( crystal_get_profile_radius(cr) < 0.0 ) {
+		crystal_free(cr);
+		return INFINITY;
+	}
+
 	list = copy_reflist(crystal_get_reflections(cr));
 	crystal_set_reflections(cr, list);
 
