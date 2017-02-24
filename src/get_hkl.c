@@ -98,7 +98,9 @@ static void show_help(const char *s)
 
 static void copy_notes(RefList *out, RefList *in)
 {
-	reflist_add_notes(out, reflist_get_notes(in));
+	if ( reflist_get_notes(in) != NULL ) {
+		reflist_add_notes(out, reflist_get_notes(in));
+	}
 }
 
 
