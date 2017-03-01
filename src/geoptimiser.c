@@ -2488,7 +2488,9 @@ int main(int argc, char *argv[])
 	}
 
 #ifdef HAVE_SAVE_TO_PNG
+#if !GLIB_CHECK_VERSION(2,36,0)
 	g_type_init();
+#endif
 #endif
 
 	ret_val = optimize_geometry(gparams, det, quadrants, connected);
