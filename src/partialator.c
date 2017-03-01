@@ -846,6 +846,8 @@ int main(int argc, char *argv[])
 	char *csplit_fn = NULL;
 	struct custom_split *csplit = NULL;
 	double max_B = 1e-18;
+	char *rfile = NULL;
+	RefList *reference = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -866,8 +868,9 @@ int main(int argc, char *argv[])
 		{"push-res",           1, NULL,                5},
 		{"res-push",           1, NULL,                5}, /* compat */
 		{"custom-split",       1, NULL,                6},
-		{"max-rel-B"   ,       1, NULL,                7},
-		{"max-rel-b"   ,       1, NULL,                7}, /* compat */
+		{"max-rel-B",          1, NULL,                7},
+		{"max-rel-b",          1, NULL,                7}, /* compat */
+		{"reference",          1, NULL,                8}, /* ssshhh! */
 
 		{"no-scale",           0, &no_scale,           1},
 		{"no-pr",              0, &no_pr,              1},
@@ -993,6 +996,10 @@ int main(int argc, char *argv[])
 			max_B = max_B * 1e-20;
 			break;
 
+			case 8 :
+			rfile = strdup(optarg);
+			break;
+
 			case 0 :
 			break;
 
@@ -1058,6 +1065,16 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 		free(csplit_fn);
+	}
+
+	if ( rfile != NULL ) {
+		RefList *rread;
+		rread = read_reflections(rfile);
+		reference = asymmetric_indices(rread, sym);
+		reflist_free(rread);
+		ERROR("WARNING: Using an external reference.\n");
+		ERROR("WARNING: If you publish a structure based on the result,"
+		      " expect to have to retract your paper!\n");
 	}
 
 	gsl_set_error_handler_off();
@@ -1226,8 +1243,10 @@ int main(int argc, char *argv[])
 		}
 
 		if ( !no_pr ) {
-			refine_all(crystals, n_crystals, full, nthreads,
-			           pmodel);
+
+			RefList *r = (reference != NULL) ? reference : full;
+			refine_all(crystals, n_crystals, r, nthreads, pmodel);
+
 			reflist_free(full);
 			full = merge_intensities(crystals, n_crystals, nthreads,
 			                         pmodel, min_measurements,
