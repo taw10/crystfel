@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <gsl/gsl_multimin.h>
+#include <gsl/gsl_fit.h>
 
 #include "image.h"
 #include "post-refinement.h"
@@ -78,35 +79,108 @@ const char *str_prflag(enum prflag flag)
 }
 
 
+static int linear_scale(RefList *list1, const RefList *list2, double *G)
+{
+	Reflection *refl1;
+	Reflection *refl2;
+	RefListIterator *iter;
+	int max_n = 256;
+	int n = 0;
+	double *x;
+	double *y;
+	double *w;
+	int r;
+	double cov11;
+	double sumsq;
+
+	x = malloc(max_n*sizeof(double));
+	w = malloc(max_n*sizeof(double));
+	y = malloc(max_n*sizeof(double));
+	if ( (x==NULL) || (y==NULL) || (w==NULL) ) {
+		ERROR("Failed to allocate memory for scaling.\n");
+		return 1;
+	}
+
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) )
+	{
+		signed int h, k, l;
+		double Ih1, Ih2;
+
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;
+
+		Ih1 = get_intensity(refl1);
+		Ih2 = get_intensity(refl2);
+
+		if ( (Ih1 <= 0.0) || (Ih2 <= 0.0) ) continue;
+		if ( isnan(Ih1) || isinf(Ih1) ) continue;
+		if ( isnan(Ih2) || isinf(Ih2) ) continue;
+
+		if ( n == max_n ) {
+			max_n *= 2;
+			x = realloc(x, max_n*sizeof(double));
+			y = realloc(y, max_n*sizeof(double));
+			w = realloc(w, max_n*sizeof(double));
+			if ( (x==NULL) || (y==NULL) || (w==NULL) ) {
+				ERROR("Failed to allocate memory for scaling.\n");
+				return 1;
+			}
+		}
+
+		x[n] = Ih2;
+		y[n] = Ih1;
+		w[n] = get_partiality(refl1);
+		n++;
+
+	}
+
+	if ( n < 2 ) {
+		ERROR("Not enough reflections for scaling\n");
+		return 1;
+	}
+
+	r = gsl_fit_wmul(x, 1, w, 1, y, 1, n, G, &cov11, &sumsq);
+
+	if ( r ) {
+		ERROR("Scaling failed.\n");
+		return 1;
+	}
+
+	free(x);
+	free(y);
+	free(w);
+
+	return 0;
+}
+
+
+
 double residual(Crystal *cr, const RefList *full, int free,
                 int *pn_used, const char *filename)
 {
-	double dev = 0.0;
-	double G, B;
+	double G;
 	Reflection *refl;
 	RefListIterator *iter;
-	FILE *fh = NULL;
 	int n_used = 0;
+	double num = 0.0;
+	double den = 0.0;
 
-	if ( filename != NULL ) {
-		fh = fopen(filename, "w");
-		if ( fh == NULL ) {
-			ERROR("Failed to open '%s'\n", filename);
-		}
+	if ( linear_scale(crystal_get_reflections(cr), full, &G) ) {
+		return INFINITY;
 	}
-
-	G = crystal_get_osf(cr);
-	B = crystal_get_Bfac(cr);
 
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		double p, L, s, w;
+		double p, w;
 		signed int h, k, l;
 		Reflection *match;
-		double esd, I_full, I_partial;
-		double fx, dc;
+		double I_full;
+		double int1, int2;
 
 		if ( free && !get_flag(refl) ) continue;
 
@@ -115,34 +189,26 @@ double residual(Crystal *cr, const RefList *full, int free,
 		if ( match == NULL ) continue;
 		I_full = get_intensity(match);
 
-		if ( get_redundancy(match) < 2 ) continue;
+		if ( get_redundancy(match) < 1 ) continue; /* FIXME: 2 */
 
 		p = get_partiality(refl);
 		//if ( p < 0.2 ) continue;
 
-		I_partial = get_intensity(refl);
-		esd = get_esd_intensity(refl);
-		//if ( I_partial < 3.0*esd ) continue;
+		int1 = get_intensity(refl) / G;
+		int2 = p*I_full;
+		w = 1.0;
 
-		L = get_lorentz(refl);
-		s = resolution(crystal_get_cell(cr), h, k, l);
+		if ( int1 + int2 < 0.0 ) continue;
 
-		fx = exp(G)*p*exp(-B*s*s)*I_full/L;
-		dc = I_partial - fx;
-		w = (s/1e9)*(s/1e9)/(esd*esd);
-		dev += w*dc*dc;
+		num += fabs(int1 - int2) * w;
+		den += (int1 + int2) * w/2.0;
+
 		n_used++;
 
-		if ( fh != NULL ) {
-			fprintf(fh, "%4i %4i %4i %e %e\n",
-			        h, k, l, s, dev);
-		}
 	}
 
-	if ( fh != NULL ) fclose(fh);
-
 	if ( pn_used != NULL ) *pn_used = n_used;
-	return dev;
+	return num/(den*sqrt(2));
 }
 
 
