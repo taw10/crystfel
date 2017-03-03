@@ -658,7 +658,9 @@ static void scan_cells(CellWindow *w)
 
 		if ( ignore ) continue;
 
-		cell_get_parameters(cells[i], &a, &b, &c, &al, &be, &ga);
+		if ( cell_get_parameters(cells[i], &a, &b, &c, &al, &be, &ga) ) {
+			continue;
+		}
 		a *= 1e10;  b *= 1e10;  c *= 1e10;
 		al = rad2deg(al);  be = rad2deg(be);  ga = rad2deg(ga);
 
@@ -719,7 +721,10 @@ static void scan_minmax(CellWindow *w)
 		int j;
 		int found = 0;
 
-		cell_get_parameters(w->cells[i], &a, &b, &c, &al, &be, &ga);
+		if ( cell_get_parameters(w->cells[i], &a, &b, &c, &al, &be, &ga) ) {
+			ERROR("Cell %i is bad\n", i);
+			continue;
+		}
 		a *= 1e10;  b *= 1e10;  c *= 1e10;
 		al = rad2deg(al);  be = rad2deg(be);  ga = rad2deg(ga);
 
@@ -1554,6 +1559,8 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Failed to open '%s'\n", stream_filename);
 		return 1;
 	}
+
+	gsl_set_error_handler_off();
 
 	w.cells = NULL;
 	w.indms = NULL;
