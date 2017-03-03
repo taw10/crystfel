@@ -3,13 +3,13 @@
  *
  * Index patterns, output hkl+intensity etc.
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2017 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -181,8 +181,6 @@ int main(int argc, char *argv[])
 	int config_checkprefix = 1;
 	int config_basename = 0;
 	int integrate_saturated = 0;
-	IndexingMethod *indm;
-	IndexingPrivate **ipriv;
 	char *indm_str = NULL;
 	char *cellfile = NULL;
 	char *prefix = NULL;
@@ -236,7 +234,6 @@ int main(int argc, char *argv[])
 		ERROR("Couldn't allocate HDF5 field list.\n");
 		return 1;
 	}
-	iargs.indm = NULL;  /* No default */
 	iargs.ipriv = NULL;  /* No default */
 	iargs.int_meth = integration_method("rings-nocen-nosat-nograd", NULL);
 	iargs.push_res = 0.0;
@@ -591,35 +588,6 @@ int main(int argc, char *argv[])
 		iargs.hdf5_peak_path = command_line_peak_path;
 	}
 
-	/* Parse indexing methods */
-	if ( indm_str == NULL ) {
-
-		STATUS("You didn't specify an indexing method, so I  won't try "
-		       " to index anything.\n"
-		       "If that isn't what you wanted, re-run with"
-		       " --indexing=<methods>.\n");
-		indm = NULL;
-
-	} else {
-
-		int i = 0;
-
-		indm = build_indexer_list(indm_str);
-		if ( indm == NULL ) {
-			ERROR("Invalid indexer list '%s'\n", indm_str);
-			return 1;
-		}
-		free(indm_str);
-
-		/* If --no-refine, unset the refinement flag on all methods */
-		if ( no_refine ) {
-			while ( indm[i] != INDEXING_NONE ) {
-				indm[i] &= ~INDEXING_REFINE;
-				i++;
-			}
-		}
-	}
-
 	/* Parse integration method */
 	if ( int_str != NULL ) {
 
@@ -755,22 +723,29 @@ int main(int argc, char *argv[])
 	}
 	free(outfile);
 
-	/* Prepare the indexer */
-	if ( indm != NULL ) {
-		ipriv = prepare_indexing(indm, iargs.cell, iargs.det,
-		                         iargs.tols, iargs.felix_options);
-		if ( ipriv == NULL ) {
-			ERROR("Failed to prepare indexing.\n");
+	/* Prepare the indexing system */
+	if ( indm_str == NULL ) {
+
+		STATUS("You didn't specify an indexing method, so I  won't try "
+		       " to index anything.\n"
+		       "If that isn't what you wanted, re-run with"
+		       " --indexing=<methods>.\n");
+		iargs.ipriv = NULL;
+
+	} else {
+
+		iargs.ipriv = setup_indexing(indm_str, iargs.cell, iargs.det,
+		                             iargs.tols, no_refine,
+		                             iargs.felix_options);
+		if ( iargs.ipriv == NULL ) {
+			ERROR("Failed to set up indexing system\n");
 			return 1;
 		}
-	} else {
-		ipriv = NULL;
+		free(indm_str);
+
 	}
 
 	gsl_set_error_handler_off();
-
-	iargs.indm = indm;
-	iargs.ipriv = ipriv;
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
 	               st, tempdir);
@@ -783,7 +758,7 @@ int main(int argc, char *argv[])
 	free_detector_geometry(iargs.det);
 	free(iargs.hdf5_peak_path);
 	close_stream(st);
-	cleanup_indexing(indm, ipriv);
+	cleanup_indexing(iargs.ipriv);
 
 	return 0;
 }

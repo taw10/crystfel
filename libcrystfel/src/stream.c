@@ -1196,13 +1196,9 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 		}
 
 		if ( strncmp(line, "indexed_by = ", 13) == 0 ) {
-			IndexingMethod *list;
-			list = build_indexer_list(line+13);
-			if ( list == NULL ) {
+			image->indexed_by = get_indm_from_string(line+13);
+			if ( image->indexed_by == INDEXING_ERROR ) {
 				ERROR("Failed to read indexer list\n");
-			} else {
-				image->indexed_by = list[0];
-				free(list);
 			}
 		}
 

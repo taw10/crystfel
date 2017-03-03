@@ -219,8 +219,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Index the pattern */
 	time_accounts_set(taccs, TACC_INDEXING);
-	index_pattern_2(&image, iargs->indm, iargs->ipriv,
-	                &sb_shared->pings[cookie]);
+	index_pattern_2(&image, iargs->ipriv, &sb_shared->pings[cookie]);
 
 	r = chdir(rn);
 	if ( r ) {

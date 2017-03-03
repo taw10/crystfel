@@ -84,7 +84,7 @@
  * @INDEXING_USE_LATTICE_TYPE: Use lattice type and centering information to
  *   guide the indexing process.
  * @INDEXING_USE_CELL_PARAMETERS: Use the unit cell parameters to guide the
- *   indexingprocess.
+ *   indexing process.
  * @INDEXING_RETRY: If the indexer doesn't succeed, delete the weakest peaks
  *   and try again.
  * @INDEXING_MULTI: If the indexer succeeds, delete the peaks explained by the
@@ -107,6 +107,8 @@ typedef enum {
 	INDEXING_SIMULATION = 6,
 	INDEXING_DEBUG = 7,
 	INDEXING_ASDF = 8,
+
+	INDEXING_ERROR = 255,  /* Unrecognised indexing engine */
 
 	/* Bits at the top of the IndexingMethod are flags which modify the
 	 * behaviour of the indexer. */
@@ -136,28 +138,28 @@ extern "C" {
  * IndexingPrivate:
  *
  * This is an opaque data structure containing information needed by the
- * indexing method.
+ * indexing system.
  **/
-typedef void *IndexingPrivate;
+typedef struct _indexingprivate IndexingPrivate;
 
-extern IndexingMethod *build_indexer_list(const char *str);
+/* Convert indexing methods to/from text */
 extern char *indexer_str(IndexingMethod indm);
+extern IndexingMethod get_indm_from_string(const char *method);
 
 #include "detector.h"
 #include "cell.h"
 #include "image.h"
 
-extern IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
-                                          struct detector *det, float *ltl,
-                                          const char *options);
+extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
+                                       struct detector *det, float *ltl,
+                                       int no_refine, const char *options);
 
-extern void index_pattern(struct image *image,
-                          IndexingMethod *indms, IndexingPrivate **iprivs);
+extern void index_pattern(struct image *image, IndexingPrivate *ipriv);
 
-extern void index_pattern_2(struct image *image, IndexingMethod *indms,
-                            IndexingPrivate **iprivs, int *ping);
+extern void index_pattern_2(struct image *image, IndexingPrivate *ipriv,
+                            int *ping);
 
-extern void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs);
+extern void cleanup_indexing(IndexingPrivate *ipriv);
 
 #ifdef __cplusplus
 }

@@ -61,8 +61,7 @@ struct index_args
 	float min_snr;
 	int check_hdf5_snr;
 	struct detector *det;
-	IndexingMethod *indm;
-	IndexingPrivate **ipriv;
+	IndexingPrivate *ipriv;
 	int peaks;                /* Peak detection method */
 	float tols[4];
 	struct beam_params *beam;
