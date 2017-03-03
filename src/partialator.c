@@ -191,6 +191,12 @@ static void write_split(Crystal **crystals, int n_crystals, const char *outfile,
 	snprintf(tmp, 1024, "%s1", outfile);
 	split = merge_intensities(crystals1, n_crystals1, nthreads,
 		                  pmodel, min_measurements, push_res, 1);
+
+	if ( split == NULL ) {
+		ERROR("Not enough crystals for two way split!\n");
+		return;
+	}
+
 	STATUS("Writing two-way split to %s ", tmp);
 	write_reflist_2(tmp, split, sym);
 	reflist_free(split);
