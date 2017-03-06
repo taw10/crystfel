@@ -334,11 +334,34 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		crystal_set_mosaicity(cr, 0.0);
 
 		/* Prediction refinement if requested */
-		if ( (indm & INDEXING_REFINE)
-		   && (refine_prediction(image, cr) != 0) )
-		{
-			crystal_set_user_flag(cr, 1);
-			n_bad++;
+		if ( indm & INDEXING_REFINE ) {
+
+			UnitCell *out;
+
+			if ( refine_prediction(image, cr) ) {
+				crystal_set_user_flag(cr, 1);
+				n_bad++;
+			}
+
+			if ( (indm & INDEXING_CHECK_CELL_COMBINATIONS)
+			  || (indm & INDEXING_CHECK_CELL_AXES) )
+			{
+
+				/* Check that the cell parameters are still
+				 * within the tolerance */
+				out = match_cell(crystal_get_cell(cr),
+				                 ipriv->target_cell, 0,
+				                 ipriv->tolerance, 0);
+
+				if ( out == NULL ) {
+					crystal_set_user_flag(cr, 1);
+					n_bad++;
+				}
+
+				cell_free(out);
+
+			}
+
 		}
 
 	}
