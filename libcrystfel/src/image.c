@@ -288,9 +288,10 @@ void image_add_crystal(struct image *image, Crystal *cryst)
 }
 
 
-void remove_flagged_crystals(struct image *image)
+int remove_flagged_crystals(struct image *image)
 {
 	int i;
+	int n_bad = 0;
 
 	for ( i=0; i<image->n_crystals; i++ ) {
 		if ( crystal_get_user_flag(image->crystals[i]) ) {
@@ -302,9 +303,11 @@ void remove_flagged_crystals(struct image *image)
 				image->crystals[j] = image->crystals[j+1];
 			}
 			image->n_crystals--;
+			n_bad++;
 		}
 	}
 
+	return n_bad;
 }
 
 
