@@ -3,12 +3,12 @@
  *
  * Unit Cell utility functions
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2012,2014-2015 Thomas White <taw@physics.org>
+ *   2009-2012,2014-2017 Thomas White <taw@physics.org>
  *   2012                Lorenzo Galli
  *
  * This file is part of CrystFEL.
@@ -1685,4 +1685,121 @@ double cell_get_volume(UnitCell *cell)
 	rec_volume = (aCb.u*csx + aCb.v*csy + aCb.w*csz)/1e30;
 
 	return 1/rec_volume;
+}
+
+
+static double moduli_check(double ax, double ay, double az,
+                           double bx, double by, double bz)
+{
+	double ma = modulus(ax, ay, az);
+	double mb = modulus(bx, by, bz);
+	return fabs(ma-mb)/ma;
+}
+
+
+static int cells_are_similar(UnitCell *cell1, UnitCell *cell2,
+                             const double ltl, const double atl)
+{
+	double asx1, asy1, asz1, bsx1, bsy1, bsz1, csx1, csy1, csz1;
+	double asx2, asy2, asz2, bsx2, bsy2, bsz2, csx2, csy2, csz2;
+	UnitCell *pcell1, *pcell2;
+
+	/* Compare primitive cells, not centered */
+	pcell1 = uncenter_cell(cell1, NULL);
+	pcell2 = uncenter_cell(cell2, NULL);
+
+	cell_get_reciprocal(pcell1, &asx1, &asy1, &asz1,
+	                            &bsx1, &bsy1, &bsz1,
+	                            &csx1, &csy1, &csz1);
+
+	cell_get_reciprocal(pcell2, &asx2, &asy2, &asz2,
+	                            &bsx2, &bsy2, &bsz2,
+	                            &csx2, &csy2, &csz2);
+
+
+	cell_free(pcell1);
+	cell_free(pcell2);
+
+	if ( angle_between(asx1, asy1, asz1, asx2, asy2, asz2) > atl ) return 0;
+	if ( angle_between(bsx1, bsy1, bsz1, bsx2, bsy2, bsz2) > atl ) return 0;
+	if ( angle_between(csx1, csy1, csz1, csx2, csy2, csz2) > atl ) return 0;
+
+	if ( moduli_check(asx1, asy1, asz1, asx2, asy2, asz2) > ltl ) return 0;
+	if ( moduli_check(bsx1, bsy1, bsz1, bsx2, bsy2, bsz2) > ltl ) return 0;
+	if ( moduli_check(csx1, csy1, csz1, csx2, csy2, csz2) > ltl ) return 0;
+
+	return 1;
+}
+
+
+
+/**
+ * compare_cells:
+ * @a: A %UnitCell
+ * @b: Another %UnitCell
+ * @ltl: Maximum allowable fractional difference in reciprocal axis lengths
+ * @atl: Maximum allowable difference in reciprocal angles (in radians)
+ * @pmb: Place to store pointer to matrix
+ *
+ * Compare the two units cells.  If they agree to within @ltl and @atl, using
+ *  any change of axes, returns non-zero and stores the transformation to map @b
+ *  onto @a.
+ *
+ * Returns: non-zero if the cells match.
+ *
+ */
+int compare_cells(UnitCell *a, UnitCell *b, double ltl, double atl,
+                  IntegerMatrix **pmb)
+{
+	IntegerMatrix *m;
+	int i[9];
+
+	m = intmat_new(3, 3);
+
+	for ( i[0]=-1; i[0]<=+1; i[0]++ ) {
+	for ( i[1]=-1; i[1]<=+1; i[1]++ ) {
+	for ( i[2]=-1; i[2]<=+1; i[2]++ ) {
+	for ( i[3]=-1; i[3]<=+1; i[3]++ ) {
+	for ( i[4]=-1; i[4]<=+1; i[4]++ ) {
+	for ( i[5]=-1; i[5]<=+1; i[5]++ ) {
+	for ( i[6]=-1; i[6]<=+1; i[6]++ ) {
+	for ( i[7]=-1; i[7]<=+1; i[7]++ ) {
+	for ( i[8]=-1; i[8]<=+1; i[8]++ ) {
+
+		UnitCellTransformation *tfn;
+		UnitCell *nc;
+		int j, k;
+		int l = 0;
+
+		for ( j=0; j<3; j++ )
+			for ( k=0; k<3; k++ )
+				intmat_set(m, j, k, i[l++]);
+
+		if ( intmat_det(m) != +1 ) continue;
+
+		tfn = tfn_from_intmat(m);
+		nc = cell_transform(b, tfn);
+
+		if ( cells_are_similar(a, nc, ltl, atl) ) {
+			if ( pmb != NULL ) *pmb = m;
+			tfn_free(tfn);
+			cell_free(nc);
+			return 1;
+		}
+
+		tfn_free(tfn);
+		cell_free(nc);
+
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+
+	intmat_free(m);
+	return 0;
 }

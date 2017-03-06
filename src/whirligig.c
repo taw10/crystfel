@@ -279,107 +279,6 @@ static void find_and_process_series(struct window *win, int is_last_frame,
 }
 
 
-static double moduli_check(double ax, double ay, double az,
-                           double bx, double by, double bz)
-{
-	double ma = modulus(ax, ay, az);
-	double mb = modulus(bx, by, bz);
-	return fabs(ma-mb)/ma;
-}
-
-
-static int cells_are_similar(UnitCell *cell1, UnitCell *cell2)
-{
-	double asx1, asy1, asz1, bsx1, bsy1, bsz1, csx1, csy1, csz1;
-	double asx2, asy2, asz2, bsx2, bsy2, bsz2, csx2, csy2, csz2;
-	UnitCell *pcell1, *pcell2;
-	const double atl = deg2rad(5.0);
-	const double ltl = 0.1;
-
-	/* Compare primitive cells, not centered */
-	pcell1 = uncenter_cell(cell1, NULL);
-	pcell2 = uncenter_cell(cell2, NULL);
-
-	cell_get_reciprocal(pcell1, &asx1, &asy1, &asz1,
-	                            &bsx1, &bsy1, &bsz1,
-	                            &csx1, &csy1, &csz1);
-
-	cell_get_reciprocal(pcell2, &asx2, &asy2, &asz2,
-	                            &bsx2, &bsy2, &bsz2,
-	                            &csx2, &csy2, &csz2);
-
-
-	cell_free(pcell1);
-	cell_free(pcell2);
-
-	if ( angle_between(asx1, asy1, asz1, asx2, asy2, asz2) > atl ) return 0;
-	if ( angle_between(bsx1, bsy1, bsz1, bsx2, bsy2, bsz2) > atl ) return 0;
-	if ( angle_between(csx1, csy1, csz1, csx2, csy2, csz2) > atl ) return 0;
-
-	if ( moduli_check(asx1, asy1, asz1, asx2, asy2, asz2) > ltl ) return 0;
-	if ( moduli_check(bsx1, bsy1, bsz1, bsx2, bsy2, bsz2) > ltl ) return 0;
-	if ( moduli_check(csx1, csy1, csz1, csx2, csy2, csz2) > ltl ) return 0;
-
-	return 1;
-}
-
-
-static int gatinator(UnitCell *a, UnitCell *b, IntegerMatrix **pmb)
-{
-	IntegerMatrix *m;
-	int i[9];
-
-	m = intmat_new(3, 3);
-
-	for ( i[0]=-1; i[0]<=+1; i[0]++ ) {
-	for ( i[1]=-1; i[1]<=+1; i[1]++ ) {
-	for ( i[2]=-1; i[2]<=+1; i[2]++ ) {
-	for ( i[3]=-1; i[3]<=+1; i[3]++ ) {
-	for ( i[4]=-1; i[4]<=+1; i[4]++ ) {
-	for ( i[5]=-1; i[5]<=+1; i[5]++ ) {
-	for ( i[6]=-1; i[6]<=+1; i[6]++ ) {
-	for ( i[7]=-1; i[7]<=+1; i[7]++ ) {
-	for ( i[8]=-1; i[8]<=+1; i[8]++ ) {
-
-		UnitCellTransformation *tfn;
-		UnitCell *nc;
-		int j, k;
-		int l = 0;
-
-		for ( j=0; j<3; j++ )
-			for ( k=0; k<3; k++ )
-				intmat_set(m, j, k, i[l++]);
-
-		if ( intmat_det(m) != +1 ) continue;
-
-		tfn = tfn_from_intmat(m);
-		nc = cell_transform(b, tfn);
-
-		if ( cells_are_similar(a, nc) ) {
-			*pmb = m;
-			tfn_free(tfn);
-			cell_free(nc);
-			return 1;
-		}
-
-		tfn_free(tfn);
-		cell_free(nc);
-
-	}
-	}
-	}
-	}
-	}
-	}
-	}
-	}
-	}
-
-	intmat_free(m);
-	return 0;
-}
-
-
 static int crystal_used(struct window *win, int pos, int cn)
 {
 	int i;
@@ -411,8 +310,9 @@ static IntegerMatrix *try_all(struct window *win, int n1, int n2,
 	for ( i=0; i<i1->n_crystals; i++ ) {
 	for ( j=0; j<i2->n_crystals; j++ ) {
 
-		if ( gatinator(crystal_get_cell(i1->crystals[i]),
-		               crystal_get_cell(i2->crystals[j]), &m) )
+		if ( compare_cells(crystal_get_cell(i1->crystals[i]),
+		                   crystal_get_cell(i2->crystals[j]),
+		                   0.1, deg2rad(5.0), &m) )
 		{
 			if ( !crystal_used(win, n1, i)
 			  && !crystal_used(win, n2, j) )
@@ -478,8 +378,9 @@ static int try_join(struct window *win, int sn)
 	for ( j=0; j<win->img[win->join_ptr].n_crystals; j++ ) {
 		Crystal *cr2;
 		cr2 = win->img[win->join_ptr].crystals[j];
-		if ( gatinator(ref, crystal_get_cell(cr2),
-		               &win->mat[sn][win->join_ptr]) ) {
+		if ( compare_cells(ref, crystal_get_cell(cr2),
+		                   0.1, deg2rad(5.0),
+		                   &win->mat[sn][win->join_ptr]) ) {
 			win->ser[sn][win->join_ptr] = j;
 			cell_free(ref);
 			return 1;
