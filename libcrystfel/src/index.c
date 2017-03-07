@@ -354,9 +354,15 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 	}
 
+	/* For all the crystals found this time ... */
 	for ( i=0; i<r; i++ ) {
 
-		Crystal *cr = image->crystals[image->n_crystals-i-1];
+		int j;
+		int this_crystal = image->n_crystals - i - 1;
+
+		/* ... starting at the end of the (complete) list ... */
+		Crystal *cr = image->crystals[this_crystal];
+
 		crystal_set_image(cr, image);
 		crystal_set_user_flag(cr, 0);
 		crystal_set_profile_radius(cr, 0.02e9);
@@ -385,7 +391,6 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 				if ( out == NULL ) {
 					crystal_set_user_flag(cr, 1);
-					n_bad++;
 				}
 
 				cell_free(out);
@@ -394,13 +399,32 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		}
 
+		/* Don't do similarity check if this crystal is bad */
+		if ( crystal_get_user_flag(cr) ) continue;
+
+		/* Check if cell is too similar to existing ones */
+		for ( j=0; j<this_crystal; j++ ) {
+
+			Crystal *that_cr = image->crystals[j];
+
+			/* Don't do similarity check against bad crystals */
+			if ( crystal_get_user_flag(that_cr) ) continue;
+
+			if ( compare_cells(crystal_get_cell(cr),
+			                   crystal_get_cell(that_cr),
+			                   0.1, deg2rad(5.0), NULL) )
+			{
+				crystal_set_user_flag(cr, 1);
+				ERROR("Excluding duplicate cell\n");
+			}
+		}
+
 	}
 
-	remove_flagged_crystals(image);
+	n_bad = remove_flagged_crystals(image);
+	assert(r >= n_bad);
 
-	if ( n_bad == r ) return 0;
-
-	return r;
+	return r - n_bad;
 }
 
 
@@ -511,12 +535,9 @@ static int finished_retry(IndexingMethod indm, int r, struct image *image)
 		 * after deleting the explained peaks */
 
 		if ( indm & INDEXING_MULTI ) {
-			/* Remove "used" spots and try for
-			 * another lattice */
+			/* Remove "used" spots and try for another lattice */
 			Crystal *cr;
 			cr = image->crystals[image->n_crystals-1];
-			STATUS("WARNING: Multi-lattice indexing does not work"
-			       " well in this version.\n");
 			return delete_explained_peaks(image, cr);
 		} else {
 			return 1;
@@ -524,6 +545,7 @@ static int finished_retry(IndexingMethod indm, int r, struct image *image)
 
 	}
 }
+
 
 void index_pattern(struct image *image, IndexingPrivate *ipriv)
 {
