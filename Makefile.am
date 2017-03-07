@@ -159,6 +159,7 @@ crystfeldoc_DATA = doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
                    doc/examples/cspad-cxiformat.geom \
                    doc/examples/pilatus.geom \
                    doc/examples/cell-example.cell \
+                   doc/examples/Eiger16M-binning2-nativefiles.geom \
                    doc/hitrate.html doc/hitrate.png
 
 EXTRA_DIST += $(crystfeldoc_DATA) doc/twin-calculator.odt \
