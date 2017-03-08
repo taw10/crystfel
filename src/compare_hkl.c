@@ -286,13 +286,13 @@ static void add_to_fom(struct fom_context *fctx, double i1, double i2,
 		break;
 
 		case FOM_D1SIG :
-		if ( fabs(i1-i2) < (sig1+sig2)/2.0 ) {
+		if ( fabs(i1-i2) < sqrt(sig1*sig1 + sig2*sig2) ) {
 			fctx->n_within[bin]++;
 		}
 		break;
 
 		case FOM_D2SIG :
-		if ( fabs(i1-i2) < sig1+sig2 ) {  /* = 2 * (sig1+sig2)/2 */
+		if ( fabs(i1-i2) < 2.0*sqrt(sig1*sig1 + sig2*sig2) ) {
 			fctx->n_within[bin]++;
 		}
 		break;
