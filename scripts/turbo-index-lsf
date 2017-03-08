@@ -3,9 +3,9 @@
 RUN=$1
 NOSAMPLE=`echo $RUN | sed -e 's/\-.*$//'`
 
-GEOM=<name of geometry file>
+GEOM=my.geom  # Name of your geometry file
 
-find <path to CXI files>/$RUN -name '*.cxi' > files-${RUN}.lst
+find /path/to/CXI/files/$RUN -name '*.cxi' > files-${RUN}.lst  # Set location of files
 list_events -i files-${RUN}.lst -g $GEOM -o events-${RUN}.lst
 wc -l events-${RUN}.lst
 rm -f split-events-${RUN}.lst files-${RUN}.lst
@@ -18,6 +18,7 @@ for FILE in split-events-${RUN}.lst*; do
         NAME=`echo $FILE | sed -e "s/split-events-${RUN}.lst/${NOSAMPLE}-/"`
         echo "$NAME: $FILE  --->  $STREAM"
 
+	# Set indexing parameters here
         bsub -q psanaq -o $NAME.log -J $NAME -n 12 -R "span[hosts=1]" \
 	            indexamajig \
                            -i $FILE -o $STREAM -j 32 -g $GEOM --peaks=cxi

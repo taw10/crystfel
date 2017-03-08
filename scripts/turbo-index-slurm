@@ -1,0 +1,85 @@
+#!/bin/sh
+
+# Split a large indexing job into many small tasks and submit using SLURM
+
+# ./turbo-index my-files.lst label my.geom /location/for/streams
+
+# Copyright © 2016-2017 Deutsches Elektronen-Synchrotron DESY,
+#                       a research centre of the Helmholtz Association.
+#
+# Authors:
+#   2016      Steve Aplin <steve.aplin@desy.de>
+#   2016-2017 Thomas White <taw@physics.org>
+
+SPLIT=1000  # Size of job chunks
+MAIL=you@example.org  # Email address for SLURM notifications
+
+INPUT=$1
+RUN=$2
+GEOM=$3
+STREAMDIR=$4
+
+# Set up environment here if necessary
+#source /path/to/crystfel/setup.sh
+
+# Generate event list from file above
+list_events -i $INPUT -g $GEOM -o events-${RUN}.lst
+if [ $? != 0 ]; then
+       echo "list_events failed"
+       exit 1
+fi
+# If you are using single-event files instead of multi-event ("CXI") ones,
+# comment out the above lines and uncomment the following one:
+#cp $INPUT events-${RUN}.lst
+
+# Count total number of events
+wc -l events-${RUN}.lst
+
+# Split the events up, will create files with $SPLIT lines
+split -a 3 -d -l $SPLIT events-${RUN}.lst split-events-${RUN}.lst
+
+# Clean up
+rm -f events-${RUN}.lst
+
+# Loop over the event list files, and submit a batch job for each of them
+for FILE in split-events-${RUN}.lst*; do
+
+    # Stream file is the output of crystfel
+    STREAM=`echo $FILE | sed -e "s/split-events-${RUN}.lst/${RUN}.stream/"`
+
+    # Job name
+    NAME=`echo $FILE | sed -e "s/split-events-${RUN}.lst/${RUN}-/"`
+
+    echo "$NAME: $FILE  --->  $STREAM"
+
+    SLURMFILE="${NAME}.sh"
+
+    echo "#!/bin/sh" > $SLURMFILE
+    echo >> $SLURMFILE
+
+    echo "#SBATCH --partition=mypartition" >> $SLURMFILE  # Set your partition here
+    echo "#SBATCH --time=01:00:00" >> $SLURMFILE
+    echo "#SBATCH --nodes=1" >> $SLURMFILE
+    echo "#SBATCH --nice=100" >> $SLURMFILE # Set priority very low to allow other jobs through
+    echo >> $SLURMFILE
+
+    echo "#SBATCH --workdir   $PWD" >> $SLURMFILE
+    echo "#SBATCH --job-name  $NAME" >> $SLURMFILE
+    echo "#SBATCH --output    $NAME-%N-%j.out" >> $SLURMFILE
+    echo "#SBATCH --error     $NAME-%N-%j.err" >> $SLURMFILE
+    echo "#SBATCH --mail-type END" >> $SLURMFILE
+    echo "#SBATCH --mail-user $MAIL" >> $SLURMFILE
+    echo >> $SLURMFILE
+
+    echo "#source /path/to/crystfel/setup.sh" >> $SLURMFILE  # Set up environment here (again) if necessary
+    echo >> $SLURMFILE
+
+    command="indexamajig -i $FILE -o $STREAMDIR/$STREAM"
+    command="$command -j \`nproc\` -g $GEOM"
+    #command="$command --peaks=zaef"  # Indexing parameters here
+
+    echo $command >> $SLURMFILE
+
+    sbatch $SLURMFILE
+
+done
