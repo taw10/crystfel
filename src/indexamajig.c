@@ -13,6 +13,7 @@
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
+ *   2017      Valerio Mariani <valerio.mariani@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -88,6 +89,7 @@ static void show_help(const char *s)
 "     --peaks=<method>     Use 'method' for finding peaks.  Choose from:\n"
 "                           zaef  : Use Zaefferer (2000) gradient detection.\n"
 "                                    This is the default method.\n"
+"                           peakfinder8: Use Peakfinder8 algorithm.\n"
 "                           hdf5  : Get from a table in HDF5 file.\n"
 "                           cxi   : Get from CXI format HDF5 file.\n"
 "     --hdf5-peaks=<p>     Find peaks table in HDF5 file here.\n"
@@ -95,23 +97,42 @@ static void show_help(const char *s)
 "     --integration=<meth> Perform final pattern integration using <meth>.\n"
 "\n\n"
 "For more control over the process, you might need:\n\n"
-"    --tolerance=<tol>   Set the tolerances for cell comparison.\n"
-"                          Default: 5,5,5,1.5.\n"
-"    --filter-noise      Apply an aggressive noise filter which sets all\n"
-"                         pixels in each 3x3 region to zero if any of them\n"
-"                         have negative values.  Intensity measurement will\n"
-"                         be performed on the image as it was before this.\n"
-"    --median-filter=<n> Apply a median filter to the image data.  Intensity\n"
-"                         measurement will be performed on the image as it\n"
-"                         was before this.  The side length of the median\n"
-"                         filter box will be 2<n>+1.  Default: 0 (no filter).\n"
-"    --no-sat-corr       Don't correct values of saturated peaks using a\n"
-"                         table included in the HDF5 file.\n"
-"    --threshold=<n>     Only accept peaks above <n> ADU.  Default: 800.\n"
-"    --min-gradient=<n>  Minimum squared gradient for Zaefferer peak search.\n"
-"                         Default: 100,000.\n"
-"    --min-snr=<n>       Minimum signal-to-noise ratio for peaks.\n"
-"                         Default: 5.\n"
+"    --tolerance=<tol>     Set the tolerances for cell comparison.\n"
+"                            Default: 5,5,5,1.5.\n"
+"    --filter-noise        Apply an aggressive noise filter which sets all\n"
+"                           pixels in each 3x3 region to zero if any of them\n"
+"                           have negative values.  Intensity measurement will\n"
+"                           be performed on the image as it was before this.\n"
+"    --median-filter=<n>   Apply a median filter to the image data. Intensity\n"
+"                           measurement will be performed on the image as it\n"
+"                           was before this.  The side length of the median\n"
+"                           filter box will be 2<n>+1.\n"
+"                           Default: 0 (no filter).\n"
+"    --no-sat-corr         Don't correct values of saturated peaks using a\n"
+"                           table included in the HDF5 file.\n"
+"    --threshold=<n>       Only accept peaks above <n> ADU in both the\n"
+"	                    Zaefferer and Peakfinder8 algorithms."
+"                           Default: 800.\n"
+"    --min-gradient=<n>    Minimum squared gradient for Zaefferer peak\n"
+"                           search. Default: 100,000.\n"
+"    --min-snr=<n>         Minimum signal-to-noise ratio for peaks, with both"
+"                           Zaefferer and Peakfinder8 algorithms.\n"
+"                           Default: 5.\n"
+"    --min-pix-count=<n>   Only accept peaks if they include more than <n>"
+"                           pixels, in the Peakfinder8 algorithm."
+"                           Default: 2.\n"
+"    --max-pix-count=<n>   Only accept peaks if they include less than <n>"
+"                           pixels, in the Peakfinder8 algorithm."
+"                           Default: 200.\n"
+"    --local-bg-radius=<n> Radius (in pixels) to use for the estimation of\n"
+"	                    local background in the Peakfinder8 algorithm.\n"
+"                           Default: 3.\n"
+"    --min-res=<n>         Only accept peaks if they lay at more than <n>\n"
+"	                    pixels from the center of the detector, int the\n"
+"                           peakfinder8 algorithm. Default: 0.\n"
+"    --max-res=<n>         Only accept peaks if they lay at less than <n>\n"
+"	                    pixels from the center of the detector, int the\n"
+"                           peakfinder8 algorithm. Default: 1200.\n"
 "    --check-hdf5-snr    Check SNR for peaks from --peaks=hdf5.\n"
 "    --peak-radius=<r>   Integration radii for peak search.\n"
 "    --int-radius=<r>    Set the integration radii.  Default: 4,5,7.\n"
@@ -214,6 +235,11 @@ int main(int argc, char *argv[])
 	iargs.threshold = 800.0;
 	iargs.min_gradient = 100000.0;
 	iargs.min_snr = 5.0;
+	iargs.min_pix_count = 2;
+	iargs.min_pix_count = 200;
+	iargs.min_res = 0;
+	iargs.max_res = 1200;
+	iargs.local_bg_radius = 3;
 	iargs.check_hdf5_snr = 0;
 	iargs.det = NULL;
 	iargs.peaks = PEAK_ZAEF;
@@ -306,6 +332,11 @@ int main(int argc, char *argv[])
 		{"fix-bandwidth",      1, NULL,               23},
 		{"fix-divergence",     1, NULL,               24},
 		{"felix-options",      1, NULL,               25},
+	        {"min-pix-count",      1, NULL,               26},
+	        {"max-pix-count",      1, NULL,               27},
+	        {"local-bg-radius",    1, NULL,               28},
+	        {"min-res",            1, NULL,               29},
+	        {"max-res",            1, NULL,               30},
 
 		{0, 0, NULL, 0}
 	};
@@ -489,6 +520,26 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+		        case 26:
+			iargs.min_pix_count = atoi(optarg);
+			break;
+
+		        case 27:
+			iargs.max_pix_count = atoi(optarg);
+			break;
+
+		        case 28:
+			iargs.local_bg_radius = atoi(optarg);
+			break;
+
+		        case 29:
+			iargs.min_res = atoi(optarg);
+			break;
+
+		        case 30:
+			iargs.max_res = atoi(optarg);
+			break;
+
 			case 0 :
 			break;
 
@@ -541,6 +592,8 @@ int main(int argc, char *argv[])
 	}
 	if ( strcmp(speaks, "zaef") == 0 ) {
 		iargs.peaks = PEAK_ZAEF;
+	} else if ( strcmp(speaks, "peakfinder8") == 0 ) {
+		iargs.peaks = PEAK_PEAKFINDER8;
 	} else if ( strcmp(speaks, "hdf5") == 0 ) {
 		iargs.peaks = PEAK_HDF5;
 	} else if ( strcmp(speaks, "cxi") == 0 ) {
