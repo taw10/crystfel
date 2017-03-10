@@ -1125,7 +1125,7 @@ int main(int argc, char *argv[])
 	char *bfile = NULL;
 	char *sym_str = NULL;
 	SymOpList *sym;
-	int ncom, nrej, nneg, nres, nbij, ncen;
+	int ncom, nrej, nmul, nneg, nres, nbij, ncen;
 	RefList *list1_acc;
 	RefList *list2_acc;
 	RefList *list1;
@@ -1149,6 +1149,7 @@ int main(int argc, char *argv[])
 	double min_I = +INFINITY;
 	double max_I = -INFINITY;
 	float highres, lowres;
+	int mul_cutoff = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -1164,6 +1165,7 @@ int main(int argc, char *argv[])
 		{"shell-file",         1, NULL,                7},
 		{"highres",            1, NULL,                8},
 		{"lowres",             1, NULL,                9},
+		{"min-measurements",   1, NULL,               11},
 		{"ignore-negs",        0, &config_ignorenegs,  1},
 		{"zero-negs",          0, &config_zeronegs,    1},
 		{"intensity-shells",   0, &config_intshells,   1},
@@ -1258,6 +1260,13 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			rmin_fix = 1.0 / (lowres/1e10);
+			break;
+
+			case 11 :
+			if ( sscanf(optarg, "%i", &mul_cutoff) != 1 ) {
+				ERROR("Invalid value for --min-measurements\n");
+				return 1;
+			}
 			break;
 
 			case '?' :
@@ -1413,6 +1422,7 @@ int main(int argc, char *argv[])
 	/* Select reflections to be used */
 	ncom = 0;
 	nrej = 0;
+	nmul = 0;
 	nneg = 0;
 	nres = 0;
 	nbij = 0;
@@ -1426,6 +1436,7 @@ int main(int argc, char *argv[])
 		signed int h, k, l;
 		double val1, val2;
 		double esd1, esd2;
+		int mul1, mul2;
 		Reflection *refl2;
 		Reflection *refl1_acc;
 		Reflection *refl2_acc;
@@ -1441,6 +1452,9 @@ int main(int argc, char *argv[])
 		esd1 = get_esd_intensity(refl1);
 		esd2 = get_esd_intensity(refl2);
 
+		mul1 = get_redundancy(refl1);
+		mul2 = get_redundancy(refl2);
+
 		if ( (val1 < sigma_cutoff * esd1)
 		  || (val2 < sigma_cutoff * esd2) )
 		{
@@ -1450,6 +1464,11 @@ int main(int argc, char *argv[])
 
 		if ( config_ignorenegs && ((val1 < 0.0) || (val2 < 0.0)) ) {
 			nneg++;
+			continue;
+		}
+
+		if ( (mul1 < mul_cutoff) || (mul2 < mul_cutoff) ) {
+			nmul++;
 			continue;
 		}
 
@@ -1542,6 +1561,11 @@ int main(int argc, char *argv[])
 	if ( config_zeronegs && (nneg > 0) ) {
 		STATUS("For %i reflection pairs, either or both versions had"
 		       " negative intensities which were set to zero.\n", nneg);
+	}
+
+	if ( nmul > 0 ) {
+		STATUS("%i reflection pairs rejected because either or both"
+		       " versions had too few measurements.\n", nmul);
 	}
 
 	if ( nres > 0 ) {
