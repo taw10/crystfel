@@ -273,6 +273,12 @@ void cell_print(UnitCell *cell)
 		STATUS("c* = %10.3e %10.3e %10.3e m^-1 (modulus %10.3e m^-1)\n",
 		       csx, csy, csz, modulus(csx, csy, csz));
 
+		STATUS("alpha* = %6.2f deg, beta* = %6.2f deg, "
+		       "gamma* = %6.2f deg\n",
+		       rad2deg(angle_between(bsx, bsy, bsz, csx, csy, csz)),
+		       rad2deg(angle_between(asx, asy, asz, csx, csy, csz)),
+		       rad2deg(angle_between(asx, asy, asz, bsx, bsy, bsz)));
+
 		STATUS("Cell representation is %s.\n", cell_rep(cell));
 
 	} else {
