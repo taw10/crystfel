@@ -370,7 +370,7 @@ static int compute_radial_stats(float ** panel_data,
 
 	for ( it_counter=0 ; it_counter<iterations ; it_counter++ ) {
 
-		for ( i=0; i<num_rad_bins; i++) {
+		for ( i=0; i<num_rad_bins; i++ ) {
 			roffset[i] = 0;
 			rsigma[i] = 0;
 			rcount[i] = 0;
@@ -380,13 +380,12 @@ static int compute_radial_stats(float ** panel_data,
 
 			int i;
 
-			for ( i = 0; i < w[pi]*h[pi] ; i++) {
+			for ( i = 0; i < w[pi]*h[pi] ; i++ ) {
 				if ( masks[pi][i] != 0 ) {
 
 					curr_r = (int)rint(r_maps[pi][i]);
 
 					data = panel_data[pi][i];
-
 
 					if ( data < rthreshold[curr_r ] ) {
 
@@ -563,6 +562,7 @@ static void peak_search(int p, int *inss, int *infs, int h, int w,
 		  && pix_in_peak_map[pi] == 0
 		  && mask[pi] != 0 ) {
 
+
 			curr_i = copy[pi] - roffset[curr_radius];
 
 			*sum_i += curr_i;
@@ -655,7 +655,8 @@ static void search_in_ring(int ring_width, int com_fs_int, int com_ss_int,
 		*local_sigma = sqrt(sum_i_squared / np_sigma -
 		                   ((sum_i / np_sigma) * (sum_i / np_sigma)));
 	} else {
-		local_radius = rint(r_map[lrint(com_idx)]);
+
+		local_radius = rint(r_map[(int)rint(com_idx)]);
 		*local_offset = roffset[local_radius];
 		*local_sigma = 0.01;
 	}
@@ -747,7 +748,7 @@ static int peakfinder8_multipanel(float *roffset, float *rthreshold,
 
 			idx = ifs+multip_w*iss;
 
-			curr_radius = (int)r_map[idx];
+			curr_radius = (int)rint(r_map[idx]);
 			curr_threshold = rthreshold[curr_radius];
 
 			if ( copy[idx] > curr_threshold &&
@@ -762,7 +763,8 @@ static int peakfinder8_multipanel(float *roffset, float *rthreshold,
 				sum_com_fs = 0;
 				sum_com_ss = 0;
 
-				do {
+				do {					
+
 					lt_num_pix_in_pk = num_pix_in_peak;
 
 					for ( p=0; p<num_pix_in_peak; p++ ) {
@@ -791,6 +793,7 @@ static int peakfinder8_multipanel(float *roffset, float *rthreshold,
 
 				peak_com_fs = sum_com_fs / fabs(sum_i);
 				peak_com_ss = sum_com_ss / fabs(sum_i);
+
 				com_idx = rint(peak_com_fs) +
 				          rint(peak_com_ss) * multip_w;
 

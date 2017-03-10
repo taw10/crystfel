@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
 	iargs.min_gradient = 100000.0;
 	iargs.min_snr = 5.0;
 	iargs.min_pix_count = 2;
-	iargs.min_pix_count = 200;
+	iargs.max_pix_count = 200;
 	iargs.min_res = 0;
 	iargs.max_res = 1200;
 	iargs.local_bg_radius = 3;
