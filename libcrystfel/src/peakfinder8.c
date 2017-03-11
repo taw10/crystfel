@@ -930,6 +930,9 @@ int peakfinder8(struct image *img, int max_n_peaks,
 	int pi;
 	int ret;
 	int num_found_peaks;
+	int iterations;
+
+	iterations = 5;
 
 	if ( img-> det == NULL) {
 		return 1;
@@ -941,7 +944,7 @@ int peakfinder8(struct image *img, int max_n_peaks,
 	}
 
 	pfmask = create_peakfinder_mask(img, rmaps, min_res, max_res);
-	if ( rmaps == NULL ) {
+	if ( pfmask == NULL ) {
 		free_radius_maps(rmaps);
 		return 1;
 	}
@@ -950,6 +953,7 @@ int peakfinder8(struct image *img, int max_n_peaks,
 	if ( pfdata == NULL) {
 		free_radius_maps(rmaps);
 		free_peakfinder_mask(pfmask);
+		return 1;
 	}
 
 	for ( pi=0 ; pi<img->det->n_panels ; pi++ ) {
@@ -976,7 +980,7 @@ int peakfinder8(struct image *img, int max_n_peaks,
 	                           rmaps->r_maps,
 	                           pfmask->masks, rstats->rthreshold,
 	                           rstats->roffset, num_rad_bins,
-	                           min_snr, threshold, 5);
+	                           min_snr, threshold, iterations);
 	if ( ret != 0 ) {
 		free_radius_maps(rmaps);
 		free_peakfinder_mask(pfmask);
@@ -1000,6 +1004,10 @@ int peakfinder8(struct image *img, int max_n_peaks,
 		int pki;
 
 		num_found_peaks = 0;
+
+		if ( img->det->panels[pi].no_index ) {
+			continue;
+		}
 
 		ret = peakfinder8_singlepanel(rstats->roffset,
 		                              rstats->rthreshold,
