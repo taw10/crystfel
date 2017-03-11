@@ -74,7 +74,6 @@ struct index_args
 	float ir_inn;
 	float ir_mid;
 	float ir_out;
-	int iterations;
 	int min_res;
 	int max_res;
 	int max_n_peaks;
