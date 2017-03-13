@@ -199,7 +199,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                               iargs->max_pix_count,
 		                               iargs->local_bg_radius,
 		                               iargs->min_res,
-		                               iargs->max_res) ) {
+		                               iargs->max_res,
+		                               iargs->use_saturated) ) {
 			if ( image.event != NULL ) {
 				ERROR("Failed to find peaks in image %s"
 				      "(event %s).\n", image.filename,

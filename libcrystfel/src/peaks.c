@@ -547,7 +547,7 @@ int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
                               float threshold, float min_snr,
                               int min_pix_count, int max_pix_count,
                               int local_bg_radius, int min_res,
-                              int max_res)
+                              int max_res, int use_saturated)
 {
 	if ( image->features != NULL ) {
 		image_feature_list_free(image->features);
@@ -559,7 +559,7 @@ int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
 	return peakfinder8(image, max_n_peaks, threshold, min_snr,
 	                   min_pix_count, max_pix_count,
 	                   local_bg_radius, min_res,
-	                   max_res);
+	                   max_res, use_saturated);
 }
 
 

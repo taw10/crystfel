@@ -53,7 +53,7 @@ extern int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
                                     float threshold, float min_snr,
                                     int mix_pix_count, int max_pix_count,
                                     int local_bg_radius, int min_res,
-                                    int max_res);
+                                    int max_res, int use_saturated);
 
 extern int peak_sanity_check(struct image *image, Crystal **crystals,
                              int n_cryst);

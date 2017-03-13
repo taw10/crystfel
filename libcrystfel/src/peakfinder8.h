@@ -37,6 +37,6 @@ int peakfinder8(struct image *img, int max_n_peaks,
                  float threshold, float min_snr,
                  int mix_pix_count, int max_pix_count,
                  int local_bg_radius, int min_res,
-                 int max_res);
+                 int max_res, int use_saturated);
 
 #endif // PEAKFINDER8_H
