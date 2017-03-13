@@ -1036,6 +1036,8 @@ int peakfinder8(struct image *img, int max_n_peaks,
 			peaks_to_add = max_n_peaks;
 		}
 
+		max_n_peaks -= peaks_to_add;
+
 		for ( pki=0 ; pki<peaks_to_add ; pki++ ) {
 
 			struct panel *p;
