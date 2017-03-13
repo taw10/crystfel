@@ -27,9 +27,6 @@
  *
  */
 
-#define _ISOC99_SOURCE
-#define _GNU_SOURCE
-
 #include "events.h"
 #include "utils.h"
 

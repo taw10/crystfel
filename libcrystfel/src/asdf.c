@@ -28,8 +28,6 @@
  *
  */
 
-#define _ISOC99_SOURCE
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

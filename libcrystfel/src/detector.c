@@ -31,8 +31,6 @@
  *
  */
 
-#define _ISOC99_SOURCE
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
