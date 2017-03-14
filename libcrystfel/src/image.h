@@ -3,11 +3,11 @@
  *
  * Handle images and image features
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2016 Thomas White <taw@physics.org>
+ *   2009-2017 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  *
@@ -44,6 +44,8 @@ struct detector;
 struct imagefeature;
 struct sample;
 struct image;
+struct imagefile;
+struct imagefile_field_list;
 
 #include "utils.h"
 #include "cell.h"
@@ -51,6 +53,7 @@ struct image;
 #include "reflist.h"
 #include "crystal.h"
 #include "index.h"
+#include "events.h"
 
 /**
  * SpectrumType:
@@ -232,6 +235,16 @@ extern ImageFeatureList *sort_peaks(ImageFeatureList *flist);
 extern void image_add_crystal(struct image *image, Crystal *cryst);
 extern void remove_flagged_crystals(struct image *image);
 extern void free_all_crystals(struct image *image);
+
+/* Image files */
+extern struct imagefile *imagefile_open(const char *filename);
+extern int imagefile_read(struct imagefile *imfile, struct image *image,
+                          struct event *event);
+extern struct hdfile *imagefile_get_hdfile(struct imagefile *imfile);
+extern void imagefile_copy_fields(struct imagefile *imfile,
+                                  struct copy_hdf5_file *copyme, FILE *fh,
+                                  struct event *ev);
+extern void imagefile_close(struct imagefile *imfile);
 
 #ifdef __cplusplus
 }

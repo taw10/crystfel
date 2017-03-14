@@ -102,7 +102,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    int serial, struct sb_shm *sb_shared, TimeAccounts *taccs)
 {
 	int check;
-	struct hdfile *hdfile;
+	struct imagefile *imfile;
 	struct image image;
 	int i;
 	int r;
@@ -125,15 +125,15 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	time_accounts_set(taccs, TACC_HDF5OPEN);
 	sb_shared->pings[cookie]++;
-	hdfile = hdfile_open(image.filename);
-	if ( hdfile == NULL ) {
+	imfile = imagefile_open(image.filename);
+	if ( imfile == NULL ) {
 		ERROR("Couldn't open file: %s\n", image.filename);
 		return;
 	}
 
 	time_accounts_set(taccs, TACC_HDF5READ);
 	sb_shared->pings[cookie]++;
-	check = hdf5_read2(hdfile, &image, image.event, 0);
+	check = imagefile_read(imfile, &image, image.event);
 	if ( check ) {
 		return;
 	}
@@ -159,9 +159,13 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	sb_shared->pings[cookie]++;
 	switch ( iargs->peaks ) {
 
+		struct hdfile *hdfile;
+
 		case PEAK_HDF5:
-		if ( get_peaks_2(&image, hdfile, iargs->hdf5_peak_path,
-		                 iargs->half_pixel_shift) )
+		hdfile = imagefile_get_hdfile(imfile);
+		if ( (hdfile == NULL)
+		  || (get_peaks_2(&image, hdfile, iargs->hdf5_peak_path,
+		                  iargs->half_pixel_shift)) )
 		{
 			ERROR("Failed to get peaks from HDF5 file.\n");
 		}
@@ -174,9 +178,11 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		break;
 
 		case PEAK_CXI:
-		if ( get_peaks_cxi_2(&image, hdfile, iargs->hdf5_peak_path,
-		                     pargs->filename_p_e,
-		                     iargs->half_pixel_shift) )
+		hdfile = imagefile_get_hdfile(imfile);
+		if ( (hdfile == NULL)
+		 ||  (get_peaks_cxi_2(&image, hdfile, iargs->hdf5_peak_path,
+		                      pargs->filename_p_e,
+		                      iargs->half_pixel_shift)) )
 		{
 			ERROR("Failed to get peaks from CXI file.\n");
 		}
@@ -227,7 +233,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	if ( r ) {
 		ERROR("Failed to chdir to temporary folder: %s\n",
 		      strerror(errno));
-		hdfile_close(hdfile);
+		imagefile_close(imfile);
 		return;
 	}
 
@@ -250,7 +256,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	r = chdir(rn);
 	if ( r ) {
 		ERROR("Failed to chdir: %s\n", strerror(errno));
-		hdfile_close(hdfile);
+		imagefile_close(imfile);
 		return;
 	}
 	free(rn);
@@ -288,7 +294,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	time_accounts_set(taccs, TACC_WRITESTREAM);
 	sb_shared->pings[cookie]++;
-	ret = write_chunk(st, &image, hdfile,
+	ret = write_chunk(st, &image, imfile,
 	                  iargs->stream_peaks, iargs->stream_refls,
 	                  pargs->filename_p_e->ev);
 	if ( ret != 0 ) {
@@ -338,5 +344,5 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	image_feature_list_free(image.features);
 	free_detector_geometry(image.det);
-	hdfile_close(hdfile);
+	imagefile_close(imfile);
 }
