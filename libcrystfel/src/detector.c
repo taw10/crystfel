@@ -2002,6 +2002,11 @@ double largest_q(struct image *image)
 	struct rvec q;
 	double tt;
 
+	if ( image->det == NULL ) {
+		ERROR("No detector geometry. assuming detector is infinite!\n");
+		return INFINITY;
+	}
+
 	q = get_q_for_panel(image->det->furthest_out_panel,
 	                    image->det->furthest_out_fs,
 	                    image->det->furthest_out_ss,
