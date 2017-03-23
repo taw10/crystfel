@@ -1,7 +1,7 @@
 /*
  * peakfinder8.h
  *
- * The processing pipeline for one image
+ * The peakfinder8 algorithm
  *
  * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
@@ -33,10 +33,18 @@
 
 #include "image.h"
 
-int peakfinder8(struct image *img, int max_n_peaks,
-                 float threshold, float min_snr,
-                 int mix_pix_count, int max_pix_count,
-                 int local_bg_radius, int min_res,
-                 int max_res, int use_saturated);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern int peakfinder8(struct image *img, int max_n_peaks,
+                       float threshold, float min_snr,
+                       int mix_pix_count, int max_pix_count,
+                       int local_bg_radius, int min_res,
+                       int max_res, int use_saturated);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // PEAKFINDER8_H

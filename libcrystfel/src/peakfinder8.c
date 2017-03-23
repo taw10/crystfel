@@ -28,6 +28,12 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <math.h>
+#include <stdlib.h>
 
 #include "peakfinder8.h"
 
@@ -58,7 +64,7 @@ struct radial_stats
 
 struct peakfinder_panel_data
 {
-	float ** panel_data;
+	float **panel_data;
 	int *panel_h;
 	int *panel_w;
 	int num_panels;
@@ -88,7 +94,7 @@ struct peakfinder_peak_data
 };
 
 
-static double compute_r_sigma(float *rsigma, int *rcount, float* roffset,
+static double compute_r_sigma(float *rsigma, int *rcount, float *roffset,
                               int i)
 {
 	return sqrt(rsigma[i] / rcount[i] -
@@ -97,8 +103,8 @@ static double compute_r_sigma(float *rsigma, int *rcount, float* roffset,
 }
 
 
-static void update_radial_stats (float *roffset, float *rsigma, int *rcount,
-                                 float value, int curr_radius)
+static void update_radial_stats(float *roffset, float *rsigma, int *rcount,
+                                float value, int curr_radius)
 {
 	roffset[curr_radius] += value;
 	rsigma[curr_radius] += (value * value);
@@ -118,7 +124,7 @@ static float get_radius(struct panel p, float fs, float ss)
 }
 
 
-static struct radius_maps* compute_radius_maps(struct detector *det)
+static struct radius_maps *compute_radius_maps(struct detector *det)
 {
 	int i, u, iss, ifs;
 	struct panel p;
@@ -237,7 +243,7 @@ static void free_peakfinder_mask(struct peakfinder_mask * pfmask)
 
 
 static int compute_num_radial_bins(int num_panels, int *w, int *h,
-                                   float **r_maps )
+                                   float **r_maps)
 {
 
 	float max_r;
@@ -267,7 +273,7 @@ static int compute_num_radial_bins(int num_panels, int *w, int *h,
 }
 
 
-static struct peakfinder_panel_data* allocate_panel_data(int num_panels)
+static struct peakfinder_panel_data *allocate_panel_data(int num_panels)
 {
 
 	struct peakfinder_panel_data *pfdata;
@@ -315,9 +321,9 @@ static void free_panel_data(struct peakfinder_panel_data *pfdata)
 }
 
 
-static struct radial_stats* allocate_radial_stats(int num_rad_bins)
+static struct radial_stats *allocate_radial_stats(int num_rad_bins)
 {
-	struct radial_stats* rstats;
+	struct radial_stats *rstats;
 
 	rstats = (struct radial_stats *)malloc(sizeof(struct radial_stats));
 	if ( rstats == NULL ) {
@@ -545,7 +551,8 @@ struct peakfinder_peak_data *allocate_peak_data(int max_num_peaks)
 }
 
 
-static void free_peak_data(struct peakfinder_peak_data *pkdata) {
+static void free_peak_data(struct peakfinder_peak_data *pkdata)
+{
 	free(pkdata->npix);
 	free(pkdata->com_fs);
 	free(pkdata->com_ss);
@@ -614,9 +621,7 @@ static void free_peakfinder_intern_data(struct peakfinder_intern_data *pfid)
 }
 
 
-
-static void peak_search(int p,
-                        struct peakfinder_intern_data *pfinter,
+static void peak_search(int p, struct peakfinder_intern_data *pfinter,
                         float *copy, char *mask, float *r_map,
                         float *rthreshold, float *roffset,
                         int *num_pix_in_peak, int asic_size_fs,
@@ -656,7 +661,8 @@ static void peak_search(int p,
 
 		if ( copy[pi] > curr_threshold
 		  && pfinter->pix_in_peak_map[pi] == 0
-		  && mask[pi] != 0 ) {
+		  && mask[pi] != 0 )
+		{
 
 
 			curr_i = copy[pi] - roffset[curr_radius];
