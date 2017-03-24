@@ -909,7 +909,6 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 		panel->adu_per_eV = atof(val);
 	} else if ( strcmp(key, "adu_per_photon") == 0 ) {
 		panel->adu_per_photon = atof(val);
-		STATUS("got adu per photon: %s\n", val);
 	} else if ( strcmp(key, "rigid_group") == 0 ) {
 		add_to_rigid_group(find_or_add_rg(det, val), panel);
 	} else if ( strcmp(key, "clen") == 0 ) {
