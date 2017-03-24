@@ -3,13 +3,13 @@
  *
  * Sandbox for indexing
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2016 Thomas White <taw@physics.org>
+ *   2010-2017 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
@@ -73,24 +73,24 @@ struct sandbox
 
 	struct index_args *iargs;
 
+	/* Worker processes */
 	int n_proc;
 	pid_t *pids;
-
 	int *running;
+	time_t *last_response;
+	int last_ping[MAX_NUM_WORKERS];
+
+	/* Streams to read from (NB not the same indices as the above) */
+	int n_read;
+	FILE **fhs;
+	int *fds;
+
 	int serial;
 
 	struct sb_shm *shared;
 	sem_t *queue_sem;
 
 	char *tmpdir;
-
-	/* The last time each worker was heard from */
-	time_t *last_response;
-
-	/* Streams to read from */
-	int n_read;
-	FILE **fhs;
-	int *fds;
 
 	/* Final output */
 	Stream *stream;
@@ -124,6 +124,7 @@ static time_t get_monotonic_seconds()
 static void stamp_response(struct sandbox *sb, int n)
 {
 	sb->last_response[n] = get_monotonic_seconds();
+	sb->last_ping[n] = sb->shared->pings[n];
 }
 
 
@@ -131,14 +132,21 @@ static void check_hung_workers(struct sandbox *sb)
 {
 	int i;
 	time_t tnow = get_monotonic_seconds();
-	for ( i=0; i<sb->n_read; i++ ) {
+	for ( i=0; i<sb->n_proc; i++ ) {
+
 		if ( !sb->running[i] ) continue;
+
+		if ( sb->shared->pings[i] != sb->last_ping[i] ) {
+			stamp_response(sb, i);
+		}
+
 		if ( tnow - sb->last_response[i] > 240 ) {
 			STATUS("Worker %i did not respond for 240 seconds - "
 			       "sending it SIGKILL.\n", i);
 			kill(sb->pids[i], SIGKILL);
 			stamp_response(sb, i);
 		}
+
 	}
 }
 
@@ -516,7 +524,6 @@ static void try_read(struct sandbox *sb, TimeAccounts *taccs)
 		/* If the chunk cannot be read, assume the connection
 		 * is broken and that the process will die soon. */
 		time_accounts_set(taccs, TACC_STREAMREAD);
-		stamp_response(sb, i);
 		if ( pump_chunk(sb->fhs[i], ofd) ) {
 			remove_pipe(sb, i);
 		}
@@ -534,6 +541,9 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		ERROR("pipe() failed!\n");
 		return;
 	}
+
+	sb->shared->pings[slot] = 0;
+	sb->last_ping[slot] = 0;
 
 	p = fork();
 	if ( p == -1 ) {

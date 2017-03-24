@@ -322,6 +322,15 @@ static int compare_doubles(const void *a, const void *b)
 }
 
 
+static double max(double a, double b, double c)
+{
+     double m = a;
+     if ( m < b ) m = b;
+     if ( m < c ) m = c;
+     return m;
+}
+
+
 /* Compares tvectors by length */
 static int compare_tvectors(const void *a, const void *b)
 {
@@ -889,11 +898,13 @@ static int find_cell(struct tvector *tvectors, int N_tvectors, double IndexFit,
 	return 0;
 }
 
+
 void swap(int *a, int *b) {
 	int c = *a;
 	*a = *b;
 	*b = c;
 }
+
 
 /* Generate triplets of integers < N_reflections in random sequence */
 static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
@@ -904,10 +915,13 @@ static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
 	int N_triplets = N_reflections * (N_reflections - 1) *
 	                                 (N_reflections - 2) / 6;
 
-	if ( N_triplets > N_triplets_max ) N_triplets = N_triplets_max;
+	if ( N_triplets > N_triplets_max || N_reflections > 1000 ) {
+		N_triplets = N_triplets_max;
+	}
 	*N = N_triplets;
 
 	int **triplets = malloc(N_triplets * sizeof(int *));
+
 	if (triplets == NULL) {
 		ERROR("Failed to allocate triplets in generate_triplets!\n");
 		return 0;
@@ -961,6 +975,7 @@ static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
 
 	return triplets;
 }
+
 
 static int index_refls(gsl_vector **reflections, int N_reflections,
                        double d_max, double volume_min, double volume_max,
@@ -1094,20 +1109,38 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 
 	double LevelFit = 1./1000;
 	double IndexFit = 1./500;
-	double d_max = 220.; // thrice the maximum expected axis length
+	double d_max = 1000.; // thrice the maximum expected axis length
 	double volume_min = 100.;
-	double volume_max = 1000000.;
+	double volume_max = 100000000.;
 
 	int N_triplets_max = 10000; // maximum number of triplets
 
 	struct asdf_private *dp = (struct asdf_private *)ipriv;
 
-	if ( dp->indm & INDEXING_CHECK_CELL_AXES ) {
+	if ( dp->indm & INDEXING_CHECK_CELL_AXES ||
+             dp->indm & INDEXING_CHECK_CELL_COMBINATIONS) {
+		double a, b, c, gamma, beta, alpha;
+		cell_get_parameters(dp->template, &a, &b, &c,
+                                                  &alpha, &beta, &gamma);
+
+		d_max = max(a, b, c) * 3 * 1e10;
+
 		double volume = cell_get_volume(dp->template);
 		double vtol = (dp->ltl[0] + dp->ltl[1] + dp->ltl[2]) / 100 +
 		               dp->ltl[3] / 180 * M_PI;
-		volume_min = volume * (1 - vtol);
-		volume_max = volume * (1 + vtol);
+
+		/* Divide volume constraints by number of lattice points per
+		 * unit cell since asdf always finds primitive cell */
+		int latt_points_per_uc = 1;
+		char centering = cell_get_centering(dp->template);
+		if ( centering == 'A' ||
+		     centering == 'B' ||
+		     centering == 'C' ||
+		     centering == 'I' ) latt_points_per_uc = 2;
+		else if ( centering == 'F' ) latt_points_per_uc = 4;
+
+		volume_min = volume * (1 - vtol)/latt_points_per_uc;
+		volume_max = volume * (1 + vtol)/latt_points_per_uc;
 	}
 
 	int n = image_feature_count(image->features);

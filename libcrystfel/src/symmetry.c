@@ -3,12 +3,12 @@
  *
  * Symmetry
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
- *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+ *   2010-2014,2016 Thomas White <taw@physics.org>
+ *   2014           Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -1085,6 +1085,21 @@ SymOpList *get_pointgroup(const char *sym)
 
 	ERROR("Unrecognised point group '%s'\n", sym);
 	return NULL;
+}
+
+
+void pointgroup_warning(const char *sym)
+{
+	if ( (strcmp(sym, "m") == 0)
+	  || (strcmp(sym, "2/m") == 0)
+	  || (strcmp(sym, "2") == 0) )
+	{
+		ERROR("WARNING: You have specified a monoclinic point group "
+		      "without a unique axis.  The default unique axis is 'c'. "
+		      "If you want unique axis b, append '_uab' to your point "
+		      "group.\n");
+	}
+
 }
 
 

@@ -65,9 +65,11 @@ struct _stream
 
 	int major_version;
 	int minor_version;
+
+	long long int ln;
 };
 
-static int read_peaks(FILE *fh, struct image *image)
+static int read_peaks(Stream *st, struct image *image)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -82,7 +84,8 @@ static int read_peaks(FILE *fh, struct image *image)
 		struct panel *p = NULL;
 		float add_x, add_y;
 
-		rval = fgets(line, 1023, fh);
+		rval = fgets(line, 1023, st->fh);
+		st->ln++;
 		if ( rval == NULL ) continue;
 		chomp(line);
 
@@ -126,7 +129,7 @@ static int read_peaks(FILE *fh, struct image *image)
 }
 
 
-static int read_peaks_2_3(FILE *fh, struct image *image)
+static int read_peaks_2_3(Stream *st, struct image *image)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -142,7 +145,8 @@ static int read_peaks_2_3(FILE *fh, struct image *image)
 		struct panel *p = NULL;
 		float add_x, add_y;
 
-		rval = fgets(line, 1023, fh);
+		rval = fgets(line, 1023, st->fh);
+		st->ln++;
 		if ( rval == NULL ) continue;
 		chomp(line);
 
@@ -269,7 +273,7 @@ static int write_peaks_2_3(struct image *image, FILE *ofh)
 }
 
 
-static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
+static RefList *read_stream_reflections_2_3(Stream *st, struct detector *det)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -290,7 +294,8 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 		int r;
 		Reflection *refl;
 
-		rval = fgets(line, 1023, fh);
+		rval = fgets(line, 1023, st->fh);
+		st->ln++;
 		if ( rval == NULL ) continue;
 		chomp(line);
 
@@ -342,7 +347,7 @@ static RefList *read_stream_reflections_2_3(FILE *fh, struct detector *det)
 }
 
 
-static RefList *read_stream_reflections_2_1(FILE *fh, struct detector *det)
+static RefList *read_stream_reflections_2_1(Stream *st, struct detector *det)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -364,7 +369,8 @@ static RefList *read_stream_reflections_2_1(FILE *fh, struct detector *det)
 		int r;
 		Reflection *refl;
 
-		rval = fgets(line, 1023, fh);
+		rval = fgets(line, 1023, st->fh);
+		st->ln++;
 		if ( rval == NULL ) continue;
 		chomp(line);
 
@@ -426,7 +432,7 @@ static RefList *read_stream_reflections_2_1(FILE *fh, struct detector *det)
 }
 
 
-static RefList *read_stream_reflections_2_2(FILE *fh, struct detector *det)
+static RefList *read_stream_reflections_2_2(Stream *st, struct detector *det)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -442,7 +448,8 @@ static RefList *read_stream_reflections_2_2(FILE *fh, struct detector *det)
 		int r;
 		Reflection *refl;
 
-		rval = fgets(line, 1023, fh);
+		rval = fgets(line, 1023, st->fh);
+		st->ln++;
 		if ( rval == NULL ) continue;
 		chomp(line);
 
@@ -887,14 +894,15 @@ int write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 }
 
 
-static int find_start_of_chunk(FILE *fh)
+static int find_start_of_chunk(Stream *st)
 {
 	char *rval = NULL;
 	char line[1024];
 
 	do {
 
-		rval = fgets(line, 1023, fh);
+		rval = fgets(line, 1023, st->fh);
+		st->ln++;
 
 		/* Trouble? */
 		if ( rval == NULL ) return 1;
@@ -942,6 +950,7 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 		char c;
 
 		rval = fgets(line, 1023, st->fh);
+		st->ln++;
 
 		/* Trouble? */
 		if ( rval == NULL ) break;
@@ -975,7 +984,8 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 				centering = c;
 				have_cen = 1;
 			} else {
-				ERROR("Duplicate centering ignored.\n");
+				ERROR("Duplicate centering (line %lli) - "
+				      "stream may be corrupted!\n", st->ln);
 			}
 		}
 
@@ -986,7 +996,8 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 				unique_axis = c;
 				have_ua = 1;
 			} else {
-				ERROR("Duplicate unique axis ignored.\n");
+				ERROR("Duplicate unique axis (line %lli) - "
+				      "stream may be corrupted!\n", st->ln);
 			}
 		}
 
@@ -997,7 +1008,8 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 				lattice_type = lattice_from_str(line+15);
 				have_latt = 1;
 			} else {
-				ERROR("Duplicate lattice type ignored.\n");
+				ERROR("Duplicate lattice type (line %lli) - "
+				      "stream may be corrupted!\n", st->ln);
 			}
 		}
 
@@ -1030,13 +1042,13 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 			/* The reflection list format in the stream diverges
 			 * after 2.2 */
 			if ( AT_LEAST_VERSION(st, 2, 3) ) {
-				reflist = read_stream_reflections_2_3(st->fh,
+				reflist = read_stream_reflections_2_3(st,
                                                       image->det);
 			} else if ( AT_LEAST_VERSION(st, 2, 2) ) {
-				reflist = read_stream_reflections_2_2(st->fh,
+				reflist = read_stream_reflections_2_2(st,
 				          image->det);
 			} else {
-				reflist = read_stream_reflections_2_1(st->fh,
+				reflist = read_stream_reflections_2_1(st,
 				          image->det);
 			}
 			if ( reflist == NULL ) {
@@ -1148,7 +1160,7 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 	int have_filename = 0;
 	int have_ev = 0;
 
-	if ( find_start_of_chunk(st->fh) ) return 1;
+	if ( find_start_of_chunk(st) ) return 1;
 
 	image->lambda = -1.0;
 	image->features = NULL;
@@ -1167,6 +1179,7 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 		float div, bw;
 
 		rval = fgets(line, 1023, st->fh);
+		st->ln++;
 
 		/* Trouble? */
 		if ( rval == NULL ) break;
@@ -1257,9 +1270,9 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 			int fail;
 
 			if ( AT_LEAST_VERSION(st, 2, 3) ) {
-				fail = read_peaks_2_3(st->fh, image);
+				fail = read_peaks_2_3(st, image);
 			} else {
-				fail = read_peaks(st->fh, image);
+				fail = read_peaks(st, image);
 			}
 			if ( fail ) {
 				ERROR("Failed while reading peaks\n");
@@ -1357,6 +1370,8 @@ Stream *open_stream_for_read(const char *filename)
 		close_stream(st);
 		return NULL;
 	}
+
+	st->ln = 1;
 
 	return st;
 }
@@ -1656,6 +1671,7 @@ void write_geometry_file(Stream *st, const char *geom_filename) {
  */
 int rewind_stream(Stream *st)
 {
+	st->ln = 0;
 	return fseek(st->fh, 0, SEEK_SET);
 }
 

@@ -3,12 +3,12 @@
  *
  * Symmetry
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
- *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+ *   2010-2014,2016 Thomas White <taw@physics.org>
+ *   2014           Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -89,6 +89,8 @@ extern void describe_symmetry(const SymOpList *s);
 
 extern int is_centric(signed int h, signed int k, signed int l,
                       const SymOpList *ops);
+
+extern void pointgroup_warning(const char *sym);
 
 extern void add_symop(SymOpList *ops, IntegerMatrix *m);
 extern SymOpList *parse_symmetry_operations(const char *s);

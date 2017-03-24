@@ -3,13 +3,13 @@
  *
  * Perform indexing (somehow)
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2016 Thomas White <taw@physics.org>
+ *   2010-2017 Thomas White <taw@physics.org>
  *   2010      Richard Kirian
  *   2012      Lorenzo Galli
  *   2015      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
@@ -160,6 +160,9 @@ extern IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 
 extern void index_pattern(struct image *image,
                           IndexingMethod *indms, IndexingPrivate **iprivs);
+
+extern void index_pattern_2(struct image *image, IndexingMethod *indms,
+                            IndexingPrivate **iprivs, int *ping);
 
 extern void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs);
 

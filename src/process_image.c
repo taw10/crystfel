@@ -3,11 +3,11 @@
  *
  * The processing pipeline for one image
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2017 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -124,6 +124,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	image.indexed_by = INDEXING_NONE;
 
 	time_accounts_set(taccs, TACC_HDF5OPEN);
+	sb_shared->pings[cookie]++;
 	hdfile = hdfile_open(image.filename);
 	if ( hdfile == NULL ) {
 		ERROR("Couldn't open file: %s\n", image.filename);
@@ -131,6 +132,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 	time_accounts_set(taccs, TACC_HDF5READ);
+	sb_shared->pings[cookie]++;
 	check = hdf5_read2(hdfile, &image, image.event, 0);
 	if ( check ) {
 		return;
@@ -138,6 +140,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Take snapshot of image before applying horrible noise filters */
 	time_accounts_set(taccs, TACC_FILTER);
+	sb_shared->pings[cookie]++;
 	prefilter = backup_image_data(image.dp, image.det);
 
 	if ( iargs->median_filter > 0 ) {
@@ -149,9 +152,11 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 	time_accounts_set(taccs, TACC_RESRANGE);
+	sb_shared->pings[cookie]++;
 	mark_resolution_range_as_bad(&image, iargs->highres, +INFINITY);
 
 	time_accounts_set(taccs, TACC_PEAKSEARCH);
+	sb_shared->pings[cookie]++;
 	switch ( iargs->peaks ) {
 
 		case PEAK_HDF5:
@@ -214,7 +219,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Index the pattern */
 	time_accounts_set(taccs, TACC_INDEXING);
-	index_pattern(&image, iargs->indm, iargs->ipriv);
+	index_pattern_2(&image, iargs->indm, iargs->ipriv,
+	                &sb_shared->pings[cookie]);
 
 	r = chdir(rn);
 	if ( r ) {
@@ -247,6 +253,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Integrate! */
 	time_accounts_set(taccs, TACC_INTEGRATION);
+	sb_shared->pings[cookie]++;
 	integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE,
 	                iargs->push_res,
 	                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
@@ -255,6 +262,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	                &sb_shared->term_lock);
 
 	time_accounts_set(taccs, TACC_WRITESTREAM);
+	sb_shared->pings[cookie]++;
 	ret = write_chunk(st, &image, hdfile,
 	                  iargs->stream_peaks, iargs->stream_refls,
 	                  pargs->filename_p_e->ev);
@@ -274,6 +282,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Count crystals which are still good */
 	time_accounts_set(taccs, TACC_TOTALS);
+	sb_shared->pings[cookie]++;
 	pthread_mutex_lock(&sb_shared->totals_lock);
 	any_crystals = 0;
 	for ( i=0; i<image.n_crystals; i++ ) {
