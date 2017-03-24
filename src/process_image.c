@@ -8,7 +8,7 @@
  *
  * Authors:
  *   2010-2017 Thomas White <taw@physics.org>
- *   2014      Valerio Mariani
+ *   2014-2017 Valerio Mariani <valerio.mariani@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -189,6 +189,28 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		             iargs->min_gradient, iargs->min_snr,
 		             iargs->pk_inn, iargs->pk_mid,iargs->pk_out,
 		             iargs->use_saturated);
+		break;
+
+	        case PEAK_PEAKFINDER8:
+		if ( search_peaks_peakfinder8(&image, 2048,
+		                               iargs->threshold,
+		                               iargs->min_snr,
+		                               iargs->min_pix_count,
+		                               iargs->max_pix_count,
+		                               iargs->local_bg_radius,
+		                               iargs->min_res,
+		                               iargs->max_res,
+		                               iargs->use_saturated) ) {
+			if ( image.event != NULL ) {
+				ERROR("Failed to find peaks in image %s"
+				      "(event %s).\n", image.filename,
+				      get_event_string(image.event));
+			} else {
+				ERROR("Failed to find peaks in image %s.",
+				      image.filename);
+			}
+
+		}
 		break;
 
 	}
