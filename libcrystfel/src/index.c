@@ -163,6 +163,10 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 
 	for ( i=0; i<n; i++ ) {
 		methods[i] = get_indm_from_string(method_strings[i]);
+		if ( methods[i] == INDEXING_ERROR ) {
+			free(methods);
+			return NULL;
+		}
 	}
 
 	ipriv = malloc(sizeof(struct _indexingprivate));
