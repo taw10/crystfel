@@ -631,10 +631,18 @@ static int add_distance_to_list(struct gpanel *gp,
                                 double *det_shift)
 {
 	int pix_index;
+	int ifs, iss;
 	double rfs, rss;
 	double crx, cry;
 
-	pix_index = ((int)rint(imfe->fs) + gp->p->w*(int)rint(imfe->ss));
+	ifs = imfe->fs;
+	iss = imfe->ss;  /* Explicit rounding towards zero (truncation) */
+	pix_index = ifs + gp->p->w*iss;
+
+	if ( (ifs >= gp->p->w) || (iss >= gp->p->h) ) {
+		ERROR("Peak is outside panel!\n");
+		return 1;
+	}
 
 	if ( gp->num_pix_displ[pix_index] > 0 ) {
 
