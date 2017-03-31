@@ -67,6 +67,7 @@ struct index_args
 	float tols[4];
 	struct beam_params *beam;
 	char *hdf5_peak_path;
+	int half_pixel_shift;
 	float pk_inn;
 	float pk_mid;
 	float pk_out;

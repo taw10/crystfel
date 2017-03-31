@@ -439,7 +439,9 @@ add_copy_hdf5_field
 new_copy_hdf5_field_list
 free_copy_hdf5_field_list
 get_peaks
+get_peaks_2
 get_peaks_cxi
+get_peaks_cxi_2
 hdfile_is_scalar
 check_path_existence
 fill_event_list

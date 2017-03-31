@@ -152,16 +152,17 @@ static void show_help(const char *s)
 " --temp-dir=<path>        Put the temporary folder under <path>.\n"
 "\n"
 "\nOptions you probably won't need:\n\n"
-"     --no-check-prefix    Don't attempt to correct the --prefix.\n"
-"     --no-use-saturated   During the initial peak search, reject\n"
-"                           peaks which contain pixels above max_adu.\n"
-"     --no-revalidate      Don't re-integrate and check HDF5 peaks for\n"
-"                           validity.\n"
-"     --no-peaks-in-stream Do not record peak search results in the stream.\n"
-"     --no-refls-in-stream Do not record integrated reflections in the stream.\n"
-"     --int-diag=<cond>    Show debugging information about reflections.\n"
-"     --no-refine          Skip the prediction refinement step.\n"
-"     --profile            Show timing data for performance monitoring.\n"
+"     --no-check-prefix     Don't attempt to correct the --prefix.\n"
+"     --no-use-saturated    During the initial peak search, reject\n"
+"                            peaks which contain pixels above max_adu.\n"
+"     --no-revalidate       Don't re-integrate and check HDF5 peaks for\n"
+"                            validity.\n"
+"     --no-peaks-in-stream  Do not record peak search results in the stream.\n"
+"     --no-refls-in-stream  Do not record integrated reflections in the stream.\n"
+"     --int-diag=<cond>     Show debugging information about reflections.\n"
+"     --no-refine           Skip the prediction refinement step.\n"
+"     --profile             Show timing data for performance monitoring.\n"
+"     --no-half-pixel-shift Don't offset the HDF5 peak locations by 0.5 px.\n"
 "\nLow-level options for the felix indexer:\n\n"
 "     --felix-options      Change the default arguments passed to the indexer.\n"
 "                          Given as a list of comma separated list of \n"
@@ -243,6 +244,7 @@ int main(int argc, char *argv[])
 	iargs.peaks = PEAK_ZAEF;
 	iargs.beam = &beam;
 	iargs.hdf5_peak_path = NULL;
+	iargs.half_pixel_shift = 1;
 	iargs.copyme = NULL;
 	iargs.pk_inn = -1.0;
 	iargs.pk_mid = -1.0;
@@ -297,6 +299,7 @@ int main(int argc, char *argv[])
 		{"check-hdf5-snr",     0, &iargs.check_hdf5_snr,     1},
 		{"no-refine",          0, &no_refine,                1},
 		{"profile",            0, &iargs.profile,            1},
+		{"no-half-pixel-shift",0, &iargs.half_pixel_shift,   0},
 
 		/* Long-only options which don't actually do anything */
 		{"no-sat-corr",        0, &iargs.satcorr,            0},

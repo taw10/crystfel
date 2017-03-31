@@ -1,7 +1,7 @@
 .\"
 .\" indexamajig man page
 .\"
-.\" Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+.\" Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
 .\"                       a research centre of the Helmholtz Association.
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
@@ -45,9 +45,11 @@ You can control the peak detection on the command line.  Firstly, you can choose
 
 \fB--peaks=cxi\fR works similarly to this, but expects four separate HDF5 datasets beneath \fIpath\fR, \fBnPeaks\fR, \fBpeakXPosRaw\fR, \fBpeakYPosRaw\fR and \fBpeakTotalIntensity\fR.  See the specification for the CXI file format at http://www.cxidb.org/ for more details.
 
+CrystFEL considers all peak locations to be distances from the corner of the detector panel, in pixel units, consistent with its description of detector geometry (see 'man crystfel_geometry').  The software which generates the HDF5 or CXI files, including Cheetah, may instead consider the peak locations to be pixel indices in the data array.  Therefore, the peak coordinates from \fB--peaks=cxi\fR or \fB--peaks=hdf5\fR will by default have 0.5 added to them.  Use \fB--no-half-pixel-shift\fR if this isn't what you want.
+
 If you use \fB--peaks=zaef\fR, indexamajig will use a simple gradient search after Zaefferer (2000).  You can control the overall threshold and minimum squared gradient for finding a peak using \fB--threshold\fR and \fB--min-gradient\fR.  The threshold has arbitrary units matching the pixel values in the data, and the minimum gradient has the equivalent squared units.  Peaks will be rejected if the 'foot point' is further away from the 'summit' of the peak by more than the inner integration radius (see below).  They will also be rejected if the peak is closer than twice the inner integration radius from another peak.
 
-If you instead use \fB--peaks=peakfinder8\fR, indexamajig will user the "peakfinder8" peak finding algorithm describerd in Barty et al. (2014). Pixels above a radius-dependent intensity threshold are considered as candidate peaks (although the user sets an absolute minimum threshold for candidate peaks). Peaks are then only accepted if their signal to noise level over the local background is sufficiently high. Peaks can include multiple pixels and the user can reject a peak if it includes too many or too few. The distance of a peak from the center of the detector can also be used as a filtering criterion. Please notice that the peakfinder8 will not report more than 2048 peaks for each panel: any additional peak is ignored.
+If you instead use \fB--peaks=peakfinder8\fR, indexamajig will use the "peakfinder8" peak finding algorithm describerd in Barty et al. (2014). Pixels above a radius-dependent intensity threshold are considered as candidate peaks (although the user sets an absolute minimum threshold for candidate peaks). Peaks are then only accepted if their signal to noise level over the local background is sufficiently high. Peaks can include multiple pixels and the user can reject a peak if it includes too many or too few. The distance of a peak from the center of the detector can also be used as a filtering criterion. Note that the peakfinder8 will not report more than 2048 peaks for each panel: any additional peak is ignored.
 
 You can suppress peak detection altogether for a panel in the geometry file by specifying the "no_index" value for the panel as non-zero.
 
@@ -333,6 +335,11 @@ Normally, peaks which contain one or more pixels above max_adu (defined in the d
 .IP \fB--no-revalidate\fR
 .PD
 When using \fB--peaks=hdf5\fR or \fB--peaks=cxi\fR, the peaks will be put through some of the same checks as if you were using \fB--peaks=zaef\fR.  These checks reject peaks which are too close to panel edges, are saturated (unless you use \fB--use-saturated\fR), have other nearby peaks (closer than twice the inner integration radius, see \fB--int-radius\fR), or have any part in a bad region.  Using this option skips this validation step, and uses the peaks directly.
+
+.PD 0
+.IP \fB--no-half-pixel-shift\fR
+.PD
+CrystFEL considers all peak locations to be distances from the corner of the detector panel, in pixel units, consistent with its description of detector geometry (see 'man crystfel_geometry').  The software which generates the HDF5 or CXI files, including Cheetah, may instead consider the peak locations to be pixel indices in the data array.  Therefore, the peak coordinates from \fB--peaks=cxi\fR or \fB--peaks=hdf5\fR will by default have 0.5 added to them.  This option \fBdisables\fR this half-pixel offset.
 
 .PD 0
 .IP \fB--check-hdf5-snr\fR
