@@ -790,7 +790,14 @@ static int compute_pixel_displacements(struct image *images, int n_images,
 
 				r = add_distance_to_list(gp, imfe, refl, fx, fy,
 				                         det_shift);
-				if ( r ) return r;
+				if ( r ) {
+					ERROR("Error processing peak %f,%f "
+					      "(panel %s), image %s %s\n",
+					      imfe->fs, imfe->ss, gp->p->name,
+					      images[cp].filename,
+					      get_event_string(images[cp].event));
+					return r;
+				}
 
 			}
 		}
