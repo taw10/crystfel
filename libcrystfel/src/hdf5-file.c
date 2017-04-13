@@ -1741,6 +1741,9 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			if ( !exists ) {
 				ERROR("Cannot find data for panel %s\n",
 				      p->name);
+				free(image->dp);
+				free(image->bad);
+				free(image->sat);
 				return 1;
 			}
 
@@ -1761,6 +1764,9 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 				if ( !exists ) {
 					ERROR("Cannot find data for panel %s\n",
 					      p->name);
+					free(image->dp);
+					free(image->bad);
+					free(image->sat);
 					return 1;
 				}
 				fail = hdfile_set_image(f, p->data, p);
@@ -1771,6 +1777,9 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		if ( fail ) {
 			ERROR("Couldn't select path for panel %s\n",
 			      p->name);
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
 			return 1;
 		}
 
@@ -1780,6 +1789,9 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		f_count = malloc(hsd->num_dims*sizeof(hsize_t));
 		if ( (f_offset == NULL) || (f_count == NULL ) ) {
 			ERROR("Failed to allocate offset or count.\n");
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
 			return 1;
 		}
 		for ( hsi=0; hsi<hsd->num_dims; hsi++ ) {
@@ -1807,6 +1819,9 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		if ( check < 0 ) {
 			ERROR("Error selecting file dataspace for panel %s\n",
 			      p->name);
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
 			return 1;
 		}
 
@@ -1820,6 +1835,9 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			ERROR("Failed to allocate panel %s\n", p->name);
 			free(f_offset);
 			free(f_count);
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
 			return 1;
 		}
 		for ( i=0; i<p->w*p->h; i++ ) image->sat[pi][i] = INFINITY;
@@ -1831,6 +1849,14 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			      p->name);
 			free(f_offset);
 			free(f_count);
+			for ( i=0; i<=pi; i++ ) {
+				free(image->dp[pi]);
+				free(image->sat[pi]);
+				free(image->bad[pi]);
+			}
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
 			return 1;
 		}
 
@@ -1847,7 +1873,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			if ( load_satmap(f, ev, p, f_offset, f_count, hsd,
 			                 image->sat[pi]) )
 			{
-				ERROR("Failed to laod sat map for panel %s\n",
+				ERROR("Failed to load sat map for panel %s\n",
 				      p->name);
 			}
 		}
