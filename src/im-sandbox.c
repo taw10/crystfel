@@ -375,7 +375,7 @@ static void run_work(const struct index_args *iargs, Stream *st,
 	cleanup_indexing(iargs->ipriv);
 	free_detector_geometry(iargs->det);
 	free(iargs->hdf5_peak_path);
-	free_copy_hdf5_field_list(iargs->copyme);
+	free_imagefile_field_list(iargs->copyme);
 	cell_free(iargs->cell);
 	if ( iargs->profile ) time_accounts_print(taccs);
 	time_accounts_free(taccs);

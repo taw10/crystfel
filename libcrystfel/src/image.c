@@ -299,3 +299,132 @@ void free_all_crystals(struct image *image)
 	free(image->crystals);
 	image->n_crystals = 0;
 }
+
+
+/**************************** Image field lists *******************************/
+
+struct imagefile_field_list
+{
+	char **fields;
+	int n_fields;
+	int max_fields;
+};
+
+
+struct imagefile_field_list *new_imagefile_field_list()
+{
+	struct imagefile_field_list *n;
+
+	n = calloc(1, sizeof(struct imagefile_field_list));
+	if ( n == NULL ) return NULL;
+
+	n->max_fields = 32;
+	n->fields = malloc(n->max_fields*sizeof(char *));
+	if ( n->fields == NULL ) {
+		free(n);
+		return NULL;
+	}
+
+	return n;
+}
+
+
+void free_imagefile_field_list(struct imagefile_field_list *n)
+{
+	int i;
+	for ( i=0; i<n->n_fields; i++ ) {
+		free(n->fields[i]);
+	}
+	free(n->fields);
+	free(n);
+}
+
+
+void add_imagefile_field(struct imagefile_field_list *copyme, const char *name)
+{
+	int i;
+
+	/* Already on the list?   Don't re-add if so. */
+	for ( i=0; i<copyme->n_fields; i++ ) {
+		if ( strcmp(copyme->fields[i], name) == 0 ) return;
+	}
+
+	/* Need more space? */
+	if ( copyme->n_fields == copyme->max_fields ) {
+
+		char **nfields;
+		int nmax = copyme->max_fields + 32;
+
+		nfields = realloc(copyme->fields, nmax*sizeof(char *));
+		if ( nfields == NULL ) {
+			ERROR("Failed to allocate space for new HDF5 field.\n");
+			return;
+		}
+
+		copyme->max_fields = nmax;
+		copyme->fields = nfields;
+
+	}
+
+	copyme->fields[copyme->n_fields] = strdup(name);
+	if ( copyme->fields[copyme->n_fields] == NULL ) {
+		ERROR("Failed to add field for copying '%s'\n", name);
+		return;
+	}
+
+	copyme->n_fields++;
+}
+
+
+/****************************** Image files ***********************************/
+
+struct imagefile *imagefile_open(const char *filename)
+{
+}
+
+
+int imagefile_read(struct imagefile *imfile, struct image *image,
+                          struct event *event)
+{
+}
+
+
+struct hdfile *imagefile_get_hdfile(struct imagefile *imfile)
+{
+}
+
+
+void imagefile_copy_fields(struct imagefile *f,
+                           const struct imagefile_field_list *copyme,
+                           FILE *fh, struct event *ev)
+{
+	int i;
+
+	if ( copyme == NULL ) return;
+
+	for ( i=0; i<copyme->n_fields; i++ ) {
+
+#warning FIXME Implement imagefile field copying
+#if 0
+		char *val;
+		char *field;
+
+		field = copyme->fields[i];
+		val = hdfile_get_string_value(f, field, ev);
+
+		if ( field[0] == '/' ) {
+			fprintf(fh, "hdf5%s = %s\n", field, val);
+		} else {
+			fprintf(fh, "hdf5/%s = %s\n", field, val);
+		}
+
+		free(val);
+#endif
+
+	}
+}
+
+
+void imagefile_close(struct imagefile *imfile)
+{
+}

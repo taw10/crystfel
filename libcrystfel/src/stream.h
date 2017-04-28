@@ -39,6 +39,7 @@
 struct image;
 struct hdfile;
 struct event;
+struct imagefile;
 #include "cell.h"
 
 #define GEOM_START_MARKER "----- Begin geometry file -----"
@@ -106,7 +107,7 @@ extern int read_chunk(Stream *st, struct image *image);
 extern int read_chunk_2(Stream *st, struct image *image,
                            StreamReadFlags srf);
 
-extern int write_chunk(Stream *st, struct image *image, struct hdfile *hdfile,
+extern int write_chunk(Stream *st, struct image *image, struct imagefile *imfile,
                        int include_peaks, int include_reflections,
                        struct event *ev);
 
