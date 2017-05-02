@@ -1047,7 +1047,7 @@ static gint displaywindow_set_newevent(GtkWidget *widget, DisplayWindow *dw)
 	}
 
 	if ( dw->hdfile == NULL ) {
-	    return 0;
+		return 0;
 	}
 
 	ed = malloc(sizeof(EventDialog));

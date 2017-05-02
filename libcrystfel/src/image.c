@@ -31,9 +31,12 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <hdf5.h>
 
 #include "image.h"
 #include "utils.h"
+#include "events.h"
+#include "hdf5-file.h"
 
 /**
  * SECTION:image
@@ -378,19 +381,69 @@ void add_imagefile_field(struct imagefile_field_list *copyme, const char *name)
 
 /****************************** Image files ***********************************/
 
+enum imagefile_type
+{
+	IMAGEFILE_HDF5,
+	IMAGEFILE_CBF
+};
+
+
+struct imagefile
+{
+	enum imagefile_type type;
+	struct hdfile *hdfile;
+};
+
+
 struct imagefile *imagefile_open(const char *filename)
 {
+	struct imagefile *f;
+
+	f = malloc(sizeof(struct imagefile));
+	if ( f == NULL ) return NULL;
+
+	if ( H5Fis_hdf5(filename) > 0 ) {
+
+		/* This is an HDF5, pass through to HDF5 layer */
+		f->type = IMAGEFILE_HDF5;
+		f->hdfile = hdfile_open(filename);
+
+		if ( f->hdfile == NULL ) {
+			free(f);
+			return NULL;
+		}
+
+	} else {
+
+		STATUS("Mock CBF check\n");
+		return NULL;
+
+	}
+
+	return f;
 }
 
 
-int imagefile_read(struct imagefile *imfile, struct image *image,
-                          struct event *event)
+int imagefile_read(struct imagefile *f, struct image *image,
+                   struct event *event)
 {
+	if ( f->type == IMAGEFILE_HDF5 ) {
+		return hdf5_read2(f->hdfile, image, event, 0);
+	} else {
+		STATUS("Mock CBF read\n");
+		return 0;
+	}
 }
 
 
-struct hdfile *imagefile_get_hdfile(struct imagefile *imfile)
+struct hdfile *imagefile_get_hdfile(struct imagefile *f)
 {
+	if ( f->type != IMAGEFILE_HDF5 ) {
+		ERROR("Not an HDF5 file!\n");
+		return NULL;
+	}
+
+	return f->hdfile;
 }
 
 
@@ -404,27 +457,33 @@ void imagefile_copy_fields(struct imagefile *f,
 
 	for ( i=0; i<copyme->n_fields; i++ ) {
 
-#warning FIXME Implement imagefile field copying
-#if 0
 		char *val;
 		char *field;
 
 		field = copyme->fields[i];
-		val = hdfile_get_string_value(f, field, ev);
 
-		if ( field[0] == '/' ) {
-			fprintf(fh, "hdf5%s = %s\n", field, val);
+		if ( f->type == IMAGEFILE_HDF5 ) {
+			val = hdfile_get_string_value(f->hdfile, field, ev);
+			if ( field[0] == '/' ) {
+				fprintf(fh, "hdf5%s = %s\n", field, val);
+			} else {
+				fprintf(fh, "hdf5/%s = %s\n", field, val);
+			}
+			free(val);
+
 		} else {
-			fprintf(fh, "hdf5/%s = %s\n", field, val);
+			STATUS("Mock CBF variable\n");
+			fprintf(fh, "cbf/%s = %s\n", field, "(FIXME)");
 		}
 
-		free(val);
-#endif
 
 	}
 }
 
 
-void imagefile_close(struct imagefile *imfile)
+void imagefile_close(struct imagefile *f)
 {
+	if ( f->type == IMAGEFILE_HDF5 ) {
+		hdfile_close(f->hdfile);
+	}
 }
