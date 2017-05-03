@@ -3,12 +3,12 @@
  *
  * Quick yet non-crappy HDF viewer
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2014 Thomas White <taw@physics.org>
+ *   2009-2017 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2014      Takanori Nakane <nakane.t@gmail.com>
  *   2012      Richard Kirian
@@ -101,8 +101,8 @@ typedef struct {
 
 	int             simple;
 
-	struct hdfile	*hdfile;
-	struct image	*image;
+	struct imagefile *imagefile;
+	struct image	 *image;
 
 	char            *geom_filename;
 	char            *rg_coll_name;
