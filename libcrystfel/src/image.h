@@ -90,6 +90,15 @@ struct imagefeature {
 	const char                      *name;
 };
 
+
+/* An enum representing the image file formats we can handle */
+enum imagefile_type
+{
+	IMAGEFILE_HDF5,
+	IMAGEFILE_CBF
+};
+
+
 /* An opaque type representing a list of image features */
 typedef struct _imagefeaturelist ImageFeatureList;
 
@@ -238,13 +247,15 @@ extern void free_all_crystals(struct image *image);
 
 /* Image files */
 extern struct imagefile *imagefile_open(const char *filename);
-extern int imagefile_read(struct imagefile *imfile, struct image *image,
+extern int imagefile_read(struct imagefile *f, struct image *image,
                           struct event *event);
-extern struct hdfile *imagefile_get_hdfile(struct imagefile *imfile);
-extern void imagefile_copy_fields(struct imagefile *imfile,
+extern int imagefile_read_simple(struct imagefile *f, struct image *image);
+extern struct hdfile *imagefile_get_hdfile(struct imagefile *f);
+extern enum imagefile_type imagefile_get_type(struct imagefile *f);
+extern void imagefile_copy_fields(struct imagefile *f,
                                   const struct imagefile_field_list *copyme,
                                   FILE *fh, struct event *ev);
-extern void imagefile_close(struct imagefile *imfile);
+extern void imagefile_close(struct imagefile *f);
 
 /* Field lists */
 extern struct imagefile_field_list *new_imagefile_field_list(void);

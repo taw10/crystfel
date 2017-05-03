@@ -32,6 +32,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <hdf5.h>
+#include <cbflib/cbf.h>
 
 #include "image.h"
 #include "utils.h"
@@ -379,20 +380,50 @@ void add_imagefile_field(struct imagefile_field_list *copyme, const char *name)
 }
 
 
-/****************************** Image files ***********************************/
+/******************************* CBF files ************************************/
 
-enum imagefile_type
+static int read_cbf(struct imagefile *f, struct image *image)
 {
-	IMAGEFILE_HDF5,
-	IMAGEFILE_CBF
-};
+	cbf_handle cbfh;
 
+	if ( cbf_make_handle(&cbfh) ) {
+		ERROR("Failed to allocate CBF handle\n");
+		return 1;
+	}
+
+	ERROR("Mock CBF read\n");
+
+	cbf_free_handle(cbfh);
+	return 0;
+}
+
+
+/****************************** Image files ***********************************/
 
 struct imagefile
 {
 	enum imagefile_type type;
 	struct hdfile *hdfile;
 };
+
+
+static signed int is_cbf_file(const char *filename)
+{
+	FILE *fh;
+	char line[1024];
+
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) return -1;
+
+	if ( fgets(line, 1024, fh) == NULL ) return -1;
+	fclose(fh);
+
+	if ( strstr(line, "CBF") == NULL ) {
+		return 0;
+	}
+
+	return 1;
+}
 
 
 struct imagefile *imagefile_open(const char *filename)
@@ -413,10 +444,9 @@ struct imagefile *imagefile_open(const char *filename)
 			return NULL;
 		}
 
-	} else {
+	} else if ( is_cbf_file(filename) > 0 ) {
 
-		STATUS("Mock CBF check\n");
-		return NULL;
+		f->type = IMAGEFILE_CBF;
 
 	}
 
@@ -429,10 +459,32 @@ int imagefile_read(struct imagefile *f, struct image *image,
 {
 	if ( f->type == IMAGEFILE_HDF5 ) {
 		return hdf5_read2(f->hdfile, image, event, 0);
+	} else if ( f->type == IMAGEFILE_CBF ) {
+		return read_cbf(f, image);
 	} else {
-		STATUS("Mock CBF read\n");
+		ERROR("Unknown file type %i\n", f->type);
+		return 1;
+	}
+}
+
+
+/* Read a simple file, no multi-event, no prior geometry etc, and
+ * generate a geometry for it */
+int imagefile_read_simple(struct imagefile *f, struct image *image)
+{
+	if ( f->type == IMAGEFILE_HDF5 ) {
+		return hdf5_read(f->hdfile, image, NULL, 0);
+	} else {
+		STATUS("Mock CBF simple read\n");
 		return 0;
 	}
+}
+
+
+enum imagefile_type imagefile_get_type(struct imagefile *f)
+{
+	assert(f != NULL);
+	return f->type;
 }
 
 
