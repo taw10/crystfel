@@ -37,6 +37,34 @@ AC_ARG_WITH(gsl,
  GSL_LIBS="-L$withval/lib -lgsl -lgslcblas -lm"],
 [PKG_CHECK_MODULES([GSL], [gsl])])
 
+AC_ARG_ENABLE(cbf, AS_HELP_STRING([--enable-cbf], [Enable CBF file support]))
+AC_ARG_WITH(cbflib_dir, AS_HELP_STRING([--with-cbflib],
+            [Specify location of CBFlib headers and libraries]))
+AC_MSG_CHECKING([whether to use CBFlib])
+AS_IF([test "x$enable_cbf" = "xyes"],
+[
+   AC_MSG_RESULT([yes])
+   AS_IF([test "x$with_cbflib_dir" != "x"],
+   [
+      dnl NB not ${with_cbflib_dir}/include/cbflib, because cbflib installs
+      dnl its own HDF5 headers which we do not want in the include path
+      CBF_CFLAGS="-I${with_cbflib_dir}/include"
+      dnl Fortunately no libhdf5.so in this folder
+      CBF_LIBS="-lcbf -L${with_cbflib_dir}/lib"
+      have_cbflib=true
+   ], [
+      AC_CHECK_LIB([cbf], [cbf_make_handle], [
+         have_cbflib=true
+         CBF_LIBS="-lcbf"
+      ])
+   ])
+], [
+   AC_MSG_RESULT([no])
+])
+AS_IF([test x$have_cbflib = xtrue],
+[
+   AC_DEFINE([HAVE_CBFLIB], [1], [Define to 1 if CBFlib is available])
+])
 
 AC_ARG_WITH(opencl, AS_HELP_STRING([--with-opencl], [Use OpenCL]))
 AC_ARG_WITH(opencl_dir, AS_HELP_STRING([--with-opencl-dir],
@@ -325,7 +353,7 @@ MAIN_CFLAGS="$MAIN_CFLAGS $GDK_pixbuf_2_CFLAGS $FFTW_CFLAGS $Pango_CFLAGS"
 MAIN_CFLAGS="$MAIN_CFLAGS $PangoCairo_CFLAGS"
 AC_SUBST([MAIN_CFLAGS])
 
-LIBCRYSTFEL_CFLAGS="$CFLAGS $HDF5_CFLAGS $GSL_CFLAGS $FFTW_CFLAGS"
+LIBCRYSTFEL_CFLAGS="$CFLAGS $HDF5_CFLAGS $GSL_CFLAGS $FFTW_CFLAGS $CBF_CFLAGS"
 AC_SUBST([LIBCRYSTFEL_CFLAGS])
 
 MAIN_LIBS="$LIBS $HDF5_LIBS -lm -lz $GSL_LIBS $GTK_LIBS $OPENCL_LIBS -pthread"
@@ -335,7 +363,7 @@ MAIN_LIBS="$MAIN_LIBS $Pango_LIBS $PangoCairo_LIBS $LDFLAGS"
 AC_SUBST([MAIN_LIBS])
 
 LIBCRYSTFEL_LIBS="$LIBS $HDF5_LIBS $GSL_LIBS $FFTW_LIBS $CURSES_LIB $LDFLAGS"
-LIBCRYSTFEL_LIBS="$LIBCRYSTFEL_LIBS -pthread"
+LIBCRYSTFEL_LIBS="$LIBCRYSTFEL_LIBS -pthread $CBF_LIBS"
 AC_SUBST([LIBCRYSTFEL_LIBS])
 
 GTK_DOC_CHECK([1.9],[--flavour no-tmpl])
