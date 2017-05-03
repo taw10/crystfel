@@ -67,8 +67,8 @@ extern int hdf5_read2(struct hdfile *f, struct image *image,
 extern int check_path_existence(hid_t fh, const char *path);
 
 extern struct hdfile *hdfile_open(const char *filename);
-int hdfile_set_image(struct hdfile *f, const char *path,
-                     struct panel *p);
+int hdfile_set_image(struct hdfile *f, const char *path);
+
 extern int16_t *hdfile_get_image_binned(struct hdfile *hdfile,
                                          int binning, int16_t *maxp);
 extern char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,

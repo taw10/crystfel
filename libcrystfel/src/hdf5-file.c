@@ -134,8 +134,7 @@ struct hdfile *hdfile_open(const char *filename)
 }
 
 
-int hdfile_set_image(struct hdfile *f, const char *path,
-                     struct panel *p)
+int hdfile_set_image(struct hdfile *f, const char *path)
 {
 	f->dh = H5Dopen2(f->fh, path, H5P_DEFAULT);
 	if ( f->dh < 0 ) {
@@ -1433,7 +1432,7 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 	if ( element == NULL ) {
 		fail = hdfile_set_first_image(f, "/");
 	} else {
-		fail = hdfile_set_image(f, element, NULL);
+		fail = hdfile_set_image(f, element);
 	}
 
 	if ( fail ) {
@@ -1747,7 +1746,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 				return 1;
 			}
 
-			fail = hdfile_set_image(f, panel_full_path, p);
+			fail = hdfile_set_image(f, panel_full_path);
 
 			free(panel_full_path);
 
@@ -1769,7 +1768,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 					free(image->sat);
 					return 1;
 				}
-				fail = hdfile_set_image(f, p->data, p);
+				fail = hdfile_set_image(f, p->data);
 
 			}
 
@@ -2299,7 +2298,7 @@ int hdfile_set_first_image(struct hdfile *f, const char *group)
 	for ( i=0; i<n; i++ ) {
 
 		if ( is_image[i] ) {
-			hdfile_set_image(f, names[i], NULL);
+			hdfile_set_image(f, names[i]);
 			for ( j=0; j<n; j++ ) free(names[j]);
 			free(is_image);
 			free(is_group);
