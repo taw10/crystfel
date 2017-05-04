@@ -38,6 +38,7 @@
 #include "utils.h"
 #include "events.h"
 #include "hdf5-file.h"
+#include "detector.h"
 
 /**
  * SECTION:image
@@ -52,6 +53,14 @@
  * frame from a large series of diffraction patterns, which might be from the
  * same or different crystals.
  */
+
+
+struct imagefile
+{
+	enum imagefile_type type;
+	char *filename;
+	struct hdfile *hdfile;
+};
 
 
 struct _imagefeaturelist
@@ -382,16 +391,231 @@ void add_imagefile_field(struct imagefile_field_list *copyme, const char *name)
 
 /******************************* CBF files ************************************/
 
+
+static char *cbf_strerr(int e)
+{
+	char *err;
+
+	err = malloc(1024);
+	if ( err == NULL ) return NULL;
+
+	err[0] = '\0';
+
+	/* NB Sum of lengths of all strings must be less than 1024 */
+	if ( e & CBF_FORMAT ) strcat(err, "Invalid format");
+	if ( e & CBF_ALLOC ) strcat(err, "Memory allocation failed");
+	if ( e & CBF_ARGUMENT ) strcat(err, "Invalid argument");
+	if ( e & CBF_ASCII ) strcat(err, "Value is ASCII");
+	if ( e & CBF_BINARY ) strcat(err, "Value is binary");
+	if ( e & CBF_BITCOUNT ) strcat(err, "Wrong number of bits");
+	if ( e & CBF_ENDOFDATA ) strcat(err, "End of data");
+	if ( e & CBF_FILECLOSE ) strcat(err, "File close error");
+	if ( e & CBF_FILEOPEN ) strcat(err, "File open error");
+	if ( e & CBF_FILEREAD ) strcat(err, "File read error");
+	if ( e & CBF_FILETELL ) strcat(err, "File tell error");
+	if ( e & CBF_FILEWRITE ) strcat(err, "File write error");
+	if ( e & CBF_IDENTICAL ) strcat(err, "Name already exists");
+	if ( e & CBF_NOTFOUND ) strcat(err, "Not found");
+	if ( e & CBF_OVERFLOW ) strcat(err, "Overflow");
+	if ( e & CBF_UNDEFINED ) strcat(err, "Number undefined");
+	if ( e & CBF_NOTIMPLEMENTED ) strcat(err, "Not implemented");
+
+	return err;
+}
+
+
+static int unpack_panels(struct image *image, signed int *data, int data_width)
+{
+	int pi;
+
+	/* FIXME: Load these masks from an HDF5 file, if filenames are
+	 * given in the geometry file */
+	uint16_t *flags = NULL;
+	float *sat = NULL;
+
+	image->dp = malloc(image->det->n_panels * sizeof(float *));
+	image->bad = malloc(image->det->n_panels * sizeof(int *));
+	image->sat = malloc(image->det->n_panels * sizeof(float *));
+	if ( (image->dp == NULL) || (image->bad == NULL)
+	  || (image->sat == NULL) )
+	{
+		ERROR("Failed to allocate panels.\n");
+		return 1;
+	}
+
+	for ( pi=0; pi<image->det->n_panels; pi++ ) {
+
+		struct panel *p;
+		int fs, ss;
+
+		p = &image->det->panels[pi];
+		image->dp[pi] = malloc(p->w*p->h*sizeof(float));
+		image->bad[pi] = calloc(p->w*p->h, sizeof(int));
+		image->sat[pi] = malloc(p->w*p->h*sizeof(float));
+		if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL)
+		  || (image->sat[pi] == NULL) )
+		{
+			ERROR("Failed to allocate panel\n");
+			return 1;
+		}
+
+		if ( p->mask != NULL ) {
+			ERROR("WARNING: Bad pixel masks do not currently work "
+			      "with CBF files\n");
+			ERROR(" (bad pixel regions specified in the geometry "
+			      "file will be used, however)\n");
+		}
+
+		if ( p->satmap != NULL ) {
+			ERROR("WARNING: Saturation maps do not currently work "
+			      "with CBF files\n");
+		}
+
+		for ( ss=0; ss<p->h; ss++ ) {
+		for ( fs=0; fs<p->w; fs++ ) {
+
+			int idx;
+			int cfs, css;
+			int bad = 0;
+
+			cfs = fs+p->orig_min_fs;
+			css = ss+p->orig_min_ss;
+			idx = cfs + css*data_width;
+
+			image->dp[pi][fs+p->w*ss] = data[idx];
+
+			if ( sat != NULL ) {
+				image->sat[pi][fs+p->w*ss] = sat[idx];
+			} else {
+				image->sat[pi][fs+p->w*ss] = INFINITY;
+			}
+
+			if ( p->no_index ) bad = 1;
+
+			if ( in_bad_region(image->det, p, cfs, css) ) {
+				bad = 1;
+			}
+
+			if ( flags != NULL ) {
+
+				int f;
+
+				f = flags[idx];
+
+				/* Bad if it's missing any of the "good" bits */
+				if ( (f & image->det->mask_good)
+				       != image->det->mask_good ) bad = 1;
+
+				/* Bad if it has any of the "bad" bits. */
+				if ( f & image->det->mask_bad ) bad = 1;
+
+			}
+			image->bad[pi][fs+p->w*ss] = bad;
+
+		}
+		}
+
+	}
+
+	return 0;
+}
+
+
 static int read_cbf(struct imagefile *f, struct image *image)
 {
 	cbf_handle cbfh;
+	FILE *fh;
+	int r;
+	unsigned int compression;
+	int binary_id, minelement, maxelement, elsigned, elunsigned;
+	size_t elsize, elements, elread, dimfast, dimmid, dimslow, padding;
+	const char *byteorder;
+	signed int *data;
 
 	if ( cbf_make_handle(&cbfh) ) {
 		ERROR("Failed to allocate CBF handle\n");
 		return 1;
 	}
 
-	ERROR("Mock CBF read\n");
+	fh = fopen(f->filename, "rb");
+	if ( fh == NULL ) {
+		ERROR("Failed to open '%s'\n", f->filename);
+		return 1;
+	}
+	/* CBFlib calls fclose(fh) when it's ready */
+
+	if ( cbf_read_widefile(cbfh, fh, 0) ) {
+		ERROR("Failed to read CBF file\n");
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	/* Select row 0 in data column inside array_data */
+	cbf_find_category(cbfh, "array_data");
+	cbf_find_column(cbfh, "data");
+	cbf_select_row(cbfh, 0);
+
+	/* Get parameters for array read */
+	r = cbf_get_integerarrayparameters_wdims(cbfh, &compression, &binary_id,
+	                                         &elsize, &elsigned, &elunsigned,
+	                                         &elements,
+	                                         &minelement, &maxelement,
+	                                         &byteorder,
+	                                         &dimfast, &dimmid, &dimslow,
+	                                         &padding);
+	if ( r ) {
+		char *err = cbf_strerr(r);
+		ERROR("Failed to read CBF array parameters: %s\n", err);
+		free(err);
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	if ( dimslow != 0 ) {
+		ERROR("CBF data array is 3D - don't know what to do with it\n");
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	if ( dimfast*dimmid*elsize > 10e9 ) {
+		ERROR("CBF data is far too big (%i x %i x %i bytes).\n",
+		      (int)dimfast, (int)dimmid, (int)elsize);
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	if ( elsize != 4 ) {
+		STATUS("Don't know what to do with element size %i\n",
+		       (int)elsize);
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	if ( strcmp(byteorder, "little_endian") != 0 ) {
+		STATUS("Don't know what to do with non-little-endian datan\n");
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	data = malloc(elsize*dimfast*dimmid);
+	if ( data == NULL ) {
+		ERROR("Failed to allocate memory for CBF data\n");
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	r = cbf_get_integerarray(cbfh, &binary_id, data, elsize, 1,
+	                         elsize*dimfast*dimmid, &elread);
+	if ( r ) {
+		char *err = cbf_strerr(r);
+		ERROR("Failed to read CBF array: %s\n", err);
+		free(err);
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	unpack_panels(image, data, dimfast);
+	free(data);
 
 	cbf_free_handle(cbfh);
 	return 0;
@@ -399,12 +623,6 @@ static int read_cbf(struct imagefile *f, struct image *image)
 
 
 /****************************** Image files ***********************************/
-
-struct imagefile
-{
-	enum imagefile_type type;
-	struct hdfile *hdfile;
-};
 
 
 static signed int is_cbf_file(const char *filename)
@@ -450,6 +668,7 @@ struct imagefile *imagefile_open(const char *filename)
 
 	}
 
+	f->filename = strdup(filename);
 	return f;
 }
 
@@ -538,4 +757,6 @@ void imagefile_close(struct imagefile *f)
 	if ( f->type == IMAGEFILE_HDF5 ) {
 		hdfile_close(f->hdfile);
 	}
+	free(f->filename);
+	free(f);
 }
