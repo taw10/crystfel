@@ -587,7 +587,7 @@ static int read_cbf(struct imagefile *f, struct image *image)
 	/* CBFlib calls fclose(fh) when it's ready */
 
 	if ( cbf_read_widefile(cbfh, fh, 0) ) {
-		ERROR("Failed to read CBF file\n");
+		ERROR("Failed to read CBF file '%s'\n", f->filename);
 		cbf_free_handle(cbfh);
 		return 1;
 	}
