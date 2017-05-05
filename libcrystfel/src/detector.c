@@ -1076,12 +1076,17 @@ static void parse_toplevel(struct detector *det, struct beam_params *beam,
 
 	} else if ( strcmp(key, "photon_energy") == 0 ) {
 		if ( beam != NULL ) {
-			if ( strncmp(val, "/", 1) == 0 ) {
+
+			double v;
+			char *end;
+
+			v = strtod(val, &end);
+			if ( (val[0] != '\0') && (end[0] == '\0') ) {
+				beam->photon_energy = v;
+				beam->photon_energy_from = NULL;
+			} else {
 				beam->photon_energy = 0.0;
 				beam->photon_energy_from = strdup(val);
-			} else {
-				beam->photon_energy = atof(val);
-				beam->photon_energy_from = NULL;
 			}
 		}
 
