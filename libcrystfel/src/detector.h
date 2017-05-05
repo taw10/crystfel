@@ -224,9 +224,8 @@ extern void get_pixel_extents(struct detector *det,
                               double *min_x, double *min_y,
                               double *max_x, double *max_y);
 
-extern void fill_in_values(struct detector *det, struct hdfile *f,
-                           struct event* ev);
 extern void fill_in_adu(struct image *image);
+extern void adjust_centering_for_rail(struct panel *p);
 
 extern int panel_is_in_rigid_group(const struct rigid_group *rg,
                                    struct panel *p);

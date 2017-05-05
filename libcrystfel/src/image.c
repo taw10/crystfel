@@ -521,6 +521,48 @@ static int unpack_panels(struct image *image, signed int *data, int data_width)
 }
 
 
+static void cbf_fill_in_beam_parameters(struct beam_params *beam,
+                                        struct imagefile *f,
+                                        struct image *image)
+{
+	double eV;
+
+	if ( beam->photon_energy_from == NULL ) {
+
+		/* Explicit value given */
+		eV = beam->photon_energy;
+
+	} else {
+
+		ERROR("Can't get photon energy from CBF yet.\n");
+		eV = 0.0;
+
+	}
+
+	image->lambda = ph_en_to_lambda(eV_to_J(eV))*beam->photon_energy_scale;
+}
+
+
+static void cbf_fill_in_clen(struct detector *det, struct imagefile *f)
+{
+	int i;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		struct panel *p = &det->panels[i];
+
+		if ( p->clen_from != NULL ) {
+
+			ERROR("Can't get clen from CBF yet.\n");
+
+		}
+
+		adjust_centering_for_rail(p);
+
+	}
+}
+
+
 static int read_cbf(struct imagefile *f, struct image *image)
 {
 	cbf_handle cbfh;
@@ -616,6 +658,17 @@ static int read_cbf(struct imagefile *f, struct image *image)
 
 	unpack_panels(image, data, dimfast);
 	free(data);
+
+	if ( image->beam != NULL ) {
+		cbf_fill_in_beam_parameters(image->beam, f, image);
+		if ( image->lambda > 1000 ) {
+			ERROR("WARNING: Missing or nonsensical wavelength "
+			      "(%e m) for %s.\n",
+			      image->lambda, image->filename);
+		}
+	}
+	cbf_fill_in_clen(image->det, f);
+	fill_in_adu(image);
 
 	cbf_free_handle(cbfh);
 	return 0;
