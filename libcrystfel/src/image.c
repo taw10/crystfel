@@ -424,7 +424,8 @@ static char *cbf_strerr(int e)
 }
 
 
-static int unpack_panels(struct image *image, signed int *data, int data_width)
+static int unpack_panels(struct image *image, signed int *data, int data_width,
+                         int data_height)
 {
 	int pi;
 
@@ -469,6 +470,14 @@ static int unpack_panels(struct image *image, signed int *data, int data_width)
 		if ( p->satmap != NULL ) {
 			ERROR("WARNING: Saturation maps do not currently work "
 			      "with CBF files\n");
+		}
+
+		if ( (p->orig_min_fs + p->w > data_width)
+		  || (p->orig_min_ss + p->h > data_height) )
+		{
+			ERROR("Panel %s is outside range of data in CBF file\n",
+			      p->name);
+			return 1;
 		}
 
 		for ( ss=0; ss<p->h; ss++ ) {
@@ -574,6 +583,11 @@ static int read_cbf(struct imagefile *f, struct image *image)
 	const char *byteorder;
 	signed int *data;
 
+	if ( image->det == NULL ) {
+		ERROR("read_cbf() needs a geometry\n");
+		return 1;
+	}
+
 	if ( cbf_make_handle(&cbfh) ) {
 		ERROR("Failed to allocate CBF handle\n");
 		return 1;
@@ -656,7 +670,7 @@ static int read_cbf(struct imagefile *f, struct image *image)
 		return 1;
 	}
 
-	unpack_panels(image, data, dimfast);
+	unpack_panels(image, data, dimfast, dimmid);
 	free(data);
 
 	if ( image->beam != NULL ) {
