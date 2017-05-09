@@ -689,6 +689,143 @@ static int read_cbf(struct imagefile *f, struct image *image)
 }
 
 
+static float *convert_float(signed int *data, int w, int h)
+{
+	float *df;
+	long int i;
+
+	df = malloc(sizeof(float)*w*h);
+	if ( df == NULL ) return NULL;
+
+	for ( i=0; i<w*h; i++ ) {
+		df[i] = data[i];
+	}
+
+	return df;
+}
+
+
+static int read_cbf_simple(struct imagefile *f, struct image *image)
+{
+	cbf_handle cbfh;
+	FILE *fh;
+	int r;
+	unsigned int compression;
+	int binary_id, minelement, maxelement, elsigned, elunsigned;
+	size_t elsize, elements, elread, dimfast, dimmid, dimslow, padding;
+	const char *byteorder;
+	signed int *data;
+
+	if ( cbf_make_handle(&cbfh) ) {
+		ERROR("Failed to allocate CBF handle\n");
+		return 1;
+	}
+
+	fh = fopen(f->filename, "rb");
+	if ( fh == NULL ) {
+		ERROR("Failed to open '%s'\n", f->filename);
+		return 1;
+	}
+	/* CBFlib calls fclose(fh) when it's ready */
+
+	if ( cbf_read_widefile(cbfh, fh, 0) ) {
+		ERROR("Failed to read CBF file '%s'\n", f->filename);
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	/* Select row 0 in data column inside array_data */
+	cbf_find_category(cbfh, "array_data");
+	cbf_find_column(cbfh, "data");
+	cbf_select_row(cbfh, 0);
+
+	/* Get parameters for array read */
+	r = cbf_get_integerarrayparameters_wdims(cbfh, &compression, &binary_id,
+	                                         &elsize, &elsigned, &elunsigned,
+	                                         &elements,
+	                                         &minelement, &maxelement,
+	                                         &byteorder,
+	                                         &dimfast, &dimmid, &dimslow,
+	                                         &padding);
+	if ( r ) {
+		char *err = cbf_strerr(r);
+		ERROR("Failed to read CBF array parameters: %s\n", err);
+		free(err);
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	if ( dimslow != 0 ) {
+		ERROR("CBF data array is 3D - don't know what to do with it\n");
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	if ( dimfast*dimmid*elsize > 10e9 ) {
+		ERROR("CBF data is far too big (%i x %i x %i bytes).\n",
+		      (int)dimfast, (int)dimmid, (int)elsize);
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	if ( elsize != 4 ) {
+		STATUS("Don't know what to do with element size %i\n",
+		       (int)elsize);
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	if ( strcmp(byteorder, "little_endian") != 0 ) {
+		STATUS("Don't know what to do with non-little-endian datan\n");
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	data = malloc(elsize*dimfast*dimmid);
+	if ( data == NULL ) {
+		ERROR("Failed to allocate memory for CBF data\n");
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	r = cbf_get_integerarray(cbfh, &binary_id, data, elsize, 1,
+	                         elsize*dimfast*dimmid, &elread);
+	if ( r ) {
+		char *err = cbf_strerr(r);
+		ERROR("Failed to read CBF array: %s\n", err);
+		free(err);
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	image->det = simple_geometry(image, dimfast, dimmid);
+	image->dp = malloc(sizeof(float *));
+	if ( image->dp == NULL ) {
+		ERROR("Failed to allocate dp array\n");
+		return 1;
+	}
+	image->dp[0] = convert_float(data, dimfast, dimmid);
+	if ( image->dp[0] == NULL ) {
+		ERROR("Failed to allocate dp array\n");
+		return 1;
+	}
+
+	if ( image->beam != NULL ) {
+		cbf_fill_in_beam_parameters(image->beam, f, image);
+		if ( image->lambda > 1000 ) {
+			ERROR("WARNING: Missing or nonsensical wavelength "
+			      "(%e m) for %s.\n",
+			      image->lambda, image->filename);
+		}
+	}
+	cbf_fill_in_clen(image->det, f);
+	fill_in_adu(image);
+
+	cbf_free_handle(cbfh);
+	return 0;
+}
+
+
 /****************************** Image files ***********************************/
 
 
@@ -761,8 +898,7 @@ int imagefile_read_simple(struct imagefile *f, struct image *image)
 	if ( f->type == IMAGEFILE_HDF5 ) {
 		return hdf5_read(f->hdfile, image, NULL, 0);
 	} else {
-		STATUS("Mock CBF simple read\n");
-		return 0;
+		return read_cbf_simple(f, image);
 	}
 }
 
