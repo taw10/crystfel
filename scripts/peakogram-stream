@@ -1,16 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-# peakogram-stream
 #
 # Check a stream for saturation
 #
-# Copyright © 2016      Deutsches Elektronen-Synchrotron DESY,
+# Copyright © 2016-2017 Deutsches Elektronen-Synchrotron DESY,
 #                       a research centre of the Helmholtz Association.
 # Copyright © 2016      The Research Foundation for SUNY
 #
 # Authors:
-#   2016      Thomas White <taw@physics.org>
+#   2016-2017 Thomas White <taw@physics.org>
 #   2014-2016 Thomas Grant <tgrant@hwi.buffalo.edu>
 #
 # This file is part of CrystFEL.
@@ -120,7 +118,7 @@ data = np.asarray(data,dtype=float)
 sys.stdout.write("\r%i peaks found" % n)
 sys.stdout.flush()
 
-print ""
+print("")
 
 x = data[:,0]
 y = data[:,1]

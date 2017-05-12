@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-
+# -*- coding: utf-8 -*-
 #
 # Chop chunks or crystals from one or both ends of a stream
 #
-# Copyright (c) 2014 Deutsches Elektronen-Synchrotron DESY,
-#                    a research centre of the Helmholtz Association.
+# Copyright © 2014-2017 Deutsches Elektronen-Synchrotron DESY,
+#                       a research centre of the Helmholtz Association.
 #
 # Author:
-#    2014 Thomas White <taw@physics.org>
+#    2014-2017 Thomas White <taw@physics.org>
 #
 
 import sys
@@ -66,7 +66,7 @@ def count_crystals(f, g, start_after, stop_after):
                 in_crystal = 0
                 need_end_chunk = 1
 
-    print "Wrote %i crystals to %s" % (n_crystals_written, opt.ofn)
+    print("Wrote {} crystals to {}".format(n_crystals_written, opt.ofn))
 
 def count_chunks(f, g, start_after, stop_after):
     n_chunks_seen = 0
@@ -95,7 +95,7 @@ def count_chunks(f, g, start_after, stop_after):
                 if n_chunks_written == stop_after:
                     break
 
-    print "Wrote %i chunks to %s" % (n_chunks_written, opt.ofn)
+    print("Wrote {} chunks to {}".format(n_chunks_written, opt.ofn))
 
 op = optparse.OptionParser()
 op.add_option('', '--input', action='store', type='string', dest='ifn',
@@ -111,7 +111,7 @@ op.add_option('', '--chunks', action='store_true', dest='chunks',
 opt,arg = op.parse_args(sys.argv)
 
 if not (opt.ifn and opt.ofn):
-    print "You need at least --input and --output"
+    print("You need at least --input and --output")
     exit(1)
 
 f = open(opt.ifn, 'r')

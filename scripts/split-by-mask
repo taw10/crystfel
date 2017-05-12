@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-
+# -*- coding: utf-8 -*-
 #
 # Split stream according to an external mask
 #
-# Copyright (c) 2014-2016 Deutsches Elektronen-Synchrotron DESY,
-#                         a research centre of the Helmholtz Association.
+# Copyright © 2014-2017 Deutsches Elektronen-Synchrotron DESY,
+#                       a research centre of the Helmholtz Association.
 #
 # Author:
-#    2014-2016 Thomas White <taw@physics.org>
+#    2014-2017 Thomas White <taw@physics.org>
 #
 
 import sys
@@ -21,7 +21,7 @@ prog = re.compile("^\s+([\d-]+)\s+([\d-]+)\s+([\d-]+)\s+[\d\.\-]+\s+[\d\.\-]+\s+
 def process_refln(fline, g, h, mask):
     match = prog.match(fline)
     if not match:
-        print 'Line not understood, WTF? %s' % fline
+        print('Line not understood, WTF? {}'.format(fline))
 	return
     fs = int(round(float(match.group(4))))
     ss = int(round(float(match.group(5))))
@@ -48,7 +48,7 @@ op.add_option('', '--mask', action='store', type='string', dest='mask_fn',
 opt,arg = op.parse_args(sys.argv)
 
 if not opt.ifn:
-    print "You need at least --input"
+    print("You need at least --input")
     exit(1)
 
 f = open(opt.ifn, 'r')

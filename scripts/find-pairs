@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 #
 # Find pairs of observations from the same pattern
 #
-# Copyright © 2014 Deutsches Elektronen-Synchrotron DESY,
-#                  a research centre of the Helmholtz Association.
+# Copyright © 2014-2017 Deutsches Elektronen-Synchrotron DESY,
+#                       a research centre of the Helmholtz Association.
 #
 # Author:
-#    2014 Thomas White <taw@physics.org>
+#    2014-2017 Thomas White <taw@physics.org>
 #
 
 import re as regexp
@@ -41,33 +40,33 @@ def find_405(f):
 
 f = open(fn1, 'r')
 flines = find_405(f)
-print len(flines),"measurements in",fn1
+print("{} measurements in {}".format(len(flines),fn1))
 
 g = open(fn2, 'r')
 glines = find_405(g)
-print len(glines),"measurements in",fn2
+print("{} measurements in {}".format(len(glines),fn2))
 
-print "\nThe common measurements:\n"
+print("\nThe common measurements:\n")
 for fn in flines.keys():
     if fn in glines:
-        print fn
-        print flines[fn].rstrip("\r\n")
-        print glines[fn]
-        print
+        print(fn)
+        print(flines[fn].rstrip("\r\n"))
+        print(glines[fn])
+        print()
         del flines[fn]
         del glines[fn]
 
-print "\nThe measurements only in",fn1,":\n"
+print("\nThe measurements only in {}:\n".format(fn1))
 
 for fn in flines.keys():
-    print fn
-    print flines[fn].rstrip("\r\n")
-    print
+    print(fn)
+    print(flines[fn].rstrip("\r\n"))
+    print()
 
-print "\nThe measurements only in",fn2,":\n"
+print("\nThe measurements only in {}:\n".format(fn2))
 
 for fn in glines.keys():
-    print fn
-    print glines[fn].rstrip("\r\n")
-    print
+    print(fn)
+    print(glines[fn].rstrip("\r\n"))
+    print("")
 

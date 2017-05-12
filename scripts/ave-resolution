@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 #
 # Find mean diffracting resolution
 #
-# Copyright © 2014-2015 Deutsches Elektronen-Synchrotron DESY,
+# Copyright © 2014-2017 Deutsches Elektronen-Synchrotron DESY,
 #                       a research centre of the Helmholtz Association.
 #
 # Author:
-#    2014-2015 Thomas White <taw@physics.org>
+#    2014-2017 Thomas White <taw@physics.org>
 #
 
 import sys
@@ -24,16 +23,16 @@ while True:
         break
     if fline.find("diffraction_resolution_limit") != -1:
         res = float(fline.split('= ')[1].split(' ')[0].rstrip("\r\n"))
-	a.append(res)
+        a.append(res)
         continue
 
 f.close()
 
 b = numpy.array(a)
-print " Mean: %.2f nm^-1 = %.2f A" % (numpy.mean(b),10.0/numpy.mean(b))
-print " Best: %.2f nm^-1 = %.2f A" % (numpy.max(b),10.0/numpy.max(b))
-print "Worst: %.2f nm^-1 = %.2f A" % (numpy.min(b),10.0/numpy.min(b))
-print "Std deviation: %.2f nm^-1" % (numpy.std(b))
+print(" Mean: {:.2} nm^-1 = {:.2} A".format(numpy.mean(b),10.0/numpy.mean(b)))
+print(" Best: {:.2} nm^-1 = {:.2} A".format(numpy.max(b),10.0/numpy.max(b)))
+print("Worst: {:.2} nm^-1 = {:.2} A".format(numpy.min(b),10.0/numpy.min(b)))
+print("Std deviation: {:.2} nm^-1".format(numpy.std(b)))
 
 plt.hist(a,bins=30)
 plt.title('Resolution based on indexing results')

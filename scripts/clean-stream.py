@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # coding=utf-8
-
+#
 # clean-stream.py
 #
 # Remove non-indexed frames from a stream
@@ -86,5 +86,5 @@ while  (line != ''):
 
 	line = infile_1.readline()
 
-print '%d suited of %d patterns have been extracted and saved as %s' % (num_suited, n_patt, sys.argv[2])
+print('%d suited of %d patterns have been extracted and saved as %s' % (num_suited, n_patt, sys.argv[2]))
 Nfile.write('%d' % num_suited)
