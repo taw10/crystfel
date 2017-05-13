@@ -124,6 +124,7 @@ static void show_help(const char *s)
 "    --max-pix-count=<n>   Only accept peaks if they include less than <n>\n"
 "                           pixels, in the Peakfinder8 algorithm.\n"
 "                           Default: 200.\n"
+"    --min-peaks=<n>       Minimum number of peaks for indexing.\n"
 "    --local-bg-radius=<n> Radius (in pixels) to use for the estimation of\n"
 "	                    local background in the Peakfinder8 algorithm.\n"
 "                           Default: 3.\n"
@@ -258,6 +259,7 @@ int main(int argc, char *argv[])
 	iargs.stream_refls = 1;
 	iargs.int_diag = INTDIAG_NONE;
 	iargs.copyme = new_imagefile_field_list();
+	iargs.min_peaks = 0;
 	if ( iargs.copyme == NULL ) {
 		ERROR("Couldn't allocate HDF5 field list.\n");
 		return 1;
@@ -337,6 +339,7 @@ int main(int argc, char *argv[])
 	        {"local-bg-radius",    1, NULL,               28},
 	        {"min-res",            1, NULL,               29},
 	        {"max-res",            1, NULL,               30},
+	        {"min-peaks",          1, NULL,               31},
 
 		{0, 0, NULL, 0}
 	};
@@ -538,6 +541,10 @@ int main(int argc, char *argv[])
 
 		        case 30:
 			iargs.max_res = atoi(optarg);
+			break;
+
+			case 31:
+			iargs.min_peaks = atoi(optarg);
 			break;
 
 			case 0 :

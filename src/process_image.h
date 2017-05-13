@@ -80,6 +80,7 @@ struct index_args
 	int min_pix_count;
 	int max_pix_count;
 	int local_bg_radius;
+	int min_peaks;
 	struct imagefile_field_list *copyme;
 	int integrate_saturated;
 	int use_saturated;

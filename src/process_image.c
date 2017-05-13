@@ -249,6 +249,17 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		image.bw = 0.00000001;
 	}
 
+	if ( image_feature_count(image.features) < iargs->min_peaks ) {
+		r = chdir(rn);
+		if ( r ) {
+			ERROR("Failed to chdir: %s\n", strerror(errno));
+			imagefile_close(imfile);
+			return;
+		}
+		free(rn);
+		goto streamwrite;
+	}
+
 	/* Index the pattern */
 	time_accounts_set(taccs, TACC_INDEXING);
 	index_pattern_2(&image, iargs->ipriv, &sb_shared->pings[cookie]);
@@ -292,6 +303,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	                iargs->int_diag_k, iargs->int_diag_l,
 	                &sb_shared->term_lock);
 
+streamwrite:
 	time_accounts_set(taccs, TACC_WRITESTREAM);
 	sb_shared->pings[cookie]++;
 	ret = write_chunk(st, &image, imfile,
