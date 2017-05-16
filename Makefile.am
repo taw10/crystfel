@@ -183,7 +183,8 @@ script_DATA = scripts/alternate-stream scripts/cell-please \
               scripts/plot-radius-resolution \
               scripts/detector-shift scripts/turbo-index-lsf \
               scripts/gaincal-to-saturation-map scripts/move-entire-detector \
-              scripts/split-by-mask scripts/turbo-index-slurm
+              scripts/split-by-mask scripts/turbo-index-slurm \
+              scripts/sum-peaks
 
 EXTRA_DIST += $(script_DATA)
 
