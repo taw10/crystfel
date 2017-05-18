@@ -556,8 +556,8 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
  * ------------------------------------------------------------------------*/
 
 static signed int finalise_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
-				    int *obs_members, int *match_members,
-				    int member_num)
+                                    int *obs_members, int *match_members,
+                                    int member_num)
 {
 	gsl_matrix **rotations = malloc(sizeof(*rotations)* pow(member_num, 2) - member_num);
 
@@ -963,7 +963,7 @@ static int generate_rotation_sym_ops(TakeTwoCell *ttCell)
 	SymOpList rawList;
 
 	switch (lattice) {
-       case L_TRICLINIC:
+		case L_TRICLINIC:
 			// ...get parental guidance for unusually accurate candidness?
 			rawList = getpg_uac("1");
 			break;
@@ -985,7 +985,7 @@ static int generate_rotation_sym_ops(TakeTwoCell *ttCell)
 		case L_CUBIC:
 			rawList = getpg_uac("432");
 			break;
-       default:
+		default:
 			break;
 	}
 
@@ -1269,7 +1269,7 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 	int success = generate_rotation_sym_ops(&ttCell);
 
 	int threshold_reached = find_seed(obs_vecs, obs_vec_count,
-									  &solution, cell);
+	                                  &solution, cell);
 
 	if ( solution == NULL ) {
 		cleanup_taketwo_obs_vecs(obs_vecs, obs_vec_count);
