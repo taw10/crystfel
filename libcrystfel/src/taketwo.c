@@ -812,11 +812,11 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
                                   int **her_match_idxs, int **his_match_idxs,
                                   int *match_count, struct TakeTwoCell *cell)
 {
-	gsl_matrix **old_mats = calloc(sizeof(gsl_matrix *) * match_count);
 	int num_occupied = 0;
+	gsl_matrix **old_mats = calloc(*match_count, sizeof(gsl_matrix *));
 
 	signed int i, j;
-	for (i = match_count - 1; i >= 0; i++) {
+	for (i = *match_count - 1; i >= 0; i++) {
 		int her_match = (*her_match_idxs)[i];
 		int his_match = (*his_match_idxs)[i];
 
@@ -957,7 +957,7 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 	return (best_rotation != NULL);
 }
 
-static int generate_rotation_sym_ops(TakeTwoCell *ttCell)
+static int generate_rotation_sym_ops(struct TakeTwoCell *ttCell)
 {
 	LatticeType lattice = cell_get_lattice_type(ttCell->cell);
 	SymOpList rawList;
