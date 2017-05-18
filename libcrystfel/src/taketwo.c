@@ -957,37 +957,93 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 	return (best_rotation != NULL);
 }
 
+
+static char *add_ua(const char *inp, char ua)
+{
+	char *pg = malloc(64);
+	if ( pg == NULL ) return NULL;
+	snprintf(pg, 63, "%s_ua%c", inp, ua);
+	return pg;
+}
+
+
+static char *get_chiral_holohedry(UnitCell *cell)
+{
+	LatticeType lattice = cell_get_lattice_type(cell);
+	char *pg = malloc(64);
+	char *pgout;
+
+	if ( pg == NULL ) return NULL;
+
+	switch (lattice)
+	{
+		case L_TRICLINIC:
+		pg = "1";
+		break;
+
+		case L_MONOCLINIC:
+		pg = "2";
+		break;
+
+		case L_ORTHORHOMBIC:
+		pg = "222";
+		break;
+
+		case L_TETRAGONAL:
+		pg = "422";
+		break;
+
+		case L_RHOMBOHEDRAL:
+		pg = "3_R";
+		break;
+
+		case L_HEXAGONAL:
+		if ( cell_get_centering(cell) == 'H' ) {
+			pg = "3_H";
+		} else {
+			pg = "622";
+		}
+		break;
+
+		case L_CUBIC:
+		pg = "432";
+		break;
+
+		default:
+		pg = "error";
+		break;
+	}
+
+	switch (lattice)
+	{
+		case L_TRICLINIC:
+		case L_ORTHORHOMBIC:
+		case L_RHOMBOHEDRAL:
+		case L_CUBIC:
+		pgout = strdup(pg);
+		break;
+
+		case L_MONOCLINIC:
+		case L_TETRAGONAL:
+		case L_HEXAGONAL:
+		pgout = add_ua(pg, cell_get_unique_axis(cell));
+		break;
+
+		default:
+		break;
+	}
+
+	return pgout;
+}
+
+
 static int generate_rotation_sym_ops(struct TakeTwoCell *ttCell)
 {
-	LatticeType lattice = cell_get_lattice_type(ttCell->cell);
-	SymOpList rawList;
+	SymOpList *rawList;
 
-	switch (lattice) {
-		case L_TRICLINIC:
-			// ...get parental guidance for unusually accurate candidness?
-			rawList = getpg_uac("1");
-			break;
-		case L_MONOCLINIC:
-			rawList = getpg_uac("2");
-			break;
-		case L_ORTHORHOMBIC:
-			rawList = getpg_uac("222");
-			break;
-		case L_TETRAGONAL:
-			rawList = getpg_uac("422");
-			break;
-		case L_RHOMBOHEDRAL:
-			rawList = getpg_uac("312_H"); // uhmmm, sure?
-			break;
-		case L_HEXAGONAL:
-			rawList = getpg_uac("622");
-			break;
-		case L_CUBIC:
-			rawList = getpg_uac("432");
-			break;
-		default:
-			break;
-	}
+	char *pg = get_chiral_holohedry(ttCell->cell);
+	rawList = get_pointgroup(pg);
+	free(pg);
 
 	/* Now we must convert these into rotation matrices rather than hkl
 	 * transformations (affects triclinic, monoclinic, rhombohedral and
