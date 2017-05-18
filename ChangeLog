@@ -1,7 +1,9 @@
 Changes in this development version
 -----------------------------------
 
+- indexamajig --peaks=peakfinder8 was added.
 - indexamajig: Hung worker processes will now be detected and killed.
+- Peak locations from HDF5 or CXI files are now offset by 0.5,0.5.
 - Detector panels no longer need to be perpendicular to the X-ray beam.
 - Detector "rail" direction ("camera length" axis) no longer needs to be along
   the X-ray beam direction.
@@ -19,8 +21,8 @@ Changes in this development version
 - Improvements to enumeration of events in multi-event files
 - scripts/detector-shift: Show a heat map, handle different panel resolutions
   correctly
-- Add scripts/move-entire-detector, scripts/split-by-mask and
-  scripts/peakogram-stream
+- Add scripts/move-entire-detector, scripts/split-by-mask,
+  scripts/peakogram-stream and scripts/sum-peaks.
 - scripts/turbo-index was renamed to turbo-index-lsf, and turbo-index-slurm
   was added.
 - An example geometry file for Eiger was added.
@@ -36,6 +38,7 @@ Changes in this development version
 - {check,compare}_hkl: Add warnings for potentially silly option choices.
 - Remove "data slab" from detector data handling (simplifies internal data
   structures a lot).
+- Python scripts were made compatible with Python 3.
 
 
 CrystFEL version 0.6.2, 21st March 2016
