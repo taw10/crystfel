@@ -317,7 +317,7 @@ static double matrix_trace(gsl_matrix *a)
 }
 
 static int symm_rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
-									 struct TakeTwoCell *cell)
+                                     struct TakeTwoCell *cell)
 {
 
 }
@@ -808,13 +808,12 @@ static int start_seed(struct SpotVec *obs_vecs, int obs_vec_count, int i,
 }
 
 static int weed_duplicate_matches(struct SpotVec *her_obs,
-								  struct SpotVec *his_obs,
-								  int **her_match_idxs, int **his_match_idxs,
-								  int *match_count, struct TakeTwoCell *cell)
+                                  struct SpotVec *his_obs,
+                                  int **her_match_idxs, int **his_match_idxs,
+                                  int *match_count, struct TakeTwoCell *cell)
 {
 	gsl_matrix **old_mats = calloc(sizeof(gsl_matrix *) * match_count);
 	int num_occupied = 0;
-	
 
 	signed int i, j;
 	for (i = match_count - 1; i >= 0; i++) {
@@ -827,11 +826,12 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 		struct rvec j_cellvec = his_obs->matches[his_match];
 
 		gsl_matrix *mat = generate_rot_mat(i_obsvec, j_obsvec,
-										   i_cellvec, j_cellvec);
+		                                   i_cellvec, j_cellvec);
 
 		for (j = 0; j < num_occupied; j++) {
 			if (old_mats[j] &&
-				symm_rot_mats_are_similar(old_mats[j], mat, cell)) {
+			    symm_rot_mats_are_similar(old_mats[j], mat, cell))
+			{
 				// we have found a duplicate, so flag as bad.
 				(*her_match_idxs)[i] = -1;
 				(*his_match_idxs)[i] = -1;
@@ -1361,15 +1361,14 @@ IndexingPrivate *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
 	STATUS("Welcome to TakeTwo\n");
 	STATUS("If you use these indexing results, please cite:\n");
 	STATUS("Ginn et al., Acta Cryst. (2016). D72, 956-965\n");
-	
-	
+
 	tp = malloc(sizeof(struct taketwo_private));
 	if ( tp == NULL ) return NULL;
-	
+
 	tp->ltl = ltl;
 	tp->cell = cell;
 	tp->indm = *indm;
-	
+
 	return (IndexingPrivate *)tp;
 }
 
