@@ -1,3 +1,15 @@
+//
+//  ignore.h
+//  cppxfel
+//
+//  Created by Helen Ginn on 24/03/2017.
+//  Copyright (c) 2017 Division of Structural Biology Oxford. All rights reserved.
+//
+
+#ifndef cppxfel_ignore_h
+#define cppxfel_ignore_h
+
+
 /*
  * taketwo.c
  *
@@ -38,6 +50,7 @@
 #include "index.h"
 #include "taketwo.h"
 #include "peaks.h"
+#include "symmetry.h"
 #include <time.h>
 
 /**
@@ -69,6 +82,14 @@ struct taketwo_private
 	IndexingMethod indm;
 	float          *ltl;
 	UnitCell       *cell;
+};
+
+// These rotation symmetry operators
+struct TakeTwoCell
+{
+	UnitCell       *cell;
+	gsl_matrix     **rotSymOps;
+	unsigned int   numOps;
 };
 
 
@@ -295,6 +316,11 @@ static double matrix_trace(gsl_matrix *a)
 	return tr;
 }
 
+static int symm_rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
+									 struct TakeTwoCell *cell)
+{
+
+}
 
 static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
 				double *score)
@@ -431,7 +457,6 @@ static int obs_shares_spot_w_array(struct SpotVec *obs_vecs, int test_idx,
 }
 
 
-// FIXME: decide if match count is returned or put in variable name
 /** Note: this could potentially (and cautiously) converted to comparing
  * cosines rather than angles, to lose an "acos" but different parts of the
  * cosine graph are more sensitive than others, so may be a trade off... or not.
@@ -781,8 +806,55 @@ static int start_seed(struct SpotVec *obs_vecs, int obs_vec_count, int i,
 	return success;
 }
 
+static int weed_duplicate_matches(struct SpotVec *her_obs,
+								  struct SpotVec *his_obs,
+								  int **her_match_idxs, int **his_match_idxs,
+								  int *match_count, struct TakeTwoCell *cell)
+{
+	gsl_matrix **old_mats = calloc(sizeof(gsl_matrix *) * match_count);
+	int num_occupied = 0;
+	
+
+	signed int i, j;
+	for (i = match_count - 1; i >= 0; i++) {
+		int her_match = (*her_match_idxs)[i];
+		int his_match = (*his_match_idxs)[i];
+
+		struct rvec i_obsvec = her_obs->obsvec;
+		struct rvec j_obsvec = his_obs->obsvec;
+		struct rvec i_cellvec = her_obs->matches[her_match];
+		struct rvec j_cellvec = his_obs->matches[his_match];
+
+		gsl_matrix *mat = generate_rot_mat(i_obsvec, j_obsvec,
+										   i_cellvec, j_cellvec);
+
+		for (j = 0; j < num_occupied; j++) {
+			if (old_mats[j] &&
+				symm_rot_mats_are_similar(old_mats[j], mat, cell)) {
+				// we have found a duplicate, so flag as bad.
+				(*her_match_idxs)[i] = -1;
+				(*his_match_idxs)[i] = -1;
+
+				gsl_matrix_free(mat);
+			} else {
+				// we have not found a duplicate, add to list.
+				old_mats[num_occupied] = mat;
+				num_occupied++;
+			}
+		}
+	}
+
+	for (i = 0; i < num_occupied; i++) {
+		if (old_mats[i]) {
+			gsl_matrix_free(old_mats[i]);
+		}
+	}
+
+	free(old_mats);
+}
+
 static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
-		     gsl_matrix **rotation)
+		     gsl_matrix **rotation, struct TakeTwoCell *cell)
 {
 	/* META: Maximum achieved maximum network membership */
 	int max_max_members = 0;
@@ -806,7 +878,9 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 
 			if ( !shared ) continue;
 
-			/* cell vector "matches" index for i, j respectively */
+			/* cell vector index matches stored in i, j and total number
+			 * stored in int matches.
+			 */
 			int *i_idx = 0;
 			int *j_idx = 0;
 			int matches;
@@ -820,10 +894,21 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 				continue;
 			}
 
+			/* Weed out the duplicate seeds (from symmetric
+			 * reflection pairs)
+			 */
+
+			weed_duplicate_matches(&obs_vecs[i], &obs_vecs[j],
+							&i_idx, &j_idx, &matches, cell);
+
 			/* We have seeds! Pass each of them through the seed-starter  */
 			/* If a seed has the highest achieved membership, make note...*/
 			int k;
 			for ( k=0; k<matches; k++ ) {
+				if (i_idx[k] < 0 || j_idx[k] < 0) {
+					continue;
+				}
+
 				int max_members = 0;
 
 				int success = start_seed(obs_vecs, obs_vec_count, i, j,
@@ -869,6 +954,67 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 
 	*rotation = best_rotation;
 	return (best_rotation != NULL);
+}
+
+static int generate_rotation_sym_ops(TakeTwoCell *ttCell)
+{
+	LatticeType lattice = cell_get_lattice_type(ttCell->cell);
+	SymOpList rawList;
+
+	switch (lattice) {
+       case L_TRICLINIC:
+			// ...get parental guidance for unusually accurate candidness?
+			rawList = getpg_uac("1");
+			break;
+		case L_MONOCLINIC:
+			rawList = getpg_uac("2");
+			break;
+		case L_ORTHORHOMBIC:
+			rawList = getpg_uac("222");
+			break;
+		case L_TETRAGONAL:
+			rawList = getpg_uac("422");
+			break;
+		case L_RHOMBOHEDRAL:
+			rawList = getpg_uac("312_H"); // uhmmm, sure?
+			break;
+		case L_HEXAGONAL:
+			rawList = getpg_uac("622");
+			break;
+		case L_CUBIC:
+			rawList = getpg_uac("432");
+			break;
+       default:
+			break;
+	}
+
+	/* Now we must convert these into rotation matrices rather than hkl
+	 * transformations (affects triclinic, monoclinic, rhombohedral and
+	 * hexagonal space groups only) */
+
+	cell_get_reciprocal(ttCell->cell, &asx, &asy, &asz, &bsx, &bsy,
+						&bsz, &csx, &csy, &csz);
+
+	inv = gsl_matrix_alloc(3, 3);
+	gsl_matrix_set(inv, 0, 0, asx);
+	gsl_matrix_set(inv, 0, 1, asy);
+	gsl_matrix_set(inv, 0, 2, asz);
+	gsl_matrix_set(inv, 1, 0, bsx);
+	gsl_matrix_set(inv, 1, 1, bsy);
+	gsl_matrix_set(inv, 1, 2, bsz);
+	gsl_matrix_set(inv, 2, 0, csx);
+	gsl_matrix_set(inv, 2, 1, csy);
+	gsl_matrix_set(inv, 2, 2, csz);
+
+	// FIXME: Finish me! Along the lines of:
+	/*
+	 MatrixPtr newMat = matFromCCP4(&spaceGroup->symop[j]);
+	 MatrixPtr ortho = newMat;
+	 ortho->preMultiply(*unitCell);
+	 ortho->multiply(*reverse);
+	 */
+
+	gsl_matrix_free(inv);
 }
 
 
@@ -1114,7 +1260,15 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 
 	if ( !success ) return NULL;
 
-	int threshold_reached = find_seed(obs_vecs, obs_vec_count, &solution);
+	struct TakeTwoCell ttCell;
+	ttCell.cell = cell;
+	ttCell.rotSymOps = NULL;
+	ttCell.numOps = 0;
+
+	int success = generate_rotation_sym_ops(&ttCell);
+
+	int threshold_reached = find_seed(obs_vecs, obs_vec_count,
+									  &solution, cell);
 
 	if ( solution == NULL ) {
 		cleanup_taketwo_obs_vecs(obs_vecs, obs_vec_count);
@@ -1225,3 +1379,5 @@ void taketwo_cleanup(IndexingPrivate *pp)
 	free(tp);
 }
 
+
+#endif
