@@ -563,6 +563,7 @@ static signed int finalise_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
 	int i, j, count;
 
+	count = 0;
 	for ( i=0; i<1; i++ ) {
 		for ( j=0; j<member_num; j++ ) {
 			if (i == j) continue;
