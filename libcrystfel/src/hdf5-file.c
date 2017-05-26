@@ -2647,6 +2647,9 @@ static int check_dims(struct hdfile *hdfile, struct panel *p, struct event *ev,
 		return 1;
 	}
 
+	H5Sclose(sh);
+	H5Dclose(dh);
+
 	return 0;
 }
 
