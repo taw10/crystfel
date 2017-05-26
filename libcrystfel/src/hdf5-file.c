@@ -1881,9 +1881,8 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			free(f_offset);
 			free(f_count);
 			for ( i=0; i<=pi; i++ ) {
-				free(image->dp[pi]);
-				free(image->sat[pi]);
-				free(image->bad[pi]);
+				free(image->dp[i]);
+				free(image->sat[i]);
 			}
 			free(image->dp);
 			free(image->bad);
