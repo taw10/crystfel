@@ -99,7 +99,7 @@ struct TakeTwoCell
 #define MAX_RECIP_DISTANCE (0.20*1e10)
 
 /* Tolerance for two lengths in reciprocal space to be considered the same */
-#define RECIP_TOLERANCE (0.001*1e10)
+#define RECIP_TOLERANCE (0.0010*1e10)
 
 /* Threshold for network members to consider a potential solution */
 #define NETWORK_MEMBER_THRESHOLD (25)
@@ -108,13 +108,13 @@ struct TakeTwoCell
 #define MAX_NETWORK_MEMBERS (NETWORK_MEMBER_THRESHOLD + 3)
 
 /* Maximum dead ends for a single branch extension during indexing */
-#define MAX_DEAD_ENDS (2)
+#define MAX_DEAD_ENDS (0)
 
 /* Tolerance for two angles to be considered the same */
-#define ANGLE_TOLERANCE (deg2rad(0.6))
+#define ANGLE_TOLERANCE (deg2rad(0.5))
 
 /* Tolerance for rot_mats_are_similar */
-#define TRACE_TOLERANCE (deg2rad(5.0))
+#define TRACE_TOLERANCE (deg2rad(4.0))
 
 /** TODO:
  *
@@ -761,12 +761,11 @@ static signed int finish_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
 static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 				  int obs_vec_count, int *obs_members,
 				  int *match_members, int start, int member_num,
-				  int *match_found, int match_start)
+				  int *match_found)
 {
 	int i;
-	int max = match_members[1] + 1000;
 
-	for ( i=start; i<obs_vec_count && i < max; i++ ) {
+	for ( i=start; i<obs_vec_count && i < start + 1000; i++ ) {
 
 		/* first we check for a shared spot - harshest condition */
 		int shared = obs_shares_spot_w_array(obs_vecs, i, obs_members,
@@ -885,7 +884,7 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 							obs_vec_count, obs_members,
 							match_members,
 							start, member_num,
-							&match_found, 0);
+							&match_found);
 
 		if ( member_num < 2 ) {
 			return 0;
