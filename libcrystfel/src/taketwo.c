@@ -71,6 +71,8 @@ struct SpotVec
 	struct rvec obsvec;
 	struct rvec *matches;
 	int match_num;
+	struct rvec *asym_matches;
+	int asym_match_num;
 	double distance;
 	struct rvec *her_rlp;
 	struct rvec *his_rlp;
@@ -100,19 +102,19 @@ struct TakeTwoCell
 #define RECIP_TOLERANCE (0.001*1e10)
 
 /* Threshold for network members to consider a potential solution */
-#define NETWORK_MEMBER_THRESHOLD (20)
+#define NETWORK_MEMBER_THRESHOLD (30)
 
 /* Maximum network members (obviously a solution so should stop) */
-#define MAX_NETWORK_MEMBERS (NETWORK_MEMBER_THRESHOLD + 5)
+#define MAX_NETWORK_MEMBERS (NETWORK_MEMBER_THRESHOLD + 3)
 
 /* Maximum dead ends for a single branch extension during indexing */
-#define MAX_DEAD_ENDS (5)
+#define MAX_DEAD_ENDS (10)
 
 /* Tolerance for two angles to be considered the same */
-#define ANGLE_TOLERANCE (deg2rad(3.0))
+#define ANGLE_TOLERANCE (deg2rad(0.7))
 
 /* Tolerance for rot_mats_are_similar */
-#define TRACE_TOLERANCE (deg2rad(3.0))
+#define TRACE_TOLERANCE (deg2rad(5.0))
 
 /** TODO:
  *
@@ -316,10 +318,94 @@ static double matrix_trace(gsl_matrix *a)
 	return tr;
 }
 
-static int symm_rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
-                                     struct TakeTwoCell *cell)
+static char *add_ua(const char *inp, char ua)
 {
+	char *pg = malloc(64);
+	if ( pg == NULL ) return NULL;
+	snprintf(pg, 63, "%s_ua%c", inp, ua);
+	return pg;
+}
 
+
+static char *get_chiral_holohedry(UnitCell *cell)
+{
+	LatticeType lattice = cell_get_lattice_type(cell);
+	char *pg = malloc(64);
+	char *pgout = 0;
+
+	if ( pg == NULL ) return NULL;
+
+	switch (lattice)
+	{
+		case L_TRICLINIC:
+		pg = "1";
+		break;
+
+		case L_MONOCLINIC:
+		pg = "2";
+		break;
+
+		case L_ORTHORHOMBIC:
+		pg = "222";
+		break;
+
+		case L_TETRAGONAL:
+		pg = "422";
+		break;
+
+		case L_RHOMBOHEDRAL:
+		pg = "3_R";
+		break;
+
+		case L_HEXAGONAL:
+		if ( cell_get_centering(cell) == 'H' ) {
+			pg = "3_H";
+		} else {
+			pg = "622";
+		}
+		break;
+
+		case L_CUBIC:
+		pg = "432";
+		break;
+
+		default:
+		pg = "error";
+		break;
+	}
+
+	switch (lattice)
+	{
+		case L_TRICLINIC:
+		case L_ORTHORHOMBIC:
+		case L_RHOMBOHEDRAL:
+		case L_CUBIC:
+		pgout = strdup(pg);
+		break;
+
+		case L_MONOCLINIC:
+		case L_TETRAGONAL:
+		case L_HEXAGONAL:
+		pgout = add_ua(pg, cell_get_unique_axis(cell));
+		break;
+
+		default:
+		break;
+	}
+
+	return pgout;
+}
+
+
+static SymOpList *sym_ops_for_cell(UnitCell *cell)
+{
+	SymOpList *rawList;
+
+	char *pg = get_chiral_holohedry(cell);
+	rawList = get_pointgroup(pg);
+	free(pg);
+	
+	return rawList;
 }
 
 static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
@@ -346,6 +432,27 @@ static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
 	return (tr < max);
 }
 
+static int symm_rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
+                                     struct TakeTwoCell *cell)
+{
+	int i;
+	
+	for (i = 0; i < cell->numOps; i++) {
+		gsl_matrix *testRot = gsl_matrix_alloc(3, 3);
+		gsl_matrix *symOp = cell->rotSymOps[i];
+		
+		gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, rot1, symOp,
+		0.0, testRot);
+		
+		if (rot_mats_are_similar(testRot, rot2, NULL)) {
+			return 1;
+		}
+	
+		gsl_matrix_free(testRot);	
+	}
+	
+	return 0;
+}
 
 static gsl_matrix *rotation_between_vectors(struct rvec a, struct rvec b)
 {
@@ -469,6 +576,9 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 	int i, j;
 	*match_count = 0;
 
+	double min_angle = deg2rad(2.5);
+	double max_angle = deg2rad(187.5);
+
 	// *her_match_idx = -1;
 	// *his_match_idx = -1;
 
@@ -478,49 +588,57 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 	/* calculate angle between all potential theoretical vectors */
 
 	for ( i=0; i<her_obs->match_num; i++ ) {
-		for ( j=0; j<his_obs->match_num; j++ ) {
+	for ( j=0; j<his_obs->match_num; j++ ) {
 
-			struct rvec *her_match = &her_obs->matches[i];
-			struct rvec *his_match = &his_obs->matches[j];
+		struct rvec *her_match = &her_obs->matches[i];
+		struct rvec *his_match = &his_obs->matches[j];
 
-			double theory_angle = rvec_angle(*her_match,
-							 *his_match);
+		double theory_angle = rvec_angle(*her_match,
+						 *his_match);
 
-			/* is this angle a match? */
+		/* is this angle a match? */
+		
+		/* If the angles are too close to 0
+		   or 180, one axis ill-determined */
+		if (theory_angle < min_angle ||
+		    theory_angle > max_angle) {
+			continue;
+		}
 
-			double angle_diff = fabs(theory_angle - obs_angle);
+		double angle_diff = fabs(theory_angle - obs_angle);
 
-			if ( angle_diff < ANGLE_TOLERANCE ) {
-				size_t new_size = (*match_count + 1) *
-				sizeof(int);
-				if (her_match_idxs && his_match_idxs)
-				{
-					/* Reallocate the array to fit in another match */
-					int *temp_hers;
-					temp_hers = realloc(*her_match_idxs, new_size);
-					int *temp_his;
-					temp_his = realloc(*his_match_idxs, new_size);
+		if ( angle_diff < ANGLE_TOLERANCE ) {
+		
+			size_t new_size = (*match_count + 1) *
+			sizeof(int);
+			if (her_match_idxs && his_match_idxs)
+			{
+				/* Reallocate the array to fit in another match */
+				int *temp_hers;
+				temp_hers = realloc(*her_match_idxs, new_size);
+				int *temp_his;
+				temp_his = realloc(*his_match_idxs, new_size);
 
-					if ( temp_hers == NULL || temp_his == NULL ) {
-						apologise();
-					}
-
-					(*her_match_idxs) = temp_hers;
-					(*his_match_idxs) = temp_his;
-
-					(*her_match_idxs)[*match_count] = i;
-					(*his_match_idxs)[*match_count] = j;
+				if ( temp_hers == NULL || temp_his == NULL ) {
+					apologise();
 				}
 
-				(*match_count)++;
+				(*her_match_idxs) = temp_hers;
+				(*his_match_idxs) = temp_his;
+
+				(*her_match_idxs)[*match_count] = i;
+				(*his_match_idxs)[*match_count] = j;
 			}
+
+			(*match_count)++;
 		}
+	}
 	}
 
 	return (*match_count > 0);
 }
 
-
+// DELETE ME IF UNUSED
 static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
 				  int *obs_members, int *match_members, int num)
 {
@@ -530,7 +648,7 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
 	 * is identical - too much faff.
 	 **/
 
-	int i, j;
+	int i = 0;
 	struct SpotVec *her_obs = &obs_vecs[test_idx];
 
 	for ( i=0; i<num; i++ ) {
@@ -555,7 +673,7 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
  * core functions regarding the meat of the TakeTwo algorithm (Level 2)
  * ------------------------------------------------------------------------*/
 
-static signed int finalise_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
+static signed int finish_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
                                     int *obs_members, int *match_members,
                                     int member_num)
 {
@@ -652,7 +770,7 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		 * checking the next value of j */
 		int j, k;
 
-		for ( j=match_start; j<match_num; j++ ) {
+		for ( j=0; j<match_num; j++ ) {
 			int all_ok = 1;
 			for ( k=0; k<member_num; k++ )
 			{
@@ -723,8 +841,8 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 	 * before it is reset in an additional branch */
 	int dead_ends = 0;
 
-	/* we can start from after the 2nd observed vector in the seed */
-	int start = obs_idx2 + 1;
+	/* we start from 0 */
+	int start = 0;
 
 	while ( 1 ) {
 
@@ -770,6 +888,7 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		start = next_index + 1;
 		member_num++;
 
+
 		if (member_num > *max_members) {
 			*max_members = member_num;
 		}
@@ -777,10 +896,23 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		/* If member_num is high enough, we want to return a yes */
 		if ( member_num > NETWORK_MEMBER_THRESHOLD ) break;
 	}
+	
+	/*		  
+	int i;
+	for (i = 0; i < member_num; i++)
+	{
+		STATUS(".");
+	}
 
-	finalise_solution(rot, obs_vecs, obs_members,
+	if ( member_num > NETWORK_MEMBER_THRESHOLD ) {
+		STATUS(" yes (%i)\n", member_num);
+	} else {
+		STATUS(" nope (%i)\n", member_num);
+	}*/
+
+	finish_solution(rot, obs_vecs, obs_members,
 			  match_members, member_num);
-
+	
 	return ( member_num > NETWORK_MEMBER_THRESHOLD );
 }
 
@@ -808,18 +940,26 @@ static int start_seed(struct SpotVec *obs_vecs, int obs_vec_count, int i,
 }
 
 static int weed_duplicate_matches(struct SpotVec *her_obs,
-                                  struct SpotVec *his_obs,
-                                  int **her_match_idxs, int **his_match_idxs,
-                                  int *match_count, struct TakeTwoCell *cell)
+                                   struct SpotVec *his_obs,
+                                   int **her_match_idxs, int **his_match_idxs,
+                                   int *match_count, struct TakeTwoCell *cell)
 {
 	int num_occupied = 0;
 	gsl_matrix **old_mats = calloc(*match_count, sizeof(gsl_matrix *));
 
+	if (old_mats == NULL)
+	{
+		apologise();
+		return 0;
+	}
+
 	signed int i, j;
-	for (i = *match_count - 1; i >= 0; i++) {
+	int duplicates = 0;
+	
+	for (i = *match_count - 1; i >= 0; i--) {
 		int her_match = (*her_match_idxs)[i];
 		int his_match = (*his_match_idxs)[i];
-
+	
 		struct rvec i_obsvec = her_obs->obsvec;
 		struct rvec j_obsvec = his_obs->obsvec;
 		struct rvec i_cellvec = her_obs->matches[her_match];
@@ -828,6 +968,8 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 		gsl_matrix *mat = generate_rot_mat(i_obsvec, j_obsvec,
 		                                   i_cellvec, j_cellvec);
 
+		int found = 0;
+		
 		for (j = 0; j < num_occupied; j++) {
 			if (old_mats[j] &&
 			    symm_rot_mats_are_similar(old_mats[j], mat, cell))
@@ -835,16 +977,21 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 				// we have found a duplicate, so flag as bad.
 				(*her_match_idxs)[i] = -1;
 				(*his_match_idxs)[i] = -1;
+				found = 1;
+	
+				duplicates++;
 
 				gsl_matrix_free(mat);
-			} else {
-				// we have not found a duplicate, add to list.
-				old_mats[num_occupied] = mat;
-				num_occupied++;
 			}
 		}
+		
+		if (!found) {
+			// we have not found a duplicate, add to list.
+			old_mats[num_occupied] = mat;
+			num_occupied++;
+		}
 	}
-
+	
 	for (i = 0; i < num_occupied; i++) {
 		if (old_mats[i]) {
 			gsl_matrix_free(old_mats[i]);
@@ -852,6 +999,8 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 	}
 
 	free(old_mats);
+	
+	return 1;
 }
 
 static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
@@ -861,7 +1010,7 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 	int max_max_members = 0;
 	gsl_matrix *best_rotation = NULL;
 
-	unsigned long start_time = time(NULL);
+//	unsigned long start_time = time(NULL);
 
 	/* loop round pairs of vectors to try and find a suitable
 	 * seed to start building a self-consistent network of vectors
@@ -885,7 +1034,10 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 			int *i_idx = 0;
 			int *j_idx = 0;
 			int matches;
-
+				
+		//	double dist1Pc = 100 * obs_vecs[i].distance / MAX_RECIP_DISTANCE;
+//			double dist2Pc = 100 * obs_vecs[j].distance / MAX_RECIP_DISTANCE;
+			
 			/* Check to see if any angles match from the cell vectors */
 			obs_vecs_match_angles(&obs_vecs[i], &obs_vecs[j],
 					      &i_idx, &j_idx, &matches);
@@ -932,8 +1084,8 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 					}
 				}
 
-				unsigned long now_time = time(NULL);
-				unsigned int seconds = now_time - start_time;
+//				unsigned long now_time = time(NULL);
+//				unsigned int seconds = now_time - start_time;
 
 				// Commented out for the time being.
 				/*
@@ -957,121 +1109,96 @@ static int find_seed(struct SpotVec *obs_vecs, int obs_vec_count,
 	return (best_rotation != NULL);
 }
 
-
-static char *add_ua(const char *inp, char ua)
+static void set_gsl_matrix(gsl_matrix *mat, double asx, double asy, double asz,
+                           double bsx, double bsy, double bsz,
+                           double csx, double csy, double csz)
 {
-	char *pg = malloc(64);
-	if ( pg == NULL ) return NULL;
-	snprintf(pg, 63, "%s_ua%c", inp, ua);
-	return pg;
+	gsl_matrix_set(mat, 0, 0, asx);
+	gsl_matrix_set(mat, 0, 1, asy);
+	gsl_matrix_set(mat, 0, 2, asz);
+	gsl_matrix_set(mat, 1, 0, bsx);
+	gsl_matrix_set(mat, 1, 1, bsy);
+	gsl_matrix_set(mat, 1, 2, bsz);
+	gsl_matrix_set(mat, 2, 0, csx);
+	gsl_matrix_set(mat, 2, 1, csy);
+	gsl_matrix_set(mat, 2, 2, csz);
 }
-
-
-static char *get_chiral_holohedry(UnitCell *cell)
-{
-	LatticeType lattice = cell_get_lattice_type(cell);
-	char *pg = malloc(64);
-	char *pgout;
-
-	if ( pg == NULL ) return NULL;
-
-	switch (lattice)
-	{
-		case L_TRICLINIC:
-		pg = "1";
-		break;
-
-		case L_MONOCLINIC:
-		pg = "2";
-		break;
-
-		case L_ORTHORHOMBIC:
-		pg = "222";
-		break;
-
-		case L_TETRAGONAL:
-		pg = "422";
-		break;
-
-		case L_RHOMBOHEDRAL:
-		pg = "3_R";
-		break;
-
-		case L_HEXAGONAL:
-		if ( cell_get_centering(cell) == 'H' ) {
-			pg = "3_H";
-		} else {
-			pg = "622";
-		}
-		break;
-
-		case L_CUBIC:
-		pg = "432";
-		break;
-
-		default:
-		pg = "error";
-		break;
-	}
-
-	switch (lattice)
-	{
-		case L_TRICLINIC:
-		case L_ORTHORHOMBIC:
-		case L_RHOMBOHEDRAL:
-		case L_CUBIC:
-		pgout = strdup(pg);
-		break;
-
-		case L_MONOCLINIC:
-		case L_TETRAGONAL:
-		case L_HEXAGONAL:
-		pgout = add_ua(pg, cell_get_unique_axis(cell));
-		break;
-
-		default:
-		break;
-	}
-
-	return pgout;
-}
-
 
 static int generate_rotation_sym_ops(struct TakeTwoCell *ttCell)
 {
-	SymOpList *rawList;
-
-	char *pg = get_chiral_holohedry(ttCell->cell);
-	rawList = get_pointgroup(pg);
-	free(pg);
+	SymOpList *rawList = sym_ops_for_cell(ttCell->cell);
 
 	/* Now we must convert these into rotation matrices rather than hkl
 	 * transformations (affects triclinic, monoclinic, rhombohedral and
 	 * hexagonal space groups only) */
+	 
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
 
+	gsl_matrix *recip = gsl_matrix_alloc(3, 3);
+	gsl_matrix *cart = gsl_matrix_alloc(3, 3);
 	cell_get_reciprocal(ttCell->cell, &asx, &asy, &asz, &bsx, &bsy,
 						&bsz, &csx, &csy, &csz);
 
-	inv = gsl_matrix_alloc(3, 3);
-	gsl_matrix_set(inv, 0, 0, asx);
-	gsl_matrix_set(inv, 0, 1, asy);
-	gsl_matrix_set(inv, 0, 2, asz);
-	gsl_matrix_set(inv, 1, 0, bsx);
-	gsl_matrix_set(inv, 1, 1, bsy);
-	gsl_matrix_set(inv, 1, 2, bsz);
-	gsl_matrix_set(inv, 2, 0, csx);
-	gsl_matrix_set(inv, 2, 1, csy);
-	gsl_matrix_set(inv, 2, 2, csz);
+	set_gsl_matrix(recip, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+
+	cell_get_cartesian(ttCell->cell, &asx, &asy, &asz, &bsx, &bsy,
+						&bsz, &csx, &csy, &csz);
+	
+	set_gsl_matrix(cart, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+
+	int i, j, k;
+	int numOps = num_equivs(rawList, NULL);
+	
+	ttCell->rotSymOps = malloc(numOps * sizeof(gsl_matrix *));
+	ttCell->numOps = numOps;
+	
+	if (ttCell->rotSymOps == NULL) {
+		apologise();
+		return 0;
+	}
+	
+	for (i = 0; i < numOps; i++)
+	{
+		gsl_matrix *symOp = gsl_matrix_alloc(3, 3);
+		IntegerMatrix *op = get_symop(rawList, NULL, i);
+		
+		for (j = 0; j < 3; j++) {
+		for (k = 0; k < 3; k++) {
+			gsl_matrix_set(symOp, j, k, intmat_get(op, j, k));
+		}
+		}
+		
+		gsl_matrix *first = gsl_matrix_calloc(3, 3);
+		gsl_matrix *second = gsl_matrix_calloc(3, 3);
+		
+		/* Each equivalence is of the form:
+	 	   cartesian * symOp * reciprocal.
+	 	   First multiplication: symOp * reciprocal */
+	 	   
+		gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
+		               1.0, symOp, recip,
+		               0.0, first);
+		
+		/* Second multiplication: cartesian * first */
+		
+		gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
+		               1.0, cart, first,
+		               0.0, second);
+		
+		ttCell->rotSymOps[i] = second;
+		
+		gsl_matrix_free(symOp);
+		gsl_matrix_free(first);
+	}
 
 	// FIXME: Finish me! Along the lines of:
-	/*
-	 MatrixPtr newMat = matFromCCP4(&spaceGroup->symop[j]);
-	 MatrixPtr ortho = newMat;
-	 ortho->preMultiply(*unitCell);
-	 ortho->multiply(*reverse);
-	 */
-
-	gsl_matrix_free(inv);
+	
+	gsl_matrix_free(cart);
+	gsl_matrix_free(recip);
+	
+	return 1;
 }
 
 
@@ -1090,7 +1217,8 @@ static int sort_func(const void *av, const void *bv)
 
 
 static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
-				  struct SpotVec *obs_vecs, int obs_vec_count)
+				  struct SpotVec *obs_vecs, int obs_vec_count,
+				  int is_asymmetric)
 {
 	int i, j;
 
@@ -1098,9 +1226,8 @@ static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
 
 		int count = 0;
 		struct sortme *for_sort = NULL;
-
+		
 		for ( j=0; j<cell_vec_count; j++ ) {
-
 			/* get distance for unit cell vector */
 			double cell_length = rvec_length(cell_vecs[j]);
 			double obs_length = obs_vecs[i].distance;
@@ -1123,15 +1250,28 @@ static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
 
 		}
 
+		/* Pointers to relevant things */
+		
+		struct rvec **match_array;
+		int *match_count;
+		
+		if (!is_asymmetric) {
+			match_array = &(obs_vecs[i].matches);
+			match_count = &(obs_vecs[i].match_num);
+		} else {
+			match_array = &(obs_vecs[i].asym_matches);
+			match_count = &(obs_vecs[i].asym_match_num);		
+		}
+
 		/* Sort in order to get most agreeable matches first */
 		qsort(for_sort, count, sizeof(struct sortme), sort_func);
-		obs_vecs[i].matches = malloc(count*sizeof(struct rvec));
-		obs_vecs[i].match_num = count;
+		*match_array = malloc(count*sizeof(struct rvec));
+		*match_count = count;
 		for ( j=0; j<count; j++ ) {
-			obs_vecs[i].matches[j] = for_sort[j].v;
+			(*match_array)[j] = for_sort[j].v;
+			
 		}
 		free(for_sort);
-
 	}
 
 	return 1;
@@ -1203,13 +1343,20 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 
 
 static int gen_theoretical_vecs(UnitCell *cell, struct rvec **cell_vecs,
-				int *vec_count)
+				struct rvec **asym_vecs, int *vec_count,
+				int *asym_vec_count)
 {
 	double a, b, c, alpha, beta, gamma;
 	int h_max, k_max, l_max;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
+
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+			    &bsx, &bsy, &bsz,
+			    &csx, &csy, &csz);
+
+	SymOpList *rawList = sym_ops_for_cell(cell);
 
 	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
 
@@ -1219,42 +1366,64 @@ static int gen_theoretical_vecs(UnitCell *cell, struct rvec **cell_vecs,
 	l_max = MAX_RECIP_DISTANCE * c;
 
 	int h, k, l;
+	int _h, _k, _l;
 	int count = 0;
-
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-			    &bsx, &bsy, &bsz,
-			    &csx, &csy, &csz);
+	int asym_count = 0;
 
 	for ( h=-h_max; h<=+h_max; h++ ) {
-		for ( k=-k_max; k<=+k_max; k++ ) {
-			for ( l=-l_max; l<=+l_max; l++ ) {
+	for ( k=-k_max; k<=+k_max; k++ ) {
+	for ( l=-l_max; l<=+l_max; l++ ) {
 
-				struct rvec cell_vec;
+		struct rvec cell_vec;
 
-				/* Exclude systematic absences from centering concerns */
-				if ( forbidden_reflection(cell, h, k, l) ) continue;
+		/* Exclude systematic absences from centering concerns */
+		if ( forbidden_reflection(cell, h, k, l) ) continue;
 
-				cell_vec.u = h*asx + k*bsx + l*csx;
-				cell_vec.v = h*asy + k*bsy + l*csy;
-				cell_vec.w = h*asz + k*bsz + l*csz;
-
-				/* add this to our array - which may require expanding */
-				count++;
-
-				struct rvec *temp_cell_vecs;
-				temp_cell_vecs = realloc(*cell_vecs, count*sizeof(struct rvec));
-
-				if ( temp_cell_vecs == NULL ) {
-					return 0;
-				} else {
-					*cell_vecs = temp_cell_vecs;
-					(*cell_vecs)[count - 1] = cell_vec;
-				}
-			}
+		int asymmetric = 0;
+		get_asymm(rawList, h, k, l, &_h, &_k, &_l);
+		
+		if (h == _h && k == _k && l == _l) {
+			asymmetric = 1;
+			asym_count++;
 		}
+		
+		cell_vec.u = h*asx + k*bsx + l*csx;
+		cell_vec.v = h*asy + k*bsy + l*csy;
+		cell_vec.w = h*asz + k*bsz + l*csz;
+
+		/* add this to our array - which may require expanding */
+		count++;
+
+		struct rvec *temp_cell_vecs;
+		temp_cell_vecs = realloc(*cell_vecs, count*sizeof(struct rvec));
+		struct rvec *temp_asym_vecs = NULL;
+
+		if (asymmetric) {
+			temp_asym_vecs = realloc(*asym_vecs,
+			                         count*sizeof(struct rvec));
+		}
+
+		if ( temp_cell_vecs == NULL ) {
+			return 0;
+		} else if (asymmetric && temp_asym_vecs == NULL) {
+			return 0;
+		} else {
+			*cell_vecs = temp_cell_vecs;
+			(*cell_vecs)[count - 1] = cell_vec;
+			
+			if (!asymmetric) {
+				continue;
+			}
+			
+			*asym_vecs = temp_asym_vecs;
+			(*asym_vecs)[asym_count - 1] = cell_vec;
+		}
+	}
+	}
 	}
 
 	*vec_count = count;
+	*asym_vec_count = asym_count;
 
 	return 1;
 }
@@ -1297,41 +1466,48 @@ static void cleanup_taketwo_obs_vecs(struct SpotVec *obs_vecs,
 static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 {
 	int cell_vec_count = 0;
+	int asym_vec_count = 0;
 	struct rvec *cell_vecs = NULL;
+	struct rvec *asym_vecs = NULL;
 	UnitCell *result;
 	int obs_vec_count = 0;
 	struct SpotVec *obs_vecs = NULL;
 	int success = 0;
 	gsl_matrix *solution = NULL;
-
-	success = gen_theoretical_vecs(cell, &cell_vecs, &cell_vec_count);
-	if ( !success ) return NULL;
-
-	success = gen_observed_vecs(rlps, rlp_count, &obs_vecs, &obs_vec_count);
-	if ( !success ) return NULL;
-
-	success = match_obs_to_cell_vecs(cell_vecs, cell_vec_count,
-					 obs_vecs, obs_vec_count);
-
-	cleanup_taketwo_cell_vecs(cell_vecs);
-
-	if ( !success ) return NULL;
-
+	
 	struct TakeTwoCell ttCell;
 	ttCell.cell = cell;
 	ttCell.rotSymOps = NULL;
 	ttCell.numOps = 0;
 
-	int success = generate_rotation_sym_ops(&ttCell);
+	success = generate_rotation_sym_ops(&ttCell);
 
-	int threshold_reached = find_seed(obs_vecs, obs_vec_count,
-	                                  &solution, cell);
+	success = gen_theoretical_vecs(cell, &cell_vecs, &asym_vecs,
+	                               &cell_vec_count, &asym_vec_count);
+	if ( !success ) return NULL;
+
+	success = gen_observed_vecs(rlps, rlp_count, &obs_vecs, &obs_vec_count);
+	if ( !success ) return NULL;
+
+	success = match_obs_to_cell_vecs(asym_vecs, asym_vec_count,
+					 obs_vecs, obs_vec_count, 1);
+
+	success = match_obs_to_cell_vecs(cell_vecs, cell_vec_count,
+					 obs_vecs, obs_vec_count, 0);
+
+	cleanup_taketwo_cell_vecs(cell_vecs);
+
+	if ( !success ) return NULL;
+
+	find_seed(obs_vecs, obs_vec_count, &solution, &ttCell);
 
 	if ( solution == NULL ) {
 		cleanup_taketwo_obs_vecs(obs_vecs, obs_vec_count);
 		return NULL;
 	}
 
+//	STATUS("Returning result.\n");
+	
 	result = transform_cell_gsl(cell, solution);
 	gsl_matrix_free(solution);
 	cleanup_taketwo_obs_vecs(obs_vecs, obs_vec_count);
