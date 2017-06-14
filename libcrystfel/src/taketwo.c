@@ -102,16 +102,16 @@ struct TakeTwoCell
 #define RECIP_TOLERANCE (0.001*1e10)
 
 /* Threshold for network members to consider a potential solution */
-#define NETWORK_MEMBER_THRESHOLD (30)
+#define NETWORK_MEMBER_THRESHOLD (25)
 
 /* Maximum network members (obviously a solution so should stop) */
 #define MAX_NETWORK_MEMBERS (NETWORK_MEMBER_THRESHOLD + 3)
 
 /* Maximum dead ends for a single branch extension during indexing */
-#define MAX_DEAD_ENDS (10)
+#define MAX_DEAD_ENDS (2)
 
 /* Tolerance for two angles to be considered the same */
-#define ANGLE_TOLERANCE (deg2rad(0.7))
+#define ANGLE_TOLERANCE (deg2rad(0.6))
 
 /* Tolerance for rot_mats_are_similar */
 #define TRACE_TOLERANCE (deg2rad(5.0))
@@ -392,7 +392,7 @@ static char *get_chiral_holohedry(UnitCell *cell)
 		default:
 		break;
 	}
-
+	
 	return pgout;
 }
 
@@ -445,6 +445,7 @@ static int symm_rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
 		0.0, testRot);
 		
 		if (rot_mats_are_similar(testRot, rot2, NULL)) {
+			gsl_matrix_free(testRot);				
 			return 1;
 		}
 	
@@ -534,7 +535,6 @@ static gsl_matrix *generate_rot_mat(struct rvec obs1, struct rvec obs2,
 
 static int obs_vecs_share_spot(struct SpotVec *her_obs, struct SpotVec *his_obs)
 {
-	/* FIXME: Disgusting... can I tone this down a bit? */
 	if ( (her_obs->her_rlp == his_obs->her_rlp) ||
 	    (her_obs->her_rlp == his_obs->his_rlp) ||
 	    (her_obs->his_rlp == his_obs->her_rlp) ||
@@ -550,6 +550,9 @@ static int obs_shares_spot_w_array(struct SpotVec *obs_vecs, int test_idx,
 				   int *members, int num)
 {
 	int i;
+	int total = 0;
+	int target = 1;
+	
 	struct SpotVec *her_obs = &obs_vecs[test_idx];
 
 	for ( i=0; i<num; i++ ) {
@@ -557,7 +560,11 @@ static int obs_shares_spot_w_array(struct SpotVec *obs_vecs, int test_idx,
 
 		int shares = obs_vecs_share_spot(her_obs, his_obs);
 
-		if ( shares ) return 1;
+		if ( shares ) return 1;;
+	}
+
+	if (total > target) {
+		return 1;
 	}
 
 	return 0;
@@ -579,9 +586,6 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 	double min_angle = deg2rad(2.5);
 	double max_angle = deg2rad(187.5);
 
-	// *her_match_idx = -1;
-	// *his_match_idx = -1;
-
 	/* calculate angle between observed vectors */
 	double obs_angle = rvec_angle(her_obs->obsvec, his_obs->obsvec);
 
@@ -597,26 +601,52 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 						 *his_match);
 
 		/* is this angle a match? */
-		
-		/* If the angles are too close to 0
-		   or 180, one axis ill-determined */
-		if (theory_angle < min_angle ||
-		    theory_angle > max_angle) {
-			continue;
-		}
 
 		double angle_diff = fabs(theory_angle - obs_angle);
 
 		if ( angle_diff < ANGLE_TOLERANCE ) {
+			// in the case of a brief check only		
+			if (!her_match_idxs || !his_match_idxs) {
+				return 1;
+			}
 		
+			/* If the angles are too close to 0
+			   or 180, one axis ill-determined */
+			if (theory_angle < min_angle ||
+			    theory_angle > max_angle) {
+				continue;
+			}
+
+			// check the third vector
+			
+			struct rvec theory_diff = diff_vec(*his_match, *her_match);
+			struct rvec obs_diff = diff_vec(his_obs->obsvec,
+			                          her_obs->obsvec);
+			
+			theory_angle = rvec_angle(*her_match,
+						 theory_diff);
+			obs_angle = rvec_angle(her_obs->obsvec, obs_diff);
+
+			if (fabs(obs_angle - theory_angle) > ANGLE_TOLERANCE) {
+				continue;
+			}
+			
+			theory_angle = rvec_angle(*his_match,
+						 theory_diff);
+			obs_angle = rvec_angle(his_obs->obsvec, obs_diff);
+		
+			if (fabs(obs_angle - theory_angle) > ANGLE_TOLERANCE) {
+				continue;
+			}
+			
 			size_t new_size = (*match_count + 1) *
 			sizeof(int);
 			if (her_match_idxs && his_match_idxs)
 			{
 				/* Reallocate the array to fit in another match */
 				int *temp_hers;
-				temp_hers = realloc(*her_match_idxs, new_size);
 				int *temp_his;
+				temp_hers = realloc(*her_match_idxs, new_size);
 				temp_his = realloc(*his_match_idxs, new_size);
 
 				if ( temp_hers == NULL || temp_his == NULL ) {
@@ -644,14 +674,12 @@ static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
 {
 	/* note: this is just a preliminary check to reduce unnecessary
 	 * computation later down the line, but is not entirely accurate.
-	 * For example, I have not checked that the 'matching cell vector'
-	 * is identical - too much faff.
 	 **/
 
 	int i = 0;
 	struct SpotVec *her_obs = &obs_vecs[test_idx];
 
-	for ( i=0; i<num; i++ ) {
+	for ( i=0; i<num && i < 2; i++ ) {
 		struct SpotVec *his_obs = &obs_vecs[obs_members[i]];
 
 		/* placeholders, but results are ignored */
@@ -736,8 +764,9 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 				  int *match_found, int match_start)
 {
 	int i;
+	int max = match_members[1] + 1000;
 
-	for ( i=start; i<obs_vec_count; i++ ) {
+	for ( i=start; i<obs_vec_count && i < max; i++ ) {
 
 		/* first we check for a shared spot - harshest condition */
 		int shared = obs_shares_spot_w_array(obs_vecs, i, obs_members,
@@ -746,11 +775,11 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		if ( !shared ) continue;
 
 		/* now we check that angles between all vectors match */
-		/*	int matches = obs_angles_match_array(obs_vecs, i, obs_members,
+		int matches = obs_angles_match_array(obs_vecs, i, obs_members,
 		 match_members, member_num);
 
 		 if ( !matches ) continue;
-		 */
+		 
 		/* final test: does the corresponding rotation matrix
 		 * match the others? NOTE: have not tested to see if
 		 * every combination of test/existing member has to be checked
@@ -971,7 +1000,7 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 		int found = 0;
 		
 		for (j = 0; j < num_occupied; j++) {
-			if (old_mats[j] &&
+			if (old_mats[j] && mat &&
 			    symm_rot_mats_are_similar(old_mats[j], mat, cell))
 			{
 				// we have found a duplicate, so flag as bad.
@@ -980,15 +1009,15 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 				found = 1;
 	
 				duplicates++;
-
-				gsl_matrix_free(mat);
 			}
 		}
-		
+
 		if (!found) {
 			// we have not found a duplicate, add to list.
 			old_mats[num_occupied] = mat;
 			num_occupied++;
+		} else {
+			gsl_matrix_free(mat);
 		}
 	}
 	
@@ -1193,10 +1222,10 @@ static int generate_rotation_sym_ops(struct TakeTwoCell *ttCell)
 		gsl_matrix_free(first);
 	}
 
-	// FIXME: Finish me! Along the lines of:
-	
 	gsl_matrix_free(cart);
 	gsl_matrix_free(recip);
+	
+	free_symoplist(rawList);
 	
 	return 1;
 }
@@ -1424,6 +1453,9 @@ static int gen_theoretical_vecs(UnitCell *cell, struct rvec **cell_vecs,
 
 	*vec_count = count;
 	*asym_vec_count = asym_count;
+	
+	free_symoplist(rawList);
+
 
 	return 1;
 }
@@ -1432,22 +1464,27 @@ static int gen_theoretical_vecs(UnitCell *cell, struct rvec **cell_vecs,
 /* ------------------------------------------------------------------------
  * cleanup functions - called from run_taketwo().
  * ------------------------------------------------------------------------*/
-
-static void cleanup_taketwo_cell_vecs(struct rvec *cell_vecs)
-{
-	free(cell_vecs);
-}
-
-
+ 
 static void cleanup_taketwo_obs_vecs(struct SpotVec *obs_vecs,
 				     int obs_vec_count)
 {
 	int i;
 	for ( i=0; i<obs_vec_count; i++ ) {
 		free(obs_vecs[i].matches);
+		free(obs_vecs[i].asym_matches);
 	}
 
 	free(obs_vecs);
+}
+
+static void cleanup_taketwo_cell(struct TakeTwoCell *ttCell)
+{
+	int i;
+	for ( i=0; i<ttCell->numOps; i++ ) {
+		gsl_matrix_free(ttCell->rotSymOps[i]);
+	}
+
+	free(ttCell->rotSymOps);
 }
 
 
@@ -1495,7 +1532,8 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 	success = match_obs_to_cell_vecs(cell_vecs, cell_vec_count,
 					 obs_vecs, obs_vec_count, 0);
 
-	cleanup_taketwo_cell_vecs(cell_vecs);
+	free(cell_vecs);
+	free(asym_vecs);
 
 	if ( !success ) return NULL;
 
@@ -1511,6 +1549,7 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 	result = transform_cell_gsl(cell, solution);
 	gsl_matrix_free(solution);
 	cleanup_taketwo_obs_vecs(obs_vecs, obs_vec_count);
+	cleanup_taketwo_cell(&ttCell);
 
 	return result;
 }
@@ -1590,9 +1629,13 @@ IndexingPrivate *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
 		return NULL;
 	}
 
-	STATUS("Welcome to TakeTwo\n");
-	STATUS("If you use these indexing results, please cite:\n");
+	STATUS("************************************\n");
+	STATUS("*****    Welcome to TakeTwo    *****\n");
+	STATUS("************************************\n\n");
+	STATUS("If you use these indexing results, please keep a roof\n");
+	STATUS("over my head by citing:\n");
 	STATUS("Ginn et al., Acta Cryst. (2016). D72, 956-965\n");
+	STATUS("\n");
 
 	tp = malloc(sizeof(struct taketwo_private));
 	if ( tp == NULL ) return NULL;
