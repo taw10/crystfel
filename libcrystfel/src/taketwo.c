@@ -112,7 +112,7 @@ struct TakeTwoCell
 
 /* Tolerance for two angles to be considered the same */
 #define ANGLE_TOLERANCE (deg2rad(0.5))
-#define COSINE_TOLERANCE 0.017
+#define COSINE_TOLERANCE 0.010
 
 /* Tolerance for rot_mats_are_similar */
 #define TRACE_TOLERANCE (deg2rad(4.0))
