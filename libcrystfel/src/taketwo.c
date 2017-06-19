@@ -112,6 +112,7 @@ struct TakeTwoCell
 
 /* Tolerance for two angles to be considered the same */
 #define ANGLE_TOLERANCE (deg2rad(0.5))
+#define COSINE_TOLERANCE 0.017
 
 /* Tolerance for rot_mats_are_similar */
 #define TRACE_TOLERANCE (deg2rad(4.0))
@@ -409,24 +410,19 @@ static SymOpList *sym_ops_for_cell(UnitCell *cell)
 }
 
 static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
+  				gsl_matrix *sub, gsl_matrix *mul,
 				double *score)
 {
 	double tr;
-	gsl_matrix *sub;
-	gsl_matrix *mul;
 
-	sub = gsl_matrix_calloc(3, 3);
 	gsl_matrix_memcpy(sub, rot1);
 	gsl_matrix_sub(sub, rot2);  /* sub = rot1 - rot2 */
 
-	mul = gsl_matrix_calloc(3, 3);
 	gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, sub, sub, 0.0, mul);
 
 	tr = matrix_trace(mul);
 	if (score != NULL) *score = tr;
 
-	gsl_matrix_free(mul);
-	gsl_matrix_free(sub);
 	double max = sqrt(4.0*(1.0-cos(TRACE_TOLERANCE)));
 
 	return (tr < max);
@@ -437,6 +433,11 @@ static int symm_rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
 {
 	int i;
 	
+	gsl_matrix *sub;
+	gsl_matrix *mul;
+	sub = gsl_matrix_calloc(3, 3);
+	mul = gsl_matrix_calloc(3, 3);
+
 	for (i = 0; i < cell->numOps; i++) {
 		gsl_matrix *testRot = gsl_matrix_alloc(3, 3);
 		gsl_matrix *symOp = cell->rotSymOps[i];
@@ -444,13 +445,18 @@ static int symm_rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
 		gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, rot1, symOp,
 		0.0, testRot);
 		
-		if (rot_mats_are_similar(testRot, rot2, NULL)) {
-			gsl_matrix_free(testRot);				
+		if (rot_mats_are_similar(testRot, rot2, sub, mul, NULL)) {
+			gsl_matrix_free(testRot);
+			gsl_matrix_free(sub);
+			gsl_matrix_free(mul);
 			return 1;
 		}
 	
 		gsl_matrix_free(testRot);	
 	}
+	
+	gsl_matrix_free(sub);
+	gsl_matrix_free(mul);
 	
 	return 0;
 }
@@ -583,11 +589,11 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 	int i, j;
 	*match_count = 0;
 
-	double min_angle = deg2rad(2.5);
-	double max_angle = deg2rad(187.5);
+	double min_angle = 0.9990;
+	double max_angle = -0.99144;
 
 	/* calculate angle between observed vectors */
-	double obs_angle = rvec_angle(her_obs->obsvec, his_obs->obsvec);
+	double obs_cos = rvec_cosine(her_obs->obsvec, his_obs->obsvec);
 
 	/* calculate angle between all potential theoretical vectors */
 
@@ -597,14 +603,14 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 		struct rvec *her_match = &her_obs->matches[i];
 		struct rvec *his_match = &his_obs->matches[j];
 
-		double theory_angle = rvec_angle(*her_match,
-						 *his_match);
+		double theory_cos = rvec_cosine(*her_match,
+						   *his_match);
 
 		/* is this angle a match? */
 
-		double angle_diff = fabs(theory_angle - obs_angle);
+		double cos_diff = fabs(theory_cos - obs_cos);
 
-		if ( angle_diff < ANGLE_TOLERANCE ) {
+		if ( cos_diff < COSINE_TOLERANCE ) {
 			// in the case of a brief check only		
 			if (!her_match_idxs || !his_match_idxs) {
 				return 1;
@@ -612,32 +618,32 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 		
 			/* If the angles are too close to 0
 			   or 180, one axis ill-determined */
-			if (theory_angle < min_angle ||
-			    theory_angle > max_angle) {
+			if (theory_cos > min_angle ||
+			    theory_cos < max_angle) {
 				continue;
 			}
 
 			// check the third vector
-			
+			/*
 			struct rvec theory_diff = diff_vec(*his_match, *her_match);
 			struct rvec obs_diff = diff_vec(his_obs->obsvec,
 			                          her_obs->obsvec);
 			
-			theory_angle = rvec_angle(*her_match,
+			theory_cos = rvec_cosine(*her_match,
 						 theory_diff);
-			obs_angle = rvec_angle(her_obs->obsvec, obs_diff);
+			obs_cos = rvec_cosine(her_obs->obsvec, obs_diff);
 
-			if (fabs(obs_angle - theory_angle) > ANGLE_TOLERANCE) {
+			if (fabs(obs_cos - theory_cos) > COSINE_TOLERANCE) {
 				continue;
 			}
 			
-			theory_angle = rvec_angle(*his_match,
+			theory_cos = rvec_cosine(*his_match,
 						 theory_diff);
-			obs_angle = rvec_angle(his_obs->obsvec, obs_diff);
+			obs_cos = rvec_cosine(his_obs->obsvec, obs_diff);
 		
-			if (fabs(obs_angle - theory_angle) > ANGLE_TOLERANCE) {
+			if (fabs(obs_cos - theory_cos) > COSINE_TOLERANCE) {
 				continue;
-			}
+			}*/
 			
 			size_t new_size = (*match_count + 1) *
 			sizeof(int);
@@ -705,6 +711,11 @@ static signed int finish_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
                                     int *obs_members, int *match_members,
                                     int member_num)
 {
+	gsl_matrix *sub;
+	gsl_matrix *mul;
+	sub = gsl_matrix_calloc(3, 3);
+	mul = gsl_matrix_calloc(3, 3);
+
 	gsl_matrix **rotations = malloc(sizeof(*rotations)* pow(member_num, 2) - member_num);
 
 	int i, j, count;
@@ -736,6 +747,7 @@ static signed int finish_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		for (j=0; j<count; j++) {
 			double addition;
 			rot_mats_are_similar(rotations[i], rotations[j],
+					     sub, mul,
 					     &addition);
 
 			current_score += addition;
@@ -754,6 +766,8 @@ static signed int finish_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
 	}
 
 	free(rotations);
+	gsl_matrix_free(sub);
+	gsl_matrix_free(mul);
 
 	return 1;
 }
@@ -764,6 +778,12 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 				  int *match_found)
 {
 	int i;
+	
+	gsl_matrix *sub;
+	gsl_matrix *mul;
+	sub = gsl_matrix_calloc(3, 3);
+	mul = gsl_matrix_calloc(3, 3);
+
 
 	for ( i=start; i<obs_vec_count && i < start + 1000; i++ ) {
 
@@ -774,10 +794,10 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		if ( !shared ) continue;
 
 		/* now we check that angles between all vectors match */
-		int matches = obs_angles_match_array(obs_vecs, i, obs_members,
-		 match_members, member_num);
+	//	int matches = obs_angles_match_array(obs_vecs, i, obs_members,
+	//	 match_members, member_num);
 
-		 if ( !matches ) continue;
+	//	 if ( !matches ) continue;
 		 
 		/* final test: does the corresponding rotation matrix
 		 * match the others? NOTE: have not tested to see if
@@ -820,6 +840,7 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
 				double trace = 0;
 				int ok = rot_mats_are_similar(rot, test_rot,
+							      sub, mul,
 							      &trace);
 				gsl_matrix_free(test_rot);
 
@@ -834,6 +855,9 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 				*match_found = test_idx[j];
 				free(member_idx);
 				free(test_idx);
+				gsl_matrix_free(sub);
+				gsl_matrix_free(mul);
+
 				return i;
 			}
 		}
@@ -842,6 +866,10 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		free(test_idx); member_idx = NULL;
 
 	}
+	
+	gsl_matrix_free(sub);
+	gsl_matrix_free(mul);
+
 
 	/* give up. */
 
