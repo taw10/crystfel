@@ -624,7 +624,7 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 			}
 
 			// check the third vector
-			/*
+			
 			struct rvec theory_diff = diff_vec(*his_match, *her_match);
 			struct rvec obs_diff = diff_vec(his_obs->obsvec,
 			                          her_obs->obsvec);
@@ -643,7 +643,7 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 		
 			if (fabs(obs_cos - theory_cos) > COSINE_TOLERANCE) {
 				continue;
-			}*/
+			}
 			
 			size_t new_size = (*match_count + 1) *
 			sizeof(int);
@@ -795,7 +795,7 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
 		/* now we check that angles between all vectors match */
 	//	int matches = obs_angles_match_array(obs_vecs, i, obs_members,
-	//	 match_members, member_num);
+		//match_members, member_num);
 
 	//	 if ( !matches ) continue;
 		 
