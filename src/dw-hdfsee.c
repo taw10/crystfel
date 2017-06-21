@@ -74,8 +74,8 @@ static void displaywindow_error(DisplayWindow *dw, const char *message)
 static gint displaywindow_closed(GtkWidget *window, DisplayWindow *dw)
 {
 
-	if ( dw->hdfile != NULL ) {
-		hdfile_close(dw->hdfile);
+	if ( dw->imagefile != NULL ) {
+		imagefile_close(dw->imagefile);
 	}
 
 	if ( dw->surf != NULL ) cairo_surface_destroy(dw->surf);
@@ -725,7 +725,7 @@ static gint displaywindow_set_binning(GtkWidget *widget, DisplayWindow *dw)
 		return 0;
 	}
 
-	if ( dw->hdfile == NULL ) {
+	if ( dw->imagefile == NULL ) {
 		return 0;
 	}
 
@@ -852,8 +852,8 @@ static gint displaywindow_set_boostint(GtkWidget *widget, DisplayWindow *dw)
 		return 0;
 	}
 
-	if ( dw->hdfile == NULL ) {
-	    return 0;
+	if ( dw->imagefile == NULL ) {
+		return 0;
 	}
 
 	bd = malloc(sizeof(BoostIntDialog));
@@ -927,8 +927,8 @@ static gint displaywindow_newevent(DisplayWindow *dw, int new_event)
 	float **old_dp = dw->image->dp;
 	int **old_bad = dw->image->bad;
 
-	fail = hdf5_read2(dw->hdfile, dw->image,
-                          dw->ev_list->events[new_event], 0);
+	fail = imagefile_read(dw->imagefile, dw->image,
+	                      dw->ev_list->events[new_event]);
 	if ( fail ) {
 		ERROR("Couldn't load image");
 		dw->image->dp = old_dp;
@@ -1046,8 +1046,8 @@ static gint displaywindow_set_newevent(GtkWidget *widget, DisplayWindow *dw)
 		return 0;
 	}
 
-	if ( dw->hdfile == NULL ) {
-	    return 0;
+	if ( dw->imagefile == NULL ) {
+		return 0;
 	}
 
 	ed = malloc(sizeof(EventDialog));
@@ -1162,7 +1162,7 @@ static gint displaywindow_set_ringradius(GtkWidget *widget, DisplayWindow *dw)
 		return 0;
 	}
 
-	if ( dw->hdfile == NULL ) {
+	if ( dw->imagefile == NULL ) {
 		return 0;
 	}
 
@@ -1796,7 +1796,7 @@ static gint displaywindow_show_numbers(GtkWidget *widget, DisplayWindow *dw)
 		return 0;
 	}
 
-	if ( dw->hdfile == NULL ) {
+	if ( dw->imagefile == NULL ) {
 		return 0;
 	}
 
@@ -2306,12 +2306,14 @@ struct newhdf {
 	char name[1024];
 };
 
+/* New HDF5 element selected from menu */
 static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 {
 	gboolean a;
 	int fail;
 
 	if ( nh->dw->not_ready_yet ) return 0;
+	assert(imagefile_get_type(nh->dw->imagefile) == IMAGEFILE_HDF5);
 
 	a = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(nh->widget));
 	if ( !a ) return 0;
@@ -2320,7 +2322,8 @@ static gint displaywindow_newhdf(GtkMenuItem *item, struct newhdf *nh)
 	 * one */
 	free_detector_geometry(nh->dw->image->det);
 	nh->dw->image->det = NULL;
-	fail = hdf5_read(nh->dw->hdfile, nh->dw->image, nh->name, 0);
+	fail = hdf5_read(imagefile_get_hdfile(nh->dw->imagefile),
+	                 nh->dw->image, nh->name, 0);
 	if ( fail ) {
 		ERROR("Couldn't load image");
 		return 1;
@@ -2456,7 +2459,12 @@ static int displaywindow_update_menus(DisplayWindow *dw, const char *selectme)
 	GtkWidget *ms;
 	GtkWidget *w;
 
-	ms = displaywindow_createhdfmenus(dw->hdfile, dw, selectme);
+	if ( imagefile_get_type(dw->imagefile) != IMAGEFILE_HDF5 ) {
+		return 0;
+	}
+
+	ms = displaywindow_createhdfmenus(imagefile_get_hdfile(dw->imagefile),
+	                                  dw, selectme);
 
 	if ( ms == NULL ) return 1;
 
@@ -2828,8 +2836,8 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	dw->image->lambda = 0.0;
 	dw->image->filename = filename;
 
-	dw->hdfile = hdfile_open(filename);
-	if ( dw->hdfile == NULL ) {
+	dw->imagefile = imagefile_open(filename);
+	if ( dw->imagefile == NULL ) {
 		ERROR("Couldn't open file: %s\n", filename);
 		free(dw->geom_filename);
 		free(dw);
@@ -2842,11 +2850,19 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	}
 
 	if ( dw->image->det != NULL && ( dw->image->det->path_dim != 0 ||
-	                                 dw->image->det->dim_dim != 0  )) {
+	                                 dw->image->det->dim_dim != 0  ))
+	{
+		struct hdfile *hdfile;
+
+		if ( imagefile_get_type(dw->imagefile) != IMAGEFILE_HDF5 ) {
+			ERROR("Multi-event geometry, but not HDF5 file!\n");
+			return NULL;
+		}
+		hdfile = imagefile_get_hdfile(dw->imagefile);
 
 		dw->multi_event = 1;
 
-		dw->ev_list = fill_event_list(dw->hdfile, dw->image->det);
+		dw->ev_list = fill_event_list(hdfile, dw->image->det);
 
 		if ( dw->ev_list == NULL ) {
 			ERROR("Error while parsing file structure\n");
@@ -2883,18 +2899,26 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 				dw->curr_event = 0;
 				ev = dw->ev_list->events[dw->curr_event];
 			}
-			check = hdf5_read2(dw->hdfile, dw->image, ev, 0);
+			check = imagefile_read(dw->imagefile, dw->image, ev);
 		} else {
-			check = hdf5_read2(dw->hdfile, dw->image, NULL, 0);
+			check = imagefile_read(dw->imagefile, dw->image, NULL);
 		}
 
 	} else {
-		check =	hdf5_read(dw->hdfile, dw->image, element, 0);
+		if ( element != NULL ) {
+			if ( imagefile_get_type(dw->imagefile) != IMAGEFILE_HDF5 ) {
+				ERROR("-e/--image requiest an HDF5 file\n");
+				return NULL;
+			}
+			hdfile_set_image(imagefile_get_hdfile(dw->imagefile),
+			                 element);
+		}
+		check =	imagefile_read_simple(dw->imagefile, dw->image);
 		dw->simple = 1;
 	}
 	if ( check ) {
 		ERROR("Couldn't load file\n");
-		hdfile_close(dw->hdfile);
+		imagefile_close(dw->imagefile);
 		free(dw->geom_filename);
 		return NULL;
 	}

@@ -528,37 +528,15 @@ int panel_number(struct detector *det, struct panel *p)
 }
 
 
-void fill_in_values(struct detector *det, struct hdfile *f, struct event* ev)
+void adjust_centering_for_rail(struct panel *p)
 {
-	int i;
+	double offs;
 
-	for ( i=0; i<det->n_panels; i++ ) {
-
-		double offs;
-		struct panel *p = &det->panels[i];
-
-		if ( p->clen_from != NULL ) {
-
-			double val;
-			int r;
-
-			r = hdfile_get_value(f, p->clen_from, ev, &val,
-			                     H5T_NATIVE_DOUBLE);
-			if ( r ) {
-				ERROR("Failed to read '%s'\n", p->clen_from);
-			} else {
-				p->clen = val * 1.0e-3;
-			}
-
-		}
-
-                /* Offset in +z direction from calibrated clen to actual */
-		offs = p->clen - p->clen_for_centering;
-		p->cnx += p->rail_x * offs;
-		p->cny += p->rail_y * offs;
-		p->clen = p->clen_for_centering + p->coffset + p->rail_z * offs;
-
-	}
+	/* Offset in +z direction from calibrated clen to actual */
+	offs = p->clen - p->clen_for_centering;
+	p->cnx += p->rail_x * offs;
+	p->cny += p->rail_y * offs;
+	p->clen = p->clen_for_centering + p->coffset + p->rail_z * offs;
 }
 
 
@@ -1076,12 +1054,15 @@ static void parse_toplevel(struct detector *det, struct beam_params *beam,
 
 	} else if ( strcmp(key, "photon_energy") == 0 ) {
 		if ( beam != NULL ) {
-			if ( strncmp(val, "/", 1) == 0 ) {
+			double v;
+			char *end;
+			v = strtod(val, &end);
+			if ( (val[0] != '\0') && (end[0] == '\0') ) {
+				beam->photon_energy = v;
+				beam->photon_energy_from = NULL;
+			} else {
 				beam->photon_energy = 0.0;
 				beam->photon_energy_from = strdup(val);
-			} else {
-				beam->photon_energy = atof(val);
-				beam->photon_energy_from = NULL;
 			}
 		}
 

@@ -134,8 +134,7 @@ struct hdfile *hdfile_open(const char *filename)
 }
 
 
-int hdfile_set_image(struct hdfile *f, const char *path,
-                     struct panel *p)
+int hdfile_set_image(struct hdfile *f, const char *path)
 {
 	f->dh = H5Dopen2(f->fh, path, H5P_DEFAULT);
 	if ( f->dh < 0 ) {
@@ -1391,8 +1390,10 @@ int hdfile_get_value(struct hdfile *f, const char *name,
 }
 
 
-void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f,
-                             struct event *ev, struct image *image)
+static void hdfile_fill_in_beam_parameters(struct beam_params *beam,
+                                           struct hdfile *f,
+                                           struct event *ev,
+                                           struct image *image)
 {
 	double eV;
 
@@ -1405,8 +1406,8 @@ void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f,
 
 		int r;
 
-		r = hdfile_get_value(f, beam->photon_energy_from, ev, &eV,
-		                     H5T_NATIVE_DOUBLE);
+		r = hdfile_get_value(f, beam->photon_energy_from,
+		                     ev, &eV, H5T_NATIVE_DOUBLE);
 		if ( r ) {
 			ERROR("Failed to read '%s'\n",
 			      beam->photon_energy_from);
@@ -1415,6 +1416,36 @@ void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f,
 	}
 
 	image->lambda = ph_en_to_lambda(eV_to_J(eV))*beam->photon_energy_scale;
+}
+
+
+static void hdfile_fill_in_clen(struct detector *det, struct hdfile *f,
+                                struct event *ev)
+{
+	int i;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		struct panel *p = &det->panels[i];
+
+		if ( p->clen_from != NULL ) {
+
+			double val;
+			int r;
+
+			r = hdfile_get_value(f, p->clen_from, ev, &val,
+			                     H5T_NATIVE_DOUBLE);
+			if ( r ) {
+				ERROR("Failed to read '%s'\n", p->clen_from);
+			} else {
+				p->clen = val * 1.0e-3;
+			}
+
+		}
+
+		adjust_centering_for_rail(p);
+
+	}
 }
 
 
@@ -1433,7 +1464,7 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 	if ( element == NULL ) {
 		fail = hdfile_set_first_image(f, "/");
 	} else {
-		fail = hdfile_set_image(f, element, NULL);
+		fail = hdfile_set_image(f, element);
 	}
 
 	if ( fail ) {
@@ -1482,7 +1513,7 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 
 	if ( image->beam != NULL ) {
 
-		fill_in_beam_parameters(image->beam, f, NULL, image);
+		hdfile_fill_in_beam_parameters(image->beam, f, NULL, image);
 
 		if ( image->lambda > 1000 ) {
 			/* Error message covers a silly value in the beam file
@@ -1747,7 +1778,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 				return 1;
 			}
 
-			fail = hdfile_set_image(f, panel_full_path, p);
+			fail = hdfile_set_image(f, panel_full_path);
 
 			free(panel_full_path);
 
@@ -1769,7 +1800,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 					free(image->sat);
 					return 1;
 				}
-				fail = hdfile_set_image(f, p->data, p);
+				fail = hdfile_set_image(f, p->data);
 
 			}
 
@@ -1886,13 +1917,13 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 
 	H5Dclose(f->dh);
 	f->data_open = 0;
-	fill_in_values(image->det, f, ev);
+	hdfile_fill_in_clen(image->det, f, ev);
 
 	if ( satcorr ) debodge_saturation(f, image);
 
 	if ( image->beam != NULL ) {
 
-		fill_in_beam_parameters(image->beam, f, ev, image);
+		hdfile_fill_in_beam_parameters(image->beam, f, ev, image);
 
 		if ( (image->lambda > 1.0) || (image->lambda < 1e-20) ) {
 
@@ -2299,7 +2330,7 @@ int hdfile_set_first_image(struct hdfile *f, const char *group)
 	for ( i=0; i<n; i++ ) {
 
 		if ( is_image[i] ) {
-			hdfile_set_image(f, names[i], NULL);
+			hdfile_set_image(f, names[i]);
 			for ( j=0; j<n; j++ ) free(names[j]);
 			free(is_image);
 			free(is_group);

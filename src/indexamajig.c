@@ -172,9 +172,9 @@ static void show_help(const char *s)
 }
 
 
-static void add_geom_beam_stuff_to_copy_hdf5(struct copy_hdf5_field *copyme,
-                                             struct detector *det,
-                                             struct beam_params *beam)
+static void add_geom_beam_stuff_to_field_list(struct imagefile_field_list *copyme,
+                                              struct detector *det,
+                                              struct beam_params *beam)
 {
 	int i;
 
@@ -183,12 +183,12 @@ static void add_geom_beam_stuff_to_copy_hdf5(struct copy_hdf5_field *copyme,
 		struct panel *p = &det->panels[i];
 
 		if ( p->clen_from != NULL ) {
-			add_copy_hdf5_field(copyme, p->clen_from);
+			add_imagefile_field(copyme, p->clen_from);
 		}
 	}
 
 	if ( beam->photon_energy_from != NULL ) {
-		add_copy_hdf5_field(copyme, beam->photon_energy_from);
+		add_imagefile_field(copyme, beam->photon_energy_from);
 	}
 }
 
@@ -257,7 +257,7 @@ int main(int argc, char *argv[])
 	iargs.stream_peaks = 1;
 	iargs.stream_refls = 1;
 	iargs.int_diag = INTDIAG_NONE;
-	iargs.copyme = new_copy_hdf5_field_list();
+	iargs.copyme = new_imagefile_field_list();
 	if ( iargs.copyme == NULL ) {
 		ERROR("Couldn't allocate HDF5 field list.\n");
 		return 1;
@@ -431,7 +431,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 10 :
-			add_copy_hdf5_field(iargs.copyme, optarg);
+			add_imagefile_field(iargs.copyme, optarg);
 			break;
 
 			case 11 :
@@ -627,7 +627,7 @@ int main(int argc, char *argv[])
 		      geom_filename);
 		return 1;
 	}
-	add_geom_beam_stuff_to_copy_hdf5(iargs.copyme, iargs.det, iargs.beam);
+	add_geom_beam_stuff_to_field_list(iargs.copyme, iargs.det, iargs.beam);
 
 	/* If no peak path from geometry file, use these (but see later) */
 	if ( iargs.hdf5_peak_path == NULL ) {
@@ -806,7 +806,7 @@ int main(int argc, char *argv[])
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
 	               st, tempdir);
 
-	free_copy_hdf5_field_list(iargs.copyme);
+	free_imagefile_field_list(iargs.copyme);
 	cell_free(iargs.cell);
 	free(iargs.beam->photon_energy_from);
 	free(prefix);

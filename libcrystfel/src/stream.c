@@ -806,8 +806,8 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 }
 
 
-int write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
-                int include_peaks, int include_reflections, struct event* ev)
+int write_chunk(Stream *st, struct image *i, struct imagefile *imfile,
+                int include_peaks, int include_reflections, struct event *ev)
 {
 	int j;
 	char *indexer;
@@ -832,7 +832,7 @@ int write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 	fprintf(st->fh, "beam_divergence = %.2e rad\n", i->div);
 	fprintf(st->fh, "beam_bandwidth = %.2e (fraction)\n", i->bw);
 
-	copy_hdf5_fields(hdfile, i->copyme, st->fh, ev);
+	imagefile_copy_fields(imfile, i->copyme, st->fh, ev);
 
 	if ( i->det != NULL ) {
 

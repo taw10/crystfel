@@ -3,11 +3,11 @@
  *
  * Handle images and image features
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2016 Thomas White <taw@physics.org>
+ *   2009-2017 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  *
@@ -44,6 +44,8 @@ struct detector;
 struct imagefeature;
 struct sample;
 struct image;
+struct imagefile;
+struct imagefile_field_list;
 
 #include "utils.h"
 #include "cell.h"
@@ -51,6 +53,7 @@ struct image;
 #include "reflist.h"
 #include "crystal.h"
 #include "index.h"
+#include "events.h"
 
 /**
  * SpectrumType:
@@ -87,6 +90,15 @@ struct imagefeature {
 	const char                      *name;
 };
 
+
+/* An enum representing the image file formats we can handle */
+enum imagefile_type
+{
+	IMAGEFILE_HDF5,
+	IMAGEFILE_CBF
+};
+
+
 /* An opaque type representing a list of image features */
 typedef struct _imagefeaturelist ImageFeatureList;
 
@@ -120,7 +132,7 @@ struct beam_params
  *    struct detector         *det;
  *    struct beam_params      *beam;
  *    char                    *filename;
- *    const struct copy_hdf5_field *copyme;
+ *    const struct imagefile_field_list *copyme;
  *
  *    int                     id;
  *
@@ -152,8 +164,8 @@ struct beam_params
  * returned by the low-level indexing system. <structfield>n_crystals</structfield>
  * is the number of crystals which were found in the image.
  *
- * <structfield>copyme</structfield> represents a list of HDF5 fields to copy
- * to the output stream.
+ * <structfield>copyme</structfield> represents a list of fields in the image
+ * file (e.g. HDF5 fields or CBF headers) to copy to the output stream.
  **/
 struct image;
 
@@ -171,7 +183,7 @@ struct image {
 	struct beam_params      *beam;  /* The nominal beam parameters */
 	char                    *filename;
 	struct event            *event;
-	const struct copy_hdf5_field *copyme;
+	const struct imagefile_field_list *copyme;
 	struct stuff_from_stream *stuff_from_stream;
 
 	double                  avg_clen;  /* Average camera length extracted
@@ -232,6 +244,25 @@ extern ImageFeatureList *sort_peaks(ImageFeatureList *flist);
 extern void image_add_crystal(struct image *image, Crystal *cryst);
 extern void remove_flagged_crystals(struct image *image);
 extern void free_all_crystals(struct image *image);
+
+/* Image files */
+extern struct imagefile *imagefile_open(const char *filename);
+extern int imagefile_read(struct imagefile *f, struct image *image,
+                          struct event *event);
+extern int imagefile_read_simple(struct imagefile *f, struct image *image);
+extern struct hdfile *imagefile_get_hdfile(struct imagefile *f);
+extern enum imagefile_type imagefile_get_type(struct imagefile *f);
+extern void imagefile_copy_fields(struct imagefile *f,
+                                  const struct imagefile_field_list *copyme,
+                                  FILE *fh, struct event *ev);
+extern void imagefile_close(struct imagefile *f);
+
+/* Field lists */
+extern struct imagefile_field_list *new_imagefile_field_list(void);
+extern void free_imagefile_field_list(struct imagefile_field_list *f);
+
+extern void add_imagefile_field(struct imagefile_field_list *copyme,
+                                const char *name);
 
 #ifdef __cplusplus
 }
