@@ -32,7 +32,10 @@
 #include <math.h>
 #include <stdio.h>
 #include <hdf5.h>
+
+#ifdef HAVE_CBFLIB
 #include <cbflib/cbf.h>
+#endif
 
 #include "image.h"
 #include "utils.h"
@@ -391,6 +394,7 @@ void add_imagefile_field(struct imagefile_field_list *copyme, const char *name)
 
 /******************************* CBF files ************************************/
 
+#ifdef HAVE_CBFLIB
 
 static char *cbf_strerr(int e)
 {
@@ -824,6 +828,24 @@ static int read_cbf_simple(struct imagefile *f, struct image *image)
 	cbf_free_handle(cbfh);
 	return 0;
 }
+
+#else /* HAVE_CBFLIB */
+
+static int read_cbf_simple(struct imagefile *f, struct image *image)
+{
+	ERROR("This version of CrystFEL was compiled without CBF support.\n");
+	return 1;
+}
+
+
+static int read_cbf(struct imagefile *f, struct image *image)
+{
+	ERROR("This version of CrystFEL was compiled without CBF support.\n");
+	return 1;
+}
+
+
+#endif /* HAVE_CBFLIB */
 
 
 /****************************** Image files ***********************************/
