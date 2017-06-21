@@ -1233,6 +1233,9 @@ static int get_scalar_value(struct hdfile *f, const char *name, void *val,
 		return 1;
 	}
 
+	H5Tclose(type);
+	H5Dclose(dh);
+
 	return 0;
 }
 
