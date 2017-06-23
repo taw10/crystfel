@@ -58,6 +58,7 @@ AS_IF([test "x$enable_cbf" = "xyes"],
          CBF_LIBS="-lcbf"
       ])
    ])
+   AC_CHECK_HEADERS([cbflib/cbf.h cbf/cbf.h])
 ], [
    AC_MSG_RESULT([no])
 ])

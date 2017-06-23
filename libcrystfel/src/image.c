@@ -27,6 +27,8 @@
  *
  */
 
+#include <config.h>
+
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
@@ -34,7 +36,12 @@
 #include <hdf5.h>
 
 #ifdef HAVE_CBFLIB
+#ifdef HAVE_CBFLIB_CBF_H
 #include <cbflib/cbf.h>
+#endif
+#ifdef HAVE_CBF_CBF_H
+#include <cbf/cbf.h>
+#endif
 #endif
 
 #include "image.h"
