@@ -51,14 +51,18 @@ AS_IF([test "x$enable_cbf" = "xyes"],
       CBF_CFLAGS="-I${with_cbflib_dir}/include"
       dnl Fortunately no libhdf5.so in this folder
       CBF_LIBS="-lcbf -L${with_cbflib_dir}/lib"
-      have_cbflib=true
    ], [
       AC_CHECK_LIB([cbf], [cbf_make_handle], [
-         have_cbflib=true
          CBF_LIBS="-lcbf"
       ])
    ])
-   AC_CHECK_HEADERS([cbflib/cbf.h cbf/cbf.h])
+   SAVED_CPPFLAGS=$CPPFLAGS
+   CPPFLAGS="$CPPFLAGS $CBF_CFLAGS"
+   AC_CHECK_HEADERS([cbflib/cbf.h cbf/cbf.h],
+   [
+      have_cbflib=true
+   ])
+   CPPFLAGS=$SAVE_CPPFLAGS
 ], [
    AC_MSG_RESULT([no])
 ])
