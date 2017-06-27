@@ -87,6 +87,7 @@ struct index_args
 	int no_revalidate;
 	int stream_peaks;
 	int stream_refls;
+	int stream_nonhits;
 	IntegrationMethod int_meth;
 	IntDiag int_diag;
 	signed int int_diag_h;

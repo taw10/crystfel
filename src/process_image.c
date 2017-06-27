@@ -257,7 +257,12 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 			return;
 		}
 		free(rn);
-		goto streamwrite;
+
+		if ( iargs->stream_nonhits ) {
+			goto streamwrite;
+		} else {
+			goto out;
+		}
 	}
 
 	/* Index the pattern */
@@ -323,6 +328,7 @@ streamwrite:
 		       get_event_string(image.event));
 	}
 
+out:
 	/* Count crystals which are still good */
 	time_accounts_set(taccs, TACC_TOTALS);
 	sb_shared->pings[cookie]++;

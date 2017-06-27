@@ -233,6 +233,16 @@ these.  The defaults are probably not appropriate for your situation.
 The default is \fB--int-radius=4,5,7\fR.
 
 .PD 0
+.IP \fB--min-peaks=\fIn\fR
+.PD
+Do not try to index frames with fewer than \fIn\fR peaks.  These frames will still be described in the output stream.  To exclude them, use \fB--no-non-hits-in-stream\fR.
+
+.PD 0
+.IP \fB--no-non-hits-in-stream\fR
+.PD
+Completely exclude 'non-hit' frames in the stream.  When this option is given, frames with fewer than the number of peaks given to \fB--min-peaks\fR will not have chunks written to the stream at all.
+
+.PD 0
 .IP \fB--basename\fR
 .PD
 Remove the directory parts of the filenames taken from the input file.  If \fB--prefix\fR or \fB-x\fR is also given, the directory parts of the filename will be removed \fIbefore\fR adding the prefix.

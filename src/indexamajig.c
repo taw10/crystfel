@@ -160,6 +160,8 @@ static void show_help(const char *s)
 "                            validity.\n"
 "     --no-peaks-in-stream  Do not record peak search results in the stream.\n"
 "     --no-refls-in-stream  Do not record integrated reflections in the stream.\n"
+"     --no-non-hits-in-stream  Do not include non-hit frames in the stream.\n"
+"                               (see --min-peaks)\n"
 "     --int-diag=<cond>     Show debugging information about reflections.\n"
 "     --no-refine           Skip the prediction refinement step.\n"
 "     --profile             Show timing data for performance monitoring.\n"
@@ -257,6 +259,7 @@ int main(int argc, char *argv[])
 	iargs.no_revalidate = 0;
 	iargs.stream_peaks = 1;
 	iargs.stream_refls = 1;
+	iargs.stream_nonhits = 1;
 	iargs.int_diag = INTDIAG_NONE;
 	iargs.copyme = new_imagefile_field_list();
 	iargs.min_peaks = 0;
@@ -295,6 +298,7 @@ int main(int argc, char *argv[])
 		{"basename",           0, &config_basename,          1},
 		{"no-peaks-in-stream", 0, &iargs.stream_peaks,       0},
 		{"no-refls-in-stream", 0, &iargs.stream_refls,       0},
+		{"no-non-hits-in-stream", 0, &iargs.stream_nonhits,  0},
 		{"integrate-saturated",0, &integrate_saturated,      1},
 		{"no-use-saturated",   0, &iargs.use_saturated,      0},
 		{"no-revalidate",      0, &iargs.no_revalidate,      1},
