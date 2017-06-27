@@ -345,6 +345,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 			if ( refine_prediction(image, cr) ) {
 				crystal_set_user_flag(cr, 1);
 				n_bad++;
+				continue;
 			}
 
 			if ( (indm & INDEXING_CHECK_CELL_COMBINATIONS)
