@@ -92,6 +92,10 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 	switch ( *m & INDEXING_METHOD_MASK ) {
 
+		case INDEXING_NONE :
+		priv = "none";
+		break;
+
 		case INDEXING_DIRAX :
 		priv = dirax_prepare(m, cell, det, ltl);
 		break;
@@ -130,7 +134,9 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		return NULL;
 	}
 
-	STATUS("Prepared indexing method %s\n", str);
+	if ( *m != INDEXING_NONE ) {
+		STATUS("Prepared indexing method %s\n", str);
+	}
 	free(str);
 
 	if ( in != *m ) {
