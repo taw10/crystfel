@@ -789,7 +789,7 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 	gsl_matrix *twiz2 = gsl_matrix_calloc(3, 3);
 	
 
-	for ( i=start; i<obs_vec_count && i < start + 1000; i++ ) {
+	for ( i=start; i<obs_vec_count; i++ ) {
 
 		/* first we check for a shared spot - harshest condition */
 		int shared = obs_shares_spot_w_array(obs_vecs, i, obs_members,
