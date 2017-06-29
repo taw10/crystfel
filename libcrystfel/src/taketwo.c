@@ -798,8 +798,8 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		if ( !shared ) continue;
 
 		/* now we check that angles between all vectors match */
-		int matches = obs_angles_match_array(obs_vecs, i, obs_members,
-		match_members, member_num);
+	//	int matches = obs_angles_match_array(obs_vecs, i, obs_members,
+	//	match_members, member_num);
 
 	//	 if ( !matches ) continue;
 		 
