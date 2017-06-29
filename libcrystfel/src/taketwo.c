@@ -108,10 +108,11 @@ struct TakeTwoCell
 #define MAX_NETWORK_MEMBERS (NETWORK_MEMBER_THRESHOLD + 3)
 
 /* Maximum dead ends for a single branch extension during indexing */
-#define MAX_DEAD_ENDS (1)
+#define MAX_DEAD_ENDS (2)
 
 /* Tolerance for two angles to be considered the same */
-#define ANGLE_TOLERANCE (deg2rad(0.5))
+#define ANGLE_TOLERANCE (deg2rad(0.6))
+
 #define COSINE_TOLERANCE 0.010
 
 /* Tolerance for rot_mats_are_similar */
