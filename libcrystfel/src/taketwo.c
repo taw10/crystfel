@@ -1599,12 +1599,23 @@ IndexingPrivate *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
 		return NULL;
 	}
 
-	STATUS("************************************\n");
-	STATUS("*****    Welcome to TakeTwo    *****\n");
-	STATUS("************************************\n\n");
-	STATUS("If you use these indexing results, please keep a roof\n");
-	STATUS("over the author's head by citing:\n");
-	STATUS("Ginn et al., Acta Cryst. (2016). D72, 956-965\n");
+	STATUS("*******************************************************************\n");
+	STATUS("*****                    Welcome to TakeTwo                   *****\n");
+	STATUS("*******************************************************************\n");
+	STATUS("      If you use these indexing results, please keep a roof\n");
+	STATUS("           over the author's head by citing this paper.\n\n");
+
+	STATUS("o     o     o     o     o     o     o     o     o     o     o     o\n");
+	STATUS("   o     o     o     o     o     o     o     o     o     o     o   \n");
+	STATUS("o                                                                 o\n");
+	STATUS("   o                      The citation is:                     o   \n");
+	STATUS("o           Ginn et al., Acta Cryst. (2016). D72, 956-965         o\n");
+	STATUS("   o                         Thank you!                        o   \n");
+	STATUS("o                                                                 o\n");
+	STATUS("   o     o     o     o     o     o     o     o     o     o     o   \n");
+	STATUS("o     o     o     o     o     o     o     o     o     o     o     o\n");
+
+
 	STATUS("\n");
 
 	tp = malloc(sizeof(struct taketwo_private));
