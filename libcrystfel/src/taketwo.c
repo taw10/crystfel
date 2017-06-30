@@ -213,21 +213,22 @@ static struct rvec rvec_cross(struct rvec a, struct rvec b)
 	return c;
 }
 
-
+/*
 static void show_rvec(struct rvec r2)
 {
 	struct rvec r = r2;
 	normalise_rvec(&r);
 	STATUS("[ %.3f %.3f %.3f ]\n", r.u, r.v, r.w);
 }
+*/
 
 
 /* ------------------------------------------------------------------------
  * functions called under the core functions, still specialised (Level 3)
  * ------------------------------------------------------------------------*/
 
-static gsl_matrix *rotation_around_axis(struct rvec c, double th,
-					gsl_matrix *res)
+static void rotation_around_axis(struct rvec c, double th,
+				 gsl_matrix *res)
 {
 	double omc = 1.0 - cos(th);
 	double s = sin(th);
@@ -240,18 +241,13 @@ static gsl_matrix *rotation_around_axis(struct rvec c, double th,
 	gsl_matrix_set(res, 2, 0, c.w*c.u*omc - c.v*s);
 	gsl_matrix_set(res, 2, 1, c.w*c.v*omc + c.u*s);
 	gsl_matrix_set(res, 2, 2, cos(th) + c.w*c.w*omc);
-
-	return res;
 }
 
 
 /* Rotate vector (vec1) around axis (axis) by angle theta. Find value of
- * theta for which the angle between (vec1) and (vec2) is minimised.
- * Behold! Finally an analytical solution for this one. Assuming
- * that @result has already been allocated. Will upload the maths to the
- * shared Google drive. */
-static gsl_matrix *closest_rot_mat(struct rvec vec1, struct rvec vec2,
-				   struct rvec axis, gsl_matrix *twizzle)
+ * theta for which the angle between (vec1) and (vec2) is minimised. */
+static void closest_rot_mat(struct rvec vec1, struct rvec vec2,
+			    struct rvec axis, gsl_matrix *twizzle)
 {
 	/* Let's have unit vectors */
 	normalise_rvec(&vec1);
@@ -299,8 +295,8 @@ static gsl_matrix *closest_rot_mat(struct rvec vec1, struct rvec vec2,
 	int addPi = (cosAlphaOther > cosAlpha);
 	double bestAngle = theta + addPi * M_PI;
 
-	/* Return an identity matrix which has been rotated by
-	 * theta around "axis" */
+	/* Don't return an identity matrix which has been rotated by
+	 * theta around "axis", but do assign it to twizzle. */
 	rotation_around_axis(axis, bestAngle, twizzle);
 }
 
@@ -457,8 +453,8 @@ static int symm_rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
 	return 0;
 }
 
-static gsl_matrix *rotation_between_vectors(struct rvec a, struct rvec b,
-					    gsl_matrix *twizzle)
+static void rotation_between_vectors(struct rvec a, struct rvec b,
+				     gsl_matrix *twizzle)
 {
 	double th = rvec_angle(a, b);
 	struct rvec c = rvec_cross(a, b);
@@ -550,7 +546,6 @@ static int obs_shares_spot_w_array(struct SpotVec *obs_vecs, int test_idx,
 				   int *members, int num)
 {
 	int i;
-	int total = 0;
 	
 	struct SpotVec *her_obs = &obs_vecs[test_idx];
 
