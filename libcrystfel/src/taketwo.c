@@ -881,7 +881,7 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
 		if (all_ok) {
 		
-			for ( int j=0; j<member_num; j++ ) {
+			for ( j=0; j<member_num; j++ ) {
 			//	STATUS("%i ", obs_members[j]);
 			}
 			//STATUS("%i\n", i);
