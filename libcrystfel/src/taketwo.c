@@ -102,18 +102,16 @@ struct TakeTwoCell
 #define RECIP_TOLERANCE (0.0010*1e10)
 
 /* Threshold for network members to consider a potential solution */
-#define NETWORK_MEMBER_THRESHOLD (25)
+#define NETWORK_MEMBER_THRESHOLD (20)
 
 /* Maximum network members (obviously a solution so should stop) */
 #define MAX_NETWORK_MEMBERS (NETWORK_MEMBER_THRESHOLD + 3)
 
 /* Maximum dead ends for a single branch extension during indexing */
-#define MAX_DEAD_ENDS (2)
+#define MAX_DEAD_ENDS (10)
 
 /* Tolerance for two angles to be considered the same */
 #define ANGLE_TOLERANCE (deg2rad(0.6))
-
-#define COSINE_TOLERANCE 0.010
 
 /* Tolerance for rot_mats_are_similar */
 #define TRACE_TOLERANCE (deg2rad(4.0))
@@ -433,10 +431,8 @@ static int symm_rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
 {
 	int i;
 	
-	gsl_matrix *sub;
-	gsl_matrix *mul;
-	sub = gsl_matrix_calloc(3, 3);
-	mul = gsl_matrix_calloc(3, 3);
+	gsl_matrix *sub = gsl_matrix_calloc(3, 3);
+	gsl_matrix *mul = gsl_matrix_calloc(3, 3);
 
 	for (i = 0; i < cell->numOps; i++) {
 		gsl_matrix *testRot = gsl_matrix_alloc(3, 3);
@@ -555,7 +551,6 @@ static int obs_shares_spot_w_array(struct SpotVec *obs_vecs, int test_idx,
 {
 	int i;
 	int total = 0;
-	int target = 1;
 	
 	struct SpotVec *her_obs = &obs_vecs[test_idx];
 
@@ -564,142 +559,105 @@ static int obs_shares_spot_w_array(struct SpotVec *obs_vecs, int test_idx,
 
 		int shares = obs_vecs_share_spot(her_obs, his_obs);
 
-		if ( shares ) return 1;;
-	}
-
-	if (total > target) {
-		return 1;
+		if ( shares ) return 1;
 	}
 
 	return 0;
 }
 
 
-/** Note: this could potentially (and cautiously) converted to comparing
- * cosines rather than angles, to lose an "acos" but different parts of the
- * cosine graph are more sensitive than others, so may be a trade off... or not.
- */
 static int obs_vecs_match_angles(struct SpotVec *her_obs,
-				 struct SpotVec *his_obs,
-				 int **her_match_idxs, int **his_match_idxs,
-				 int *match_count)
+                                 struct SpotVec *his_obs,
+                                 int **her_match_idxs, int **his_match_idxs,
+                                 int *match_count)
 {
-	int i, j;
-	*match_count = 0;
+        int i, j;
+        *match_count = 0;
 
-	double min_angle = 0.9990;
-	double max_angle = -0.99144;
+        double min_angle = deg2rad(2.5);
+        double max_angle = deg2rad(187.5);
 
-	/* calculate angle between observed vectors */
-	double obs_cos = rvec_cosine(her_obs->obsvec, his_obs->obsvec);
+        /* calculate angle between observed vectors */
+        double obs_angle = rvec_angle(her_obs->obsvec, his_obs->obsvec);
 
-	/* calculate angle between all potential theoretical vectors */
+        /* calculate angle between all potential theoretical vectors */
 
-	for ( i=0; i<her_obs->match_num; i++ ) {
-	for ( j=0; j<his_obs->match_num; j++ ) {
+        for ( i=0; i<her_obs->match_num; i++ ) {
+        for ( j=0; j<his_obs->match_num; j++ ) {
 
-		struct rvec *her_match = &her_obs->matches[i];
-		struct rvec *his_match = &his_obs->matches[j];
+                struct rvec *her_match = &her_obs->matches[i];
+                struct rvec *his_match = &his_obs->matches[j];
 
-		double theory_cos = rvec_cosine(*her_match,
-						   *his_match);
+                double theory_angle = rvec_angle(*her_match,
+                                                 *his_match);
 
-		/* is this angle a match? */
+                /* is this angle a match? */
 
-		double cos_diff = fabs(theory_cos - obs_cos);
+                double angle_diff = fabs(theory_angle - obs_angle);
 
-		if ( cos_diff < COSINE_TOLERANCE ) {
-			// in the case of a brief check only		
-			if (!her_match_idxs || !his_match_idxs) {
-				return 1;
-			}
-		
-			/* If the angles are too close to 0
-			   or 180, one axis ill-determined */
-			if (theory_cos > min_angle ||
-			    theory_cos < max_angle) {
-				continue;
-			}
+                if ( angle_diff < ANGLE_TOLERANCE ) {
+                        // in the case of a brief check only            
+                        if (!her_match_idxs || !his_match_idxs) {
+                                return 1;
+                        }
+                
+                        /* If the angles are too close to 0
+                           or 180, one axis ill-determined */
+                        if (theory_angle < min_angle ||
+                            theory_angle > max_angle) {
+                                continue;
+                        }
 
-			// check the third vector
-			
-			struct rvec theory_diff = diff_vec(*his_match, *her_match);
-			struct rvec obs_diff = diff_vec(his_obs->obsvec,
-			                          her_obs->obsvec);
-			
-			theory_cos = rvec_cosine(*her_match,
-						 theory_diff);
-			obs_cos = rvec_cosine(her_obs->obsvec, obs_diff);
+                        // check the third vector
+                        
+                        struct rvec theory_diff = diff_vec(*his_match, *her_match);
+                        struct rvec obs_diff = diff_vec(his_obs->obsvec,
+                                                  her_obs->obsvec);
+                        
+                        theory_angle = rvec_angle(*her_match,
+                                                 theory_diff);
+                        obs_angle = rvec_angle(her_obs->obsvec, obs_diff);
 
-			if (fabs(obs_cos - theory_cos) > COSINE_TOLERANCE) {
-				continue;
-			}
-			
-			theory_cos = rvec_cosine(*his_match,
-						 theory_diff);
-			obs_cos = rvec_cosine(his_obs->obsvec, obs_diff);
-		
-			if (fabs(obs_cos - theory_cos) > COSINE_TOLERANCE) {
-				continue;
-			}
-			
-			size_t new_size = (*match_count + 1) *
-			sizeof(int);
-			if (her_match_idxs && his_match_idxs)
-			{
-				/* Reallocate the array to fit in another match */
-				int *temp_hers;
-				int *temp_his;
-				temp_hers = realloc(*her_match_idxs, new_size);
-				temp_his = realloc(*his_match_idxs, new_size);
+                        if (fabs(obs_angle - theory_angle) > ANGLE_TOLERANCE) {
+                                continue;
+                        }
+                        
+                        theory_angle = rvec_angle(*his_match,
+                                                 theory_diff);
+                        obs_angle = rvec_angle(his_obs->obsvec, obs_diff);
+                
+                        if (fabs(obs_angle - theory_angle) > ANGLE_TOLERANCE) {
+                                continue;
+                        }
+                        
+                        size_t new_size = (*match_count + 1) *
+                        sizeof(int);
+                        if (her_match_idxs && his_match_idxs)
+                        {
+                                /* Reallocate the array to fit in another match */
+                                int *temp_hers;
+                                int *temp_his;
+                                temp_hers = realloc(*her_match_idxs, new_size);
+                                temp_his = realloc(*his_match_idxs, new_size);
 
-				if ( temp_hers == NULL || temp_his == NULL ) {
-					apologise();
-				}
+                                if ( temp_hers == NULL || temp_his == NULL ) {
+                                        apologise();
+                                }
 
-				(*her_match_idxs) = temp_hers;
-				(*his_match_idxs) = temp_his;
+                                (*her_match_idxs) = temp_hers;
+                                (*his_match_idxs) = temp_his;
 
-				(*her_match_idxs)[*match_count] = i;
-				(*his_match_idxs)[*match_count] = j;
-			}
+                                (*her_match_idxs)[*match_count] = i;
+                                (*his_match_idxs)[*match_count] = j;
+                        }
 
-			(*match_count)++;
-		}
-	}
-	}
+                        (*match_count)++;
+                }
+        }
+        }
 
-	return (*match_count > 0);
+        return (*match_count > 0);
 }
-
-// DELETE ME IF UNUSED
-static int obs_angles_match_array(struct SpotVec *obs_vecs, int test_idx,
-				  int *obs_members, int *match_members, int num)
-{
-	/* note: this is just a preliminary check to reduce unnecessary
-	 * computation later down the line, but is not entirely accurate.
-	 **/
-
-	int i = 0;
-	struct SpotVec *her_obs = &obs_vecs[test_idx];
-
-	for ( i=0; i<num && i < 2; i++ ) {
-		struct SpotVec *his_obs = &obs_vecs[obs_members[i]];
-
-		/* placeholders, but results are ignored */
-		int match_count = 0;
-
-		/* check our test vector matches existing network member */
-		int success = obs_vecs_match_angles(her_obs, his_obs,
-						    NULL, NULL,
-						    &match_count);
-
-		if (!success) return 0;
-	}
-
-	return 1;
-}
-
 
 /* ------------------------------------------------------------------------
  * core functions regarding the meat of the TakeTwo algorithm (Level 2)
@@ -809,7 +767,7 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 		int found = 0;
 		
 		for (j = 0; j < num_occupied; j++) {
-			if (old_mats[j] &&
+			if (old_mats[j] && mat &&
 			    symm_rot_mats_are_similar(old_mats[j], mat, cell))
 			{
 				// we have found a duplicate, so flag as bad.
@@ -820,6 +778,7 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 				duplicates++;
 
 				gsl_matrix_free(mat);
+				break;
 			}
 		}
 		
@@ -838,8 +797,6 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 
 	free(old_mats);
 	
-	STATUS("Found %i\n", num_occupied);
-	
 	return 1;
 }
 
@@ -848,7 +805,7 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 				  int *match_members, int start, int member_num,
 				  int *match_found, struct TakeTwoCell *cell)
 {
-	int i;
+	int i, j, k;
 	gsl_matrix *twiz1 = gsl_matrix_calloc(3, 3);
 	gsl_matrix *twiz2 = gsl_matrix_calloc(3, 3);
 	
@@ -859,92 +816,38 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 						     member_num);
 
 		if ( !shared ) continue;
-
-		/* now we check that angles between all vectors match */
-		/*	int matches = obs_angles_match_array(obs_vecs, i, obs_members,
-		 match_members, member_num);
-
-		 if ( !matches ) continue;
-		 */
-		/* final test: does the corresponding rotation matrix
-		 * match the others? NOTE: have not tested to see if
-		 * every combination of test/existing member has to be checked
-		 * so for now, just sticking to the first two...
-		 */
-
-		/* need to grab all the matching vector indices */
-
-		int *member_idx = 0;
-		int *test_idx = 0;
-		int match_num;
-
-		obs_vecs_match_angles(&obs_vecs[obs_members[0]], &obs_vecs[i],
-				      &member_idx, &test_idx, &match_num);
-
-		weed_duplicate_matches(&obs_vecs[obs_members[0]], &obs_vecs[i],
-				       &member_idx, &test_idx, &match_num, cell);
-
-		free(member_idx);
-		free(test_idx);
-
-		// If we have no matches for the first vector,
-		// then this is fruitless so give up now */
-		if (match_num == 0) {
+		
+		int skip = 0;
+		for ( j=0; j<member_num && skip == 0; j++ ) {
+			if (i == obs_members[j]) {
+				skip = 1;
+			}
+		}
+		
+		if (skip) {
 			continue;
 		}
 
-		/* this observed vec (obs_vecs[i]) must agree with all
-		the other observed vecs in the network (obs_members[member_num])
-		*/
-		 
-		int j, k;
-			
 		int all_ok = 1;
-		
+		int matched = -1;
+	
 		for ( j=0; j<member_num && all_ok; j++ ) {
-			// me: member in question (obs_vecs[i])
-			// you: obs_vecs[obs_members[j]]
-			
+		
 			struct SpotVec *me = &obs_vecs[i];
 			struct SpotVec *you = &obs_vecs[obs_members[j]];
-			
+			struct rvec you_cell = you->matches[match_members[j]];
+
 			struct rvec me_obs = me->obsvec;
 			struct rvec you_obs = you->obsvec;
 
-			int *your_idxs = 0;
-			int *my_idxs = 0;
+			int one_is_okay = 0;
 
-			obs_vecs_match_angles(me, you, &my_idxs,
-					      &your_idxs, &match_num);
-			
-			STATUS("2\n");
-
-			if (match_num == 0) {
-				all_ok = 0;
-				STATUS("shit\n");
-				continue;
-			}
-			
-			weed_duplicate_matches(me, you,
-					       &my_idxs, &your_idxs,
-				               &match_num, cell);
-
-			STATUS("3\n");
-
-			for ( k=0; k<match_num; k++ ) {
+			for ( k=0; k<me->match_num; k++ ) {
+				
 				gsl_matrix *test_rot;
+		
+				struct rvec me_cell = me->matches[k];								
 
-				if (my_idxs[k] < 0 || your_idxs[k] < 0) {
-					continue;
-				}
-
-				STATUS("4\n");
-
-				struct rvec me_cell = me->matches[my_idxs[k]];								
-				struct rvec you_cell;
-
-				you_cell = you->matches[your_idxs[k]];
-					
 				test_rot = generate_rot_mat(me_obs,
 					    you_obs, me_cell, you_cell,
 					    twiz1, twiz2);			
@@ -955,23 +858,34 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 				
 				gsl_matrix_free(test_rot);
 
-				STATUS("5\n");
-
-				if (!ok) {
-					all_ok = 0;
-					STATUS("fuck\n");
-
-					break;
+				if (ok) {
+					one_is_okay = 1;
+					
+					if (matched >= 0 && k == matched) {
+						*match_found = k;
+					} else if (matched < 0) {
+						matched = k;
+					} else {
+						one_is_okay = 0;
+						break;
+					}					
 				}
 			}
 			
-			free(my_idxs);
-			free(your_idxs);
+			if (!one_is_okay) {
+				all_ok = 0;
+				break;
+			}
 		}
-	
+
+
 		if (all_ok) {
-			STATUS("phew\n");
-			*match_found = i;
+		
+			for ( int j=0; j<member_num; j++ ) {
+		//		STATUS("%i ", obs_members[j]);
+			}
+		//	STATUS("%i\n", i);
+			
 			return i;
 		}
 	}
@@ -1034,24 +948,21 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
 			/* We have not had too many dead ends. Try removing
 			 the last member and continue. */
-			start++;
+			start = obs_members[member_num - 1] + 1;
 			member_num--;
 			dead_ends++;
-			STATUS("\n");
 
 			continue;
 		}
 
 		/* we have elongated membership - so reset dead_ends counter */
-		dead_ends = 0;
+	//	dead_ends = 0;
 
 		obs_members[member_num] = next_index;
 		match_members[member_num] = match_found;
 
-		start = next_index + 1;
 		member_num++;
-
-
+		
 		if (member_num > *max_members) {
 			*max_members = member_num;
 		}
@@ -1059,19 +970,6 @@ static int grow_network(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		/* If member_num is high enough, we want to return a yes */
 		if ( member_num > NETWORK_MEMBER_THRESHOLD ) break;
 	}
-	
-	/*		  
-	int i;
-	for (i = 0; i < member_num; i++)
-	{
-		STATUS(".");
-	}
-
-	if ( member_num > NETWORK_MEMBER_THRESHOLD ) {
-		STATUS(" yes (%i)\n", member_num);
-	} else {
-		STATUS(" nope (%i)\n", member_num);
-	}*/
 
 	finish_solution(rot, obs_vecs, obs_members,
 			  match_members, member_num);
@@ -1620,14 +1518,10 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 		return NULL;
 	}
 
-//	STATUS("Returning result.\n");
-
 	result = transform_cell_gsl(cell, solution);
 	gsl_matrix_free(solution);
 	cleanup_taketwo_obs_vecs(obs_vecs, obs_vec_count);
 	cleanup_taketwo_cell(&ttCell);
-	
-	STATUS("good.\n");
 	
 	return result;
 }
@@ -1673,8 +1567,11 @@ int taketwo_index(struct image *image, IndexingPrivate *ipriv)
 		if ( !peak_sanity_check(image, &cr, 1) ) {
 			cell_free(cell);
 			crystal_free(cr);
+		//	STATUS("Rubbish!!\n");
 
 			return 0;
+		} else {
+		//	STATUS("That's good!\n");
 		}
 	}
 
@@ -1711,7 +1608,7 @@ IndexingPrivate *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
 	STATUS("*****    Welcome to TakeTwo    *****\n");
 	STATUS("************************************\n\n");
 	STATUS("If you use these indexing results, please keep a roof\n");
-	STATUS("over my head by citing:\n");
+	STATUS("over the author's head by citing:\n");
 	STATUS("Ginn et al., Acta Cryst. (2016). D72, 956-965\n");
 	STATUS("\n");
 
