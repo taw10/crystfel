@@ -96,7 +96,7 @@ struct TakeTwoCell
 
 
 /* Maximum distance between two rlp sizes to consider info for indexing */
-#define MAX_RECIP_DISTANCE (0.20*1e10)
+#define MAX_RECIP_DISTANCE (0.15*1e10)
 
 /* Tolerance for two lengths in reciprocal space to be considered the same */
 #define RECIP_TOLERANCE (0.0010*1e10)
@@ -114,7 +114,7 @@ struct TakeTwoCell
 #define ANGLE_TOLERANCE (deg2rad(0.6))
 
 /* Tolerance for rot_mats_are_similar */
-#define TRACE_TOLERANCE (deg2rad(4.0))
+#define TRACE_TOLERANCE (deg2rad(2.5))
 
 /** TODO:
  *
@@ -882,9 +882,9 @@ static signed int find_next_index(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		if (all_ok) {
 		
 			for ( int j=0; j<member_num; j++ ) {
-		//		STATUS("%i ", obs_members[j]);
+			//	STATUS("%i ", obs_members[j]);
 			}
-		//	STATUS("%i\n", i);
+			//STATUS("%i\n", i);
 			
 			return i;
 		}
