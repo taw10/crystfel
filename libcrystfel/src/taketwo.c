@@ -110,6 +110,10 @@ struct TakeTwoCell
 /* Maximum dead ends for a single branch extension during indexing */
 #define MAX_DEAD_ENDS (10)
 
+/* Maximum observed vectors before TakeTwo gives up and deals with
+ * what is already there. */
+#define MAX_OBS_VECTORS 100000
+
 /* Tolerance for two angles to be considered the same */
 #define ANGLE_TOLERANCE (deg2rad(0.6))
 
@@ -1291,7 +1295,7 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 	/* maximum distance squared for comparisons */
 	double max_sq_length = pow(MAX_RECIP_DISTANCE, 2);
 
-	for ( i=0; i<rlp_count-1; i++ ) {
+	for ( i=0; i<rlp_count-1 && count < MAX_OBS_VECTORS; i++ ) {
 		for ( j=i+1; j<rlp_count; j++ ) {
 
 
