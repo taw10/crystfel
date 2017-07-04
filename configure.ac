@@ -37,11 +37,11 @@ AC_ARG_WITH(gsl,
  GSL_LIBS="-L$withval/lib -lgsl -lgslcblas -lm"],
 [PKG_CHECK_MODULES([GSL], [gsl])])
 
-AC_ARG_ENABLE(cbf, AS_HELP_STRING([--enable-cbf], [Enable CBF file support]))
+AC_ARG_ENABLE(cbf, AS_HELP_STRING([--disable-cbf], [Disable CBF file support]))
 AC_ARG_WITH(cbflib_dir, AS_HELP_STRING([--with-cbflib],
             [Specify location of CBFlib headers and libraries]))
 AC_MSG_CHECKING([whether to use CBFlib])
-AS_IF([test "x$enable_cbf" = "xyes"],
+AS_IF([test "x$enable_cbf" != "xno"],
 [
    AC_MSG_RESULT([yes])
    AS_IF([test "x$with_cbflib_dir" != "x"],
