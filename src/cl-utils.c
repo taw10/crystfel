@@ -50,6 +50,15 @@ const char *clError(cl_int err)
 		case CL_SUCCESS :
 		return "no error";
 
+		case CL_DEVICE_NOT_AVAILABLE :
+		return "device not available";
+
+		case CL_DEVICE_NOT_FOUND :
+		return "device not found";
+
+		case CL_INVALID_DEVICE_TYPE :
+		return "invalid device type";
+
 		case CL_INVALID_PLATFORM :
 		return "invalid platform";
 
