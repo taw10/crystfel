@@ -387,144 +387,6 @@ int poisson_noise(gsl_rng *rng, double expected)
 }
 
 
-/**
- * SECTION:quaternion
- * @short_description: Simple quaternion handling
- * @title: Quaternion
- * @section_id:
- * @see_also:
- * @include: "utils.h"
- * @Image:
- *
- * There is a simple quaternion structure in CrystFEL.  At the moment, it is
- * only used when simulating patterns, as an argument to cell_rotate() to
- * orient the unit cell.
- */
-
-/**
- * quaternion_modulus:
- * @q: A %quaternion
- *
- * If a quaternion represents a pure rotation, its modulus should be unity.
- *
- * Returns: the modulus of the given quaternion.
- **/
-double quaternion_modulus(struct quaternion q)
-{
-	return sqrt(q.w*q.w + q.x*q.x + q.y*q.y + q.z*q.z);
-}
-
-
-/**
- * normalise_quaternion:
- * @q: A %quaternion
- *
- * Rescales the quaternion such that its modulus is unity.
- *
- * Returns: the normalised version of @q
- **/
-struct quaternion normalise_quaternion(struct quaternion q)
-{
-	double mod;
-	struct quaternion r;
-
-	mod = quaternion_modulus(q);
-
-	r.w = q.w / mod;
-	r.x = q.x / mod;
-	r.y = q.y / mod;
-	r.z = q.z / mod;
-
-	return r;
-}
-
-
-/**
- * random_quaternion:
- * @rng: A GSL random number generator to use
- *
- * Returns: a randomly generated, normalised, quaternion.
- **/
-struct quaternion random_quaternion(gsl_rng *rng)
-{
-	struct quaternion q;
-
-	q.w = 2.0*gsl_rng_uniform(rng) - 1.0;
-	q.x = 2.0*gsl_rng_uniform(rng) - 1.0;
-	q.y = 2.0*gsl_rng_uniform(rng) - 1.0;
-	q.z = 2.0*gsl_rng_uniform(rng) - 1.0;
-	q = normalise_quaternion(q);
-
-	return q;
-}
-
-
-/**
- * quaternion_valid:
- * @q: A %quaternion
- *
- * Checks if the given quaternion is normalised.
- *
- * This function performs a nasty floating point comparison of the form
- * <code>(modulus > 0.999) && (modulus < 1.001)</code>, and so should not be
- * relied upon to spot anything other than the most obvious input error.
- *
- * Returns: 1 if the quaternion is normalised, 0 if not.
- **/
-int quaternion_valid(struct quaternion q)
-{
-	double qmod;
-
-	qmod = quaternion_modulus(q);
-
-	/* Modulus = 1 to within some tolerance?
-	 * Nasty allowance for floating-point accuracy follows... */
-	if ( (qmod > 0.999) && (qmod < 1.001) ) return 1;
-
-	return 0;
-}
-
-
-/**
- * quat_rot
- * @q: A vector (in the form of a "struct rvec")
- * @z: A %quaternion
- *
- * Rotates a vector according to a quaternion.
- *
- * Returns: A rotated version of @p.
- **/
-struct rvec quat_rot(struct rvec q, struct quaternion z)
-{
-	struct rvec res;
-	double t01, t02, t03, t11, t12, t13, t22, t23, t33;
-
-	t01 = z.w*z.x;
-	t02 = z.w*z.y;
-	t03 = z.w*z.z;
-	t11 = z.x*z.x;
-	t12 = z.x*z.y;
-	t13 = z.x*z.z;
-	t22 = z.y*z.y;
-	t23 = z.y*z.z;
-	t33 = z.z*z.z;
-
-	res.u = (1.0 - 2.0 * (t22 + t33)) * q.u
-	            + (2.0 * (t12 + t03)) * q.v
-	            + (2.0 * (t13 - t02)) * q.w;
-
-	res.v =       (2.0 * (t12 - t03)) * q.u
-	      + (1.0 - 2.0 * (t11 + t33)) * q.v
-	            + (2.0 * (t01 + t23)) * q.w;
-
-	res.w =       (2.0 * (t02 + t13)) * q.u
-	            + (2.0 * (t23 - t01)) * q.v
-	      + (1.0 - 2.0 * (t11 + t22)) * q.w;
-
-	return res;
-}
-
-
 /* Return non-zero if c is in delims */
 static int assplode_isdelim(const char c, const char *delims)
 {
@@ -690,4 +552,142 @@ char *safe_basename(const char *in)
 void utils_fudge_gslcblas()
 {
         STATUS("%p\n", cblas_sgemm);
+}
+
+
+/**
+ * SECTION:quaternion
+ * @short_description: Simple quaternion handling
+ * @title: Quaternion
+ * @section_id:
+ * @see_also:
+ * @include: "utils.h"
+ * @Image:
+ *
+ * There is a simple quaternion structure in CrystFEL.  At the moment, it is
+ * only used when simulating patterns, as an argument to cell_rotate() to
+ * orient the unit cell.
+ */
+
+/**
+ * quaternion_modulus:
+ * @q: A %quaternion
+ *
+ * If a quaternion represents a pure rotation, its modulus should be unity.
+ *
+ * Returns: the modulus of the given quaternion.
+ **/
+double quaternion_modulus(struct quaternion q)
+{
+	return sqrt(q.w*q.w + q.x*q.x + q.y*q.y + q.z*q.z);
+}
+
+
+/**
+ * normalise_quaternion:
+ * @q: A %quaternion
+ *
+ * Rescales the quaternion such that its modulus is unity.
+ *
+ * Returns: the normalised version of @q
+ **/
+struct quaternion normalise_quaternion(struct quaternion q)
+{
+	double mod;
+	struct quaternion r;
+
+	mod = quaternion_modulus(q);
+
+	r.w = q.w / mod;
+	r.x = q.x / mod;
+	r.y = q.y / mod;
+	r.z = q.z / mod;
+
+	return r;
+}
+
+
+/**
+ * random_quaternion:
+ * @rng: A GSL random number generator to use
+ *
+ * Returns: a randomly generated, normalised, quaternion.
+ **/
+struct quaternion random_quaternion(gsl_rng *rng)
+{
+	struct quaternion q;
+
+	q.w = 2.0*gsl_rng_uniform(rng) - 1.0;
+	q.x = 2.0*gsl_rng_uniform(rng) - 1.0;
+	q.y = 2.0*gsl_rng_uniform(rng) - 1.0;
+	q.z = 2.0*gsl_rng_uniform(rng) - 1.0;
+	q = normalise_quaternion(q);
+
+	return q;
+}
+
+
+/**
+ * quaternion_valid:
+ * @q: A %quaternion
+ *
+ * Checks if the given quaternion is normalised.
+ *
+ * This function performs a nasty floating point comparison of the form
+ * <code>(modulus > 0.999) && (modulus < 1.001)</code>, and so should not be
+ * relied upon to spot anything other than the most obvious input error.
+ *
+ * Returns: 1 if the quaternion is normalised, 0 if not.
+ **/
+int quaternion_valid(struct quaternion q)
+{
+	double qmod;
+
+	qmod = quaternion_modulus(q);
+
+	/* Modulus = 1 to within some tolerance?
+	 * Nasty allowance for floating-point accuracy follows... */
+	if ( (qmod > 0.999) && (qmod < 1.001) ) return 1;
+
+	return 0;
+}
+
+
+/**
+ * quat_rot
+ * @q: A vector (in the form of a "struct rvec")
+ * @z: A %quaternion
+ *
+ * Rotates a vector according to a quaternion.
+ *
+ * Returns: A rotated version of @p.
+ **/
+struct rvec quat_rot(struct rvec q, struct quaternion z)
+{
+	struct rvec res;
+	double t01, t02, t03, t11, t12, t13, t22, t23, t33;
+
+	t01 = z.w*z.x;
+	t02 = z.w*z.y;
+	t03 = z.w*z.z;
+	t11 = z.x*z.x;
+	t12 = z.x*z.y;
+	t13 = z.x*z.z;
+	t22 = z.y*z.y;
+	t23 = z.y*z.z;
+	t33 = z.z*z.z;
+
+	res.u = (1.0 - 2.0 * (t22 + t33)) * q.u
+	            + (2.0 * (t12 + t03)) * q.v
+	            + (2.0 * (t13 - t02)) * q.w;
+
+	res.v =       (2.0 * (t12 - t03)) * q.u
+	      + (1.0 - 2.0 * (t11 + t33)) * q.v
+	            + (2.0 * (t01 + t23)) * q.w;
+
+	res.w =       (2.0 * (t02 + t13)) * q.u
+	            + (2.0 * (t23 - t01)) * q.v
+	      + (1.0 - 2.0 * (t11 + t22)) * q.w;
+
+	return res;
 }
