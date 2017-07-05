@@ -380,7 +380,6 @@ find_panel_by_name
 simple_geometry
 record_image
 get_pixel_extents
-get_q
 get_q_for_panel
 get_tt
 smallest_q
@@ -416,7 +415,6 @@ find_event
 get_event_string
 get_event_from_event_string
 event_path_placeholder_subst
-partial_event_substitution
 retrieve_full_path
 initialize_filename_plus_event
 free_filename_plus_event

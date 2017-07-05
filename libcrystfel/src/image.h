@@ -70,7 +70,26 @@ typedef enum {
 	SPECTRUM_TWOCOLOUR
 } SpectrumType;
 
-/* Structure describing a feature in an image */
+
+/**
+ * imagefeature:
+ *  @parent: Image this feature belongs to
+ *  @fs: Fast scan coordinate
+ *  @ss: Slow scan coordinate
+ *  @p: Pointer to panel
+ *  @intensity: Intensity of peak
+ *  @rx: Reciprocal x coordinate in m^-1
+ *  @ry: Reciprocal y coordinate in m^-1
+ *  @rz: Reciprocal z coordinate in m^-1
+ *  @name: Text name for feature
+ *
+ *  Represents a peak in an image.
+ *
+ *  Note carefully that the @fs and @ss coordinates are the distances, measured
+ *  in pixels, from the corner of the panel.  They are NOT pixel indices.
+ *  If the peak is in the middle of the first pixel, its coordinates would be
+ *  0.5,0.5.
+ */
 struct imagefeature {
 
 	struct image                    *parent;
@@ -84,10 +103,10 @@ struct imagefeature {
 	double                          ry;
 	double                          rz;
 
-	/* Internal use only */
-	int                             valid;
-
 	const char                      *name;
+
+	/*< private >*/
+	int                             valid;
 };
 
 
@@ -110,44 +129,46 @@ struct sample
 };
 
 
+/**
+ * beam_params:
+ *  @photon_energy: eV per photon
+ *  @photon_energy_from: HDF5 dataset name
+ *  @photon_energy_scale: Scale factor for photon energy, if it comes from HDF5
+ */
 struct beam_params
 {
-	double photon_energy;  /* eV per photon */
-	char  *photon_energy_from; /* HDF5 dataset name */
-	double photon_energy_scale;  /* Scale factor for photon energy, if the
-	                              * energy is to be from the HDF5 file */
+	double photon_energy;
+	char  *photon_energy_from;
+	double photon_energy_scale;
 };
 
 
 /**
  * image:
- *
- * <programlisting>
- * struct image
- * {
- *    Crystal                 **crystals;
- *    int                     n_crystals;
- *    IndexingMethod          indexed_by;
- *
- *    struct detector         *det;
- *    struct beam_params      *beam;
- *    char                    *filename;
- *    const struct imagefile_field_list *copyme;
- *
- *    int                     id;
- *
- *    double                  lambda;
- *    double                  div;
- *    double                  bw;
- *
- *    int                     width;
- *    int                     height;
- *
- *    long long int           num_peaks;
- *    long long int           num_saturated_peaks;
- *    ImageFeatureList        *features;
- * };
- * </programlisting>
+ *   @crystals: Array of crystals in the image
+ *   @n_crystals: The number of crystals in the image
+ *   @indexed_by: Indexing method which indexed this pattern
+ *   @det: Detector structure
+ *   @beam: Beam parameters structure
+ *   @filename: Filename for the image file
+ *   @copyme: Fields to copy from the image file to the stream
+ *   @id: ID number of the thread handling this image
+ *   @serial: Serial number for this image
+ *   @lambda: Wavelength
+ *   @div: Divergence
+ *   @bw: Bandwidth
+ *   @num_peaks: The number of peaks
+ *   @num_saturated_peaks: The number of saturated peaks
+ *   @features: The peaks found in the image
+ *   @dp: The image data, by panel
+ *   @bad: The bad pixel mask, array by panel
+ *   @sat: The per-pixel saturation mask, array by panel
+ *   @event: Event ID for the image
+ *   @stuff_from_stream: Items read back from the stream
+ *   @avg_clen: Mean of camera length values for all panels
+ *   @spectrum: Spectrum information
+ *   @nsamples: Number of spectrum samples
+ *   @spectrum_size: SIze of spectrum array
  *
  * The field <structfield>data</structfield> contains the raw image data, if it
  * is currently available.  The data might be available throughout the
@@ -204,8 +225,8 @@ struct image {
 	double                  bw;            /* Bandwidth as a fraction */
 
 	/* Detected peaks */
-	long long int           num_peaks;
-	long long int           num_saturated_peaks;
+	long long               num_peaks;
+	long long               num_saturated_peaks;
 	ImageFeatureList        *features;
 
 };

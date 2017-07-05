@@ -3,12 +3,12 @@
  *
  * Detector properties
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2016 Thomas White <taw@physics.org>
+ *   2009-2017 Thomas White <taw@physics.org>
  *   2011-2012 Richard Kirian <rkirian@asu.edu>
  *   2014      Valerio Mariani
  *   2011      Andrew Aquila
@@ -42,7 +42,6 @@ struct rg_collection;
 struct detector;
 struct panel;
 struct badregion;
-struct detector;
 struct beam_params;
 struct hdfile;
 struct event;
@@ -80,6 +79,47 @@ struct rg_collection
 };
 
 
+/**
+ * panel:
+ *  @name: Text name for the panel (fixed length array)
+ *  @cnx: Location of corner, in pixels, x coordinate
+ *  @cny: Location of corner, in pixels, y coordinate
+ *  @coffset: The offset to be applied from @clen (which may come from elsewhere)
+ *  @clen: The distance from the interaction point to the corner of the first pixel
+ *  @clen_from: Location to get @clen from, e.g. from HDF5 file
+ *  @mask: Location of mask data
+ *  @mask_file: Filename for mask data
+ *  @satmap: Location of per-pixel saturation map
+ *  @satmap_file: Filename for saturation map
+ *  @res: Resolution of panel in pixels per metre
+ *  @badrow: Readout direction (for filtering out clusters of peaks)
+ *  @no_index: Non-zero if panel is entirely "bad"
+ *  @adu_per_photon: Number of detector intensity units per photon
+ *  @adu_per_eV: Number of detector intensity units per eV of photon energy
+ *  @max_adu: Saturation value
+ *  @dim_structure: Dimension structure
+ *  @fsx: Real-space x-direction of data fast-scan direction
+ *  @fsy: Real-space y-direction of data fast-scan direction
+ *  @fsz: Real-space z-direction of data fast-scan direction
+ *  @ssx: Real-space x-direction of data slow-scan direction
+ *  @ssy: Real-space y-direction of data slow-scan direction
+ *  @ssz: Real-space z-direction of data slow-scan direction
+ *  @rail_x: x direction of camera length "rail"
+ *  @rail_y: y direction of camera length "rail"
+ *  @rail_z: z direction of camera length "rail"
+ *  @clen_for_centering: Value of clen (without coffset) at which beam is centered
+ *  @xfs: Data fast-scan direction of real-space x-direction
+ *  @yfs: Data fast-scan direction of real-space y-direction
+ *  @xss: Data slow-scan direction of real-space x-direction
+ *  @yss: Data slow-scan direction of real-space y-direction
+ *  @orig_min_fs: Minimum fs coordinate of data in file
+ *  @orig_max_fs: Maximum fs coordinate of data in file
+ *  @orig_min_ss: Minimum ss coordinate of data in file (inclusive)
+ *  @orig_max_ss: Maximum ss coordinate of data in file (inclusive)
+ *  @data: Location of data in file
+ *  @w: Width of panel
+ *  @h: Height of panel
+ */
 struct panel
 {
         char     name[1024];  /* Name for this panel */

@@ -75,6 +75,7 @@
  * @INDEXING_SIMULATION: Dummy value
  * @INDEXING_DEBUG: Results injector for debugging
  * @INDEXING_ASDF: Use in-built "asdf" indexer
+ * @INDEXING_ERROR: Special value for unrecognised indexing engine name
  * @INDEXING_CHECK_CELL_COMBINATIONS: Check linear combinations of unit cell
  *   axes for agreement with given cell.
  * @INDEXING_CHECK_CELL_AXES: Check unit cell axes for agreement with given
