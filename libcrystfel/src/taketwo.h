@@ -33,9 +33,9 @@
 
 #include "cell.h"
 
-extern IndexingPrivate *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
-                                        struct detector *det, float *ltl);
-extern int taketwo_index(struct image *image, IndexingPrivate *ipriv);
+extern void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
+                             struct detector *det, float *ltl);
+extern int taketwo_index(struct image *image, void *priv);
 extern void taketwo_cleanup(IndexingPrivate *pp);
 
 #endif /* TAKETWO_H */

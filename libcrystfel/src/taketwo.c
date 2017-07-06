@@ -1523,7 +1523,7 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 
 /* CrystFEL interface hooks */
 
-int taketwo_index(struct image *image, IndexingPrivate *ipriv)
+int taketwo_index(struct image *image, void *priv)
 {
 	Crystal *cr;
 	UnitCell *cell;
@@ -1575,8 +1575,8 @@ int taketwo_index(struct image *image, IndexingPrivate *ipriv)
 }
 
 
-IndexingPrivate *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
-				 struct detector *det, float *ltl)
+void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
+                      struct detector *det, float *ltl)
 {
 	struct taketwo_private *tp;
 
@@ -1624,7 +1624,7 @@ IndexingPrivate *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
 	tp->cell = cell;
 	tp->indm = *indm;
 
-	return (IndexingPrivate *)tp;
+	return tp;
 }
 
 
