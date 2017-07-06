@@ -64,6 +64,7 @@ Contributors
 
 * Wolfgang Brehm <wolfgang.brehm@gmail.com>
   "Detwinning" algorithm (ambigator)
+  Fixes for d1sig and d2sig
 
 * Valerio Mariani <<alerio.mariani@desy.de>
   Packaging and general bug fixing
@@ -92,3 +93,13 @@ Contributors
 
 * Thomas Grant <tgrant@hwi.buffalo.edu>
   Original version of scripts/peakogram-stream
+
+* Steve Aplin <steve.aplin@desy.de>
+  Original version of scripts/turbo-index-slurm
+
+* Oleksandr Yefanov <oleksandr.yefanov@desy.de>
+  geoptimiser
+  Peakfinder8 improvements
+
+* Helen Ginn  <helen@strubi.ox.ac.uk>
+  TakeTwo indexing algorithm

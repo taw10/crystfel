@@ -1,8 +1,9 @@
 Changes in this development version
 -----------------------------------
 
-- indexamajig --peaks=peakfinder8 was added.
+- indexamajig --peaks=peakfinder8 was added (Valerio Mariani, Oleksandr Yefanov)
 - CBF files are now supported as input.
+- TakeTwo indexing was incorporated (Helen Ginn)
 - indexamajig: Hung worker processes will now be detected and killed.
 - Peak locations from HDF5 or CXI files are now offset by 0.5,0.5.
 - Detector panels no longer need to be perpendicular to the X-ray beam.
@@ -14,7 +15,7 @@ Changes in this development version
 - The number of detector units per photon (rather than per eV) can now be
   specified in the geometry file.
 - indexamajig: Small changes to how peaks from HDF5 files are checked.
-- compare_hkl --fom=d1sig and d2sig were fixed.
+- compare_hkl --fom=d1sig and d2sig were fixed (Wolfgang Brehm).
 - compare_hkl --min-measurements was added.
 - New polarisation correction.
 - Reflection data files now contain audit information (CrystFEL version number
@@ -25,7 +26,7 @@ Changes in this development version
 - Add scripts/move-entire-detector, scripts/split-by-mask,
   scripts/peakogram-stream and scripts/sum-peaks.
 - scripts/turbo-index was renamed to turbo-index-lsf, and turbo-index-slurm
-  was added.
+  was added (Steve Aplin).
 - An example geometry file for Eiger was added.
 - Multiple bug fixes for asdf indexing
 - cell_explorer: Fixed invisible Greek letters on some systems

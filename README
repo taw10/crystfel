@@ -26,6 +26,9 @@ Authors:
   Keitaro Yamashita <k.yamashita@spring8.or.jp>
   Marmoru Suzuki <mamoru.suzuki@protein.osaka-u.ac.jp>
   Thomas Grant <tgrant@hwi.buffalo.edu>
+  Steve Aplin <steve.aplin@desy.de>
+  Oleksandr Yefanov <oleksandr.yefanov@desy.de>
+  Helen Ginn  <helen@strubi.ox.ac.uk>
 
 CrystFEL is free software: you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software
@@ -149,11 +152,6 @@ If you get an error mentioning fftw3 and telling you to recompile with -fPIC,
 then your version of FFTW3 is not compiled in a suitable way.  You'll need to
 install it again (from source) adding "--enable-shared" to its ./configure
 command line.
-
-If you get an error about "cairo_surface_show_page" in src/scaling-report.c,
-simply edit the file and comment that line out.  Partialator will then not be
-able to produce a useful scaling report, but the rest of CrystFEL will work
-properly.
 
 If you are installing from Git, the following extra things apply:
 
